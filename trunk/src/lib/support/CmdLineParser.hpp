@@ -170,9 +170,14 @@ public:
     DupOptKind dupKind;
     const char* dupArgSep; // separator for 'DUPARG_CONCAT'
   };
-
-  static OptArgDesc OptArgDesc_NULL; // The NULL terminator
-
+  
+  // The NULL terminator (two versions).  The use of the first version
+  // is preferable, but some older compilers won't support it.
+  static OptArgDesc OptArgDesc_NULL;
+# define CmdLineParser_OptArgDesc_NULL_MACRO \
+    { 0, NULL, CmdLineParser::ARG_NULL, CmdLineParser::DUPOPT_NULL, NULL }
+  
+  
   // ---------------------------------------------------------
   // Exception thrown when errors are encountered
   // ---------------------------------------------------------

@@ -81,8 +81,8 @@ static const char* usage_details =
 "                       space\n"
 "  -p <list>, --canonical-paths <list>\n"
 "                       Ensure that scope tree only contains files found in\n"
-"                       the colon-separated <pathlist>. May be passed\n"
-"                       multiple times.\n"
+"                       the colon-separated <list>. May be passed multiple\n"
+"                       times.\n"
 "  -V, --version        Print version information.\n"
 "  -h, --help           Print this help.\n"
 "  -D, --dump-binary    Dump binary information and suppress loop recovery\n"
@@ -114,12 +114,12 @@ CmdLineParser::OptArgDesc Args::optArgs[] = {
   { 'c', "compact",         CLP::ARG_NONE, CLP::DUPOPT_CLOB, NULL },
   { 'p', "canonical-paths", CLP::ARG_REQ , CLP::DUPOPT_CAT,  ":" },
   {  0 , "pcmap",           CLP::ARG_REQ , CLP::DUPOPT_ERR,  NULL }, // hidden
-
+  
   { 'V', "version",     CLP::ARG_NONE, CLP::DUPOPT_CLOB, NULL },
   { 'h', "help",        CLP::ARG_NONE, CLP::DUPOPT_CLOB, NULL },
   { 'D', "dump-binary", CLP::ARG_NONE, CLP::DUPOPT_CLOB, NULL },
   {  0 , "debug",       CLP::ARG_OPT,  CLP::DUPOPT_CLOB, NULL }, // hidden
-  CmdLineParser::OptArgDesc_NULL
+  CmdLineParser_OptArgDesc_NULL_MACRO // SGI's compiler requires this version
 };
 
 #undef CLP
