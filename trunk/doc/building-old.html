@@ -425,6 +425,10 @@ output, you may want to redirect it to a file.  For example:
 
 <h3>Notes</h3>
 
+<p> Before building the HPCToolkit directory, 
+you must have already initialized your 
+environment <a href="#environment>as described above</a>.</p>
+ 
 <p>Below is a list of exceptions or special options for compiling
 HPCToolkit.  (We hope to eliminate this eyesore with Autoconf/make,
 but until then...)</p>
@@ -575,24 +579,12 @@ successfully compiled hpcviewer:
 </div>
 
 <li>
-<p>Choose the appropriate build directory: <code>build-unix</code> 
-for unix systems
-or <code>build-win</code> for windows. Change to that directory.
-<ul>
-<li><p> For Unix builds, change to the <code>build-unix</code>
-directory and initiate the build
+<p>Change to the build directory <code>build-unix</code> 
+(This directory is used for Unix systems and for building under Cygwin on Windows.) Initiate the build with make.  
 <div class="indent">
 <code>cd build-unix </code><br>
 <code>make</code><br>
 </div>
-
-<li><p>For Windows builds, change to the <code>build-win</code>
-directory and initiate the build
-<div class="indent">
-<code>cd build-win</code><br>
-<code>compile.bat</code><br>
-</div>
-</ul>
 </ol>
 <h3>Using hpcviewer</h3>
 <ul>
