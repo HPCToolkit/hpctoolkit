@@ -13,7 +13,9 @@ endif
 # Set platform variables
 #############################################################################
 
-setenv HPCTOOLKIT_PLATFORM `cd ${HPCTOOLKIT}/src/config; ./hpcplatform`
+pushd ${HPCTOOLKIT}/src/config >& /dev/null
+setenv HPCTOOLKIT_PLATFORM `./hpcplatform`
+popd >& /dev/null
 
 #############################################################################
 # Set other variables
