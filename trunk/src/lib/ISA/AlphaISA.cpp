@@ -67,8 +67,8 @@
 
 // See 'ISA.h' for comments on the interface
 
-ISA::InstType
-AlphaISA::GetInstType(MachInst* mi, ushort opIndex, ushort sz)
+ISA::InstDesc
+AlphaISA::GetInstDesc(MachInst* mi, ushort opIndex, ushort sz)
 {
   // We know that instruction sizes are guaranteed to be 4 bytes, but
   // the host may have a different byte order than the executable.
@@ -87,28 +87,28 @@ AlphaISA::GetInstType(MachInst* mi, ushort opIndex, ushort sz)
     case LDWU:
     case LDF:  // FP loads
     case LDS:
-      return (ISA::MEM_LOAD);
+      return InstDesc(InstDesc::MEM_LOAD);
     case LDQ:
     case LDQ_L:
     case LDQ_U:
     case LDG:  // FP loads
     case LDT:
     case HW_LD: // PALcode
-      return (ISA::MEM_LOAD); // Doubleword
+      return InstDesc(InstDesc::MEM_LOAD); // Doubleword
     case STB:  // Integer stores
     case STL:
     case STL_C:
     case STW:
     case STF:  // FP stores
     case STS:
-      return (ISA::MEM_STORE);
+      return InstDesc(InstDesc::MEM_STORE);
     case STQ:
     case STQ_C:
     case STQ_U:
     case STG:  // FP stores
     case STT:
     case HW_ST: // PALcode
-      return (ISA::MEM_STORE); // Doubleword
+      return InstDesc(InstDesc::MEM_STORE); // Doubleword
 
       // Integer/FP control Instructions (SS 4.3 and 4.9; Tables 4-3
       // and 4-15)
@@ -126,11 +126,11 @@ AlphaISA::GetInstType(MachInst* mi, ushort opIndex, ushort sz)
     case FBLE:
     case FBLT:
     case FBNE:
-      return (ISA::BR_COND_REL);
+      return InstDesc(InstDesc::BR_COND_REL);
     case BR:
-      return (ISA::BR_UN_COND_REL);
+      return InstDesc(InstDesc::BR_UN_COND_REL);
     case BSR:  // branch and call
-      return (ISA::SUBR_REL);
+      return InstDesc(InstDesc::SUBR_REL);
 
       // Technically all these instructions are identical except for
       // hints.  We have to assume the compiler's hint is actually
@@ -139,24 +139,24 @@ AlphaISA::GetInstType(MachInst* mi, ushort opIndex, ushort sz)
       switch (inst & MBR_MASK)
 	{
 	case JMP:
-	  return (ISA::BR_UN_COND_IND);
+	  return InstDesc(InstDesc::BR_UN_COND_IND);
 	case JSR:
 	case JSR_COROUTINE:  // FIXME: return and call
-	  return (ISA::SUBR_IND);
+	  return InstDesc(InstDesc::SUBR_IND);
 	case RET:
-	  return (ISA::SUBR_RET);
+	  return (InstDesc::SUBR_RET);
 	}
       break;
       
       // PALcode format instructions
     case CALLSYS:
-      return (ISA::SYS_CALL); 
+      return InstDesc(InstDesc::SYS_CALL); 
       
     default:
       break;
     }
   
-  return (ISA::OTHER);
+  return InstDesc(InstDesc::OTHER);
 }
 
 Addr

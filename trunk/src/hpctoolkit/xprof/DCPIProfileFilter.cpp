@@ -53,6 +53,7 @@
 
 //*************************** User Include Files ****************************
 
+#include "PCProfileFilter.h"
 #include "DCPIProfileFilter.h"
 #include "DCPIProfileMetric.h"
 
@@ -69,7 +70,7 @@ PCProfileFilter*
 DCPIProfileFilter::PM_Retired()
 {
   PCProfileFilter* f = 
-    new PCProfileFilter(PMMetric_Retired(), new DCPIInsnFilter(NULL, NULL));
+    new PCProfileFilter(PMMetric_Retired(), new InsnFilter(NULL, NULL));
   f->SetName("PM_Retired_Insn");
   f->SetDescription("Retired PM Instructions");
   return f;
@@ -100,14 +101,4 @@ DCPIMetricFilter::operator()(const PCProfileMetric* m)
   } else {
     return false;
   }
-}
-
-//****************************************************************************
-// DCPIInsnFilter
-//****************************************************************************
-
-bool 
-DCPIInsnFilter::operator()(Addr pc)
-{
-  return true;
 }

@@ -128,10 +128,10 @@ i686ISA::GetInstSize(MachInst* mi)
   return size;
 }
 
-ISA::InstType
-i686ISA::GetInstType(MachInst* mi, ushort opIndex, ushort s)
+ISA::InstDesc
+i686ISA::GetInstDesc(MachInst* mi, ushort opIndex, ushort s)
 {
-  ISA::InstType t;
+  ISA::InstDesc d;
 
   if (CacheLookup(mi) == NULL) {
     ushort size = print_insn_i386((bfd_vma)mi, di);
@@ -140,39 +140,39 @@ i686ISA::GetInstType(MachInst* mi, ushort opIndex, ushort s)
 
   switch(di->insn_type) {
     case dis_noninsn:
-      t = ISA::INVALID;
+      d.Set(InstDesc::INVALID);
       break;
     case dis_branch:
       if (di->target != 0) {
-	t = ISA::BR_UN_COND_REL;
+	d.Set(InstDesc::BR_UN_COND_REL);
       } else {
-	t = ISA::BR_UN_COND_IND;
+	d.Set(InstDesc::BR_UN_COND_IND);
       }
       break;
     case dis_condbranch:
       if (di->target != 0) {
-	t = ISA::BR_COND_REL;
+	d.Set(InstDesc::BR_COND_REL);
       } else {
-	t = ISA::BR_COND_IND;
+	d.Set(InstDesc::BR_COND_IND);
       }
       break;
     case dis_jsr:
       if (di->target != 0) {
-	t = ISA::SUBR_REL;
+	d.Set(InstDesc::SUBR_REL);
       } else {
-	t = ISA::SUBR_IND;
+	d.Set(InstDesc::SUBR_IND);
       }
       break;
     case dis_condjsr:
-      t = ISA::OTHER;
+      d.Set(InstDesc::OTHER);
     case dis_dref:
     case dis_dref2:
-      t = ISA::MEM; 
+      d.Set(InstDesc::MEM_OTHER);
     default:
-      t = ISA::OTHER;
+      d.Set(InstDesc::OTHER);
       break;
   }
-  return t;
+  return d;
 }
 
 Addr

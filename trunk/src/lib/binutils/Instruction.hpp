@@ -83,8 +83,8 @@ public:
   virtual ~Instruction() { }
   
   // Returns a classification of the instruction
-  ISA::InstType GetType() const {
-    return isa->GetInstType(minst, GetOpIndex(), GetSize());
+  ISA::InstDesc GetDesc() const {
+    return isa->GetInstDesc(minst, GetOpIndex(), GetSize());
   }
 
   // 'GetBits' returns a pointer to the bits of the instruction;

@@ -72,29 +72,47 @@ ISA::~ISA()
   delete _cache;
 }
 
-const char* ISA::InstType2Str(ISA::InstType t)
-{
-  switch(t) {
-    case ISA::BR_COND_REL:    return "BR_COND_REL";
-    case ISA::BR_COND_IND:    return "BR_COND_IND";
-    case ISA::BR_UN_COND_REL: return "BR_UN_COND_REL";
-    case ISA::BR_UN_COND_IND: return "BR_UN_COND_IND";
+//****************************************************************************
+// ISA::InstDesc
+//****************************************************************************
 
-    case ISA::SUBR_REL:       return "SUBR_REL";
-    case ISA::SUBR_IND:       return "SUBR_IND";
-    case ISA::SUBR_RET:       return "SUBR_RET";
-    case ISA::SYS_CALL:       return "SYS_CALL";
+const char* 
+ISA::InstDesc::ToString() const
+{
+  switch(ty) {
+    case BR_COND_REL:    return "BR_COND_REL";
+    case BR_COND_IND:    return "BR_COND_IND";
+    case BR_UN_COND_REL: return "BR_UN_COND_REL";
+    case BR_UN_COND_IND: return "BR_UN_COND_IND";
+
+    case SUBR_REL:       return "SUBR_REL";
+    case SUBR_IND:       return "SUBR_IND";
+    case SUBR_RET:       return "SUBR_RET";
+    case SYS_CALL:       return "SYS_CALL";
       
-    case ISA::MEM:            return "MEM";
-    case ISA::MEM_LOAD:       return "MEM_LOAD";
-    case ISA::MEM_STORE:      return "MEM_STORE";
+    case MEM_LOAD:       return "MEM_LOAD";
+    case MEM_STORE:      return "MEM_STORE";
+    case MEM_OTHER:      return "MEM";
       
-    case ISA::OTHER:          return "OTHER";
-    case ISA::INVALID:        return "INVALID";
+    case OTHER:          return "OTHER";
+    case INVALID:        return "INVALID";
     default: BriefAssertion(false && "Programming Error");
   }
   return NULL;
 }
+
+void 
+ISA::InstDesc::Dump(std::ostream& o)
+{
+  o << ToString();
+}
+
+void 
+ISA::InstDesc::DDump()
+{
+  Dump(std::cerr);
+}
+
 
 //****************************************************************************
 

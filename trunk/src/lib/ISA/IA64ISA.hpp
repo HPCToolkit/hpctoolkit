@@ -82,7 +82,7 @@ public:
   
   virtual ushort GetInstNumOps(MachInst *mi);
 
-  virtual InstType GetInstType(MachInst* mi, ushort opIndex, ushort sz = 0);
+  virtual InstDesc GetInstDesc(MachInst* mi, ushort opIndex, ushort sz = 0);
 
   virtual Addr GetInstTargetAddr(MachInst* mi, Addr pc, ushort opIndex,
 				 ushort sz = 0);

@@ -72,7 +72,7 @@ Instruction::Dump(std::ostream& o, const char* pre) const
   String p(pre);
   Addr target = GetTargetAddr(pc);
 
-  o << p << hex << "0x" << pc << dec << ": " << ISA::InstType2Str(GetType());
+  o << p << hex << "0x" << pc << dec << ": " << GetDesc().ToString();
 
   if (target != 0) { o << " <0x" << hex << target << dec << "> "; }
   else             { o << " "; }

@@ -159,6 +159,84 @@ public:
 private:
 };
 
+
+//****************************************************************************
+// InsnClassExpr
+//****************************************************************************
+
+// InsnClassExpr: A common 'PCFilter' will be an instruction class
+// filter (cf. 'InsnFilter').  This represent a disjunctive expression
+// of instruction classes that can be used with an 'InsnFilter'.
+
+class InsnClassExpr {
+public:
+  typedef uint32_t bitvec_t;
+    
+public:
+  // A 'InsnClassExpr' can be created using the bit definitions above.
+  InsnClassExpr(bitvec_t bv = 0) : bits(bv) { }
+  virtual ~InsnClassExpr() { }
+  
+  InsnClassExpr(const InsnClassExpr& x) { *this = x; }
+  InsnClassExpr& operator=(const InsnClassExpr& x) { 
+    bits = x.bits; 
+    return *this;
+  }
+  
+  // IsValid: If no bits are set, this must be an invalid expression
+  bool IsValid() const { return bits != 0; }
+  
+  // IsSet: Tests to see if all the specified bits are set
+  bool IsSet(const bitvec_t bv) const {
+    return (bits & bv) == bv;
+  }
+  bool IsSet(const InsnClassExpr& m) const {
+    return (bits & m.bits) == m.bits; 
+  }
+  // Set: Set all the specified bits
+  void Set(const bitvec_t bv) {
+    bits = bits | bv;
+  }
+  void Set(const InsnClassExpr& m) {
+    bits = bits | m.bits;
+  }
+  // Unset: Clears all the specified bits
+  void Unset(const bitvec_t bv) {
+    bits = bits & ~bv;
+  }
+  void Unset(const InsnClassExpr& m) {
+    bits = bits & ~(m.bits);
+  }
+  
+  void Dump(std::ostream& o = std::cerr);
+  void DDump();
+  
+private:
+  
+protected:
+private:  
+  bitvec_t bits;
+};
+
+//****************************************************************************
+// InsnFilter
+//****************************************************************************
+
+class LoadModule; // FIXME
+
+// InsnFilter: Divides PCs into two sets by Alpha instruction class.
+class InsnFilter : public PCFilter {
+public:
+  InsnFilter(InsnClassExpr* expr, LoadModule* lm) { }
+  virtual ~InsnFilter() { }
+  
+  // Returns true if 'pc' satisfies 'expr'; false otherwise.
+  virtual bool operator()(Addr pc);
+
+private:
+};
+
+
 //****************************************************************************
 
 #endif 
