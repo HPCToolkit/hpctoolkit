@@ -41,10 +41,12 @@ static void finalizelines(void);
 static int iscodeline(char *line);
 static char* get_line_slot(void);
 
-static char* name(char *line);
-static char* offset(char *line);
-static char* length(char *line);
-static long htoll(char *s);
+static char* get_name(char *line);
+static char* get_offset(char *line);
+static char* get_length(char *line);
+
+static unsigned long hex2ul(char *s);
+static uint64_t      hex2u64(char *s);
 
 static void dumprtloadmap(void);
 static void dumplines(void);
@@ -206,9 +208,9 @@ finalizelines(void)
     (rtloadmod_desc_t *) malloc(sizeof(rtloadmod_desc_t) * slots_in_use);
   
   for(i = 0; i < slots_in_use; i++) {
-    rtloadmap.module[i].name = strdup(name(mappings[i]));
-    rtloadmap.module[i].offset = htoll(offset(mappings[i]));
-    rtloadmap.module[i].length = htoll(length(mappings[i])) -
+    rtloadmap.module[i].name = strdup(get_name(mappings[i]));
+    rtloadmap.module[i].offset = hex2u64(get_offset(mappings[i]));
+    rtloadmap.module[i].length = hex2ul(get_length(mappings[i])) -
       rtloadmap.module[i].offset;
   }
   rtloadmap.count = slots_in_use;
@@ -221,7 +223,7 @@ finalizelines(void)
 }
 
 static char*
-name(char *line)
+get_name(char *line)
 {
   char *name = index(line, (int) '/');
   char *newline = index(line, (int) '\n');
@@ -230,25 +232,34 @@ name(char *line)
 }
 
 static char*
-offset(char *line)
+get_offset(char *line)
 {
   return line;
 }
 
 static char*
-length(char *line)
+get_length(char *line)
 {
   char *minus = index(line, (int) '-');
   return minus + 1;
 }
 
-static long 
-htoll(char *s)
+static unsigned long 
+hex2ul(char *s)
 {
   unsigned long res = 0;
-  sscanf(s,"%lx",&res);
+  sscanf(s, "%lx", &res);
   return res;
 }
+
+static uint64_t 
+hex2u64(char *s)
+{
+  uint64_t res = 0;
+  sscanf(s, "%"SCNx64"", &res);
+  return res;
+}
+
 
 /*  Dump a processed form of the load map
  */
