@@ -148,7 +148,7 @@ CmdLineParser::OptArgDesc Args::optArgs[] = {
   { 'V', "version",  CLP::ARG_NONE, CLP::DUPOPT_CLOB, NULL },
   { 'h', "help",     CLP::ARG_NONE, CLP::DUPOPT_CLOB, NULL },
   {  0 , "debug",    CLP::ARG_OPT,  CLP::DUPOPT_CLOB, NULL }, // hidden
-  CmdLineParser::OptArgDesc_NULL
+  CmdLineParser_OptArgDesc_NULL_MACRO // SGI's compiler requires this version
 };
 
 #undef CLP
