@@ -198,17 +198,25 @@ Plus::~Plus() {
 }
 
 double Plus::eval(const ScopeInfo *si) {
-  double sum = 0.0;
-  for (int i = 0; i < n; i++) {
-    if (nodes[i] == NULL)
-      return NaNVal;
-    double tmp = nodes[i]->eval(si);
-    if (IsNaNorInfinity(tmp))
-      return NaNVal;
-    sum += tmp;
+  double result = NaNVal;
+  int i;
+  for (i = 0; i < n; i++) {
+    if (nodes[i] != NULL) {
+      double tmp = nodes[i]->eval(si);
+      if (IsNaNorInfinity(tmp)) continue; 
+       result = tmp;
+       break;
+    }
   }
-  IFTRACE << "sum=" << sum << endl; 
-  return sum;
+  for (i++; i < n; i++) {
+    if (nodes[i] != NULL) {
+      double tmp = nodes[i]->eval(si);
+      if (IsNaNorInfinity(tmp)) continue; 
+      result += tmp;
+    }
+  }
+  IFTRACE << "sum=" << result << endl; 
+  return result;
 }
 
 void Plus::print() {
@@ -269,13 +277,23 @@ Min::~Min() {
 }
 
 double Min::eval(const ScopeInfo *si) {
-  double result = nodes[0]->eval(si);
-  if (IsNaNorInfinity(result)) return NaNVal;
-  for (int i = 1; i < n; i++) {
-    double tmp = nodes[i]->eval(si);
-    if (IsNaNorInfinity(tmp))
-      return NaNVal;
-    result = MIN(result,tmp);
+  double result = NaNVal;
+  int i;
+  for (i = 0; i < n; i++) {
+    if (nodes[i] != NULL) {
+      double tmp = nodes[i]->eval(si);
+      if (IsNaNorInfinity(tmp)) continue; 
+      // if i > 0, there is an empty value that we will treat as 0.0
+      result = (i == 0) ? tmp : MIN(tmp, 0.0);
+      break;
+    }
+  }
+  for (i++; i < n; i++) {
+    if (nodes[i] != NULL) {
+      double tmp = nodes[i]->eval(si);
+      if (IsNaNorInfinity(tmp)) tmp = 0.0; 
+      result = MIN(result, tmp);
+    }
   }
   IFTRACE << "min=" << result << endl; 
   return result;
@@ -304,13 +322,24 @@ Max::~Max() {
 }
 
 double Max::eval(const ScopeInfo *si) {
-  double result = nodes[0]->eval(si);
-  if (IsNaNorInfinity(result)) return NaNVal;
-  for (int i = 1; i < n; i++) {
-    double tmp = nodes[i]->eval(si);
-    if (IsNaNorInfinity(tmp))
-      return NaNVal;
-    result = MAX(result, tmp);
+  double result = NaNVal;
+  int i;
+  for (i = 0; i < n; i++) {
+    if (nodes[i] != NULL) {
+      double tmp = nodes[i]->eval(si);
+      if (IsNaNorInfinity(tmp)) continue; 
+      // if i > 0, there is an empty value that we will treat as 0.0
+      result = (i == 0) ? tmp : MAX(tmp, 0.0);
+      result = tmp;
+      break;
+    }
+  }
+  for (i++; i < n; i++) {
+    if (nodes[i] != NULL) {
+      double tmp = nodes[i]->eval(si);
+      if (IsNaNorInfinity(tmp)) tmp = 0.0; 
+      result = MAX(result, tmp);
+    }
   }
   IFTRACE << "max=" << result << endl; 
   return result;
