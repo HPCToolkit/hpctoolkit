@@ -393,6 +393,10 @@ hpcrun_pthread_create PARAMS_PTHREAD_CREATE
 
   if (opt_debug >= 1) { MSG(stderr, "==> creating thread <=="); }
   
+  if (!real_pthread_create) {
+    DIE("fatal error: Cannot intercept POSIX thread creation.  Please use the -t option to profile threaded applications.");
+  }
+  
   /* squirrel away original arguments */
   sz = sizeof(hpcrun_pthread_create_args_t);
   hpcargs = (hpcrun_pthread_create_args_t*)malloc(sz);
