@@ -294,6 +294,22 @@ hpcfile_num8s__fprint(hpcfile_num8s_t* x, FILE* fs)
 //***************************************************************************
 
 size_t
+hpc_fread_le2(uint16_t* val, FILE* fs)
+{
+  uint16_t v = 0; // local copy of val
+  int shift = 0, num_read = 0, c;
+  
+  for (shift = 0; shift < 16; shift += 8) {
+    if ( (c = fgetc(fs)) == EOF ) { break; }
+    num_read++;
+    v |= ((uint16_t)(c & 0xff) << shift); // 0, 8
+  }
+
+  *val = v;
+  return num_read;
+}
+
+size_t
 hpc_fread_le4(uint32_t* val, FILE* fs)
 {
   uint32_t v = 0; // local copy of val
@@ -323,6 +339,20 @@ hpc_fread_le8(uint64_t* val, FILE* fs)
 
   *val = v;
   return num_read;
+}
+
+size_t 
+hpc_fwrite_le2(uint16_t* val, FILE* fs)
+{
+  uint16_t v = *val; // local copy of val
+  int shift = 0, num_write = 0, c;
+  
+  for (shift = 0; shift < 16; shift += 8) {
+    c = fputc( ((v >> shift) & 0xff) , fs);
+    if (c == EOF) { break; }
+    num_write++;
+  }
+  return num_write;
 }
 
 size_t 

@@ -218,8 +218,10 @@ int hpcfile_num8s__fprint(hpcfile_num8s_t* x, FILE* fs);
 // hpc_fread_beX:  (not needed now)
 // hpc_fwrite_beX: (not needed now)
 
+size_t hpc_fread_le2(uint16_t* val, FILE* fs);
 size_t hpc_fread_le4(uint32_t* val, FILE* fs);
 size_t hpc_fread_le8(uint64_t* val, FILE* fs);
+size_t hpc_fwrite_le2(uint16_t* val, FILE* fs);
 size_t hpc_fwrite_le4(uint32_t* val, FILE* fs);
 size_t hpc_fwrite_le8(uint64_t* val, FILE* fs);
 
