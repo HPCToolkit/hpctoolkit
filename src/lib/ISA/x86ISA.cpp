@@ -101,7 +101,8 @@ i686ISA::i686ISA()
   INIT_DISASSEMBLE_INFO(*di, stdout, fake_fprintf_func);
   //  fprintf_func: (int (*)(void *, const char *, ...))fprintf;
 
-  di->arch = bfd_arch_i386;                //  bfd_get_arch (abfd);
+  di->arch = bfd_arch_i386;      // bfd_get_arch(abfd);
+  di->mach = bfd_mach_i386_i386; // bfd_get_mach(abfd); needed in print_insn()
   di->endian = BFD_ENDIAN_LITTLE;
   di->read_memory_func = read_memory_func; // vs. 'buffer_read_memory'
   di->print_address_func = print_addr;     // vs. 'generic_print_address'
