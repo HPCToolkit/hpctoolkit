@@ -1,5 +1,5 @@
+// -*-Mode: C++;-*-
 // $Id$
-// -*-C++-*-
 // * BeginRiceCopyright *****************************************************
 // 
 // Copyright ((c)) 2002, Rice University 
@@ -58,6 +58,8 @@
 #include "Args.h"
 #include "PgmScopeTree.h"
 #include "PgmScopeTreeUtils.h"
+using namespace ScopeTreeBuilder;
+
 #include <lib/binutils/LoadModule.h>
 #include <lib/binutils/PCToSrcLineMap.h>
 
@@ -111,10 +113,10 @@ main(int argc, char* argv[])
       }
       
       // Build scope tree
-      PgmScopeTree* pgmScopeTree =
-	BuildScopeTreeFromExe(exe, map, args.canonicalPathList,
-			      args.normalizeScopeTree,
-			      args.verboseMode);
+      PgmScopeTree* pgmScopeTree = BuildFromExe(exe, map, 
+						args.canonicalPathList, 
+						args.normalizeScopeTree,
+						args.verboseMode);
       
       // Write map (map should now be a valid pointer) & scope tree
       if (map) { WriteMapFile(map, args.pcMapFile); }
