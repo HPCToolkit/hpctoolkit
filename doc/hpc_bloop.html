@@ -26,7 +26,7 @@
 <div id="main">
 
 <!-- automatically updated by Emacs hook below; nicer than CVS Date -->
-<p class="lastupdated">Last Updated: 2004-11-05</p>
+<p class="lastupdated">Last Updated: 2004-11-06</p>
 
 <h2>User Commands: bloop(1)</h2>
 
@@ -107,6 +107,11 @@ compiler optimizations.  Sometimes it is also informative to look at
 the unnormalized output to get an idea of how the compiler has
 transformed your loops.  Some day there will be both instrumentation
 and a user interface that will be able to use the unnormalized form.
+
+<dt>-u, --unsafe-normalize-off
+<dd>Perform scope tree normalization, but disable 'unsafe'
+normalizations.  Such nomalizations are heuristics that often do the
+'right' thing, but may result in misleading loop nests.
 
 <dt>-i, --irreducible-interval-as-loop
 <dd>Treat irreducible intervals as loops.  Intuitively, irreducible
