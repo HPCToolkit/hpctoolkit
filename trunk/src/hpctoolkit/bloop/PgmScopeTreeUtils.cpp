@@ -51,6 +51,9 @@
 
 #include <iostream>
 #include <fstream>
+using std::cout;
+using std::cerr;
+using std::endl;
 
 #ifdef NO_STD_CHEADERS
 # include <string.h>
@@ -161,12 +164,12 @@ BuildScopeTreeFromExe(Executable* exe, PCToSrcLineXMap* &map,
       
       FileScope* fileScope = FindOrCreateFileNode(pgmScope, p);
       if (verboseMode){
-        cerr <<"Building scope tree for [" << p->GetName()  << "] ... ";
+        cerr << "Building scope tree for [" << p->GetName()  << "] ... ";
       }
       BuildScopeTreeFromProc(fileScope, p);
       if (map) { BuildPCToSrcLineMap(map, p); } // MAP
       if (verboseMode){
-        cerr <<"done " << endl;
+        cerr << "done " << endl;
       }
        
     }
