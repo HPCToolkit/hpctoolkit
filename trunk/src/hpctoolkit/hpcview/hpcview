@@ -27,7 +27,7 @@ else
     ROOTDIR_REL=`dirname ${BINDIR}`;
 fi
 
-ROOTDIR=`cd ${ROOTDIR_REL} ; pwd`
+ROOTDIR=`cd ${ROOTDIR_REL} && pwd`
 
 HPCTOOLKIT=${ROOTDIR}
 BINARY="$0bin" # ${HPCTOOLKIT}/bin/ `basename $0` bin
@@ -82,7 +82,7 @@ unset XERCESPLATFORM
 # exec binary image
 #############################################################################
 
-if [ -f ${BINARY} -a -x ${BINARY} ]; then
+if [ -r ${BINARY} -a -x ${BINARY} ]; then
     if [ $# -eq 0 ]; then
 	exec ${BINARY}
     else
@@ -90,5 +90,5 @@ if [ -f ${BINARY} -a -x ${BINARY} ]; then
     fi
 else
     echo "$0 fatal error: cannot exec '${BINARY}'"
+    exit 1;
 fi
-
