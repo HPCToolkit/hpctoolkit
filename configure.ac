@@ -376,6 +376,13 @@ case ${host} in
     if HPCcxxcmp([CC]); then
       # Sun Forte/ONE
       HOST_AR="$CXX $CXXFLAGS -xar -o"
+      if test "$OPT_ENABLE_DEVELOP" = "yes" ; then
+        my_opt_cflags="-g"
+        my_opt_cxxflags="-g"
+      else 
+        my_opt_cflags="-O"
+        my_opt_cxxflags="-O"
+      fi
     fi
     # Sun demangle
     my_demangle_ldflags="-ldemangle"
