@@ -64,7 +64,7 @@ static void reset_slots();
  *  and load addresses.
  */
 rtloadmap_t* 
-hpcrun_code_lines_from_loadmap(int dumpmap)
+hpcrun_get_rtloadmap(int dbglvl)
 {
   char filename[PATH_MAX];
   FILE *pf;
@@ -88,10 +88,10 @@ hpcrun_code_lines_from_loadmap(int dumpmap)
   } while (fgets(line, MAXLINELEN, pf) != NULL);
   finalizelines();
 
-  if (dumpmap) { 
+  if (dbglvl >= 3) { 
     dumprtloadmap(); 
   }
-  if (dumpmap > 3) {
+  if (dbglvl >= 4) {
     dumplines();
   }
 
@@ -237,7 +237,7 @@ dumplines(void)
 int 
 main(void)
 {
-  hpcrun_code_lines_from_loadmap(1);
+  hpcrun_get_rtloadmap(3);
 #if 0
   dumplines();
 #endif
