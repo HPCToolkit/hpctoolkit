@@ -74,8 +74,12 @@ Instruction::Dump(std::ostream& o, const char* pre) const
 
   o << p << hex << "0x" << pc << dec << ": " << GetDesc().ToString();
 
-  if (target != 0) { o << " <0x" << hex << target << dec << "> "; }
-  else             { o << " "; }
+  if (target != 0 || GetOpIndex() != 0) { 
+    o << " <0x" << hex << target << dec << "> "; 
+  }
+  else { 
+    o << " "; 
+  }
 
   DumpSelf(o, p);
   o << "\n";
