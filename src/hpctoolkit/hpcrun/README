@@ -1,0 +1,135 @@
+
+=============================================================================
+==
+== README
+==
+=============================================================================
+
+0. Overview
+--------------------
+
+This directory contains a prototype of the papiprof profiler.  It
+consists of papirun and papiprof, tools for collecting, processing and
+viewing profiling data.
+
+papirun launches the PAPI profiler on an unmodified application binary
+using a preloaded library that intercepts the application's execution
+during program launch.  When the application's execution is
+intercepted, the papirun library determines the process' list of load
+modules (including DSOs) and prepares PAPI_sprofil for profiling over
+each load module.  Once the profiler is initialized, control is passed
+back to the application.  When the application exits, control returns
+to the papirun library, which calls finalization routines and writes
+the profiling data to a binary file for later processing.
+
+papiprof processes data collected from papirun and translates it into
+text, html or PROFILE formats.
+
+1. Using
+--------------------
+
+Be warned: This is still a prototype and we plan on some revisions
+once the papiprof prototype is up and running.  We haven't yet set up a
+beautiful configuration utility and we have only tested on ia64-Linux.
+
+To try it out: 
+  
+0. Open "Makefile.include" in an editor and set variables.
+
+     CC: either GCC or Intel CC
+     PAPIxxx: locations to PAPI includes and library
+     BFDxxx:  locations to GNU bfd includes and libraries
+     BPSYMINC: the location of file bp-sym.h from glibc
+
+1. Open the file Sourceme-sh.papirun.  These environment variables need to
+   be set before using papirun.
+     PAPIRUN_HOME - the directory papirun lives in
+     PAPIRUN_PAPILIB_PATH - the directory that libpapi.so lives in
+     
+2. Make papirun/papiprof:
+     make
+
+3. Try it out
+  
+   1. Build test2
+      cd test2
+      make
+  
+   2. Collect profiling info
+      ../papirun -p 100000 test2
+         
+   3. View profiling info
+      ../papiprof -e test2 test2.PAPI_TOT_CYC.pid
+   
+
+   See the file events.c for PAPI events you can use with papirun.  
+
+2. A Few Details
+--------------------
+
+papiprof: 
+
+This is very rough.  Only the text mode output has been tested; html
+and PGM output require a few more tweaks.
+
+You can pass multiple profile files with the same or different events.
+When more than one event with the same period is detected, collective
+events (min, max, sum) are automatically created to provide aggregate
+info.
+
+
+// The format is of type PROFILE and should be
+// fairly self-explanatory.  Metric counts (M) are embedded within a
+// program scope tree, with a program (PGM), files (F), procedures
+// (P), and statements (S).  The format supports multiple metrics and
+// thus each metric in the scope tree is identified by a short name
+// previously assigned in the header information.  
+
+
+papirun files:
+  preload.c
+  papirun.h
+  map.c/h
+  events.c/h
+  flags.c/h
+  io.c/h
+
+The file 'preload.c' contains the main source code; the other files
+are ancillary and contain brief descriptions at the top so that it
+shouldn't be too difficult to divine their purpose.
+
+Options are passed to 'preload.c' via environment variables.  The
+'papirun' script processes all the arguments and sets a number of
+corresponding environment variables which are later read by the
+papirun library.
+
+The library is automatically loaded using the linker's LD_PRELOAD
+environment variable.  Setting this variable causes the loader to load
+the referened file *before* anything else is loaded.  Since libraries
+can have initialization/finalization routines that are automatically
+executed upon load/unload, execution control first passes to this
+library.
+
+The initialization routine (using the special name '_init') prepares
+the library for intercepting the libc_start routine, which is the
+launch point of every application.  The _init routine uses dlsym to
+get a handle to the libc_start function that we are going to
+intercept.  The interception is done by defining a symbol with exactly
+the same prototype (C declaration) as the function to intercept:
+because this library is loaded first the linker finds our symbol first
+and passes control to our intercepting libc_start.  Profiling is then
+initialized and execution is passed back to the intercepted function
+using the handle that was obtained via dlsym.  The application then
+runs normally.
+
+We obtain a list of loaded modules (including DSOs) by examing the
+data found in /proc/pid/maps (or /proc/self/maps).
+
+After the application is finished, control passes back to the papirun
+library.  Profiling is stopped and the data is written to a binary
+output file.
+
+=============================================================================
+
+John Mellor-Crummey and Nathan Tallent, Rice University
+February 3, 2003
