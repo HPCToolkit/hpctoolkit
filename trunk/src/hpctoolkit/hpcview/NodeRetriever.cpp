@@ -68,10 +68,15 @@
 using std::endl;
 using std::cerr;
 
+
+//************************ Local Declarations ******************************
+
+const char *unknownFileName = "<unknown>";
+
 //****************************************************************************
 
 static String 
-RemoveBlanks(const char* name)
+RemoveTrailingBlanks(const char* name)
 {
   int i;
   String noBlanks = name; 
@@ -89,7 +94,7 @@ RemoveBlanks(const char* name)
 static String 
 GetFormattedSourceFileName(const char* nm)
 { 
-  String name = RemoveBlanks(nm); 
+  String name = RemoveTrailingBlanks(nm); 
   return name; 
 }
 
@@ -129,12 +134,27 @@ NodeRetriever::MoveToLoadMod(const char* name)
 FileScope *
 NodeRetriever::MoveToFile(const char* name) 
 {
+  static long unknownFileIndex = 0;
+  String knownByName;
+  
   BriefAssertion(name);
 
+  if (strcmp(name, unknownFileName) == 0) {
+    if (!currentLM) {
+      currentLM = MoveToLoadMod(root->Name());
+    } 
+    knownByName = "Unknown file in " + currentLM->BaseName();
+    unknownFileIndex++;
+    
+  } else {
+    knownByName = name;
+  }
+ 
   // Obtain a 'canonical' file name
-  String fileName = GetFormattedSourceFileName(name);  
+  String fileName = GetFormattedSourceFileName(knownByName);  
   
   bool srcIsReadable = true; 
+
   String filePath = String(pathfind_r(path, fileName, "r")); 
   if (filePath.Length() == 0) {
     srcIsReadable = false; 
