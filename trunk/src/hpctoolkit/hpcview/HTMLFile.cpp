@@ -373,7 +373,6 @@ HTMLFile::NavigateFrameHref(const char *anchor, const char* text,
   // mouse over
 
   (*this) 
-    // << "<a name='" << anchor << "'></a>"
     << "<a"
     << " onMouseOver=\"window.status ='" << text << "'; return true\"" 
     << " href=\"javascript:navframes('" 
@@ -397,14 +396,15 @@ HTMLFile::NavigateSourceHref(const char *navid, const char *parentid,
     << "<a"
     << " onMouseOver=\"window.status ='" << text << "'; return true\""
     << " href=\"javascript:select_source_location('" 
-    << navid << "','" << parentid << "','"
-    << scope_depth << "')\">"
+    << navid << "','" << parentid << "',"
+    << scope_depth << ")\">"
     << HTMLEscapeStr(txt) << "</a>" << fill; 
 } 
 
 
 void 
-HTMLFile::NavigateFrameHrefForLoop(LoopScope* ls, unsigned int width) 
+HTMLFile::NavigateFrameHrefForLoop(LoopScope* ls, unsigned int width, 
+                int flattening) 
 {
   // get handles on first and last lines in scope
   CodeInfo *first = ls->GetFirst();
@@ -454,23 +454,42 @@ HTMLFile::NavigateFrameHrefForLoop(LoopScope* ls, unsigned int width)
     << "<a" << " onMouseOver=\"window.status ='" << text2 << "'; return true\""
     << " href=\"javascript:navframes('" << realanchor2 << "'" << ")\">" 
     << String(ls->EndLine()) << "</a>"
-    << HTMLEscapeStr(txt) << fill
-    << "<a name='" << realanchor1 << "'></a>" << "<a name='" << realanchor2
-    << "'></a>";
-
-  if (first->BegLine() == ls->BegLine()) {
-    (*this) << "<a name='" << anchor1 << "Y'></a>";
+    << HTMLEscapeStr(txt) << fill;
+  if (flattening == NO_FLATTEN_DEPTH)
+  {
+    (*this)
+      << "<a name='" << realanchor1 << "'></a>" 
+      << "<a name='" << realanchor2 << "'></a>";
+    if (first->BegLine() == ls->BegLine()) {
+      (*this) << "<a name='" << anchor1 << "Y'></a>";
+    }
+    if (last->EndLine() == ls->EndLine() 
+        && !(first->BegLine() == ls->BegLine() && first == last)) {
+      // just check not to put the same anchor twice
+      (*this) << "<a name='" << anchor2 << "Y'></a>";
+    }
   }
-  if (last->EndLine() == ls->EndLine() 
-      && !(first->BegLine() == ls->BegLine() && first == last)) {
-    // just check not to put the same anchor twice
-    (*this) << "<a name='" << anchor2 << "Y'></a>";
+  else
+  {
+    (*this)
+      << "<a name='l" << flattening << "_" << realanchor1 << "'></a>" 
+      << "<a name='l" << flattening << "_" << realanchor2 << "'></a>";
+
+    if (first->BegLine() == ls->BegLine()) {
+      (*this) << "<a name='l" << flattening << "_" << anchor1 << "Y'></a>";
+    }
+    if (last->EndLine() == ls->EndLine() 
+        && !(first->BegLine() == ls->BegLine() && first == last)) {
+      // just check not to put the same anchor twice
+      (*this) << "<a name='l" << flattening << "_" << anchor2 << "Y'></a>";
+    }
   }
 } 
 
 
 void 
-HTMLFile::NavigateFrameHrefForProc(ProcScope* ps, unsigned int width) 
+HTMLFile::NavigateFrameHrefForProc(ProcScope* ps, unsigned int width, 
+           int flattening) 
 {
   // get handle on first line in scope
   CodeInfo *first = ps->GetFirst();
@@ -493,8 +512,13 @@ HTMLFile::NavigateFrameHrefForProc(ProcScope* ps, unsigned int width)
   (*this) << "<a"
 	  << " onMouseOver=\"window.status ='" << text << "'; return true\"" 
 	  << " href=\"javascript:navframes('" << anchor << "'" << ")\">" 
-	  << txt << "</a>" 
-	  << fill << "<a name='" << anchor << "'></a>"; 
+	  << txt << "</a>" << fill;
+  if (flattening == NO_FLATTEN_DEPTH)
+    (*this)
+      << "<a name='" << anchor << "'></a>"; 
+  else
+    (*this)
+      << "<a name='l" << flattening << "_" << anchor << "'></a>"; 
 } 
 
 void 

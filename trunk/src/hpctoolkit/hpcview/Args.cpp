@@ -76,7 +76,7 @@ void Args::Usage()
 {
   cerr
   << "Usage:\n"
-  << "       " << cmd << " [-V] [-h dir] [-r] [-u] [-w n] [-x file [-c] [-l]]  [-z [-f n] [-m n] [-s n.m]] configFile" << endl
+  << "       " << cmd << " [-V] [-h dir] [-r] [-u] [-w n] [-x file [-c] [-l]]  [-z [-o] [-f n] [-m n] [-s n.m]] configFile" << endl
   << "\n"
   << " [ GENERAL OPTIONS ]\n"
   << "     -V       print version information\n"
@@ -115,6 +115,9 @@ void Args::Usage()
   << "\n"
   << " [ OPTIONS TO GENERATE STATIC HTML FOR WEB BROWSER VIEWING ]\n"
   << "     -z       Generate static HTML.\n"
+  << "     -o       Generate old style HTML. Each flatten view is in a\n"
+  << "              separate file. Good if the application is very big and\n"
+  << "              the new style HTML files become too large.\n"
   << "     -f n     Compute static flattenings only for the top 'n' levels\n"
   << "              of the scope tree.\n" 
   << "     -m n     Limit the number of children reported in any scope to \n"
@@ -144,6 +147,7 @@ Args::Args(int argc, char* const* argv) {
   OutputFinalScopeTree   = false;
   CopySrcFiles           = true;
   SkipHTMLfiles          = true;  // do not generate static HTML
+  OldStyleHTML           = false;
   XML_ToStdout           = false;
   XML_DumpAllMetrics     = true;  // dump metrics on interior nodes
   XML_Dump_File          = "scopeTree_XML.out";
@@ -155,7 +159,7 @@ Args::Args(int argc, char* const* argv) {
 
   // Note: option list follows usage message
   int c;
-  while ((c = getopt(argc, argv, "Vh:ruw:x:clzf:m:s:d")) != EOF) {
+  while ((c = getopt(argc, argv, "Vh:ruw:x:clzof:m:s:d")) != EOF) {
     switch (c) {
     
     // General Options
@@ -201,6 +205,10 @@ Args::Args(int argc, char* const* argv) {
       SkipHTMLfiles = false;
       break; 
     }
+    case 'o': {  // generate old style HTML
+      OldStyleHTML = true;
+      break; 
+    }
     case 'f': { 
       depthToFlatten = atoi(optarg);
       break; 
@@ -242,6 +250,7 @@ Args::Args(int argc, char* const* argv) {
   IFTRACE << "Args.OutputInitialScopeTree= " << OutputInitialScopeTree << endl; 
   IFTRACE << "Args.XML_Dump_File= " << XML_Dump_File << endl; 
   IFTRACE << "Args.SkipHTMLfiles= " << SkipHTMLfiles << endl; 
+  IFTRACE << "Args.OldStyleHTML= "  << OldStyleHTML << endl; 
   IFTRACE << "Args.configurationFile= " << configurationFile << endl; 
   IFTRACE << "Args.maxLinesPerPerfPane= " << maxLinesPerPerfPane << endl; 
   IFTRACE << "::trace " << ::trace << endl; 

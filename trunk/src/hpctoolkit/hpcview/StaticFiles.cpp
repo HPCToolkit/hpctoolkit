@@ -56,6 +56,7 @@ const char* StaticFileName[] = {
   "global.js",
   "utilsForHere.js",
   "utilsForAll.js",
+  "utilsForAll_old.js",
 
   "styleForAll.css",  // HPCView StyleSheets
   "styleHere.css",
@@ -90,20 +91,28 @@ extern bool IsJSFile(StaticFileId id)
 } 
 
 int 
-StaticFiles::CopyAllFiles()  const
+StaticFiles::CopyAllFiles(bool oldStyleHtml)  const
 {
   int ret = 0; 
+  if (oldStyleHtml)
+    ret = ret || Copy(StaticFileName[(int)UTILSALLOLD], 
+                StaticFileName[(int)UTILSALL]); 
+  else
+    ret = ret || Copy(StaticFileName[(int)UTILSALL], 
+                StaticFileName[(int)UTILSALL]); 
+     
   for (int i = 0; StaticFileName[i]; i++) {
-    ret = ret || Copy(StaticFileName[i]); 
+    if ((StaticFileId)i != UTILSALLOLD && (StaticFileId)i != UTILSALL)
+      ret = ret || Copy(StaticFileName[i], StaticFileName[i]); 
   }
   return ret; 
 }
 
 int 
-StaticFiles::Copy(const char* fname)  const
+StaticFiles::Copy(const char* fnameSrc, const char* fnameDst)  const
 {
-   String srcFname = fileHome + "/" + fname; 
-   String dstFname = htmlDir + "/" + fname; 
+   String srcFname = fileHome + "/" + fnameSrc; 
+   String dstFname = htmlDir + "/" + fnameDst; 
    const char* error = CopyFile(dstFname, (const char*) srcFname, NULL); 
    if (error) {
      cerr << "ERROR: " << error << endl; 

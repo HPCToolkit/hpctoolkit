@@ -238,7 +238,15 @@ realmain(int argc, char* const* argv)
   // browseable database generation
   //-------------------------------------------------------
   if ( !args.SkipHTMLfiles ) {
-    IFTRACE << "Writing html output to " << args.htmlDir << ": ..." << endl; 
+    IFTRACE << "Writing html output to " << args.htmlDir << ". ";
+    if ( args.OldStyleHTML ) {
+      IFTRACE << "Generate old style HTML (flatten views in separate files): ..." 
+              << endl; 
+    }
+    else {
+      IFTRACE << "Generate new style HTML (default: flatten views of a scope are in the same files): ..." 
+              << endl; 
+    }
     if (htmlDriver.Write(driver) == false) {
       cerr << "ERROR: Could not generate html output." << endl; 
     }; 
