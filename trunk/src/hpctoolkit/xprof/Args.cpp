@@ -67,8 +67,8 @@ void Args::Usage()
 {
   cerr
     << "Usage: " << endl
-    << "  " << cmd << " [-l | -L]  <binary> <profile>\n"
-    << "  " << cmd << " [-V] [ [-M <mlist> -M...] [-X <xlist> -X...] [-R] ] <binary> <profile>\n"
+    << "  " << cmd << " [-l | -L] <profile>\n"
+    << "  " << cmd << " [-V] [ [-M <mlist> -M...] [-X <xlist> -X...] [-R] ] [<binary>] <profile>\n"
     
     << endl;
   cerr
@@ -77,6 +77,11 @@ void Args::Usage()
     << "<binary> with profile data from <profile>. In effect, the output is\n"
     << "a [source-line -> PC-profile-data] map represented as a XML scope\n"
     << "tree (e.g. file, procedure, statement).  Output is sent to stdout.\n"
+    << "\n"
+    << "To find source line information, access to the profiled binary is\n"
+    << "required.  xprof will try to find the binary from data within in\n"
+    << "<profile>.  If this information is missing, <binary> must be\n"
+    << "explicitly specified.\n" 
     << "\n"
     << "By default, xprof determines a set of metrics available for the\n" 
     << "given profile data and includes all of them in the PROFILE output.\n"
@@ -139,6 +144,7 @@ Args::Args(int argc, char* const* argv)
       printVersion = true;
       break; 
     }
+
     case 'm': {
       // A non-null value of 'pcMapFile' indicates it has been set
       if (optarg == NULL) { error = true; }
@@ -184,11 +190,19 @@ Args::Args(int argc, char* const* argv)
     }
   }
 
-  error = error || (optind != argc-2); 
+  int argsleft = (argc - optind);
+
+  error = error || !(argsleft == 1 || argsleft == 2); 
+
   if (!error) {
-    progFile = argv[optind];
-    profFile = argv[optind+1]; 
+    if (argsleft == 1) {
+      profFile = argv[optind]; 
+    } else {
+      progFile = argv[optind];
+      profFile = argv[optind+1]; 
+    }
   } 
+
 
   // Sanity check: -M,-X and -R should not be used at the same time
   if ( (!metricList.Empty() || !excludeMList.Empty()) && outputRawMetrics) {

@@ -106,8 +106,7 @@ main(int argc, char* argv[])
     cerr << "Error: Exception encountered while reading profile!\n";
     exit(2);
   }
-  
-  
+    
   if (args.listAvailableMetrics > 0) {
     // * Assume DCPI mode *
     DCPIProfile* dcpiprof = dynamic_cast<DCPIProfile*>(pcprof);
@@ -118,11 +117,26 @@ main(int argc, char* argv[])
   // ------------------------------------------------------------
   // Read executable
   // ------------------------------------------------------------
+  
   Executable* exe = NULL;
   try {
+    String exeNm = args.progFile;
+
+    // Try to find exe from profile info if not given
+    if (exeNm.Empty()) {
+      exeNm = pcprof->GetProfiledFile();
+      
+      std::ifstream ifile(exeNm, std::ios::in);
+      if ( !ifile.is_open() || ifile.fail() ) {
+	cerr << "Error: Could not find associated binary '" << exeNm
+	     << "'; please specify explicitly.\n";
+	exit(1);
+      }
+    }
+
     exe = new Executable();
-    if (!exe->Open(args.progFile)) { exit(1); } // Error already printed 
-    if (!exe->Read()) { exit(1); }              // Error already printed 
+    if (!exe->Open(exeNm)) { exit(1); } // Error already printed 
+    if (!exe->Read()) { exit(1); }      // Error already printed 
   } catch (std::bad_alloc& x) {
     cerr << "Error: Memory alloc failed while reading binary!\n";
     exit(1);
