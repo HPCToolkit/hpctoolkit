@@ -179,7 +179,7 @@ f_getoptions()
 
   # For options that do not require <command> to be given...
   if [ "${opt_dump_events}" != "0" ]; then 
-    cmd_to_profile="`dirname $0`/donothing" # placeholder command
+    cmd_to_profile="/bin/ls" # placeholder command
   else
     cmd_to_profile="$*"
   fi
