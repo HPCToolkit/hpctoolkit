@@ -63,8 +63,8 @@ successive file into a load module of the first.  In other words, the
 first PROFILE file is considered to be the main program; every file
 thereafter an associated load module.
 
-Warning: The source PROFILE files should *not* contain load module
-elements (LM).
+Warning: The source PROFILE files should each contain the same set of 
+metrics adn should *not* contain any load module elements (LM).
 
 \n";
 
