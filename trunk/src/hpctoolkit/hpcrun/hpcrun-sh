@@ -1,0 +1,246 @@
+#!/bin/bash
+# Testing: set -x: line by line (set -n: syntax)
+# set -x
+
+# $Id$
+
+## **************************************************************************
+##
+## File: 
+##    papirun: Launch the PAPI profiler by setting up a preloaded
+##    library that will intercept an application's execution and start
+##    the profiler.  This script processes arguments and passes them
+##    to the profiling library through environment variables.
+##
+## Author:
+##    Written by John Mellor-Crummey and Nathan Tallent, Rice University.
+##    
+## **************************************************************************
+
+#############################################################################
+
+PAPIRUN_VERSION="1.0"
+
+# One can set personal defaults here, instead of changing source code.
+# These values will be overriden by commandline options.
+opt_out_path="."
+opt_period="32767"
+opt_flag="PAPI_PROFIL_POSIX"
+opt_event="PAPI_TOT_CYC"
+opt_debug=""
+opt_dump=""
+
+#####################
+
+opt_recursive="1"
+
+cmd_to_profile=""
+cmd_name=""
+
+#############################################################################
+
+# Note: All function names are prefixed with 'f_' in order to make
+# function calls very clear.
+
+cmd="$0"
+
+f_usage()
+{
+  p="printf"
+  $p "\n"
+  $p "Usage:\n"
+  $p "  ${cmd} [-e <event>] [-p <period>] [-o <outpath>] <command> [args...]\n"
+  $p "\n"
+  $p "  papirun profiles the execution of an arbitrary command using the   \n"
+  $p "  PAPI profiling interface. During execution of <command>, the \n"
+  $p "  specified PAPI event will be monitored. \n"
+  $p "\n"
+  $p "  Each <period> instances of the specified event, a counter \n"
+  $p "  associated with the instruction at the current program counter \n"
+  $p "  location will be incremented. When <command> terminates normally, a\n"
+  $p "  profile (a histogram of counts for instructions in each load module)\n"
+  $p "  will be written out to a file with name <command>.<event>.<pid>.\n"
+  $p "\n"
+  $p "  Options: Defaults are shown in square brackets [].\n"
+  $p "    -r          : By default all processes spawned by <command> will\n"
+  $p "                  be profiled, each receiving its own output file.\n"
+  $p "                  Use this option to turn off recursive profiling;\n"
+  $p "                  only <command> will be profiled.\n"
+  $p "    -e <event>  : PAPI event to sample               [PAPI_TOT_CYCLES]  \n"
+  $p "    -p <period> : Sample period                      [2^15 - 1] \n"
+  $p "    -f <flag>   : Profile style flag                 [PAPI_POSIX_PROFIL]\n"
+  $p "    -o <outpath>: Directory for output data          [.]             \n"
+  $p "\n"
+  $p "List all valid PAPI events for this architecture: \n"
+  $p "  ${cmd} -a \n"
+  $p "\n"
+  $p "NOTES:\n"
+  $p "   papirun uses LD_PRELOAD to initiate profiling; modifications to \n"
+  $p "   at least the papirun launcher script will be necessary to profile \n" 
+  $p "   programs that use LD_PRELOAD. \n"
+  $p "\n"
+  $p "   papirun cannot be used to profile setuid commands\n"
+  $p "   as LD_PRELOAD is not permitted for them.\n" 
+  $p "\n"
+}
+
+f_checkenv()
+{
+  if [ -z "${PAPIRUN_HOME}" ]; then 
+    printf "${cmd}: Please set PAPIRUN_HOME before using!\n"
+    exit 1
+  fi 
+
+  if [ -z "${PAPIRUN_PAPILIB_PATH}" ]; then
+    printf "${cmd}: Please set PAPIRUN_PAPILIB_PATH before using!\n"
+    exit 1
+  fi
+
+  LD_PRELOAD="${PAPIRUN_HOME}/papirun.so"
+  
+  if [ ! -r "${LD_PRELOAD}" ]; then 
+    printf "${cmd}: launch library not found!"
+    exit 1
+  fi 
+
+  LD_LIBRARY_PATH="${LD_LIBRARY_PATH}:${PAPIRUN_PAPILIB_PATH}"
+}
+
+# args: ($1, $2): (string_to_check, string_for_error_msg[optional])
+f_error_on_nil()
+{
+  if [ -z "$1" ]; then
+    if [ -n "$2" ]; then printf "$2"; fi
+    f_usage
+    exit 1
+  fi
+}
+
+# args: ($1, $2): (option, option_value)
+f_opt_check()
+{
+  # 'option_value' should be non-nil
+  f_error_on_nil "$2" "** no value for option $1\n"
+    
+  # 'option_value' should not start with '-'
+  if ( echo "$2" | grep '^-.*' >/dev/null 2>&1 ); then
+    printf "** invalid value for option $1: $2\n"
+    f_usage
+    exit 1
+  fi
+}
+
+# args: ($1..$n): all arguments given to this script
+f_getoptions()
+{
+  # We can't easily use 'getopt' or 'getopts' because we have to
+  # protect options given to the command to profile.
+
+  if [ -z "$1" ]; then
+    f_usage
+    exit 0
+  fi
+
+  # parse argument list
+  while [ $# -ge 1 ]; do
+    case $1 in
+      -o)   shift; opt_out_path="$1"; 
+            f_opt_check "-o" "${opt_out_path}";
+            ;;
+      -p)   shift; opt_period="$1";
+            f_opt_check "-p" "${opt_period}";
+            ;;
+      -e)   shift; opt_event="$1";
+            f_opt_check "-e" "${opt_event}";
+            ;;
+      -r)   opt_recursive="";
+            ;;
+      -f)   shift; opt_flag="$1";
+            f_opt_check "-f" "${opt_debug}";
+            ;;
+      -d)   shift; opt_debug="$1";
+            f_opt_check "-d" "${opt_debug}";
+            ;;
+      -a)   opt_dump="1";
+            ;;
+      -*)  printf "** Invalid option '$1'\n";
+           f_usage; exit 1;
+           ;;
+
+      *)   break ;;
+    esac
+    shift
+  done
+
+  if [ -n "${opt_dump}" ]; then
+    cmd_name="/bin/ls"
+    cmd_to_profile="/bin/ls"
+  else
+    cmd_name="$1"
+    cmd_to_profile="$*"
+  fi
+
+  f_error_on_nil "${cmd_to_profile}" "** no command to profile\n";
+}
+
+# assumes: all variables have been set
+f_prepareenv()
+{
+  # export the profiler library
+  export LD_PRELOAD
+  export LD_LIBRARY_PATH
+
+  PAPIRUN_EVENT_FLAG="${opt_flag}"
+  export PAPIRUN_EVENT_FLAG
+
+  # export profiler options
+  PAPIRUN_OUTPUT_PATH="${opt_out_path}"
+  export PAPIRUN_OUTPUT_PATH
+
+  PAPIRUN_SAMPLE_PERIOD="${opt_period}"
+  export PAPIRUN_SAMPLE_PERIOD
+
+  PAPIRUN_EVENT_NAME="${opt_event}"
+  export PAPIRUN_EVENT_NAME
+
+  if [ -n "${opt_recursive}" ] ; then
+    PAPIRUN_RECURSIVE="1"
+    export PAPIRUN_RECURSIVE
+  fi
+
+  if [ -n "${opt_flags}" ]; then
+    PAPIRUN_EVENT_FLAGS="${opt_flags}"
+    export PAPIRUN_EVENT_FLAGS
+  fi
+
+  if [ -n "${opt_dump}" ]; then
+    PAPIRUN_DUMP_EVENTS="${opt_dump}"
+    export PAPIRUN_DUMP_EVENTS
+  fi
+
+
+  if [ -n "${opt_debug}" ]; then
+    PAPIRUN_DEBUG="${opt_debug}"
+    export PAPIRUN_DEBUG
+  fi
+
+  # Make sure that `.' is in the PATH so that we can find the command
+  # to profile if in the current directory. [We can get around this,
+  # but for now it is the quickest thing.] 
+  PATH=".:${PATH}" 
+}
+
+#############################################################################
+# Main
+#############################################################################
+# $n: argument n, with $0 being the command name
+# $*: all arguments from $1 to $n
+
+f_checkenv 
+
+f_getoptions $*
+
+f_prepareenv
+
+#echo ${cmd_to_profile}
+exec ${cmd_to_profile}
