@@ -10,41 +10,40 @@ $Id$
 
 Contents:
 
-  0. Brief Overview of HPCTools
+  0. Brief Overview of HPCToolkit
 
 =============================================================================
 
-0. Brief Overview of HPCTools Root:
+0. Brief Overview of HPCToolkit Root:
 --------------------
 
-Local HPCTools documentation: Point your browser to
+Local HPCToolkit documentation: Point your browser to
 ${HPCTOOLKIT}/doc/index.html.
 
 File in root:
 
-  README              - A very brief description of HPCTools
-  README.Contact      - Contacting the HPCTools team
+  README              - A very brief description of HPCToolkit
+  README.Contact      - Contacting the HPCToolkit team
   README.License      - The license you agree to by using this software
   README.Index        - This file
-  README.ReleaseNotes - Release notes and a revision history of HPCTools
+  README.ReleaseNotes - Release notes and a revision history of HPCToolkit
 
   Sourceme-csh        - Environment variables needed for use or development
-  Sourceme-sh         -   of HPCTools. 
+  Sourceme-sh         -   of HPCToolkit. 
 
 
 Directories in root: (not all may exist, depending on your distribution)
 
-  bin/      - Stores the binaries from an install of HPCTools
-  doc/      - Documentation for HPCTools
+  bin/      - Stores the binaries from an install of HPCToolkit
+  doc/      - Documentation for HPCToolkit
   examples/ - Sample scripts and configuration files for collecting
               and preparing profiles for display.
   lib/      - External libraries
   obj/      - Stores object files, archives and binaries from a build
-              of HPCTools.
-  src/      - HPCTools source code; external libraries and tools source 
+              of HPCToolkit.
+  src/      - HPCToolkit source code; external libraries and tools source 
               code.
-  tests/    - Tests for HPCTools
-  tools/    - Tools that can be used by or with HPCTools.
+  tools/    - Tools that can be used by or with HPCToolkit.
 
   See the READMEs under each directory for more information on each
   component.
