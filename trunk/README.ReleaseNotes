@@ -200,7 +200,9 @@ HPCToolkit Version 3.6.0: [2003.07.05]
 - Remove OpenAnalysis, binutils and xercesc from source tree
 - Convert OpenAnalysys' make system to Autoconf/make.
 - Add front end make system for binutils and xercesc.
-- Update to binutils 2.13.92; Update to xercesc 2.3.0.
+- Update HPCToolkit tests for ISA changes and new xprof.
+- Update to binutils 2.13.92 (snapshot) and then 2.14 (official release).
+- Update to xercesc 2.3.0.
 
 HPCToolkit Version 3.5.2: [2003.03.28]
 --------------------
