@@ -182,6 +182,9 @@ public:
     bool IsMemStore() const { return ty == MEM_STORE; }
     // Memory ref not categorized as load or store
     bool IsMemOther() const { return ty == MEM_OTHER; }
+
+    // Any memory operation
+    bool IsMemOp() { return IsMemLoad() || IsMemStore() || IsMemOther(); }
     
     // -----------------------------------------------------
     
@@ -247,8 +250,11 @@ public:
 	      || ty == INT_CMP || ty == INT_LOGIC || ty == INT_SHIFT);
     }
     
-    // Any other floating point instruction
+    // Any other integer instruction
     bool IsIntOther() const { return ty == INT_MOV || ty == INT_OTHER; }
+
+    // Any integer instruction
+    bool IsIntOp() const { return IsIntArith() || IsIntOther(); }
 
     // -----------------------------------------------------
     
