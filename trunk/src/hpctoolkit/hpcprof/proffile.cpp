@@ -139,6 +139,8 @@ ProfFileLM::~ProfFileLM()
 {
 }
 
+#undef  DEBUG
+
 int
 ProfFileLM::read(FILE *fp)
 {
@@ -157,9 +159,15 @@ ProfFileLM::read(FILE *fp)
     if ((c = fgetc(fp)) == EOF) { return 1; }
     name_[n] = (char)c;
   } 
+#ifdef DEBUG
+  cerr << name_ << " "; 
+#endif
 
   sz = hpc_fread_le8(&load_addr_, fp);
   if (sz != sizeof(load_addr_)) { return 1; }
+#ifdef DEBUG
+  cerr << "load address=" << load_addr_ << endl; 
+#endif
 
   // Read event data
   unsigned int count = 1;
@@ -226,6 +234,9 @@ ProfFileEvent::read(FILE *fp, uint64_t load_addr)
   
   sz = hpc_fread_le4(&ndat, fp);
   if (sz != sizeof(ndat)) { return 1; }
+#ifdef DEBUG
+  cerr << "ndat =" << ndat << endl; 
+#endif
 
   dat_.resize(ndat);
   for (unsigned int i = 0; i < ndat; ++i) {
@@ -234,6 +245,9 @@ ProfFileEvent::read(FILE *fp, uint64_t load_addr)
 
     sz = hpc_fread_le4(&offset, fp);
     if (sz != sizeof(offset)) { return 1; }
+#ifdef DEBUG
+  cerr << "  (cnt,offset)=(" << count << "," << offset << ")" << endl; 
+#endif
     
     pprof_off_t pc = load_addr + offset;
     dat_[i] = make_pair(pc, count);
