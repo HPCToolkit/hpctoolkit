@@ -125,10 +125,11 @@ ProfileWriter::WriteProfile(std::ostream& os, DerivedProfile* profData,
   if (profData->GetNumMetrics() == 0) {
     return; // We must have at least one metric
   }
-
+  
   const PCProfile* rawprofData = profData->GetPCProfile();
-  const ISA* isa = rawprofData->GetISA();
-
+  ISA* isa = rawprofData->GetISA();
+  isa->Attach(); // ensure longevity
+  
   // ------------------------------------------------------------------------
   // Dump header info
   // ------------------------------------------------------------------------  
@@ -255,7 +256,9 @@ ProfileWriter::WriteProfile(std::ostream& os, DerivedProfile* profData,
   // Dump footer
   // ------------------------------------------------------------------------  
   os << "</PROFILE>\n"; 
-  ProfileWriter::DumpProfileFooter(os);    
+  ProfileWriter::DumpProfileFooter(os);
+  
+  isa->Detach();
 }
 
 //****************************************************************************
