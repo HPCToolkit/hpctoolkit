@@ -1,0 +1,84 @@
+#!/bin/sh
+# Testing: set -x: line by line (set -n: syntax)
+# set -x
+
+# $Header$
+
+## **************************************************************************
+##
+## Launching script
+##
+## John Mellor-Crummey and Nathan Tallent
+##
+## **************************************************************************
+
+#############################################################################
+# Find where we were called from
+#############################################################################
+
+BINDIR=`dirname $0`
+
+if [ ${BINDIR} = '.' ]; then 
+    ROOTDIR='..';
+else
+    ROOTDIR=`dirname ${BINDIR}`;
+fi
+
+HPCTOOLKIT=${ROOTDIR}
+BINARY="$0bin" # ${HPCTOOLKIT}/bin/ `basename $0` bin
+
+unset BINDIR
+unset ROOTDIR
+
+#echo "--> $0"
+#echo "--> ${HPCTOOLKIT}"
+#echo "--> ${BINARY}"
+
+#############################################################################
+# Set environment for process
+#############################################################################
+
+# Note: we could have autoconf/automake insert the platform
+export HPCTOOLKIT
+export HPCTOOLKIT_PLATFORM=`cd ${HPCTOOLKIT}/config; ./hpcplatform`
+
+export XERCESCROOT="${HPCTOOLKIT}/xercesc"
+
+XERCESPLATFORM="${XERCESCROOT}/lib"
+
+if test ${HPCTOOLKIT_PLATFORM} = 'mips-IRIX64' ; then
+  # set library path for IRIX systems
+  if test -z LD_LIBRARYN32_PATH ; then
+    export LD_LIBRARYN32_PATH=${XERCESPLATFORM}
+  else
+    export LD_LIBRARYN32_PATH=${XERCESPLATFORM}:${LD_LIBRARYN32_PATH}
+  fi
+  if test -z LD_LIBRARY64_PATH ; then
+    export LD_LIBRARY64_PATH=${XERCESPLATFORM}
+  else
+    export LD_LIBRARY64_PATH=${XERCESPLATFORM}:${LD_LIBRARY64_PATH}
+  fi
+else
+  if test -z LD_LIBRARY_PATH ; then
+    export LD_LIBRARY_PATH=${XERCESPLATFORM}
+  else
+    export LD_LIBRARY_PATH=${XERCESPLATFORM}:${LD_LIBRARY_PATH}
+  fi
+fi
+
+unset XERCESPLATFORM
+
+#############################################################################
+# exec binary image
+#############################################################################
+
+if [ -f ${BINARY} -a -x ${BINARY} ]; then
+    if [ $# -eq 0 ]; then
+	exec ${BINARY}
+    else
+	exec ${BINARY} "$@"
+    fi
+else
+    echo "$0 fatal error: cannot exec '${BINARY}'"
+fi
+
