@@ -25,7 +25,8 @@
 
 <div id="main">
 
-<p class="lastupdated">Last Updated 14 July 2003</p>
+<!-- automatically updated by Emacs hook below; nicer than CVS Date -->
+<p class="lastupdated">Last Updated: 2004-10-26</p>
 
 <h2>User Commands: hpcquick(1)</h2>
 
@@ -36,11 +37,10 @@
 <div class="indent">
 
 <p><span class="hpctool">hpcquick</span> 
-   [-V]
+   [other-options]
    -z|x
-   [-n]
-   -I <i>dir1 dir2 ... dirN</i> 
-   [-S <i>structure</i>]
+   [ -I <i>dir1 dir2 ... dirN</i> ]
+   [ -S <i>struct-file</i> ]
    -P <i>prof1 prof2 ... profM</i>
 
 <p>Location: <code>${HPCTOOLKIT}/bin</code>
@@ -67,17 +67,16 @@ All shell commands are captured into a log file.
 
 <p>Following is a list of the various profile files accepted.  If needed,
 they will automatically be converted into the XML
-<a href="dtd_profile.html" class="hpctool">PROFILE</a> format (using
-the vendor's <code class="xtool">prof</code> tool and the 
-toolkit's <a href="hpc_ptran.html" class="hpctool">ptran</a>) 
+<a href="dtd_profile.html" class="hpctool">PROFILE</a> format 
 before <a href="hpcview.html" class="hpctool">hpcview</a> is run.
 
 <ul>
+  <li>binary output from <a href="hpcrun.html" class="hpctool">hpcrun</a>
   <li>binary output from SGI's <code class="xtool">ssrun</code>
   <!-- <code class="xtool">uprofile</code> on the Compaq/Alpha -->
-  <li>XML <a href="dtd_profile.html" class="hpctool">PROFILE</a> 
-      files from <a href="hpc_xprof.html" class="hpctool">xprof</a>, 
-      <a href="hpc_papiprof.html" class="hpctool">papiprof</a> and 
+  <li>XML <a href="dtd_profile.html" class="hpctool">PROFILE</a> files
+      (e.g., from <a href="hpc_xprof.html" class="hpctool">xprof</a>, 
+      <a href="hpcprof.html" class="hpctool">hpcprof</a> and 
       <a href="hpc_ptran.html" class="hpctool">ptran</a>
 </ul>
 
@@ -91,9 +90,6 @@ before <a href="hpcview.html" class="hpctool">hpcview</a> is run.
 
 <dl>
 
-<dt>-V
-<dd>Print version information.
-
 <dt>-z
 <dd>configure <a href="hpcview.html" class="hpctool">hpcview</a> to produce
 an HTML database
@@ -101,9 +97,6 @@ an HTML database
 <dt>-x
 <dd>configure <a href="hpcview.html" class="hpctool">hpcview</a> to produce
 an XML database
-
-<dt>-n
-<dd>exit before producing database (but record command in log file)
 
 <dt>-I <i>dir1 dir2 ... dirN</i>
 <dd><i>dir1</i> through <i>dirN</i> specify a list of directories --
@@ -117,8 +110,8 @@ code is not found in these directories (e.g., system libraries),
 will generate a synopsis that shows the presence of the function and
 its line extents (if known), but no source code.
 
-<dt>-S <i>structure</i>
-<dd><i>structure</i> is a program structure file (XML document of type
+<dt>-S <i>struct-file</i>
+<dd><i>struct-file</i> is a program structure file (XML document of type
 <a href="dtd_pgm.html" class="hpctool">PGM</a>) that contains a 
 specification of the hierarchical structure of the application
 program.  Supplying a program structure file is optional. However, a
@@ -136,6 +129,27 @@ to extract the structure information from the executable binary.
 <dd><i>prof1</i> through <i>profM</i> are names of profile files.
 
 </dl>
+
+
+<h4>Other options</h4>
+
+<dl>
+
+<dt>-n
+<dd>No <a href="hpcview.html" class="hpctool">hpcview</a> output.  Convert
+profiles and create an <a href="hpcview.html" class="hpctool">hpcview</a>
+config file, but do not generate an 
+<a href="hpcview.html" class="hpctool">hpcview</a> output dababase; 
+record all commands in log file.
+
+<dt>-V
+<dd>Print version information.
+
+<dt>-h
+<dd>Print help.
+
+</dl>
+
 
 </div> <!-- class=indent -->
 
@@ -155,7 +169,7 @@ gathered hardware performance counter data (experiments named
 The command </p>
 
 <div class="indent">
-  <code>hpcquick -I ../src -S bloop.psxml -P *_hwc.*</code>
+  <code>hpcquick -x -I ../src -S bloop.psxml -P *_hwc.*</code>
 </div>
 
 <p>will display the profile data with one column per profile file.</p>
@@ -171,14 +185,7 @@ The command </p>
 <div class="indent">
 
 <span class="hpctool">hpcquick</span> runs on any system with a
-relatively recent version of Perl.  Depending on the version of Perl
-on your system, either the PERLLIB or PERL5LIB environment variable
-must be set to point to the Perl library located in
-<code>${HPCTOOLKIT}/lib/perl</code>.  The 
-<a href="../Sourceme-csh"><code>Sourceme-csh</code></a> and
-<a href="../Sourceme-sh"><code>Sourceme-sh</code></a> files set both of these 
-variables for <code>csh</code>-based and <code>sh</code>-based shells,
-respectivley. </p>
+relatively recent version of Perl. 
 
 </div> <!-- class=indent -->
 
@@ -192,3 +199,13 @@ respectivley. </p>
 
 </body>
 </html>
+
+
+<!-- Local Variables: -->
+<!-- eval: (add-hook 'write-file-hooks 'time-stamp) -->
+<!-- time-stamp-start: ">Last Updated: " -->
+<!-- time-stamp-format: "%:y-%02m-%02d" -->
+<!-- time-stamp-end: "<" -->
+<!-- time-stamp-line-limit: 35 -->
+<!-- End: -->
+
