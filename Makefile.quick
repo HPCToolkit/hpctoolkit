@@ -59,7 +59,7 @@ endif
 #############################################################################
 
 BUILDDIR   = $(WD)/build-$(PLATFORM)
-INSTALLDIR = $(WD)/$(PLATFORM)
+INSTALLDIR = $(WD)/HPCToolkit-$(PLATFORM)
 
 ifdef DEVELOP
   CONFIG_OPTS = --enable-develop
