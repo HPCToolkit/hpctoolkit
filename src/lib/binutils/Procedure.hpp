@@ -87,7 +87,8 @@ public:
   // Returns the name as determined by debugging information; if this
   // is unavailable returns the name found in the symbol table.  (Note
   // that no demangling is performed.)
-  String GetName()     const { return name; }
+  String  GetName()     const { return name; }
+  String& GetName()           { return name; }
 
   // Returns the name as found in the symbol table
   String GetLinkName() const { return linkname; }
