@@ -181,8 +181,16 @@ Like bloop, it it can be used as a 'cross-tool'.
 
 HPCToolkit Version 3.?.?: [xxxx.xx.xx]
 --------------------
-- bloop now supports the Sun WorkShop/Forte/ONE compiler.
 - Update code so it can be compiled by GCC 3.3.2
+- hpcview:
+    - Use of hpcviewer is now preferred method for viewing data (as
+      opposed to static HTML database).
+- bloop:
+    - Enable support for Sun's WorkShop/Forte/ONE compiler
+    - Revamp scope tree builder
+    - Rewrite key normalization routine (coalesce duplicate statements)
+- xprof:
+    - Enable reading of profile data from stdin or file
 
 HPCToolkit Version 3.6.0: [2003.07.05]
 --------------------
