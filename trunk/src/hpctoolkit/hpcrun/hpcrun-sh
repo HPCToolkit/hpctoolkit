@@ -112,6 +112,10 @@ f_getoptions()
   # We can't easily use 'getopt' or 'getopts' because we have to
   # protect options given to the command to profile.
 
+  # NOTE: This should actually *not* be a function because once either
+  # $@ or $* is pased to it, a quoted argument like 'a b c' that
+  # should be *one* argument, will be white-space split into three.
+
   if [ -z "$1" ]; then
     f_usage
     exit 0
@@ -195,6 +199,8 @@ f_prepareenv()
 #############################################################################
 # $n: argument n, with $0 being the command name
 # $*: all arguments from $1 to $n
+# $@: all arguments form $1 to $n in double quotes
+# $#: number of arguments
 
 f_checkenv 
 
