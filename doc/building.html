@@ -25,7 +25,8 @@
 
 <div id="main">
 
-<p class="lastupdated">Last Updated 12 Mar 2004</p>
+<!-- automatically updated by Emacs hook below; nicer than CVS Date -->
+<p class="lastupdated">Last Updated: 2004-03-10</p>
 
 <a name="toc"></a>
 <h2>Downloading, Building and Installing HPCToolkit</h2>
@@ -36,7 +37,7 @@
 
   <li><a href="#prerequisites">System Prerequisites</a>
 
-  <li>Building
+  <li>Building and Installing
   <ul>
     <li><a href="#build_overview">Build Overview</a>
     <li><a href="#build_xlib_binutils">External Library: GNU binutils</a>
@@ -141,6 +142,7 @@ instructions.):
 
     <li>ia64-Linux:
       <ul class="noindent">
+        <li>Intel C++/C 8.0
         <li>Intel C++/C 7.0, 7.1
         <li>Intel C++/C 6.0
         <li>GCC C++/C 3.0.4, 3.2.x, 3.3.x
@@ -205,7 +207,7 @@ configurations:
 <!-- ********************************************************************** -->
 <!-- ********************************************************************** -->
 
-<h2>Building</h2>
+<h2>Building and Installing</h2>
 <p><i>[<a href="#toc">Contents</a>]</i>
 
 <div class="indent">
@@ -220,18 +222,18 @@ configurations:
 
 <p>There are three external libraries -- OpenAnalysis, Xerces-C++ and
 GNU binutils -- that must be built before HPCToolkit can be built,
-installed and used.</p>
+installed and used.  Please use the same C++ compiler for each
+component.</p>
 
 <p>HPCToolkit's hpcviewer tool is in a separate directory and built
-separately. We often download,
-compile, and run hpcviewer on laptops or desktops rather than the
-system on which we collect performance measurements.
-We briefly describe how to build hpcviewer here, regardless of where
-you want to build it.</p> 
+separately. We often download, compile, and run hpcviewer on laptops
+or desktops rather than the system on which we collect performance
+measurements.  We briefly describe how to build hpcviewer here,
+regardless of where you want to build it.</p>
 
-<p>In some cases it may be possible to use versions of these libraries
-that may already be installed on your system, but we do not support
-such configurations.</p>
+<p>In some cases it may be possible to use versions of the external
+libraries that may already be installed on your system.  However, we
+do not support such configurations.</p>
 
 
 <!-- ********************************************************************** -->
@@ -252,7 +254,7 @@ special options.</p>
   <li>GCC C 2.9x can also be used.
   <li>ia64-Linux:
     <ul class="noindent">
-      <li>Intel C <i>cannot</i> be used; use GCC C.
+      <li>Intel C 6.x or 7.x <i>cannot</i> be used; use GCC C.
     </ul>
   <li>mips-IRIX64:
     <ul class="noindent">
@@ -478,7 +480,6 @@ on using the toolkit.
 <!-- ********************************************************************** -->
 
 <a name="build_evaluation"></a>
-<a name="environment"></a> <!-- deprecated -->
 
 <h2>Evaluation</h2>
 <p><i>[<a href="#toc">Contents</a>]</i>
@@ -637,3 +638,13 @@ example, the lines below would add <code>libgcc.a</code> or
 
 </body>
 </html>
+
+
+<!-- Local Variables: -->
+<!-- eval: (add-hook 'write-file-hooks 'time-stamp) -->
+<!-- time-stamp-start: ">Last Updated: " -->
+<!-- time-stamp-format: "%:y-%02m-%02d" -->
+<!-- time-stamp-end: "<" -->
+<!-- time-stamp-line-limit: 35 -->
+<!-- End: -->
+
