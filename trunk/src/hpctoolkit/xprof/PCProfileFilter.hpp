@@ -55,6 +55,8 @@
 #include <vector>
 #include <list>
 
+#include "inttypes.h"
+
 //*************************** User Include Files ****************************
 
 #include <include/general.h>
