@@ -62,6 +62,7 @@
 
 typedef int (*libc_start_main_fptr_t) START_MAIN_PARAMS;
 typedef void (*libc_start_main_fini_fptr_t) (void);
+typedef pid_t (*fork_fptr_t) (void);
 
 static int  hpcr_libc_start_main START_MAIN_PARAMS;
 static void hpcr_fini(void); 
@@ -82,8 +83,9 @@ static const uint64_t default_period = (1 << 15) - 1; /* (2^15 - 1) */
 /* These variables are set when the library is initialized */
 
 /* Intercepted libc routines */
-static libc_start_main_fptr_t      start_main;
-static libc_start_main_fini_fptr_t start_main_fini;
+static libc_start_main_fptr_t      real_start_main;
+static libc_start_main_fini_fptr_t real_start_main_fini;
+static fork_fptr_t real_fork;
 
 /* hpcrun options (this should be a tidy struct) */
 static int      opt_debug = 0;
@@ -119,7 +121,7 @@ _init(void)
   init_options();
 
   if (opt_debug >= 1) { 
-    fprintf(stderr, "*** initializing "HPCRUN_LIB" ***\n"); 
+    fprintf(stderr, "*** initializing "HPCRUN_LIB" (process %d) ***\n", getpid()); 
   }
   
   /* Grab pointers to functions that will be intercepted.
@@ -134,21 +136,26 @@ _init(void)
   */
 
   /* from libc */
-  start_main = (libc_start_main_fptr_t)dlsym(RTLD_NEXT, "__libc_start_main");
+  real_start_main = (libc_start_main_fptr_t)dlsym(RTLD_NEXT, "__libc_start_main");
   if ((error = dlerror()) != NULL) {
     fputs(error, stderr);
     exit(1);
   }
-  if (!start_main) {
-    start_main = (libc_start_main_fptr_t)dlsym(RTLD_NEXT, 
+  if (!real_start_main) {
+    real_start_main = (libc_start_main_fptr_t)dlsym(RTLD_NEXT, 
 					       "__BP___libc_start_main");
     if ((error = dlerror()) != NULL) {
       fputs(error, stderr);
       exit(1);
     }
   }
-  if (!start_main) {
+  if (!real_start_main) {
     DIE("Cannot intercept beginning of process execution and therefore cannot begin profiling.");
+  }
+  real_fork  = (fork_fptr_t)dlsym(RTLD_NEXT, "fork");
+  if ((error = dlerror()) != NULL) {
+    fputs(error, stderr);
+    exit(1);
   }
 }
 
@@ -158,7 +165,9 @@ _init(void)
 void 
 _fini(void)
 {
-  if (opt_debug >= 1) { fprintf(stderr, "*** finalizing "HPCRUN_LIB" ***\n"); }
+  if (opt_debug >= 1) { 
+    fprintf(stderr, "*** finalizing "HPCRUN_LIB" (process %d) ***\n", getpid()); 
+  }
 }
 
 
@@ -173,7 +182,7 @@ init_options(void)
   env_debug = getenv("HPCRUN_DEBUG");
   opt_debug = (env_debug ? atoi(env_debug) : 0);
 
-  if (opt_debug >= 1) { fprintf(stderr, "** processing "HPCRUN_LIB" opts\n"); }
+  if (opt_debug >= 1) { fprintf(stderr, "** processing "HPCRUN_LIB" opts (process %d)\n", getpid()); }
   
   /* Recursive profiling: default is on */
   env_recursive = getenv("HPCRUN_RECURSIVE");
@@ -185,7 +194,7 @@ init_options(void)
   }
 
   if (opt_debug >= 1) { 
-    fprintf(stderr, "  recursive profiling: %d\n", opt_recursive); 
+    fprintf(stderr, "  recursive profiling: %d (process %d)\n", opt_recursive, getpid()); 
   }
   
   /* Profiling event list: default PAPI_TOT_CYC:32767 (default_period) */
@@ -196,7 +205,7 @@ init_options(void)
   }
 
   if (opt_debug >= 1) { 
-    fprintf(stderr, "  event list: %s\n", env_eventlist); 
+    fprintf(stderr, "  event list: %s (process %d)\n", env_eventlist, getpid()); 
   }
   
   /* Output path: default . */
@@ -250,16 +259,16 @@ hpcr_libc_start_main START_MAIN_PARAMS
 {
   /* squirrel away for later use */
   profiled_cmd = ubp_av[0];  /* command is also in /proc/pid/cmdline */
-  start_main_fini = fini;
+  real_start_main_fini = fini;
   
   /* initialize profiling */
   init_hpcrun();
   
   /* launch the process */
   if (opt_debug >= 1) {
-    fprintf(stderr, "*** launching intercepted app: %s ***\n", profiled_cmd);
+    fprintf(stderr, "*** launching intercepted app: %s (process %d) ***\n", profiled_cmd, getpid());
   }
-  (*start_main)(main, argc, ubp_av, init, hpcr_fini, rtld_fini, stack_end);
+  (*real_start_main)(main, argc, ubp_av, init, hpcr_fini, rtld_fini, stack_end);
   return 0; /* never reached */
 }
 
@@ -268,8 +277,8 @@ hpcr_libc_start_main START_MAIN_PARAMS
 static void 
 hpcr_fini(void)
 {
-  if (start_main_fini) {
-    (*start_main_fini)();
+  if (real_start_main_fini) {
+    (*real_start_main_fini)();
   }
   fini_hpcrun();
   exit(0);
@@ -293,7 +302,7 @@ static void
 init_hpcrun(void)
 {
   if (opt_debug >= 1) { 
-    fprintf(stderr, "*** initializing "HPCRUN_LIB" monitoring ***\n");
+    fprintf(stderr, "*** initializing "HPCRUN_LIB" monitoring (process %d) ***\n", getpid());
   }
   
   rtloadmap = hpcrun_code_lines_from_loadmap(opt_debug);
@@ -422,7 +431,7 @@ init_papi(hpcpapi_profile_desc_vec_t* profdescs, rtloadmap_t* rtmap)
     }
     
     if (opt_debug >= 1) { 
-      fprintf(stderr, "Finding event: '%s' '%llu'\n", eventbuf, period);
+      fprintf(stderr, "Finding event: '%s' '%llu' (process %d)\n", eventbuf, period, getpid());
     }
 
     /* Find event info, ensuring it is available.  Note: it is
@@ -480,7 +489,7 @@ init_papi(hpcpapi_profile_desc_vec_t* profdescs, rtloadmap_t* rtmap)
     prof->numsprofs = rtmap->count;
 
     if (opt_debug >= 3) { 
-      fprintf(stderr, "profile buffer details for %s:\n", prof->einfo.symbol); 
+      fprintf(stderr, "profile buffer details for %s (process %d):\n", prof->einfo.symbol, getpid()); 
       fprintf(stderr, "  count = %d, es=%#x ec=%#x sp=%llu ef=%d\n",
 	      prof->numsprofs, profdescs->eset, prof->ecode, prof->period, 
 	      prof->flags);
@@ -532,7 +541,7 @@ init_papi(hpcpapi_profile_desc_vec_t* profdescs, rtloadmap_t* rtmap)
       break;
     }
     if (papi_debug != 0) {
-      fprintf(stderr, "setting PAPI debug option %d.\n", papi_debug);
+      fprintf(stderr, "setting PAPI debug option %d. (process %d)\n", papi_debug, getpid());
       if ((pcode = PAPI_set_debug(papi_debug)) != PAPI_OK) {
 	DIE("PAPI error: (%d) %s. Aborting.", pcode, PAPI_strerror(pcode));
       }
@@ -558,7 +567,7 @@ start_papi(hpcpapi_profile_desc_vec_t* profdescs)
     hpcpapi_profile_desc_t* prof = &profdescs->vec[i];
 
     if (opt_debug >= 1) { 
-      fprintf(stderr, "Calling PAPI_sprofil(): %s\n", prof->einfo.symbol);
+      fprintf(stderr, "Calling PAPI_sprofil(): %s (process %d)\n", prof->einfo.symbol, getpid());
     }
     
     pcode = PAPI_sprofil(prof->sprofs, prof->numsprofs, profdescs->eset, 
@@ -631,7 +640,7 @@ static void
 fini_hpcrun(void)
 {
   if (opt_debug >= 1) { 
-    fprintf(stderr, "*** finalizing "HPCRUN_LIB" monitoring ***\n");
+    fprintf(stderr, "*** finalizing "HPCRUN_LIB" monitoring (process %d) ***\n", getpid());
   }
   
   stop_papi(&papi_profdescs);
@@ -648,7 +657,9 @@ stop_papi(hpcpapi_profile_desc_vec_t* profdescs)
   long_long* values = NULL; // array the size of the eventset
   
   if ((pcode = PAPI_stop(profdescs->eset, values)) != PAPI_OK) {
+#if 0
     DIE("PAPI error: (%d) %s. Aborting.", pcode, PAPI_strerror(pcode));
+#endif
   }
 }
 
@@ -730,7 +741,7 @@ write_module_profile(FILE* fs, rtloadmod_desc_t* mod,
 {
   int i;
   
-  if (opt_debug >= 2) { fprintf(stderr, "writing module %s\n", mod->name); }
+  if (opt_debug >= 2) { fprintf(stderr, "writing module %s (process %d)\n", mod->name, getpid()); }
 
   /* <loadmodule_name>, <loadmodule_loadoffset> */
   write_string(fs, mod->name);
@@ -770,8 +781,8 @@ write_event_data(FILE *fs, hpcpapi_profile_desc_t* prof, int sprofidx)
   hpc_fwrite_le4(&count, fs);
   
   if (opt_debug >= 2) {
-    fprintf(stderr, "  profile for %s has %d of %d non-zero counters", 
-	    prof->einfo.symbol, count, ncounters);
+    fprintf(stderr, "  profile for %s has %d of %d non-zero counters (process %d)", 
+	    prof->einfo.symbol, count, ncounters, getpid());
     fprintf(stderr, " (last non-zero counter: %d)\n", inz);
   }
   
@@ -803,4 +814,23 @@ write_string(FILE *fs, char *str)
 }
 
 /****************************************************************************/
+
+pid_t fork()
+{
+  if (opt_debug >= 1) { fprintf(stderr, "** forking (process %d)\n", getpid()); }
+   pid_t retval = (*real_fork)();
+   if (retval == 0) { /* child */
+           if (opt_debug >= 1) { fprintf(stderr, "** caught fork (process %d)\n", getpid()); }
+           if (hpc_init_papi_force() != 0) {
+             fprintf(stderr, "** PAPI library initialization failed after fork (process %d)\n", getpid()); 
+	     exit(-1);
+	   }
+	   init_hpcrun();
+   }
+}
+
+pid_t vfork()
+{
+  return fork();
+}
 

@@ -48,6 +48,8 @@ static long htoll(char *s);
 static void dumprtloadmap(void);
 static void dumplines(void);
 
+static void reset_slots();
+
 /****************************************************************************/
 
 /* number of bytes to print out for a long in hex with a 0x prefix */ 
@@ -66,8 +68,11 @@ hpcrun_code_lines_from_loadmap(int dumpmap)
 {
   char filename[PATH_MAX];
   FILE *pf;
-  char *line = get_line_slot(); 
+  char *line;
   pid_t pid = getpid();
+
+  reset_slots();
+  line = get_line_slot(); 
 
   sprintf(filename,"/proc/%d/maps", pid);
   pf = fopen(filename,"r");
@@ -96,6 +101,14 @@ hpcrun_code_lines_from_loadmap(int dumpmap)
 static char **mappings = 0;
 static int slots_avail = 0;
 static int slots_in_use = 0;
+
+static void reset_slots()
+{
+	slots_avail = 0;
+	slots_in_use = 0;
+	if (mappings) free(mappings);
+	mappings = 0;
+}
 
 /* allocate a slot for a new line in an 
  * extensible array of load map lines.

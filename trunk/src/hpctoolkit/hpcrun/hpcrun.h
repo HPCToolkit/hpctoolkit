@@ -50,7 +50,7 @@
   { fputs("hpcrun", stderr);                                          \
     if (HPCRUN_DBG_LVL) {                                             \
       fprintf(stderr, " [%s:%d]", __FILE__, __LINE__); }              \
-    fputs(": ", stderr); fprintf(stderr, __VA_ARGS__); fputs("\n", stderr); }
+    fprintf(stderr,": (process %d) ", getpid()); fprintf(stderr, __VA_ARGS__); fputs("\n", stderr); }
 
 #define DIE(...) ERRMSG(__VA_ARGS__); { exit(1); }
 
