@@ -233,11 +233,21 @@ typedef psuint suint;  // standard sized unsigned int
 #  define PRIu64    "llu"
 #  define PRIx64    "llx"
 # endif
+# ifndef SCNd64 /* use as a synecdoche for SCNa64 */
+#  define SCNd64    "lld"
+#  define SCNu64    "llu"
+#  define SCNx64    "llx"
+# endif
 #elif defined(ARCH_64)
 # ifndef PRId64 /* use as a synecdoche for PRIa64 */
 #  define PRId64    "ld"
 #  define PRIu64    "lu"
 #  define PRIx64    "lx"
+# endif
+# ifndef SCNd64 /* use as a synecdoche for SCNa64 */
+#  define SCNd64    "ld"
+#  define SCNu64    "lu"
+#  define SCNx64    "lx"
 # endif
 #else
 # error "ArchIndTypes.h: Internal error defining printf macros."
