@@ -186,15 +186,25 @@ HTMLDriver::Write(const Driver& driver)  const
   // here we rely on the fact that PerfMetrics and MetricInfos 
   // have the same indexes 
   IntVector displayMetrics; 
+  int firstSorted = (-1);
   for (unsigned int i = 0; i < driver.NumberOfMetrics(); i++) {
     if (driver.PerfDataSrc(i).Display()) {
        displayMetrics.push_back(i); 
+       if (driver.PerfDataSrc(i).SortBy() && firstSorted==(-1)) {
+          firstSorted = i;
+       }
     } 
   } 
   if (displayMetrics.size() == 0) {
     cerr << "ERROR: Could not find a single valid metric to display." << endl; 
     return false; 
   } 
+  if (firstSorted == -1) {
+    cerr << "WARNING: Could not find a single valid metric to sort by." << endl
+         << "         Use the first displayed metric for sorting." << endl;
+    firstSorted = displayMetrics[0];
+    IndexToPerfDataInfo(firstSorted).setSortBy();
+  }
   displayMetrics.push_back(-1); 
 
   HTMLFile hf(htmlDir, EMPTY, NULL);   
@@ -219,7 +229,7 @@ HTMLDriver::Write(const Driver& driver)  const
   // miscellaneous files
   WriteFiles("files"); 
   WriteHeader(HEADER, driver.Title()); 
-  WriteIndexFile(scopes.Root(), table, displayMetrics[0], scopeTables, 
+  WriteIndexFile(scopes.Root(), table, firstSorted, scopeTables, 
 		 driver.Title(), HEADER);
   return true; 
 } 

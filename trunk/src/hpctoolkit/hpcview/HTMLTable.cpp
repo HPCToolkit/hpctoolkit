@@ -129,12 +129,13 @@ HTMLTable::Write(const char* dir,
 		 const char* bodyBgColor) const 
 {
   IFTRACE << "HTMLTable::Write" << endl;
-  bool ok = true; 
   int i = 0; 
   while  ((*perfIndex)[i] != -1) {
-     ok = WriteTableHead(dir, (*perfIndex)[i], headBgColor)  
+     bool ok = true;
+     if (IndexToPerfDataInfo((*perfIndex)[i]).SortBy())
+        ok = WriteTableHead(dir, (*perfIndex)[i], headBgColor)  
 #if 0
-          && WriteTableBody(dir, (*perfIndex)[i], bodyBgColor); 
+             && WriteTableBody(dir, (*perfIndex)[i], bodyBgColor); 
 #else
 ;
 #endif
@@ -176,7 +177,8 @@ HTMLTable::WriteTableHead(const char* dir,
       hf << label; 
       hf.FontColorStop(highlightColor); 
     } else {
-      hf.SetTableAndScopes(Name(), TableFileName(index), 
+      if (IndexToPerfDataInfo(index).SortBy()) {
+         hf.SetTableAndScopes(Name(), TableFileName(index), 
 			   HTMLScopes::SelfFrameName(), 
 			   // HTMLScopes::SelfFileName(scopes.Root(),index),
 			   HTMLScopes::KidsFrameName(), 
@@ -184,6 +186,11 @@ HTMLTable::WriteTableHead(const char* dir,
 			   IndexToPerfDataInfo(index).Name(),
 			   IndexToPerfDataInfo(index).DisplayInfo().Name(),
 			   dspInfo.Width() - noPercentAdjustment); 
+      } else {
+         String label = ""; 
+         label.LeftFormat(dspInfo.Width() - noPercentAdjustment); 
+         hf << label; 
+      }
     } 
     hf << " | "; 
   }

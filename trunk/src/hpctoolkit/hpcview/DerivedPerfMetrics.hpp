@@ -58,7 +58,7 @@ class DOM_Node;
 class FilePerfMetric : public PerfMetric {
 public: 
   FilePerfMetric(const char* nm, const char* nativeNm, const char* displayNm,
-		 bool display, bool percent,
+		 bool display, bool percent, bool sortBy, 
 		 const char* fname, const char* ftype, Driver* _driver); 
   virtual ~FilePerfMetric(); 
   
@@ -77,7 +77,7 @@ private:
 class ComputedPerfMetric : public PerfMetric {
 public: 
   ComputedPerfMetric(const char* nm, const char* displayNm,
-		     bool display, bool percent, 
+		     bool display, bool percent, bool sortBy, 
 		     bool propagateComputed, DOM_Node &expr);
   virtual ~ComputedPerfMetric(); 
 

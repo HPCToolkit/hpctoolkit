@@ -54,9 +54,9 @@ using std::endl;
 // ************************************************************************* //
 PerfMetric::PerfMetric(const char *nm, const char *nativeNm, 
 		       const char* displayNm, 
-		       bool disp, bool perc, bool propComputed)
+		       bool disp, bool perc, bool propComputed, bool sort)
  : name(nm), nativeName(nativeNm), eventsPerCount(0), dispInfo(NULL), 
-   display(disp), percent(perc), pcomputed(propComputed) 
+   display(disp), percent(perc), pcomputed(propComputed), sortBy(sort) 
 {
   // trace = 1; 
   BriefAssertion(!IsPerfDataIndex(NameToPerfDataIndex(nm))); 

@@ -94,7 +94,8 @@ static void ProcessELEMENT(DOM_Node &node, Driver &driver);
 static void ProcessMETRIC(DOM_Node &node, Driver &driver);
 static void ProcessFILE(DOM_Node &fileNode, Driver &driver, 
 			String &metricName, bool metricDoDisplay, 
-			bool metricDoPercent, String &metricDisplayName);
+			bool metricDoPercent, bool metricDoSortBy, 
+			String &metricDisplayName);
 
 static String getAttr(DOM_Node &node, const DOMString &attrName);
 
@@ -277,12 +278,14 @@ static void ProcessMETRIC(DOM_Node &node, Driver &driver)
   static DOMString PERCENTATTR("percent");
   static DOMString PROPAGATEATTR("propagate");
   static DOMString DISPLAYNAMEATTR("displayName");
+  static DOMString SORTBYATTR("sortBy");
 
   // get metric attributes
   String metricName = getAttr(node, NAMEATTR); 
   String metricDisplayName = getAttr(node, DISPLAYNAMEATTR); 
   bool metricDoDisplay = (getAttr(node, DISPLAYATTR) == "true"); 
   bool metricDoPercent = (getAttr(node,PERCENTATTR) == "true"); 
+  bool metricDoSortBy = (getAttr(node,SORTBYATTR) == "true"); 
 
   if (metricName.Length() == 0) {
     String error = "METRIC: Invalid name: '" + metricName + "'.";
@@ -301,6 +304,7 @@ static void ProcessMETRIC(DOM_Node &node, Driver &driver)
   IFTRACE << "METRIC: name=" << metricName << " " 
 	  << "display=" <<  ((metricDoDisplay) ? "true" : "false") << " " 
 	  << "doPercent=" <<  ((metricDoPercent) ? "true" : "false") << " " 
+	  << "sortBy=" <<  ((metricDoSortBy) ? "true" : "false") << " " 
 	  << "metricDisplayName=" << metricDisplayName << " " 
 	  << endl;
   
@@ -321,7 +325,8 @@ static void ProcessMETRIC(DOM_Node &node, Driver &driver)
     if (metricType.equals(FILE)) {
 
       ProcessFILE(metricImpl, driver, metricName, 
-		  metricDoDisplay, metricDoPercent, metricDisplayName);
+		  metricDoDisplay, metricDoPercent, metricDoSortBy, 
+		  metricDisplayName);
     } else if (metricType.equals(COMPUTE)) {
       bool propagateComputed
 	= (getAttr(metricImpl,PROPAGATEATTR) == "computed"); 
@@ -335,7 +340,7 @@ static void ProcessMETRIC(DOM_Node &node, Driver &driver)
 	}
 	
 	driver.Add(new ComputedPerfMetric(metricName, metricDisplayName, 
-					  metricDoDisplay, metricDoPercent,
+					  metricDoDisplay, metricDoPercent, metricDoSortBy,
 					  propagateComputed, child)); 
       }
     
@@ -349,7 +354,8 @@ static void ProcessMETRIC(DOM_Node &node, Driver &driver)
 
 static void ProcessFILE(DOM_Node &fileNode, Driver &driver, 
 			String &metricName, bool metricDoDisplay, 
-			bool metricDoPercent, String &metricDisplayName)
+			bool metricDoPercent, bool metricDoSortBy, 
+			String &metricDisplayName)
 {
   static DOMString TYPEATTR("type");
   static DOMString NAMEATTR("name");
@@ -368,7 +374,7 @@ static void ProcessFILE(DOM_Node &fileNode, Driver &driver,
 
   if (metricFile.Length() > 0) { 
     driver.Add(new FilePerfMetric(metricName, nativeName, metricDisplayName, 
-				  metricDoDisplay, metricDoPercent, 
+				  metricDoDisplay, metricDoPercent, metricDoSortBy, 
 				  metricFile, metricFileType, &driver)); 
   } else {
     String error = "FILE: Invalid filename '" + metricFile + "'";
