@@ -1045,7 +1045,8 @@ Optional Packages:
   --with-tags[=TAGS]
                           include additional configurations [automatic]
   --with-papi=<papi_install_path>
-                          use PAPI with hpcrun/hpcprof (default is NO)
+                          use given PAPI installation (absolute path) with
+                          hpcrun (default is NO)
 
 Some influential environment variables:
   CC          C compiler command
@@ -3665,7 +3666,7 @@ ia64-*-hpux*)
   ;;
 *-*-irix6*)
   # Find out which ABI we are using.
-  echo '#line 3668 "configure"' > conftest.$ac_ext
+  echo '#line 3669 "configure"' > conftest.$ac_ext
   if { (eval echo "$as_me:$LINENO: \"$ac_compile\"") >&5
   (eval $ac_compile) 2>&5
   ac_status=$?
@@ -5255,7 +5256,7 @@ fi
 
 
 # Provide some information about the compiler.
-echo "$as_me:5258:" \
+echo "$as_me:5259:" \
      "checking for Fortran 77 compiler version" >&5
 ac_compiler=`set X $ac_compile; echo $2`
 { (eval echo "$as_me:$LINENO: \"$ac_compiler --version </dev/null >&5\"") >&5
@@ -6289,11 +6290,11 @@ else
    -e 's:.*FLAGS}? :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:6292: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:6293: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:6296: \$? = $ac_status" >&5
+   echo "$as_me:6297: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings
@@ -6522,11 +6523,11 @@ else
    -e 's:.*FLAGS}? :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:6525: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:6526: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:6529: \$? = $ac_status" >&5
+   echo "$as_me:6530: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings
@@ -6582,11 +6583,11 @@ else
    -e 's:.*FLAGS}? :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:6585: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:6586: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>out/conftest.err)
    ac_status=$?
    cat out/conftest.err >&5
-   echo "$as_me:6589: \$? = $ac_status" >&5
+   echo "$as_me:6590: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s out/conftest2.$ac_objext
    then
      # The compiler can only warn and ignore the option if not recognized
@@ -7961,7 +7962,7 @@ linux*)
   libsuff=
   case "$host_cpu" in
   x86_64*)
-    echo '#line 7964 "configure"' > conftest.$ac_ext
+    echo '#line 7965 "configure"' > conftest.$ac_ext
     if { (eval echo "$as_me:$LINENO: \"$ac_compile\"") >&5
   (eval $ac_compile) 2>&5
   ac_status=$?
@@ -8821,7 +8822,7 @@ else
   lt_dlunknown=0; lt_dlno_uscore=1; lt_dlneed_uscore=2
   lt_status=$lt_dlunknown
   cat > conftest.$ac_ext <<EOF
-#line 8824 "configure"
+#line 8825 "configure"
 #include "confdefs.h"
 
 #if HAVE_DLFCN_H
@@ -8919,7 +8920,7 @@ else
   lt_dlunknown=0; lt_dlno_uscore=1; lt_dlneed_uscore=2
   lt_status=$lt_dlunknown
   cat > conftest.$ac_ext <<EOF
-#line 8922 "configure"
+#line 8923 "configure"
 #include "confdefs.h"
 
 #if HAVE_DLFCN_H
@@ -11098,11 +11099,11 @@ else
    -e 's:.*FLAGS}? :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:11101: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:11102: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:11105: \$? = $ac_status" >&5
+   echo "$as_me:11106: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings
@@ -11158,11 +11159,11 @@ else
    -e 's:.*FLAGS}? :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:11161: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:11162: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>out/conftest.err)
    ac_status=$?
    cat out/conftest.err >&5
-   echo "$as_me:11165: \$? = $ac_status" >&5
+   echo "$as_me:11166: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s out/conftest2.$ac_objext
    then
      # The compiler can only warn and ignore the option if not recognized
@@ -11714,7 +11715,7 @@ linux*)
   libsuff=
   case "$host_cpu" in
   x86_64*)
-    echo '#line 11717 "configure"' > conftest.$ac_ext
+    echo '#line 11718 "configure"' > conftest.$ac_ext
     if { (eval echo "$as_me:$LINENO: \"$ac_compile\"") >&5
   (eval $ac_compile) 2>&5
   ac_status=$?
@@ -12574,7 +12575,7 @@ else
   lt_dlunknown=0; lt_dlno_uscore=1; lt_dlneed_uscore=2
   lt_status=$lt_dlunknown
   cat > conftest.$ac_ext <<EOF
-#line 12577 "configure"
+#line 12578 "configure"
 #include "confdefs.h"
 
 #if HAVE_DLFCN_H
@@ -12672,7 +12673,7 @@ else
   lt_dlunknown=0; lt_dlno_uscore=1; lt_dlneed_uscore=2
   lt_status=$lt_dlunknown
   cat > conftest.$ac_ext <<EOF
-#line 12675 "configure"
+#line 12676 "configure"
 #include "confdefs.h"
 
 #if HAVE_DLFCN_H
@@ -13499,11 +13500,11 @@ else
    -e 's:.*FLAGS}? :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:13502: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:13503: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:13506: \$? = $ac_status" >&5
+   echo "$as_me:13507: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings
@@ -13559,11 +13560,11 @@ else
    -e 's:.*FLAGS}? :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:13562: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:13563: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>out/conftest.err)
    ac_status=$?
    cat out/conftest.err >&5
-   echo "$as_me:13566: \$? = $ac_status" >&5
+   echo "$as_me:13567: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s out/conftest2.$ac_objext
    then
      # The compiler can only warn and ignore the option if not recognized
@@ -14918,7 +14919,7 @@ linux*)
   libsuff=
   case "$host_cpu" in
   x86_64*)
-    echo '#line 14921 "configure"' > conftest.$ac_ext
+    echo '#line 14922 "configure"' > conftest.$ac_ext
     if { (eval echo "$as_me:$LINENO: \"$ac_compile\"") >&5
   (eval $ac_compile) 2>&5
   ac_status=$?
@@ -15648,11 +15649,11 @@ else
    -e 's:.*FLAGS}? :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:15651: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:15652: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:15655: \$? = $ac_status" >&5
+   echo "$as_me:15656: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings
@@ -15881,11 +15882,11 @@ else
    -e 's:.*FLAGS}? :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:15884: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:15885: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:15888: \$? = $ac_status" >&5
+   echo "$as_me:15889: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings
@@ -15941,11 +15942,11 @@ else
    -e 's:.*FLAGS}? :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:15944: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:15945: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>out/conftest.err)
    ac_status=$?
    cat out/conftest.err >&5
-   echo "$as_me:15948: \$? = $ac_status" >&5
+   echo "$as_me:15949: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s out/conftest2.$ac_objext
    then
      # The compiler can only warn and ignore the option if not recognized
@@ -17320,7 +17321,7 @@ linux*)
   libsuff=
   case "$host_cpu" in
   x86_64*)
-    echo '#line 17323 "configure"' > conftest.$ac_ext
+    echo '#line 17324 "configure"' > conftest.$ac_ext
     if { (eval echo "$as_me:$LINENO: \"$ac_compile\"") >&5
   (eval $ac_compile) 2>&5
   ac_status=$?
@@ -18180,7 +18181,7 @@ else
   lt_dlunknown=0; lt_dlno_uscore=1; lt_dlneed_uscore=2
   lt_status=$lt_dlunknown
   cat > conftest.$ac_ext <<EOF
-#line 18183 "configure"
+#line 18184 "configure"
 #include "confdefs.h"
 
 #if HAVE_DLFCN_H
@@ -18278,7 +18279,7 @@ else
   lt_dlunknown=0; lt_dlno_uscore=1; lt_dlneed_uscore=2
   lt_status=$lt_dlunknown
   cat > conftest.$ac_ext <<EOF
-#line 18281 "configure"
+#line 18282 "configure"
 #include "confdefs.h"
 
 #if HAVE_DLFCN_H
@@ -21350,7 +21351,8 @@ HPCTOOLKIT_PLATFORM=`cd ${hpctoolkit_top}/config; ./hpcplatform`
 
 
 # NOTE: we should allow the locations of xerces, OA, and binutils
-# installations to optionally be given on configure line.
+# installations to optionally be given on configure line or in the
+# environment.
 
 #-------------------------------------------------
 # Check for Xerces-C (XML parser)
@@ -21463,7 +21465,12 @@ if test "${with_papi+set}" = set; then
   withval="$with_papi"
   if test $withval != no; then
      OPT_HAVE_PAPI=yes
-     OPT_PAPI=`cd ${withval} && pwd`
+     if ( echo "${withval}" | grep -v "^/" >/dev/null 2>&1 ); then
+       { { echo "$as_me:$LINENO: error: --with-papi requires absolute path as argument; given '${withval}'" >&5
+echo "$as_me: error: --with-papi requires absolute path as argument; given '${withval}'" >&2;}
+   { (exit 1); exit 1; }; }
+     fi
+     OPT_PAPI=${withval}
    fi
 else
   if test -f /usr/local/papi/include/papi.h; then

@@ -112,7 +112,8 @@ AC_SUBST([HPCTOOLKIT_PLATFORM])
 
 
 # NOTE: we should allow the locations of xerces, OA, and binutils
-# installations to optionally be given on configure line.
+# installations to optionally be given on configure line or in the
+# environment.
 
 #-------------------------------------------------
 # Check for Xerces-C (XML parser)
@@ -199,10 +200,13 @@ OPT_PAPI_DLOPEN=
 
 AC_ARG_WITH([papi],
   AC_HELP_STRING([--with-papi=<papi_install_path>],
-                 [use PAPI with hpcrun/hpcprof (default is NO)]),
+                 [use given PAPI installation (absolute path) with hpcrun (default is NO)]),
   [if test $withval != no; then
      OPT_HAVE_PAPI=yes
-     OPT_PAPI=`cd ${withval} && pwd`
+     if ( echo "${withval}" | grep -v "^/" >/dev/null 2>&1 ); then
+       AC_MSG_ERROR([--with-papi requires absolute path as argument; given '${withval}'])
+     fi
+     OPT_PAPI=${withval}
    fi],
   [if test -f /usr/local/papi/include/papi.h; then
     OPT_HAVE_PAPI=yes
