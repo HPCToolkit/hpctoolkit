@@ -62,7 +62,11 @@ BUILDDIR   = $(WD)/build-$(PLATFORM)
 INSTALLDIR = $(WD)/HPCToolkit-$(PLATFORM)
 
 ifdef DEVELOP
-  CONFIG_OPTS = --enable-develop
+  CONFIG_OPTS += --enable-develop
+endif
+
+ifdef PAPI
+  CONFIG_OPTS += --with-papi=$(PAPI)
 endif
 
 # used by configure (from GNU Autoconf)
