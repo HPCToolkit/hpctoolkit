@@ -102,14 +102,19 @@ private:
 #define TYPEPM(m) DCPI_MTYPE_PM | (m)
 #define TYPERM(m) DCPI_MTYPE_RM | (m)
 
-#define DCPI_PM_CNTR(pfx, n1, n2, n3, cbit1, cbit2, cbit3) \
-  { pfx##n1, TYPEPM((cbit1)) }, \
-  { pfx##n2, TYPEPM((cbit2)) }, \
-  { pfx##n3, TYPEPM((cbit3)) }
+#define DCPI_PM_CNTR(pfx, n1, n2, n3, bit1, bit2, bit3) \
+  { pfx##n1, TYPEPM((bit1)) }, \
+  { pfx##n2, TYPEPM((bit2)) }, \
+  { pfx##n3, TYPEPM((bit3)) }
 
-#define DCPI_PM_BIT(name, tbit, fbit) \
-  { name,      TYPEPM((tbit)) }, \
-  { "!"##name, TYPEPM((fbit)) }
+#define DCPI_PM_ATTR(name, truebits, falsebits) \
+  { name,      TYPEPM((truebits)) }, \
+  { "!"##name, TYPEPM((falsebits)) }
+
+#define DCPI_PM_TRAP(name, truebits, falsebits) \
+  { name,      TYPEPM((truebits)) }, \
+  { "!"##name, TYPEPM((falsebits)) }
+
 
 #define TABLE_SZ \
    sizeof(DCPITranslationTable::table) / sizeof(DCPITranslationTable::Entry)
@@ -123,35 +128,36 @@ DCPITranslationTable::Entry DCPITranslationTable::table[] = {
   DCPI_PM_CNTR("m3", "count", "inflight", "replays", DCPI_PM_CNTR_count, DCPI_PM_CNTR_inflight, DCPI_PM_CNTR_replays), 
 
   // ProfileMe instruction attributes
-  DCPI_PM_BIT("retired", DCPI_PM_ATTR_retired_T, DCPI_PM_ATTR_retired_F),
-  DCPI_PM_BIT("taken", DCPI_PM_ATTR_taken_T, DCPI_PM_ATTR_taken_F),
-  DCPI_PM_BIT("cbrmispredict", DCPI_PM_ATTR_cbrmispredict_T, DCPI_PM_ATTR_cbrmispredict_F),
-  DCPI_PM_BIT("valid", DCPI_PM_ATTR_valid_T, DCPI_PM_ATTR_valid_F),
-  DCPI_PM_BIT("nyp", DCPI_PM_ATTR_nyp_T, DCPI_PM_ATTR_nyp_F),
-  DCPI_PM_BIT("ldstorder", DCPI_PM_ATTR_ldstorder_T, DCPI_PM_ATTR_ldstorder_F),
-  DCPI_PM_BIT("map_stall", DCPI_PM_ATTR_map_stall_T, DCPI_PM_ATTR_map_stall_F),
-  DCPI_PM_BIT("early_kill", DCPI_PM_ATTR_early_kill_T, DCPI_PM_ATTR_early_kill_F),
-  DCPI_PM_BIT("late_kill", DCPI_PM_ATTR_late_kill_T, DCPI_PM_ATTR_late_kill_F),
-  DCPI_PM_BIT("capped", DCPI_PM_ATTR_capped_T, DCPI_PM_ATTR_capped_F),
-  DCPI_PM_BIT("twnzrd", DCPI_PM_ATTR_twnzrd_T, DCPI_PM_ATTR_twnzrd_F),
+  DCPI_PM_ATTR("retired", DCPI_PM_ATTR_retired_T, DCPI_PM_ATTR_retired_F),
+  DCPI_PM_ATTR("taken", DCPI_PM_ATTR_taken_T, DCPI_PM_ATTR_taken_F),
+  DCPI_PM_ATTR("cbrmispredict", DCPI_PM_ATTR_cbrmispredict_T, DCPI_PM_ATTR_cbrmispredict_F),
+  DCPI_PM_ATTR("valid", DCPI_PM_ATTR_valid_T, DCPI_PM_ATTR_valid_F),
+  DCPI_PM_ATTR("nyp", DCPI_PM_ATTR_nyp_T, DCPI_PM_ATTR_nyp_F),
+  DCPI_PM_ATTR("ldstorder", DCPI_PM_ATTR_ldstorder_T, DCPI_PM_ATTR_ldstorder_F),
+  DCPI_PM_ATTR("map_stall", DCPI_PM_ATTR_map_stall_T, DCPI_PM_ATTR_map_stall_F),
+  DCPI_PM_ATTR("early_kill", DCPI_PM_ATTR_early_kill_T, DCPI_PM_ATTR_early_kill_F),
+  DCPI_PM_ATTR("late_kill", DCPI_PM_ATTR_late_kill_T, DCPI_PM_ATTR_late_kill_F),
+  DCPI_PM_ATTR("capped", DCPI_PM_ATTR_capped_T, DCPI_PM_ATTR_capped_F),
+  DCPI_PM_ATTR("twnzrd", DCPI_PM_ATTR_twnzrd_T, DCPI_PM_ATTR_twnzrd_F),
   
   // ProfileMe instruction traps  
-  DCPI_PM_BIT("notrap", DCPI_PM_TRAP_notrap_T, DCPI_PM_TRAP_notrap_F),
-  DCPI_PM_BIT("mispredict", DCPI_PM_TRAP_mispredict_T, DCPI_PM_TRAP_mispredict_F),
-  DCPI_PM_BIT("replays", DCPI_PM_TRAP_replays_T, DCPI_PM_TRAP_replays_F),
-  DCPI_PM_BIT("unaligntrap", DCPI_PM_TRAP_unaligntrap_T, DCPI_PM_TRAP_unaligntrap_F),
-  DCPI_PM_BIT("dtbmiss", DCPI_PM_TRAP_dtbmiss_T, DCPI_PM_TRAP_dtbmiss_F),
-  DCPI_PM_BIT("dtb2miss3", DCPI_PM_TRAP_dtb2miss3_T, DCPI_PM_TRAP_dtb2miss3_F),
-  DCPI_PM_BIT("dtb2miss4", DCPI_PM_TRAP_dtb2miss4_T, DCPI_PM_TRAP_dtb2miss4_F),
-  DCPI_PM_BIT("itbmiss", DCPI_PM_TRAP_itbmiss_T, DCPI_PM_TRAP_itbmiss_F),
-  DCPI_PM_BIT("arithtrap", DCPI_PM_TRAP_arithtrap_T, DCPI_PM_TRAP_arithtrap_F),
-  DCPI_PM_BIT("fpdisabledtrap", DCPI_PM_TRAP_fpdisabledtrap_T, DCPI_PM_TRAP_fpdisabledtrap_F),
-  DCPI_PM_BIT("MT_FPCRtrap", DCPI_PM_TRAP_MT_FPCRtrap_T, DCPI_PM_TRAP_MT_FPCRtrap_F),
-  DCPI_PM_BIT("dfaulttrap", DCPI_PM_TRAP_dfaulttrap_T, DCPI_PM_TRAP_dfaulttrap_F),
-  DCPI_PM_BIT("iacvtrap", DCPI_PM_TRAP_iacvtrap_T, DCPI_PM_TRAP_iacvtrap_F),
-  DCPI_PM_BIT("OPCDECtrap", DCPI_PM_TRAP_OPCDECtrap_T, DCPI_PM_TRAP_OPCDECtrap_F),
-  DCPI_PM_BIT("interrupt", DCPI_PM_TRAP_interrupt_T, DCPI_PM_TRAP_interrupt_F),
-  DCPI_PM_BIT("mchktrap", DCPI_PM_TRAP_mchktrap_T, DCPI_PM_TRAP_mchktrap_F),
+  { "trap", TYPEPM(DCPI_PM_TRAP_trap) },
+  DCPI_PM_TRAP("notrap", DCPI_PM_TRAP_notrap, DCPI_PM_TRAP_N_notrap),
+  DCPI_PM_TRAP("mispredict", DCPI_PM_TRAP_mispredict, DCPI_PM_TRAP_N_mispredict),
+  DCPI_PM_TRAP("replays", DCPI_PM_TRAP_replays, DCPI_PM_TRAP_N_replays),
+  DCPI_PM_TRAP("unaligntrap", DCPI_PM_TRAP_unaligntrap, DCPI_PM_TRAP_N_unaligntrap),
+  DCPI_PM_TRAP("dtbmiss", DCPI_PM_TRAP_dtbmiss, DCPI_PM_TRAP_N_dtbmiss),
+  DCPI_PM_TRAP("dtb2miss3", DCPI_PM_TRAP_dtb2miss3, DCPI_PM_TRAP_N_dtb2miss3),
+  DCPI_PM_TRAP("dtb2miss4", DCPI_PM_TRAP_dtb2miss4, DCPI_PM_TRAP_N_dtb2miss4),
+  DCPI_PM_TRAP("itbmiss", DCPI_PM_TRAP_itbmiss, DCPI_PM_TRAP_N_itbmiss),
+  DCPI_PM_TRAP("arithtrap", DCPI_PM_TRAP_arithtrap, DCPI_PM_TRAP_N_arithtrap),
+  DCPI_PM_TRAP("fpdisabledtrap", DCPI_PM_TRAP_fpdisabledtrap, DCPI_PM_TRAP_N_fpdisabledtrap),
+  DCPI_PM_TRAP("MT_FPCRtrap", DCPI_PM_TRAP_MT_FPCRtrap, DCPI_PM_TRAP_N_MT_FPCRtrap),
+  DCPI_PM_TRAP("dfaulttrap", DCPI_PM_TRAP_dfaulttrap, DCPI_PM_TRAP_N_dfaulttrap),
+  DCPI_PM_TRAP("iacvtrap", DCPI_PM_TRAP_iacvtrap, DCPI_PM_TRAP_N_iacvtrap),
+  DCPI_PM_TRAP("OPCDECtrap", DCPI_PM_TRAP_OPCDECtrap, DCPI_PM_TRAP_N_OPCDECtrap),
+  DCPI_PM_TRAP("interrupt", DCPI_PM_TRAP_interrupt, DCPI_PM_TRAP_N_interrupt),
+  DCPI_PM_TRAP("mchktrap", DCPI_PM_TRAP_mchktrap, DCPI_PM_TRAP_N_mchktrap),
   
   // Non-ProfileMe event types
   { "cycles", TYPERM(DCPI_RM_cycles) },
@@ -168,7 +174,8 @@ bool DCPITranslationTable::sorted = false;
 #undef TYPEPM
 #undef TYPERM
 #undef DCPI_PM_CNTR
-#undef DCPI_PM_BIT
+#undef DCPI_PM_ATTR
+#undef DCPI_PM_TRAP
 #undef TABLE_SZ
 
 //****************************************************************************
