@@ -274,6 +274,7 @@ dump_PROFILE(Summary& sum)
 	
 	os << I[2] << "<METRIC shortName" << XMLAttr(i);
 	os << " nativeName" << XMLAttr(ev.name()); 
+	os << " displayName" << XMLAttr(ev.name()); 
 	os << " period"     << XMLAttr(ev.period());
 	os << " units"      << XMLAttr(units);
 	os << "/>\n";
