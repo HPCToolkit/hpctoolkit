@@ -89,7 +89,7 @@ public:
   };
 
 public:
-  DCPIProfile(const ISA* isa_, suint sz = 256);
+  DCPIProfile(ISA* isa_, suint sz = 256);
   virtual ~DCPIProfile();
  
   // Access to 'DCPIProfileMetric' (includes casts)

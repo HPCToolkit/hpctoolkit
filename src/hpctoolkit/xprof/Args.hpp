@@ -63,6 +63,7 @@ public:
 
   // arguments - options
   String pcMapFile; 
+  uint listAvailableMetrics; // 0: no, 1: short, 2: long
   bool outputRawMetrics;
   
   // arguments
