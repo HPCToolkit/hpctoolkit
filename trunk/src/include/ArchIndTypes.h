@@ -146,7 +146,7 @@
 #  define ARCH_USE_LONG_LONG 1 /* FIXME */
 # endif
 
-#elif (defined(ARCH_ALPHA64) || defined(ARCH_IA32) || defined(ARCH_MIPS64) \
+#elif (defined(ARCH_ALPHA64) || defined(ARCH_IA64) || defined(ARCH_MIPS64) \
        || defined(ARCH_SPARC64))
 
   // long/pointer: 64 bits; int: 32 bits
