@@ -1,10 +1,10 @@
+// -*-Mode: C++;-*-
 // $Id$
-// -*- C++ -*-
 
 //***************************************************************************
 //
 // File:
-//    proffile.h
+//    $Source$
 //
 // Purpose:
 //    Class for reading and representing papirun profile data.
