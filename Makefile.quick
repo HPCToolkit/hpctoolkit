@@ -50,7 +50,7 @@
 SHELL = /bin/sh
 WD := $(shell pwd)
 
-PLATFORM := $(shell cd $(WD)/config; ./hpcplatform)
+PLATFORM := $(shell cd $(WD)/config && ./hpcplatform)
 ifeq ($(PLATFORM),)
   $(error "Unknown/unsupported platform") # unavailable in older gmakes
   error "Unknown/unsupported platform"    # will certainly cause an error
@@ -114,12 +114,12 @@ configure:
 	@echo "*** Configuring ***"
 	$(WD)/config/hpcautotouch
 	-mkdir -p $(BUILDDIR)
-	cd $(BUILDDIR); \
+	cd $(BUILDDIR) && \
 	../configure $(CONFIG_OPTS) --prefix="$(INSTALLDIR)"
 
 build:
 	@echo "*** Building ***"
-	cd $(BUILDDIR); $(MAKE)
+	cd $(BUILDDIR) && $(MAKE)
 
 clean:
 	/bin/rm -f -r $(BUILDDIR)
@@ -130,7 +130,7 @@ clean:
 
 install: uninstall
 	@echo "*** Installing ***"
-	cd $(BUILDDIR); $(MAKE) install
+	cd $(BUILDDIR) && $(MAKE) install
 	@echo "*** Installed to: $(INSTALLDIR) ***"
 
 uninstall: 

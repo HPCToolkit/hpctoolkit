@@ -64,7 +64,7 @@ include(config/hpc-cxxutils.m4)
 #    correctly
 #----------------------------------------------------------------------------
 
-AC_INIT([HPCToolkit], [4.0.5], [hpc@cs.rice.edu], [HPCToolkit])
+AC_INIT([HPCToolkit], [4.0.7], [hpc@cs.rice.edu], [HPCToolkit])
 AC_CONFIG_SRCDIR([src/include/HPCToolkitVersionInfo.h])
 AC_CONFIG_AUX_DIR([config])
 
@@ -75,23 +75,29 @@ AM_INIT_AUTOMAKE(1.9.5)
 AC_CANONICAL_HOST
 
 #----------------------------------------------------------------------------
+# Setup
+#----------------------------------------------------------------------------
+
+# ${srcdir}, ${ac_top_srcdir}, ${ac_top_builddir}
+hpctoolkit_top=`cd ${srcdir} && pwd`
+hpctoolkit_build=`pwd`
+HPCTOOLKIT_PLATFORM=`cd ${hpctoolkit_top}/config && ./hpcplatform`
+AC_SUBST([HPCTOOLKIT_PLATFORM])
+
+#----------------------------------------------------------------------------
 # Prerequisites: programs, libraries
 #----------------------------------------------------------------------------
 
 # AC_PROG_CXX will set CXXFLAGS to something like -g -O2 if not
-# already set.  We do not want this!
-if test -z "$CFLAGS" ; then
-  CFLAGS=""
-fi
-if test -z "$CXXFLAGS" ; then
-  CXXFLAGS=""
-fi
+# already defined.  We do not want this!
+HPC_ENSURE_DEFINED_CXXFLAGS
+HPC_ENSURE_DEFINED_CFLAGS
 
 # Check for programs.
 # Note: libtool makes PROG_RANLIB obsolete
 AC_PROG_LIBTOOL
-AC_PROG_CXX(CC  cxx  icpc ecpc icc ecc  g++ gcc c++)
-AC_PROG_CC(cc  icc ecc  gcc)
+AC_PROG_CXX(HPC_CXX_LIST)
+AC_PROG_CC(HPC_CC_LIST)
 AC_PROG_CXXCPP
 AC_PROG_INSTALL
 
@@ -110,19 +116,14 @@ HPC_CHECK_CXX_STDC_HEADERS
 # Check for library functions.
 # -none thus far-
 
-# ${srcdir}, ${ac_top_srcdir}, ${ac_top_builddir}
-hpctoolkit_top=`cd ${srcdir} && pwd`
-hpctoolkit_build=`pwd`
-HPCTOOLKIT_PLATFORM=`cd ${hpctoolkit_top}/config && ./hpcplatform`
-AC_SUBST([HPCTOOLKIT_PLATFORM])
-
-# NOTE: we should allow the locations of xerces, OA, and binutils
-# installations to optionally be given on configure line or in the
-# environment.
 
 #-------------------------------------------------
 # Check for Xerces-C (XML parser)
 #-------------------------------------------------
+
+# NOTE: we should allow the locations of xerces, OA, and binutils
+# installations to optionally be given on configure line or in the
+# environment.
 
 AC_MSG_CHECKING([for Xerces-C])
 
@@ -286,16 +287,7 @@ AM_CONDITIONAL(OPT_ENABLE_HPCRUN, test "${OPT_ENABLE_HPCRUN}" = "yes")
 # $host: $host_cpu-$host_vendor-$host_os
 #----------------------------------------------------------------------------
 
-# Given a compiler name, compares it against the value of CXX and test
-# for a match.  returns 0 if equal; 1 otherwise
-# args: ($1): (compiler_name)
-CXXcmp()
-{
-  if ( echo "$CXX" | grep "$1\$" >/dev/null 2>&1 ); then
-    return 0
-  fi
-  return 1
-}
+HPC_DEF_CXXCMP
 
 #-------------------------------------------------
 # Host-specific settings for HPCToolkit
@@ -333,7 +325,7 @@ fi
 
 case ${host} in
   alpha*-*-linux* | alpha*-*-osf*)
-    if CXXcmp "cxx"; then
+    if HPCcxxcmp([cxx]); then
       # Compaq compiler: Before using libtool, we had used local
       # repositories and included template definitions in respective
       # archives.  However, libtool doesn't take kindly to including
@@ -353,18 +345,18 @@ case ${host} in
     my_demangle_ldflags="-lmld"
     ;;
   i386*-*-linux* | i686*-*-linux* | ia64*-*-linux*)
-    if CXXcmp "icpc" || CXXcmp "ecpc" || CXXcmp "icc" || CXXcmp "ecc" ; then
+    if HPCcxxcmp([icpc ecpc icc ecc]) ; then
       :
     fi
     ;;
   mips*-*-irix*)
-    if CXXcmp "CC"; then
+    if HPCcxxcmp([CC]) ; then
       # SGI MIPSpro
       HOST_CFLAGS="-64"
       HOST_CXXFLAGS="-64 -LANG:std"
       HOST_AR="$CXX $CXXFLAGS ${HOST_CXXFLAGS} -ar -o"
     fi
-    if CXXcmp "g++" || CXXcmp "gcc" || CXXcmp "c++"; then
+    if HPCcxxcmp([g++ gcc c++]) ; then
       HOST_CFLAGS="-mabi=64"
       HOST_CXXFLAGS="-mabi=64"
     fi
@@ -372,7 +364,7 @@ case ${host} in
     my_demangle_ldflags="-lmangle"
     ;;
   sparc*-*-solaris*)
-    if CXXcmp "CC"; then
+    if HPCcxxcmp([CC]); then
       # Sun Forte/ONE
       HOST_AR="$CXX $CXXFLAGS -xar -o"
     fi
