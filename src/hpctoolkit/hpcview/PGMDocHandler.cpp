@@ -59,7 +59,7 @@ using std::atof; // For compatibility with non-std C headers
 using std::atoi;
 #endif
 
-//************************* Xerces Include Files *******************************
+//************************ Xerces Include Files ******************************
 
 #include <xercesc/util/XMLString.hpp>         
 using XERCES_CPP_NAMESPACE::XMLString;

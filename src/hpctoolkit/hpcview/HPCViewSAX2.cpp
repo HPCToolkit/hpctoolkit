@@ -40,17 +40,14 @@
 using std::cerr;
 using std::endl;
 
-
-//************************* Xerces Include Files *******************************
+//************************ Xerces Include Files ******************************
 
 #include <xercesc/util/XMLString.hpp>        
 using XERCES_CPP_NAMESPACE::XMLString;
 
-
 //************************* User Include Files *******************************
 
 #include "HPCViewSAX2.h"
-
 
 //****************************************************************************
 

@@ -50,6 +50,7 @@
 //************************ System Include Files ******************************
 
 #include <iostream> 
+using std::cerr;
 
 #ifdef NO_STD_CHEADERS
 # include <stdlib.h>
@@ -57,7 +58,6 @@
 # include <cstdlib>
 using std::atof; // For compatibility with non-std C headers
 using std::atoi;
-using std::cerr;
 #endif
 
 //************************* Xerces Include Files *******************************
