@@ -21,22 +21,6 @@ popd >& /dev/null
 # Set other variables
 #############################################################################
 
-set HPCPERLLIB="${HPCTOOLKIT}/lib/perl"
-
-if ( ! $?PERLLIB ) then
-  setenv PERLLIB "${HPCPERLLIB}"
-else
-  setenv PERLLIB "${HPCPERLLIB}:${PERLLIB}"
-endif
-
-if ( ! $?PERL5LIB ) then
-  setenv PERL5LIB "${HPCPERLLIB}"
-else
-  setenv PERL5LIB "${HPCPERLLIB}:${PERL5LIB}"
-endif
-
-#############################################################################
-
 setenv XERCESCROOT "${HPCTOOLKIT}/xercesc"
 
 set XERCESPLATFORM="${XERCESCROOT}/lib"

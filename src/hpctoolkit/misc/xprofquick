@@ -50,13 +50,22 @@
 #############################################################################
 
 use strict;
-use HPCToolkitVersionInfo;
+use warnings;
+
 use File::Spec;
 use IO::File;
+use FindBin qw($Script $RealBin);
+
+use lib "$RealBin/../lib/perl";
+use HPCToolkitVersionInfo;
+
 STDOUT->autoflush(1); 
 
-my $usage = 
-"usage: xprofquick <dcpi_binary_data_1>...<dcpi_binary_data_n>
+#############################################################################
+
+my $the_program = $Script;
+my $the_usage = 
+"usage: ${the_program} <dcpi_binary_data_1>...<dcpi_binary_data_n>
 
 Given a list of binary DCPI data files, creates one PROFILE file.  The
 first file will be considered to result from the main profiled
@@ -86,7 +95,7 @@ my $xprofquickLog = "xprofquick.log";
 
 ## Make sure called with minimum number of arguments
 my $numArgs = scalar(@ARGV);
-if ($numArgs < 1) { die $usage; }
+if ($numArgs < 1) { die $the_usage; }
 
 my $dcpibinFiles = [ ];
 
@@ -127,7 +136,7 @@ exit(0);
 sub printUsageAndExit 
 {
     my ($command) = @_; # not used now
-    print STDOUT ${usage};
+    print STDOUT $the_usage;
     exit(-1);
 }
 
@@ -135,7 +144,7 @@ sub printUsageAndExit
 sub printVersionAndExit 
 {
     my ($command) = @_; # not used now
-    print STDERR "xprofquick: ", $HPCToolkitVersionInfo::info, "\n";
+    print STDERR "${the_program}: ", $HPCToolkitVersionInfo::info, "\n";
     exit(-1);
 }
 

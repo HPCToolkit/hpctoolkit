@@ -50,14 +50,22 @@
 #############################################################################
 
 use strict;
-use HPCToolkitVersionInfo;
+use warnings;
+
 use IO::File;
 use File::Spec;
+use FindBin qw($Script $RealBin);
+
+use lib "$RealBin/../lib/perl";
+use HPCToolkitVersionInfo;
 
 STDOUT->autoflush(1); 
 
-my $usage = 
-"usage: hpcmissing <xml-data-file>
+#############################################################################
+
+my $the_program = $Script;
+my $the_usage = 
+"usage: ${the_program} <xml-data-file>
 
 Given a list of xml data files (pxml/psxml), list directories and
 files that cannot be found on the current platform.
@@ -73,7 +81,7 @@ files that cannot be found on the current platform.
 
 ## Make sure called with minimum number of arguments
 my $numArgs = scalar(@ARGV);
-if ($numArgs < 1) { die $usage; }
+if ($numArgs < 1) { die $the_usage; }
 
 my $pxmlfiles = [ ];
 
@@ -104,7 +112,7 @@ exit(0);
 sub printUsageAndExit 
 {
     my ($command) = @_; # not used now
-    print STDOUT ${usage};
+    print STDOUT $the_usage;
     exit(-1);
 }
 
@@ -112,7 +120,7 @@ sub printUsageAndExit
 sub printVersionAndExit 
 {
     my ($command) = @_; # not used now
-    print STDERR "hpcmissing: ", $HPCToolkitVersionInfo::info, "\n";
+    print STDERR "${the_program}: ", $HPCToolkitVersionInfo::info, "\n";
     exit(-1);
 }
 

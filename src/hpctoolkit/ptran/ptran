@@ -52,6 +52,9 @@
 # $Date$
 # $Revision$
 # $Log$
+# Revision 1.3  2004/09/30 19:31:50  eraxxon
+# Use FindBin to remove need for PERLLIB environment variable.  Also use it to determine the name of the calling program.
+#
 # Revision 1.2  2003/07/14 18:57:08  eraxxon
 # Make -m consistent with usage (-m goes with machine, not platform!)
 #
@@ -95,21 +98,29 @@
 #
 # ----------------------------------------------------------------------
 
-use HPCToolkitVersionInfo;
+#use strict;
+#use warnings;
+
 use FileHandle;
+
+use Getopt::Std;
+use vars qw($opt_m $opt_e);
+use FindBin qw($Script $RealBin);
+
+use lib "$RealBin/../lib/perl";
+use HPCToolkitVersionInfo;
 use ptranSgi;
 use ptranDec;
-use Getopt::Std;
 
-use vars qw($opt_m $opt_e);
 
 #print STDOUT "path $ENV{PATH} \n";
 
 # ----------------------------------------------------------------------
 
-$usage = 
+my $the_program = $Script;
+my $the_usage = 
 "Usage: 
-  ptran [-V] [-m machine] [-e nn] [-h] < input > output
+  ${the_program} [-V] [-m machine] [-e nn] [-h] < input > output
 
 Reads a vendor-specific profile file and outputs a PROFILE document.
 
@@ -181,12 +192,12 @@ else {
 
 sub printUsage {
     my $command = shift; # no longer used
-    print STDERR ${usage};
+    print STDERR $the_usage;
 }
 
 sub printVersion {
     my $command = shift; # no longer used
-    print STDERR "ptran: ", $HPCToolkitVersionInfo::info, "\n";
+    print STDERR "${the_program}: ", $HPCToolkitVersionInfo::info, "\n";
 }
 
 sub driver {

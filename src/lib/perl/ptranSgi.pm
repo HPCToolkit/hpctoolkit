@@ -39,8 +39,11 @@
 # $Date$
 # $Revision$
 # $Log$
-# Revision 1.1  2003/04/21 21:55:04  slindahl
-# Initial revision
+# Revision 1.2  2004/09/30 19:31:50  eraxxon
+# Use FindBin to remove need for PERLLIB environment variable.  Also use it to determine the name of the calling program.
+#
+# Revision 1.1.1.1  2003/04/21 21:55:04  slindahl
+# Initial import of HPCToolkit by Sarah Gonzales as of 4/21/03
 #
 # Revision 1.5  2002/07/17  18:08:52  eraxxon
 # Update copyright notices and RCS strings.
@@ -92,6 +95,7 @@
 package ptranSgi;
 
 use strict;
+
 use PapiSpec();
 use PROFILEXMLWriter();
 

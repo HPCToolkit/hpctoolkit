@@ -38,7 +38,7 @@
 # HPCToolkitVersionInfo.pm
 #
 #   HPCToolkit version information for perl tools.
-#   (cf. $HPCTOOLS/src/include/HPCToolkitVersionInfo.h)
+#   (cf. $HPCTOOLKIT/src/include/HPCToolkitVersionInfo.h)
 #
 # ----------------------------------------------------------------------
 

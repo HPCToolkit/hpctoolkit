@@ -19,22 +19,6 @@ export HPCTOOLKIT_PLATFORM=`cd ${HPCTOOLKIT}/config; ./hpcplatform`
 # Set other variables
 #############################################################################
 
-HPCPERLLIB="${HPCTOOLKIT}/lib/perl"
-
-if test -z "${PERLLIB}" ; then
-  export PERLLIB="${HPCPERLLIB}"
-else
-  export PERLLIB="${HPCPERLLIB}:${PERLLIB}"
-fi
-
-if test -z "${PERL5LIB}" ; then
-  export PERL5LIB="${HPCPERLLIB}"
-else
-  export PERL5LIB="${HPCPERLLIB}:${PERL5LIB}"
-fi
-
-#############################################################################
-
 export XERCESCROOT="${HPCTOOLKIT}/xercesc"
 
 XERCESPLATFORM="${XERCESCROOT}/lib"

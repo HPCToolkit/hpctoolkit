@@ -50,18 +50,25 @@
 #############################################################################
 
 use strict;
-use HPCToolkitVersionInfo;
+use warnings;
+
 use IO::File;
+use FindBin qw($Script $RealBin);
 
 # Does not seem to be fully implemented very widely
 #use Math::BigInt; # Math::BigFloat also exists
 #Math::BigInt->accuracy(20);
 
+use lib "$RealBin/../lib/perl";
+use HPCToolkitVersionInfo;
+
 STDOUT->autoflush(1); 
 
+#############################################################################
 
-my $usage = 
-"usage: dcpicounts <path to dcpidb_epoch_platform>
+my $the_program = $Script;
+my $the_usage = 
+"usage: ${the_program} <path to dcpidb_epoch_platform>
 
 Given the path to one collection of dcpi binary data, prints total
 cycles (if available) for each image.  The dcpi binary data is located
@@ -93,7 +100,7 @@ my $eventcyclesRE = '^event\s+(\d+) cycles:(\d+):(\d+)';
 
 ## Make sure called with minimum number of arguments
 my $numArgs = scalar(@ARGV);
-if ($numArgs < 1) { die $usage; }
+if ($numArgs < 1) { die $the_usage; }
 
 # The path to the dcpi DB *including* an epoch
 my $dcpidb = $ARGV[0]; 
@@ -119,7 +126,7 @@ exit(0);
 sub printUsageAndExit 
 {
     my ($command) = @_; # not used now
-    print STDOUT ${usage};
+    print STDOUT $the_usage;
     exit(-1);
 }
 
@@ -127,7 +134,7 @@ sub printUsageAndExit
 sub printVersionAndExit 
 {
     my ($command) = @_; # not used now
-    print STDERR "dcpicounts: ", $HPCToolkitVersionInfo::info, "\n";
+    print STDERR "${the_program}: ", $HPCToolkitVersionInfo::info, "\n";
     exit(-1);
 }
 
@@ -171,7 +178,7 @@ sub getCountsForAll
 {
     my($dcpidb) = @_;
   
-    my $tmpfile = "dcpicounts.deleteme-$$.tmp~";
+    my $tmpfile = "${the_program}.deleteme-$$.tmp~";
     my $countVec = [ ];
     
     # ----------------------------------------------------------
