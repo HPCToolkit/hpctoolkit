@@ -75,7 +75,6 @@ using namespace std; // For compatibility with non-std C headers
 #include "Args.h"
 #include "PgmScopeTreeBuilder.h"
 using namespace ScopeTreeBuilder;
-#include "CodeInfoPtrSet.h"
 #include "BloopIRInterface.h"
 
 #include <lib/binutils/LoadModule.h>
@@ -113,9 +112,6 @@ RemoveOrphanedProcedureRepository(PgmScopeTree* pgmScopeTree);
 
 static bool
 CoalesceDuplicateStmts(PgmScopeTree* pgmScopeTree);
-
-static bool 
-MergeOverlappingCode(PgmScopeTree* pgmScopeTree); // deprecated
 
 static bool 
 MergePerfectlyNestedLoops(PgmScopeTree* pgmScopeTree);
@@ -803,60 +799,6 @@ CDS_InspectStmt(StmtRangeScope* stmt1, LineToStmtMap* stmtMap, int level)
   return changed;
 }
 
-
-// MergeOverlappingCode: When any particular loop or statement
-// overlaps with another [at the same level, having the same parent
-// loop], fuse them.  The difference between this routine and
-// CoalesceDuplicateStmts(), is that the latter only fuses when it
-// finds duplicate statements.
-//
-// Rationale: Compiler optimizations such as loop unrolling (start-up,
-// steady-state, wind-down), e.g., can produce (strange!) cases of
-// duplicate and overlapping code.
-static bool 
-MergeOverlappingCode(ScopeInfo* node);
-
-static bool 
-MergeOverlappingCode(PgmScopeTree* pgmScopeTree)
-{
-  return MergeOverlappingCode(pgmScopeTree->GetRoot());
-}
-
-static bool 
-MergeOverlappingCode(ScopeInfo* node)
-{
-  bool changed = false;
-  
-  if (!node) { return changed; }
-  
-  // Create a set with all the children of newItem and iterate over this in
-  // order not to be affected by a modification in the tree structure
-  CodeInfoPtrSet* childSet = MakeSetFromChildren(node);
-  
-  // For each immediate child of this node...
-  CodeInfoPtrSet* mergedSet = new CodeInfoPtrSet;
-  CodeInfo *child = NULL;
-  for (CodeInfoPtrSetIterator iter(childSet); (child = iter.Current());
-       iter++) {
-    BriefAssertion(child); // always true
-
-    // 1. Recursively do any merging for this tree's children
-    changed |= MergeOverlappingCode(child);
-
-    // 2. Test for overlapping loops and merge if necessary
-    if (child->Type() == ScopeInfo::LOOP) {
-      
-      // Collect loops in a set that prevents overlapping elements;
-      // AddOrMerge may unlink 'child' from tree and delete it.
-      bool added = mergedSet->AddOrMerge(child); 
-      changed = !added; // if not added, then it was merged
-    }
-  } 
-  delete mergedSet;
-  delete childSet;
-  
-  return changed; 
-}
 
 
 // MergePerfectlyNestedLoops: Fuse together a child with a parent when

@@ -69,7 +69,6 @@ OBJS = \
 	PgmScopeTree.o \
 	PgmScopeTreeIterator.o \
 	PgmScopeTreeBuilder.o \
-	CodeInfoPtrSet.o \
 	BloopIRInterface.o
 
 ####################
