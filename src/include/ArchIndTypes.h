@@ -83,6 +83,8 @@
 # define INTEL_IA32
 #elif (__linux && __ia64)
 # define INTEL_IA64
+#elif (defined(__MACH__) && defined(__ppc__))
+# define DARWIN_POWERPC
 #else
 # error "ArchIndTypes: does not know of your system" 
 #endif
@@ -202,7 +204,7 @@
 #  define ARCH_USE_LONG_LONG 1
 
 # endif // __sun
-#elif (__i386 && __linux)
+#elif (__i386 && __linux || DARWIN_POWERPC)
 
   // int/long/pointer: 32 bits (_ILP32)
   typedef long          psint;  // pointer-sized int (32-bit)
