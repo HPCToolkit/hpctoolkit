@@ -741,7 +741,7 @@ write_module_profile(FILE* fs, rtloadmod_desc_t* mod,
 {
   int i;
   
-  if (opt_debug >= 2) { fprintf(stderr, "writing module %s (process %d)\n", mod->name, getpid()); }
+  if (opt_debug >= 2) { fprintf(stderr, "writing module %s (process %d at offset %#x)\n", mod->name, getpid(), mod->offset); }
 
   /* <loadmodule_name>, <loadmodule_loadoffset> */
   write_string(fs, mod->name);
