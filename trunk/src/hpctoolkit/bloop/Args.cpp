@@ -116,6 +116,7 @@ void Args::Usage()
     << "  -p: Ensure the scope tree only contains those files found in\n"
     << "      the colon separated <pathlist>\n"
     << "  -c: Print output in compact form without extra white space\n"
+    << "  -v: Verbose output; Generates progress messages\n"
     << " [-d: Debug default mode; not for general use.]\n"
     << "\n"
     << "Debug mode: Prints an unprocessed section, procedure, and \n"
@@ -133,17 +134,22 @@ Args::Args(int argc, char* const* argv)
   debugMode = false;
   prettyPrintOutput = true;
   normalizeScopeTree = true;
-  
+  verboseMode = false;
+
   extern char *optarg;
   extern int optind;
   bool error = false;
   trace = 0;
   int c;
-  while ((c = getopt(argc, argv, "VDm:np:cd")) != EOF) {
+  while ((c = getopt(argc, argv, "vVDm:np:cd")) != EOF) {
     switch (c) {
     case 'D': {
       debugMode = true; 
       break; 
+    }
+    case 'v':{
+      verboseMode = true;
+      break;
     }
     case 'V': { 
       printVersion = true;
