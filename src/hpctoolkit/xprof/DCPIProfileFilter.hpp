@@ -75,8 +75,38 @@ GetPredefinedDCPIFilter(const char* metric, LoadModule* lm);
 // DCPIMetricExpr
 //****************************************************************************
 
-// 'DCPIMetricExpr' extensions to 'DCPIMetricDesc' for precisely
-// representing DCPI metrics.
+// 'DCPIMetricExpr' extensions to 'DCPIMetricDesc' for representing
+// DCPI metric query expressions.  DCPIMetricDesc bits should be used
+// to construct an expression.
+//
+// The following expressions are allowed:
+//   * Non-ProfileMe expressions
+//   * ProfileMe expressions
+// Following is a description of valid query expressions.  Expressions
+// are not checked for validity; invalid expressions will report
+// non-sensical matches or none at all.  See documentation for
+// DCPIMetricDesc bits for more information on bits and their
+// meanings.
+//
+// Non-ProfileMe expressions: <type> && <counter> 
+//
+// A conjuction between <type> and <counter> subexpressions.  <type>
+// must be DCPI_MTYPE_RM.  One and only one counter should be referenced
+// within <counter>.  E.g.:
+//   valid:   DCPI_MTYPE_RM | DCPI_RM_cycles 
+//   invalid: DCPI_MTYPE_RM | DCPI_RM_cycles | DCPI_RM_retires
+//
+// ProfileMe expressions: <type> && <counter> && <attribute> && <trap>
+//
+// A conjuction between <type>, <counter>, <attribute> and <trap>
+// subexpressions.  <type> must be DCPI_MTYPE_PM.  <counter> should
+// reference one ProfileMe counter.  <attribute> is itself a
+// conjunction of ProfileMe instruction attributes and may be empty.
+// Note that setting both the T and F bit for the same attribute will
+// produce no matches.  Because only one ProfileMe trap bit is set for
+// any sample, the <trap> subexpression is a *disjunction* of trap
+// bits; it may be empty.
+//   valid: DCPI_MTYPE_PM | DCPI_PM_CNTR_count | DCPI_PM_ATTR_retired_T
 class DCPIMetricExpr : public DCPIMetricDesc {
 public:
   DCPIMetricExpr(DCPIMetricDesc::bitvec_t bv)
@@ -89,7 +119,23 @@ public:
     DCPIMetricDesc::operator=(x);
     return *this;
   }
-    
+  
+  // IsSatisfied: Test to see if this query expression is satisfied by
+  // the DCPI metric 'm'.
+  bool IsSatisfied(const DCPIMetricDesc::bitvec_t bv) {
+    return IsSatisfied(DCPIMetricDesc(bv));
+  }
+  bool IsSatisfied(const DCPIMetricDesc& m) {
+    // The <trap> subexpression is a disjuction, so we test it separately
+    bool expr = m.IsSet(bits & ~DCPI_PM_TRAP_MASK);
+    bitvec_t trapbv = bits & DCPI_PM_TRAP_MASK;
+    if (trapbv != 0) { 
+      return expr && m.IsSetAny(trapbv);
+    } else {
+      return expr;
+    }
+  }
+  
 protected:
 private:  
 
@@ -130,9 +176,10 @@ public:
     InsnClassExpr iexpr;  // the instruction filter expr
   };
 
-  // Note: these availability tags refer to the raw DCPI metrics (not derived)
-  // (We use enum instead of #define b/c we know they only need to fit in
-  // 32 bits.)  RM should never be used at the same time as PM0-PM3.
+  // Note: these availability tags refer to the raw DCPI metrics (not
+  // derived) (We use enum instead of #define b/c symbolic info is
+  // nice and we know they only need to fit in 32 bits.)  RM should
+  // never be used at the same time as PM0-PM3.
   enum AvailTag {
     RM  = 0x00000001, // the given non ProfileMe (regular) metric must be available
     PM0 = 0x00000002, // ProfileMe mode 0
