@@ -38,7 +38,7 @@
    Variable              Value
    ---------------------------------------------------------------------
    HPCRUN_RECURSIVE      0 for no; 1 for yes
-   HPCRUN_THREAD         0 for no; 1 for yes
+   HPCRUN_THREAD         see hpc_threadprof_t below
    HPCRUN_EVENT_LIST     <event1>:<period1>;<event2>;<event3>:<period3>...
                          (period is optional)
    HPCRUN_OUTPUT_PATH    output file path
@@ -46,9 +46,19 @@
    HPCRUN_DEBUG          positive integer
  */
 
-#define HPCRUN_VERSION "2.0"
-
 #define HPCRUN_LIB "libhpcrun.so"
+
+typedef enum enum_hpc_threadprof_t {
+  HPCRUN_THREADPROF_NO   = 0, /* do not initialize thread support */
+#define HPCRUN_THREADPROF_NO_STR   "0"
+  
+  HPCRUN_THREADPROF_EACH = 1, /* separate profile for each thread */
+#define HPCRUN_THREADPROF_EACH_STR "1"
+  
+  HPCRUN_THREADPROF_ALL  = 2  /* combined profile for all thread */
+#define HPCRUN_THREADPROF_ALL_STR  "2"
+} hpc_threadprof_t;
+
 
 // Private debugging level: messages for in-house debugging [0-9]
 #define HPCRUN_DBG_LVL 0
@@ -182,7 +192,7 @@ typedef struct {
 typedef struct {
   /* We use void* to make conditional compilation easy.  See macros below. */
   void* sysprofs;   /* hpcsys_profile_desc_vec_t* */
-  void* papiprofs;  /* hpcpapi_profile_desc_vec_t */
+  void* papiprofs;  /* hpcpapi_profile_desc_vec_t* */
 
   hpcrun_ofile_desc_t ofile; 
 } hpcrun_profiles_desc_t;
