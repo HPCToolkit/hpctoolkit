@@ -150,7 +150,7 @@ Options:
   -V: print version information
   -z: configure hpcview to produce an html database
   -x: configure hpcview to produce an xml database
-  -n: exit before producing database
+  -n: exit before producing database (but record command in log file)
   -I: dir1...dirN specify a list of directories -- relative or absolute -- 
       containing source code to which performance data should be 
       correlated.  In order to search a directory *and* recursively search 
@@ -205,9 +205,9 @@ my $ssrunFileRE    = '(.*)\.(\w+)\.([fm]\d+)';
 
 my $xmlAttrRE      = '\s*=\s*\"([^\"]+)\"'; # grabs everything between ""
 
+## Note: All options should be known by isArgument().
 #  my $titleOpt      = '-title';
 ## my $configFileOpt = '-config';
-## my $dumpOpt       = '-n';
 ## my $groupRE       = '^-grp(=(\w+))?';
 ## my $singleRE      = '^-sng(=(\w+))?';
 my $verOpt          = '-V';
@@ -215,8 +215,8 @@ my $htmlOutOpt      = '-z';
 my $xmlOutOpt       = '-x';
 my $noOutOpt        = '-n';
 my $incOpt          = '-I';
-my $profOpt         = '-P';
 my $structOpt       = '-S';
+my $profOpt         = '-P';
 
 my $configFile = "hpcquick.xml";
 my $logFile = "hpcquick.log";
@@ -276,7 +276,8 @@ while ($i < $argc) {
   if ($ARGV[$i] eq $verOpt) {
       printVersionAndExit($0);
   }
-  if ($ARGV[$i] eq $htmlOutOpt) {
+  # option: output style
+  elsif ($ARGV[$i] eq $htmlOutOpt) {
       $outOpt = "-z";
   }
   elsif ($ARGV[$i] eq $xmlOutOpt) {
@@ -319,7 +320,7 @@ while ($i < $argc) {
 # ------------------------------------------------------
 
 if ($outOpt eq $illegalOutOpt) {
-    print STDOUT "No output option specified";
+    print STDOUT "No output option specified.\n";
     printUsageAndExit($0);
 }
 
@@ -355,14 +356,13 @@ exit(0);
 # ----------------------------------------------------------------------
 
 sub isArgument {
-    my $argument = shift;
-    if (!defined($argument)) {
+    my $arg = shift;
+    if (!defined($arg)) {
 	return 0;
     }
-    if ($argument eq $verOpt
-	|| $argument eq $structOpt 
-	|| $argument eq $incOpt
-	|| $argument eq $profOpt) {
+    if ($arg eq $verOpt 
+	|| $arg eq $htmlOutOpt || $arg eq $xmlOutOpt || $arg eq $noOutOpt 
+	|| $arg eq $incOpt || $arg eq $structOpt || $arg eq $profOpt) {
 	return 2;
     }
     return 1;
@@ -794,7 +794,7 @@ sub createOutputFiles {
 	my $incdir = xmlEsc($config->{incDirs}->{names}[$i]);
 	my $view = $incdir;
 	if ( $view eq "." ) { $view = ""; }
-	elsif ( $view[0] ne "/" ) { $view = "/" . $view; }
+	elsif ( $view =~ "/^\//" ) { $view = "/" . $view; }
 	print {$outFHndl} "<PATH name=\"", $incdir,"\" viewname=\"src", $view, "\"/>\n";
     }
     print {$outFHndl} "\n";
@@ -835,7 +835,11 @@ sub createOutputFiles {
     # ------------------------------------------------------
     # Run hpcview
     # ------------------------------------------------------
-    print STDOUT "Running hpcview to create browsable database...\n";
+    if (!($suppressOutput)) {
+	print STDOUT "Running hpcview to create browsable database...\n";
+    } else {
+	print STDOUT "Sending command to create browsable database to log...\n";
+    }
 
     my $hpcquickdb = "hpcquick.db";
     if (-d $hpcquickdb || -e $hpcquickdb) {
@@ -845,21 +849,20 @@ sub createOutputFiles {
 
     my $command = "hpcview -h $hpcquickdb $outOpt $out";
     print {$logFHndl} "$command\n";
-
-    if ($suppressOutput == 0 ) {
+    
+    if (!($suppressOutput)) {
 	system($command);
     }
     
     $logFHndl->close();
-
     print STDOUT "\n";
 
     # ------------------------------------------------------
     # Finalization
     # ------------------------------------------------------
     print STDOUT "Created files: '$out', '$log'\n";
-    if ($suppressOutput == 0 ) {
-      print STDOUT "Browsable database: './$hpcquickdb/index.html'\n"
+    if (!($suppressOutput)) {
+	print STDOUT "Browsable database: './$hpcquickdb'\n";
     }
 }
     
