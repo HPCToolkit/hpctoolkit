@@ -77,6 +77,7 @@ public:
   String pcMapFile; 
   bool prettyPrintOutput;
   bool normalizeScopeTree;
+  bool verboseMode;
   String canonicalPathList;
 
   // arguments
