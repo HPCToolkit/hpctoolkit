@@ -132,10 +132,22 @@ contributions from descendants in the scope tree, but are meaningless
 for computed metrics such as ratio of flops/memory access in a scope.
 </span>
 
+<p><span class="xmlcomment">Sorting the data by a metric can be controlled
+by setting the optional `sortBy' attribute to `true' or `false'. 
+The size of the database
+and the time needed to create the database are directly proportional to the 
+number of sorting metrics. Very often one might want to display multiple 
+metrics to view the performance data in parallel, but does not need 
+to sort the database by every displayed metric. If all metrics are marked as
+non-sortable, the first displayed metric is used by default to sort the 
+database.
+</span>
+
 <br>&lt;METRIC name="<span class='xmlvar'>name1</span>" 
   displayName="<span class='xmlvar'>name-in-display</span>"
   display="<span class='xmlvar'>true|false</span>" 
-  percent="<span class='xmlvar'>true|false</span>" &gt;
+  percent="<span class='xmlvar'>true|false</span>" 
+  sortBy="<span class='xmlvar'>true|false</span>" &gt;
 
 <br>&lt;FILE name="<span class='xmlvar'>file1 of type PROFILE</span>"
    select="<span class='xmlvar'>short-name-in-file1</span>" /&gt;
