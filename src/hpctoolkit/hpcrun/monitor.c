@@ -1,4 +1,4 @@
- /* -*-Mode: C;-*- */
+/* -*-Mode: C;-*- */
 /* $Id$ */
 
 /****************************************************************************
@@ -7,12 +7,11 @@
 //    $Source$
 //
 // Purpose:
-//    Prepares and finalizes profiling for a process.  The library
-//    intercepts the beginning execution point of the process,
-//    determines the process' list of load modules (including DSOs)
-//    and prepares PAPI_sprofil for profiling over each load module.
-//    When the process exits, control will be transferred back to this
-//    library where profile data is written for later processing. 
+//    A library of routines for preparing and finalizing monitoring
+//    for a process.  The library can determine a process' list of
+//    load modules (including DSOs), prepare PAPI_sprofil for
+//    profiling over each load module, finalize profiling and write
+//    the data for later processing.
 //
 // Description:
 //    [The set of functions, macros, etc. defined in the file]
@@ -32,45 +31,26 @@
 
 #include <stdlib.h>
 #include <unistd.h>
-#include <pthread.h>
 #include <stdio.h>
-#include <unistd.h>
+#include <stdarg.h>   /* va_arg */
+#include <signal.h>
 #include <string.h>
 #include <limits.h>   /* for 'PATH_MAX' */
-#include <signal.h>
 #include <inttypes.h>
-#include <stdarg.h>   /* va_arg */
 #include <errno.h>
-
-#ifndef __USE_GNU
-# define __USE_GNU /* must define on Linux to get RTLD_NEXT from <dlfcn.h> */
-# define SELF_DEFINED__USE_GNU
-#endif
-
 #include <dlfcn.h>
+#include <pthread.h>
 
 /**************************** User Include Files ****************************/
 
-#include "hpcpapi.h" /* <papi.h>, etc. */
+#include "monitor.h"
 
 #include "hpcrun.h"
+#include "hpcpapi.h" /* <papi.h>, etc. */
 #include "rtmap.h"
 #include <lib/hpcfile/io.h>
 
 /**************************** Forward Declarations **************************/
-
-static void init_library();
-static void fini_library();
-
-static void init_process();
-static void fini_process();
-
-static hpcrun_profiles_desc_t* init_thread(int is_thread);
-
-static void                    fini_thread(hpcrun_profiles_desc_t** profdesc, 
-					   int is_thread);
-
-static long hpcrun_gettid();
 
 typedef uint32_t hpc_hist_bucket; /* a 4 byte histogram bucket */
 
@@ -78,96 +58,26 @@ static const uint64_t default_period = (1 << 15) - 1; /* (2^15 - 1) */
 
 /**************************** Forward Declarations **************************/
 
-/* libc intercepted routines */
-
-#define PARAMS_START_MAIN (int (*main) (int, char **, char **),              \
-			   int argc,                                         \
-			   char *__unbounded *__unbounded ubp_av,            \
-			   void (*init) (void),                              \
-                           void (*fini) (void),                              \
-			   void (*rtld_fini) (void),                         \
-			   void *__unbounded stack_end)
-
-typedef int (*libc_start_main_fptr_t) PARAMS_START_MAIN;
-static int  hpcrun_libc_start_main PARAMS_START_MAIN;
-
-typedef void (*libc_start_main_fini_fptr_t) (void);
-static void hpcrun_libc_start_main_fini(); 
-
-
-#define PARAMS_EXECV  (const char *path, char *const argv[])
-#define PARAMS_EXECVP (const char *file, char *const argv[])
-#define PARAMS_EXECVE (const char *path, char *const argv[],                 \
-                       char *const envp[])
-
-typedef int (*execv_fptr_t)  PARAMS_EXECV;
-typedef int (*execvp_fptr_t) PARAMS_EXECVP;
-typedef int (*execve_fptr_t) PARAMS_EXECVE;
-
-static int  hpcrun_execv  PARAMS_EXECV;
-static int  hpcrun_execvp PARAMS_EXECVP;
-static int  hpcrun_execve PARAMS_EXECVE;
-
-
-typedef pid_t (*fork_fptr_t) (void);
-static pid_t hpcrun_fork();
-
-
-/* libpthread intercepted routines */
-
-#define PARAMS_PTHREAD_CREATE (pthread_t* thread,                            \
-			       const pthread_attr_t* attr,                   \
-			       void *(*start_routine)(void*),                \
-			       void* arg)
-
-typedef struct {
-  void* (*start_routine)(void*);    /* from pthread_create() */
-  void* arg;                        /* from pthread_create() */
-  hpcrun_profiles_desc_t* profdesc; /* profiling info */
-} hpcrun_pthread_create_args_t;
-
-
-typedef int (*pthread_create_fptr_t) PARAMS_PTHREAD_CREATE;
-static int hpcrun_pthread_create PARAMS_PTHREAD_CREATE;
-static void* hpcrun_pthread_create_start_routine(void* arg);
-static void  hpcrun_pthread_cleanup_routine(void* arg);
-
-typedef pthread_t (*pthread_self_fptr_t) (void);
-
-
 /* intercepted signals */
-
 static void hpcrun_sighandler(int sig);
 
 /*************************** Variable Declarations **************************/
 
-/* These variables are set when the library is initialized */
-
-/* Intercepted libc and libpthread routines */
-static libc_start_main_fptr_t      real_start_main;
-static libc_start_main_fini_fptr_t real_start_main_fini;
-static execv_fptr_t                real_execv;
-static execvp_fptr_t               real_execvp;
-static execve_fptr_t               real_execve;
-static fork_fptr_t                 real_fork;
-static pthread_create_fptr_t       real_pthread_create;
-static pthread_self_fptr_t         real_pthread_self;
-
-/* hpcrun options (this should be a tidy struct) */
-static int   opt_debug = 0;
-static int   opt_recursive = 0;
-static hpc_threadprof_t opt_thread = HPCRUN_THREADPROF_NO;
-static char* opt_eventlist = NULL;
-static char  opt_outpath[PATH_MAX] = "";
-static int   opt_flagscode = 0;
-
-/*************************** Variable Declarations **************************/
-
-/* These variables are set when libc_start_main is intercepted */
-
 /* This info is constant throughout the process and can therefore be
    shared among multiple threads. */
-static char*        profiled_cmd = NULL; /* profiled command */
+
+/* hpcrun options: set when the library is initialized */
+int   opt_debug = 0;
+int   opt_recursive = 0;
+hpc_threadprof_t opt_thread = HPCRUN_THREADPROF_NO;
+char* opt_eventlist = NULL;
+char  opt_outpath[PATH_MAX] = "";
+int   opt_flagscode = 0;
+
+/* monitored command: set when library or process is initialized  */
+const char* hpcrun_cmd = NULL;
+
+/* monitoring variables: set when the process is initialized */
 static rtloadmap_t* rtloadmap = NULL;    /* run time load map */
 static unsigned     numSysEvents  = 0;   /* estimate */
 static unsigned     numPAPIEvents = 0;   /* estimate */
@@ -177,54 +87,18 @@ static unsigned     numPAPIEvents = 0;   /* estimate */
    combining thread profiles. */
 static hpcrun_profiles_desc_t* hpc_profdesc = NULL;
 
+
 /****************************************************************************
  * Library initialization and finalization
  ****************************************************************************/
 
 static void init_option_debug();
 static void init_options();
-static void handle_any_dlerror();
-
-/*
- *  Implicit interface
- */
-void 
-_init()
-{
-  init_library();
-  /* process initialized with interception of libc_start_main */
-}
-
-void 
-_fini()
-{
-  /* process finalized with libc_start_main */
-  fini_library();
-}
-
-
-/*
- *  Explicit interface
- */
-void 
-hpcrun_init()
-{
-  init_library();
-  init_process();
-}
-
-void 
-hpcrun_fini()
-{
-  fini_process();
-  fini_library();
-}
-
 
 /*
  *  Library initialization
  */
-static void 
+extern void 
 init_library()
 {
   init_option_debug();
@@ -232,76 +106,15 @@ init_library()
   if (opt_debug >= 1) { MSG(stderr, "*** init_library ***"); }
   
   init_options();
-
-  /* Grab pointers to functions that may be intercepted.
-
-     Note: RTLD_NEXT is not documented in the dlsym man/info page
-     but in <dlfcn.h>: 
   
-     If the first argument of `dlsym' or `dlvsym' is set to RTLD_NEXT
-     the run-time address of the symbol called NAME in the next shared
-     object is returned.  The "next" relation is defined by the order
-     the shared objects were loaded.  
-  */
-
-  /* ----------------------------------------------------- 
-   * libc interceptions
-   * ----------------------------------------------------- */
-  real_start_main = 
-    (libc_start_main_fptr_t)dlsym(RTLD_NEXT, "__libc_start_main");
-  handle_any_dlerror();
-  if (!real_start_main) {
-    real_start_main = 
-      (libc_start_main_fptr_t)dlsym(RTLD_NEXT, "__BP___libc_start_main");
-    handle_any_dlerror();
-  }
-  if (!real_start_main) {
-    DIE("fatal error: Cannot intercept beginning of process execution and therefore cannot begin profiling.");
-  }
-
-  
-  real_execv = (execv_fptr_t)dlsym(RTLD_NEXT, "execv");  
-  handle_any_dlerror();
-
-  real_execvp = (execvp_fptr_t)dlsym(RTLD_NEXT, "execvp");  
-  handle_any_dlerror();
-  
-  real_execve = (execve_fptr_t)dlsym(RTLD_NEXT, "execve");
-  handle_any_dlerror();
-  
-  
-  real_fork = (fork_fptr_t)dlsym(RTLD_NEXT, "fork");
-  handle_any_dlerror();
-  
-  /* ----------------------------------------------------- 
-   * libpthread interceptions
-   * ----------------------------------------------------- */
-  
-  /* Note: PAPI only supports profiling on a per-thread basis */
-  if (opt_thread != HPCRUN_THREADPROF_NO) {
-    /* FIXME: I suppose it would be possible for someone to dlopen
-       libpthread which means it would not be visible now. Perhaps we
-       should do a dlsym on libpthread instead. */
-    real_pthread_create = 
-      (pthread_create_fptr_t)dlsym(RTLD_NEXT, "pthread_create");
-    handle_any_dlerror();
-    if (!real_pthread_create) {
-      DIE("fatal error: Cannot intercept POSIX thread creation and therefore cannot profile threads.");
-    }
-    
-    real_pthread_self = dlsym(RTLD_NEXT, "pthread_self");
-    handle_any_dlerror();
-    if (!real_pthread_self) {
-      DIE("fatal error: Cannot intercept POSIX thread id routine and therefore cannot profile threads.");
-    }
-  }
+  init_library_SPECIALIZED();
 }
 
 
 /*
  *  Library finalization
  */
-static void 
+extern void 
 fini_library()
 {
   if (opt_debug >= 1) { MSG(stderr, "*** fini_library ***"); }
@@ -379,311 +192,7 @@ init_options()
  * Intercepted routines 
  ****************************************************************************/
 
-/*
- *  Intercept the start routine: this is from glibc and can be one of
- *  two different names depending on how the macro BP_SYM is defined.
- *    glibc-x/sysdeps/generic/libc-start.c
- */
-extern int 
-__libc_start_main PARAMS_START_MAIN
-{
-  hpcrun_libc_start_main(main, argc, ubp_av, init, fini, rtld_fini, stack_end);
-  return 0; /* never reached */
-}
-
-
-extern int 
-__BP___libc_start_main PARAMS_START_MAIN
-{
-  hpcrun_libc_start_main(main, argc, ubp_av, init, fini, rtld_fini, stack_end);
-  return 0; /* never reached */
-}
-
-
-static int 
-hpcrun_libc_start_main PARAMS_START_MAIN
-{
-  /* squirrel away for later use */
-  profiled_cmd = ubp_av[0];  /* command is also in /proc/pid/cmdline */
-  real_start_main_fini = fini;
-  
-  /* initialize profiling for process */
-  init_process();
-  
-  /* launch the process */
-  if (opt_debug >= 1) {
-    MSG(stderr, "*** launching intercepted app: %s ***", profiled_cmd);
-  }
-  (*real_start_main)(main, argc, ubp_av, init, hpcrun_libc_start_main_fini, 
-		     rtld_fini, stack_end);
-  return 0; /* never reached */
-}
-
-
-static void 
-hpcrun_libc_start_main_fini()
-{
-  if (real_start_main_fini) {
-    (*real_start_main_fini)();
-  }
-  fini_process();
-  exit(0);
-}
-
-
-/*
- *  Intercept creation of exec() family of routines because profiling
- *  *must* be off when the exec takes place or it interferes with
- *  ld.so (and the latter will not preload our monitoring library).
- *  Moreover, this allows us to safely write any profile data to disk.
- *
- *  execl, execlp, execle / execv, execvp, execve  
- *
- *  Note: We cannot simply intercept libc'c __execve (which implements
- *  all other routines on Linux) because it is a libc-local symbol.
- *    glibc-x/sysdeps/generic/execve.c
- * 
- *  Note: Stupid C has no way of passing along the input vararg list
- *  intact.
- */
-
-static void parse_execl(const char*** argv, const char* const** envp,
-			const char* arg, va_list arglist);
-
-
-extern int 
-execl(const char *path, const char *arg, ...)
-{
-  const char** argv = NULL;
-  va_list arglist;
-
-  va_start(arglist, arg);
-  parse_execl(&argv, NULL, arg, arglist);
-  va_end(arglist);
-  
-  return hpcrun_execv(path, (char* const*)argv);
-}
-
-
-extern int 
-execlp(const char *file, const char *arg, ...)
-{
-  const char** argv = NULL;
-  va_list arglist;
-  
-  va_start(arglist, arg);
-  parse_execl(&argv, NULL, arg, arglist);
-  va_end(arglist);
-  
-  return hpcrun_execvp(file, (char* const*)argv);
-}
-
-
-extern int 
-execle(const char *path, const char *arg, ...)
-{
-  const char** argv = NULL;
-  const char* const* envp = NULL;
-  va_list arglist;
-
-  va_start(arglist, arg);
-  parse_execl(&argv, &envp, arg, arglist);
-  va_end(arglist);
-  
-  return hpcrun_execve(path, (char* const*)argv, (char* const*)envp);
-}
-
-
-extern int 
-execv PARAMS_EXECV
-{
-  return hpcrun_execv(path, argv);
-}
-
-
-extern int 
-execvp PARAMS_EXECVP
-{
-  return hpcrun_execvp(file, argv);
-}
-
-
-extern int 
-execve PARAMS_EXECVE
-{
-  return hpcrun_execve(path, argv, envp);
-}
-
-
-static int
-hpcrun_execv PARAMS_EXECV
-{
-  if (opt_debug >= 1) { MSG(stderr, "==> execv-ing <=="); }
-  fini_process();
-  return (*real_execv)(path, argv);
-}
-
-
-static int
-hpcrun_execvp PARAMS_EXECVP
-{
-  if (opt_debug >= 1) { MSG(stderr, "==> execvp-ing <=="); }
-  fini_process();
-  return (*real_execvp)(file, argv);
-}
-
-
-static int
-hpcrun_execve PARAMS_EXECVE
-{
-  if (opt_debug >= 1) { MSG(stderr, "==> execve-ing <=="); }
-  fini_process();
-  return (*real_execve)(path, argv, envp);
-}
-
-
-static void 
-parse_execl(const char*** argv, const char* const** envp,
-	    const char* arg, va_list arglist)
-{
-  /* argv & envp are pointers to arrays of char* */
-  /* va_start has already been called */
-
-  const char* argp;
-  int argvSz = 32, argc = 1;
-  
-  *argv = malloc((argvSz+1) * sizeof(const char*));
-  if (!*argv) { DIE("fatal error: malloc() failed!"); }
-  
-  (*argv)[0] = arg;
-  while ((argp = va_arg(arglist, const char*)) != NULL) { 
-    if (argc > argvSz) {
-      argvSz *= 2;
-      *argv = realloc(*argv, (argvSz+1) * sizeof(const char*));
-      if (!*argv) { DIE("fatal error: realloc() failed!"); }
-    }
-    (*argv)[argc] = argp;
-    argc++;
-  }
-  (*argv)[argc] = NULL;
-  
-  if (envp != NULL) {
-    *envp = va_arg(arglist, const char* const*);
-  }
-
-#if 0
-  if (opt_debug >= 2) { 
-    int i;
-    for (i = 0; i < argc; ++i) {
-      MSG(stderr, "  execl arg%d: %s", i, (*argv)[i]);
-    }
-    if (envp) {
-      MSG(stderr, "  execl envp found");
-    }
-  }
-#endif
-  
-  /* user calls va_end */
-}
-
-
-/*
- *  Intercept creation of new processes via fork(), vfork()
- */
-
-extern pid_t 
-fork()
-{
-  return hpcrun_fork();
-}
-
-
-extern pid_t 
-vfork()
-{
-  return hpcrun_fork();
-}
-
-
-static pid_t 
-hpcrun_fork()
-{
-  pid_t pid;
-
-  if (opt_debug >= 1) { MSG(stderr, "==> forking <=="); }
-  
-  pid = (*real_fork)();
-  if (pid == 0) { 
-    /* Initialize profiling for child process */
-    if (opt_debug >= 1) { MSG(stderr, "==> caught fork <=="); }
-    init_process();
-  } 
-  /* Nothing to do for parent process */
-  
-  return pid;
-}
-
-
-/*
- *  Intercept creation of new theads via pthread_create()
- */
-
-extern int 
-pthread_create PARAMS_PTHREAD_CREATE
-{
-  return hpcrun_pthread_create(thread, attr, start_routine, arg);
-}
-
-
-static int 
-hpcrun_pthread_create PARAMS_PTHREAD_CREATE
-{
-  hpcrun_pthread_create_args_t* hpcargs;
-  int rval, sz;
-
-  if (opt_debug >= 1) { MSG(stderr, "==> creating thread <=="); }
-  
-  /* squirrel away original arguments */
-  sz = sizeof(hpcrun_pthread_create_args_t);
-  hpcargs = (hpcrun_pthread_create_args_t*)malloc(sz);
-  if (!hpcargs) { DIE("fatal error: malloc() failed!"); }
-  memset(hpcargs, 0x0, sizeof(hpcrun_pthread_create_args_t));
-  hpcargs->start_routine = start_routine;
-  hpcargs->arg = arg;
-  
-  /* create the thread using our own start routine */
-  rval = real_pthread_create(thread, attr, hpcrun_pthread_create_start_routine,
-			     (void*)hpcargs);
-  return rval;
-}
-
-
-static void*
-hpcrun_pthread_create_start_routine(void* arg)
-{
-  hpcrun_pthread_create_args_t* hpcargs = (hpcrun_pthread_create_args_t*)arg;
-  void* rval;
-  
-  if (opt_debug >= 1) { MSG(stderr, "==> caught thread <=="); }
-  
-  pthread_cleanup_push(hpcrun_pthread_cleanup_routine, hpcargs);
-  hpcargs->profdesc = init_thread(1 /*is_thread*/);
-  rval = (hpcargs->start_routine)(hpcargs->arg);
-  pthread_cleanup_pop(1);
-  return rval;
-}
-
-
-static void  
-hpcrun_pthread_cleanup_routine(void* arg)
-{
-  hpcrun_pthread_create_args_t* hpcargs = (hpcrun_pthread_create_args_t*)arg;
-  hpcrun_profiles_desc_t* profdesc = hpcargs->profdesc;
-  
-  free(hpcargs); /* from hpcrun_pthread_create() */
-  fini_thread(&profdesc, 1 /*is_thread*/);
-}
-
+/* none for now */
 
 /****************************************************************************
  * Intercepted signals
@@ -711,6 +220,7 @@ hpcrun_sighandler(int sig)
   
   fini_process();
   fini_library();
+  exit(0);
 }
 
 
@@ -757,19 +267,19 @@ static void init_sighandlers();
 /*
  *  Prepare for profiling this process
  */
-static void 
+extern void 
 init_process()
 {
   if (opt_debug >= 1) { MSG(stderr, "*** init_process ***"); }
 
   rtloadmap = hpcrun_get_rtloadmap(opt_debug);
-  
+
   /* Initialize PAPI if necessary */
   count_events(&numSysEvents, &numPAPIEvents); /* no error checking */
   if (numPAPIEvents > 0) {
     init_papi_for_process();
   }
-  
+
   hpc_profdesc = init_thread(0 /*is_thread*/);
 }
 
@@ -780,7 +290,7 @@ init_process()
  *  'is_thread' refers to whether we are in an actual thread, i.e. not
  *  simply a the execution of a process.)
  */
-static hpcrun_profiles_desc_t* 
+extern hpcrun_profiles_desc_t* 
 init_thread(int is_thread)
 {
   hpcrun_profiles_desc_t* profdesc = NULL, *sharedprofdesc = NULL;
@@ -1157,7 +667,7 @@ init_profdesc_ofile(hpcrun_profiles_desc_t* profdesc, int sharedprofdesc)
   static unsigned int hostnmLen = 128;         /* never redefined */
   char outfilenm[outfilenmLen];
   char hostnm[hostnmLen];
-  char* cmd = profiled_cmd; 
+  const char* cmd = hpcrun_cmd; 
   char* event = NULL, *evetc = "", *slash = NULL;
   unsigned numEvents = 0;
   FILE* fs;
@@ -1335,11 +845,7 @@ init_papi_for_process()
   
   /* PAPI_set_domain(PAPI_DOM_ALL); */
   
-  if (opt_thread) {
-    if ((rval = PAPI_thread_init(real_pthread_self)) != PAPI_OK) {
-      DIE("fatal error: PAPI error (%d): %s.", rval, PAPI_strerror(rval));
-    }
-  }
+  init_papi_for_process_SPECIALIZED();
 }
 
 
@@ -1532,7 +1038,7 @@ static void fini_profdesc(hpcrun_profiles_desc_t** profdesc,
 /*
  *  Finalize profiling for this process
  */
-static void 
+extern void 
 fini_process()
 {
   if (opt_debug >= 1) { MSG(stderr, "*** fini_process ***"); }
@@ -1549,7 +1055,7 @@ fini_process()
  *  Finalize profiling for this thread and free profiling data.  See
  *  init_thread() for meaning of 'is_thread'.
  */
-static void 
+extern void 
 fini_thread(hpcrun_profiles_desc_t** profdesc, int is_thread)
 {
   int sharedprofdesc = 0;
@@ -1879,25 +1385,52 @@ write_string(FILE *fs, char *str)
 
 /* hpcrun_gettid: return a thread id */
 /* FIXME: return size_t or intptr_t */
-static long
+extern long
 hpcrun_gettid()
 {
-  /* We only support POSIX threads right now */
-  if (real_pthread_self) {
-    return (long)real_pthread_self();
-  }
-  else {
-    return 0;
-  }
+  return hpcrun_gettid_SPECIALIZED();
 }
 
-static void
-handle_any_dlerror()
+extern void 
+hpcrun_parse_execl(const char*** argv, const char* const** envp,
+		   const char* arg, va_list arglist)
 {
-  /* Note: We assume dlsym() or something similar has just been called! */
-  char *error;
-  if ((error = dlerror()) != NULL) {
-    DIE("fatal error: %s\n", error);
-  }
-}
+  /* argv & envp are pointers to arrays of char* */
+  /* va_start has already been called */
 
+  const char* argp;
+  int argvSz = 32, argc = 1;
+  
+  *argv = malloc((argvSz+1) * sizeof(const char*));
+  if (!*argv) { DIE("fatal error: malloc() failed!"); }
+  
+  (*argv)[0] = arg;
+  while ((argp = va_arg(arglist, const char*)) != NULL) { 
+    if (argc > argvSz) {
+      argvSz *= 2;
+      *argv = realloc(*argv, (argvSz+1) * sizeof(const char*));
+      if (!*argv) { DIE("fatal error: realloc() failed!"); }
+    }
+    (*argv)[argc] = argp;
+    argc++;
+  }
+  (*argv)[argc] = NULL;
+  
+  if (envp != NULL) {
+    *envp = va_arg(arglist, const char* const*);
+  }
+
+#if 0
+  if (opt_debug >= 2) { 
+    int i;
+    for (i = 0; i < argc; ++i) {
+      MSG(stderr, "  execl arg%d: %s", i, (*argv)[i]);
+    }
+    if (envp) {
+      MSG(stderr, "  execl envp found");
+    }
+  }
+#endif
+  
+  /* user calls va_end */
+}
