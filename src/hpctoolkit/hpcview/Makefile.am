@@ -107,13 +107,15 @@ MYCLEAN = @HOST_LIBTREPOSITORY@
 # Automake rules
 #############################################################################
 
-bin_PROGRAMS = hpcview
+bin_SCRIPTS = hpcview
 
-hpcview_SOURCES  = $(MYSOURCES)
-hpcview_CFLAGS   = $(MYCFLAGS)
-hpcview_CXXFLAGS = $(MYCXXFLAGS)
-hpcview_LDFLAGS  = $(MYLDFLAGS)
-hpcview_LDADD    = $(MYLDADD)
+bin_PROGRAMS = hpcviewbin
+
+hpcviewbin_SOURCES  = $(MYSOURCES)
+hpcviewbin_CFLAGS   = $(MYCFLAGS)
+hpcviewbin_CXXFLAGS = $(MYCXXFLAGS)
+hpcviewbin_LDFLAGS  = $(MYLDFLAGS)
+hpcviewbin_LDADD    = $(MYLDADD)
 
 MOSTLYCLEANFILES = $(MYCLEAN)
 

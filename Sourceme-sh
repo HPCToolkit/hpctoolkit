@@ -3,44 +3,12 @@
 
 #############################################################################
 
+# Note: can we have this set by autoconf/automake?
+
 if test -z "${HPCTOOLKIT}" ; then
   echo "You must set your HPCTOOLKIT environment variable before sourcing"
   echo "this file."
   return 1
-fi
-
-#############################################################################
-# Set platform variables
-#############################################################################
-
-export HPCTOOLKIT_PLATFORM=`cd ${HPCTOOLKIT}/config; ./hpcplatform`
-
-#############################################################################
-# Set other variables
-#############################################################################
-
-export XERCESCROOT="${HPCTOOLKIT}/xercesc"
-
-XERCESPLATFORM="${XERCESCROOT}/lib"
-
-if test "${HPCTOOLKIT_PLATFORM}" = "mips-IRIX64" ; then
-  # set library path for IRIX systems
-  if test -z "${LD_LIBRARYN32_PATH}" ; then
-    export LD_LIBRARYN32_PATH="${XERCESPLATFORM}"
-  else
-    export LD_LIBRARYN32_PATH="${XERCESPLATFORM}:${LD_LIBRARYN32_PATH}"
-  fi
-  if test -z "${LD_LIBRARY64_PATH}" ; then
-    export LD_LIBRARY64_PATH="${XERCESPLATFORM}"
-  else
-    export LD_LIBRARY64_PATH="${XERCESPLATFORM}:${LD_LIBRARY64_PATH}"
-  fi
-else
-  if test -z "${LD_LIBRARY_PATH}" ; then
-    export LD_LIBRARY_PATH="${XERCESPLATFORM}"
-  else
-    export LD_LIBRARY_PATH="${XERCESPLATFORM}:${LD_LIBRARY_PATH}"
-  fi
 fi
 
 #############################################################################

@@ -3,46 +3,12 @@
 
 #############################################################################
 
+# Note: can we have this set by autoconf/automake?
+
 if ( ! $?HPCTOOLKIT ) then
   echo "You must set your HPCTOOLKIT environment variable before sourcing"
   echo "this file."
   exit 1
-endif
-
-#############################################################################
-# Set platform variables
-#############################################################################
-
-pushd ${HPCTOOLKIT}/config >& /dev/null
-setenv HPCTOOLKIT_PLATFORM `./hpcplatform`
-popd >& /dev/null
-
-#############################################################################
-# Set other variables
-#############################################################################
-
-setenv XERCESCROOT "${HPCTOOLKIT}/xercesc"
-
-set XERCESPLATFORM="${XERCESCROOT}/lib"
-
-if ( ${HPCTOOLKIT_PLATFORM} == 'mips-IRIX64' ) then
-  # set library path for IRIX systems
-  if ( ! $?LD_LIBRARYN32_PATH ) then
-    setenv LD_LIBRARYN32_PATH "${XERCESPLATFORM}"
-  else
-    setenv LD_LIBRARYN32_PATH "${XERCESPLATFORM}:${LD_LIBRARYN32_PATH}"   
-  endif
-  if ( ! $?LD_LIBRARY64_PATH ) then
-    setenv LD_LIBRARY64_PATH "${XERCESPLATFORM}"
-  else
-    setenv LD_LIBRARY64_PATH "${XERCESPLATFORM}:${LD_LIBRARY64_PATH}"
-  endif
-else
-  if ( ! $?LD_LIBRARY_PATH ) then
-    setenv LD_LIBRARY_PATH "${XERCESPLATFORM}"
-  else
-    setenv LD_LIBRARY_PATH "${XERCESPLATFORM}:${LD_LIBRARY_PATH}"
-  endif
 endif
 
 #############################################################################
