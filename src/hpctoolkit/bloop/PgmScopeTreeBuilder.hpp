@@ -1,5 +1,5 @@
+// -*-Mode: C++;-*-
 // $Id$
-// -*-C++-*-
 // * BeginRiceCopyright *****************************************************
 // 
 // Copyright ((c)) 2002, Rice University 
@@ -37,7 +37,7 @@
 //***************************************************************************
 //
 // File:
-//    PgmScopeTreeUtils.H
+//    PgmScopeTreeBuilder.H
 //
 // Purpose:
 //    [The purpose of this file]
@@ -47,22 +47,18 @@
 //
 //***************************************************************************
 
-#ifndef PgmScopeTreeUtils_H 
-#define PgmScopeTreeUtils_H
+#ifndef PgmScopeTreeBuilder_H 
+#define PgmScopeTreeBuilder_H
 
 //************************* System Include Files ****************************
 
 //*************************** User Include Files ****************************
 
-#include <OpenAnalysis/CFG/CFG.h>
-#include <OpenAnalysis/CFG/RIFG.h>
-
 #include <include/general.h> 
 
 #include "PgmScopeTree.h"
+
 #include <lib/binutils/LoadModule.h>
-#include <lib/support/StringHashTable.h>
-#include <lib/support/PointerStack.h>
 
 //*************************** Forward Declarations ***************************
 
@@ -72,82 +68,23 @@ class PCToSrcLineXMap;
 
 // Functions to build and dump a scope tree from an Executable
 
+namespace ScopeTreeBuilder {
+  
+  PgmScopeTree* 
+  BuildFromExe(Executable* exe, PCToSrcLineXMap* &map,
+	       String canonicalPathList = "",
+	       bool normalizeScopeTree = true,
+	       bool verboseMode = false);
+  
+  bool 
+  Normalize(PgmScopeTree* pgmScopeTree);
+  
+};
+
 void
 WriteScopeTree(std::ostream& os, PgmScopeTree* pgmScopeTree,
 	       bool prettyPrint = true);
 
-PgmScopeTree*
-BuildScopeTreeFromExe(Executable* exe, PCToSrcLineXMap* &map,
-		      String canonicalPathList = "",
-		      bool normalizeScopeTree = true,
-		      bool verboseMode = false);
-
-//*************************** Forward Declarations ***************************
-
-// Private functions for building a scope tree
-
-ProcScope*
-BuildScopeTreeFromProc(FileScope* enclosingScope, Procedure* p); 
-
-
-int
-BuildScopeTreeForInterval(CodeInfo* enclosingScope, RIFGNodeId node,
-			  TarjanIntervals *tarj, CFG *g,
-			  StringHashTable *stmtTable, int,
-                          RIFG *tmpRIFG, LoadModule *lm);
-
-void
-GatherStmtsFromBB(CFG::Node* head_bb, LoopScope* lScope,
-		  StringHashTable* stmtTable, int level,
-                  LoadModule *lm);
-
-StmtRangeScope*
-BuildScopeTreeFromInst(LoopScope* enclosingScope, 
-		       long startLine, long endLine);
-
-FileScope*
-FindOrCreateFileNode(PgmScope* pgmScopeTree, Procedure* p);
-
-// Functions to 'normalize' a scope tree
-
-bool NormalizeScopeTree(PgmScopeTree* pgmScopeTree);
-bool RemoveOrphanedProcedureRepository(PgmScopeTree* pgmScopeTree);
-bool MergeOverlappingCode(PgmScopeTree* pgmScopeTree);
-bool MergePerfectlyNestedLoops(PgmScopeTree* pgmScopeTree);
-bool RemoveEmptyFiles(PgmScopeTree* pgmScopeTree);
-
-bool FilterFilesFromScopeTree(PgmScopeTree* pgmScopeTree,
-			      String canonicalPathList);
-
 //****************************************************************************
-
-// Simple class for data associated with a statement
-class StmtData {
-public:
-  StmtData(LoopScope* _assocLoop = NULL, long _startLine = 0,
-	   long _endLine = 0, int _level = 0)
-    : assocLoop(_assocLoop), startLine(_startLine), endLine(_endLine), 
-      level(_level), next(NULL) { }
-
-  ~StmtData() { /* owns no data */ }
-
-  LoopScope* GetAssocLoop() { return assocLoop; }
-  long GetStartLine() { return startLine; }
-  long GetEndLine() { return endLine; }
-  int GetLevel() { return level; }
-  StmtData *GetNext() { return next; }
-
-  void SetAssocLoop(LoopScope* _assocLoop) { assocLoop = _assocLoop; }
-  void SetStartLine(long _startLine) { startLine = _startLine; }
-  void SetEndLine(long _endLine) { endLine = _endLine; }
-  void SetLevel(int _level) { level = _level; }
-  void SetNext(StmtData *_next) { next = _next; }
-  
-private:
-  LoopScope* assocLoop; // associated ScopeTree loop
-  suint startLine, endLine;
-  int level;
-  StmtData *next;
-};
 
 #endif

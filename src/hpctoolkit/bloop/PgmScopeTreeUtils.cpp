@@ -1,5 +1,5 @@
+// -*-Mode: C++;-*-
 // $Id$
-// -*-C++-*-
 // * BeginRiceCopyright *****************************************************
 // 
 // Copyright ((c)) 2002, Rice University 
@@ -37,7 +37,7 @@
 //***************************************************************************
 //
 // File:
-//    PgmScopeTreeUtils.C
+//    PgmScopeTreeBuilder.C
 //
 // Purpose:
 //    [The purpose of this file]
@@ -62,10 +62,19 @@ using std::endl;
 using namespace std; // For compatibility with non-std C headers
 #endif
 
+#include <map> // STL
+
+//************************ OpenAnalysis Include Files ***********************
+
+#include <OpenAnalysis/CFG/CFG.h>
+#include <OpenAnalysis/CFG/OARIFG.h>
+#include <OpenAnalysis/CFG/TarjanIntervals.h>
+
 //*************************** User Include Files ****************************
 
 #include "Args.h"
 #include "PgmScopeTreeUtils.h"
+using namespace ScopeTreeBuilder;
 #include "CodeInfoPtrSet.h"
 #include "BloopIRInterface.h"
 
@@ -74,45 +83,113 @@ using namespace std; // For compatibility with non-std C headers
 #include <lib/binutils/Procedure.h>
 #include <lib/binutils/BinUtils.h>
 #include <lib/binutils/PCToSrcLineMap.h>
-#include <lib/support/StringHashTable.h>
-#include <lib/support/PointerStack.h>
-#include <lib/support/PtrStack.h>
 #include <lib/support/Files.h>
 #include <lib/support/Assertion.h>
 #include <lib/support/pathfind.h>
 
-#include <OpenAnalysis/CFG/CFG.h>
-#include <OpenAnalysis/CFG/OARIFG.h>
-#include <OpenAnalysis/CFG/TarjanIntervals.h>
+//*************************** Forward Declarations ***************************
+
+// Helpers for building a scope tree
+
+static ProcScope*
+BuildFromProc(FileScope* fileScope, Procedure* p); 
+
+static int
+BuildFromTarjTree(ProcScope* pScope, Procedure* p, TarjanIntervals* tarj, 
+		  RIFG* fg, CFG* cfg, RIFGNodeId fgNode);
+
+static int
+BuildFromBB(CodeInfo* enclosingScope, Procedure* p, CFG::Node* bb);
+
+static FileScope*
+FindOrCreateFileNode(PgmScope* pgmScopeTree, Procedure* p);
 
 //*************************** Forward Declarations ***************************
 
-// Enabling this flag will permit only procedures with 'interesting'
-// information to be added to the ScopeTree
-#define BLOOP_SCOPE_TREE_ONLY_CONTAINS_INTERESTING_INFO
+// Helpers for normalizing a scope tree
 
-const char* OrphanedProcedureFile =
-  "~~~bloop:-No-Associated-File-Found-For-These-Procedures";
+static bool 
+RemoveOrphanedProcedureRepository(PgmScopeTree* pgmScopeTree);
 
-//#define BLOOP_DEBUG_PROC
+static bool 
+MergeOverlappingCode(PgmScopeTree* pgmScopeTree);
+
+static bool
+RenestUnnestedStmts(PgmScopeTree* pgmScopeTree);
+
+static bool 
+MergePerfectlyNestedLoops(PgmScopeTree* pgmScopeTree);
+
+static bool 
+RemoveEmptyScopes(PgmScopeTree* pgmScopeTree);
+
+static bool 
+FilterFilesFromScopeTree(PgmScopeTree* pgmScopeTree, String canonicalPathList);
+
+//*************************** Forward Declarations ***************************
+
+// Helpers for traversing the Tarjan Tree
+// CFGNode -> <begAddr, endAddr>
+class CFGNodeToPCMap : public std::map<CFG::Node*, std::pair<Addr, Addr>* > {
+public:
+  CFGNodeToPCMap();
+  CFGNodeToPCMap(CFG* cfg, Procedure* p);
+  virtual ~CFGNodeToPCMap();
+  virtual void clear();
+
+  void build(CFG* cfg, CFG::Node* n, Procedure* p, Addr _end);
+
+public:
+  typedef std::map<CFG::Node*, std::pair<Addr, Addr>* > BaseMap;
+};
+
+static void 
+CFG_GetBegAndEndAddrs(CFG::Node* n, Addr &beg, Addr &end);
+
+
+// Helpers for normalizing the scope tree
+class StmtData;
+
+typedef std::map<suint, StmtData*> LineToStmtMap;
+typedef std::map<suint, StmtData*>::iterator LineToStmtMapIt;
+
+class StmtData {
+public:
+  StmtData(StmtRangeScope* _stmt = NULL, int _level = 0)
+    : stmt(_stmt), level(_level) { }
+  ~StmtData() { /* owns no data */ }
+
+  StmtRangeScope* GetStmt() { return stmt; }
+  int GetLevel() { return level; }
+  
+  void SetStmt(StmtRangeScope* _stmt) { stmt = _stmt; }
+  void SetLevel(int _level) { level = _level; }
+  
+private:
+  StmtRangeScope* stmt;
+  int level;
+};
+
 
 // MAP: Temporary and inadequate implementation.  Note more specific
 // comments above function def.
-void BuildPCToSrcLineMap(PCToSrcLineXMap* map, Procedure* p); 
+static void 
+BuildPCToSrcLineMap(PCToSrcLineXMap* map, Procedure* p); 
 
-std::map<CFG::Node*, std::pair<Addr, Addr>* > BlockToPCMap;
-typedef std::map<CFG::Node*, std::pair<Addr, Addr>* >::iterator BlockToPCMapIt;
+//*************************** Forward Declarations ***************************
 
-static void CFG_GetStartAndEndAddresses(CFG::Node* n, Addr &start, Addr &end);
-static void CFG_BuildBlockToPCMap(CFG*, CFG::Node*, Procedure*, Addr);
-static void CFG_ClearBlockToPCMap();
+//#define BLOOP_DEBUG_PROC
+#define BLOOP_ATTEMPT_TO_IMPROVE_INTERVAL_BOUNDARIES
 
-//****************************************************************************
-// Set of routines to build a scope tree
-//****************************************************************************
+const char* OrphanedProcedureFile =
+  "~~~No-Associated-File-Found-For-These-Procedures~~~";
 
 const char *PGMdtd =
 #include <lib/xml/PGM.dtd.h>
+
+//****************************************************************************
+// Set of routines to write a scope tree
+//****************************************************************************
 
 void
 WriteScopeTree(std::ostream& os, PgmScopeTree* pgmScopeTree, bool prettyPrint)
@@ -127,12 +204,15 @@ WriteScopeTree(std::ostream& os, PgmScopeTree* pgmScopeTree, bool prettyPrint)
   pgmScopeTree->Dump(os, dumpFlags);
 }
 
+//****************************************************************************
+// Set of routines to build a scope tree
+//****************************************************************************
 
 PgmScopeTree*
-BuildScopeTreeFromExe(Executable* exe, PCToSrcLineXMap* &map,
-		      String canonicalPathList, 
-		      bool normalizeScopeTree,
-		      bool verboseMode)
+ScopeTreeBuilder::BuildFromExe(Executable* exe, PCToSrcLineXMap* &map,
+			       String canonicalPathList, 
+			       bool normalizeScopeTree,
+			       bool verboseMode)
 {
   BriefAssertion(exe);
 
@@ -166,7 +246,7 @@ BuildScopeTreeFromExe(Executable* exe, PCToSrcLineXMap* &map,
       if (verboseMode){
         cerr << "Building scope tree for [" << p->GetName()  << "] ... ";
       }
-      BuildScopeTreeFromProc(fileScope, p);
+      BuildFromProc(fileScope, p);
       if (map) { BuildPCToSrcLineMap(map, p); } // MAP
       if (verboseMode){
         cerr << "done " << endl;
@@ -183,21 +263,44 @@ BuildScopeTreeFromExe(Executable* exe, PCToSrcLineXMap* &map,
   }
 
   if (normalizeScopeTree) {
-    bool result = NormalizeScopeTree(pgmScopeTree);
+    bool result = Normalize(pgmScopeTree);
     BriefAssertion(result); // Should never be false
   }
 
   return pgmScopeTree;
 }
 
+bool 
+ScopeTreeBuilder::Normalize(PgmScopeTree* pgmScopeTree)
+{
+  RemoveOrphanedProcedureRepository(pgmScopeTree);
+  
+  // Notes: The order of the passes is important.  Also, thus far, we should
+  // not actually need the iteration to achieve a fixed point.
+  bool changed = false;
+  do {
+    bool ch1, ch2, ch3;
+    ch1 = MergeOverlappingCode(pgmScopeTree);
+    ch2 = RenestUnnestedStmts(pgmScopeTree);
+    ch3 = MergePerfectlyNestedLoops(pgmScopeTree);
+    changed = (ch1 || ch2 || ch3);
+  } while (changed);
+  
+  changed |= RemoveEmptyScopes(pgmScopeTree);
+  
+  return true; // no errors
+}
 
+//****************************************************************************
+// Helpers for building a scope tree
+//****************************************************************************
 
 #ifdef BLOOP_DEBUG_PROC
-bool testProcNow = false;
+static bool testProcNow = false;
 #endif
 
-ProcScope* 
-BuildScopeTreeFromProc(FileScope* enclosingScope, Procedure* p)
+static ProcScope* 
+BuildFromProc(FileScope* fileScope, Procedure* p)
 {  
   String func, file;
   suint startLn, endLn;
@@ -210,140 +313,132 @@ BuildScopeTreeFromProc(FileScope* enclosingScope, Procedure* p)
   String funcNm   = GetBestFuncName(p->GetName()); 
   String funcLnNm = GetBestFuncName(p->GetLinkName());
 
-  ProcScope* pScope = new ProcScope((const char*)funcNm, enclosingScope,
+  ProcScope* pScope = new ProcScope((const char*)funcNm, fileScope,
 				    (const char*)funcLnNm, startLn, endLn);
 
 #ifdef BLOOP_DEBUG_PROC
   testProcNow = false;
   suint dbgId = p->GetId(); 
 
-  const char* dbgNm = "__check_eh_spec";
+  const char* dbgNm = "main";
   if (strncmp(funcNm, dbgNm, strlen(dbgNm)) == 0) { testProcNow = true; }
   //if (dbgId == 537) { testProcNow = true; }
 
   //cout << "==> Processing `" << funcNm << "' (" << dbgId << ") <==\n";
 #endif
   
-  // -----------------------------------------------------------------  
-  // Traverse the Tarjan Tree
-  // -----------------------------------------------------------------  
+  // -------------------------------------------------------
+  // Build and traverse the Tarjan tree to create loop nests
+  // -------------------------------------------------------
   BloopIRInterface irInterface(p);
   BloopIRStmtIterator stmtIter(*p);
-  CFG* g = new CFG(irInterface, &stmtIter, (SymHandle)((const char *)funcNm));
-  CFG_BuildBlockToPCMap(g, g->Entry(), p, 0);
-
-  OARIFG tmpRIFG(*g);
-  TarjanIntervals tmpTarj(tmpRIFG);
-
-  RIFGNodeId root = tmpRIFG.GetRootNode();
-
+  
+  CFG cfg(irInterface, &stmtIter, (SymHandle)((const char *)funcNm));
+  OARIFG fg(cfg);
+  TarjanIntervals tarj(fg);
+  RIFGNodeId fgRoot = fg.GetRootNode();
+  
 #ifdef BLOOP_DEBUG_PROC
   if (testProcNow) {
     cout << "*** CFG for `" << funcNm << "' ***" << endl;
-    cout << "  total blocks: " << g->num_nodes() << endl
-	 << "  total edges:  " << g->num_edges() << endl;
-    g->dump(cout);
+    cout << "  total blocks: " << cfg.num_nodes() << endl
+	 << "  total edges:  " << cfg.num_edges() << endl;
+    cfg.dump(cout);
 
     cout << "*** Tarjan Interval Tree for `" << funcNm << "' ***" << endl;
-    tmpTarj.Dump();
+    tarj.Dump();
     cout << endl;
     cout.flush(); cerr.flush();
   }
 #endif 
-
-  // Optimizing compilers may move statments within a loop into one or more 
-  // enclosing scopes outside of the original loop (but never past the
-  // routine, of course), or, in rare cases, into a nested loop (e.g. to free
-  // up registers).  We want to associate stmts within loops to
-  // the deepest nested loop in which any instruction deriving from that
-  // stmt appears.  
-  StringHashTable stmtTable; 
-
-  int numLoops = BuildScopeTreeForInterval(pScope, root, &tmpTarj,
-					   g, &stmtTable, 0, &tmpRIFG,
-                                           p->GetLoadModule());
-
-  // -----------------------------------------------------------------  
-  // Add collected statements to ScopeTree
-  // -----------------------------------------------------------------  
-  for (StringHashTableIterator it(&stmtTable); it.Current() != NULL; it++) {
-    StmtData* sData = (StmtData*)(it.Current()->GetData());
-    do {
-      BuildScopeTreeFromInst(sData->GetAssocLoop(), sData->GetStartLine(),
-			     sData->GetEndLine());
-      StmtData *aux = sData;
-      sData = sData->GetNext();
-      delete aux; // Cleanup
-    } while (sData);
-    it.Current()->SetData(NULL);
-  }
   
-#ifdef BLOOP_SCOPE_TREE_ONLY_CONTAINS_INTERESTING_INFO
-  // If there are no interesting loops in this procedure, then we
-  // don't want it in the Scope Tree
-  if (numLoops == 0) {
-    pScope->Unlink();
-    delete pScope;
-    pScope = NULL;
-  }
-#endif
-  
-  // Cleanup
-  delete g;
-  CFG_ClearBlockToPCMap();
-  
+  BuildFromTarjTree(pScope, p, &tarj, &fg, &cfg, fgRoot);
   return pScope;
 }
 
-// Recursively build loops using Tarjan interval analysis
-int 
-BuildScopeTreeForInterval(CodeInfo* enclosingScope, RIFGNodeId node, 
-			  TarjanIntervals *tarj, CFG *g, 
-			  StringHashTable *stmtTable, int addStmts,
-			  RIFG *tmpRIFG, LoadModule *lm)
+
+// BuildFromTarjTree: Recursively build loops using Tarjan interval
+// analysis and returns the number of loops created.
+static int 
+BuildFromTarjInterval(CodeInfo* enclosingScope, Procedure* p,
+		      TarjanIntervals* tarj, RIFG* fg, CFG* cfg, 
+		      RIFGNodeId fgNode, CFGNodeToPCMap* cfgNodeMap,
+		      int addStmts);
+
+static int
+BuildFromTarjTree(ProcScope* pScope, Procedure* p, TarjanIntervals* tarj, 
+		  RIFG* fg, CFG* cfg, RIFGNodeId fgNode)
+{
+#ifdef BLOOP_ATTEMPT_TO_IMPROVE_INTERVAL_BOUNDARIES
+  CFGNodeToPCMap cfgNodeMap(cfg, p);
+#else
+  CFGNodeToPCMap cfgNodeMap;
+#endif
+  int num = BuildFromTarjInterval(pScope, p, tarj, fg, cfg, fgNode, 
+				  &cfgNodeMap, 0);
+  return num;
+}
+
+static int 
+BuildFromTarjInterval(CodeInfo* enclosingScope, Procedure* p,
+		      TarjanIntervals* tarj, RIFG* fg, CFG* cfg, 
+		      RIFGNodeId fgNode, CFGNodeToPCMap* cfgNodeMap,
+		      int addStmts)
 {
   int localLoops = 0;
-  int kid;
-  CFG::Node* crtBlock;
+  CFG::Node* bb = (CFG::Node*)(fg->GetRIFGNode(fgNode));
+
+#ifdef BLOOP_ATTEMPT_TO_IMPROVE_INTERVAL_BOUNDARIES
   String func, file;
   Addr startAddr, endAddr;
   suint startLn = UNDEF_LINE, endLn = UNDEF_LINE;
   suint loopsStartLn = UNDEF_LINE, loopsEndLn = UNDEF_LINE;
 
-  CFG::Node* tmpBB = (CFG::Node*)(tmpRIFG->GetRIFGNode(node));
-  BriefAssertion(BlockToPCMap.find(tmpBB) != BlockToPCMap.end());
-  startAddr = BlockToPCMap[tmpBB]->first;
-  endAddr = BlockToPCMap[tmpBB]->second;
+  BriefAssertion(cfgNodeMap->find(bb) != cfgNodeMap->end());
+  startAddr = (*cfgNodeMap)[bb]->first;
+  endAddr = (*cfgNodeMap)[bb]->second;
+#endif
 
   if (addStmts) {
-    GatherStmtsFromBB((CFG::Node*)(tmpRIFG->GetRIFGNode(node)),
-                      (LoopScope*)enclosingScope, 
-		      stmtTable, tarj->Level(node), lm); 
+    BuildFromBB(enclosingScope, p, bb);
   }
+  
+  // -------------------------------------------------------
+  // Traverse the Tarjan tree, building loop nests
+  // -------------------------------------------------------
+  for (int kid = tarj->TarjInners(fgNode); kid != RIFG_NIL; 
+       kid = tarj->TarjNext(kid) ) {
+    CFG::Node* crtBlk = (CFG::Node*)(fg->GetRIFGNode(kid));
 
-  for ( kid = tarj->TarjInners(node) ; kid != RIFG_NIL ; 
-        kid = tarj->TarjNext(kid) ) {
-    crtBlock = (CFG::Node*)(tmpRIFG->GetRIFGNode(kid));
-    if (tarj->IntervalType(kid) == RI_TARJ_ACYCLIC) { // not a loop head
+    // -----------------------------------------------------
+    // 1. ACYCLIC: No loops
+    // -----------------------------------------------------
+    if (tarj->IntervalType(kid) == RI_TARJ_ACYCLIC) { 
+#ifdef BLOOP_ATTEMPT_TO_IMPROVE_INTERVAL_BOUNDARIES
       if (tarj->TarjNext(kid) == RIFG_NIL) {
-        BriefAssertion(BlockToPCMap.find(crtBlock) != BlockToPCMap.end());
-        endAddr = BlockToPCMap[crtBlock]->second;
+        BriefAssertion(cfgNodeMap->find(crtBlk) != cfgNodeMap->end());
+        endAddr = (*cfgNodeMap)[crtBlk]->second;
       }
+#endif
       if (addStmts) {
-	GatherStmtsFromBB(crtBlock, (LoopScope*)enclosingScope, 
-			  stmtTable, tarj->Level(kid), lm); 
+	BuildFromBB(enclosingScope, p, crtBlk);
       }
     }
     
-    if (tarj->IntervalType(kid) == RI_TARJ_INTERVAL) { // loop head
-      LoopScope* lScope = new LoopScope(enclosingScope, UNDEF_LINE,
-					UNDEF_LINE, crtBlock->getID());
-      int iL = BuildScopeTreeForInterval(lScope, kid, tarj, g, stmtTable, 1,
-                                         tmpRIFG, lm);
-      localLoops += iL + 1;
-
-      // eraxxon: MAP: -- Add all PC's from loop head/end BB to map
+    // -----------------------------------------------------
+    // 2. INTERVAL: Loop head
+    // -----------------------------------------------------
+    if (tarj->IntervalType(kid) == RI_TARJ_INTERVAL) { 
       
+      // Build the loop nest
+      LoopScope* lScope = new LoopScope(enclosingScope, UNDEF_LINE,
+					UNDEF_LINE, crtBlk->getID());
+      int num = BuildFromTarjInterval(lScope, p, tarj, fg, cfg, kid, 
+				      cfgNodeMap, 1);
+      localLoops += (num + 1);
+      
+#ifdef BLOOP_ATTEMPT_TO_IMPROVE_INTERVAL_BOUNDARIES
+      // Update line numbers from data collected building loop nest
       if (loopsStartLn == UNDEF_LINE) {
 	BriefAssertion( loopsEndLn == UNDEF_LINE );
 	loopsStartLn = lScope->BegLine();
@@ -355,26 +450,30 @@ BuildScopeTreeForInterval(CodeInfo* enclosingScope, RIFGNodeId node,
 	  loopsEndLn = MAX(loopsEndLn, lScope->EndLine() );
 	}
       }
-       
-#ifdef BLOOP_SCOPE_TREE_ONLY_CONTAINS_INTERESTING_INFO
-      // Remove this loop if we cannot find valid line numbers
+#endif
+      
+      // Remove the loop nest if we could not find valid line numbers
       if (!IsValidLine(lScope->BegLine(), lScope->EndLine())) {
 	lScope->Unlink();
 	delete lScope;
-	localLoops--; // valid if done recursively...
+	localLoops -= (num + 1); // N.B.: 'num' should always be 0
       }
-#endif
     }
-
-    if (tarj->IntervalType(kid) == RI_TARJ_IRREDUCIBLE) { // not a loop head
-      localLoops += BuildScopeTreeForInterval(enclosingScope, kid, tarj, g,
-					      stmtTable, addStmts, tmpRIFG,
-                                              lm);
+    
+    // -----------------------------------------------------
+    // 3. IRREDUCIBLE: May contain loops
+    // -----------------------------------------------------
+    if (tarj->IntervalType(kid) == RI_TARJ_IRREDUCIBLE) {
+      int num = BuildFromTarjInterval(enclosingScope, p, tarj, fg, cfg, 
+				      kid, cfgNodeMap, addStmts);
+      localLoops += num;
     }
   }
 
+
+#ifdef BLOOP_ATTEMPT_TO_IMPROVE_INTERVAL_BOUNDARIES
   // FIXME: it would probably be better to include opIndices here
-  lm->GetSourceFileInfo(startAddr, 0, endAddr, 0, func, file, startLn, endLn);
+  p->GetSourceFileInfo(startAddr, 0, endAddr, 0, func, file, startLn, endLn);
 
   if (loopsStartLn != UNDEF_LINE && loopsStartLn < startLn) {
     startLn = loopsStartLn;
@@ -385,64 +484,44 @@ BuildScopeTreeForInterval(CodeInfo* enclosingScope, RIFGNodeId node,
   if (IsValidLine(startLn, endLn)) {
     enclosingScope->SetLineRange(startLn, endLn); // conditional
   }
+#endif
   
   return localLoops;
 }
 
-// Gather stmts from the current basic block.
-void 
-GatherStmtsFromBB(CFG::Node* bb, LoopScope* lScope,
-		  StringHashTable* stmtTable, int level,
-		  LoadModule *lm) 
-{  
-  String func, file;
-  suint line;
-  StringHashBucket testQuery;
-  Addr pc;
+
+// BuildFromBB: Adds statements from the current basic block to
+// 'enclosingScope'.  Does not add duplicates.
+static int 
+BuildFromBB(CodeInfo* enclosingScope, Procedure* p, CFG::Node* bb)
+{
+  LineToStmtMap stmtMap; // maps lines to the bogus pointer (StmtData*)1
 
   for (CFG::NodeStatementsIterator s_iter(bb); (bool)s_iter; ++s_iter) {
-    Instruction *tmpInsn = (Instruction *)((StmtHandle)s_iter);
-    pc = tmpInsn->GetPC();
+    Instruction *insn = (Instruction *)((StmtHandle)s_iter);
+    Addr pc = insn->GetPC();
     
-    lm->GetSourceFileInfo(pc, tmpInsn->GetOpIndex(), func, file, line); 
-    if ( !(!file.Empty() && IsValidLine(line)) ) {
+    String func, file;
+    suint line;
+    p->GetSourceFileInfo(pc, insn->GetOpIndex(), func, file, line); 
+    if ( !IsValidLine(line) ) {
       continue; // cannot continue without valid symbolic info
     }
-      
-    // Update the stmtTable:
-    //   Overwrite any identical stmt entry (file + line_number) already
-    //   in the table if the following is true: the entry was added from
-    //   an *enclosing* scope (i.e. a lower level).  In this case, some
-    //   (but not all) of the instructions for the current statment
-    //   were found outside of this deeper loop. 
-    String hashKey = file + String(":") + String(line); 
-    testQuery.SetKey(hashKey);
-    StringHashBucket* qResult = stmtTable->QueryEntry(&testQuery);
-    if (qResult) {
-      StmtData* sData = (StmtData*)qResult->GetData();
-      if (sData->GetLevel() < level) { // update only if found in inner loop
-	sData->SetAssocLoop(lScope); // update associated loop
-	sData->SetLevel(level); // update deepest level where stmt is present
-      }
-    } else {
-      StmtData* sData = new StmtData(lScope, line, line, level);
-      stmtTable->AddEntry(new StringHashBucket(hashKey, sData));
-    }
+    
     // eraxxon: MAP: add all PC's for BB to map
+    
+    StmtData* stmtdata = stmtMap[line];
+    if (stmtdata == NULL) {
+      stmtMap[line] = (StmtData*)1;
+      new StmtRangeScope(enclosingScope, line, line);
+    }
   } 
+  return 0;
 } 
 
-StmtRangeScope* 
-BuildScopeTreeFromInst(LoopScope* enclosingScope,
-		       long startLine, long endLine)
-{
-  StmtRangeScope* srScope =
-    new StmtRangeScope(enclosingScope, startLine, endLine);
-  return srScope;
-}
 
-
-FileScope* 
+// FindOrCreateFileNode: 
+static FileScope* 
 FindOrCreateFileNode(PgmScope* pgmScopeTree, Procedure* p)
 {
   String func, file;
@@ -459,65 +538,60 @@ FindOrCreateFileNode(PgmScope* pgmScopeTree, Procedure* p)
   return fileScope; // guaranteed to be a valid pointer
 } 
 
+
 //****************************************************************************
-// Routines for normalizing the ScopeTree
+// Helpers for normalizing a scope tree
 //****************************************************************************
 
-bool 
-NormalizeScopeTree(PgmScopeTree* pgmScopeTree)
-{
-  bool pass1 = RemoveOrphanedProcedureRepository(pgmScopeTree);
-    
-  bool pass2 = MergeOverlappingCode(pgmScopeTree);
-  bool pass3 = MergePerfectlyNestedLoops(pgmScopeTree);
-  
-  bool pass4 = RemoveEmptyFiles(pgmScopeTree);
-
-  return (pass1 && pass2 && pass3 && pass4);
-}
-
-// Remove the OrphanedProcedureFile from the tree.
-bool 
+// RemoveOrphanedProcedureRepository: Remove the OrphanedProcedureFile
+// from the tree.
+static bool 
 RemoveOrphanedProcedureRepository(PgmScopeTree* pgmScopeTree)
 {
-  bool noError = true;
+  bool changed = false;
 
   PgmScope* pgmScope = pgmScopeTree->GetRoot();
-  if (!pgmScope) { return noError; }
+  if (!pgmScope) { return changed; }
 
   // For each immediate child of this node...
   for (ScopeInfoChildIterator it(pgmScope); it.Current(); /* */) {
     BriefAssertion(((ScopeInfo*)it.Current())->Type() == ScopeInfo::FILE);
     FileScope* file = dynamic_cast<FileScope*>(it.Current()); // always true
     it++; // advance iterator -- it is pointing at 'file'
-
+    
     if (strcmp(file->Name(), OrphanedProcedureFile) == 0) {
       file->Unlink(); // unlink 'file' from tree
       delete file;
+      changed = true;
     }
   } 
   
-  return noError;
+  return changed;
 }
 
-// When any particular loop or statement overlaps with another [at the
-// same level, having the same parent loop], fuse them.  (Loop
-// unrolling (start-up, steady-state, wind-down), e.g., can produce
-// strange cases of overlapping code).
-bool MergeOverlappingCode(ScopeInfo* node);
 
-bool 
+// MergeOverlappingCode: When any particular loop or statement
+// overlaps with another [at the same level, having the same parent
+// loop], fuse them.  
+//
+// Rationale: Compiler optimizations such as loop unrolling (start-up,
+// steady-state, wind-down), e.g., can produce (strange!) cases of
+// duplicate and overlapping code.
+static bool 
+MergeOverlappingCode(ScopeInfo* node);
+
+static bool 
 MergeOverlappingCode(PgmScopeTree* pgmScopeTree)
 {
   return MergeOverlappingCode(pgmScopeTree->GetRoot());
 }
 
-bool 
+static bool 
 MergeOverlappingCode(ScopeInfo* node)
 {
-  bool noError = true;
+  bool changed = false;
   
-  if (!node) { return noError; }
+  if (!node) { return changed; }
   
   // Create a set with all the children of newItem and iterate over this in
   // order not to be affected by a modification in the tree structure
@@ -531,48 +605,148 @@ MergeOverlappingCode(ScopeInfo* node)
     BriefAssertion(child); // always true
 
     // 1. Recursively do any merging for this tree's children
-    noError = noError && MergeOverlappingCode(child);
+    changed |= MergeOverlappingCode(child);
 
     // 2. Test for overlapping loops and merge if necessary
     if (child->Type() == ScopeInfo::LOOP) {
       
       // Collect loops in a set that prevents overlapping elements;
       // AddOrMerge may unlink 'child' from tree and delete it.
-      (void) mergedSet->AddOrMerge(child); 
+      bool added = mergedSet->AddOrMerge(child); 
+      changed = !added; // if not added, then it was merged
     }
   } 
   delete mergedSet;
   delete childSet;
   
-  return noError; 
+  return changed; 
 }
 
-// Fuse together a child with a parent when the child is perfectly nested
-// in the parent.
-bool MergePerfectlyNestedLoops(ScopeInfo* node);
 
-bool 
+// RenestUnnestedStmts: If the same statement exists at multiple
+// levels within a loop nest, discard all but the innermost
+// instance. If two identical statements exist at the same level,
+// discard one.  (Multiple statements exist at the same level because
+// of multiple basic blocks containing the same statement.)
+//
+// Rationale: Compiler optimizations may hoist loop-invariant
+// operations out of inner loops.  Note however that in rare cases,
+// code may be moved deeper into a nest (e.g. to free registers).
+// Even so, we want to associate statements within loops nests to
+// the deepest level in which they appear.
+static bool
+RenestUnnestedStmts(CodeInfo *scope, LineToStmtMap* stmtMap, int level);
+
+static bool
+RenestUnnestedStmts(PgmScopeTree* pgmScopeTree)
+{
+  bool changed = false;
+  PgmScope* pgmScope = pgmScopeTree->GetRoot();
+  
+  // Note: we apply the normalization routine to each FileScope so
+  // that it can assume that all line numbers encountered are within
+  // the same file.  This keeps the LineToStmtMap simple and fast.
+
+  // For each immediate child of this node...
+  for (ScopeInfoChildIterator it(pgmScope); it.Current(); ++it) {
+    BriefAssertion(((ScopeInfo*)it.Current())->Type() == ScopeInfo::FILE);
+    FileScope* file = dynamic_cast<FileScope*>(it.Current()); // always true
+    
+    LineToStmtMap stmtMap;
+    changed |= RenestUnnestedStmts(file, &stmtMap, 0);
+  } 
+  
+  return changed;
+}
+
+// RenestUnnestedStmts: Helper for the above. Assumes that all
+// statement line numbers are within the same file.  Note that since
+// we may delete nodes, we always operate on the children of 'scope'.
+// (Deleting oneself is not fun!)
+static bool
+RenestUnnestedStmts(CodeInfo *scope, LineToStmtMap* stmtMap, int level)
+{
+  bool changed = false;
+  
+  if (!scope) { return changed; }
+  
+  // A post-order traversal of this node (visit children before parent)...
+  for (ScopeInfoChildIterator it(scope); it.Current(); /* */) {
+    CodeInfo* child = dynamic_cast<CodeInfo*>(it.Current()); // always true
+    BriefAssertion(child);
+    it++; // advance iterator -- it is pointing at 'child'
+    
+    // 1. Recursively perform re-nesting on 'child'
+    changed |= RenestUnnestedStmts(child, stmtMap, level + 1);
+    
+    // 2. Examine 'child'
+    if (child->Type() == ScopeInfo::STMT_RANGE) {
+      
+      // If this statement instance already exists, delete the
+      // shallower instance.
+      StmtRangeScope* sr_child = dynamic_cast<StmtRangeScope*>(child);
+      suint line = child->BegLine();
+      StmtData* stmtdata = (*stmtMap)[line];
+      if (stmtdata) {
+	
+	// Find the node stmt to delete
+	StmtRangeScope* toRemove = NULL;
+	if (stmtdata->GetLevel() < level) {
+	  toRemove = stmtdata->GetStmt();
+	  stmtdata->SetStmt(sr_child);  // set replacement info
+	  stmtdata->SetLevel(level);
+	} else { 
+	  toRemove = sr_child;
+	}
+	toRemove->Unlink(); // unlink 'toRemove' from tree
+	delete toRemove;
+	changed = true;
+	
+      } else {
+	stmtdata = new StmtData(sr_child, level);
+	(*stmtMap)[line] = stmtdata;
+      }
+      
+    } else if (child->Type() == ScopeInfo::PROC) {
+      // Clear statement table
+      for (LineToStmtMapIt it = stmtMap->begin(); it != stmtMap->end(); ++it) {
+	delete (*it).second;
+      }
+      stmtMap->clear();
+    }
+  } 
+  
+  return changed; 
+}
+
+
+// MergePerfectlyNestedLoops: Fuse together a child with a parent when
+// the child is perfectly nested in the parent.
+static bool 
+MergePerfectlyNestedLoops(ScopeInfo* node);
+
+static bool 
 MergePerfectlyNestedLoops(PgmScopeTree* pgmScopeTree)
 {
   return MergePerfectlyNestedLoops(pgmScopeTree->GetRoot());
 }
 
-bool 
+static bool 
 MergePerfectlyNestedLoops(ScopeInfo* node)
 {
-  bool noError = true;
+  bool changed = false;
   
-  if (!node) { return noError; }
+  if (!node) { return changed; }
   
-  // For each immediate child of this node...
+  // A post-order traversal of this node (visit children before parent)...
   for (ScopeInfoChildIterator it(node); it.Current(); /* */) {
     CodeInfo* child = dynamic_cast<CodeInfo*>(it.Current()); // always true
     BriefAssertion(child);
     it++; // advance iterator -- it is pointing at 'child'
     
     // 1. Recursively do any merging for this tree's children
-    noError = noError && MergePerfectlyNestedLoops(child);
-
+    changed |= MergePerfectlyNestedLoops(child);
+    
     // 2. Test if this is a perfectly nested loop with identical loop
     //    bounds and merge if so.
 
@@ -599,43 +773,67 @@ MergePerfectlyNestedLoops(ScopeInfo* node)
       }
       child->Unlink(); // unlink 'child' from tree
       delete child;
+      changed = true;
     }
   } 
   
-  return noError; 
+  return changed; 
 }
 
-bool 
-RemoveEmptyFiles(PgmScopeTree* pgmScopeTree)
+
+// RemoveEmptyScopes: Removes certain empty scopes from the tree,
+// always maintaining the top level PgmScope (PGM) scope.  The
+// following scope are deleted if empty:
+//   FileScope, ProcScope, LoopScope
+static bool 
+RemoveEmptyScopes(ScopeInfo* node);
+
+static bool 
+RemoveEmptyScopes(PgmScopeTree* pgmScopeTree)
 {
-  bool noError = true;
+  // Always maintain the top level PGM scope, even if empty
+  return RemoveEmptyScopes(pgmScopeTree->GetRoot());
+}
 
-  PgmScope* pgmScope = pgmScopeTree->GetRoot();
-  if (!pgmScope) { return noError; }
+static bool 
+RemoveEmptyScopes(ScopeInfo* node)
+{
+  bool changed = false;
+  
+  if (!node) { return changed; }
 
-  // For each immediate child of this node...
-  for (ScopeInfoChildIterator it(pgmScope); it.Current(); /* */) {
-    BriefAssertion(((ScopeInfo*)it.Current())->Type() == ScopeInfo::FILE);
-    FileScope* file = dynamic_cast<FileScope*>(it.Current()); // always true
-    it++; // advance iterator -- it is pointing at 'file'
+  // A post-order traversal of this node (visit children before parent)...
+  for (ScopeInfoChildIterator it(node); it.Current(); /* */) {
+    ScopeInfo* child = dynamic_cast<ScopeInfo*>(it.Current());
+    it++; // advance iterator -- it is pointing at 'child'
+    
+    // 1. Recursively do any trimming for this tree's children
+    changed |= RemoveEmptyScopes(child);
 
-    // Verify this file has at least one child
-    if (file->ChildCount() == 0) {
-      file->Unlink(); // unlink 'file' from tree
-      delete file;
+    // 2. Trim this node if necessary
+    if (child->Type() == ScopeInfo::FILE 
+	|| child->Type() == ScopeInfo::PROC
+	|| child->Type() == ScopeInfo::LOOP) {
+      if (child->ChildCount() == 0) {
+	child->Unlink(); // unlink 'child' from tree
+	delete child;
+	changed = true;
+      }
     }
   } 
   
-  return noError;
+  return changed; 
 }
 
-bool 
+
+// FilterFilesFromScopeTree: 
+static bool 
 FilterFilesFromScopeTree(PgmScopeTree* pgmScopeTree, String canonicalPathList)
 {
-  bool noError = true;
-
+  bool changed = false;
+  
   PgmScope* pgmScope = pgmScopeTree->GetRoot();
-  if (!pgmScope) { return noError; }
+  if (!pgmScope) { return changed; }
   
   // For each immediate child of this node...
   for (ScopeInfoChildIterator it(pgmScope); it.Current(); /* */) {
@@ -649,20 +847,76 @@ FilterFilesFromScopeTree(PgmScopeTree* pgmScopeTree, String canonicalPathList)
     if (!pathfind(canonicalPathList, baseFileName, "r")) {
       file->Unlink(); // unlink 'file' from tree
       delete file;
+      changed = true;
     }
   } 
   
-  return noError;
+  return changed;
 }
 
+
 //****************************************************************************
-// CFG helper routines
+// Helpers for traversing the Tarjan Tree
 //****************************************************************************
 
-void 
-CFG_GetStartAndEndAddresses(CFG::Node* n, Addr &start, Addr &end)
+CFGNodeToPCMap::CFGNodeToPCMap() 
 {
-  start = 0;
+}
+
+CFGNodeToPCMap::CFGNodeToPCMap(CFG* cfg, Procedure* p)
+{
+  this->build(cfg, cfg->Entry(), p, 0);
+}
+
+CFGNodeToPCMap::~CFGNodeToPCMap()
+{
+  clear();
+}
+
+void
+CFGNodeToPCMap::build(CFG* cfg, CFG::Node* n, Procedure* p, Addr _end)
+{
+  Addr curBeg = 0, curEnd = 0;
+
+  // If n is not in the map, it hasn't been visited yet.
+  if (this->find(n) == this->end()) {
+    if (n->empty() == true) {
+      // Empty blocks won't have any instructions to get PCs from.
+      if (n == cfg->Entry()) {
+        // Set the entry node PCs from the procedure's begin address.
+        curBeg = curEnd = p->GetStartAddr();
+      } else {
+        // Otherwise, use the end PC propagated from ancestors.
+        curBeg = curEnd = _end;
+      }
+    } else {
+      // Non-empty blocks will have some instructions to get PCs from.
+      CFG_GetBegAndEndAddrs(n, curBeg, curEnd);
+    }
+    (*this)[n] = new std::pair<Addr, Addr>(curBeg, curEnd);
+
+    // Visit descendents.
+    for (CFG::SinkNodesIterator sink(n); (bool)sink; ++sink) {
+      CFG::Node* child = dynamic_cast<CFG::Node*>((DGraph::Node*)sink);
+      this->build(cfg, child, p, curEnd);
+    }
+  }
+}
+
+void
+CFGNodeToPCMap::clear()
+{
+  for (iterator it = this->begin(); it != this->end(); ++it) {
+    delete (*it).second; // std::pair<Addr, Addr>*
+  }
+  BaseMap::clear();
+}
+
+
+static void 
+CFG_GetBegAndEndAddrs(CFG::Node* n, Addr &beg, Addr &end)
+{
+  beg = 0;
   end = 0;
 
   // FIXME: It would be a lot faster and easier if we could just grab
@@ -671,51 +925,11 @@ CFG_GetStartAndEndAddresses(CFG::Node* n, Addr &start, Addr &end)
   bool first = true;
   for (CFG::NodeStatementsIterator s_iter(n); (bool)s_iter; ++s_iter) {
     if (first == true) {
-      start = ((Instruction *)((StmtHandle)s_iter))->GetPC();
+      beg = ((Instruction *)((StmtHandle)s_iter))->GetPC();
       first = false;
     }
     end = ((Instruction *)((StmtHandle)s_iter))->GetPC();
   }
-}
-
-void 
-CFG_BuildBlockToPCMap(CFG* g, CFG::Node* n, Procedure* p, Addr _end)
-{
-  Addr currStart = 0, currEnd = 0;
-
-  // If n is not in the map, it hasn't been visited yet.
-  if (BlockToPCMap.find(n) == BlockToPCMap.end()) {
-    if (n->empty() == true) {
-      // Empty blocks won't have any instructions to get PCs from.
-      if (n == g->Entry()) {
-        // Set the entry node PCs from the procedure's start address.
-        currStart = currEnd = p->GetStartAddr();
-      } else {
-        // Otherwise, use the end PC propagated from ancestors.
-        currStart = currEnd = _end;
-      }
-    } else {
-      // Non-empty blocks will have some instructions to get PCs from.
-      CFG_GetStartAndEndAddresses(n, currStart, currEnd);
-    }
-    BlockToPCMap[n] = new std::pair<Addr, Addr>(currStart, currEnd);
-
-    // Visit descendents.
-    for (CFG::SinkNodesIterator sink(n); (bool)sink; ++sink) {
-      CFG::Node* child = dynamic_cast<CFG::Node*>((DGraph::Node*)sink);
-      CFG_BuildBlockToPCMap(g, child, p, currEnd);
-    }
-  }
-}
-
-void 
-CFG_ClearBlockToPCMap()
-{
-  BlockToPCMapIt it;
-  for (it = BlockToPCMap.begin(); it != BlockToPCMap.end(); ++it) {
-    delete (*it).second; // std::pair<Addr, Addr>*
-  }
-  BlockToPCMap.clear();
 }
 
 //****************************************************************************
@@ -731,7 +945,7 @@ CFG_ClearBlockToPCMap()
 // ScopeTree is construced, esp. the loop nesting information.  (For
 // example, perhaps the map should be constructed with the ScopeTree).
 
-void 
+static void 
 BuildPCToSrcLineMap(PCToSrcLineXMap* map, Procedure* p)
 {
   String funcNm   = GetBestFuncName(p->GetName()); 
