@@ -13,7 +13,7 @@ endif
 # Set platform variables
 #############################################################################
 
-pushd ${HPCTOOLKIT}/src/config >& /dev/null
+pushd ${HPCTOOLKIT}/config >& /dev/null
 setenv HPCTOOLKIT_PLATFORM `./hpcplatform`
 popd >& /dev/null
 
@@ -21,7 +21,7 @@ popd >& /dev/null
 # Set other variables
 #############################################################################
 
-set HPCPERLLIB="${HPCTOOLKIT}/bin/perl"
+set HPCPERLLIB="${HPCTOOLKIT}/lib/perl"
 
 if ( ! $?PERLLIB ) then
   setenv PERLLIB "${HPCPERLLIB}"
@@ -37,19 +37,9 @@ endif
 
 #############################################################################
 
-# When HPCToolkit is formally installed, xerces will be in a different
-# location
+setenv XERCESCROOT "${HPCTOOLKIT}/xercesc"
 
-set installedXerces="${HPCTOOLKIT}/lib/xercesc"
-
-if ( -d "${installedXerces}" ) then
-  setenv XERCESCROOT "${installedXerces}"
-else
-  setenv XERCESCROOT "${HPCTOOLKIT}/../xercesc"
-endif
-
-set XERCESPLATFORM="${XERCESCROOT}/${HPCTOOLKIT_PLATFORM}/lib"
-
+set XERCESPLATFORM="${XERCESCROOT}/lib"
 
 if ( ${HPCTOOLKIT_PLATFORM} == 'mips-IRIX64' ) then
   # set library path for IRIX systems
@@ -73,4 +63,4 @@ endif
 
 #############################################################################
 
-setenv PATH "${HPCTOOLKIT}/bin/${HPCTOOLKIT_PLATFORM}:${HPCTOOLKIT}/bin:${PATH}"
+setenv PATH "${HPCTOOLKIT}/bin:${PATH}"
