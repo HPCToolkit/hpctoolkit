@@ -73,6 +73,10 @@ static void init_options(void);
 static void init_hpcrun(void);
 static void fini_hpcrun();
 
+typedef uint32_t hpc_hist_bucket; /* a 4 byte histogram bucket */
+
+static const uint64_t default_period = (1 << 15) - 1; /* (2^15 - 1) */
+
 /*************************** Variable Declarations **************************/
 
 /* These variables are set when the library is initialized */
@@ -82,28 +86,25 @@ static libc_start_main_fptr_t      start_main;
 static libc_start_main_fini_fptr_t start_main_fini;
 
 /* hpcrun options (this should be a tidy struct) */
-static int      opt_debug;
-static int      opt_recursive;
-static char*    opt_eventname;
-static uint64_t opt_sampleperiod;
-static char     opt_outpath[PATH_MAX];
-static int      opt_flagscode;
+static int      opt_debug = 0;
+static int      opt_recursive = 0;
+static char*    opt_eventlist = NULL;
+static char     opt_outpath[PATH_MAX] = "";
+static int      opt_flagscode = 0;
 
 /*************************** Variable Declarations **************************/
 
 /* These variables are set when libc_start_main is intercepted */
 
-/* The profiled command and its run time load map */
+/* The profiled command and its run-time load map */
 static char*        profiled_cmd;
 static rtloadmap_t* rtloadmap;
 
-/* PAPI profiling information (list) */
+/* PAPI profiling information (one for each profiled event) */
 static hpcpapi_profile_desc_vec_t papi_profdescs;
-   static hpcpapi_profile_desc_t papi_profxxx; /* temporary */
 
-/* hpcrun output files (list) */
-static hpcrun_ofile_desc_vec_t hpc_ofiles;
-   static hpcrun_ofile_desc_t ofile; /* temporary */
+/* hpcrun output file */
+static hpcrun_ofile_desc_t hpc_ofile;
 
 /****************************************************************************/
 
@@ -117,8 +118,10 @@ _init(void)
 
   init_options();
 
-  if (opt_debug >= 1) { fprintf(stderr, "** initializing libhpcrun.so **\n"); }
-
+  if (opt_debug >= 1) { 
+    fprintf(stderr, "*** initializing "HPCRUN_LIB" ***\n"); 
+  }
+  
   /* Grab pointers to functions that will be intercepted.
 
      Note: RTLD_NEXT is not documented in the dlsym man/info page
@@ -145,8 +148,7 @@ _init(void)
     }
   }
   if (!start_main) {
-    fputs("hpcrun: cannot intercept beginning of process execution and therefore cannot begin profiling\n", stderr);
-    exit(1);
+    DIE("Cannot intercept beginning of process execution and therefore cannot begin profiling.");
   }
 }
 
@@ -156,22 +158,22 @@ _init(void)
 void 
 _fini(void)
 {
-  if (opt_debug >= 1) { fprintf(stderr, "** finalizing libhpcrun.so **\n"); }
+  if (opt_debug >= 1) { fprintf(stderr, "*** finalizing "HPCRUN_LIB" ***\n"); }
 }
 
 
 static void
 init_options(void)
 {
-  char *env_debug, *env_recursive, *env_event, *env_period, *env_outpath, 
-    *env_flags;
+  char *env_debug, *env_recursive, *env_eventlist, *env_eventlistSZ, 
+    *env_outpath, *env_flags;
   int ret;
 
-  /* Debugging: default is off */
+  /* Debugging (get this first) : default is off */
   env_debug = getenv("HPCRUN_DEBUG");
   opt_debug = (env_debug ? atoi(env_debug) : 0);
 
-  if (opt_debug >= 1) { fprintf(stderr, "* processing options\n"); }
+  if (opt_debug >= 1) { fprintf(stderr, "** processing "HPCRUN_LIB" opts\n"); }
   
   /* Recursive profiling: default is on */
   env_recursive = getenv("HPCRUN_RECURSIVE");
@@ -186,23 +188,15 @@ init_options(void)
     fprintf(stderr, "  recursive profiling: %d\n", opt_recursive); 
   }
   
-  /* Profiling event: default PAPI_TOT_CYC */
-  opt_eventname = "PAPI_TOT_CYC";
-  env_event = getenv("HPCRUN_EVENT_NAME");
-  if (env_event) {
-    opt_eventname = env_event;
+  /* Profiling event list: default PAPI_TOT_CYC:32767 (default_period) */
+  opt_eventlist = "PAPI_TOT_CYC:32767"; 
+  env_eventlist = getenv("HPCRUN_EVENT_LIST");
+  if (env_eventlist) {
+    opt_eventlist = env_eventlist;
   }
-  
-  /* Profiling period: default 2^15-1 */
-  opt_sampleperiod = (1 << 15) - 1;
-  env_period = getenv("HPCRUN_SAMPLE_PERIOD");
-  if (env_period) {
-    opt_sampleperiod = atoi(env_period);
-  }
-  if (opt_sampleperiod == 0) {
-    fprintf(stderr, "hpcrun: invalid period '%llu'. Aborting.\n", 
-	    opt_sampleperiod);
-    exit(-1);
+
+  if (opt_debug >= 1) { 
+    fprintf(stderr, "  event list: %s\n", env_eventlist); 
   }
   
   /* Output path: default . */
@@ -220,14 +214,13 @@ init_options(void)
     env_flags = getenv("HPCRUN_EVENT_FLAG");
     if (env_flags) {
       if ((f = hpcpapi_flag_by_name(env_flags)) == NULL) {
-	fprintf(stderr, "hpcrun: invalid profiling flag '%s'. Aborting.\n",
-		env_flags);
-	exit(-1);
+	DIE("Invalid profiling flag '%s'. Aborting.", env_flags);
       }
       opt_flagscode = f->code;
     }
   }
 }
+
 
 /****************************************************************************/
 
@@ -243,12 +236,14 @@ __libc_start_main START_MAIN_PARAMS
   return 0; /* never reached */
 }
 
+
 int 
 __BP___libc_start_main START_MAIN_PARAMS
 {
   hpcr_libc_start_main(main, argc, ubp_av, init, fini, rtld_fini, stack_end);
   return 0; /* never reached */
 }
+
 
 static int 
 hpcr_libc_start_main START_MAIN_PARAMS
@@ -257,12 +252,12 @@ hpcr_libc_start_main START_MAIN_PARAMS
   profiled_cmd = ubp_av[0];  /* command is also in /proc/pid/cmdline */
   start_main_fini = fini;
   
-  /* initialize papi profiling */
+  /* initialize profiling */
   init_hpcrun();
   
   /* launch the process */
   if (opt_debug >= 1) {
-    fprintf(stderr, "** launching application: %s\n", profiled_cmd);
+    fprintf(stderr, "*** launching intercepted app: %s ***\n", profiled_cmd);
   }
   (*start_main)(main, argc, ubp_av, init, hpcr_fini, rtld_fini, stack_end);
   return 0; /* never reached */
@@ -285,9 +280,11 @@ hpcr_fini(void)
  * Initialize PAPI profiling
  ****************************************************************************/
 
-static void init_papi(hpcpapi_profile_desc_vec_t* profdescs, rtloadmap_t *lm);
+static void init_papi(hpcpapi_profile_desc_vec_t* profdescs, 
+		      rtloadmap_t* rtmap);
 static void start_papi(hpcpapi_profile_desc_vec_t* profdescs);
-static void init_output(hpcpapi_profile_desc_vec_t* profdescs);
+static void init_output(hpcrun_ofile_desc_t* ofile, 
+			hpcpapi_profile_desc_vec_t* profdescs);
 
 /*
  *  Prepare for PAPI profiling
@@ -296,89 +293,51 @@ static void
 init_hpcrun(void)
 {
   if (opt_debug >= 1) { 
-    fprintf(stderr, "* initializing hpcrun monitoring\n");
+    fprintf(stderr, "*** initializing "HPCRUN_LIB" monitoring ***\n");
   }
   
   rtloadmap = hpcrun_code_lines_from_loadmap(opt_debug);
   
-  init_papi(&papi_profdescs, rtloadmap); /* init papi_profdescs */
-  init_output(&papi_profdescs);
+  init_papi(&papi_profdescs, rtloadmap);    /* init papi_profdescs */
+  init_output(&hpc_ofile, &papi_profdescs); /* init hpc_ofile */
   start_papi(&papi_profdescs);
 }
 
 
 static void 
-init_papi(hpcpapi_profile_desc_vec_t* profdescs, rtloadmap_t *lm)
+init_papi(hpcpapi_profile_desc_vec_t* profdescs, rtloadmap_t* rtmap)
 {  
-  int pcode;
-  const char* evstr;
-  
-  /* Initiailize PAPI library */
-  if (hpc_init_papi() != 0) {
-    exit(-1);
-  }
-  
-  /* Profiling event */
-  papi_profxxx.ecode = 0;
-  if ((pcode = PAPI_event_name_to_code(opt_eventname, &papi_profxxx.ecode))
-      != PAPI_OK) {
-    fprintf(stderr, "hpcrun: invalid PAPI event '%s'. Aborting.\n",
-	    opt_eventname);
-    exit(-1);
-  }
-  if ((pcode = PAPI_query_event(papi_profxxx.ecode)) != PAPI_OK) { 
-    /* should not strictly be necessary */
-    fprintf(stderr, 
-	    "hpcrun: PAPI event '%s' not supported (code=%d). Aborting.\n",
-	    evstr, pcode);
-    exit(-1);
-  }
-  if ((pcode = PAPI_get_event_info(papi_profxxx.ecode, &papi_profxxx.einfo)) 
-      != PAPI_OK) {
-    fprintf(stderr, "hpcrun: PAPI error %d: '%s'. Aborting.\n",
-	    pcode, PAPI_strerror(pcode));
-    exit(-1);
-  }
-  
-  papi_profxxx.eset = PAPI_NULL;
-  if (PAPI_create_eventset(&papi_profxxx.eset) != PAPI_OK) {
-    fprintf(stderr, "hpcrun: failed to create PAPI event set. Aborting.\n");
-    exit(-1);
-  }
-  
-  if (PAPI_add_event(papi_profxxx.eset, papi_profxxx.ecode) != PAPI_OK) {
-    fprintf(stderr, "hpcrun: failed to add event '%s'. Aborting.\n", evstr);
-    exit(-1);
-  }
-  
-  /* Profiling period */
-  papi_profxxx.period = opt_sampleperiod;
+  int pcode, i;
+  int numHwCntrs = 0;
+  unsigned profdescsSZ = 0; 
+  const unsigned eventbufSZ = 128; /* really the last index, not the size */
+  char eventbuf[eventbufSZ+1];
+  char* tok, *tmp_eventlist;
 
-  /* Set profiling scaling factor */
-
-  /*  cf. man profil()
-
-      The scale factor describes how much smaller the histogram buffer
-      is than the region to be profiled.  It also describes how each
-      histogram counter correlates with the region to be profiled.
-
-      The region to be profiled can be thought of being divided into n
-      equally sized blocks, each b bytes long.  If each histogram
-      counter is bh bytes long, the value of the scale factor is the
-      reciprocal of (b / bh).  
+  /* Note on hpcpapi_profile_desc_t and PAPI_sprofil() scaling factor
+     cf. man profil()
+     
+     The scale factor describes how much smaller the histogram buffer
+     is than the region to be profiled.  It also describes how each
+     histogram counter correlates with the region to be profiled.
+     
+     The region to be profiled can be thought of being divided into n
+     equally sized blocks, each b bytes long.  If each histogram
+     counter is bh bytes long, the value of the scale factor is the
+     reciprocal of (b / bh).  
            scale = reciprocal( b / bh )
 
-      The representation of the scale factor is a 16-bit fixed-point
-      fraction with the decimal point implied on the *left*.  Under
-      this representation, the maximum value of scale is 0xffff
-      (essentially 1). (0x10000 can also be used.)
+     The representation of the scale factor is a 16-bit fixed-point
+     fraction with the decimal point implied on the *left*.  Under
+     this representation, the maximum value of scale is 0xffff
+     (essentially 1). (0x10000 can also be used.)
 
-      Alternatively, and perhaps more conveniently, the scale can be
-      thought of as a ratio between an unsigned integer scaleval and
-      65536:
+     Alternatively, and perhaps more conveniently, the scale can be
+     thought of as a ratio between an unsigned integer scaleval and
+     65536:
           scale = ( scaleval / 65536 ) = ( bh / b )
 
-      Some sample scale values when bh is 4 (unsigned int):
+     Some sample scale values when bh is 4 (unsigned int):
 
           scaleval            bytes_per_code_block (b)
           ----------------------------------------
@@ -387,28 +346,188 @@ init_papi(hpcpapi_profile_desc_vec_t* profdescs, rtloadmap_t *lm)
 	  0x4000              16 (size of Itanium instruction packet)
 
       
-      Using this second notation, we can show the relation between the
-      histogram counters and the region to profile.  The histogram
-      counter that will be incremented for an interrupt at program
-      counter pc is:
+     Using this second notation, we can show the relation between the
+     histogram counters and the region to profile.  The histogram
+     counter that will be incremented for an interrupt at program
+     counter pc is:
           histogram[ ((pc - load_offset)/bh) * (scaleval/65536) ]
 
-      The number of counters in the histogram should equal the number
-      of blocks in the region to be profiled.
+     The number of counters in the histogram should equal the number
+     of blocks in the region to be profiled.  */
+
+  
+  /* 1. Initialize PAPI library */
+  if (hpc_init_papi() != 0) {
+    exit(-1);
+  }
+  
+  /* 2. Initialize 'profdescs' */
+  
+  /* 2a. Find number of 'profdescs' (strtok() will destroy the string) */
+  tmp_eventlist = strdup(opt_eventlist);
+  for (tok = strtok(tmp_eventlist, ";"); (tok != NULL); 
+       tok = strtok((char*)NULL, ";")) {
+    profdescsSZ++;
+  }
+  free(tmp_eventlist);
+  
+  /* 2b. Initialize 'profdescs' */
+  {
+    unsigned int vecbufsz = sizeof(hpcpapi_profile_desc_t) * profdescsSZ;
+    profdescs->size = profdescsSZ;
+    profdescs->vec = (hpcpapi_profile_desc_t*)malloc(vecbufsz);
+    if (!profdescs->vec) {
+      DIE("malloc() failed! Aborting.");
+    }
+    memset(profdescs->vec, 0x00, vecbufsz);
+  }
+
+  profdescs->eset = PAPI_NULL; 
+  if ((pcode = PAPI_create_eventset(&profdescs->eset)) != PAPI_OK) {
+    DIE("PAPI error: (%d) %s. Aborting.", pcode, PAPI_strerror(pcode));
+  }
+
+  /* 2c. For each event:period pair, init corresponding 'profdescs' entry */
+  tmp_eventlist = strdup(opt_eventlist);
+  tok = strtok(tmp_eventlist, ";");
+  for (i = 0; (tok != NULL); i++, tok = strtok((char*)NULL, ";")) {
+    hpcpapi_profile_desc_t* prof = &(profdescs->vec[i]);
+    uint64_t period = default_period;
+    char* sep;
+    
+    /* Extract fields from token */
+    sep = strchr(tok, ':'); /* optional period delimiter */
+    if (sep) {
+      unsigned len = MIN(sep - tok, eventbufSZ);
+      strncpy(eventbuf, tok, len);
+      period = strtol(sep+1, (char **)NULL, 10);
+      eventbuf[len] = '\0'; 
+    }
+    else {
+      strncpy(eventbuf, tok, eventbufSZ);
+      eventbuf[eventbufSZ] = '\0';
+    }
+    
+    if (opt_debug >= 1) { 
+      fprintf(stderr, "Finding event: '%s' '%llu'\n", eventbuf, period);
+    }
+
+    /* Find event info, ensuring it is available.  Note: it is
+       necessary to do a query_event *and* get_event_info.  Sometimes
+       the latter will return info on an event that does not exist. */
+    if (PAPI_event_name_to_code(eventbuf, &prof->ecode) != PAPI_OK) {
+      DIE("Invalid event '%s'. Aborting.", eventbuf);
+    }
+    if (PAPI_query_event(prof->ecode) != PAPI_OK) { 
+      DIE("Event '%s' not supported. Aborting.", eventbuf);
+    }
+    if ((pcode = PAPI_get_event_info(prof->ecode, &prof->einfo)) != PAPI_OK) {
+      DIE("PAPI error: (%d) %s. Aborting.", pcode, PAPI_strerror(pcode));
+    }
+
+    if ((pcode = PAPI_add_event(profdescs->eset, prof->ecode)) != PAPI_OK) {
+      DIE("PAPI error: (%d) %s. Aborting.", pcode, PAPI_strerror(pcode));
+    }
+  
+    /* Profiling period */
+    if (period == 0) {
+      DIE("Invalid period %llu for event '%s'. Aborting.", period, eventbuf);
+    }  
+    prof->period = period;
+    
+    /* Profiling flags */
+    prof->flags = opt_flagscode;
+    prof->flags |= PAPI_PROFIL_BUCKET_32; /* hpc_hist_bucket */
+    
+    prof->bytesPerCntr = sizeof(hpc_hist_bucket); /* 4 */
+    prof->bytesPerCodeBlk = 4;
+    prof->scale = 0x10000; // 0x8000 * (prof->bytesPerCntr >> 1);
+    
+    if ( (prof->scale * prof->bytesPerCodeBlk) != 
+	 (65536 * prof->bytesPerCntr) ) {
+      DIE("Programming error: invalid profiling scale.");
+    }
+    
+    /* N.B.: prof->sprofs remains uninitialized */
+  }
+  free(tmp_eventlist);
+  
+  /* 2d. Ensure we have enough hardware counters */
+  // The order in which we do this depends on event set stuff. FIXME
+  numHwCntrs = PAPI_num_hwctrs();
+  
+  
+  /* 3. For each 'profdescs' entry, init sprofil()-specific info */
+  for (i = 0; i < profdescs->size; ++i) {
+    int mapi;
+    unsigned int sprofbufsz = sizeof(PAPI_sprofil_t) * rtmap->count;
+    hpcpapi_profile_desc_t* prof = &profdescs->vec[i];
+    
+    prof->sprofs = (PAPI_sprofil_t*)malloc(sprofbufsz);
+    if (!prof->sprofs) {
+      DIE("malloc() failed! Aborting.");
+    }
+    memset(prof->sprofs, 0x00, sprofbufsz);
+    prof->numsprofs = rtmap->count;
+
+    if (opt_debug >= 3) { 
+      fprintf(stderr, "profile buffer details for %s:\n", prof->einfo.symbol); 
+      fprintf(stderr, "  count = %d, es=%#x ec=%#x sp=%llu ef=%d\n",
+	      prof->numsprofs, profdescs->eset, prof->ecode, prof->period, 
+	      prof->flags);
+    }
+
+    for (mapi = 0; mapi < rtmap->count; ++mapi) {
+      unsigned int bufsz;
+      unsigned int ncntr;
+
+      /* eliminate use of ceil() (link with libm) by adding 1 */
+      ncntr = (rtmap->module[mapi].length / prof->bytesPerCodeBlk) + 1;
+      bufsz = ncntr * prof->bytesPerCntr;
       
-  */
+      /* buffer base and size */
+      prof->sprofs[mapi].pr_base = (void*)malloc(bufsz);
+      prof->sprofs[mapi].pr_size = bufsz;
+      if (!prof->sprofs[mapi].pr_base) {
+	DIE("malloc() failed! Aborting.");
+      }
+      memset(prof->sprofs[mapi].pr_base, 0x00, bufsz);
+
+      /* pc offset and scaling factor */
+      prof->sprofs[mapi].pr_off = (caddr_t)rtmap->module[mapi].offset;
+      prof->sprofs[mapi].pr_scale = prof->scale;
+      
+      if (opt_debug >= 3) {
+	fprintf(stderr, 
+		"\tprofile[%d] base = %p size = %#x off = %#lx scale = %#x\n",
+		mapi, prof->sprofs[mapi].pr_base, prof->sprofs[mapi].pr_size, 
+		prof->sprofs[mapi].pr_off, prof->sprofs[mapi].pr_scale);
+      }
+    }
+  }
+
   
-  /* Profiling flags */
-  papi_profxxx.flags = opt_flagscode;
-  papi_profxxx.flags |= PAPI_PROFIL_BUCKET_32;
-  
-  //papi_profxxx.bytesPerCntr = sizeof(unsigned short); /* 2, PAPI v. 2 */
-  papi_profxxx.bytesPerCntr = sizeof(unsigned int);   /* 4 */
-  papi_profxxx.bytesPerCodeBlk = 4;
-  papi_profxxx.scale = 0x10000; // 0x8000 * (papi_profxxx.bytesPerCntr >> 1);
-  
-  if ( (papi_profxxx.scale * papi_profxxx.bytesPerCodeBlk) != (65536 * papi_profxxx.bytesPerCntr) ) {
-    fprintf(stderr, "hpcrun: Programming error!\n");
+  /* 4. Set PAPI debug */
+  {
+    int papi_debug = 0;
+    switch(opt_debug) {
+    case 0: 
+    case 1: 
+    case 2:
+      break;
+    case 3:
+      papi_debug = PAPI_VERB_ECONT;
+      break;
+    case 4:
+      papi_debug = PAPI_VERB_ESTOP;
+      break;
+    }
+    if (papi_debug != 0) {
+      fprintf(stderr, "setting PAPI debug option %d.\n", papi_debug);
+      if ((pcode = PAPI_set_debug(papi_debug)) != PAPI_OK) {
+	DIE("PAPI error: (%d) %s. Aborting.", pcode, PAPI_strerror(pcode));
+      }
+    }
   }
 }
 
@@ -416,127 +535,69 @@ init_papi(hpcpapi_profile_desc_vec_t* profdescs, rtloadmap_t *lm)
 static void 
 start_papi(hpcpapi_profile_desc_vec_t* profdescs)
 {
-  rtloadmap_t *lm = rtloadmap; /* FIXME */
-  unsigned int bufsz;
+  int pcode;
   int i;
-
-  /* 1. Prepare profiling buffers and structures */
-  papi_profxxx.sprofs = 
-    (PAPI_sprofil_t *) malloc(sizeof(PAPI_sprofil_t) * lm->count);
-
-  if (opt_debug >= 3) { fprintf(stderr, "profile buffer details:\n"); }
-
-  for (i = 0; i < lm->count; ++i) {
-    /* eliminate use of libm and ceil() by adding 1 */
-    unsigned int ncntr = (lm->module[i].length / papi_profxxx.bytesPerCodeBlk) + 1;
-    bufsz = ncntr * papi_profxxx.bytesPerCntr;
-    
-    /* buffer base */
-    papi_profxxx.sprofs[i].pr_base = (unsigned short *)malloc(bufsz);
-    /* buffer size */
-    papi_profxxx.sprofs[i].pr_size = bufsz;
-    /* pc offset */
-    papi_profxxx.sprofs[i].pr_off = (caddr_t) (unsigned long) lm->module[i].offset;
-    /* pc scaling */
-    papi_profxxx.sprofs[i].pr_scale = papi_profxxx.scale;
-    
-    /* zero out the profile buffer */
-    memset(papi_profxxx.sprofs[i].pr_base, 0x00, bufsz);
-
-    if (opt_debug >= 3) {
-      fprintf(stderr, 
-	      "\tprofile[%d] base = %p size = %u off = %lx scale = %u\n",
-	      i, papi_profxxx.sprofs[i].pr_base, papi_profxxx.sprofs[i].pr_size, 
-	      papi_profxxx.sprofs[i].pr_off, papi_profxxx.sprofs[i].pr_scale);
-    }
-  }
   
-  if (opt_debug >= 3) {
-    fprintf(stderr, "count = %d, es=%x ec=%x sp=%llu ef=%d\n",
-	    lm->count, papi_profxxx.eset, papi_profxxx.ecode, 
-	    papi_profxxx.period, papi_profxxx.flags);
-  }
+  /* Note: PAPI_sprofil() can profile only one event in an event set,
+     though this function may be called on other events in the *same*
+     event set to profile multiple events simultaneously.  The event
+     set must be shared since PAPI will run only one event set at a
+     time (PAPI_start()).  */
 
-  /* 2. Prepare PAPI subsystem for profiling */
-  {
-    int r = PAPI_sprofil(papi_profxxx.sprofs, lm->count, papi_profxxx.eset, 
-			 papi_profxxx.ecode, papi_profxxx.period, 
-			 papi_profxxx.flags);
-    if (r != PAPI_OK) {
-      fprintf(stderr,  "hpcrun: PAPI_sprofil failed, code %d. Aborting.\n", 
-	      r);
-      exit(-1);
+  /* 1. Prepare PAPI subsystem for profiling */  
+  for (i = 0; i < profdescs->size; ++i) {
+    hpcpapi_profile_desc_t* prof = &profdescs->vec[i];
+
+    if (opt_debug >= 1) { 
+      fprintf(stderr, "Calling PAPI_sprofil(): %s\n", prof->einfo.symbol);
+    }
+    
+    pcode = PAPI_sprofil(prof->sprofs, prof->numsprofs, profdescs->eset, 
+			 prof->ecode, prof->period, prof->flags);
+    if (pcode != PAPI_OK) {
+      DIE("PAPI error: (%d) %s. Aborting.", pcode, PAPI_strerror(pcode));
     }
   }
 
-  /* 3. Set PAPI debug */
-  {
-    int papi_opt_debug;
-    switch(opt_debug) {
-    case 0: case 1: case 2:
-      break;
-    case 3:
-      papi_opt_debug = PAPI_VERB_ECONT;
-      break;
-    case 4:
-      papi_opt_debug = PAPI_VERB_ESTOP;
-      break;
-    }
-    if (opt_debug >= 3) {
-      fprintf(stderr, "setting debug option %d.\n", papi_opt_debug);
-      if (PAPI_set_debug(papi_opt_debug) != PAPI_OK) {
-	fprintf(stderr,"hpcrun: failed to set debug level. Aborting.\n");
-	exit(-1);
-      }
-    }
-  }
-
-  /* 4. Launch PAPI */
-  if (PAPI_start(papi_profxxx.eset) != PAPI_OK) {
-    fprintf(stderr,"hpcrun: failed to start event set. Aborting.\n");
-    exit(-1);
+  /* 2. Launch PAPI */
+  if ((pcode = PAPI_start(profdescs->eset)) != PAPI_OK) {
+    DIE("PAPI error: (%d) %s. Aborting.", pcode, PAPI_strerror(pcode));
   }
 }
 
 
 static void 
-init_output(hpcpapi_profile_desc_vec_t* profdescs)
+init_output(hpcrun_ofile_desc_t* ofile, hpcpapi_profile_desc_vec_t* profdescs)
 {
-  static unsigned int outfilenmLen = PATH_MAX+32;
-  int pcode;
+  static unsigned int outfilenmLen = PATH_MAX;
+  static unsigned int hostnameLen = 128;
   char outfilenm[outfilenmLen];
-  char* executable = profiled_cmd; 
-  char* eventstr;
-  unsigned int len;
-  char hostnam[128]; 
-  
-  eventstr = opt_eventname; /* FIXME: turn into papi_eventname */
-  
-  gethostname(hostnam, 128);
-  
-  {
-    char* slash = rindex(executable, '/');
-    if (slash) {
-      executable = slash+1; /* basename of executable */
-    }
-  }
-  
-  len = strlen(opt_outpath) + strlen(executable) + strlen(eventstr) + 32;
-  if (len >= outfilenmLen) {
-    fprintf(stderr,"hpcrun: output file pathname too long! Aborting.\n");
-    exit(-1);
-  }
+  char hostnam[hostnameLen];
+  char* cmd = profiled_cmd; 
+  char* slash;
+  int i;
 
-  sprintf(outfilenm, "%s/%s.%s.%s.%d", opt_outpath, executable, eventstr, 
-	hostnam, getpid());
-  
-  ofile.fs = fopen(outfilenm, "w");
-
-  if (ofile.fs == NULL) {
-    fprintf(stderr,"hpcrun: failed to open output file '%s'. Aborting.\n",
-	    outfilenm);
-    exit(-1);
+  /* Get components for constructing file name */
+  slash = rindex(cmd, '/');
+  if (slash) {
+    cmd = slash + 1; /* basename of cmd */
   }
+  
+  gethostname(hostnam, hostnameLen);
+  hostnam[hostnameLen-1] = '\0'; /* ensure NULL termination */
+  
+  char* event = profdescs->vec[0].einfo.symbol; /* first event name */
+  
+  /* Create file name */
+  snprintf(outfilenm, outfilenmLen, "%s/%s.%s.%s.%d", 
+	   opt_outpath, cmd, event, hostnam, getpid());
+  
+  ofile->fs = fopen(outfilenm, "w");
+  if (ofile->fs == NULL) {
+    DIE("Failed to open output file '%s'. Aborting.", outfilenm);
+  }
+  
+  ofile->fname = NULL; // FIXME: skip setting ofile->fname for now
 }
 
 
@@ -544,11 +605,15 @@ init_output(hpcpapi_profile_desc_vec_t* profdescs)
  * Finalize PAPI profiling
  ****************************************************************************/
 
-static void write_all_profiles(FILE* fp, rtloadmap_t* lm, 
+static void write_all_profiles(hpcrun_ofile_desc_t* ofile, rtloadmap_t* rtmap,
 			       hpcpapi_profile_desc_vec_t* profdescs);
 
 static void 
+stop_papi(hpcpapi_profile_desc_vec_t* profdescs);
+
+static void 
 fini_papi(hpcpapi_profile_desc_vec_t* profdescs);
+
 
 /*
  *  Finalize PAPI profiling
@@ -556,22 +621,55 @@ fini_papi(hpcpapi_profile_desc_vec_t* profdescs);
 static void 
 fini_hpcrun(void)
 {
-  long long ct = 0;
+  if (opt_debug >= 1) { 
+    fprintf(stderr, "*** finalizing "HPCRUN_LIB" monitoring ***\n");
+  }
   
-  if (opt_debug >= 1) { fprintf(stderr, "fini_hpcrun:\n"); }
-  PAPI_stop(papi_profxxx.eset, &ct);
-  
-  write_all_profiles(ofile.fs, rtloadmap, &papi_profdescs);
-  
-  fini_papi(&papi_profdescs);
+  stop_papi(&papi_profdescs);
+  write_all_profiles(&hpc_ofile, rtloadmap, &papi_profdescs);
+  fini_papi(&papi_profdescs); /* uninit 'papi_profdescs' */
 }
+
+
+static void 
+stop_papi(hpcpapi_profile_desc_vec_t* profdescs)
+{
+  int pcode;
+  int i;
+  long_long* values = NULL; // array the size of the eventset
+  
+  if ((pcode = PAPI_stop(profdescs->eset, values)) != PAPI_OK) {
+    DIE("PAPI error: (%d) %s. Aborting.", pcode, PAPI_strerror(pcode));
+  }
+}
+
 
 static void 
 fini_papi(hpcpapi_profile_desc_vec_t* profdescs)
 {
-  PAPI_cleanup_eventset(papi_profxxx.eset);
-  PAPI_destroy_eventset(&papi_profxxx.eset);
-  papi_profxxx.eset = PAPI_NULL;
+  int i, j;
+
+  /* No need to test for failures during PAPI calls -- we've already
+     got the goods! */
+  
+  for (i = 0; i < profdescs->size; ++i) {
+    hpcpapi_profile_desc_t* prof = &profdescs->vec[i];
+    
+    for (j = 0; j < prof->numsprofs; ++j) {
+      free(prof->sprofs[j].pr_base);
+      prof->sprofs[j].pr_base = 0;
+    }
+    free(prof->sprofs);
+    prof->sprofs = 0;
+  }
+  
+  PAPI_cleanup_eventset(profdescs->eset);
+  PAPI_destroy_eventset(&profdescs->eset);
+  profdescs->eset = PAPI_NULL;
+  
+  free(profdescs->vec);
+  profdescs->vec = 0;
+  profdescs->size = 0;
   
   PAPI_shutdown();
 }
@@ -581,100 +679,118 @@ fini_papi(hpcpapi_profile_desc_vec_t* profdescs)
  * Write profile data
  ****************************************************************************/
 
-static void write_module_profile(FILE *fp, rtloadmod_desc_t *m, 
-				  PAPI_sprofil_t *p);
-static void write_module_data(FILE *fp, PAPI_sprofil_t *p);
+static void write_module_profile(FILE* fp, rtloadmod_desc_t* mod,
+				 hpcpapi_profile_desc_vec_t* profdescs, 
+				 int sprofidx);
+static void write_event_data(FILE *fp, hpcpapi_profile_desc_t* prof, 
+			     int sprofidx);
 static void write_string(FILE *fp, char *str);
 
 
 /*
- *  Write profile data for this process
+ *  Write profile data for this process.  See hpcrun.h for file format info.
  */
 static void 
-write_all_profiles(FILE* fp, rtloadmap_t* lm, 
+write_all_profiles(hpcrun_ofile_desc_t* ofile, rtloadmap_t* rtmap,
 		   hpcpapi_profile_desc_vec_t* profdescs)
 {
-  /* Header information */
-  fwrite(HPCRUNFILE_MAGIC_STR, 1, HPCRUNFILE_MAGIC_STR_LEN, fp);
-  fwrite(HPCRUNFILE_VERSION, 1, HPCRUNFILE_VERSION_LEN, fp);
-  fputc(HPCRUNFILE_ENDIAN, fp);
+  int i;
+  FILE* fs = ofile->fs;
+    
+  /* <header> */
+  fwrite(HPCRUNFILE_MAGIC_STR, 1, HPCRUNFILE_MAGIC_STR_LEN, fs);
+  fwrite(HPCRUNFILE_VERSION, 1, HPCRUNFILE_VERSION_LEN, fs);
+  fputc(HPCRUNFILE_ENDIAN, fs);
+  
+  /* <loadmodule_list> */
+  hpcpapi_profile_desc_t* prof = &profdescs->vec[i];
 
-  /* Load modules */
-  {
-    unsigned int i;
-    hpc_fwrite_le4(&(lm->count), fp);
-    for (i = 0; i < lm->count; ++i) {
-      write_module_profile(fp, &(lm->module[i]), &(papi_profxxx.sprofs[i]));
-    }
+  hpc_fwrite_le4(&(rtmap->count), fs);
+  for (i = 0; i < rtmap->count; ++i) {
+    write_module_profile(fs, &(rtmap->module[i]), profdescs, i);
   }
-
-  fclose(fp);
+  
+  fclose(fs);
+  ofile->fs = NULL;
 }
 
+
 static void 
-write_module_profile(FILE *fp, rtloadmod_desc_t *m, PAPI_sprofil_t *p)
+write_module_profile(FILE* fs, rtloadmod_desc_t* mod,
+		     hpcpapi_profile_desc_vec_t* profdescs, int sprofidx)
 {
-  /* Load module name and load offset */
-  if (opt_debug >= 1) { fprintf(stderr, "writing module %s\n", m->name); }
-  write_string(fp, m->name);
-  hpc_fwrite_le8(&(m->offset), fp);
+  int i;
   
-  /* Profiling event name, description and period */
-  write_string(fp, papi_profxxx.einfo.symbol);     /* event name */
-  write_string(fp, papi_profxxx.einfo.long_descr); /* event description */
-  hpc_fwrite_le8(&papi_profxxx.period, fp);
-  
-  /* Profiling data */
-  write_module_data(fp, p);
+  if (opt_debug >= 2) { fprintf(stderr, "writing module %s\n", mod->name); }
+
+  /* <loadmodule_name>, <loadmodule_loadoffset> */
+  write_string(fs, mod->name);
+  hpc_fwrite_le8(&(mod->offset), fs);
+
+  /* <loadmodule_eventcount> */
+  hpc_fwrite_le4(&(profdescs->size), fs);
+
+  /* Event data */
+  for (i = 0; i < profdescs->size; ++i) {
+    hpcpapi_profile_desc_t* prof = &profdescs->vec[i];
+
+    /* <event_x_name> <event_x_description> <event_x_period> */
+    write_string(fs, prof->einfo.symbol);     /* name */
+    write_string(fs, prof->einfo.long_descr); /* description */
+    hpc_fwrite_le8(&prof->period, fs);
+    
+    /* <event_x_data> */
+    write_event_data(fs, prof, sprofidx);
+  }
 }
 
+
 static void 
-write_module_data(FILE *fp, PAPI_sprofil_t *p)
+write_event_data(FILE *fs, hpcpapi_profile_desc_t* prof, int sprofidx)
 {
   unsigned int count = 0, offset = 0, i = 0, inz = 0;
-  unsigned int ncounters = (p->pr_size / papi_profxxx.bytesPerCntr);
-  unsigned int *lpr_base = p->pr_base;
+  PAPI_sprofil_t* sprof = &(prof->sprofs[sprofidx]);
+  hpc_hist_bucket* histo = (hpc_hist_bucket*)sprof->pr_base;
+  unsigned int ncounters = (sprof->pr_size / prof->bytesPerCntr);
   
-  /* Number of profiling entries */
+  /* <histogram_non_zero_bucket_count> */
   count = 0;
   for (i = 0; i < ncounters; ++i) {
-    if (lpr_base[i] != 0) { count++; inz = i; }
+    if (histo[i] != 0) { count++; inz = i; }
   }
-  hpc_fwrite_le4(&count, fp);
+  hpc_fwrite_le4(&count, fs);
   
-  if (opt_debug >= 1) {
-    fprintf(stderr, "  profile has %d of %d non-zero counters", count,
-	    ncounters);
+  if (opt_debug >= 2) {
+    fprintf(stderr, "  profile for %s has %d of %d non-zero counters", 
+	    prof->einfo.symbol, count, ncounters);
     fprintf(stderr, " (last non-zero counter: %d)\n", inz);
   }
   
-  /* Profiling entries */
+  /* <histogram_non_zero_bucket_x_value> 
+     <histogram_non_zero_bucket_x_offset> */
   for (i = 0; i < ncounters; ++i) {
-    if (lpr_base[i] != 0) {
-      uint32_t cnt = lpr_base[i];
-      hpc_fwrite_le4(&cnt, fp); /* count */
-      offset = i * papi_profxxx.bytesPerCodeBlk;
-      hpc_fwrite_le4(&offset, fp); /* offset (in bytes) from load addr */
-      if (opt_debug >= 1) {
-        fprintf(stderr, "  (cnt,offset)=(%d,%x)\n",cnt,offset);
+    if (histo[i] != 0) {
+      uint32_t cnt = histo[i];
+      hpc_fwrite_le4(&cnt, fs);   /* count */
+
+      offset = i * prof->bytesPerCodeBlk;
+      hpc_fwrite_le4(&offset, fs); /* offset (in bytes) from load addr */
+
+      if (opt_debug >= 2) {
+        fprintf(stderr, "  (cnt,offset)=(%d,%#x)\n",cnt,offset);
       }
     }
   }
-  
-  /* cleanup */
-  if (p->pr_base) {
-    free(p->pr_base);
-    p->pr_base = 0;
-  }
 }
 
+
 static void 
-write_string(FILE *fp, char *str)
+write_string(FILE *fs, char *str)
 {
-  /* Note: there is no null terminator on 'str' */
+  /* <string_length> <string_without_terminator> */
   unsigned int len = strlen(str);
-  hpc_fwrite_le4(&len, fp);
-  fwrite(str, 1, len, fp);
+  hpc_fwrite_le4(&len, fs);
+  fwrite(str, 1, len, fs);
 }
 
 /****************************************************************************/
