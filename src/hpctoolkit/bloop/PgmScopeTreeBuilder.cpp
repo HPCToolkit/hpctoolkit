@@ -113,7 +113,7 @@ static bool
 RemoveOrphanedProcedureRepository(PgmScopeTree* pgmScopeTree);
 
 static bool
-CoalesceDuplicateStmts(PgmScopeTree* pgmScopeTree);
+CoalesceDuplicateStmts(PgmScopeTree* pgmScopeTree, bool unsafeNormalizations);
 
 static bool 
 MergePerfectlyNestedLoops(PgmScopeTree* pgmScopeTree);
@@ -255,6 +255,7 @@ ScopeTreeBuilder::BuildFromExe(/*Executable*/ LoadModule* exe,
 			       PCToSrcLineXMap* &map,
 			       String canonicalPathList, 
 			       bool normalizeScopeTree,
+			       bool unsafeNormalizations,
 			       bool irreducibleIntervalIsLoop,
 			       bool verboseMode)
 {
@@ -309,7 +310,7 @@ ScopeTreeBuilder::BuildFromExe(/*Executable*/ LoadModule* exe,
   }
 
   if (normalizeScopeTree) {
-    bool result = Normalize(pgmScopeTree);
+    bool result = Normalize(pgmScopeTree, unsafeNormalizations);
     BriefAssertion(result); // Should never be false
   }
 
@@ -322,7 +323,8 @@ ScopeTreeBuilder::BuildFromExe(/*Executable*/ LoadModule* exe,
 // almost all unnormalized scope tree contain duplicate statement
 // instances.  See each normalizing routine for more information.
 bool 
-ScopeTreeBuilder::Normalize(PgmScopeTree* pgmScopeTree)
+ScopeTreeBuilder::Normalize(PgmScopeTree* pgmScopeTree, 
+			    bool unsafeNormalizations)
 {
   bool changed = false;
   changed |= RemoveOrphanedProcedureRepository(pgmScopeTree);
@@ -332,7 +334,7 @@ ScopeTreeBuilder::Normalize(PgmScopeTree* pgmScopeTree)
   do {
 #endif
     changed = false;
-    changed |= CoalesceDuplicateStmts(pgmScopeTree);
+    changed |= CoalesceDuplicateStmts(pgmScopeTree, unsafeNormalizations);
 #if 0
   } while (changed);
 #endif
@@ -669,6 +671,8 @@ RemoveOrphanedProcedureRepository(PgmScopeTree* pgmScopeTree)
 //   instances.
 // E.g.: lca ---...--- s1
 //          \---...--- s2
+static bool CDS_unsafeNormalizations = true;
+
 static bool
 CoalesceDuplicateStmts(CodeInfo* scope, LineToStmtMap* stmtMap, 
 		       ScopeInfoSet* visited, ScopeInfoSet* toDelete,
@@ -686,9 +690,10 @@ CDS_InspectStmt(StmtRangeScope* stmt1, LineToStmtMap* stmtMap,
   throw (CDS_RestartException);
 
 static bool
-CoalesceDuplicateStmts(PgmScopeTree* pgmScopeTree)
+CoalesceDuplicateStmts(PgmScopeTree* pgmScopeTree, bool unsafeNormalizations)
 {
   bool changed = false;
+  CDS_unsafeNormalizations = unsafeNormalizations;
   PgmScope* pgmScope = pgmScopeTree->GetRoot();
   LineToStmtMap stmtMap;      // line to statement data map
   ScopeInfoSet visitedScopes; // all children of a scope have been visited
@@ -882,7 +887,7 @@ CDS_InspectStmt(StmtRangeScope* stmt1, LineToStmtMap* stmtMap,
       CDSDBG { cout << "  Delete: " << toRemove << endl; }
       changed = true;
     } 
-    else {
+    else if (CDS_unsafeNormalizations) {
       // Case 2: Duplicate statements in different loops (or scopes).
       // Merge the nodes from stmt2->lca into those from stmt1->lca.
       CDSDBG { cout << "  Merge: " << stmt1 << " <- " << stmt2 << endl; }

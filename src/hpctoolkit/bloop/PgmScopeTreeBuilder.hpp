@@ -74,11 +74,13 @@ namespace ScopeTreeBuilder {
   BuildFromExe(/*Executable*/ LoadModule* exe, PCToSrcLineXMap* &map,
 	       String canonicalPathList = "",
 	       bool normalizeScopeTree = true,
+	       bool unsafeNormalizations = true,
 	       bool irreducibleIntervalIsLoop = false,
 	       bool verboseMode = false);
   
   bool 
-  Normalize(PgmScopeTree* pgmScopeTree);
+  Normalize(PgmScopeTree* pgmScopeTree, 
+	    bool unsafeNormalizations = true);
   
 }
 

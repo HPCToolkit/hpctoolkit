@@ -143,6 +143,7 @@ real_main(int argc, char* argv[])
     PgmScopeTree* pgmScopeTree =
       BuildFromExe(exe, map, args.canonicalPathList.c_str(),
 		   args.normalizeScopeTree, 
+		   args.unsafeNormalizations,
 		   args.irreducibleIntervalIsLoop,
 		   args.verboseMode);
     
