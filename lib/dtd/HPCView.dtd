@@ -18,7 +18,8 @@
             name CDATA #REQUIRED
 	    displayName CDATA #REQUIRED
 	    display (true|false) "true"
-	    percent (true|false) "true">
+	    percent (true|false) "true"
+	    sortBy  (true|false) "false">
 
 <!ELEMENT FILE EMPTY>
 <!ATTLIST FILE
