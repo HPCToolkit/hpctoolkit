@@ -47,8 +47,7 @@
 #-----------------------------------------------------------------
 
 #  Paths
-GCC_BIN_304 = /u/ac/jle/gcc-3.0.4/inst/bin
-GCC_BIN_32 = /usr/local/gcc-3.2/bin
+GCC_BIN_32 = /usr/local/gcc-3.2.2/bin
 GCC_BIN = $(GCC_BIN_32)
 
 INTEL_BIN = /usr/local/intel/compiler60/ia64/bin

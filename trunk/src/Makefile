@@ -55,12 +55,9 @@ include $(HPCTOOLKIT)/src/Makeinclude.config
 # Site/machine/architecture independent configuration 
 #############################################################################
 
-all: post_cvs_co_script exes install
+all: exes install
 
-exes: build_bloop build_hpcview build_xprof #build_xcsprof
-
-post_cvs_co_script:
-	$(HPCTOOLKIT)/tools/hFinishCVSCheckout
+exes: build_hpcview build_bloop build_xprof #build_xcsprof
 
 .PHONY: all exes post_cvs_co_script
 
@@ -119,17 +116,27 @@ uninstall: uninstall_scripts
 
 
 PERL_LIB     = perl
-SCRIPTS_SRC  = ptran/ptran hpcquick/hpcquick filters/f90modfilt
+HPCQUICK_OS=`uname -s`
+
+SCRIPTS_SRC  = ptran/ptran filters/f90modfilt
+SCRIPTS_HPCQUICK  = hpcquick/hpcquick hpcquick/$(HPCQUICK_OS)/hpcquick 
 SCRIPTS_INST = ptran hpcquick f90modfilt
 
 # install perl tools
 #   note: we only copy *.pm files (instead of the whole directory) so
-#     that the RCS directory is not copied!
+#     that the CVS directory is not copied!
 install_scripts: uninstall_scripts
 	-mkdir $(HBIN)/$(PERL_LIB)
 	cp $(HSRC)/lib/$(PERL_LIB)/*.pm $(HBIN)/$(PERL_LIB)/
 	for i in $(SCRIPTS_SRC) ; do \
-	  cp $(HSRC)/hpctoolkit/$$i $(HBIN)/ ; \
+	  if [ -x $(HSRC)/hpctoolkit/$$i ] ; then \
+	    cp $(HSRC)/hpctoolkit/$$i $(HBIN)/ ; \
+	  fi \
+	done; \
+	for i in $(SCRIPTS_HPCQUICK) ; do \
+	  if [ -x $(HSRC)/hpctoolkit/$$i ] ; then \
+	    cp $(HSRC)/hpctoolkit/$$i $(HBIN)/$(PLATFORM); \
+	  fi \
 	done
 
 # uninstall perl tools
