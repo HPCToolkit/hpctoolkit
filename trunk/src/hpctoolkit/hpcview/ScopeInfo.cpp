@@ -1098,6 +1098,89 @@ PgmScope::CSV_TreeDump(std::ostream &os) const
 }
 
 // **********************************************************************
+
+void 
+ScopeInfo::TSV_DumpSelf(const PgmScope &root, std::ostream &os) const
+{ 
+  char temp[32];
+  for (unsigned int i=0; i < NumberOfPerfDataInfos(); i++) {
+    double val = (HasPerfData(i) ? PerfData(i) : 0);
+    os << "\t" << val;
+    /*const PerfMetric& metric = IndexToPerfDataInfo(i);
+    if (metric.Percent()) {
+      double percVal = val / root.PerfData(i) * 100;
+      sprintf(temp, "%5.2lf", percVal);
+      os << "\t" << temp;
+    }
+    */
+  }
+  os << endl;
+}
+
+
+// Dumps the scope tree PGM
+void
+ScopeInfo::TSV_Dump(const PgmScope &root, std::ostream &os, 
+          const char *file_name, const char *routine_name,
+          int lLevel) const 
+{
+  //Dump children
+  for (NameSortedChildIterator it(this); it.Current(); it++) {
+    it.Current()->TSV_Dump(root, os); 
+  }
+}
+
+void
+FileScope::TSV_Dump(const PgmScope &root, std::ostream &os, 
+          const char *file_name, const char *routine_name,
+          int lLevel) const 
+{
+  //Dump children
+  for (NameSortedChildIterator it(this); it.Current(); it++) {
+    it.Current()->TSV_Dump(root, os, BaseName()); 
+  }
+}
+
+void
+ProcScope::TSV_Dump(const PgmScope &root, std::ostream &os, 
+          const char *file_name, const char *routine_name,
+          int lLevel) const 
+{
+  // print file name, routine name, start and end line, loop level
+  // os << file_name << "," << Name() << "," << begLine << "," << endLine << ",0";
+  for (LineSortedChildIterator it(this); it.Current(); it++) {
+    it.CurScope()->TSV_Dump(root, os, file_name, Name(), 1); 
+  } 
+}
+
+void
+CodeInfo::TSV_Dump(const PgmScope &root, std::ostream &os, 
+          const char *file_name, const char *routine_name,
+          int lLevel) const 
+{
+  ScopeType myScopeType = this->Type();
+  // recurse into loops until we have single lines
+  if (myScopeType == LINE) {
+	  // print file name, routine name, start and end line, loop level
+	  os << (file_name?file_name:(const char*)Name()) << "," 
+	     << (routine_name?routine_name:"") << ":" 
+	     << begLine;
+	  TSV_DumpSelf(root, os);
+	  return;
+  }
+
+  for (LineSortedChildIterator it(this); it.Current(); it++) {
+    it.CurScope()->TSV_Dump(root, os, file_name, routine_name, lLevel+1); 
+  } 
+}
+
+void
+PgmScope::TSV_TreeDump(std::ostream &os) const
+{
+  ScopeInfo::TSV_Dump(*this, os);
+}
+
+// **********************************************************************
 // RefScope specific methods 
 // **********************************************************************
 

@@ -281,3 +281,21 @@ Driver::CSV_Dump(PgmScope* pgm, std::ostream &os) const
   pgm->CSV_TreeDump(os);
 }
 
+void
+Driver::TSV_Dump(PgmScope* pgm, std::ostream &os) const
+{
+  os << "LineID";
+  for (unsigned int i=0; i < NumberOfPerfDataInfos(); i++) {
+    const PerfMetric& metric = IndexToPerfDataInfo(i); 
+    os << "\t" << metric.DisplayInfo().Name();
+    /*
+    if (metric.Percent())
+      os << "\t" << metric.DisplayInfo().Name() << " (%)";
+    */
+  }
+  os << endl;
+  
+  // Dump SCOPETREE
+  pgm->TSV_TreeDump(os);
+}
+

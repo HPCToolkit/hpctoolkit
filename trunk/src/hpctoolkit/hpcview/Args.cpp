@@ -82,7 +82,7 @@ static const char* version_info =
 #include <include/HPCToolkitVersionInfo.h>
 
 static const char* usage_summary =
-"[-V] [-h dir] [-r] [-u] [-w n] [-x file [-c] [-l]] [-y file] [-z [-o] [-f n] [-m n] [-s n.m]] configFile\n";
+"[-V] [-h dir] [-r] [-u] [-w n] [-x file [-c] [-l]] [-y file] [-t file] [-z [-o] [-f n] [-m n] [-s n.m]] configFile\n";
 
 static const char* usage_details =
 "[ GENERAL OPTIONS ]\n"
@@ -121,6 +121,12 @@ static const char* usage_details =
 "              separated value format, good for loading in a spreadsheet\n"
 "              program, or for parsing with a shell script.\n"
 "              Data is presented at loop level granularity.\n"
+"\n"
+"[ OPTIONS TO GENERATE TSV DATA FOR FLATFILE OUTPUT]\n"
+"  -t file     Write scope tree, with metrics, to 'file' in a tab \n"
+"              separated value format, good for loading in a gene-shaving\n"
+"              program, or for parsing with a shell script.\n"
+"              Data is presented at line level granularity.\n"
 "\n"
 "[ OPTIONS TO GENERATE STATIC HTML FOR WEB BROWSER VIEWING ]\n"
 "  -z          Generate static HTML.\n"
@@ -163,6 +169,7 @@ Args::Ctor()
   CopySrcFiles           = true;
   SkipHTMLfiles          = true;  // do not generate static HTML
   FlatCSVOutput          = false;
+  FlatTSVOutput		 = false;
   OldStyleHTML           = false;
   XML_ToStdout           = false;
   XML_DumpAllMetrics     = true;  // dump metrics on interior nodes
@@ -222,7 +229,7 @@ Args::Parse(int argc, const char* const argv[])
   extern int optind;
   bool error = false; 
   int c;
-  while ((c = getopt(argc, (char**)argv, "Vh:ruw:x:cly:zof:m:s:d")) != EOF) {
+  while ((c = getopt(argc, (char**)argv, "Vh:ruw:x:cly:t:zof:m:s:d")) != EOF) {
     switch (c) {
     
     // General Options
@@ -268,6 +275,15 @@ Args::Parse(int argc, const char* const argv[])
     // CSV output (for Spreadsheet) options
     case 'y': { 
       FlatCSVOutput = true;
+      XML_Dump_File = optarg;
+      OutputFinalScopeTree = true;
+      if ( XML_Dump_File == "-" ) XML_ToStdout = true;
+      break; 
+    }
+
+    // TSV output options
+    case 't': { 
+      FlatTSVOutput = true;
       XML_Dump_File = optarg;
       OutputFinalScopeTree = true;
       if ( XML_Dump_File == "-" ) XML_ToStdout = true;
@@ -325,7 +341,8 @@ Args::Parse(int argc, const char* const argv[])
   } 
 
   // CopySrcFiles makes sense only if -x arg is used.
-  if (false == OutputFinalScopeTree || FlatCSVOutput == true)  
+  if (false == OutputFinalScopeTree || FlatCSVOutput == true 
+		  || FlatTSVOutput == true)  
     CopySrcFiles = false;
 
   if (error) {
