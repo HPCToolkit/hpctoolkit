@@ -327,7 +327,11 @@ public:
   virtual String DumpLineRange(int dmpFlag = PgmScopeTree::XML_TRUE) const;
 
   void SetLineRange(suint begLn, suint endLn); // be careful when using!
-  
+
+  // this is a rather ugly change of the interface to allow correcting the
+  // start line number of loops;
+  void modifyStartLine(suint newStart) { begLine = newStart; }
+    
 protected: 
   void Relocate(); 
   suint begLine; 

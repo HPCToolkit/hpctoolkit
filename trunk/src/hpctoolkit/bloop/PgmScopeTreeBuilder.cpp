@@ -882,8 +882,22 @@ CDS_Main(CodeInfo* scope, LineToStmtMap* stmtMap, ScopeInfoSet* visited,
   return changed; 
 }
 
+bool 
+ScopesGreaterThanLine(const ScopeInfo &info, long line)
+{
+   const CodeInfo* cinfo = dynamic_cast<const CodeInfo*>(&info);
+   return (cinfo!=NULL && cinfo->BegLine() > line);
+}
+
+bool 
+ScopesEqualToLine(const ScopeInfo &info, long line)
+{
+   const CodeInfo* cinfo = dynamic_cast<const CodeInfo*>(&info);
+   return (cinfo!=NULL && cinfo->BegLine() == line);
+}
+
 // CDS_InspectStmt: applies case 1 or 2, as described above
-static bool
+bool
 CDS_InspectStmt(StmtRangeScope* stmt1, LineToStmtMap* stmtMap, int level)
   throw (CDS_RestartException)
 {
@@ -924,7 +938,117 @@ CDS_InspectStmt(StmtRangeScope* stmt1, LineToStmtMap* stmtMap, int level)
       changed = true;
       
     } else {
-      
+      CodeInfo* lca_CI = dynamic_cast<CodeInfo*>(lca);
+      BriefAssertion(lca_CI);
+
+      // for a general case, I need to find the outermost
+      // ancestors inside the lca for each of the two statements.
+      // I should always be able to find them
+      ScopeInfo *ancestor1 = stmt1->Parent();
+      ScopeInfo *ancestor2 = stmt2->Parent();
+      while (ancestor1->Parent() != lca)
+         ancestor1 = ancestor1->Parent();
+      while (ancestor2->Parent() != lca)
+         ancestor2 = ancestor2->Parent();
+      // ancestor1 and ancestor2 are loops
+      CodeInfo *CI_ancestor1 = dynamic_cast<CodeInfo*>(ancestor1);
+      CodeInfo *CI_ancestor2 = dynamic_cast<CodeInfo*>(ancestor2);
+      // if stmt1 and stmt2 correspond to the start line number of the
+      // two outer scopes, and the rest of children in these scopes are not
+      // interleaved, then do not merge the scopes. 
+      // Fix the start line number instead.
+      if (line == CI_ancestor1->BegLine() &&
+          line == CI_ancestor2->BegLine() ) {
+         CDSDBG {
+           cout << "START. line=" << line << ", ancestor1=" << CI_ancestor1->ToDumpString()
+                << CI_ancestor1->DumpLineRange() << ", ancestor2=" << CI_ancestor2->ToDumpString()
+                << CI_ancestor2->DumpLineRange() << ", LCA=" << lca_CI->ToDumpString()
+                << lca_CI->DumpLineRange() << endl;
+         }
+         // test if this is the only overlapping statement
+         ScopeInfoFilter* myFilter = new ScopeInfoFilter (
+                 ScopesGreaterThanLine, "biggerThanLine", line);
+         ScopeInfoLineSortedIterator it1 (CI_ancestor1,
+                     myFilter, true);
+         ScopeInfoLineSortedIterator it2 (CI_ancestor2,
+                     myFilter, true);
+         if (it1.Current() && it2.Current()) {
+            suint line1 = (dynamic_cast<CodeInfo*>(it1.Current()))->BegLine();
+            suint line2 = (dynamic_cast<CodeInfo*>(it2.Current()))->BegLine();
+            CDSDBG {
+              cout << "Found next line in scope1=" << line1 << ", next line in scope2="
+                   << line2 << endl;
+            }
+            if (line1 > CI_ancestor2->EndLine()) {
+               CDSDBG {
+                 cout << "FOUND line1 larger than ancestor2->endline=" 
+                      << CI_ancestor2->EndLine() << endl;
+               }
+               ScopeInfoFilter* equalFilter = new ScopeInfoFilter (
+                       ScopesEqualToLine, "equalToLine", line);
+               // I must delete all the duplicate statements to line 'line' from 
+               // sub-tree pointed at ancestor1
+               ScopeInfoLineSortedIterator it3 (CI_ancestor1,
+                           equalFilter, true);
+               for ( ; it3.Current() ; ) {
+                  stmt1 = dynamic_cast<StmtRangeScope*>(it3.Current());
+                  it3 ++;
+                  CodeInfo* CI_parent = stmt1->CodeInfoParent();
+                  stmt1->Unlink(); // unlink 'stmt1' from tree
+                  CDSDBG { cout << "  Delete: " << stmt1 << endl; }
+                  delete stmt1;
+                  // must update the start line number of all scopes from parent to ancestor1
+                  do {
+                     // find the next larger line
+                     ScopeInfoLineSortedIterator it4 (CI_parent, NULL, true);
+                     if (it4.Current())
+                        line1 = (dynamic_cast<CodeInfo*>(it4.Current()))->BegLine();
+                     else
+                        line1 = line;  // the line value I want to remove
+                     CI_parent->modifyStartLine(line1);
+                     CI_parent = CI_parent->CodeInfoParent();
+                  } while (CI_parent != lca);
+               }
+               delete (myFilter);
+               delete (equalFilter);
+               // iterators between stmt1 and 'lca' are invalidated. 
+               // Restart at lca.
+               throw CDS_RestartException(lca_CI);
+            }
+            if (line2 > CI_ancestor1->EndLine()) {
+               CDSDBG {
+                 cout << "FOUND line2 larger than ancestor1->endline=" 
+                      << CI_ancestor1->EndLine() << endl;
+               }
+               stmtdata->SetStmt(stmt1);  // replace stmt2 with stmt1
+               stmtdata->SetLevel(level);
+               // update the start line of all scopes from the statement's
+               // parent up to the scope just under lca (ancestor1)
+               // This scope was processed before. I cannot have duplicate statements
+               // in this scope
+               CodeInfo* CI_parent = stmt2->CodeInfoParent();
+               stmt2->Unlink(); // unlink 'stmt1' from tree
+               CDSDBG { cout << "  Delete: " << stmt2 << endl; }
+               delete stmt2;
+               // must update the start line number of all scopes from parent to ancestor2
+               do {
+                  // find the next larger line
+                  ScopeInfoLineSortedIterator it4 (CI_parent, NULL, true);
+                  if (it4.Current())
+                     line1 = (dynamic_cast<CodeInfo*>(it4.Current()))->BegLine();
+                  else
+                     line1 = line;  // the line value I want to remove
+                  CI_parent->modifyStartLine(line1);
+                  CI_parent = CI_parent->CodeInfoParent();
+               } while (CI_parent != lca);
+               delete (myFilter);
+               // iterators between stmt2 and 'lca' are invalidated. 
+               // Restart at lca.
+               throw CDS_RestartException(lca_CI);
+            }
+         }
+         delete (myFilter);
+      }
       // Case 2: Duplicate statements in different loops (or scopes).
       // Merge the nodes from stmt2->lca into those from stmt1->lca.
       CDSDBG { cout << "  Merge: " << stmt1 << " <- " << stmt2 << endl; }
@@ -933,8 +1057,6 @@ CDS_InspectStmt(StmtRangeScope* stmt1, LineToStmtMap* stmtMap, int level)
 	// While neither statement is deleted ('stmtMap' is still
 	// valid), iterators between stmt1 and 'lca' are invalidated. 
 	// Restart at lca.
-	CodeInfo* lca_CI = dynamic_cast<CodeInfo*>(lca);
-	BriefAssertion(lca_CI);
 	throw CDS_RestartException(lca_CI);
       }
       
