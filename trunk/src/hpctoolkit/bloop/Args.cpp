@@ -77,6 +77,8 @@ static const char* usage_details =
 "Options:\n"
 "  -v, --verbose        Verbose: generate progress messages to stderr\n"
 "  -n, --normalize-off  Turn off scope tree normalization\n"
+"  -u, --unsafe-normalize-off\n"
+"                       Turn off potentially unsafe normalization\n"
 "  -i, --irreducible-interval-as-loop\n"
 "                       Treat irreducible intervals as loops\n"
 "  -c, --compact        Generate compact output, eliminating extra white\n"
@@ -115,6 +117,8 @@ CmdLineParser::OptArgDesc Args::optArgs[] = {
   // Options
   { 'v', "verbose",         CLP::ARG_NONE, CLP::DUPOPT_CLOB, NULL },
   { 'n', "normalize-off",   CLP::ARG_NONE, CLP::DUPOPT_CLOB, NULL },
+  { 'u', "unsafe-normalize-off", 
+                            CLP::ARG_NONE, CLP::DUPOPT_CLOB, NULL },
   { 'i', "irreducible-interval-as-loop",
                             CLP::ARG_NONE, CLP::DUPOPT_CLOB, NULL },
   { 'c', "compact",         CLP::ARG_NONE, CLP::DUPOPT_CLOB, NULL },
@@ -151,6 +155,7 @@ Args::Ctor()
 {
   verboseMode = false;
   normalizeScopeTree = true;
+  unsafeNormalizations = true;
   irreducibleIntervalIsLoop = false;
   prettyPrintOutput = true;
   dumpBinary = false;
@@ -230,6 +235,9 @@ Args::Parse(int argc, const char* const argv[])
     } 
     if (parser.IsOpt("normalize-off")) { 
       normalizeScopeTree = false;
+    } 
+    if (parser.IsOpt("unsafe-normalize-off")) { 
+      unsafeNormalizations = false;
     } 
     if (parser.IsOpt("irreducible-interval-as-loop")) { 
       irreducibleIntervalIsLoop = true;
