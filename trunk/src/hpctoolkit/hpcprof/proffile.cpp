@@ -74,7 +74,7 @@ ProfFile::read(const string &filename)
 
   fp = fopen(filename.c_str(), "r");
 
-  // Read Header information
+  // <header>
   char magic_str[HPCRUNFILE_MAGIC_STR_LEN];
   char version[HPCRUNFILE_VERSION_LEN];
   char endian;
@@ -90,7 +90,7 @@ ProfFile::read(const string &filename)
   if ((c = fgetc(fp)) == EOF) { return 1; }
   endian = (char)c;
   
-  // Sanity check Header information
+  // sanity check header
   if (strncmp(magic_str, HPCRUNFILE_MAGIC_STR, 
 	      HPCRUNFILE_MAGIC_STR_LEN) != 0) { 
     return 1; 
@@ -101,7 +101,7 @@ ProfFile::read(const string &filename)
   if (endian != HPCRUNFILE_ENDIAN) { return 1; }
 
 
-  // Read Load modules
+  // <loadmodule_list>
   uint32_t count;
 
   sz = hpc_fread_le4(&count, fp);
@@ -149,7 +149,7 @@ ProfFileLM::read(FILE *fp)
 {
   size_t sz;
   
-  // Load module name and load offset.
+  // <loadmodule_name>, <loadmodule_loadoffset>
   if (read_string(fp, name_) != 0) { return 1; }
 #ifdef DEBUG
   cerr << name_ << " "; 
@@ -160,11 +160,14 @@ ProfFileLM::read(FILE *fp)
 #ifdef DEBUG
   cerr << "load address=" << load_addr_ << endl; 
 #endif
-
-  // Read event data
+  
+  // <loadmodule_eventcount>
   unsigned int count = 1;
-
+  sz = hpc_fread_le4(&count, fp);
+  if (sz != sizeof(count)) { return 1; }
   eventvec_.resize(count);
+  
+  // Event data
   for (unsigned int i = 0; i < count; ++i) {
     if (eventvec_[i].read(fp, load_addr_) != 0) { return 1; }
   }
@@ -202,35 +205,36 @@ ProfFileEvent::read(FILE *fp, uint64_t load_addr)
 {
   size_t sz;
   
-  // Profiling event name, description and period
+  // <event_x_name> <event_x_description> <event_x_period>
   if (read_string(fp, name_) != 0) { return 1; }
   if (read_string(fp, desc_) != 0) { return 1; }
   
   sz = hpc_fread_le8(&period_, fp);
   if (sz != sizeof(period_)) { return 1; }
   
-  // Profiling data
+  // <event_x_data>
   dat_.clear();
   outofrange_ = 0;
   overflow_ = 0;
   
-  // Profiling entry: count and offset
+  // <histogram_non_zero_bucket_count>
   unsigned int ndat;    // number of profile entries
-  unsigned int count; // profile count
-  unsigned int offset;  // offset from load address
-  
   sz = hpc_fread_le4(&ndat, fp);
   if (sz != sizeof(ndat)) { return 1; }
 #ifdef DEBUG
   cerr << "ndat =" << ndat << endl; 
 #endif
-
   dat_.resize(ndat);
+
+  // <histogram_non_zero_bucket_x_value> 
+  // <histogram_non_zero_bucket_x_offset>
+  unsigned int count;   // profile count
+  unsigned int offset;  // offset from load address
   for (unsigned int i = 0; i < ndat; ++i) {
-    sz = hpc_fread_le4(&count, fp);
+    sz = hpc_fread_le4(&count, fp);        // count
     if (sz != sizeof(count)) { return 1; }
 
-    sz = hpc_fread_le4(&offset, fp);
+    sz = hpc_fread_le4(&offset, fp);       // offset
     if (sz != sizeof(offset)) { return 1; }
 #ifdef DEBUG
   cerr << "  (cnt,offset)=(" << count << "," << offset << ")" << endl; 
@@ -269,7 +273,7 @@ read_string(FILE *fp, std::string& str)
   uint32_t len; // string length  
   int c;
 
-  // Note: the string is not null terminated.
+  // <string_length> <string_without_terminator>
   sz = hpc_fread_le4(&len, fp);
   if (sz != sizeof(len)) { return 1; }
   
