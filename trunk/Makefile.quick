@@ -75,9 +75,38 @@ export CXX
 
 #############################################################################
 
+define HELPCMDS
+echo "A wrapper for configuring, building and installing HPCToolkit."
+echo "Targets:"
+echo "  all       - Configure, build and install, using the options below."
+echo ""
+echo "  configure - Configure and create makefiles, using the options below."
+echo "  build     - Build"
+echo "  install   - Install"
+echo ""
+echo "Options to 'all' and 'configure':"
+echo "  CC=<C-compiler>         - Set the C compiler"
+echo "  CXX=<C++-compiler>      - Set C++ compiler"
+echo "  PAPI=<PAPI-install-dir> - Set PAPI installation (absolute path)"
+echo "  DEVELOP=1               - develop mode"
+echo ""
+echo "By default, makefiles are created in:"
+echo "  $(BUILDDIR)"
+echo "By default, the installation is performed in:"
+echo "  $(INSTALLDIR)"
+echo ""
+echo "For more complex actions, use the configure target above and then use"
+echo "the _resulting_ makefiles in the build directory; or use the typical"
+echo "Autoconf/Automake trio,"
+echo "  ./configure <options> ; make ; make install"
+endef
+
+help: 
+	@$(HELPCMDS)
+
 all: configure build install
 
-.PHONY : all
+.PHONY : all help
 
 #############################################################################
 
