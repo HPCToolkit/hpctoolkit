@@ -327,11 +327,7 @@ public:
   virtual String DumpLineRange(int dmpFlag = PgmScopeTree::XML_TRUE) const;
 
   void SetLineRange(suint begLn, suint endLn); // be careful when using!
-
-  // this is a rather ugly change of the interface to allow correcting the
-  // start line number of loops;
-  void modifyStartLine(suint newStart) { begLine = newStart; }
-    
+  
 protected: 
   void Relocate(); 
   suint begLine; 
@@ -471,9 +467,7 @@ public:
   virtual String LinkName() const   { return linkname; }
   virtual String CodeName() const; 
   virtual String ToDumpString(int dmpFlag = PgmScopeTree::XML_TRUE) const;
-
-  void FixIntervalBoundaries();
-
+  
 private: 
   String name; 
   String linkname;
@@ -492,8 +486,6 @@ public:
   virtual String CodeName() const;
   virtual String ToDumpString(int dmpFlag = PgmScopeTree::XML_TRUE) const; 
   
-  bool FixIntervalBoundaries(suint pStartLn, suint pEndLn, 
-           suint& newStart, suint& newEnd);
 private:
   int id;
 };

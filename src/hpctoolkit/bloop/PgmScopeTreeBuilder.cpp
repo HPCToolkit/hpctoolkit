@@ -91,11 +91,11 @@ using namespace ScopeTreeBuilder;
 // Helpers for building a scope tree
 
 static ProcScope*
-BuildFromProc(FileScope* fileScope, Procedure* p, bool fixBoundaries); 
+BuildFromProc(FileScope* fileScope, Procedure* p); 
 
 static int
 BuildFromTarjTree(ProcScope* pScope, Procedure* p, TarjanIntervals* tarj, 
-		  RIFG* fg, CFG* cfg, RIFGNodeId fgNode, bool fixBoundaries);
+		  RIFG* fg, CFG* cfg, RIFGNodeId fgNode);
 
 static int
 BuildFromBB(CodeInfo* enclosingScope, Procedure* p, CFG::Node* bb);
@@ -250,7 +250,6 @@ ScopeTreeBuilder::BuildFromExe(/*Executable*/ LoadModule* exe,
 			       PCToSrcLineXMap* &map,
 			       String canonicalPathList, 
 			       bool normalizeScopeTree,
-			       bool fixBoundaries,
 			       bool verboseMode)
 {
   BriefAssertion(exe);
@@ -287,7 +286,7 @@ ScopeTreeBuilder::BuildFromExe(/*Executable*/ LoadModule* exe,
       if (verboseMode){
         cerr << "Building scope tree for [" << p->GetName()  << "] ... ";
       }
-      BuildFromProc(fileScope, p, fixBoundaries);
+      BuildFromProc(fileScope, p);
       if (map) { BuildPCToSrcLineMap(map, p); } // MAP
       if (verboseMode){
         cerr << "done " << endl;
@@ -348,7 +347,7 @@ static bool testProcNow = false;
 
 // BuildFromProc: 
 static ProcScope* 
-BuildFromProc(FileScope* fileScope, Procedure* p, bool fixBoundaries)
+BuildFromProc(FileScope* fileScope, Procedure* p)
 {  
   String func, file;
   suint startLn, endLn;
@@ -402,19 +401,7 @@ BuildFromProc(FileScope* fileScope, Procedure* p, bool fixBoundaries)
   }
 #endif 
   
-  BuildFromTarjTree(pScope, p, &tarj, &fg, &cfg, fgRoot, fixBoundaries);
-  // mgabi: Here I try to fix the boundaries that are the result of compilers
-  // using the routine's start line number (Sun compiler and Sgi compiler), 
-  // or the routine's end line number (Intel compiler) for instructions that
-  // access the routine's input parameters (and maybe other instructions). 
-  // I will recursively traverse the tree corresponding to each routine, 
-  // and I will remove the statements inside loops that correspond to 
-  // either the start or the end line numbers of the parent routine. 
-  // I will also remove statements which are outside any loop, because 
-  // they do not add any value to the final scope tree.
-  if (fixBoundaries)
-    pScope->FixIntervalBoundaries();
-
+  BuildFromTarjTree(pScope, p, &tarj, &fg, &cfg, fgRoot);
   return pScope;
 }
 
@@ -429,18 +416,15 @@ BuildFromTarjInterval(CodeInfo* enclosingScope, Procedure* p,
 
 static int
 BuildFromTarjTree(ProcScope* pScope, Procedure* p, TarjanIntervals* tarj, 
-		  RIFG* fg, CFG* cfg, RIFGNodeId fgNode, bool fixBoundaries)
+		  RIFG* fg, CFG* cfg, RIFGNodeId fgNode)
 {
 #ifdef BLOOP_ATTEMPT_TO_IMPROVE_INTERVAL_BOUNDARIES
   CFGNodeToPCMap cfgNodeMap(cfg, p);
 #else
   CFGNodeToPCMap cfgNodeMap;
 #endif
-  // mgabi: changed to add statements that are outside loops, to have a more 
-  // precise understanding of the routine's start and end line numbers.
-  // I will remove these statements in a future traversal of the tree.
   int num = BuildFromTarjInterval(pScope, p, tarj, fg, cfg, fgNode, 
-				  &cfgNodeMap, fixBoundaries?1:0);
+				  &cfgNodeMap, 0);
   return num;
 }
 
@@ -602,107 +586,6 @@ FindOrCreateFileNode(LoadModScope* lmScope, Procedure* p)
   return fileScope; // guaranteed to be a valid pointer
 } 
 
-// FixIntervalBoundaries
-void
-ProcScope::FixIntervalBoundaries()
-{
-  suint pStartLn = BegLine();
-  suint pEndLn = EndLine();
-  if (pStartLn == UNDEF_LINE)  // line no info unavailable
-    return;
-  
-  for (ScopeInfoChildIterator it(this); it.Current(); /* */) {
-    CodeInfo* child = dynamic_cast<CodeInfo*>(it.Current()); // always true
-    it++; // advance iterator -- it is pointing at 'child'
-    
-    if (child->Type() == ScopeInfo::STMT_RANGE) {
-      // statement outside any loop; remove it as we do not need it anymore
-      child->Unlink(); // unlink 'child' from tree
-      CDSDBG { cout << "  Delete: " << child << endl; }
-      delete child;
-    } else
-    if (child->Type() == ScopeInfo::LOOP) {
-      // found a loop; fix boundaries recursively
-      suint newStart, newEnd; 
-      if (! dynamic_cast<LoopScope*>(child)->FixIntervalBoundaries(pStartLn, 
-             pEndLn, newStart, newEnd) ) {
-        // loop has no good statement; remove it
-        child->Unlink(); // unlink 'child' from tree
-        CDSDBG { cout << "  Delete: " << child << endl; }
-        delete child;
-      }
-    } 
-  }
-}
-
-bool
-LoopScope::FixIntervalBoundaries(suint pStartLn, suint pEndLn, 
-             suint& newStart, suint& newEnd)
-{
-  BriefAssertion (begLine != UNDEF_LINE); // method would not be called
-  if (begLine!=pStartLn && endLine!=pEndLn) // this loop is not affected by
-                                          // this type of boundaries problems
-  {
-    newStart = begLine; newEnd = endLine;
-    return (true);
-  }
-  
-  newStart = UNDEF_LINE; newEnd = UNDEF_LINE;
-  for (ScopeInfoChildIterator it(this); it.Current(); /* */) {
-    CodeInfo* child = dynamic_cast<CodeInfo*>(it.Current()); // always true
-    it++; // advance iterator -- it is pointing at 'child'
-
-    suint childStart, childEnd;
-    if (child->Type() == ScopeInfo::STMT_RANGE) {
-      childStart = child->BegLine();
-      childEnd = child->EndLine();
-      if (childEnd==pStartLn || childStart==pEndLn) {
-        // statement inside loop with bad line number; remove it
-        child->Unlink(); // unlink 'child' from tree
-        CDSDBG { cout << "  Delete: " << child << endl; }
-        delete child;
-      } else   // a good statement
-        if (newStart == UNDEF_LINE) {
-          // newEnd must be also UNDEF
-          newStart = childStart;
-          newEnd = childEnd;
-        } else {
-          BriefAssertion (newEnd != UNDEF_LINE);
-          newStart = MIN(newStart, childStart);
-          newEnd = MAX(newEnd, childEnd);
-        }
-    } else
-    if (child->Type() == ScopeInfo::LOOP) {  // can it be anything else?
-      // found a loop; fix boundaries recursively
-      if (dynamic_cast<LoopScope*>(child)->FixIntervalBoundaries(pStartLn, 
-               pEndLn, childStart, childEnd) ) {  // loop is valid
-        if (newStart == UNDEF_LINE) {
-          // newEnd must be also UNDEF
-          newStart = childStart;
-          newEnd = childEnd;
-        } else {
-          BriefAssertion (newEnd != UNDEF_LINE);
-          newStart = MIN(newStart, childStart);
-          newEnd = MAX(newEnd, childEnd);
-        }
-      } else {  // loop does not have any good statement
-        child->Unlink(); // unlink 'child' from tree
-        CDSDBG { cout << "  Delete: " << child << endl; }
-        delete child;
-      }
-    }  // type == LOOP
-  }  // child_iterator
-  // if the new start and end line numbers are valid, then modify the 
-  // current ones
-  if (newStart != UNDEF_LINE) {
-    BriefAssertion (newEnd != UNDEF_LINE);
-    begLine = newStart;
-    endLine = newEnd;
-    return (true);
-  } else
-    return (false);
-}
-
 
 //****************************************************************************
 // Helpers for normalizing a scope tree
@@ -796,17 +679,17 @@ CoalesceDuplicateStmts(PgmScopeTree* pgmScopeTree)
   for (ScopeInfoChildIterator lmit(pgmScope); lmit.Current(); lmit++) {
     BriefAssertion(((ScopeInfo*)lmit.Current())->Type() == ScopeInfo::LM);
     LoadModScope* lm = dynamic_cast<LoadModScope*>(lmit.Current()); // always true
-
-  // We apply the normalization routine to each FileScope so that 1)
-  // we are guaranteed to only process CodeInfos and 2) we can assume
-  // that all line numbers encountered are within the same file
-  // (keeping the LineToStmtMap simple and fast).
-  for (ScopeInfoChildIterator it(lm); it.Current(); ++it) {
-    BriefAssertion(((ScopeInfo*)it.Current())->Type() == ScopeInfo::FILE);
-    FileScope* file = dynamic_cast<FileScope*>(it.Current()); // always true
     
-    changed |= CoalesceDuplicateStmts(file, &stmtMap, &visitedScopes, 1);
-  } 
+    // We apply the normalization routine to each FileScope so that 1)
+    // we are guaranteed to only process CodeInfos and 2) we can assume
+    // that all line numbers encountered are within the same file
+    // (keeping the LineToStmtMap simple and fast).
+    for (ScopeInfoChildIterator it(lm); it.Current(); ++it) {
+      BriefAssertion(((ScopeInfo*)it.Current())->Type() == ScopeInfo::FILE);
+      FileScope* file = dynamic_cast<FileScope*>(it.Current()); // always true
+      
+      changed |= CoalesceDuplicateStmts(file, &stmtMap, &visitedScopes, 1);
+    } 
   }
 
   return changed;
@@ -896,22 +779,8 @@ CDS_Main(CodeInfo* scope, LineToStmtMap* stmtMap, ScopeInfoSet* visited,
   return changed; 
 }
 
-bool 
-ScopesGreaterThanLine(const ScopeInfo &info, long line)
-{
-   const CodeInfo* cinfo = dynamic_cast<const CodeInfo*>(&info);
-   return (cinfo!=NULL && cinfo->BegLine() > line);
-}
-
-bool 
-ScopesEqualToLine(const ScopeInfo &info, long line)
-{
-   const CodeInfo* cinfo = dynamic_cast<const CodeInfo*>(&info);
-   return (cinfo!=NULL && cinfo->BegLine() == line);
-}
-
 // CDS_InspectStmt: applies case 1 or 2, as described above
-bool
+static bool
 CDS_InspectStmt(StmtRangeScope* stmt1, LineToStmtMap* stmtMap, int level)
   throw (CDS_RestartException)
 {
@@ -952,117 +821,7 @@ CDS_InspectStmt(StmtRangeScope* stmt1, LineToStmtMap* stmtMap, int level)
       changed = true;
       
     } else {
-      CodeInfo* lca_CI = dynamic_cast<CodeInfo*>(lca);
-      BriefAssertion(lca_CI);
-
-      // for a general case, I need to find the outermost
-      // ancestors inside the lca for each of the two statements.
-      // I should always be able to find them
-      ScopeInfo *ancestor1 = stmt1->Parent();
-      ScopeInfo *ancestor2 = stmt2->Parent();
-      while (ancestor1->Parent() != lca)
-         ancestor1 = ancestor1->Parent();
-      while (ancestor2->Parent() != lca)
-         ancestor2 = ancestor2->Parent();
-      // ancestor1 and ancestor2 are loops
-      CodeInfo *CI_ancestor1 = dynamic_cast<CodeInfo*>(ancestor1);
-      CodeInfo *CI_ancestor2 = dynamic_cast<CodeInfo*>(ancestor2);
-      // if stmt1 and stmt2 correspond to the start line number of the
-      // two outer scopes, and the rest of children in these scopes are not
-      // interleaved, then do not merge the scopes. 
-      // Fix the start line number instead.
-      if (line == CI_ancestor1->BegLine() &&
-          line == CI_ancestor2->BegLine() ) {
-         CDSDBG {
-           cout << "START. line=" << line << ", ancestor1=" << CI_ancestor1->ToDumpString()
-                << CI_ancestor1->DumpLineRange() << ", ancestor2=" << CI_ancestor2->ToDumpString()
-                << CI_ancestor2->DumpLineRange() << ", LCA=" << lca_CI->ToDumpString()
-                << lca_CI->DumpLineRange() << endl;
-         }
-         // test if this is the only overlapping statement
-         ScopeInfoFilter* myFilter = new ScopeInfoFilter (
-                 ScopesGreaterThanLine, "biggerThanLine", line);
-         ScopeInfoLineSortedIterator it1 (CI_ancestor1,
-                     myFilter, true);
-         ScopeInfoLineSortedIterator it2 (CI_ancestor2,
-                     myFilter, true);
-         if (it1.Current() && it2.Current()) {
-            suint line1 = (dynamic_cast<CodeInfo*>(it1.Current()))->BegLine();
-            suint line2 = (dynamic_cast<CodeInfo*>(it2.Current()))->BegLine();
-            CDSDBG {
-              cout << "Found next line in scope1=" << line1 << ", next line in scope2="
-                   << line2 << endl;
-            }
-            if (line1 > CI_ancestor2->EndLine()) {
-               CDSDBG {
-                 cout << "FOUND line1 larger than ancestor2->endline=" 
-                      << CI_ancestor2->EndLine() << endl;
-               }
-               ScopeInfoFilter* equalFilter = new ScopeInfoFilter (
-                       ScopesEqualToLine, "equalToLine", line);
-               // I must delete all the duplicate statements to line 'line' from 
-               // sub-tree pointed at ancestor1
-               ScopeInfoLineSortedIterator it3 (CI_ancestor1,
-                           equalFilter, true);
-               for ( ; it3.Current() ; ) {
-                  stmt1 = dynamic_cast<StmtRangeScope*>(it3.Current());
-                  it3 ++;
-                  CodeInfo* CI_parent = stmt1->CodeInfoParent();
-                  stmt1->Unlink(); // unlink 'stmt1' from tree
-                  CDSDBG { cout << "  Delete: " << stmt1 << endl; }
-                  delete stmt1;
-                  // must update the start line number of all scopes from parent to ancestor1
-                  do {
-                     // find the next larger line
-                     ScopeInfoLineSortedIterator it4 (CI_parent, NULL, true);
-                     if (it4.Current())
-                        line1 = (dynamic_cast<CodeInfo*>(it4.Current()))->BegLine();
-                     else
-                        line1 = line;  // the line value I want to remove
-                     CI_parent->modifyStartLine(line1);
-                     CI_parent = CI_parent->CodeInfoParent();
-                  } while (CI_parent != lca);
-               }
-               delete (myFilter);
-               delete (equalFilter);
-               // iterators between stmt1 and 'lca' are invalidated. 
-               // Restart at lca.
-               throw CDS_RestartException(lca_CI);
-            }
-            if (line2 > CI_ancestor1->EndLine()) {
-               CDSDBG {
-                 cout << "FOUND line2 larger than ancestor1->endline=" 
-                      << CI_ancestor1->EndLine() << endl;
-               }
-               stmtdata->SetStmt(stmt1);  // replace stmt2 with stmt1
-               stmtdata->SetLevel(level);
-               // update the start line of all scopes from the statement's
-               // parent up to the scope just under lca (ancestor1)
-               // This scope was processed before. I cannot have duplicate statements
-               // in this scope
-               CodeInfo* CI_parent = stmt2->CodeInfoParent();
-               stmt2->Unlink(); // unlink 'stmt1' from tree
-               CDSDBG { cout << "  Delete: " << stmt2 << endl; }
-               delete stmt2;
-               // must update the start line number of all scopes from parent to ancestor2
-               do {
-                  // find the next larger line
-                  ScopeInfoLineSortedIterator it4 (CI_parent, NULL, true);
-                  if (it4.Current())
-                     line1 = (dynamic_cast<CodeInfo*>(it4.Current()))->BegLine();
-                  else
-                     line1 = line;  // the line value I want to remove
-                  CI_parent->modifyStartLine(line1);
-                  CI_parent = CI_parent->CodeInfoParent();
-               } while (CI_parent != lca);
-               delete (myFilter);
-               // iterators between stmt2 and 'lca' are invalidated. 
-               // Restart at lca.
-               throw CDS_RestartException(lca_CI);
-            }
-         }
-         delete (myFilter);
-      }
+      
       // Case 2: Duplicate statements in different loops (or scopes).
       // Merge the nodes from stmt2->lca into those from stmt1->lca.
       CDSDBG { cout << "  Merge: " << stmt1 << " <- " << stmt2 << endl; }
@@ -1071,6 +830,8 @@ CDS_InspectStmt(StmtRangeScope* stmt1, LineToStmtMap* stmtMap, int level)
 	// While neither statement is deleted ('stmtMap' is still
 	// valid), iterators between stmt1 and 'lca' are invalidated. 
 	// Restart at lca.
+	CodeInfo* lca_CI = dynamic_cast<CodeInfo*>(lca);
+	BriefAssertion(lca_CI);
 	throw CDS_RestartException(lca_CI);
       }
       
