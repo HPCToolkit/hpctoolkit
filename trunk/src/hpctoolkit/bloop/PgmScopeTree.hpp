@@ -256,9 +256,10 @@ public:
   static bool ArePathsOverlapping(ScopeInfo* lca, ScopeInfo* desc1, 
 				  ScopeInfo* desc2);
   
-  // MergePaths: Given divergent paths (as defined above), merges the
-  // shorter path into the longer path.  If a merge takes place returns true.
-  static bool MergePaths(ScopeInfo* lca, ScopeInfo* desc1, ScopeInfo* desc2);
+  // MergePaths: Given divergent paths (as defined above), merges the path
+  // from 'toDesc' into 'fromDesc'. If a merge takes place returns true.
+  static bool MergePaths(ScopeInfo* lca, 
+			 ScopeInfo* toDesc, ScopeInfo* fromDesc);
   
   // Merge: Given two nodes, 'fromNode' and 'toNode', merges the
   // former into the latter, if possible.  If the merge takes place,

@@ -537,43 +537,43 @@ ScopeInfo::ArePathsOverlapping(ScopeInfo* lca, ScopeInfo* desc1,
 }
 
 bool
-ScopeInfo::MergePaths(ScopeInfo* lca, ScopeInfo* desc1, ScopeInfo* desc2)
+ScopeInfo::MergePaths(ScopeInfo* lca, ScopeInfo* toDesc, ScopeInfo* fromDesc)
 {
   bool merged = false;
   // Should we verify that lca is really the lca?
   
-  // Collect nodes along paths between 'lca' and 'desc1', 'desc2'.
+  // Collect nodes along paths between 'lca' and 'toDesc', 'fromDesc'.
   // The descendent nodes will be at the end of the list.
-  ScopeInfoList path1, path2;
-  for (ScopeInfo* x = desc1; x != lca; x = x->Parent()) {
-    path1.push_front(x);
+  ScopeInfoList toPath, fromPath;
+  for (ScopeInfo* x = toDesc; x != lca; x = x->Parent()) {
+    toPath.push_front(x);
   }
-  for (ScopeInfo* x = desc2; x != lca; x = x->Parent()) {
-    path2.push_front(x);
+  for (ScopeInfo* x = fromDesc; x != lca; x = x->Parent()) {
+    fromPath.push_front(x);
   }
-  BriefAssertion(path1.size() > 0 && path2.size() > 0);
+  BriefAssertion(toPath.size() > 0 && fromPath.size() > 0);
   
-  // The shorter path will be merged into the longer one.  Determine
-  // which is which (of course, they can be equal)
-  ScopeInfoList* pathL = &path1; // long path
-  ScopeInfoList* pathS = &path2; // short path
-  if (pathL->size() < pathS->size()) {
-    pathL = &path2;
-    pathS = &path1;
+  // We merge from the deepest _common_ level of nesting out to lca
+  // (shallowest).  
+  ScopeInfoList::reverse_iterator toPathIt = toPath.rbegin();
+  ScopeInfoList::reverse_iterator fromPathIt = fromPath.rbegin();
+  
+  // Determine which path is longer (of course, they can be equal) so
+  // we can properly set up the iterators
+  ScopeInfoList::reverse_iterator* lPathIt = &toPathIt; // long path iter
+  int difference = toPath.size() - fromPath.size();
+  if (difference < 0) {
+    lPathIt = &fromPathIt;
+    difference = -difference;
   }
   
-  // We merge from the deepest level of nesting out to lca
-  // (shallowest), beginning with the shortest path.  First, we align
-  // the iterators.
-  ScopeInfoList::reverse_iterator pathSit = pathS->rbegin();
-  ScopeInfoList::reverse_iterator pathLit = pathL->rbegin();
-  int offset = (pathL->size() - pathS->size());
-  for (int i = 0; i < offset; ++i) { pathLit++; }
+  // Align the iterators
+  for (int i = 0; i < difference; ++i) { (*lPathIt)++; }
   
-  // Now we merge along the shortest path
-  for ( ; pathLit != pathL->rend(); ++pathLit, ++pathSit) {
-    ScopeInfo* from = (*pathSit);
-    ScopeInfo* to = (*pathLit);
+  // Now merge the nodes in 'fromPath' into 'toPath'
+  for ( ; fromPathIt != fromPath.rend(); ++fromPathIt, ++toPathIt) {
+    ScopeInfo* from = (*fromPathIt);
+    ScopeInfo* to = (*toPathIt);
     if (IsMergable(to, from)) {
       merged |= Merge(to, from);
     }
