@@ -48,18 +48,18 @@ hpc_init_papi()
 int
 hpc_init_papi_force()
 {
-    /* Initialize PAPI library */
-    int papi_version; 
-    papi_version = PAPI_library_init(PAPI_VER_CURRENT);
-    if (papi_version != PAPI_VER_CURRENT) {
-      fprintf(stderr, "PAPI library initialization failure - expected version %d, dynamic library was version %d. Aborting.\n", PAPI_VER_CURRENT, papi_version);
-      return 1;
-    }
-    
-    if (papi_version < 3) {
-      fprintf(stderr, "Using PAPI library version %d; expecting version 3 or greater.\n", papi_version);
-      return 1;
-    }
+  /* Initialize PAPI library */
+  int papi_version; 
+  papi_version = PAPI_library_init(PAPI_VER_CURRENT);
+  if (papi_version != PAPI_VER_CURRENT) {
+    fprintf(stderr, "PAPI library initialization failure - expected version %d, dynamic library was version %d. Aborting.\n", PAPI_VER_CURRENT, papi_version);
+    return 1;
+  }
+  
+  if (papi_version < 3) {
+    fprintf(stderr, "Using PAPI library version %d; expecting version 3 or greater.\n", papi_version);
+    return 1;
+  }
   return 0;
 }
 
