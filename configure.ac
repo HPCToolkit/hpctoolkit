@@ -68,6 +68,8 @@ AC_CONFIG_AUX_DIR([config])
 AC_PREREQ(2.59)
 AM_INIT_AUTOMAKE(1.8.3)
 
+AC_CANONICAL_HOST
+
 #----------------------------------------------------------------------------
 # Prerequisites: programs, libraries
 #----------------------------------------------------------------------------
@@ -81,8 +83,8 @@ if test -z "$CXXFLAGS" ; then
   CXXFLAGS=""
 fi
 
-# Checks for programs.
-AC_CANONICAL_HOST
+# Check for programs.
+AC_PROG_LIBTOOL
 AC_PROG_CXX(CC  cxx  icpc ecpc icc ecc  g++ gcc c++)
 AC_PROG_CC(cc  icc ecc  gcc)
 AC_PROG_CXXCPP
@@ -92,75 +94,179 @@ AC_PROG_INSTALL
 # Use C++ compiler for all checks
 AC_LANG(C++)
 
-# Checks for libraries.
-# FIXME: binutils, xerces, openanalysis
-
-# Checks for header files
+# Check for header files
 AC_HEADER_STDC
 AC_CHECK_HEADERS(unistd.h)
 AC_CHECK_HEADERS(inttypes.h)
 HPC_CHECK_CXX_STDC_HEADERS
 
-# Checks for typedefs, structures, and compiler characteristics.
+# Check for typedefs, structures, and compiler characteristics.
 # -none thus far-
 
-# Checks for library functions.
+# Check for library functions.
 # -none thus far-
 
-hpctoolkit_top=`cd ${srcdir} ; pwd`
+hpctoolkit_top=`cd ${srcdir} && pwd`
 HPCTOOLKIT_PLATFORM=`cd ${hpctoolkit_top}/config; ./hpcplatform`
 AC_SUBST([HPCTOOLKIT_PLATFORM])
 
 
 # NOTE: we should allow the locations of xerces, OA, and binutils
-#   installations to be passed in as options.
+# installations to optionally be given on configure line.
 
 #-------------------------------------------------
-# Xerces-C (XML parser)
+# Check for Xerces-C (XML parser)
 #-------------------------------------------------
+
+AC_MSG_CHECKING([for Xerces-C])
 
 XERCES="${hpctoolkit_top}/../xercesc/${HPCTOOLKIT_PLATFORM}"
 XERCES_IFLAGS="-I${XERCES}/include"
 XERCES_LDFLAGS="-L${XERCES}/lib -lxerces-c"
+
+AC_MSG_RESULT([${XERCES}])
 AC_SUBST([XERCES])
 AC_SUBST([XERCES_IFLAGS])
 AC_SUBST([XERCES_LDFLAGS])
 
 #-------------------------------------------------
-# Open Analysis (CFG builder, etc.)
+# Check for Open Analysis (CFG builder, etc.)
 #-------------------------------------------------
+
+AC_MSG_CHECKING([for OpenAnalysis])
 
 OA="${hpctoolkit_top}/../OpenAnalysis/${HPCTOOLKIT_PLATFORM}"
 OA_IFLAGS="-DOA_IRHANDLETYPE_SZ64 -I${OA}/include"
 OA_LDFLAGS="-L${OA}/lib -lOAsz64"
+
+AC_MSG_RESULT([${OA}])
 AC_SUBST([OA_IFLAGS])
 AC_SUBST([OA_LDFLAGS])
 
 #-------------------------------------------------
-# GNU's binutils (binary interface)
+# Check for GNU's binutils (binary interface)
 #-------------------------------------------------
 
+AC_MSG_CHECKING([for GNU binutils])
+
 GNUBINUTILS="${hpctoolkit_top}/../binutils/${HPCTOOLKIT_PLATFORM}"
-GNUBINUTIL_IFLAGS="-I${GNUBINUTILS}/include"
-GNUBINUTIL_LDFLAGS="-L${GNUBINUTILS}/lib -lbfd -lopcodes -liberty -lintl"
-AC_SUBST([GNUBINUTIL_IFLAGS])
-AC_SUBST([GNUBINUTIL_LDFLAGS])
+GNUBINUTILS_IFLAGS="-I${GNUBINUTILS}/include"
+#GNUBINUTILS_LDFLAGS="-L${GNUBINUTILS}/lib -lbfd -lopcodes -liberty -lintl"
+GNUBINUTILS_LDFLAGS="-L${GNUBINUTILS}/lib -lbfd -lopcodes -liberty ${GNUBINUTILS}/lib/libintl.a"
+
+AC_MSG_RESULT([${GNUBINUTILS}])
+AC_SUBST([GNUBINUTILS_IFLAGS])
+AC_SUBST([GNUBINUTILS_LDFLAGS])
 
 
 #----------------------------------------------------------------------------
 # Options
 #----------------------------------------------------------------------------
-OPT_DEVELOP="false"
 
-AC_ARG_ENABLE(develop,
-  [  --enable-develop    Build development version (enable debugging)],
+#-------------------------------------------------
+# enable-develop
+#-------------------------------------------------
+
+AC_MSG_CHECKING([whether DEVELOP mode is enabled])
+
+OPT_ENABLE_DEVELOP=no
+
+AC_ARG_ENABLE([develop],
+  AC_HELP_STRING([--enable-develop],
+                 [Build development version (enable debugging)]),
   [case "${enableval}" in
-     yes) develop="true" ; OPT_DEVELOP="true" ;;
-     no)  develop="false" ;;
+     yes) OPT_ENABLE_DEVELOP="yes" ;;
+     no)  OPT_ENABLE_DEVELOP="no" ;;
      *) AC_MSG_ERROR([bad value ${enableval} for --enable-develop]) ;;
    esac],
-  [develop="false"])
-AM_CONDITIONAL(OPT_DEVELOP, test "$develop" = "true")
+  [OPT_ENABLE_DEVELOP=no])
+
+AC_MSG_RESULT([${OPT_ENABLE_DEVELOP}])
+AM_CONDITIONAL(OPT_ENABLE_DEVELOP, test "${OPT_ENABLE_DEVELOP}" = "yes")
+
+#-------------------------------------------------
+# with-papi
+#-------------------------------------------------
+
+AC_MSG_CHECKING([whether configured with PAPI])
+
+OPT_HAVE_PAPI=no
+OPT_PAPI=
+OPT_PAPI_IFLAGS=
+OPT_PAPI_LIBPATH=
+OPT_PAPI_LDFLAGS=
+OPT_PAPI_DLOPEN=
+
+AC_ARG_WITH([papi],
+  AC_HELP_STRING([--with-papi=<papi_install_path>],
+                 [use PAPI with hpcrun/hpcprof (default is NO)]),
+  [if test $withval != no; then
+     OPT_HAVE_PAPI=yes
+     OPT_PAPI=`cd ${withval} && pwd`
+   fi],
+  [if test -f /usr/local/papi/include/papi.h; then
+    OPT_HAVE_PAPI=yes
+    OPT_PAPI=/usr/local/papi
+   elif test -f /usr/local/include/papi.h; then
+    OPT_HAVE_PAPI=yes
+    OPT_PAPI=/usr/local
+  fi])
+
+# Allow <papi_install_path> to either point to a true installation or
+# simply a build.  In the latter case, the papi library and header
+# will have a different location.
+#   <papi-install-path>/ include/papi.h
+#                        lib/libpapi.so
+#   <papi-build-path>/ papi.h
+#                      libpapi.so
+if test "$OPT_HAVE_PAPI" = "yes" ; then
+  if test -f "${OPT_PAPI}/include/papi.h"; then
+    OPT_PAPI_IFLAGS="-I${OPT_PAPI}/include"
+  else
+    OPT_PAPI_IFLAGS="-I${OPT_PAPI}"
+  fi
+  if test -d "${OPT_PAPI}/lib"; then
+    OPT_PAPI_LIBPATH="${OPT_PAPI}/lib"
+  else
+    OPT_PAPI_LIBPATH="${OPT_PAPI}"
+  fi
+fi
+
+if test -n "${OPT_PAPI_LIBPATH}" ; then
+  OPT_PAPI_LDFLAGS="-L${OPT_PAPI_LIBPATH} -lpapi"
+  OPT_PAPI_DLOPEN="${OPT_PAPI_LIBPATH}/libpapi.so"
+fi
+
+# Check for PAPI > 3.0 [skip for now]
+
+if test "${OPT_HAVE_PAPI}" = "yes"; then 
+  AC_MSG_RESULT([yes (${OPT_PAPI_DLOPEN})])
+else
+  AC_MSG_RESULT([no])
+fi
+
+AM_CONDITIONAL(OPT_HAVE_PAPI, test "${OPT_HAVE_PAPI}" = "yes")
+AC_SUBST(OPT_PAPI_IFLAGS)
+AC_SUBST(OPT_PAPI_LIBPATH)
+AC_SUBST(OPT_PAPI_LDFLAGS)
+AC_SUBST(OPT_PAPI_DLOPEN)
+
+
+#-------------------------------------------------
+# enable-hpcrun: Only build hpcrun if on Linux and PAPI is present
+#-------------------------------------------------
+
+AC_MSG_CHECKING([whether to build hpcrun])
+
+OPT_ENABLE_HPCRUN="no"
+if test "${OPT_HAVE_PAPI}" = "yes" &&  
+   ( echo "${HPCTOOLKIT_PLATFORM}" | grep "Linux\$" >/dev/null 2>&1 ); then
+  OPT_ENABLE_HPCRUN="yes"
+fi
+
+AC_MSG_RESULT([${OPT_ENABLE_HPCRUN}])
+AM_CONDITIONAL(OPT_ENABLE_HPCRUN, test "${OPT_ENABLE_HPCRUN}" = "yes")
+
 
 #----------------------------------------------------------------------------
 # Host-dependent configuration
@@ -187,16 +293,19 @@ HOST_CFLAGS=""
 HOST_CXXFLAGS=""
 HOST_AR=""
 HOST_LIBTREPOSITORY=""
+HOST_LINK_NO_START_FILES="-nostartfiles"
 
 # Specific settings for programs
 HOST_HPCVIEW_LDFLAGS=""
 HOST_BLOOP_LDFLAGS=""
 HOST_XPROF_LDFLAGS=""
 HOST_XCSPROF_LDFLAGS=""
+HOST_HPCRUN_LDFLAGS=""
+HOST_HPCPROF_LDFLAGS=""
 my_demangle_ldflags=""
 
 # Options
-if test "$OPT_DEVELOP" = "true" ; then
+if test "$OPT_ENABLE_DEVELOP" = "yes" ; then
   my_opt_cflags="-g -O0"
   my_opt_cxxflags="-g -O0"
 else 
@@ -212,7 +321,7 @@ case ${host} in
       # Compaq compiler
       HOST_CXXFLAGS="-std strict_ansi -rtti -pt -ptr ./cxx_trepository"
       HOST_LIBTREPOSITORY="./cxx_trepository/*.o"
-      if test "$OPT_DEVELOP" = "true" ; then
+      if test "$OPT_ENABLE_DEVELOP" = "yes" ; then
         my_opt_flags="-g"
         my_opt_cxxflags="-gall"
       else 
@@ -274,12 +383,15 @@ AC_SUBST([HOST_CFLAGS])
 AC_SUBST([HOST_CXXFLAGS])
 AC_SUBST([HOST_AR])
 AC_SUBST([HOST_LIBTREPOSITORY])
+AC_SUBST([HOST_LINK_NO_START_FILES])
 AM_CONDITIONAL(IS_HOST_AR, test "${HOST_AR}" != "")
 
 AC_SUBST([HOST_BLOOP_LDFLAGS])
 AC_SUBST([HOST_HPCVIEW_LDFLAGS])
 AC_SUBST([HOST_XPROF_LDFLAGS])
 AC_SUBST([HOST_XCSPROF_LDFLAGS])
+AC_SUBST([HOST_HPCRUN_LDFLAGS])
+AC_SUBST([HOST_HPCPROF_LDFLAGS])
 
 #----------------------------------------------------------------------------
 # Makefiles to create
@@ -292,6 +404,7 @@ AC_OUTPUT([ \
   src/hpctoolkit/bloop/Makefile \
   src/hpctoolkit/filters/Makefile \
   src/hpctoolkit/hpcquick/Makefile \
+  src/hpctoolkit/hpcrun/Makefile \
   src/hpctoolkit/hpcview/Makefile \
   src/hpctoolkit/misc/Makefile \
   src/hpctoolkit/ptran/Makefile \

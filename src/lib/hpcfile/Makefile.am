@@ -66,7 +66,8 @@ MYSOURCES = \
 	hpcfile_csproflib.h \
 	hpcfile_cstree.h hpcfile_cstree.c \
 	hpcfile_cstreelib.h \
-	hpcfile_general.h hpcfile_general.c
+	hpcfile_general.h hpcfile_general.c \
+	io.h io.c
 
 MYCFLAGS   = @HOST_CFLAGS@   $(HPC_IFLAGS) 
 MYCXXFLAGS = @HOST_CXXFLAGS@ $(HPC_IFLAGS) 

@@ -86,6 +86,7 @@ ACLOCAL = @ACLOCAL@
 AMDEP_FALSE = @AMDEP_FALSE@
 AMDEP_TRUE = @AMDEP_TRUE@
 AMTAR = @AMTAR@
+AR = @AR@
 AUTOCONF = @AUTOCONF@
 AUTOHEADER = @AUTOHEADER@
 AUTOMAKE = @AUTOMAKE@
@@ -93,6 +94,7 @@ AWK = @AWK@
 CC = @CC@
 CCDEPMODE = @CCDEPMODE@
 CFLAGS = @CFLAGS@
+CPP = @CPP@
 CPPFLAGS = @CPPFLAGS@
 CXX = @CXX@
 CXXCPP = @CXXCPP@
@@ -101,19 +103,25 @@ CXXFLAGS = @CXXFLAGS@
 CYGPATH_W = @CYGPATH_W@
 DEFS = @DEFS@
 DEPDIR = @DEPDIR@
+ECHO = @ECHO@
 ECHO_C = @ECHO_C@
 ECHO_N = @ECHO_N@
 ECHO_T = @ECHO_T@
 EGREP = @EGREP@
 EXEEXT = @EXEEXT@
-GNUBINUTIL_IFLAGS = @GNUBINUTIL_IFLAGS@
-GNUBINUTIL_LDFLAGS = @GNUBINUTIL_LDFLAGS@
+F77 = @F77@
+FFLAGS = @FFLAGS@
+GNUBINUTILS_IFLAGS = @GNUBINUTILS_IFLAGS@
+GNUBINUTILS_LDFLAGS = @GNUBINUTILS_LDFLAGS@
 HOST_AR = @HOST_AR@
 HOST_BLOOP_LDFLAGS = @HOST_BLOOP_LDFLAGS@
 HOST_CFLAGS = @HOST_CFLAGS@
 HOST_CXXFLAGS = @HOST_CXXFLAGS@
+HOST_HPCPROF_LDFLAGS = @HOST_HPCPROF_LDFLAGS@
+HOST_HPCRUN_LDFLAGS = @HOST_HPCRUN_LDFLAGS@
 HOST_HPCVIEW_LDFLAGS = @HOST_HPCVIEW_LDFLAGS@
 HOST_LIBTREPOSITORY = @HOST_LIBTREPOSITORY@
+HOST_LINK_NO_START_FILES = @HOST_LINK_NO_START_FILES@
 HOST_XCSPROF_LDFLAGS = @HOST_XCSPROF_LDFLAGS@
 HOST_XPROF_LDFLAGS = @HOST_XPROF_LDFLAGS@
 HPCTOOLKIT_PLATFORM = @HPCTOOLKIT_PLATFORM@
@@ -126,13 +134,23 @@ IS_HOST_AR_TRUE = @IS_HOST_AR_TRUE@
 LDFLAGS = @LDFLAGS@
 LIBOBJS = @LIBOBJS@
 LIBS = @LIBS@
+LIBTOOL = @LIBTOOL@
+LN_S = @LN_S@
 LTLIBOBJS = @LTLIBOBJS@
 MAKEINFO = @MAKEINFO@
 OA_IFLAGS = @OA_IFLAGS@
 OA_LDFLAGS = @OA_LDFLAGS@
 OBJEXT = @OBJEXT@
-OPT_DEVELOP_FALSE = @OPT_DEVELOP_FALSE@
-OPT_DEVELOP_TRUE = @OPT_DEVELOP_TRUE@
+OPT_ENABLE_DEVELOP_FALSE = @OPT_ENABLE_DEVELOP_FALSE@
+OPT_ENABLE_DEVELOP_TRUE = @OPT_ENABLE_DEVELOP_TRUE@
+OPT_ENABLE_HPCRUN_FALSE = @OPT_ENABLE_HPCRUN_FALSE@
+OPT_ENABLE_HPCRUN_TRUE = @OPT_ENABLE_HPCRUN_TRUE@
+OPT_HAVE_PAPI_FALSE = @OPT_HAVE_PAPI_FALSE@
+OPT_HAVE_PAPI_TRUE = @OPT_HAVE_PAPI_TRUE@
+OPT_PAPI_DLOPEN = @OPT_PAPI_DLOPEN@
+OPT_PAPI_IFLAGS = @OPT_PAPI_IFLAGS@
+OPT_PAPI_LDFLAGS = @OPT_PAPI_LDFLAGS@
+OPT_PAPI_LIBPATH = @OPT_PAPI_LIBPATH@
 PACKAGE = @PACKAGE@
 PACKAGE_BUGREPORT = @PACKAGE_BUGREPORT@
 PACKAGE_NAME = @PACKAGE_NAME@
@@ -148,8 +166,10 @@ VERSION = @VERSION@
 XERCES = @XERCES@
 XERCES_IFLAGS = @XERCES_IFLAGS@
 XERCES_LDFLAGS = @XERCES_LDFLAGS@
+ac_ct_AR = @ac_ct_AR@
 ac_ct_CC = @ac_ct_CC@
 ac_ct_CXX = @ac_ct_CXX@
+ac_ct_F77 = @ac_ct_F77@
 ac_ct_RANLIB = @ac_ct_RANLIB@
 ac_ct_STRIP = @ac_ct_STRIP@
 am__fastdepCC_FALSE = @am__fastdepCC_FALSE@
@@ -263,6 +283,15 @@ $(top_srcdir)/configure:  $(am__configure_deps)
 	cd $(top_builddir) && $(MAKE) $(AM_MAKEFLAGS) am--refresh
 $(ACLOCAL_M4):  $(am__aclocal_m4_deps)
 	cd $(top_builddir) && $(MAKE) $(AM_MAKEFLAGS) am--refresh
+
+mostlyclean-libtool:
+	-rm -f *.lo
+
+clean-libtool:
+	-rm -rf .libs _libs
+
+distclean-libtool:
+	-rm -f libtool
 uninstall-info-am:
 tags: TAGS
 TAGS:
@@ -329,11 +358,11 @@ maintainer-clean-generic:
 	@echo "it deletes files that may require special tools to rebuild."
 clean: clean-am
 
-clean-am: clean-generic mostlyclean-am
+clean-am: clean-generic clean-libtool mostlyclean-am
 
 distclean: distclean-am
 	-rm -f Makefile
-distclean-am: clean-am distclean-generic
+distclean-am: clean-am distclean-generic distclean-libtool
 
 dvi: dvi-am
 
@@ -361,7 +390,7 @@ maintainer-clean-am: distclean-am maintainer-clean-generic
 
 mostlyclean: mostlyclean-am
 
-mostlyclean-am: mostlyclean-generic
+mostlyclean-am: mostlyclean-generic mostlyclean-libtool
 
 pdf: pdf-am
 
@@ -373,14 +402,15 @@ ps-am:
 
 uninstall-am: uninstall-info-am
 
-.PHONY: all all-am check check-am clean clean-generic distclean \
-	distclean-generic distdir dvi dvi-am html html-am info info-am \
-	install install-am install-data install-data-am \
-	install-data-local install-exec install-exec-am install-info \
-	install-info-am install-man install-strip installcheck \
-	installcheck-am installdirs maintainer-clean \
-	maintainer-clean-generic mostlyclean mostlyclean-generic pdf \
-	pdf-am ps ps-am uninstall uninstall-am uninstall-info-am
+.PHONY: all all-am check check-am clean clean-generic clean-libtool \
+	distclean distclean-generic distclean-libtool distdir dvi \
+	dvi-am html html-am info info-am install install-am \
+	install-data install-data-am install-data-local install-exec \
+	install-exec-am install-info install-info-am install-man \
+	install-strip installcheck installcheck-am installdirs \
+	maintainer-clean maintainer-clean-generic mostlyclean \
+	mostlyclean-generic mostlyclean-libtool pdf pdf-am ps ps-am \
+	uninstall uninstall-am uninstall-info-am
 
 
 #############################################################################

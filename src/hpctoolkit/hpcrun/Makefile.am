@@ -55,9 +55,7 @@ AUTOMAKE_OPTIONS = foreign
 # Common settings
 #############################################################################
 
-# NEWTEMPORARY
-#include $(top_srcdir)/src/Makeinclude.config
-include $(top_srcdir)/Makeinclude.config
+include $(top_srcdir)/src/Makeinclude.config
 
 #############################################################################
 # Local settings
@@ -71,19 +69,13 @@ MYSOURCES_HPCRUN = \
 MYSOURCES_LIBHPCRUN = \
 	preload.c \
 	hpcpapi.h hpcpapi.c \
-	map.h map.c \
-	io.h io.c 
+	rtmap.h rtmap.c 
 
 MYSOURCES_HPCPROF = \
 	hpcprof.h hpcprof.cc \
 	summary.h summary.cc \
 	loadmodule.h loadmodule.cc \
-	proffile.h proffile.cc \
-	io.h io.c 
-
-# NOTE: 
-#  io.c/h --> hpcfile_general.h/c
-#  PROFILE.dtd.h --> lib/dtd/...
+	proffile.h proffile.cc 
 
 
 MYCFLAGS   = @HOST_CFLAGS@   $(HPC_IFLAGS) @OPT_PAPI_IFLAGS@
@@ -93,26 +85,28 @@ MYCFLAGS_HPCRUN = \
 	-DHPC_PAPI_DLOPEN=\"@OPT_PAPI_DLOPEN@\" \
 	-DHPC_PAPI_LIBPATH=\"@OPT_PAPI_LIBPATH@\"
 
+
 MYLDFLAGS_HPCRUN    = @HOST_CXXFLAGS@ -R @OPT_PAPI_LIBPATH@
 MYLDFLAGS_LIBHPCRUN = @HOST_CXXFLAGS@ -Xcompiler @HOST_LINK_NO_START_FILES@
 MYLDFLAGS_HPCPROF   = @HOST_CXXFLAGS@
 
+
 MYLDADD_HPCRUN    = -ldl
-MYLDADD_LIBHPCRUN = @OPT_PAPI_LDFLAGS@ -ldl
-MYLDADD_HPCPROF   = @HOST_LIBTREPOSITORY@ @GNUBINUTIL_LDFLAGS@
+MYLDADD_LIBHPCRUN = \
+	$(HPC_LIBHPCFILE) \
+	@OPT_PAPI_LDFLAGS@ \
+	-ldl
+MYLDADD_HPCPROF   = \
+	$(HPC_LIBHPCFILE) \
+	@HOST_LIBTREPOSITORY@ \
+	@GNUBINUTILS_LDFLAGS@
+
 
 MYCLEAN = @HOST_LIBTREPOSITORY@
 
 #############################################################################
 # Automake rules
 #############################################################################
-
-# TEMPORARY: this should go in teh subdir recursion list
-#if OPT_ENABLE_HPCRUN
-#  MYHPCRUN = hpcrun
-#endif
-
-#SUBDIRS = $(MYHPCRUN)
 
 bin_PROGRAMS         = hpcrun
 hpcrun_SOURCES       = $(MYSOURCES_HPCRUN)
@@ -139,7 +133,5 @@ MOSTLYCLEANFILES     = $(MYCLEAN)
 # Common rules
 #############################################################################
 
-# NEWTEMPORARY
-#include $(top_srcdir)/src/Makeinclude.rules
-include $(top_srcdir)/Makeinclude.rules
+include $(top_srcdir)/src/Makeinclude.rules
 
