@@ -183,14 +183,14 @@ private:
 // Helpers for normalizing the scope tree
 // ------------------------------------------------------------
 
-class CDS_RestartAtLCA_Exception {
+class CDS_RestartException {
 public:
-  CDS_RestartAtLCA_Exception(CodeInfo* lca_) : lca(lca_) { }
-  ~CDS_RestartAtLCA_Exception() { }
-  CodeInfo* GetLCA() const { return lca; }
+  CDS_RestartException(CodeInfo* n) : node(n) { }
+  ~CDS_RestartException() { }
+  CodeInfo* GetNode() const { return node; }
 
 private:
-  CodeInfo* lca;
+  CodeInfo* node;
 };
 
 
@@ -233,7 +233,18 @@ WriteScopeTree(std::ostream& os, PgmScopeTree* pgmScopeTree, bool prettyPrint)
 // Set of routines to build a scope tree
 //****************************************************************************
 
-// BuildFromExe: Builds a scope tree from the Executable 'exe'.  
+// BuildFromExe: Builds a scope tree -- with a focus on loop nest
+//   recovery -- representing program source code from the Executable
+//   'exe'.  
+// An executable represents binary code, which is essentially
+//   a collection of procedures along with some extra information like
+//   symbol and debugging tables.  This routine relies on the debugging
+//   information to associate procedures with thier source code files
+//   and to recover procedure loop nests, correlating them to source
+//   code line numbers.  A normalization pass is typically run in order
+//   to 'clean up' the resulting scope tree.  Among other things, the
+//   normalizer employs heuristics to reverse certain compiler
+//   optimizations such as loop unrolling.
 PgmScopeTree*
 ScopeTreeBuilder::BuildFromExe(Executable* exe, PCToSrcLineXMap* &map,
 			       String canonicalPathList, 
@@ -331,6 +342,7 @@ ScopeTreeBuilder::Normalize(PgmScopeTree* pgmScopeTree)
 static bool testProcNow = false;
 #endif
 
+// BuildFromProc: 
 static ProcScope* 
 BuildFromProc(FileScope* fileScope, Procedure* p)
 {  
@@ -627,29 +639,33 @@ RemoveOrphanedProcedureRepository(PgmScopeTree* pgmScopeTree)
 // If duplicate statements appear in different loops, find the least
 //   common ancestor (deepest nested common ancestor) in the scope tree
 //   and merge the corresponding loops along the paths to each of the
-//   duplicate statments.
+//   duplicate statements.  Note that merging can create instances of
+//   case 1.
 // Rationale: Compiler optimizations such as loop unrolling (start-up,
 //   steady-state, wind-down), e.g., can produce multiple statement
 //   instances.
 // E.g.: lca ---...--- s1
 //          \---...--- s2
 static bool
-CoalesceDuplicateStmts(CodeInfo* scope, LineToStmtMap* stmtMap, int level)
-  throw (CDS_RestartAtLCA_Exception);
+CoalesceDuplicateStmts(CodeInfo* scope, LineToStmtMap* stmtMap, 
+		       ScopeInfoSet* visited, int level)
+  throw (CDS_RestartException);
 static bool
-CDS_Main(CodeInfo* scope, LineToStmtMap* stmtMap, int level)
-  throw (CDS_RestartAtLCA_Exception); /* indirect */
+CDS_Main(CodeInfo* scope, LineToStmtMap* stmtMap, ScopeInfoSet* visited, 
+	 int level)
+  throw (CDS_RestartException); /* indirect */
 static bool
 CDS_InspectStmt(StmtRangeScope* stmt1, LineToStmtMap* stmtMap, int level)
-  throw (CDS_RestartAtLCA_Exception);
+  throw (CDS_RestartException);
 
 static bool
 CoalesceDuplicateStmts(PgmScopeTree* pgmScopeTree)
 {
   bool changed = false;
   PgmScope* pgmScope = pgmScopeTree->GetRoot();
-  LineToStmtMap stmtMap;
-  
+  LineToStmtMap stmtMap;      // line to statement data map
+  ScopeInfoSet visitedScopes; // all children of a scope have been visited
+
   // We apply the normalization routine to each FileScope so that 1)
   // we are guaranteed to only process CodeInfos and 2) we can assume
   // that all line numbers encountered are within the same file
@@ -658,7 +674,7 @@ CoalesceDuplicateStmts(PgmScopeTree* pgmScopeTree)
     BriefAssertion(((ScopeInfo*)it.Current())->Type() == ScopeInfo::FILE);
     FileScope* file = dynamic_cast<FileScope*>(it.Current()); // always true
     
-    changed |= CoalesceDuplicateStmts(file, &stmtMap, 1);
+    changed |= CoalesceDuplicateStmts(file, &stmtMap, &visitedScopes, 1);
   } 
 
   return changed;
@@ -667,29 +683,39 @@ CoalesceDuplicateStmts(PgmScopeTree* pgmScopeTree)
 // CoalesceDuplicateStmts Helper: 
 // During a post-order recursive examination of the scope tree, case 1
 //   above can be applied without problems.  However, the merging in
-//   case 2 can delete the current loop, its previously visited
-//   siblings, or even its ancestors, invalidating several iterators on
-//   the recursion stack (and causing infinite loops or freed memory
-//   reads).
+//   case 2 can invalidate the current *and* ancestor iterators out to
+//   the lca! (We always merge *into* the current path to avoid deleting
+//   all nodes on the current recursion stack).
 // Solution 1: After application of case 2, unwind the recursion stack
-//   and restart the algorithm at the least common ancestor.
-// Solution 2: Divide into two distinct phases.  Phase 1 collects all
-//   statements into a multi-map.  Phase 2 iterates over the map,
-//   applying case 1 and 2 until all duplicate entries are removed.
-// This implements solution 1.  Solution 2 does not require the
-//   reexploration of an entire subtree after each merge, but it does
-//   require that the multimap handle sorted iteratation that it perform
-//   several local resorts as duplicate statements are deleted.
+//   and restart the algorithm at the least common ancestor.  Retain a
+//   set of visited nodes so that we do not have to revisit fully
+//   explored and unchanged nodes.  Since the most recently merged
+//   path will not be in the visited set, it will be propertly visited.
+// Solution 2: Specially advance the child iterators.  If applying
+//   case 1, the iterator would be advanced *before* a statement was
+//   deleted (so the current child could be deleted if necessary).  If
+//   applying case 2, the iterator would be advanced *after* the merge
+//   (since merging could add new items to the end of the child list).
+//   Note however that the latter does *not* currently hold true for
+//   merging!  The merging of CodeInfo can trigger a reordering based
+//   on begin/end lines; new children will not simply end up at the
+//   end of the child list.
+// Solution 3: Divide into two distinct phases.  Phase 1 collects all
+//   statements into a multi-map (that handles sorted iteration and
+//   fast local resorts).  Phase 2 iterates over the map, applying
+//   case 1 and 2 until all duplicate entries are removed.
+// This implements solution 1.
 static bool
-CoalesceDuplicateStmts(CodeInfo* scope, LineToStmtMap* stmtMap, int level)
-  throw (CDS_RestartAtLCA_Exception)
+CoalesceDuplicateStmts(CodeInfo* scope, LineToStmtMap* stmtMap, 
+		       ScopeInfoSet* visited, int level)
+  throw (CDS_RestartException)
 {
   try {
-    return CDS_Main(scope, stmtMap, level);
-  } catch (CDS_RestartAtLCA_Exception& x) {
-    // Unwind the recursion stack until we find 'lca'
-    if (x.GetLCA() == scope) {
-      return CoalesceDuplicateStmts(x.GetLCA(), stmtMap, level);
+    return CDS_Main(scope, stmtMap, visited, level);
+  } catch (CDS_RestartException& x) {
+    // Unwind the recursion stack until we find the node
+    if (x.GetNode() == scope) {
+      return CoalesceDuplicateStmts(x.GetNode(), stmtMap, visited, level);
     } else {
       throw;
     }
@@ -698,14 +724,17 @@ CoalesceDuplicateStmts(CodeInfo* scope, LineToStmtMap* stmtMap, int level)
 
 // CDS_Main: Helper for the above. Assumes that all statement line
 // numbers are within the same file.  We operate on the children of
-// 'scope' to support support node deletion (case 1 above).
+// 'scope' to support support node deletion (case 1 above).  When we
+// have visited all children of 'scope' we place it in 'visited'.
 static bool
-CDS_Main(CodeInfo* scope, LineToStmtMap* stmtMap, int level)
-  throw (CDS_RestartAtLCA_Exception) /* indirect */
+CDS_Main(CodeInfo* scope, LineToStmtMap* stmtMap, ScopeInfoSet* visited, 
+	 int level)
+  throw (CDS_RestartException) /* indirect */
 {
   bool changed = false;
   
   if (!scope) { return changed; }
+  if (visited->find(scope) != visited->end()) { return changed; }
   
   // A post-order traversal of this node (visit children before parent)...
   for (ScopeInfoChildIterator it(scope); it.Current(); /* */) {
@@ -716,7 +745,7 @@ CDS_Main(CodeInfo* scope, LineToStmtMap* stmtMap, int level)
     CDSDBG { cout << "CDS: " << child << endl; }
     
     // 1. Recursively perform re-nesting on 'child'.
-    changed |= CoalesceDuplicateStmts(child, stmtMap, level + 1);
+    changed |= CoalesceDuplicateStmts(child, stmtMap, visited, level + 1);
     
     // 2. Examine 'child'
     if (child->Type() == ScopeInfo::STMT_RANGE) {
@@ -727,16 +756,18 @@ CDS_Main(CodeInfo* scope, LineToStmtMap* stmtMap, int level)
       
     } else if (child->Type() == ScopeInfo::PROC) {
       stmtMap->clear(); // Clear statement table
+      visited->clear(); // Clear visited set
     }
   }
   
+  visited->insert(scope);
   return changed; 
 }
 
 // CDS_InspectStmt: applies case 1 or 2, as described above
 static bool
 CDS_InspectStmt(StmtRangeScope* stmt1, LineToStmtMap* stmtMap, int level)
-  throw (CDS_RestartAtLCA_Exception)
+  throw (CDS_RestartException)
 {
   bool changed = false;
   
@@ -750,7 +781,8 @@ CDS_InspectStmt(StmtRangeScope* stmt1, LineToStmtMap* stmtMap, int level)
     // Ensure we have two different instances of the same line
     if (stmt1 == stmt2) { return false; }
     
-    // Find the least common ancestor
+    // Find the least common ancestor.  At most it should be a
+    // procedure scope.
     ScopeInfo* lca = ScopeInfo::LeastCommonAncestor(stmt1, stmt2);
     BriefAssertion(lca);
     
@@ -759,7 +791,7 @@ CDS_InspectStmt(StmtRangeScope* stmt1, LineToStmtMap* stmtMap, int level)
     bool case1 = (stmt1->Parent() == lca || stmt2->Parent() == lca);
     if (case1) {
       
-      // Case 1: Duplicate statments. Delete shallower one.
+      // Case 1: Duplicate statements. Delete shallower one.
       StmtRangeScope* toRemove = NULL;
       if (stmtdata->GetLevel() < level) { // stmt2.level < stmt1.level
 	toRemove = stmt2;
@@ -775,16 +807,17 @@ CDS_InspectStmt(StmtRangeScope* stmt1, LineToStmtMap* stmtMap, int level)
       
     } else {
       
-      // Case 2: Duplicate statements in different loops (or scopes). Merge.
-      CDSDBG { cout << "  Merge: " << stmt1 << " " << stmt2 << endl; }
+      // Case 2: Duplicate statements in different loops (or scopes).
+      // Merge the nodes from stmt2->lca into those from stmt1->lca.
+      CDSDBG { cout << "  Merge: " << stmt1 << " <- " << stmt2 << endl; }
       changed = ScopeInfo::MergePaths(lca, stmt1, stmt2);
       if (changed) {
 	// While neither statement is deleted ('stmtMap' is still
-	// valid), nodes between them and 'lca' may be merged and
-	// deleted. Restart at lca.
+	// valid), iterators between stmt1 and 'lca' are invalidated. 
+	// Restart at lca.
 	CodeInfo* lca_CI = dynamic_cast<CodeInfo*>(lca);
 	BriefAssertion(lca_CI);
-	throw CDS_RestartAtLCA_Exception(lca_CI);
+	throw CDS_RestartException(lca_CI);
       }
       
     }
