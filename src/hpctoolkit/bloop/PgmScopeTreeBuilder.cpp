@@ -1016,9 +1016,6 @@ LineToStmtMap::clear()
 // Helper Routines
 //****************************************************************************
 
-// FIXME: This needs to be rewritten to be consistent with LoadModule
-// classes.  But more importantly...
-
 // MAP: This is a temporary and inadequate implementation for building
 // the [PC -> src-line] map.  In particular, the map should be built
 // with the source-code recovery information that is computed as the
@@ -1028,14 +1025,14 @@ LineToStmtMap::clear()
 static void 
 BuildPCToSrcLineMap(PCToSrcLineXMap* map, Procedure* p)
 {
-  String funcNm   = GetBestFuncName(p->GetName()); 
-  String funcLnNm = GetBestFuncName(p->GetLinkName());
-
-  ProcPCToSrcLineXMap* pmap = NULL;
-  int pmap_insertCnt = 0;
+  //suint dbgId = p->GetId(); 
+  String theFunc = GetBestFuncName(p->GetName()); 
+  String theFile = "";
   
-  String theFunc /*= funcNm*/, theFile;
-  int funcCnt = 0;
+  ProcPCToSrcLineXMap* pmap = 
+    new ProcPCToSrcLineXMap(p->GetStartAddr(), p->GetEndAddr(), 
+			    theFunc, theFile);
+  
   for (ProcedureInstructionIterator it(*p); it.IsValid(); ++it) {
     Instruction* inst = it.Current();
     Addr pc = inst->GetPC();
@@ -1044,40 +1041,18 @@ BuildPCToSrcLineMap(PCToSrcLineXMap* map, Procedure* p)
     String func, file;
     suint line;
     p->GetSourceFileInfo(pc, inst->GetOpIndex(), func, file, line);
-    func = GetBestFuncName(func);
-
-    if ( !(!func.Empty() && IsValidLine(line)) ) {
-      continue; // cannot continue without valid symbolic info
-    }    
-    if (file.Empty() && !theFile.Empty() // possible replacement...
-	&& func == theFunc) { // ...the replacement is valid
-      file = theFile; 
+    
+    if ( !IsValidLine(line) ) { continue; } // need valid symbolic info
+    if (theFile.Empty() && !file.Empty()) {
+      theFile = file; 
     }
     
-    // 2. If we are starting a new function, insert old map and create another
-    if (func != theFunc) {
-      if (pmap_insertCnt > 0) { map->InsertProcInList(pmap); }
-      else { delete pmap; }
-
-      pmap_insertCnt = 0;
-      Addr strt = ((funcCnt++ == 0) ? p->GetStartAddr() : pc); // FIXME
-      pmap = new ProcPCToSrcLineXMap(strt, p->GetEndAddr(), func, file);
-    }
-
-    // 3. Update 'pmap'
-    if (!pmap) {
-      BriefAssertion(false);
-    }
+    // 2. Update 'pmap'
     SrcLineX* lineInstance = new SrcLineX(line, 0); // MAP
     pmap->Insert(pc, lineInstance);
-    pmap_insertCnt++;
-    
-    if (theFunc != func) { theFunc = func; }
-    if (theFile != file) { theFile = file; }
   }
-
-  // 4. Process last pmap
-  if (pmap_insertCnt > 0) { map->InsertProcInList(pmap); }
-  else { delete pmap; }
+  
+  pmap->SetFileName(theFile);
+  map->InsertProcInList(pmap);
 }
 
