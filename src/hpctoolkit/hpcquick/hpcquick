@@ -132,7 +132,7 @@ STDOUT->autoflush(1);
 
 $usage = 
 "Usage: 
-  hpcquick [-V] -I dir1 dir2 ... dirN  [-S structure]  -P prof1 prof2 ... profM
+  hpcquick [-V] -z|x [-n] -I dir1 dir2 ... dirN  [-S structure]  -P prof1 prof2 ... profM
   
 Given a list of paths to directories containing interesting program 
 source code files, an optional program structure file created by the
@@ -148,6 +148,9 @@ the vendor's 'prof' tool and the toolkit's 'ptran') before hpcview is run.
 
 Options:
   -V: print version information
+  -z: configure hpcview to produce an html database
+  -x: configure hpcview to produce an xml database
+  -n: exit before producing database
   -I: dir1...dirN specify a list of directories -- relative or absolute -- 
       containing source code to which performance data should be 
       correlated.  In order to search a directory *and* recursively search 
@@ -208,6 +211,9 @@ my $xmlAttrRE      = '\s*=\s*\"([^\"]+)\"'; # grabs everything between ""
 ## my $groupRE       = '^-grp(=(\w+))?';
 ## my $singleRE      = '^-sng(=(\w+))?';
 my $verOpt          = '-V';
+my $htmlOutOpt      = '-z';
+my $xmlOutOpt       = '-x';
+my $noOutOpt        = '-n';
 my $incOpt          = '-I';
 my $profOpt         = '-P';
 my $structOpt       = '-S';
@@ -254,21 +260,33 @@ $structFile = "";
 # 'main': process the command line arguments
 # ----------------------------------------------------------------------
 
+my $illegalOutOpt = "a -z or -x or -n output option must be specified";
 my $argc = scalar(@ARGV);
+my $outOpt = $illegalOutOpt;
 
 if ($argc < 1) {
     printUsageAndExit($0);
 }
 
 my $i = 0;
+my $suppressOutput = 0;
 while ($i < $argc) {
 
   # option: version
   if ($ARGV[$i] eq $verOpt) {
       printVersionAndExit($0);
   }
+  if ($ARGV[$i] eq $htmlOutOpt) {
+      $outOpt = "-z";
+  }
+  elsif ($ARGV[$i] eq $xmlOutOpt) {
+      $outOpt = "-x hpcquick";
+  }
+  elsif ($ARGV[$i] eq $noOutOpt) {
+      $suppressOutput = 1;
+  }
   # option: program structure
-  if ($ARGV[$i] eq $structOpt) {
+  elsif ($ARGV[$i] eq $structOpt) {
       $structFile = $ARGV[$i + 1];
       $i++;
   }
@@ -299,6 +317,11 @@ while ($i < $argc) {
 # ------------------------------------------------------
 # several option checks
 # ------------------------------------------------------
+
+if ($outOpt eq $illegalOutOpt) {
+    print STDOUT "No output option specified";
+    printUsageAndExit($0);
+}
 
 if (!defined($configFile)) {
     print STDOUT "Internal Error: Missing config file name\n";
@@ -769,7 +792,10 @@ sub createOutputFiles {
     $i = 0;
     for ($i = 0; $i < $config->{incDirs}->{total}; $i++) {
 	my $incdir = xmlEsc($config->{incDirs}->{names}[$i]);
-	print {$outFHndl} "<PATH name=\"", $incdir, "\"/>\n";
+	my $view = $incdir;
+	if ( $view eq "." ) { $view = ""; }
+	elsif ( $view[0] ne "/" ) { $view = "/" . $view; }
+	print {$outFHndl} "<PATH name=\"", $incdir,"\" viewname=\"src", $view, "\"/>\n";
     }
     print {$outFHndl} "\n";
     
@@ -817,9 +843,12 @@ sub createOutputFiles {
 	$hpcquickdb .= "-" . $$; # append pid (if this exists, too bad)
     }
 
-    my $command = "hpcview -h $hpcquickdb -z $out";
+    my $command = "hpcview -h $hpcquickdb $outOpt $out";
     print {$logFHndl} "$command\n";
-    system($command);
+
+    if ($suppressOutput == 0 ) {
+	system($command);
+    }
     
     $logFHndl->close();
 
@@ -829,7 +858,9 @@ sub createOutputFiles {
     # Finalization
     # ------------------------------------------------------
     print STDOUT "Created files: '$out', '$log'\n";
-    print STDOUT "Browsable database: './$hpcquickdb/index.html'\n"
+    if ($suppressOutput == 0 ) {
+      print STDOUT "Browsable database: './$hpcquickdb/index.html'\n"
+    }
 }
     
 
