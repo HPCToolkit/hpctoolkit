@@ -49,7 +49,7 @@
 #
 #############################################################################
 
-include(src/config/hpc-cxxutils.m4)
+include(config/hpc-cxxutils.m4)
 
 #----------------------------------------------------------------------------
 # Initialization: 
@@ -63,7 +63,7 @@ include(src/config/hpc-cxxutils.m4)
 
 AC_INIT(HPCToolkit, 3.7.0)
 AC_CONFIG_SRCDIR([src/include/HPCToolkitVersionInfo.h])
-AC_CONFIG_AUX_DIR([src/config])
+AC_CONFIG_AUX_DIR([config])
 
 AC_PREREQ(2.59)
 AM_INIT_AUTOMAKE(1.8.3)
@@ -108,7 +108,7 @@ HPC_AC_CHECK_CXX_STDC_HEADERS
 # -none thus far-
 
 hpctoolkit_top=`cd ${srcdir} ; pwd`
-HPCTOOLKIT_PLATFORM=`cd ${hpctoolkit_top}/src/config; ./hpcplatform`
+HPCTOOLKIT_PLATFORM=`cd ${hpctoolkit_top}/config; ./hpcplatform`
 AC_SUBST([HPCTOOLKIT_PLATFORM])
 
 #-------------------------------------------------

@@ -66,9 +66,9 @@ MYFILEPAIRS = \
 	Sourceme-sh! 
 
 MYSCRIPTPAIRS = \
-	src/config/hpcguess!config \
-	src/config/hpcplatform!config \
-	src/config/config.guess!config 
+	config/hpcguess!config \
+	config/hpcplatform!config \
+	config/config.guess!config 
 
 MYDIRS = \
 	doc \
