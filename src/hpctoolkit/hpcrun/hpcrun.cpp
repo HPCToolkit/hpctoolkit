@@ -497,7 +497,7 @@ list_available_events(event_list_t listType)
 		     || hwinfo->model == 16);
   
   printf("*** Available native events ***\n");
-  if (isP4) { printf("Note: Pentium IV listing is by event groups; group names (*) are not events.\n"); }
+  if (isP4) { printf("Note: Pentium 4 listing is by event groups; group names (*) are not events.\n"); }
   printf(separator_minor);
   if (listType == LIST_SHORT) { 
     printf(HdrNtvShort); 
