@@ -224,6 +224,7 @@ AC_ARG_WITH([papi],
 #                        lib/libpapi.so
 #   <papi-build-path>/ papi.h
 #                      libpapi.so
+# Note: same test is in HPCToolkitRoot's Makefile.quick
 if test "$OPT_HAVE_PAPI" = "yes" ; then
   if test -f "${OPT_PAPI}/include/papi.h"; then
     OPT_PAPI_IFLAGS="-I${OPT_PAPI}/include"
