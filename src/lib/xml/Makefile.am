@@ -64,6 +64,11 @@ include $(top_srcdir)/src/Makeinclude.config
 MYSOURCES = \
 	xml.h xml.C
 
+MYDTDHEADERS = \
+	$(srcdir)/PROFILE.dtd.h \
+	$(srcdir)/CSPROFILE.dtd.h \
+	$(srcdir)/PGM.dtd.h
+
 MYCFLAGS   = @HOST_CFLAGS@   $(HPC_IFLAGS) 
 MYCXXFLAGS = @HOST_CXXFLAGS@ $(HPC_IFLAGS) 
 
@@ -81,6 +86,8 @@ MYCLEAN = @HOST_LIBTREPOSITORY@
 # Automake rules
 #############################################################################
 
+noinst_HEADERS = $(MYDTDHEADERS)
+
 noinst_LIBRARIES = libHPCxml.a
 
 libHPCxml_a_SOURCES  = $(MYSOURCES)
@@ -90,6 +97,15 @@ libHPCxml_a_AR       = $(MYAR)
 libHPCxml_a_LIBADD   = $(MYLIBADD)
 
 MOSTLYCLEANFILES = $(MYCLEAN)
+
+#############################################################################
+# Other rules
+#############################################################################
+
+# Regenerate DTD headers if DTDs have changed.
+
+$(srcdir)/%.dtd.h : $(HPCTOOLKIT)/lib/dtd/%.dtd
+	$(srcdir)/makedtdstring $<  > $@
 
 #############################################################################
 # Common rules
