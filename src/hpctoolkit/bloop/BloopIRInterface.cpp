@@ -95,9 +95,8 @@ BloopIRInterface::BloopIRInterface (Procedure *_p) : proc(_p)
 
     // If this insn is a branch, record its target address in
     // the branch target set.
-    ISA::InstType t = insn->GetType();
-    if (t == ISA::BR_COND_REL
-        || t == ISA::BR_UN_COND_REL) {
+    ISA::InstDesc d = insn->GetDesc();
+    if (d.IsBrRel()) {
       branchTargetSet.insert(insn->GetTargetAddr(curr_pc));
     }
     ++pii;
@@ -112,78 +111,47 @@ BloopIRInterface::GetStmtType (StmtHandle h)
   Instruction *insn = (Instruction *) h;
   StmtLabel br_targ = 0;
 
-  switch (insn->GetType()) {
-    //
-    // Unconditional jump.
-    //
-    case ISA::BR_UN_COND_REL:
-      // If the branch targets a PC outside of its procedure, then
-      // we just ignore it.  For bloop this is fine since the branch 
-      // won't create any loops.
-      br_targ = (StmtLabel) (insn->GetTargetAddr(insn->GetPC()));
-      if (proc->IsIn(br_targ)) {
-        ty = UNCONDITIONAL_JUMP;
-      } else {
-        ty = SIMPLE;
-      }
-      break;
-    //
+  ISA::InstDesc d = insn->GetDesc();
+  if (d.IsBrUnCondRel()) {
+    // Unconditional jump. If the branch targets a PC outside of its
+    // procedure, then we just ignore it.  For bloop this is fine
+    // since the branch won't create any loops.
+    br_targ = (StmtLabel) (insn->GetTargetAddr(insn->GetPC()));
+    if (proc->IsIn(br_targ)) {
+      ty = UNCONDITIONAL_JUMP;
+    } else {
+      ty = SIMPLE;
+    }
+  } else if (d.IsBrUnCondInd()) {
     // Unconditional jump (indirect).
-    //
-    case ISA::BR_UN_COND_IND:
-      // FIXME: Turbo hack, temporary measure. 
-      //ty = UNCONDITIONAL_JUMP_I;
+    // FIXME: Turbo hack, temporary measure. 
+    //ty = UNCONDITIONAL_JUMP_I;
+    ty = SIMPLE;
+  } else if (d.IsBrCondRel()) {
+    // Unstructured two-way branches. If the branch targets a PC
+    // outside of its procedure, then we just ignore it.  For bloop
+    // this is fine since the branch won't create any loops.
+    br_targ = (StmtLabel) (insn->GetTargetAddr(insn->GetPC()));
+    if (proc->IsIn(br_targ)) {
+      ty = USTRUCT_TWOWAY_CONDITIONAL_T;
+    } else {
       ty = SIMPLE;
-      break;
-    //
-    // Unstructured two-way branches.
-    //
-    case ISA::BR_COND_REL:
-      // If the branch targets a PC outside of its procedure, then
-      // we just ignore it.  For bloop this is fine since the branch
-      // won't create any loops.
-      br_targ = (StmtLabel) (insn->GetTargetAddr(insn->GetPC()));
-      if (proc->IsIn(br_targ)) {
-        ty = USTRUCT_TWOWAY_CONDITIONAL_T;
-      } else {
-        ty = SIMPLE;
-      }
-      break;
-    case ISA::BR_COND_IND:
-      // FIXME: Turbo hack, temporary measure. 
-      ty = SIMPLE;
-      break;
+    }
+  } else if (d.IsBrCondInd()) {
+    // FIXME: Turbo hack, temporary measure. 
+    ty = SIMPLE;
 #if 0  // FIXME: ISA currently assumes every cbranch is "branch on true".
-    case OPR_FALSEBR:
-      ty = USTRUCT_TWOWAY_CONDITIONAL_F;
-      break;
+  } else if (OPR_FALSEBR) {
+    ty = USTRUCT_TWOWAY_CONDITIONAL_F;
 #endif
-    //
+  } else if (d.IsSubrRet()) {
     // Return statement.
-    //
-    case ISA::SUBR_RET:
-      ty = RETURN;
-      break;
-    //
+    ty = RETURN;
+  } else {
     // Simple statements.
-    //
-    case ISA::SUBR_REL:
-    case ISA::SUBR_IND:
-    case ISA::SYS_CALL:
-    case ISA::MEM:
-    case ISA::MEM_LOAD:
-    case ISA::MEM_STORE:
-    case ISA::OTHER:
-    case ISA::INVALID:
-      ty = SIMPLE;
-      break;
-    //
-    // Bother.
-    //
-    default:
-      BriefAssertion (0);
-      break;
+    ty = SIMPLE;
   }
+  
   return ty;
 }
 
@@ -359,8 +327,8 @@ StmtLabel
 BloopIRInterface::GetTargetLabel (StmtHandle h, int n)
 {
   Instruction *insn = (Instruction *) h;
-  if (insn->GetType() == ISA::BR_UN_COND_REL
-      || insn->GetType() == ISA::BR_COND_REL) {
+  ISA::InstDesc d = insn->GetDesc();
+  if (d.IsBrRel()) {
     return (StmtLabel) (insn->GetTargetAddr(insn->GetPC()));
   } else {
     // FIXME: We're seeing indirect branches.
@@ -461,26 +429,20 @@ void BloopIRInterface::Dump (StmtHandle stmt, ostream& os)
     cout << hex << insn->GetPC() << ": ";
   }
 
-  ISA::InstType t = insn->GetType();
-  const char* str = ISA::InstType2Str(t);
+  ISA::InstDesc d = insn->GetDesc();
+  const char* str = d.ToString();
   StmtLabel br_targ = 0;
 
-  switch (t) {
-    case ISA::BR_COND_REL:
-    case ISA::BR_UN_COND_REL:
+  if (d.IsBrRel()) {
       br_targ = (StmtLabel) (insn->GetTargetAddr(insn->GetPC()));
       os << str << " <" << hex << br_targ << ">";
       if (proc->IsIn(br_targ) == false) {
         cout << "[out of procedure -- treated as SIMPLE]";
       }
-      break;
-    case ISA::BR_COND_IND:
-    case ISA::BR_UN_COND_IND:
-      os << str << " <register>";
-      break;
-    default:
-      os << str;
-      break;
+  } else if (d.IsBrInd()) {
+    os << str << " <register>";
+  } else {
+    os << str;
   }
   os << dec;
 }

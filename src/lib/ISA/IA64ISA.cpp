@@ -82,7 +82,7 @@ static void print_addr (bfd_vma vma, struct disassemble_info *info)
 }
 
 static int read_memory_func (bfd_vma vma, bfd_byte *myaddr, unsigned int len,
-                       struct disassemble_info *info)
+			     struct disassemble_info *info)
 {
   memcpy(myaddr, (const char *)vma, len);
   return 0; /* success */
@@ -116,11 +116,11 @@ IA64ISA::IA64ISA()
 }
 
 
-ISA::InstType
-IA64ISA::GetInstType(MachInst* mi, ushort opIndex, ushort sz)
+ISA::InstDesc
+IA64ISA::GetInstDesc(MachInst* mi, ushort opIndex, ushort sz)
 {
   MachInst* gnuMI = ConvertMIToOpMI(mi, opIndex);
-  ISA::InstType t;
+  InstDesc d;
 
   if (CacheLookup(gnuMI) == NULL) {
     int size = print_insn_ia64((bfd_vma)gnuMI, di);
@@ -129,39 +129,39 @@ IA64ISA::GetInstType(MachInst* mi, ushort opIndex, ushort sz)
 
   switch(di->insn_type) {
     case dis_noninsn:
-      t = ISA::INVALID;
+      d.Set(InstDesc::INVALID);
       break;
     case dis_branch:
       if (di->target != 0) {
-        t = ISA::BR_UN_COND_REL;
+        d.Set(InstDesc::BR_UN_COND_REL);
       } else {
-        t = ISA::BR_UN_COND_IND;
+        d.Set(InstDesc::BR_UN_COND_IND);
       }
       break;
     case dis_condbranch:
       if (di->target != 0) {
-        t = ISA::BR_COND_REL;
+        d.Set(InstDesc::BR_COND_REL);
       } else {
-        t = ISA::BR_COND_IND;
+        d.Set(InstDesc::BR_COND_IND);
       }
       break;
     case dis_jsr:
       if (di->target != 0) {
-        t = ISA::SUBR_REL;
+        d.Set(InstDesc::SUBR_REL);
       } else {
-        t = ISA::SUBR_IND;
+        d.Set(InstDesc::SUBR_IND);
       }
       break;
     case dis_condjsr:
-      t = ISA::OTHER;
+      d.Set(InstDesc::OTHER);
     case dis_dref:
     case dis_dref2:
-      t = ISA::MEM; 
+      d.Set(InstDesc::MEM_OTHER);
     default:
-      t = ISA::OTHER;
+      d.Set(InstDesc::OTHER);
       break;
   }
-  return t;
+  return d;
 }
 
 Addr

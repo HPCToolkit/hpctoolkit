@@ -52,6 +52,8 @@
 
 //************************* System Include Files ****************************
 
+#include <iostream>
+
 //*************************** User Include Files ****************************
 
 #include <include/general.h>
@@ -77,6 +79,10 @@ public:
   ushort instSize; 
 };
 
+//*************************** Forward Declarations ***************************
+
+
+
 //***************************************************************************
 // ISA
 //***************************************************************************
@@ -84,30 +90,119 @@ public:
 // 'ISA': An abstract base class for an Instruction Set Architecture.  
 
 class ISA {
+
+  // ------------------------------------------------------------------------
+
+
 public:
-  enum InstType {
-    // Types are something like the following
-    BR_COND_REL,		// PC-relative conditional branch
-    BR_COND_IND,                // Register/Indirect conditional branch
-    BR_UN_COND_REL,		// PC-relative unconditional branch
-    BR_UN_COND_IND,		// Register/Indirect unconditional branch
+
+  // ------------------------------------------------------------------------
+
+  // InstDesc: Describes an instruction's class in various levels.
+  class InstDesc {
+  public:
+  
+    // Used to implement InstDesc.  These are mutually exclusive
+    // instruction classes.  They are not intended for general use!
+    enum IType {
+      BR_COND_REL,		// PC-relative conditional branch
+      BR_COND_IND,              // Register/Indirect conditional branch
+      BR_UN_COND_REL,		// PC-relative unconditional branch
+      BR_UN_COND_IND,		// Register/Indirect unconditional branch
+      
+      SUBR_REL,			// Relative subroutine call
+      SUBR_IND,			// Register/Indirect subroutine call
+      SUBR_RET,			// Subroutine return
+      SYS_CALL,			// System call
+      
+      MEM_LOAD,			// Memory load
+      MEM_STORE,                // Memory store
+      MEM_OTHER,                // Memory ref not categorized as load or store
+      
+      OTHER,      	       	// Any other valid instruction
+      INVALID                   // An invalid instruction
+    };
     
-    SUBR_REL,			// Relative subroutine call
-    SUBR_IND,			// Register/Indirect subroutine call
-    SUBR_RET,			// Subroutine return
-    SYS_CALL,			// System call
+  public:
+    // A 'InstDesc' can be created using the bit definitions above.
+    InstDesc(IType t = INVALID) : ty(t) { }
+    virtual ~InstDesc() { }
+    
+    InstDesc(const InstDesc& x) { *this = x; }
+    InstDesc& operator=(const InstDesc& x) { 
+      ty = x.ty; 
+      return *this;
+    }
+        
+    // -----------------------------------------------------
 
-    MEM,		        // Memory ref not categorized as load or store
-    MEM_LOAD,			// Memory load
-    MEM_STORE,			// Memory store
+    // IsValid: A valid instruction
+    bool IsValid() const { return ty != INVALID; }
+    // An invalid instruction
+    bool IsInvalid() const { return ty == INVALID; }
 
-    OTHER,      	       	// Any other valid instruction
-    INVALID                     // An invalid instruction
+    // -----------------------------------------------------
+
+    // Some sort of branch
+    bool IsBr() const { return IsBrRel() || IsBrInd(); }
+
+    // Some sort of PC-relative branch
+    bool IsBrRel() const { return IsBrCondRel() || IsBrUnCondRel(); }
+    // Some sort of Register/Indirect branch
+    bool IsBrInd() const { return IsBrCondInd() || IsBrUnCondInd(); }
+
+    // PC-relative conditional branch
+    bool IsBrCondRel() const { return ty == BR_COND_REL; }
+    // Register/Indirect conditional branch
+    bool IsBrCondInd() const { return ty == BR_COND_IND; }
+    // PC-relative unconditional branch
+    bool IsBrUnCondRel() const { return ty == BR_UN_COND_REL; }
+    // Register/Indirect unconditional branch
+    bool IsBrUnCondInd() const { return ty == BR_UN_COND_IND; }
+
+    // -----------------------------------------------------
+    
+    // Some subroutine call (but not a system call)
+    bool IsSubr() const { return IsSubrRel() || IsSubrInd(); }
+
+    // Relative subroutine call
+    bool IsSubrRel() const { return ty == SUBR_REL; }
+    // Register/Indirect subroutine call
+    bool IsSubrInd() const { return ty == SUBR_IND; }
+    // Subroutine return
+    bool IsSubrRet() const { return ty == SUBR_RET; }
+    // System call
+    bool IsSysCall() const { return ty == SYS_CALL; }
+
+    // -----------------------------------------------------
+
+    // Memory load
+    bool IsMemLoad() const { return ty == MEM_LOAD; }
+    // Memory store
+    bool IsMemStore() const { return ty == MEM_STORE; }
+    // Memory ref not categorized as load or store
+    bool IsMemOther() const { return ty == MEM_OTHER; }
+
+    // -----------------------------------------------------
+
+    // Any other valid instruction
+    bool IsOther() const { return ty == OTHER; }
+
+    // -----------------------------------------------------
+
+    void Set(IType t) { ty = t; }
+    
+    const char* ToString() const;
+    void Dump(std::ostream& o = std::cerr);
+    void DDump();
+
+  private:  
+    IType ty;
   };
+  
+  // ------------------------------------------------------------------------
 
-  static const char* InstType2Str(InstType t);
-
-  // --------------------------------------------------------
+public:
   
   ISA();
   virtual ~ISA();
@@ -137,9 +232,9 @@ public:
   // value of 0 indicates the 'packet' contains data.
   virtual ushort GetInstNumOps(MachInst* mi) = 0;
   
-  // Returns the instruction type, a general classification of the
-  // operation performed
-  virtual InstType GetInstType(MachInst* mi, ushort opIndex, ushort sz = 0)
+  // Returns an instruction descriptor which provides a high level
+  // classifications of the operation performed
+  virtual InstDesc GetInstDesc(MachInst* mi, ushort opIndex, ushort sz = 0)
     = 0;
   
   // Given a jump or branch instruction 'mi', return the target address.

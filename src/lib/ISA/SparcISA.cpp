@@ -112,12 +112,15 @@ SparcISA::~SparcISA()
   delete di;
 }
 
-ISA::InstType
-SparcISA::GetInstType(MachInst* mi, ushort opIndex, ushort sz)
+ISA::InstDesc
+SparcISA::GetInstDesc(MachInst* mi, ushort opIndex, ushort sz)
 {
-  ISA::InstType t;
-  
-  print_insn_sparc((bfd_vma)mi, di);
+  ISA::InstDesc d;
+
+  if (CacheLookup(mi) == NULL) {
+    ushort size = print_insn_sparc((bfd_vma)mi, di);
+    CacheSet(mi, size);
+  }
 
   // The target field is set (to an absolute vma) on PC-relative
   // branches/jumps.  However, the target field is also set after
@@ -131,39 +134,39 @@ SparcISA::GetInstType(MachInst* mi, ushort opIndex, ushort sz)
 
   switch (di->insn_type) {
     case dis_noninsn:
-      t = ISA::INVALID;
+      d.Set(InstDesc::INVALID);
       break;
     case dis_branch:
       if (di->target != 0 && isPCRel) {
-	t = ISA::BR_UN_COND_REL;
+	d.Set(InstDesc::BR_UN_COND_REL);
       } else {
-	t = ISA::BR_UN_COND_IND;
+	d.Set(InstDesc::BR_UN_COND_IND);
       }
       break;
     case dis_condbranch:
       if (di->target != 0 && isPCRel) {
-	t = ISA::BR_COND_REL;
+	d.Set(InstDesc::BR_COND_REL);
       } else {
-	t = ISA::BR_COND_IND;
+	d.Set(InstDesc::BR_COND_IND);
       }
       break;
     case dis_jsr:
       if (di->target != 0 && isPCRel) {
-	t = ISA::SUBR_REL;
+	d.Set(InstDesc::SUBR_REL);
       } else {
-	t = ISA::SUBR_IND;
+	d.Set(InstDesc::SUBR_IND);
       }
       break;
     case dis_condjsr:
-      t = ISA::OTHER;
+      d.Set(InstDesc::OTHER);
     case dis_dref:
     case dis_dref2:
-      t = ISA::MEM; 
+      d.Set(InstDesc::MEM_OTHER);
     default:
-      t = ISA::OTHER;
+      d.Set(InstDesc::OTHER);
       break;
   }
-  return t;
+  return d;
 }
 
 
@@ -173,18 +176,18 @@ SparcISA::GetInstTargetAddr(MachInst* mi, Addr pc, ushort opIndex, ushort sz)
   // N.B.: The GNU decoders assume that the address of 'mi' is
   // actually the PC/vma in order to calculate PC-relative targets.
 
-  switch (GetInstType(mi, opIndex, sz)) {
-    case ISA::BR_COND_REL:
-    case ISA::BR_UN_COND_REL:
-    case ISA::SUBR_REL: 
-      print_insn_sparc((bfd_vma)mi, di);    
-      return (di->target - (bfd_vma)mi) + (bfd_vma)pc;
-    default:
-      // return di->target; // return the results of sethi instruction chains
-      return 0;
+  if (CacheLookup(mi) == NULL) {
+    ushort size = print_insn_sparc((bfd_vma)mi, di);
+    CacheSet(mi, size);
   }
   
-  return (0);
+  ISA::InstDesc d = GetInstDesc(mi, opIndex, sz);
+  if (d.IsBrRel() || d.IsSubrRel()) {
+    return (di->target - (bfd_vma)mi) + (bfd_vma)pc;
+  } else {
+    // return di->target; // return the results of sethi instruction chains
+    return 0;
+  }
 }
 
 ushort
@@ -203,20 +206,10 @@ SparcISA::GetInstNumDelaySlots(MachInst* mi, ushort opIndex, ushort sz)
 
   // (We don't care about delays on instructions such as loads/stores)
 
-  switch (GetInstType(mi, opIndex, sz))
-    {
-    case ISA::BR_COND_REL:
-    case ISA::BR_COND_IND:
-    case ISA::BR_UN_COND_REL:
-    case ISA::BR_UN_COND_IND:
-    case ISA::SUBR_REL:
-    case ISA::SUBR_IND:
-    case ISA::SUBR_RET:
-      return (1);
-      
-    default:
-      break;
-    }
-
-  return (0);
+  ISA::InstDesc d = GetInstDesc(mi, opIndex, sz);
+  if (d.IsBr() || d.IsSubr() || d.IsSubrRet()) {
+    return 1;
+  } else {
+    return 0;
+  }
 }

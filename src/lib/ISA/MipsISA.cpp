@@ -67,8 +67,8 @@
 
 // See 'ISA.h' for comments on the interface
 
-ISA::InstType
-MipsISA::GetInstType(MachInst* mi, ushort opIndex, ushort sz)
+ISA::InstDesc
+MipsISA::GetInstDesc(MachInst* mi, ushort opIndex, ushort sz)
 {
   // We know that instruction sizes are guaranteed to be 4 bytes, but
   // the host may have a different byte order than the executable.
@@ -82,12 +82,12 @@ MipsISA::GetInstType(MachInst* mi, ushort opIndex, ushort sz)
 	case JR:                        // Instructions from Table A-13
 	  // JR $31 returns from a JAL call instruction.
 	  if (REG_S(inst) == REG_RA) {
-	    return (ISA::SUBR_RET);
+	    return InstDesc(InstDesc::SUBR_RET);
 	  } else {
-	    return (ISA::BR_UN_COND_IND);
+	    return InstDesc(InstDesc::BR_UN_COND_IND);
 	  }
 	case JALR:
-	  return (ISA::SUBR_IND);
+	  return InstDesc(InstDesc::SUBR_IND);
 	  
 	case SYSCALL:                   // Instructions from Table A-16, 
 	case BREAK:                     //   Table A-17
@@ -97,10 +97,10 @@ MipsISA::GetInstType(MachInst* mi, ushort opIndex, ushort sz)
 	case TLTU:
 	case TEQ:
 	case TNE:
-	  return (ISA::SYS_CALL); 
+	  return InstDesc(InstDesc::SYS_CALL); 
 
 	case SYNC:
-	  return (ISA::OTHER);
+	  return InstDesc(InstDesc::OTHER);
 	}
       break;
     case OPRegImm:
@@ -110,13 +110,13 @@ MipsISA::GetInstType(MachInst* mi, ushort opIndex, ushort sz)
 	case BGEZ:
 	case BLTZL:
 	case BGEZL:
-	  return (ISA::BR_COND_REL);
+	  return InstDesc(InstDesc::BR_COND_REL);
 	  
 	case BLTZAL:  // Link
 	case BGEZAL:  // Link
 	case BLTZALL: // Link
 	case BGEZALL: // Link
-	  return (ISA::SUBR_REL); 
+	  return InstDesc(InstDesc::SUBR_REL); 
 
 	case TGEI:                      // Instructions from Table A-18 
 	case TGEIU: // Trap-on-Condition...
@@ -124,20 +124,20 @@ MipsISA::GetInstType(MachInst* mi, ushort opIndex, ushort sz)
 	case TLTIU:
 	case TEQI:
 	case TNEI:
-	  return (ISA::SYS_CALL); 
+	  return InstDesc(InstDesc::SYS_CALL); 
 	}
       break;
     case OPCop1x:
       switch (inst & OPCop1x_MASK)
 	{
 	case LWXC1: // Word	        // Instructions from Table A-7
-	  return (ISA::MEM_LOAD);
+	  return InstDesc(InstDesc::MEM_LOAD);
 	case LDXC1: // Doubleword
-	  return (ISA::MEM_LOAD);
+	  return InstDesc(InstDesc::MEM_LOAD);
 	case SWXC1: // Word
-	  return (ISA::MEM_STORE);
+	  return InstDesc(InstDesc::MEM_STORE);
 	case SDXC1: // Doubleword
-	  return (ISA::MEM_STORE);
+	  return InstDesc(InstDesc::MEM_STORE);
 	}
       break;
 
@@ -153,7 +153,7 @@ MipsISA::GetInstType(MachInst* mi, ushort opIndex, ushort sz)
     case LL:   // Linked Word
     case LWC1: // Word
     case LWC2: // Word
-      return (ISA::MEM_LOAD);
+      return InstDesc(InstDesc::MEM_LOAD);
 
     case LD:   // Doubleword
     case LDL:  // Doubleword Left
@@ -161,7 +161,7 @@ MipsISA::GetInstType(MachInst* mi, ushort opIndex, ushort sz)
     case LLD:  // Linked Doubleword
     case LDC1: // Doubleword
     case LDC2: // Doubleword
-      return (ISA::MEM_LOAD); // Doubleword
+      return InstDesc(InstDesc::MEM_LOAD); // Doubleword
 
     case SB:   // Byte
     case SH:   // Halfword
@@ -171,7 +171,7 @@ MipsISA::GetInstType(MachInst* mi, ushort opIndex, ushort sz)
     case SC:   // Conditional Word
     case SWC1: // Word
     case SWC2: // Word
-      return (ISA::MEM_STORE);
+      return InstDesc(InstDesc::MEM_STORE);
       
     case SD:   // Doubleword
     case SDL:  // Doubleword Left
@@ -179,20 +179,23 @@ MipsISA::GetInstType(MachInst* mi, ushort opIndex, ushort sz)
     case SCD:  // Conditional Doubleword
     case SDC1: // Doubleword
     case SDC2: // Doubleword
-      return (ISA::MEM_STORE); // Doubleword
+      return InstDesc(InstDesc::MEM_STORE); // Doubleword
 
-    case J:                             // Instructions from Table A-12
-      return (ISA::BR_UN_COND_REL);     // N.B.: These instructions are
-    case JAL:                           //   PC-region but we will treat them
-      return (ISA::SUBR_REL);           //   as PC-relative
+                                        // Instructions from Table A-12
+      // N.B.: These instructions are PC-region but we will treat them
+      // as PC-relative
+    case J:                             
+      return InstDesc(InstDesc::BR_UN_COND_REL);  
+    case JAL:                           
+      return InstDesc(InstDesc::SUBR_REL);     
       
     case BEQ:                           // Instructions from Table A-14
       // If operands are the same then then there is no fall-thru branch.
       // Test for general case.
       if (REG_S(inst) == REG_T(inst))
-	return (ISA::BR_UN_COND_REL);
+	return InstDesc(InstDesc::BR_UN_COND_REL);
       else
-	return (ISA::BR_COND_REL);
+	return InstDesc(InstDesc::BR_COND_REL);
     case BNE:
     case BLEZ:
     case BGTZ:
@@ -200,13 +203,13 @@ MipsISA::GetInstType(MachInst* mi, ushort opIndex, ushort sz)
     case BNEL:
     case BLEZL:
     case BGTZL:
-      return (ISA::BR_COND_REL);
+      return InstDesc(InstDesc::BR_COND_REL);
 
     default:
       break;
     }
   
-  return (ISA::OTHER);
+  return InstDesc(InstDesc::OTHER);
 }
 
 
@@ -282,23 +285,12 @@ MipsISA::GetInstNumDelaySlots(MachInst* mi, ushort opIndex, ushort sz)
   // branches.
 
   // (We don't care about delays on instructions such as loads/stores)
-
-  switch (GetInstType(mi, opIndex, sz))
-    {
-    case ISA::BR_COND_REL:
-    case ISA::BR_COND_IND:
-    case ISA::BR_UN_COND_REL:
-    case ISA::BR_UN_COND_IND:
-    case ISA::SUBR_REL:
-    case ISA::SUBR_IND:
-    case ISA::SUBR_RET:
-      return (1);
-      
-    default:
-      break;
-    }
-
-  return (0);
+  InstDesc d = GetInstDesc(mi, opIndex, sz);
+  if (d.IsBr() || d.IsSubr() || d.IsSubrRet()) {
+    return 1;
+  } else {
+    return 0;
+  }
 }
 
 //****************************************************************************
