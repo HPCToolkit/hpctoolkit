@@ -72,12 +72,10 @@ hpcpapi_flag_by_name(const char *name);
 /**************************** Forward Declarations **************************/
 
 // hpcpapi_profile_desc_t: Collects all information to describe one
-// call to PAPI_sprofil().  Note that this assumes that there will be
-// one event per event set.
+// call to PAPI_sprofil(). 
 typedef struct {
   PAPI_event_info_t einfo;       // PAPI's info for the event
   int               ecode;       // PAPI's event code
-  int               eset;        // the corresponding event set
   uint64_t          period;      // sampling period
   int               flags;       // profiling flags
   
@@ -85,13 +83,16 @@ typedef struct {
   unsigned int      bytesPerCntr;    // bytes per histogram counter
   unsigned int      scale;           // relationship between the two
   
-  PAPI_sprofil_t*   sprofs;      // buffers for the histograms
+  PAPI_sprofil_t*   sprofs;      // vector of histogram buffers, one for each
+  unsigned int      numsprofs;   //   run time load module
 } hpcpapi_profile_desc_t;
 
 // hpcpapi_profile_desc_vec_t: A vector of hpcpapi_profile_desc_t.
 typedef struct {
-  unsigned int            size; /* vector size */
-  hpcpapi_profile_desc_t* vec;  /* the vector */
+  int eset; // the event set
+
+  unsigned int            size; // vector size
+  hpcpapi_profile_desc_t* vec;  // one for each event
 } hpcpapi_profile_desc_vec_t;
 
 /****************************************************************************/
