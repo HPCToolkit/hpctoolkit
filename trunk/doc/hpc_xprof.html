@@ -51,36 +51,42 @@
 
 <div class="indent">
 
-<p><span class="hpctool">xprof</span> converts various types of profile
-output into the PROFILE format, which in particular, associates 
-source file line information from <i>binary</i> with profile data
-from <i>profile</i>.  It behaves very much like 
-<span class="xtool">prof</span> followed by 
-<a href="hpc_ptran.html" class="hpctool">ptran</a>: 
-Given profile data as the <i>profile</i> input, it outputs a 
+
+<p><span class="hpctool">xprof</span> processes execution 
+profile data collected with DCPI on HP Alpha+Tru64
+platforms into the XML PROFILE format used by
+<span class="hpctool">hpcview</span>. 
+<span class="hpctool">xprof</span> was designed to interpret data collected 
+with the Alpha's ProfileMe performance monitoring hardware.
+<p> <span class="hpctool">xprof</span> can interpret profile data not only for executables, but also
+for shared libraries. To facilicate processing DCPI profile data with 
+<span class="hpctool">xprof</span>, the  
+<span class="hpctool">xprofquick</span> script is useful.
+For information about how to use
+<span class="hpctool">xprofquick</span>, invoke the script with
+no arguments.</p>
+
+<p>To use <span class="hpctool">xprof</span> directly to interpret DCPI performance data 
+instead of using the <span class="hpctool">xprofquick</span> wrapper script,
+DCPI performance data with must first be converted into an ASCII form
+using HP's <span class="xtool">dcpicat</span> utility.
+Given <span class="xtool">dcpicat</span> profile data as input, 
+<span class="hpctool">xprof</span> outputs a 
 <a href="dtd_profile.html" class="hpctool">PROFILE</a> file suitable as
 input to <a href="hpcview.html" class="hpctool">hpcview</a>.  Output
 is sent to standard out.</p>
 
-<p>To find source line information, access to the profiled binary is 
-required.  <span class="xtool">xprof</span> will try to find the
+<p>To find source line information, 
+<span class="hpctool">xprof</span> requires
+access to the profiled binary.  <span class="hpctool">xprof</span> will try to find the
 <i>binary</i> from data within <i>profile</i>.  If this information
-is missing, <i>binary</i> must be explicitly specified.
+is missing, <i>binary</i> must be explicitly specified.</p>
 
 <p>By default, <span class="xtool">xprof</span> determines a set of
 metrics available for the given profile data and includes all of them 
 in the <a href="dtd_profile.html" class="hpctool">PROFILE</a> output.
 
-<p>Currently <span class="hpctool">xprof</span> processes the output of 
-<span class="xtool">dcpicat</span>
-on Compaq Tru64/Alpha machines, incuding ProfileMe data.  Other input
-data formats may be added in future versions.</p>
 
-<p>In the future, we hope to modify <span class="hpctool">xprof</span>
-to automatically generate data for associated DSO's; until then you
-may find the <span class="hpctool">xprofquick</span> script useful.
-For usage information, run <span class="hpctool">xprofquick</span>
-with no arguments.
 
 
 </div> <!-- class=indent -->
