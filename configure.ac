@@ -344,11 +344,13 @@ case ${host} in
     # DEC demangle
     my_demangle_ldflags="-lmld"
     ;;
+
   i386*-*-linux* | i686*-*-linux* | ia64*-*-linux*)
     if HPCcxxcmp([icpc ecpc icc ecc]) ; then
       :
     fi
     ;;
+
   mips*-*-irix*)
     if HPCcxxcmp([CC]) ; then
       # SGI MIPSpro
@@ -363,6 +365,7 @@ case ${host} in
     # SGI demangle
     my_demangle_ldflags="-lmangle"
     ;;
+
   sparc*-*-solaris*)
     if HPCcxxcmp([CC]); then
       # Sun Forte/ONE
@@ -371,6 +374,7 @@ case ${host} in
     # Sun demangle
     my_demangle_ldflags="-ldemangle"
     ;;
+
   *)
     ;;
 esac
