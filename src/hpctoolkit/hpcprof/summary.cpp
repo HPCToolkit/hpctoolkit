@@ -1,10 +1,10 @@
+// -*-Mode: C++;-*-
 // $Id$
-// -*- C++ -*-
 
 //***************************************************************************
 //
 // File:
-//    summary.cc
+//    $Source$
 //
 // Purpose:
 //    Classes for representing and storing information about profiles.
