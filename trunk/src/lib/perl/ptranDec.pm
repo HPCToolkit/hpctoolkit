@@ -39,8 +39,11 @@
 # $Date$
 # $Revision$
 # $Log$
-# Revision 1.1  2003/04/21 21:55:05  slindahl
-# Initial revision
+# Revision 1.2  2004/09/30 19:31:50  eraxxon
+# Use FindBin to remove need for PERLLIB environment variable.  Also use it to determine the name of the calling program.
+#
+# Revision 1.1.1.1  2003/04/21 21:55:05  slindahl
+# Initial import of HPCToolkit by Sarah Gonzales as of 4/21/03
 #
 # Revision 1.9  2002/11/27  16:23:45  eraxxon
 # Fixed calculation of cycle counts when 'sample counts' are reported as time.
@@ -123,6 +126,7 @@
 package ptranDec;
 
 use strict;
+
 use POSIX();
 use PapiSpec();
 use PROFILEXMLWriter();

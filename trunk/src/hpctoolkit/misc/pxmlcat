@@ -50,12 +50,21 @@
 #############################################################################
 
 use strict;
-use HPCToolkitVersionInfo;
+use warnings;
+
 use IO::File;
+use FindBin qw($Script $RealBin);
+
+use lib "$RealBin/../lib/perl";
+use HPCToolkitVersionInfo;
+
 STDOUT->autoflush(1); 
 
-my $usage = 
-"usage: pxmlcat <pxmlfile_1>...<pxmlfile_n>
+#############################################################################
+
+my $the_program = $Script;
+my $the_usage = 
+"usage: ${the_program} <pxmlfile_1>...<pxmlfile_n>
 
 Given a list of PROFILE (.pxml) files, produce one PROFILE file by
 using the first file as the program (PGM) and converting each
@@ -78,7 +87,7 @@ metrics adn should *not* contain any load module elements (LM).
 
 ## Make sure called with minimum number of arguments
 my $numArgs = scalar(@ARGV);
-if ($numArgs < 1) { die $usage; }
+if ($numArgs < 1) { die $the_usage; }
 
 my $pxmlfiles = [ ];
 
@@ -109,7 +118,7 @@ exit(0);
 sub printUsageAndExit 
 {
     my ($command) = @_; # not used now
-    print STDOUT ${usage};
+    print STDOUT $the_usage;
     exit(-1);
 }
 
@@ -117,7 +126,7 @@ sub printUsageAndExit
 sub printVersionAndExit 
 {
     my ($command) = @_; # not used now
-    print STDERR "pxmlcat: ", $HPCToolkitVersionInfo::info, "\n";
+    print STDERR "${the_program}: ", $HPCToolkitVersionInfo::info, "\n";
     exit(-1);
 }
 
@@ -201,7 +210,7 @@ sub plagiarizePGM
     my($file) = @_;
     my $line = undef;
 
-    my $comment = "<!-- *** Plagiarized from '$file' by pxmlcat *** -->";
+    my $comment = "<!-- *** Plagiarized from '$file' by ${the_program} *** -->";
 
     # Open/prepare file
     my $fhndl = new IO::File;

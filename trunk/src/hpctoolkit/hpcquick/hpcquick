@@ -62,10 +62,11 @@
 use strict;
 use warnings;
 
-use FindBin qw($Script $RealBin);
-use HPCToolkitVersionInfo;
-
 use IO::File;
+use FindBin qw($Script $RealBin);
+
+use lib "$RealBin/../lib/perl";
+use HPCToolkitVersionInfo;
 
 STDOUT->autoflush(1); 
 
@@ -368,7 +369,7 @@ sub isArgument
 sub printUsageAndExit 
 {
   my ($command) = @_; # not used now
-  print STDOUT ${the_usage};
+  print STDOUT $the_usage;
   exit(-1);
 }
 
@@ -377,7 +378,7 @@ sub printUsageAndExit
 sub printVersionAndExit 
 {
   my $command = shift; # not used now
-  print STDERR "hpcquick: ", $HPCToolkitVersionInfo::info, "\n";
+  print STDERR "${the_program}: ", $HPCToolkitVersionInfo::info, "\n";
   exit(-1);
 }
 
