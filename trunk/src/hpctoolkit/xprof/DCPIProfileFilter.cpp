@@ -78,37 +78,45 @@ PredefinedDCPIMetricTable::Entry PredefinedDCPIMetricTable::table[] = {
   // Metrics available whenever ProfileMe is used (any PM mode)
   // -------------------------------------------------------
 
-  // FIXME: what should we do about unreliable data and early_kill?
+  // We generally avoid metrics with early_kill set: When a profiled
+  // instruction is killed early in the pipeline (early_kill is set),
+  // the PC reported by the hardware may be wrong and all counter
+  // values and bits other than valid, early_kill, no_trap, and and
+  // map_stall may be wrong.
 
-  // NOTE: it seems we can cross check with the retire counter 
-  //  for mode 0 or mode 2...
+  // FIXME: Can we cross check with the retire counter for mode 0, 2
   {"retired_insn", "Retired Instructions (includes mispredicted branches)",
    PM0 | PM1 | PM2 | PM3,
-   DCPIMetricExpr(DCPI_MTYPE_PM | DCPI_PM_CNTR_count | DCPI_PM_ATTR_retired_T),
+   DCPIMetricExpr(DCPI_MTYPE_PM | DCPI_PM_CNTR_count | DCPI_PM_ATTR_retired_T
+		  | DCPI_PM_ATTR_early_kill_F),
    InsnClassExpr(INSN_CLASS_ALL)
   },
 
   {"retired_fp_insn", "Retired FP Instructions (includes mispredicted branches)",
    PM0 | PM1 | PM2 | PM3,
-   DCPIMetricExpr(DCPI_MTYPE_PM | DCPI_PM_CNTR_count | DCPI_PM_ATTR_retired_T),
+   DCPIMetricExpr(DCPI_MTYPE_PM | DCPI_PM_CNTR_count | DCPI_PM_ATTR_retired_T
+		  | DCPI_PM_ATTR_early_kill_F),
    InsnClassExpr(INSN_CLASS_FLOP)
   },
 
   {"mispredicted_branches", "Mispredicted branches",
    PM0 | PM1 | PM2 | PM3,
-   DCPIMetricExpr(DCPI_MTYPE_PM | DCPI_PM_CNTR_count | DCPI_PM_ATTR_cbrmispredict_T),
+   DCPIMetricExpr(DCPI_MTYPE_PM | DCPI_PM_CNTR_count 
+		  | DCPI_PM_ATTR_cbrmispredict_T | DCPI_PM_ATTR_early_kill_F),
    InsnClassExpr(INSN_CLASS_ALL) /* bit is only true for branches */
   },
 
   {"replay_ldst", "Replays caused by load/store ordering. [Untested]",
    PM0 | PM1 | PM2 | PM3,
-   DCPIMetricExpr(DCPI_MTYPE_PM | DCPI_PM_CNTR_count | DCPI_PM_ATTR_ldstorder_T),
+   DCPIMetricExpr(DCPI_MTYPE_PM | DCPI_PM_CNTR_count 
+		  | DCPI_PM_ATTR_ldstorder_T | DCPI_PM_ATTR_early_kill_F),
    InsnClassExpr(INSN_CLASS_ALL)
   },
 
   {"trapped_insn", "Instructions causing traps",
    PM0 | PM1 | PM2 | PM3,
-   DCPIMetricExpr(DCPI_MTYPE_PM | DCPI_PM_CNTR_count | DCPI_PM_TRAP_trap),
+   DCPIMetricExpr(DCPI_MTYPE_PM | DCPI_PM_CNTR_count 
+		  | DCPI_PM_ATTR_early_kill_F | DCPI_PM_TRAP_trap),
    InsnClassExpr(INSN_CLASS_ALL)
   },
 
@@ -128,31 +136,36 @@ PredefinedDCPIMetricTable::Entry PredefinedDCPIMetricTable::table[] = {
   // FIXME: these are just the raw counters; how best to combine them?
   {"pm_inflight", "Inflight cycles (excludes fetch stage) for instructions that retired without trapping.",
    PM0 | PM1 | PM3,
-   DCPIMetricExpr(DCPI_MTYPE_PM | DCPI_PM_CNTR_inflight),
+   DCPIMetricExpr(DCPI_MTYPE_PM | DCPI_PM_CNTR_inflight 
+		  | DCPI_PM_ATTR_early_kill_F),
    InsnClassExpr(INSN_CLASS_ALL)
   },
 
   {"pm_retdelay", "Delays before retire (excludes all cycles prior to fetch).",
    PM1,
-   DCPIMetricExpr(DCPI_MTYPE_PM | DCPI_PM_CNTR_retdelay),
+   DCPIMetricExpr(DCPI_MTYPE_PM | DCPI_PM_CNTR_retdelay 
+		  | DCPI_PM_ATTR_early_kill_F),
    InsnClassExpr(INSN_CLASS_ALL)
   },
 
   {"pm_retires", "Instruction retires.",
    PM0 | PM2,
-   DCPIMetricExpr(DCPI_MTYPE_PM | DCPI_PM_CNTR_retires),
+   DCPIMetricExpr(DCPI_MTYPE_PM | DCPI_PM_CNTR_retires 
+		  | DCPI_PM_ATTR_early_kill_F),
    InsnClassExpr(INSN_CLASS_ALL)
   },
 
   {"pm_bcmisses", "B-cache (L2) cache misses.",
    PM2,
-   DCPIMetricExpr(DCPI_MTYPE_PM | DCPI_PM_CNTR_bcmisses),
+   DCPIMetricExpr(DCPI_MTYPE_PM | DCPI_PM_CNTR_bcmisses 
+		  | DCPI_PM_ATTR_early_kill_F),
    InsnClassExpr(INSN_CLASS_ALL)
   },
 
   {"pm_replays", "Memory system replay traps.",
    PM3,
-   DCPIMetricExpr(DCPI_MTYPE_PM | DCPI_PM_CNTR_replays),
+   DCPIMetricExpr(DCPI_MTYPE_PM | DCPI_PM_CNTR_replays
+		  | DCPI_PM_ATTR_early_kill_F),
    InsnClassExpr(INSN_CLASS_ALL)
   },
 
