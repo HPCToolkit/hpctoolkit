@@ -102,18 +102,24 @@ private:
 #define TYPEPM(m) DCPI_MTYPE_PM | (m)
 #define TYPERM(m) DCPI_MTYPE_RM | (m)
 
+// 'pfx', 'n1', 'n2', 'n3' should all be strings
 #define DCPI_PM_CNTR(pfx, n1, n2, n3, bit1, bit2, bit3) \
-  { pfx##n1, TYPEPM((bit1)) }, \
-  { pfx##n2, TYPEPM((bit2)) }, \
-  { pfx##n3, TYPEPM((bit3)) }
+  { pfx n1, TYPEPM((bit1)) }, \
+  { pfx n2, TYPEPM((bit2)) }, \
+  { pfx n3, TYPEPM((bit3)) }
+  /* the macro concatenation operator ## must produce a token */
 
+// 'name' should be a string
 #define DCPI_PM_ATTR(name, truebits, falsebits) \
   { name,      TYPEPM((truebits)) }, \
-  { "!"##name, TYPEPM((falsebits)) }
+  { "!" name, TYPEPM((falsebits)) }
+  /* the macro concatenation operator ## must produce a token */
 
+// 'name' should be a string
 #define DCPI_PM_TRAP(name, truebits, falsebits) \
   { name,      TYPEPM((truebits)) }, \
-  { "!"##name, TYPEPM((falsebits)) }
+  { "!" name, TYPEPM((falsebits)) }
+  /* the macro concatenation operator ## must produce a token */
 
 
 #define TABLE_SZ \
