@@ -169,8 +169,10 @@ private:
 // InsnClassExpr
 //****************************************************************************
 
-#define INSN_CLASS_ALL 1
-#define INSN_CLASS_FLOPS 2
+
+#define INSN_CLASS_ALL   0x00000001 /* cannot be part of disjunction! */
+#define INSN_CLASS_FLOP  0x00000002
+#define INSN_CLASS_OTHER 0x00000004
 
 // InsnClassExpr: A common 'PCFilter' will be an instruction class
 // filter (cf. 'InsnFilter').  This represent a disjunctive expression
@@ -190,7 +192,18 @@ public:
     bits = x.bits; 
     return *this;
   }
-  
+
+  // IsSatisfied: Test to see if this query expression is satisfied by
+  // the given instruction class description within 'bv'.  (Only on
+  // bit (= class) in 'bv' is set.)
+  bool IsSatisfied(const bitvec_t bv) {
+    if (IsSet(INSN_CLASS_ALL)) {
+      return true;
+    } else {
+      return IsSet(bv); // only one bit (= class) in 'bv' is set
+    }
+  }
+
   // IsValid: If no bits are set, this must be an invalid expression
   bool IsValid() const { return bits != 0; }
   
@@ -200,6 +213,13 @@ public:
   }
   bool IsSet(const InsnClassExpr& m) const {
     return (bits & m.bits) == m.bits; 
+  }
+  // IsSetAny: Tests to see if *any* of the specified bits are set
+  bool IsSetAny(const bitvec_t bv) const {
+    return (bits & bv) != 0;
+  }
+  bool IsSetAny(const InsnClassExpr& m) const {
+    return (bits & m.bits) != 0; 
   }
   // Set: Set all the specified bits
   void Set(const bitvec_t bv) {
@@ -225,6 +245,12 @@ protected:
 private:  
   bitvec_t bits;
 };
+
+
+// ConvertInstDesc: Converts an InstDesc to one of the above classes
+InsnClassExpr::bitvec_t 
+ConvertToInsnClass(ISA::InstDesc d);
+
 
 //****************************************************************************
 // InsnFilter
