@@ -54,15 +54,15 @@ GCC_BIN = /usr/site/gcc-3.0.4/bin
 BIN = $(BIN_53)
 
 #  ANSI C++ compiler
-CXX = $(BIN)/CC -features=rtti
+CXX = CC -features=rtti
   # Note: use default template handling: -instances=extern
 
-#CXX = $(GCC_BIN)/g++
+#CXX = g++
   # Note: use default template handling (use 3.0.4 or later)
 
 #  ANSI C compiler
-CC = $(BIN)/cc
-#CC = $(GCC_BIN)/gcc
+CC = cc
+#CC = gcc
 
 #  Archiver
 AR = $(CXX) -xar -o       # Sun CC

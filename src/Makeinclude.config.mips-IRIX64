@@ -51,16 +51,16 @@ SGI_BIN = /usr/bin
 GCC_BIN = /usr/freeware/bin
 
 #  ANSI C++ compiler
-CXX = $(SGI_BIN)/CC -64 -LANG:std -DNO_STD_CHEADERS
+CXX = CC -64 -LANG:std -DNO_STD_CHEADERS
   # Note: Remove NO_STD_CHEADERS if your compiler supports <cheader> headers
   # Note: use default template handling: -prelink -ptnone
 
-#CXX = $(GCC_BIN)/g++ -mabi=64
+#CXX = g++ -mabi=64
   # Note: use default template handling (use 3.0.4 or later)
 
 #  ANSI C compiler
-CC = $(SGI_BIN)/cc -64 
-#CC = $(GCC_BIN)/gcc -mabi=64
+CC = cc -64 
+#CC = gcc -mabi=64
 
 #  Archiver
 AR = $(CXX) -ar -o     # SGI C++
