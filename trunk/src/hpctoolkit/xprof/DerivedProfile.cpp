@@ -114,7 +114,7 @@ DerivedProfile::Create(const PCProfile* pcprof_,
   } else {
     // For each metric filter, create a derived metric
     SetNumMetrics(filtlist->size());
-    PCProfileFilterListCIt it = filtlist->begin();
+    PCProfileFilterList::const_iterator it = filtlist->begin();
     for (suint i = 0; it != filtlist->end(); ++it, ++i) {
       PCProfileFilter* filt = *it;
       MetricFilter* mfilt = filt->GetMetricFilter();
@@ -153,7 +153,7 @@ DerivedProfile::Create(const PCProfile* pcprof_,
       Addr pc = isa->ConvertOpPCToPC(oppc, opIndex);
       
       // For each derived metric and its insn filter
-      PCProfileFilterListCIt fIt = filtlist->begin();
+      PCProfileFilterList::const_iterator fIt = filtlist->begin();
       for (suint i = 0; fIt != filtlist->end(); ++fIt, ++i) {
 	PCProfileFilter* filt = *fIt;
 	PCFilter* pcfilt = filt->GetPCFilter();
