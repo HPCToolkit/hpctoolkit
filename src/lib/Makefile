@@ -52,8 +52,7 @@ include $(HPCTOOLKIT)/src/Makeinclude.config
 
 all: libs
 
-libs: $(LIB_SUPPORT) $(LIB_BINUTILS) $(LIB_ISA) $(LIB_XML) 
-  # $(LIB_HPCFILE)
+libs: $(LIB_SUPPORT) $(LIB_BINUTILS) $(LIB_ISA) $(LIB_XML) #$(LIB_HPCFILE)
 
 .PHONY: all libs
 
@@ -73,21 +72,22 @@ $(LIB_ISA):
 $(LIB_XML): 
 	@$(MAKE) -f $(HPCTOOLKIT_SRC_PATH)/lib/xml/Makefile
 
-#$(LIB_HPCFILE): 
-#	@$(MAKE) -f $(HPCTOOLKIT_SRC_PATH)/lib/hpcfile/Makefile
+$(LIB_HPCFILE): 
+	@$(MAKE) -f $(HPCTOOLKIT_SRC_PATH)/lib/hpcfile/Makefile
 
 .PHONY: $(LIB_SUPPORT) $(LIB_BINUTILS) $(LIB_ISA) $(LIB_XML) $(LIB_HPCFILE)
 
 
 ## Other
 
-clean:
-	@$(MAKE) clean -f $(HPCTOOLKIT_SRC_PATH)/lib/support/Makefile
-	@$(MAKE) clean -f $(HPCTOOLKIT_SRC_PATH)/lib/binutils/Makefile
-	@$(MAKE) clean -f $(HPCTOOLKIT_SRC_PATH)/lib/ISA/Makefile
-	@$(MAKE) clean -f $(HPCTOOLKIT_SRC_PATH)/lib/xml/Makefile
-#	@$(MAKE) clean -f $(HPCTOOLKIT_SRC_PATH)/lib/hpcfile/Makefile
+CLEAN_DIRS = support binutils ISA xml hpcfile 
 
+clean:
+	for i in $(CLEAN_DIRS) ; do \
+	  if [ -d $(HPCTOOLKIT_SRC_PATH)/lib/$$i ] ; then \
+	    $(MAKE) clean -f $(HPCTOOLKIT_SRC_PATH)/lib/$$i/Makefile ; \
+	  fi \
+	done
 
 vars: 
 	@echo CXX=$(CXX)

@@ -57,8 +57,7 @@ include $(HPCTOOLKIT)/src/Makeinclude.config
 
 all: exes install
 
-exes:  build_bloop build_hpcview build_xprof
-  # build_xcsprof
+exes: build_bloop build_hpcview build_xprof #build_xcsprof
 
 .PHONY: all exes
 
@@ -80,8 +79,8 @@ build_hpcview: libs
 build_xprof: libs
 	@$(MAKE) -f $(HSRC)/hpctoolkit/xprof/Makefile
 
-#build_xcsprof: libs
-#	@$(MAKE) -f $(HSRC)/hpctoolkit/xcsprof/Makefile
+build_xcsprof: libs
+	@$(MAKE) -f $(HSRC)/hpctoolkit/xcsprof/Makefile
 
 .PHONY: build_hpcview build_bloop build_xprof build_xcsprof
 
@@ -100,13 +99,16 @@ libs:
 #  Install/Uninstall
 #-----------------------------------------------------------------
 
+INSTALL_EXES = $(EXE_HPCVIEW) $(EXE_BLOOP) $(EXE_XPROF) $(EXE_XCSPROF)
+
 # install everything
 install: exes uninstall install_scripts
 	-mkdir -p $(HBIN)/$(PLATFORM)
-	cp $(HPCTOOLKIT_EXE_PATH)/$(EXE_BLOOP) $(HBIN)/$(PLATFORM)/
-	cp $(HPCTOOLKIT_EXE_PATH)/$(EXE_HPCVIEW) $(HBIN)/$(PLATFORM)/
-	cp $(HPCTOOLKIT_EXE_PATH)/$(EXE_XPROF) $(HBIN)/$(PLATFORM)/
-#	cp $(HPCTOOLKIT_EXE_PATH)/$(EXE_XCSPROF) $(HBIN)/$(PLATFORM)/
+	for i in $(INSTALL_EXES) ; do \
+	  if [ -x $(HPCTOOLKIT_EXE_PATH)/$$i ] ; then \
+	    cp $(HPCTOOLKIT_EXE_PATH)/$$i $(HBIN)/$(PLATFORM)/ ; \
+	  fi \
+	done
 
 # uninstall everything
 uninstall: uninstall_scripts
@@ -141,19 +143,21 @@ uninstall_scripts:
 #  Clean build files
 #-----------------------------------------------------------------
 
-clean:
-	@$(MAKE) clean -f $(HSRC)/lib/Makefile
-	@$(MAKE) clean -f $(HSRC)/hpctoolkit/bloop/Makefile
-	@$(MAKE) clean -f $(HSRC)/hpctoolkit/hpcview/Makefile
-	@$(MAKE) clean -f $(HSRC)/hpctoolkit/xprof/Makefile
-#	@$(MAKE) clean -f $(HSRC)/hpctoolkit/xcsprof/Makefile
-	@echo "Note: does not clean libs or tools in src/external_*"
+CLEAN_DIRS = lib hpctoolkit/hpcview hpctoolkit/bloop hpctoolkit/xprof \
+	hpctoolkit/xcsprof
 
+clean:
+	for i in $(CLEAN_DIRS) ; do \
+	  if [ -d $(HSRC)/$$i ] ; then \
+	    $(MAKE) clean -f $(HSRC)/$$i/Makefile ; \
+	  fi \
+	done
+	@echo "Note: does not clean libs or tools in src/external_*"
 
 veryclean:
 	if [ -n "$(HPCTOOLKIT_OBJ_PATH)" \
 	     -a "$(HPCTOOLKIT_OBJ_PATH)" != "/" ] ; then \
-	  /bin/rm -f -r $(HPCTOOLKIT_OBJ_PATH); \
+	  /bin/rm -f -r $(HPCTOOLKIT_OBJ_PATH) ; \
 	fi
 	@echo "Note: does not clean libs or tools in src/external_*"
 

@@ -52,11 +52,13 @@ pre_build:
 	-mkdir -p $(OBJP)
 
 build: pre_build
-	@cd $(OBJP); \
+	@cd $(OBJP) ; \
 	  $(MAKE) -f $(SRCS)/Makefile.real SRCS=$(SRCS)
 
 clean: 
-	@cd $(OBJP); \
-	  $(MAKE) clean -f $(SRCS)/Makefile.real SRCS=$(SRCS)
+	@if [ -d $(OBJP) ] ; then \
+	  cd $(OBJP) ; \
+	  $(MAKE) clean -f $(SRCS)/Makefile.real SRCS=$(SRCS) ; \
+	fi
 
 .PHONY: all pre_build build clean
