@@ -73,7 +73,7 @@ ifdef RELEASE
   USER_CXXFLAGS = -O -D_IEEE
   USER_CFLAGS   = -O -D_IEEE
 else 
-  USER_CXXFLAGS = -g -D_IEEE
+  USER_CXXFLAGS = -g -gall -D_IEEE
   USER_CFLAGS   = -g -D_IEEE
 endif
 
