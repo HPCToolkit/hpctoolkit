@@ -45,7 +45,7 @@ extern "C" {
 #endif
 
 extern rtloadmap_t* 
-hpcrun_code_lines_from_loadmap(int dumpmap);
+hpcrun_get_rtloadmap(int dbglvl);
 
 #ifdef __cplusplus
 }
