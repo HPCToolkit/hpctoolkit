@@ -73,11 +73,17 @@ using std::cerr;
 using std::cout;
 using std::endl;
 
-PCProfileFilterList*
-GetAvailPredefDCPIFilters(DCPIProfile* prof, LoadModule* lm);
+typedef std::list<String>          StringList;
+typedef StringList::iterator       StringListIt;
+typedef StringList::const_iterator StringListCIt;
+
 
 void
 ListAvailPredefDCPIFilters(DCPIProfile* prof, bool longlist = false);
+
+PCProfileFilterList*
+GetDCPIFilters(DCPIProfile* prof, LoadModule* lm, 
+	       const char* metricList, const char* excludeMList);
 
 //****************************************************************************
 
@@ -157,11 +163,20 @@ main(int argc, char* argv[])
     PCProfileFilterList* filtList = NULL;
     if (!args.outputRawMetrics) {
       DCPIProfile* dcpiprof = dynamic_cast<DCPIProfile*>(pcprof);
-      filtList = GetAvailPredefDCPIFilters(dcpiprof, modInfo.GetLM());
+      filtList = GetDCPIFilters(dcpiprof, modInfo.GetLM(), 
+				args.metricList, args.excludeMList);
+      if (!filtList) {
+	exit(1); // Error already printed
+      }
     }
     
     drvdprof = new DerivedProfile(pcprof, filtList);
     delete filtList;
+
+    if (drvdprof->GetNumMetrics() == 0) {
+      cerr << "Error: Could not find any metrics to convert to PROFILE!\n";
+      exit(1);
+    }
 
   } catch (...) {
     cerr << "Error: Exception encountered while constructing derived profile!\n";
@@ -188,27 +203,29 @@ main(int argc, char* argv[])
 
 //****************************************************************************
 
-bool
-IsPredefDCPIFilterAvail(DCPIProfile* prof, PredefinedDCPIMetricTable::Entry* e);
-
-// GetAvailPredefDCPIFilters: Return a list of all the filters within
-// the DCPI predefined metric table that are available for this
-// profile.
 PCProfileFilterList*
-GetAvailPredefDCPIFilters(DCPIProfile* prof, LoadModule* lm)
-{
-  PCProfileFilterList* flist = new PCProfileFilterList;
-  for (uint i = 0; i < PredefinedDCPIMetricTable::GetSize(); ++i) {
-    PredefinedDCPIMetricTable::Entry* e = PredefinedDCPIMetricTable::Index(i);
-    if (IsPredefDCPIFilterAvail(prof, e)) {
-      flist->push_back(GetPredefinedDCPIFilter(e->name, lm));
-    }
-  }
-  return flist;
-}
+GetDCPIFilters(StringList* mlist, LoadModule* lm);
+
+StringList*
+GetAvailPredefDCPIFilterNms(DCPIProfile* prof, LoadModule* lm);
+
+bool
+IsPredefDCPIFilterAvail(DCPIProfile* prof, StringList* flist, 
+			const char* emsg = NULL);
+
+bool
+IsPredefDCPIFilterAvail(DCPIProfile* prof, 
+			PredefinedDCPIMetricTable::Entry* e);
+
+StringList*
+ConvertColonListToStringList(const char* str);
+
+void
+RemoveFromList(StringList* l1, StringList* l2);
+
 
 // ListAvailPredefDCPIFilters: Iterate through the DCPI predefined
-// metric table, lising any metrics (filters) that are available for
+// metric table, listing any metrics (filters) that are available for
 // this profile.
 void
 ListAvailPredefDCPIFilters(DCPIProfile* prof, bool longlist)
@@ -244,6 +261,106 @@ ListAvailPredefDCPIFilters(DCPIProfile* prof, bool longlist)
   }
 }
 
+
+// GetDCPIFilters: Returns the list of DCPI filters determined by the
+// colon-separated include list in 'metricList' and the colon-separated
+// exclude list in 'excludeMList'.  If 'metricList' is empty, a list of
+// available metrics will automatically computed.  If an error occurs
+// during processing -- such as invalid metrics -- an error message is
+// printed and NULL will be returned.  User is responsible for memory
+// deallocation.
+PCProfileFilterList*
+GetDCPIFilters(DCPIProfile* prof, LoadModule* lm, 
+	       const char* metricList, const char* excludeMList)
+{
+  bool noError = true;
+  PCProfileFilterList* flist = NULL;
+
+  // 1. Determine the initial list of metrics to compute.  All metrics
+  // should be valid even if some will later be excluded.  (We do not
+  // allow users to specify an unavailable metric here and then
+  // exclude it.)
+  StringList* mlist = NULL;
+  if (metricList[0] != '\0') {
+    mlist = ConvertColonListToStringList(metricList);
+    noError &= IsPredefDCPIFilterAvail(prof, mlist, "Error in -M:");
+  } else {
+    mlist = GetAvailPredefDCPIFilterNms(prof, lm);
+  }
+  
+  // 2. Remove excludes from this list.  (All metrics in 'mlist' are valid.)
+  StringList* xlist = NULL;
+  if (excludeMList[0] != '\0') {
+    xlist = ConvertColonListToStringList(excludeMList);
+    noError &= IsPredefDCPIFilterAvail(prof, xlist, "Error in -X:");
+    RemoveFromList(mlist, xlist);
+  }
+
+  // 3. Create the list of filters for the final metric list. (All should
+  // be avilable.)
+  if (noError) {
+    flist = GetDCPIFilters(mlist, lm);
+  }
+  delete mlist;
+  delete xlist;
+  return flist;
+}
+
+
+// GetDCPIFilters: Return a list of filters for the metrics in 'mlist'.
+// User is responsible for memory deallocation.  
+// Note: assumes that every filter name in 'mlist' is available.
+PCProfileFilterList*
+GetDCPIFilters(StringList* mlist, LoadModule* lm) 
+{
+  PCProfileFilterList* flist = new PCProfileFilterList;
+  for (StringListIt it = mlist->begin(); it != mlist->end(); ++it) {
+    const String& nm = *it;
+    flist->push_back(GetPredefinedDCPIFilter(nm, lm));
+  }
+  return flist;
+}
+
+// GetAvailPredefDCPIFilterNms: Return a list of all the filter names
+// within the DCPI predefined metric table that are available for this
+// profile.
+StringList*
+GetAvailPredefDCPIFilterNms(DCPIProfile* prof, LoadModule* lm)
+{
+  StringList* flist = new StringList;
+  for (uint i = 0; i < PredefinedDCPIMetricTable::GetSize(); ++i) {
+    PredefinedDCPIMetricTable::Entry* e = PredefinedDCPIMetricTable::Index(i);
+    if (IsPredefDCPIFilterAvail(prof, e)) {
+      flist->push_back(String(e->name));
+    }
+  }
+  return flist;
+}
+
+
+// IsPredefDCPIFilterAvail: Given a list of filter names, determine if
+// each one is available given this profile.  If 'emsg' is non-NULL,
+// an error message will be printed for each invalid filter name, with
+// 'emsg' printed first on each error line.
+bool 
+IsPredefDCPIFilterAvail(DCPIProfile* prof, StringList* flist, const char* emsg)
+{
+  bool ret = true;
+  PredefinedDCPIMetricTable::Entry* e; 
+  for (StringListIt it = flist->begin(); it != flist->end(); ++it) {
+    const String& nm = *it;
+    
+    e = PredefinedDCPIMetricTable::FindEntry(nm);
+    if ( !(e && IsPredefDCPIFilterAvail(prof, e)) ) {
+      ret = false;
+      if (emsg) {
+	cerr << emsg << " The DCPI filter '" << nm << "' is invalid for this profile.\n";
+      }
+    } 
+  }
+  return ret;
+}
+
 // IsPredefDCPIFilterAvail: Given the DCPIProfile and an entry in the
 // DCPI predefined metric table, determine if the corresponding filter
 // is available (meaningful) for this profile.
@@ -265,9 +382,9 @@ IsPredefDCPIFilterAvail(DCPIProfile* prof, PredefinedDCPIMetricTable::Entry* e)
     return false;
     
   } else {
+
     // The filter may be available in any ProfileMe mode or in only
     // one mode.
-
     bool pmavail = false;
     if (e->avail & PredefinedDCPIMetricTable::PM0) {
       if (pmmode == DCPIProfile::PM0) { pmavail |= true; }
@@ -284,4 +401,43 @@ IsPredefDCPIFilterAvail(DCPIProfile* prof, PredefinedDCPIMetricTable::Entry* e)
     return pmavail;
   }
   
+}
+
+
+// ConvertColonListToStringList: convert the colon-separated list of
+// names to a StringList.  Users are responsible for memory.
+StringList*
+ConvertColonListToStringList(const char* str)
+{
+  StringList* l = new StringList;
+ 
+  if (!str) { return l; }
+ 
+  char* tok = strtok(const_cast<char*>(str), ":");
+  while (tok != NULL) {
+    l->push_back(String(tok));
+    tok = strtok((char*)NULL, ":");
+  }
+  
+  return l;
+}
+
+
+// RemoveFromList: Removes all items in l2 from l1.
+void
+RemoveFromList(StringList* l1, StringList* l2) 
+{
+  for (StringListIt it2 = l2->begin(); it2 != l2->end(); ++it2) {
+    const String& nm2 = *it2;
+
+    // Remove nm2 every time it occurs in l1
+    for (StringListIt it1 = l1->begin(); it1 != l1->end(); ) {
+      const String& nm1 = *it1;
+      if (nm1 == nm2) { 
+	it1 = l1->erase(it1); // it1 now points at next element or end
+      } else {
+	++it1;
+      }
+    }
+  }
 }

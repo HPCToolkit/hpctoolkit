@@ -62,10 +62,12 @@ public:
   String cmd; 
 
   // arguments - options
-  String pcMapFile; 
+  String pcMapFile;
   uint listAvailableMetrics; // 0: no, 1: short, 2: long
+  String metricList;
+  String excludeMList;
   bool outputRawMetrics;
-  
+
   // arguments
   String progFile; // binary that was profiled
   String profFile; // profiling output for 'progFile'
