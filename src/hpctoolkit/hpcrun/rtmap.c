@@ -15,16 +15,16 @@
 // Author:
 //    Written by John Mellor-Crummey and Nathan Tallent, Rice University.
 //
-//***************************************************************************/
+*****************************************************************************/
 
 /************************** System Include Files ****************************/
 
-#include <sys/types.h>
-#include <sys/param.h>
-#include <unistd.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <unistd.h>
 #include <string.h>
+#include <limits.h> /* for 'PATH_MAX' */
+#include <sys/types.h>
 
 /**************************** User Include Files ****************************/
 
@@ -36,24 +36,24 @@
 
 static loadmodules_t loadmodules;
 
-static void finalizelines();
+static void finalizelines(void);
 static int iscodeline(char *line);
-static char* get_line_slot();
+static char* get_line_slot(void);
 
 static char* name(char *line);
 static char* offset(char *line);
 static char* length(char *line);
 static long htoll(char *s);
 
-static void dumploadmodules();
-static void dumplines();
+static void dumploadmodules(void);
+static void dumplines(void);
 
 /****************************************************************************/
 
 /* number of bytes to print out for a long in hex with a 0x prefix */ 
 #define bhl (sizeof(long)*2+2)
 
-#define MAXLINELEN (MAXPATHLEN + 80)
+#define MAXLINELEN (PATH_MAX + 80)
 
 /****************************************************************************/
 
@@ -64,7 +64,7 @@ static void dumplines();
 loadmodules_t* 
 papirun_code_lines_from_loadmap(int dumpmap)
 {
-  char filename[MAXPATHLEN];
+  char filename[PATH_MAX];
   FILE *pf;
   char *line = get_line_slot(); 
   pid_t pid = getpid();
@@ -101,9 +101,8 @@ static int slots_in_use = 0;
  * extensible array of load map lines.
  */
 static char*
-get_line_slot() 
+get_line_slot(void) 
 {
-  slots_in_use; /* FIXME what does this do? */
   if (slots_in_use == slots_avail) {
     if (mappings == 0) {
       slots_avail = 512;
@@ -134,7 +133,7 @@ iscodeline(char *line)
  * executable code.
  */
 static void 
-finalizelines()
+finalizelines(void)
 {
   int i;
   if (slots_in_use > 0) {
@@ -196,7 +195,7 @@ htoll(char *s)
 /*  Dump a processed form of the load map
  */
 static void 
-dumploadmodules()
+dumploadmodules(void)
 {
   int i;
   fprintf(stderr, "Dumping currently mapped load modules:\n");
@@ -212,7 +211,7 @@ dumploadmodules()
 /*  Simply regurgitate the code lines of the load map
  */
 static void 
-dumplines()
+dumplines(void)
 {
   int i = 0;
   for (; i < slots_in_use; i++) {
@@ -222,12 +221,14 @@ dumplines()
 
 
 #if TESTING
-int main()
+int 
+main(void)
 {
   papirun_code_lines_from_loadmap(1);
 #if 0
   dumplines();
 #endif
+  return 0;
 }
 #endif
 
