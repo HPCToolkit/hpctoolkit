@@ -476,7 +476,7 @@ BuildFromTarjInterval(CodeInfo* enclosingScope, Procedure* p,
       
       // Build the loop nest
       LoopScope* lScope = new LoopScope(enclosingScope, UNDEF_LINE,
-					UNDEF_LINE, crtBlk->getID());
+					UNDEF_LINE, crtBlk->getId());
       int num = BuildFromTarjInterval(lScope, p, tarj, fg, cfg, kid, 
 				      cfgNodeMap, 1);
       localLoops += (num + 1);
