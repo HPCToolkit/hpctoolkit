@@ -53,6 +53,7 @@ include(src/config/hpc-cxxutils.m4)
 
 #----------------------------------------------------------------------------
 # Initialization: 
+# Update to autoconf 2.59 and automake 1.8.3
 # Require autoconf 2.54 because automake 1.7.6 needs it.  
 #  - automake 1.7.6 is needed to generate Intel 7.1 dependencies correctly.
 #  - automake 1.6.1 failed to generate separate lists of object files for
@@ -64,8 +65,8 @@ AC_INIT(HPCToolkit, 3.7.0)
 AC_CONFIG_SRCDIR([src/include/HPCToolkitVersionInfo.h])
 AC_CONFIG_AUX_DIR([src/config])
 
-AC_PREREQ(2.54)
-AM_INIT_AUTOMAKE(1.7.6)
+AC_PREREQ(2.59)
+AM_INIT_AUTOMAKE(1.8.3)
 
 #----------------------------------------------------------------------------
 # Prerequisites: programs, libraries
