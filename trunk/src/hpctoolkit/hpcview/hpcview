@@ -30,7 +30,7 @@ fi
 ROOTDIR=`cd ${ROOTDIR_REL} && pwd`
 
 HPCTOOLKIT=${ROOTDIR}
-BINARY="$0bin" # ${HPCTOOLKIT}/bin/ `basename $0` bin
+BINARY="$0-bin" # ${HPCTOOLKIT}/bin/ `basename $0` bin
 
 unset BINDIR
 unset ROOTDIR

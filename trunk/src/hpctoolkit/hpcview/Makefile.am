@@ -109,13 +109,13 @@ MYCLEAN = @HOST_LIBTREPOSITORY@
 
 bin_SCRIPTS = hpcview
 
-bin_PROGRAMS = hpcviewbin
+bin_PROGRAMS = hpcview-bin
 
-hpcviewbin_SOURCES  = $(MYSOURCES)
-hpcviewbin_CFLAGS   = $(MYCFLAGS)
-hpcviewbin_CXXFLAGS = $(MYCXXFLAGS)
-hpcviewbin_LDFLAGS  = $(MYLDFLAGS)
-hpcviewbin_LDADD    = $(MYLDADD)
+hpcview_bin_SOURCES  = $(MYSOURCES)
+hpcview_bin_CFLAGS   = $(MYCFLAGS)
+hpcview_bin_CXXFLAGS = $(MYCXXFLAGS)
+hpcview_bin_LDFLAGS  = $(MYLDFLAGS)
+hpcview_bin_LDADD    = $(MYLDADD)
 
 MOSTLYCLEANFILES = $(MYCLEAN)
 
