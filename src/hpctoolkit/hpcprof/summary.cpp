@@ -498,8 +498,8 @@ Summary::process_lm(const ProfFileLM& proflm, int ev_i_start)
   lm->set_debug(debug_);
 
   if (debug_) {
-      cout << "Summary::process_lm: '" << lmname << "' (@ " 
-	   << proflm.load_addr() << ")" << endl;
+      cerr << "--- Summary::process_lm: '" << lmname << "' (@ " 
+	   << hex << proflm.load_addr() << dec << ") ---" << endl;
     }
 
 #if 0 // FIXME: add module qualification; this is mostly useless
@@ -531,8 +531,8 @@ Summary::process_lm(const ProfFileLM& proflm, int ev_i_start)
 	  n_sample_[ev_i] += count;
 
 	  if (debug_) {
-	      cout << "  { samples: addr = " << (void*) pc 
-		   << ", count = " << count << " }" << endl;
+	      cerr << "  { samples: addr = " << hex << pc 
+		   << ", count = " << count << " }" << dec << endl;
 	    }
 	  
 	  // Try to find symbolic info
@@ -543,21 +543,23 @@ Summary::process_lm(const ProfFileLM& proflm, int ev_i_start)
 	  if (lm->type() == LoadModule::DSO && pc > proflm.load_addr()) {
 	      pc1 = pc - proflm.load_addr(); // adjust lookup pc for DSOs
 	      if (debug_) {
-		cout << "Adjusting DSO pc_=" << (void *)pc << ", load_addr: " 
-		     << proflm.load_addr() << " == pc1: " 
-		     << (void *)pc1 << endl;
+		cerr << "Adjusting DSO pc_=" << hex << pc << ", load_addr: " 
+		     << proflm.load_addr() << " == pc1: " << pc1 
+		     << dec << endl;
 	      }
 	    }
 	      
-	  if (!lm->find(pc1, &c_filename, &lineno, &c_funcname)) {
-	      //lineno = 12345; 
-	      continue;
+	  bool fnd = lm->find(pc1, &c_filename, &lineno, &c_funcname);
+	  if (fnd) {
+	    if (debug_) {
+	      cerr << "  { *found @ " << hex << pc1 << ": " << c_funcname 
+		   << "\n    " << c_filename << ":" << lineno << " }" << endl;
 	    }
-
-	  if (debug_) {
-	    cout << "  { *found @ " << (void*)pc1 << ": " << c_funcname << endl
-		 << "    " << c_filename << ":" << lineno << " }" << endl;
-	    }
+	  } 
+	  else {
+	    // force attribution to an unknown file:function
+	    c_filename = c_funcname = NULL;
+	  }
 
 	  string funcname, filename;
 	  if (c_funcname) { funcname = lm->demangle(c_funcname); }
