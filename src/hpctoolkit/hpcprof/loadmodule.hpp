@@ -31,16 +31,15 @@
 
 //************************* System Include Files ****************************
 
-#include <string>
-#include <map>
-
 #include <stdio.h>
 #include <time.h>
 
-#define TRUE_FALSE_ALREADY_DEFINED /* for bfd.h */
-#include <bfd.h>
+#include <string>
+#include <map>
 
 //*************************** User Include Files ****************************
+
+#include <include/gnu_bfd.h>
 
 #include "hpcprof.h"
 
