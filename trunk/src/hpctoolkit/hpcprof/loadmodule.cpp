@@ -178,8 +178,7 @@ BFDLoadModule::read_file(const string &name, bool clear_cache)
     long symcount;
     PTR minisyms;
     unsigned int size;
-    struct size_sym *symsizes;
-    asymbol *tmp_symbol, *mk_sym;
+    asymbol *tmp_symbol;
     int i;
     
     symcount = bfd_read_minisymbols (bfd_, (bfd_boolean)true, &minisyms, &size);
