@@ -86,35 +86,35 @@ PredefinedDCPIMetricTable::Entry PredefinedDCPIMetricTable::table[] = {
 
   // FIXME: Can we cross check with the retire counter for mode 0, 2
   {"INSTRUCT", "Retired Instructions (includes mispredicted branches)",
-   PM0 | PM1 | PM2 | PM3,
+   PM0 | PM1 | PM2 | PM3, NULL,
    DCPIMetricExpr(DCPI_MTYPE_PM | DCPI_PM_CNTR_count | DCPI_PM_ATTR_retired_T
 		  | DCPI_PM_ATTR_early_kill_F),
    InsnClassExpr(INSN_CLASS_ALL)
   },
 
   {"FLOPS", "Retired FP Instructions (includes mispredicted branches)",
-   PM0 | PM1 | PM2 | PM3,
+   PM0 | PM1 | PM2 | PM3, NULL,
    DCPIMetricExpr(DCPI_MTYPE_PM | DCPI_PM_CNTR_count | DCPI_PM_ATTR_retired_T
 		  | DCPI_PM_ATTR_early_kill_F),
    InsnClassExpr(INSN_CLASS_FLOP)
   },
 
   {"MPBRANCH", "Mispredicted branches",
-   PM0 | PM1 | PM2 | PM3,
+   PM0 | PM1 | PM2 | PM3, NULL,
    DCPIMetricExpr(DCPI_MTYPE_PM | DCPI_PM_CNTR_count 
 		  | DCPI_PM_ATTR_cbrmispredict_T | DCPI_PM_ATTR_early_kill_F),
    InsnClassExpr(INSN_CLASS_ALL) /* bit is only true for branches */
   },
 
   {"LSREPLAY", "Replays caused by load/store ordering. [Untested]",
-   PM0 | PM1 | PM2 | PM3,
+   PM0 | PM1 | PM2 | PM3, NULL,
    DCPIMetricExpr(DCPI_MTYPE_PM | DCPI_PM_CNTR_count 
 		  | DCPI_PM_ATTR_ldstorder_T | DCPI_PM_ATTR_early_kill_F),
    InsnClassExpr(INSN_CLASS_ALL)
   },
 
   {"TRAPS", "Instructions causing traps",
-   PM0 | PM1 | PM2 | PM3,
+   PM0 | PM1 | PM2 | PM3, NULL,
    DCPIMetricExpr(DCPI_MTYPE_PM | DCPI_PM_CNTR_count 
 		  | DCPI_PM_ATTR_early_kill_F | DCPI_PM_TRAP_trap),
    InsnClassExpr(INSN_CLASS_ALL)
@@ -135,35 +135,35 @@ PredefinedDCPIMetricTable::Entry PredefinedDCPIMetricTable::table[] = {
 
   // FIXME: these are just the raw counters; how best to combine them?
   {"pmINFLT", "Inflight cycles (excludes fetch stage) for instructions that retired without trapping.",
-   PM0 | PM1 | PM3,
+   PM0 | PM1 | PM3, NULL,
    DCPIMetricExpr(DCPI_MTYPE_PM | DCPI_PM_CNTR_inflight 
 		  | DCPI_PM_ATTR_early_kill_F),
    InsnClassExpr(INSN_CLASS_ALL)
   },
 
   {"pmRETDEL", "Delays before retire (excludes all cycles prior to fetch).",
-   PM1,
+   PM1, NULL,
    DCPIMetricExpr(DCPI_MTYPE_PM | DCPI_PM_CNTR_retdelay 
 		  | DCPI_PM_ATTR_early_kill_F),
    InsnClassExpr(INSN_CLASS_ALL)
   },
 
   {"pmRETIRE", "Instruction retires.",
-   PM0 | PM2,
+   PM0 | PM2, NULL,
    DCPIMetricExpr(DCPI_MTYPE_PM | DCPI_PM_CNTR_retires 
 		  | DCPI_PM_ATTR_early_kill_F),
    InsnClassExpr(INSN_CLASS_ALL)
   },
 
   {"pmBCMISS", "B-cache (L2) cache misses.",
-   PM2,
+   PM2, NULL,
    DCPIMetricExpr(DCPI_MTYPE_PM | DCPI_PM_CNTR_bcmisses 
 		  | DCPI_PM_ATTR_early_kill_F),
    InsnClassExpr(INSN_CLASS_ALL)
   },
 
   {"pmREPLAY", "Memory system replay traps.",
-   PM3,
+   PM3, NULL,
    DCPIMetricExpr(DCPI_MTYPE_PM | DCPI_PM_CNTR_replays
 		  | DCPI_PM_ATTR_early_kill_F),
    InsnClassExpr(INSN_CLASS_ALL)
@@ -187,29 +187,29 @@ PredefinedDCPIMetricTable::Entry PredefinedDCPIMetricTable::table[] = {
   // Non ProfileMe metrics, possibly available at any time
   // -------------------------------------------------------
   // Note: because availability of regular metrics must be determined
-  // by string matching, these names *must* match those found in
-  // dcpicat output (DCPIProfile)
+  // by string matching, the 'availStr' *must* match the metric names
+  // found in dcpicat output (DCPIProfile)
 
-  { "cycles"/*"CYCLES"*/, "Processor cycles",
-    RM,
+  { "CYCLES", "Processor cycles",
+    RM, "cycles",
     DCPIMetricExpr(DCPI_MTYPE_RM | DCPI_RM_cycles),
     InsnClassExpr(INSN_CLASS_ALL)
   },
   
-  { "retires"/*"RETIRES"*/, "Retired instructions",
-    RM,
+  { "RETIRES", "Retired instructions",
+    RM, "retires",
     DCPIMetricExpr(DCPI_MTYPE_RM | DCPI_RM_retires),
     InsnClassExpr(INSN_CLASS_ALL)
   },
 
-  { "replaytrap"/*"MBREPLAY"*/, "Mbox replay traps",
-    RM,
+  { "MBREPLAY", "Mbox replay traps",
+    RM, "replaytrap",
     DCPIMetricExpr(DCPI_MTYPE_RM | DCPI_RM_replaytrap),
     InsnClassExpr(INSN_CLASS_ALL)
   },
 
-  { "bmiss"/*"BCMISS"*/, "Bcache misses or long-latency probes",
-    RM,
+  { "BCMISS", "Bcache misses or long-latency probes",
+    RM, "bmiss",
     DCPIMetricExpr(DCPI_MTYPE_RM | DCPI_RM_bmiss),
     InsnClassExpr(INSN_CLASS_ALL)
   }

@@ -174,6 +174,7 @@ public:
     const char* description;
     
     uint32_t avail; // condition that must be true for metric to be available
+    const char* availStr; // optional extension to above condition
     
     DCPIMetricExpr mexpr; // the metric filter expr
     InsnClassExpr iexpr;  // the instruction filter expr
