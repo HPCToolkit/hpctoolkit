@@ -1,0 +1,97 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+
+<!--
+  HPCToolkit Documentation: Editing within Netscape/Mozilla Composer
+  is possible, but it generates strange stuff in-line.  
+  Please use an ordinary text editor.
+-->
+
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+
+  <title>HPCToolkit hpcviewer man page</title>
+
+  <link rel='stylesheet' type='text/css' href='styleForAll.css'>
+</head>
+
+<body>
+
+<!-- ********************************************************************** -->
+
+<script language="JavaScript" src="header_hpctools.js"></script>
+
+<!-- ********************************************************************** -->
+
+<div id="main">
+
+<p class="lastupdated">Last Updated 31 Jan 2003</p>
+
+<h2>User Commands: hpcviewer.jar(1)</h2>
+
+<!-- ********************************************************************** -->
+
+<h3>SYNOPSIS</h3>
+
+<div class="indent">
+
+<p><span class="hpctool">java -jar hpcviewer.jar</span>
+
+<p>(or double click on the <span class="hpctool">hpcviewer.jar</span> 
+icon in appropriate environments.)</p>
+
+<p>Location: <code>${HPCTOOLKIT}/bin</code> <i>(not included in all distributions)</i>
+
+</div> <!-- class=indent -->
+
+<!-- ********************************************************************** -->
+
+<h3>DESCRIPTION</h3>
+
+<div class="indent">
+
+<p><span class="hpctool">hpcviewer</span> is a Java program for 
+browsing the output of 
+<a href="hpcview.html" class="hpctool">hpcview -x <i>file</i> -h <i>dir</i> ...
+</a> The database when using 
+<a href="hpcview.html" class="hpctool">hpcview</a> in this mode
+is orders of magnitude smaller than when generating static HTML in the
+`classic' mode.</p>
+
+<p>When <span class="hpctool">hpcviewer</span> starts it presents a
+file chooser window. Select the <i>dir/file</i> that was created by
+<a href="hpcview.html" class="hpctool">hpcview</a>.</p>
+
+</div> <!-- class=indent -->
+
+<!-- ********************************************************************** -->
+
+<h3>NOTES</h3>
+
+<div class="indent">
+
+<p><span class="hpctool">hpcviewer</span> is currently in prototype
+status.  There is enough functionality to be useful in day-to-day
+work, but the tool has a number of bugs that have not yet been corrected.
+We hope to be ready do deploy it soon.</p>
+
+<p>The prototype works the the Sun JDK 1.3 and newer distributions.
+Due to the variation in the sets of fonts installed on each Unix and
+Linux system, <span class="hpctool">hpcviewer</span> may not present
+an acceptable display if it is run on one machine and displayed
+through the X server on another.  We are addressing this problem. In
+its current state, best results have been obtained on Windows and
+Solaris.</p>
+
+</div> <!-- class=indent -->
+
+<!-- ********************************************************************** -->
+
+<script language="JavaScript" src="footer_hpctools.js"></script>
+
+<!-- ********************************************************************** -->
+
+</div> <!-- id=main -->
+
+</body>
+</html>

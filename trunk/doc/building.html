@@ -1,0 +1,555 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+
+<!--
+  HPCToolkit Documentation: Editing within Netscape/Mozilla Composer
+  is possible, but it generates strange stuff in-line.  
+  Please use an ordinary text editor.
+-->
+
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+
+  <title>HPCToolkit: Testing and Installing</title>
+
+  <link rel='stylesheet' type='text/css' href='styleForAll.css'>
+</head>
+
+<body>
+
+<!-- ********************************************************************** -->
+
+<script language="JavaScript" src="header_hpctools.js"></script>
+
+<!-- ********************************************************************** -->
+
+<div id="main">
+
+<p class="lastupdated">Last Updated 07 Mar 2003</p>
+
+<a name="toc"></a>
+<h2>Building and Installing HPCToolkit</h2>
+
+<h2>Contents</h2>
+<ul>
+  <li><a href="#overview">Build Overview</a>
+  <li><a href="#buildnotes">Build Notes</a>
+  <li><a href="#environment">Environment</a>
+  <li><a href="#xlib_binutils">External Library: GNU binutils</a>
+  <li><a href="#xlib_oa">External Library: OpenAnalysis</a>
+  <li><a href="#hpctools">HPCToolkit</a>
+  <li><a href="#evaluation">Evaluation</a>
+  <li><a href="#troubleshooting">Troubleshooting</a>
+</ul>
+
+<!-- ********************************************************************** -->
+
+<a name="overview"></a>
+
+<h2>Build Overview</h2>
+<p><i>[<a href="#toc">Contents</a>]</i>
+
+
+<p>There are two external libraries -- OpenAnalysis and GNU binutils
+-- that must be built before HPCToolkit can be built, installed and
+used.  Once you get past GNU binutils, you are on the downhill side.</p>
+
+<p>Note that because we have had to make a number of fixes and
+changes to GNU binutils, you cannot link against a current version of
+binutils that may already be on your system. See 
+<a href="../README.ReleaseNotes">
+<code>${HPCTOOLKIT}/README.ReleaseNotes</code></a>
+for more information.</p>
+
+<!-- ********************************************************************** -->
+
+<a name="buildnotes"></a>
+
+<h2>Build Notes</h2>
+<p><i>[<a href="#toc">Contents</a>]</i>
+
+<ol class="noindent">
+
+<li>
+<p>HPCToolkit and OpenAnalysis require an ANSI/ISO C++ compliant
+compiler.  Of course, the same C++ compiler should be used for each.
+In addition, HPCToolkit requires an ANSI/ISO compliant C compiler.
+    
+<p>Unfortunately, some otherwise ANSI/ISO compliant C++ compilers do
+not fully support the definition for including C library routines.
+For example, C headers are now included using the
+<code>&lt;cheader&gt;</code> syntax (as opposed to
+<code>&lt;header.h&gt;</code>) and functions are in the
+<code>std</code> namespace.  If your compiler does not support this
+standard, add <code>-DNO_STD_CHEADERS</code> to your compile line.  We
+have indicated the compilers with wich we have used this option below.
+
+<p>The list of compilers that we have successfully tested are:
+
+  <ul class="noindent">
+    <li>alpha-OSF1:
+      <ul class="noindent">
+        <li>Compaq C++/C 6.3
+        <li>Compaq C++/C 6.2 (<i>use <code>-DNO_STD_CHEADERS</code></i>)
+        <li>GCC C++/C 3.2.1
+        <li>GCC C++/C 3.0.4<sup>1</sup>
+      </ul>
+
+    <li>i686-Linux:
+      <ul class="noindent">
+        <li>GCC C++/C 3.0.4
+      </ul>
+
+    <li>ia64-Linux:
+      <ul class="noindent">
+        <li>Intel C++/C 7.0
+        <li>Intel C++/C 6.0
+        <li>GCC C++/C 3.2
+        <li>GCC C++/C 3.0.4
+      </ul>
+
+    <li>mips-IRIX64:
+      <ul class="noindent">
+        <li>SGI MIPSpro C++/C 7.3 (<i>use <code>-DNO_STD_CHEADERS</code></i>)
+        <li>GCC C++/C 3.0.4<sup>1</sup>
+      </ul>
+
+    <li>sparc-SunOS:
+      <ul class="noindent">
+        <li>Sun Forte C++/C 5.3 (WorkShop 6 update 2 with patch 111685-01
+            or greater (bug id 4466915))
+        <li>Sun Forte C++/C 5.1 (WorkShop 6)
+        <li>GCC C++/C 3.0.4
+      </ul>
+  </ul>
+
+<p><sup>1</sup>We have not specifically tested this compiler on this
+platform, but believe it should work.
+
+
+<li>
+<p>Everywhere that `make' is used you should think `gnumake', not a
+vendor supplied make.  We have successfully used the following versions:
+
+  <ul class="noindent">
+    <li>3.70 (alpha-OSF1, mips-IRIX64, sparc-SunOS)
+    <li>3.76 (sparc-SunOS)
+    <li>3.77 (alpha-OSF1)
+    <li>3.78 (i686-Linux)
+    <li>3.79 (ia64-Linux, mips-IRIX64)
+    <li>3.80 (alpha-OSF1)
+  </ul>
+
+<li>
+<p>Our Perl-based tools and the OpenAnalysis make system require that
+you have some variant of Perl 5 installed and that it is in your path.
+For the record, we have succssfully used:
+
+  <ul class="noindent">
+    <li>5.004 (mips-IRIX64)
+    <li>5.005 (alpha-OSF1, i686-Linux)
+    <li>5.6.0 (ia64-Linux)
+    <li>5.6.1 (alpha-OSF1, ia64-Linux, sparc-SunOS)
+  </ul>
+
+<li>
+
+<p>Compiling templates: HPCToolkit and OpenAnalysis both use templates.
+Most compilers are now relatively good at handling templates without
+special options or tightrope walking.  However, a few comments which
+apply to building both HPCToolkit and OpenAnalysis are apropos.
+
+  <ul class="noindent">
+    <li>Sun and SGI compilers: Both of these compilers rely on the
+      compiler itself to perform some archiving duties to ensure that
+      that the correct number of template definitions are included in
+      archives. The system archiver should <i>not</i> be used.  If however
+      you wish to substitute for the GCC compiler, make sure to use
+      your system archiver.
+
+
+    <li>Compaq compiler: The Compaq compiler uses a rather cumbersome
+      implementation of a template repository.  The repository must be
+      manually specified both at compile time and at archiving or link
+      time.  Use the system archiver.  If you wish to substitute the
+      GCC compiler, make sure to undefine/remove any template
+      repository options.
+
+    <li>GCC: Use default template handling and the system archiver.
+
+    <li>Intel Compilers: Use default template handling and the system
+      archiver.
+
+  </ul>
+
+</ol>
+
+
+
+<!-- ********************************************************************** -->
+
+<a name="environment"></a>
+
+<h2>Environment</h2>
+<p><i>[<a href="#toc">Contents</a>]</i>
+
+
+<p>Prepare your environment by first setting the HPCTOOLKIT environment
+variable; it should point to the base directory containing the
+HPCToolkit tree.  Then source the appropriate Sourceme file.  For
+example:
+
+<div class="indent">
+  <i>(csh variants)</i><br>
+  <code>setenv HPCTOOLKIT "/my_path/HPCToolkit"</code><br>
+  <code>source $HPCTOOLKIT/Sourceme-csh</code>
+<br><br>
+  <i>(sh variants)</i><br>
+  <code>export HPCTOOLKIT="/my_path/HPCToolkit"</code><br>
+  <code>source $HPCTOOLKIT/Sourceme-sh</code><br>
+</div>
+
+
+<!-- ********************************************************************** -->
+
+<a name="xlib_binutils"></a>
+
+<h2>External Library: GNU binutils</h2>
+<p><i>[<a href="#toc">Contents</a>]</i>
+
+
+<h3>Compiler notes</h3>
+
+<p>Below is a list of C compilers that we have successfully used in
+building this version of GNU binutils.  The list refers to the same
+versions of C++ compilers listed above in 
+<a href="#buildnotes">Build Notes</a>; in the case of GCC, versions
+2.9x are also fine.</p>
+
+<ul>
+  <li>alpha-OSF1:  
+    <ul class="noindent">
+      <li>Compaq C
+      <li>GCC C
+    </ul>
+  <li>i686-Linux:
+    <ul class="noindent">
+      <li>GCC C
+    </ul>
+  <li>ia64-Linux:
+    <ul class="noindent">
+      <li>GCC C
+      <li><i>(encountered errors with Intel C)</i>
+    </ul>
+  <li>mips-IRIX64:
+    <ul class="noindent">
+      <li>GCC C <i>(add <code>-mabi=64</code> as part of the CC variable)</i>
+      <li><i>(encountered errors with SGI C)</i>
+    </ul>
+  <li>sparc-SunOS:
+    <ul class="noindent">
+      <li>Sun C
+      <li>GCC C
+    </ul>
+</ul>
+
+
+<h3>Building</h3>
+
+<ol class="noindent">
+
+<li>
+<p>Change to the binutils directory.
+
+<div class="indent">
+<code>cd $HPCTOOLKIT/src/external_lib/binutils/binutils-2.13</code>
+</div>
+
+<li>
+<p>Set the C compiler and any compilation options mentioned above
+along with debugging or optimization options.  (The
+HPCTOOLKIT_BINUTILS_INSTALL variable is not strictly needed by the
+binutils make system, but it makes these steps more readable and is
+used by our installation finalizer script.)  For example:
+
+<div class="indent">
+<i>(csh variants)</i><br>
+<code>setenv CC "gcc"</code><br>
+<code>setenv CFLAGS "-O"</code><br>
+<code>setenv&nbsp;HPCTOOLKIT_BINUTILS_INSTALL&nbsp;"$HPCTOOLKIT/src/external_lib/binutils/binutils-2.13/inst-$HPCTOOLKIT_PLATFORM"</code>
+
+<br><br>
+<i>(sh variants)</i><br>
+<code>export CC="gcc"</code><br>
+<code>export CFLAGS="-O"</code><br>
+<code>export&nbsp;HPCTOOLKIT_BINUTILS_INSTALL="$HPCTOOLKIT/src/external_lib/binutils/binutils-2.13/inst-$HPCTOOLKIT_PLATFORM"</code>
+</div>
+
+
+<li>
+<p>If you are rebuilding binutils see `Rebuilding' notes below.
+
+
+<li>
+<p>Configure the make system.  The following line will configure
+binutils to support every target that HPCToolkit presently supports.  If
+you know that you only need and want a subset of this target list,
+modify accordingly.  The directory supplied to the <code>--prefix</code>
+argument should be absolute.
+
+<div class="indent">
+<code>./configure&nbsp;--with-included-gettext&nbsp;--enable-targets="mips64-sgi-irix6,&nbsp;alpha-*-linux-gnu,&nbsp;alpha-*-osf,&nbsp;sparc32-*-elf,&nbsp;sparc64-*-solaris2,&nbsp;i386-*-linux-gnu,&nbsp;ia64-*-linux-gnu"&nbsp;--prefix="$HPCTOOLKIT_BINUTILS_INSTALL"</code>
+</div>
+
+<li>
+<p>Make and install. (If you get a note while running `configure' that
+`makeinfo' is too old, create a noop <code>makeinfo</code>
+shell script and put it where your PATH can find it.  This is because
+<code>make&nbsp;install</code> will try to run `makeinfo' anyway
+and choke if it is not found.)
+
+<div class="indent">
+<code>make</code><br>
+<code>make install</code><br>
+<code>$HPCTOOLKIT/tools/hFinishGNUBinutilsInstall</code>
+</div>
+
+
+<li>
+<p>(Optional) Clean the build files.  <code>make&nbsp;clean</code>
+will remove all build files except the installed libraries and
+utilities.  HPCToolkit will not use these utilities.</p>
+
+</ol>
+
+<h3>Rebuilding</h3>
+
+<p>Between runs of <code>configure</code> on different platforms, be
+sure to do the following.  (The last command deletes all Makefile's,
+but not Makefile.in's.)</p>
+
+<div class="indent">
+<code>rm -r $HPCTOOLKIT_BINUTILS_INSTALL/*</code><br>
+<code>make clean</code><br>
+<code>rm config.cache</code><br>
+<code>find . -name "Makefile" -exec rm {} \; -print</code>
+</div>
+
+<!-- ********************************************************************** -->
+
+<a name="xlib_oa"></a>
+
+<h2>External Library: OpenAnalysis</h2>
+<p><i>[<a href="#toc">Contents</a>]</i>
+
+<p>Please see the <a href="#buildnotes">notes</a> about `Compilers'
+and `Compiling templates' above.</p>
+
+<ol class="noindent">
+
+<li>
+<p>Configure the make system
+
+<ul class="noindent">
+
+  <li>Open <code>${HPCTOOLKIT}/src/external_lib/OpenAnalysis/Makefile</code>
+      in an editor.
+  
+  <li>Verify that your C++ compiler (<code>CXX</code>) and archiver
+      (<code>AR</code>) are correctly set.  
+
+  <li>Add/remove <code>-DNO_STD_CHEADERS</code> to the
+      <code>CXX</code> command line if necessary.
+
+  <li>On alpha-OSF1, verify that <code>TREPOSITORY</code>
+      is correctly set.
+
+</ul>
+
+
+<li>
+<p>Build.  By default, the toolset will be compiled with
+debugging information; passing <code>RELEASE=1</code> to `make' will
+turn this off and also turn on compiler optimizations.</p>
+
+<div class="indent">
+<code>cd $HPCTOOLKIT/src/external_lib/OpenAnalysis</code><br>
+<code>make RELEASE=1</code>
+</div>
+
+
+<li>
+<p>(Optional) Clean the build files.  <code>make&nbsp;clean</code>
+will remove all build files except the OpenAnalysis library.
+(<code>make&nbsp;veryclean</code> will also remove the library.)</p>
+
+</ol>
+
+<!-- ********************************************************************** -->
+
+<a name="hpctools"></a>
+
+<h2>HPCToolkit</h2>
+<p><i>[<a href="#toc">Contents</a>]</i>
+
+<p>Please see the <a href="#buildnotes">notes</a> about `Compilers'
+and `Compiling templates' above.</p>
+
+<ol class="noindent">
+
+<li>
+<p>On ia64-Linux systems there are two Xerces-C libraries (the XML
+parser), one compiled with GNU C++ 3.2 and the other with Intel C++ 6.
+Set the <code>${HPCTOOLKIT}/lib/xerces-c2_1_0/ia64-Linux</code> symbolic
+link to point to the version that corresponds with your compiler.  For
+example:
+
+<div class="indent">
+  <code>cd $HPCTOOLKIT/lib/xerces-c2_1_0</code><br>
+  <code>rm ia64-Linux</code><br>
+  <code>ln -s ia64-Linux-g++ ia64-Linux</code>
+</div>
+
+
+<li>
+<p>Configure the make system
+
+<ul class="noindent">
+
+<!--
+  <li><p>If you are not using the GNU binutils in
+     <code>$HPCTOOLKIT/src/external_lib/binutils/binutils-2.13/inst-$HPCTOOLKIT_PLATFORM</code>,
+     edit the 'BINUTILS' variable in $HPCTOOLKIT/src/Makeinclude.config.
+     It should point to the base directory of the binutils installation.
+-->
+
+  <li>Open <code>${HPCTOOLKIT}/src/Makeinclude.config.${HPCTOOLKIT_PLATFORM}</code>
+      in an editor.  
+
+  <li>Verify your C++ compiler (<code>CXX</code>), C compiler
+     (<code>CC</code>) and archiver (<code>AR</code>) are correctly
+     set.
+ 
+  <li>Add/remove <code>-DNO_STD_CHEADERS</code> to the
+     <code>CXX</code> command line if necessary. 
+
+  <li>On alpha-OSF1, verify that <code>SPECIFY_CXX_TREPOSITORY</code>
+      is correctly set.
+
+</ul>
+
+
+<li>
+<p>Build and install.  By default, the toolset will be compiled with
+debugging information; passing <code>RELEASE=1</code> to `make' will
+turn this off and also turn on compiler optimizations.  (Note that
+<code>make&nbsp;install</code> is run automatically.)</p>
+
+<div class="indent">
+<code>cd $HPCTOOLKIT/src</code><br>
+<code>make RELEASE=1</code>
+</div>
+
+
+<li>
+<p>(Optional) Clean the build files.  <code>make&nbsp;veryclean</code>
+will remove all build files.  (<code>make&nbsp;clean</code> will remove
+object files and libraries, but will not remove any compiler generated
+template databases.)</p>
+
+</ol>
+
+<p>As <code>make&nbsp;install</code> is run, the HCTools binaries will
+be copied to <code>${HPCTOOLKIT}/bin/${HPCTOOLKIT_PLATFORM}</code>.  Platform
+independent tools will be copied to <code>${HPCTOOLKIT}/bin</code>.  In order to
+easily use the tools on some shells, you may need to indicate that the
+PATH ought to be researched.  For example, on <code>csh</code> or
+<code>tcsh</code> execute <code>rehash</code>.</p>
+
+
+<!-- ********************************************************************** -->
+
+<a name="evaluation"></a>
+
+<h2>Evaluation</h2>
+<p><i>[<a href="#toc">Contents</a>]</i>
+
+
+<p>Yeah! If everything is built and installed, take a sip of your
+favorite beverage and consider running the <a href="testing.html">tests</a>.
+
+<p>Grrr! If everything fails miserably, take a sip of your favorite
+beverage and send us some mail.  Also consult the troubleshooting
+notes below.</p>
+
+<!-- ********************************************************************** -->
+
+<a name="troubleshooting"></a>
+
+<h2>Troubleshooting</h2>
+<p><i>[<a href="#toc">Contents</a>]</i>
+
+
+<ol class="noindent">
+
+<li>
+<p>GNU binutils will not build.  For addition information go to the
+binutils <a href="http://sources.redhat.com/binutils">website</a>.</p>
+
+<!-- http://www.gnu.org/software/binutils/ -->
+
+
+<li>
+<p>When compiling OpenAnalysis with GCC 3.0.4 and <code>-0</code>, there is a
+compilation error similar to:</p>
+
+<div class="indent">
+  <pre>DomTree.C:73: Internal compiler error in expand_end_loop, at stmt.c:2527</pre>
+</div>
+
+<p>OpenAnalysis exposes a bug in the GCC 3.0.4 optimizer.  Turn off
+optimization and recompile.</p>
+
+
+<li>
+<p>When linking HPCToolkit, there is an error message similar to:
+
+<div class="indent">
+  <pre>undefined reference to `__udivsi3'</pre>
+</div>
+
+<p>Most likely you compiled GNU binutils with GCC and are compiling
+HPCToolkit with a non-GCC compiler.  Unfortunately, sometimes the GNU
+binutils libraries are not fully self-contained, and lack some symbols
+that are defined in <code>libgcc.a</code> or <code>libgcc_s.so</code>
+(depending on which compiler version you have).  
+
+<p>There are two solutions to this problem.  First, you can compile
+HPCToolkit with GCC and the appropriate library will be automatically
+provided during the linking stage.  Secondly, you can continue
+compiling with a non-GCC compiler while adding the appropriate library
+to the link line.  To do this, first determine which library your
+version of GCC uses.  Then, open the file
+<code>${HPCTOOLKIT}/src/Makeinclude.config.${HPCTOOLKIT_PLATFORM}</code>
+in an editor and modify the <code>USER_C_LDFLAGS</code> variable.  For
+example, the lines below would add <code>libgcc.a</code> or
+<code>libgcc_s.so</code>, respectively, to the link:
+
+<div class="indent">
+  <code>USER_C_LDFLAGS = /gcc_lib_path/libgcc.a</code><br>
+  <code>USER_C_LDFLAGS = /gcc_lib_path/libgcc_s.so</code>
+</div>
+
+
+</ol>
+
+<!-- ********************************************************************** -->
+
+<script language="JavaScript" src="footer_hpctools.js"></script>
+
+<!-- ********************************************************************** -->
+
+</div> <!-- id=main -->
+
+</body>
+</html>

@@ -1,0 +1,20 @@
+$Id$
+
+=============================================================================
+==
+== README
+==
+== Location: ${HPCTOOLKIT}/tools
+==
+=============================================================================
+
+This directory contains miscellaneous support scripts and external
+tools for use with HPCToolkit.
+
+=============================================================================
+
+Overview of tools:
+--------------------
+
+hFinishGNUBinutilsInstall - Script used for installing HPCToolkit
+
