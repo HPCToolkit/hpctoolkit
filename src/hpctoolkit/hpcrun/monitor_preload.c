@@ -61,6 +61,7 @@ static pid_t hpcrun_fork();
 
 static void hpcrun__exit(int status);
 
+
 /* libpthread intercepted routines */
 static int hpcrun_pthread_create PARAMS_PTHREAD_CREATE;
 static void* hpcrun_pthread_create_start_routine(void* arg);
@@ -383,18 +384,19 @@ hpcrun_fork()
 
 /*
  *  Intercept premature exits that disregard registered atexit()
- *  handlers.
+ *  handlers (which we use to stop profiling).
  *
  *    'normal' termination  : _exit, _Exit
  *    'abnormal' termination: abort
  *
- *  Note: _exit() implements _Exit().
+ *  Note: _exit() implements _Exit().  It does not return.
  *  Note: We catch abort by catching SIGABRT
  */
 
 extern void 
 _exit(int status)
 {
+  /* _exit does not return */
   hpcrun__exit(status);
 }
 
@@ -402,6 +404,7 @@ _exit(int status)
 extern void 
 _Exit(int status)
 {
+  /* _Exit does not return */
   hpcrun__exit(status);
 }
 
