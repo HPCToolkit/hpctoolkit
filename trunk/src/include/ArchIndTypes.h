@@ -102,6 +102,11 @@
 # else
 #  error "ArchIndTypes.h: Unknown MIPS platform."
 # endif
+#elif (defined(__x86_64))
+# define PLATFORM_X86_64_LINUX
+# define ARCH_X86_64
+# define ARCH_64
+# define OS_LINUX
 #elif (defined(__ppc__) && defined(__MACH__))
 # define PLATFORM_POWERPC_DARWIN
 # define ARCH_POWERPC32
@@ -147,7 +152,7 @@
 # endif
 
 #elif (defined(ARCH_ALPHA64) || defined(ARCH_IA64) || defined(ARCH_MIPS64) \
-       || defined(ARCH_SPARC64))
+       || defined(ARCH_SPARC64)|| defined(ARCH_X86_64))
 
   // long/pointer: 64 bits; int: 32 bits
   typedef long          psint;  // pointer-sized int (64-bit)
