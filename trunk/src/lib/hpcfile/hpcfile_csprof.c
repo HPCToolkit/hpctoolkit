@@ -360,7 +360,7 @@ hpcfile_csprof_hdr__fprint(hpcfile_csprof_hdr_t* x, FILE* fs)
   
   hpcfile_csprof_id__fprint(&x->fid, fs);
 
-  fprintf(fs, "(num_data: %lu)}\n", x->num_data);
+  fprintf(fs, "(num_data: %"PRIu64")}\n", x->num_data);
   
   return HPCFILE_OK;
 }
@@ -388,7 +388,7 @@ hpcfile_csprof_data__fprint(hpcfile_csprof_data_t* x, FILE* fs)
   if (x->target) { fprintf(fs, "(target: %s)\n", x->target); }
   if (x->event) { fprintf(fs, "(event: %s)\n", x->event); }
   if (x->sample_period) { 
-    fprintf(fs, "(sample period: %lu)\n", x->sample_period); 
+    fprintf(fs, "(sample period: %"PRIu64")\n", x->sample_period); 
   }
   fputs("}\n", fs);
 

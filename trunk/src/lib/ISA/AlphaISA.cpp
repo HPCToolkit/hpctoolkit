@@ -72,7 +72,7 @@ AlphaISA::GetInstDesc(MachInst* mi, ushort opIndex, ushort sz)
 {
   // We know that instruction sizes are guaranteed to be 4 bytes, but
   // the host may have a different byte order than the executable.
-  uint32 inst = (uint32)bfd_getl32((const unsigned char*)mi);
+  uint32_t inst = (uint32_t)bfd_getl32((const unsigned char*)mi);
   // FIXME: should we test for little vs. big (same with MIPS)
   
   switch (inst & OP_MASK)
@@ -758,7 +758,7 @@ AlphaISA::GetInstTargetAddr(MachInst* mi, Addr pc, ushort opIndex, ushort sz)
 {
   // We know that instruction sizes are guaranteed to be 4 bytes, but
   // the host may have a different byte order than the executable.
-  uint32 inst = (uint32)bfd_getl32((const unsigned char*)mi);
+  uint32_t inst = (uint32_t)bfd_getl32((const unsigned char*)mi);
   
   psint offset;
   switch (inst & OP_MASK)

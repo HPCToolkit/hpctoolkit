@@ -197,7 +197,7 @@ hpcfile_num8__fprint(hpcfile_num8_t* x, FILE* fs)
 
   fprintf(fs, "(tag: %u)\n", x->tag); 
 
-  fprintf(fs, "(num: %lu)\n", x->num);
+  fprintf(fs, "(num: %"PRIu64")\n", x->num);
 
   return HPCFILE_OK;
 }
@@ -273,7 +273,7 @@ hpcfile_num8s__fprint(hpcfile_num8s_t* x, FILE* fs)
   if (x->nums) { 
     uint32_t i;
     for (i = 0; i < x->length; ++i) {
-      fprintf(fs, " (num: %lu)", x->nums[i]); 
+      fprintf(fs, " (num: %"PRIu64")", x->nums[i]); 
     }
   }
   

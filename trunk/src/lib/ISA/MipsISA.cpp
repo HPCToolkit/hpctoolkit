@@ -72,7 +72,7 @@ MipsISA::GetInstDesc(MachInst* mi, ushort opIndex, ushort sz)
 {
   // We know that instruction sizes are guaranteed to be 4 bytes, but
   // the host may have a different byte order than the executable.
-  uint32 inst = (uint32)bfd_getb32((const unsigned char*)mi);
+  uint32_t inst = (uint32_t)bfd_getb32((const unsigned char*)mi);
   
   switch (inst & OP_MASK)
     {
@@ -218,7 +218,7 @@ MipsISA::GetInstTargetAddr(MachInst* mi, Addr pc, ushort opIndex, ushort sz)
 {
   // We know that instruction sizes are guaranteed to be 4 bytes, but
   // the host may have a different byte order than the executable.
-  uint32 inst = (uint32)bfd_getb32((const unsigned char*)mi);
+  uint32_t inst = (uint32_t)bfd_getb32((const unsigned char*)mi);
 
   psint offset;
   switch (inst & OP_MASK)

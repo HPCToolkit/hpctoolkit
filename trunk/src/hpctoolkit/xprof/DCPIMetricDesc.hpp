@@ -52,8 +52,6 @@
 
 //************************* System Include Files ****************************
 
-#include "inttypes.h"
-
 //*************************** User Include Files ****************************
 
 #include <include/general.h>
@@ -103,8 +101,8 @@
 // ProfileMe and 'regular' (traditional, non-ProfileMe metrics). (For
 // an actual metric, only one of these bits should be set.)
 
-#define DCPI_MTYPE_PM                 0x0000000000000001
-#define DCPI_MTYPE_RM                 0x0000000000000002
+#define DCPI_MTYPE_PM                 UINT64_C(0x0000000000000001)
+#define DCPI_MTYPE_RM                 UINT64_C(0x0000000000000002)
 
 // ----------------------------------------------------------
   
@@ -112,65 +110,65 @@
 // three counters associated with each unique set of attributes^trap;
 // we view each counter as a separate metric.) (For an actual metric,
 // only one of these bits should be set.)
-#define DCPI_PM_CNTR_MASK             0x00000000000000fc
+#define DCPI_PM_CNTR_MASK             UINT64_C(0x00000000000000fc)
 
-#define DCPI_PM_CNTR_count            0x0000000000000004
-#define DCPI_PM_CNTR_inflight         0x0000000000000008
-#define DCPI_PM_CNTR_retires          0x0000000000000010
-#define DCPI_PM_CNTR_retdelay         0x0000000000000020
-#define DCPI_PM_CNTR_bcmisses         0x0000000000000040
-#define DCPI_PM_CNTR_replays          0x0000000000000080
+#define DCPI_PM_CNTR_count            UINT64_C(0x0000000000000004)
+#define DCPI_PM_CNTR_inflight         UINT64_C(0x0000000000000008)
+#define DCPI_PM_CNTR_retires          UINT64_C(0x0000000000000010)
+#define DCPI_PM_CNTR_retdelay         UINT64_C(0x0000000000000020)
+#define DCPI_PM_CNTR_bcmisses         UINT64_C(0x0000000000000040)
+#define DCPI_PM_CNTR_replays          UINT64_C(0x0000000000000080)
 
 // ProfileMe instruction attributes (22 bits; bits 8-29): Many
 // attribute bits may be set in any given sample.  Each attribute
 // takes two bits to represent its presence or absence.  (For an
 // actual metric, only one bit for each attribute should be set.)
-#define DCPI_PM_ATTR_MASK            0x000000003fffff00
+#define DCPI_PM_ATTR_MASK            UINT64_C(0x000000003fffff00)
 
-#define DCPI_PM_ATTR_retired_T       0x0000000000000100
-#define DCPI_PM_ATTR_retired_F       0x0000000000000200
-#define DCPI_PM_ATTR_taken_T         0x0000000000000400
-#define DCPI_PM_ATTR_taken_F         0x0000000000000800
-#define DCPI_PM_ATTR_cbrmispredict_T 0x0000000000001000
-#define DCPI_PM_ATTR_cbrmispredict_F 0x0000000000002000
-#define DCPI_PM_ATTR_valid_T         0x0000000000004000
-#define DCPI_PM_ATTR_valid_F         0x0000000000008000
-#define DCPI_PM_ATTR_nyp_T           0x0000000000010000
-#define DCPI_PM_ATTR_nyp_F           0x0000000000020000
-#define DCPI_PM_ATTR_ldstorder_T     0x0000000000040000
-#define DCPI_PM_ATTR_ldstorder_F     0x0000000000080000
-#define DCPI_PM_ATTR_map_stall_T     0x0000000000100000
-#define DCPI_PM_ATTR_map_stall_F     0x0000000000200000
-#define DCPI_PM_ATTR_early_kill_T    0x0000000000400000
-#define DCPI_PM_ATTR_early_kill_F    0x0000000000800000
-#define DCPI_PM_ATTR_late_kill_T     0x0000000001000000
-#define DCPI_PM_ATTR_late_kill_F     0x0000000002000000
-#define DCPI_PM_ATTR_capped_T        0x0000000004000000
-#define DCPI_PM_ATTR_capped_F        0x0000000008000000
-#define DCPI_PM_ATTR_twnzrd_T        0x0000000010000000
-#define DCPI_PM_ATTR_twnzrd_F        0x0000000020000000
+#define DCPI_PM_ATTR_retired_T       UINT64_C(0x0000000000000100)
+#define DCPI_PM_ATTR_retired_F       UINT64_C(0x0000000000000200)
+#define DCPI_PM_ATTR_taken_T         UINT64_C(0x0000000000000400)
+#define DCPI_PM_ATTR_taken_F         UINT64_C(0x0000000000000800)
+#define DCPI_PM_ATTR_cbrmispredict_T UINT64_C(0x0000000000001000)
+#define DCPI_PM_ATTR_cbrmispredict_F UINT64_C(0x0000000000002000)
+#define DCPI_PM_ATTR_valid_T         UINT64_C(0x0000000000004000)
+#define DCPI_PM_ATTR_valid_F         UINT64_C(0x0000000000008000)
+#define DCPI_PM_ATTR_nyp_T           UINT64_C(0x0000000000010000)
+#define DCPI_PM_ATTR_nyp_F           UINT64_C(0x0000000000020000)
+#define DCPI_PM_ATTR_ldstorder_T     UINT64_C(0x0000000000040000)
+#define DCPI_PM_ATTR_ldstorder_F     UINT64_C(0x0000000000080000)
+#define DCPI_PM_ATTR_map_stall_T     UINT64_C(0x0000000000100000)
+#define DCPI_PM_ATTR_map_stall_F     UINT64_C(0x0000000000200000)
+#define DCPI_PM_ATTR_early_kill_T    UINT64_C(0x0000000000400000)
+#define DCPI_PM_ATTR_early_kill_F    UINT64_C(0x0000000000800000)
+#define DCPI_PM_ATTR_late_kill_T     UINT64_C(0x0000000001000000)
+#define DCPI_PM_ATTR_late_kill_F     UINT64_C(0x0000000002000000)
+#define DCPI_PM_ATTR_capped_T        UINT64_C(0x0000000004000000)
+#define DCPI_PM_ATTR_capped_F        UINT64_C(0x0000000008000000)
+#define DCPI_PM_ATTR_twnzrd_T        UINT64_C(0x0000000010000000)
+#define DCPI_PM_ATTR_twnzrd_F        UINT64_C(0x0000000020000000)
 
 // ProfileMe instruction traps (16 bits; bits 32-47): Exactly one trap
 // (or notrap, meaning none of the other traps) is set in any given
 // metric. (For an actual metric, only one trap bit should be set.)
-#define DCPI_PM_TRAP_MASK            0x0000ffff00000000
+#define DCPI_PM_TRAP_MASK            UINT64_C(0x0000ffff00000000)
 
-#define DCPI_PM_TRAP_notrap          0x0000000100000000
-#define DCPI_PM_TRAP_mispredict      0x0000000200000000
-#define DCPI_PM_TRAP_replays         0x0000000400000000
-#define DCPI_PM_TRAP_unaligntrap     0x0000000800000000
-#define DCPI_PM_TRAP_dtbmiss         0x0000001000000000
-#define DCPI_PM_TRAP_dtb2miss3       0x0000002000000000
-#define DCPI_PM_TRAP_dtb2miss4       0x0000004000000000
-#define DCPI_PM_TRAP_itbmiss         0x0000008000000000
-#define DCPI_PM_TRAP_arithtrap       0x0000010000000000
-#define DCPI_PM_TRAP_fpdisabledtrap  0x0000020000000000
-#define DCPI_PM_TRAP_MT_FPCRtrap     0x0000040000000000
-#define DCPI_PM_TRAP_dfaulttrap      0x0000080000000000
-#define DCPI_PM_TRAP_iacvtrap        0x0000100000000000
-#define DCPI_PM_TRAP_OPCDECtrap      0x0000200000000000
-#define DCPI_PM_TRAP_interrupt       0x0000400000000000
-#define DCPI_PM_TRAP_mchktrap        0x0000800000000000
+#define DCPI_PM_TRAP_notrap          UINT64_C(0x0000000100000000)
+#define DCPI_PM_TRAP_mispredict      UINT64_C(0x0000000200000000)
+#define DCPI_PM_TRAP_replays         UINT64_C(0x0000000400000000)
+#define DCPI_PM_TRAP_unaligntrap     UINT64_C(0x0000000800000000)
+#define DCPI_PM_TRAP_dtbmiss         UINT64_C(0x0000001000000000)
+#define DCPI_PM_TRAP_dtb2miss3       UINT64_C(0x0000002000000000)
+#define DCPI_PM_TRAP_dtb2miss4       UINT64_C(0x0000004000000000)
+#define DCPI_PM_TRAP_itbmiss         UINT64_C(0x0000008000000000)
+#define DCPI_PM_TRAP_arithtrap       UINT64_C(0x0000010000000000)
+#define DCPI_PM_TRAP_fpdisabledtrap  UINT64_C(0x0000020000000000)
+#define DCPI_PM_TRAP_MT_FPCRtrap     UINT64_C(0x0000040000000000)
+#define DCPI_PM_TRAP_dfaulttrap      UINT64_C(0x0000080000000000)
+#define DCPI_PM_TRAP_iacvtrap        UINT64_C(0x0000100000000000)
+#define DCPI_PM_TRAP_OPCDECtrap      UINT64_C(0x0000200000000000)
+#define DCPI_PM_TRAP_interrupt       UINT64_C(0x0000400000000000)
+#define DCPI_PM_TRAP_mchktrap        UINT64_C(0x0000800000000000)
 
 // The negative versions of these require setting every bit except the
 // referenced one.
@@ -198,12 +196,12 @@
 
 // Non-ProfileMe (regular metric) event types supported on Alpha
 // 21264a+ (EV67+) processors (4 bits; bits 2-5)
-#define DCPI_RM_CNTR_MASK         0x000000000000003c
+#define DCPI_RM_CNTR_MASK         UINT64_C(0x000000000000003c)
 
-#define DCPI_RM_cycles            0x0000000000000004
-#define DCPI_RM_retires           0x0000000000000008
-#define DCPI_RM_replaytrap        0x0000000000000010
-#define DCPI_RM_bmiss             0x0000000000000020
+#define DCPI_RM_cycles            UINT64_C(0x0000000000000004)
+#define DCPI_RM_retires           UINT64_C(0x0000000000000008)
+#define DCPI_RM_replaytrap        UINT64_C(0x0000000000000010)
+#define DCPI_RM_bmiss             UINT64_C(0x0000000000000020)
 
 // ----------------------------------------------------------
 

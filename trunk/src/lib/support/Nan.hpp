@@ -37,11 +37,15 @@
 #ifndef Nan_h
 #define Nan_h
 
-#if ((__linux && __i386) || (__linux && __ia64) || \
-	(defined(__MACH__) && defined(__ppc__)) )
+//*************************** User Include Files ****************************
+
+#include <include/general.h>
+
+//****************************************************************************
+
+#if (defined(OS_LINUX) || defined(OS_MACHDARWIN))
 # include <math.h> /* must include bits/nan.h through math.h */
-#elif ( ((__digital__ || __alpha) && __unix) || (__sgi && __unix) \
-        || (__sun && __unix))
+#elif (defined(OS_OSF1) || defined(OS_IRIX64) || defined(OS_SUNOS))
 # include <nan.h>  /* math.h does not include nan.h */
 #else
 # error "Nan.h/C: please ensure NaN support is correct."
