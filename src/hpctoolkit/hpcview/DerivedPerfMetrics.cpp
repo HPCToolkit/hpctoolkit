@@ -61,9 +61,9 @@ using std::endl;
 
 FilePerfMetric::FilePerfMetric(const char* nm, const char* nativeNm,
 			       const char* displayNm, bool doDisp, 
-			       bool doPerc, const char* fName,
+			       bool doPerc, bool doSort, const char* fName,
 			       const char* tp, Driver* _driver) 
-  : PerfMetric(nm, nativeNm, displayNm, doDisp, doPerc, false),
+  : PerfMetric(nm, nativeNm, displayNm, doDisp, doPerc, false, doSort),
     file(fName), type(tp), driver(_driver)
 { 
   // trace = 1;
@@ -75,10 +75,10 @@ FilePerfMetric::~FilePerfMetric()
 }
 
 ComputedPerfMetric::ComputedPerfMetric(const char* nm, const char* displayNm, 
-				       bool doDisp, bool doPerc, 
+				       bool doDisp, bool doPerc, bool doSort, 
 				       bool propagateComputed, 
 				       DOM_Node &expr)
-  : PerfMetric(nm, NULL, displayNm, doDisp, doPerc, propagateComputed)
+  : PerfMetric(nm, NULL, displayNm, doDisp, doPerc, propagateComputed, doSort)
 {
    try {
      mathExpr = new MathMLExpr(expr); 

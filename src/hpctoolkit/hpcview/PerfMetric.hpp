@@ -110,7 +110,7 @@ public:
   // fastest).
   
   PerfMetric(const char *name, const char *nativeName, const char* displayName,
-	     bool display, bool percent, bool propComputed); 
+	     bool display, bool percent, bool propComputed, bool sortBy); 
   // constructor automatically adds new instance to PerfMetricTable
   // and sets this->perfInfoIndex to instance's index in the table
   
@@ -123,6 +123,8 @@ public:
   bool Display() const                { return display; }
   bool Percent() const                { return percent; }
   bool PropComputed() const           { return pcomputed; }
+  bool SortBy() const                 { return sortBy; }
+  void setSortBy()                    { sortBy = true; }
   
   DataDisplayInfo& DisplayInfo()const { return *dispInfo; }; 
   
@@ -147,6 +149,7 @@ private:
   bool display; 
   bool percent; 
   bool pcomputed; 
+  bool sortBy; 
   
 protected: 
   unsigned int perfInfoIndex; 

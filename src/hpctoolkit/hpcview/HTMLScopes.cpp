@@ -228,10 +228,11 @@ HTMLScopes::Write(const char* htmlDir,
   }
 #endif
 
-  bool ok = true; 
   int i = 0; 
   while  ((*perfIndex)[i] != -1) {
-    ok = WriteScopesForMetric(htmlDir, (*perfIndex)[i], headBgColor, 
+    bool ok = true; 
+    if (IndexToPerfDataInfo((*perfIndex)[i]).SortBy()) 
+       ok = WriteScopesForMetric(htmlDir, (*perfIndex)[i], headBgColor, 
 			      bodyBgColor);
     if (!ok) { 
       i = 0; // start over 

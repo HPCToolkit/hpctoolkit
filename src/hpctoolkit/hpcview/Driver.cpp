@@ -244,6 +244,9 @@ Driver::XML_Dump(PgmScope* pgm, int dumpFlags, std::ostream &os,
        << "\042 displayName=\042" << metric.DisplayInfo().Name()
        << "\042 display=\042" << ((metric.Display()) ? "true" : "false")
        << "\042 percent=\042" << ((metric.Percent()) ? "true" : "false")
+#if 0   // hpcviewer does dynamic sorting, no need for this flag
+       << "\042 sortBy=\042"  << ((metric.SortBy())  ? "true" : "false")
+#endif
        << "\042/>" << endl;
   }
   os << pre1 << "</METRICS>" << endl;
