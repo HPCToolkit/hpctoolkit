@@ -157,9 +157,14 @@ IA64ISA::GetInstDesc(MachInst* mi, ushort opIndex, ushort sz)
       break;
     case dis_condjsr:
       d.Set(InstDesc::OTHER);
+      break;
+    case dis_return:
+      d.Set(InstDesc::SUBR_RET);
+      break;
     case dis_dref:
     case dis_dref2:
       d.Set(InstDesc::MEM_OTHER);
+      break;
     default:
       d.Set(InstDesc::OTHER);
       break;
