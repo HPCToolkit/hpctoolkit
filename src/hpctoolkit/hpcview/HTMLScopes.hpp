@@ -89,6 +89,11 @@ public:
   static String KidsFileName(const ScopeInfo* si, int pIndex, 
 			     int flattening); 
 
+  // generate an uniq anchor name for the given scope info with the
+  // specified performance metric and flattening level
+  static String AnchorName(const ScopeInfo* si, int pIndex, 
+			     int flattening); 
+
   String ToString() const; 
 
 private:
@@ -98,6 +103,8 @@ private:
 
   void WriteHeader(HTMLFile &hf) const; 
   void WriteScope(const char* htmlDir, const char* bgColor, 
+		  const ScopeInfo &scope, int pIndex, int flattening) const;
+  void WriteScopeOldStyle(const char* htmlDir, const char* bgColor, 
 		  const ScopeInfo &scope, int pIndex, int flattening) const;
   void WriteLine(HTMLFile &hf, unsigned int level, 
 		 const ScopeInfo *si, int pIndex, int flattening, 

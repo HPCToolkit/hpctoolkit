@@ -70,6 +70,7 @@ public:
   bool OutputFinalScopeTree;
   bool CopySrcFiles;
   bool SkipHTMLfiles;
+  bool OldStyleHTML;
   bool XML_ToStdout;
   bool XML_DumpAllMetrics;
   String XML_Dump_File;

@@ -114,8 +114,10 @@ public:
   void NavigateFrameHref(const char *anchor, const char* text, 
 			 unsigned int width); 
 
-  void NavigateFrameHrefForLoop(LoopScope* ls, unsigned int width); 
-  void NavigateFrameHrefForProc(ProcScope* ls, unsigned int width); 
+  void NavigateFrameHrefForLoop(LoopScope* ls, unsigned int width, 
+                    int flattening); 
+  void NavigateFrameHrefForProc(ProcScope* ls, unsigned int width,
+                    int flattening); 
 
   void NavigateSourceHref(const char *navid, const char *parentid, const int scope_depth, const char *text,
 			  unsigned int width); 

@@ -156,7 +156,7 @@ HTMLDriver::HTMLDriver(const ScopesInfo &scps,
   if (makeDir(htmlDir) != 0) { exit(1); }
   if (!pgmArgs.SkipHTMLfiles) {
     if (makeDir(scpsDir) != 0 ||
-	StaticFiles(fileHome, htmlDir).CopyAllFiles() != 0) {
+	StaticFiles(fileHome, htmlDir).CopyAllFiles(args.OldStyleHTML) != 0) {
       exit(1);
     }
   }
@@ -243,7 +243,7 @@ WriteIndexFile(const char* htmlDir,
 	       HTMLScopes &scopes, 
 	       const String& title, 
 	       const char* header, 
-	       bool debug)
+	       bool debug, bool oldStyleHtml)
 {
   BriefAssertion(table.Name().Length() > 0); 
   
@@ -257,6 +257,10 @@ WriteIndexFile(const char* htmlDir,
   if (debug) {
     fname += ".debug"; 
   } 
+  int flattening = NO_FLATTEN_DEPTH;
+  if (oldStyleHtml)
+    flattening = 0;
+  
   HTMLFile hf(htmlDir, fname, tit, /*frameset*/ true); 
   hf.PrintNoBodyOrFrameset(); 
   hf.JSFileInclude(DETECTBS); 
@@ -322,13 +326,15 @@ WriteIndexFile(const char* htmlDir,
      << "            frameborder='1'" << endl
      << "            title='performance info of scopes:: node and parent'" << endl
      << "            scrolling='no'" << endl
-     << "            src='" << scopes.SelfFileName(pgmScope, perfIndex) << ".html'>" << endl
+     << "            src='" << scopes.SelfFileName(pgmScope, perfIndex, 
+                            flattening) << ".html'>" << endl
      << endl
      << "          <!-- Frameset 3: Frame: Descendants List -->" << endl
      << "          <frame name='" << HTMLScopes::KidsFrameName() << "'" << endl
      << "            frameborder='1'" << endl
      << "            title='performance info of scopes:: kids'" << endl
-     << "            src='" << scopes.KidsFileName(pgmScope, perfIndex, 0) << ".html'>" << endl
+     << "            src='" << scopes.KidsFileName(pgmScope, perfIndex, 
+                            flattening) << ".html'>" << endl
      << "       </frameset> " << endl
      << "    </frameset>" << endl
      << "  </frameset>" << endl
@@ -345,10 +351,10 @@ HTMLDriver::WriteIndexFile(PgmScope *pgmScope,
 			   HTMLScopes &htmlScopes, 
 			   const String& title, const char* header) const
 {
-  ::WriteIndexFile(htmlDir, pgmScope, 
-		   table, perfIndex, htmlScopes, title, header, true); 
-  ::WriteIndexFile(htmlDir, pgmScope, 
-		   table, perfIndex, htmlScopes, title, header, false); 
+  ::WriteIndexFile(htmlDir, pgmScope, table, perfIndex, 
+           htmlScopes, title, header, true, args.OldStyleHTML); 
+  ::WriteIndexFile(htmlDir, pgmScope, table, perfIndex, 
+           htmlScopes, title, header, false, args.OldStyleHTML); 
 }
 
 static void

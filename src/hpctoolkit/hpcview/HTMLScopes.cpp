@@ -133,6 +133,18 @@ HTMLScopes::KidsFileName(const ScopeInfo* si, int pIndex, int flattening)
 }
 
 String 
+HTMLScopes::AnchorName(const ScopeInfo* si, int pIndex, int flattening)
+{
+  // Do not use pIndex for now. We'll need it only if we decide to 
+  // generate the data for all performance metrics into the same file
+  String result = HTMLDriver::UniqueName(si, NO_PERF_INDEX,
+                 NO_FLATTEN_DEPTH);
+  if (flattening != NO_FLATTEN_DEPTH)
+     result = "l" + String((long)flattening) + "_" + result;
+  return result;
+}
+
+String 
 HTMLScopes::HeadFileName() const 
 {
   return "scopes.header" ; 
@@ -185,49 +197,6 @@ HTMLScopes::Write(const char* htmlDir,
 {
   IFTRACE << "HTMLScopes::Write" << endl;
 
-#if 0
-  {
-    HTMLFile hf = HTMLFile(htmlDir, SelfHeadFileName(), NULL); 
-    hf.SetBgColor(headBgColor); 
-    hf << "<pre>" << endl
-       << "Ancestor" 
-       << "<table CELLSPACING=0 BORDER=0 CELLPADDING=0 width=\"100%\">"
-       << "<tr><td align=right>"
-       << " <a onMouseOver=\"window.status="
-       << "'Show descendants the next level deeper';"
-       << "return true\" href=\"javascript:flatten_scope_kids()\">"
-       << "<img src=\"flatten.gif\" width=60 align=top border=no></a>" 
-       << "</td></tr></table>"
-       << endl
-       << "<hr>Current "
-       << "<table CELLSPACING=0 BORDER=0 CELLPADDING=0 width=\"100%\">"
-       << "<tr><td align=right>"
-       << " <a onMouseOver=\"window.status="
-       << "'Show descendants the next level shallower';"
-       << "return true\" href=\"javascript:unflatten_scope_kids()\">"
-       << "<img src=\"unflatten.gif\" width=60 align=top border=no></a>" 
-       << "</td></tr></table>"
-       << endl
-       << "<hr>" 
-       << "</pre>" << endl; 
-  }
-  {
-    HTMLFile hf = HTMLFile(htmlDir, KidsHeadFileName(), NULL); 
-    hf.SetBgColor(headBgColor); 
-    hf << "<pre>" << endl
-       << "Descendants" 
-       << "<table CELLSPACING=0 BORDER=0 CELLPADDING=0 width=\"100%\">"
-       << "<tr><td align=right>"
-       << " <a onMouseOver=\"window.status="
-       << "'Remove all the highlightes';"
-       << "return true\" href=\"javascript:clear_highlights()\">"
-       << "<img src=\"flatten.gif\" width=60 align=top border=no></a>" 
-       << "</td></tr></table>"
-       << endl
-       << "</pre>" << endl; 
-  }
-#endif
-
   int i = 0; 
   while  ((*perfIndex)[i] != -1) {
     bool ok = true; 
@@ -261,16 +230,154 @@ HTMLScopes::WriteScopesForMetric(const char* htmlDir, int sortByPerfIndex,
     numViewsOfRoot = 1;
   }
 
-  for(int flattening = 0; flattening < numViewsOfRoot; flattening++ ) {
-    WriteScope(htmlDir, bodyBgColor, *scopes.Root(), sortByPerfIndex, 
-	       flattening); 
+  if (args.OldStyleHTML)
+  {
+     for( int flat=0 ; flat<numViewsOfRoot ; flat++ )
+        WriteScopeOldStyle(htmlDir, bodyBgColor, *scopes.Root(), 
+                  sortByPerfIndex, flat); 
   }
-
+  else
+     WriteScope(htmlDir, bodyBgColor, *scopes.Root(), sortByPerfIndex, 
+ 	       numViewsOfRoot); 
   return true; // for now
 }
 
 void 
 HTMLScopes::WriteScope(const char* htmlDir, const char* bgColor, 
+		       const ScopeInfo &scope, int pIndex, 
+		       int maxFlattening) const
+{
+  // This writes three files: 
+  //   SelfFileName()      with perf info for scope and its parent 
+  //   KidsFileName()      with 2 divs one for highlighter the other for perf 
+  //                       data of scopes's children
+  //                       performance data of scopes's children in the
+  //                       second div
+  //
+
+  int depth = scope.ScopeDepth();
+  int height = scope.ScopeHeight();
+
+  //---------------------------------------------------------
+  // the normal amount of flattening that can be applied to 
+  // a node is one less than its scope depth. 
+  // 
+  // if (depth - 1 < 0), we adjust it to 0 because we MUST 
+  // execute one trip of the loop for the root PGM node.
+  //---------------------------------------------------------
+  int levels = MAX(depth - 1, 0);
+  if (args.depthToFlatten == 0) {
+     // bypass all flattening if command line argument so indicates
+     levels = 0;
+  } 
+  int outerlevel = levels;
+  String baseName = "HPCView Scopes File: ";
+  String selfFile = SelfFileName(&scope, pIndex, NO_FLATTEN_DEPTH); 
+  // write a file containing scopes's and scope's parent's perf data
+  String scopeFileName = baseName + selfFile;
+  HTMLFile hf(htmlDir, selfFile, scopeFileName);
+  hf.SetBgColor(bgColor);  
+
+  //-------------------------------------------------------
+  // the maximum number of times a node may be flattened
+  // is its height minus one (it must have at least a non leaf
+  // child to be able to flatten it. This maxflatten represents
+  // how many times we can click the flatten button with the current
+  // scope unchanged (== height).
+  // On the other hand, levels represents how many flattenings we can
+  // do before we reach the current scope (== depth)
+  //-------------------------------------------------------
+  int maxflatten = height - 1;
+  if (scope.ScopeDepth() >= args.depthToFlatten) {
+     // no scope deeper than the deepest scope to be flattened
+     // will be allowed to be flattened
+     maxflatten = 0;
+  }
+      
+  hf.SetOnLoad(String("handle_scope_self_onload(") + "\"" + selfFile
+       + "\",\"" + HTMLDriver::UniqueName(&scope, NO_PERF_INDEX,
+				      NO_FLATTEN_DEPTH)
+       + "\"," + String((long)maxflatten) + "," 
+       + String((long)depth) + ");");
+  hf.StartBodyOrFrameset();
+  hf.WriteHighlightDiv();
+
+  for (; levels >= 0; levels--) {
+    ScopeInfo *outer = scope.Parent();
+    int i = levels;
+    while(i-- > 0) { outer = outer->Parent(); }
+
+    hf << "<div class=\"" << LINES_DIV_NAME << "\" id=\"" 
+       << LINES_DIV_NAME << "_" << String((long)levels) << "\">" << endl;
+    hf << "<pre>" << endl;
+    WriteLine(hf, OUTER, outer, pIndex, levels, false);
+    WriteHR(hf);
+    WriteLine(hf, CURRENT, &scope, pIndex, levels, false);
+    hf << "</pre>" << endl;
+    hf << "</div>" << endl; 
+
+    if (scope.ScopeDepth() >= args.depthToFlatten && 
+       (outerlevel - levels) >= args.depthToFlatten)  
+    {
+       // restricted flattening: bypass flattening at all
+       // intermediate levels
+       levels = MIN(1,levels);
+    } 
+  }
+
+  String kidsFile = KidsFileName(&scope, pIndex, NO_FLATTEN_DEPTH);
+
+  CompareByPerfInfo_MetricIndex = pIndex;
+
+  // write a file containing layer for scopes's children's perf data 
+  // and highlighter 
+  HTMLFile hfk(htmlDir, kidsFile, "HPCView Scopes File"); 
+  hfk.SetOnLoad(String("handle_scope_frame_onload(") + "\"" + kidsFile 
+       + "\");"); 
+  // FIXME: eraxxon: this is an invalid attribute
+  // hfk.SetOnResize(String("resize_table(window.name);")); 
+  hfk.SetBgColor(bgColor);
+  hfk.StartBodyOrFrameset(); 
+
+  hfk.WriteHighlightDiv();
+
+  for( int flatIt=0 ; flatIt<maxFlattening ; flatIt++ )
+  {
+    SortedCodeInfoChildIterator kids(&scope, flatIt, CompareByPerfInfo); 
+    hfk << "<div class=\"" << LINES_DIV_NAME << "\" id=\"" 
+       << LINES_DIV_NAME << "_" << String((long)flatIt) << "\">" << endl;
+    hfk << "<pre>" << endl;
+
+    int linesLeft = args.maxLinesPerPerfPane;
+    for (; kids.Current() && linesLeft-- > 0 ; kids++) {
+       WriteLine(hfk, INNER, kids.Current(), pIndex, flatIt, true); 
+    } 
+    hfk << "</pre>" << endl;
+    hfk << "</div>" << endl;
+  }
+  
+  SortedCodeInfoChildIterator kids(&scope, 0, CompareByPerfInfo); 
+  // check whether there is flattening to do at the current level
+  int maxFlattenings;
+  if (args.depthToFlatten > scope.ScopeDepth()) {
+    maxFlattenings = INT_MAX;
+  } else {
+    // just produce the normal unflattened view of the tree
+    maxFlattenings = 1;
+  }
+  // recurse: write a file for all non leaf children 
+  for (; kids.Current(); kids++) {
+     ScopeInfo *child = kids.Current();
+     if (!child->IsLeaf() && HasInterestingChildren(child)) {
+        int childFlattenDepth = MIN(maxFlattenings, child->ScopeHeight());
+        WriteScope(htmlDir, bgColor, *child, pIndex, childFlattenDepth); 
+     }
+  } 
+}
+
+
+void 
+HTMLScopes::WriteScopeOldStyle(const char* htmlDir, const char* bgColor, 
 		       const ScopeInfo &scope, int pIndex, 
 		       int flattening) const
 {
@@ -337,17 +444,17 @@ HTMLScopes::WriteScope(const char* htmlDir, const char* bgColor,
 
       hf << "<div id=\"" << LINES_DIV_NAME << "\">" << endl;
       hf << "<pre>" << endl;
-      WriteLine(hf, OUTER, outer, pIndex, flattening, false);
+      WriteLine(hf, OUTER, outer, pIndex, NO_FLATTEN_DEPTH, false);
       WriteHR(hf);
-      WriteLine(hf, CURRENT, &scope, pIndex, flattening, false);
+      WriteLine(hf, CURRENT, &scope, pIndex, NO_FLATTEN_DEPTH, false);
       hf << "</pre>" << endl;
       hf << "</div>" << endl; 
 
       if (scope.ScopeDepth() >= args.depthToFlatten && 
-	  (outerlevel - levels) >= args.depthToFlatten)  {
-	// restricted flattening: bypass flattening at all
-	// intermediate levels
-	levels = MIN(1,levels);
+         (outerlevel - levels) >= args.depthToFlatten)  {
+        // restricted flattening: bypass flattening at all
+        // intermediate levels
+        levels = MIN(1,levels);
       } 
     }
   }
@@ -374,7 +481,7 @@ HTMLScopes::WriteScope(const char* htmlDir, const char* bgColor,
 
     int linesLeft = args.maxLinesPerPerfPane;
     for (; kids.Current() && linesLeft-- > 0 ; kids++) {
-      WriteLine(hf, INNER, kids.Current(), pIndex, flattening, true); 
+      WriteLine(hf, INNER, kids.Current(), pIndex, NO_FLATTEN_DEPTH, true); 
     } 
     hf << "</pre>" << endl;
     hf << "</div>" << endl;
@@ -394,15 +501,17 @@ HTMLScopes::WriteScope(const char* htmlDir, const char* bgColor,
     for (; kids.Current(); kids++) {
       ScopeInfo *child = kids.Current();
       if (!child->IsLeaf() && HasInterestingChildren(child)) {
-	for(int childFlattenDepth = 0; 
-	    childFlattenDepth < MIN(maxFlattenings, child->ScopeHeight());
-	    childFlattenDepth++ ) {
-	  WriteScope(htmlDir, bgColor, *child, pIndex, childFlattenDepth); 
-	}
+        for(int childFlattenDepth = 0; 
+            childFlattenDepth < MIN(maxFlattenings, child->ScopeHeight());
+            childFlattenDepth++ ) {
+          WriteScopeOldStyle(htmlDir, bgColor, *child, pIndex, 
+                     childFlattenDepth); 
+        }
       } 
     }
   }
 }
+
 
 void 
 HTMLScopes::WriteLine(HTMLFile &hf, unsigned int level, 
@@ -423,8 +532,9 @@ HTMLScopes::WriteLine(HTMLFile &hf, unsigned int level,
       return; 
     } 
 
-    if (anchor) { hf.Anchor(HTMLDriver::UniqueName(si, NO_PERF_INDEX,
-						   NO_FLATTEN_DEPTH)); }
+    if (anchor) 
+      hf.Anchor(AnchorName(si, pIndex, flattening)); 
+
     int width = HTMLDriver::NameDisplayInfo.Width(); 
     String code = HTMLTable::CodeName(*si); 
 
@@ -449,19 +559,17 @@ HTMLScopes::WriteLine(HTMLFile &hf, unsigned int level,
     }
 
     // Write procedure/loop/src ref
-    if (!anchor) {
-      hf.Anchor(HTMLDriver::UniqueName(si, NO_PERF_INDEX,
-				       NO_FLATTEN_DEPTH)); 
-    } 
+    if (!anchor) 
+      hf.Anchor(AnchorName(si, pIndex, flattening)); 
 
     if (si->Type() == ScopeInfo::PROC && level == INNER) {
-      hf.NavigateFrameHrefForProc((ProcScope*)si,  width); 
+      hf.NavigateFrameHrefForProc((ProcScope*)si, width, flattening); 
     } else if (si->Type() == ScopeInfo::LOOP) {
-      hf.NavigateFrameHrefForLoop((LoopScope*)si,  width); 
+      hf.NavigateFrameHrefForLoop((LoopScope*)si, width, flattening); 
     } else if (HTMLTable::UsesIt(*si)) {
       hf.NavigateFrameHref
 	(HTMLDriver::UniqueName(si, NO_PERF_INDEX, 
-				NO_FLATTEN_DEPTH), code,  width); 
+				NO_FLATTEN_DEPTH), code, width); 
     } else { 
       code.LeftFormat(width); 
       hf << code; 

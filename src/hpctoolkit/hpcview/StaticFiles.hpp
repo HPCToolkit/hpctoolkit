@@ -54,6 +54,7 @@ typedef enum {
   GLOBAL, 
   UTILSHERE, 
   UTILSALL, 
+  UTILSALLOLD, 
   GLOBALSTYLE,
   STYLEHERE,
   MANUAL, 
@@ -83,13 +84,13 @@ public:
    StaticFiles(const char* _fHome, const char* _htmlDir) : 
      htmlDir(_htmlDir), fileHome(_fHome) {}; 
    
-   int CopyAllFiles() const; 
+   int CopyAllFiles(bool oldStyleHtml) const; 
 
 private: 
   String htmlDir; 
   String fileHome; 
   
-  int Copy(const char* f) const; 
+  int Copy(const char* fS, const char* fD) const; 
 };
 
 #endif 
