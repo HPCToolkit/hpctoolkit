@@ -24,6 +24,7 @@
 #include <unistd.h>
 #include <string.h>
 #include <limits.h> /* for 'PATH_MAX' */
+#include <libgen.h> /* for dirname/basename */
 #include <sys/types.h>
 
 /**************************** User Include Files ****************************/
@@ -67,15 +68,15 @@ rtloadmap_t*
 hpcrun_get_rtloadmap(int dbglvl)
 {
   char filename[PATH_MAX];
-  FILE *pf;
+  FILE *fs;
   char *line;
   pid_t pid = getpid();
 
   reset_slots();
   line = get_line_slot(); 
 
-  sprintf(filename,"/proc/%d/maps", pid);
-  pf = fopen(filename,"r");
+  sprintf(filename, "/proc/%d/maps", pid);
+  fs = fopen(filename, "r");
 
   /* read lines from the maps file in /proc for this
    * process. discard the line if it does not correspond
@@ -83,9 +84,11 @@ hpcrun_get_rtloadmap(int dbglvl)
    */
   do {
     if (iscodeline(line)) {
-    	line = get_line_slot(); 
+      line = get_line_slot(); 
     }
-  } while (fgets(line, MAXLINELEN, pf) != NULL);
+  } while (fgets(line, MAXLINELEN, fs) != NULL);
+  fclose(fs);
+
   finalizelines();
 
   if (dbglvl >= 3) { 
@@ -98,6 +101,44 @@ hpcrun_get_rtloadmap(int dbglvl)
   return &rtloadmap;
 }
 
+
+/* 
+ * Return the name of the command invoked to create this process.  
+ *
+ */
+const char*
+hpcrun_get_cmd(int dbglvl)
+{
+  static char* cmd = NULL; /* */
+  
+  char filenm[PATH_MAX];
+  char cmdline[PATH_MAX];
+  FILE *fs;
+  pid_t pid = getpid();
+  char* space, *basenm;
+  
+  free(cmd);
+  
+  sprintf(filenm, "/proc/%d/cmdline", pid);
+  fs = fopen(filenm, "r");
+  fgets(cmdline, PATH_MAX, fs);
+  fclose(fs);
+
+  /* Separate the command's path from its arguments.  Assume for now
+     that there are no spaces in path name. */
+  space = strchr(cmdline, ' '); /* assume there is no  */
+  if (space) {
+    *space = '\0';
+  }
+  
+  /* Find the basename of the path*/
+  basenm = basename(cmdline);
+  cmd = malloc(sizeof(const char*) * (strlen(basenm) + 1));
+  strcpy(cmd, basenm);
+  
+  return cmd;
+}
+
 /****************************************************************************/
 
 static char **mappings = 0;
@@ -106,10 +147,10 @@ static int slots_in_use = 0;
 
 static void reset_slots()
 {
-	slots_avail = 0;
-	slots_in_use = 0;
-	if (mappings) free(mappings);
-	mappings = 0;
+  slots_avail = 0;
+  slots_in_use = 0;
+  if (mappings) free(mappings);
+  mappings = 0;
 }
 
 /* allocate a slot for a new line in an 
