@@ -52,8 +52,6 @@
 
 //************************* System Include Files ****************************
 
-#include "inttypes.h"
-
 //*************************** User Include Files ****************************
 
 #include <include/general.h>

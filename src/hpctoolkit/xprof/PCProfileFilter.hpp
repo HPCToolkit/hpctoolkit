@@ -55,8 +55,6 @@
 #include <vector>
 #include <list>
 
-#include "inttypes.h"
-
 //*************************** User Include Files ****************************
 
 #include <include/general.h>
@@ -65,7 +63,6 @@
 #include <lib/binutils/LoadModule.h>
 
 #include <lib/support/String.h>
-#include <lib/support/Assertion.h>
 
 //*************************** Forward Declarations ***************************
 
