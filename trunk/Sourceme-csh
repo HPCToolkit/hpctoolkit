@@ -13,15 +13,7 @@ endif
 # Set platform variables
 #############################################################################
 
-setenv HPCTOOLKIT_ARCH `uname -p`
-if ( ${HPCTOOLKIT_ARCH} == "unknown" ) then
-  setenv HPCTOOLKIT_ARCH `uname -m`
-endif
-
-setenv HPCTOOLKIT_OS `uname -s`
-#setenv HPCTOOLKIT_OS `${HPCTOOLKIT}/tools/darch`
-
-setenv HPCTOOLKIT_PLATFORM "${HPCTOOLKIT_ARCH}-${HPCTOOLKIT_OS}"
+setenv HPCTOOLKIT_PLATFORM `cd ${HPCTOOLKIT}/src/config; ./hpcplatform`
 
 #############################################################################
 # Set other variables
@@ -57,7 +49,7 @@ endif
 set XERCESPLATFORM="${XERCESCROOT}/${HPCTOOLKIT_PLATFORM}/lib"
 
 
-if ( ${HPCTOOLKIT_OS} == 'IRIX64' || ${HPCTOOLKIT_OS} == 'IRIX' ) then
+if ( ${HPCTOOLKIT_PLATFORM} == 'mips-IRIX64' ) then
   # set library path for IRIX systems
   if ( ! $?LD_LIBRARYN32_PATH ) then
     setenv LD_LIBRARYN32_PATH "${XERCESPLATFORM}"
