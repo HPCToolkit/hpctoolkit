@@ -180,6 +180,9 @@ private:
   int level;
 };
 
+static void 
+DeleteContents(ScopeInfoSet* s);
+
 
 // ------------------------------------------------------------
 // Helpers for normalizing the scope tree
@@ -631,6 +634,7 @@ RemoveOrphanedProcedureRepository(PgmScopeTree* pgmScopeTree)
   return changed;
 }
 
+//****************************************************************************
 
 // CoalesceDuplicateStmts: Coalesce duplicate statement instances that
 // may appear in the scope tree.  There are two basic cases:
@@ -667,14 +671,18 @@ RemoveOrphanedProcedureRepository(PgmScopeTree* pgmScopeTree)
 //          \---...--- s2
 static bool
 CoalesceDuplicateStmts(CodeInfo* scope, LineToStmtMap* stmtMap, 
-		       ScopeInfoSet* visited, int level)
+		       ScopeInfoSet* visited, ScopeInfoSet* toDelete,
+		       int level)
   throw (CDS_RestartException);
+
 static bool
-CDS_Main(CodeInfo* scope, LineToStmtMap* stmtMap, ScopeInfoSet* visited, 
-	 int level)
+CDS_Main(CodeInfo* scope, LineToStmtMap* stmtMap, 
+	 ScopeInfoSet* visited, ScopeInfoSet* toDelete, int level)
   throw (CDS_RestartException); /* indirect */
+
 static bool
-CDS_InspectStmt(StmtRangeScope* stmt1, LineToStmtMap* stmtMap, int level)
+CDS_InspectStmt(StmtRangeScope* stmt1, LineToStmtMap* stmtMap, 
+		ScopeInfoSet* toDelete, int level)
   throw (CDS_RestartException);
 
 static bool
@@ -684,6 +692,7 @@ CoalesceDuplicateStmts(PgmScopeTree* pgmScopeTree)
   PgmScope* pgmScope = pgmScopeTree->GetRoot();
   LineToStmtMap stmtMap;      // line to statement data map
   ScopeInfoSet visitedScopes; // all children of a scope have been visited
+  ScopeInfoSet toDelete;      // nodes to delete
 
   for (ScopeInfoChildIterator lmit(pgmScope); lmit.Current(); lmit++) {
     BriefAssertion(((ScopeInfo*)lmit.Current())->Type() == ScopeInfo::LM);
@@ -697,7 +706,8 @@ CoalesceDuplicateStmts(PgmScopeTree* pgmScopeTree)
       BriefAssertion(((ScopeInfo*)it.Current())->Type() == ScopeInfo::FILE);
       FileScope* file = dynamic_cast<FileScope*>(it.Current()); // always true
       
-      changed |= CoalesceDuplicateStmts(file, &stmtMap, &visitedScopes, 1);
+      changed |= CoalesceDuplicateStmts(file, &stmtMap, &visitedScopes, 
+					&toDelete, 1);
     } 
   }
 
@@ -705,42 +715,79 @@ CoalesceDuplicateStmts(PgmScopeTree* pgmScopeTree)
 }
 
 // CoalesceDuplicateStmts Helper: 
-// During a post-order recursive examination of the scope tree, case 1
-//   above can be applied without problems.  However, the merging in
-//   case 2 can invalidate the current *and* ancestor iterators out to
-//   the lca! (We always merge *into* the current path to avoid deleting
-//   all nodes on the current recursion stack).
-// Solution 1: After application of case 2, unwind the recursion stack
+//
+// Because instances of case 2 can create instances of case 1, we need
+// to restart the algorithm at the lca after merging has been applied.
+//
+// This has some implications:
+// - We can delete nodes during the merging. (Deletion of nodes will
+//   invalidate the current *and* ancestor iterators out to the
+//   lca!)
+// - We cannot simply delete nodes in case 1.  The restarting means
+//   that nodes that we have already seen are in the statement map and
+//   could therefore be deleted out from under us during iteration. 
+//   Consider this snippet of code:
+// 
+//   <L b=... >  // level 3
+//     ...
+//     <L b="1484" e="1485">  // level 4
+//        <S b="1484" />
+//        <S b="1484" />
+//        <S b="1485" />
+//        <S b="1485" />
+//     </L>
+//     <S b="1485">
+//     ...
+//   </L>
+//   
+//   CDS_Main loops on the children of the current scope.  It saves the
+//   current value of the iterator to 'child' and then increments it (an
+//   attempt to prevet this problem!). After that it recursively calls CDS
+//   on 'child'.
+//   
+//   When 'child' points to the 4th level loop in the picture above, the
+//   iterator has been incremented and points to the next child which
+//   happens to be a statement for line 1485.
+//   
+//   When CDS processes the inner loop and reaches a statement for line
+//   1485, it realizes a duplicate was found in the level 3 loop -- the
+//   statement to which level 3 loop iterator points to.  Because the
+//   current statement is on a deeper level (4 as opposed to 3 in the map),
+//   the statement on level 3 is unlinked and deleted.  After the level 4
+//   loop is completely processed, it returns back to the level 3 loop
+//   where it points to a block of memory that was freed already.
+//
+// Solution: After application of case 2, unwind the recursion stack
 //   and restart the algorithm at the least common ancestor.  Retain a
 //   set of visited nodes so that we do not have to revisit fully
 //   explored and unchanged nodes.  Since the most recently merged
-//   path will not be in the visited set, it will be propertly visited.
-// Solution 2: Specially advance the child iterators.  If applying
-//   case 1, the iterator would be advanced *before* a statement was
-//   deleted (so the current child could be deleted if necessary).  If
-//   applying case 2, the iterator would be advanced *after* the merge
-//   (since merging could add new items to the end of the child list).
-//   Note however that the latter does *not* currently hold true for
-//   merging!  The merging of CodeInfo can trigger a reordering based
+//   path will not be in the visited set, it will be propertly visited
+//
+// Notes: 
+// - We always merge *into* the current path to avoid deleting all nodes
+//   on the current recursion stack.
+// - Note that the merging of CodeInfos can trigger a reordering based
 //   on begin/end lines; new children will not simply end up at the
 //   end of the child list.
-// Solution 3: Divide into two distinct phases.  Phase 1 collects all
+//
+// Another solution: Divide into two distinct phases.  Phase 1 collects all
 //   statements into a multi-map (that handles sorted iteration and
 //   fast local resorts).  Phase 2 iterates over the map, applying
 //   case 1 and 2 until all duplicate entries are removed.
-// This implements solution 1.
 static bool
 CoalesceDuplicateStmts(CodeInfo* scope, LineToStmtMap* stmtMap, 
-		       ScopeInfoSet* visited, int level)
+		       ScopeInfoSet* visited, ScopeInfoSet* toDelete, 
+		       int level)
   throw (CDS_RestartException)
 {
   try {
-    return CDS_Main(scope, stmtMap, visited, level);
+    return CDS_Main(scope, stmtMap, visited, toDelete, level);
   } 
   catch (CDS_RestartException& x) {
     // Unwind the recursion stack until we find the node
     if (x.GetNode() == scope) {
-      return CoalesceDuplicateStmts(x.GetNode(), stmtMap, visited, level);
+      return CoalesceDuplicateStmts(x.GetNode(), stmtMap, visited, 
+				    toDelete, level);
     } 
     else {
       throw;
@@ -754,46 +801,49 @@ CoalesceDuplicateStmts(CodeInfo* scope, LineToStmtMap* stmtMap,
 // have visited all children of 'scope' we place it in 'visited'.
 static bool
 CDS_Main(CodeInfo* scope, LineToStmtMap* stmtMap, ScopeInfoSet* visited, 
-	 int level)
+	 ScopeInfoSet* toDelete, int level)
   throw (CDS_RestartException) /* indirect */
 {
   bool changed = false;
   
   if (!scope) { return changed; }
   if (visited->find(scope) != visited->end()) { return changed; }
-  
+  if (toDelete->find(scope) != toDelete->end()) { return changed; }
+
   // A post-order traversal of this node (visit children before parent)...
-  for (ScopeInfoChildIterator it(scope); it.Current(); /* */) {
+  for (ScopeInfoChildIterator it(scope); it.Current(); ++it) {
     CodeInfo* child = dynamic_cast<CodeInfo*>(it.Current()); // always true
     BriefAssertion(child);
-    it++; // advance iterator -- it is pointing at 'child'
+    
+    if (toDelete->find(child) != toDelete->end()) { continue; }
     
     CDSDBG { cout << "CDS: " << child << endl; }
     
     // 1. Recursively perform re-nesting on 'child'.
-    changed |= CoalesceDuplicateStmts(child, stmtMap, visited, level + 1);
+    changed |= CoalesceDuplicateStmts(child, stmtMap, visited, toDelete,
+				      level + 1);
     
     // 2. Examine 'child'
     if (child->Type() == ScopeInfo::STMT_RANGE) {
-      
       // Note: 'child' may be deleted or a restart exception may be thrown
       StmtRangeScope* stmt = dynamic_cast<StmtRangeScope*>(child);
-      changed |= CDS_InspectStmt(stmt, stmtMap, level);
-      
+      changed |= CDS_InspectStmt(stmt, stmtMap, toDelete, level);
     } 
     else if (child->Type() == ScopeInfo::PROC) {
-      stmtMap->clear(); // Clear statement table
-      visited->clear(); // Clear visited set
+      stmtMap->clear();         // Clear statement table
+      visited->clear();         // Clear visited set
+      DeleteContents(toDelete); // Clear 'toDelete'
     }
   }
   
   visited->insert(scope);
   return changed; 
 }
-
+  
 // CDS_InspectStmt: applies case 1 or 2, as described above
 static bool
-CDS_InspectStmt(StmtRangeScope* stmt1, LineToStmtMap* stmtMap, int level)
+CDS_InspectStmt(StmtRangeScope* stmt1, LineToStmtMap* stmtMap, 
+		ScopeInfoSet* toDelete, int level)
   throw (CDS_RestartException)
 {
   bool changed = false;
@@ -828,16 +878,9 @@ CDS_InspectStmt(StmtRangeScope* stmt1, LineToStmtMap* stmtMap, int level)
 	toRemove = stmt1;
       }
       
-      toRemove->Unlink(); // unlink 'toRemove' from tree
+      toDelete->insert(toRemove);
       CDSDBG { cout << "  Delete: " << toRemove << endl; }
-      delete toRemove;
       changed = true;
-      
-      // FIXME: This is necessary!
-      CodeInfo* lca_CI = dynamic_cast<CodeInfo*>(lca);
-      BriefAssertion(lca_CI);
-      throw CDS_RestartException(lca_CI);
-      
     } 
     else {
       // Case 2: Duplicate statements in different loops (or scopes).
@@ -845,8 +888,9 @@ CDS_InspectStmt(StmtRangeScope* stmt1, LineToStmtMap* stmtMap, int level)
       CDSDBG { cout << "  Merge: " << stmt1 << " <- " << stmt2 << endl; }
       changed = ScopeInfo::MergePaths(lca, stmt1, stmt2);
       if (changed) {
-	// While neither statement is deleted ('stmtMap' is still
-	// valid), iterators between stmt1 and 'lca' are invalidated. 
+	// We may have created instances of case 1.  Furthermore,
+	// while neither statement is deleted ('stmtMap' is still
+	// valid), iterators between stmt1 and 'lca' are invalidated.
 	// Restart at lca.
 	CodeInfo* lca_CI = dynamic_cast<CodeInfo*>(lca);
 	BriefAssertion(lca_CI);
@@ -864,7 +908,7 @@ CDS_InspectStmt(StmtRangeScope* stmt1, LineToStmtMap* stmtMap, int level)
   return changed;
 }
 
-
+//****************************************************************************
 
 // MergePerfectlyNestedLoops: Fuse together a child with a parent when
 // the child is perfectly nested in the parent.
@@ -926,6 +970,7 @@ MergePerfectlyNestedLoops(ScopeInfo* node)
   return changed; 
 }
 
+//****************************************************************************
 
 // RemoveEmptyScopes: Removes certain empty scopes from the tree,
 // always maintaining the top level PgmScope (PGM) scope.  The
@@ -971,6 +1016,7 @@ RemoveEmptyScopes(ScopeInfo* node)
   return changed; 
 }
 
+//****************************************************************************
 
 // FilterFilesFromScopeTree: 
 static bool 
@@ -1131,3 +1177,15 @@ BuildPCToSrcLineMap(PCToSrcLineXMap* map, Procedure* p)
   map->InsertProcInList(pmap);
 }
 
+
+static void 
+DeleteContents(ScopeInfoSet* s)
+{
+  // Delete nodes in toDelete
+  for (ScopeInfoSet::iterator it = s->begin(); it != s->end(); ++it) {
+    ScopeInfo* n = (*it);
+    n->Unlink(); // unlink 'n' from tree
+    delete n;
+  }
+  s->clear();
+}
