@@ -558,7 +558,7 @@ init_papi(hpcpapi_profile_desc_vec_t* profdescs, rtloadmap_t* rtmap)
     if ((pcode = PAPI_get_event_info(prof->ecode, &prof->einfo)) != PAPI_OK) {
       DIE("fatal error: (%d) PAPI error %s.", pcode, PAPI_strerror(pcode));
     }
-    if (prof->einfo.count > 1) {
+    if ((prof->ecode & PAPI_PRESET_MASK) && (prof->einfo.count > 1)) {
       DIE("fatal error: '%s' is a PAPI derived event. \n"
 	  "\tSampling of derived events is not supported by PAPI.\n" 
 	  "\tUse 'hpcrun -L' to find the component native events of '%s' that you can monitor separately.", eventbuf, eventbuf);
