@@ -174,7 +174,28 @@ BFDLoadModule::read_file(const string &name, bool clear_cache)
     type_ = DSO;
   } 
 
-  if (type_ == DSO) {
+  minisyms_ = true;
+  {
+    long int symsize = bfd_get_symtab_upper_bound(bfd_);
+    if (!symsize) {
+      cleanup();
+      return;
+    }
+    
+    symbols_ = (asymbol**)(new char[symsize]);
+    if (!symbols_) {
+      cleanup();
+      return;
+    }
+    
+    int numsym = bfd_canonicalize_symtab(bfd_, symbols_);
+#if 0
+    cerr << "Number of symbols loaded: " << numsym << endl;
+#endif
+    
+    if (numsym > 0) minisyms_ = false;
+  }
+  if (minisyms_ && type_ == DSO) {
     long symcount;
     PTR minisyms;
     unsigned int size;
@@ -210,26 +231,6 @@ BFDLoadModule::read_file(const string &name, bool clear_cache)
     cerr << "Mini symbols loaded: " << nsyms << endl;
 #endif
     minisyms_ = true;
-  }
-  else {
-    long int symsize = bfd_get_symtab_upper_bound(bfd_);
-    if (!symsize) {
-      cleanup();
-      return;
-    }
-    
-    symbols_ = (asymbol**)(new char[symsize]);
-    if (!symbols_) {
-      cleanup();
-      return;
-    }
-    
-    int numsym = bfd_canonicalize_symtab(bfd_, symbols_);
-#if 0
-    cerr << "Number of symbols loaded: " << numsym << endl;
-#endif
-    
-    minisyms_ = false;
   }
 }
 
@@ -423,6 +424,7 @@ BFDLoadModule::find(pprof_off_t pc, const char **filename,
 
   find_bfd(pc, filename, lineno, funcname);
 
+#if 0
   if (line_ == 0) {
       // possible BFD problem--reinitialize and try again
       const_cast<BFDLoadModule*>(this)->read_file(name(),false);
@@ -431,6 +433,7 @@ BFDLoadModule::find(pprof_off_t pc, const char **filename,
           cerr << "WARNING: BFD lineno == 0 problem detected" << endl;
         }
     }
+#endif
 
   if (debug_) {
 #if 0
