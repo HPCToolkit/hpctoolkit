@@ -1,0 +1,68 @@
+# $Id$
+
+#############################################################################
+
+if ( ! $?HPCTOOLKIT ) then
+  echo "You must set your HPCTOOLKIT environment variable before sourcing"
+  echo "this file."
+  exit 1
+endif
+
+#############################################################################
+# Set platform variables
+#############################################################################
+
+setenv HPCTOOLKIT_ARCH `uname -p`
+if ( ${HPCTOOLKIT_ARCH} == "unknown" ) then
+  setenv HPCTOOLKIT_ARCH `uname -m`
+endif
+
+setenv HPCTOOLKIT_OS `uname -s`
+#setenv HPCTOOLKIT_OS `${HPCTOOLKIT}/tools/darch`
+
+setenv HPCTOOLKIT_PLATFORM "${HPCTOOLKIT_ARCH}-${HPCTOOLKIT_OS}"
+
+#############################################################################
+# Set other variables
+#############################################################################
+
+set HPCPERLLIB="${HPCTOOLKIT}/bin/perl"
+
+if ( ! $?PERLLIB ) then
+  setenv PERLLIB "${HPCPERLLIB}"
+else
+  setenv PERLLIB "${HPCPERLLIB}:${PERLLIB}"
+endif
+
+if ( ! $?PERL5LIB ) then
+  setenv PERL5LIB "${HPCPERLLIB}"
+else
+  setenv PERL5LIB "${HPCPERLLIB}:${PERL5LIB}"
+endif
+
+#############################################################################
+
+setenv XERCESCROOT "${HPCTOOLKIT}/lib/xerces-c2_1_0"
+set XERCESPLATFORM="${XERCESCROOT}/${HPCTOOLKIT_PLATFORM}"
+
+if ( ${HPCTOOLKIT_OS} == 'IRIX64' || ${HPCTOOLKIT_OS} == 'IRIX' ) then
+  # set library path for IRIX systems
+  if ( ! $?LD_LIBRARYN32_PATH ) then
+    setenv LD_LIBRARYN32_PATH "${XERCESPLATFORM}"
+  else
+    setenv LD_LIBRARYN32_PATH "${XERCESPLATFORM}:${LD_LIBRARYN32_PATH}"   
+  endif
+  if ( ! $?LD_LIBRARY64_PATH ) then
+    setenv LD_LIBRARY64_PATH "${XERCESPLATFORM}"
+  else
+    setenv LD_LIBRARY64_PATH "${XERCESPLATFORM}:${LD_LIBRARY64_PATH}"
+  endif
+else
+  if ( ! $?LD_LIBRARY_PATH ) then
+    setenv LD_LIBRARY_PATH "${XERCESPLATFORM}"
+  else
+    setenv LD_LIBRARY_PATH "${XERCESPLATFORM}:${LD_LIBRARY_PATH}"
+  endif
+endif
+
+setenv PATH "${HPCTOOLKIT}/bin/${HPCTOOLKIT_PLATFORM}:${HPCTOOLKIT}/bin:${PATH}"

@@ -1,0 +1,188 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+
+<!--
+  HPCToolkit Documentation: Editing within Netscape/Mozilla Composer
+  is possible, but it generates strange stuff in-line.  
+  Please use an ordinary text editor.
+-->
+
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+
+  <title>HPCToolkit hpcquick man page</title>
+
+  <link rel='stylesheet' type='text/css' href='styleForAll.css'>
+</head>
+
+<body>
+
+<!-- ********************************************************************** -->
+
+<script language="JavaScript" src="header_hpctools.js"></script>
+
+<!-- ********************************************************************** -->
+
+<div id="main">
+
+<p class="lastupdated">Last Updated 31 Jan 2003</p>
+
+<h2>User Commands: hpcquick(1)</h2>
+
+<!-- ********************************************************************** -->
+
+<h3>SYNOPSIS</h3>
+
+<div class="indent">
+
+<p><span class="hpctool">hpcquick</span> 
+   [-V]
+   -I <i>dir1 dir2 ... dirN</i> 
+   [-S <i>structure</i>]
+   -P <i>binprof1 binprof2 ... binprofM</i>
+
+<p>Location: <code>${HPCTOOLKIT}/bin</code>
+
+</div> <!-- class=indent -->
+
+<!-- ********************************************************************** -->
+
+<h3>DESCRIPTION</h3>
+
+<div class="indent">
+
+<p><span class="hpctool">hpcquick</span> is a script that simplifies
+the process of using <a href="hpcview.html" class="hpctool">hpcview</a>
+to correlate performance data with an application's source code. 
+Given a list of paths to directories containing interesting
+program source code files, an optional program
+structure file created by the 
+<a href="hpc_bloop.html" class="hpctool">bloop</a> tool, and
+a list of binary profiles (collected using 
+<code class="xtool">ssrun</code> on the SGI/MIPS platform, or using
+<code class="xtool">uprofile</code> on the Compaq/Alpha
+platform), <span class="hpctool">hpcquick</span> will run the vendor 
+<code class="xtool">prof</code> tool on the binary profile files and
+translate them into a platform-independent format using the 
+<a href="hpc_ptran.html" class="hpctool">ptran</a> script.  
+<span class="hpctool">hpcquick</span> will have
+<a href="hpcview.html" class="hpctool">hpcview</a> generate a 
+performance database in the <code>HPCQUICK</code> subdirectory. 
+The configuration file synthesized by 
+<span class="hpctool">hpcquick</span> and passed to 
+<a href="hpcview.html" class="hpctool">hpcview</a> will be left in a file
+<code>hpcquick.xml</code> in the current directory. A script
+containing the commands issued by hpcquick to create the performance
+database will be left in the file <code>hpcquick.log</code> in the
+current directory.
+
+</div> <!-- class=indent -->
+
+<!-- ********************************************************************** -->
+
+<h3>ARGUMENTS</h3>
+
+<div class="indent">
+
+<dl>
+
+<dt>-V
+<dd>Print version information.
+
+<dt>-I <i>dir1 dir2 ... dirN</i>
+<dd><i>dir1</i> through <i>dirN</i> specify a list of directories --
+either relative or absolute -- containing source code to which
+performance data should be correlated.  In order to search for source
+files in a directory <i>and</i> recursively inspect all of its
+descendents, append an escaped '*' after the last slash, e.g.,
+<code>/mypath/\*</code>.  For any functions whose source
+code is not found in these directories (e.g., system libraries),
+<a href="hpcview.html" class="hpctool">hpcview</a>
+will generate a synopsis that shows the presence of the function and
+its line extents (if known), but no source code.
+
+<dt>-S <i>structure</i>
+<dd><i>structure</i> is a program structure file (XML document of type
+<a href="dtd_pgm.html" class="hpctool">PGM</a>) that contains a 
+specification of the hierarchical structure of the application
+program.  Supplying a program structure file is optional. However, a
+structure file must be supplied for 
+<a href="hpcview.html" class="hpctool">hpcview</a> to compute and
+correlate loop-level performance metrics.
+
+<dt>-P <i>binprof1 binprof2 ... binprofM</i>
+<dd><i>binprof1</i> through <i>binprofM</i> are names of binary profile 
+files collected using SGI's <code class="xtool">ssrun</code>, or the
+Compaq Tru64's <code class="xtool">uprofile</code> command.  Given the names
+of one or more profiles, <span class="hpctool">hpcquick</span> 
+will translate them into vendor-specific ASCII representations 
+using the vendor-supplied <code class="xtool">prof</code> tool, 
+and then translate them into a platform-independent representation 
+(XML documents of type 
+<a href="dtd_profile.html" class="hpctool">PROFILE</a>) 
+for input to <a href="hpcview.html" class="hpctool">hpcview</a>.
+
+<br><br>
+
+Structure files are typically created using 
+<a href="hpc_bloop.html" class="hpctool">bloop</a> to extract the structure
+information from the executable binary.  (However, other mechanisms
+for creating a structure file could be used.)
+
+</dl>
+
+</div> <!-- class=indent -->
+
+<!-- ********************************************************************** -->
+
+<h3>EXAMPLES</h3>
+
+<div class="indent">
+
+<ol class="noindent">
+
+<li><p>Assume all of your source code is in <code>../src</code> and you
+did several <span class="xtool">ssrun</span> executions in which you
+gathered hardware performance counter data (experiments named
+<code>"*_hwc"</code>).  Program structure information from 
+<span class="hpctool">bloop</span> has been sent to <code>bloop.psxml</code>.
+The command </p>
+
+<div class="indent">
+  <code>hpcquick -I ../src -S bloop.psxml -P *_hwc.*</code>
+</div>
+
+<p>will display the profile data with one column per profile file.</p>
+
+</ol>
+
+</div> <!-- class=indent -->
+
+<!-- ********************************************************************** -->
+
+<h3>NOTES</h3>
+
+<div class="indent">
+
+<span class="hpctool">hpcquick</span> runs on any system with a
+relatively recent version of Perl.  Depending on the version of Perl
+on your system, either the PERLLIB or PERL5LIB environment variable
+must be set to point to the Perl library located in
+<code>${HPCTOOLKIT}/bin/perl</code>.  The 
+<a href="../Sourceme-csh"><code>Sourceme-csh</code></a> and
+<a href="../Sourceme-sh"><code>Sourceme-sh</code></a> files set both of these 
+variables for <code>csh</code>-based and <code>sh</code>-based shells,
+respectivley. </p>
+
+</div> <!-- class=indent -->
+
+<!-- ********************************************************************** -->
+
+<script language="JavaScript" src="footer_hpctools.js"></script>
+
+<!-- ********************************************************************** -->
+
+</div> <!-- id=main -->
+
+</body>
+</html>

@@ -1,0 +1,142 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+
+<!--
+  HPCToolkit Documentation: Editing within Netscape/Mozilla Composer
+  is possible, but it generates strange stuff in-line.  
+  Please use an ordinary text editor.
+-->
+
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+
+  <title>HPCToolkit hvprof man page</title>
+
+  <link rel='stylesheet' type='text/css' href='styleForAll.css'>
+</head>
+
+<body>
+
+<!-- ********************************************************************** -->
+
+<script language="JavaScript" src="header_hpctools.js"></script>
+
+<!-- ********************************************************************** -->
+
+<div id="main">
+
+<p class="lastupdated">Last Updated 31 Jan 2003</p>
+
+<h2>User Commands: hvprof(1)</h2>
+
+<!-- ********************************************************************** -->
+
+<h3>SYNOPSIS</h3>
+
+<div class="indent">
+
+<ol class="noindent">
+  <li> Recompile your application, linking in 
+      <span class="hpctool">vprof</span>'s vmon profiling library.
+  <li> Run your application.
+  <li> Convert vmon binary profiling information into 
+       <a href="dtd_profile.html" class="hpctool">PROFILE</a> format
+       using <span class="hpctool">cprof</span>.
+</ol>
+
+<p><span class="hpctool">cprof</span> 
+   -p <i>binary</i> <i>vmon_profile</i>
+
+<p><span class="hpctool">cprof</span> 
+   --hvprof_profile <i>binary</i> <i>vmon_profile</i>
+
+<p>Location: <code>${HPCTOOLKIT}/src/external_tools/hvprof</code>
+<i>(source code; not included in all distributions)</i>
+
+</div> <!-- class=indent -->
+
+<!-- ********************************************************************** -->
+
+<h3>DESCRIPTION</h3>
+
+<div class="indent">
+
+<p><span class="hpctool">hvprof</span> is a modification 
+of <a href="http://aros.ca.sandia.gov/~cljanss/perf/vprof">
+The Visual Profiler</a> (by Curtis L. Janssen) a tool that uses 
+<a href="http://icl.cs.utk.edu/projects/papi/">PAPI</a>
+to collect profiling information.  We modified to the tool to 
+package profile data into HPCTool's
+<a href="dtd_profile.html" class="hpctool">PROFILE</a> format for 
+input into <a href="hpcview.html" class="hpctool">hpcview</a>. 
+In addition, we have verified that 
+<a href="http://icl.cs.utk.edu/projects/papi/">PAPI</a> profiling can
+successfully be performed on ia64-Linux platforms (Itanium and
+Itanium2).</p>
+
+</div> <!-- class=indent -->
+
+<!-- ********************************************************************** -->
+
+<h3>ARGUMENTS</h3>
+
+<div class="indent">
+
+<dl>
+
+<dt><i>binary</i>
+<dd>The binary used to collect the profiling data.
+
+<dt><i>vmon_profile</i>
+<dd>The file that contains binary profiling information.  The 
+default is <code>vmon.out</code>
+
+<dt>-p <i>or</i> --hvprof_profile
+<dd>Instruct <span class="hpctool">cprof</span> to convert the 
+profiling data in <i>vmon_profile</i> to HPCTool's 
+<a href="dtd_profile.html" class="hpctool">PROFILE</a> format
+instead of to its default output.  Either option name may be used, but
+other <span class="hpctool">cprof</span> regular option should be
+given.
+
+</dl>
+
+</div> <!-- class=indent -->
+
+<!-- ********************************************************************** -->
+
+<h3>NOTES</h3>
+
+<div class="indent">
+
+<p>We have not tested on Pentium IV machines, though it should now be
+supported with <a href="http://icl.cs.utk.edu/projects/papi/">PAPI 2.3.1</a>
+and greater.
+
+</div> <!-- class=indent -->
+
+<!-- ********************************************************************** -->
+
+<h3>ALSO SEE</h3>
+
+<div class="indent">
+
+<p>For more information about building and using, please see the files
+
+<div class="indent">
+  <code>${HPCTOOLKIT}/src/external_tools/hvprof/README.hvprof</code><br>
+  <code>${HPCTOOLKIT}/src/external_tools/hvprof/README.hvprof.QuickStart</code>
+</div>
+
+</div> <!-- class=indent -->
+
+<!-- ********************************************************************** -->
+
+<script language="JavaScript" src="footer_hpctools.js"></script>
+
+<!-- ********************************************************************** -->
+
+</div> <!-- id=main -->
+
+</body>
+</html>

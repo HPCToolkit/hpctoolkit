@@ -1,0 +1,91 @@
+$Id$
+
+=============================================================================
+==
+== README
+==
+== Location: ${HPCTOOLKIT}/src
+==
+=============================================================================
+
+This is is top level directory for the tree that contains all of the
+HPCToolkit source code.
+
+=============================================================================
+
+Builds should be done in this directory.  The make system by default
+will store files that result from builds in ${HPCTOOLKIT}/obj.
+Successful builds will install results in ${HPCTOOLKIT}/bin.  For more
+information on building, refer to the HPCToolkit documentation at
+${HPCTOOLKIT}/doc/index.html.
+
+Overview of source code:
+--------------------
+
+hpctools/    - Contains the code for individual tools in the HPCToolkit 
+               toolset.
+
+	      
+  bloop/       - Driver and analysis files specific to the 'bloop'
+                 tool.
+
+  hpcquick/    - Perl code for 'hpcquick'
+  
+  hpcview/     - Driver and analysis files specific to the 'hpcview' tool.
+
+  ptran/       - Perl code for 'ptran'
+
+  xprof/       - Driver and support files specific to the 'xprof'
+                 tool.
+
+hpc_include/ - Contains general include files available for any 
+include/       HPCToolkit src files (but not external libraries).  There 
+               should be no associated object files or library for these
+               includes.
+               
+hpc_lib/     - Contains libraries for use by HPCToolkit
+lib/           (but not external tools).
+
+  binutils    - A library that reads load modules and executables
+                and processes them by section, procedure and
+		instruction.  It is built upon GNU's binutils and
+		uses the ISA library to for queries that require
+		instruction decoding.  (Uses 'support' and 'ISA'.)
+		
+  ISA         - ISA implements an instruction set architecture,
+                most significantly by decoding and providing
+		information about machine instructions.  It
+		knows nothing about a load module ('binutils').
+		(Uses 'support'.)
+
+  perl        - Perl modules for use with the perl scripts in 
+                src/hpctools.
+
+  support     - A support library that defines several generic data
+                structures, file operations and support routines.
+		This library is not dependent upon any other library.
+		
+  xml         - This simple library provides routines for reading
+                and writing XML files in lieu of using Xerces.
+                (These routines were created when 'bloop' and 'xprof'
+                were separate from 'hpcview' but the library still may
+                have a justified existence.)  (Uses 'support'.)
+
+		     
+external_lib/
+
+  OpenAnalysis/ - Implements generic and specialized graphs used in
+                  program analysis.  Among other things, implements a
+	          control flow graph and Tarjan interval analysis.
+
+  binutils/     - GNU's binutils.  Among other things, implements the
+                  basic interface to a load module's contents, symbol
+	          table and debugging information.
+
+external_tools
+
+  hvprof - This is a version of vprof (The Visual Profiler) that has
+           been extended to generate output in a parsable format that can
+           be read by 'hpcview'.  See external_tools/hvprof/README.hvprof
+           for more information.
+

@@ -1,0 +1,68 @@
+# $Id$
+
+#############################################################################
+
+if test -z "${HPCTOOLKIT}" ; then
+  echo "You must set your HPCTOOLKIT environment variable before sourcing"
+  echo "this file."
+  exit 1
+fi
+
+#############################################################################
+# Set platform variables
+#############################################################################
+
+export HPCTOOLKIT_ARCH=`uname -p`
+if test "${HPCTOOLKIT_ARCH}" = "unknown" ; then
+  export HPCTOOLKIT_ARCH=`uname -m`
+fi
+
+export HPCTOOLKIT_OS=`uname -s`
+#export HPCTOOLKIT_OS=`${HPCTOOLKIT}/tools/darch`
+
+export HPCTOOLKIT_PLATFORM="${HPCTOOLKIT_ARCH}-${HPCTOOLKIT_OS}"
+
+#############################################################################
+# Set other variables
+#############################################################################
+
+HPCPERLLIB="${HPCTOOLKIT}/bin/perl"
+
+if test -z "${PERLLIB}" ; then
+  export PERLLIB="${HPCPERLLIB}"
+else
+  export PERLLIB="${HPCPERLLIB}:${PERLLIB}"
+fi
+
+if test -z "${PERL5LIB}" ; then
+  export PERL5LIB="${HPCPERLLIB}"
+else
+  export PERL5LIB="${HPCPERLLIB}:${PERL5LIB}"
+fi
+
+#############################################################################
+
+export XERCESCROOT="${HPCTOOLKIT}/lib/xerces-c2_1_0"
+XERCESPLATFORM="${XERCESCROOT}/${HPCTOOLKIT_PLATFORM}"
+
+if test "${HPCTOOLKIT_OS}" = "IRIX64" -o "${HPCTOOLKIT_OS}" = "IRIX" ; then
+  # set library path for IRIX systems
+  if test -z "${LD_LIBRARYN32_PATH}" ; then
+    export LD_LIBRARYN32_PATH="${XERCESPLATFORM}"
+  else
+    export LD_LIBRARYN32_PATH="${XERCESPLATFORM}:${LD_LIBRARYN32_PATH}"
+  fi
+  if test -z "${LD_LIBRARY64_PATH}" ; then
+    export LD_LIBRARY64_PATH="${XERCESPLATFORM}"
+  else
+    export LD_LIBRARY64_PATH="${XERCESPLATFORM}:${LD_LIBRARY64_PATH}"
+  fi
+else
+  if test -z "${LD_LIBRARY_PATH}" ; then
+    export LD_LIBRARY_PATH="${XERCESPLATFORM}"
+  else
+    export LD_LIBRARY_PATH="${XERCESPLATFORM}:${LD_LIBRARY_PATH}"
+  fi
+fi
+
+export PATH="${HPCTOOLKIT}/bin/${HPCTOOLKIT_PLATFORM}:${HPCTOOLKIT}/bin:${PATH}"

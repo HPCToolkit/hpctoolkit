@@ -1,0 +1,24 @@
+$Id$
+
+=============================================================================
+==
+== README
+==
+== Location: ${HPCTOOLKIT}/doc
+==
+=============================================================================
+
+For documentation, point your browser to ${HPCTOOLKIT}/doc/index.html
+
+=============================================================================
+
+This directory contains some files that are copies of files that also
+exist in the root directory of the HPCToolkit web page. They exists to
+ensure that the this documentation (${HPCTOOLKIT}/doc) is self
+sufficient.  Please don't let them get too out of sync.
+
+  header_hpctools.js - very similar
+  footer_hpctools.js - identical
+  styleForAll.css    - identical
+
+=============================================================================
