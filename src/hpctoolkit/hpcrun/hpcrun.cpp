@@ -43,14 +43,15 @@
 #define LD_PRELOAD "LD_PRELOAD"
 #define HPCRUN_HOME "HPCRUN_HOME"
 
+#define eventlistBufSZ PATH_MAX
+
 /* Options that will be passed to profiling library */
 static const char* opt_recursive = "1";
-static const char* opt_event = NULL;
-static const char* opt_period = NULL;
+static char        opt_eventlist[eventlistBufSZ] = "";
 static const char* opt_out_path = NULL;
 static const char* opt_flag = NULL;
 static const char* opt_debug = NULL;
-static char** opt_command_argv = NULL; /* command to profile */
+static char**      opt_command_argv = NULL; /* command to profile */
 
 /* Options that will be consumed here */
 static int myopt_list_events = 0; /* 0, 1, 2: none, short, long */
@@ -134,7 +135,7 @@ static const char* args_usage_details =
 "the instruction at the current program counter location will be\n"
 "incremented. When <command> terminates normally, a profile (a histogram of\n"
 "counts for instructions in each load module) will be written to a file with\n"
-"name <command>.<event>.<pid>.\n"
+"name <command>.<event1>.<hostname>.<pid>.\n"
 "\n"
 "The special option '--' can be used to stop hpcrun option parsing.  This is\n"
 "especially useful when <command> takes arguments of its own.\n"
@@ -185,7 +186,7 @@ args_parse(int argc, char* argv[])
   extern char *optarg;
   extern int optind;
   int c;
-  while ((c = getopt(argc, (char**)argv, "hVd:re:p:o:f:lL")) != EOF) {
+  while ((c = getopt(argc, (char**)argv, "hVd:re:o:f:lL")) != EOF) {
     switch (c) {
       
     // Special options that are immediately evaluated
@@ -211,11 +212,12 @@ args_parse(int argc, char* argv[])
       break; 
     }
     case 'e': {
-      opt_event = optarg;
-      break; 
-    }
-    case 'p': {
-      opt_period = optarg;
+      if ( (strlen(opt_eventlist) + strlen(optarg) + 1) >= eventlistBufSZ-1) {
+	args_print_error(stderr, "Internal error: event list too long!");
+	exit(1);
+      }
+      strcat(opt_eventlist, optarg);
+      strcat(opt_eventlist, ";");
       break; 
     }
     case 'o': {
@@ -363,11 +365,8 @@ check_and_prepare_env_for_profiling()
   if (opt_recursive) {
     setenv("HPCRUN_RECURSIVE", opt_recursive, 1);
   }
-  if (opt_event) {
-    setenv("HPCRUN_EVENT_NAME", opt_event, 1);
-  }
-  if (opt_period) {
-    setenv("HPCRUN_SAMPLE_PERIOD", opt_period, 1);
+  if (opt_eventlist[0] != '\0') {
+    setenv("HPCRUN_EVENT_LIST", opt_eventlist, 1);
   }
   if (opt_out_path) {
     setenv("HPCRUN_OUTPUT_PATH", opt_out_path, 1);
@@ -403,11 +402,7 @@ list_available_events(int listType)
   const PAPI_hw_info_t* hwinfo = NULL;
   static const char* separator_major = "\n=========================================================================\n\n";
   static const char* separator_minor = "-------------------------------------------------------------------------\n";
-
-#if (!defined(PAPI_ENUM_ALL))
-  int PAPI_ENUM_ALL = 0; /* supposed to be defined according to man page... */
-#endif
-
+  
   /* Hardware information */
   if ((hwinfo = PAPI_get_hardware_info()) == NULL) {
     fprintf(stderr,"papirun: failed to set debug level. Aborting.\n");
@@ -434,10 +429,12 @@ list_available_events(int listType)
   printf(separator_minor);
   printf("Name\t\tDerived\tDescription (Implementation Note)\n");
   printf(separator_minor);
-  i = 0 | PRESET_MASK;
+  i = 0 | PAPI_PRESET_MASK;
   count = 0;
   do {
-    if (PAPI_get_event_info(i, &info) == PAPI_OK) {
+    int exists = (PAPI_query_event(i) == PAPI_OK &&
+		  PAPI_get_event_info(i, &info) == PAPI_OK);
+    if (exists) {
       printf("%s\t%s\t%s (%s)\n",
 	     info.symbol,
 	     (info.count > 1 ? "Yes" : "No"),
@@ -454,7 +451,7 @@ list_available_events(int listType)
   printf(separator_minor);
   printf("Name\t\t\t\tDescription\n");
   printf(separator_minor);
-  i = 0 | NATIVE_MASK;
+  i = 0 | PAPI_NATIVE_MASK;
   count = 0;
   do {      
     if (PAPI_get_event_info(i, &info) == PAPI_OK) {
