@@ -15,7 +15,7 @@
 @SET_MAKE@
 
 # -*-Mode: makefile;-*-
-# $Header: /Volumes/cvsrep/developer/HPCToolkit/src/hpctoolkit/hpcrun/Makefile.am,v 1.5 2004/11/03 03:09:53 eraxxon Exp $
+# $Header: /Volumes/cvsrep/developer/HPCToolkit/src/hpctoolkit/hpcrun/Makefile.am,v 1.6 2004/11/07 02:39:14 eraxxon Exp $
 
 #############################################################################
 #
