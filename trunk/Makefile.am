@@ -126,7 +126,8 @@ myinstall-xerces:
 	@$(mkinstalldirs) $(MYXERCESINSTALLDIR)
 	@cp -R $(MYXERCESLIB) $(MYXERCESINSTALLDIR)/.
 
-.PHONY : install-data-hook myinstall-files myinstall-scripts \
+.PHONY : install-data-local install-data-hook \
+	myinstall-files myinstall-scripts \
 	myinstall-dirs myinstall-xerces
 
 
