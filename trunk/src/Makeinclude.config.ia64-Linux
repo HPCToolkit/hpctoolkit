@@ -54,15 +54,15 @@ GCC_BIN = $(GCC_BIN_32)
 INTEL_BIN = /usr/local/intel/compiler60/ia64/bin
 
 #  C++ compiler
-#CXX = $(INTEL_BIN)/ecpc
+#CXX = ecpc
   # Note: use default template handling
 
-CXX = $(GCC_BIN)/g++ -Wall
+CXX = g++ -Wall
   # Note: use default template handling (use 3.0.4 or later)
 
 #  ANSI C compiler
-#CC = $(INTEL_BIN)/ecc
-CC = $(GCC_BIN)/gcc
+#CC = ecc
+CC = gcc
 
 #  Archiver
 AR = /usr/bin/ar -rv  # g++ and Intel

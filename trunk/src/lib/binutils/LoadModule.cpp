@@ -376,7 +376,12 @@ LoadModule::Dump(std::ostream& o, const char* pre) const
 
   o << p << "==================== Load Module Dump ====================\n";
 
-  o << p1 << "BFD version: " << BFD_VERSION << endl;  
+  o << p1 << "BFD version: ";
+#ifdef BFD_VERSION
+  o << BFD_VERSION << endl;
+#else
+  o << "-unknown-" << endl;
+#endif
 
   o << p1 << "Load Module Information:\n";
   DumpModuleInfo(o, p2);
