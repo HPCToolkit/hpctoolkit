@@ -69,8 +69,8 @@ AC_CONFIG_SRCDIR([src/include/HPCToolkitVersionInfo.h])
 AC_CONFIG_AUX_DIR([config])
 
 AC_PREREQ(2.59)
-AM_INIT_AUTOMAKE(1.9.3)
-# Require libtool 1.5.10
+AM_INIT_AUTOMAKE(1.9.5)
+# Require libtool 1.5.14
 
 AC_CANONICAL_HOST
 
@@ -88,11 +88,11 @@ if test -z "$CXXFLAGS" ; then
 fi
 
 # Check for programs.
+# Note: libtool makes PROG_RANLIB obsolete
 AC_PROG_LIBTOOL
 AC_PROG_CXX(CC  cxx  icpc ecpc icc ecc  g++ gcc c++)
 AC_PROG_CC(cc  icc ecc  gcc)
 AC_PROG_CXXCPP
-AC_PROG_RANLIB
 AC_PROG_INSTALL
 
 # Use C++ compiler for all checks
