@@ -171,6 +171,24 @@ _init()
     fputs(error, stderr);
     exit(1);
   }
+
+#if 0
+
+  // THREAD
+  // thread_id_handle = dlsym(RTLD_DEFAULT,"pthread_self");
+  
+  //if (thread_id_handle) {
+  //  pthread_trap_create(thread_probe_init_routine);
+  //  pthread_trap_exit(thread_probe_shutdown_routine);
+  //}
+#ifndef NO_PAPI
+    retval = PAPI_thread_init(thread_id_handle);
+    if (retval != PAPI_OK)
+      error("PAPI_thread_init",retval);
+#endif
+
+#endif
+
 }
 
 /*
@@ -208,6 +226,7 @@ init_options()
   }
 
   if (opt_debug >= 1) { 
+    fprintf(stderr, "  LD_PRELOAD: %s (process %d)\n", getenv("LD_PRELOAD"), getpid()); 
     fprintf(stderr, "  recursive profiling: %d (process %d)\n", opt_recursive, getpid()); 
   }
   
@@ -338,6 +357,8 @@ vfork()
  */
 
 /*
+
+THREAD
 
 To profile threads
   For each thread:
@@ -547,10 +568,14 @@ init_profdescs(hpcrun_profile_desc_vec_t* x, hpcpapi_profile_desc_vec_t* y,
       if ((rcode = PAPI_create_eventset(&y->eset)) != PAPI_OK) {
 	DIE("fatal error: (%d) PAPI error %s.", rcode, PAPI_strerror(rcode));
       }
+      
     }
+    
+    //PAPI_set_domain(PAPI_DOM_ALL); // FIXME
   }
   
-  
+
+
   /* 3. For each event:period pair, init corresponding profdescs
      entry.  Classification of events *must* be the same as above. */
   tmp_eventlist = strdup(opt_eventlist);
@@ -750,12 +775,12 @@ add_sysevent(hpcrun_profile_desc_vec_t* profdescs, rtloadmap_t* rtmap,
   if (strcmp(eventnm, HPCRUN_EVENT_WALLCLK_STR) == 0) {
     prof->ename = HPCRUN_EVENT_WALLCLK_STR;
     prof->flags = 0;
-    prof->period = 1; /* 1 millisecond */
+    prof->period = 10; /* 10 millisecond */
   }
   else if (strcmp(eventnm, HPCRUN_EVENT_FWALLCLK_STR) == 0) {
     prof->ename = HPCRUN_EVENT_FWALLCLK_STR;
     prof->flags = PROF_FAST;
-    prof->period = 10; /* 10 milliseconds */
+    prof->period = 10; /* should be 1 ms; cf. /usr/include/sys/profile.h */
   }
   else {
     DIE("fatal error: Invalid event: '%s'.", eventnm);
@@ -906,11 +931,13 @@ add_papievent(hpcpapi_profile_desc_vec_t* profdescs, rtloadmap_t* rtmap,
   if ((pcode = PAPI_get_event_info(prof->ecode, &prof->einfo)) != PAPI_OK) {
     DIE("fatal error: (%d) PAPI error %s.", pcode, PAPI_strerror(pcode));
   }
+#if 0 // FIXME
   if ((prof->ecode & PAPI_PRESET_MASK) && (prof->einfo.count > 1)) {
     DIE("fatal error: '%s' is a PAPI derived event.\n"
 	"\tSampling of derived events is not supported by PAPI.\n" 
 	"\tUse 'hpcrun -L' to find the component native events of '%s' that you can monitor separately.", eventnm, eventnm);
   }
+#endif
 
   if ((pcode = PAPI_add_event(profdescs->eset, prof->ecode)) != PAPI_OK) {
     DIE("fatal error: (%d) Unable to add event '%s' to event set.\n"
