@@ -168,8 +168,11 @@ void FilePerfMetric::Make(NodeRetriever &ret)
   AccumulateFromChildren(*ret.GetRoot(), Index());
   
   if (!ret.GetRoot()->HasPerfData(Index())) {
-    String msg = "File " + file + " does not contain any metric information.";
-    throw MetricException(msg);
+    // eraxxon: Instead of throwning an exception, let's emit a warning.
+    String msg = "File '" + file + 
+      "' does not contain any information for metric '" + Name() + "'";
+    //throw MetricException(msg);
+    cerr << "hpcview warning: " << msg << endl;
   }
   IFTRACE << "FilePerfMetric::Make yields: " << ToString() << endl;
 }
