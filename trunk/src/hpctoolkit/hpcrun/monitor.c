@@ -433,33 +433,34 @@ init_papi(hpcpapi_profile_desc_vec_t* profdescs, rtloadmap_t* rtmap)
   /* Note on hpcpapi_profile_desc_t and PAPI_sprofil() scaling factor
      cf. man profil()
      
-     The scale factor describes how much smaller the histogram buffer
-     is than the region to be profiled.  It also describes how each
-     histogram counter correlates with the region to be profiled.
+     The scale factor describes how the histogram buffer and each
+     histogram counter correlates with the region to be profiled.  
      
-     The region to be profiled can be thought of being divided into n
-     equally sized blocks, each b bytes long.  [[[ If each histogram
-     counter is bh bytes long, the value of the scale factor is the
-     reciprocal of (b / bh).  ]]]
+     The region to be profiled can be thought of as being divided into
+     n equally sized blocks, each b bytes long.  For historical
+     reasons, we introduce a term, bh, representing the size in bytes
+     of each histogram counter.  The value of the scale factor is the
+     reciprocal of (b / bh):
            scale = reciprocal( b / bh )
+     Note that now bh is *fixed* at 2.
 
-     The representation of the scale factor is a 16-bit fixed-point
+     Since this scheme was devised when a memory word was 16-bits or
+     2-bytes, the scale factor was represented as a 16-bit fixed-point
      fraction with the decimal point implied on the *left*.  Under
-     this representation, the maximum value of scale is 0xffff
-     (essentially 1). (0x10000 can also be used.)
+     this representation, the maximum value of the scale was 0xffff
+     (essentially 1, 0x10000); this is *no longer* the case.
 
      Alternatively, and perhaps more conveniently, the scale can be
      thought of as a ratio between an unsigned integer scaleval and
      65536:
           scale = ( scaleval / 65536 ) = ( bh / b )
 
-       [[[ where bh is currently fixed at 2 ]]]
-
-     Some sample scale values when bh is 4 (unsigned int):
+     Some sample scale values, given that bh is fixed at 2.
 
           scaleval            bytes_per_code_block (b)
           ----------------------------------------
-          0xffff (or 0x10000) 2
+          0x20000             1
+          0x10000 (or 0xffff) 2
 	  0x8000              4  (size of many RISC instructions)
 	  0x4000              8
 	  0x2000              16 (size of Itanium instruction packet)
@@ -579,8 +580,8 @@ init_papi(hpcpapi_profile_desc_vec_t* profdescs, rtloadmap_t* rtmap)
     prof->flags |= PAPI_PROFIL_BUCKET_32; /* hpc_hist_bucket */
     
     prof->bytesPerCntr = sizeof(hpc_hist_bucket); /* 4 */
-    prof->bytesPerCodeBlk = 4; // 1
-    prof->scale = 0x8000;      // 0x10000
+    prof->bytesPerCodeBlk = 4;
+    prof->scale = 0x8000;
 
     if ( (prof->scale * prof->bytesPerCodeBlk) != (65536 * 2) ) {
       DIE("fatal error: internal programming error - invalid profiling scale.");
@@ -606,7 +607,7 @@ init_papi(hpcpapi_profile_desc_vec_t* profdescs, rtloadmap_t* rtmap)
 
     if (opt_debug >= 3) { 
       fprintf(stderr, "profile buffer details for %s (process %d):\n", prof->einfo.symbol, getpid()); 
-      fprintf(stderr, "  count = %d, es=%#x ec=%#x sp=%llu ef=%d\n",
+      fprintf(stderr, "  count = %d, es=%#x ec=%#x sp=%"PRIu64" ef=%d\n",
 	      prof->numsprofs, profdescs->eset, prof->ecode, prof->period, 
 	      prof->flags);
     }
@@ -878,7 +879,7 @@ write_module_profile(FILE* fs, rtloadmod_desc_t* mod,
 {
   int i;
   
-  if (opt_debug >= 2) { fprintf(stderr, "writing module %s (process %d at offset %#x)\n", mod->name, getpid(), mod->offset); }
+  if (opt_debug >= 2) { fprintf(stderr, "writing module %s (process %d at offset %#"PRIx64")\n", mod->name, getpid(), mod->offset); }
 
   /* <loadmodule_name>, <loadmodule_loadoffset> */
   write_string(fs, mod->name);
@@ -905,17 +906,17 @@ write_module_profile(FILE* fs, rtloadmod_desc_t* mod,
 static void 
 write_event_data(FILE *fs, hpcpapi_profile_desc_t* prof, int sprofidx)
 {
-  unsigned int count = 0, offset = 0, i = 0, inz = 0;
+  uint64_t count = 0, offset = 0, i = 0, inz = 0;
   PAPI_sprofil_t* sprof = &(prof->sprofs[sprofidx]);
   hpc_hist_bucket* histo = (hpc_hist_bucket*)sprof->pr_base;
-  unsigned int ncounters = (sprof->pr_size / prof->bytesPerCntr);
+  uint64_t ncounters = (sprof->pr_size / prof->bytesPerCntr);
   
   /* <histogram_non_zero_bucket_count> */
   count = 0;
   for (i = 0; i < ncounters; ++i) {
     if (histo[i] != 0) { count++; inz = i; }
   }
-  hpc_fwrite_le4(&count, fs);
+  hpc_fwrite_le8(&count, fs);
   
   if (opt_debug >= 2) {
     fprintf(stderr, "  profile for %s has %d of %d non-zero counters (process %d)", 
@@ -931,7 +932,7 @@ write_event_data(FILE *fs, hpcpapi_profile_desc_t* prof, int sprofidx)
       hpc_fwrite_le4(&cnt, fs);   /* count */
 
       offset = i * prof->bytesPerCodeBlk;
-      hpc_fwrite_le4(&offset, fs); /* offset (in bytes) from load addr */
+      hpc_fwrite_le8(&offset, fs); /* offset (in bytes) from load addr */
 
       if (opt_debug >= 2) {
         fprintf(stderr, "  (cnt,offset)=(%d,%#x)\n",cnt,offset);
