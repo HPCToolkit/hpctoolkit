@@ -78,26 +78,43 @@ PredefinedDCPIMetricTable::Entry PredefinedDCPIMetricTable::table[] = {
   // Metrics available whenever ProfileMe is used (any PM mode)
   // -------------------------------------------------------
 
+  // FIXME: what should we do about unreliable data and early_kill?
+
   // NOTE: it seems we can cross check with the retire counter 
   //  for mode 0 or mode 2...
-  {"retired_insn", "Retired Instructions (may have caused mispredict trap)",
+  {"retired_insn", "Retired Instructions (includes mispredicted branches)",
    PM0 | PM1 | PM2 | PM3,
    DCPIMetricExpr(DCPI_MTYPE_PM | DCPI_PM_CNTR_count | DCPI_PM_ATTR_retired_T),
    InsnClassExpr(INSN_CLASS_ALL)
   },
 
-  {"retired_fp_insn", "Retired FP Instructions (may have caused mispredict trap)",
+  {"retired_fp_insn", "Retired FP Instructions (includes mispredicted branches)",
    PM0 | PM1 | PM2 | PM3,
    DCPIMetricExpr(DCPI_MTYPE_PM | DCPI_PM_CNTR_count | DCPI_PM_ATTR_retired_T),
-   InsnClassExpr(INSN_CLASS_FLOPS)
+   InsnClassExpr(INSN_CLASS_FLOP)
+  },
+
+  {"mispredicted_branches", "Mispredicted branches",
+   PM0 | PM1 | PM2 | PM3,
+   DCPIMetricExpr(DCPI_MTYPE_PM | DCPI_PM_CNTR_count | DCPI_PM_ATTR_cbrmispredict_T),
+   InsnClassExpr(INSN_CLASS_ALL) /* bit is only true for branches */
+  },
+
+  {"replay_ldst", "Replays caused by load/store ordering. [Untested]",
+   PM0 | PM1 | PM2 | PM3,
+   DCPIMetricExpr(DCPI_MTYPE_PM | DCPI_PM_CNTR_count | DCPI_PM_ATTR_ldstorder_T),
+   InsnClassExpr(INSN_CLASS_ALL)
+  },
+
+  {"trapped_insn", "Instructions causing traps",
+   PM0 | PM1 | PM2 | PM3,
+   DCPIMetricExpr(DCPI_MTYPE_PM | DCPI_PM_CNTR_count | DCPI_PM_TRAP_trap),
+   InsnClassExpr(INSN_CLASS_ALL)
   },
 
 #if 0
-//   "mispredicted_branches", "Mispredicted branches"
-//      count + cbrmispredict [only true on branches] ; any insn 
 //   "icache_miss_lb", "Lower bound on icache misses"
 //      count + nyp , any insn
-//   "ldstorder trap" [Untested]
 #endif
 
   // -------------------------------------------------------
@@ -105,17 +122,21 @@ PredefinedDCPIMetricTable::Entry PredefinedDCPIMetricTable::table[] = {
   // -------------------------------------------------------
 
 #if 0
-    "m0inflight"   Inflight cycles --> total cycles?
-    "m0retires"    Instruction retires --> cross check retired instructions?
+//  "m0inflight"   Inflight cycles --> total cycles?
+//  "m0retires"    Instruction retires --> cross check retired instructions?
 
-    "m1inflight"   Inflight cycles --> total cycles
-    "m1retdelay"   Retire delay --> 
+//  "m1inflight"   Inflight cycles --> total cycles
+//  "m1retdelay"   Retire delay --> 
 
-    "m2retires"    Instruction retires --> cross check retired instructions?
-    "m2bcmisses"   B-cache misses --> b-cache misses
+//    inflight + any insn --> approx inflight cycles for insn that retired w/out trapping
+//    inflight + fp --> approx inflight cycles for flops that retired without trapping
 
-    "m3inflight"   Inflight cycles
-    "m3replays"    Pipeline replay traps
+
+//  "m2retires"    Instruction retires --> cross check retired instructions?
+//  "m2bcmisses"   B-cache misses --> b-cache misses
+
+//  "m3inflight"   Inflight cycles
+//  "m3replays"    Pipeline replay traps
 #endif
 
   // -------------------------------------------------------
@@ -208,9 +229,5 @@ DCPIMetricFilter::operator()(const PCProfileMetric* m)
   BriefAssertion(dm && "Internal Error: invalid cast!");
   
   const DCPIMetricDesc& mdesc = dm->GetDCPIDesc();
-  if (mdesc.IsSet(expr)) {
-    return true;
-  } else {
-    return false;
-  }
+  return expr.IsSatisfied(mdesc);
 }
