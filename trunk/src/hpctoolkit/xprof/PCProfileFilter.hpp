@@ -170,9 +170,11 @@ private:
 //****************************************************************************
 
 
-#define INSN_CLASS_ALL   0x00000001 /* cannot be part of disjunction! */
-#define INSN_CLASS_FLOP  0x00000002
-#define INSN_CLASS_OTHER 0x00000004
+#define INSN_CLASS_ALL      0x00000001 /* cannot be part of disjunction! */
+#define INSN_CLASS_FLOP     0x00000002
+#define INSN_CLASS_INTOP    0x00000004
+#define INSN_CLASS_MEMOP    0x00000008
+#define INSN_CLASS_OTHER    0x00000010
 
 // InsnClassExpr: A common 'PCFilter' will be an instruction class
 // filter (cf. 'InsnFilter').  This represent a disjunctive expression
