@@ -480,7 +480,7 @@ list_available_events(event_list_t listType)
   // -------------------------------------------------------
   printf("*** Wall clock time ***\n");
   printf(HPCRUN_EVENT_WALLCLK_STR"     wall clock time (10 millisecond period)\n");
-  printf(HPCRUN_EVENT_FWALLCLK_STR"    fast wall clock time (1 millisecond period)\n");
+  // printf(HPCRUN_EVENT_FWALLCLK_STR"    fast wall clock time (1 millisecond period)\n");
   printf(separator_major);
 
   // -------------------------------------------------------
