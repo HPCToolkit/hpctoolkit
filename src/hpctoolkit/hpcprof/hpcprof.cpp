@@ -392,7 +392,7 @@ dump_PROFILE_metric(ostream& os,
   // Dump metrics with non-zero counts
   for (unsigned int l = 0; l < countVec.size(); ++l) {
     if (countVec[l] > 0) {
-      double v = countVec[l] * periodVec[l];
+      double v = (double) countVec[l] * (double) periodVec[l];
       os << I[ilevel] << "<M n" << XMLAttr(l) << " v" << XMLAttr(v) << "/>\n";
     }
   }
