@@ -64,7 +64,6 @@
 
 #include <lib/ISA/ISA.h>
 #include <lib/support/String.h>
-#include <lib/support/Assertion.h>
 
 //*************************** Forward Declarations ***************************
 

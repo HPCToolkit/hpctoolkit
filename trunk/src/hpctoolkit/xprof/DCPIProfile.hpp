@@ -55,8 +55,6 @@
 #include <vector>
 #include <map>
 
-#include "inttypes.h"
-
 //*************************** User Include Files ****************************
 
 #include <include/general.h>
@@ -67,7 +65,6 @@
 
 #include <lib/ISA/ISATypes.h>
 #include <lib/support/String.h>
-#include <lib/support/Assertion.h>
 
 //*************************** Forward Declarations ***************************
 
