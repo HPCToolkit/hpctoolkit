@@ -70,7 +70,7 @@
 using std::cerr;
 
 PCProfileFilterList*
-CreateFilterList();
+CreateFilterList(LoadModule* lm);
 
 //****************************************************************************
 
@@ -139,7 +139,11 @@ main(int argc, char* argv[])
   DerivedProfile* profData = NULL;
   try {
     // We currently assume DCPI mode
-    PCProfileFilterList* filtList = NULL; // CreateFilterList();
+    PCProfileFilterList* filtList = NULL;
+    if (!args.outputRawMetrics) {
+      filtList = CreateFilterList(modInfo.GetLM());
+    }
+    
     profData = new DerivedProfile(rawprofData, filtList);
 
   } catch (...) {
@@ -171,9 +175,11 @@ main(int argc, char* argv[])
 #include "DCPIProfile.h"
 
 PCProfileFilterList*
-CreateFilterList()
+CreateFilterList(LoadModule* lm)
 {
   PCProfileFilterList* flist = new PCProfileFilterList;
-  flist->push_back(DCPIProfileFilter::PM_Retired());
+  flist->push_back(DCPIProfileFilter::RetiredInsn(lm));
+  flist->push_back(DCPIProfileFilter::RetiredFPInsn(lm));
+
   return flist;
 }

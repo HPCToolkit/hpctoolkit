@@ -53,6 +53,7 @@
 //************************* System Include Files ****************************
 
 #include <map>
+#include <set>
 
 #ifdef NO_STD_CHEADERS
 # include <limits.h>
@@ -66,7 +67,7 @@
 
 #include "PCProfileFilter.h"
 
-#include <lib/ISA/ISATypes.h>
+#include <lib/ISA/ISA.h>
 #include <lib/support/String.h>
 #include <lib/support/Assertion.h>
 
@@ -76,7 +77,9 @@
 typedef ulong PCProfileDatum; 
 #define PCProfileDatum_NIL 0 /* no data is present */
 
-class PCSet; // FIXME: share with PCProfile.h
+typedef std::set<Addr>        PCSet;
+typedef PCSet::iterator       PCSetIt;
+typedef PCSet::const_iterator PCSetCIt;
 
 //****************************************************************************
 // PCProfileMetric
@@ -89,10 +92,10 @@ class PCSet; // FIXME: share with PCProfile.h
 // stored.  Note that in the case of VLIW machines, PCs are really
 // 'operation PCs', that is, a single value that combines the PC and
 // an offset identifying the operation within the VLIW packet.  The
-// 'operation PC' should follow ISA class conventions. (Creaters of a
-// 'PCProfileMetric' should therefore use ISA::ConvertPCToOpPC to
-// generate the 'operation PCs'.)
-// see: 'PCProfileMetric_MapIterator'
+// 'operation PC' should follow ISA class conventions.  Because of
+// this, a metric contains a pointer to an appropriate ISA.  (Creaters
+// of a 'PCProfileMetric' should therefore use ISA::ConvertPCToOpPC to
+// generate the 'operation PCs'.)  see: 'PCProfileMetric_MapIterator'
 class PCProfileMetric
 {
 private:
@@ -102,8 +105,9 @@ private:
   typedef PCToPCProfileDatumMap::const_iterator PCToPCProfileDatumMapCIt;
 
 public:
-  PCProfileMetric()
-    : total(0), period (0), txtStart(0), txtSz(0)
+  // Constructor: we do not own 'isa_'
+  PCProfileMetric(const ISA* isa_)
+    : total(0), period (0), txtStart(0), txtSz(0), isa(isa_)
     { /* map does not need to be initialized */ }
   virtual ~PCProfileMetric() { }
   
@@ -128,21 +132,25 @@ public:
   // 'GetSz': The number of entries (note: this is not necessarily the
   // number of instructions or PC values in the text segment).
   suint GetSz() const { return map.size(); }
-
+  
+  const ISA* GetISA() const { return isa; }
+  
   // find/insert by PC value (GetTxtStart() <= PC <= GetTxtStart()+GetTxtSz())
   // 'Find': return datum for 'pc'; PCProfileDatum_NIL if not found.
   // (Note that this means one cannot distinguish between a dataset
   // resulting from the insertion of <pc, 0> and a dataset in which no
   // insertion was performed for the same pc.  However, this should
   // not be a problem.)
-  PCProfileDatum Find(Addr pc) const {
-    PCToPCProfileDatumMapCIt it = map.find(pc);
+  PCProfileDatum Find(Addr pc, ushort opIndex) const {
+    Addr oppc = isa->ConvertPCToOpPC(pc, opIndex);
+    PCToPCProfileDatumMapCIt it = map.find(oppc);
     if (it == map.end()) { return PCProfileDatum_NIL; } 
     else { return ((*it).second); }
   }
-  void Insert(Addr pc, PCProfileDatum& d) {
+  void Insert(Addr pc, ushort opIndex, PCProfileDatum& d) {
+    Addr oppc = isa->ConvertPCToOpPC(pc, opIndex);
     if (d != PCProfileDatum_NIL) {
-      map.insert(PCToPCProfileDatumMapVal(pc, d)); // do not add duplicates!
+      map.insert(PCToPCProfileDatumMapVal(oppc, d)); // do not add duplicates!
     }
   }
 
@@ -170,7 +178,8 @@ private:
   ulong          period;   // sampling period
   Addr           txtStart; // beginning of text segment 
   Addr           txtSz;    // size of text segment
-  
+
+  const ISA* isa;            // we do not own; points to containing set  
   PCToPCProfileDatumMap map; // map of sampling data
 };
 
@@ -186,6 +195,8 @@ public:
   }
   virtual ~PCProfileMetric_MapIterator() { }
 
+  // Note: This is the 'operation PC' and may not actually be the true
+  // PC!  cf. ISA::ConvertOpPCToPC(...).
   Addr           CurrentSrc()    { return (*it).first; }
   PCProfileDatum CurrentTarget() { return (*it).second; }
 

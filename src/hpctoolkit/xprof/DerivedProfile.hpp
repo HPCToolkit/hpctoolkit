@@ -195,28 +195,48 @@ public:
   // the derived name and description will come directly from the
   // 'PCProfileMetric'.  We assume ownership of the metric set
   // container (but not the contents -- the 'PCProfileMetric's).
-  DerivedProfileMetric(const PCProfileMetricSet* s = NULL) { SetMetricSet(s); }
+  DerivedProfileMetric(const PCProfileMetricSet* s = NULL);
   DerivedProfileMetric(const PCProfileMetric* m);
   virtual ~DerivedProfileMetric();
   
   // Name, Description: The metric name (high level name) and a description
   // NativeName: A name that is a combination of the raw metrics
   // Period: The sampling period (whether event or instruction based)
-  // MetricSet: The set of 'PCProfileMetric's
   const char* GetName()        const { return name; }
   const char* GetNativeName()  const { return nativeName; }
   const char* GetDescription() const { return description; }
   ulong       GetPeriod()      const { return period; }
 
-  const PCProfileMetricSet* GetMetricSet() const { return set; }
-
   void SetName(const char* s)        { name = s; }
   void SetNativeName(const char* s)  { nativeName = s; }
   void SetDescription(const char* s) { description = s; }
   void SetPeriod(ulong p)            { period = p; }
+
+  // MetricSet: The set of 'PCProfileMetric's
+  const PCProfileMetricSet* GetMetricSet() const { return mset; }
   void SetMetricSet(const PCProfileMetricSet* s) { 
-    set = const_cast<PCProfileMetricSet*>(s); 
+    mset = const_cast<PCProfileMetricSet*>(s); 
   } 
+
+  // PCSet: The set of relevant PCs (may be NULL or empty)
+  const PCSet* GetPCSet() const { return pcset; }
+  // A special function for saving some memory; use with caution
+  void MakeDerivedPCSetCoterminousWithPCSet() { delete pcset; pcset = NULL; }
+
+  bool FindPC(Addr pc, ushort opIndex) { 
+    if (pcset) {
+      Addr oppc = mset->GetISA()->ConvertPCToOpPC(pc, opIndex);
+      PCSetIt it = pcset->find(oppc);
+      return (it != pcset->end());
+    } else {
+      return (mset->DataExists(pc, opIndex) >= 0);
+    }
+  }
+  void InsertPC(Addr pc, ushort opIndex) {
+    BriefAssertion(pcset);
+    Addr oppc = mset->GetISA()->ConvertPCToOpPC(pc, opIndex);
+    pcset->insert(oppc); // do not add duplicates!
+  }
 
   void Dump(std::ostream& o = std::cerr);
   void DDump(); 
@@ -225,15 +245,20 @@ private:
   // Should not be used  
   DerivedProfileMetric(const DerivedProfileMetric& m) { }
   DerivedProfileMetric& operator=(const DerivedProfileMetric& m) { return *this; }
+
+  void Ctor(const PCProfileMetricSet* s);
+
   
 protected:
-private:  
+private:
   String name;
   String nativeName;
   String description;
   ulong period; // sampling period
 
-  PCProfileMetricSet* set; // we own the set container, but not the contents!
+  PCProfileMetricSet* mset; // we own the set container, but not the contents!
+  PCSet* pcset;  // the set of PCs relevant for this metric.  If NULL, 
+                 // the set is coterminous with the set of PCs within 'mset'
 };
 
 #endif 

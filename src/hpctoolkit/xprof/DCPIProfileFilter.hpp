@@ -60,6 +60,7 @@
 #include "DCPIMetricDesc.h"
 
 #include <lib/ISA/ISATypes.h>
+#include <lib/binutils/LoadModule.h>
 
 //*************************** Forward Declarations ***************************
 
@@ -69,8 +70,13 @@ class DCPIMetricFilter;
 
 // Routines that return predeined metric filters 
 namespace DCPIProfileFilter {
-  
-  PCProfileFilter* PM_Retired();
+
+  PCProfileFilter*
+  RetiredInsn(LoadModule* lm);
+
+  PCProfileFilter*
+  RetiredFPInsn(LoadModule* lm);
+
 
   // Metrics
   DCPIMetricFilter* PMMetric_Retired();

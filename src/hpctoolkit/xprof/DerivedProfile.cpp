@@ -128,16 +128,51 @@ DerivedProfile::Create(const PCProfile* pcprof_,
       dm->SetPeriod(GetPeriod(s));
       SetMetric(i, dm);
     }
+    // FIXME: in a dcpi version we could automatically carry over non
+    // PM metrics
   }
   
   // -------------------------------------------------------
-  // for each pc
-  //   for each derived metric and its insn filter
-  //     if insn filter is satisfied for pc && pc has data
-  //        record this pc in prof
-  // as a side effect we could build a pc2srcline map if one is not available
+  // 2. Determine set of interesting PCs.  As a special case, if
+  // filtlist is null, we have a one to one mapping between raw PCs
+  // and derived PCs.
   // -------------------------------------------------------
-  // skip this for now... 
+
+  // FIXME: we could save some memory and possibly some cache misses
+  // if this was moved to ProfileWriter.
+  // Also, we could build a pc2srcline map as a side effect...
+
+  if (filtlist == NULL) {
+    for (DerivedProfile_MetricIterator dmIt(*this); dmIt.IsValid(); ++dmIt) {
+      DerivedProfileMetric* dm = dmIt.Current();
+      dm->MakeDerivedPCSetCoterminousWithPCSet();
+    }
+  } else {
+    // Iterate over PC values in the profile
+    for (PCProfile_PCIterator it(*pcprof); it.IsValid(); ++it) {
+      
+      Addr oppc = it.Current(); // an 'operation pc'
+      ushort opIndex;
+      Addr pc = isa->ConvertOpPCToPC(oppc, opIndex);
+      
+      // For each derived metric and its insn filter
+      PCProfileFilterListCIt fIt = filtlist->begin();
+      for (suint i = 0; fIt != filtlist->end(); ++fIt, ++i) {
+	PCProfileFilter* filt = *fIt;
+	PCFilter* pcfilt = filt->GetPCFilter();
+	
+	DerivedProfileMetric* dm 
+	  = const_cast<DerivedProfileMetric*>(GetMetric(i));
+	const PCProfileMetricSet* rawMSet = dm->GetMetricSet();
+	
+	// if pc has data && insn filter is satisfied for pc, record pc
+	if (rawMSet->DataExists(pc, opIndex) >= 0 && (*pcfilt)(pc, opIndex)) {
+	  dm->InsertPC(pc, opIndex);
+	}
+      }  
+    }
+  }
+
 }
 
 void 
@@ -155,22 +190,36 @@ DerivedProfile::DDump()
 // DerivedProfileMetric
 //****************************************************************************
 
+DerivedProfileMetric::DerivedProfileMetric(const PCProfileMetricSet* s)
+{ 
+  Ctor(s);
+}
+
 DerivedProfileMetric::DerivedProfileMetric(const PCProfileMetric* m)
 {
-  PCProfileMetricSet* s = new PCProfileMetricSet(1);
+  // FIXME: create new isa object of same type
+  PCProfileMetricSet* s = new PCProfileMetricSet(m->GetISA(), 1);
   s->Add(m);
-  SetMetricSet(s);
+
+  Ctor(s);
   SetName(m->GetName());
   SetNativeName(m->GetName());
   SetDescription(m->GetDescription());
   SetPeriod(m->GetPeriod());
 }
 
+void
+DerivedProfileMetric::Ctor(const PCProfileMetricSet* s)
+{
+  SetMetricSet(s); 
+  pcset = new PCSet;
+}
+
 DerivedProfileMetric::~DerivedProfileMetric()
 {
-  // we own the set container, but not the contents!
-  set->Clear(); 
-  delete set;
+  mset->Clear(); // we own the set container, but not the contents!
+  delete mset;
+  delete pcset;
 }
 
 void 

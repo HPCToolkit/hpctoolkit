@@ -69,9 +69,8 @@ class DCPIProfile;
 //****************************************************************************
 
 // 'ProfileReader' is just a helpful container for all
-// profile-file-reading-functions.  It has no state and should never
-// be instantiated by a user; rather use the globally instantiated
-// variable below.
+// profile-file-reading-functions.  It has no state and need not be
+// instantiated by a user.
 class ProfileReader
 {
 public:
@@ -85,14 +84,6 @@ private:
   // ------------------------------------------------------------------------
   static DCPIProfile* ReadProfileFile_DCPICat(std::istream& pFile);
   
-  // ------------------------------------------------------------------------
-  //  SGI/MIPS/IRIX
-  // ------------------------------------------------------------------------
-
-  // ------------------------------------------------------------------------
-  //  Sun/SPARC/SunOS
-  // ------------------------------------------------------------------------
-
 };
 
 #endif 

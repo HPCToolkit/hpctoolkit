@@ -67,14 +67,28 @@ using std::dec;
 //****************************************************************************
 
 PCProfileFilter*
-DCPIProfileFilter::PM_Retired()
+DCPIProfileFilter::RetiredInsn(LoadModule* lm)
 {
-  PCProfileFilter* f = 
-    new PCProfileFilter(PMMetric_Retired(), new InsnFilter(NULL, NULL));
-  f->SetName("PM_Retired_Insn");
-  f->SetDescription("Retired PM Instructions");
+  InsnFilter* i = new InsnFilter(InsnClassExpr(INSN_CLASS_ALL), lm);
+
+  PCProfileFilter* f = new PCProfileFilter(PMMetric_Retired(), i);
+  f->SetName("Retired_Insn");
+  f->SetDescription("Retired Instructions");
   return f;
 }
+
+PCProfileFilter*
+DCPIProfileFilter::RetiredFPInsn(LoadModule* lm)
+{
+  InsnFilter* i = new InsnFilter(InsnClassExpr(INSN_CLASS_FLOPS), lm);
+
+  PCProfileFilter* f = new PCProfileFilter(PMMetric_Retired(), i);
+  f->SetName("Retired_FP_Insn");
+  f->SetDescription("Retired FP Instructions");
+  return f;
+}
+
+
 
 DCPIMetricFilter* 
 DCPIProfileFilter::PMMetric_Retired()

@@ -62,7 +62,7 @@
 #include "PCProfileMetric.h"
 #include "PCProfileFilter.h"
 
-#include <lib/ISA/ISATypes.h>
+#include <lib/ISA/ISA.h>
 #include <lib/support/String.h>
 #include <lib/support/Assertion.h>
 
@@ -88,13 +88,15 @@ typedef PCVec::const_iterator PCVecCIt;
 // 'PCProfileMetricSet' is a set of PCProfileMetrics.  It can be used
 // to represent all metrics in raw profile data or some collection of
 // raw metrics forming a derived metric.  Filters can be applied to
-// yield a new set.
+// yield a new set.  A set contains an ISA, which its metrics point
+// to, primarily for conversion between 'pcs' and 'operation pcs'.
 class PCProfileMetricSet
 {
 private:
   
 public:
-  PCProfileMetricSet(suint sz = 16); // reserves at least 'sz' slots
+  // Constructor: reserves at least 'sz' slots; we assume ownership of 'isa_'
+  PCProfileMetricSet(const ISA* isa_, suint sz = 16); 
   virtual ~PCProfileMetricSet(); 
   
   // Access to metrics (0-based).  When a set is created, space for
@@ -118,11 +120,13 @@ public:
 
   void Clear() { metricVec.clear(); }
 
-  // DataExists(): Does non-NIL data exist for some metric at
-  // PC value 'pc'?  If yes, returns the index of the first metric
-  // with non-nil data (forward iteration from 0 to size);
-  // otherwise, returns negative.
-  sint DataExists(Addr pc) const;
+  const ISA* GetISA() const { return isa; }
+
+  // DataExists(): Does non-NIL data exist for some metric at the
+  // operation designated by 'pc' and 'opIndex'?  If yes, returns the
+  // index of the first metric with non-nil data (forward iteration
+  // from 0 to size); otherwise, returns negative.  
+  sint DataExists(Addr pc, ushort opIndex) const;
 
   // Filter(): Returns a new, non-null but possibly empty, set of
   // metrics that pass the filter (i.e., every metric metric 'm' for
@@ -148,6 +152,7 @@ private:
   // and any possible resizing should be cheap b/c these sets should
   // be relatively small.
   PCProfileMetricVec metricVec;
+  const ISA* isa; 
 };
 
 
@@ -208,7 +213,7 @@ private:
 class PCProfile : public PCProfileMetricSet
 {
 public:
-  PCProfile(suint sz = 16);
+  PCProfile(const ISA* isa_, suint sz = 16);
   virtual ~PCProfile();
   
   // ProfiledFile: the name of the profiled program image
@@ -228,14 +233,14 @@ public:
 
   // Access to PCs containing non-zero profiling info
   suint GetNumPCs() { return pcVec.size(); }
-  void AddPC(Addr pc); // be careful: should be no duplicates
+  void AddPC(Addr pc, ushort opIndex); // be careful: should be no duplicates
 
   void Dump(std::ostream& o = std::cerr);
   void DDump(); 
   
 private:
   // Should not be used 
-  PCProfile(const PCProfile& p) { }
+  PCProfile(const PCProfile& p);
   PCProfile& operator=(const PCProfile& p) { return *this; }
   
   friend class PCProfile_PCIterator;
@@ -258,6 +263,8 @@ public:
   }
   virtual ~PCProfile_PCIterator() { }
 
+  // Note: This is the 'operation PC' and may not actually be the true
+  // PC!  cf. ISA::ConvertOpPCToPC(...).
   Addr Current() const { return (*it); }
 
   void operator++()    { it++; } // prefix
