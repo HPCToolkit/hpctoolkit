@@ -37,7 +37,7 @@
 //***************************************************************************
 //
 // File:
-//    PCProfileUtils.C
+//    ProfileWriter.C
 //
 // Purpose:
 //    [The purpose of this file]
@@ -64,8 +64,9 @@ using namespace std; // For compatibility with non-std C headers
 
 #include <include/general.h>
 
-#include "PCProfileUtils.h"
+#include "ProfileWriter.h"
 #include "PCProfile.h"
+#include "DerivedProfile.h"
 
 #include <lib/binutils/LoadModule.h>
 #include <lib/binutils/Section.h>
@@ -86,6 +87,8 @@ using std::endl;
 using std::hex;
 using std::dec;
 
+const char* UNKNOWN = "<unknown>";
+
 // LineToPCProfileVecMap
 
 struct lt_SrcLineX
@@ -102,40 +105,180 @@ struct lt_SrcLineX
 };
 
 typedef std::map<SrcLineX*, PCProfileVec*, lt_SrcLineX> LineToPCProfileVecMap;
-typedef std::map<SrcLineX*, PCProfileVec*, lt_SrcLineX>::iterator
-  LineToPCProfileVecMapIt;
-typedef std::map<SrcLineX*, PCProfileVec*>::value_type
-  LineToPCProfileVecMapVal;
+typedef LineToPCProfileVecMap::iterator   LineToPCProfileVecMapIt;
+typedef LineToPCProfileVecMap::value_type LineToPCProfileVecMapVal;
 
-void DumpFuncLineMap(ostream& ofile, LineToPCProfileVecMap& map,
-		     PCProfile* profData,
-		     const char* func, const char* file);
-void ClearFuncLineMap(LineToPCProfileVecMap& map);
+void 
+DumpFuncLineMap(ostream& os, LineToPCProfileVecMap& map, 
+		DerivedProfile* profData, const char* func, const char* file);
+void //FIXME
+DumpFuncLineMap_old(ostream& ofile, LineToPCProfileVecMap& map,
+		PCProfile* profData, const char* func, const char* file);
+void 
+ClearFuncLineMap(LineToPCProfileVecMap& map);
+
+//****************************************************************************
+// 
+//****************************************************************************
+
+void
+ProfileWriter::WriteProfile(std::ostream& os, DerivedProfile* profData,
+			    LoadModuleInfo* modInfo)
+{  
+  const PCProfile* rawprofData = profData->GetPCProfile();
+
+  // ------------------------------------------------------------------------
+  // Dump header info
+  // ------------------------------------------------------------------------  
+  ProfileWriter::DumpProfileHeader(os);
+
+  const char* profiledFile = rawprofData->GetProfiledFile();
+
+  os << "<PROFILE version=\"3.0\">\n";
+  os << "<PROFILEHDR>\n" << rawprofData->GetHdrInfo() << "</PROFILEHDR>\n";
+  os << "<PROFILEPARAMS>\n";
+  {
+    os << "<TARGET name"; WriteAttrStr(os, profiledFile); os << "/>\n";
+    os << "<METRICS>\n";
+    
+    DerivedProfile_MetricIterator it(*profData);
+    for (uint i = 0; it.IsValid(); ++it, ++i) {
+      DerivedProfileMetric* m = it.Current();
+      os << "<METRIC shortName"; WriteAttrNum(os, i);
+      os << " nativeName";       WriteAttrNum(os, m->GetNativeName());
+      os << " period";           WriteAttrNum(os, m->GetPeriod());
+      // os << " displayName";      WriteAttrNum(os, m->GetName());
+      // os << " count_total";   WriteAttrNum(os, m->GetTotalCount());
+      os << "/>\n";
+    }
+    os << "</METRICS>\n";
+    os << "</PROFILEPARAMS>\n";
+  }
+
+  // ------------------------------------------------------------------------
+  // Iterate through the PC values in the profile, collect symbolic
+  // information on a source line basis, and output the results
+  // ------------------------------------------------------------------------  
+
+  os << "<PROFILESCOPETREE>\n";
+  os << "<PGM n"; WriteAttrStr(os, profiledFile); os << ">\n";
+
+  // 'funcLineMap' maps a line number to a 'PCProfileVec'.  It should
+  //   contain information only for the current function, 'theFunc'.
+  LineToPCProfileVecMap funcLineMap;
+
+  // Iterate over PC values in the profile
+  String theFunc, theFile; 
+  for (PCProfile_PCIterator it(*rawprofData); it.IsValid(); ++it) {
+
+    // FIXME: since we only support Alpha for now, we do not need
+    // ISA::ConvertOpPCToPC
+    Addr pc = it.Current(); // actually an 'operation pc'
+    Instruction* inst = modInfo->GetLM()->GetInst(pc, 0);
+    BriefAssertion(inst && "Internal Error: Cannot find instruction!");
+    
+    // --------------------------------------------------
+    // 1. Attempt to find symbolic information
+    // --------------------------------------------------
+    String func, file;
+    SrcLineX srcLn; 
+    modInfo->GetSymbolicInfo(pc, inst->GetOpIndex(), func, file, srcLn);
+    
+    // Bad line info: cannot fix and cannot report; advance iteration
+    if ( !IsValidLine(srcLn.GetSrcLine()) ) {
+      continue;
+    }    
+    
+    // Bad function name: cannot fix
+    if (func.Empty()) { func = UNKNOWN; }
+    
+    // Bad file name: try to fix
+    if (file.Empty()) {
+      if (!theFile.Empty() && func == theFunc && func != UNKNOWN) { 
+	file = theFile;	// valid replacement
+      } else {
+	file = UNKNOWN;
+      }
+    }
+    
+    // --------------------------------------------------
+    // 2. If we are starting a new function, dump 'funcLineMap'
+    // --------------------------------------------------
+    if (func != theFunc) {
+      DumpFuncLineMap(os, funcLineMap, profData, theFunc, theFile);
+      ClearFuncLineMap(funcLineMap); // clears map and memory
+    }
+
+    // --------------------------------------------------
+    // 3. Update 'funcLineMap'
+    // --------------------------------------------------
+    PCProfileVec* vec = NULL;
+    LineToPCProfileVecMapIt it1 = funcLineMap.find(&srcLn);
+    if (it1 == funcLineMap.end()) {
+      // Initialize the vector and insert into the map
+      vec = new PCProfileVec(profData->GetNumMetrics());
+      funcLineMap.insert(LineToPCProfileVecMapVal(new SrcLineX(srcLn), vec));
+    } else {
+      vec = (*it1).second;
+    }
+    
+    // Update vector counts
+    DerivedProfile_MetricIterator dmIt(*profData);
+    for (uint i = 0; dmIt.IsValid(); ++dmIt, ++i) {
+      DerivedProfileMetric* dm = dmIt.Current();
+      PCProfileMetricSetIterator mIt( *(dm->GetMetricSet()) );
+      for ( ; mIt.IsValid(); ++mIt) {
+	PCProfileMetric* m = mIt.Current();
+	(*vec)[i] += m->Find(pc);
+      }
+    }
+    
+    if (theFunc != func) { theFunc = func; }
+    if (theFile != file) { theFile = file; }
+  }
+  
+  // --------------------------------------------------
+  // 4. Dump 'funcLineMap', if it contains info for the last function
+  // --------------------------------------------------
+  if (funcLineMap.size() > 0) {
+    DumpFuncLineMap(os, funcLineMap, profData, theFunc, theFile);
+    ClearFuncLineMap(funcLineMap); // clears map and memory
+  }
+  
+  os << "</PGM>\n";
+  os << "</PROFILESCOPETREE>\n";
+  
+  // ------------------------------------------------------------------------
+  // Dump footer
+  // ------------------------------------------------------------------------  
+  os << "</PROFILE>\n"; 
+  ProfileWriter::DumpProfileFooter(os);    
+}
 
 //****************************************************************************
 // Combine 'PCProfile' with symbolic info and dump
 //****************************************************************************
 
 void
-DumpWithSymbolicInfo(ostream& os, PCProfile* profData, LoadModuleInfo* modInfo)
+DumpAsPROFILE(ostream& os, PCProfile* profData, LoadModuleInfo* modInfo)
 {
   const char* profiledFile = profData->GetProfiledFile();
-  PCProfileMetric* m = profData->GetMetric(0);
+  const PCProfileMetric* m = profData->GetMetric(0);
   const Addr txtStart = m->GetTxtStart();       // All metrics guaranteed to  
   const Addr txtEnd = txtStart + m->GetTxtSz(); //   have identical values.
-  const unsigned long numMetrics = profData->GetMetricVecSz();
+  const ulong numMetrics = profData->GetSz();
 
   // ------------------------------------------------------------------------
   // Dump header info
   // ------------------------------------------------------------------------  
-  DumpProfileHeader(os);
+  ProfileWriter::DumpProfileHeader(os);
   os << "<PROFILE version=\"3.0\">\n";
   os << "<PROFILEHDR>\n" << profData->GetHdrInfo() << "</PROFILEHDR>\n";
   os << "<PROFILEPARAMS>\n";
   {
     os << "<TARGET name"; WriteAttrStr(os, profiledFile); os << "/>\n";
     os << "<METRICS>\n";
-    for (suint i = 0; i < numMetrics; i++) {
+    for (ulong i = 0; i < numMetrics; i++) {
       m = profData->GetMetric(i);
       os << "<METRIC shortName"; WriteAttrNum(os, i);
       os << " nativeName";       WriteAttrNum(os, m->GetName());
@@ -176,12 +319,12 @@ DumpWithSymbolicInfo(ostream& os, PCProfile* profData, LoadModuleInfo* modInfo)
 	Addr pc = inst->GetPC();
 
 	// We want to iterate only over PC values for which counts are
-	// recorded.  Note: Every metric in 'profData' has entries for
-	// the same pc values.
-	if (profData->GetMetric(0)->Find(pc) == PCProfileDatum_NIL) {
+	// recorded.  
+	long foundMetric;
+	if ( (foundMetric = profData->DataExists(pc)) < 0) {
 	  continue;
 	}
-
+	
 	// --------------------------------------------------
 	// Attempt to find symbolic information
 	// --------------------------------------------------
@@ -202,37 +345,28 @@ DumpWithSymbolicInfo(ostream& os, PCProfile* profData, LoadModuleInfo* modInfo)
 	// --------------------------------------------------
 	// Update 'funcLineMap'
 	// --------------------------------------------------    
+	PCProfileVec* vec = NULL;
 	LineToPCProfileVecMapIt it1 = funcLineMap.find(&srcLn);
-	if (it1 != funcLineMap.end()) { // found -- update counts
-	  PCProfileVec* vec = (*it1).second;
-	  for (unsigned long i = 0; i < numMetrics; i++) {
-	    m = profData->GetMetric(i);
-	    (*vec)[i] += m->Find(pc);
-	    BriefAssertion(m->Find(pc) != PCProfileDatum_NIL);
-	  }     
-	} else { // no entry found -- assign counts
-	  PCProfileVec* vec = new PCProfileVec(numMetrics);
-	  for (unsigned long i = 0; i < numMetrics; i++) {
-	    m = profData->GetMetric(i);
-	    (*vec)[i] = m->Find(pc);
-	    BriefAssertion(m->Find(pc) != PCProfileDatum_NIL);
-	  }
-	  
-	  // Don't keep 'vec' if all pc counts are 0.
-	  if (!vec->IsZeroed()) {
-	    funcLineMap.insert(LineToPCProfileVecMapVal(new SrcLineX(srcLn),
-							vec));
-	  } else {
-	    delete vec;
-	  }
+	if (it1 == funcLineMap.end()) {
+	  // Initialize the vector and insert into the map
+	  vec = new PCProfileVec(numMetrics);
+	  funcLineMap.insert(LineToPCProfileVecMapVal(new SrcLineX(srcLn), vec));
+	} else {
+	  vec = (*it1).second;
 	}
+
+	// Update vector counts
+	for (ulong i = (ulong)foundMetric; i < numMetrics; i++) {
+	  m = profData->GetMetric(i);
+	  (*vec)[i] += m->Find(pc); // add
+	}	
       }
 
       // --------------------------------------------------
       // Dump the contents of 'funcLineMap'
       // --------------------------------------------------
-      if (funcLineMap.size() > 0 && !theFunc.Empty() && !theFile.Empty()) {
-	DumpFuncLineMap(os, funcLineMap, profData, theFunc, theFile);
+      if (!theFunc.Empty() && !theFile.Empty()) {
+	DumpFuncLineMap_old(os, funcLineMap, profData, theFunc, theFile);
       }
       ClearFuncLineMap(funcLineMap); // clears map and memory
       
@@ -247,7 +381,7 @@ DumpWithSymbolicInfo(ostream& os, PCProfile* profData, LoadModuleInfo* modInfo)
   // ------------------------------------------------------------------------  
 
   os << "</PROFILE>\n"; 
-  DumpProfileFooter(os);
+  ProfileWriter::DumpProfileFooter(os);
 }
 
 //****************************************************************************
@@ -257,40 +391,35 @@ DumpWithSymbolicInfo(ostream& os, PCProfile* profData, LoadModuleInfo* modInfo)
 const char *PROFILEdtd =
 #include <lib/xml/PROFILE.dtd.h>
 
-void DumpProfileHeader(ostream& os)
+void 
+ProfileWriter::DumpProfileHeader(ostream& os)
 {
   os << "<?xml version=\"1.0\"?>" << endl;
   os << "<!DOCTYPE PROFILE [\n" << PROFILEdtd << "]>" << endl;
   os.flush();
 }
 
-void DumpProfileFooter(ostream& os)
+void 
+ProfileWriter::DumpProfileFooter(ostream& os)
 {
   /* nothing to do */
 }
 
 // Output should be in increasing order by line number.
-void DumpFuncLineMap(ostream& os, LineToPCProfileVecMap& map,
-		     PCProfile* profData, const char* func, const char* file)
+void 
+DumpFuncLineMap(ostream& os, LineToPCProfileVecMap& map, 
+		DerivedProfile* profData, const char* func, const char* file)
 {
-  // 'func' will be different than the last call; 'file' may be the same
-  static String theFile; // initializes to empty string
-
-  if (strcmp(theFile, file) != 0) {
-    // close and begin new file
-    // (but don't close if this is the first time (theFile is empty)...
-  }
-
   static const char* I[] = { "", // Indent levels (0 - 5)
 			     "  ",
 			     "    ",
 			     "      ",
 			     "        ",
 			     "          " };
+
+  if (map.size() == 0) { return; }
   
   os << I[1] << "<F n";  WriteAttrStr(os, file); os << ">\n";
-  
-  // Output 'func'
   os << I[2] << "<P n";  WriteAttrStr(os, func); os << ">\n";
     
   LineToPCProfileVecMapIt it;
@@ -299,12 +428,54 @@ void DumpFuncLineMap(ostream& os, LineToPCProfileVecMap& map,
     PCProfileVec* vec = (*it).second;
     
     os << I[3] << "<S b"; WriteAttrNum(os, srcLn->GetSrcLine());
-    os << " id";     WriteAttrNum(os, srcLn->GetSrcLineX());
+    os << " id";          WriteAttrNum(os, srcLn->GetSrcLineX());
     os << ">\n";
     for (suint i = 0; i < vec->GetSz(); ++i) {
       if ( (*vec)[i] != 0 ) {
-	PCProfileMetric* e = profData->GetMetric(i);
-	double v = (double)(*vec)[i] * (double)e->GetPeriod();
+	const DerivedProfileMetric* dm = profData->GetMetric(i);
+	double v = (double)(*vec)[i] * (double)dm->GetPeriod();
+	
+	os << I[4] << "<M n"; WriteAttrNum(os, i);
+	os << " v";   WriteAttrNum(os, v);
+	os << "/>\n";
+      }
+    }
+    os << I[3] << "</S>" << endl;
+  }
+
+  os << I[2] << "</P>" << endl;
+  os << I[1] << "</F>\n";
+}
+
+// Output should be in increasing order by line number.
+void 
+DumpFuncLineMap_old(ostream& os, LineToPCProfileVecMap& map,
+		    PCProfile* profData, const char* func, const char* file)
+{
+  static const char* I[] = { "", // Indent levels (0 - 5)
+			     "  ",
+			     "    ",
+			     "      ",
+			     "        ",
+			     "          " };
+
+  if (map.size() == 0) { return; }
+  
+  os << I[1] << "<F n";  WriteAttrStr(os, file); os << ">\n";
+  os << I[2] << "<P n";  WriteAttrStr(os, func); os << ">\n";
+    
+  LineToPCProfileVecMapIt it;
+  for (it = map.begin(); it != map.end(); ++it) {
+    SrcLineX* srcLn = (*it).first;
+    PCProfileVec* vec = (*it).second;
+    
+    os << I[3] << "<S b"; WriteAttrNum(os, srcLn->GetSrcLine());
+    os << " id";          WriteAttrNum(os, srcLn->GetSrcLineX());
+    os << ">\n";
+    for (suint i = 0; i < vec->GetSz(); ++i) {
+      if ( (*vec)[i] != 0 ) {
+	const PCProfileMetric* m = profData->GetMetric(i);
+	double v = (double)(*vec)[i] * (double)m->GetPeriod();
 	
 	os << I[4] << "<M n"; WriteAttrNum(os, i);
 	os << " v";   WriteAttrNum(os, v);

@@ -37,62 +37,70 @@
 //***************************************************************************
 //
 // File:
-//    ProfileReader.h
+//    DCPIProfileMetric.h
 //
 // Purpose:
 //    [The purpose of this file]
 //
 // Description:
-//    [The set of functions, macros, etc. defined in the file]
+//    See, in particular, the comments associated with 'DCPIProfile'.
 //
 //***************************************************************************
 
-#ifndef ProfileReader_H 
-#define ProfileReader_H
+#ifndef DCPIProfileMetric_H 
+#define DCPIProfileMetric_H
 
 //************************* System Include Files ****************************
 
-#include <iostream>
-#include <fstream>
+#include "inttypes.h"
 
 //*************************** User Include Files ****************************
 
 #include <include/general.h>
 
-#include <lib/support/String.h> 
+#include "PCProfile.h"
+#include "DCPIProfileFilter.h"
+
+#include <lib/ISA/ISATypes.h>
 
 //*************************** Forward Declarations ***************************
 
-class PCProfile;
-class DCPIProfile;
+//****************************************************************************
+// DCPIProfileMetric
+//****************************************************************************
+
+// 'DCPIProfileMetric' extensions to 'PCProfileMetric' for precisely
+// representing DCPI metrics.
+class DCPIProfileMetric : public PCProfileMetric {
+public:
+  // A metric can be created from a 'DCPIMetricDesc' or a string that
+  // will be used to create a 'DCPIMetricDesc'.
+  DCPIProfileMetric() { }
+  DCPIProfileMetric(const char* name) : desc(name) { }
+  DCPIProfileMetric(const DCPIMetricDesc& x) : desc(x) { }
+
+  ~DCPIProfileMetric() { }
+  
+  // GetDCPIDesc: 
+  const DCPIMetricDesc& GetDCPIDesc() const { return desc; }
+  void SetDCPIDesc(const DCPIMetricDesc& x) { 
+    desc = x; 
+  }
+  
+  void Dump(std::ostream& o = std::cerr);
+  void DDump();
+  
+private:
+  // Should not be used  
+  DCPIProfileMetric(const DCPIProfileMetric& m) { }
+  DCPIProfileMetric& operator=(const DCPIProfileMetric& m) { return *this; }
+  
+protected:
+private:  
+  DCPIMetricDesc desc;
+};
 
 //****************************************************************************
 
-// 'ProfileReader' is just a helpful container for all
-// profile-file-reading-functions.  It has no state and should never
-// be instantiated by a user; rather use the globally instantiated
-// variable below.
-class ProfileReader
-{
-public:
-  static PCProfile* ReadProfileFile(const char* profFile /* FIXME: type */);
-
-private: 
-  // These functions should only be called by `ReadProfileFile'
-
-  // ------------------------------------------------------------------------
-  //  DCPI (Alpha/OSF1)
-  // ------------------------------------------------------------------------
-  static DCPIProfile* ReadProfileFile_DCPICat(std::istream& pFile);
-  
-  // ------------------------------------------------------------------------
-  //  SGI/MIPS/IRIX
-  // ------------------------------------------------------------------------
-
-  // ------------------------------------------------------------------------
-  //  Sun/SPARC/SunOS
-  // ------------------------------------------------------------------------
-
-};
-
 #endif 
+

@@ -37,57 +37,109 @@
 //***************************************************************************
 //
 // File:
-//    ProfileWriter.h
+//    DCPIProfile.h
 //
 // Purpose:
 //    [The purpose of this file]
 //
 // Description:
-//    [The set of functions, macros, etc. defined in the file]
+//    See, in particular, the comments associated with 'DCPIProfile'.
 //
 //***************************************************************************
 
-#ifndef ProfileWriter_H 
-#define ProfileWriter_H
+#ifndef DCPIProfile_H 
+#define DCPIProfile_H
 
 //************************* System Include Files ****************************
 
-#include <fstream>
+#include <vector>
+#include <map>
+
+#include "inttypes.h"
 
 //*************************** User Include Files ****************************
 
 #include <include/general.h>
 
-#include <lib/binutils/PCToSrcLineMap.h>
-#include <lib/binutils/LoadModuleInfo.h>
+#include "PCProfile.h"
+#include "DCPIProfileMetric.h"
+#include "DCPIProfileFilter.h"
+
+#include <lib/ISA/ISATypes.h>
+#include <lib/support/String.h>
+#include <lib/support/Assertion.h>
 
 //*************************** Forward Declarations ***************************
 
-class PCProfile; // FIXME (remove)
-class DerivedProfile;
-class Executable;
-
+//****************************************************************************
+// DCPIProfile
 //****************************************************************************
 
-// FIXME: to remove
-void DumpAsPROFILE(std::ostream& os, PCProfile* profData,
-		   LoadModuleInfo* modInfo);
-
-class ProfileWriter
+// 'DCPIProfile' extensions to 'PCProfile' for representing data
+// resulting from DEC/Compaq/HP DCPI profiles (including ProfileMe).
+class DCPIProfile : public PCProfile
 {
 public:
-  static void WriteProfile(std::ostream& os, DerivedProfile* profData,
-			   LoadModuleInfo* modInfo);
+  DCPIProfile(suint sz = 200);
+  virtual ~DCPIProfile();
+ 
+  // Access to 'DCPIProfileMetric' (includes casts)
+  const DCPIProfileMetric* DCPIGetMetric(suint i) const { 
+    return dynamic_cast<const DCPIProfileMetric*>(Index(i)); 
+  }
+  void SetDCPIMetric(suint i, DCPIProfileMetric* m) { Assign(i, m); }
+ 
+  void Dump(std::ostream& o = std::cerr);
+  void DDump(); 
   
-  // FIXME
-  friend void DumpAsPROFILE(std::ostream& os, PCProfile* profData,
-		   LoadModuleInfo* modInfo);
-
 private:
-  static void DumpProfileHeader(std::ostream& os);
-  static void DumpProfileFooter(std::ostream& os);
+  // Should not be used 
+  DCPIProfile(const DCPIProfile& p) { }
+  DCPIProfile& operator=(const DCPIProfile& p) { return *this; }
+  
+  friend class DCPIProfileMetricSetIterator;
+  
+protected:
+private:
+  
+};
+
+// 'DCPIProfileMetricSetIterator' iterates over all 'DCPIProfileMetric'
+// within a 'DCPIProfile'.
+class DCPIProfileMetricSetIterator
+{
+public:
+  DCPIProfileMetricSetIterator(const DCPIProfile& x) 
+    : p(x), it(x) { }
+  virtual ~DCPIProfileMetricSetIterator() { }
+  
+  DCPIProfileMetric* Current() { 
+    return dynamic_cast<DCPIProfileMetric*>(it.Current()); 
+  }
+  
+  void operator++()    { it++; } // prefix
+  void operator++(int) { ++it; } // postfix
+  
+  bool IsValid() const { return it.IsValid(); }
+  bool IsEmpty() const { return it.IsEmpty(); }
+  
+  // Reset and prepare for iteration again
+  void Reset()  { it.Reset(); }
+  
+private:
+  // Should not be used  
+  DCPIProfileMetricSetIterator();
+  DCPIProfileMetricSetIterator(const DCPIProfileMetricSetIterator& x);
+  DCPIProfileMetricSetIterator& operator=(const DCPIProfileMetricSetIterator& x) 
+    { return *this; }
+  
+protected:
+private:
+  const DCPIProfile& p;
+  PCProfileMetricSetIterator it;
 };
 
 //****************************************************************************
 
 #endif 
+

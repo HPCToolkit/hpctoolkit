@@ -37,7 +37,7 @@
 //***************************************************************************
 //
 // File:
-//    ProfileReader.h
+//    DCPIProfile.C
 //
 // Purpose:
 //    [The purpose of this file]
@@ -47,52 +47,44 @@
 //
 //***************************************************************************
 
-#ifndef ProfileReader_H 
-#define ProfileReader_H
-
 //************************* System Include Files ****************************
 
 #include <iostream>
-#include <fstream>
 
 //*************************** User Include Files ****************************
 
-#include <include/general.h>
-
-#include <lib/support/String.h> 
+#include "DCPIProfile.h"
 
 //*************************** Forward Declarations ***************************
 
-class PCProfile;
-class DCPIProfile;
+using std::endl;
+using std::hex;
+using std::dec;
 
 //****************************************************************************
+// DCPIProfile
+//****************************************************************************
 
-// 'ProfileReader' is just a helpful container for all
-// profile-file-reading-functions.  It has no state and should never
-// be instantiated by a user; rather use the globally instantiated
-// variable below.
-class ProfileReader
+DCPIProfile::DCPIProfile(suint sz)
+  : PCProfile(sz)
 {
-public:
-  static PCProfile* ReadProfileFile(const char* profFile /* FIXME: type */);
+}
 
-private: 
-  // These functions should only be called by `ReadProfileFile'
+DCPIProfile::~DCPIProfile()
+{
+}
 
-  // ------------------------------------------------------------------------
-  //  DCPI (Alpha/OSF1)
-  // ------------------------------------------------------------------------
-  static DCPIProfile* ReadProfileFile_DCPICat(std::istream& pFile);
-  
-  // ------------------------------------------------------------------------
-  //  SGI/MIPS/IRIX
-  // ------------------------------------------------------------------------
+void 
+DCPIProfile::Dump(std::ostream& o)
+{
+  o << "'DCPIProfile' --\n";
+  PCProfile::Dump(o);
+}
 
-  // ------------------------------------------------------------------------
-  //  Sun/SPARC/SunOS
-  // ------------------------------------------------------------------------
+void 
+DCPIProfile::DDump()
+{
+  Dump(std::cerr);
+}
 
-};
-
-#endif 
+//****************************************************************************

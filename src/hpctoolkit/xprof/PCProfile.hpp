@@ -53,17 +53,14 @@
 //************************* System Include Files ****************************
 
 #include <vector>
-#include <map>
-
-#ifdef NO_STD_CHEADERS
-# include <limits.h>
-#else
-# include <climits>
-#endif
+#include <list>
 
 //*************************** User Include Files ****************************
 
 #include <include/general.h>
+
+#include "PCProfileMetric.h"
+#include "PCProfileFilter.h"
 
 #include <lib/ISA/ISATypes.h>
 #include <lib/support/String.h>
@@ -71,10 +68,222 @@
 
 //*************************** Forward Declarations ***************************
 
-// 'PCProfileDatum' holds a single profile count or statistic. 
-typedef unsigned long PCProfileDatum; 
-const PCProfileDatum  PCProfileDatum_NIL = ULONG_MAX;
+// Some useful containers
+typedef std::list<PCProfileMetric*>         PCProfileMetricList;
+typedef PCProfileMetricList::iterator       PCProfileMetricListIt;
+typedef PCProfileMetricList::const_iterator PCProfileMetricListCIt;
 
+typedef std::vector<PCProfileMetric*>      PCProfileMetricVec;
+typedef PCProfileMetricVec::iterator       PCProfileMetricVecIt;
+typedef PCProfileMetricVec::const_iterator PCProfileMetricVecCIt;
+
+typedef std::vector<Addr>     PCVec;
+typedef PCVec::iterator       PCVecIt;
+typedef PCVec::const_iterator PCVecCIt;
+
+//****************************************************************************
+// PCProfileMetricSet
+//****************************************************************************
+
+// 'PCProfileMetricSet' is a set of PCProfileMetrics.  It can be used
+// to represent all metrics in raw profile data or some collection of
+// raw metrics forming a derived metric.  Filters can be applied to
+// yield a new set.
+class PCProfileMetricSet
+{
+private:
+  
+public:
+  PCProfileMetricSet(suint sz = 16); // reserves at least 'sz' slots
+  virtual ~PCProfileMetricSet(); 
+  
+  // Access to metrics (0-based).  When a set is created, space for
+  // slots is only reserved.  To add slots, one must use 'Add' or
+  // 'SetSz'.  Once slots exist, they can be randomly accessed via
+  // 'Assign' and 'operator[]'.
+  const PCProfileMetric* Index(suint i) const { return metricVec[i]; }
+  const PCProfileMetric* operator[](suint i) const { return metricVec[i]; }
+
+  void Assign(suint i, const PCProfileMetric* m) { 
+    metricVec[i] = const_cast<PCProfileMetric*>(m); // assume ownership of m
+  }
+  PCProfileMetric*& operator[](suint i) { return metricVec[i]; }
+
+  void Add(const PCProfileMetric* m) {
+    metricVec.push_back(const_cast<PCProfileMetric*>(m));
+  }
+
+  suint GetSz() const { return metricVec.size(); }
+  void SetSz(suint sz) { metricVec.resize(sz); }  
+
+  void Clear() { metricVec.clear(); }
+
+  // DataExists(): Does non-NIL data exist for some metric at
+  // PC value 'pc'?  If yes, returns the index of the first metric
+  // with non-nil data (forward iteration from 0 to size);
+  // otherwise, returns negative.
+  sint DataExists(Addr pc) const;
+
+  // Filter(): Returns a new, non-null but possibly empty, set of
+  // metrics that pass the filter (i.e., every metric metric 'm' for
+  // which 'filter' returns true.)  User becomes responsible for
+  // freeing memory.
+  PCProfileMetricSet* Filter(MetricFilter* filter) const;
+  
+  void Dump(std::ostream& o = std::cerr);
+  void DDump(); 
+  
+private:
+  // Should not be used 
+  PCProfileMetricSet(const PCProfileMetricSet& p) { }
+  PCProfileMetricSet& operator=(const PCProfileMetricSet& p) { return *this; }
+
+  friend class PCProfileMetricSetIterator;
+  
+protected:
+private:
+  
+  // We lie a little about this being a 'set' and use a vector for
+  // implementation.  Set indexing (random access) may be convenient;
+  // and any possible resizing should be cheap b/c these sets should
+  // be relatively small.
+  PCProfileMetricVec metricVec;
+};
+
+
+// 'PCProfileMetricSetIterator' iterates over all 'PCProfileMetric'
+// within a 'PCProfile'.
+class PCProfileMetricSetIterator
+{
+public:
+  PCProfileMetricSetIterator(const PCProfileMetricSet& x) : s(x) {
+    Reset();
+  }
+  virtual ~PCProfileMetricSetIterator() { }
+
+  PCProfileMetric* Current() const { return (*it); }
+
+  void operator++()    { it++; } // prefix
+  void operator++(int) { ++it; } // postfix
+
+  bool IsValid() const { return it != s.metricVec.end(); } 
+  bool IsEmpty() const { return it == s.metricVec.end(); }
+
+  // Reset and prepare for iteration again
+  void Reset()  { it = s.metricVec.begin(); }
+  
+private:
+  // Should not be used 
+  PCProfileMetricSetIterator();
+  PCProfileMetricSetIterator(const PCProfileMetricSetIterator& x);
+  PCProfileMetricSetIterator& operator=(const PCProfileMetricSetIterator& x) 
+    { return *this; }
+
+protected:
+private:
+  const PCProfileMetricSet& s;
+  PCProfileMetricVecCIt it;
+};
+
+//****************************************************************************
+// PCProfile
+//****************************************************************************
+
+// 'PCProfile' represents data resulting from one or more different
+// profile runs.  A 'PCProfile' is a 'PCProfileMetricSet' and
+// consequently contains a set of metrics, each with their own
+// [pc->count] map.  'PCProfile' is abstract enough to represent
+// profile data from event-sampling systems such as SGI's ssrun or
+// instruction-sampling systems such as DEC/Compaq/HP's DCPI
+// ProfileMe.
+//
+// Because each metric contains its own sparse [pc->count] map (0
+// counts are not recorded) it is difficult to know in advance for
+// which PCs there is a non-zero count for at least one metric.
+// Because of this, a 'PCProfile' also contains a list of PCs at which
+// at least one metric contains non-zero counts.
+//
+// Note: all metrics for one profile should have identical values for 
+// PCProfileMetric::GetTxtStart() and PCProfileMetric::GetTxtSz()
+class PCProfile : public PCProfileMetricSet
+{
+public:
+  PCProfile(suint sz = 16);
+  virtual ~PCProfile();
+  
+  // ProfiledFile: the name of the profiled program image
+  // HdrInfo: a copy of the unparsed header info. 
+  const char* GetProfiledFile() const { return profiledFile; }
+  const char* GetHdrInfo()      const { return fHdrInfo; }
+  
+  void SetProfiledFile(const char* s)  { profiledFile = s; }
+  void SetHdrInfo(const char* s)       { fHdrInfo = s; }
+
+  // Access to metrics (redundant)
+  const PCProfileMetric* GetMetric(suint i) const { return Index(i); }
+  void SetMetric(suint i, const PCProfileMetric* m) { Assign(i, m); }
+  void AddMetric(const PCProfileMetric* m) { Add(m); }
+  suint GetNumMetrics() const { return GetSz(); }
+  void SetNumMetrics(suint sz) { SetSz(sz); }
+
+  // Access to PCs containing non-zero profiling info
+  suint GetNumPCs() { return pcVec.size(); }
+  void AddPC(Addr pc); // be careful: should be no duplicates
+
+  void Dump(std::ostream& o = std::cerr);
+  void DDump(); 
+  
+private:
+  // Should not be used 
+  PCProfile(const PCProfile& p) { }
+  PCProfile& operator=(const PCProfile& p) { return *this; }
+  
+  friend class PCProfile_PCIterator;
+
+protected:
+private:
+  String profiledFile; // name of profiled file
+  String fHdrInfo;     // unparsed file header info
+
+  PCVec pcVec; // PCs for which some metric has non-zero data
+};
+
+
+// PCProfile_PCIterator
+class PCProfile_PCIterator
+{
+public:
+  PCProfile_PCIterator(const PCProfile& x) : p(x) {
+    Reset();
+  }
+  virtual ~PCProfile_PCIterator() { }
+
+  Addr Current() const { return (*it); }
+
+  void operator++()    { it++; } // prefix
+  void operator++(int) { ++it; } // postfix
+
+  bool IsValid() const { return it != p.pcVec.end(); } 
+  bool IsEmpty() const { return it == p.pcVec.end(); }
+
+  // Reset and prepare for iteration again
+  void Reset()  { it = p.pcVec.begin(); }
+  
+private:
+  // Should not be used 
+  PCProfile_PCIterator();
+  PCProfile_PCIterator(const PCProfile_PCIterator& x);
+  PCProfile_PCIterator& operator=(const PCProfile_PCIterator& x) 
+    { return *this; }
+
+protected:
+private:
+  const PCProfile& p;
+  PCVecCIt it;
+};
+
+//****************************************************************************
+// PCProfileVec
 //****************************************************************************
 
 // 'PCProfileVec' is a vector of 'PCProfileDatum.'  A value can be
@@ -87,7 +296,7 @@ class PCProfileVec
 {
 public:
   PCProfileVec(suint sz);
-  ~PCProfileVec() { }
+  virtual ~PCProfileVec() { }
 
   suint GetDatum() const { return datum; }
   suint GetSz()    const { return vec.size(); }
@@ -114,174 +323,4 @@ private:
 };
 
 
-//****************************************************************************
-
-class PCProfileMetric;
-
-// 'PCProfile' can represent data resulting from many different types
-// of profile runs.  A 'PCProfile' contains one or more metrics
-// ('PCProfileMetric') that represent interesting things that can be
-// profiled at runtime.  Given a metric, a 'PCProfile' associates
-// profile counts or statistics with a particular PC value.  Thus, a
-// 'PCProfile' can be used to represent profile data from
-// event-sampling systems such as SGI's ssrun or more sophisticated
-// instruction-sampling systems such as Compaq's DCPI ProfileMe.
-
-// Note: If one 'PCProfileMetric' in a 'PCProfile' has an entry at
-// PC, then every other 'PCProfileMetric' should have an entry for PC
-// (even if the entry is 0).
-class PCProfile
-{
-public:
-  ~PCProfile(); 
-
-  const char*    GetProfiledFile() const { return profiledFile; }
-  const char*    GetHdrInfo()      const { return fHdrInfo; }
-  PCProfileDatum GetTotalCount()   const { return totalCount; }
-
-  void SetProfiledFile(const char* s)  { profiledFile = s; }
-  void SetHdrInfo(const char* s)       { fHdrInfo = s; }
-  void SetTotalCount(PCProfileDatum d) { totalCount = d; }
-
-  suint            GetMetricVecSz()   const { return metricVec.size(); }
-  PCProfileMetric* GetMetric(suint i) const { return metricVec[i]; }
-
-  void Dump(std::ostream& o = std::cerr);
-  void DDump(); 
-  
-private:
-  // Should not be used 
-  PCProfile() { }
-  PCProfile(const PCProfile& p) { }
-  PCProfile& operator=(const PCProfile& p) { return *this; }
-
-  // Restrict usage
-  PCProfile(suint sz);
-  void SetEvent(suint i, PCProfileMetric* m) { 
-    metricVec[i] = m; // assume ownership of m
-  }
-
-  friend class ProfileReader; 
-  
-protected:
-private:
-  String profiledFile;       // name of profiled file
-  String fHdrInfo;           // unparsed file header info
-
-  PCProfileDatum totalCount; // sum of metric counts
-  
-  std::vector<PCProfileMetric*> metricVec;
-};
-
-//****************************************************************************
-
-// 'PCProfileMetric' defines a profiling metric and all raw data resulting
-// from one profiling run.
-// see: 'PCProfileMetricIterator' 
-class PCProfileMetric
-{
-private:
-  typedef std::map<Addr, PCProfileDatum>             PCToPCProfileDatumMap;
-  typedef std::map<Addr, PCProfileDatum>::value_type PCToPCProfileDatumMapVal;
-  typedef std::map<Addr, PCProfileDatum>::iterator   PCToPCProfileDatumMapIt;
-  typedef std::map<Addr, PCProfileDatum>::const_iterator 
-    PCToPCProfileDatumMapCIt;
-
-public:
-  ~PCProfileMetric() { }
-
-  // Name, Description: The metric name and a description
-  // TotalCount: The sum of all raw data for this metric
-  // Period: The sampling period (whether event or instruction based)
-  // TxtStart, TxtSz: Beginning of the text segment and the text segment size
-  const char*    GetName()        const { return name; }
-  const char*    GetDescription() const { return description; }
-  PCProfileDatum GetTotalCount()  const { return total; }
-  unsigned int   GetPeriod()      const { return period; }
-  Addr           GetTxtStart()    const { return txtStart; }
-  Addr           GetTxtSz()       const { return txtSz; }
-  
-  void SetName(const char* s)          { name = s; }
-  void SetDescription(const char* s)   { description = s; }
-  void SetTotalCount(PCProfileDatum d) { total = d; }
-  void SetPeriod(unsigned int p)       { period = p; }
-  void SetTxtStart(Addr a)             { txtStart = a; }
-  void SetTxtSz(Addr a)                { txtSz = a; }
-
-  // 'GetSz': The number of entries (note: this is not necessarily the
-  // number of PCs in the text segment).
-  suint          GetSz() const         { return map.size(); }
-
-  // find/insert by PC value (GetTxtStart() <= PC <= GetTxtStart()+GetTxtSz())
-  // 'Find': return datum for 'pc'
-  PCProfileDatum Find(suint pc) {
-    PCToPCProfileDatumMapIt it = map.find(pc);
-    if (it == map.end()) { return PCProfileDatum_NIL; } 
-    else { return ((*it).second); }
-  }
-  void Insert(suint pc, PCProfileDatum& d) {
-    BriefAssertion(d != PCProfileDatum_NIL);
-    map.insert(PCToPCProfileDatumMapVal(pc, d)); // do not add duplicates!
-  }
-
-  void Dump(std::ostream& o = std::cerr);
-  void DDump(); 
-
-private:
-  // Should not be used  
-  PCProfileMetric(const PCProfileMetric& m) { }
-  PCProfileMetric& operator=(const PCProfileMetric& m) { return *this; }
-
-  // Restrict usage
-  PCProfileMetric()
-    : total(0), period (0), txtStart(0), txtSz(0)
-  { /* map does not need to be initialized */ }
-  
-  friend class ProfileReader;
-  friend class PCProfileMetricIterator;
-  
-protected:
-private:  
-  String name;
-  String description;
-  
-  PCProfileDatum total;    // sum across all pc values recorded for this event
-  unsigned int   period;   // sampling period
-  Addr           txtStart; // beginning of text segment 
-  Addr           txtSz;    // size of text segment
-  
-  PCToPCProfileDatumMap map; // map of sampling data
-};
-
-// 'PCProfileMetricIterator' iterates over a 'PCProfileMetric'
-class PCProfileMetricIterator
-{
-public:
-  PCProfileMetricIterator(const PCProfileMetric* m_) : m(m_) {
-    Reset();
-  }
-
-  void Reset()  { it = m->map.begin(); }
-  bool IsDone() { return (it == m->map.end()); }
-  
-  Addr           CurrentSrc()    { return (*it).first; }
-  PCProfileDatum CurrentTarget() { return (*it).second; }
-  
-  void operator++()    { it++; } // prefix
-  void operator++(int) { ++it; } // postfix
-  
-private:
-  // Should not be used  
-  PCProfileMetricIterator() { }
-  PCProfileMetricIterator(const PCProfileMetricIterator& _m) { }
-  PCProfileMetricIterator& operator=(const PCProfileMetricIterator& _m) 
-  { return *this; }
-
-protected:
-private:
-  const PCProfileMetric* m;
-  PCProfileMetric::PCToPCProfileDatumMapCIt it;
-};
-
 #endif 
-

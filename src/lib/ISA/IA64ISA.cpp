@@ -177,7 +177,7 @@ IA64ISA::GetInstTargetAddr(MachInst* mi, Addr pc, ushort opIndex,
 
   /* The target field is only set on instructions with targets.  */
   if (di->target != 0) {
-    return (bfd_vma)di->target + (bfd_vma)(pc & ~0xf);
+    return (bfd_vma)di->target + (bfd_vma)pc;
   } else {
     return 0;
   }
