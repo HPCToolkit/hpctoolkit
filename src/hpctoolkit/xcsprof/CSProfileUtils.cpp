@@ -106,23 +106,29 @@ WriteCSProfile(CSProfile* prof, std::ostream& os, bool prettyPrint)
   CSProfileMetric* metric = prof->GetMetric();
   os << "<CSPROFILE version=\"1.0\">\n";
   os << "<CSPROFILEHDR>\n</CSPROFILEHDR>\n";
-  os << "<CSPROFILEPARAMS>\n";
-  {
-    os << "<TARGET name"; WriteAttrStr(os, prof->GetTarget()); os << "/>\n";
-    
-    os << "<METRIC shortName"; WriteAttrNum(os, 0);
-    os << " nativeName";       WriteAttrNum(os, metric->GetName());
-    os << " period";           WriteAttrNum(os, metric->GetPeriod());
-    os << "/>\n";
 
-    os << "</CSPROFILEPARAMS>\n";
+  {
+  	os << "<CSPROFILEPARAMS>\n";
+  	os << "<TARGET name"; WriteAttrStr(os, prof->GetTarget()); os << "/>\n";
+    
+  	os << "<METRIC shortName"; WriteAttrNum(os, 0);
+  	os << " nativeName";       WriteAttrNum(os, metric->GetName());
+  	os << " period";           WriteAttrNum(os, metric->GetPeriod());
+  	os << "/>\n";
+
+  	os << "</CSPROFILEPARAMS>\n";
   }
+
+
   os.flush();
   
   int dumpFlags = (CSProfTree::XML_TRUE); // CSProfTree::XML_NO_ESC_CHARS
   if (!prettyPrint) { dumpFlags |= CSProfTree::COMPRESSED_OUTPUT; }
   
   prof->GetTree()->Dump(os, dumpFlags);
+
+  os << "</CSPROFILE>\n";
+  os.flush();
 }
 
 bool 
