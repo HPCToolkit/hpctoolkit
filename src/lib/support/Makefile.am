@@ -92,6 +92,7 @@ MYSOURCES = \
 	VectorTmpl.h VectorTmpl.C \
 	WordSet.h WordSet.C \
 	bstring.h \
+	findinstall.h findinstall.c \
 	pathfind.h pathfind.C \
 	realpath.h realpath.c
 
