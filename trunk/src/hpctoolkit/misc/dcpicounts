@@ -61,7 +61,7 @@ STDOUT->autoflush(1);
 
 
 my $usage = 
-"usage: dcpicount <path to dcpidb_epoch_platform>
+"usage: dcpicounts <path to dcpidb_epoch_platform>
 
 Given the path to one collection of dcpi binary data, prints total
 cycles (if available) for each image.  The dcpi binary data is located
