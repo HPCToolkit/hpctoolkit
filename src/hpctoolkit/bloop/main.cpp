@@ -56,7 +56,7 @@ using std::cerr;
 
 //************************ OpenAnalysis Include Files ***********************
 
-#include <OpenAnalysis/Utils/Exception.h>
+#include <OpenAnalysis/Utils/Exception.hpp>
 
 //*************************** User Include Files ****************************
 
@@ -88,7 +88,7 @@ main(int argc, char* argv[])
     e.Report(cerr); // fatal error
     exit(1);
   }
-  catch (Exception& e /* OpenAnalysis -- should be in namespace */) {
+  catch (OA::Exception& e) {
     e.report(cerr);
     exit(1);
   }
