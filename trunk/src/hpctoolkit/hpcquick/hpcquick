@@ -911,7 +911,12 @@ sub canonicalizeProfileData
     if ( !(-e $x && -r $x) ) {
       UsageError("Invalid or non-existent profile file: '$x'\n");
     }
-
+    # test that the file has non-zero size (it is difficult to
+    # determine the file type of empty files)
+    if ( -z $x ) {
+      UsageError("Zero-sized profile file: '$x'\n");
+    }
+    
     # if we do not have a PROFILE file, canonicalize
     my $PROFILEFile = undef;
     my $rawFile = undef;
