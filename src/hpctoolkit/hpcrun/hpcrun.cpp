@@ -43,6 +43,12 @@
 #define LD_PRELOAD "LD_PRELOAD"
 #define HPCRUN_HOME "HPCRUN_HOME"
 
+typedef enum {
+  LIST_NONE  = 0, /* none */
+  LIST_SHORT,     /* 'short' */
+  LIST_LONG       /* 'long' */
+} event_list_t;
+
 #define eventlistBufSZ PATH_MAX
 
 /* Options that will be passed to profiling library */
@@ -54,7 +60,7 @@ static const char* opt_debug = NULL;
 static char**      opt_command_argv = NULL; /* command to profile */
 
 /* Options that will be consumed here */
-static int myopt_list_events = 0; /* 0, 1, 2: none, short, long */
+static int myopt_list_events = LIST_NONE;
 static int myopt_debug = 0;
 
 static void
@@ -69,7 +75,7 @@ static int
 launch_and_profile(char* argv[]);
 
 static void 
-list_available_events(int listType);
+list_available_events(event_list_t listType);
 
 /****************************************************************************/
 
@@ -121,7 +127,7 @@ static const char* args_version_info =
 /* #include <include/HPCToolkitVersionInfo.h> */
 
 static const char* args_usage_summary1 =
-"[-r] [-e <event>...] [-p <period>] [-o <outpath>] [-f <flag>] -- <command> [args_to_command...]\n";
+"[-r] [-e <event>[:<period>]...] [-o <outpath>] [-f <flag>] -- <command> [arguments]\n";
 
 static const char* args_usage_summary2 =
 "[-l | -L] [-V] [-h]\n";
@@ -129,32 +135,35 @@ static const char* args_usage_summary2 =
 static const char* args_usage_details =
 "hpcrun profiles the execution of an arbitrary command using the PAPI\n"
 "profiling interface. During execution of <command>, the specified PAPI or\n"
-"native events will be monitored.\n"
+"native events will be monitored.  Given multiple events it can create\n"
+"multiple profile histograms during one run.\n"
 "\n"
-"Each <period> instances of the specified event, a counter associated with\n"
+"Each <period> instances of the specified <event>, a counter associated with\n"
 "the instruction at the current program counter location will be\n"
-"incremented. When <command> terminates normally, a profile (a histogram of\n"
-"counts for instructions in each load module) will be written to a file with\n"
-"name <command>.<event1>.<hostname>.<pid>.\n"
+"incremented. When <command> terminates normally, a profile -- a histogram\n"
+"of counts for instructions in each load module) will be written to a file\n"
+"with name <command>.<event1>.<hostname>.<pid>.\n"
 "\n"
 "The special option '--' can be used to stop hpcrun option parsing.  This is\n"
 "especially useful when <command> takes arguments of its own.\n"
 "\n"
 "General Options:\n"
 "  -l           List PAPI and native events available on this architecture\n"
-"  -L           <currently the same as the above>\n"
+"  -L           Similar to above but with more information.\n"
 "  -V           Print version information.\n"
 "  -h           Print this help.\n"
 "\n"
-"Profiling Options: Defaults are shown in square brackets [].\n"
-"  -r           By default all processes spawned by <command> will be\n"
-"               profiled, each receiving its own output file. Use this\n"
-"               option to turn off recursive profiling; only <command> will\n"
-"               be profiled.\n"
-"  -e <event>   PAPI or native event to sample           [PAPI_TOT_CYCLES]\n"
-"  -p <period>  Sample period                            [2^15 - 1]\n"
-"  -o <outpath> Directory for output data                [.]\n"
-"  -f <flag>    Profile style flag                       [PAPI_POSIX_PROFIL]\n"
+"Profiling Options: Defaults are shown in curly brackets {}.\n"
+"  -r  By default all processes spawned by <command> will be profiled, each\n"
+"      receiving its own output file. Use this option to turn off recursive\n"
+"      profiling; only <command> will be profiled.\n"
+"  -e <event>[:<period>]                                {PAPI_TOT_CYC:32767}\n"
+"      An event to profile and its corresponding sample period.  <event>\n"
+"      may be either a PAPI or native processor event\n"
+"  -o <outpath>                                                          {.}\n"
+"      Directory for output data\n"
+"  -f <flag>                                             {PAPI_POSIX_PROFIL}\n"
+"      Profile style flag\n"
 "\n"
 "NOTES:\n"
 "* Because hpcrun uses LD_PRELOAD to initiate profiling it cannot be used\n"
@@ -391,19 +400,41 @@ check_and_prepare_env_for_profiling()
  *  src/ctests/avail.c) 
  */
 static void 
-list_available_events(int listType)
+list_available_events(event_list_t listType)
 {
-  /* Ensure PAPI is initialized */
+  if (listType == LIST_NONE) {
+    return;
+  }
+  
+  // -------------------------------------------------------
+  // Ensure PAPI is initialized
+  // -------------------------------------------------------
   init_papi();
 
   int i, count;
   int retval;
+  int isIntel, isP4;
   PAPI_event_info_t info;
   const PAPI_hw_info_t* hwinfo = NULL;
   static const char* separator_major = "\n=========================================================================\n\n";
   static const char* separator_minor = "-------------------------------------------------------------------------\n";
-  
-  /* Hardware information */
+
+  static const char* HdrPAPIShort = "Name\t\tDescription\n";
+  static const char* FmtPAPIShort = "%s\t%s\n";
+  static const char* HdrPAPILong = 
+    "Name\t\tDerived\tDescription (Implementation Note)\n";
+  static const char* FmtPAPILong = "%s\t%s\t%s (%s)\n";
+
+  static const char* HdrNtvShort = "Name\t\t\t\tDescription\n";
+  static const char* FmtNtvShort = "%-31s %s\n";
+  static const char* HdrNtvLong =  "Name\t\t\t\tDescription\n";
+  static const char* FmtNtvLong =  "%-31s %s\n";
+  static const char* FmtNtvGrp    = "* %-29s %s\n";
+  static const char* FmtNtvGrpMbr = "  %-29s %s\n";
+
+  // -------------------------------------------------------
+  // Hardware information
+  // -------------------------------------------------------
   if ((hwinfo = PAPI_get_hardware_info()) == NULL) {
     fprintf(stderr,"papirun: failed to set debug level. Aborting.\n");
     exit(-1);
@@ -424,45 +455,92 @@ list_available_events(int listType)
   printf("Max Multiplex Counters  : %d\n", PAPI_MPX_DEF_DEG);
   printf(separator_major);
 
-  /* PAPI events */
+  // -------------------------------------------------------
+  // PAPI events
+  // -------------------------------------------------------
   printf("*** Available PAPI preset events ***\n");
   printf(separator_minor);
-  printf("Name\t\tDerived\tDescription (Implementation Note)\n");
+  if (listType == LIST_SHORT) {
+    printf(HdrPAPIShort);
+  }
+  else if (listType == LIST_LONG) {
+    printf(HdrPAPILong);
+  }
   printf(separator_minor);
   i = 0 | PAPI_PRESET_MASK;
   count = 0;
   do {
-    int exists = (PAPI_query_event(i) == PAPI_OK &&
-		  PAPI_get_event_info(i, &info) == PAPI_OK);
-    if (exists) {
-      printf("%s\t%s\t%s (%s)\n",
-	     info.symbol,
-	     (info.count > 1 ? "Yes" : "No"),
-	     info.long_descr, 
-	     (info.vendor_name ? info.vendor_name : ""));
+    if (PAPI_get_event_info(i, &info) == PAPI_OK) {
+      if (listType == LIST_SHORT) {
+	printf(FmtPAPIShort, info.symbol, info.long_descr);
+      } 
+      else if (listType == LIST_LONG) {
+	printf(FmtPAPILong, 
+	       info.symbol, (info.count > 1 ? "Yes" : "No"),
+	       info.long_descr, (info.vendor_name ? info.vendor_name : ""));
+      }
       count++;
     }
-  } while (PAPI_enum_event(&i, PAPI_ENUM_ALL) == PAPI_OK);
+  } while (PAPI_enum_event(&i, PAPI_PRESET_ENUM_AVAIL) == PAPI_OK);
   printf("Total PAPI events reported: %d\n", count);
   printf(separator_major);  
+
+  // -------------------------------------------------------
+  // Native events
+  // -------------------------------------------------------
+
+  /* PAPI does not always correctly return a vendor id */
+  isIntel = (hwinfo->vendor == PAPI_VENDOR_INTEL || 
+	     (hwinfo->vendor_string && 
+	      strcmp(hwinfo->vendor_string, "GenuineIntel") == 0));
+  isP4 = isIntel && (hwinfo->model == 11 || hwinfo->model == 12
+		     || hwinfo->model == 16);
   
-  /* Native events */
-  printf("*** Available native events ***\n");  
+  printf("*** Available native events ***\n");
+  if (isP4) { printf("Note: Pentium IV listing is by event groups; group names (*) are not events.\n"); }
   printf(separator_minor);
-  printf("Name\t\t\t\tDescription\n");
+  if (listType == LIST_SHORT) { 
+    printf(HdrNtvShort); 
+  }
+  else if (listType == LIST_LONG) { 
+    printf(HdrNtvLong); 
+  }
   printf(separator_minor);
   i = 0 | PAPI_NATIVE_MASK;
   count = 0;
-  do {      
-    if (PAPI_get_event_info(i, &info) == PAPI_OK) {
-      const char* desc = info.long_descr;
-      if (strncmp(info.symbol, desc, strlen(info.symbol)) == 0) {
-	desc += strlen(info.symbol);
+  
+  if (isP4) {
+    /* Pentium IV special case */
+    do {
+      int j = i;
+      unsigned l = 0;
+      if (PAPI_get_event_info(i, &info) == PAPI_OK) {
+	printf(FmtNtvGrp, info.symbol, info.long_descr);
+	l = strlen(info.long_descr);
       }
-      printf("%-30s %s\n", info.symbol, desc);
-      count++;
-    }
-  } while (PAPI_enum_event(&i, PAPI_ENUM_ALL) == PAPI_OK);
+      while (PAPI_enum_event(&j, PAPI_PENT4_ENUM_BITS) == PAPI_OK) {
+	if (PAPI_get_event_info(j, &info) == PAPI_OK) {
+	  printf(FmtNtvGrpMbr, info.symbol, info.long_descr + l + 1);
+	  count++;
+	}
+      }
+    } while (PAPI_enum_event(&i, PAPI_PENT4_ENUM_GROUPS) == PAPI_OK);
+  }
+  else {
+    do {
+      if (PAPI_get_event_info(i, &info) == PAPI_OK) {
+	if (listType == LIST_SHORT || listType == LIST_LONG) {
+	  const char* desc = info.long_descr;
+	  if (strncmp(info.symbol, desc, strlen(info.symbol)) == 0) {
+	    desc += strlen(info.symbol);
+	  }
+	  printf(FmtNtvShort, info.symbol, desc);
+	} 
+	count++;
+      }
+    } while (PAPI_enum_event(&i, PAPI_ENUM_ALL) == PAPI_OK);
+  }
+  
   printf("Total native events reported: %d\n", count);
   printf(separator_major);
 }
