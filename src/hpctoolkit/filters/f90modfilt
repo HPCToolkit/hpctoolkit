@@ -56,7 +56,7 @@ opt_machine=""
 
 # Globals
 our_arch=`uname -p`
-if [ "$arch" = "unknown" ]; then
+if [ "$our_arch" = "unknown" ]; then
   our_arch=`uname -m`
 fi
 
