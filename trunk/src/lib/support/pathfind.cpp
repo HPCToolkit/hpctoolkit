@@ -172,7 +172,7 @@ pathfind_r (const char* pathList,
       strcat(pathList_r, ":"); // will have a trailing ':' for 'strchr'
     } else {
       // copy to non-recurisve path list
-      if (first_nr == 0) { strcat(pathList_nr, ":"); }      
+      if (first_nr == 0) { strcat(pathList_nr, ":"); }
       strcat(pathList_nr, aPath);
       first_nr = 0; // the first copy has been made
     }
@@ -187,7 +187,7 @@ pathfind_r (const char* pathList,
   if (result) { goto pathfind_r_fini; }
   
   /* 2. Try a pathfind on all recursive paths */
-  /* For every recursive path... (cannot use 'strtok' because of recursion */
+  /* For every recursive path... (cannot use 'strtok' because of recursion) */
   aPath = pathList_r;       // beginning of token string
   sep = strchr(aPath, ':'); // end of token
   while (sep != NULL) {
