@@ -23,6 +23,10 @@
 /************************** System Include Files ****************************/
 
 #include <stdio.h>
+#include <inttypes.h>
+
+#include <sys/time.h>    /* for sprofil() */
+#include <sys/profil.h>  /* for sprofil() */
 
 /**************************** Forward Declarations **************************/
 
@@ -50,9 +54,19 @@
   { fputs("hpcrun", stderr);                                          \
     if (HPCRUN_DBG_LVL) {                                             \
       fprintf(stderr, " [%s:%d]", __FILE__, __LINE__); }              \
-    fprintf(stderr,": (process %d) ", getpid()); fprintf(stderr, __VA_ARGS__); fputs("\n", stderr); }
+    fprintf(stderr," (process %d): ", getpid()); fprintf(stderr, __VA_ARGS__); fputs("\n", stderr); }
 
 #define DIE(...) ERRMSG(__VA_ARGS__); { exit(1); }
+
+/**************************** Forward Declarations **************************/
+
+/* Special system supported events */
+
+#define HPCRUN_EVENT_WALLCLK_STR     "WALLCLK"
+#define HPCRUN_EVENT_WALLCLK_STRLN   7
+
+#define HPCRUN_EVENT_FWALLCLK_STR    "FWALLCLK"
+#define HPCRUN_EVENT_FWALLCLK_STRLN  8
 
 /**************************** Forward Declarations **************************/
 
@@ -117,6 +131,33 @@
       <string_length>
       <string_without_terminator>
  */
+
+
+/**************************** Forward Declarations **************************/
+
+// hpcrun_profile_desc_t: Collects all information to describe system
+// based (i.e. non-PAPI) profiles, e.g. a call to sprofil().
+typedef struct {
+  /* currently we only have one type of system prof.  If we ever need
+     more we can add a prof-type field */ 
+  char*             ename;       // event name
+  uint64_t          period;      // sampling period
+  //struct timeval*   tval;      // contains info after a call to sprofil()
+  unsigned int      flags;       // profiling flags
+  
+  unsigned int      bytesPerCodeBlk; // bytes per block of monitored code
+  unsigned int      bytesPerCntr;    // bytes per histogram counter
+  unsigned int      scale;           // relationship between the two
+  
+  struct prof*      sprofs;      // vector of histogram buffers, one for each
+  unsigned int      numsprofs;   //   run time load module
+} hpcrun_profile_desc_t;
+
+// hpcrun_profile_desc_vec_t: A vector of hpcrun_profile_desc_t.
+typedef struct {
+  unsigned int           size; // vector size
+  hpcrun_profile_desc_t* vec;  // one for each profile
+} hpcrun_profile_desc_vec_t;
 
 
 /**************************** Forward Declarations **************************/
