@@ -80,7 +80,8 @@ hpcpapi_flag_by_name(const char *name);
 /**************************** Forward Declarations **************************/
 
 // hpcpapi_profile_desc_t: Collects all information to describe one
-// call to PAPI_sprofil(). 
+// call to PAPI_sprofil().  Note that the segmented-profile buffers
+// will correspond to data in the run-time-load-map.
 typedef struct {
   PAPI_event_info_t einfo;       // PAPI's info for the event
   int               ecode;       // PAPI's event code
