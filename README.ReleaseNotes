@@ -9,7 +9,7 @@ $Id$
 =============================================================================
 
 This file contains release notes and highlights the history of
-revisions to HPCTools.
+revisions to HPCToolkit.
 
 Contents:
   0. Current Notes
@@ -27,7 +27,7 @@ See ${HPCTOOLKIT}/doc/index.html for manual pages on the toolset.
 Generally speaking, running a tool without any options will output a
 brief usage message.
 
-0.1. HPCTools and GNU binutils 2.13:
+0.1. HPCToolkit and GNU binutils 2.13:
 ----
 We have had to make a number of fixes and changes to GNU binutils,
 most significantly to support the reading of debugging information
@@ -36,7 +36,7 @@ decoders.  This means that, for now, you must use the binutils
 distribution that we provide.  We hope to have most or all of our
 fixes and changes included in future releases of binutils.
 
-0.2. HPCTools and memory usage:
+0.2. HPCToolkit and memory usage:
 ----
 Our library for reading executable binaries can use a *lot* of memory
 on large binaries.  This is because the whole binary is read into
@@ -136,7 +136,7 @@ moo/mips-IRIX64.g++-64.BLOOP)
 
 2.7. Performance:
 ----
-The HPCTools/src/libs/ISA classes use the GNU ia64 instruction
+The ${HPCTOOLKIT}/src/libs/ISA classes use the GNU ia64 instruction
 decoder.  Because it is very inefficient, we have temporarily disabled
 decoding on non-brach instruction packets.  This will only affect
 'bloop' when it is used with the -D option, a debugging option that
