@@ -401,7 +401,7 @@ sub processProfile {
     my ($config, $profile) = @_;
     
     # test whether the file exists
-    if ( !(-e $profile && -f $profile && -r $profile) ) {
+    if ( !(-e $profile && -r $profile) ) {
 	print STDOUT "Invalid or non-existent profile file: '$profile'\n";
 	printUsageAndExit($0);
     }
@@ -769,7 +769,7 @@ sub createOutputFiles {
     print STDOUT "Running hpcview to create browsable database...\n";
 
     my $hpcquickdb = "hpcquick.db";
-    if (-d $hpcquickdb) {
+    if (-d $hpcquickdb || -e $hpcquickdb) {
 	print STDOUT "  Warning: database directory '$hpcquickdb' exists; creating unique name.\n";
 	$hpcquickdb .= "-" . $$; # append pid (if this exists, too bad)
     }
