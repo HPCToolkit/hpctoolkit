@@ -47,6 +47,26 @@
 
 #############################################################################
 
+
+# One can set personal defaults here, instead of changing source code.
+# These values will be overriden by commandline options.
+opt_machine=""
+
+#####################
+
+# Globals
+our_arch=`uname -p`
+if [ "$arch" = "unknown" ]; then
+  our_arch=`uname -m`
+fi
+
+our_os=`uname -s`
+
+our_platform="${our_arch}-${our_os}"
+
+
+#############################################################################
+
 # Note: All function names are prefixed with 'f_' in order to make
 # function calls very clear.
 
@@ -57,7 +77,7 @@ f_usage()
   p="printf"
   $p "\n"
   $p "Usage:\n"
-  $p "  ${cmd} < infile > outfile\n"
+  $p "  ${cmd} [-m machine] < infile > outfile\n"
   $p "\n"
   $p "  Sometimes bloop generates long names for F90 code, for example\n"
   $p "  'foo.in.bar' for function 'foo' in module 'bar'. These long function\n"
@@ -69,7 +89,13 @@ f_usage()
   $p "  bloop to make the names match.  It should be used as a filter from\n"
   $p "  stdin to stdout.\n"
   $p "\n"
+  $p "  The sript supports SGI's and Compaq's F90 compilers.  The script\n"
+  $p "  tries to determine which compiler is being used by machine type.\n"
+  $p "\n"
   $p "  Options:\n"
+  $p "    -m machine\n"
+  $p "         Specify a machine if it is not inferred correctly.\n"
+  $p "         Currently supported: sgi | compaq.\n"
   $p "    -h : prints help\n"
 }
 
@@ -97,12 +123,46 @@ f_opt_check()
   fi
 }
 
+
+# args: ($1): (machine) 
+f_get_machine()
+{
+  if [ -z "$1" ]; then
+    
+    # No machine has been requested so we figure out a default one
+    case "$our_platform" in
+      alpha-OSF1)  opt_machine="compaq" ;;
+      mips-IRIX64) opt_machine="sgi" ;;
+      *) printf "** Unknown machine type '${our_platform}'; Please specify with -m. ** \n";
+         exit 1;
+         ;;
+    esac
+
+  else
+
+    # The machine has been requested so we make sure it is valid
+    case "$1" in
+      compaq | sgi) 
+         opt_machine="$1"; 
+         ;;
+      *) printf "** Invalid machine type '$1' with -m.\n";
+         exit 1;
+         ;;
+    esac
+
+  fi
+}
+
+
 # args: ($1..$n): all arguments given to this script
 f_getoptions()
 {
   # parse argument list
   while [ $# -ge 1 ]; do
-    case $1 in
+    case "$1" in
+      -m)  shift; opt_machine="$1";
+           f_opt_check "-m" "${opt_machine}";
+	   ;;
       -h)  f_usage; exit 0;
            ;;
       -*)  printf "** Invalid option '$1'\n";
@@ -113,7 +173,12 @@ f_getoptions()
     esac
     shift
   done
+
+  f_get_machine "$opt_machine"
+
 }
+
+
 
 #############################################################################
 # Main
@@ -123,4 +188,13 @@ f_getoptions()
 
 f_getoptions $*
 
-sed -e '/\.in\./s/\.in\.[^\"]*\"/\"/'
+# Note: These regexs will only match names enclosed in double quotes
+# -- "foo.in.bar" -- such as will be found in PGM output.
+sedRE=''
+case "$opt_machine" in
+  compaq) sedRE='/\$.*\$/s/\$.*\$\(.*\)_\"/\1\"/' ;;
+  sgi)    sedRE='/\.in\./s/\.in\.[^\"]*\"/\"/'  ;;
+  *)      printf "** Internal error **"; exit 1 ;;
+esac
+
+sed -e ${sedRE}
