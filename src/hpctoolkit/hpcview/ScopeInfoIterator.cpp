@@ -142,7 +142,7 @@ void UpdateScopeTree( const ScopeInfo *node, int noMetrics )
       {
         case ScopeInfo::PGM: delete dynamic_cast<PgmScope*>(si); break;
         case ScopeInfo::GROUP: delete dynamic_cast<GroupScope*>(si); break;
-        case ScopeInfo::LM: delete dynamic_cast<GroupScope*>(si); break;
+        case ScopeInfo::LM: delete dynamic_cast<LoadModScope*>(si); break;
         case ScopeInfo::FILE: delete dynamic_cast<FileScope*>(si); break;
         case ScopeInfo::PROC: delete dynamic_cast<ProcScope*>(si); break;
         case ScopeInfo::LOOP: delete dynamic_cast<LoopScope*>(si); break;

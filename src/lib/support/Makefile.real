@@ -115,6 +115,9 @@ install: $(LIBRARY)
 
 $(LIBRARY): $(OBJS) 
 	$(AR) $(ARFLAGS) $(LIBRARY) $(OBJS)
+ifdef RANLIB
+	$(RANLIB) $(LIBRARY) 
+endif
 
 clean:
 	@echo "*** Cleaning $(OBJS) $(LIBRARY) ***"

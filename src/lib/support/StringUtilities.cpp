@@ -83,11 +83,10 @@ void smove(char **old, char *fresh)
 }
 
 /*
- *  string_copy - just like strcpy, but instead of returning a
- *                pointer to beginning of s1, it returns a pointer 
+ *  strcpye -     like strcpy, but returns a pointer 
  *                to the null that terminates s1.
  */
-static char* string_copy(register char* s1, register char* s2)
+static char* strcpye(register char* s1, register char* s2)
 {
   while ( (*s1++ = *s2++) );
   return --s1;
@@ -118,8 +117,9 @@ char* nssave(int n, const char* const s1, ...)
   /* Concat them all together into the new space. */
   va_start(ap, s1);
   {
-     strcpy(tstr, (char*)s1);
-     for (int i = 0; i < n-1; i++) strcat(tstr, va_arg(ap, char*));
+    char *loc = tstr;
+    loc = strcpye(loc, (char*)s1);
+    for (int i = 0; i < n-1; i++) loc = strcpye(loc, va_arg(ap, char*));
   }
   va_end(ap);
 

@@ -123,6 +123,14 @@ ScopeInfoChildIterator::Current()  const
   return dynamic_cast<ScopeInfo*>(s); 
 } 
 
+
+//*****************************************************************************
+// ScopeInfoChildIterator
+//*****************************************************************************
+CodeInfoChildIterator::CodeInfoChildIterator(const CodeInfo *root) 
+  : NonUniformDegreeTreeNodeChildIterator(root, /*firstToLast*/ false)
+  {}
+
 //*****************************************************************************
 // ScopeInfoIterator
 //*****************************************************************************

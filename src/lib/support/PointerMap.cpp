@@ -148,7 +148,6 @@ void PointerMap::Dump() const
 /******************* PointerMap Member Functions - Protected *****************/
 uint PointerMap::PMHashFunct(const void* entry, const uint size)
 {
-  PointerMapEntry* e = (PointerMapEntry *) entry; 
   return (uint) (((psint) (entry)) % size);
 }
 

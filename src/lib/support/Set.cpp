@@ -56,11 +56,15 @@ using namespace std; // For compatibility with non-std C headers
 //*************************** User Include Files ****************************
 
 #include "Set.h"
+
+// #define DEBUG 1
+
+#ifdef DEBUG
 #include "Assertion.h"
+#endif
 
 //*************************** Forward Declarations ***************************
 
-// #define DEBUG 1
 
 //****************************************************************************
 

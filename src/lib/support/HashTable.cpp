@@ -429,11 +429,11 @@ int HashTable::GetEntryIndex (const void* entry) const
 
 //
 //
-void* HashTable::GetEntryByIndex (const int index) const
+void* HashTable::GetEntryByIndex (const uint index) const
 {
   if (hashTableCreated)
     {
-       if (index < 0 || index >= nextSlot) return (void*)NULL;
+       if (index >= nextSlot) return (void*)NULL;
        else return (void*)&((char*)entries)[entrySize * index];
     }
   else

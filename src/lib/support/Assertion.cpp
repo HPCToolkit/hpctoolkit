@@ -73,6 +73,8 @@ using namespace std; // For compatibility with non-std C headers
 
 #include <include/general.h>
 
+#define In_Assertion_C 1
+
 #include "Assertion.h"
 
 //************************** Variable Definitions ***************************
@@ -294,3 +296,4 @@ static void Quit(AssertionExitType action, int status)
     return;
 
 }  // end Quit
+

@@ -316,7 +316,7 @@ ProcScope::~ProcScope()
 
 // record a new line scope in map (FIXME: deprecated)
 LineScope* 
-ProcScope::CreateLineScope(CodeInfo *mom, int lineNumber)
+ProcScope::CreateLineScope(CodeInfo *mom, suint lineNumber)
 {
   LineScope *line = new LineScope(mom, lineNumber);
   (*lineMap)[line->BegLine()] = line; 
@@ -329,7 +329,7 @@ ProcScope::CreateLineScope(CodeInfo *mom, int lineNumber)
 
 // record a new line scope in map (FIXME: deprecated)
 LineScope* 
-ProcScope::GetLineScope(int line) 
+ProcScope::GetLineScope(suint line) 
 {
   LineScope *scope = (*lineMap)[line];
   if (scope == NULL) {
@@ -339,7 +339,7 @@ ProcScope::GetLineScope(int line)
 } 
 
 
-LoopScope::LoopScope(CodeInfo *mom, int beg, int end) 
+LoopScope::LoopScope(CodeInfo *mom, suint beg, suint end) 
   : CodeInfo(LOOP, mom, beg, end)
 {
   ScopeType t = (mom) ? mom->Type() : ANY;
@@ -365,7 +365,7 @@ StmtRangeScope::~StmtRangeScope()
 }
 
 // FIXME: deprecated
-LineScope::LineScope(CodeInfo *mom, int l) 
+LineScope::LineScope(CodeInfo *mom, suint l) 
   : CodeInfo(LINE, mom, l, l)
 {
   ScopeType t = (mom) ? mom->Type() : ANY;
@@ -629,14 +629,23 @@ CodeInfo::CodeName() const
   FileScope *f = File(); 
   String name; 
   if (f != NULL) { 
-    name = File()->BaseName() + ": " ;
+    name = File()->BaseName();
   } 
-  name += String(begLine);
-  if (begLine != endLine) {
-    name += "-" +  String(endLine) ; 
+  if (begLine != UNDEF_LINE || endLine != UNDEF_LINE) {
+    name += ": " + CodeLineName(begLine);
+    if (begLine != endLine) {
+      name += "-" +  CodeLineName(endLine); 
+    }
   }
   return name;
 } 
+
+String
+CodeInfo::CodeLineName(suint line) const
+{
+  if (line == UNDEF_LINE) return String("?");
+  else return String(line);
+}
 
 String
 GroupScope::CodeName() const 
@@ -664,11 +673,14 @@ String
 ProcScope::CodeName() const 
 {
   FileScope *f = File(); 
-  String  cName = name + " ("; 
+  String  cName = name;
   if (f != NULL) { 
-     cName += File()->BaseName() + ":" ;
+     cName += " (" + f->BaseName();
+     if (begLine != UNDEF_LINE) {
+       cName += ":" + CodeLineName(begLine);
+     }
+     cName += ")";
   } 
-  cName += String(begLine) + ")";
   return cName; 
 } 
 
@@ -1045,7 +1057,7 @@ RefScope::RelocateRef()
 // **********************************************************************
 
 void 
-CodeInfo::SetLineRange(int beg, int end) 
+CodeInfo::SetLineRange(suint beg, suint end) 
 {
   if (beg == UNDEF_LINE) {
     BriefAssertion(end == UNDEF_LINE); 
@@ -1127,9 +1139,8 @@ CodeInfo::Relocate()
 }
 
 bool 
-CodeInfo::ContainsLine(int ln)  const
+CodeInfo::ContainsLine(suint ln)  const
 {
-   BriefAssertion(ln >= 0); 
    if (Type() == FILE) {
      return true; 
    } 
@@ -1137,7 +1148,7 @@ CodeInfo::ContainsLine(int ln)  const
 } 
 
 CodeInfo* 
-CodeInfo::CodeInfoWithLine(int ln)  const
+CodeInfo::CodeInfoWithLine(suint ln)  const
 {
    BriefAssertion(ln != UNDEF_LINE); 
    CodeInfo *ci; 

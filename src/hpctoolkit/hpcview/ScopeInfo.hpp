@@ -221,7 +221,6 @@ class CodeInfo : public ScopeInfo {
 protected: 
   CodeInfo(ScopeType t, ScopeInfo* mom, 
 	   suint beg = UNDEF_LINE, suint end = UNDEF_LINE); 
-           // line numbers are for the measured code NOT the source 
   
 public: 
   virtual ~CodeInfo();
@@ -229,8 +228,8 @@ public:
   suint BegLine() const { return begLine; }
   suint EndLine()   const { return endLine; } 
   
-  bool      ContainsLine(int ln) const; 
-  CodeInfo* CodeInfoWithLine(int ln) const; 
+  bool      ContainsLine(suint ln) const; 
+  CodeInfo* CodeInfoWithLine(suint ln) const; 
 
   // ---------------------------------------------------------------------
   // retuns a string of the form: 
@@ -243,6 +242,8 @@ public:
   // ---------------------------------------------------------------------
   virtual String CodeName() const; 
 
+  String CodeLineName(suint line) const; 
+
   virtual String ToString() const; 
   virtual String ToXML() const; 
   virtual String XMLLineNumbers() const;
@@ -251,7 +252,7 @@ public:
   CodeInfo *GetLast() const { return last; } 
 
 protected: 
-  void SetLineRange(int beg, int end); 
+  void SetLineRange(suint beg, suint end); 
   void Relocate(); 
   suint begLine; 
   suint endLine; 
@@ -338,6 +339,7 @@ public:
   LoadModScope(const char* lmName, ScopeInfo *mom); 
   virtual ~LoadModScope(); 
 
+  virtual String BaseName() const  { return BaseFileName(name); }
   String Name() const { return name; }
 
   virtual String CodeName() const;
@@ -404,8 +406,8 @@ public:
 
   // FIXME: deprecated
   // return a line scope from lineMap or a new one if none is found
-  LineScope *GetLineScope(int line);  
-  LineScope *CreateLineScope(CodeInfo *mom, int lineNumber); 
+  LineScope *GetLineScope(suint line);  
+  LineScope *CreateLineScope(CodeInfo *mom, suint lineNumber); 
 
 private: 
   String name; 
@@ -420,7 +422,7 @@ private:
 class LoopScope: public CodeInfo {
 public: 
   LoopScope(CodeInfo *mom, 
-	    int firstLine = UNDEF_LINE, int lastLine = UNDEF_LINE);
+	    suint firstLine = UNDEF_LINE, suint lastLine = UNDEF_LINE);
   virtual ~LoopScope();
   
   virtual String CodeName() const;
@@ -451,7 +453,7 @@ public:
 // ----------------------------------------------------------------------
 class LineScope: public CodeInfo {
 public: 
-  LineScope(CodeInfo *mom, int srcLine); 
+  LineScope(CodeInfo *mom, suint srcLine); 
   
 };
 
