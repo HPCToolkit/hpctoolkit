@@ -75,9 +75,11 @@ class DCPIProfileMetric : public PCProfileMetric {
 public:
   // A metric can be created from a 'DCPIMetricDesc' or a string that
   // will be used to create a 'DCPIMetricDesc'.
-  DCPIProfileMetric() { }
-  DCPIProfileMetric(const char* name) : desc(name) { }
-  DCPIProfileMetric(const DCPIMetricDesc& x) : desc(x) { }
+  DCPIProfileMetric(ISA* isa_) : PCProfileMetric(isa_) { }
+  DCPIProfileMetric(ISA* isa_, const char* name) 
+    : PCProfileMetric(isa_), desc(name) { }
+  DCPIProfileMetric(ISA* isa_, const DCPIMetricDesc& x) 
+    : PCProfileMetric(isa_), desc(x) { }
 
   ~DCPIProfileMetric() { }
   
@@ -92,7 +94,7 @@ public:
   
 private:
   // Should not be used  
-  DCPIProfileMetric(const DCPIProfileMetric& m) { }
+  DCPIProfileMetric(const DCPIProfileMetric& m);
   DCPIProfileMetric& operator=(const DCPIProfileMetric& m) { return *this; }
   
 protected:

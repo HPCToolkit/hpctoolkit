@@ -63,6 +63,7 @@ public:
 
   // arguments - options
   String pcMapFile; 
+  bool outputRawMetrics;
   
   // arguments
   String progFile; // binary that was profiled

@@ -111,9 +111,6 @@ typedef LineToPCProfileVecMap::value_type LineToPCProfileVecMapVal;
 void 
 DumpFuncLineMap(ostream& os, LineToPCProfileVecMap& map, 
 		DerivedProfile* profData, const char* func, const char* file);
-void //FIXME
-DumpFuncLineMap_old(ostream& ofile, LineToPCProfileVecMap& map,
-		PCProfile* profData, const char* func, const char* file);
 void 
 ClearFuncLineMap(LineToPCProfileVecMap& map);
 
@@ -126,6 +123,7 @@ ProfileWriter::WriteProfile(std::ostream& os, DerivedProfile* profData,
 			    LoadModuleInfo* modInfo)
 {  
   const PCProfile* rawprofData = profData->GetPCProfile();
+  const ISA* isa = rawprofData->GetISA();
 
   // ------------------------------------------------------------------------
   // Dump header info
@@ -147,7 +145,7 @@ ProfileWriter::WriteProfile(std::ostream& os, DerivedProfile* profData,
       os << "<METRIC shortName"; WriteAttrNum(os, i);
       os << " nativeName";       WriteAttrNum(os, m->GetNativeName());
       os << " period";           WriteAttrNum(os, m->GetPeriod());
-      // os << " displayName";      WriteAttrNum(os, m->GetName());
+      os << " displayName";      WriteAttrNum(os, m->GetName());
       // os << " count_total";   WriteAttrNum(os, m->GetTotalCount());
       os << "/>\n";
     }
@@ -165,16 +163,17 @@ ProfileWriter::WriteProfile(std::ostream& os, DerivedProfile* profData,
 
   // 'funcLineMap' maps a line number to a 'PCProfileVec'.  It should
   //   contain information only for the current function, 'theFunc'.
+  String theFunc, theFile; 
   LineToPCProfileVecMap funcLineMap;
 
   // Iterate over PC values in the profile
-  String theFunc, theFile; 
   for (PCProfile_PCIterator it(*rawprofData); it.IsValid(); ++it) {
-
-    // FIXME: since we only support Alpha for now, we do not need
-    // ISA::ConvertOpPCToPC
-    Addr pc = it.Current(); // actually an 'operation pc'
-    Instruction* inst = modInfo->GetLM()->GetInst(pc, 0);
+    
+    Addr oppc = it.Current(); // an 'operation pc'
+    ushort opIndex;
+    Addr pc = isa->ConvertOpPCToPC(oppc, opIndex);
+    
+    Instruction* inst = modInfo->GetLM()->GetInst(pc, opIndex);
     BriefAssertion(inst && "Internal Error: Cannot find instruction!");
     
     // --------------------------------------------------
@@ -182,7 +181,7 @@ ProfileWriter::WriteProfile(std::ostream& os, DerivedProfile* profData,
     // --------------------------------------------------
     String func, file;
     SrcLineX srcLn; 
-    modInfo->GetSymbolicInfo(pc, inst->GetOpIndex(), func, file, srcLn);
+    modInfo->GetSymbolicInfo(pc, opIndex, func, file, srcLn);
     
     // Bad line info: cannot fix and cannot report; advance iteration
     if ( !IsValidLine(srcLn.GetSrcLine()) ) {
@@ -210,7 +209,7 @@ ProfileWriter::WriteProfile(std::ostream& os, DerivedProfile* profData,
     }
 
     // --------------------------------------------------
-    // 3. Update 'funcLineMap'
+    // 3. Update 'funcLineMap' for each derived metric
     // --------------------------------------------------
     PCProfileVec* vec = NULL;
     LineToPCProfileVecMapIt it1 = funcLineMap.find(&srcLn);
@@ -222,14 +221,17 @@ ProfileWriter::WriteProfile(std::ostream& os, DerivedProfile* profData,
       vec = (*it1).second;
     }
     
-    // Update vector counts
+    // Update vector counts for each derived metric.  Note that we
+    // only update when the current pc applies to the derived metric.
     DerivedProfile_MetricIterator dmIt(*profData);
     for (uint i = 0; dmIt.IsValid(); ++dmIt, ++i) {
       DerivedProfileMetric* dm = dmIt.Current();
-      PCProfileMetricSetIterator mIt( *(dm->GetMetricSet()) );
-      for ( ; mIt.IsValid(); ++mIt) {
-	PCProfileMetric* m = mIt.Current();
-	(*vec)[i] += m->Find(pc);
+      if (dm->FindPC(pc, opIndex)) {
+	PCProfileMetricSetIterator mIt( *(dm->GetMetricSet()) );
+	for ( ; mIt.IsValid(); ++mIt) {
+	  PCProfileMetric* m = mIt.Current();
+	  (*vec)[i] += m->Find(pc, opIndex);
+	}
       }
     }
     
@@ -258,6 +260,10 @@ ProfileWriter::WriteProfile(std::ostream& os, DerivedProfile* profData,
 //****************************************************************************
 // Combine 'PCProfile' with symbolic info and dump
 //****************************************************************************
+
+void //FIXME
+DumpFuncLineMap_old(ostream& ofile, LineToPCProfileVecMap& map,
+		PCProfile* profData, const char* func, const char* file);
 
 void
 DumpAsPROFILE(ostream& os, PCProfile* profData, LoadModuleInfo* modInfo)
@@ -317,11 +323,12 @@ DumpAsPROFILE(ostream& os, PCProfile* profData, LoadModuleInfo* modInfo)
       for (ProcedureInstructionIterator it(*p); it.IsValid(); ++it) {
 	Instruction* inst = it.Current();
 	Addr pc = inst->GetPC();
+	ushort opIndex = inst->GetOpIndex();
 
 	// We want to iterate only over PC values for which counts are
 	// recorded.  
 	long foundMetric;
-	if ( (foundMetric = profData->DataExists(pc)) < 0) {
+	if ( (foundMetric = profData->DataExists(pc, opIndex)) < 0) {
 	  continue;
 	}
 	
@@ -330,7 +337,7 @@ DumpAsPROFILE(ostream& os, PCProfile* profData, LoadModuleInfo* modInfo)
 	// --------------------------------------------------
 	String func, file;
 	SrcLineX srcLn; 
-	modInfo->GetSymbolicInfo(pc, inst->GetOpIndex(), func, file, srcLn);
+	modInfo->GetSymbolicInfo(pc, opIndex, func, file, srcLn);
 	
 	if (theFile.Empty() && !file.Empty()) { theFile = file; }
 	
@@ -358,7 +365,7 @@ DumpAsPROFILE(ostream& os, PCProfile* profData, LoadModuleInfo* modInfo)
 	// Update vector counts
 	for (ulong i = (ulong)foundMetric; i < numMetrics; i++) {
 	  m = profData->GetMetric(i);
-	  (*vec)[i] += m->Find(pc); // add
+	  (*vec)[i] += m->Find(pc, opIndex); // add
 	}	
       }
 

@@ -68,6 +68,8 @@ void Args::Usage()
   cerr
     << "Usage: " << endl
     << "  " << cmd << " [-V] <binary> <profile>\n"
+    << "  " << cmd << " -R <binary> <profile>\n"
+
     << endl;
   cerr
     << "Converts various types of profile output into the PROFILE format,\n"
@@ -91,7 +93,8 @@ void Args::Usage()
     << "  - Compaq's DCPI 'dcpicat' (including ProfileMe) \n"
     << "\n"
     << "Options:\n"
-    << "  -V: print version information\n"    
+    << "  -V: print version information\n"
+    << "  -R: outputs all raw metrics...\n"
 #if 0    
     << "  -m: specify <bloop-pcmap>\n"
 #endif    
@@ -104,14 +107,14 @@ Args::Args(int argc, char* const* argv)
   cmd = argv[0]; 
 
   bool printVersion = false;
-  //other options: prettyPrintOutput = false;
+  outputRawMetrics = false;
   
   extern char *optarg;
   extern int optind;
   bool error = false;
   trace = 0;
   int c;
-  while ((c = getopt(argc, argv, "Vm:d")) != EOF) {
+  while ((c = getopt(argc, argv, "VRm:d")) != EOF) {
     switch (c) {
     case 'm': {
       // A non-null value of 'pcMapFile' indicates it has been set
@@ -121,6 +124,10 @@ Args::Args(int argc, char* const* argv)
     }
     case 'V': { 
       printVersion = true;
+      break; 
+    }
+    case 'R': { 
+      outputRawMetrics = true;
       break; 
     }
     case 'd': { // debug 

@@ -55,6 +55,8 @@
 
 #include "PCProfileFilter.h"
 
+#include <lib/binutils/Instruction.h>
+
 //*************************** Forward Declarations ***************************
 
 using std::endl;
@@ -82,8 +84,29 @@ PCProfileFilter::DDump()
 // InsnFilter
 //****************************************************************************
 
-bool 
-InsnFilter::operator()(Addr pc)
+InsnFilter::InsnFilter(InsnClassExpr expr_, LoadModule* lm_)
+  : expr(expr_), lm(lm_)
 {
-  return true;
+}
+
+InsnFilter::~InsnFilter()
+{
+}
+
+bool 
+InsnFilter::operator()(Addr pc, ushort opIndex)
+{
+  Instruction* inst = lm->GetInst(pc, opIndex);
+  BriefAssertion(inst && "Internal Error: Cannot find instruction!");
+
+  ISA::InstDesc d = inst->GetDesc();
+  
+  if (expr.IsSet(INSN_CLASS_ALL)) {
+    return true;
+  } else if (expr.IsSet(INSN_CLASS_FLOPS)) {
+    return d.IsFP();
+  } else {
+    BriefAssertion(false);
+    return false;
+  }
 }

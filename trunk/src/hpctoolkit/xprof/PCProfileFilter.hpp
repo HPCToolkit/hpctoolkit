@@ -61,7 +61,9 @@
 
 #include <include/general.h>
 
-#include <lib/ISA/ISATypes.h>
+#include <lib/ISA/ISA.h>
+#include <lib/binutils/LoadModule.h>
+
 #include <lib/support/String.h>
 #include <lib/support/Assertion.h>
 
@@ -155,8 +157,9 @@ public:
   PCFilter() { }
   virtual ~PCFilter() { }
   
-  // Returns true if 'pc' is within the 'in' set; false otherwise.
-  virtual bool operator()(const Addr pc) = 0;
+  // Returns true if the operation at 'pc' and 'opIndex' is within the
+  // 'in' set; false otherwise.
+  virtual bool operator()(Addr pc, ushort opIndex) = 0;
 
 private:
 };
@@ -165,6 +168,9 @@ private:
 //****************************************************************************
 // InsnClassExpr
 //****************************************************************************
+
+#define INSN_CLASS_ALL 1
+#define INSN_CLASS_FLOPS 2
 
 // InsnClassExpr: A common 'PCFilter' will be an instruction class
 // filter (cf. 'InsnFilter').  This represent a disjunctive expression
@@ -224,18 +230,19 @@ private:
 // InsnFilter
 //****************************************************************************
 
-class LoadModule; // FIXME
-
 // InsnFilter: Divides PCs into two sets by Alpha instruction class.
 class InsnFilter : public PCFilter {
 public:
-  InsnFilter(InsnClassExpr* expr, LoadModule* lm) { }
-  virtual ~InsnFilter() { }
+  InsnFilter(InsnClassExpr expr_, LoadModule* lm_);
+  virtual ~InsnFilter();
   
-  // Returns true if 'pc' satisfies 'expr'; false otherwise.
-  virtual bool operator()(Addr pc);
-
+  // Returns true if the operation at 'pc' and 'opIndex' satisfies
+  // 'expr'; false otherwise.
+  virtual bool operator()(Addr pc, ushort opIndex);
+  
 private:
+  InsnClassExpr expr;
+  LoadModule* lm; // we do not own
 };
 
 

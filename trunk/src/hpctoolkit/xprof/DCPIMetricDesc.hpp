@@ -217,8 +217,8 @@ public:
   }
 
   // Some simple queries
-  bool IsTypeProfileMe() { return IsSet(DCPI_MTYPE_RM); }
-  bool IsTypeRegular() { return IsSet(DCPI_MTYPE_PM); }
+  bool IsTypeProfileMe() { return IsSet(DCPI_MTYPE_PM); }
+  bool IsTypeRegular() { return IsSet(DCPI_MTYPE_RM); }
 
   // IsValid: If no bits are set, this must be an invalid descriptor
   bool IsValid() const { return bits != 0; }

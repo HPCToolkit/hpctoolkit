@@ -79,8 +79,17 @@
 // resulting from DEC/Compaq/HP DCPI profiles (including ProfileMe).
 class DCPIProfile : public PCProfile
 {
+public: 
+  enum PMMode {
+    PM_NONE, // No ProfileMe events
+    PM0,     // ProfileMe mode 0
+    PM1,     // ProfileMe mode 1
+    PM2,     // ProfileMe mode 2
+    PM3      // ProfileMe mode 3
+  };
+
 public:
-  DCPIProfile(suint sz = 200);
+  DCPIProfile(const ISA* isa_, suint sz = 256);
   virtual ~DCPIProfile();
  
   // Access to 'DCPIProfileMetric' (includes casts)
@@ -89,19 +98,22 @@ public:
   }
   void SetDCPIMetric(suint i, DCPIProfileMetric* m) { Assign(i, m); }
  
+  PMMode GetPMMode() const { return pmmode; }
+  void SetPMMode(PMMode x) { pmmode = x; }
+
   void Dump(std::ostream& o = std::cerr);
   void DDump(); 
   
 private:
   // Should not be used 
-  DCPIProfile(const DCPIProfile& p) { }
+  DCPIProfile(const DCPIProfile& p);
   DCPIProfile& operator=(const DCPIProfile& p) { return *this; }
   
   friend class DCPIProfileMetricSetIterator;
   
 protected:
 private:
-  
+  PMMode pmmode; 
 };
 
 // 'DCPIProfileMetricSetIterator' iterates over all 'DCPIProfileMetric'

@@ -61,6 +61,9 @@
 #include "ProfileReader.h"
 #include "PCProfile.h"
 #include "DCPIProfile.h"
+
+#include <lib/ISA/ISA.h>
+#include <lib/ISA/AlphaISA.h>
 #include <lib/xml/xml.h>
 
 //*************************** Forward Declarations ***************************
@@ -79,9 +82,11 @@ struct lt_PCProfileMetric
   { return (strcmp(m1->GetName(), m2->GetName()) < 0); }
 };
 
-bool 
+static bool 
 MetricNamesAreUnique(PCProfileMetricSet& mset);
 
+static DCPIProfile::PMMode
+DeterminePMMode(const char* pmcounter);
 
 //****************************************************************************
 //  public: ReadProfileFile: 
@@ -121,10 +126,6 @@ ProfileReader::ReadProfileFile(const char* profFile /* FIXME: type */)
 //  private: DEC/Alpha/OSF1
 //****************************************************************************
 
-#ifdef ALPHA_64
-// system dependent headers, funcs...
-#endif
-
 // 'ReadProfileFile_DCPICat' reads 'dcpicat' output.  
 DCPIProfile*
 ProfileReader::ReadProfileFile_DCPICat(std::istream& pFile)
@@ -133,6 +134,7 @@ ProfileReader::ReadProfileFile_DCPICat(std::istream& pFile)
   const int bufSz = 128; 
   char buf[bufSz]; // holds single tokens guaranteed not to be too big
 
+  ISA* isa = new AlphaISA();
   DCPIProfile* profData = NULL;  
   std::stringstream hdr; // header info
   String profiledFile;   // name of profiled file
@@ -200,26 +202,32 @@ ProfileReader::ReadProfileFile_DCPICat(std::istream& pFile)
   //  see 'dcpiprofileme' and 'dcpicat' man pages.
 
   // Create 'PCProfileMetric' from 'event' and collect them all into a queue
-  unsigned int metricCount = 0;
   PCProfileMetricList mlist;
   DCPIProfileMetric* curMetric;
+  DCPIProfile::PMMode pmmode = DCPIProfile::PM_NONE;
+
   String X;
   PCProfileDatum W, Y, Z;
   bool invalidMetric = false;
+  unsigned int metricCount = 0;
+
   while ( (!pFile.eof() && !pFile.fail()) && pFile.peek() == 'e' ) {
 
     pFile >> buf;  // read 'event' token (above: line begins with 'e')
     pFile >> W >> std::ws;          // read 'W' (total count)
     
     X = GetLine(pFile, ':');        // read 'x' or 'X' (event name)
-    if ( !isdigit(pFile.peek()) ) { // read 'X'
-      X += ":" + GetLine(pFile, ':');
+    if ( !isdigit(pFile.peek()) ) { // read 'X' (for ProfileMe)
+      String pmcounter = GetLine(pFile, ':');
+      pmmode = DeterminePMMode(pmcounter);
+      if (pmmode == DCPIProfile::PM_NONE) { invalidMetric = true; }
+      X += ":" + pmcounter;
     }
 
     pFile >> Y; Skip(pFile, ":");   // read 'Y' (sampling period) and ':'
     pFile >> Z >> std::ws;          // read 'Z' (sampling time)
     
-    curMetric = new DCPIProfileMetric(X);
+    curMetric = new DCPIProfileMetric(isa, X);
     curMetric->SetTxtStart(txtStart);
     curMetric->SetTxtSz(txtSz);
     curMetric->SetTotalCount(W);
@@ -234,9 +242,10 @@ ProfileReader::ReadProfileFile_DCPICat(std::istream& pFile)
   }
   
   // Create 'PCProfile' object and add all events
-  profData = new DCPIProfile(metricCount);
+  profData = new DCPIProfile(isa, metricCount);
   profData->SetHdrInfo( (hdr.str()).c_str() );
   profData->SetProfiledFile(profiledFile);
+  profData->SetPMMode(pmmode);
   
   while (!mlist.empty()) {
     PCProfileMetric* m = mlist.front();
@@ -261,8 +270,7 @@ ProfileReader::ReadProfileFile_DCPICat(std::istream& pFile)
   // number; the columns are in the same order as the 'event' listing.
   // PC's are in increasing address order.  Skipped PC's have '0' for
   // all counts.  Because we are dealing with a non-VLIW architecture,
-  // we do not need to use ISA::ConvertPCToOpPC when creating the
-  // [pc->count] map.
+  // the 'opIndex' argument to 'AddPC(...)' and 'Insert(...)' is always 0.
 
   // Note: add a dummy block to prevent compiler warnings/errors
   // about the above 'goto' crossing the initialization of 'pcCount'
@@ -275,11 +283,11 @@ ProfileReader::ReadProfileFile_DCPICat(std::istream& pFile)
       Skip(pFile, "0x");         // eat up '0x' prefix
       pFile >> hex >> PC >> dec; // read 'PC' value, non VLIW instruction
 
-      profData->AddPC(PC); // there is some non-zero data at PC
+      profData->AddPC(PC, 0); // there is some non-zero data at PC
       for (unsigned long i = 0; i < metricCount; i++) {
 	pFile >> profileDatum;
 	const PCProfileMetric* m = profData->GetMetric(i);
-	const_cast<PCProfileMetric*>(m)->Insert(PC, profileDatum);
+	const_cast<PCProfileMetric*>(m)->Insert(PC, 0, profileDatum);
       }
       
       pFile >> std::ws;
@@ -300,7 +308,8 @@ ProfileReader::ReadProfileFile_DCPICat(std::istream& pFile)
 }
 
 // Check to see if there are duplicates in 'mlist' while preserving order.
-bool MetricNamesAreUnique(PCProfileMetricSet& mset)
+static bool 
+MetricNamesAreUnique(PCProfileMetricSet& mset)
 {
   bool STATUS = true;
   
@@ -335,29 +344,19 @@ bool MetricNamesAreUnique(PCProfileMetricSet& mset)
   return STATUS;
 }
 
-
-//****************************************************************************
-//  private: SGI/MIPS/IRIX
-//****************************************************************************
-
-#ifdef MIPS_64
-// system dependent headers, funcs...
-#endif
-
-#ifdef MIPS_32
-// system dependent headers, funcs...
-#endif
-
-
-//****************************************************************************
-//  private: Sun/SPARC/SunOS
-//****************************************************************************
-
-#ifdef SPARC_64
-// system dependent headers, funcs...
-#endif
-
-#ifdef SPARC_32
-// system dependent headers, funcs...
-#endif
+// Given a ProfileMe counter name, determine which ProfileMe mode was used
+static DCPIProfile::PMMode
+DeterminePMMode(const char* pmcounter)
+{
+  if (strncmp("m0", pmcounter, 2)) {
+    return DCPIProfile::PM0;
+  } else if (strncmp("m1", pmcounter, 2)) {
+    return DCPIProfile::PM1;
+  } else if (strncmp("m2", pmcounter, 2)) {
+    return DCPIProfile::PM2;
+  } else if (strncmp("m3", pmcounter, 2)) {
+    return DCPIProfile::PM3;
+  }
+  return DCPIProfile::PM_NONE;
+}
 
