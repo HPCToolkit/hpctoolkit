@@ -318,6 +318,13 @@ BloopIRInterface::IsBreakImplied (StmtHandle multicond)
 }
 
 
+bool
+BloopIRInterface::IsCatchAll (StmtHandle h, int bodyIndex)
+{
+  BriefAssertion (0);
+  return false;
+}
+
 //-----------------------------------------------------------------------------
 // Unstructured two-way conditionals: 
 //-----------------------------------------------------------------------------
