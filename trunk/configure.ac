@@ -111,6 +111,10 @@ hpctoolkit_top=`cd ${srcdir} ; pwd`
 HPCTOOLKIT_PLATFORM=`cd ${hpctoolkit_top}/config; ./hpcplatform`
 AC_SUBST([HPCTOOLKIT_PLATFORM])
 
+
+# NOTE: we should allow the locations of xerces, OA, and binutils
+#   installations to be passed in as options.
+
 #-------------------------------------------------
 # Xerces-C (XML parser)
 #-------------------------------------------------
