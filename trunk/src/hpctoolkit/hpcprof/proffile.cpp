@@ -7,7 +7,7 @@
 //    proffile.cc
 //
 // Purpose:
-//    Class for reading and representing papirun profile data.
+//    Class for reading and representing hpcrun profile data.
 //
 // Description:
 //    [The set of functions, macros, etc. defined in the file]
@@ -34,7 +34,7 @@
 
 //*************************** User Include Files ****************************
 
-#include "papirun.h"
+#include "hpcrun.h"
 #include "proffile.h"
 #include "io.h"
 
@@ -75,29 +75,29 @@ ProfFile::read(const string &filename)
   fp = fopen(filename.c_str(), "r");
 
   // Read Header information
-  char magic_str[PAPIRUN_MAGIC_STR_LEN];
-  char version[PAPIRUN_VERSION_LEN];
+  char magic_str[HPCRUN_MAGIC_STR_LEN];
+  char version[HPCRUN_VERSION_LEN];
   char endian;
   int c;
   size_t sz;
 
-  sz = fread((char*)magic_str, 1, PAPIRUN_MAGIC_STR_LEN, fp);
-  if (sz != PAPIRUN_MAGIC_STR_LEN) { return 1; }
+  sz = fread((char*)magic_str, 1, HPCRUN_MAGIC_STR_LEN, fp);
+  if (sz != HPCRUN_MAGIC_STR_LEN) { return 1; }
   
-  sz = fread((char*)version, 1, PAPIRUN_VERSION_LEN, fp);
-  if (sz != PAPIRUN_VERSION_LEN) { return 1; }
+  sz = fread((char*)version, 1, HPCRUN_VERSION_LEN, fp);
+  if (sz != HPCRUN_VERSION_LEN) { return 1; }
   
   if ((c = fgetc(fp)) == EOF) { return 1; }
   endian = (char)c;
   
   // Sanity check Header information
-  if (strncmp(magic_str, PAPIRUN_MAGIC_STR, PAPIRUN_MAGIC_STR_LEN) != 0) { 
+  if (strncmp(magic_str, HPCRUN_MAGIC_STR, HPCRUN_MAGIC_STR_LEN) != 0) { 
     return 1; 
   }
-  if (strncmp(version, PAPIRUN_VERSION, PAPIRUN_VERSION_LEN) != 0) { 
+  if (strncmp(version, HPCRUN_VERSION, HPCRUN_VERSION_LEN) != 0) { 
     return 1; 
   }
-  if (endian != PAPIRUN_ENDIAN) { return 1; }
+  if (endian != HPCRUN_ENDIAN) { return 1; }
 
 
   // Read Load modules
