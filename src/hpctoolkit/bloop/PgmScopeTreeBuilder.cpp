@@ -111,11 +111,11 @@ FindOrCreateFileNode(PgmScope* pgmScopeTree, Procedure* p);
 static bool 
 RemoveOrphanedProcedureRepository(PgmScopeTree* pgmScopeTree);
 
-static bool 
-MergeOverlappingCode(PgmScopeTree* pgmScopeTree);
-
 static bool
-RenestUnnestedStmts(PgmScopeTree* pgmScopeTree);
+CoalesceDuplicateStmts(PgmScopeTree* pgmScopeTree);
+
+static bool 
+MergeOverlappingCode(PgmScopeTree* pgmScopeTree); // deprecated
 
 static bool 
 MergePerfectlyNestedLoops(PgmScopeTree* pgmScopeTree);
@@ -128,30 +128,42 @@ FilterFilesFromScopeTree(PgmScopeTree* pgmScopeTree, String canonicalPathList);
 
 //*************************** Forward Declarations ***************************
 
+// ------------------------------------------------------------
 // Helpers for traversing the Tarjan Tree
+// ------------------------------------------------------------
+
 // CFGNode -> <begAddr, endAddr>
 class CFGNodeToPCMap : public std::map<CFG::Node*, std::pair<Addr, Addr>* > {
 public:
-  CFGNodeToPCMap();
-  CFGNodeToPCMap(CFG* cfg, Procedure* p);
-  virtual ~CFGNodeToPCMap();
+  typedef std::map<CFG::Node*, std::pair<Addr, Addr>* > BaseMap;
+
+public:
+  CFGNodeToPCMap() { }
+  CFGNodeToPCMap(CFG* cfg, Procedure* p) { build(cfg, cfg->Entry(), p, 0); }
+  virtual ~CFGNodeToPCMap() { clear(); }
   virtual void clear();
 
   void build(CFG* cfg, CFG::Node* n, Procedure* p, Addr _end);
-
-public:
-  typedef std::map<CFG::Node*, std::pair<Addr, Addr>* > BaseMap;
 };
 
 static void 
 CFG_GetBegAndEndAddrs(CFG::Node* n, Addr &beg, Addr &end);
 
 
+// ------------------------------------------------------------
 // Helpers for normalizing the scope tree
+// ------------------------------------------------------------
 class StmtData;
 
-typedef std::map<suint, StmtData*> LineToStmtMap;
-typedef std::map<suint, StmtData*>::iterator LineToStmtMapIt;
+class LineToStmtMap : public std::map<suint, StmtData*> {
+public:
+  typedef std::map<suint, StmtData*> BaseMap;
+
+public:
+  LineToStmtMap() { }
+  virtual ~LineToStmtMap() { clear(); }
+  virtual void clear();
+};
 
 class StmtData {
 public:
@@ -159,8 +171,8 @@ public:
     : stmt(_stmt), level(_level) { }
   ~StmtData() { /* owns no data */ }
 
-  StmtRangeScope* GetStmt() { return stmt; }
-  int GetLevel() { return level; }
+  StmtRangeScope* GetStmt() const { return stmt; }
+  int GetLevel() const { return level; }
   
   void SetStmt(StmtRangeScope* _stmt) { stmt = _stmt; }
   void SetLevel(int _level) { level = _level; }
@@ -168,6 +180,21 @@ public:
 private:
   StmtRangeScope* stmt;
   int level;
+};
+
+
+// ------------------------------------------------------------
+// Helpers for normalizing the scope tree
+// ------------------------------------------------------------
+
+class CDS_RestartAtLCA_Exception {
+public:
+  CDS_RestartAtLCA_Exception(CodeInfo* lca_) : lca(lca_) { }
+  ~CDS_RestartAtLCA_Exception() { }
+  CodeInfo* GetLCA() const { return lca; }
+
+private:
+  CodeInfo* lca;
 };
 
 
@@ -179,6 +206,8 @@ BuildPCToSrcLineMap(PCToSrcLineXMap* map, Procedure* p);
 //*************************** Forward Declarations ***************************
 
 //#define BLOOP_DEBUG_PROC
+#define CDSDBG if (0) /* optimized away */
+
 #define BLOOP_ATTEMPT_TO_IMPROVE_INTERVAL_BOUNDARIES
 
 const char* OrphanedProcedureFile =
@@ -208,6 +237,7 @@ WriteScopeTree(std::ostream& os, PgmScopeTree* pgmScopeTree, bool prettyPrint)
 // Set of routines to build a scope tree
 //****************************************************************************
 
+// BuildFromExe: Builds a scope tree from the Executable 'exe'.  
 PgmScopeTree*
 ScopeTreeBuilder::BuildFromExe(Executable* exe, PCToSrcLineXMap* &map,
 			       String canonicalPathList, 
@@ -270,22 +300,28 @@ ScopeTreeBuilder::BuildFromExe(Executable* exe, PCToSrcLineXMap* &map,
   return pgmScopeTree;
 }
 
+
+// Normalize: Because of compiler optimizations and other things, it
+// is almost always desirable normalize a scope tree.  For example,
+// almost all unnormalized scope tree contain duplicate statement
+// instances.  See each normalizing routine for more information.
 bool 
 ScopeTreeBuilder::Normalize(PgmScopeTree* pgmScopeTree)
 {
-  RemoveOrphanedProcedureRepository(pgmScopeTree);
-  
-  // Notes: The order of the passes is important.  Also, thus far, we should
-  // not actually need the iteration to achieve a fixed point.
   bool changed = false;
-  do {
-    bool ch1, ch2, ch3;
-    ch1 = MergeOverlappingCode(pgmScopeTree);
-    ch2 = RenestUnnestedStmts(pgmScopeTree);
-    ch3 = MergePerfectlyNestedLoops(pgmScopeTree);
-    changed = (ch1 || ch2 || ch3);
-  } while (changed);
+  changed |= RemoveOrphanedProcedureRepository(pgmScopeTree);
   
+#if 0 /* not necessary */
+  // Apply following routines until a fixed point is reached.
+  do {
+#endif
+    changed = false;
+    changed |= CoalesceDuplicateStmts(pgmScopeTree);
+#if 0
+  } while (changed);
+#endif
+  
+  changed |= MergePerfectlyNestedLoops(pgmScopeTree);
   changed |= RemoveEmptyScopes(pgmScopeTree);
   
   return true; // no errors
@@ -495,7 +531,7 @@ BuildFromTarjInterval(CodeInfo* enclosingScope, Procedure* p,
 static int 
 BuildFromBB(CodeInfo* enclosingScope, Procedure* p, CFG::Node* bb)
 {
-  LineToStmtMap stmtMap; // maps lines to the bogus pointer (StmtData*)1
+  LineToStmtMap stmtMap; // maps lines to NULL (simulates a set)
 
   for (CFG::NodeStatementsIterator s_iter(bb); (bool)s_iter; ++s_iter) {
     Instruction *insn = (Instruction *)((StmtHandle)s_iter);
@@ -510,9 +546,8 @@ BuildFromBB(CodeInfo* enclosingScope, Procedure* p, CFG::Node* bb)
     
     // eraxxon: MAP: add all PC's for BB to map
     
-    StmtData* stmtdata = stmtMap[line];
-    if (stmtdata == NULL) {
-      stmtMap[line] = (StmtData*)1;
+    if (stmtMap.find(line) == stmtMap.end()) {
+      stmtMap[line] = NULL;
       new StmtRangeScope(enclosingScope, line, line);
     }
   } 
@@ -570,9 +605,210 @@ RemoveOrphanedProcedureRepository(PgmScopeTree* pgmScopeTree)
 }
 
 
+// CoalesceDuplicateStmts: Coalesce duplicate statement instances that
+// may appear in the scope tree.  There are two basic cases:
+//
+// Case 1a:
+// If the same statement exists at multiple levels within a loop nest,
+//   discard all but the innermost instance.
+// Rationale: Compiler optimizations may hoist loop-invariant
+//   operations out of inner loops.  Note however that in rare cases,
+//   code may be moved deeper into a nest (e.g. to free registers).
+//   Even so, we want to associate statements within loop nests to the
+//   deepest level in which they appear.
+// E.g.: lca --- ... --- s1
+//          \--- s2
+//
+// Case 1b:
+// If the same statement exists within the same loop, discard all but one.
+// Rationale: Multiple statements exist at the same level because of
+//   multiple basic blocks containing the same statement, cf. BuildFromBB().
+//   Also, the merging in case 2 may result in duplicate statements.
+// E.g.: lca --- s1
+//          \--- s2
+//
+// Case 2: 
+// If duplicate statements appear in different loops, find the least
+//   common ancestor (deepest nested common ancestor) in the scope tree
+//   and merge the corresponding loops along the paths to each of the
+//   duplicate statments.
+// Rationale: Compiler optimizations such as loop unrolling (start-up,
+//   steady-state, wind-down), e.g., can produce multiple statement
+//   instances.
+// E.g.: lca ---...--- s1
+//          \---...--- s2
+static bool
+CoalesceDuplicateStmts(CodeInfo* scope, LineToStmtMap* stmtMap, int level)
+  throw (CDS_RestartAtLCA_Exception);
+static bool
+CDS_Main(CodeInfo* scope, LineToStmtMap* stmtMap, int level)
+  throw (CDS_RestartAtLCA_Exception); /* indirect */
+static bool
+CDS_InspectStmt(StmtRangeScope* stmt1, LineToStmtMap* stmtMap, int level)
+  throw (CDS_RestartAtLCA_Exception);
+
+static bool
+CoalesceDuplicateStmts(PgmScopeTree* pgmScopeTree)
+{
+  bool changed = false;
+  PgmScope* pgmScope = pgmScopeTree->GetRoot();
+  LineToStmtMap stmtMap;
+  
+  // We apply the normalization routine to each FileScope so that 1)
+  // we are guaranteed to only process CodeInfos and 2) we can assume
+  // that all line numbers encountered are within the same file
+  // (keeping the LineToStmtMap simple and fast).
+  for (ScopeInfoChildIterator it(pgmScope); it.Current(); ++it) {
+    BriefAssertion(((ScopeInfo*)it.Current())->Type() == ScopeInfo::FILE);
+    FileScope* file = dynamic_cast<FileScope*>(it.Current()); // always true
+    
+    changed |= CoalesceDuplicateStmts(file, &stmtMap, 1);
+  } 
+
+  return changed;
+}
+
+// CoalesceDuplicateStmts Helper: 
+// During a post-order recursive examination of the scope tree, case 1
+//   above can be applied without problems.  However, the merging in
+//   case 2 can delete the current loop, its previously visited
+//   siblings, or even its ancestors, invalidating several iterators on
+//   the recursion stack (and causing infinite loops or freed memory
+//   reads).
+// Solution 1: After application of case 2, unwind the recursion stack
+//   and restart the algorithm at the least common ancestor.
+// Solution 2: Divide into two distinct phases.  Phase 1 collects all
+//   statements into a multi-map.  Phase 2 iterates over the map,
+//   applying case 1 and 2 until all duplicate entries are removed.
+// This implements solution 1.  Solution 2 does not require the
+//   reexploration of an entire subtree after each merge, but it does
+//   require that the multimap handle sorted iteratation that it perform
+//   several local resorts as duplicate statements are deleted.
+static bool
+CoalesceDuplicateStmts(CodeInfo* scope, LineToStmtMap* stmtMap, int level)
+  throw (CDS_RestartAtLCA_Exception)
+{
+  try {
+    return CDS_Main(scope, stmtMap, level);
+  } catch (CDS_RestartAtLCA_Exception& x) {
+    // Unwind the recursion stack until we find 'lca'
+    if (x.GetLCA() == scope) {
+      return CoalesceDuplicateStmts(x.GetLCA(), stmtMap, level);
+    } else {
+      throw;
+    }
+  }
+}
+
+// CDS_Main: Helper for the above. Assumes that all statement line
+// numbers are within the same file.  We operate on the children of
+// 'scope' to support support node deletion (case 1 above).
+static bool
+CDS_Main(CodeInfo* scope, LineToStmtMap* stmtMap, int level)
+  throw (CDS_RestartAtLCA_Exception) /* indirect */
+{
+  bool changed = false;
+  
+  if (!scope) { return changed; }
+  
+  // A post-order traversal of this node (visit children before parent)...
+  for (ScopeInfoChildIterator it(scope); it.Current(); /* */) {
+    CodeInfo* child = dynamic_cast<CodeInfo*>(it.Current()); // always true
+    BriefAssertion(child);
+    it++; // advance iterator -- it is pointing at 'child'
+    
+    CDSDBG { cout << "CDS: " << child << endl; }
+    
+    // 1. Recursively perform re-nesting on 'child'.
+    changed |= CoalesceDuplicateStmts(child, stmtMap, level + 1);
+    
+    // 2. Examine 'child'
+    if (child->Type() == ScopeInfo::STMT_RANGE) {
+      
+      // Note: 'child' may be deleted or a restart exception may be thrown
+      StmtRangeScope* stmt = dynamic_cast<StmtRangeScope*>(child);
+      changed |= CDS_InspectStmt(stmt, stmtMap, level);
+      
+    } else if (child->Type() == ScopeInfo::PROC) {
+      stmtMap->clear(); // Clear statement table
+    }
+  }
+  
+  return changed; 
+}
+
+// CDS_InspectStmt: applies case 1 or 2, as described above
+static bool
+CDS_InspectStmt(StmtRangeScope* stmt1, LineToStmtMap* stmtMap, int level)
+  throw (CDS_RestartAtLCA_Exception)
+{
+  bool changed = false;
+  
+  suint line = stmt1->BegLine();
+  StmtData* stmtdata = (*stmtMap)[line];
+  if (stmtdata) {
+    
+    StmtRangeScope* stmt2 = stmtdata->GetStmt();
+    CDSDBG { cout << " Find: " << stmt1 << " " << stmt2 << endl; }
+    
+    // Ensure we have two different instances of the same line
+    if (stmt1 == stmt2) { return false; }
+    
+    // Find the least common ancestor
+    ScopeInfo* lca = ScopeInfo::LeastCommonAncestor(stmt1, stmt2);
+    BriefAssertion(lca);
+    
+    // Because we have the lca and know that the descendent nodes are
+    // statements (leafs), the test for case 1 is very simple:
+    bool case1 = (stmt1->Parent() == lca || stmt2->Parent() == lca);
+    if (case1) {
+      
+      // Case 1: Duplicate statments. Delete shallower one.
+      StmtRangeScope* toRemove = NULL;
+      if (stmtdata->GetLevel() < level) { // stmt2.level < stmt1.level
+	toRemove = stmt2;
+	stmtdata->SetStmt(stmt1);  // replace stmt2 with stmt1
+	stmtdata->SetLevel(level);
+      } else { 
+	toRemove = stmt1;
+      }
+      toRemove->Unlink(); // unlink 'toRemove' from tree
+      CDSDBG { cout << "  Delete: " << toRemove << endl; }
+      delete toRemove;
+      changed = true;
+      
+    } else {
+      
+      // Case 2: Duplicate statements in different loops (or scopes). Merge.
+      CDSDBG { cout << "  Merge: " << stmt1 << " " << stmt2 << endl; }
+      changed = ScopeInfo::MergePaths(lca, stmt1, stmt2);
+      if (changed) {
+	// While neither statement is deleted ('stmtMap' is still
+	// valid), nodes between them and 'lca' may be merged and
+	// deleted. Restart at lca.
+	CodeInfo* lca_CI = dynamic_cast<CodeInfo*>(lca);
+	BriefAssertion(lca_CI);
+	throw CDS_RestartAtLCA_Exception(lca_CI);
+      }
+      
+    }
+    
+  } else {
+    // Add the statement instance to the map
+    stmtdata = new StmtData(stmt1, level);
+    (*stmtMap)[line] = stmtdata;
+    CDSDBG { cout << " Map: " << stmt1 << endl; }
+  }
+  
+  return changed;
+}
+
+
 // MergeOverlappingCode: When any particular loop or statement
 // overlaps with another [at the same level, having the same parent
-// loop], fuse them.  
+// loop], fuse them.  The difference between this routine and
+// CoalesceDuplicateStmts(), is that the latter only fuses when it
+// finds duplicate statements.
 //
 // Rationale: Compiler optimizations such as loop unrolling (start-up,
 // steady-state, wind-down), e.g., can produce (strange!) cases of
@@ -618,103 +854,6 @@ MergeOverlappingCode(ScopeInfo* node)
   } 
   delete mergedSet;
   delete childSet;
-  
-  return changed; 
-}
-
-
-// RenestUnnestedStmts: If the same statement exists at multiple
-// levels within a loop nest, discard all but the innermost
-// instance. If two identical statements exist at the same level,
-// discard one.  (Multiple statements exist at the same level because
-// of multiple basic blocks containing the same statement.)
-//
-// Rationale: Compiler optimizations may hoist loop-invariant
-// operations out of inner loops.  Note however that in rare cases,
-// code may be moved deeper into a nest (e.g. to free registers).
-// Even so, we want to associate statements within loops nests to
-// the deepest level in which they appear.
-static bool
-RenestUnnestedStmts(CodeInfo *scope, LineToStmtMap* stmtMap, int level);
-
-static bool
-RenestUnnestedStmts(PgmScopeTree* pgmScopeTree)
-{
-  bool changed = false;
-  PgmScope* pgmScope = pgmScopeTree->GetRoot();
-  
-  // Note: we apply the normalization routine to each FileScope so
-  // that it can assume that all line numbers encountered are within
-  // the same file.  This keeps the LineToStmtMap simple and fast.
-
-  // For each immediate child of this node...
-  for (ScopeInfoChildIterator it(pgmScope); it.Current(); ++it) {
-    BriefAssertion(((ScopeInfo*)it.Current())->Type() == ScopeInfo::FILE);
-    FileScope* file = dynamic_cast<FileScope*>(it.Current()); // always true
-    
-    LineToStmtMap stmtMap;
-    changed |= RenestUnnestedStmts(file, &stmtMap, 0);
-  } 
-  
-  return changed;
-}
-
-// RenestUnnestedStmts: Helper for the above. Assumes that all
-// statement line numbers are within the same file.  Note that since
-// we may delete nodes, we always operate on the children of 'scope'.
-// (Deleting oneself is not fun!)
-static bool
-RenestUnnestedStmts(CodeInfo *scope, LineToStmtMap* stmtMap, int level)
-{
-  bool changed = false;
-  
-  if (!scope) { return changed; }
-  
-  // A post-order traversal of this node (visit children before parent)...
-  for (ScopeInfoChildIterator it(scope); it.Current(); /* */) {
-    CodeInfo* child = dynamic_cast<CodeInfo*>(it.Current()); // always true
-    BriefAssertion(child);
-    it++; // advance iterator -- it is pointing at 'child'
-    
-    // 1. Recursively perform re-nesting on 'child'
-    changed |= RenestUnnestedStmts(child, stmtMap, level + 1);
-    
-    // 2. Examine 'child'
-    if (child->Type() == ScopeInfo::STMT_RANGE) {
-      
-      // If this statement instance already exists, delete the
-      // shallower instance.
-      StmtRangeScope* sr_child = dynamic_cast<StmtRangeScope*>(child);
-      suint line = child->BegLine();
-      StmtData* stmtdata = (*stmtMap)[line];
-      if (stmtdata) {
-	
-	// Find the node stmt to delete
-	StmtRangeScope* toRemove = NULL;
-	if (stmtdata->GetLevel() < level) {
-	  toRemove = stmtdata->GetStmt();
-	  stmtdata->SetStmt(sr_child);  // set replacement info
-	  stmtdata->SetLevel(level);
-	} else { 
-	  toRemove = sr_child;
-	}
-	toRemove->Unlink(); // unlink 'toRemove' from tree
-	delete toRemove;
-	changed = true;
-	
-      } else {
-	stmtdata = new StmtData(sr_child, level);
-	(*stmtMap)[line] = stmtdata;
-      }
-      
-    } else if (child->Type() == ScopeInfo::PROC) {
-      // Clear statement table
-      for (LineToStmtMapIt it = stmtMap->begin(); it != stmtMap->end(); ++it) {
-	delete (*it).second;
-      }
-      stmtMap->clear();
-    }
-  } 
   
   return changed; 
 }
@@ -859,20 +998,6 @@ FilterFilesFromScopeTree(PgmScopeTree* pgmScopeTree, String canonicalPathList)
 // Helpers for traversing the Tarjan Tree
 //****************************************************************************
 
-CFGNodeToPCMap::CFGNodeToPCMap() 
-{
-}
-
-CFGNodeToPCMap::CFGNodeToPCMap(CFG* cfg, Procedure* p)
-{
-  this->build(cfg, cfg->Entry(), p, 0);
-}
-
-CFGNodeToPCMap::~CFGNodeToPCMap()
-{
-  clear();
-}
-
 void
 CFGNodeToPCMap::build(CFG* cfg, CFG::Node* n, Procedure* p, Addr _end)
 {
@@ -930,6 +1055,19 @@ CFG_GetBegAndEndAddrs(CFG::Node* n, Addr &beg, Addr &end)
     }
     end = ((Instruction *)((StmtHandle)s_iter))->GetPC();
   }
+}
+
+//****************************************************************************
+// Helpers for traversing the Tarjan Tree
+//****************************************************************************
+
+void
+LineToStmtMap::clear()
+{
+  for (BaseMap::iterator it = begin(); it != end(); ++it) {
+    delete (*it).second;
+  }
+  BaseMap::clear();
 }
 
 //****************************************************************************
