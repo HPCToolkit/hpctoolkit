@@ -27,7 +27,7 @@ See ${HPCTOOLKIT}/doc/index.html for manual pages on the toolset.
 Generally speaking, running a tool without any options will output a
 brief usage message.
 
-0.1. HPCToolkit and GNU binutils 2.13:
+0.1. HPCToolkit and GNU binutils:
 ----
 We have had to make a number of fixes and changes to GNU binutils,
 most significantly to support the reading of debugging information
@@ -187,6 +187,20 @@ Like bloop, it it can be used as a 'cross-tool'.
 
 4. Revision History
 --------------------
+
+HPCToolkit Version 3.6.0: [2003.07.05]
+--------------------
+- Extend xprof to compute derived metrics from DCPI profiles.  In the 
+  process, significantly revise/rewrite most existing xprof code and
+  extend ISA and AlphaISA class.
+- Significantly revise hpcquick to accept PROFILE files with -P option.
+- Fix various hpcview bugs and use new xerces SAX interface.
+- Revamp HPCToolkit make system (portions of the source tree can easily
+  be removed without breaking the build).
+- Remove OpenAnalysis, binutils and xercesc from source tree
+- Convert OpenAnalysys' make system to Autoconf/make.
+- Add front end make system for binutils and xercesc.
+- Update to binutils 2.13.92; Update to xercesc 2.3.0.
 
 HPCToolkit Version 3.5.2: [2003.03.28]
 --------------------
