@@ -52,11 +52,15 @@
 
 
 // Information about Alpha instructions, encoding, conventions, and
-// section numbers are from "Alpha Architecture Handbook, Version 4
-// (October 1998).  Some of the opcode definitions have been
-// cross-checked with the alpha opcode table from GNU's binutils
-// ("opcodes/alpha-opc.c").
+// section numbers is from 
+//   Alpha Architecture Reference Manual, Fourth Edition 
+//   (January 2002; (c) Compaq Computer Corporation 2002)
+// It is available at the following anonymous FTP site:
+//   ftp.compaq.com/pub/products/alphaCPUdocs/alpha_arch_ref.pdf
 
+// Some of the opcode definitions have been cross-checked with the
+// alpha opcode table from GNU's binutils ("opcodes/alpha-opc.c") and
+// the file '/usr/include/machine/inst.h'.
 
 // ==========================================================================
 

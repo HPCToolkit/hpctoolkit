@@ -105,21 +105,53 @@ public:
     // Used to implement InstDesc.  These are mutually exclusive
     // instruction classes.  They are not intended for general use!
     enum IType {
-      BR_COND_REL,		// PC-relative conditional branch
-      BR_COND_IND,              // Register/Indirect conditional branch
-      BR_UN_COND_REL,		// PC-relative unconditional branch
-      BR_UN_COND_IND,		// Register/Indirect unconditional branch
+      // Note: only the Alpha ISA can reliably uses all categories.
+      // The other ISAs -- with the exception of MIPS -- only classify
+      // branches and do not distinguish between FP/int branches.
+
+      MEM_LOAD,                 // Memory load (integer and FP)
+      MEM_STORE,                // Memory store (integer and FP)
+      MEM_OTHER,                // Other memory inst
+
+      INT_BR_COND_REL,          // PC-relative conditional branch (int compare)
+      INT_BR_COND_IND,          // Register/Indirect conditional branch
+      FP_BR_COND_REL,           // PC-relative conditional branch (FP compare)
+      FP_BR_COND_IND,           // Register/Indirect conditional branch 
       
-      SUBR_REL,			// Relative subroutine call
-      SUBR_IND,			// Register/Indirect subroutine call
-      SUBR_RET,			// Subroutine return
-      SYS_CALL,			// System call
+      BR_UN_COND_REL,           // PC-relative unconditional branch
+      BR_UN_COND_IND,           // Register/Indirect unconditional branch
       
-      MEM_LOAD,			// Memory load
-      MEM_STORE,                // Memory store
-      MEM_OTHER,                // Memory ref not categorized as load or store
+      SUBR_REL,	                // Relative subroutine call
+      SUBR_IND,	                // Register/Indirect subroutine call
+      SUBR_RET,	                // Subroutine return
+
+      // ----------------
+      // The Alpha ISA classifies OTHER instructions into the
+      // following subdivisions. 
+      INT_ADD,      // Integer operations 
+      INT_SUB,
+      INT_MUL,
+      INT_CMP,
+      INT_LOGIC,
+      INT_SHIFT,
+      INT_MOV,
+      INT_OTHER, 
       
-      OTHER,      	       	// Any other valid instruction
+      FP_ADD,       // FP operation 
+      FP_SUB,
+      FP_MUL,
+      FP_DIV,
+      FP_CMP,
+      FP_CVT, 
+      FP_SQRT,
+      FP_MOV,
+      FP_OTHER,
+
+      // OTHER: a non-integer, non-fp instruction
+      // ----------------
+      
+      SYS_CALL,	                // System call      
+      OTHER,                    // Any other valid instruction
       INVALID                   // An invalid instruction
     };
     
@@ -135,31 +167,49 @@ public:
     }
         
     // -----------------------------------------------------
-
+    
     // IsValid: A valid instruction
     bool IsValid() const { return ty != INVALID; }
     // An invalid instruction
     bool IsInvalid() const { return ty == INVALID; }
-
+    
     // -----------------------------------------------------
-
+    
+    // Memory load
+    bool IsMemLoad() const { return ty == MEM_LOAD; }
+    // Memory store
+    bool IsMemStore() const { return ty == MEM_STORE; }
+    // Memory ref not categorized as load or store
+    bool IsMemOther() const { return ty == MEM_OTHER; }
+    
+    // -----------------------------------------------------
+    
     // Some sort of branch
     bool IsBr() const { return IsBrRel() || IsBrInd(); }
-
+    
     // Some sort of PC-relative branch
     bool IsBrRel() const { return IsBrCondRel() || IsBrUnCondRel(); }
     // Some sort of Register/Indirect branch
     bool IsBrInd() const { return IsBrCondInd() || IsBrUnCondInd(); }
-
+    
     // PC-relative conditional branch
-    bool IsBrCondRel() const { return ty == BR_COND_REL; }
+    bool IsBrCondRel() const { 
+      return ty == INT_BR_COND_REL || ty == FP_BR_COND_REL; 
+    }
     // Register/Indirect conditional branch
-    bool IsBrCondInd() const { return ty == BR_COND_IND; }
+    bool IsBrCondInd() const { 
+      return ty == INT_BR_COND_IND || ty == FP_BR_COND_IND; 
+    }
     // PC-relative unconditional branch
     bool IsBrUnCondRel() const { return ty == BR_UN_COND_REL; }
     // Register/Indirect unconditional branch
     bool IsBrUnCondInd() const { return ty == BR_UN_COND_IND; }
 
+    // A branch with floating point comparison
+    bool IsFPBr() const { 
+      return ty == FP_BR_COND_REL || ty == FP_BR_COND_IND; 
+    }
+    
     // -----------------------------------------------------
     
     // Some subroutine call (but not a system call)
@@ -171,25 +221,43 @@ public:
     bool IsSubrInd() const { return ty == SUBR_IND; }
     // Subroutine return
     bool IsSubrRet() const { return ty == SUBR_RET; }
+    
+    // -----------------------------------------------------
+
+    // A floating point instruction
+    bool IsFP() const { return IsFPBr() || IsFPArith() || IsFPOther(); }
+
+    // A floating point arithmetic instruction (excludes fp branches,
+    // moves, other)
+    bool IsFPArith() const { 
+      return (ty == FP_ADD || ty == FP_ADD || ty == FP_SUB || ty == FP_MUL
+	      || ty == FP_DIV || ty == FP_CMP || ty == FP_CVT 
+	      || ty == FP_SQRT);
+    }
+    
+    // Any other floating point instruction
+    bool IsFPOther() const { return ty == FP_MOV || ty == FP_OTHER; }
+
+    // -----------------------------------------------------
+    
+    // An integer arithmetic instruction (excludes branches, moves, other)
+    bool IsIntArith() const { 
+      return (ty == INT_ADD || ty == INT_SUB || ty == INT_MUL 
+	      || ty == INT_CMP || ty == INT_LOGIC || ty == INT_SHIFT);
+    }
+    
+    // Any other floating point instruction
+    bool IsIntOther() const { return ty == INT_MOV || ty == INT_OTHER; }
+
+    // -----------------------------------------------------
+    
     // System call
     bool IsSysCall() const { return ty == SYS_CALL; }
-
-    // -----------------------------------------------------
-
-    // Memory load
-    bool IsMemLoad() const { return ty == MEM_LOAD; }
-    // Memory store
-    bool IsMemStore() const { return ty == MEM_STORE; }
-    // Memory ref not categorized as load or store
-    bool IsMemOther() const { return ty == MEM_OTHER; }
-
-    // -----------------------------------------------------
-
     // Any other valid instruction
     bool IsOther() const { return ty == OTHER; }
-
+    
     // -----------------------------------------------------
-
+    
     void Set(IType t) { ty = t; }
     
     const char* ToString() const;

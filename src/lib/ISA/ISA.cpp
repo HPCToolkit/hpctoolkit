@@ -80,23 +80,46 @@ const char*
 ISA::InstDesc::ToString() const
 {
   switch(ty) {
-    case BR_COND_REL:    return "BR_COND_REL";
-    case BR_COND_IND:    return "BR_COND_IND";
-    case BR_UN_COND_REL: return "BR_UN_COND_REL";
-    case BR_UN_COND_IND: return "BR_UN_COND_IND";
+  case MEM_LOAD:        return "MEM_LOAD";
+  case MEM_STORE:       return "MEM_STORE";
+  case MEM_OTHER:       return "MEM_OTHER";
 
-    case SUBR_REL:       return "SUBR_REL";
-    case SUBR_IND:       return "SUBR_IND";
-    case SUBR_RET:       return "SUBR_RET";
-    case SYS_CALL:       return "SYS_CALL";
+  case INT_BR_COND_REL: return "INT_BR_COND_REL";
+  case INT_BR_COND_IND: return "INT_BR_COND_IND";
+  case FP_BR_COND_REL:  return "FP_BR_COND_REL";
+  case FP_BR_COND_IND:  return "FP_BR_COND_IND";
+
+  case BR_UN_COND_REL:  return "BR_UN_COND_REL";
+  case BR_UN_COND_IND:  return "BR_UN_COND_IND";
       
-    case MEM_LOAD:       return "MEM_LOAD";
-    case MEM_STORE:      return "MEM_STORE";
-    case MEM_OTHER:      return "MEM";
+  case SUBR_REL:        return "SUBR_REL";
+  case SUBR_IND:        return "SUBR_IND";
+  case SUBR_RET:        return "SUBR_RET";
       
-    case OTHER:          return "OTHER";
-    case INVALID:        return "INVALID";
-    default: BriefAssertion(false && "Programming Error");
+  case INT_ADD:         return "INT_ADD";
+  case INT_SUB:         return "INT_SUB";
+  case INT_MUL:         return "INT_MUL";
+  case INT_CMP:         return "INT_CMP";
+  case INT_LOGIC:       return "INT_LOGIC";
+  case INT_SHIFT:       return "INT_SHIFT";
+  case INT_MOV:         return "INT_MOV";
+  case INT_OTHER:       return "INT_OTHER";
+  
+  case FP_ADD:          return "FP_ADD";
+  case FP_SUB:          return "FP_SUB";
+  case FP_MUL:          return "FP_MUL";
+  case FP_DIV:          return "FP_DIV";
+  case FP_CMP:          return "FP_CMP";
+  case FP_CVT:          return "FP_CVT";
+  case FP_SQRT:         return "FP_SQRT";
+  case FP_MOV:          return "FP_MOV";
+  case FP_OTHER:        return "FP_OTHER";
+
+  case SYS_CALL:        return "SYS_CALL";
+  case OTHER:           return "OTHER";
+  case INVALID:         return "INVALID";
+
+  default: BriefAssertion(false && "Programming Error");
   }
   return NULL;
 }

@@ -151,9 +151,9 @@ i686ISA::GetInstDesc(MachInst* mi, ushort opIndex, ushort s)
       break;
     case dis_condbranch:
       if (di->target != 0) {
-	d.Set(InstDesc::BR_COND_REL);
+	d.Set(InstDesc::INT_BR_COND_REL); // arbitrarily choose int
       } else {
-	d.Set(InstDesc::BR_COND_IND);
+	d.Set(InstDesc::INT_BR_COND_IND); // arbitrarily choose int
       }
       break;
     case dis_jsr:
