@@ -117,9 +117,8 @@ uninstall: uninstall_scripts
 
 PERL_LIB     = perl
 
-SCRIPTS_SRC  = ptran/ptran filters/f90modfilt
-SCRIPTS_HPCQUICK  = hpcquick/hpcquick hpcquick/hpcquick-papiprof
-SCRIPTS_INST = ptran hpcquick f90modfilt
+SCRIPTS_SRC  = ptran/ptran filters/f90modfilt hpcquick/hpcquick hpcquick/hpcquick-papiprof
+SCRIPTS_INST = ptran f90modfilt hpcquick hpcquick-papiprof
 
 # install perl tools
 #   note: we only copy *.pm files (instead of the whole directory) so
@@ -131,12 +130,7 @@ install_scripts: uninstall_scripts
 	  if [ -x $(HSRC)/hpctoolkit/$$i ] ; then \
 	    cp $(HSRC)/hpctoolkit/$$i $(HBIN)/ ; \
 	  fi \
-	done; \
-	for i in $(SCRIPTS_HPCQUICK) ; do \
-	  if [ -x $(HSRC)/hpctoolkit/$$i ] ; then \
-	    cp $(HSRC)/hpctoolkit/$$i $(HBIN)/$(PLATFORM); \
-	  fi \
-	done
+	done;
 
 # uninstall perl tools
 uninstall_scripts:
