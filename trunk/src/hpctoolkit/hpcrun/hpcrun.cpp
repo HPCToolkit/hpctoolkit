@@ -488,7 +488,7 @@ list_available_events(event_list_t listType)
       else if (listType == LIST_LONG) {
 	printf(FmtPAPILong, 
 	       info.symbol, (info.count > 1 ? "Yes" : "No"),
-	       info.long_descr, (info.vendor_name ? info.vendor_name : ""));
+	       info.long_descr, (info.note ? info.note : ""));
       }
       count++;
     }
