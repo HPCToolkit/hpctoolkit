@@ -5,7 +5,7 @@
 if test -z "${HPCTOOLKIT}" ; then
   echo "You must set your HPCTOOLKIT environment variable before sourcing"
   echo "this file."
-  exit 1
+  return 1
 fi
 
 #############################################################################
