@@ -37,7 +37,7 @@
 //***************************************************************************
 //
 // File:
-//    PgmScopeTreeBuilder.H
+//    $Source$
 //
 // Purpose:
 //    [The purpose of this file]
