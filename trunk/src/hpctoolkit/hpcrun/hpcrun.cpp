@@ -127,7 +127,7 @@ static const char* args_version_info =
 /* #include <include/HPCToolkitVersionInfo.h> */
 
 static const char* args_usage_summary1 =
-"[-r] [-e <event>[:<period>]...] [-o <outpath>] [-f <flag>] -- <command> [arguments]\n";
+"[-r] [-e <event1>[:<period1>] [-e <event2>[:<period2>] ...]] [-o <outpath>] [-f <flag>] -- <command> [arguments]\n";
 
 static const char* args_usage_summary2 =
 "[-l | -L] [-V] [-h]\n";
@@ -138,11 +138,13 @@ static const char* args_usage_details =
 "native events will be monitored.  Given multiple events it can create\n"
 "multiple profile histograms during one run.\n"
 "\n"
-"Each <period> instances of the specified <event>, a counter associated with\n"
-"the instruction at the current program counter location will be\n"
-"incremented. When <command> terminates normally, a profile -- a histogram\n"
-"of counts for instructions in each load module) will be written to a file\n"
-"with name <command>.<event1>.<hostname>.<pid>.\n"
+"For each <eventk>, each <periodk> instances of <eventk> a counter associated \n"
+"with the instruction at the current program counter location will be incremented. \n"
+"When <command> terminates normally, a profile -- a histogram of counts\n"
+"for instructions in each load module) will be written to a file with the\n"
+"name <command>.<event1>.<hostname>.<pid>. If multiple events are specified,\n"
+"data for all events will be recorded in this single file even though the file\n"
+"naming convention only uses <event1> in name of the output file.\n"
 "\n"
 "The special option '--' can be used to stop hpcrun option parsing.  This is\n"
 "especially useful when <command> takes arguments of its own.\n"
@@ -157,18 +159,17 @@ static const char* args_usage_details =
 "  -r  By default all processes spawned by <command> will be profiled, each\n"
 "      receiving its own output file. Use this option to turn off recursive\n"
 "      profiling; only <command> will be profiled.\n"
-"  -e <event1>[:<period1>][;<event2>[:<period2>][<event3> ...]]  {PAPI_TOT_CYC:32767}\n"
-"      An event to profile and its corresponding sample period.  <event>\n"
+"  -e <eventk>[:<periodk>]                               {PAPI_TOT_CYC:32767}\n"
+"      An event to profile and its corresponding sample period.  <eventk>\n"
 "      may be either a PAPI or native processor event\n"
 "      NOTE 1: it is recommended that you always specify the sampling period for\n"
 "              each profiling event.\n"
 "      NOTE 2: multiple events may be selected for profiling during an execution\n" 
-"              by using two or more <event>[:<period>] pairs. Each event-period\n"
-"              should be separated from the previous one by a semicolon.\n"
+"              by using  multiple '-e' arguments. \n"
 "      NOTE 3: the maximum number of events that can be monitored during a single\n"
-"              execution depends on the processor. also, not all combinations of \n"
+"              execution depends on the processor. not all combinations of \n"
 "              events may be monitored in the same execution. allowable\n"
-"              combinations are a function of the processor. check your \n"
+"              combinations depend on the processor. check your \n"
 "              processor documentation for the details of both issues.\n"
 "  -o <outpath>                                                          {.}\n"
 "      Directory for output data\n"
