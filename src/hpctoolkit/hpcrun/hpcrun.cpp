@@ -81,7 +81,11 @@ static int
 launch_and_profile(const char* installpath, char* argv[]);
 
 static int
-list_available_events(event_list_t listType);
+list_available_events(char* argv[], event_list_t listType);
+
+
+static int
+prepend_to_ld_lib_path(const char* str);
 
 //***************************************************************************
 //
@@ -98,7 +102,7 @@ main(int argc, char* argv[])
   // Check for special options that short circuit profiling
   if (myopt_list_events) {
     // List events
-    return list_available_events(myopt_list_events);
+    return list_available_events(argv, myopt_list_events);
   }
   else {
     // Launch and profile
@@ -128,20 +132,8 @@ init_papi()
 static int
 prepare_ld_lib_path_for_papi()
 {
-  char newval[PATH_MAX] = "";
-  char *oldval;
-  int sz;
-  
   /* LD_LIBRARY_PATH */
-  strncpy(newval, HPC_PAPI_LIBPATH, PATH_MAX);
-  oldval = getenv(LD_LIBRARY_PATH);
-  if (oldval) {
-    sz = PATH_MAX - (strlen(newval) + 1); /* 'path:' */
-    snprintf(newval + strlen(newval), sz, ":%s", oldval);
-  }
-  newval[PATH_MAX-1] = '\0';
-  setenv(LD_LIBRARY_PATH, newval, 1);
-  return 0;
+  return prepend_to_ld_lib_path(HPC_PAPI_LIBPATH);
 }
 
 
@@ -513,22 +505,51 @@ check_and_prepare_env_for_eventlisting();
  *  List available events.
  */
 static int
-list_available_events(event_list_t listType)
+list_available_events(char* argv[], event_list_t listType)
 {
+  static const char* HPCRUN_TAG = "HPCRUN_SUPER_SECRET_TAG";
+  char* envtag = NULL;
   pid_t pid;
-  int status;
-
-  if (check_and_prepare_env_for_eventlisting() != 0) {
-    return 1;
-  }
+  int status = 0;
   
-  // For a reason I do not understand, dlopen may *ignore* a
-  // LD_LIBRARY_PATH modified with a call to setenv().
-  dlopen_papi();
-  list_available_events_helper(listType);    
-  dlclose_papi();
-
-  return 0;
+  // For a (security?) reason I do not understand, dlopen may *ignore*
+  // a call to setenv() modifying LD_LIBRARY_PATH.  Thus we set the
+  // environment (adding a special tag to prevent infinite recursion)
+  // and then fork() and exec a call to ourself.
+  envtag = getenv(HPCRUN_TAG);
+  if (!envtag) {
+    // 1. No hpcrun tag: prepare env, add the tag and fork/exec
+    status |= check_and_prepare_env_for_eventlisting();
+    status |= setenv(HPCRUN_TAG, "1", 1);
+    if (status != 0) { 
+      fprintf(stderr, "%s: Error preparing environment\n", args_command);
+      return status; 
+    }
+    //fprintf(stderr, "%s\n", getenv(LD_LIBRARY_PATH));
+    
+    // Fork and exec
+    if ((pid = fork()) == 0) {
+      // Child process
+      const char* cmd = argv[0];
+      if (execvp(cmd, argv) == -1) {
+	fprintf(stderr, "%s: Error exec'ing myself!: %s\n", 
+		args_command, strerror(errno));
+	return 1;
+      }
+      // never reached
+    }
+    
+    // Parent process
+    wait(&status);
+    return WEXITSTATUS(status);
+  }
+  else {
+    // 2. List the events
+    dlopen_papi();
+    list_available_events_helper(listType);    
+    dlclose_papi();
+    return 0;
+  }
 }
 
 
@@ -698,10 +719,7 @@ list_available_events_helper(event_list_t listType)
 static int
 check_and_prepare_env_for_eventlisting()
 {
-  /* LD_LIBRARY_PATH */
-  prepare_ld_lib_path_for_papi();
-  //fprintf(stderr, "%s\n", getenv(LD_LIBRARY_PATH));
-  return 0;
+  return prepare_ld_lib_path_for_papi();
 }
 
 
@@ -709,3 +727,21 @@ check_and_prepare_env_for_eventlisting()
 // Misc
 //***************************************************************************
 
+static int
+prepend_to_ld_lib_path(const char* str)
+{
+  char newval[PATH_MAX] = "";
+  char *oldval;
+  int sz;
+  
+  /* LD_LIBRARY_PATH */
+  strncpy(newval, str, PATH_MAX);
+  oldval = getenv(LD_LIBRARY_PATH);
+  if (oldval) {
+    sz = PATH_MAX - (strlen(newval) + 1); /* 'path:' */
+    snprintf(newval + strlen(newval), sz, ":%s", oldval);
+  }
+  newval[PATH_MAX-1] = '\0';
+  setenv(LD_LIBRARY_PATH, newval, 1);
+  return 0;
+}
