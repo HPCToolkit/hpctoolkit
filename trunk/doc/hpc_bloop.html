@@ -172,19 +172,21 @@ compilers:</p>
   <li>alpha-OSF1:  GCC 2.9x, 3.x, Compaq Compilers 6.x
   <li>i686-Linux:  GCC 2.9x, 3.x
   <li>ia64-Linux:  GCC 2.9x, 3.x, Intel Compilers 6.x, 7.x
-  <li>mips-IRIX64: GCC 2.9x, 3.x, SGI MIPSpro Compilers 7.x 
-  <li>sparc-SunOS: GCC 2.9x, 3.x
+  <li>mips-IRIX64: GCC 2.9x, 3.x, SGI MIPSpro Compilers 7.x
+  <li>sparc-SunOS: GCC 2.9x, 3.x, Sun WorkShop/Forte/ONE 6u2
 </ul>
 
-<p><span class="hpctool">bloop</span> is dependent upon
-debugging information to report source line
-information.  In order to facilitate accurate source file loop
-recovery, each binary to be analyzed should be compiled with as much
-debugging information as possible. E.g.</p>
+<p><span class="hpctool">bloop</span> is dependent upon debugging
+information to report source line information.  In order to facilitate
+accurate source file loop recovery, each binary to be analyzed should
+be compiled with as much debugging information as possible.  Moreover
+the debugging information must be in the binary, not object files.
+E.g.</p>
 
 <ul>
   <li>GNU Compilers and Intel Compilers: <code>-g</code>
   <li>Compaq Compilers and SGI MIPSpro Compilers: <code>-g3</code>
+  <li>Sun Compilers: <code>-g -xs</code>
 </ul>
 
 <p><span class="hpctool">bloop</span> does <i>not</i> currently
