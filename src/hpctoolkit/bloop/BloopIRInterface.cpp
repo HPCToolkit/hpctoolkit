@@ -428,29 +428,28 @@ void BloopIRInterface::Dump (StmtHandle stmt, ostream& os)
 {
   Instruction *insn = (Instruction *) stmt;
  
-  // Currently, we just print the instruction type.
-  // What we really want is a textual disassembly of the instruction
-  // from the disassembler.
+  // Currently, we just print the instruction type.  What we really
+  // want is a textual disassembly of the instruction from the
+  // disassembler.
 
-  if (branchTargetSet.find(insn->GetPC()) != branchTargetSet.end()) {
-    cout << hex << insn->GetPC() << ": ";
-  }
-
+  Addr pc = insn->GetPC();
   ISA::InstDesc d = insn->GetDesc();
-  const char* str = d.ToString();
-  StmtLabel br_targ = 0;
 
-  if (d.IsBrRel()) {
-      br_targ = (StmtLabel) (insn->GetTargetAddr(insn->GetPC()));
-      os << str << " <" << hex << br_targ << ">";
-      if (proc->IsIn(br_targ) == false) {
-        cout << "[out of procedure -- treated as SIMPLE]";
-      }
-  } else if (d.IsBrInd()) {
-    os << str << " <register>";
-  } else {
-    os << str;
+  // Output pc and descriptor
+  cout << hex << "0x" << pc << dec << ": " << d.ToString();
+  
+  // Output other qualifiers
+  if (branchTargetSet.find(pc) != branchTargetSet.end()) {
+    cout << " [branch target]";
   }
-  os << dec;
+  if (d.IsBrRel()) {
+    StmtLabel targ = (StmtLabel) (insn->GetTargetAddr(pc));
+    os << " <" << hex << "0x" << targ << dec << ">";
+    if (proc->IsIn(targ) == false) {
+      cout << " [out of procedure -- treated as SIMPLE]";
+    }
+  } else if (d.IsBrInd()) {
+    os << " <register>";
+  }
 }
 
