@@ -53,8 +53,9 @@ include(config/hpc-cxxutils.m4)
 
 #----------------------------------------------------------------------------
 # Initialization: 
-# Require libtool 1.5.10 to correctly link templates with MIPSPro
-#   compiler on IRIX64.
+# Require libtool 1.5.10 and automake 1.9.3 to 1) correctly link
+#   templates with MIPSPro compiler on IRIX64, 2) link on alpha-Tru64
+#   and 3) fix missing .so problem on Linux.
 # Update to autoconf 2.59 and automake 1.8.3
 # Require autoconf 2.54 because automake 1.7.6 needs it.  
 #  - automake 1.7.6 is needed to generate Intel 7.1 dependencies correctly.
@@ -63,12 +64,12 @@ include(config/hpc-cxxutils.m4)
 #    correctly
 #----------------------------------------------------------------------------
 
-AC_INIT([HPCToolkit], [4.0.0], [hpc@cs.rice.edu], [HPCToolkit])
+AC_INIT([HPCToolkit], [4.0.5], [hpc@cs.rice.edu], [HPCToolkit])
 AC_CONFIG_SRCDIR([src/include/HPCToolkitVersionInfo.h])
 AC_CONFIG_AUX_DIR([config])
 
 AC_PREREQ(2.59)
-AM_INIT_AUTOMAKE(1.8.3)
+AM_INIT_AUTOMAKE(1.9.3)
 # Require libtool 1.5.10
 
 AC_CANONICAL_HOST
