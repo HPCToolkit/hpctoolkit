@@ -53,8 +53,8 @@
 #include "hpcpapi.h" /* <papi.h>, etc. */
 
 #include "hpcrun.h"
-#include "map.h"
-#include "io.h"
+#include "rtmap.h"
+#include <lib/hpcfile/io.h>
 
 /**************************** Forward Declarations **************************/
 
