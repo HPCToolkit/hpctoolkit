@@ -72,6 +72,7 @@ using std::memcpy;
 using std::size_t;
 # include <cctype>
 using std::isdigit; // For compatibility with non-std C headers
+using std::isspace;
 #endif
 
 //*************************** User Include Files ****************************
