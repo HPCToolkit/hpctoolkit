@@ -179,6 +179,13 @@ Like bloop, it it can be used as a 'cross-tool'.
 4. Revision History
 --------------------
 
+HPCToolkit Version x.x.x: [2004.11.xx]
+--------------------
+- Create HPCToolkitRoot, a shell repository to make obtaining sources,
+  building and installation easier.
+- Merge hpcrun/hpcprof into code base.  hpcrun can create profiles of
+  multiple PAPI or native events, monitor threads and follow forks.
+
 HPCToolkit Version 3.7.0: [2004.03.12]
 --------------------
 - Replace make system with Autoconf/Automake make system

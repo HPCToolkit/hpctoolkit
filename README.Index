@@ -14,33 +14,28 @@ Contents:
 
 =============================================================================
 
-0. Brief Overview of HPCToolkit Root:
+0. Brief Overview of HPCToolkit Installation:
 --------------------
 
 Local HPCToolkit documentation: Point your browser to
 ${HPCTOOLKIT}/doc/index.html.
 
-File in root:
+Files and directories:
 
   README              - A very brief description of HPCToolkit
   README.Contact      - Contacting the HPCToolkit team
-  README.License      - The license you agree to by using this software
   README.Index        - This file
+  README.License      - The license you agree to by using this software
   README.ReleaseNotes - Release notes and a revision history of HPCToolkit
 
-  Sourceme-csh        - Environment variables needed for use or development
-  Sourceme-sh         -   of HPCToolkit. 
+  Sourceme-csh        - Places ${HPCTOOLKIT}/bin in your PATH
+  Sourceme-sh
 
-
-Directories in root: (not all may exist, depending on your distribution)
-
+  bin/      - All HPCToolkit executables
+  config/   - Certain scripts uses for configuration.
   doc/      - Documentation for HPCToolkit
   examples/ - Sample scripts and configuration files for collecting
               and preparing profiles for display.
-  lib/      - External libraries
-  src/      - HPCToolkit source code; external libraries and tools source 
-              code.
-  tools/    - Tools that can be used by or with HPCToolkit.
+  lib/      - HPCToolkit libraries.
+  xercesc/  - XercesC library
 
-  See the READMEs under each directory for more information on each
-  component.
