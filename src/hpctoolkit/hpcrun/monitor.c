@@ -112,11 +112,19 @@ init_library()
 
 
 /*
- *  Library finalization
+ *  Library finalization. Since this routine can be called more than
+ *  once per process, ensure that it is idempotent.
  */
 extern void 
 fini_library()
 {
+  static int is_finalized = 0;
+  if (is_finalized) {
+    if (opt_debug >= 1) { MSG(stderr, "*** fini_library (skip) ***"); }
+    return;
+  }
+  
+  is_finalized = 1;
   if (opt_debug >= 1) { MSG(stderr, "*** fini_library ***"); }
 }
 
@@ -1041,11 +1049,20 @@ static void fini_profdesc(hpcrun_profiles_desc_t** profdesc,
 
 
 /*
- *  Finalize profiling for this process
+ *  Finalize profiling for this process.  Since this routine can be
+ *  called more than once per process, ensure that it is idempotent.
  */
 extern void 
 fini_process()
 {
+  static int is_finalized = 0;
+
+  if (is_finalized) {
+    if (opt_debug >= 1) { MSG(stderr, "*** fini_process (skip) ***"); }
+    return;
+  }
+
+  is_finalized = 1;
   if (opt_debug >= 1) { MSG(stderr, "*** fini_process ***"); }
 
   fini_thread(&hpc_profdesc, 0 /*is_thread*/);
