@@ -352,14 +352,13 @@ int CodeInfoLineComp(CodeInfo* x, CodeInfo* y);
 // ---------------------------------------------------------
 class PgmScope: public ScopeInfo {
 public: 
-  PgmScope(const char* pgmName); 
+  PgmScope(); 
   virtual ~PgmScope(); 
 
   String Name() const { return name; }
 
   // find by 'realpath'
   LoadModScope* FindLoadMod(const char* nm) const;
-  FileScope*    FindFile(const char* nm) const;
 
   virtual String ToDumpString(int dmpFlag = PgmScopeTree::XML_TRUE) const; 
 
@@ -373,14 +372,12 @@ public:
 protected: 
 private: 
   void AddToLoadModMap(LoadModScope& lm);
-  void AddToFileMap(FileScope& file);
   friend class LoadModScope;   
   friend class FileScope; 
 
   bool frozen;
   String name;            // the program name
   LoadModScopeMap* lmMap; // mapped by 'realpath'
-  FileScopeMap* fileMap;  // mapped by 'realpath'
 }; 
 
 // ---------------------------------------------------------
@@ -415,14 +412,17 @@ public:
   LoadModScope(const char* lmName, ScopeInfo* mom);
   virtual ~LoadModScope(); 
 
+  FileScope*    FindFile(const char* nm) const;
   String Name() const { return name; }
 
   virtual String CodeName() const;
   virtual String ToDumpString(int dmpFlag = PgmScopeTree::XML_TRUE) const;
   
+  void AddToFileMap(FileScope& file);
 protected: 
 private: 
   String name; // the load module name
+  FileScopeMap* fileMap;  // mapped by 'realpath'
 }; 
 
 // ---------------------------------------------------------
