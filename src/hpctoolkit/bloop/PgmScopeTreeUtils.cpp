@@ -61,6 +61,7 @@ using namespace std; // For compatibility with non-std C headers
 
 //*************************** User Include Files ****************************
 
+#include "Args.h"
 #include "PgmScopeTreeUtils.h"
 #include "CodeInfoPtrSet.h"
 #include "BloopIRInterface.h"
@@ -126,7 +127,9 @@ WriteScopeTree(std::ostream& os, PgmScopeTree* pgmScopeTree, bool prettyPrint)
 
 PgmScopeTree*
 BuildScopeTreeFromExe(Executable* exe, PCToSrcLineXMap* &map,
-		      String canonicalPathList, bool normalizeScopeTree)
+		      String canonicalPathList, 
+		      bool normalizeScopeTree,
+		      bool verboseMode)
 {
   BriefAssertion(exe);
 
@@ -157,8 +160,15 @@ BuildScopeTreeFromExe(Executable* exe, PCToSrcLineXMap* &map,
       Procedure* p = it1.Current();
       
       FileScope* fileScope = FindOrCreateFileNode(pgmScope, p);
+      if (verboseMode){
+        cerr <<"Building scope tree for [" << p->GetName()  << "] ... ";
+      }
       BuildScopeTreeFromProc(fileScope, p);
       if (map) { BuildPCToSrcLineMap(map, p); } // MAP
+      if (verboseMode){
+        cerr <<"done " << endl;
+      }
+       
     }
   }
 
