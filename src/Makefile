@@ -162,14 +162,12 @@ clean:
 	    $(MAKE) clean -f $(HSRC)/$$i/Makefile ; \
 	  fi \
 	done
-	@echo "Note: does not clean libs or tools in src/external_*"
 
 veryclean:
 	if [ -n "$(HPCTOOLKIT_OBJ_PATH)" \
 	     -a "$(HPCTOOLKIT_OBJ_PATH)" != "/" ] ; then \
 	  /bin/rm -f -r $(HPCTOOLKIT_OBJ_PATH) ; \
 	fi
-	@echo "Note: does not clean libs or tools in src/external_*"
 
 .PHONY: clean veryclean
 
