@@ -69,7 +69,7 @@ static const char* usage_summary =
 "[options] <binary>\n";
 
 static const char* usage_details =
-"bloop analyzes the application binary <binary>, recovers information about\n"
+"bloop analyzes the binary or DSO <binary>, recovers information about\n"
 "its source-line loop-nesting structure, and generates an XML scope tree (of\n"
 "type PGM) to stdout.  It uses debugging information to gather source-line\n"
 "data; see caveats below for common problems.\n"

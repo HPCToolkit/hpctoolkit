@@ -80,9 +80,9 @@ my $the_usage =
   ${the_program} [other-options] -z|x [-I <dir1>...<dirN>] [-S <struct-file1> ...<struct-fileK>] -P <prof1>...<profM>
   
 Given a list of paths to directories containing interesting program source
-code files, an optional program structure file created by the 'bloop' tool,
-and a list of profile files, creates an 'hpcview' configuration file and a
-browsable database in the current directory.  All shell commands are captured
+code files, an optional list of program structure files created by the 'bloop'
+tool, and a list of profile files, creates an 'hpcview' configuration file and
+a browsable database in the current directory.  All shell commands are captured
 into a log file.
 
 Following is a list of the various profile files accepted.  If needed, they
@@ -103,7 +103,8 @@ Standard arguments:
   -S <struct-file1>...<struct-fileK>    
                       An optional space-separated set of structure files from
 		      bloop. These structure files can be for the main program
-		      and/or any or all of the shared libraries used by the program.
+		      and/or any or all of the shared libraries used by the
+                      program.
   -P <prof1>...<profM> 
                       A space-separated list of profile files.
 

@@ -24,7 +24,7 @@ Contents:
 --------------------
 
 See ${HPCTOOLKIT}/doc/index.html for manual pages on the toolset.
-Generally speaking, running a tool without any options will output a
+Generally speaking, running a tool with the -h option will output a
 brief usage message.
 
 0.1. HPCToolkit and GNU binutils:
@@ -179,12 +179,30 @@ Like bloop, it it can be used as a 'cross-tool'.
 4. Revision History
 --------------------
 
-HPCToolkit Version x.x.x: [2004.11.xx]
+HPCToolkit Version 4.0.0: [2004.11.xx]
 --------------------
 - Create HPCToolkitRoot, a shell repository to make obtaining sources,
   building and installation easier.
-- Merge hpcrun/hpcprof into code base.  hpcrun can create profiles of
-  multiple PAPI or native events, monitor threads and follow forks.
+- Autoconf HPCToolkitRoot and hpcviewer. 
+- Revamp launching of hpcview et al. to not be dependent upon
+  Sourcemes.  All needed envionment variables are set dynamically.
+- Overhaul hpcquick to canonicalize all performace data files into 
+  PROFILE files before extracting metrics.  Include support for processing
+  hpcrun files.
+- Merge hpcrun/hpcprof into code base.
+- Extend hpcrun:
+  - create profiles of multiple PAPI or native events
+  - monitor POSIX threads
+  - follow forks
+  - profile through execs
+  - create WALLCLK profiles
+- bloop processes DSOs.
+- Fix bugs in hpcprof:
+  - When no line information could be found, samples were dropped
+  - Fix several type-size problems.
+- hpcview and hpcquick handle multiple structure files
+- Port HPCToolkit to opteron-Linux.
+- Update documentation accordingly.
 
 HPCToolkit Version 3.7.0: [2004.03.12]
 --------------------

@@ -26,7 +26,7 @@
 <div id="main">
 
 <!-- automatically updated by Emacs hook below; nicer than CVS Date -->
-<p class="lastupdated">Last Updated: 2004-10-26</p>
+<p class="lastupdated">Last Updated: 2004-10-28</p>
 
 <h2>User Commands: bloop(1)</h2>
 
@@ -49,11 +49,11 @@
 
 <div class="indent">
 
-<p><span class="hpctool">bloop</span> analyzes the application 
-binary <i>binary</i>, recovers information about its source-line 
-loop-nesting structure and generates an XML scope tree to standard 
-output.  It uses debugging information to gather source-line
-data; see NOTES below for common problems.</p>
+<p><span class="hpctool">bloop</span> analyzes the binary or
+dynamically linked library <i>binary</i>, recovers information about
+its source-line loop-nesting structure and generates an XML scope tree
+to standard output.  It uses debugging information to gather
+source-line data; see NOTES below for common problems.</p>
 
 <p>The output file is an XML document of type 
 <a href="dtd_pgm.html" class="hpctool">PGM</a> which can be passed 
@@ -120,13 +120,13 @@ colon separated <i>list</i>.  May be passed multiple times.
 <br><br>
 
 Normally, <span class="hpctool">bloop</span> outputs program structure
-information for everything found in the application
-<i>binary</i>. (Functions that are in dynamically linked libraries are
-not in the binary, so their structure is not analyzed.)  This option
-limits the output to only functions whose source is found in supplied
-path list.  This allows the user to focus on performance issues in the
-application, rather than looking at the details of a large library
-with which it is linked and for which source code is not available.
+information for everything found in <i>binary</i>. (Recall that
+applications can use routines in dynamically linked libraries, which
+are <i>separate</i> binaries.)  This option limits the output to only
+functions whose source is found in supplied path list.  This allows
+the user to focus on performance issues in the application, rather
+than looking at the details of a large library with which it is linked
+and for which source code is not available.
 
 <dt>-V, --version
 <dd>Print version information.
@@ -186,11 +186,11 @@ use:</p>
   <li>Sun Compilers: <code>-g -xs</code>
 </ul>
 
-<p><span class="hpctool">bloop</span> does <i>not</i> currently
-load and analyze any dynamically linked libraries that may be used
-by <i>binary</i>.  To include such libraries in a 
-<span class="hpctool">bloop</span> analysis, you will need to relink
-your program with static versions of the libraries.</p>
+<p>While <span class="hpctool">bloop</span> can analyize dynamically
+linked libraries, it will <i>not</i> currently load all such libraries
+used by <i>binary</i>.  To create such information, run 
+<span class="hpctool">bloop</span> on each dynamically linked library (or
+relink your program with static versions of the libraries).</p>
 
 <p><span class="hpctool">bloop</span> is a `cross-tool' and thus
 supports the analysis of different types of target binaries on one
@@ -210,18 +210,13 @@ compilers:</p>
 
 <!-- ********************************************************************** -->
 
+<!--
 <h3>FUTURE DIRECTIONS</h3>
-
-<div class="indent">
-
-<p>We have plans to add support for the analysis of dynamically linked
-libraries.</p>
-
-</div> <!-- class=indent -->
+-->
 
 <!-- ********************************************************************** -->
 
-<h3>ALSO SEE</h3>
+<h3>RELATED</h3>
 
 <div class="indent">
 
