@@ -121,11 +121,11 @@ head {
 }
 
 h1 {
-  font-size: 32px;
-  line-height: 1;
-  font-family: sans-serif;
+  font-size: 24px;
+  font-family: serif;
   color: black;
-  background-color: transparent; 
+  background-color: transparent;
+  line-height: 1;
 }
 
 h2 {
