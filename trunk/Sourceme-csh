@@ -42,7 +42,7 @@ endif
 
 #############################################################################
 
-setenv XERCESCROOT "${HPCTOOLKIT}/../xercesc
+setenv XERCESCROOT "${HPCTOOLKIT}/../xercesc"
 set XERCESPLATFORM="${XERCESCROOT}/${HPCTOOLKIT_PLATFORM}/lib"
 
 if ( ${HPCTOOLKIT_OS} == 'IRIX64' || ${HPCTOOLKIT_OS} == 'IRIX' ) then
