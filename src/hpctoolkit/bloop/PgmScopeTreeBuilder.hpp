@@ -74,6 +74,7 @@ namespace ScopeTreeBuilder {
   BuildFromExe(/*Executable*/ LoadModule* exe, PCToSrcLineXMap* &map,
 	       String canonicalPathList = "",
 	       bool normalizeScopeTree = true,
+	       bool irreducibleIntervalIsLoop = false,
 	       bool verboseMode = false);
   
   bool 

@@ -77,6 +77,8 @@ static const char* usage_details =
 "Options:\n"
 "  -v, --verbose        Verbose: generate progress messages to stderr\n"
 "  -n, --normalize-off  Turn off scope tree normalization\n"
+"  -i, --irreducible-interval-as-loop\n"
+"                       Treat irreducible intervals as loops\n"
 "  -c, --compact        Generate compact output, eliminating extra white\n"
 "                       space\n"
 "  -p <list>, --canonical-paths <list>\n"
@@ -113,6 +115,8 @@ CmdLineParser::OptArgDesc Args::optArgs[] = {
   // Options
   { 'v', "verbose",         CLP::ARG_NONE, CLP::DUPOPT_CLOB, NULL },
   { 'n', "normalize-off",   CLP::ARG_NONE, CLP::DUPOPT_CLOB, NULL },
+  { 'i', "irreducible-interval-as-loop",
+                            CLP::ARG_NONE, CLP::DUPOPT_CLOB, NULL },
   { 'c', "compact",         CLP::ARG_NONE, CLP::DUPOPT_CLOB, NULL },
   { 'p', "canonical-paths", CLP::ARG_REQ , CLP::DUPOPT_CAT,  ":" },
   {  0 , "pcmap",           CLP::ARG_REQ , CLP::DUPOPT_ERR,  NULL }, // hidden
@@ -147,6 +151,7 @@ Args::Ctor()
 {
   verboseMode = false;
   normalizeScopeTree = true;
+  irreducibleIntervalIsLoop = false;
   prettyPrintOutput = true;
   dumpBinary = false;
 }
@@ -226,6 +231,9 @@ Args::Parse(int argc, const char* const argv[])
     if (parser.IsOpt("normalize-off")) { 
       normalizeScopeTree = false;
     } 
+    if (parser.IsOpt("irreducible-interval-as-loop")) { 
+      irreducibleIntervalIsLoop = true;
+    } 
     if (parser.IsOpt("compact")) { 
       prettyPrintOutput = false;
     } 
@@ -241,7 +249,7 @@ Args::Parse(int argc, const char* const argv[])
     
     // Check for required arguments
     if (parser.GetNumArgs() != 1) {
-      PrintError(std::cerr, "Missing a required argument!");
+      PrintError(std::cerr, "Incorrect number of arguments!");
       exit(1);
     }
     inputFile = parser.GetArg(0);
