@@ -86,11 +86,11 @@ access the HPCToolkit repository.
 <div class="indent">
   <i>(csh variants)</i><br>
   <code>setenv CVS_RSH ${HOME}/bin/hipersoft-anonssh</code><br>
-  <code>setenv CVSROOT :ext:anoncvs@128.42.2.152:/Volumes/cvsrep/developer</code><br>
+  <code>setenv CVSROOT :ext:anoncvs@koolkat2.cs.rice.edu:/Volumes/cvsrep/developer</code><br>
 <br>
   <i>(sh variants)</i><br>
   <code>export CVS_RSH=${HOME}/bin/hipersoft-anonssh</code><br>
-  <code>export CVSROOT=:ext:anoncvs@128.42.2.152:/Volumes/cvsrep/developer</code>
+  <code>export CVSROOT=:ext:anoncvs@koolkat2.cs.rice.edu:/Volumes/cvsrep/developer</code>
 </div>
 
 <li>
@@ -426,8 +426,7 @@ want to redirect it to a file.  For example:
 </div>
 
 <p>After installation is complete, a message will be generated giving
-installation location.  By default, it is a directory representing the
-platform (${HPCTOOLKIT_PLATFORM}).
+the installation location.  By default, it is `HPCToolkit-[platform]'.
 
 <li>
 <p>(Optional) Clean the build files.
