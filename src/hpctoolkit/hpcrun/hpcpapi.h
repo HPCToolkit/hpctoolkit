@@ -22,6 +22,9 @@
 
 /************************** System Include Files ****************************/
 
+#include <stdlib.h>
+#include <inttypes.h>
+
 #include <papi.h>
 #if !(defined(PAPI_VERSION) && (PAPI_VERSION_MAJOR(PAPI_VERSION) >= 3))
 # error "Must use PAPI version 3 or greater."
@@ -48,22 +51,48 @@ hpc_init_papi();
 
 /**************************** Forward Declarations **************************/
 
+// hpcpapi_flagdesc_t: PAPI_sprofil() flags
 typedef struct {
   int code;          /* PAPI flag value */
   const char *name;  /* PAPI flag name */
-} papi_flagdesc_t;
+} hpcpapi_flagdesc_t;
 
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-extern const papi_flagdesc_t *
-hpcrun_flag_by_name(const char *name);
+extern const hpcpapi_flagdesc_t *
+hpcpapi_flag_by_name(const char *name);
 
 #ifdef __cplusplus
 }
 #endif
+
+/**************************** Forward Declarations **************************/
+
+// hpcpapi_profile_desc_t: Collects all information to describe one
+// call to PAPI_sprofil().  Note that this assumes that there will be
+// one event per event set.
+typedef struct {
+  PAPI_event_info_t einfo;       // PAPI's info for the event
+  int               ecode;       // PAPI's event code
+  int               eset;        // the corresponding event set
+  uint64_t          period;      // sampling period
+  int               flags;       // profiling flags
+  
+  unsigned int      bytesPerCodeBlk; // bytes per block of monitored code
+  unsigned int      bytesPerCntr;    // bytes per histogram counter
+  unsigned int      scale;           // relationship between the two
+  
+  PAPI_sprofil_t*   sprofs;      // buffers for the histograms
+} hpcpapi_profile_desc_t;
+
+// hpcpapi_profile_desc_vec_t: A vector of hpcpapi_profile_desc_t.
+typedef struct {
+  unsigned int            size; /* vector size */
+  hpcpapi_profile_desc_t* vec;  /* the vector */
+} hpcpapi_profile_desc_vec_t;
 
 /****************************************************************************/
 

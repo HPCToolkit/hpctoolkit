@@ -55,18 +55,18 @@ hpc_init_papi()
 
 /****************************************************************************/
 
-static papi_flagdesc_t papi_flags[] = {
+static hpcpapi_flagdesc_t papi_flags[] = {
+  { PAPI_PROFIL_POSIX,    "PAPI_PROFIL_POSIX" },
+  { PAPI_PROFIL_RANDOM,   "PAPI_PROFIL_RANDOM" },  
   { PAPI_PROFIL_WEIGHTED, "PAPI_PROFIL_WEIGHTED" },  
   { PAPI_PROFIL_COMPRESS, "PAPI_PROFIL_COMPRESS" },  
-  { PAPI_PROFIL_RANDOM,   "PAPI_PROFIL_RANDOM" },  
-  { PAPI_PROFIL_POSIX,    "PAPI_PROFIL_POSIX" },
   { -1,                   NULL }
 }; 
 
-const papi_flagdesc_t *
-hpcrun_flag_by_name(const char *name)
+const hpcpapi_flagdesc_t *
+hpcpapi_flag_by_name(const char *name)
 {
-  papi_flagdesc_t *i = papi_flags;
+  hpcpapi_flagdesc_t *i = papi_flags;
   for (; i->name != NULL; i++) {
     if (strcmp(name, i->name) == 0) return i;
   }
