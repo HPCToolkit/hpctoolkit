@@ -817,10 +817,14 @@ init_profdesc(hpcrun_profiles_desc_t** profdesc,
       prof->sprofs[mapi].pr_scale = prof->scale;
       
       if (opt_debug >= 3) {
+	/* 'pr_size' and 'pr_off' are of type size_t which is of type 'long'
+	   on 64-bit machines */
 	MSG(stderr, 
-	    "\tprofile[%d] base = %p size = %#x off = %#x scale = %#lx",
-	    mapi, prof->sprofs[mapi].pr_base, prof->sprofs[mapi].pr_size, 
-	    prof->sprofs[mapi].pr_off, prof->sprofs[mapi].pr_scale);
+	    "\tprofile[%d] base = %p size = %#lx off = %#lx scale = %#lx",
+	    mapi, prof->sprofs[mapi].pr_base, 
+	    prof->sprofs[mapi].pr_size, 
+	    prof->sprofs[mapi].pr_off, 
+	    prof->sprofs[mapi].pr_scale);
       }
     }
   }

@@ -53,7 +53,7 @@ static void reset_slots();
 /****************************************************************************/
 
 /* number of bytes to print out for a long in hex with a 0x prefix */ 
-#define bhl (sizeof(long)*2+2)
+#define bhl ((int)(sizeof(long)*2+2))
 
 #define MAXLINELEN (PATH_MAX + 80)
 
@@ -215,11 +215,9 @@ dumprtloadmap(void)
   int i;
   fprintf(stderr, "Dumping currently mapped load modules:\n");
   for (i = 0; i < rtloadmap.count; i++) {
-    fprintf(stderr,"  offset=%#0*llx ", bhl,
-	    rtloadmap.module[i].offset);
-    fprintf(stderr,"length=%#0*lx ", bhl,
-	    rtloadmap.module[i].length);
-    fprintf(stderr,"name=%s\n", rtloadmap.module[i].name);
+    fprintf(stderr, "  offset=%#0*"PRIx64" ", bhl, rtloadmap.module[i].offset);
+    fprintf(stderr, "length=%#0*lx ",    bhl, rtloadmap.module[i].length);
+    fprintf(stderr, "name=%s\n", rtloadmap.module[i].name);
   }
 }
 
