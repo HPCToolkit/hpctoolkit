@@ -247,15 +247,17 @@ static void
 args_parse(int argc, char* argv[])
 {
   int cmdExists = 0;
-  args_command = argv[0]; 
+  int c;
+
+  args_command = argv[0];
   
   // -------------------------------------------------------
   // Parse the command line
   // -------------------------------------------------------
   // Note: option list follows usage message
-  extern char *optarg;
-  extern int optind;
-  int c;
+
+  // extern char *optarg; -- provided by unistd.h
+  // extern int optind; 
   while ((c = getopt(argc, (char**)argv, "hVd:rte:o:f:lL")) != EOF) {
     switch (c) {
       
@@ -480,15 +482,6 @@ check_and_prepare_env_for_profiling(const char* installpath)
 static void 
 list_available_events(event_list_t listType)
 {
-  if (listType == LIST_NONE) {
-    return;
-  }
-  
-  // -------------------------------------------------------
-  // Ensure PAPI is initialized
-  // -------------------------------------------------------
-  init_papi();
-
   int i, count;
   int isIntel, isP4;
   PAPI_event_info_t info;
@@ -508,6 +501,15 @@ list_available_events(event_list_t listType)
   //static const char* FmtNtvLong =  "%-31s %s\n";
   static const char* FmtNtvGrp    = "* %-29s %s\n";
   static const char* FmtNtvGrpMbr = "  %-29s %s\n";
+  
+  if (listType == LIST_NONE) {
+    return;
+  }
+  
+  // -------------------------------------------------------
+  // Ensure PAPI is initialized
+  // -------------------------------------------------------
+  init_papi();
 
   // -------------------------------------------------------
   // Hardware information
