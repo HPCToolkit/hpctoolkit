@@ -68,19 +68,8 @@ class DCPIMetricFilter;
 
 //****************************************************************************
 
-// Routines that return predeined metric filters 
-namespace DCPIProfileFilter {
-
-  PCProfileFilter*
-  RetiredInsn(LoadModule* lm);
-
-  PCProfileFilter*
-  RetiredFPInsn(LoadModule* lm);
-
-
-  // Metrics
-  DCPIMetricFilter* PMMetric_Retired();
-}
+PCProfileFilter* 
+GetPredefinedDCPIFilter(const char* metric, LoadModule* lm);
 
 //****************************************************************************
 // DCPIMetricExpr
@@ -122,6 +111,53 @@ public:
 
 private:
   DCPIMetricExpr expr;
+};
+
+//****************************************************************************
+// PredefinedDCPIMetricTable
+//****************************************************************************
+
+class PredefinedDCPIMetricTable {
+public:
+
+  struct Entry {
+    const char* name; 
+    const char* description;
+    
+    uint32_t avail; // condition that must be true for metric to be available
+    
+    DCPIMetricExpr mexpr; // the metric filter expr
+    InsnClassExpr iexpr;  // the instruction filter expr
+  };
+
+  // Note: these availability tags refer to the raw DCPI metrics (not derived)
+  // (We use enum instead of #define b/c we know they only need to fit in
+  // 32 bits.)  RM should never be used at the same time as PM0-PM3.
+  enum AvailTag {
+    RM  = 0x00000001, // the given non ProfileMe (regular) metric must be available
+    PM0 = 0x00000002, // ProfileMe mode 0
+    PM1 = 0x00000004, // ProfileMe mode 1
+    PM2 = 0x00000008, // ProfileMe mode 2
+    PM3 = 0x00000010  // ProfileMe mode 3
+  };
+
+public:
+  PredefinedDCPIMetricTable() { }
+  ~PredefinedDCPIMetricTable() { }
+
+  static Entry* FindEntry(const char* token);
+  static Entry* Index(uint i);
+  static uint GetSize() { return size; }
+
+private:
+  // Should not be used 
+  PredefinedDCPIMetricTable(const PredefinedDCPIMetricTable& p) { }
+  PredefinedDCPIMetricTable& operator=(const PredefinedDCPIMetricTable& p) { return *this; }
+  
+private:
+  static Entry table[];
+  static uint size;
+  static bool sorted;
 };
 
 //****************************************************************************

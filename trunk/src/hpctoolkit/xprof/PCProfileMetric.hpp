@@ -105,11 +105,9 @@ private:
   typedef PCToPCProfileDatumMap::const_iterator PCToPCProfileDatumMapCIt;
 
 public:
-  // Constructor: we do not own 'isa_'
-  PCProfileMetric(const ISA* isa_)
-    : total(0), period (0), txtStart(0), txtSz(0), isa(isa_)
-    { /* map does not need to be initialized */ }
-  virtual ~PCProfileMetric() { }
+  // Constructor: the ISA is *reference counted*
+  PCProfileMetric(ISA* isa_);
+  virtual ~PCProfileMetric();
   
   // Name, Description: The metric name and a description
   // TotalCount: The sum of all raw data for this metric
@@ -133,7 +131,9 @@ public:
   // number of instructions or PC values in the text segment).
   suint GetSz() const { return map.size(); }
   
-  const ISA* GetISA() const { return isa; }
+  // 'GetISA': Note: A user must call ISA::Attach() if this is more
+  // than a momentary reference!
+  ISA* GetISA() const { return isa; }
   
   // find/insert by PC value (GetTxtStart() <= PC <= GetTxtStart()+GetTxtSz())
   // 'Find': return datum for 'pc'; PCProfileDatum_NIL if not found.
@@ -179,7 +179,7 @@ private:
   Addr           txtStart; // beginning of text segment 
   Addr           txtSz;    // size of text segment
 
-  const ISA* isa;            // we do not own; points to containing set  
+  ISA* isa;                // we do not own; points to containing set  
   PCToPCProfileDatumMap map; // map of sampling data
 };
 

@@ -65,37 +65,135 @@ using std::dec;
 
 
 //****************************************************************************
+// PredefinedDCPIMetricTable
+//****************************************************************************
 
-PCProfileFilter*
-DCPIProfileFilter::RetiredInsn(LoadModule* lm)
+#define TABLE_SZ \
+   sizeof(PredefinedDCPIMetricTable::table) / sizeof(PredefinedDCPIMetricTable::Entry)
+
+
+PredefinedDCPIMetricTable::Entry PredefinedDCPIMetricTable::table[] = {
+
+  // -------------------------------------------------------
+  // Metrics available whenever ProfileMe is used (any PM mode)
+  // -------------------------------------------------------
+
+  // NOTE: it seems we can cross check with the retire counter 
+  //  for mode 0 or mode 2...
+  {"retired_insn", "Retired Instructions (may have caused mispredict trap)",
+   PM0 | PM1 | PM2 | PM3,
+   DCPIMetricExpr(DCPI_MTYPE_PM | DCPI_PM_CNTR_count | DCPI_PM_ATTR_retired_T),
+   InsnClassExpr(INSN_CLASS_ALL)
+  },
+
+  {"retired_fp_insn", "Retired FP Instructions (may have caused mispredict trap)",
+   PM0 | PM1 | PM2 | PM3,
+   DCPIMetricExpr(DCPI_MTYPE_PM | DCPI_PM_CNTR_count | DCPI_PM_ATTR_retired_T),
+   InsnClassExpr(INSN_CLASS_FLOPS)
+  },
+
+#if 0
+//   "mispredicted_branches", "Mispredicted branches"
+//      count + cbrmispredict [only true on branches] ; any insn 
+//   "icache_miss_lb", "Lower bound on icache misses"
+//      count + nyp , any insn
+//   "ldstorder trap" [Untested]
+#endif
+
+  // -------------------------------------------------------
+  // Metrics available for a specific ProfileMe mode
+  // -------------------------------------------------------
+
+#if 0
+    "m0inflight"   Inflight cycles --> total cycles?
+    "m0retires"    Instruction retires --> cross check retired instructions?
+
+    "m1inflight"   Inflight cycles --> total cycles
+    "m1retdelay"   Retire delay --> 
+
+    "m2retires"    Instruction retires --> cross check retired instructions?
+    "m2bcmisses"   B-cache misses --> b-cache misses
+
+    "m3inflight"   Inflight cycles
+    "m3replays"    Pipeline replay traps
+#endif
+
+  // -------------------------------------------------------
+  // Non ProfileMe metrics, possibly available at any time
+  // -------------------------------------------------------
+
+  { "cycles", "Processor cycles",
+    RM,
+    DCPIMetricExpr(DCPI_MTYPE_RM | DCPI_RM_cycles),
+    InsnClassExpr(INSN_CLASS_ALL)
+  },
+  
+  { "retires", "Retired instructions",
+    RM,
+    DCPIMetricExpr(DCPI_MTYPE_RM | DCPI_RM_retires),
+    InsnClassExpr(INSN_CLASS_ALL)
+  },
+
+  { "replaytrap", "Mbox replay traps",
+    RM,
+    DCPIMetricExpr(DCPI_MTYPE_RM | DCPI_RM_replaytrap),
+    InsnClassExpr(INSN_CLASS_ALL)
+  },
+
+  { "bmiss", "Bcache misses or long-latency probes",
+    RM,
+    DCPIMetricExpr(DCPI_MTYPE_RM | DCPI_RM_bmiss),
+    InsnClassExpr(INSN_CLASS_ALL)
+  }
+
+};
+
+uint PredefinedDCPIMetricTable::size = TABLE_SZ;
+
+bool PredefinedDCPIMetricTable::sorted = false;
+
+#undef TABLE_SZ
+
+//****************************************************************************
+
+PredefinedDCPIMetricTable::Entry*
+PredefinedDCPIMetricTable::FindEntry(const char* metric)
 {
-  InsnFilter* i = new InsnFilter(InsnClassExpr(INSN_CLASS_ALL), lm);
-
-  PCProfileFilter* f = new PCProfileFilter(PMMetric_Retired(), i);
-  f->SetName("Retired_Insn");
-  f->SetDescription("Retired Instructions");
-  return f;
+  // FIXME: we should search a quick-sorted table with binary search.
+  // check 'sorted'
+  Entry* found = NULL;
+  for (uint i = 0; i < GetSize(); ++i) {
+    if (strcmp(metric, table[i].name) == 0) {
+      found = &table[i];
+    }
+  }
+  return found;
 }
 
-PCProfileFilter*
-DCPIProfileFilter::RetiredFPInsn(LoadModule* lm)
+PredefinedDCPIMetricTable::Entry*
+PredefinedDCPIMetricTable::Index(uint i)
 {
-  InsnFilter* i = new InsnFilter(InsnClassExpr(INSN_CLASS_FLOPS), lm);
-
-  PCProfileFilter* f = new PCProfileFilter(PMMetric_Retired(), i);
-  f->SetName("Retired_FP_Insn");
-  f->SetDescription("Retired FP Instructions");
-  return f;
+  if (i >= GetSize()) { return NULL; }
+  return &table[i];
 }
 
 
+//****************************************************************************
+// 
+//****************************************************************************
 
-DCPIMetricFilter* 
-DCPIProfileFilter::PMMetric_Retired()
+PCProfileFilter* 
+GetPredefinedDCPIFilter(const char* metric, LoadModule* lm)
 {
-  DCPIMetricExpr e = DCPIMetricExpr(DCPI_MTYPE_PM | DCPI_PM_CNTR_count 
-				    | DCPI_PM_ATTR_retired_T);
-  DCPIMetricFilter* f = new DCPIMetricFilter(e);
+  PredefinedDCPIMetricTable::Entry* e =
+    PredefinedDCPIMetricTable::FindEntry(metric);
+  if (!e) { return NULL; }
+
+  PCProfileFilter* f = new PCProfileFilter(new DCPIMetricFilter(e->mexpr), 
+					   new InsnFilter(e->iexpr, lm));
+  
+  f->SetName(e->name);
+  f->SetDescription(e->description);
   return f;
 }
 

@@ -128,8 +128,6 @@ DerivedProfile::Create(const PCProfile* pcprof_,
       dm->SetPeriod(GetPeriod(s));
       SetMetric(i, dm);
     }
-    // FIXME: in a dcpi version we could automatically carry over non
-    // PM metrics
   }
   
   // -------------------------------------------------------
@@ -137,17 +135,16 @@ DerivedProfile::Create(const PCProfile* pcprof_,
   // filtlist is null, we have a one to one mapping between raw PCs
   // and derived PCs.
   // -------------------------------------------------------
-
-  // FIXME: we could save some memory and possibly some cache misses
-  // if this was moved to ProfileWriter.
-  // Also, we could build a pc2srcline map as a side effect...
-
+  
   if (filtlist == NULL) {
     for (DerivedProfile_MetricIterator dmIt(*this); dmIt.IsValid(); ++dmIt) {
       DerivedProfileMetric* dm = dmIt.Current();
       dm->MakeDerivedPCSetCoterminousWithPCSet();
     }
   } else {
+    // FIXME: Save memory by using MakeDerivedPCSetCoterminousWithPCSet() 
+    // when the insn filter is the identity filter.
+    
     // Iterate over PC values in the profile
     for (PCProfile_PCIterator it(*pcprof); it.IsValid(); ++it) {
       
@@ -197,7 +194,6 @@ DerivedProfileMetric::DerivedProfileMetric(const PCProfileMetricSet* s)
 
 DerivedProfileMetric::DerivedProfileMetric(const PCProfileMetric* m)
 {
-  // FIXME: create new isa object of same type
   PCProfileMetricSet* s = new PCProfileMetricSet(m->GetISA(), 1);
   s->Add(m);
 

@@ -65,6 +65,18 @@ using std::dec;
 // PCProfileMetric
 //****************************************************************************
 
+PCProfileMetric::PCProfileMetric(ISA* isa_)
+  : total(0), period (0), txtStart(0), txtSz(0), isa(isa_)
+{ 
+  /* map does not need to be initialized */ 
+  isa->Attach();
+}
+
+PCProfileMetric::~PCProfileMetric() 
+{ 
+  isa->Detach();
+}
+
 void 
 PCProfileMetric::Dump(std::ostream& o)
 {

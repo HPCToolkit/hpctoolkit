@@ -67,8 +67,8 @@ void Args::Usage()
 {
   cerr
     << "Usage: " << endl
-    << "  " << cmd << " [-V] <binary> <profile>\n"
-    << "  " << cmd << " -R <binary> <profile>\n"
+    << "  " << cmd << " [-V] [ [-M <>] [-X <>] [-R] ] <binary> <profile>\n"
+    << "  " << cmd << " [-l | -L]  <binary> <profile>\n"
 
     << endl;
   cerr
@@ -77,6 +77,9 @@ void Args::Usage()
     << "<binary> with profile data from <profile>. In effect, the output is\n"
     << "a [source-line -> PC-profile-data] map represented as a XML scope\n"
     << "tree (e.g. file, procedure, statement).  Output is sent to stdout.\n"
+    << "\n"
+    << "By default, xprof determines a set of metrics available for the\n" 
+    << "given profile data and includes all of them in the PROFILE output.\n"
     << "\n"
 #if 0  // FIXME '[-m <bloop-pcmap>]'
     << "If no <bloop-pcmap> -- a map extended with analysis information\n"
@@ -93,8 +96,22 @@ void Args::Usage()
     << "  - Compaq's DCPI 'dcpicat' (including ProfileMe) \n"
     << "\n"
     << "Options:\n"
-    << "  -V: print version information\n"
-    << "  -R: outputs all raw metrics...\n"
+    << "  -V: Print version information\n"
+    << "\n"
+    << "  [Listing Metrics] \n"
+    << "  -l: List all derived metrics, in compact form, available from\n"
+    << "      <profile> and suppress generation of PROFILE output.\n"
+    << "  -L: List all derived metrics, in long form, available from\n"
+    << "      <profile> and suppress generation of PROFILE output.\n"
+    << "\n"    
+    << "  [Selecting Metrics] \n"
+    << "  -M: ...\n"
+    << "  -X: ...\n"
+    << "  -R: For some profile data, such as DCPI's ProfileMe, xprof\n"
+    << "      by default outputs derived metrics based on the raw data.\n"
+    << "      This option instructs xprof to output the raw profile metrics,\n"
+    << "      not any derived metrics.  Most users will not find this\n"
+    << "      useful.\n"
 #if 0    
     << "  -m: specify <bloop-pcmap>\n"
 #endif    
@@ -107,6 +124,7 @@ Args::Args(int argc, char* const* argv)
   cmd = argv[0]; 
 
   bool printVersion = false;
+  listAvailableMetrics = 0; // 0: no, 1: short, 2: long
   outputRawMetrics = false;
   
   extern char *optarg;
@@ -114,7 +132,7 @@ Args::Args(int argc, char* const* argv)
   bool error = false;
   trace = 0;
   int c;
-  while ((c = getopt(argc, argv, "VRm:d")) != EOF) {
+  while ((c = getopt(argc, argv, "VlLRm:d")) != EOF) {
     switch (c) {
     case 'm': {
       // A non-null value of 'pcMapFile' indicates it has been set
@@ -124,6 +142,14 @@ Args::Args(int argc, char* const* argv)
     }
     case 'V': { 
       printVersion = true;
+      break; 
+    }
+    case 'l': { 
+      listAvailableMetrics = 1;
+      break; 
+    }
+    case 'L': { 
+      listAvailableMetrics = 2;
       break; 
     }
     case 'R': { 

@@ -134,7 +134,7 @@ ProfileReader::ReadProfileFile_DCPICat(std::istream& pFile)
   const int bufSz = 128; 
   char buf[bufSz]; // holds single tokens guaranteed not to be too big
 
-  ISA* isa = new AlphaISA();
+  ISA* isa = new AlphaISA(); // we are going to reference count this
   DCPIProfile* profData = NULL;  
   std::stringstream hdr; // header info
   String profiledFile;   // name of profiled file
@@ -228,6 +228,7 @@ ProfileReader::ReadProfileFile_DCPICat(std::istream& pFile)
     pFile >> Z >> std::ws;          // read 'Z' (sampling time)
     
     curMetric = new DCPIProfileMetric(isa, X);
+    isa->Detach(); // Remove our reference
     curMetric->SetTxtStart(txtStart);
     curMetric->SetTxtSz(txtSz);
     curMetric->SetTotalCount(W);

@@ -67,13 +67,126 @@ using std::dec;
 int
 SetDCPIMetricDescBit(const char* token, DCPIMetricDesc& m);
 
-struct DCPITranslationTableEntry {
-  const char* tok;
-  DCPIMetricDesc::bitvec_t bits;
+
+//****************************************************************************
+// DCPITranslationTable
+//****************************************************************************
+
+class DCPITranslationTable {
+public:
+  struct Entry {
+    const char* tok;
+    DCPIMetricDesc::bitvec_t bits;
+  };
+
+public:
+  DCPITranslationTable() { }
+  ~DCPITranslationTable() { }
+
+  static Entry* FindEntry(const char* token);
+  static uint GetSize() { return size; }
+
+private:
+  // Should not be used 
+  DCPITranslationTable(const DCPITranslationTable& p) { }
+  DCPITranslationTable& operator=(const DCPITranslationTable& p) { return *this; }
+  
+private:
+  static Entry table[];
+  static uint size;
+  static bool sorted;
 };
 
-DCPITranslationTableEntry*
-FindDCPITranslationTableEntry(const char* token);
+//****************************************************************************
+
+#define TYPEPM(m) DCPI_MTYPE_PM | (m)
+#define TYPERM(m) DCPI_MTYPE_RM | (m)
+
+#define DCPI_PM_CNTR(pfx, n1, n2, n3, cbit1, cbit2, cbit3) \
+  { pfx##n1, TYPEPM((cbit1)) }, \
+  { pfx##n2, TYPEPM((cbit2)) }, \
+  { pfx##n3, TYPEPM((cbit3)) }
+
+#define DCPI_PM_BIT(name, tbit, fbit) \
+  { name,      TYPEPM((tbit)) }, \
+  { "!"##name, TYPEPM((fbit)) }
+
+#define TABLE_SZ \
+   sizeof(DCPITranslationTable::table) / sizeof(DCPITranslationTable::Entry)
+
+
+DCPITranslationTable::Entry DCPITranslationTable::table[] = {
+  // ProfileMe counters
+  DCPI_PM_CNTR("m0", "count", "inflight", "retires", DCPI_PM_CNTR_count, DCPI_PM_CNTR_inflight, DCPI_PM_CNTR_retires), 
+  DCPI_PM_CNTR("m1", "count", "inflight", "retdelay", DCPI_PM_CNTR_count, DCPI_PM_CNTR_inflight, DCPI_PM_CNTR_retdelay), 
+  DCPI_PM_CNTR("m2", "count", "retires", "bcmisses", DCPI_PM_CNTR_count, DCPI_PM_CNTR_retires, DCPI_PM_CNTR_bcmisses), 
+  DCPI_PM_CNTR("m3", "count", "inflight", "replays", DCPI_PM_CNTR_count, DCPI_PM_CNTR_inflight, DCPI_PM_CNTR_replays), 
+
+  // ProfileMe instruction attributes
+  DCPI_PM_BIT("retired", DCPI_PM_ATTR_retired_T, DCPI_PM_ATTR_retired_F),
+  DCPI_PM_BIT("taken", DCPI_PM_ATTR_taken_T, DCPI_PM_ATTR_taken_F),
+  DCPI_PM_BIT("cbrmispredict", DCPI_PM_ATTR_cbrmispredict_T, DCPI_PM_ATTR_cbrmispredict_F),
+  DCPI_PM_BIT("valid", DCPI_PM_ATTR_valid_T, DCPI_PM_ATTR_valid_F),
+  DCPI_PM_BIT("nyp", DCPI_PM_ATTR_nyp_T, DCPI_PM_ATTR_nyp_F),
+  DCPI_PM_BIT("ldstorder", DCPI_PM_ATTR_ldstorder_T, DCPI_PM_ATTR_ldstorder_F),
+  DCPI_PM_BIT("map_stall", DCPI_PM_ATTR_map_stall_T, DCPI_PM_ATTR_map_stall_F),
+  DCPI_PM_BIT("early_kill", DCPI_PM_ATTR_early_kill_T, DCPI_PM_ATTR_early_kill_F),
+  DCPI_PM_BIT("late_kill", DCPI_PM_ATTR_late_kill_T, DCPI_PM_ATTR_late_kill_F),
+  DCPI_PM_BIT("capped", DCPI_PM_ATTR_capped_T, DCPI_PM_ATTR_capped_F),
+  DCPI_PM_BIT("twnzrd", DCPI_PM_ATTR_twnzrd_T, DCPI_PM_ATTR_twnzrd_F),
+  
+  // ProfileMe instruction traps  
+  DCPI_PM_BIT("notrap", DCPI_PM_TRAP_notrap_T, DCPI_PM_TRAP_notrap_F),
+  DCPI_PM_BIT("mispredict", DCPI_PM_TRAP_mispredict_T, DCPI_PM_TRAP_mispredict_F),
+  DCPI_PM_BIT("replays", DCPI_PM_TRAP_replays_T, DCPI_PM_TRAP_replays_F),
+  DCPI_PM_BIT("unaligntrap", DCPI_PM_TRAP_unaligntrap_T, DCPI_PM_TRAP_unaligntrap_F),
+  DCPI_PM_BIT("dtbmiss", DCPI_PM_TRAP_dtbmiss_T, DCPI_PM_TRAP_dtbmiss_F),
+  DCPI_PM_BIT("dtb2miss3", DCPI_PM_TRAP_dtb2miss3_T, DCPI_PM_TRAP_dtb2miss3_F),
+  DCPI_PM_BIT("dtb2miss4", DCPI_PM_TRAP_dtb2miss4_T, DCPI_PM_TRAP_dtb2miss4_F),
+  DCPI_PM_BIT("itbmiss", DCPI_PM_TRAP_itbmiss_T, DCPI_PM_TRAP_itbmiss_F),
+  DCPI_PM_BIT("arithtrap", DCPI_PM_TRAP_arithtrap_T, DCPI_PM_TRAP_arithtrap_F),
+  DCPI_PM_BIT("fpdisabledtrap", DCPI_PM_TRAP_fpdisabledtrap_T, DCPI_PM_TRAP_fpdisabledtrap_F),
+  DCPI_PM_BIT("MT_FPCRtrap", DCPI_PM_TRAP_MT_FPCRtrap_T, DCPI_PM_TRAP_MT_FPCRtrap_F),
+  DCPI_PM_BIT("dfaulttrap", DCPI_PM_TRAP_dfaulttrap_T, DCPI_PM_TRAP_dfaulttrap_F),
+  DCPI_PM_BIT("iacvtrap", DCPI_PM_TRAP_iacvtrap_T, DCPI_PM_TRAP_iacvtrap_F),
+  DCPI_PM_BIT("OPCDECtrap", DCPI_PM_TRAP_OPCDECtrap_T, DCPI_PM_TRAP_OPCDECtrap_F),
+  DCPI_PM_BIT("interrupt", DCPI_PM_TRAP_interrupt_T, DCPI_PM_TRAP_interrupt_F),
+  DCPI_PM_BIT("mchktrap", DCPI_PM_TRAP_mchktrap_T, DCPI_PM_TRAP_mchktrap_F),
+  
+  // Non-ProfileMe event types
+  { "cycles", TYPERM(DCPI_RM_cycles) },
+  { "retires", TYPERM(DCPI_RM_retires) },
+  { "replaytrap", TYPERM(DCPI_RM_replaytrap) },
+  { "bmiss", TYPERM(DCPI_RM_bmiss) }
+
+};
+
+uint DCPITranslationTable::size = TABLE_SZ;
+
+bool DCPITranslationTable::sorted = false;
+
+#undef TYPEPM
+#undef TYPERM
+#undef DCPI_PM_CNTR
+#undef DCPI_PM_BIT
+#undef TABLE_SZ
+
+//****************************************************************************
+
+DCPITranslationTable::Entry*
+DCPITranslationTable::FindEntry(const char* token)
+{
+  // FIXME: we should search a quick-sorted table with binary search.
+  // check 'sorted'
+  Entry* found = NULL;
+  for (uint i = 0; i < GetSize(); ++i) {
+    if (strcmp(token, table[i].tok) == 0) {
+      found = &table[i];
+    }
+  }
+  return found;
+}
+
 
 //****************************************************************************
 // DCPIMetricDesc
@@ -150,7 +263,7 @@ SetDCPIMetricDescBit(const char* token, DCPIMetricDesc& m)
   }
   
   // 1. Set the appropriate bit by string comparisons
-  DCPITranslationTableEntry* e = FindDCPITranslationTableEntry(token);
+  DCPITranslationTable::Entry* e = DCPITranslationTable::FindEntry(token);
   if (!e) { return 1; }
   m.Set(e->bits);
   
@@ -159,85 +272,4 @@ SetDCPIMetricDescBit(const char* token, DCPIMetricDesc& m)
 
 //****************************************************************************
 
-#define TYPEPM(m) DCPI_MTYPE_PM | (m)
-#define TYPERM(m) DCPI_MTYPE_RM | (m)
 
-#define DCPI_PM_CNTR(pfx, n1, n2, n3, cbit1, cbit2, cbit3) \
-  { pfx##n1, TYPEPM((cbit1)) }, \
-  { pfx##n2, TYPEPM((cbit2)) }, \
-  { pfx##n3, TYPEPM((cbit3)) }
-
-#define DCPI_PM_BIT(name, tbit, fbit) \
-  { name,      TYPEPM((tbit)) }, \
-  { "!"##name, TYPEPM((fbit)) }
-
-
-#define DCPITranslationTableSZ \
-   sizeof(DCPITranslationTable) / sizeof(DCPITranslationTableEntry)
-
-static DCPITranslationTableEntry DCPITranslationTable[] = {
-  // ProfileMe counters
-  DCPI_PM_CNTR("m0", "count", "inflight", "retires", DCPI_PM_CNTR_count, DCPI_PM_CNTR_inflight, DCPI_PM_CNTR_retires), 
-  DCPI_PM_CNTR("m1", "count", "inflight", "retdelay", DCPI_PM_CNTR_count, DCPI_PM_CNTR_inflight, DCPI_PM_CNTR_retdelay), 
-  DCPI_PM_CNTR("m2", "count", "retires", "bcmisses", DCPI_PM_CNTR_count, DCPI_PM_CNTR_retires, DCPI_PM_CNTR_bcmisses), 
-  DCPI_PM_CNTR("m3", "count", "inflight", "replays", DCPI_PM_CNTR_count, DCPI_PM_CNTR_inflight, DCPI_PM_CNTR_replays), 
-
-  // ProfileMe instruction attributes
-  DCPI_PM_BIT("retired", DCPI_PM_ATTR_retired_T, DCPI_PM_ATTR_retired_F),
-  DCPI_PM_BIT("taken", DCPI_PM_ATTR_taken_T, DCPI_PM_ATTR_taken_F),
-  DCPI_PM_BIT("cbrmispredict", DCPI_PM_ATTR_cbrmispredict_T, DCPI_PM_ATTR_cbrmispredict_F),
-  DCPI_PM_BIT("valid", DCPI_PM_ATTR_valid_T, DCPI_PM_ATTR_valid_F),
-  DCPI_PM_BIT("nyp", DCPI_PM_ATTR_nyp_T, DCPI_PM_ATTR_nyp_F),
-  DCPI_PM_BIT("ldstorder", DCPI_PM_ATTR_ldstorder_T, DCPI_PM_ATTR_ldstorder_F),
-  DCPI_PM_BIT("map_stall", DCPI_PM_ATTR_map_stall_T, DCPI_PM_ATTR_map_stall_F),
-  DCPI_PM_BIT("early_kill", DCPI_PM_ATTR_early_kill_T, DCPI_PM_ATTR_early_kill_F),
-  DCPI_PM_BIT("late_kill", DCPI_PM_ATTR_late_kill_T, DCPI_PM_ATTR_late_kill_F),
-  DCPI_PM_BIT("capped", DCPI_PM_ATTR_capped_T, DCPI_PM_ATTR_capped_F),
-  DCPI_PM_BIT("twnzrd", DCPI_PM_ATTR_twnzrd_T, DCPI_PM_ATTR_twnzrd_F),
-  
-  // ProfileMe instruction traps  
-  DCPI_PM_BIT("notrap", DCPI_PM_TRAP_notrap_T, DCPI_PM_TRAP_notrap_F),
-  DCPI_PM_BIT("mispredict", DCPI_PM_TRAP_mispredict_T, DCPI_PM_TRAP_mispredict_F),
-  DCPI_PM_BIT("replays", DCPI_PM_TRAP_replays_T, DCPI_PM_TRAP_replays_F),
-  DCPI_PM_BIT("unaligntrap", DCPI_PM_TRAP_unaligntrap_T, DCPI_PM_TRAP_unaligntrap_F),
-  DCPI_PM_BIT("dtbmiss", DCPI_PM_TRAP_dtbmiss_T, DCPI_PM_TRAP_dtbmiss_F),
-  DCPI_PM_BIT("dtb2miss3", DCPI_PM_TRAP_dtb2miss3_T, DCPI_PM_TRAP_dtb2miss3_F),
-  DCPI_PM_BIT("dtb2miss4", DCPI_PM_TRAP_dtb2miss4_T, DCPI_PM_TRAP_dtb2miss4_F),
-  DCPI_PM_BIT("itbmiss", DCPI_PM_TRAP_itbmiss_T, DCPI_PM_TRAP_itbmiss_F),
-  DCPI_PM_BIT("arithtrap", DCPI_PM_TRAP_arithtrap_T, DCPI_PM_TRAP_arithtrap_F),
-  DCPI_PM_BIT("fpdisabledtrap", DCPI_PM_TRAP_fpdisabledtrap_T, DCPI_PM_TRAP_fpdisabledtrap_F),
-  DCPI_PM_BIT("MT_FPCRtrap", DCPI_PM_TRAP_MT_FPCRtrap_T, DCPI_PM_TRAP_MT_FPCRtrap_F),
-  DCPI_PM_BIT("dfaulttrap", DCPI_PM_TRAP_dfaulttrap_T, DCPI_PM_TRAP_dfaulttrap_F),
-  DCPI_PM_BIT("iacvtrap", DCPI_PM_TRAP_iacvtrap_T, DCPI_PM_TRAP_iacvtrap_F),
-  DCPI_PM_BIT("OPCDECtrap", DCPI_PM_TRAP_OPCDECtrap_T, DCPI_PM_TRAP_OPCDECtrap_F),
-  DCPI_PM_BIT("interrupt", DCPI_PM_TRAP_interrupt_T, DCPI_PM_TRAP_interrupt_F),
-  DCPI_PM_BIT("mchktrap", DCPI_PM_TRAP_mchktrap_T, DCPI_PM_TRAP_mchktrap_F),
-  
-  // Non-ProfileMe event types
-  { "cycles", TYPERM(DCPI_RM_cycles) },
-  { "retires", TYPERM(DCPI_RM_retires) },
-  { "replaytrap", TYPERM(DCPI_RM_replaytrap) },
-  { "bmiss", TYPERM(DCPI_RM_bmiss) }
-
-};
-
-#undef TYPEPM
-#undef TYPERM
-#undef DCPI_PM_CNTR
-#undef DCPI_PM_BIT
-
-
-DCPITranslationTableEntry*
-FindDCPITranslationTableEntry(const char* token)
-{
-  // FIXME: we should search a quick-sorted table with binary search.
-  DCPITranslationTableEntry* found = NULL;
-  for (uint i = 0; i < DCPITranslationTableSZ; ++i) {
-    if (strcmp(token, DCPITranslationTable[i].tok) == 0) {
-      found = &DCPITranslationTable[i];
-    }
-  }
-  return found;
-}
-
-//****************************************************************************

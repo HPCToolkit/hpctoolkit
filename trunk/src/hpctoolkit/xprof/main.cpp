@@ -61,6 +61,8 @@
 #include "PCProfile.h"
 #include "DerivedProfile.h"
 
+#include "DCPIProfile.h"
+
 #include <lib/binutils/LoadModule.h>
 #include <lib/binutils/PCToSrcLineMap.h>
 #include <lib/binutils/LoadModuleInfo.h>
@@ -68,9 +70,14 @@
 //*************************** Forward Declarations ***************************
 
 using std::cerr;
+using std::cout;
+using std::endl;
 
 PCProfileFilterList*
-CreateFilterList(LoadModule* lm);
+GetAvailPredefDCPIFilters(DCPIProfile* prof, LoadModule* lm);
+
+void
+ListAvailPredefDCPIFilters(DCPIProfile* prof, bool longlist = false);
 
 //****************************************************************************
 
@@ -78,6 +85,29 @@ int
 main(int argc, char* argv[])
 {
   Args args(argc, argv);
+  
+  // ------------------------------------------------------------
+  // Read 'pcprof', the raw profiling data file
+  // ------------------------------------------------------------
+  PCProfile* pcprof = NULL;
+  try {
+    pcprof = ProfileReader::ReadProfileFile(args.profFile /*filetype*/);
+    if (!pcprof) { exit(1); }
+  } catch (std::bad_alloc& x) {
+    cerr << "Error: Memory alloc failed while reading profile!\n";
+    exit(1);
+  } catch (...) {
+    cerr << "Error: Exception encountered while reading profile!\n";
+    exit(2);
+  }
+  
+  
+  if (args.listAvailableMetrics > 0) {
+    // * Assume DCPI mode *
+    DCPIProfile* dcpiprof = dynamic_cast<DCPIProfile*>(pcprof);
+    ListAvailPredefDCPIFilters(dcpiprof, args.listAvailableMetrics == 2);
+    return (0);
+  }
   
   // ------------------------------------------------------------
   // Read executable
@@ -116,48 +146,34 @@ main(int argc, char* argv[])
   }
   
   LoadModuleInfo modInfo(exe, map);
-  
-  // ------------------------------------------------------------
-  // Read 'rawprofData', the raw profiling data file
-  // ------------------------------------------------------------
-  PCProfile* rawprofData = NULL;
-  try {
-    rawprofData = ProfileReader::ReadProfileFile(args.profFile /*filetype*/);
-    if (!rawprofData) { exit(1); }
-  } catch (std::bad_alloc& x) {
-    cerr << "Error: Memory alloc failed while reading profile!\n";
-    exit(1);
-  } catch (...) {
-    cerr << "Error: Exception encountered while reading profile!\n";
-    exit(2);
-  }
-  
+    
   // ------------------------------------------------------------
   // Construct some metrics, derived in some way from the raw
   // profiling data, that we are interested in.
   // ------------------------------------------------------------
-  DerivedProfile* profData = NULL;
+  DerivedProfile* drvdprof = NULL;
   try {
-    // We currently assume DCPI mode
+    // * Assume DCPI mode *
     PCProfileFilterList* filtList = NULL;
     if (!args.outputRawMetrics) {
-      filtList = CreateFilterList(modInfo.GetLM());
+      DCPIProfile* dcpiprof = dynamic_cast<DCPIProfile*>(pcprof);
+      filtList = GetAvailPredefDCPIFilters(dcpiprof, modInfo.GetLM());
     }
     
-    profData = new DerivedProfile(rawprofData, filtList);
+    drvdprof = new DerivedProfile(pcprof, filtList);
+    delete filtList;
 
   } catch (...) {
     cerr << "Error: Exception encountered while constructing derived profile!\n";
     exit(2);
   }
-
+  
   // ------------------------------------------------------------
   // Translate the derived metrics to a PROFILE file
   // ------------------------------------------------------------
   try {
-    // We currently assume DCPI mode
-    //DumpAsPROFILE(std::cout, rawprofData, &modInfo);
-    ProfileWriter::WriteProfile(std::cout, profData, &modInfo);
+    // * Assume DCPI mode *
+    ProfileWriter::WriteProfile(cout, drvdprof, &modInfo);
   } catch (...) {
     cerr << "Error: Exception encountered while translating to PROFILE!\n";
     exit(2);
@@ -165,21 +181,107 @@ main(int argc, char* argv[])
   
   delete exe;
   delete map;
-  delete rawprofData;
-  delete profData;
+  delete pcprof;
+  delete drvdprof;
   return (0);
 }
 
 //****************************************************************************
 
-#include "DCPIProfile.h"
+bool
+IsPredefDCPIFilterAvail(DCPIProfile* prof, PredefinedDCPIMetricTable::Entry* e);
 
+// GetAvailPredefDCPIFilters: Return a list of all the filters within
+// the DCPI predefined metric table that are available for this
+// profile.
 PCProfileFilterList*
-CreateFilterList(LoadModule* lm)
+GetAvailPredefDCPIFilters(DCPIProfile* prof, LoadModule* lm)
 {
   PCProfileFilterList* flist = new PCProfileFilterList;
-  flist->push_back(DCPIProfileFilter::RetiredInsn(lm));
-  flist->push_back(DCPIProfileFilter::RetiredFPInsn(lm));
-
+  for (uint i = 0; i < PredefinedDCPIMetricTable::GetSize(); ++i) {
+    PredefinedDCPIMetricTable::Entry* e = PredefinedDCPIMetricTable::Index(i);
+    if (IsPredefDCPIFilterAvail(prof, e)) {
+      flist->push_back(GetPredefinedDCPIFilter(e->name, lm));
+    }
+  }
   return flist;
+}
+
+// ListAvailPredefDCPIFilters: Iterate through the DCPI predefined
+// metric table, lising any metrics (filters) that are available for
+// this profile.
+void
+ListAvailPredefDCPIFilters(DCPIProfile* prof, bool longlist)
+{
+  // When longlist is false, a short listing is printed
+  // When longlist is true, a long listing is print (name and description)
+
+  String out;
+  for (uint i = 0; i < PredefinedDCPIMetricTable::GetSize(); ++i) {
+    PredefinedDCPIMetricTable::Entry* e = PredefinedDCPIMetricTable::Index(i);
+    if (IsPredefDCPIFilterAvail(prof, e)) {
+      
+      if (longlist) {
+	out += String("  ") + e->name + ": " + e->description + "\n";
+      } else {
+	if (!out.Empty()) { out += ":"; }
+	out += e->name;
+      }
+      
+    }
+  }
+  
+  if (out.Empty()) {
+    cout << "No derived metrics available for this DCPI profile.";
+  } else {
+    cout << "The following metrics are available for this DCPI profile:\n";
+    if (longlist) {
+      cout << out;
+    } else {
+      cout << "  -M " << out << endl;
+      cout << "(This line may be edited and passed to xprof.)" << endl;
+    }
+  }
+}
+
+// IsPredefDCPIFilterAvail: Given the DCPIProfile and an entry in the
+// DCPI predefined metric table, determine if the corresponding filter
+// is available (meaningful) for this profile.
+bool 
+IsPredefDCPIFilterAvail(DCPIProfile* prof, PredefinedDCPIMetricTable::Entry* e)
+{
+  DCPIProfile::PMMode pmmode = prof->GetPMMode();
+  
+  if (e->avail & PredefinedDCPIMetricTable::RM) {
+
+    // The filter may or may not be available (whether in ProfileMe
+    // mode or not): must check each metric
+    for (PCProfileMetricSetIterator it(*prof); it.IsValid(); ++it) {
+      PCProfileMetric* m = it.Current();
+      if (strcmp(e->name, m->GetName()) == 0) {
+	return true;
+      }
+    }
+    return false;
+    
+  } else {
+    // The filter may be available in any ProfileMe mode or in only
+    // one mode.
+
+    bool pmavail = false;
+    if (e->avail & PredefinedDCPIMetricTable::PM0) {
+      if (pmmode == DCPIProfile::PM0) { pmavail |= true; }
+    } 
+    if (e->avail & PredefinedDCPIMetricTable::PM1) {
+      if (pmmode == DCPIProfile::PM1) { pmavail |= true; }
+    }
+    if (e->avail & PredefinedDCPIMetricTable::PM2) {
+      if (pmmode == DCPIProfile::PM2) { pmavail |= true; }
+    }
+    if (e->avail & PredefinedDCPIMetricTable::PM3) {
+      if (pmmode == DCPIProfile::PM3) { pmavail |= true; }
+    }
+    return pmavail;
+  }
+  
 }

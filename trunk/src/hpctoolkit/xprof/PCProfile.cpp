@@ -65,10 +65,11 @@ using std::dec;
 // PCProfileMetricSet
 //****************************************************************************
 
-PCProfileMetricSet::PCProfileMetricSet(const ISA* isa_, suint sz)
+PCProfileMetricSet::PCProfileMetricSet(ISA* isa_, suint sz)
   : isa(isa_)
 {
   metricVec.reserve(16);
+  isa->Attach();
 }
 
 PCProfileMetricSet::~PCProfileMetricSet()
@@ -77,7 +78,7 @@ PCProfileMetricSet::~PCProfileMetricSet()
     delete metricVec[i];
   }
   metricVec.clear();
-  // delete isa; FIXME: delete isa
+  isa->Detach();
 }
 
 sint
@@ -95,7 +96,6 @@ PCProfileMetricSet::DataExists(Addr pc, ushort opIndex) const
 PCProfileMetricSet*
 PCProfileMetricSet::Filter(MetricFilter* filter) const
 {
-  // FIXME: create new isa object of same type
   PCProfileMetricSet* s = new PCProfileMetricSet(isa);
   
   for (suint i = 0; i < GetSz(); i++) {
@@ -128,7 +128,7 @@ PCProfileMetricSet::DDump()
 // PCProfile
 //****************************************************************************
 
-PCProfile::PCProfile(const ISA* isa_, suint sz)
+PCProfile::PCProfile(ISA* isa_, suint sz)
   : PCProfileMetricSet(isa_, sz)
 {
   pcVec.reserve(1024);

@@ -90,13 +90,14 @@ typedef PCVec::const_iterator PCVecCIt;
 // raw metrics forming a derived metric.  Filters can be applied to
 // yield a new set.  A set contains an ISA, which its metrics point
 // to, primarily for conversion between 'pcs' and 'operation pcs'.
+// Note that the ISA is reference counted.
 class PCProfileMetricSet
 {
 private:
   
 public:
-  // Constructor: reserves at least 'sz' slots; we assume ownership of 'isa_'
-  PCProfileMetricSet(const ISA* isa_, suint sz = 16); 
+  // Constructor: reserves at least 'sz' slots; 'isa_' is *reference counted*
+  PCProfileMetricSet(ISA* isa_, suint sz = 16); 
   virtual ~PCProfileMetricSet(); 
   
   // Access to metrics (0-based).  When a set is created, space for
@@ -120,8 +121,11 @@ public:
 
   void Clear() { metricVec.clear(); }
 
-  const ISA* GetISA() const { return isa; }
 
+  // 'GetISA': Note: A user must call ISA::Attach() if this is more
+  // than a momentary reference!
+  ISA* GetISA() const { return isa; }
+  
   // DataExists(): Does non-NIL data exist for some metric at the
   // operation designated by 'pc' and 'opIndex'?  If yes, returns the
   // index of the first metric with non-nil data (forward iteration
@@ -152,7 +156,7 @@ private:
   // and any possible resizing should be cheap b/c these sets should
   // be relatively small.
   PCProfileMetricVec metricVec;
-  const ISA* isa; 
+  ISA* isa; 
 };
 
 
@@ -213,7 +217,7 @@ private:
 class PCProfile : public PCProfileMetricSet
 {
 public:
-  PCProfile(const ISA* isa_, suint sz = 16);
+  PCProfile(ISA* isa_, suint sz = 16);
   virtual ~PCProfile();
   
   // ProfiledFile: the name of the profiled program image

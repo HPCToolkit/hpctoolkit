@@ -65,7 +65,7 @@ using std::dec;
 // DCPIProfile
 //****************************************************************************
 
-DCPIProfile::DCPIProfile(const ISA* isa_, suint sz)
+DCPIProfile::DCPIProfile(ISA* isa_, suint sz)
   : PCProfile(isa_, sz), pmmode(DCPIProfile::PM_NONE)
 {
 }
