@@ -20,7 +20,7 @@
 // Author:
 //    Written by John Mellor-Crummey and Nathan Tallent, Rice University.
 //
-// Acknowledgements   
+// Acknowledgements:
 //    Phil Mucci's 'papiex' code provided guidance for handling threads.
 //
 //    The PAPI Initialization code was originally adapted from parts of The
@@ -239,17 +239,20 @@ init_library()
   
   /* Note: PAPI only supports profiling on a per-thread basis */
   if (opt_thread) {
+    /* FIXME: I suppose it would be possible for someone to dlopen
+       libpthread which means it would not be visible now. Perhaps we
+       should do a dlsym on libpthread instead. */
     real_pthread_create = 
       (pthread_create_fptr_t)dlsym(RTLD_NEXT, "pthread_create");
     handle_any_dlerror();
     if (!real_pthread_create) {
-      DIE("fatal error: Cannot intercept thread creation and therefore cannot profile threads.");
+      DIE("fatal error: Cannot intercept POSIX thread creation and therefore cannot profile threads.");
     }
     
     real_pthread_self = dlsym(RTLD_NEXT, "pthread_self");
     handle_any_dlerror();
     if (!real_pthread_self) {
-      DIE("fatal error: Cannot intercept thread id routine and therefore cannot profile threads.");
+      DIE("fatal error: Cannot intercept POSIX thread id routine and therefore cannot profile threads.");
     }
   }
 }
@@ -412,9 +415,6 @@ hpcrun_fork()
   if (pid == 0) { 
     /* Initialize profiling for child process */
     if (opt_debug >= 1) { MSG(stderr, "==> caught fork <=="); }
-    if (hpc_init_papi_force() != 0) {
-      exit(1); /* error already printed */
-    }
     init_process();
   } 
   /* Nothing to do for parent process */
@@ -549,7 +549,7 @@ static void
 init_process()
 {
   if (opt_debug >= 1) { MSG(stderr, "*** init_process ***"); }
-  
+
   rtloadmap = hpcrun_code_lines_from_loadmap(opt_debug);
   
   /* Initialize PAPI if necessary */
@@ -1013,12 +1013,13 @@ init_papi_for_process()
 {  
   int rval;
   int papi_debug = 0;
-
-  /* Initialize papi */
-  if (hpc_init_papi() != 0) {
+  
+  /* Initialize papi: hpc_init_papi_force() *must* be used for forks();
+     it works for non-forks also. */
+  if (hpc_init_papi_force() != 0) { 
     exit(1); /* error already printed */
   }
-
+  
   /* set PAPI debug */
   switch(opt_debug) {
   case 0: 
@@ -1548,6 +1549,7 @@ write_string(FILE *fs, char *str)
 /****************************************************************************/
 
 /* hpcrun_gettid: return a thread id */
+/* FIXME: return size_t or intptr_t */
 static long
 hpcrun_gettid()
 {
