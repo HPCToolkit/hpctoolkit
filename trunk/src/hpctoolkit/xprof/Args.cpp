@@ -68,7 +68,7 @@ void Args::Usage()
   cerr
     << "Usage: " << endl
     << "  " << cmd << " [-l | -L]  <binary> <profile>\n"
-    << "  " << cmd << " [-V] [ [-M <mlist>] [-X <xlist>] [-R] ] <binary> <profile>\n"
+    << "  " << cmd << " [-V] [ [-M <mlist> -M...] [-X <xlist> -X...] [-R] ] <binary> <profile>\n"
     
     << endl;
   cerr
@@ -155,14 +155,16 @@ Args::Args(int argc, char* const* argv)
       break; 
     }
 
-    case 'M': {
+    case 'M': { // may occur multiple times
       if (optarg == NULL) { error = true; }
-      metricList = optarg;
+      if (!metricList.Empty()) { metricList += ":"; }
+      metricList += optarg;
       break; 
     }
-    case 'X': {
+    case 'X': { // may occur multiple times
       if (optarg == NULL) { error = true; }
-      excludeMList = optarg;
+      if (!excludeMList.Empty()) { excludeMList += ":"; }
+      excludeMList += optarg;
       break; 
     }
     case 'R': { 
