@@ -210,7 +210,8 @@ hpcrun_sighandler(int sig)
   signal(sig, SIG_DFL); /* return to default action */
     
   switch (sig) {
-  case SIGINT: {
+  case SIGINT:
+  case SIGABRT: {
     break;
   }
   default: 
@@ -220,7 +221,9 @@ hpcrun_sighandler(int sig)
   
   fini_process();
   fini_library();
-  exit(0);
+  
+  signal(SIGABRT, SIG_DFL); /* return SIGABRT to default before abort()! */
+  abort();
 }
 
 
@@ -1003,7 +1006,8 @@ static void init_sighandler(int sig);
 static void 
 init_sighandlers()
 {
-  init_sighandler(SIGINT);  /* Ctrl-C */
+  init_sighandler(SIGINT);   /* Ctrl-C */
+  init_sighandler(SIGABRT);  /* abort() */
 }
 
 
