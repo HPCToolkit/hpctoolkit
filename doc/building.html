@@ -26,7 +26,7 @@
 <div id="main">
 
 <!-- automatically updated by Emacs hook below; nicer than CVS Date -->
-<p class="lastupdated">Last Updated: 2004-10-29</p>
+<p class="lastupdated">Last Updated: 2005-03-14</p>
 
 <a name="toc"></a>
 <h1>Downloading, Building and Installing HPCToolkit</h1>
@@ -76,6 +76,7 @@ be used.
 
     <li>Linux-i686
       <ul class="noindent">
+        <li>Intel C++/C 8.0
         <li>GCC C++/C 3.0.4, 3.2.x, 3.3.x
       </ul>
 
@@ -200,10 +201,6 @@ configurations.)</p>
 <h2>Building and Installing</h2>
 <p><i>[<a href="#toc">Contents</a>]</i>
 
-
-<p><i>Temporary: To build HPCToolkit on IRIX64, please use these 
-<a href="building-old.html">instructions</a>.</i>
-
 <p>The easiest way to build HPCToolkit is to use
 <code>Makefile.quick</code>, which will build everything you
 downloaded in the first step.  If you want to build HPCToolkit's
@@ -228,11 +225,35 @@ non-Un*x environment (e.g. Windows without Cygwin).
 
 <li>
 <p>Configure, build and install. Since this will produce a lot of
-output, you may want to redirect it to a file.
+output, you may want to redirect it to a file.  Make sure to use the
+<code>CXX</code> and <code>CC</code> options if you do not wish to use
+the GNU compiler:
 
 <div class="indent">
-  <code>make -f Makefile.quick [PAPI=&lt;install_path&gt;] all</code><br>
+  <code>make -f Makefile.quick&nbsp;[PAPI=&lt;install_path&gt;]&nbsp;[CXX=&lt;C++&nbsp;compiler&gt;]&nbsp;[CC=&lt;C&nbsp;compiler&gt;]&nbsp;all</code><br>
 </div>
+
+<p>For example:
+   <ul class="noindent">
+     <li>Linux-*: <i>(using the GNU compiler and Intel compiler,
+                  respectively)</i>
+       <ul class="noindent">
+         <li><code>make&nbsp;-f&nbsp;Makefile.quick&nbsp;PAPI=&lt;papi&gt;&nbsp;CXX=g++&nbsp;CC=gcc&nbsp;all</code>
+         <li><code>make&nbsp;-f&nbsp;Makefile.quick&nbsp;PAPI=&lt;papi&gt;&nbsp;CXX=icc&nbsp;CC=icc&nbsp;all</code>
+       </ul>
+     <li>IRIX64-mips: <i>(using the SGI MIPSpro compiler)</i>
+       <ul class="noindent">
+         <li><code>make&nbsp;-f&nbsp;Makefile.quick&nbsp;CXX=CC&nbsp;CC=cc&nbsp;all</code>
+       </ul>
+    <li>SunOS-sparc: <i>(using the Sun compiler)</i>
+       <ul class="noindent">
+         <li><code>make&nbsp;-f&nbsp;Makefile.quick&nbsp;CXX=CC&nbsp;CC=cc&nbsp;all</code>
+       </ul>
+     <li>Tru64-alpha: <i>(using the Compaq comiler)</i>
+       <ul class="noindent">
+         <li><code>make&nbsp;-f&nbsp;Makefile.quick&nbsp;CXX=cxx&nbsp;CC=cc&nbsp;all</code>
+       </ul>
+   </ul>
 
 </ol>
 
