@@ -55,11 +55,14 @@ include $(HPCTOOLKIT)/src/Makeinclude.config
 # Site/machine/architecture independent configuration 
 #############################################################################
 
-all: exes install
+all: post_cvs_co_script exes install
 
 exes: build_bloop build_hpcview build_xprof #build_xcsprof
 
-.PHONY: all exes
+post_cvs_co_script:
+	$(HPCTOOLKIT)/tools/hFinishCVSCheckout
+
+.PHONY: all exes post_cvs_co_script
 
 #############################################################################
 
