@@ -54,6 +54,10 @@ using std::cerr;
 #include <fstream>
 #include <new>
 
+//************************ OpenAnalysis Include Files ***********************
+
+#include <OpenAnalysis/Utils/Exception.h>
+
 //*************************** User Include Files ****************************
 
 #include "Args.h"
@@ -84,6 +88,10 @@ main(int argc, char* argv[])
     e.Report(cerr); // fatal error
     exit(1);
   }
+  catch (Exception& e /* OpenAnalysis -- should be in namespace */) {
+    e.report(cerr);
+    exit(1);
+  }
   catch (std::bad_alloc& x) {
     cerr << "Error: Memory alloc failed!\n";
     exit(1);
@@ -103,9 +111,9 @@ real_main(int argc, char* argv[])
   // ------------------------------------------------------------
   // Read executable
   // ------------------------------------------------------------
-  Executable* exe = NULL;
+  LoadModule* exe = NULL;
   try {
-    exe = new Executable();
+    exe = new LoadModule(); // Executable(): use LoadModule for now
     if (!exe->Open(args.inputFile.c_str())) { 
       exit(1); // Error already printed 
     } 

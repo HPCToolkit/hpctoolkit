@@ -246,7 +246,8 @@ WriteScopeTree(std::ostream& os, PgmScopeTree* pgmScopeTree, bool prettyPrint)
 //   normalizer employs heuristics to reverse certain compiler
 //   optimizations such as loop unrolling.
 PgmScopeTree*
-ScopeTreeBuilder::BuildFromExe(Executable* exe, PCToSrcLineXMap* &map,
+ScopeTreeBuilder::BuildFromExe(/*Executable*/ LoadModule* exe, 
+			       PCToSrcLineXMap* &map,
 			       String canonicalPathList, 
 			       bool normalizeScopeTree,
 			       bool verboseMode)
