@@ -51,11 +51,8 @@
 # hpcquick  -- R. Fowler  July, 2000
 #   
 # A Perl script to help new users get started quickly with 'hpcview'.
-# This script processes ssrun data files, creates a simple configuration 
+# This script processes profile data files, creates a simple configuration 
 # file and runs 'hpcview' using that configuration.
-# 
-# THIS VERSION IS INTENDED FOR USE ON SGI R10K and R12K or
-# COMPAQ/ALPHA MACHINES ONLY.
 # 
 # To get started --
 #   -1.  Set the environment variable $HPCTOOLKIT to the installed location
@@ -68,7 +65,7 @@
 #        several times to gather raw data.
 #    2.  Run hpcquick with arguments specifying the paths to your
 #        source code and the names of files output by ssrun.  
-#    3.  Point your web browser at HPCQUICK/index.html.
+#    3.  Point your web browser at the resulting database.
 #    (4) If the results don't satisfy you, modify the outputs of hpcquick
 #        (a sequence of commands and a 'hpcview' configuration file) to 
 #        do what you need.
@@ -88,6 +85,39 @@
 #   configuration file to meet your requirements.
 #
 # ----------------------------------------------------------------------
+
+# Todo notes (eraxxon):
+#
+# I have significantly revised hpcquick to 'sort-of' work along the
+# following lines.  However, more revisions are needed to beautify
+# (improving maintainability and extensibility).  The motivation
+# behind all this is that PROFILE files are now the standard format
+# for profile data.  Instead of trying to extract metric names et
+# al. from profile filenames, we want to rely on ptran/xprof/papiprof
+# to produce a PROFILE file, extract information from this and then
+# produce the hpcview database.  We have to know just enough about
+# binary formats to known when to run ptran et al, but that is it.
+# Another motivation is that we want to be able to process PROFILE
+# files directly.
+#
+# Note: Generally speaking, the metric names in the data structures should
+# refer to PROFILE metrics and data.
+#
+# 1. Produce PROFILE info for all binary profiles. (ssrun, umon.out, etc.)
+#    - Convert to one or more binary profiles to PROFILE info (stored
+#      in a temporary filename since we don't know how to extract
+#      metric names).
+#    - Associate raw profile files with PROFILE file (for later use).
+#    - Result is a list of {PROFILE, rawprofile} structs
+#
+# 2. Examine PROFILE files and init intermediate data structures
+#    - Set data structures (metric types, etc.) based on PROFILE info.
+#    - For PROFILE files with assoc. raw profile files, rename the temp
+#      PROFILE to a good name based on the metrics within. 
+# 
+# 3. Output hpcview related files based on info in data structures.
+#
+# ** Does not currently support uprofile output. **
 
 # ----------------------------------------------------------------------
 
@@ -114,7 +144,6 @@ Following is a list of the various profile files accepted.  If needed,
 they will automatically be converted into the PROFILE format for
 hpcview (using the vendor's 'prof' tool and 'ptran').
   o binary output from SGI's ssrun
-  o binary output from Alpha-Tru64's uprofile
   o XML PROFILE files from xprof, papiprof and ptran
 
 Options:
@@ -127,6 +156,8 @@ Options:
   -S: Optional program structure from 'bloop'.
   -P: prof1...profM specify a list of profile files.
 ";
+
+#   o [binary output from Alpha-Tru64's uprofile] 
 
 # ----------------------------------------------------------------------
 
@@ -270,12 +301,12 @@ while ($i < $argc) {
 # ------------------------------------------------------
 
 if (!defined($configFile)) {
-    print STDOUT "Missing config file name\n";
+    print STDOUT "Internal Error: Missing config file name\n";
     printUsageAndExit($0);
 }
 
 if (!defined($configuration{title})) {
-    print STDOUT "Missing title\n";
+    print STDOUT "Internal Error: Missing title\n";
     printUsageAndExit($0);
 }
 
@@ -466,6 +497,7 @@ sub findMetricsForProfile {
 	$aMetric->{expType} = findMetricForBinProfile($profile);
 	$aMetric->{displayName} = $aMetric->{expType};
 	$metrics[$i] = $aMetric;
+	print STDOUT " *** $aMetric->{expType}\n";
 	return \@metrics;
     }
 }
@@ -475,10 +507,13 @@ sub findMetricsForProfile {
 #   Finds some tolerable title for this profile.  $profile should exist.
 # ----------------------------------------------------------------------
 
+# FIXME: It would be far superior to always find the title from the
+# PROFILE files (see notes at top).
+
 sub constructTitleForProfile {
     my ($profile) = @_;
 
-    my $title = "<notitle>";
+    my $title;
 
     if (getProfileType($profile) == $PROFILEType) {
 
@@ -497,6 +532,10 @@ sub constructTitleForProfile {
     } else {
 	$profile =~ /$ssrunFileRE/;
 	$title = $1;
+
+	if (!defined($title)) { 
+	    $title = "<notitle>"; # hack for unmon.out 
+	}
     }
     #print STDOUT "*** Title: $title\n";
     return $title;
@@ -541,14 +580,15 @@ sub getProfileType {
 #   find the experiment type given a binary ssrun profile file name
 # ----------------------------------------------------------------------
 
+# FIXME: We should be extracting this stuff from PROFILE (see notes at top)
+
 sub findMetricForBinProfile {
     my $fileName = shift;
     
-    # FIXME: ostensibly only for ssrun...
     if ($fileName =~ /$ssrunFileRE/) {
 	return $2;
     } else {
-	return undef;
+	return "_metric_";  # hack for umon.out
     }
 }
 
@@ -691,9 +731,12 @@ sub createOutputFiles {
 	if (!defined($metric->{PROFILEfile})) {
 	    print STDOUT "Processing raw performance data file...\n";
 	    
-	    # FIXME: this is ostensibly only for ssrun
+	    # FIXME: Only for ssrun
 	    my $PROFILE = $metric->{rawProfFiles}[0];
 	    $PROFILE =~ s/$ssrunFileRE/$1.$expTypeQ$pxmlExt/;
+	    if ($PROFILE eq $metric->{rawProfFiles}[0]) {
+		$PROFILE .= ".$expTypeQ$pxmlExt"; # 
+	    }
 	    
 	    my $command = "$profileCmd -lines";
 	    foreach $file (@{$metric->{rawProfFiles}}) {
@@ -798,10 +841,8 @@ sub createOutputFiles {
 
 sub xmlEsc {
 
-    # FIXME: Is there a way to make these 'static' without placing
-    # them at the top of the file? When they are outside of this
-    # subroutine, perl -w complains the substitutions below use
-    # uninitialized values.
+    # FIXME: Is there a way to make simulate C statics without placing
+    # these at the top of the file to force evaulation?
     my $ampersand = "&";
     my $amp = "&amp;";
     my $quoteMark = "\"";
@@ -810,7 +851,6 @@ sub xmlEsc {
     my $lt = "&lt;";
     my $rightAngleBracket = ">";
     my $gt = "&gt;";
-
 
     my ($content) = @_;
     if (!defined($content)) {
