@@ -185,8 +185,10 @@ main(int argc, char* argv[])
     }
     
     drvdprof = new DerivedProfile(pcprof, filtList);
-    delete filtList;
-
+    
+    if (filtList) { filtList->destroyContents(); }
+    delete filtList; // done with filters
+    
     if (drvdprof->GetNumMetrics() == 0) {
       cerr << "Error: Could not find any metrics to convert to PROFILE!\n";
       exit(1);
@@ -322,7 +324,7 @@ GetDCPIFilters(DCPIProfile* prof, LoadModule* lm,
 
 
 // GetDCPIFilters: Return a list of filters for the metrics in 'mlist'.
-// User is responsible for memory deallocation.  
+// User is responsible for memory deallocation of list and its contents. 
 // Note: assumes that every filter name in 'mlist' is available.
 PCProfileFilterList*
 GetDCPIFilters(StringList* mlist, LoadModule* lm) 
