@@ -212,8 +212,10 @@ HPCToolkit Version 4.0.0: [2004.11.06]
   - Add options to treat irreducible intervals as loops and to turn
     off potentially unsafe normalizations.
   - Performance tuning: 
-    - Replace binutils' dwarf2 linear-time line-lookup algorithm with
+    - Replace binutils' DWARF2 linear-time line-lookup algorithm with
       binary search.
+    - Use a one-element cache to drastically speed up ELF symbol table
+      function search 
 - hpcview and hpcquick handle multiple structure files
 - Port HPCToolkit to opteron-Linux.
 - Update documentation accordingly.
