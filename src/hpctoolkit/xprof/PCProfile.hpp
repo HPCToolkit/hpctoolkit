@@ -211,8 +211,6 @@ private:
 // Because of this, a 'PCProfile' also contains a list of PCs at which
 // at least one metric contains non-zero counts.
 //
-// Note: all metrics for one profile should have identical values for 
-// PCProfileMetric::GetTxtStart() and PCProfileMetric::GetTxtSz()
 class PCProfile : public PCProfileMetricSet
 {
 public:
@@ -226,7 +224,13 @@ public:
   
   void SetProfiledFile(const char* s)  { profiledFile = s; }
   void SetHdrInfo(const char* s)       { fHdrInfo = s; }
-
+  
+  // Text start and size (redundant).  Note: all metrics for one
+  // profile should have identical values for
+  // PCProfileMetric::GetTxtStart() and PCProfileMetric::GetTxtSz()
+  Addr GetTxtStart() const { return (GetSz()) ? Index(0)->GetTxtStart() : 0; }
+  Addr GetTxtSz()    const { return (GetSz()) ? Index(0)->GetTxtSz() : 0; }
+  
   // Access to metrics (redundant)
   const PCProfileMetric* GetMetric(suint i) const { return Index(i); }
   void SetMetric(suint i, const PCProfileMetric* m) { Assign(i, m); }
