@@ -88,7 +88,7 @@ stringcat(const string& s, T n)
 ///////////////////////////////////////////////////////////////////////
 // Event
 
-Event::Event(const char* name, const char* desc, unsigned int period)
+Event::Event(const char* name, const char* desc, uint64_t period)
 {
   name_ = name;
   description_ = desc;
@@ -111,7 +111,7 @@ Event::description() const
   return description_.c_str();
 }
 
-unsigned int
+uint64_t
 Event::period() const
 {
   return period_;
@@ -240,10 +240,9 @@ get_namemap_entry(const qual_name& name, namemap &l, int ncounter)
 }
 
 static void
-sum_vectors(vector<unsigned int>& v1, const vector<unsigned int>& v2)
+sum_vectors(vector<uint64_t>& v1, const vector<uint64_t>& v2)
 {
-  unsigned int i;
-  for (i = 0; i < v1.size() && i < v2.size(); ++i) {
+  for (unsigned int i = 0; i < v1.size() && i < v2.size(); ++i) {
       v1[i] += v2[i];
     }
 }
@@ -436,11 +435,11 @@ Summary::init(const string& pgm, const vector<ProfFile>& profs)
 
 		      for (funcmap_t::iterator ifunc = funcmap.begin();
 			   ifunc != funcmap.end(); ++ifunc) {
-			  vector<unsigned int> &c = (*ifunc).second;
-			  unsigned int value = c[loc.elementary_location(0)];
-			  unsigned int vmin = value;
-			  unsigned int vmax = value;
-			  unsigned int vsum = value;
+			  vector<uint64_t> &c = (*ifunc).second;
+			  uint64_t value = c[loc.elementary_location(0)];
+			  uint64_t vmin = value;
+			  uint64_t vmax = value;
+			  uint64_t vsum = value;
 			  for (int l = 1; l < loc.nevents(); ++l) {
 			      value = c[loc.elementary_location(l)];
 			      if (value > vmax) vmax = value;
@@ -573,7 +572,7 @@ Summary::process_lm(const ProfFileLM& proflm, int ev_i_start)
 	  filemap_t& filemap = lmmap_[lmname];
 	  funcmap_t &funcmap = filemap[filename][lineno];
 	  if (funcmap.find(funcname) == funcmap.end()) {
-	      vector<unsigned int> &c = funcmap[funcname];
+	      vector<uint64_t> &c = funcmap[funcname];
 	      c.resize(ncounter());
 	      fill(c.begin(), c.end(), 0);
 	      c[ev_i] = count;
@@ -870,7 +869,7 @@ Summary::annotate_file(istream &s, ostream &as, const linemap_t &linemap) const
       as << "Could not read file." << endl;
       return false;
     }
-  vector<unsigned int> counters(ncounter());
+  vector<uint64_t> counters(ncounter());
   int width;
   if (display_percent()) {
       if (ndecimal) width = 5 + ndecimal;
@@ -955,10 +954,9 @@ Summary::print(ostream& o) const
 	      funcmap_t::const_iterator k;
 	      for (k = funcmap.begin(); k != funcmap.end(); ++k) {
 		  const string &funcname = (*k).first;
-		  const vector<unsigned int> &counts = (*k).second;
+		  const vector<uint64_t> &counts = (*k).second;
 		  o << "    " << lineno << " " << funcname << " [";
-		  unsigned int l;
-		  for (l = 0; l < counts.size(); ++l) {
+		  for (unsigned int l = 0; l < counts.size(); ++l) {
 		      if (l) o << " ";
 		      o << counts[l];
 		    }
@@ -1019,7 +1017,7 @@ Summary::summarize_generic(void (Summary::*construct)(namemap&),
   unsigned int j;
   unsigned int maxcount = 0;
   for (namemap::iterator i = names.begin(); i != names.end(); ++i) {
-      vector<unsigned int> &counts = (*i).second.first;
+      vector<uint64_t> &counts = (*i).second.first;
       for (j = 0; j < counts.size(); ++j) {
 	  if (counts[j] > maxcount) { maxcount = counts[j]; }
         }
@@ -1041,7 +1039,7 @@ Summary::summarize_generic(void (Summary::*construct)(namemap&),
   for (namemap::iterator i = names.begin(); i != names.end(); ++i) {
       const qual_name& qname = (*i).first;
       
-      vector<unsigned int> &counts = (*i).second.first;
+      vector<uint64_t> &counts = (*i).second.first;
       unsigned int count = 0;
       if (sorting_index && sorting_index-1 < counts.size()) {
           count = counts[sorting_index-1];
@@ -1065,7 +1063,7 @@ Summary::summarize_generic(void (Summary::*construct)(namemap&),
 	fullname = "<<" + qname.first + ">>" + qname.second;
       }
 
-      const vector<unsigned int> &counts = loci.first;
+      const vector<uint64_t> &counts = loci.first;
       if (display_percent()) {
           bool is_significant = false;
           for (j = 0; j < counts.size(); ++j) {
