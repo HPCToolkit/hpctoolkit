@@ -65,10 +65,10 @@ class Event {
   protected:
     std::string name_;
     std::string description_;
-    unsigned int period_;
+    uint64_t period_;
   public:
     /// Construct a Event using a papi_event_t structure.
-    Event(const char* name, const char* desc, unsigned int period);
+    Event(const char* name, const char* desc, uint64_t period);
     /** Destroy the Event. This does not delete the papi_event_t given
         to the constructor. */
     virtual ~Event();
@@ -77,7 +77,7 @@ class Event {
     /// Returns the event description.
     virtual const char *description() const;
     /// Returns the profiling sampling period
-    unsigned int period() const;
+    uint64_t period() const;
 };
 
 /** This is a specialization of Event that represents aggregate
@@ -114,7 +114,7 @@ class CollectiveEvent: public Event {
 /** The funcmap type maps the function name to the counts for a line of
     code.  This is a map because there might be more than one function
     attributed to a line of code due to inlining.  */
-typedef std::map<std::string, std::vector<unsigned int> > funcmap_t;
+typedef std::map<std::string, std::vector<uint64_t> > funcmap_t;
 
 /** The linemap type maps the line number to a funcmap. */
 typedef std::map<unsigned int, funcmap_t> linemap_t;
@@ -158,7 +158,7 @@ typedef std::pair<std::string, unsigned int> location;
 /** The loccount type pairs a set of locations with the a counter value
     vector.  It is used to represent aggregate counts from several
     locations.  */
-typedef std::pair<std::vector<unsigned int>, std::set<location> > loccount;
+typedef std::pair<std::vector<uint64_t>, std::set<location> > loccount;
 
 /** The namemap type aggregates all of the counter information for a
     particular qual_name. */

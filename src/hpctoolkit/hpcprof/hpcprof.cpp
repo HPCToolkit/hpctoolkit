@@ -232,8 +232,8 @@ static void dump_PROFILE_header(ostream& os);
 
 
 static void dump_PROFILE_metric(ostream& os, 
-				const vector<unsigned int>& countVec,
-				const vector<ulong>& periodVec,
+				const vector<uint64_t>& countVec,
+				const vector<uint64_t>& periodVec,
 				int ilevel);
 
 // dump_PROFILE: Given the Summary 'sum', dumps the profile data in
@@ -248,7 +248,7 @@ dump_PROFILE(Summary& sum)
 
   // a vector to store periods for use in metric value calculation;
   // indexed by 'shortname'.  period is in events/sample.
-  vector<ulong> periodVec(sum.ncounter());
+  vector<uint64_t> periodVec(sum.ncounter());
 
   // Make only elementary (non-collective) events visible
   sum.hide_all();
@@ -325,7 +325,7 @@ dump_PROFILE(Summary& sum)
 	funcmap_t::const_iterator k;
 	for (k = funcmap.begin(); k != funcmap.end(); ++k) {
 	  const string &funcname = (*k).first;
-	  const vector<unsigned int> countVec = (*k).second;
+	  const vector<uint64_t> countVec = (*k).second;
 	  
 	  // We are starting a new procedure...
 	  if (theFunc != funcname) {
@@ -385,14 +385,14 @@ dump_PROFILE_header(ostream& os)
 
 static void 
 dump_PROFILE_metric(ostream& os, 
-		    const vector<unsigned int>& countVec,
-		    const vector<ulong>& periodVec,
+		    const vector<uint64_t>& countVec,
+		    const vector<uint64_t>& periodVec,
 		    int ilevel)
 {
   // Dump metrics with non-zero counts
   for (unsigned int l = 0; l < countVec.size(); ++l) {
     if (countVec[l] > 0) {
-      double v = (double) countVec[l] * (double) periodVec[l];
+      double v = (double)countVec[l] * (double)periodVec[l];
       os << I[ilevel] << "<M n" << XMLAttr(l) << " v" << XMLAttr(v) << "/>\n";
     }
   }
