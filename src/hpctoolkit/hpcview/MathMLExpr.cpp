@@ -48,12 +48,18 @@ using std::atoi;
 
 //************************* User Include Files *******************************
 
-#include "XMLAdapter.h"
+// #include "XMLAdapter.h"
 #include "MathMLExpr.h"
 #include "PerfMetric.h"
 #include <lib/support/String.h>
 #include <lib/support/Nan.h>
 #include <lib/support/Trace.h>
+
+//************************ Xerces Include Files ******************************
+
+#include <xercesc/util/XMLString.hpp>         
+using XERCES_CPP_NAMESPACE::XMLString;
+
 
 //************************ Forward Declarations ******************************
 
@@ -99,27 +105,27 @@ using std::endl;
 //
 // ----------------------------------------------------------------------
 
-static bool isOperatorNode(DOM_Node& node);
-static bool isOperandNode(DOM_Node& node);
+static bool isOperatorNode(DOMNode *node);
+static bool isOperandNode(DOMNode *node);
 
 extern double NaNVal;
 
-MathMLExpr::MathMLExpr(DOM_Node &math) 
+MathMLExpr::MathMLExpr(DOMNode *math) 
 {
   int exprs = 0;
-  DOM_Node child = math.getFirstChild();
-  for (; child != NULL; child = child.getNextSibling()) {
-    if (child.getNodeType() == DOM_Node::TEXT_NODE) {
+  DOMNode *child = math->getFirstChild();
+  for (; child != NULL; child = child->getNextSibling()) {
+    if (child->getNodeType() == DOMNode::TEXT_NODE) {
       // DTD ensures this can't contain anything but white space
       continue;
-    } else if (child.getNodeType() == DOM_Node::COMMENT_NODE) {
+    } else if (child->getNodeType() == DOMNode::COMMENT_NODE) {
       continue;
     }
     
     if (exprs == 1) {
       throw MathMLExprException("More than one MathML expression specified for COMPUTE");
     }
-    IFTRACE << child.getNodeType() << endl; 
+    IFTRACE << child->getNodeType() << endl; 
     exprs++;
     topNode = buildEvalTree(child);
   }
@@ -142,86 +148,84 @@ double MathMLExpr::eval(const ScopeInfo *si)
 }
 
 // ----------------------------------------------------------------------
-// -- bool isOperatorNode(DOM_Node& node) --
-//   Tests whether a DOM_Node is one of the operator nodes -- divide,
+// -- bool isOperatorNode(DOMNode *node) --
+//   Tests whether a DOMNode is one of the operator nodes -- divide,
 //   minus, plus, power and times.
 // -- params --
-//   node:       a DOM_Node
+//   node:       a DOMNode
 // ----------------------------------------------------------------------
 
-static bool isOperatorNode(DOM_Node& node) {
+static bool isOperatorNode(DOMNode *node) {
   
-  static const DOMString DIVISION("divide");
-  static const DOMString SUBTRACTION("minus");
-  static const DOMString ADDITION("plus");
-  static const DOMString MAXML("max");
-  static const DOMString MINML("min");
-  static const DOMString EXPONENTIATION("power");
-  static const DOMString MULTIPLICATION("times");
+  static const XMLCh* DIVISION = XMLString::transcode("divide");
+  static const XMLCh* SUBTRACTION = XMLString::transcode("minus");
+  static const XMLCh* ADDITION = XMLString::transcode("plus");
+  static const XMLCh* MAXML = XMLString::transcode("max");
+  static const XMLCh* MINML = XMLString::transcode("min");
+  static const XMLCh* EXPONENTIATION = XMLString::transcode("power");
+  static const XMLCh* MULTIPLICATION = XMLString::transcode("times");
 
-  DOMString nodeName = node.getNodeName();
+  const XMLCh* nodeName = node->getNodeName();
 
-  return (nodeName.equals(DIVISION) || nodeName.equals(SUBTRACTION) ||
-	  nodeName.equals(ADDITION) || nodeName.equals(EXPONENTIATION) ||
-	  nodeName.equals(MULTIPLICATION) || nodeName.equals(MAXML) || 
-		nodeName.equals(MINML));
+  return (XMLString::equals(nodeName,DIVISION) || XMLString::equals(nodeName,SUBTRACTION) ||
+	  XMLString::equals(nodeName,ADDITION) || XMLString::equals(nodeName,EXPONENTIATION) ||
+	  XMLString::equals(nodeName,MULTIPLICATION) || XMLString::equals(nodeName,MAXML) || 
+		XMLString::equals(nodeName,MINML));
 }
 
-static bool isOperandNode(DOM_Node& node) {
+static bool isOperandNode(DOMNode *node) {
 
-  static const DOMString APPLY("apply");
-  static const DOMString NUMBER("cn");
-  static const DOMString IDENTIFIER("ci");
+  static const XMLCh* APPLY = XMLString::transcode("apply");
+  static const XMLCh* NUMBER = XMLString::transcode("cn");
+  static const XMLCh* IDENTIFIER = XMLString::transcode("ci");
 
-  DOMString nodeName = node.getNodeName();
+  const XMLCh* nodeName = node->getNodeName();
 
-  return (nodeName.equals(APPLY) ||
-	  nodeName.equals(NUMBER) || nodeName.equals(IDENTIFIER));
+  return (XMLString::equals(nodeName,APPLY) ||
+	  XMLString::equals(nodeName,NUMBER) || XMLString::equals(nodeName,IDENTIFIER));
 }
 
 
 // ----------------------------------------------------------------------
-// -- EvalNode* buildEvalTree(DOM_Node& node) --
-//   Build an EvalNode object out of a DOM_Node object.
+// -- EvalNode* buildEvalTree(DOMNode *node) --
+//   Build an EvalNode object out of a DOMNode object.
 // -- params --
-//   node:    a DOM_Node
+//   node:    a DOMNode
 // -- exception --
 //   An exception of type MathMLExprException could be thrown.  If the 
 // ----------------------------------------------------------------------
 
-EvalNode* MathMLExpr::buildEvalTree(DOM_Node& node) {
+EvalNode* MathMLExpr::buildEvalTree(DOMNode *node) {
 
-  static const DOMString MathML("MathML");
-  static const DOMString APPLY("apply");
-  static const DOMString DIVISION("divide");
-  static const DOMString SUBTRACTION("minus");
-  static const DOMString ADDITION("plus");
-  static const DOMString EXPONENTIATION("power");
-  static const DOMString MULTIPLICATION("times");
-  static const DOMString MAXML("max");
-  static const DOMString MINML("min");
-  static const DOMString NUMBER("cn");
-  static const DOMString IDENTIFIER("ci");
+  static const XMLCh* APPLY = XMLString::transcode("apply");
+  static const XMLCh* DIVISION = XMLString::transcode("divide");
+  static const XMLCh* SUBTRACTION = XMLString::transcode("minus");
+  static const XMLCh* ADDITION = XMLString::transcode("plus");
+  static const XMLCh* EXPONENTIATION = XMLString::transcode("power");
+  static const XMLCh* MULTIPLICATION = XMLString::transcode("times");
+  static const XMLCh* MAXML = XMLString::transcode("max");
+  static const XMLCh* MINML = XMLString::transcode("min");
+  static const XMLCh* NUMBER = XMLString::transcode("cn");
+  static const XMLCh* IDENTIFIER = XMLString::transcode("ci");
 
   // Get the name and value out for convenience
-  DOMString nodeName = node.getNodeName();
-  DOMString nodeValue = node.getNodeValue();
+  const XMLCh* nodeName = node->getNodeName();
+  const XMLCh* nodeValue = node->getNodeValue();
 
-  switch (node.getNodeType()) {
+  switch (node->getNodeType()) {
     
-  case DOM_Node::TEXT_NODE:
+  case DOMNode::TEXT_NODE:
     {
       EvalNode* evalNode;
-      const XMLCh* xmlStr = nodeValue.rawBuffer();
       if (isNumber) {  // is a number
-	char* str = XMLStrToStr(xmlStr);
+	char* str = XMLString::transcode(nodeValue);
 	IFTRACE << "str --" << str << "--" << endl; 
 	evalNode = new Const(atof(str));
 	IFTRACE << "number is --" << atof(str) << "--" << endl; 
 	delete[] str;
       }
       else {           // is a variable
-	String str = XMLStrToString(xmlStr);
+	String str = XMLString::transcode(nodeValue);
 	IFTRACE << "str --" << str << "--" << endl; 
 	int perfDataIndex = NameToPerfDataIndex(str);
 	IFTRACE << "index --" << perfDataIndex << "--" << endl; 
@@ -234,19 +238,19 @@ EvalNode* MathMLExpr::buildEvalTree(DOM_Node& node) {
       return evalNode;
     }
   
-  case DOM_Node::ELEMENT_NODE: { // ignore all attributes
+  case DOMNode::ELEMENT_NODE: { // ignore all attributes
 
-    DOM_Node child = node.getFirstChild();
+    DOMNode *child = node->getFirstChild();
 
     // if it is an apply node
-    if (nodeName.equals(APPLY)) {
+    if (XMLString::equals(nodeName,APPLY)) {
       IFTRACE << nodeName << endl; 
 
       // find the node that could be the operator
       // if it is not, throw a "no operator" exception
-      DOM_Node op = child;
-      while (op != NULL && op.getNodeType() != DOM_Node::ELEMENT_NODE)
-	op = op.getNextSibling();
+      DOMNode *op = child;
+      while (op != NULL && op->getNodeType() != DOMNode::ELEMENT_NODE)
+	op = op->getNextSibling();
       if (op == NULL || !isOperatorNode(op)) {
 	throw MathMLExprException("No operator");
 	return NULL;
@@ -255,11 +259,11 @@ EvalNode* MathMLExpr::buildEvalTree(DOM_Node& node) {
       // if the operator is found
       int numChildren = 0;
       child = op;
-      while ((child = child.getNextSibling()) != NULL) {
+      while ((child = child->getNextSibling()) != NULL) {
 	// could be some text between operands, ignore them
-	if (child.getNodeType() == DOM_Node::TEXT_NODE) {
+	if (child->getNodeType() == DOMNode::TEXT_NODE) {
 	  continue;
-	} else if (child.getNodeType() == DOM_Node::COMMENT_NODE) {
+	} else if (child->getNodeType() == DOMNode::COMMENT_NODE) {
 	  continue;
 	}
 	
@@ -282,7 +286,7 @@ EvalNode* MathMLExpr::buildEvalTree(DOM_Node& node) {
       child = op;
       for (int i = 0; i < numChildren; i++) {
 	do {
-	  child = child.getNextSibling();
+	  child = child->getNextSibling();
 	} while (!isOperandNode(child));
 	IFTRACE << "child " << i << " " << child << endl; 
 	try {
@@ -297,23 +301,23 @@ EvalNode* MathMLExpr::buildEvalTree(DOM_Node& node) {
 	}
       }
 
-      nodeName = op.getNodeName();
-      if (nodeName.equals(ADDITION))
+      nodeName = op->getNodeName();
+      if (XMLString::equals(nodeName,ADDITION))
 	return new Plus(nodes, numChildren);
-      if (nodeName.equals(SUBTRACTION) && numChildren <= 2) {
+      if (XMLString::equals(nodeName,SUBTRACTION) && numChildren <= 2) {
 	if (numChildren == 1)
 	  return new Neg(nodes[0]);
 	return new Minus(nodes[0], nodes[1]);
       }
-      if (nodeName.equals(EXPONENTIATION) && numChildren == 2)
+      if (XMLString::equals(nodeName,EXPONENTIATION) && numChildren == 2)
 	return new Power(nodes[0], nodes[1]);
-      if (nodeName.equals(MULTIPLICATION))
+      if (XMLString::equals(nodeName,MULTIPLICATION))
 	return new Times(nodes, numChildren);
-      if (nodeName.equals(MAXML))
+      if (XMLString::equals(nodeName,MAXML))
 	return new Max(nodes, numChildren);
-      if (nodeName.equals(MINML))
+      if (XMLString::equals(nodeName,MINML))
 	return new Min(nodes, numChildren);
-      if (nodeName.equals(DIVISION) && numChildren == 2)
+      if (XMLString::equals(nodeName,DIVISION) && numChildren == 2)
 	return new Divide(nodes[0], nodes[1]);
       // otherwise, throw an exception and return NULL after the switch
       // switch
@@ -324,7 +328,7 @@ EvalNode* MathMLExpr::buildEvalTree(DOM_Node& node) {
       throw MathMLExprException("Unknown operation");
     }
 
-    if (nodeName.equals(NUMBER)) {
+    if (XMLString::equals(nodeName,NUMBER)) {
       IFTRACE << "--" << child << "--" << endl; 
       isNumber = true;
       EvalNode* builtNode;
@@ -337,7 +341,7 @@ EvalNode* MathMLExpr::buildEvalTree(DOM_Node& node) {
       }
     }
 
-    if (nodeName.equals(IDENTIFIER)) {
+    if (XMLString::equals(nodeName,IDENTIFIER)) {
       IFTRACE << "--" << child << "--" << endl; 
       isNumber = false;
       EvalNode* builtNode;
@@ -354,17 +358,17 @@ EvalNode* MathMLExpr::buildEvalTree(DOM_Node& node) {
     throw MathMLExprException("Unknown node");
   }
 
-  case DOM_Node::ENTITY_REFERENCE_NODE:
+  case DOMNode::ENTITY_REFERENCE_NODE:
     {
       throw MathMLExprException("Entity -- not supported");
     }
   
-  case DOM_Node::CDATA_SECTION_NODE:
+  case DOMNode::CDATA_SECTION_NODE:
     {
       throw MathMLExprException("CDATA -- not supported");
     }
   
-  case DOM_Node::COMMENT_NODE:
+  case DOMNode::COMMENT_NODE:
     {
       //throw MathMLExprException("Comment -- not supported");
       break;

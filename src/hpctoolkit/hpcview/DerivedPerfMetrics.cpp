@@ -40,11 +40,13 @@
 
 //************************* User Include Files *******************************
 
+#include "HPCViewSAX2.h"
 #include "DerivedPerfMetrics.h"
 #include "ScopesInfo.h"
 #include "PROFILEDocHandler.h"
 #include "MathMLExpr.h"
-#include <lib/support/Assertion.h>
+
+#include <lib/support/pathfind.h>
 #include <lib/support/Trace.h>
 
 //************************ Forward Declarations ******************************
@@ -77,20 +79,20 @@ FilePerfMetric::~FilePerfMetric()
 ComputedPerfMetric::ComputedPerfMetric(const char* nm, const char* displayNm, 
 				       bool doDisp, bool doPerc, bool doSort, 
 				       bool propagateComputed, 
-				       DOM_Node &expr)
+				       DOMNode *expr)
   : PerfMetric(nm, NULL, displayNm, doDisp, doPerc, propagateComputed, doSort)
 {
    try {
      mathExpr = new MathMLExpr(expr); 
    }
    catch (const MathMLExprException &e) {
-     cerr << "ERROR: Could not construct metric '" << nm << "'." << endl 
-	  << "\tException encountered handling MathML expression: " 
+     cerr << "hpcview fatal error: Could not construct METRIC '" << nm << "'." << endl 
+	  << "\tXML exception encountered when processing MathML expression: " 
 	  << e.getMessage() << "." << endl;
      exit(1);
    }
    catch (...) {
-     cerr << "ERROR: Could not construct metric " << endl 
+     cerr << "hpcview fatal error: Could not construct metric " << endl 
 	  << "\tUnknown exception encountered handling MathML expression." << endl; 
      exit(1);
    }
@@ -137,28 +139,31 @@ void FilePerfMetric::Make(NodeRetriever &ret)
 {
   IFTRACE << "FilePerfMetric::Make " << endl << " " << ToString() << endl;
   
-  SAXParser parser;
-  parser.setDoValidation(true);
+  SAX2XMLReader* parser = XMLReaderFactory::createXMLReader();
+
+  parser->setFeature(XMLUni::fgSAX2CoreValidation, true);
+  // parser->setFeature(XMLUni::fgXercesDynamic, true);
+
   PROFILEDocHandler handler(&ret, driver);
-  parser.setDocumentHandler(&handler);
-  parser.setErrorHandler(&handler); 
+  parser->setContentHandler(&handler);
+  parser->setErrorHandler(&handler); 
+
+  String filePath = String(pathfind(".", file, "r")); 
+  if (filePath.Length() == 0) {
+    cerr << "hpcview fatal error: could not open PROFILE file '" 
+	 << file << "'." << endl;
+    exit(1);
+  }
   
   try {
-    handler.Initialize(Index(), file);
-    parser.parse(file);
-  }
-  catch (const XMLException& toCatch) {
-    String msg = "ERROR: Failed to open file '" + file + "'."; 
-    throw MetricException(msg);
-  }
-  catch (const SAXException& toCatch) {
-    String msg = "ERROR: Parsing error in '" + file + "'.";
-    throw MetricException(msg);
+    handler.Initialize(Index(), filePath);
+    parser->parse(filePath);
   }
   catch (const PROFILEException& toCatch) {
-    String msg = "ERROR: '" + file + "': " + toCatch.message();
+    String msg = toCatch.message();
     throw MetricException(msg); 
   }
+  delete parser;
   
   AccumulateFromChildren(*ret.GetRoot(), Index());
   

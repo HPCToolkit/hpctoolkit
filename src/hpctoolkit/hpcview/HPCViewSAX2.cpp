@@ -2,7 +2,7 @@
 // -*-C++-*-
 // * BeginRiceCopyright *****************************************************
 // 
-// Copyright ((c)) 2002, Rice University 
+// Copyright ((c)) 2003, Rice University 
 // All rights reserved.
 // 
 // Redistribution and use in source and binary forms, with or without
@@ -34,43 +34,43 @@
 // 
 // ******************************************************* EndRiceCopyright *
 
-#ifndef HPCViewDocParser_h
-#define HPCViewDocParser_h
-
 //************************ System Include Files ******************************
+
+#include <iostream>
+using std::cerr;
+using std::endl;
+
 
 //************************* Xerces Include Files *******************************
 
+#include <xercesc/util/XMLString.hpp>        
+using XERCES_CPP_NAMESPACE::XMLString;
 
-#include <xercesc/dom/DOMNode.hpp> 
-using XERCES_CPP_NAMESPACE::DOMNode;
 
 //************************* User Include Files *******************************
 
-#include <lib/support/String.h>
+#include "HPCViewSAX2.h"
 
-#include "HPCViewXMLErrHandler.h"
-
-//************************ Forward Declarations ******************************
-
-class Driver;
 
 //****************************************************************************
 
-void HPCViewDocParser(Driver &driver, String &inputFile, 
-		      HPCViewXMLErrHandler &errReporter);
-
-class HPCViewDocException {
-public:
-  HPCViewDocException (String msg) {
-    msgtext = msg;
+String getAttr(const Attributes& attributes, int i) 
+{
+  const XMLCh* const xmlStr = attributes.getValue((unsigned int) i); 
+  String s = "";
+  if (xmlStr) {
+    s = XMLString::transcode(xmlStr); 
   }
-  String getMessage() const { 
-    return msgtext; 
+  return s; 
+}
+
+String getAttr(const Attributes& attributes, const XMLCh* const name)
+{
+  const XMLCh* const xmlStr = attributes.getValue(name); 
+  String s = "";
+  if (xmlStr) {
+    s = XMLString::transcode(xmlStr); 
   }
-private:
-  String msgtext;
-};
+  return s;
+}
 
-
-#endif

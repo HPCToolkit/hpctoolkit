@@ -47,12 +47,19 @@
 
 //************************ System Include Files ******************************
 
+//************************ Xerces Include Files ******************************
+
+// class DOMNode;
+#include <xercesc/dom/DOMNode.hpp>         /* johnmc */
+using XERCES_CPP_NAMESPACE::DOMNode;
+
 //************************* User Include Files *******************************
 
-#include "XMLAdapter.h"
+// #include "XMLAdapter.h"
 #include "EvalNode.h"
 #include "ScopeInfo.h"
 #include <lib/support/String.h>
+
 
 //************************ Forward Declarations ******************************
 
@@ -128,7 +135,7 @@ public:
   //   MathML expressions.
   // ------------------------------------------------------------
   
-  MathMLExpr(DOM_Node &math);
+  MathMLExpr(DOMNode *math);
 
   // ------------------------------------------------------------
   // -- ~MathMLExpr() --
@@ -155,7 +162,7 @@ private:
   EvalNode* topNode;
   bool isNumber;           // not sure about this
   // helper function
-  EvalNode* buildEvalTree(DOM_Node& node);
+  EvalNode* buildEvalTree(DOMNode *node);
 };
 
 #endif  // MathMLExpr_H

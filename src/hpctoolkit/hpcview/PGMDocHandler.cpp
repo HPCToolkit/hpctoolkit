@@ -59,10 +59,18 @@ using std::atof; // For compatibility with non-std C headers
 using std::atoi;
 #endif
 
+//************************* Xerces Include Files *******************************
+
+#include <xercesc/util/XMLString.hpp>         
+using XERCES_CPP_NAMESPACE::XMLString;
+
+#include <xercesc/sax/ErrorHandler.hpp>         
+using XERCES_CPP_NAMESPACE::XMLString;
+
 //************************* User Include Files *******************************
 
 #include "PGMDocHandler.h"
-#include "XMLAdapter.h"
+#include "HPCViewXMLErrHandler.h"
 #include "ScopesInfo.h"
 #include <lib/support/Assertion.h>
 #include <lib/support/Trace.h>
@@ -83,8 +91,23 @@ using std::endl;
 // ----------------------------------------------------------------------
 
 PGMDocHandler::PGMDocHandler(NodeRetriever* const retriever,
-			     Driver *_driver) 
-  : SAXHandlerBase(true) 
+			     Driver *_driver) : 
+  // element names
+  elemPgm(XMLString::transcode("PGM")), 
+  elemGroup(XMLString::transcode("G")),
+  elemLM(XMLString::transcode("LM")),
+  elemFile(XMLString::transcode("F")),
+  elemProc(XMLString::transcode("P")),
+  elemLoop(XMLString::transcode("L")),
+  elemStmt(XMLString::transcode("S")),
+  
+  // attribute names
+  attrVer(XMLString::transcode("version")),
+  attrName(XMLString::transcode("n")),
+  attrLnName(XMLString::transcode("ln")),
+  attrBegin(XMLString::transcode("b")),
+  attrEnd(XMLString::transcode("e")),
+  attrId(XMLString::transcode("id"))
 {
   // trace = 1;
   nodeRetriever = retriever;
@@ -109,8 +132,10 @@ PGMDocHandler::~PGMDocHandler()
 
 
 // ----------------------------------------------------------------------
-// -- startElement(const XMLCh* const name,
-//                 AttributeList& attributes) --
+// -- startElement(const XMLCh* const uri, 
+//                 const XMLCh* const name, 
+//                 const XMLCh* const qname, 
+//                 const Attributes& attributes)
 //   Process the element start tag and extract out attributes.
 //
 //   -- arguments --
@@ -119,31 +144,15 @@ PGMDocHandler::~PGMDocHandler()
 // ----------------------------------------------------------------------
 
 #define s_c_XMLCh_c static const XMLCh* const
-
-// element names
-s_c_XMLCh_c elemPgm    = XMLStr("PGM");
-s_c_XMLCh_c elemGroup  = XMLStr("G");
-s_c_XMLCh_c elemLM     = XMLStr("LM");
-s_c_XMLCh_c elemFile   = XMLStr("F");
-s_c_XMLCh_c elemProc   = XMLStr("P");
-s_c_XMLCh_c elemLoop   = XMLStr("L");
-s_c_XMLCh_c elemStmt   = XMLStr("S");
-
-// attribute names
-s_c_XMLCh_c attrVer    = XMLStr("version");
-s_c_XMLCh_c attrName   = XMLStr("n");
-s_c_XMLCh_c attrLnName = XMLStr("ln");
-s_c_XMLCh_c attrBegin  = XMLStr("b");
-s_c_XMLCh_c attrEnd    = XMLStr("e");
-s_c_XMLCh_c attrId     = XMLStr("id");
-
-void PGMDocHandler::startElement(const XMLCh* const name,
-				 AttributeList& attributes) 
+void PGMDocHandler:: startElement(const XMLCh* const uri, 
+				  const XMLCh* const name, 
+				  const XMLCh* const qname, 
+				  const Attributes& attributes)
 {  
   // -----------------------------------------------------------------
   // PGM
   // -----------------------------------------------------------------
-  if (isXMLStrSame(name, elemPgm)) {
+  if (XMLString::equals(name, elemPgm)) {
     String pgmName = getAttr(attributes, attrName);
     String verStr = getAttr(attributes, attrVer);
     
@@ -163,13 +172,13 @@ void PGMDocHandler::startElement(const XMLCh* const name,
   }
   
   // G(roup)
-  if (isXMLStrSame(name, elemGroup)) {
+  if (XMLString::equals(name, elemGroup)) {
     // For now, GROUPs are meaningless in a PGM.
     IFTRACE << "G(roup)" << endl;
   }    
   
   // LM (load module)
-  if (isXMLStrSame(name, elemLM)) {
+  if (XMLString::equals(name, elemLM)) {
     String lm = getAttr(attributes, attrName); // must exist
     lm = driver->ReplacePath(lm);
 
@@ -181,7 +190,7 @@ void PGMDocHandler::startElement(const XMLCh* const name,
   }
   
   // F(ile)
-  if (isXMLStrSame(name, elemFile)) {
+  if (XMLString::equals(name, elemFile)) {
     String srcFile = getAttr(attributes, attrName);
     srcFile = driver->ReplacePath(srcFile);
     IFTRACE << "F(ile): name=" << srcFile << endl;
@@ -197,7 +206,7 @@ void PGMDocHandler::startElement(const XMLCh* const name,
   }
 
   // P(roc)
-  if (isXMLStrSame(name, elemProc)) {
+  if (XMLString::equals(name, elemProc)) {
     // currentScope should be NULL, scopeStack should contain file
     BriefAssertion( currentScope == NULL );
     BriefAssertion( scopeStack.Depth() == 1 );
@@ -239,7 +248,7 @@ void PGMDocHandler::startElement(const XMLCh* const name,
   }
 
   // L(oop)
-  if (isXMLStrSame(name, elemLoop)) {
+  if (XMLString::equals(name, elemLoop)) {
     // stack depth should be at least 1
     BriefAssertion( scopeStack.Depth() >= 2 );
     int numAttr = attributes.getLength();
@@ -264,7 +273,7 @@ void PGMDocHandler::startElement(const XMLCh* const name,
   }
   
   // S(tmt)
-  if (isXMLStrSame(name, elemStmt)) {
+  if (XMLString::equals(name, elemStmt)) {
     int numAttr = attributes.getLength();
     
     // 'begin' is required but 'end' is implied (and can be in any order)
@@ -300,15 +309,16 @@ void PGMDocHandler::startElement(const XMLCh* const name,
 }
 
 
-void PGMDocHandler::endElement(const XMLCh* const name)
+void PGMDocHandler::endElement(const XMLCh* const uri, const XMLCh* const name, 
+			       const XMLCh* const qname)
 {
   // LM (load module)
-  if (isXMLStrSame(name, elemLM)) {
+  if (XMLString::equals(name, elemLM)) {
     lmName = "";
   }
 
   // F(ile)
-  if (isXMLStrSame(name, elemFile)) {
+  if (XMLString::equals(name, elemFile)) {
     BriefAssertion( scopeStack.Depth() == 1 );
     scopeStack.Pop();
     currentScope = NULL;
@@ -316,7 +326,7 @@ void PGMDocHandler::endElement(const XMLCh* const name)
   }
 
   // P(roc)
-  if (isXMLStrSame(name, elemProc)) {
+  if (XMLString::equals(name, elemProc)) {
     // currentScope should be Proc, scopeStack should one level
     BriefAssertion( currentScope == funcScope );
     BriefAssertion( scopeStack.Depth() == 2 );
@@ -327,7 +337,7 @@ void PGMDocHandler::endElement(const XMLCh* const name)
   }
   
   // L(oop)
-  if (isXMLStrSame(name, elemLoop)) {
+  if (XMLString::equals(name, elemLoop)) {
     // stack depth should be at least 3
     BriefAssertion( scopeStack.Depth() >= 3 );
     BriefAssertion(currentScope != NULL); 
@@ -335,5 +345,26 @@ void PGMDocHandler::endElement(const XMLCh* const name)
     scopeStack.Pop();
     currentScope = static_cast<CodeInfo*>(scopeStack.Top());
   }
+}
+
+const char *STRUC = "STRUCTURE";
+
+// ---------------------------------------------------------------------------
+//  implementation of SAX2 ErrorHandler interface
+// ---------------------------------------------------------------------------
+void PGMDocHandler::error(const SAXParseException& e)
+{
+  HPCViewXMLErrHandler::report(cerr, "hpcview non-fatal error", STRUC, e);
+}
+
+void PGMDocHandler::fatalError(const SAXParseException& e)
+{
+  HPCViewXMLErrHandler::report(cerr, "hpcview fatal error", STRUC, e);
+  exit(1);
+}
+
+void PGMDocHandler::warning(const SAXParseException& e)
+{
+  HPCViewXMLErrHandler::report(cerr, "hpcview warning", STRUC, e);
 }
 

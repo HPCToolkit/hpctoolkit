@@ -45,20 +45,30 @@
 using std::exit; // For compatibility with non-std C headers
 #endif
 
+//************************* Xerces Include Files *******************************
+
+#include <xercesc/util/XMLString.hpp> 
+using XERCES_CPP_NAMESPACE::XMLString;
+
+#include <xercesc/parsers/XercesDOMParser.hpp>
+using XERCES_CPP_NAMESPACE::XercesDOMParser;
+
+#include <xercesc/dom/DOMNamedNodeMap.hpp> 
+using XERCES_CPP_NAMESPACE::DOMNamedNodeMap;
+
+
 //************************* User Include Files *******************************
+
+#include "HPCViewDocParser.h"
 
 #include "Driver.h"
 #include "MathMLExpr.h"
 #include "DerivedPerfMetrics.h"
 #include "PerfMetric.h"
 #include "ScopesInfo.h"
-#include "XMLAdapter.h"
 
-#include <lib/support/String.h>
-#include <lib/support/Assertion.h>
 #include <lib/support/Trace.h>
 
-#include <xercesc/dom/deprecated/DOM_Node.hpp> /* FIXME */
 
 //************************ Forward Declarations ******************************
 
@@ -67,162 +77,138 @@ using std::endl;
 
 //****************************************************************************
 
-// -------------------------------------------------------------------------
-// local types 
-// -------------------------------------------------------------------------
-
-class DocException {
-public:
-  DocException (String msg) {
-    msgtext = msg;
-  }
-  String message() const { 
-    return msgtext; 
-  }
-private:
-  String msgtext;
-};
-
 
 // -------------------------------------------------------------------------
 // declare forward references 
 // -------------------------------------------------------------------------
 
-static void ProcessDOCUMENT(DOM_Node &node, Driver &driver);
-static void ProcessHPCVIEW(DOM_Node &node, Driver &driver);
-static void ProcessELEMENT(DOM_Node &node, Driver &driver);
-static void ProcessMETRIC(DOM_Node &node, Driver &driver);
-static void ProcessFILE(DOM_Node &fileNode, Driver &driver, 
+static void ProcessDOCUMENT(DOMNode *node, Driver &driver);
+static void ProcessHPCVIEW(DOMNode *node, Driver &driver);
+static void ProcessELEMENT(DOMNode *node, Driver &driver);
+static void ProcessMETRIC(DOMNode *node, Driver &driver);
+static void ProcessFILE(DOMNode *fileNode, Driver &driver, 
 			String &metricName, bool metricDoDisplay, 
 			bool metricDoPercent, bool metricDoSortBy, 
 			String &metricDisplayName);
 
-static String getAttr(DOM_Node &node, const DOMString &attrName);
+static String getAttr(DOMNode *node, const XMLCh *attrName);
 
 // -------------------------------------------------------------------------
 // external operations
 // -------------------------------------------------------------------------
 
-void PrintName(DOM_Node node)
+void PrintName(DOMNode *node)
 {
-  DOMString nodeName = node.getNodeName();
-  DOMString nodeValue = node.getNodeValue();
-  cerr << "name=" << nodeName.transcode() 
-       << " value=" << nodeValue.transcode() << endl;
+  const XMLCh *nodeName = node->getNodeName();
+  const XMLCh *nodeValue = node->getNodeValue();
+  cerr << "name=" << XMLString::transcode(nodeName) 
+       << " value=" << XMLString::transcode(nodeValue) << endl;
 }
 
 void HPCViewDocParser(Driver &driver, String &inputFile, 
-		      ErrorHandler &errReporter)
+		      HPCViewXMLErrHandler  &errReporter)
 {
-  DOMParser parser;
-  parser.setDoValidation(true);
+  XercesDOMParser *parser = new XercesDOMParser;
 
-  parser.setErrorHandler(&errReporter);
+  parser->setValidationScheme(XercesDOMParser::Val_Auto);
 
-  try { 
-    IFTRACE << "Parsing configuration file: " << inputFile << endl; 
+  parser->setErrorHandler(&errReporter);
 
-    // unless an error is thrown, parsing is successful
-    parser.parse(inputFile); 
-
-    DOM_Node doc = parser.getDocument();
-    IFTRACE << "document: " << doc << endl;
-
-    ProcessDOCUMENT(doc, driver);
+  IFTRACE << "Parsing configuration file: " << inputFile << endl; 
+  
+  parser->parse(inputFile); 
+  if (parser->getErrorCount() > 0) {
+    String error =  "terminating because of previously reported CONFIGURATION file parse errors.";
+    throw HPCViewDocException(error); 
   }
-  catch (const DocException &d) {
-    cerr << "HPCView configuration file error: " << d.message() << endl;
-    //eraxxon: error: const Locator* loc = (parser.getScanner()).getLocator();
-    exit(-1);
-  }
-  catch (...) {
-    cerr << "Unexpected error encountered!";
-    exit(-1);
-  }
+  
+  DOMNode *doc = parser->getDocument();
+  IFTRACE << "document: " << doc << endl;
+  
+  ProcessDOCUMENT(doc, driver);
 
+  delete parser;
 }
 
 // -------------------------------------------------------------------------
 // internal operations
 // -------------------------------------------------------------------------
 
-static void ProcessDOCUMENT(DOM_Node &node, Driver &driver)
+static void ProcessDOCUMENT(DOMNode *node, Driver &driver)
 {
-  DOM_Node child = node.getFirstChild();
+  DOMNode *child = node->getFirstChild();
   ProcessHPCVIEW(child,driver);
 }
 
-static void ProcessHPCVIEW(DOM_Node &node, Driver &driver)
+static void ProcessHPCVIEW(DOMNode *node, Driver &driver)
 {
-  DOMString nodeValue = node.getNodeValue();
-
   IFTRACE << "HPCVIEW:" << endl << node << endl; 
 
   if ((node == NULL) ||
-	  (node.getNodeType() != DOM_Node::DOCUMENT_TYPE_NODE) ){ 
-    String error = "Config file does not begin with DOCUMENT_TYPE_NODE"; 
-    throw DocException(error); 
+	  (node->getNodeType() != DOMNode::DOCUMENT_TYPE_NODE) ){ 
+    String error = "CONFIGURATION file does not begin with <HPCVIEW>"; 
+    throw HPCViewDocException(error); 
   };
   
-  node = node.getNextSibling();
+  node = node->getNextSibling();
   IFTRACE << "HPCVIEW:" << endl << node << endl; 
 
   if ( (node == NULL)
-       || (node.getNodeType() != DOM_Node::ELEMENT_NODE)) {
-    String error = "No DOCUMENT_NODE found in config file."; 
-    throw DocException(error); 
+       || (node->getNodeType() != DOMNode::ELEMENT_NODE)) {
+    String error = "No DOCUMENT_NODE found in CONFIGURATION file."; 
+    throw HPCViewDocException(error); 
   };
 
   // process each child 
-  DOM_Node child = node.getFirstChild();
-  for (; child != NULL; child = child.getNextSibling()) {
+  DOMNode *child = node->getFirstChild();
+  for (; child != NULL; child = child->getNextSibling()) {
     ProcessELEMENT(child, driver);
   }
 } 
 
 
-static void ProcessELEMENT(DOM_Node &node, Driver &driver)
+static void ProcessELEMENT(DOMNode *node, Driver &driver)
 {
-  static DOMString METRIC("METRIC");
-  static DOMString PATH("PATH");
-  static DOMString REPLACE("REPLACE");
-  static DOMString TITLE("TITLE");
-  static DOMString STRUCTURE("STRUCTURE");
-  static DOMString NAMEATTR("name");
-  static DOMString VIEWNAMEATTR("viewname");
-  static DOMString INATTR("in");
-  static DOMString OUTATTR("out");
+  static XMLCh *METRIC = XMLString::transcode("METRIC");
+  static XMLCh *PATH = XMLString::transcode("PATH");
+  static XMLCh *REPLACE = XMLString::transcode("REPLACE");
+  static XMLCh *TITLE = XMLString::transcode("TITLE");
+  static XMLCh *STRUCTURE = XMLString::transcode("STRUCTURE");
+  static XMLCh *NAMEATTR = XMLString::transcode("name");
+  static XMLCh *VIEWNAMEATTR = XMLString::transcode("viewname");
+  static XMLCh *INATTR = XMLString::transcode("in");
+  static XMLCh *OUTATTR = XMLString::transcode("out");
 
-  DOMString nodeName = node.getNodeName();
+  const XMLCh *nodeName = node->getNodeName();
 
   // Verify node type
-  if (node.getNodeType() == DOM_Node::TEXT_NODE) {
+  if (node->getNodeType() == DOMNode::TEXT_NODE) {
     return; // DTD ensures this can't contain anything but white space
-  } else if (node.getNodeType() == DOM_Node::COMMENT_NODE) {
+  } else if (node->getNodeType() == DOMNode::COMMENT_NODE) {
     return;
-  } else if (node.getNodeType() != DOM_Node::ELEMENT_NODE) {
+  } else if (node->getNodeType() != DOMNode::ELEMENT_NODE) {
     String error = "Unexpected XML object found: '" +
-      String(nodeName.transcode()) + "'";
-    throw DocException(error); 
+      String(XMLString::transcode(nodeName)) + "'";
+    throw HPCViewDocException(error); 
   }
 
   // Parse ELEMENT nodes
-  if (nodeName.equals(PATH)) {  
+  if (XMLString::equals(nodeName,PATH)) {  
     String path = getAttr(node, NAMEATTR);
     String viewname = getAttr(node, VIEWNAMEATTR);
     IFTRACE << "PATH: " << path << ", v=" << viewname << endl; 
     
     if (path.Length() == 0) {
-      String error = "PATH: path attribute cannot be empty.";
-      throw DocException(error); 
+      String error = "PATH name attribute cannot be empty.";
+      throw HPCViewDocException(error); 
     } else if (driver.CopySrcFiles() && viewname.Length() == 0) {
       String error = "PATH '" + path + "': viewname attribute cannot be empty when source files are to be copied.";
-      throw DocException(error); 
+      throw HPCViewDocException(error); 
     } // there could be many other nefarious values of these attributes
     
     driver.AddPath(path, viewname);
     
-  } else if (nodeName.equals(REPLACE)) {  
+  } else if (XMLString::equals(nodeName,REPLACE)) {  
     String inPath = getAttr(node, INATTR); 
     String outPath = getAttr(node, OUTATTR); 
     IFTRACE << "REPLACE: " << inPath << " -to- " << outPath << endl;
@@ -239,46 +225,42 @@ static void ProcessELEMENT(DOM_Node &node, Driver &driver)
 
     if (addPath) { driver.AddReplacePath(inPath, outPath); }
     
-  } else if (nodeName.equals(METRIC)) {
+  } else if (XMLString::equals(nodeName,METRIC)) {
     ProcessMETRIC(node, driver);
 
-  } else if (nodeName.equals(TITLE)) {
+  } else if (XMLString::equals(nodeName,TITLE)) {
     String title = getAttr(node, NAMEATTR); 
     IFTRACE << "TITLE: " << title << endl; 
     driver.SetTitle(title);
 
-  } else if (nodeName.equals(STRUCTURE)) {
+  } else if (XMLString::equals(nodeName,STRUCTURE)) {
     String pgmFileName = getAttr(node, NAMEATTR); 
     IFTRACE << "STRUCTURE file: " << pgmFileName << endl; 
 
-    if ( driver.IsPGMFileAvailable() ) {
-      String error = "ERROR: STRUCTURE file previously defined as " + 
-	String(driver.PGMFileName()) + ", cannot set to " + pgmFileName;
-      throw DocException(error); 
-    } else if ( pgmFileName.Length() == 0 ) {
-      String error = "ERROR: STRUCTURE file name is empty.";
-      throw DocException(error); 
+    if ( pgmFileName.Length() == 0 ) {
+      String error = "STRUCTURE file name is empty.";
+      throw HPCViewDocException(error); 
     } 
     else {
       driver.SetPGMFileName(pgmFileName);
     }
   } else {
     String error = "Unexpected ELEMENT type encountered: '" +
-      String(nodeName.transcode()) + "'";
-    throw DocException(error);
+      String(XMLString::transcode(nodeName)) + "'";
+    throw HPCViewDocException(error);
   }
 }
 
-static void ProcessMETRIC(DOM_Node &node, Driver &driver)
+static void ProcessMETRIC(DOMNode *node, Driver &driver)
 {
-  static DOMString FILE("FILE");
-  static DOMString COMPUTE("COMPUTE");
-  static DOMString NAMEATTR("name");
-  static DOMString DISPLAYATTR("display");
-  static DOMString PERCENTATTR("percent");
-  static DOMString PROPAGATEATTR("propagate");
-  static DOMString DISPLAYNAMEATTR("displayName");
-  static DOMString SORTBYATTR("sortBy");
+  static XMLCh *FILE = XMLString::transcode("FILE");
+  static XMLCh *COMPUTE = XMLString::transcode("COMPUTE");
+  static XMLCh *NAMEATTR = XMLString::transcode("name");
+  static XMLCh *DISPLAYATTR = XMLString::transcode("display");
+  static XMLCh *PERCENTATTR = XMLString::transcode("percent");
+  static XMLCh *PROPAGATEATTR = XMLString::transcode("propagate");
+  static XMLCh *DISPLAYNAMEATTR = XMLString::transcode("displayName");
+  static XMLCh *SORTBYATTR = XMLString::transcode("sortBy");
 
   // get metric attributes
   String metricName = getAttr(node, NAMEATTR); 
@@ -289,16 +271,16 @@ static void ProcessMETRIC(DOM_Node &node, Driver &driver)
 
   if (metricName.Length() == 0) {
     String error = "METRIC: Invalid name: '" + metricName + "'.";
-    throw DocException(error); 
+    throw HPCViewDocException(error); 
   } else if (NameToPerfDataIndex(metricName) != UNDEF_METRIC_INDEX) {
     String error = String("METRIC: Metric name '") + metricName +
       "' was previously defined.";
-    throw DocException(error); 
+    throw HPCViewDocException(error); 
   }
 
   if (metricDisplayName.Length() == 0) {
     String error = "METRIC: Invalid displayName: '" + metricDisplayName + "'.";
-    throw DocException(error); 
+    throw HPCViewDocException(error); 
   }
     
   IFTRACE << "METRIC: name=" << metricName << " " 
@@ -309,33 +291,33 @@ static void ProcessMETRIC(DOM_Node &node, Driver &driver)
 	  << endl;
   
   // should have exactly one child
-  DOM_Node metricImpl = node.getFirstChild();
+  DOMNode *metricImpl = node->getFirstChild();
 
-  for ( ; metricImpl != NULL; metricImpl = metricImpl.getNextSibling()) {
+  for ( ; metricImpl != NULL; metricImpl = metricImpl->getNextSibling()) {
 
-    if (metricImpl.getNodeType() == DOM_Node::TEXT_NODE) {
+    if (metricImpl->getNodeType() == DOMNode::TEXT_NODE) {
       // DTD ensures this can't contain anything but white space
       continue;
-    } else if (metricImpl.getNodeType() == DOM_Node::COMMENT_NODE) {
+    } else if (metricImpl->getNodeType() == DOMNode::COMMENT_NODE) {
       continue;
     }
     
-    DOMString metricType = metricImpl.getNodeName();
+    const XMLCh *metricType = metricImpl->getNodeName();
 
-    if (metricType.equals(FILE)) {
+    if (XMLString::equals(metricType,FILE)) {
 
       ProcessFILE(metricImpl, driver, metricName, 
 		  metricDoDisplay, metricDoPercent, metricDoSortBy, 
 		  metricDisplayName);
-    } else if (metricType.equals(COMPUTE)) {
+    } else if (XMLString::equals(metricType,COMPUTE)) {
       bool propagateComputed
 	= (getAttr(metricImpl,PROPAGATEATTR) == "computed"); 
-      DOM_Node child = metricImpl.getFirstChild();
-      for (; child != NULL; child = child.getNextSibling()) {
-	if (child.getNodeType() == DOM_Node::TEXT_NODE) {
+      DOMNode *child = metricImpl->getFirstChild();
+      for (; child != NULL; child = child->getNextSibling()) {
+	if (child->getNodeType() == DOMNode::TEXT_NODE) {
 	  // DTD ensures this can't contain anything but white space
 	  continue;
-	} else if (child.getNodeType() == DOM_Node::COMMENT_NODE) {
+	} else if (child->getNodeType() == DOMNode::COMMENT_NODE) {
 	  continue;
 	}
 	
@@ -346,20 +328,20 @@ static void ProcessMETRIC(DOM_Node &node, Driver &driver)
     
     } else {
       String error = String("Unexpected METRIC type '") + 
-	metricType.transcode() + "'.";
-      throw DocException(error);
+	XMLString::transcode(metricType) + "'.";
+      throw HPCViewDocException(error);
     }
   }
 }
 
-static void ProcessFILE(DOM_Node &fileNode, Driver &driver, 
+static void ProcessFILE(DOMNode *fileNode, Driver &driver, 
 			String &metricName, bool metricDoDisplay, 
 			bool metricDoPercent, bool metricDoSortBy, 
 			String &metricDisplayName)
 {
-  static DOMString TYPEATTR("type");
-  static DOMString NAMEATTR("name");
-  static DOMString SELECTATTR("select");
+  static XMLCh *TYPEATTR = XMLString::transcode("type");
+  static XMLCh *NAMEATTR = XMLString::transcode("name");
+  static XMLCh *SELECTATTR = XMLString::transcode("select");
 
   String metricFile     = getAttr(fileNode, NAMEATTR); 
   String metricFileType = getAttr(fileNode, TYPEATTR);
@@ -377,8 +359,8 @@ static void ProcessFILE(DOM_Node &fileNode, Driver &driver,
 				  metricDoDisplay, metricDoPercent, metricDoSortBy, 
 				  metricFile, metricFileType, &driver)); 
   } else {
-    String error = "FILE: Invalid filename '" + metricFile + "'";
-    throw DocException(error);
+    String error = "METRIC '" + metricName + "' FILE name empty.";
+    throw HPCViewDocException(error);
   }
 
 }
@@ -387,16 +369,16 @@ static void ProcessFILE(DOM_Node &fileNode, Driver &driver,
 
 // Returns the attribute value or an empty string if the attribute
 // does not exist.
-static String getAttr(DOM_Node &node, const DOMString &attrName)
+static String getAttr(DOMNode *node, const XMLCh *attrName)
 {
-  DOM_NamedNodeMap  attributes = node.getAttributes();
-  DOM_Node attrNode = attributes.getNamedItem(attrName);
+  DOMNamedNodeMap  *attributes = node->getAttributes();
+  DOMNode *attrNode = attributes->getNamedItem(attrName);
   IFTRACE << "getAttr(): attrNode" << attrNode << endl;
-  if (attrNode.isNull()) {
+  if (attrNode == NULL) {
     return String("");
   } else {
-    DOMString attrNodeValue = attrNode.getNodeValue();
-    return String(attrNodeValue.transcode());
+    const XMLCh *attrNodeValue = attrNode->getNodeValue();
+    return String(XMLString::transcode(attrNodeValue));
   }
 }
 

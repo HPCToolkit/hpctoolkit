@@ -54,18 +54,23 @@
 
 //************************* User Include Files *******************************
 
-#include "XMLAdapter.h"
-#include "Driver.h"
 #include <lib/support/String.h>
+
+//************************* Xerces Declarations ******************************
+
+#include "HPCViewSAX2.h"
 
 //************************ Forward Declarations ******************************
 
 class NodeRetriever; 
 class ProcScope; 
+class FileScope; 
+class LoadModScope; 
+class Driver; 
 
 //****************************************************************************
 
-class PROFILEDocHandler : public SAXHandlerBase {
+class PROFILEDocHandler : public DefaultHandler {
 public:
 
   PROFILEDocHandler(NodeRetriever* const retriever, Driver* _driver);
@@ -76,8 +81,15 @@ public:
   void Initialize(int metricIndx, const char* profileFileName);
 
   // overridden functions
-  void startElement(const XMLCh* const name, AttributeList& attributes);
-  void endElement(const XMLCh* const name);
+  void startElement(const XMLCh* const uri, const XMLCh* const name, const XMLCh* const qname, const Attributes& attributes);
+  void endElement(const XMLCh* const uri, const XMLCh* const name, const XMLCh* const qname);
+
+  //--------------------------------------
+  // SAX2 error handler interface
+  //--------------------------------------
+  void error(const SAXParseException& e);
+  void fatalError(const SAXParseException& e);
+  void warning(const SAXParseException& e);
 
 private:
   NodeRetriever* nodeRetriever;
@@ -94,8 +106,46 @@ private:
   String lmName;
   String srcFileName;
   String funcName;
-  ProcScope *funcScope;
+  ProcScope *procScope;
+  FileScope *fileScope;
+  LoadModScope *lmScope;
   int line;
+
+private:
+  const XMLCh *const elemProfile;
+  const XMLCh *const elemProfileHdr;
+  const XMLCh *const elemProfileParams;
+  const XMLCh *const elemTarget;
+  const XMLCh *const elemMetrics;
+  const XMLCh *const elemMetricDef;
+
+  const XMLCh *const elemProfileScopeTree;
+  const XMLCh *const elemPgm;
+  const XMLCh *const elemGroup;
+  const XMLCh *const elemLM;
+  const XMLCh *const elemFile;
+  const XMLCh *const elemProc;
+  const XMLCh *const elemLoop;
+  const XMLCh *const elemStmt;
+  const XMLCh *const elemMetric;
+
+  // attribute names for PROFILE elements
+  const XMLCh *const attrVer;
+  const XMLCh *const attrShortName;
+  const XMLCh *const attrNativeName;
+  const XMLCh *const attrPeriod;
+  const XMLCh *const attrUnits;
+  const XMLCh *const attrDisplayName;
+  const XMLCh *const attrDisplay;
+
+  // attribute names for PGM elements
+  const XMLCh *const attrName;
+  const XMLCh *const attrLnName;
+  const XMLCh *const attrBegin;
+  const XMLCh *const attrEnd;
+  const XMLCh *const attrId;
+  const XMLCh *const attrVal;
+
 };
 
 class PROFILEException {

@@ -81,10 +81,11 @@ HTMLOBJS = \
 
 XMLOBJS = \
 	NodeRetriever.o \
-	XMLAdapter.o \
 	PROFILEDocHandler.o \
 	PGMDocHandler.o \
 	HPCViewDocParser.o \
+	HPCViewSAX2.o \
+	HPCViewXMLErrHandler.o \
 	EvalNode.o \
 	MathMLExpr.o \
 	DerivedPerfMetrics.o
@@ -127,6 +128,9 @@ endif
 
 $(LIBRARY): $(OBJS)
 	$(AR) $(ARFLAGS) $(LIBRARY) $(OBJS)
+ifdef RANLIB
+	$(RANLIB) $(LIBRARY) 
+endif
 	@echo "*** $(LIBRARY) is up to date. ***"
 
 clean:

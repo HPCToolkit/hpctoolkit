@@ -48,10 +48,14 @@
 
 #include <lib/support/String.h> 
 
+//************************* Xerces Declarations ******************************
+
+#include <xercesc/dom/DOMNode.hpp>         /* johnmc */
+using XERCES_CPP_NAMESPACE::DOMNode;
+
 //************************ Forward Declarations ******************************
 
 class MathMLExpr;
-class DOM_Node;
 
 //****************************************************************************
 
@@ -78,7 +82,7 @@ class ComputedPerfMetric : public PerfMetric {
 public: 
   ComputedPerfMetric(const char* nm, const char* displayNm,
 		     bool display, bool percent, bool sortBy, 
-		     bool propagateComputed, DOM_Node &expr);
+		     bool propagateComputed, DOMNode *expr);
   virtual ~ComputedPerfMetric(); 
 
   virtual void Make(NodeRetriever &ret); // compute node by node
