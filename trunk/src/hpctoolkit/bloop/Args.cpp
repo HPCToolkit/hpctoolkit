@@ -77,8 +77,6 @@ static const char* usage_details =
 "Options:\n"
 "  -v, --verbose        Verbose: generate progress messages to stderr\n"
 "  -n, --normalize-off  Turn off scope tree normalization\n"
-"  -f, --fix-boundaries-off\n"
-"                       Turn off interval boundaries correction.\n"
 "  -c, --compact        Generate compact output, eliminating extra white\n"
 "                       space\n"
 "  -p <list>, --canonical-paths <list>\n"
@@ -115,7 +113,6 @@ CmdLineParser::OptArgDesc Args::optArgs[] = {
   // Options
   { 'v', "verbose",         CLP::ARG_NONE, CLP::DUPOPT_CLOB, NULL },
   { 'n', "normalize-off",   CLP::ARG_NONE, CLP::DUPOPT_CLOB, NULL },
-  { 'f', "fix-boundaries-off", CLP::ARG_NONE, CLP::DUPOPT_CLOB, NULL },
   { 'c', "compact",         CLP::ARG_NONE, CLP::DUPOPT_CLOB, NULL },
   { 'p', "canonical-paths", CLP::ARG_REQ , CLP::DUPOPT_CAT,  ":" },
   {  0 , "pcmap",           CLP::ARG_REQ , CLP::DUPOPT_ERR,  NULL }, // hidden
@@ -150,7 +147,6 @@ Args::Ctor()
 {
   verboseMode = false;
   normalizeScopeTree = true;
-  fixBoundaries = true;
   prettyPrintOutput = true;
   dumpBinary = false;
 }
@@ -229,9 +225,6 @@ Args::Parse(int argc, const char* const argv[])
     } 
     if (parser.IsOpt("normalize-off")) { 
       normalizeScopeTree = false;
-    } 
-    if (parser.IsOpt("fix-boundaries-off")) { 
-      fixBoundaries = false;
     } 
     if (parser.IsOpt("compact")) { 
       prettyPrintOutput = false;

@@ -142,7 +142,7 @@ real_main(int argc, char* argv[])
     // Build scope tree
     PgmScopeTree* pgmScopeTree =
       BuildFromExe(exe, map, args.canonicalPathList.c_str(),
-		   args.normalizeScopeTree, args.fixBoundaries, args.verboseMode);
+		   args.normalizeScopeTree, args.verboseMode);
     
     // Write map (map should now be a valid pointer) & scope tree
     if (map) { WriteMapFile(map, args.pcMapFile); }
