@@ -563,10 +563,11 @@ BuildFromBB(CodeInfo* enclosingScope, Procedure* p, CFG::Node* bb)
   for (CFG::NodeStatementsIterator s_iter(bb); (bool)s_iter; ++s_iter) {
     Instruction* insn = IRHNDL_TO_PTR((StmtHandle)s_iter, Instruction*);
     Addr pc = insn->GetPC();
-    
+    ushort opIdx = insn->GetOpIndex();
+
     String func, file;
     suint line;
-    p->GetSourceFileInfo(pc, insn->GetOpIndex(), func, file, line); 
+    p->GetSourceFileInfo(pc, opIdx, func, file, line); 
     if ( !IsValidLine(line) ) {
       continue; // cannot continue without valid symbolic info
     }
