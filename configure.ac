@@ -1,4 +1,4 @@
-# -*-Mode: m4;-*-
+# -*-Mode: autoconf;-*-
 # $Header$
 
 ## * BeginRiceCopyright *****************************************************
@@ -99,7 +99,7 @@ AC_LANG(C++)
 AC_HEADER_STDC
 AC_CHECK_HEADERS(unistd.h)
 AC_CHECK_HEADERS(inttypes.h)
-HPC_AC_CHECK_CXX_STDC_HEADERS
+HPC_CHECK_CXX_STDC_HEADERS
 
 # Checks for typedefs, structures, and compiler characteristics.
 # -none thus far-
