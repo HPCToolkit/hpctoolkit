@@ -26,7 +26,7 @@
 <div id="main">
 
 <!-- automatically updated by Emacs hook below; nicer than CVS Date -->
-<p class="lastupdated">Last Updated: 2004-10-26</p>
+<p class="lastupdated">Last Updated: 2004-10-28</p>
 
 <a name="toc"></a>
 <h2>Downloading, Building and Installing HPCToolkit</h2>
@@ -37,18 +37,9 @@
 
   <li><a href="#sources">Downloading the Sources</a>
 
-  <li>Building and Installing
-  <ul>
-    <li><a href="#build_hpctoolkit">HPCToolkit</a>
-    <li><a href="#build_hpcviewer">hpcviewer</a>
-  </ul>
+  <li><a href="#building_installing">Building and Installing</a>
 
-  <li>Using
-  <ul>
-    <li><a href="#use_hpctoolkit">HPCToolkit</a>
-    <li><a href="#use_hpcviewer">hpcviewer</a>
-  </ul>
-  
+  <li><a href="#using">Using</a>  
 </ul>
 
 
@@ -131,16 +122,20 @@ succssfully used versions 5.6.x, 5.8.x.
 of <a href="http://icl.cs.utk.edu/projects/papi/">PAPI</a> 3.0 or greater.
 
 <li>
-<p><a href="hpcviewer.html" class="hpctool">hpcviewer</a> is a Java 
-application that can be used on a variety of platforms.  We have successfully
-used the following specific configurations:
+<p><a href="hpcviewer.html" class="hpctool">hpcviewer</a> is a Java
+application that can be used on a variety of platforms.  It only needs
+a recent Java runtime environment (JRE).  We have successfully used:
 
   <ul class="noindent">
-    <li>Mac OS X: javac from JDK 1.4.2
-    <li>ia64-Linux: using javac from jd2sdk1.4.2 
-    <li>i686-Linux: using javac from jd2sdk1.4.2 
-    <li>sparc-Solaris: using javac from JDK 1.4.0
-    <li>alpha-Tru64: using javac from JDK 1.4.2
+    <li>Mac OS X: JRE 1.4.2
+    <li>Windows: JRE 1.4.2
+    <li>Cygwin: JRE 1.4.2
+  </ul>
+  <br>
+  <ul class="noindent">
+    <li>Linux (i686, ia64, opteron): JRE 1.4.2
+    <li>Solaris-sparc: JRE 1.4.0
+    <li>Tru64-alpha: JRE 1.4.2
   </ul>
 
 </ol>
@@ -167,36 +162,48 @@ used the following specific configurations:
 <p>Change to the top-level HPCToolkitRoot directory.
 
 <li>
-<p>Gather the rest of the sources using anonymous cvs.   
+
+<p>Gather the rest of the sources using our checkout tool.  If you 
+<i>only</i> want to download 
+<a href="hpcviewer.html" class="hpctool">hpcviewer</a>, use 
+the <code>--mod-hpcviewer-only</code> option.
+(We often use <a href="hpcviewer.html" class="hpctool">hpcviewer</a> on laptops
+or desktops rather than on the system on which we collect performance
+measurements.)</p>
+
 <div class="indent">
   <code>./bin/updatesrc</code><br>
+<i>or</i><br>
+  <code>./bin/updatesrc --mod-hpcviewer-only</code><br>
 </div>
 <p>This will print a summary of progress to standard out and generate
 a log file with all the hoary details.
 
 </ol>
 
+<p>(Note: If you download HPCToolkit, it will also download three
+external libraries -- OpenAnalysis, Xerces-C++ and GNU binutils. In
+some cases it may be possible to use versions of these libraries that
+are already installed on your system.  However, we do not support such
+configurations.)</p>
+
+
 <!-- ********************************************************************** -->
 <!-- ********************************************************************** -->
+
+<a name="building_installing"></a>
 
 <h2>Building and Installing</h2>
 <p><i>[<a href="#toc">Contents</a>]</i>
 
-<div class="indent">
 
-<!-- ********************************************************************** -->
-
-<a name="build_hpctoolkit"></a>
-
-<h2>HPCToolkit</h2>
-<p><i>[<a href="#toc">Contents</a>]</i>
-
-<p><i>Temporary: On IRIX64, please use these 
+<p><i>Temporary: To build HPCToolkit on IRIX64, please use these 
 <a href="building-old.html">instructions</a>.</i>
 
 <p>The easiest way to build HPCToolkit is to use
-<code>Makefile.quick</code>.  If you want to build <a
-href="hpcrun.html" class="hpctool">hpcrun</a>, you will need to use
+<code>Makefile.quick</code>, which will build everything you
+downloaded in the first step.  If you want to build HPCToolkit's
+<a href="hpcrun.html" class="hpctool">hpcrun</a>, you will need to use
 the <code>PAPI</code> option.  For a brief description, list of
 supported options and the default installation path, execute the
 following.
@@ -204,6 +211,11 @@ following.
 <div class="indent">
   <code>make -f Makefile.quick help</code><br>
 </div>
+
+<p>As a special exception, 
+<a href="hpcviewer.html" class="hpctool">hpcviewer</a> may be used 
+<i>without performing the steps below</i>.  This is useful in a
+non-Un*x environment (e.g. Windows without Cygwin).
 
 <ol class="noindent">
 
@@ -224,95 +236,34 @@ output, you may want to redirect it to a file.
 Because the installation is compact and self-contained, you may rename
 or move it to another location.  All source code may be removed.
 
-<p>Note: There are three external libraries -- OpenAnalysis,
-Xerces-C++ and GNU binutils -- that will be built during this process.
-In some cases it may be possible to use versions of these libraries
-that may already be installed on your system.  However, we do not
-support such configurations.</p>
-
-<!-- ********************************************************************** -->
-
-<a name="build_hpcviewer"></a>
-
-<h2>External tool: hpcviewer</h2>
-<p><i>[<a href="#toc">Contents</a>]</i>
-
-<p>HPCToolkit's hpcviewer tool is in a separate directory and built
-separately. We often download, compile, and run hpcviewer on laptops
-or desktops rather than the system on which we collect performance
-measurements.  We briefly describe how to build hpcviewer here,
-regardless of where you want to build it.</p>
-
-<p>These instructions are for Unix systems or for Cygwin-Windows.
-
-<h3>Building</h3>
-
-<ol class="noindent">
-
-<li>
-<p>Change to the top-level hpcviewer directory <code>hpcviewer</code>.
-
-<li>
-<p>Change to the build directory <code>build-unix</code> and initiate
-the build with make.
-
-<div class="indent">
-  <code>cd build-unix</code><br>
-  <code>make</code><br>
-</div>
-
-</ol>
-
-<p>See <a href="#use_hpcviewer">Using hpcviewer</a> for instructions
-on using the toolkit.
-
-<!-- ********************************************************************** -->
-
-</div>
-
 <!-- end: Building -->
 
 <!-- ********************************************************************** -->
 <!-- ********************************************************************** -->
 
+<a name="using"></a>
 
 <h2>Using</h2>
 <p><i>[<a href="#toc">Contents</a>]</i>
 
+<p>You may use the resulting installation as-is. However, you may wish
+to add the <code>bin</code> subdirectory to your <code>PATH</code>.
+One way to do this is to set the <code>HPCTOOLKIT</code> environment
+variable to the root of your installation and then use our 'Sourceme'
+script.  For example:
 <div class="indent">
-
-<!-- ********************************************************************** -->
-
-<a name="use_hpctoolkit"></a>
-
-<h2>HPCToolkit</h2>
-<p><i>[<a href="#toc">Contents</a>]</i>
-
-<p>To use the resulting installation, add the <code>bin</code> subdirectory to your <code>PATH</code>.  If you set the <code>HPCTOOLKIT</code> environment variable to the root of your installation, you can use either 
-<a href="../Sourceme-csh"><code>Sourceme-csh</code></a> or 
-<a href="../Sourceme-sh"><code>Sourceme-sh</code></a> to set your <code>PATH</code>.
-
-<!-- ********************************************************************** -->
-
-<a name="use_hpcviewer"></a>
-
-<h2>hpcviewer</h2>
-<p><i>[<a href="#toc">Contents</a>]</i>
-
-<p>In a Un*x environment, add the <code>bin</code> subdirectory of the hpcviewer directory to
-your path. Run the <code>hpcviewer</code> command. When run with no
-arguments, it will bring up a file chooser dialog to select the
-performance database XML file. The pathname of the performance
-database XML file can be specified as an argument to
-<code>hpcviewer</code> to skip the file chooser dialog.
-
-<p>On some systems with a GUI (e.g. Mac OS X), double clicking on the
-HPCViewer.jar file icon can also be used to launch
-<code>hpcviewer</code>.
-
-<!-- ********************************************************************** -->
-
+  <i>(csh variants)</i><br>
+  <code>setenv HPCTOOLKIT "/my_path/HPCToolkit"</code><br>
+  <code>source $HPCTOOLKIT/Sourceme-csh</code>
+<br><br>
+  <i>(sh variants)</i><br>
+  <code>export HPCTOOLKIT="/my_path/HPCToolkit"</code><br>
+  <code>source $HPCTOOLKIT/Sourceme-sh</code>
 </div>
+
+<p>As a special exception for non-Un*x environments, 
+<a href="hpcviewer.html" class="hpctool">hpcviewer</a> may be lauched via 
+the GUI.  See the <a href="hpcviewer.html">man page</a> for more information.
 
 <!-- end: Using -->
 
