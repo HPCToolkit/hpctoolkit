@@ -4,7 +4,6 @@ $Id$
 == README
 ==
 == John Mellor-Crummey and Nathan Tallent, Rice University
-== March 4, 2003
 ==
 =============================================================================
 
@@ -18,45 +17,54 @@ Contents:
 -1. N.B.
 --------------------
 
-papirun/papiprof should be regarded as "beta" software. 
-The UTK PAPI team is currently working to integrate it 
-with the PAPI distribution.
+hpcrun/hpcprof should be regarded as "beta" software. 
 
 
 0. Overview
 --------------------
 
-This directory contains a prototype of the papiprof profiler.  It
-consists of papirun and papiprof, tools for collecting, processing and
-viewing profiling data.
+This directory contains a prototype of the hpcrun profiler.  It
+consists of hpcrun and hpcprof, tools for collecting and processing
+profiling data, and is designed to be used with HPCToolkit's viewer.
+hpcrun can profile unmodified applications using either PAPI or
+native-processor events, create multiple profiles in one run and
+alleviate world hunger.  (Caveat emptor...)
 
-papirun launches the PAPI profiler on an unmodified application binary
+hpcrun launches the PAPI profiler on an unmodified application binary
 using a preloaded library that intercepts the application's execution
 during program launch.  When the application's execution is
-intercepted, the papirun library determines the process' list of load
+intercepted, the hpcrun library determines the process' list of load
 modules (including DSOs) and prepares PAPI_sprofil for profiling over
 each load module.  Once the profiler is initialized, control is passed
 back to the application.  When the application exits, control returns
-to the papirun library, which calls finalization routines and writes
+to the hpcrun library, which calls finalization routines and writes
 the profiling data to a binary file for later processing.
 
-By default, papirun will profile every process spawned by the profiled
+By default, hpcrun will profile every process spawned by the profiled
 command and generate separate output for each process.  An option can
-turn off this behavior.
+turn off this behavior.  In order to generate multiple profiles,
+hpcrun requires corresponding hardware support.
 
-papiprof processes data collected from papirun, correlates it with
+hpcprof processes data collected from hpcrun, correlates it with
 source file information and produces text, html or PROFILE output.
 Users can use the text and html output to obtain a quick overview of
 program performance.  This output consists of 1) summary lists of load
 modules, files, procedures and lines sorted by profiling metric counts
 and 2) source files with annotated metric information in their
-margins.  Uses can use the PROFILE output with HPCView (from HPCTools)
+margins.  Uses can use the PROFILE output with HPCView (from HPCToolkit)
 in order to do a top-down analysis of the profile information.
 PROFILE output should be used with HPCTools 3.5.1 or later.
 
+hpcrun/prof is designed primarily to be used on ia64-Linux and
+i686-Linux.  In theory it could be used on any system that supports
+library preloading and PAPI, but sometimes better options are
+available.  For example, alpha-Tru64 users will want to profile using
+DCPI (HPCToolkit's xprof provides a good way of making this data
+usable).
+
 N.B.: We have not tested html output.
 
-Parts of the papiprof profiler have been adapted from Version 0.12 of
+Parts of the hpcprof profiler have been adapted from Version 0.12 of
 The Visual Profiler by Curtis L. Janssen.
 
 =============================================================================
@@ -66,60 +74,69 @@ The Visual Profiler by Curtis L. Janssen.
 
 Be warned: This is still a prototype.
 
-While we intend papiprof to be ported to a number of platforms, we
-have only tested it on ia64-Linux and i686-Linux.
-
-1.1. PAPI:
+1.1. Prerequisites
 ----
-papirun refers to events using their 'standardized' PAPI names.  Users
-should know that PAPI events do not always directly refer to a native
-event counted by a given processor's performance counters.  This is
-true *even if* a PAPI event exists for a given platform.  In cases
-where no direct hardware counter is available, PAPI may attempt to
-simulate an event counter using some combination of other performance
-counter information.
 
-We recommend using PAPI 3. At this writing, we have tested with 
-PAPI 3 beta and all seems fine.  Papirun has been used extensively with 
-PAPI 2.3.4.
+* PAPI: hpcrun requires use of PAPI3.  As of this writing, one should
+  use the CVS version of PAPI since it contains fixes for bugs we have
+  identified.
 
-For IA64 support, you will need PAPI 2.3.1 or greater and a kernel of
-2.4.18 or higher (which includes pfmon support). You can find more
-PAPI information at http://icl.cs.utk.edu/projects/papi.
+* Kernel: 
+    For Linux-IA64, you will need kernel 2.4.18 or higher (which includes
+    pfmon support). 
 
-1.3. Compiler notes:
+    For Linux-x86, you will need a custom kernel that has been patched
+    with perfctr.
+
+    More information can be found at http://icl.cs.utk.edu/projects/papi.
+
+We have tested with GCC 2.96, 3.2, 3.3.3; Intel 6.0, 7.0.
+
+1.2.
 ----
-We have tested with GCC 2.96, 3.2; Intel 6.0, 7.0.
 
-1.4. To try it out:
+hpcrun refers to events using either standard PAPI or native-processor
+names.  Users should know that PAPI events do not always directly
+refer to a native event counted by a given processor's performance
+counters.  This is true *even if* a PAPI event exists for a given
+platform.  In cases where no direct hardware counter is available,
+PAPI may attempt to simulate an event counter using some combination
+of other performance counter information.
+
+1.3. To try it out:
 ----
   
 0. Open "Makefile.include" in an editor and set variables.
 
      CC, CXX:          C and C++ compiler
-     PAPIINC, PAPILIB: locations to PAPI includes and library
-     BFDINC, BFDLIB:   locations to GNU BFD includes and libraries
+     PAPI_INCLUDE_DIR, PAPI_LIB_DIR: 
+                       locations to PAPI includes and library
+     BINUTILS_DIR:     location of a GNU binutils installation 
+                       (we recommend use of our modified version which 
+                       can be obtained using the same CVS repository: 
+                       cvs co binutils)
 
 1. Open the file Sourceme-sh or Sourceme-csh, depending on your
    shell. These environment variables need to be set before using
-   papirun.  After you have set the variables, source the file.
+   hpcrun.  After you have set the variables, source the file.
 
-     PAPIRUN_HOME         - the directory you have installed papiprof in
-     PAPIRUN_PAPILIB_PATH - the directory that libpapi.so lives in
+     HPCRUN_HOME         - the location of hpcrun
+     HPCRUN_PAPILIB_PATH - the directory where libpapi.so lives 
      
-2. Make papirun/papiprof:
+2. Make hpcrun/hpcprof:
      make
 
 3. Kick the tires
   
-   1. List PAPI events available on your system.
+   1. List events available on your system. WARNING: currently, native
+      event listing can be overwhelming.
 
-      papirun -L
+      hpcrun -L
 
    2. See usage information:
 
-      papirun
-      papiprof
+      hpcrun
+      hpcprof
 
 4. Take a test drive
 
@@ -130,17 +147,17 @@ We have tested with GCC 2.96, 3.2; Intel 6.0, 7.0.
 
    2. Collect profiling info.  A file to hold the profile histogram
       will be generated with a file name in the format
-      <command><papi_event><process_id>.
+      <command>.<event1>.<hostname>.<pid>
 
-      papirun -p 1000021 test2
+      hpcrun -e PAPI_TOT_CYC:1000021 ./test2
          
    3. View a text summary of the profiling info:
 
-      papiprof -e test2 test2.PAPI_TOT_CYC.pid
+      hpcprof -e test2 test2.PAPI_TOT_CYC.<hostname>.<pid>
 
    4. Create PROFILE output of the profiling info:
 
-      papiprof -p test2 test2.PAPI_TOT_CYC.pid
+      hpcprof -p test2 test2.PAPI_TOT_CYC.<hostname>.<pid>
 
    5. Some other events you can try (and approximate periods). Note
       that appropriate period values can vary depending on your system
@@ -150,46 +167,44 @@ We have tested with GCC 2.96, 3.2; Intel 6.0, 7.0.
         PAPI_L1_ICM  - 1019
         PAPI_L1_DCM  - 1019 or 101
       
-      papirun -e PAPI_L1_DCM -p 1019 test2
+      hpcrun -e PAPI_L1_DCM -p 1019 test2
 
    6. Create text summaries and PROFILES with multiple events:
 
-      papiprof -e test2  <list_of_profiles...>
+      hpcprof -e test2  <list_of_profiles...>
 
-      papiprof -p test2  <list_of_profiles...>
+      hpcprof -p test2  <list_of_profiles...>
    
 =============================================================================
 
 2. A Few Details
 --------------------
 
-2.1. papirun
+2.1. hpcrun
 ----
 
 Files:
-  papirun*
-  papirun.h
+  hpcrun.c/h
+  hpcpapi.c/h
   preload.c
-  events.c/h
-  flags.c/h
-  io.c/h
   map.c/h
+  io.c/h
 
-The file 'preload.c' contains the main source code; the other files
-are ancillary and contain brief descriptions at the top so that it
-shouldn't be too difficult to divine their purpose.
+The files 'hprun.c' and 'preload.c' contain the main source code; the
+other files are ancillary and contain brief descriptions at the top so
+that it shouldn't be too difficult to divine their purpose.
 
-Options are passed to 'preload.c' via environment variables.  The
-'papirun' script processes all the arguments and sets a number of
-corresponding environment variables which are later read by the
-papirun library.
+'hpcrun.c' is the interface to the profiling library.  It parses
+options,prepares the environment for the profiling library, forks a
+new process and exec's the application to be profiled.
 
+'preload.c' contains the bulk of the code for the profiling library.
 The library is automatically loaded using the linker's LD_PRELOAD
 environment variable.  Setting this variable causes the loader to load
 the referened file *before* anything else is loaded.  Since libraries
 can have initialization/finalization routines that are automatically
 executed upon load/unload, execution control first passes to this
-library.
+library.  Options are passed to it via environment variables.
 
 The initialization routine (using the special name '_init') prepares
 the library for intercepting the libc_start routine, which is the
@@ -206,21 +221,21 @@ runs normally.
 We obtain a list of loaded modules (including DSOs) by examing the
 data found in /proc/pid/maps (or /proc/self/maps).
 
-After the application is finished, control passes back to the papirun
+After the application is finished, control passes back to the hpcrun
 library.  Profiling is stopped and the data is written to a binary
 output file.
 
-2.2. papiprof
+2.2. hpcprof
 ----
 
 Files:
-  papiprof.cc/h
-  loadmodule.cc/h
-  proffile.cc/h
+  hpcprof.cc/h
   summary.cc/h
+  proffile.cc/h
+  loadmodule.cc/h
   PROFILE.dtd.h
 
-papiprof is still rough, though it should now produce useful
+hpcprof is still rough, though it should now produce useful
 information.  We have tested text and PROFILE output, but not html.
 
 You can pass multiple profile files with the same or different events.
