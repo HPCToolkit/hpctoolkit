@@ -7,7 +7,7 @@
 //    $Source$
 //
 // Purpose:
-//    Process papirun profile files creating text, html and PROFILE output.
+//    Process hpcrun profile files creating text, html and PROFILE output.
 //
 // Description:
 //    [The set of functions, macros, etc. defined in the file]
@@ -67,8 +67,8 @@ usage(const string &argv0)
 {
   cout 
     << "Usage:\n"
-    << "  " << argv0 << "    [options] <executable> <papirun_file>...\n"
-    << "  " << argv0 << " -p [options] <executable> <papirun_file>...\n"
+    << "  " << argv0 << "    [options] <executable> <hpcrun_file>...\n"
+    << "  " << argv0 << " -p [options] <executable> <hpcrun_file>...\n"
     << endl
     << "Options: General\n"
     << "  -h, --help          Print this message.\n"
@@ -90,7 +90,7 @@ usage(const string &argv0)
     << "  -H, --html dir      Output HTML into directory dir.\n"
     << endl
     << "Options: PROFILE mode\n"
-    << "  -p, --profile       Dump PROFILE output (for use with HPCTools).\n"
+    << "  -p, --profile       Dump PROFILE output (for use with HPCToolkit's hpcview).\n"
     << endl;
 }
 
