@@ -60,8 +60,6 @@
 
 //*************************** User Include Files ****************************
 
-// OpenAnalysis headers.
-// Use OA_IRHANDLETYPE_SZ64: size of bfd_vma/Addr
 #include <OpenAnalysis/Utils/DGraph.h>
 #include <OpenAnalysis/Interface/IRInterface.h>
  
@@ -70,6 +68,20 @@
 #include <lib/binutils/Procedure.h>
 #include <lib/support/String.h>
 #include <lib/support/Assertion.h>
+
+// IRInterface types: Use OA_IRHANDLETYPE_SZ64 (size of bfd_vma/Addr)
+//   ProcHandle  - 
+//   StmtHandle  - Instruction*
+//   ExprHandle  - 
+//   LeafHandle  - 
+//   StmtLabel   - Addr
+//   SymHandle   - 
+//   ConstHandle - 
+
+// FIXME: eraxxon: Due to some unwariness, these types are a mixture
+// of fixed size (Addr) and relative size (Instruction*).  I think we
+// should be able to use only one so that casts are always between
+// types of the same size.
 
 //*************************** Forward Declarations ***************************
 
@@ -140,9 +152,9 @@ public:
   //--------------------------------------------------------
   IRStmtIterator *LoopBody(StmtHandle h);
   StmtHandle LoopHeader (StmtHandle h);
-  bool LoopIterationsDefinedAtEntry (StmtHandle h);
   ExprHandle GetLoopCondition (StmtHandle h); 
   StmtHandle GetLoopIncrement (StmtHandle h);
+  bool LoopIterationsDefinedAtEntry (StmtHandle h);
 
   //--------------------------------------------------------
   // invariant: a two-way conditional or a multi-way conditional MUST provide
@@ -192,6 +204,12 @@ public:
   int NumberOfDelaySlots(StmtHandle h);
  
   //--------------------------------------------------------
+  // 
+  //--------------------------------------------------------
+  ExprTree* GetExprTreeForExprHandle(ExprHandle h) 
+    { BriefAssertion(0); return NULL; }
+
+  //--------------------------------------------------------
   // Obtain uses and defs
   //--------------------------------------------------------
   IRUseDefIterator *GetUses (StmtHandle h);
@@ -203,7 +221,10 @@ public:
   SymHandle GetProcSymHandle(ProcHandle h) 
     { BriefAssertion(0); return (SymHandle)0; }
   SymHandle GetSymHandle (LeafHandle vh) { return (SymHandle)0; }
-  const char *GetSymNameFromSymHandle (SymHandle sh) { return "<no-sym>"; }
+  const char *GetSymNameFromSymHandle (SymHandle sh) 
+    { return "<no-sym>"; }
+  const char *GetConstNameFromConstHandle(ConstHandle ch) 
+    { return "<no-const>"; };
 
   //--------------------------------------------------------
   // Debugging
