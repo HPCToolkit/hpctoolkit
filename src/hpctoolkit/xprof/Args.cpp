@@ -69,7 +69,7 @@ void Args::Usage()
     << "Usage: " << endl
     << "  " << cmd << " [-l | -L] <profile>\n"
     << "  " << cmd << " [-V] [ [-M <mlist> -M...] [-X <xlist> -X...] [-R] ] [<binary>] <profile>\n"
-    
+    << "    Note: -p allows <profile> to be read from stdin.\n"
     << endl;
   cerr
     << "Converts various types of profile output into the PROFILE format,\n"
@@ -101,6 +101,10 @@ void Args::Usage()
     << "The following <profile> formats are currently supported: \n"
     << "  - DEC/Compaq/HP's DCPI 'dcpicat' (including ProfileMe) \n"
     << "\n"
+    << "General options:\n"
+    << "  -p       Supply <profile> on stdin.  E.g., it is often desirable\n"
+    << "           to pipe the output of 'dcpicat' into xprof.\n"
+    << "\n"    
     << "Listing available metrics:\n"
     << "  -l       List all derived metrics, in compact form, available from\n"
     << "           <profile> and suppress generation of PROFILE output.\n"
@@ -118,10 +122,10 @@ void Args::Usage()
     << "           or from those specified with -M.  <xlist> is a colon-\n"
     << "           separated list.\n"
     << "  -R       (Most will not find this useful.) For some profile data,\n"
-    << "           such as DCPI's ProfileMe, the default is to output derived\n"
-    << "           metrics, not the underlying raw metrics; this option\n"
-    << "           forces output of only the raw metrics.  Should not be\n"
-    << "           used with -M or -X.\n"
+    << "           such as DCPI's ProfileMe, the default is to output\n"
+    << "           derived metrics, not the underlying raw metrics; this\n"
+    << "           option forces output of only the raw metrics.  Should not\n"
+    << "           be used with -M or -X.\n"
     << endl;
 } 
 
@@ -130,6 +134,7 @@ Args::Args(int argc, char* const* argv)
   cmd = argv[0]; 
 
   bool printVersion = false;
+  bool profFileFromStdin = false;
   listAvailableMetrics = 0; // 0: no, 1: short, 2: long
   outputRawMetrics = false;
   
@@ -138,7 +143,7 @@ Args::Args(int argc, char* const* argv)
   bool error = false;
   trace = 0;
   int c;
-  while ((c = getopt(argc, argv, "Vm:lLM:X:Rd")) != EOF) {
+  while ((c = getopt(argc, argv, "Vm:lLM:X:Rpd")) != EOF) {
     switch (c) {
     case 'V': { 
       printVersion = true;
@@ -178,6 +183,11 @@ Args::Args(int argc, char* const* argv)
       break; 
     }
 
+    case 'p': { 
+      profFileFromStdin = true;
+      break; 
+    }
+
     case 'd': { // debug 
       trace++; 
       break; 
@@ -191,19 +201,33 @@ Args::Args(int argc, char* const* argv)
   }
 
   int argsleft = (argc - optind);
+  
+  // If we are to read the profile file from stdin, then there should
+  // be at most one more argument.
+  bool err = false;
+  if (profFileFromStdin) {
+    err = !(argsleft == 0 || argsleft == 1);
+  } else {
+    err = !(argsleft == 1 || argsleft == 2);
+  }
+  error |= err;
 
-  error = error || !(argsleft == 1 || argsleft == 2); 
-
+  // Sort out the program file and profile file
   if (!error) {
-    if (argsleft == 1) {
-      profFile = argv[optind]; 
+    if (profFileFromStdin) {
+      if (argsleft == 1) {
+	progFile = argv[optind];
+      }
     } else {
-      progFile = argv[optind];
-      profFile = argv[optind+1]; 
+      if (argsleft == 1) {
+	profFile = argv[optind]; 
+      } else {
+	progFile = argv[optind];
+	profFile = argv[optind+1]; 
+      }
     }
   } 
-
-
+  
   // Sanity check: -M,-X and -R should not be used at the same time
   if ( (!metricList.Empty() || !excludeMList.Empty()) && outputRawMetrics) {
     cerr << "Error: -M or -X cannot be used with -R.\n";
