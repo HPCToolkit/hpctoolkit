@@ -50,9 +50,9 @@
 #include "map.h"
 #include "io.h"
 
-/****************************** Type Declarations ***************************/
+/**************************** Forward Declarations **************************/
 
-/* start main */
+/* libc_start_main related */
 
 #define START_MAIN_PARAMS (int (*main) (int, char **, char **), \
 			   int argc, char *__unbounded *__unbounded ubp_av, \
@@ -61,28 +61,25 @@
 			   void *__unbounded stack_end)
 
 typedef int (*libc_start_main_fptr_t) START_MAIN_PARAMS;
+typedef void (*libc_start_main_fini_fptr_t) (void);
 
-static int hpcr_libc_start_main START_MAIN_PARAMS;
-
-static libc_start_main_fptr_t sm;
-
-static void (*real_fini) (void);
+static int  hpcr_libc_start_main START_MAIN_PARAMS;
+static void hpcr_fini(void); 
 
 /**************************** Forward Declarations **************************/
-
-static void hpcr_fini(void); 
 
 static void init_options(void);
 
 static void init_hpcrun(void);
-static void done_hpcrun();
-
-static void write_all_profiles(FILE* fp, rtloadmap_t* lm, 
-			       hpcpapi_profile_desc_vec_t* profdescs);
+static void fini_hpcrun();
 
 /*************************** Variable Declarations **************************/
 
 /* These variables are set when the library is initialized */
+
+/* Intercepted libc routines */
+static libc_start_main_fptr_t      start_main;
+static libc_start_main_fini_fptr_t start_main_fini;
 
 /* hpcrun options (this should be a tidy struct) */
 static int      opt_debug;
@@ -134,19 +131,20 @@ _init(void)
   */
 
   /* from libc */
-  sm = (libc_start_main_fptr_t)dlsym(RTLD_NEXT, "__libc_start_main"); 
+  start_main = (libc_start_main_fptr_t)dlsym(RTLD_NEXT, "__libc_start_main");
   if ((error = dlerror()) != NULL) {
     fputs(error, stderr);
     exit(1);
   }
-  if (!sm) {
-    sm = (libc_start_main_fptr_t)dlsym(RTLD_NEXT, "__BP___libc_start_main"); 
+  if (!start_main) {
+    start_main = (libc_start_main_fptr_t)dlsym(RTLD_NEXT, 
+					       "__BP___libc_start_main");
     if ((error = dlerror()) != NULL) {
       fputs(error, stderr);
       exit(1);
     }
   }
-  if (!sm) {
+  if (!start_main) {
     fputs("hpcrun: cannot intercept beginning of process execution and therefore cannot begin profiling\n", stderr);
     exit(1);
   }
@@ -257,7 +255,7 @@ hpcr_libc_start_main START_MAIN_PARAMS
 {
   /* squirrel away for later use */
   profiled_cmd = ubp_av[0];  /* command is also in /proc/pid/cmdline */
-  real_fini = fini;
+  start_main_fini = fini;
   
   /* initialize papi profiling */
   init_hpcrun();
@@ -266,7 +264,7 @@ hpcr_libc_start_main START_MAIN_PARAMS
   if (opt_debug >= 1) {
     fprintf(stderr, "** launching application: %s\n", profiled_cmd);
   }
-  (*sm)(main, argc, ubp_av, init, hpcr_fini, rtld_fini, stack_end);
+  (*start_main)(main, argc, ubp_av, init, hpcr_fini, rtld_fini, stack_end);
   return 0; /* never reached */
 }
 
@@ -275,8 +273,10 @@ hpcr_libc_start_main START_MAIN_PARAMS
 static void 
 hpcr_fini(void)
 {
-  if (real_fini) (*real_fini)();
-  done_hpcrun();
+  if (start_main_fini) {
+    (*start_main_fini)();
+  }
+  fini_hpcrun();
   exit(0);
 }
 
@@ -544,6 +544,9 @@ init_output(hpcpapi_profile_desc_vec_t* profdescs)
  * Finalize PAPI profiling
  ****************************************************************************/
 
+static void write_all_profiles(FILE* fp, rtloadmap_t* lm, 
+			       hpcpapi_profile_desc_vec_t* profdescs);
+
 static void 
 fini_papi(hpcpapi_profile_desc_vec_t* profdescs);
 
@@ -551,11 +554,11 @@ fini_papi(hpcpapi_profile_desc_vec_t* profdescs);
  *  Finalize PAPI profiling
  */
 static void 
-done_hpcrun(void)
+fini_hpcrun(void)
 {
   long long ct = 0;
   
-  if (opt_debug >= 1) { fprintf(stderr, "done_hpcrun:\n"); }
+  if (opt_debug >= 1) { fprintf(stderr, "fini_hpcrun:\n"); }
   PAPI_stop(papi_profxxx.eset, &ct);
   
   write_all_profiles(ofile.fs, rtloadmap, &papi_profdescs);
