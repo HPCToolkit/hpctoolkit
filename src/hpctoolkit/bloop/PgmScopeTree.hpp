@@ -1,5 +1,5 @@
+// -*-Mode: C++;-*-
 // $Id$
-// -*-C++-*-
 // * BeginRiceCopyright *****************************************************
 // 
 // Copyright ((c)) 2002, Rice University 
@@ -37,7 +37,7 @@
 //***************************************************************************
 //
 // File:
-//    PgmScopeTree.H
+//    $Source$
 //
 // Purpose:
 //    [The purpose of this file]
@@ -53,6 +53,8 @@
 //************************* System Include Files ****************************
 
 #include <iostream>
+#include <list> // STL
+#include <set>  // STL
 
 //*************************** User Include Files ****************************
 
@@ -63,6 +65,14 @@
 #include <lib/support/String.h>
 #include <lib/support/Files.h>
 #include <lib/support/Nan.h>
+
+//*************************** Forward Declarations ***************************
+
+class ScopeInfo;
+
+// Some possibly useful containers
+typedef std::list<ScopeInfo*> ScopeInfoList;
+typedef std::set<ScopeInfo*> ScopeInfoSet;
 
 //*************************** Forward Declarations ***************************
 
@@ -194,6 +204,12 @@ public:
   LoopScope*      Loop() const;          // return Ancestor(LOOP)
   StmtRangeScope* StmtRange() const;     // return Ancestor(STMT_RANGE)
 
+  // Note: We assume that a node cannot be an ancestor of itself.
+
+  // LeastCommonAncestor: Given two ScopeInfo nodes, return the least
+  // common ancestor (deepest nested common ancestor) or NULL.
+  static ScopeInfo* LeastCommonAncestor(ScopeInfo* n1, ScopeInfo* n2);
+
   // --------------------------------------------------------
   // Tree navigation 
   //   1) all ScopeInfos contain CodeInfos as children 
@@ -207,6 +223,52 @@ public:
   CodeInfo* PrevScope()      const;      // return  NULL or PrevSibling()
   bool      IsLeaf()         const       { return  FirstEnclScope() == NULL; }
 
+  // --------------------------------------------------------
+  // Paths and Merging
+  // --------------------------------------------------------
+
+  // Distance: Given two ScopeInfo nodes, a node and some ancestor,
+  // return the distance of the path between the two.  The distance
+  // between a node and its direct ancestor is 1.  If there is no path
+  // between the two nodes, returns a negative number; if the two
+  // nodes are equal, returns 0.
+  static int Distance(ScopeInfo* ancestor, ScopeInfo* descendent);
+
+  // ArePathsOverlapping: Given two nodes and their least common
+  // ancestor, lca, returns whether the paths from the nodes to lca
+  // overlap.
+  //
+  // Let d1 and d2 be two nodes descended from their least common
+  // ancestor, lca.  Furthermore, let the path p1 from d1 to lca be as
+  // long or longer than the path p2 from d2 to lca.  (Thus, d1 is
+  // nested as deep or more deeply than d2.)  If the paths p1 and p2 are
+  // overlapping then d2 will be somewhere on the path between d1 and
+  // lca.
+  //
+  // Examples: 
+  // 1. Overlapping: lca --- d2 --- ... --- d1
+  //
+  // 2. Divergent:   lca --- d1
+  //                    \--- d2
+  //
+  // 3. Divergent:   lca ---...--- d1
+  //                    \---...--- d2
+  static bool ArePathsOverlapping(ScopeInfo* lca, ScopeInfo* desc1, 
+				  ScopeInfo* desc2);
+  
+  // MergePaths: Given divergent paths (as defined above), merges the
+  // shorter path into the longer path.  If a merge takes place returns true.
+  static bool MergePaths(ScopeInfo* lca, ScopeInfo* desc1, ScopeInfo* desc2);
+  
+  // Merge: Given two nodes, 'fromNode' and 'toNode', merges the
+  // former into the latter, if possible.  If the merge takes place,
+  // deletes 'fromNode' and returns true; otherwise returns false.
+  static bool Merge(ScopeInfo* toNode, ScopeInfo* fromNode);
+
+  // IsMergable: Returns whether 'fromNode' is capable of being merged
+  // into 'toNode'
+  static bool IsMergable(ScopeInfo* toNode, ScopeInfo* fromNode);
+  
   // --------------------------------------------------------
   // debugging and printing 
   // --------------------------------------------------------
