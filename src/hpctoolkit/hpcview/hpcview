@@ -16,19 +16,25 @@
 # Find where we were called from
 #############################################################################
 
+# Note: HPCTOOLKIT must be absolute.  We could have autoconf/automake
+# insert the installation dir and the platform
+
 BINDIR=`dirname $0`
 
 if [ ${BINDIR} = '.' ]; then 
-    ROOTDIR='..';
+    ROOTDIR_REL='..';
 else
-    ROOTDIR=`dirname ${BINDIR}`;
+    ROOTDIR_REL=`dirname ${BINDIR}`;
 fi
+
+ROOTDIR=`cd ${ROOTDIR_REL} ; pwd`
 
 HPCTOOLKIT=${ROOTDIR}
 BINARY="$0bin" # ${HPCTOOLKIT}/bin/ `basename $0` bin
 
 unset BINDIR
 unset ROOTDIR
+unset ROOTDIR_REL
 
 #echo "--> $0"
 #echo "--> ${HPCTOOLKIT}"
@@ -38,7 +44,6 @@ unset ROOTDIR
 # Set environment for process
 #############################################################################
 
-# Note: we could have autoconf/automake insert the platform
 export HPCTOOLKIT
 export HPCTOOLKIT_PLATFORM=`cd ${HPCTOOLKIT}/config; ./hpcplatform`
 
