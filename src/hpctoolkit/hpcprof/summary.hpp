@@ -277,11 +277,11 @@ class Summary {
 
     // (vectors indexed by event/counter number)
     std::vector<Event*> event_;                //< The events.
-    std::vector<unsigned int> n_sample_;       //< The number of samples.
-    std::vector<unsigned int> outofrange_;     //< The number out of range.
-    std::vector<unsigned int> overflow_;       //< The number of overflows.
-    std::vector<unsigned int> n_missing_file_; //< The number missing a file.
-    std::vector<unsigned int> n_missing_func_; //< The number missing a func.
+    std::vector<uint64_t> n_sample_;       //< The number of samples.
+    std::vector<uint64_t> outofrange_;     //< The number out of range.
+    std::vector<uint64_t> overflow_;       //< The number of overflows.
+    std::vector<uint64_t> n_missing_file_; //< The number missing a file.
+    std::vector<uint64_t> n_missing_func_; //< The number missing a func.
     std::vector<bool> visible_;                //< True, if to be shown.
     std::vector<bool> elementary_;             //< True, if elementary
 
@@ -426,15 +426,15 @@ class Summary {
     /// Returns the number of counters (including aggregates).
     int ncounter() const { return n_event_; } 
     /// Returns the number of samples for the given counter.
-    unsigned int n_sample(int i) const { return n_sample_[i]; }
+    uint64_t n_sample(int i) const { return n_sample_[i]; }
     /// Returns the number of overflows for the given counter.
-    unsigned int overflow(int i) const { return overflow_[i]; }
+    uint64_t overflow(int i) const { return overflow_[i]; }
     /// Returns the number of out of range samples for the given counter.
-    unsigned int outofrange(int i) const { return outofrange_[i]; }
+    uint64_t outofrange(int i) const { return outofrange_[i]; }
     /// Returns the number of missing files for the given counter.
-    unsigned int n_missing_file(int i) const { return n_missing_file_[i]; }
+    uint64_t n_missing_file(int i) const { return n_missing_file_[i]; }
     /// Returns the number of missing function names for the given counter.
-    unsigned int n_missing_func(int i) const { return n_missing_func_[i]; }
+    uint64_t n_missing_func(int i) const { return n_missing_func_[i]; }
 
     /// Returns true if the given counter is visible.
     bool visible(int i) const { return visible_[i]; }
