@@ -15,7 +15,7 @@
 @SET_MAKE@
 
 # -*-Mode: makefile;-*-
-# $Header: /Volumes/cvsrep/developer/HPCToolkit/src/lib/xml/Makefile.am,v 1.2 2004/11/01 17:43:59 eraxxon Exp $
+# $Header: /Volumes/cvsrep/developer/HPCToolkit/src/lib/xml/Makefile.am,v 1.3 2004/11/03 03:12:05 eraxxon Exp $
 
 #############################################################################
 #
@@ -75,7 +75,7 @@
 # Assumes includer sets MYCXXFLAGS and MYCFLAGS
 
 
-SOURCES = $(libHPCxml_a_SOURCES)
+SOURCES = $(libHPCxml_la_SOURCES)
 
 srcdir = @srcdir@
 top_srcdir = @top_srcdir@
@@ -109,17 +109,16 @@ am__configure_deps = $(am__aclocal_m4_deps) $(CONFIGURE_DEPENDENCIES) \
 	$(ACLOCAL_M4)
 mkinstalldirs = $(SHELL) $(top_srcdir)/config/mkinstalldirs
 CONFIG_CLEAN_FILES =
-LIBRARIES = $(noinst_LIBRARIES)
-ARFLAGS = cru
+LTLIBRARIES = $(noinst_LTLIBRARIES)
 am__DEPENDENCIES_1 =
-libHPCxml_a_DEPENDENCIES = $(am__DEPENDENCIES_1)
-am__objects_1 = libHPCxml_a-xml.$(OBJEXT)
-am_libHPCxml_a_OBJECTS = $(am__objects_1)
-libHPCxml_a_OBJECTS = $(am_libHPCxml_a_OBJECTS)
+libHPCxml_la_DEPENDENCIES = $(am__DEPENDENCIES_1)
+am__objects_1 = libHPCxml_la-xml.lo
+am_libHPCxml_la_OBJECTS = $(am__objects_1)
+libHPCxml_la_OBJECTS = $(am_libHPCxml_la_OBJECTS)
 DEFAULT_INCLUDES = -I. -I$(srcdir)
 depcomp = $(SHELL) $(top_srcdir)/config/depcomp
 am__depfiles_maybe = depfiles
-@AMDEP_TRUE@DEP_FILES = ./$(DEPDIR)/libHPCxml_a-xml.Po
+@AMDEP_TRUE@DEP_FILES = ./$(DEPDIR)/libHPCxml_la-xml.Plo
 CXXCOMPILE = $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) \
 	$(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS)
 LTCXXCOMPILE = $(LIBTOOL) --mode=compile $(CXX) $(DEFS) \
@@ -136,8 +135,8 @@ LTCOMPILE = $(LIBTOOL) --mode=compile $(CC) $(DEFS) \
 CCLD = $(CC)
 LINK = $(LIBTOOL) --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
 	$(AM_LDFLAGS) $(LDFLAGS) -o $@
-SOURCES = $(libHPCxml_a_SOURCES)
-DIST_SOURCES = $(libHPCxml_a_SOURCES)
+SOURCES = $(libHPCxml_la_SOURCES)
+DIST_SOURCES = $(libHPCxml_la_SOURCES)
 HEADERS = $(noinst_HEADERS)
 ETAGS = etags
 CTAGS = ctags
@@ -290,11 +289,11 @@ HPC_IFLAGS = -I$(HPCTOOLKIT)/src
 #   HPC_LIBXML      : HPC_LIBSUPPORT
 #   HPC_LIBSUPPORT  :
 #   HPC_LIBHPCFILE  :
-HPC_LIBBINUTILS = $(top_builddir)/src/lib/binutils/libHPCbinutils.a
-HPC_LIBISA = $(top_builddir)/src/lib/ISA/libHPCisa.a
-HPC_LIBXML = $(top_builddir)/src/lib/xml/libHPCxml.a
-HPC_LIBSUPPORT = $(top_builddir)/src/lib/support/libHPCsupport.a
-HPC_LIBHPCFILE = $(top_builddir)/src/lib/hpcfile/libHPCfile.a
+HPC_LIBBINUTILS = $(top_builddir)/src/lib/binutils/libHPCbinutils.la
+HPC_LIBISA = $(top_builddir)/src/lib/ISA/libHPCisa.la
+HPC_LIBXML = $(top_builddir)/src/lib/xml/libHPCxml.la
+HPC_LIBSUPPORT = $(top_builddir)/src/lib/support/libHPCsupport.la
+HPC_LIBHPCFILE = $(top_builddir)/src/lib/hpcfile/libHPCfile.la
 
 #############################################################################
 # Common settings
@@ -323,12 +322,12 @@ MYCLEAN = @HOST_LIBTREPOSITORY@
 #############################################################################
 noinst_HEADERS = $(MYDTDHEADERS)
 BUILT_SOURCES = $(MYDTDHEADERS)
-noinst_LIBRARIES = libHPCxml.a
-libHPCxml_a_SOURCES = $(MYSOURCES)
-libHPCxml_a_CFLAGS = $(MYCFLAGS)
-libHPCxml_a_CXXFLAGS = $(MYCXXFLAGS)
-libHPCxml_a_AR = $(MYAR)
-libHPCxml_a_LIBADD = $(MYLIBADD)
+noinst_LTLIBRARIES = libHPCxml.la
+libHPCxml_la_SOURCES = $(MYSOURCES)
+libHPCxml_la_CFLAGS = $(MYCFLAGS)
+libHPCxml_la_CXXFLAGS = $(MYCXXFLAGS)
+libHPCxml_la_AR = $(MYAR)
+libHPCxml_la_LIBADD = $(MYLIBADD)
 MOSTLYCLEANFILES = $(MYCLEAN)
 MYCPPFLAGS_CXX = $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) \
 	$(MYCXXFLAGS)
@@ -371,12 +370,16 @@ $(top_srcdir)/configure:  $(am__configure_deps)
 $(ACLOCAL_M4):  $(am__aclocal_m4_deps)
 	cd $(top_builddir) && $(MAKE) $(AM_MAKEFLAGS) am--refresh
 
-clean-noinstLIBRARIES:
-	-test -z "$(noinst_LIBRARIES)" || rm -f $(noinst_LIBRARIES)
-libHPCxml.a: $(libHPCxml_a_OBJECTS) $(libHPCxml_a_DEPENDENCIES) 
-	-rm -f libHPCxml.a
-	$(libHPCxml_a_AR) libHPCxml.a $(libHPCxml_a_OBJECTS) $(libHPCxml_a_LIBADD)
-	$(RANLIB) libHPCxml.a
+clean-noinstLTLIBRARIES:
+	-test -z "$(noinst_LTLIBRARIES)" || rm -f $(noinst_LTLIBRARIES)
+	@list='$(noinst_LTLIBRARIES)'; for p in $$list; do \
+	  dir="`echo $$p | sed -e 's|/[^/]*$$||'`"; \
+	  test "$$dir" != "$$p" || dir=.; \
+	  echo "rm -f \"$${dir}/so_locations\""; \
+	  rm -f "$${dir}/so_locations"; \
+	done
+libHPCxml.la: $(libHPCxml_la_OBJECTS) $(libHPCxml_la_DEPENDENCIES) 
+	$(CXXLINK)  $(libHPCxml_la_LDFLAGS) $(libHPCxml_la_OBJECTS) $(libHPCxml_la_LIBADD) $(LIBS)
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
@@ -384,7 +387,7 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCxml_a-xml.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCxml_la-xml.Plo@am__quote@
 
 .C.o:
 @am__fastdepCXX_TRUE@	if $(CXXCOMPILE) -MT $@ -MD -MP -MF "$(DEPDIR)/$*.Tpo" -c -o $@ $<; \
@@ -410,29 +413,29 @@ distclean-compile:
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(LTCXXCOMPILE) -c -o $@ $<
 
-libHPCxml_a-xml.o: xml.C
-@am__fastdepCXX_TRUE@	if $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCxml_a_CXXFLAGS) $(CXXFLAGS) -MT libHPCxml_a-xml.o -MD -MP -MF "$(DEPDIR)/libHPCxml_a-xml.Tpo" -c -o libHPCxml_a-xml.o `test -f 'xml.C' || echo '$(srcdir)/'`xml.C; \
-@am__fastdepCXX_TRUE@	then mv -f "$(DEPDIR)/libHPCxml_a-xml.Tpo" "$(DEPDIR)/libHPCxml_a-xml.Po"; else rm -f "$(DEPDIR)/libHPCxml_a-xml.Tpo"; exit 1; fi
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='xml.C' object='libHPCxml_a-xml.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	depfile='$(DEPDIR)/libHPCxml_a-xml.Po' tmpdepfile='$(DEPDIR)/libHPCxml_a-xml.TPo' @AMDEPBACKSLASH@
+libHPCxml_la-xml.o: xml.C
+@am__fastdepCXX_TRUE@	if $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCxml_la_CXXFLAGS) $(CXXFLAGS) -MT libHPCxml_la-xml.o -MD -MP -MF "$(DEPDIR)/libHPCxml_la-xml.Tpo" -c -o libHPCxml_la-xml.o `test -f 'xml.C' || echo '$(srcdir)/'`xml.C; \
+@am__fastdepCXX_TRUE@	then mv -f "$(DEPDIR)/libHPCxml_la-xml.Tpo" "$(DEPDIR)/libHPCxml_la-xml.Po"; else rm -f "$(DEPDIR)/libHPCxml_la-xml.Tpo"; exit 1; fi
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='xml.C' object='libHPCxml_la-xml.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	depfile='$(DEPDIR)/libHPCxml_la-xml.Po' tmpdepfile='$(DEPDIR)/libHPCxml_la-xml.TPo' @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCxml_a_CXXFLAGS) $(CXXFLAGS) -c -o libHPCxml_a-xml.o `test -f 'xml.C' || echo '$(srcdir)/'`xml.C
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCxml_la_CXXFLAGS) $(CXXFLAGS) -c -o libHPCxml_la-xml.o `test -f 'xml.C' || echo '$(srcdir)/'`xml.C
 
-libHPCxml_a-xml.obj: xml.C
-@am__fastdepCXX_TRUE@	if $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCxml_a_CXXFLAGS) $(CXXFLAGS) -MT libHPCxml_a-xml.obj -MD -MP -MF "$(DEPDIR)/libHPCxml_a-xml.Tpo" -c -o libHPCxml_a-xml.obj `if test -f 'xml.C'; then $(CYGPATH_W) 'xml.C'; else $(CYGPATH_W) '$(srcdir)/xml.C'; fi`; \
-@am__fastdepCXX_TRUE@	then mv -f "$(DEPDIR)/libHPCxml_a-xml.Tpo" "$(DEPDIR)/libHPCxml_a-xml.Po"; else rm -f "$(DEPDIR)/libHPCxml_a-xml.Tpo"; exit 1; fi
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='xml.C' object='libHPCxml_a-xml.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	depfile='$(DEPDIR)/libHPCxml_a-xml.Po' tmpdepfile='$(DEPDIR)/libHPCxml_a-xml.TPo' @AMDEPBACKSLASH@
+libHPCxml_la-xml.obj: xml.C
+@am__fastdepCXX_TRUE@	if $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCxml_la_CXXFLAGS) $(CXXFLAGS) -MT libHPCxml_la-xml.obj -MD -MP -MF "$(DEPDIR)/libHPCxml_la-xml.Tpo" -c -o libHPCxml_la-xml.obj `if test -f 'xml.C'; then $(CYGPATH_W) 'xml.C'; else $(CYGPATH_W) '$(srcdir)/xml.C'; fi`; \
+@am__fastdepCXX_TRUE@	then mv -f "$(DEPDIR)/libHPCxml_la-xml.Tpo" "$(DEPDIR)/libHPCxml_la-xml.Po"; else rm -f "$(DEPDIR)/libHPCxml_la-xml.Tpo"; exit 1; fi
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='xml.C' object='libHPCxml_la-xml.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	depfile='$(DEPDIR)/libHPCxml_la-xml.Po' tmpdepfile='$(DEPDIR)/libHPCxml_la-xml.TPo' @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCxml_a_CXXFLAGS) $(CXXFLAGS) -c -o libHPCxml_a-xml.obj `if test -f 'xml.C'; then $(CYGPATH_W) 'xml.C'; else $(CYGPATH_W) '$(srcdir)/xml.C'; fi`
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCxml_la_CXXFLAGS) $(CXXFLAGS) -c -o libHPCxml_la-xml.obj `if test -f 'xml.C'; then $(CYGPATH_W) 'xml.C'; else $(CYGPATH_W) '$(srcdir)/xml.C'; fi`
 
-libHPCxml_a-xml.lo: xml.C
-@am__fastdepCXX_TRUE@	if $(LIBTOOL) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCxml_a_CXXFLAGS) $(CXXFLAGS) -MT libHPCxml_a-xml.lo -MD -MP -MF "$(DEPDIR)/libHPCxml_a-xml.Tpo" -c -o libHPCxml_a-xml.lo `test -f 'xml.C' || echo '$(srcdir)/'`xml.C; \
-@am__fastdepCXX_TRUE@	then mv -f "$(DEPDIR)/libHPCxml_a-xml.Tpo" "$(DEPDIR)/libHPCxml_a-xml.Plo"; else rm -f "$(DEPDIR)/libHPCxml_a-xml.Tpo"; exit 1; fi
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='xml.C' object='libHPCxml_a-xml.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	depfile='$(DEPDIR)/libHPCxml_a-xml.Plo' tmpdepfile='$(DEPDIR)/libHPCxml_a-xml.TPlo' @AMDEPBACKSLASH@
+libHPCxml_la-xml.lo: xml.C
+@am__fastdepCXX_TRUE@	if $(LIBTOOL) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCxml_la_CXXFLAGS) $(CXXFLAGS) -MT libHPCxml_la-xml.lo -MD -MP -MF "$(DEPDIR)/libHPCxml_la-xml.Tpo" -c -o libHPCxml_la-xml.lo `test -f 'xml.C' || echo '$(srcdir)/'`xml.C; \
+@am__fastdepCXX_TRUE@	then mv -f "$(DEPDIR)/libHPCxml_la-xml.Tpo" "$(DEPDIR)/libHPCxml_la-xml.Plo"; else rm -f "$(DEPDIR)/libHPCxml_la-xml.Tpo"; exit 1; fi
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='xml.C' object='libHPCxml_la-xml.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	depfile='$(DEPDIR)/libHPCxml_la-xml.Plo' tmpdepfile='$(DEPDIR)/libHPCxml_la-xml.TPlo' @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(LIBTOOL) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCxml_a_CXXFLAGS) $(CXXFLAGS) -c -o libHPCxml_a-xml.lo `test -f 'xml.C' || echo '$(srcdir)/'`xml.C
+@am__fastdepCXX_FALSE@	$(LIBTOOL) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCxml_la_CXXFLAGS) $(CXXFLAGS) -c -o libHPCxml_la-xml.lo `test -f 'xml.C' || echo '$(srcdir)/'`xml.C
 
 mostlyclean-libtool:
 	-rm -f *.lo
@@ -523,7 +526,7 @@ distdir: $(DISTFILES)
 check-am: all-am
 check: $(BUILT_SOURCES)
 	$(MAKE) $(AM_MAKEFLAGS) check-am
-all-am: Makefile $(LIBRARIES) $(HEADERS)
+all-am: Makefile $(LTLIBRARIES) $(HEADERS)
 installdirs:
 install: $(BUILT_SOURCES)
 	$(MAKE) $(AM_MAKEFLAGS) install-am
@@ -554,7 +557,7 @@ maintainer-clean-generic:
 	-test -z "$(BUILT_SOURCES)" || rm -f $(BUILT_SOURCES)
 clean: clean-am
 
-clean-am: clean-generic clean-libtool clean-noinstLIBRARIES \
+clean-am: clean-generic clean-libtool clean-noinstLTLIBRARIES \
 	mostlyclean-am
 
 distclean: distclean-am
@@ -604,7 +607,7 @@ ps-am:
 uninstall-am: uninstall-info-am
 
 .PHONY: CTAGS GTAGS all all-am check check-am clean clean-generic \
-	clean-libtool clean-noinstLIBRARIES ctags distclean \
+	clean-libtool clean-noinstLTLIBRARIES ctags distclean \
 	distclean-compile distclean-generic distclean-libtool \
 	distclean-tags distdir dvi dvi-am html html-am info info-am \
 	install install-am install-data install-data-am install-exec \

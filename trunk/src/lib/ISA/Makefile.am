@@ -89,13 +89,13 @@ MYCLEAN = @HOST_LIBTREPOSITORY@
 # Automake rules
 #############################################################################
 
-noinst_LIBRARIES = libHPCisa.a
+noinst_LTLIBRARIES = libHPCisa.la
 
-libHPCisa_a_SOURCES  = $(MYSOURCES)
-libHPCisa_a_CFLAGS   = $(MYCFLAGS)
-libHPCisa_a_CXXFLAGS = $(MYCXXFLAGS)
-libHPCisa_a_AR       = $(MYAR)
-libHPCisa_a_LIBADD   = $(MYLIBADD)
+libHPCisa_la_SOURCES  = $(MYSOURCES)
+libHPCisa_la_CFLAGS   = $(MYCFLAGS)
+libHPCisa_la_CXXFLAGS = $(MYCXXFLAGS)
+libHPCisa_la_AR       = $(MYAR)
+libHPCisa_la_LIBADD   = $(MYLIBADD)
 
 MOSTLYCLEANFILES = $(MYCLEAN)
 

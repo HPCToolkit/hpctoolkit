@@ -89,13 +89,13 @@ MYCLEAN = @HOST_LIBTREPOSITORY@
 noinst_HEADERS = $(MYDTDHEADERS)
 BUILT_SOURCES = $(MYDTDHEADERS)
 
-noinst_LIBRARIES = libHPCxml.a
+noinst_LTLIBRARIES = libHPCxml.la
 
-libHPCxml_a_SOURCES  = $(MYSOURCES)
-libHPCxml_a_CFLAGS   = $(MYCFLAGS)
-libHPCxml_a_CXXFLAGS = $(MYCXXFLAGS)
-libHPCxml_a_AR       = $(MYAR)
-libHPCxml_a_LIBADD   = $(MYLIBADD)
+libHPCxml_la_SOURCES  = $(MYSOURCES)
+libHPCxml_la_CFLAGS   = $(MYCFLAGS)
+libHPCxml_la_CXXFLAGS = $(MYCXXFLAGS)
+libHPCxml_la_AR       = $(MYAR)
+libHPCxml_la_LIBADD   = $(MYLIBADD)
 
 MOSTLYCLEANFILES = $(MYCLEAN)
 

@@ -113,13 +113,13 @@ MYCLEAN = @HOST_LIBTREPOSITORY@
 # Automake rules
 #############################################################################
 
-noinst_LIBRARIES = libHPCsupport.a
+noinst_LTLIBRARIES = libHPCsupport.la
 
-libHPCsupport_a_SOURCES  = $(MYSOURCES)
-libHPCsupport_a_CFLAGS   = $(MYCFLAGS)
-libHPCsupport_a_CXXFLAGS = $(MYCXXFLAGS)
-libHPCsupport_a_AR       = $(MYAR)
-libHPCsupport_a_LIBADD   = $(MYLIBADD)
+libHPCsupport_la_SOURCES  = $(MYSOURCES)
+libHPCsupport_la_CFLAGS   = $(MYCFLAGS)
+libHPCsupport_la_CXXFLAGS = $(MYCXXFLAGS)
+libHPCsupport_la_AR       = $(MYAR)
+libHPCsupport_la_LIBADD   = $(MYLIBADD)
 
 MOSTLYCLEANFILES = $(MYCLEAN)
 
