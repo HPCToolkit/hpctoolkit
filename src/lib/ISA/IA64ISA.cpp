@@ -140,7 +140,9 @@ IA64ISA::GetInstDesc(MachInst* mi, ushort opIndex, ushort sz)
       }
       break;
     case dis_condbranch:
-      if (di->target != 0) {
+      // N.B.: On the Itanium it is possible to have a one-bundle loop
+      // (where the third slot branches to the first slot)!
+      if (di->target != 0 || opIndex != 0) {
         d.Set(InstDesc::INT_BR_COND_REL); // arbitrarily choose int
       } else {
         d.Set(InstDesc::INT_BR_COND_IND); // arbitrarily choose int
@@ -175,9 +177,11 @@ IA64ISA::GetInstTargetAddr(MachInst* mi, Addr pc, ushort opIndex,
     int size = print_insn_ia64(PTR_TO_BFDVMA(gnuMI), di);
     CacheSet(gnuMI, size);
   }
-
-  /* The target field is only set on instructions with targets.  */
-  if (di->target != 0) {
+  
+  // The target field is only set on instructions with targets.
+  // N.B.: On the Itanium it is possible to have a one-bundle loop
+  // (where the third slot branches to the first slot)!
+  if (di->target != 0 || opIndex != 0)  {
     return (bfd_vma)di->target + (bfd_vma)pc;
   } else {
     return 0;
