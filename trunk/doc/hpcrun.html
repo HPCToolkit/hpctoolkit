@@ -25,7 +25,8 @@
 
 <div id="main">
 
-<p class="lastupdated">Last Updated 20 Sept 2004</p>
+<!-- automatically updated by Emacs hook below; nicer than CVS Date -->
+<p class="lastupdated">Last Updated: 2004-10-26</p>
 
 <h2>User Commands: hpcrun(1)</h2>
 
@@ -35,10 +36,11 @@
 
 <div class="indent">
 
-<p><span class="hpctool">hpcrun</span> [-r] [-e&nbsp;&lt;event1&gt;[:&lt;period1&gt;] 
-[-e&nbsp;&lt;event2&gt;[:&lt;period2&gt;] ...]] [-o&nbsp;&lt;outpath&gt;] [-f&nbsp;&lt;flag&gt;] 
--- &lt;command&gt; [arguments]
-<p><span class="hpctool">hpcrun</span> [-l | -L] [-V] [-h] 
+<p><span class="hpctool">hpcrun</span> 
+   [profiling-options] -- <i>command [arguments]</i>
+
+<p><span class="hpctool">hpcrun</span> 
+   [-l | -L] [-V] [-h] 
  
 </div> <!-- class=indent -->
 
@@ -50,31 +52,32 @@
 
 <p><span class="hpctool">hpcrun</span>
 profiles the execution of an arbitrary command using statistical sampling. 
-During execution of &lt;command&gt;, the specified events 
-will be monitored. Events may be specified using PAPI platform independent 
-names or using native event names for the processor.
+During execution of <i>command</i>, the specified events 
+will be monitored.  Events may be specified using either 
+<a href="http://icl.cs.utk.edu/projects/papi/">PAPI</a> platform independent 
+names or the native event names for the processor. 
 <span class="hpctool">hpcrun</span> 
 can sample multiple events during a single execution.
 </p>
 
-<p>
-For each &lt;eventk&gt;, each &lt;periodk&gt; instances of &lt;eventk&gt; a counter associated 
-with the instruction at the current program counter location will be incremented. 
-When &lt;command&gt; terminates normally, a profile (a histogram of counts
-for instructions in each load module) will be written to a file with the
-name &lt;command&gt;.&lt;event1&gt;.&lt;hostname&gt;.&lt;pid&gt;. If multiple events are specified,
-data for all events will be recorded in this single file even though the file
-naming convention only uses &lt;event1&gt; in name of the output file.
-</p>
+<p>For each event <i>e</i> and its period <i>p</i>, for every <i>p</i>
+instances of <i>e</i> a counter associated with the instruction at the
+current program counter location will be incremented.  When
+<i>command</i> terminates normally, a profile -- a histogram of counts
+for instructions in each load module -- will be written to a file with
+the name <i>command</i>.<i>event1</i>.<i>hostname</i>.<i>pid</i>.<i>tid</i>.
+If multiple events are specified, data for all events will be recorded
+in this single file even though the file naming convention only uses
+<i>event1</i> in the name of the output file.</p>
 
-<p>
-The special option '--' can be used to stop 
-<span class="hpctool">hpcrun</span> 
-option parsing.  This is
-especially useful when &lt;command&gt; takes arguments of its own.
-</p>
+<p>The special option '--' can be used to stop 
+<span class="hpctool">hpcrun</span> option parsing.  This is especially
+useful when <i>command</i> takes arguments of its own.</p>
 
-
+<p><span class="hpctool">hpcrun</span> allows the user to abort a
+process <i>and</i> write the partial profiling data to disk by sending
+the Interrupt signal (INT or Ctrl-C).  This can be extremely useful on
+long-running or misbehaving applications.
 
 </div> <!-- class=indent -->
 
@@ -84,83 +87,116 @@ especially useful when &lt;command&gt; takes arguments of its own.
 
 <div class="indent">
 
-</div> <!-- class=indent -->
-<h4>GENERAL OPTIONS</h4>
-<div class="indent">
+<h4>General Options</h4>
 
 <dl>
 
-<dt>-l <dd> List PAPI and native events available on this architecture.
+<dt>-l 
+<dd>List events available on this architecture (system, PAPI, native).
+
+<dt>-L
+<dd>Similar to -l, but with more detailed information.
+
+<dt>-V
+<dd>Print version information.
+
+<dt>-h
+<dd>Print help.
+
+</dl>
 
 
-<dt>-L<dd> Similar to -l, but with more detailed information.
-
-<dt>-V <dd>Print version information.
-
-</div> <!-- class=indent -->
-<h4>PROFILING OPTIONS</h4>
-<div class="indent">
+<h4>Profiling Options</h4>
 
 <dl>
 
 <dt>-r 
-<dd> By default all processes spawned by &lt;command&gt; will be profiled, each
-      receiving its own output file. Use this option to turn off recursive
-      profiling; only &lt;command&gt; will be profiled.
+<dd>By default all processes spawned by <i>command</i> will be
+    profiled, each receiving its own output file. Use this option to
+    turn off recursive profiling; only <i>command</i> will be
+    profiled.
 
-<dt>- <i>&lt;eventk&gt;[:&lt;periodk&gt;] </i>  
-<dd> An event to profile and its corresponding sample period.  &lt;eventk&gt;
-      may be either a PAPI or native processor event
-The default event profiled is PAPI_TOT_CYC and the default sampling period used for any event is 32767 events.
-<ul>
-<li>NOTE 1: It is recommended that you always specify the sampling period for
-              each profiling event.</li>
-<li>NOTE 2: Multiple events may be selected for profiling during an execution
-              by using  multiple '-e' arguments. </li>
-<li>NOTE 3: The maximum number of events that can be monitored during a single
-              execution depends on the processor. Not all combinations of 
-              events may be monitored in the same execution. Allowable
-              combinations depend on the processor. Check your 
-              processor documentation for the details of both issues.</li>
-</ul>
+<dt>-t [<i>mode</i>]
 
-<dt>-o
-<dd>Directory for output data. The default output directory is the current directory. 
+<dd>Profile threads. (Without this flag, profiling of a multithreaded
+    process will silently die.) There are two modes:
+   <ul>
+     <li>each: Default. Create separate profiles for each thread.
+     <li>all:  Create one combined profile of all threads.
+   </ul>
+   
+   <p>NOTES:
+   <ul>
+   <li>The WALLCLK event cannot be used in a multithreaded process.
+   <li>Only POSIX threads are supported.
+   </ul>
 
+<dt>-e <i>event</i>[:<i>period</i>]
+
+<dd>An event to profile and its corresponding sample period.
+    <i>event</i> may be either a PAPI or native processor event.
+    Default: PAPI_TOT_CYC:32767
+
+   <p>NOTES:
+   <ul>
+   <li>It is recommended that you always specify the sampling period
+       for each profiling event.
+   <li>You may use the special event WALLCLK to profile with wall
+       clock time.  It may be used only <i>once</i> and cannot be used
+       with another event.  It is an error to specify a period.
+   <li>Multiple events may be selected for profiling during an
+       execution by using multiple '-e' arguments.
+   <li>The maximum number of events that can be monitored during a
+       single execution depends on the processor. Not all combinations
+       of events may be monitored in the same execution; allowable
+       combinations depend on the processor. check your processor
+       documentation for the details of both issues.
+   </ul>
+
+<dt>-o <i>outpath</i>
+<dd>Directory for output data. The default output directory is the
+    current directory.
+
+<dt>-f <i>flag</i>
+<dd>PAPI profile style flag. Default: PAPI_POSIX_PROFIL
 
 </dl>
+
 </div> <!-- class=indent -->
+
+<!-- ********************************************************************** -->
 
 <h4>NOTES</h4>
-<ul>
-<p>
-Because 
-<span class="hpctool">hpcrun</span> 
-uses LD_PRELOAD to initiate profiling it cannot be used
-to profile setuid commands; LD_PRELOAD is not permitted for them.
-</p>
-<p>
-Bug: For non-recursive profiling, LD_PRELOAD is currently unsetenv'd.
-  Child processes that otherwise depend LD_PRELOAD will likely die.
-</p>
 
-
-<p><span class="hpctool">hpcrun</span> currently runs only on Linux. It has been tested on Itanium, Pentium, Opteron, and Athlon processors. </p>
-
-
-<p><span class="hpctool">hpcrun</span> uses the HPCRUN_HOME 
-environment variable.</p>
-
-</ul>
-</div> <!-- class=indent -->
-<h3>RELATED</h3>
 <div class="indent">
-<p>
-<span class="hpctool">hpcrun</span> 
-uses the statistical sampling interface of the <a href="http://icl.cs.utk.edu/papi/">PAPI library</a> for 
-monitoring executions.
+
+<p>Because <span class="hpctool">hpcrun</span> uses LD_PRELOAD to
+initiate profiling it cannot be used to profile setuid commands.
+For the same reason, it cannot profile statically linked applications.</p>
+
+<p>Bug: For non-recursive profiling, LD_PRELOAD is currently unsetenv'd.
+Child processes that otherwise depend LD_PRELOAD will likely die.</p>
+
+<p><span class="hpctool">hpcrun</span> currently runs only on
+Linux. It has been tested on Itanium, Pentium, Opteron, and Athlon
+processors. </p>
+
 </div> <!-- class=indent -->
 
+<!-- ********************************************************************** -->
+
+<h3>RELATED</h3>
+
+<div class="indent">
+
+<p><span class="hpctool">hpcrun</span> 
+uses the statistical sampling interface of the 
+<a href="http://icl.cs.utk.edu/papi/">PAPI library</a> for monitoring
+executions.
+
+<p><a href="hpcprof.html" class="hpctool">hpcprof</a>
+
+</div> <!-- class=indent -->
 
 <!-- ********************************************************************** -->
 
@@ -173,4 +209,12 @@ monitoring executions.
 </body>
 </html>
 
+
+<!-- Local Variables: -->
+<!-- eval: (add-hook 'write-file-hooks 'time-stamp) -->
+<!-- time-stamp-start: ">Last Updated: " -->
+<!-- time-stamp-format: "%:y-%02m-%02d" -->
+<!-- time-stamp-end: "<" -->
+<!-- time-stamp-line-limit: 35 -->
+<!-- End: -->
 
