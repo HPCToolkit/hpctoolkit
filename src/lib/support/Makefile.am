@@ -1,0 +1,130 @@
+# -*-Mode: makefile;-*-
+# $Header$
+
+## * BeginRiceCopyright *****************************************************
+## 
+## Copyright ((c)) 2002, Rice University 
+## All rights reserved.
+## 
+## Redistribution and use in source and binary forms, with or without
+## modification, are permitted provided that the following conditions are
+## met:
+## 
+## * Redistributions of source code must retain the above copyright
+##   notice, this list of conditions and the following disclaimer.
+## 
+## * Redistributions in binary form must reproduce the above copyright
+##   notice, this list of conditions and the following disclaimer in the
+##   documentation and/or other materials provided with the distribution.
+## 
+## * Neither the name of Rice University (RICE) nor the names of its
+##   contributors may be used to endorse or promote products derived from
+##   this software without specific prior written permission.
+## 
+## This software is provided by RICE and contributors "as is" and any
+## express or implied warranties, including, but not limited to, the
+## implied warranties of merchantability and fitness for a particular
+## purpose are disclaimed. In no event shall RICE or contributors be
+## liable for any direct, indirect, incidental, special, exemplary, or
+## consequential damages (including, but not limited to, procurement of
+## substitute goods or services; loss of use, data, or profits; or
+## business interruption) however caused and on any theory of liability,
+## whether in contract, strict liability, or tort (including negligence
+## or otherwise) arising in any way out of the use of this software, even
+## if advised of the possibility of such damage. 
+## 
+## ******************************************************* EndRiceCopyright *
+
+#############################################################################
+#
+# File:
+#   $Source$
+#
+# Description:
+#   *Process with automake to produce Makefile.in*
+#   
+#   Note: All local variables are prefixed with MY to prevent name
+#   clashes with automatic automake variables.
+#
+#############################################################################
+
+# We do not want the standard GNU files (NEWS README AUTHORS ChangeLog...)
+AUTOMAKE_OPTIONS = foreign
+
+#############################################################################
+# Common settings
+#############################################################################
+
+include $(top_srcdir)/src/Makeinclude.config
+
+#############################################################################
+# Local settings
+#############################################################################
+
+MYSOURCES = \
+	Assertion.h Assertion.C \
+	CmdLineParser.h CmdLineParser.C \
+	DumpMsgHandler.h DumpMsgHandler.C \
+	Files.h Files.C \
+	HashTable.h HashTable.C \
+	HashTableSortedIterator.h HashTableSortedIterator.C \
+	IntVector.h IntVector.C \
+	IteratorStack.h IteratorStack.C \
+	Nan.h Nan.C \
+	NonUniformDegreeTree.h NonUniformDegreeTree.C \
+	OffsetLengthList.h OffsetLengthList.C \
+	PointerMap.h PointerMap.C \
+	PointerStack.h PointerStack.C \
+	PtrSet.h PtrSet.C \
+	PtrSetIterator.h PtrSetIterator.C \
+	PtrStack.h \
+	QuickSort.h QuickSort.C \
+	Set.h Set.C \
+	SrcFile.h SrcFile.C \
+	StackableIterator.h StackableIterator.C \
+	String.h String.C \
+	StringHashTable.h StringHashTable.C \
+	StringLt.h \
+	StringUtilities.h StringUtilities.C \
+	Trace.h Trace.C \
+	Unique.h Unique.C \
+	VectorSupport.h VectorSupport.C \
+	VectorTmpl.h VectorTmpl.C \
+	WordSet.h WordSet.C \
+	bstring.h \
+	pathfind.h pathfind.C \
+	realpath.h realpath.c
+
+MYCFLAGS   = @HOST_CFLAGS@   $(HPC_IFLAGS) 
+MYCXXFLAGS = @HOST_CXXFLAGS@ $(HPC_IFLAGS) 
+
+if IS_HOST_AR
+  MYAR = @HOST_AR@
+else
+  MYAR = $(AR) cru
+endif
+
+MYLIBADD = @HOST_LIBTREPOSITORY@
+
+MYCLEAN = @HOST_LIBTREPOSITORY@
+
+#############################################################################
+# Automake rules
+#############################################################################
+
+noinst_LIBRARIES = libHPCsupport.a
+
+libHPCsupport_a_SOURCES  = $(MYSOURCES)
+libHPCsupport_a_CFLAGS   = $(MYCFLAGS)
+libHPCsupport_a_CXXFLAGS = $(MYCXXFLAGS)
+libHPCsupport_a_AR       = $(MYAR)
+libHPCsupport_a_LIBADD   = $(MYLIBADD)
+
+MOSTLYCLEANFILES = $(MYCLEAN)
+
+#############################################################################
+# Common rules
+#############################################################################
+
+include $(top_srcdir)/src/Makeinclude.rules
+
