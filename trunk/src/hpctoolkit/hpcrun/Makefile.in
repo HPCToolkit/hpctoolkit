@@ -116,7 +116,7 @@ LTLIBRARIES = $(lib_LTLIBRARIES)
 am__DEPENDENCIES_1 = $(top_builddir)/src/lib/hpcfile/libHPCfile.a
 am__DEPENDENCIES_2 = $(am__DEPENDENCIES_1)
 libhpcrun_la_DEPENDENCIES = $(am__DEPENDENCIES_2)
-am__objects_1 = libhpcrun_la-preload.lo libhpcrun_la-hpcpapi.lo \
+am__objects_1 = libhpcrun_la-monitor.lo libhpcrun_la-hpcpapi.lo \
 	libhpcrun_la-rtmap.lo
 am_libhpcrun_la_OBJECTS = $(am__objects_1)
 libhpcrun_la_OBJECTS = $(am_libhpcrun_la_OBJECTS)
@@ -145,7 +145,7 @@ am__depfiles_maybe = depfiles
 @AMDEP_TRUE@	./$(DEPDIR)/hpcrun-hpcpapi.Po \
 @AMDEP_TRUE@	./$(DEPDIR)/hpcrun-hpcrun.Po \
 @AMDEP_TRUE@	./$(DEPDIR)/libhpcrun_la-hpcpapi.Plo \
-@AMDEP_TRUE@	./$(DEPDIR)/libhpcrun_la-preload.Plo \
+@AMDEP_TRUE@	./$(DEPDIR)/libhpcrun_la-monitor.Plo \
 @AMDEP_TRUE@	./$(DEPDIR)/libhpcrun_la-rtmap.Plo
 COMPILE = $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
 	$(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
@@ -335,7 +335,7 @@ MYSOURCES_HPCRUN = \
 	dlpapi.h dlpapi.c 
 
 MYSOURCES_LIBHPCRUN = \
-	preload.c \
+	monitor.c \
 	hpcpapi.h hpcpapi.c \
 	rtmap.h rtmap.c 
 
@@ -504,7 +504,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/hpcrun-hpcpapi.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/hpcrun-hpcrun.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-hpcpapi.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-preload.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-monitor.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-rtmap.Plo@am__quote@
 
 .c.o:
@@ -531,29 +531,29 @@ distclean-compile:
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(LTCOMPILE) -c -o $@ $<
 
-libhpcrun_la-preload.o: preload.c
-@am__fastdepCC_TRUE@	if $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT libhpcrun_la-preload.o -MD -MP -MF "$(DEPDIR)/libhpcrun_la-preload.Tpo" -c -o libhpcrun_la-preload.o `test -f 'preload.c' || echo '$(srcdir)/'`preload.c; \
-@am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/libhpcrun_la-preload.Tpo" "$(DEPDIR)/libhpcrun_la-preload.Po"; else rm -f "$(DEPDIR)/libhpcrun_la-preload.Tpo"; exit 1; fi
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='preload.c' object='libhpcrun_la-preload.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	depfile='$(DEPDIR)/libhpcrun_la-preload.Po' tmpdepfile='$(DEPDIR)/libhpcrun_la-preload.TPo' @AMDEPBACKSLASH@
+libhpcrun_la-monitor.o: monitor.c
+@am__fastdepCC_TRUE@	if $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT libhpcrun_la-monitor.o -MD -MP -MF "$(DEPDIR)/libhpcrun_la-monitor.Tpo" -c -o libhpcrun_la-monitor.o `test -f 'monitor.c' || echo '$(srcdir)/'`monitor.c; \
+@am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/libhpcrun_la-monitor.Tpo" "$(DEPDIR)/libhpcrun_la-monitor.Po"; else rm -f "$(DEPDIR)/libhpcrun_la-monitor.Tpo"; exit 1; fi
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='monitor.c' object='libhpcrun_la-monitor.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	depfile='$(DEPDIR)/libhpcrun_la-monitor.Po' tmpdepfile='$(DEPDIR)/libhpcrun_la-monitor.TPo' @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o libhpcrun_la-preload.o `test -f 'preload.c' || echo '$(srcdir)/'`preload.c
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o libhpcrun_la-monitor.o `test -f 'monitor.c' || echo '$(srcdir)/'`monitor.c
 
-libhpcrun_la-preload.obj: preload.c
-@am__fastdepCC_TRUE@	if $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT libhpcrun_la-preload.obj -MD -MP -MF "$(DEPDIR)/libhpcrun_la-preload.Tpo" -c -o libhpcrun_la-preload.obj `if test -f 'preload.c'; then $(CYGPATH_W) 'preload.c'; else $(CYGPATH_W) '$(srcdir)/preload.c'; fi`; \
-@am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/libhpcrun_la-preload.Tpo" "$(DEPDIR)/libhpcrun_la-preload.Po"; else rm -f "$(DEPDIR)/libhpcrun_la-preload.Tpo"; exit 1; fi
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='preload.c' object='libhpcrun_la-preload.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	depfile='$(DEPDIR)/libhpcrun_la-preload.Po' tmpdepfile='$(DEPDIR)/libhpcrun_la-preload.TPo' @AMDEPBACKSLASH@
+libhpcrun_la-monitor.obj: monitor.c
+@am__fastdepCC_TRUE@	if $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT libhpcrun_la-monitor.obj -MD -MP -MF "$(DEPDIR)/libhpcrun_la-monitor.Tpo" -c -o libhpcrun_la-monitor.obj `if test -f 'monitor.c'; then $(CYGPATH_W) 'monitor.c'; else $(CYGPATH_W) '$(srcdir)/monitor.c'; fi`; \
+@am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/libhpcrun_la-monitor.Tpo" "$(DEPDIR)/libhpcrun_la-monitor.Po"; else rm -f "$(DEPDIR)/libhpcrun_la-monitor.Tpo"; exit 1; fi
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='monitor.c' object='libhpcrun_la-monitor.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	depfile='$(DEPDIR)/libhpcrun_la-monitor.Po' tmpdepfile='$(DEPDIR)/libhpcrun_la-monitor.TPo' @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o libhpcrun_la-preload.obj `if test -f 'preload.c'; then $(CYGPATH_W) 'preload.c'; else $(CYGPATH_W) '$(srcdir)/preload.c'; fi`
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o libhpcrun_la-monitor.obj `if test -f 'monitor.c'; then $(CYGPATH_W) 'monitor.c'; else $(CYGPATH_W) '$(srcdir)/monitor.c'; fi`
 
-libhpcrun_la-preload.lo: preload.c
-@am__fastdepCC_TRUE@	if $(LIBTOOL) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT libhpcrun_la-preload.lo -MD -MP -MF "$(DEPDIR)/libhpcrun_la-preload.Tpo" -c -o libhpcrun_la-preload.lo `test -f 'preload.c' || echo '$(srcdir)/'`preload.c; \
-@am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/libhpcrun_la-preload.Tpo" "$(DEPDIR)/libhpcrun_la-preload.Plo"; else rm -f "$(DEPDIR)/libhpcrun_la-preload.Tpo"; exit 1; fi
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='preload.c' object='libhpcrun_la-preload.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	depfile='$(DEPDIR)/libhpcrun_la-preload.Plo' tmpdepfile='$(DEPDIR)/libhpcrun_la-preload.TPlo' @AMDEPBACKSLASH@
+libhpcrun_la-monitor.lo: monitor.c
+@am__fastdepCC_TRUE@	if $(LIBTOOL) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT libhpcrun_la-monitor.lo -MD -MP -MF "$(DEPDIR)/libhpcrun_la-monitor.Tpo" -c -o libhpcrun_la-monitor.lo `test -f 'monitor.c' || echo '$(srcdir)/'`monitor.c; \
+@am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/libhpcrun_la-monitor.Tpo" "$(DEPDIR)/libhpcrun_la-monitor.Plo"; else rm -f "$(DEPDIR)/libhpcrun_la-monitor.Tpo"; exit 1; fi
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='monitor.c' object='libhpcrun_la-monitor.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	depfile='$(DEPDIR)/libhpcrun_la-monitor.Plo' tmpdepfile='$(DEPDIR)/libhpcrun_la-monitor.TPlo' @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(LIBTOOL) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o libhpcrun_la-preload.lo `test -f 'preload.c' || echo '$(srcdir)/'`preload.c
+@am__fastdepCC_FALSE@	$(LIBTOOL) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o libhpcrun_la-monitor.lo `test -f 'monitor.c' || echo '$(srcdir)/'`monitor.c
 
 libhpcrun_la-hpcpapi.o: hpcpapi.c
 @am__fastdepCC_TRUE@	if $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT libhpcrun_la-hpcpapi.o -MD -MP -MF "$(DEPDIR)/libhpcrun_la-hpcpapi.Tpo" -c -o libhpcrun_la-hpcpapi.o `test -f 'hpcpapi.c' || echo '$(srcdir)/'`hpcpapi.c; \

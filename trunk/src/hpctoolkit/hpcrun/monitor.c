@@ -192,11 +192,13 @@ void
 _init()
 {
   init_library();
+  /* process initialized with interception of libc_start_main */
 }
 
 void 
 _fini()
 {
+  /* process finalized with libc_start_main */
   fini_library();
 }
 
@@ -208,11 +210,13 @@ void
 hpcrun_init()
 {
   init_library();
+  init_process();
 }
 
 void 
 hpcrun_fini()
 {
+  fini_process();
   fini_library();
 }
 
