@@ -26,7 +26,7 @@
 <div id="main">
 
 <!-- automatically updated by Emacs hook below; nicer than CVS Date -->
-<p class="lastupdated">Last Updated: 2004-10-26</p>
+<p class="lastupdated">Last Updated: 2004-10-28</p>
 
 <h2>User Commands: hpcquick(1)</h2>
 
@@ -40,7 +40,7 @@
    [other-options]
    -z|x
    [ -I <i>dir1 dir2 ... dirN</i> ]
-   [ -S <i>struct-file</i> ]
+   [ -S <i>struct1 struct2 ... structK</i> ]
    -P <i>prof1 prof2 ... profM</i>
 
 <p>Location: <code>${HPCTOOLKIT}/bin</code>
@@ -57,8 +57,8 @@
 the process of using <a href="hpcview.html" class="hpctool">hpcview</a>
 to correlate performance data with an application's source code. 
 Given a list of paths to directories containing interesting
-program source code files, an optional program
-structure file created by the 
+program source code files, an optional list of program
+structure files created by the 
 <a href="hpc_bloop.html" class="hpctool">bloop</a> tool, and
 a list of profile files, creates an 
 <a href="hpcview.html" class="hpctool">hpcview</a>
@@ -110,12 +110,15 @@ code is not found in these directories (e.g., system libraries),
 will generate a synopsis that shows the presence of the function and
 its line extents (if known), but no source code.
 
-<dt>-S <i>struct-file</i>
-<dd><i>struct-file</i> is a program structure file (XML document of type
-<a href="dtd_pgm.html" class="hpctool">PGM</a>) that contains a 
-specification of the hierarchical structure of the application
-program.  Supplying a program structure file is optional. However, a
-structure file must be supplied for 
+<dt>-S <i>struct1 struct2 ... structK</i>
+<dd><i>struct1</i> through <i>structK</i> is a list of program
+structure files (XML document of type
+<a href="dtd_pgm.html" class="hpctool">PGM</a>) that each contain a 
+specification of the hierarchical structure of a binary image.  The
+structure files can be for the main program and/or any or all of the
+shared libraries used by the program.  Supplying program structure
+files is optional. However, an appropriate structure file must be
+supplied in order for
 <a href="hpcview.html" class="hpctool">hpcview</a> to compute and
 correlate loop-level performance metrics.  
 
