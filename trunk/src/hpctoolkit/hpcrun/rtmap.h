@@ -47,6 +47,9 @@ extern "C" {
 extern rtloadmap_t* 
 hpcrun_get_rtloadmap(int dbglvl);
 
+extern const char*
+hpcrun_get_cmd(int dbglvl);
+
 #ifdef __cplusplus
 }
 #endif
