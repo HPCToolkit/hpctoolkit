@@ -200,6 +200,11 @@ public:
                const char *file_name = NULL, const char *routine_name = NULL,
                int lLevel = 0) const; 
 
+  void TSV_DumpSelf(const PgmScope &root, std::ostream &os = std::cout) const;
+  virtual void TSV_Dump(const PgmScope &root, std::ostream &os = std::cout, 
+               const char *file_name = NULL, const char *routine_name = NULL,
+               int lLevel = 0) const; 
+
   void CollectCrossReferences();
   int NoteHeight();
   void NoteDepth();
@@ -260,6 +265,10 @@ public:
                const char *file_name = NULL, const char *routine_name = NULL,
                int lLevel = 0) const; 
 
+  virtual void TSV_Dump(const PgmScope &root, std::ostream &os = std::cout, 
+               const char *file_name = NULL, const char *routine_name = NULL,
+               int lLevel = 0) const; 
+
 protected: 
   void SetLineRange(suint beg, suint end); 
   void Relocate(); 
@@ -300,6 +309,7 @@ public:
   void XML_Dump(std::ostream &os = std::cout, int dmpFlag = 0, 
 		const char *pre = "") const;
   void CSV_TreeDump(std::ostream &os = std::cout) const;
+  void TSV_TreeDump(std::ostream &os = std::cout) const;
    
 protected: 
 private: 
@@ -392,6 +402,9 @@ public:
   virtual void CSV_Dump(const PgmScope &root, std::ostream &os = std::cout, 
                const char *file_name = NULL, const char *routine_name = NULL,
                int lLevel = 0) const; 
+  virtual void TSV_Dump(const PgmScope &root, std::ostream &os = std::cout, 
+               const char *file_name = NULL, const char *routine_name = NULL,
+               int lLevel = 0) const; 
   
 private: 
   void AddToProcMap(ProcScope& proc); 
@@ -424,6 +437,9 @@ public:
   LineScope *CreateLineScope(CodeInfo *mom, suint lineNumber); 
 
   virtual void CSV_Dump(const PgmScope &root, std::ostream &os = std::cout, 
+               const char *file_name = NULL, const char *routine_name = NULL,
+               int lLevel = 0) const; 
+  virtual void TSV_Dump(const PgmScope &root, std::ostream &os = std::cout, 
                const char *file_name = NULL, const char *routine_name = NULL,
                int lLevel = 0) const; 
 
