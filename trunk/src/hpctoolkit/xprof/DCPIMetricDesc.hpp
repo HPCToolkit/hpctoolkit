@@ -278,7 +278,7 @@ private:
 // Convert a string describing a DCPI metric into a 'DCPIMetricDesc'.
 // The string should have the format used in 'dcpicat'.  The following
 // is a slightly modified format used by the DCPI tools (cf. ProfileMe
-// man page).
+// man page: man dcpiprofileme).
 //
 // Assumed format: 
 //   string ::= ProfileMe_sample_set *
