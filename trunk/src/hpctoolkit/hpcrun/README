@@ -1,8 +1,18 @@
-
+$Id$
 =============================================================================
 ==
 == README
 ==
+== John Mellor-Crummey and Nathan Tallent, Rice University
+== March 4, 2003
+==
+=============================================================================
+
+Contents:
+  0. Overview
+  1. Using
+  2. A Few Details
+
 =============================================================================
 
 0. Overview
@@ -22,77 +32,159 @@ back to the application.  When the application exits, control returns
 to the papirun library, which calls finalization routines and writes
 the profiling data to a binary file for later processing.
 
-papiprof processes data collected from papirun and translates it into
-text, html or PROFILE formats.
+By default, papirun will profile every process spawned by the profiled
+command and generate separate output for each process.  An option can
+turn off this behavior.
+
+papiprof processes data collected from papirun, correlates it with
+source file information and produces text, html or PROFILE output.
+Users can use the text and html output to obtain a quick overview of
+program performance.  This output consists of 1) summary lists of load
+modules, files, procedures and lines sorted by profiling metric counts
+and 2) source files with annotated metric information in their
+margins.  Uses can use the PROFILE output with HPCView (from HPCTools)
+in order to do a top-down analysis of the profile information.
+PROFILE output should be used with HPCTools 3.5.1 or later.
+
+N.B.: We have not tested html output.
+
+Parts of the papiprof profiler have been adapted from Version 0.12 of
+The Visual Profiler by Curtis L. Janssen.
+
+=============================================================================
 
 1. Using
 --------------------
 
-Be warned: This is still a prototype and we plan on some revisions
-once the papiprof prototype is up and running.  We haven't yet set up a
-beautiful configuration utility and we have only tested on ia64-Linux.
+Be warned: This is still a prototype.
 
-To try it out: 
+While we intend papiprof to be ported to a number of platforms, we
+have only tested it on ia64-Linux and i686-Linux.
+
+1.1. PAPI:
+----
+papirun refers to events using their 'standardized' PAPI names.  Users
+should know that PAPI events do not always directly refer to a native
+event counted by a given processor's performance counters.  This is
+true *even if* a PAPI event exists for a given platform.  In cases
+where no direct hardware counter is available, PAPI may attempt to
+simulate an event counter using some combination of other performance
+counter information.
+
+1.2. PAPI and ia64-Linux:
+----
+For IA64 support, you will need PAPI 2.3.1 or greater and a kernel of
+2.4.18 or higher (which includes pfmon support). You can find more
+PAPI information at http://icl.cs.utk.edu/projects/papi.
+
+[FIXME: does this apply any more?]
+N.B.: hvprof can crash when the PAPI overflow threshold is too low.
+Not surprisingly, sensitivity to low thresholds varies with the PAPI
+event; commonly occuring events produce greater sensitivity.  For
+example, to profile issued instructions on an Itanium2 chip, you
+should almost certainly avoid thresholds much lower than 100,000.  In
+contrast, to profile instruction or data cache misses, the threshold
+could reasonably be much smaller.  Note that given the speed of the
+Itanium/Itanium2 chips and the amount of overhead necessary for
+profiling, you will almost certainly want to avoid very low thresholds
+anyway.
+
+[FIXME]
+If you are an user of the IA64 NCSA cluster (currently running kernel
+2.4.16), you can use a custom version of PAPI 2.1.0 tailored for
+pfmon-0.06a and kernel 2.4.16.  This version uses software timer
+interrupts instead of hardware counter interrupts and will be a little
+more inaccurate.  However, it will still produce helpul information.
+The custom verion is currently located in '/u/ac/mucci/papi/src';
+thanks go to Phil Mucci.
+
+1.3. Compiler notes:
+----
+We have tested with GCC 2.96, 3.2; Intel 6.0, 7.0.
+
+1.4. To try it out:
+----
   
 0. Open "Makefile.include" in an editor and set variables.
 
-     CC: either GCC or Intel CC
-     PAPIxxx: locations to PAPI includes and library
-     BFDxxx:  locations to GNU bfd includes and libraries
-     BPSYMINC: the location of file bp-sym.h from glibc
+     CC, CXX:          C and C++ compiler
+     PAPIINC, PAPILIB: locations to PAPI includes and library
+     BFDINC, BFDLIB:   locations to GNU BFD includes and libraries
 
-1. Open the file Sourceme-sh.papirun.  These environment variables need to
-   be set before using papirun.
-     PAPIRUN_HOME - the directory papirun lives in
+1. Open the file Sourceme-sh or Sourceme-csh, depending on your
+   shell. These environment variables need to be set before using
+   papirun.  After you have set the variables, source the file.
+
+     PAPIRUN_HOME         - the directory you have installed papiprof in
      PAPIRUN_PAPILIB_PATH - the directory that libpapi.so lives in
      
 2. Make papirun/papiprof:
      make
 
-3. Try it out
+3. Kick the tires
   
+   1. List PAPI events available on your system.
+
+      papirun -L
+
+   2. See usage information:
+
+      papirun
+      papiprof
+
+4. Take a test drive
+
    1. Build test2
+
       cd test2
       make
-  
-   2. Collect profiling info
-      ../papirun -p 100000 test2
-         
-   3. View profiling info
-      ../papiprof -e test2 test2.PAPI_TOT_CYC.pid
-   
 
-   See the file events.c for PAPI events you can use with papirun.  
+   2. Collect profiling info.  A file to hold the profile histogram
+      will be generated with a file name in the format
+      <command><papi_event><process_id>.
+
+      papirun -p 1000021 test2
+         
+   3. View a text summary of the profiling info:
+
+      papiprof -e test2 test2.PAPI_TOT_CYC.pid
+
+   4. Create PROFILE output of the profiling info:
+
+      papiprof -p test2 test2.PAPI_TOT_CYC.pid
+
+   5. Some other events you can try (and approximate periods). Note
+      that appropriate period values can vary depending on your system
+      and application.
+        PAPI_TOT_INS - 1000021
+        PAPI_FLOPS   - 1000021
+        PAPI_L1_ICM  - 1019
+        PAPI_L1_DCM  - 1019 or 101
+      
+      papirun -e PAPI_L1_DCM -p 1019 test2
+
+   6. Create text summaries and PROFILES with multiple events:
+
+      papiprof -e test2  <list_of_profiles...>
+
+      papiprof -p test2  <list_of_profiles...>
+   
+=============================================================================
 
 2. A Few Details
 --------------------
 
-papiprof: 
+2.1. papirun
+----
 
-This is very rough.  Only the text mode output has been tested; html
-and PGM output require a few more tweaks.
-
-You can pass multiple profile files with the same or different events.
-When more than one event with the same period is detected, collective
-events (min, max, sum) are automatically created to provide aggregate
-info.
-
-
-// The format is of type PROFILE and should be
-// fairly self-explanatory.  Metric counts (M) are embedded within a
-// program scope tree, with a program (PGM), files (F), procedures
-// (P), and statements (S).  The format supports multiple metrics and
-// thus each metric in the scope tree is identified by a short name
-// previously assigned in the header information.  
-
-
-papirun files:
-  preload.c
+Files:
+  papirun*
   papirun.h
-  map.c/h
+  preload.c
   events.c/h
   flags.c/h
   io.c/h
+  map.c/h
 
 The file 'preload.c' contains the main source code; the other files
 are ancillary and contain brief descriptions at the top so that it
@@ -129,7 +221,32 @@ After the application is finished, control passes back to the papirun
 library.  Profiling is stopped and the data is written to a binary
 output file.
 
-=============================================================================
+2.2. papiprof
+----
 
-John Mellor-Crummey and Nathan Tallent, Rice University
-February 3, 2003
+Files:
+  papiprof.cc/h
+  loadmodule.cc/h
+  proffile.cc/h
+  summary.cc/h
+  PROFILE.dtd.h
+
+papiprof is still rough, though it should now produce useful
+information.  We have tested text and PROFILE output, but not html.
+
+You can pass multiple profile files with the same or different events.
+When more than one event with the same period is detected, collective
+events (min, max, sum) are automatically created to provide aggregate
+info.  These collective events are output in text and html modes, but
+are removed from PROFILE output.
+
+The PROFILE format should be fairly self-explanatory.  Metric counts
+(M) are embedded within a program scope tree, with a program (PGM),
+load modules (LM), files (F), procedures (P), and statements (S).  The
+format supports multiple metrics and thus each metric in the scope
+tree is identified by a short name previously assigned in the header
+information.  Note that unlike the text and html mode, metrics counts
+are not given in terms of *sample* counts but rather as estimated
+*event* counts, i.e., (samples) * (events/sample).
+
+=============================================================================
