@@ -243,7 +243,7 @@ sub HPCToolkitInstall
 	
 	# copy
 	print STDOUT "  $hpctoolkit/$src -> $installdir/$destdir\n";
-	$cmd = $vars . "cp -r $hpctoolkit/$src $installdir/$destdir";
+	$cmd = $vars . "/usr/bin/cp -R $hpctoolkit/$src $installdir/$destdir";
 	if (!$noCopy) {
 	    system($cmd) == 0 
 		or die "*** system '$cmd' failed: $? ***";
@@ -261,11 +261,34 @@ sub HPCToolkitInstall
 sub RemoveCVSDirs
 {
     my($dir) = @_;
+
+    # Sometimes find returns an error but deletes the file. Why???
+    # Consequently, we implement our own find.
+
+    #my $cmd = "find $dir " . '-name CVS -exec /bin/rm -r -f \{\} \;';
+    #if (!$noCopy) {
+    #    system($cmd);
+    #}
     
-    my $cmd = "find $dir " . '-name "CVS" -exec /bin/rm -r -f \{\} \;';
-    if (!$noCopy) {
-	system($cmd) == 0 
-	    or die "*** system '$cmd' failed: $? ***";
+    opendir(CURRENT_DIR, $dir);
+    my (@dir_entries) = grep(!/^\./, readdir(CURRENT_DIR));
+    closedir(CURRENT_DIR);
+
+    for my $dir_entry (@dir_entries) {
+	my $path = "$dir/$dir_entry";
+	#print STDOUT "Examining: $path\n";
+
+	next if (!-d "$path");
+	
+	if ($dir_entry eq "CVS") {
+	    print STDOUT "Deleting: $path\n";
+	    my $cmd = "/bin/rm -r -f $path";
+	    if (!$noCopy) {
+	        system($cmd);
+	    }
+	} else {
+	    RemoveCVSDirs("$path");
+	}
     }
     
     return 0;
