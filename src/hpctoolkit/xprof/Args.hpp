@@ -53,10 +53,12 @@
 //************************* System Include Files ****************************
 
 #include <iostream>
+#include <string>
 
 //*************************** User Include Files ****************************
 
-#include <lib/support/String.h>
+#include <include/general.h>
+#include <lib/support/CmdLineParser.h>
 
 //*************************** Forward Declarations **************************
 
@@ -77,7 +79,7 @@ public:
   
   // Error
   void PrintError(std::ostream& os, const char* msg) const;
-  //void PrintError(std::ostream& os, const std::string& msg) const;
+  void PrintError(std::ostream& os, const std::string& msg) const;
 
   // Dump
   void Dump(std::ostream& os = std::cerr) const;
@@ -85,22 +87,25 @@ public:
 
 public:  
   // Parsed Data: Command
-  String cmd; 
+  const std::string& GetCmd() const { return parser.GetCmd(); }
 
   // Parsed Data: optional arguments
-  String pcMapFile;
-  uint listAvailableMetrics; // 0: no, 1: short, 2: long.  0 is default.
-  String metricList;
-  String excludeMList;
+  unsigned int listAvailableMetrics; // 0: no, 1: short, 2: long. 0 is default
+  std::string metricList;
+  std::string excludeMList;
   bool outputRawMetrics;     // default: false
+  std::string pcMapFile;
 
   // Parsed Data: arguments
-  String progFile; // binary that was profiled
-  String profFile; // profiling output for 'progFile'
+  std::string progFile; // binary that was profiled
+  std::string profFile; // profiling output for 'progFile'
 
 private:
   void Ctor();
-  
+
+private:
+  static CmdLineParser::OptArgDesc optArgs[];
+  CmdLineParser parser;
 }; 
 
 #endif

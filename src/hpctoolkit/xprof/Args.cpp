@@ -49,20 +49,16 @@
 
 //************************* System Include Files ****************************
 
-#include <iostream>
-
-#include <unistd.h> // for 'getopt'
-
 //*************************** User Include Files ****************************
 
 #include "Args.h"
-#include <lib/support/String.h>
 #include <lib/support/Trace.h>
 
 //*************************** Forward Declarations **************************
 
 using std::cerr;
 using std::endl;
+using std::string;
 
 //***************************************************************************
 
@@ -70,13 +66,10 @@ static const char* version_info =
 #include <include/HPCToolkitVersionInfo.h>
 
 static const char* usage_summary1 =
-"[-l | -L] <profile>\n";
+"[options] [<binary>] <profile>\n";
 
 static const char* usage_summary2 =
-"[-V] [ [-M <mlist> -M...] [-X <xlist> -X...] [-R] ] [<binary>] <profile>\n";
-
-static const char* usage_summary3 =
-"Note: -p allows <profile> to be read from stdin.\n";
+"[options] -p [<binary>]\n";
 
 static const char* usage_details =
 "Converts various types of profile output into the PROFILE format, which in\n"
@@ -94,30 +87,33 @@ static const char* usage_details =
 "\n"
 "The following <profile> formats are currently supported: \n"
 "  - DEC/Compaq/HP's DCPI 'dcpicat' (including ProfileMe) \n"
-"\n"
-"General options:\n"
-"  -p       Supply <profile> on stdin.  E.g., it is often desirable to pipe\n"
-"           the output of 'dcpicat' into xprof.\n"
-"  -V       Print version information.\n"
-"  -h       Print this help.\n"
 "\n"    
 "Listing available metrics:\n"
-"  -l       List all derived metrics, in compact form, available from\n"
-"           <profile> and suppress generation of PROFILE output.  Note that\n"
-"           this output can be used with the -M option.\n"
-"  -L       List all derived metrics, in long form, available from <profile>\n"
-"           and suppress generation of PROFILE output.\n"
+"  -l    List all derived metrics, in compact form, available from <profile>\n"
+"        and suppress generation of PROFILE output.  Note that this output\n"
+"        can be used with the -M option.\n"
+"  -L    List all derived metrics, in long form, available from <profile>\n"
+"        and suppress generation of PROFILE output.\n"
 "\n"    
-"Normal Mode:\n"
-"  -M mlist Specify metrics to replace the default metric list.  Metrics in\n"
-"           PROFILE output will follow this ordering. <mlist> is a colon-\n"
-"           separated list; duplicates are allowed (though not recommended).\n"
-"  -X xlist Specify metrics to exclude from the default metric list or from\n"
-"           those specified with -M.  <xlist> is a colon-separated list.\n"
-"  -R       (Most will not find this useful.) For some profile data, such as\n"
-"           DCPI's ProfileMe, the default is to output derived metrics, not\n"
-"           the underlying raw metrics; this option forces output of only\n"
-"           the raw metrics.  Should not be used with -M or -X.\n";
+"Selecting metrics:\n"
+"  -M <list>, --metrics <list>\n"
+"     Replaces the default metric set with the colon-separated <list> and\n"
+"     defined the metric ordering. May be passed multiple times. Duplicates\n"
+"     are allowed (though not recommended).\n"
+"  -X <list>, --exclude-metrics <list>\n"
+"     Exclude metrics in the colon-separated <list> from either the default\n"
+"     metric set or from those specified with -M. May be passed multiple\n"
+"     times.\n"
+"  -R, --raw-metrics\n"
+"     Generate 'raw' metrics, disabling computation of derived metrics.  For\n"
+"     some profile data, such as DCPI's ProfileMe, the default is to output\n"
+"     derived metrics, not the underlying raw metrics.\n"
+"\n"
+"General options:\n"
+"  -p, --pipe     Supply <profile> on stdin.  E.g., it is often desirable to\n"
+"                 pipe the output of 'dcpicat' into xprof.\n"
+"  -V, --version  Print version information.\n"
+"  -h, --help     Print this help.\n";
 
 #if 0  // FIXME '[-m <bloop-pcmap>]'
 "If no <bloop-pcmap> -- a map extended with analysis information\n"
@@ -131,6 +127,32 @@ static const char* usage_details =
 "\n"
 "  -m: specify <bloop-pcmap>\n"
 #endif     
+
+
+#define CLP CmdLineParser
+
+// Note: Changing the option name requires changing the name in Parse()
+CmdLineParser::OptArgDesc Args::optArgs[] = {
+  // List mode
+  { 'l', NULL,       CLP::ARG_NONE, CLP::DUPOPT_CLOB, NULL },
+  { 'L', NULL,       CLP::ARG_NONE, CLP::DUPOPT_CLOB, NULL },
+
+  // Normal mode
+  { 'M', "metrics",         CLP::ARG_REQ , CLP::DUPOPT_CAT,  ":" },
+  { 'X', "exclude-metrics", CLP::ARG_REQ , CLP::DUPOPT_CAT,  ":" },
+  { 'R', "raw-metrics", CLP::ARG_NONE, CLP::DUPOPT_CLOB, NULL },
+  {  0 , "pcmap",       CLP::ARG_REQ , CLP::DUPOPT_ERR,  NULL }, // hidden
+
+  // General options
+  { 'p', "pipe",     CLP::ARG_NONE, CLP::DUPOPT_CLOB, NULL },
+  { 'V', "version",  CLP::ARG_NONE, CLP::DUPOPT_CLOB, NULL },
+  { 'h', "help",     CLP::ARG_NONE, CLP::DUPOPT_CLOB, NULL },
+  {  0 , "debug",    CLP::ARG_OPT,  CLP::DUPOPT_CLOB, NULL }, // hidden
+  CmdLineParser::OptArgDesc_NULL
+};
+
+#undef CLP
+
 
 //***************************************************************************
 // Args
@@ -163,7 +185,7 @@ Args::~Args()
 void 
 Args::PrintVersion(std::ostream& os) const
 {
-  os << cmd << ": " << version_info << endl;
+  os << GetCmd() << ": " << version_info << endl;
 }
 
 
@@ -171,9 +193,8 @@ void
 Args::PrintUsage(std::ostream& os) const
 {
   os << "Usage: " << endl
-     << cmd << " " << usage_summary1
-     << cmd << " " << usage_summary2
-     << "  " << usage_summary3 << endl
+     << GetCmd() << " " << usage_summary1
+     << GetCmd() << " " << usage_summary2 << endl
      << usage_details << endl;
 } 
 
@@ -181,152 +202,120 @@ Args::PrintUsage(std::ostream& os) const
 void 
 Args::PrintError(std::ostream& os, const char* msg) const
 {
-  os << cmd << ": " << msg << endl
-     << "Try `" << cmd << " -h' for more information." << endl;
+  os << GetCmd() << ": " << msg << endl
+     << "Try `" << GetCmd() << " --help' for more information." << endl;
+}
+
+void 
+Args::PrintError(std::ostream& os, const std::string& msg) const
+{
+  PrintError(os, msg.c_str());
 }
 
 
 void
 Args::Parse(int argc, const char* const argv[])
 {
-  // FIXME: eraxxon: drop my new argument parser in here
-  cmd = argv[0]; 
-
-  bool printHelp = false;
-  bool printVersion = false;
-  bool profFileFromStdin = false;
-  
-  // -------------------------------------------------------
-  // Parse the command line
-  // -------------------------------------------------------
-  extern char *optarg;
-  extern int optind;
-  bool error = false;
-  trace = 0;
-  int c;
-  while ((c = getopt(argc, (char**)argv, "Vhm:lLM:X:Rpd")) != EOF) {
-    switch (c) {
-    case 'V': { 
-      printVersion = true;
-      break; 
+  try {
+    
+    // -------------------------------------------------------
+    // Parse the command line
+    // -------------------------------------------------------
+    parser.Parse(optArgs, argc, argv);
+    
+    // -------------------------------------------------------
+    // Sift through results, checking for semantic errors
+    // -------------------------------------------------------
+    
+    // Special options that should be checked first
+    trace = 0;
+    if (parser.IsOpt("debug")) { 
+      trace = 1; 
+      if (parser.IsOptArg("debug")) {
+	const string& arg = parser.GetOptArg("debug");
+	trace = (int)CmdLineParser::ToLong(arg);
+      }
     }
-    case 'h': { 
-      printHelp = true;
-      break; 
+    if (parser.IsOpt("help")) { 
+      PrintUsage(std::cerr); 
+      exit(1);
     }
-
-    case 'm': {
-      // A non-null value of 'pcMapFile' indicates it has been set
-      if (optarg == NULL) { error = true; }
-      pcMapFile = optarg;
-      break; 
+    if (parser.IsOpt("version")) { 
+      PrintVersion(std::cerr);
+      exit(1);
     }
-
-    case 'l': { 
+    
+    // Check for other options: List mode
+    if (parser.IsOpt('l')) { 
       listAvailableMetrics = 1;
-      break; 
-    }
-    case 'L': { 
+    } 
+    if (parser.IsOpt('L')) { 
       listAvailableMetrics = 2;
-      break; 
-    }
+    } 
 
-    case 'M': { // may occur multiple times
-      if (optarg == NULL) { error = true; }
-      if (!metricList.Empty()) { metricList += ":"; }
-      metricList += optarg;
-      break; 
+    // Check for other options: normal mode
+    if (parser.IsOpt("metrics")) { 
+      metricList = parser.GetOptArg("metrics");
     }
-    case 'X': { // may occur multiple times
-      if (optarg == NULL) { error = true; }
-      if (!excludeMList.Empty()) { excludeMList += ":"; }
-      excludeMList += optarg;
-      break; 
+    if (parser.IsOpt("exclude-metrics")) { 
+      excludeMList = parser.GetOptArg("exclude-metrics");
     }
-    case 'R': { 
+    if (parser.IsOpt("raw-metrics")) { 
       outputRawMetrics = true;
-      break; 
+    } 
+    if (parser.IsOpt("pcmap")) { 
+      pcMapFile = parser.GetOptArg("pcmap");
     }
 
-    case 'p': { 
+    // Sanity check: -M,-X and -R should not be used at the same time
+    if ( (!metricList.empty() || !excludeMList.empty()) && outputRawMetrics) {
+      PrintError(std::cerr, "Error: -M or -X cannot be used with -R.\n");
+      exit(1);
+    }
+    
+    // Check for other options: General
+    bool profFileFromStdin = false;
+    if (parser.IsOpt('p')) { 
       profFileFromStdin = true;
-      break; 
-    }
-
-    case 'd': { // debug 
-      trace++; 
-      break; 
-    }
-    case ':':
-    case '?': { // error
-      error = true; 
-      break; 
-    }
-    }
-  }
-
-  // -------------------------------------------------------
-  // Sift through results, checking for semantic errors
-  // -------------------------------------------------------
-  
-  // Special options that should be checked first
-  if (printHelp) {
-    PrintUsage(cerr);
-    exit(1);
-  }
-  
-  if (printVersion) {
-    PrintVersion(cerr);
-    exit(1);
-  }
-  
-  
-  int argsleft = (argc - optind);
-  
-  // If we are to read the profile file from stdin, then there should
-  // be at most one more argument.
-  bool err = false;
-  if (profFileFromStdin) {
-    err = !(argsleft == 0 || argsleft == 1);
-  } else {
-    err = !(argsleft == 1 || argsleft == 2);
-  }
-  error |= err;
-
-  // Sort out the program file and profile file
-  if (!error) {
+    } 
+    
+    // Check for required arguments
+    string errtxt;
+    int argsleft = parser.GetNumArgs();
     if (profFileFromStdin) {
-      if (argsleft == 1) {
-	progFile = argv[optind];
+      switch (argsleft) {
+      case 0: break; // ok
+      case 1: progFile = parser.GetArg(0); break;
+      default: errtxt = "Too many arguments!";
       }
     } else {
-      if (argsleft == 1) {
-	profFile = argv[optind]; 
-      } else {
-	progFile = argv[optind];
-	profFile = argv[optind+1]; 
+      switch (argsleft) {
+      case 1: profFile = parser.GetArg(0); break;
+      case 2: 
+	progFile = parser.GetArg(0); 
+	profFile = parser.GetArg(1); 
+	break;
+      default: errtxt = "Incorrect number of arguments!";
       }
     }
-  } 
-
-  // Sanity check: -M,-X and -R should not be used at the same time
-  if ( (!metricList.Empty() || !excludeMList.Empty()) && outputRawMetrics) {
-    cerr << "Error: -M or -X cannot be used with -R.\n";
-    error = true;
+    
+    if (!errtxt.empty()) {
+      PrintError(std::cerr, errtxt);
+      exit(1);
+    }
+    
   }
-
-  if (error) {
-    PrintError(cerr, "Error parsing command line"); 
-    exit(1); 
+  catch (CmdLineParser::ParseError& e) {
+    PrintError(std::cerr, e.GetMessage());
+    exit(1);
   }
-
 }
 
 
 void 
 Args::Dump(std::ostream& os) const
 {
-  os << "Args.cmd= " << cmd << endl; 
+  os << "Args.cmd= " << GetCmd() << endl; 
   os << "Args.pcMapFile= " << pcMapFile << endl;
   os << "Args.progFile= " << progFile << endl;
   os << "Args.profFile= " << profFile << endl;
