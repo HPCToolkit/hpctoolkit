@@ -1,7 +1,7 @@
-/* -*-Mode: C;-*- */
-/* $Id$ */
+// -*-Mode: C++;-*-
+// $Id$
 
-/****************************************************************************
+//***************************************************************************
 //
 // File: 
 //    $Source$
@@ -17,10 +17,10 @@
 //
 // Author:
 //    Written by John Mellor-Crummey and Nathan Tallent, Rice University.
-//    
-*****************************************************************************/
+//
+//***************************************************************************
 
-/************************** System Include Files ****************************/
+//************************* System Include Files ****************************
 
 #include <stdlib.h>
 #include <unistd.h> /* for getopt(); cf. stdlib.h */
@@ -28,25 +28,24 @@
 #include <string.h>
 #include <errno.h>
 #include <inttypes.h>
-#include <libgen.h> /* for dirname/basename */
 
 #include <sys/types.h> /* for wait() */
 #include <sys/wait.h>  /* for wait() */
 
-/**************************** User Include Files ****************************/
+//*************************** User Include Files ****************************
 
 #include "hpcpapi.h" /* <papi.h>, etc. */
 #include "dlpapi.h"
 #include "hpcrun.h"
+#include <lib/support/findinstall.h>
 
+//*************************** Forward Declarations **************************
 
-/**************************** Forward Declarations **************************/
-
-typedef enum {
+enum event_list_t {
   LIST_NONE  = 0, /* none */
   LIST_SHORT,     /* 'short' */
   LIST_LONG       /* 'long' */
-} event_list_t;
+};
 
 #define eventlistBufSZ PATH_MAX
 
@@ -60,19 +59,16 @@ static const char* opt_debug = NULL;
 static char**      opt_command_argv = NULL; /* command to profile */
 
 /* Options that will be consumed here */
-static int myopt_list_events = LIST_NONE;
+static event_list_t myopt_list_events = LIST_NONE;
 static int myopt_debug = 0;
 
 static void
 args_parse(int argc, char* argv[]);
 
-/**************************** Forward Declarations **************************/
+//*************************** Forward Declarations **************************
 
 static void
 init_papi();
-
-static char*
-hpctoolkit_installation_path(const char* cmd);
 
 static int
 launch_and_profile(const char* installpath, char* argv[]);
@@ -80,11 +76,9 @@ launch_and_profile(const char* installpath, char* argv[]);
 static void 
 list_available_events(event_list_t listType);
 
-/****************************************************************************/
-
-/****************************************************************************
- * 
- ****************************************************************************/
+//***************************************************************************
+//
+//***************************************************************************
 
 int
 main(int argc, char* argv[])
@@ -103,7 +97,9 @@ main(int argc, char* argv[])
   }
   
   // Launch and profile
-  installpath = hpctoolkit_installation_path(argv[0]);
+  if ((installpath = findinstall(argv[0], "hpcrun")) == NULL) {
+    fprintf(stderr, "%s: Cannot locate installation path\n", argv[0]);
+  }
   if ((retval = launch_and_profile(installpath, opt_command_argv)) != 0) {
     return retval; // error already printed
   }
@@ -123,39 +119,9 @@ init_papi()
 }
 
 
-/* FIXME: move to shared location */
-static char*
-hpctoolkit_installation_path(const char* cmd)
-{
-  static char rootdir[PATH_MAX] = "";
-  char *bindir, *rootdir_rel;
-  char *cmd1 = NULL, *bindir_tmp = NULL;
-  
-  cmd1 = strdup(cmd);
-  bindir = dirname(cmd1);
-  if (strcmp(bindir, ".") == 0) {
-    rootdir_rel = "..";
-  } 
-  else {
-    bindir_tmp = strdup(bindir);
-    rootdir_rel = dirname(bindir_tmp);
-  }
-  
-  if (realpath(rootdir_rel, rootdir) == NULL) {
-    fprintf(stderr, "%s: %s\n", cmd, strerror(errno));
-    exit(1);
-  }
-  
-  free(cmd1);
-  free(bindir_tmp);
-  
-  return rootdir;
-}
-
-
-/****************************************************************************
- * Parse options
- ****************************************************************************/
+//***************************************************************************
+// Parse options
+//***************************************************************************
 
 static const char* args_command;
 
@@ -200,8 +166,12 @@ static const char* args_usage_details =
 "  -r  By default all processes spawned by <command> will be profiled, each\n"
 "      receiving its own output file. Use this option to turn off recursive\n"
 "      profiling; only <command> will be profiled.\n"
-"  -t  Create profiles for each thread in a multithreaded process.  Without\n"
-"      this flag, profiling of a multithreaded process will silently die.\n"
+
+"  -t [<mode>]                                                        {each}\n"
+"      Profile threads. (Without this flag, profiling of a multithreaded\n"
+"      process will silently die.) There are two modes:\n"
+"        each: Create separate profiles for each thread.\n"
+"        all:  Create one combined profile of all threads.\n"
 "      NOTE 1: The WALLCLK event cannot be used in a multithreaded process.\n"
 "      NOTE 2: Only POSIX threads are supported.\n"
 "  -e <eventk>[:<periodk>]                              {PAPI_TOT_CYC:32767}\n"
@@ -257,7 +227,10 @@ args_parse(int argc, char* argv[])
 
   // extern char *optarg; -- provided by unistd.h
   // extern int optind; 
-  while ((c = getopt(argc, (char**)argv, "hVd:rte:o:f:lL")) != EOF) {
+
+  // NOTE: This getopt string uses some GNU extensions (::).  
+  // FIXME: CONVERT to use HPCToolkit's option parser.
+  while ((c = getopt(argc, (char**)argv, "hVd:rt::e:o:f:lL")) != EOF) {
     switch (c) {
       
     // Special options that are immediately evaluated
@@ -283,7 +256,21 @@ args_parse(int argc, char* argv[])
       break; 
     }
     case 't': {
-      opt_thread = "1";
+      if (optarg) {
+	if (strcmp(optarg, "each") == 0) {
+	  opt_thread = HPCRUN_THREADPROF_EACH_STR;
+	}
+	else if (strcmp(optarg, "all") == 0) {
+	  opt_thread = HPCRUN_THREADPROF_ALL_STR;
+	}
+	else {
+	  args_print_error(stderr, "Invalid option to -t!");
+	  exit(1);
+	}
+      }
+      else {
+	opt_thread = HPCRUN_THREADPROF_EACH_STR;
+      }
       break; 
     }
     case 'e': {
@@ -304,11 +291,11 @@ args_parse(int argc, char* argv[])
       break; 
     }
     case 'l': {
-      myopt_list_events = 1;
+      myopt_list_events = LIST_SHORT;
       break; 
     }
     case 'L': { 
-      myopt_list_events = 2;
+      myopt_list_events = LIST_LONG;
       break; 
     }
     
@@ -338,7 +325,7 @@ args_parse(int argc, char* argv[])
   if (cmdExists) {
     int i;
     int sz = argc - optind + 1;
-    opt_command_argv = malloc(sz * sizeof(char *));
+    opt_command_argv = (char**)malloc(sz * sizeof(char *));
     for (i = optind; i < argc; ++i) {
       opt_command_argv[i - optind] = strdup(argv[i]);
     }
@@ -372,9 +359,9 @@ args_print_error(FILE* fs, const char* msg)
 }
 
 
-/****************************************************************************
- * Profile
- ****************************************************************************/
+//***************************************************************************
+// Profile
+//***************************************************************************
 
 static int
 check_and_prepare_env_for_profiling(const char* installpath);
@@ -394,7 +381,7 @@ launch_and_profile(const char* installpath, char* argv[])
     // Child process
     const char* cmd = opt_command_argv[0];
     if (execvp(cmd, opt_command_argv) == -1) {
-      fprintf(stderr, "%s: Error exec'ing %s: %s\n", 
+      fprintf(stderr, "%s: Error exec'ing '%s': %s\n", 
 	      args_command, cmd, strerror(errno));
       return 1;
     }
@@ -470,9 +457,9 @@ check_and_prepare_env_for_profiling(const char* installpath)
 }
 
 
-/****************************************************************************
- * List profiling events
- ****************************************************************************/
+//***************************************************************************
+// List profiling events
+//***************************************************************************
 
 /*
  *  List available PAPI and native events.  (Based on PAPI's
