@@ -85,35 +85,35 @@ PredefinedDCPIMetricTable::Entry PredefinedDCPIMetricTable::table[] = {
   // map_stall may be wrong.
 
   // FIXME: Can we cross check with the retire counter for mode 0, 2
-  {"retired_insn", "Retired Instructions (includes mispredicted branches)",
+  {"INSTRUCT", "Retired Instructions (includes mispredicted branches)",
    PM0 | PM1 | PM2 | PM3,
    DCPIMetricExpr(DCPI_MTYPE_PM | DCPI_PM_CNTR_count | DCPI_PM_ATTR_retired_T
 		  | DCPI_PM_ATTR_early_kill_F),
    InsnClassExpr(INSN_CLASS_ALL)
   },
 
-  {"retired_fp_insn", "Retired FP Instructions (includes mispredicted branches)",
+  {"FLOPS", "Retired FP Instructions (includes mispredicted branches)",
    PM0 | PM1 | PM2 | PM3,
    DCPIMetricExpr(DCPI_MTYPE_PM | DCPI_PM_CNTR_count | DCPI_PM_ATTR_retired_T
 		  | DCPI_PM_ATTR_early_kill_F),
    InsnClassExpr(INSN_CLASS_FLOP)
   },
 
-  {"mispredicted_branches", "Mispredicted branches",
+  {"MPBRANCH", "Mispredicted branches",
    PM0 | PM1 | PM2 | PM3,
    DCPIMetricExpr(DCPI_MTYPE_PM | DCPI_PM_CNTR_count 
 		  | DCPI_PM_ATTR_cbrmispredict_T | DCPI_PM_ATTR_early_kill_F),
    InsnClassExpr(INSN_CLASS_ALL) /* bit is only true for branches */
   },
 
-  {"replay_ldst", "Replays caused by load/store ordering. [Untested]",
+  {"LSREPLAY", "Replays caused by load/store ordering. [Untested]",
    PM0 | PM1 | PM2 | PM3,
    DCPIMetricExpr(DCPI_MTYPE_PM | DCPI_PM_CNTR_count 
 		  | DCPI_PM_ATTR_ldstorder_T | DCPI_PM_ATTR_early_kill_F),
    InsnClassExpr(INSN_CLASS_ALL)
   },
 
-  {"trapped_insn", "Instructions causing traps",
+  {"TRAPS", "Instructions causing traps",
    PM0 | PM1 | PM2 | PM3,
    DCPIMetricExpr(DCPI_MTYPE_PM | DCPI_PM_CNTR_count 
 		  | DCPI_PM_ATTR_early_kill_F | DCPI_PM_TRAP_trap),
@@ -134,35 +134,35 @@ PredefinedDCPIMetricTable::Entry PredefinedDCPIMetricTable::table[] = {
   // m3: inflight, replays
 
   // FIXME: these are just the raw counters; how best to combine them?
-  {"pm_inflight", "Inflight cycles (excludes fetch stage) for instructions that retired without trapping.",
+  {"pmINFLT", "Inflight cycles (excludes fetch stage) for instructions that retired without trapping.",
    PM0 | PM1 | PM3,
    DCPIMetricExpr(DCPI_MTYPE_PM | DCPI_PM_CNTR_inflight 
 		  | DCPI_PM_ATTR_early_kill_F),
    InsnClassExpr(INSN_CLASS_ALL)
   },
 
-  {"pm_retdelay", "Delays before retire (excludes all cycles prior to fetch).",
+  {"pmRETDEL", "Delays before retire (excludes all cycles prior to fetch).",
    PM1,
    DCPIMetricExpr(DCPI_MTYPE_PM | DCPI_PM_CNTR_retdelay 
 		  | DCPI_PM_ATTR_early_kill_F),
    InsnClassExpr(INSN_CLASS_ALL)
   },
 
-  {"pm_retires", "Instruction retires.",
+  {"pmRETIRE", "Instruction retires.",
    PM0 | PM2,
    DCPIMetricExpr(DCPI_MTYPE_PM | DCPI_PM_CNTR_retires 
 		  | DCPI_PM_ATTR_early_kill_F),
    InsnClassExpr(INSN_CLASS_ALL)
   },
 
-  {"pm_bcmisses", "B-cache (L2) cache misses.",
+  {"pmBCMISS", "B-cache (L2) cache misses.",
    PM2,
    DCPIMetricExpr(DCPI_MTYPE_PM | DCPI_PM_CNTR_bcmisses 
 		  | DCPI_PM_ATTR_early_kill_F),
    InsnClassExpr(INSN_CLASS_ALL)
   },
 
-  {"pm_replays", "Memory system replay traps.",
+  {"pmREPLAY", "Memory system replay traps.",
    PM3,
    DCPIMetricExpr(DCPI_MTYPE_PM | DCPI_PM_CNTR_replays
 		  | DCPI_PM_ATTR_early_kill_F),
@@ -190,25 +190,25 @@ PredefinedDCPIMetricTable::Entry PredefinedDCPIMetricTable::table[] = {
   // by string matching, these names *must* match those found in
   // dcpicat output (DCPIProfile)
 
-  { "cycles", "Processor cycles",
+  { "CYCLES", "Processor cycles",
     RM,
     DCPIMetricExpr(DCPI_MTYPE_RM | DCPI_RM_cycles),
     InsnClassExpr(INSN_CLASS_ALL)
   },
   
-  { "retires", "Retired instructions",
+  { "RETIRES", "Retired instructions",
     RM,
     DCPIMetricExpr(DCPI_MTYPE_RM | DCPI_RM_retires),
     InsnClassExpr(INSN_CLASS_ALL)
   },
 
-  { "replaytrap", "Mbox replay traps",
+  { "MBREPLAY", "Mbox replay traps",
     RM,
     DCPIMetricExpr(DCPI_MTYPE_RM | DCPI_RM_replaytrap),
     InsnClassExpr(INSN_CLASS_ALL)
   },
 
-  { "bmiss", "Bcache misses or long-latency probes",
+  { "BCMISS", "Bcache misses or long-latency probes",
     RM,
     DCPIMetricExpr(DCPI_MTYPE_RM | DCPI_RM_bmiss),
     InsnClassExpr(INSN_CLASS_ALL)
