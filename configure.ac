@@ -107,7 +107,7 @@ HPC_AC_CHECK_CXX_STDC_HEADERS
 # Checks for library functions.
 # -none thus far-
 
-hpctoolkit_top=`pwd`/${srcdir}
+hpctoolkit_top=`cd ${srcdir} ; pwd`
 HPCTOOLKIT_PLATFORM=`cd ${hpctoolkit_top}/src/config; ./hpcplatform`
 AC_SUBST([HPCTOOLKIT_PLATFORM])
 
