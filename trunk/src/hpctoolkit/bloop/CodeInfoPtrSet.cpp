@@ -52,7 +52,7 @@
 
 #include "CodeInfoPtrSet.h"
 #include "PgmScopeTree.h"
-#include "PgmScopeTreeUtils.h"
+#include "PgmScopeTreeBuilder.h"
 #include <lib/support/Assertion.h>
 
 #include <lib/binutils/BinUtils.h>
