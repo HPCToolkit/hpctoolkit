@@ -77,7 +77,7 @@ STDOUT->autoflush(1);
 my $the_program = $Script;
 my $the_usage = 
 "Usage: 
-  ${the_program} [other-options] -z|x [-I <dir1>...<dirN>] [-S <struct-file1> ...<struct-fileK>] -P <prof1>...<profM>
+  ${the_program} [other-options] -z|x [-I <dir1>...<dirN>] [-S <struct1> ...<structK>] -P <prof1>...<profM>
   
 Given a list of paths to directories containing interesting program source
 code files, an optional list of program structure files created by the 'bloop'
@@ -100,7 +100,7 @@ Standard arguments:
                       directory *and* recursively search all of its
                       descendents, append an escaped '*' after the last slash,
                       e.g., /mypath/\\* (escaping is for the shell).
-  -S <struct-file1>...<struct-fileK>    
+  -S <struct1>...<structK>    
                       An optional space-separated set of structure files from
 		      bloop. These structure files can be for the main program
 		      and/or any or all of the shared libraries used by the
