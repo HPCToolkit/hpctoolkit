@@ -227,6 +227,7 @@ HPC_LIBHPCFILE = $(top_builddir)/src/lib/hpcfile/libHPCfile.a
 # Local settings
 #############################################################################
 MYSCRIPTS = \
+	hpcmissing \
 	dcpicounts \
 	pxmlcat \
 	xprofquick
