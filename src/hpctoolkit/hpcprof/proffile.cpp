@@ -36,14 +36,16 @@
 
 #include "papirun.h"
 #include "proffile.h"
-#include "events.h"
 #include "io.h"
 
 //*************************** Forward Declarations **************************
 
+//#define PROFREADER_TEST
+
 using namespace std;
 
-//#define PROFREADER_TEST
+static int read_string(FILE *fp, std::string& str);
+
 
 //***************************************************************************
 
@@ -145,24 +147,13 @@ int
 ProfFileLM::read(FILE *fp)
 {
   size_t sz;
-  int c;
-    
-  // Load module name and load offset.  Note: the load module string name is
-  // not null terminated.
-  uint32_t namelen;   // module name length
   
-  sz = hpc_fread_le4(&namelen, fp);
-  if (sz != sizeof(namelen)) { return 1; }
-  
-  name_.resize(namelen);
-  for (unsigned int n = 0; n < namelen; ++n) { 
-    if ((c = fgetc(fp)) == EOF) { return 1; }
-    name_[n] = (char)c;
-  } 
+  // Load module name and load offset.
+  if (read_string(fp, name_) != 0) { return 1; }
 #ifdef DEBUG
   cerr << name_ << " "; 
 #endif
-
+  
   sz = hpc_fread_le8(&load_addr_, fp);
   if (sz != sizeof(load_addr_)) { return 1; }
 #ifdef DEBUG
@@ -199,7 +190,6 @@ ProfFileLM::dump(std::ostream& o, const char* pre) const
 
 ProfFileEvent::ProfFileEvent()
 {
-  event_ = 0;
 }
 
 ProfFileEvent::~ProfFileEvent()
@@ -210,14 +200,10 @@ int
 ProfFileEvent::read(FILE *fp, uint64_t load_addr)
 {
   size_t sz;
-    
-  // Profiling event and period
-  int eventcode = -1;
   
-  sz = hpc_fread_le4((uint32_t*)&eventcode, fp);
-  if (sz != sizeof(eventcode)) { return 1; }
-  
-  event_ = papirun_event_by_code(eventcode);
+  // Profiling event name, description and period
+  if (read_string(fp, name_) != 0) { return 1; }
+  if (read_string(fp, desc_) != 0) { return 1; }
   
   sz = hpc_fread_le8(&period_, fp);
   if (sz != sizeof(period_)) { return 1; }
@@ -271,6 +257,27 @@ ProfFileEvent::dump(std::ostream& o, const char* pre) const
     o << p1 << "{ 0x" << hex << dat.first << ": " << dec
       << dat.second << " }" << endl;
   }
+}
+
+//***************************************************************************
+
+static int
+read_string(FILE *fp, std::string& str)
+{
+  size_t sz;
+  uint32_t len; // string length  
+  int c;
+
+  // Note: the string is not null terminated.
+  sz = hpc_fread_le4(&len, fp);
+  if (sz != sizeof(len)) { return 1; }
+  
+  str.resize(len);
+  for (unsigned int n = 0; n < len; ++n) { 
+    if ((c = fgetc(fp)) == EOF) { return 1; }
+    str[n] = (char)c;
+  } 
+  return 0;
 }
 
 //***************************************************************************

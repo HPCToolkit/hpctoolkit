@@ -88,9 +88,10 @@ stringcat(const string& s, T n)
 ///////////////////////////////////////////////////////////////////////
 // Event
 
-Event::Event(const papi_event_t *e, unsigned int period)
+Event::Event(const char* name, const char* desc, unsigned int period)
 {
-  e_ = e;
+  name_ = name;
+  description_ = desc;
   period_ = period;
 }
 
@@ -98,22 +99,16 @@ Event::~Event()
 {
 }
 
-unsigned int
-Event::event_code() const
-{
-  return e_->code;
-}
-
 const char *
 Event::name() const
 {
-  return e_->name;
+  return name_.c_str();
 }
 
 const char *
 Event::description() const
 {
-  return e_->description;
+  return description_.c_str();
 }
 
 unsigned int
@@ -125,12 +120,12 @@ Event::period() const
 ///////////////////////////////////////////////////////////////////////
 // CollectiveEvent
 
-CollectiveEvent::CollectiveEvent(const Event *e, Op op)
-  : Event(e->papi_event(), e->period())
+CollectiveEvent::CollectiveEvent(const Event* e, Op op)
+  : Event(e->name(), e->description(), e->period())
 {
   op_ = op;
-  name_ = e_->name;
-  description_ = e_->description;
+  name_ = Event::name_;
+  description_ = Event::description_;
   switch(op) {
   case Sum:
       name_.append(" (sum)");
@@ -287,8 +282,7 @@ Summary::ctor_init()
 
 Summary::~Summary()
 {
-  for (vector<Event*>::iterator i = event_.begin(); i != event_.end();
-       ++i) {
+  for (vector<Event*>::iterator i = event_.begin(); i != event_.end(); ++i) {
       delete *i;
     }
 }
@@ -322,6 +316,10 @@ Summary::init(const string& pgm, const vector<string>& prof_fnames)
 bool
 Summary::init(const string& pgm, const vector<ProfFile>& profs)
 { 
+  // FIXME: For what we want to do, the order in which vprof creates a
+  // summary is annoying.  For now, to avoid a rewrite, I have hacked
+  // and added comments.
+  
   pgm_name_ = pgm; // FIXME: make sure we can find the main program (?)
   
   // 1a. Sanity check file modification times
@@ -355,7 +353,8 @@ Summary::init(const string& pgm, const vector<ProfFile>& profs)
       for (unsigned int k = 0; k < proflm.num_events(); ++k, ++ev_i) {
 	  const ProfFileEvent& profevent = proflm.event(k);
 	  string name = stringcat(profevent.name(), profevent.period());
-	  event2locs_map_[name].set_offset(ev_i, profevent.event(),
+	  event2locs_map_[name].set_offset(ev_i, profevent.name(),
+					         /*profevent.event()*/
 					   n_collective_);
         }
     }
@@ -365,7 +364,7 @@ Summary::init(const string& pgm, const vector<ProfFile>& profs)
        i != event2locs_map_.end(); ++i) {
       (*i).second.inc_offset(n_event_);
     }
-
+  
   n_event_ += n_collective_; // simple + aggegate events
   
   // 2. Set vector sizes and initialize vectors
@@ -517,7 +516,8 @@ Summary::process_lm(const ProfFileLM& proflm, int ev_i_start)
       // Create event
       const ProfFileEvent& profevent = proflm.event(l);
       if (event_[ev_i] == NULL) {
-	  event_[ev_i] = new Event(profevent.event(), profevent.period());
+	  event_[ev_i] = new Event(profevent.name(), profevent.description(),
+				   profevent.period());
         }
       outofrange_[ev_i] += profevent.outofrange();
       overflow_[ev_i] += profevent.overflow();
