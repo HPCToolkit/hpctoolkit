@@ -1,0 +1,91 @@
+#!/bin/sh
+
+# $Id$
+
+# A sample SH script for collecting multiple profile metrics on an
+# SGI Origin.  This script illustrates how to measure graduated loads
+# and stores using ssrun.
+#
+# Usage notes:
+#   - Set the HPCPATH, HPCAPPL, and HPCARGS variables either here or in 
+#     the environment. 
+#   - We assume that there are NO old ssrun output files in the
+#     directory.  This is because ssrun output files have the process
+#     number as the suffix of the file name and these cannot be predicted
+#     ahead of time.  Hence the wildcards in the file names.
+#   - 'hpcview_cfg-sgi.xml' is the corresponding hpcview configuration
+#     file.
+#
+# After each ssrun data file is generated, it is piped through prof
+# and then ptran.  If the program invoked by ssrun command parallel
+# (multiple processes/threads), prof will combine the data for all of
+# the processes (threads) into a single file. 
+
+#############################################################################
+
+#HPCPATH="The path to the application"
+#HPCAPPL="The application name"
+#HPCARGS="Arguments to the application"
+
+# Replace me or define in calling environment
+HPCPATH="."
+#HPCAPPL="hydro.mips-IRIX64.f77-64-O3"
+#HPCARGS=""
+
+if [ -z "${HPCAPPL}" ] ; then
+  echo "Please set HPCAPPL"
+  exit 1
+fi
+
+HPCRUN="${HPCPATH}/${HPCAPPL} ${HPCARGS}"
+
+#############################################################################
+
+# cycles
+ssrun -fcy_hwc ${HPCRUN}
+prof -lines ${HPCAPPL}.fcy_hwc.m* | ptran >fcy_hwc.pxml
+
+# flop
+ssrun -gfp_hwc ${HPCRUN}
+prof -lines ${HPCAPPL}.gfp_hwc.m* | ptran >gfp_hwc.pxml
+
+# l1miss
+ssrun -fdc_hwc ${HPCRUN}
+prof -lines ${HPCAPPL}.fdc_hwc.m* | ptran >fdc_hwc.pxml
+
+# l2miss
+ssrun -fdsc_hwc ${HPCRUN}
+prof -lines ${HPCAPPL}.fdsc_hwc.m* | ptran >fdsc_hwc.pxml
+
+# tlb miss
+ssrun -tlb_hwc ${HPCRUN}
+prof -lines ${HPCAPPL}.tlb_hwc.m* | ptran >tlb_hwc.pxml
+
+
+# Loads
+_SPEEDSHOP_HWC_COUNTER_NUMBER="18"
+_SPEEDSHOP_HWC_COUNTER_OVERFLOW="1023"
+export _SPEEDSHOP_HWC_COUNTER_NUMBER
+export _SPEEDSHOP_HWC_COUNTER_OVERFLOW
+
+ssrun  -prof_hwc ${HPCRUN}
+prof -lines ${HPCAPPL}.prof_hwc* | ptran >gl_hwc.pxml
+
+for f in `ls ${HPCAPPL}.prof_hwc*` ; do
+  mv $f `echo $f | sed 's/prof/gl/'`
+done
+
+
+# Stores
+_SPEEDSHOP_HWC_COUNTER_NUMBER="19"
+_SPEEDSHOP_HWC_COUNTER_OVERFLOW="1023"
+export _SPEEDSHOP_HWC_COUNTER_NUMBER
+export _SPEEDSHOP_HWC_COUNTER_OVERFLOW
+
+ssrun  -prof_hwc ${HPCRUN}
+prof -lines ${HPCAPPL}.prof_hwc* | ptran > gs_hwc.pxml
+
+for f in `ls ${HPCAPPL}.prof_hwc* ` ; do
+  mv $f `echo $f | sed 's/prof/gs/'`
+done
+
