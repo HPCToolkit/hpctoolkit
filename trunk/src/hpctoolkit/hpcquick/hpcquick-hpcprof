@@ -149,7 +149,8 @@ my %metric = (
 
 my $pxmlExt        = '.pxml';
 my $ssrunOutputRE = '(.*)\.(\w+)\.([fm]\d+)';
-my $papirunOutputRE = '(.*)\.(.*)\.(.*)\.(\d+)';
+#my $papirunOutputRE = '(.*)\.(.*)\.(.*)\.(\d+)';
+my $papirunOutputRE = '(.*)\.(PAPI_[^\.]*)\.(.*)';
 #  my $titleOpt      = '-title';
 ## my $configFileOpt = '-config';
 ## my $dumpOpt       = '-n';
@@ -159,6 +160,8 @@ my $verOpt          = '-V';
 my $incOpt          = '-I';
 my $profOptRE       = '^-P(=(\w+))?';
 my $structOpt       = '-S';
+my $noOutOpt        = '-n'; 
+my $suppressOutput  = 0;
 
 my $argc = $#ARGV;
 my $configFile = "hpcquick.xml";
@@ -238,6 +241,9 @@ while ($i <= $argc) {
 	  }
       }
       $i--;
+  } 
+  elsif ($ARGV[$i] eq $noOutOpt) {
+     $suppressOutput = 1;
   }
   # process profile files.
   elsif ($ARGV[$i] =~  /$profOptRE/
@@ -527,6 +533,7 @@ sub createOutputFiles {
 	# figure the file name for the transformed profile file
 	$fileName = $metric->{files}[0];
 	$fileName =~ s/$papirunOutputRE/$1.$exp$pxmlExt/;
+	$fileName = $basename . "." . $exp . $pxmlExt;
 	
 	# print out the display name
 	print {$outFileHandle} "\" displayName=\"";
@@ -540,7 +547,7 @@ sub createOutputFiles {
         print STDOUT "Processing performance data file: \n";
 
 	# generate the temporary ascii profile file
-	$command = "papiprof -p " . $basename . " "; 
+	$command = "hpcprof -p " . $basename . " "; 
 	foreach $file (@{$metric->{files}}) {
 	    $command .= $file . " ";
 	}
@@ -554,7 +561,8 @@ sub createOutputFiles {
 	
 	# print out the file name
 	print {$outFileHandle} "<FILE name=\"";
-	print {$outFileHandle} doEscape($fileName);
+	#print {$outFileHandle} doEscape($fileName);
+	print {$outFileHandle} $fileName;
 	print {$outFileHandle} "\"/>\n";
 
 	# print out the end tag for METRIC element
@@ -567,13 +575,20 @@ sub createOutputFiles {
 
     $outFileHandle->close();
 
-    # run hpcview
-    print STDOUT "Running hpcview to create a browsable database\n";
-    system("hpcview -x hpcquick $out");
+
+
+# ------------------------------------------------------
+# Run hpcview
+# ------------------------------------------------------
+    if (!($suppressOutput)) {
+      print STDOUT "Running hpcview to create browsable database...\n";
+      system("hpcview -x hpcquick $out");
+    } else {
+      print STDOUT "Sending command to create browsable database to log...\n";
+    }
     print {$logFileHandle}  "hpcview -x hpcquick $out\n";
 
     $logFileHandle->close();
-
 }
     
 
@@ -593,7 +608,7 @@ $quot = '&quot;';
 $quoteMark = "\"";
 
 sub doEscape {
-    my ($content) = @_;
+    my $content = shift;
     $content =~ s/$ampersand/$amp/g;
     $content =~ s/$quoteMark/$quot/g;
     $content =~ s/$leftAngleBracket/$lt/g;
