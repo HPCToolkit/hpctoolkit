@@ -349,13 +349,13 @@ MetricNamesAreUnique(PCProfileMetricSet& mset)
 static DCPIProfile::PMMode
 DeterminePMMode(const char* pmcounter)
 {
-  if (strncmp("m0", pmcounter, 2)) {
+  if (strncmp("m0", pmcounter, 2) == 0) {
     return DCPIProfile::PM0;
-  } else if (strncmp("m1", pmcounter, 2)) {
+  } else if (strncmp("m1", pmcounter, 2) == 0) {
     return DCPIProfile::PM1;
-  } else if (strncmp("m2", pmcounter, 2)) {
+  } else if (strncmp("m2", pmcounter, 2) == 0) {
     return DCPIProfile::PM2;
-  } else if (strncmp("m3", pmcounter, 2)) {
+  } else if (strncmp("m3", pmcounter, 2) == 0) {
     return DCPIProfile::PM3;
   }
   return DCPIProfile::PM_NONE;
