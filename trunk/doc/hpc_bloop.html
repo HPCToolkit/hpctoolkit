@@ -25,7 +25,7 @@
 
 <div id="main">
 
-<p class="lastupdated">Last Updated 31 Jan 2003</p>
+<p class="lastupdated">Last Updated 12 Mar 2004</p>
 
 <h2>User Commands: bloop(1)</h2>
 
@@ -36,13 +36,9 @@
 <div class="indent">
 
 <p><span class="hpctool">bloop</span> 
-   [-V] [-n] [-p <i>pathlist</i>] [-c]
-   <i>binary</i> &gt; <i>output.psxml</i>
+   [options] <i>binary</i> &gt; <i>output.psxml</i>
 
-<p><span class="hpctool">bloop</span> 
-   -D <i>binary</i> &gt; <i>output.psxml</i>
-
-<p>Location: <code>${HPCTOOLKIT}/bin/${HPCTOOLKIT_PLATFORM}</code>
+<p>Location: <code>${HPCTOOLKIT}/bin</code>
 
 </div> <!-- class=indent -->
 
@@ -53,19 +49,21 @@
 <div class="indent">
 
 <p><span class="hpctool">bloop</span> analyzes the application 
-binary <i>binary</i> and
-writes a description of the loop nesting structure
-to standard output.  The output file is an XML document of type 
-<a href="dtd_pgm.html" class="hpctool">PGM</a>. The program structure
-file can be passed to <a href="hpcview.html" class="hpctool">hpcview</a>
-to allow it to aggregate performance metrics at each level of the loop
-hierarchy and to map the loops to the program source code. The 
+binary <i>binary</i>, recovers information about its source-line 
+loop-nesting structure and generates an XML scope tree to standard 
+output.  It uses debugging information to gather source-line
+data; see NOTES below for common problems.</p>
+
+<p>The output file is an XML document of type 
+<a href="dtd_pgm.html" class="hpctool">PGM</a> which can be passed 
+to <a href="hpcview.html" class="hpctool">hpcview</a>
+in order to enable it to aggregate performance metrics at each level of
+the loop hierarchy and to map the loops to the program source code. The 
 <a href="hpcquick.html" class="hpctool">hpcquick</a> script will also
 take <span class="hpctool">bloop</span> output.</p>
 
 <p><span class="hpctool">bloop</span> analyzes C, C++ and Fortran binaries
-from a number of different platforms, relying on debugging information
-to collect source line information.  See usage notes below.</p>
+from a number of different platforms.  See NOTES below.</p>
 
 </div> <!-- class=indent -->
 
@@ -75,16 +73,29 @@ to collect source line information.  See usage notes below.</p>
 
 <div class="indent">
 
-<p>In typical usage, <span class="hpctool">bloop</span> is used
+<p>Typically <span class="hpctool">bloop</span> is used
 with no arguments other than <i>binary</i> and its standard output
 is redirected to the file <i>output.psxml</i>.</p>
 
 <dl>
 
-<dt>-V
-<dd>Print version information.
+<dt><i>binary</i>
+<dd>This is the executable binary for your application.  If there are
+libraries that you want profiled and from which you want to extract
+the structure, you have to link those libraries statically with your
+application.
 
-<dt>-n
+</dl>
+
+
+<h4>Options</h4>
+
+<dl>
+
+<dt>-v, --verbose
+<dd>Verbose: generate progress messages to stderr.
+
+<dt>-n, --normalize-off
 <dd>Turn off scope tree normalization.  <span class="hpctool">bloop</span>
 uses a normalization heuristic that collapses the object-code loop
 structure into one in which each source statement appears in at most
@@ -96,10 +107,14 @@ the unnormalized output to get an idea of how the compiler has
 transformed your loops.  Some day there will be both instrumentation
 and a user interface that will be able to use the unnormalized form.
 
-<dt>-p <i>pathlist</i>
-<dd>If <code>-p</code> is used, <span class="hpctool">bloop</span> 
-ensures that the scope tree only contains those files found in the
-colon separated <i>pathlist</i>.
+<dt>-c, --compact
+<dd>Compact output.  Normally, the output is formatted with
+indentation to make it more readable.  This option suppresses this extra
+white space.  The result is very compact, but practically unreadable.
+
+<dt>-p <i>list</i>, --canonical-paths <i>list</i>
+<dd>Ensure that the scope tree only contains those files found in the
+colon separated <i>list</i>.  May be passed multiple times.
 
 <br><br>
 
@@ -112,25 +127,18 @@ path list.  This allows the user to focus on performance issues in the
 application, rather than looking at the details of a large library
 with which it is linked and for which source code is not available.
 
-<dt>-c
-<dd>Compact output.  Normally, the output is formatted with
-indentation to make it more readable.  Using <code>-c</code>
-suppresses this extra white space.  The result is very compact, but
-practically unreadable, output.
+<dt>-V, --version
+<dd>Print version information.
 
-<dt>-D
-<dd>Debug mode.  When this option is used, 
-<span class="hpctool">bloop</span> prints an
+<dt>-h, --help
+<dd>Print help.
+
+<dt>-D, --dump-binary
+<dd>Dump binary information and suppress loop recovery.  When this option 
+is used, <span class="hpctool">bloop</span> prints an
 unprocessed list of sections in <i>binary</i>, the procedures in each
 section, and a basic decoded list of instructions in each procedure.
-This option is not intended for general use, though you may find it
-interesting if you are faced with lots of extra time.
-
-<dt><i>binary</i>
-<dd>This is the executable binary for your application.  If there are
-libraries that you want profiled and from which you want to extract
-the structure, you have to link those libraries statically with your
-application.
+This option is not intended for general use, though it can be interesting.
 
 </dl>
 
@@ -162,6 +170,27 @@ output in the file <code>sweep3dsingle.psxml</code>, execute:</p>
 
 <div class="indent">
 
+<p><span class="hpctool">bloop</span> is dependent upon <i>accurate</i>
+debugging information to facilitate source-line loop recovery.  This 
+implies that <span class="hpctool">bloop</span> cannot fix inaccurate
+debugging information generated by optimizing compilers.  It also means
+that <i>binary</i> should be compiled with as much debugging information
+as possible.  Finally, the debugging information must be in the binary, 
+not object files.  Here is a list of compilers and options that one should
+use:</p>
+
+<ul>
+  <li>GNU Compilers and Intel Compilers: <code>-g</code>
+  <li>Compaq Compilers and SGI MIPSpro Compilers: <code>-g3</code>
+  <li>Sun Compilers: <code>-g -xs</code>
+</ul>
+
+<p><span class="hpctool">bloop</span> does <i>not</i> currently
+load and analyze any dynamically linked libraries that may be used
+by <i>binary</i>.  To include such libraries in a 
+<span class="hpctool">bloop</span> analysis, you will need to relink
+your program with static versions of the libraries.</p>
+
 <p><span class="hpctool">bloop</span> is a `cross-tool' and thus
 supports the analysis of different types of target binaries on one
 platform.  (GNU's binutils must also be configured to support these
@@ -175,26 +204,6 @@ compilers:</p>
   <li>mips-IRIX64: GCC 2.9x, 3.x, SGI MIPSpro Compilers 7.x
   <li>sparc-SunOS: GCC 2.9x, 3.x, Sun WorkShop/Forte/ONE 6u2
 </ul>
-
-<p><span class="hpctool">bloop</span> is dependent upon debugging
-information to report source line information.  In order to facilitate
-accurate source file loop recovery, each binary to be analyzed should
-be compiled with as much debugging information as possible.  Moreover
-the debugging information must be in the binary, not object files.
-E.g.</p>
-
-<ul>
-  <li>GNU Compilers and Intel Compilers: <code>-g</code>
-  <li>Compaq Compilers and SGI MIPSpro Compilers: <code>-g3</code>
-  <li>Sun Compilers: <code>-g -xs</code>
-</ul>
-
-<p><span class="hpctool">bloop</span> does <i>not</i> currently
-load and analyze any dynamically
-linked libraries that may be used by the binary it is analyzing.  To
-include such libraries in a <span class="hpctool">bloop</span> analysis,
-you will need to relink your program with static versions of the 
-libraries.</p>
 
 </div> <!-- class=indent -->
 
