@@ -242,7 +242,7 @@ static void ProcessELEMENT(DOMNode *node, Driver &driver)
       throw HPCViewDocException(error); 
     } 
     else {
-      driver.SetPGMFileName(pgmFileName);
+      driver.AddStructureFile(pgmFileName);
     }
   } else {
     String error = "Unexpected ELEMENT type encountered: '" +

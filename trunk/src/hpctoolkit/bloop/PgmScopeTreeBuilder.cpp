@@ -101,7 +101,7 @@ static int
 BuildFromBB(CodeInfo* enclosingScope, Procedure* p, CFG::Node* bb);
 
 static FileScope*
-FindOrCreateFileNode(PgmScope* pgmScopeTree, Procedure* p);
+FindOrCreateFileNode(LoadModScope* lmScope, Procedure* p);
 
 //*************************** Forward Declarations ***************************
 
@@ -263,8 +263,10 @@ ScopeTreeBuilder::BuildFromExe(/*Executable*/ LoadModule* exe,
   }
 
   // Assume exe->Read() has been performed
-  pgmScope = new PgmScope(exe->GetName());
+  pgmScope = new PgmScope();
   pgmScopeTree = new PgmScopeTree(pgmScope);
+
+  LoadModScope *lmScope = new LoadModScope(exe->GetName(),pgmScope);
   
   // -----------------------------------------------------------------
   // For each procedure, find the existing corresponding FileScope or
@@ -281,7 +283,7 @@ ScopeTreeBuilder::BuildFromExe(/*Executable*/ LoadModule* exe,
     for (TextSectionProcedureIterator it1(*tsec); it1.IsValid(); ++it1) {
       Procedure* p = it1.Current();
       
-      FileScope* fileScope = FindOrCreateFileNode(pgmScope, p);
+      FileScope* fileScope = FindOrCreateFileNode(lmScope, p);
       if (verboseMode){
         cerr << "Building scope tree for [" << p->GetName()  << "] ... ";
       }
@@ -583,7 +585,7 @@ BuildFromBB(CodeInfo* enclosingScope, Procedure* p, CFG::Node* bb)
 
 // FindOrCreateFileNode: 
 static FileScope* 
-FindOrCreateFileNode(PgmScope* pgmScopeTree, Procedure* p)
+FindOrCreateFileNode(LoadModScope* lmScope, Procedure* p)
 {
   String func, file;
   suint startLn, endLn;
@@ -591,10 +593,10 @@ FindOrCreateFileNode(PgmScope* pgmScopeTree, Procedure* p)
 		       startLn, endLn); // FIXME: use only startAddr
 
   if (file.Empty()) { file = OrphanedProcedureFile; }
-  FileScope* fileScope = pgmScopeTree->FindFile(file);
+  FileScope* fileScope = lmScope->FindFile(file);
   if (fileScope == NULL) {
     bool fileIsReadable = FileIsReadable(file);
-    fileScope = new FileScope(file, fileIsReadable, pgmScopeTree);
+    fileScope = new FileScope(file, fileIsReadable, lmScope);
   }
   return fileScope; // guaranteed to be a valid pointer
 } 
@@ -715,17 +717,22 @@ RemoveOrphanedProcedureRepository(PgmScopeTree* pgmScopeTree)
   PgmScope* pgmScope = pgmScopeTree->GetRoot();
   if (!pgmScope) { return changed; }
 
-  // For each immediate child of this node...
-  for (ScopeInfoChildIterator it(pgmScope); it.Current(); /* */) {
-    BriefAssertion(((ScopeInfo*)it.Current())->Type() == ScopeInfo::FILE);
-    FileScope* file = dynamic_cast<FileScope*>(it.Current()); // always true
-    it++; // advance iterator -- it is pointing at 'file'
-    
-    if (strcmp(file->Name(), OrphanedProcedureFile) == 0) {
-      file->Unlink(); // unlink 'file' from tree
-      delete file;
-      changed = true;
-    }
+  for (ScopeInfoChildIterator lmit(pgmScope); lmit.Current(); lmit++) {
+    BriefAssertion(((ScopeInfo*)lmit.Current())->Type() == ScopeInfo::LM);
+    LoadModScope* lm = dynamic_cast<LoadModScope*>(lmit.Current()); // always true
+
+    // For each immediate child of this node...
+    for (ScopeInfoChildIterator it(lm); it.Current(); /* */) {
+      BriefAssertion(((ScopeInfo*)it.Current())->Type() == ScopeInfo::FILE);
+      FileScope* file = dynamic_cast<FileScope*>(it.Current()); // always true
+      it++; // advance iterator -- it is pointing at 'file'
+      
+      if (strcmp(file->Name(), OrphanedProcedureFile) == 0) {
+        file->Unlink(); // unlink 'file' from tree
+        delete file;
+        changed = true;
+      }
+    } 
   } 
   
   return changed;
@@ -785,16 +792,21 @@ CoalesceDuplicateStmts(PgmScopeTree* pgmScopeTree)
   LineToStmtMap stmtMap;      // line to statement data map
   ScopeInfoSet visitedScopes; // all children of a scope have been visited
 
+  for (ScopeInfoChildIterator lmit(pgmScope); lmit.Current(); lmit++) {
+    BriefAssertion(((ScopeInfo*)lmit.Current())->Type() == ScopeInfo::LM);
+    LoadModScope* lm = dynamic_cast<LoadModScope*>(lmit.Current()); // always true
+
   // We apply the normalization routine to each FileScope so that 1)
   // we are guaranteed to only process CodeInfos and 2) we can assume
   // that all line numbers encountered are within the same file
   // (keeping the LineToStmtMap simple and fast).
-  for (ScopeInfoChildIterator it(pgmScope); it.Current(); ++it) {
+  for (ScopeInfoChildIterator it(lm); it.Current(); ++it) {
     BriefAssertion(((ScopeInfo*)it.Current())->Type() == ScopeInfo::FILE);
     FileScope* file = dynamic_cast<FileScope*>(it.Current()); // always true
     
     changed |= CoalesceDuplicateStmts(file, &stmtMap, &visitedScopes, 1);
   } 
+  }
 
   return changed;
 }

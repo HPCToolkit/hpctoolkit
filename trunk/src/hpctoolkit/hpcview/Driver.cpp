@@ -62,7 +62,6 @@ using std::endl;
 Driver::Driver(int deleteUnderscores, bool _cpySrcFiles)
   : Unique("Driver") 
 {
-  pgmFileName = "";
   path = ".";
   deleteTrailingUnderscores = deleteUnderscores;
   cpySrcFiles = _cpySrcFiles;
@@ -162,6 +161,8 @@ Driver::MakePerfData(ScopesInfo &scopes)
   // if a PGM document has been provided, use it to 
   // initialize the structure of the scope tree
   //-------------------------------------------------------
+ for (unsigned int i = 0; i < structureFiles.size(); i++) {
+  String pgmFileName = GetStructureFile(i);
   if (pgmFileName != "") {
     String filePath = String(pathfind(".", pgmFileName, "r")); 
     if (filePath.Length() > 0) {
@@ -195,6 +196,7 @@ Driver::MakePerfData(ScopesInfo &scopes)
 	   << pgmFileName << "'." << endl;
       exit(1);
     }
+  }
   }
 
   //-------------------------------------------------------
