@@ -26,7 +26,7 @@
 <div id="main">
 
 <!-- automatically updated by Emacs hook below; nicer than CVS Date -->
-<p class="lastupdated">Last Updated: 2004-10-26</p>
+<p class="lastupdated">Last Updated: 2004-10-28</p>
 
 <a name="toc"></a>
 <h2>Building and Installing HPCToolkit</h2>
@@ -41,7 +41,6 @@
     <li><a href="#build_xlib_xercesc">External Library: Xerces-C++</a>
     <li><a href="#build_xlib_oa">External Library: OpenAnalysis</a>
     <li><a href="#build_hpctoolkit">HPCToolkit</a>
-    <li><a href="#build_hpcviewer">hpcviewer</a>
   </ul>
 
   <li><a href="#build_troubleshooting">Build Troubleshooting</a>
@@ -68,17 +67,6 @@
 GNU binutils -- that must be built before HPCToolkit can be built,
 installed and used.  Please use the same C++ compiler for each
 component.</p>
-
-<p>HPCToolkit's hpcviewer tool is in a separate directory and built
-separately. We often download, compile, and run hpcviewer on laptops
-or desktops rather than the system on which we collect performance
-measurements.  We briefly describe how to build hpcviewer here,
-regardless of where you want to build it.</p>
-
-<p>In some cases it may be possible to use versions of the external
-libraries that may already be installed on your system.  However, we
-do not support such configurations.</p>
-
 
 <!-- ********************************************************************** -->
 
@@ -280,39 +268,6 @@ want to redirect it to a file.  For example:
 Because the installation is compact and self-contained, you may rename
 or move it to another location.  All source code may be removed.
 
-
-<!-- ********************************************************************** -->
-
-<a name="build_hpcviewer"></a>
-
-<h2>External tool: hpcviewer</h2>
-<p><i>[<a href="#toc">Contents</a>]</i>
-
-
-<h3>Notes</h3>
-
-<p>These instructions are for Unix systems or for Cygwin-Windows.
-
-<h3>Building</h3>
-
-<ol class="noindent">
-
-<li>
-<p>Change to the top-level hpcviewer directory <code>hpcviewer</code>.
-
-<li>
-<p>Change to the build directory <code>build-unix</code> and initiate
-the build with make.
-
-<div class="indent">
-  <code>cd build-unix</code><br>
-  <code>make</code><br>
-</div>
-
-</ol>
-
-<p>See <a href="#use_hpcviewer">Using hpcviewer</a> for instructions
-on using the toolkit.
 
 <!-- ********************************************************************** -->
 
