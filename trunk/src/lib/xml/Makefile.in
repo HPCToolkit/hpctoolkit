@@ -74,6 +74,7 @@
 
 # Assumes includer sets MYCXXFLAGS and MYCFLAGS
 
+
 SOURCES = $(libHPCxml_a_SOURCES)
 
 srcdir = @srcdir@
@@ -97,8 +98,8 @@ NORMAL_UNINSTALL = :
 PRE_UNINSTALL = :
 POST_UNINSTALL = :
 host_triplet = @host@
-DIST_COMMON = $(srcdir)/Makefile.am $(srcdir)/Makefile.in \
-	$(top_srcdir)/src/Makeinclude.config \
+DIST_COMMON = $(noinst_HEADERS) $(srcdir)/Makefile.am \
+	$(srcdir)/Makefile.in $(top_srcdir)/src/Makeinclude.config \
 	$(top_srcdir)/src/Makeinclude.rules
 subdir = src/lib/xml
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
@@ -137,6 +138,7 @@ LINK = $(LIBTOOL) --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
 	$(AM_LDFLAGS) $(LDFLAGS) -o $@
 SOURCES = $(libHPCxml_a_SOURCES)
 DIST_SOURCES = $(libHPCxml_a_SOURCES)
+HEADERS = $(noinst_HEADERS)
 ETAGS = etags
 CTAGS = ctags
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
@@ -303,6 +305,11 @@ HPC_LIBHPCFILE = $(top_builddir)/src/lib/hpcfile/libHPCfile.a
 MYSOURCES = \
 	xml.h xml.C
 
+MYDTDHEADERS = \
+	$(srcdir)/PROFILE.dtd.h \
+	$(srcdir)/CSPROFILE.dtd.h \
+	$(srcdir)/PGM.dtd.h
+
 MYCFLAGS = @HOST_CFLAGS@   $(HPC_IFLAGS) 
 MYCXXFLAGS = @HOST_CXXFLAGS@ $(HPC_IFLAGS) 
 @IS_HOST_AR_FALSE@MYAR = $(AR) cru
@@ -313,6 +320,7 @@ MYCLEAN = @HOST_LIBTREPOSITORY@
 #############################################################################
 # Automake rules
 #############################################################################
+noinst_HEADERS = $(MYDTDHEADERS)
 noinst_LIBRARIES = libHPCxml.a
 libHPCxml_a_SOURCES = $(MYSOURCES)
 libHPCxml_a_CFLAGS = $(MYCFLAGS)
@@ -511,7 +519,7 @@ distdir: $(DISTFILES)
 	done
 check-am: all-am
 check: check-am
-all-am: Makefile $(LIBRARIES)
+all-am: Makefile $(LIBRARIES) $(HEADERS)
 installdirs:
 install: install-am
 install-exec: install-exec-am
@@ -603,6 +611,15 @@ uninstall-am: uninstall-info-am
 
 
 #############################################################################
+
+#############################################################################
+# Other rules
+#############################################################################
+
+# Regenerate DTD headers if DTDs have changed.
+
+$(srcdir)/%.dtd.h : $(HPCTOOLKIT)/lib/dtd/%.dtd
+	$(srcdir)/makedtdstring $<  > $@
 
 %.C.pp : %.C
 	$(CXXCPP) $(MYCPPFLAGS_CXX) $< > $@
