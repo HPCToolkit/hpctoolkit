@@ -388,20 +388,21 @@ hpcrun_fork()
   pid_t pid;
 
   if (opt_debug >= 1) { 
-    fprintf(stderr, "** forking (process %d)\n", getpid()); 
+    fprintf(stderr, "==> forking (process %d) <==\n", getpid()); 
   }
   
   pid = (*real_fork)();
-  if (pid == 0) { /* child */
+  if (pid == 0) { 
+    /* Initialize profiling for child process */
     if (opt_debug >= 1) { 
-      fprintf(stderr, "** caught fork (process %d)\n", getpid()); 
+      fprintf(stderr, "==> caught fork (process %d) <==\n", getpid()); 
     }
     if (hpc_init_papi_force() != 0) {
-      fprintf(stderr, "** PAPI library initialization failed after fork (process %d)\n", getpid());
-      exit(-1);
+      exit(1); /* error already printed */
     }
     init_process();
-  }
+  } 
+  /* Nothing to do for parent process */
   
   return pid;
 }
@@ -914,7 +915,7 @@ init_papi_for_process()
 
   /* Initialize papi */
   if (hpc_init_papi() != 0) {
-    exit(-1);
+    exit(1); /* error already printed */
   }
 
   /* set PAPI debug */
