@@ -80,7 +80,7 @@ endif
 #    _IEEE: for NaN stuff
 
 USER_C_IFLAGS =
-USER_C_LDFLAGS = -lpthread -lmld
+USER_C_LDFLAGS = -lmld
 
 #    mld: DEC demangle
 
