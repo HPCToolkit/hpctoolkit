@@ -119,11 +119,11 @@ am__objects_1 = xcsprof-main.$(OBJEXT) xcsprof-Args.$(OBJEXT) \
 am_xcsprof_OBJECTS = $(am__objects_1)
 xcsprof_OBJECTS = $(am_xcsprof_OBJECTS)
 am__DEPENDENCIES_1 =  \
-	$(top_builddir)/src/lib/binutils/libHPCbinutils.a
-am__DEPENDENCIES_2 = $(top_builddir)/src/lib/ISA/libHPCisa.a
-am__DEPENDENCIES_3 = $(top_builddir)/src/lib/xml/libHPCxml.a
-am__DEPENDENCIES_4 = $(top_builddir)/src/lib/support/libHPCsupport.a
-am__DEPENDENCIES_5 = $(top_builddir)/src/lib/hpcfile/libHPCfile.a
+	$(top_builddir)/src/lib/binutils/libHPCbinutils.la
+am__DEPENDENCIES_2 = $(top_builddir)/src/lib/ISA/libHPCisa.la
+am__DEPENDENCIES_3 = $(top_builddir)/src/lib/xml/libHPCxml.la
+am__DEPENDENCIES_4 = $(top_builddir)/src/lib/support/libHPCsupport.la
+am__DEPENDENCIES_5 = $(top_builddir)/src/lib/hpcfile/libHPCfile.la
 am__DEPENDENCIES_6 = $(am__DEPENDENCIES_1) $(am__DEPENDENCIES_2) \
 	$(am__DEPENDENCIES_3) $(am__DEPENDENCIES_4) \
 	$(am__DEPENDENCIES_5)
@@ -306,11 +306,11 @@ HPC_IFLAGS = -I$(HPCTOOLKIT)/src
 #   HPC_LIBXML      : HPC_LIBSUPPORT
 #   HPC_LIBSUPPORT  :
 #   HPC_LIBHPCFILE  :
-HPC_LIBBINUTILS = $(top_builddir)/src/lib/binutils/libHPCbinutils.a
-HPC_LIBISA = $(top_builddir)/src/lib/ISA/libHPCisa.a
-HPC_LIBXML = $(top_builddir)/src/lib/xml/libHPCxml.a
-HPC_LIBSUPPORT = $(top_builddir)/src/lib/support/libHPCsupport.a
-HPC_LIBHPCFILE = $(top_builddir)/src/lib/hpcfile/libHPCfile.a
+HPC_LIBBINUTILS = $(top_builddir)/src/lib/binutils/libHPCbinutils.la
+HPC_LIBISA = $(top_builddir)/src/lib/ISA/libHPCisa.la
+HPC_LIBXML = $(top_builddir)/src/lib/xml/libHPCxml.la
+HPC_LIBSUPPORT = $(top_builddir)/src/lib/support/libHPCsupport.la
+HPC_LIBHPCFILE = $(top_builddir)/src/lib/hpcfile/libHPCfile.la
 
 #############################################################################
 # Common settings

@@ -15,7 +15,7 @@
 @SET_MAKE@
 
 # -*-Mode: makefile;-*-
-# $Header: /Volumes/cvsrep/developer/HPCToolkit/src/hpctoolkit/hpcview/Makefile.am,v 1.2 2004/09/30 20:56:19 eraxxon Exp $
+# $Header: /Volumes/cvsrep/developer/HPCToolkit/src/hpctoolkit/hpcview/Makefile.am,v 1.3 2004/11/03 03:11:22 eraxxon Exp $
 
 #############################################################################
 #
@@ -135,7 +135,7 @@ am__objects_1 = hpcview_bin-main.$(OBJEXT) hpcview_bin-Args.$(OBJEXT) \
 	hpcview_bin-StaticFiles.$(OBJEXT)
 am_hpcview_bin_OBJECTS = $(am__objects_1)
 hpcview_bin_OBJECTS = $(am_hpcview_bin_OBJECTS)
-am__DEPENDENCIES_1 = $(top_builddir)/src/lib/support/libHPCsupport.a
+am__DEPENDENCIES_1 = $(top_builddir)/src/lib/support/libHPCsupport.la
 am__DEPENDENCIES_2 = $(am__DEPENDENCIES_1)
 hpcview_bin_DEPENDENCIES = $(am__DEPENDENCIES_2)
 binSCRIPT_INSTALL = $(INSTALL_SCRIPT)
@@ -333,11 +333,11 @@ HPC_IFLAGS = -I$(HPCTOOLKIT)/src
 #   HPC_LIBXML      : HPC_LIBSUPPORT
 #   HPC_LIBSUPPORT  :
 #   HPC_LIBHPCFILE  :
-HPC_LIBBINUTILS = $(top_builddir)/src/lib/binutils/libHPCbinutils.a
-HPC_LIBISA = $(top_builddir)/src/lib/ISA/libHPCisa.a
-HPC_LIBXML = $(top_builddir)/src/lib/xml/libHPCxml.a
-HPC_LIBSUPPORT = $(top_builddir)/src/lib/support/libHPCsupport.a
-HPC_LIBHPCFILE = $(top_builddir)/src/lib/hpcfile/libHPCfile.a
+HPC_LIBBINUTILS = $(top_builddir)/src/lib/binutils/libHPCbinutils.la
+HPC_LIBISA = $(top_builddir)/src/lib/ISA/libHPCisa.la
+HPC_LIBXML = $(top_builddir)/src/lib/xml/libHPCxml.la
+HPC_LIBSUPPORT = $(top_builddir)/src/lib/support/libHPCsupport.la
+HPC_LIBHPCFILE = $(top_builddir)/src/lib/hpcfile/libHPCfile.la
 
 #############################################################################
 # Common settings

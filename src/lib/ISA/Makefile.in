@@ -74,7 +74,7 @@
 
 # Assumes includer sets MYCXXFLAGS and MYCFLAGS
 
-SOURCES = $(libHPCisa_a_SOURCES)
+SOURCES = $(libHPCisa_la_SOURCES)
 
 srcdir = @srcdir@
 top_srcdir = @top_srcdir@
@@ -108,25 +108,23 @@ am__configure_deps = $(am__aclocal_m4_deps) $(CONFIGURE_DEPENDENCIES) \
 	$(ACLOCAL_M4)
 mkinstalldirs = $(SHELL) $(top_srcdir)/config/mkinstalldirs
 CONFIG_CLEAN_FILES =
-LIBRARIES = $(noinst_LIBRARIES)
-ARFLAGS = cru
+LTLIBRARIES = $(noinst_LTLIBRARIES)
 am__DEPENDENCIES_1 =
-libHPCisa_a_DEPENDENCIES = $(am__DEPENDENCIES_1)
-am__objects_1 = libHPCisa_a-AlphaISA.$(OBJEXT) \
-	libHPCisa_a-IA64ISA.$(OBJEXT) libHPCisa_a-ISA.$(OBJEXT) \
-	libHPCisa_a-MipsISA.$(OBJEXT) libHPCisa_a-SparcISA.$(OBJEXT) \
-	libHPCisa_a-i686ISA.$(OBJEXT)
-am_libHPCisa_a_OBJECTS = $(am__objects_1)
-libHPCisa_a_OBJECTS = $(am_libHPCisa_a_OBJECTS)
+libHPCisa_la_DEPENDENCIES = $(am__DEPENDENCIES_1)
+am__objects_1 = libHPCisa_la-AlphaISA.lo libHPCisa_la-IA64ISA.lo \
+	libHPCisa_la-ISA.lo libHPCisa_la-MipsISA.lo \
+	libHPCisa_la-SparcISA.lo libHPCisa_la-i686ISA.lo
+am_libHPCisa_la_OBJECTS = $(am__objects_1)
+libHPCisa_la_OBJECTS = $(am_libHPCisa_la_OBJECTS)
 DEFAULT_INCLUDES = -I. -I$(srcdir)
 depcomp = $(SHELL) $(top_srcdir)/config/depcomp
 am__depfiles_maybe = depfiles
-@AMDEP_TRUE@DEP_FILES = ./$(DEPDIR)/libHPCisa_a-AlphaISA.Po \
-@AMDEP_TRUE@	./$(DEPDIR)/libHPCisa_a-IA64ISA.Po \
-@AMDEP_TRUE@	./$(DEPDIR)/libHPCisa_a-ISA.Po \
-@AMDEP_TRUE@	./$(DEPDIR)/libHPCisa_a-MipsISA.Po \
-@AMDEP_TRUE@	./$(DEPDIR)/libHPCisa_a-SparcISA.Po \
-@AMDEP_TRUE@	./$(DEPDIR)/libHPCisa_a-i686ISA.Po
+@AMDEP_TRUE@DEP_FILES = ./$(DEPDIR)/libHPCisa_la-AlphaISA.Plo \
+@AMDEP_TRUE@	./$(DEPDIR)/libHPCisa_la-IA64ISA.Plo \
+@AMDEP_TRUE@	./$(DEPDIR)/libHPCisa_la-ISA.Plo \
+@AMDEP_TRUE@	./$(DEPDIR)/libHPCisa_la-MipsISA.Plo \
+@AMDEP_TRUE@	./$(DEPDIR)/libHPCisa_la-SparcISA.Plo \
+@AMDEP_TRUE@	./$(DEPDIR)/libHPCisa_la-i686ISA.Plo
 CXXCOMPILE = $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) \
 	$(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS)
 LTCXXCOMPILE = $(LIBTOOL) --mode=compile $(CXX) $(DEFS) \
@@ -143,8 +141,8 @@ LTCOMPILE = $(LIBTOOL) --mode=compile $(CC) $(DEFS) \
 CCLD = $(CC)
 LINK = $(LIBTOOL) --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
 	$(AM_LDFLAGS) $(LDFLAGS) -o $@
-SOURCES = $(libHPCisa_a_SOURCES)
-DIST_SOURCES = $(libHPCisa_a_SOURCES)
+SOURCES = $(libHPCisa_la_SOURCES)
+DIST_SOURCES = $(libHPCisa_la_SOURCES)
 ETAGS = etags
 CTAGS = ctags
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
@@ -296,11 +294,11 @@ HPC_IFLAGS = -I$(HPCTOOLKIT)/src
 #   HPC_LIBXML      : HPC_LIBSUPPORT
 #   HPC_LIBSUPPORT  :
 #   HPC_LIBHPCFILE  :
-HPC_LIBBINUTILS = $(top_builddir)/src/lib/binutils/libHPCbinutils.a
-HPC_LIBISA = $(top_builddir)/src/lib/ISA/libHPCisa.a
-HPC_LIBXML = $(top_builddir)/src/lib/xml/libHPCxml.a
-HPC_LIBSUPPORT = $(top_builddir)/src/lib/support/libHPCsupport.a
-HPC_LIBHPCFILE = $(top_builddir)/src/lib/hpcfile/libHPCfile.a
+HPC_LIBBINUTILS = $(top_builddir)/src/lib/binutils/libHPCbinutils.la
+HPC_LIBISA = $(top_builddir)/src/lib/ISA/libHPCisa.la
+HPC_LIBXML = $(top_builddir)/src/lib/xml/libHPCxml.la
+HPC_LIBSUPPORT = $(top_builddir)/src/lib/support/libHPCsupport.la
+HPC_LIBHPCFILE = $(top_builddir)/src/lib/hpcfile/libHPCfile.la
 
 #############################################################################
 # Common settings
@@ -330,12 +328,12 @@ MYCLEAN = @HOST_LIBTREPOSITORY@
 #############################################################################
 # Automake rules
 #############################################################################
-noinst_LIBRARIES = libHPCisa.a
-libHPCisa_a_SOURCES = $(MYSOURCES)
-libHPCisa_a_CFLAGS = $(MYCFLAGS)
-libHPCisa_a_CXXFLAGS = $(MYCXXFLAGS)
-libHPCisa_a_AR = $(MYAR)
-libHPCisa_a_LIBADD = $(MYLIBADD)
+noinst_LTLIBRARIES = libHPCisa.la
+libHPCisa_la_SOURCES = $(MYSOURCES)
+libHPCisa_la_CFLAGS = $(MYCFLAGS)
+libHPCisa_la_CXXFLAGS = $(MYCXXFLAGS)
+libHPCisa_la_AR = $(MYAR)
+libHPCisa_la_LIBADD = $(MYLIBADD)
 MOSTLYCLEANFILES = $(MYCLEAN)
 MYCPPFLAGS_CXX = $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) \
 	$(MYCXXFLAGS)
@@ -377,12 +375,16 @@ $(top_srcdir)/configure:  $(am__configure_deps)
 $(ACLOCAL_M4):  $(am__aclocal_m4_deps)
 	cd $(top_builddir) && $(MAKE) $(AM_MAKEFLAGS) am--refresh
 
-clean-noinstLIBRARIES:
-	-test -z "$(noinst_LIBRARIES)" || rm -f $(noinst_LIBRARIES)
-libHPCisa.a: $(libHPCisa_a_OBJECTS) $(libHPCisa_a_DEPENDENCIES) 
-	-rm -f libHPCisa.a
-	$(libHPCisa_a_AR) libHPCisa.a $(libHPCisa_a_OBJECTS) $(libHPCisa_a_LIBADD)
-	$(RANLIB) libHPCisa.a
+clean-noinstLTLIBRARIES:
+	-test -z "$(noinst_LTLIBRARIES)" || rm -f $(noinst_LTLIBRARIES)
+	@list='$(noinst_LTLIBRARIES)'; for p in $$list; do \
+	  dir="`echo $$p | sed -e 's|/[^/]*$$||'`"; \
+	  test "$$dir" != "$$p" || dir=.; \
+	  echo "rm -f \"$${dir}/so_locations\""; \
+	  rm -f "$${dir}/so_locations"; \
+	done
+libHPCisa.la: $(libHPCisa_la_OBJECTS) $(libHPCisa_la_DEPENDENCIES) 
+	$(CXXLINK)  $(libHPCisa_la_LDFLAGS) $(libHPCisa_la_OBJECTS) $(libHPCisa_la_LIBADD) $(LIBS)
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
@@ -390,12 +392,12 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCisa_a-AlphaISA.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCisa_a-IA64ISA.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCisa_a-ISA.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCisa_a-MipsISA.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCisa_a-SparcISA.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCisa_a-i686ISA.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCisa_la-AlphaISA.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCisa_la-IA64ISA.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCisa_la-ISA.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCisa_la-MipsISA.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCisa_la-SparcISA.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCisa_la-i686ISA.Plo@am__quote@
 
 .C.o:
 @am__fastdepCXX_TRUE@	if $(CXXCOMPILE) -MT $@ -MD -MP -MF "$(DEPDIR)/$*.Tpo" -c -o $@ $<; \
@@ -421,149 +423,149 @@ distclean-compile:
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(LTCXXCOMPILE) -c -o $@ $<
 
-libHPCisa_a-AlphaISA.o: AlphaISA.C
-@am__fastdepCXX_TRUE@	if $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCisa_a_CXXFLAGS) $(CXXFLAGS) -MT libHPCisa_a-AlphaISA.o -MD -MP -MF "$(DEPDIR)/libHPCisa_a-AlphaISA.Tpo" -c -o libHPCisa_a-AlphaISA.o `test -f 'AlphaISA.C' || echo '$(srcdir)/'`AlphaISA.C; \
-@am__fastdepCXX_TRUE@	then mv -f "$(DEPDIR)/libHPCisa_a-AlphaISA.Tpo" "$(DEPDIR)/libHPCisa_a-AlphaISA.Po"; else rm -f "$(DEPDIR)/libHPCisa_a-AlphaISA.Tpo"; exit 1; fi
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='AlphaISA.C' object='libHPCisa_a-AlphaISA.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	depfile='$(DEPDIR)/libHPCisa_a-AlphaISA.Po' tmpdepfile='$(DEPDIR)/libHPCisa_a-AlphaISA.TPo' @AMDEPBACKSLASH@
+libHPCisa_la-AlphaISA.o: AlphaISA.C
+@am__fastdepCXX_TRUE@	if $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCisa_la_CXXFLAGS) $(CXXFLAGS) -MT libHPCisa_la-AlphaISA.o -MD -MP -MF "$(DEPDIR)/libHPCisa_la-AlphaISA.Tpo" -c -o libHPCisa_la-AlphaISA.o `test -f 'AlphaISA.C' || echo '$(srcdir)/'`AlphaISA.C; \
+@am__fastdepCXX_TRUE@	then mv -f "$(DEPDIR)/libHPCisa_la-AlphaISA.Tpo" "$(DEPDIR)/libHPCisa_la-AlphaISA.Po"; else rm -f "$(DEPDIR)/libHPCisa_la-AlphaISA.Tpo"; exit 1; fi
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='AlphaISA.C' object='libHPCisa_la-AlphaISA.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	depfile='$(DEPDIR)/libHPCisa_la-AlphaISA.Po' tmpdepfile='$(DEPDIR)/libHPCisa_la-AlphaISA.TPo' @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCisa_a_CXXFLAGS) $(CXXFLAGS) -c -o libHPCisa_a-AlphaISA.o `test -f 'AlphaISA.C' || echo '$(srcdir)/'`AlphaISA.C
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCisa_la_CXXFLAGS) $(CXXFLAGS) -c -o libHPCisa_la-AlphaISA.o `test -f 'AlphaISA.C' || echo '$(srcdir)/'`AlphaISA.C
 
-libHPCisa_a-AlphaISA.obj: AlphaISA.C
-@am__fastdepCXX_TRUE@	if $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCisa_a_CXXFLAGS) $(CXXFLAGS) -MT libHPCisa_a-AlphaISA.obj -MD -MP -MF "$(DEPDIR)/libHPCisa_a-AlphaISA.Tpo" -c -o libHPCisa_a-AlphaISA.obj `if test -f 'AlphaISA.C'; then $(CYGPATH_W) 'AlphaISA.C'; else $(CYGPATH_W) '$(srcdir)/AlphaISA.C'; fi`; \
-@am__fastdepCXX_TRUE@	then mv -f "$(DEPDIR)/libHPCisa_a-AlphaISA.Tpo" "$(DEPDIR)/libHPCisa_a-AlphaISA.Po"; else rm -f "$(DEPDIR)/libHPCisa_a-AlphaISA.Tpo"; exit 1; fi
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='AlphaISA.C' object='libHPCisa_a-AlphaISA.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	depfile='$(DEPDIR)/libHPCisa_a-AlphaISA.Po' tmpdepfile='$(DEPDIR)/libHPCisa_a-AlphaISA.TPo' @AMDEPBACKSLASH@
+libHPCisa_la-AlphaISA.obj: AlphaISA.C
+@am__fastdepCXX_TRUE@	if $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCisa_la_CXXFLAGS) $(CXXFLAGS) -MT libHPCisa_la-AlphaISA.obj -MD -MP -MF "$(DEPDIR)/libHPCisa_la-AlphaISA.Tpo" -c -o libHPCisa_la-AlphaISA.obj `if test -f 'AlphaISA.C'; then $(CYGPATH_W) 'AlphaISA.C'; else $(CYGPATH_W) '$(srcdir)/AlphaISA.C'; fi`; \
+@am__fastdepCXX_TRUE@	then mv -f "$(DEPDIR)/libHPCisa_la-AlphaISA.Tpo" "$(DEPDIR)/libHPCisa_la-AlphaISA.Po"; else rm -f "$(DEPDIR)/libHPCisa_la-AlphaISA.Tpo"; exit 1; fi
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='AlphaISA.C' object='libHPCisa_la-AlphaISA.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	depfile='$(DEPDIR)/libHPCisa_la-AlphaISA.Po' tmpdepfile='$(DEPDIR)/libHPCisa_la-AlphaISA.TPo' @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCisa_a_CXXFLAGS) $(CXXFLAGS) -c -o libHPCisa_a-AlphaISA.obj `if test -f 'AlphaISA.C'; then $(CYGPATH_W) 'AlphaISA.C'; else $(CYGPATH_W) '$(srcdir)/AlphaISA.C'; fi`
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCisa_la_CXXFLAGS) $(CXXFLAGS) -c -o libHPCisa_la-AlphaISA.obj `if test -f 'AlphaISA.C'; then $(CYGPATH_W) 'AlphaISA.C'; else $(CYGPATH_W) '$(srcdir)/AlphaISA.C'; fi`
 
-libHPCisa_a-AlphaISA.lo: AlphaISA.C
-@am__fastdepCXX_TRUE@	if $(LIBTOOL) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCisa_a_CXXFLAGS) $(CXXFLAGS) -MT libHPCisa_a-AlphaISA.lo -MD -MP -MF "$(DEPDIR)/libHPCisa_a-AlphaISA.Tpo" -c -o libHPCisa_a-AlphaISA.lo `test -f 'AlphaISA.C' || echo '$(srcdir)/'`AlphaISA.C; \
-@am__fastdepCXX_TRUE@	then mv -f "$(DEPDIR)/libHPCisa_a-AlphaISA.Tpo" "$(DEPDIR)/libHPCisa_a-AlphaISA.Plo"; else rm -f "$(DEPDIR)/libHPCisa_a-AlphaISA.Tpo"; exit 1; fi
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='AlphaISA.C' object='libHPCisa_a-AlphaISA.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	depfile='$(DEPDIR)/libHPCisa_a-AlphaISA.Plo' tmpdepfile='$(DEPDIR)/libHPCisa_a-AlphaISA.TPlo' @AMDEPBACKSLASH@
+libHPCisa_la-AlphaISA.lo: AlphaISA.C
+@am__fastdepCXX_TRUE@	if $(LIBTOOL) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCisa_la_CXXFLAGS) $(CXXFLAGS) -MT libHPCisa_la-AlphaISA.lo -MD -MP -MF "$(DEPDIR)/libHPCisa_la-AlphaISA.Tpo" -c -o libHPCisa_la-AlphaISA.lo `test -f 'AlphaISA.C' || echo '$(srcdir)/'`AlphaISA.C; \
+@am__fastdepCXX_TRUE@	then mv -f "$(DEPDIR)/libHPCisa_la-AlphaISA.Tpo" "$(DEPDIR)/libHPCisa_la-AlphaISA.Plo"; else rm -f "$(DEPDIR)/libHPCisa_la-AlphaISA.Tpo"; exit 1; fi
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='AlphaISA.C' object='libHPCisa_la-AlphaISA.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	depfile='$(DEPDIR)/libHPCisa_la-AlphaISA.Plo' tmpdepfile='$(DEPDIR)/libHPCisa_la-AlphaISA.TPlo' @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(LIBTOOL) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCisa_a_CXXFLAGS) $(CXXFLAGS) -c -o libHPCisa_a-AlphaISA.lo `test -f 'AlphaISA.C' || echo '$(srcdir)/'`AlphaISA.C
+@am__fastdepCXX_FALSE@	$(LIBTOOL) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCisa_la_CXXFLAGS) $(CXXFLAGS) -c -o libHPCisa_la-AlphaISA.lo `test -f 'AlphaISA.C' || echo '$(srcdir)/'`AlphaISA.C
 
-libHPCisa_a-IA64ISA.o: IA64ISA.C
-@am__fastdepCXX_TRUE@	if $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCisa_a_CXXFLAGS) $(CXXFLAGS) -MT libHPCisa_a-IA64ISA.o -MD -MP -MF "$(DEPDIR)/libHPCisa_a-IA64ISA.Tpo" -c -o libHPCisa_a-IA64ISA.o `test -f 'IA64ISA.C' || echo '$(srcdir)/'`IA64ISA.C; \
-@am__fastdepCXX_TRUE@	then mv -f "$(DEPDIR)/libHPCisa_a-IA64ISA.Tpo" "$(DEPDIR)/libHPCisa_a-IA64ISA.Po"; else rm -f "$(DEPDIR)/libHPCisa_a-IA64ISA.Tpo"; exit 1; fi
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='IA64ISA.C' object='libHPCisa_a-IA64ISA.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	depfile='$(DEPDIR)/libHPCisa_a-IA64ISA.Po' tmpdepfile='$(DEPDIR)/libHPCisa_a-IA64ISA.TPo' @AMDEPBACKSLASH@
+libHPCisa_la-IA64ISA.o: IA64ISA.C
+@am__fastdepCXX_TRUE@	if $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCisa_la_CXXFLAGS) $(CXXFLAGS) -MT libHPCisa_la-IA64ISA.o -MD -MP -MF "$(DEPDIR)/libHPCisa_la-IA64ISA.Tpo" -c -o libHPCisa_la-IA64ISA.o `test -f 'IA64ISA.C' || echo '$(srcdir)/'`IA64ISA.C; \
+@am__fastdepCXX_TRUE@	then mv -f "$(DEPDIR)/libHPCisa_la-IA64ISA.Tpo" "$(DEPDIR)/libHPCisa_la-IA64ISA.Po"; else rm -f "$(DEPDIR)/libHPCisa_la-IA64ISA.Tpo"; exit 1; fi
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='IA64ISA.C' object='libHPCisa_la-IA64ISA.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	depfile='$(DEPDIR)/libHPCisa_la-IA64ISA.Po' tmpdepfile='$(DEPDIR)/libHPCisa_la-IA64ISA.TPo' @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCisa_a_CXXFLAGS) $(CXXFLAGS) -c -o libHPCisa_a-IA64ISA.o `test -f 'IA64ISA.C' || echo '$(srcdir)/'`IA64ISA.C
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCisa_la_CXXFLAGS) $(CXXFLAGS) -c -o libHPCisa_la-IA64ISA.o `test -f 'IA64ISA.C' || echo '$(srcdir)/'`IA64ISA.C
 
-libHPCisa_a-IA64ISA.obj: IA64ISA.C
-@am__fastdepCXX_TRUE@	if $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCisa_a_CXXFLAGS) $(CXXFLAGS) -MT libHPCisa_a-IA64ISA.obj -MD -MP -MF "$(DEPDIR)/libHPCisa_a-IA64ISA.Tpo" -c -o libHPCisa_a-IA64ISA.obj `if test -f 'IA64ISA.C'; then $(CYGPATH_W) 'IA64ISA.C'; else $(CYGPATH_W) '$(srcdir)/IA64ISA.C'; fi`; \
-@am__fastdepCXX_TRUE@	then mv -f "$(DEPDIR)/libHPCisa_a-IA64ISA.Tpo" "$(DEPDIR)/libHPCisa_a-IA64ISA.Po"; else rm -f "$(DEPDIR)/libHPCisa_a-IA64ISA.Tpo"; exit 1; fi
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='IA64ISA.C' object='libHPCisa_a-IA64ISA.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	depfile='$(DEPDIR)/libHPCisa_a-IA64ISA.Po' tmpdepfile='$(DEPDIR)/libHPCisa_a-IA64ISA.TPo' @AMDEPBACKSLASH@
+libHPCisa_la-IA64ISA.obj: IA64ISA.C
+@am__fastdepCXX_TRUE@	if $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCisa_la_CXXFLAGS) $(CXXFLAGS) -MT libHPCisa_la-IA64ISA.obj -MD -MP -MF "$(DEPDIR)/libHPCisa_la-IA64ISA.Tpo" -c -o libHPCisa_la-IA64ISA.obj `if test -f 'IA64ISA.C'; then $(CYGPATH_W) 'IA64ISA.C'; else $(CYGPATH_W) '$(srcdir)/IA64ISA.C'; fi`; \
+@am__fastdepCXX_TRUE@	then mv -f "$(DEPDIR)/libHPCisa_la-IA64ISA.Tpo" "$(DEPDIR)/libHPCisa_la-IA64ISA.Po"; else rm -f "$(DEPDIR)/libHPCisa_la-IA64ISA.Tpo"; exit 1; fi
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='IA64ISA.C' object='libHPCisa_la-IA64ISA.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	depfile='$(DEPDIR)/libHPCisa_la-IA64ISA.Po' tmpdepfile='$(DEPDIR)/libHPCisa_la-IA64ISA.TPo' @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCisa_a_CXXFLAGS) $(CXXFLAGS) -c -o libHPCisa_a-IA64ISA.obj `if test -f 'IA64ISA.C'; then $(CYGPATH_W) 'IA64ISA.C'; else $(CYGPATH_W) '$(srcdir)/IA64ISA.C'; fi`
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCisa_la_CXXFLAGS) $(CXXFLAGS) -c -o libHPCisa_la-IA64ISA.obj `if test -f 'IA64ISA.C'; then $(CYGPATH_W) 'IA64ISA.C'; else $(CYGPATH_W) '$(srcdir)/IA64ISA.C'; fi`
 
-libHPCisa_a-IA64ISA.lo: IA64ISA.C
-@am__fastdepCXX_TRUE@	if $(LIBTOOL) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCisa_a_CXXFLAGS) $(CXXFLAGS) -MT libHPCisa_a-IA64ISA.lo -MD -MP -MF "$(DEPDIR)/libHPCisa_a-IA64ISA.Tpo" -c -o libHPCisa_a-IA64ISA.lo `test -f 'IA64ISA.C' || echo '$(srcdir)/'`IA64ISA.C; \
-@am__fastdepCXX_TRUE@	then mv -f "$(DEPDIR)/libHPCisa_a-IA64ISA.Tpo" "$(DEPDIR)/libHPCisa_a-IA64ISA.Plo"; else rm -f "$(DEPDIR)/libHPCisa_a-IA64ISA.Tpo"; exit 1; fi
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='IA64ISA.C' object='libHPCisa_a-IA64ISA.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	depfile='$(DEPDIR)/libHPCisa_a-IA64ISA.Plo' tmpdepfile='$(DEPDIR)/libHPCisa_a-IA64ISA.TPlo' @AMDEPBACKSLASH@
+libHPCisa_la-IA64ISA.lo: IA64ISA.C
+@am__fastdepCXX_TRUE@	if $(LIBTOOL) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCisa_la_CXXFLAGS) $(CXXFLAGS) -MT libHPCisa_la-IA64ISA.lo -MD -MP -MF "$(DEPDIR)/libHPCisa_la-IA64ISA.Tpo" -c -o libHPCisa_la-IA64ISA.lo `test -f 'IA64ISA.C' || echo '$(srcdir)/'`IA64ISA.C; \
+@am__fastdepCXX_TRUE@	then mv -f "$(DEPDIR)/libHPCisa_la-IA64ISA.Tpo" "$(DEPDIR)/libHPCisa_la-IA64ISA.Plo"; else rm -f "$(DEPDIR)/libHPCisa_la-IA64ISA.Tpo"; exit 1; fi
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='IA64ISA.C' object='libHPCisa_la-IA64ISA.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	depfile='$(DEPDIR)/libHPCisa_la-IA64ISA.Plo' tmpdepfile='$(DEPDIR)/libHPCisa_la-IA64ISA.TPlo' @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(LIBTOOL) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCisa_a_CXXFLAGS) $(CXXFLAGS) -c -o libHPCisa_a-IA64ISA.lo `test -f 'IA64ISA.C' || echo '$(srcdir)/'`IA64ISA.C
+@am__fastdepCXX_FALSE@	$(LIBTOOL) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCisa_la_CXXFLAGS) $(CXXFLAGS) -c -o libHPCisa_la-IA64ISA.lo `test -f 'IA64ISA.C' || echo '$(srcdir)/'`IA64ISA.C
 
-libHPCisa_a-ISA.o: ISA.C
-@am__fastdepCXX_TRUE@	if $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCisa_a_CXXFLAGS) $(CXXFLAGS) -MT libHPCisa_a-ISA.o -MD -MP -MF "$(DEPDIR)/libHPCisa_a-ISA.Tpo" -c -o libHPCisa_a-ISA.o `test -f 'ISA.C' || echo '$(srcdir)/'`ISA.C; \
-@am__fastdepCXX_TRUE@	then mv -f "$(DEPDIR)/libHPCisa_a-ISA.Tpo" "$(DEPDIR)/libHPCisa_a-ISA.Po"; else rm -f "$(DEPDIR)/libHPCisa_a-ISA.Tpo"; exit 1; fi
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='ISA.C' object='libHPCisa_a-ISA.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	depfile='$(DEPDIR)/libHPCisa_a-ISA.Po' tmpdepfile='$(DEPDIR)/libHPCisa_a-ISA.TPo' @AMDEPBACKSLASH@
+libHPCisa_la-ISA.o: ISA.C
+@am__fastdepCXX_TRUE@	if $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCisa_la_CXXFLAGS) $(CXXFLAGS) -MT libHPCisa_la-ISA.o -MD -MP -MF "$(DEPDIR)/libHPCisa_la-ISA.Tpo" -c -o libHPCisa_la-ISA.o `test -f 'ISA.C' || echo '$(srcdir)/'`ISA.C; \
+@am__fastdepCXX_TRUE@	then mv -f "$(DEPDIR)/libHPCisa_la-ISA.Tpo" "$(DEPDIR)/libHPCisa_la-ISA.Po"; else rm -f "$(DEPDIR)/libHPCisa_la-ISA.Tpo"; exit 1; fi
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='ISA.C' object='libHPCisa_la-ISA.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	depfile='$(DEPDIR)/libHPCisa_la-ISA.Po' tmpdepfile='$(DEPDIR)/libHPCisa_la-ISA.TPo' @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCisa_a_CXXFLAGS) $(CXXFLAGS) -c -o libHPCisa_a-ISA.o `test -f 'ISA.C' || echo '$(srcdir)/'`ISA.C
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCisa_la_CXXFLAGS) $(CXXFLAGS) -c -o libHPCisa_la-ISA.o `test -f 'ISA.C' || echo '$(srcdir)/'`ISA.C
 
-libHPCisa_a-ISA.obj: ISA.C
-@am__fastdepCXX_TRUE@	if $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCisa_a_CXXFLAGS) $(CXXFLAGS) -MT libHPCisa_a-ISA.obj -MD -MP -MF "$(DEPDIR)/libHPCisa_a-ISA.Tpo" -c -o libHPCisa_a-ISA.obj `if test -f 'ISA.C'; then $(CYGPATH_W) 'ISA.C'; else $(CYGPATH_W) '$(srcdir)/ISA.C'; fi`; \
-@am__fastdepCXX_TRUE@	then mv -f "$(DEPDIR)/libHPCisa_a-ISA.Tpo" "$(DEPDIR)/libHPCisa_a-ISA.Po"; else rm -f "$(DEPDIR)/libHPCisa_a-ISA.Tpo"; exit 1; fi
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='ISA.C' object='libHPCisa_a-ISA.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	depfile='$(DEPDIR)/libHPCisa_a-ISA.Po' tmpdepfile='$(DEPDIR)/libHPCisa_a-ISA.TPo' @AMDEPBACKSLASH@
+libHPCisa_la-ISA.obj: ISA.C
+@am__fastdepCXX_TRUE@	if $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCisa_la_CXXFLAGS) $(CXXFLAGS) -MT libHPCisa_la-ISA.obj -MD -MP -MF "$(DEPDIR)/libHPCisa_la-ISA.Tpo" -c -o libHPCisa_la-ISA.obj `if test -f 'ISA.C'; then $(CYGPATH_W) 'ISA.C'; else $(CYGPATH_W) '$(srcdir)/ISA.C'; fi`; \
+@am__fastdepCXX_TRUE@	then mv -f "$(DEPDIR)/libHPCisa_la-ISA.Tpo" "$(DEPDIR)/libHPCisa_la-ISA.Po"; else rm -f "$(DEPDIR)/libHPCisa_la-ISA.Tpo"; exit 1; fi
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='ISA.C' object='libHPCisa_la-ISA.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	depfile='$(DEPDIR)/libHPCisa_la-ISA.Po' tmpdepfile='$(DEPDIR)/libHPCisa_la-ISA.TPo' @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCisa_a_CXXFLAGS) $(CXXFLAGS) -c -o libHPCisa_a-ISA.obj `if test -f 'ISA.C'; then $(CYGPATH_W) 'ISA.C'; else $(CYGPATH_W) '$(srcdir)/ISA.C'; fi`
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCisa_la_CXXFLAGS) $(CXXFLAGS) -c -o libHPCisa_la-ISA.obj `if test -f 'ISA.C'; then $(CYGPATH_W) 'ISA.C'; else $(CYGPATH_W) '$(srcdir)/ISA.C'; fi`
 
-libHPCisa_a-ISA.lo: ISA.C
-@am__fastdepCXX_TRUE@	if $(LIBTOOL) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCisa_a_CXXFLAGS) $(CXXFLAGS) -MT libHPCisa_a-ISA.lo -MD -MP -MF "$(DEPDIR)/libHPCisa_a-ISA.Tpo" -c -o libHPCisa_a-ISA.lo `test -f 'ISA.C' || echo '$(srcdir)/'`ISA.C; \
-@am__fastdepCXX_TRUE@	then mv -f "$(DEPDIR)/libHPCisa_a-ISA.Tpo" "$(DEPDIR)/libHPCisa_a-ISA.Plo"; else rm -f "$(DEPDIR)/libHPCisa_a-ISA.Tpo"; exit 1; fi
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='ISA.C' object='libHPCisa_a-ISA.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	depfile='$(DEPDIR)/libHPCisa_a-ISA.Plo' tmpdepfile='$(DEPDIR)/libHPCisa_a-ISA.TPlo' @AMDEPBACKSLASH@
+libHPCisa_la-ISA.lo: ISA.C
+@am__fastdepCXX_TRUE@	if $(LIBTOOL) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCisa_la_CXXFLAGS) $(CXXFLAGS) -MT libHPCisa_la-ISA.lo -MD -MP -MF "$(DEPDIR)/libHPCisa_la-ISA.Tpo" -c -o libHPCisa_la-ISA.lo `test -f 'ISA.C' || echo '$(srcdir)/'`ISA.C; \
+@am__fastdepCXX_TRUE@	then mv -f "$(DEPDIR)/libHPCisa_la-ISA.Tpo" "$(DEPDIR)/libHPCisa_la-ISA.Plo"; else rm -f "$(DEPDIR)/libHPCisa_la-ISA.Tpo"; exit 1; fi
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='ISA.C' object='libHPCisa_la-ISA.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	depfile='$(DEPDIR)/libHPCisa_la-ISA.Plo' tmpdepfile='$(DEPDIR)/libHPCisa_la-ISA.TPlo' @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(LIBTOOL) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCisa_a_CXXFLAGS) $(CXXFLAGS) -c -o libHPCisa_a-ISA.lo `test -f 'ISA.C' || echo '$(srcdir)/'`ISA.C
+@am__fastdepCXX_FALSE@	$(LIBTOOL) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCisa_la_CXXFLAGS) $(CXXFLAGS) -c -o libHPCisa_la-ISA.lo `test -f 'ISA.C' || echo '$(srcdir)/'`ISA.C
 
-libHPCisa_a-MipsISA.o: MipsISA.C
-@am__fastdepCXX_TRUE@	if $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCisa_a_CXXFLAGS) $(CXXFLAGS) -MT libHPCisa_a-MipsISA.o -MD -MP -MF "$(DEPDIR)/libHPCisa_a-MipsISA.Tpo" -c -o libHPCisa_a-MipsISA.o `test -f 'MipsISA.C' || echo '$(srcdir)/'`MipsISA.C; \
-@am__fastdepCXX_TRUE@	then mv -f "$(DEPDIR)/libHPCisa_a-MipsISA.Tpo" "$(DEPDIR)/libHPCisa_a-MipsISA.Po"; else rm -f "$(DEPDIR)/libHPCisa_a-MipsISA.Tpo"; exit 1; fi
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='MipsISA.C' object='libHPCisa_a-MipsISA.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	depfile='$(DEPDIR)/libHPCisa_a-MipsISA.Po' tmpdepfile='$(DEPDIR)/libHPCisa_a-MipsISA.TPo' @AMDEPBACKSLASH@
+libHPCisa_la-MipsISA.o: MipsISA.C
+@am__fastdepCXX_TRUE@	if $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCisa_la_CXXFLAGS) $(CXXFLAGS) -MT libHPCisa_la-MipsISA.o -MD -MP -MF "$(DEPDIR)/libHPCisa_la-MipsISA.Tpo" -c -o libHPCisa_la-MipsISA.o `test -f 'MipsISA.C' || echo '$(srcdir)/'`MipsISA.C; \
+@am__fastdepCXX_TRUE@	then mv -f "$(DEPDIR)/libHPCisa_la-MipsISA.Tpo" "$(DEPDIR)/libHPCisa_la-MipsISA.Po"; else rm -f "$(DEPDIR)/libHPCisa_la-MipsISA.Tpo"; exit 1; fi
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='MipsISA.C' object='libHPCisa_la-MipsISA.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	depfile='$(DEPDIR)/libHPCisa_la-MipsISA.Po' tmpdepfile='$(DEPDIR)/libHPCisa_la-MipsISA.TPo' @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCisa_a_CXXFLAGS) $(CXXFLAGS) -c -o libHPCisa_a-MipsISA.o `test -f 'MipsISA.C' || echo '$(srcdir)/'`MipsISA.C
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCisa_la_CXXFLAGS) $(CXXFLAGS) -c -o libHPCisa_la-MipsISA.o `test -f 'MipsISA.C' || echo '$(srcdir)/'`MipsISA.C
 
-libHPCisa_a-MipsISA.obj: MipsISA.C
-@am__fastdepCXX_TRUE@	if $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCisa_a_CXXFLAGS) $(CXXFLAGS) -MT libHPCisa_a-MipsISA.obj -MD -MP -MF "$(DEPDIR)/libHPCisa_a-MipsISA.Tpo" -c -o libHPCisa_a-MipsISA.obj `if test -f 'MipsISA.C'; then $(CYGPATH_W) 'MipsISA.C'; else $(CYGPATH_W) '$(srcdir)/MipsISA.C'; fi`; \
-@am__fastdepCXX_TRUE@	then mv -f "$(DEPDIR)/libHPCisa_a-MipsISA.Tpo" "$(DEPDIR)/libHPCisa_a-MipsISA.Po"; else rm -f "$(DEPDIR)/libHPCisa_a-MipsISA.Tpo"; exit 1; fi
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='MipsISA.C' object='libHPCisa_a-MipsISA.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	depfile='$(DEPDIR)/libHPCisa_a-MipsISA.Po' tmpdepfile='$(DEPDIR)/libHPCisa_a-MipsISA.TPo' @AMDEPBACKSLASH@
+libHPCisa_la-MipsISA.obj: MipsISA.C
+@am__fastdepCXX_TRUE@	if $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCisa_la_CXXFLAGS) $(CXXFLAGS) -MT libHPCisa_la-MipsISA.obj -MD -MP -MF "$(DEPDIR)/libHPCisa_la-MipsISA.Tpo" -c -o libHPCisa_la-MipsISA.obj `if test -f 'MipsISA.C'; then $(CYGPATH_W) 'MipsISA.C'; else $(CYGPATH_W) '$(srcdir)/MipsISA.C'; fi`; \
+@am__fastdepCXX_TRUE@	then mv -f "$(DEPDIR)/libHPCisa_la-MipsISA.Tpo" "$(DEPDIR)/libHPCisa_la-MipsISA.Po"; else rm -f "$(DEPDIR)/libHPCisa_la-MipsISA.Tpo"; exit 1; fi
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='MipsISA.C' object='libHPCisa_la-MipsISA.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	depfile='$(DEPDIR)/libHPCisa_la-MipsISA.Po' tmpdepfile='$(DEPDIR)/libHPCisa_la-MipsISA.TPo' @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCisa_a_CXXFLAGS) $(CXXFLAGS) -c -o libHPCisa_a-MipsISA.obj `if test -f 'MipsISA.C'; then $(CYGPATH_W) 'MipsISA.C'; else $(CYGPATH_W) '$(srcdir)/MipsISA.C'; fi`
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCisa_la_CXXFLAGS) $(CXXFLAGS) -c -o libHPCisa_la-MipsISA.obj `if test -f 'MipsISA.C'; then $(CYGPATH_W) 'MipsISA.C'; else $(CYGPATH_W) '$(srcdir)/MipsISA.C'; fi`
 
-libHPCisa_a-MipsISA.lo: MipsISA.C
-@am__fastdepCXX_TRUE@	if $(LIBTOOL) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCisa_a_CXXFLAGS) $(CXXFLAGS) -MT libHPCisa_a-MipsISA.lo -MD -MP -MF "$(DEPDIR)/libHPCisa_a-MipsISA.Tpo" -c -o libHPCisa_a-MipsISA.lo `test -f 'MipsISA.C' || echo '$(srcdir)/'`MipsISA.C; \
-@am__fastdepCXX_TRUE@	then mv -f "$(DEPDIR)/libHPCisa_a-MipsISA.Tpo" "$(DEPDIR)/libHPCisa_a-MipsISA.Plo"; else rm -f "$(DEPDIR)/libHPCisa_a-MipsISA.Tpo"; exit 1; fi
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='MipsISA.C' object='libHPCisa_a-MipsISA.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	depfile='$(DEPDIR)/libHPCisa_a-MipsISA.Plo' tmpdepfile='$(DEPDIR)/libHPCisa_a-MipsISA.TPlo' @AMDEPBACKSLASH@
+libHPCisa_la-MipsISA.lo: MipsISA.C
+@am__fastdepCXX_TRUE@	if $(LIBTOOL) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCisa_la_CXXFLAGS) $(CXXFLAGS) -MT libHPCisa_la-MipsISA.lo -MD -MP -MF "$(DEPDIR)/libHPCisa_la-MipsISA.Tpo" -c -o libHPCisa_la-MipsISA.lo `test -f 'MipsISA.C' || echo '$(srcdir)/'`MipsISA.C; \
+@am__fastdepCXX_TRUE@	then mv -f "$(DEPDIR)/libHPCisa_la-MipsISA.Tpo" "$(DEPDIR)/libHPCisa_la-MipsISA.Plo"; else rm -f "$(DEPDIR)/libHPCisa_la-MipsISA.Tpo"; exit 1; fi
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='MipsISA.C' object='libHPCisa_la-MipsISA.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	depfile='$(DEPDIR)/libHPCisa_la-MipsISA.Plo' tmpdepfile='$(DEPDIR)/libHPCisa_la-MipsISA.TPlo' @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(LIBTOOL) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCisa_a_CXXFLAGS) $(CXXFLAGS) -c -o libHPCisa_a-MipsISA.lo `test -f 'MipsISA.C' || echo '$(srcdir)/'`MipsISA.C
+@am__fastdepCXX_FALSE@	$(LIBTOOL) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCisa_la_CXXFLAGS) $(CXXFLAGS) -c -o libHPCisa_la-MipsISA.lo `test -f 'MipsISA.C' || echo '$(srcdir)/'`MipsISA.C
 
-libHPCisa_a-SparcISA.o: SparcISA.C
-@am__fastdepCXX_TRUE@	if $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCisa_a_CXXFLAGS) $(CXXFLAGS) -MT libHPCisa_a-SparcISA.o -MD -MP -MF "$(DEPDIR)/libHPCisa_a-SparcISA.Tpo" -c -o libHPCisa_a-SparcISA.o `test -f 'SparcISA.C' || echo '$(srcdir)/'`SparcISA.C; \
-@am__fastdepCXX_TRUE@	then mv -f "$(DEPDIR)/libHPCisa_a-SparcISA.Tpo" "$(DEPDIR)/libHPCisa_a-SparcISA.Po"; else rm -f "$(DEPDIR)/libHPCisa_a-SparcISA.Tpo"; exit 1; fi
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='SparcISA.C' object='libHPCisa_a-SparcISA.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	depfile='$(DEPDIR)/libHPCisa_a-SparcISA.Po' tmpdepfile='$(DEPDIR)/libHPCisa_a-SparcISA.TPo' @AMDEPBACKSLASH@
+libHPCisa_la-SparcISA.o: SparcISA.C
+@am__fastdepCXX_TRUE@	if $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCisa_la_CXXFLAGS) $(CXXFLAGS) -MT libHPCisa_la-SparcISA.o -MD -MP -MF "$(DEPDIR)/libHPCisa_la-SparcISA.Tpo" -c -o libHPCisa_la-SparcISA.o `test -f 'SparcISA.C' || echo '$(srcdir)/'`SparcISA.C; \
+@am__fastdepCXX_TRUE@	then mv -f "$(DEPDIR)/libHPCisa_la-SparcISA.Tpo" "$(DEPDIR)/libHPCisa_la-SparcISA.Po"; else rm -f "$(DEPDIR)/libHPCisa_la-SparcISA.Tpo"; exit 1; fi
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='SparcISA.C' object='libHPCisa_la-SparcISA.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	depfile='$(DEPDIR)/libHPCisa_la-SparcISA.Po' tmpdepfile='$(DEPDIR)/libHPCisa_la-SparcISA.TPo' @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCisa_a_CXXFLAGS) $(CXXFLAGS) -c -o libHPCisa_a-SparcISA.o `test -f 'SparcISA.C' || echo '$(srcdir)/'`SparcISA.C
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCisa_la_CXXFLAGS) $(CXXFLAGS) -c -o libHPCisa_la-SparcISA.o `test -f 'SparcISA.C' || echo '$(srcdir)/'`SparcISA.C
 
-libHPCisa_a-SparcISA.obj: SparcISA.C
-@am__fastdepCXX_TRUE@	if $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCisa_a_CXXFLAGS) $(CXXFLAGS) -MT libHPCisa_a-SparcISA.obj -MD -MP -MF "$(DEPDIR)/libHPCisa_a-SparcISA.Tpo" -c -o libHPCisa_a-SparcISA.obj `if test -f 'SparcISA.C'; then $(CYGPATH_W) 'SparcISA.C'; else $(CYGPATH_W) '$(srcdir)/SparcISA.C'; fi`; \
-@am__fastdepCXX_TRUE@	then mv -f "$(DEPDIR)/libHPCisa_a-SparcISA.Tpo" "$(DEPDIR)/libHPCisa_a-SparcISA.Po"; else rm -f "$(DEPDIR)/libHPCisa_a-SparcISA.Tpo"; exit 1; fi
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='SparcISA.C' object='libHPCisa_a-SparcISA.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	depfile='$(DEPDIR)/libHPCisa_a-SparcISA.Po' tmpdepfile='$(DEPDIR)/libHPCisa_a-SparcISA.TPo' @AMDEPBACKSLASH@
+libHPCisa_la-SparcISA.obj: SparcISA.C
+@am__fastdepCXX_TRUE@	if $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCisa_la_CXXFLAGS) $(CXXFLAGS) -MT libHPCisa_la-SparcISA.obj -MD -MP -MF "$(DEPDIR)/libHPCisa_la-SparcISA.Tpo" -c -o libHPCisa_la-SparcISA.obj `if test -f 'SparcISA.C'; then $(CYGPATH_W) 'SparcISA.C'; else $(CYGPATH_W) '$(srcdir)/SparcISA.C'; fi`; \
+@am__fastdepCXX_TRUE@	then mv -f "$(DEPDIR)/libHPCisa_la-SparcISA.Tpo" "$(DEPDIR)/libHPCisa_la-SparcISA.Po"; else rm -f "$(DEPDIR)/libHPCisa_la-SparcISA.Tpo"; exit 1; fi
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='SparcISA.C' object='libHPCisa_la-SparcISA.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	depfile='$(DEPDIR)/libHPCisa_la-SparcISA.Po' tmpdepfile='$(DEPDIR)/libHPCisa_la-SparcISA.TPo' @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCisa_a_CXXFLAGS) $(CXXFLAGS) -c -o libHPCisa_a-SparcISA.obj `if test -f 'SparcISA.C'; then $(CYGPATH_W) 'SparcISA.C'; else $(CYGPATH_W) '$(srcdir)/SparcISA.C'; fi`
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCisa_la_CXXFLAGS) $(CXXFLAGS) -c -o libHPCisa_la-SparcISA.obj `if test -f 'SparcISA.C'; then $(CYGPATH_W) 'SparcISA.C'; else $(CYGPATH_W) '$(srcdir)/SparcISA.C'; fi`
 
-libHPCisa_a-SparcISA.lo: SparcISA.C
-@am__fastdepCXX_TRUE@	if $(LIBTOOL) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCisa_a_CXXFLAGS) $(CXXFLAGS) -MT libHPCisa_a-SparcISA.lo -MD -MP -MF "$(DEPDIR)/libHPCisa_a-SparcISA.Tpo" -c -o libHPCisa_a-SparcISA.lo `test -f 'SparcISA.C' || echo '$(srcdir)/'`SparcISA.C; \
-@am__fastdepCXX_TRUE@	then mv -f "$(DEPDIR)/libHPCisa_a-SparcISA.Tpo" "$(DEPDIR)/libHPCisa_a-SparcISA.Plo"; else rm -f "$(DEPDIR)/libHPCisa_a-SparcISA.Tpo"; exit 1; fi
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='SparcISA.C' object='libHPCisa_a-SparcISA.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	depfile='$(DEPDIR)/libHPCisa_a-SparcISA.Plo' tmpdepfile='$(DEPDIR)/libHPCisa_a-SparcISA.TPlo' @AMDEPBACKSLASH@
+libHPCisa_la-SparcISA.lo: SparcISA.C
+@am__fastdepCXX_TRUE@	if $(LIBTOOL) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCisa_la_CXXFLAGS) $(CXXFLAGS) -MT libHPCisa_la-SparcISA.lo -MD -MP -MF "$(DEPDIR)/libHPCisa_la-SparcISA.Tpo" -c -o libHPCisa_la-SparcISA.lo `test -f 'SparcISA.C' || echo '$(srcdir)/'`SparcISA.C; \
+@am__fastdepCXX_TRUE@	then mv -f "$(DEPDIR)/libHPCisa_la-SparcISA.Tpo" "$(DEPDIR)/libHPCisa_la-SparcISA.Plo"; else rm -f "$(DEPDIR)/libHPCisa_la-SparcISA.Tpo"; exit 1; fi
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='SparcISA.C' object='libHPCisa_la-SparcISA.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	depfile='$(DEPDIR)/libHPCisa_la-SparcISA.Plo' tmpdepfile='$(DEPDIR)/libHPCisa_la-SparcISA.TPlo' @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(LIBTOOL) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCisa_a_CXXFLAGS) $(CXXFLAGS) -c -o libHPCisa_a-SparcISA.lo `test -f 'SparcISA.C' || echo '$(srcdir)/'`SparcISA.C
+@am__fastdepCXX_FALSE@	$(LIBTOOL) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCisa_la_CXXFLAGS) $(CXXFLAGS) -c -o libHPCisa_la-SparcISA.lo `test -f 'SparcISA.C' || echo '$(srcdir)/'`SparcISA.C
 
-libHPCisa_a-i686ISA.o: i686ISA.C
-@am__fastdepCXX_TRUE@	if $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCisa_a_CXXFLAGS) $(CXXFLAGS) -MT libHPCisa_a-i686ISA.o -MD -MP -MF "$(DEPDIR)/libHPCisa_a-i686ISA.Tpo" -c -o libHPCisa_a-i686ISA.o `test -f 'i686ISA.C' || echo '$(srcdir)/'`i686ISA.C; \
-@am__fastdepCXX_TRUE@	then mv -f "$(DEPDIR)/libHPCisa_a-i686ISA.Tpo" "$(DEPDIR)/libHPCisa_a-i686ISA.Po"; else rm -f "$(DEPDIR)/libHPCisa_a-i686ISA.Tpo"; exit 1; fi
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='i686ISA.C' object='libHPCisa_a-i686ISA.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	depfile='$(DEPDIR)/libHPCisa_a-i686ISA.Po' tmpdepfile='$(DEPDIR)/libHPCisa_a-i686ISA.TPo' @AMDEPBACKSLASH@
+libHPCisa_la-i686ISA.o: i686ISA.C
+@am__fastdepCXX_TRUE@	if $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCisa_la_CXXFLAGS) $(CXXFLAGS) -MT libHPCisa_la-i686ISA.o -MD -MP -MF "$(DEPDIR)/libHPCisa_la-i686ISA.Tpo" -c -o libHPCisa_la-i686ISA.o `test -f 'i686ISA.C' || echo '$(srcdir)/'`i686ISA.C; \
+@am__fastdepCXX_TRUE@	then mv -f "$(DEPDIR)/libHPCisa_la-i686ISA.Tpo" "$(DEPDIR)/libHPCisa_la-i686ISA.Po"; else rm -f "$(DEPDIR)/libHPCisa_la-i686ISA.Tpo"; exit 1; fi
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='i686ISA.C' object='libHPCisa_la-i686ISA.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	depfile='$(DEPDIR)/libHPCisa_la-i686ISA.Po' tmpdepfile='$(DEPDIR)/libHPCisa_la-i686ISA.TPo' @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCisa_a_CXXFLAGS) $(CXXFLAGS) -c -o libHPCisa_a-i686ISA.o `test -f 'i686ISA.C' || echo '$(srcdir)/'`i686ISA.C
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCisa_la_CXXFLAGS) $(CXXFLAGS) -c -o libHPCisa_la-i686ISA.o `test -f 'i686ISA.C' || echo '$(srcdir)/'`i686ISA.C
 
-libHPCisa_a-i686ISA.obj: i686ISA.C
-@am__fastdepCXX_TRUE@	if $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCisa_a_CXXFLAGS) $(CXXFLAGS) -MT libHPCisa_a-i686ISA.obj -MD -MP -MF "$(DEPDIR)/libHPCisa_a-i686ISA.Tpo" -c -o libHPCisa_a-i686ISA.obj `if test -f 'i686ISA.C'; then $(CYGPATH_W) 'i686ISA.C'; else $(CYGPATH_W) '$(srcdir)/i686ISA.C'; fi`; \
-@am__fastdepCXX_TRUE@	then mv -f "$(DEPDIR)/libHPCisa_a-i686ISA.Tpo" "$(DEPDIR)/libHPCisa_a-i686ISA.Po"; else rm -f "$(DEPDIR)/libHPCisa_a-i686ISA.Tpo"; exit 1; fi
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='i686ISA.C' object='libHPCisa_a-i686ISA.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	depfile='$(DEPDIR)/libHPCisa_a-i686ISA.Po' tmpdepfile='$(DEPDIR)/libHPCisa_a-i686ISA.TPo' @AMDEPBACKSLASH@
+libHPCisa_la-i686ISA.obj: i686ISA.C
+@am__fastdepCXX_TRUE@	if $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCisa_la_CXXFLAGS) $(CXXFLAGS) -MT libHPCisa_la-i686ISA.obj -MD -MP -MF "$(DEPDIR)/libHPCisa_la-i686ISA.Tpo" -c -o libHPCisa_la-i686ISA.obj `if test -f 'i686ISA.C'; then $(CYGPATH_W) 'i686ISA.C'; else $(CYGPATH_W) '$(srcdir)/i686ISA.C'; fi`; \
+@am__fastdepCXX_TRUE@	then mv -f "$(DEPDIR)/libHPCisa_la-i686ISA.Tpo" "$(DEPDIR)/libHPCisa_la-i686ISA.Po"; else rm -f "$(DEPDIR)/libHPCisa_la-i686ISA.Tpo"; exit 1; fi
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='i686ISA.C' object='libHPCisa_la-i686ISA.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	depfile='$(DEPDIR)/libHPCisa_la-i686ISA.Po' tmpdepfile='$(DEPDIR)/libHPCisa_la-i686ISA.TPo' @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCisa_a_CXXFLAGS) $(CXXFLAGS) -c -o libHPCisa_a-i686ISA.obj `if test -f 'i686ISA.C'; then $(CYGPATH_W) 'i686ISA.C'; else $(CYGPATH_W) '$(srcdir)/i686ISA.C'; fi`
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCisa_la_CXXFLAGS) $(CXXFLAGS) -c -o libHPCisa_la-i686ISA.obj `if test -f 'i686ISA.C'; then $(CYGPATH_W) 'i686ISA.C'; else $(CYGPATH_W) '$(srcdir)/i686ISA.C'; fi`
 
-libHPCisa_a-i686ISA.lo: i686ISA.C
-@am__fastdepCXX_TRUE@	if $(LIBTOOL) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCisa_a_CXXFLAGS) $(CXXFLAGS) -MT libHPCisa_a-i686ISA.lo -MD -MP -MF "$(DEPDIR)/libHPCisa_a-i686ISA.Tpo" -c -o libHPCisa_a-i686ISA.lo `test -f 'i686ISA.C' || echo '$(srcdir)/'`i686ISA.C; \
-@am__fastdepCXX_TRUE@	then mv -f "$(DEPDIR)/libHPCisa_a-i686ISA.Tpo" "$(DEPDIR)/libHPCisa_a-i686ISA.Plo"; else rm -f "$(DEPDIR)/libHPCisa_a-i686ISA.Tpo"; exit 1; fi
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='i686ISA.C' object='libHPCisa_a-i686ISA.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	depfile='$(DEPDIR)/libHPCisa_a-i686ISA.Plo' tmpdepfile='$(DEPDIR)/libHPCisa_a-i686ISA.TPlo' @AMDEPBACKSLASH@
+libHPCisa_la-i686ISA.lo: i686ISA.C
+@am__fastdepCXX_TRUE@	if $(LIBTOOL) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCisa_la_CXXFLAGS) $(CXXFLAGS) -MT libHPCisa_la-i686ISA.lo -MD -MP -MF "$(DEPDIR)/libHPCisa_la-i686ISA.Tpo" -c -o libHPCisa_la-i686ISA.lo `test -f 'i686ISA.C' || echo '$(srcdir)/'`i686ISA.C; \
+@am__fastdepCXX_TRUE@	then mv -f "$(DEPDIR)/libHPCisa_la-i686ISA.Tpo" "$(DEPDIR)/libHPCisa_la-i686ISA.Plo"; else rm -f "$(DEPDIR)/libHPCisa_la-i686ISA.Tpo"; exit 1; fi
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='i686ISA.C' object='libHPCisa_la-i686ISA.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	depfile='$(DEPDIR)/libHPCisa_la-i686ISA.Plo' tmpdepfile='$(DEPDIR)/libHPCisa_la-i686ISA.TPlo' @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(LIBTOOL) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCisa_a_CXXFLAGS) $(CXXFLAGS) -c -o libHPCisa_a-i686ISA.lo `test -f 'i686ISA.C' || echo '$(srcdir)/'`i686ISA.C
+@am__fastdepCXX_FALSE@	$(LIBTOOL) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCisa_la_CXXFLAGS) $(CXXFLAGS) -c -o libHPCisa_la-i686ISA.lo `test -f 'i686ISA.C' || echo '$(srcdir)/'`i686ISA.C
 
 mostlyclean-libtool:
 	-rm -f *.lo
@@ -653,7 +655,7 @@ distdir: $(DISTFILES)
 	done
 check-am: all-am
 check: check-am
-all-am: Makefile $(LIBRARIES)
+all-am: Makefile $(LTLIBRARIES)
 installdirs:
 install: install-am
 install-exec: install-exec-am
@@ -682,7 +684,7 @@ maintainer-clean-generic:
 	@echo "it deletes files that may require special tools to rebuild."
 clean: clean-am
 
-clean-am: clean-generic clean-libtool clean-noinstLIBRARIES \
+clean-am: clean-generic clean-libtool clean-noinstLTLIBRARIES \
 	mostlyclean-am
 
 distclean: distclean-am
@@ -732,7 +734,7 @@ ps-am:
 uninstall-am: uninstall-info-am
 
 .PHONY: CTAGS GTAGS all all-am check check-am clean clean-generic \
-	clean-libtool clean-noinstLIBRARIES ctags distclean \
+	clean-libtool clean-noinstLTLIBRARIES ctags distclean \
 	distclean-compile distclean-generic distclean-libtool \
 	distclean-tags distdir dvi dvi-am html html-am info info-am \
 	install install-am install-data install-data-am install-exec \

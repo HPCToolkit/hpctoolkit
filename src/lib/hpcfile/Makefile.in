@@ -74,7 +74,7 @@
 
 # Assumes includer sets MYCXXFLAGS and MYCFLAGS
 
-SOURCES = $(libHPCfile_a_SOURCES)
+SOURCES = $(libHPCfile_la_SOURCES)
 
 srcdir = @srcdir@
 top_srcdir = @top_srcdir@
@@ -108,23 +108,21 @@ am__configure_deps = $(am__aclocal_m4_deps) $(CONFIGURE_DEPENDENCIES) \
 	$(ACLOCAL_M4)
 mkinstalldirs = $(SHELL) $(top_srcdir)/config/mkinstalldirs
 CONFIG_CLEAN_FILES =
-LIBRARIES = $(noinst_LIBRARIES)
-ARFLAGS = cru
+LTLIBRARIES = $(noinst_LTLIBRARIES)
 am__DEPENDENCIES_1 =
-libHPCfile_a_DEPENDENCIES = $(am__DEPENDENCIES_1)
-am__objects_1 = libHPCfile_a-hpcfile_csprof.$(OBJEXT) \
-	libHPCfile_a-hpcfile_cstree.$(OBJEXT) \
-	libHPCfile_a-hpcfile_general.$(OBJEXT) \
-	libHPCfile_a-io.$(OBJEXT)
-am_libHPCfile_a_OBJECTS = $(am__objects_1)
-libHPCfile_a_OBJECTS = $(am_libHPCfile_a_OBJECTS)
+libHPCfile_la_DEPENDENCIES = $(am__DEPENDENCIES_1)
+am__objects_1 = libHPCfile_la-hpcfile_csprof.lo \
+	libHPCfile_la-hpcfile_cstree.lo \
+	libHPCfile_la-hpcfile_general.lo libHPCfile_la-io.lo
+am_libHPCfile_la_OBJECTS = $(am__objects_1)
+libHPCfile_la_OBJECTS = $(am_libHPCfile_la_OBJECTS)
 DEFAULT_INCLUDES = -I. -I$(srcdir)
 depcomp = $(SHELL) $(top_srcdir)/config/depcomp
 am__depfiles_maybe = depfiles
-@AMDEP_TRUE@DEP_FILES = ./$(DEPDIR)/libHPCfile_a-hpcfile_csprof.Po \
-@AMDEP_TRUE@	./$(DEPDIR)/libHPCfile_a-hpcfile_cstree.Po \
-@AMDEP_TRUE@	./$(DEPDIR)/libHPCfile_a-hpcfile_general.Po \
-@AMDEP_TRUE@	./$(DEPDIR)/libHPCfile_a-io.Po
+@AMDEP_TRUE@DEP_FILES = ./$(DEPDIR)/libHPCfile_la-hpcfile_csprof.Plo \
+@AMDEP_TRUE@	./$(DEPDIR)/libHPCfile_la-hpcfile_cstree.Plo \
+@AMDEP_TRUE@	./$(DEPDIR)/libHPCfile_la-hpcfile_general.Plo \
+@AMDEP_TRUE@	./$(DEPDIR)/libHPCfile_la-io.Plo
 COMPILE = $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
 	$(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
 LTCOMPILE = $(LIBTOOL) --mode=compile $(CC) $(DEFS) \
@@ -133,8 +131,8 @@ LTCOMPILE = $(LIBTOOL) --mode=compile $(CC) $(DEFS) \
 CCLD = $(CC)
 LINK = $(LIBTOOL) --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
 	$(AM_LDFLAGS) $(LDFLAGS) -o $@
-SOURCES = $(libHPCfile_a_SOURCES)
-DIST_SOURCES = $(libHPCfile_a_SOURCES)
+SOURCES = $(libHPCfile_la_SOURCES)
+DIST_SOURCES = $(libHPCfile_la_SOURCES)
 ETAGS = etags
 CTAGS = ctags
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
@@ -286,11 +284,11 @@ HPC_IFLAGS = -I$(HPCTOOLKIT)/src
 #   HPC_LIBXML      : HPC_LIBSUPPORT
 #   HPC_LIBSUPPORT  :
 #   HPC_LIBHPCFILE  :
-HPC_LIBBINUTILS = $(top_builddir)/src/lib/binutils/libHPCbinutils.a
-HPC_LIBISA = $(top_builddir)/src/lib/ISA/libHPCisa.a
-HPC_LIBXML = $(top_builddir)/src/lib/xml/libHPCxml.a
-HPC_LIBSUPPORT = $(top_builddir)/src/lib/support/libHPCsupport.a
-HPC_LIBHPCFILE = $(top_builddir)/src/lib/hpcfile/libHPCfile.a
+HPC_LIBBINUTILS = $(top_builddir)/src/lib/binutils/libHPCbinutils.la
+HPC_LIBISA = $(top_builddir)/src/lib/ISA/libHPCisa.la
+HPC_LIBXML = $(top_builddir)/src/lib/xml/libHPCxml.la
+HPC_LIBSUPPORT = $(top_builddir)/src/lib/support/libHPCsupport.la
+HPC_LIBHPCFILE = $(top_builddir)/src/lib/hpcfile/libHPCfile.la
 
 #############################################################################
 # Common settings
@@ -317,12 +315,12 @@ MYCLEAN =
 #############################################################################
 # Automake rules
 #############################################################################
-noinst_LIBRARIES = libHPCfile.a
-libHPCfile_a_SOURCES = $(MYSOURCES)
-libHPCfile_a_CFLAGS = $(MYCFLAGS)
-libHPCfile_a_CXXFLAGS = $(MYCXXFLAGS)
-libHPCfile_a_AR = $(MYAR)
-libHPCfile_a_LIBADD = $(MYLIBADD)
+noinst_LTLIBRARIES = libHPCfile.la
+libHPCfile_la_SOURCES = $(MYSOURCES)
+libHPCfile_la_CFLAGS = $(MYCFLAGS)
+libHPCfile_la_CXXFLAGS = $(MYCXXFLAGS)
+libHPCfile_la_AR = $(MYAR)
+libHPCfile_la_LIBADD = $(MYLIBADD)
 MOSTLYCLEANFILES = $(MYCLEAN)
 MYCPPFLAGS_CXX = $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) \
 	$(MYCXXFLAGS)
@@ -364,12 +362,16 @@ $(top_srcdir)/configure:  $(am__configure_deps)
 $(ACLOCAL_M4):  $(am__aclocal_m4_deps)
 	cd $(top_builddir) && $(MAKE) $(AM_MAKEFLAGS) am--refresh
 
-clean-noinstLIBRARIES:
-	-test -z "$(noinst_LIBRARIES)" || rm -f $(noinst_LIBRARIES)
-libHPCfile.a: $(libHPCfile_a_OBJECTS) $(libHPCfile_a_DEPENDENCIES) 
-	-rm -f libHPCfile.a
-	$(libHPCfile_a_AR) libHPCfile.a $(libHPCfile_a_OBJECTS) $(libHPCfile_a_LIBADD)
-	$(RANLIB) libHPCfile.a
+clean-noinstLTLIBRARIES:
+	-test -z "$(noinst_LTLIBRARIES)" || rm -f $(noinst_LTLIBRARIES)
+	@list='$(noinst_LTLIBRARIES)'; for p in $$list; do \
+	  dir="`echo $$p | sed -e 's|/[^/]*$$||'`"; \
+	  test "$$dir" != "$$p" || dir=.; \
+	  echo "rm -f \"$${dir}/so_locations\""; \
+	  rm -f "$${dir}/so_locations"; \
+	done
+libHPCfile.la: $(libHPCfile_la_OBJECTS) $(libHPCfile_la_DEPENDENCIES) 
+	$(LINK)  $(libHPCfile_la_LDFLAGS) $(libHPCfile_la_OBJECTS) $(libHPCfile_la_LIBADD) $(LIBS)
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
@@ -377,10 +379,10 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCfile_a-hpcfile_csprof.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCfile_a-hpcfile_cstree.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCfile_a-hpcfile_general.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCfile_a-io.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCfile_la-hpcfile_csprof.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCfile_la-hpcfile_cstree.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCfile_la-hpcfile_general.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCfile_la-io.Plo@am__quote@
 
 .c.o:
 @am__fastdepCC_TRUE@	if $(COMPILE) -MT $@ -MD -MP -MF "$(DEPDIR)/$*.Tpo" -c -o $@ $<; \
@@ -406,101 +408,101 @@ distclean-compile:
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(LTCOMPILE) -c -o $@ $<
 
-libHPCfile_a-hpcfile_csprof.o: hpcfile_csprof.c
-@am__fastdepCC_TRUE@	if $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCfile_a_CFLAGS) $(CFLAGS) -MT libHPCfile_a-hpcfile_csprof.o -MD -MP -MF "$(DEPDIR)/libHPCfile_a-hpcfile_csprof.Tpo" -c -o libHPCfile_a-hpcfile_csprof.o `test -f 'hpcfile_csprof.c' || echo '$(srcdir)/'`hpcfile_csprof.c; \
-@am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/libHPCfile_a-hpcfile_csprof.Tpo" "$(DEPDIR)/libHPCfile_a-hpcfile_csprof.Po"; else rm -f "$(DEPDIR)/libHPCfile_a-hpcfile_csprof.Tpo"; exit 1; fi
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='hpcfile_csprof.c' object='libHPCfile_a-hpcfile_csprof.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	depfile='$(DEPDIR)/libHPCfile_a-hpcfile_csprof.Po' tmpdepfile='$(DEPDIR)/libHPCfile_a-hpcfile_csprof.TPo' @AMDEPBACKSLASH@
+libHPCfile_la-hpcfile_csprof.o: hpcfile_csprof.c
+@am__fastdepCC_TRUE@	if $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCfile_la_CFLAGS) $(CFLAGS) -MT libHPCfile_la-hpcfile_csprof.o -MD -MP -MF "$(DEPDIR)/libHPCfile_la-hpcfile_csprof.Tpo" -c -o libHPCfile_la-hpcfile_csprof.o `test -f 'hpcfile_csprof.c' || echo '$(srcdir)/'`hpcfile_csprof.c; \
+@am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/libHPCfile_la-hpcfile_csprof.Tpo" "$(DEPDIR)/libHPCfile_la-hpcfile_csprof.Po"; else rm -f "$(DEPDIR)/libHPCfile_la-hpcfile_csprof.Tpo"; exit 1; fi
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='hpcfile_csprof.c' object='libHPCfile_la-hpcfile_csprof.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	depfile='$(DEPDIR)/libHPCfile_la-hpcfile_csprof.Po' tmpdepfile='$(DEPDIR)/libHPCfile_la-hpcfile_csprof.TPo' @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCfile_a_CFLAGS) $(CFLAGS) -c -o libHPCfile_a-hpcfile_csprof.o `test -f 'hpcfile_csprof.c' || echo '$(srcdir)/'`hpcfile_csprof.c
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCfile_la_CFLAGS) $(CFLAGS) -c -o libHPCfile_la-hpcfile_csprof.o `test -f 'hpcfile_csprof.c' || echo '$(srcdir)/'`hpcfile_csprof.c
 
-libHPCfile_a-hpcfile_csprof.obj: hpcfile_csprof.c
-@am__fastdepCC_TRUE@	if $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCfile_a_CFLAGS) $(CFLAGS) -MT libHPCfile_a-hpcfile_csprof.obj -MD -MP -MF "$(DEPDIR)/libHPCfile_a-hpcfile_csprof.Tpo" -c -o libHPCfile_a-hpcfile_csprof.obj `if test -f 'hpcfile_csprof.c'; then $(CYGPATH_W) 'hpcfile_csprof.c'; else $(CYGPATH_W) '$(srcdir)/hpcfile_csprof.c'; fi`; \
-@am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/libHPCfile_a-hpcfile_csprof.Tpo" "$(DEPDIR)/libHPCfile_a-hpcfile_csprof.Po"; else rm -f "$(DEPDIR)/libHPCfile_a-hpcfile_csprof.Tpo"; exit 1; fi
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='hpcfile_csprof.c' object='libHPCfile_a-hpcfile_csprof.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	depfile='$(DEPDIR)/libHPCfile_a-hpcfile_csprof.Po' tmpdepfile='$(DEPDIR)/libHPCfile_a-hpcfile_csprof.TPo' @AMDEPBACKSLASH@
+libHPCfile_la-hpcfile_csprof.obj: hpcfile_csprof.c
+@am__fastdepCC_TRUE@	if $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCfile_la_CFLAGS) $(CFLAGS) -MT libHPCfile_la-hpcfile_csprof.obj -MD -MP -MF "$(DEPDIR)/libHPCfile_la-hpcfile_csprof.Tpo" -c -o libHPCfile_la-hpcfile_csprof.obj `if test -f 'hpcfile_csprof.c'; then $(CYGPATH_W) 'hpcfile_csprof.c'; else $(CYGPATH_W) '$(srcdir)/hpcfile_csprof.c'; fi`; \
+@am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/libHPCfile_la-hpcfile_csprof.Tpo" "$(DEPDIR)/libHPCfile_la-hpcfile_csprof.Po"; else rm -f "$(DEPDIR)/libHPCfile_la-hpcfile_csprof.Tpo"; exit 1; fi
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='hpcfile_csprof.c' object='libHPCfile_la-hpcfile_csprof.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	depfile='$(DEPDIR)/libHPCfile_la-hpcfile_csprof.Po' tmpdepfile='$(DEPDIR)/libHPCfile_la-hpcfile_csprof.TPo' @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCfile_a_CFLAGS) $(CFLAGS) -c -o libHPCfile_a-hpcfile_csprof.obj `if test -f 'hpcfile_csprof.c'; then $(CYGPATH_W) 'hpcfile_csprof.c'; else $(CYGPATH_W) '$(srcdir)/hpcfile_csprof.c'; fi`
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCfile_la_CFLAGS) $(CFLAGS) -c -o libHPCfile_la-hpcfile_csprof.obj `if test -f 'hpcfile_csprof.c'; then $(CYGPATH_W) 'hpcfile_csprof.c'; else $(CYGPATH_W) '$(srcdir)/hpcfile_csprof.c'; fi`
 
-libHPCfile_a-hpcfile_csprof.lo: hpcfile_csprof.c
-@am__fastdepCC_TRUE@	if $(LIBTOOL) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCfile_a_CFLAGS) $(CFLAGS) -MT libHPCfile_a-hpcfile_csprof.lo -MD -MP -MF "$(DEPDIR)/libHPCfile_a-hpcfile_csprof.Tpo" -c -o libHPCfile_a-hpcfile_csprof.lo `test -f 'hpcfile_csprof.c' || echo '$(srcdir)/'`hpcfile_csprof.c; \
-@am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/libHPCfile_a-hpcfile_csprof.Tpo" "$(DEPDIR)/libHPCfile_a-hpcfile_csprof.Plo"; else rm -f "$(DEPDIR)/libHPCfile_a-hpcfile_csprof.Tpo"; exit 1; fi
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='hpcfile_csprof.c' object='libHPCfile_a-hpcfile_csprof.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	depfile='$(DEPDIR)/libHPCfile_a-hpcfile_csprof.Plo' tmpdepfile='$(DEPDIR)/libHPCfile_a-hpcfile_csprof.TPlo' @AMDEPBACKSLASH@
+libHPCfile_la-hpcfile_csprof.lo: hpcfile_csprof.c
+@am__fastdepCC_TRUE@	if $(LIBTOOL) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCfile_la_CFLAGS) $(CFLAGS) -MT libHPCfile_la-hpcfile_csprof.lo -MD -MP -MF "$(DEPDIR)/libHPCfile_la-hpcfile_csprof.Tpo" -c -o libHPCfile_la-hpcfile_csprof.lo `test -f 'hpcfile_csprof.c' || echo '$(srcdir)/'`hpcfile_csprof.c; \
+@am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/libHPCfile_la-hpcfile_csprof.Tpo" "$(DEPDIR)/libHPCfile_la-hpcfile_csprof.Plo"; else rm -f "$(DEPDIR)/libHPCfile_la-hpcfile_csprof.Tpo"; exit 1; fi
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='hpcfile_csprof.c' object='libHPCfile_la-hpcfile_csprof.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	depfile='$(DEPDIR)/libHPCfile_la-hpcfile_csprof.Plo' tmpdepfile='$(DEPDIR)/libHPCfile_la-hpcfile_csprof.TPlo' @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(LIBTOOL) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCfile_a_CFLAGS) $(CFLAGS) -c -o libHPCfile_a-hpcfile_csprof.lo `test -f 'hpcfile_csprof.c' || echo '$(srcdir)/'`hpcfile_csprof.c
+@am__fastdepCC_FALSE@	$(LIBTOOL) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCfile_la_CFLAGS) $(CFLAGS) -c -o libHPCfile_la-hpcfile_csprof.lo `test -f 'hpcfile_csprof.c' || echo '$(srcdir)/'`hpcfile_csprof.c
 
-libHPCfile_a-hpcfile_cstree.o: hpcfile_cstree.c
-@am__fastdepCC_TRUE@	if $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCfile_a_CFLAGS) $(CFLAGS) -MT libHPCfile_a-hpcfile_cstree.o -MD -MP -MF "$(DEPDIR)/libHPCfile_a-hpcfile_cstree.Tpo" -c -o libHPCfile_a-hpcfile_cstree.o `test -f 'hpcfile_cstree.c' || echo '$(srcdir)/'`hpcfile_cstree.c; \
-@am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/libHPCfile_a-hpcfile_cstree.Tpo" "$(DEPDIR)/libHPCfile_a-hpcfile_cstree.Po"; else rm -f "$(DEPDIR)/libHPCfile_a-hpcfile_cstree.Tpo"; exit 1; fi
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='hpcfile_cstree.c' object='libHPCfile_a-hpcfile_cstree.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	depfile='$(DEPDIR)/libHPCfile_a-hpcfile_cstree.Po' tmpdepfile='$(DEPDIR)/libHPCfile_a-hpcfile_cstree.TPo' @AMDEPBACKSLASH@
+libHPCfile_la-hpcfile_cstree.o: hpcfile_cstree.c
+@am__fastdepCC_TRUE@	if $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCfile_la_CFLAGS) $(CFLAGS) -MT libHPCfile_la-hpcfile_cstree.o -MD -MP -MF "$(DEPDIR)/libHPCfile_la-hpcfile_cstree.Tpo" -c -o libHPCfile_la-hpcfile_cstree.o `test -f 'hpcfile_cstree.c' || echo '$(srcdir)/'`hpcfile_cstree.c; \
+@am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/libHPCfile_la-hpcfile_cstree.Tpo" "$(DEPDIR)/libHPCfile_la-hpcfile_cstree.Po"; else rm -f "$(DEPDIR)/libHPCfile_la-hpcfile_cstree.Tpo"; exit 1; fi
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='hpcfile_cstree.c' object='libHPCfile_la-hpcfile_cstree.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	depfile='$(DEPDIR)/libHPCfile_la-hpcfile_cstree.Po' tmpdepfile='$(DEPDIR)/libHPCfile_la-hpcfile_cstree.TPo' @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCfile_a_CFLAGS) $(CFLAGS) -c -o libHPCfile_a-hpcfile_cstree.o `test -f 'hpcfile_cstree.c' || echo '$(srcdir)/'`hpcfile_cstree.c
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCfile_la_CFLAGS) $(CFLAGS) -c -o libHPCfile_la-hpcfile_cstree.o `test -f 'hpcfile_cstree.c' || echo '$(srcdir)/'`hpcfile_cstree.c
 
-libHPCfile_a-hpcfile_cstree.obj: hpcfile_cstree.c
-@am__fastdepCC_TRUE@	if $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCfile_a_CFLAGS) $(CFLAGS) -MT libHPCfile_a-hpcfile_cstree.obj -MD -MP -MF "$(DEPDIR)/libHPCfile_a-hpcfile_cstree.Tpo" -c -o libHPCfile_a-hpcfile_cstree.obj `if test -f 'hpcfile_cstree.c'; then $(CYGPATH_W) 'hpcfile_cstree.c'; else $(CYGPATH_W) '$(srcdir)/hpcfile_cstree.c'; fi`; \
-@am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/libHPCfile_a-hpcfile_cstree.Tpo" "$(DEPDIR)/libHPCfile_a-hpcfile_cstree.Po"; else rm -f "$(DEPDIR)/libHPCfile_a-hpcfile_cstree.Tpo"; exit 1; fi
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='hpcfile_cstree.c' object='libHPCfile_a-hpcfile_cstree.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	depfile='$(DEPDIR)/libHPCfile_a-hpcfile_cstree.Po' tmpdepfile='$(DEPDIR)/libHPCfile_a-hpcfile_cstree.TPo' @AMDEPBACKSLASH@
+libHPCfile_la-hpcfile_cstree.obj: hpcfile_cstree.c
+@am__fastdepCC_TRUE@	if $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCfile_la_CFLAGS) $(CFLAGS) -MT libHPCfile_la-hpcfile_cstree.obj -MD -MP -MF "$(DEPDIR)/libHPCfile_la-hpcfile_cstree.Tpo" -c -o libHPCfile_la-hpcfile_cstree.obj `if test -f 'hpcfile_cstree.c'; then $(CYGPATH_W) 'hpcfile_cstree.c'; else $(CYGPATH_W) '$(srcdir)/hpcfile_cstree.c'; fi`; \
+@am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/libHPCfile_la-hpcfile_cstree.Tpo" "$(DEPDIR)/libHPCfile_la-hpcfile_cstree.Po"; else rm -f "$(DEPDIR)/libHPCfile_la-hpcfile_cstree.Tpo"; exit 1; fi
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='hpcfile_cstree.c' object='libHPCfile_la-hpcfile_cstree.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	depfile='$(DEPDIR)/libHPCfile_la-hpcfile_cstree.Po' tmpdepfile='$(DEPDIR)/libHPCfile_la-hpcfile_cstree.TPo' @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCfile_a_CFLAGS) $(CFLAGS) -c -o libHPCfile_a-hpcfile_cstree.obj `if test -f 'hpcfile_cstree.c'; then $(CYGPATH_W) 'hpcfile_cstree.c'; else $(CYGPATH_W) '$(srcdir)/hpcfile_cstree.c'; fi`
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCfile_la_CFLAGS) $(CFLAGS) -c -o libHPCfile_la-hpcfile_cstree.obj `if test -f 'hpcfile_cstree.c'; then $(CYGPATH_W) 'hpcfile_cstree.c'; else $(CYGPATH_W) '$(srcdir)/hpcfile_cstree.c'; fi`
 
-libHPCfile_a-hpcfile_cstree.lo: hpcfile_cstree.c
-@am__fastdepCC_TRUE@	if $(LIBTOOL) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCfile_a_CFLAGS) $(CFLAGS) -MT libHPCfile_a-hpcfile_cstree.lo -MD -MP -MF "$(DEPDIR)/libHPCfile_a-hpcfile_cstree.Tpo" -c -o libHPCfile_a-hpcfile_cstree.lo `test -f 'hpcfile_cstree.c' || echo '$(srcdir)/'`hpcfile_cstree.c; \
-@am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/libHPCfile_a-hpcfile_cstree.Tpo" "$(DEPDIR)/libHPCfile_a-hpcfile_cstree.Plo"; else rm -f "$(DEPDIR)/libHPCfile_a-hpcfile_cstree.Tpo"; exit 1; fi
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='hpcfile_cstree.c' object='libHPCfile_a-hpcfile_cstree.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	depfile='$(DEPDIR)/libHPCfile_a-hpcfile_cstree.Plo' tmpdepfile='$(DEPDIR)/libHPCfile_a-hpcfile_cstree.TPlo' @AMDEPBACKSLASH@
+libHPCfile_la-hpcfile_cstree.lo: hpcfile_cstree.c
+@am__fastdepCC_TRUE@	if $(LIBTOOL) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCfile_la_CFLAGS) $(CFLAGS) -MT libHPCfile_la-hpcfile_cstree.lo -MD -MP -MF "$(DEPDIR)/libHPCfile_la-hpcfile_cstree.Tpo" -c -o libHPCfile_la-hpcfile_cstree.lo `test -f 'hpcfile_cstree.c' || echo '$(srcdir)/'`hpcfile_cstree.c; \
+@am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/libHPCfile_la-hpcfile_cstree.Tpo" "$(DEPDIR)/libHPCfile_la-hpcfile_cstree.Plo"; else rm -f "$(DEPDIR)/libHPCfile_la-hpcfile_cstree.Tpo"; exit 1; fi
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='hpcfile_cstree.c' object='libHPCfile_la-hpcfile_cstree.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	depfile='$(DEPDIR)/libHPCfile_la-hpcfile_cstree.Plo' tmpdepfile='$(DEPDIR)/libHPCfile_la-hpcfile_cstree.TPlo' @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(LIBTOOL) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCfile_a_CFLAGS) $(CFLAGS) -c -o libHPCfile_a-hpcfile_cstree.lo `test -f 'hpcfile_cstree.c' || echo '$(srcdir)/'`hpcfile_cstree.c
+@am__fastdepCC_FALSE@	$(LIBTOOL) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCfile_la_CFLAGS) $(CFLAGS) -c -o libHPCfile_la-hpcfile_cstree.lo `test -f 'hpcfile_cstree.c' || echo '$(srcdir)/'`hpcfile_cstree.c
 
-libHPCfile_a-hpcfile_general.o: hpcfile_general.c
-@am__fastdepCC_TRUE@	if $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCfile_a_CFLAGS) $(CFLAGS) -MT libHPCfile_a-hpcfile_general.o -MD -MP -MF "$(DEPDIR)/libHPCfile_a-hpcfile_general.Tpo" -c -o libHPCfile_a-hpcfile_general.o `test -f 'hpcfile_general.c' || echo '$(srcdir)/'`hpcfile_general.c; \
-@am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/libHPCfile_a-hpcfile_general.Tpo" "$(DEPDIR)/libHPCfile_a-hpcfile_general.Po"; else rm -f "$(DEPDIR)/libHPCfile_a-hpcfile_general.Tpo"; exit 1; fi
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='hpcfile_general.c' object='libHPCfile_a-hpcfile_general.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	depfile='$(DEPDIR)/libHPCfile_a-hpcfile_general.Po' tmpdepfile='$(DEPDIR)/libHPCfile_a-hpcfile_general.TPo' @AMDEPBACKSLASH@
+libHPCfile_la-hpcfile_general.o: hpcfile_general.c
+@am__fastdepCC_TRUE@	if $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCfile_la_CFLAGS) $(CFLAGS) -MT libHPCfile_la-hpcfile_general.o -MD -MP -MF "$(DEPDIR)/libHPCfile_la-hpcfile_general.Tpo" -c -o libHPCfile_la-hpcfile_general.o `test -f 'hpcfile_general.c' || echo '$(srcdir)/'`hpcfile_general.c; \
+@am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/libHPCfile_la-hpcfile_general.Tpo" "$(DEPDIR)/libHPCfile_la-hpcfile_general.Po"; else rm -f "$(DEPDIR)/libHPCfile_la-hpcfile_general.Tpo"; exit 1; fi
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='hpcfile_general.c' object='libHPCfile_la-hpcfile_general.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	depfile='$(DEPDIR)/libHPCfile_la-hpcfile_general.Po' tmpdepfile='$(DEPDIR)/libHPCfile_la-hpcfile_general.TPo' @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCfile_a_CFLAGS) $(CFLAGS) -c -o libHPCfile_a-hpcfile_general.o `test -f 'hpcfile_general.c' || echo '$(srcdir)/'`hpcfile_general.c
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCfile_la_CFLAGS) $(CFLAGS) -c -o libHPCfile_la-hpcfile_general.o `test -f 'hpcfile_general.c' || echo '$(srcdir)/'`hpcfile_general.c
 
-libHPCfile_a-hpcfile_general.obj: hpcfile_general.c
-@am__fastdepCC_TRUE@	if $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCfile_a_CFLAGS) $(CFLAGS) -MT libHPCfile_a-hpcfile_general.obj -MD -MP -MF "$(DEPDIR)/libHPCfile_a-hpcfile_general.Tpo" -c -o libHPCfile_a-hpcfile_general.obj `if test -f 'hpcfile_general.c'; then $(CYGPATH_W) 'hpcfile_general.c'; else $(CYGPATH_W) '$(srcdir)/hpcfile_general.c'; fi`; \
-@am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/libHPCfile_a-hpcfile_general.Tpo" "$(DEPDIR)/libHPCfile_a-hpcfile_general.Po"; else rm -f "$(DEPDIR)/libHPCfile_a-hpcfile_general.Tpo"; exit 1; fi
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='hpcfile_general.c' object='libHPCfile_a-hpcfile_general.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	depfile='$(DEPDIR)/libHPCfile_a-hpcfile_general.Po' tmpdepfile='$(DEPDIR)/libHPCfile_a-hpcfile_general.TPo' @AMDEPBACKSLASH@
+libHPCfile_la-hpcfile_general.obj: hpcfile_general.c
+@am__fastdepCC_TRUE@	if $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCfile_la_CFLAGS) $(CFLAGS) -MT libHPCfile_la-hpcfile_general.obj -MD -MP -MF "$(DEPDIR)/libHPCfile_la-hpcfile_general.Tpo" -c -o libHPCfile_la-hpcfile_general.obj `if test -f 'hpcfile_general.c'; then $(CYGPATH_W) 'hpcfile_general.c'; else $(CYGPATH_W) '$(srcdir)/hpcfile_general.c'; fi`; \
+@am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/libHPCfile_la-hpcfile_general.Tpo" "$(DEPDIR)/libHPCfile_la-hpcfile_general.Po"; else rm -f "$(DEPDIR)/libHPCfile_la-hpcfile_general.Tpo"; exit 1; fi
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='hpcfile_general.c' object='libHPCfile_la-hpcfile_general.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	depfile='$(DEPDIR)/libHPCfile_la-hpcfile_general.Po' tmpdepfile='$(DEPDIR)/libHPCfile_la-hpcfile_general.TPo' @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCfile_a_CFLAGS) $(CFLAGS) -c -o libHPCfile_a-hpcfile_general.obj `if test -f 'hpcfile_general.c'; then $(CYGPATH_W) 'hpcfile_general.c'; else $(CYGPATH_W) '$(srcdir)/hpcfile_general.c'; fi`
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCfile_la_CFLAGS) $(CFLAGS) -c -o libHPCfile_la-hpcfile_general.obj `if test -f 'hpcfile_general.c'; then $(CYGPATH_W) 'hpcfile_general.c'; else $(CYGPATH_W) '$(srcdir)/hpcfile_general.c'; fi`
 
-libHPCfile_a-hpcfile_general.lo: hpcfile_general.c
-@am__fastdepCC_TRUE@	if $(LIBTOOL) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCfile_a_CFLAGS) $(CFLAGS) -MT libHPCfile_a-hpcfile_general.lo -MD -MP -MF "$(DEPDIR)/libHPCfile_a-hpcfile_general.Tpo" -c -o libHPCfile_a-hpcfile_general.lo `test -f 'hpcfile_general.c' || echo '$(srcdir)/'`hpcfile_general.c; \
-@am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/libHPCfile_a-hpcfile_general.Tpo" "$(DEPDIR)/libHPCfile_a-hpcfile_general.Plo"; else rm -f "$(DEPDIR)/libHPCfile_a-hpcfile_general.Tpo"; exit 1; fi
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='hpcfile_general.c' object='libHPCfile_a-hpcfile_general.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	depfile='$(DEPDIR)/libHPCfile_a-hpcfile_general.Plo' tmpdepfile='$(DEPDIR)/libHPCfile_a-hpcfile_general.TPlo' @AMDEPBACKSLASH@
+libHPCfile_la-hpcfile_general.lo: hpcfile_general.c
+@am__fastdepCC_TRUE@	if $(LIBTOOL) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCfile_la_CFLAGS) $(CFLAGS) -MT libHPCfile_la-hpcfile_general.lo -MD -MP -MF "$(DEPDIR)/libHPCfile_la-hpcfile_general.Tpo" -c -o libHPCfile_la-hpcfile_general.lo `test -f 'hpcfile_general.c' || echo '$(srcdir)/'`hpcfile_general.c; \
+@am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/libHPCfile_la-hpcfile_general.Tpo" "$(DEPDIR)/libHPCfile_la-hpcfile_general.Plo"; else rm -f "$(DEPDIR)/libHPCfile_la-hpcfile_general.Tpo"; exit 1; fi
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='hpcfile_general.c' object='libHPCfile_la-hpcfile_general.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	depfile='$(DEPDIR)/libHPCfile_la-hpcfile_general.Plo' tmpdepfile='$(DEPDIR)/libHPCfile_la-hpcfile_general.TPlo' @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(LIBTOOL) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCfile_a_CFLAGS) $(CFLAGS) -c -o libHPCfile_a-hpcfile_general.lo `test -f 'hpcfile_general.c' || echo '$(srcdir)/'`hpcfile_general.c
+@am__fastdepCC_FALSE@	$(LIBTOOL) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCfile_la_CFLAGS) $(CFLAGS) -c -o libHPCfile_la-hpcfile_general.lo `test -f 'hpcfile_general.c' || echo '$(srcdir)/'`hpcfile_general.c
 
-libHPCfile_a-io.o: io.c
-@am__fastdepCC_TRUE@	if $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCfile_a_CFLAGS) $(CFLAGS) -MT libHPCfile_a-io.o -MD -MP -MF "$(DEPDIR)/libHPCfile_a-io.Tpo" -c -o libHPCfile_a-io.o `test -f 'io.c' || echo '$(srcdir)/'`io.c; \
-@am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/libHPCfile_a-io.Tpo" "$(DEPDIR)/libHPCfile_a-io.Po"; else rm -f "$(DEPDIR)/libHPCfile_a-io.Tpo"; exit 1; fi
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='io.c' object='libHPCfile_a-io.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	depfile='$(DEPDIR)/libHPCfile_a-io.Po' tmpdepfile='$(DEPDIR)/libHPCfile_a-io.TPo' @AMDEPBACKSLASH@
+libHPCfile_la-io.o: io.c
+@am__fastdepCC_TRUE@	if $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCfile_la_CFLAGS) $(CFLAGS) -MT libHPCfile_la-io.o -MD -MP -MF "$(DEPDIR)/libHPCfile_la-io.Tpo" -c -o libHPCfile_la-io.o `test -f 'io.c' || echo '$(srcdir)/'`io.c; \
+@am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/libHPCfile_la-io.Tpo" "$(DEPDIR)/libHPCfile_la-io.Po"; else rm -f "$(DEPDIR)/libHPCfile_la-io.Tpo"; exit 1; fi
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='io.c' object='libHPCfile_la-io.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	depfile='$(DEPDIR)/libHPCfile_la-io.Po' tmpdepfile='$(DEPDIR)/libHPCfile_la-io.TPo' @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCfile_a_CFLAGS) $(CFLAGS) -c -o libHPCfile_a-io.o `test -f 'io.c' || echo '$(srcdir)/'`io.c
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCfile_la_CFLAGS) $(CFLAGS) -c -o libHPCfile_la-io.o `test -f 'io.c' || echo '$(srcdir)/'`io.c
 
-libHPCfile_a-io.obj: io.c
-@am__fastdepCC_TRUE@	if $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCfile_a_CFLAGS) $(CFLAGS) -MT libHPCfile_a-io.obj -MD -MP -MF "$(DEPDIR)/libHPCfile_a-io.Tpo" -c -o libHPCfile_a-io.obj `if test -f 'io.c'; then $(CYGPATH_W) 'io.c'; else $(CYGPATH_W) '$(srcdir)/io.c'; fi`; \
-@am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/libHPCfile_a-io.Tpo" "$(DEPDIR)/libHPCfile_a-io.Po"; else rm -f "$(DEPDIR)/libHPCfile_a-io.Tpo"; exit 1; fi
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='io.c' object='libHPCfile_a-io.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	depfile='$(DEPDIR)/libHPCfile_a-io.Po' tmpdepfile='$(DEPDIR)/libHPCfile_a-io.TPo' @AMDEPBACKSLASH@
+libHPCfile_la-io.obj: io.c
+@am__fastdepCC_TRUE@	if $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCfile_la_CFLAGS) $(CFLAGS) -MT libHPCfile_la-io.obj -MD -MP -MF "$(DEPDIR)/libHPCfile_la-io.Tpo" -c -o libHPCfile_la-io.obj `if test -f 'io.c'; then $(CYGPATH_W) 'io.c'; else $(CYGPATH_W) '$(srcdir)/io.c'; fi`; \
+@am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/libHPCfile_la-io.Tpo" "$(DEPDIR)/libHPCfile_la-io.Po"; else rm -f "$(DEPDIR)/libHPCfile_la-io.Tpo"; exit 1; fi
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='io.c' object='libHPCfile_la-io.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	depfile='$(DEPDIR)/libHPCfile_la-io.Po' tmpdepfile='$(DEPDIR)/libHPCfile_la-io.TPo' @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCfile_a_CFLAGS) $(CFLAGS) -c -o libHPCfile_a-io.obj `if test -f 'io.c'; then $(CYGPATH_W) 'io.c'; else $(CYGPATH_W) '$(srcdir)/io.c'; fi`
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCfile_la_CFLAGS) $(CFLAGS) -c -o libHPCfile_la-io.obj `if test -f 'io.c'; then $(CYGPATH_W) 'io.c'; else $(CYGPATH_W) '$(srcdir)/io.c'; fi`
 
-libHPCfile_a-io.lo: io.c
-@am__fastdepCC_TRUE@	if $(LIBTOOL) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCfile_a_CFLAGS) $(CFLAGS) -MT libHPCfile_a-io.lo -MD -MP -MF "$(DEPDIR)/libHPCfile_a-io.Tpo" -c -o libHPCfile_a-io.lo `test -f 'io.c' || echo '$(srcdir)/'`io.c; \
-@am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/libHPCfile_a-io.Tpo" "$(DEPDIR)/libHPCfile_a-io.Plo"; else rm -f "$(DEPDIR)/libHPCfile_a-io.Tpo"; exit 1; fi
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='io.c' object='libHPCfile_a-io.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	depfile='$(DEPDIR)/libHPCfile_a-io.Plo' tmpdepfile='$(DEPDIR)/libHPCfile_a-io.TPlo' @AMDEPBACKSLASH@
+libHPCfile_la-io.lo: io.c
+@am__fastdepCC_TRUE@	if $(LIBTOOL) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCfile_la_CFLAGS) $(CFLAGS) -MT libHPCfile_la-io.lo -MD -MP -MF "$(DEPDIR)/libHPCfile_la-io.Tpo" -c -o libHPCfile_la-io.lo `test -f 'io.c' || echo '$(srcdir)/'`io.c; \
+@am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/libHPCfile_la-io.Tpo" "$(DEPDIR)/libHPCfile_la-io.Plo"; else rm -f "$(DEPDIR)/libHPCfile_la-io.Tpo"; exit 1; fi
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='io.c' object='libHPCfile_la-io.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	depfile='$(DEPDIR)/libHPCfile_la-io.Plo' tmpdepfile='$(DEPDIR)/libHPCfile_la-io.TPlo' @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(LIBTOOL) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCfile_a_CFLAGS) $(CFLAGS) -c -o libHPCfile_a-io.lo `test -f 'io.c' || echo '$(srcdir)/'`io.c
+@am__fastdepCC_FALSE@	$(LIBTOOL) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCfile_la_CFLAGS) $(CFLAGS) -c -o libHPCfile_la-io.lo `test -f 'io.c' || echo '$(srcdir)/'`io.c
 
 mostlyclean-libtool:
 	-rm -f *.lo
@@ -590,7 +592,7 @@ distdir: $(DISTFILES)
 	done
 check-am: all-am
 check: check-am
-all-am: Makefile $(LIBRARIES)
+all-am: Makefile $(LTLIBRARIES)
 installdirs:
 install: install-am
 install-exec: install-exec-am
@@ -619,7 +621,7 @@ maintainer-clean-generic:
 	@echo "it deletes files that may require special tools to rebuild."
 clean: clean-am
 
-clean-am: clean-generic clean-libtool clean-noinstLIBRARIES \
+clean-am: clean-generic clean-libtool clean-noinstLTLIBRARIES \
 	mostlyclean-am
 
 distclean: distclean-am
@@ -669,7 +671,7 @@ ps-am:
 uninstall-am: uninstall-info-am
 
 .PHONY: CTAGS GTAGS all all-am check check-am clean clean-generic \
-	clean-libtool clean-noinstLIBRARIES ctags distclean \
+	clean-libtool clean-noinstLTLIBRARIES ctags distclean \
 	distclean-compile distclean-generic distclean-libtool \
 	distclean-tags distdir dvi dvi-am html html-am info info-am \
 	install install-am install-data install-data-am install-exec \

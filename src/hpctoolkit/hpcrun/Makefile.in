@@ -15,7 +15,7 @@
 @SET_MAKE@
 
 # -*-Mode: makefile;-*-
-# $Header: /Volumes/cvsrep/developer/HPCToolkit/src/hpctoolkit/hpcrun/Makefile.am,v 1.4 2004/11/01 19:06:33 eraxxon Exp $
+# $Header: /Volumes/cvsrep/developer/HPCToolkit/src/hpctoolkit/hpcrun/Makefile.am,v 1.5 2004/11/03 03:09:53 eraxxon Exp $
 
 #############################################################################
 #
@@ -114,7 +114,7 @@ CONFIG_CLEAN_FILES =
 am__installdirs = "$(DESTDIR)$(libdir)" "$(DESTDIR)$(bindir)"
 libLTLIBRARIES_INSTALL = $(INSTALL)
 LTLIBRARIES = $(lib_LTLIBRARIES)
-am__DEPENDENCIES_1 = $(top_builddir)/src/lib/hpcfile/libHPCfile.a
+am__DEPENDENCIES_1 = $(top_builddir)/src/lib/hpcfile/libHPCfile.la
 am__DEPENDENCIES_2 = $(am__DEPENDENCIES_1)
 libhpcrun_la_DEPENDENCIES = $(am__DEPENDENCIES_2)
 am__objects_1 = libhpcrun_la-monitor_preload.lo \
@@ -133,7 +133,7 @@ am__objects_3 = hpcrun-hpcrun.$(OBJEXT) hpcrun-hpcpapi.$(OBJEXT) \
 	hpcrun-dlpapi.$(OBJEXT)
 am_hpcrun_OBJECTS = $(am__objects_3)
 hpcrun_OBJECTS = $(am_hpcrun_OBJECTS)
-am__DEPENDENCIES_3 = $(top_builddir)/src/lib/support/libHPCsupport.a
+am__DEPENDENCIES_3 = $(top_builddir)/src/lib/support/libHPCsupport.la
 am__DEPENDENCIES_4 = $(am__DEPENDENCIES_3)
 hpcrun_DEPENDENCIES = $(am__DEPENDENCIES_4)
 am__objects_4 = libhpcrun_static_o-monitor_static.$(OBJEXT) \
@@ -332,11 +332,11 @@ HPC_IFLAGS = -I$(HPCTOOLKIT)/src
 #   HPC_LIBXML      : HPC_LIBSUPPORT
 #   HPC_LIBSUPPORT  :
 #   HPC_LIBHPCFILE  :
-HPC_LIBBINUTILS = $(top_builddir)/src/lib/binutils/libHPCbinutils.a
-HPC_LIBISA = $(top_builddir)/src/lib/ISA/libHPCisa.a
-HPC_LIBXML = $(top_builddir)/src/lib/xml/libHPCxml.a
-HPC_LIBSUPPORT = $(top_builddir)/src/lib/support/libHPCsupport.a
-HPC_LIBHPCFILE = $(top_builddir)/src/lib/hpcfile/libHPCfile.a
+HPC_LIBBINUTILS = $(top_builddir)/src/lib/binutils/libHPCbinutils.la
+HPC_LIBISA = $(top_builddir)/src/lib/ISA/libHPCisa.la
+HPC_LIBXML = $(top_builddir)/src/lib/xml/libHPCxml.la
+HPC_LIBSUPPORT = $(top_builddir)/src/lib/support/libHPCsupport.la
+HPC_LIBHPCFILE = $(top_builddir)/src/lib/hpcfile/libHPCfile.la
 
 #############################################################################
 # Common settings
