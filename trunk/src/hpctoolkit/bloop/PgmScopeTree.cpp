@@ -920,27 +920,35 @@ ScopeInfo::DumpLineSorted(ostream &os, int dmpFlag, const char *pre) const
 void
 PgmScope::DumpLineSorted(ostream &os, int dmpFlag, const char *pre) const
 {
+  // N.B.: Typically LoadModScope are children
   String indent = "   ";
   if (dmpFlag & PgmScopeTree::COMPRESSED_OUTPUT) { pre = ""; indent = ""; }  
 
   ScopeInfo::DumpSelfBefore(os, dmpFlag, pre);
   String prefix = String(pre) + indent;  
-  for (ScopeInfoNameSortedChildIterator pgmIt(this); pgmIt.Current(); 
-       pgmIt++) { 
-#if 0
-    // FIXME: The following will be true for 'bloop', but not
-    // necessarily for all possible trees (e.g., this could be a GroupScope)
-    FileScope* file = dynamic_cast<FileScope*>(pgmIt.Current());
-    BriefAssertion(file); 
-
-    file->DumpLineSorted(os, dmpFlag, prefix);
-#else
-    ScopeInfo* scope = pgmIt.Current();
+  for (ScopeInfoNameSortedChildIterator it(this); it.Current(); it++) { 
+    ScopeInfo* scope = it.Current();
     scope->DumpLineSorted(os, dmpFlag, prefix);
-#endif
   }
   ScopeInfo::DumpSelfAfter(os, dmpFlag, pre);
 }
+
+void
+LoadModScope::DumpLineSorted(ostream &os, int dmpFlag, const char *pre) const
+{
+  // N.B.: Typically FileScopes are children
+  String indent = "   ";
+  if (dmpFlag & PgmScopeTree::COMPRESSED_OUTPUT) { pre = ""; indent = ""; }  
+
+  ScopeInfo::DumpSelfBefore(os, dmpFlag, pre);
+  String prefix = String(pre) + indent;  
+  for (ScopeInfoNameSortedChildIterator it(this); it.Current(); it++) { 
+    ScopeInfo* scope = it.Current();
+    scope->DumpLineSorted(os, dmpFlag, prefix);
+  }
+  ScopeInfo::DumpSelfAfter(os, dmpFlag, pre);
+}
+
 
 String 
 ScopeInfo::Types() 

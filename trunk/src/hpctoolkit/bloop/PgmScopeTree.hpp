@@ -414,6 +414,10 @@ public:
   virtual String CodeName() const;
   virtual String ToDumpString(int dmpFlag = PgmScopeTree::XML_TRUE) const;
   
+  void DumpLineSorted(std::ostream &os = std::cerr, 
+		      int dmpFlag = PgmScopeTree::XML_TRUE,
+		      const char *pre = "") const;
+  
   void AddToFileMap(FileScope& file);
 protected: 
 private: 
