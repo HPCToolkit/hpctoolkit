@@ -21622,9 +21622,13 @@ fi
 case ${host} in
   alpha*-*-linux* | alpha*-*-osf*)
     if CXXcmp "cxx"; then
-      # Compaq compiler
+      # Compaq compiler: Before using libtool, we had used local
+      # repositories and included template definitions in respective
+      # archives.  However, libtool doesn't take kindly to including
+      # .o's and .lo's in the same archive.  Thus, we now use a global
+      # repository, even though it means archives are not self-contained.
       HOST_CXXFLAGS="-std strict_ansi -rtti -pt -ptr ${hpctoolkit_build}/cxx_trepository"
-      HOST_LIBTREPOSITORY="${hpctoolkit_build}/cxx_trepository/*.o"
+      #old: HOST_LIBTREPOSITORY="./cxx_trepository/*.o"
       if test "$OPT_ENABLE_DEVELOP" = "yes" ; then
         my_opt_flags="-g"
         my_opt_cxxflags="-gall"
