@@ -57,7 +57,7 @@ include $(HPCTOOLKIT)/src/Makeinclude.config
 
 all: exes install
 
-exes: build_hpcview build_bloop build_xprof #build_xcsprof
+exes: build_hpcview build_bloop build_xprof build_xcsprof
 
 .PHONY: all exes post_cvs_co_script
 
@@ -104,9 +104,11 @@ INSTALL_EXES = $(EXE_HPCVIEW) $(EXE_BLOOP) $(EXE_XPROF) $(EXE_XCSPROF)
 # install everything
 install: exes uninstall install_scripts
 	-mkdir -p $(HBIN)/$(PLATFORM)
+	chmod 755 $(HBIN)/$(PLATFORM)
 	for i in $(INSTALL_EXES) ; do \
 	  if [ -x $(HPCTOOLKIT_EXE_PATH)/$$i ] ; then \
 	    cp $(HPCTOOLKIT_EXE_PATH)/$$i $(HBIN)/$(PLATFORM)/ ; \
+	    chmod 755 $(HBIN)/$(PLATFORM)/$$i ; \
 	  fi \
 	done
 
@@ -117,22 +119,23 @@ uninstall: uninstall_scripts
 
 PERL_LIB     = perl
 
-SCRIPTS_SRC  = ptran/ptran filters/f90modfilt \
-	hpcquick/hpcquick hpcquick/hpcquick-papiprof \
-	misc/dcpicounts misc/pxmlcat misc/xprofquick
-SCRIPTS_INST = ptran f90modfilt \
-	hpcquick hpcquick-papiprof \
-	dcpicounts pxmlcat xprofquick
+SCRIPTS_SRC  = ptran/ptran filters/sgi-f90modfilt filters/compaq-f90modfilt hpcquick/hpcquick hpcquick/hpcquick-papiprof misc/dcpicounts misc/pxmlcat misc/xprofquick
+SCRIPTS_INST = ptran sgi-f90modfilt compaq-f90modfilt hpcquick hpcquick-papiprof dcpicounts pxmlcat xprofquick
 
 # install perl tools
 #   note: we only copy *.pm files (instead of the whole directory) so
 #     that the CVS directory is not copied!
 install_scripts: uninstall_scripts
 	-mkdir $(HBIN)/$(PERL_LIB)
-	cp $(HSRC)/lib/$(PERL_LIB)/*.pm $(HBIN)/$(PERL_LIB)/
+	chmod 755 $(HBIN)/$(PERL_LIB)
+	for i in $(HSRC)/lib/$(PERL_LIB)/*.pm ; do \
+	  cp $$i $(HBIN)/$(PERL_LIB)/; \
+	  chmod 644 $(HBIN)/$(PERL_LIB)/`basename $$i`; \
+	done;
 	for i in $(SCRIPTS_SRC) ; do \
 	  if [ -x $(HSRC)/hpctoolkit/$$i ] ; then \
 	    cp $(HSRC)/hpctoolkit/$$i $(HBIN)/ ; \
+	    chmod 755 $(HBIN)/`basename $$i`; \
 	  fi \
 	done;
 

@@ -52,7 +52,7 @@ include $(HPCTOOLKIT)/src/Makeinclude.config
 
 all: libs
 
-libs: $(LIB_SUPPORT) $(LIB_BINUTILS) $(LIB_ISA) $(LIB_XML) #$(LIB_HPCFILE)
+libs: $(LIB_SUPPORT) $(LIB_BINUTILS) $(LIB_ISA) $(LIB_XML) $(LIB_HPCFILE)
 
 .PHONY: all libs
 
