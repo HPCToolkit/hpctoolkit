@@ -1,0 +1,252 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+
+<!--
+  HPCToolkit Documentation: Editing within Netscape/Mozilla Composer
+  is possible, but it generates strange stuff in-line.  
+  Please use an ordinary text editor.
+-->
+
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+
+  <title>HPCToolkit bloop man page</title>
+
+  <link rel='stylesheet' type='text/css' href='styleForAll.css'>
+</head>
+
+<body>
+
+<!-- ********************************************************************** -->
+
+<script language="JavaScript" src="header_hpctools.js"></script> 
+
+<!-- ********************************************************************** -->
+
+<div id="main">
+
+<!-- automatically updated by Emacs hook below; nicer than CVS Date -->
+<p class="lastupdated">Last Updated: 2004-10-26</p>
+
+<h2>User Commands: bloop(1)</h2>
+
+<!-- ********************************************************************** -->
+
+<h3>SYNOPSIS</h3>
+
+<div class="indent">
+
+<p><span class="hpctool">bloop</span> 
+   [options] <i>binary</i> &gt; <i>output.psxml</i>
+
+<p>Location: <code>${HPCTOOLKIT}/bin</code>
+
+</div> <!-- class=indent -->
+
+<!-- ********************************************************************** -->
+
+<h3>DESCRIPTION</h3>
+
+<div class="indent">
+
+<p><span class="hpctool">bloop</span> analyzes the application 
+binary <i>binary</i>, recovers information about its source-line 
+loop-nesting structure and generates an XML scope tree to standard 
+output.  It uses debugging information to gather source-line
+data; see NOTES below for common problems.</p>
+
+<p>The output file is an XML document of type 
+<a href="dtd_pgm.html" class="hpctool">PGM</a> which can be passed 
+to <a href="hpcquick.html" class="hpctool">hpcquick</a> or
+<a href="hpcview.html" class="hpctool">hpcview</a>
+in order to enable the latter to aggregate performance metrics at each
+level of the loop hierarchy and to map the loops to the program source
+code.</p>
+
+<p><span class="hpctool">bloop</span> analyzes C, C++ and Fortran binaries
+from a number of different platforms.  See NOTES below.</p>
+
+</div> <!-- class=indent -->
+
+<!-- ********************************************************************** -->
+
+<h3>ARGUMENTS</h3>
+
+<div class="indent">
+
+<p>Typically <span class="hpctool">bloop</span> is used
+with no arguments other than <i>binary</i> and its standard output
+is redirected to the file <i>output.psxml</i>.</p>
+
+<dl>
+
+<dt><i>binary</i>
+<dd>This is the executable binary for your application.  If there are
+libraries that you want profiled and from which you want to extract
+the structure, you have to link those libraries statically with your
+application.
+
+</dl>
+
+
+<h4>Options</h4>
+
+<dl>
+
+<dt>-v, --verbose
+<dd>Verbose: generate progress messages to stderr.
+
+<dt>-n, --normalize-off
+<dd>Turn off scope tree normalization.  <span class="hpctool">bloop</span>
+uses a normalization heuristic that collapses the object-code loop
+structure into one in which each source statement appears in at most
+one loop.  Turning off normalization is currently used only for
+debugging <span class="hpctool">bloop</span> if it fails to correctly
+collapse multiple occurrences of the a statement that may arise due to
+compiler optimizations.  Sometimes it is also informative to look at
+the unnormalized output to get an idea of how the compiler has
+transformed your loops.  Some day there will be both instrumentation
+and a user interface that will be able to use the unnormalized form.
+
+<dt>-c, --compact
+<dd>Compact output.  Normally, the output is formatted with
+indentation to make it more readable.  This option suppresses this extra
+white space.  The result is very compact, but practically unreadable.
+
+<dt>-p <i>list</i>, --canonical-paths <i>list</i>
+<dd>Ensure that the scope tree only contains those files found in the
+colon separated <i>list</i>.  May be passed multiple times.
+
+<br><br>
+
+Normally, <span class="hpctool">bloop</span> outputs program structure
+information for everything found in the application
+<i>binary</i>. (Functions that are in dynamically linked libraries are
+not in the binary, so their structure is not analyzed.)  This option
+limits the output to only functions whose source is found in supplied
+path list.  This allows the user to focus on performance issues in the
+application, rather than looking at the details of a large library
+with which it is linked and for which source code is not available.
+
+<dt>-V, --version
+<dd>Print version information.
+
+<dt>-h, --help
+<dd>Print help.
+
+<dt>-D, --dump-binary
+<dd>Dump binary information and suppress loop recovery.  When this option 
+is used, <span class="hpctool">bloop</span> prints an
+unprocessed list of sections in <i>binary</i>, the procedures in each
+section, and a basic decoded list of instructions in each procedure.
+This option is not intended for general use, though it can be interesting.
+
+</dl>
+
+</div> <!-- class=indent -->
+
+<!-- ********************************************************************** -->
+
+<h3>EXAMPLES</h3>
+
+<div class="indent">
+
+<ol class="noindent">
+
+<li><p>To analyze the program binary <code>sweep3dsingle</code> that
+you have compiled with debugging information, and to capture the
+output in the file <code>sweep3dsingle.psxml</code>, execute:</p>
+
+<div class="indent">
+  <code>bloop sweep3dsingle > sweep3dsingle.psxml</code>
+</div>
+
+</ol>
+
+</div> <!-- class=indent -->
+
+<!-- ********************************************************************** -->
+
+<h3>NOTES</h3>
+
+<div class="indent">
+
+<p><span class="hpctool">bloop</span> is dependent upon <i>accurate</i>
+debugging information to facilitate source-line loop recovery.  This 
+implies that <span class="hpctool">bloop</span> cannot fix inaccurate
+debugging information generated by optimizing compilers.  It also means
+that <i>binary</i> should be compiled with as much debugging information
+as possible.  Finally, the debugging information must be in the binary, 
+not object files.  Here is a list of compilers and options that one should
+use:</p>
+
+<ul>
+  <li>GNU Compilers and Intel Compilers: <code>-g</code>
+  <li>Compaq Compilers and SGI MIPSpro Compilers: <code>-g3</code>
+  <li>Sun Compilers: <code>-g -xs</code>
+</ul>
+
+<p><span class="hpctool">bloop</span> does <i>not</i> currently
+load and analyze any dynamically linked libraries that may be used
+by <i>binary</i>.  To include such libraries in a 
+<span class="hpctool">bloop</span> analysis, you will need to relink
+your program with static versions of the libraries.</p>
+
+<p><span class="hpctool">bloop</span> is a `cross-tool' and thus
+supports the analysis of different types of target binaries on one
+platform.  (GNU's binutils must also be configured to support these
+targets.).  It currently supports the following platforms and
+compilers:</p>
+
+<ul>
+  <li>alpha-OSF1:  GCC 2.9x, 3.x, Compaq Compilers 6.x
+  <li>i686-Linux:  GCC 2.9x, 3.x
+  <li>ia64-Linux:  GCC 2.9x, 3.x, Intel Compilers 6.x, 7.x
+  <li>mips-IRIX64: GCC 2.9x, 3.x, SGI MIPSpro Compilers 7.x
+  <li>sparc-SunOS: GCC 2.9x, 3.x, Sun WorkShop/Forte/ONE 6u2
+</ul>
+
+</div> <!-- class=indent -->
+
+<!-- ********************************************************************** -->
+
+<h3>FUTURE DIRECTIONS</h3>
+
+<div class="indent">
+
+<p>We have plans to add support for the analysis of dynamically linked
+libraries.</p>
+
+</div> <!-- class=indent -->
+
+<!-- ********************************************************************** -->
+
+<h3>ALSO SEE</h3>
+
+<div class="indent">
+
+<p>See the file 
+<a href="../README.ReleaseNotes"><code>${HPCTOOLKIT}/README.ReleaseNotes</code></a>
+for some platform specific notes.</p>
+
+</div> <!-- class=indent -->
+
+<!-- ********************************************************************** -->
+
+<script language="JavaScript" src="footer_hpctools.js"></script>
+
+<!-- ********************************************************************** -->
+
+</div> <!-- id=main -->
+
+</body>
+</html>
+
+
+<!-- Local Variables: -->
+<!-- eval: (add-hook 'write-file-hooks 'time-stamp) -->
+<!-- time-stamp-start: ">Last Updated: " -->
+<!-- time-stamp-format: "%:y-%02m-%02d" -->
+<!-- time-stamp-end: "<" -->
+<!-- time-stamp-line-limit: 35 -->
+<!-- End: -->
