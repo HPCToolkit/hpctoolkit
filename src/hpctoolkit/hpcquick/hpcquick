@@ -123,7 +123,6 @@
 
 use HPCToolkitVersionInfo;
 use FileHandle();
-use Cwd 'realpath';
 
 STDOUT->autoflush(1); 
 
@@ -439,37 +438,58 @@ sub isValidSrcPath {
 #   viewname should not be empty.
 # ----------------------------------------------------------------------
 
-sub getViewnameFromSrcPath {
-    my ($path) = @_;
-    my $recursive = 0;
-    
-    # Remove recursive path indicator, if present.
-    my $p = isRecursivePath($path);
-    if ($p) {
-	$path = $p;
-	$recursive = 1;
-    }
-    
-    # ------------------------------------------------------
-    # If path contains a '.' or '..', canonicalize.
-    # ------------------------------------------------------
-    # Exception: ., ./xxx
-    #if ( $path eq "." ) { $path = ""; }
-    #if ( $path =~ s/^\.\/// )
-    if ( ($path =~ /\./) || ($path =~ /\.\./)) { 
-	$path = realpath($path);
-    }
-    
-    # If path begins with '/', remove
-    $path =~ s/^\///;
+{
+    my $defaultViewNm;
+    my $defaultQualifier;
 
-    # If path was recursive, add indicator
-    if ($recursive) {
-	$path .= "-r";
+    sub getViewnameFromSrcPath {
+	my ($path) = @_;
+	my $recursive = 0;
+
+	# ------------------------------------------------------
+	# Normalize path into initial viewname.  If we have a path like
+	# the following, we would like to use its name:
+	#   ./mypath, ./mypath/*, mypath/, ./mypath/.
+	# Admittedly, this is not overly likely.
+	# ------------------------------------------------------
+	
+	# Remove recursive path indicator, if present.
+	my $p = isRecursivePath($path);
+	if ($p) {
+	    $path = $p;
+	    $recursive = 1;
+	}
+	
+	# Remove any beginning '.' (but not ..!)
+	$path =~ s/^\.$//;  # .
+	$path =~ s/^\.\///; # ./
+	
+	# Remove any trailing '/' or '/.'
+	$path =~ s/\/$//; 
+	$path =~ s/\/\.$//; 
+	
+	my $viewnm = $path;
+	
+	# ------------------------------------------------------
+	# Now, if viewname contains invalid chars, canonicalize.
+	# Invalid: ., *, ?, /, \  (there are others...)
+	# ------------------------------------------------------
+	
+	if ( $viewnm eq "" 
+	     || ($viewnm =~ /\./) || ($viewnm =~ /\*/) 
+	     || ($viewnm =~ /\?/) 
+	     || ($viewnm =~ /\//) || ($viewnm =~ /\\/)) {
+	    $viewnm = $defaultViewNm . $defaultQualifier;
+	    $defaultQualifier++;
+	}
+	
+	return $viewnm;
     }
-    
-    my $view = $path;
-    return $view;
+
+    BEGIN { 
+	$defaultViewNm = "src";
+	$defaultQualifier = 1;
+    }
 }
 
 # ----------------------------------------------------------------------
@@ -481,9 +501,9 @@ sub getViewnameFromSrcPath {
 sub isRecursivePath {
     my ($path) = @_;
     
-    # This is a recursive path if the last character is '*'.  If it
+    # This is a recursive path if it ends with '/*'.  If it
     # exists, strip it off.
-    my $cnt = ($path =~ s/\*$//);
+    my $cnt = ($path =~ s/\/\*$//);
     
     if ($cnt > 0) {
 	return $path;
@@ -933,29 +953,31 @@ sub createOutputFiles {
 #   and &quot;.
 # ----------------------------------------------------------------------
 
-sub xmlEsc {
+{
+    my ($amp, $ampXML);   # ampersand
+    my ($quot, $quotXML); # double quote
+    my ($lt, $ltXML);     # left angle bracket
+    my ($gt, $gtXML);     # right angle bracket
+    
+    sub xmlEsc {
+	my ($content) = @_;
+	if (!defined($content)) {
+	    return $content;
+	}
 
-    # FIXME: Is there a way to make simulate C statics without placing
-    # these at the top of the file to force evaulation?
-    my $ampersand = "&";
-    my $amp = "&amp;";
-    my $quoteMark = "\"";
-    my $quot = "&quot;";
-    my $leftAngleBracket = "<";
-    my $lt = "&lt;";
-    my $rightAngleBracket = ">";
-    my $gt = "&gt;";
+	$content =~ s/$amp/$ampXML/g;
+	$content =~ s/$quot/$quotXML/g;
 
-    my ($content) = @_;
-    if (!defined($content)) {
+	$content =~ s/$lt/$ltXML/g;
+	$content =~ s/$gt/$gtXML/g;
 	return $content;
     }
 
-    $content =~ s/$ampersand/$amp/g;
-    $content =~ s/$quoteMark/$quot/g;
-
-    $content =~ s/$leftAngleBracket/$lt/g;
-    $content =~ s/$rightAngleBracket/$gt/g;
-    return $content;
+    BEGIN { 
+	($amp, $ampXML) = ("&", "&amp;");
+	($quot, $quotXML) = ("\"", "&quot;");
+	($lt, $ltXML) = ("<", "&lt;");
+	($gt, $gtXML) = (">", "&gt;");
+    }
 }
 
