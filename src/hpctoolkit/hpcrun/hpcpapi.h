@@ -45,6 +45,14 @@ extern "C" {
 extern int
 hpc_init_papi();
 
+
+/* hpc_init_papi_force: Force initialization of the PAPI library 
+   perform error checking.  If an error is
+   encountered, print an error message and return non-zero; otherwise
+   return 0.  May be called only once. */
+extern int
+hpc_init_papi_force();
+
 #ifdef __cplusplus
 }
 #endif

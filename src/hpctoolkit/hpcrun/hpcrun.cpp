@@ -109,7 +109,7 @@ main(int argc, char* argv[])
 static void
 init_papi() 
 {
-  /* Initiailize PAPI library */
+  /* Initialize PAPI library */
   if (hpc_init_papi() != 0) {
     exit(-1);
   }

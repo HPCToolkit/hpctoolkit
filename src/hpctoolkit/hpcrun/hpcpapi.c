@@ -36,7 +36,19 @@ hpc_init_papi()
   int retval;
 
   if (PAPI_is_initialized() == PAPI_NOT_INITED) {
-    /* Initiailize PAPI library */
+    return hpc_init_papi_force();
+  }
+  
+  return 0;
+}
+
+
+/****************************************************************************/
+
+int
+hpc_init_papi_force()
+{
+    /* Initialize PAPI library */
     int papi_version; 
     papi_version = PAPI_library_init(PAPI_VER_CURRENT);
     if (papi_version != PAPI_VER_CURRENT) {
@@ -48,8 +60,6 @@ hpc_init_papi()
       fprintf(stderr, "Using PAPI library version %d; expecting version 3 or greater.\n", papi_version);
       return 1;
     }
-  }
-  
   return 0;
 }
 
