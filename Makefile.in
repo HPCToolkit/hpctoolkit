@@ -15,7 +15,7 @@
 @SET_MAKE@
 
 # -*-Mode: makefile;-*-
-# $Header: /Volumes/cvsrep/developer/HPCToolkit/Makefile.am,v 1.2 2004/03/10 18:28:59 eraxxon Exp $
+# $Header: /Volumes/cvsrep/developer/HPCToolkit/Makefile.am,v 1.3 2004/09/27 20:37:22 johnmc Exp $
 
 #############################################################################
 #
@@ -676,7 +676,8 @@ myinstall-xerces:
 	@$(mkinstalldirs) $(MYXERCESINSTALLDIR)
 	@cp -R $(MYXERCESLIB) $(MYXERCESINSTALLDIR)/.
 
-.PHONY : install-data-hook myinstall-files myinstall-scripts \
+.PHONY : install-data-local install-data-hook \
+	myinstall-files myinstall-scripts \
 	myinstall-dirs myinstall-xerces
 
 hpc_webdocs: 
