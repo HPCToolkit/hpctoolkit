@@ -153,22 +153,19 @@ void PGMDocHandler:: startElement(const XMLCh* const uri,
   // PGM
   // -----------------------------------------------------------------
   if (XMLString::equals(name, elemPgm)) {
-    String pgmName = getAttr(attributes, attrName);
     String verStr = getAttr(attributes, attrVer);
     
-    pgmName = driver->ReplacePath(pgmName);
     double ver = atof(verStr);
 
     pgmVersion = ver;
-    if (pgmVersion < 3.0) {
+    if (pgmVersion < 4.0) {
       String error = "This file format version is outdated; please regenerate the file."; 
       throw PGMException(error); 
     }
     
-    IFTRACE << "PGM: name=" << pgmName << " ver=" << ver << endl;
+    IFTRACE << "PGM: ver=" << ver << endl;
 
     PgmScope* root = nodeRetriever->GetRoot();
-    root->SetName(pgmName);
   }
   
   // G(roup)

@@ -73,9 +73,9 @@ public:
   void SetTitle(const char* tit)        { title = tit; } ; 
   const String& Title() const           { return title; } ;
 
-  void SetPGMFileName(const char* pf) { pgmFileName = pf; } ;
-  const String& PGMFileName() const { return pgmFileName; } ;
-  int IsPGMFileAvailable() { return (pgmFileName != ""); };
+  void AddStructureFile(const char* pf) { structureFiles.push_back(new String(pf)); } ;
+  const String& GetStructureFile(int i) const { return *structureFiles[i]; } ;
+  int NumberOfStructureFiles() { return structureFiles.size(); };
   
   void AddPath(const char* _path, const char* _viewname);
   const String& Path() const { return path; } ;
@@ -106,7 +106,6 @@ public:
 
 private: 
   String title;
-  String pgmFileName;
   int deleteTrailingUnderscores;
   bool cpySrcFiles;
 
@@ -117,6 +116,7 @@ private:
   std::vector<String> replaceOutPath; 
 
   std::vector<PerfMetric*> dataSrc; 
+  std::vector<String*> structureFiles; 
 };
 
 #endif 

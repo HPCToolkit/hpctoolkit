@@ -77,7 +77,7 @@ STDOUT->autoflush(1);
 my $the_program = $Script;
 my $the_usage = 
 "Usage: 
-  ${the_program} [other-options] -z|x [-I <dir1>...<dirN>] [-S <struct-file>] -P <prof1>...<profM>
+  ${the_program} [other-options] -z|x [-I <dir1>...<dirN>] [-S <struct-file1> ...<struct-fileK>] -P <prof1>...<profM>
   
 Given a list of paths to directories containing interesting program source
 code files, an optional program structure file created by the 'bloop' tool,
@@ -100,7 +100,10 @@ Standard arguments:
                       directory *and* recursively search all of its
                       descendents, append an escaped '*' after the last slash,
                       e.g., /mypath/\\* (escaping is for the shell).
-  -S <struct-file>    Optional program structure from 'bloop'.
+  -S <struct-file1>...<struct-fileK>    
+                      An optional space-separated set of structure files from
+		      bloop. These structure files can be for the main program
+		      and/or any or all of the shared libraries used by the program.
   -P <prof1>...<profM> 
                       A space-separated list of profile files.
 
@@ -293,7 +296,7 @@ sub parseOptions
       $opt_hpcviewout = "-z";
     }
     elsif ($ARGV[$i] eq $xmlOutOpt) {
-      $opt_hpcviewout = "-x hpcquick.hpcviewerML";
+      $opt_hpcviewout = "-x hpcquick.hpcviewer";
     }
     elsif ($ARGV[$i] eq $noOutOpt) {
       $opt_suppressOutput = 1;
@@ -301,8 +304,10 @@ sub parseOptions
 
     # option: program structure
     elsif ($ARGV[$i] eq $structOpt) {
-      $i++;
-      push(@{$opt_structFiles}, $ARGV[$i]);
+      while (isArgument($ARGV[$i + 1]) == 1) {
+        $i++;
+        push(@{$opt_structFiles}, $ARGV[$i]);
+      }
     }
 
     # option: include src paths
@@ -680,8 +685,8 @@ sub genHPCViewConfigFile
   # ------------------------------------------------------
   # structure file
   # ------------------------------------------------------
-  if ($cfgData->{structFiles}->{total} == 1) {
-    my $fnm = $cfgData->{structFiles}->{list}[0];
+  for (my $i = 0; $i < $cfgData->{structFiles}->{total}; $i++) {
+    my $fnm = $cfgData->{structFiles}->{list}[$i];
     
     print STDOUT "  Adding structure file: '$fnm'\n";
     print {$cfgFhndl} "<STRUCTURE name=\"", xmlEsc($fnm), "\"/>";
