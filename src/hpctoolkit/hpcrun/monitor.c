@@ -153,7 +153,7 @@ _init(void)
     }
   }
   if (!real_start_main) {
-    DIE("Cannot intercept beginning of process execution and therefore cannot begin profiling.");
+    DIE("fatal error: Cannot intercept beginning of process execution and therefore cannot begin profiling.");
   }
   
   real_fork  = (fork_fptr_t)dlsym(RTLD_NEXT, "fork");
@@ -227,7 +227,7 @@ init_options(void)
     env_flags = getenv("HPCRUN_EVENT_FLAG");
     if (env_flags) {
       if ((f = hpcpapi_flag_by_name(env_flags)) == NULL) {
-	DIE("Invalid profiling flag '%s'. Aborting.", env_flags);
+	DIE("fatal error: Invalid profiling flag '%s'.", env_flags);
       }
       opt_flagscode = f->code;
     }
@@ -462,14 +462,14 @@ init_papi(hpcpapi_profile_desc_vec_t* profdescs, rtloadmap_t* rtmap)
     profdescs->size = profdescsSZ;
     profdescs->vec = (hpcpapi_profile_desc_t*)malloc(vecbufsz);
     if (!profdescs->vec) {
-      DIE("malloc() failed! Aborting.");
+      DIE("fatal error: malloc() failed!");
     }
     memset(profdescs->vec, 0x00, vecbufsz);
   }
   
   profdescs->eset = PAPI_NULL; 
   if ((pcode = PAPI_create_eventset(&profdescs->eset)) != PAPI_OK) {
-    DIE("PAPI error: (%d) %s. Aborting.", pcode, PAPI_strerror(pcode));
+    DIE("fatal error: (%d) PAPI error %s.", pcode, PAPI_strerror(pcode));
   }
   
   /* 2d. For each event:period pair, init corresponding 'profdescs' entry */
@@ -507,22 +507,29 @@ init_papi(hpcpapi_profile_desc_vec_t* profdescs, rtloadmap_t* rtmap)
        necessary to do a query_event *and* get_event_info.  Sometimes
        the latter will return info on an event that does not exist. */
     if (PAPI_event_name_to_code(eventbuf, &prof->ecode) != PAPI_OK) {
-      DIE("Invalid event '%s'. Aborting.", eventbuf);
+      DIE("fatal error: Event '%s' is not recognized.\n"
+	  "\tCheck the list of supported events with 'hpcrun -L'.", eventbuf);
     }
     if (PAPI_query_event(prof->ecode) != PAPI_OK) { 
-      DIE("Event '%s' not supported. Aborting.", eventbuf);
+      DIE("fatal error: PAPI_query_event for '%s' failed for unknown reason.", eventbuf);
     }
     if ((pcode = PAPI_get_event_info(prof->ecode, &prof->einfo)) != PAPI_OK) {
-      DIE("PAPI error: (%d) %s. Aborting.", pcode, PAPI_strerror(pcode));
+      DIE("fatal error: (%d) PAPI error %s.", pcode, PAPI_strerror(pcode));
+    }
+    if (prof->einfo.count > 1) {
+      DIE("fatal error: '%s' is a PAPI derived event. \n"
+	  "\tSampling of derived events is not supported by PAPI.\n" 
+	  "\tUse 'hpcrun -L' to find the component native events of '%s' that you can monitor separately.", eventbuf, eventbuf);
     }
 
     if ((pcode = PAPI_add_event(profdescs->eset, prof->ecode)) != PAPI_OK) {
-      DIE("PAPI error: (%d) %s. Aborting.", pcode, PAPI_strerror(pcode));
+      DIE("fatal error: (%d) Unable to add event '%s' to event set.\n"
+	  "\tPAPI error %s.", pcode, eventbuf, PAPI_strerror(pcode));
     }
   
     /* Profiling period */
     if (period == 0) {
-      DIE("Invalid period %llu for event '%s'. Aborting.", period, eventbuf);
+      DIE("fatal error: Invalid period %llu for event '%s'.", period, eventbuf);
     }  
     prof->period = period;
     
@@ -535,7 +542,7 @@ init_papi(hpcpapi_profile_desc_vec_t* profdescs, rtloadmap_t* rtmap)
     prof->scale = 0x8000;      // 0x10000
 
     if ( (prof->scale * prof->bytesPerCodeBlk) != (65536 * 2) ) {
-      DIE("Programming error: invalid profiling scale.");
+      DIE("fatal error: internal programming error - invalid profiling scale.");
     }
     
     /* N.B.: prof->sprofs remains uninitialized */
@@ -551,7 +558,7 @@ init_papi(hpcpapi_profile_desc_vec_t* profdescs, rtloadmap_t* rtmap)
     
     prof->sprofs = (PAPI_sprofil_t*)malloc(sprofbufsz);
     if (!prof->sprofs) {
-      DIE("malloc() failed! Aborting.");
+      DIE("fatal error: malloc() failed!");
     }
     memset(prof->sprofs, 0x00, sprofbufsz);
     prof->numsprofs = rtmap->count;
@@ -575,7 +582,7 @@ init_papi(hpcpapi_profile_desc_vec_t* profdescs, rtloadmap_t* rtmap)
       prof->sprofs[mapi].pr_base = (void*)malloc(bufsz);
       prof->sprofs[mapi].pr_size = bufsz;
       if (!prof->sprofs[mapi].pr_base) {
-	DIE("malloc() failed! Aborting.");
+	DIE("fatal error: malloc() failed!");
       }
       memset(prof->sprofs[mapi].pr_base, 0x00, bufsz);
 
@@ -611,7 +618,7 @@ init_papi(hpcpapi_profile_desc_vec_t* profdescs, rtloadmap_t* rtmap)
     if (papi_debug != 0) {
       fprintf(stderr, "setting PAPI debug option %d. (process %d)\n", papi_debug, getpid());
       if ((pcode = PAPI_set_debug(papi_debug)) != PAPI_OK) {
-	DIE("PAPI error: (%d) %s. Aborting.", pcode, PAPI_strerror(pcode));
+	DIE("fatal error: (%d) PAPI error %s.", pcode, PAPI_strerror(pcode));
       }
     }
   }
@@ -641,13 +648,13 @@ start_papi(hpcpapi_profile_desc_vec_t* profdescs)
     pcode = PAPI_sprofil(prof->sprofs, prof->numsprofs, profdescs->eset, 
 			 prof->ecode, prof->period, prof->flags);
     if (pcode != PAPI_OK) {
-      DIE("PAPI error: (%d) %s. Aborting.", pcode, PAPI_strerror(pcode));
+      DIE("fatal error: (%d) PAPI error %s.", pcode, PAPI_strerror(pcode));
     }
   }
 
   /* 2. Launch PAPI */
   if ((pcode = PAPI_start(profdescs->eset)) != PAPI_OK) {
-    DIE("PAPI error: (%d) %s. Aborting.", pcode, PAPI_strerror(pcode));
+    DIE("fatal error: (%d) PAPI error %s.", pcode, PAPI_strerror(pcode));
   }
 }
 
@@ -680,7 +687,7 @@ init_output(hpcrun_ofile_desc_t* ofile, hpcpapi_profile_desc_vec_t* profdescs)
   
   ofile->fs = fopen(outfilenm, "w");
   if (ofile->fs == NULL) {
-    DIE("Failed to open output file '%s'. Aborting.", outfilenm);
+    DIE("fatal error: Failed to open output file '%s'.", outfilenm);
   }
   
   ofile->fname = NULL; // FIXME: skip setting ofile->fname for now
@@ -726,7 +733,7 @@ stop_papi(hpcpapi_profile_desc_vec_t* profdescs)
   
   if ((pcode = PAPI_stop(profdescs->eset, values)) != PAPI_OK) {
 #if 0
-    DIE("PAPI error: (%d) %s. Aborting.", pcode, PAPI_strerror(pcode));
+    DIE("fatal error: (%d) PAPI error %s.", pcode, PAPI_strerror(pcode));
 #endif
   }
 }
