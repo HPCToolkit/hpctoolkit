@@ -71,7 +71,7 @@ class PCToSrcLineXMap;
 namespace ScopeTreeBuilder {
   
   PgmScopeTree* 
-  BuildFromExe(Executable* exe, PCToSrcLineXMap* &map,
+  BuildFromExe(/*Executable*/ LoadModule* exe, PCToSrcLineXMap* &map,
 	       String canonicalPathList = "",
 	       bool normalizeScopeTree = true,
 	       bool verboseMode = false);
