@@ -487,18 +487,25 @@ init_profdescs(hpcrun_profile_desc_vec_t* x, hpcpapi_profile_desc_vec_t* y,
     fprintf(stderr, "  Found %d sys events and %d PAPI events\n",
 	    xprofdescsSZ, yprofdescsSZ);
   }
-  if (xprofdescsSZ > 0 && yprofdescsSZ > 0) {
-    DIE("Cannot profile both WALLCLK and PAPI events at the same time. (Both use SIGPROF.)\n");
-  }
-  
-  
+
   /* 1b. Initialize PAPI if necessary */
   if (yprofdescsSZ > 0) {
     init_papi();
   }
   
-  /* 1c. Ensure we have enough hardware counters if using PAPI.  Note: PAPI
-     cannot profile when using multiplexing. */
+  /* 1c. Ensure we do not profile both wallclock and PAPI events. */
+  if (xprofdescsSZ > 0 && yprofdescsSZ > 0) {
+    DIE("Cannot profile both WALLCLK and PAPI events at the same time. (Both use SIGPROF.)");
+  }
+  
+  /* 1d. Ensure no more than one wall clock event is profiled.  (Only
+     one appropriate itimer (ITIMER_PROF) is provided per process.) */ 
+  if (xprofdescsSZ > 1) {
+    xprofdescsSZ = 1;
+  }
+  
+  /* 1e. Ensure we have enough hardware counters if using PAPI.  Note:
+     PAPI cannot profile when using multiplexing. */
   {
     int numHwCntrs = PAPI_num_hwctrs();
     if (yprofdescsSZ > numHwCntrs) {
@@ -566,8 +573,8 @@ init_profdescs(hpcrun_profile_desc_vec_t* x, hpcpapi_profile_desc_vec_t* y,
     }
     
     /* Determine the event type */
-    if ( (strcmp(tok, HPCRUN_EVENT_WALLCLK_STR) == 0) ||
-	 (strcmp(tok, HPCRUN_EVENT_FWALLCLK_STR) == 0) ) {
+    if ( (strcmp(eventbuf, HPCRUN_EVENT_WALLCLK_STR) == 0) ||
+	 (strcmp(eventbuf, HPCRUN_EVENT_FWALLCLK_STR) == 0) ) {
       evty = 1;
     } 
     else {
@@ -734,7 +741,7 @@ add_sysevent(hpcrun_profile_desc_vec_t* profdescs, rtloadmap_t* rtmap,
   
   if (profidx >= profdescs->size) {
     /* Assumes that the only system event is wallclock time */
-    DIE("fatal error: Only one wallclock event may be profiled at a time.\n");
+    DIE("fatal error: Only one wallclock event may be profiled at a time.");
   }
 
   prof = &(profdescs->vec[profidx]);
@@ -751,7 +758,7 @@ add_sysevent(hpcrun_profile_desc_vec_t* profdescs, rtloadmap_t* rtmap,
     prof->period = 10; /* 10 milliseconds */
   }
   else {
-    DIE("fatal error: Invalid event: '%s'.\n", eventnm);
+    DIE("fatal error: Invalid event: '%s'.", eventnm);
   }
 
   /* Profiling period (already set) */
