@@ -119,8 +119,13 @@ uninstall: uninstall_scripts
 
 PERL_LIB     = perl
 
-SCRIPTS_SRC  = ptran/ptran filters/sgi-f90modfilt filters/compaq-f90modfilt hpcquick/hpcquick hpcquick/hpcquick-papiprof misc/dcpicounts misc/pxmlcat misc/xprofquick
-SCRIPTS_INST = ptran sgi-f90modfilt compaq-f90modfilt hpcquick hpcquick-papiprof dcpicounts pxmlcat xprofquick
+SCRIPTS_SRC  = ptran/ptran filters/f90modfilt \
+	hpcquick/hpcquick hpcquick/hpcquick-papiprof \
+	misc/dcpicounts misc/pxmlcat misc/xprofquick
+
+SCRIPTS_INST = ptran f90modfilt \
+	hpcquick hpcquick-papiprof \
+	dcpicounts pxmlcat xprofquick
 
 # install perl tools
 #   note: we only copy *.pm files (instead of the whole directory) so
