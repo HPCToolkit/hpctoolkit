@@ -1,10 +1,10 @@
+/* -*-Mode: C;-*- */
 /* $Id$ */
-/* -*-C-*- */
 
 /****************************************************************************
 //
 // File: 
-//    map.h
+//    $Source$
 //
 // Purpose:
 //    Finds a list of loaded modules (e.g. DSOs) for the current process.
@@ -44,7 +44,8 @@ typedef struct {
 extern "C" {
 #endif
 
-loadmodules_t* papirun_code_lines_from_loadmap(int dumpmap);
+extern loadmodules_t* 
+hpcrun_code_lines_from_loadmap(int dumpmap);
 
 #ifdef __cplusplus
 }

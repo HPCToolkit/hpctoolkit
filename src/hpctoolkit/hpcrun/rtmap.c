@@ -1,10 +1,10 @@
+/* -*-Mode: C;-*- */
 /* $Id$ */
-/* -*-C-*- */
 
 /****************************************************************************
 //
 // File: 
-//    map.c
+//    $Source$
 //
 // Purpose:
 //    Finds a list of loaded modules (e.g. DSOs) for the current process.
@@ -62,7 +62,7 @@ static void dumplines(void);
  *  and load addresses.
  */
 loadmodules_t* 
-papirun_code_lines_from_loadmap(int dumpmap)
+hpcrun_code_lines_from_loadmap(int dumpmap)
 {
   char filename[PATH_MAX];
   FILE *pf;
@@ -224,7 +224,7 @@ dumplines(void)
 int 
 main(void)
 {
-  papirun_code_lines_from_loadmap(1);
+  hpcrun_code_lines_from_loadmap(1);
 #if 0
   dumplines();
 #endif
