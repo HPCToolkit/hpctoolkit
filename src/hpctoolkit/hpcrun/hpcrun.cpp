@@ -53,6 +53,7 @@ typedef enum {
 
 /* Options that will be passed to profiling library */
 static const char* opt_recursive = "1";
+static const char* opt_thread = "0";
 static char        opt_eventlist[eventlistBufSZ] = "";
 static const char* opt_out_path = NULL;
 static const char* opt_flag = NULL;
@@ -215,7 +216,7 @@ args_parse(int argc, char* argv[])
   extern char *optarg;
   extern int optind;
   int c;
-  while ((c = getopt(argc, (char**)argv, "hVd:re:o:f:lL")) != EOF) {
+  while ((c = getopt(argc, (char**)argv, "hVd:rte:o:f:lL")) != EOF) {
     switch (c) {
       
     // Special options that are immediately evaluated
@@ -238,6 +239,10 @@ args_parse(int argc, char* argv[])
     // Other options
     case 'r': {
       opt_recursive = "0";
+      break; 
+    }
+    case 't': {
+      opt_thread = "1";
       break; 
     }
     case 'e': {
@@ -338,7 +343,6 @@ launch_and_profile(char* argv[])
 {
   pid_t pid;
   int status;
-  int retval;
   
   if (check_and_prepare_env_for_profiling() != 0) {
     return 1;
@@ -394,6 +398,9 @@ check_and_prepare_env_for_profiling()
   if (opt_recursive) {
     setenv("HPCRUN_RECURSIVE", opt_recursive, 1);
   }
+  if (opt_thread) {
+    setenv("HPCRUN_THREAD", opt_thread, 1);
+  }
   if (opt_eventlist[0] != '\0') {
     setenv("HPCRUN_EVENT_LIST", opt_eventlist, 1);
   }
@@ -432,7 +439,6 @@ list_available_events(event_list_t listType)
   init_papi();
 
   int i, count;
-  int retval;
   int isIntel, isP4;
   PAPI_event_info_t info;
   const PAPI_hw_info_t* hwinfo = NULL;
@@ -442,13 +448,13 @@ list_available_events(event_list_t listType)
   static const char* HdrPAPIShort = "Name\t\tDescription\n";
   static const char* FmtPAPIShort = "%s\t%s\n";
   static const char* HdrPAPILong = 
-    "Name\t\tDerived\tDescription (Implementation Note)\n";
+    "Name\t     Profilable\tDescription (Implementation Note)\n";
   static const char* FmtPAPILong = "%s\t%s\t%s (%s)\n";
 
   static const char* HdrNtvShort = "Name\t\t\t\tDescription\n";
   static const char* FmtNtvShort = "%-31s %s\n";
   static const char* HdrNtvLong =  "Name\t\t\t\tDescription\n";
-  static const char* FmtNtvLong =  "%-31s %s\n";
+  //static const char* FmtNtvLong =  "%-31s %s\n";
   static const char* FmtNtvGrp    = "* %-29s %s\n";
   static const char* FmtNtvGrpMbr = "  %-29s %s\n";
 
@@ -504,12 +510,12 @@ list_available_events(event_list_t listType)
       } 
       else if (listType == LIST_LONG) {
 	/* NOTE: Although clumsy, this test has official sanction. */
-	int derived = 0;
+	int profilable = 1;
 	if ((info.count > 1) && strcmp(info.derived, "DERIVED_CMPD") != 0) {
-	  derived = 1;
+	  profilable = 0;
 	}
 	printf(FmtPAPILong, 
-	       info.symbol, ((derived) ? "Yes" : "No"),
+	       info.symbol, ((profilable) ? "Yes" : "No"),
 	       info.long_descr, (info.note ? info.note : ""));
       }
       count++;

@@ -36,6 +36,7 @@
    Variable              Value
    ---------------------------------------------------------------------
    HPCRUN_RECURSIVE      0 for no; 1 for yes
+   HPCRUN_THREAD         0 for no; 1 for yes
    HPCRUN_EVENT_LIST     <event1>:<period1>;<event2>;<event3>:<period3>...
                          (period is optional)
    HPCRUN_OUTPUT_PATH    output file path
