@@ -11,7 +11,7 @@ document.write('<img src="images/header.gif">');
 document.write('<table width="100%" border="0" cellspacing="0" cellpadding="0">');
 document.write('<tr>');
 document.write('<td align="left">');
-document.write('[ <a href="http://www.cs.rice.edu/~dsystem/hpctools">HPCToolkit</a> ]');
+document.write('[ <a href="http://www.hipersoft.rice.edu/hpctoolkit/">HPCToolkit</a> ]');
 document.write('</td>');
 document.write('<td align="right">');
 document.write('[ <a href="index.html">DocRoot</a> |');
