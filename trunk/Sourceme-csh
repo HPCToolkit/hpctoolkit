@@ -42,8 +42,8 @@ endif
 
 #############################################################################
 
-setenv XERCESCROOT "${HPCTOOLKIT}/lib/xerces-c2_1_0"
-set XERCESPLATFORM="${XERCESCROOT}/${HPCTOOLKIT_PLATFORM}"
+setenv XERCESCROOT "${HPCTOOLKIT}/../xercesc
+set XERCESPLATFORM="${XERCESCROOT}/${HPCTOOLKIT_PLATFORM}/lib"
 
 if ( ${HPCTOOLKIT_OS} == 'IRIX64' || ${HPCTOOLKIT_OS} == 'IRIX' ) then
   # set library path for IRIX systems

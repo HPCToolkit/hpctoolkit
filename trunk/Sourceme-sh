@@ -42,8 +42,8 @@ fi
 
 #############################################################################
 
-export XERCESCROOT="${HPCTOOLKIT}/lib/xerces-c2_1_0"
-XERCESPLATFORM="${XERCESCROOT}/${HPCTOOLKIT_PLATFORM}"
+export XERCESCROOT="${HPCTOOLKIT}/../xercesc"
+XERCESPLATFORM="${XERCESCROOT}/${HPCTOOLKIT_PLATFORM}/lib"
 
 if test "${HPCTOOLKIT_OS}" = "IRIX64" -o "${HPCTOOLKIT_OS}" = "IRIX" ; then
   # set library path for IRIX systems
