@@ -51,20 +51,21 @@
 <h2>Downloading the Sources</h2>
 <p><i>[<a href="#toc">Contents</a>]</i>
 
-<p>To reduce the effort needed to distribute HPCToolkit, we have opted to distribute 
-it in source form only. Source files for the toolkit and external libraries it requires 
-are distributed via anonymous CVS checkout.
+<p>To reduce the effort needed to distribute HPCToolkit, we have opted
+to distribute it in source form only. Source files for the toolkit and
+external libraries it requires are distributed via anonymous CVS
+checkout.
 </p>
 
 <ol>
 <li>
-To retrieve the source files from CVS, you will need to download an 
-ssh script that contains a key that will grant you read-only access 
-to Hipersoft CVS repositories at Rice University. Click on the hyperlink at the end of this 
-sentence to retrieve a copy of the ssh script 
-<a href="www.hipersoft.rice.edu/cvs/hipersoft-anonssh">hipersoft-anonssh</a>. 
-Save this script in ${HOME}/bin/hipersoft-anonssh.
+To retrieve the source files from CVS, you will need to download 
+<code><a href="www.hipersoft.rice.edu/cvs/hipersoft-anonssh">hipersoft-anonssh</a></code>, 
+a ssh script that contains a key that will grant you read-only access
+to the Hipersoft CVS repositories at Rice University.  Save this script in
+<code>${HOME}/bin/hipersoft-anonssh</code>.
 </li>
+
 <br>
 <li> Set up the required CVS environment variables to enable you to 
 access the HPCToolkit repository.
@@ -86,7 +87,7 @@ Use CVS to check out the HPCToolkit sources using the command
 <br>
 <br>
 <ul>
-<code>cvs co HPCToolkit_all_sources</code>
+<code>cvs co HPCToolkit_all_source</code>
 </ul>
 </li>
 </ol>
@@ -118,7 +119,7 @@ configurations.</p>
 
 <li>
 <p>HPCToolkit, OpenAnalysis and Xerces-C++ require an ANSI/ISO C/C++
-compliant compiler.  GNU binutils requires such a compiler that
+compliant compiler.  GNU binutils requires a C compiler that also
 supports a few GNU extensions.  Of course, the same C++ compiler
 should be used for each component (because of templates and mangling).
     
@@ -128,18 +129,19 @@ For example, C headers are now included using the
 <code>&lt;cheader&gt;</code> syntax (as opposed to
 <code>&lt;header.h&gt;</code>) and functions are in the
 <code>std</code> namespace.  If your compiler does not support this
-standard, add <code>-DNO_STD_CHEADERS</code> to your compile line.  We
-have indicated the compilers with wich we have used this option below.
+standard, you will need to compile HPCToolkit with
+<code>-DNO_STD_CHEADERS</code> (the instructions below explain when
+this is necessary).
 
 <p>The list of compilers that we have successfully tested are:
 
   <ul class="noindent">
     <li>alpha-OSF1:
       <ul class="noindent">
+        <li>Compaq C++/C 6.5
         <li>Compaq C++/C 6.3
         <li>Compaq C++/C 6.2 (<i>use <code>-DNO_STD_CHEADERS</code></i>)
         <li>GCC C++/C 3.2.1
-        <li>GCC C++/C 3.0.4<sup>1</sup>
       </ul>
 
     <li>i686-Linux:
@@ -157,8 +159,9 @@ have indicated the compilers with wich we have used this option below.
 
     <li>mips-IRIX64:
       <ul class="noindent">
-        <li>SGI MIPSpro C++/C 7.3 (<i>use <code>-DNO_STD_CHEADERS</code></i>)
-        <li>GCC C++/C 3.0.4<sup>1</sup>
+        <!-- <li>SGI MIPSpro C++/C 7.4 (???) -->
+        <li>SGI MIPSpro C++/C 7.3.x (<i>use <code>-DNO_STD_CHEADERS</code></i>)
+        <!-- <li>GCC C++/C 3.2.1 (???) -->
       </ul>
 
     <li>sparc-SunOS:
@@ -170,20 +173,16 @@ have indicated the compilers with wich we have used this option below.
       </ul>
   </ul>
 
-<p><sup>1</sup>We have not specifically tested this compiler on this
-platform, but believe it should work.
-
-
 <li>
-<p>Everywhere that `make' is used you should think `gnumake', not a
-vendor supplied make.  We have successfully used the following versions:
+<p>Everywhere that `make' is used you should think GNU make, not a
+vendor supplied make.  For the record, we have successfully used:
 
   <ul class="noindent">
     <li>3.70 (alpha-OSF1, mips-IRIX64, sparc-SunOS)
     <li>3.76 (sparc-SunOS)
     <li>3.77 (alpha-OSF1)
     <li>3.78 (i686-Linux)
-    <li>3.79 (ia64-Linux, mips-IRIX64)
+    <li>3.79 (alpha-OSF1, ia64-Linux, mips-IRIX64)
     <li>3.80 (alpha-OSF1)
   </ul>
 
@@ -195,7 +194,7 @@ succssfully used:
   <ul class="noindent">
     <li>5.004 (mips-IRIX64)
     <li>5.005 (alpha-OSF1, i686-Linux)
-    <li>5.6.0 (ia64-Linux)
+    <li>5.6.0 (alpha-OSF1, ia64-Linux)
     <li>5.6.1 (alpha-OSF1, ia64-Linux, sparc-SunOS)
   </ul>
 
@@ -213,7 +212,6 @@ apply to building both HPCToolkit and OpenAnalysis are apropos.
       archives. The system archiver should <i>not</i> be used.  If however
       you wish to substitute for the GCC compiler, make sure to use
       your system archiver.
-
 
     <li>Compaq compiler: The Compaq compiler uses a rather cumbersome
       implementation of a template repository.  The repository must be
@@ -267,36 +265,20 @@ example:
 
 <h3>Compiler notes</h3>
 
-<p>Below is a list of C compilers that we have successfully used in
-building this version of GNU binutils.  The list refers to the same
-versions of C++ compilers listed above in 
-<a href="#buildnotes">Build Notes</a>; in the case of GCC, versions
-2.9x are also fine.</p>
+<p>Most of the C compilers listed in <a href="#buildnotes">Build
+Notes</a> can compile binutils.  Below is a list of exceptions or
+special options.</p>
 
 <ul>
-  <li>alpha-OSF1:  
-    <ul class="noindent">
-      <li>Compaq C
-      <li>GCC C
-    </ul>
-  <li>i686-Linux:
-    <ul class="noindent">
-      <li>GCC C
-    </ul>
+  <li>GCC C 2.9x can also be used.
   <li>ia64-Linux:
     <ul class="noindent">
-      <li>GCC C
-      <li><i>(encountered errors with Intel C)</i>
+      <li>Intel C <i>cannot</i> be used.
     </ul>
   <li>mips-IRIX64:
     <ul class="noindent">
-      <li>GCC C <i>(add <code>-mabi=64</code> to CFLAGS)</i>
-      <li><i>(encountered errors with SGI C)</i>
-    </ul>
-  <li>sparc-SunOS:
-    <ul class="noindent">
-      <li>Sun C
-      <li>GCC C
+      <li>SGI CC <i>cannot</i> be used.
+      <li>GCC C requires <code>CFLAGS="-mabi=64"</code>
     </ul>
 </ul>
 
@@ -313,9 +295,10 @@ versions of C++ compilers listed above in
 </div>
 
 <li>
-<p>Build, configure and install.  Run make with the C compiler and any
-compilation options mentioned above.  Since this will produce a lot of
-output, you may want to redirect it to a file.  For example:
+<p>Configure, build and install.  Run make with the C compiler (CC)
+and any compilation options (CFLAGS) mentioned above.  Since this will
+produce a lot of output, you may want to redirect it to a file.  For
+example:
 
 <div class="indent">
 <code>make CC="gcc" CFLAGS="-O"</code><br>
@@ -347,9 +330,10 @@ output, you may want to redirect it to a file.  For example:
 </div>
 
 <li>
-<p>Build, configure and install.  Run make with the C++ compiler and
-any desired compilation options.  Since this will produce a lot of
-output, you may want to redirect it to a file.  For example:
+<p>Configure, build and install.  Run make with the C++ compiler (CXX)
+and any desired compilation options (CXXFLAGS).  Since this will
+produce a lot of output, you may want to redirect it to a file.  For
+example:
 
 <div class="indent">
 <code>make CXX="g++" CXXFLAGS="-O"</code><br>
@@ -381,12 +365,12 @@ output, you may want to redirect it to a file.  For example:
 </div>
 
 <li>
-<p>Build, configure and install.  Run make with the C and C++
-compiler.  Since this will produce a lot of output, you may want to
-redirect it to a file.  For example:
+
+<p>Configure, build and install.  Run make with the C and C++ compiler
+(CC and CXX, respectively).  Since this will produce a lot of output,
+you may want to redirect it to a file.  For example:
 
 <div class="indent">
-<!-- <code>make CC="gcc" CXX="g++" CXXFLAGS=""</code><br> -->
 <code>make CC="gcc" CXX="g++"</code><br>
 </div>
 
@@ -435,8 +419,7 @@ and `Compiling templates' above.</p>
 <li>
 <p>Build and install.  By default, the toolset will be compiled with
 debugging information; passing <code>RELEASE=1</code> to `make' will
-turn this off and also turn on compiler optimizations.  (Note that
-<code>make&nbsp;install</code> is run automatically.)</p>
+turn this off and also turn on compiler optimizations.</p>
 
 <div class="indent">
 <code>cd $HPCTOOLKIT/src</code><br>
@@ -452,8 +435,8 @@ template databases.)</p>
 
 </ol>
 
-<p>As <code>make&nbsp;install</code> is run, the HCToolkit binaries will
-be copied to <code>${HPCTOOLKIT}/bin/${HPCTOOLKIT_PLATFORM}</code>.  
+<p>The HCToolkit binaries will be copied to
+<code>${HPCTOOLKIT}/bin/${HPCTOOLKIT_PLATFORM}</code>.  
 Platform independent tools will be copied to <code>${HPCTOOLKIT}/bin</code>.
 In order to easily use the tools on some shells, you may need to indicate 
 that the PATH ought to be researched.  For example, on <code>csh</code> or
@@ -469,7 +452,9 @@ that the PATH ought to be researched.  For example, on <code>csh</code> or
 
 
 <p>Yeah! If everything is built and installed, take a sip of your
-favorite beverage and consider running the <a href="testing.html">tests</a>.
+favorite beverage and consider trying the toolkit out.
+
+<!-- consider running the <a href="testing.html">tests</a>. -->
 
 <p>Grrr! If everything fails miserably, take a sip of your favorite
 beverage and send us some mail.  Also consult the troubleshooting
@@ -534,12 +519,13 @@ example, the lines below would add <code>libgcc.a</code> or
 </div>
 
 
+<!--
 <li> FIXME: If you get a note while running `configure' that
 `makeinfo' is too old, create a noop <code>makeinfo</code>
 shell script and put it where your PATH can find it.  This is because
 <code>make&nbsp;install</code> will try to run `makeinfo' anyway
 and choke if it is not found.
-
+-->
 
 </ol>
 
