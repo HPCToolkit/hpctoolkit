@@ -147,9 +147,9 @@ ProfileWriter::WriteProfile(std::ostream& os, DerivedProfile* profData,
     for (uint i = 0; it.IsValid(); ++it, ++i) {
       DerivedProfileMetric* m = it.Current();
       os << "<METRIC shortName"; WriteAttrNum(os, i);
+      os << " displayName";      WriteAttrStr(os, m->GetName());
       os << " nativeName";       WriteAttrStr(os, m->GetNativeName());
       os << " period";           WriteAttrNum(os, m->GetPeriod());
-      os << " displayName";      WriteAttrStr(os, m->GetName());
       // os << " count_total";   WriteAttrNum(os, m->GetTotalCount());
       os << "/>\n";
     }
