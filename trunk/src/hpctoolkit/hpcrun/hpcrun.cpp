@@ -164,16 +164,19 @@ static const char* args_usage_details =
 "  -r  By default all processes spawned by <command> will be profiled, each\n"
 "      receiving its own output file. Use this option to turn off recursive\n"
 "      profiling; only <command> will be profiled.\n"
-"  -e <eventk>[:<periodk>]                               {PAPI_TOT_CYC:32767}\n"
+"  -e <eventk>[:<periodk>]                              {PAPI_TOT_CYC:32767}\n"
 "      An event to profile and its corresponding sample period.  <eventk>\n"
 "      may be either a PAPI or native processor event\n"
-"      NOTE 1: it is recommended that you always specify the sampling period for\n"
-"              each profiling event.\n"
-"      NOTE 2: multiple events may be selected for profiling during an execution\n" 
-"              by using  multiple '-e' arguments. \n"
-"      NOTE 3: the maximum number of events that can be monitored during a single\n"
-"              execution depends on the processor. not all combinations of \n"
-"              events may be monitored in the same execution. allowable\n"
+"      NOTE 1: It is recommended that you always specify the sampling period\n"
+"              for each profiling event.\n"
+"      NOTE 2: You may use the special events WALLCLK, FWALLCLK to profile\n"
+"              with wall clock time.  Only *one* of the two may be used, and\n"
+"              only *once*.  It is an error to specify a period.\n"
+"      NOTE 3: Multiple events may be selected for profiling during an\n" 
+"              execution by using  multiple '-e' arguments. \n"
+"      NOTE 4: The maximum number of events that can be monitored during a\n"
+"              single execution depends on the processor. Not all combinations\n"
+"              of events may be monitored in the same execution; allowable\n"
 "              combinations depend on the processor. check your \n"
 "              processor documentation for the details of both issues.\n"
 "  -o <outpath>                                                          {.}\n"
@@ -470,6 +473,14 @@ list_available_events(event_list_t listType)
   printf("Number Hardware Counters: %d\n", 
 	 PAPI_get_opt(PAPI_MAX_HWCTRS, NULL));
   printf("Max Multiplex Counters  : %d\n", PAPI_MPX_DEF_DEG);
+  printf(separator_major);
+
+  // -------------------------------------------------------
+  // Wall clock time
+  // -------------------------------------------------------
+  printf("*** Wall clock time ***\n");
+  printf(HPCRUN_EVENT_WALLCLK_STR"     wall clock time (10 millisecond period)\n");
+  printf(HPCRUN_EVENT_FWALLCLK_STR"    fast wall clock time (1 millisecond period)\n");
   printf(separator_major);
 
   // -------------------------------------------------------
