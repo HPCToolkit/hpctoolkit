@@ -503,8 +503,13 @@ list_available_events(event_list_t listType)
 	printf(FmtPAPIShort, info.symbol, info.long_descr);
       } 
       else if (listType == LIST_LONG) {
+	/* NOTE: Although clumsy, this test has official sanction. */
+	int derived = 0;
+	if ((info.count > 1) && strcmp(info.derived, "DERIVED_CMPD") != 0) {
+	  derived = 1;
+	}
 	printf(FmtPAPILong, 
-	       info.symbol, (info.count > 1 ? "Yes" : "No"),
+	       info.symbol, ((derived) ? "Yes" : "No"),
 	       info.long_descr, (info.note ? info.note : ""));
       }
       count++;
