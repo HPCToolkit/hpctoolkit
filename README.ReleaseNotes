@@ -179,11 +179,12 @@ Like bloop, it it can be used as a 'cross-tool'.
 4. Revision History
 --------------------
 
-HPCToolkit Version 4.0.0: [2004.11.xx]
+HPCToolkit Version 4.0.0: [2004.11.06]
 --------------------
 - Create HPCToolkitRoot, a shell repository to make obtaining sources,
   building and installation easier.
 - Autoconf HPCToolkitRoot and hpcviewer. 
+- HPCToolkit now uses libtool to build libraries.
 - Revamp launching of hpcview et al. to not be dependent upon
   Sourcemes.  All needed envionment variables are set dynamically.
 - Overhaul hpcquick to canonicalize all performace data files into 
@@ -191,6 +192,7 @@ HPCToolkit Version 4.0.0: [2004.11.xx]
   hpcrun files.
 - Merge hpcrun/hpcprof into code base.
 - Extend hpcrun:
+  - introduce support for profiling statically linked applications
   - create profiles of multiple PAPI or native events
   - monitor POSIX threads
   - follow forks
