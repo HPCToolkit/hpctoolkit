@@ -91,13 +91,13 @@ BloopIRInterface::BloopIRInterface (Procedure *_p) : proc(_p)
   branchTargetSet.clear();
   while (pii.IsValid()) {
     Instruction *insn = pii.Current();
-    Addr curr_pc = pii.CurrentPC();
+    Addr curr_oppc = pii.CurrentPC(); // the 'operation PC'
 
     // If this insn is a branch, record its target address in
     // the branch target set.
     ISA::InstDesc d = insn->GetDesc();
     if (d.IsBrRel()) {
-      branchTargetSet.insert(insn->GetTargetAddr(curr_pc));
+      branchTargetSet.insert(insn->GetTargetAddr(insn->GetPC()));
     }
     ++pii;
   }
