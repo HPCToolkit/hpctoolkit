@@ -23,12 +23,6 @@
 /************************** System Include Files ****************************/
 
 #include <stdio.h>
-#include <inttypes.h>
-
-#include <sys/time.h>    /* for sprofil() */
-#include <sys/profil.h>  /* for sprofil() */
-
-#include "hpcpapi.h"
 
 /**************************** Forward Declarations **************************/
 
@@ -60,22 +54,6 @@ typedef enum enum_hpc_threadprof_t {
 } hpc_threadprof_t;
 
 
-// Private debugging level: messages for in-house debugging [0-9]
-#define HPCRUN_DBG_LVL 0
-
-#define MSG(x, ...)                                                   \
-  { fprintf((x), "hpcrun (pid %d, tid %ld): ", getpid(), hpcrun_gettid()); fprintf((x), __VA_ARGS__); fputs("\n", (x)); }
-
-#define ERRMSG(...)                                                   \
-  { fputs("hpcrun", stderr);                                          \
-    if (HPCRUN_DBG_LVL) {                                             \
-      fprintf(stderr, " [%s:%d]", __FILE__, __LINE__); }              \
-    fprintf(stderr, " (pid %d, tid %ld): ", getpid(), hpcrun_gettid()); fprintf(stderr, __VA_ARGS__); fputs("\n", stderr); }
-
-#define DIE(...) ERRMSG(__VA_ARGS__); { exit(1); }
-
-/**************************** Forward Declarations **************************/
-
 /* Special system supported events */
 
 #define HPCRUN_EVENT_WALLCLK_STR     "WALLCLK"
@@ -85,27 +63,6 @@ typedef enum enum_hpc_threadprof_t {
 #define HPCRUN_EVENT_FWALLCLK_STRLN  8
 
 /**************************** Forward Declarations **************************/
-
-#ifdef MAX
-# undef MAX
-#endif
-#ifdef MIN
-# undef MIN
-#endif
-#define MAX(a,b)	((a>=b)?a:b)
-#define MIN(a,b)	((a<=b)?a:b)
-
-/**************************** Forward Declarations **************************/
-
-/* Because these are byte strings, they will not be affected by endianness */
-
-#define HPCRUNFILE_MAGIC_STR "HPCRUN____"
-#define HPCRUNFILE_MAGIC_STR_LEN 10  /* exclude '\0' */
-
-#define HPCRUNFILE_VERSION "01.00"
-#define HPCRUNFILE_VERSION_LEN 5 /* exclude '\0' */
-
-#define HPCRUNFILE_ENDIAN 'l' /* l for little */
 
 /* 
    File format:
@@ -148,67 +105,16 @@ typedef enum enum_hpc_threadprof_t {
       <string_without_terminator>
  */
 
+/* <header>
+   Because these are byte strings, they will not be affected by endianness */
 
-/**************************** Forward Declarations **************************/
+#define HPCRUNFILE_MAGIC_STR "HPCRUN____"
+#define HPCRUNFILE_MAGIC_STR_LEN 10  /* exclude '\0' */
 
-// hpcsys_profile_desc_t: Collects all information to describe system
-// based (i.e. non-PAPI) profiles, e.g. a call to sprofil(). Note that
-// the segmented-profile buffers will correspond to data in the
-// run-time-load-map.
-typedef struct {
-  /* currently we only have one type of system prof.  If we ever need
-     more we can add a prof-type field */ 
-  char*             ename;       // event name
-  uint64_t          period;      // sampling period
-  //struct timeval*   tval;      // contains info after a call to sprofil()
-  unsigned int      flags;       // profiling flags
-  
-  unsigned int      bytesPerCodeBlk; // bytes per block of monitored code
-  unsigned int      bytesPerCntr;    // bytes per histogram counter
-  unsigned int      scale;           // relationship between the two
-  
-  struct prof*      sprofs;      // vector of histogram buffers, one for each
-  unsigned int      numsprofs;   //   run time load module
-} hpcsys_profile_desc_t;
+#define HPCRUNFILE_VERSION "01.00"
+#define HPCRUNFILE_VERSION_LEN 5 /* exclude '\0' */
 
-// hpcsys_profile_desc_vec_t: A vector of hpcsys_profile_desc_t.
-typedef struct {
-  unsigned int           size; // vector size
-  hpcsys_profile_desc_t* vec;  // one for each profile
-  
-} hpcsys_profile_desc_vec_t;
-
-/**************************** Forward Declarations **************************/
-
-// hpcrun_ofile_desc_t: Describes an hpcrun output file
-typedef struct {
-  FILE* fs;    // file stream
-  char* fname; // file name
-} hpcrun_ofile_desc_t;
-
-
-// hpcrun_profiles_desc_t: Describes all concurrent profiles for a
-// particular process or thread.  
-typedef struct {
-  /* We use void* to make conditional compilation easy.  See macros below. */
-  void* sysprofs;   /* hpcsys_profile_desc_vec_t* */
-  void* papiprofs;  /* hpcpapi_profile_desc_vec_t* */
-
-  hpcrun_ofile_desc_t ofile; 
-} hpcrun_profiles_desc_t;
-
-/* Each accessor macro has two versions, one for use as lvalue and
-   rvalue.  The reason is that casts in lvalue expressions is a
-   non-standard. */
-#define HPC_GETL_SYSPROFS(x)  ((x)->sysprofs)
-#define HPC_GET_SYSPROFS(x)  ((hpcsys_profile_desc_vec_t*)((x)->sysprofs))
-
-//#if HAVE_PAPI
-#define HPC_GETL_PAPIPROFS(x) ((x)->papiprofs)
-#define HPC_GET_PAPIPROFS(x) ((hpcpapi_profile_desc_vec_t*)((x)->papiprofs))
-//#else
-//#define HPC_GET_PAPIPROFS(x) (x->papiprofs)
-//#endif
+#define HPCRUNFILE_ENDIAN 'l' /* l for little */
 
 /****************************************************************************/
 

@@ -378,6 +378,10 @@ launch_and_profile(const char* installpath, char* argv[])
   if (check_and_prepare_env_for_profiling(installpath) != 0) {
     return 1;
   }
+
+  if (myopt_debug >= 1) {
+    fprintf(stderr, "hpcrun (pid %d) ==> %s\n", getpid(), opt_command_argv[0]);
+  }
   
   // Fork and exec the command to profile
   if ((pid = fork()) == 0) {

@@ -66,8 +66,15 @@ MYSOURCES_HPCRUN = \
 	hpcpapi.h hpcpapi.c \
 	dlpapi.h dlpapi.c 
 
-MYSOURCES_LIBHPCRUN = \
-	monitor.c \
+MYSOURCES_LIBHPCRUN_PRELOAD = \
+	monitor_preload.c \
+	monitor.h monitor.c \
+	hpcpapi.h hpcpapi.c \
+	rtmap.h rtmap.c 
+
+MYSOURCES_LIBHPCRUN_STATIC = \
+	monitor_static.cc \
+	monitor.h monitor.c \
 	hpcpapi.h hpcpapi.c \
 	rtmap.h rtmap.c 
 
@@ -79,7 +86,7 @@ MYSOURCES_HPCPROF = \
 
 
 MYIFLAGS_PAPI = \
-	-DHPC_PAPI_DLOPEN=\"@OPT_PAPI_DLOPEN@\"   \
+	-DHPC_PAPI_LIBSO=\"@OPT_PAPI_LIBSO@\"   \
 	-DHPC_PAPI_LIBPATH=\"@OPT_PAPI_LIBPATH@\"
 
 MYCFLAGS   = @HOST_CFLAGS@   $(HPC_IFLAGS) @OPT_PAPI_IFLAGS@
@@ -88,18 +95,26 @@ MYCFLAGS_HPCRUN   = $(MYCFLAGS) $(MYIFLAGS_PAPI)
 MYCXXFLAGS_HPCRUN = $(MYCXXFLAGS) $(MYIFLAGS_PAPI)
 
 
-MYLDFLAGS_HPCRUN    = @HOST_CXXFLAGS@ -R @OPT_PAPI_LIBPATH@
-MYLDFLAGS_LIBHPCRUN = @HOST_CXXFLAGS@ -Xcompiler @HOST_LINK_NO_START_FILES@
-MYLDFLAGS_HPCPROF   = @HOST_CXXFLAGS@
+MYLDFLAGS_HPCRUN    = \
+	@HOST_CXXFLAGS@ -R @OPT_PAPI_LIBPATH@
+MYLDFLAGS_LIBHPCRUN_PRELOAD = \
+	@HOST_CXXFLAGS@ -Xcompiler @HOST_LINK_NO_START_FILES@
+MYLDFLAGS_LIBHPCRUN_STATIC = \
+	@HOST_CXXFLAGS@ -all-static
+MYLDFLAGS_HPCPROF   = \
+	@HOST_CXXFLAGS@
 
 
 MYLDADD_HPCRUN    = \
 	$(HPC_LIBSUPPORT) \
 	-ldl
-MYLDADD_LIBHPCRUN = \
+MYLDADD_LIBHPCRUN_PRELOAD = \
 	$(HPC_LIBHPCFILE) \
 	@OPT_PAPI_LDFLAGS@ \
 	-ldl
+MYLDADD_LIBHPCRUN_STATIC = \
+	$(HPC_LIBHPCFILE) \
+	@OPT_PAPI_LIBA@
 MYLDADD_HPCPROF   = \
 	$(HPC_LIBHPCFILE) \
 	@HOST_LIBTREPOSITORY@ \
@@ -108,31 +123,88 @@ MYLDADD_HPCPROF   = \
 
 MYCLEAN = @HOST_LIBTREPOSITORY@
 
+MYINSTALLDIR = $(DESTDIR)$(prefix)
+
 #############################################################################
 # Automake rules
 #############################################################################
 
-bin_PROGRAMS         = hpcrun
-hpcrun_SOURCES       = $(MYSOURCES_HPCRUN)
-hpcrun_CFLAGS        = $(MYCFLAGS_HPCRUN)
-hpcrun_CXXFLAGS      = $(MYCXXFLAGS_HPCRUN)
-hpcrun_LDFLAGS       = $(MYLDFLAGS_HPCRUN)
-hpcrun_LDADD         = $(MYLDADD_HPCRUN)
+bin_PROGRAMS            = hpcrun
+hpcrun_SOURCES          = $(MYSOURCES_HPCRUN)
+hpcrun_CFLAGS           = $(MYCFLAGS_HPCRUN)
+hpcrun_CXXFLAGS         = $(MYCXXFLAGS_HPCRUN)
+hpcrun_LDFLAGS          = $(MYLDFLAGS_HPCRUN)
+hpcrun_LDADD            = $(MYLDADD_HPCRUN)
 
-lib_LTLIBRARIES      = libhpcrun.la
-libhpcrun_la_SOURCES = $(MYSOURCES_LIBHPCRUN)
-libhpcrun_la_CFLAGS  = $(MYCFLAGS)
-libhpcrun_la_LDFLAGS = $(MYLDFLAGS_LIBHPCRUN)
-libhpcrun_la_LIBADD  = $(MYLDADD_LIBHPCRUN)
+# N.B.: We only care about the dynamically linked version of this
+# library.  An install-hook below ensures only intercepted symbols
+# will be visible.
+lib_LTLIBRARIES         = libhpcrun.la
+libhpcrun_la_SOURCES    = $(MYSOURCES_LIBHPCRUN_PRELOAD)
+libhpcrun_la_CFLAGS     = $(MYCFLAGS)
+libhpcrun_la_LDFLAGS    = $(MYLDFLAGS_LIBHPCRUN_PRELOAD)
+libhpcrun_la_LIBADD     = $(MYLDADD_LIBHPCRUN_PRELOAD)
 
-bin_PROGRAMS        += hpcprof
-hpcprof_SOURCES      = $(MYSOURCES_HPCPROF)
-hpcprof_CFLAGS       = $(MYCFLAGS)
-hpcprof_CXXFLAGS     = $(MYCXXFLAGS)
-hpcprof_LDFLAGS      = $(MYLDFLAGS_HPCPROF)
-hpcprof_LDADD        = $(MYLDADD_HPCPROF)
+# N.B.: We use the PROGRAMS primary to get free linking.  An
+# install-hook below moves this from bin to lib in the installation.
+bin_PROGRAMS               += libhpcrun-static.o
+libhpcrun_static_o_SOURCES  = $(MYSOURCES_LIBHPCRUN_STATIC)
+libhpcrun_static_o_CFLAGS   = $(MYCFLAGS)
+libhpcrun_static_o_CXXFLAGS = $(MYCXXFLAGS)
+libhpcrun_static_o_LDFLAGS  = $(MYLDFLAGS_LIBHPCRUN_STATIC)
+libhpcrun_static_o_LDADD    = $(MYLDADD_LIBHPCRUN_STATIC)
 
-MOSTLYCLEANFILES     = $(MYCLEAN)
+# Can We use libtool to get free linking?  It complains.
+#lib_LTLIBRARIES             += libhpcrun-static.o
+#libhpcrun_static_o_SOURCES  = $(MYSOURCES_LIBHPCRUN_STATIC)
+#libhpcrun_static_o_CFLAGS   = $(MYCFLAGS)
+#libhpcrun_static_o_CXXFLAGS = $(MYCXXFLAGS)
+#libhpcrun_static_o_LDFLAGS  = $(MYLDFLAGS_LIBHPCRUN_STATIC)
+#libhpcrun_static_o_LIBADD   = $(MYLDADD_LIBHPCRUN_STATIC)
+
+bin_PROGRAMS           += hpcprof
+hpcprof_SOURCES         = $(MYSOURCES_HPCPROF)
+hpcprof_CFLAGS          = $(MYCFLAGS)
+hpcprof_CXXFLAGS        = $(MYCXXFLAGS)
+hpcprof_LDFLAGS         = $(MYLDFLAGS_HPCPROF)
+hpcprof_LDADD           = $(MYLDADD_HPCPROF)
+
+MOSTLYCLEANFILES        = $(MYCLEAN)
+
+#############################################################################
+# Other rules
+#############################################################################
+
+MY_INTERCEPTED_SYMS_COMMON = \
+	__libc_start_main  __BP___libc_start_main \
+	execl execlp execle execv execvp execve \
+	fork vfork \
+	pthread_create
+
+MY_INTERCEPTED_SYMS_LIBHPCRUNSO = \
+	_init _fini \
+	$(MY_INTERCEPTED_SYMS_COMMON)
+
+MY_INTERCEPTED_SYMS_LIBHPCRUNST = \
+	$(MY_INTERCEPTED_SYMS_COMMON)
+
+
+# *-hook runs after install has completed
+install-exec-local: myinstall-exec
+
+myinstall-exec: myinstall-libhpcrunso myinstall-libhpcrun-static
+
+
+MYKEEPSYMS = $(addprefix -K , $(MY_INTERCEPTED_SYMS_LIBHPCRUNSO))
+
+myinstall-libhpcrunso:
+	rm -f $(MYINSTALLDIR)/lib/libhpcrun.a
+	objcopy -S $(MYKEEPSYMS) $(MYINSTALLDIR)/lib/libhpcrun.so
+
+myinstall-libhpcrun-static: 
+	mv $(MYINSTALLDIR)/bin/libhpcrun-static.o $(MYINSTALLDIR)/lib/.
+
+.PHONY: myinstall-exec myinstall-libhpcrunso myinstall-libhpcrun-static
 
 #############################################################################
 # Common rules
