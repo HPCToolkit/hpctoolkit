@@ -27,10 +27,11 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <inttypes.h> // alpha -- FIXME
-//#include <stdint.h> // standard in C99 FIXME
+#include <inttypes.h> /* commonly available, unlike <stdint.h> */
 
 //*************************** User Include Files ****************************
+
+#include <include/ArchIndTypes.h> /* special printf format strings */
 
 //*************************** Forward Declarations **************************
 

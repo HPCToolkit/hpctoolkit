@@ -407,7 +407,7 @@ hpcfile_cstree_hdr__fprint(hpcfile_cstree_hdr_t* x, FILE* fs)
 
   hpcfile_cstree_id__fprint(&x->fid, fs);
 
-  fprintf(fs, "(vma_sz: %u) (uint_sz: %u) (num_nodes: %lu)}\n", 
+  fprintf(fs, "(vma_sz: %u) (uint_sz: %u) (num_nodes: %"PRIu64")}\n", 
 	  x->vma_sz, x->uint_sz, x->num_nodes);
   
   return HPCFILE_OK;
@@ -459,7 +459,8 @@ hpcfile_cstree_nodedata__fwrite(hpcfile_cstree_nodedata_t* x, FILE* fs)
 int 
 hpcfile_cstree_nodedata__fprint(hpcfile_cstree_nodedata_t* x, FILE* fs)
 {
-  fprintf(fs, "{nodedata: (ip: %lx) (weight: %lu)}\n", x->ip, x->weight);
+  fprintf(fs, "{nodedata: (ip: %"PRIx64") (weight: %"PRIu64")}\n", 
+	  x->ip, x->weight);
   
   return HPCFILE_OK;
 }
@@ -524,7 +525,8 @@ hpcfile_cstree_node__fprint(hpcfile_cstree_node_t* x, FILE* fs)
 
   hpcfile_cstree_nodedata__fprint(&x->data, fs);
   
-  fprintf(fs, "(id: %lu) (id_parent: %lu)}\n", x->id, x->id_parent);
+  fprintf(fs, "(id: %"PRIu64") (id_parent: %"PRIu64")}\n", 
+	  x->id, x->id_parent);
   
   return HPCFILE_OK;
 }

@@ -50,14 +50,21 @@
 //
 //   S (1 bit)   E (15 bits)   F (112 bits)
 
+//*************************** User Include Files ****************************
+
 #include "Nan.h"
+
+//*************************** Forward Declarations ***************************
+
 double NaNVal;
+
+//****************************************************************************
 
 void 
 InitNaN() {
-#if defined(NAN)
+#if (defined(NAN))
   NaNVal = NAN;
-#elif (__i386 && __linux__) || (__ia64 && __linux__)
+#elif (defined(OS_LINUX))
   NaNVal = 0.0/0.0; // This is intentional (NAN)
 #else
   // 64 bit double precision
@@ -68,10 +75,10 @@ InitNaN() {
 bool
 IsNaNorInfinity(double d)
 {
-#if defined(isnan) && defined(isinf)
+#if (defined(isnan) && defined(isinf))
   return isnan(d) || isinf(d); 
-#elif (__i386 && __linux__) || (__ia64 && __linux__)
-  return isnan(d) || isinf(d); 
+#elif (defined(OS_LINUX))
+  return isnan(d) || isinf(d);
 #else
   return IsNANorINF(d);
 #endif
@@ -80,9 +87,9 @@ IsNaNorInfinity(double d)
 bool
 IsNaN(double d)
 {
-#if defined(isnan)
+#if (defined(isnan))
   return isnan(d); 
-#elif (__i386 && __linux__) || (__ia64 && __linux__)
+#elif (defined(OS_LINUX))
   return isnan(d); 
 #else
   return NaN(d);

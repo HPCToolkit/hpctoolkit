@@ -50,6 +50,7 @@
 #ifndef ALPHA_INSTRUCTIONS_H
 #define ALPHA_INSTRUCTIONS_H
 
+#include "inttypes.h"
 
 // Information about Alpha instructions, encoding, conventions, and
 // section numbers is from 
@@ -107,7 +108,7 @@
 // behind this encoding scheme.
 
 // The main opcode 
-#define OP(x)		(uint32)(((x) & 0x3F) << 26)
+#define OP(x)		(uint32_t)(((x) & 0x3F) << 26)
 #define OP_MASK		0xFC000000    /* opcode: bits 31-26 */
 
 // =========================================
