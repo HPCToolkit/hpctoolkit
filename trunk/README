@@ -19,12 +19,13 @@ Contents:
 0. What is HPCToolkit:
 --------------------
 
-HPCToolkit is a multi-platform package with tools for 1) collecting raw
-profile information, 2) converting various types of profiling
+HPCToolkit is a multi-platform package with tools for 1) collecting
+raw profile information, 2) converting various types of profiling
 information into platform independent XML formats and 3) synthesizing
 browsable representations that correlate performance metrics gathered
 from multiple sources with program source code.  It was formerly
-released under the name HPCView.
+released under the name HPCView and includes code once named 'hpcprof'
+and 'papiprof'.
 
 HPCToolkit is an effort of the Center for High Performance Software
 Research (HiPerSoft) at Rice University.
