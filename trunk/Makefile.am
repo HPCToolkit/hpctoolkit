@@ -141,12 +141,12 @@ myinstall-xerces:
 
 # GNUtar
 MYTAR = tar
+MYTARFILE = @abs_top_builddir@/@PACKAGE_NAME@-@PACKAGE_VERSION@-webdocs.tar
 MYSRC = @abs_top_srcdir@
 
 hpc_webdocs: 
 	cd $(srcdir)/.. ; \
-	${MYTAR} cvf $(MYINSTALLDIR)/@PACKAGE_NAME@-webdocs.tar \
-	 --exclude=CVS \
+	${MYTAR} cvf $(MYTARFILE) --exclude=CVS \
 	 HPCToolkit/README* HPCToolkit/Sourceme* \
 	 HPCToolkit/doc \
 	 HPCToolkit/lib/html \
