@@ -32,10 +32,10 @@
 /****************************************************************************/
 
 int
-hpc_init_papi()
+hpc_init_papi(int (*is_init)(void), int (*init)(int))
 {
-  if (PAPI_is_initialized() == PAPI_NOT_INITED) {
-    return hpc_init_papi_force();
+  if ((*is_init)() == PAPI_NOT_INITED) {
+    return hpc_init_papi_force(init);
   }
   
   return 0;
@@ -45,11 +45,11 @@ hpc_init_papi()
 /****************************************************************************/
 
 int
-hpc_init_papi_force()
+hpc_init_papi_force(int (*init)(int))
 {
   /* Initialize PAPI library */
   int papi_version; 
-  papi_version = PAPI_library_init(PAPI_VER_CURRENT);
+  papi_version = (*init)(PAPI_VER_CURRENT);
   if (papi_version != PAPI_VER_CURRENT) {
     fprintf(stderr, "(pid %d): PAPI library initialization failure - expected version %d, dynamic library was version %d. Aborting.\n", getpid(), PAPI_VER_CURRENT, papi_version);
     return 1;

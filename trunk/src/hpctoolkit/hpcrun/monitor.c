@@ -1016,7 +1016,7 @@ init_papi_for_process()
   
   /* Initialize papi: hpc_init_papi_force() *must* be used for forks();
      it works for non-forks also. */
-  if (hpc_init_papi_force() != 0) { 
+  if (hpc_init_papi_force(PAPI_library_init) != 0) { 
     exit(1); /* error already printed */
   }
   
@@ -1568,8 +1568,7 @@ handle_any_dlerror()
   /* Note: We assume dlsym() or something similar has just been called! */
   char *error;
   if ((error = dlerror()) != NULL) {
-    fputs(error, stderr);
-    exit(1);
+    DIE("fatal error: %s\n", error);
   }
 }
 

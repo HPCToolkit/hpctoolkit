@@ -14,6 +14,16 @@ Contents:
 
 =============================================================================
 
+-2.
+--------------------
+
+New building procedures:
+
+./configure --with-papi=<papi-install-path> --prefix=<install-path>
+make
+make install
+
+
 -1. N.B.
 --------------------
 
@@ -184,11 +194,11 @@ of other performance counter information.
 ----
 
 Files:
-  hpcrun.c/h
+  hpcrun.c/h 
   hpcpapi.c/h
   preload.c
   map.c/h
-  io.c/h
+  io.c/h    [duplicate]  --> lib/dtd/...
 
 The files 'hprun.c' and 'preload.c' contain the main source code; the
 other files are ancillary and contain brief descriptions at the top so
@@ -233,7 +243,8 @@ Files:
   summary.cc/h
   proffile.cc/h
   loadmodule.cc/h
-  PROFILE.dtd.h
+  io.c/h           [duplicate]  --> hpcfile_general.h/c
+  PROFILE.dtd.h    [duplicate]  --> lib/dtd/...
 
 hpcprof is still rough, though it should now produce useful
 information.  We have tested text and PROFILE output, but not html.
@@ -324,3 +335,13 @@ Multithreaded process (each thread individually)
     1. --- 
 
 ------------------------------------------------------------
+
+Merge hpcprof into HPCToolkit
+  - if we don't have papi, eitheer conditionally build hpcrun or do
+    not build it.
+  - how to build as a shared library
+  - how to launch without setting evn (LD_LIB_PATH for PAPI)
+    - use dlopen
+    - use a launching script
+
+
