@@ -40,9 +40,11 @@
 
 //************************* User Include Files *******************************
 
+
 #include "Driver.h" 
+#include "HPCViewSAX2.h"
+#include "HPCViewXMLErrHandler.h"
 #include "ScopesInfo.h"
-#include "XMLAdapter.h"
 #include "PGMDocHandler.h"
 
 #include <lib/support/Assertion.h>
@@ -163,22 +165,25 @@ Driver::MakePerfData(ScopesInfo &scopes)
   if (pgmFileName != "") {
     String filePath = String(pathfind(".", pgmFileName, "r")); 
     if (filePath.Length() > 0) {
-      SAXParser parser;
-      parser.setDoValidation(true);
+      SAX2XMLReader* parser = XMLReaderFactory::createXMLReader();
+
+      parser->setFeature(XMLUni::fgSAX2CoreValidation, true);
+      parser->setFeature(XMLUni::fgXercesDynamic, true);
+      parser->setFeature(XMLUni::fgXercesValidationErrorAsFatal, true);
+
       PGMDocHandler handler(&ret, this);
-      parser.setDocumentHandler( &handler );
-      parser.setErrorHandler( &handler );
+      parser->setContentHandler(&handler);
+      parser->setErrorHandler(&handler);
+
       try {
-         parser.parse( (const char *)filePath);
-      }
-      catch (const XMLException& toCatch) {
-        String msg = "ERROR: Could not open STRUCTURE file '" + filePath + "'";
-        ReportException(msg, toCatch);
-	exit(1);
+         parser->parse(filePath);
+	 if (parser->getErrorCount() > 0) {
+	   cerr << "hpcview fatal error: terminating because of previously reported STRUCTURE file parse errors." << endl;
+	   exit(1);
+	 }
       }
       catch (const SAXException& toCatch) {
-        String msg = "ERROR: Parsing error in '" + filePath + "'"; 
-        ReportException(msg, toCatch);
+	   cerr << "hpcview fatal error: terminating because of previously reported STRUCTURE file parse errors." << endl;
 	exit(1);
       }
       catch (const PGMException& toCatch) {
@@ -186,8 +191,8 @@ Driver::MakePerfData(ScopesInfo &scopes)
 	exit(1);
       }
     } else {
-      cerr << "ERROR: could not find STRUCTURE file " 
-	   << pgmFileName << "." << endl;
+      cerr << "hpcview fatal error: could not open STRUCTURE file '" 
+	   << pgmFileName << "'." << endl;
       exit(1);
     }
   }
@@ -201,8 +206,8 @@ Driver::MakePerfData(ScopesInfo &scopes)
     try {
       dataSrc[i]->Make(ret);
     } catch (const MetricException &mex) {
-      cerr << "ERROR: Could not construct metric " 
-	   << dataSrc[i]->Name() << "." << endl
+      cerr << "hpcview fatal error: Could not construct METRIC '" 
+	   << dataSrc[i]->Name() << "'." << endl
 	   << "\t" << mex.error << endl;
       exit(1);
     } 

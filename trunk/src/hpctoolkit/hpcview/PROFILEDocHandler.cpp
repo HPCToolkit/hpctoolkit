@@ -57,13 +57,23 @@
 # include <cstdlib>
 using std::atof; // For compatibility with non-std C headers
 using std::atoi;
+using std::cerr;
 #endif
+
+//************************* Xerces Include Files *******************************
+
+#include "HPCViewSAX2.h"
+#include "HPCViewXMLErrHandler.h"
+
+#include <xercesc/util/XMLString.hpp>         
+using XERCES_CPP_NAMESPACE::XMLString;
 
 //************************* User Include Files *******************************
 
 #include "PROFILEDocHandler.h"
-#include "XMLAdapter.h"
+#include "Driver.h"
 #include "ScopesInfo.h"
+
 #include <lib/support/Assertion.h>
 #include <lib/support/Trace.h>
 
@@ -82,14 +92,45 @@ using std::endl;
 // ----------------------------------------------------------------------
 
 PROFILEDocHandler::PROFILEDocHandler(NodeRetriever* const retriever, 
-				     Driver* _driver) 
-  : SAXHandlerBase(true) 
+				     Driver* _driver)  :
+  elemProfile(XMLString::transcode("PROFILE")),
+  elemProfileHdr(XMLString::transcode("PROFILEHDR")),
+  elemProfileParams(XMLString::transcode("PROFILEPARAMS")),
+  elemTarget(XMLString::transcode("TARGET")),
+  elemMetrics(XMLString::transcode("METRICS")),
+  elemMetricDef(XMLString::transcode("METRIC")),
+  elemProfileScopeTree(XMLString::transcode("PROFILESCOPETREE")),
+  elemPgm(XMLString::transcode("PGM")),
+  elemGroup(XMLString::transcode("G")),
+  elemLM(XMLString::transcode("LM")),
+  elemFile(XMLString::transcode("F")),
+  elemProc(XMLString::transcode("P")),
+  elemLoop(XMLString::transcode("L")),
+  elemStmt(XMLString::transcode("S")),
+  elemMetric(XMLString::transcode("M")),
+  
+  // attribute names for PROFILE elements
+  attrVer(XMLString::transcode("version")),
+  attrShortName(XMLString::transcode("shortName")),
+  attrNativeName(XMLString::transcode("nativeName")),
+  attrPeriod(XMLString::transcode("period")),
+  attrUnits(XMLString::transcode("units")),
+  attrDisplayName(XMLString::transcode("displayName")),
+  attrDisplay(XMLString::transcode("display")),
+  
+  // attribute names for PGM elements
+  attrName(XMLString::transcode("n")),
+  attrLnName(XMLString::transcode("ln")),
+  attrBegin(XMLString::transcode("b")),
+  attrEnd(XMLString::transcode("e")),
+  attrId(XMLString::transcode("id")),
+  attrVal(XMLString::transcode("v"))
 {
   nodeRetriever = retriever;
   driver = _driver;
   metricPerfDataTblIndx = -1;
   profVersion = -1;
-  funcScope = NULL;
+  procScope = NULL;
   line = -1;
 }
 
@@ -115,8 +156,8 @@ PROFILEDocHandler::Initialize(int metricIndx, const char* profileFileName)
 }
 
 // ----------------------------------------------------------------------
-// -- startElement(const XMLCh* const name,
-//                 AttributeList& attributes) --
+// -- startElement(const XMLCh* const uri, const XMLCh* const name, 
+//                 const XMLCh* const qname, const Attributes& attributes)
 //   Process the element start tag and extract out attributes.
 //
 //   -- arguments --
@@ -124,49 +165,14 @@ PROFILEDocHandler::Initialize(int metricIndx, const char* profileFileName)
 //     attributes:   attributes
 // ----------------------------------------------------------------------
 
-#define s_c_XMLCh_c static const XMLCh* const
 
-// Note: indentation shows basic element heirarchy
-s_c_XMLCh_c elemProfile            = XMLStr("PROFILE");
-s_c_XMLCh_c   elemProfileHdr       = XMLStr("PROFILEHDR");
-s_c_XMLCh_c   elemProfileParams    = XMLStr("PROFILEPARAMS");
-s_c_XMLCh_c     elemTarget         = XMLStr("TARGET");
-s_c_XMLCh_c     elemMetrics        = XMLStr("METRICS");
-s_c_XMLCh_c       elemMetricDef    = XMLStr("METRIC");
-s_c_XMLCh_c   elemProfileScopeTree = XMLStr("PROFILESCOPETREE");
-s_c_XMLCh_c     elemPgm            = XMLStr("PGM");
-s_c_XMLCh_c     elemGroup          = XMLStr("G");
-s_c_XMLCh_c     elemLM             = XMLStr("LM");
-s_c_XMLCh_c     elemFile           = XMLStr("F");
-s_c_XMLCh_c     elemProc           = XMLStr("P");
-s_c_XMLCh_c     elemLoop           = XMLStr("L");
-s_c_XMLCh_c     elemStmt           = XMLStr("S");
-s_c_XMLCh_c     elemMetric         = XMLStr("M");
-
-// attribute names for PROFILE elements
-s_c_XMLCh_c attrVer         = XMLStr("version");
-s_c_XMLCh_c attrShortName   = XMLStr("shortName");
-s_c_XMLCh_c attrNativeName  = XMLStr("nativeName");
-s_c_XMLCh_c attrPeriod      = XMLStr("period");
-s_c_XMLCh_c attrUnits       = XMLStr("units");
-s_c_XMLCh_c attrDisplayName = XMLStr("displayName");
-s_c_XMLCh_c attrDisplay     = XMLStr("display");
-
-// attribute names for PGM elements
-s_c_XMLCh_c attrName   = XMLStr("n");
-s_c_XMLCh_c attrLnName = XMLStr("ln");
-s_c_XMLCh_c attrBegin  = XMLStr("b");
-s_c_XMLCh_c attrEnd    = XMLStr("e");
-s_c_XMLCh_c attrId     = XMLStr("id");
-s_c_XMLCh_c attrVal    = XMLStr("v");
-
-void PROFILEDocHandler::startElement(const XMLCh* const name,
-				     AttributeList& attributes) 
+void PROFILEDocHandler::startElement(const XMLCh* const uri, const XMLCh* const name, 
+				     const XMLCh* const qname, const Attributes& attributes)
 {
   // -----------------------------------------------------------------
   // PROFILE
   // -----------------------------------------------------------------  
-  if (isXMLStrSame(name, elemProfile)) {
+  if (XMLString::equals(name, elemProfile)) {
     String verStr = getAttr(attributes, attrVer);
     double ver = atof(verStr);
     
@@ -183,30 +189,30 @@ void PROFILEDocHandler::startElement(const XMLCh* const name,
   // -----------------------------------------------------------------
   // PROFILEHDR
   // -----------------------------------------------------------------
-  if (isXMLStrSame(name, elemProfileHdr)) {
+  if (XMLString::equals(name, elemProfileHdr)) {
     IFTRACE << "PROFILEHDR" << endl;
   }
 
   // -----------------------------------------------------------------
   // PROFILEPARAMS
   // -----------------------------------------------------------------
-  if (isXMLStrSame(name, elemProfileParams)) {
+  if (XMLString::equals(name, elemProfileParams)) {
     IFTRACE << "PROFILEPARAMS" << endl;
   }
 
   // TARGET: executable name
-  if (isXMLStrSame(name, elemTarget)) {
+  if (XMLString::equals(name, elemTarget)) {
     String target = getAttr(attributes, 0 /*name*/); 
     IFTRACE << "TARGET: name=" << target << endl;
   }
   
   // METRICS
-  if (isXMLStrSame(name, elemMetrics)) {
+  if (XMLString::equals(name, elemMetrics)) {
     IFTRACE << "METRICS" << endl;
   }
 
   // METRIC: list of profiling metrics
-  if (isXMLStrSame(name, elemMetricDef)) {
+  if (XMLString::equals(name, elemMetricDef)) {
     String shortName   = getAttr(attributes, attrShortName);
     String nativeName  = getAttr(attributes, attrNativeName);
     String period      = getAttr(attributes, attrPeriod);
@@ -235,12 +241,12 @@ void PROFILEDocHandler::startElement(const XMLCh* const name,
   // -----------------------------------------------------------------
 
   // PROFILESCOPETREE
-  if (isXMLStrSame(name, elemProfileScopeTree)) {
+  if (XMLString::equals(name, elemProfileScopeTree)) {
     IFTRACE << "PROFILESCOPETREE" << endl;
   }
 
   // PGM [See PGMDocHandler.C]
-  if (isXMLStrSame(name, elemPgm)) {
+  if (XMLString::equals(name, elemPgm)) {
     String pgmName = getAttr(attributes, attrName);
     pgmName = driver->ReplacePath(pgmName);
     IFTRACE << "PGM: name= " << pgmName << endl;
@@ -250,37 +256,37 @@ void PROFILEDocHandler::startElement(const XMLCh* const name,
   }
 
   // G(roup)
-  if (isXMLStrSame(name, elemGroup)) {
+  if (XMLString::equals(name, elemGroup)) {
     // For now, GROUPs are meaningless in a PROFILE.
     IFTRACE << "G(roup)" << endl;
   }    
 
   // LM (load module)
-  if (isXMLStrSame(name, elemLM)) {
+  if (XMLString::equals(name, elemLM)) {
     String lm = getAttr(attributes, attrName); // must exist
     lm = driver->ReplacePath(lm);
 
     BriefAssertion(lmName.Length() == 0);
     lmName = lm;
-    nodeRetriever->MoveToLoadMod(lmName);
+    lmScope = nodeRetriever->MoveToLoadMod(lmName);
     
     IFTRACE << "LM (load module): name= " << lmName << endl;
   }
 
   // F(ile)
-  if (isXMLStrSame(name, elemFile)) {
+  if (XMLString::equals(name, elemFile)) {
     String srcFile = getAttr(attributes, attrName); // must exist
     srcFile = driver->ReplacePath(srcFile);
 
     BriefAssertion(srcFileName.Length() == 0);
     srcFileName = srcFile;
-    nodeRetriever->MoveToFile(srcFileName); 
+    fileScope = nodeRetriever->MoveToFile(srcFileName); 
 
     IFTRACE << "F(ile): name= " << srcFile << endl;       
   }
   
   // P(roc)
-  if (isXMLStrSame(name, elemProc)) {
+  if (XMLString::equals(name, elemProc)) {
     String name = getAttr(attributes, attrName); // must exist
     if (driver->MustDeleteUnderscore()) {
       if ((name.Length() > 0) && (name[name.Length()-1] == '_')) {
@@ -294,19 +300,19 @@ void PROFILEDocHandler::startElement(const XMLCh* const name,
     
     BriefAssertion(funcName.Length() == 0);
     funcName = name;
-    funcScope = nodeRetriever->MoveToProc(funcName);
+    procScope = nodeRetriever->MoveToProc(funcName);
     
     IFTRACE << "P(roc): name= " << name << endl;       
   }
 
   // L(oop)
-  if (isXMLStrSame(name, elemLoop)) {
+  if (XMLString::equals(name, elemLoop)) {
     // For now, LOOPs are meaningless in a PROFILE.
     IFTRACE << "L(oop)" << endl;
   }    
   
   // S(tmt)
-  if (isXMLStrSame(name, elemStmt)) {
+  if (XMLString::equals(name, elemStmt)) {
     int numAttr = attributes.getLength();
     BriefAssertion(numAttr >= 1 && numAttr <= 3);
     
@@ -331,7 +337,7 @@ void PROFILEDocHandler::startElement(const XMLCh* const name,
   }
 
   // M(etric)
-  if (isXMLStrSame(name, elemMetric)) {
+  if (XMLString::equals(name, elemMetric)) {
     String name  = getAttr(attributes, attrName);
     String value = getAttr(attributes, attrVal);
 
@@ -339,10 +345,18 @@ void PROFILEDocHandler::startElement(const XMLCh* const name,
     if (strcmp(name, metricNameShort) == 0) {
       // FIXME: Metrics can be attached to any element of the tree,
       // not just stmts.  (use StmtRangeScope not LineScope)
+      double val = atof(value);
       if (line != -1) { // FIXME change to IsValid
-	double val = atof(value);
-	CodeInfo* lineNode = funcScope->GetLineScope(line); 
+	CodeInfo* lineNode = procScope->GetLineScope(line); 
 	lineNode->SetPerfData(metricPerfDataTblIndx, val); 
+      } else {
+	if (procScope) {
+	  procScope->SetPerfData(metricPerfDataTblIndx, val); 
+	} else if (fileScope) {
+	  fileScope->SetPerfData(metricPerfDataTblIndx, val); 
+	} else {
+	  lmScope->SetPerfData(metricPerfDataTblIndx, val); 
+	}
       }
     }
     
@@ -351,7 +365,9 @@ void PROFILEDocHandler::startElement(const XMLCh* const name,
   }
 }
 
-void PROFILEDocHandler::endElement(const XMLCh* const name)
+void PROFILEDocHandler::endElement(const XMLCh* const uri, 
+				   const XMLCh* const name, 
+				   const XMLCh* const qname)
 {
   // -----------------------------------------------------------------
   // PROFILEHDR
@@ -362,11 +378,11 @@ void PROFILEDocHandler::endElement(const XMLCh* const name)
   // -----------------------------------------------------------------
 
   // METRICS
-  if (isXMLStrSame(name, elemMetrics)) {
+  if (XMLString::equals(name, elemMetrics)) {
     // If 'metricNameShort' has not been found then 'metricName' is invalid
     if ( metricNameShort.Length() == 0 ){
-      String error = "Metric with shortName= " + metricName 
-	+ " not found in file: " + profileFile	; 
+      String error = "METRIC with shortName=" + metricName 
+	+ " not found in PROFILE file '" + profileFile + "'."; 
       throw PROFILEException(error); 
     }
   }
@@ -376,23 +392,48 @@ void PROFILEDocHandler::endElement(const XMLCh* const name)
   // -----------------------------------------------------------------
 
   // LM (load module)
-  if (isXMLStrSame(name, elemLM)) {
+  if (XMLString::equals(name, elemLM)) {
     lmName = "";
+    lmScope = NULL;
   }
 
   // F(ile)
-  if (isXMLStrSame(name, elemFile)) {
+  if (XMLString::equals(name, elemFile)) {
     srcFileName = "";
+    fileScope = NULL;
   }
 
   // P(roc)
-  if (isXMLStrSame(name, elemProc)) {
+  if (XMLString::equals(name, elemProc)) {
     funcName = "";
-    funcScope = NULL;
+    procScope = NULL;
   }
 
   // S(tmt)
-  if (isXMLStrSame(name, elemStmt)) {
+  if (XMLString::equals(name, elemStmt)) {
     line = -1;
   }
 }
+
+
+const char *PROFILE = "PROFILE";
+
+// ---------------------------------------------------------------------------
+//  implementation of SAX2 ErrorHandler interface
+// ---------------------------------------------------------------------------
+void PROFILEDocHandler::error(const SAXParseException& e)
+{
+  HPCViewXMLErrHandler::report(cerr, "hpcview non-fatal error", PROFILE, e);
+}
+
+void PROFILEDocHandler::fatalError(const SAXParseException& e)
+{
+  HPCViewXMLErrHandler::report(cerr, "hpcview fatal error", PROFILE, e);
+  exit(1);
+}
+
+void PROFILEDocHandler::warning(const SAXParseException& e)
+{
+  HPCViewXMLErrHandler::report(cerr, "hpcview warning", PROFILE, e);
+}
+

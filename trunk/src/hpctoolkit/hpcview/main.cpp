@@ -50,12 +50,24 @@ using namespace std; // For compatibility with non-std C headers
 #include <dirent.h>
 #include <sys/types.h>
 
+//************************* Xerces Include Files *******************************
+
+#include <xercesc/util/XMLString.hpp>        
+using XERCES_CPP_NAMESPACE::XMLString;
+
+#include <xercesc/util/PlatformUtils.hpp>        
+using XERCES_CPP_NAMESPACE::XMLPlatformUtils;
+
+#include <xercesc/util/XMLException.hpp>
+using XERCES_CPP_NAMESPACE::XMLException;
+
+
 //************************* User Include Files *******************************
 
 // XML related includes 
-#include "XMLAdapter.h" 
 #include "PROFILEDocHandler.h" 
 #include "HPCViewDocParser.h"
+#include "HPCViewXMLErrHandler.h"
 
 // Argument Handling
 #include "Args.h" 
@@ -95,8 +107,6 @@ private:
 
 #define NUM_PREFIX_LINES 2
 
-static String ConfigDtd(const char* hpcHome);
-
 static void AppendContents(std::ofstream &dest, const char *srcFile);
 
 static String BuildConfFile(const char* hpcHome, const char* confFile);
@@ -117,10 +127,10 @@ main(int argc, char* const* argv)
   try {
     ret = realmain(argc, argv);
   } catch (std::bad_alloc& x) {
-    cerr << "Error: Memory alloc failed!\n";
+    cerr << "hpcview fatal error: Memory alloc failed!\n";
     exit(1);
   } catch (...) {
-    cerr << "Error: Unknown exception encountered!\n";
+    cerr << "hpcview fatal error: Unknown exception encountered!\n";
     exit(2);
   }
 
@@ -145,7 +155,7 @@ realmain(int argc, char* const* argv)
 	  << ": ..." << endl; 
 
   //-------------------------------------------------------
-  // Read configuaration file
+  // Read configuration file
   //-------------------------------------------------------
   String tmpFile;
   try {
@@ -154,15 +164,28 @@ realmain(int argc, char* const* argv)
   }
   catch (const FileException &e) {
     cerr << e.GetError() << endl;
-    exit(-1);
+    exit(1);
   }
 
   Driver driver(args.deleteUnderscores, args.CopySrcFiles); 
 
   String userFile(args.configurationFile);
-  DOMTreeErrorReporter errReporter(userFile, tmpFile, NUM_PREFIX_LINES);
+  HPCViewXMLErrHandler errReporter(userFile, tmpFile, NUM_PREFIX_LINES, true);
+  try {
+    HPCViewDocParser(driver, tmpFile, errReporter);
+  }
+  catch (const HPCViewDocException &d){
+    unlink(tmpFile); 
+    cerr << "hpcview fatal error: CONFIGURATION file processing error." << endl
+    << "\t" << d.getMessage() << endl;
+    exit(1);
+  }
+  catch (...) {
+    unlink(tmpFile); 
+    cerr << "hpcview fatal error: terminating because of previously reported CONFIGURATION file errors." << endl;
+    exit(1);
+  };
 
-  HPCViewDocParser(driver, tmpFile, errReporter);
   unlink(tmpFile); 
 
   //-------------------------------------------------------
@@ -254,6 +277,7 @@ realmain(int argc, char* const* argv)
   }
   
   ClearPerfDataSrcTable(); 
+  FiniXML();
   
   return 0; 
 } 
@@ -264,14 +288,12 @@ static void
 InitXML() 
 {
   IFTRACE << "Initializing XML: ..." << endl; 
-  // Initialize the XML4C2 system
   try {
     XMLPlatformUtils::Initialize();
   } 
   catch (const XMLException& toCatch) {
-    cerr << "ERROR during initialization! :\n" 
-	 << XMLStrToString(toCatch.getMessage())
-	 << endl;
+    cerr << "hpcview fatal error: unable to initialize XML processor." << endl 
+	 << "\t" << XMLString::transcode(toCatch.getMessage()) << endl;
     exit(1); 
   }
   IFTRACE << endl; 
@@ -284,12 +306,6 @@ FiniXML()
   XMLPlatformUtils::Terminate();
   IFTRACE << endl; 
 }
-
-static String
-ConfigDtd(const char* hpcHome) 
-{
-  return String(hpcHome) + "/lib/dtd/HPCView.dtd"; 
-} 
 
 #define MAX_IO_SIZE (64 * 1024)
 
@@ -322,7 +338,7 @@ BuildConfFile(const char* hpcHome, const char* confFile)
   if (hpcloc[hpcloc.Length()-1] != '/') {
     hpcloc += "/";
   }
-  std::ofstream tmp(tmpFile);
+  std::ofstream tmp(tmpFile, std::ios_base::out);
 
   if (tmp.fail()) {
     String error = String("Unable to open temporary file ") + tmpFile + 
