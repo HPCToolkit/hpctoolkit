@@ -41,8 +41,7 @@ National Computational Science Alliance.
 1. For More Information:
 --------------------
 
-HPCToolkit documentation: Point your browser to ${HPCTOOLKIT}/doc/index.html
+HPCToolkit documentation (including instructions for build/installation)
+  Point your browser to ${HPCTOOLKIT}/doc/index.html
 
 HPCToolkit Website: http://www.hipersoft.rice.edu/hpctoolkit
-
-See README.Index in this directory.

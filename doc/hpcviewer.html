@@ -26,7 +26,7 @@
 <div id="main">
 
 <!-- automatically updated by Emacs hook below; nicer than CVS Date -->
-<p class="lastupdated">Last Updated: 2004-10-26</p>
+<p class="lastupdated">Last Updated: 2004-10-28</p>
 
 <h2>User Commands: hpcviewer(1)</h2>
 
@@ -37,10 +37,11 @@
 <div class="indent">
 
 <p><span class="hpctool">hpcviewer</span>
-   [<i>performance-database</i>]
+   [<i>performance-database/hpcviewer-file</i>]
 
-<p>(or double click on the <span class="hpctool">HPCViewer.jar</span> 
-icon using a GUI user interface.)</p>
+<p>Location: <code>${HPCTOOLKIT}/bin</code>
+
+<p>For GUI environments, double click on the <span class="hpctool">HPCViewer.jar</span> icon in <code>${HPCTOOLKIT}/lib</code>.
 
 </div> <!-- class=indent -->
 
@@ -52,13 +53,15 @@ icon using a GUI user interface.)</p>
 
 <p><span class="hpctool">hpcviewer</span> is a graphical user interface
 for exploring performance databases created by 
-<a href="hpcview.html" class="hpctool">hpcview</a>. 
-<span class="hpctool">hpcviewer</span> is written in Java, so it can run
-anywhere -- on your cluster, on your desktop, or on your laptop. 
+<a href="hpcview.html" class="hpctool">hpcview</a> (or 
+<a href="hpcquick.html" class="hpctool">hpcquick</a>).
+Because it is written in Java, it can run anywhere -- on your cluster,
+on your desktop, or on your laptop.
 
-<p>When <span class="hpctool">hpcviewer</span> starts it presents a
-file chooser window. Select the <i>dir/file</i> that was created by
-<a href="hpcview.html" class="hpctool">hpcview</a>.</p>
+<p>When <span class="hpctool">hpcviewer</span> is run with no
+arguments, it will display a file chooser dialog-box so that you can 
+select the <i>performance-database/hpcviewer-file</i> to view. 
+The pathname of this file can also be specified as an argument.
 
 <p> The <span class="hpctool">hpcviewer</span> user interface enables
 one to explore an application's performance data in a top-down
