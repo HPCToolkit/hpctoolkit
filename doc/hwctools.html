@@ -26,7 +26,7 @@
 <div id="main">
 
 <!-- automatically updated by Emacs hook below; nicer than CVS Date -->
-<p class="lastupdated">Last Updated: 2004-10-29</p>
+<p class="lastupdated">Last Updated: 2004-11-05</p>
 
 <a name="toc"></a>
 <h1>Hardware Counter Tools</h1>
@@ -57,6 +57,52 @@ Linux.  However, for some Linux architectures -- notably x86 --
 installation requires a custom kernel. PAPI includes all necessary
 instructions: see the file <code>INSTALL.txt</code> in the root of the
 PAPI distribution source tree.
+
+<p>You may experience some problems with PAPI 3.0.  We have compiled a
+list of (known and reported) outstanding issues with our suggested
+work-arounds:
+
+  <ol class="indent">
+
+    <li><p>Linux-*: PAPI is not able to reliably detect when Thread Local
+        Storage (TLS) is supported by your compiler/system.  The
+        result is that you may stumble upon an error in
+        <code>src/threads.h</code> when compiling PAPI:
+
+	<div class="indent">
+	  <pre>threads.h:31: error: thread-local storage not supported for this target</pre>
+	</div>
+
+	<p>Or when using <a href="hpcrun.html" class="hpctool">hpcrun</a>
+	to monitor a multithreaded application, it may report an error
+        like the following:
+
+	<div class="indent">
+	  <pre>hpcrun (pid 23091, tid cv16386): fatal error: PAPI error (-10): EventSet is currently counting.</pre>
+	</div>
+
+	<p>In either case, the solution is to recompile PAPI while
+        explicitly disabling TLS features.  To do this, open
+        <code>src/threads.h</code> and force the test at line 4 to be
+        false.  For example, replace:
+
+	<div class="indent">
+	  <code>#if&nbsp;defined(__GNUC__)&nbsp;&&&nbsp;(__GNUC__&nbsp;>=&nbsp;3)...</code>
+	</div>
+
+        <p>with 
+
+	<div class="indent">
+	  <code>#if&nbsp;<span class="xmlcomment">0&nbsp;&&</span>&nbsp;defined(__GNUC__)&nbsp;&&&nbsp;(__GNUC__&nbsp;>=&nbsp;3)...</code>
+	</div>
+
+    <li><p>Linux-opteron: A bug in the PAPI library build process causes
+        <code>libpapi.so</code> to contain a reference to
+        <code>perfctr.so.6</code> -- only this doesn't exist.  The
+        simple workaround is to create your own symbolic link from
+        <code>perfctr.so.5</code> to <code>perfctr.so.6</code>.
+
+  </ol>
 
 <!-- end: papi -->
 
