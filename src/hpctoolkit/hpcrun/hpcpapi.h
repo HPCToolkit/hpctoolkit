@@ -43,15 +43,15 @@ extern "C" {
    encountered, print an error message and return non-zero; otherwise
    return 0.  May be called multiple times. */
 extern int
-hpc_init_papi();
+hpc_init_papi(int (*is_init)(void), int (*init)(int));
 
 
-/* hpc_init_papi_force: Force initialization of the PAPI library 
-   perform error checking.  If an error is
-   encountered, print an error message and return non-zero; otherwise
-   return 0.  May be called only once. */
+/* hpc_init_papi_force: Force initialization of the PAPI library
+   perform error checking.  If an error is encountered, print an error
+   message and return non-zero; otherwise return 0.  May be called
+   only once. */
 extern int
-hpc_init_papi_force();
+hpc_init_papi_force(int (*init)(int));
 
 #ifdef __cplusplus
 }

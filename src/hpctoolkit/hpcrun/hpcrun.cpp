@@ -28,6 +28,7 @@
 #include <string.h>
 #include <errno.h>
 #include <inttypes.h>
+#include <libgen.h> /* for dirname/basename */
 
 #include <sys/types.h> /* for wait() */
 #include <sys/wait.h>  /* for wait() */
@@ -35,13 +36,11 @@
 /**************************** User Include Files ****************************/
 
 #include "hpcpapi.h" /* <papi.h>, etc. */
-
+#include "dlpapi.h"
 #include "hpcrun.h"
 
-/**************************** Forward Declarations **************************/
 
-#define LD_PRELOAD "LD_PRELOAD"
-#define HPCRUN_HOME "HPCRUN_HOME"
+/**************************** Forward Declarations **************************/
 
 typedef enum {
   LIST_NONE  = 0, /* none */
@@ -72,8 +71,11 @@ args_parse(int argc, char* argv[]);
 static void
 init_papi();
 
+static char*
+hpctoolkit_installation_path(const char* cmd);
+
 static int
-launch_and_profile(char* argv[]);
+launch_and_profile(const char* installpath, char* argv[]);
 
 static void 
 list_available_events(event_list_t listType);
@@ -88,17 +90,21 @@ int
 main(int argc, char* argv[])
 {
   int retval; 
+  char* installpath;
   
   args_parse(argc, argv);
   
   // Special options that short circuit profiling
   if (myopt_list_events) {
-    list_available_events(myopt_list_events);
+    dlopen_papi();
+    list_available_events(myopt_list_events);    
+    dlclose_papi();
     return 0;
   }
   
   // Launch and profile
-  if ((retval = launch_and_profile(opt_command_argv)) != 0) {
+  installpath = hpctoolkit_installation_path(argv[0]);
+  if ((retval = launch_and_profile(installpath, opt_command_argv)) != 0) {
     return retval; // error already printed
   }
   
@@ -111,9 +117,39 @@ static void
 init_papi() 
 {
   /* Initialize PAPI library */
-  if (hpc_init_papi() != 0) {
-    exit(-1);
+  if (hpc_init_papi(dl_PAPI_is_initialized, dl_PAPI_library_init) != 0) {
+    exit(-1); /* message already printed */
   }
+}
+
+
+/* FIXME: move to shared location */
+static char*
+hpctoolkit_installation_path(const char* cmd)
+{
+  static char rootdir[PATH_MAX] = "";
+  char *bindir, *rootdir_rel;
+  char *cmd1 = NULL, *bindir_tmp = NULL;
+  
+  cmd1 = strdup(cmd);
+  bindir = dirname(cmd1);
+  if (strcmp(bindir, ".") == 0) {
+    rootdir_rel = "..";
+  } 
+  else {
+    bindir_tmp = strdup(bindir);
+    rootdir_rel = dirname(bindir_tmp);
+  }
+  
+  if (realpath(rootdir_rel, rootdir) == NULL) {
+    fprintf(stderr, "%s: %s\n", cmd, strerror(errno));
+    exit(1);
+  }
+  
+  free(cmd1);
+  free(bindir_tmp);
+  
+  return rootdir;
 }
 
 
@@ -340,15 +376,15 @@ args_print_error(FILE* fs, const char* msg)
  ****************************************************************************/
 
 static int
-check_and_prepare_env_for_profiling();
+check_and_prepare_env_for_profiling(const char* installpath);
 
 static int
-launch_and_profile(char* argv[])
+launch_and_profile(const char* installpath, char* argv[])
 {
   pid_t pid;
   int status;
   
-  if (check_and_prepare_env_for_profiling() != 0) {
+  if (check_and_prepare_env_for_profiling(installpath) != 0) {
     return 1;
   }
   
@@ -357,7 +393,8 @@ launch_and_profile(char* argv[])
     // Child process
     const char* cmd = opt_command_argv[0];
     if (execvp(cmd, opt_command_argv) == -1) {
-      fprintf(stderr, "hpcrun: Error exec'ing %s: %s\n", cmd, strerror(errno));
+      fprintf(stderr, "%s: Error exec'ing %s: %s\n", 
+	      args_command, cmd, strerror(errno));
       return 1;
     }
     // never reached
@@ -370,31 +407,41 @@ launch_and_profile(char* argv[])
 
 
 static int
-check_and_prepare_env_for_profiling()
+check_and_prepare_env_for_profiling(const char* installpath)
 {
+#define LD_LIBRARY_PATH "LD_LIBRARY_PATH"
+#define LD_PRELOAD      "LD_PRELOAD"
+  
+  char newval[PATH_MAX] = "";
+  char *oldval;
+  int sz;
+
   // -------------------------------------------------------
-  // Sanity check environment
+  // Prepare environment
   // -------------------------------------------------------
-  char *hpcrunhome;
-  hpcrunhome = getenv(HPCRUN_HOME);
-  if (!hpcrunhome) {
-    fprintf(stderr, "hpcrun: Please set " HPCRUN_HOME " before using\n");
-    return 1;
+  
+  /* LD_LIBRARY_PATH */
+  strncpy(newval, HPC_PAPI_LIBPATH, PATH_MAX);
+  oldval = getenv(LD_LIBRARY_PATH);
+  if (oldval) {
+    sz = PATH_MAX - (strlen(newval) + 1); /* 'path:' */
+    snprintf(newval + strlen(newval), sz, ":%s", oldval);
   }
-  
-  // -------------------------------------------------------
-  // Prepare environment: LD_PRELOAD
-  // -------------------------------------------------------
-  static char newpreloadval[PATH_MAX] = "";
-  char *preloadval;
-  
-  sprintf(newpreloadval, " %s/" HPCRUN_LIB, hpcrunhome);
-  
-  preloadval = getenv(LD_PRELOAD);
-  if (preloadval) {
-    sprintf(newpreloadval + strlen(newpreloadval), " %s", preloadval);
+  newval[PATH_MAX-1] = '\0';
+  setenv(LD_LIBRARY_PATH, newval, 1);
+
+  /* LD_PRELOAD */
+  snprintf(newval, PATH_MAX, "%s/lib/" HPCRUN_LIB, installpath);
+  oldval = getenv(LD_PRELOAD);
+  if (oldval) {
+    sz = PATH_MAX - (strlen(newval) + 1); /* 'path ' */
+    snprintf(newval + strlen(newval), sz, " %s", oldval);
   }
-  setenv(LD_PRELOAD, newpreloadval, 1);  
+  newval[PATH_MAX-1] = '\0';
+  setenv(LD_PRELOAD, newval, 1);
+
+  //fprintf(stderr, "%s\n", getenv(LD_LIBRARY_PATH));
+  //fprintf(stderr, "%s\n", getenv(LD_PRELOAD));
   
   // -------------------------------------------------------
   // Prepare environment: Profiler options
@@ -465,7 +512,7 @@ list_available_events(event_list_t listType)
   // -------------------------------------------------------
   // Hardware information
   // -------------------------------------------------------
-  if ((hwinfo = PAPI_get_hardware_info()) == NULL) {
+  if ((hwinfo = dl_PAPI_get_hardware_info()) == NULL) {
     fprintf(stderr,"papirun: failed to set debug level. Aborting.\n");
     exit(-1);
   }
@@ -481,7 +528,7 @@ list_available_events(event_list_t listType)
   printf("Nodes in this System    : %d\n", hwinfo->nnodes);
   printf("Total CPU's             : %d\n", hwinfo->totalcpus);
   printf("Number Hardware Counters: %d\n", 
-	 PAPI_get_opt(PAPI_MAX_HWCTRS, NULL));
+	 dl_PAPI_get_opt(PAPI_MAX_HWCTRS, NULL));
   printf("Max Multiplex Counters  : %d\n", PAPI_MPX_DEF_DEG);
   printf(separator_major);
 
@@ -508,7 +555,7 @@ list_available_events(event_list_t listType)
   i = 0 | PAPI_PRESET_MASK;
   count = 0;
   do {
-    if (PAPI_get_event_info(i, &info) == PAPI_OK) {
+    if (dl_PAPI_get_event_info(i, &info) == PAPI_OK) {
       if (listType == LIST_SHORT) {
 	printf(FmtPAPIShort, info.symbol, info.long_descr);
       } 
@@ -524,7 +571,7 @@ list_available_events(event_list_t listType)
       }
       count++;
     }
-  } while (PAPI_enum_event(&i, PAPI_PRESET_ENUM_AVAIL) == PAPI_OK);
+  } while (dl_PAPI_enum_event(&i, PAPI_PRESET_ENUM_AVAIL) == PAPI_OK);
   printf("Total PAPI events reported: %d\n", count);
   printf(separator_major);  
 
@@ -557,21 +604,21 @@ list_available_events(event_list_t listType)
     do {
       int j = i;
       unsigned l = 0;
-      if (PAPI_get_event_info(i, &info) == PAPI_OK) {
+      if (dl_PAPI_get_event_info(i, &info) == PAPI_OK) {
 	printf(FmtNtvGrp, info.symbol, info.long_descr);
 	l = strlen(info.long_descr);
       }
-      while (PAPI_enum_event(&j, PAPI_PENT4_ENUM_BITS) == PAPI_OK) {
-	if (PAPI_get_event_info(j, &info) == PAPI_OK) {
+      while (dl_PAPI_enum_event(&j, PAPI_PENT4_ENUM_BITS) == PAPI_OK) {
+	if (dl_PAPI_get_event_info(j, &info) == PAPI_OK) {
 	  printf(FmtNtvGrpMbr, info.symbol, info.long_descr + l + 1);
 	  count++;
 	}
       }
-    } while (PAPI_enum_event(&i, PAPI_PENT4_ENUM_GROUPS) == PAPI_OK);
+    } while (dl_PAPI_enum_event(&i, PAPI_PENT4_ENUM_GROUPS) == PAPI_OK);
   }
   else {
     do {
-      if (PAPI_get_event_info(i, &info) == PAPI_OK) {
+      if (dl_PAPI_get_event_info(i, &info) == PAPI_OK) {
 	if (listType == LIST_SHORT || listType == LIST_LONG) {
 	  const char* desc = info.long_descr;
 	  if (strncmp(info.symbol, desc, strlen(info.symbol)) == 0) {
@@ -581,7 +628,7 @@ list_available_events(event_list_t listType)
 	} 
 	count++;
       }
-    } while (PAPI_enum_event(&i, PAPI_ENUM_ALL) == PAPI_OK);
+    } while (dl_PAPI_enum_event(&i, PAPI_ENUM_ALL) == PAPI_OK);
   }
   
   printf("Total native events reported: %d\n", count);
