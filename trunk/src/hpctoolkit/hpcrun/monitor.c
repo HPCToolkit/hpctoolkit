@@ -776,12 +776,12 @@ add_sysevent(hpcsys_profile_desc_vec_t* profdescs, rtloadmap_t* rtmap,
   if (strcmp(eventnm, HPCRUN_EVENT_WALLCLK_STR) == 0) {
     prof->ename = HPCRUN_EVENT_WALLCLK_STR;
     prof->flags = 0;
-    prof->period = 10; /* 10 millisecond */
+    prof->period = 1; /* 1 millisecond (not 10!); discovered empirically */
   }
   else if (strcmp(eventnm, HPCRUN_EVENT_FWALLCLK_STR) == 0) {
     prof->ename = HPCRUN_EVENT_FWALLCLK_STR;
     prof->flags = PROF_FAST;
-    prof->period = 10; /* should be 1 ms; cf. /usr/include/sys/profile.h */
+    prof->period = 1; /* should be 1 ms; cf. /usr/include/sys/profile.h */
   }
   else {
     DIE("fatal error: Invalid event: '%s'.", eventnm);

@@ -67,13 +67,20 @@ args_parse(int argc, char* argv[]);
 
 //*************************** Forward Declarations **************************
 
+#define LD_LIBRARY_PATH "LD_LIBRARY_PATH"
+#define LD_PRELOAD      "LD_PRELOAD"
+
 static void
 init_papi();
 
 static int
+prepare_ld_lib_path_for_papi();
+
+
+static int
 launch_and_profile(const char* installpath, char* argv[]);
 
-static void 
+static int
 list_available_events(event_list_t listType);
 
 //***************************************************************************
@@ -88,20 +95,19 @@ main(int argc, char* argv[])
   
   args_parse(argc, argv);
   
-  // Special options that short circuit profiling
+  // Check for special options that short circuit profiling
   if (myopt_list_events) {
-    dlopen_papi();
-    list_available_events(myopt_list_events);    
-    dlclose_papi();
-    return 0;
+    // List events
+    return list_available_events(myopt_list_events);
   }
-  
-  // Launch and profile
-  if ((installpath = findinstall(argv[0], "hpcrun")) == NULL) {
-    fprintf(stderr, "%s: Cannot locate installation path\n", argv[0]);
-  }
-  if ((retval = launch_and_profile(installpath, opt_command_argv)) != 0) {
-    return retval; // error already printed
+  else {
+    // Launch and profile
+    if ((installpath = findinstall(argv[0], "hpcrun")) == NULL) {
+      fprintf(stderr, "%s: Cannot locate installation path\n", argv[0]);
+    }
+    if ((retval = launch_and_profile(installpath, opt_command_argv)) != 0) {
+      return retval; // error already printed
+    }
   }
   
   // never reached except on error: No need to free memory in opt_command_argv
@@ -119,6 +125,26 @@ init_papi()
 }
 
 
+static int
+prepare_ld_lib_path_for_papi()
+{
+  char newval[PATH_MAX] = "";
+  char *oldval;
+  int sz;
+  
+  /* LD_LIBRARY_PATH */
+  strncpy(newval, HPC_PAPI_LIBPATH, PATH_MAX);
+  oldval = getenv(LD_LIBRARY_PATH);
+  if (oldval) {
+    sz = PATH_MAX - (strlen(newval) + 1); /* 'path:' */
+    snprintf(newval + strlen(newval), sz, ":%s", oldval);
+  }
+  newval[PATH_MAX-1] = '\0';
+  setenv(LD_LIBRARY_PATH, newval, 1);
+  return 0;
+}
+
+
 //***************************************************************************
 // Parse options
 //***************************************************************************
@@ -132,7 +158,7 @@ static const char* args_usage_summary1 =
 "[profiling-options] -- <command> [arguments]\n";
 
 static const char* args_usage_summary2 =
-"[-l | -L] [-V] [-h]\n";
+"[-l | -L] [-P] [-V] [-h]\n";
 
 static const char* args_usage_details =
 "hpcrun profiles the execution of an arbitrary command using statistical\n"
@@ -162,6 +188,7 @@ static const char* args_usage_details =
 "  -l           List events available on this architecture \n"
 "               (system, PAPI, native)\n"
 "  -L           Similar to above but with more information.\n"
+"  -P           Print the PAPI installation path.\n"
 "  -V           Print version information.\n"
 "  -h           Print this help.\n"
 "\n"
@@ -214,6 +241,9 @@ args_print_usage(FILE* fs);
 static void 
 args_print_error(FILE* fs, const char* msg);
 
+static void 
+args_print_papi(FILE* fs);
+
 
 static void
 args_parse(int argc, char* argv[])
@@ -233,7 +263,7 @@ args_parse(int argc, char* argv[])
 
   // NOTE: This getopt string uses some GNU extensions (::).  
   // FIXME: CONVERT to use HPCToolkit's option parser.
-  while ((c = getopt(argc, (char**)argv, "hVd:rt::e:o:f:lL")) != EOF) {
+  while ((c = getopt(argc, (char**)argv, "hVd:Prt::e:o:f:lL")) != EOF) {
     switch (c) {
       
     // Special options that are immediately evaluated
@@ -250,6 +280,11 @@ args_parse(int argc, char* argv[])
     case 'd': { // debug
       opt_debug = optarg;
       myopt_debug = atoi(optarg);
+      break; 
+    }
+    case 'P': { 
+      args_print_papi(stderr);
+      exit(0);
       break; 
     }
     
@@ -362,12 +397,20 @@ args_print_error(FILE* fs, const char* msg)
 }
 
 
+static void 
+args_print_papi(FILE* fs)
+{
+  fprintf(fs, "%s: Using PAPI installed at '"HPC_PAPI_LIBSO"'\n",
+	  args_command);
+}
+
 //***************************************************************************
 // Profile
 //***************************************************************************
 
 static int
 check_and_prepare_env_for_profiling(const char* installpath);
+
 
 static int
 launch_and_profile(const char* installpath, char* argv[])
@@ -403,10 +446,7 @@ launch_and_profile(const char* installpath, char* argv[])
 
 static int
 check_and_prepare_env_for_profiling(const char* installpath)
-{
-#define LD_LIBRARY_PATH "LD_LIBRARY_PATH"
-#define LD_PRELOAD      "LD_PRELOAD"
-  
+{  
   char newval[PATH_MAX] = "";
   char *oldval;
   int sz;
@@ -416,14 +456,7 @@ check_and_prepare_env_for_profiling(const char* installpath)
   // -------------------------------------------------------
   
   /* LD_LIBRARY_PATH */
-  strncpy(newval, HPC_PAPI_LIBPATH, PATH_MAX);
-  oldval = getenv(LD_LIBRARY_PATH);
-  if (oldval) {
-    sz = PATH_MAX - (strlen(newval) + 1); /* 'path:' */
-    snprintf(newval + strlen(newval), sz, ":%s", oldval);
-  }
-  newval[PATH_MAX-1] = '\0';
-  setenv(LD_LIBRARY_PATH, newval, 1);
+  prepare_ld_lib_path_for_papi();
 
   /* LD_PRELOAD */
   snprintf(newval, PATH_MAX, "%s/lib/" HPCRUN_LIB, installpath);
@@ -464,16 +497,47 @@ check_and_prepare_env_for_profiling(const char* installpath)
 }
 
 
+
 //***************************************************************************
 // List profiling events
 //***************************************************************************
 
+static void
+list_available_events_helper(event_list_t listType);
+
+static int
+check_and_prepare_env_for_eventlisting();
+
+
 /*
- *  List available PAPI and native events.  (Based on PAPI's
- *  src/ctests/avail.c) 
+ *  List available events.
+ */
+static int
+list_available_events(event_list_t listType)
+{
+  pid_t pid;
+  int status;
+
+  if (check_and_prepare_env_for_eventlisting() != 0) {
+    return 1;
+  }
+  
+  // For a reason I do not understand, dlopen may *ignore* a
+  // LD_LIBRARY_PATH modified with a call to setenv().
+  dlopen_papi();
+  list_available_events_helper(listType);    
+  dlclose_papi();
+
+  return 0;
+}
+
+
+/*
+ *  List available system, PAPI and native events.  (Mostly based on
+ *  PAPI's src/ctests/avail.c)
  */
 static void 
-list_available_events(event_list_t listType)
+list_available_events_helper(event_list_t listType)
 {
   int i, count;
   int isIntel, isP4;
@@ -531,7 +595,7 @@ list_available_events(event_list_t listType)
   // Wall clock time
   // -------------------------------------------------------
   printf("*** Wall clock time ***\n");
-  printf(HPCRUN_EVENT_WALLCLK_STR"     wall clock time (10 millisecond period)\n");
+  printf(HPCRUN_EVENT_WALLCLK_STR"     wall clock time (1 millisecond period)\n");
   // printf(HPCRUN_EVENT_FWALLCLK_STR"    fast wall clock time (1 millisecond period)\n");
   printf(separator_major);
 
@@ -629,3 +693,19 @@ list_available_events(event_list_t listType)
   printf("Total native events reported: %d\n", count);
   printf(separator_major);
 }
+
+
+static int
+check_and_prepare_env_for_eventlisting()
+{
+  /* LD_LIBRARY_PATH */
+  prepare_ld_lib_path_for_papi();
+  //fprintf(stderr, "%s\n", getenv(LD_LIBRARY_PATH));
+  return 0;
+}
+
+
+//***************************************************************************
+// Misc
+//***************************************************************************
+
