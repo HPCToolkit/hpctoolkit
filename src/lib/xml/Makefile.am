@@ -87,6 +87,7 @@ MYCLEAN = @HOST_LIBTREPOSITORY@
 #############################################################################
 
 noinst_HEADERS = $(MYDTDHEADERS)
+BUILT_SOURCES = $(MYDTDHEADERS)
 
 noinst_LIBRARIES = libHPCxml.a
 
@@ -103,7 +104,6 @@ MOSTLYCLEANFILES = $(MYCLEAN)
 #############################################################################
 
 # Regenerate DTD headers if DTDs have changed.
-
 $(srcdir)/%.dtd.h : $(HPCTOOLKIT)/lib/dtd/%.dtd
 	$(srcdir)/makedtdstring $<  > $@
 

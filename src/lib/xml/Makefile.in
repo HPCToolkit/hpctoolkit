@@ -207,10 +207,11 @@ OPT_ENABLE_HPCRUN_FALSE = @OPT_ENABLE_HPCRUN_FALSE@
 OPT_ENABLE_HPCRUN_TRUE = @OPT_ENABLE_HPCRUN_TRUE@
 OPT_HAVE_PAPI_FALSE = @OPT_HAVE_PAPI_FALSE@
 OPT_HAVE_PAPI_TRUE = @OPT_HAVE_PAPI_TRUE@
-OPT_PAPI_DLOPEN = @OPT_PAPI_DLOPEN@
 OPT_PAPI_IFLAGS = @OPT_PAPI_IFLAGS@
 OPT_PAPI_LDFLAGS = @OPT_PAPI_LDFLAGS@
+OPT_PAPI_LIBA = @OPT_PAPI_LIBA@
 OPT_PAPI_LIBPATH = @OPT_PAPI_LIBPATH@
+OPT_PAPI_LIBSO = @OPT_PAPI_LIBSO@
 PACKAGE = @PACKAGE@
 PACKAGE_BUGREPORT = @PACKAGE_BUGREPORT@
 PACKAGE_NAME = @PACKAGE_NAME@
@@ -321,6 +322,7 @@ MYCLEAN = @HOST_LIBTREPOSITORY@
 # Automake rules
 #############################################################################
 noinst_HEADERS = $(MYDTDHEADERS)
+BUILT_SOURCES = $(MYDTDHEADERS)
 noinst_LIBRARIES = libHPCxml.a
 libHPCxml_a_SOURCES = $(MYSOURCES)
 libHPCxml_a_CFLAGS = $(MYCFLAGS)
@@ -334,7 +336,8 @@ MYCPPFLAGS_CXX = $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) \
 MYCPPFLAGS_CC = $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) \
 	$(MYCFLAGS)
 
-all: all-am
+all: $(BUILT_SOURCES)
+	$(MAKE) $(AM_MAKEFLAGS) all-am
 
 .SUFFIXES:
 .SUFFIXES: .C .lo .o .obj
@@ -518,10 +521,12 @@ distdir: $(DISTFILES)
 	  fi; \
 	done
 check-am: all-am
-check: check-am
+check: $(BUILT_SOURCES)
+	$(MAKE) $(AM_MAKEFLAGS) check-am
 all-am: Makefile $(LIBRARIES) $(HEADERS)
 installdirs:
-install: install-am
+install: $(BUILT_SOURCES)
+	$(MAKE) $(AM_MAKEFLAGS) install-am
 install-exec: install-exec-am
 install-data: install-data-am
 uninstall: uninstall-am
@@ -546,6 +551,7 @@ distclean-generic:
 maintainer-clean-generic:
 	@echo "This command is intended for maintainers to use"
 	@echo "it deletes files that may require special tools to rebuild."
+	-test -z "$(BUILT_SOURCES)" || rm -f $(BUILT_SOURCES)
 clean: clean-am
 
 clean-am: clean-generic clean-libtool clean-noinstLIBRARIES \
@@ -617,7 +623,6 @@ uninstall-am: uninstall-info-am
 #############################################################################
 
 # Regenerate DTD headers if DTDs have changed.
-
 $(srcdir)/%.dtd.h : $(HPCTOOLKIT)/lib/dtd/%.dtd
 	$(srcdir)/makedtdstring $<  > $@
 
