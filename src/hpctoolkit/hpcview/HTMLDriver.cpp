@@ -190,18 +190,20 @@ HTMLDriver::Write(const Driver& driver)  const
   for (unsigned int i = 0; i < driver.NumberOfMetrics(); i++) {
     if (driver.PerfDataSrc(i).Display()) {
        displayMetrics.push_back(i); 
-       if (driver.PerfDataSrc(i).SortBy() && firstSorted==(-1)) {
+       if (driver.PerfDataSrc(i).SortBy() && (firstSorted==(-1))) {
           firstSorted = i;
        }
     } 
   } 
   if (displayMetrics.size() == 0) {
-    cerr << "ERROR: Could not find a single valid metric to display." << endl; 
+    cerr << "ERROR: No valid metric to display." << endl; 
     return false; 
   } 
   if (firstSorted == -1) {
-    cerr << "WARNING: Could not find a single valid metric to sort by." << endl
-         << "         Use the first displayed metric for sorting." << endl;
+    cerr << "hpcview warning: CONFIGURATION file does not specify a sortBy attribute for any METRIC."  << endl
+	 << "        Sorting on the first displayed metric by default." << endl
+         << "        Avoid this warning by adding the attribute "
+	 << "sortBy=\"true\" to one or more METRIC definitions." << endl;
     firstSorted = displayMetrics[0];
     IndexToPerfDataInfo(firstSorted).setSortBy();
   }
@@ -248,7 +250,6 @@ WriteIndexFile(const char* htmlDir,
   struct timeval t; 
   gettimeofday(&t,0); 
   char date[50]; 
-  //  cftime(date, "%x %X", &t.tv_sec); 
   strftime(date, 50, "%x %X", localtime(&t.tv_sec)); 
   String tit = title + " &nbsp; (" + date + ")"; 
   
@@ -421,7 +422,8 @@ WriteFileList(HTMLFile &hf, const char* header,
   for (; it.CurScope(); it++) {
     FileScope *f = dynamic_cast<FileScope*>(it.CurScope()); 
     BriefAssertion(f != NULL); 
-    if (f->HasSourceFile() == hasSource) {
+    if (f->HasSourceFile() == hasSource) 
+    {
       count = 1; 
       break; 
     } 
@@ -435,7 +437,8 @@ WriteFileList(HTMLFile &hf, const char* header,
     for (; it.CurScope(); it++) {
       FileScope *f = dynamic_cast<FileScope*>(it.CurScope()); 
       BriefAssertion(f != NULL); 
-      if (f->HasSourceFile() == hasSource) {
+      if (f->HasSourceFile() == hasSource) 
+      {
 	if (hasSource) {
 	  String curPath = PathComponent(it.CurScope()->Name());
 	  if (curPath != lastPath) {

@@ -486,10 +486,9 @@ HTMLScopes::WriteLine(HTMLFile &hf, unsigned int level,
     hf << NOARROW << empty << " | ";
   }
 
-  // Write performance data
-  bool rc = HTMLTable::WriteMetricValues(hf, perfIndex, si, *scopes.Root());
+  // Write performance data (ignoring return value!)
+  (void) HTMLTable::WriteMetricValues(hf, perfIndex, si, *scopes.Root());
 
-  // BriefAssertion(rc == true); 
   hf << endl; 
 }
 

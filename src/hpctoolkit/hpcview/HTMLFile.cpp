@@ -83,13 +83,6 @@ MakeFill(String &str, String &fill, unsigned int width)
   }
 }
 
-static const char* 
-HTMLFileName(const char *filename) 
-{
-  String f = String(filename) + ".html"; 
-  return f; 
-} 
-
 static 
 String PathName(const char* dir, const char* fname)  
 {
@@ -325,7 +318,9 @@ HTMLFile::JavascriptHref(const char *jsCode, const char* displayName)
 void 
 HTMLFile::GotoSrcHref(const char *displayName, const char *srcFile)
 {
-  (*this)  << "<a href=\"javascript:gotofile('" 
+  (*this)  << "<a" 
+	   << " onMouseOver=\"window.status ='" << displayName << "'; return true\""
+	   << "  href=\"javascript:gotofile('" 
 	   << srcFile << "')\">" 
 	   << displayName << "</a>"; 
 } 

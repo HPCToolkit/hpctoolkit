@@ -217,10 +217,10 @@ UseForTable(const ScopeInfo &sinfo, long unused)
     // sinfo is something inside a FileScope
     FileScope *srcFile = sinfo.File(); 
     BriefAssertion(srcFile); 
-    if (sinfo.IsLeaf()) {
+    if (sinfo.Type() == ScopeInfo::PROC) {
+      return true;
+    } else if (sinfo.IsLeaf()) {
       return (srcFile->HasSourceFile()); 
-    } else if (sinfo.Type() == ScopeInfo::PROC) {
-      return (!srcFile->HasSourceFile()); 
     } 
   }
   return false; 

@@ -86,9 +86,7 @@ static const char *HTMLEscapeChar(const char &buf)
 static void ReformatSrc(HTMLFile &hf, const char* lineBuf, 
 			unsigned int curLine, 
 			CodeInfoList* list); 
-static char* FormatOneLine(const char *buf, int cp_sz, int *offset);
 static String BuildContLineHead();
-static int NumUnmatchedBracket(char c);
 
 HTMLSrcFiles::HTMLSrcFiles(const ScopesInfo &scpes, const Args &pgmArgs, 
 			   const ScopeInfoFilter &entryFilter, 
@@ -206,7 +204,7 @@ HTMLSrcFiles::WriteSrc(HTMLFile &hf, FileScope &file) const
   LineSortedIteratorForLargeScopes it(&file, 
 				  &(UseForSrcCode), 0); // leaves,loops,procs
   CodeInfoLine *cil = it.Current(); 
-  int curLine = 1; 
+  unsigned int curLine = 1; 
   char lineBuf[MAXLINESIZE];
   while (fgets(lineBuf, MAXLINESIZE, srcFile) != NULL) {
     if ((cil != NULL) && (curLine == cil->GetLine())) {
@@ -266,20 +264,30 @@ HTMLSrcFiles::GenSrc(HTMLFile &hf, CodeInfo &ci, unsigned int level,
   ReformatSrc(hf, "\n", UNDEF_LINE, NULL); 
   
   String line = String((char)' ', (unsigned int)(level * 3)); 
-  line += ci.Name(); 
+  line += ci.Name() + "(...) "; 
+  if (ci.BegLine() == ci.EndLine()) {
+    line += "{ ... }\n"; 
+  } else {
+    line += "{\n"; 
+  }
 
   CodeInfoLine cil(&ci, IS_BEG_LINE); 
   CodeInfoList lst; 
   lst[0] = &cil; 
   lst[1] = NULL; 
   ReformatSrc(hf, line, ci.BegLine(), &lst); 
+
+  if (ci.BegLine() != ci.EndLine()) {
   
-  line = String((char)' ', (unsigned int)(level * 3)) + "..." + "\n"; 
+    line = String((char)' ', (unsigned int)(level * 3)) + "..." + "\n"; 
+    ReformatSrc(hf, line, UNDEF_LINE, NULL); 
+  
+    line = String((char)' ', (unsigned int)(level * 3)) + "} /* end " 
+      + ci.Name() + " */\n"; 
+    ReformatSrc(hf, line, ci.EndLine(), NULL); 
+  }
+  line = String((char)' ', (unsigned int)(level * 3)) + "\n"; 
   ReformatSrc(hf, line, UNDEF_LINE, NULL); 
-  
-  line = String((char)' ', (unsigned int)(level * 3)) + "end " 
-    + ci.Name() + "\n"; 
-  ReformatSrc(hf, line, ci.EndLine(), NULL); 
 }
 
 static RefScope*  
@@ -306,7 +314,9 @@ WriteLineNumber(HTMLFile &hf, suint curLine, CodeInfoList *list)
 {
   String lineNum; 
   if (curLine != UNDEF_LINE) {
-    lineNum = String(curLine); 
+    lineNum = String((long) curLine); 
+  } else if (list != NULL) { // first line of a synopsis
+    lineNum = String("?");
   }
    
   if (list == NULL) { 
@@ -509,64 +519,10 @@ ReformatSrc(HTMLFile &hf, const char* lineBuf, unsigned int curLine,
   hf << endl; 
 } 
 
-// format one source line; insert "\n" 
-static char *
-FormatOneLine(const char *buf, int cp_sz, int *offset)
-{
-  char *n_buf       = new char[MAXLINESIZE];
-  String cont_ln_hd  = BuildContLineHead();
-  int ln_offset     = *offset;
-  int left_ln_sz    = *offset + cp_sz;
-  int num_unmatched = 0;
-  int j = 0;
-  int i = 0;
-  
-  while (left_ln_sz > 0) {
-    while ((cp_sz > 0) && (ln_offset < CODE_WIDTH ||
-			  buf[i] != ' ' ||
-			  num_unmatched > 0)) {
-      const char *sub = strstr(buf, "subroutine");
-      if (!sub)
-	num_unmatched += NumUnmatchedBracket(buf[i]);
-      
-      n_buf[j++] = buf[i++];
-      cp_sz--;
-      ln_offset++;
-    }
-
-    if (cp_sz > 0) {
-      n_buf[j++] = '\n';
-      sprintf(&n_buf[j], "%s", (const char*) cont_ln_hd);
-      j += strlen(cont_ln_hd);
-      ln_offset = 0;
-      *offset = 0;
-    }
-    
-    left_ln_sz = cp_sz;
-  }
-  
-  n_buf[j] = '\0';
-  
-  return n_buf;
-}
-
 static String
 BuildContLineHead()
 {
   String head((char)' ', (unsigned int)(LINE_NUM_WIDTH + CONT_LINE_INDENT));
   head += CODE_SPACE; 
   return head;
-}
-
-static int 
-NumUnmatchedBracket(char c) 
-{
-  int num_unmatched = 0;
-  
-  if (c == '(')
-    num_unmatched = 1;
-  else if (c == ')')
-    num_unmatched = -1;
-
-  return num_unmatched;
 }
