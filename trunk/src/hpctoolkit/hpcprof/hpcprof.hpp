@@ -52,7 +52,7 @@
 #define SIZEOF_VOID_P 4
 
 /* --------------------------------------------------------- */
-#elif (__linux && __ia64)
+#elif (__linux && (__ia64 || __x86_64))
 /* --------------------------------------------------------- */
 
 /* The number of bytes in a unsigned long long.  If unsigned long long
