@@ -50,8 +50,14 @@
 //************************* System Include Files ****************************
 
 #include <iostream>
+using std::cerr;
+using std::cout;
+using std::endl;
 #include <fstream>
 #include <new>
+
+#include <string>
+using std::string;
 
 //*************************** User Include Files ****************************
 
@@ -69,14 +75,12 @@
 
 //*************************** Forward Declarations ***************************
 
-using std::cerr;
-using std::cout;
-using std::endl;
-
-typedef std::list<String>          StringList;
+typedef std::list<string>          StringList;
 typedef StringList::iterator       StringListIt;
 typedef StringList::const_iterator StringListCIt;
 
+int
+real_main(int argc, char* argv[]);
 
 void
 ListAvailPredefDCPIFilters(DCPIProfile* prof, bool longlist = false);
@@ -90,6 +94,27 @@ GetDCPIFilters(DCPIProfile* prof, LoadModule* lm,
 int
 main(int argc, char* argv[])
 {
+  try {
+    return real_main(argc, argv);
+  }
+  catch (CmdLineParser::Exception& e) {
+    e.Report(cerr); // fatal error
+    exit(1);
+  }
+  catch (std::bad_alloc& x) {
+    cerr << "Error: Memory alloc failed!\n";
+    exit(1);
+  }
+  catch (...) {
+    cerr << "Unknown exception caught\n";
+    exit(2);
+  }
+}
+
+
+int
+real_main(int argc, char* argv[])
+{
   Args args(argc, argv);
   
   // ------------------------------------------------------------
@@ -97,16 +122,14 @@ main(int argc, char* argv[])
   // ------------------------------------------------------------
   PCProfile* pcprof = NULL;
   try {
-    pcprof = ProfileReader::ReadProfileFile(args.profFile /*filetype*/);
+    pcprof = ProfileReader::ReadProfileFile(args.profFile.c_str() /*type*/);
     if (!pcprof) { exit(1); }
-  } catch (std::bad_alloc& x) {
+  } 
+  catch (std::bad_alloc& x) {
     cerr << "Error: Memory alloc failed while reading profile!\n";
     exit(1);
-  } catch (...) {
-    cerr << "Error: Exception encountered while reading profile!\n";
-    exit(2);
-  }
-    
+  } 
+  
   if (args.listAvailableMetrics > 0) {
     // * Assume DCPI mode *
     DCPIProfile* dcpiprof = dynamic_cast<DCPIProfile*>(pcprof);
@@ -119,13 +142,13 @@ main(int argc, char* argv[])
   // ------------------------------------------------------------
   LoadModule* exe = NULL; // Executable*: use LoadModule for now (Alpha)
   try {
-    String exeNm = args.progFile;
+    string exeNm = args.progFile;
 
     // Try to find exe from profile info if not given
-    if (exeNm.Empty()) {
+    if (exeNm.empty()) {
       exeNm = pcprof->GetProfiledFile();
       
-      std::ifstream ifile(exeNm, std::ios::in);
+      std::ifstream ifile(exeNm.c_str(), std::ios::in);
       if ( !ifile.is_open() || ifile.fail() ) {
 	cerr << "Error: Could not find associated binary '" << exeNm
 	     << "'; please specify explicitly.\n";
@@ -134,14 +157,12 @@ main(int argc, char* argv[])
     }
     
     exe = new LoadModule(); // Executable(): use LoadModule for now (Alpha)
-    if (!exe->Open(exeNm)) { exit(1); } // Error already printed 
-    if (!exe->Read()) { exit(1); }      // Error already printed 
-  } catch (std::bad_alloc& x) {
+    if (!exe->Open(exeNm.c_str())) { exit(1); } // Error already printed 
+    if (!exe->Read()) { exit(1); }              // Error already printed 
+  }
+  catch (std::bad_alloc& x) {
     cerr << "Error: Memory alloc failed while reading binary!\n";
     exit(1);
-  } catch (...) {
-    cerr << "Error: Exception encountered while reading binary!\n";
-    exit(2);
   }
   
   exe->Relocate(pcprof->GetTxtStart());
@@ -150,20 +171,12 @@ main(int argc, char* argv[])
   // Read 'PCToSrcLineXMap', if available
   // ------------------------------------------------------------
   PCToSrcLineXMap* map = NULL;
-  try {
-    if (!args.pcMapFile.Empty()) {
-      map = ReadPCToSrcLineMap(args.pcMapFile);
-      if (!map) {
-	cerr << "Error reading file `" << args.pcMapFile << "'\n";
-	exit(1); 
-      }
+  if (!args.pcMapFile.empty()) {
+    map = ReadPCToSrcLineMap(args.pcMapFile.c_str());
+    if (!map) {
+      cerr << "Error reading file `" << args.pcMapFile << "'\n";
+      exit(1); 
     }
-  } catch (std::bad_alloc& x) {
-    cerr << "Error: Memory alloc failed while reading map!\n";
-    exit(1);
-  } catch (...) {
-    cerr << "Error: Exception encountered while reading map!\n";
-    exit(2);
   }
   // N.B. No relocation for map at the moment
   
@@ -173,44 +186,34 @@ main(int argc, char* argv[])
   // Construct some metrics, derived in some way from the raw
   // profiling data, that we are interested in.
   // ------------------------------------------------------------
+  // * Assume DCPI mode *
   DerivedProfile* drvdprof = NULL;
-  try {
-    // * Assume DCPI mode *
-    PCProfileFilterList* filtList = NULL;
-    if (!args.outputRawMetrics) {
-      DCPIProfile* dcpiprof = dynamic_cast<DCPIProfile*>(pcprof);
-      filtList = GetDCPIFilters(dcpiprof, modInfo.GetLM(), 
-				args.metricList, args.excludeMList);
-      if (!filtList) {
-	exit(1); // Error already printed
-      }
+  PCProfileFilterList* filtList = NULL;
+  if (!args.outputRawMetrics) {
+    DCPIProfile* dcpiprof = dynamic_cast<DCPIProfile*>(pcprof);
+    filtList = GetDCPIFilters(dcpiprof, modInfo.GetLM(), 
+			      args.metricList.c_str(), 
+			      args.excludeMList.c_str());
+    if (!filtList) {
+      exit(1); // Error already printed
     }
-    
-    drvdprof = new DerivedProfile(pcprof, filtList);
-    
-    if (filtList) { filtList->destroyContents(); }
-    delete filtList; // done with filters
-    
-    if (drvdprof->GetNumMetrics() == 0) {
-      cerr << "Error: Could not find any metrics to convert to PROFILE!\n";
-      exit(1);
-    }
-
-  } catch (...) {
-    cerr << "Error: Exception encountered while constructing derived profile!\n";
-    exit(2);
+  }
+  
+  drvdprof = new DerivedProfile(pcprof, filtList);
+  
+  if (filtList) { filtList->destroyContents(); }
+  delete filtList; // done with filters
+  
+  if (drvdprof->GetNumMetrics() == 0) {
+    cerr << "Error: Could not find any metrics to convert to PROFILE!\n";
+    exit(1);
   }
   
   // ------------------------------------------------------------
   // Translate the derived metrics to a PROFILE file
   // ------------------------------------------------------------
-  try {
-    // * Assume DCPI mode *
-    ProfileWriter::WriteProfile(cout, drvdprof, &modInfo);
-  } catch (...) {
-    cerr << "Error: Exception encountered while translating to PROFILE!\n";
-    exit(2);
-  }
+  // * Assume DCPI mode *
+  ProfileWriter::WriteProfile(cout, drvdprof, &modInfo);
   
   delete exe;
   delete map;
@@ -251,22 +254,22 @@ ListAvailPredefDCPIFilters(DCPIProfile* prof, bool longlist)
   // When longlist is false, a short listing is printed
   // When longlist is true, a long listing is print (name and description)
 
-  String out;
+  string out;
   for (suint i = 0; i < PredefinedDCPIMetricTable::GetSize(); ++i) {
     PredefinedDCPIMetricTable::Entry* e = PredefinedDCPIMetricTable::Index(i);
     if (IsPredefDCPIFilterAvail(prof, e)) {
       
       if (longlist) {
-	out += String("  ") + e->name + ": " + e->description + "\n";
+	out += string("  ") + e->name + ": " + e->description + "\n";
       } else {
-	if (!out.Empty()) { out += ":"; }
+	if (!out.empty()) { out += ":"; }
 	out += e->name;
       }
       
     }
   }
   
-  if (out.Empty()) {
+  if (out.empty()) {
     cout << "No derived metrics available for this DCPI profile.";
   } else {
     cout << "The following metrics are available for this DCPI profile:\n";
@@ -333,8 +336,8 @@ GetDCPIFilters(StringList* mlist, LoadModule* lm)
 {
   PCProfileFilterList* flist = new PCProfileFilterList;
   for (StringListIt it = mlist->begin(); it != mlist->end(); ++it) {
-    const String& nm = *it;
-    flist->push_back(GetPredefinedDCPIFilter(nm, lm));
+    const string& nm = *it;
+    flist->push_back(GetPredefinedDCPIFilter(nm.c_str(), lm));
   }
   return flist;
 }
@@ -349,7 +352,7 @@ GetAvailPredefDCPIFilterNms(DCPIProfile* prof, LoadModule* lm)
   for (suint i = 0; i < PredefinedDCPIMetricTable::GetSize(); ++i) {
     PredefinedDCPIMetricTable::Entry* e = PredefinedDCPIMetricTable::Index(i);
     if (IsPredefDCPIFilterAvail(prof, e)) {
-      flist->push_back(String(e->name));
+      flist->push_back(string(e->name));
     }
   }
   return flist;
@@ -366,9 +369,9 @@ IsPredefDCPIFilterAvail(DCPIProfile* prof, StringList* flist, const char* emsg)
   bool ret = true;
   PredefinedDCPIMetricTable::Entry* e; 
   for (StringListIt it = flist->begin(); it != flist->end(); ++it) {
-    const String& nm = *it;
+    const string& nm = *it;
     
-    e = PredefinedDCPIMetricTable::FindEntry(nm);
+    e = PredefinedDCPIMetricTable::FindEntry(nm.c_str());
     if ( !(e && IsPredefDCPIFilterAvail(prof, e)) ) {
       ret = false;
       if (emsg) {
@@ -433,7 +436,7 @@ ConvertColonListToStringList(const char* str)
  
   char* tok = strtok(const_cast<char*>(str), ":");
   while (tok != NULL) {
-    l->push_back(String(tok));
+    l->push_back(string(tok));
     tok = strtok((char*)NULL, ":");
   }
   
@@ -446,11 +449,11 @@ void
 RemoveFromList(StringList* l1, StringList* l2) 
 {
   for (StringListIt it2 = l2->begin(); it2 != l2->end(); ++it2) {
-    const String& nm2 = *it2;
+    const string& nm2 = *it2;
 
     // Remove nm2 every time it occurs in l1
     for (StringListIt it1 = l1->begin(); it1 != l1->end(); ) {
-      const String& nm1 = *it1;
+      const string& nm1 = *it1;
       if (nm1 == nm2) { 
 	it1 = l1->erase(it1); // it1 now points at next element or end
       } else {
