@@ -39,10 +39,12 @@
 
 /* pathfind - search for named file in given colon-separated pathlist
  * --------
- * Searches for a file named "name" in each directory in the colon-separated
- * pathlist given as the first argument, and returns the full pathname to the
- * first occurence that has at least the mode bits specified by mode. An
- * empty path in the pathlist is interpreted as the current directory.
+ * Searches for a file named "name" in each directory in the
+ * colon-separated pathlist given as the first argument, and returns
+ * the full pathname to the first occurence that has at least the mode
+ * bits specified by mode. An empty path in the pathlist is
+ * interpreted as the current directory.  Returns NULL if 'name' is
+ * not found.
  *
  * The following mode bits are understood:
  *    "r" - read access
@@ -67,20 +69,31 @@
  *    comment; in reality it should not be escaped! **
  */
 
-extern char*
-pathfind (const char*  pathList,
-          const char*  name,
-          const char*  mode );
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 extern char*
-pathfind_r (const char*  pathList,
-	    const char*  name,
-	    const char*  mode );
-
+pathfind(const char* pathList,
+	 const char* name,
+	 const char* mode);
+  
+extern char*
+pathfind_r(const char* pathList,
+	   const char* name,
+	   const char* mode);
+ 
 #define RECURSIVE_PATH_SUFFIX_LN 2 /* length of the recursive suffix */
-        
+
 /* Is this a valid recursive path of the form '.../path/\*' ? */
 
-int is_recursive_path(const char* path);
+int 
+is_recursive_path(const char* path);
+
+#ifdef __cplusplus
+}
+#endif
+
 
 #endif
