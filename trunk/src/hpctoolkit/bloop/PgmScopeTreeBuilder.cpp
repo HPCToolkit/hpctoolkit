@@ -91,11 +91,13 @@ using namespace ScopeTreeBuilder;
 // Helpers for building a scope tree
 
 static ProcScope*
-BuildFromProc(FileScope* fileScope, Procedure* p); 
+BuildFromProc(FileScope* fileScope, Procedure* p, 
+	      bool irreducibleIntervalIsLoop); 
 
 static int
 BuildFromTarjTree(ProcScope* pScope, Procedure* p, TarjanIntervals* tarj, 
-		  RIFG* fg, CFG* cfg, RIFGNodeId fgNode);
+		  RIFG* fg, CFG* cfg, RIFGNodeId fgNode,
+		  bool irreducibleIntervalIsLoop);
 
 static int
 BuildFromBB(CodeInfo* enclosingScope, Procedure* p, CFG::Node* bb);
@@ -250,6 +252,7 @@ ScopeTreeBuilder::BuildFromExe(/*Executable*/ LoadModule* exe,
 			       PCToSrcLineXMap* &map,
 			       String canonicalPathList, 
 			       bool normalizeScopeTree,
+			       bool irreducibleIntervalIsLoop,
 			       bool verboseMode)
 {
   BriefAssertion(exe);
@@ -286,7 +289,7 @@ ScopeTreeBuilder::BuildFromExe(/*Executable*/ LoadModule* exe,
       if (verboseMode){
         cerr << "Building scope tree for [" << p->GetName()  << "] ... ";
       }
-      BuildFromProc(fileScope, p);
+      BuildFromProc(fileScope, p, irreducibleIntervalIsLoop);
       if (map) { BuildPCToSrcLineMap(map, p); } // MAP
       if (verboseMode){
         cerr << "done " << endl;
@@ -347,7 +350,8 @@ static bool testProcNow = false;
 
 // BuildFromProc: 
 static ProcScope* 
-BuildFromProc(FileScope* fileScope, Procedure* p)
+BuildFromProc(FileScope* fileScope, Procedure* p, 
+	      bool irreducibleIntervalIsLoop)
 {  
   String func, file;
   suint startLn, endLn;
@@ -401,7 +405,8 @@ BuildFromProc(FileScope* fileScope, Procedure* p)
   }
 #endif 
   
-  BuildFromTarjTree(pScope, p, &tarj, &fg, &cfg, fgRoot);
+  BuildFromTarjTree(pScope, p, &tarj, &fg, &cfg, fgRoot, 
+		    irreducibleIntervalIsLoop);
   return pScope;
 }
 
@@ -412,11 +417,12 @@ static int
 BuildFromTarjInterval(CodeInfo* enclosingScope, Procedure* p,
 		      TarjanIntervals* tarj, RIFG* fg, CFG* cfg, 
 		      RIFGNodeId fgNode, CFGNodeToPCMap* cfgNodeMap,
-		      int addStmts);
+		      int addStmts, bool irreducibleIntervalIsLoop);
 
 static int
 BuildFromTarjTree(ProcScope* pScope, Procedure* p, TarjanIntervals* tarj, 
-		  RIFG* fg, CFG* cfg, RIFGNodeId fgNode)
+		  RIFG* fg, CFG* cfg, RIFGNodeId fgNode,
+		  bool irreducibleIntervalIsLoop)
 {
 #ifdef BLOOP_ATTEMPT_TO_IMPROVE_INTERVAL_BOUNDARIES
   CFGNodeToPCMap cfgNodeMap(cfg, p);
@@ -424,7 +430,7 @@ BuildFromTarjTree(ProcScope* pScope, Procedure* p, TarjanIntervals* tarj,
   CFGNodeToPCMap cfgNodeMap;
 #endif
   int num = BuildFromTarjInterval(pScope, p, tarj, fg, cfg, fgNode, 
-				  &cfgNodeMap, 0);
+				  &cfgNodeMap, 0, irreducibleIntervalIsLoop);
   return num;
 }
 
@@ -432,7 +438,7 @@ static int
 BuildFromTarjInterval(CodeInfo* enclosingScope, Procedure* p,
 		      TarjanIntervals* tarj, RIFG* fg, CFG* cfg, 
 		      RIFGNodeId fgNode, CFGNodeToPCMap* cfgNodeMap,
-		      int addStmts)
+		      int addStmts, bool irrIntIsLoop)
 {
   int localLoops = 0;
   CFG::Node* bb = (CFG::Node*)(fg->GetRIFGNode(fgNode));
@@ -475,15 +481,16 @@ BuildFromTarjInterval(CodeInfo* enclosingScope, Procedure* p,
     }
     
     // -----------------------------------------------------
-    // 2. INTERVAL: Loop head
+    // 2. INTERVAL or IRREDUCIBLE as a loop: Loop head
     // -----------------------------------------------------
-    if (tarj->IntervalType(kid) == RI_TARJ_INTERVAL) { 
+    if (tarj->IntervalType(kid) == RI_TARJ_INTERVAL || 
+	(irrIntIsLoop && tarj->IntervalType(kid) == RI_TARJ_IRREDUCIBLE)) { 
       
       // Build the loop nest
       LoopScope* lScope = new LoopScope(enclosingScope, UNDEF_LINE,
 					UNDEF_LINE, crtBlk->getId());
       int num = BuildFromTarjInterval(lScope, p, tarj, fg, cfg, kid, 
-				      cfgNodeMap, 1);
+				      cfgNodeMap, 1, irrIntIsLoop);
       localLoops += (num + 1);
       
 #ifdef BLOOP_ATTEMPT_TO_IMPROVE_INTERVAL_BOUNDARIES
@@ -510,13 +517,14 @@ BuildFromTarjInterval(CodeInfo* enclosingScope, Procedure* p,
     }
     
     // -----------------------------------------------------
-    // 3. IRREDUCIBLE: May contain loops
+    // 3. IRREDUCIBLE as no loop: May contain loops
     // -----------------------------------------------------
-    if (tarj->IntervalType(kid) == RI_TARJ_IRREDUCIBLE) {
+    if (!irrIntIsLoop && tarj->IntervalType(kid) == RI_TARJ_IRREDUCIBLE) {
       int num = BuildFromTarjInterval(enclosingScope, p, tarj, fg, cfg, 
-				      kid, cfgNodeMap, addStmts);
+				      kid, cfgNodeMap, addStmts, irrIntIsLoop);
       localLoops += num;
     }
+    
   }
 
 
