@@ -57,7 +57,7 @@
 //***************************************************************************
 
 // <pc, count>
-typedef std::pair<pprof_off_t, unsigned short> ProfFileEventDatum;
+typedef std::pair<pprof_off_t, unsigned long long> ProfFileEventDatum;
 
 // ProfFileEvent: contains the event name, profiling period and
 // profiling data for the event

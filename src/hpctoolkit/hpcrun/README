@@ -18,9 +18,9 @@ Contents:
 -1. N.B.
 --------------------
 
-papirun/papiprof should be regarded as "alpha" software: You may be
-tempted to seethe with anger while using it.  The UTK PAPI team is
-currently working to integrate it with the PAPI distribution.
+papirun/papiprof should be regarded as "beta" software. 
+The UTK PAPI team is currently working to integrate it 
+with the PAPI distribution.
 
 
 0. Overview
@@ -79,8 +79,10 @@ where no direct hardware counter is available, PAPI may attempt to
 simulate an event counter using some combination of other performance
 counter information.
 
-1.2. PAPI and ia64-Linux:
-----
+We recommend using PAPI 3. At this writing, we have tested with 
+PAPI 3 beta and all seems fine.  Papirun has been used extensively with 
+PAPI 2.3.4.
+
 For IA64 support, you will need PAPI 2.3.1 or greater and a kernel of
 2.4.18 or higher (which includes pfmon support). You can find more
 PAPI information at http://icl.cs.utk.edu/projects/papi.
