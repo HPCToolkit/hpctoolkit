@@ -19,7 +19,7 @@ document.write('  <a href="hpc_bloop.html">bloop</a> |');
 document.write('  <a href="hpcquick.html">hpcquick</a> |');
 document.write('  <a href="hpcview.html">hpcview</a> |');
 document.write('  <a href="hpcviewer.html">hpcviewer</a> |');
-document.write('  <a href="hvprof.html">hvprof</a> |');
+document.write('  <a href="hpc_papiprof.html">papiprof</a> |');
 document.write('  <a href="hpc_ptran.html">ptran</a> |');
 document.write('  <a href="hpc_xprof.html">xprof</a> ]');
 document.write('</td>');
