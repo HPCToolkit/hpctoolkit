@@ -1,5 +1,5 @@
+// -*-Mode: C++;-*-
 // $Id$
-// -*-C++-*-
 // * BeginRiceCopyright *****************************************************
 // 
 // Copyright ((c)) 2002, Rice University 
@@ -35,11 +35,24 @@
 // ******************************************************* EndRiceCopyright *
 
 //***************************************************************************
+//
+// File:
+//    Args.h
+//
+// Purpose:
+//    [The purpose of this file]
+//
+// Description:
+//    [The set of functions, macros, etc. defined in the file]
+//
+//***************************************************************************
 
 #ifndef Args_h
 #define Args_h
 
 //************************* System Include Files ****************************
+
+#include <iostream>
 
 //*************************** User Include Files ****************************
 
@@ -47,30 +60,47 @@
 
 //*************************** Forward Declarations **************************
 
-#define THRESHHOLDING_DISABLED -1
-
 //***************************************************************************
 
 class Args {
 public: 
-  Args(int argc, char* const* argv); 
+  Args(); 
+  Args(int argc, const char* const argv[]);
+  ~Args(); 
+
+  // Parse the command line
+  void Parse(int argc, const char* const argv[]);
+
+  // Version and Usage information
+  void PrintVersion(std::ostream& os) const;
+  void PrintUsage(std::ostream& os) const;
   
-  void Version();
-  void Usage();
+  // Error
+  void PrintError(std::ostream& os, const char* msg) const;
+  //void PrintError(std::ostream& os, const std::string& msg) const;
+
+  // Dump
+  void Dump(std::ostream& os = std::cerr) const;
+  void DDump() const;
 
 public:  
+  // Parsed Data: Command
   String cmd; 
 
-  // arguments - options
+  // Parsed Data: optional arguments
   String pcMapFile;
-  uint listAvailableMetrics; // 0: no, 1: short, 2: long
+  uint listAvailableMetrics; // 0: no, 1: short, 2: long.  0 is default.
   String metricList;
   String excludeMList;
-  bool outputRawMetrics;
+  bool outputRawMetrics;     // default: false
 
-  // arguments
+  // Parsed Data: arguments
   String progFile; // binary that was profiled
   String profFile; // profiling output for 'progFile'
+
+private:
+  void Ctor();
+  
 }; 
 
 #endif

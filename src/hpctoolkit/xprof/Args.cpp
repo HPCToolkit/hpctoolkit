@@ -1,5 +1,5 @@
+// -*-Mode: C++;-*-
 // $Id$
-// -*-C++-*-
 // * BeginRiceCopyright *****************************************************
 // 
 // Copyright ((c)) 2002, Rice University 
@@ -35,6 +35,17 @@
 // ******************************************************* EndRiceCopyright *
 
 //***************************************************************************
+//
+// File:
+//    Args.C
+//
+// Purpose:
+//    [The purpose of this file]
+//
+// Description:
+//    [The set of functions, macros, etc. defined in the file]
+//
+//***************************************************************************
 
 //************************* System Include Files ****************************
 
@@ -55,98 +66,152 @@ using std::endl;
 
 //***************************************************************************
 
-const char* hpctoolsVerInfo=
+static const char* version_info =
 #include <include/HPCToolkitVersionInfo.h>
 
-void Args::Version()
+static const char* usage_summary1 =
+"[-l | -L] <profile>\n";
+
+static const char* usage_summary2 =
+"[-V] [ [-M <mlist> -M...] [-X <xlist> -X...] [-R] ] [<binary>] <profile>\n";
+
+static const char* usage_summary3 =
+"Note: -p allows <profile> to be read from stdin.\n";
+
+static const char* usage_details =
+"Converts various types of profile output into the PROFILE format, which in\n"
+"particular, associates source file line information from <binary> with\n"
+"profile data from <profile>. In effect, the output is a [source-line to\n"
+"PC-profile-data] map represented as a XML scope tree (e.g. file, procedure,\n"
+"statement).  Output is sent to stdout.\n"
+"\n"
+"To find source line information, access to the profiled binary is required.\n"
+"xprof will try to find the binary from data within <profile>.  If this\n"
+"information is missing, <binary> must be explicitly specified.\n"
+"\n"
+"By default, xprof determines a set of metrics available for the given\n" 
+"profile data and includes all of them in the PROFILE output.\n"
+"\n"
+"The following <profile> formats are currently supported: \n"
+"  - DEC/Compaq/HP's DCPI 'dcpicat' (including ProfileMe) \n"
+"\n"
+"General options:\n"
+"  -p       Supply <profile> on stdin.  E.g., it is often desirable to pipe\n"
+"           the output of 'dcpicat' into xprof.\n"
+"  -V       Print version information.\n"
+"  -h       Print this help.\n"
+"\n"    
+"Listing available metrics:\n"
+"  -l       List all derived metrics, in compact form, available from\n"
+"           <profile> and suppress generation of PROFILE output.  Note that\n"
+"           this output can be used with the -M option.\n"
+"  -L       List all derived metrics, in long form, available from <profile>\n"
+"           and suppress generation of PROFILE output.\n"
+"\n"    
+"Normal Mode:\n"
+"  -M mlist Specify metrics to replace the default metric list.  Metrics in\n"
+"           PROFILE output will follow this ordering. <mlist> is a colon-\n"
+"           separated list; duplicates are allowed (though not recommended).\n"
+"  -X xlist Specify metrics to exclude from the default metric list or from\n"
+"           those specified with -M.  <xlist> is a colon-separated list.\n"
+"  -R       (Most will not find this useful.) For some profile data, such as\n"
+"           DCPI's ProfileMe, the default is to output derived metrics, not\n"
+"           the underlying raw metrics; this option forces output of only\n"
+"           the raw metrics.  Should not be used with -M or -X.\n";
+
+#if 0  // FIXME '[-m <bloop-pcmap>]'
+"If no <bloop-pcmap> -- a map extended with analysis information\n"
+"from 'bloop' -- is provided, the program attempts to construct\n"
+"the PROFILE by querying the <binary>'s debugging information.\n"
+"Because of the better analysis ability of 'bloop', a <bloop-pcmap>\n"
+"usually improves the accuracy of the PROFILE.  Moreover, because\n"
+"no loop recovery is performed, providing <bloop-pcmap> enables\n"
+"the PROFILE to represent loop nesting information.\n"
+"[*Not fully implemented.*]\n"
+"\n"
+"  -m: specify <bloop-pcmap>\n"
+#endif     
+
+//***************************************************************************
+// Args
+//***************************************************************************
+
+Args::Args()
 {
-  cerr << cmd << ": " << hpctoolsVerInfo << endl;
+  Ctor();
 }
 
-void Args::Usage()
+Args::Args(int argc, const char* const argv[])
 {
-  cerr
-    << "Usage: " << endl
-    << "  " << cmd << " [-l | -L] <profile>\n"
-    << "  " << cmd << " [-V] [ [-M <mlist> -M...] [-X <xlist> -X...] [-R] ] [<binary>] <profile>\n"
-    << "    Note: -p allows <profile> to be read from stdin.\n"
-    << endl;
-  cerr
-    << "Converts various types of profile output into the PROFILE format,\n"
-    << "which, in particular, associates source file line information from\n"
-    << "<binary> with profile data from <profile>. In effect, the output is\n"
-    << "a [source-line -> PC-profile-data] map represented as a XML scope\n"
-    << "tree (e.g. file, procedure, statement).  Output is sent to stdout.\n"
-    << "\n"
-    << "To find source line information, access to the profiled binary is\n"
-    << "required.  xprof will try to find the binary from data within in\n"
-    << "<profile>.  If this information is missing, <binary> must be\n"
-    << "explicitly specified.\n" 
-    << "\n"
-    << "By default, xprof determines a set of metrics available for the\n" 
-    << "given profile data and includes all of them in the PROFILE output.\n"
-    << "\n"
-#if 0  // FIXME '[-m <bloop-pcmap>]'
-    << "If no <bloop-pcmap> -- a map extended with analysis information\n"
-    << "from 'bloop' -- is provided, the program attempts to construct\n"
-    << "the PROFILE by querying the <binary>'s debugging information.\n"
-    << "Because of the better analysis ability of 'bloop', a <bloop-pcmap>\n"
-    << "usually improves the accuracy of the PROFILE.  Moreover, because\n"
-    << "no loop recovery is performed, providing <bloop-pcmap> enables\n"
-    << "the PROFILE to represent loop nesting information.\n"
-    << "[*Not fully implemented.*]\n"
-    << "\n"
-    << "  -m: specify <bloop-pcmap>\n"
-#endif     
-    << "The following <profile> formats are currently supported: \n"
-    << "  - DEC/Compaq/HP's DCPI 'dcpicat' (including ProfileMe) \n"
-    << "\n"
-    << "General options:\n"
-    << "  -p       Supply <profile> on stdin.  E.g., it is often desirable\n"
-    << "           to pipe the output of 'dcpicat' into xprof.\n"
-    << "\n"    
-    << "Listing available metrics:\n"
-    << "  -l       List all derived metrics, in compact form, available from\n"
-    << "           <profile> and suppress generation of PROFILE output.\n"
-    << "           Note that this output can be used with the -M option.\n"
-    << "  -L       List all derived metrics, in long form, available from\n"
-    << "           <profile> and suppress generation of PROFILE output.\n"
-    << "\n"    
-    << "Normal Mode:\n"
-    << "  -V       Print version information.\n"
-    << "  -M mlist Specify metrics to replace the default metric list.\n"
-    << "           Metrics in PROFILE output will follow this ordering.\n"
-    << "           <mlist> is a colon-separated list; duplicates are allowed\n"
-    << "           (though not recommended).\n"
-    << "  -X xlist Specify metrics to exclude from the default metric list\n"
-    << "           or from those specified with -M.  <xlist> is a colon-\n"
-    << "           separated list.\n"
-    << "  -R       (Most will not find this useful.) For some profile data,\n"
-    << "           such as DCPI's ProfileMe, the default is to output\n"
-    << "           derived metrics, not the underlying raw metrics; this\n"
-    << "           option forces output of only the raw metrics.  Should not\n"
-    << "           be used with -M or -X.\n"
-    << endl;
+  Ctor();
+  Parse(argc, argv);
+}
+
+void
+Args::Ctor()
+{
+  listAvailableMetrics = 0;
+  outputRawMetrics = false;
+}
+
+
+Args::~Args()
+{
+}
+
+
+void 
+Args::PrintVersion(std::ostream& os) const
+{
+  os << cmd << ": " << version_info << endl;
+}
+
+
+void 
+Args::PrintUsage(std::ostream& os) const
+{
+  os << "Usage: " << endl
+     << cmd << " " << usage_summary1
+     << cmd << " " << usage_summary2
+     << "  " << usage_summary3 << endl
+     << usage_details << endl;
 } 
 
-Args::Args(int argc, char* const* argv)
+
+void 
+Args::PrintError(std::ostream& os, const char* msg) const
 {
+  os << cmd << ": " << msg << endl
+     << "Try `" << cmd << " -h' for more information." << endl;
+}
+
+
+void
+Args::Parse(int argc, const char* const argv[])
+{
+  // FIXME: eraxxon: drop my new argument parser in here
   cmd = argv[0]; 
 
+  bool printHelp = false;
   bool printVersion = false;
   bool profFileFromStdin = false;
-  listAvailableMetrics = 0; // 0: no, 1: short, 2: long
-  outputRawMetrics = false;
   
+  // -------------------------------------------------------
+  // Parse the command line
+  // -------------------------------------------------------
   extern char *optarg;
   extern int optind;
   bool error = false;
   trace = 0;
   int c;
-  while ((c = getopt(argc, argv, "Vm:lLM:X:Rpd")) != EOF) {
+  while ((c = getopt(argc, (char**)argv, "Vhm:lLM:X:Rpd")) != EOF) {
     switch (c) {
     case 'V': { 
       printVersion = true;
+      break; 
+    }
+    case 'h': { 
+      printHelp = true;
       break; 
     }
 
@@ -200,6 +265,22 @@ Args::Args(int argc, char* const* argv)
     }
   }
 
+  // -------------------------------------------------------
+  // Sift through results, checking for semantic errors
+  // -------------------------------------------------------
+  
+  // Special options that should be checked first
+  if (printHelp) {
+    PrintUsage(cerr);
+    exit(1);
+  }
+  
+  if (printVersion) {
+    PrintVersion(cerr);
+    exit(1);
+  }
+  
+  
   int argsleft = (argc - optind);
   
   // If we are to read the profile file from stdin, then there should
@@ -227,27 +308,33 @@ Args::Args(int argc, char* const* argv)
       }
     }
   } 
-  
+
   // Sanity check: -M,-X and -R should not be used at the same time
   if ( (!metricList.Empty() || !excludeMList.Empty()) && outputRawMetrics) {
     cerr << "Error: -M or -X cannot be used with -R.\n";
     error = true;
   }
 
-  IFTRACE << "Args.cmd= " << cmd << endl; 
-  IFTRACE << "Args.progFile= " << progFile << endl;
-  IFTRACE << "Args.profFile= " << profFile << endl;
-  IFTRACE << "Args.pcMapFile= " << pcMapFile << endl;
-  IFTRACE << "::trace " << ::trace << endl; 
-
-  if (printVersion) {
-    Version();
-    exit(1);
-  }
-  
   if (error) {
-    Usage(); 
+    PrintError(cerr, "Error parsing command line"); 
     exit(1); 
   }
+
 }
 
+
+void 
+Args::Dump(std::ostream& os) const
+{
+  os << "Args.cmd= " << cmd << endl; 
+  os << "Args.pcMapFile= " << pcMapFile << endl;
+  os << "Args.progFile= " << progFile << endl;
+  os << "Args.profFile= " << profFile << endl;
+  os << "::trace " << ::trace << endl; 
+}
+
+void 
+Args::DDump() const
+{
+  Dump(std::cerr);
+}

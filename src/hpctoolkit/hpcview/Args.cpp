@@ -1,5 +1,5 @@
+// -*-Mode: C++;-*-
 // $Id$
-// -*-C++-*-
 // * BeginRiceCopyright *****************************************************
 // 
 // Copyright ((c)) 2002, Rice University 
@@ -34,6 +34,19 @@
 // 
 // ******************************************************* EndRiceCopyright *
 
+//***************************************************************************
+//
+// File:
+//    Args.C
+//
+// Purpose:
+//    [The purpose of this file]
+//
+// Description:
+//    [The set of functions, macros, etc. defined in the file]
+//
+//***************************************************************************
+
 //************************ System Include Files ******************************
 
 #include <iostream>
@@ -61,88 +74,84 @@ using std::endl;
 
 //****************************************************************************
 
+int fileTrace = 0;
+
 const String Args::HPCTOOLKIT = "HPCTOOLKIT"; 
 
-
-const char* hpctoolkitVerInfo=
+static const char* version_info =
 #include <include/HPCToolkitVersionInfo.h>
 
-void Args::Version()
+static const char* usage_summary =
+"[-V] [-h dir] [-r] [-u] [-w n] [-x file [-c] [-l]]  [-z [-o] [-f n] [-m n] [-s n.m]] configFile\n";
+
+static const char* usage_details =
+"[ GENERAL OPTIONS ]\n"
+"  -V          print version information\n"
+"  -h dir      Specify the destination directory all output files. The\n"
+"              default is ./hpcview.output\n"
+"  -r          Enable execution tracing. Use this option to debug path\n"
+"              replacement if metric and program structure information is\n"
+"              not being fused properly matched.\n"
+"  -u          Leave trailing underscores on routine names alone. HPCView\n"
+"              normally deletes any trailing underscore from routine names\n"
+"              to avoid problems caused when Fortran compilers provide\n"
+"              inconsistent information about routine names.\n"
+"  -w n        Specify warning level. Default warning level is 0; 1 produces\n"
+"              messages about creating procedure synopses\n"
+"\n"
+"[ OPTIONS TO GENERATE HPCVIEWER INPUT ]\n"
+"  -x file     Write XML scope tree, with metrics, to 'file'. The scope tree\n"
+"              can be used with HPCViewer.\n"
+"  -c          Do *not* copy source code files into dataset. By default,\n"
+"              hpcview -x makes copies of source files that have performance\n"
+"              metrics and that can be reached by PATH/REPLACE statements\n"
+"              in 'configFile'. The source files are copied to appropriate\n"
+"              'viewname' directories within the (-h) output-directory. This\n"
+"              results in a self-contained dataset that does not rely on an\n"
+"              external source code repository.  If copying is suppressed,\n"
+"              the resulting output is useful only on the original system.\n"
+"  -l          By default, the generated scope tree contains aggregated\n"
+"              metrics at all internal nodes of the scope tree.  This option\n"
+"              saves space by outputting metrics only at the leaves. A\n"
+"              FUTURE version of HPCViewer will be able to use the option,\n"
+"              but no current software can.\n"
+"\n"
+"[ OPTIONS TO GENERATE STATIC HTML FOR WEB BROWSER VIEWING ]\n"
+"  -z          Generate static HTML.\n"
+"  -o          Generate old style HTML. Each flatten view is in a separate\n"
+"              file. Good if the application is very big and the new style\n"
+"              HTML files become too large.\n"
+"  -f n        Compute static flattenings only for the top 'n' levels of the\n"
+"              scope tree.\n" 
+"  -m n        Limit the number of children reported in any scope to 'n'\n"
+"              with the highest value according to the currently selected\n"
+"              performance metric\n"
+"  -s n.m      Suppress reporting for scopes contributing less than 'n.m'\n"
+"              percent of the total cost.\n";
+
+
+//***************************************************************************
+// Args
+//***************************************************************************
+
+Args::Args()
 {
-  cerr << cmd << ": " << hpctoolkitVerInfo << endl;
+  Ctor();
 }
 
-void Args::Usage()
+Args::Args(int argc, const char* const argv[])
 {
-  cerr
-  << "Usage:\n"
-  << "       " << cmd << " [-V] [-h dir] [-r] [-u] [-w n] [-x file [-c] [-l]]  [-z [-o] [-f n] [-m n] [-s n.m]] configFile" << endl
-  << "\n"
-  << " [ GENERAL OPTIONS ]\n"
-  << "     -V       print version information\n"
-  << "     -h dir   Specify the destination directory all output files.\n"
-  << "              The default is ./hpcview.output\n"
-  << "     -r       Enable execution tracing. Use this option to debug path\n"
-  << "              replacement if metric and program structure information\n"
-  << "              is not being fused properly matched.\n"
-  << "     -u       Leave trailing underscores on routine names alone.\n"
-  << "              HPCView normally deletes any trailing underscore from\n"
-  << "              routine names to avoid problems caused when Fortran\n"
-  << "              compilers provide inconsistent information about routine\n"
-  << "              names.\n"
-  << "     -w n     Specify warning level.  Default warning level is 0; \n"
-  << "              1 produces messages about creating procedure synopses\n"
-  << "\n"
-  << " [ OPTIONS TO GENERATE HPCVIEWER INPUT ]\n"
-  << "     -x file  Write XML scope tree, with metrics, to 'file'. The scope\n"
-  << "              tree can be used with the HPCViewer.\n"
-  << "     -c       By default, hpcview -x makes copies of source files that\n"
-  << "              have performance metrics and that can be reached by PATH\n"
-  << "              and REPLACE statements in 'configFile'.  The files are\n"
-  << "              copied to appropriate 'viewname' directories within the\n"
-  << "              (-h) output-directory.\n"
-  << "              This results in a self-contained dataset that can viewed\n"
-  << "              in contexts, e.g., after copying to a new system, that\n"
-  << "              do not have access to the source in its current position\n"
-  << "              in the file system.  Setting -c suppresses copying\n"
-  << "              The resulting output is useful only on the original\n"
-  << "              system.\n"
-  << "     -l       By default, the scope tree generated above contains\n"
-  << "              aggregated metrics at all internal nodes of the scope\n"
-  << "              tree.  The -l option saves space by outputting metrics\n"
-  << "              only at the leaves.  A FUTURE version of HPCViewer will\n"
-  << "              be able to use option, but no current software can.\n"
-  << "\n"
-  << " [ OPTIONS TO GENERATE STATIC HTML FOR WEB BROWSER VIEWING ]\n"
-  << "     -z       Generate static HTML.\n"
-  << "     -o       Generate old style HTML. Each flatten view is in a\n"
-  << "              separate file. Good if the application is very big and\n"
-  << "              the new style HTML files become too large.\n"
-  << "     -f n     Compute static flattenings only for the top 'n' levels\n"
-  << "              of the scope tree.\n" 
-  << "     -m n     Limit the number of children reported in any scope to \n"
-  << "              the 'n' with the highest value according to the \n"
-  << "              currently selected performance metric\n"
-  << "     -s n.m   Suppress reporting for scopes contributing less than\n"
-  << "              'n.m' percent of the total cost.\n"
-  << "\n";
-} 
+  Ctor();
+  Parse(argc, argv);
+}
 
-int fileTrace = 0;
-  
-Args::Args(int argc, char* const* argv) {
-  cmd = argv[0]; 
+void
+Args::Ctor()
+{
   setHPCHome(); 
   fileHome = String(hpcHome) + "/lib/html"; 
-  
-  extern char *optarg;
-  extern int optind;
-  deleteUnderscores=1;
-  warningLevel=0;
-  htmlDir = "hpcview.output"; 
 
-  bool printVersion = false;  
-
+  htmlDir                = "hpcview.output"; 
   OutputInitialScopeTree = false; // used for debugging at this point
   OutputFinalScopeTree   = false;
   CopySrcFiles           = true;
@@ -152,14 +161,61 @@ Args::Args(int argc, char* const* argv) {
   XML_DumpAllMetrics     = true;  // dump metrics on interior nodes
   XML_Dump_File          = "scopeTree_XML.out";
 
-  maxLinesPerPerfPane = INT_MAX;
   depthToFlatten = INT_MAX;
-  scopeThresholdPercent = THRESHOLDING_DISABLED;
-  bool error = false; 
+  maxLinesPerPerfPane = INT_MAX;
+  deleteUnderscores = 1;
+  warningLevel = 0;
 
+  scopeThresholdPercent = THRESHOLDING_DISABLED;
+}
+
+
+Args::~Args()
+{
+}
+
+
+void 
+Args::PrintVersion(std::ostream& os) const
+{
+  cerr << cmd << ": " << version_info << endl;
+}
+
+
+void 
+Args::PrintUsage(std::ostream& os) const
+{
+  cerr << "Usage: " << cmd << " " << usage_summary << endl
+       << usage_details << endl;
+} 
+
+
+void 
+Args::PrintError(std::ostream& os, const char* msg) const
+{
+  // FIXME: waiting until we plug the new option parser in
+  os << cmd << ": " << msg << endl
+     << "Try `" << cmd << " --help' for more information." << endl;
+}
+
+
+void
+Args::Parse(int argc, const char* const argv[])
+{
+  // FIXME: eraxxon: drop my new argument parser in here
+  cmd = argv[0]; 
+
+  bool printVersion = false;  
+  
+  // -------------------------------------------------------
+  // Parse the command line
+  // -------------------------------------------------------
   // Note: option list follows usage message
+  extern char *optarg;
+  extern int optind;
+  bool error = false; 
   int c;
-  while ((c = getopt(argc, argv, "Vh:ruw:x:clzof:m:s:d")) != EOF) {
+  while ((c = getopt(argc, (char**)argv, "Vh:ruw:x:clzof:m:s:d")) != EOF) {
     switch (c) {
     
     // General Options
@@ -234,6 +290,17 @@ Args::Args(int argc, char* const* argv) {
     }
     }
   }
+
+  // -------------------------------------------------------
+  // Sift through results, checking for semantic errors
+  // -------------------------------------------------------
+  
+  // Special options that should be checked first
+  if (printVersion) {
+    PrintVersion(cerr);
+    exit(1);
+  }
+
   error = error || (optind != argc-1); 
   if (!error) {
     configurationFile = argv[optind];
@@ -242,32 +309,40 @@ Args::Args(int argc, char* const* argv) {
   // CopySrcFiles makes sense only if -x arg is used.
   if (false == OutputFinalScopeTree)  CopySrcFiles = false;
 
-  IFTRACE << "Args.cmd= " << cmd << endl; 
-  IFTRACE << "Args.hpcHome= " << hpcHome << endl; 
-  IFTRACE << "Args.fileHome= " << fileHome << endl; 
-  IFTRACE << "Args.htmlDir= " << htmlDir << endl; 
-  IFTRACE << "Args.OutputFinalScopeTree= " << OutputFinalScopeTree << endl; 
-  IFTRACE << "Args.OutputInitialScopeTree= " << OutputInitialScopeTree << endl; 
-  IFTRACE << "Args.XML_Dump_File= " << XML_Dump_File << endl; 
-  IFTRACE << "Args.SkipHTMLfiles= " << SkipHTMLfiles << endl; 
-  IFTRACE << "Args.OldStyleHTML= "  << OldStyleHTML << endl; 
-  IFTRACE << "Args.configurationFile= " << configurationFile << endl; 
-  IFTRACE << "Args.maxLinesPerPerfPane= " << maxLinesPerPerfPane << endl; 
-  IFTRACE << "::trace " << ::trace << endl; 
-
-  if (printVersion) {
-    Version();
-    exit(1);
-  }
-
   if (error) {
-    Usage(); 
+    PrintUsage(cerr);
     exit(1); 
   } 
 }
 
 
-void Args::setHPCHome() 
+void 
+Args::Dump(std::ostream& os) const
+{
+  os << "Args.cmd= " << cmd << endl; 
+  os << "Args.hpcHome= " << hpcHome << endl; 
+  os << "Args.fileHome= " << fileHome << endl; 
+  os << "Args.htmlDir= " << htmlDir << endl; 
+  os << "Args.OutputFinalScopeTree= " << OutputFinalScopeTree << endl; 
+  os << "Args.OutputInitialScopeTree= " << OutputInitialScopeTree << endl; 
+  os << "Args.XML_Dump_File= " << XML_Dump_File << endl; 
+  os << "Args.SkipHTMLfiles= " << SkipHTMLfiles << endl; 
+  os << "Args.OldStyleHTML= "  << OldStyleHTML << endl; 
+  os << "Args.configurationFile= " << configurationFile << endl; 
+  os << "Args.maxLinesPerPerfPane= " << maxLinesPerPerfPane << endl; 
+  os << "::trace " << ::trace << endl; 
+}
+
+void 
+Args::DDump() const
+{
+  Dump(std::cerr);
+}
+
+
+
+void 
+Args::setHPCHome() 
 {
   char * home = getenv(HPCTOOLKIT); 
   if (home == NULL) {
