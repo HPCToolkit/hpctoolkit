@@ -49,25 +49,20 @@
 
 //************************* System Include Files ****************************
 
-#include <iostream>
-
-#include <unistd.h> // for 'getopt'
-
 //*************************** User Include Files ****************************
 
 #include "Args.h"
-
-#include <lib/support/String.h>
 #include <lib/support/Trace.h>
 
 //*************************** Forward Declarations **************************
 
 using std::cerr;
 using std::endl;
+using std::string;
 
 //***************************************************************************
 
-static const char* version_info=
+static const char* version_info =
 #include <include/HPCToolkitVersionInfo.h>
 
 static const char* usage_summary =
@@ -80,18 +75,17 @@ static const char* usage_details =
 "data; see caveats below for common problems.\n"
 "\n"
 "Options:\n"
-"  -v            Verbose: generate progress messages\n"
-"  -n            Turn off scope tree normalization\n"
-"  -c            Generate compact output, eliminating extra white space\n"
-"  -p <pathlist> Ensure that scope tree only contains files found in the\n"
-"                colon-separated <pathlist>\n"
-"  -V            Print version information\n"
-"  -h            Print this help\n"
-" [-d            Debug default mode; not for general use.]\n"
-"\n"
-"Debug mode: Dump binary information. Not for general use.\n"
-"  -D  Turn on debug mode\n"
-" [-d  Debug debug mode.]\n"
+"  -v, --verbose        Verbose: generate progress messages to stderr\n"
+"  -n, --normalize-off  Turn off scope tree normalization\n"
+"  -c, --compact        Generate compact output, eliminating extra white\n"
+"                       space\n"
+"  -p <list>, --canonical-paths <list>\n"
+"                       Ensure that scope tree only contains files found in\n"
+"                       the colon-separated <pathlist>. May be passed\n"
+"                       multiple times.\n"
+"  -V, --version        Print version information.\n"
+"  -h, --help           Print this help.\n"
+"  -D, --dump-binary    Dump binary information and suppress loop recovery\n"
 "\n"
 "Caveats:\n"
 "* <binary> should be compiled with as much debugging info as possible (e.g.\n"
@@ -107,6 +101,28 @@ static const char* usage_details =
 "      can be used to improve the output of 'xProf'.\n"
 "      [*Not fully implemented.*]\n"
 #endif     
+
+
+#define CLP CmdLineParser
+
+// Note: Changing the option name requires changing the name in Parse()
+CmdLineParser::OptArgDesc Args::optArgs[] = {
+
+  // Options
+  { 'v', "verbose",         CLP::ARG_NONE, CLP::DUPOPT_CLOB, NULL },
+  { 'n', "normalize-off",   CLP::ARG_NONE, CLP::DUPOPT_CLOB, NULL },
+  { 'c', "compact",         CLP::ARG_NONE, CLP::DUPOPT_CLOB, NULL },
+  { 'p', "canonical-paths", CLP::ARG_REQ , CLP::DUPOPT_CAT,  ":" },
+  {  0 , "pcmap",           CLP::ARG_REQ , CLP::DUPOPT_ERR,  NULL }, // hidden
+
+  { 'V', "version",     CLP::ARG_NONE, CLP::DUPOPT_CLOB, NULL },
+  { 'h', "help",        CLP::ARG_NONE, CLP::DUPOPT_CLOB, NULL },
+  { 'D', "dump-binary", CLP::ARG_NONE, CLP::DUPOPT_CLOB, NULL },
+  {  0 , "debug",       CLP::ARG_OPT,  CLP::DUPOPT_CLOB, NULL }, // hidden
+  CmdLineParser::OptArgDesc_NULL
+};
+
+#undef CLP
 
 
 //***************************************************************************
@@ -127,10 +143,10 @@ Args::Args(int argc, const char* const argv[])
 void
 Args::Ctor()
 {
-  debugMode = false;
-  prettyPrintOutput = true;
-  normalizeScopeTree = true;
   verboseMode = false;
+  normalizeScopeTree = true;
+  prettyPrintOutput = true;
+  dumpBinary = false;
 }
 
 
@@ -142,14 +158,14 @@ Args::~Args()
 void 
 Args::PrintVersion(std::ostream& os) const
 {
-  os << cmd << ": " << version_info << endl;
+  os << GetCmd() << ": " << version_info << endl;
 }
 
 
 void 
 Args::PrintUsage(std::ostream& os) const
 {
-  os << "Usage: " << cmd << " " << usage_summary << endl
+  os << "Usage: " << GetCmd() << " " << usage_summary << endl
      << usage_details << endl;
 } 
 
@@ -157,102 +173,80 @@ Args::PrintUsage(std::ostream& os) const
 void 
 Args::PrintError(std::ostream& os, const char* msg) const
 {
-  os << cmd << ": " << msg << endl
-     << "Try `" << cmd << " -h' for more information." << endl;
+  os << GetCmd() << ": " << msg << endl
+     << "Try `" << GetCmd() << " --help' for more information." << endl;
+}
+
+void 
+Args::PrintError(std::ostream& os, const std::string& msg) const
+{
+  PrintError(os, msg.c_str());
 }
 
 
 void
 Args::Parse(int argc, const char* const argv[])
 {
-  // FIXME: eraxxon: drop my new argument parser in here
-  cmd = argv[0]; 
+  try {
 
-  bool printHelp = false;
-  bool printVersion = false;
-
-  // -------------------------------------------------------
-  // Parse the command line
-  // -------------------------------------------------------
-  extern char *optarg;
-  extern int optind;
-  bool error = false;
-  trace = 0;
-  int c;
-  while ((c = getopt(argc, (char**)argv, "vVhDm:np:cd")) != EOF) {
-    switch (c) {
-    case 'D': {
-      debugMode = true; 
-      break; 
+    // -------------------------------------------------------
+    // Parse the command line
+    // -------------------------------------------------------
+    parser.Parse(optArgs, argc, argv);
+    
+    // -------------------------------------------------------
+    // Sift through results, checking for semantic errors
+    // -------------------------------------------------------
+    
+    // Special options that should be checked first
+    trace = 0;
+    
+    if (parser.IsOpt("debug")) { 
+      trace = 1; 
+      if (parser.IsOptArg("debug")) {
+	const string& arg = parser.GetOptArg("debug");
+	trace = (int)CmdLineParser::ToLong(arg);
+      }
     }
-    case 'v':{
+    if (parser.IsOpt("help")) { 
+      PrintUsage(std::cerr); 
+      exit(1);
+    }
+    if (parser.IsOpt("version")) { 
+      PrintVersion(std::cerr);
+      exit(1);
+    }
+    
+    // Check for other options
+    if (parser.IsOpt("verbose")) { 
       verboseMode = true;
-      break;
-    }
-    case 'V': { 
-      printVersion = true;
-      break; 
-    }
-    case 'h': { 
-      printHelp = true;
-      break; 
-    }
-
-    case 'm': {
-      // A non-null value of 'pcMapFile' indicates it has been set
-      if (optarg == NULL) { error = true; }
-      pcMapFile = optarg;
-      break;
-    }
-    case 'n': {
+    } 
+    if (parser.IsOpt("normalize-off")) { 
       normalizeScopeTree = false;
-      break; 
-    }
-    case 'p': {
-      // A non-null value of 'canonicalPathList' indicates it has been set
-      if (optarg == NULL) { error = true; }
-      canonicalPathList = optarg;
-      break; 
-    }
-    case 'c': {
+    } 
+    if (parser.IsOpt("compact")) { 
       prettyPrintOutput = false;
-      break; 
+    } 
+    if (parser.IsOpt("canonical-paths")) { 
+      canonicalPathList = parser.GetOptArg("canonical-paths");
     }
-    case 'd': { // debug 
-      trace++; 
-      break; 
+    if (parser.IsOpt("pcmap")) { 
+      pcMapFile = parser.GetOptArg("pcmap");
     }
-    case ':':
-    case '?': { // error
-      error = true; 
-      break; 
+    if (parser.IsOpt("dump-binary")) { 
+      dumpBinary = true;
+    } 
+    
+    // Check for required arguments
+    if (parser.GetNumArgs() != 1) {
+      PrintError(std::cerr, "Missing a required argument!");
+      exit(1);
     }
-    }
+    inputFile = parser.GetArg(0);
   }
-
-  // -------------------------------------------------------
-  // Sift through results, checking for semantic errors
-  // -------------------------------------------------------
-
-  // Special options that should be checked first
-  if (printHelp) {
-    PrintUsage(cerr);
+  catch (CmdLineParser::ParseError& e) {
+    PrintError(std::cerr, e.GetMessage());
     exit(1);
-  }
-  
-  if (printVersion) {
-    PrintVersion(cerr);
-    exit(1);
-  }
-
-  error = error || (optind != argc-1); 
-  if (!error) {
-    inputFile = argv[optind];
-  } 
-  
-  if (error) {
-    PrintError(cerr, "Error parsing command line"); 
-    exit(1); 
   }
 }
 
@@ -260,8 +254,8 @@ Args::Parse(int argc, const char* const argv[])
 void 
 Args::Dump(std::ostream& os) const
 {
-  os << "Args.cmd= " << cmd << endl; 
-  os << "Args.debugMode= " << debugMode << endl;
+  os << "Args.cmd= " << GetCmd() << endl; 
+  os << "Args.dumpBinary= " << dumpBinary << endl;
   os << "Args.pcMapFile= " << pcMapFile << endl;
   os << "Args.prettyPrintOutput= " << prettyPrintOutput << endl;
   os << "Args.normalizeScopeTree= " << normalizeScopeTree << endl;

@@ -53,12 +53,14 @@
 //************************* System Include Files ****************************
 
 #include <iostream>
+#include <string>
 
 //*************************** User Include Files ****************************
 
-#include <lib/support/String.h>
+#include <include/general.h>
+#include <lib/support/CmdLineParser.h>
 
-//*************************** Forward Declarations ***************************
+//*************************** Forward Declarations **************************
 
 //***************************************************************************
 
@@ -77,7 +79,7 @@ public:
   
   // Error
   void PrintError(std::ostream& os, const char* msg) const;
-  //void PrintError(std::ostream& os, const std::string& msg) const;
+  void PrintError(std::ostream& os, const std::string& msg) const;
 
   // Dump
   void Dump(std::ostream& os = std::cerr) const;
@@ -85,22 +87,25 @@ public:
 
 public:  
   // Parsed Data: Command
-  String cmd; 
+  const std::string& GetCmd() const { return parser.GetCmd(); }
 
   // Parsed Data: optional arguments
-  bool debugMode;           // defaults: false
-  String pcMapFile; 
-  bool prettyPrintOutput;   // default: true
-  bool normalizeScopeTree;  // default: true
   bool verboseMode;         // default: false
-  String canonicalPathList;
+  bool normalizeScopeTree;  // default: true
+  bool prettyPrintOutput;   // default: true
+  std::string canonicalPathList;
+  std::string pcMapFile; 
+  bool dumpBinary;          // defaults: false
 
   // Parsed Data: arguments
-  String inputFile;
+  std::string inputFile;
 
 private:
   void Ctor();
 
+private:
+  static CmdLineParser::OptArgDesc optArgs[];
+  CmdLineParser parser;
 }; 
 
 #endif
