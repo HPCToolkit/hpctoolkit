@@ -185,6 +185,17 @@ Process:
 ------------------------------------------------------------
 
 Process + Exec:
+  Start:
+    1. ---
+    2. ---
+
+  Exec:
+    3. Intercept exec:
+       - fini_process()
+       - ld.so causes repeat of #1 and #2
+
+  Stop:
+    10. --- 
 
 ------------------------------------------------------------
 
@@ -217,9 +228,10 @@ Process + Fork/Exec:
   Start (process 2)
     3. Intercept fork (hpcrun_fork()) 
        [see #3 in Process + Fork]
-    4. Exec:
-       - repeat #1 and #2: initialize library, intercept launch points;
-         launch process
+
+  Exec (process 2)
+    4. Intercept exec 
+       [see #3 in Process + Exec]
 
   Stop (process 1):
     9. --- 
