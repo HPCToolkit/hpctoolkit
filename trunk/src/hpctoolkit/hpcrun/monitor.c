@@ -28,6 +28,7 @@
 /************************** System Include Files ****************************/
 
 #include <stdlib.h>
+#include <unistd.h>
 #include <stdio.h>
 #include <unistd.h>
 #include <string.h>
@@ -291,37 +292,6 @@ pr_fini(void)
   exit(0);
 }
 
-/****************************************************************************/
-
-__libc_fork ()
-{
- fprintf (stderr, "In __libc_fork\n");
- exit (0);
-}
-
-__fork ()
-{
- fprintf (stderr, "In __fork\n");
- exit (0);
-}
-
-pthread_create ()
-{
- fprintf (stderr, "In pthread_create\n");
- exit (0);
-}
-
-__clone ()
-{
- fprintf (stderr, "In __clone\n");
- exit (0);
-}
-
-__clone2 ()
-{
- fprintf (stderr, "In __clone2\n");
- exit (0);
-}
 
 /****************************************************************************
  * Initialize PAPI profiling
@@ -544,6 +514,9 @@ init_output(void)
   char* executable = command_name; 
   const char* eventstr = papirun_event_by_code(papi_eventcode)->name;
   unsigned int len;
+  char* hostnam[128]; 
+
+  gethostname(hostnam, 128);
 
   {
     char* slash = rindex(executable, '/');
@@ -558,8 +531,8 @@ init_output(void)
     exit(-1);
   }
 
-  sprintf(outfilenm, "%s/%s.%s.%d", opt_outpath, executable, eventstr, 
-	  getpid());
+  sprintf(outfilenm, "%s/%s.%s.%s.%d", opt_outpath, executable, eventstr, 
+	hostnam, getpid());
   
   proffile = fopen(outfilenm, "w");
 
