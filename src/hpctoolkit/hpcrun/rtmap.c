@@ -90,7 +90,9 @@ hpcrun_code_lines_from_loadmap(int dumpmap)
 
   if (dumpmap) { 
     dumprtloadmap(); 
-    /* dumplines(); */
+  }
+  if (dumpmap > 3) {
+    dumplines();
   }
 
   return &rtloadmap;
@@ -232,8 +234,8 @@ dumplines(void)
   }
 }
 
-
 #if TESTING
+
 int 
 main(void)
 {
@@ -243,5 +245,6 @@ main(void)
 #endif
   return 0;
 }
+
 #endif
 
