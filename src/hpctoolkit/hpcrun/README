@@ -103,13 +103,13 @@ of other performance counter information.
 
 Key files:
   hpcrun.c/h 
-  preload.c
+  monitor.c
 
 'hpcrun.c' is the interface to the profiling library.  It parses
 options, prepares the environment for the profiling library, forks a
 new process and exec's the application to be profiled.
 
-'preload.c' contains the bulk of the code for the profiling library.
+'monitor.c' contains the bulk of the code for the profiling library.
 The library is automatically loaded using the linker's LD_PRELOAD
 environment variable.  Setting this variable causes the loader to load
 the referened file *before* anything else is loaded.  Since libraries

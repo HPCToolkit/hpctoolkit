@@ -67,7 +67,7 @@ MYSOURCES_HPCRUN = \
 	dlpapi.h dlpapi.c 
 
 MYSOURCES_LIBHPCRUN = \
-	preload.c \
+	monitor.c \
 	hpcpapi.h hpcpapi.c \
 	rtmap.h rtmap.c 
 
