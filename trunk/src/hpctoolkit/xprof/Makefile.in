@@ -147,13 +147,20 @@ am__depfiles_maybe = depfiles
 @AMDEP_TRUE@	./$(DEPDIR)/xprof-main.Po
 CXXCOMPILE = $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) \
 	$(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS)
+LTCXXCOMPILE = $(LIBTOOL) --mode=compile $(CXX) $(DEFS) \
+	$(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) \
+	$(AM_CXXFLAGS) $(CXXFLAGS)
 CXXLD = $(CXX)
-CXXLINK = $(CXXLD) $(AM_CXXFLAGS) $(CXXFLAGS) $(AM_LDFLAGS) $(LDFLAGS) \
-	-o $@
+CXXLINK = $(LIBTOOL) --mode=link $(CXXLD) $(AM_CXXFLAGS) $(CXXFLAGS) \
+	$(AM_LDFLAGS) $(LDFLAGS) -o $@
 COMPILE = $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
 	$(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
+LTCOMPILE = $(LIBTOOL) --mode=compile $(CC) $(DEFS) \
+	$(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) \
+	$(AM_CFLAGS) $(CFLAGS)
 CCLD = $(CC)
-LINK = $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) $(LDFLAGS) -o $@
+LINK = $(LIBTOOL) --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
+	$(AM_LDFLAGS) $(LDFLAGS) -o $@
 SOURCES = $(xprof_SOURCES)
 DIST_SOURCES = $(xprof_SOURCES)
 ETAGS = etags
@@ -163,6 +170,7 @@ ACLOCAL = @ACLOCAL@
 AMDEP_FALSE = @AMDEP_FALSE@
 AMDEP_TRUE = @AMDEP_TRUE@
 AMTAR = @AMTAR@
+AR = @AR@
 AUTOCONF = @AUTOCONF@
 AUTOHEADER = @AUTOHEADER@
 AUTOMAKE = @AUTOMAKE@
@@ -170,6 +178,7 @@ AWK = @AWK@
 CC = @CC@
 CCDEPMODE = @CCDEPMODE@
 CFLAGS = @CFLAGS@
+CPP = @CPP@
 CPPFLAGS = @CPPFLAGS@
 CXX = @CXX@
 CXXCPP = @CXXCPP@
@@ -178,19 +187,25 @@ CXXFLAGS = @CXXFLAGS@
 CYGPATH_W = @CYGPATH_W@
 DEFS = @DEFS@
 DEPDIR = @DEPDIR@
+ECHO = @ECHO@
 ECHO_C = @ECHO_C@
 ECHO_N = @ECHO_N@
 ECHO_T = @ECHO_T@
 EGREP = @EGREP@
 EXEEXT = @EXEEXT@
-GNUBINUTIL_IFLAGS = @GNUBINUTIL_IFLAGS@
-GNUBINUTIL_LDFLAGS = @GNUBINUTIL_LDFLAGS@
+F77 = @F77@
+FFLAGS = @FFLAGS@
+GNUBINUTILS_IFLAGS = @GNUBINUTILS_IFLAGS@
+GNUBINUTILS_LDFLAGS = @GNUBINUTILS_LDFLAGS@
 HOST_AR = @HOST_AR@
 HOST_BLOOP_LDFLAGS = @HOST_BLOOP_LDFLAGS@
 HOST_CFLAGS = @HOST_CFLAGS@
 HOST_CXXFLAGS = @HOST_CXXFLAGS@
+HOST_HPCPROF_LDFLAGS = @HOST_HPCPROF_LDFLAGS@
+HOST_HPCRUN_LDFLAGS = @HOST_HPCRUN_LDFLAGS@
 HOST_HPCVIEW_LDFLAGS = @HOST_HPCVIEW_LDFLAGS@
 HOST_LIBTREPOSITORY = @HOST_LIBTREPOSITORY@
+HOST_LINK_NO_START_FILES = @HOST_LINK_NO_START_FILES@
 HOST_XCSPROF_LDFLAGS = @HOST_XCSPROF_LDFLAGS@
 HOST_XPROF_LDFLAGS = @HOST_XPROF_LDFLAGS@
 HPCTOOLKIT_PLATFORM = @HPCTOOLKIT_PLATFORM@
@@ -203,13 +218,23 @@ IS_HOST_AR_TRUE = @IS_HOST_AR_TRUE@
 LDFLAGS = @LDFLAGS@
 LIBOBJS = @LIBOBJS@
 LIBS = @LIBS@
+LIBTOOL = @LIBTOOL@
+LN_S = @LN_S@
 LTLIBOBJS = @LTLIBOBJS@
 MAKEINFO = @MAKEINFO@
 OA_IFLAGS = @OA_IFLAGS@
 OA_LDFLAGS = @OA_LDFLAGS@
 OBJEXT = @OBJEXT@
-OPT_DEVELOP_FALSE = @OPT_DEVELOP_FALSE@
-OPT_DEVELOP_TRUE = @OPT_DEVELOP_TRUE@
+OPT_ENABLE_DEVELOP_FALSE = @OPT_ENABLE_DEVELOP_FALSE@
+OPT_ENABLE_DEVELOP_TRUE = @OPT_ENABLE_DEVELOP_TRUE@
+OPT_ENABLE_HPCRUN_FALSE = @OPT_ENABLE_HPCRUN_FALSE@
+OPT_ENABLE_HPCRUN_TRUE = @OPT_ENABLE_HPCRUN_TRUE@
+OPT_HAVE_PAPI_FALSE = @OPT_HAVE_PAPI_FALSE@
+OPT_HAVE_PAPI_TRUE = @OPT_HAVE_PAPI_TRUE@
+OPT_PAPI_DLOPEN = @OPT_PAPI_DLOPEN@
+OPT_PAPI_IFLAGS = @OPT_PAPI_IFLAGS@
+OPT_PAPI_LDFLAGS = @OPT_PAPI_LDFLAGS@
+OPT_PAPI_LIBPATH = @OPT_PAPI_LIBPATH@
 PACKAGE = @PACKAGE@
 PACKAGE_BUGREPORT = @PACKAGE_BUGREPORT@
 PACKAGE_NAME = @PACKAGE_NAME@
@@ -225,8 +250,10 @@ VERSION = @VERSION@
 XERCES = @XERCES@
 XERCES_IFLAGS = @XERCES_IFLAGS@
 XERCES_LDFLAGS = @XERCES_LDFLAGS@
+ac_ct_AR = @ac_ct_AR@
 ac_ct_CC = @ac_ct_CC@
 ac_ct_CXX = @ac_ct_CXX@
+ac_ct_F77 = @ac_ct_F77@
 ac_ct_RANLIB = @ac_ct_RANLIB@
 ac_ct_STRIP = @ac_ct_STRIP@
 am__fastdepCC_FALSE = @am__fastdepCC_FALSE@
@@ -313,13 +340,13 @@ MYSOURCES = \
 	ProfileReader.h ProfileReader.C \
 	ProfileWriter.h ProfileWriter.C
 
-MYCFLAGS = @HOST_CFLAGS@   $(HPC_IFLAGS) @GNUBINUTIL_IFLAGS@
-MYCXXFLAGS = @HOST_CXXFLAGS@ $(HPC_IFLAGS) @GNUBINUTIL_IFLAGS@
+MYCFLAGS = @HOST_CFLAGS@   $(HPC_IFLAGS) @GNUBINUTILS_IFLAGS@
+MYCXXFLAGS = @HOST_CXXFLAGS@ $(HPC_IFLAGS) @GNUBINUTILS_IFLAGS@
 MYLDFLAGS = @HOST_CXXFLAGS@
 MYLDADD = \
 	@HOST_LIBTREPOSITORY@ \
 	$(HPC_LIBBINUTILS) $(HPC_LIBISA) $(HPC_LIBXML) $(HPC_LIBSUPPORT) \
-	@GNUBINUTIL_LDFLAGS@ \
+	@GNUBINUTILS_LDFLAGS@ \
 	@HOST_XPROF_LDFLAGS@ \
 	-lm
 
@@ -339,7 +366,7 @@ MYCPPFLAGS_CC = $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) \
 all: all-am
 
 .SUFFIXES:
-.SUFFIXES: .C .o .obj
+.SUFFIXES: .C .lo .o .obj
 $(srcdir)/Makefile.in:  $(srcdir)/Makefile.am $(top_srcdir)/src/Makeinclude.config $(top_srcdir)/src/Makeinclude.rules $(am__configure_deps)
 	@for dep in $?; do \
 	  case '$(am__configure_deps)' in \
@@ -375,10 +402,11 @@ install-binPROGRAMS: $(bin_PROGRAMS)
 	@list='$(bin_PROGRAMS)'; for p in $$list; do \
 	  p1=`echo $$p|sed 's/$(EXEEXT)$$//'`; \
 	  if test -f $$p \
+	     || test -f $$p1 \
 	  ; then \
 	    f=`echo "$$p1" | sed 's,^.*/,,;$(transform);s/$$/$(EXEEXT)/'`; \
-	   echo " $(INSTALL_PROGRAM_ENV) $(binPROGRAMS_INSTALL) '$$p' '$(DESTDIR)$(bindir)/$$f'"; \
-	   $(INSTALL_PROGRAM_ENV) $(binPROGRAMS_INSTALL) "$$p" "$(DESTDIR)$(bindir)/$$f" || exit 1; \
+	   echo " $(INSTALL_PROGRAM_ENV) $(LIBTOOL) --mode=install $(binPROGRAMS_INSTALL) '$$p' '$(DESTDIR)$(bindir)/$$f'"; \
+	   $(INSTALL_PROGRAM_ENV) $(LIBTOOL) --mode=install $(binPROGRAMS_INSTALL) "$$p" "$(DESTDIR)$(bindir)/$$f" || exit 1; \
 	  else :; fi; \
 	done
 
@@ -391,7 +419,11 @@ uninstall-binPROGRAMS:
 	done
 
 clean-binPROGRAMS:
-	-test -z "$(bin_PROGRAMS)" || rm -f $(bin_PROGRAMS)
+	@list='$(bin_PROGRAMS)'; for p in $$list; do \
+	  f=`echo $$p|sed 's/$(EXEEXT)$$//'`; \
+	  echo " rm -f $$p $$f"; \
+	  rm -f $$p $$f ; \
+	done
 xprof$(EXEEXT): $(xprof_OBJECTS) $(xprof_DEPENDENCIES) 
 	@rm -f xprof$(EXEEXT)
 	$(CXXLINK) $(xprof_LDFLAGS) $(xprof_OBJECTS) $(xprof_LDADD) $(LIBS)
@@ -431,6 +463,14 @@ distclean-compile:
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(CXXCOMPILE) -c -o $@ `$(CYGPATH_W) '$<'`
 
+.C.lo:
+@am__fastdepCXX_TRUE@	if $(LTCXXCOMPILE) -MT $@ -MD -MP -MF "$(DEPDIR)/$*.Tpo" -c -o $@ $<; \
+@am__fastdepCXX_TRUE@	then mv -f "$(DEPDIR)/$*.Tpo" "$(DEPDIR)/$*.Plo"; else rm -f "$(DEPDIR)/$*.Tpo"; exit 1; fi
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='$<' object='$@' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	depfile='$(DEPDIR)/$*.Plo' tmpdepfile='$(DEPDIR)/$*.TPlo' @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(LTCXXCOMPILE) -c -o $@ $<
+
 xprof-main.o: main.C
 @am__fastdepCXX_TRUE@	if $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(xprof_CXXFLAGS) $(CXXFLAGS) -MT xprof-main.o -MD -MP -MF "$(DEPDIR)/xprof-main.Tpo" -c -o xprof-main.o `test -f 'main.C' || echo '$(srcdir)/'`main.C; \
 @am__fastdepCXX_TRUE@	then mv -f "$(DEPDIR)/xprof-main.Tpo" "$(DEPDIR)/xprof-main.Po"; else rm -f "$(DEPDIR)/xprof-main.Tpo"; exit 1; fi
@@ -446,6 +486,14 @@ xprof-main.obj: main.C
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	depfile='$(DEPDIR)/xprof-main.Po' tmpdepfile='$(DEPDIR)/xprof-main.TPo' @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(xprof_CXXFLAGS) $(CXXFLAGS) -c -o xprof-main.obj `if test -f 'main.C'; then $(CYGPATH_W) 'main.C'; else $(CYGPATH_W) '$(srcdir)/main.C'; fi`
+
+xprof-main.lo: main.C
+@am__fastdepCXX_TRUE@	if $(LIBTOOL) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(xprof_CXXFLAGS) $(CXXFLAGS) -MT xprof-main.lo -MD -MP -MF "$(DEPDIR)/xprof-main.Tpo" -c -o xprof-main.lo `test -f 'main.C' || echo '$(srcdir)/'`main.C; \
+@am__fastdepCXX_TRUE@	then mv -f "$(DEPDIR)/xprof-main.Tpo" "$(DEPDIR)/xprof-main.Plo"; else rm -f "$(DEPDIR)/xprof-main.Tpo"; exit 1; fi
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='main.C' object='xprof-main.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	depfile='$(DEPDIR)/xprof-main.Plo' tmpdepfile='$(DEPDIR)/xprof-main.TPlo' @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(LIBTOOL) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(xprof_CXXFLAGS) $(CXXFLAGS) -c -o xprof-main.lo `test -f 'main.C' || echo '$(srcdir)/'`main.C
 
 xprof-Args.o: Args.C
 @am__fastdepCXX_TRUE@	if $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(xprof_CXXFLAGS) $(CXXFLAGS) -MT xprof-Args.o -MD -MP -MF "$(DEPDIR)/xprof-Args.Tpo" -c -o xprof-Args.o `test -f 'Args.C' || echo '$(srcdir)/'`Args.C; \
@@ -463,6 +511,14 @@ xprof-Args.obj: Args.C
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(xprof_CXXFLAGS) $(CXXFLAGS) -c -o xprof-Args.obj `if test -f 'Args.C'; then $(CYGPATH_W) 'Args.C'; else $(CYGPATH_W) '$(srcdir)/Args.C'; fi`
 
+xprof-Args.lo: Args.C
+@am__fastdepCXX_TRUE@	if $(LIBTOOL) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(xprof_CXXFLAGS) $(CXXFLAGS) -MT xprof-Args.lo -MD -MP -MF "$(DEPDIR)/xprof-Args.Tpo" -c -o xprof-Args.lo `test -f 'Args.C' || echo '$(srcdir)/'`Args.C; \
+@am__fastdepCXX_TRUE@	then mv -f "$(DEPDIR)/xprof-Args.Tpo" "$(DEPDIR)/xprof-Args.Plo"; else rm -f "$(DEPDIR)/xprof-Args.Tpo"; exit 1; fi
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='Args.C' object='xprof-Args.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	depfile='$(DEPDIR)/xprof-Args.Plo' tmpdepfile='$(DEPDIR)/xprof-Args.TPlo' @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(LIBTOOL) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(xprof_CXXFLAGS) $(CXXFLAGS) -c -o xprof-Args.lo `test -f 'Args.C' || echo '$(srcdir)/'`Args.C
+
 xprof-DCPIMetricDesc.o: DCPIMetricDesc.C
 @am__fastdepCXX_TRUE@	if $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(xprof_CXXFLAGS) $(CXXFLAGS) -MT xprof-DCPIMetricDesc.o -MD -MP -MF "$(DEPDIR)/xprof-DCPIMetricDesc.Tpo" -c -o xprof-DCPIMetricDesc.o `test -f 'DCPIMetricDesc.C' || echo '$(srcdir)/'`DCPIMetricDesc.C; \
 @am__fastdepCXX_TRUE@	then mv -f "$(DEPDIR)/xprof-DCPIMetricDesc.Tpo" "$(DEPDIR)/xprof-DCPIMetricDesc.Po"; else rm -f "$(DEPDIR)/xprof-DCPIMetricDesc.Tpo"; exit 1; fi
@@ -478,6 +534,14 @@ xprof-DCPIMetricDesc.obj: DCPIMetricDesc.C
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	depfile='$(DEPDIR)/xprof-DCPIMetricDesc.Po' tmpdepfile='$(DEPDIR)/xprof-DCPIMetricDesc.TPo' @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(xprof_CXXFLAGS) $(CXXFLAGS) -c -o xprof-DCPIMetricDesc.obj `if test -f 'DCPIMetricDesc.C'; then $(CYGPATH_W) 'DCPIMetricDesc.C'; else $(CYGPATH_W) '$(srcdir)/DCPIMetricDesc.C'; fi`
+
+xprof-DCPIMetricDesc.lo: DCPIMetricDesc.C
+@am__fastdepCXX_TRUE@	if $(LIBTOOL) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(xprof_CXXFLAGS) $(CXXFLAGS) -MT xprof-DCPIMetricDesc.lo -MD -MP -MF "$(DEPDIR)/xprof-DCPIMetricDesc.Tpo" -c -o xprof-DCPIMetricDesc.lo `test -f 'DCPIMetricDesc.C' || echo '$(srcdir)/'`DCPIMetricDesc.C; \
+@am__fastdepCXX_TRUE@	then mv -f "$(DEPDIR)/xprof-DCPIMetricDesc.Tpo" "$(DEPDIR)/xprof-DCPIMetricDesc.Plo"; else rm -f "$(DEPDIR)/xprof-DCPIMetricDesc.Tpo"; exit 1; fi
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='DCPIMetricDesc.C' object='xprof-DCPIMetricDesc.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	depfile='$(DEPDIR)/xprof-DCPIMetricDesc.Plo' tmpdepfile='$(DEPDIR)/xprof-DCPIMetricDesc.TPlo' @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(LIBTOOL) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(xprof_CXXFLAGS) $(CXXFLAGS) -c -o xprof-DCPIMetricDesc.lo `test -f 'DCPIMetricDesc.C' || echo '$(srcdir)/'`DCPIMetricDesc.C
 
 xprof-DCPIProfile.o: DCPIProfile.C
 @am__fastdepCXX_TRUE@	if $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(xprof_CXXFLAGS) $(CXXFLAGS) -MT xprof-DCPIProfile.o -MD -MP -MF "$(DEPDIR)/xprof-DCPIProfile.Tpo" -c -o xprof-DCPIProfile.o `test -f 'DCPIProfile.C' || echo '$(srcdir)/'`DCPIProfile.C; \
@@ -495,6 +559,14 @@ xprof-DCPIProfile.obj: DCPIProfile.C
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(xprof_CXXFLAGS) $(CXXFLAGS) -c -o xprof-DCPIProfile.obj `if test -f 'DCPIProfile.C'; then $(CYGPATH_W) 'DCPIProfile.C'; else $(CYGPATH_W) '$(srcdir)/DCPIProfile.C'; fi`
 
+xprof-DCPIProfile.lo: DCPIProfile.C
+@am__fastdepCXX_TRUE@	if $(LIBTOOL) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(xprof_CXXFLAGS) $(CXXFLAGS) -MT xprof-DCPIProfile.lo -MD -MP -MF "$(DEPDIR)/xprof-DCPIProfile.Tpo" -c -o xprof-DCPIProfile.lo `test -f 'DCPIProfile.C' || echo '$(srcdir)/'`DCPIProfile.C; \
+@am__fastdepCXX_TRUE@	then mv -f "$(DEPDIR)/xprof-DCPIProfile.Tpo" "$(DEPDIR)/xprof-DCPIProfile.Plo"; else rm -f "$(DEPDIR)/xprof-DCPIProfile.Tpo"; exit 1; fi
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='DCPIProfile.C' object='xprof-DCPIProfile.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	depfile='$(DEPDIR)/xprof-DCPIProfile.Plo' tmpdepfile='$(DEPDIR)/xprof-DCPIProfile.TPlo' @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(LIBTOOL) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(xprof_CXXFLAGS) $(CXXFLAGS) -c -o xprof-DCPIProfile.lo `test -f 'DCPIProfile.C' || echo '$(srcdir)/'`DCPIProfile.C
+
 xprof-DCPIProfileFilter.o: DCPIProfileFilter.C
 @am__fastdepCXX_TRUE@	if $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(xprof_CXXFLAGS) $(CXXFLAGS) -MT xprof-DCPIProfileFilter.o -MD -MP -MF "$(DEPDIR)/xprof-DCPIProfileFilter.Tpo" -c -o xprof-DCPIProfileFilter.o `test -f 'DCPIProfileFilter.C' || echo '$(srcdir)/'`DCPIProfileFilter.C; \
 @am__fastdepCXX_TRUE@	then mv -f "$(DEPDIR)/xprof-DCPIProfileFilter.Tpo" "$(DEPDIR)/xprof-DCPIProfileFilter.Po"; else rm -f "$(DEPDIR)/xprof-DCPIProfileFilter.Tpo"; exit 1; fi
@@ -510,6 +582,14 @@ xprof-DCPIProfileFilter.obj: DCPIProfileFilter.C
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	depfile='$(DEPDIR)/xprof-DCPIProfileFilter.Po' tmpdepfile='$(DEPDIR)/xprof-DCPIProfileFilter.TPo' @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(xprof_CXXFLAGS) $(CXXFLAGS) -c -o xprof-DCPIProfileFilter.obj `if test -f 'DCPIProfileFilter.C'; then $(CYGPATH_W) 'DCPIProfileFilter.C'; else $(CYGPATH_W) '$(srcdir)/DCPIProfileFilter.C'; fi`
+
+xprof-DCPIProfileFilter.lo: DCPIProfileFilter.C
+@am__fastdepCXX_TRUE@	if $(LIBTOOL) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(xprof_CXXFLAGS) $(CXXFLAGS) -MT xprof-DCPIProfileFilter.lo -MD -MP -MF "$(DEPDIR)/xprof-DCPIProfileFilter.Tpo" -c -o xprof-DCPIProfileFilter.lo `test -f 'DCPIProfileFilter.C' || echo '$(srcdir)/'`DCPIProfileFilter.C; \
+@am__fastdepCXX_TRUE@	then mv -f "$(DEPDIR)/xprof-DCPIProfileFilter.Tpo" "$(DEPDIR)/xprof-DCPIProfileFilter.Plo"; else rm -f "$(DEPDIR)/xprof-DCPIProfileFilter.Tpo"; exit 1; fi
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='DCPIProfileFilter.C' object='xprof-DCPIProfileFilter.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	depfile='$(DEPDIR)/xprof-DCPIProfileFilter.Plo' tmpdepfile='$(DEPDIR)/xprof-DCPIProfileFilter.TPlo' @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(LIBTOOL) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(xprof_CXXFLAGS) $(CXXFLAGS) -c -o xprof-DCPIProfileFilter.lo `test -f 'DCPIProfileFilter.C' || echo '$(srcdir)/'`DCPIProfileFilter.C
 
 xprof-DCPIProfileMetric.o: DCPIProfileMetric.C
 @am__fastdepCXX_TRUE@	if $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(xprof_CXXFLAGS) $(CXXFLAGS) -MT xprof-DCPIProfileMetric.o -MD -MP -MF "$(DEPDIR)/xprof-DCPIProfileMetric.Tpo" -c -o xprof-DCPIProfileMetric.o `test -f 'DCPIProfileMetric.C' || echo '$(srcdir)/'`DCPIProfileMetric.C; \
@@ -527,6 +607,14 @@ xprof-DCPIProfileMetric.obj: DCPIProfileMetric.C
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(xprof_CXXFLAGS) $(CXXFLAGS) -c -o xprof-DCPIProfileMetric.obj `if test -f 'DCPIProfileMetric.C'; then $(CYGPATH_W) 'DCPIProfileMetric.C'; else $(CYGPATH_W) '$(srcdir)/DCPIProfileMetric.C'; fi`
 
+xprof-DCPIProfileMetric.lo: DCPIProfileMetric.C
+@am__fastdepCXX_TRUE@	if $(LIBTOOL) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(xprof_CXXFLAGS) $(CXXFLAGS) -MT xprof-DCPIProfileMetric.lo -MD -MP -MF "$(DEPDIR)/xprof-DCPIProfileMetric.Tpo" -c -o xprof-DCPIProfileMetric.lo `test -f 'DCPIProfileMetric.C' || echo '$(srcdir)/'`DCPIProfileMetric.C; \
+@am__fastdepCXX_TRUE@	then mv -f "$(DEPDIR)/xprof-DCPIProfileMetric.Tpo" "$(DEPDIR)/xprof-DCPIProfileMetric.Plo"; else rm -f "$(DEPDIR)/xprof-DCPIProfileMetric.Tpo"; exit 1; fi
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='DCPIProfileMetric.C' object='xprof-DCPIProfileMetric.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	depfile='$(DEPDIR)/xprof-DCPIProfileMetric.Plo' tmpdepfile='$(DEPDIR)/xprof-DCPIProfileMetric.TPlo' @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(LIBTOOL) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(xprof_CXXFLAGS) $(CXXFLAGS) -c -o xprof-DCPIProfileMetric.lo `test -f 'DCPIProfileMetric.C' || echo '$(srcdir)/'`DCPIProfileMetric.C
+
 xprof-DerivedProfile.o: DerivedProfile.C
 @am__fastdepCXX_TRUE@	if $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(xprof_CXXFLAGS) $(CXXFLAGS) -MT xprof-DerivedProfile.o -MD -MP -MF "$(DEPDIR)/xprof-DerivedProfile.Tpo" -c -o xprof-DerivedProfile.o `test -f 'DerivedProfile.C' || echo '$(srcdir)/'`DerivedProfile.C; \
 @am__fastdepCXX_TRUE@	then mv -f "$(DEPDIR)/xprof-DerivedProfile.Tpo" "$(DEPDIR)/xprof-DerivedProfile.Po"; else rm -f "$(DEPDIR)/xprof-DerivedProfile.Tpo"; exit 1; fi
@@ -542,6 +630,14 @@ xprof-DerivedProfile.obj: DerivedProfile.C
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	depfile='$(DEPDIR)/xprof-DerivedProfile.Po' tmpdepfile='$(DEPDIR)/xprof-DerivedProfile.TPo' @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(xprof_CXXFLAGS) $(CXXFLAGS) -c -o xprof-DerivedProfile.obj `if test -f 'DerivedProfile.C'; then $(CYGPATH_W) 'DerivedProfile.C'; else $(CYGPATH_W) '$(srcdir)/DerivedProfile.C'; fi`
+
+xprof-DerivedProfile.lo: DerivedProfile.C
+@am__fastdepCXX_TRUE@	if $(LIBTOOL) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(xprof_CXXFLAGS) $(CXXFLAGS) -MT xprof-DerivedProfile.lo -MD -MP -MF "$(DEPDIR)/xprof-DerivedProfile.Tpo" -c -o xprof-DerivedProfile.lo `test -f 'DerivedProfile.C' || echo '$(srcdir)/'`DerivedProfile.C; \
+@am__fastdepCXX_TRUE@	then mv -f "$(DEPDIR)/xprof-DerivedProfile.Tpo" "$(DEPDIR)/xprof-DerivedProfile.Plo"; else rm -f "$(DEPDIR)/xprof-DerivedProfile.Tpo"; exit 1; fi
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='DerivedProfile.C' object='xprof-DerivedProfile.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	depfile='$(DEPDIR)/xprof-DerivedProfile.Plo' tmpdepfile='$(DEPDIR)/xprof-DerivedProfile.TPlo' @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(LIBTOOL) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(xprof_CXXFLAGS) $(CXXFLAGS) -c -o xprof-DerivedProfile.lo `test -f 'DerivedProfile.C' || echo '$(srcdir)/'`DerivedProfile.C
 
 xprof-PCProfile.o: PCProfile.C
 @am__fastdepCXX_TRUE@	if $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(xprof_CXXFLAGS) $(CXXFLAGS) -MT xprof-PCProfile.o -MD -MP -MF "$(DEPDIR)/xprof-PCProfile.Tpo" -c -o xprof-PCProfile.o `test -f 'PCProfile.C' || echo '$(srcdir)/'`PCProfile.C; \
@@ -559,6 +655,14 @@ xprof-PCProfile.obj: PCProfile.C
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(xprof_CXXFLAGS) $(CXXFLAGS) -c -o xprof-PCProfile.obj `if test -f 'PCProfile.C'; then $(CYGPATH_W) 'PCProfile.C'; else $(CYGPATH_W) '$(srcdir)/PCProfile.C'; fi`
 
+xprof-PCProfile.lo: PCProfile.C
+@am__fastdepCXX_TRUE@	if $(LIBTOOL) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(xprof_CXXFLAGS) $(CXXFLAGS) -MT xprof-PCProfile.lo -MD -MP -MF "$(DEPDIR)/xprof-PCProfile.Tpo" -c -o xprof-PCProfile.lo `test -f 'PCProfile.C' || echo '$(srcdir)/'`PCProfile.C; \
+@am__fastdepCXX_TRUE@	then mv -f "$(DEPDIR)/xprof-PCProfile.Tpo" "$(DEPDIR)/xprof-PCProfile.Plo"; else rm -f "$(DEPDIR)/xprof-PCProfile.Tpo"; exit 1; fi
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='PCProfile.C' object='xprof-PCProfile.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	depfile='$(DEPDIR)/xprof-PCProfile.Plo' tmpdepfile='$(DEPDIR)/xprof-PCProfile.TPlo' @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(LIBTOOL) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(xprof_CXXFLAGS) $(CXXFLAGS) -c -o xprof-PCProfile.lo `test -f 'PCProfile.C' || echo '$(srcdir)/'`PCProfile.C
+
 xprof-PCProfileFilter.o: PCProfileFilter.C
 @am__fastdepCXX_TRUE@	if $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(xprof_CXXFLAGS) $(CXXFLAGS) -MT xprof-PCProfileFilter.o -MD -MP -MF "$(DEPDIR)/xprof-PCProfileFilter.Tpo" -c -o xprof-PCProfileFilter.o `test -f 'PCProfileFilter.C' || echo '$(srcdir)/'`PCProfileFilter.C; \
 @am__fastdepCXX_TRUE@	then mv -f "$(DEPDIR)/xprof-PCProfileFilter.Tpo" "$(DEPDIR)/xprof-PCProfileFilter.Po"; else rm -f "$(DEPDIR)/xprof-PCProfileFilter.Tpo"; exit 1; fi
@@ -574,6 +678,14 @@ xprof-PCProfileFilter.obj: PCProfileFilter.C
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	depfile='$(DEPDIR)/xprof-PCProfileFilter.Po' tmpdepfile='$(DEPDIR)/xprof-PCProfileFilter.TPo' @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(xprof_CXXFLAGS) $(CXXFLAGS) -c -o xprof-PCProfileFilter.obj `if test -f 'PCProfileFilter.C'; then $(CYGPATH_W) 'PCProfileFilter.C'; else $(CYGPATH_W) '$(srcdir)/PCProfileFilter.C'; fi`
+
+xprof-PCProfileFilter.lo: PCProfileFilter.C
+@am__fastdepCXX_TRUE@	if $(LIBTOOL) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(xprof_CXXFLAGS) $(CXXFLAGS) -MT xprof-PCProfileFilter.lo -MD -MP -MF "$(DEPDIR)/xprof-PCProfileFilter.Tpo" -c -o xprof-PCProfileFilter.lo `test -f 'PCProfileFilter.C' || echo '$(srcdir)/'`PCProfileFilter.C; \
+@am__fastdepCXX_TRUE@	then mv -f "$(DEPDIR)/xprof-PCProfileFilter.Tpo" "$(DEPDIR)/xprof-PCProfileFilter.Plo"; else rm -f "$(DEPDIR)/xprof-PCProfileFilter.Tpo"; exit 1; fi
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='PCProfileFilter.C' object='xprof-PCProfileFilter.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	depfile='$(DEPDIR)/xprof-PCProfileFilter.Plo' tmpdepfile='$(DEPDIR)/xprof-PCProfileFilter.TPlo' @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(LIBTOOL) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(xprof_CXXFLAGS) $(CXXFLAGS) -c -o xprof-PCProfileFilter.lo `test -f 'PCProfileFilter.C' || echo '$(srcdir)/'`PCProfileFilter.C
 
 xprof-PCProfileMetric.o: PCProfileMetric.C
 @am__fastdepCXX_TRUE@	if $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(xprof_CXXFLAGS) $(CXXFLAGS) -MT xprof-PCProfileMetric.o -MD -MP -MF "$(DEPDIR)/xprof-PCProfileMetric.Tpo" -c -o xprof-PCProfileMetric.o `test -f 'PCProfileMetric.C' || echo '$(srcdir)/'`PCProfileMetric.C; \
@@ -591,6 +703,14 @@ xprof-PCProfileMetric.obj: PCProfileMetric.C
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(xprof_CXXFLAGS) $(CXXFLAGS) -c -o xprof-PCProfileMetric.obj `if test -f 'PCProfileMetric.C'; then $(CYGPATH_W) 'PCProfileMetric.C'; else $(CYGPATH_W) '$(srcdir)/PCProfileMetric.C'; fi`
 
+xprof-PCProfileMetric.lo: PCProfileMetric.C
+@am__fastdepCXX_TRUE@	if $(LIBTOOL) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(xprof_CXXFLAGS) $(CXXFLAGS) -MT xprof-PCProfileMetric.lo -MD -MP -MF "$(DEPDIR)/xprof-PCProfileMetric.Tpo" -c -o xprof-PCProfileMetric.lo `test -f 'PCProfileMetric.C' || echo '$(srcdir)/'`PCProfileMetric.C; \
+@am__fastdepCXX_TRUE@	then mv -f "$(DEPDIR)/xprof-PCProfileMetric.Tpo" "$(DEPDIR)/xprof-PCProfileMetric.Plo"; else rm -f "$(DEPDIR)/xprof-PCProfileMetric.Tpo"; exit 1; fi
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='PCProfileMetric.C' object='xprof-PCProfileMetric.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	depfile='$(DEPDIR)/xprof-PCProfileMetric.Plo' tmpdepfile='$(DEPDIR)/xprof-PCProfileMetric.TPlo' @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(LIBTOOL) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(xprof_CXXFLAGS) $(CXXFLAGS) -c -o xprof-PCProfileMetric.lo `test -f 'PCProfileMetric.C' || echo '$(srcdir)/'`PCProfileMetric.C
+
 xprof-ProfileReader.o: ProfileReader.C
 @am__fastdepCXX_TRUE@	if $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(xprof_CXXFLAGS) $(CXXFLAGS) -MT xprof-ProfileReader.o -MD -MP -MF "$(DEPDIR)/xprof-ProfileReader.Tpo" -c -o xprof-ProfileReader.o `test -f 'ProfileReader.C' || echo '$(srcdir)/'`ProfileReader.C; \
 @am__fastdepCXX_TRUE@	then mv -f "$(DEPDIR)/xprof-ProfileReader.Tpo" "$(DEPDIR)/xprof-ProfileReader.Po"; else rm -f "$(DEPDIR)/xprof-ProfileReader.Tpo"; exit 1; fi
@@ -607,6 +727,14 @@ xprof-ProfileReader.obj: ProfileReader.C
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(xprof_CXXFLAGS) $(CXXFLAGS) -c -o xprof-ProfileReader.obj `if test -f 'ProfileReader.C'; then $(CYGPATH_W) 'ProfileReader.C'; else $(CYGPATH_W) '$(srcdir)/ProfileReader.C'; fi`
 
+xprof-ProfileReader.lo: ProfileReader.C
+@am__fastdepCXX_TRUE@	if $(LIBTOOL) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(xprof_CXXFLAGS) $(CXXFLAGS) -MT xprof-ProfileReader.lo -MD -MP -MF "$(DEPDIR)/xprof-ProfileReader.Tpo" -c -o xprof-ProfileReader.lo `test -f 'ProfileReader.C' || echo '$(srcdir)/'`ProfileReader.C; \
+@am__fastdepCXX_TRUE@	then mv -f "$(DEPDIR)/xprof-ProfileReader.Tpo" "$(DEPDIR)/xprof-ProfileReader.Plo"; else rm -f "$(DEPDIR)/xprof-ProfileReader.Tpo"; exit 1; fi
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='ProfileReader.C' object='xprof-ProfileReader.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	depfile='$(DEPDIR)/xprof-ProfileReader.Plo' tmpdepfile='$(DEPDIR)/xprof-ProfileReader.TPlo' @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(LIBTOOL) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(xprof_CXXFLAGS) $(CXXFLAGS) -c -o xprof-ProfileReader.lo `test -f 'ProfileReader.C' || echo '$(srcdir)/'`ProfileReader.C
+
 xprof-ProfileWriter.o: ProfileWriter.C
 @am__fastdepCXX_TRUE@	if $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(xprof_CXXFLAGS) $(CXXFLAGS) -MT xprof-ProfileWriter.o -MD -MP -MF "$(DEPDIR)/xprof-ProfileWriter.Tpo" -c -o xprof-ProfileWriter.o `test -f 'ProfileWriter.C' || echo '$(srcdir)/'`ProfileWriter.C; \
 @am__fastdepCXX_TRUE@	then mv -f "$(DEPDIR)/xprof-ProfileWriter.Tpo" "$(DEPDIR)/xprof-ProfileWriter.Po"; else rm -f "$(DEPDIR)/xprof-ProfileWriter.Tpo"; exit 1; fi
@@ -622,6 +750,23 @@ xprof-ProfileWriter.obj: ProfileWriter.C
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	depfile='$(DEPDIR)/xprof-ProfileWriter.Po' tmpdepfile='$(DEPDIR)/xprof-ProfileWriter.TPo' @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(xprof_CXXFLAGS) $(CXXFLAGS) -c -o xprof-ProfileWriter.obj `if test -f 'ProfileWriter.C'; then $(CYGPATH_W) 'ProfileWriter.C'; else $(CYGPATH_W) '$(srcdir)/ProfileWriter.C'; fi`
+
+xprof-ProfileWriter.lo: ProfileWriter.C
+@am__fastdepCXX_TRUE@	if $(LIBTOOL) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(xprof_CXXFLAGS) $(CXXFLAGS) -MT xprof-ProfileWriter.lo -MD -MP -MF "$(DEPDIR)/xprof-ProfileWriter.Tpo" -c -o xprof-ProfileWriter.lo `test -f 'ProfileWriter.C' || echo '$(srcdir)/'`ProfileWriter.C; \
+@am__fastdepCXX_TRUE@	then mv -f "$(DEPDIR)/xprof-ProfileWriter.Tpo" "$(DEPDIR)/xprof-ProfileWriter.Plo"; else rm -f "$(DEPDIR)/xprof-ProfileWriter.Tpo"; exit 1; fi
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='ProfileWriter.C' object='xprof-ProfileWriter.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	depfile='$(DEPDIR)/xprof-ProfileWriter.Plo' tmpdepfile='$(DEPDIR)/xprof-ProfileWriter.TPlo' @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(LIBTOOL) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(xprof_CXXFLAGS) $(CXXFLAGS) -c -o xprof-ProfileWriter.lo `test -f 'ProfileWriter.C' || echo '$(srcdir)/'`ProfileWriter.C
+
+mostlyclean-libtool:
+	-rm -f *.lo
+
+clean-libtool:
+	-rm -rf .libs _libs
+
+distclean-libtool:
+	-rm -f libtool
 uninstall-info-am:
 
 ID: $(HEADERS) $(SOURCES) $(LISP) $(TAGS_FILES)
@@ -734,13 +879,13 @@ maintainer-clean-generic:
 	@echo "it deletes files that may require special tools to rebuild."
 clean: clean-am
 
-clean-am: clean-binPROGRAMS clean-generic mostlyclean-am
+clean-am: clean-binPROGRAMS clean-generic clean-libtool mostlyclean-am
 
 distclean: distclean-am
 	-rm -rf ./$(DEPDIR)
 	-rm -f Makefile
 distclean-am: clean-am distclean-compile distclean-generic \
-	distclean-tags
+	distclean-libtool distclean-tags
 
 dvi: dvi-am
 
@@ -769,7 +914,8 @@ maintainer-clean-am: distclean-am maintainer-clean-generic
 
 mostlyclean: mostlyclean-am
 
-mostlyclean-am: mostlyclean-compile mostlyclean-generic
+mostlyclean-am: mostlyclean-compile mostlyclean-generic \
+	mostlyclean-libtool
 
 pdf: pdf-am
 
@@ -782,15 +928,16 @@ ps-am:
 uninstall-am: uninstall-binPROGRAMS uninstall-info-am
 
 .PHONY: CTAGS GTAGS all all-am check check-am clean clean-binPROGRAMS \
-	clean-generic ctags distclean distclean-compile \
-	distclean-generic distclean-tags distdir dvi dvi-am html \
-	html-am info info-am install install-am install-binPROGRAMS \
-	install-data install-data-am install-exec install-exec-am \
-	install-info install-info-am install-man install-strip \
-	installcheck installcheck-am installdirs maintainer-clean \
-	maintainer-clean-generic mostlyclean mostlyclean-compile \
-	mostlyclean-generic pdf pdf-am ps ps-am tags uninstall \
-	uninstall-am uninstall-binPROGRAMS uninstall-info-am
+	clean-generic clean-libtool ctags distclean distclean-compile \
+	distclean-generic distclean-libtool distclean-tags distdir dvi \
+	dvi-am html html-am info info-am install install-am \
+	install-binPROGRAMS install-data install-data-am install-exec \
+	install-exec-am install-info install-info-am install-man \
+	install-strip installcheck installcheck-am installdirs \
+	maintainer-clean maintainer-clean-generic mostlyclean \
+	mostlyclean-compile mostlyclean-generic mostlyclean-libtool \
+	pdf pdf-am ps ps-am tags uninstall uninstall-am \
+	uninstall-binPROGRAMS uninstall-info-am
 
 
 #############################################################################

@@ -109,7 +109,6 @@ am__configure_deps = $(am__aclocal_m4_deps) $(CONFIGURE_DEPENDENCIES) \
 mkinstalldirs = $(SHELL) $(top_srcdir)/config/mkinstalldirs
 CONFIG_CLEAN_FILES =
 LIBRARIES = $(noinst_LIBRARIES)
-AR = ar
 ARFLAGS = cru
 am__DEPENDENCIES_1 =
 libHPCbinutils_a_DEPENDENCIES = $(am__DEPENDENCIES_1)
@@ -134,13 +133,20 @@ am__depfiles_maybe = depfiles
 @AMDEP_TRUE@	./$(DEPDIR)/libHPCbinutils_a-Section.Po
 CXXCOMPILE = $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) \
 	$(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS)
+LTCXXCOMPILE = $(LIBTOOL) --mode=compile $(CXX) $(DEFS) \
+	$(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) \
+	$(AM_CXXFLAGS) $(CXXFLAGS)
 CXXLD = $(CXX)
-CXXLINK = $(CXXLD) $(AM_CXXFLAGS) $(CXXFLAGS) $(AM_LDFLAGS) $(LDFLAGS) \
-	-o $@
+CXXLINK = $(LIBTOOL) --mode=link $(CXXLD) $(AM_CXXFLAGS) $(CXXFLAGS) \
+	$(AM_LDFLAGS) $(LDFLAGS) -o $@
 COMPILE = $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
 	$(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
+LTCOMPILE = $(LIBTOOL) --mode=compile $(CC) $(DEFS) \
+	$(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) \
+	$(AM_CFLAGS) $(CFLAGS)
 CCLD = $(CC)
-LINK = $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) $(LDFLAGS) -o $@
+LINK = $(LIBTOOL) --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
+	$(AM_LDFLAGS) $(LDFLAGS) -o $@
 SOURCES = $(libHPCbinutils_a_SOURCES)
 DIST_SOURCES = $(libHPCbinutils_a_SOURCES)
 ETAGS = etags
@@ -150,6 +156,7 @@ ACLOCAL = @ACLOCAL@
 AMDEP_FALSE = @AMDEP_FALSE@
 AMDEP_TRUE = @AMDEP_TRUE@
 AMTAR = @AMTAR@
+AR = @AR@
 AUTOCONF = @AUTOCONF@
 AUTOHEADER = @AUTOHEADER@
 AUTOMAKE = @AUTOMAKE@
@@ -157,6 +164,7 @@ AWK = @AWK@
 CC = @CC@
 CCDEPMODE = @CCDEPMODE@
 CFLAGS = @CFLAGS@
+CPP = @CPP@
 CPPFLAGS = @CPPFLAGS@
 CXX = @CXX@
 CXXCPP = @CXXCPP@
@@ -165,19 +173,25 @@ CXXFLAGS = @CXXFLAGS@
 CYGPATH_W = @CYGPATH_W@
 DEFS = @DEFS@
 DEPDIR = @DEPDIR@
+ECHO = @ECHO@
 ECHO_C = @ECHO_C@
 ECHO_N = @ECHO_N@
 ECHO_T = @ECHO_T@
 EGREP = @EGREP@
 EXEEXT = @EXEEXT@
-GNUBINUTIL_IFLAGS = @GNUBINUTIL_IFLAGS@
-GNUBINUTIL_LDFLAGS = @GNUBINUTIL_LDFLAGS@
+F77 = @F77@
+FFLAGS = @FFLAGS@
+GNUBINUTILS_IFLAGS = @GNUBINUTILS_IFLAGS@
+GNUBINUTILS_LDFLAGS = @GNUBINUTILS_LDFLAGS@
 HOST_AR = @HOST_AR@
 HOST_BLOOP_LDFLAGS = @HOST_BLOOP_LDFLAGS@
 HOST_CFLAGS = @HOST_CFLAGS@
 HOST_CXXFLAGS = @HOST_CXXFLAGS@
+HOST_HPCPROF_LDFLAGS = @HOST_HPCPROF_LDFLAGS@
+HOST_HPCRUN_LDFLAGS = @HOST_HPCRUN_LDFLAGS@
 HOST_HPCVIEW_LDFLAGS = @HOST_HPCVIEW_LDFLAGS@
 HOST_LIBTREPOSITORY = @HOST_LIBTREPOSITORY@
+HOST_LINK_NO_START_FILES = @HOST_LINK_NO_START_FILES@
 HOST_XCSPROF_LDFLAGS = @HOST_XCSPROF_LDFLAGS@
 HOST_XPROF_LDFLAGS = @HOST_XPROF_LDFLAGS@
 HPCTOOLKIT_PLATFORM = @HPCTOOLKIT_PLATFORM@
@@ -190,13 +204,23 @@ IS_HOST_AR_TRUE = @IS_HOST_AR_TRUE@
 LDFLAGS = @LDFLAGS@
 LIBOBJS = @LIBOBJS@
 LIBS = @LIBS@
+LIBTOOL = @LIBTOOL@
+LN_S = @LN_S@
 LTLIBOBJS = @LTLIBOBJS@
 MAKEINFO = @MAKEINFO@
 OA_IFLAGS = @OA_IFLAGS@
 OA_LDFLAGS = @OA_LDFLAGS@
 OBJEXT = @OBJEXT@
-OPT_DEVELOP_FALSE = @OPT_DEVELOP_FALSE@
-OPT_DEVELOP_TRUE = @OPT_DEVELOP_TRUE@
+OPT_ENABLE_DEVELOP_FALSE = @OPT_ENABLE_DEVELOP_FALSE@
+OPT_ENABLE_DEVELOP_TRUE = @OPT_ENABLE_DEVELOP_TRUE@
+OPT_ENABLE_HPCRUN_FALSE = @OPT_ENABLE_HPCRUN_FALSE@
+OPT_ENABLE_HPCRUN_TRUE = @OPT_ENABLE_HPCRUN_TRUE@
+OPT_HAVE_PAPI_FALSE = @OPT_HAVE_PAPI_FALSE@
+OPT_HAVE_PAPI_TRUE = @OPT_HAVE_PAPI_TRUE@
+OPT_PAPI_DLOPEN = @OPT_PAPI_DLOPEN@
+OPT_PAPI_IFLAGS = @OPT_PAPI_IFLAGS@
+OPT_PAPI_LDFLAGS = @OPT_PAPI_LDFLAGS@
+OPT_PAPI_LIBPATH = @OPT_PAPI_LIBPATH@
 PACKAGE = @PACKAGE@
 PACKAGE_BUGREPORT = @PACKAGE_BUGREPORT@
 PACKAGE_NAME = @PACKAGE_NAME@
@@ -212,8 +236,10 @@ VERSION = @VERSION@
 XERCES = @XERCES@
 XERCES_IFLAGS = @XERCES_IFLAGS@
 XERCES_LDFLAGS = @XERCES_LDFLAGS@
+ac_ct_AR = @ac_ct_AR@
 ac_ct_CC = @ac_ct_CC@
 ac_ct_CXX = @ac_ct_CXX@
+ac_ct_F77 = @ac_ct_F77@
 ac_ct_RANLIB = @ac_ct_RANLIB@
 ac_ct_STRIP = @ac_ct_STRIP@
 am__fastdepCC_FALSE = @am__fastdepCC_FALSE@
@@ -295,8 +321,8 @@ MYSOURCES = \
 	Procedure.h Procedure.C \
 	Section.h Section.C
 
-MYCFLAGS = @HOST_CFLAGS@   $(HPC_IFLAGS) @GNUBINUTIL_IFLAGS@
-MYCXXFLAGS = @HOST_CXXFLAGS@ $(HPC_IFLAGS) @GNUBINUTIL_IFLAGS@
+MYCFLAGS = @HOST_CFLAGS@   $(HPC_IFLAGS) @GNUBINUTILS_IFLAGS@
+MYCXXFLAGS = @HOST_CXXFLAGS@ $(HPC_IFLAGS) @GNUBINUTILS_IFLAGS@
 @IS_HOST_AR_FALSE@MYAR = $(AR) cru
 @IS_HOST_AR_TRUE@MYAR = @HOST_AR@
 MYLIBADD = @HOST_LIBTREPOSITORY@
@@ -321,7 +347,7 @@ MYCPPFLAGS_CC = $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) \
 all: all-am
 
 .SUFFIXES:
-.SUFFIXES: .C .o .obj
+.SUFFIXES: .C .lo .o .obj
 $(srcdir)/Makefile.in:  $(srcdir)/Makefile.am $(top_srcdir)/src/Makeinclude.config $(top_srcdir)/src/Makeinclude.rules $(am__configure_deps)
 	@for dep in $?; do \
 	  case '$(am__configure_deps)' in \
@@ -389,6 +415,14 @@ distclean-compile:
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(CXXCOMPILE) -c -o $@ `$(CYGPATH_W) '$<'`
 
+.C.lo:
+@am__fastdepCXX_TRUE@	if $(LTCXXCOMPILE) -MT $@ -MD -MP -MF "$(DEPDIR)/$*.Tpo" -c -o $@ $<; \
+@am__fastdepCXX_TRUE@	then mv -f "$(DEPDIR)/$*.Tpo" "$(DEPDIR)/$*.Plo"; else rm -f "$(DEPDIR)/$*.Tpo"; exit 1; fi
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='$<' object='$@' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	depfile='$(DEPDIR)/$*.Plo' tmpdepfile='$(DEPDIR)/$*.TPlo' @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(LTCXXCOMPILE) -c -o $@ $<
+
 libHPCbinutils_a-BinUtils.o: BinUtils.C
 @am__fastdepCXX_TRUE@	if $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCbinutils_a_CXXFLAGS) $(CXXFLAGS) -MT libHPCbinutils_a-BinUtils.o -MD -MP -MF "$(DEPDIR)/libHPCbinutils_a-BinUtils.Tpo" -c -o libHPCbinutils_a-BinUtils.o `test -f 'BinUtils.C' || echo '$(srcdir)/'`BinUtils.C; \
 @am__fastdepCXX_TRUE@	then mv -f "$(DEPDIR)/libHPCbinutils_a-BinUtils.Tpo" "$(DEPDIR)/libHPCbinutils_a-BinUtils.Po"; else rm -f "$(DEPDIR)/libHPCbinutils_a-BinUtils.Tpo"; exit 1; fi
@@ -404,6 +438,14 @@ libHPCbinutils_a-BinUtils.obj: BinUtils.C
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	depfile='$(DEPDIR)/libHPCbinutils_a-BinUtils.Po' tmpdepfile='$(DEPDIR)/libHPCbinutils_a-BinUtils.TPo' @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCbinutils_a_CXXFLAGS) $(CXXFLAGS) -c -o libHPCbinutils_a-BinUtils.obj `if test -f 'BinUtils.C'; then $(CYGPATH_W) 'BinUtils.C'; else $(CYGPATH_W) '$(srcdir)/BinUtils.C'; fi`
+
+libHPCbinutils_a-BinUtils.lo: BinUtils.C
+@am__fastdepCXX_TRUE@	if $(LIBTOOL) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCbinutils_a_CXXFLAGS) $(CXXFLAGS) -MT libHPCbinutils_a-BinUtils.lo -MD -MP -MF "$(DEPDIR)/libHPCbinutils_a-BinUtils.Tpo" -c -o libHPCbinutils_a-BinUtils.lo `test -f 'BinUtils.C' || echo '$(srcdir)/'`BinUtils.C; \
+@am__fastdepCXX_TRUE@	then mv -f "$(DEPDIR)/libHPCbinutils_a-BinUtils.Tpo" "$(DEPDIR)/libHPCbinutils_a-BinUtils.Plo"; else rm -f "$(DEPDIR)/libHPCbinutils_a-BinUtils.Tpo"; exit 1; fi
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='BinUtils.C' object='libHPCbinutils_a-BinUtils.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	depfile='$(DEPDIR)/libHPCbinutils_a-BinUtils.Plo' tmpdepfile='$(DEPDIR)/libHPCbinutils_a-BinUtils.TPlo' @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(LIBTOOL) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCbinutils_a_CXXFLAGS) $(CXXFLAGS) -c -o libHPCbinutils_a-BinUtils.lo `test -f 'BinUtils.C' || echo '$(srcdir)/'`BinUtils.C
 
 libHPCbinutils_a-Instruction.o: Instruction.C
 @am__fastdepCXX_TRUE@	if $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCbinutils_a_CXXFLAGS) $(CXXFLAGS) -MT libHPCbinutils_a-Instruction.o -MD -MP -MF "$(DEPDIR)/libHPCbinutils_a-Instruction.Tpo" -c -o libHPCbinutils_a-Instruction.o `test -f 'Instruction.C' || echo '$(srcdir)/'`Instruction.C; \
@@ -421,6 +463,14 @@ libHPCbinutils_a-Instruction.obj: Instruction.C
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCbinutils_a_CXXFLAGS) $(CXXFLAGS) -c -o libHPCbinutils_a-Instruction.obj `if test -f 'Instruction.C'; then $(CYGPATH_W) 'Instruction.C'; else $(CYGPATH_W) '$(srcdir)/Instruction.C'; fi`
 
+libHPCbinutils_a-Instruction.lo: Instruction.C
+@am__fastdepCXX_TRUE@	if $(LIBTOOL) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCbinutils_a_CXXFLAGS) $(CXXFLAGS) -MT libHPCbinutils_a-Instruction.lo -MD -MP -MF "$(DEPDIR)/libHPCbinutils_a-Instruction.Tpo" -c -o libHPCbinutils_a-Instruction.lo `test -f 'Instruction.C' || echo '$(srcdir)/'`Instruction.C; \
+@am__fastdepCXX_TRUE@	then mv -f "$(DEPDIR)/libHPCbinutils_a-Instruction.Tpo" "$(DEPDIR)/libHPCbinutils_a-Instruction.Plo"; else rm -f "$(DEPDIR)/libHPCbinutils_a-Instruction.Tpo"; exit 1; fi
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='Instruction.C' object='libHPCbinutils_a-Instruction.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	depfile='$(DEPDIR)/libHPCbinutils_a-Instruction.Plo' tmpdepfile='$(DEPDIR)/libHPCbinutils_a-Instruction.TPlo' @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(LIBTOOL) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCbinutils_a_CXXFLAGS) $(CXXFLAGS) -c -o libHPCbinutils_a-Instruction.lo `test -f 'Instruction.C' || echo '$(srcdir)/'`Instruction.C
+
 libHPCbinutils_a-LoadModule.o: LoadModule.C
 @am__fastdepCXX_TRUE@	if $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCbinutils_a_CXXFLAGS) $(CXXFLAGS) -MT libHPCbinutils_a-LoadModule.o -MD -MP -MF "$(DEPDIR)/libHPCbinutils_a-LoadModule.Tpo" -c -o libHPCbinutils_a-LoadModule.o `test -f 'LoadModule.C' || echo '$(srcdir)/'`LoadModule.C; \
 @am__fastdepCXX_TRUE@	then mv -f "$(DEPDIR)/libHPCbinutils_a-LoadModule.Tpo" "$(DEPDIR)/libHPCbinutils_a-LoadModule.Po"; else rm -f "$(DEPDIR)/libHPCbinutils_a-LoadModule.Tpo"; exit 1; fi
@@ -436,6 +486,14 @@ libHPCbinutils_a-LoadModule.obj: LoadModule.C
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	depfile='$(DEPDIR)/libHPCbinutils_a-LoadModule.Po' tmpdepfile='$(DEPDIR)/libHPCbinutils_a-LoadModule.TPo' @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCbinutils_a_CXXFLAGS) $(CXXFLAGS) -c -o libHPCbinutils_a-LoadModule.obj `if test -f 'LoadModule.C'; then $(CYGPATH_W) 'LoadModule.C'; else $(CYGPATH_W) '$(srcdir)/LoadModule.C'; fi`
+
+libHPCbinutils_a-LoadModule.lo: LoadModule.C
+@am__fastdepCXX_TRUE@	if $(LIBTOOL) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCbinutils_a_CXXFLAGS) $(CXXFLAGS) -MT libHPCbinutils_a-LoadModule.lo -MD -MP -MF "$(DEPDIR)/libHPCbinutils_a-LoadModule.Tpo" -c -o libHPCbinutils_a-LoadModule.lo `test -f 'LoadModule.C' || echo '$(srcdir)/'`LoadModule.C; \
+@am__fastdepCXX_TRUE@	then mv -f "$(DEPDIR)/libHPCbinutils_a-LoadModule.Tpo" "$(DEPDIR)/libHPCbinutils_a-LoadModule.Plo"; else rm -f "$(DEPDIR)/libHPCbinutils_a-LoadModule.Tpo"; exit 1; fi
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='LoadModule.C' object='libHPCbinutils_a-LoadModule.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	depfile='$(DEPDIR)/libHPCbinutils_a-LoadModule.Plo' tmpdepfile='$(DEPDIR)/libHPCbinutils_a-LoadModule.TPlo' @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(LIBTOOL) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCbinutils_a_CXXFLAGS) $(CXXFLAGS) -c -o libHPCbinutils_a-LoadModule.lo `test -f 'LoadModule.C' || echo '$(srcdir)/'`LoadModule.C
 
 libHPCbinutils_a-LoadModuleInfo.o: LoadModuleInfo.C
 @am__fastdepCXX_TRUE@	if $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCbinutils_a_CXXFLAGS) $(CXXFLAGS) -MT libHPCbinutils_a-LoadModuleInfo.o -MD -MP -MF "$(DEPDIR)/libHPCbinutils_a-LoadModuleInfo.Tpo" -c -o libHPCbinutils_a-LoadModuleInfo.o `test -f 'LoadModuleInfo.C' || echo '$(srcdir)/'`LoadModuleInfo.C; \
@@ -453,6 +511,14 @@ libHPCbinutils_a-LoadModuleInfo.obj: LoadModuleInfo.C
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCbinutils_a_CXXFLAGS) $(CXXFLAGS) -c -o libHPCbinutils_a-LoadModuleInfo.obj `if test -f 'LoadModuleInfo.C'; then $(CYGPATH_W) 'LoadModuleInfo.C'; else $(CYGPATH_W) '$(srcdir)/LoadModuleInfo.C'; fi`
 
+libHPCbinutils_a-LoadModuleInfo.lo: LoadModuleInfo.C
+@am__fastdepCXX_TRUE@	if $(LIBTOOL) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCbinutils_a_CXXFLAGS) $(CXXFLAGS) -MT libHPCbinutils_a-LoadModuleInfo.lo -MD -MP -MF "$(DEPDIR)/libHPCbinutils_a-LoadModuleInfo.Tpo" -c -o libHPCbinutils_a-LoadModuleInfo.lo `test -f 'LoadModuleInfo.C' || echo '$(srcdir)/'`LoadModuleInfo.C; \
+@am__fastdepCXX_TRUE@	then mv -f "$(DEPDIR)/libHPCbinutils_a-LoadModuleInfo.Tpo" "$(DEPDIR)/libHPCbinutils_a-LoadModuleInfo.Plo"; else rm -f "$(DEPDIR)/libHPCbinutils_a-LoadModuleInfo.Tpo"; exit 1; fi
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='LoadModuleInfo.C' object='libHPCbinutils_a-LoadModuleInfo.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	depfile='$(DEPDIR)/libHPCbinutils_a-LoadModuleInfo.Plo' tmpdepfile='$(DEPDIR)/libHPCbinutils_a-LoadModuleInfo.TPlo' @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(LIBTOOL) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCbinutils_a_CXXFLAGS) $(CXXFLAGS) -c -o libHPCbinutils_a-LoadModuleInfo.lo `test -f 'LoadModuleInfo.C' || echo '$(srcdir)/'`LoadModuleInfo.C
+
 libHPCbinutils_a-PCToSrcLineMap.o: PCToSrcLineMap.C
 @am__fastdepCXX_TRUE@	if $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCbinutils_a_CXXFLAGS) $(CXXFLAGS) -MT libHPCbinutils_a-PCToSrcLineMap.o -MD -MP -MF "$(DEPDIR)/libHPCbinutils_a-PCToSrcLineMap.Tpo" -c -o libHPCbinutils_a-PCToSrcLineMap.o `test -f 'PCToSrcLineMap.C' || echo '$(srcdir)/'`PCToSrcLineMap.C; \
 @am__fastdepCXX_TRUE@	then mv -f "$(DEPDIR)/libHPCbinutils_a-PCToSrcLineMap.Tpo" "$(DEPDIR)/libHPCbinutils_a-PCToSrcLineMap.Po"; else rm -f "$(DEPDIR)/libHPCbinutils_a-PCToSrcLineMap.Tpo"; exit 1; fi
@@ -468,6 +534,14 @@ libHPCbinutils_a-PCToSrcLineMap.obj: PCToSrcLineMap.C
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	depfile='$(DEPDIR)/libHPCbinutils_a-PCToSrcLineMap.Po' tmpdepfile='$(DEPDIR)/libHPCbinutils_a-PCToSrcLineMap.TPo' @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCbinutils_a_CXXFLAGS) $(CXXFLAGS) -c -o libHPCbinutils_a-PCToSrcLineMap.obj `if test -f 'PCToSrcLineMap.C'; then $(CYGPATH_W) 'PCToSrcLineMap.C'; else $(CYGPATH_W) '$(srcdir)/PCToSrcLineMap.C'; fi`
+
+libHPCbinutils_a-PCToSrcLineMap.lo: PCToSrcLineMap.C
+@am__fastdepCXX_TRUE@	if $(LIBTOOL) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCbinutils_a_CXXFLAGS) $(CXXFLAGS) -MT libHPCbinutils_a-PCToSrcLineMap.lo -MD -MP -MF "$(DEPDIR)/libHPCbinutils_a-PCToSrcLineMap.Tpo" -c -o libHPCbinutils_a-PCToSrcLineMap.lo `test -f 'PCToSrcLineMap.C' || echo '$(srcdir)/'`PCToSrcLineMap.C; \
+@am__fastdepCXX_TRUE@	then mv -f "$(DEPDIR)/libHPCbinutils_a-PCToSrcLineMap.Tpo" "$(DEPDIR)/libHPCbinutils_a-PCToSrcLineMap.Plo"; else rm -f "$(DEPDIR)/libHPCbinutils_a-PCToSrcLineMap.Tpo"; exit 1; fi
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='PCToSrcLineMap.C' object='libHPCbinutils_a-PCToSrcLineMap.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	depfile='$(DEPDIR)/libHPCbinutils_a-PCToSrcLineMap.Plo' tmpdepfile='$(DEPDIR)/libHPCbinutils_a-PCToSrcLineMap.TPlo' @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(LIBTOOL) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCbinutils_a_CXXFLAGS) $(CXXFLAGS) -c -o libHPCbinutils_a-PCToSrcLineMap.lo `test -f 'PCToSrcLineMap.C' || echo '$(srcdir)/'`PCToSrcLineMap.C
 
 libHPCbinutils_a-Procedure.o: Procedure.C
 @am__fastdepCXX_TRUE@	if $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCbinutils_a_CXXFLAGS) $(CXXFLAGS) -MT libHPCbinutils_a-Procedure.o -MD -MP -MF "$(DEPDIR)/libHPCbinutils_a-Procedure.Tpo" -c -o libHPCbinutils_a-Procedure.o `test -f 'Procedure.C' || echo '$(srcdir)/'`Procedure.C; \
@@ -485,6 +559,14 @@ libHPCbinutils_a-Procedure.obj: Procedure.C
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCbinutils_a_CXXFLAGS) $(CXXFLAGS) -c -o libHPCbinutils_a-Procedure.obj `if test -f 'Procedure.C'; then $(CYGPATH_W) 'Procedure.C'; else $(CYGPATH_W) '$(srcdir)/Procedure.C'; fi`
 
+libHPCbinutils_a-Procedure.lo: Procedure.C
+@am__fastdepCXX_TRUE@	if $(LIBTOOL) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCbinutils_a_CXXFLAGS) $(CXXFLAGS) -MT libHPCbinutils_a-Procedure.lo -MD -MP -MF "$(DEPDIR)/libHPCbinutils_a-Procedure.Tpo" -c -o libHPCbinutils_a-Procedure.lo `test -f 'Procedure.C' || echo '$(srcdir)/'`Procedure.C; \
+@am__fastdepCXX_TRUE@	then mv -f "$(DEPDIR)/libHPCbinutils_a-Procedure.Tpo" "$(DEPDIR)/libHPCbinutils_a-Procedure.Plo"; else rm -f "$(DEPDIR)/libHPCbinutils_a-Procedure.Tpo"; exit 1; fi
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='Procedure.C' object='libHPCbinutils_a-Procedure.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	depfile='$(DEPDIR)/libHPCbinutils_a-Procedure.Plo' tmpdepfile='$(DEPDIR)/libHPCbinutils_a-Procedure.TPlo' @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(LIBTOOL) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCbinutils_a_CXXFLAGS) $(CXXFLAGS) -c -o libHPCbinutils_a-Procedure.lo `test -f 'Procedure.C' || echo '$(srcdir)/'`Procedure.C
+
 libHPCbinutils_a-Section.o: Section.C
 @am__fastdepCXX_TRUE@	if $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCbinutils_a_CXXFLAGS) $(CXXFLAGS) -MT libHPCbinutils_a-Section.o -MD -MP -MF "$(DEPDIR)/libHPCbinutils_a-Section.Tpo" -c -o libHPCbinutils_a-Section.o `test -f 'Section.C' || echo '$(srcdir)/'`Section.C; \
 @am__fastdepCXX_TRUE@	then mv -f "$(DEPDIR)/libHPCbinutils_a-Section.Tpo" "$(DEPDIR)/libHPCbinutils_a-Section.Po"; else rm -f "$(DEPDIR)/libHPCbinutils_a-Section.Tpo"; exit 1; fi
@@ -500,6 +582,23 @@ libHPCbinutils_a-Section.obj: Section.C
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	depfile='$(DEPDIR)/libHPCbinutils_a-Section.Po' tmpdepfile='$(DEPDIR)/libHPCbinutils_a-Section.TPo' @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCbinutils_a_CXXFLAGS) $(CXXFLAGS) -c -o libHPCbinutils_a-Section.obj `if test -f 'Section.C'; then $(CYGPATH_W) 'Section.C'; else $(CYGPATH_W) '$(srcdir)/Section.C'; fi`
+
+libHPCbinutils_a-Section.lo: Section.C
+@am__fastdepCXX_TRUE@	if $(LIBTOOL) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCbinutils_a_CXXFLAGS) $(CXXFLAGS) -MT libHPCbinutils_a-Section.lo -MD -MP -MF "$(DEPDIR)/libHPCbinutils_a-Section.Tpo" -c -o libHPCbinutils_a-Section.lo `test -f 'Section.C' || echo '$(srcdir)/'`Section.C; \
+@am__fastdepCXX_TRUE@	then mv -f "$(DEPDIR)/libHPCbinutils_a-Section.Tpo" "$(DEPDIR)/libHPCbinutils_a-Section.Plo"; else rm -f "$(DEPDIR)/libHPCbinutils_a-Section.Tpo"; exit 1; fi
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='Section.C' object='libHPCbinutils_a-Section.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	depfile='$(DEPDIR)/libHPCbinutils_a-Section.Plo' tmpdepfile='$(DEPDIR)/libHPCbinutils_a-Section.TPlo' @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(LIBTOOL) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCbinutils_a_CXXFLAGS) $(CXXFLAGS) -c -o libHPCbinutils_a-Section.lo `test -f 'Section.C' || echo '$(srcdir)/'`Section.C
+
+mostlyclean-libtool:
+	-rm -f *.lo
+
+clean-libtool:
+	-rm -rf .libs _libs
+
+distclean-libtool:
+	-rm -f libtool
 uninstall-info-am:
 
 ID: $(HEADERS) $(SOURCES) $(LISP) $(TAGS_FILES)
@@ -609,13 +708,14 @@ maintainer-clean-generic:
 	@echo "it deletes files that may require special tools to rebuild."
 clean: clean-am
 
-clean-am: clean-generic clean-noinstLIBRARIES mostlyclean-am
+clean-am: clean-generic clean-libtool clean-noinstLIBRARIES \
+	mostlyclean-am
 
 distclean: distclean-am
 	-rm -rf ./$(DEPDIR)
 	-rm -f Makefile
 distclean-am: clean-am distclean-compile distclean-generic \
-	distclean-tags
+	distclean-libtool distclean-tags
 
 dvi: dvi-am
 
@@ -644,7 +744,8 @@ maintainer-clean-am: distclean-am maintainer-clean-generic
 
 mostlyclean: mostlyclean-am
 
-mostlyclean-am: mostlyclean-compile mostlyclean-generic
+mostlyclean-am: mostlyclean-compile mostlyclean-generic \
+	mostlyclean-libtool
 
 pdf: pdf-am
 
@@ -657,15 +758,16 @@ ps-am:
 uninstall-am: uninstall-info-am
 
 .PHONY: CTAGS GTAGS all all-am check check-am clean clean-generic \
-	clean-noinstLIBRARIES ctags distclean distclean-compile \
-	distclean-generic distclean-tags distdir dvi dvi-am html \
-	html-am info info-am install install-am install-data \
-	install-data-am install-exec install-exec-am install-info \
-	install-info-am install-man install-strip installcheck \
-	installcheck-am installdirs maintainer-clean \
-	maintainer-clean-generic mostlyclean mostlyclean-compile \
-	mostlyclean-generic pdf pdf-am ps ps-am tags uninstall \
-	uninstall-am uninstall-info-am
+	clean-libtool clean-noinstLIBRARIES ctags distclean \
+	distclean-compile distclean-generic distclean-libtool \
+	distclean-tags distdir dvi dvi-am html html-am info info-am \
+	install install-am install-data install-data-am install-exec \
+	install-exec-am install-info install-info-am install-man \
+	install-strip installcheck installcheck-am installdirs \
+	maintainer-clean maintainer-clean-generic mostlyclean \
+	mostlyclean-compile mostlyclean-generic mostlyclean-libtool \
+	pdf pdf-am ps ps-am tags uninstall uninstall-am \
+	uninstall-info-am
 
 
 #############################################################################
