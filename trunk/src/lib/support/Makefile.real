@@ -63,6 +63,7 @@ VPATH = $(SRCS)
 # objects are placed wherever the compilation is done
 CXX_OBJS = \
 	Assertion.o \
+	CmdLineParser.o \
 	DumpMsgHandler.o \
 	Files.o \
 	HashTable.o \
