@@ -153,7 +153,8 @@ String::String(const String& copyString)
   strcpy(stringText, copyString.stringText);
 }
 
-String::String(long i) 
+void
+String::ctor(long i) 
 {
    int sign = 0;
    long absi = i;
@@ -170,7 +171,8 @@ String::String(long i)
    itoa(i, stringText); 
 }
 
-String::String(unsigned long l, bool hex)
+void
+String::ctor(unsigned long l, bool hex)
 {
   if (hex) {
     // eraxxon: make this stuff obsolete

@@ -199,10 +199,14 @@ class String
       String(double d); 
         // construct from double
 
-      String(long i); 
+      String(int i)  { ctor((long)i); }
+      String(long i) { ctor(i); }
         // construct from int/long value 
 
-      String(unsigned long i, bool hex = false); 
+      String(unsigned int i,  bool hex = false) 
+	{ ctor((unsigned long)i, hex); }
+      String(unsigned long i, bool hex = false) 
+	{ ctor(i, hex); }
         // construct from unsigned long value (setting 'hex' converts
         // to hex representation, (e.g. pointer))
 
@@ -344,6 +348,10 @@ class String
       // Dumping
       //----------------------------------------
       void Dump(const char* indent = "") const;
+
+   protected:
+      void ctor(long i);
+      void ctor(unsigned long l, bool hex);
 
    protected:
       char* stringText;
