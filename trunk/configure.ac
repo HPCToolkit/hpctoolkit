@@ -196,7 +196,8 @@ OPT_PAPI=
 OPT_PAPI_IFLAGS=
 OPT_PAPI_LIBPATH=
 OPT_PAPI_LDFLAGS=
-OPT_PAPI_DLOPEN=
+OPT_PAPI_LIBSO=
+OPT_PAPI_LIBA=
 
 AC_ARG_WITH([papi],
   AC_HELP_STRING([--with-papi=<papi_install_path>],
@@ -238,13 +239,14 @@ fi
 
 if test -n "${OPT_PAPI_LIBPATH}" ; then
   OPT_PAPI_LDFLAGS="-L${OPT_PAPI_LIBPATH} -lpapi"
-  OPT_PAPI_DLOPEN="${OPT_PAPI_LIBPATH}/libpapi.so"
+  OPT_PAPI_LIBSO="${OPT_PAPI_LIBPATH}/libpapi.so"
+  OPT_PAPI_LIBA="${OPT_PAPI_LIBPATH}/libpapi.a"
 fi
 
 # Check for PAPI > 3.0 [skip for now]
 
 if test "${OPT_HAVE_PAPI}" = "yes"; then 
-  AC_MSG_RESULT([yes (${OPT_PAPI_DLOPEN})])
+  AC_MSG_RESULT([yes (${OPT_PAPI_LIBSO})])
 else
   AC_MSG_RESULT([no])
 fi
@@ -253,7 +255,8 @@ AM_CONDITIONAL(OPT_HAVE_PAPI, test "${OPT_HAVE_PAPI}" = "yes")
 AC_SUBST(OPT_PAPI_IFLAGS)
 AC_SUBST(OPT_PAPI_LIBPATH)
 AC_SUBST(OPT_PAPI_LDFLAGS)
-AC_SUBST(OPT_PAPI_DLOPEN)
+AC_SUBST(OPT_PAPI_LIBSO)
+AC_SUBST(OPT_PAPI_LIBA)
 
 
 #-------------------------------------------------
