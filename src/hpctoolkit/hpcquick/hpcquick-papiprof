@@ -1,0 +1,602 @@
+#! /usr/bin/env perl
+
+# Note: Using the following 'fool proof' method of starting Perl will
+# cause problems unless HPCTOOLKIT stuff has been added to the shell
+# initialization file.  The exec will start a new shell and 'hpqquick' will
+# not be found unless shell's initialization file sets the PATH.  This
+# is probably not what we want.
+
+#eval '(exit $?0)' && eval 'exec perl -S $0 ${1+"$@"}'
+#& eval 'exec perl -S $0 $argv:q'
+#if 0;
+
+## $Id$
+## * BeginRiceCopyright *****************************************************
+## 
+## Copyright ((c)) 2002, Rice University 
+## All rights reserved.
+## 
+## Redistribution and use in source and binary forms, with or without
+## modification, are permitted provided that the following conditions are
+## met:
+## 
+## * Redistributions of source code must retain the above copyright
+##   notice, this list of conditions and the following disclaimer.
+## 
+## * Redistributions in binary form must reproduce the above copyright
+##   notice, this list of conditions and the following disclaimer in the
+##   documentation and/or other materials provided with the distribution.
+## 
+## * Neither the name of Rice University (RICE) nor the names of its
+##   contributors may be used to endorse or promote products derived from
+##   this software without specific prior written permission.
+## 
+## This software is provided by RICE and contributors "as is" and any
+## express or implied warranties, including, but not limited to, the
+## implied warranties of merchantability and fitness for a particular
+## purpose are disclaimed. In no event shall RICE or contributors be
+## liable for any direct, indirect, incidental, special, exemplary, or
+## consequential damages (including, but not limited to, procurement of
+## substitute goods or services; loss of use, data, or profits; or
+## business interruption) however caused and on any theory of liability,
+## whether in contract, strict liability, or tort (including negligence
+## or otherwise) arising in any way out of the use of this software, even
+## if advised of the possibility of such damage. 
+## 
+## ******************************************************* EndRiceCopyright *
+
+
+# ----------------------------------------------------------------------
+#
+# hpcquick  -- R. Fowler  July, 2000
+#   
+# A Perl script to help new users get started quickly with 'hpcview'.
+# This script processes ssrun data files, creates a simple configuration 
+# file and runs 'hpcview' using that configuration.
+# 
+# THIS VERSION IS INTENDED FOR USE ON SGI R10K and R12K or
+# COMPAQ/ALPHA MACHINES ONLY.
+# 
+# To get started --
+#   -1.  Set the environment variable $HPCTOOLKIT to the installed location
+#        of HPCToolkit, and execute "source $HPCTOOLKIT/Sourceme-csh" or 
+#        "source $HPCTOOLKIT/Sourceme-sh" to set other environment variables 
+#        and modify your PATH.
+#    0.  Go to the directory in which you want to run your program and
+#        in which you will collect profiling information.
+#    1.  Run your program under ssrun (SGI/MIPS) or uprofile (Compaq/Alpha) 
+#        several times to gather raw data.
+#    2.  Run hpcquick with arguments specifying the paths to your
+#        source code and the names of files output by ssrun.  
+#    3.  Point your web browser at HPCQUICK/index.html.
+#    (4) If the results don't satisfy you, modify the outputs of hpcquick
+#        (a sequence of commands and a 'hpcview' configuration file) to 
+#        do what you need.
+#       
+# Step 1 creates a set of binary files containing your profiling
+#   information.
+# Step 2 converts the binary files into the form expected by
+#   'hpcview'.  It then runs 'hpcview' on those files to create a
+#   subdirectory called HPCQUICK and to fill it with browsable
+#   performance information.
+# Step 3 browses the data.
+#   There are two useful side effects of Step 2.  It echos the stream
+#   of commands it uses to a log file.  It also creates an 'hpcview'
+#   configuration file.  The easy way to migrate to more complex uses
+#   of 'hpcview' (Step 3) is to create a script containing
+#   modifications to the command sequence, and to modify the
+#   configuration file to meet your requirements.
+#
+# ----------------------------------------------------------------------
+
+# ----------------------------------------------------------------------
+
+use HPCToolkitVersionInfo;
+use FileHandle();
+
+#print STDOUT "path $ENV{PATH} \n";
+
+# ----------------------------------------------------------------------
+
+$usage = 
+"Usage: 
+  hpcquick [-V] -I dir1 dir2 ... dirN  [-S structure] 
+           -P binprof1 binprof2 ... binprofM
+  
+Given a list of paths to directories containing interesting program 
+source code files, an optional program structure file created by the
+'bloop' tool, and a list of binary profiles (collected using SGI's 
+ssrun or Compaq/Alpha's uprofile), it will 1) run the vendor prof tool 
+on the binary profile files and translate them using the 'ptran' script; 
+2) use 'hpcview' to generate a database.
+
+  -V: print version information
+  -I: dir1...dirN specify a list of directories -- relative or absolute -- 
+      containing source code to which performance data should be 
+      correlated.  In order to search a directory *and* recursively search 
+      all of its descendents, append an escaped '*' after the last slash,
+      e.g., /mypath/\\*.
+  -S: Optional program structure from 'bloop'.
+  -P: binprof1...binprofM specify a list of binary profile files.
+";
+
+# ----------------------------------------------------------------------
+
+# fields of the  configuration XML file
+
+my %configuration = (
+		     title            => undef,
+		     incDirs          => undef,
+		     expTypes         => undef,
+		     displayNames     => undef,
+		     metrics          => [ ],
+		     dumpFlag         => undef,
+		     );
+
+my %names = (
+	     hashTable  => undef,
+	     total      => 0,
+	     totals     => undef,
+	     indices    => undef,
+	     names      => undef,
+	     );
+
+my %metric = (
+	      expType     => undef,
+	      displayName => undef,
+	      files       => undef,
+	      );
+
+my $pxmlExt        = '.pxml';
+my $ssrunOutputRE = '(.*)\.(\w+)\.([fm]\d+)';
+my $papirunOutputRE = '(.*)\.(.*)\.(.*)\.(\d+)';
+#  my $titleOpt      = '-title';
+## my $configFileOpt = '-config';
+## my $dumpOpt       = '-n';
+## my $groupRE       = '^-grp(=(\w+))?';
+## my $singleRE      = '^-sng(=(\w+))?';
+my $verOpt          = '-V';
+my $incOpt          = '-I';
+my $profOptRE       = '^-P(=(\w+))?';
+my $structOpt       = '-S';
+
+my $argc = $#ARGV;
+my $configFile = "hpcquick.xml";
+my $logFile = "hpcquick.log";
+
+my $profile = "prof";
+my $ptran = "ptran";
+my $remove = "/bin/rm";
+my $tmpFile = ".tmp";
+
+
+#
+# initialize the configuration data structure
+#
+
+# contains included directories
+$configuration{incDirs} = { %names, };
+$configuration{incDirs}->{hashTable} = { };
+$configuration{incDirs}->{totals} = [ ];
+$configuration{incDirs}->{indices} = [ ];
+$configuration{incDirs}->{names} = [ ];
+
+# includes all different experiment types
+$configuration{expTypes} = { %names, };
+$configuration{expTypes}->{hashTable} = { };
+$configuration{expTypes}->{totals} = [ ];
+$configuration{expTypes}->{indices} = [ ];
+$configuration{expTypes}->{names} = [ ];
+
+# includes all different display names
+$configuration{displayNames} = { %names, };
+$configuration{displayNames}->{hashTable} = { };
+$configuration{displayNames}->{totals} = [ ];
+$configuration{displayNames}->{indices} = [ ];
+$configuration{displayNames}->{names} = [ ];
+
+# includes information for each metric
+$configuration{metrics} = [ ];
+$structFile = "";
+$single = 0;
+
+#
+# process the command line arguments
+#
+
+if ($argc < 0) {
+    printUsageAndExit($0);
+}
+
+my $i = 0;
+while ($i <= $argc) {
+
+  # version option
+  if ($ARGV[$i] eq $verOpt) {
+      printVersionAndExit($0);
+  }
+  # program structure option
+  if ($ARGV[$i] eq $structOpt) {
+      $structFile = $ARGV[$i + 1];
+      $i++;
+  }
+  # included directory option
+  elsif ($ARGV[$i] eq $incOpt) {
+      while (isArgument($ARGV[++$i]) == 1) {
+	  if (!defined($configuration{incDirs}->{hashTable}->{$ARGV[$i]})) {
+	      print STDOUT "path: $ARGV[$i]\n";
+	      if (isValidSrcPath($ARGV[$i])) {
+		  $configuration{incDirs}->{total}++;
+		  $configuration{incDirs}->{hashTable}->{$ARGV[$i]} = 0;
+		  push @{$configuration{incDirs}->{names}}, $ARGV[$i];
+		  print STDOUT "Adding source path: $ARGV[$i]\n";
+	      }
+	      else {
+		  print STDOUT "Invalid argument to -I : $ARGV[$i], not a directory.\n";
+		  printUsageAndExit($0);
+	      }
+	  }
+      }
+      $i--;
+  }
+  # process profile files.
+  elsif ($ARGV[$i] =~  /$profOptRE/
+	 || $single == 1 && ($ARGV[$i] =~ /$ssrunOutputRE/ 
+	 || $ARGV[$i] =~ /$papirunOutputRE/)) {
+      $single = 1;
+      my $expName = undef;
+      my $expType = undef;
+      my $aMetric = { %metric, };
+      my $fileNames = [ ];
+      
+      # the file name is right after the -sng
+      if ($ARGV[$i] =~ /$profOptRE/) {
+	  $expName = $2;
+	  $expType = findExpType($ARGV[$i + 1]);
+      }
+      # other argument not immediately after -sng
+      else {
+	  $expType = findExpType($ARGV[$i]);
+	  $i--;
+      }
+      if (!defined($expName)) { $expName = $expType; }
+      #print STDOUT "exp type = $expType\n";
+      #print STDOUT "exp name = $expName\n";
+      
+      processMetric(\%configuration, $aMetric, $expType, $expName);
+      
+      # test whether the file exists
+      if (isArgument($ARGV[++$i]) == 1 && $ARGV[$i] =~ /$ssrunOutputRE/
+	  && -e $ARGV[$i] && -f $ARGV[$i] && -r $ARGV[$i]) {
+	  push @$fileNames, $ARGV[$i];
+	  if (!defined($configuration{title})) {
+	      #  extract the title from the first ssrun file name.
+	      $configuration{title} = findBaseName($ARGV[$i]);
+	  }
+	  print STDOUT "Using performance data from file: $ARGV[$i]\n";
+      } else { 
+	  if (isArgument($ARGV[$i]) == 1 && $ARGV[$i] =~ /$papirunOutputRE/
+	  && -e $ARGV[$i] && -f $ARGV[$i] && -r $ARGV[$i]) {
+	  push @$fileNames, $ARGV[$i];
+	  if (!defined($configuration{title})) {
+	      $configuration{title} = findBaseName($ARGV[$i]);
+	  }
+	  print STDOUT "Using performance data from file: $ARGV[$i]\n";
+          } else {
+	     print STDOUT "Invalid or non-existent profile file: $ARGV[$i]\n";
+	     printUsageAndExit($0);
+          }
+      }
+      
+      # log in the filename
+      $aMetric->{files} = $fileNames;
+      push @{$configuration{metrics}}, $aMetric;
+  }
+  
+  # something not recognized
+  else {
+      print STDOUT "Not a valid option, source path, or performance file: $ARGV[$i]\n";
+      printUsageAndExit($0);
+  }
+  
+  # point to the next argument
+  $i++;
+}
+
+# several option checks
+if (!defined($configFile)) {
+    print STDOUT "Missing config file name\n";
+    printUsageAndExit($0);
+}
+
+if (!defined($configuration{title})) {
+    print STDOUT "Missing title\n";
+    printUsageAndExit($0);
+}
+
+if ($#{$configuration{metrics}} < 0) {
+    print STDOUT "No valid performance data files specified.\n";
+    printUsageAndExit($0);
+}
+
+createOutputFiles(\%configuration, $configFile,$logFile);
+exit(0);
+
+# ----------------------------------------------------------------------
+# printUsageAndExit, printVersionAndExit
+# ----------------------------------------------------------------------
+
+sub printUsageAndExit {
+    my $command = shift; # not used now
+    print STDOUT ${usage};
+    exit(-1);
+}
+
+sub printVersionAndExit {
+    my $command = shift; # not used now
+    print STDERR "hpcquick: ", $HPCToolkitVersionInfo::info, "\n";
+    exit(-1);
+}
+
+
+# ----------------------------------------------------------------------
+# isArgument
+#   find out whether the word is an argument or option flag or undefined
+#   return 0 if it is not defined
+#   return 1 if it is an argument
+#   return 2 if it is not an argument
+# ----------------------------------------------------------------------
+
+sub isArgument {
+    my $argument = shift;
+    if (!defined($argument)) {
+	return 0;
+    }
+    if ($argument =~ /$profOptRE/
+	|| $argument eq $structOpt 
+	|| $argument eq $incOpt ){
+	return 2;
+    }
+    return 1;
+}
+
+# ----------------------------------------------------------------------
+# findExpType
+#   find out the experiment type given a binary ssrun profile file name
+# ----------------------------------------------------------------------
+
+sub findExpType {
+    my $fileName = shift;
+    if (isArgument($fileName) == 1 && $fileName =~ /$ssrunOutputRE/) {
+	return $2;
+    }
+    else {
+	return undef;
+    }
+}
+
+#  Returns the base name out of an ssrun output file.
+
+sub findBaseName {
+    my $fileName = shift;
+    if (isArgument($fileName) == 1 && $fileName =~ /$papirunOutputRE/) {
+	return $1;
+    }
+    else {
+	return undef;
+    }
+}
+
+# ----------------------------------------------------------------------
+# isValidSrcPath
+#   Given a path to used in a PATH element, test whether it is valid.
+#   Returns 1 or 0.
+# ----------------------------------------------------------------------
+
+sub isValidSrcPath {
+    my ($path) = @_;
+
+    # This is a recursive path is the last character is '*'.  If it
+    # exists, strip it off. (Using regexp is inefficient but it
+    # shouldn't matter.)
+    $path =~ s/\*$//;
+
+    if (-d $path && -e $path) {
+	return 1;
+    } else {
+	return 0;
+    }
+}
+
+# ----------------------------------------------------------------------
+# processMetric
+#   Given a configuration data structure and experiment name
+#   Test whether the experiment type and display name exist
+#     if yes, increase its number
+#     if not, insert the new name into the array and hash table
+# ----------------------------------------------------------------------
+
+sub processMetric {
+    my ($config, $aMetric, $expType, $expName) = @_;
+    #print STDOUT @{$config->{expTypes}->{totals}}, "\n";
+    #print STDOUT @{$config->{displayNames}->{totals}}, "\n";
+    #print STDOUT "$expType, $expName\n";
+    my $expTypeIndex = $config->{expTypes}->{hashTable}->{$expType};
+    my $expNameIndex = $config->{displayNames}->{hashTable}->{$expName};
+    
+    if (!defined($expTypeIndex)) {
+	$expTypeIndex = $config->{expTypes}->{total}++;
+	$config->{expTypes}->{hashTable}->{$expType} = $expTypeIndex;
+	push @{$config->{expTypes}->{names}}, $expType;
+	push @{$config->{expTypes}->{totals}}, 1;
+	push @{$config->{expTypes}->{indices}}, 0;
+    }
+    else {
+	$config->{expTypes}->{totals}->[$expTypeIndex]++;
+    }
+    if (!defined($expNameIndex)) {
+	$expNameIndex = $config->{displayNames}->{total}++;
+	$config->{displayNames}->{hashTable}{$expName} = $expNameIndex;
+	push @{$config->{displayNames}->{names}}, $expName;
+	push @{$config->{displayNames}->{totals}}, 1;
+	push @{$config->{displayNames}->{indices}}, 0;
+    }
+    else {
+	$config->{displayNames}->{totals}->[$expNameIndex]++;
+    }
+    $aMetric->{expType} = $expTypeIndex;
+    $aMetric->{displayName} = $expNameIndex;
+    #print STDOUT @{$config->{expTypes}->{totals}}, "\n";
+    #print STDOUT @{$config->{displayNames}->{totals}}, "\n";
+    
+}
+
+# ----------------------------------------------------------------------
+# createOutputFiles
+#   Given a configuration data structure,
+#   write out a configuration file,  and
+#   execute the commands to generate the input files to hpcview.
+#   the commands are also output to $logFile
+#
+# ----------------------------------------------------------------------
+
+sub createOutputFiles {
+    my ($config, $out, $log) = @_;
+    my $i;
+    my $outFileHandle = new FileHandle();
+    my $logFileHandle = new FileHandle();
+
+    $outFileHandle->open("> $out");
+    $logFileHandle->open("> $log");
+
+    print STDOUT "Creating configuration file $out\n";
+
+    # print out the start document tag
+    print {$outFileHandle} "<HPCVIEW>\n\n";
+
+    # print out title
+    print {$outFileHandle} "<TITLE name=\"";
+    print {$outFileHandle} doEscape($config->{title});
+    print {$outFileHandle} "\"/>\n\n";
+
+    # print out the paths
+    $i = 0;
+    for ($i = 0; $i < $config->{incDirs}->{total}; $i++) {
+	print {$outFileHandle} "<PATH name=\"";
+	print {$outFileHandle} doEscape($config->{incDirs}->{names}[$i]);
+	print {$outFileHandle} "\"/>\n";
+    }
+    print {$outFileHandle} "\n";
+    
+    # print out the structure file
+    if ($structFile ne "") {
+        print {$outFileHandle} "<STRUCTURE name=\"";
+        print {$outFileHandle} $structFile;
+        print {$outFileHandle} "\"/>\n";
+    }
+    print {$outFileHandle} "\n";
+
+    # print out the metrics
+    # both name and display name are defined according to whether there
+    # are multiple instances of them.  If there are, distingish by appending
+    # a cardinal number
+    $i = 0;
+    for ($i = 0; $i <= $#{$config->{metrics}}; $i++) {
+	my $metric = $config->{metrics}[$i];
+	my ($name, $displayName, $fileName, $basename, $exp, $command);
+	
+	# print out the metric element
+	print {$outFileHandle} "<METRIC name=\"";
+	#print STDOUT "exp = $exp\n";
+
+	$basename = $metric->{files}[0];
+	$basename =~ s/$papirunOutputRE/$1/;
+
+	$exp = $metric->{files}[0];
+	$exp =~ s/$papirunOutputRE/$2/;
+
+	# print STDOUT "exp = $exp\n";
+	#print STDOUT %{$config->{expTypes}}, "\n";
+	if ($config->{expTypes}->{totals}[$exp] > 1) {
+	    $exp .= "-" .
+		$config->{expTypes}->{indices}[$exp]++;
+	}
+	print {$outFileHandle} doEscape($exp);
+
+	# figure the file name for the transformed profile file
+	$fileName = $metric->{files}[0];
+	$fileName =~ s/$papirunOutputRE/$1.$exp$pxmlExt/;
+	
+	# print out the display name
+	print {$outFileHandle} "\" displayName=\"";
+	#print STDOUT "display = ", $exp, "\n";
+	print {$outFileHandle} doEscape($exp);
+
+	print {$outFileHandle} "\">\n";
+
+	
+        # generate .pxml
+        print STDOUT "Processing performance data file: \n";
+
+	# generate the temporary ascii profile file
+	$command = "papiprof -p " . $basename . " "; 
+	foreach $file (@{$metric->{files}}) {
+	    $command .= $file . " ";
+	}
+	$command .=  " > $fileName";
+
+	    print {$logFileHandle} $command, "\n";
+ 	    print STDOUT "     ", $command, "\n";
+
+	system($command);
+
+	
+	# print out the file name
+	print {$outFileHandle} "<FILE name=\"";
+	print {$outFileHandle} doEscape($fileName);
+	print {$outFileHandle} "\"/>\n";
+
+	# print out the end tag for METRIC element
+	print {$outFileHandle} "</METRIC>\n\n";
+
+    }
+
+    #print out the end document tag
+    print {$outFileHandle} "</HPCVIEW>\n";
+
+    $outFileHandle->close();
+
+    # run hpcview
+    print STDOUT "Running hpcview to create a browsable database\n";
+    system("hpcview -h HPCQUICK -z $out");
+    print {$logFileHandle}  "hpcview -h HPCQUICK -z $out\n";
+
+    $logFileHandle->close();
+
+}
+    
+
+# ----------------------------------------------------------------------
+# -- doEscape($content) --
+#   return a string with <, >, & and " replaced with &lt;, &gt;, &amp;
+#   and &quot;.
+# ----------------------------------------------------------------------
+
+$lt = '&lt;';
+$leftAngleBracket = "<";
+$gt = '&gt;';
+$rightAngleBracket = ">";
+$amp = '&amp;';
+$ampersand = "&";
+$quot = '&quot;';
+$quoteMark = "\"";
+
+sub doEscape {
+    my ($content) = @_;
+    $content =~ s/$ampersand/$amp/g;
+    $content =~ s/$quoteMark/$quot/g;
+    $content =~ s/$leftAngleBracket/$lt/g;
+    $content =~ s/$rightAngleBracket/$gt/g;
+    return $content;
+}
+
