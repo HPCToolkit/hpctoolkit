@@ -79,6 +79,16 @@ PCProfileFilter::DDump()
   Dump(std::cerr);
 }
 
+//****************************************************************************
+// InsnClassExpr
+//****************************************************************************
+
+InsnClassExpr::bitvec_t 
+ConvertToInsnClass(ISA::InstDesc d)
+{
+  if (d.IsFP()) { return INSN_CLASS_FLOP; }
+  else { return INSN_CLASS_OTHER; }
+}
 
 //****************************************************************************
 // InsnFilter
@@ -98,15 +108,6 @@ InsnFilter::operator()(Addr pc, ushort opIndex)
 {
   Instruction* inst = lm->GetInst(pc, opIndex);
   BriefAssertion(inst && "Internal Error: Cannot find instruction!");
-
-  ISA::InstDesc d = inst->GetDesc();
   
-  if (expr.IsSet(INSN_CLASS_ALL)) {
-    return true;
-  } else if (expr.IsSet(INSN_CLASS_FLOPS)) {
-    return d.IsFP();
-  } else {
-    BriefAssertion(false);
-    return false;
-  }
+  return (expr.IsSatisfied(ConvertToInsnClass(inst->GetDesc())));
 }
