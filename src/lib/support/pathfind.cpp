@@ -62,7 +62,8 @@ String
 subdirs_to_pathlist(const char* path, int recursive);
 
 
-int is_recursive_path(const char* path)
+int 
+is_recursive_path(const char* path)
 {
   int l = strlen(path);
   if (l > RECURSIVE_PATH_SUFFIX_LN && path[l - 1] == '*' &&
@@ -74,9 +75,9 @@ int is_recursive_path(const char* path)
 
 
 char*
-pathfind (const char* pathList,
-          const char* name,
-          const char* mode)
+pathfind(const char* pathList,
+	 const char* name,
+	 const char* mode)
 {
   static char* result = NULL;
   int   accessFlags = 0;
@@ -146,9 +147,9 @@ pathfind (const char* pathList,
 
 
 char*
-pathfind_r (const char* pathList,
-	    const char* name,
-	    const char* mode)
+pathfind_r(const char* pathList,
+	   const char* name,
+	   const char* mode)
 {
   char* result = NULL; /* 'result' will point to storage in 'pathfind' */
 
@@ -266,7 +267,7 @@ main (int argc, const char *argv[])
   
   for (i = 1; i < argc; i++) {
     res = pathfind (getenv ("PATH"), argv[i], "r");
-    printf ("findpath(%s) == %s\n", argv[i], res ? res : "<<NULL>>");
+    printf("findpath(%s) == %s\n", argv[i], res ? res : "<<NULL>>");
   }
 }
 #endif
