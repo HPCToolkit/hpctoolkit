@@ -378,6 +378,9 @@ BuildConfFile(const char* hpcHome, const char* confFile)
       << "<!DOCTYPE HPCVIEW SYSTEM \"" << hpcloc // has trailing '/'
       << "lib/dtd/HPCView.dtd\">" << endl;
 
+  //std::cout << "TMP DTD file: '" << tmpFile << "'" << std::endl;
+  //std::cout << "  " << hpcloc << std::endl;
+
   AppendContents(tmp,confFile);
   tmp.close();
   return tmpFile; 
