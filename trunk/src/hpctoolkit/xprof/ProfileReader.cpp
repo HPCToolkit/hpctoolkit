@@ -172,7 +172,6 @@ DCPIProfile*
 ProfileReader::ReadProfileFile_DCPICat(std::istream& is)
 {
   String str;
-  const char* str1;
   const int bufSz = 128; 
   char buf[bufSz]; // holds single tokens guaranteed not to be too big
   
@@ -217,14 +216,16 @@ ProfileReader::ReadProfileFile_DCPICat(std::istream& is)
   str = GetLine(is); hdr << (const char*)str << "\n";
   
   // 'text_start' - starting address of text section of profiled binary (hex)
-  str = GetLine(is); hdr << (const char*)str << "\n";
-  str1 = GetSecondSubstring(str);  // value of 'text_start'
-  txtStart = strtoul(str1, (char **)NULL, 16);
+  str = Get(is, '0'); hdr << (const char*)str; // read until 0x
+  Skip(is, "0x");                          // eat up '0x' prefix
+  is >> hex >> txtStart >> dec >> std::ws; // value of 'text_start'
+  hdr << "0x" << hex << txtStart << dec << "\n";
   
   // 'text_size' - byte-size of the text section (hex) 
-  str = GetLine(is); hdr << (const char*)str << "\n";
-  str1 = GetSecondSubstring(str);  // value of 'text_size'
-  txtSz = strtoul(str1, (char **)NULL, 16);
+  str = Get(is, '0'); hdr << (const char*)str; // read until 0x
+  Skip(is, "0x");                       // eat up '0x' prefix
+  is >> hex >> txtSz >> dec >> std::ws; // value of 'text_size'
+  hdr << "0x" << hex << txtSz << dec << "\n";
   
   if (is.eof() || is.fail()) { return NULL; /* error */ }
   
@@ -325,7 +326,7 @@ ProfileReader::ReadProfileFile_DCPICat(std::istream& is)
     unsigned long pcCount = 0; // number of PC entries
     PCProfileDatum profileDatum;
     Addr PC;
-    is >> std::ws;   
+    is >> std::ws;
     while ( (!is.eof() && !is.fail()) ) {
       Skip(is, "0x");         // eat up '0x' prefix
       is >> hex >> PC >> dec; // read 'PC' value, non VLIW instruction
@@ -421,13 +422,13 @@ GetSecondSubstring(const char* str)
   const char* ptr = str;
   
   // ignore first bit of whitespace
-  while (*ptr != '/0' && isspace(*ptr)) { ptr++; }
+  while (*ptr != '\0' && isspace(*ptr)) { ptr++; }
   
   // ignore first substring
-  while (*ptr != '/0' && !isspace(*ptr)) { ptr++; }
+  while (*ptr != '\0' && !isspace(*ptr)) { ptr++; }
   
   // ignore second bit of whitespace
-  while (*ptr != '/0' && isspace(*ptr)) { ptr++; }
+  while (*ptr != '\0' && isspace(*ptr)) { ptr++; }
   
   return ptr; // beginning of second substring
 }
