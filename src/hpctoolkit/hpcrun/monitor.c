@@ -931,14 +931,15 @@ add_papievent(hpcpapi_profile_desc_vec_t* profdescs, rtloadmap_t* rtmap,
   if ((pcode = PAPI_get_event_info(prof->ecode, &prof->einfo)) != PAPI_OK) {
     DIE("fatal error: (%d) PAPI error %s.", pcode, PAPI_strerror(pcode));
   }
-#if 0 // FIXME
-  if ((prof->ecode & PAPI_PRESET_MASK) && (prof->einfo.count > 1)) {
+  
+  /* NOTE: Although clumsy, this test has official sanction. */
+  if ((prof->ecode & PAPI_PRESET_MASK) && (prof->einfo.count > 1) && 
+      strcmp(prof->einfo.derived, "DERIVED_CMPD") != 0) {
     DIE("fatal error: '%s' is a PAPI derived event.\n"
 	"\tSampling of derived events is not supported by PAPI.\n" 
 	"\tUse 'hpcrun -L' to find the component native events of '%s' that you can monitor separately.", eventnm, eventnm);
   }
-#endif
-
+  
   if ((pcode = PAPI_add_event(profdescs->eset, prof->ecode)) != PAPI_OK) {
     DIE("fatal error: (%d) Unable to add event '%s' to event set.\n"
 	"\tPAPI error %s.", pcode, eventnm, PAPI_strerror(pcode));
