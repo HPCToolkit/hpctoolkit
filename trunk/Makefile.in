@@ -15,12 +15,12 @@
 @SET_MAKE@
 
 # -*-Mode: makefile;-*-
-# $Header$
+# $Header: /Volumes/cvsrep/developer/HPCToolkit/Makefile.am,v 1.1 2004/03/10 01:31:29 eraxxon Exp $
 
 #############################################################################
 #
 # File:
-#   $Source$
+#   $Source: /Volumes/cvsrep/developer/HPCToolkit/Makefile.am,v $
 #
 # Description:
 #   *Process with automake to produce Makefile.in*
