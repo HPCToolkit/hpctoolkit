@@ -23,7 +23,8 @@
 
 <!-- ********************************************************************** -->
 
-<div class="lastupdated">Last Updated 07 Mar 2003</div>
+<!-- automatically updated by Emacs hook below; nicer than CVS Date -->
+<p class="lastupdated">Last Updated: 2004-10-30</p>
 
 <h2>File Format: HPCVIEW</h2>
 
@@ -93,13 +94,14 @@ places.</span>
 out="<span class='xmlvar'>new-path-prefix</span>" /&gt;
 
 <p>
-<span class="xmlcomment">(Optional) A STRUCTURE directive provides
-the name of a program structure file (type 
-<a href="dtd_pgm.html" class="hpctool">PGM</a>) extracted from the
-application binary using the 
+<span class="xmlcomment">(Optional) A list of STRUCTURE directives provides
+the names of program structure files (type 
+<a href="dtd_pgm.html" class="hpctool">PGM</a>) created using the
 <a href="hpc_bloop.html" class="hpctool">bloop</a> tool.</span>
 
-<br>&lt;STRUCTURE name="<span class='xmlvar'>bloop_output.psxml</span>" /&gt;
+<br>&lt;STRUCTURE name="<span class='xmlvar'>program.psxml</span>" /&gt;
+<br>&lt;STRUCTURE name="<span class='xmlvar'>key-dso1.psxml</span>" /&gt;
+<br>&lt;STRUCTURE name="<span class='xmlvar'>key-dso2.psxml</span>" /&gt;
 
 <p><span class="xmlcomment">
 One or more metrics must be defined. A metric may be 1) read from a
@@ -241,3 +243,12 @@ operators plus, minus, times, divide, max, min, and power
 
 </body>
 </html>
+
+
+<!-- Local Variables: -->
+<!-- eval: (add-hook 'write-file-hooks 'time-stamp) -->
+<!-- time-stamp-start: ">Last Updated: " -->
+<!-- time-stamp-format: "%:y-%02m-%02d" -->
+<!-- time-stamp-end: "<" -->
+<!-- time-stamp-line-limit: 35 -->
+<!-- End: -->
