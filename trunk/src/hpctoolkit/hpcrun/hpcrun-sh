@@ -33,7 +33,6 @@ opt_debug=""
 
 # These option variables cannot be modified with personal defaults.
 opt_recursive="1"
-opt_dump_events="0"
 
 cmd_to_profile=""
 
@@ -49,41 +48,17 @@ f_usage()
   p="printf"
   $p "\n"
   $p "Usage:\n"
-  $p "  ${cmd} [-r] [-e <event>] [-p <period>] [-o <outpath>] [-f <flag>] <command> [args_to_command...]\n"
-  $p "  ${cmd} -l | -L\n"
+  $p "  ${cmd} [options] <command> [args_to_command...]\n"
   $p "\n"
-  $p "  papirun profiles the execution of an arbitrary command using the\n"
-  $p "  PAPI profiling interface. During execution of <command>, the\n"
-  $p "  specified PAPI event will be monitored.\n"
+  $p "  An alternative launcher, available for experimental, testing and\n"
+  $p "  sentimental reasons.  If you don't know what this, use 'hpcrun'.\n"
   $p "\n"
-  $p "  Each <period> instances of the specified event, a counter\n"
-  $p "  associated with the instruction at the current program counter\n"
-  $p "  location will be incremented. When <command> terminates normally, a\n"
-  $p "  profile (a histogram of counts for instructions in each load module)\n"
-  $p "  will be written out to a file with name <command>.<event>.<pid>.\n"
-  $p "\n"
-  $p "  General Options: Defaults are shown in square brackets [].\n"
-  $p "    -r          : By default all processes spawned by <command> will\n"
-  $p "                  be profiled, each receiving its own output file.\n"
-  $p "                  Use this option to turn off recursive profiling;\n"
-  $p "                  only <command> will be profiled.\n"
-  $p "    -e <event>  : PAPI event to sample             [PAPI_TOT_CYCLES]\n"
-  $p "    -p <period> : Sample period                    [2^15 - 1]\n"
-  $p "    -o <outpath>: Directory for output data        [.]\n"
-  $p "    -f <flag>   : Profile style flag               [PAPI_POSIX_PROFIL]\n"
-  $p "\n"
-  $p "  Special Options:\n"
-  $p "    -l          : List valid PAPI events for this architecture.\n"
-  $p "    -L          : List valid PAPI events for this architecture and\n"
-  $p "                  include brief descriptions.\n"
-  $p "\n"
-  $p "NOTES:\n"
-  $p "   papirun uses LD_PRELOAD to initiate profiling; modifications to \n"
-  $p "   at least the papirun launcher script will be necessary to profile \n" 
-  $p "   programs that use LD_PRELOAD. \n"
-  $p "\n"
-  $p "   papirun cannot be used to profile setuid commands as LD_PRELOAD\n"
-  $p "   is not permitted for them.\n" 
+  $p "  Options Available to the script: \n"
+  $p "    -r          : Turn off recursive profiling\n"
+  $p "    -e <event>  : PAPI event to sample\n"
+  $p "    -p <period> : Sample period\n"
+  $p "    -o <outpath>: Directory for output data\n"
+  $p "    -f <flag>   : Profile style flag\n"
   $p "\n"
 }
 
@@ -94,10 +69,10 @@ f_checkenv()
     exit 1
   fi 
 
-  if [ -z "${HPCRUN_PAPILIB_PATH}" ]; then
-    printf "${cmd}: Please set HPCRUN_PAPILIB_PATH before using!\n"
-    exit 1
-  fi
+#  if [ -z "${HPCRUN_PAPILIB_PATH}" ]; then
+#    printf "${cmd}: Please set HPCRUN_PAPILIB_PATH before using!\n"
+#    exit 1
+#  fi
 
   LD_PRELOAD="${HPCRUN_HOME}/libhpcrun.so"
   
@@ -106,7 +81,7 @@ f_checkenv()
     exit 1
   fi 
 
-  LD_LIBRARY_PATH="${LD_LIBRARY_PATH}:${HPCRUN_PAPILIB_PATH}"
+#  LD_LIBRARY_PATH="${LD_LIBRARY_PATH}:${HPCRUN_PAPILIB_PATH}"
 }
 
 # args: ($1, $2): (string_to_check, string_for_error_msg[optional])
@@ -161,10 +136,8 @@ f_getoptions()
       -f)   shift; opt_flag="$1";
             f_opt_check "-f" "${opt_flag}";
             ;;
-      -l)   opt_dump_events="1";
-            ;;
-      -L)   opt_dump_events="2";
-            ;;
+#      -l)   opt_dump_events="1";
+#            ;;
       -d)   shift; opt_debug="$1";
             f_opt_check "-d" "${opt_debug}";
             ;;
@@ -177,13 +150,9 @@ f_getoptions()
     shift
   done
 
-  # For options that do not require <command> to be given...
-  if [ "${opt_dump_events}" != "0" ]; then 
-    cmd_to_profile="/bin/ls" # placeholder command
-  else
-    cmd_to_profile="$*"
-  fi
-
+  # The command ($*: all arguments from $1 to $n)
+  cmd_to_profile="$*"
+  
   f_error_on_nil "${cmd_to_profile}" "** no command to profile\n";
 }
 
@@ -192,7 +161,7 @@ f_prepareenv()
 {
   # export the profiler library
   export LD_PRELOAD
-  export LD_LIBRARY_PATH
+#  export LD_LIBRARY_PATH
 
   # export profiler options
   if [ -n "${opt_recursive}" ] ; then
@@ -225,15 +194,10 @@ f_prepareenv()
     export HPCRUN_DEBUG
   fi
 
-  if [ -n "${opt_dump_events}" ]; then
-    HPCRUN_DUMP_EVENTS="${opt_dump_events}"
-    export HPCRUN_DUMP_EVENTS
-  fi
-
   # Make sure that `.' is in the PATH so that we can find the command
   # to profile if in the current directory. [We can get around this,
   # but for now it is the quickest thing.] 
-  PATH=".:${PATH}" 
+  PATH=".:${PATH}"
 }
 
 #############################################################################
