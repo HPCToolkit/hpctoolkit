@@ -33,6 +33,7 @@
 #include <unistd.h>
 #include <string.h>
 #include <limits.h> /* for 'PATH_MAX' */
+#include <signal.h>
 #include <inttypes.h>
 
 #ifndef __USE_GNU
@@ -66,6 +67,11 @@ typedef pid_t (*fork_fptr_t) (void);
 
 static int  hpcr_libc_start_main START_MAIN_PARAMS;
 static void hpcr_fini(void); 
+
+
+/* catching signals */
+
+static void hpcr_sighandler(int sig);
 
 /**************************** Forward Declarations **************************/
 
@@ -352,6 +358,38 @@ papiex:
 
 
 /****************************************************************************
+ * Intercepted signals
+ ****************************************************************************/
+
+/* We allow the user to kill profiling by intercepting the certain
+   signals.  This can be very useful on long-running or misbehaving
+   applications. */
+
+static void 
+hpcr_sighandler(int sig)
+{
+  if (opt_debug >= 1) { fprintf(stderr, "*** catching signal %d (process %d) ***\n", sig, getpid()); }
+  
+  signal(sig, SIG_DFL); /* return to default action */
+    
+  switch (sig) {
+  case SIGINT: {
+    break;
+  }
+  default: 
+    ERRMSG("Warning: Handling unknown signal %d.\n", sig);
+    break;
+  }
+  
+  hpcr_fini();
+  exit(0);
+}
+
+
+/****************************************************************************/
+/****************************************************************************/
+
+/****************************************************************************
  * Initialize PAPI profiling
  ****************************************************************************/
 
@@ -360,6 +398,7 @@ static void init_papi(hpcpapi_profile_desc_vec_t* profdescs,
 static void start_papi(hpcpapi_profile_desc_vec_t* profdescs);
 static void init_output(hpcrun_ofile_desc_t* ofile, 
 			hpcpapi_profile_desc_vec_t* profdescs);
+static void init_sighandlers();
 
 /*
  *  Prepare for PAPI profiling
@@ -375,6 +414,8 @@ init_hpcrun(void)
   
   init_papi(&papi_profdescs, rtloadmap);    /* init papi_profdescs */
   init_output(&hpc_ofile, &papi_profdescs); /* init hpc_ofile */
+  init_sighandlers();                       /* init signal handlers */
+
   start_papi(&papi_profdescs);
 }
 
@@ -691,6 +732,27 @@ init_output(hpcrun_ofile_desc_t* ofile, hpcpapi_profile_desc_vec_t* profdescs)
   }
   
   ofile->fname = NULL; // FIXME: skip setting ofile->fname for now
+}
+
+
+static void init_sighandler(int sig);
+
+static void 
+init_sighandlers()
+{
+  init_sighandler(SIGINT);  /* Ctrl-C */
+}
+
+
+static void 
+init_sighandler(int sig)
+{
+  if (signal(sig, SIG_IGN) != SIG_IGN) {
+    signal(sig, hpcr_sighandler);
+  } 
+  else {
+    ERRMSG("Warning: Signal %d already has a handler.\n", sig);
+  }
 }
 
 
