@@ -116,10 +116,9 @@ uninstall: uninstall_scripts
 
 
 PERL_LIB     = perl
-HPCQUICK_OS=`uname -s`
 
 SCRIPTS_SRC  = ptran/ptran filters/f90modfilt
-SCRIPTS_HPCQUICK  = hpcquick/hpcquick hpcquick/$(HPCQUICK_OS)/hpcquick 
+SCRIPTS_HPCQUICK  = hpcquick/hpcquick hpcquick/hpcquick-papiprof
 SCRIPTS_INST = ptran hpcquick f90modfilt
 
 # install perl tools
