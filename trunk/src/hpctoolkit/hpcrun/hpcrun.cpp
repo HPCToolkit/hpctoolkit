@@ -160,8 +160,7 @@ hpctoolkit_installation_path(const char* cmd)
 static const char* args_command;
 
 static const char* args_version_info =
-"version " HPCRUN_VERSION;
-/* #include <include/HPCToolkitVersionInfo.h> */
+#include <include/HPCToolkitVersionInfo.h>
 
 static const char* args_usage_summary1 =
 "[profiling-options] -- <command> [arguments]\n";
