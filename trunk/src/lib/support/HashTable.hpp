@@ -320,7 +320,7 @@ class HashTable
                        DeleteEntryFunctPtr const DeleteEntryCallback = 0, ...);
     void* QueryEntry (const void* entry) const;
     int   GetEntryIndex (const void* entry) const;
-    void* GetEntryByIndex (const int index) const;
+    void* GetEntryByIndex (const uint index) const;
     uint  NumberOfEntries () const;
 
     void  Dump ();

@@ -55,7 +55,9 @@ double NaNVal;
 
 void 
 InitNaN() {
-#if (__i386 && __linux__) || (__ia64 && __linux__)
+#if defined(NAN)
+  NaNVal = NAN;
+#elif (__i386 && __linux__) || (__ia64 && __linux__)
   NaNVal = 0.0/0.0; // This is intentional (NAN)
 #else
   // 64 bit double precision
@@ -66,7 +68,9 @@ InitNaN() {
 bool
 IsNaNorInfinity(double d)
 {
-#if (__i386 && __linux__) || (__ia64 && __linux__)
+#if defined(isnan) && defined(isinf)
+  return isnan(d) || isinf(d); 
+#elif (__i386 && __linux__) || (__ia64 && __linux__)
   return isnan(d) || isinf(d); 
 #else
   return IsNANorINF(d);
@@ -76,7 +80,9 @@ IsNaNorInfinity(double d)
 bool
 IsNaN(double d)
 {
-#if (__i386 && __linux__) || (__ia64 && __linux__)
+#if defined(isnan)
+  return isnan(d); 
+#elif (__i386 && __linux__) || (__ia64 && __linux__)
   return isnan(d); 
 #else
   return NaN(d);

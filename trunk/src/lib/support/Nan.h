@@ -37,7 +37,8 @@
 #ifndef Nan_h
 #define Nan_h
 
-#if ((__i386 && __linux) || (__ia64 && __linux))
+#if ((__linux && __i386) || (__linux && __ia64) || \
+	(defined(__MACH__) && defined(__ppc__)) )
 # include <math.h> /* must include bits/nan.h through math.h */
 #elif ( ((__digital__ || __alpha) && __unix) || (__sgi && __unix) \
         || (__sun && __unix))

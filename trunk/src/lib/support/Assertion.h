@@ -259,8 +259,11 @@ extern const int  ASSERTION_RETURN_VALUE;
 // Should global assert messages appear
 extern GlobalAssertMsgsType globalAssertMsgsEnabled;
 
+#ifndef In_Assertion_C
+// ifndef added so this won't be defined and unused in Assertion.C
 // Should local assert messages appear
 static LocalAssertMsgsType localAssertMsgsEnabled = LOCAL_ASSERT_MSG_ON;
+#endif
 
 /***************************** Macro Definitions ****************************/
 

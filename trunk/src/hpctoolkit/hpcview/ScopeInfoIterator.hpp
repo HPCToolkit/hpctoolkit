@@ -222,7 +222,7 @@ public:
    
    CodeInfo* GetCodeInfo()  { return _ci; }
    
-   int GetLine()
+   suint GetLine()
    { 
       return (_forEndLine?_ci->EndLine():_ci->BegLine());
    }

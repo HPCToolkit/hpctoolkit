@@ -525,7 +525,7 @@ MergeOverlappingCode(ScopeInfo* node)
       
       // Collect loops in a set that prevents overlapping elements;
       // AddOrMerge may unlink 'child' from tree and delete it.
-      bool noDeletion = mergedSet->AddOrMerge(child); 
+      (void) mergedSet->AddOrMerge(child); 
     }
   } 
   delete mergedSet;

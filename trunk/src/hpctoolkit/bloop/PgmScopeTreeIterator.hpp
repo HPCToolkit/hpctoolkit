@@ -122,6 +122,20 @@ private:
 
 
 //*****************************************************************************
+// CodeInfoChildIterator
+//    iterates over all children of a ScopeInfo that pass the given 
+//    filter or if a NULL filter was given over all children 
+//    no particular order is garanteed 
+//*****************************************************************************
+
+class CodeInfoChildIterator : public NonUniformDegreeTreeNodeChildIterator {
+public: 
+  CodeInfoChildIterator(const CodeInfo *root); 
+  CodeInfo* CurCodeInfo() const { return dynamic_cast<CodeInfo*>(Current()); };
+};  
+
+
+//*****************************************************************************
 // ScopeInfoIterator
 //    iterates over all ScopeInfos in the tree rooted at a given ScopeInfo 
 //    that pass the given filter or if a NULL filter was given over all 
