@@ -23,8 +23,7 @@ HPCRUN_VERSION="2.0"
 
 # One can set personal defaults here, instead of changing source code.
 # These values will be overriden by commandline options.
-opt_event=""
-opt_period=""
+opt_eventlist=""
 opt_out_path=""
 opt_flag=""
 opt_debug=""
@@ -54,11 +53,10 @@ f_usage()
   $p "  sentimental reasons.  If you don't know what this, use 'hpcrun'.\n"
   $p "\n"
   $p "  Options Available to the script: \n"
-  $p "    -r          : Turn off recursive profiling\n"
-  $p "    -e <event>  : PAPI event to sample\n"
-  $p "    -p <period> : Sample period\n"
-  $p "    -o <outpath>: Directory for output data\n"
-  $p "    -f <flag>   : Profile style flag\n"
+  $p "    -r                   Turn off recursive profiling\n"
+  $p "    -e <event>:<period>  PAPI event and period for sampling\n"
+  $p "    -o <outpath>         Directory for output data\n"
+  $p "    -f <flag>            Profile style flag\n"
   $p "\n"
 }
 
@@ -124,11 +122,8 @@ f_getoptions()
     case $1 in
       -r)   opt_recursive="0";
             ;;
-      -e)   shift; opt_event="$1";
-            f_opt_check "-e" "${opt_event}";
-            ;;
-      -p)   shift; opt_period="$1";
-            f_opt_check "-p" "${opt_period}";
+      -e)   shift; opt_eventlist="${opt_eventlist}$1;";
+            f_opt_check "-e" "$1";
             ;;
       -o)   shift; opt_out_path="$1";
             f_opt_check "-o" "${opt_out_path}";
@@ -169,14 +164,9 @@ f_prepareenv()
     export HPCRUN_RECURSIVE
   fi
 
-  if [ -n "${opt_event}" ]; then
-    HPCRUN_EVENT_NAME="${opt_event}"
-    export HPCRUN_EVENT_NAME
-  fi
-
-  if [ -n "${opt_period}" ]; then
-    HPCRUN_SAMPLE_PERIOD="${opt_period}"
-    export HPCRUN_SAMPLE_PERIOD
+  if [ -n "${opt_eventlist}" ]; then
+    HPCRUN_EVENT_LIST="${opt_eventlist}"
+    export HPCRUN_EVENT_LIST
   fi
 
   if [ -n "${opt_out_path}" ]; then
