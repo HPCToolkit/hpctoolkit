@@ -61,10 +61,6 @@ using namespace std; // For compatibility with non-std C headers
 
 //*************************** User Include Files ****************************
 
-#include <OpenAnalysis/CFG/CFG.h>
-#include <OpenAnalysis/CFG/OARIFG.h>
-#include <OpenAnalysis/CFG/TarjanIntervals.h>
-
 #include "PgmScopeTreeUtils.h"
 #include "CodeInfoPtrSet.h"
 #include "BloopIRInterface.h"
@@ -81,6 +77,10 @@ using namespace std; // For compatibility with non-std C headers
 #include <lib/support/Assertion.h>
 #include <lib/support/pathfind.h>
 
+#include <OpenAnalysis/CFG/CFG.h>
+#include <OpenAnalysis/CFG/OARIFG.h>
+#include <OpenAnalysis/CFG/TarjanIntervals.h>
+
 //*************************** Forward Declarations ***************************
 
 // Enabling this flag will permit only procedures with 'interesting'
@@ -96,7 +96,7 @@ const char* OrphanedProcedureFile =
 // comments above function def.
 void BuildPCToSrcLineMap(PCToSrcLineXMap* map, Procedure* p); 
 
-std::map< CFG::Node*, std::pair<Addr, Addr>* > BlockToPCMap;
+std::map<CFG::Node*, std::pair<Addr, Addr>* > BlockToPCMap;
 typedef std::map<CFG::Node*, std::pair<Addr, Addr>* >::iterator BlockToPCMapIt;
 
 static void CFG_GetStartAndEndAddresses(CFG::Node* n, Addr &start, Addr &end);

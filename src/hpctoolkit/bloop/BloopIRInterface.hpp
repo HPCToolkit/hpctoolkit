@@ -61,6 +61,7 @@
 //*************************** User Include Files ****************************
 
 // OpenAnalysis headers.
+// Use OA_IRHANDLETYPE_SZ64: size of bfd_vma/Addr
 #include <OpenAnalysis/Utils/DGraph.h>
 #include <OpenAnalysis/Interface/IRInterface.h>
  
@@ -102,24 +103,26 @@ private:
 class BloopIRInterface : public IRInterface {
 public:
   BloopIRInterface (Procedure *_p);
-  BloopIRInterface () { BriefAssertion (0); }
+  BloopIRInterface () { BriefAssertion(0); }
   ~BloopIRInterface () {}
+
+  //------------------------------
+  // General - all statement types
+  //------------------------------
   IRStmtType GetStmtType (StmtHandle);
   StmtLabel GetLabel (StmtHandle);
 
   //------------------------------
-  // for compound statement. 
+  // For procedures, compound statements. 
   //------------------------------
+  IRStmtIterator *ProcBody(ProcHandle h) 
+    { BriefAssertion(false); return NULL; }
   IRStmtIterator *GetFirstInCompound (StmtHandle h);
 
   //------------------------------
-  // for procedure, loop
+  // Loops
   //------------------------------
-  IRStmtIterator *Body (StmtHandle h);
-
-  //------------------------------
-  // loops
-  //------------------------------
+  IRStmtIterator *LoopBody(StmtHandle h);
   StmtHandle LoopHeader (StmtHandle h);
   bool LoopIterationsDefinedAtEntry (StmtHandle h);
   ExprHandle GetLoopCondition (StmtHandle h); 
@@ -131,23 +134,13 @@ public:
   //------------------------------
 
   //------------------------------
-  // unstructured two-way conditionals: 
+  // Structured two-way conditionals
   //------------------------------
-  // two-way branch, loop continue
-  StmtLabel  GetTargetLabel (StmtHandle h, int n);
-
-  ExprHandle GetCondition (StmtHandle h);
+  IRStmtIterator *TrueBody (StmtHandle h);
+  IRStmtIterator *ElseBody (StmtHandle h);
 
   //------------------------------
-  // unstructured multi-way conditionals
-  //------------------------------
-  int NumUMultiTargets (StmtHandle h);
-  StmtLabel GetUMultiTargetLabel (StmtHandle h, int targetIndex);
-  StmtLabel GetUMultiCatchallLabel (StmtHandle h);
-  ExprHandle GetUMultiCondition (StmtHandle h, int targetIndex);
-
-  //------------------------------
-  // structured multiway conditionals
+  // Structured multiway conditionals
   //------------------------------
   int NumMultiCases (StmtHandle h);
   // condition for multi body 
@@ -159,10 +152,19 @@ public:
   IRStmtIterator *GetMultiCatchall (StmtHandle h);
 
   //------------------------------
-  // structured conditionals
+  // Unstructured two-way conditionals: 
   //------------------------------
-  IRStmtIterator *TrueBody (StmtHandle h);
-  IRStmtIterator *ElseBody (StmtHandle h);
+  // two-way branch, loop continue
+  StmtLabel  GetTargetLabel (StmtHandle h, int n);
+  ExprHandle GetCondition (StmtHandle h);
+
+  //------------------------------
+  // Unstructured multi-way conditionals
+  //------------------------------
+  int NumUMultiTargets (StmtHandle h);
+  StmtLabel GetUMultiTargetLabel (StmtHandle h, int targetIndex);
+  StmtLabel GetUMultiCatchallLabel (StmtHandle h);
+  ExprHandle GetUMultiCondition (StmtHandle h, int targetIndex);
 
   //------------------------------
   // Special
@@ -174,24 +176,24 @@ public:
   int NumberOfDelaySlots(StmtHandle h);
  
   //------------------------------
-  // obtain uses and defs
+  // Obtain uses and defs
   //------------------------------
+  IRProcCallIterator *GetProcCalls(StmtHandle h) 
+    { BriefAssertion(false); return NULL; }
   IRUseDefIterator *GetUses (StmtHandle h);
   IRUseDefIterator *GetDefs (StmtHandle h);
 
-  SymHandle GetSymHandle (LeafHandle vh) {
-    return (SymHandle)0;
-  }
+  //------------------------------
+  // Symbol Handles
+  //------------------------------
+  SymHandle GetProcSymHandle(ProcHandle h) { return (SymHandle)0; }
+  SymHandle GetSymHandle (LeafHandle vh) { return (SymHandle)0; }
+  const char *GetSymNameFromSymHandle (SymHandle sh) { return "<no-sym>"; }
 
-  // Given a SymHandle, return the textual name.
-  char *GetSymNameFromSymHandle (SymHandle sh) {
-    // FIXME: For now, we just use a const char* as a symbol.
-    const char *s = (const char *)sh;
-    return (char *)s;
-  }
-
+  //------------------------------
+  // Debugging
+  //------------------------------
   void PrintLeaf (LeafHandle vh, ostream & os) { };
-
   void Dump (StmtHandle stmt, ostream& os);
 
 private:
