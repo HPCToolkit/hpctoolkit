@@ -109,10 +109,11 @@ HPC_CHECK_CXX_STDC_HEADERS
 # Check for library functions.
 # -none thus far-
 
+# ${srcdir}, ${ac_top_srcdir}, ${ac_top_builddir}
 hpctoolkit_top=`cd ${srcdir} && pwd`
-HPCTOOLKIT_PLATFORM=`cd ${hpctoolkit_top}/config; ./hpcplatform`
+hpctoolkit_build=`pwd`
+HPCTOOLKIT_PLATFORM=`cd ${hpctoolkit_top}/config && ./hpcplatform`
 AC_SUBST([HPCTOOLKIT_PLATFORM])
-
 
 # NOTE: we should allow the locations of xerces, OA, and binutils
 # installations to optionally be given on configure line or in the
@@ -333,8 +334,8 @@ case ${host} in
   alpha*-*-linux* | alpha*-*-osf*)
     if CXXcmp "cxx"; then
       # Compaq compiler
-      HOST_CXXFLAGS="-std strict_ansi -rtti -pt -ptr ./cxx_trepository"
-      HOST_LIBTREPOSITORY="./cxx_trepository/*.o"
+      HOST_CXXFLAGS="-std strict_ansi -rtti -pt -ptr ${hpctoolkit_build}/cxx_trepository"
+      HOST_LIBTREPOSITORY="${hpctoolkit_build}/cxx_trepository/*.o"
       if test "$OPT_ENABLE_DEVELOP" = "yes" ; then
         my_opt_flags="-g"
         my_opt_cxxflags="-gall"
