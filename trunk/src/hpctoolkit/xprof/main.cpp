@@ -118,7 +118,7 @@ main(int argc, char* argv[])
   // Read executable
   // ------------------------------------------------------------
   
-  Executable* exe = NULL;
+  LoadModule* exe = NULL; // Executable*: use LoadModule for now (Alpha)
   try {
     String exeNm = args.progFile;
 
@@ -134,7 +134,7 @@ main(int argc, char* argv[])
       }
     }
 
-    exe = new Executable();
+    exe = new LoadModule(); // Executable(): use LoadModule for now (Alpha)
     if (!exe->Open(exeNm)) { exit(1); } // Error already printed 
     if (!exe->Read()) { exit(1); }      // Error already printed 
   } catch (std::bad_alloc& x) {
