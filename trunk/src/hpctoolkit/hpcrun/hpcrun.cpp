@@ -128,7 +128,7 @@ static const char* args_version_info =
 /* #include <include/HPCToolkitVersionInfo.h> */
 
 static const char* args_usage_summary1 =
-"[-r] [-e <event1>[:<period1>] [-e <event2>[:<period2>] ...]] [-o <outpath>] [-f <flag>] -- <command> [arguments]\n";
+"[profiling-options] -- <command> [arguments]\n";
 
 static const char* args_usage_summary2 =
 "[-l | -L] [-V] [-h]\n";
@@ -139,14 +139,14 @@ static const char* args_usage_details =
 "native events will be monitored.  Given multiple events it can create\n"
 "multiple profile histograms during one run.\n"
 "\n"
-"For each <eventk>, each <periodk> instances of <eventk> a counter\n"
+"For each event 'e' and period 'p', for every 'p' instances of 'e' a counter\n"
 "associated with the instruction at the current program counter location\n"
 "will be incremented.  When <command> terminates normally, a profile -- a\n"
 "histogram of counts for instructions in each load module -- will be written\n"
-"to a file with the name <command>.<event1>.<hostname>.<pid>. If multiple\n"
-"events are specified, data for all events will be recorded in this single\n"
-"file even though the file naming convention only uses <event1> in name of\n"
-"the output file.\n"
+"to a file with the name <command>.<event1>.<hostname>.<pid>.<tid>. If\n"
+"multiple events are specified, data for all events will be recorded in this\n"
+"single file even though the file naming convention only uses <event1> in\n"
+"name of the output file.\n"
 "\n"
 "The special option '--' can be used to stop hpcrun option parsing.  This is\n"
 "especially useful when <command> takes arguments of its own.\n"
@@ -165,6 +165,10 @@ static const char* args_usage_details =
 "  -r  By default all processes spawned by <command> will be profiled, each\n"
 "      receiving its own output file. Use this option to turn off recursive\n"
 "      profiling; only <command> will be profiled.\n"
+"  -t  Create profiles for each thread in a multithreaded process.  Without\n"
+"      this flag, profiling of a multithreaded process will silently die.\n"
+"      NOTE 1: The WALLCLK event cannot be used in a multithreaded process.\n"
+"      NOTE 2: Only POSIX threads are supported.\n"
 "  -e <eventk>[:<periodk>]                              {PAPI_TOT_CYC:32767}\n"
 "      An event to profile and its corresponding sample period.  <eventk>\n"
 "      may be either a PAPI or native processor event\n"

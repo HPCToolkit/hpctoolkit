@@ -28,6 +28,8 @@
 #include <sys/time.h>    /* for sprofil() */
 #include <sys/profil.h>  /* for sprofil() */
 
+#include "hpcpapi.h"
+
 /**************************** Forward Declarations **************************/
 
 /* 
@@ -136,8 +138,10 @@
 
 /**************************** Forward Declarations **************************/
 
-// hpcrun_profile_desc_t: Collects all information to describe system
-// based (i.e. non-PAPI) profiles, e.g. a call to sprofil().
+// hpcsys_profile_desc_t: Collects all information to describe system
+// based (i.e. non-PAPI) profiles, e.g. a call to sprofil(). Note that
+// the segmented-profile buffers will correspond to data in the
+// run-time-load-map.
 typedef struct {
   /* currently we only have one type of system prof.  If we ever need
      more we can add a prof-type field */ 
@@ -152,14 +156,14 @@ typedef struct {
   
   struct prof*      sprofs;      // vector of histogram buffers, one for each
   unsigned int      numsprofs;   //   run time load module
-} hpcrun_profile_desc_t;
+} hpcsys_profile_desc_t;
 
-// hpcrun_profile_desc_vec_t: A vector of hpcrun_profile_desc_t.
+// hpcsys_profile_desc_vec_t: A vector of hpcsys_profile_desc_t.
 typedef struct {
   unsigned int           size; // vector size
-  hpcrun_profile_desc_t* vec;  // one for each profile
-} hpcrun_profile_desc_vec_t;
-
+  hpcsys_profile_desc_t* vec;  // one for each profile
+  
+} hpcsys_profile_desc_vec_t;
 
 /**************************** Forward Declarations **************************/
 
@@ -168,6 +172,30 @@ typedef struct {
   FILE* fs;    // file stream
   char* fname; // file name
 } hpcrun_ofile_desc_t;
+
+
+// hpcrun_profiles_desc_t: Describes all concurrent profiles for a
+// particular process or thread.  
+typedef struct {
+  /* We use void* to make conditional compilation easy.  See macros below. */
+  void* sysprofs;   /* hpcsys_profile_desc_vec_t* */
+  void* papiprofs;  /* hpcpapi_profile_desc_vec_t */
+
+  hpcrun_ofile_desc_t ofile; 
+} hpcrun_profiles_desc_t;
+
+/* Each accessor macro has two versions, one for use as lvalue and
+   rvalue.  The reason is that casts in lvalue expressions is a
+   non-standard. */
+#define HPC_GETL_SYSPROFS(x)  ((x)->sysprofs)
+#define HPC_GET_SYSPROFS(x)  ((hpcsys_profile_desc_vec_t*)((x)->sysprofs))
+
+//#if HAVE_PAPI
+#define HPC_GETL_PAPIPROFS(x) ((x)->papiprofs)
+#define HPC_GET_PAPIPROFS(x) ((hpcpapi_profile_desc_vec_t*)((x)->papiprofs))
+//#else
+//#define HPC_GET_PAPIPROFS(x) (x->papiprofs)
+//#endif
 
 /****************************************************************************/
 

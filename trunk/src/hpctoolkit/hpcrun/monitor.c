@@ -20,6 +20,9 @@
 // Author:
 //    Written by John Mellor-Crummey and Nathan Tallent, Rice University.
 //
+// Acknowledgements   
+//    Phil Mucci's 'papiex' code provided guidance for handling threads.
+//
 //    The PAPI Initialization code was originally adapted from parts of The
 //    Visual Profiler by Curtis L. Janssen (vmon.c).
 //    
@@ -29,6 +32,7 @@
 
 #include <stdlib.h>
 #include <unistd.h>
+#include <pthread.h>
 #include <stdio.h>
 #include <unistd.h>
 #include <string.h>
@@ -54,87 +58,109 @@
 
 /**************************** Forward Declarations **************************/
 
-/* Intercepted routines and signals */
-
-#define START_MAIN_PARAMS (int (*main) (int, char **, char **), \
-			   int argc, char *__unbounded *__unbounded ubp_av, \
-			   void (*init) (void), void (*fini) (void), \
-			   void (*rtld_fini) (void), \
-			   void *__unbounded stack_end)
-
-typedef int (*libc_start_main_fptr_t) START_MAIN_PARAMS;
-typedef void (*libc_start_main_fini_fptr_t) (void);
-
-static int  hpcrun_libc_start_main START_MAIN_PARAMS;
-static void hpcrun_libc_start_main_fini(); 
-
-
-typedef pid_t (*fork_fptr_t) (void);
-static pid_t hpcrun_fork();
-
-
-/* catching signals */
-
-static void hpcrun_sighandler(int sig);
-
-/**************************** Forward Declarations **************************/
-
 static void init_library();
 static void fini_library();
 
 static void init_process();
 static void fini_process();
 
-static void init_thread();
-static void fini_thread();
+static hpcrun_profiles_desc_t* init_thread(int multithreaded);
+static void                    fini_thread(hpcrun_profiles_desc_t** profdesc, 
+					   int multithreaded);
+
+static long hpcrun_gettid();
 
 typedef uint32_t hpc_hist_bucket; /* a 4 byte histogram bucket */
 
 static const uint64_t default_period = (1 << 15) - 1; /* (2^15 - 1) */
 
+/**************************** Forward Declarations **************************/
+
+/* libc intercepted routines */
+
+#define PARAMS_START_MAIN (int (*main) (int, char **, char **),              \
+			   int argc,                                         \
+			   char *__unbounded *__unbounded ubp_av,            \
+			   void (*init) (void),                              \
+                           void (*fini) (void),                              \
+			   void (*rtld_fini) (void),                         \
+			   void *__unbounded stack_end)
+
+typedef int (*libc_start_main_fptr_t) PARAMS_START_MAIN;
+static int  hpcrun_libc_start_main PARAMS_START_MAIN;
+
+typedef void (*libc_start_main_fini_fptr_t) (void);
+static void hpcrun_libc_start_main_fini(); 
+
+typedef pid_t (*fork_fptr_t) (void);
+static pid_t hpcrun_fork();
+
+
+/* libpthread intercepted routines */
+
+#define PARAMS_PTHREAD_CREATE (pthread_t* thread,                            \
+			       const pthread_attr_t* attr,                   \
+			       void *(*start_routine)(void*),                \
+			       void* arg)
+
+typedef struct {
+  void* (*start_routine)(void*);    /* from pthread_create() */
+  void* arg;                        /* from pthread_create() */
+  hpcrun_profiles_desc_t* profdesc; /* profiling info */
+} hpcrun_pthread_create_args_t;
+
+
+typedef int (*pthread_create_fptr_t) PARAMS_PTHREAD_CREATE;
+static int hpcrun_pthread_create PARAMS_PTHREAD_CREATE;
+static void* hpcrun_pthread_create_start_routine(void* arg);
+static void  hpcrun_pthread_cleanup_routine(void* arg);
+
+typedef pthread_t (*pthread_self_fptr_t) (void);
+
+
+/* intercepted signals */
+
+static void hpcrun_sighandler(int sig);
+
 /*************************** Variable Declarations **************************/
 
 /* These variables are set when the library is initialized */
 
-/* Intercepted libc routines */
+/* Intercepted libc and libpthread routines */
 static libc_start_main_fptr_t      real_start_main;
 static libc_start_main_fini_fptr_t real_start_main_fini;
-static fork_fptr_t real_fork;
+static fork_fptr_t                 real_fork;
+static pthread_create_fptr_t       real_pthread_create;
+static pthread_self_fptr_t         real_pthread_self;
 
 /* hpcrun options (this should be a tidy struct) */
-static int      opt_debug = 0;
-static int      opt_recursive = 0;
-static int      opt_thread = 0;
-static char*    opt_eventlist = NULL;
-static char     opt_outpath[PATH_MAX] = "";
-static int      opt_flagscode = 0;
+static int   opt_debug = 0;
+static int   opt_recursive = 0;
+static int   opt_thread = 0;
+static char* opt_eventlist = NULL;
+static char  opt_outpath[PATH_MAX] = "";
+static int   opt_flagscode = 0;
 
 /*************************** Variable Declarations **************************/
 
 /* These variables are set when libc_start_main is intercepted */
 
-/* The profiled command and its run-time load map */
-static char*        profiled_cmd;
-static rtloadmap_t* rtloadmap;
+/* This info is constant throughout the process and can therefore be
+   shared among multiple threads. */
+static char*        profiled_cmd = NULL; /* profiled command */
+static rtloadmap_t* rtloadmap = NULL;    /* run time load map */
+static unsigned     numSysEvents  = 0;   /* estimate */
+static unsigned     numPAPIEvents = 0;   /* estimate */
 
-/* System and PAPI based profiling information (one for each profile).
-   Note that each segented-profile buffer should correspond to data in
-   'rtloadmap'. */
-static hpcrun_profile_desc_vec_t sys_profdescs;
-static hpcpapi_profile_desc_vec_t papi_profdescs;
-
-static unsigned numSysEvents = 0; /* estimate */
-static unsigned numPAPIEvents= 0; /* estimate */
-
-/* hpcrun output file */
-static hpcrun_ofile_desc_t hpc_ofile;
-
+/* Profiling information for the first thread in a process. */
+static hpcrun_profiles_desc_t* hpc_profdesc = NULL;
 
 /****************************************************************************
  * Library initialization and finalization
  ****************************************************************************/
 
 static void init_options();
+static void handle_any_dlerror();
 
 /*
  *  Implicit interface
@@ -174,15 +200,13 @@ hpcrun_fini()
 static void 
 init_library()
 {
-  char *error;
-
   init_options();
 
   if (opt_debug >= 1) { 
     fprintf(stderr, "*** init_library ("HPCRUN_LIB", process %d) ***\n", 
 	    getpid()); 
   }
-  
+
   /* Grab pointers to functions that may be intercepted.
 
      Note: RTLD_NEXT is not documented in the dlsym man/info page
@@ -194,39 +218,43 @@ init_library()
      the shared objects were loaded.  
   */
 
-  /* from libc */
-  real_start_main = (libc_start_main_fptr_t)dlsym(RTLD_NEXT, "__libc_start_main");
-  if ((error = dlerror()) != NULL) {
-    fputs(error, stderr);
-    exit(1);
-  }
+  /* ----------------------------------------------------- 
+   * libc interceptions
+   * ----------------------------------------------------- */
+  real_start_main = 
+    (libc_start_main_fptr_t)dlsym(RTLD_NEXT, "__libc_start_main");
+  handle_any_dlerror();
   if (!real_start_main) {
-    real_start_main = (libc_start_main_fptr_t)dlsym(RTLD_NEXT, 
-					       "__BP___libc_start_main");
-    if ((error = dlerror()) != NULL) {
-      fputs(error, stderr);
-      exit(1);
-    }
+    real_start_main = 
+      (libc_start_main_fptr_t)dlsym(RTLD_NEXT, "__BP___libc_start_main");
+    handle_any_dlerror();
   }
   if (!real_start_main) {
     DIE("fatal error: Cannot intercept beginning of process execution and therefore cannot begin profiling.");
   }
   
   real_fork = (fork_fptr_t)dlsym(RTLD_NEXT, "fork");
-  if ((error = dlerror()) != NULL) {
-    fputs(error, stderr);
-    exit(1);
-  }
+  handle_any_dlerror();
   
-#if 0 // THREAD
-  /* from pthread, needed for PAPI */
-  if (PROFILE_EACH_THREAD) {
+  /* ----------------------------------------------------- 
+   * libpthread interceptions
+   * ----------------------------------------------------- */
+  
+  /* Note: PAPI only supports profiling on a per-thread basis */
+  if (opt_thread) {
+    real_pthread_create = 
+      (pthread_create_fptr_t)dlsym(RTLD_NEXT, "pthread_create");
+    handle_any_dlerror();
+    if (!real_pthread_create) {
+      DIE("fatal error: Cannot intercept thread creation and therefore cannot profile threads.");
+    }
+    
     real_pthread_self = dlsym(RTLD_NEXT, "pthread_self");
+    handle_any_dlerror();
     if (!real_pthread_self) {
-      DIE("fatal error: Cannot profile thread.");
+      DIE("fatal error: Cannot intercept thread id routine and therefore cannot profile threads.");
     }
   }
-#endif
 }
 
 
@@ -317,7 +345,7 @@ init_options()
  *    glibc-x/sysdeps/generic/libc-start.c
  */
 int 
-__libc_start_main START_MAIN_PARAMS
+__libc_start_main PARAMS_START_MAIN
 {
   hpcrun_libc_start_main(main, argc, ubp_av, init, fini, rtld_fini, stack_end);
   return 0; /* never reached */
@@ -325,7 +353,7 @@ __libc_start_main START_MAIN_PARAMS
 
 
 int 
-__BP___libc_start_main START_MAIN_PARAMS
+__BP___libc_start_main PARAMS_START_MAIN
 {
   hpcrun_libc_start_main(main, argc, ubp_av, init, fini, rtld_fini, stack_end);
   return 0; /* never reached */
@@ -333,7 +361,7 @@ __BP___libc_start_main START_MAIN_PARAMS
 
 
 static int 
-hpcrun_libc_start_main START_MAIN_PARAMS
+hpcrun_libc_start_main PARAMS_START_MAIN
 {
   /* squirrel away for later use */
   profiled_cmd = ubp_av[0];  /* command is also in /proc/pid/cmdline */
@@ -412,29 +440,65 @@ hpcrun_fork()
  *  Intercept creation of new theads via pthread_create()
  */
 
-#if 0
-// THREAD
-int pthread_create(pthread_t* thread, pthread_attr_t* attr, 
-		    void * (*start_routine)(void *), void * arg)
+int 
+pthread_create PARAMS_PTHREAD_CREATE
 {
-
-
-}
-
-static int 
-hpcrun_pthread_create(...)
-{
-
+  return hpcrun_pthread_create(thread, attr, start_routine, arg);
 }
 
 
 static int 
-hpcrun_execute_pthread(...)
+hpcrun_pthread_create PARAMS_PTHREAD_CREATE
 {
-  // probe_thread_init_tramp
+  hpcrun_pthread_create_args_t* hpcargs;
+  int rval, sz;
+
+  if (opt_debug >= 1) { 
+    fprintf(stderr, "==> creating thread (process %d) <==\n", getpid());
+  }
+  
+  /* squirrel away original arguments */
+  sz = sizeof(hpcrun_pthread_create_args_t);
+  hpcargs = (hpcrun_pthread_create_args_t*)malloc(sz);
+  if (!hpcargs) { DIE("fatal error: malloc() failed!"); }
+  memset(hpcargs, 0x0, sizeof(hpcrun_pthread_create_args_t));
+  hpcargs->start_routine = start_routine;
+  hpcargs->arg = arg;
+  
+  /* create the thread using our own start routine */
+  rval = real_pthread_create(thread, attr, hpcrun_pthread_create_start_routine,
+			     (void*)hpcargs);
+  return rval;
 }
 
-#endif 
+
+static void*
+hpcrun_pthread_create_start_routine(void* arg)
+{
+  hpcrun_pthread_create_args_t* hpcargs = (hpcrun_pthread_create_args_t*)arg;
+  void* rval;
+  
+  if (opt_debug >= 1) { 
+    fprintf(stderr, "==> caught thread (process %d) <==\n", getpid()); 
+  }
+  
+  pthread_cleanup_push(hpcrun_pthread_cleanup_routine, hpcargs);
+  hpcargs->profdesc = init_thread(1 /*multithreaded*/);
+  rval = (hpcargs->start_routine)(hpcargs->arg);
+  pthread_cleanup_pop(1);
+  return rval;
+}
+
+
+static void  
+hpcrun_pthread_cleanup_routine(void* arg)
+{
+  hpcrun_pthread_create_args_t* hpcargs = (hpcrun_pthread_create_args_t*)arg;
+  hpcrun_profiles_desc_t* profdesc = hpcargs->profdesc;
+  
+  free(hpcargs); /* from hpcrun_pthread_create() */
+  fini_thread(&profdesc, 1 /*multithreaded*/);
+}
 
 
 /****************************************************************************
@@ -475,25 +539,22 @@ hpcrun_sighandler(int sig)
 
 static void count_events(unsigned* sysEvents, unsigned* papiEvents);
 
-static void 
-init_profdescs(hpcrun_profile_desc_vec_t* x, unsigned xpectedxSZ,
-	       hpcpapi_profile_desc_vec_t* y, unsigned xpectedySZ,
-	       rtloadmap_t* rtmap);
+static void init_profdesc(hpcrun_profiles_desc_t** profdesc,
+			   unsigned xpectedxSZ, unsigned xpectedySZ, 
+			   rtloadmap_t* rtmap);
+static void init_profdesc_ofile(hpcrun_profiles_desc_t* profdesc,
+				int multithreaded);
 
-static void add_sysevent(hpcrun_profile_desc_vec_t* profdescs, 
+static void add_sysevent(hpcsys_profile_desc_vec_t* profdescs, 
 			 rtloadmap_t* rtmap, int profidx, 
 			 char* eventnm, uint64_t period);
-static void start_sysprof(hpcrun_profile_desc_vec_t* profdescs);
+static void start_sysprof(hpcsys_profile_desc_vec_t* profdescs);
 
 static void init_papi_for_process();
 static void add_papievent(hpcpapi_profile_desc_vec_t* profdescs, 
 			  rtloadmap_t* rtmap, int profidx, 
 			  char* eventnm, uint64_t period);
 static void start_papi_for_thread(hpcpapi_profile_desc_vec_t* profdescs);
-
-static void init_output(hpcrun_ofile_desc_t* ofile,
-			hpcrun_profile_desc_vec_t* xprofdescs,
-			hpcpapi_profile_desc_vec_t* yprofdescs);
 
 static void init_sighandlers();
 
@@ -517,38 +578,39 @@ init_process()
     init_papi_for_process();
   }  
   
-  init_thread();
+  hpc_profdesc = init_thread(opt_thread);
 }
 
 
 /*
- *  Prepare profiling for this thread
+ *  Prepare profiling for this thread.  N.B.: the caller must keep the
+ *  returned data structure safe!
  */
-static void 
-init_thread()
+static hpcrun_profiles_desc_t* 
+init_thread(int multithreaded)
 {
-  if (opt_debug >= 1) { 
-    fprintf(stderr, "*** init_thread ("HPCRUN_LIB", process %d, tid %d) ***\n",
-	    getpid(), 0);
-  }
-
-  /* Create profile info from event list.  Perform error checking. */
-  init_profdescs(&sys_profdescs, numSysEvents, &papi_profdescs, numPAPIEvents, 
-		 rtloadmap);
-
-  // THREAD: PAPI_set_thr_specific
-
-  /* init hpc_ofile and signal handlers */
-  init_output(&hpc_ofile, &sys_profdescs, &papi_profdescs);
-
-  init_sighandlers();
+  hpcrun_profiles_desc_t* profdesc = NULL;
   
-  if (sys_profdescs.size > 0) {
-    start_sysprof(&sys_profdescs); // FIXME: threads?
+  if (opt_debug >= 1) { 
+    fprintf(stderr, "*** init_thread ("HPCRUN_LIB", process %d) ***\n", 
+	    getpid());
   }
-  if (papi_profdescs.size > 0) {
-    start_papi_for_thread(&papi_profdescs);
+  
+  /* Create profile info from event list and perform error checking. */
+  init_profdesc(&profdesc, numSysEvents, numPAPIEvents, rtloadmap);
+  
+  /* Init signal handlers */
+  init_sighandlers();
+
+  /* Launch profilers */
+  if (HPC_GET_SYSPROFS(profdesc)) {
+    start_sysprof(HPC_GET_SYSPROFS(profdesc));
   }
+  if (HPC_GET_PAPIPROFS(profdesc)) {
+    start_papi_for_thread(HPC_GET_PAPIPROFS(profdesc));
+  }
+
+  return profdesc;
 }
 
 
@@ -581,9 +643,8 @@ count_events(unsigned* sysEvents, unsigned* papiEvents)
 
 
 static void 
-init_profdescs(hpcrun_profile_desc_vec_t* x, unsigned xpectedxSZ,
-	       hpcpapi_profile_desc_vec_t* y, unsigned xpectedySZ,
-	       rtloadmap_t* rtmap)
+init_profdesc(hpcrun_profiles_desc_t** profdesc, 
+	      unsigned numSysEv, unsigned numPapiEv, rtloadmap_t* rtmap)
 {
   /* PAPI should already be initialized if necessary */
   
@@ -591,73 +652,91 @@ init_profdescs(hpcrun_profile_desc_vec_t* x, unsigned xpectedxSZ,
   const unsigned eventbufSZ = 128; /* really the last index, not the size */
   char eventbuf[eventbufSZ+1];
   char* tok, *tmp_eventlist;
-  int rcode, i;
+  int rval, i;
 
   if (opt_debug >= 1) { 
     fprintf(stderr, "Initializing profile descriptors\n");
     fprintf(stderr, "  Found %d sys events and %d PAPI events\n",
-	    xpectedxSZ, xpectedySZ);
+	    numSysEv, numPapiEv);
   }
   
   /* 1a. Ensure we do not profile both system and PAPI events. */
-  if (xpectedxSZ > 0 && xpectedySZ > 0) {
+  if (numSysEv > 0 && numPapiEv > 0) {
     DIE("Cannot profile both WALLCLK and PAPI events at the same time. (Both use SIGPROF.)");
   }
   
   /* 1b. Ensure no more than one wall clock event is profiled.  (Only
      one appropriate itimer (ITIMER_PROF) is provided per process.) */ 
-  if (xpectedxSZ > 1) {
-    xpectedxSZ = 1;
+  if (numSysEv > 1) {
+    numSysEv = 1;
+  }
+
+  /* 1c. Ensure that we do not use system profile with threads */ 
+  if (numSysEv > 0 && opt_thread) {
+    DIE("Cannot profile WALLCLK on multithreaded process. (sprofil() limitation.)");
   }
   
-  /* 1c. Ensure we have enough hardware counters if using PAPI.  Note:
+  /* 1d. Ensure we have enough hardware counters if using PAPI.  Note:
      PAPI cannot profile when using multiplexing. */
   {
     int numHwCntrs = PAPI_num_hwctrs();
-    if (xpectedySZ > numHwCntrs) {
-      ERRMSG("Warning: Too many events (%d) for hardware counters (%d).  Only using first %d events.", xpectedySZ, numHwCntrs, numHwCntrs);
-      xpectedySZ = numHwCntrs;
+    if (numPapiEv > numHwCntrs) {
+      ERRMSG("Warning: Too many events (%d) for hardware counters (%d).  Only using first %d events.", numPapiEv, numHwCntrs, numHwCntrs);
+      numPapiEv = numHwCntrs;
     }
   }
 
+  
+  /* 2a. Initialize profdesc */
+  *profdesc = (hpcrun_profiles_desc_t*)malloc(sizeof(hpcrun_profiles_desc_t));
+  if (!(*profdesc)) { DIE("fatal error: malloc() failed!"); }
+  memset(*profdesc, 0x00, sizeof(hpcrun_profiles_desc_t));
+  
+  /* 2b. Initialize system profdescs */
+  if (numSysEv > 0) {
+    unsigned int vecsz, sz = sizeof(hpcsys_profile_desc_vec_t);
 
-  /* 2a. Initialize hpcrun profdescs */
-  {
-    unsigned int vecbufsz = sizeof(hpcrun_profile_desc_t) * xpectedxSZ;
-    x->size = xpectedxSZ;
-    x->vec = NULL;
-    
-    if (xpectedxSZ > 0) {
-      x->vec = (hpcrun_profile_desc_t*)malloc(vecbufsz);
-      if (!x->vec) {
-	DIE("fatal error: malloc() failed!");
-      }
-      memset(x->vec, 0x00, vecbufsz);
+    HPC_GETL_SYSPROFS(*profdesc) = (hpcsys_profile_desc_vec_t*)malloc(sz);
+    if (!HPC_GET_SYSPROFS(*profdesc)) { 
+      DIE("fatal error: malloc() failed!"); 
     }
-  }
 
-  /* 2b. Initialize papi profdescs */
-  {
-    unsigned int vecbufsz = sizeof(hpcpapi_profile_desc_t) * xpectedySZ;
-    y->size = xpectedySZ;
-    y->vec = NULL;
-    y->eset = PAPI_NULL; 
+    vecsz = sizeof(hpcsys_profile_desc_t) * numSysEv;    
+    HPC_GET_SYSPROFS(*profdesc)->size = numSysEv;    
     
-    if (xpectedySZ > 0) {
-      y->vec = (hpcpapi_profile_desc_t*)malloc(vecbufsz);
-      if (!y->vec) {
-	DIE("fatal error: malloc() failed!");
-      }
-      memset(y->vec, 0x00, vecbufsz);
-      
-      if ((rcode = PAPI_create_eventset(&y->eset)) != PAPI_OK) {
-	DIE("fatal error: (%d) PAPI error %s.", rcode, PAPI_strerror(rcode));
-      }
-      
+    HPC_GET_SYSPROFS(*profdesc)->vec = (hpcsys_profile_desc_t*)malloc(vecsz);
+    if (!HPC_GET_SYSPROFS(*profdesc)->vec) { 
+      DIE("fatal error: malloc() failed!"); 
     }
+    memset(HPC_GET_SYSPROFS(*profdesc)->vec, 0x00, vecsz);
   }
   
+  /* 2c. Initialize papi profdescs */
+  if (numPapiEv > 0) {
+    unsigned int vecsz, sz = sizeof(hpcpapi_profile_desc_vec_t);
+    
+    HPC_GETL_PAPIPROFS(*profdesc) = (hpcpapi_profile_desc_vec_t*)malloc(sz);
+    if (!HPC_GET_PAPIPROFS(*profdesc)) { 
+      DIE("fatal error: malloc() failed!"); 
+    }
 
+    vecsz = sizeof(hpcpapi_profile_desc_t) * numPapiEv;
+    HPC_GET_PAPIPROFS(*profdesc)->size = numPapiEv;    
+    
+    HPC_GET_PAPIPROFS(*profdesc)->vec = (hpcpapi_profile_desc_t*)malloc(vecsz);
+    if (!HPC_GET_PAPIPROFS(*profdesc)->vec) { 
+      DIE("fatal error: malloc() failed!"); 
+    }
+    memset(HPC_GET_PAPIPROFS(*profdesc)->vec, 0x00, vecsz);
+    
+    HPC_GET_PAPIPROFS(*profdesc)->eset = PAPI_NULL;     
+    if ((rval = PAPI_create_eventset(&HPC_GET_PAPIPROFS(*profdesc)->eset)) 
+	!= PAPI_OK) {
+      DIE("fatal error: PAPI error (%d): %s.", rval, PAPI_strerror(rval));
+    }
+  }
+
+  
   /* 3. For each event:period pair, init corresponding profdescs
      entry.  Classification of events *must* be the same as count_events(). */
   tmp_eventlist = strdup(opt_eventlist);
@@ -707,11 +786,13 @@ init_profdescs(hpcrun_profile_desc_vec_t* x, unsigned xpectedxSZ,
     /* Add the event to the appropriate place */
     if (evty == 1) {
       xprofidx++;
-      add_sysevent(x, rtmap, xprofidx, eventbuf, period);
+      add_sysevent(HPC_GET_SYSPROFS(*profdesc), rtmap, xprofidx, 
+		   eventbuf, period);
     } 
     else if (evty == 2) {
       yprofidx++;
-      add_papievent(y, rtmap, yprofidx, eventbuf, period);
+      add_papievent(HPC_GET_PAPIPROFS(*profdesc), rtmap, yprofidx, 
+		    eventbuf, period);
     } 
     else {
       DIE("fatal error: internal programming error - invalid event.");
@@ -719,19 +800,17 @@ init_profdescs(hpcrun_profile_desc_vec_t* x, unsigned xpectedxSZ,
   }
   free(tmp_eventlist);
 
-  /* N.B.: at this point x->sprofs an1d y->sprofs remains uninitialized */
+  /* N.B.: at this point x->sprofs an1d (*y)->sprofs remains uninitialized */
 
 
   /* 4a. For each sys profdescs entry, init sprofil()-specific info */
-  for (i = 0; i < x->size; ++i) {
+  for (i = 0; i < numSysEv; ++i) {
     int mapi;
     unsigned int sprofbufsz = sizeof(struct prof) * rtmap->count;
-    hpcrun_profile_desc_t* prof = &x->vec[i];
+    hpcsys_profile_desc_t* prof = &HPC_GET_SYSPROFS(*profdesc)->vec[i];
     
     prof->sprofs = (struct prof*)malloc(sprofbufsz);
-    if (!prof->sprofs) {
-      DIE("fatal error: malloc() failed!");
-    }
+    if (!prof->sprofs) { DIE("fatal error: malloc() failed!"); }
     memset(prof->sprofs, 0x00, sprofbufsz);
     prof->numsprofs = rtmap->count;
 
@@ -753,8 +832,8 @@ init_profdescs(hpcrun_profile_desc_vec_t* x, unsigned xpectedxSZ,
       /* buffer base and size */
       prof->sprofs[mapi].pr_base = (void*)malloc(bufsz);
       prof->sprofs[mapi].pr_size = bufsz;
-      if (!prof->sprofs[mapi].pr_base) {
-	DIE("fatal error: malloc() failed!");
+      if (!prof->sprofs[mapi].pr_base) { 
+	DIE("fatal error: malloc() failed!"); 
       }
       memset(prof->sprofs[mapi].pr_base, 0x00, bufsz);
 
@@ -772,15 +851,13 @@ init_profdescs(hpcrun_profile_desc_vec_t* x, unsigned xpectedxSZ,
   }
 
   /* 4b. For each papi profdescs entry, init sprofil()-specific info */
-  for (i = 0; i < y->size; ++i) {
+  for (i = 0; i < numPapiEv; ++i) {
     int mapi;
     unsigned int sprofbufsz = sizeof(PAPI_sprofil_t) * rtmap->count;
-    hpcpapi_profile_desc_t* prof = &y->vec[i];
+    hpcpapi_profile_desc_t* prof = &HPC_GET_PAPIPROFS(*profdesc)->vec[i];
     
     prof->sprofs = (PAPI_sprofil_t*)malloc(sprofbufsz);
-    if (!prof->sprofs) {
-      DIE("fatal error: malloc() failed!");
-    }
+    if (!prof->sprofs) { DIE("fatal error: malloc() failed!"); }
     memset(prof->sprofs, 0x00, sprofbufsz);
     prof->numsprofs = rtmap->count;
 
@@ -788,8 +865,8 @@ init_profdescs(hpcrun_profile_desc_vec_t* x, unsigned xpectedxSZ,
       fprintf(stderr, "profile buffer details for %s (process %d):\n", 
 	      prof->einfo.symbol, getpid()); 
       fprintf(stderr, "  count = %d, es=%#x ec=%#x sp=%"PRIu64" ef=%d\n",
-	      prof->numsprofs, y->eset, prof->ecode, prof->period, 
-	      prof->flags);
+	      prof->numsprofs, HPC_GET_PAPIPROFS(*profdesc)->eset, 
+	      prof->ecode, prof->period, prof->flags);
     }
 
     for (mapi = 0; mapi < rtmap->count; ++mapi) {
@@ -820,11 +897,64 @@ init_profdescs(hpcrun_profile_desc_vec_t* x, unsigned xpectedxSZ,
       }
     }
   }
+  
+  init_profdesc_ofile(*profdesc, opt_thread);
+}
+
+
+static void 
+init_profdesc_ofile(hpcrun_profiles_desc_t* profdesc, int multithreaded)
+{
+  static unsigned int outfilenmLen = PATH_MAX; /* never redefined */
+  static unsigned int hostnmLen = 128;         /* never redefined */
+  char outfilenm[outfilenmLen];
+  char hostnm[hostnmLen];
+  char* cmd = profiled_cmd; 
+  char* event = NULL, *evetc = "", *slash = NULL;
+  unsigned numEvents = 0;
+  
+  /* Get components for constructing file name:
+     <outpath>/<command>.<event1>.<hostname>.<pid>.<tid> */
+  
+  /* <command> */
+  slash = rindex(cmd, '/');
+  if (slash) {
+    cmd = slash + 1; /* basename of cmd */
+  }
+  
+  /* <event1> */
+  if (HPC_GET_SYSPROFS(profdesc)) {
+    numEvents += HPC_GET_SYSPROFS(profdesc)->size;
+    event = HPC_GET_SYSPROFS(profdesc)->vec[0].ename;
+  }
+  if (!event && HPC_GET_PAPIPROFS(profdesc)) {
+    numEvents += HPC_GET_PAPIPROFS(profdesc)->size;
+    event = HPC_GET_PAPIPROFS(profdesc)->vec[0].einfo.symbol; /* first name */
+  }
+  if (numEvents > 1) {
+    evetc = "-etc"; /* indicates unshown events */
+  }
+  
+  /* <hostname> */
+  gethostname(hostnm, hostnmLen);
+  hostnm[hostnmLen-1] = '\0'; /* ensure NULL termination */
+
+  
+  /* Create file name */
+  snprintf(outfilenm, outfilenmLen, "%s/%s.%s%s.%s.%d.%ld", 
+	   opt_outpath, cmd, event, evetc, hostnm, getpid(), hpcrun_gettid());
+  
+  profdesc->ofile.fs = fopen(outfilenm, "w");
+  if (profdesc->ofile.fs == NULL) {
+    DIE("fatal error: Failed to open output file '%s'.", outfilenm);
+  }
+  
+  profdesc->ofile.fname = NULL; // skip setting ofile->fname for now
 }
 
 
 static void
-add_sysevent(hpcrun_profile_desc_vec_t* profdescs, rtloadmap_t* rtmap,
+add_sysevent(hpcsys_profile_desc_vec_t* profdescs, rtloadmap_t* rtmap,
 	     int profidx, char* eventnm, uint64_t period)
 {
   /* Cf. the notes below on PAPI_sprofil().  As is presented below,
@@ -844,7 +974,7 @@ add_sysevent(hpcrun_profile_desc_vec_t* profdescs, rtloadmap_t* rtmap,
 	  0x4000              16 (size of Itanium instruction packet)
   */
   
-  hpcrun_profile_desc_t* prof = NULL;
+  hpcsys_profile_desc_t* prof = NULL;
   
   if (profidx >= profdescs->size) {
     /* Assumes that the only system event is wallclock time */
@@ -888,12 +1018,12 @@ add_sysevent(hpcrun_profile_desc_vec_t* profdescs, rtloadmap_t* rtmap,
 
 
 static void 
-start_sysprof(hpcrun_profile_desc_vec_t* profdescs)
+start_sysprof(hpcsys_profile_desc_vec_t* profdescs)
 {
   int ecode;
 
   /* Note: should only be one profdesc! */
-  hpcrun_profile_desc_t* prof = &profdescs->vec[0];
+  hpcsys_profile_desc_t* prof = &profdescs->vec[0];
 
   if (opt_debug >= 1) { 
     fprintf(stderr, "Calling sprofil(): %s (process %d)\n", 
@@ -910,7 +1040,7 @@ start_sysprof(hpcrun_profile_desc_vec_t* profdescs)
 static void 
 init_papi_for_process()
 {  
-  int pcode;
+  int rval;
   int papi_debug = 0;
 
   /* Initialize papi */
@@ -933,21 +1063,18 @@ init_papi_for_process()
   }
   if (papi_debug != 0) {
     fprintf(stderr, "setting PAPI debug option %d. (process %d)\n", papi_debug, getpid());
-    if ((pcode = PAPI_set_debug(papi_debug)) != PAPI_OK) {
-      DIE("fatal error: (%d) PAPI error %s.", pcode, PAPI_strerror(pcode));
+    if ((rval = PAPI_set_debug(papi_debug)) != PAPI_OK) {
+      DIE("fatal error: PAPI error (%d): %s.", rval, PAPI_strerror(rval));
     }
   }
   
-  //PAPI_set_domain(PAPI_DOM_ALL); // FIXME
-
-#if 0 // THREAD
-  // delay this to init_process and after papi_init
-  if (PROFILING_PAPI_EVENTS && PROFILE_EACH_THREAD) {
-    retval = PAPI_thread_init(thread_id_handle);
-    if (retval != PAPI_OK)
-      error("PAPI_thread_init",retval);
+  /* PAPI_set_domain(PAPI_DOM_ALL); */
+  
+  if (opt_thread) {
+    if ((rval = PAPI_thread_init(real_pthread_self)) != PAPI_OK) {
+      DIE("fatal error: PAPI error (%d): %s.", rval, PAPI_strerror(rval));
+    }
   }
-#endif
 }
 
 
@@ -1002,6 +1129,10 @@ add_papievent(hpcpapi_profile_desc_vec_t* profdescs, rtloadmap_t* rtmap,
 
   int pcode;
   hpcpapi_profile_desc_t* prof = NULL;
+  
+  if (!profdescs) {
+    DIE("fatal error: internal programming error.");
+  }
 
   if (profidx >= profdescs->size) {
     ERRMSG("Warning: Ignoring event '%s:%"PRIu64"'.", eventnm, period);
@@ -1015,14 +1146,14 @@ add_papievent(hpcpapi_profile_desc_vec_t* profdescs, rtloadmap_t* rtmap,
      the latter will return info on an event that does not exist. */
   if (PAPI_event_name_to_code(eventnm, &prof->ecode) != PAPI_OK) {
     DIE("fatal error: Event '%s' is not recognized.\n"
-	"\tCheck the list of supported events with 'hpcrun -L'.", eventnm);
+	"\tCheck the list of supported events with `hpcrun -L'.", eventnm);
   }
   if (PAPI_query_event(prof->ecode) != PAPI_OK) { 
     DIE("fatal error: PAPI_query_event for '%s' failed for unknown reason.", 
 	eventnm);
   }
   if ((pcode = PAPI_get_event_info(prof->ecode, &prof->einfo)) != PAPI_OK) {
-    DIE("fatal error: (%d) PAPI error %s.", pcode, PAPI_strerror(pcode));
+    DIE("fatal error: PAPI error (%d): %s.", pcode, PAPI_strerror(pcode));
   }
   
   /* NOTE: Although clumsy, this test has official sanction. */
@@ -1030,7 +1161,7 @@ add_papievent(hpcpapi_profile_desc_vec_t* profdescs, rtloadmap_t* rtmap,
       strcmp(prof->einfo.derived, "DERIVED_CMPD") != 0) {
     DIE("fatal error: '%s' is a PAPI derived event.\n"
 	"\tSampling of derived events is not supported by PAPI.\n" 
-	"\tUse 'hpcrun -L' to find the component native events of '%s' that you can monitor separately.", eventnm, eventnm);
+	"\tUse `hpcrun -L' to find the component native events of '%s' that you can monitor separately.", eventnm, eventnm);
   }
   
   if ((pcode = PAPI_add_event(profdescs->eset, prof->ecode)) != PAPI_OK) {
@@ -1064,6 +1195,8 @@ start_papi_for_thread(hpcpapi_profile_desc_vec_t* profdescs)
 {
   int pcode;
   int i;
+
+  if (!profdescs) { return; }
   
   /* Note: PAPI_sprofil() can profile only one event in an event set,
      though this function may be called on other events in the *same*
@@ -1082,65 +1215,14 @@ start_papi_for_thread(hpcpapi_profile_desc_vec_t* profdescs)
     pcode = PAPI_sprofil(prof->sprofs, prof->numsprofs, profdescs->eset, 
 			 prof->ecode, prof->period, prof->flags);
     if (pcode != PAPI_OK) {
-      DIE("fatal error: (%d) PAPI error %s.", pcode, PAPI_strerror(pcode));
+      DIE("fatal error: PAPI error (%d): %s.", pcode, PAPI_strerror(pcode));
     }
   }
 
   /* 2. Launch PAPI */
   if ((pcode = PAPI_start(profdescs->eset)) != PAPI_OK) {
-    DIE("fatal error: (%d) PAPI error %s.", pcode, PAPI_strerror(pcode));
+    DIE("fatal error: PAPI error (%d): %s.", pcode, PAPI_strerror(pcode));
   }
-}
-
-
-static void 
-init_output(hpcrun_ofile_desc_t* ofile, hpcrun_profile_desc_vec_t* xprofdescs,
-	    hpcpapi_profile_desc_vec_t* yprofdescs)
-{
-  static unsigned int outfilenmLen = PATH_MAX; /* never redefined */
-  static unsigned int hostnmLen = 128;         /* never redefined */
-  char outfilenm[outfilenmLen];
-  char hostnm[hostnmLen];
-  char* cmd = profiled_cmd; 
-  char* event = NULL, *evetc = "", *slash = NULL;
-  
-  // THREAD: add <tid> tag
-  
-  /* Get components for constructing file name:
-     <outpath>/<command>.<event1>.<hostname>.<pid> */
-  
-  /* <command> */
-  slash = rindex(cmd, '/');
-  if (slash) {
-    cmd = slash + 1; /* basename of cmd */
-  }
-  
-  /* <event1> */
-  if (xprofdescs->size > 0) {
-    event = xprofdescs->vec[0].ename;
-  }
-  if (!event && yprofdescs->size > 0) {
-    event = yprofdescs->vec[0].einfo.symbol; /* first event name */
-  }
-  if ((xprofdescs->size + yprofdescs->size) > 1) {
-    evetc = "-etc"; /* indicates unshown events */
-  }
-  
-  /* <hostname> */
-  gethostname(hostnm, hostnmLen);
-  hostnm[hostnmLen-1] = '\0'; /* ensure NULL termination */
-
-  
-  /* Create file name */
-  snprintf(outfilenm, outfilenmLen, "%s/%s.%s%s.%s.%d", 
-	   opt_outpath, cmd, event, evetc, hostnm, getpid());
-  
-  ofile->fs = fopen(outfilenm, "w");
-  if (ofile->fs == NULL) {
-    DIE("fatal error: Failed to open output file '%s'.", outfilenm);
-  }
-  
-  ofile->fname = NULL; // FIXME: skip setting ofile->fname for now
 }
 
 
@@ -1169,46 +1251,16 @@ init_sighandler(int sig)
  * Finalize profiling
  ****************************************************************************/
 
-static void write_all_profiles(hpcrun_ofile_desc_t* ofile, rtloadmap_t* rtmap,
-			       hpcrun_profile_desc_vec_t* xprofdescs,
-			       hpcpapi_profile_desc_vec_t* yprofdescs);
+static void write_all_profiles(hpcrun_profiles_desc_t* profdesc, 
+			       rtloadmap_t* rtmap);
 
-static void stop_sysprof(hpcrun_profile_desc_vec_t* profdescs);
-static void fini_sysprof(hpcrun_profile_desc_vec_t* profdescs);
+static void stop_sysprof(hpcsys_profile_desc_vec_t* profdescs);
 
-static void stop_papi(hpcpapi_profile_desc_vec_t* profdescs);
-static void fini_papi(hpcpapi_profile_desc_vec_t* profdescs);
+static void stop_papi_for_thread(hpcpapi_profile_desc_vec_t* profdescs);
+static void fini_papi_for_thread(hpcpapi_profile_desc_vec_t* profdescs);
+static void fini_papi_for_process();
 
-
-/*
- *  Finalize profiling for this thread
- */
-static void 
-fini_thread()
-{
-  if (opt_debug >= 1) { 
-    fprintf(stderr, "*** fini_thread ("HPCRUN_LIB", process %d, tid %d) ***\n",
-	    getpid(), 0);
-  }
-  
-  // THREAD: PAPI_get_thr_specific
-
-  if (papi_profdescs.size > 0) {
-    stop_papi(&papi_profdescs);
-  }
-  if (sys_profdescs.size > 0) {
-    stop_sysprof(&sys_profdescs); // FIXME: for threads?
-  }
-  
-  write_all_profiles(&hpc_ofile, rtloadmap, &sys_profdescs, &papi_profdescs);
-  
-  if (sys_profdescs.size > 0) {
-    fini_sysprof(&sys_profdescs); /* uninit sys_profdescs */
-  }
-  if (papi_profdescs.size > 0) {
-    fini_papi(&papi_profdescs);   /* uninit papi_profdescs */
-  }
-}
+static void fini_profdesc(hpcrun_profiles_desc_t** profdesc);
 
 
 /*
@@ -1222,12 +1274,47 @@ fini_process()
 	    getpid());
   }
 
-  fini_thread();
+  fini_thread(&hpc_profdesc, opt_thread);
+
+  if (numPAPIEvents > 0) {
+    fini_papi_for_process();
+  }  
+}
+
+
+/*
+ *  Finalize profiling for this thread and free profiling data
+ */
+static void 
+fini_thread(hpcrun_profiles_desc_t** profdesc, int multithreaded)
+{
+  if (opt_debug >= 1) { 
+    fprintf(stderr, "*** fini_thread ("HPCRUN_LIB", process %d, tid %d) ***\n",
+	    getpid(), 0);
+  }
+  
+  /* Stop profiling */
+  if (HPC_GET_PAPIPROFS(*profdesc)) {
+    stop_papi_for_thread(HPC_GET_PAPIPROFS(*profdesc));
+  }
+  if (HPC_GET_SYSPROFS(*profdesc)) {
+    stop_sysprof(HPC_GET_SYSPROFS(*profdesc));
+  }
+
+  /* Write data */
+  write_all_profiles(*profdesc, rtloadmap);
+
+  /* Finalize profiling subsystems and uninit descriptor */
+  if (HPC_GET_PAPIPROFS(*profdesc)) {
+    fini_papi_for_thread(HPC_GET_PAPIPROFS(*profdesc));
+  }
+  
+  fini_profdesc(profdesc);
 }
 
 
 static void 
-stop_sysprof(hpcrun_profile_desc_vec_t* profdescs)
+stop_sysprof(hpcsys_profile_desc_vec_t* profdescs)
 {
   int ecode;
 
@@ -1242,53 +1329,85 @@ stop_sysprof(hpcrun_profile_desc_vec_t* profdescs)
 
 
 static void 
-fini_sysprof(hpcrun_profile_desc_vec_t* profdescs)
-{
-}
-
-
-static void 
-stop_papi(hpcpapi_profile_desc_vec_t* profdescs)
+stop_papi_for_thread(hpcpapi_profile_desc_vec_t* profdescs)
 {
   int pcode;
   long_long* values = NULL; // array the size of the eventset
   
   if ((pcode = PAPI_stop(profdescs->eset, values)) != PAPI_OK) {
 #if 0
-    DIE("fatal error: (%d) PAPI error %s.", pcode, PAPI_strerror(pcode));
+    DIE("fatal error: PAPI error (%d): %s.", pcode, PAPI_strerror(pcode));
 #endif
   }
 }
 
 
 static void 
-fini_papi(hpcpapi_profile_desc_vec_t* profdescs)
+fini_papi_for_thread(hpcpapi_profile_desc_vec_t* profdescs)
 {
-  int i, j;
-
   /* No need to test for failures during PAPI calls -- we've already
      got the goods! */
-  
-  for (i = 0; i < profdescs->size; ++i) {
-    hpcpapi_profile_desc_t* prof = &profdescs->vec[i];
-    
-    for (j = 0; j < prof->numsprofs; ++j) {
-      free(prof->sprofs[j].pr_base);
-      prof->sprofs[j].pr_base = 0;
-    }
-    free(prof->sprofs);
-    prof->sprofs = 0;
-  }
-  
   PAPI_cleanup_eventset(profdescs->eset);
   PAPI_destroy_eventset(&profdescs->eset);
   profdescs->eset = PAPI_NULL;
-  
-  free(profdescs->vec);
-  profdescs->vec = 0;
-  profdescs->size = 0;
-  
+}
+
+
+static void 
+fini_papi_for_process()
+{
   PAPI_shutdown();
+}
+
+
+static void 
+fini_profdesc(hpcrun_profiles_desc_t** profdesc)
+{
+  int i, j;
+  unsigned numSysEv = 0, numPapiEv = 0;
+  
+  if (!profdesc || !*profdesc) { return; }
+
+  if (HPC_GET_SYSPROFS(*profdesc)) {
+    numSysEv = HPC_GET_SYSPROFS(*profdesc)->size;
+  }
+  if (HPC_GET_PAPIPROFS(*profdesc)) {
+    numPapiEv = HPC_GET_PAPIPROFS(*profdesc)->size;
+  }
+
+  /* 1a. Uninitialize system profdescs */
+  for (i = 0; i < numSysEv; ++i) {
+    hpcsys_profile_desc_t* prof = &HPC_GET_SYSPROFS(*profdesc)->vec[i];
+    for (j = 0; j < prof->numsprofs; ++j) {
+      free(prof->sprofs[j].pr_base);
+    }
+    free(prof->sprofs);
+    prof->sprofs = NULL;
+  }
+  
+  if (numSysEv > 0) {
+    free(HPC_GET_SYSPROFS(*profdesc)->vec);
+    free(HPC_GET_SYSPROFS(*profdesc));
+  }
+
+  /* 1b. Uninitialize papi profdescs */
+  for (i = 0; i < numPapiEv; ++i) {
+    hpcpapi_profile_desc_t* prof = &HPC_GET_PAPIPROFS(*profdesc)->vec[i];
+    for (j = 0; j < prof->numsprofs; ++j) {
+      free(prof->sprofs[j].pr_base);
+    }
+    free(prof->sprofs);
+    prof->sprofs = NULL;
+  }
+
+  if (numPapiEv > 0) {
+    free(HPC_GET_PAPIPROFS(*profdesc)->vec);
+    free(HPC_GET_PAPIPROFS(*profdesc));
+  }
+
+  /* 1c. Uninitialize profdesc */
+  free(*profdesc);
+  *profdesc = NULL;
 }
 
 
@@ -1297,13 +1416,12 @@ fini_papi(hpcpapi_profile_desc_vec_t* profdescs)
  ****************************************************************************/
 
 static void write_module_profile(FILE* fp, rtloadmod_desc_t* mod,
-				 hpcrun_profile_desc_vec_t* xprofdescs,
-				 hpcpapi_profile_desc_vec_t* yprofdescs, 
+				 hpcrun_profiles_desc_t* profdesc, 
 				 int sprofidx);
 
 static void write_event_hdr(FILE *fs, char* name, char* desc, 
 			    uint64_t period);
-static void write_sysevent_data(FILE *fs, hpcrun_profile_desc_t* prof,
+static void write_sysevent_data(FILE *fs, hpcsys_profile_desc_t* prof,
 				int sprofidx);
 static void write_papievent_data(FILE *fp, hpcpapi_profile_desc_t* prof, 
 			     int sprofidx);
@@ -1317,39 +1435,33 @@ static void write_string(FILE *fp, char *str);
  *  Write profile data for this process.  See hpcrun.h for file format info.
  */
 static void 
-write_all_profiles(hpcrun_ofile_desc_t* ofile, rtloadmap_t* rtmap,
-		   hpcrun_profile_desc_vec_t* xprofdescs,
-		   hpcpapi_profile_desc_vec_t* yprofdescs)
+write_all_profiles(hpcrun_profiles_desc_t* profdesc, rtloadmap_t* rtmap)
 {
   int i;
-  FILE* fs = ofile->fs;
-    
+  FILE* fs = profdesc->ofile.fs;
+
   /* <header> */
   fwrite(HPCRUNFILE_MAGIC_STR, 1, HPCRUNFILE_MAGIC_STR_LEN, fs);
   fwrite(HPCRUNFILE_VERSION, 1, HPCRUNFILE_VERSION_LEN, fs);
   fputc(HPCRUNFILE_ENDIAN, fs);
   
   /* <loadmodule_list> */
-#if 0  
-  hpcpapi_profile_desc_t* prof = &yprofdescs->vec[i];
-#endif
-
   hpc_fwrite_le4(&(rtmap->count), fs);
   for (i = 0; i < rtmap->count; ++i) {
-    write_module_profile(fs, &(rtmap->module[i]), xprofdescs, yprofdescs, i);
+    write_module_profile(fs, &(rtmap->module[i]), profdesc, i);
   }
   
   fclose(fs);
-  ofile->fs = NULL;
+  profdesc->ofile.fs = NULL;
 }
 
 
 static void 
 write_module_profile(FILE* fs, rtloadmod_desc_t* mod,
-		     hpcrun_profile_desc_vec_t* xprofdescs,
-		     hpcpapi_profile_desc_vec_t* yprofdescs, int sprofidx)
+		     hpcrun_profiles_desc_t* profdesc, int sprofidx)
 {
-  int i, evcount;
+  int i, numEv = 0;
+  unsigned numSysEv = 0, numPapiEv = 0;
   
   if (opt_debug >= 2) { fprintf(stderr, "writing module %s (process %d at offset %#"PRIx64")\n", mod->name, getpid(), mod->offset); }
 
@@ -1358,19 +1470,26 @@ write_module_profile(FILE* fs, rtloadmod_desc_t* mod,
   hpc_fwrite_le8(&(mod->offset), fs);
 
   /* <loadmodule_eventcount> */
-  evcount = xprofdescs->size + yprofdescs->size;
-  hpc_fwrite_le4(&evcount, fs);
+  if (HPC_GET_SYSPROFS(profdesc)) { 
+    numSysEv = HPC_GET_SYSPROFS(profdesc)->size;
+    numEv += numSysEv; 
+  }
+  if (HPC_GET_PAPIPROFS(profdesc)) { 
+    numPapiEv = HPC_GET_PAPIPROFS(profdesc)->size;
+    numEv += numPapiEv; 
+  }
+  hpc_fwrite_le4(&numEv, fs);
   
   /* Event data */
   /*   <event_x_name> <event_x_description> <event_x_period> */
   /*   <event_x_data> */
-  for (i = 0; i < xprofdescs->size; ++i) {
-    hpcrun_profile_desc_t* prof = &xprofdescs->vec[i];
+  for (i = 0; i < numSysEv; ++i) {
+    hpcsys_profile_desc_t* prof = &HPC_GET_SYSPROFS(profdesc)->vec[i];
     write_event_hdr(fs, prof->ename, prof->ename, prof->period);
     write_sysevent_data(fs, prof, sprofidx);
   }
-  for (i = 0; i < yprofdescs->size; ++i) {
-    hpcpapi_profile_desc_t* prof = &yprofdescs->vec[i];
+  for (i = 0; i < numPapiEv; ++i) {
+    hpcpapi_profile_desc_t* prof = &HPC_GET_PAPIPROFS(profdesc)->vec[i];
     write_event_hdr(fs, prof->einfo.symbol, prof->einfo.long_descr,
 		    prof->period);
     write_papievent_data(fs, prof, sprofidx);
@@ -1389,7 +1508,7 @@ write_event_hdr(FILE *fs, char* name, char* desc, uint64_t period)
 
 
 static void 
-write_sysevent_data(FILE *fs, hpcrun_profile_desc_t* prof, int sprofidx)
+write_sysevent_data(FILE *fs, hpcsys_profile_desc_t* prof, int sprofidx)
 {
   char* ename = prof->ename;
   struct prof* sprof = &(prof->sprofs[sprofidx]);
@@ -1458,5 +1577,30 @@ write_string(FILE *fs, char *str)
   fwrite(str, 1, len, fs);
 }
 
+
 /****************************************************************************/
+
+/* hpcrun_gettid: return a thread id */
+static long
+hpcrun_gettid()
+{
+  /* We only support POSIX threads right now */
+  if (real_pthread_self) {
+    return (long)real_pthread_self();
+  }
+  else {
+    return 0;
+  }
+}
+
+static void
+handle_any_dlerror()
+{
+  /* Note: We assume dlsym() or something similar has just been called! */
+  char *error;
+  if ((error = dlerror()) != NULL) {
+    fputs(error, stderr);
+    exit(1);
+  }
+}
 
