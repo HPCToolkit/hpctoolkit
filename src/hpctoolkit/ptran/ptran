@@ -52,8 +52,11 @@
 # $Date$
 # $Revision$
 # $Log$
-# Revision 1.1  2003/04/21 21:55:06  slindahl
-# Initial revision
+# Revision 1.2  2003/07/14 18:57:08  eraxxon
+# Make -m consistent with usage (-m goes with machine, not platform!)
+#
+# Revision 1.1.1.1  2003/04/21 21:55:06  slindahl
+# Initial import of HPCToolkit by Sarah Gonzales as of 4/21/03
 #
 # Revision 1.6  2003/03/26  21:25:20  eraxxon
 # Rename HPCTools to HPCToolkit.
@@ -106,17 +109,19 @@ use vars qw($opt_m $opt_e);
 
 $usage = 
 "Usage: 
-  ptran [-V] [-m platform] [-e nn] [-h] < input > output
+  ptran [-V] [-m machine] [-e nn] [-h] < input > output
 
 Reads a vendor-specific profile file and outputs a PROFILE document.
 
-  -V          : print version information
-  -m platform : Specify a platform if it is not inferred correctly.
-                sgi (ssrun), compaq (uprofile).
-  -e nn       : nn is an integer that selects specific metrics from
-                experiments (e.g. ideal on SGIs) that generate more
-                than one interesting column in the profile file.
-  -h          : prints help
+  -V : print version information
+  -m machine :
+     Specify a machine if it is not inferred correctly.
+     sgi (ssrun) or compaq (uprofile).
+  -e nn
+     nn is an integer that selects specific metrics from experiments 
+     (e.g. ideal on SGIs) that generate more than one interesting column 
+     in the profile file.
+  -h : prints help
 ";
 
 # ----------------------------------------------------------------------
