@@ -50,6 +50,7 @@
 //************************* System Include Files ****************************
 
 #include <iostream>
+using std::cerr;
 #include <fstream>
 #include <new>
 
@@ -65,85 +66,95 @@ using namespace ScopeTreeBuilder;
 
 //*************************** Forward Declarations ***************************
 
-using std::cerr;
+int
+real_main(int argc, char* argv[]);
 
-bool WriteMapFile(PCToSrcLineXMap* map, String& fname);
+bool 
+WriteMapFile(PCToSrcLineXMap* map, std::string& fname);
 
 //****************************************************************************
 
 int
 main(int argc, char* argv[])
 {
-  Args args(argc, argv);
+  try {
+    return real_main(argc, argv);
+  }
+  catch (CmdLineParser::Exception& e) {
+    e.Report(cerr); // fatal error
+    exit(1);
+  }
+  catch (std::bad_alloc& x) {
+    cerr << "Error: Memory alloc failed!\n";
+    exit(1);
+  }
+  catch (...) {
+    cerr << "Unknown exception caught\n";
+    exit(2);
+  }
+}
 
+
+int
+real_main(int argc, char* argv[])
+{
+  Args args(argc, argv);
+  
   // ------------------------------------------------------------
   // Read executable
   // ------------------------------------------------------------
   Executable* exe = NULL;
   try {
     exe = new Executable();
-    if (!exe->Open(args.inputFile)) { exit(1); } // Error already printed 
-    if (!exe->Read()) { exit(1); }               // Error already printed 
-  } catch (std::bad_alloc& x) {
+    if (!exe->Open(args.inputFile.c_str())) { 
+      exit(1); // Error already printed 
+    } 
+    if (!exe->Read()) { exit(1); } // Error already printed 
+  } 
+  catch (std::bad_alloc& x) {
     cerr << "Error: Memory alloc failed while reading binary!\n";
     exit(1);
-  } catch (...) {
-    cerr << "Error: Exception encountered while reading binary!\n";
-    exit(2);
   }
-
-  if (args.debugMode) {
+  
+  if (args.dumpBinary) {
     // ------------------------------------------------------------
     // Dump executable without a scope tree
     // ------------------------------------------------------------
-    try {
-      exe->Dump(std::cout);
-    } catch (...) {
-      cerr << "Error: Exception encountered while dumping binary!\n";
-      exit(2);
-    }
+    exe->Dump(std::cout);
+    
   } else {
     // ------------------------------------------------------------
     // Build and print the ScopeTree
     // ------------------------------------------------------------
-    try {
-      PCToSrcLineXMap* map = NULL;
-      if (args.pcMapFile.Length() > 0) {
-	map = (PCToSrcLineXMap*)1; // FIXME:indicate that map should be created
-      }
-      
-      // Build scope tree
-      PgmScopeTree* pgmScopeTree = BuildFromExe(exe, map, 
-						args.canonicalPathList, 
-						args.normalizeScopeTree,
-						args.verboseMode);
-      
-      // Write map (map should now be a valid pointer) & scope tree
-      if (map) { WriteMapFile(map, args.pcMapFile); }
-      WriteScopeTree(std::cout, pgmScopeTree, args.prettyPrintOutput);
-      
-      // Cleanup
-      delete pgmScopeTree;
-      delete map;
-    } catch (std::bad_alloc& x) {
-      cerr << "Error: Memory alloc failed while preparing PGM tree!\n";
-      exit(1);
-    } catch (...) {
-      cerr << "Error: Exception encountered while preparing PGM tree!\n";
-      exit(2);
+    PCToSrcLineXMap* map = NULL;
+    if (!args.pcMapFile.empty()) {
+      map = (PCToSrcLineXMap*)1; // FIXME:indicate that map should be created
     }
+    
+    // Build scope tree
+    PgmScopeTree* pgmScopeTree =
+      BuildFromExe(exe, map, args.canonicalPathList.c_str(),
+		   args.normalizeScopeTree, args.verboseMode);
+    
+    // Write map (map should now be a valid pointer) & scope tree
+    if (map) { WriteMapFile(map, args.pcMapFile); }
+    WriteScopeTree(std::cout, pgmScopeTree, args.prettyPrintOutput);
+    
+    // Cleanup
+    delete pgmScopeTree;
+    delete map;
   }
-
+  
   delete exe;
   return (0);
 }
 
 //****************************************************************************
 
-bool WriteMapFile(PCToSrcLineXMap* map, String& fname)
+bool 
+WriteMapFile(PCToSrcLineXMap* map, std::string& fname)
 {
-
-  std::ofstream ofile(fname);
+  std::ofstream ofile(fname.c_str());
   if ( !ofile.is_open() || ofile.fail() ) {
     cerr << "Error opening file `" << fname << "'\n";
     return false;
