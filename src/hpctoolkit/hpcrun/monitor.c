@@ -4,7 +4,7 @@
 /****************************************************************************
 //
 // File: 
-//    preload.c
+//    $Source$
 //
 // Purpose:
 //    Prepares and finalizes profiling for a process.  The library
@@ -20,7 +20,7 @@
 // Author:
 //    Written by John Mellor-Crummey and Nathan Tallent, Rice University.
 //
-//    The PAPI Initialization code was adapted from parts of The
+//    The PAPI Initialization code was originally adapted from parts of The
 //    Visual Profiler by Curtis L. Janssen (vmon.c).
 //    
 *****************************************************************************/
@@ -42,16 +42,12 @@
 
 #include <dlfcn.h>
 
-#include <papi.h>
-#if !(defined(PAPI_VERSION) && (PAPI_VERSION_MAJOR(PAPI_VERSION) >= 3))
-# error "Must use PAPI version 3 or greater."
-#endif
-
 /**************************** User Include Files ****************************/
+
+#include "hpcpapi.h" /* <papi.h>, etc. */
 
 #include "hpcrun.h"
 #include "map.h"
-#include "flags.h"
 #include "io.h"
 
 /****************************** Type Declarations ***************************/
@@ -66,7 +62,7 @@
 
 typedef int (*libc_start_main_fptr_t) START_MAIN_PARAMS;
 
-static int pr_libc_start_main START_MAIN_PARAMS;
+static int hpcr_libc_start_main START_MAIN_PARAMS;
 
 static libc_start_main_fptr_t sm;
 
@@ -74,12 +70,12 @@ static void (*real_fini) (void);
 
 /**************************** Forward Declarations **************************/
 
-static void pr_fini(void); 
+static void hpcr_fini(void); 
 
 static void init_options(void);
 
-static void init_papirun(void);
-static void done_papirun(void);
+static void init_hpcrun(void);
+static void done_hpcrun(void);
 
 static void write_all_profiles(void);
 
@@ -88,14 +84,13 @@ static void write_all_profiles(void);
 /* the profiled command */
 static char *command_name;
 
-/* papirun options (this should be a tidy struct) */
+/* hpcrun options (this should be a tidy struct) */
 static int      opt_debug;
 static int      opt_recursive;
 static char*    opt_eventname;
 static uint64_t opt_sampleperiod;
 static char     opt_outpath[PATH_MAX];
 static int      opt_flagscode;
-static int      opt_dump_events; /* no, short, long dump (0,1,2) */
 
 /* used for PAPI stuff (this should be a tidy struct) */
 static PAPI_event_info_t papi_eventinfo;
@@ -106,13 +101,12 @@ static int               papi_flagscode;
 static PAPI_sprofil_t*   papi_profiles;
 
 static unsigned int papi_bytesPerCodeBlk;
-
 /* PAPI version 2 */
 // static unsigned int papi_bytesPerCntr = sizeof(unsigned short); /* 2 */
 static unsigned int papi_bytesPerCntr = sizeof(unsigned int); /* 4 */
 static unsigned int papi_scale;
 
-/* papirun */
+/* hpcrun */
 static loadmodules_t *loadmodules;
 static FILE *proffile;
 
@@ -128,7 +122,7 @@ _init(void)
 
   init_options();
 
-  if (opt_debug >= 1) { fprintf(stderr, "** initializing papirun.so **\n"); }
+  if (opt_debug >= 1) { fprintf(stderr, "** initializing libhpcrun.so **\n"); }
 
   /* Grab pointers to functions that will be intercepted.
 
@@ -155,7 +149,7 @@ _init(void)
     }
   }
   if (!sm) {
-    fputs("papirun: cannot intercept beginning of process execution and therefore cannot begin profiling\n", stderr);
+    fputs("hpcrun: cannot intercept beginning of process execution and therefore cannot begin profiling\n", stderr);
     exit(1);
   }
 }
@@ -166,7 +160,7 @@ _init(void)
 void 
 _fini(void)
 {
-  if (opt_debug >= 1) { fprintf(stderr, "** finalizing papirun.so **\n"); }
+  if (opt_debug >= 1) { fprintf(stderr, "** finalizing libhpcrun.so **\n"); }
 }
 
 
@@ -174,7 +168,7 @@ static void
 init_options(void)
 {
   char *env_debug, *env_recursive, *env_event, *env_period, *env_outpath, 
-    *env_flags, *env_dump_events;
+    *env_flags;
   int ret;
 
   /* Debugging: default is off */
@@ -188,7 +182,8 @@ init_options(void)
   opt_recursive = (env_recursive ? atoi(env_recursive) : 1);
   if (!opt_recursive) {
     /* turn off profiling for any processes spawned by this one */
-    unsetenv("LD_PRELOAD");
+    unsetenv("LD_PRELOAD"); 
+    /* FIXME: just extract HPCRUN_LIB */
   }
 
   if (opt_debug >= 1) { 
@@ -209,7 +204,7 @@ init_options(void)
     opt_sampleperiod = atoi(env_period);
   }
   if (opt_sampleperiod == 0) {
-    fprintf(stderr, "papirun: invalid period '%llu'. Aborting.\n", 
+    fprintf(stderr, "hpcrun: invalid period '%llu'. Aborting.\n", 
 	    opt_sampleperiod);
     exit(-1);
   }
@@ -223,23 +218,19 @@ init_options(void)
   
   /* Profiling flags: default PAPI_PROFIL_POSIX */
   {
-    const papi_flagdesc_t *f = papirun_flag_by_name("PAPI_PROFIL_POSIX");
+    const papi_flagdesc_t *f = hpcrun_flag_by_name("PAPI_PROFIL_POSIX");
     opt_flagscode = f->code;
 
     env_flags = getenv("HPCRUN_EVENT_FLAG");
     if (env_flags) {
-      if ((f = papirun_flag_by_name(env_flags)) == NULL) {
-	fprintf(stderr, "papirun: invalid profiling flag '%s'. Aborting.\n",
+      if ((f = hpcrun_flag_by_name(env_flags)) == NULL) {
+	fprintf(stderr, "hpcrun: invalid profiling flag '%s'. Aborting.\n",
 		env_flags);
 	exit(-1);
       }
       opt_flagscode = f->code;
     }
   }
-
-  /* Dump events: default 0 */
-  env_dump_events = getenv("HPCRUN_DUMP_EVENTS");
-  opt_dump_events = (env_dump_events ? atoi(env_dump_events) : 0);
 }
 
 /****************************************************************************/
@@ -252,42 +243,42 @@ init_options(void)
 int 
 __libc_start_main START_MAIN_PARAMS
 {
-  pr_libc_start_main(main, argc, ubp_av, init, fini, rtld_fini, stack_end);
+  hpcr_libc_start_main(main, argc, ubp_av, init, fini, rtld_fini, stack_end);
   return 0; /* never reached */
 }
 
 int 
 __BP___libc_start_main START_MAIN_PARAMS
 {
-  pr_libc_start_main(main, argc, ubp_av, init, fini, rtld_fini, stack_end);
+  hpcr_libc_start_main(main, argc, ubp_av, init, fini, rtld_fini, stack_end);
   return 0; /* never reached */
 }
 
 static int 
-pr_libc_start_main START_MAIN_PARAMS
+hpcr_libc_start_main START_MAIN_PARAMS
 {
   /* squirrel away for later use */
   command_name = ubp_av[0];  /* command is also in /proc/pid/cmdline */
   real_fini = fini;
   
   /* initialize papi profiling */
-  init_papirun();
+  init_hpcrun();
   
   /* launch the process */
   if (opt_debug >= 1) {
     fprintf(stderr, "** launching application: %s\n", command_name);
   }
-  (*sm)(main, argc, ubp_av, init, pr_fini, rtld_fini, stack_end);
+  (*sm)(main, argc, ubp_av, init, hpcr_fini, rtld_fini, stack_end);
   return 0; /* never reached */
 }
 
 
-/* papirun fini */
+/* hpcrun fini */
 static void 
-pr_fini(void)
+hpcr_fini(void)
 {
   if (real_fini) (*real_fini)();
-  done_papirun();
+  done_hpcrun();
   exit(0);
 }
 
@@ -300,28 +291,18 @@ static void init_papi(void);
 static void start_papi(void);
 static void init_output(void);
 
-static void papirun_dump_valid_papi_events(int dump);
-
 /*
  *  Prepare for PAPI profiling
  */
 static void 
-init_papirun(void)
+init_hpcrun(void)
 {
   if (opt_debug >= 1) { 
-    fprintf(stderr, "* initializing papirun monitoring\n");
+    fprintf(stderr, "* initializing hpcrun monitoring\n");
   }
 
   init_papi();
-
-  /* List all PAPI events */
-  if (opt_dump_events > 0) {
-    papirun_dump_valid_papi_events(opt_dump_events);
-    exit(0);
-  }
-
   init_output();
-  
   start_papi();
 }
 
@@ -331,17 +312,9 @@ init_papi(void)
 {  
   int pcode;
   const char* evstr;
-
-  /* Initiailize PAPI library */
-  int papi_version; 
-  papi_version = PAPI_library_init(PAPI_VER_CURRENT);
-  if (papi_version != PAPI_VER_CURRENT) {
-    fprintf(stderr, "papirun: PAPI library initialization failure - expected version %d, dynamic library was version %d. Aborting.\n", PAPI_VER_CURRENT, papi_version);
-    exit(-1);
-  }
   
-  if (papi_version < 3) {
-    fprintf(stderr, "papirun: Using PAPI library version %d; expecting version 3 or greater.\n", papi_version);
+  /* Initiailize PAPI library */
+  if (hpc_init_papi() != 0) {
     exit(-1);
   }
   
@@ -349,32 +322,32 @@ init_papi(void)
   papi_eventcode = 0;
   if ((pcode = PAPI_event_name_to_code(opt_eventname, &papi_eventcode))
       != PAPI_OK) {
-    fprintf(stderr, "papirun: invalid PAPI event '%s'. Aborting.\n",
+    fprintf(stderr, "hpcrun: invalid PAPI event '%s'. Aborting.\n",
 	    opt_eventname);
     exit(-1);
   }
   if ((pcode = PAPI_query_event(papi_eventcode)) != PAPI_OK) { 
     /* should not strictly be necessary */
     fprintf(stderr, 
-	    "papirun: PAPI event '%s' not supported (code=%d). Aborting.\n",
+	    "hpcrun: PAPI event '%s' not supported (code=%d). Aborting.\n",
 	    evstr, pcode);
     exit(-1);
   }
   if ((pcode = PAPI_get_event_info(papi_eventcode, &papi_eventinfo)) 
       != PAPI_OK) {
-    fprintf(stderr, "papirun: PAPI error %d: '%s'. Aborting.\n",
+    fprintf(stderr, "hpcrun: PAPI error %d: '%s'. Aborting.\n",
 	    pcode, PAPI_strerror(pcode));
     exit(-1);
   }
   
   papi_eventset = PAPI_NULL;
   if (PAPI_create_eventset(&papi_eventset) != PAPI_OK) {
-    fprintf(stderr, "papirun: failed to create PAPI event set. Aborting.\n");
+    fprintf(stderr, "hpcrun: failed to create PAPI event set. Aborting.\n");
     exit(-1);
   }
   
   if (PAPI_add_event(papi_eventset, papi_eventcode) != PAPI_OK) {
-    fprintf(stderr, "papirun: failed to add event '%s'. Aborting.\n", evstr);
+    fprintf(stderr, "hpcrun: failed to add event '%s'. Aborting.\n", evstr);
     exit(-1);
   }
   
@@ -432,14 +405,14 @@ init_papi(void)
   papi_scale = 0x10000; // 0x8000 * (papi_bytesPerCntr >> 1);
   
   if ( (papi_scale * papi_bytesPerCodeBlk) != (65536 * papi_bytesPerCntr) ) {
-    fprintf(stderr, "papirun: Programming error!\n");
+    fprintf(stderr, "hpcrun: Programming error!\n");
   }
 }
 
 static void 
 start_papi(void)
 {
-  loadmodules_t *lm = papirun_code_lines_from_loadmap(opt_debug);
+  loadmodules_t *lm = hpcrun_code_lines_from_loadmap(opt_debug);
   unsigned int bufsz;
   int i;
 
@@ -487,7 +460,7 @@ start_papi(void)
 			 papi_eventcode, papi_sampleperiod, 
 			 papi_flagscode);
     if (r != PAPI_OK) {
-      fprintf(stderr,  "papirun: PAPI_sprofil failed, code %d. Aborting.\n", 
+      fprintf(stderr,  "hpcrun: PAPI_sprofil failed, code %d. Aborting.\n", 
 	      r);
       exit(-1);
     }
@@ -509,7 +482,7 @@ start_papi(void)
     if (opt_debug >= 3) {
       fprintf(stderr, "setting debug option %d.\n", papi_opt_debug);
       if (PAPI_set_debug(papi_opt_debug) != PAPI_OK) {
-	fprintf(stderr,"papirun: failed to set debug level. Aborting.\n");
+	fprintf(stderr,"hpcrun: failed to set debug level. Aborting.\n");
 	exit(-1);
       }
     }
@@ -517,7 +490,7 @@ start_papi(void)
 
   /* 4. Launch PAPI */
   if (PAPI_start(papi_eventset) != PAPI_OK) {
-    fprintf(stderr,"papirun: failed to start event set. Aborting.\n");
+    fprintf(stderr,"hpcrun: failed to start event set. Aborting.\n");
     exit(-1);
   }
 }
@@ -546,7 +519,7 @@ init_output(void)
   
   len = strlen(opt_outpath) + strlen(executable) + strlen(eventstr) + 32;
   if (len >= outfilenmLen) {
-    fprintf(stderr,"papirun: output file pathname too long! Aborting.\n");
+    fprintf(stderr,"hpcrun: output file pathname too long! Aborting.\n");
     exit(-1);
   }
 
@@ -556,7 +529,7 @@ init_output(void)
   proffile = fopen(outfilenm, "w");
 
   if (proffile == NULL) {
-    fprintf(stderr,"papirun: failed to open output file '%s'. Aborting.\n",
+    fprintf(stderr,"hpcrun: failed to open output file '%s'. Aborting.\n",
 	    outfilenm);
     exit(-1);
   }
@@ -571,11 +544,11 @@ init_output(void)
  *  Finalize PAPI profiling
  */
 static void 
-done_papirun(void)
+done_hpcrun(void)
 {
   long long ct = 0;
 
-  if (opt_debug >= 1) { fprintf(stderr, "done_papirun:\n"); }
+  if (opt_debug >= 1) { fprintf(stderr, "done_hpcrun:\n"); }
   PAPI_stop(papi_eventset, &ct);
   PAPI_remove_event(papi_eventset, papi_eventcode);
 
@@ -605,9 +578,9 @@ write_all_profiles(void)
   FILE *fp = proffile;
 
   /* Header information */
-  fwrite(HPCRUN_MAGIC_STR, 1, HPCRUN_MAGIC_STR_LEN, fp);
-  fwrite(HPCRUN_VERSION, 1, HPCRUN_VERSION_LEN, fp);
-  fputc(HPCRUN_ENDIAN, fp);
+  fwrite(HPCRUNFILE_MAGIC_STR, 1, HPCRUNFILE_MAGIC_STR_LEN, fp);
+  fwrite(HPCRUNFILE_VERSION, 1, HPCRUNFILE_VERSION_LEN, fp);
+  fputc(HPCRUNFILE_ENDIAN, fp);
 
   /* Load modules */
   {
@@ -688,106 +661,5 @@ write_string(FILE *fp, char *str)
   fwrite(str, 1, len, fp);
 }
 
-/****************************************************************************
- * Dump papi events
- ****************************************************************************/
-
-/*
- *  List available PAPI and native events.  (Based on PAPI's
- *  src/ctests/avail.c) 
- */
-static void 
-papirun_dump_valid_papi_events(int dump)
-{
-  /* PAPI_library_init must have been called */
-  int i, count;
-  int retval;
-  PAPI_event_info_t info;
-  const PAPI_hw_info_t* hwinfo = NULL;
-  static const char* separator_major = "\n=========================================================================\n\n";
-  static const char* separator_minor = "-------------------------------------------------------------------------\n";
-
-#if (!defined(PAPI_ENUM_ALL))
-  int PAPI_ENUM_ALL = 0; /* supposed to be defined according to man page... */
-#endif
-
-  /* Hardware information */
-  if ((hwinfo = PAPI_get_hardware_info()) == NULL) {
-    fprintf(stderr,"papirun: failed to set debug level. Aborting.\n");
-    exit(-1);
-  }
-  printf("*** Hardware information ***\n");
-  printf(separator_minor);
-  printf("Vendor string and code  : %s (%d)\n", hwinfo->vendor_string,
-	 hwinfo->vendor);
-  printf("Model string and code   : %s (%d)\n", 
-	 hwinfo->model_string, hwinfo->model);
-  printf("CPU Revision            : %f\n", hwinfo->revision);
-  printf("CPU Megahertz           : %f\n", hwinfo->mhz);
-  printf("CPU's in this Node      : %d\n", hwinfo->ncpu);
-  printf("Nodes in this System    : %d\n", hwinfo->nnodes);
-  printf("Total CPU's             : %d\n", hwinfo->totalcpus);
-  printf("Number Hardware Counters: %d\n", 
-	 PAPI_get_opt(PAPI_MAX_HWCTRS, NULL));
-  printf("Max Multiplex Counters  : %d\n", PAPI_MPX_DEF_DEG);
-  printf(separator_major);
-
-  /* PAPI events */
-  printf("*** Available PAPI preset events ***\n");
-  printf(separator_minor);
-  printf("Name\t\tDerived\tDescription (Implementation Note)\n");
-  printf(separator_minor);
-  i = 0 | PRESET_MASK;
-  count = 0;
-  do {
-    if (PAPI_get_event_info(i, &info) == PAPI_OK) {
-      printf("%s\t%s\t%s (%s)\n",
-	     info.symbol,
-	     (info.count > 1 ? "Yes" : "No"),
-	     info.long_descr, 
-	     (info.vendor_name ? info.vendor_name : ""));
-      count++;
-    }
-  } while (PAPI_enum_event(&i, PAPI_ENUM_ALL) == PAPI_OK);
-  printf("Total PAPI events reported: %d\n", count);
-  printf(separator_major);  
-  
-  /* Native events */
-  printf("*** Available native events ***\n");  
-  printf(separator_minor);
-  printf("Name\t\t\t\tDescription\n");
-  printf(separator_minor);
-  i = 0 | NATIVE_MASK;
-  count = 0;
-  do {      
-    if (PAPI_get_event_info(i, &info) == PAPI_OK) {
-      const char* desc = info.long_descr;
-      if (strncmp(info.symbol, desc, strlen(info.symbol)) == 0) {
-	desc += strlen(info.symbol);
-      }
-      printf("%-30s %s\n", info.symbol, desc);
-      count++;
-    }
-  } while (PAPI_enum_event(&i, PAPI_ENUM_ALL) == PAPI_OK);
-  printf("Total native events reported: %d\n", count);
-  printf(separator_major);
-  
-#if 0
-  papi_event_t *e = papirun_event_table;
-  fprintf(stderr, "papirun events for this architecture:\n");
-  
-  for (; e->name != NULL; e++) {
-    int pcode;
-    if ((pcode = PAPI_query_event(e->code)) == PAPI_OK) { 
-      if (dump == 1) {
-	papirun_write_wrapped_event_list(stderr, e);
-      } else if (dump == 2) {
-	papirun_write_event(stderr, e);
-      }
-    }
-  }
-  fprintf(stderr,"\n");
-#endif
-
-}
+/****************************************************************************/
 
