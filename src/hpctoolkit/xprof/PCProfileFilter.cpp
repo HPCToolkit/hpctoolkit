@@ -87,6 +87,8 @@ InsnClassExpr::bitvec_t
 ConvertToInsnClass(ISA::InstDesc d)
 {
   if (d.IsFP()) { return INSN_CLASS_FLOP; }
+  else if (d.IsMemOp()) { return INSN_CLASS_MEMOP; }
+  else if (d.IsIntOp()) { return INSN_CLASS_INTOP; }
   else { return INSN_CLASS_OTHER; }
 }
 
