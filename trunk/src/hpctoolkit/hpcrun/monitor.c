@@ -370,8 +370,15 @@ init_papi(hpcpapi_profile_desc_vec_t* profdescs, rtloadmap_t* rtmap)
     profdescsSZ++;
   }
   free(tmp_eventlist);
+
+  /* 2b. Ensure we have enough hardware counters */
+  numHwCntrs = PAPI_num_hwctrs();
+  if (profdescsSZ > numHwCntrs) {
+    ERRMSG("Warning: Too many events (%d) for hardware counters (%d).  Only using first %d events.", profdescsSZ, numHwCntrs, numHwCntrs);
+    profdescsSZ = numHwCntrs;
+  }
   
-  /* 2b. Initialize 'profdescs' */
+  /* 2c. Initialize 'profdescs' */
   {
     unsigned int vecbufsz = sizeof(hpcpapi_profile_desc_t) * profdescsSZ;
     profdescs->size = profdescsSZ;
@@ -381,20 +388,26 @@ init_papi(hpcpapi_profile_desc_vec_t* profdescs, rtloadmap_t* rtmap)
     }
     memset(profdescs->vec, 0x00, vecbufsz);
   }
-
+  
   profdescs->eset = PAPI_NULL; 
   if ((pcode = PAPI_create_eventset(&profdescs->eset)) != PAPI_OK) {
     DIE("PAPI error: (%d) %s. Aborting.", pcode, PAPI_strerror(pcode));
   }
-
-  /* 2c. For each event:period pair, init corresponding 'profdescs' entry */
+  
+  /* 2d. For each event:period pair, init corresponding 'profdescs' entry */
   tmp_eventlist = strdup(opt_eventlist);
   tok = strtok(tmp_eventlist, ";");
   for (i = 0; (tok != NULL); i++, tok = strtok((char*)NULL, ";")) {
-    hpcpapi_profile_desc_t* prof = &(profdescs->vec[i]);
+    hpcpapi_profile_desc_t* prof = NULL;
     uint64_t period = default_period;
     char* sep;
     
+    if (i >= profdescs->size) {
+      break;
+    }
+    
+    prof = &(profdescs->vec[i]);
+	
     /* Extract fields from token */
     sep = strchr(tok, ':'); /* optional period delimiter */
     if (sep) {
@@ -451,10 +464,6 @@ init_papi(hpcpapi_profile_desc_vec_t* profdescs, rtloadmap_t* rtmap)
     /* N.B.: prof->sprofs remains uninitialized */
   }
   free(tmp_eventlist);
-  
-  /* 2d. Ensure we have enough hardware counters */
-  // The order in which we do this depends on event set stuff. FIXME
-  numHwCntrs = PAPI_num_hwctrs();
   
   
   /* 3. For each 'profdescs' entry, init sprofil()-specific info */
