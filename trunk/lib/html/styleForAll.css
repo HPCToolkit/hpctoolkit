@@ -27,6 +27,22 @@
   z-index: 4;  /* stack index */
 }
 
+/* 'line' class: basic style for most everything
+ */
+.line {
+  position: absolute;
+    top: 0;
+    left: 0;
+  vertical-align: top;
+  display: block;  
+  font-size: 13px;    /* BasicFontSize */
+  font-family: monospace;
+  color: black;
+  background-color: transparent;
+  visibility: hidden;
+  z-index: 4;  /* stack index */
+}
+
 /* 'highlight' id
  */
 #highlight {
