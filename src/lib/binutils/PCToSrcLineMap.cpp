@@ -125,6 +125,7 @@ SrcLineX* PCToSrcLineXMap::Find(Addr pc) const
 ProcPCToSrcLineXMap* PCToSrcLineXMap::FindProc(Addr pc) const
 {
   BriefAssertion(IsFinalized());
+  // FIXME: warning: can be overlapping entries (see below)
 
   if (procVec->size() == 0) { return NULL; }
   
@@ -162,6 +163,9 @@ ProcPCToSrcLineXMap* PCToSrcLineXMap::FindProc(const char* s) const
 {
   // 'FindProc' is not expected to be common; otherwise an index by
   // proc name (i.e. a hash table) might be worthwhile.
+
+  // FIXME: Sometimes there are duplicate procs, leading to duplicate
+  // names!  See below.
   BriefAssertion(IsFinalized());
   for (suint i = 0; i < procVec->size(); i++) {
     ProcPCToSrcLineXMap* map = (*procVec)[i];
@@ -176,6 +180,11 @@ ProcPCToSrcLineXMap* PCToSrcLineXMap::FindProc(const char* s) const
 void PCToSrcLineXMap::InsertProcInList(ProcPCToSrcLineXMap* m)
 {
   // Insert in sorted order, assuming the list is already in sorted order
+
+  // FIXME: Sometimes (e.g. on alpha) a one-instruction dummy
+  // procedure exists for each procedure -- and they share the same
+  // start address.  To handle this, for now we compare using
+  // less-than-or-equal.
   BriefAssertion(!IsFinalized());
   ProcPCToSrcLineXMapIt it = tmpVec->begin();
   Addr sAddr = m->GetStartAddr();
@@ -183,10 +192,10 @@ void PCToSrcLineXMap::InsertProcInList(ProcPCToSrcLineXMap* m)
   if (it == tmpVec->end()) {
     // Special case: empty list
     tmpVec->push_front(m);
-  } else if (sAddr < tmpVec->front()->GetStartAddr()) {
+  } else if (sAddr <= tmpVec->front()->GetStartAddr()) {
     // Special case: insert at front of list
     tmpVec->push_front(m);
-  } else if (tmpVec->back()->GetStartAddr() < sAddr) {
+  } else if (tmpVec->back()->GetStartAddr() <= sAddr) {
     // Special case: insert at end of list
     tmpVec->push_back(m);
   } else {
@@ -194,7 +203,7 @@ void PCToSrcLineXMap::InsertProcInList(ProcPCToSrcLineXMap* m)
     for ( ; it != tmpVec->end(); /*++it*/) {
       ProcPCToSrcLineXMap* a = *it;
       ProcPCToSrcLineXMap* b = *(++it);
-      if (a->GetStartAddr() < sAddr && sAddr < b->GetStartAddr()) {
+      if (a->GetStartAddr() <= sAddr && sAddr <= b->GetStartAddr()) {
 	tmpVec->insert(--it, m);
 	break;
       }
