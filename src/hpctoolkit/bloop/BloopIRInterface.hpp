@@ -75,12 +75,15 @@
 
 class BloopIRStmtIterator: public IRStmtIterator {
 public:
-  BloopIRStmtIterator (Procedure &_p) : pii(_p) {  };
-  ~BloopIRStmtIterator () {};
+  BloopIRStmtIterator (Procedure &_p) : pii(_p) { }
+  ~BloopIRStmtIterator () { }
 
-  StmtHandle Current () { return (StmtHandle)(pii.Current()); };
-  bool IsValid () { return pii.IsValid(); };
-  void operator++ () { ++pii; };
+  StmtHandle Current () { return (StmtHandle)(pii.Current()); }
+  bool IsValid () { return pii.IsValid(); }
+  void operator++ () { ++pii; }
+
+  void Reset() { pii.Reset(); }
+  
 private:
   ProcedureInstructionIterator pii;
 };
@@ -90,11 +93,14 @@ class BloopIRUseDefIterator: public IRUseDefIterator {
 public:
   BloopIRUseDefIterator (Instruction *insn, int uses_or_defs);
   BloopIRUseDefIterator () { BriefAssertion (0); }
-  ~BloopIRUseDefIterator () {};
+  ~BloopIRUseDefIterator () { }
 
-  LeafHandle Current () { return 0; };
-  bool IsValid () { return false; };
-  void operator++ () {  };
+  LeafHandle Current () { return 0; }
+  bool IsValid () { return false; }
+  void operator++ () { }
+
+  void Reset() { }
+
 private:
 };
 
@@ -104,44 +110,54 @@ class BloopIRInterface : public IRInterface {
 public:
   BloopIRInterface (Procedure *_p);
   BloopIRInterface () { BriefAssertion(0); }
-  ~BloopIRInterface () {}
+  ~BloopIRInterface () { }
 
-  //------------------------------
-  // General - all statement types
-  //------------------------------
+  //--------------------------------------------------------
+  // Procedures and call sites
+  //--------------------------------------------------------
+  IRProcType GetProcType(ProcHandle h) 
+    { BriefAssertion(0); return ProcType_ILLEGAL; }
+  IRStmtIterator *ProcBody(ProcHandle h) 
+    { BriefAssertion(0); return NULL; }
+  IRCallsiteIterator *GetCallsites(StmtHandle h) 
+    { BriefAssertion(0); return NULL; } 
+  IRCallsiteParamIterator *GetCallsiteParams(ExprHandle h) 
+    { BriefAssertion(0); return NULL; } 
+  bool IsParamProcRef(ExprHandle h) 
+    { BriefAssertion(0); return false; }
+  virtual bool IsCallThruProcParam(ExprHandle h) 
+    { BriefAssertion(0); return false; }
+
+  //--------------------------------------------------------
+  // Statements: General
+  //--------------------------------------------------------
   IRStmtType GetStmtType (StmtHandle);
   StmtLabel GetLabel (StmtHandle);
-
-  //------------------------------
-  // For procedures, compound statements. 
-  //------------------------------
-  IRStmtIterator *ProcBody(ProcHandle h) 
-    { BriefAssertion(false); return NULL; }
   IRStmtIterator *GetFirstInCompound (StmtHandle h);
 
-  //------------------------------
+  //--------------------------------------------------------
   // Loops
-  //------------------------------
+  //--------------------------------------------------------
   IRStmtIterator *LoopBody(StmtHandle h);
   StmtHandle LoopHeader (StmtHandle h);
   bool LoopIterationsDefinedAtEntry (StmtHandle h);
   ExprHandle GetLoopCondition (StmtHandle h); 
   StmtHandle GetLoopIncrement (StmtHandle h);
 
-  //------------------------------
+  //--------------------------------------------------------
   // invariant: a two-way conditional or a multi-way conditional MUST provide
   // provided either a target, or a target label
-  //------------------------------
+  //--------------------------------------------------------
 
-  //------------------------------
+  //--------------------------------------------------------
   // Structured two-way conditionals
-  //------------------------------
+  //--------------------------------------------------------
   IRStmtIterator *TrueBody (StmtHandle h);
   IRStmtIterator *ElseBody (StmtHandle h);
 
-  //------------------------------
+  //--------------------------------------------------------
   // Structured multiway conditionals
-  //------------------------------
+  //--------------------------------------------------------
   int NumMultiCases (StmtHandle h);
   // condition for multi body 
   ExprHandle GetSMultiCondition (StmtHandle h, int bodyIndex);
@@ -151,48 +167,47 @@ public:
   bool IsBreakImplied (StmtHandle multicond);
   IRStmtIterator *GetMultiCatchall (StmtHandle h);
 
-  //------------------------------
+  //--------------------------------------------------------
   // Unstructured two-way conditionals: 
-  //------------------------------
+  //--------------------------------------------------------
   // two-way branch, loop continue
   StmtLabel  GetTargetLabel (StmtHandle h, int n);
   ExprHandle GetCondition (StmtHandle h);
 
-  //------------------------------
+  //--------------------------------------------------------
   // Unstructured multi-way conditionals
-  //------------------------------
+  //--------------------------------------------------------
   int NumUMultiTargets (StmtHandle h);
   StmtLabel GetUMultiTargetLabel (StmtHandle h, int targetIndex);
   StmtLabel GetUMultiCatchallLabel (StmtHandle h);
   ExprHandle GetUMultiCondition (StmtHandle h, int targetIndex);
 
-  //------------------------------
+  //--------------------------------------------------------
   // Special
-  //------------------------------
+  //--------------------------------------------------------
   bool ParallelWithSuccessor(StmtHandle h) { return false; }
 
   // Given an unstructured branch/jump statement, return the number
   // of delay slots.
   int NumberOfDelaySlots(StmtHandle h);
  
-  //------------------------------
+  //--------------------------------------------------------
   // Obtain uses and defs
-  //------------------------------
-  IRProcCallIterator *GetProcCalls(StmtHandle h) 
-    { BriefAssertion(false); return NULL; }
+  //--------------------------------------------------------
   IRUseDefIterator *GetUses (StmtHandle h);
   IRUseDefIterator *GetDefs (StmtHandle h);
 
-  //------------------------------
+  //--------------------------------------------------------
   // Symbol Handles
-  //------------------------------
-  SymHandle GetProcSymHandle(ProcHandle h) { return (SymHandle)0; }
+  //--------------------------------------------------------
+  SymHandle GetProcSymHandle(ProcHandle h) 
+    { BriefAssertion(0); return (SymHandle)0; }
   SymHandle GetSymHandle (LeafHandle vh) { return (SymHandle)0; }
   const char *GetSymNameFromSymHandle (SymHandle sh) { return "<no-sym>"; }
 
-  //------------------------------
+  //--------------------------------------------------------
   // Debugging
-  //------------------------------
+  //--------------------------------------------------------
   void PrintLeaf (LeafHandle vh, ostream & os) { };
   void Dump (StmtHandle stmt, ostream& os);
 
