@@ -265,3 +265,19 @@ Driver::XML_Dump(PgmScope* pgm, int dumpFlags, std::ostream &os,
   os << pre << "</HPCVIEWER>" << endl;
 }
 
+void
+Driver::CSV_Dump(PgmScope* pgm, std::ostream &os) const
+{
+  os << "File name,Routine name,Start line,End line,Loop level";
+  for (unsigned int i=0; i < NumberOfPerfDataInfos(); i++) {
+    const PerfMetric& metric = IndexToPerfDataInfo(i); 
+    os << "," << metric.DisplayInfo().Name();
+    if (metric.Percent())
+      os << "," << metric.DisplayInfo().Name() << " (%)";
+  }
+  os << endl;
+  
+  // Dump SCOPETREE
+  pgm->CSV_TreeDump(os);
+}
+

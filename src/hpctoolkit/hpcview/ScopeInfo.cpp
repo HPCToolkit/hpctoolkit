@@ -1011,6 +1011,92 @@ PgmScope::XML_Dump(std::ostream &os, int dmpFlag, const char *pre) const
   ScopeInfo::XML_Dump(os, dmpFlag, pre);
 }
 
+void 
+ScopeInfo::CSV_DumpSelf(const PgmScope &root, std::ostream &os) const
+{ 
+  char temp[32];
+  for (unsigned int i=0; i < NumberOfPerfDataInfos(); i++) {
+    double val = (HasPerfData(i) ? PerfData(i) : 0);
+    os << "," << val;
+    const PerfMetric& metric = IndexToPerfDataInfo(i);
+    if (metric.Percent()) {
+      double percVal = val / root.PerfData(i) * 100;
+      sprintf(temp, "%5.2lf", percVal);
+      os << "," << temp;
+    }
+  }
+  os << endl;
+}
+
+
+// Dumps the scope tree PGM
+void
+ScopeInfo::CSV_Dump(const PgmScope &root, std::ostream &os, 
+          const char *file_name, const char *routine_name,
+          int lLevel) const 
+{
+  // print file name, routine name, start and end line, loop level
+  os << Name() << ",,,,";
+  CSV_DumpSelf(root, os); 
+  for (NameSortedChildIterator it(this); it.Current(); it++) {
+    it.Current()->CSV_Dump(root, os); 
+  }
+}
+
+void
+FileScope::CSV_Dump(const PgmScope &root, std::ostream &os, 
+          const char *file_name, const char *routine_name,
+          int lLevel) const 
+{
+  // print file name, routine name, start and end line, loop level
+  os << BaseName() << ",," << begLine << "," << endLine << ",";
+  CSV_DumpSelf(root, os); 
+  for (NameSortedChildIterator it(this); it.Current(); it++) {
+    it.Current()->CSV_Dump(root, os, BaseName()); 
+  }
+}
+
+void
+ProcScope::CSV_Dump(const PgmScope &root, std::ostream &os, 
+          const char *file_name, const char *routine_name,
+          int lLevel) const 
+{
+  // print file name, routine name, start and end line, loop level
+  os << file_name << "," << Name() << "," << begLine << "," << endLine 
+     << ",0";
+  CSV_DumpSelf(root, os); 
+  for (LineSortedChildIterator it(this); it.Current(); it++) {
+    it.CurScope()->CSV_Dump(root, os, file_name, Name(), 1); 
+  } 
+}
+
+void
+CodeInfo::CSV_Dump(const PgmScope &root, std::ostream &os, 
+          const char *file_name, const char *routine_name,
+          int lLevel) const 
+{
+  ScopeType myScopeType = this->Type();
+  // do not display info for single lines
+  if (myScopeType == LINE)
+    return;
+  // print file name, routine name, start and end line, loop level
+  os << (file_name?file_name:(const char*)Name()) << "," 
+     << (routine_name?routine_name:"") << "," 
+     << begLine << "," << endLine << ",";
+  if (lLevel)
+    os << lLevel;
+  CSV_DumpSelf(root, os);
+  for (LineSortedChildIterator it(this); it.Current(); it++) {
+    it.CurScope()->CSV_Dump(root, os, file_name, routine_name, lLevel+1); 
+  } 
+}
+
+void
+PgmScope::CSV_TreeDump(std::ostream &os) const
+{
+  ScopeInfo::CSV_Dump(*this, os);
+}
+
 // **********************************************************************
 // RefScope specific methods 
 // **********************************************************************
