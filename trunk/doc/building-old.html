@@ -10,7 +10,7 @@
 <head>
   <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
 
-  <title>HPCToolkit: Testing and Installing</title>
+  <title>HPCToolkit: Downloading, Building and Testing</title>
 
   <link rel='stylesheet' type='text/css' href='styleForAll.css'>
 </head>
@@ -25,13 +25,14 @@
 
 <div id="main">
 
-<p class="lastupdated">Last Updated 07 Mar 2003</p>
+<p class="lastupdated">Last Updated 25 June 2003</p>
 
 <a name="toc"></a>
-<h2>Building and Installing HPCToolkit</h2>
+<h2>Downloading, Building and Installing HPCToolkit</h2>
 
 <h2>Contents</h2>
 <ul>
+  <li><a href="#sources">Downloading the Sources</a>
   <li><a href="#overview">Build Overview</a>
   <li><a href="#buildnotes">Build Notes</a>
   <li><a href="#environment">Environment</a>
@@ -45,6 +46,53 @@
 
 <!-- ********************************************************************** -->
 
+<a name="sources"></a>
+
+<h2>Downloading the Sources</h2>
+<p><i>[<a href="#toc">Contents</a>]</i>
+
+<p>To reduce the effort needed to distribute HPCToolkit, we have opted to distribute 
+it in source form only. Source files for the toolkit and external libraries it requires 
+are distributed via anonymous CVS checkout.
+</p>
+
+<ol>
+<li>
+To retrieve the source files from CVS, you will need to download an 
+ssh script that contains a key that will grant you read-only access 
+to Hipersoft CVS repositories at Rice University. Click on the hyperlink at the end of this 
+sentence to retrieve a copy of the ssh script 
+<a href="www.hipersoft.rice.edu/cvs/hipersoft-anonssh">hipersoft-anonssh</a>. 
+Save this script in ${HOME}/bin/hipersoft-anonssh.
+</li>
+<br>
+<li> Set up the required CVS environment variables to enable you to 
+access the HPCToolkit repository.
+
+<ul>
+<br>
+<i>(csh variants)</i><br>
+<code>setenv CVS_RSH ${HOME}/bin/hipersoft-anonssh</code><br>
+<code>setenv CVSROOT :ext:anonymous@128.42.2.152:/Volumes/cvsrep/developer</code><br>
+<br>
+<i>(sh variants)</i><br>
+<code>export CVS_RSH=${HOME}/bin/hipersoft-anonssh</code><br>
+<code>export CVSROOT=:ext:anonymous@128.42.2.152:/Volumes/cvsrep/developer</code><br>
+</ul>
+</li>
+<br>
+<li>
+Use CVS to check out the HPCToolkit sources using the command
+<br>
+<br>
+<ul>
+<code>cvs co HPCToolkit_all_sources</code>
+</ul>
+</li>
+</ol>
+    
+<!-- ********************************************************************** -->
+
 <a name="overview"></a>
 
 <h2>Build Overview</h2>
@@ -56,8 +104,8 @@ and Xerces-C++ -- that must be built before HPCToolkit can be built,
 installed and used. </p>
 
 <p>It is possible to use versions of these libraries that may already
-be installed on your system, but we do not currently support these
-situations.</p>
+be installed on your system, but our Makefiles do not currently support such 
+configurations.</p>
 
 <!-- ********************************************************************** -->
 
@@ -338,7 +386,8 @@ compiler.  Since this will produce a lot of output, you may want to
 redirect it to a file.  For example:
 
 <div class="indent">
-<code>make CC="gcc" CXX="g++" CXXFLAGS=""</code><br>
+<!-- <code>make CC="gcc" CXX="g++" CXXFLAGS=""</code><br> -->
+<code>make CC="gcc" CXX="g++"</code><br>
 </div>
 
 <li>
