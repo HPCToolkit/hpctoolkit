@@ -284,6 +284,7 @@ HTMLScopes::WriteScope(const char* htmlDir, const char* bgColor,
 
   if (flattening == 0) { 
     int depth = scope.ScopeDepth();
+    int height = scope.ScopeHeight();
 
     //---------------------------------------------------------
     // the normal amount of flattening that can be applied to 
@@ -308,14 +309,18 @@ HTMLScopes::WriteScope(const char* htmlDir, const char* bgColor,
 
       //-------------------------------------------------------
       // the maximum number of times a node may be flattened
-      // is its height minus the number of times it has been 
-      // flattened already
+      // is its height minus one (it must have at least a non leaf
+      // child to be able to flatten it. This maxflatten represents
+      // how many times we can click the flatten button with the current
+      // scope unchanged (== height).
+      // On the other hand, levels represents how many flattenings we can
+      // do before we reach the current scope (== depth)
       //-------------------------------------------------------
-      int maxflatten = scope.ScopeHeight() - 1 - levels;
+      int maxflatten = height - 1;
       if (scope.ScopeDepth() >= args.depthToFlatten) {
-	// no scope deeper than the deepest scope to be flattened
-	// will be allowed to be flattened
-	maxflatten = 0;
+         // no scope deeper than the deepest scope to be flattened
+         // will be allowed to be flattened
+         maxflatten = 0;
       }
       
       hf.SetOnLoad(String("handle_scope_self_onload(") + "\"" + selfFile
@@ -327,10 +332,8 @@ HTMLScopes::WriteScope(const char* htmlDir, const char* bgColor,
       hf.WriteHighlightDiv();
 
       ScopeInfo *outer = scope.Parent();
-      {
-	int i = levels;
-	while(i-- > 0) { outer = outer->Parent(); }
-      }
+      int i = levels;
+      while(i-- > 0) { outer = outer->Parent(); }
 
       hf << "<div id=\"" << LINES_DIV_NAME << "\">" << endl;
       hf << "<pre>" << endl;
@@ -350,24 +353,9 @@ HTMLScopes::WriteScope(const char* htmlDir, const char* bgColor,
   }
 
   String kidsFile = KidsFileName(&scope, pIndex, flattening);  
-  String kidsDocFile   = kidsFile + ".doc"; 
 
   CompareByPerfInfo_MetricIndex = pIndex;
   SortedCodeInfoChildIterator kids(&scope, flattening, CompareByPerfInfo); 
-  /*
-  { 
-    // write a file containing scopes's children's perf data 
-    HTMLFile hf = HTMLFile(htmlDir, kidsDocFile, NULL); 
-    hf.StartBody(); 
-    hf << "<pre>" << endl; 
-
-    int linesLeft = args.maxLinesPerPerfPane;
-    for (; kids.Current() && linesLeft-- > 0 ; kids++) {
-      WriteLine(hf, INNER, kids.Current(), pIndex, flattening, true); 
-    } 
-    hf << "</pre>" << endl; 
-  }
-  */
   { 
     // write a file containing layer for scopes's children's perf data 
     // and highlighter 
