@@ -136,10 +136,11 @@ ProfileReader::ReadProfileFile_DCPICat(std::istream& pFile)
 
   ISA* isa = new AlphaISA(); // we are going to reference count this
   DCPIProfile* profData = NULL;  
-  std::stringstream hdr; // header info
-  String profiledFile;   // name of profiled file
-  Addr txtStart = 0;     // starting address of text segment
-  Addr txtSz    = 0;     // byte-size of text section
+  std::stringstream hdr;   // header info
+  String profiledFile;     // name of profiled file
+  String profiledFilePath; // path to profiled file
+  Addr txtStart = 0;       // starting address of text segment
+  Addr txtSz    = 0;       // byte-size of text section
   
   // ------------------------------------------------------------------------
   // Read header
@@ -164,6 +165,11 @@ ProfileReader::ReadProfileFile_DCPICat(std::istream& pFile)
   //   multiple 'path' entries are sometimes given.
   while ( (!pFile.eof() && !pFile.fail()) && pFile.peek() == 'p' ) {
     str = GetLine(pFile); hdr << (const char*)str << "\n";
+    if (profiledFilePath.Empty()) {
+      pFile.seekg(-(int)str.Length()-1, std::ios::cur); // reposition to reread
+      pFile >> buf >> buf >> std::ws;            // read 'path' token and value
+      profiledFilePath = buf;
+    }
   }  
   
   // 'epoch' - date the profile was made
@@ -245,7 +251,11 @@ ProfileReader::ReadProfileFile_DCPICat(std::istream& pFile)
   // Create 'PCProfile' object and add all events
   profData = new DCPIProfile(isa, metricCount);
   profData->SetHdrInfo( (hdr.str()).c_str() );
-  profData->SetProfiledFile(profiledFile);
+  if (!profiledFilePath.Empty()) {
+    profData->SetProfiledFile(profiledFilePath);
+  } else { 
+    profData->SetProfiledFile(profiledFile);
+  }
   profData->SetPMMode(pmmode);
   
   while (!mlist.empty()) {
