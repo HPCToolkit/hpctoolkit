@@ -68,6 +68,12 @@ using std::dec;
 // PCProfileFilter
 //****************************************************************************
 
+PCProfileFilter::~PCProfileFilter()
+{
+  delete mfilt;
+  delete pcfilt;
+}
+
 void 
 PCProfileFilter::Dump(std::ostream& o)
 {
@@ -114,4 +120,15 @@ InsnFilter::operator()(Addr pc, ushort opIndex)
   }
 
   return (expr.IsSatisfied(ConvertToInsnClass(inst->GetDesc())));
+}
+
+//****************************************************************************
+// PCProfileFilterList
+//****************************************************************************
+
+void 
+PCProfileFilterList::destroyContents() 
+{
+  for (iterator it = begin(); it != end(); ++it) { delete (*it); }
+  clear();
 }

@@ -71,9 +71,17 @@ class MetricFilter;
 class PCFilter;
 
 // Some useful containers
-typedef std::list<PCProfileFilter*>         PCProfileFilterList;
-typedef PCProfileFilterList::iterator       PCProfileFilterListIt;
-typedef PCProfileFilterList::const_iterator PCProfileFilterListCIt;
+class PCProfileFilterList : public std::list<PCProfileFilter*> {
+public:
+  typedef std::list<PCProfileFilter*> Base;
+
+public:
+  PCProfileFilterList() { }
+  virtual ~PCProfileFilterList() { clear(); }
+  virtual void clear() { Base::clear(); } // does not delte contents
+  void destroyContents();  // deletes contents
+};
+
 
 class PCProfileMetric;
 
@@ -88,9 +96,10 @@ class PCProfileMetric;
 class PCProfileFilter
 {
 public:
+  // PCProfileFilter: assumes ownership of the MetricFilter and PCFilter.
   PCProfileFilter(MetricFilter* x = NULL, PCFilter* y = NULL)
     : mfilt(x), pcfilt(y) { }
-  virtual ~PCProfileFilter() { }
+  virtual ~PCProfileFilter();
 
   // Name, Description: The name and a description of what this filter
   // computes.
