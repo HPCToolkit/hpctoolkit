@@ -62,9 +62,9 @@ include $(top_srcdir)/src/Makeinclude.config
 #############################################################################
 
 MYSOURCES_HPCRUN = \
-	hpcrun.h hpcrun.c \
+	hpcrun.h hpcrun.cc \
 	hpcpapi.h hpcpapi.c \
-	dlpapi.h dlpapi.c
+	dlpapi.h dlpapi.c 
 
 MYSOURCES_LIBHPCRUN = \
 	preload.c \
@@ -78,12 +78,14 @@ MYSOURCES_HPCPROF = \
 	proffile.h proffile.cc 
 
 
+MYIFLAGS_PAPI = \
+	-DHPC_PAPI_DLOPEN=\"@OPT_PAPI_DLOPEN@\"   \
+	-DHPC_PAPI_LIBPATH=\"@OPT_PAPI_LIBPATH@\"
+
 MYCFLAGS   = @HOST_CFLAGS@   $(HPC_IFLAGS) @OPT_PAPI_IFLAGS@
 MYCXXFLAGS = @HOST_CXXFLAGS@ $(HPC_IFLAGS) @OPT_PAPI_IFLAGS@
-MYCFLAGS_HPCRUN = \
-	$(MYCFLAGS) \
-	-DHPC_PAPI_DLOPEN=\"@OPT_PAPI_DLOPEN@\" \
-	-DHPC_PAPI_LIBPATH=\"@OPT_PAPI_LIBPATH@\"
+MYCFLAGS_HPCRUN   = $(MYCFLAGS) $(MYIFLAGS_PAPI)
+MYCXXFLAGS_HPCRUN = $(MYCXXFLAGS) $(MYIFLAGS_PAPI)
 
 
 MYLDFLAGS_HPCRUN    = @HOST_CXXFLAGS@ -R @OPT_PAPI_LIBPATH@
@@ -91,7 +93,9 @@ MYLDFLAGS_LIBHPCRUN = @HOST_CXXFLAGS@ -Xcompiler @HOST_LINK_NO_START_FILES@
 MYLDFLAGS_HPCPROF   = @HOST_CXXFLAGS@
 
 
-MYLDADD_HPCRUN    = -ldl
+MYLDADD_HPCRUN    = \
+	$(HPC_LIBSUPPORT) \
+	-ldl
 MYLDADD_LIBHPCRUN = \
 	$(HPC_LIBHPCFILE) \
 	@OPT_PAPI_LDFLAGS@ \
@@ -111,6 +115,7 @@ MYCLEAN = @HOST_LIBTREPOSITORY@
 bin_PROGRAMS         = hpcrun
 hpcrun_SOURCES       = $(MYSOURCES_HPCRUN)
 hpcrun_CFLAGS        = $(MYCFLAGS_HPCRUN)
+hpcrun_CXXFLAGS      = $(MYCXXFLAGS_HPCRUN)
 hpcrun_LDFLAGS       = $(MYLDFLAGS_HPCRUN)
 hpcrun_LDADD         = $(MYLDADD_HPCRUN)
 
