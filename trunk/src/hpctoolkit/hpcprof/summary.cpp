@@ -500,7 +500,7 @@ Summary::process_lm(const ProfFileLM& proflm, int ev_i_start)
 
   if (debug_) {
       cout << "Summary::process_lm: '" << lmname << "' (@ " 
-	   << (void*)proflm.load_addr() << ")" << endl;
+	   << proflm.load_addr() << ")" << endl;
     }
 
 #if 0 // FIXME: add module qualification; this is mostly useless
@@ -544,7 +544,7 @@ Summary::process_lm(const ProfFileLM& proflm, int ev_i_start)
 	      pc1 = pc - proflm.load_addr(); // adjust lookup pc for DSOs
 	      if (debug_) {
 		cout << "Adjusting DSO pc_=" << (void *)pc << ", load_addr: " 
-		     << (void *)proflm.load_addr() << " == pc1: " 
+		     << proflm.load_addr() << " == pc1: " 
 		     << (void *)pc1 << endl;
 	      }
 	    }

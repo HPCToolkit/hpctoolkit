@@ -1,5 +1,5 @@
+/* -*-Mode: C;-*- */
 /* $Id$ */
-/* -*-C-*- */
 
 /****************************************************************************
 //
@@ -33,6 +33,7 @@
 #include <unistd.h>
 #include <string.h>
 #include <limits.h> /* for 'PATH_MAX' */
+#include <inttypes.h>
 
 #ifndef __USE_GNU
 # define __USE_GNU /* must define on Linux to get RTLD_NEXT from <dlfcn.h> */
@@ -86,19 +87,19 @@ static void write_all_profiles(void);
 static char *command_name;
 
 /* papirun options (this should be a tidy struct) */
-static int           opt_debug;
-static int           opt_recursive;
-static int           opt_eventcode;
-static unsigned long opt_sampleperiod;
-static char          opt_outpath[PATH_MAX];
-static int           opt_flagscode;
-static int           opt_dump_events; /* no, short, long dump (0,1,2) */
+static int      opt_debug;
+static int      opt_recursive;
+static int      opt_eventcode;
+static uint64_t opt_sampleperiod;
+static char     opt_outpath[PATH_MAX];
+static int      opt_flagscode;
+static int      opt_dump_events; /* no, short, long dump (0,1,2) */
 
 /* used for PAPI stuff (this should be a tidy struct) */
-static int           papi_eventcode;
-static int           papi_eventset;
-static unsigned long papi_sampleperiod;
-static int           papi_flagscode;
+static int             papi_eventcode;
+static int             papi_eventset;
+static uint64_t        papi_sampleperiod;
+static int             papi_flagscode;
 static PAPI_sprofil_t *papi_profiles;
 
 static unsigned int papi_bytesPerCodeBlk;
@@ -210,7 +211,7 @@ init_options(void)
     opt_sampleperiod = atoi(env_period);
   }
   if (opt_sampleperiod == 0) {
-    fprintf(stderr, "papirun: invalid period '%lu'. Aborting.\n", 
+    fprintf(stderr, "papirun: invalid period '%llu'. Aborting.\n", 
 	    opt_sampleperiod);
     exit(-1);
   }
@@ -453,14 +454,14 @@ start_papi(void)
 
     if (opt_debug >= 3) {
       fprintf(stderr, 
-	      "\tprofile[%d] base = %lx size = %d off = %lx scale = %lx\n",
+	      "\tprofile[%d] base = %p size = %u off = %lx scale = %u\n",
 	      i, papi_profiles[i].pr_base, papi_profiles[i].pr_size, 
 	      papi_profiles[i].pr_off, papi_profiles[i].pr_scale);
     }
   }
   
   if (opt_debug >= 3) {
-    fprintf(stderr, "count = %d, es=%x ec=%x sp=%d ef=%d\n",
+    fprintf(stderr, "count = %d, es=%x ec=%x sp=%llu ef=%d\n",
 	    lm->count, papi_eventset, papi_eventcode, 
 	    papi_sampleperiod, papi_flagscode);
   }
@@ -514,7 +515,7 @@ init_output(void)
   char* executable = command_name; 
   const char* eventstr = papirun_event_by_code(papi_eventcode)->name;
   unsigned int len;
-  char* hostnam[128]; 
+  char hostnam[128]; 
 
   gethostname(hostnam, 128);
 

@@ -199,7 +199,7 @@ ProfFileEvent::~ProfFileEvent()
 }
 
 int
-ProfFileEvent::read(FILE *fp, unsigned long load_addr)
+ProfFileEvent::read(FILE *fp, uint64_t load_addr)
 {
   size_t sz;
     
