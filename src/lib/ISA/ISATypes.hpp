@@ -67,6 +67,7 @@
 // of 'bfd_vma' so we don't have to mess with differently sized address
 // spaces.  (0 is the null value)
 typedef bfd_vma Addr;
+typedef bfd_signed_vma AddrSigned; // useful for offsets
 
 // MachInst* can point to (non-)variable length instructions (or
 // instruction words) and should not be dereferenced.  To examine the
