@@ -75,16 +75,7 @@ binary to be analyzed was compiled on another platform with a
 proprietary compiler, there is a good chance demangling will be
 unsuccessful.
 
-2.2. Sun Compilers and Sun stabs:
-----
-Unfortunately, we do not currently support Sun WorkShop/Forte/ONE
-Compilers, even with the -g -xs options.  Because bloop currently uses
-GNU's binutils to read executables and gather source file information,
-and because binutils cannot fully understand Sun's stabs debugging
-information, it will generate uninteresting output on such a binary.
-Use GCC instead.
-
-2.3. Fortran and implicit 'program' statements:
+2.2. Fortran and implicit 'program' statements:
 ----
 Please make sure to explicitly include a 'program' statement
 designating your Fortran program's "main" routine.  The debugging
@@ -93,7 +84,7 @@ adversely affected without such a statement.  (The compilers that we
 have seen affected by this are: SGIPro f77 (mips-IRIX64); GCC g77
 (mips-IRIX64, sparc-SunOS, i686-Linux); Intel efc (ia64-Linux).)
  
-2.4. Compaq C++ and Templates:
+2.3. Compaq C++ and Templates:
 ----
 The Compaq C++ compiler creates dummy file descriptors -- files that
 do not exist -- to store debugging information about template
@@ -102,7 +93,7 @@ to live in files with names like 'file.H~alt~deccxx_6431CCA5'.  This
 is not actually a bug, but in the future we may develop a smarter way
 to deal with such cases. (see moo/alpha-OSF1.cxx-pt.BLOOP)
 
-2.5. GCC 2.9x and alpha-OSF1:
+2.4. GCC 2.9x and alpha-OSF1:
 ----
 From what we can tell, sometimes GCC g++ (on alpha-OSF1) generates
 erroneous file information.  This can cause 'bloop' to associate some
@@ -126,7 +117,7 @@ there is not an utility that I know of that can dump the debugging
 info.  None of alpha's 'odump', 'coffobjanl' or GNU's 'objdump' fully
 dump the debugging sections.]
 
-2.6. GCC g++ 2.9x-3.0 and mips-IRIX64:
+2.5. GCC g++ 2.9x-3.0 and mips-IRIX64:
 ----
 We have noticed in rare cases that the line numbers that GCC g++ (on
 mips-IRIX64) generates are absurdly large, e.g. 18446744073709551479.
@@ -134,7 +125,7 @@ This appears to only occur in unimportant system libraries, and even
 then, rarely.  At any rate, this is not a bug in bloop. (see
 moo/mips-IRIX64.g++-64.BLOOP)
 
-2.7. Performance:
+2.6. Performance:
 ----
 The ${HPCTOOLKIT}/src/libs/ISA classes use the GNU ia64 instruction
 decoder.  Because it is very inefficient, we have temporarily disabled
@@ -150,7 +141,7 @@ Compaq ECOFF debugging information.  However, it is also significant
 on large binaries from other platforms.  We would like to fix this in
 future releases, but it is not high on a priority list.
 
-2.8. GNU binutils and the i686 disassembler:
+2.7. GNU binutils and the i686 disassembler:
 ----
 Oddly enough, the GNU i686 disassembler produces very slightly
 different output depending on what platform it is run on (e.g.,
@@ -159,7 +150,7 @@ this use 'objdump -d'), but it should not adversely affect 'bloop'.
 We might fix this if our wish that someone else would fix it is not
 fulfilled.
 
-2.9. GNU binutils, GCC and Linux/non-Linux OSs:
+2.8. GNU binutils, GCC and Linux/non-Linux OSs:
 ----
 The BFD symbol names (used as procedure link names in 'bloop') and
 procedure link types (only visible with 'bloop -D') that GNU binutils
@@ -187,6 +178,11 @@ Like bloop, it it can be used as a 'cross-tool'.
 
 4. Revision History
 --------------------
+
+HPCToolkit Version 3.?.?: [xxxx.xx.xx]
+--------------------
+- bloop now supports the Sun WorkShop/Forte/ONE compiler.
+- Update code so it can be compiled by GCC 3.3.2
 
 HPCToolkit Version 3.6.0: [2003.07.05]
 --------------------
