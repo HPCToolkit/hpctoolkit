@@ -19,11 +19,11 @@
 
 /* Because these are byte strings, they will not be affected by endianness */
 
-#define PAPIRUN_MAGIC_STR "HPCRUN____"
-#define PAPIRUN_MAGIC_STR_LEN 10  /* exclude '\0' */
+#define HPCRUN_MAGIC_STR "HPCRUN____"
+#define HPCRUN_MAGIC_STR_LEN 10  /* exclude '\0' */
 
-#define PAPIRUN_VERSION "01.00"
-#define PAPIRUN_VERSION_LEN 5 /* exclude '\0' */
+#define HPCRUN_VERSION "01.00"
+#define HPCRUN_VERSION_LEN 5 /* exclude '\0' */
 
-#define PAPIRUN_ENDIAN 'l' /* l for little */
+#define HPCRUN_ENDIAN 'l' /* l for little */
 
