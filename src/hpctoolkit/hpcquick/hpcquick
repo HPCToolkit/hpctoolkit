@@ -1,8 +1,8 @@
 #! /usr/bin/env perl
 
 # Note: Using the following 'fool proof' method of starting Perl will
-# cause problems unless HPCTOOLS stuff has been added to the shell
-# initialization file.  The exec will start a new shell and ptran will
+# cause problems unless HPCTOOLKIT stuff has been added to the shell
+# initialization file.  The exec will start a new shell and 'hpqquick' will
 # not be found unless shell's initialization file sets the PATH.  This
 # is probably not what we want.
 
@@ -58,9 +58,9 @@
 # COMPAQ/ALPHA MACHINES ONLY.
 # 
 # To get started --
-#   -1.  Set the environment variable $HPCTOOLS to the installed location
-#        of HPCTools, and execute "source $HPCTOOLS/Sourceme-csh" or 
-#        "source $HPCTOOLS/Sourceme-sh" to set other environment variables 
+#   -1.  Set the environment variable $HPCTOOLKIT to the installed location
+#        of HPCToolkit, and execute "source $HPCTOOLKIT/Sourceme-csh" or 
+#        "source $HPCTOOLKIT/Sourceme-sh" to set other environment variables 
 #        and modify your PATH.
 #    0.  Go to the directory in which you want to run your program and
 #        in which you will collect profiling information.
