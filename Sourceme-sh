@@ -13,15 +13,7 @@ fi
 # Set platform variables
 #############################################################################
 
-export HPCTOOLKIT_ARCH=`uname -p`
-if test "${HPCTOOLKIT_ARCH}" = "unknown" ; then
-  export HPCTOOLKIT_ARCH=`uname -m`
-fi
-
-export HPCTOOLKIT_OS=`uname -s`
-#export HPCTOOLKIT_OS=`${HPCTOOLKIT}/tools/darch`
-
-export HPCTOOLKIT_PLATFORM="${HPCTOOLKIT_ARCH}-${HPCTOOLKIT_OS}"
+export HPCTOOLKIT_PLATFORM=`cd ${HPCTOOLKIT}/src/config; ./hpcplatform`
 
 #############################################################################
 # Set other variables
@@ -57,7 +49,7 @@ fi
 XERCESPLATFORM="${XERCESCROOT}/${HPCTOOLKIT_PLATFORM}/lib"
 
 
-if test "${HPCTOOLKIT_OS}" = "IRIX64" -o "${HPCTOOLKIT_OS}" = "IRIX" ; then
+if test "${HPCTOOLKIT_PLATFORM}" = "mips-IRIX64" ; then
   # set library path for IRIX systems
   if test -z "${LD_LIBRARYN32_PATH}" ; then
     export LD_LIBRARYN32_PATH="${XERCESPLATFORM}"
