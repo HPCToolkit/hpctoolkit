@@ -91,6 +91,8 @@ static const char* usage_details =
 "* <binary> should be compiled with as much debugging info as possible (e.g.\n"
 "  -g3 for some compilers). When using the Sun compiler, place debugging\n"
 "  info _in_ the binary (-xs).\n"
+"* Optimizing compilers may generate inaccurate debugging information.\n"
+"  bloop cannot fix this.\n"
 "* C++ mangling is compiler specific. bloop tries both the platform's and\n"
 "  GNU's demangler, but if <binary> was produced with a proprietary compiler\n"
 "  demangling will likely be unsuccessful. (Also, cross-platform usage.)\n";
