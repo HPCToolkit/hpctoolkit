@@ -255,4 +255,72 @@ are not given in terms of *sample* counts but rather as estimated
 
 =============================================================================
 
+Outline of hpcrun's monitoring scheme
 
+(Note: In order to show the relation of each case with the basic
+'Process' case, identical information is elided with '---'.)
+
+------------------------------------------------------------
+
+Process:
+  Start:
+    1. init_library()
+    2. Intercept launch point (hpcrun_libc_start_main())
+       - init_process()
+       - Launch with hpcrun_libc_start_main_fini() as exit handler
+	
+  Stop:
+    1. Return to exit handler (hpcrun_libc_start_main_fini())
+       - fini_process()
+
+------------------------------------------------------------
+
+Process + Fork:
+  Start:
+    1. ---
+    2. ---
+    3. Intercept fork (hpcrun_fork()) 
+       (hpcrun lib already initialized; do not return to libc_start_main
+        again; signal and exit handler already installed)
+       - init_process()
+
+  Stop (process 1):
+    1. --- 
+
+  Stop (process 2):
+    1. --- 
+
+------------------------------------------------------------
+
+Process + Exec:
+
+------------------------------------------------------------
+
+Process + Fork/Exec:
+
+------------------------------------------------------------
+
+Multithreaded process (all threads as one process)
+  * Not possible.  PAPI_sprofil() only supports profiling on a
+    per-thread basis.sprofil() does not support threads.
+
+------------------------------------------------------------
+
+Multithreaded process (each thread individually)
+  Start:
+    1. ---
+    2. ---
+
+  Each thread:
+    1. Intercept thread creation (hpcrun_pthread_create())
+       - Call pthread_create with hpcrun_pthread_create_start_routine()
+         as the start routine
+    2. Execute thread: 
+       - init_thread()
+       - execute
+       - fini_thread()
+
+  Stop:
+    1. --- 
+
+------------------------------------------------------------
