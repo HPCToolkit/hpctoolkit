@@ -186,26 +186,29 @@ PredefinedDCPIMetricTable::Entry PredefinedDCPIMetricTable::table[] = {
   // -------------------------------------------------------
   // Non ProfileMe metrics, possibly available at any time
   // -------------------------------------------------------
+  // Note: because availability of regular metrics must be determined
+  // by string matching, these names *must* match those found in
+  // dcpicat output (DCPIProfile)
 
-  { "cntr_cycles", "Processor cycles",
+  { "cycles", "Processor cycles",
     RM,
     DCPIMetricExpr(DCPI_MTYPE_RM | DCPI_RM_cycles),
     InsnClassExpr(INSN_CLASS_ALL)
   },
   
-  { "cntr_retires", "Retired instructions",
+  { "retires", "Retired instructions",
     RM,
     DCPIMetricExpr(DCPI_MTYPE_RM | DCPI_RM_retires),
     InsnClassExpr(INSN_CLASS_ALL)
   },
 
-  { "cntr_replaytrap", "Mbox replay traps",
+  { "replaytrap", "Mbox replay traps",
     RM,
     DCPIMetricExpr(DCPI_MTYPE_RM | DCPI_RM_replaytrap),
     InsnClassExpr(INSN_CLASS_ALL)
   },
 
-  { "cntr_bmiss", "Bcache misses or long-latency probes",
+  { "bmiss", "Bcache misses or long-latency probes",
     RM,
     DCPIMetricExpr(DCPI_MTYPE_RM | DCPI_RM_bmiss),
     InsnClassExpr(INSN_CLASS_ALL)

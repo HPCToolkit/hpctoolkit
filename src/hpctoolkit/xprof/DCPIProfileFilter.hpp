@@ -126,6 +126,9 @@ public:
     return IsSatisfied(DCPIMetricDesc(bv));
   }
   bool IsSatisfied(const DCPIMetricDesc& m) {
+    // FIXME: This works for now, but it is technically incorrect
+    // becuase regular metrics do not have the <trap> subexpression.
+
     // The <trap> subexpression is a disjuction, so we test it separately
     bool expr = m.IsSet(bits & ~DCPI_PM_TRAP_MASK);
     bitvec_t trapbv = bits & DCPI_PM_TRAP_MASK;
