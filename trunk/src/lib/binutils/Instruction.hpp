@@ -86,7 +86,7 @@ public:
   ISA::InstDesc GetDesc() const {
     return isa->GetInstDesc(minst, GetOpIndex(), GetSize());
   }
-
+  
   // 'GetBits' returns a pointer to the bits of the instruction;
   // 'GetSize' returns the size of the machine instruction.
   // In the case of VLIW instructions, returns the {bits, size} not of
@@ -95,6 +95,7 @@ public:
   virtual ushort    GetSize() const = 0;
 
   // Returns the PC/VMA for the beginning of this instruction.
+  // WARNING: this is unrelocated
   Addr GetPC() const { return pc; }
   void SetPC(Addr _pc) { pc = _pc; }
   

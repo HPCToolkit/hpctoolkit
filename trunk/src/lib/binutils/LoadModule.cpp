@@ -92,13 +92,16 @@ public:
   bfd* abfd;                       // BFD of this module.
 };
 
+
 LoadModule::LoadModule()
-  : type(Unknown)
+  : type(Unknown), textStart(0), textEnd(0), 
+    textStartReloc(0), unRelocDelta(0)
 {
   impl = new LoadModuleImpl;
   impl->bfdSymbolTable = impl->sortedSymbolTable = NULL;
   impl->abfd = NULL;
 }
+
 
 LoadModule::~LoadModule()
 {
@@ -125,49 +128,69 @@ LoadModule::~LoadModule()
   addrToInstMap.clear();
 }
 
+
 bool
 LoadModule::Open(const char* moduleName)
 {
   IFTRACE << "LoadModule::Open: " << moduleName << endl;
 
-  // Initialize bfd and open the object file.
-  if (name.Empty()) {
-    // Determine file existence.
-    bfd_init();
-    bfd *abfd = bfd_openr(moduleName, "default");
-    if (!abfd) {
-      cerr << "Error: `" << moduleName << "': " << bfd_errmsg(bfd_get_error())
-	   << endl; 
-      return false;
-    }
-   
-    // bfd_object: The BFD may contain data, symbols, relocations and
-    //   debug info.
-    // bfd_archive: The BFD contains other BFDs and an optional index.
-    // bfd_core: The BFD contains the result of an executable core dump.
-    if (!bfd_check_format(abfd, bfd_object)) {
-      cerr << "Error: `" << moduleName << "': not an object or executable\n";
-      return false;
-    }
-    
-    name = moduleName;
-    impl->abfd = abfd;
-    flagword flags = bfd_get_file_flags(abfd);
-    if (flags & EXEC_P) {         // BFD is directly executable
-      type = Executable;
-    } else if (flags & DYNAMIC) { // BFD is a dynamic object
-      type = SharedLibrary;
-    } else if (flags) {
-      type = Unknown;
-    }
-  } else {
+  if (!name.Empty()) {
     // 'moduleName' should be equal to what already exists
     BriefAssertion(strcmp(name, moduleName) == 0);
+    return true;
+  }
+
+  // -------------------------------------------------------
+  // 1. Initialize bfd and open the object file.
+  // -------------------------------------------------------
+
+  // Determine file existence.
+  bfd_init();
+  bfd *abfd = bfd_openr(moduleName, "default");
+  if (!abfd) {
+    cerr << "Error: `" << moduleName << "': " << bfd_errmsg(bfd_get_error())
+	 << endl; 
+    return false;
   }
   
-  // Configure ISA.  
+  // bfd_object: The BFD may contain data, symbols, relocations and
+  //   debug info.
+  // bfd_archive: The BFD contains other BFDs and an optional index.
+  // bfd_core: The BFD contains the result of an executable core dump.
+  if (!bfd_check_format(abfd, bfd_object)) {
+    cerr << "Error: `" << moduleName << "': not an object or executable\n";
+    return false;
+  }
+  
+  name = moduleName;
+  impl->abfd = abfd;
 
-  // 1. Create a new ISA (this may not be necessary, but it is cheap)
+  // -------------------------------------------------------
+  // 2. Collect data from BFD
+  // -------------------------------------------------------
+
+  // Set flags.  FIXME: both executable and dynamic flags can be set
+  // on some architectures (e.g. alpha).
+  flagword flags = bfd_get_file_flags(impl->abfd);
+  if (flags & EXEC_P) {         // BFD is directly executable
+    type = Executable;
+  } else if (flags & DYNAMIC) { // BFD is a dynamic object
+    type = SharedLibrary;
+  } else if (flags) {
+    type = Unknown;
+  }
+  
+  // FIXME: only do for alpha at the moment 
+  if (bfd_get_arch(impl->abfd) == bfd_arch_alpha) {
+    textStart = bfd_ecoff_get_text_start(impl->abfd);
+    textEnd   = bfd_ecoff_get_text_end(impl->abfd);
+  }
+  
+  // -------------------------------------------------------
+  // 3. Configure ISA.  
+  // -------------------------------------------------------
+
+  // Create a new ISA (this may not be necessary, but it is cheap)
   ISA* newisa = NULL;
   switch (bfd_get_arch(impl->abfd)) {
     case bfd_arch_mips:
@@ -190,18 +213,19 @@ LoadModule::Open(const char* moduleName)
       BriefAssertion(false);
   }
 
-  // 2. Sanity check.  Test to make sure the new LoadModule is using
-  // the same ISA type.
+  // Sanity check.  Test to make sure the new LoadModule is using the
+  // same ISA type.
   if (!isa) {
     isa = newisa;
   } else {
-    BriefAssertion(typeid(*newisa) == typeid(*isa) &&
-		   "Cannot simultaneously open LoadModules with different ISAs!");
     delete newisa;
+    BriefAssertion(typeid(*newisa) == typeid(*isa) &&
+		"Cannot simultaneously open LoadModules with different ISAs!");
   }
   
   return true;
 }
+
 
 bool
 LoadModule::Read()
@@ -221,6 +245,31 @@ LoadModule::Read()
   }
 }
 
+
+// Relocate: Internally, all operations are performed on non-relocated
+// PCs.  All routines operating on PCs should call UnRelocatePC(),
+// which will do the right thing.
+void 
+LoadModule::Relocate(Addr textStartReloc_)
+{
+  BriefAssertion(textStart != 0 && "Relocation not supported on this arch!");
+  textStartReloc = textStartReloc_;
+  
+  if (textStartReloc == 0) {
+    unRelocDelta = 0;
+  } else {
+    unRelocDelta = -(textStartReloc - textStart);
+  }
+}
+
+bool 
+LoadModule::IsRelocated() const 
+{ 
+  return (textStartReloc != 0);
+}
+
+
+
 MachInst*
 LoadModule::GetMachInst(Addr pc, ushort &size) const
 {
@@ -237,7 +286,8 @@ LoadModule::GetMachInst(Addr pc, ushort &size) const
 Instruction*
 LoadModule::GetInst(Addr pc, ushort opIndex) const
 {
-  Addr mapPC = isa->ConvertPCToOpPC(pc, opIndex);
+  Addr unrelocPC = UnRelocatePC(pc);
+  Addr mapPC = isa->ConvertPCToOpPC(unrelocPC, opIndex);
   
   Instruction* inst = NULL;
   AddrToInstMapItC it = addrToInstMap.find(mapPC);
@@ -250,11 +300,13 @@ LoadModule::GetInst(Addr pc, ushort opIndex) const
 void
 LoadModule::AddInst(Addr pc, ushort opIndex, Instruction *inst)
 {
-  Addr mapPC = isa->ConvertPCToOpPC(pc, opIndex);
+  Addr unrelocPC = UnRelocatePC(pc);
+  Addr mapPC = isa->ConvertPCToOpPC(unrelocPC, opIndex);
 
   // FIXME: It wouldn't hurt to verify this isn't a duplicate
   addrToInstMap.insert(AddrToInstMapVal(mapPC, inst));
 }
+
 
 bool
 LoadModule::GetSourceFileInfo(Addr pc, ushort opIndex,
@@ -271,7 +323,8 @@ LoadModule::GetSourceFileInfo(Addr pc, ushort opIndex,
   unsigned int bfd_line = 0;
   //BriefAssertion(sizeof(suint) >= sizeof(bfd_line));
 
-  Addr opPC = isa->ConvertPCToOpPC(pc, opIndex);
+  Addr unrelocPC = UnRelocatePC(pc);
+  Addr opPC = isa->ConvertPCToOpPC(unrelocPC, opIndex);
   
   // Find the Section where this pc lives.
   asection *bfdSection = NULL;
@@ -310,7 +363,7 @@ LoadModule::GetSourceFileInfo(Addr startPC, ushort sOpIndex,
   func = file = '\0';
   startLine = endLine = 0;
 
-  // Enforce condition that 'startPC' <= 'endPC'.
+  // Enforce condition that 'startPC' <= 'endPC'. (No need to unrelocate!)
   Addr startOpPC = isa->ConvertPCToOpPC(startPC, sOpIndex);
   Addr endOpPC   = isa->ConvertPCToOpPC(endPC, eOpIndex);
   if (! (startOpPC <= endOpPC) ) {
@@ -367,6 +420,7 @@ LoadModule::GetSourceFileInfo(Addr startPC, ushort sOpIndex,
   return STATUS;
 }
 
+
 void
 LoadModule::Dump(std::ostream& o, const char* pre) const
 {
@@ -412,6 +466,7 @@ LoadModule::DumpSelf(std::ostream& o, const char* pre) const
 {
 }
 
+
 //***************************   private members    ***************************
 
 int
@@ -429,6 +484,7 @@ LoadModule::SymCmpByVMAFunc(const void* s1, const void* s2)
     return 0;
   }
 }
+
 
 bool
 LoadModule::ReadSymbolTables()
@@ -492,6 +548,7 @@ LoadModule::ReadSymbolTables()
   return STATUS;
 }
 
+
 bool
 LoadModule::ReadSections()
 {
@@ -528,6 +585,7 @@ LoadModule::ReadSections()
   return STATUS;
 }
 
+
 void
 LoadModule::DumpModuleInfo(std::ostream& o, const char* pre) const
 {
@@ -550,6 +608,9 @@ LoadModule::DumpModuleInfo(std::ostream& o, const char* pre) const
       o << "-unknown-'\n";
       BriefAssertion(false); 
   }
+  
+  o << p << "Text(start,end): 0x" << hex << GetTextStart() << ", 0x"
+    << GetTextEnd() << dec << "\n";
   
   o << p << "Endianness: `"
     << ( (bfd_big_endian(abfd)) ? "Big'\n" : "Little'\n" );
@@ -615,6 +676,7 @@ LoadModule::DumpModuleInfo(std::ostream& o, const char* pre) const
   o << p << "Bits per word: "    << abfd->arch_info->bits_per_word  << endl;
 }
 
+
 void
 LoadModule::DumpSymTab(std::ostream& o, const char* pre) const
 {
@@ -636,6 +698,7 @@ LoadModule::DumpSymTab(std::ostream& o, const char* pre) const
   } 
 }
 
+
 //***************************************************************************
 // Executable
 //***************************************************************************
@@ -645,9 +708,11 @@ Executable::Executable()
 {
 }
 
+
 Executable::~Executable()
 {
 }
+
 
 bool
 Executable::Open(const char* moduleName)
@@ -663,6 +728,7 @@ Executable::Open(const char* moduleName)
   }
   return STATUS;
 }
+
 
 void
 Executable::Dump(std::ostream& o, const char* pre) const
