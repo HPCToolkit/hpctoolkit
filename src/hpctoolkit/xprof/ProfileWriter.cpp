@@ -89,6 +89,8 @@ using std::dec;
 
 const char* UNKNOWN = "<unknown>";
 
+//*************************** Forward Declarations ***************************
+
 // LineToPCProfileVecMap
 
 struct lt_SrcLineX
@@ -122,6 +124,11 @@ void
 ProfileWriter::WriteProfile(std::ostream& os, DerivedProfile* profData,
 			    LoadModuleInfo* modInfo)
 {  
+  // Sanity check
+  if (profData->GetNumMetrics() == 0) {
+    return; // We must have at least one metric
+  }
+
   const PCProfile* rawprofData = profData->GetPCProfile();
   const ISA* isa = rawprofData->GetISA();
 
@@ -157,7 +164,7 @@ ProfileWriter::WriteProfile(std::ostream& os, DerivedProfile* profData,
   // Iterate through the PC values in the profile, collect symbolic
   // information on a source line basis, and output the results
   // ------------------------------------------------------------------------  
-
+  
   os << "<PROFILESCOPETREE>\n";
   os << "<PGM n"; WriteAttrStr(os, profiledFile); os << ">\n";
 
@@ -258,140 +265,6 @@ ProfileWriter::WriteProfile(std::ostream& os, DerivedProfile* profData,
 }
 
 //****************************************************************************
-// Combine 'PCProfile' with symbolic info and dump
-//****************************************************************************
-
-void //FIXME
-DumpFuncLineMap_old(ostream& ofile, LineToPCProfileVecMap& map,
-		PCProfile* profData, const char* func, const char* file);
-
-void
-DumpAsPROFILE(ostream& os, PCProfile* profData, LoadModuleInfo* modInfo)
-{
-  const char* profiledFile = profData->GetProfiledFile();
-  const PCProfileMetric* m = profData->GetMetric(0);
-  const Addr txtStart = m->GetTxtStart();       // All metrics guaranteed to  
-  const Addr txtEnd = txtStart + m->GetTxtSz(); //   have identical values.
-  const ulong numMetrics = profData->GetSz();
-
-  // ------------------------------------------------------------------------
-  // Dump header info
-  // ------------------------------------------------------------------------  
-  ProfileWriter::DumpProfileHeader(os);
-  os << "<PROFILE version=\"3.0\">\n";
-  os << "<PROFILEHDR>\n" << profData->GetHdrInfo() << "</PROFILEHDR>\n";
-  os << "<PROFILEPARAMS>\n";
-  {
-    os << "<TARGET name"; WriteAttrStr(os, profiledFile); os << "/>\n";
-    os << "<METRICS>\n";
-    for (ulong i = 0; i < numMetrics; i++) {
-      m = profData->GetMetric(i);
-      os << "<METRIC shortName"; WriteAttrNum(os, i);
-      os << " nativeName";       WriteAttrNum(os, m->GetName());
-      os << " period";           WriteAttrNum(os, m->GetPeriod());
-      // os << " count_total";   WriteAttrNum(os, m->GetTotalCount());
-      os << "/>\n";
-    }
-    os << "</METRICS>\n";
-    os << "</PROFILEPARAMS>\n";
-  }
-
-  // ------------------------------------------------------------------------
-  // Iterate through the PC values of the text section, collect
-  //   symbolic information on a source line basis, and output the results
-  // ------------------------------------------------------------------------  
-
-  os << "<PROFILESCOPETREE>\n";
-  os << "<PGM n"; WriteAttrStr(os, profiledFile); os << ">\n";
-  
-  // 'funcLineMap' maps a line number to a 'PCProfileVec'.  It should
-  //   contain information only for the current function, 'theFunc'.
-  LineToPCProfileVecMap funcLineMap;
-
-  for (LoadModuleSectionIterator it(*modInfo->GetLM()); it.IsValid(); ++it) {
-    Section* sec = it.Current();
-    if (sec->GetType() != Section::Text) { continue; }
-
-    // We have a 'TextSection'.  Iterate over procedures.
-    TextSection* tsec = dynamic_cast<TextSection*>(sec);
-    for (TextSectionProcedureIterator it(*tsec); it.IsValid(); ++it) {
-      Procedure* p = it.Current();
-      String pName = GetBestFuncName(p->GetName());
-
-      // We have a 'Procedure'.  Iterate over PC values
-      String theFunc = pName, theFile; 
-      for (ProcedureInstructionIterator it(*p); it.IsValid(); ++it) {
-	Instruction* inst = it.Current();
-	Addr pc = inst->GetPC();
-	ushort opIndex = inst->GetOpIndex();
-
-	// We want to iterate only over PC values for which counts are
-	// recorded.  
-	long foundMetric;
-	if ( (foundMetric = profData->DataExists(pc, opIndex)) < 0) {
-	  continue;
-	}
-	
-	// --------------------------------------------------
-	// Attempt to find symbolic information
-	// --------------------------------------------------
-	String func, file;
-	SrcLineX srcLn; 
-	modInfo->GetSymbolicInfo(pc, opIndex, func, file, srcLn);
-	
-	if (theFile.Empty() && !file.Empty()) { theFile = file; }
-	
-	// Bad line numbers: cannot fix; advance iteration
-	if (!IsValidLine(srcLn.GetSrcLine())) {
-	  continue; // No useful symbolic information; advance iteration
-	}
-
-	// Bad/Different func name: ignore for now and use 'theFunc' (FIXME)
-	// Bad file name: ignore and use 'theFile' (FIXME)
-	  
-	// --------------------------------------------------
-	// Update 'funcLineMap'
-	// --------------------------------------------------    
-	PCProfileVec* vec = NULL;
-	LineToPCProfileVecMapIt it1 = funcLineMap.find(&srcLn);
-	if (it1 == funcLineMap.end()) {
-	  // Initialize the vector and insert into the map
-	  vec = new PCProfileVec(numMetrics);
-	  funcLineMap.insert(LineToPCProfileVecMapVal(new SrcLineX(srcLn), vec));
-	} else {
-	  vec = (*it1).second;
-	}
-
-	// Update vector counts
-	for (ulong i = (ulong)foundMetric; i < numMetrics; i++) {
-	  m = profData->GetMetric(i);
-	  (*vec)[i] += m->Find(pc, opIndex); // add
-	}	
-      }
-
-      // --------------------------------------------------
-      // Dump the contents of 'funcLineMap'
-      // --------------------------------------------------
-      if (!theFunc.Empty() && !theFile.Empty()) {
-	DumpFuncLineMap_old(os, funcLineMap, profData, theFunc, theFile);
-      }
-      ClearFuncLineMap(funcLineMap); // clears map and memory
-      
-    }
-  }
-  
-  os << "</PGM>\n";
-  os << "</PROFILESCOPETREE>\n";
-
-  // ------------------------------------------------------------------------
-  // Dump footer
-  // ------------------------------------------------------------------------  
-
-  os << "</PROFILE>\n"; 
-  ProfileWriter::DumpProfileFooter(os);
-}
-
-//****************************************************************************
 // 
 //****************************************************************************
 
@@ -453,49 +326,6 @@ DumpFuncLineMap(ostream& os, LineToPCProfileVecMap& map,
   os << I[2] << "</P>" << endl;
   os << I[1] << "</F>\n";
 }
-
-// Output should be in increasing order by line number.
-void 
-DumpFuncLineMap_old(ostream& os, LineToPCProfileVecMap& map,
-		    PCProfile* profData, const char* func, const char* file)
-{
-  static const char* I[] = { "", // Indent levels (0 - 5)
-			     "  ",
-			     "    ",
-			     "      ",
-			     "        ",
-			     "          " };
-
-  if (map.size() == 0) { return; }
-  
-  os << I[1] << "<F n";  WriteAttrStr(os, file); os << ">\n";
-  os << I[2] << "<P n";  WriteAttrStr(os, func); os << ">\n";
-    
-  LineToPCProfileVecMapIt it;
-  for (it = map.begin(); it != map.end(); ++it) {
-    SrcLineX* srcLn = (*it).first;
-    PCProfileVec* vec = (*it).second;
-    
-    os << I[3] << "<S b"; WriteAttrNum(os, srcLn->GetSrcLine());
-    os << " id";          WriteAttrNum(os, srcLn->GetSrcLineX());
-    os << ">\n";
-    for (suint i = 0; i < vec->GetSz(); ++i) {
-      if ( (*vec)[i] != 0 ) {
-	const PCProfileMetric* m = profData->GetMetric(i);
-	double v = (double)(*vec)[i] * (double)m->GetPeriod();
-	
-	os << I[4] << "<M n"; WriteAttrNum(os, i);
-	os << " v";   WriteAttrNum(os, v);
-	os << "/>\n";
-      }
-    }
-    os << I[3] << "</S>" << endl;
-  }
-
-  os << I[2] << "</P>" << endl;
-  os << I[1] << "</F>\n";
-}
-
 
 void ClearFuncLineMap(LineToPCProfileVecMap& map)
 {
