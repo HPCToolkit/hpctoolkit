@@ -100,6 +100,8 @@ public:
   // ------------------------------------------------------------------------
 
   // InstDesc: Describes an instruction's class in various levels.
+  // Note: This should not have virtual functions so that objects can be
+  // passed around by value.
   class InstDesc {
   public:
   
@@ -159,7 +161,7 @@ public:
   public:
     // A 'InstDesc' can be created using the bit definitions above.
     InstDesc(IType t = INVALID) : ty(t) { }
-    virtual ~InstDesc() { }
+    ~InstDesc() { }
     
     InstDesc(const InstDesc& x) { *this = x; }
     InstDesc& operator=(const InstDesc& x) { 
