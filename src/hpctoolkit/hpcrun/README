@@ -167,7 +167,7 @@ of other performance counter information.
         PAPI_L1_ICM  - 1019
         PAPI_L1_DCM  - 1019 or 101
       
-      hpcrun -e PAPI_L1_DCM -p 1019 test2
+      hpcrun -e PAPI_L1_DCM:1019 test2
 
    6. Create text summaries and PROFILES with multiple events:
 
