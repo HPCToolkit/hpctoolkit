@@ -179,7 +179,7 @@ TextSection::TextSection(LoadModule* _lm, String _name, Addr _start, Addr _end,
   impl->contentsRaw = new char[_size+16+16];
   memset(impl->contentsRaw, 0, 16+16);        // zero the padding
   char* contentsTmp = impl->contentsRaw + 16; // add the padding
-  impl->contents = (char *)( ((bfd_vma)contentsTmp + 15) & ~15 ); // align
+  impl->contents = (char *)( ((psuint)contentsTmp + 15) & ~15 ); // align
 
   const char *nameStr = (const char *)_name;
   int result = bfd_get_section_contents(abfd,

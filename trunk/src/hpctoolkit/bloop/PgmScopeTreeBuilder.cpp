@@ -381,7 +381,8 @@ BuildFromProc(FileScope* fileScope, Procedure* p, bool fixBoundaries)
   BloopIRInterface irInterface(p);
   BloopIRStmtIterator stmtIter(*p);
   
-  CFG cfg(irInterface, &stmtIter, (SymHandle)((const char *)funcNm));
+  CFG cfg(irInterface, &stmtIter, 
+	  PTR_TO_IRHNDL((const char *)funcNm, SymHandle));
   OARIFG fg(cfg);
   TarjanIntervals tarj(fg);
   RIFGNodeId fgRoot = fg.GetRootNode();
@@ -562,7 +563,7 @@ BuildFromBB(CodeInfo* enclosingScope, Procedure* p, CFG::Node* bb)
   LineToStmtMap stmtMap; // maps lines to NULL (simulates a set)
 
   for (CFG::NodeStatementsIterator s_iter(bb); (bool)s_iter; ++s_iter) {
-    Instruction *insn = (Instruction *)((StmtHandle)s_iter);
+    Instruction* insn = IRHNDL_TO_PTR((StmtHandle)s_iter, Instruction*);
     Addr pc = insn->GetPC();
     
     String func, file;
@@ -1276,12 +1277,15 @@ CFG_GetBegAndEndAddrs(CFG::Node* n, Addr &beg, Addr &end)
   // the first and last statements from a block. Perhaps we'll
   // modify the CFG code, this works for now.
   bool first = true;
+  Instruction* insn;
   for (CFG::NodeStatementsIterator s_iter(n); (bool)s_iter; ++s_iter) {
     if (first == true) {
-      beg = ((Instruction *)((StmtHandle)s_iter))->GetPC();
+      insn = IRHNDL_TO_PTR((StmtHandle)s_iter, Instruction*);
+      beg = insn->GetPC();
       first = false;
     }
-    end = ((Instruction *)((StmtHandle)s_iter))->GetPC();
+    insn = IRHNDL_TO_PTR((StmtHandle)s_iter, Instruction*);
+    end = insn->GetPC();
   }
 }
 

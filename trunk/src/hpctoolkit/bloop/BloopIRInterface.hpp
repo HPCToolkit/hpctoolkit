@@ -69,6 +69,8 @@
 #include <lib/support/String.h>
 #include <lib/support/Assertion.h>
 
+//*************************** Forward Declarations ***************************
+
 // IRInterface types: Use OA_IRHANDLETYPE_SZ64 (size of bfd_vma/Addr)
 //   ProcHandle  - 
 //   StmtHandle  - Instruction*
@@ -83,6 +85,13 @@
 // should be able to use only one so that casts are always between
 // types of the same size.
 
+// The IR handle type is 64 bits but we will need to interface with
+// 32-bit pointers at times.  Use this macro to eliminate potential
+// compiler warnings about "casting a 32-bit pointer to an integer of
+// different size".
+#define PTR_TO_IRHNDL(x, totype) ((totype)(psuint)(x))
+#define IRHNDL_TO_PTR(x, totype) ((totype)(psuint)(x))
+
 //*************************** Forward Declarations ***************************
 
 class BloopIRStmtIterator: public IRStmtIterator {
@@ -90,7 +99,7 @@ public:
   BloopIRStmtIterator (Procedure &_p) : pii(_p) { }
   ~BloopIRStmtIterator () { }
 
-  StmtHandle Current () { return (StmtHandle)(pii.Current()); }
+  StmtHandle Current () { return PTR_TO_IRHNDL(pii.Current(), StmtHandle); }
   bool IsValid () { return pii.IsValid(); }
   void operator++ () { ++pii; }
 
@@ -230,7 +239,7 @@ public:
     { BriefAssertion(0); return (SymHandle)0; }
   SymHandle GetSymHandle (LeafHandle vh) { return (SymHandle)0; }
   const char *GetSymNameFromSymHandle (SymHandle sh) 
-    { return (const char*)sh; }
+    { return IRHNDL_TO_PTR(sh, const char*); }
   const char *GetConstNameFromConstHandle(ConstHandle ch) 
     { return "<no-const>"; };
 
