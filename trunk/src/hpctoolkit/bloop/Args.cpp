@@ -93,7 +93,7 @@ void Args::Usage()
     << "compilers:\n"
     << "  alpha-OSF1:  GCC 2.9x, 3.x, Compaq Compilers 6.x\n"
     << "  i686-Linux:  GCC 2.9x, 3.x\n"
-    << "  ia64-Linux:  GCC 2.9x, 3.x, Intel Compilers 6.x\n"
+    << "  ia64-Linux:  GCC 2.9x, 3.x, Intel Compilers 6.x, 7.x\n"
     << "  mips-IRIX64: GCC 2.9x, 3.x, SGI MIPSpro Compilers 7.x \n"
     << "  sparc-SunOS: GCC 2.9x, 3.x\n"
     << "One caveat to supporting multiple targets is that C++ mangling\n"
