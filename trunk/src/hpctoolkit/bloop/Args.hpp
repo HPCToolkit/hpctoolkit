@@ -1,5 +1,5 @@
+// -*-Mode: C++;-*-
 // $Id$
-// -*-C++-*-
 // * BeginRiceCopyright *****************************************************
 // 
 // Copyright ((c)) 2002, Rice University 
@@ -52,36 +52,55 @@
 
 //************************* System Include Files ****************************
 
+#include <iostream>
+
 //*************************** User Include Files ****************************
 
 #include <lib/support/String.h>
 
 //*************************** Forward Declarations ***************************
 
-#define THRESHHOLDING_DISABLED -1
-
 //***************************************************************************
 
 class Args {
 public: 
-  Args(int argc, char* const* argv); 
+  Args(); 
+  Args(int argc, const char* const argv[]);
+  ~Args(); 
+
+  // Parse the command line
+  void Parse(int argc, const char* const argv[]);
+
+  // Version and Usage information
+  void PrintVersion(std::ostream& os) const;
+  void PrintUsage(std::ostream& os) const;
   
-  void Version();
-  void Usage();
+  // Error
+  void PrintError(std::ostream& os, const char* msg) const;
+  //void PrintError(std::ostream& os, const std::string& msg) const;
+
+  // Dump
+  void Dump(std::ostream& os = std::cerr) const;
+  void DDump() const;
 
 public:  
+  // Parsed Data: Command
   String cmd; 
 
-  // arguments - options
-  bool debugMode;
+  // Parsed Data: optional arguments
+  bool debugMode;           // defaults: false
   String pcMapFile; 
-  bool prettyPrintOutput;
-  bool normalizeScopeTree;
-  bool verboseMode;
+  bool prettyPrintOutput;   // default: true
+  bool normalizeScopeTree;  // default: true
+  bool verboseMode;         // default: false
   String canonicalPathList;
 
-  // arguments
+  // Parsed Data: arguments
   String inputFile;
+
+private:
+  void Ctor();
+
 }; 
 
 #endif

@@ -1,5 +1,5 @@
+// -*-Mode: C++;-*-
 // $Id$
-// -*-C++-*-
 // * BeginRiceCopyright *****************************************************
 // 
 // Copyright ((c)) 2002, Rice University 
@@ -67,83 +67,119 @@ using std::endl;
 
 //***************************************************************************
 
-const char* hpctoolsVerInfo=
+static const char* version_info=
 #include <include/HPCToolkitVersionInfo.h>
 
-void Args::Version()
+static const char* usage_summary =
+"[options] <binary>\n";
+
+static const char* usage_details =
+"bloop analyzes the application binary <binary>, recovers information about\n"
+"its source-line loop-nesting structure, and generates an XML scope tree (of\n"
+"type PGM) to stdout.  It uses debugging information to gather source-line\n"
+"data; see caveats below for common problems.\n"
+"\n"
+"Options:\n"
+"  -v            Verbose: generate progress messages\n"
+"  -n            Turn off scope tree normalization\n"
+"  -c            Generate compact output, eliminating extra white space\n"
+"  -p <pathlist> Ensure that scope tree only contains files found in the\n"
+"                colon-separated <pathlist>\n"
+"  -V            Print version information\n"
+"  -h            Print this help\n"
+" [-d            Debug default mode; not for general use.]\n"
+"\n"
+"Debug mode: Dump binary information. Not for general use.\n"
+"  -D  Turn on debug mode\n"
+" [-d  Debug debug mode.]\n"
+"\n"
+"Caveats:\n"
+"* <binary> should be compiled with as much debugging info as possible (e.g.\n"
+"  -g3 for some compilers). When using the Sun compiler, place debugging\n"
+"  info _in_ the binary (-xs).\n"
+"* C++ mangling is compiler specific. bloop tries both the platform's and\n"
+"  GNU's demangler, but if <binary> was produced with a proprietary compiler\n"
+"  demangling will likely be unsuccessful. (Also, cross-platform usage.)\n";
+
+#if 0 // FIXME: '[-m <pcmap>]'
+"  -m: Create and write a [PC -> source-line] map to <pcmap>.\n"
+"      The map is extended with loop analysis information and  \n"
+"      can be used to improve the output of 'xProf'.\n"
+"      [*Not fully implemented.*]\n"
+#endif     
+
+
+//***************************************************************************
+// Args
+//***************************************************************************
+
+Args::Args()
 {
-  cerr << cmd << ": " << hpctoolsVerInfo << endl;
+  Ctor();
 }
 
-void Args::Usage()
+Args::Args(int argc, const char* const argv[])
 {
-  cerr
-    << "Usage: " << endl
-    << "  " << cmd << " [-V] [-n] [-p <pathlist>] [-c] <binary>\n"
-    << "  " << cmd << " -D <binary>\n"
-    << endl;
-  cerr
-    << "Default mode: Analyzes the application binary <binary> and recovers\n"
-    << "information about source line loop nesting structure.  Generates an\n"
-    << "XML scope tree (of type PGM) of the binary's contents to stdout.\n"
-    << "\n"
-    << "'bloop' analyzes C, C++ and Fortran binaries from a number of\n"
-    << "different platforms, relying on debugging information for source\n"
-    << "line information.  It currently supports the following targets and\n"
-    << "compilers:\n"
-    << "  alpha-OSF1:  GCC 2.9x, 3.x, Compaq Compilers 6.x\n"
-    << "  i686-Linux:  GCC 2.9x, 3.x\n"
-    << "  ia64-Linux:  GCC 2.9x, 3.x, Intel Compilers 6.x, 7.x\n"
-    << "  mips-IRIX64: GCC 2.9x, 3.x, SGI MIPSpro Compilers 7.x\n"
-    << "  sparc-SunOS: GCC 2.9x, 3.x, Sun WorkShop/Forte/ONE 6u2\n"
-    << "One caveat to supporting multiple targets is that C++ mangling\n"
-    << "is often compiler specific.  Both the current platform's demangler\n"
-    << "and GNU's demangler are used in attempts to demangle names.  But if\n"
-    << "<binary> was compiled on another platform with a proprietary\n"
-    << "compiler, there is a good chance demangling will be unsuccessful.\n"
-    << "\n"
-    << "In order to ensure accurate reporting, <binary> should be compiled\n"
-    << "with as much debugging information as possible (e.g. -g3 for some\n"
-    << "compilers).  When using the Sun compiler make sure to use -xs to\n"
-    << "place debugging info _in_ the binary.\n"
-    << "  \n"
-#if 0 // FIXME: '[-m <pcmap>]'
-    << "  -m: Create and write a [PC -> source-line] map to <pcmap>.\n"
-    << "      The map is extended with loop analysis information and  \n"
-    << "      can be used to improve the output of 'xProf'.\n"
-    << "      [*Not fully implemented.*]\n"
-#endif     
-    << "  -V: print version information\n"
-    << "  -n: Turn off scope tree 'normalization'\n"
-    << "  -p: Ensure the scope tree only contains those files found in\n"
-    << "      the colon separated <pathlist>\n"
-    << "  -c: Print output in compact form without extra white space\n"
-    << "  -v: Verbose output; Generates progress messages\n"
-    << " [-d: Debug default mode; not for general use.]\n"
-    << "\n"
-    << "Debug mode: Prints an unprocessed section, procedure, and \n"
-    << "instruction list of <binary> to stdout.\n"
-    << "  -D: Turn on debug mode\n"
-    << " [-d: Debug debug mode.]\n"
-    << endl;
-} 
+  Ctor();
+  Parse(argc, argv);
+}
 
-Args::Args(int argc, char* const* argv)
+void
+Args::Ctor()
 {
-  cmd = argv[0]; 
-
-  bool printVersion = false;
   debugMode = false;
   prettyPrintOutput = true;
   normalizeScopeTree = true;
   verboseMode = false;
+}
 
+
+Args::~Args()
+{
+}
+
+
+void 
+Args::PrintVersion(std::ostream& os) const
+{
+  os << cmd << ": " << version_info << endl;
+}
+
+
+void 
+Args::PrintUsage(std::ostream& os) const
+{
+  os << "Usage: " << cmd << " " << usage_summary << endl
+     << usage_details << endl;
+} 
+
+
+void 
+Args::PrintError(std::ostream& os, const char* msg) const
+{
+  os << cmd << ": " << msg << endl
+     << "Try `" << cmd << " -h' for more information." << endl;
+}
+
+
+void
+Args::Parse(int argc, const char* const argv[])
+{
+  // FIXME: eraxxon: drop my new argument parser in here
+  cmd = argv[0]; 
+
+  bool printHelp = false;
+  bool printVersion = false;
+
+  // -------------------------------------------------------
+  // Parse the command line
+  // -------------------------------------------------------
   extern char *optarg;
   extern int optind;
   bool error = false;
   trace = 0;
   int c;
-  while ((c = getopt(argc, argv, "vVDm:np:cd")) != EOF) {
+  while ((c = getopt(argc, (char**)argv, "vVhDm:np:cd")) != EOF) {
     switch (c) {
     case 'D': {
       debugMode = true; 
@@ -157,6 +193,11 @@ Args::Args(int argc, char* const* argv)
       printVersion = true;
       break; 
     }
+    case 'h': { 
+      printHelp = true;
+      break; 
+    }
+
     case 'm': {
       // A non-null value of 'pcMapFile' indicates it has been set
       if (optarg == NULL) { error = true; }
@@ -188,30 +229,55 @@ Args::Args(int argc, char* const* argv)
     }
     }
   }
+
+  // -------------------------------------------------------
+  // Sift through results, checking for semantic errors
+  // -------------------------------------------------------
+
+  // Special options that should be checked first
+  if (printHelp) {
+    PrintUsage(cerr);
+    exit(1);
+  }
+  
+  if (printVersion) {
+    PrintVersion(cerr);
+    exit(1);
+  }
+
   error = error || (optind != argc-1); 
   if (!error) {
     inputFile = argv[optind];
   } 
-
-  IFTRACE << "Args.cmd= " << cmd << endl; 
-  IFTRACE << "Args.debugMode= " << debugMode << endl;
-  IFTRACE << "Args.pcMapFile= " << pcMapFile << endl;
-  IFTRACE << "Args.prettyPrintOutput= " << prettyPrintOutput << endl;
-  IFTRACE << "Args.normalizeScopeTree= " << normalizeScopeTree << endl;
-  IFTRACE << "Args.canonicalPathList= " << canonicalPathList << endl;
-  IFTRACE << "Args.inputFile= " << inputFile << endl;
-  IFTRACE << "::trace " << ::trace << endl; 
-  
-  if (printVersion) {
-    Version();
-    exit(1);
-  }
   
   if (error) {
-    Usage(); 
+    PrintError(cerr, "Error parsing command line"); 
     exit(1); 
   }
 }
+
+
+void 
+Args::Dump(std::ostream& os) const
+{
+  os << "Args.cmd= " << cmd << endl; 
+  os << "Args.debugMode= " << debugMode << endl;
+  os << "Args.pcMapFile= " << pcMapFile << endl;
+  os << "Args.prettyPrintOutput= " << prettyPrintOutput << endl;
+  os << "Args.normalizeScopeTree= " << normalizeScopeTree << endl;
+  os << "Args.canonicalPathList= " << canonicalPathList << endl;
+  os << "Args.inputFile= " << inputFile << endl;
+  os << "::trace " << ::trace << endl; 
+}
+
+void 
+Args::DDump() const
+{
+  Dump(std::cerr);
+}
+
+
+//***************************************************************************
 
 #if 0
 #include <dirent.h>

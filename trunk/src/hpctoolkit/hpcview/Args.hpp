@@ -34,11 +34,25 @@
 // 
 // ******************************************************* EndRiceCopyright *
 
+//***************************************************************************
+//
+// File:
+//    Args.h
+//
+// Purpose:
+//    [The purpose of this file]
+//
+// Description:
+//    [The set of functions, macros, etc. defined in the file]
+//
+//***************************************************************************
 
 #ifndef Args_h
 #define Args_h
 
 //************************ System Include Files ******************************
+
+#include <iostream>
 
 //************************* User Include Files *******************************
 
@@ -48,24 +62,44 @@
 
 #define THRESHOLDING_DISABLED -1.0
 
+extern int fileTrace;
+
 //****************************************************************************
 
 class Args {
 public: 
-  Args(int argc, char* const* argv); 
+  Args(); 
+  Args(int argc, const char* const argv[]);
+  ~Args(); 
+
+  // Parse the command line
+  void Parse(int argc, const char* const argv[]);
+
+  // Version and Usage information
+  void PrintVersion(std::ostream& os) const;
+  void PrintUsage(std::ostream& os) const;
+  
+  // Error
+  void PrintError(std::ostream& os, const char* msg) const;
+  //void PrintError(std::ostream& os, const std::string& msg) const;
+
+  // Dump
+  void Dump(std::ostream& os = std::cerr) const;
+  void DDump() const;
   
   void Version();
   void Usage();
-  
-  String cmd; 
-  String hpcHome ;
-  String fileHome ; 
-  String htmlDir ; 
-  String configurationFile; 
 
-  void setHPCHome(); 
+public:  
   static const String HPCTOOLKIT;
+  String hpcHome;
+  String fileHome; 
 
+  // Parsed Data: Command
+  String cmd; 
+
+  // Parsed Data: optional arguments
+  String htmlDir;
   bool OutputInitialScopeTree;
   bool OutputFinalScopeTree;
   bool CopySrcFiles;
@@ -82,8 +116,13 @@ public:
 
   float scopeThresholdPercent; 
 
-}; 
+  // Parsed Data: arguments
+  String configurationFile;
 
-extern int fileTrace;
+private:
+  void Ctor();
+  void setHPCHome(); 
+
+}; 
 
 #endif
