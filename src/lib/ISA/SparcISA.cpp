@@ -84,7 +84,7 @@ static void print_addr (bfd_vma vma, struct disassemble_info *info)
 static int read_memory_func (bfd_vma vma, bfd_byte *myaddr, unsigned int len,
                        struct disassemble_info *info)
 {
-  memcpy(myaddr, (const char *)vma, len);
+  memcpy(myaddr, BFDVMA_TO_PTR(vma, const char*), len);
   return 0; /* success */
 }
 
@@ -119,7 +119,7 @@ SparcISA::GetInstDesc(MachInst* mi, ushort opIndex, ushort sz)
   ISA::InstDesc d;
 
   if (CacheLookup(mi) == NULL) {
-    ushort size = print_insn_sparc((bfd_vma)mi, di);
+    ushort size = print_insn_sparc(PTR_TO_BFDVMA(mi), di);
     CacheSet(mi, size);
   }
 
@@ -178,13 +178,13 @@ SparcISA::GetInstTargetAddr(MachInst* mi, Addr pc, ushort opIndex, ushort sz)
   // actually the PC/vma in order to calculate PC-relative targets.
 
   if (CacheLookup(mi) == NULL) {
-    ushort size = print_insn_sparc((bfd_vma)mi, di);
+    ushort size = print_insn_sparc(PTR_TO_BFDVMA(mi), di);
     CacheSet(mi, size);
   }
   
   ISA::InstDesc d = GetInstDesc(mi, opIndex, sz);
   if (d.IsBrRel() || d.IsSubrRel()) {
-    return (di->target - (bfd_vma)mi) + (bfd_vma)pc;
+    return (di->target - PTR_TO_BFDVMA(mi)) + (bfd_vma)pc;
   } else {
     // return di->target; // return the results of sethi instruction chains
     return 0;

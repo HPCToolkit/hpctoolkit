@@ -108,7 +108,7 @@ IRStmtType
 BloopIRInterface::GetStmtType (StmtHandle h) 
 {
   IRStmtType ty;
-  Instruction *insn = (Instruction *) h;
+  Instruction *insn = IRHNDL_TO_PTR(h, Instruction*);
   StmtLabel br_targ = 0;
 
   ISA::InstDesc d = insn->GetDesc();
@@ -159,7 +159,7 @@ BloopIRInterface::GetStmtType (StmtHandle h)
 StmtLabel
 BloopIRInterface::GetLabel (StmtHandle h)
 {
-  Instruction *insn = (Instruction *) h;
+  Instruction *insn = IRHNDL_TO_PTR(h, Instruction*);
   if (branchTargetSet.find(insn->GetPC()) != branchTargetSet.end()) {
     return (StmtLabel) (insn->GetPC());
   } else {
@@ -260,7 +260,7 @@ BloopIRInterface::ElseBody (StmtHandle h)
 int
 BloopIRInterface::NumberOfDelaySlots(StmtHandle h)
 {
-  Instruction *insn = (Instruction *) h;
+  Instruction *insn = IRHNDL_TO_PTR(h, Instruction*);
   return insn->GetNumDelaySlots();
 }
 
@@ -333,7 +333,7 @@ BloopIRInterface::IsCatchAll (StmtHandle h, int bodyIndex)
 StmtLabel
 BloopIRInterface::GetTargetLabel (StmtHandle h, int n)
 {
-  Instruction *insn = (Instruction *) h;
+  Instruction *insn = IRHNDL_TO_PTR(h, Instruction*);
   ISA::InstDesc d = insn->GetDesc();
   if (d.IsBrRel()) {
     return (StmtLabel) (insn->GetTargetAddr(insn->GetPC()));
@@ -397,7 +397,7 @@ BloopIRInterface::GetUMultiCondition (StmtHandle h, int targetIndex)
 IRUseDefIterator*
 BloopIRInterface::GetUses (StmtHandle h)
 {
-  Instruction *insn = (Instruction *) h;
+  Instruction *insn = IRHNDL_TO_PTR(h, Instruction*);
   return new BloopIRUseDefIterator (insn, IRUseDefIterator::Uses);
 }
 
@@ -405,7 +405,7 @@ BloopIRInterface::GetUses (StmtHandle h)
 IRUseDefIterator*
 BloopIRInterface::GetDefs (StmtHandle h)
 {
-  Instruction *insn = (Instruction *) h;
+  Instruction *insn = IRHNDL_TO_PTR(h, Instruction*);
   return new BloopIRUseDefIterator (insn, IRUseDefIterator::Defs);
 }
 
@@ -426,7 +426,7 @@ IRGetSymNameFromLeafHandle(LeafHandle vh)
 
 void BloopIRInterface::Dump (StmtHandle stmt, ostream& os)
 {
-  Instruction *insn = (Instruction *) stmt;
+  Instruction *insn = IRHNDL_TO_PTR(stmt, Instruction*);
  
   // Currently, we just print the instruction type.  What we really
   // want is a textual disassembly of the instruction from the

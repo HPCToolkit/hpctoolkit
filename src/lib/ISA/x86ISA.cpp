@@ -84,7 +84,7 @@ static void print_addr (bfd_vma vma, struct disassemble_info *info)
 static int read_memory_func (bfd_vma vma, bfd_byte *myaddr, unsigned int len,
 			     struct disassemble_info *info)
 {
-  memcpy(myaddr, (const char *)vma, len);
+  memcpy(myaddr, BFDVMA_TO_PTR(vma, const char*), len);
   return 0; /* success */
 }
 
@@ -120,7 +120,7 @@ i686ISA::GetInstSize(MachInst* mi)
   DecodingCache *cache;
 
   if ((cache = CacheLookup(mi)) == NULL) {
-    size = print_insn_i386((bfd_vma)mi, di);
+    size = print_insn_i386(PTR_TO_BFDVMA(mi), di);
     CacheSet(mi, size);
   } else {
     size = cache->instSize;
@@ -134,7 +134,7 @@ i686ISA::GetInstDesc(MachInst* mi, ushort opIndex, ushort s)
   ISA::InstDesc d;
 
   if (CacheLookup(mi) == NULL) {
-    ushort size = print_insn_i386((bfd_vma)mi, di);
+    ushort size = print_insn_i386(PTR_TO_BFDVMA(mi), di);
     CacheSet(mi, size);
   }
 
@@ -179,7 +179,7 @@ Addr
 i686ISA::GetInstTargetAddr(MachInst* mi, Addr pc, ushort opIndex, ushort sz)
 {
   if (CacheLookup(mi) == NULL) {
-    ushort size = print_insn_i386((bfd_vma)mi, di);
+    ushort size = print_insn_i386(PTR_TO_BFDVMA(mi), di);
     CacheSet(mi, size);
   }
 
@@ -189,7 +189,7 @@ i686ISA::GetInstTargetAddr(MachInst* mi, Addr pc, ushort opIndex, ushort sz)
 
   // The target field is only set on instructions with targets.
   if (di->target != 0) {
-    return (di->target - ((bfd_vma)(mi) & 0xffffffff)) + (bfd_vma)pc;
+    return (di->target - (PTR_TO_BFDVMA(mi) & 0xffffffff)) + (bfd_vma)pc;
   } else {
     return 0;
   }

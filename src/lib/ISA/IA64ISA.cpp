@@ -84,9 +84,10 @@ static void print_addr (bfd_vma vma, struct disassemble_info *info)
 static int read_memory_func (bfd_vma vma, bfd_byte *myaddr, unsigned int len,
 			     struct disassemble_info *info)
 {
-  memcpy(myaddr, (const char *)vma, len);
+  memcpy(myaddr, BFDVMA_TO_PTR(vma, const char*), len);
   return 0; /* success */
 }
+
 } // extern "C"
 
 static MachInst* ConvertMIToOpMI(MachInst* mi, ushort opIndex)
@@ -123,7 +124,7 @@ IA64ISA::GetInstDesc(MachInst* mi, ushort opIndex, ushort sz)
   InstDesc d;
 
   if (CacheLookup(gnuMI) == NULL) {
-    int size = print_insn_ia64((bfd_vma)gnuMI, di);
+    int size = print_insn_ia64(PTR_TO_BFDVMA(gnuMI), di);
     CacheSet(gnuMI, size);
   }
 
@@ -171,7 +172,7 @@ IA64ISA::GetInstTargetAddr(MachInst* mi, Addr pc, ushort opIndex,
   MachInst* gnuMI = ConvertMIToOpMI(mi, opIndex);
 
   if (CacheLookup(gnuMI) == NULL) {
-    int size = print_insn_ia64((bfd_vma)gnuMI, di);
+    int size = print_insn_ia64(PTR_TO_BFDVMA(gnuMI), di);
     CacheSet(gnuMI, size);
   }
 
@@ -188,7 +189,7 @@ IA64ISA::GetInstNumOps(MachInst* mi)
 {
   // Because of the MLX template and data, we can't just return 3 here.
   if (CacheLookup(mi) == NULL) {
-    int size = print_insn_ia64((bfd_vma)mi, di);
+    int size = print_insn_ia64(PTR_TO_BFDVMA(mi), di);
     CacheSet(mi, size);
   }
 
