@@ -79,6 +79,7 @@ all: configure build install
 
 configure: clean
 	@echo "*** Configuring ***"
+	$(WD)/src/config/hpcautotouch
 	-mkdir -p $(BUILDDIR)
 	cd $(BUILDDIR); \
 	../configure $(CONFIG_OPTS) --prefix="$(INSTALLDIR)"
