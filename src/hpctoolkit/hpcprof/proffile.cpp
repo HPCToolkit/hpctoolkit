@@ -130,6 +130,7 @@ ProfFile::dump(std::ostream& o, const char* pre) const
     const ProfFileLM& proflm = load_module(i);
     proflm.dump(o, p1.c_str());
   }
+  o << p << "--- End ProfFile Dump ---" << endl;
 }
 
 //***************************************************************************
@@ -218,8 +219,8 @@ ProfFileEvent::read(FILE *fp, uint64_t load_addr)
   overflow_ = 0;
   
   // <histogram_non_zero_bucket_count>
-  unsigned int ndat;    // number of profile entries
-  sz = hpc_fread_le4(&ndat, fp);
+  uint64_t ndat;    // number of profile entries
+  sz = hpc_fread_le8(&ndat, fp);
   if (sz != sizeof(ndat)) { return 1; }
 #ifdef DEBUG
   cerr << "ndat =" << ndat << endl; 
@@ -228,13 +229,13 @@ ProfFileEvent::read(FILE *fp, uint64_t load_addr)
 
   // <histogram_non_zero_bucket_x_value> 
   // <histogram_non_zero_bucket_x_offset>
-  unsigned int count;   // profile count
-  unsigned int offset;  // offset from load address
+  uint32_t count;   // profile count
+  uint64_t offset;  // offset from load address
   for (unsigned int i = 0; i < ndat; ++i) {
     sz = hpc_fread_le4(&count, fp);        // count
     if (sz != sizeof(count)) { return 1; }
 
-    sz = hpc_fread_le4(&offset, fp);       // offset
+    sz = hpc_fread_le8(&offset, fp);       // offset
     if (sz != sizeof(offset)) { return 1; }
 #ifdef DEBUG
   cerr << "  (cnt,offset)=(" << count << "," << offset << ")" << endl; 
