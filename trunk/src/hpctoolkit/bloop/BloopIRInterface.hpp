@@ -75,7 +75,7 @@
 //   ExprHandle  - 
 //   LeafHandle  - 
 //   StmtLabel   - Addr
-//   SymHandle   - 
+//   SymHandle   - char* (simply dummy strings)
 //   ConstHandle - 
 
 // FIXME: eraxxon: Due to some unwariness, these types are a mixture
@@ -230,7 +230,7 @@ public:
     { BriefAssertion(0); return (SymHandle)0; }
   SymHandle GetSymHandle (LeafHandle vh) { return (SymHandle)0; }
   const char *GetSymNameFromSymHandle (SymHandle sh) 
-    { return "<no-sym>"; }
+    { return (const char*)sh; }
   const char *GetConstNameFromConstHandle(ConstHandle ch) 
     { return "<no-const>"; };
 
