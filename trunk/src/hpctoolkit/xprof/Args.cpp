@@ -67,9 +67,9 @@ void Args::Usage()
 {
   cerr
     << "Usage: " << endl
-    << "  " << cmd << " [-V] [ [-M <>] [-X <>] [-R] ] <binary> <profile>\n"
     << "  " << cmd << " [-l | -L]  <binary> <profile>\n"
-
+    << "  " << cmd << " [-V] [ [-M <mlist>] [-X <xlist>] [-R] ] <binary> <profile>\n"
+    
     << endl;
   cerr
     << "Converts various types of profile output into the PROFILE format,\n"
@@ -91,31 +91,32 @@ void Args::Usage()
     << "the PROFILE to represent loop nesting information.\n"
     << "[*Not fully implemented.*]\n"
     << "\n"
+    << "  -m: specify <bloop-pcmap>\n"
 #endif     
     << "The following <profile> formats are currently supported: \n"
-    << "  - Compaq's DCPI 'dcpicat' (including ProfileMe) \n"
+    << "  - DEC/Compaq/HP's DCPI 'dcpicat' (including ProfileMe) \n"
     << "\n"
-    << "Options:\n"
-    << "  -V: Print version information\n"
-    << "\n"
-    << "  [Listing Metrics] \n"
-    << "  -l: List all derived metrics, in compact form, available from\n"
-    << "      <profile> and suppress generation of PROFILE output.\n"
-    << "  -L: List all derived metrics, in long form, available from\n"
-    << "      <profile> and suppress generation of PROFILE output.\n"
+    << "Listing available metrics:\n"
+    << "  -l       List all derived metrics, in compact form, available from\n"
+    << "           <profile> and suppress generation of PROFILE output.\n"
+    << "           Note that this output can be used with the -M option.\n"
+    << "  -L       List all derived metrics, in long form, available from\n"
+    << "           <profile> and suppress generation of PROFILE output.\n"
     << "\n"    
-    << "  [Selecting Metrics] \n"
-    << "  -M: ...\n"
-    << "  -X: ...\n"
-    << "  -R: For some profile data, such as DCPI's ProfileMe, xprof\n"
-    << "      by default outputs derived metrics based on the raw data.\n"
-    << "      This option instructs xprof to output the raw profile metrics,\n"
-    << "      not any derived metrics.  Most users will not find this\n"
-    << "      useful.\n"
-#if 0    
-    << "  -m: specify <bloop-pcmap>\n"
-#endif    
-    
+    << "Normal Mode:\n"
+    << "  -V       Print version information.\n"
+    << "  -M mlist Optional colon-separated metric inclusion list. Replaces\n"
+    << "           the default metric list. Metrics in PROFILE output will.\n"
+    << "           follow this ordering.  Duplicates are allowed (though\n"
+    << "           not recommended).\n"
+    << "  -X xlist Optional colon-separated metric exclusion list. Excludes\n"
+    << "           the listed metrics from either the default metric list or\n"
+    << "           the list specified with -M.\n"
+    << "  -R       (Most will not find this useful.) For some profile data,\n"
+    << "           such as DCPI's ProfileMe, the default is to output derived\n"
+    << "           metrics, not the underlying raw metrics; this option\n"
+    << "           forces output of only the raw metrics.  Should not be\n"
+    << "           used with -M or -X.\n"
     << endl;
 } 
 
@@ -132,18 +133,19 @@ Args::Args(int argc, char* const* argv)
   bool error = false;
   trace = 0;
   int c;
-  while ((c = getopt(argc, argv, "VlLRm:d")) != EOF) {
+  while ((c = getopt(argc, argv, "Vm:lLM:X:Rd")) != EOF) {
     switch (c) {
+    case 'V': { 
+      printVersion = true;
+      break; 
+    }
     case 'm': {
       // A non-null value of 'pcMapFile' indicates it has been set
       if (optarg == NULL) { error = true; }
       pcMapFile = optarg;
       break; 
     }
-    case 'V': { 
-      printVersion = true;
-      break; 
-    }
+
     case 'l': { 
       listAvailableMetrics = 1;
       break; 
@@ -152,10 +154,22 @@ Args::Args(int argc, char* const* argv)
       listAvailableMetrics = 2;
       break; 
     }
+
+    case 'M': {
+      if (optarg == NULL) { error = true; }
+      metricList = optarg;
+      break; 
+    }
+    case 'X': {
+      if (optarg == NULL) { error = true; }
+      excludeMList = optarg;
+      break; 
+    }
     case 'R': { 
       outputRawMetrics = true;
       break; 
     }
+
     case 'd': { // debug 
       trace++; 
       break; 
@@ -167,11 +181,18 @@ Args::Args(int argc, char* const* argv)
     }
     }
   }
+
   error = error || (optind != argc-2); 
   if (!error) {
     progFile = argv[optind];
     profFile = argv[optind+1]; 
   } 
+
+  // Sanity check: -M,-X and -R should not be used at the same time
+  if ( (!metricList.Empty() || !excludeMList.Empty()) && outputRawMetrics) {
+    cerr << "Error: -M or -X cannot be used with -R.\n";
+    error = true;
+  }
 
   IFTRACE << "Args.cmd= " << cmd << endl; 
   IFTRACE << "Args.progFile= " << progFile << endl;
