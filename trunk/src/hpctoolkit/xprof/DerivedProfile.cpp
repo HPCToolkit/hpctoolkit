@@ -175,6 +175,16 @@ DerivedProfile::Create(const PCProfile* pcprof_,
 void 
 DerivedProfile::Dump(std::ostream& o)
 {
+  o << "'DerivedProfile' --\n";
+  if (pcprof) {
+    const_cast<PCProfile*>(pcprof)->Dump(o);
+  }
+  
+  o << "'Metrics' --\n";
+  for (DerivedProfile_MetricIterator it(*this); it.IsValid(); ++it) {
+    DerivedProfileMetric* dm = it.Current();
+    dm->Dump(o);
+  }
 }
 
 void 
