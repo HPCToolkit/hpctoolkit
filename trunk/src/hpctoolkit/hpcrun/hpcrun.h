@@ -53,11 +53,14 @@
 // Private debugging level: messages for in-house debugging [0-9]
 #define HPCRUN_DBG_LVL 0
 
+#define MSG(x, ...)                                                   \
+  { fprintf((x), "hpcrun (pid %d, tid %ld): ", getpid(), hpcrun_gettid()); fprintf((x), __VA_ARGS__); fputs("\n", (x)); }
+
 #define ERRMSG(...)                                                   \
   { fputs("hpcrun", stderr);                                          \
     if (HPCRUN_DBG_LVL) {                                             \
       fprintf(stderr, " [%s:%d]", __FILE__, __LINE__); }              \
-    fprintf(stderr," (pid %d): ", getpid()); fprintf(stderr, __VA_ARGS__); fputs("\n", stderr); }
+    fprintf(stderr, " (pid %d, tid %ld): ", getpid(), hpcrun_gettid()); fprintf(stderr, __VA_ARGS__); fputs("\n", stderr); }
 
 #define DIE(...) ERRMSG(__VA_ARGS__); { exit(1); }
 
