@@ -25,7 +25,7 @@
 
 <div id="main">
 
-<p class="lastupdated">Last Updated 11 Feb 2003</p>
+<p class="lastupdated">Last Updated 12 Mar 2004</p>
 
 <a name="toc"></a>
 <h2>Downloading, Building and Installing HPCToolkit</h2>
@@ -34,24 +34,30 @@
 <ul>
   <li><a href="#sources">Downloading the Sources</a>
 
-  <li><a href="#environment">Environment</a>
+  <li><a href="#prerequisites">System Prerequisites</a>
 
   <li>Building
   <ul>
-    <li><a href="#overview">Build Overview</a>
-    <li><a href="#buildnotes">Build Notes</a>
-    <li><a href="#xlib_binutils">External Library: GNU binutils</a>
-    <li><a href="#xlib_xercesc">External Library: Xerces-C++</a>
-    <li><a href="#xlib_oa">External Library: OpenAnalysis</a>
-    <li><a href="#hpctoolkit">HPCToolkit</a>
-    <li><a href="#hpcviewer">hpcviewer</a>
-    <li><a href="#evaluation">Evaluation</a>
-    <li><a href="#troubleshooting">Troubleshooting</a>
+    <li><a href="#build_overview">Build Overview</a>
+    <li><a href="#build_xlib_binutils">External Library: GNU binutils</a>
+    <li><a href="#build_xlib_xercesc">External Library: Xerces-C++</a>
+    <li><a href="#build_xlib_oa">External Library: OpenAnalysis</a>
+    <li><a href="#build_hpctoolkit">HPCToolkit</a>
+    <li><a href="#build_hpcviewer">hpcviewer</a>
+    <li><a href="#build_evaluation">Evaluation</a>
   </ul>
 
-  <li><a href="#installing">Installing</a>
+  <li>Using
+  <ul>
+    <li><a href="#use_hpctoolkit">HPCToolkit</a>
+    <li><a href="#use_hpcviewer">hpcviewer</a>
+  </ul>
+
+  <li><a href="#build_troubleshooting">Build Troubleshooting</a>
+  
 </ul>
 
+<!-- ********************************************************************** -->
 <!-- ********************************************************************** -->
 
 <a name="sources"></a>
@@ -64,78 +70,38 @@ to distribute it in source form only. Source files for the toolkit and
 external libraries it requires are distributed via anonymous CVS
 checkout.
 
-			<ol class="noindent">
-				<li>
-				<p>To retrieve the source files from CVS, you will need to download <code><a href="http://hipersoft.cs.rice.edu/cvs/hipersoft-anonssh">hipersoft-anonssh</a></code>, 
+<ol class="noindent">
+<li>
+<p>To retrieve the source files from CVS, you will need to download 
+<code><a href="http://hipersoft.cs.rice.edu/cvs/hipersoft-anonssh">hipersoft-anonssh</a></code>, 
 a ssh script that contains a key that will grant you read-only access
 to the Hipersoft CVS repositories at Rice University.  Save this script in
 <code>${HOME}/bin/hipersoft-anonssh</code>.
 
-				<li>
-				<p>Set up the required CVS environment variables to enable you to 
-access the HPCToolkit repository.
-
-				<div class="indent">
-  <i>(csh variants)</i><br>
-  <code>setenv CVS_RSH ${HOME}/bin/hipersoft-anonssh</code><br>
-					<code>setenv CVSROOT :ext:anoncvs@128.42.2.152:/Volumes/cvsrep/developer</code><br>
-					<br>
-  <i>(sh variants)</i><br>
-  <code>export CVS_RSH=${HOME}/bin/hipersoft-anonssh</code><br>
-					<code>export CVSROOT=:ext:anoncvs@128.42.2.152:/Volumes/cvsrep/developer</code></div>
-				<li>
-				<p>Use CVS to check out the HPCToolkit sources using the command
-
-			</ol>
-			<div class="indent">
-				<p><code>cvs co HPCToolkit_all_source</code><br>
-						<br>
-					Please note - there are several HPCToolkit CVS modules. Please visit our <a href="http://hipersoft.cs.rice.edu/cvs/#rice_repositories">CVS information pages</a> for a complete list of available modules. <br>
-					</p>
-			</div>
-			<!-- ********************************************************************** --><a name="environment"></a>
-
-<h2>Environment</h2>
-<p><i>[<a href="#toc">Contents</a>]</i>
-
-<ol class="noindent">
-
 <li>
-<p>Before building, installing, or using the tools, certain
-environment variables need to be set.  To set these variables and to
-include a reference to the tools in your PATH, source either
-<a href="../Sourceme-csh"><code>Sourceme-csh</code></a> or 
-<a href="../Sourceme-sh"><code>Sourceme-sh</code></a>. 
-The former will setup your environment for <code>csh</code> variants;
-the latter will do so for <code>sh</code> variants.  
-Before sourcing these files, the HPCTOOLKIT environment
-variable should be set to the root directory of the HPCToolkit 
-tree.  For example:
+<p>Set up the required CVS environment variables to enable you to 
+access the HPCToolkit repository.
 
 <div class="indent">
   <i>(csh variants)</i><br>
-  <code>setenv HPCTOOLKIT "/my_path/HPCToolkit"</code><br>
-  <code>source $HPCTOOLKIT/Sourceme-csh</code>
-<br><br>
+  <code>setenv CVS_RSH ${HOME}/bin/hipersoft-anonssh</code><br>
+  <code>setenv CVSROOT :ext:anoncvs@128.42.2.152:/Volumes/cvsrep/developer</code><br>
+<br>
   <i>(sh variants)</i><br>
-  <code>export HPCTOOLKIT="/my_path/HPCToolkit"</code><br>
-  <code>source $HPCTOOLKIT/Sourceme-sh</code>
+  <code>export CVS_RSH=${HOME}/bin/hipersoft-anonssh</code><br>
+  <code>export CVSROOT=:ext:anoncvs@128.42.2.152:/Volumes/cvsrep/developer</code>
 </div>
 
-<p>You may wish to add these commands to your shell initialization files.</p>
-
-
 <li>
-<p>Our Perl-based tools require that you have some variant of Perl 5
-installed and that it is in your path.  For the record, we have
-succssfully used:
+<p>Use CVS to check out the HPCToolkit sources using the command
 
-  <ul class="noindent">
-    <li>5.004 (mips-IRIX64)
-    <li>5.005 (alpha-OSF1, i686-Linux)
-    <li>5.6.0 (alpha-OSF1, ia64-Linux)
-    <li>5.6.1 (alpha-OSF1, ia64-Linux, sparc-SunOS)
-  </ul>
+<div class="indent">
+  <code>cvs co HPCToolkit_all_source</code><br>
+</div>
+
+<br>
+Please note - there are several HPCToolkit CVS modules. Please visit our
+<a href="http://hipersoft.cs.rice.edu/cvs/#rice_repositories">CVS information pages</a> for a complete list of available modules. 
 
 </ol>
 
@@ -143,52 +109,23 @@ succssfully used:
 <!-- ********************************************************************** -->
 <!-- ********************************************************************** -->
 
-<h2>Building</h2>
-<p><i>[<a href="#toc">Contents</a>]</i>
+<a name="prerequisites"></a>
 
-<div class="indent">
-
-<!-- ********************************************************************** -->
-
-<a name="overview"></a>
-
-<h2>Build Overview</h2>
-<p><i>[<a href="#toc">Contents</a>]</i>
-
-
-<p>There are three external libraries -- OpenAnalysis, Xerces-C++ and
-GNU binutils -- that must be built before HPCToolkit can be built,
-installed and used.</p>
-
-<p>HPCToolkit's hpcviewer tool is in a separate directory and built
-separately. We often download,
-compile, and run hpcviewer on laptops or desktops rather than the
-system on which we collect performance measurements.
-We briefly describe how to build hpcviewer here, regardless of where
-you want to build it.</p> 
-
-<p>It is possible to use versions of these libraries that may already
-be installed on your system, but we do not support such
-configurations.</p>
-
-<!-- ********************************************************************** -->
-
-<a name="buildnotes"></a>
-
-<h2>Build Notes</h2>
+<h2>System Prerequisites</h2>
 <p><i>[<a href="#toc">Contents</a>]</i>
 
 <ol class="noindent">
 
 <li>
-<p>HPCToolkit, OpenAnalysis and Xerces-C++ require an ANSI/ISO C/C++
-compliant compiler.  GNU binutils requires a C compiler that also
-supports a few GNU extensions.  Of course, the same C++ compiler
-should be used for each component (because of templates and mangling).
+<p>HPCToolkit requires an ANSI/ISO C/C++ compliant compiler.
+Generally speaking any relatively recent vendor compiler or GCC 3.x
+should be fine.  The toolkit uses GNU binutils which requires a C
+compiler that also supports a few GNU extensions; obviously, GCC may
+be used.
     
 <p>The list of compilers that we have successfully tested are listed
-below.  (Special options or exceptions will be noted in the
-instructions following.):
+below.  (Special options or exceptions are noted in the build
+instructions.):
 
   <ul class="noindent">
     <li>alpha-OSF1:
@@ -199,16 +136,14 @@ instructions following.):
 
     <li>i686-Linux:
       <ul class="noindent">
-        <li>GCC C++/C 3.2.x
-        <li>GCC C++/C 3.0.4
+        <li>GCC C++/C 3.0.4, 3.2.x, 3.3.x
       </ul>
 
     <li>ia64-Linux:
       <ul class="noindent">
         <li>Intel C++/C 7.0, 7.1
         <li>Intel C++/C 6.0
-        <li>GCC C++/C 3.2.x
-        <li>GCC C++/C 3.0.4
+        <li>GCC C++/C 3.0.4, 3.2.x, 3.3.x
       </ul>
 
     <li>mips-IRIX64:
@@ -227,9 +162,8 @@ instructions following.):
   </ul>
 
 <li>
-<p>Everywhere that `make' or `gmake' is used you should think GNU
-make, not a vendor supplied make.  For the record, we have
-successfully used:
+<p>HPCToolkit requires a basic version of GNU make, not a vendor
+supplied make.  We have successfully used:
 
   <ul class="noindent">
     <li>3.70 (alpha-OSF1, mips-IRIX64, sparc-SunOS)
@@ -240,12 +174,69 @@ successfully used:
     <li>3.80 (alpha-OSF1)
   </ul>
 
+<li>
+<p>HPCToolkit contains some Perl-based tools which require that some
+variant of Perl 5 installed and that it is in your path.  For the
+record, we have succssfully used:
+
+  <ul class="noindent">
+    <li>5.004 (mips-IRIX64)
+    <li>5.005 (alpha-OSF1, i686-Linux)
+    <li>5.6.0 (alpha-OSF1, ia64-Linux)
+    <li>5.6.1 (alpha-OSF1, ia64-Linux, sparc-SunOS)
+  </ul>
+
+<li>
+<p>hpcviewer is a Java application that can be used on a variety of
+platforms.  We have successfully used the following specific
+configurations:
+
+  <ul class="noindent">
+    <li>Mac OS X: javac from JDK 1.4.2
+    <li>ia64-Linux: using javac from jd2sdk1.4.2 
+    <li>i686-Linux: using javac from jd2sdk1.4.2 
+    <li>sparc-Solaris: using javac from JDK 1.4.0
+    <li>alpha-Tru64: using javac from JDK 1.4.2
+  </ul>
+
 </ol>
 
 
 <!-- ********************************************************************** -->
+<!-- ********************************************************************** -->
 
-<a name="xlib_binutils"></a>
+<h2>Building</h2>
+<p><i>[<a href="#toc">Contents</a>]</i>
+
+<div class="indent">
+
+<!-- ********************************************************************** -->
+
+<a name="build_overview"></a>
+
+<h2>Build Overview</h2>
+<p><i>[<a href="#toc">Contents</a>]</i>
+
+
+<p>There are three external libraries -- OpenAnalysis, Xerces-C++ and
+GNU binutils -- that must be built before HPCToolkit can be built,
+installed and used.</p>
+
+<p>HPCToolkit's hpcviewer tool is in a separate directory and built
+separately. We often download,
+compile, and run hpcviewer on laptops or desktops rather than the
+system on which we collect performance measurements.
+We briefly describe how to build hpcviewer here, regardless of where
+you want to build it.</p> 
+
+<p>In some cases it may be possible to use versions of these libraries
+that may already be installed on your system, but we do not support
+such configurations.</p>
+
+
+<!-- ********************************************************************** -->
+
+<a name="build_xlib_binutils"></a>
 
 <h2>External Library: GNU binutils</h2>
 <p><i>[<a href="#toc">Contents</a>]</i>
@@ -253,8 +244,8 @@ successfully used:
 
 <h3>Notes</h3>
 
-<p>Most of the C compilers listed in <a href="#buildnotes">Build
-Notes</a> can compile binutils.  Below is a list of exceptions or
+<p>Most of the C compilers listed in <a href="#prerequisites">System 
+Prerequisites</a> can compile binutils.  Below is a list of exceptions or
 special options.</p>
 
 <ul>
@@ -266,7 +257,7 @@ special options.</p>
   <li>mips-IRIX64:
     <ul class="noindent">
       <li>SGI C <i>cannot</i> be used; use GCC C.
-      <li>GCC C should be compiled with <code>-mabi=64</code>, e.g.
+      <li>GCC C should be compiled with <code>-mabi=64</code>:
          <code>CFLAGS='-O -mabi=64'</code>.
     </ul>
 </ul>
@@ -277,11 +268,7 @@ special options.</p>
 <ol class="noindent">
 
 <li>
-<p>Change to the binutils directory.
-
-<div class="indent">
-<code>cd binutils</code>
-</div>
+<p>Change to the top-level binutils directory <code>binutils</code>.
 
 <li>
 <p>Configure, build and install.  Run make with the C compiler (CC)
@@ -289,7 +276,7 @@ and compilation options (CFLAGS).  Since this will produce a lot of
 output, you may want to redirect it to a file.  For example:
 
 <div class="indent">
-<code>gmake CC='gcc' CFLAGS='-O'</code><br>
+  <code>gmake CC='gcc' CFLAGS='-O'</code><br>
 </div>
 
 <li>
@@ -310,7 +297,7 @@ tools.
 
 <!-- ********************************************************************** -->
 
-<a name="xlib_xercesc"></a>
+<a name="build_xlib_xercesc"></a>
 
 <h2>External Library: Xerces-C++</h2>
 <p><i>[<a href="#toc">Contents</a>]</i>
@@ -322,9 +309,9 @@ tools.
 <ul>
   <li>mips-IRIX64:
     <ul class="noindent">
-      <li>SGI C++ should be compiled with <code>-64</code>, e.g.
+      <li>SGI C++ should be compiled with <code>-64</code>:
          <code>CXXFLAGS='-64'</code>.
-      <li>GCC C++ should be compiled with <code>-mabi=64</code>, e.g.
+      <li>GCC C++ should be compiled with <code>-mabi=64</code>:
          <code>CXXFLAGS='-mabi=64'</code>.
     </ul>
 </ul>
@@ -335,22 +322,16 @@ tools.
 <ol class="noindent">
 
 <li>
-<p>Change to the Xerces-C++ directory.
-
-<div class="indent">
-<code>cd xercesc</code>
-</div>
+<p>Change to the top-level Xerces-C++ directory <code>xercesc</code>.
 
 <li>
-
 <p>Configure, build and install.  Run make with the C++ and C compiler
 (CXX and CC, respectively) and compilation options (CXXFLAGS).  Since
 this will produce a lot of output, you may want to redirect it to a
 file.  For example:
 
-
 <div class="indent">
-<code>gmake CXX='g++' CC='gcc'</code><br>
+  <code>gmake CXX='g++' CC='gcc' CXXFLAGS=''</code><br>
 </div>
 
 <li>
@@ -365,7 +346,7 @@ file.  For example:
 
 <!-- ********************************************************************** -->
 
-<a name="xlib_oa"></a>
+<a name="build_xlib_oa"></a>
 
 <h2>External Library: OpenAnalysis</h2>
 <p><i>[<a href="#toc">Contents</a>]</i>
@@ -378,9 +359,9 @@ file.  For example:
 <ul>
   <li>mips-IRIX64:
     <ul class="noindent">
-      <li>SGI C++ should be compiled with <code>-64</code>, e.g.
+      <li>SGI C++ should be compiled with <code>-64</code>:
          <code>CXXFLAGS='-O -64'</code>.
-      <li>GCC C++ should be compiled with <code>-mabi=64</code>, e.g.
+      <li>GCC C++ should be compiled with <code>-mabi=64</code>:
          <code>CXXFLAGS='-O -mabi=64'</code>.
     </ul>
 </ul>
@@ -391,11 +372,7 @@ file.  For example:
 <ol class="noindent">
 
 <li>
-<p>Change to the OpenAnalysis directory.
-
-<div class="indent">
-<code>cd OpenAnalysis</code>
-</div>
+<p>Change to the top-level OpenAnalysis directory <code>OpenAnalysis</code>.
 
 <li>
 <p>Configure, build and install.  Run make with the C++ compiler (CXX)
@@ -403,7 +380,7 @@ and compilation options (CXXFLAGS).  Since this will produce a lot of
 output, you may want to redirect it to a file.  For example:
 
 <div class="indent">
-<code>gmake CXX='g++' CXXFLAGS='-O'</code><br>
+  <code>gmake CXX='g++' CXXFLAGS='-O'</code><br>
 </div>
 
 <li>
@@ -418,134 +395,56 @@ output, you may want to redirect it to a file.  For example:
 
 <!-- ********************************************************************** -->
 
-<a name="hpctoolkit"></a>
+<a name="build_hpctoolkit"></a>
 
 <h2>HPCToolkit</h2>
 <p><i>[<a href="#toc">Contents</a>]</i>
 
 <h3>Notes</h3>
 
-<p> Before building the HPCToolkit directory, 
-you must have already initialized your 
-environment <a href="#environment">as described above</a>.</p>
- 
-<p>Below is a list of exceptions or special options for compiling
-HPCToolkit.  (We hope to eliminate this eyesore with Autoconf/make,
-but until then...)</p>
-
-<ol class="noindent">
-
-<li>
-<p>Unfortunately, some otherwise ANSI/ISO compliant C++ compilers do
-not fully support the definition for including C library routines.
-For example, C headers are now included using the
-<code>&lt;cheader&gt;</code> syntax (as opposed to
-<code>&lt;header.h&gt;</code>) and functions are in the
-<code>std</code> namespace.  If your compiler does not support this
-standard, you will need to compile HPCToolkit with
-<code>-DNO_STD_CHEADERS</code>.
-
-  <ul class="noindent">
-    <li>alpha-OSF1:
-      <ul class="noindent">
-        <li>Compaq C++/C 6.2 (<i>use <code>-DNO_STD_CHEADERS</code></i>)
-      </ul>
-
-    <li>mips-IRIX64:
-      <ul class="noindent">
-        <li>SGI MIPSpro C++/C 7.3.x, 7.4
-            (<i>use <code>-DNO_STD_CHEADERS</code></i>)
-      </ul>
-  </ul>
-
-<li>
-<p>Compiling templates: HPCToolkit and OpenAnalysis both use templates.
-Most compilers are now relatively good at handling templates without
-special options or tightrope walking.  However, a few comments which
-apply to building both HPCToolkit and OpenAnalysis are apropos.
-
-  <ul class="noindent">
-    <li>Sun and SGI compilers: Both of these compilers rely on the
-      compiler itself to perform some archiving duties to ensure that
-      that the correct number of template definitions are included in
-      archives. The system archiver should <i>not</i> be used.  If however
-      you wish to substitute for the GCC compiler, make sure to use
-      your system archiver.
-
-    <li>Compaq compiler: The Compaq compiler uses a rather cumbersome
-      implementation of a template repository.  The repository must be
-      manually specified both at compile time and at archiving or link
-      time.  Use the system archiver.  If you wish to substitute the
-      GCC compiler, make sure to undefine/remove any template
-      repository options.
-
-    <li>GCC: Use default template handling and the system archiver.
-
-    <li>Intel Compilers: Use default template handling and the system
-      archiver.
-
-  </ul>
-</ol>
-
+<p>HPCToolkit can be built and installed using the typical Autoconf
+sequence of commands (e.g. configure, make, make install).  The
+instructions below use a wrapper which will do the right thing for the
+typical user.
 
 <h3>Building</h3>
 
 <ol class="noindent">
 
 <li>
-<p>Configure the make system
-
-<ul class="noindent">
-
-  <li>Open <code>${HPCTOOLKIT}/src/Makeinclude.config.${HPCTOOLKIT_PLATFORM}</code>
-      in an editor.  
-
-  <li>Verify your C++ compiler (<code>CXX</code>), C compiler
-     (<code>CC</code>) and archiver (<code>AR</code>) are correctly
-     set.
- 
-  <li>Add/remove <code>-DNO_STD_CHEADERS</code> to the
-     <code>CXX</code> command line if necessary. 
-
-  <li>On alpha-OSF1, verify that <code>SPECIFY_CXX_TREPOSITORY</code>
-      is correctly set.
-
-</ul>
-
+<p>Change to the top-level HPCToolkit directory <code>HPCToolkit</code>.
 
 <li>
-<p>Build and install (local installation).  By default, the toolset
-will be compiled with debugging information; passing
-<code>RELEASE=1</code> to `make' will turn this off and also turn on
-compiler optimizations.</p>
-
+<p>Configure, build and install.  Run make with the C++ compiler (CXX)
+and C compiler (CC).  Since this will produce a lot of output, you may
+want to redirect it to a file.  For example:
 
 <div class="indent">
-<code>cd $HPCTOOLKIT/src</code><br>
-<code>gmake RELEASE=1</code>
+  <code>gmake -f Makefile.quick CXX='g++' CC='gcc'</code><br>
 </div>
 
+<p>After installation is complete, a message will be generated giving
+installation location.  By default, it is a directory representing the
+platform (${HPCTOOLKIT_PLATFORM}).
 
 <li>
 <p>(Optional) Clean the build files.
 
 <div class="indent">
-  <code>gmake veryclean</code>
+  <code>gmake -f Makefile.quick clean</code>
 </div>
 
 </ol>
 
-<p>The HCToolkit binaries will be copied to
-<code>${HPCTOOLKIT}/bin/${HPCTOOLKIT_PLATFORM}</code>.  
-Platform independent tools will be copied to <code>${HPCTOOLKIT}/bin</code>.
-In order to easily use the tools on some shells, you may need to indicate 
-that the PATH ought to be researched.  For example, on <code>csh</code> or
-<code>tcsh</code> execute <code>rehash</code>.</p>
-
+<p>The HPCToolkit installation is compact and self-contained and may
+be renamed or moved to another location.  All source code (including
+external libraries) may be removed.  See 
+<a href="#use_hpctoolkit">Using HPCToolkit</a> for instructions on using
+the toolkit.
 
 <!-- ********************************************************************** -->
 
-<a name="hpcviewer"></a>
+<a name="build_hpcviewer"></a>
 
 <h2>External tool: hpcviewer</h2>
 <p><i>[<a href="#toc">Contents</a>]</i>
@@ -553,56 +452,33 @@ that the PATH ought to be researched.  For example, on <code>csh</code> or
 
 <h3>Notes</h3>
 
-
-<p>hpcviewer is a Java application. We have built it on a variety of
-platforms. We list some specific configurations on which we have
-successfully compiled hpcviewer:
-
-<ul>
-  <li>Mac OS X: javac from JDK 1.4.2
-  <li>ia64-Linux: using javac from jd2sdk1.4.2 
-  <li>ia64-Linux: using javac from jd2sdk1.4.2 
-  <li>sparc-Solaris: using javac from JDK 1.4.0
-  <li>alpha-Tru64: using javac from JDK 1.4.2
-</ul>
-
+<p>These instructions are for Unix systems or for Cygwin-Windows.
 
 <h3>Building</h3>
 
 <ol class="noindent">
 
 <li>
-<p>Change to the hpcviewer directory.
-
-<div class="indent">
-<code>cd hpcviewer</code>
-</div>
+<p>Change to the top-level hpcviewer directory <code>hpcviewer</code>.
 
 <li>
-<p>Change to the build directory <code>build-unix</code> 
-(This directory is used for Unix systems and for building under Cygwin on Windows.) Initiate the build with make.  
-<div class="indent">
-<code>cd build-unix </code><br>
-<code>make</code><br>
-</div>
-</ol>
-<h3>Using hpcviewer</h3>
-<ul>
-<li>On Unix, add the bin subdirectory of the hpcviewer directory
-to your path. Run the <code>hpcviewer</code> command. When run with no
-arguments, it will bring up a file chooser dialog to select the
-performance database XML file. The pathname of the performance
-database XML file can be specified as an argument to
-<code>hpcviewer</code> to skip the file chooser dialog.
-<li> On some systems with a GUI (e.g. Mac OS X),  double clicking on the
-HPCViewer.jar file icon can also be used to launch 
-<code>hpcviewer</code>.
-</ul>
+<p>Change to the build directory <code>build-unix</code> and initiate
+the build with make.
 
+<div class="indent">
+  <code>cd build-unix</code><br>
+  <code>make</code><br>
+</div>
+
+</ol>
+
+<p>See <a href="#use_hpcviewer">Using hpcviewer</a> for instructions
+on using the toolkit.
 
 <!-- ********************************************************************** -->
 
-<a name="evaluation"></a>
+<a name="build_evaluation"></a>
+<a name="environment"></a> <!-- deprecated -->
 
 <h2>Evaluation</h2>
 <p><i>[<a href="#toc">Contents</a>]</i>
@@ -614,12 +490,84 @@ favorite beverage and consider trying the toolkit out.
 <!-- consider running the <a href="testing.html">tests</a>. -->
 
 <p>Grrr! If everything fails miserably, take a sip of your favorite
-beverage and send us some mail.  Also consult the troubleshooting
+beverage and send us some mail.  Also consult the 
+<a href="#build_troubleshooting">Troubleshooting</a>
 notes below.</p>
 
 <!-- ********************************************************************** -->
 
-<a name="troubleshooting"></a>
+</div>
+
+<!-- end: Building -->
+
+<!-- ********************************************************************** -->
+<!-- ********************************************************************** -->
+
+
+<h2>Using</h2>
+<p><i>[<a href="#toc">Contents</a>]</i>
+
+<div class="indent">
+
+<!-- ********************************************************************** -->
+
+<a name="use_hpctoolkit"></a>
+
+<h2>HPCToolkit</h2>
+<p><i>[<a href="#toc">Contents</a>]</i>
+
+<p>To use the resulting installation, certain environment variables need
+to be set.  To set these variables and to include a reference to the tools
+in your PATH, source either
+<a href="../Sourceme-csh"><code>Sourceme-csh</code></a> or 
+<a href="../Sourceme-sh"><code>Sourceme-sh</code></a>. 
+The former will setup your environment for <code>csh</code> variants;
+the latter will do so for <code>sh</code> variants.  
+Before sourcing these files, the HPCTOOLKIT environment
+variable should be set to the root directory of the HPCToolkit 
+installation.  For example:
+
+<div class="indent">
+  <i>(csh variants)</i><br>
+  <code>setenv HPCTOOLKIT "/my_path/HPCToolkit"</code><br>
+  <code>source $HPCTOOLKIT/Sourceme-csh</code>
+<br><br>
+  <i>(sh variants)</i><br>
+  <code>export HPCTOOLKIT="/my_path/HPCToolkit"</code><br>
+  <code>source $HPCTOOLKIT/Sourceme-sh</code>
+</div>
+
+<p>You may wish to add these commands to your shell initialization files.</p>
+
+
+<!-- ********************************************************************** -->
+
+<a name="use_hpcviewer"></a>
+
+<h2>Using hpcviewer</h2>
+<p><i>[<a href="#toc">Contents</a>]</i>
+
+<p>On Unix, add the bin subdirectory of the hpcviewer directory to
+your path. Run the <code>hpcviewer</code> command. When run with no
+arguments, it will bring up a file chooser dialog to select the
+performance database XML file. The pathname of the performance
+database XML file can be specified as an argument to
+<code>hpcviewer</code> to skip the file chooser dialog.
+
+<p>On some systems with a GUI (e.g. Mac OS X), double clicking on the
+HPCViewer.jar file icon can also be used to launch
+<code>hpcviewer</code>.
+
+<!-- ********************************************************************** -->
+
+</div>
+
+<!-- end: Using -->
+
+<!-- ********************************************************************** -->
+<!-- ********************************************************************** -->
+
+<a name="build_troubleshooting"></a>
 
 <h2>Troubleshooting</h2>
 <p><i>[<a href="#toc">Contents</a>]</i>
@@ -677,49 +625,8 @@ example, the lines below would add <code>libgcc.a</code> or
 
 </ol>
 
-<!-- ********************************************************************** -->
-
-</div>
-
-<!-- end: Building -->
 
 <!-- ********************************************************************** -->
-<!-- ********************************************************************** -->
-
-
-<a name="installing"></a>
-
-<h2>Installing</h2>
-<p><i>[<a href="#toc">Contents</a>]</i>
-
-<p>Once the toolkit is built, it can be used `as is'.  However, users
-who are not interested in modifying the sources may desire as compact
-an installation as possible.  We have prepared the
-<code>hpcinstall</code> script for this purpose.
-
-<p>The <code>hpcinstall</code> script will install HPCToolkit for
-end-user use.  The script will copy the required executables, DSOs and
-documentation to a given installation path.  If desired, the toolkit
-can be installed multiple times to different locations or the
-resulting installation can be tar'd and zipped for subsequent
-transfer.  The installation is self-contained and will consume
-significantly less disk space than the sources (GNU binutils and
-Xerces-C++ are rather large), which can safely be removed.
-
-<p>For example, to install the toolkit to <code>/my_path</code>:
-
-<div class="indent">
-<code>${HPCTOOLKIT}/tools/hpcinstall /my_path</code>
-</div>
-
-<p>You can run <code>hpcinstall</code> without any options for more
-information.
-
-<p>To use the resulting installation, (re)set your environment
-variables as explained in the <a href="#environment">Environment</a>
-section to point to the <i>installed</i> version.
-
-
 <!-- ********************************************************************** -->
 
 <script language="JavaScript" src="footer_hpctools.js"></script>

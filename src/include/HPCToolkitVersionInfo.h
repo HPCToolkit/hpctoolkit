@@ -1,1 +1,1 @@
-"A member of HPCToolkit, version 3.6.0";
+"A member of HPCToolkit, version " PACKAGE_VERSION;
