@@ -1,4 +1,4 @@
-/* -*-Mode: C;-*- */
+ /* -*-Mode: C;-*- */
 /* $Id$ */
 
 /****************************************************************************
@@ -36,9 +36,10 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <string.h>
-#include <limits.h> /* for 'PATH_MAX' */
+#include <limits.h>   /* for 'PATH_MAX' */
 #include <signal.h>
 #include <inttypes.h>
+#include <stdarg.h>   /* va_arg */
 #include <errno.h>
 
 #ifndef __USE_GNU
@@ -93,6 +94,21 @@ static int  hpcrun_libc_start_main PARAMS_START_MAIN;
 typedef void (*libc_start_main_fini_fptr_t) (void);
 static void hpcrun_libc_start_main_fini(); 
 
+
+#define PARAMS_EXECV  (const char *path, char *const argv[])
+#define PARAMS_EXECVP (const char *file, char *const argv[])
+#define PARAMS_EXECVE (const char *path, char *const argv[],                 \
+                       char *const envp[])
+
+typedef int (*execv_fptr_t)  PARAMS_EXECV;
+typedef int (*execvp_fptr_t) PARAMS_EXECVP;
+typedef int (*execve_fptr_t) PARAMS_EXECVE;
+
+static int  hpcrun_execv  PARAMS_EXECV;
+static int  hpcrun_execvp PARAMS_EXECVP;
+static int  hpcrun_execve PARAMS_EXECVE;
+
+
 typedef pid_t (*fork_fptr_t) (void);
 static pid_t hpcrun_fork();
 
@@ -130,6 +146,9 @@ static void hpcrun_sighandler(int sig);
 /* Intercepted libc and libpthread routines */
 static libc_start_main_fptr_t      real_start_main;
 static libc_start_main_fini_fptr_t real_start_main_fini;
+static execv_fptr_t                real_execv;
+static execvp_fptr_t               real_execvp;
+static execve_fptr_t               real_execve;
 static fork_fptr_t                 real_fork;
 static pthread_create_fptr_t       real_pthread_create;
 static pthread_self_fptr_t         real_pthread_self;
@@ -162,6 +181,7 @@ static hpcrun_profiles_desc_t* hpc_profdesc = NULL;
  * Library initialization and finalization
  ****************************************************************************/
 
+static void init_option_debug();
 static void init_options();
 static void handle_any_dlerror();
 
@@ -203,9 +223,11 @@ hpcrun_fini()
 static void 
 init_library()
 {
-  init_options();
-
+  init_option_debug();
+  
   if (opt_debug >= 1) { MSG(stderr, "*** init_library ***"); }
+  
+  init_options();
 
   /* Grab pointers to functions that may be intercepted.
 
@@ -232,6 +254,17 @@ init_library()
   if (!real_start_main) {
     DIE("fatal error: Cannot intercept beginning of process execution and therefore cannot begin profiling.");
   }
+
+  
+  real_execv = (execv_fptr_t)dlsym(RTLD_NEXT, "execv");  
+  handle_any_dlerror();
+
+  real_execvp = (execvp_fptr_t)dlsym(RTLD_NEXT, "execvp");  
+  handle_any_dlerror();
+  
+  real_execve = (execve_fptr_t)dlsym(RTLD_NEXT, "execve");
+  handle_any_dlerror();
+  
   
   real_fork = (fork_fptr_t)dlsym(RTLD_NEXT, "fork");
   handle_any_dlerror();
@@ -272,16 +305,22 @@ fini_library()
 
 
 static void
+init_option_debug()
+{
+  /* Debugging (get this first) : default is off */
+  char *env_debug = getenv("HPCRUN_DEBUG");
+  opt_debug = (env_debug ? atoi(env_debug) : 0);
+}
+
+
+static void
 init_options()
 {
-  char *env_debug, *env_recursive, *env_thread, *env_eventlist, *env_outpath, 
-    *env_flags;
-
-  /* Debugging (get this first) : default is off */
-  env_debug = getenv("HPCRUN_DEBUG");
-  opt_debug = (env_debug ? atoi(env_debug) : 0);
-
-  if (opt_debug >= 1) { MSG(stderr, "** processing opts"); }
+  char *env_recursive, *env_thread, *env_eventlist, *env_outpath, *env_flags;
+  
+  if (opt_debug >= 1) { 
+    MSG(stderr, "  LD_PRELOAD: %s", getenv("LD_PRELOAD")); 
+  }
   
   /* Recursive profiling: default is on */
   env_recursive = getenv("HPCRUN_RECURSIVE");
@@ -293,7 +332,6 @@ init_options()
   }
 
   if (opt_debug >= 1) { 
-    MSG(stderr, "  LD_PRELOAD: %s", getenv("LD_PRELOAD"));
     MSG(stderr, "  recursive profiling: %d", opt_recursive); 
   }
   
@@ -342,7 +380,7 @@ init_options()
  *  two different names depending on how the macro BP_SYM is defined.
  *    glibc-x/sysdeps/generic/libc-start.c
  */
-int 
+extern int 
 __libc_start_main PARAMS_START_MAIN
 {
   hpcrun_libc_start_main(main, argc, ubp_av, init, fini, rtld_fini, stack_end);
@@ -350,7 +388,7 @@ __libc_start_main PARAMS_START_MAIN
 }
 
 
-int 
+extern int 
 __BP___libc_start_main PARAMS_START_MAIN
 {
   hpcrun_libc_start_main(main, argc, ubp_av, init, fini, rtld_fini, stack_end);
@@ -390,17 +428,173 @@ hpcrun_libc_start_main_fini()
 
 
 /*
+ *  Intercept creation of exec() family of routines because profiling
+ *  *must* be off when the exec takes place or it interferes with
+ *  ld.so (and the latter will not preload our monitoring library).
+ *  Moreover, this allows us to safely write any profile data to disk.
+ *
+ *  execl, execlp, execle / execv, execvp, execve  
+ *
+ *  Note: We cannot simply intercept libc'c __execve (which implements
+ *  all other routines on Linux) because it is a libc-local symbol.
+ *    glibc-x/sysdeps/generic/execve.c
+ * 
+ *  Note: Stupid C has no way of passing along the input vararg list
+ *  intact.
+ */
+
+static void parse_execl(const char*** argv, const char* const** envp,
+			const char* arg, va_list arglist);
+
+
+extern int 
+execl(const char *path, const char *arg, ...)
+{
+  const char** argv = NULL;
+  va_list arglist;
+
+  va_start(arglist, arg);
+  parse_execl(&argv, NULL, arg, arglist);
+  va_end(arglist);
+  
+  return hpcrun_execv(path, (char* const*)argv);
+}
+
+
+extern int 
+execlp(const char *file, const char *arg, ...)
+{
+  const char** argv = NULL;
+  va_list arglist;
+  
+  va_start(arglist, arg);
+  parse_execl(&argv, NULL, arg, arglist);
+  va_end(arglist);
+  
+  return hpcrun_execvp(file, (char* const*)argv);
+}
+
+
+extern int 
+execle(const char *path, const char *arg, ...)
+{
+  const char** argv = NULL;
+  const char* const* envp = NULL;
+  va_list arglist;
+
+  va_start(arglist, arg);
+  parse_execl(&argv, &envp, arg, arglist);
+  va_end(arglist);
+  
+  return hpcrun_execve(path, (char* const*)argv, (char* const*)envp);
+}
+
+
+extern int 
+execv PARAMS_EXECV
+{
+  return hpcrun_execv(path, argv);
+}
+
+
+extern int 
+execvp PARAMS_EXECVP
+{
+  return hpcrun_execvp(file, argv);
+}
+
+
+extern int 
+execve PARAMS_EXECVE
+{
+  return hpcrun_execve(path, argv, envp);
+}
+
+
+static int
+hpcrun_execv PARAMS_EXECV
+{
+  if (opt_debug >= 1) { MSG(stderr, "==> execv-ing <=="); }
+  fini_process();
+  return (*real_execv)(path, argv);
+}
+
+
+static int
+hpcrun_execvp PARAMS_EXECVP
+{
+  if (opt_debug >= 1) { MSG(stderr, "==> execvp-ing <=="); }
+  fini_process();
+  return (*real_execvp)(file, argv);
+}
+
+
+static int
+hpcrun_execve PARAMS_EXECVE
+{
+  if (opt_debug >= 1) { MSG(stderr, "==> execve-ing <=="); }
+  fini_process();
+  return (*real_execve)(path, argv, envp);
+}
+
+
+static void 
+parse_execl(const char*** argv, const char* const** envp,
+	    const char* arg, va_list arglist)
+{
+  /* argv & envp are pointers to arrays of char* */
+  /* va_start has already been called */
+
+  const char* argp;
+  int argvSz = 32, argc = 1;
+  
+  *argv = malloc((argvSz+1) * sizeof(const char*));
+  if (!*argv) { DIE("fatal error: malloc() failed!"); }
+  
+  (*argv)[0] = arg;
+  while ((argp = va_arg(arglist, const char*)) != NULL) { 
+    if (argc > argvSz) {
+      argvSz *= 2;
+      *argv = realloc(*argv, (argvSz+1) * sizeof(const char*));
+      if (!*argv) { DIE("fatal error: realloc() failed!"); }
+    }
+    (*argv)[argc] = argp;
+    argc++;
+  }
+  (*argv)[argc] = NULL;
+  
+  if (envp != NULL) {
+    *envp = va_arg(arglist, const char* const*);
+  }
+
+#if 0
+  if (opt_debug >= 2) { 
+    int i;
+    for (i = 0; i < argc; ++i) {
+      MSG(stderr, "  execl arg%d: %s", i, (*argv)[i]);
+    }
+    if (envp) {
+      MSG(stderr, "  execl envp found");
+    }
+  }
+#endif
+  
+  /* user calls va_end */
+}
+
+
+/*
  *  Intercept creation of new processes via fork(), vfork()
  */
 
-pid_t 
+extern pid_t 
 fork()
 {
   return hpcrun_fork();
 }
 
 
-pid_t 
+extern pid_t 
 vfork()
 {
   return hpcrun_fork();
@@ -430,7 +624,7 @@ hpcrun_fork()
  *  Intercept creation of new theads via pthread_create()
  */
 
-int 
+extern int 
 pthread_create PARAMS_PTHREAD_CREATE
 {
   return hpcrun_pthread_create(thread, attr, start_routine, arg);
@@ -511,8 +705,8 @@ hpcrun_sighandler(int sig)
     break;
   }
   
-  hpcrun_fini();
-  exit(0);
+  fini_process();
+  fini_library();
 }
 
 
@@ -564,13 +758,13 @@ init_process()
 {
   if (opt_debug >= 1) { MSG(stderr, "*** init_process ***"); }
 
-  rtloadmap = hpcrun_code_lines_from_loadmap(opt_debug);
+  rtloadmap = hpcrun_get_rtloadmap(opt_debug);
   
   /* Initialize PAPI if necessary */
   count_events(&numSysEvents, &numPAPIEvents); /* no error checking */
   if (numPAPIEvents > 0) {
     init_papi_for_process();
-  }  
+  }
   
   hpc_profdesc = init_thread(0 /*is_thread*/);
 }
@@ -726,7 +920,7 @@ init_profdesc(hpcrun_profiles_desc_t** profdesc,
       DIE("fatal error: malloc() failed!"); 
     }
     memset(HPC_GET_PAPIPROFS(*profdesc)->vec, 0x00, vecsz);
-    
+
     HPC_GET_PAPIPROFS(*profdesc)->eset = PAPI_NULL;     
     if ((rval = PAPI_create_eventset(&HPC_GET_PAPIPROFS(*profdesc)->eset)) 
 	!= PAPI_OK) {
@@ -799,7 +993,6 @@ init_profdesc(hpcrun_profiles_desc_t** profdesc,
 
   /* N.B.: at this point x->sprofs an1d (*y)->sprofs remains uninitialized */
 
-
   /* 4a. For each sys profdescs entry, init sprofil()-specific info */
   if (HPC_GET_SYSPROFS(*profdesc)) {
     hpcsys_profile_desc_vec_t* sh = 
@@ -844,7 +1037,7 @@ init_sysprofdesc_buffer(hpcsys_profile_desc_vec_t* profdesc,
       prof->numsprofs = rtmap->count;
     }
       
-    if (opt_debug >= 3) { 
+    if (opt_debug >= 4) { 
       MSG(stderr, "profile buffer details for %s:", prof->ename); 
       MSG(stderr, "  count = %d, sp=%"PRIu64" ef=%d",
 	  prof->numsprofs, prof->period, prof->flags);
@@ -874,7 +1067,7 @@ init_sysprofdesc_buffer(hpcsys_profile_desc_vec_t* profdesc,
 	prof->sprofs[mapi].pr_off = rtmap->module[mapi].offset;
 	prof->sprofs[mapi].pr_scale = prof->scale;      
 	
-	if (opt_debug >= 3) {
+	if (opt_debug >= 4) {
 	  /* 'pr_size'/'pr_off' are of type 'size_t' which is of pointer size */
 	  MSG(stderr, "\tprofile[%d] base = %p size = %#"PRIxPTR" off = %#"PRIxPTR" scale = %#lx",
 	      mapi, prof->sprofs[mapi].pr_base, prof->sprofs[mapi].pr_size, 
@@ -910,7 +1103,7 @@ init_papiprofdesc_buffer(hpcpapi_profile_desc_vec_t* profdesc,
       
     }
     
-    if (opt_debug >= 3) { 
+    if (opt_debug >= 4) { 
       MSG(stderr, "profile buffer details for %s:", prof->einfo.symbol); 
       MSG(stderr, "  count = %d, es=%#x ec=%#x sp=%"PRIu64" ef=%d",
 	  prof->numsprofs, profdesc->eset, 
@@ -941,7 +1134,7 @@ init_papiprofdesc_buffer(hpcpapi_profile_desc_vec_t* profdesc,
 	prof->sprofs[mapi].pr_off = (caddr_t)rtmap->module[mapi].offset;
 	prof->sprofs[mapi].pr_scale = prof->scale;
 	
-	if (opt_debug >= 3) {
+	if (opt_debug >= 4) {
 	  MSG(stderr, 
 	      "\tprofile[%d] base = %p size = %#x off = %p scale = %#x",
 	      mapi, prof->sprofs[mapi].pr_base, prof->sprofs[mapi].pr_size, 
@@ -1007,18 +1200,19 @@ init_profdesc_ofile(hpcrun_profiles_desc_t* profdesc, int sharedprofdesc)
   if (!profdesc->ofile.fname) { DIE("fatal error: malloc() failed!"); }
   strcpy(profdesc->ofile.fname, outfilenm);
 
-  
   /* Test whether we can write to this filesystem */
   fs = fopen(outfilenm, "w");
   if (fs == NULL) {
     DIE("fatal error: Filesystem test failed (cannot open file '%s').", 
 	outfilenm);
   }
-  
   fclose(fs);
-  if (unlink(outfilenm) != 0) {
-    DIE("fatal error: %s.", strerror(errno));
-  }
+  
+  /* Note: it is possible for this filename to already exist
+     (e.g. consider a process that exec's itself).  Claim our
+     territory by leaving an empty file in the file system. */
+
+  /* FIXME: what if this filename already exists? e.g., we exec ourself! */
 }
 
 
@@ -1357,7 +1551,7 @@ fini_thread(hpcrun_profiles_desc_t** profdesc, int is_thread)
   int sharedprofdesc = 0;
   
   if (opt_debug >= 1) { MSG(stderr, "*** fini_thread ***"); }
-  
+
   /* Stop profiling */
   if (HPC_GET_PAPIPROFS(*profdesc)) {
     stop_papi_for_thread(HPC_GET_PAPIPROFS(*profdesc));
@@ -1368,7 +1562,7 @@ fini_thread(hpcrun_profiles_desc_t** profdesc, int is_thread)
 
   /* Write data (if necessary) */
   write_all_profiles(*profdesc, rtloadmap);
-  
+
   /* Finalize profiling subsystems and uninit descriptor */
   if (HPC_GET_PAPIPROFS(*profdesc)) {
     fini_papi_for_thread(HPC_GET_PAPIPROFS(*profdesc));
@@ -1399,12 +1593,25 @@ stop_sysprof(hpcsys_profile_desc_vec_t* profdescs)
 static void 
 stop_papi_for_thread(hpcpapi_profile_desc_vec_t* profdescs)
 {
-  int pcode;
+  int pcode, i;
   long_long* values = NULL; // array the size of the eventset
   
   if ((pcode = PAPI_stop(profdescs->eset, values)) != PAPI_OK) {
 #if 0
     DIE("fatal error: PAPI error (%d): %s.", pcode, PAPI_strerror(pcode));
+#endif
+  }
+
+  /* Call PAPI_sprofil() with a 0 threshold to cleanup internal memory */
+  for (i = 0; i < profdescs->size; ++i) {
+    hpcpapi_profile_desc_t* prof = &profdescs->vec[i];
+    
+    pcode = PAPI_sprofil(prof->sprofs, prof->numsprofs, profdescs->eset, 
+			 prof->ecode, 0, prof->flags);
+#if 0
+    if (pcode != PAPI_OK) {
+      DIE("fatal error: PAPI error (%d): %s.", pcode, PAPI_strerror(pcode));
+    }
 #endif
   }
 }
@@ -1529,7 +1736,7 @@ write_all_profiles(hpcrun_profiles_desc_t* profdesc, rtloadmap_t* rtmap)
   fwrite(HPCRUNFILE_MAGIC_STR, 1, HPCRUNFILE_MAGIC_STR_LEN, fs);
   fwrite(HPCRUNFILE_VERSION, 1, HPCRUNFILE_VERSION_LEN, fs);
   fputc(HPCRUNFILE_ENDIAN, fs);
-  
+
   /* <loadmodule_list> */
   hpc_fwrite_le4(&(rtmap->count), fs);
   for (i = 0; i < rtmap->count; ++i) {
@@ -1631,7 +1838,7 @@ write_event_data(FILE *fs, char* ename, hpc_hist_bucket* histo,
   }
   hpc_fwrite_le8(&count, fs);
   
-  if (opt_debug >= 2) {
+  if (opt_debug >= 3) {
     MSG(stderr, "  profile for %s has %"PRIu64" of %"PRIu64" non-zero counters (last non-zero counter: %"PRIu64")", 
 	ename, count, ncounters, inz);
   }
@@ -1646,7 +1853,7 @@ write_event_data(FILE *fs, char* ename, hpc_hist_bucket* histo,
       offset = i * bytesPerCodeBlk;
       hpc_fwrite_le8(&offset, fs); /* offset (in bytes) from load addr */
 
-      if (opt_debug >= 2) {
+      if (opt_debug >= 3) {
         MSG(stderr, "  (cnt,offset)=(%d,%"PRIx64")", cnt, offset);
       }
     }
