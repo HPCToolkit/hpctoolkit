@@ -91,11 +91,11 @@ using namespace ScopeTreeBuilder;
 // Helpers for building a scope tree
 
 static ProcScope*
-BuildFromProc(FileScope* fileScope, Procedure* p); 
+BuildFromProc(FileScope* fileScope, Procedure* p, bool fixBoundaries); 
 
 static int
 BuildFromTarjTree(ProcScope* pScope, Procedure* p, TarjanIntervals* tarj, 
-		  RIFG* fg, CFG* cfg, RIFGNodeId fgNode);
+		  RIFG* fg, CFG* cfg, RIFGNodeId fgNode, bool fixBoundaries);
 
 static int
 BuildFromBB(CodeInfo* enclosingScope, Procedure* p, CFG::Node* bb);
@@ -250,6 +250,7 @@ ScopeTreeBuilder::BuildFromExe(/*Executable*/ LoadModule* exe,
 			       PCToSrcLineXMap* &map,
 			       String canonicalPathList, 
 			       bool normalizeScopeTree,
+			       bool fixBoundaries,
 			       bool verboseMode)
 {
   BriefAssertion(exe);
@@ -284,7 +285,7 @@ ScopeTreeBuilder::BuildFromExe(/*Executable*/ LoadModule* exe,
       if (verboseMode){
         cerr << "Building scope tree for [" << p->GetName()  << "] ... ";
       }
-      BuildFromProc(fileScope, p);
+      BuildFromProc(fileScope, p, fixBoundaries);
       if (map) { BuildPCToSrcLineMap(map, p); } // MAP
       if (verboseMode){
         cerr << "done " << endl;
@@ -345,7 +346,7 @@ static bool testProcNow = false;
 
 // BuildFromProc: 
 static ProcScope* 
-BuildFromProc(FileScope* fileScope, Procedure* p)
+BuildFromProc(FileScope* fileScope, Procedure* p, bool fixBoundaries)
 {  
   String func, file;
   suint startLn, endLn;
@@ -397,7 +398,19 @@ BuildFromProc(FileScope* fileScope, Procedure* p)
   }
 #endif 
   
-  BuildFromTarjTree(pScope, p, &tarj, &fg, &cfg, fgRoot);
+  BuildFromTarjTree(pScope, p, &tarj, &fg, &cfg, fgRoot, fixBoundaries);
+  // mgabi: Here I try to fix the boundaries that are the result of compilers
+  // using the routine's start line number (Sun compiler and Sgi compiler), 
+  // or the routine's end line number (Intel compiler) for instructions that
+  // access the routine's input parameters (and maybe other instructions). 
+  // I will recursively traverse the tree corresponding to each routine, 
+  // and I will remove the statements inside loops that correspond to 
+  // either the start or the end line numbers of the parent routine. 
+  // I will also remove statements which are outside any loop, because 
+  // they do not add any value to the final scope tree.
+  if (fixBoundaries)
+    pScope->FixIntervalBoundaries();
+
   return pScope;
 }
 
@@ -412,15 +425,18 @@ BuildFromTarjInterval(CodeInfo* enclosingScope, Procedure* p,
 
 static int
 BuildFromTarjTree(ProcScope* pScope, Procedure* p, TarjanIntervals* tarj, 
-		  RIFG* fg, CFG* cfg, RIFGNodeId fgNode)
+		  RIFG* fg, CFG* cfg, RIFGNodeId fgNode, bool fixBoundaries)
 {
 #ifdef BLOOP_ATTEMPT_TO_IMPROVE_INTERVAL_BOUNDARIES
   CFGNodeToPCMap cfgNodeMap(cfg, p);
 #else
   CFGNodeToPCMap cfgNodeMap;
 #endif
+  // mgabi: changed to add statements that are outside loops, to have a more 
+  // precise understanding of the routine's start and end line numbers.
+  // I will remove these statements in a future traversal of the tree.
   int num = BuildFromTarjInterval(pScope, p, tarj, fg, cfg, fgNode, 
-				  &cfgNodeMap, 0);
+				  &cfgNodeMap, fixBoundaries?1:0);
   return num;
 }
 
@@ -581,6 +597,107 @@ FindOrCreateFileNode(PgmScope* pgmScopeTree, Procedure* p)
   }
   return fileScope; // guaranteed to be a valid pointer
 } 
+
+// FixIntervalBoundaries
+void
+ProcScope::FixIntervalBoundaries()
+{
+  suint pStartLn = BegLine();
+  suint pEndLn = EndLine();
+  if (pStartLn == UNDEF_LINE)  // line no info unavailable
+    return;
+  
+  for (ScopeInfoChildIterator it(this); it.Current(); /* */) {
+    CodeInfo* child = dynamic_cast<CodeInfo*>(it.Current()); // always true
+    it++; // advance iterator -- it is pointing at 'child'
+    
+    if (child->Type() == ScopeInfo::STMT_RANGE) {
+      // statement outside any loop; remove it as we do not need it anymore
+      child->Unlink(); // unlink 'child' from tree
+      CDSDBG { cout << "  Delete: " << child << endl; }
+      delete child;
+    } else
+    if (child->Type() == ScopeInfo::LOOP) {
+      // found a loop; fix boundaries recursively
+      suint newStart, newEnd; 
+      if (! dynamic_cast<LoopScope*>(child)->FixIntervalBoundaries(pStartLn, 
+             pEndLn, newStart, newEnd) ) {
+        // loop has no good statement; remove it
+        child->Unlink(); // unlink 'child' from tree
+        CDSDBG { cout << "  Delete: " << child << endl; }
+        delete child;
+      }
+    } 
+  }
+}
+
+bool
+LoopScope::FixIntervalBoundaries(suint pStartLn, suint pEndLn, 
+             suint& newStart, suint& newEnd)
+{
+  BriefAssertion (begLine != UNDEF_LINE); // method would not be called
+  if (begLine!=pStartLn && endLine!=pEndLn) // this loop is not affected by
+                                          // this type of boundaries problems
+  {
+    newStart = begLine; newEnd = endLine;
+    return (true);
+  }
+  
+  newStart = UNDEF_LINE; newEnd = UNDEF_LINE;
+  for (ScopeInfoChildIterator it(this); it.Current(); /* */) {
+    CodeInfo* child = dynamic_cast<CodeInfo*>(it.Current()); // always true
+    it++; // advance iterator -- it is pointing at 'child'
+
+    suint childStart, childEnd;
+    if (child->Type() == ScopeInfo::STMT_RANGE) {
+      childStart = child->BegLine();
+      childEnd = child->EndLine();
+      if (childEnd==pStartLn || childStart==pEndLn) {
+        // statement inside loop with bad line number; remove it
+        child->Unlink(); // unlink 'child' from tree
+        CDSDBG { cout << "  Delete: " << child << endl; }
+        delete child;
+      } else   // a good statement
+        if (newStart == UNDEF_LINE) {
+          // newEnd must be also UNDEF
+          newStart = childStart;
+          newEnd = childEnd;
+        } else {
+          BriefAssertion (newEnd != UNDEF_LINE);
+          newStart = MIN(newStart, childStart);
+          newEnd = MAX(newEnd, childEnd);
+        }
+    } else
+    if (child->Type() == ScopeInfo::LOOP) {  // can it be anything else?
+      // found a loop; fix boundaries recursively
+      if (dynamic_cast<LoopScope*>(child)->FixIntervalBoundaries(pStartLn, 
+               pEndLn, childStart, childEnd) ) {  // loop is valid
+        if (newStart == UNDEF_LINE) {
+          // newEnd must be also UNDEF
+          newStart = childStart;
+          newEnd = childEnd;
+        } else {
+          BriefAssertion (newEnd != UNDEF_LINE);
+          newStart = MIN(newStart, childStart);
+          newEnd = MAX(newEnd, childEnd);
+        }
+      } else {  // loop does not have any good statement
+        child->Unlink(); // unlink 'child' from tree
+        CDSDBG { cout << "  Delete: " << child << endl; }
+        delete child;
+      }
+    }  // type == LOOP
+  }  // child_iterator
+  // if the new start and end line numbers are valid, then modify the 
+  // current ones
+  if (newStart != UNDEF_LINE) {
+    BriefAssertion (newEnd != UNDEF_LINE);
+    begLine = newStart;
+    endLine = newEnd;
+    return (true);
+  } else
+    return (false);
+}
 
 
 //****************************************************************************

@@ -467,7 +467,9 @@ public:
   virtual String LinkName() const   { return linkname; }
   virtual String CodeName() const; 
   virtual String ToDumpString(int dmpFlag = PgmScopeTree::XML_TRUE) const;
-  
+
+  void FixIntervalBoundaries();
+
 private: 
   String name; 
   String linkname;
@@ -486,6 +488,8 @@ public:
   virtual String CodeName() const;
   virtual String ToDumpString(int dmpFlag = PgmScopeTree::XML_TRUE) const; 
   
+  bool FixIntervalBoundaries(suint pStartLn, suint pEndLn, 
+           suint& newStart, suint& newEnd);
 private:
   int id;
 };
