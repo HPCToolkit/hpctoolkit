@@ -57,7 +57,7 @@
 
 #include "Args.h"
 #include "PgmScopeTree.h"
-#include "PgmScopeTreeUtils.h"
+#include "PgmScopeTreeBuilder.h"
 using namespace ScopeTreeBuilder;
 
 #include <lib/binutils/LoadModule.h>

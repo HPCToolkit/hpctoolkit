@@ -1,5 +1,5 @@
+# -*-Mode: makefile;-*-
 # $Id$
-# -*-makefile-*-
 ## * BeginRiceCopyright *****************************************************
 ## 
 ## Copyright ((c)) 2002, Rice University 
@@ -68,7 +68,7 @@ OBJS = \
 	Args.o \
 	PgmScopeTree.o \
 	PgmScopeTreeIterator.o \
-	PgmScopeTreeUtils.o \
+	PgmScopeTreeBuilder.o \
 	CodeInfoPtrSet.o \
 	BloopIRInterface.o
 

@@ -37,7 +37,7 @@
 //***************************************************************************
 //
 // File:
-//    PgmScopeTreeBuilder.C
+//    $Source$
 //
 // Purpose:
 //    [The purpose of this file]
@@ -73,7 +73,7 @@ using namespace std; // For compatibility with non-std C headers
 //*************************** User Include Files ****************************
 
 #include "Args.h"
-#include "PgmScopeTreeUtils.h"
+#include "PgmScopeTreeBuilder.h"
 using namespace ScopeTreeBuilder;
 #include "CodeInfoPtrSet.h"
 #include "BloopIRInterface.h"
