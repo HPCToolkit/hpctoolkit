@@ -1,5 +1,5 @@
+// -*-Mode: C++;-*-
 // $Id$
-// -*-C++-*-
 // * BeginRiceCopyright *****************************************************
 // 
 // Copyright ((c)) 2002, Rice University 
@@ -37,7 +37,7 @@
 //***************************************************************************
 //
 // File:
-//    PgmScopeTree.C
+//    $Source$
 //
 // Purpose:
 //    [The purpose of this file]
@@ -317,7 +317,7 @@ StmtRangeScope::~StmtRangeScope()
 }
 
 //***************************************************************************
-// ScopeInfo, etc: Tree Navigation 
+// ScopeInfo: Ancestor
 //***************************************************************************
 
 #define dyn_cast_return(base, derived, expr) \
@@ -360,6 +360,30 @@ int IsAncestorOf(ScopeInfo *parent, ScopeInfo *son, int difference)
 }
 
 #endif
+
+ScopeInfo* 
+ScopeInfo::LeastCommonAncestor(ScopeInfo* n1, ScopeInfo* n2)
+{
+  // Collect all ancestors of n1 and n2.  The root will be at the front
+  // of the ancestor list.
+  ScopeInfoList anc1, anc2;
+  for (ScopeInfo* a = n1->Parent(); (a); a = a->Parent()) {
+    anc1.push_front(a);
+  }
+  for (ScopeInfo* a = n2->Parent(); (a); a = a->Parent()) {
+    anc2.push_front(a);
+  }
+  
+  // Find the most deeply nested common ancestor
+  ScopeInfo* lca = NULL;
+  while ( (!anc1.empty() && !anc2.empty()) && (anc1.front() == anc2.front())) {
+    lca = anc1.front();
+    anc1.pop_front();
+    anc2.pop_front();
+  }
+  
+  return lca;
+}
 
 PgmScope*
 ScopeInfo::Pgm() const 
@@ -413,6 +437,11 @@ ScopeInfo::StmtRange() const
   dyn_cast_return(ScopeInfo, StmtRangeScope, Ancestor(STMT_RANGE));
 }
 
+
+//***************************************************************************
+// ScopeInfo: Tree Navigation
+//***************************************************************************
+
 CodeInfo* 
 ScopeInfo::FirstEnclScope() const
 {
@@ -461,6 +490,140 @@ ScopeInfo::PrevScope() const
   }
   return NULL; 
 }
+
+//***************************************************************************
+// ScopeInfo: Paths and Merging
+//***************************************************************************
+
+int 
+ScopeInfo::Distance(ScopeInfo* anc, ScopeInfo* desc)
+{
+  int distance = 0;
+  for (ScopeInfo* x = desc; x != NULL; x = x->Parent()) {
+    if (x == anc) {
+      return distance;
+    }
+    ++distance;
+  }
+
+  // If we arrive here, there was no path between 'anc' and 'desc'
+  return -1;
+}
+
+bool 
+ScopeInfo::ArePathsOverlapping(ScopeInfo* lca, ScopeInfo* desc1, 
+			       ScopeInfo* desc2)
+{
+  // Ensure that d1 is on the longest path
+  ScopeInfo* d1 = desc1, *d2 = desc2;
+  int dist1 = Distance(lca, d1);
+  int dist2 = Distance(lca, d2);
+  if (dist2 > dist1) {
+    ScopeInfo* t = d1;
+    d1 = d2;
+    d2 = t;
+  } 
+  
+  // Iterate over the longest path (d1 -> lca) searching for d2.  Stop
+  // when x is NULL or lca.
+  for (ScopeInfo* x = d1; (x && x != lca); x = x->Parent()) {
+    if (x == d2) { 
+      return true;
+    }
+  }
+  
+  // If we arrive here, we did not encounter d2.  Divergent.
+  return false; 
+}
+
+bool
+ScopeInfo::MergePaths(ScopeInfo* lca, ScopeInfo* desc1, ScopeInfo* desc2)
+{
+  bool merged = false;
+  // Should we verify that lca is really the lca?
+  
+  // Collect nodes along paths between 'lca' and 'desc1', 'desc2'.
+  // The descendent nodes will be at the end of the list.
+  ScopeInfoList path1, path2;
+  for (ScopeInfo* x = desc1; x != lca; x = x->Parent()) {
+    path1.push_front(x);
+  }
+  for (ScopeInfo* x = desc2; x != lca; x = x->Parent()) {
+    path2.push_front(x);
+  }
+  BriefAssertion(path1.size() > 0 && path2.size() > 0);
+  
+  // The shorter path will be merged into the longer one.  Determine
+  // which is which (of course, they can be equal)
+  ScopeInfoList* pathL = &path1; // long path
+  ScopeInfoList* pathS = &path2; // short path
+  if (pathL->size() < pathS->size()) {
+    pathL = &path2;
+    pathS = &path1;
+  }
+  
+  // We merge from the deepest level of nesting out to lca
+  // (shallowest), beginning with the shortest path.  First, we align
+  // the iterators.
+  ScopeInfoList::reverse_iterator pathSit = pathS->rbegin();
+  ScopeInfoList::reverse_iterator pathLit = pathL->rbegin();
+  int offset = (pathL->size() - pathS->size());
+  for (int i = 0; i < offset; ++i) { pathLit++; }
+  
+  // Now we merge along the shortest path
+  for ( ; pathLit != pathL->rend(); ++pathLit, ++pathSit) {
+    ScopeInfo* from = (*pathSit);
+    ScopeInfo* to = (*pathLit);
+    if (IsMergable(to, from)) {
+      merged |= Merge(to, from);
+    }
+  }
+  
+  return merged;
+}
+
+bool 
+ScopeInfo::Merge(ScopeInfo* toNode, ScopeInfo* fromNode)
+{
+  if (!IsMergable(toNode, fromNode)) {
+    return false;
+  }
+  
+  // Perform the merge
+  // 1. Move all children of 'fromNode' into 'toNode'
+  for (ScopeInfoChildIterator it(fromNode); it.Current(); /* */) {
+    ScopeInfo* child = dynamic_cast<ScopeInfo*>(it.Current());
+    it++; // advance iterator -- it is pointing at 'child'
+    
+    child->Unlink();
+    child->Link(toNode);
+  }
+  
+  // 2. If merging CodeInfos, update line ranges
+  CodeInfo* toCI = dynamic_cast<CodeInfo*>(toNode);
+  CodeInfo* fromCI = dynamic_cast<CodeInfo*>(fromNode);
+  if (toCI && fromCI) {
+    suint begLn = MIN(toCI->BegLine(), fromCI->BegLine());
+    suint endLn = MAX(toCI->EndLine(), fromCI->EndLine());
+    toCI->SetLineRange(begLn, endLn);
+  }
+  
+  // 3. Unlink 'fromNode' from the tree and delete it
+  fromNode->Unlink();
+  delete fromNode;
+  
+  return true;
+}
+
+bool 
+ScopeInfo::IsMergable(ScopeInfo* toNode, ScopeInfo* fromNode)
+{
+  // For now, merges are only defined on LOOPs and GROUPs
+  ScopeInfo::ScopeType toTy = toNode->Type(), fromTy = fromNode->Type();
+  bool goodTy = (toTy == ScopeInfo::LOOP || toTy == ScopeInfo::GROUP);
+  return ((toTy == fromTy) && goodTy);
+}
+
 
 //***************************************************************************
 // ScopeInfo, etc: Names, Name Maps, and Retrieval by Name
