@@ -71,8 +71,8 @@ static void hpcr_fini(void);
 
 static void init_options(void);
 
-static void init_hpcrun(void);
-static void fini_hpcrun();
+void init_hpcrun(void);
+void fini_hpcrun();
 
 typedef uint32_t hpc_hist_bucket; /* a 4 byte histogram bucket */
 
@@ -108,7 +108,10 @@ static hpcpapi_profile_desc_vec_t papi_profdescs;
 /* hpcrun output file */
 static hpcrun_ofile_desc_t hpc_ofile;
 
-/****************************************************************************/
+
+/****************************************************************************
+ * Library initialization and finalization
+ ****************************************************************************/
 
 /*
  *  Library initialization
@@ -152,6 +155,7 @@ _init(void)
   if (!real_start_main) {
     DIE("Cannot intercept beginning of process execution and therefore cannot begin profiling.");
   }
+  
   real_fork  = (fork_fptr_t)dlsym(RTLD_NEXT, "fork");
   if ((error = dlerror()) != NULL) {
     fputs(error, stderr);
@@ -231,7 +235,9 @@ init_options(void)
 }
 
 
-/****************************************************************************/
+/****************************************************************************
+ * Intercepted routines 
+ ****************************************************************************/
 
 /*
  *  Intercept the start routine: this is from glibc and can be one of
@@ -285,6 +291,66 @@ hpcr_fini(void)
 }
 
 
+/*
+ *  Intercept creation of new processes via fork(), vfork()
+ */
+
+pid_t 
+fork()
+{
+  if (opt_debug >= 1) { 
+    fprintf(stderr, "** forking (process %d)\n", getpid()); 
+  }
+  
+  pid_t retval = (*real_fork)();
+  if (retval == 0) { /* child */
+    if (opt_debug >= 1) { 
+      fprintf(stderr, "** caught fork (process %d)\n", getpid()); 
+    }
+    if (hpc_init_papi_force() != 0) {
+      fprintf(stderr, "** PAPI library initialization failed after fork (process %d)\n", getpid());
+      exit(-1);
+    }
+    init_hpcrun();
+  }
+}
+
+
+pid_t 
+vfork()
+{
+  return fork();
+}
+
+
+/*
+ *  Intercept creation of new threads via
+ */
+
+/*
+
+To profile threads
+  For each thread:
+    * Create thread event set
+    * Create profile buffers for thread/event set
+     PAPI_set_thr_specific
+
+     * papi_sprofl(thread_event_set)
+     * papi_start(thread_event_set
+
+papiex:
+  lib constructor: process_probe_init_routine
+    setup_process 
+      thread_probe_init_routine
+  lib destructor:  process_probe_shutdown_routine
+    thread_probe_shutdown_routine
+  
+  intercept: fork, 
+    pthread_create, pthread_trap_create, pthread_trap_exit
+
+*/
+
+
 /****************************************************************************
  * Initialize PAPI profiling
  ****************************************************************************/
@@ -298,7 +364,7 @@ static void init_output(hpcrun_ofile_desc_t* ofile,
 /*
  *  Prepare for PAPI profiling
  */
-static void 
+void 
 init_hpcrun(void)
 {
   if (opt_debug >= 1) { 
@@ -331,9 +397,9 @@ init_papi(hpcpapi_profile_desc_vec_t* profdescs, rtloadmap_t* rtmap)
      histogram counter correlates with the region to be profiled.
      
      The region to be profiled can be thought of being divided into n
-     equally sized blocks, each b bytes long.  If each histogram
+     equally sized blocks, each b bytes long.  [[[ If each histogram
      counter is bh bytes long, the value of the scale factor is the
-     reciprocal of (b / bh).  
+     reciprocal of (b / bh).  ]]]
            scale = reciprocal( b / bh )
 
      The representation of the scale factor is a 16-bit fixed-point
@@ -346,13 +412,16 @@ init_papi(hpcpapi_profile_desc_vec_t* profdescs, rtloadmap_t* rtmap)
      65536:
           scale = ( scaleval / 65536 ) = ( bh / b )
 
+       [[[ where bh is currently fixed at 2 ]]]
+
      Some sample scale values when bh is 4 (unsigned int):
 
           scaleval            bytes_per_code_block (b)
           ----------------------------------------
-          0xffff (or 0x10000) 4  (size of many RISC instructions)
-	  0x8000              8
-	  0x4000              16 (size of Itanium instruction packet)
+          0xffff (or 0x10000) 2
+	  0x8000              4  (size of many RISC instructions)
+	  0x4000              8
+	  0x2000              16 (size of Itanium instruction packet)
 
       
      Using this second notation, we can show the relation between the
@@ -462,11 +531,10 @@ init_papi(hpcpapi_profile_desc_vec_t* profdescs, rtloadmap_t* rtmap)
     prof->flags |= PAPI_PROFIL_BUCKET_32; /* hpc_hist_bucket */
     
     prof->bytesPerCntr = sizeof(hpc_hist_bucket); /* 4 */
-    prof->bytesPerCodeBlk = 4;
-    prof->scale = 0x10000; // 0x8000 * (prof->bytesPerCntr >> 1);
-    
-    if ( (prof->scale * prof->bytesPerCodeBlk) != 
-	 (65536 * prof->bytesPerCntr) ) {
+    prof->bytesPerCodeBlk = 4; // 1
+    prof->scale = 0x8000;      // 0x10000
+
+    if ( (prof->scale * prof->bytesPerCodeBlk) != (65536 * 2) ) {
       DIE("Programming error: invalid profiling scale.");
     }
     
@@ -636,7 +704,7 @@ fini_papi(hpcpapi_profile_desc_vec_t* profdescs);
 /*
  *  Finalize PAPI profiling
  */
-static void 
+void 
 fini_hpcrun(void)
 {
   if (opt_debug >= 1) { 
@@ -814,23 +882,4 @@ write_string(FILE *fs, char *str)
 }
 
 /****************************************************************************/
-
-pid_t fork()
-{
-  if (opt_debug >= 1) { fprintf(stderr, "** forking (process %d)\n", getpid()); }
-   pid_t retval = (*real_fork)();
-   if (retval == 0) { /* child */
-           if (opt_debug >= 1) { fprintf(stderr, "** caught fork (process %d)\n", getpid()); }
-           if (hpc_init_papi_force() != 0) {
-             fprintf(stderr, "** PAPI library initialization failed after fork (process %d)\n", getpid()); 
-	     exit(-1);
-	   }
-	   init_hpcrun();
-   }
-}
-
-pid_t vfork()
-{
-  return fork();
-}
 
