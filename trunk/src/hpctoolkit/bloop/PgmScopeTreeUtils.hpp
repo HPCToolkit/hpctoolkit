@@ -79,7 +79,8 @@ WriteScopeTree(std::ostream& os, PgmScopeTree* pgmScopeTree,
 PgmScopeTree*
 BuildScopeTreeFromExe(Executable* exe, PCToSrcLineXMap* &map,
 		      String canonicalPathList = "",
-		      bool normalizeScopeTree = true);
+		      bool normalizeScopeTree = true,
+		      bool verboseMode = false);
 
 //*************************** Forward Declarations ***************************
 
