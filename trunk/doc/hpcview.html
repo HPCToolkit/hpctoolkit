@@ -38,7 +38,7 @@
 <p><span class="hpctool">hpcview</span>
    [-V] [-h <i>dir</i>] [-r] [-u] [-w n] 
    {-x <i>file</i> [-c] [-l]}
-   {-z [-f n] [-m n] [-s n.m]}
+   {-z [-o] [-f n] [-m n] [-s n.m]}
    <i>configFile</i>
 
 <p>Location: <code>${HPCTOOLKIT}/bin/${HPCTOOLKIT_PLATFORM}</code>
@@ -163,6 +163,15 @@ will be able to use option, but no current software can.
 
 <dt>-z
 <dd>Generate static HTML.
+
+<dt>-o
+<dd>By default, <span class="hpctool">hpcview</span> generates all the 
+flattened views of a scope into a single file. This option instructs 
+<span class="hpctool">hpcview</span> to generate each flatten view in its
+own HTML file, which is the only HTML style supported in the older versions 
+of the tool. While the new format is more efficient because it generates 
+a much smaller number of files, we still allow the old HTML style in case 
+the generated files are too large.
 
 <dt>-f <i>n</i>
 <dd>Compute static flattenings only for the top <i>n</i> levels of the
