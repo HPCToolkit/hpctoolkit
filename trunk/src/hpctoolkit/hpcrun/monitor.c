@@ -103,7 +103,14 @@ static int             papi_flagscode;
 static PAPI_sprofil_t *papi_profiles;
 
 static unsigned int papi_bytesPerCodeBlk;
+
+#ifndef PAPI_VERSION
+// PAPI version 2
 static unsigned int papi_bytesPerCntr = sizeof(unsigned short); /* 2 */
+#elif PAPI_VERSION_MAJOR(PAPI_VERSION) >= 3
+static unsigned int papi_bytesPerCntr = sizeof(unsigned int); /* 4 */
+#endif
+
 static unsigned int papi_scale;
 
 /* papirun */
@@ -359,7 +366,14 @@ init_papi(void)
     exit(-1);
   }
 
+#ifndef PAPI_VERSION
+// PAPI version 2
   if (PAPI_add_event(&papi_eventset, papi_eventcode) != PAPI_OK) {
+#elif PAPI_VERSION_MAJOR(PAPI_VERSION) >= 3
+  if (PAPI_add_event(papi_eventset, papi_eventcode) != PAPI_OK) {
+#else
+#error unknown PAPI version
+#endif
     fprintf(stderr, "papirun: failed to add event '%s'. Aborting.\n", evstr);
     exit(-1);
   }
@@ -369,6 +383,11 @@ init_papi(void)
 
   /* Profiling flags */
   papi_flagscode = opt_flagscode;
+#ifdef PAPI_VERSION
+#if PAPI_VERSION_MAJOR(PAPI_VERSION) >= 3
+  papi_flagscode |= PAPI_PROFIL_BUCKET_32;
+#endif
+#endif
 
   /* Set profiling scaling factor */
 
@@ -414,7 +433,7 @@ init_papi(void)
       
   */
   papi_bytesPerCodeBlk = 4;
-  papi_scale = 0x8000;
+  papi_scale = 0x8000 * (papi_bytesPerCntr>>1);
   
   if ( (papi_scale * papi_bytesPerCodeBlk) != (65536 * papi_bytesPerCntr) ) {
     fprintf(stderr, "papirun: Programming error!\n");
@@ -445,7 +464,14 @@ start_papi(void)
     /* buffer size */
     papi_profiles[i].pr_size = bufsz;
     /* pc offset */
+#ifndef PAPI_VERSION
+// PAPI version 2
     papi_profiles[i].pr_off = lm->module[i].offset;
+#elif PAPI_VERSION_MAJOR(PAPI_VERSION) >= 3
+    papi_profiles[i].pr_off = (caddr_t) (unsigned long) lm->module[i].offset;
+#else
+#error unknown PAPI version
+#endif
     /* pc scaling */
     papi_profiles[i].pr_scale = papi_scale;
     
@@ -559,8 +585,16 @@ done_papirun(void)
 
   if (opt_debug >= 1) { fprintf(stderr, "done_papirun:\n"); }
   PAPI_stop(papi_eventset, &ct);
+#ifndef PAPI_VERSION
+// PAPI version 2
   PAPI_rem_event(&papi_eventset, papi_eventcode);
   PAPI_destroy_eventset(&papi_eventset);
+#elif PAPI_VERSION_MAJOR(PAPI_VERSION) >= 3
+  PAPI_remove_event(papi_eventset, papi_eventcode);
+  PAPI_destroy_eventset(papi_eventset);
+#else
+#error unknown PAPI version
+#endif
 
   write_all_profiles();
 
@@ -636,10 +670,19 @@ write_module_data(FILE *fp, PAPI_sprofil_t *p)
   unsigned int count = 0, offset = 0, i = 0, inz = 0;
   unsigned int ncounters = (p->pr_size / papi_bytesPerCntr);
 
+#ifndef PAPI_VERSION
+// PAPI version 2
+  unsigned short *lpr_base = p->pr_base;
+#elif PAPI_VERSION_MAJOR(PAPI_VERSION) >= 3
+  unsigned int *lpr_base = p->pr_base;
+#else
+#error unknown PAPI version
+#endif
+
   /* Number of profiling entries */
   count = 0;
   for (i = 0; i < ncounters; ++i) {
-    if (p->pr_base[i] != 0) { count++; inz = i; }
+    if (lpr_base[i] != 0) { count++; inz = i; }
   }
   hpc_fwrite_le4(&count, fp);
   
@@ -651,8 +694,9 @@ write_module_data(FILE *fp, PAPI_sprofil_t *p)
   
   /* Profiling entries */
   for (i = 0; i < ncounters; ++i) {
-    if (p->pr_base[i] != 0) {
-      hpc_fwrite_le2(&(p->pr_base[i]), fp); /* count */
+    if (lpr_base[i] != 0) {
+      uint64_t addr = lpr_base[i];
+      hpc_fwrite_le4(&addr, fp); /* count */
       offset = i * papi_bytesPerCodeBlk;
       hpc_fwrite_le4(&offset, fp); /* offset (in bytes) from load addr */
     }

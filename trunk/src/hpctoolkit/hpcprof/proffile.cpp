@@ -221,7 +221,7 @@ ProfFileEvent::read(FILE *fp, uint64_t load_addr)
   
   // Profiling entry: count and offset
   unsigned int ndat;    // number of profile entries
-  unsigned short count; // profile count
+  unsigned int count; // profile count
   unsigned int offset;  // offset from load address
   
   sz = hpc_fread_le4(&ndat, fp);
@@ -229,7 +229,7 @@ ProfFileEvent::read(FILE *fp, uint64_t load_addr)
 
   dat_.resize(ndat);
   for (unsigned int i = 0; i < ndat; ++i) {
-    sz = hpc_fread_le2(&count, fp);
+    sz = hpc_fread_le4(&count, fp);
     if (sz != sizeof(count)) { return 1; }
 
     sz = hpc_fread_le4(&offset, fp);
