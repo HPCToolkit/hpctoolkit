@@ -9,9 +9,8 @@ $Id$
 
 Contents:
   0. Overview
-  1. Using
-  2. A Few Details
-  3. More Details: Outline of hpcrun's monitoring scheme
+  1. A Few Details
+  2. More Details: Outline of hpcrun's monitoring scheme
 
 =============================================================================
 
@@ -57,57 +56,38 @@ available.  For example, alpha-Tru64 users will want to profile using
 DCPI (HPCToolkit's xprof provides a good way of making this data
 usable).
 
+
+Caution: hpcrun refers to events using either standard PAPI or
+native-processor names.  Users should know that PAPI events do not
+always directly refer to a native event counted by a given processor's
+performance counters.  This is true *even if* a PAPI event exists for
+a given platform.  In cases where no direct hardware counter is
+available, PAPI may attempt to simulate an event counter using some
+combination of other performance counter information; typically these
+are not profilable.
+
+
 N.B.: We have not tested html output.
-
-=============================================================================
-
-1. Using
---------------------
-
-Be warned: This is still a prototype.
-
-1.1. Prerequisites
-----
-
-* PAPI: hpcrun requires use of PAPI3.
-
-* Kernel: 
-    For Linux-IA64, you will need kernel 2.4.18 or higher (which includes
-    pfmon support). 
-
-    For Linux-x86, you will need a custom kernel that has been patched
-    with perfctr.
-
-    More information can be found at http://icl.cs.utk.edu/projects/papi.
-
-We have tested with GCC 2.96, 3.2, 3.3.3; Intel 6.0, 7.0.
-
-1.2.
-----
-
-hpcrun refers to events using either standard PAPI or native-processor
-names.  Users should know that PAPI events do not always directly
-refer to a native event counted by a given processor's performance
-counters.  This is true *even if* a PAPI event exists for a given
-platform.  In cases where no direct hardware counter is available,
-PAPI may attempt to simulate an event counter using some combination
-of other performance counter information.
    
 =============================================================================
 
-2. A Few Details
+1. A Few Details
 --------------------
 
-2.1. hpcrun
+1.1. hpcrun
 ----
 
 Key files:
   hpcrun.c/h 
-  monitor.c
+  monitor.c 
+  
 
 'hpcrun.c' is the interface to the profiling library.  It parses
 options, prepares the environment for the profiling library, forks a
 new process and exec's the application to be profiled.
+
+
+1.1.1. Dynamically linked applications
 
 'monitor.c' contains the bulk of the code for the profiling library.
 The library is automatically loaded using the linker's LD_PRELOAD
@@ -129,6 +109,14 @@ initialized and execution is passed back to the intercepted function
 using the handle that was obtained via dlsym.  The application then
 runs normally.
 
+
+1.1.2. Statically linked applications
+
+[FIXME]
+
+
+1.1.3. Misc
+
 We obtain a list of loaded modules (including DSOs) by examing the
 data found in /proc/pid/maps (or /proc/self/maps).
 
@@ -136,7 +124,8 @@ After the application is finished, control passes back to the hpcrun
 library.  Profiling is stopped and the data is written to a binary
 output file.
 
-2.2. hpcprof
+
+1.2. hpcprof
 ----
 
 Key files:
@@ -163,7 +152,7 @@ are not given in terms of *sample* counts but rather as estimated
 
 =============================================================================
 
-3. More Details: Outline of hpcrun's monitoring scheme
+2. More Details: Outline of hpcrun's monitoring scheme
 --------------------
 
 (Note: In order to show the relation of each case with the basic

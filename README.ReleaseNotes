@@ -190,7 +190,7 @@ HPCToolkit Version 4.0.0: [2004.11.06]
 - Overhaul hpcquick to canonicalize all performace data files into 
   PROFILE files before extracting metrics.  Include support for processing
   hpcrun files.
-- Merge hpcrun/hpcprof into code base.
+- Merge separate hpcrun/hpcprof into HPCToolkit code base.
 - Extend hpcrun:
   - introduce support for profiling statically linked applications
   - create profiles of multiple PAPI or native events
@@ -198,10 +198,17 @@ HPCToolkit Version 4.0.0: [2004.11.06]
   - follow forks
   - profile through execs
   - create WALLCLK profiles
-- bloop processes DSOs.
 - Fix bugs in hpcprof:
   - When no line information could be found, samples were dropped
   - Fix several type-size problems.
+- bloop:
+  - processes DSOs
+  - recognize one-bundle loops on IA64 (PC-relative target is 0)
+  - classify return instructions as such on IA64, x86, Sparc ensuring
+    that no fallthru edge is placed between the return and possible
+    subsequent (error handlin) code.
+  - Add options to treat irreducible intervals as loops and to turn
+    off potentially unsafe normalizations.
 - hpcview and hpcquick handle multiple structure files
 - Port HPCToolkit to opteron-Linux.
 - Update documentation accordingly.
