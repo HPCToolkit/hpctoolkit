@@ -65,6 +65,7 @@ using std::strcpy;
 using std::strcmp;
 using std::strncmp;
 using std::strerror;
+using std::strtok;
 using std::memset;
 using std::memcpy;
 using std::size_t;
