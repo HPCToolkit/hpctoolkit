@@ -19,7 +19,7 @@
 
 #############################################################################
 
-PAPIRUN_VERSION="1.0"
+HPCRUN_VERSION="2.0"
 
 # One can set personal defaults here, instead of changing source code.
 # These values will be overriden by commandline options.
@@ -89,24 +89,24 @@ f_usage()
 
 f_checkenv()
 {
-  if [ -z "${PAPIRUN_HOME}" ]; then 
-    printf "${cmd}: Please set PAPIRUN_HOME before using!\n"
+  if [ -z "${HPCRUN_HOME}" ]; then 
+    printf "${cmd}: Please set HPCRUN_HOME before using!\n"
     exit 1
   fi 
 
-  if [ -z "${PAPIRUN_PAPILIB_PATH}" ]; then
-    printf "${cmd}: Please set PAPIRUN_PAPILIB_PATH before using!\n"
+  if [ -z "${HPCRUN_PAPILIB_PATH}" ]; then
+    printf "${cmd}: Please set HPCRUN_PAPILIB_PATH before using!\n"
     exit 1
   fi
 
-  LD_PRELOAD="${PAPIRUN_HOME}/papirun.so"
+  LD_PRELOAD="${HPCRUN_HOME}/libhpcrun.so"
   
   if [ ! -r "${LD_PRELOAD}" ]; then 
     printf "${cmd}: launch library ${LD_PRELOAD} not found!\n"
     exit 1
   fi 
 
-  LD_LIBRARY_PATH="${LD_LIBRARY_PATH}:${PAPIRUN_PAPILIB_PATH}"
+  LD_LIBRARY_PATH="${LD_LIBRARY_PATH}:${HPCRUN_PAPILIB_PATH}"
 }
 
 # args: ($1, $2): (string_to_check, string_for_error_msg[optional])
@@ -196,38 +196,38 @@ f_prepareenv()
 
   # export profiler options
   if [ -n "${opt_recursive}" ] ; then
-    PAPIRUN_RECURSIVE="${opt_recursive}"
-    export PAPIRUN_RECURSIVE
+    HPCRUN_RECURSIVE="${opt_recursive}"
+    export HPCRUN_RECURSIVE
   fi
 
   if [ -n "${opt_event}" ]; then
-    PAPIRUN_EVENT_NAME="${opt_event}"
-    export PAPIRUN_EVENT_NAME
+    HPCRUN_EVENT_NAME="${opt_event}"
+    export HPCRUN_EVENT_NAME
   fi
 
   if [ -n "${opt_period}" ]; then
-    PAPIRUN_SAMPLE_PERIOD="${opt_period}"
-    export PAPIRUN_SAMPLE_PERIOD
+    HPCRUN_SAMPLE_PERIOD="${opt_period}"
+    export HPCRUN_SAMPLE_PERIOD
   fi
 
   if [ -n "${opt_out_path}" ]; then
-    PAPIRUN_OUTPUT_PATH="${opt_out_path}"
-    export PAPIRUN_OUTPUT_PATH
+    HPCRUN_OUTPUT_PATH="${opt_out_path}"
+    export HPCRUN_OUTPUT_PATH
   fi
 
   if [ -n "${opt_flag}" ]; then
-    PAPIRUN_EVENT_FLAG="${opt_flag}"
-    export PAPIRUN_EVENT_FLAG
+    HPCRUN_EVENT_FLAG="${opt_flag}"
+    export HPCRUN_EVENT_FLAG
   fi
 
   if [ -n "${opt_debug}" ]; then
-    PAPIRUN_DEBUG="${opt_debug}"
-    export PAPIRUN_DEBUG
+    HPCRUN_DEBUG="${opt_debug}"
+    export HPCRUN_DEBUG
   fi
 
   if [ -n "${opt_dump_events}" ]; then
-    PAPIRUN_DUMP_EVENTS="${opt_dump_events}"
-    export PAPIRUN_DUMP_EVENTS
+    HPCRUN_DUMP_EVENTS="${opt_dump_events}"
+    export HPCRUN_DUMP_EVENTS
   fi
 
   # Make sure that `.' is in the PATH so that we can find the command

@@ -4,10 +4,10 @@
 /****************************************************************************
 //
 // File:
-//    papiprof.h
+//    hpcprof.h
 //
 // Purpose:
-//    Types for papiprof
+//    Types for hpcprof
 //
 // Description:
 //    [The set of functions, macros, etc. defined in the file]
@@ -27,8 +27,8 @@
    IA32 and IA64 machines
 */
 
-#ifndef _papiprof_h
-#define _papiprof_h
+#ifndef _hpcprof_h
+#define _hpcprof_h
 
 
 /* --------------------------------------------------------- */

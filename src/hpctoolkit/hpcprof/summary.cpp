@@ -39,7 +39,7 @@
 
 //*************************** User Include Files ****************************
 
-#include "papiprof.h"
+#include "hpcprof.h"
 #include "summary.h"
 
 //*************************** Forward Declarations **************************

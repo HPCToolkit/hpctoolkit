@@ -49,7 +49,7 @@
 
 /**************************** User Include Files ****************************/
 
-#include "papirun.h"
+#include "hpcrun.h"
 #include "map.h"
 #include "flags.h"
 #include "io.h"
@@ -178,13 +178,13 @@ init_options(void)
   int ret;
 
   /* Debugging: default is off */
-  env_debug = getenv("PAPIRUN_DEBUG");
+  env_debug = getenv("HPCRUN_DEBUG");
   opt_debug = (env_debug ? atoi(env_debug) : 0);
 
   if (opt_debug >= 1) { fprintf(stderr, "* processing options\n"); }
   
   /* Recursive profiling: default is on */
-  env_recursive = getenv("PAPIRUN_RECURSIVE");
+  env_recursive = getenv("HPCRUN_RECURSIVE");
   opt_recursive = (env_recursive ? atoi(env_recursive) : 1);
   if (!opt_recursive) {
     /* turn off profiling for any processes spawned by this one */
@@ -197,14 +197,14 @@ init_options(void)
   
   /* Profiling event: default PAPI_TOT_CYC */
   opt_eventname = "PAPI_TOT_CYC";
-  env_event = getenv("PAPIRUN_EVENT_NAME");
+  env_event = getenv("HPCRUN_EVENT_NAME");
   if (env_event) {
     opt_eventname = env_event;
   }
   
   /* Profiling period: default 2^15-1 */
   opt_sampleperiod = (1 << 15) - 1;
-  env_period = getenv("PAPIRUN_SAMPLE_PERIOD");
+  env_period = getenv("HPCRUN_SAMPLE_PERIOD");
   if (env_period) {
     opt_sampleperiod = atoi(env_period);
   }
@@ -216,7 +216,7 @@ init_options(void)
   
   /* Output path: default . */
   strncpy(opt_outpath, ".", PATH_MAX);
-  env_outpath = getenv("PAPIRUN_OUTPUT_PATH");
+  env_outpath = getenv("HPCRUN_OUTPUT_PATH");
   if (env_outpath) {
     strncpy(opt_outpath, env_outpath, PATH_MAX);
   }
@@ -226,7 +226,7 @@ init_options(void)
     const papi_flagdesc_t *f = papirun_flag_by_name("PAPI_PROFIL_POSIX");
     opt_flagscode = f->code;
 
-    env_flags = getenv("PAPIRUN_EVENT_FLAG");
+    env_flags = getenv("HPCRUN_EVENT_FLAG");
     if (env_flags) {
       if ((f = papirun_flag_by_name(env_flags)) == NULL) {
 	fprintf(stderr, "papirun: invalid profiling flag '%s'. Aborting.\n",
@@ -238,7 +238,7 @@ init_options(void)
   }
 
   /* Dump events: default 0 */
-  env_dump_events = getenv("PAPIRUN_DUMP_EVENTS");
+  env_dump_events = getenv("HPCRUN_DUMP_EVENTS");
   opt_dump_events = (env_dump_events ? atoi(env_dump_events) : 0);
 }
 
@@ -605,9 +605,9 @@ write_all_profiles(void)
   FILE *fp = proffile;
 
   /* Header information */
-  fwrite(PAPIRUN_MAGIC_STR, 1, PAPIRUN_MAGIC_STR_LEN, fp);
-  fwrite(PAPIRUN_VERSION, 1, PAPIRUN_VERSION_LEN, fp);
-  fputc(PAPIRUN_ENDIAN, fp);
+  fwrite(HPCRUN_MAGIC_STR, 1, HPCRUN_MAGIC_STR_LEN, fp);
+  fwrite(HPCRUN_VERSION, 1, HPCRUN_VERSION_LEN, fp);
+  fputc(HPCRUN_ENDIAN, fp);
 
   /* Load modules */
   {

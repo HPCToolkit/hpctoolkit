@@ -4,7 +4,7 @@
 //***************************************************************************
 //
 // File:
-//    papiprof.cc
+//    hpcprof.cc
 //
 // Purpose:
 //    Process papirun profile files creating text, html and PROFILE output.
@@ -31,7 +31,7 @@
 
 //*************************** User Include Files ****************************
 
-#include "papiprof.h"
+#include "hpcprof.h"
 #include "summary.h"
 
 //*************************** Forward Declarations **************************

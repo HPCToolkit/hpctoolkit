@@ -41,14 +41,14 @@
 
 //*************************** User Include Files ****************************
 
-#include "papiprof.h"
+#include "hpcprof.h"
 
 //*************************** Forward Declarations **************************
 
 
 //***************************************************************************
 
-// Basic format for the papiprof data file:
+// Basic format for the hpcprof data file:
 //   A profile file (ProfFile) contains one or more load module sections
 //   (ProfFileLM) with each load module section containing one or more
 //   profiling data sets, one for each event/metric. (ProfFileEvent).
