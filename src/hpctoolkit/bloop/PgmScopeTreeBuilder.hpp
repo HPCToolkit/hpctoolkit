@@ -79,7 +79,7 @@ namespace ScopeTreeBuilder {
   bool 
   Normalize(PgmScopeTree* pgmScopeTree);
   
-};
+}
 
 void
 WriteScopeTree(std::ostream& os, PgmScopeTree* pgmScopeTree,
