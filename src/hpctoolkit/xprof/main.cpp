@@ -117,7 +117,6 @@ main(int argc, char* argv[])
   // ------------------------------------------------------------
   // Read executable
   // ------------------------------------------------------------
-  
   LoadModule* exe = NULL; // Executable*: use LoadModule for now (Alpha)
   try {
     String exeNm = args.progFile;
@@ -133,7 +132,7 @@ main(int argc, char* argv[])
 	exit(1);
       }
     }
-
+    
     exe = new LoadModule(); // Executable(): use LoadModule for now (Alpha)
     if (!exe->Open(exeNm)) { exit(1); } // Error already printed 
     if (!exe->Read()) { exit(1); }      // Error already printed 
@@ -144,6 +143,8 @@ main(int argc, char* argv[])
     cerr << "Error: Exception encountered while reading binary!\n";
     exit(2);
   }
+  
+  exe->Relocate(pcprof->GetTxtStart());
   
   // ------------------------------------------------------------
   // Read 'PCToSrcLineXMap', if available
@@ -164,6 +165,7 @@ main(int argc, char* argv[])
     cerr << "Error: Exception encountered while reading map!\n";
     exit(2);
   }
+  // N.B. No relocation for map at the moment
   
   LoadModuleInfo modInfo(exe, map);
     

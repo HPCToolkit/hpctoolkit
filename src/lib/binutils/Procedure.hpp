@@ -108,6 +108,7 @@ public:
   void SetSize(suint _size)  { size = _size; }
   
   // Return true if virtual memory address 'pc' is within the procedure
+  // WARNING: pc must be unrelocated
   bool  IsIn(Addr pc)  const { return (start <= pc && pc <= end); }
 
   // Return the unique number assigned to this procedure

@@ -85,6 +85,9 @@ extern ISA* isa; // current ISA
 
 // 'LoadModule' represents a binary loaded into memory
 
+// Note: everywhere 'PC' (program counter) is used, read VMA (virtual
+// memory address) or instruction pointer.
+
 class LoadModuleImpl; 
 
 class LoadModule {
@@ -95,27 +98,38 @@ public:
   LoadModule();
   virtual ~LoadModule();
 
-  // 'Open': If 'moduleName' is not already open, attempt to do so;
+  // Open: If 'moduleName' is not already open, attempt to do so;
   // return true on success and false otherwise.  If a file is already
   // open return true. (Sections, Procedures and Instructions are not
   // constructed yet.)
   virtual bool Open(const char* moduleName);
 
-  // 'Read': If module has not already been read, attempt to do so;
+  // Read: If module has not already been read, attempt to do so;
   // return true on success and false otherwise.  If a file has
   // already been read, return true.
   virtual bool Read();
 
-  // Return name of load module
+  // GetName: Return name of load module
   String GetName() const { return name; }
 
-  // Return type of load module
+  // GetType:  Return type of load module
   Type GetType() const { return type; }
-  
-  // Return number of sections
+
+  // GetTextStart, GetTextEnd: (Unrelocated) Text start and end.
+  // FIXME: only guaranteed on alpha at present
+  Addr GetTextStart() const { return textStart; }
+  Addr GetTextEnd() const { return textEnd; }
+
+  // Relocate: 'Relocate' the text section to the supplied text start
+  // address.  All member functions that take PCs will assume they
+  // receive *relocated* values.  A value of 0 unrelocates the module.
+  void Relocate(Addr textStartReloc_);
+  bool IsRelocated() const;
+
+  // GetNumSections: Return number of sections
   suint GetNumSections() const { return sections.size(); }
 
-  // Add a section
+  // AddSection: Add a section
   void AddSection(Section *section) { sections.push_back(section); }
 
 
@@ -128,21 +142,21 @@ public:
   // 'Instruction' that may be accessed by the combination of its pc and
   // operation index.  
   //
-  // 'GetMachInst': Return a pointer to beginning of the instrution
+  // GetMachInst: Return a pointer to beginning of the instrution
   // bits at virtual memory address 'pc'; NULL if invalid instruction
   // or invalid 'pc'.  Sets 'size' to the size (bytes) of the
   // instruction.
   //
-  // 'GetInst': Similar to the above except returns an 'Instruction',
+  // GetInst: Similar to the above except returns an 'Instruction',
   // not the bits.
   //
-  // 'AddInst': Add an instruction to the map
+  // AddInst: Add an instruction to the map
   MachInst*    GetMachInst(Addr pc, ushort &size) const;
   Instruction* GetInst(Addr pc, ushort opIndex) const;
   void AddInst(Addr pc, ushort opIndex, Instruction *inst);
 
   
-  // 'GetSourceFileInfo': If possible, find the source file, function
+  // GetSourceFileInfo: If possible, find the source file, function
   // name and line number that corresponds to the operation at
   // 'pc + opIndex'.  If it is possible to find all information without
   // errors, return true; otherwise false.
@@ -190,7 +204,11 @@ private:
   // Constructing routines: return true on success; false on error
   bool ReadSymbolTables();
   bool ReadSections();
-
+  
+  // UnRelocatePC: Given a relocated PC, returns a non-relocated version.
+  Addr UnRelocatePC(Addr relocatedPC) const 
+    { return (relocatedPC + unRelocDelta); }
+  
   // Comparison routines for QuickSort.
   static int SymCmpByVMAFunc(const void* s1, const void* s2);
 
@@ -220,7 +238,10 @@ protected:
 private: 
   String name;
   Type   type;
-
+  Addr   textStart, textEnd; // text begin and end
+  Addr   textStartReloc;     // relocated text start
+  AddrSigned unRelocDelta;   // offset to unrelocate relocated PCs
+    
   SectionSeq sections; // A list of sections
 
   // A map of virtual memory addresses to Instruction*

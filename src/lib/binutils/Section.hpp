@@ -103,6 +103,7 @@ public:
   Addr GetSize()  const { return size; }
 
   // Return true if virtual memory address 'pc' is within the section
+  // WARNING: pc must be unrelocated
   bool  IsIn(Addr pc) const { return (start <= pc && pc < end); }
 
   // Convenient wrappers for the 'LoadModule' versions of the same.
