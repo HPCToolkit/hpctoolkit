@@ -26,81 +26,44 @@
 <div id="main">
 
 <!-- automatically updated by Emacs hook below; nicer than CVS Date -->
-<p class="lastupdated">Last Updated: 25 Sept 2004</p>
-
-<a name="toc"></a>
-<h2>HPCToolkit Documentation</h2>
-
-<h2>Contents</h2>
-<ul>
-  <li><a href="#introduction">Introduction</a>
-  <li><a href="#installation">Building, Installing and Using</a>
-  <li><a href="#notes">Notes</a>
-</ul>
+<p class="lastupdated">Last Updated: 2004-10-26</p>
 
 <!-- ********************************************************************** -->
 
 <a name="introduction"></a>
 <h2>Introduction</h2> 
 
-<p>HPCToolkit is a multi-platform package with tools for 1) collecting
-raw profile information, 2) converting various types of profiling
-information into platform independent XML formats and 3) synthesizing
-browsable representations that correlate performance metrics gathered
-from multiple sources with program source code.  Two versions of the
-final database allow users to view the analysis results with either a
-standard commodity web browser or a Java viewer that is part of
-HPCToolkit.</p>
-
-<p>The HPCToolkit package has been especially designed to use profile
-data that have been collected using the <b>hardware performance
-counters</b> built into all modern microprocessors.  The advantage of
-using performance counters for profiling is usually lower profiling
-overhead and the ability to make more precise measurements. For Linux-based systems, the toolkit includes <span class="hpctool">hpcrun</span> a tool that can profile
-multiple events (e.g. cycles, cache misses, instructions) in a single execution
-of an unmodified application binary. 
-<span class="hpctool">hpcrun</span> 
-collects profile data for the application itself, as well as dynamically-loaded shared libraries. Profiles are collected with the aid of the  
-<a href="http://icl.cs.utk.edu/projects/papi/">PAPI</a> profiling library.
-For Irix and Tru64 platforms, we rely on vendor-supplied profiling tools (ssrun and DCPI respectively) for performance data collection.
-
-<p>
-The toolkit also includes a binary analysis tool that recovers loop nesting structure of a program 
-and maps it back to source code locations with the aid of symbol table information found in application binaries.
-Another tool correlatesd performance profile data and program 
-structure information deduced by the binary analyzer with application and library source code. 
-Finally, a Java-based interactive browser enables one to explore performance data effectively in a top-down fashion.
-Currently the toolkit is works on Pentium, Athlon, Opteron, Itanium, Alpha, and MIPS platforms.
-</p>
+<p>HPCToolkit is an open-source suite of multi-platform tools for
+profile-based performance analysis of applications.  Please visit our
+<a href="http://www.hipersoft.rice.edu/hpctoolkit">web page</a> for an
+overview of the toolset.
 
 <!-- ********************************************************************** -->
 
 <a name="installation"></a>
 
 <h2>Building, Installing and Using</h2>
-<p><i>[<a href="#toc">Contents</a>]</i>
 
-<p>To <b>download and build</b> the sources, follow these 
-<a href="building.html">build instructions</a>.
+<p>To <b>download, build and install</b> the toolkit, follow these 
+<a href="building.html">instructions</a>.
 
-<p>To <b>use</b> an installed toolkit, prepare your
-<a href="building.html#use_hpctoolkit">environment</a>.
+<p<b>Documentation and Examples</b> can be found 
+<a href="http://www.hipersoft.rice.edu/hpctoolkit">online</a>.
 
-<p><b>Documentation</b> is located at 
-<code>${HPCTOOLKIT}/doc/index.html</code>.
+<p><b>Man pages</b> are available locally (see top menu) and 
+<a href="http://www.hipersoft.rice.edu/hpctoolkit">online</a>.
 
-<p>For some <b>examples</b> and sample scripts and 
+<!-- <p>For some <b>examples</b> and sample scripts 
 <a href="hpcview.html" class="hpctool">hpcview</a> configuration files, 
-see the directory <code>${HPCTOOLKIT}/examples</code>.
+see the directory <code>${HPCTOOLKIT}/examples</code>. -->
 
 <!-- ********************************************************************** -->
 
 <a name="notes"></a>
 
 <h2>Notes</h2>
-<p><i>[<a href="#toc">Contents</a>]</i>
 
-<p>For an overview of the directories and files in the distribution, see
+<p>For an overview of the directories and files in the installation, see
 <a href="../README.Index"><code>${HPCTOOLKIT}/README.Index</code></a>.
 
 <p>For specific release information, see
