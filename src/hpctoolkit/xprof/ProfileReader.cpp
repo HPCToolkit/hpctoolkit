@@ -56,6 +56,13 @@
 #include <vector>
 #include <algorithm>
 
+#ifdef NO_STD_CHEADERS
+# include <stdlib.h>
+#else
+# include <cstdlib>
+using std::strtoul; // For compatibility with non-std C headers
+#endif
+
 //*************************** User Include Files ****************************
 
 #include "ProfileReader.h"
@@ -88,36 +95,70 @@ MetricNamesAreUnique(PCProfileMetricSet& mset);
 static DCPIProfile::PMMode
 DeterminePMMode(const char* pmcounter);
 
+static const char*
+GetSecondSubstring(const char* str);
+
 //****************************************************************************
 //  public: ReadProfileFile: 
 //****************************************************************************
 
-// Note: 'ReadProfileFile' guarantees that every 'PCProfileMetric' in the
-// 'PCProfile' will have identical return values for both
-// 'GetTxtStart' and 'GetTxtSz'.
-
+// ReadProfileFile: Given the name of a profile file 'profFile',
+// creates a 'PCProfile' from the raw profile data.  If 'profFile' is
+// NULL or the empty string, reads from cin.
+//
+// Note: Guarantees that every 'PCProfileMetric' in the 'PCProfile'
+// will have identical return values for both 'GetTxtStart' and
+// 'GetTxtSz'.
 PCProfile*
 ProfileReader::ReadProfileFile(const char* profFile /* FIXME: type */)
 {
-
-  // Text or binary!!
-
-  std::ifstream pFile(profFile);
-  if ( !pFile.is_open() || pFile.fail()) {
-    cerr << "Error opening file `" << profFile << "'" << endl;
-    return NULL;
-  }
-
   PCProfile* profData = NULL;
+  std::istream* is = NULL;
+  bool usingStdin = (!profFile || profFile[0] == '\0');
+  
+  // ------------------------------------------------------------
+  // Open an input stream and determine its type
+  // ------------------------------------------------------------  
+  if (!usingStdin) {
+    
+    // Attempt to open as a file
+    std::ifstream* pFile = new std::ifstream(profFile);
+    is = pFile;
+    if ( !pFile->is_open() || pFile->fail()) {
+      cerr << "Error opening file `" << profFile << "'" << endl;
+      goto ReadProfileFile_CleanupAfterError;
+    }
+    
+  } else {
+    // Read from cin
+    is = &(std::cin);
+  }
+  
+  // Figure out type (text, binary?)
+
+  // ------------------------------------------------------------
+  // Read the data
+  // ------------------------------------------------------------  
 
   // depending on file type, choose the correct reader
-  profData = dynamic_cast<PCProfile*>(ReadProfileFile_DCPICat(pFile));
-
+  profData = dynamic_cast<PCProfile*>(ReadProfileFile_DCPICat(*is));
+  
   if (!profData) {
-    cerr << "Error reading file `" << profFile << "'" << endl;
+    if (!usingStdin) {
+      cerr << "Error reading file `" << profFile << "'" << endl;
+    } else {
+      cerr << "Error reading from stdin" << endl;
+    }
   }
 
-  pFile.close();
+  // ------------------------------------------------------------
+  // Cleanup
+  // ------------------------------------------------------------  
+ ReadProfileFile_CleanupAfterError:
+  if (!usingStdin) {
+    delete is;
+  }
+  
   return profData;
 }
 
@@ -128,12 +169,13 @@ ProfileReader::ReadProfileFile(const char* profFile /* FIXME: type */)
 
 // 'ReadProfileFile_DCPICat' reads 'dcpicat' output.  
 DCPIProfile*
-ProfileReader::ReadProfileFile_DCPICat(std::istream& pFile)
+ProfileReader::ReadProfileFile_DCPICat(std::istream& is)
 {
   String str;
+  const char* str1;
   const int bufSz = 128; 
   char buf[bufSz]; // holds single tokens guaranteed not to be too big
-
+  
   ISA* isa = new AlphaISA(); // we are going to reference count this
   DCPIProfile* profData = NULL;  
   std::stringstream hdr;   // header info
@@ -142,56 +184,50 @@ ProfileReader::ReadProfileFile_DCPICat(std::istream& pFile)
   Addr txtStart = 0;       // starting address of text segment
   Addr txtSz    = 0;       // byte-size of text section
   
-  // ------------------------------------------------------------------------
+  // ------------------------------------------------------------
   // Read header
-  // ------------------------------------------------------------------------  
+  // ------------------------------------------------------------  
   
   // 'name' - name of profiled binary
-  str = GetLine(pFile); hdr << (const char*)str << "\n";
-  pFile.seekg(-(int)str.Length()-1, std::ios::cur); // reposition to reread
-  pFile >> buf >> buf >> std::ws;              // read 'name' token and value
-  profiledFile = buf;
-    
+  str = GetLine(is); hdr << (const char*)str << "\n";
+  profiledFile = GetSecondSubstring(str);  // value of 'name'
+  
   // 'image' - date and id information for profiled binary
-  str = GetLine(pFile); hdr << (const char*)str << "\n";
+  str = GetLine(is); hdr << (const char*)str << "\n";
   
   // 'label' (optional) - label for this profile file
-  if (pFile.peek() == 'l') {
-    str = GetLine(pFile); hdr << (const char*)str << "\n";
+  if (is.peek() == 'l') {
+    str = GetLine(is); hdr << (const char*)str << "\n";
   }
   
   // 'path' - path for the profiled binary
   //  note: while the 'dcpicat' man-page does not indicate this,
-  //   multiple 'path' entries are sometimes given.
-  while ( (!pFile.eof() && !pFile.fail()) && pFile.peek() == 'p' ) {
-    str = GetLine(pFile); hdr << (const char*)str << "\n";
+  //  multiple 'path' entries are sometimes given.
+  while ( (!is.eof() && !is.fail()) && is.peek() == 'p' ) {
+    str = GetLine(is); hdr << (const char*)str << "\n";
     if (profiledFilePath.Empty()) {
-      pFile.seekg(-(int)str.Length()-1, std::ios::cur); // reposition to reread
-      pFile >> buf >> buf >> std::ws;            // read 'path' token and value
-      profiledFilePath = buf;
+      profiledFilePath = GetSecondSubstring(str);  // value of 'path'
     }
   }  
   
   // 'epoch' - date the profile was made
-  str = GetLine(pFile); hdr << (const char*)str << "\n";
-
+  str = GetLine(is); hdr << (const char*)str << "\n";
+  
   // 'platform' - name of machine on which the profile was made
-  str = GetLine(pFile); hdr << (const char*)str << "\n";
-
+  str = GetLine(is); hdr << (const char*)str << "\n";
+  
   // 'text_start' - starting address of text section of profiled binary (hex)
-  str = GetLine(pFile); hdr << (const char*)str << "\n";
-  pFile.seekg(-(int)str.Length()-1, std::ios::cur); // reposition to reread
-  pFile >> buf >> std::ws; Skip(pFile, "0x");  // read 'text_start' token...
-  pFile >> hex >> txtStart >> dec >> std::ws;  // read 'text_start' value    
-
+  str = GetLine(is); hdr << (const char*)str << "\n";
+  str1 = GetSecondSubstring(str);  // value of 'text_start'
+  txtStart = strtoul(str1, (char **)NULL, 16);
+  
   // 'text_size' - byte-size of the text section (hex) 
-  str = GetLine(pFile); hdr << (const char*)str << "\n";
-  pFile.seekg(-(int)str.Length()-1, std::ios::cur); // reposition to reread
-  pFile >> buf >> std::ws; Skip(pFile, "0x");  // read 'text_size' token...
-  pFile >> hex >> txtSz >> dec >> std::ws;     // read 'text_size' value
-
-  if (pFile.eof() || pFile.fail()) { return NULL; /* error */ }
-
+  str = GetLine(is); hdr << (const char*)str << "\n";
+  str1 = GetSecondSubstring(str);  // value of 'text_size'
+  txtSz = strtoul(str1, (char **)NULL, 16);
+  
+  if (is.eof() || is.fail()) { return NULL; /* error */ }
+  
   // 'event' - one line for each event type in the profile
   //   Format: 'event W x:X:Y:Z'
   //   (The following adapted from dcpicat man page.)
@@ -211,30 +247,29 @@ ProfileReader::ReadProfileFile_DCPICat(std::istream& pFile)
   PCProfileMetricList mlist;
   DCPIProfileMetric* curMetric;
   DCPIProfile::PMMode pmmode = DCPIProfile::PM_NONE;
-
+  
   String X;
   PCProfileDatum W, Y, Z;
   bool invalidMetric = false;
   unsigned int metricCount = 0;
 
-  while ( (!pFile.eof() && !pFile.fail()) && pFile.peek() == 'e' ) {
+  while ( (!is.eof() && !is.fail()) && is.peek() == 'e' ) {
 
-    pFile >> buf;  // read 'event' token (above: line begins with 'e')
-    pFile >> W >> std::ws;          // read 'W' (total count)
+    is >> buf;  // read 'event' token (above: line begins with 'e')
+    is >> W >> std::ws;          // read 'W' (total count)
     
-    X = GetLine(pFile, ':');        // read 'x' or 'X' (event name)
-    if ( !isdigit(pFile.peek()) ) { // read 'X' (for ProfileMe)
-      String pmcounter = GetLine(pFile, ':');
+    X = GetLine(is, ':');        // read 'x' or 'X' (event name)
+    if ( !isdigit(is.peek()) ) { // read 'X' (for ProfileMe)
+      String pmcounter = GetLine(is, ':');
       pmmode = DeterminePMMode(pmcounter);
       if (pmmode == DCPIProfile::PM_NONE) { invalidMetric = true; }
       X += ":" + pmcounter;
     }
 
-    pFile >> Y; Skip(pFile, ":");   // read 'Y' (sampling period) and ':'
-    pFile >> Z >> std::ws;          // read 'Z' (sampling time)
+    is >> Y; Skip(is, ":");   // read 'Y' (sampling period) and ':'
+    is >> Z >> std::ws;          // read 'Z' (sampling time)
     
     curMetric = new DCPIProfileMetric(isa, X);
-    isa->Detach(); // Remove our reference
     curMetric->SetTxtStart(txtStart);
     curMetric->SetTxtSz(txtSz);
     curMetric->SetTotalCount(W);
@@ -250,6 +285,7 @@ ProfileReader::ReadProfileFile_DCPICat(std::istream& pFile)
   
   // Create 'PCProfile' object and add all events
   profData = new DCPIProfile(isa, metricCount);
+  isa->Detach(); // Remove our reference
   profData->SetHdrInfo( (hdr.str()).c_str() );
   if (!profiledFilePath.Empty()) {
     profData->SetProfiledFile(profiledFilePath);
@@ -264,7 +300,7 @@ ProfileReader::ReadProfileFile_DCPICat(std::istream& pFile)
     profData->AddMetric(m);
   }
   
-  if (invalidMetric || pFile.eof() || pFile.fail()) { 
+  if (invalidMetric || is.eof() || is.fail()) { 
     goto DCPICat_CleanupAfterError; 
   }
   
@@ -273,9 +309,9 @@ ProfileReader::ReadProfileFile_DCPICat(std::istream& pFile)
   // duplicates were generated...
   MetricNamesAreUnique(*profData); // Print warning if necessary
   
-  // ------------------------------------------------------------------------
+  // ------------------------------------------------------------
   // Read sampling information
-  // ------------------------------------------------------------------------  
+  // ------------------------------------------------------------  
 
   // There are 1 PC-column + n count-columns where n is the 'event'
   // number; the columns are in the same order as the 'event' listing.
@@ -289,28 +325,28 @@ ProfileReader::ReadProfileFile_DCPICat(std::istream& pFile)
     unsigned long pcCount = 0; // number of PC entries
     PCProfileDatum profileDatum;
     Addr PC;
-    pFile >> std::ws;   
-    while ( (!pFile.eof() && !pFile.fail()) ) {
-      Skip(pFile, "0x");         // eat up '0x' prefix
-      pFile >> hex >> PC >> dec; // read 'PC' value, non VLIW instruction
+    is >> std::ws;   
+    while ( (!is.eof() && !is.fail()) ) {
+      Skip(is, "0x");         // eat up '0x' prefix
+      is >> hex >> PC >> dec; // read 'PC' value, non VLIW instruction
 
       profData->AddPC(PC, 0); // there is some non-zero data at PC
       for (unsigned long i = 0; i < metricCount; i++) {
-	pFile >> profileDatum;
+	is >> profileDatum;
 	const PCProfileMetric* m = profData->GetMetric(i);
 	const_cast<PCProfileMetric*>(m)->Insert(PC, 0, profileDatum);
       }
       
-      pFile >> std::ws;
+      is >> std::ws;
       pcCount++;
     }
   }
 
-  if (pFile.fail()) { goto DCPICat_CleanupAfterError; }
+  if (is.fail()) { goto DCPICat_CleanupAfterError; }
 
-  // ------------------------------------------------------------------------
+  // ------------------------------------------------------------
   // Done! 
-  // ------------------------------------------------------------------------  
+  // ------------------------------------------------------------  
   return profData;
 
  DCPICat_CleanupAfterError:
@@ -369,5 +405,30 @@ DeterminePMMode(const char* pmcounter)
     return DCPIProfile::PM3;
   }
   return DCPIProfile::PM_NONE;
+}
+
+// GetSecondString: Given a string composed of substrings separated by
+// whitespace, return a pointer to the beginning of the second
+// substring.  Ignores any whitespace at the beginning of the first
+// substring. E.g.
+//   name                 hydro
+//   text_start           0x000120000000
+static const char*
+GetSecondSubstring(const char* str) 
+{
+  if (!str) { return NULL; }
+  
+  const char* ptr = str;
+  
+  // ignore first bit of whitespace
+  while (*ptr != '/0' && isspace(*ptr)) { ptr++; }
+  
+  // ignore first substring
+  while (*ptr != '/0' && !isspace(*ptr)) { ptr++; }
+  
+  // ignore second bit of whitespace
+  while (*ptr != '/0' && isspace(*ptr)) { ptr++; }
+  
+  return ptr; // beginning of second substring
 }
 
