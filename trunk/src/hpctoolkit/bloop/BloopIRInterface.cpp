@@ -68,6 +68,20 @@ using std::dec;
 // See OpenAnalysis/Interface/IRInterface.h for more documentation on
 // these functions.
 
+//-----------------------------------------------------------------------------
+// BloopIRUseDefIterator
+//-----------------------------------------------------------------------------
+
+// The ISA_IRUseDefIterator constructor.
+BloopIRUseDefIterator::BloopIRUseDefIterator (Instruction *insn, int u_or_d)
+{
+  // FIXME: stub
+}
+
+//-----------------------------------------------------------------------------
+// BloopIRInterface
+//-----------------------------------------------------------------------------
+
 // When this constructor is called, we assume that this instantiation
 // of the IRInterface represents a procedure.  We then need to find
 // all the possible branch targets.
@@ -173,16 +187,6 @@ BloopIRInterface::GetStmtType (StmtHandle h)
   return ty;
 }
 
-
-// Given a compound statement, return an IRStmtIterator* for the statements.
-IRStmtIterator*
-BloopIRInterface::GetFirstInCompound (StmtHandle h)
-{
-  BriefAssertion (0);
-  return NULL;
-}
-
-
 // Given a statement, return the label associated with it (or NULL if none).
 StmtLabel
 BloopIRInterface::GetLabel (StmtHandle h)
@@ -196,8 +200,13 @@ BloopIRInterface::GetLabel (StmtHandle h)
 }
 
 
+//-----------------------------------------------------------------------------
+// For procedures, compound statements. 
+//-----------------------------------------------------------------------------
+
+// Given a compound statement, return an IRStmtIterator* for the statements.
 IRStmtIterator*
-BloopIRInterface::Body (StmtHandle h)
+BloopIRInterface::GetFirstInCompound (StmtHandle h)
 {
   BriefAssertion (0);
   return NULL;
@@ -207,6 +216,13 @@ BloopIRInterface::Body (StmtHandle h)
 //-----------------------------------------------------------------------------
 // Loops
 //-----------------------------------------------------------------------------
+
+IRStmtIterator*
+BloopIRInterface::LoopBody (StmtHandle h)
+{
+  BriefAssertion (0);
+  return NULL;
+}
 
 bool
 BloopIRInterface::LoopIterationsDefinedAtEntry (StmtHandle h)
@@ -237,6 +253,47 @@ BloopIRInterface::GetLoopIncrement (StmtHandle h)
 {
   BriefAssertion (0);
   return 0;
+}
+
+
+//-----------------------------------------------------------------------------
+// Structured two-way conditionals
+//
+// FIXME: Is GetCondition for unstructured conditionals also?  It is currently
+// implemented that way.
+//-----------------------------------------------------------------------------
+
+ExprHandle
+BloopIRInterface::GetCondition (StmtHandle h)
+{
+  BriefAssertion (0);
+  return 0;
+}
+
+
+IRStmtIterator*
+BloopIRInterface::TrueBody (StmtHandle h)
+{
+  BriefAssertion (0);
+  return 0;
+}
+
+
+IRStmtIterator*
+BloopIRInterface::ElseBody (StmtHandle h)
+{
+  BriefAssertion (0);
+  return 0;
+}
+
+
+// Given an unstructured branch/jump statement, return the number
+// of delay slots.
+int
+BloopIRInterface::NumberOfDelaySlots(StmtHandle h)
+{
+  Instruction *insn = (Instruction *) h;
+  return insn->GetNumDelaySlots();
 }
 
 
@@ -294,6 +351,25 @@ BloopIRInterface::IsBreakImplied (StmtHandle multicond)
 
 
 //-----------------------------------------------------------------------------
+// Unstructured two-way conditionals: 
+//-----------------------------------------------------------------------------
+
+// Unstructured two-way branch (future loop continue?)
+StmtLabel
+BloopIRInterface::GetTargetLabel (StmtHandle h, int n)
+{
+  Instruction *insn = (Instruction *) h;
+  if (insn->GetType() == ISA::BR_UN_COND_REL
+      || insn->GetType() == ISA::BR_COND_REL) {
+    return (StmtLabel) (insn->GetTargetAddr(insn->GetPC()));
+  } else {
+    // FIXME: We're seeing indirect branches.
+    return (StmtLabel) 0;
+  }
+}
+
+
+//-----------------------------------------------------------------------------
 // Unstructured multiway conditionals
 //-----------------------------------------------------------------------------
 
@@ -340,66 +416,9 @@ BloopIRInterface::GetUMultiCondition (StmtHandle h, int targetIndex)
 
 
 //-----------------------------------------------------------------------------
-//-----------------------------------------------------------------------------
-
-// Unstructured two-way branch (future loop continue?)
-StmtLabel
-BloopIRInterface::GetTargetLabel (StmtHandle h, int n)
-{
-  Instruction *insn = (Instruction *) h;
-  if (insn->GetType() == ISA::BR_UN_COND_REL
-      || insn->GetType() == ISA::BR_COND_REL) {
-    return (StmtLabel) (insn->GetTargetAddr(insn->GetPC()));
-  } else {
-    // FIXME: We're seeing indirect branches.
-    return (StmtLabel) 0;
-  }
-}
-
-
-//-----------------------------------------------------------------------------
-// Structured conditionals
-//
-// FIXME: Is GetCondition for unstructured conditionals also?  It is currently
-// implemented that way.
-//-----------------------------------------------------------------------------
-ExprHandle
-BloopIRInterface::GetCondition (StmtHandle h)
-{
-  BriefAssertion (0);
-  return 0;
-}
-
-
-IRStmtIterator*
-BloopIRInterface::TrueBody (StmtHandle h)
-{
-  BriefAssertion (0);
-  return 0;
-}
-
-
-IRStmtIterator*
-BloopIRInterface::ElseBody (StmtHandle h)
-{
-  BriefAssertion (0);
-  return 0;
-}
-
-
-// Given an unstructured branch/jump statement, return the number
-// of delay slots.
-int
-BloopIRInterface::NumberOfDelaySlots(StmtHandle h)
-{
-  Instruction *insn = (Instruction *) h;
-  return insn->GetNumDelaySlots();
-}
-
-
-//-----------------------------------------------------------------------------
 // Obtain uses and defs
 //-----------------------------------------------------------------------------
+
 IRUseDefIterator*
 BloopIRInterface::GetUses (StmtHandle h)
 {
@@ -417,16 +436,19 @@ BloopIRInterface::GetDefs (StmtHandle h)
 
 
 // FIXME: Hack.  Only used from CFG::ltnode.
-char *
+#if 0
+const char*
 IRGetSymNameFromLeafHandle(LeafHandle vh)
 {
   BriefAssertion (0);
-  return 0;
+  return NULL;
 }
+#endif
 
 //-----------------------------------------------------------------------------
-// Dumper.
+// Debugging
 //-----------------------------------------------------------------------------
+
 void BloopIRInterface::Dump (StmtHandle stmt, ostream& os)
 {
   Instruction *insn = (Instruction *) stmt;
@@ -461,16 +483,5 @@ void BloopIRInterface::Dump (StmtHandle stmt, ostream& os)
       break;
   }
   os << dec;
-}
-
-
-//-----------------------------------------------------------------------------
-// Creation of use and def lists.
-//-----------------------------------------------------------------------------
-
-// The ISA_IRUseDefIterator constructor.
-BloopIRUseDefIterator::BloopIRUseDefIterator (Instruction *insn, int u_or_d)
-{
-  // FIXME: stub
 }
 
