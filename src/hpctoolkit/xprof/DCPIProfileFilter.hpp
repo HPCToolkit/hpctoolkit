@@ -193,8 +193,8 @@ public:
   ~PredefinedDCPIMetricTable() { }
 
   static Entry* FindEntry(const char* token);
-  static Entry* Index(uint i);
-  static uint GetSize() { return size; }
+  static Entry* Index(suint i);
+  static suint GetSize() { return size; }
 
 private:
   // Should not be used 
@@ -203,7 +203,7 @@ private:
   
 private:
   static Entry table[];
-  static uint size;
+  static suint size;
   static bool sorted;
 };
 

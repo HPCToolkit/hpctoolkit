@@ -268,7 +268,7 @@ GetNativeName(const PCProfileMetricSet* s)
 {
   String nm;
   PCProfileMetricSetIterator it(*s);
-  for (uint i = 0; it.IsValid(); ++it, ++i) {
+  for (suint i = 0; it.IsValid(); ++it, ++i) {
     PCProfileMetric* m = it.Current();
     if (i != 0) { nm += "+"; }
     nm += String("[") + m->GetName() + "]";
