@@ -87,8 +87,9 @@ public:
 // ISA
 //***************************************************************************
 
-// 'ISA': An abstract base class for an Instruction Set Architecture.  
-
+// 'ISA': An abstract base class for an Instruction Set Architecture.
+// It can classify and return certain information about the actual
+// bits of a machine instruction. 
 class ISA {
 
   // ------------------------------------------------------------------------
@@ -276,6 +277,21 @@ public:
   virtual ~ISA();
   
   // --------------------------------------------------------
+  // Reference Counting:
+  // --------------------------------------------------------  
+  
+  // Because the only real member data an ISA has is a decoding cache,
+  // one typically does not really want to make copies of an ISA
+  // object.  However, there are times when it may be convenient to
+  // hand out several pointers to an ISA, creating a memory management
+  // nightmare in which ownership is not clearly demarcated.  We
+  // therefore provide an optional basic reference counting mechanism,
+  // a slightly less ghoulish solution.
+
+  void Attach() { ++refcount; }
+  void Detach() { if (--refcount == 0) { delete this; } }
+
+  // --------------------------------------------------------
   // Instructions:
   // --------------------------------------------------------  
 
@@ -369,6 +385,7 @@ protected:
 
 private:
   DecodingCache *_cache;
+  uint refcount;
 };
 
 //****************************************************************************
