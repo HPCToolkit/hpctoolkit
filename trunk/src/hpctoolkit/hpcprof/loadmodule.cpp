@@ -340,6 +340,9 @@ BFDLoadModule::find_address_in_section(bfd* abfd, asection* section, PTR exec)
   }
   
   if (e->debug() && (tmp_found || tmp_filename || tmp_funcname || tmp_line)) {
+    // sometimes bfd_find_nearest_line() lies and 'tmp_found' is bogus
+    if (!tmp_filename) { tmp_filename = ""; }
+    if (!tmp_funcname) { tmp_funcname = ""; }
     cerr << "    { bfd sec find: (" << tmp_found << ")"
 	 << ", file = " << tmp_filename
 	 << ", func = " << tmp_funcname
