@@ -152,7 +152,7 @@ function updateHighlighterWidth(fname)
    {
       styleHL = getStyleObject(window.top.frames[fname].document, highlighter_div_name() );
    }
-   if (typeof(styleHL) != "undefined") // && styleHL.width != "undefined")
+   if (typeof(styleHL) != "undefined" && styleHL) // && styleHL.width != "undefined")
    {
       if (!document.layers)
          styleHL.width = window.top.frameWidth[fname] - 20;
@@ -211,6 +211,13 @@ function set_cur_file(frame, f)
 { 
    // trace("set_cur_file: " + frame + " " + f); 
    window.top.cur_file[frame] = f; 
+}
+
+function cur_div(frame)        { return window.top.cur_div[frame];}
+function set_cur_div(frame, d) 
+{ 
+   // trace("set_cur_div: " + frame + " " + d); 
+   window.top.cur_div[frame] = d; 
 }
 
 function is_loaded(frame)       
@@ -336,7 +343,13 @@ function get_anchor( fname, anchid )
    {
       trace("; layers is defined ");
       mydoc = window.top.frames[fname].document;
-      a = mydoc.line.document.anchors[anchid];
+      if (typeof(cur_div(fname)) != "undefined")
+      {
+        a = eval('mydoc.layers["' + cur_div(fname) + '"].document.anchors["' 
+             + anchid + '"]');
+      }
+      else
+        a = mydoc.line.document.anchors[anchid];
    } else
    if (document.all)
    {
@@ -378,7 +391,17 @@ function get_anchor( fname, anchid )
 function get_position_anchor(fname, anchid, usebottom)
 {
    trace("get_position_anchor: " + fname + " " + anchid + " " + usebottom);
-
+   if (typeof(cur_div(fname)) != "undefined")
+   {
+      divName = cur_div(fname);
+      dPos = divName.lastIndexOf("_");
+      if (dPos>0)
+         divId = divName.substring(dPos+1, divName.length);
+      else
+         divId = 0;
+//      alert(fname + " has divId " + divId);
+      anchid = "l" + divId + "_" + anchid;
+   }
    a = get_anchor(fname, anchid);
    if ((typeof(a) == "undefined") && (typeof(anchid) != "undefined")) {
       trace(" original anchor was not found ");
@@ -386,7 +409,7 @@ function get_position_anchor(fname, anchid, usebottom)
       var pos = anchid.lastIndexOf("X");
       if (pos>0)
       {
-         newanchid = anchid.substr(0, pos);
+         newanchid = anchid.substring(0, pos);
       } else
       {
          newanchid = anchid + "Y";
@@ -456,14 +479,15 @@ function scroll_to_anchor(fname, anchor)
       if (posy != -13) {
          if (fname == 'source') {
             posy = Math.max(posy - 20, 0);
-	 }
-         // scroll to anchor
-         var posx = getXPosition(fname);
-         if (posx == undefined)
-            posx = 0;
-         window.top.frames[fname].scrollTo(posx, posy);
+         }
       }
-      // else -> we didn't find that anchor
+      else // -> we didn't find that anchor
+         posy = 0;
+      // scroll to anchor
+      var posx = getXPosition(fname);
+      if (posx == undefined)
+         posx = 0;
+      window.top.frames[fname].scrollTo(posx, posy);
    }
 }
 
@@ -710,17 +734,38 @@ function get_flatten_depth(offset)
 function scopesGoto(file_name) 
 {
     trace("scopesGoto: file=" + file_name);
-    kids_file_name = file_name + "." + get_flatten_depth(0);
-    scopeGotoFrame(kids_frame, kids_file_ext, kids_file_name); 
-    self_file_name = file_name + "." + get_flatten_depth(-1);
-    scopeGotoFrame(self_frame, self_file_ext, self_file_name); 
+    kids_file_name = file_name; // + "." + get_flatten_depth(0);
+    scopeGotoFrame(kids_frame, kids_file_ext, kids_file_name, get_flatten_depth(0)); 
+    self_file_name = file_name; // + "." + get_flatten_depth(-1);
+    scopeGotoFrame(self_frame, self_file_ext, self_file_name, get_flatten_depth(-1)); 
 }
 
-function scopeGotoFrame(frame, ext, file_name)
+function scopeGotoFrame(frame, ext, file_name, flatLevel)
 {
     scopes_file = file_name + ext; 
     if (cur_file(frame) != scopes_file) { 
        move_scope_frame(frame, scopes_file, global_nav_id()); 
+    } else
+    {
+      divName = lines_div_name() + "_" + flatLevel;
+      if (cur_div(frame) != divName)
+      {
+         hide(frame, cur_div(frame));
+         show(frame, divName);
+         set_cur_div(frame, divName);
+
+         moveAtXPos( frame, highlighter_div_name(), 0 );
+         if (typeof(getFrameWidth) != "undefined" && window.top.frameWidth[frame] == undefined)
+         {
+            window.top.frameWidth[frame] = getFrameWidth(frame);
+         }
+         updateHighlighterWidth(frame);
+    
+         move_highlighter(frame, global_nav_id());
+         scroll_to_anchor(frame, global_nav_id());
+//         if (frame == kids_frame)
+//            check_scroll_position('loaded');
+      }
     }
 }
 
@@ -732,6 +777,10 @@ function handle_scope_self_onload(file, scope_id, maxflatten, scope_depth)
 
    window.top.current_scope_maxflatten = maxflatten;
    // window.top.nesting_level = scope_depth;
+
+   divName = lines_div_name() + "_" + get_flatten_depth(-1);
+   set_cur_div(window.name, divName);
+   show(window.name, divName);
 
    moveAtXPos( window.name, highlighter_div_name(), 0 );
    if (typeof(getFrameWidth) != "undefined" && window.top.frameWidth[window.name] == undefined)
@@ -823,6 +872,10 @@ function handle_scope_frame_onload(file)
     set_scopes_dir(dir);
     it_is_a_table(window.name) ;
     set_loaded(window.name, true);
+
+    divName = lines_div_name() + "_" + get_flatten_depth(0);
+    set_cur_div(window.name, divName);
+    show(window.name, divName);
     
     moveAtXPos( window.name, highlighter_div_name(), 0 );
     if (typeof(getFrameWidth) != "undefined" && window.top.frameWidth[window.name] == undefined)
@@ -918,22 +971,26 @@ function adjust_depth_and_flattening(scope_depth)
 	nlevel += 1;
    }
    trace("\n    slevels=" + slevels + " nlevel=" + nlevel + " wtnl="  +
-	window.top.nesting_level + " wtf[wtnl]=" +
-	window.top.flatten_level[window.top.nesting_level]);
-    if (slevels >= scope_depth - 1) {
-	window.top.nesting_level = nlevel - 1;
-	slevels -= window.top.flatten_level[window.top.nesting_level] + 1;
-	window.top.flatten_level[window.top.nesting_level] = 
-	  (scope_depth - slevels) - 2;
-	slevels = scope_depth - 1;
+      window.top.nesting_level + " wtf[wtnl]=" +
+      window.top.flatten_level[window.top.nesting_level]);
+   if (slevels >= scope_depth - 1) {
+      window.top.nesting_level = nlevel - 1;
+      slevels -= window.top.flatten_level[window.top.nesting_level] + 1;
+      window.top.flatten_level[window.top.nesting_level] = 
+           (scope_depth - slevels) - 2;
+      slevels = scope_depth - 1;
    }
+   trace("\n    slevels=" + slevels + " nlevel=" + nlevel + " wtnl="  +
+      window.top.nesting_level + " wtf[wtnl]=" +
+      window.top.flatten_level[window.top.nesting_level] +
+      " scope_depth=" + scope_depth);
    add_unflattened_scopes(scope_depth - slevels);
 }
 
 function select_source_location(nav_id, parent_id, scope_depth) 
 {
         trace("\nselect_source_line: " + nav_id + " " + parent_id); 
-	adjust_depth_and_flattening(scope_depth + 1);
+	adjust_depth_and_flattening(scope_depth+1);
         direct_scopesGoto(parent_id); 
 	navframes(nav_id);
 }
