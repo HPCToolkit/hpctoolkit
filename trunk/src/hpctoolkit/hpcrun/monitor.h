@@ -153,6 +153,8 @@ typedef int (*execve_fptr_t) PARAMS_EXECVE;
 
 typedef pid_t (*fork_fptr_t) (void);
 
+typedef void (*_exit_fptr_t) (int);
+
 /* 'intercepted' libpthread routines */
 
 #define PARAMS_PTHREAD_CREATE (pthread_t* thread,                            \

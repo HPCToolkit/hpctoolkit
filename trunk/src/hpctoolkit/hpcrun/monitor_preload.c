@@ -59,6 +59,8 @@ static int  hpcrun_execve PARAMS_EXECVE;
 
 static pid_t hpcrun_fork();
 
+static void hpcrun__exit(int status);
+
 /* libpthread intercepted routines */
 static int hpcrun_pthread_create PARAMS_PTHREAD_CREATE;
 static void* hpcrun_pthread_create_start_routine(void* arg);
@@ -74,6 +76,7 @@ static execv_fptr_t                real_execv;
 static execvp_fptr_t               real_execvp;
 static execve_fptr_t               real_execve;
 static fork_fptr_t                 real_fork;
+static _exit_fptr_t                real__exit;
 static pthread_create_fptr_t       real_pthread_create;
 static pthread_self_fptr_t         real_pthread_self;
 
@@ -145,6 +148,10 @@ init_library_SPECIALIZED()
   real_fork = (fork_fptr_t)dlsym(RTLD_NEXT, "fork");
   hpcrun_handle_any_dlerror();
   
+  
+  real__exit = (_exit_fptr_t)dlsym(RTLD_NEXT, "_exit");
+  hpcrun_handle_any_dlerror();
+
   /* ----------------------------------------------------- 
    * libpthread interceptions
    * ----------------------------------------------------- */
@@ -371,6 +378,42 @@ hpcrun_fork()
   /* Nothing to do for parent process */
   
   return pid;
+}
+
+
+/*
+ *  Intercept premature exits that disregard registered atexit()
+ *  handlers.
+ *
+ *    'normal' termination  : _exit, _Exit
+ *    'abnormal' termination: abort
+ *
+ *  Note: _exit() implements _Exit().
+ *  Note: We catch abort by catching SIGABRT
+ */
+
+extern void 
+_exit(int status)
+{
+  hpcrun__exit(status);
+}
+
+
+extern void 
+_Exit(int status)
+{
+  hpcrun__exit(status);
+}
+
+
+static void 
+hpcrun__exit(int status)
+{
+  if (opt_debug >= 1) { MSG(stderr, "==> _exit <=="); }
+  
+  fini_process();
+  fini_library();
+  real__exit(status);
 }
 
 
