@@ -39,7 +39,7 @@
    [-V]
    -I <i>dir1 dir2 ... dirN</i> 
    [-S <i>structure</i>]
-   -P <i>binprof1 binprof2 ... binprofM</i>
+   -P <i>prof1 prof2 ... profM</i>
 
 <p>Location: <code>${HPCTOOLKIT}/bin</code>
 
@@ -58,23 +58,26 @@ Given a list of paths to directories containing interesting
 program source code files, an optional program
 structure file created by the 
 <a href="hpc_bloop.html" class="hpctool">bloop</a> tool, and
-a list of binary profiles (collected using 
-<code class="xtool">ssrun</code> on the SGI/MIPS platform, or using
-<code class="xtool">uprofile</code> on the Compaq/Alpha
-platform), <span class="hpctool">hpcquick</span> will run the vendor 
-<code class="xtool">prof</code> tool on the binary profile files and
-translate them into a platform-independent format using the 
-<a href="hpc_ptran.html" class="hpctool">ptran</a> script.  
-<span class="hpctool">hpcquick</span> will have
-<a href="hpcview.html" class="hpctool">hpcview</a> generate a 
-performance database in the <code>HPCQUICK</code> subdirectory. 
-The configuration file synthesized by 
-<span class="hpctool">hpcquick</span> and passed to 
-<a href="hpcview.html" class="hpctool">hpcview</a> will be left in a file
-<code>hpcquick.xml</code> in the current directory. A script
-containing the commands issued by hpcquick to create the performance
-database will be left in the file <code>hpcquick.log</code> in the
-current directory.
+a list of profile files, creates an 
+<a href="hpcview.html" class="hpctool">hpcview</a>
+configuration file and a browsable database in the current directory.
+All shell commands are captured into a log file.
+
+<p>Following is a list of the various profile files accepted.  If needed,
+they will automatically be converted into the XML
+<a href="dtd_profile.html" class="hpctool">PROFILE</a> format (using
+the vendor's <code class="xtool">prof</code> tool and the 
+toolkit's <a href="hpc_ptran.html" class="hpctool">ptran</a>) 
+before <a href="hpcview.html" class="hpctool">hpcview</a> is run.
+
+<ul>
+  <li>binary output from SGI's <code class="xtool">ssrun</code>
+  <!-- <code class="xtool">uprofile</code> on the Compaq/Alpha -->
+  <li>XML <a href="dtd_profile.html" class="hpctool">PROFILE</a> 
+      files from <a href="hpc_xprof.html" class="hpctool">xprof</a>, 
+      papiprof and 
+      <a href="hpc_ptran.html" class="hpctool">ptran</a>
+</ul>
 
 </div> <!-- class=indent -->
 
@@ -108,26 +111,16 @@ specification of the hierarchical structure of the application
 program.  Supplying a program structure file is optional. However, a
 structure file must be supplied for 
 <a href="hpcview.html" class="hpctool">hpcview</a> to compute and
-correlate loop-level performance metrics.
-
-<dt>-P <i>binprof1 binprof2 ... binprofM</i>
-<dd><i>binprof1</i> through <i>binprofM</i> are names of binary profile 
-files collected using SGI's <code class="xtool">ssrun</code>, or the
-Compaq Tru64's <code class="xtool">uprofile</code> command.  Given the names
-of one or more profiles, <span class="hpctool">hpcquick</span> 
-will translate them into vendor-specific ASCII representations 
-using the vendor-supplied <code class="xtool">prof</code> tool, 
-and then translate them into a platform-independent representation 
-(XML documents of type 
-<a href="dtd_profile.html" class="hpctool">PROFILE</a>) 
-for input to <a href="hpcview.html" class="hpctool">hpcview</a>.
+correlate loop-level performance metrics.  
 
 <br><br>
 
-Structure files are typically created using 
-<a href="hpc_bloop.html" class="hpctool">bloop</a> to extract the structure
-information from the executable binary.  (However, other mechanisms
-for creating a structure file could be used.)
+Structure files are typically 
+created using <a href="hpc_bloop.html" class="hpctool">bloop</a> 
+to extract the structure information from the executable binary. 
+
+<dt>-P <i>prof1 prof2 ... profM</i>
+<dd><i>prof1</i> through <i>profM</i> are names of profile files.
 
 </dl>
 
