@@ -74,6 +74,9 @@ AM_INIT_AUTOMAKE(1.9.5)
 
 AC_CANONICAL_HOST
 
+AC_MSG_NOTICE([INFO: On entry: CXX=${CXX} CXXFLAGS=${CXXFLAGS}])
+AC_MSG_NOTICE([INFO: On entry: CC=${CC} CFLAGS=${CFLAGS}])
+
 #----------------------------------------------------------------------------
 # Setup
 #----------------------------------------------------------------------------
@@ -100,6 +103,9 @@ AC_PROG_CXX(HPC_CXX_LIST)
 AC_PROG_CC(HPC_CC_LIST)
 AC_PROG_CXXCPP
 AC_PROG_INSTALL
+
+AC_MSG_NOTICE([INFO: After check: CXX=${CXX} CXXFLAGS=${CXXFLAGS}])
+AC_MSG_NOTICE([INFO: After check: CC=${CC} CFLAGS=${CFLAGS}])
 
 # Use C++ compiler for all checks
 AC_LANG(C++)
@@ -339,7 +345,7 @@ case ${host} in
       else 
         my_opt_cflags="-g3 -O2"
         my_opt_cxxflags="-g3 -O2"
-      fi 
+      fi
     fi
     # DEC demangle
     my_demangle_ldflags="-lmld"
