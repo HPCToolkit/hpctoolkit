@@ -68,6 +68,9 @@ class DCPIMetricFilter;
 
 //****************************************************************************
 
+// GetPredefinedDCPIFilter: Given a metric name, returns a DCPI filter
+// if available, or NULL.  The user is responsible for unallocating
+// the returned object.
 PCProfileFilter* 
 GetPredefinedDCPIFilter(const char* metric, LoadModule* lm);
 

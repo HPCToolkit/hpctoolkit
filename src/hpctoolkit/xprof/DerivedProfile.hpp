@@ -99,12 +99,12 @@ public:
 		 const PCProfileFilterList* filtlist);
   virtual ~DerivedProfile();
 
-  // Does not assume ownership of 'pcprof_' or 'filtlist' but does
-  // save a pointer to the former.  If filtlist is NULL, an 'identity'
-  // filter is assumed.
+  // Create: Does not assume ownership of 'pcprof_' or 'filtlist' but
+  // does save a pointer to the former.  If filtlist is NULL, an
+  // 'identity' filter is assumed.
   void Create(const PCProfile* pcprof_, const PCProfileFilterList* filtlist);
 
-  // PCProfile: the underlying raw data
+  // GetPCProfile: Returns 'PCProfile', the underlying raw data
   const PCProfile* GetPCProfile() const { return pcprof; }
   
   // Access to metrics (0 based): When a metric set is created, space
