@@ -1,7 +1,30 @@
+// $Id$
+// -*- C++ -*-
+
+//***************************************************************************
+//
+// File:
+//    summary.cc
+//
+// Purpose:
+//    Classes for representing and storing information about profiles.
+//
+// Description:
+//    [The set of functions, macros, etc. defined in the file]
+//
+// Author:
+//    Written by John Mellor-Crummey and Nathan Tallent, Rice University.
+//
+//    Adapted from parts of The Visual Profiler by Curtis L. Janssen
+//    (summary.cc).
+//
+//***************************************************************************
 
 #ifdef __GNUG__
 #pragma implementation
 #endif
+
+//************************* System Include Files ****************************
 
 #include <fstream>
 #include <iomanip>
@@ -14,10 +37,16 @@
 #include <dirent.h>
 #include <math.h>
 
+//*************************** User Include Files ****************************
+
 #include "papiprof.h"
 #include "summary.h"
 
+//*************************** Forward Declarations **************************
+
 using namespace std;
+
+//***************************************************************************
 
 //////////////////////////////////////////////////////////////////////////
 // utility functions
@@ -54,13 +83,6 @@ stringcat(const string& s, T n)
   ostringstream oss;
   oss << s << n;
   return oss.str();
-
-#if 0 // FIXME: strstream is deprecated and we don't need to support
-  ostrstream fileline;
-  fileline << filename.c_str() << ":" << lineno << ends;
-  qual_name qname = qual_name_val(lmname, fileline.str());
-  fileline.freeze(0);
-#endif  
 } 
 
 ///////////////////////////////////////////////////////////////////////
@@ -173,7 +195,7 @@ FileSearch::resolve(const string &directory, const string &file) const
   DIR *dir = opendir(directory.c_str());
   if (dir == 0) return "";
   struct dirent *de;
-  while (de = readdir(dir)) filenames.insert(de->d_name);
+  while ((de = readdir(dir))) { filenames.insert(de->d_name); }
   closedir(dir);
 
   for (set<string>::const_iterator i = filenames.begin();
@@ -225,7 +247,7 @@ get_namemap_entry(const qual_name& name, namemap &l, int ncounter)
 static void
 sum_vectors(vector<unsigned int>& v1, const vector<unsigned int>& v2)
 {
-  int i;
+  unsigned int i;
   for (i = 0; i < v1.size() && i < v2.size(); ++i) {
       v1[i] += v2[i];
     }
@@ -239,10 +261,10 @@ Summary::Summary(int d)
   cleanup();
 }
 
-Summary::Summary(const Executable *exec, const vector<ProfFile> &profs, int d)
+Summary::Summary(const LoadModule *exec, const vector<ProfFile> &profs, int d)
   : debug_(d)
 {
-  abort();  // FIXME: do we want an Executable?
+  abort();  // FIXME: do we want a LoadModule?
  
   ctor_init();
   cleanup();
@@ -280,7 +302,7 @@ Summary::init(const string& pgm, const vector<string>& prof_fnames)
 
   // Read all profiling data
   vector<ProfFile> profs(prof_fnames.size());
-  for (int i = 0; i < prof_fnames.size(); ++i) {
+  for (unsigned int i = 0; i < prof_fnames.size(); ++i) {
       int ret = profs[i].read(prof_fnames[i]);
       if (ret != 0) {
 	  cerr << "Cannot read profile file " << prof_fnames[i] << endl;
@@ -303,7 +325,7 @@ Summary::init(const string& pgm, const vector<ProfFile>& profs)
   pgm_name_ = pgm; // FIXME: make sure we can find the main program (?)
   
   // 1a. Sanity check file modification times
-  for (int i = 0; i < profs.size(); ++i) {
+  for (unsigned int i = 0; i < profs.size(); ++i) {
       const ProfFile& prof = profs[i];
 
       if (i == 0) { 
@@ -320,9 +342,9 @@ Summary::init(const string& pgm, const vector<ProfFile>& profs)
   // collective counters as a side effect.  Note that there is one
   // counter for each event.
   n_event_ = n_collective_ = 0;  
-  int ev_i = 0; // nth event
+  unsigned int ev_i = 0; // nth event
 
-  for (int i = 0; i < profs.size(); ++i) {
+  for (unsigned int i = 0; i < profs.size(); ++i) {
       const ProfFile& prof = profs[i];
       
       // We inspect only the first load module of each prof file because
@@ -330,7 +352,7 @@ Summary::init(const string& pgm, const vector<ProfFile>& profs)
       // module contains the same PAPI events.  
       const ProfFileLM& proflm = prof.load_module(0);
       n_event_ += proflm.num_events();
-      for (int k = 0; k < proflm.num_events(); ++k, ++ev_i) {
+      for (unsigned int k = 0; k < proflm.num_events(); ++k, ++ev_i) {
 	  const ProfFileEvent& profevent = proflm.event(k);
 	  string name = stringcat(profevent.name(), profevent.period());
 	  event2locs_map_[name].set_offset(ev_i, profevent.event(),
@@ -372,10 +394,10 @@ Summary::init(const string& pgm, const vector<ProfFile>& profs)
   //    load modules may be the same.  it would be nice not to open
   //    them more than once.
   ev_i = 0;
-  for (int i = 0; i < profs.size(); ++i) {
+  for (unsigned int i = 0; i < profs.size(); ++i) {
       const ProfFile& prof = profs[i];
       const ProfFileLM& proflm1 = prof.load_module(0);
-      for (int j = 0; j < prof.num_load_modules(); ++j) {
+      for (unsigned int j = 0; j < prof.num_load_modules(); ++j) {
   	  const ProfFileLM& proflm = prof.load_module(j);
 	  process_lm(proflm, ev_i);
         }
@@ -466,11 +488,10 @@ Summary::cleanup()
 bool
 Summary::process_lm(const ProfFileLM& proflm, int ev_i_start)
 {
-  // FIXME
   const string& lmname = proflm.name();
 
   // 1. Open load module
-  Executable *lm = new BFDExecutable(lmname); 
+  LoadModule *lm = new BFDLoadModule(lmname); 
   if (lm == 0) { // FIXME
     cerr << "No known way to process load module " << lmname << endl;
     return false;
@@ -489,9 +510,9 @@ Summary::process_lm(const ProfFileLM& proflm, int ev_i_start)
 #endif
 
   // 2. Create event and process profile data and find symbolic information
-  int ev_i = ev_i_start; // the nth event
+  unsigned int ev_i = ev_i_start; // the nth event
 
-  for (int l = 0; l < proflm.num_events(); ++l, ++ev_i) {
+  for (unsigned int l = 0; l < proflm.num_events(); ++l, ++ev_i) {
 
       // Create event
       const ProfFileEvent& profevent = proflm.event(l);
@@ -502,9 +523,9 @@ Summary::process_lm(const ProfFileLM& proflm, int ev_i_start)
       overflow_[ev_i] += profevent.overflow();
 	  
       // Inspect the event data and try to find symbolic info
-      for (int m = 0; m < profevent.num_data(); ++m) {
+      for (unsigned int m = 0; m < profevent.num_data(); ++m) {
 	  const ProfFileEventDatum& dat = profevent.datum(m);
-	  vmon_off_t pc = dat.first;
+	  pprof_off_t pc = dat.first;
 	  unsigned short count = dat.second;
 
 	  n_sample_[ev_i] += count;
@@ -518,17 +539,21 @@ Summary::process_lm(const ProfFileLM& proflm, int ev_i_start)
 	  const char *c_funcname, *c_filename;
 	  unsigned int lineno;
 	  
-	  vmon_off_t pc1 = pc;
-	  if (lm->type() == Executable::DSO && pc > proflm.load_addr()) {
+	  pprof_off_t pc1 = pc;
+	  if (lm->type() == LoadModule::DSO && pc > proflm.load_addr()) {
 	      pc1 = pc - proflm.load_addr(); // adjust lookup pc for DSOs
-	      cout << "Adjusting DSO pc_=" << (void *)pc << ", load_addr: " << (void *)proflm.load_addr() << " == pc1: " << (void *)pc1 << endl;
+	      if (debug_) {
+		cout << "Adjusting DSO pc_=" << (void *)pc << ", load_addr: " 
+		     << (void *)proflm.load_addr() << " == pc1: " 
+		     << (void *)pc1 << endl;
+	      }
 	    }
 	      
 	  if (!lm->find(pc1, &c_filename, &lineno, &c_funcname)) {
-	      lineno = 12345; /* continue; */
+	      //lineno = 12345; 
+	      continue;
 	    }
 
-	  cout << "Looking for pc=" << pc1 << ", count=" << count << endl;
 	  if (debug_) {
 	    cout << "  { *found @ " << (void*)pc1 << ": " << c_funcname << endl
 		 << "    " << c_filename << ":" << lineno << " }" << endl;
@@ -929,7 +954,7 @@ Summary::print(ostream& o) const
 		  const string &funcname = (*k).first;
 		  const vector<unsigned int> &counts = (*k).second;
 		  o << "    " << lineno << " " << funcname << " [";
-		  int l;
+		  unsigned int l;
 		  for (l = 0; l < counts.size(); ++l) {
 		      if (l) o << " ";
 		      o << counts[l];
@@ -988,8 +1013,8 @@ Summary::summarize_generic(void (Summary::*construct)(namemap&),
   (this->*construct)(names);
 
   // Determine the width needed to annotate margin with counts.
-  int j;
-  int maxcount = 0;
+  unsigned int j;
+  unsigned int maxcount = 0;
   for (namemap::iterator i = names.begin(); i != names.end(); ++i) {
       vector<unsigned int> &counts = (*i).second.first;
       for (j = 0; j < counts.size(); ++j) {
@@ -997,7 +1022,9 @@ Summary::summarize_generic(void (Summary::*construct)(namemap&),
         }
     }
   int widthcounts;
-  if (display_percent()) widthcounts = 3;
+  if (display_percent()) { 
+      widthcounts = 3; 
+    }
   else {
       widthcounts = 1;
       while (maxcount /= 10) widthcounts++;
@@ -1006,7 +1033,7 @@ Summary::summarize_generic(void (Summary::*construct)(namemap&),
   // If there are multiple event annotations, the summary can be
   // sorted according to one of them.  Collect all names into a set
   // that will sort them according to the chosen event.
-  int sorting_index = ncounter();
+  unsigned int sorting_index = ncounter();
   setpair sortingset;
   for (namemap::iterator i = names.begin(); i != names.end(); ++i) {
       const qual_name& qname = (*i).first;
@@ -1100,7 +1127,7 @@ Summary::simple_resolve(const std::string &file) const
 {
   string resolved_file;
 
-  for (int i = 0; i < filesearches_.size(); ++i) {
+  for (unsigned int i = 0; i < filesearches_.size(); ++i) {
       resolved_file = filesearches_[i].resolve(file);
       if (resolved_file.size()) return resolved_file;
     }
@@ -1121,7 +1148,7 @@ Summary::resolve(const std::string &file) const
   if (file_exists(file)) return file;
 
   // check if file is a mangled file name produced by KCC
-  int suffix_length = 11+1+3+1+1;
+  unsigned int suffix_length = 11+1+3+1+1;
   if (file.size() > suffix_length) {
       if (file.substr(file.size()-6,5) == ".int.") {
           string demangled_file = file.substr(0,file.size()-suffix_length);

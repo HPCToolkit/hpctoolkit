@@ -7,14 +7,16 @@
 //    papiprof.cc
 //
 // Purpose:
-//    Rice addition to cprof/vprof:
-//      - Dump profile data using the PROFILE format.
+//    Process papirun profile files creating text, html and PROFILE output.
 //
 // Description:
 //    [The set of functions, macros, etc. defined in the file]
 //
 // Author:
 //    Written by John Mellor-Crummey and Nathan Tallent, Rice University.
+//
+//    Adapted from parts of The Visual Profiler by Curtis L. Janssen
+//    (cprof.cc).
 //
 //***************************************************************************
 
@@ -43,7 +45,7 @@ static vector<string> proffiles;
 static vector<qual_name> annotate; // <load module name, file name>
 
 static bool show_as_html = false;
-static bool dump_profile = false; // FIXME
+static bool dump_profile = false;
 
 static bool show_loadmodules = false; // FIXME
 static bool show_files = false;
@@ -77,14 +79,14 @@ usage(const string &argv0)
     << "  --force             Show data that is not accurate.\n"
     << "  -v, --version       Display the version number.\n"
     << endl
-    << "Options: Text and HTML mode\n"
+    << "Options: Text and HTML mode [Default]\n"
     << "  -e, --everything    Show all information.\n"
     << "  -f, --files         Show all files.\n"
     << "  -r, --funcs         Show all functions.\n"
     << "  -l, --lines         Show all lines.\n"
     << "  -a, --annotate file Annotate file.\n"
     << "  -n, --number        Show number of samples (not %).\n"
-    << "  -s, --show thres    Set threshold for showing aggregate data."
+    << "  -s, --show thres    Set threshold for showing aggregate data.\n"
     << "  -H, --html dir      Output HTML into directory dir.\n"
     << endl
     << "Options: PROFILE mode\n"

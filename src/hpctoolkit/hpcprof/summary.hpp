@@ -1,4 +1,24 @@
+// $Id$
 // -*- C++ -*-
+
+//***************************************************************************
+//
+// File:
+//    summary.h
+//
+// Purpose:
+//    Classes for representing and storing information about profiles.
+//
+// Description:
+//    [The set of functions, macros, etc. defined in the file]
+//
+// Author:
+//    Written by John Mellor-Crummey and Nathan Tallent, Rice University.
+//
+//    Adapted from parts of The Visual Profiler by Curtis L. Janssen
+//    (summary.h).
+//
+//***************************************************************************
 
 /** @file */
 #ifndef _summary_h
@@ -8,6 +28,8 @@
 #pragma interface
 #endif
 
+//************************* System Include Files ****************************
+
 #include <iostream>
 #include <string>
 #include <vector>
@@ -16,9 +38,15 @@
 
 #include <unistd.h>
 
+//*************************** User Include Files ****************************
+
 #include "proffile.h"
-#include "exec.h"
+#include "loadmodule.h"
 #include "events.h"
+
+//*************************** Forward Declarations **************************
+
+//***************************************************************************
 
 //////////////////////////////////////////////////////////////////////////
 // utility functions
@@ -239,12 +267,17 @@ class Summary {
    private:
   
     std::string pgm_name_; // program name
+  
+    // These vectors contain data that corresponds to all of the
+    // elementary and collective events for the summary.  The data is
+    // correlated by vector index.  Data for elementary events comes
+    // first, followed by collective events (if any).  Each event has
+    // a corresponding counter, either elementary or collective.
     
-    // FIXME: how are the below arrays indexed??? counter or event
     int n_event_;      // number of events (including collective events)
     int n_collective_; // number of collective events
 
-    // These vectors are all indexed by event/counter number
+    // (vectors indexed by event/counter number)
     std::vector<Event*> event_;                //< The events.
     std::vector<unsigned int> n_sample_;       //< The number of samples.
     std::vector<unsigned int> outofrange_;     //< The number out of range.
@@ -295,7 +328,7 @@ class Summary {
         @param v A vector of vmon data files.
         @param debug The debugging level.
      */
-    Summary(const Executable *e, const std::vector<ProfFile> &v, // FIXME
+    Summary(const LoadModule *e, const std::vector<ProfFile> &v,
 	    int debug = 0);
     /** Construct a Summary object.
         @param p Name of the main program binary
@@ -318,7 +351,7 @@ class Summary {
      */
     bool init(const std::string&, const std::vector<ProfFile>&);
 
-    bool process_lm(const ProfFileLM&, int); // FIXME
+    bool process_lm(const ProfFileLM&, int);
 
     /** Set the debugging level. @param d The debugging level. */
     void set_debug(int d) { debug_ = d; }
@@ -361,7 +394,6 @@ class Summary {
         counters and locations. */
     const lmmap_t &lmmap() const { return lmmap_; }
 
-    // FIXME
     void construct_loadmodule_namemap(namemap &nm);
     /** Construct a namemap that maps file names to all the
         counter information about that file.
