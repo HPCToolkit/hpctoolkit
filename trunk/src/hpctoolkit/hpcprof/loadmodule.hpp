@@ -1,10 +1,10 @@
+// -*-Mode: C++;-*-
 // $Id$
-// -*- C++ -*-
 
 //***************************************************************************
 //
 // File:
-//    loadmodule.h
+//    $Source$
 //
 // Purpose:
 //    LoadModule class for reading and gathering symbolic information

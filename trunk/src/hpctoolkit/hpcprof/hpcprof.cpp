@@ -1,10 +1,10 @@
+// -*-Mode: C++;-*-
 // $Id$
-// -*- C++ -*-
 
 //***************************************************************************
 //
 // File:
-//    hpcprof.cc
+//    $Source$
 //
 // Purpose:
 //    Process papirun profile files creating text, html and PROFILE output.
