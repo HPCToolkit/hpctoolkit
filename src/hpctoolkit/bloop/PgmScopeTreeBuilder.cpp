@@ -268,7 +268,7 @@ ScopeTreeBuilder::BuildFromExe(/*Executable*/ LoadModule* exe,
   pgmScope = new PgmScope();
   pgmScopeTree = new PgmScopeTree(pgmScope);
 
-  LoadModScope *lmScope = new LoadModScope(exe->GetName(),pgmScope);
+  LoadModScope *lmScope = new LoadModScope(exe->GetName(), pgmScope);
   
   // -----------------------------------------------------------------
   // For each procedure, find the existing corresponding FileScope or
@@ -499,7 +499,8 @@ BuildFromTarjInterval(CodeInfo* enclosingScope, Procedure* p,
 	BriefAssertion( loopsEndLn == UNDEF_LINE );
 	loopsStartLn = lScope->BegLine();
 	loopsEndLn = lScope->EndLine();
-      } else {
+      } 
+      else {
 	BriefAssertion( loopsEndLn != UNDEF_LINE );
 	if (IsValidLine(lScope->BegLine(), lScope->EndLine())) {
 	  loopsStartLn = MIN(loopsStartLn, lScope->BegLine() );
@@ -735,11 +736,13 @@ CoalesceDuplicateStmts(CodeInfo* scope, LineToStmtMap* stmtMap,
 {
   try {
     return CDS_Main(scope, stmtMap, visited, level);
-  } catch (CDS_RestartException& x) {
+  } 
+  catch (CDS_RestartException& x) {
     // Unwind the recursion stack until we find the node
     if (x.GetNode() == scope) {
       return CoalesceDuplicateStmts(x.GetNode(), stmtMap, visited, level);
-    } else {
+    } 
+    else {
       throw;
     }
   }
@@ -777,7 +780,8 @@ CDS_Main(CodeInfo* scope, LineToStmtMap* stmtMap, ScopeInfoSet* visited,
       StmtRangeScope* stmt = dynamic_cast<StmtRangeScope*>(child);
       changed |= CDS_InspectStmt(stmt, stmtMap, level);
       
-    } else if (child->Type() == ScopeInfo::PROC) {
+    } 
+    else if (child->Type() == ScopeInfo::PROC) {
       stmtMap->clear(); // Clear statement table
       visited->clear(); // Clear visited set
     }
@@ -813,23 +817,29 @@ CDS_InspectStmt(StmtRangeScope* stmt1, LineToStmtMap* stmtMap, int level)
     // statements (leafs), the test for case 1 is very simple:
     bool case1 = (stmt1->Parent() == lca || stmt2->Parent() == lca);
     if (case1) {
-      
       // Case 1: Duplicate statements. Delete shallower one.
       StmtRangeScope* toRemove = NULL;
       if (stmtdata->GetLevel() < level) { // stmt2.level < stmt1.level
 	toRemove = stmt2;
 	stmtdata->SetStmt(stmt1);  // replace stmt2 with stmt1
 	stmtdata->SetLevel(level);
-      } else { 
+      } 
+      else { 
 	toRemove = stmt1;
       }
+      
       toRemove->Unlink(); // unlink 'toRemove' from tree
       CDSDBG { cout << "  Delete: " << toRemove << endl; }
       delete toRemove;
       changed = true;
       
-    } else {
+      // FIXME: This is necessary!
+      CodeInfo* lca_CI = dynamic_cast<CodeInfo*>(lca);
+      BriefAssertion(lca_CI);
+      throw CDS_RestartException(lca_CI);
       
+    } 
+    else {
       // Case 2: Duplicate statements in different loops (or scopes).
       // Merge the nodes from stmt2->lca into those from stmt1->lca.
       CDSDBG { cout << "  Merge: " << stmt1 << " <- " << stmt2 << endl; }
@@ -842,10 +852,9 @@ CDS_InspectStmt(StmtRangeScope* stmt1, LineToStmtMap* stmtMap, int level)
 	BriefAssertion(lca_CI);
 	throw CDS_RestartException(lca_CI);
       }
-      
     }
-    
-  } else {
+  } 
+  else {
     // Add the statement instance to the map
     stmtdata = new StmtData(stmt1, level);
     (*stmtMap)[line] = stmtdata;
@@ -1008,11 +1017,13 @@ CFGNodeToPCMap::build(CFG* cfg, CFG::Node* n, Procedure* p, Addr _end)
       if (n == cfg->Entry()) {
         // Set the entry node PCs from the procedure's begin address.
         curBeg = curEnd = p->GetStartAddr();
-      } else {
+      } 
+      else {
         // Otherwise, use the end PC propagated from ancestors.
         curBeg = curEnd = _end;
       }
-    } else {
+    } 
+    else {
       // Non-empty blocks will have some instructions to get PCs from.
       CFG_GetBegAndEndAddrs(n, curBeg, curEnd);
     }
