@@ -107,7 +107,9 @@ bool
 InsnFilter::operator()(Addr pc, ushort opIndex)
 {
   Instruction* inst = lm->GetInst(pc, opIndex);
-  BriefAssertion(inst && "Internal Error: Cannot find instruction!");
-  
+  if (!inst) {
+    return false;
+  }
+
   return (expr.IsSatisfied(ConvertToInsnClass(inst->GetDesc())));
 }
