@@ -139,6 +139,7 @@ am__objects_1 = libHPCsupport_a-Assertion.$(OBJEXT) \
 	libHPCsupport_a-VectorSupport.$(OBJEXT) \
 	libHPCsupport_a-VectorTmpl.$(OBJEXT) \
 	libHPCsupport_a-WordSet.$(OBJEXT) \
+	libHPCsupport_a-findinstall.$(OBJEXT) \
 	libHPCsupport_a-pathfind.$(OBJEXT) \
 	libHPCsupport_a-realpath.$(OBJEXT)
 am_libHPCsupport_a_OBJECTS = $(am__objects_1)
@@ -173,6 +174,7 @@ am__depfiles_maybe = depfiles
 @AMDEP_TRUE@	./$(DEPDIR)/libHPCsupport_a-VectorSupport.Po \
 @AMDEP_TRUE@	./$(DEPDIR)/libHPCsupport_a-VectorTmpl.Po \
 @AMDEP_TRUE@	./$(DEPDIR)/libHPCsupport_a-WordSet.Po \
+@AMDEP_TRUE@	./$(DEPDIR)/libHPCsupport_a-findinstall.Po \
 @AMDEP_TRUE@	./$(DEPDIR)/libHPCsupport_a-pathfind.Po \
 @AMDEP_TRUE@	./$(DEPDIR)/libHPCsupport_a-realpath.Po
 CXXCOMPILE = $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) \
@@ -387,6 +389,7 @@ MYSOURCES = \
 	VectorTmpl.h VectorTmpl.C \
 	WordSet.h WordSet.C \
 	bstring.h \
+	findinstall.h findinstall.c \
 	pathfind.h pathfind.C \
 	realpath.h realpath.c
 
@@ -487,6 +490,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCsupport_a-VectorSupport.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCsupport_a-VectorTmpl.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCsupport_a-WordSet.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCsupport_a-findinstall.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCsupport_a-pathfind.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCsupport_a-realpath.Po@am__quote@
 
@@ -1209,6 +1213,30 @@ libHPCsupport_a-pathfind.lo: pathfind.C
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	depfile='$(DEPDIR)/$*.Plo' tmpdepfile='$(DEPDIR)/$*.TPlo' @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(LTCOMPILE) -c -o $@ $<
+
+libHPCsupport_a-findinstall.o: findinstall.c
+@am__fastdepCC_TRUE@	if $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCsupport_a_CFLAGS) $(CFLAGS) -MT libHPCsupport_a-findinstall.o -MD -MP -MF "$(DEPDIR)/libHPCsupport_a-findinstall.Tpo" -c -o libHPCsupport_a-findinstall.o `test -f 'findinstall.c' || echo '$(srcdir)/'`findinstall.c; \
+@am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/libHPCsupport_a-findinstall.Tpo" "$(DEPDIR)/libHPCsupport_a-findinstall.Po"; else rm -f "$(DEPDIR)/libHPCsupport_a-findinstall.Tpo"; exit 1; fi
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='findinstall.c' object='libHPCsupport_a-findinstall.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	depfile='$(DEPDIR)/libHPCsupport_a-findinstall.Po' tmpdepfile='$(DEPDIR)/libHPCsupport_a-findinstall.TPo' @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCsupport_a_CFLAGS) $(CFLAGS) -c -o libHPCsupport_a-findinstall.o `test -f 'findinstall.c' || echo '$(srcdir)/'`findinstall.c
+
+libHPCsupport_a-findinstall.obj: findinstall.c
+@am__fastdepCC_TRUE@	if $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCsupport_a_CFLAGS) $(CFLAGS) -MT libHPCsupport_a-findinstall.obj -MD -MP -MF "$(DEPDIR)/libHPCsupport_a-findinstall.Tpo" -c -o libHPCsupport_a-findinstall.obj `if test -f 'findinstall.c'; then $(CYGPATH_W) 'findinstall.c'; else $(CYGPATH_W) '$(srcdir)/findinstall.c'; fi`; \
+@am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/libHPCsupport_a-findinstall.Tpo" "$(DEPDIR)/libHPCsupport_a-findinstall.Po"; else rm -f "$(DEPDIR)/libHPCsupport_a-findinstall.Tpo"; exit 1; fi
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='findinstall.c' object='libHPCsupport_a-findinstall.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	depfile='$(DEPDIR)/libHPCsupport_a-findinstall.Po' tmpdepfile='$(DEPDIR)/libHPCsupport_a-findinstall.TPo' @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCsupport_a_CFLAGS) $(CFLAGS) -c -o libHPCsupport_a-findinstall.obj `if test -f 'findinstall.c'; then $(CYGPATH_W) 'findinstall.c'; else $(CYGPATH_W) '$(srcdir)/findinstall.c'; fi`
+
+libHPCsupport_a-findinstall.lo: findinstall.c
+@am__fastdepCC_TRUE@	if $(LIBTOOL) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCsupport_a_CFLAGS) $(CFLAGS) -MT libHPCsupport_a-findinstall.lo -MD -MP -MF "$(DEPDIR)/libHPCsupport_a-findinstall.Tpo" -c -o libHPCsupport_a-findinstall.lo `test -f 'findinstall.c' || echo '$(srcdir)/'`findinstall.c; \
+@am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/libHPCsupport_a-findinstall.Tpo" "$(DEPDIR)/libHPCsupport_a-findinstall.Plo"; else rm -f "$(DEPDIR)/libHPCsupport_a-findinstall.Tpo"; exit 1; fi
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='findinstall.c' object='libHPCsupport_a-findinstall.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	depfile='$(DEPDIR)/libHPCsupport_a-findinstall.Plo' tmpdepfile='$(DEPDIR)/libHPCsupport_a-findinstall.TPlo' @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCsupport_a_CFLAGS) $(CFLAGS) -c -o libHPCsupport_a-findinstall.lo `test -f 'findinstall.c' || echo '$(srcdir)/'`findinstall.c
 
 libHPCsupport_a-realpath.o: realpath.c
 @am__fastdepCC_TRUE@	if $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCsupport_a_CFLAGS) $(CFLAGS) -MT libHPCsupport_a-realpath.o -MD -MP -MF "$(DEPDIR)/libHPCsupport_a-realpath.Tpo" -c -o libHPCsupport_a-realpath.o `test -f 'realpath.c' || echo '$(srcdir)/'`realpath.c; \
