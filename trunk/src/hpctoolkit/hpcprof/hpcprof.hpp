@@ -1,3 +1,26 @@
+/* $Id$ */
+/* -*- C -*- */
+
+/****************************************************************************
+//
+// File:
+//    papiprof.h
+//
+// Purpose:
+//    Types for papiprof
+//
+// Description:
+//    [The set of functions, macros, etc. defined in the file]
+//
+// Author:
+//    Written by John Mellor-Crummey and Nathan Tallent, Rice University.
+//
+//    Adapted from parts of The Visual Profiler by Curtis L. Janssen
+//    (vconfig.h).
+//
+*****************************************************************************/
+
+
 /* FIXME FIXME FIXME */
 
 /* We want to replace this stuff.  I have set it up temporarily for
@@ -12,7 +35,7 @@
 #define SIZEOF_UNSIGNED_LONG_LONG 8
 
 /* The number of bytes in a unsigned long. */
-#define SIZEOF_UNSIGNED_LONG 4
+#define SIZEOF_UNSIGNED_LONG 8
 
 /* The number of bytes in a unsigned int. */
 #define SIZEOF_UNSIGNED_INT 4
@@ -29,16 +52,17 @@
 /* Define if <cheader> style headers are present for C++ code.  */
 /* #define HAVE_CNAME */
 
-/* vmon_off_t is an unsigned type with the same size as void * */
+/* FIXME: pprof_off_t */
+/* pprof_off_t is an unsigned type with the same size as void * */
 #if SIZEOF_UNSIGNED_INT == SIZEOF_VOID_P
-  typedef unsigned int vmon_off_t;
+  typedef unsigned int pprof_off_t;
 #elif SIZEOF_UNSIGNED_LONG == SIZEOF_VOID_P
-  typedef unsigned long vmon_off_t;
+  typedef unsigned long pprof_off_t;
 #elif defined(SIZEOF_UNSIGNED_LONG_LONG) \
       && SIZEOF_UNSIGNED_LONG_LONG == SIZEOF_VOID_P
-  typedef unsigned long long vmon_off_t;
+  typedef unsigned long long pprof_off_t;
 #else
-# error "could not find type for vmon_off_t"
+# error "could not find type for pprof_off_t"
 #endif
 
 /* vmon_off64_t is an unsigned type with the size of 8. */

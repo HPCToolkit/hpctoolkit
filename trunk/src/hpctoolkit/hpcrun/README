@@ -15,6 +15,14 @@ Contents:
 
 =============================================================================
 
+-1. N.B.
+--------------------
+
+papirun/papiprof should be regarded as "alpha" software: You may be
+tempted to seethe with anger while using it.  The UTK PAPI team is
+currently working to integrate it with the PAPI distribution.
+
+
 0. Overview
 --------------------
 
@@ -76,27 +84,6 @@ counter information.
 For IA64 support, you will need PAPI 2.3.1 or greater and a kernel of
 2.4.18 or higher (which includes pfmon support). You can find more
 PAPI information at http://icl.cs.utk.edu/projects/papi.
-
-[FIXME: does this apply any more?]
-N.B.: hvprof can crash when the PAPI overflow threshold is too low.
-Not surprisingly, sensitivity to low thresholds varies with the PAPI
-event; commonly occuring events produce greater sensitivity.  For
-example, to profile issued instructions on an Itanium2 chip, you
-should almost certainly avoid thresholds much lower than 100,000.  In
-contrast, to profile instruction or data cache misses, the threshold
-could reasonably be much smaller.  Note that given the speed of the
-Itanium/Itanium2 chips and the amount of overhead necessary for
-profiling, you will almost certainly want to avoid very low thresholds
-anyway.
-
-[FIXME]
-If you are an user of the IA64 NCSA cluster (currently running kernel
-2.4.16), you can use a custom version of PAPI 2.1.0 tailored for
-pfmon-0.06a and kernel 2.4.16.  This version uses software timer
-interrupts instead of hardware counter interrupts and will be a little
-more inaccurate.  However, it will still produce helpul information.
-The custom verion is currently located in '/u/ac/mucci/papi/src';
-thanks go to Phil Mucci.
 
 1.3. Compiler notes:
 ----

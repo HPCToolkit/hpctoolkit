@@ -1,38 +1,69 @@
+// $Id$
 // -*- C++ -*-
 
-#ifndef _exec_h
-#define _exec_h
+//***************************************************************************
+//
+// File:
+//    loadmodule.h
+//
+// Purpose:
+//    LoadModule class for reading and gathering symbolic information
+//    from a load module.  (based on GNU Binutils).
+//
+// Description:
+//    [The set of functions, macros, etc. defined in the file]
+//
+// Author:
+//    Written by John Mellor-Crummey and Nathan Tallent, Rice University.
+//
+//    Adapted from parts of The Visual Profiler by Curtis L. Janssen
+//    (exec.h).
+//
+//***************************************************************************
+
+
+#ifndef _loadmodule_h
+#define _loadmodule_h
 
 #ifdef __GNUC__
 #pragma interface
 #endif
 
-#include <stdio.h>
-#include <time.h>
+//************************* System Include Files ****************************
+
 #include <string>
 #include <map>
 
+#include <stdio.h>
+#include <time.h>
+
+#define TRUE_FALSE_ALREADY_DEFINED /* for bfd.h */
+#include <bfd.h>
+
+//*************************** User Include Files ****************************
+
 #include "papiprof.h"
 
-// FIXME: Executable -> LoadModule
-// FIXME: type for non-BFD exe
+//*************************** Forward Declarations **************************
 
-/** This represents an executable.  It can be used to lookup
+//***************************************************************************
+
+/** This represents a load module.  It can be used to lookup
     the file name, line number, and function name corresponding
     to a program counter. */
-class Executable {
+class LoadModule {
   public: 
     enum Type {Exe, DSO, Unknown};
 
   protected:
     /// The debug level.
     int debug_;
-    /// FIXME: type
+    /// LoadModule type
     Type type_; 
 
   public:
-    Executable();
-    virtual ~Executable();
+    LoadModule();
+    virtual ~LoadModule();
 
     /// Set the debug level.
     void set_debug(int d) { debug_ = d; }
@@ -57,15 +88,17 @@ class Executable {
     virtual void read(const std::string &exec) = 0;
     /// Return the given symbol demangled.
     virtual std::string demangle(const std::string &symbol) const = 0;
+    
+    // FIXME: deprecated
     /// Return the offset to the start of the text segment.
-    virtual vmon_off_t textstart() const = 0;
+    virtual pprof_off_t textstart() const = 0;
     /** Retrieve symbol information about a program counter.
         @param pc The program counter.
         @param filename A pointer to the file name or 0 is written here.
         @param lineno The line number or 0 is written here.
         @param funcname The function name or 0 is written here.
     */
-    virtual int find(vmon_off_t pc, const char **filename,
+    virtual int find(pprof_off_t pc, const char **filename,
                      unsigned int *lineno, const char **funcname) const = 0;
 };
 
@@ -90,10 +123,9 @@ class FuncInfo {
     int index() const { return index_; }
 };
 
-#define TRUE_FALSE_ALREADY_DEFINED
-#include <bfd.h>
+
 /** An executable that uses the GNU BFD to lookup symbolic information. */
-class BFDExecutable: public Executable {
+class BFDLoadModule: public LoadModule {
   private:
     std::string name_;
     static int bfdinitialized_;
@@ -114,16 +146,16 @@ class BFDExecutable: public Executable {
     // Using locmap will speed up the case where multiple vmon.out files
     // are used and the BFD bug which requires BFD be reinitialized after
     // most line number lookups exists.
-    mutable std::map<vmon_off_t,FuncInfo> locmap_;
+    mutable std::map<pprof_off_t,FuncInfo> locmap_;
 
     void cleanup(bool clear_cache = true);
     void read_file(const std::string& name, bool clear_cache = true);
 
-    void find_bfd(vmon_off_t pc, const char **filename,
+    void find_bfd(pprof_off_t pc, const char **filename,
                   unsigned int *lineno, const char **funcname) const;
   public:
-    BFDExecutable(const std::string &);
-    ~BFDExecutable();
+    BFDLoadModule(const std::string &);
+    ~BFDLoadModule();
 
     static void find_address_in_section(bfd*, asection*, PTR);
 
@@ -131,50 +163,9 @@ class BFDExecutable: public Executable {
     std::string name() const;
     void read(const std::string &);
     std::string demangle(const std::string &) const;
-    vmon_off_t textstart() const;
-    int find(vmon_off_t pc, const char **filename,
+    pprof_off_t textstart() const;
+    int find(pprof_off_t pc, const char **filename,
              unsigned int *lineno, const char **funcname) const;
 };
-
-#if 0 /* FIXME: throw this stuff away */
-//#ifdef HAVE_LIBLD
-#include <ldfcn.h>
-#include <aouthdr.h>
-#include <syms.h>
-/** An executable that uses libld to lookup symbolic information
-    for COFF executables. */
-class COFFExecutable: public Executable {
-  private:
-    std::string name_;
-    LDFILE *ldfile_;
-    vmon_off_t textstart_;
-    bool is64_;
-    std::map<uint64_t, FuncInfo> locmap_;
-
-    void init32();
-    void init64();
-    int find32(vmon_off_t pc, const char **filename,
-               unsigned int *lineno, const char **funcname) const;
-    int find64(vmon_off_t pc, const char **filename,
-               unsigned int *lineno, const char **funcname) const;
-    void cleanup();
-  public:
-    COFFExecutable(const std::string &);
-    ~COFFExecutable();
-
-    bool is64() const { return is64_; }
-
-    bool line_info() const;
-
-    time_t mtime() const;
-    std::string name() const;
-    void read(const std::string &);
-    std::string demangle(const std::string &) const;
-    vmon_off_t textstart() const;
-    int find(vmon_off_t pc, const char **filename,
-             unsigned int *lineno, const char **funcname) const;
-};
-//#endif
-#endif
 
 #endif

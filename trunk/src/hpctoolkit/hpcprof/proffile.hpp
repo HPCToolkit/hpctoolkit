@@ -1,22 +1,50 @@
+// $Id$
 // -*- C++ -*-
 
-#ifndef _prunfile_h
-#define _prunfile_h
+//***************************************************************************
+//
+// File:
+//    proffile.h
+//
+// Purpose:
+//    Class for reading and representing papirun profile data.
+//
+// Description:
+//    [The set of functions, macros, etc. defined in the file]
+//
+// Author:
+//    Written by John Mellor-Crummey and Nathan Tallent, Rice University.
+//
+//    Adapted from parts of The Visual Profiler by Curtis L. Janssen
+//    (vmonfile.h).
+//
+//***************************************************************************
+
+#ifndef _proffile_h
+#define _proffile_h
 
 #ifdef __GNUG__
 #pragma interface
 #endif
 
-#include <stdlib.h>
-#include <stdio.h>
+//************************* System Include Files ****************************
 
 #include <vector>
 #include <string>
 #include <utility>
+
+#include <stdlib.h>
+#include <stdio.h>
+
 #include <sys/time.h>
+
+//*************************** User Include Files ****************************
 
 #include "papiprof.h"
 #include "events.h"
+
+//*************************** Forward Declarations **************************
+
 
 //***************************************************************************
 
@@ -28,14 +56,14 @@
 //***************************************************************************
 
 // <pc, count>
-typedef std::pair<vmon_off_t, unsigned short> ProfFileEventDatum;
+typedef std::pair<pprof_off_t, unsigned short> ProfFileEventDatum;
 
 // ProfFileEvent: contains the event name, profiling period and
 // profiling data for the event
 class ProfFileEvent {
   private:
     const papi_event_t *event_;
-    unsigned int period_;       // FIXME (64 bits?)
+    unsigned long period_;
     unsigned int outofrange_;
     unsigned int overflow_;
     std::vector<ProfFileEventDatum> dat_;

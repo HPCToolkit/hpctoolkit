@@ -15,7 +15,7 @@
 // Author:
 //    Written by John Mellor-Crummey and Nathan Tallent, Rice University.
 //
-//***************************************************************************/
+*****************************************************************************/
 
 #ifndef map_h
 #define map_h
@@ -35,6 +35,15 @@ typedef struct {
   loadmodule_t *module; /* the vector */
 } loadmodules_t;
 
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 loadmodules_t* papirun_code_lines_from_loadmap(int dumpmap);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

@@ -15,7 +15,7 @@
 // Author:
 //    Written by John Mellor-Crummey and Nathan Tallent, Rice University.
 //
-//***************************************************************************/
+*****************************************************************************/
 
 /* Because these are byte strings, they will not be affected by endianness */
 

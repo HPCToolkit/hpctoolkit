@@ -1,23 +1,45 @@
+// $Id$
+// -*- C++ -*-
+
+//***************************************************************************
+//
+// File:
+//    proffile.cc
+//
+// Purpose:
+//    Class for reading and representing papirun profile data.
+//
+// Description:
+//    [The set of functions, macros, etc. defined in the file]
+//
+// Author:
+//    Written by John Mellor-Crummey and Nathan Tallent, Rice University.
+//
+//    Adapted from parts of The Visual Profiler by Curtis L. Janssen
+//    (vmonfile.cc).
+//
+//***************************************************************************
 
 #ifdef __GNUC__
 #pragma implementation
 #endif
 
-#ifdef HAVE_CNAME
-# include <cstdio>
-#else
-# include <stdio.h>
-#endif
+//************************* System Include Files ****************************
+
 #include <iostream>
 #include <string>
 
+#include <stdio.h>
 #include <sys/stat.h>
+
+//*************************** User Include Files ****************************
 
 #include "papirun.h"
 #include "proffile.h"
 #include "events.h"
 #include "io.h"
 
+//*************************** Forward Declarations **************************
 
 using namespace std;
 
@@ -101,7 +123,7 @@ ProfFile::dump(std::ostream& o, const char* pre) const
   o << p << "{ ProfFile: " << name_ << ", modtime: " << mtime_ << " }" 
     << endl;
 
-  for (int i = 0; i < num_load_modules(); ++i) {
+  for (unsigned int i = 0; i < num_load_modules(); ++i) {
     const ProfFileLM& proflm = load_module(i);
     proflm.dump(o, p1.c_str());
   }
@@ -131,15 +153,13 @@ ProfFileLM::read(FILE *fp)
   if (sz != sizeof(namelen)) { return 1; }
   
   name_.resize(namelen);
-  for (int n = 0; n < namelen; ++n) { 
+  for (unsigned int n = 0; n < namelen; ++n) { 
     if ((c = fgetc(fp)) == EOF) { return 1; }
     name_[n] = (char)c;
   } 
 
-  unsigned long long tmp_addr;
-  sz = hpc_fread_le8(&tmp_addr, fp);
-  if (sz != sizeof(tmp_addr)) { return 1; }
-  load_addr_ = (long)tmp_addr;
+  sz = hpc_fread_le8(&load_addr_, fp);
+  if (sz != sizeof(load_addr_)) { return 1; }
 
   // Read event data
   unsigned int count = 1;
@@ -161,7 +181,7 @@ ProfFileLM::dump(std::ostream& o, const char* pre) const
   o << p << "{ ProfFileLM: " << name_ << ", loadAddr: 0x" << hex 
     << load_addr_ << dec << " }" << endl;
   
-  for (int i = 0; i < num_events(); ++i) {
+  for (unsigned int i = 0; i < num_events(); ++i) {
     const ProfFileEvent& profevent = event(i);
     profevent.dump(o, p1.c_str());
   }
@@ -182,19 +202,18 @@ int
 ProfFileEvent::read(FILE *fp, unsigned long load_addr)
 {
   size_t sz;
-  int c;
     
   // Profiling event and period
-  uint32_t eventcode;
+  int eventcode = -1;
   
-  sz = hpc_fread_le4(&eventcode, fp);
+  sz = hpc_fread_le4((uint32_t*)&eventcode, fp);
   if (sz != sizeof(eventcode)) { return 1; }
-
-  event_ = papirun_papi_event_by_type((int)eventcode); // FIXME
   
-  sz = hpc_fread_le4(&period_, fp);
+  event_ = papirun_event_by_code(eventcode);
+  
+  sz = hpc_fread_le8(&period_, fp);
   if (sz != sizeof(period_)) { return 1; }
-
+  
   // Profiling data
   dat_.clear();
   outofrange_ = 0;
@@ -203,20 +222,20 @@ ProfFileEvent::read(FILE *fp, unsigned long load_addr)
   // Profiling entry: count and offset
   unsigned int ndat;    // number of profile entries
   unsigned short count; // profile count
-  unsigned int offset;  // offset from load address // FIXME
+  unsigned int offset;  // offset from load address
   
   sz = hpc_fread_le4(&ndat, fp);
   if (sz != sizeof(ndat)) { return 1; }
 
   dat_.resize(ndat);
-  for (int i = 0; i < ndat; ++i) {
+  for (unsigned int i = 0; i < ndat; ++i) {
     sz = hpc_fread_le2(&count, fp);
     if (sz != sizeof(count)) { return 1; }
 
     sz = hpc_fread_le4(&offset, fp);
     if (sz != sizeof(offset)) { return 1; }
     
-    vmon_off_t pc = load_addr + offset; // FIXME
+    pprof_off_t pc = load_addr + offset;
     dat_[i] = make_pair(pc, count);
   }
 
@@ -233,7 +252,7 @@ ProfFileEvent::dump(std::ostream& o, const char* pre) const
     << ", outofrange: " << outofrange() << ", overflow: " << overflow()
     << " }" << endl;
   
-  for (int i = 0; i < num_data(); ++i) {
+  for (unsigned int i = 0; i < num_data(); ++i) {
     const ProfFileEventDatum& dat = datum(i);
     o << p1 << "{ 0x" << hex << dat.first << ": " << dec
       << dat.second << " }" << endl;
