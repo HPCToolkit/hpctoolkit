@@ -57,6 +57,8 @@
 #include "DCPIProfileFilter.h"
 #include "DCPIProfileMetric.h"
 
+#include <lib/support/Assertion.h>
+
 //*************************** Forward Declarations ***************************
 
 using std::endl;
