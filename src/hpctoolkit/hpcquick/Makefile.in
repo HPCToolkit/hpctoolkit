@@ -228,7 +228,7 @@ HPC_LIBHPCFILE = $(top_builddir)/src/lib/hpcfile/libHPCfile.a
 #############################################################################
 MYSCRIPTS = \
 	hpcquick \
-	hpcquick-papiprof
+	hpcquick-hpcprof
 
 
 #############################################################################
