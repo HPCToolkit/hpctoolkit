@@ -120,17 +120,48 @@ PredefinedDCPIMetricTable::Entry PredefinedDCPIMetricTable::table[] = {
   // -------------------------------------------------------
   // Metrics available for a specific ProfileMe mode
   // -------------------------------------------------------
+  // m0: inflight, retires
+  // m1: inflight, retdelay
+  // m2: retires,  bcmisses
+  // m3: inflight, replays
+
+  // FIXME: these are just the raw counters; how best to combine them?
+  {"pm_inflight", "Inflight cycles (excludes fetch stage) for instructions that retired without trapping.",
+   PM0 | PM1 | PM3,
+   DCPIMetricExpr(DCPI_MTYPE_PM | DCPI_PM_CNTR_inflight),
+   InsnClassExpr(INSN_CLASS_ALL)
+  },
+
+  {"pm_retdelay", "Delays before retire (excludes all cycles prior to fetch).",
+   PM1,
+   DCPIMetricExpr(DCPI_MTYPE_PM | DCPI_PM_CNTR_retdelay),
+   InsnClassExpr(INSN_CLASS_ALL)
+  },
+
+  {"pm_retires", "Instruction retires.",
+   PM0 | PM2,
+   DCPIMetricExpr(DCPI_MTYPE_PM | DCPI_PM_CNTR_retires),
+   InsnClassExpr(INSN_CLASS_ALL)
+  },
+
+  {"pm_bcmisses", "B-cache (L2) cache misses.",
+   PM2,
+   DCPIMetricExpr(DCPI_MTYPE_PM | DCPI_PM_CNTR_bcmisses),
+   InsnClassExpr(INSN_CLASS_ALL)
+  },
+
+  {"pm_replays", "Memory system replay traps.",
+   PM3,
+   DCPIMetricExpr(DCPI_MTYPE_PM | DCPI_PM_CNTR_replays),
+   InsnClassExpr(INSN_CLASS_ALL)
+  },
 
 #if 0
-//  "m0inflight"   Inflight cycles --> total cycles?
+//  "m0inflight"   "Number of cycles instruction was Inflight
 //  "m0retires"    Instruction retires --> cross check retired instructions?
 
-//  "m1inflight"   Inflight cycles --> total cycles
-//  "m1retdelay"   Retire delay --> 
-
-//    inflight + any insn --> approx inflight cycles for insn that retired w/out trapping
-//    inflight + fp --> approx inflight cycles for flops that retired without trapping
-
+//  "m1inflight"   Inflight cycles
+//  "m1retdelay"   Delays Retire delay (excludes all cycles prior to fetch)--> 
 
 //  "m2retires"    Instruction retires --> cross check retired instructions?
 //  "m2bcmisses"   B-cache misses --> b-cache misses
@@ -143,25 +174,25 @@ PredefinedDCPIMetricTable::Entry PredefinedDCPIMetricTable::table[] = {
   // Non ProfileMe metrics, possibly available at any time
   // -------------------------------------------------------
 
-  { "cycles", "Processor cycles",
+  { "cntr_cycles", "Processor cycles",
     RM,
     DCPIMetricExpr(DCPI_MTYPE_RM | DCPI_RM_cycles),
     InsnClassExpr(INSN_CLASS_ALL)
   },
   
-  { "retires", "Retired instructions",
+  { "cntr_retires", "Retired instructions",
     RM,
     DCPIMetricExpr(DCPI_MTYPE_RM | DCPI_RM_retires),
     InsnClassExpr(INSN_CLASS_ALL)
   },
 
-  { "replaytrap", "Mbox replay traps",
+  { "cntr_replaytrap", "Mbox replay traps",
     RM,
     DCPIMetricExpr(DCPI_MTYPE_RM | DCPI_RM_replaytrap),
     InsnClassExpr(INSN_CLASS_ALL)
   },
 
-  { "bmiss", "Bcache misses or long-latency probes",
+  { "cntr_bmiss", "Bcache misses or long-latency probes",
     RM,
     DCPIMetricExpr(DCPI_MTYPE_RM | DCPI_RM_bmiss),
     InsnClassExpr(INSN_CLASS_ALL)
