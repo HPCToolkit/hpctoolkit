@@ -1,0 +1,28 @@
+$Id$
+
+=============================================================================
+==
+== README
+==
+== Location: ${HPCTOOLKIT}/lib
+==
+=============================================================================
+
+This contains some external libraries used by HPCToolkit.
+
+=============================================================================
+
+Overview of libraries:
+--------------------
+
+dtd/           - Data type definitions for XML file formats.
+
+html/          - HTML, CSS stylesheets, and JavaScript code used when
+                 'hpcview' generates a static HTML database.
+
+xerces-c2_1_0/ - Xerces C++ XML Parser package.  Only precompiled DSOs, 
+                 documentation and include files are included.
+                 See the README.Building file for more information on the
+                 build flags we used.  See http://xml.apache.org/xerces-c/
+                 for more information on the Xerces package.
+
