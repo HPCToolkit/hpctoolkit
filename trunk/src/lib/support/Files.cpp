@@ -41,10 +41,12 @@
 #include <sys/param.h>
 
 #ifdef NO_STD_CHEADERS
+# include <stdlib.h>
 # include <stdio.h>
 # include <errno.h>
 # include <stdarg.h>
 #else
+# include <cstdlib> // for 'mkstemp' (not technically visible in C++)
 # include <cstdio>  // for 'tmpnam'
 # include <cerrno>
 # include <cstdarg>
@@ -133,7 +135,8 @@ CountChar(const char* file, char c)
   return count; 
 } 
 
-const char* TmpFileName()   
+const char* 
+TmpFileName()   
 {
   // below is a hack to replace the deprecated tmpnam which g++ 3.2.2 will
   // no longer allow. the mkstemp routine, which is touted as the replacement
@@ -141,20 +144,33 @@ const char* TmpFileName()
   // unfortunately no way to interface this with the ofstream class constructor
   // which requires a filename. thus, a hack is born ...
   // John Mellor-Crummey 5/7/2003
+  
+  // eraxxon: GNU is right that 'tmpnam' can be dangerous, but
+  // 'mkstemp' is not strictly part of C++! We could create an
+  // interface to 'mkstemp' within a C file, but this is getting
+  // cumbersome... and 'tmpnam' is not quite a WMD.
 
+#ifdef __GNUC__
   static char tmpfilename[MAXPATHLEN];
-  strcpy(tmpfilename,"/tmp/hpcviewtmpXXXXXX");
 
   // creating a unique temp name with the new mkstemp interface now 
   // requires opening, closing, and deleting a file when all we want
   // is the filename. sigh ...
+  strcpy(tmpfilename,"/tmp/hpcviewtmpXXXXXX");
   close(mkstemp(tmpfilename));
   unlink(tmpfilename);
 
-  return tmpfilename; 
+  return tmpfilename;
+#else
+  return tmpnam(NULL); 
+#endif
 }
 
-int         DeleteFile(const char* file) { return unlink(file); }
+int
+DeleteFile(const char* file) 
+{ 
+  return unlink(file); 
+}
 
 String 
 BaseFileName(const char* fName) 
