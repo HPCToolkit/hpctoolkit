@@ -526,13 +526,13 @@ Summary::process_lm(const ProfFileLM& proflm, int ev_i_start)
       for (unsigned int m = 0; m < profevent.num_data(); ++m) {
 	  const ProfFileEventDatum& dat = profevent.datum(m);
 	  pprof_off_t pc = dat.first;
-	  unsigned short count = dat.second;
+	  uint32_t count = dat.second;
 
 	  n_sample_[ev_i] += count;
 
 	  if (debug_) {
-	      cerr << "  { samples: addr = " << hex << pc 
-		   << ", count = " << count << " }" << dec << endl;
+	      cerr << "  { samples: addr = " << hex << pc << dec
+		   << ", count = " << count << " }" << endl;
 	    }
 	  
 	  // Try to find symbolic info
@@ -552,8 +552,9 @@ Summary::process_lm(const ProfFileLM& proflm, int ev_i_start)
 	  bool fnd = lm->find(pc1, &c_filename, &lineno, &c_funcname);
 	  if (fnd) {
 	    if (debug_) {
-	      cerr << "  { *found @ " << hex << pc1 << ": " << c_funcname 
-		   << "\n    " << c_filename << ":" << lineno << " }" << endl;
+	      cerr << "  { *found @ " << hex << pc1 << dec << ": " 
+		   << c_funcname << "\n    " 
+		   << c_filename << ":" << lineno << " }" << endl;
 	    }
 	  } 
 	  else {
