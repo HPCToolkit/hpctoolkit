@@ -644,8 +644,9 @@ init_papiprofdesc_buffer(hpcpapi_profile_desc_vec_t* profdesc,
 	}
 	memset(prof->sprofs[mapi].pr_base, 0x00, bufsz);
 	
-	/* pc offset and scaling factor */
-	prof->sprofs[mapi].pr_off = (caddr_t)rtmap->module[mapi].offset;
+	/* pc offset and scaling factor (note: 'caddr_t' is a 'void*') */
+	prof->sprofs[mapi].pr_off = 
+	  (caddr_t)(uintptr_t)rtmap->module[mapi].offset;
 	prof->sprofs[mapi].pr_scale = prof->scale;
 	
 	if (opt_debug >= 4) {
