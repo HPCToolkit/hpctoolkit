@@ -63,15 +63,10 @@
 
 //*************************** Forward Declarations ***************************
 
-class PCProfile; // FIXME (remove)
 class DerivedProfile;
 class Executable;
 
 //****************************************************************************
-
-// FIXME: to remove
-void DumpAsPROFILE(std::ostream& os, PCProfile* profData,
-		   LoadModuleInfo* modInfo);
 
 class ProfileWriter
 {
@@ -79,10 +74,6 @@ public:
   static void WriteProfile(std::ostream& os, DerivedProfile* profData,
 			   LoadModuleInfo* modInfo);
   
-  // FIXME
-  friend void DumpAsPROFILE(std::ostream& os, PCProfile* profData,
-		   LoadModuleInfo* modInfo);
-
 private:
   static void DumpProfileHeader(std::ostream& os);
   static void DumpProfileFooter(std::ostream& os);
