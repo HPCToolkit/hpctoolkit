@@ -110,7 +110,7 @@ MipsISA::GetInstDesc(MachInst* mi, ushort opIndex, ushort sz)
 	case BGEZ:
 	case BLTZL:
 	case BGEZL:
-	  return InstDesc(InstDesc::BR_COND_REL);
+	  return InstDesc(InstDesc::INT_BR_COND_REL);
 	  
 	case BLTZAL:  // Link
 	case BGEZAL:  // Link
@@ -124,7 +124,7 @@ MipsISA::GetInstDesc(MachInst* mi, ushort opIndex, ushort sz)
 	case TLTIU:
 	case TEQI:
 	case TNEI:
-	  return InstDesc(InstDesc::SYS_CALL); 
+	  return InstDesc(InstDesc::OTHER); 
 	}
       break;
     case OPCop1x:
@@ -195,7 +195,7 @@ MipsISA::GetInstDesc(MachInst* mi, ushort opIndex, ushort sz)
       if (REG_S(inst) == REG_T(inst))
 	return InstDesc(InstDesc::BR_UN_COND_REL);
       else
-	return InstDesc(InstDesc::BR_COND_REL);
+	return InstDesc(InstDesc::INT_BR_COND_REL);
     case BNE:
     case BLEZ:
     case BGTZ:
@@ -203,7 +203,7 @@ MipsISA::GetInstDesc(MachInst* mi, ushort opIndex, ushort sz)
     case BNEL:
     case BLEZL:
     case BGTZL:
-      return InstDesc(InstDesc::BR_COND_REL);
+      return InstDesc(InstDesc::INT_BR_COND_REL);
 
     default:
       break;
