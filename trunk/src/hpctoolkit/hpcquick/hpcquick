@@ -95,10 +95,10 @@
 # for profile data.  Instead of trying to extract metric names et
 # al. from profile filenames, we want to rely on ptran/xprof/papiprof
 # to produce a PROFILE file, extract information from this and then
-# produce the hpcview database.  We have to know just enough about
-# binary formats to known when to run ptran et al, but that is it.
-# Another motivation is that we want to be able to process PROFILE
-# files directly.
+# produce the hpcview database.  Thus, we have to know just enough
+# about binary formats to known when to run, e.g., ptran or xprof, but
+# that is it.  Another motivation is that we want to be able to
+# process PROFILE files directly.
 #
 # Note: Generally speaking, the metric names in the data structures should
 # refer to PROFILE metrics and data.
@@ -123,6 +123,7 @@
 
 use HPCToolkitVersionInfo;
 use FileHandle();
+use Cwd 'realpath';
 
 STDOUT->autoflush(1); 
 
@@ -164,17 +165,19 @@ Options:
 
 # ----------------------------------------------------------------------
 
-# fields of the configuration XML file
+# fields of the configuration structure (corresponding to the HPCView
+# XML configuraiton file) 
 
 my %configuration = (
 		     title            => undef,
-		     incDirs          => undef,
-		     expTypes         => undef,
-		     displayNames     => undef,
-		     metrics          => [ ], # array of 'metric'
+		     srcPaths         => undef,
+		     metricTypes      => undef,
+		     metricDispNms    => undef,
+		     metrics          => [ ],   # array of 'metric'
 		     dumpFlag         => undef,
 		     );
 
+# generic container for 'srcPaths', 'metricTypes', 'metricDispNms' above
 my %names = (
 	     hashTable  => undef,
 	     total      => 0,
@@ -184,8 +187,8 @@ my %names = (
 	     );
 
 my %metric = (
-	      expType      => undef,
-	      displayName  => undef,
+	      type         => undef,
+	      dispNm       => undef, # display name
 	      rawProfFiles => undef, # raw profile files for the metric
 	      PROFILEfile  => undef, # the PROFILE file
 	      PROFILEmid   => undef, # id of the metric within PROFILE
@@ -231,26 +234,26 @@ my $tmpFile = ".tmp";
 # initialize the configuration data structure
 #
 
-# contains included directories
-$configuration{incDirs} = { %names, };
-$configuration{incDirs}->{hashTable} = { };
-$configuration{incDirs}->{totals} = [ ];
-$configuration{incDirs}->{indices} = [ ];
-$configuration{incDirs}->{names} = [ ];
+# contains included source paths
+$configuration{srcPaths} = { %names, };
+$configuration{srcPaths}->{hashTable} = { };
+$configuration{srcPaths}->{totals} = [ ];
+$configuration{srcPaths}->{indices} = [ ];
+$configuration{srcPaths}->{names} = [ ];
 
-# includes all different experiment types
-$configuration{expTypes} = { %names, };
-$configuration{expTypes}->{hashTable} = { };
-$configuration{expTypes}->{totals} = [ ];
-$configuration{expTypes}->{indices} = [ ];
-$configuration{expTypes}->{names} = [ ];
+# includes all different metric types
+$configuration{metricTypes} = { %names, };
+$configuration{metricTypes}->{hashTable} = { };
+$configuration{metricTypes}->{totals} = [ ];
+$configuration{metricTypes}->{indices} = [ ];
+$configuration{metricTypes}->{names} = [ ];
 
-# includes all different display names
-$configuration{displayNames} = { %names, };
-$configuration{displayNames}->{hashTable} = { };
-$configuration{displayNames}->{totals} = [ ];
-$configuration{displayNames}->{indices} = [ ];
-$configuration{displayNames}->{names} = [ ];
+# includes all different metric display names
+$configuration{metricDispNms} = { %names, };
+$configuration{metricDispNms}->{hashTable} = { };
+$configuration{metricDispNms}->{totals} = [ ];
+$configuration{metricDispNms}->{indices} = [ ];
+$configuration{metricDispNms}->{names} = [ ];
 
 # includes information for each metric
 $configuration{metrics} = [ ];
@@ -281,7 +284,7 @@ while ($i < $argc) {
       $outOpt = "-z";
   }
   elsif ($ARGV[$i] eq $xmlOutOpt) {
-      $outOpt = "-x hpcquick";
+      $outOpt = "-x hpcquick.hpcviewerML";
   }
   elsif ($ARGV[$i] eq $noOutOpt) {
       $suppressOutput = 1;
@@ -291,11 +294,11 @@ while ($i < $argc) {
       $structFile = $ARGV[$i + 1];
       $i++;
   }
-  # option: include directories
+  # option: include src paths
   elsif ($ARGV[$i] eq $incOpt) {
       while (isArgument($ARGV[$i + 1]) == 1) {
 	  $i++;
-	  processInclude(\%configuration, $ARGV[$i]);
+	  processSrcPath(\%configuration, $ARGV[$i]);
       }
   }
   # profile files
@@ -388,23 +391,23 @@ sub printVersionAndExit {
 # ----------------------------------------------------------------------
 
 # ----------------------------------------------------------------------
-# processInclude
+# processSrcPath
 #   Given a ref to a configuration data structure and an include file
 #   path, perform sanity check and store the path within structure.
 # ----------------------------------------------------------------------
 
-sub processInclude {
-    my ($config, $include) = @_;
+sub processSrcPath {
+    my ($config, $path) = @_;
 
-    if (!defined($config->{incDirs}->{hashTable}->{$include})) {
-	if (isValidSrcPath($include)) {
-	    print STDOUT "Adding source path: '$include'\n";
-	    $config->{incDirs}->{total}++;
-	    $config->{incDirs}->{hashTable}->{$include} = 0;
-	    push @{$config->{incDirs}->{names}}, $include;
+    if (!defined($config->{srcPaths}->{hashTable}->{$path})) {
+	if (isValidSrcPath($path)) {
+	    print STDOUT "Adding source path: '$path'\n";
+	    $config->{srcPaths}->{total}++;
+	    $config->{srcPaths}->{hashTable}->{$path} = 0;
+	    push @{$config->{srcPaths}->{names}}, $path;
 	}
 	else {
-	    print STDOUT "Invalid argument to -I: '$include' not a directory.\n";
+	    print STDOUT "Invalid argument to -I: '$path' not a directory.\n";
 	    printUsageAndExit($0);
 	}
     }
@@ -412,22 +415,80 @@ sub processInclude {
 
 # ----------------------------------------------------------------------
 # isValidSrcPath
-#   Given a path to used in a PATH element, test whether it is valid.
+#   Given a path to be used in a PATH element, test whether it is valid.
 #   Returns 1 or 0.
 # ----------------------------------------------------------------------
 
 sub isValidSrcPath {
     my ($path) = @_;
 
-    # This is a recursive path is the last character is '*'.  If it
-    # exists, strip it off. (Using regexp is inefficient but it
-    # shouldn't matter.)
-    $path =~ s/\*$//;
-
+    # Remove recursive path indicator, if present.
+    my $p = isRecursivePath($path);
+    if ($p) { $path = $p; }
+    
     if (-d $path && -e $path) {
 	return 1;
     } else {
 	return 0;
+    }
+}
+
+# ----------------------------------------------------------------------
+# getViewnameFromSrcPath
+#   Given a source path, return a viewname. (for PATH element).  The
+#   viewname should not be empty.
+# ----------------------------------------------------------------------
+
+sub getViewnameFromSrcPath {
+    my ($path) = @_;
+    my $recursive = 0;
+    
+    # Remove recursive path indicator, if present.
+    my $p = isRecursivePath($path);
+    if ($p) {
+	$path = $p;
+	$recursive = 1;
+    }
+    
+    # ------------------------------------------------------
+    # If path contains a '.' or '..', canonicalize.
+    # ------------------------------------------------------
+    # Exception: ., ./xxx
+    #if ( $path eq "." ) { $path = ""; }
+    #if ( $path =~ s/^\.\/// )
+    if ( ($path =~ /\./) || ($path =~ /\.\./)) { 
+	$path = realpath($path);
+    }
+    
+    # If path begins with '/', remove
+    $path =~ s/^\///;
+
+    # If path was recursive, add indicator
+    if ($recursive) {
+	$path .= "-r";
+    }
+    
+    my $view = $path;
+    return $view;
+}
+
+# ----------------------------------------------------------------------
+# isRecursivePath
+#   Given a source path, return the non-recursive name if this is a
+#   recursive path, otherwise return undef.
+# ----------------------------------------------------------------------
+
+sub isRecursivePath {
+    my ($path) = @_;
+    
+    # This is a recursive path if the last character is '*'.  If it
+    # exists, strip it off.
+    my $cnt = ($path =~ s/\*$//);
+    
+    if ($cnt > 0) {
+	return $path;
+    } else {
+	return undef;
     }
 }
 
@@ -477,13 +538,13 @@ sub processProfile {
     for (my $i = 0; $i < $numMetrics; $i++) {
 
 	my $aMetric = { %metric, };
-	my $expType = $metricsRef->[$i]->{expType};
-	my $displayName = $metricsRef->[$i]->{displayName};
-	#print STDOUT "exptype = $expType\n";
-	#print STDOUT "dispname = $displayName\n";
+	my $mType = $metricsRef->[$i]->{type};
+	my $mDispNm = $metricsRef->[$i]->{dispNm};
+	#print STDOUT "mType = $mType\n";
+	#print STDOUT "dispname = $mDispNm\n";
 	
-	# sets aMetric->expType, displayName
-	processMetric($config, $aMetric, $expType, $displayName);
+	# sets aMetric->type, dispNm
+	processMetric($config, $aMetric, $mType, $mDispNm);
 	
 	# set aMetric->rawProfFiles, PROFILEfile, PROFILEmid
 	if (getProfileType($profile) == $PROFILEType) {
@@ -517,10 +578,10 @@ sub findMetricsForProfile {
 	my $aMetric = { %metric, };
 	my $i = 0;
 
-	$aMetric->{expType} = findMetricForBinProfile($profile);
-	$aMetric->{displayName} = $aMetric->{expType};
+	$aMetric->{type} = findMetricForBinProfile($profile);
+	$aMetric->{dispNm} = $aMetric->{type};
 	$metrics[$i] = $aMetric;
-	print STDOUT " *** $aMetric->{expType}\n";
+	print STDOUT " *** $aMetric->{type}\n";
 	return \@metrics;
     }
 }
@@ -600,7 +661,7 @@ sub getProfileType {
 
 # ----------------------------------------------------------------------
 # findMetricsForBinProfile
-#   find the experiment type given a binary ssrun profile file name
+#   find the metric type given a binary ssrun profile file name
 # ----------------------------------------------------------------------
 
 # FIXME: We should be extracting this stuff from PROFILE (see notes at top)
@@ -640,8 +701,8 @@ sub findMetricsForPROFILE {
 	    my ($id) = ($line =~ /shortName$xmlAttrRE/);
 	    print STDOUT "  Adding PROFILE metric '$nm'\n";
     
-	    $aMetric->{expType} = $nm;
-	    $aMetric->{displayName} = $nm;
+	    $aMetric->{type} = $nm;
+	    $aMetric->{dispNm} = $nm;
 	    $aMetric->{PROFILEmid} = $id;
 	    $metrics[$i] = $aMetric;
 	    $i++;
@@ -658,46 +719,46 @@ sub findMetricsForPROFILE {
 
 # ----------------------------------------------------------------------
 # processMetric
-#   Given a ref to a configuration data structure and experiment name
-#   Test whether the experiment type and display name exist
+#   Given a ref to a configuration data structure and a metric name
+#   Test whether the metric type and display name exist
 #     if yes, increase its number
 #     if not, insert the new name into the array and hash table
 # ----------------------------------------------------------------------
 
 sub processMetric {
-    my ($config, $aMetric, $expType, $expName) = @_;
+    my ($config, $aMetric, $mType, $mName) = @_;
     #print STDOUT "processMetric:\n";
-    #print STDOUT "  -", @{$config->{expTypes}->{totals}}, "\n";
-    #print STDOUT "  -", @{$config->{displayNames}->{totals}}, "\n";
-    #print STDOUT "  $expType, $expName\n";
+    #print STDOUT "  -", @{$config->{metricTypes}->{totals}}, "\n";
+    #print STDOUT "  -", @{$config->{metricDispNms}->{totals}}, "\n";
+    #print STDOUT "  $mType, $mName\n";
 
-    my $expTypeIndex = $config->{expTypes}->{hashTable}->{$expType};
-    my $expNameIndex = $config->{displayNames}->{hashTable}->{$expName};
+    my $mTypeIdx = $config->{metricTypes}->{hashTable}->{$mType};
+    my $mNameIdx = $config->{metricDispNms}->{hashTable}->{$mName};
     
-    if (!defined($expTypeIndex)) {
-	$expTypeIndex = $config->{expTypes}->{total}++;
-	$config->{expTypes}->{hashTable}->{$expType} = $expTypeIndex;
-	push @{$config->{expTypes}->{names}}, $expType;
-	push @{$config->{expTypes}->{totals}}, 1;
-	push @{$config->{expTypes}->{indices}}, 0;
+    if (!defined($mTypeIdx)) {
+	$mTypeIdx = $config->{metricTypes}->{total}++;
+	$config->{metricTypes}->{hashTable}->{$mType} = $mTypeIdx;
+	push @{$config->{metricTypes}->{names}}, $mType;
+	push @{$config->{metricTypes}->{totals}}, 1;
+	push @{$config->{metricTypes}->{indices}}, 0;
     }
     else {
-	$config->{expTypes}->{totals}->[$expTypeIndex]++;
+	$config->{metricTypes}->{totals}->[$mTypeIdx]++;
     }
-    if (!defined($expNameIndex)) {
-	$expNameIndex = $config->{displayNames}->{total}++;
-	$config->{displayNames}->{hashTable}{$expName} = $expNameIndex;
-	push @{$config->{displayNames}->{names}}, $expName;
-	push @{$config->{displayNames}->{totals}}, 1;
-	push @{$config->{displayNames}->{indices}}, 0;
+    if (!defined($mNameIdx)) {
+	$mNameIdx = $config->{metricDispNms}->{total}++;
+	$config->{metricDispNms}->{hashTable}{$mName} = $mNameIdx;
+	push @{$config->{metricDispNms}->{names}}, $mName;
+	push @{$config->{metricDispNms}->{totals}}, 1;
+	push @{$config->{metricDispNms}->{indices}}, 0;
     }
     else {
-	$config->{displayNames}->{totals}->[$expNameIndex]++;
+	$config->{metricDispNms}->{totals}->[$mNameIdx]++;
     }
-    $aMetric->{expType} = $expTypeIndex;
-    $aMetric->{displayName} = $expNameIndex;
-    #print STDOUT "  -", @{$config->{expTypes}->{totals}}, "\n";
-    #print STDOUT "  -", @{$config->{displayNames}->{totals}}, "\n";
+    $aMetric->{type} = $mTypeIdx;
+    $aMetric->{dispNm} = $mNameIdx;
+    #print STDOUT "  -", @{$config->{metricTypes}->{totals}}, "\n";
+    #print STDOUT "  -", @{$config->{metricDispNms}->{totals}}, "\n";
 }
 
 
@@ -733,22 +794,22 @@ sub createOutputFiles {
 	# both name and display name are defined according to whether
 	# there are multiple instances of them.  If there are,
 	# distingish by appending a cardinal number
-	my $expType = $metric->{expType};
-	my $expTypeQ = $config->{expTypes}->{names}[$expType];
-	if ($config->{expTypes}->{totals}[$expType] > 1) {
-	    $expTypeQ .= "-" . $config->{expTypes}->{indices}[$expType]++;
+	my $mType = $metric->{type};
+	my $mTypeQ = $config->{metricTypes}->{names}[$mType];
+	if ($config->{metricTypes}->{totals}[$mType] > 1) {
+	    $mTypeQ .= "-" . $config->{metricTypes}->{indices}[$mType]++;
 	}
 	
-	my $dispNm = $metric->{displayName};
-	my $dispNmQ = $config->{displayNames}->{names}[$dispNm];
-	if ($config->{displayNames}->{totals}[$dispNm] > 1) {
-	    $dispNmQ .= "-" . $config->{displayNames}->{indices}[$dispNm]++;
+	my $dispNm = $metric->{dispNm};
+	my $dispNmQ = $config->{metricDispNms}->{names}[$dispNm];
+	if ($config->{metricDispNms}->{totals}[$dispNm] > 1) {
+	    $dispNmQ .= "-" . $config->{metricDispNms}->{indices}[$dispNm]++;
 	}
 	
-	#print STDOUT "expTypeQ = $expTypeQ\n";
+	#print STDOUT "mTypeQ = $mTypeQ\n";
 	#print STDOUT "dispNmQ = $dispNmQ\n";
-	$metric->{expType} = $expTypeQ;    # save for later (FIXME: ugly)
-	$metric->{displayName} = $dispNmQ; # save for later (FIXME: ugly)
+	$metric->{type} = $mTypeQ;    # save for later (FIXME: ugly)
+	$metric->{dispNm} = $dispNmQ; # save for later (FIXME: ugly)
 	
 	# if the PROFILEfile is undefined, we must create it
 	if (!defined($metric->{PROFILEfile})) {
@@ -756,9 +817,9 @@ sub createOutputFiles {
 	    
 	    # FIXME: Only for ssrun
 	    my $PROFILE = $metric->{rawProfFiles}[0];
-	    $PROFILE =~ s/$ssrunFileRE/$1.$expTypeQ$pxmlExt/;
+	    $PROFILE =~ s/$ssrunFileRE/$1.$mTypeQ$pxmlExt/;
 	    if ($PROFILE eq $metric->{rawProfFiles}[0]) {
-		$PROFILE .= ".$expTypeQ$pxmlExt"; # 
+		$PROFILE .= ".$mTypeQ$pxmlExt"; # 
 	    }
 	    
 	    my $command = "$profileCmd -lines";
@@ -790,12 +851,11 @@ sub createOutputFiles {
 
     # print paths
     $i = 0;
-    for ($i = 0; $i < $config->{incDirs}->{total}; $i++) {
-	my $incdir = xmlEsc($config->{incDirs}->{names}[$i]);
-	my $view = $incdir;
-	if ( $view eq "." ) { $view = ""; }
-	elsif ( $view =~ "/^\//" ) { $view = "/" . $view; }
-	print {$outFHndl} "<PATH name=\"", $incdir,"\" viewname=\"src", $view, "\"/>\n";
+    for ($i = 0; $i < $config->{srcPaths}->{total}; $i++) {
+	my $srcdir = xmlEsc($config->{srcPaths}->{names}[$i]);
+	my $viewnm = getViewnameFromSrcPath($srcdir);
+	print {$outFHndl} "<PATH name=\"", $srcdir, "\" ",
+	                  "viewname=\"", $viewnm, "\"/>\n";
     }
     print {$outFHndl} "\n";
     
@@ -812,8 +872,8 @@ sub createOutputFiles {
 	
 	# print METRIC start tag
 	print {$outFHndl} 
-	  "<METRIC name=\"", xmlEsc($metric->{expType}), "\" ",
-	  "displayName=\"", xmlEsc($metric->{displayName}), "\"";
+	  "<METRIC name=\"", xmlEsc($metric->{type}), "\" ",
+	  "displayName=\"", xmlEsc($metric->{dispNm}), "\"";
 	
 	if ($i == 0) { print {$outFHndl} " sortBy=\"true\""; }
 	print {$outFHndl} ">\n";
