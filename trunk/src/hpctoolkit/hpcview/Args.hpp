@@ -108,6 +108,7 @@ public:
   bool XML_ToStdout;
   bool XML_DumpAllMetrics;
   String XML_Dump_File;
+  bool FlatCSVOutput;
 
   int depthToFlatten; 
   int maxLinesPerPerfPane; 

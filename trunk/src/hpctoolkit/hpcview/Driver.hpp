@@ -101,6 +101,7 @@ public:
 		const char *pre = "") const;
   void XML_Dump(PgmScope* pgm, int dumpFlags, std::ostream &os = std::cout, 
 		const char *pre = "") const;
+  void CSV_Dump(PgmScope* pgm, std::ostream &os = std::cout) const;
 
 private: 
   String title;

@@ -222,7 +222,9 @@ realmain(int argc, char* const* argv)
   // Traverse the tree and removes all the nodes that don't have profile
   // data associated with them.
   //-------------------------------------------------------
-  UpdateScopeTree( scopes.Root(), driver.NumberOfMetrics() );
+  // do not remove the scopes with no profile data if the output is flat CSV
+  if (! args.FlatCSVOutput)
+    UpdateScopeTree( scopes.Root(), driver.NumberOfMetrics() );
   
   scopes.Root()->Freeze(); // disallow further additions to tree 
 
@@ -263,6 +265,23 @@ realmain(int argc, char* const* argv)
     CopySourceFiles(scopes.Root(), driver.PathVec(), args.htmlDir);
   }
 
+  if ( args.FlatCSVOutput ) {
+    if ( args.XML_ToStdout ) {
+      cerr << "The final scope tree (in CSV) will appear on stdout" << endl; 
+      driver.CSV_Dump(scopes.Root());
+    } else {
+      String dmpFile = args.htmlDir + "/" + args.XML_Dump_File;
+      
+      cerr << "The final scope tree (in CSV) will be written to "
+	   << dmpFile << endl;
+      std::ofstream XML_outFile(dmpFile);
+      if ( !XML_outFile ) {
+	cerr << "Output file open failed; skipping write of final scope tree."
+             << endl;
+      }
+      driver.CSV_Dump(scopes.Root(), XML_outFile);
+    }
+  } else
   if ( args.OutputFinalScopeTree ) {
     int dumpFlags = (args.XML_DumpAllMetrics) ?
       0 : ScopeInfo::DUMP_LEAF_METRICS;
