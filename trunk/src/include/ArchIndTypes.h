@@ -204,7 +204,7 @@
 #  define ARCH_USE_LONG_LONG 1
 
 # endif // __sun
-#elif (__i386 && __linux || DARWIN_POWERPC)
+#elif ((__i386 && __linux) || defined(DARWIN_POWERPC))
 
   // int/long/pointer: 32 bits (_ILP32)
   typedef long          psint;  // pointer-sized int (32-bit)
