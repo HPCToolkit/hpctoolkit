@@ -1,0 +1,260 @@
+#! /usr/bin/env perl
+# -*-Mode: perl;-*-
+
+# make sure we execute perl
+#eval '(exit $?0)' && eval 'exec perl -S $0 ${1+"$@"}'
+#& eval 'exec perl -S $0 $argv:q'
+#if 0;
+
+## $Id$
+## * BeginRiceCopyright *****************************************************
+## 
+## Copyright ((c)) 2002, Rice University 
+## All rights reserved.
+## 
+## Redistribution and use in source and binary forms, with or without
+## modification, are permitted provided that the following conditions are
+## met:
+## 
+## * Redistributions of source code must retain the above copyright
+##   notice, this list of conditions and the following disclaimer.
+## 
+## * Redistributions in binary form must reproduce the above copyright
+##   notice, this list of conditions and the following disclaimer in the
+##   documentation and/or other materials provided with the distribution.
+## 
+## * Neither the name of Rice University (RICE) nor the names of its
+##   contributors may be used to endorse or promote products derived from
+##   this software without specific prior written permission.
+## 
+## This software is provided by RICE and contributors "as is" and any
+## express or implied warranties, including, but not limited to, the
+## implied warranties of merchantability and fitness for a particular
+## purpose are disclaimed. In no event shall RICE or contributors be
+## liable for any direct, indirect, incidental, special, exemplary, or
+## consequential damages (including, but not limited to, procurement of
+## substitute goods or services; loss of use, data, or profits; or
+## business interruption) however caused and on any theory of liability,
+## whether in contract, strict liability, or tort (including negligence
+## or otherwise) arising in any way out of the use of this software, even
+## if advised of the possibility of such damage. 
+## 
+## ******************************************************* EndRiceCopyright *
+
+#############################################################################
+##
+## $Source$ 
+##
+##   Nathan Tallent.
+##
+#############################################################################
+
+use strict;
+use HPCToolkitVersionInfo;
+use IO::File;
+
+# Does not seem to be fully implemented very widely
+#use Math::BigInt; # Math::BigFloat also exists
+#Math::BigInt->accuracy(20);
+
+STDOUT->autoflush(1); 
+
+
+my $usage = 
+"usage: dcpicount <path to dcpidb_epoch_platform>
+
+Given the path to one collection of dcpi binary data, prints total
+cycles (if available) for each image.  The dcpi binary data is located
+within the following path: \$DCPIDB/<epoch>/<platform>.
+\n";
+
+#############################################################################
+## Globals
+#############################################################################
+
+my %tuple = (
+	     dcpidata   => undef,
+	     image      => undef,
+	     cyclecount => undef,
+	     );
+
+
+my $nameRE = '^name\s+(.\S+)';
+my $pathRE = '^path\s+(.\S+)';
+my $eventcyclesRE = '^event\s+(\d+) cycles:(\d+):(\d+)';
+
+#############################################################################
+## main/driver
+#############################################################################
+
+# ----------------------------------------------------------
+# Parse the command line
+# ----------------------------------------------------------
+
+## Make sure called with minimum number of arguments
+my $numArgs = scalar(@ARGV);
+if ($numArgs < 1) { die $usage; }
+
+# The path to the dcpi DB *including* an epoch
+my $dcpidb = $ARGV[0]; 
+
+if (! (-d $dcpidb)) {
+    print STDERR "*** Directory '$dcpidb' does not exist ***\n"; 
+    printUsageAndExit($0);
+} 
+
+#my $argidx = 0;
+#for ( ; $argidx < $numArgs; $argidx++) {
+#    my $arg = $ARGV[$argidx]; 
+#}
+
+printCountsForAll($dcpidb);
+exit(0);
+
+#############################################################################
+## Subroutines
+#############################################################################
+
+# printUsageAndExit
+sub printUsageAndExit 
+{
+    my ($command) = @_; # not used now
+    print STDOUT ${usage};
+    exit(-1);
+}
+
+# printVersionAndExit
+sub printVersionAndExit 
+{
+    my ($command) = @_; # not used now
+    print STDERR "dcpicounts: ", $HPCToolkitVersionInfo::info, "\n";
+    exit(-1);
+}
+
+
+#############################################################################
+## printCountsForAll
+#############################################################################
+
+
+# getCountsForAll: Given a path to several dcpi binary data files,
+#   extract basic count info for each one.  Prints info on STDOUT.
+# returns: nothing
+# effect: 
+# assumes: The list contains at least one file and that each file
+#   exists.  Each PROFILE contains no prior load modules.
+sub printCountsForAll
+{
+    my($dcpidb) = @_;
+
+    my ($countVec) = getCountsForAll($dcpidb);
+
+    my $total = 0; # Math::BigInt->new('0');
+    map { $total += $_->{cyclecount} } @$countVec;
+    
+    print STDOUT "Summary for $dcpidb...\n";
+    for (my $i = 0; $i < scalar(@{$countVec}); $i++) {
+	my $cnt = $countVec->[$i];
+	#print STDOUT $cnt->{cyclecount}->bsstr(), "\n";
+	printf STDOUT "%20llu %s\n", $cnt->{cyclecount}, , $cnt->{image};
+    }
+    printf STDOUT "%20llu\n", $total;
+}
+
+
+# getCountsForAll: Given a path to several dcpi binary data files,
+#   extract basic count info for each one.  Prints info on STDOUT.
+# returns: 
+# effect: 
+# assumes: 
+sub getCountsForAll
+{
+    my($dcpidb) = @_;
+  
+    my $tmpfile = "dcpicounts.deleteme-$$.tmp~";
+    my $countVec = [ ];
+    
+    # ----------------------------------------------------------
+    # Iterate over files within this directory.  There should only be
+    # dcpi binary data files and directories to consider.
+    # ----------------------------------------------------------
+    opendir(CURRENT_DIR, $dcpidb);
+    my (@dir_entries) = grep(!/^\./, readdir(CURRENT_DIR));
+    closedir(CURRENT_DIR);
+
+    for my $dir (@dir_entries) {
+	my $file = "$dcpidb/$dir";
+	if (-d "$file") { next; }
+        if (!-r "$file") { 
+	    die "*** Cannot read file '$file' ***\n"; 
+	}
+
+	my $cnt = { %tuple, };
+	
+	# Run dcpicat
+	my $cmd = "dcpicat $file > $tmpfile";
+	system($cmd) == 0 
+	    or die "*** system '$cmd' failed: $? ***";
+	
+	# Get the counts from dcpicat
+	my ($name, $count) = getCounts($tmpfile);
+	unlink($tmpfile);
+	
+	$cnt->{dcpidata}   = $file;
+	$cnt->{image}      = $name;
+	$cnt->{cyclecount} = $count;
+	
+	push @$countVec, $cnt;
+    }
+
+    return $countVec;
+}
+
+# getCounts: Given a dcpicat file extract the name and cycle count
+sub getCounts
+{
+    my($file) = @_;
+    my $line = undef;    
+
+    # Open/prepare file
+    my $fhndl = new IO::File;
+    $fhndl->open("< $file") 
+	or die "Error! Can't open '$file'\n";
+    
+    my ($name, $path) = (undef, undef);
+    my $count = 0; #Math::BigInt->new('0');
+
+    while ($line = <$fhndl>) {
+	
+	# We prefer path, but it may not be available
+	if ($line =~ /$nameRE/) {
+	    $name = $1;
+	}
+
+	# Get the name from path (may be multiple instances of path)
+	if (!defined($path) && $line =~ /$pathRE/) {
+	    $path = $1;
+	}
+	
+	# Find the cycles event
+	if ($line =~ /$eventcyclesRE/) {
+	    my $samples = $1; # Math::BigInt->new($1);
+	    my $period = $2; # Math::BigInt->new($2);
+	    $count = $samples * $period;
+	}
+	
+	# We have read enough when we reach the first {pc count} line
+	if ($line =~ /^0x\d+/) { 
+	    last;
+	}
+
+    }
+    $fhndl->close();
+
+    defined($name) or die "Internal Error! No name in '$file'!\n";
+
+    if (defined($path)) { $name = $path; }
+    
+    return ($name, $count);
+}
+
