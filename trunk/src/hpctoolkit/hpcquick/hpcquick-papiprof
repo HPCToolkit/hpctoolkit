@@ -484,7 +484,8 @@ sub createOutputFiles {
     for ($i = 0; $i < $config->{incDirs}->{total}; $i++) {
 	print {$outFileHandle} "<PATH name=\"";
 	print {$outFileHandle} doEscape($config->{incDirs}->{names}[$i]);
-	print {$outFileHandle} "\"/>\n";
+	print {$outFileHandle} "\" viewname=\"src", $i,"\" ";
+	print {$outFileHandle} "/>\n";
     }
     print {$outFileHandle} "\n";
     
@@ -568,8 +569,8 @@ sub createOutputFiles {
 
     # run hpcview
     print STDOUT "Running hpcview to create a browsable database\n";
-    system("hpcview -h HPCQUICK -z $out");
-    print {$logFileHandle}  "hpcview -h HPCQUICK -z $out\n";
+    system("hpcview -x hpcquick $out");
+    print {$logFileHandle}  "hpcview -x hpcquick $out\n";
 
     $logFileHandle->close();
 
