@@ -390,6 +390,7 @@ BuildFromProc(FileScope* fileScope, Procedure* p, bool fixBoundaries)
     cout << "  total blocks: " << cfg.num_nodes() << endl
 	 << "  total edges:  " << cfg.num_edges() << endl;
     cfg.dump(cout);
+    cfg.dumpdot(cout);
 
     cout << "*** Tarjan Interval Tree for `" << funcNm << "' ***" << endl;
     tarj.Dump();
@@ -1319,6 +1320,11 @@ BuildPCToSrcLineMap(PCToSrcLineXMap* map, Procedure* p)
     if (theFile.Empty() && !file.Empty()) {
       theFile = file; 
     }
+    
+#if 0
+    cerr << hex << pc << dec << ": " 
+	 << file << ":" << func << ":" << line << endl;
+#endif
     
     // 2. Update 'pmap'
     SrcLineX* lineInstance = new SrcLineX(line, 0); // MAP
