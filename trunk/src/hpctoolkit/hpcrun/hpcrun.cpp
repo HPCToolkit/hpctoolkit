@@ -102,7 +102,7 @@ main(int argc, char* argv[])
     return retval; // error already printed
   }
   
-  // FIXME: free memory in opt_command_argv
+  // never reached except on error: No need to free memory in opt_command_argv
   return 0;
 }
 
