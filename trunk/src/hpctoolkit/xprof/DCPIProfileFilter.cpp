@@ -72,10 +72,26 @@ using std::dec;
    sizeof(PredefinedDCPIMetricTable::table) / sizeof(PredefinedDCPIMetricTable::Entry)
 
 
+
+// --------------------------------------------------------------------------
+// NOTE: 
+//   the availability of non-ProfileMe metrics must be determined
+//   by string matching. Thus, the 'availStr' *must* match the metric names
+//   found in dcpicat output (DCPIProfile)
+// --------------------------------------------------------------------------
+
 PredefinedDCPIMetricTable::Entry PredefinedDCPIMetricTable::table[] = {
 
+  // non-ProfileMe metric
+  { "CYCLES", "Processor cycles",
+    RM, "cycles",
+    DCPIMetricExpr(DCPI_MTYPE_RM | DCPI_RM_cycles),
+    InsnClassExpr(INSN_CLASS_ALL)
+  },
+  
   // -------------------------------------------------------
-  // Metrics available whenever ProfileMe is used (any PM mode)
+  // Each ProfileMe metric is marked with the modes (PM mode) 
+  // in which it is available
   // -------------------------------------------------------
 
   // We generally avoid metrics with early_kill set: When a profiled
@@ -83,6 +99,14 @@ PredefinedDCPIMetricTable::Entry PredefinedDCPIMetricTable::table[] = {
   // the PC reported by the hardware may be wrong and all counter
   // values and bits other than valid, early_kill, no_trap, and and
   // map_stall may be wrong.
+
+  // available in ProfileMe mode PM1 only
+  {"pmRETDEL", "Delays before retire (excludes all cycles prior to fetch).",
+   PM1, NULL,
+   DCPIMetricExpr(DCPI_MTYPE_PM | DCPI_PM_CNTR_retdelay 
+		  | DCPI_PM_ATTR_early_kill_F),
+   InsnClassExpr(INSN_CLASS_ALL)
+  },
 
   // FIXME: Can we cross check with the retire counter for mode 0, 2
   {"INSTRUCT", "Retired Instructions (includes mispredicted branches)",
@@ -99,11 +123,25 @@ PredefinedDCPIMetricTable::Entry PredefinedDCPIMetricTable::table[] = {
    InsnClassExpr(INSN_CLASS_FLOP)
   },
 
-  {"MPBRANCH", "Mispredicted branches",
+  {"MEMOPS", "Retired Memory Access Instructions",
+   PM0 | PM1 | PM2 | PM3, NULL,
+   DCPIMetricExpr(DCPI_MTYPE_PM | DCPI_PM_CNTR_count | DCPI_PM_ATTR_retired_T
+		  | DCPI_PM_ATTR_early_kill_F),
+   InsnClassExpr(INSN_CLASS_MEMOP)
+  },
+
+  {"INTOPS", "Retired Integer Instructions",
+   PM0 | PM1 | PM2 | PM3, NULL,
+   DCPIMetricExpr(DCPI_MTYPE_PM | DCPI_PM_CNTR_count | DCPI_PM_ATTR_retired_T
+		  | DCPI_PM_ATTR_early_kill_F),
+   InsnClassExpr(INSN_CLASS_INTOP)
+  },
+
+  {"TRAPS", "Instructions causing traps",
    PM0 | PM1 | PM2 | PM3, NULL,
    DCPIMetricExpr(DCPI_MTYPE_PM | DCPI_PM_CNTR_count 
-		  | DCPI_PM_ATTR_cbrmispredict_T | DCPI_PM_ATTR_early_kill_F),
-   InsnClassExpr(INSN_CLASS_ALL) /* bit is only true for branches */
+		  | DCPI_PM_ATTR_early_kill_F | DCPI_PM_TRAP_trap),
+   InsnClassExpr(INSN_CLASS_ALL)
   },
 
   {"LSREPLAY", "Replays caused by load/store ordering. [Untested]",
@@ -113,12 +151,36 @@ PredefinedDCPIMetricTable::Entry PredefinedDCPIMetricTable::table[] = {
    InsnClassExpr(INSN_CLASS_ALL)
   },
 
-  {"TRAPS", "Instructions causing traps",
+  {"MPBRANCH", "Mispredicted branches",
    PM0 | PM1 | PM2 | PM3, NULL,
    DCPIMetricExpr(DCPI_MTYPE_PM | DCPI_PM_CNTR_count 
-		  | DCPI_PM_ATTR_early_kill_F | DCPI_PM_TRAP_trap),
+		  | DCPI_PM_ATTR_cbrmispredict_T | DCPI_PM_ATTR_early_kill_F),
+   InsnClassExpr(INSN_CLASS_ALL) /* bit is only true for branches */
+  },
+
+
+  {"pmBCMISS", "sampled B-cache (L2) misses.",
+   PM0 | PM1 | PM2 | PM3, NULL,
+   DCPIMetricExpr(DCPI_MTYPE_PM | DCPI_PM_CNTR_bcmisses 
+		  | DCPI_PM_ATTR_early_kill_F),
    InsnClassExpr(INSN_CLASS_ALL)
   },
+
+  {"TLBMISS", "TLB miss at any level.",
+   PM0 | PM1 | PM2 | PM3, NULL,
+   DCPIMetricExpr(DCPI_MTYPE_PM | DCPI_PM_CNTR_count 
+		  | DCPI_PM_TRAP_dtbmiss | DCPI_PM_TRAP_dtb2miss3 
+		  | DCPI_PM_TRAP_dtb2miss4 | DCPI_PM_ATTR_early_kill_F),
+   InsnClassExpr(INSN_CLASS_ALL)
+  },
+
+  {"IMISS", "Lower bound on instruction cache misses",
+   PM0 | PM1 | PM2 | PM3, NULL,
+   DCPIMetricExpr(DCPI_MTYPE_PM | DCPI_PM_CNTR_count 
+		  | DCPI_PM_ATTR_nyp_T | DCPI_PM_ATTR_early_kill_F),
+   InsnClassExpr(INSN_CLASS_ALL)
+  },
+
 
 #if 0
 //   "icache_miss_lb", "Lower bound on icache misses"
@@ -141,12 +203,6 @@ PredefinedDCPIMetricTable::Entry PredefinedDCPIMetricTable::table[] = {
    InsnClassExpr(INSN_CLASS_ALL)
   },
 
-  {"pmRETDEL", "Delays before retire (excludes all cycles prior to fetch).",
-   PM1, NULL,
-   DCPIMetricExpr(DCPI_MTYPE_PM | DCPI_PM_CNTR_retdelay 
-		  | DCPI_PM_ATTR_early_kill_F),
-   InsnClassExpr(INSN_CLASS_ALL)
-  },
 
   {"pmRETIRE", "Instruction retires.",
    PM0 | PM2, NULL,
@@ -154,14 +210,6 @@ PredefinedDCPIMetricTable::Entry PredefinedDCPIMetricTable::table[] = {
 		  | DCPI_PM_ATTR_early_kill_F),
    InsnClassExpr(INSN_CLASS_ALL)
   },
-
-  {"pmBCMISS", "B-cache (L2) cache misses.",
-   PM2, NULL,
-   DCPIMetricExpr(DCPI_MTYPE_PM | DCPI_PM_CNTR_bcmisses 
-		  | DCPI_PM_ATTR_early_kill_F),
-   InsnClassExpr(INSN_CLASS_ALL)
-  },
-
   {"pmREPLAY", "Memory system replay traps.",
    PM3, NULL,
    DCPIMetricExpr(DCPI_MTYPE_PM | DCPI_PM_CNTR_replays
@@ -183,19 +231,6 @@ PredefinedDCPIMetricTable::Entry PredefinedDCPIMetricTable::table[] = {
 //  "m3replays"    Pipeline replay traps
 #endif
 
-  // -------------------------------------------------------
-  // Non ProfileMe metrics, possibly available at any time
-  // -------------------------------------------------------
-  // Note: because availability of regular metrics must be determined
-  // by string matching, the 'availStr' *must* match the metric names
-  // found in dcpicat output (DCPIProfile)
-
-  { "CYCLES", "Processor cycles",
-    RM, "cycles",
-    DCPIMetricExpr(DCPI_MTYPE_RM | DCPI_RM_cycles),
-    InsnClassExpr(INSN_CLASS_ALL)
-  },
-  
   { "RETIRES", "Retired instructions",
     RM, "retires",
     DCPIMetricExpr(DCPI_MTYPE_RM | DCPI_RM_retires),
