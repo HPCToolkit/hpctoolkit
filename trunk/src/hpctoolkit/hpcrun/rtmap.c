@@ -34,7 +34,7 @@
 
 #define TESTING 0
 
-static loadmodules_t loadmodules;
+static rtloadmap_t rtloadmap;
 
 static void finalizelines(void);
 static int iscodeline(char *line);
@@ -45,7 +45,7 @@ static char* offset(char *line);
 static char* length(char *line);
 static long htoll(char *s);
 
-static void dumploadmodules(void);
+static void dumprtloadmap(void);
 static void dumplines(void);
 
 /****************************************************************************/
@@ -61,7 +61,7 @@ static void dumplines(void);
  *  Read lines from the load maps in /proc to find runtime libraries
  *  and load addresses.
  */
-loadmodules_t* 
+rtloadmap_t* 
 hpcrun_code_lines_from_loadmap(int dumpmap)
 {
   char filename[PATH_MAX];
@@ -84,11 +84,11 @@ hpcrun_code_lines_from_loadmap(int dumpmap)
   finalizelines();
 
   if (dumpmap) { 
-    dumploadmodules(); 
+    dumprtloadmap(); 
     /* dumplines(); */
   }
 
-  return &loadmodules;
+  return &rtloadmap;
 }
 
 /****************************************************************************/
@@ -144,18 +144,18 @@ finalizelines(void)
     }
   }
   
-  loadmodules.module = 
-    (loadmodule_t *) malloc(sizeof(loadmodule_t) * slots_in_use);
+  rtloadmap.module = 
+    (rtloadmod_desc_t *) malloc(sizeof(rtloadmod_desc_t) * slots_in_use);
   
   for(i = 0; i < slots_in_use; i++) {
-    loadmodules.module[i].name = strdup(name(mappings[i]));
-    loadmodules.module[i].offset = htoll(offset(mappings[i]));
-    loadmodules.module[i].length = htoll(length(mappings[i])) -
-      loadmodules.module[i].offset;
+    rtloadmap.module[i].name = strdup(name(mappings[i]));
+    rtloadmap.module[i].offset = htoll(offset(mappings[i]));
+    rtloadmap.module[i].length = htoll(length(mappings[i])) -
+      rtloadmap.module[i].offset;
   }
-  loadmodules.count = slots_in_use;
+  rtloadmap.count = slots_in_use;
 #if TESTING
-  dumploadmodules();
+  dumprtloadmap();
 #endif
   
   mappings = realloc(mappings, (slots_in_use +1) * sizeof(char*));
@@ -195,16 +195,16 @@ htoll(char *s)
 /*  Dump a processed form of the load map
  */
 static void 
-dumploadmodules(void)
+dumprtloadmap(void)
 {
   int i;
   fprintf(stderr, "Dumping currently mapped load modules:\n");
-  for (i = 0; i < loadmodules.count; i++) {
+  for (i = 0; i < rtloadmap.count; i++) {
     fprintf(stderr,"  offset=%#0*llx ", bhl,
-	    loadmodules.module[i].offset);
+	    rtloadmap.module[i].offset);
     fprintf(stderr,"length=%#0*lx ", bhl,
-	    loadmodules.module[i].length);
-    fprintf(stderr,"name=%s\n", loadmodules.module[i].name);
+	    rtloadmap.module[i].length);
+    fprintf(stderr,"name=%s\n", rtloadmap.module[i].name);
   }
 }
 

@@ -75,14 +75,14 @@ static void hpcr_fini(void);
 static void init_options(void);
 
 static void init_hpcrun(void);
-static void done_hpcrun(void);
+static void done_hpcrun();
 
-static void write_all_profiles(void);
+static void write_all_profiles(FILE* fp, rtloadmap_t* lm, 
+			       hpcpapi_profile_desc_vec_t* profdescs);
 
 /*************************** Variable Declarations **************************/
 
-/* the profiled command */
-static char *command_name;
+/* These variables are set when the library is initialized */
 
 /* hpcrun options (this should be a tidy struct) */
 static int      opt_debug;
@@ -92,23 +92,21 @@ static uint64_t opt_sampleperiod;
 static char     opt_outpath[PATH_MAX];
 static int      opt_flagscode;
 
-/* used for PAPI stuff (this should be a tidy struct) */
-static PAPI_event_info_t papi_eventinfo;
-static int               papi_eventcode;
-static int               papi_eventset;
-static uint64_t          papi_sampleperiod;
-static int               papi_flagscode;
-static PAPI_sprofil_t*   papi_profiles;
+/*************************** Variable Declarations **************************/
 
-static unsigned int papi_bytesPerCodeBlk;
-/* PAPI version 2 */
-// static unsigned int papi_bytesPerCntr = sizeof(unsigned short); /* 2 */
-static unsigned int papi_bytesPerCntr = sizeof(unsigned int); /* 4 */
-static unsigned int papi_scale;
+/* These variables are set when libc_start_main is intercepted */
 
-/* hpcrun */
-static loadmodules_t *loadmodules;
-static FILE *proffile;
+/* The profiled command and its run time load map */
+static char*        profiled_cmd;
+static rtloadmap_t* rtloadmap;
+
+/* PAPI profiling information (list) */
+static hpcpapi_profile_desc_vec_t papi_profdescs;
+   static hpcpapi_profile_desc_t papi_profxxx; /* temporary */
+
+/* hpcrun output files (list) */
+static hpcrun_ofile_desc_vec_t hpc_ofiles;
+   static hpcrun_ofile_desc_t ofile; /* temporary */
 
 /****************************************************************************/
 
@@ -218,12 +216,12 @@ init_options(void)
   
   /* Profiling flags: default PAPI_PROFIL_POSIX */
   {
-    const papi_flagdesc_t *f = hpcrun_flag_by_name("PAPI_PROFIL_POSIX");
+    const hpcpapi_flagdesc_t *f = hpcpapi_flag_by_name("PAPI_PROFIL_POSIX");
     opt_flagscode = f->code;
 
     env_flags = getenv("HPCRUN_EVENT_FLAG");
     if (env_flags) {
-      if ((f = hpcrun_flag_by_name(env_flags)) == NULL) {
+      if ((f = hpcpapi_flag_by_name(env_flags)) == NULL) {
 	fprintf(stderr, "hpcrun: invalid profiling flag '%s'. Aborting.\n",
 		env_flags);
 	exit(-1);
@@ -258,7 +256,7 @@ static int
 hpcr_libc_start_main START_MAIN_PARAMS
 {
   /* squirrel away for later use */
-  command_name = ubp_av[0];  /* command is also in /proc/pid/cmdline */
+  profiled_cmd = ubp_av[0];  /* command is also in /proc/pid/cmdline */
   real_fini = fini;
   
   /* initialize papi profiling */
@@ -266,7 +264,7 @@ hpcr_libc_start_main START_MAIN_PARAMS
   
   /* launch the process */
   if (opt_debug >= 1) {
-    fprintf(stderr, "** launching application: %s\n", command_name);
+    fprintf(stderr, "** launching application: %s\n", profiled_cmd);
   }
   (*sm)(main, argc, ubp_av, init, hpcr_fini, rtld_fini, stack_end);
   return 0; /* never reached */
@@ -287,9 +285,9 @@ hpcr_fini(void)
  * Initialize PAPI profiling
  ****************************************************************************/
 
-static void init_papi(void);
-static void start_papi(void);
-static void init_output(void);
+static void init_papi(hpcpapi_profile_desc_vec_t* profdescs, rtloadmap_t *lm);
+static void start_papi(hpcpapi_profile_desc_vec_t* profdescs);
+static void init_output(hpcpapi_profile_desc_vec_t* profdescs);
 
 /*
  *  Prepare for PAPI profiling
@@ -300,15 +298,17 @@ init_hpcrun(void)
   if (opt_debug >= 1) { 
     fprintf(stderr, "* initializing hpcrun monitoring\n");
   }
-
-  init_papi();
-  init_output();
-  start_papi();
+  
+  rtloadmap = hpcrun_code_lines_from_loadmap(opt_debug);
+  
+  init_papi(&papi_profdescs, rtloadmap); /* init papi_profdescs */
+  init_output(&papi_profdescs);
+  start_papi(&papi_profdescs);
 }
 
 
 static void 
-init_papi(void)
+init_papi(hpcpapi_profile_desc_vec_t* profdescs, rtloadmap_t *lm)
 {  
   int pcode;
   const char* evstr;
@@ -319,44 +319,40 @@ init_papi(void)
   }
   
   /* Profiling event */
-  papi_eventcode = 0;
-  if ((pcode = PAPI_event_name_to_code(opt_eventname, &papi_eventcode))
+  papi_profxxx.ecode = 0;
+  if ((pcode = PAPI_event_name_to_code(opt_eventname, &papi_profxxx.ecode))
       != PAPI_OK) {
     fprintf(stderr, "hpcrun: invalid PAPI event '%s'. Aborting.\n",
 	    opt_eventname);
     exit(-1);
   }
-  if ((pcode = PAPI_query_event(papi_eventcode)) != PAPI_OK) { 
+  if ((pcode = PAPI_query_event(papi_profxxx.ecode)) != PAPI_OK) { 
     /* should not strictly be necessary */
     fprintf(stderr, 
 	    "hpcrun: PAPI event '%s' not supported (code=%d). Aborting.\n",
 	    evstr, pcode);
     exit(-1);
   }
-  if ((pcode = PAPI_get_event_info(papi_eventcode, &papi_eventinfo)) 
+  if ((pcode = PAPI_get_event_info(papi_profxxx.ecode, &papi_profxxx.einfo)) 
       != PAPI_OK) {
     fprintf(stderr, "hpcrun: PAPI error %d: '%s'. Aborting.\n",
 	    pcode, PAPI_strerror(pcode));
     exit(-1);
   }
   
-  papi_eventset = PAPI_NULL;
-  if (PAPI_create_eventset(&papi_eventset) != PAPI_OK) {
+  papi_profxxx.eset = PAPI_NULL;
+  if (PAPI_create_eventset(&papi_profxxx.eset) != PAPI_OK) {
     fprintf(stderr, "hpcrun: failed to create PAPI event set. Aborting.\n");
     exit(-1);
   }
   
-  if (PAPI_add_event(papi_eventset, papi_eventcode) != PAPI_OK) {
+  if (PAPI_add_event(papi_profxxx.eset, papi_profxxx.ecode) != PAPI_OK) {
     fprintf(stderr, "hpcrun: failed to add event '%s'. Aborting.\n", evstr);
     exit(-1);
   }
   
   /* Profiling period */
-  papi_sampleperiod = opt_sampleperiod;
-
-  /* Profiling flags */
-  papi_flagscode = opt_flagscode;
-  papi_flagscode |= PAPI_PROFIL_BUCKET_32;
+  papi_profxxx.period = opt_sampleperiod;
 
   /* Set profiling scaling factor */
 
@@ -401,64 +397,71 @@ init_papi(void)
       of blocks in the region to be profiled.
       
   */
-  papi_bytesPerCodeBlk = 4;
-  papi_scale = 0x10000; // 0x8000 * (papi_bytesPerCntr >> 1);
   
-  if ( (papi_scale * papi_bytesPerCodeBlk) != (65536 * papi_bytesPerCntr) ) {
+  /* Profiling flags */
+  papi_profxxx.flags = opt_flagscode;
+  papi_profxxx.flags |= PAPI_PROFIL_BUCKET_32;
+  
+  //papi_profxxx.bytesPerCntr = sizeof(unsigned short); /* 2, PAPI v. 2 */
+  papi_profxxx.bytesPerCntr = sizeof(unsigned int);   /* 4 */
+  papi_profxxx.bytesPerCodeBlk = 4;
+  papi_profxxx.scale = 0x10000; // 0x8000 * (papi_profxxx.bytesPerCntr >> 1);
+  
+  if ( (papi_profxxx.scale * papi_profxxx.bytesPerCodeBlk) != (65536 * papi_profxxx.bytesPerCntr) ) {
     fprintf(stderr, "hpcrun: Programming error!\n");
   }
 }
 
+
 static void 
-start_papi(void)
+start_papi(hpcpapi_profile_desc_vec_t* profdescs)
 {
-  loadmodules_t *lm = hpcrun_code_lines_from_loadmap(opt_debug);
+  rtloadmap_t *lm = rtloadmap; /* FIXME */
   unsigned int bufsz;
   int i;
 
   /* 1. Prepare profiling buffers and structures */
-  loadmodules = lm;
-  papi_profiles = 
+  papi_profxxx.sprofs = 
     (PAPI_sprofil_t *) malloc(sizeof(PAPI_sprofil_t) * lm->count);
 
   if (opt_debug >= 3) { fprintf(stderr, "profile buffer details:\n"); }
 
   for (i = 0; i < lm->count; ++i) {
     /* eliminate use of libm and ceil() by adding 1 */
-    unsigned int ncntr = (lm->module[i].length / papi_bytesPerCodeBlk) + 1;
-    bufsz = ncntr * papi_bytesPerCntr;
+    unsigned int ncntr = (lm->module[i].length / papi_profxxx.bytesPerCodeBlk) + 1;
+    bufsz = ncntr * papi_profxxx.bytesPerCntr;
     
     /* buffer base */
-    papi_profiles[i].pr_base = (unsigned short *)malloc(bufsz);
+    papi_profxxx.sprofs[i].pr_base = (unsigned short *)malloc(bufsz);
     /* buffer size */
-    papi_profiles[i].pr_size = bufsz;
+    papi_profxxx.sprofs[i].pr_size = bufsz;
     /* pc offset */
-    papi_profiles[i].pr_off = (caddr_t) (unsigned long) lm->module[i].offset;
+    papi_profxxx.sprofs[i].pr_off = (caddr_t) (unsigned long) lm->module[i].offset;
     /* pc scaling */
-    papi_profiles[i].pr_scale = papi_scale;
+    papi_profxxx.sprofs[i].pr_scale = papi_profxxx.scale;
     
     /* zero out the profile buffer */
-    memset(papi_profiles[i].pr_base, 0x00, bufsz);
+    memset(papi_profxxx.sprofs[i].pr_base, 0x00, bufsz);
 
     if (opt_debug >= 3) {
       fprintf(stderr, 
 	      "\tprofile[%d] base = %p size = %u off = %lx scale = %u\n",
-	      i, papi_profiles[i].pr_base, papi_profiles[i].pr_size, 
-	      papi_profiles[i].pr_off, papi_profiles[i].pr_scale);
+	      i, papi_profxxx.sprofs[i].pr_base, papi_profxxx.sprofs[i].pr_size, 
+	      papi_profxxx.sprofs[i].pr_off, papi_profxxx.sprofs[i].pr_scale);
     }
   }
   
   if (opt_debug >= 3) {
     fprintf(stderr, "count = %d, es=%x ec=%x sp=%llu ef=%d\n",
-	    lm->count, papi_eventset, papi_eventcode, 
-	    papi_sampleperiod, papi_flagscode);
+	    lm->count, papi_profxxx.eset, papi_profxxx.ecode, 
+	    papi_profxxx.period, papi_profxxx.flags);
   }
 
   /* 2. Prepare PAPI subsystem for profiling */
   {
-    int r = PAPI_sprofil(papi_profiles, lm->count, papi_eventset, 
-			 papi_eventcode, papi_sampleperiod, 
-			 papi_flagscode);
+    int r = PAPI_sprofil(papi_profxxx.sprofs, lm->count, papi_profxxx.eset, 
+			 papi_profxxx.ecode, papi_profxxx.period, 
+			 papi_profxxx.flags);
     if (r != PAPI_OK) {
       fprintf(stderr,  "hpcrun: PAPI_sprofil failed, code %d. Aborting.\n", 
 	      r);
@@ -489,19 +492,20 @@ start_papi(void)
   }
 
   /* 4. Launch PAPI */
-  if (PAPI_start(papi_eventset) != PAPI_OK) {
+  if (PAPI_start(papi_profxxx.eset) != PAPI_OK) {
     fprintf(stderr,"hpcrun: failed to start event set. Aborting.\n");
     exit(-1);
   }
 }
 
+
 static void 
-init_output(void)
+init_output(hpcpapi_profile_desc_vec_t* profdescs)
 {
   static unsigned int outfilenmLen = PATH_MAX+32;
   int pcode;
   char outfilenm[outfilenmLen];
-  char* executable = command_name; 
+  char* executable = profiled_cmd; 
   char* eventstr;
   unsigned int len;
   char hostnam[128]; 
@@ -526,9 +530,9 @@ init_output(void)
   sprintf(outfilenm, "%s/%s.%s.%s.%d", opt_outpath, executable, eventstr, 
 	hostnam, getpid());
   
-  proffile = fopen(outfilenm, "w");
+  ofile.fs = fopen(outfilenm, "w");
 
-  if (proffile == NULL) {
+  if (ofile.fs == NULL) {
     fprintf(stderr,"hpcrun: failed to open output file '%s'. Aborting.\n",
 	    outfilenm);
     exit(-1);
@@ -540,6 +544,9 @@ init_output(void)
  * Finalize PAPI profiling
  ****************************************************************************/
 
+static void 
+fini_papi(hpcpapi_profile_desc_vec_t* profdescs);
+
 /*
  *  Finalize PAPI profiling
  */
@@ -547,23 +554,31 @@ static void
 done_hpcrun(void)
 {
   long long ct = 0;
-
+  
   if (opt_debug >= 1) { fprintf(stderr, "done_hpcrun:\n"); }
-  PAPI_stop(papi_eventset, &ct);
-  PAPI_remove_event(papi_eventset, papi_eventcode);
+  PAPI_stop(papi_profxxx.eset, &ct);
+  
+  write_all_profiles(ofile.fs, rtloadmap, &papi_profdescs);
+  
+  fini_papi(&papi_profdescs);
+}
 
-  PAPI_destroy_eventset(&papi_eventset);
-  write_all_profiles();
-
-  papi_eventset = PAPI_NULL;
+static void 
+fini_papi(hpcpapi_profile_desc_vec_t* profdescs)
+{
+  PAPI_cleanup_eventset(papi_profxxx.eset);
+  PAPI_destroy_eventset(&papi_profxxx.eset);
+  papi_profxxx.eset = PAPI_NULL;
+  
   PAPI_shutdown();
 }
+
 
 /****************************************************************************
  * Write profile data
  ****************************************************************************/
 
-static void write_module_profile(FILE *fp, loadmodule_t *m, 
+static void write_module_profile(FILE *fp, rtloadmod_desc_t *m, 
 				  PAPI_sprofil_t *p);
 static void write_module_data(FILE *fp, PAPI_sprofil_t *p);
 static void write_string(FILE *fp, char *str);
@@ -573,10 +588,9 @@ static void write_string(FILE *fp, char *str);
  *  Write profile data for this process
  */
 static void 
-write_all_profiles(void)
+write_all_profiles(FILE* fp, rtloadmap_t* lm, 
+		   hpcpapi_profile_desc_vec_t* profdescs)
 {
-  FILE *fp = proffile;
-
   /* Header information */
   fwrite(HPCRUNFILE_MAGIC_STR, 1, HPCRUNFILE_MAGIC_STR_LEN, fp);
   fwrite(HPCRUNFILE_VERSION, 1, HPCRUNFILE_VERSION_LEN, fp);
@@ -585,10 +599,9 @@ write_all_profiles(void)
   /* Load modules */
   {
     unsigned int i;
-    loadmodules_t *lm = loadmodules;
     hpc_fwrite_le4(&(lm->count), fp);
     for (i = 0; i < lm->count; ++i) {
-      write_module_profile(fp, &(lm->module[i]), &(papi_profiles[i]));
+      write_module_profile(fp, &(lm->module[i]), &(papi_profxxx.sprofs[i]));
     }
   }
 
@@ -596,7 +609,7 @@ write_all_profiles(void)
 }
 
 static void 
-write_module_profile(FILE *fp, loadmodule_t *m, PAPI_sprofil_t *p)
+write_module_profile(FILE *fp, rtloadmod_desc_t *m, PAPI_sprofil_t *p)
 {
   /* Load module name and load offset */
   if (opt_debug >= 1) { fprintf(stderr, "writing module %s\n", m->name); }
@@ -604,9 +617,9 @@ write_module_profile(FILE *fp, loadmodule_t *m, PAPI_sprofil_t *p)
   hpc_fwrite_le8(&(m->offset), fp);
   
   /* Profiling event name, description and period */
-  write_string(fp, papi_eventinfo.symbol);     /* event name */
-  write_string(fp, papi_eventinfo.long_descr); /* event description */
-  hpc_fwrite_le8(&papi_sampleperiod, fp);
+  write_string(fp, papi_profxxx.einfo.symbol);     /* event name */
+  write_string(fp, papi_profxxx.einfo.long_descr); /* event description */
+  hpc_fwrite_le8(&papi_profxxx.period, fp);
   
   /* Profiling data */
   write_module_data(fp, p);
@@ -616,7 +629,7 @@ static void
 write_module_data(FILE *fp, PAPI_sprofil_t *p)
 {
   unsigned int count = 0, offset = 0, i = 0, inz = 0;
-  unsigned int ncounters = (p->pr_size / papi_bytesPerCntr);
+  unsigned int ncounters = (p->pr_size / papi_profxxx.bytesPerCntr);
   unsigned int *lpr_base = p->pr_base;
   
   /* Number of profiling entries */
@@ -637,7 +650,7 @@ write_module_data(FILE *fp, PAPI_sprofil_t *p)
     if (lpr_base[i] != 0) {
       uint32_t cnt = lpr_base[i];
       hpc_fwrite_le4(&cnt, fp); /* count */
-      offset = i * papi_bytesPerCodeBlk;
+      offset = i * papi_profxxx.bytesPerCodeBlk;
       hpc_fwrite_le4(&offset, fp); /* offset (in bytes) from load addr */
       if (opt_debug >= 1) {
         fprintf(stderr, "  (cnt,offset)=(%d,%x)\n",cnt,offset);

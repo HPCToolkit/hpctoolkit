@@ -26,25 +26,25 @@
 
 /****************************************************************************/
 
-/* loadmodule_t: runtime load information for a load module */
+/* rtloadmod_desc_t: runtime load information for a load module */
 typedef struct {
   char *name;            /* load module name */
   uint64_t      offset;  /* load address or beginning of memory map */
   unsigned long length;  /* length (in bytes) mapped into memory */
-} loadmodule_t;
+} rtloadmod_desc_t;
 
-/* loadmodules_t: a vector of loadmodule_t */
+/* rtloadmap_t: run time load map (a vector of rtloadmod_desc_t) */
 typedef struct {
-  unsigned int count;   /* vector size */
-  loadmodule_t *module; /* the vector */
-} loadmodules_t;
+  unsigned int      count;  /* vector size */
+  rtloadmod_desc_t* module; /* the vector */
+} rtloadmap_t;
 
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-extern loadmodules_t* 
+extern rtloadmap_t* 
 hpcrun_code_lines_from_loadmap(int dumpmap);
 
 #ifdef __cplusplus
