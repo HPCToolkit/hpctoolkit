@@ -127,7 +127,17 @@ double Power::eval(const ScopeInfo *si) {
     return NaNVal;
   double b = base->eval(si);
   double e = exponent->eval(si);
-  if (IsNaNorInfinity(b) || IsNaNorInfinity(e))
+  if (IsNaNorInfinity(e) && IsNaNorInfinity(b))  // do not create a value if
+                                                 // both are missing
+    return (NaNVal);
+  if (IsNaNorInfinity(e) || e==0)  // exp is missing, assume it is zero
+    return (1);
+  else
+    if (IsNaNorInfinity(b) || b==0)
+      return (0);
+  // if b < 0, pow works only if e is integer
+  // I will simplify. If b<0, return NaNVal;
+  if (b < 0)
     return NaNVal;
   IFTRACE << "pow=" << pow(b, e) << endl; 
   return pow(b, e);
@@ -151,8 +161,10 @@ double Divide::eval(const ScopeInfo *si) {
     return NaNVal;
   double n = numerator->eval(si);
   double d = denominator->eval(si);
-  if (d == 0.0 || IsNaNorInfinity(d) || IsNaNorInfinity(n))
+  if (IsNaNorInfinity(d) || d == 0.0)
     return NaNVal;
+  if (IsNaNorInfinity(n))
+    return (0);
   IFTRACE << "divident=" << n/d << endl; 
   return n / d;
 }
@@ -175,10 +187,14 @@ double Minus::eval(const ScopeInfo *si) {
     return NaNVal;
   double m = minuend->eval(si);
   double s = subtrahend->eval(si);
-  if (IsNaNorInfinity(m) || IsNaNorInfinity(s))
+  if (IsNaNorInfinity(m) && IsNaNorInfinity(s))
     return NaNVal;
+  if (IsNaNorInfinity(m))
+    m = 0.0;
+  if (IsNaNorInfinity(s))
+    s = 0.0;
   IFTRACE << "diff=" << m-s << endl; 
-  return m - s;
+  return (m - s);
 }
 
 void Minus::print() {
