@@ -25,7 +25,7 @@
 
 <div id="main">
 
-<p class="lastupdated">Last Updated 30 July 2003</p>
+<p class="lastupdated">Last Updated 11 Feb 2003</p>
 
 <a name="toc"></a>
 <h2>Downloading, Building and Installing HPCToolkit</h2>
@@ -44,6 +44,7 @@
     <li><a href="#xlib_xercesc">External Library: Xerces-C++</a>
     <li><a href="#xlib_oa">External Library: OpenAnalysis</a>
     <li><a href="#hpctoolkit">HPCToolkit</a>
+    <li><a href="#hpcviewer">hpcviewer</a>
     <li><a href="#evaluation">Evaluation</a>
     <li><a href="#troubleshooting">Troubleshooting</a>
   </ul>
@@ -158,6 +159,13 @@ succssfully used:
 <p>There are three external libraries -- OpenAnalysis, Xerces-C++ and
 GNU binutils -- that must be built before HPCToolkit can be built,
 installed and used.</p>
+
+<p>HPCToolkit's hpcviewer tool is in a separate directory and built
+separately. We often download,
+compile, and run hpcviewer on laptops or desktops rather than the
+system on which we collect performance measurements.
+We briefly describe how to build hpcviewer here, regardless of where
+you want to build it.</p> 
 
 <p>It is possible to use versions of these libraries that may already
 be installed on your system, but we do not support such
@@ -529,6 +537,75 @@ Platform independent tools will be copied to <code>${HPCTOOLKIT}/bin</code>.
 In order to easily use the tools on some shells, you may need to indicate 
 that the PATH ought to be researched.  For example, on <code>csh</code> or
 <code>tcsh</code> execute <code>rehash</code>.</p>
+
+
+<!-- ********************************************************************** -->
+
+<a name="hpcviewer"></a>
+
+<h2>External tool: hpcviewer</h2>
+<p><i>[<a href="#toc">Contents</a>]</i>
+
+
+<h3>Notes</h3>
+
+
+<p>hpcviewer is a Java application. We have built it on a variety of
+platforms. We list some specific configurations on which we have
+successfully compiled hpcviewer:
+
+<ul>
+  <li>Mac OS X: javac from JDK 1.4.2
+  <li>ia64-Linux: using javac from jd2sdk1.4.2 
+  <li>ia64-Linux: using javac from jd2sdk1.4.2 
+  <li>sparc-Solaris: using javac from JDK 1.4.0
+  <li>alpha-Tru64: using javac from JDK 1.4.2
+</ul>
+
+
+<h3>Building</h3>
+
+<ol class="noindent">
+
+<li>
+<p>Change to the hpcviewer directory.
+
+<div class="indent">
+<code>cd hpcviewer</code>
+</div>
+
+<li>
+<p>Choose the appropriate build directory: <code>build-unix</code> 
+for unix systems
+or <code>build-win</code> for windows. Change to that directory.
+<ul>
+<li><p> For Unix builds, change to the <code>build-unix</code>
+directory and initiate the build
+<div class="indent">
+<code>cd build-unix </code><br>
+<code>make</code><br>
+</div>
+
+<li><p>For Windows builds, change to the <code>build-win</code>
+directory and initiate the build
+<div class="indent">
+<code>cd build-win</code><br>
+<code>compile.bat</code><br>
+</div>
+</ul>
+</ol>
+<h3>Using hpcviewer</h3>
+<ul>
+<li>On Unix, add the bin subdirectory of the hpcviewer directory
+to your path. Run the <code>hpcviewer</code> command. When run with no
+arguments, it will bring up a file chooser dialog to select the
+performance database XML file. The pathname of the performance
+database XML file can be specified as an argument to
+<code>hpcviewer</code> to skip the file chooser dialog.
+<li> On some systems with a GUI (e.g. Mac OS X),  double clicking on the
+HPCViewer.jar file icon can also be used to launch 
+<code>hpcviewer</code>.
+</ul>
 
 
 <!-- ********************************************************************** -->
