@@ -179,6 +179,19 @@ Like bloop, it it can be used as a 'cross-tool'.
 4. Revision History
 --------------------
 
+HPCToolkit Version 4.0.5: [2005.01.20]
+--------------------
+- Binutils performance tuning: 
+  - Replace binutils' DWARF2 linear-time line-lookup algorithm with
+    binary search.
+  - Use a one-element cache to drastically speed up ELF symbol table
+    function search 
+- Update libtool, autoconf and automake to fix build problems on
+  IRIX64 (linking templates), Tru64 (including templates in libtool
+  archives), and Linux (missing .so).
+- Upgrade xercesc from 2.3.0 to 2.6.0
+- hpcrun/hpcquick: minor fixes
+  
 HPCToolkit Version 4.0.0: [2004.11.06]
 --------------------
 - Create HPCToolkitRoot, a shell repository to make obtaining sources,
@@ -211,11 +224,6 @@ HPCToolkit Version 4.0.0: [2004.11.06]
     Make necessary changes to GNU binutils to propgate this information.
   - Add options to treat irreducible intervals as loops and to turn
     off potentially unsafe normalizations.
-  - Performance tuning: 
-    - Replace binutils' DWARF2 linear-time line-lookup algorithm with
-      binary search.
-    - Use a one-element cache to drastically speed up ELF symbol table
-      function search 
 - hpcview and hpcquick handle multiple structure files
 - Port HPCToolkit to opteron-Linux.
 - Update documentation accordingly.
