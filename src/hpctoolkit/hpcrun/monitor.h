@@ -29,6 +29,7 @@
 #include <stdio.h>
 #include <unistd.h>      /* getpid() */
 #include <inttypes.h>
+#include <stdarg.h>
 
 #include <sys/time.h>    /* for sprofil() */
 #include <sys/profil.h>  /* for sprofil() */
