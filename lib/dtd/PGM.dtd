@@ -3,7 +3,6 @@
      must be children of Fs instead of simply children of a PGM or LM. -->
 <!ELEMENT PGM (G|LM|F)+>
 <!ATTLIST PGM
-	n CDATA #REQUIRED
 	version CDATA #REQUIRED>
   <!-- Groups create arbitrary sets of other elements except PGM. -->
   <!ELEMENT G (G|LM|F|P|L|S)*>
