@@ -182,7 +182,7 @@ BFDLoadModule::read_file(const string &name, bool clear_cache)
     asymbol *tmp_symbol, *mk_sym;
     int i;
     
-    symcount = bfd_read_minisymbols (bfd_, bfd_tttrue, &minisyms, &size);
+    symcount = bfd_read_minisymbols (bfd_, (bfd_boolean)true, &minisyms, &size);
     symbols_ = (asymbol**)(new char[(symcount+1)*sizeof(asymbol *)]);
 #if 0
     cerr << "Mini symbols semiloaded: " << symcount << endl;
@@ -194,7 +194,7 @@ BFDLoadModule::read_file(const string &name, bool clear_cache)
       if (res == tmp_symbol) {
 	tmp_symbol = bfd_make_empty_symbol (bfd_);
       }
-      res = bfd_minisymbol_to_symbol(bfd_, bfd_tttrue, 
+      res = bfd_minisymbol_to_symbol(bfd_, (bfd_boolean)true, 
 				     (PTR)(((char *)minisyms)+i*size), 
 				     tmp_symbol);
       if (minisym_is_interesting(bfd_, res)) {
