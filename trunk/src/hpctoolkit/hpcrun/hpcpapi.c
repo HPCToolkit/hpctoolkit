@@ -33,8 +33,6 @@
 int
 hpc_init_papi()
 {
-  int retval;
-
   if (PAPI_is_initialized() == PAPI_NOT_INITED) {
     return hpc_init_papi_force();
   }
