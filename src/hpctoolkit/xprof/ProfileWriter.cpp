@@ -68,13 +68,10 @@ using namespace std; // For compatibility with non-std C headers
 #include "PCProfile.h"
 #include "DerivedProfile.h"
 
-#include <lib/binutils/LoadModule.h>
-#include <lib/binutils/Section.h>
-#include <lib/binutils/Procedure.h>
-#include <lib/binutils/Instruction.h>
+#include <lib/binutils/LoadModuleInfo.h>
 #include <lib/binutils/PCToSrcLineMap.h>
 #include <lib/binutils/BinUtils.h>
-#include <lib/support/String.h> 
+#include <lib/support/String.h>
 #include <lib/xml/xml.h>
 
 //*************************** Forward Declarations ***************************
@@ -179,9 +176,6 @@ ProfileWriter::WriteProfile(std::ostream& os, DerivedProfile* profData,
     Addr oppc = it.Current(); // an 'operation pc'
     ushort opIndex;
     Addr pc = isa->ConvertOpPCToPC(oppc, opIndex);
-    
-    Instruction* inst = modInfo->GetLM()->GetInst(pc, opIndex);
-    BriefAssertion(inst && "Internal Error: Cannot find instruction!");
     
     // --------------------------------------------------
     // 1. Attempt to find symbolic information
