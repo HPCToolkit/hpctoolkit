@@ -1,5 +1,5 @@
+// -*-Mode: C++;-*-
 // $Id$
-// -*-C++-*-
 // * BeginRiceCopyright *****************************************************
 // 
 // Copyright ((c)) 2002, Rice University 
@@ -65,368 +65,130 @@ using std::dec;
 
 //****************************************************************************
 
-// See OpenAnalysis/Interface/IRInterface.h for more documentation on
-// these functions.
+//***************************************************************************
+// Iterators
+//***************************************************************************
 
-//-----------------------------------------------------------------------------
-// BloopIRUseDefIterator
-//-----------------------------------------------------------------------------
-
-// The ISA_IRUseDefIterator constructor.
-BloopIRUseDefIterator::BloopIRUseDefIterator (Instruction *insn, int u_or_d)
-{
-  // FIXME: stub
-}
+//***************************************************************************
+// Abstract Interfaces
+//***************************************************************************
 
 //-----------------------------------------------------------------------------
 // BloopIRInterface
 //-----------------------------------------------------------------------------
 
-// When this constructor is called, we assume that this instantiation
-// of the IRInterface represents a procedure.  We then need to find
-// all the possible branch targets.
-BloopIRInterface::BloopIRInterface (Procedure *_p) : proc(_p)
+// BloopIRInterface: We assume each instantiation of the IRInterface
+// represents one procedure.  We then need to find all the possible
+// branch targets.
+BloopIRInterface::BloopIRInterface (Procedure *_p) 
+  : proc(_p)
 {
-  ProcedureInstructionIterator pii(*_p);
   branchTargetSet.clear();
-  while (pii.IsValid()) {
+  for (ProcedureInstructionIterator pii(*proc); pii.IsValid(); ++pii) {
     Instruction *insn = pii.Current();
     Addr curr_oppc = pii.CurrentPC(); // the 'operation PC'
-
+    
     // If this insn is a branch, record its target address in
     // the branch target set.
     ISA::InstDesc d = insn->GetDesc();
     if (d.IsBrRel()) {
       branchTargetSet.insert(insn->GetTargetAddr(insn->GetPC()));
     }
-    ++pii;
-  }
-}
-
-// Translate a ISA statement type into a IRStmtType.
-IRStmtType
-BloopIRInterface::GetStmtType (StmtHandle h) 
-{
-  IRStmtType ty;
-  Instruction *insn = IRHNDL_TO_PTR(h, Instruction*);
-  StmtLabel br_targ = 0;
-
-  ISA::InstDesc d = insn->GetDesc();
-  if (d.IsBrUnCondRel()) {
-    // Unconditional jump. If the branch targets a PC outside of its
-    // procedure, then we just ignore it.  For bloop this is fine
-    // since the branch won't create any loops.
-    br_targ = (StmtLabel) (insn->GetTargetAddr(insn->GetPC()));
-    if (proc->IsIn(br_targ)) {
-      ty = UNCONDITIONAL_JUMP;
-    } else {
-      ty = SIMPLE;
-    }
-  } else if (d.IsBrUnCondInd()) {
-    // Unconditional jump (indirect).
-    // FIXME: Turbo hack, temporary measure. 
-    //ty = UNCONDITIONAL_JUMP_I;
-    ty = SIMPLE;
-  } else if (d.IsBrCondRel()) {
-    // Unstructured two-way branches. If the branch targets a PC
-    // outside of its procedure, then we just ignore it.  For bloop
-    // this is fine since the branch won't create any loops.
-    br_targ = (StmtLabel) (insn->GetTargetAddr(insn->GetPC()));
-    if (proc->IsIn(br_targ)) {
-      ty = USTRUCT_TWOWAY_CONDITIONAL_T;
-    } else {
-      ty = SIMPLE;
-    }
-  } else if (d.IsBrCondInd()) {
-    // FIXME: Turbo hack, temporary measure. 
-    ty = SIMPLE;
-#if 0  // FIXME: ISA currently assumes every cbranch is "branch on true".
-  } else if (OPR_FALSEBR) {
-    ty = USTRUCT_TWOWAY_CONDITIONAL_F;
-#endif
-  } else if (d.IsSubrRet()) {
-    // Return statement.
-    ty = RETURN;
-  } else {
-    // Simple statements.
-    ty = SIMPLE;
-  }
-  
-  return ty;
-}
-
-// Given a statement, return the label associated with it (or NULL if none).
-StmtLabel
-BloopIRInterface::GetLabel (StmtHandle h)
-{
-  Instruction *insn = IRHNDL_TO_PTR(h, Instruction*);
-  if (branchTargetSet.find(insn->GetPC()) != branchTargetSet.end()) {
-    return (StmtLabel) (insn->GetPC());
-  } else {
-    return 0;
   }
 }
 
 
-//-----------------------------------------------------------------------------
-// For procedures, compound statements. 
-//-----------------------------------------------------------------------------
-
-// Given a compound statement, return an IRStmtIterator* for the statements.
-IRStmtIterator*
-BloopIRInterface::GetFirstInCompound (StmtHandle h)
-{
-  BriefAssertion (0);
-  return NULL;
-}
-
-
-//-----------------------------------------------------------------------------
-// Loops
-//-----------------------------------------------------------------------------
-
-IRStmtIterator*
-BloopIRInterface::LoopBody (StmtHandle h)
-{
-  BriefAssertion (0);
-  return NULL;
-}
-
-bool
-BloopIRInterface::LoopIterationsDefinedAtEntry (StmtHandle h)
-{
-  return false;
-}
-
-
-// The loop header is the initialization block.
-StmtHandle
-BloopIRInterface::LoopHeader (StmtHandle h)
-{
-  BriefAssertion(0);
-  return 0;
-}
-
-
-ExprHandle
-BloopIRInterface::GetLoopCondition (StmtHandle h)
-{
-  BriefAssertion(0);
-  return 0;
-}
-
-
-StmtHandle
-BloopIRInterface::GetLoopIncrement (StmtHandle h)
-{
-  BriefAssertion (0);
-  return 0;
-}
-
-
-//-----------------------------------------------------------------------------
-// Structured two-way conditionals
-//
-// FIXME: Is GetCondition for unstructured conditionals also?  It is currently
-// implemented that way.
-//-----------------------------------------------------------------------------
-
-ExprHandle
-BloopIRInterface::GetCondition (StmtHandle h)
-{
-  BriefAssertion (0);
-  return 0;
-}
-
-
-IRStmtIterator*
-BloopIRInterface::TrueBody (StmtHandle h)
-{
-  BriefAssertion (0);
-  return 0;
-}
-
-
-IRStmtIterator*
-BloopIRInterface::ElseBody (StmtHandle h)
-{
-  BriefAssertion (0);
-  return 0;
-}
-
-
-// Given an unstructured branch/jump statement, return the number
-// of delay slots.
-int
-BloopIRInterface::NumberOfDelaySlots(StmtHandle h)
-{
-  Instruction *insn = IRHNDL_TO_PTR(h, Instruction*);
-  return insn->GetNumDelaySlots();
-}
-
-
-//-----------------------------------------------------------------------------
-// Structured multiway conditionals
-//-----------------------------------------------------------------------------
-
-int
-BloopIRInterface::NumMultiCases (StmtHandle h)
-{
-  BriefAssertion (0);
-  return -1;
-}
-
-
-ExprHandle
-BloopIRInterface::GetSMultiCondition (StmtHandle h, int bodyIndex)
-{
-  BriefAssertion (0);
-  return 0;
-}
-
-
-ExprHandle
-BloopIRInterface::GetMultiExpr (StmtHandle h)
-{
-  BriefAssertion (0);
-  return 0;
-}
-
-
-// I'm assuming bodyIndex is 0..n-1.
-IRStmtIterator*
-BloopIRInterface::MultiBody (StmtHandle h, int bodyIndex)
-{
-  BriefAssertion (0);
-  return 0;
-}
-
-
-IRStmtIterator*
-BloopIRInterface::GetMultiCatchall (StmtHandle h)
-{
-  BriefAssertion (0);
-  return 0;
-}
-
-
-bool
-BloopIRInterface::IsBreakImplied (StmtHandle multicond)
-{
-  BriefAssertion (0);
-  return false;
-}
-
-
-bool
-BloopIRInterface::IsCatchAll (StmtHandle h, int bodyIndex)
-{
-  BriefAssertion (0);
-  return false;
-}
-
-//-----------------------------------------------------------------------------
-// Unstructured two-way conditionals: 
-//-----------------------------------------------------------------------------
-
-// Unstructured two-way branch (future loop continue?)
-StmtLabel
-BloopIRInterface::GetTargetLabel (StmtHandle h, int n)
-{
-  Instruction *insn = IRHNDL_TO_PTR(h, Instruction*);
-  ISA::InstDesc d = insn->GetDesc();
-  if (d.IsBrRel()) {
-    return (StmtLabel) (insn->GetTargetAddr(insn->GetPC()));
-  } else {
-    // FIXME: We're seeing indirect branches.
-    return (StmtLabel) 0;
-  }
-}
-
-
-//-----------------------------------------------------------------------------
-// Unstructured multiway conditionals
-//-----------------------------------------------------------------------------
-
-// Given an unstructured multi-way branch, return the number of targets.
-// The count does not include the optional default/catchall target.
-int
-BloopIRInterface::NumUMultiTargets (StmtHandle h)
+BloopIRInterface::~BloopIRInterface()
 { 
-  BriefAssertion (0);
-  return -1;
+  branchTargetSet.clear();
 }
 
 
-// Given an unstructured multi-way branch, return the label of the target
-// statement at 'targetIndex'. The n targets are indexed [0..n-1]. 
-StmtLabel
-BloopIRInterface::GetUMultiTargetLabel (StmtHandle h, int targetIndex)
-{
-  BriefAssertion (0);
-  return 0;
-}
+//-------------------------------------------------------------------------
+// IRHandlesIRInterface
+//-------------------------------------------------------------------------
 
-
-// Given an unstructured multi-way branch, return the label of the optional
-// default/catchall target. Return 0 if no default target.
-StmtLabel
-BloopIRInterface::GetUMultiCatchallLabel (StmtHandle h)
+std::string 
+BloopIRInterface::toString(const OA::ProcHandle h)
 { 
-  BriefAssertion (0);
-  return 0;
+  std::ostringstream oss;
+  oss << h.hval();
+  return oss.str();
 }
 
 
-// Given an unstructured multi-way branch, return the condition expression
-// corresponding to target 'targetIndex'. The n targets are indexed [0..n-1].
-ExprHandle
-BloopIRInterface::GetUMultiCondition (StmtHandle h, int targetIndex)
-{
-  // FIXME: It isn't yet decided whether or not this function is needed in
-  // the IR interface.
-  BriefAssertion (0);
-  return 0;
+std::string 
+BloopIRInterface::toString(const OA::StmtHandle h)
+{ 
+  std::ostringstream oss;
+  if (h.hval() == 0) {
+    oss << "StmtHandle(0)";
+  } 
+  else {
+    dump(h, oss);
+  }
+  return oss.str();
 }
 
 
-//-----------------------------------------------------------------------------
-// Obtain uses and defs
-//-----------------------------------------------------------------------------
-
-IRUseDefIterator*
-BloopIRInterface::GetUses (StmtHandle h)
+std::string 
+BloopIRInterface::toString(const OA::ExprHandle h) 
 {
-  Instruction *insn = IRHNDL_TO_PTR(h, Instruction*);
-  return new BloopIRUseDefIterator (insn, IRUseDefIterator::Uses);
+  std::ostringstream oss;
+  oss << h.hval();
+  return oss.str();
 }
 
 
-IRUseDefIterator*
-BloopIRInterface::GetDefs (StmtHandle h)
+std::string 
+BloopIRInterface::toString(const OA::OpHandle h) 
 {
-  Instruction *insn = IRHNDL_TO_PTR(h, Instruction*);
-  return new BloopIRUseDefIterator (insn, IRUseDefIterator::Defs);
+  std::ostringstream oss;
+  oss << h.hval();
+  return oss.str();
 }
 
 
-// FIXME: Hack.  Only used from CFG::ltnode.
-#if 0
-const char*
-IRGetSymNameFromLeafHandle(LeafHandle vh)
+std::string 
+BloopIRInterface::toString(const OA::MemRefHandle h)
 {
-  BriefAssertion (0);
-  return NULL;
+  std::ostringstream oss;
+  oss << h.hval();
+  return oss.str();
 }
-#endif
 
-//-----------------------------------------------------------------------------
-// Debugging
-//-----------------------------------------------------------------------------
 
-void BloopIRInterface::Dump (StmtHandle stmt, ostream& os)
+std::string 
+BloopIRInterface::toString(const OA::SymHandle h) 
 {
-  Instruction *insn = IRHNDL_TO_PTR(stmt, Instruction*);
+  const char* sym = IRHNDL_TO_TY(h, const char*);
+  std::string s(sym);
+  return s;
+}
+
+
+std::string 
+BloopIRInterface::toString(const OA::ConstSymHandle h) 
+{
+  std::ostringstream oss;
+  oss << h.hval();
+  return oss.str();
+}
+
+
+std::string 
+BloopIRInterface::toString(const OA::ConstValHandle h) 
+{
+  std::ostringstream oss;
+  oss << h.hval();
+  return oss.str();
+}
+
+
+void 
+BloopIRInterface::dump(OA::StmtHandle stmt, std::ostream& os)
+{
+  Instruction *insn = IRHNDL_TO_TY(stmt, Instruction*);
  
   // Currently, we just print the instruction type.  What we really
   // want is a textual disassembly of the instruction from the
@@ -443,13 +205,317 @@ void BloopIRInterface::Dump (StmtHandle stmt, ostream& os)
     cout << " [branch target]";
   }
   if (d.IsBrRel()) {
-    StmtLabel targ = (StmtLabel) (insn->GetTargetAddr(pc));
+    Addr targ = insn->GetTargetAddr(pc);
     os << " <" << hex << "0x" << targ << dec << ">";
     if (proc->IsIn(targ) == false) {
       cout << " [out of procedure -- treated as SIMPLE]";
     }
-  } else if (d.IsBrInd()) {
+  } 
+  else if (d.IsBrInd()) {
     os << " <register>";
   }
+}
+
+
+void 
+BloopIRInterface::dump(OA::MemRefHandle h, std::ostream& os)
+{
+  BriefAssertion(0);
+}
+
+
+void 
+BloopIRInterface::currentProc(OA::ProcHandle p)
+{
+  BriefAssertion(0);
+}
+
+
+//---------------------------------------------------------------------------
+// CFGIRInterfaceDefault
+//---------------------------------------------------------------------------
+
+OA::OA_ptr<OA::IRRegionStmtIterator> 
+BloopIRInterface::procBody(OA::ProcHandle h)
+{
+  Procedure* p = IRHNDL_TO_TY(h, Procedure*);
+  BriefAssertion(p == proc);
+  OA::OA_ptr<OA::IRRegionStmtIterator> it;
+  it = new BloopIRRegionStmtIterator(*p);
+  return it;
+}
+
+
+//----------------------------------------------------------
+// Statements: General
+//----------------------------------------------------------
+
+// Translate a ISA statement type into a IRStmtType.
+OA::CFG::IRStmtType
+BloopIRInterface::getCFGStmtType(OA::StmtHandle h) 
+{
+  OA::CFG::IRStmtType ty;
+  Instruction *insn = IRHNDL_TO_TY(h, Instruction*);
+  Addr br_targ = 0;
+
+  ISA::InstDesc d = insn->GetDesc();
+  if (d.IsBrUnCondRel()) {
+    // Unconditional jump. If the branch targets a PC outside of its
+    // procedure, then we just ignore it.  For bloop this is fine
+    // since the branch won't create any loops.
+    br_targ = insn->GetTargetAddr(insn->GetPC());
+    if (proc->IsIn(br_targ)) {
+      ty = OA::CFG::UNCONDITIONAL_JUMP;
+    } 
+    else {
+      ty = OA::CFG::SIMPLE;
+    }
+  } 
+  else if (d.IsBrUnCondInd()) {
+    // Unconditional jump (indirect).
+    //ty = OA::CFG::UNCONDITIONAL_JUMP_I; // FIXME: Turbo hack, temporary. 
+    ty = OA::CFG::SIMPLE;
+  } 
+  else if (d.IsBrCondRel()) {
+    // Unstructured two-way branches. If the branch targets a PC
+    // outside of its procedure, then we just ignore it.  For bloop
+    // this is fine since the branch won't create any loops.
+    br_targ = insn->GetTargetAddr(insn->GetPC());
+    if (proc->IsIn(br_targ)) {
+      ty = OA::CFG::USTRUCT_TWOWAY_CONDITIONAL_T;
+    }
+    else {
+      ty = OA::CFG::SIMPLE;
+    }
+  } 
+#if 0  
+  // FIXME: ISA currently assumes every cbranch is "branch on true".
+  else if (d.br_cond_rel_on_false) {
+    ty = OA::CFG::USTRUCT_TWOWAY_CONDITIONAL_F;
+  }
+#endif
+  else if (d.IsBrCondInd()) {
+    ty = OA::CFG::SIMPLE; // FIXME: Turbo hack, temporary. 
+  } 
+  else if (d.IsSubrRet()) {
+    // Return statement.
+    ty = OA::CFG::RETURN;
+  }
+  else {
+    // Simple statements.
+    ty = OA::CFG::SIMPLE;
+  }
+  
+  return ty;
+}
+
+
+OA::StmtLabel
+BloopIRInterface::getLabel(OA::StmtHandle h)
+{
+  OA::StmtLabel lbl = 0;
+  Instruction *insn = IRHNDL_TO_TY(h, Instruction*);
+  if (branchTargetSet.find(insn->GetPC()) != branchTargetSet.end()) {
+    lbl = insn->GetPC();
+  } 
+  return lbl;
+}
+
+
+OA::OA_ptr<OA::IRRegionStmtIterator>
+BloopIRInterface::getFirstInCompound(OA::StmtHandle h)
+{
+  BriefAssertion(0);
+  return OA::OA_ptr<BloopIRRegionStmtIterator>();
+}
+
+
+//--------------------------------------------------------
+// Loops
+//--------------------------------------------------------
+
+OA::OA_ptr<OA::IRRegionStmtIterator>
+BloopIRInterface::loopBody(OA::StmtHandle h)
+{
+  BriefAssertion(0);
+  return OA::OA_ptr<OA::IRRegionStmtIterator>();
+}
+
+
+OA::StmtHandle
+BloopIRInterface::loopHeader(OA::StmtHandle h)
+{
+  BriefAssertion(0);
+  return OA::StmtHandle(0);
+}
+
+
+OA::StmtHandle
+BloopIRInterface::getLoopIncrement(OA::StmtHandle h)
+{
+  BriefAssertion(0);
+  return OA::StmtHandle(0);
+}
+
+
+bool
+BloopIRInterface::loopIterationsDefinedAtEntry(OA::StmtHandle h)
+{
+  return false;
+}
+
+
+//--------------------------------------------------------
+// Structured two-way conditionals
+//--------------------------------------------------------
+
+OA::OA_ptr<OA::IRRegionStmtIterator>
+BloopIRInterface::trueBody(OA::StmtHandle h)
+{
+  BriefAssertion(0);
+  return OA::OA_ptr<BloopIRRegionStmtIterator>();
+}
+
+
+OA::OA_ptr<OA::IRRegionStmtIterator>
+BloopIRInterface::elseBody(OA::StmtHandle h)
+{
+  BriefAssertion(0);
+  return OA::OA_ptr<BloopIRRegionStmtIterator>();
+}
+
+
+//--------------------------------------------------------
+// Structured multiway conditionals
+//--------------------------------------------------------
+
+int
+BloopIRInterface::numMultiCases(OA::StmtHandle h)
+{
+  BriefAssertion(0);
+  return -1;
+}
+
+
+OA::OA_ptr<OA::IRRegionStmtIterator>
+BloopIRInterface::multiBody(OA::StmtHandle h, int bodyIndex)
+{
+  BriefAssertion(0);
+  return OA::OA_ptr<BloopIRRegionStmtIterator>();
+}
+
+
+bool
+BloopIRInterface::isBreakImplied(OA::StmtHandle h)
+{
+  BriefAssertion(0);
+  return false;
+}
+
+
+bool
+BloopIRInterface::isCatchAll(OA::StmtHandle h, int bodyIndex)
+{
+  BriefAssertion(0);
+  return false;
+}
+
+
+OA::OA_ptr<OA::IRRegionStmtIterator>
+BloopIRInterface::getMultiCatchall(OA::StmtHandle h)
+{
+  BriefAssertion(0);
+  return OA::OA_ptr<BloopIRRegionStmtIterator>();
+}
+
+
+OA::ExprHandle
+BloopIRInterface::getSMultiCondition(OA::StmtHandle h, int bodyIndex)
+{
+  BriefAssertion(0);
+  return OA::ExprHandle(0);
+}
+
+
+//--------------------------------------------------------
+// Unstructured two-way conditionals
+//--------------------------------------------------------
+
+OA::StmtLabel
+BloopIRInterface::getTargetLabel(OA::StmtHandle h, int n)
+{
+  OA::StmtLabel lbl = 0;
+  Instruction *insn = IRHNDL_TO_TY(h, Instruction*);
+  ISA::InstDesc d = insn->GetDesc();
+  if (d.IsBrRel()) {
+    lbl = insn->GetTargetAddr(insn->GetPC());
+  } 
+  else {
+    lbl = 0; // FIXME: We're seeing indirect branches.
+  }
+  return lbl;
+}
+
+
+//--------------------------------------------------------
+// Unstructured multi-way conditionals
+//--------------------------------------------------------
+
+int
+BloopIRInterface::numUMultiTargets(OA::StmtHandle h)
+{ 
+  BriefAssertion(0);
+  return -1;
+}
+
+
+OA::StmtLabel
+BloopIRInterface::getUMultiTargetLabel(OA::StmtHandle h, int targetIndex)
+{
+  BriefAssertion(0);
+  return OA::StmtLabel(0);
+}
+
+
+OA::StmtLabel
+BloopIRInterface::getUMultiCatchallLabel(OA::StmtHandle h)
+{ 
+  BriefAssertion(0);
+  return OA::StmtLabel(0);
+}
+
+
+OA::ExprHandle
+BloopIRInterface::getUMultiCondition(OA::StmtHandle h, int targetIndex)
+{
+  BriefAssertion(0);
+  return OA::ExprHandle(0);
+}
+
+
+//--------------------------------------------------------
+// Special
+//--------------------------------------------------------
+
+int
+BloopIRInterface::numberOfDelaySlots(OA::StmtHandle h)
+{
+  Instruction *insn = IRHNDL_TO_TY(h, Instruction*);
+  return insn->GetNumDelaySlots();
+}
+
+
+//--------------------------------------------------------
+// Symbol Handles
+//--------------------------------------------------------
+
+OA::SymHandle 
+BloopIRInterface::getProcSymHandle(OA::ProcHandle h)
+{ 
+  Procedure* p = IRHNDL_TO_TY(h, Procedure*);
+  BriefAssertion(p == proc);
+  String& name = p->GetName(); // this gives us persistent data!
+  const char* nm = (const char *)name;
+  return TY_TO_IRHNDL(nm, OA::SymHandle);
 }
 

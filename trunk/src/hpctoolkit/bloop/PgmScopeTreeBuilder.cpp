@@ -66,9 +66,9 @@ using namespace std; // For compatibility with non-std C headers
 
 //************************ OpenAnalysis Include Files ***********************
 
-#include <OpenAnalysis/CFG/CFG.h>
-#include <OpenAnalysis/CFG/OARIFG.h>
-#include <OpenAnalysis/CFG/TarjanIntervals.h>
+#include <OpenAnalysis/CFG/ManagerCFGStandard.hpp>
+#include <OpenAnalysis/Utils/RIFG.hpp>
+#include <OpenAnalysis/Utils/NestedSCR.hpp>
 
 //*************************** User Include Files ****************************
 
@@ -95,12 +95,15 @@ BuildFromProc(FileScope* fileScope, Procedure* p,
 	      bool irreducibleIntervalIsLoop); 
 
 static int
-BuildFromTarjTree(ProcScope* pScope, Procedure* p, TarjanIntervals* tarj, 
-		  RIFG* fg, CFG* cfg, RIFGNodeId fgNode,
+BuildFromTarjTree(ProcScope* pScope, Procedure* p, 
+		  OA::OA_ptr<OA::NestedSCR> tarj,
+		  OA::OA_ptr<OA::CFG::Interface> cfg, 
+		  OA::RIFG::NodeId fgNode,
 		  bool irreducibleIntervalIsLoop);
 
 static int
-BuildFromBB(CodeInfo* enclosingScope, Procedure* p, CFG::Node* bb);
+BuildFromBB(CodeInfo* enclosingScope, Procedure* p, 
+	    OA::OA_ptr<OA::CFG::Interface::Node> bb);
 
 static FileScope*
 FindOrCreateFileNode(LoadModScope* lmScope, Procedure* p);
@@ -127,25 +130,33 @@ FilterFilesFromScopeTree(PgmScopeTree* pgmScopeTree, String canonicalPathList);
 //*************************** Forward Declarations ***************************
 
 // ------------------------------------------------------------
-// Helpers for traversing the Tarjan Tree
+// Helpers for traversing the Nested SCR (Tarjan Tree)
 // ------------------------------------------------------------
 
 // CFGNode -> <begAddr, endAddr>
-class CFGNodeToPCMap : public std::map<CFG::Node*, std::pair<Addr, Addr>* > {
+class CFGNodeToPCMap 
+  : public std::map<OA::OA_ptr<OA::CFG::Interface::Node>, 
+		    std::pair<Addr, Addr>* > 
+{
 public:
-  typedef std::map<CFG::Node*, std::pair<Addr, Addr>* > BaseMap;
+  typedef std::map<OA::OA_ptr<OA::CFG::Interface::Node>, 
+		   std::pair<Addr, Addr>* > BaseMap;
 
 public:
   CFGNodeToPCMap() { }
-  CFGNodeToPCMap(CFG* cfg, Procedure* p) { build(cfg, cfg->Entry(), p, 0); }
+  CFGNodeToPCMap(OA::OA_ptr<OA::CFG::Interface> cfg, Procedure* p) 
+    { build(cfg, cfg->getEntry(), p, 0); }
   virtual ~CFGNodeToPCMap() { clear(); }
   virtual void clear();
 
-  void build(CFG* cfg, CFG::Node* n, Procedure* p, Addr _end);
+  void build(OA::OA_ptr<OA::CFG::Interface> cfg, 
+	     OA::OA_ptr<OA::CFG::Interface::Node> n, 
+	     Procedure* p, Addr _end);
 };
 
 static void 
-CFG_GetBegAndEndAddrs(CFG::Node* n, Addr &beg, Addr &end);
+CFG_GetBegAndEndAddrs(OA::OA_ptr<OA::CFG::Interface::Node> n, 
+		      Addr &beg, Addr &end);
 
 
 // ------------------------------------------------------------
@@ -384,49 +395,55 @@ BuildFromProc(FileScope* fileScope, Procedure* p,
 #endif
   
   // -------------------------------------------------------
-  // Build and traverse the Tarjan tree to create loop nests
+  // Build and traverse the Nested SCR (Tarjan tree) to create loop nests
   // -------------------------------------------------------
-  BloopIRInterface irInterface(p);
-  BloopIRStmtIterator stmtIter(*p);
+  OA::OA_ptr<BloopIRInterface> irIF; irIF = new BloopIRInterface(p);
   
-  CFG cfg(irInterface, &stmtIter, 
-	  PTR_TO_IRHNDL((const char *)funcNm, SymHandle));
-  OARIFG fg(cfg);
-  TarjanIntervals tarj(fg);
-  RIFGNodeId fgRoot = fg.GetRootNode();
+  OA::OA_ptr<OA::CFG::ManagerStandard> cfgmanstd;
+  cfgmanstd = new OA::CFG::ManagerStandard(irIF);
+  OA::OA_ptr<OA::CFG::CFGStandard> cfg = 
+    cfgmanstd->performAnalysis(TY_TO_IRHNDL(p, OA::ProcHandle));
+  
+  OA::OA_ptr<OA::RIFG> rifg; rifg = new OA::RIFG(cfg);
+  OA::OA_ptr<OA::NestedSCR> tarj; tarj = new OA::NestedSCR(rifg);
+  
+  OA::RIFG::NodeId fgRoot = rifg->getSource();
   
 #ifdef BLOOP_DEBUG_PROC
   if (testProcNow) {
     cout << "*** CFG for `" << funcNm << "' ***" << endl;
-    cout << "  total blocks: " << cfg.num_nodes() << endl
-	 << "  total edges:  " << cfg.num_edges() << endl;
-    cfg.dump(cout);
-    cfg.dumpdot(cout);
+    cout << "  total blocks: " << cfg->num_nodes() << endl
+	 << "  total edges:  " << cfg->num_edges() << endl;
+    cfg->dump(cout, irIF);
+    cfg->dumpdot(cout, irIF);
 
-    cout << "*** Tarjan Interval Tree for `" << funcNm << "' ***" << endl;
-    tarj.Dump();
+    cout << "*** Nested SCR (Tarjan Interval) Tree for `" << 
+      funcNm << "' ***" << endl;
+    tarj->dump(cout);
     cout << endl;
     cout.flush(); cerr.flush();
   }
 #endif 
   
-  BuildFromTarjTree(pScope, p, &tarj, &fg, &cfg, fgRoot, 
-		    irreducibleIntervalIsLoop);
+  BuildFromTarjTree(pScope, p, tarj, cfg, fgRoot, irreducibleIntervalIsLoop);
   return pScope;
 }
 
 
-// BuildFromTarjTree: Recursively build loops using Tarjan interval
-// analysis and returns the number of loops created.
+// BuildFromTarjTree: Recursively build loops using Nested SCR (Tarjan
+// interval) analysis and returns the number of loops created.
 static int 
 BuildFromTarjInterval(CodeInfo* enclosingScope, Procedure* p,
-		      TarjanIntervals* tarj, RIFG* fg, CFG* cfg, 
-		      RIFGNodeId fgNode, CFGNodeToPCMap* cfgNodeMap,
+		      OA::OA_ptr<OA::NestedSCR> tarj,
+		      OA::OA_ptr<OA::CFG::Interface> cfg,
+		      OA::RIFG::NodeId fgNode, CFGNodeToPCMap* cfgNodeMap,
 		      int addStmts, bool irreducibleIntervalIsLoop);
 
 static int
-BuildFromTarjTree(ProcScope* pScope, Procedure* p, TarjanIntervals* tarj, 
-		  RIFG* fg, CFG* cfg, RIFGNodeId fgNode,
+BuildFromTarjTree(ProcScope* pScope, Procedure* p, 
+		  OA::OA_ptr<OA::NestedSCR> tarj,
+		  OA::OA_ptr<OA::CFG::Interface> cfg, 
+		  OA::RIFG::NodeId fgNode,
 		  bool irreducibleIntervalIsLoop)
 {
 #ifdef BLOOP_ATTEMPT_TO_IMPROVE_INTERVAL_BOUNDARIES
@@ -434,19 +451,22 @@ BuildFromTarjTree(ProcScope* pScope, Procedure* p, TarjanIntervals* tarj,
 #else
   CFGNodeToPCMap cfgNodeMap;
 #endif
-  int num = BuildFromTarjInterval(pScope, p, tarj, fg, cfg, fgNode, 
+  int num = BuildFromTarjInterval(pScope, p, tarj, cfg, fgNode, 
 				  &cfgNodeMap, 0, irreducibleIntervalIsLoop);
   return num;
 }
 
 static int 
 BuildFromTarjInterval(CodeInfo* enclosingScope, Procedure* p,
-		      TarjanIntervals* tarj, RIFG* fg, CFG* cfg, 
-		      RIFGNodeId fgNode, CFGNodeToPCMap* cfgNodeMap,
+		      OA::OA_ptr<OA::NestedSCR> tarj,
+		      OA::OA_ptr<OA::CFG::Interface> cfg, 
+		      OA::RIFG::NodeId fgNode, CFGNodeToPCMap* cfgNodeMap,
 		      int addStmts, bool irrIntIsLoop)
 {
   int localLoops = 0;
-  CFG::Node* bb = (CFG::Node*)(fg->GetRIFGNode(fgNode));
+  OA::OA_ptr<OA::RIFG> rifg = tarj->getRIFG();
+  OA::OA_ptr<OA::CFG::Interface::Node> bb =
+    rifg->getNode(fgNode).convert<OA::CFG::Interface::Node>();
 
 #ifdef BLOOP_ATTEMPT_TO_IMPROVE_INTERVAL_BOUNDARIES
   String func, file;
@@ -464,18 +484,20 @@ BuildFromTarjInterval(CodeInfo* enclosingScope, Procedure* p,
   }
   
   // -------------------------------------------------------
-  // Traverse the Tarjan tree, building loop nests
+  // Traverse the Nested SCR (Tarjan tree), building loop nests
   // -------------------------------------------------------
-  for (int kid = tarj->TarjInners(fgNode); kid != RIFG_NIL; 
-       kid = tarj->TarjNext(kid) ) {
-    CFG::Node* crtBlk = (CFG::Node*)(fg->GetRIFGNode(kid));
-
+  for (int kid = tarj->getInners(fgNode); kid != OA::RIFG::NIL; 
+       kid = tarj->getNext(kid) ) {
+    OA::OA_ptr<OA::CFG::Interface::Node> crtBlk = 
+      rifg->getNode(kid).convert<OA::CFG::Interface::Node>();
+    OA::NestedSCR::Node_t ity = tarj->getNodeType(kid);
+    
     // -----------------------------------------------------
     // 1. ACYCLIC: No loops
     // -----------------------------------------------------
-    if (tarj->IntervalType(kid) == RI_TARJ_ACYCLIC) { 
+    if (ity == OA::NestedSCR::NODE_ACYCLIC) { 
 #ifdef BLOOP_ATTEMPT_TO_IMPROVE_INTERVAL_BOUNDARIES
-      if (tarj->TarjNext(kid) == RIFG_NIL) {
+      if (tarj->getNext(kid) == OA::RIFG::NIL) {
         BriefAssertion(cfgNodeMap->find(crtBlk) != cfgNodeMap->end());
         endAddr = (*cfgNodeMap)[crtBlk]->second;
       }
@@ -488,13 +510,13 @@ BuildFromTarjInterval(CodeInfo* enclosingScope, Procedure* p,
     // -----------------------------------------------------
     // 2. INTERVAL or IRREDUCIBLE as a loop: Loop head
     // -----------------------------------------------------
-    if (tarj->IntervalType(kid) == RI_TARJ_INTERVAL || 
-	(irrIntIsLoop && tarj->IntervalType(kid) == RI_TARJ_IRREDUCIBLE)) { 
+    if (ity == OA::NestedSCR::NODE_INTERVAL || 
+	(irrIntIsLoop && ity == OA::NestedSCR::NODE_IRREDUCIBLE)) { 
       
       // Build the loop nest
       LoopScope* lScope = new LoopScope(enclosingScope, UNDEF_LINE,
 					UNDEF_LINE, crtBlk->getId());
-      int num = BuildFromTarjInterval(lScope, p, tarj, fg, cfg, kid, 
+      int num = BuildFromTarjInterval(lScope, p, tarj, cfg, kid, 
 				      cfgNodeMap, 1, irrIntIsLoop);
       localLoops += (num + 1);
       
@@ -525,9 +547,9 @@ BuildFromTarjInterval(CodeInfo* enclosingScope, Procedure* p,
     // -----------------------------------------------------
     // 3. IRREDUCIBLE as no loop: May contain loops
     // -----------------------------------------------------
-    if (!irrIntIsLoop && tarj->IntervalType(kid) == RI_TARJ_IRREDUCIBLE) {
-      int num = BuildFromTarjInterval(enclosingScope, p, tarj, fg, cfg, 
-				      kid, cfgNodeMap, addStmts, irrIntIsLoop);
+    if (!irrIntIsLoop && ity == OA::NestedSCR::NODE_IRREDUCIBLE) {
+      int num = BuildFromTarjInterval(enclosingScope, p, tarj, cfg, kid, 
+				      cfgNodeMap, addStmts, irrIntIsLoop);
       localLoops += num;
     }
     
@@ -556,12 +578,15 @@ BuildFromTarjInterval(CodeInfo* enclosingScope, Procedure* p,
 // BuildFromBB: Adds statements from the current basic block to
 // 'enclosingScope'.  Does not add duplicates.
 static int 
-BuildFromBB(CodeInfo* enclosingScope, Procedure* p, CFG::Node* bb)
+BuildFromBB(CodeInfo* enclosingScope, Procedure* p, 
+	    OA::OA_ptr<OA::CFG::Interface::Node> bb)
 {
   LineToStmtMap stmtMap; // maps lines to NULL (simulates a set)
-
-  for (CFG::NodeStatementsIterator s_iter(bb); (bool)s_iter; ++s_iter) {
-    Instruction* insn = IRHNDL_TO_PTR((StmtHandle)s_iter, Instruction*);
+  
+  OA::OA_ptr<OA::CFG::Interface::NodeStatementsIterator> it =
+    bb->getNodeStatementsIterator();
+  for ( ; it->isValid(); ++(*it)) {
+    Instruction* insn = IRHNDL_TO_TY(it->current(), Instruction*);
     Addr pc = insn->GetPC();
     ushort opIdx = insn->GetOpIndex();
 
@@ -1054,19 +1079,21 @@ FilterFilesFromScopeTree(PgmScopeTree* pgmScopeTree, String canonicalPathList)
 
 
 //****************************************************************************
-// Helpers for traversing the Tarjan Tree
+// Helpers for traversing the Nested SCR (Tarjan Tree)
 //****************************************************************************
 
 void
-CFGNodeToPCMap::build(CFG* cfg, CFG::Node* n, Procedure* p, Addr _end)
+CFGNodeToPCMap::build(OA::OA_ptr<OA::CFG::Interface> cfg, 
+		      OA::OA_ptr<OA::CFG::Interface::Node> n, 
+		      Procedure* p, Addr _end)
 {
   Addr curBeg = 0, curEnd = 0;
 
   // If n is not in the map, it hasn't been visited yet.
   if (this->find(n) == this->end()) {
-    if (n->empty() == true) {
+    if (n->size() == 0) {
       // Empty blocks won't have any instructions to get PCs from.
-      if (n == cfg->Entry()) {
+      if (n == cfg->getEntry()) {
         // Set the entry node PCs from the procedure's begin address.
         curBeg = curEnd = p->GetStartAddr();
       } 
@@ -1082,8 +1109,10 @@ CFGNodeToPCMap::build(CFG* cfg, CFG::Node* n, Procedure* p, Addr _end)
     (*this)[n] = new std::pair<Addr, Addr>(curBeg, curEnd);
 
     // Visit descendents.
-    for (CFG::SinkNodesIterator sink(n); (bool)sink; ++sink) {
-      CFG::Node* child = dynamic_cast<CFG::Node*>((DGraph::Node*)sink);
+    OA::OA_ptr<OA::CFG::Interface::SinkNodesIterator> it = 
+      n->getSinkNodesIterator();
+    for ( ; it->isValid(); ++(*it)) {
+      OA::OA_ptr<OA::CFG::Interface::Node> child = it->current();
       this->build(cfg, child, p, curEnd);
     }
   }
@@ -1100,7 +1129,8 @@ CFGNodeToPCMap::clear()
 
 
 static void 
-CFG_GetBegAndEndAddrs(CFG::Node* n, Addr &beg, Addr &end)
+CFG_GetBegAndEndAddrs(OA::OA_ptr<OA::CFG::Interface::Node> n, 
+		      Addr& beg, Addr& end)
 {
   beg = 0;
   end = 0;
@@ -1110,19 +1140,22 @@ CFG_GetBegAndEndAddrs(CFG::Node* n, Addr &beg, Addr &end)
   // modify the CFG code, this works for now.
   bool first = true;
   Instruction* insn;
-  for (CFG::NodeStatementsIterator s_iter(n); (bool)s_iter; ++s_iter) {
+  OA::OA_ptr<OA::CFG::Interface::NodeStatementsIterator> it =
+    n->getNodeStatementsIterator();
+  for ( ; it->isValid(); ++(*it)) {
     if (first == true) {
-      insn = IRHNDL_TO_PTR((StmtHandle)s_iter, Instruction*);
+      insn = IRHNDL_TO_TY(it->current(), Instruction*);
       beg = insn->GetPC();
       first = false;
     }
-    insn = IRHNDL_TO_PTR((StmtHandle)s_iter, Instruction*);
+    insn = IRHNDL_TO_TY(it->current(), Instruction*);
     end = insn->GetPC();
   }
 }
 
+
 //****************************************************************************
-// Helpers for traversing the Tarjan Tree
+// Helpers for traversing the Nested SCR (Tarjan Tree)
 //****************************************************************************
 
 void

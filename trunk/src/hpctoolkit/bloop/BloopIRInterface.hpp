@@ -1,5 +1,5 @@
+// -*-Mode: C++;-*-
 // $Id$
-// -*-C++-*-
 // * BeginRiceCopyright *****************************************************
 // 
 // Copyright ((c)) 2002, Rice University 
@@ -58,10 +58,11 @@
 #include <list>
 #include <set>
 
-//*************************** User Include Files ****************************
+//************************ OpenAnalysis Include Files ***********************
 
-#include <OpenAnalysis/Utils/DGraph.h>
-#include <OpenAnalysis/Interface/IRInterface.h>
+#include <OpenAnalysis/IRInterface/CFGIRInterfaceDefault.hpp>
+
+//*************************** User Include Files ****************************
  
 #include <lib/ISA/ISA.h>
 #include <lib/binutils/Instruction.h>
@@ -89,165 +90,145 @@
 // 32-bit pointers at times.  Use this macro to eliminate potential
 // compiler warnings about "casting a 32-bit pointer to an integer of
 // different size".
-#define PTR_TO_IRHNDL(x, totype) ((totype)(psuint)(x))
-#define IRHNDL_TO_PTR(x, totype) ((totype)(psuint)(x))
+#define TY_TO_IRHNDL(x, totype) (totype((OA::irhandle_t)(psuint)(x)))
+#define IRHNDL_TO_TY(x, totype) ((totype)(psuint)(x.hval()))
 
-//*************************** Forward Declarations ***************************
+//***************************************************************************
+// Iterators
+//***************************************************************************
 
-class BloopIRStmtIterator: public IRStmtIterator {
+class BloopIRRegionStmtIterator: public OA::IRRegionStmtIterator {
 public:
-  BloopIRStmtIterator (Procedure &_p) : pii(_p) { }
-  ~BloopIRStmtIterator () { }
+  BloopIRRegionStmtIterator(Procedure &_p) : pii(_p) { }
+  virtual ~BloopIRRegionStmtIterator() { }
 
-  StmtHandle Current () { return PTR_TO_IRHNDL(pii.Current(), StmtHandle); }
-  bool IsValid () { return pii.IsValid(); }
-  void operator++ () { ++pii; }
+  virtual OA::StmtHandle current () const 
+    { return TY_TO_IRHNDL(pii.Current(), OA::StmtHandle); }
 
-  void Reset() { pii.Reset(); }
-  
+  virtual bool isValid () const { return pii.IsValid(); }
+  virtual void operator++ () { ++pii; }
+
+  virtual void reset() { pii.Reset(); }
+
 private:
   ProcedureInstructionIterator pii;
 };
 
 
-class BloopIRUseDefIterator: public IRUseDefIterator {
+//***************************************************************************
+// Abstract Interfaces
+//***************************************************************************
+
+class BloopIRInterface 
+  : public virtual OA::IRHandlesIRInterface,
+    public OA::CFG::CFGIRInterfaceDefault 
+{
 public:
-  BloopIRUseDefIterator (Instruction *insn, int uses_or_defs);
-  BloopIRUseDefIterator () { BriefAssertion (0); }
-  ~BloopIRUseDefIterator () { }
 
-  LeafHandle Current () { return 0; }
-  bool IsValid () { return false; }
-  void operator++ () { }
-
-  void Reset() { }
-
-private:
-};
-
-//*************************** Forward Declarations ***************************
-
-class BloopIRInterface : public IRInterface {
-public:
+  // Note: We assume each instantiation of the IRInterface represents
+  // one procedure!
   BloopIRInterface (Procedure *_p);
-  BloopIRInterface () { BriefAssertion(0); }
-  ~BloopIRInterface () { }
+  virtual ~BloopIRInterface ();
+  
+  
+  //-------------------------------------------------------------------------
+  // IRHandlesIRInterface
+  //-------------------------------------------------------------------------
+  
+  // create a string for the given handle, should be succinct
+  // and there should be no newlines
+  std::string toString(const OA::ProcHandle h);
+  std::string toString(const OA::StmtHandle h);
+  std::string toString(const OA::ExprHandle h);
+  std::string toString(const OA::OpHandle h);
+  std::string toString(const OA::MemRefHandle h);
+  std::string toString(const OA::SymHandle h);
+  std::string toString(const OA::ConstSymHandle h);
+  std::string toString(const OA::ConstValHandle h);
+  
+  // Given a statement, pretty-print it to the output stream os.
+  void dump(OA::StmtHandle stmt, std::ostream& os);
+  
+  // Given a memory reference, pretty-print it to the output stream os.
+  void dump(OA::MemRefHandle h, std::ostream& os);
 
-  //--------------------------------------------------------
-  // Procedures and call sites
-  //--------------------------------------------------------
-  IRProcType GetProcType(ProcHandle h) 
-    { BriefAssertion(0); return ProcType_ILLEGAL; }
-  IRStmtIterator *ProcBody(ProcHandle h) 
-    { BriefAssertion(0); return NULL; }
-  IRCallsiteIterator *GetCallsites(StmtHandle h) 
-    { BriefAssertion(0); return NULL; } 
-  IRCallsiteParamIterator *GetCallsiteParams(ExprHandle h) 
-    { BriefAssertion(0); return NULL; } 
-  bool IsParamProcRef(ExprHandle h) 
-    { BriefAssertion(0); return false; }
-  virtual bool IsCallThruProcParam(ExprHandle h) 
-    { BriefAssertion(0); return false; }
+  void currentProc(OA::ProcHandle p);
+
+  //-------------------------------------------------------------------------
+  // CFGIRInterfaceDefault
+  //-------------------------------------------------------------------------
+  
+  //! Given a ProcHandle, return an IRRegionStmtIterator* for the
+  //! procedure. The user must free the iterator's memory via delete.
+  OA::OA_ptr<OA::IRRegionStmtIterator> procBody(OA::ProcHandle h);
+
 
   //--------------------------------------------------------
   // Statements: General
   //--------------------------------------------------------
-  IRStmtType GetStmtType (StmtHandle);
-  StmtLabel GetLabel (StmtHandle);
-  IRStmtIterator *GetFirstInCompound (StmtHandle h);
+
+  //! Are return statements allowed
+  bool returnStatementsAllowed() { return true; }
+
+  //! Given a statement, return its CFG::IRStmtType
+  OA::CFG::IRStmtType getCFGStmtType(OA::StmtHandle h);
+
+  OA::StmtLabel getLabel(OA::StmtHandle h);
+
+  OA::OA_ptr<OA::IRRegionStmtIterator> getFirstInCompound(OA::StmtHandle h);
+
 
   //--------------------------------------------------------
   // Loops
   //--------------------------------------------------------
-  IRStmtIterator *LoopBody(StmtHandle h);
-  StmtHandle LoopHeader (StmtHandle h);
-  StmtHandle GetLoopIncrement (StmtHandle h);
-  bool LoopIterationsDefinedAtEntry (StmtHandle h);
-
-  // condition for loop
-  ExprHandle GetLoopCondition (StmtHandle h); 
-
-  //--------------------------------------------------------
-  // invariant: a two-way conditional or a multi-way conditional MUST provide
-  // provided either a target, or a target label
-  //--------------------------------------------------------
+  OA::OA_ptr<OA::IRRegionStmtIterator> loopBody(OA::StmtHandle h);
+  OA::StmtHandle loopHeader(OA::StmtHandle h);
+  OA::StmtHandle getLoopIncrement(OA::StmtHandle h);
+  bool loopIterationsDefinedAtEntry(OA::StmtHandle h);
 
   //--------------------------------------------------------
   // Structured two-way conditionals
   //--------------------------------------------------------
-  IRStmtIterator *TrueBody (StmtHandle h);
-  IRStmtIterator *ElseBody (StmtHandle h);
-
+  OA::OA_ptr<OA::IRRegionStmtIterator> trueBody(OA::StmtHandle h);
+  OA::OA_ptr<OA::IRRegionStmtIterator> elseBody(OA::StmtHandle h);
+  
   //--------------------------------------------------------
   // Structured multiway conditionals
   //--------------------------------------------------------
-  int NumMultiCases (StmtHandle h);
-  IRStmtIterator *MultiBody (StmtHandle h, int bodyIndex);
-  bool IsBreakImplied (StmtHandle multicond);
-  bool IsCatchAll(StmtHandle h, int bodyIndex);
-  IRStmtIterator *GetMultiCatchall (StmtHandle h);
-
-  // condition for multi body 
-  ExprHandle GetSMultiCondition (StmtHandle h, int bodyIndex);
-  // multi-way beginning expression
-  ExprHandle GetMultiExpr (StmtHandle h);
+  int numMultiCases(OA::StmtHandle h);
+  OA::OA_ptr<OA::IRRegionStmtIterator> multiBody(OA::StmtHandle h, 
+						 int bodyIndex);
+  bool isBreakImplied(OA::StmtHandle h);
+  bool isCatchAll(OA::StmtHandle h, int bodyIndex);
+  OA::OA_ptr<OA::IRRegionStmtIterator> getMultiCatchall(OA::StmtHandle h);
+  OA::ExprHandle getSMultiCondition (OA::StmtHandle h, int bodyIndex);
 
   //--------------------------------------------------------
-  // Unstructured two-way conditionals: 
+  // Unstructured two-way conditionals
   //--------------------------------------------------------
-  // two-way branch, loop continue
-  StmtLabel  GetTargetLabel (StmtHandle h, int n);
-
-  // condition for two-way branch
-  ExprHandle GetCondition (StmtHandle h);
-
+  OA::StmtLabel getTargetLabel(OA::StmtHandle h, int n);
+  
   //--------------------------------------------------------
   // Unstructured multi-way conditionals
   //--------------------------------------------------------
-  int NumUMultiTargets (StmtHandle h);
-  StmtLabel GetUMultiTargetLabel (StmtHandle h, int targetIndex);
-  StmtLabel GetUMultiCatchallLabel (StmtHandle h);
-
-  // condition for u-multi way
-  ExprHandle GetUMultiCondition (StmtHandle h, int targetIndex);
+  int numUMultiTargets(OA::StmtHandle h);
+  OA::StmtLabel getUMultiTargetLabel(OA::StmtHandle h, int targetIndex);
+  OA::StmtLabel getUMultiCatchallLabel(OA::StmtHandle h);
+  OA::ExprHandle getUMultiCondition(OA::StmtHandle h, int targetIndex);
 
   //--------------------------------------------------------
   // Special
   //--------------------------------------------------------
-  bool ParallelWithSuccessor(StmtHandle h) { return false; }
-
-  // Given an unstructured branch/jump statement, return the number
-  // of delay slots.
-  int NumberOfDelaySlots(StmtHandle h);
- 
-  //--------------------------------------------------------
-  // 
-  //--------------------------------------------------------
-  ExprTree* GetExprTreeForExprHandle(ExprHandle h) 
-    { BriefAssertion(0); return NULL; }
-
-  //--------------------------------------------------------
-  // Obtain uses and defs
-  //--------------------------------------------------------
-  IRUseDefIterator *GetUses (StmtHandle h);
-  IRUseDefIterator *GetDefs (StmtHandle h);
+  bool parallelWithSuccessor(OA::StmtHandle h) { return false; }
+  int numberOfDelaySlots(OA::StmtHandle h);
 
   //--------------------------------------------------------
   // Symbol Handles
-  //--------------------------------------------------------
-  SymHandle GetProcSymHandle(ProcHandle h) 
-    { BriefAssertion(0); return (SymHandle)0; }
-  SymHandle GetSymHandle (LeafHandle vh) { return (SymHandle)0; }
-  const char *GetSymNameFromSymHandle (SymHandle sh) 
-    { return IRHNDL_TO_PTR(sh, const char*); }
-  const char *GetConstNameFromConstHandle(ConstHandle ch) 
-    { return "<no-const>"; };
-
-  //--------------------------------------------------------
-  // Debugging
-  //--------------------------------------------------------
-  void PrintLeaf (LeafHandle vh, ostream & os) { };
-  void Dump (StmtHandle stmt, ostream& os);
+  //--------------------------------------------------------  
+  OA::SymHandle getProcSymHandle(OA::ProcHandle h);
+  
+private:
+  BloopIRInterface () { BriefAssertion(0); }
 
 private:
   Procedure *proc;
