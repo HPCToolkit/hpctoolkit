@@ -6,7 +6,7 @@
 //***************************************************************************
 //
 // File:
-//    hpcfile_general.h
+//    $Source$
 //
 // Purpose:
 //    General and helper functions for reading/writing a HPC data
@@ -32,6 +32,7 @@
 //*************************** User Include Files ****************************
 
 #include <include/ArchIndTypes.h> /* special printf format strings */
+#include "io.h"
 
 //*************************** Forward Declarations **************************
 
@@ -204,26 +205,6 @@ int hpcfile_num8s__fread(hpcfile_num8s_t* x, FILE* fs,
 			 hpcfile_cb__alloc_fn_t alloc_fn);
 int hpcfile_num8s__fwrite(hpcfile_num8s_t* x, FILE* fs);
 int hpcfile_num8s__fprint(hpcfile_num8s_t* x, FILE* fs);
-
-//***************************************************************************
-
-// hpc_fread_leX: Reads 'X' number of little-endian bytes from the file
-// stream 'fs', correctly orders them for the current architecture,
-// and stores the result in 'val'. Returns the number of bytes read.
-//
-// hpc_fwrite_leX: Write 'X' number of bytes from 'val' to the
-// little-endian file stream 'fs', correctly ordering the bytes before
-// writing.  Returns the number of bytes written.
-//
-// hpc_fread_beX:  (not needed now)
-// hpc_fwrite_beX: (not needed now)
-
-size_t hpc_fread_le2(uint16_t* val, FILE* fs);
-size_t hpc_fread_le4(uint32_t* val, FILE* fs);
-size_t hpc_fread_le8(uint64_t* val, FILE* fs);
-size_t hpc_fwrite_le2(uint16_t* val, FILE* fs);
-size_t hpc_fwrite_le4(uint32_t* val, FILE* fs);
-size_t hpc_fwrite_le8(uint64_t* val, FILE* fs);
 
 //***************************************************************************
 
