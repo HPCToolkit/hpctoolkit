@@ -62,8 +62,7 @@ include $(top_srcdir)/src/Makeinclude.config
 #############################################################################
 
 MYSCRIPTS = \
-	hpcquick \
-	hpcquick-hpcprof
+	hpcquick 
 
 #############################################################################
 # Automake rules
