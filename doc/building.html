@@ -256,13 +256,22 @@ versions of C++ compilers listed above in
 
 <h3>Building</h3>
 
+<!-- 
+FIXME: change to use this method
+
+mkdir obj-$HPCTOOLKIT_PLATFORM
+cd obj-$HPCTOOLKIT_PLATFORM
+../binutils-2.13/configure ...
+make
+-->
+
 <ol class="noindent">
 
 <li>
 <p>Change to the binutils directory.
 
 <div class="indent">
-<code>cd $HPCTOOLKIT/src/external_lib/binutils/binutils-2.13</code>
+<code>cd $HPCTOOLKIT/../binutils/binutils-2.13</code>
 </div>
 
 <li>
@@ -276,13 +285,13 @@ used by our installation finalizer script.)  For example:
 <i>(csh variants)</i><br>
 <code>setenv CC "gcc"</code><br>
 <code>setenv CFLAGS "-O"</code><br>
-<code>setenv&nbsp;HPCTOOLKIT_BINUTILS_INSTALL&nbsp;"$HPCTOOLKIT/src/external_lib/binutils/binutils-2.13/inst-$HPCTOOLKIT_PLATFORM"</code>
+<code>setenv&nbsp;HPCTOOLKIT_BINUTILS_INSTALL&nbsp;"$HPCTOOLKIT/../binutils/binutils-2.13/inst-$HPCTOOLKIT_PLATFORM"</code>
 
 <br><br>
 <i>(sh variants)</i><br>
 <code>export CC="gcc"</code><br>
 <code>export CFLAGS="-O"</code><br>
-<code>export&nbsp;HPCTOOLKIT_BINUTILS_INSTALL="$HPCTOOLKIT/src/external_lib/binutils/binutils-2.13/inst-$HPCTOOLKIT_PLATFORM"</code>
+<code>export&nbsp;HPCTOOLKIT_BINUTILS_INSTALL="$HPCTOOLKIT/../binutils/binutils-2.13/inst-$HPCTOOLKIT_PLATFORM"</code>
 </div>
 
 
@@ -352,7 +361,7 @@ and `Compiling templates' above.</p>
 
 <ul class="noindent">
 
-  <li>Open <code>${HPCTOOLKIT}/src/external_lib/OpenAnalysis/Makefile</code>
+  <li>Open <code>${HPCTOOLKIT}/../OpenAnalysis/Makefile</code>
       in an editor.
   
   <li>Verify that your C++ compiler (<code>CXX</code>) and archiver
@@ -373,7 +382,7 @@ debugging information; passing <code>RELEASE=1</code> to `make' will
 turn this off and also turn on compiler optimizations.</p>
 
 <div class="indent">
-<code>cd $HPCTOOLKIT/src/external_lib/OpenAnalysis</code><br>
+<code>cd $HPCTOOLKIT/../OpenAnalysis</code><br>
 <code>make RELEASE=1</code>
 </div>
 
@@ -418,7 +427,7 @@ example:
 
 <!--
   <li><p>If you are not using the GNU binutils in
-     <code>$HPCTOOLKIT/src/external_lib/binutils/binutils-2.13/inst-$HPCTOOLKIT_PLATFORM</code>,
+     <code>$HPCTOOLKIT/../binutils/binutils-2.13/inst-$HPCTOOLKIT_PLATFORM</code>,
      edit the 'BINUTILS' variable in $HPCTOOLKIT/src/Makeinclude.config.
      It should point to the base directory of the binutils installation.
 -->
