@@ -163,9 +163,11 @@ get_line_slot(void)
     if (mappings == 0) {
       slots_avail = 512;
       mappings = malloc(slots_avail * sizeof(char*));
-    } else
+    } 
+    else {
       slots_avail += 256;
       mappings = realloc(mappings, slots_avail * sizeof(char));
+    }
   }
   mappings[slots_in_use] = (char *) malloc(MAXLINELEN);
   *mappings[slots_in_use] = (char) NULL;
