@@ -372,42 +372,43 @@ HTMLTable::WriteMetricValues(HTMLFile& hf, const IntVector *perfIndex,
 { 
   for (int i =0; (*perfIndex)[i] != -1; i++) {
     int index = (*perfIndex)[i]; 
-    BriefAssertion(root.HasPerfData(index)); 
+    // eraxxon: Let's just output 0s when we don't have data.
+    //BriefAssertion(root.HasPerfData(index)); 
     DataDisplayInfo& dspInfo = IndexToPerfDataInfo(index).DisplayInfo(); 
     int valWidth =  dspInfo.Width() - percentWidth - 1; 
     int myPercentWidth = percentWidth;
     hf.FontColorStart(dspInfo.Color()); 
     String valStr, percentStr; 
     if (scope != NULL) {
-    if (scope->HasPerfData(index)) { 
-      double val = scope->PerfData(index); 
-      if (dspInfo.FormatAsInt()) {
-	valStr = String((long) (val + 0.5));  // round x.5 up to (x+1)
+      if (scope->HasPerfData(index)) { 
+	double val = scope->PerfData(index); 
+	if (dspInfo.FormatAsInt()) {
+	  valStr = String((long) (val + 0.5));  // round x.5 up to (x+1)
+	} else {
+	  char valChars[100]; 
+	  sprintf(valChars, "%.2e", val); 
+	  valStr = String(valChars);
+	} 
+	if (valStr.Length() > (unsigned int)valWidth) {
+	  dspInfo.SetWidth(valStr.Length() + percentWidth + 1);
+	  hf.FontColorStop(dspInfo.Color()); // eraxxon: must stop font
+	  return false; 
+	}  
+	int valPercent = (int) ((val / root.PerfData(index)) * 100 + 0.5);
+	if (IndexToPerfDataInfo(index).Percent()) { 
+	  percentStr = String((long) valPercent); 
+	} else {
+	  myPercentWidth = 0;
+	}
       } else {
-	char valChars[100]; 
-	sprintf(valChars, "%.2e", val); 
-	valStr = String(valChars);
-      } 
-      if (valStr.Length() > (unsigned int)valWidth) {
-        dspInfo.SetWidth(valStr.Length() + percentWidth + 1);
-	hf.FontColorStop(dspInfo.Color()); // eraxxon: must stop font
-	return false; 
-      }  
-      int valPercent = (int) ((val / root.PerfData(index)) * 100 + 0.5);
-      if (IndexToPerfDataInfo(index).Percent()) { 
-        percentStr = String((long) valPercent); 
-      } else {
-        myPercentWidth = 0;
+        if (!IndexToPerfDataInfo(index).Percent()) myPercentWidth = 0;
       }
     } else {
-        if (!IndexToPerfDataInfo(index).Percent()) myPercentWidth = 0;
-    }
-    } else {
-        if (!IndexToPerfDataInfo(index).Percent()) myPercentWidth = 0;
+      if (!IndexToPerfDataInfo(index).Percent()) myPercentWidth = 0;
     }
     valStr.RightFormat(valWidth); 
     if (myPercentWidth > 0) percentStr.RightFormat(myPercentWidth + 1); 
-
+    
     hf << valStr << percentStr << " | "; 
     hf.FontColorStop(dspInfo.Color()); 
   }
