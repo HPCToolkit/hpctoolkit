@@ -1,3 +1,4 @@
+# -*-Mode: sh;-*-
 # $Id$
 
 #############################################################################
@@ -42,8 +43,19 @@ endif
 
 #############################################################################
 
-setenv XERCESCROOT "${HPCTOOLKIT}/../xercesc"
+# When HPCToolkit is formally installed, xerces will be in a different
+# location
+
+set installedXerces="${HPCTOOLKIT}/lib/xercesc"
+
+if ( -d "${installedXerces}" ) then
+  setenv XERCESCROOT "${installedXerces}"
+else
+  setenv XERCESCROOT "${HPCTOOLKIT}/../xercesc"
+endif
+
 set XERCESPLATFORM="${XERCESCROOT}/${HPCTOOLKIT_PLATFORM}/lib"
+
 
 if ( ${HPCTOOLKIT_OS} == 'IRIX64' || ${HPCTOOLKIT_OS} == 'IRIX' ) then
   # set library path for IRIX systems
@@ -64,5 +76,7 @@ else
     setenv LD_LIBRARY_PATH "${XERCESPLATFORM}:${LD_LIBRARY_PATH}"
   endif
 endif
+
+#############################################################################
 
 setenv PATH "${HPCTOOLKIT}/bin/${HPCTOOLKIT_PLATFORM}:${HPCTOOLKIT}/bin:${PATH}"
