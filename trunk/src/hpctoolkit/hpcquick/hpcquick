@@ -107,7 +107,7 @@ Standard arguments:
 Other options:
   -n                  No hpcview output.  Convert profiles and create an 
                       hpcview config file, but do not generate an hpcview
-                      output; record all commands in log file.
+                      output database; record all commands in log file.
   -V                  Print version information.
   -h                  Print this help.
 
