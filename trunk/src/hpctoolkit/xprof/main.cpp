@@ -56,9 +56,11 @@
 //*************************** User Include Files ****************************
 
 #include "Args.h"
-#include "PCProfile.h"
 #include "ProfileReader.h"
-#include "PCProfileUtils.h"
+#include "ProfileWriter.h"
+#include "PCProfile.h"
+#include "DerivedProfile.h"
+
 #include <lib/binutils/LoadModule.h>
 #include <lib/binutils/PCToSrcLineMap.h>
 #include <lib/binutils/LoadModuleInfo.h>
@@ -67,7 +69,8 @@
 
 using std::cerr;
 
-PCToSrcLineXMap* ReadMapFile(String& fname);
+PCProfileFilterList*
+CreateFilterList();
 
 //****************************************************************************
 
@@ -93,21 +96,6 @@ main(int argc, char* argv[])
   }
   
   // ------------------------------------------------------------
-  // Read 'profData', the profiling data file
-  // ------------------------------------------------------------
-  PCProfile* profData = NULL;
-  try {
-    profData = TheProfileReader.ReadProfileFile(args.profFile /*filetype*/);
-    if (!profData) { exit(1); }
-  } catch (std::bad_alloc& x) {
-    cerr << "Error: Memory alloc failed while reading profile!\n";
-    exit(1);
-  } catch (...) {
-    cerr << "Error: Exception encountered while reading profile!\n";
-    exit(2);
-  }
-
-  // ------------------------------------------------------------
   // Read 'PCToSrcLineXMap', if available
   // ------------------------------------------------------------
   PCToSrcLineXMap* map = NULL;
@@ -127,22 +115,65 @@ main(int argc, char* argv[])
     exit(2);
   }
   
+  LoadModuleInfo modInfo(exe, map);
+  
   // ------------------------------------------------------------
-  // Dump the PROFILE file
+  // Read 'rawprofData', the raw profiling data file
+  // ------------------------------------------------------------
+  PCProfile* rawprofData = NULL;
+  try {
+    rawprofData = ProfileReader::ReadProfileFile(args.profFile /*filetype*/);
+    if (!rawprofData) { exit(1); }
+  } catch (std::bad_alloc& x) {
+    cerr << "Error: Memory alloc failed while reading profile!\n";
+    exit(1);
+  } catch (...) {
+    cerr << "Error: Exception encountered while reading profile!\n";
+    exit(2);
+  }
+  
+  // ------------------------------------------------------------
+  // Construct some metrics, derived in some way from the raw
+  // profiling data, that we are interested in.
+  // ------------------------------------------------------------
+  DerivedProfile* profData = NULL;
+  try {
+    // We currently assume DCPI mode
+    PCProfileFilterList* filtList = NULL; // CreateFilterList();
+    profData = new DerivedProfile(rawprofData, filtList);
+
+  } catch (...) {
+    cerr << "Error: Exception encountered while constructing derived profile!\n";
+    exit(2);
+  }
+
+  // ------------------------------------------------------------
+  // Translate the derived metrics to a PROFILE file
   // ------------------------------------------------------------
   try {
-    LoadModuleInfo modInfo(exe, map);
-    DumpWithSymbolicInfo(std::cout, profData, &modInfo);
+    // We currently assume DCPI mode
+    //DumpAsPROFILE(std::cout, rawprofData, &modInfo);
+    ProfileWriter::WriteProfile(std::cout, profData, &modInfo);
   } catch (...) {
-    cerr << "Error: Exception encountered while preparing PROFILE!\n";
+    cerr << "Error: Exception encountered while translating to PROFILE!\n";
     exit(2);
   }
   
   delete exe;
   delete map;
+  delete rawprofData;
   delete profData;
   return (0);
 }
 
 //****************************************************************************
 
+#include "DCPIProfile.h"
+
+PCProfileFilterList*
+CreateFilterList()
+{
+  PCProfileFilterList* flist = new PCProfileFilterList;
+  flist->push_back(DCPIProfileFilter::PM_Retired());
+  return flist;
+}

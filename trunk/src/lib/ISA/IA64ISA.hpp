@@ -105,6 +105,14 @@ public:
     return (pc + 6 * opIndex); // 0, 6, 12
   }
 
+  virtual Addr ConvertOpPCToPC(Addr oppc, ushort& opIndex) const
+  {
+    // See above comments
+    ushort offset = (oppc & 0xf); // 0, 6, 12
+    opIndex = offset / 6;
+    return (oppc - offset);
+  }
+
 private: 
   // Should not be used
   IA64ISA(const IA64ISA& i) { }

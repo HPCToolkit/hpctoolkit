@@ -37,7 +37,7 @@
 //***************************************************************************
 //
 // File:
-//    ProfileReader.h
+//    PCProfileMetric.C
 //
 // Purpose:
 //    [The purpose of this file]
@@ -47,52 +47,49 @@
 //
 //***************************************************************************
 
-#ifndef ProfileReader_H 
-#define ProfileReader_H
-
 //************************* System Include Files ****************************
 
 #include <iostream>
-#include <fstream>
 
 //*************************** User Include Files ****************************
 
-#include <include/general.h>
-
-#include <lib/support/String.h> 
+#include "PCProfileMetric.h"
 
 //*************************** Forward Declarations ***************************
 
-class PCProfile;
-class DCPIProfile;
+using std::endl;
+using std::hex;
+using std::dec;
 
 //****************************************************************************
+// PCProfileMetric
+//****************************************************************************
 
-// 'ProfileReader' is just a helpful container for all
-// profile-file-reading-functions.  It has no state and should never
-// be instantiated by a user; rather use the globally instantiated
-// variable below.
-class ProfileReader
+void 
+PCProfileMetric::Dump(std::ostream& o)
 {
-public:
-  static PCProfile* ReadProfileFile(const char* profFile /* FIXME: type */);
+  o << "'PCProfileMetric' --\n";
+  o << "  name: " << name << "\n";
+  o << "  textStart (hex): " << hex << txtStart << dec << "\n";
+  o << "  textSize: " << txtSz << "\n";
+  o << "  map size (number of entries): " << map.size() << "\n";
+  o << "  map entries (PC is reported in hex as an offset from textStart) = [";
+  Addr pc = 0;
+  PCProfileDatum d = 0;
+  suint printed = 0;
+  for (PCToPCProfileDatumMapIt it = map.begin(); it != map.end(); ++it) {
+    if (printed != 0) { o << ", "; }
+    pc = (*it).first - txtStart; // actually, the offset
+    d = (*it).second;
+    o << "(" << hex << pc << dec << ", " << d << ")";
+    printed++;
+  }
+  o << "]" << endl;
+}
 
-private: 
-  // These functions should only be called by `ReadProfileFile'
+void
+PCProfileMetric::DDump()
+{
+  Dump(std::cerr);
+}
 
-  // ------------------------------------------------------------------------
-  //  DCPI (Alpha/OSF1)
-  // ------------------------------------------------------------------------
-  static DCPIProfile* ReadProfileFile_DCPICat(std::istream& pFile);
-  
-  // ------------------------------------------------------------------------
-  //  SGI/MIPS/IRIX
-  // ------------------------------------------------------------------------
-
-  // ------------------------------------------------------------------------
-  //  Sun/SPARC/SunOS
-  // ------------------------------------------------------------------------
-
-};
-
-#endif 

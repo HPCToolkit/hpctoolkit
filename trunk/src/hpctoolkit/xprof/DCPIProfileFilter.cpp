@@ -37,7 +37,7 @@
 //***************************************************************************
 //
 // File:
-//    ProfileReader.h
+//    DCPIFilterExpr.C
 //
 // Purpose:
 //    [The purpose of this file]
@@ -47,52 +47,67 @@
 //
 //***************************************************************************
 
-#ifndef ProfileReader_H 
-#define ProfileReader_H
-
 //************************* System Include Files ****************************
 
 #include <iostream>
-#include <fstream>
 
 //*************************** User Include Files ****************************
 
-#include <include/general.h>
-
-#include <lib/support/String.h> 
+#include "DCPIProfileFilter.h"
+#include "DCPIProfileMetric.h"
 
 //*************************** Forward Declarations ***************************
 
-class PCProfile;
-class DCPIProfile;
+using std::endl;
+using std::hex;
+using std::dec;
+
 
 //****************************************************************************
 
-// 'ProfileReader' is just a helpful container for all
-// profile-file-reading-functions.  It has no state and should never
-// be instantiated by a user; rather use the globally instantiated
-// variable below.
-class ProfileReader
+PCProfileFilter*
+DCPIProfileFilter::PM_Retired()
 {
-public:
-  static PCProfile* ReadProfileFile(const char* profFile /* FIXME: type */);
+  PCProfileFilter* f = 
+    new PCProfileFilter(PMMetric_Retired(), new DCPIInsnFilter(NULL, NULL));
+  f->SetName("PM_Retired_Insn");
+  f->SetDescription("Retired PM Instructions");
+  return f;
+}
 
-private: 
-  // These functions should only be called by `ReadProfileFile'
+DCPIMetricFilter* 
+DCPIProfileFilter::PMMetric_Retired()
+{
+  DCPIMetricExpr e = DCPIMetricExpr(DCPI_MTYPE_PM | DCPI_PM_CNTR_count 
+				    | DCPI_PM_ATTR_retired_T);
+  DCPIMetricFilter* f = new DCPIMetricFilter(e);
+  return f;
+}
 
-  // ------------------------------------------------------------------------
-  //  DCPI (Alpha/OSF1)
-  // ------------------------------------------------------------------------
-  static DCPIProfile* ReadProfileFile_DCPICat(std::istream& pFile);
+//****************************************************************************
+// DCPIMetricFilter
+//****************************************************************************
+
+bool 
+DCPIMetricFilter::operator()(const PCProfileMetric* m)
+{
+  const DCPIProfileMetric* dm = dynamic_cast<const DCPIProfileMetric*>(m);
+  BriefAssertion(dm && "Internal Error: invalid cast!");
   
-  // ------------------------------------------------------------------------
-  //  SGI/MIPS/IRIX
-  // ------------------------------------------------------------------------
+  const DCPIMetricDesc& mdesc = dm->GetDCPIDesc();
+  if (mdesc.IsSet(expr)) {
+    return true;
+  } else {
+    return false;
+  }
+}
 
-  // ------------------------------------------------------------------------
-  //  Sun/SPARC/SunOS
-  // ------------------------------------------------------------------------
+//****************************************************************************
+// DCPIInsnFilter
+//****************************************************************************
 
-};
-
-#endif 
+bool 
+DCPIInsnFilter::operator()(Addr pc)
+{
+  return true;
+}

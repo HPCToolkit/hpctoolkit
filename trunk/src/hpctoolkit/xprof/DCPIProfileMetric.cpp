@@ -37,7 +37,7 @@
 //***************************************************************************
 //
 // File:
-//    ProfileReader.h
+//    DCPIProfileMetric.C
 //
 // Purpose:
 //    [The purpose of this file]
@@ -47,52 +47,35 @@
 //
 //***************************************************************************
 
-#ifndef ProfileReader_H 
-#define ProfileReader_H
-
 //************************* System Include Files ****************************
 
 #include <iostream>
-#include <fstream>
 
 //*************************** User Include Files ****************************
 
-#include <include/general.h>
-
-#include <lib/support/String.h> 
+#include "DCPIProfileMetric.h"
 
 //*************************** Forward Declarations ***************************
 
-class PCProfile;
-class DCPIProfile;
+using std::endl;
+using std::hex;
+using std::dec;
 
 //****************************************************************************
+// DCPIProfileMetric
+//****************************************************************************
 
-// 'ProfileReader' is just a helpful container for all
-// profile-file-reading-functions.  It has no state and should never
-// be instantiated by a user; rather use the globally instantiated
-// variable below.
-class ProfileReader
+void 
+DCPIProfileMetric::Dump(std::ostream& o)
 {
-public:
-  static PCProfile* ReadProfileFile(const char* profFile /* FIXME: type */);
+  o << "'DCPIProfileMetric' --\n";
+  PCProfileMetric::Dump(o);
+}
 
-private: 
-  // These functions should only be called by `ReadProfileFile'
+void
+DCPIProfileMetric::DDump()
+{
+  Dump(std::cerr);
+}
 
-  // ------------------------------------------------------------------------
-  //  DCPI (Alpha/OSF1)
-  // ------------------------------------------------------------------------
-  static DCPIProfile* ReadProfileFile_DCPICat(std::istream& pFile);
-  
-  // ------------------------------------------------------------------------
-  //  SGI/MIPS/IRIX
-  // ------------------------------------------------------------------------
-
-  // ------------------------------------------------------------------------
-  //  Sun/SPARC/SunOS
-  // ------------------------------------------------------------------------
-
-};
-
-#endif 
+//****************************************************************************

@@ -66,9 +66,17 @@ VPATH = $(SRCS)
 OBJS = \
 	main.o \
 	Args.o \
+	ProfileReader.o \
+	ProfileWriter.o \
+	DerivedProfile.o \
 	PCProfile.o \
-	PCProfileUtils.o \
-	ProfileReader.o 
+	PCProfileMetric.o \
+	PCProfileFilter.o \
+	DCPIProfile.o \
+	DCPIProfileMetric.o \
+	DCPIProfileFilter.o \
+	DCPIMetricDesc.o
+
 
 ####################
 

@@ -166,16 +166,25 @@ public:
 				       ushort sz2) const = 0;
 
   // ConvertPCToOpPC: Given a pc at the beginning of an instruction
-  // and an opIndex, returns the 'address' of this operation.
+  // and an opIndex, returns one value -- an 'operation pc' --
+  // representing both. 
+  //
+  // ConvertOpPCToPC: Given an 'operation pc', returns the individual
+  // pc and opIndex components. (The latter is returned as a
+  // pass-by-reference parameter.)  N.B.: The 'operation pc' must
+  // follow the convetions of 'ConvertPCToOpPC'.
   //
   // Sometimes users need to pretend that the individual operations in
   // VLIW instructions are addressable.  This is, of course not true,
-  // but debugging information and other things may be stored in this
-  // manner for simplicity.
+  // but 'operation pcs' are useful for [pc->xxx] maps (e.g. debugging
+  // information is stored in this manner).
   //
   // The default function assumes non-VLIW architecture
   virtual Addr ConvertPCToOpPC(Addr pc, ushort opIndex) const
   { return pc; }
+
+  virtual Addr ConvertOpPCToPC(Addr oppc, ushort& opIndex) const
+  { opIndex = 0; return oppc; }
   
 private:
   // Should not be used

@@ -62,26 +62,123 @@ using std::hex;
 using std::dec;
 
 //****************************************************************************
+// PCProfileMetricSet
+//****************************************************************************
+
+PCProfileMetricSet::PCProfileMetricSet(suint sz)
+{
+  metricVec.reserve(16);
+}
+
+PCProfileMetricSet::~PCProfileMetricSet()
+{
+  for (suint i = 0; i < GetSz(); i++) {
+    delete metricVec[i];
+  }
+  metricVec.clear();
+}
+
+sint
+PCProfileMetricSet::DataExists(Addr pc) const
+{
+  for (suint i = 0; i < GetSz(); i++) {
+    const PCProfileMetric* m = Index(i);
+    if (m->Find(pc) != PCProfileDatum_NIL) {
+      return (sint)i; // this cast should never be a problem
+    }
+  }
+  return -1;
+}
+
+PCProfileMetricSet*
+PCProfileMetricSet::Filter(MetricFilter* filter) const
+{
+  PCProfileMetricSet* s = new PCProfileMetricSet;
+  for (suint i = 0; i < GetSz(); i++) {
+    PCProfileMetric* m = metricVec[i];
+    if ( (*filter)(m) ) {
+      s->Add(m);
+    }
+  }
+  return s;
+}
+
+void 
+PCProfileMetricSet::Dump(std::ostream& o)
+{
+  o << "'PCProfileMetricSet' --\n";
+  o << "  vec size: " << GetSz() << "\n";
+  for (suint i = 0; i < GetSz(); i++) {
+    metricVec[i]->Dump(o);
+  }
+}
+
+void 
+PCProfileMetricSet::DDump()
+{
+  Dump(std::cerr);
+}
+
+
+//****************************************************************************
+// PCProfile
+//****************************************************************************
+
+PCProfile::PCProfile(suint sz)
+  : PCProfileMetricSet(sz)
+{
+  pcVec.reserve(1024);
+}
+
+PCProfile::~PCProfile()
+{
+  pcVec.clear();
+}
+
+void
+PCProfile::AddPC(Addr pc) 
+{
+  if (pcVec.size() == pcVec.capacity()) {
+    pcVec.reserve(pcVec.capacity() * 2);
+  }
+  pcVec.push_back(pc);
+}
+
+void 
+PCProfile::Dump(std::ostream& o)
+{
+  o << "'PCProfile' --\n";
+  o << "  file: " << profiledFile << "\n";
+  o << "  header info:\n" << fHdrInfo;
+  PCProfileMetricSet::Dump(o);  
+}
+
+void 
+PCProfile::DDump()
+{
+  Dump(std::cerr);
+}
+
+//****************************************************************************
 // PCProfileVec
 //****************************************************************************
 
 PCProfileVec::PCProfileVec(suint sz)
-  : datum(0), vec(std::vector<PCProfileDatum>(sz))
+  : datum(0), vec(sz, PCProfileDatum_NIL)
 {
-  for (suint i = 0; i < vec.size(); i++) {
-    vec[i] = PCProfileDatum_NIL;
-  }
 }
 
-bool PCProfileVec::IsZeroed()
+bool 
+PCProfileVec::IsZeroed()
 {
-  for (suint i = 0; i < vec.size(); i++) {
-    if (vec[i] != 0) { return false; } // not every entry is '0'
+  for (ulong i = 0; i < vec.size(); i++) {
+    if (vec[i] != PCProfileDatum_NIL) { return false; }
   }
   return true; // every entry is '0'
 }
 
-void PCProfileVec::Dump(std::ostream& o)
+void 
+PCProfileVec::Dump(std::ostream& o)
 {
   o << "'PCProfileVec' --\n";
   o << "  datum=" << datum << endl;
@@ -93,71 +190,8 @@ void PCProfileVec::Dump(std::ostream& o)
   o << "]" << endl;
 }
 
-void PCProfileVec::DDump()
+void 
+PCProfileVec::DDump()
 {
   Dump(std::cerr);
 }
-
-//****************************************************************************
-// PCProfile
-//****************************************************************************
-
-PCProfile::PCProfile(suint sz)
-  : totalCount(0), metricVec(std::vector<PCProfileMetric*>(sz))
-{
-  for (suint i = 0; i < metricVec.size(); i++) {
-    metricVec[i] = NULL;
-  }
-}
-
-PCProfile::~PCProfile()
-{
-  for (suint i = 0; i < metricVec.size(); i++) {
-    delete metricVec[i];
-  }
-}
-
-void PCProfile::Dump(std::ostream& o)
-{
-  o << "'PCProfile' --\n";
-  o << "  vec size: " << metricVec.size() << "\n";
-  for (suint i = 0; i < metricVec.size(); i++) {
-    metricVec[i]->Dump(o);
-  }
-}
-
-void PCProfile::DDump()
-{
-  Dump(std::cerr);
-}
-
-//****************************************************************************
-// PCProfileMetric
-//****************************************************************************
-
-void PCProfileMetric::Dump(std::ostream& o)
-{
-  o << "'PCProfileMetric' --\n";
-  o << "  name: " << name << "\n";
-  o << "  textStart (hex): " << hex << txtStart << dec << "\n";
-  o << "  textSize: " << txtSz << "\n";
-  o << "  map size (number of entries): " << map.size() << "\n";
-  o << "  map entries (PC is reported in hex as an offset from textStart) = [";
-  Addr pc = 0;
-  PCProfileDatum d = 0;
-  suint printed = 0;
-  for (PCToPCProfileDatumMapIt it = map.begin(); it != map.end(); ++it) {
-    if (printed != 0) { o << ", "; }
-    pc = (*it).first - txtStart; // actually, the offset
-    d = (*it).second;
-    o << "(" << hex << pc << dec << ", " << d << ")";
-    printed++;
-  }
-  o << "]" << endl;
-}
-
-void PCProfileMetric::DDump()
-{
-  Dump(std::cerr);
-}
-
