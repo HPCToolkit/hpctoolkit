@@ -183,6 +183,7 @@ MY_INTERCEPTED_SYMS_COMMON = \
 	__libc_start_main  __BP___libc_start_main \
 	execl execlp execle execv execvp execve \
 	fork vfork \
+	_exit _Exit \
 	pthread_create
 
 MY_INTERCEPTED_SYMS_LIBHPCRUNSO = \

@@ -1786,7 +1786,7 @@ AC_DEFUN([_LT_AC_SHARED_EXT],[
   if test ! -f "${ofile}"; then
     AC_MSG_WARN([output file `$ofile' does not exist])
   fi
-  if test -z `grep -e 'shared_ext.*shrext' $ofile`; then
+  if test -z "`grep -e 'shared_ext.*shrext' $ofile`"; then
     # Make sure $shared_ext gets set to $shrext
     if sed -e 's/shared_ext/shrext/g' "$ofile" > "${ofile}T"; then
       mv "${ofile}T" "$ofile"
