@@ -62,6 +62,7 @@ include $(top_srcdir)/src/Makeinclude.config
 #############################################################################
 
 MYSCRIPTS = \
+	hpcmissing \
 	dcpicounts \
 	pxmlcat \
 	xprofquick
