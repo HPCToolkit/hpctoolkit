@@ -51,7 +51,7 @@ DEC_BIN = /usr/bin
 GCC_BIN = /usr/local/bin
 
 #  C++ compiler
-CXX = $(DEC_BIN)/cxx -std strict_ansi -rtti -pt -DNO_STD_CHEADERS 
+CXX = $(DEC_BIN)/cxx -std strict_ansi -rtti -pt #-DNO_STD_CHEADERS 
   # Note: use default template handling: -pt -ptr (see CXX_TREPOSITORY_ARG)
 
 #CXX = $(GCC_BIN)/g++
