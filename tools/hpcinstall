@@ -224,7 +224,7 @@ sub HPCToolkitInstall
 	    or die "*** system '$cmd' failed: $? ***";
     }
 
-    # copy easy files
+    # copy all the files
     for my $item (@copylist) {
 	my ($src, $dest) = @$item;
 	
