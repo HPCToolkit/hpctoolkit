@@ -11,6 +11,7 @@ Contents:
   0. Overview
   1. Using
   2. A Few Details
+  3. More Details: Outline of hpcrun's monitoring scheme
 
 =============================================================================
 
@@ -178,25 +179,8 @@ Process:
        - Launch with hpcrun_libc_start_main_fini() as exit handler
 	
   Stop:
-    1. Return to exit handler (hpcrun_libc_start_main_fini())
-       - fini_process()
-
-------------------------------------------------------------
-
-Process + Fork:
-  Start:
-    1. ---
-    2. ---
-    3. Intercept fork (hpcrun_fork()) 
-       (hpcrun lib already initialized; do not return to libc_start_main
-        again; signal and exit handler already installed)
-       - init_process()
-
-  Stop (process 1):
-    1. --- 
-
-  Stop (process 2):
-    1. --- 
+    10. Return to exit handler (hpcrun_libc_start_main_fini())
+        - fini_process()
 
 ------------------------------------------------------------
 
@@ -204,41 +188,83 @@ Process + Exec:
 
 ------------------------------------------------------------
 
-Process + Fork/Exec:
+Process + Fork:
+  Start (process 1):
+    1. ---
+    2. ---
+
+  Start (process 2)
+    3. Intercept fork (hpcrun_fork())
+       for child process: 
+       - hpcrun lib already initialized; 
+         do not return to libc_start_main again; 
+         signal and exit handler already installed
+       - init_process()
+
+  Stop (process 1):
+    9. --- 
+
+  Stop (process 2):
+    10. --- 
 
 ------------------------------------------------------------
 
-Multithreaded process (all threads as one process)
-  * Not possible.  PAPI_sprofil() only supports profiling on a
-    per-thread basis.sprofil() does not support threads.
+Process + Fork/Exec:
+  Start (process 1):
+    1. ---
+    2. ---
+
+  Start (process 2)
+    3. Intercept fork (hpcrun_fork()) 
+       [see #3 in Process + Fork]
+    4. Exec:
+       - repeat #1 and #2: initialize library, intercept launch points;
+         launch process
+
+  Stop (process 1):
+    9. --- 
+
+  Stop (process 2):
+    10. --- 
 
 ------------------------------------------------------------
 
 Multithreaded process (each thread individually)
-  Start:
+  Start (process):
     1. ---
     2. ---
 
   Each thread:
-    1. Intercept thread creation (hpcrun_pthread_create())
+    3. Intercept thread creation (hpcrun_pthread_create()) 
        - Call pthread_create with hpcrun_pthread_create_start_routine()
          as the start routine
-    2. Execute thread: 
+    4. Execute thread: 
        - init_thread()
        - execute
        - fini_thread()
 
-  Stop:
-    1. --- 
+  Stop (process):
+    1.. --- 
 
 ------------------------------------------------------------
 
-Merge hpcprof into HPCToolkit
-  - if we don't have papi, eitheer conditionally build hpcrun or do
-    not build it.
-  - how to build as a shared library
-  - how to launch without setting evn (LD_LIB_PATH for PAPI)
-    - use dlopen
-    - use a launching script
+Multithreaded process (all threads as one process)* 
+  Start (process):
+    1. ---
+    2. ---
 
+  Each thread:
+    3. Intercept thread creation [see #3 in Multithreaded process]
+    4. Execute thread
+       - init_thread() // use existing profile buf; no new output file
+       - execute
+       - fini_thread() // appropriately un-init
 
+  Stop (process):
+    1.. --- 
+
+* Because PAPI does not have an atomic interrupt, it is possible that
+one could loose samples if more than one thread increments the same
+histogram bucket at the same time.
+
+------------------------------------------------------------
