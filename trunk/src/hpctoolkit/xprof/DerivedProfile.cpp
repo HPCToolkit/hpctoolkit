@@ -274,6 +274,6 @@ GetNativeName(const PCProfileMetricSet* s)
     nm += String("[") + m->GetName() + "]";
   }
   
-  if (nm.Empty()) { nm = "<no-metrics>"; }
+  if (nm.Empty()) { nm = "[no-matching-metrics]"; }
   return nm;
 }
