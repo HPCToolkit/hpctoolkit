@@ -20,12 +20,16 @@
 #ifndef map_h
 #define map_h
 
+/************************** System Include Files ****************************/
+
+#include <inttypes.h>
+
 /****************************************************************************/
 
 /* loadmodule_t: runtime load information for a load module */
 typedef struct {
   char *name;            /* load module name */
-  unsigned long offset;  /* load address or beginning of memory map */
+  uint64_t      offset;  /* load address or beginning of memory map */
   unsigned long length;  /* length (in bytes) mapped into memory */
 } loadmodule_t;
 

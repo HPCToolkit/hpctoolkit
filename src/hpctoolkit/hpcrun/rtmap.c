@@ -200,7 +200,7 @@ dumploadmodules(void)
   int i;
   fprintf(stderr, "Dumping currently mapped load modules:\n");
   for (i = 0; i < loadmodules.count; i++) {
-    fprintf(stderr,"  offset=%#0*lx ", bhl,
+    fprintf(stderr,"  offset=%#0*llx ", bhl,
 	    loadmodules.module[i].offset);
     fprintf(stderr,"length=%#0*lx ", bhl,
 	    loadmodules.module[i].length);

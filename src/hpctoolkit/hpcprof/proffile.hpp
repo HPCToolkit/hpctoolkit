@@ -32,6 +32,7 @@
 #include <vector>
 #include <string>
 #include <utility>
+#include <inttypes.h>
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -63,7 +64,7 @@ typedef std::pair<pprof_off_t, unsigned short> ProfFileEventDatum;
 class ProfFileEvent {
   private:
     const papi_event_t *event_;
-    unsigned long period_;
+    uint64_t     period_;
     unsigned int outofrange_;
     unsigned int overflow_;
     std::vector<ProfFileEventDatum> dat_;
@@ -73,11 +74,11 @@ class ProfFileEvent {
     ~ProfFileEvent();
 
     // read: Return 0 on success; non-zero (1) on error.
-    int read(FILE*, unsigned long load_addr);
+    int read(FILE*, uint64_t load_addr);
 
     const char* name() const { return event_->name; }
     const papi_event_t *event() const { return event_; }
-    unsigned long period() const { return period_; }
+    uint64_t period() const { return period_; }
 
     unsigned int outofrange() const { return outofrange_; }
     unsigned int overflow() const { return overflow_; }
@@ -94,8 +95,8 @@ class ProfFileEvent {
 // ProfFileLM: Contains profiling information for a load module
 class ProfFileLM {
   private:
-    std::string name_;        // module name
-    unsigned long load_addr_; // load offset during runtime FIXME type 64
+    std::string name_;                    // module name
+    uint64_t load_addr_;                  // load offset during runtime
     std::vector<ProfFileEvent> eventvec_; // events
 
   public:
@@ -106,7 +107,7 @@ class ProfFileLM {
     int read(FILE*);
     
     const std::string& name() const { return name_; }
-    unsigned long load_addr() const { return load_addr_; }
+    uint64_t load_addr() const { return load_addr_; }
 
     // 0 based indexing
     unsigned int num_events() const { return eventvec_.size(); }
