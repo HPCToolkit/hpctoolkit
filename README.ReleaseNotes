@@ -179,8 +179,9 @@ Like bloop, it it can be used as a 'cross-tool'.
 4. Revision History
 --------------------
 
-HPCToolkit Version 3.?.?: [xxxx.xx.xx]
+HPCToolkit Version 3.7.0: [2004.03.12]
 --------------------
+- Replace make system with Autoconf/Automake make system
 - Update code so it can be compiled by GCC 3.3.2
 - hpcview:
     - Use of hpcviewer is now preferred method for viewing data (as
@@ -189,8 +190,11 @@ HPCToolkit Version 3.?.?: [xxxx.xx.xx]
     - Enable support for Sun's WorkShop/Forte/ONE compiler
     - Revamp scope tree builder
     - Rewrite key normalization routine (coalesce duplicate statements)
+    - Enable support of long option switches; improve option parsing.
 - xprof:
     - Enable reading of profile data from stdin or file
+    - Add basic support for processing Alpha relocated shared libraries
+    - Enable support of long option switches; improve option parsing.
 
 HPCToolkit Version 3.6.0: [2003.07.05]
 --------------------
