@@ -79,6 +79,6 @@ webdocs:
 	path=`pwd | sed 's-.*/--'` ; \
 	tar cvf ./$${path}_webdocs.tar \
 	  README* RELEASE_NOTES Sourceme-* \
-	  doc/*.html doc/images \
+	  doc/*.html doc/*.js doc/images \
 	  lib/html/man*.html lib/html/*.gif lib/html/styleForMan.css \
 	  lib/dtd/*.dtd 
