@@ -45,173 +45,78 @@
 ## 
 ## ******************************************************* EndRiceCopyright *
 
-
-# ----------------------------------------------------------------------
+#############################################################################
 #
-# hpcquick  -- R. Fowler  July, 2000
-#   
-# A Perl script to help new users get started quickly with 'hpcview'.
-# This script processes profile data files, creates a simple configuration 
-# file and runs 'hpcview' using that configuration.
+# $Source$ 
+#
+# R. Fowler    2000.07: Initial version
+# N. Tallent   2004.09: Major revision
+#
+# A Perl script to help users get started quickly with HPCToolkit.
+# This script processes various profile data files, creates a simple
+# hpcview configuration file and runs 'hpcview' using that
+# configuration.
 # 
-# To get started --
-#   -1.  Set the environment variable $HPCTOOLKIT to the installed location
-#        of HPCToolkit, and execute "source $HPCTOOLKIT/Sourceme-csh" or 
-#        "source $HPCTOOLKIT/Sourceme-sh" to set other environment variables 
-#        and modify your PATH.
-#    0.  Go to the directory in which you want to run your program and
-#        in which you will collect profiling information.
-#    1.  Run your program under ssrun (SGI/MIPS) or uprofile (Compaq/Alpha) 
-#        several times to gather raw data.
-#    2.  Run hpcquick with arguments specifying the paths to your
-#        source code and the names of files output by ssrun.  
-#    3.  Point your web browser at the resulting database.
-#    (4) If the results don't satisfy you, modify the outputs of hpcquick
-#        (a sequence of commands and a 'hpcview' configuration file) to 
-#        do what you need.
-#       
-# Step 1 creates a set of binary files containing your profiling
-#   information.
-# Step 2 converts the binary files into the form expected by
-#   'hpcview'.  It then runs 'hpcview' on those files to create a
-#   subdirectory called HPCQUICK and to fill it with browsable
-#   performance information.
-# Step 3 browses the data.
-#   There are two useful side effects of Step 2.  It echos the stream
-#   of commands it uses to a log file.  It also creates an 'hpcview'
-#   configuration file.  The easy way to migrate to more complex uses
-#   of 'hpcview' (Step 3) is to create a script containing
-#   modifications to the command sequence, and to modify the
-#   configuration file to meet your requirements.
-#
-# ----------------------------------------------------------------------
+#############################################################################
 
-# Todo notes (eraxxon):
-#
-# I have significantly revised hpcquick to 'sort-of' work along the
-# following lines.  However, more revisions are needed to beautify
-# (improving maintainability and extensibility).  The motivation
-# behind all this is that PROFILE files are now the standard format
-# for profile data.  Instead of trying to extract metric names et
-# al. from profile filenames, we want to rely on ptran/xprof/papiprof
-# to produce a PROFILE file, extract information from this and then
-# produce the hpcview database.  Thus, we have to know just enough
-# about binary formats to known when to run, e.g., ptran or xprof, but
-# that is it.  Another motivation is that we want to be able to
-# process PROFILE files directly.
-#
-# Note: Generally speaking, the metric names in the data structures should
-# refer to PROFILE metrics and data.
-#
-# 1. Produce PROFILE info for all binary profiles. (ssrun, umon.out, etc.)
-#    - Convert to one or more binary profiles to PROFILE info (stored
-#      in a temporary filename since we don't know how to extract
-#      metric names).
-#    - Associate raw profile files with PROFILE file (for later use).
-#    - Result is a list of {PROFILE, rawprofile} structs
-#
-# 2. Examine PROFILE files and init intermediate data structures
-#    - Set data structures (metric types, etc.) based on PROFILE info.
-#    - For PROFILE files with assoc. raw profile files, rename the temp
-#      PROFILE to a good name based on the metrics within. 
-# 
-# 3. Output hpcview related files based on info in data structures.
-#
-# ** Does not currently support uprofile output. **
+use strict;
+use warnings;
 
-# ----------------------------------------------------------------------
-
+use FindBin qw($Script $RealBin);
 use HPCToolkitVersionInfo;
-use FileHandle();
+
+use IO::File;
 
 STDOUT->autoflush(1); 
 
 #print STDOUT "path $ENV{PATH} \n";
 
-# ----------------------------------------------------------------------
+#############################################################################
 
-$usage = 
+my $the_program = $Script;
+my $the_usage = 
 "Usage: 
-  hpcquick [-V] -z|x [-n] -I dir1 dir2 ... dirN  [-S structure]  -P prof1 prof2 ... profM
+  ${the_program} [other-options] -z|x [-I <dir1>...<dirN>] [-S <struct-file>] -P <prof1>...<profM>
   
-Given a list of paths to directories containing interesting program 
-source code files, an optional program structure file created by the
-'bloop' tool, and a list of profile files, creates an 'hpcview' 
-configuration file and a browsable database in the current directory.
-All shell commands are captured into a log file.
+Given a list of paths to directories containing interesting program source
+code files, an optional program structure file created by the 'bloop' tool,
+and a list of profile files, creates an 'hpcview' configuration file and a
+browsable database in the current directory.  All shell commands are captured
+into a log file.
 
-Following is a list of the various profile files accepted.  If needed,
-they will automatically be converted into the PROFILE format (using
-the vendor's 'prof' tool and the toolkit's 'ptran') before hpcview is run.
+Following is a list of the various profile files accepted.  If needed, they
+will automatically be converted into the PROFILE format before hpcview is run.
+  o binary output from hpcrun
   o binary output from SGI's ssrun
-  o XML PROFILE files from xprof, papiprof and ptran
+  o XML PROFILE files (e.g., from xprof, hpcprof and ptran)
 
-Options:
-  -V: print version information
-  -z: configure hpcview to produce an html database
-  -x: configure hpcview to produce an xml database
-  -n: exit before producing database (but record command in log file)
-  -I: dir1...dirN specify a list of directories -- relative or absolute -- 
-      containing source code to which performance data should be 
-      correlated.  In order to search a directory *and* recursively search 
-      all of its descendents, append an escaped '*' after the last slash,
-      e.g., /mypath/\\* (escaping is for the shell).
-  -S: Optional program structure from 'bloop'.
-  -P: prof1...profM specify a list of profile files.
+Standard arguments:
+  -z                  Instruct hpcview to produce an html database
+  -x                  Instruct hpcview to produce hpcviewer output
+  -I <dir1>...<dirN>  A space-separated list of directories -- relative or 
+                      absolute -- containing source code to which performance 
+                      data should be correlated.  In order to search a
+                      directory *and* recursively search all of its
+                      descendents, append an escaped '*' after the last slash,
+                      e.g., /mypath/\\* (escaping is for the shell).
+  -S <struct-file>    Optional program structure from 'bloop'.
+  -P <prof1>...<profM> 
+                      A space-separated list of profile files.
+
+Other options:
+  -n                  No hpcview output.  Convert profiles and create an 
+                      hpcview config file, but do not generate an hpcview
+                      output; record all commands in log file.
+  -V                  Print version information.
+  -h                  Print this help.
+
 ";
 
+# Does not currently support
 #   o [binary output from Alpha-Tru64's uprofile] 
 
-# ----------------------------------------------------------------------
-
-# fields of the configuration structure (corresponding to the HPCView
-# XML configuraiton file) 
-
-my %configuration = (
-		     title            => undef,
-		     srcPaths         => undef,
-		     metricTypes      => undef,
-		     metricDispNms    => undef,
-		     metrics          => [ ],   # array of 'metric'
-		     dumpFlag         => undef,
-		     );
-
-# generic container for 'srcPaths', 'metricTypes', 'metricDispNms' above
-my %names = (
-	     hashTable  => undef,
-	     total      => 0,
-	     totals     => undef,
-	     indices    => undef,
-	     names      => undef,
-	     );
-
-my %metric = (
-	      type         => undef,
-	      dispNm       => undef, # display name
-	      rawProfFiles => undef, # raw profile files for the metric
-	      PROFILEfile  => undef, # the PROFILE file
-	      PROFILEmid   => undef, # id of the metric within PROFILE
-	      );
-
-# ----------------------------------------------------------------------
-
-my $ssrunType = 0;
-my $uprofileType = 1;
-my $PROFILEType = 2;
-
-# ----------------------------------------------------------------------
-
-my $pxmlExt        = '.pxml';
-my $PROFILEFileRE  = '.+\.pxml';
-my $ssrunFileRE    = '(.*)\.(\w+)\.([fm]\d+)';
-
-my $xmlAttrRE      = '\s*=\s*\"([^\"]+)\"'; # grabs everything between ""
-
-## Note: All options should be known by isArgument().
-#  my $titleOpt      = '-title';
-## my $configFileOpt = '-config';
-## my $groupRE       = '^-grp(=(\w+))?';
-## my $singleRE      = '^-sng(=(\w+))?';
+# Note: All option flags should be known by isArgument().
+my $helpOpt         = '-h';
 my $verOpt          = '-V';
 my $htmlOutOpt      = '-z';
 my $xmlOutOpt       = '-x';
@@ -220,764 +125,1007 @@ my $incOpt          = '-I';
 my $structOpt       = '-S';
 my $profOpt         = '-P';
 
-my $configFile = "hpcquick.xml";
-my $logFile = "hpcquick.log";
+#############################################################################
 
-my $profileCmd = "prof";
-my $ptranCmd = "ptran";
-my $remove = "/bin/rm";
-my $tmpFile = ".tmp";
+# A generic container for 'names'.  Warning: these fields sometimes
+# have slightly different semantics.
+my %names_t = 
+    (
+     hashTable  => undef, # hash of names to their index within the list
+     list       => undef, # array of names
+     totals     => undef, # num of dup. of each item in 'names'
+     total      => 0,     # number of names contained within
+     
+     indices    => undef, # Used to generate unique names in config files
+     );
 
+# metricInfo_t: a 'struct' representing hpcview metric information
+# Warning: the first two fields are abused (FIXME)
+my %metricInfo_t = 
+    (
+     type         => undef, # index into hpcviewConfigData{metricTypes}
+     dispNm       => undef, # index into hpcviewConfigData{metricDispNms}
+     profinfo     => undef, # a 'profileInfo_t'
+     PROFILEmid   => undef, # id of the metric within the PROFILE file
+     );
 
-#
-# initialize the configuration data structure
-#
-
-# contains included source paths
-$configuration{srcPaths} = { %names, };
-$configuration{srcPaths}->{hashTable} = { };
-$configuration{srcPaths}->{totals} = [ ];
-$configuration{srcPaths}->{indices} = [ ];
-$configuration{srcPaths}->{names} = [ ];
-
-# includes all different metric types
-$configuration{metricTypes} = { %names, };
-$configuration{metricTypes}->{hashTable} = { };
-$configuration{metricTypes}->{totals} = [ ];
-$configuration{metricTypes}->{indices} = [ ];
-$configuration{metricTypes}->{names} = [ ];
-
-# includes all different metric display names
-$configuration{metricDispNms} = { %names, };
-$configuration{metricDispNms}->{hashTable} = { };
-$configuration{metricDispNms}->{totals} = [ ];
-$configuration{metricDispNms}->{indices} = [ ];
-$configuration{metricDispNms}->{names} = [ ];
-
-# includes information for each metric
-$configuration{metrics} = [ ];
-$structFile = "";
-
-# ----------------------------------------------------------------------
-# 'main': process the command line arguments
-# ----------------------------------------------------------------------
-
-my $illegalOutOpt = "a -z or -x or -n output option must be specified";
-my $argc = scalar(@ARGV);
-my $outOpt = $illegalOutOpt;
-
-if ($argc < 1) {
-    printUsageAndExit($0);
-}
-
-my $i = 0;
-my $suppressOutput = 0;
-while ($i < $argc) {
-
-  # option: version
-  if ($ARGV[$i] eq $verOpt) {
-      printVersionAndExit($0);
-  }
-  # option: output style
-  elsif ($ARGV[$i] eq $htmlOutOpt) {
-      $outOpt = "-z";
-  }
-  elsif ($ARGV[$i] eq $xmlOutOpt) {
-      $outOpt = "-x hpcquick.hpcviewerML";
-  }
-  elsif ($ARGV[$i] eq $noOutOpt) {
-      $suppressOutput = 1;
-  }
-  # option: program structure
-  elsif ($ARGV[$i] eq $structOpt) {
-      $structFile = $ARGV[$i + 1];
-      $i++;
-  }
-  # option: include src paths
-  elsif ($ARGV[$i] eq $incOpt) {
-      while (isArgument($ARGV[$i + 1]) == 1) {
-	  $i++;
-	  processSrcPath(\%configuration, $ARGV[$i]);
-      }
-  }
-  # profile files
-  elsif ($ARGV[$i] eq $profOpt) {
-      while (isArgument($ARGV[$i + 1]) == 1) {
-	  $i++;
-	  processProfile(\%configuration, $ARGV[$i]);
-      }
-  }
-  # something not recognized
-  else {
-      print STDOUT "Invalid argument: '$ARGV[$i]'\n";
-      printUsageAndExit($0);
-  }
-  
-  # point to the next argument
-  $i++;
-}
-
-# ------------------------------------------------------
-# several option checks
-# ------------------------------------------------------
-
-if ($outOpt eq $illegalOutOpt) {
-    print STDOUT "No output option specified.\n";
-    printUsageAndExit($0);
-}
-
-if (!defined($configFile)) {
-    print STDOUT "Internal Error: Missing config file name\n";
-    printUsageAndExit($0);
-}
-
-if (!defined($configuration{title})) {
-    print STDOUT "Internal Error: Missing title\n";
-    printUsageAndExit($0);
-}
-
-if ($#{$configuration{metrics}} < 0) {
-    print STDOUT "No valid performance data files specified.\n";
-    printUsageAndExit($0);
-}
-
-# ------------------------------------------------------
-# create output files
-# ------------------------------------------------------
-createOutputFiles(\%configuration, $configFile, $logFile);
-exit(0);
-
-
-
-# ----------------------------------------------------------------------
-# isArgument
-#   find out whether the word is an argument or option flag or undefined
-#   return 0 if it is not defined
-#   return 1 if it is an argument
-#   return 2 if it is not an argument
-# ----------------------------------------------------------------------
-
-sub isArgument {
-    my $arg = shift;
-    if (!defined($arg)) {
-	return 0;
-    }
-    if ($arg eq $verOpt 
-	|| $arg eq $htmlOutOpt || $arg eq $xmlOutOpt || $arg eq $noOutOpt 
-	|| $arg eq $incOpt || $arg eq $structOpt || $arg eq $profOpt) {
-	return 2;
-    }
-    return 1;
-}
-
-# ----------------------------------------------------------------------
-# printUsageAndExit, printVersionAndExit
-# ----------------------------------------------------------------------
-
-sub printUsageAndExit {
-    my $command = shift; # not used now
-    print STDOUT ${usage};
-    exit(-1);
-}
-
-sub printVersionAndExit {
-    my $command = shift; # not used now
-    print STDERR "hpcquick: ", $HPCToolkitVersionInfo::info, "\n";
-    exit(-1);
-}
-
-
-# ----------------------------------------------------------------------
-
-# ----------------------------------------------------------------------
-# processSrcPath
-#   Given a ref to a configuration data structure and an include file
-#   path, perform sanity check and store the path within structure.
-# ----------------------------------------------------------------------
-
-sub processSrcPath {
-    my ($config, $path) = @_;
-
-    if (!defined($config->{srcPaths}->{hashTable}->{$path})) {
-	if (isValidSrcPath($path)) {
-	    print STDOUT "Adding source path: '$path'\n";
-	    $config->{srcPaths}->{total}++;
-	    $config->{srcPaths}->{hashTable}->{$path} = 0;
-	    push @{$config->{srcPaths}->{names}}, $path;
-	}
-	else {
-	    print STDOUT "Invalid argument to -I: '$path' not a directory.\n";
-	    printUsageAndExit($0);
-	}
-    }
-}
-
-# ----------------------------------------------------------------------
-# isValidSrcPath
-#   Given a path to be used in a PATH element, test whether it is valid.
-#   Returns 1 or 0.
-# ----------------------------------------------------------------------
-
-sub isValidSrcPath {
-    my ($path) = @_;
-
-    # Remove recursive path indicator, if present.
-    my $p = isRecursivePath($path);
-    if ($p) { $path = $p; }
-    
-    if (-d $path && -e $path) {
-	return 1;
-    } else {
-	return 0;
-    }
-}
-
-# ----------------------------------------------------------------------
-# getViewnameFromSrcPath
-#   Given a source path, return a viewname. (for PATH element).  The
-#   viewname should not be empty.
-# ----------------------------------------------------------------------
-
-{
-    my $defaultViewNm;
-    my $defaultQualifier;
-
-    sub getViewnameFromSrcPath {
-	my ($path) = @_;
-	my $recursive = 0;
-
-	# ------------------------------------------------------
-	# Normalize path into initial viewname.  If we have a path like
-	# the following, we would like to use its name:
-	#   ./mypath, ./mypath/*, mypath/, ./mypath/.
-	# Admittedly, this is not overly likely.
-	# ------------------------------------------------------
-	
-	# Remove recursive path indicator, if present.
-	my $p = isRecursivePath($path);
-	if ($p) {
-	    $path = $p;
-	    $recursive = 1;
-	}
-	
-	# Remove any beginning '.' (but not ..!)
-	$path =~ s/^\.$//;  # .
-	$path =~ s/^\.\///; # ./
-	
-	# Remove any trailing '/' or '/.'
-	$path =~ s/\/$//; 
-	$path =~ s/\/\.$//; 
-	
-	my $viewnm = $path;
-	
-	# ------------------------------------------------------
-	# Now, if viewname contains invalid chars, canonicalize.
-	# Invalid: ., *, ?, /, \  (there are others...)
-	# ------------------------------------------------------
-	
-	if ( $viewnm eq "" 
-	     || ($viewnm =~ /\./) || ($viewnm =~ /\*/) 
-	     || ($viewnm =~ /\?/) 
-	     || ($viewnm =~ /\//) || ($viewnm =~ /\\/)) {
-	    $viewnm = $defaultViewNm . $defaultQualifier;
-	    $defaultQualifier++;
-	}
-	
-	return $viewnm;
-    }
-
-    BEGIN { 
-	$defaultViewNm = "src";
-	$defaultQualifier = 1;
-    }
-}
-
-# ----------------------------------------------------------------------
-# isRecursivePath
-#   Given a source path, return the non-recursive name if this is a
-#   recursive path, otherwise return undef.
-# ----------------------------------------------------------------------
-
-sub isRecursivePath {
-    my ($path) = @_;
-    
-    # This is a recursive path if it ends with '/*'.  If it
-    # exists, strip it off.
-    my $cnt = ($path =~ s/\/\*$//);
-    
-    if ($cnt > 0) {
-	return $path;
-    } else {
-	return undef;
-    }
-}
-
-
-# ----------------------------------------------------------------------
-
-# ----------------------------------------------------------------------
-# processProfile
-#   Given a ref to a configuration data structure and a profile file,
-#   perform sanity checks and store info within structure.
-#
+# profileInfo_t: a 'struct' of PROFILE data and its corresponding raw
+# profile data.
 #   Note: In theory a metric may be defined with multiple raw profile
 #   files, but we currently do not support this.  In this case, all
 #   the profile data would be incorporated into one metric in a
 #   PROFILE file.  *** To reiterate: Currently, there will be one
 #   metric per raw profile file. ***
-#
-#   If we are already given a PROFILE file, we may have multiple
-#   metrics within it.  (In this case several metrics will refer to
-#   the same PROFILE file.)
-#
-# ----------------------------------------------------------------------
+my %profileInfo_t = 
+    (
+     PROFILEfile  => undef, # PROFILE file (canonical profile info)
+     rawProfFiles => undef, # list of any corresponding raw profile files
+     rawProfType  => undef, # type of raw data (if applicable)
+     );
 
-sub processProfile {
-    my ($config, $profile) = @_;
+#############################################################################
+
+my ($hpcrunType,
+    $ssrunType,
+    $uprofileType,
+    $PROFILEType) =
+    (0, 1, 2, 3);
+
+my $pxmlExt        = '.pxml';
+my $xmlAttrRE      = '\s*=\s*\"([^\"]+)\"'; # grabs everything between ""
+
+#############################################################################
+## main/driver
+#############################################################################
+
+# fields of the configuration structure (corresponding to the HPCView
+# XML configuraiton file) 
+
+my %hpcviewConfigData = 
+    (
+     title            => undef, # title of profile database
+     srcPaths         => undef, # 'names_t', list of unique src paths
+     structFiles      => undef, # 'names_t', list of unique struct files
+     metricTypes      => undef, # 'names_t', hash of metric types
+     metricDispNms    => undef, # 'names_t', hash of metric names
+     metrics          => [ ],   # array of 'metricInfo_t'
+     dumpFlag         => undef,  
+     );
+my $opt_srcPaths = [ ];
+my $opt_structFiles = [];
+my $opt_profileFiles = [ ];
+my $opt_suppressOutput = 0;
+my $opt_hpcviewout = undef;
+
+my $configFile = "hpcquick.xml";
+my $logFile = "hpcquick.log";
+
+# ----------------------------------------------------------
+# process the command line arguments
+# ----------------------------------------------------------
+parseOptions($0);
+
+# ----------------------------------------------------------
+# Create and fill 'hpcviewConfigData' data structure
+# ----------------------------------------------------------
+
+# Easy initialization
+Config_init(\%hpcviewConfigData);
+Config_addSrcPaths(\%hpcviewConfigData, $opt_srcPaths);
+Config_addStructFiles(\%hpcviewConfigData, $opt_structFiles);
+
+my $logFHndl = new IO::File();
+$logFHndl->open("> $logFile")
+    or Error("Can't open '$logFile'\n");
+
+# Canonicalize profile data into PROFILE data
+print STDOUT "* Canonicalizing performance data...\n";
+my $profileData = canonicalizeProfileData($opt_profileFiles, $logFHndl);
+
+# Initialize metrics using PROFILE files
+print STDOUT "* Collecting metrics from performance data...\n";
+Config_addMetrics(\%hpcviewConfigData, $profileData);
+if (scalar(@{$hpcviewConfigData{metrics}}) == 0) {
+  Error("No valid metrics found within profile data.\n");
+}
+
+Config_addTitle(\%hpcviewConfigData);
+
+# ----------------------------------------------------------
+# Generate hpcview information
+# ----------------------------------------------------------
+
+# Generate hpcview config file
+print STDOUT "* Generating hpcview configuration file...\n";
+genHPCViewConfigFile(\%hpcviewConfigData, $configFile, $logFHndl);
+
+# Generate hpcview database (if necessary)
+if (!($opt_suppressOutput)) {
+  print STDOUT "* Running hpcview to create browsable database...\n";
+} 
+else {
+  print STDOUT "* Sending command to create browsable database to log...\n";
+}
+my $db = genHPCViewDB(\%hpcviewConfigData, $configFile, $logFHndl);
+
+$logFHndl->close();
+
+# Final notice
+print STDOUT "\n";
+print STDOUT "* Created files: '$configFile', '$logFile'\n";
+if (!($opt_suppressOutput)) {
+  print STDOUT "* Browsable database: '$db'\n";
+}
+
+exit(0);
+
+
+#############################################################################
+##
+#############################################################################
+
+# parseOptions: 
+sub parseOptions
+{  
+  my ($command) = @_; 
+  
+  my $argc = scalar(@ARGV);  
+  if ($argc < 1) {
+    UsageError("Missing a required argument!\n");
+  }
+  
+  my $i = 0;
+  while ($i < $argc) {
+
+    # option: help
+    if ($ARGV[$i] eq $helpOpt) {
+      printUsageAndExit($command);
+    }
+
+    # option: version
+    if ($ARGV[$i] eq $verOpt) {
+      printVersionAndExit($command);
+    }
+
+    # option: output style
+    elsif ($ARGV[$i] eq $htmlOutOpt) {
+      $opt_hpcviewout = "-z";
+    }
+    elsif ($ARGV[$i] eq $xmlOutOpt) {
+      $opt_hpcviewout = "-x hpcquick.hpcviewerML";
+    }
+    elsif ($ARGV[$i] eq $noOutOpt) {
+      $opt_suppressOutput = 1;
+    }
+
+    # option: program structure
+    elsif ($ARGV[$i] eq $structOpt) {
+      $i++;
+      push(@{$opt_structFiles}, $ARGV[$i]);
+    }
+
+    # option: include src paths
+    elsif ($ARGV[$i] eq $incOpt) {
+      while (isArgument($ARGV[$i + 1]) == 1) {
+	$i++;
+	push(@{$opt_srcPaths}, $ARGV[$i]);
+      }
+    }
+
+    # profile files
+    elsif ($ARGV[$i] eq $profOpt) {
+      while (isArgument($ARGV[$i + 1]) == 1) {
+	$i++;
+	push(@{$opt_profileFiles}, $ARGV[$i]);
+      }
+    }
+
+    # something not recognized
+    else {
+      UsageError("Invalid argument: '$ARGV[$i]'\n");
+    }
+    
+    # point to the next argument
+    $i++;
+  }
+  
+  
+  # ----------------------------------------------------------
+  # semantic checks
+  # ----------------------------------------------------------
+  
+  if (!defined($opt_hpcviewout)) {
+    UsageError("No output option specified: try -z or -x.\n");
+  }
+  
+  if (!defined($configFile)) {
+    Error("Internal Error: Missing config file name\n");
+  }   
+}
+
+
+# isArgument
+#   find out whether the word is an argument or option flag or undefined
+#   return 0 if it is not defined
+#   return 1 if it is an argument
+#   return 2 if it is not an argument (i.e. an option flag)
+sub isArgument 
+{
+  my $arg = shift;
+  if (!defined($arg)) {
+    return 0;
+  }
+  if ($arg eq $helpOpt || $arg eq $verOpt
+      || $arg eq $htmlOutOpt || $arg eq $xmlOutOpt || $arg eq $noOutOpt 
+      || $arg eq $incOpt || $arg eq $structOpt || $arg eq $profOpt) {
+    return 2;
+  }
+  return 1;
+}
+
+
+# printUsageAndExit
+sub printUsageAndExit 
+{
+  my ($command) = @_; # not used now
+  print STDOUT ${the_usage};
+  exit(-1);
+}
+
+
+# printVersionAndExit
+sub printVersionAndExit 
+{
+  my $command = shift; # not used now
+  print STDERR "hpcquick: ", $HPCToolkitVersionInfo::info, "\n";
+  exit(-1);
+}
+
+
+# UsageError
+sub UsageError 
+{
+  my ($msg) = @_;
+  if (defined($msg)) {
+    print STDOUT "${the_program}: ${msg}";
+  }
+  print STDOUT "Try `${the_program} -h' for more information.\n";
+  exit(-1);
+}
+
+
+# Error
+sub Error 
+{
+  my ($msg) = @_;
+  if (defined($msg)) {
+    print STDOUT "Error! ${the_program}: ${msg}";
+  }
+  exit(-1);
+}
+
+
+#############################################################################
+## 
+#############################################################################
+
+# Config_init: 
+sub Config_init
+{  
+  my ($cfgData) = @_;
+  
+  # contains included source paths
+  $cfgData->{srcPaths} = { %names_t, };
+  $cfgData->{srcPaths}->{hashTable} = { };
+  $cfgData->{srcPaths}->{list} = [ ];
+  $cfgData->{srcPaths}->{totals} = [ ];
+  $cfgData->{srcPaths}->{indices} = [ ];
+
+  # contains included source paths
+  $cfgData->{structFiles} = { %names_t, };
+  $cfgData->{structFiles}->{hashTable} = { };
+  $cfgData->{structFiles}->{list} = [ ];
+  $cfgData->{structFiles}->{totals} = [ ];
+  $cfgData->{structFiles}->{indices} = [ ];
+
+  # includes all different metric types
+  $cfgData->{metricTypes} = { %names_t, };
+  $cfgData->{metricTypes}->{hashTable} = { };
+  $cfgData->{metricTypes}->{list} = [ ];
+  $cfgData->{metricTypes}->{totals} = [ ];
+  $cfgData->{metricTypes}->{indices} = [ ];
+  
+  # includes all different metric display names
+  $cfgData->{metricDispNms} = { %names_t, };
+  $cfgData->{metricDispNms}->{hashTable} = { };
+  $cfgData->{metricDispNms}->{list} = [ ];
+  $cfgData->{metricDispNms}->{totals} = [ ];
+  $cfgData->{metricDispNms}->{indices} = [ ];
+  
+  # includes information for each metric
+  $cfgData->{metrics} = [ ];
+}
+
+
+# Config_addSrcPaths
+#   Given a ref to a hpcviewConfigData data structure and a list of source file
+#   paths, perform sanity checks and store the paths within the structure.
+sub Config_addSrcPaths
+{
+  my ($cfgData, $paths) = @_;
+
+  for my $x (@{$paths}) {
+    if (isValidSrcPath($x)) {
+      Config_addToNamesList($cfgData->{srcPaths}, $x);
+    }
+    else {
+      UsageError("Invalid argument to -I: '$x' not a directory.\n");
+    }
+  }
+}
+
+
+# Config_addStructFiles
+#   Given a ref to a hpcviewConfigData data structure and a list of source file
+#   paths, perform sanity checks and store the paths within the structure.
+sub Config_addStructFiles
+{
+  my ($cfgData, $paths) = @_;
+
+  for my $x (@{$paths}) {
+    if (-e $x && -r $x) {
+      Config_addToNamesList($cfgData->{structFiles}, $x);
+    }
+    else {
+      UsageError("Invalid argument to -S: '$x' is not readable.\n");
+    }
+  }
+}
+
+
+# Config_addToNamesList
+#   Given a 'names_t' add 'nm' to the hashTable and list, if it will
+#   not create duplicates.
+#   Returns 1 for a valid path added to config;
+#           0 for a path already existing in config.
+sub Config_addToNamesList
+{
+  my ($anames, $nm) = @_;
+  
+  if (!defined($anames->{hashTable}->{$nm})) {
+    $anames->{hashTable}->{$nm} = 0;
+    push(@{$anames->{list}}, $nm);
+    $anames->{total}++;
+    return 1;
+  }
+  else {
+    return 0;
+  }
+}
+
+
+# Config_addMetrics: 
+#   Given a ref to a hpcviewConfigData data structure and a list of
+#   'profileInfo_t', initialize metrics based on the canonical PROFILE
+#   info.
+sub Config_addMetrics 
+{
+  my ($cfgData, $profData) = @_;
+  
+  for my $x (@{$profData}) {
+    Config_addMetric($cfgData, $x);
+  }
+}
+
+
+# Config_addMetric
+#   Given a ref to a hpcviewConfigData data structure and a
+#   'profileInfo_t', gather metrics from the PROFILE information.
+#   (Since a PROFILE file may have multiple metrics, several metrics
+#   can refer to the same PROFILE file.)
+sub Config_addMetric
+{
+  my ($cfgData, $aprofInfo) = @_;
+
+  my $fnm = $aprofInfo->{PROFILEfile};  
+
+  # Find metrics within this PROFILE file.  Note that the returned
+  # list is not in the proper format.
+  my $metricsRef = findMetricsForPROFILE($fnm);
+  my $numMetrics = scalar(@{$metricsRef});
+  if ($numMetrics == 0) {
+    print STDOUT "Warning: Could not find any metrics in '$fnm'\n";
+  }
+  
+  # Create a proper metric list containing each metric from this profile file
+  for (my $i = 0; $i < $numMetrics; $i++) {    
+    my $aMetric = { %metricInfo_t, };
+    my $mType = $metricsRef->[$i]->{type};
+    my $mDispNm = $metricsRef->[$i]->{dispNm};
+    #print STDOUT "mType = $mType\n";
+    #print STDOUT "dispname = $mDispNm\n";
+    
+    # sets aMetric->type, dispNm (as indices!)
+    Config_addMetricNames($cfgData, $aMetric, $mType, $mDispNm);
+    
+    # set aMetric->profinfo, PROFILEmid
+    $aMetric->{profinfo} = $aprofInfo;
+    $aMetric->{PROFILEmid} = $metricsRef->[$i]->{PROFILEmid};
+
+    # Add this metric to the list
+    push(@{$cfgData->{metrics}}, $aMetric);
+  }
+}
+
+
+# Config_addMetricNames
+#   Given a ref to a hpcviewConfigData data structure and a metricInfo_t,
+#   test whether the metric type and display name exist.
+#     if yes, increase its number
+#     if not, insert the new name into the array and hash table
+sub Config_addMetricNames
+{
+  my ($cfgData, $aMetric, $mType, $mName) = @_;
+  #print STDOUT "Config_addMetricNames:\n";
+  #print STDOUT "  -", @{$cfgData->{metricTypes}->{totals}}, "\n";
+  #print STDOUT "  -", @{$cfgData->{metricDispNms}->{totals}}, "\n";
+  #print STDOUT "  $mType, $mName\n";
+  
+  my $mTypeIdx = $cfgData->{metricTypes}->{hashTable}->{$mType};
+  my $mNameIdx = $cfgData->{metricDispNms}->{hashTable}->{$mName};
+  
+  if (!defined($mTypeIdx)) {
+    $mTypeIdx = $cfgData->{metricTypes}->{total}++;
+    $cfgData->{metricTypes}->{hashTable}->{$mType} = $mTypeIdx;
+    push(@{$cfgData->{metricTypes}->{list}}, $mType);
+    push(@{$cfgData->{metricTypes}->{totals}}, 1);
+    push(@{$cfgData->{metricTypes}->{indices}}, 0);
+  }
+  else {
+    $cfgData->{metricTypes}->{totals}->[$mTypeIdx]++;
+  }
+  if (!defined($mNameIdx)) {
+    $mNameIdx = $cfgData->{metricDispNms}->{total}++;
+    $cfgData->{metricDispNms}->{hashTable}{$mName} = $mNameIdx;
+    push(@{$cfgData->{metricDispNms}->{list}}, $mName);
+    push(@{$cfgData->{metricDispNms}->{totals}}, 1);
+    push(@{$cfgData->{metricDispNms}->{indices}}, 0);
+  }
+  else {
+    $cfgData->{metricDispNms}->{totals}->[$mNameIdx]++;
+  }
+  $aMetric->{type} = $mTypeIdx;
+  $aMetric->{dispNm} = $mNameIdx;
+  #print STDOUT "  -", @{$cfgData->{metricTypes}->{totals}}, "\n";
+  #print STDOUT "  -", @{$cfgData->{metricDispNms}->{totals}}, "\n";
+}
+
+
+# Config_addTitle:
+#   Given a ref to a hpcviewConfigData data structure that *already*
+#   contains metrics, make up a title.
+sub Config_addTitle
+{
+  my ($cfgData, $aprofInfo) = @_;
+
+  # If no title exists, extract the title from the first PROFILE file
+  if (!defined($cfgData->{title})) {
+    my $fnm = $cfgData->{metrics}[0]->{profinfo}->{PROFILEfile};
+    $cfgData->{title} = Config_makeTitle($fnm);
+  }
+}
+
+
+# Config_makeTitle
+#   Given a PROFILE file, make up a title.
+sub Config_makeTitle
+{
+  my ($profile) = @_;
+  
+  my $title = "(Untitled)";
+  
+  my $profileHandle = new IO::File();
+  $profileHandle->open("< $profile")
+      or Error("Can't open '$profile'\n");
+
+  while (<$profileHandle>) {
+    my $line = $_;
+    if ($line =~ /<TARGET /) {
+      ($title) = ($line =~ /name$xmlAttrRE/);
+      last;
+    }
+  }
+  $profileHandle->close();
+
+  #print STDOUT "*** Title: $title\n";
+  return $title;
+}
+
+
+#############################################################################
+##
+#############################################################################
+
+# genHPCViewConfigFile
+#   Given a hpcviewConfigData data structure, generate a hpcview
+#   config file.  Any system commands are also written to $logFHndl.
+sub genHPCViewConfigFile 
+{
+  my ($cfgData, $cfgFnm, $logFhndl) = @_;
+  
+  my $cfgFhndl = new IO::File();  
+  $cfgFhndl->open("> $cfgFnm")
+      or Error("Can't open '$cfgFnm'\n");
+  
+  # start document tag
+  print {$cfgFhndl} "<HPCVIEW>\n\n";
+  
+  # title
+  print {$cfgFhndl} "<TITLE name=\"", xmlEsc($cfgData->{title}), "\"/>\n\n";
+
+  # ------------------------------------------------------
+  # src paths
+  # ------------------------------------------------------
+  for (my $i = 0; $i < $cfgData->{srcPaths}->{total}; $i++) {
+    my $dir = $cfgData->{srcPaths}->{list}[$i];
+    my $viewnm = getViewnameFromSrcPath($dir);
+    
+    print STDOUT "  Adding source path: '$dir'\n";
+    print {$cfgFhndl} "<PATH name=\"", xmlEsc($dir), "\" ",
+          "viewname=\"", xmlEsc($viewnm), "\"/>\n";
+  }
+  print {$cfgFhndl} "\n";
+  
+  # ------------------------------------------------------
+  # structure file
+  # ------------------------------------------------------
+  if ($cfgData->{structFiles}->{total} == 1) {
+    my $fnm = $cfgData->{structFiles}->{list}[0];
+    
+    print STDOUT "  Adding structure file: '$fnm'\n";
+    print {$cfgFhndl} "<STRUCTURE name=\"", xmlEsc($fnm), "\"/>";
+    print {$cfgFhndl} "\n\n";
+  }
+  
+  # ------------------------------------------------------
+  # metrics
+  # ------------------------------------------------------
+  
+  my $numMetrics = scalar(@{$cfgData->{metrics}});  
+  
+  # Create metric display names
+  # FIXME: This abuses the data structure semantics and is out-of-place
+  for (my $i = 0; $i < $numMetrics; $i++) {
+    my $metric = $cfgData->{metrics}[$i];
+    
+    # both name and display name are defined according to whether
+    # there are multiple instances of them.  If there are,
+    # distingish by appending a cardinal number
+    my $mType = $metric->{type};
+    my $mTypeQ = $cfgData->{metricTypes}->{list}[$mType];
+    if ($cfgData->{metricTypes}->{totals}[$mType] > 1) {
+      $mTypeQ .= "-" . $cfgData->{metricTypes}->{indices}[$mType]++;
+    }
+    
+    my $dispNm = $metric->{dispNm};
+    my $dispNmQ = $cfgData->{metricDispNms}->{list}[$dispNm];
+    if ($cfgData->{metricDispNms}->{totals}[$dispNm] > 1) {
+      $dispNmQ .= "-" . $cfgData->{metricDispNms}->{indices}[$dispNm]++;
+    }
+    
+    #print STDOUT "mTypeQ = $mTypeQ\n";
+    #print STDOUT "dispNmQ = $dispNmQ\n";
+    $metric->{type} = $mTypeQ;    # save for later (Abuse!)
+    $metric->{dispNm} = $dispNmQ; # save for later (Abuse!)
+
+  }
+  
+  for (my $i = 0; $i < $numMetrics; $i++) {
+    my $metric = $cfgData->{metrics}[$i];
+    
+    my $nm = $metric->{dispNm};
+    my $fnm = $metric->{profinfo}->{PROFILEfile};
+    
+    print STDOUT "  Adding metric '$nm' from '$fnm'\n";
+    
+    # METRIC start tag
+    print {$cfgFhndl} "<METRIC name=\"", xmlEsc($metric->{type}), "\" ",
+          "displayName=\"", xmlEsc($nm), "\"";
+    
+    if ($i == 0) { print {$cfgFhndl} " sortBy=\"true\""; }
+    print {$cfgFhndl} ">\n";
+    
+    # FILE subelement
+    print {$cfgFhndl} "  <FILE name=\"", xmlEsc($fnm), "\" ",
+	  "select=\"", xmlEsc($metric->{PROFILEmid}), "\"/>\n";
+  
+    # METRIC end tag
+    print {$cfgFhndl} "</METRIC>\n\n";
+  }
+  
+  # end document tag
+  print {$cfgFhndl} "</HPCVIEW>\n";
+  
+  $cfgFhndl->close();
+}  
+
+
+# genHPCViewDB
+#   Given a hpcviewConfigData data structure and config file, generate
+#   a hpcview database and return its name.  Any system commands are
+#   also written to $logFHndl.
+sub genHPCViewDB 
+{
+  my ($cfgData, $cfgFnm, $logFhndl) = @_;
+
+  # Create a database name
+  my $hpcquickdb = "hpcquick.db";
+  if (-d $hpcquickdb || -e $hpcquickdb) {
+    print STDOUT "  Warning: database directory '$hpcquickdb' exists; creating unique name.\n";
+    $hpcquickdb .= "-" . $$; # append pid (if this exists, too bad)
+  }
+  
+  # run hpcview
+  my $cmd = "hpcview -h $hpcquickdb $opt_hpcviewout $cfgFnm";
+  print STDOUT "  $cmd\n";
+  print {$logFhndl} "$cmd\n";
+  
+  if (!($opt_suppressOutput)) {
+    print STDOUT "---------------------------------------------------------\n";
+    if (system($cmd) != 0) {
+      Error("system() failed! '$cmd'\n");
+    }
+    print STDOUT "---------------------------------------------------------\n";
+  }
+  
+  return $hpcquickdb;  
+}
+    
+
+#############################################################################
+
+# isValidSrcPath
+#   Given a path to be used in a PATH element, test whether it is valid.
+#   Returns 1 or 0.
+sub isValidSrcPath 
+{
+  my ($path) = @_;
+  
+  # Remove recursive path indicator, if present.
+  my $p = isRecursivePath($path);
+  if ($p) { $path = $p; }
+  
+  if (-d $path && -e $path) {
+    return 1;
+  } else {
+    return 0;
+  }
+}
+
+
+# getViewnameFromSrcPath
+#   Given a source path, return a viewname. (for PATH element).  The
+#   viewname should not be empty.
+{
+  my $defaultViewNm;
+  my $defaultQualifier;
+  
+  sub getViewnameFromSrcPath 
+  {
+    my ($path) = @_;
+    my $recursive = 0;
+    
+    # ------------------------------------------------------
+    # Normalize path into initial viewname.  If we have a path like
+    # the following, we would like to use its name:
+    #   ./mypath, ./mypath/*, mypath/, ./mypath/.
+    # Admittedly, this is not overly likely.
+    # ------------------------------------------------------
+    
+    # Remove recursive path indicator, if present.
+    my $p = isRecursivePath($path);
+    if ($p) {
+      $path = $p;
+      $recursive = 1;
+    }
+    
+    # Remove any beginning '.' (but not ..!)
+    $path =~ s/^\.$//;  # .
+    $path =~ s/^\.\///; # ./
+    
+    # Remove any trailing '/' or '/.'
+    $path =~ s/\/$//; 
+    $path =~ s/\/\.$//; 
+    
+    my $viewnm = $path;
+    
+    # ------------------------------------------------------
+    # Now, if viewname contains invalid chars, canonicalize.
+    # Invalid: ., *, ?, /, \  (there are others...)
+    # ------------------------------------------------------
+    
+    if ( $viewnm eq "" 
+	 || ($viewnm =~ /\./) || ($viewnm =~ /\*/) 
+	 || ($viewnm =~ /\?/) 
+	 || ($viewnm =~ /\//) || ($viewnm =~ /\\/)) {
+      $viewnm = $defaultViewNm . $defaultQualifier;
+      $defaultQualifier++;
+    }
+    
+    return $viewnm;
+  }
+
+  BEGIN { 
+    $defaultViewNm = "src";
+    $defaultQualifier = 1;
+  }
+}
+
+
+# isRecursivePath
+#   Given a source path, return the non-recursive name if this is a
+#   recursive path, otherwise return undef.
+sub isRecursivePath 
+{
+  my ($path) = @_;
+  
+  # This is a recursive path if it ends with '/*'.  If it
+  # exists, strip it off.
+  my $cnt = ($path =~ s/\/\*$//);
+  
+  if ($cnt > 0) {
+    return $path;
+  } else {
+    return undef;
+  }
+}
+
+
+# canonicalizeProfileData
+#   Given a list of profile data files and a file handle to a log
+#   file, creates a canonical list of data, ensuring we have PROFILE
+#   info for all binary profiles. (hpcrun, ssrun, umon.out, etc.)
+#   Saves canonicalizing commands to the log file.
+#    - Convert each binary profile into PROFILE data (stored
+#      in a temporary filename since we don't know how to extract
+#      metric names). (Eventually we may support converting a group of 
+#      binary data into one PROFILE data file.)
+#    - Associates raw profile files with PROFILE file (for later use).
+#    - Returns a list of 'profileInfo_t'
+sub canonicalizeProfileData
+{
+  my ($profFiles, $logFhndl) = @_;
+    
+  my $profileData = [ ];
+
+  for my $x (@{$profFiles}) {
     
     # test whether the file exists
-    if ( !(-e $profile && -r $profile) ) {
-	print STDOUT "Invalid or non-existent profile file: '$profile'\n";
-	printUsageAndExit($0);
+    if ( !(-e $x && -r $x) ) {
+      UsageError("Invalid or non-existent profile file: '$x'\n");
     }
-    print STDOUT "Using performance data from file: '$profile'\n";
-    
-    # extract the title from the first profile
-    if (!defined($config->{title})) {
-	$config->{title} = constructTitleForProfile($profile);
+
+    # if we do not have a PROFILE file, canonicalize
+    my $PROFILEFile = undef;
+    my $rawFile = undef;
+    my $ty = getProfileType($x);
+    if ($ty == $PROFILEType) {
+      $PROFILEFile = $x;
     }
-    
-    # For each metric from this profile file, add metric to list
-    my $metricsRef = findMetricsForProfile($profile);
-    my $numMetrics = scalar(@{$metricsRef});
-    if ($numMetrics == 0) {
-	print STDOUT "Could not find metrics for profile file: '$profile'\n";
-	printUsageAndExit($0);
+    else {
+      $rawFile = $x;
+      $PROFILEFile = canonicalizeProfile($rawFile, $ty, $logFhndl);
     }
     
-    for (my $i = 0; $i < $numMetrics; $i++) {
-
-	my $aMetric = { %metric, };
-	my $mType = $metricsRef->[$i]->{type};
-	my $mDispNm = $metricsRef->[$i]->{dispNm};
-	#print STDOUT "mType = $mType\n";
-	#print STDOUT "dispname = $mDispNm\n";
-	
-	# sets aMetric->type, dispNm
-	processMetric($config, $aMetric, $mType, $mDispNm);
-	
-	# set aMetric->rawProfFiles, PROFILEfile, PROFILEmid
-	if (getProfileType($profile) == $PROFILEType) {
-	    $aMetric->{PROFILEfile} = $profile;
-	    $aMetric->{PROFILEmid} = $metricsRef->[$i]->{PROFILEmid};
-	} else {
-	    my $rawProfFiles = [ ];
-	    push @$rawProfFiles, $profile;
-	    $aMetric->{rawProfFiles} = $rawProfFiles;
-	}
-	
-	# Add this metric to the list
-	push @{$config->{metrics}}, $aMetric;
+    my $aProfInfo = { %profileInfo_t, };
+    $aProfInfo->{PROFILEfile} = $PROFILEFile;
+    $aProfInfo->{rawProfFiles} = [ ];
+    if ($rawFile) {
+      push(@{$aProfInfo->{rawProfFiles}}, $rawFile);
     }
+    $aProfInfo->{rawProfType} = ($ty == $PROFILEType) ? undef : $ty;
+    
+    push(@{$profileData}, $aProfInfo);
+  }
 
+  return $profileData;
 }
 
-# ----------------------------------------------------------------------
-# findMetricsForProfile
-#   Given a profile file, return an array ref with all metrics
-#   associated with it
-# ----------------------------------------------------------------------
 
-sub findMetricsForProfile {
-    my ($profile) = @_;
+# canonicalizeProfile
+#   Given a raw profile file and its type, canonicalize into a PROFILE
+#   file and return the new file name.
+{
+  my ($sgiProfCmd, $alphaProfCmd, $ptranCmd);
+  my $hpcprofCmd;
 
-    if (getProfileType($profile) == $PROFILEType) {
-	return findMetricsForPROFILE($profile);
-    } else {
-	my $metrics = [ ];
-	my $aMetric = { %metric, };
-	my $i = 0;
+  sub canonicalizeProfile
+  {
+    my ($rawFile, $profTy, $logFhndl) = @_;
 
-	$aMetric->{type} = findMetricForBinProfile($profile);
-	$aMetric->{dispNm} = $aMetric->{type};
-	$metrics[$i] = $aMetric;
-	print STDOUT " *** $aMetric->{type}\n";
-	return \@metrics;
+    # Determine what command should be used to generate PROFILE data
+    my $PROFILEFile = $rawFile . ".hpcquick" . $pxmlExt;
+    my $rawFileNms = $rawFile; # could potentially be a list
+
+    my $cmd = undef;
+    
+    if ($profTy == $hpcrunType) {
+      # grab the <exe> portion of the first file name; it is only used to
+      # create a title (using the non-greedy version of * = *?)
+      my ($exe) = ($rawFileNms =~ m/^(.*?)\./);
+      $cmd = "$hpcprofCmd $exe $rawFileNms > $PROFILEFile";
     }
+    elsif ($profTy == $ssrunType) {
+      $cmd = "$sgiProfCmd $rawFileNms | $ptranCmd > $PROFILEFile";
+    }
+    elsif ($profTy == $uprofileType) {
+      my $exe = 'foo'; # FIXME
+      $cmd = "$alphaProfCmd $exe $rawFileNms | $ptranCmd > $PROFILEFile";
+    }
+    else {
+      print STDERR "Internal Error: Unknown profile type '$profTy'\n";
+    }
+
+    # Execute the command
+    print STDOUT "  $cmd\n";
+    print {$logFhndl} "$cmd\n";
+    if (system($cmd) != 0) {
+      Error("system() failed! '$cmd'\n");
+    }
+    
+    return $PROFILEFile;
+  }
+
+  BEGIN { 
+    $sgiProfCmd = "prof -lines";
+    $alphaProfCmd = "prof -lines";
+    $hpcprofCmd = "hpcprof -p";
+    $ptranCmd = "ptran";
+  }
 }
 
-# ----------------------------------------------------------------------
-# constructTitleForProfile
-#   Finds some tolerable title for this profile.  $profile should exist.
-# ----------------------------------------------------------------------
 
-# FIXME: It would be far superior to always find the title from the
-# PROFILE files (see notes at top).
+# findMetricsForPROFILE
+#   Given a PROFILE file, return an array ref of 'metricInfo_t' for the
+#   file. Assume the file exists.
+#   
+#   Note: The 'type' and 'dispNm' fields of 'metricInfo_t' contain
+#   *strings* not indices (IOW, it is doing double-duty.)
+sub findMetricsForPROFILE 
+{
+  my ($proffile) = @_;
+  
+  my $metrics = [ ];
+  
+  my $profileHandle = new IO::File();
+  $profileHandle->open("< $proffile")
+      or Error("Can't open '$proffile'\n");
 
-sub constructTitleForProfile {
-    my ($profile) = @_;
-
-    my $title;
-
-    if (getProfileType($profile) == $PROFILEType) {
-
-	my $profileHandle = new FileHandle();
-	$profileHandle->open("< $profile");
-
-	while (<$profileHandle>) {
-	    my $line = $_;
-	    if ($line =~ /<TARGET /) {
-		($title) = ($line =~ /name$xmlAttrRE/);
-		last;
-	    }
-	}
-	$profileHandle->close();
-	
-    } else {
-	$profile =~ /$ssrunFileRE/;
-	$title = $1;
-
-	if (!defined($title)) { 
-	    $title = "<notitle>"; # hack for unmon.out 
-	}
+  my $i = 0;
+  while (<$profileHandle>) {
+    my $line = $_;
+    
+    if ($line =~ /<METRIC /) {
+      my $aMetric = { %metricInfo_t, };
+      
+      my ($nm) = ($line =~ /displayName$xmlAttrRE/);
+      my ($id) = ($line =~ /shortName$xmlAttrRE/);
+      
+      $aMetric->{type} = $nm;
+      $aMetric->{dispNm} = $nm;
+      $aMetric->{PROFILEmid} = $id;
+      $metrics->[$i] = $aMetric;
+      $i++;
     }
-    #print STDOUT "*** Title: $title\n";
-    return $title;
+    if ($line =~ /<\/METRICS>/) {
+      last;
+    }
+  }
+  $profileHandle->close();
+  
+  return $metrics;
 }
 
-# ----------------------------------------------------------------------
+
 # getProfileType
 #   Given a profile file, returns one of 'ssrunType', 'uprofileType',
 #   'PROFILEType'
-# ----------------------------------------------------------------------
+{
+  my $PROFILEFileRE;
+  my $ssrunFileRE;
+  my $uprofFileRE;
 
-sub getProfileType {
+  sub getProfileType 
+  {
     my ($profile) = @_;
-
+    
     # FIXME: we should detect uprofile better
+    
     if ($profile =~ /$PROFILEFileRE/) {
-	return $PROFILEType;
-    } elsif ($profile =~ /$ssrunFileRE/) {
-	return $ssrunType;
-    } else {
-	# We have to do some heavy lifting: Open and examine contents.
-	my $header = "";
-	my $profileHandle = new FileHandle();
-	$profileHandle->open("< $profile");
-	
-	my $type = $uprofileType; 
-	my $sz = 256; 
-	my $ret = read $profileHandle, $header, $sz;
-	if ($ret == $sz) {
-	    if ($header =~ /<!DOCTYPE PROFILE /s) {
-		$type = $PROFILEType;
-	    }
-	}
-	$profileHandle->close();
-	
-	return $type;
-    }
-}
-
-# ----------------------------------------------------------------------
-# findMetricsForBinProfile
-#   find the metric type given a binary ssrun profile file name
-# ----------------------------------------------------------------------
-
-# FIXME: We should be extracting this stuff from PROFILE (see notes at top)
-
-sub findMetricForBinProfile {
-    my $fileName = shift;
-    
-    if ($fileName =~ /$ssrunFileRE/) {
-	return $2;
-    } else {
-	return "_metric_";  # hack for umon.out
-    }
-}
-
-# ----------------------------------------------------------------------
-# findMetricsForPROFILE
-#   Given a profile file, return an array ref with all metrics
-#   associated with it. Assume the file exists.  
-# ----------------------------------------------------------------------
-
-sub findMetricsForPROFILE {
-    my ($profile) = @_;
-
-    my $metrics = [ ];
-    
-    my $profileHandle = new FileHandle();
-    $profileHandle->open("< $profile");
-    
-    my $i = 0;
-    while (<$profileHandle>) {
-	my $line = $_;
-	
-	if ($line =~ /<METRIC /) {
-	    my $aMetric = { %metric, };
-	    
-	    my ($nm) = ($line =~ /displayName$xmlAttrRE/);
-	    my ($id) = ($line =~ /shortName$xmlAttrRE/);
-	    print STDOUT "  Adding PROFILE metric '$nm'\n";
-    
-	    $aMetric->{type} = $nm;
-	    $aMetric->{dispNm} = $nm;
-	    $aMetric->{PROFILEmid} = $id;
-	    $metrics[$i] = $aMetric;
-	    $i++;
-	}
-	if ($line =~ /<\/METRICS>/) {
-	    last;
-	}
-    }
-    $profileHandle->close();
-
-    return \@metrics;
-}
-
-
-# ----------------------------------------------------------------------
-# processMetric
-#   Given a ref to a configuration data structure and a metric name
-#   Test whether the metric type and display name exist
-#     if yes, increase its number
-#     if not, insert the new name into the array and hash table
-# ----------------------------------------------------------------------
-
-sub processMetric {
-    my ($config, $aMetric, $mType, $mName) = @_;
-    #print STDOUT "processMetric:\n";
-    #print STDOUT "  -", @{$config->{metricTypes}->{totals}}, "\n";
-    #print STDOUT "  -", @{$config->{metricDispNms}->{totals}}, "\n";
-    #print STDOUT "  $mType, $mName\n";
-
-    my $mTypeIdx = $config->{metricTypes}->{hashTable}->{$mType};
-    my $mNameIdx = $config->{metricDispNms}->{hashTable}->{$mName};
-    
-    if (!defined($mTypeIdx)) {
-	$mTypeIdx = $config->{metricTypes}->{total}++;
-	$config->{metricTypes}->{hashTable}->{$mType} = $mTypeIdx;
-	push @{$config->{metricTypes}->{names}}, $mType;
-	push @{$config->{metricTypes}->{totals}}, 1;
-	push @{$config->{metricTypes}->{indices}}, 0;
-    }
+      return $PROFILEType;
+    } 
+    elsif ($profile =~ /$ssrunFileRE/) {
+      return $ssrunType;
+    } 
     else {
-	$config->{metricTypes}->{totals}->[$mTypeIdx]++;
+      # We have to do some heavy lifting: Open and examine contents.
+      my $header = "";
+      my $profileHandle = new IO::File();
+      $profileHandle->open("< $profile")
+	  or Error("Can't open '$profile'\n");
+      
+      my $type = $uprofileType;
+      
+      # 1. Test for a magic string at the beginning of the file
+      seek($profileHandle, 0, 0); # rewind to beginning
+      my $sz = 16;
+      my $ret = read($profileHandle, $header, $sz);
+      if ($ret == $sz) {
+	if ($header =~ /^HPCRUN/s) {
+	  $type = $hpcrunType;
+	}
+      }
+      
+      # 2. Read a chunk of the file and examine the purported header
+      # information
+      seek($profileHandle, 0, 0); # rewind to beginning
+      $sz = 256; 
+      $ret = read($profileHandle, $header, $sz);
+      if ($ret == $sz) {
+	if ($header =~ /<!DOCTYPE PROFILE /s) {
+	  $type = $PROFILEType;
+	}
+      }
+      
+      $profileHandle->close();
+      
+      return $type;
     }
-    if (!defined($mNameIdx)) {
-	$mNameIdx = $config->{metricDispNms}->{total}++;
-	$config->{metricDispNms}->{hashTable}{$mName} = $mNameIdx;
-	push @{$config->{metricDispNms}->{names}}, $mName;
-	push @{$config->{metricDispNms}->{totals}}, 1;
-	push @{$config->{metricDispNms}->{indices}}, 0;
-    }
-    else {
-	$config->{metricDispNms}->{totals}->[$mNameIdx]++;
-    }
-    $aMetric->{type} = $mTypeIdx;
-    $aMetric->{dispNm} = $mNameIdx;
-    #print STDOUT "  -", @{$config->{metricTypes}->{totals}}, "\n";
-    #print STDOUT "  -", @{$config->{metricDispNms}->{totals}}, "\n";
+  }
+
+  BEGIN { 
+    $PROFILEFileRE = '.+\.pxml';
+    #$hpcrunFileRE = '(.*)\.(.*)\.(.*)'; # <exe>.<event>.<host>.<pid>
+    $ssrunFileRE   = '(.*)\.(\w+)\.([fm]\d+)';
+    $uprofFileRE   = undef; # 'umon.out'
+  }
 }
 
 
-# ----------------------------------------------------------------------
-
-# ----------------------------------------------------------------------
-# createOutputFiles
-#   Given a configuration data structure,
-#   write out a configuration file,  and
-#   execute the commands to generate the input files to hpcview.
-#   the commands are also output to $logFile
-#
-# ----------------------------------------------------------------------
-
-sub createOutputFiles {
-    my ($config, $out, $log) = @_;
-    my $outFHndl = new FileHandle();
-    my $logFHndl = new FileHandle();
-    my $i;
-    my $numMetrics = scalar(@{$config->{metrics}});
-
-    $outFHndl->open("> $out");
-    $logFHndl->open("> $log");
-
-    # ------------------------------------------------------
-    # Create PROFILE files for any metrics that need it
-    # (Note: we also deal with duplicate metric names here)
-    # ------------------------------------------------------
-    $i = 0;
-    for ($i = 0; $i < $numMetrics; $i++) {
-	my $metric = $config->{metrics}[$i];
-
-	# both name and display name are defined according to whether
-	# there are multiple instances of them.  If there are,
-	# distingish by appending a cardinal number
-	my $mType = $metric->{type};
-	my $mTypeQ = $config->{metricTypes}->{names}[$mType];
-	if ($config->{metricTypes}->{totals}[$mType] > 1) {
-	    $mTypeQ .= "-" . $config->{metricTypes}->{indices}[$mType]++;
-	}
-	
-	my $dispNm = $metric->{dispNm};
-	my $dispNmQ = $config->{metricDispNms}->{names}[$dispNm];
-	if ($config->{metricDispNms}->{totals}[$dispNm] > 1) {
-	    $dispNmQ .= "-" . $config->{metricDispNms}->{indices}[$dispNm]++;
-	}
-	
-	#print STDOUT "mTypeQ = $mTypeQ\n";
-	#print STDOUT "dispNmQ = $dispNmQ\n";
-	$metric->{type} = $mTypeQ;    # save for later (FIXME: ugly)
-	$metric->{dispNm} = $dispNmQ; # save for later (FIXME: ugly)
-	
-	# if the PROFILEfile is undefined, we must create it
-	if (!defined($metric->{PROFILEfile})) {
-	    print STDOUT "Processing raw performance data file...\n";
-	    
-	    # FIXME: Only for ssrun
-	    my $PROFILE = $metric->{rawProfFiles}[0];
-	    $PROFILE =~ s/$ssrunFileRE/$1.$mTypeQ$pxmlExt/;
-	    if ($PROFILE eq $metric->{rawProfFiles}[0]) {
-		$PROFILE .= ".$mTypeQ$pxmlExt"; # 
-	    }
-	    
-	    my $command = "$profileCmd -lines";
-	    foreach $file (@{$metric->{rawProfFiles}}) {
-		$command .= " $file";
-	    }
-	    $command .= " | $ptranCmd > $PROFILE";
-
-	    print STDOUT "  $command\n";
-	    print {$logFHndl} "$command\n";
-	    system($command);
-
-	    $metric->{PROFILEfile} = $PROFILE;
-	    $metric->{PROFILEmid} = 0; # default 
-	}
-    }
-    print STDOUT "\n";
-
-    # ------------------------------------------------------
-    # Create hpcview configuation file
-    # ------------------------------------------------------
-    print STDOUT "Creating hpcview configuration file...\n";
-
-    # print start document tag
-    print {$outFHndl} "<HPCVIEW>\n\n";
-
-    # print title
-    print {$outFHndl} "<TITLE name=\"", xmlEsc($config->{title}), "\"/>\n\n";
-
-    # print paths
-    $i = 0;
-    for ($i = 0; $i < $config->{srcPaths}->{total}; $i++) {
-	my $srcdir = xmlEsc($config->{srcPaths}->{names}[$i]);
-	my $viewnm = getViewnameFromSrcPath($srcdir);
-	print {$outFHndl} "<PATH name=\"", $srcdir, "\" ",
-	                  "viewname=\"", $viewnm, "\"/>\n";
-    }
-    print {$outFHndl} "\n";
-    
-    # print structure file
-    if ($structFile ne "") {
-        print {$outFHndl} "<STRUCTURE name=\"", xmlEsc($structFile), "\"/>";
-	print {$outFHndl} "\n\n";
-    }
-
-    # print metrics
-    $i = 0;
-    for ($i = 0; $i < $numMetrics; $i++) {
-	my $metric = $config->{metrics}[$i];
-	
-	# print METRIC start tag
-	print {$outFHndl} 
-	  "<METRIC name=\"", xmlEsc($metric->{type}), "\" ",
-	  "displayName=\"", xmlEsc($metric->{dispNm}), "\"";
-	
-	if ($i == 0) { print {$outFHndl} " sortBy=\"true\""; }
-	print {$outFHndl} ">\n";
-	
-	# print FILE subelement
-	print {$outFHndl} 
-	  "  <FILE name=\"", xmlEsc($metric->{PROFILEfile}), "\" ",
-	  "select=\"", xmlEsc($metric->{PROFILEmid}), "\"/>\n";
-
-	# print METRIC end tag
-	print {$outFHndl} "</METRIC>\n\n";
-    }
-    
-    # print end document tag
-    print {$outFHndl} "</HPCVIEW>\n";
-
-    $outFHndl->close();
-
-    # ------------------------------------------------------
-    # Run hpcview
-    # ------------------------------------------------------
-    if (!($suppressOutput)) {
-	print STDOUT "Running hpcview to create browsable database...\n";
-    } else {
-	print STDOUT "Sending command to create browsable database to log...\n";
-    }
-
-    my $hpcquickdb = "hpcquick.db";
-    if (-d $hpcquickdb || -e $hpcquickdb) {
-	print STDOUT "  Warning: database directory '$hpcquickdb' exists; creating unique name.\n";
-	$hpcquickdb .= "-" . $$; # append pid (if this exists, too bad)
-    }
-
-    my $command = "hpcview -h $hpcquickdb $outOpt $out";
-    print {$logFHndl} "$command\n";
-    
-    if (!($suppressOutput)) {
-	system($command);
-    }
-    
-    $logFHndl->close();
-    print STDOUT "\n";
-
-    # ------------------------------------------------------
-    # Finalization
-    # ------------------------------------------------------
-    print STDOUT "Created files: '$out', '$log'\n";
-    if (!($suppressOutput)) {
-	print STDOUT "Browsable database: './$hpcquickdb'\n";
-    }
-}
-    
-
-# ----------------------------------------------------------------------
-# -- xmlEsc($content) --
+# xmlEsc($content)
 #   return a string with <, >, & and " replaced with &lt;, &gt;, &amp;
 #   and &quot;.
-# ----------------------------------------------------------------------
-
 {
-    my ($amp, $ampXML);   # ampersand
-    my ($quot, $quotXML); # double quote
-    my ($lt, $ltXML);     # left angle bracket
-    my ($gt, $gtXML);     # right angle bracket
+  my ($amp, $ampXML);   # ampersand
+  my ($quot, $quotXML); # double quote
+  my ($lt, $ltXML);     # left angle bracket
+  my ($gt, $gtXML);     # right angle bracket
+  
+  sub xmlEsc 
+  {
+    my ($content) = @_;
+    if (!defined($content)) {
+      return $content;
+    }
     
-    sub xmlEsc {
-	my ($content) = @_;
-	if (!defined($content)) {
-	    return $content;
-	}
+    $content =~ s/$amp/$ampXML/g;
+    $content =~ s/$quot/$quotXML/g;
+    
+    $content =~ s/$lt/$ltXML/g;
+    $content =~ s/$gt/$gtXML/g;
+    return $content;
+  }
 
-	$content =~ s/$amp/$ampXML/g;
-	$content =~ s/$quot/$quotXML/g;
-
-	$content =~ s/$lt/$ltXML/g;
-	$content =~ s/$gt/$gtXML/g;
-	return $content;
-    }
-
-    BEGIN { 
-	($amp, $ampXML) = ("&", "&amp;");
-	($quot, $quotXML) = ("\"", "&quot;");
-	($lt, $ltXML) = ("<", "&lt;");
-	($gt, $gtXML) = (">", "&gt;");
-    }
+  BEGIN { 
+    ($amp, $ampXML) = ("&", "&amp;");
+    ($quot, $quotXML) = ("\"", "&quot;");
+    ($lt, $ltXML) = ("<", "&lt;");
+    ($gt, $gtXML) = (">", "&gt;");
+  }
 }
 
+#############################################################################
+
+# Local Variables:
+# perl-indent-level: 2
+# End:
