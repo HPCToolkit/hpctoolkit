@@ -15,12 +15,12 @@
 @SET_MAKE@
 
 # -*-Mode: makefile;-*-
-# $Header$
+# $Header: /Volumes/cvsrep/developer/HPCToolkit/src/lib/perl/Makefile.am,v 1.1 2004/03/10 01:31:33 eraxxon Exp $
 
 #############################################################################
 #
 # File:
-#   $Source$
+#   $Source: /Volumes/cvsrep/developer/HPCToolkit/src/lib/perl/Makefile.am,v $
 #
 # Description:
 #   *Process with automake to produce Makefile.in*
@@ -31,12 +31,12 @@
 #############################################################################
 
 # -*-Mode: makefile;-*-
-# $Header$
+# $Header: /Volumes/cvsrep/developer/HPCToolkit/src/Makeinclude.config,v 1.9 2004/03/10 01:32:32 eraxxon Exp $
 
 #############################################################################
 #
 # File:
-#   $Source$
+#   $Source: /Volumes/cvsrep/developer/HPCToolkit/src/Makeinclude.config,v $
 #
 # Description:
 #   Include file for package Makefile.in
