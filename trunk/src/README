@@ -13,12 +13,6 @@ HPCToolkit source code.
 
 =============================================================================
 
-Builds should be done in this directory.  The make system by default
-will store files that result from builds in ${HPCTOOLKIT}/obj.
-Successful builds will install results in ${HPCTOOLKIT}/bin.  For more
-information on building, refer to the HPCToolkit documentation at
-${HPCTOOLKIT}/doc/index.html.
-
 Overview of source code:
 --------------------
 
