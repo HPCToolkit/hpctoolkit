@@ -351,7 +351,7 @@ case ${host} in
     my_demangle_ldflags="-lmld"
     ;;
 
-  i386*-*-linux* | i686*-*-linux* | ia64*-*-linux*)
+  i386*-*-linux* | i686*-*-linux* | x86_64*-*-linux* | ia64*-*-linux*)
     if HPCcxxcmp([icpc ecpc icc ecc]) ; then
       :
     fi
