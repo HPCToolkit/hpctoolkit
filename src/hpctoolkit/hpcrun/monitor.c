@@ -630,7 +630,7 @@ init_profdesc(hpcrun_profiles_desc_t** profdesc,
   char eventbuf[eventbufSZ+1];
   char* tok, *tmp_eventlist;
   int rval, i;
-
+      
   if (opt_debug >= 1) { 
     MSG(stderr, "Initializing profile descriptors");
     MSG(stderr, "  Found %d sys events and %d PAPI events", 
@@ -814,17 +814,13 @@ init_profdesc(hpcrun_profiles_desc_t** profdesc,
 
       /* pc offset and scaling factor */
       prof->sprofs[mapi].pr_off = rtmap->module[mapi].offset;
-      prof->sprofs[mapi].pr_scale = prof->scale;
-      
+      prof->sprofs[mapi].pr_scale = prof->scale;      
+
       if (opt_debug >= 3) {
-	/* 'pr_size' and 'pr_off' are of type size_t which is of type 'long'
-	   on 64-bit machines */
-	MSG(stderr, 
-	    "\tprofile[%d] base = %p size = %#lx off = %#lx scale = %#lx",
-	    mapi, prof->sprofs[mapi].pr_base, 
-	    prof->sprofs[mapi].pr_size, 
-	    prof->sprofs[mapi].pr_off, 
-	    prof->sprofs[mapi].pr_scale);
+	/* 'pr_size'/'pr_off' are of type 'size_t' which is of pointer size */
+	MSG(stderr, "\tprofile[%d] base = %p size = %#"PRIxPTR" off = %#"PRIxPTR" scale = %#lx",
+	    mapi, prof->sprofs[mapi].pr_base, prof->sprofs[mapi].pr_size, 
+	    prof->sprofs[mapi].pr_off, prof->sprofs[mapi].pr_scale);
       }
     }
   }
