@@ -694,10 +694,13 @@ write_module_data(FILE *fp, PAPI_sprofil_t *p)
   /* Profiling entries */
   for (i = 0; i < ncounters; ++i) {
     if (lpr_base[i] != 0) {
-      uint32_t addr = lpr_base[i];
-      hpc_fwrite_le4(&addr, fp); /* count */
+      uint32_t cnt = lpr_base[i];
+      hpc_fwrite_le4(&cnt, fp); /* count */
       offset = i * papi_bytesPerCodeBlk;
       hpc_fwrite_le4(&offset, fp); /* offset (in bytes) from load addr */
+      if (opt_debug >= 1) {
+        fprintf(stderr, "  (cnt,offset)=(%d,%x)\n",cnt,offset);
+      }
     }
   }
   
