@@ -36,7 +36,7 @@
 
 #include "hpcrun.h"
 #include "proffile.h"
-#include "io.h"
+#include <lib/hpcfile/io.h>
 
 //*************************** Forward Declarations **************************
 

@@ -14,22 +14,6 @@ Contents:
 
 =============================================================================
 
--2.
---------------------
-
-New building procedures:
-
-./configure --with-papi=<papi-install-path> --prefix=<install-path>
-make
-make install
-
-
--1. N.B.
---------------------
-
-hpcrun/hpcprof should be regarded as "beta" software. 
-
-
 0. Overview
 --------------------
 
@@ -74,9 +58,6 @@ usable).
 
 N.B.: We have not tested html output.
 
-Parts of the hpcprof profiler have been adapted from Version 0.12 of
-The Visual Profiler by Curtis L. Janssen.
-
 =============================================================================
 
 1. Using
@@ -87,9 +68,7 @@ Be warned: This is still a prototype.
 1.1. Prerequisites
 ----
 
-* PAPI: hpcrun requires use of PAPI3.  As of this writing, one should
-  use the CVS version of PAPI since it contains fixes for bugs we have
-  identified.
+* PAPI: hpcrun requires use of PAPI3.
 
 * Kernel: 
     For Linux-IA64, you will need kernel 2.4.18 or higher (which includes
@@ -112,78 +91,6 @@ counters.  This is true *even if* a PAPI event exists for a given
 platform.  In cases where no direct hardware counter is available,
 PAPI may attempt to simulate an event counter using some combination
 of other performance counter information.
-
-1.3. To try it out:
-----
-  
-0. Open "Makefile.include" in an editor and set variables.
-
-     CC, CXX:          C and C++ compiler
-     PAPI_INCLUDE_DIR, PAPI_LIB_DIR: 
-                       locations to PAPI includes and library
-     BINUTILS_DIR:     location of a GNU binutils installation 
-                       (we recommend use of our modified version which 
-                       can be obtained using the same CVS repository: 
-                       cvs co binutils)
-
-1. Open the file Sourceme-sh or Sourceme-csh, depending on your
-   shell. These environment variables need to be set before using
-   hpcrun.  After you have set the variables, source the file.
-
-     HPCRUN_HOME         - the location of hpcrun
-     HPCRUN_PAPILIB_PATH - the directory where libpapi.so lives 
-     
-2. Make hpcrun/hpcprof:
-     make
-
-3. Kick the tires
-  
-   1. List events available on your system. WARNING: currently, native
-      event listing can be overwhelming.
-
-      hpcrun -L
-
-   2. See usage information:
-
-      hpcrun
-      hpcprof
-
-4. Take a test drive
-
-   1. Build test2
-
-      cd test2
-      make
-
-   2. Collect profiling info.  A file to hold the profile histogram
-      will be generated with a file name in the format
-      <command>.<event1>.<hostname>.<pid>
-
-      hpcrun -e PAPI_TOT_CYC:1000021 ./test2
-         
-   3. View a text summary of the profiling info:
-
-      hpcprof -e test2 test2.PAPI_TOT_CYC.<hostname>.<pid>
-
-   4. Create PROFILE output of the profiling info:
-
-      hpcprof -p test2 test2.PAPI_TOT_CYC.<hostname>.<pid>
-
-   5. Some other events you can try (and approximate periods). Note
-      that appropriate period values can vary depending on your system
-      and application.
-        PAPI_TOT_INS - 1000021
-        PAPI_FLOPS   - 1000021
-        PAPI_L1_ICM  - 1019
-        PAPI_L1_DCM  - 1019 or 101
-      
-      hpcrun -e PAPI_L1_DCM:1019 test2
-
-   6. Create text summaries and PROFILES with multiple events:
-
-      hpcprof -e test2  <list_of_profiles...>
-
-      hpcprof -p test2  <list_of_profiles...>
    
 =============================================================================
 
@@ -193,19 +100,12 @@ of other performance counter information.
 2.1. hpcrun
 ----
 
-Files:
+Key files:
   hpcrun.c/h 
-  hpcpapi.c/h
   preload.c
-  map.c/h
-  io.c/h    [duplicate]  --> lib/dtd/...
-
-The files 'hprun.c' and 'preload.c' contain the main source code; the
-other files are ancillary and contain brief descriptions at the top so
-that it shouldn't be too difficult to divine their purpose.
 
 'hpcrun.c' is the interface to the profiling library.  It parses
-options,prepares the environment for the profiling library, forks a
+options, prepares the environment for the profiling library, forks a
 new process and exec's the application to be profiled.
 
 'preload.c' contains the bulk of the code for the profiling library.
@@ -238,13 +138,9 @@ output file.
 2.2. hpcprof
 ----
 
-Files:
+Key files:
   hpcprof.cc/h
   summary.cc/h
-  proffile.cc/h
-  loadmodule.cc/h
-  io.c/h           [duplicate]  --> hpcfile_general.h/c
-  PROFILE.dtd.h    [duplicate]  --> lib/dtd/...
 
 hpcprof is still rough, though it should now produce useful
 information.  We have tested text and PROFILE output, but not html.
@@ -266,7 +162,8 @@ are not given in terms of *sample* counts but rather as estimated
 
 =============================================================================
 
-Outline of hpcrun's monitoring scheme
+3. More Details: Outline of hpcrun's monitoring scheme
+--------------------
 
 (Note: In order to show the relation of each case with the basic
 'Process' case, identical information is elided with '---'.)

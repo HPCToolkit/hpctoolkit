@@ -219,7 +219,7 @@ main(int argc, char *argv[])
  "=\"" << (attr) << "\""
 
 const char *PROFILEdtd =
-#include "PROFILE.dtd.h"
+#include "lib/xml/PROFILE.dtd.h"
 
 const char* I[] = { "", // Indent levels (0 - 5)
 		    "  ",
