@@ -77,7 +77,7 @@ all: configure build install
 
 #############################################################################
 
-configure: clean
+configure: 
 	@echo "*** Configuring ***"
 	$(WD)/config/hpcautotouch
 	-mkdir -p $(BUILDDIR)
