@@ -182,21 +182,18 @@ CodeInfo::~CodeInfo()
 }
 
 
-PgmScope::PgmScope(const char* pgmName) 
+PgmScope::PgmScope() 
   : ScopeInfo(PGM, NULL) 
 { 
-  BriefAssertion(pgmName);
   frozen = false;
-  name = pgmName; 
+  name = (char *) NULL; 
   lmMap = new LoadModScopeMap();
-  fileMap = new FileScopeMap(); 
 }
 
 PgmScope::~PgmScope() 
 {
   frozen = false;
   delete lmMap;
-  delete fileMap;
 }
 
 
@@ -224,10 +221,12 @@ LoadModScope::LoadModScope(const char* lmName, ScopeInfo* mom)
   BriefAssertion((mom == NULL) || (t == PGM) || (t == GROUP));
 
   name = lmName;
+  fileMap = new FileScopeMap(); 
 }
 
 LoadModScope::~LoadModScope() 
 {
+  delete fileMap;
 }
 
 
@@ -242,7 +241,7 @@ FileScope::FileScope(const char* srcFileWithPath,
 
   srcIsReadable = srcIsReadble_; 
   name = srcFileWithPath; 
-  Pgm()->AddToFileMap(*this); 
+  LoadMod()->AddToFileMap(*this); 
   procMap = new ProcScopeMap(); 
 }
 
@@ -639,7 +638,7 @@ PgmScope::AddToLoadModMap(LoadModScope &lm)
 }
 
 void 
-PgmScope::AddToFileMap(FileScope &f) 
+LoadModScope::AddToFileMap(FileScope &f) 
 {
   String fName = RealPath(f.Name());
   // STL::map is a Unique Associative Container  
@@ -671,7 +670,7 @@ PgmScope::FindLoadMod(const char* nm) const
 }
 
 FileScope*
-PgmScope::FindFile(const char* nm) const
+LoadModScope::FindFile(const char* nm) const
 {
   String fName = RealPath(nm); 
   if ((*fileMap).count(fName) != 0) 
@@ -788,8 +787,7 @@ CodeInfo::ToDumpString(int dmpFlag)  const
 String
 PgmScope::ToDumpString(int dmpFlag)  const
 { 
-  String self = ScopeInfo::ToDumpString(dmpFlag) + " n" +
-    MakeAttrStr(name, AddXMLEscapeChars(dmpFlag)) + " version=\"3.0\"";
+  String self = ScopeInfo::ToDumpString(dmpFlag) + " version=\"4.0\"";
   return self; 
 }
 
@@ -929,12 +927,17 @@ PgmScope::DumpLineSorted(ostream &os, int dmpFlag, const char *pre) const
   String prefix = String(pre) + indent;  
   for (ScopeInfoNameSortedChildIterator pgmIt(this); pgmIt.Current(); 
        pgmIt++) { 
+#if 0
     // FIXME: The following will be true for 'bloop', but not
     // necessarily for all possible trees (e.g., this could be a GroupScope)
     FileScope* file = dynamic_cast<FileScope*>(pgmIt.Current());
     BriefAssertion(file); 
 
     file->DumpLineSorted(os, dmpFlag, prefix);
+#else
+    ScopeInfo* scope = pgmIt.Current();
+    scope->DumpLineSorted(os, dmpFlag, prefix);
+#endif
   }
   ScopeInfo::DumpSelfAfter(os, dmpFlag, pre);
 }
@@ -1136,6 +1139,7 @@ void
 ScopeInfoTester(int argc, const char** argv) 
 {
   PgmScope *root = new PgmScope("ScopeInfoTester"); 
+  LoadModScope *lmScope = new LoadModScope("load module", root); 
   FileScope *file; 
   ProcScope *proc; 
   LoopScope *loop;
@@ -1148,7 +1152,7 @@ ScopeInfoTester(int argc, const char** argv)
     fclose(srcFile); 
   }  
   
-  file = new FileScope("file.c", known, root); 
+  file = new FileScope("file.c", known, lmScope); 
   proc = new ProcScope("proc", file); 
   loop = new LoopScope(proc->CodeInfoWithLine(2), 2, 10); 
   loop = new LoopScope(proc->CodeInfoWithLine(5), 5, 9);  
@@ -1188,7 +1192,7 @@ ScopeInfoTester(int argc, const char** argv)
   
   cout << "Iterators " << endl; 
   { 
-    FileScope *file_c = root->FindFile("file.c"); 
+    FileScope *file_c = lmScope->FindFile("file.c"); 
     BriefAssertion(file_c); 
     ProcScope *proc = file_c->FindProc("proc"); 
     BriefAssertion(proc); 
