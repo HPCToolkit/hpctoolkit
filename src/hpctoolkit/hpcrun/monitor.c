@@ -588,14 +588,13 @@ done_papirun(void)
 #ifndef PAPI_VERSION
 // PAPI version 2
   PAPI_rem_event(&papi_eventset, papi_eventcode);
-  PAPI_destroy_eventset(&papi_eventset);
 #elif PAPI_VERSION_MAJOR(PAPI_VERSION) >= 3
   PAPI_remove_event(papi_eventset, papi_eventcode);
-  PAPI_destroy_eventset(papi_eventset);
 #else
 #error unknown PAPI version
 #endif
 
+  PAPI_destroy_eventset(&papi_eventset);
   write_all_profiles();
 
   papi_eventset = PAPI_NULL;
@@ -695,7 +694,7 @@ write_module_data(FILE *fp, PAPI_sprofil_t *p)
   /* Profiling entries */
   for (i = 0; i < ncounters; ++i) {
     if (lpr_base[i] != 0) {
-      uint64_t addr = lpr_base[i];
+      uint32_t addr = lpr_base[i];
       hpc_fwrite_le4(&addr, fp); /* count */
       offset = i * papi_bytesPerCodeBlk;
       hpc_fwrite_le4(&offset, fp); /* offset (in bytes) from load addr */
