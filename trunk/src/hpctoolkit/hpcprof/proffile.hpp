@@ -42,7 +42,6 @@
 //*************************** User Include Files ****************************
 
 #include "papiprof.h"
-#include "events.h"
 
 //*************************** Forward Declarations **************************
 
@@ -63,7 +62,8 @@ typedef std::pair<pprof_off_t, unsigned long long> ProfFileEventDatum;
 // profiling data for the event
 class ProfFileEvent {
   private:
-    const papi_event_t *event_;
+    std::string  name_;
+    std::string  desc_;
     uint64_t     period_;
     unsigned int outofrange_;
     unsigned int overflow_;
@@ -76,8 +76,8 @@ class ProfFileEvent {
     // read: Return 0 on success; non-zero (1) on error.
     int read(FILE*, uint64_t load_addr);
 
-    const char* name() const { return event_->name; }
-    const papi_event_t *event() const { return event_; }
+    const char* name() const { return name_.c_str(); }
+    const char* description() const { return desc_.c_str(); }
     uint64_t period() const { return period_; }
 
     unsigned int outofrange() const { return outofrange_; }

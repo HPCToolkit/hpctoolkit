@@ -43,12 +43,14 @@
 #include <dlfcn.h>
 
 #include <papi.h>
+#if !(defined(PAPI_VERSION) && (PAPI_VERSION_MAJOR(PAPI_VERSION) >= 3))
+# error "Must use PAPI version 3 or greater."
+#endif
 
 /**************************** User Include Files ****************************/
 
 #include "papirun.h"
 #include "map.h"
-#include "events.h"
 #include "flags.h"
 #include "io.h"
 
@@ -89,28 +91,25 @@ static char *command_name;
 /* papirun options (this should be a tidy struct) */
 static int      opt_debug;
 static int      opt_recursive;
-static int      opt_eventcode;
+static char*    opt_eventname;
 static uint64_t opt_sampleperiod;
 static char     opt_outpath[PATH_MAX];
 static int      opt_flagscode;
 static int      opt_dump_events; /* no, short, long dump (0,1,2) */
 
 /* used for PAPI stuff (this should be a tidy struct) */
-static int             papi_eventcode;
-static int             papi_eventset;
-static uint64_t        papi_sampleperiod;
-static int             papi_flagscode;
-static PAPI_sprofil_t *papi_profiles;
+static PAPI_event_info_t papi_eventinfo;
+static int               papi_eventcode;
+static int               papi_eventset;
+static uint64_t          papi_sampleperiod;
+static int               papi_flagscode;
+static PAPI_sprofil_t*   papi_profiles;
 
 static unsigned int papi_bytesPerCodeBlk;
 
-#ifndef PAPI_VERSION
-// PAPI version 2
-static unsigned int papi_bytesPerCntr = sizeof(unsigned short); /* 2 */
-#elif PAPI_VERSION_MAJOR(PAPI_VERSION) >= 3
+/* PAPI version 2 */
+// static unsigned int papi_bytesPerCntr = sizeof(unsigned short); /* 2 */
 static unsigned int papi_bytesPerCntr = sizeof(unsigned int); /* 4 */
-#endif
-
 static unsigned int papi_scale;
 
 /* papirun */
@@ -131,7 +130,7 @@ _init(void)
 
   if (opt_debug >= 1) { fprintf(stderr, "** initializing papirun.so **\n"); }
 
-  /* Grab poiners to functions that will be intercepted.
+  /* Grab pointers to functions that will be intercepted.
 
      Note: RTLD_NEXT is not documented in the dlsym man/info page
      but in <dlfcn.h>: 
@@ -176,6 +175,7 @@ init_options(void)
 {
   char *env_debug, *env_recursive, *env_event, *env_period, *env_outpath, 
     *env_flags, *env_dump_events;
+  int ret;
 
   /* Debugging: default is off */
   env_debug = getenv("PAPIRUN_DEBUG");
@@ -196,19 +196,10 @@ init_options(void)
   }
   
   /* Profiling event: default PAPI_TOT_CYC */
-  {
-    const papi_event_t* e = papirun_event_by_name("PAPI_TOT_CYC");
-    opt_eventcode = e->code;
-    
-    env_event = getenv("PAPIRUN_EVENT_NAME");
-    if (env_event) {
-      if ((e = papirun_event_by_name(env_event)) == NULL) {
-	fprintf(stderr, "papirun: invalid PAPI event '%s'. Aborting.\n",
-		env_event);
-	exit(-1);
-      }
-      opt_eventcode = e->code;
-    }
+  opt_eventname = "PAPI_TOT_CYC";
+  env_event = getenv("PAPIRUN_EVENT_NAME");
+  if (env_event) {
+    opt_eventname = env_event;
   }
   
   /* Profiling period: default 2^15-1 */
@@ -222,14 +213,14 @@ init_options(void)
 	    opt_sampleperiod);
     exit(-1);
   }
-
+  
   /* Output path: default . */
   strncpy(opt_outpath, ".", PATH_MAX);
   env_outpath = getenv("PAPIRUN_OUTPUT_PATH");
   if (env_outpath) {
     strncpy(opt_outpath, env_outpath, PATH_MAX);
   }
-
+  
   /* Profiling flags: default PAPI_PROFIL_POSIX */
   {
     const papi_flagdesc_t *f = papirun_flag_by_name("PAPI_PROFIL_POSIX");
@@ -348,15 +339,31 @@ init_papi(void)
     fprintf(stderr, "papirun: PAPI library initialization failure - expected version %d, dynamic library was version %d. Aborting.\n", PAPI_VER_CURRENT, papi_version);
     exit(-1);
   }
-
+  
+  if (papi_version < 3) {
+    fprintf(stderr, "papirun: Using PAPI library version %d; expecting version 3 or greater.\n", papi_version);
+    exit(-1);
+  }
+  
   /* Profiling event */
-  papi_eventcode = opt_eventcode;
-  evstr = papirun_event_by_code(papi_eventcode)->name;
-
+  papi_eventcode = 0;
+  if ((pcode = PAPI_event_name_to_code(opt_eventname, &papi_eventcode))
+      != PAPI_OK) {
+    fprintf(stderr, "papirun: invalid PAPI event '%s'. Aborting.\n",
+	    opt_eventname);
+    exit(-1);
+  }
   if ((pcode = PAPI_query_event(papi_eventcode)) != PAPI_OK) { 
+    /* should not strictly be necessary */
     fprintf(stderr, 
 	    "papirun: PAPI event '%s' not supported (code=%d). Aborting.\n",
 	    evstr, pcode);
+    exit(-1);
+  }
+  if ((pcode = PAPI_get_event_info(papi_eventcode, &papi_eventinfo)) 
+      != PAPI_OK) {
+    fprintf(stderr, "papirun: PAPI error %d: '%s'. Aborting.\n",
+	    pcode, PAPI_strerror(pcode));
     exit(-1);
   }
   
@@ -365,15 +372,8 @@ init_papi(void)
     fprintf(stderr, "papirun: failed to create PAPI event set. Aborting.\n");
     exit(-1);
   }
-
-#ifndef PAPI_VERSION
-// PAPI version 2
-  if (PAPI_add_event(&papi_eventset, papi_eventcode) != PAPI_OK) {
-#elif PAPI_VERSION_MAJOR(PAPI_VERSION) >= 3
+  
   if (PAPI_add_event(papi_eventset, papi_eventcode) != PAPI_OK) {
-#else
-#error unknown PAPI version
-#endif
     fprintf(stderr, "papirun: failed to add event '%s'. Aborting.\n", evstr);
     exit(-1);
   }
@@ -383,11 +383,7 @@ init_papi(void)
 
   /* Profiling flags */
   papi_flagscode = opt_flagscode;
-#ifdef PAPI_VERSION
-#if PAPI_VERSION_MAJOR(PAPI_VERSION) >= 3
   papi_flagscode |= PAPI_PROFIL_BUCKET_32;
-#endif
-#endif
 
   /* Set profiling scaling factor */
 
@@ -400,9 +396,8 @@ init_papi(void)
       The region to be profiled can be thought of being divided into n
       equally sized blocks, each b bytes long.  If each histogram
       counter is bh bytes long, the value of the scale factor is the
-      reciprocal of (b / bh).  Since each histogram counter is 2 bytes
-      (unsigned short),
-           scale = reciprocal( b / 2 )
+      reciprocal of (b / bh).  
+           scale = reciprocal( b / bh )
 
       The representation of the scale factor is a 16-bit fixed-point
       fraction with the decimal point implied on the *left*.  Under
@@ -410,30 +405,31 @@ init_papi(void)
       (essentially 1). (0x10000 can also be used.)
 
       Alternatively, and perhaps more conveniently, the scale can be
-      thought of as a ratio between an unsigned integer and 65536:
-          scale = ( scaleval / 65536 ) = ( 2 / b )
+      thought of as a ratio between an unsigned integer scaleval and
+      65536:
+          scale = ( scaleval / 65536 ) = ( bh / b )
 
-      Some sample scale values: 
+      Some sample scale values when bh is 4 (unsigned int):
 
-          scaleval            bytes_per_code_block
+          scaleval            bytes_per_code_block (b)
           ----------------------------------------
-          0xffff (or 0x10000) 2
-          0x8000              4  (size of many RISC instructions)
-	  0x4000              8
-	  0x2000              16 (size of Itanium instruction packet)
+          0xffff (or 0x10000) 4  (size of many RISC instructions)
+	  0x8000              8
+	  0x4000              16 (size of Itanium instruction packet)
+
       
       Using this second notation, we can show the relation between the
       histogram counters and the region to profile.  The histogram
       counter that will be incremented for an interrupt at program
       counter pc is:
-          histogram[ ((pc - load_offset)/2) * (scaleval/65536) ]
+          histogram[ ((pc - load_offset)/bh) * (scaleval/65536) ]
 
       The number of counters in the histogram should equal the number
       of blocks in the region to be profiled.
       
   */
   papi_bytesPerCodeBlk = 4;
-  papi_scale = 0x8000 * (papi_bytesPerCntr>>1);
+  papi_scale = 0x10000; // 0x8000 * (papi_bytesPerCntr >> 1);
   
   if ( (papi_scale * papi_bytesPerCodeBlk) != (65536 * papi_bytesPerCntr) ) {
     fprintf(stderr, "papirun: Programming error!\n");
@@ -464,14 +460,7 @@ start_papi(void)
     /* buffer size */
     papi_profiles[i].pr_size = bufsz;
     /* pc offset */
-#ifndef PAPI_VERSION
-// PAPI version 2
-    papi_profiles[i].pr_off = lm->module[i].offset;
-#elif PAPI_VERSION_MAJOR(PAPI_VERSION) >= 3
     papi_profiles[i].pr_off = (caddr_t) (unsigned long) lm->module[i].offset;
-#else
-#error unknown PAPI version
-#endif
     /* pc scaling */
     papi_profiles[i].pr_scale = papi_scale;
     
@@ -537,14 +526,17 @@ static void
 init_output(void)
 {
   static unsigned int outfilenmLen = PATH_MAX+32;
+  int pcode;
   char outfilenm[outfilenmLen];
   char* executable = command_name; 
-  const char* eventstr = papirun_event_by_code(papi_eventcode)->name;
+  char* eventstr;
   unsigned int len;
   char hostnam[128]; 
-
+  
+  eventstr = opt_eventname; /* FIXME: turn into papi_eventname */
+  
   gethostname(hostnam, 128);
-
+  
   {
     char* slash = rindex(executable, '/');
     if (slash) {
@@ -585,14 +577,7 @@ done_papirun(void)
 
   if (opt_debug >= 1) { fprintf(stderr, "done_papirun:\n"); }
   PAPI_stop(papi_eventset, &ct);
-#ifndef PAPI_VERSION
-// PAPI version 2
-  PAPI_rem_event(&papi_eventset, papi_eventcode);
-#elif PAPI_VERSION_MAJOR(PAPI_VERSION) >= 3
   PAPI_remove_event(papi_eventset, papi_eventcode);
-#else
-#error unknown PAPI version
-#endif
 
   PAPI_destroy_eventset(&papi_eventset);
   write_all_profiles();
@@ -607,8 +592,8 @@ done_papirun(void)
 
 static void write_module_profile(FILE *fp, loadmodule_t *m, 
 				  PAPI_sprofil_t *p);
-static void write_module_name(FILE *fp, char *name);
 static void write_module_data(FILE *fp, PAPI_sprofil_t *p);
+static void write_string(FILE *fp, char *str);
 
 
 /*
@@ -641,11 +626,13 @@ static void
 write_module_profile(FILE *fp, loadmodule_t *m, PAPI_sprofil_t *p)
 {
   /* Load module name and load offset */
-  write_module_name(fp, m->name);
+  if (opt_debug >= 1) { fprintf(stderr, "writing module %s\n", m->name); }
+  write_string(fp, m->name);
   hpc_fwrite_le8(&(m->offset), fp);
-
-  /* Profiling event and period */
-  hpc_fwrite_le4((uint32_t*)&papi_eventcode, fp);
+  
+  /* Profiling event name, description and period */
+  write_string(fp, papi_eventinfo.symbol);     /* event name */
+  write_string(fp, papi_eventinfo.long_descr); /* event description */
   hpc_fwrite_le8(&papi_sampleperiod, fp);
   
   /* Profiling data */
@@ -653,31 +640,12 @@ write_module_profile(FILE *fp, loadmodule_t *m, PAPI_sprofil_t *p)
 }
 
 static void 
-write_module_name(FILE *fp, char *name)
-{
-  /* Note: there is no null terminator on the name string */
-  unsigned int namelen = strlen(name);
-  hpc_fwrite_le4(&namelen, fp);
-  fwrite(name, 1, namelen, fp);
-  
-  if (opt_debug >= 1) { fprintf(stderr, "writing module %s\n", name); }
-}
-
-static void 
 write_module_data(FILE *fp, PAPI_sprofil_t *p)
 {
   unsigned int count = 0, offset = 0, i = 0, inz = 0;
   unsigned int ncounters = (p->pr_size / papi_bytesPerCntr);
-
-#ifndef PAPI_VERSION
-// PAPI version 2
-  unsigned short *lpr_base = p->pr_base;
-#elif PAPI_VERSION_MAJOR(PAPI_VERSION) >= 3
   unsigned int *lpr_base = p->pr_base;
-#else
-#error unknown PAPI version
-#endif
-
+  
   /* Number of profiling entries */
   count = 0;
   for (i = 0; i < ncounters; ++i) {
@@ -711,18 +679,103 @@ write_module_data(FILE *fp, PAPI_sprofil_t *p)
   }
 }
 
+static void 
+write_string(FILE *fp, char *str)
+{
+  /* Note: there is no null terminator on 'str' */
+  unsigned int len = strlen(str);
+  hpc_fwrite_le4(&len, fp);
+  fwrite(str, 1, len, fp);
+}
+
 /****************************************************************************
  * Dump papi events
  ****************************************************************************/
 
+/*
+ *  List available PAPI and native events.  (Based on PAPI's
+ *  src/ctests/avail.c) 
+ */
 static void 
 papirun_dump_valid_papi_events(int dump)
 {
   /* PAPI_library_init must have been called */
+  int i, count;
+  int retval;
+  PAPI_event_info_t info;
+  const PAPI_hw_info_t* hwinfo = NULL;
+  static const char* separator_major = "\n=========================================================================\n\n";
+  static const char* separator_minor = "-------------------------------------------------------------------------\n";
+
+#if (!defined(PAPI_ENUM_ALL))
+  int PAPI_ENUM_ALL = 0; /* supposed to be defined according to man page... */
+#endif
+
+  /* Hardware information */
+  if ((hwinfo = PAPI_get_hardware_info()) == NULL) {
+    fprintf(stderr,"papirun: failed to set debug level. Aborting.\n");
+    exit(-1);
+  }
+  printf("*** Hardware information ***\n");
+  printf(separator_minor);
+  printf("Vendor string and code  : %s (%d)\n", hwinfo->vendor_string,
+	 hwinfo->vendor);
+  printf("Model string and code   : %s (%d)\n", 
+	 hwinfo->model_string, hwinfo->model);
+  printf("CPU Revision            : %f\n", hwinfo->revision);
+  printf("CPU Megahertz           : %f\n", hwinfo->mhz);
+  printf("CPU's in this Node      : %d\n", hwinfo->ncpu);
+  printf("Nodes in this System    : %d\n", hwinfo->nnodes);
+  printf("Total CPU's             : %d\n", hwinfo->totalcpus);
+  printf("Number Hardware Counters: %d\n", 
+	 PAPI_get_opt(PAPI_MAX_HWCTRS, NULL));
+  printf("Max Multiplex Counters  : %d\n", PAPI_MPX_DEF_DEG);
+  printf(separator_major);
+
+  /* PAPI events */
+  printf("*** Available PAPI preset events ***\n");
+  printf(separator_minor);
+  printf("Name\t\tDerived\tDescription (Implementation Note)\n");
+  printf(separator_minor);
+  i = 0 | PRESET_MASK;
+  count = 0;
+  do {
+    if (PAPI_get_event_info(i, &info) == PAPI_OK) {
+      printf("%s\t%s\t%s (%s)\n",
+	     info.symbol,
+	     (info.count > 1 ? "Yes" : "No"),
+	     info.long_descr, 
+	     (info.vendor_name ? info.vendor_name : ""));
+      count++;
+    }
+  } while (PAPI_enum_event(&i, PAPI_ENUM_ALL) == PAPI_OK);
+  printf("Total PAPI events reported: %d\n", count);
+  printf(separator_major);  
   
+  /* Native events */
+  printf("*** Available native events ***\n");  
+  printf(separator_minor);
+  printf("Name\t\t\t\tDescription\n");
+  printf(separator_minor);
+  i = 0 | NATIVE_MASK;
+  count = 0;
+  do {      
+    if (PAPI_get_event_info(i, &info) == PAPI_OK) {
+      const char* desc = info.long_descr;
+      if (strncmp(info.symbol, desc, strlen(info.symbol)) == 0) {
+	desc += strlen(info.symbol);
+      }
+      printf("%-30s %s\n", info.symbol, desc);
+      count++;
+    }
+  } while (PAPI_enum_event(&i, PAPI_ENUM_ALL) == PAPI_OK);
+  printf("Total native events reported: %d\n", count);
+  printf(separator_major);
+  
+#if 0
   papi_event_t *e = papirun_event_table;
   fprintf(stderr, "papirun events for this architecture:\n");
-
+  
   for (; e->name != NULL; e++) {
     int pcode;
     if ((pcode = PAPI_query_event(e->code)) == PAPI_OK) { 
@@ -734,5 +787,7 @@ papirun_dump_valid_papi_events(int dump)
     }
   }
   fprintf(stderr,"\n");
+#endif
+
 }
 

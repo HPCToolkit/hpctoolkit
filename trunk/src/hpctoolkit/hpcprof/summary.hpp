@@ -42,7 +42,6 @@
 
 #include "proffile.h"
 #include "loadmodule.h"
-#include "events.h"
 
 //*************************** Forward Declarations **************************
 
@@ -60,28 +59,25 @@ std::string htmlize(const std::string &);
 //////////////////////////////////////////////////////////////////////////
 // Event
 
-/** A proviled event.
+/** A profiled event.
 */
 class Event {
   protected:
-    const papi_event_t *e_;
+    std::string name_;
+    std::string description_;
     unsigned int period_;
   public:
     /// Construct a Event using a papi_event_t structure.
-    Event(const papi_event_t *, unsigned int period);
+    Event(const char* name, const char* desc, unsigned int period);
     /** Destroy the Event. This does not delete the papi_event_t given
         to the constructor. */
     virtual ~Event();
-    /// Returns the event type.
-    virtual unsigned int event_code() const;
     /// Returns the event name.
     virtual const char *name() const;
     /// Returns the event description.
     virtual const char *description() const;
     /// Returns the profiling sampling period
     unsigned int period() const;
-    /// Returns the underlying papi_event_t structure.
-    const papi_event_t *papi_event() const { return e_; }
 };
 
 /** This is a specialization of Event that represents aggregate
@@ -209,24 +205,26 @@ class CollectiveLocations {
     int lmax_; //< The location of the maximum of the aggregated counters.
     int lmin_; //< The location of the minimum of the aggregated counters.
     int nevents_; //< The number of events/counters aggregated.
-    const papi_event_t *event_; //< The type of event aggregated.
-
+    //const Event* event_; //< The type of event aggregated.
+    std::string eventname_; //< The type of event aggregated.
+    
     /// The locations/indices of the elementary events.
     std::vector<int> elementary_locations_;
 
   public:
     CollectiveLocations() {
       nevents_ = lsum_ = lmax_ = lmin_ = 0;
-      event_ = 0;
+      //event_ = NULL;
     }
     /** Add another elementary event to be aggregated.  @param i The index
         for the new event.  @param e The event type.  @param offset The
         offset for the next available event slot.  If needed, slots will be
         allocated for min, max, and sum events and offset will be
         incremented.  */
-    void set_offset(int i, const papi_event_t *e, int &offset) {
+    void set_offset(int i, /*const Event* e*/ const char* ename, int &offset) {
       elementary_locations_.push_back(i);
-      event_ = e;
+      //event_ = e;
+      eventname_ = ename;
       nevents_++;
       if (nevents_ == 2) {
           lmin_ = offset++;
@@ -250,8 +248,8 @@ class CollectiveLocations {
     int lsum() const { return lsum_; }
     /// Returns the number of aggregated events.
     int nevents() const { return nevents_; }
-    /// Returns the type for the aggregated event.
-    const papi_event_t *event() const { return event_; }
+    /// Returns the event information for the aggregated event.
+    //const Event* event() const { return event_; }
     /** Looks up the offsets for the elementary events that this
         CollectiveLocations aggregates.
         @param i The number of the elementary event.
