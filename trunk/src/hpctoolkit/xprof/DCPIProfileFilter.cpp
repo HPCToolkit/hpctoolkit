@@ -190,25 +190,25 @@ PredefinedDCPIMetricTable::Entry PredefinedDCPIMetricTable::table[] = {
   // by string matching, these names *must* match those found in
   // dcpicat output (DCPIProfile)
 
-  { "CYCLES", "Processor cycles",
+  { "cycles"/*"CYCLES"*/, "Processor cycles",
     RM,
     DCPIMetricExpr(DCPI_MTYPE_RM | DCPI_RM_cycles),
     InsnClassExpr(INSN_CLASS_ALL)
   },
   
-  { "RETIRES", "Retired instructions",
+  { "retires"/*"RETIRES"*/, "Retired instructions",
     RM,
     DCPIMetricExpr(DCPI_MTYPE_RM | DCPI_RM_retires),
     InsnClassExpr(INSN_CLASS_ALL)
   },
 
-  { "MBREPLAY", "Mbox replay traps",
+  { "replaytrap"/*"MBREPLAY"*/, "Mbox replay traps",
     RM,
     DCPIMetricExpr(DCPI_MTYPE_RM | DCPI_RM_replaytrap),
     InsnClassExpr(INSN_CLASS_ALL)
   },
 
-  { "BCMISS", "Bcache misses or long-latency probes",
+  { "bmiss"/*"BCMISS"*/, "Bcache misses or long-latency probes",
     RM,
     DCPIMetricExpr(DCPI_MTYPE_RM | DCPI_RM_bmiss),
     InsnClassExpr(INSN_CLASS_ALL)
