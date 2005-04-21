@@ -64,7 +64,12 @@ static void reset_slots();
 
 /*
  *  Read lines from the load maps in /proc to find runtime libraries
- *  and load addresses.
+ *  and load addresses.  Cf. "man proc".  E.g.:
+ *
+ *      address           perms offset  dev   inode      pathname
+ *      08048000-08056000 r-xp 00000000 03:0c 64593      /usr/sbin/gpm
+ *      08056000-08058000 rw-p 0000d000 03:0c 64593      /usr/sbin/gpm
+ *  
  */
 rtloadmap_t* 
 hpcrun_get_rtloadmap(int dbglvl)
