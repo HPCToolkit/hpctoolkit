@@ -26,7 +26,7 @@
 <div id="main">
 
 <!-- automatically updated by Emacs hook below; nicer than CVS Date -->
-<p class="lastupdated">Last Updated: 2005-04-20</p>
+<p class="lastupdated">Last Updated: 2005-04-21</p>
 
 <h2>User Commands: hpcquick(1)</h2>
 
@@ -38,7 +38,6 @@
 
 <p><span class="hpctool">hpcquick</span> 
    [other-options]
-   -z|x
    [ -I <i>dir1 dir2 ... dirN</i> ]
    [ -S <i>struct1 struct2 ... structJ</i> ]
    [ -G <i>group1 group2 ... groupK</i> ]
@@ -60,11 +59,13 @@ to correlate performance data with an application's source code.
 Given a list of paths to directories containing interesting
 program source code files, an optional list of program
 structure files created by the 
-<a href="hpc_bloop.html" class="hpctool">bloop</a> tool, and
-a list of profile files, creates an 
-<a href="hpcview.html" class="hpctool">hpcview</a>
-configuration file and a browsable database in the current directory.
-All shell commands are captured into a log file.
+<a href="hpc_bloop.html" class="hpctool">bloop</a> tool,
+an optional list of group files, and a list of profile files, creates
+an <a href="hpcview.html" class="hpctool">hpcview</a>
+configuration file and a browsable database in the current directory;
+by default hpcquick generates an 
+<a href="hpcviewer.html" class="hpctool">hpcviewer</a> database.  All shell
+commands are captured into a log file.
 
 <p>Following is a list of the various profile files accepted.  If needed,
 they will automatically be converted into the XML
@@ -97,7 +98,7 @@ an HTML database
 
 <dt>-x
 <dd>configure <a href="hpcview.html" class="hpctool">hpcview</a> to produce
-an XML database
+an XML database [Default]
 
 <dt>-I <i>dir1 dir2 ... dirN</i>
 <dd><i>dir1</i> through <i>dirN</i> specify a list of directories --
@@ -129,7 +130,7 @@ Structure files are typically
 created using <a href="hpc_bloop.html" class="hpctool">bloop</a> 
 to extract the structure information from the executable binary. 
 
-<dt>-S <i>group1 group2 ... groupK</i>
+<dt>-G <i>group1 group2 ... groupK</i>
 <dd><i>group1</i> through <i>groupK</i> is a list of group files 
 (XML document of type <a href="dtd_pgm.html" class="hpctool">PGM</a>)
 that each define a partition (grouping) of the program structure scope
@@ -182,7 +183,7 @@ gathered hardware performance counter data (experiments named
 The command </p>
 
 <div class="indent">
-  <code>hpcquick -x -I ../src -S bloop.psxml -P *_hwc.*</code>
+  <code>hpcquick -I ../src -S bloop.psxml -P *_hwc.*</code>
 </div>
 
 <p>will display the profile data with one column per profile file.</p>

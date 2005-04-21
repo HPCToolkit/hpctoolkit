@@ -77,13 +77,14 @@ STDOUT->autoflush(1);
 my $the_program = $Script;
 my $the_usage = 
 "Usage: 
-  ${the_program} [other-options] -z|x [-I <dir1>...<dirN>] [-S <struct1> ...<structK>] -P <prof1>...<profM>
-  
-Given a list of paths to directories containing interesting program source
-code files, an optional list of program structure files created by the 'bloop'
-tool, and a list of profile files, creates an 'hpcview' configuration file and
-a browsable database in the current directory.  All shell commands are captured
-into a log file.
+  ${the_program} [other-options] [-I <dir1>...<dirN>] [-S <struct1> ...<structJ>] [-G <group1> ...<groupK>] -P <prof1>...<profM>
+
+Given a list of paths to directories containing interesting program
+source code files, an optional list of program structure files created
+by the 'bloop' tool, an optional list of group files, and a list of
+profile files, creates an 'hpcview' configuration file and a browsable
+database in the current directory; by default hpcquick generates an
+hpcviewer database.  All shell commands are captured into a log file.
 
 Following is a list of the various profile files accepted.  If needed, they
 will automatically be converted into the PROFILE format before hpcview is run.
@@ -92,8 +93,6 @@ will automatically be converted into the PROFILE format before hpcview is run.
   o XML PROFILE files (e.g., from xprof, hpcprof and ptran)
 
 Standard arguments:
-  -z                  Instruct hpcview to produce an html database
-  -x                  Instruct hpcview to produce hpcviewer output
   -I <dir1>...<dirN>  A space-separated list of directories -- relative or 
                       absolute -- containing source code to which performance 
                       data should be correlated.  In order to search a
@@ -113,6 +112,8 @@ Standard arguments:
                       A space-separated list of profile files.
 
 Other options:
+  -z                  Instruct hpcview to produce an html database
+  -x                  Instruct hpcview to produce hpcviewer output [Default]
   -n                  No hpcview output.  Convert profiles and create an 
                       hpcview config file, but do not generate an hpcview
                       output database; record all commands in log file.
@@ -184,6 +185,8 @@ my ($hpcrunType,
 my $pxmlExt        = '.pxml';
 my $xmlAttrRE      = '\s*=\s*\"([^\"]+)\"'; # grabs everything between ""
 
+my $default_hpcviewout = "-x hpcquick.hpcviewer";
+
 #############################################################################
 ## main/driver
 #############################################################################
@@ -207,7 +210,8 @@ my $opt_structFiles = [];
 my $opt_groupFiles = [];
 my $opt_profileFiles = [ ];
 my $opt_suppressOutput = 0;
-my $opt_hpcviewout = undef;
+my $opt_outputDB   = "hpcquick.db";
+my $opt_hpcviewout = $default_hpcviewout;
 
 my $configFile = "hpcquick.xml";
 my $logFile = "hpcquick.log";
@@ -305,7 +309,7 @@ sub parseOptions
       $opt_hpcviewout = "-z";
     }
     elsif ($ARGV[$i] eq $xmlOutOpt) {
-      $opt_hpcviewout = "-x hpcquick.hpcviewer";
+      $opt_hpcviewout = $default_hpcviewout;
     }
     elsif ($ARGV[$i] eq $noOutOpt) {
       $opt_suppressOutput = 1;
@@ -821,7 +825,7 @@ sub genHPCViewDB
   my ($cfgData, $cfgFnm, $logFhndl) = @_;
 
   # Create a database name
-  my $hpcquickdb = "hpcquick.db";
+  my $hpcquickdb = $opt_outputDB;
   if (-d $hpcquickdb || -e $hpcquickdb) {
     print STDOUT "  Warning: database directory '$hpcquickdb' exists; creating unique name.\n";
     $hpcquickdb .= "-" . $$; # append pid (if this exists, too bad)
