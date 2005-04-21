@@ -7,7 +7,7 @@
   <!-- Groups create arbitrary sets of other elements except PGM. -->
   <!ELEMENT G (G|LM|F|P|L|S)*>
   <!ATTLIST G
-	n CDATA #IMPLIED>
+	n CDATA #REQUIRED>
   <!-- Runtime load modules for PGM (e.g., DSOs, exe) -->
   <!ELEMENT LM (G|F)*>
   <!ATTLIST LM

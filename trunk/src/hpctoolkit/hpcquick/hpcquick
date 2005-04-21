@@ -100,12 +100,16 @@ Standard arguments:
                       directory *and* recursively search all of its
                       descendents, append an escaped '*' after the last slash,
                       e.g., /mypath/\\* (escaping is for the shell).
-  -S <struct1>...<structK>    
+  -S <struct1>...<structJ>
                       An optional space-separated set of structure files from
 		      bloop. These structure files can be for the main program
 		      and/or any or all of the shared libraries used by the
                       program.
-  -P <prof1>...<profM> 
+  -G <group1>...<groupK>
+                      An optional space-separated set of group files. These
+                      group files can be for the main program and/or any or all
+                      of the shared libraries used by the program.
+  -P <prof1>...<profM>
                       A space-separated list of profile files.
 
 Other options:
@@ -128,6 +132,7 @@ my $xmlOutOpt       = '-x';
 my $noOutOpt        = '-n';
 my $incOpt          = '-I';
 my $structOpt       = '-S';
+my $groupOpt        = '-G';
 my $profOpt         = '-P';
 
 #############################################################################
@@ -191,6 +196,7 @@ my %hpcviewConfigData =
      title            => undef, # title of profile database
      srcPaths         => undef, # 'names_t', list of unique src paths
      structFiles      => undef, # 'names_t', list of unique struct files
+     groupFiles       => undef, # 'names_t', list of unique group files
      metricTypes      => undef, # 'names_t', hash of metric types
      metricDispNms    => undef, # 'names_t', hash of metric names
      metrics          => [ ],   # array of 'metricInfo_t'
@@ -198,6 +204,7 @@ my %hpcviewConfigData =
      );
 my $opt_srcPaths = [ ];
 my $opt_structFiles = [];
+my $opt_groupFiles = [];
 my $opt_profileFiles = [ ];
 my $opt_suppressOutput = 0;
 my $opt_hpcviewout = undef;
@@ -218,6 +225,7 @@ parseOptions($0);
 Config_init(\%hpcviewConfigData);
 Config_addSrcPaths(\%hpcviewConfigData, $opt_srcPaths);
 Config_addStructFiles(\%hpcviewConfigData, $opt_structFiles);
+Config_addGroupFiles(\%hpcviewConfigData, $opt_groupFiles);
 
 my $logFHndl = new IO::File();
 $logFHndl->open("> $logFile")
@@ -311,6 +319,14 @@ sub parseOptions
       }
     }
 
+    # option: groups
+    elsif ($ARGV[$i] eq $groupOpt) {
+      while (isArgument($ARGV[$i + 1]) == 1) {
+        $i++;
+        push(@{$opt_groupFiles}, $ARGV[$i]);
+      }
+    }
+
     # option: include src paths
     elsif ($ARGV[$i] eq $incOpt) {
       while (isArgument($ARGV[$i + 1]) == 1) {
@@ -364,7 +380,8 @@ sub isArgument
   }
   if ($arg eq $helpOpt || $arg eq $verOpt
       || $arg eq $htmlOutOpt || $arg eq $xmlOutOpt || $arg eq $noOutOpt 
-      || $arg eq $incOpt || $arg eq $structOpt || $arg eq $profOpt) {
+      || $arg eq $incOpt || $arg eq $structOpt || $arg eq $groupOpt 
+      || $arg eq $profOpt) {
     return 2;
   }
   return 1;
@@ -435,6 +452,13 @@ sub Config_init
   $cfgData->{structFiles}->{totals} = [ ];
   $cfgData->{structFiles}->{indices} = [ ];
 
+  # contains included source paths
+  $cfgData->{groupFiles} = { %names_t, };
+  $cfgData->{groupFiles}->{hashTable} = { };
+  $cfgData->{groupFiles}->{list} = [ ];
+  $cfgData->{groupFiles}->{totals} = [ ];
+  $cfgData->{groupFiles}->{indices} = [ ];
+
   # includes all different metric types
   $cfgData->{metricTypes} = { %names_t, };
   $cfgData->{metricTypes}->{hashTable} = { };
@@ -473,8 +497,9 @@ sub Config_addSrcPaths
 
 
 # Config_addStructFiles
-#   Given a ref to a hpcviewConfigData data structure and a list of source file
-#   paths, perform sanity checks and store the paths within the structure.
+#   Given a ref to a hpcviewConfigData data structure and a list of
+#   structure file paths, perform sanity checks and store the paths
+#   within the structure.
 sub Config_addStructFiles
 {
   my ($cfgData, $paths) = @_;
@@ -485,6 +510,25 @@ sub Config_addStructFiles
     }
     else {
       UsageError("Invalid argument to -S: '$x' is not readable.\n");
+    }
+  }
+}
+
+
+# Config_addGroupFiles
+#   Given a ref to a hpcviewConfigData data structure and a list of
+#   group file paths, perform sanity checks and store the paths within
+#   the structure.
+sub Config_addGroupFiles
+{
+  my ($cfgData, $paths) = @_;
+
+  for my $x (@{$paths}) {
+    if (-e $x && -r $x) {
+      Config_addToNamesList($cfgData->{groupFiles}, $x);
+    }
+    else {
+      UsageError("Invalid argument to -G: '$x' is not readable.\n");
     }
   }
 }
@@ -691,6 +735,17 @@ sub genHPCViewConfigFile
     
     print STDOUT "  Adding structure file: '$fnm'\n";
     print {$cfgFhndl} "<STRUCTURE name=\"", xmlEsc($fnm), "\"/>";
+    print {$cfgFhndl} "\n\n";
+  }
+
+  # ------------------------------------------------------
+  # group file
+  # ------------------------------------------------------
+  for (my $i = 0; $i < $cfgData->{groupFiles}->{total}; $i++) {
+    my $fnm = $cfgData->{groupFiles}->{list}[$i];
+    
+    print STDOUT "  Adding group file: '$fnm'\n";
+    print {$cfgFhndl} "<GROUP name=\"", xmlEsc($fnm), "\"/>";
     print {$cfgFhndl} "\n\n";
   }
   

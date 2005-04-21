@@ -26,7 +26,7 @@
 <div id="main">
 
 <!-- automatically updated by Emacs hook below; nicer than CVS Date -->
-<p class="lastupdated">Last Updated: 2004-10-28</p>
+<p class="lastupdated">Last Updated: 2005-04-20</p>
 
 <h2>User Commands: hpcquick(1)</h2>
 
@@ -40,7 +40,8 @@
    [other-options]
    -z|x
    [ -I <i>dir1 dir2 ... dirN</i> ]
-   [ -S <i>struct1 struct2 ... structK</i> ]
+   [ -S <i>struct1 struct2 ... structJ</i> ]
+   [ -G <i>group1 group2 ... groupK</i> ]
    -P <i>prof1 prof2 ... profM</i>
 
 <p>Location: <code>${HPCTOOLKIT}/bin</code>
@@ -110,8 +111,8 @@ code is not found in these directories (e.g., system libraries),
 will generate a synopsis that shows the presence of the function and
 its line extents (if known), but no source code.
 
-<dt>-S <i>struct1 struct2 ... structK</i>
-<dd><i>struct1</i> through <i>structK</i> is a list of program
+<dt>-S <i>struct1 struct2 ... structJ</i>
+<dd><i>struct1</i> through <i>structJ</i> is a list of program
 structure files (XML document of type
 <a href="dtd_pgm.html" class="hpctool">PGM</a>) that each contain a 
 specification of the hierarchical structure of a binary image.  The
@@ -127,6 +128,15 @@ correlate loop-level performance metrics.
 Structure files are typically 
 created using <a href="hpc_bloop.html" class="hpctool">bloop</a> 
 to extract the structure information from the executable binary. 
+
+<dt>-S <i>group1 group2 ... groupK</i>
+<dd><i>group1</i> through <i>groupK</i> is a list of group files 
+(XML document of type <a href="dtd_pgm.html" class="hpctool">PGM</a>)
+that each define a partition (grouping) of the program structure scope
+tree.  Group files typically closely correspond to structure files --
+indeed they can replace structure files -- where the the groupings
+serve as handles that will be annotated with aggregate performance 
+information by <a href="hpcview.html" class="hpctool">hpcview</a>.
 
 <dt>-P <i>prof1 prof2 ... profM</i>
 <dd><i>prof1</i> through <i>profM</i> are names of profile files.

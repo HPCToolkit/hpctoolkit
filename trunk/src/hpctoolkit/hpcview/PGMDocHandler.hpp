@@ -1,5 +1,5 @@
+// -*-Mode: C++;-*-
 // $Id$
-// -*-C++-*-
 // * BeginRiceCopyright *****************************************************
 // 
 // Copyright ((c)) 2002, Rice University 
@@ -57,23 +57,29 @@
 // #include "XMLAdapter.h"
 
 #include "HPCViewSAX2.h"
+#include "ScopeInfo.h"
 
-#include "Driver.h"
+#include <map>
+
 #include <lib/support/String.h>
 #include <lib/support/PointerStack.h>
 
 //************************ Forward Declarations ******************************
 
+class Driver;
+
 class NodeRetriever; 
-class ProcScope; 
-class CodeInfo;
 
 //****************************************************************************
 
 class PGMDocHandler : public DefaultHandler {
 public:
+  enum Doc_t { Doc_NULL, Doc_STRUCT, Doc_GROUP };
+  static const char* ToString(Doc_t docty);
 
-  PGMDocHandler(NodeRetriever* const retriever, Driver* _driver);
+public:
+
+  PGMDocHandler(Doc_t ty, NodeRetriever* const retriever, Driver* _driver);
   ~PGMDocHandler();
 
   void startElement(const XMLCh* const uri, const XMLCh* const name, const XMLCh* const qname, const Attributes& attributes);
@@ -85,8 +91,82 @@ public:
   void error(const SAXParseException& e);
   void fatalError(const SAXParseException& e);
   void warning(const SAXParseException& e);
+
+private:
+
+  class StackEntry_t {
+  public:
+    StackEntry_t(ScopeInfo* entry_ = NULL, ScopeInfo* shadow_ = NULL) 
+      : entry(entry_), shadow(shadow_), isLeaf(true) { }
+    ~StackEntry_t() { }
+    
+    ScopeInfo* GetScope() const { return entry; }
+    ScopeInfo* GetShadow() const { return shadow; }
+
+    void SetScope(ScopeInfo* x) { entry = x; }
+    void SetShadow(ScopeInfo* x) { shadow = x; }
+
+    // Is this a leaf node?
+    bool IsLeaf() { return isLeaf; }
+    void SetLeaf(bool x) { isLeaf = x; }
+
+    bool IsGroupScope() { return (entry->Type() == ScopeInfo::GROUP); }
+    bool IsNonGroupLeaf() { return (IsLeaf() && !IsGroupScope()); }
+
+  private:
+    ScopeInfo* entry;
+    ScopeInfo* shadow;
+    bool isLeaf;
+  };
+  
+  
+  StackEntry_t* GetStackEntry(unsigned int idx)
+  {
+    return static_cast<StackEntry_t*>(scopeStack.Get(idx));
+  }
+  
+  ScopeInfo* GetCurrentScope()
+  {
+    StackEntry_t* entry = static_cast<StackEntry_t*>(scopeStack.Top());
+    return entry->GetScope();
+  }
+
+  ScopeInfo* GetScope(unsigned int idx)
+  {
+    StackEntry_t* entry = static_cast<StackEntry_t*>(scopeStack.Get(idx));
+    return entry->GetScope();
+  }
+
+  ScopeInfo* GetShadowScope(unsigned int idx)
+  {
+    StackEntry_t* entry = static_cast<StackEntry_t*>(scopeStack.Get(idx));
+    return entry->GetShadow();
+  }
+
+  void PushCurrentScope(ScopeInfo* scope)
+  {
+    StackEntry_t* entry = new StackEntry_t(scope);
+    scopeStack.Push(entry);
+  }
+  
+  void PopCurrentScope()
+  {
+    StackEntry_t* entry = static_cast<StackEntry_t*>(scopeStack.Pop());
+    delete entry;
+  }
+  
+  // Find the current file scope (include top of stack)
+  FileScope* FindCurrentFileScope();
+
+  // Find the enclosing GroupScope stack depth (excluding the top of
+  // stack) or return 0 if not found.
+  unsigned int FindEnclosingGroupScopeDepth();
+
+
+  void ProcessGroupDocEndTag();
   
 private:
+  Doc_t docty;
   NodeRetriever* nodeRetriever;
   Driver* driver;
   
@@ -94,12 +174,19 @@ private:
   double pgmVersion;     // initialized to a negative
 
   // variables for transient values during file processing
-  String lmName;
-  String srcFileName; 
-  String funcName; 
-  ProcScope *funcScope; 
-  PointerStack scopeStack; // the top is the scope where we must add stmts
-  CodeInfo *currentScope;
+  String currentLmName;    // only one LM on the stack at a time
+  String currentFileName;  // only one File on the stack at a time
+  String currentFuncName;
+  ProcScope* currentFuncScope;
+  unsigned groupNestingLvl;
+
+  // stack of StackEntry_t representing current scope context.  Top of
+  // stack is most deeply nested scope.
+  PointerStack scopeStack;
+
+private:
+  // Note: these cannot be static since the Xerces must be initialized
+  // first.
 
   // element names
   const XMLCh *const elemPgm;
