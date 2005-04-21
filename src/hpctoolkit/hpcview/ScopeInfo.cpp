@@ -1,5 +1,5 @@
+// -*-Mode: C++;-*-
 // $Id$
-// -*-C++-*-
 // * BeginRiceCopyright *****************************************************
 // 
 // Copyright ((c)) 2002, Rice University 
@@ -91,6 +91,7 @@ public:
     { return i1 < i2; }
 };
 
+class GroupScopeMap   : public std::map<String, GroupScope*, StringLt> { };
 class LoadModScopeMap : public std::map<String, LoadModScope*, StringLt> { };
 class ProcScopeMap    : public std::map<String, ProcScope*, StringLt> { }; 
 class FileScopeMap    : public std::map<String, FileScope*, StringLt> { };
@@ -130,6 +131,22 @@ ScopeInfo::ScopeInfo(ScopeType t, ScopeInfo* mom)
   static unsigned int uniqueId = 0; 
   uid = uniqueId++; 
   height = 0;
+}
+
+ScopeInfo& 
+ScopeInfo::operator=(const ScopeInfo& other) 
+{
+  // shallow copy
+  if (&other != this) {
+    type     = other.type;
+    uid      = other.uid;
+    perfData = other.perfData;
+    height   = 0;
+    depth    = 0;
+    
+    ZeroLinks(); // NonUniformDegreeTreeNode
+  }
+  return *this;
 }
 
 void ScopeInfo::CollectCrossReferences() 
@@ -219,6 +236,18 @@ CodeInfo::CodeInfo(ScopeType t, ScopeInfo* mom, suint beg, suint end)
   SetLineRange(beg, end); 
 }
 
+CodeInfo& 
+CodeInfo::operator=(const CodeInfo& other) 
+{
+  // shallow copy
+  if (&other != this) {
+    begLine = other.begLine;
+    endLine = other.endLine;
+    first = last = NULL;
+  }
+  return *this;
+}
+
 CodeInfo::~CodeInfo() 
 {
 }
@@ -230,20 +259,36 @@ PgmScope::PgmScope(const char* n)
   BriefAssertion(n);
   frozen = false;
   name = n;
+  groupMap = new GroupScopeMap();
   lmMap = new LoadModScopeMap();
   fileMap = new FileScopeMap(); 
+}
+
+PgmScope& 
+PgmScope::operator=(const PgmScope& other) 
+{
+  // shallow copy
+  if (&other != this) {
+    frozen   = other.frozen;
+    name     = other.name;
+    groupMap = NULL;
+    lmMap    = NULL;
+    fileMap  = NULL;
+  }
+  return *this;
 }
 
 PgmScope::~PgmScope() 
 {
   frozen = false; 
+  delete groupMap;
   delete lmMap;
   delete fileMap;
 }
 
 
-GroupScope::GroupScope(const char* grpName,
-                       CodeInfo *mom, int beg, int end) 
+GroupScope::GroupScope(const char* grpName, ScopeInfo* mom, 
+		       int beg, int end) 
   : CodeInfo(GROUP, mom, beg, end)
 {
   BriefAssertion(grpName);
@@ -251,6 +296,7 @@ GroupScope::GroupScope(const char* grpName,
   BriefAssertion((mom == NULL) || (t == PGM) || (t == GROUP) || (t == LM) 
 		 || (t == FILE) || (t == PROC) || (t == LOOP));
   name = grpName;
+  Pgm()->AddToGroupMap(*this); 
 }
 
 GroupScope::~GroupScope()
@@ -291,6 +337,18 @@ FileScope::FileScope(const char* srcFileWithPath,
   procMap = new ProcScopeMap(); 
 }
 
+FileScope& 
+FileScope::operator=(const FileScope& other) 
+{
+  // shallow copy
+  if (&other != this) {
+    srcIsReadable = other.srcIsReadable;
+    name          = other.name;
+    procMap       = NULL;
+  }
+  return *this;
+}
+
 FileScope::~FileScope() 
 {
   delete procMap;
@@ -307,6 +365,17 @@ ProcScope::ProcScope(const char* n, CodeInfo *mom, int beg, int end)
   name = n; 
   if (File()) File()->AddToProcMap(*this); 
   lineMap = new LineScopeMap(); // FIXME: to be deprecated
+}
+
+ProcScope& 
+ProcScope::operator=(const ProcScope& other) 
+{
+  // shallow copy
+  if (&other != this) {
+    name    = other.name;
+    lineMap = new LineScopeMap(); // FIXME: to be deprecated
+  }
+  return *this;
 }
 
 ProcScope::~ProcScope() 
@@ -369,7 +438,8 @@ LineScope::LineScope(CodeInfo *mom, suint l)
   : CodeInfo(LINE, mom, l, l)
 {
   ScopeType t = (mom) ? mom->Type() : ANY;
-  BriefAssertion((mom == NULL) || (t == STMT_RANGE || t == PROC || t == LOOP));
+  BriefAssertion((mom == NULL) || (t == GROUP) || (t == PROC) || (t == LOOP)
+		 || (t == STMT_RANGE));
 }
 
 // FIXME: deprecated
@@ -561,20 +631,29 @@ ScopeInfo::PerfData(int i) const
 // **********************************************************************
 
 void 
-PgmScope::AddToLoadModMap(LoadModScope &lm) 
+PgmScope::AddToGroupMap(GroupScope& grp) 
+{
+  String grpName = grp.Name();
+  // STL::map is a Unique Associative Container
+  BriefAssertion(groupMap->count(grpName) == 0);
+  (*groupMap)[grpName] = &grp;
+}
+
+void 
+PgmScope::AddToLoadModMap(LoadModScope& lm) 
 {
   String lmName = RealPath(lm.Name());
   // STL::map is a Unique Associative Container  
-  BriefAssertion((*lmMap).count(lmName) == 0); 
+  BriefAssertion(lmMap->count(lmName) == 0); 
   (*lmMap)[lmName] = &lm; 
 } 
 
 void 
-PgmScope::AddToFileMap(FileScope &f) 
+PgmScope::AddToFileMap(FileScope& f) 
 {
   String fName = RealPath(f.Name()); 
   // STL::map is a Unique Associative Container  
-  BriefAssertion((*fileMap).count(fName) == 0); 
+  BriefAssertion(fileMap->count(fName) == 0); 
   (*fileMap)[fName] = &f; 
 
   IFTRACE << "PgmScope namemap: mapping file name '" << fName 
@@ -585,7 +664,7 @@ void
 FileScope::AddToProcMap(ProcScope &p) 
 {
   // STL::map is a Unique Associative Container
-  BriefAssertion((*procMap).count(p.Name()) == 0); 
+  BriefAssertion(procMap->count(p.Name()) == 0); 
   (*procMap)[p.Name()] = &p; 
 
   IFTRACE << "FileScope (" << hex << this << dec
@@ -593,11 +672,19 @@ FileScope::AddToProcMap(ProcScope &p)
 	  << "' to ProcScope* " << hex << &p << dec << endl;
 } 
 
+GroupScope*
+PgmScope::FindGroup(const char* nm) const
+{
+  if (groupMap->count(nm) != 0)
+    return (*groupMap)[nm];
+  return NULL; 
+}
+
 LoadModScope*
 PgmScope::FindLoadMod(const char* nm) const
 {
   String lmName = RealPath(nm); 
-  if ((*lmMap).count(lmName) != 0) 
+  if (lmMap->count(lmName) != 0) 
     return (*lmMap)[lmName]; 
   return NULL; 
 }
@@ -606,7 +693,7 @@ FileScope*
 PgmScope::FindFile(const char* nm) const
 {
   String fName = RealPath(nm); 
-  if ((*fileMap).count(fName) != 0) 
+  if (fileMap->count(fName) != 0) 
     return (*fileMap)[fName]; 
   return NULL; 
 }
@@ -614,7 +701,7 @@ PgmScope::FindFile(const char* nm) const
 ProcScope*
 FileScope::FindProc(const char* nm) const
 {
-  if ((*procMap).count(nm) != 0) 
+  if (procMap && procMap->count(nm) != 0) 
     return (*procMap)[nm]; 
   return NULL; 
 }

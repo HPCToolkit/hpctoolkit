@@ -63,6 +63,7 @@ class ScopeInfo;
 class CodeInfo;
 
 class PgmScope;
+class GroupScope;
 class LoadModScope;
 class FileScope;
 class ProcScope;
@@ -77,6 +78,12 @@ public:
   ~NodeRetriever();
   
   PgmScope* GetRoot() const { return root; }; 
+
+  // get/make group scope with given parent and name.  We need a
+  // parent scope for now because a Group can be a child of basically
+  // anything and we do not keep an 'enclosingscope' pointer.
+  GroupScope* MoveToGroup(ScopeInfo* parent, const char* name);
+
 
   // get/make load module with name 'name' and remember it as current
   // load module.  Resets current file and proc.

@@ -1,5 +1,5 @@
+// -*-Mode: C++;-*-
 // $Id$
-// -*-C++-*-
 // * BeginRiceCopyright *****************************************************
 // 
 // Copyright ((c)) 2002, Rice University 
@@ -169,24 +169,27 @@ static void ProcessHPCVIEW(DOMNode *node, Driver &driver)
 
 static void ProcessELEMENT(DOMNode *node, Driver &driver)
 {
-  static XMLCh *METRIC = XMLString::transcode("METRIC");
-  static XMLCh *PATH = XMLString::transcode("PATH");
-  static XMLCh *REPLACE = XMLString::transcode("REPLACE");
-  static XMLCh *TITLE = XMLString::transcode("TITLE");
-  static XMLCh *STRUCTURE = XMLString::transcode("STRUCTURE");
-  static XMLCh *NAMEATTR = XMLString::transcode("name");
-  static XMLCh *VIEWNAMEATTR = XMLString::transcode("viewname");
-  static XMLCh *INATTR = XMLString::transcode("in");
-  static XMLCh *OUTATTR = XMLString::transcode("out");
+  static XMLCh* METRIC       = XMLString::transcode("METRIC");
+  static XMLCh* PATH         = XMLString::transcode("PATH");
+  static XMLCh* REPLACE      = XMLString::transcode("REPLACE");
+  static XMLCh* TITLE        = XMLString::transcode("TITLE");
+  static XMLCh* STRUCTURE    = XMLString::transcode("STRUCTURE");
+  static XMLCh* GROUP        = XMLString::transcode("GROUP");
+  static XMLCh* NAMEATTR     = XMLString::transcode("name");
+  static XMLCh* VIEWNAMEATTR = XMLString::transcode("viewname");
+  static XMLCh* INATTR       = XMLString::transcode("in");
+  static XMLCh* OUTATTR      = XMLString::transcode("out");
 
   const XMLCh *nodeName = node->getNodeName();
 
   // Verify node type
   if (node->getNodeType() == DOMNode::TEXT_NODE) {
     return; // DTD ensures this can't contain anything but white space
-  } else if (node->getNodeType() == DOMNode::COMMENT_NODE) {
+  }
+  else if (node->getNodeType() == DOMNode::COMMENT_NODE) {
     return;
-  } else if (node->getNodeType() != DOMNode::ELEMENT_NODE) {
+  }
+  else if (node->getNodeType() != DOMNode::ELEMENT_NODE) {
     String error = "Unexpected XML object found: '" +
       String(XMLString::transcode(nodeName)) + "'";
     throw HPCViewDocException(error); 
@@ -201,14 +204,16 @@ static void ProcessELEMENT(DOMNode *node, Driver &driver)
     if (path.Length() == 0) {
       String error = "PATH name attribute cannot be empty.";
       throw HPCViewDocException(error); 
-    } else if (driver.CopySrcFiles() && viewname.Length() == 0) {
+    }
+    else if (driver.CopySrcFiles() && viewname.Length() == 0) {
       String error = "PATH '" + path + "': viewname attribute cannot be empty when source files are to be copied.";
       throw HPCViewDocException(error); 
     } // there could be many other nefarious values of these attributes
     
     driver.AddPath(path, viewname);
     
-  } else if (XMLString::equals(nodeName,REPLACE)) {  
+  }
+  else if (XMLString::equals(nodeName,REPLACE)) {  
     String inPath = getAttr(node, INATTR); 
     String outPath = getAttr(node, OUTATTR); 
     IFTRACE << "REPLACE: " << inPath << " -to- " << outPath << endl;
@@ -218,33 +223,50 @@ static void ProcessELEMENT(DOMNode *node, Driver &driver)
       cerr << "WARNING: REPLACE: Identical 'in' and 'out' paths: '"
 	   << inPath << "'!  No action will be performed." << endl;
       addPath = false;
-    } else if (inPath.Length() == 0 && outPath.Length() != 0) {
+    }
+    else if (inPath.Length() == 0 && outPath.Length() != 0) {
       cerr << "WARNING: REPLACE: 'in' path is empty; 'out' path '" << outPath
 	   << "' will be prepended to every file path!" << endl;
     }
 
     if (addPath) { driver.AddReplacePath(inPath, outPath); }
     
-  } else if (XMLString::equals(nodeName,METRIC)) {
+  }
+  else if (XMLString::equals(nodeName,METRIC)) {
     ProcessMETRIC(node, driver);
 
-  } else if (XMLString::equals(nodeName,TITLE)) {
+  }
+  else if (XMLString::equals(nodeName,TITLE)) {
     String title = getAttr(node, NAMEATTR); 
     IFTRACE << "TITLE: " << title << endl; 
     driver.SetTitle(title);
 
-  } else if (XMLString::equals(nodeName,STRUCTURE)) {
-    String pgmFileName = getAttr(node, NAMEATTR); 
-    IFTRACE << "STRUCTURE file: " << pgmFileName << endl; 
+  }
+  else if (XMLString::equals(nodeName,STRUCTURE)) {
+    String fnm = getAttr(node, NAMEATTR); // file name
+    IFTRACE << "STRUCTURE file: " << fnm << endl; 
 
-    if ( pgmFileName.Length() == 0 ) {
+    if (fnm.Empty()) {
       String error = "STRUCTURE file name is empty.";
       throw HPCViewDocException(error); 
     } 
     else {
-      driver.AddStructureFile(pgmFileName);
+      driver.AddStructureFile(fnm);
     }
-  } else {
+  } 
+  else if (XMLString::equals(nodeName,GROUP)) {
+    String fnm = getAttr(node, NAMEATTR); // file name
+    IFTRACE << "GROUP file: " << fnm << endl; 
+
+    if (fnm.Empty()) {
+      String error = "GROUP file name is empty.";
+      throw HPCViewDocException(error); 
+    } 
+    else {
+      driver.AddGroupFile(fnm);
+    }
+  } 
+  else {
     String error = "Unexpected ELEMENT type encountered: '" +
       String(XMLString::transcode(nodeName)) + "'";
     throw HPCViewDocException(error);
@@ -253,14 +275,14 @@ static void ProcessELEMENT(DOMNode *node, Driver &driver)
 
 static void ProcessMETRIC(DOMNode *node, Driver &driver)
 {
-  static XMLCh *FILE = XMLString::transcode("FILE");
-  static XMLCh *COMPUTE = XMLString::transcode("COMPUTE");
-  static XMLCh *NAMEATTR = XMLString::transcode("name");
-  static XMLCh *DISPLAYATTR = XMLString::transcode("display");
-  static XMLCh *PERCENTATTR = XMLString::transcode("percent");
-  static XMLCh *PROPAGATEATTR = XMLString::transcode("propagate");
-  static XMLCh *DISPLAYNAMEATTR = XMLString::transcode("displayName");
-  static XMLCh *SORTBYATTR = XMLString::transcode("sortBy");
+  static XMLCh* FILE = XMLString::transcode("FILE");
+  static XMLCh* COMPUTE = XMLString::transcode("COMPUTE");
+  static XMLCh* NAMEATTR = XMLString::transcode("name");
+  static XMLCh* DISPLAYATTR = XMLString::transcode("display");
+  static XMLCh* PERCENTATTR = XMLString::transcode("percent");
+  static XMLCh* PROPAGATEATTR = XMLString::transcode("propagate");
+  static XMLCh* DISPLAYNAMEATTR = XMLString::transcode("displayName");
+  static XMLCh* SORTBYATTR = XMLString::transcode("sortBy");
 
   // get metric attributes
   String metricName = getAttr(node, NAMEATTR); 
@@ -272,7 +294,8 @@ static void ProcessMETRIC(DOMNode *node, Driver &driver)
   if (metricName.Length() == 0) {
     String error = "METRIC: Invalid name: '" + metricName + "'.";
     throw HPCViewDocException(error); 
-  } else if (NameToPerfDataIndex(metricName) != UNDEF_METRIC_INDEX) {
+  }
+  else if (NameToPerfDataIndex(metricName) != UNDEF_METRIC_INDEX) {
     String error = String("METRIC: Metric name '") + metricName +
       "' was previously defined.";
     throw HPCViewDocException(error); 
@@ -298,7 +321,8 @@ static void ProcessMETRIC(DOMNode *node, Driver &driver)
     if (metricImpl->getNodeType() == DOMNode::TEXT_NODE) {
       // DTD ensures this can't contain anything but white space
       continue;
-    } else if (metricImpl->getNodeType() == DOMNode::COMMENT_NODE) {
+    }
+    else if (metricImpl->getNodeType() == DOMNode::COMMENT_NODE) {
       continue;
     }
     
@@ -309,7 +333,8 @@ static void ProcessMETRIC(DOMNode *node, Driver &driver)
       ProcessFILE(metricImpl, driver, metricName, 
 		  metricDoDisplay, metricDoPercent, metricDoSortBy, 
 		  metricDisplayName);
-    } else if (XMLString::equals(metricType,COMPUTE)) {
+    }
+    else if (XMLString::equals(metricType,COMPUTE)) {
       bool propagateComputed
 	= (getAttr(metricImpl,PROPAGATEATTR) == "computed"); 
       DOMNode *child = metricImpl->getFirstChild();
@@ -317,7 +342,8 @@ static void ProcessMETRIC(DOMNode *node, Driver &driver)
 	if (child->getNodeType() == DOMNode::TEXT_NODE) {
 	  // DTD ensures this can't contain anything but white space
 	  continue;
-	} else if (child->getNodeType() == DOMNode::COMMENT_NODE) {
+	}
+	else if (child->getNodeType() == DOMNode::COMMENT_NODE) {
 	  continue;
 	}
 	
@@ -339,9 +365,9 @@ static void ProcessFILE(DOMNode *fileNode, Driver &driver,
 			bool metricDoPercent, bool metricDoSortBy, 
 			String &metricDisplayName)
 {
-  static XMLCh *TYPEATTR = XMLString::transcode("type");
-  static XMLCh *NAMEATTR = XMLString::transcode("name");
-  static XMLCh *SELECTATTR = XMLString::transcode("select");
+  static XMLCh* TYPEATTR = XMLString::transcode("type");
+  static XMLCh* NAMEATTR = XMLString::transcode("name");
+  static XMLCh* SELECTATTR = XMLString::transcode("select");
 
   String metricFile     = getAttr(fileNode, NAMEATTR); 
   String metricFileType = getAttr(fileNode, TYPEATTR);

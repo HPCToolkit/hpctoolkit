@@ -1,5 +1,5 @@
+// -*-Mode: C++;-*-
 // $Id$
-// -*-C++-*-
 // * BeginRiceCopyright *****************************************************
 // 
 // Copyright ((c)) 2002, Rice University 
@@ -85,6 +85,12 @@ class NonUniformDegreeTreeNode {
 public:
   NonUniformDegreeTreeNode(NonUniformDegreeTreeNode *_parent = 0);
   
+  NonUniformDegreeTreeNode(const NonUniformDegreeTreeNode& other) {
+    *this = other;
+  }
+  
+  NonUniformDegreeTreeNode& operator=(const NonUniformDegreeTreeNode& other);
+
   // destructor for destroying derived class instances
   virtual ~NonUniformDegreeTreeNode();
   
@@ -109,7 +115,21 @@ public:
   NonUniformDegreeTreeNode *LastChild() const
     { return children ? children->prev_sibling : 0; };
 
-private:
+protected:
+  // useful for resetting parent/child/etc links after cloning
+  void ZeroLinks() {
+    // no parent
+    parent = NULL;
+
+    // no children
+    children = NULL;
+    child_count = 0;
+
+    // initial circular list of siblings includes only self
+    next_sibling = prev_sibling = this;
+  }
+
+protected:
   NonUniformDegreeTreeNode *parent, *children, *next_sibling, *prev_sibling;
   unsigned int child_count;
 

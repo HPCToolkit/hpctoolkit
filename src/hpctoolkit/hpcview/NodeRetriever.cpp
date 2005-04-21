@@ -111,6 +111,20 @@ NodeRetriever::~NodeRetriever()
 {
 }
 
+GroupScope*
+NodeRetriever::MoveToGroup(ScopeInfo* parent, const char* name)
+{
+  BriefAssertion(parent && name);
+  
+  GroupScope* grp = root->FindGroup(name);
+  if (grp == NULL) {
+    grp = new GroupScope(name, parent);
+    IFTRACE << "NodeRetriever::MoveToGroup new GroupScope: " << name
+	    << endl;
+  } 
+  return grp;
+}
+
 LoadModScope*
 NodeRetriever::MoveToLoadMod(const char* name) 
 {

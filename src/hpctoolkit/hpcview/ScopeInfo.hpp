@@ -1,5 +1,5 @@
+// -*-Mode: C++;-*-
 // $Id$
-// -*-C++-*-
 // * BeginRiceCopyright *****************************************************
 // 
 // Copyright ((c)) 2002, Rice University 
@@ -56,6 +56,7 @@
 class WordSetSortedIterator;
 class DoubleVector;
 
+class GroupScopeMap;
 class LoadModScopeMap;
 class FileScopeMap;
 class ProcScopeMap;
@@ -65,10 +66,10 @@ class LineScopeMap;
 
 #define UNDEF_LINE 0
 
-// FIXME: It would make more sense for LoadModScope to simply be a
-// ScopeInfo and not a CodeInfo, but the assumption that *only* a
-// PgmScope is not a CodeInfo is deeply embedded and would take a
-// while to untangle.
+// FIXME: It would make more sense for GroupScope and LoadModScope to
+// simply be ScopeInfos and not CodeInfos, but the assumption that
+// *only* a PgmScope is not a CodeInfo is deeply embedded and would
+// take a while to untangle.
 
 class ScopeInfo;   // Base class for all scopes
 class CodeInfo;    // Base class for everyone but PGM
@@ -87,7 +88,7 @@ class RefScope;   // to be deprecated
 // ---------------------------------------------------------
 // ScopeInfo: The base node for a program scope tree
 // ---------------------------------------------------------
-class ScopeInfo: public NonUniformDegreeTreeNode, public Unique {
+class ScopeInfo: public NonUniformDegreeTreeNode {
 public:
 
   enum ScopeType {
@@ -126,20 +127,24 @@ public:
     
   };
 
+protected:
+  ScopeInfo(const ScopeInfo& other) { *this = other; }
+  ScopeInfo& operator=(const ScopeInfo& other);
+
 public:
-  ScopeInfo(ScopeType type, ScopeInfo* parent);
+  ScopeInfo(ScopeType type, ScopeInfo* parent = NULL);
   virtual ~ScopeInfo(); 
   
   // ---------------------------------------------------------------------
   // Name() is overwritten by: RefScope,ProcScope,FileScope     
   // ---------------------------------------------------------------------
-  virtual String Name() const        { return ScopeTypeToName(Type()); };
+  virtual String Name() const        { return ScopeTypeToName(Type()); }
 
   // ---------------------------------------------------------------------
   // interface to fields 
   // ---------------------------------------------------------------------
-  ScopeType     Type() const         { return type; };
-  unsigned int  UniqueId() const     { return uid; };
+  ScopeType     Type() const         { return type; }
+  unsigned int  UniqueId() const     { return uid; }
 
   bool   HasPerfData(int i) const;     // checks whether PerfData(i) is set
   double PerfData(int i) const;        // returns NaN iff !HasPerfData(i) 
@@ -149,7 +154,7 @@ public:
   // Parent
   // ---------------------------------------------------------------------
   ScopeInfo *Parent() const 
-                { return (ScopeInfo*) NonUniformDegreeTreeNode::Parent(); };
+                { return (ScopeInfo*) NonUniformDegreeTreeNode::Parent(); }
   
   CodeInfo  *CodeInfoParent() const;   // return dyn_cast<CodeInfo*>(Parent())
   
@@ -175,12 +180,19 @@ public:
   //      since PgmScopes have no siblings, it is safe to make Next/PrevScope 
   //      return CodeInfo pointers 
   // ---------------------------------------------------------------------
-  CodeInfo *FirstEnclScope() const;      // return  FirstChild()
-  CodeInfo *LastEnclScope()  const;      // return  LastChild()
-  CodeInfo *NextScope()      const;      // return  NULL or NextSibling()
-  CodeInfo *PrevScope()      const;      // return  NULL or PrevSibling()
+  CodeInfo* FirstEnclScope() const;      // return  FirstChild()
+  CodeInfo* LastEnclScope()  const;      // return  LastChild()
+  CodeInfo* NextScope()      const;      // return  NULL or NextSibling()
+  CodeInfo* PrevScope()      const;      // return  NULL or PrevSibling()
   bool      IsLeaf()         const       { return  FirstEnclScope() == NULL; }
-
+  
+  // ---------------------------------------------------------------------
+  // cloning
+  // ---------------------------------------------------------------------
+  
+  // Clone: return a shallow copy, unlinked from the tree
+  virtual ScopeInfo* Clone() { return new ScopeInfo(*this); }
+  
   // ---------------------------------------------------------------------
   // debugging and printing 
   // ---------------------------------------------------------------------
@@ -209,10 +221,10 @@ public:
   int NoteHeight();
   void NoteDepth();
 
-  int ScopeHeight() const { return height; };
-  int ScopeDepth() const { return depth; };
-  
-private: 
+  int ScopeHeight() const { return height; }
+  int ScopeDepth() const { return depth; }
+
+protected: 
 
   ScopeType type;
   unsigned int uid; 
@@ -229,9 +241,11 @@ private:
 // ----------------------------------------------------------------------
 class CodeInfo : public ScopeInfo {
 protected: 
-  CodeInfo(ScopeType t, ScopeInfo* mom, 
+  CodeInfo(ScopeType t, ScopeInfo* mom = NULL, 
 	   suint beg = UNDEF_LINE, suint end = UNDEF_LINE); 
-  
+  CodeInfo(const CodeInfo& other) : ScopeInfo(other.type) { *this = other; }
+  CodeInfo& operator=(const CodeInfo& other);
+
 public: 
   virtual ~CodeInfo();
 
@@ -253,6 +267,8 @@ public:
   virtual String CodeName() const; 
 
   String CodeLineName(suint line) const; 
+
+  virtual ScopeInfo* Clone() { return new CodeInfo(*this); }
 
   virtual String ToString() const; 
   virtual String ToXML() const; 
@@ -289,10 +305,16 @@ public:
 // PgmScope is root of the scope tree
 // ---------------------------------------------------------
 class PgmScope: public ScopeInfo {
+protected:
+  PgmScope(const PgmScope& other) : ScopeInfo(other.type) { *this = other; }
+  PgmScope& operator=(const PgmScope& other);
+
 public: 
   PgmScope(const char* n); 
   virtual ~PgmScope(); 
-  
+
+  GroupScope* FindGroup(const char* nm) const;
+
   // find by 'realpath'
   LoadModScope* FindLoadMod(const char* nm) const;
   FileScope*    FindFile(const char* nm) const;
@@ -302,6 +324,8 @@ public:
 
   String Name() const { return name; }
   void   SetName(const char* n) { name = n; }
+
+  virtual ScopeInfo* Clone() { return new PgmScope(*this); }
 
   virtual String ToString() const;
   virtual String ToXML() const;
@@ -313,15 +337,19 @@ public:
    
 protected: 
 private: 
+  void AddToGroupMap(GroupScope& grp);
   void AddToLoadModMap(LoadModScope& lm);
   void AddToFileMap(FileScope& file);
-  friend class FileScope; 
+  friend class GroupScope; 
   friend class LoadModScope;
+  friend class FileScope; 
 
   bool frozen;
-  String name;            // the program name
-  LoadModScopeMap* lmMap; // mapped by 'realpath'
-  FileScopeMap* fileMap;  // mapped by 'realpath'
+  String name;  // the program name
+
+  GroupScopeMap*   groupMap;
+  LoadModScopeMap* lmMap;     // mapped by 'realpath'
+  FileScopeMap*    fileMap;   // mapped by 'realpath'
 }; 
 
 // ---------------------------------------------------------
@@ -332,16 +360,20 @@ private:
 // They may be used to describe several different types of scopes
 //   (including user-defined ones)
 // ---------------------------------------------------------
+// FIXME: See note about GroupScope above.
 class GroupScope: public CodeInfo {
 public: 
-  GroupScope(const char *grpName, CodeInfo *mom,
+  GroupScope(const char* grpName, ScopeInfo* mom,
 	     int firstLine = UNDEF_LINE,
 	     int lastLine = UNDEF_LINE);
   virtual ~GroupScope();
 
   String Name() const                  { return name; } 
-  
+
   virtual String CodeName() const;
+
+  virtual ScopeInfo* Clone() { return new GroupScope(*this); }
+
   virtual String ToString() const;
   virtual String ToXML() const;
 
@@ -363,6 +395,9 @@ public:
   String Name() const { return name; }
 
   virtual String CodeName() const;
+
+  virtual ScopeInfo* Clone() { return new LoadModScope(*this); }
+
   virtual String ToString() const;
   virtual String ToXML() const; 
 
@@ -377,6 +412,10 @@ private:
 // FileScopes may refer to an unreadable file
 // ---------------------------------------------------------
 class FileScope: public CodeInfo {
+protected:
+  FileScope(const FileScope& other) : CodeInfo(other.type) { *this = other; }
+  FileScope& operator=(const FileScope& other);
+
 public: 
   FileScope(const char *fileNameWithPath, bool srcIsReadable_, 
 	    const char* preproc, 
@@ -395,6 +434,8 @@ public:
   virtual String CodeName() const;
 
   bool HasSourceFile() const { return srcIsReadable; } // srcIsReadable
+
+  virtual ScopeInfo* Clone() { return new FileScope(*this); }
   
   virtual String ToString() const; 
   virtual String ToXML() const; 
@@ -420,6 +461,10 @@ private:
 // children: GroupScope's, LoopScope's, StmtRangeScope's
 // ---------------------------------------------------------
 class ProcScope: public CodeInfo {
+protected:
+  ProcScope(const ProcScope& other) : CodeInfo(other.type) { *this = other; }
+  ProcScope& operator=(const ProcScope& other);
+
 public: 
   ProcScope(const char* name, CodeInfo *mom, 
 	    int firstLine = UNDEF_LINE, int lastLine = UNDEF_LINE);
@@ -427,6 +472,8 @@ public:
   
   virtual String Name() const       { return name; }; 
   virtual String CodeName() const; 
+
+  virtual ScopeInfo* Clone() { return new ProcScope(*this); }
 
   virtual String ToString() const; 
   virtual String ToXML() const; 
@@ -460,6 +507,9 @@ public:
   virtual ~LoopScope();
   
   virtual String CodeName() const;
+
+  virtual ScopeInfo* Clone() { return new LoopScope(*this); }
+
   virtual String ToString() const; 
   virtual String ToXML() const; 
   
@@ -475,6 +525,9 @@ public:
   virtual ~StmtRangeScope();
   
   virtual String CodeName() const;
+
+  virtual ScopeInfo* Clone() { return new StmtRangeScope(*this); }
+
   virtual String ToString() const;  
   virtual String ToXML() const;  
 
@@ -489,6 +542,7 @@ class LineScope: public CodeInfo {
 public: 
   LineScope(CodeInfo *mom, suint srcLine); 
   
+  virtual ScopeInfo* Clone() { return new LineScope(*this); }
 };
 
 // ----------------------------------------------------------------------
@@ -506,7 +560,9 @@ public:
   
   virtual String Name() const   { return name; }
   virtual String CodeName() const; 
-  
+
+  virtual ScopeInfo* Clone() { return new RefScope(*this); }
+
   virtual String ToString() const; 
   virtual String ToXML() const; 
 

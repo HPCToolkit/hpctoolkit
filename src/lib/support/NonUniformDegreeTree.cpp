@@ -1,5 +1,5 @@
+// -*-Mode: C++;-*-
 // $Id$
-// -*-C++-*-
 // * BeginRiceCopyright *****************************************************
 // 
 // Copyright ((c)) 2002, Rice University 
@@ -82,18 +82,24 @@ using std::endl;
 NonUniformDegreeTreeNode::NonUniformDegreeTreeNode
 (NonUniformDegreeTreeNode *_parent)
 {
-  // no parent
-  this->parent = 0;
-  
-  // no children
-  child_count = 0; children = 0;
-  
-  // initial circular list of siblings includes only self
-  next_sibling = this; prev_sibling = this;
-  
+  ZeroLinks();
   Link(_parent); // link to parent and siblings if any
 }
 
+
+NonUniformDegreeTreeNode& 
+NonUniformDegreeTreeNode::operator=(const NonUniformDegreeTreeNode& other) 
+{
+  // shallow copy
+  if (&other != this) {
+    parent       = other.parent;
+    children     = other.children;
+    next_sibling = other.next_sibling;
+    prev_sibling = other.prev_sibling;
+    child_count  = other.child_count;
+  }
+  return *this;
+}
 
 //-----------------------------------------------
 // links a node to a parent and at the end of the 

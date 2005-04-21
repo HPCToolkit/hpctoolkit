@@ -1,5 +1,5 @@
+// -*-Mode: C++;-*-
 // $Id$
-// -*-C++-*-
 // * BeginRiceCopyright *****************************************************
 // 
 // Copyright ((c)) 2002, Rice University 
@@ -45,7 +45,6 @@
 #include "HPCViewSAX2.h"
 #include "HPCViewXMLErrHandler.h"
 #include "ScopesInfo.h"
-#include "PGMDocHandler.h"
 
 #include <lib/support/Assertion.h>
 #include <lib/support/pathfind.h>
@@ -156,58 +155,33 @@ void
 Driver::MakePerfData(ScopesInfo &scopes) 
 {
   NodeRetriever ret(scopes.Root(), path);
-
+  
   //-------------------------------------------------------
-  // if a PGM document has been provided, use it to 
+  // if a PGM/Structure document has been provided, use it to 
   // initialize the structure of the scope tree
   //-------------------------------------------------------
- for (unsigned int i = 0; i < structureFiles.size(); i++) {
-  String pgmFileName = GetStructureFile(i);
-  if (pgmFileName != "") {
-    String filePath = String(pathfind(".", pgmFileName, "r")); 
-    if (filePath.Length() > 0) {
-      SAX2XMLReader* parser = XMLReaderFactory::createXMLReader();
-
-      parser->setFeature(XMLUni::fgSAX2CoreValidation, true);
-      parser->setFeature(XMLUni::fgXercesDynamic, true);
-      parser->setFeature(XMLUni::fgXercesValidationErrorAsFatal, true);
-
-      PGMDocHandler handler(&ret, this);
-      parser->setContentHandler(&handler);
-      parser->setErrorHandler(&handler);
-
-      try {
-         parser->parse(filePath);
-	 if (parser->getErrorCount() > 0) {
-	   cerr << "hpcview fatal error: terminating because of previously reported STRUCTURE file parse errors." << endl;
-	   exit(1);
-	 }
-      }
-      catch (const SAXException& toCatch) {
-	   cerr << "hpcview fatal error: terminating because of previously reported STRUCTURE file parse errors." << endl;
-	exit(1);
-      }
-      catch (const PGMException& toCatch) {
-	cerr << "ERROR: '" << filePath << "': " << toCatch.message() << endl;
-	exit(1);
-      }
-    } else {
-      cerr << "hpcview fatal error: could not open STRUCTURE file '" 
-	   << pgmFileName << "'." << endl;
-      exit(1);
-    }
-  }
+  if (NumberOfStructureFiles() > 0) {
+    ProcessPGMFile(&ret, PGMDocHandler::Doc_STRUCT, &structureFiles);
   }
 
+  //-------------------------------------------------------
+  // if a PGM/Group document has been provided, use it to form the 
+  // group partitions (as wall as initialize/extend the scope tree)
+  //-------------------------------------------------------
+  if (NumberOfGroupFiles() > 0) {
+    ProcessPGMFile(&ret, PGMDocHandler::Doc_GROUP, &groupFiles);
+  }
+  
   //-------------------------------------------------------
   // Create metrics, file and computed. (File metrics are read from
   // PROFILE files and will update the scope tree with any new
   // information; computed metrics are expressions of file metrics).
   //-------------------------------------------------------
- for (unsigned int i = 0; i < dataSrc.size(); i++) {
+  for (unsigned int i = 0; i < dataSrc.size(); i++) {
     try {
       dataSrc[i]->Make(ret);
-    } catch (const MetricException &mex) {
+    } 
+    catch (const MetricException &mex) {
       cerr << "hpcview fatal error: Could not construct METRIC '" 
 	   << dataSrc[i]->Name() << "'." << endl
 	   << "\t" << mex.error << endl;
@@ -215,6 +189,58 @@ Driver::MakePerfData(ScopesInfo &scopes)
     } 
   } 
 }
+
+
+void
+Driver::ProcessPGMFile(NodeRetriever* nretriever, 
+		       PGMDocHandler::Doc_t docty, 
+		       std::vector<String*>* files)
+{
+  if (!files) {
+    return;
+  }
+  
+  for (unsigned int i = 0; i < files->size(); i++) {
+    String& pgmFileName = *((*files)[i]);
+    if (!pgmFileName.Empty()) {
+      String filePath = String(pathfind(".", pgmFileName, "r")); 
+      if (!filePath.Empty()) {
+	SAX2XMLReader* parser = XMLReaderFactory::createXMLReader();
+	
+	parser->setFeature(XMLUni::fgSAX2CoreValidation, true);
+	parser->setFeature(XMLUni::fgXercesDynamic, true);
+	parser->setFeature(XMLUni::fgXercesValidationErrorAsFatal, true);
+	
+	PGMDocHandler handler(docty, nretriever, this);
+	parser->setContentHandler(&handler);
+	parser->setErrorHandler(&handler);
+	
+	try {
+	  parser->parse(filePath);
+	  if (parser->getErrorCount() > 0) {
+	    cerr << "hpcview fatal error: terminating because of previously reported " << PGMDocHandler::ToString(docty) << " file parse errors." << endl;
+	    exit(1);
+	  }
+	}
+	catch (const SAXException& toCatch) {
+	  cerr << "hpcview fatal error: terminating because of previously reported " << PGMDocHandler::ToString(docty) << " file parse errors." << endl;
+	  exit(1);
+	}
+	catch (const PGMException& toCatch) {
+	  cerr << "ERROR: '" << filePath << "': " << toCatch.message() << endl;
+	  exit(1);
+	}
+      } 
+      else {
+	cerr << "hpcview fatal error: could not open " 
+	     << PGMDocHandler::ToString(docty) << " file '" 
+	     << pgmFileName << "'." << endl;
+	exit(1);
+      }
+    }
+  }
+}
+
 
 void
 Driver::XML_Dump(PgmScope* pgm, std::ostream &os, const char *pre) const

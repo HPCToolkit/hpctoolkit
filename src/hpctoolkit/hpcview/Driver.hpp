@@ -1,5 +1,5 @@
+// -*-Mode: C++;-*-
 // $Id$
-// -*-C++-*-
 // * BeginRiceCopyright *****************************************************
 // 
 // Copyright ((c)) 2002, Rice University 
@@ -48,6 +48,8 @@
 
 #include <include/general.h>
 
+#include "PGMDocHandler.h"
+
 #include <lib/support/Unique.h>
 #include <lib/support/String.h>
 
@@ -70,16 +72,20 @@ public:
   Driver(int deleteUnderscores, bool _cpySrcFiles); 
   ~Driver(); 
   
-  void SetTitle(const char* tit)        { title = tit; } ; 
-  const String& Title() const           { return title; } ;
+  void SetTitle(const char* tit)        { title = tit; }
+  const String& Title() const           { return title; }
 
-  void AddStructureFile(const char* pf) { structureFiles.push_back(new String(pf)); } ;
-  const String& GetStructureFile(int i) const { return *structureFiles[i]; } ;
-  int NumberOfStructureFiles() { return structureFiles.size(); };
-  
+  void AddStructureFile(const char* pf) { structureFiles.push_back(new String(pf)); }
+  const String& GetStructureFile(int i) const { return *structureFiles[i]; }
+  int NumberOfStructureFiles() { return structureFiles.size(); }
+
+  void AddGroupFile(const char* pf) { groupFiles.push_back(new String(pf)); }
+  const String& GetGroupFile(int i) const { return *groupFiles[i]; }
+  int NumberOfGroupFiles() { return groupFiles.size(); }
+
   void AddPath(const char* _path, const char* _viewname);
-  const String& Path() const { return path; } ;
-  const PathTupleVec& PathVec() const { return pathVec; } ;
+  const String& Path() const { return path; }
+  const PathTupleVec& PathVec() const { return pathVec; }
 
   void AddReplacePath(const char* inPath, const char* outPath); 
   String ReplacePath(const char* path);
@@ -87,8 +93,8 @@ public:
   bool MustDeleteUnderscore( void );
   bool CopySrcFiles() { return cpySrcFiles; }
   
-  unsigned int NumberOfMetrics() const       { return dataSrc.size(); } ; 
-  const PerfMetric& PerfDataSrc(int i) const { return *dataSrc[i]; }; 
+  unsigned int NumberOfMetrics() const       { return dataSrc.size(); }
+  const PerfMetric& PerfDataSrc(int i) const { return *dataSrc[i]; }
   void Add(PerfMetric* metric); 
   
   void MakePerfData(ScopesInfo& scopesInfo);
@@ -105,6 +111,11 @@ public:
   void TSV_Dump(PgmScope* pgm, std::ostream &os = std::cout) const;
 
 private: 
+  
+  void ProcessPGMFile(NodeRetriever* nretriever, 
+		      PGMDocHandler::Doc_t docty, 
+		      std::vector<String*>* files);
+
   String title;
   int deleteTrailingUnderscores;
   bool cpySrcFiles;
@@ -115,8 +126,9 @@ private:
   std::vector<String> replaceInPath; 
   std::vector<String> replaceOutPath; 
 
-  std::vector<PerfMetric*> dataSrc; 
-  std::vector<String*> structureFiles; 
+  std::vector<PerfMetric*> dataSrc;
+  std::vector<String*> structureFiles;
+  std::vector<String*> groupFiles;
 };
 
 #endif 
