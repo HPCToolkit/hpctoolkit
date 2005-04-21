@@ -179,9 +179,13 @@ Like bloop, it it can be used as a 'cross-tool'.
 4. Revision History
 --------------------
 
+HPCToolkit Version 4.1.1: [2005.04.21]
+--------------------
 - Add support for Group scopes
+- hpcquick produces hpcviewer output by default
 
 HPCToolkit Version 4.1.0: [2005.03.18]
+--------------------
 - HPCToolkitRoot
   - Improve sub-repository checkout
   - Improve building by determining and propagating compiler
