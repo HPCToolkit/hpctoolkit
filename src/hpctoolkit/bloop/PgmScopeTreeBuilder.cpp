@@ -404,7 +404,8 @@ BuildFromProc(FileScope* fileScope, Procedure* p,
   OA::OA_ptr<OA::CFG::CFGStandard> cfg = 
     cfgmanstd->performAnalysis(TY_TO_IRHNDL(p, OA::ProcHandle));
   
-  OA::OA_ptr<OA::RIFG> rifg; rifg = new OA::RIFG(cfg);
+  OA::OA_ptr<OA::RIFG> rifg; 
+  rifg = new OA::RIFG(cfg, cfg->getEntry(), cfg->getExit());
   OA::OA_ptr<OA::NestedSCR> tarj; tarj = new OA::NestedSCR(rifg);
   
   OA::RIFG::NodeId fgRoot = rifg->getSource();
@@ -412,8 +413,8 @@ BuildFromProc(FileScope* fileScope, Procedure* p,
 #ifdef BLOOP_DEBUG_PROC
   if (testProcNow) {
     cout << "*** CFG for `" << funcNm << "' ***" << endl;
-    cout << "  total blocks: " << cfg->num_nodes() << endl
-	 << "  total edges:  " << cfg->num_edges() << endl;
+    cout << "  total blocks: " << cfg->getNumNodes() << endl
+	 << "  total edges:  " << cfg->getNumEdges() << endl;
     cfg->dump(cout, irIF);
     cfg->dumpdot(cout, irIF);
 
@@ -1087,6 +1088,9 @@ CFGNodeToPCMap::build(OA::OA_ptr<OA::CFG::Interface> cfg,
 		      OA::OA_ptr<OA::CFG::Interface::Node> n, 
 		      Procedure* p, Addr _end)
 {
+  // NEWS FLASH: We could use OA's getReversePostDFSIterator to do this
+  // pre-order traversal of the CFG.
+
   Addr curBeg = 0, curEnd = 0;
 
   // If n is not in the map, it hasn't been visited yet.
