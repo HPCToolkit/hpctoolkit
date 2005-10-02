@@ -55,10 +55,6 @@ AUTOMAKE_OPTIONS = foreign
 # Local settings
 #############################################################################
 
-if OPT_ENABLE_HPCRUN
-  MYHPCRUN = hpcrun
-endif
-
 #############################################################################
 # Automake rules
 #############################################################################
@@ -67,12 +63,19 @@ SUBDIRS = \
 	bloop \
 	filters \
 	hpcquick \
-	$(MYHPCRUN) \
 	hpcview \
 	misc \
 	ptran \
 	xcsprof \
 	xprof
+
+if OPT_ENABLE_HPCRUN
+  SUBDIRS += hpcrun
+endif
+
+if OPT_ENABLE_DEVTOOLS
+  SUBDIRS += lump
+endif
 
 #############################################################################
 # Other rules
