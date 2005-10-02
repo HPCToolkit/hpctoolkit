@@ -62,7 +62,7 @@ BUILDDIR   = $(WD)/build-$(PLATFORM)
 INSTALLDIR = $(WD)/HPCToolkit-$(PLATFORM)
 
 ifdef DEVELOP
-  CONFIG_OPTS += --enable-develop
+  CONFIG_OPTS += --enable-develop --enable-devtools
 endif
 
 ifdef PAPI
@@ -88,7 +88,7 @@ echo "Options to 'all' and 'configure':"
 echo "  CC=<C-compiler>         - Set the C compiler"
 echo "  CXX=<C++-compiler>      - Set the C++ compiler"
 echo "  PAPI=<PAPI-install-dir> - Set PAPI installation (absolute path)"
-echo "  DEVELOP=1               - develop mode"
+echo "  DEVELOP=1               - develop mode (debug + dev tools)"
 echo ""
 echo "By default, makefiles are created in:"
 echo "  $(BUILDDIR)"
