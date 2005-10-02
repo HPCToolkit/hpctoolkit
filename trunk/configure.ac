@@ -288,6 +288,28 @@ AC_MSG_RESULT([${OPT_ENABLE_HPCRUN}])
 AM_CONDITIONAL(OPT_ENABLE_HPCRUN, test "${OPT_ENABLE_HPCRUN}" = "yes")
 
 
+#-------------------------------------------------
+# enable-devtools: Tools of interest to developers
+#-------------------------------------------------
+
+AC_MSG_CHECKING([whether to build developer tools (devtools)])
+
+OPT_ENABLE_DEVTOOLS="no"
+
+AC_ARG_ENABLE([devtools],
+  AC_HELP_STRING([--enable-devtools],
+                 [Build development tools (enable debugging)]),
+  [case "${enableval}" in
+     yes) OPT_ENABLE_DEVTOOLS="yes" ;;
+     no)  OPT_ENABLE_DEVTOOLS="no" ;;
+     *) AC_MSG_ERROR([bad value ${enableval} for --enable-devtools]) ;;
+   esac],
+  [OPT_ENABLE_DEVTOOLS=no])
+
+AC_MSG_RESULT([${OPT_ENABLE_DEVTOOLS}])
+AM_CONDITIONAL(OPT_ENABLE_DEVTOOLS, test "${OPT_ENABLE_DEVTOOLS}" = "yes")
+
+
 #----------------------------------------------------------------------------
 # Host-dependent configuration
 # $host: $host_cpu-$host_vendor-$host_os
@@ -435,6 +457,7 @@ AC_OUTPUT([ \
   src/hpctoolkit/hpcquick/Makefile \
   src/hpctoolkit/hpcrun/Makefile \
   src/hpctoolkit/hpcview/Makefile \
+  src/hpctoolkit/lump/Makefile \
   src/hpctoolkit/misc/Makefile \
   src/hpctoolkit/ptran/Makefile \
   src/hpctoolkit/xcsprof/Makefile \
