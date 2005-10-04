@@ -90,6 +90,7 @@ void ClearLineToAddrListMap(LineToAddrListMap* map);
 
 // Dump Helpers
 void DumpSymbolicInfo(std::ostream& os, LoadModule* lm);
+void DumpSymbolicInfoOld(std::ostream& os, LoadModule* lm);
 
 //****************************************************************************
 
@@ -125,7 +126,11 @@ main(int argc, char* argv[])
 
     if (args.symbolicDump) {
       DumpSymbolicInfo(std::cout, lm);
-    } else {
+    } 
+    else if (args.symbolicDumpOld) {
+      DumpSymbolicInfoOld(std::cout, lm);
+    }
+    else {
       lm->Dump(std::cout);
     }
     
@@ -138,23 +143,12 @@ main(int argc, char* argv[])
   return (0);
 }
 
+
 //****************************************************************************
 
-void DumpSymbolicInfoForFunc(std::ostream& os, const char* pre, 
-			     const char* func, LineToAddrListMap* map, 
-			     const char* file);
-
 void 
-DumpSymbolicInfo(std::ostream& os, LoadModule* lm)
+DumpHeaderInfo(std::ostream& os, LoadModule* lm, const char* pre = "")
 {
-  String pre = "  ";
-  String pre1 = pre + "  ";
-
-  // ------------------------------------------------------------------------
-  // Iterate through the PC values of the text section, collect
-  //   symbolic information on a source line basis, and output the results
-  // ------------------------------------------------------------------------  
-  
   os << "Begin LoadModule Stmt Dump\n";
   os << pre << "Name: `" << lm->GetName() << "'\n";
   os << pre << "Type: `";
@@ -170,6 +164,80 @@ DumpSymbolicInfo(std::ostream& os, LoadModule* lm)
       BriefAssertion(false); 
   }
   os << pre << "ISA: `" << typeid(*isa).name() << "'\n"; // std::type_info
+}
+
+
+
+
+//****************************************************************************
+
+void 
+DumpSymbolicInfo(std::ostream& os, LoadModule* lm)
+{
+  String pre = "  ";
+  String pre1 = pre + "  ";
+
+  DumpHeaderInfo(os, lm, pre);  
+
+  // ------------------------------------------------------------------------
+  // Iterate through the PC values of the text section, and dump the 
+  //   symbolic information associated with each PC
+  // ------------------------------------------------------------------------  
+
+  os << pre << "Dump:\n";
+  for (LoadModuleSectionIterator it(*lm); it.IsValid(); ++it) {
+    Section* sec = it.Current();
+    if (sec->GetType() != Section::Text) { continue; }
+    
+    // We have a 'TextSection'.  Iterate over procedures.
+    TextSection* tsec = dynamic_cast<TextSection*>(sec);
+    for (TextSectionProcedureIterator it(*tsec); it.IsValid(); ++it) {
+      Procedure* p = it.Current();
+      String pName = GetBestFuncName(p->GetName());
+
+      os << "* " << pName << hex
+	 << " [" << "0x" << p->GetStartAddr() << ", 0x" << p->GetEndAddr()
+	 << "]\n" << dec;
+
+      // We have a 'Procedure'.  Iterate over PC values     
+      for (ProcedureInstructionIterator it(*p); it.IsValid(); ++it) {
+	Instruction* inst = it.Current();
+	Addr pc = inst->GetPC();
+	Addr opPC = isa->ConvertPCToOpPC(pc, inst->GetOpIndex());
+	
+	// Find and dump symbolic info attched to VMA
+	String func, file;
+	suint line;
+	p->GetSourceFileInfo(pc, inst->GetOpIndex(), func, file, line);
+	func = GetBestFuncName(func);
+	
+	os << pre << "0x" << hex << opPC << dec 
+	   << " " << file << ":" << line << ":" << func << "\n";
+      }
+      os << std::endl;
+    }
+  }
+  os << "\n" << "End LoadModule Stmt Dump\n";
+}
+
+//****************************************************************************
+
+void DumpSymbolicInfoForFunc(std::ostream& os, const char* pre, 
+			     const char* func, LineToAddrListMap* map, 
+			     const char* file);
+
+void 
+DumpSymbolicInfoOld(std::ostream& os, LoadModule* lm)
+{
+  String pre = "  ";
+  String pre1 = pre + "  ";
+
+  DumpHeaderInfo(os, lm, pre);
+
+  // ------------------------------------------------------------------------
+  // Iterate through the PC values of the text section, collect
+  //   symbolic information on a source line basis, and output the results
+  // ------------------------------------------------------------------------  
 
   os << pre << "Dump:\n";
   for (LoadModuleSectionIterator it(*lm); it.IsValid(); ++it) {
@@ -236,6 +304,7 @@ DumpSymbolicInfo(std::ostream& os, LoadModule* lm)
   os << "\n" << "End LoadModule Stmt Dump\n";
 }
 
+
 void 
 DumpSymbolicInfoForFunc(std::ostream& os, const char* pre, 
 			const char* func, LineToAddrListMap* map, 
@@ -266,9 +335,8 @@ DumpSymbolicInfoForFunc(std::ostream& os, const char* pre,
 }
 
 
-//****************************************************************************
-
-void ClearLineToAddrListMap(LineToAddrListMap* map)
+void 
+ClearLineToAddrListMap(LineToAddrListMap* map)
 {
   LineToAddrListMapIt it;
   for (it = map->begin(); it != map->end(); ++it) {

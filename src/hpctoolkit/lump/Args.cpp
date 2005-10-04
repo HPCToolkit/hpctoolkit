@@ -84,8 +84,10 @@ static const char* usage_details =
 "By default, section, procedure and instruction lists are dumped.\n"
 "\n"
 "Options:\n"
-"  -s, --symbolic       Instead of the default, dump symbolic info\n"
-"                       (file, func, line).\n"
+"  -s, --symbolic-info  Instead of the default, dump symbolic info\n"
+"                       (file, func, line) associated with each PC/VMA.\n"
+"  -t, --symbolic-info-old\n"
+"                       Instead of the default, dump symbolic info (old).\n"
 "  -l <addr>, load-addr <addr>\n"
 "                       By default, DSOs will be 'loaded' at 0x0.  Use this\n"
 "                       option to specify a different load address.\n"
@@ -101,12 +103,14 @@ static const char* usage_details =
 CmdLineParser::OptArgDesc Args::optArgs[] = {
 
   // Options
-  { 's', "symbolic",    CLP::ARG_NONE, CLP::DUPOPT_CLOB, NULL },
-  { 'l', "load-addr",   CLP::ARG_REQ , CLP::DUPOPT_CLOB, NULL },
+  { 's', "symbolic-info",     CLP::ARG_NONE, CLP::DUPOPT_CLOB, NULL },
+  { 't', "symbolic-info-old", CLP::ARG_NONE, CLP::DUPOPT_CLOB, NULL },
+
+  { 'l', "load-addr",     CLP::ARG_REQ , CLP::DUPOPT_CLOB, NULL },
   
-  { 'V', "version",     CLP::ARG_NONE, CLP::DUPOPT_CLOB, NULL },
-  { 'h', "help",        CLP::ARG_NONE, CLP::DUPOPT_CLOB, NULL },
-  {  0 , "debug",       CLP::ARG_OPT,  CLP::DUPOPT_CLOB, NULL }, // hidden
+  { 'V', "version",  CLP::ARG_NONE, CLP::DUPOPT_CLOB, NULL },
+  { 'h', "help",     CLP::ARG_NONE, CLP::DUPOPT_CLOB, NULL },
+  {  0 , "debug",    CLP::ARG_OPT,  CLP::DUPOPT_CLOB, NULL }, // hidden
   CmdLineParser_OptArgDesc_NULL_MACRO // SGI's compiler requires this version
 };
 
@@ -132,6 +136,7 @@ void
 Args::Ctor()
 {
   symbolicDump = false;
+  symbolicDumpOld = false;
   loadAddr = 0x0;
   debugLevel = 0;
 }
@@ -205,8 +210,11 @@ Args::Parse(int argc, const char* const argv[])
     }
     
     // Check for other options
-    if (parser.IsOpt("symbolic")) { 
+    if (parser.IsOpt("symbolic-info")) { 
       symbolicDump = true;
+    } 
+    if (parser.IsOpt("symbolic-info-old")) { 
+      symbolicDumpOld = true;
     } 
     if (parser.IsOpt("load-addr")) { 
       const string& arg = parser.GetOptArg("load-addr");
