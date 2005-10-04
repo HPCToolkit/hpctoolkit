@@ -104,8 +104,12 @@ main(int argc, char* argv[])
   LoadModule* lm = NULL;
   try {
     lm = new LoadModule();
-    if (!lm->Open(args.inputFile)) { exit(1); } // Error already printed 
-    if (!lm->Read()) { exit(1); }               // Error already printed 
+    if (!lm->Open(args.inputFile.c_str())) { 
+      exit(1); // Error already printed 
+    }
+    if (!lm->Read()) { 
+      exit(1); // Error already printed 
+    }
   } catch (std::bad_alloc& x) {
     cerr << "Error: Memory alloc failed while reading load module!\n";
     exit(1);
