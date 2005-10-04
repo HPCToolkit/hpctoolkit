@@ -93,6 +93,7 @@ public:
 
   // Parsed Data: optional arguments
   bool symbolicDump;
+  bool symbolicDumpOld;
   Addr loadAddr;
   int debugLevel;
 
