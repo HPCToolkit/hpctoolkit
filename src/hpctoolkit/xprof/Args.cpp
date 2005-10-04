@@ -310,6 +310,10 @@ Args::Parse(int argc, const char* const argv[])
     PrintError(std::cerr, e.GetMessage());
     exit(1);
   }
+  catch (CmdLineParser::Exception& e) {
+    e.Report(std::cerr);
+    exit(1);
+  }
 }
 
 
