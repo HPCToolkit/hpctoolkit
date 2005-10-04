@@ -2032,8 +2032,14 @@ HPCTOOLKIT_PLATFORM=`cd ${hpctoolkit_top}/config && ./hpcplatform`
 
 # AC_PROG_CXX will set CXXFLAGS to something like -g -O2 if not
 # already defined.  We do not want this!
-HPC_ENSURE_DEFINED_CXXFLAGS
-HPC_ENSURE_DEFINED_CFLAGS
+if test -z "$CXXFLAGS" ; then
+     CXXFLAGS=""
+   fi
+
+if test -z "$CFLAGS" ; then
+     CFLAGS=""
+   fi
+
 
 # Check for programs.
 # Note: libtool makes PROG_RANLIB obsolete
@@ -3693,7 +3699,7 @@ ia64-*-hpux*)
   ;;
 *-*-irix6*)
   # Find out which ABI we are using.
-  echo '#line 3696 "configure"' > conftest.$ac_ext
+  echo '#line 3702 "configure"' > conftest.$ac_ext
   if { (eval echo "$as_me:$LINENO: \"$ac_compile\"") >&5
   (eval $ac_compile) 2>&5
   ac_status=$?
@@ -3768,24 +3774,6 @@ x86_64-*linux*|ppc*-*linux*|powerpc*-*linux*|s390*-*linux*|sparc*-*linux*)
           LD="${LD-ld} -m elf64_sparc"
           ;;
       esac
-      ;;
-    esac
-  fi
-  rm -rf conftest*
-  ;;
-
-*-*-linux*)
-  # Test if the compiler is 64bit
-  echo 'int i;' > conftest.$ac_ext
-  lt_cv_cc_64bit_output=no
-  if { (eval echo "$as_me:$LINENO: \"$ac_compile\"") >&5
-  (eval $ac_compile) 2>&5
-  ac_status=$?
-  echo "$as_me:$LINENO: \$? = $ac_status" >&5
-  (exit $ac_status); }; then
-    case `/usr/bin/file conftest.$ac_objext` in
-    *"ELF 64"*)
-      lt_cv_cc_64bit_output=yes
       ;;
     esac
   fi
@@ -5290,7 +5278,7 @@ fi
 
 
 # Provide some information about the compiler.
-echo "$as_me:5293:" \
+echo "$as_me:5281:" \
      "checking for Fortran 77 compiler version" >&5
 ac_compiler=`set X $ac_compile; echo $2`
 { (eval echo "$as_me:$LINENO: \"$ac_compiler --version </dev/null >&5\"") >&5
@@ -6253,47 +6241,6 @@ else
 fi;
 test -z "$pic_mode" && pic_mode=default
 
-# Check if we have a version mismatch between libtool.m4 and ltmain.sh.
-#
-# Note:  This should be in AC_LIBTOOL_SETUP, _after_ $ltmain have been defined.
-#        We also should do it _before_ AC_LIBTOOL_LANG_C_CONFIG that actually
-#        calls AC_LIBTOOL_CONFIG and creates libtool.
-#
-echo "$as_me:$LINENO: checking for correct ltmain.sh version" >&5
-echo $ECHO_N "checking for correct ltmain.sh version... $ECHO_C" >&6
-if test -z "$ltmain"; then
-  echo "$as_me:$LINENO: result: no" >&5
-echo "${ECHO_T}no" >&6
-  echo
-  echo "*** Gentoo sanity check failed! ***"
-  echo "*** \$ltmain is not defined, please check the patch for consistency! ***"
-  echo
-  exit 1
-fi
-gentoo_lt_version="1.5.18"
-gentoo_ltmain_version=`grep '^[:space:]*VERSION=' $ltmain | sed -e 's|^[:space:]*VERSION=||'`
-if test "$gentoo_lt_version" != "$gentoo_ltmain_version"; then
-  echo "$as_me:$LINENO: result: no" >&5
-echo "${ECHO_T}no" >&6
-  echo
-  echo "*** Gentoo sanity check failed! ***"
-  echo "*** libtool.m4 and ltmain.sh have a version mismatch! ***"
-  echo "*** (libtool.m4 = $gentoo_lt_version, ltmain.sh = $gentoo_ltmain_version) ***"
-  echo
-  echo "Please run:"
-  echo
-  echo "  libtoolize --copy --force"
-  echo
-  echo "if appropriate, please contact the maintainer of this"
-  echo "package (or your distribution) for help."
-  echo
-  exit 1
-else
-  echo "$as_me:$LINENO: result: yes" >&5
-echo "${ECHO_T}yes" >&6
-fi
-
-
 # Use C for the default configuration in the libtool script
 tagname=
 lt_save_CC="$CC"
@@ -6429,11 +6376,11 @@ else
    -e 's:.*FLAGS}? :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:6432: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:6379: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:6436: \$? = $ac_status" >&5
+   echo "$as_me:6383: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -6691,11 +6638,11 @@ else
    -e 's:.*FLAGS}? :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:6694: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:6641: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:6698: \$? = $ac_status" >&5
+   echo "$as_me:6645: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -6753,11 +6700,11 @@ else
    -e 's:.*FLAGS}? :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:6756: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:6703: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>out/conftest.err)
    ac_status=$?
    cat out/conftest.err >&5
-   echo "$as_me:6760: \$? = $ac_status" >&5
+   echo "$as_me:6707: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s out/conftest2.$ac_objext
    then
      # The compiler can only warn and ignore the option if not recognized
@@ -7937,30 +7884,6 @@ cygwin* | mingw* | pw32*)
     esac
     ;;
 
-  linux*)
-    if $LD --help 2>&1 | egrep ': supported targets:.* elf' > /dev/null; then
-      archive_cmds='$CC -shared $libobjs $deplibs $compiler_flags ${wl}-soname $wl$soname -o $lib'
-      supports_anon_versioning=no
-      case `$LD -v 2>/dev/null` in
-        *\ 01.* | *\ 2.[0-9].* | *\ 2.10.*) ;; # catch versions < 2.11
-        *\ 2.11.93.0.2\ *) supports_anon_versioning=yes ;; # RH7.3 ...
-        *\ 2.11.92.0.12\ *) supports_anon_versioning=yes ;; # Mandrake 8.2 ...
-        *\ 2.11.*) ;; # other 2.11 versions
-        *) supports_anon_versioning=yes ;;
-      esac
-      if test $supports_anon_versioning = yes; then
-        archive_expsym_cmds='$echo "{ global:" > $output_objdir/$libname.ver~
-cat $export_symbols | sed -e "s/\(.*\)/\1;/" >> $output_objdir/$libname.ver~
-$echo "local: *; };" >> $output_objdir/$libname.ver~
-        $CC -shared $libobjs $deplibs $compiler_flags ${wl}-soname $wl$soname ${wl}-version-script ${wl}$output_objdir/$libname.ver -o $lib'
-      else
-        $archive_expsym_cmds="$archive_cmds"
-      fi
-    else
-      ld_shlibs=no
-    fi
-    ;;
-
   *)
     library_names_spec='${libname}`echo ${release} | $SED -e 's/[.]/-/g'`${versuffix}${shared_ext} $libname.lib'
     ;;
@@ -8165,13 +8088,6 @@ linux*)
     sys_lib_dlsearch_path_spec="/lib /usr/lib $lt_ld_extra"
   fi
 
-  case $host_cpu:$lt_cv_cc_64bit_output in
-  powerpc64:yes | s390x:yes | sparc64:yes | x86_64:yes)
-    sys_lib_dlsearch_path_spec="/lib64 /usr/lib64 /usr/X11R6/lib64"
-    sys_lib_search_path_spec="/lib64 /usr/lib64 /usr/local/lib64 /usr/X11R6/lib64"
-    ;;
-  esac
-
   # We used to test for /lib/ld.so.1 and disable shared libraries on
   # powerpc, because MkLinux only supported shared libraries with the
   # GNU dynamic linker.  Since this was broken with cross compilers,
@@ -8179,30 +8095,6 @@ linux*)
   # people can always --disable-shared, the test was removed, and we
   # assume the GNU/Linux dynamic linker is in use.
   dynamic_linker='GNU/Linux ld.so'
-
-  # Find out which ABI we are using (multilib Linux x86_64 hack).
-  libsuff=
-  case "$host_cpu" in
-  x86_64*)
-    echo '#line 8187 "configure"' > conftest.$ac_ext
-    if { (eval echo "$as_me:$LINENO: \"$ac_compile\"") >&5
-  (eval $ac_compile) 2>&5
-  ac_status=$?
-  echo "$as_me:$LINENO: \$? = $ac_status" >&5
-  (exit $ac_status); }; then
-      case `/usr/bin/file conftest.$ac_objext` in
-      *64-bit*)
-        libsuff=64
-        ;;
-      esac
-    fi
-    rm -rf conftest*
-    ;;
-  *)
-    ;;
-  esac
-  sys_lib_dlsearch_path_spec="/lib${libsuff} /usr/lib${libsuff}"
-  sys_lib_search_path_spec="/lib${libsuff} /usr/lib${libsuff} /usr/local/lib${libsuff}"
   ;;
 
 knetbsd*-gnu)
@@ -9048,7 +8940,7 @@ else
   lt_dlunknown=0; lt_dlno_uscore=1; lt_dlneed_uscore=2
   lt_status=$lt_dlunknown
   cat > conftest.$ac_ext <<EOF
-#line 9051 "configure"
+#line 8943 "configure"
 #include "confdefs.h"
 
 #if HAVE_DLFCN_H
@@ -9146,7 +9038,7 @@ else
   lt_dlunknown=0; lt_dlno_uscore=1; lt_dlneed_uscore=2
   lt_status=$lt_dlunknown
   cat > conftest.$ac_ext <<EOF
-#line 9149 "configure"
+#line 9041 "configure"
 #include "confdefs.h"
 
 #if HAVE_DLFCN_H
@@ -11394,11 +11286,11 @@ else
    -e 's:.*FLAGS}? :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:11397: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:11289: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:11401: \$? = $ac_status" >&5
+   echo "$as_me:11293: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -11456,11 +11348,11 @@ else
    -e 's:.*FLAGS}? :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:11459: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:11351: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>out/conftest.err)
    ac_status=$?
    cat out/conftest.err >&5
-   echo "$as_me:11463: \$? = $ac_status" >&5
+   echo "$as_me:11355: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s out/conftest2.$ac_objext
    then
      # The compiler can only warn and ignore the option if not recognized
@@ -11769,30 +11661,6 @@ cygwin* | mingw* | pw32*)
     esac
     ;;
 
-  linux*)
-    if $LD --help 2>&1 | egrep ': supported targets:.* elf' > /dev/null; then
-      archive_cmds='$CC -shared $libobjs $deplibs $compiler_flags ${wl}-soname $wl$soname -o $lib'
-      supports_anon_versioning=no
-      case `$LD -v 2>/dev/null` in
-        *\ 01.* | *\ 2.[0-9].* | *\ 2.10.*) ;; # catch versions < 2.11
-        *\ 2.11.93.0.2\ *) supports_anon_versioning=yes ;; # RH7.3 ...
-        *\ 2.11.92.0.12\ *) supports_anon_versioning=yes ;; # Mandrake 8.2 ...
-        *\ 2.11.*) ;; # other 2.11 versions
-        *) supports_anon_versioning=yes ;;
-      esac
-      if test $supports_anon_versioning = yes; then
-        archive_expsym_cmds='$echo "{ global:" > $output_objdir/$libname.ver~
-cat $export_symbols | sed -e "s/\(.*\)/\1;/" >> $output_objdir/$libname.ver~
-$echo "local: *; };" >> $output_objdir/$libname.ver~
-        $CC -shared $libobjs $deplibs $compiler_flags ${wl}-soname $wl$soname ${wl}-version-script ${wl}$output_objdir/$libname.ver -o $lib'
-      else
-        $archive_expsym_cmds="$archive_cmds"
-      fi
-    else
-      ld_shlibs=no
-    fi
-    ;;
-
   *)
     library_names_spec='${libname}`echo ${release} | $SED -e 's/[.]/-/g'`${versuffix}${shared_ext} $libname.lib'
     ;;
@@ -11997,13 +11865,6 @@ linux*)
     sys_lib_dlsearch_path_spec="/lib /usr/lib $lt_ld_extra"
   fi
 
-  case $host_cpu:$lt_cv_cc_64bit_output in
-  powerpc64:yes | s390x:yes | sparc64:yes | x86_64:yes)
-    sys_lib_dlsearch_path_spec="/lib64 /usr/lib64 /usr/X11R6/lib64"
-    sys_lib_search_path_spec="/lib64 /usr/lib64 /usr/local/lib64 /usr/X11R6/lib64"
-    ;;
-  esac
-
   # We used to test for /lib/ld.so.1 and disable shared libraries on
   # powerpc, because MkLinux only supported shared libraries with the
   # GNU dynamic linker.  Since this was broken with cross compilers,
@@ -12011,30 +11872,6 @@ linux*)
   # people can always --disable-shared, the test was removed, and we
   # assume the GNU/Linux dynamic linker is in use.
   dynamic_linker='GNU/Linux ld.so'
-
-  # Find out which ABI we are using (multilib Linux x86_64 hack).
-  libsuff=
-  case "$host_cpu" in
-  x86_64*)
-    echo '#line 12019 "configure"' > conftest.$ac_ext
-    if { (eval echo "$as_me:$LINENO: \"$ac_compile\"") >&5
-  (eval $ac_compile) 2>&5
-  ac_status=$?
-  echo "$as_me:$LINENO: \$? = $ac_status" >&5
-  (exit $ac_status); }; then
-      case `/usr/bin/file conftest.$ac_objext` in
-      *64-bit*)
-        libsuff=64
-        ;;
-      esac
-    fi
-    rm -rf conftest*
-    ;;
-  *)
-    ;;
-  esac
-  sys_lib_dlsearch_path_spec="/lib${libsuff} /usr/lib${libsuff}"
-  sys_lib_search_path_spec="/lib${libsuff} /usr/lib${libsuff} /usr/local/lib${libsuff}"
   ;;
 
 knetbsd*-gnu)
@@ -12880,7 +12717,7 @@ else
   lt_dlunknown=0; lt_dlno_uscore=1; lt_dlneed_uscore=2
   lt_status=$lt_dlunknown
   cat > conftest.$ac_ext <<EOF
-#line 12883 "configure"
+#line 12720 "configure"
 #include "confdefs.h"
 
 #if HAVE_DLFCN_H
@@ -12978,7 +12815,7 @@ else
   lt_dlunknown=0; lt_dlno_uscore=1; lt_dlneed_uscore=2
   lt_status=$lt_dlunknown
   cat > conftest.$ac_ext <<EOF
-#line 12981 "configure"
+#line 12818 "configure"
 #include "confdefs.h"
 
 #if HAVE_DLFCN_H
@@ -13863,11 +13700,11 @@ else
    -e 's:.*FLAGS}? :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:13866: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:13703: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:13870: \$? = $ac_status" >&5
+   echo "$as_me:13707: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -13925,11 +13762,11 @@ else
    -e 's:.*FLAGS}? :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:13928: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:13765: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>out/conftest.err)
    ac_status=$?
    cat out/conftest.err >&5
-   echo "$as_me:13932: \$? = $ac_status" >&5
+   echo "$as_me:13769: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s out/conftest2.$ac_objext
    then
      # The compiler can only warn and ignore the option if not recognized
@@ -15089,30 +14926,6 @@ cygwin* | mingw* | pw32*)
     esac
     ;;
 
-  linux*)
-    if $LD --help 2>&1 | egrep ': supported targets:.* elf' > /dev/null; then
-      archive_cmds='$CC -shared $libobjs $deplibs $compiler_flags ${wl}-soname $wl$soname -o $lib'
-      supports_anon_versioning=no
-      case `$LD -v 2>/dev/null` in
-        *\ 01.* | *\ 2.[0-9].* | *\ 2.10.*) ;; # catch versions < 2.11
-        *\ 2.11.93.0.2\ *) supports_anon_versioning=yes ;; # RH7.3 ...
-        *\ 2.11.92.0.12\ *) supports_anon_versioning=yes ;; # Mandrake 8.2 ...
-        *\ 2.11.*) ;; # other 2.11 versions
-        *) supports_anon_versioning=yes ;;
-      esac
-      if test $supports_anon_versioning = yes; then
-        archive_expsym_cmds='$echo "{ global:" > $output_objdir/$libname.ver~
-cat $export_symbols | sed -e "s/\(.*\)/\1;/" >> $output_objdir/$libname.ver~
-$echo "local: *; };" >> $output_objdir/$libname.ver~
-        $CC -shared $libobjs $deplibs $compiler_flags ${wl}-soname $wl$soname ${wl}-version-script ${wl}$output_objdir/$libname.ver -o $lib'
-      else
-        $archive_expsym_cmds="$archive_cmds"
-      fi
-    else
-      ld_shlibs=no
-    fi
-    ;;
-
   *)
     library_names_spec='${libname}`echo ${release} | $SED -e 's/[.]/-/g'`${versuffix}${shared_ext} $libname.lib'
     ;;
@@ -15317,13 +15130,6 @@ linux*)
     sys_lib_dlsearch_path_spec="/lib /usr/lib $lt_ld_extra"
   fi
 
-  case $host_cpu:$lt_cv_cc_64bit_output in
-  powerpc64:yes | s390x:yes | sparc64:yes | x86_64:yes)
-    sys_lib_dlsearch_path_spec="/lib64 /usr/lib64 /usr/X11R6/lib64"
-    sys_lib_search_path_spec="/lib64 /usr/lib64 /usr/local/lib64 /usr/X11R6/lib64"
-    ;;
-  esac
-
   # We used to test for /lib/ld.so.1 and disable shared libraries on
   # powerpc, because MkLinux only supported shared libraries with the
   # GNU dynamic linker.  Since this was broken with cross compilers,
@@ -15331,30 +15137,6 @@ linux*)
   # people can always --disable-shared, the test was removed, and we
   # assume the GNU/Linux dynamic linker is in use.
   dynamic_linker='GNU/Linux ld.so'
-
-  # Find out which ABI we are using (multilib Linux x86_64 hack).
-  libsuff=
-  case "$host_cpu" in
-  x86_64*)
-    echo '#line 15339 "configure"' > conftest.$ac_ext
-    if { (eval echo "$as_me:$LINENO: \"$ac_compile\"") >&5
-  (eval $ac_compile) 2>&5
-  ac_status=$?
-  echo "$as_me:$LINENO: \$? = $ac_status" >&5
-  (exit $ac_status); }; then
-      case `/usr/bin/file conftest.$ac_objext` in
-      *64-bit*)
-        libsuff=64
-        ;;
-      esac
-    fi
-    rm -rf conftest*
-    ;;
-  *)
-    ;;
-  esac
-  sys_lib_dlsearch_path_spec="/lib${libsuff} /usr/lib${libsuff}"
-  sys_lib_search_path_spec="/lib${libsuff} /usr/lib${libsuff} /usr/local/lib${libsuff}"
   ;;
 
 knetbsd*-gnu)
@@ -16102,11 +15884,11 @@ else
    -e 's:.*FLAGS}? :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:16105: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:15887: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:16109: \$? = $ac_status" >&5
+   echo "$as_me:15891: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -16364,11 +16146,11 @@ else
    -e 's:.*FLAGS}? :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:16367: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:16149: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:16371: \$? = $ac_status" >&5
+   echo "$as_me:16153: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -16426,11 +16208,11 @@ else
    -e 's:.*FLAGS}? :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:16429: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:16211: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>out/conftest.err)
    ac_status=$?
    cat out/conftest.err >&5
-   echo "$as_me:16433: \$? = $ac_status" >&5
+   echo "$as_me:16215: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s out/conftest2.$ac_objext
    then
      # The compiler can only warn and ignore the option if not recognized
@@ -17610,30 +17392,6 @@ cygwin* | mingw* | pw32*)
     esac
     ;;
 
-  linux*)
-    if $LD --help 2>&1 | egrep ': supported targets:.* elf' > /dev/null; then
-      archive_cmds='$CC -shared $libobjs $deplibs $compiler_flags ${wl}-soname $wl$soname -o $lib'
-      supports_anon_versioning=no
-      case `$LD -v 2>/dev/null` in
-        *\ 01.* | *\ 2.[0-9].* | *\ 2.10.*) ;; # catch versions < 2.11
-        *\ 2.11.93.0.2\ *) supports_anon_versioning=yes ;; # RH7.3 ...
-        *\ 2.11.92.0.12\ *) supports_anon_versioning=yes ;; # Mandrake 8.2 ...
-        *\ 2.11.*) ;; # other 2.11 versions
-        *) supports_anon_versioning=yes ;;
-      esac
-      if test $supports_anon_versioning = yes; then
-        archive_expsym_cmds='$echo "{ global:" > $output_objdir/$libname.ver~
-cat $export_symbols | sed -e "s/\(.*\)/\1;/" >> $output_objdir/$libname.ver~
-$echo "local: *; };" >> $output_objdir/$libname.ver~
-        $CC -shared $libobjs $deplibs $compiler_flags ${wl}-soname $wl$soname ${wl}-version-script ${wl}$output_objdir/$libname.ver -o $lib'
-      else
-        $archive_expsym_cmds="$archive_cmds"
-      fi
-    else
-      ld_shlibs=no
-    fi
-    ;;
-
   *)
     library_names_spec='${libname}`echo ${release} | $SED -e 's/[.]/-/g'`${versuffix}${shared_ext} $libname.lib'
     ;;
@@ -17838,13 +17596,6 @@ linux*)
     sys_lib_dlsearch_path_spec="/lib /usr/lib $lt_ld_extra"
   fi
 
-  case $host_cpu:$lt_cv_cc_64bit_output in
-  powerpc64:yes | s390x:yes | sparc64:yes | x86_64:yes)
-    sys_lib_dlsearch_path_spec="/lib64 /usr/lib64 /usr/X11R6/lib64"
-    sys_lib_search_path_spec="/lib64 /usr/lib64 /usr/local/lib64 /usr/X11R6/lib64"
-    ;;
-  esac
-
   # We used to test for /lib/ld.so.1 and disable shared libraries on
   # powerpc, because MkLinux only supported shared libraries with the
   # GNU dynamic linker.  Since this was broken with cross compilers,
@@ -17852,30 +17603,6 @@ linux*)
   # people can always --disable-shared, the test was removed, and we
   # assume the GNU/Linux dynamic linker is in use.
   dynamic_linker='GNU/Linux ld.so'
-
-  # Find out which ABI we are using (multilib Linux x86_64 hack).
-  libsuff=
-  case "$host_cpu" in
-  x86_64*)
-    echo '#line 17860 "configure"' > conftest.$ac_ext
-    if { (eval echo "$as_me:$LINENO: \"$ac_compile\"") >&5
-  (eval $ac_compile) 2>&5
-  ac_status=$?
-  echo "$as_me:$LINENO: \$? = $ac_status" >&5
-  (exit $ac_status); }; then
-      case `/usr/bin/file conftest.$ac_objext` in
-      *64-bit*)
-        libsuff=64
-        ;;
-      esac
-    fi
-    rm -rf conftest*
-    ;;
-  *)
-    ;;
-  esac
-  sys_lib_dlsearch_path_spec="/lib${libsuff} /usr/lib${libsuff}"
-  sys_lib_search_path_spec="/lib${libsuff} /usr/lib${libsuff} /usr/local/lib${libsuff}"
   ;;
 
 knetbsd*-gnu)
@@ -18721,7 +18448,7 @@ else
   lt_dlunknown=0; lt_dlno_uscore=1; lt_dlneed_uscore=2
   lt_status=$lt_dlunknown
   cat > conftest.$ac_ext <<EOF
-#line 18724 "configure"
+#line 18451 "configure"
 #include "confdefs.h"
 
 #if HAVE_DLFCN_H
@@ -18819,7 +18546,7 @@ else
   lt_dlunknown=0; lt_dlno_uscore=1; lt_dlneed_uscore=2
   lt_status=$lt_dlunknown
   cat > conftest.$ac_ext <<EOF
-#line 18822 "configure"
+#line 18549 "configure"
 #include "confdefs.h"
 
 #if HAVE_DLFCN_H
@@ -19875,7 +19602,7 @@ ac_compile='$CXX -c $CXXFLAGS $CPPFLAGS conftest.$ac_ext >&5'
 ac_link='$CXX -o conftest$ac_exeext $CXXFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $LIBS >&5'
 ac_compiler_gnu=$ac_cv_cxx_compiler_gnu
 if test -n "$ac_tool_prefix"; then
-  for ac_prog in $CCC HPC_CXX_LIST
+  for ac_prog in $CCC CC  cxx  icpc ecpc icc ecc  g++ gcc c++
   do
     # Extract the first word of "$ac_tool_prefix$ac_prog", so it can be a program name with args.
 set dummy $ac_tool_prefix$ac_prog; ac_word=$2
@@ -19917,7 +19644,7 @@ fi
 fi
 if test -z "$CXX"; then
   ac_ct_CXX=$CXX
-  for ac_prog in $CCC HPC_CXX_LIST
+  for ac_prog in $CCC CC  cxx  icpc ecpc icc ecc  g++ gcc c++
 do
   # Extract the first word of "$ac_prog", so it can be a program name with args.
 set dummy $ac_prog; ac_word=$2
@@ -20339,7 +20066,7 @@ ac_compile='$CC -c $CFLAGS $CPPFLAGS conftest.$ac_ext >&5'
 ac_link='$CC -o conftest$ac_exeext $CFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $LIBS >&5'
 ac_compiler_gnu=$ac_cv_c_compiler_gnu
 if test -n "$ac_tool_prefix"; then
-  for ac_prog in HPC_CC_LIST
+  for ac_prog in cc  icc ecc  gcc
   do
     # Extract the first word of "$ac_tool_prefix$ac_prog", so it can be a program name with args.
 set dummy $ac_tool_prefix$ac_prog; ac_word=$2
@@ -20381,7 +20108,7 @@ fi
 fi
 if test -z "$CC"; then
   ac_ct_CC=$CC
-  for ac_prog in HPC_CC_LIST
+  for ac_prog in cc  icc ecc  gcc
 do
   # Extract the first word of "$ac_prog", so it can be a program name with args.
 set dummy $ac_prog; ac_word=$2
@@ -21745,7 +21472,82 @@ fi
 
 done
 
-HPC_CHECK_CXX_STDC_HEADERS
+echo "$as_me:$LINENO: checking whether ${CXX-CC} supports C++ style C headers (<cheader>)" >&5
+echo $ECHO_N "checking whether ${CXX-CC} supports C++ style C headers (<cheader>)... $ECHO_C" >&6
+if test "${ac_cv_check_cxx_ctd_cheaders+set}" = set; then
+  echo $ECHO_N "(cached) $ECHO_C" >&6
+else
+  cat >conftest.$ac_ext <<_ACEOF
+/* confdefs.h.  */
+_ACEOF
+cat confdefs.h >>conftest.$ac_ext
+cat >>conftest.$ac_ext <<_ACEOF
+/* end confdefs.h.  */
+
+#include <cstdlib>
+#include <cstddef>
+#include <cstdio>
+#include <cassert>
+#include <cerrno>
+
+#include <cstdarg>
+#include <cstring>
+#include <cmath>
+#include <csetjmp>
+#include <csignal>
+
+#include <cctype>
+#include <climits>
+#include <cfloat>
+#include <clocale>
+
+int
+main ()
+{
+std::strcmp("fee fi", "fo fum");
+  ;
+  return 0;
+}
+_ACEOF
+rm -f conftest.$ac_objext
+if { (eval echo "$as_me:$LINENO: \"$ac_compile\"") >&5
+  (eval $ac_compile) 2>conftest.er1
+  ac_status=$?
+  grep -v '^ *+' conftest.er1 >conftest.err
+  rm -f conftest.er1
+  cat conftest.err >&5
+  echo "$as_me:$LINENO: \$? = $ac_status" >&5
+  (exit $ac_status); } &&
+	 { ac_try='test -z "$ac_cxx_werror_flag"
+			 || test ! -s conftest.err'
+  { (eval echo "$as_me:$LINENO: \"$ac_try\"") >&5
+  (eval $ac_try) 2>&5
+  ac_status=$?
+  echo "$as_me:$LINENO: \$? = $ac_status" >&5
+  (exit $ac_status); }; } &&
+	 { ac_try='test -s conftest.$ac_objext'
+  { (eval echo "$as_me:$LINENO: \"$ac_try\"") >&5
+  (eval $ac_try) 2>&5
+  ac_status=$?
+  echo "$as_me:$LINENO: \$? = $ac_status" >&5
+  (exit $ac_status); }; }; then
+  ac_cv_check_cxx_ctd_cheaders="yes"
+else
+  echo "$as_me: failed program was:" >&5
+sed 's/^/| /' conftest.$ac_ext >&5
+
+ac_cv_check_cxx_ctd_cheaders="no"
+fi
+rm -f conftest.err conftest.$ac_objext conftest.$ac_ext
+fi
+echo "$as_me:$LINENO: result: $ac_cv_check_cxx_ctd_cheaders" >&5
+echo "${ECHO_T}$ac_cv_check_cxx_ctd_cheaders" >&6
+   if test "$ac_cv_check_cxx_ctd_cheaders" = "no" ; then
+     cat >>confdefs.h <<\_ACEOF
+#define NO_STD_CHEADERS 1
+_ACEOF
+
+   fi
 
 # Check for typedefs, structures, and compiler characteristics.
 # -none thus far-
@@ -22010,7 +21812,19 @@ fi
 # $host: $host_cpu-$host_vendor-$host_os
 #----------------------------------------------------------------------------
 
-HPC_DEF_CXXCMP
+MYcxxcmp()
+   {
+     mycxx=$1
+     shift
+
+     while test $# -ge 1 ; do
+       if ( echo "$mycxx" | grep "$1\$" >/dev/null 2>&1 ); then
+         return 0
+       fi
+       shift
+     done
+     return 1
+   }
 
 #-------------------------------------------------
 # Host-specific settings for HPCToolkit
@@ -22048,7 +21862,7 @@ fi
 
 case ${host} in
   alpha*-*-linux* | alpha*-*-osf*)
-    if HPCcxxcmp(cxx); then
+    if MYcxxcmp $CXX cxx; then
       # Compaq compiler: Before using libtool, we had used local
       # repositories and included template definitions in respective
       # archives.  However, libtool doesn't take kindly to including
@@ -22069,19 +21883,19 @@ case ${host} in
     ;;
 
   i386*-*-linux* | i686*-*-linux* | x86_64*-*-linux* | ia64*-*-linux*)
-    if HPCcxxcmp(icpc ecpc icc ecc) ; then
+    if MYcxxcmp $CXX icpc ecpc icc ecc ; then
       :
     fi
     ;;
 
   mips*-*-irix*)
-    if HPCcxxcmp(CC) ; then
+    if MYcxxcmp $CXX CC ; then
       # SGI MIPSpro
       HOST_CFLAGS="-64"
       HOST_CXXFLAGS="-64 -LANG:std"
       HOST_AR="$CXX $CXXFLAGS ${HOST_CXXFLAGS} -ar -o"
     fi
-    if HPCcxxcmp(g++ gcc c++) ; then
+    if MYcxxcmp $CXX g++ gcc c++ ; then
       HOST_CFLAGS="-mabi=64"
       HOST_CXXFLAGS="-mabi=64"
     fi
@@ -22090,7 +21904,7 @@ case ${host} in
     ;;
 
   sparc*-*-solaris*)
-    if HPCcxxcmp(CC); then
+    if MYcxxcmp $CXX CC; then
       # Sun Forte/ONE
       HOST_AR="$CXX $CXXFLAGS -xar -o"
       if test "$OPT_ENABLE_DEVELOP" = "yes" ; then
