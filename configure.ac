@@ -53,6 +53,7 @@ include(config/hpc-cxxutils.m4)
 
 #----------------------------------------------------------------------------
 # Initialization: 
+# Careful: Automake 1.9.6 would include defs of hpc-cxxutils macros.
 # Require libtool 1.5.10 and automake 1.9.3 to 1) correctly link
 #   templates with MIPSPro compiler on IRIX64, 2) link on alpha-Tru64
 #   and 3) fix missing .so problem on Linux.
@@ -64,7 +65,7 @@ include(config/hpc-cxxutils.m4)
 #    correctly
 #----------------------------------------------------------------------------
 
-AC_INIT([HPCToolkit], [4.1.1], [hpc@cs.rice.edu], [HPCToolkit])
+AC_INIT([HPCToolkit], [4.1.2], [hpc@cs.rice.edu], [HPCToolkit])
 AC_CONFIG_SRCDIR([src/include/HPCToolkitVersionInfo.h])
 AC_CONFIG_AUX_DIR([config])
 

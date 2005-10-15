@@ -179,6 +179,12 @@ Like bloop, it it can be used as a 'cross-tool'.
 4. Revision History
 --------------------
 
+HPCToolkit Version 4.1.2: [2005.08.15]
+--------------------
+- Merge 'lump' (load module dumper) into source tree.  Build when
+  configured with --enable-devtools.
+- Automake 1.9.5; Libtool 1.5.18 (still Autoconf 2.59)
+
 HPCToolkit Version 4.1.1: [2005.04.21]
 --------------------
 - Add support for Group scopes
