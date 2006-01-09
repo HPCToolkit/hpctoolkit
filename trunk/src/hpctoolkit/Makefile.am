@@ -63,6 +63,7 @@ SUBDIRS = \
 	bloop \
 	filters \
 	hpcquick \
+	hpcprof \
 	hpcview \
 	misc \
 	ptran \

@@ -75,7 +75,7 @@
 # Assumes includer sets MYCXXFLAGS and MYCFLAGS
 
 
-SOURCES = $(libhpcrun_la_SOURCES) $(hpcprof_SOURCES) $(hpcrun_SOURCES) $(libhpcrun_static_o_SOURCES)
+SOURCES = $(libhpcrun_la_SOURCES) $(hpcrun_SOURCES) $(libhpcrun_static_o_SOURCES)
 
 srcdir = @srcdir@
 top_srcdir = @top_srcdir@
@@ -102,8 +102,7 @@ host_triplet = @host@
 DIST_COMMON = README $(srcdir)/Makefile.am $(srcdir)/Makefile.in \
 	$(top_srcdir)/src/Makeinclude.config \
 	$(top_srcdir)/src/Makeinclude.rules
-bin_PROGRAMS = hpcrun$(EXEEXT) libhpcrun-static.o$(EXEEXT) \
-	hpcprof$(EXEEXT)
+bin_PROGRAMS = hpcrun$(EXEEXT) libhpcrun-static.o$(EXEEXT)
 subdir = src/hpctoolkit/hpcrun
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/config/hpc-cxxutils.m4 \
@@ -131,23 +130,18 @@ am_libhpcrun_la_OBJECTS = $(am__objects_1)
 libhpcrun_la_OBJECTS = $(am_libhpcrun_la_OBJECTS)
 binPROGRAMS_INSTALL = $(INSTALL_PROGRAM)
 PROGRAMS = $(bin_PROGRAMS)
-am__objects_2 = hpcprof-hpcprof.$(OBJEXT) hpcprof-summary.$(OBJEXT) \
-	hpcprof-loadmodule.$(OBJEXT) hpcprof-proffile.$(OBJEXT)
-am_hpcprof_OBJECTS = $(am__objects_2)
-hpcprof_OBJECTS = $(am_hpcprof_OBJECTS)
-hpcprof_DEPENDENCIES = $(am__DEPENDENCIES_2)
-am__objects_3 = hpcrun-hpcrun.$(OBJEXT) hpcrun-hpcpapi.$(OBJEXT) \
+am__objects_2 = hpcrun-hpcrun.$(OBJEXT) hpcrun-hpcpapi.$(OBJEXT) \
 	hpcrun-dlpapi.$(OBJEXT)
-am_hpcrun_OBJECTS = $(am__objects_3)
+am_hpcrun_OBJECTS = $(am__objects_2)
 hpcrun_OBJECTS = $(am_hpcrun_OBJECTS)
 am__DEPENDENCIES_3 = $(top_builddir)/src/lib/support/libHPCsupport.la
 am__DEPENDENCIES_4 = $(am__DEPENDENCIES_3)
 hpcrun_DEPENDENCIES = $(am__DEPENDENCIES_4)
-am__objects_4 = libhpcrun_static_o-monitor_static.$(OBJEXT) \
+am__objects_3 = libhpcrun_static_o-monitor_static.$(OBJEXT) \
 	libhpcrun_static_o-monitor.$(OBJEXT) \
 	libhpcrun_static_o-hpcpapi.$(OBJEXT) \
 	libhpcrun_static_o-rtmap.$(OBJEXT)
-am_libhpcrun_static_o_OBJECTS = $(am__objects_4)
+am_libhpcrun_static_o_OBJECTS = $(am__objects_3)
 libhpcrun_static_o_OBJECTS = $(am_libhpcrun_static_o_OBJECTS)
 libhpcrun_static_o_DEPENDENCIES = $(am__DEPENDENCIES_2)
 DEFAULT_INCLUDES = -I. -I$(srcdir)
@@ -169,10 +163,10 @@ LTCXXCOMPILE = $(LIBTOOL) --tag=CXX --mode=compile $(CXX) $(DEFS) \
 CXXLD = $(CXX)
 CXXLINK = $(LIBTOOL) --tag=CXX --mode=link $(CXXLD) $(AM_CXXFLAGS) \
 	$(CXXFLAGS) $(AM_LDFLAGS) $(LDFLAGS) -o $@
-SOURCES = $(libhpcrun_la_SOURCES) $(hpcprof_SOURCES) $(hpcrun_SOURCES) \
+SOURCES = $(libhpcrun_la_SOURCES) $(hpcrun_SOURCES) \
 	$(libhpcrun_static_o_SOURCES)
-DIST_SOURCES = $(libhpcrun_la_SOURCES) $(hpcprof_SOURCES) \
-	$(hpcrun_SOURCES) $(libhpcrun_static_o_SOURCES)
+DIST_SOURCES = $(libhpcrun_la_SOURCES) $(hpcrun_SOURCES) \
+	$(libhpcrun_static_o_SOURCES)
 ETAGS = etags
 CTAGS = ctags
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
@@ -358,12 +352,6 @@ MYSOURCES_LIBHPCRUN_STATIC = \
 	hpcpapi.h hpcpapi.c \
 	rtmap.h rtmap.c 
 
-MYSOURCES_HPCPROF = \
-	hpcprof.h hpcprof.cc \
-	summary.h summary.cc \
-	loadmodule.h loadmodule.cc \
-	proffile.h proffile.cc 
-
 MYIFLAGS_PAPI = \
 	-DHPC_PAPI_LIBSO=\"@OPT_PAPI_LIBSO@\"   \
 	-DHPC_PAPI_LIBPATH=\"@OPT_PAPI_LIBPATH@\"
@@ -372,8 +360,6 @@ MYCFLAGS = @HOST_CFLAGS@   $(HPC_IFLAGS) @OPT_PAPI_IFLAGS@
 MYCXXFLAGS = @HOST_CXXFLAGS@ $(HPC_IFLAGS) @OPT_PAPI_IFLAGS@
 MYCFLAGS_HPCRUN = $(MYCFLAGS)   $(MYIFLAGS_PAPI)
 MYCXXFLAGS_HPCRUN = $(MYCXXFLAGS) $(MYIFLAGS_PAPI)
-MYCFLAGS_HPCPROF = $(MYCFLAGS)   @GNUBINUTILS_IFLAGS@
-MYCXXFLAGS_HPCPROF = $(MYCXXFLAGS) @GNUBINUTILS_IFLAGS@
 MYLDFLAGS_HPCRUN = \
 	@HOST_CXXFLAGS@ -R @OPT_PAPI_LIBPATH@
 
@@ -382,9 +368,6 @@ MYLDFLAGS_LIBHPCRUN_PRELOAD = \
 
 MYLDFLAGS_LIBHPCRUN_STATIC = \
 	@HOST_CXXFLAGS@ -all-static
-
-MYLDFLAGS_HPCPROF = \
-	@HOST_CXXFLAGS@
 
 MYLDADD_HPCRUN = \
 	$(HPC_LIBSUPPORT) \
@@ -398,11 +381,6 @@ MYLDADD_LIBHPCRUN_PRELOAD = \
 MYLDADD_LIBHPCRUN_STATIC = \
 	$(HPC_LIBHPCFILE) \
 	@OPT_PAPI_LIBA@
-
-MYLDADD_HPCPROF = \
-	$(HPC_LIBHPCFILE) \
-	@HOST_LIBTREPOSITORY@ \
-	@GNUBINUTILS_LDFLAGS@
 
 MYCLEAN = @HOST_LIBTREPOSITORY@
 MYINSTALLDIR = $(DESTDIR)$(prefix)
@@ -425,11 +403,14 @@ libhpcrun_static_o_CFLAGS = $(MYCFLAGS)
 libhpcrun_static_o_CXXFLAGS = $(MYCXXFLAGS)
 libhpcrun_static_o_LDFLAGS = $(MYLDFLAGS_LIBHPCRUN_STATIC)
 libhpcrun_static_o_LDADD = $(MYLDADD_LIBHPCRUN_STATIC)
-hpcprof_SOURCES = $(MYSOURCES_HPCPROF)
-hpcprof_CFLAGS = $(MYCFLAGS_HPCPROF)
-hpcprof_CXXFLAGS = $(MYCXXFLAGS_HPCPROF)
-hpcprof_LDFLAGS = $(MYLDFLAGS_HPCPROF)
-hpcprof_LDADD = $(MYLDADD_HPCPROF)
+
+# Can We use libtool to get free linking?  It complains.
+#lib_LTLIBRARIES             += libhpcrun-static.o
+#libhpcrun_static_o_SOURCES  = $(MYSOURCES_LIBHPCRUN_STATIC)
+#libhpcrun_static_o_CFLAGS   = $(MYCFLAGS)
+#libhpcrun_static_o_CXXFLAGS = $(MYCXXFLAGS)
+#libhpcrun_static_o_LDFLAGS  = $(MYLDFLAGS_LIBHPCRUN_STATIC)
+#libhpcrun_static_o_LIBADD   = $(MYLDADD_LIBHPCRUN_STATIC)
 MOSTLYCLEANFILES = $(MYCLEAN)
 
 #############################################################################
@@ -546,9 +527,6 @@ clean-binPROGRAMS:
 	  echo " rm -f $$p $$f"; \
 	  rm -f $$p $$f ; \
 	done
-hpcprof$(EXEEXT): $(hpcprof_OBJECTS) $(hpcprof_DEPENDENCIES) 
-	@rm -f hpcprof$(EXEEXT)
-	$(CXXLINK) $(hpcprof_LDFLAGS) $(hpcprof_OBJECTS) $(hpcprof_LDADD) $(LIBS)
 hpcrun$(EXEEXT): $(hpcrun_OBJECTS) $(hpcrun_DEPENDENCIES) 
 	@rm -f hpcrun$(EXEEXT)
 	$(CXXLINK) $(hpcrun_LDFLAGS) $(hpcrun_OBJECTS) $(hpcrun_LDADD) $(LIBS)
@@ -562,10 +540,6 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/hpcprof-hpcprof.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/hpcprof-loadmodule.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/hpcprof-proffile.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/hpcprof-summary.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/hpcrun-dlpapi.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/hpcrun-hpcpapi.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/hpcrun-hpcrun.Po@am__quote@
@@ -717,62 +691,6 @@ libhpcrun_static_o-rtmap.obj: rtmap.c
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='$<' object='$@' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(LTCXXCOMPILE) -c -o $@ $<
-
-hpcprof-hpcprof.o: hpcprof.cc
-@am__fastdepCXX_TRUE@	if $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(hpcprof_CXXFLAGS) $(CXXFLAGS) -MT hpcprof-hpcprof.o -MD -MP -MF "$(DEPDIR)/hpcprof-hpcprof.Tpo" -c -o hpcprof-hpcprof.o `test -f 'hpcprof.cc' || echo '$(srcdir)/'`hpcprof.cc; \
-@am__fastdepCXX_TRUE@	then mv -f "$(DEPDIR)/hpcprof-hpcprof.Tpo" "$(DEPDIR)/hpcprof-hpcprof.Po"; else rm -f "$(DEPDIR)/hpcprof-hpcprof.Tpo"; exit 1; fi
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='hpcprof.cc' object='hpcprof-hpcprof.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(hpcprof_CXXFLAGS) $(CXXFLAGS) -c -o hpcprof-hpcprof.o `test -f 'hpcprof.cc' || echo '$(srcdir)/'`hpcprof.cc
-
-hpcprof-hpcprof.obj: hpcprof.cc
-@am__fastdepCXX_TRUE@	if $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(hpcprof_CXXFLAGS) $(CXXFLAGS) -MT hpcprof-hpcprof.obj -MD -MP -MF "$(DEPDIR)/hpcprof-hpcprof.Tpo" -c -o hpcprof-hpcprof.obj `if test -f 'hpcprof.cc'; then $(CYGPATH_W) 'hpcprof.cc'; else $(CYGPATH_W) '$(srcdir)/hpcprof.cc'; fi`; \
-@am__fastdepCXX_TRUE@	then mv -f "$(DEPDIR)/hpcprof-hpcprof.Tpo" "$(DEPDIR)/hpcprof-hpcprof.Po"; else rm -f "$(DEPDIR)/hpcprof-hpcprof.Tpo"; exit 1; fi
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='hpcprof.cc' object='hpcprof-hpcprof.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(hpcprof_CXXFLAGS) $(CXXFLAGS) -c -o hpcprof-hpcprof.obj `if test -f 'hpcprof.cc'; then $(CYGPATH_W) 'hpcprof.cc'; else $(CYGPATH_W) '$(srcdir)/hpcprof.cc'; fi`
-
-hpcprof-summary.o: summary.cc
-@am__fastdepCXX_TRUE@	if $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(hpcprof_CXXFLAGS) $(CXXFLAGS) -MT hpcprof-summary.o -MD -MP -MF "$(DEPDIR)/hpcprof-summary.Tpo" -c -o hpcprof-summary.o `test -f 'summary.cc' || echo '$(srcdir)/'`summary.cc; \
-@am__fastdepCXX_TRUE@	then mv -f "$(DEPDIR)/hpcprof-summary.Tpo" "$(DEPDIR)/hpcprof-summary.Po"; else rm -f "$(DEPDIR)/hpcprof-summary.Tpo"; exit 1; fi
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='summary.cc' object='hpcprof-summary.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(hpcprof_CXXFLAGS) $(CXXFLAGS) -c -o hpcprof-summary.o `test -f 'summary.cc' || echo '$(srcdir)/'`summary.cc
-
-hpcprof-summary.obj: summary.cc
-@am__fastdepCXX_TRUE@	if $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(hpcprof_CXXFLAGS) $(CXXFLAGS) -MT hpcprof-summary.obj -MD -MP -MF "$(DEPDIR)/hpcprof-summary.Tpo" -c -o hpcprof-summary.obj `if test -f 'summary.cc'; then $(CYGPATH_W) 'summary.cc'; else $(CYGPATH_W) '$(srcdir)/summary.cc'; fi`; \
-@am__fastdepCXX_TRUE@	then mv -f "$(DEPDIR)/hpcprof-summary.Tpo" "$(DEPDIR)/hpcprof-summary.Po"; else rm -f "$(DEPDIR)/hpcprof-summary.Tpo"; exit 1; fi
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='summary.cc' object='hpcprof-summary.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(hpcprof_CXXFLAGS) $(CXXFLAGS) -c -o hpcprof-summary.obj `if test -f 'summary.cc'; then $(CYGPATH_W) 'summary.cc'; else $(CYGPATH_W) '$(srcdir)/summary.cc'; fi`
-
-hpcprof-loadmodule.o: loadmodule.cc
-@am__fastdepCXX_TRUE@	if $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(hpcprof_CXXFLAGS) $(CXXFLAGS) -MT hpcprof-loadmodule.o -MD -MP -MF "$(DEPDIR)/hpcprof-loadmodule.Tpo" -c -o hpcprof-loadmodule.o `test -f 'loadmodule.cc' || echo '$(srcdir)/'`loadmodule.cc; \
-@am__fastdepCXX_TRUE@	then mv -f "$(DEPDIR)/hpcprof-loadmodule.Tpo" "$(DEPDIR)/hpcprof-loadmodule.Po"; else rm -f "$(DEPDIR)/hpcprof-loadmodule.Tpo"; exit 1; fi
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='loadmodule.cc' object='hpcprof-loadmodule.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(hpcprof_CXXFLAGS) $(CXXFLAGS) -c -o hpcprof-loadmodule.o `test -f 'loadmodule.cc' || echo '$(srcdir)/'`loadmodule.cc
-
-hpcprof-loadmodule.obj: loadmodule.cc
-@am__fastdepCXX_TRUE@	if $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(hpcprof_CXXFLAGS) $(CXXFLAGS) -MT hpcprof-loadmodule.obj -MD -MP -MF "$(DEPDIR)/hpcprof-loadmodule.Tpo" -c -o hpcprof-loadmodule.obj `if test -f 'loadmodule.cc'; then $(CYGPATH_W) 'loadmodule.cc'; else $(CYGPATH_W) '$(srcdir)/loadmodule.cc'; fi`; \
-@am__fastdepCXX_TRUE@	then mv -f "$(DEPDIR)/hpcprof-loadmodule.Tpo" "$(DEPDIR)/hpcprof-loadmodule.Po"; else rm -f "$(DEPDIR)/hpcprof-loadmodule.Tpo"; exit 1; fi
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='loadmodule.cc' object='hpcprof-loadmodule.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(hpcprof_CXXFLAGS) $(CXXFLAGS) -c -o hpcprof-loadmodule.obj `if test -f 'loadmodule.cc'; then $(CYGPATH_W) 'loadmodule.cc'; else $(CYGPATH_W) '$(srcdir)/loadmodule.cc'; fi`
-
-hpcprof-proffile.o: proffile.cc
-@am__fastdepCXX_TRUE@	if $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(hpcprof_CXXFLAGS) $(CXXFLAGS) -MT hpcprof-proffile.o -MD -MP -MF "$(DEPDIR)/hpcprof-proffile.Tpo" -c -o hpcprof-proffile.o `test -f 'proffile.cc' || echo '$(srcdir)/'`proffile.cc; \
-@am__fastdepCXX_TRUE@	then mv -f "$(DEPDIR)/hpcprof-proffile.Tpo" "$(DEPDIR)/hpcprof-proffile.Po"; else rm -f "$(DEPDIR)/hpcprof-proffile.Tpo"; exit 1; fi
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='proffile.cc' object='hpcprof-proffile.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(hpcprof_CXXFLAGS) $(CXXFLAGS) -c -o hpcprof-proffile.o `test -f 'proffile.cc' || echo '$(srcdir)/'`proffile.cc
-
-hpcprof-proffile.obj: proffile.cc
-@am__fastdepCXX_TRUE@	if $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(hpcprof_CXXFLAGS) $(CXXFLAGS) -MT hpcprof-proffile.obj -MD -MP -MF "$(DEPDIR)/hpcprof-proffile.Tpo" -c -o hpcprof-proffile.obj `if test -f 'proffile.cc'; then $(CYGPATH_W) 'proffile.cc'; else $(CYGPATH_W) '$(srcdir)/proffile.cc'; fi`; \
-@am__fastdepCXX_TRUE@	then mv -f "$(DEPDIR)/hpcprof-proffile.Tpo" "$(DEPDIR)/hpcprof-proffile.Po"; else rm -f "$(DEPDIR)/hpcprof-proffile.Tpo"; exit 1; fi
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='proffile.cc' object='hpcprof-proffile.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(hpcprof_CXXFLAGS) $(CXXFLAGS) -c -o hpcprof-proffile.obj `if test -f 'proffile.cc'; then $(CYGPATH_W) 'proffile.cc'; else $(CYGPATH_W) '$(srcdir)/proffile.cc'; fi`
 
 hpcrun-hpcrun.o: hpcrun.cc
 @am__fastdepCXX_TRUE@	if $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(hpcrun_CXXFLAGS) $(CXXFLAGS) -MT hpcrun-hpcrun.o -MD -MP -MF "$(DEPDIR)/hpcrun-hpcrun.Tpo" -c -o hpcrun-hpcrun.o `test -f 'hpcrun.cc' || echo '$(srcdir)/'`hpcrun.cc; \
