@@ -34,8 +34,8 @@
 
 //*************************** User Include Files ****************************
 
-#include "hpcrun.h"
 #include "proffile.h"
+#include <lib/hpcfile/hpcfile_hpcrun.h>
 #include <lib/hpcfile/io.h>
 
 //*************************** Forward Declarations **************************

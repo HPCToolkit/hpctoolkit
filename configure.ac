@@ -456,6 +456,7 @@ AC_OUTPUT([ \
   src/hpctoolkit/bloop/Makefile \
   src/hpctoolkit/filters/Makefile \
   src/hpctoolkit/hpcquick/Makefile \
+  src/hpctoolkit/hpcprof/Makefile \
   src/hpctoolkit/hpcrun/Makefile \
   src/hpctoolkit/hpcview/Makefile \
   src/hpctoolkit/lump/Makefile \
