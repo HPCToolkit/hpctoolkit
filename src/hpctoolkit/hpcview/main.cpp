@@ -258,7 +258,7 @@ realmain(int argc, char* const* argv)
   }
 
   if ( args.CopySrcFiles ) {
-    cerr << "Copying all source files reached by REPLACE/PATH statments to "
+    cerr << "Copying all source files reached by REPLACE/PATH statements to "
 	 << args.htmlDir << endl;
 
     // Note that this may modify file names in the ScopeTree
