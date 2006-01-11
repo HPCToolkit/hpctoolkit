@@ -53,7 +53,9 @@ include(config/hpc-cxxutils.m4)
 
 #----------------------------------------------------------------------------
 # Initialization: 
-# Careful: Automake 1.9.6 would include defs of hpc-cxxutils macros.
+# Careful: 
+#   - Automake 1.9.6 would include defs of hpc-cxxutils macros.
+#   - Libtool 1.5.18 has a bug interacting with Tru64's ksh.
 # Require libtool 1.5.10 and automake 1.9.3 to 1) correctly link
 #   templates with MIPSPro compiler on IRIX64, 2) link on alpha-Tru64
 #   and 3) fix missing .so problem on Linux.
