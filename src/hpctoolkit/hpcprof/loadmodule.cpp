@@ -43,7 +43,8 @@ bool minisym_is_interesting(bfd *abfd, asymbol *p);
 
 #define valueof(x) ((x)->section->vma + (x)->value)
 
-int val_forward(const void *x, const void *y)
+extern "C" int 
+val_forward(const void *x, const void *y)
 {
   asymbol *xp = *(asymbol **)x;
   asymbol *yp = *(asymbol **)y;
