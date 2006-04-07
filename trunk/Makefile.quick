@@ -69,6 +69,15 @@ ifdef PAPI
   CONFIG_OPTS += --with-papi=$(PAPI)
 endif
 
+ifdef UNWIND
+  CONFIG_OPTS += --with-libunwind=$(UNWIND)
+endif
+
+ifdef CSPROF
+  CONFIG_OPTS += --enable-csprof-sync
+endif
+
+
 # used by configure (from GNU Autoconf)
 export CC
 export CXX
@@ -87,7 +96,12 @@ echo ""
 echo "Options to 'all' and 'configure':"
 echo "  CC=<C-compiler>         - Set the C compiler"
 echo "  CXX=<C++-compiler>      - Set the C++ compiler"
+echo ""
 echo "  PAPI=<PAPI-install-dir> - Set PAPI installation (absolute path)"
+echo ""
+echo "  UNWIND=<libunwind-install-dir> - Set libuwind installation (absolute path)"
+echo "  CSPROF=1  - Build mem-csprof"
+echo ""
 echo "  DEVELOP=1               - develop mode (debug + dev tools)"
 echo ""
 echo "By default, makefiles are created in:"
@@ -140,3 +154,8 @@ uninstall:
 
 #############################################################################
 
+check: 
+
+.PHONY : check 
+
+#############################################################################

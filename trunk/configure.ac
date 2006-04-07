@@ -67,13 +67,13 @@ include(config/hpc-cxxutils.m4)
 #    correctly
 #----------------------------------------------------------------------------
 
-AC_INIT([HPCToolkit], [4.1.3], [hpc@cs.rice.edu], [HPCToolkit])
+AC_INIT([HPCToolkit], [4.2.0], [hpc@cs.rice.edu], [HPCToolkit])
 AC_CONFIG_SRCDIR([src/include/HPCToolkitVersionInfo.h])
 AC_CONFIG_AUX_DIR([config])
 
 AC_PREREQ(2.59)
 AM_INIT_AUTOMAKE(1.9.5)
-# Require libtool 1.5.14
+# Require libtool 1.5.20
 
 AC_CANONICAL_HOST
 
@@ -274,6 +274,47 @@ AC_SUBST(OPT_PAPI_LDFLAGS)
 AC_SUBST(OPT_PAPI_LIBSO)
 AC_SUBST(OPT_PAPI_LIBA)
 
+#-------------------------------------------------
+# with-libunwind
+#-------------------------------------------------
+
+AC_MSG_CHECKING([whether configured with libunwind])
+
+OPT_HAVE_LIBUNWIND=no
+OPT_LIBUNWIND=
+OPT_LIBUNWIND_IFLAGS=
+OPT_LIBUNWIND_LIBPATH=
+OPT_LIBUNWIND_LDFLAGS=
+OPT_LIBUNWIND_LIBSO=
+OPT_LIBUNWIND_LIBA=
+
+AC_ARG_WITH([libunwind],
+  AC_HELP_STRING([--with-libunwind=<libunwind_install_path>],
+                 [use given LIBUNWIND installation (absolute path) with csprof (default is NO)]),
+  [if test $withval != no; then
+     OPT_HAVE_LIBUNWIND=yes
+     if ( echo "${withval}" | grep -v "^/" >/dev/null 2>&1 ); then
+       AC_MSG_ERROR([--with-libunwind requires absolute path as argument; given '${withval}'])
+     fi
+     OPT_LIBUNWIND=${withval}
+   fi],
+  [])
+
+# Check for LIBUNWIND > .9xxx [skip for now]
+
+if test "${OPT_HAVE_LIBUNWIND}" = "yes"; then 
+  AC_MSG_RESULT([yes (${OPT_LIBUNWIND_LIBSO})])
+else
+  AC_MSG_RESULT([no])
+fi
+
+AM_CONDITIONAL(OPT_HAVE_LIBUNWIND, test "${OPT_HAVE_LIBUNWIND}" = "yes")
+AC_SUBST(OPT_LIBUNWIND_IFLAGS)
+AC_SUBST(OPT_LIBUNWIND_LIBPATH)
+AC_SUBST(OPT_LIBUNWIND_LDFLAGS)
+AC_SUBST(OPT_LIBUNWIND_LIBSO)
+AC_SUBST(OPT_LIBUNWIND_LIBA)
+
 
 #-------------------------------------------------
 # enable-hpcrun: Only build hpcrun if on Linux and PAPI is present
@@ -289,6 +330,59 @@ fi
 
 AC_MSG_RESULT([${OPT_ENABLE_HPCRUN}])
 AM_CONDITIONAL(OPT_ENABLE_HPCRUN, test "${OPT_ENABLE_HPCRUN}" = "yes")
+
+
+#-------------------------------------------------
+# enable-csprof: [not yet available]
+# enable-csprof-sync: 
+# enable-csprof-async: 
+#   - on Linux, requires libunwind
+#-------------------------------------------------
+
+AC_MSG_CHECKING([whether to build csprof (synchronous)])
+
+OPT_ENABLE_CSPROF_SYNC=no
+
+AC_ARG_ENABLE([csprof-sync],
+  AC_HELP_STRING([--enable-csprof-sync],
+                 [Build csprof (synchronous)]),
+  [case "${enableval}" in
+     yes) OPT_ENABLE_CSPROF_SYNC="yes" ;;
+     no)  OPT_ENABLE_CSPROF_SYNC="no" ;;
+     *) AC_MSG_ERROR([bad value ${enableval} for --enable-csprof-sync]) ;;
+   esac],
+  [OPT_ENABLE_CSPROF_SYNC=no])
+
+AC_MSG_RESULT([${OPT_ENABLE_CSPROF_SYNC}])
+AM_CONDITIONAL(OPT_ENABLE_CSPROF_SYNC, test "${OPT_ENABLE_CSPROF_SYNC}" = "yes")
+
+
+AC_MSG_CHECKING([whether to build csprof (asynchronous)])
+
+OPT_ENABLE_CSPROF_ASYNC=no
+
+AC_ARG_ENABLE([csprof-async],
+  AC_HELP_STRING([--enable-csprof-async],
+                 [Build csprof (synchronous)]),
+  [case "${enableval}" in
+     yes) OPT_ENABLE_CSPROF_ASYNC="yes" ;;
+     no)  OPT_ENABLE_CSPROF_ASYNC="no" ;;
+     *) AC_MSG_ERROR([bad value ${enableval} for --enable-csprof-async]) ;;
+   esac],
+  [OPT_ENABLE_CSPROF_ASYNC=no])
+
+AC_MSG_RESULT([${OPT_ENABLE_CSPROF_ASYNC}])
+AM_CONDITIONAL(OPT_ENABLE_CSPROF_ASYNC, test "${OPT_ENABLE_CSPROF_ASYNC}" = "yes")
+
+
+# On Linux, verify we have libunwind!!!
+if test "${OPT_ENABLE_CSPROF_SYNC}" = "yes" || 
+   test "${OPT_ENABLE_CSPROF_ASYNC}" = "yes" ; then
+  if test "${OPT_HAVE_LIBUNWIND}" = "no" &&  
+     ( echo "${HPCTOOLKIT_PLATFORM}" | grep "Linux\$" >/dev/null 2>&1 ); then
+    AC_MSG_ERROR([libunwind is needed to build csprof on Linux])
+  fi
+fi
 
 
 #-------------------------------------------------
