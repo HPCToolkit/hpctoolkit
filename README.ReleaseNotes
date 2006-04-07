@@ -179,6 +179,12 @@ Like bloop, it it can be used as a 'cross-tool'.
 4. Revision History
 --------------------
 
+HPCToolkit Version 4.2.0: [2006.04.07]
+--------------------
+- Add csprof to source tree
+- Integrate separate version of xcsprof into source tree
+- Integrate csprof viewer into source tree
+
 HPCToolkit Version 4.1.3: [2006.01.09]
 --------------------
 - Split code for hpcrun and hpcprof.
