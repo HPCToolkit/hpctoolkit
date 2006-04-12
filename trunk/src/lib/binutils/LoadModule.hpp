@@ -79,6 +79,21 @@ class ISA;
 // not anticiapte such generality being very useful.
 extern ISA* isa; // current ISA
 
+
+/// A map between pairs of addresses in the same procedure and the first line of the procedure. This map is built upon reading the module.
+using namespace std;
+
+typedef pair< Addr, Addr > AddrPair;
+
+struct PairAddrLt {
+  bool operator() (const AddrPair pair1, const AddrPair pair2) const {
+    return (pair1.second < pair2.first);
+  }
+};
+typedef map< pair<Addr,Addr>, suint, PairAddrLt>  AddrToProcedureMap;
+typedef AddrToProcedureMap::iterator AddrToProcedureMapIt;
+typedef AddrToProcedureMap::value_type AddrToProcedureMapVal;
+
 //***************************************************************************
 // LoadModule
 //***************************************************************************
@@ -187,6 +202,8 @@ public:
 			 String &func, String &file,
 			 suint &startLine, suint &endLine) const;
 
+  bool GetProcedureFirstLineInfo(Addr pc, ushort opIndex, suint &line);
+ 
   // Dump contents for inspection
   virtual void Dump(std::ostream& o = std::cerr, const char* pre = "") const;
   virtual void DDump() const;
@@ -204,7 +221,11 @@ private:
   // Constructing routines: return true on success; false on error
   bool ReadSymbolTables();
   bool ReadSections();
-  
+ 
+  // Builds the map from <proc start addr, proc end addr> pairs to 
+  // procedure first line.
+  bool buildAddrToProcedureMap();
+
   // UnRelocatePC: Given a relocated PC, returns a non-relocated version.
   Addr UnRelocatePC(Addr relocatedPC) const 
     { return (relocatedPC + unRelocDelta); }
@@ -246,6 +267,7 @@ private:
 
   // A map of virtual memory addresses to Instruction*
   AddrToInstMap addrToInstMap;  // owns all Instruction*
+  AddrToProcedureMap addrToProcedureMap; // CC
 };
 
 //***************************************************************************

@@ -129,3 +129,11 @@ LoadModuleInfo::GetSymbolicInfo(Addr pc, ushort opIndex,
   }
   return true;
 }
+
+
+bool 
+LoadModuleInfo::GetProcedureFirstLineInfo(Addr pc, 
+					  ushort opIndex, 
+					  suint &line) {
+  return lm->GetProcedureFirstLineInfo(pc, opIndex, line);
+}
