@@ -44,6 +44,8 @@
 //*************************** User Include Files ****************************
 
 #include <lib/support/String.h>
+#include <vector>
+#include <string>
 
 //*************************** Forward Declarations **************************
 
@@ -67,6 +69,14 @@ public:
   // arguments
   String progFile; // binary that was profiled
   String profFile; // profiling output for 'progFile'
+  std::vector<String> searchPaths; // list of serch paths
+  String databaseDirectory; 
 }; 
+
+#ifndef xDEBUG
+#define xDEBUG(flag, code) {if (flag) {code; fflush(stdout); fflush(stderr);}} 
+#endif
+
+#define DEB_PROCESS_ARGUMENTS 0
 
 #endif

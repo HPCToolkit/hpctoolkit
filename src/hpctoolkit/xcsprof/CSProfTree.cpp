@@ -57,7 +57,9 @@
 #include <lib/support/Assertion.h>
 #include <lib/support/Trace.h>
 
-#include <lib/xml/xml.h>
+#include <lib/xml/xml.h> 
+
+#include <assert.h> /* FMZ */
 
 //*************************** Forward Declarations ***************************
 
@@ -105,7 +107,7 @@ CSProfTree::DDump() const
 //***************************************************************************
 
 const char* CSProfNode::NodeNames[CSProfNode::NUMBER_OF_TYPES] = {
-  "PGM", "G", "CALLSITE", "L", "S", "ANY"
+  "PGM", "G", "CALLSITE", "L", "S", "PROCEDURE_FRAME", "STATEMENT", "ANY"
 };
 
 const char* 
@@ -132,6 +134,11 @@ CSProfNode::CSProfNode(NodeType t, CSProfNode* _parent)
 		 !AncestorPgm()->IsFrozen());
   static unsigned int uniqueId = 0; 
   uid = uniqueId++; 
+  xDEBUG(DEB_UNIFY_PROCEDURE_FRAME,
+	 if (type==STATEMENT) {
+	   fprintf(stderr, " CSProfNode constructor: copying callsite into statement node\n");
+	   )
+	 }
 }
 
 static bool
@@ -152,7 +159,11 @@ CSProfCodeNode::CSProfCodeNode(NodeType t, CSProfNode* _parent,
   : CSProfNode(t, _parent), begLine(UNDEF_LINE), endLine(UNDEF_LINE)
 { 
   SetLineRange(begLn, endLn); 
-}
+  xDEBUG(DEB_UNIFY_PROCEDURE_FRAME,
+	 if (type==STATEMENT) {
+	   fprintf(stderr, " CSProfCodeNode constructor: copying callsite into statement node\n");
+	   )
+	 }}
 
 CSProfCodeNode::~CSProfCodeNode() 
 {
@@ -192,6 +203,7 @@ CSProfCallSiteNode_Check(CSProfCallSiteNode* n, CSProfNode* _parent)
   BriefAssertion((_parent == NULL) 
 		 || (_parent->GetType() == CSProfNode::PGM)
 		 || (_parent->GetType() == CSProfNode::GROUP) 
+		 || (_parent->GetType() == CSProfNode::PROCEDURE_FRAME) 
 		 || (_parent->GetType() == CSProfNode::CALLSITE));
 }
 
@@ -202,9 +214,9 @@ CSProfCallSiteNode::CSProfCallSiteNode(CSProfNode* _parent)
 }
 
 CSProfCallSiteNode::CSProfCallSiteNode(CSProfNode* _parent, Addr _ip, 
-				       ushort _opIndex, suint _weight)
+			      ushort _opIndex, vector<suint> _metrics)
   : CSProfCodeNode(CALLSITE, _parent, UNDEF_LINE, UNDEF_LINE), 
-    ip(_ip), opIndex(_opIndex), weight(_weight)
+    ip(_ip), opIndex(_opIndex), metrics(_metrics) 
 {
   CSProfCallSiteNode_Check(this, _parent);
 }
@@ -212,6 +224,44 @@ CSProfCallSiteNode::CSProfCallSiteNode(CSProfNode* _parent, Addr _ip,
 CSProfCallSiteNode::~CSProfCallSiteNode()
 {
 }
+
+CSProfStatementNode::CSProfStatementNode(CSProfNode* _parent)
+  :  CSProfCodeNode(STATEMENT, _parent, UNDEF_LINE, UNDEF_LINE)
+{
+  xDEBUG(DEB_UNIFY_PROCEDURE_FRAME,
+	 fprintf(stderr, " CSProfCodeNode wrong copying callsite into statement node\n"));
+}
+
+CSProfStatementNode::~CSProfStatementNode()
+{
+}
+
+void 
+CSProfStatementNode::copyCallSiteNode(CSProfCallSiteNode* _node) {
+  xDEBUG(DEB_UNIFY_PROCEDURE_FRAME,
+	 fprintf(stderr, " explicit copying callsite into statement node\n"));
+  file = _node->GetFile();
+  proc = _node->GetProc();
+  SetLine(_node->GetLine());
+  SetIP(_node->GetIP(), _node->GetOpIndex());
+  xDEBUG(DEB_UNIFY_PROCEDURE_FRAME,
+	 fprintf(stderr, " copied file, proc, line, ip, opindex\n"));
+  int i;
+  for (i=0; i<_node->GetMetrics().size(); i++) 
+    metrics.push_back(_node->GetMetric(i));
+  xDEBUG(DEB_UNIFY_PROCEDURE_FRAME,
+	 fprintf(stderr, " copied metrics\n"));
+  fileistext = _node->FileIsText();
+}
+
+CSProfProcedureFrameNode::CSProfProcedureFrameNode(CSProfNode* _parent): CSProfCodeNode(PROCEDURE_FRAME, _parent, UNDEF_LINE, UNDEF_LINE) {
+  CSProfCallSiteNode_Check(NULL, _parent);
+}
+
+CSProfProcedureFrameNode::~CSProfProcedureFrameNode()
+{
+}
+
 
 CSProfLoopNode::CSProfLoopNode(CSProfNode* _parent, 
 			       suint begLn, suint endLn, int _id)
@@ -320,6 +370,14 @@ CSProfNode::AncestorCallSite() const
   dyn_cast_return(CSProfNode, CSProfCallSiteNode, Ancestor(CALLSITE)); 
 }
 
+CSProfProcedureFrameNode*
+CSProfNode::AncestorProcedureFrame() const
+{
+  dyn_cast_return(CSProfNode, 
+		  CSProfProcedureFrameNode,
+		  Ancestor(PROCEDURE_FRAME)); 
+}
+
 CSProfLoopNode*
 CSProfNode::AncestorLoop() const 
 {
@@ -365,7 +423,13 @@ CSProfNode::ToDumpString(int dmpFlag) const
     self = self + " uid" + MakeAttrNum(GetUniqueId());
   }
   return self;
+} 
+
+String 
+CSProfNode::ToDumpMetricsString(int dmpFlag) const {
+  return "";
 }
+
 
 String
 CSProfCodeNode::ToDumpString(int dmpFlag) const
@@ -399,22 +463,152 @@ CSProfCallSiteNode::ToDumpString(int dmpFlag) const
   if (!(dmpFlag & CSProfTree::XML_TRUE)) {
     self = self + " ip" + MakeAttrNum((unsigned long)ip, true) 
       + " op" + MakeAttrNum(opIndex); // FIXME: cast for *&^ SGI compiler
-  }
-  if (!file.Empty()) {
-    self = self + " f" + MakeAttrStr(file, AddXMLEscapeChars(dmpFlag)); 
-  }
+  } 
+
+  if (!file.Empty()) { 
+     if (fileistext)
+        self = self + " f" + MakeAttrStr(file, AddXMLEscapeChars(dmpFlag)); 
+     else 
+        self = self + " lm" + MakeAttrStr(file, AddXMLEscapeChars(dmpFlag)); 
+   } 
+
   if (!proc.Empty()) {
     self = self + " p" + MakeAttrStr(proc, AddXMLEscapeChars(dmpFlag));
-  }
+   } else {
+       self = self + " ip" + MakeAttrNum((unsigned long)ip,true) ; 
+     }
+    
+
   if (GetBegLine() != UNDEF_LINE) {
     self = self + " l" + MakeAttrNum(GetBegLine());
-  }
-  if (weight != 0) {
-    self = self + " c" + MakeAttrNum(weight);
-  }
-  
+  }  
+
   return self; 
+} 
+
+
+String 
+CSProfCallSiteNode::ToDumpMetricsString(int dmpFlag) const {
+  int i;
+  String metricsString;
+
+  xDEBUG(DEB_READ_MMETRICS,
+	 fprintf(stderr, "dumping metrics for node %lx \n", ip); 
+	 fflush(stderr);
+	 for (i=0; i<metrics.size(); i++) {
+	   fprintf(stderr, "Metric %d: %ld\n", i, metrics[i]);
+	   fflush(stderr);
+	 }
+	 );
+
+  metricsString ="";
+  for (i=0; i<metrics.size(); i++) {
+    suint crtMetric = metrics[i];
+    if (crtMetric!= 0) {
+      metricsString  +=  " <M ";
+      metricsString  +=  "n"+MakeAttrNum(i)+" v" + MakeAttrNum(crtMetric);
+      metricsString  +=  " />";
+    }
+  }
+  return metricsString;
 }
+
+/** Add metrics from call site node c to current node.
+ * @param c call site node to be "added" to this node
+ */
+void 
+CSProfCallSiteNode::addMetrics(CSProfCallSiteNode* c) {
+  assert (metrics.size() == c->metrics.size());
+  int numMetrics = metrics.size();
+  int i;
+  for (i=0; i<numMetrics; i++) {
+    metrics[i] += c->metrics[i];
+  }
+}
+
+String
+CSProfStatementNode::ToDumpString(int dmpFlag) const
+{
+  String self = CSProfNode::ToDumpString(dmpFlag);
+  
+  if (!(dmpFlag & CSProfTree::XML_TRUE)) {
+    self = self + " ip" + MakeAttrNum((unsigned long)ip, true) 
+      + " op" + MakeAttrNum(opIndex); // FIXME: cast for *&^ SGI compiler
+  } 
+
+  if (!file.Empty()) { 
+     if (fileistext)
+        self = self + " f" + MakeAttrStr(file, AddXMLEscapeChars(dmpFlag)); 
+     else 
+        self = self + " lm" + MakeAttrStr(file, AddXMLEscapeChars(dmpFlag)); 
+   } 
+
+  if (!proc.Empty()) {
+    self = self + " p" + MakeAttrStr(proc, AddXMLEscapeChars(dmpFlag));
+   } else {
+       self = self + " ip" + MakeAttrNum((unsigned long)ip,true) ; 
+     }
+    
+
+  if (GetBegLine() != UNDEF_LINE) {
+    self = self + " l" + MakeAttrNum(GetBegLine());
+  }  
+
+  return self; 
+} 
+
+
+String 
+CSProfStatementNode::ToDumpMetricsString(int dmpFlag) const {
+  int i;
+  String metricsString;
+
+  xDEBUG(DEB_READ_MMETRICS,
+	 fprintf(stderr, "dumping metrics for node %lx \n", ip); 
+	 fflush(stderr);
+	 for (i=0; i<metrics.size(); i++) {
+	   fprintf(stderr, "Metric %d: %ld\n", i, metrics[i]);
+	   fflush(stderr);
+	 }
+	 );
+
+  metricsString ="";
+  for (i=0; i<metrics.size(); i++) {
+    suint crtMetric = metrics[i];
+    if (crtMetric!= 0) {
+      metricsString  +=  " <M ";
+      metricsString  +=  "n"+MakeAttrNum(i)+" v" + MakeAttrNum(crtMetric);
+      metricsString  +=  " />";
+    }
+  }
+  return metricsString;
+}
+
+String
+CSProfProcedureFrameNode::ToDumpString(int dmpFlag) const
+{
+  String self = CSProfNode::ToDumpString(dmpFlag);
+  
+  if (!file.Empty()) { 
+     if (fileistext)
+        self = self + " f" + MakeAttrStr(file, AddXMLEscapeChars(dmpFlag)); 
+     else 
+        self = self + " lm" + MakeAttrStr(file, AddXMLEscapeChars(dmpFlag)); 
+   } 
+
+  if (!proc.Empty()) {
+    self = self + " p" + MakeAttrStr(proc, AddXMLEscapeChars(dmpFlag));
+  } else {
+    self = self + " p" + MakeAttrStr("unknown", AddXMLEscapeChars(dmpFlag)) ; 
+  }
+
+  if (GetBegLine() != UNDEF_LINE) {
+    self = self + " l" + MakeAttrNum(GetBegLine());
+  }  
+
+  return self; 
+} 
+
 
 String 
 CSProfLoopNode::ToDumpString(int dmpFlag) const
@@ -435,11 +629,17 @@ void
 CSProfNode::DumpSelfBefore(ostream &os, int dmpFlag, const char *prefix) const
 {
   os << prefix << "<" << ToDumpString(dmpFlag);
-  if (/*(dmpFlag & CSProfTree::XML_TRUE) && */ 
-      (dmpFlag & CSProfTree::XML_EMPTY_TAG)) {
-    os << "/>"; 
-  } else { 
-    os << ">"; 
+  os << ">"; 
+  switch (GetType()) {
+  case CALLSITE:  
+  case STATEMENT:
+    if (ToDumpMetricsString(dmpFlag)!="") {
+      os << endl;
+      os << prefix << "  " << ToDumpMetricsString(dmpFlag); 
+    }
+    break;
+  default:
+    break;
   }
   if (!(dmpFlag & CSProfTree::COMPRESSED_OUTPUT)) { os << endl; }
 }
@@ -447,11 +647,8 @@ CSProfNode::DumpSelfBefore(ostream &os, int dmpFlag, const char *prefix) const
 void
 CSProfNode::DumpSelfAfter(ostream &os, int dmpFlag, const char *prefix) const
 {
-  if (/* ((dmpFlag & CSProfTree::XML_TRUE) && */
-      !(dmpFlag & CSProfTree::XML_EMPTY_TAG)) {
-    os << prefix << "</" << String(NodeTypeToName(GetType())) << ">";
-    if (!(dmpFlag & CSProfTree::COMPRESSED_OUTPUT)) { os << endl; }
-  } 
+  os << prefix << "</" << String(NodeTypeToName(GetType())) << ">";
+  if (!(dmpFlag & CSProfTree::COMPRESSED_OUTPUT)) { os << endl; }
 }
 
 void

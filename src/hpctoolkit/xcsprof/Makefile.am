@@ -67,7 +67,8 @@ MYSOURCES = \
 	CSProfTree.h CSProfTree.C \
 	CSProfTreeIterator.h CSProfTreeIterator.C \
 	CSProfile.h CSProfile.C \
-	CSProfileUtils.h CSProfileUtils.C
+	CSProfileUtils.h CSProfileUtils.C \
+	CSProfEpoch.h CSProfEpoch.C
 
 MYCFLAGS   = @HOST_CFLAGS@   $(HPC_IFLAGS) @GNUBINUTILS_IFLAGS@
 MYCXXFLAGS = @HOST_CXXFLAGS@ $(HPC_IFLAGS) @GNUBINUTILS_IFLAGS@
