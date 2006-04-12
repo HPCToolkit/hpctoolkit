@@ -160,11 +160,40 @@ hpcfile_csprof_read(FILE* fs, hpcfile_csprof_data_t* data,
 #endif
 	break;
       default:
+#if 0 
 	return HPCFILE_ERR; 
+#else  
+//do we have to use call back function to get the space we need here? FMZ
+        data->num_metrics=tag;
+        data->metrics=alloc_fn(data->num_metrics * sizeof(hpcfile_csprof_metric_t));
+        for (ii=0; ii<data->num_metrics; ++ii) {
+         // Read metrics data tag
+         sz = hpc_fread_le4(&tag, fs);
+         if (sz != sizeof(tag)) { return HPCFILE_ERR; }
+         // read in the name of the  metric
+                str.str = NULL;
+                if (hpcfile_str__fread(&str, fs, alloc_fn) != HPCFILE_OK) {
+                    free_fn(str.str);
+                    return HPCFILE_ERR;
+                  }
+
+                 data->metrics[ii].metric_name=str.str;
+
+// read in the sample period
+                sz = hpc_fread_le4(&tag, fs);
+                if (sz != sizeof(tag)) { return HPCFILE_ERR; }
+                if (hpcfile_num8__fread(&num8, fs) != HPCFILE_OK) {
+                  return HPCFILE_ERR;
+                }
+
+                data->metrics[ii].sample_period=num8.num;
+           }
+#endif
 	break;
     }
     
     // Interpret the data: FIXME sanity check
+#if 0 
     switch (tag) {
       case HPCFILE_TAG__CSPROF_TARGET: 
 	data->target = str.str; 
@@ -178,9 +207,50 @@ hpcfile_csprof_read(FILE* fs, hpcfile_csprof_data_t* data,
       default: 
 	break; // skip 
     }
+#endif
 
   }
 
+
+  // processing the epoch part here to reach the trees part--FMZ
+  {
+    int num_epoch;
+    int num_modules;
+    unsigned int num_trees ;
+    unsigned long long tsamps ;
+    size_t namelen;
+    char module_name[256];
+    int i,jj;
+    uint64_t vaddr,mapaddr;
+    //read number of epochs
+    hpc_fread_le4(&num_epoch, fs);
+    //read in all epochs 
+    epochtbl->num_epoch = num_epoch; 
+    epochtbl->epoch_modlist=alloc_fn(num_epoch*sizeof(epoch_entry_t));
+    for (i=0;i<num_epoch;i++) {
+      hpc_fread_le4(&num_modules, fs); 
+      epochtbl->epoch_modlist[i].num_loadmodule=num_modules; 
+      epochtbl->epoch_modlist[i].loadmodule=alloc_fn(num_modules*sizeof(ldmodule_t));
+      for (jj=0; jj<num_modules; jj++) { 
+	str.str=NULL; 
+	if (hpcfile_str__fread(&str, fs, alloc_fn) != HPCFILE_OK) {
+	  free_fn(str.str);
+	  return HPCFILE_ERR;
+	} 
+	epochtbl->epoch_modlist[i].loadmodule[jj].name=str.str;
+	hpc_fread_le8(&vaddr, fs);
+	hpc_fread_le8(&mapaddr, fs); 
+	epochtbl->epoch_modlist[i].loadmodule[jj].vaddr=vaddr;
+	epochtbl->epoch_modlist[i].loadmodule[jj].mapaddr=mapaddr;
+      } //read in modules
+    }//read in epoch
+    
+    //skip some info before into the trees
+    hpc_fread_le4(&num_trees,fs);
+    hpc_fread_le8(&tsamps,fs); 
+    
+  } // processing epoch table
+  
   // Success! Note: We assume that it is possible for other data to
   // exist beyond this point in the stream; don't check for EOF.
   ret = HPCFILE_OK;
