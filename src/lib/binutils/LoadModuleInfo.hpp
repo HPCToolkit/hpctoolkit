@@ -81,6 +81,7 @@ public:
 
   bool GetSymbolicInfo(Addr pc, ushort opIndex,
 		       String& func, String& file, SrcLineX& srcLn);
+  bool GetProcedureFirstLineInfo(Addr pc, ushort opIndex, suint &line);
   
   LoadModule*      GetLM() const { return lm; }
   PCToSrcLineXMap* GetMap() const { return map; }

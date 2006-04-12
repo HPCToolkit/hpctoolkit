@@ -58,6 +58,7 @@
 #include "LoadModule.h"
 #include "Section.h"
 #include "Instruction.h"
+#include "Procedure.h"
 #include <lib/support/Assertion.h>
 #include <lib/support/QuickSort.h>
 #include <lib/support/Trace.h>
@@ -125,7 +126,11 @@ LoadModule::~LoadModule()
   for (it = addrToInstMap.begin(); it != addrToInstMap.end(); ++it) {
     delete (*it).second; // Instruction*
   }
-  addrToInstMap.clear();
+  addrToInstMap.clear(); 
+
+ //reset isa  
+  isa = NULL;
+
 }
 
 
@@ -239,6 +244,7 @@ LoadModule::Read()
       && sections.size() == 0 && addrToInstMap.size() == 0) {
     STATUS &= ReadSymbolTables();
     STATUS &= ReadSections();
+    buildAddrToProcedureMap();
     return STATUS;
   } else {
     return STATUS;
@@ -585,6 +591,82 @@ LoadModule::ReadSections()
   return STATUS;
 }
 
+#define xDEBUG( flag, code) {if (flag) {code; fflush (stderr); fflush(stdout);}} 
+#define DEB_BUILD_PROC_MAP 0
+
+// Builds the map from <proc start addr, proc end addr> pairs to 
+// procedure first line.
+bool LoadModule::buildAddrToProcedureMap() {
+    bool STATUS = false;
+    for (LoadModuleSectionIterator it(*this); it.IsValid(); ++it) {
+      Section* sec = it.Current();
+      if (sec->GetType() != Section::Text) {
+	continue;
+      }
+
+      // We have a TextSection.  Iterate over procedures.
+      // Obtain the bfd section corresponding to our Section.
+      asection *bfdSection = 
+	bfd_get_section_by_name(impl->abfd, sec->GetName());
+      Addr base = bfd_section_vma(impl->abfd, bfdSection);
+
+      TextSection* tsec = dynamic_cast<TextSection*>(sec);
+      for (TextSectionProcedureIterator it1(*tsec); it1.IsValid(); ++it1) {
+	Procedure* p = it1.Current();
+      
+	Addr procStartAddress = p->GetStartAddr();
+	Addr procEndAddr = p->GetEndAddr();
+	Instruction *instruction = p->GetFirstInst();
+	ushort opIndex = instruction->GetOpIndex();
+	Addr opPC = isa->ConvertPCToOpPC(procStartAddress, opIndex);
+	// Obtain the source line information.
+	// This function assumes that the interface type 'suint' can hold
+	// the bfd_find_nearest_line line number type.  
+	unsigned int bfd_line = 0;
+	const char *_func = NULL, *_file = NULL;
+	if (bfdSection
+	    && bfd_find_nearest_line(impl->abfd, bfdSection, 
+				     impl->bfdSymbolTable,
+				     opPC - base, &_file, &_func,
+				     &bfd_line)) {
+	  STATUS = (_file && _func && IsValidLine(bfd_line));
+
+	  addrToProcedureMap.insert(AddrToProcedureMapVal( AddrPair(procStartAddress, procEndAddr), bfd_line ));
+	  xDEBUG(DEB_BUILD_PROC_MAP, 
+		 fprintf(stderr, "adding procedure %s start line %d\n", 
+			 _func, bfd_line););
+	}
+      }
+    } 
+    return STATUS;
+  }
+
+bool 
+LoadModule::GetProcedureFirstLineInfo(Addr pc, ushort opIndex, suint &line) {
+  xDEBUG( DEB_BUILD_PROC_MAP,
+	  fprintf(stderr, "LoadModule::GetProcedureFirstLineInfo %p %x\n", 
+		  this, this););
+  bool STATUS = false;
+
+  if (!impl->bfdSymbolTable) { return STATUS; }
+  
+  // This function assumes that the interface type 'suint' can hold
+  // the bfd_find_nearest_line line number type.  
+  unsigned int bfd_line = 0;
+  //BriefAssertion(sizeof(suint) >= sizeof(bfd_line));
+
+  Addr unrelocPC = UnRelocatePC(pc);
+  Addr opPC = isa->ConvertPCToOpPC(unrelocPC, opIndex);
+
+  AddrToProcedureMapIt it = addrToProcedureMap.find( AddrPair(opPC,opPC));
+  if (it != addrToProcedureMap.end()) {
+    line=it->second;
+    STATUS = true;
+  } else {
+    line = 0;
+  }
+  return STATUS;
+}
 
 void
 LoadModule::DumpModuleInfo(std::ostream& o, const char* pre) const
