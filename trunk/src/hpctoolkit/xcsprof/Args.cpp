@@ -41,12 +41,17 @@
 #include <iostream>
 
 #include <unistd.h> // for 'getopt'
+#include <errno.h>
+#include <sys/stat.h>
+#include <sys/types.h>
 
 //*************************** User Include Files ****************************
 
 #include "Args.h"
 #include <lib/support/String.h>
+#include <lib/support/StringUtilities.h>
 #include <lib/support/Trace.h>
+#include "CSProfileUtils.h"
 
 //*************************** Forward Declarations **************************
 
@@ -67,90 +72,131 @@ void Args::Usage()
 {
   cerr
     << "Usage: " << endl
-    << "  " << cmd << " [-V] <binary> <profile>\n"
+    << "  " << cmd << " [-h|-H|-help|--help] [-V|--V|-version|--version] <binary> <profile> [-I src1 ... srcn] -db database \n"
     << endl;
   cerr
-    << "Converts various types of profile output into the CSPROFILE format,\n"
-    << "FIXME.  Output is sent to stdout.\n"
-    << "\n"
-#if 0  // FIXME '[-m <bloop-pcmap>]'
-    << "If no <bloop-pcmap> -- a map extended with analysis information\n"
-    << "from 'bloop' -- is provided, the program attempts to construct\n"
-    << "the PROFILE by querying the <binary>'s debugging information.\n"
-    << "Because of the better analysis ability of 'bloop', a <bloop-pcmap>\n"
-    << "usually improves the accuracy of the PROFILE.  Moreover, because\n"
-    << "no loop recovery is performed, providing <bloop-pcmap> enables\n"
-    << "the PROFILE to represent loop nesting information.\n"
-    << "[*Not fully implemented.*]\n"
-    << "\n"
-#endif     
-    << "The following <profile> formats are currently supported: \n"
-    << "  - HPCTools FIXME \n"
-    << "\n"
+    << "Converts one csprof output file into a CSPROFILE database.\n"
+    << "The results are created in the XML file database/xcsprof.xml.\n"
+    << "The available source files are copied in the directory database/src.\n"
     << "Options:\n"
-    << "  -V: print version information\n"    
-#if 0    
-    << "  -m: specify <bloop-pcmap>\n"
-#endif    
-    
+    << " -h|-H|-help|--help          : print this help\n"    
+    << " -V|--V|-version|--version   : print version information\n"    
+    << " -I src1 ... srcn : search paths for source files\n"    
     << endl;
 } 
 
 Args::Args(int argc, char* const* argv)
 {
   cmd = argv[0]; 
+  xDEBUG (DEB_PROCESS_ARGUMENTS, 
+	  cerr << "start processing arguments\n";);
 
   bool printVersion = false;
+  bool printHelp = false;
   //other options: prettyPrintOutput = false;
-  
-  extern char *optarg;
-  extern int optind;
-  bool error = false;
-  trace = 0;
-  int c;
-  while ((c = getopt(argc, argv, "Vm:d")) != EOF) {
-    switch (c) {
-    case 'm': {
-      // A non-null value of 'pcMapFile' indicates it has been set
-      if (optarg == NULL) { error = true; }
-      pcMapFile = optarg;
-      break; 
-    }
-    case 'V': { 
-      printVersion = true;
-      break; 
-    }
-    case 'd': { // debug 
-      trace++; 
-      break; 
-    }
-    case ':':
-    case '?': { // error
-      error = true; 
-      break; 
-    }
-    }
+
+  if (argc == 1) {
+    Usage();
+    exit(1);
   }
-  error = error || (optind != argc-2); 
-  if (!error) {
-    progFile = argv[optind];
-    profFile = argv[optind+1]; 
-  } 
 
-  IFTRACE << "Args.cmd= " << cmd << endl; 
-  IFTRACE << "Args.progFile= " << progFile << endl;
-  IFTRACE << "Args.profFile= " << profFile << endl;
-  IFTRACE << "Args.pcMapFile= " << pcMapFile << endl;
-  IFTRACE << "::trace " << ::trace << endl; 
+  int argIndex=1;
+  
+  if ( !strcmp( argv[argIndex], "-h") || !strcmp( argv[argIndex], "-help") ||
+       !strcmp( argv[argIndex], "-H") || !strcmp( argv[argIndex], "--help")) {
+    Usage();
+    exit(1);
+  }
 
-  if (printVersion) {
+  if ( !strcmp( argv[argIndex], "-V") || !strcmp( argv[argIndex], "--V") ||
+       !strcmp( argv[argIndex], "-version") || !strcmp( argv[argIndex], "--version")) {
     Version();
     exit(1);
   }
-  
-  if (error) {
-    Usage(); 
-    exit(1); 
-  }
-}
 
+  xDEBUG (DEB_PROCESS_ARGUMENTS, 
+	  cerr << "argc=" << argc << endl;);
+
+  if (argc < 3) {
+    Usage ();
+    exit(1);
+  } 
+
+  progFile = argv[argIndex]; 
+  profFile = argv[argIndex+1]; 
+  argIndex = 3;
+
+  char cwdName[MAX_PATH_SIZE +1];
+  getcwd(cwdName, MAX_PATH_SIZE);
+  String crtDir=cwdName; 
+  if ( (argc>argIndex) && !strcmp(argv[argIndex], "-I")) {
+    xDEBUG (DEB_PROCESS_ARGUMENTS, 
+	    cerr << "adding search paths" << endl;);
+    argIndex ++;
+    while ( (argIndex < argc) &&  strcmp(argv[argIndex], "-db")) {
+      xDEBUG (DEB_PROCESS_ARGUMENTS, 
+	      cerr << "adding search path  " << 
+	      argv[argIndex] << endl;);
+      String searchPath = argv[argIndex];
+      if (chdir (argv[argIndex]) == 0) {
+	char searchPathChr[MAX_PATH_SIZE +1];
+	getcwd(searchPathChr, MAX_PATH_SIZE);
+	String normSearchPath=searchPathChr; 
+	//String normSearchPath = normalizeFilePath(searchPath);
+	searchPaths.push_back(normSearchPath);
+      }
+      chdir (cwdName);
+      argIndex++;
+    }
+  }
+
+  xDEBUG (DEB_PROCESS_ARGUMENTS, 
+	  cerr << "argc=" << argc << 
+	  " argIndex=" << argIndex << endl;);
+  if ( (argc != (argIndex+2)) ||
+       (strcmp(argv[argIndex], "-db"))) {
+    databaseDirectory = crtDir+"/xcsprof-db";
+  } else {
+    databaseDirectory = argv[argIndex+1];
+    databaseDirectory = normalizeFilePath (databaseDirectory);
+  }
+
+  bool uniqueDatabaseDirectoryCreated ;
+
+  if (mkdir(databaseDirectory, 
+	    S_IRWXU | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH) == -1) {
+    if (errno == EEXIST) {
+      cerr << databaseDirectory << " already exists\n";
+      // attempt to create databaseDirectory+pid;
+      char myPidChr[20];
+      pid_t myPid = getpid();
+      itoa (myPid, myPidChr);
+      String databaseDirectoryPid = databaseDirectory + myPidChr;
+      cerr << "attempting to create alternate database directory "
+	   << databaseDirectoryPid << std::endl;
+      if (mkdir(databaseDirectoryPid, 
+		S_IRWXU | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH) == -1) {
+	cerr << "could not create alternate database directory " << 
+	  databaseDirectoryPid << std::endl;
+	exit(1);
+      } else {
+	cerr << "created unique database directory " << databaseDirectoryPid << std::endl;
+	databaseDirectory = databaseDirectoryPid;
+      }
+
+    } else {
+      cerr << "could not create database directory " << 
+	databaseDirectory << endl;
+      exit (1);
+    }
+  }
+
+  cerr << "executable: " << progFile << " csprof trace: " << profFile << std::endl;
+  if (searchPaths.size() > 0) {
+    cerr << "search paths: " << std::endl; 
+    for (int i=0; i<searchPaths.size(); i++ ) {
+	cerr << searchPaths[i] << std::endl;
+      }
+  }
+  cerr << "Database directory: " << databaseDirectory << std::endl;
+}
