@@ -27,6 +27,13 @@ See ${HPCTOOLKIT}/doc/index.html for manual pages on the toolset.
 Generally speaking, running a tool with the -h option will output a
 brief usage message.
 
+0.0.
+----
+
+Please note: 'csviewer' displays call stack profile information. It is
+intended to be used as a temporary tool, until its functionality is
+merged with that of the flat profile viewer 'hpcviewer'.
+
 0.1. HPCToolkit and GNU binutils:
 ----
 We have had to make a number of fixes and changes to GNU binutils,
