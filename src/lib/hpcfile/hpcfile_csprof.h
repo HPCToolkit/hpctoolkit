@@ -80,6 +80,7 @@ int hpcfile_csprof_id__fread(hpcfile_csprof_id_t* x, FILE* fs);
 int hpcfile_csprof_id__fwrite(hpcfile_csprof_id_t* x, FILE* fs);
 int hpcfile_csprof_id__fprint(hpcfile_csprof_id_t* x, FILE* fs);
 
+
 // ---------------------------------------------------------
 // hpcfile_csprof_hdr_t:
 // ---------------------------------------------------------
@@ -99,17 +100,31 @@ int hpcfile_csprof_hdr__fread(hpcfile_csprof_hdr_t* x, FILE* fs);
 int hpcfile_csprof_hdr__fwrite(hpcfile_csprof_hdr_t* x, FILE* fs);
 int hpcfile_csprof_hdr__fprint(hpcfile_csprof_hdr_t* x, FILE* fs);
 
+
+/* hpcfile_csprof_metric_t */
+
+typedef struct hpcfile_csprof_metric_s {
+    char *metric_name;          /* name of the metric */
+    uint64_t sample_period;     /* sample period of the metric */
+} hpcfile_csprof_metric_t;
+
+int hpcfile_csprof_metric__init(hpcfile_csprof_metric_t *x);
+int hpcfile_csprof_metric__fini(hpcfile_csprof_metric_t *x);
+
+int hpcfile_csprof_metric__fread(hpcfile_csprof_metric_t *x, FILE *fs);
+int hpcfile_csprof_metric__fwrite(hpcfile_csprof_metric_t *x, FILE *fs);
+int hpcfile_csprof_metric__fprint(hpcfile_csprof_metric_t *x, FILE *fs);
+
+
 // ---------------------------------------------------------
 // hpcfile_csprof_data_t: used only for passing data; not actually
 // part of the file format
 // ---------------------------------------------------------
+
 typedef struct hpcfile_csprof_data_s {
-  char* target;  // name of profiling target (usually, executable)
-  // processor id
-  // FIXME: list of dynamically loaded libraries with addresses
-  
-  char* event;
-  uint64_t sample_period; 
+  char* target;               // name of profiling target
+  uint32_t num_metrics;       // number of metrics recorded
+  hpcfile_csprof_metric_t *metrics;
   
 } hpcfile_csprof_data_t;
 
@@ -117,6 +132,27 @@ int hpcfile_csprof_data__init(hpcfile_csprof_data_t* x);
 int hpcfile_csprof_data__fini(hpcfile_csprof_data_t* x);
 
 int hpcfile_csprof_data__fprint(hpcfile_csprof_data_t* x, FILE* fs);
+
+
+//**************************************************************************
+// temp file for epoch read
+//**************************************************************************
+typedef struct ldmodule_s {
+   char *name;
+   uint64_t vaddr;
+   uint64_t  mapaddr;
+} ldmodule_t; 
+
+typedef struct epoch_entry_s { 
+  uint32_t num_loadmodule;
+  ldmodule_t *loadmodule;
+} epoch_entry_t;
+
+typedef struct epoch_table_s {
+       uint32_t num_epoch;
+       epoch_entry_t *epoch_modlist;
+} epoch_table_t; 
+
 
 //***************************************************************************
 

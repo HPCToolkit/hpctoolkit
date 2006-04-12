@@ -52,8 +52,17 @@ extern "C" {
 #define HPCFILE_CSTREE_MAGIC_STR     "HPC_CSTREE"
 #define HPCFILE_CSTREE_MAGIC_STR_LEN 10 /* exclude '\0' */
 
-#define HPCFILE_CSTREE_VERSION     "01.00"
-#define HPCFILE_CSTREE_VERSION_LEN 5 /* exclude '\0' */
+/* the format of the nodes contained in the file will be different
+   depending on whether or not we've using the trampoline in this
+   build.  make it so that the library doesn't get confused */
+#define CSPROF_TRAMPOLINE_BACKEND 1
+#ifdef CSPROF_TRAMPOLINE_BACKEND
+# define HPCFILE_CSTREE_VERSION     "01.0T" /* 'T' is for trampoline */
+# define HPCFILE_CSTREE_VERSION_LEN 5 /* exclude '\0' */
+#else
+# define HPCFILE_CSTREE_VERSION     "01.00"
+# define HPCFILE_CSTREE_VERSION_LEN 5 /* exclude '\0' */
+#endif
 
 #define HPCFILE_CSTREE_ENDIAN 'l' /* 'l' for little, 'b' for big */
 
@@ -83,7 +92,6 @@ int hpcfile_cstree_id__fprint(hpcfile_cstree_id_t* x, FILE* fs);
 // hpcfile_cstree_hdr_t:
 // ---------------------------------------------------------
 typedef struct hpcfile_cstree_hdr_s {
-
   hpcfile_cstree_id_t fid;
   
   // data type sizes (currently, redundant info)
@@ -91,8 +99,8 @@ typedef struct hpcfile_cstree_hdr_s {
   uint32_t uint_sz;   // 8
   
   // data information
-  uint64_t num_nodes; // number of tree nodes
-  
+  uint64_t num_nodes;         /* number of tree nodes */
+  uint32_t epoch;             /* epoch index */
 } hpcfile_cstree_hdr_t;
 
 int hpcfile_cstree_hdr__init(hpcfile_cstree_hdr_t* x);
@@ -105,6 +113,7 @@ int hpcfile_cstree_hdr__fprint(hpcfile_cstree_hdr_t* x, FILE* fs);
 // ---------------------------------------------------------
 // hpcfile_cstree_nodedata_t:
 // ---------------------------------------------------------
+#define MAX_NUMBER_OF_METRICS 10 
 typedef struct hpcfile_cstree_nodedata_s {
 
   // instruction pointer: more accurately, this is an 'operation
@@ -112,20 +121,41 @@ typedef struct hpcfile_cstree_nodedata_s {
   // by adding 0, 1, or 2 to the instruction pointer for the first,
   // second and third operation, respectively.
   hpcfile_vma_t ip;
-  
+
+  // 'sp': the stack pointer of this node 
+  hpcfile_uint_t sp;
+
+#if 0
   // 'weight': if non-zero, indicates the end of a sample from this
   // node to the tree's root.  The value indicates the number of times
   // the sample has been recorded.
   hpcfile_uint_t weight;
+
+/* FMZ #ifdef CSPROF_TRAMPOLINE_BACKEND */
+    /* 'calls': indicates the number of times this node has been called
+       by its parent node */
+  hpcfile_uint_t calls;
+/* #endif */
+/* #ifdef CSPROF_MALLOC_PROFILING */
+    /* 'death': indicates the path from this node to the root was the
+       cause of the sigsegv that terminated the app */
+  hpcfile_uint_t death;
+/* #endif */
+#endif
+
+  hpcfile_uint_t metrics[MAX_NUMBER_OF_METRICS];
 
 } hpcfile_cstree_nodedata_t;
 
 int hpcfile_cstree_nodedata__init(hpcfile_cstree_nodedata_t* x);
 int hpcfile_cstree_nodedata__fini(hpcfile_cstree_nodedata_t* x);
 
-int hpcfile_cstree_nodedata__fread(hpcfile_cstree_nodedata_t* x, FILE* fs);
-int hpcfile_cstree_nodedata__fwrite(hpcfile_cstree_nodedata_t* x, FILE* fs);
-int hpcfile_cstree_nodedata__fprint(hpcfile_cstree_nodedata_t* x, FILE* fs);
+int hpcfile_cstree_nodedata__fread(hpcfile_cstree_nodedata_t* x, FILE* fs, 
+				   int num_metrics);
+int hpcfile_cstree_nodedata__fwrite(hpcfile_cstree_nodedata_t* x, FILE* fs, 
+				    int num_metrics);
+int hpcfile_cstree_nodedata__fprint(hpcfile_cstree_nodedata_t* x, FILE* fs,
+				      int num_metrics);
 
 // ---------------------------------------------------------
 // hpcfile_cstree_node_t: The root node -- the node without a parent -- is
@@ -143,9 +173,12 @@ typedef struct hpcfile_cstree_node_s {
 int hpcfile_cstree_node__init(hpcfile_cstree_node_t* x);
 int hpcfile_cstree_node__fini(hpcfile_cstree_node_t* x);
 
-int hpcfile_cstree_node__fread(hpcfile_cstree_node_t* x, FILE* fs);
-int hpcfile_cstree_node__fwrite(hpcfile_cstree_node_t* x, FILE* fs);
-int hpcfile_cstree_node__fprint(hpcfile_cstree_node_t* x, FILE* fs);
+int hpcfile_cstree_node__fread(hpcfile_cstree_node_t* x, FILE* fs, 
+			       int num_metrics);
+int hpcfile_cstree_node__fwrite(hpcfile_cstree_node_t* x, FILE* fs, 
+				int num_metrics);
+int hpcfile_cstree_node__fprint(hpcfile_cstree_node_t* x, FILE* fs, 
+				int num_metrics);
 
 //***************************************************************************
 

@@ -77,7 +77,8 @@ hpcfile_csprof_write(FILE* fs, hpcfile_csprof_data_t* data);
 // Note: Any corresponding call stack tree is *not* read by this
 // function.  Users must also call hpcfile_cstree_read().
 int
-hpcfile_csprof_read(FILE* fs, hpcfile_csprof_data_t* data, 
+hpcfile_csprof_read(FILE* fs, hpcfile_csprof_data_t* data,  
+                    epoch_table_t* epochtbl,
 		    hpcfile_cb__alloc_fn_t alloc_fn,
 		    hpcfile_cb__free_fn_t free_fn);
 

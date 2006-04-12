@@ -58,6 +58,7 @@ hpcfile_csprof_write(FILE* fs, hpcfile_csprof_data_t* data)
   hpcfile_csprof_hdr_t fhdr;
   hpcfile_str_t str;
   hpcfile_num8_t num8;
+  int i;
 
   if (!fs) { return HPCFILE_ERR; }
 
@@ -77,21 +78,22 @@ hpcfile_csprof_write(FILE* fs, hpcfile_csprof_data_t* data)
   }
   if (hpcfile_str__fwrite(&str, fs) != HPCFILE_OK) { return HPCFILE_ERR; }
 
-  // Write HPCFILE_TAG__CSPROF_EVENT
-  hpcfile_str__init(&str);
-  str.tag = HPCFILE_TAG__CSPROF_EVENT;
-  if (data->event) {
-    str.length = strlen(data->event);
-    str.str = data->event;
-  }
-  if (hpcfile_str__fwrite(&str, fs) != HPCFILE_OK) { return HPCFILE_ERR; }
+  hpc_fwrite_le4(&data->num_metrics, fs);
+
+
+  for(i = 0; i < data->num_metrics; ++i) {
+      hpcfile_csprof_metric_t metric = data->metrics[i];
+
+      hpcfile_str__init(&str);
+      str.tag = HPCFILE_TAG__CSPROF_EVENT;
+      str.length = strlen(metric.metric_name);
+      str.str = metric.metric_name;
+      if(hpcfile_str__fwrite(&str, fs) != HPCFILE_OK) { return HPCFILE_ERR; }
   
-  // Write HPCFILE_TAG__CSPROF_PERIOD
-  hpcfile_num8__init(&num8);
-  num8.tag = HPCFILE_TAG__CSPROF_PERIOD;
-  num8.num = data->sample_period;
-  if (hpcfile_num8__fwrite(&num8, fs) != HPCFILE_OK) {
-    return HPCFILE_ERR; 
+      hpcfile_num8__init(&num8);
+      num8.tag = HPCFILE_TAG__CSPROF_PERIOD;
+      num8.num = metric.sample_period;
+      if (hpcfile_num8__fwrite(&num8, fs) != HPCFILE_OK) { return HPCFILE_ERR; }
   }
 
   return HPCFILE_OK;
@@ -104,14 +106,15 @@ hpcfile_csprof_write(FILE* fs, hpcfile_csprof_data_t* data)
 // See header file for documentation of public interface.
 // Cf. 'HPC_CSPROF format details' above.
 int
-hpcfile_csprof_read(FILE* fs, hpcfile_csprof_data_t* data, 
+hpcfile_csprof_read(FILE* fs, hpcfile_csprof_data_t* data,  
+                    epoch_table_t* epochtbl,
 		    hpcfile_cb__alloc_fn_t alloc_fn,
 		    hpcfile_cb__free_fn_t free_fn)
 {
   hpcfile_csprof_hdr_t fhdr;
   hpcfile_str_t str;
   hpcfile_num8_t num8;
-  uint64_t i;
+  uint64_t i,ii;
   uint32_t tag;
   size_t sz;
   int ret = HPCFILE_ERR;
@@ -125,9 +128,8 @@ hpcfile_csprof_read(FILE* fs, hpcfile_csprof_data_t* data,
     return HPCFILE_ERR; 
   }
   
-  // Read data chunks
-  for (i = 0; i < fhdr.num_data; ++i) {
-
+  // Read data chunks (except epoch)
+  for (i = 0; i < fhdr.num_data-1; ++i) {  
     // Read data tag
     sz = hpc_fread_le4(&tag, fs);
     if (sz != sizeof(tag)) { return HPCFILE_ERR; }
@@ -140,6 +142,9 @@ hpcfile_csprof_read(FILE* fs, hpcfile_csprof_data_t* data,
 	  free_fn(str.str);
 	  return HPCFILE_ERR;
 	}
+
+	data->target = str.str; 
+
 	break;
       case HPCFILE_NUM8:
 	if (hpcfile_num8__fread(&num8, fs) != HPCFILE_OK) { 
@@ -383,15 +388,20 @@ hpcfile_csprof_data__fini(hpcfile_csprof_data_t* x)
 int 
 hpcfile_csprof_data__fprint(hpcfile_csprof_data_t* x, FILE* fs)
 {
-  fputs("{csprof_data:\n", fs);
+  int i;
 
-  if (x->target) { fprintf(fs, "(target: %s)\n", x->target); }
-  if (x->event) { fprintf(fs, "(event: %s)\n", x->event); }
-  if (x->sample_period) { 
-    fprintf(fs, "(sample period: %"PRIu64")\n", x->sample_period); 
+  fputs("# csprof_data:\n", fs);
+  
+  if (x->target) { fprintf(fs, "# target: %s\n", x->target); }
+  fprintf(fs, "# metrics: %d\n", x->num_metrics);
+  
+  for(i = 0; i < x->num_metrics; ++i) {
+    hpcfile_csprof_metric_t metric = x->metrics[i];
+    
+    if (metric.metric_name) { fprintf(fs, "# event: %s\n", metric.metric_name); }
+    fprintf(fs, "# sample period: %lu\n", metric.sample_period); 
   }
-  fputs("}\n", fs);
-
+  
   return HPCFILE_OK;
 }
 
