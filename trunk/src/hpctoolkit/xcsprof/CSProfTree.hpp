@@ -63,9 +63,11 @@
 #include <lib/support/String.h>
 
 #include <lib/ISA/ISATypes.h>
+#include <vector>
 
 //*************************** Forward Declarations ***************************
 
+using namespace std;
 int AddXMLEscapeChars(int dmpFlag);
 
 const suint UNDEF_LINE = 0;
@@ -102,8 +104,8 @@ public:
   CSProfNode* GetRoot() const { return root; }
   bool        IsEmpty() const { return (root == NULL); }
 
-  void SetRoot(CSProfNode* x) { root = x; }
-  
+  void SetRoot(CSProfNode* x) { root = x; } 
+
   // Dump contents for inspection
   virtual void Dump(std::ostream& os = std::cerr, 
 		    int dmpFlag = XML_TRUE) const;
@@ -125,6 +127,10 @@ class CSProfGroupNode;
 class CSProfCallSiteNode;
 class CSProfLoopNode; 
 class CSProfStmtRangeNode; 
+class CSProfMetricsNode; 
+
+class CSProfProcedureFrameNode;
+class CSProfStatementNode;
 
 // ---------------------------------------------------------
 // CSProfNode: The base node for a call stack profile tree.
@@ -137,6 +143,8 @@ public:
     CALLSITE,
     LOOP,
     STMT_RANGE,
+    PROCEDURE_FRAME,
+    STATEMENT,
     ANY,
     NUMBER_OF_TYPES
   };
@@ -189,11 +197,15 @@ public:
   CSProfCallSiteNode*  AncestorCallSite() const;
   CSProfLoopNode*      AncestorLoop() const;
   CSProfStmtRangeNode* AncestorStmtRange() const;
+  CSProfProcedureFrameNode* AncestorProcedureFrame() const; // CC
+  CSProfStatementNode* AncestorStatement() const; // CC
 
   // --------------------------------------------------------
   // Dump contents for inspection
   // --------------------------------------------------------
   virtual String ToDumpString(int dmpFlag = CSProfTree::XML_TRUE) const; 
+  virtual String ToDumpMetricsString(int dmpFlag) const; 
+
   virtual String Types(); // lists this instance's base and derived types 
   
   void DumpSelfBefore(std::ostream& os = std::cerr, 
@@ -212,7 +224,8 @@ public:
   void DDump();
   void DDumpSort();
   
-private: 
+ protected:
+  // private: 
   NodeType type;
   unsigned int uid; 
 };
@@ -313,11 +326,63 @@ public:
   // Constructor/Destructor
   CSProfCallSiteNode(CSProfNode* _parent);
   CSProfCallSiteNode(CSProfNode* _parent, 
-		     Addr _ip, ushort _opIndex, suint _weight);
+		     Addr _ip, ushort _opIndex, vector<suint> _metrics);
   virtual ~CSProfCallSiteNode();
   
   // Node data
-  suint GetWeight() const { return weight; }
+  Addr GetIP() const { return ip-8; }
+  ushort GetOpIndex() const { return opIndex; }
+  
+  const char* GetFile() const { return file; }
+  const char* GetProc() const { return proc; }
+  suint       GetLine() const { return begLine; }
+
+  void SetIP(Addr _ip, ushort _opIndex) { ip = _ip; opIndex = _opIndex; }
+
+  void SetFile(const char* fnm) { file = fnm; }
+  void SetProc(const char* pnm) { proc = pnm; }
+  void SetLine(suint ln) { begLine = endLine = ln; /* SetLineRange(ln, ln); */ } 
+  void SetFileIsText(bool bi) {fileistext = bi;}
+  bool FileIsText() {return fileistext;} 
+  bool GotSrcInfo() {return donewithsrcinfproc;} 
+  void SetSrcInfoDone(bool bi) {donewithsrcinfproc=bi;}
+
+  suint GetMetric(int metricIndex) {return metrics[metricIndex];}
+  vector<suint>& GetMetrics() {return metrics;}
+  
+  // Dump contents for inspection
+  virtual String ToDumpString(int dmpFlag = CSProfTree::XML_TRUE) const;
+  virtual String ToDumpMetricsString(int dmpFlag = CSProfTree::XML_TRUE) const;
+ 
+  /// add metrics from call site node c to current node.
+  void addMetrics(CSProfCallSiteNode* c);
+protected: 
+  Addr ip;        // instruction pointer for this node
+  ushort opIndex; // index in the instruction 
+
+  vector<suint> metrics;  
+
+  // source file info
+  String file; 
+  bool   fileistext; //separated from load module 
+  bool   donewithsrcinfproc ;
+  String proc;
+};
+
+// ---------------------------------------------------------
+// CSProfStatementNode correspond to leaf nodes in the call stack tree 
+// children of: CSProfPgmNode, CSProfGroupNode, CSProfCallSiteNode
+// ---------------------------------------------------------
+  
+class CSProfStatementNode: public CSProfCodeNode {
+ public:
+  // Constructor/Destructor
+  CSProfStatementNode(CSProfNode* _parent);
+  virtual ~CSProfStatementNode();
+
+  void copyCallSiteNode(CSProfCallSiteNode* _node);
+
+  // Node data
   Addr GetIP() const { return ip; }
   ushort GetOpIndex() const { return opIndex; }
   
@@ -326,26 +391,61 @@ public:
   suint       GetLine() const { return begLine; }
 
   void SetIP(Addr _ip, ushort _opIndex) { ip = _ip; opIndex = _opIndex; }
-  void SetWeight(suint w) { weight = w; }
 
   void SetFile(const char* fnm) { file = fnm; }
   void SetProc(const char* pnm) { proc = pnm; }
-  void SetLine(suint ln) { begLine = endLine = ln; /* SetLineRange(ln, ln); */ }
+  void SetLine(suint ln) { begLine = endLine = ln; /* SetLineRange(ln, ln); */ } 
+  void SetFileIsText(bool bi) {fileistext = bi;}
+  bool FileIsText() {return fileistext;}
+
+  suint GetMetric(int metricIndex) {return metrics[metricIndex];}
   
   // Dump contents for inspection
   virtual String ToDumpString(int dmpFlag = CSProfTree::XML_TRUE) const;
-  
-private: 
+  virtual String ToDumpMetricsString(int dmpFlag = CSProfTree::XML_TRUE) const;
+ 
+protected: 
   Addr ip;        // instruction pointer for this node
   ushort opIndex; // index in the instruction 
 
-  // 'weight': if non-zero, indicates the end of a sample from this
-  // node to the tree's root.  The value indicates the number of times
-  // the sample has been recorded.
-  suint weight;
+  vector<suint> metrics;  
 
   // source file info
-  String file;
+  String file; 
+  bool   fileistext; //separated from load module
+  String proc;
+};
+
+// ---------------------------------------------------------
+// CSProfProcedureFrameNode is  
+// children of: CSProfPgmNode, CSProfGroupNode, CSProfCallSiteNode
+// children: CSProfCallSiteNode, CSProfStatementNode
+// ---------------------------------------------------------
+  
+class CSProfProcedureFrameNode: public CSProfCodeNode {
+public:
+  // Constructor/Destructor
+  CSProfProcedureFrameNode(CSProfNode* _parent);
+  virtual ~CSProfProcedureFrameNode();
+  
+  // Node data
+  const char* GetFile() const { return file; }
+  const char* GetProc() const { return proc; }
+  suint       GetLine() const { return begLine; }
+
+  void SetFile(const char* fnm) { file = fnm; }
+  void SetProc(const char* pnm) { proc = pnm; }
+  void SetLine(suint ln) { begLine = endLine = ln; /* SetLineRange(ln, ln); */ } 
+  void SetFileIsText(bool bi) {fileistext = bi;}
+  bool FileIsText() {return fileistext;}
+
+  // Dump contents for inspection
+  virtual String ToDumpString(int dmpFlag = CSProfTree::XML_TRUE) const;
+ 
+private: 
+  // source file info
+  String file; 
+  bool   fileistext; //separated from load module
   String proc;
 };
 
@@ -388,6 +488,13 @@ public:
 private:
   int id;
 };
+
+#ifndef xDEBUG
+#define xDEBUG(flag, code) {if (flag) {code; fflush(stdout); fflush(stderr);}} 
+#endif
+
+#define DEB_READ_MMETRICS 0
+#define DEB_UNIFY_PROCEDURE_FRAME 0
 
 #include "CSProfTreeIterator.h" 
 

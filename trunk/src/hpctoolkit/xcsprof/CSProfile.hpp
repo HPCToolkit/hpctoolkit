@@ -59,6 +59,8 @@
 #include <include/general.h> 
 
 #include "CSProfTree.h"
+#include "CSProfMetric.h"
+#include "CSProfEpoch.h"
 
 //*************************** Forward Declarations ***************************
 
@@ -66,24 +68,37 @@
 // CSProfile
 //***************************************************************************
 
-class CSProfileMetric;
-
 // 'CSProfile' represents data resulting from a call stack profile.
 // It assumes that only one (possibly complex) metric was used in
 // collecting call stack samples and that consequently there is only
 // one set of sample data.  The call stack data is stored as a tree
 // with the root representing the bottom of the all the call stack
-// samples.
+// samples. ----OLD
+
+// call stack profile could have multiple metrics such as "retired
+// instruction" "byte allocated" "byte deallocated" "sigmentation
+// fault" "cycle" etc.
+// We supposed to get the number of metrics from the data file and
+// based on the number to have a vector of metrics
+// The call stack data is stored as a tree with the root representing
+// the bottom of the all the call stack smples
+// muliple metrics => multiple sample data associated with each tree leaf
+
 class CSProfile: public Unique {
 public:
   // Constructor/Destructor
-  CSProfile();
+  CSProfile(suint i);
   virtual ~CSProfile();
   
   // Data
-  const char*      GetTarget() const { return target; }
-  CSProfileMetric* GetMetric() const { return metric; }
-  CSProfTree*      GetTree() const { return tree; }
+
+  const char*      GetTarget()              const { return target; }
+  suint            GetNumberOfMetrics()     const { return numberofmetrics; }
+  CSProfileMetric* GetMetric(const suint i) const { return &metrics[i]; }
+  CSProfTree*      GetTree()                const { return tree; }
+  void             SetEpoch(CSProfEpoch *ep)  {epoch=ep;}
+  CSProfEpoch*     GetEpoch()               const { return epoch; }
+  void             ProfileDumpEpoch() {epoch->Dump(); }
 
   void SetTarget(const char* s) { target = s; }
 
@@ -92,47 +107,12 @@ public:
   virtual void DDump() const;
  
 private:
-  String target;
-  CSProfileMetric* metric;
+  String target; 
+  suint  numberofmetrics;
+  CSProfileMetric* metrics;
   CSProfTree* tree;
+  CSProfEpoch* epoch;
 };
-
-//***************************************************************************
-// CSProfileMetric
-//***************************************************************************
-
-// 'CSProfileMetric' describes the metric by which call stack profile
-// data was collected.
-class CSProfileMetric
-{
-public:
-  CSProfileMetric() : period(0) { }
-  ~CSProfileMetric() { }
-
-  // Name, Description: The metric name and a description
-  // Period: The sampling period (whether event or instruction based)
-  const char*  GetName()        const { return name; }
-  const char*  GetDescription() const { return description; }
-  unsigned int GetPeriod()      const { return period; }
-  
-  void SetName(const char* s)        { name = s; }
-  void SetDescription(const char* s) { description = s; }
-  void SetPeriod(unsigned int p)     { period = p; }
-
-  void Dump(std::ostream& os = std::cerr) const;
-  void DDump() const; 
-
-private:
-  // Should not be used  
-  CSProfileMetric(const CSProfileMetric& m) { }
-  CSProfileMetric& operator=(const CSProfileMetric& m) { return *this; }
-
-protected:
-private:  
-  String name;
-  String description;
-  unsigned int period; // sampling period
-};
-
 
 #endif
+

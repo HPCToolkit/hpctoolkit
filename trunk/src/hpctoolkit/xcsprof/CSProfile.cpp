@@ -70,17 +70,21 @@ using std::endl;
 //***************************************************************************
 // CSProfile
 //***************************************************************************
-
-CSProfile::CSProfile()
+CSProfile::CSProfile(suint i)
 {
-  metric = new CSProfileMetric;
-  tree = new CSProfTree;
+  numberofmetrics =     i;
+  metrics         =   new CSProfileMetric[i];
+  tree            =   new CSProfTree;
+  epoch           =   NULL;
 }
 
 CSProfile::~CSProfile()
 {
-  delete metric;
-  delete tree;
+  delete[] metrics;  
+  delete tree; 
+  if (epoch) {
+      delete   epoch;
+   }
 }
 
 void 

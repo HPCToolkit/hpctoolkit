@@ -90,6 +90,12 @@ const CSProfNodeFilter NodeTypeFilter[CSProfNode::NUMBER_OF_TYPES] = {
 		   CSProfNode::NodeTypeToName(CSProfNode::STMT_RANGE),
 		   CSProfNode::STMT_RANGE),
   CSProfNodeFilter(HasNodeType,
+		   CSProfNode::NodeTypeToName(CSProfNode::GROUP), 
+		   CSProfNode::PROCEDURE_FRAME),
+  CSProfNodeFilter(HasNodeType,
+		   CSProfNode::NodeTypeToName(CSProfNode::GROUP), 
+		   CSProfNode::STATEMENT),
+  CSProfNodeFilter(HasNodeType,
 		   CSProfNode::NodeTypeToName(CSProfNode::ANY),
 		   CSProfNode::ANY)
 }; 

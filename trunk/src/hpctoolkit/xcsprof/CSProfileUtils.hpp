@@ -53,6 +53,8 @@
 //************************* System Include Files ****************************
 
 #include <iostream>
+#include <vector>
+#include <stack>
 
 //*************************** User Include Files ****************************
 
@@ -66,20 +68,44 @@
 
 //*************************** Forward Declarations ***************************
 
-CSProfile* ReadCSProfileFile_HCSPROFILE(const char* fnm);
+CSProfile* ReadCSProfileFile_HCSPROFILE(const char* fnm,const char *execnm);
 
 //****************************************************************************
 
+void WriteCSProfileInDatabase(CSProfile* prof, String dbDirectory);
 void WriteCSProfile(CSProfile* prof, std::ostream& os,
 		    bool prettyPrint = true);
 
 bool AddSourceFileInfoToCSProfile(CSProfile* prof, LoadModuleInfo* lm);
-bool AddSourceFileInfoToCSTreeNode(CSProfNode* node, LoadModuleInfo* lm);
+bool AddSourceFileInfoToCSTreeNode(CSProfCallSiteNode* node, 
+                                   LoadModuleInfo*     lm  ,
+                                   bool                istext);
+
+void copySourceFiles (CSProfile *prof, 
+		      std::vector<String>& searchPaths,
+		      String dbSourceDirectory);  
+
+void LdmdSetUsedFlag(CSProfile* prof); 
 
 //****************************************************************************
 
 bool NormalizeCSProfile(CSProfile* prof);
+bool NormalizeInternalCallSites(CSProfile* prof, LoadModuleInfo* lmi);
 
 //****************************************************************************
+
+#define MAX_PATH_SIZE 2048 
+/** Normalizes a file path.*/
+String normalizeFilePath(String filePath);
+String normalizeFilePath(String filePath, 
+			 std::stack<String>& pathSegmentsStack);
+void breakPathIntoSegments(String normFilePath, 
+			   std::stack<String>& pathSegmentsStack);
+
+#define DEB_READ_MMETRICS 0
+#define DEB_LOAD_MODULE 0
+#define DEB_PROC_FIRST_LINE 0
+#define DEB_NORM_SEARCH_PATH  0
+#define DEB_MKDIR_SRC_DIR 0
 
 #endif
