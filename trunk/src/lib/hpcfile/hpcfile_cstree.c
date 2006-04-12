@@ -30,6 +30,7 @@
 #include <string.h>
 
 #include <sys/stat.h>
+#include <assert.h>
 
 //*************************** User Include Files ****************************
 
@@ -44,7 +45,8 @@ hpcfile_cstree_write_node(FILE* fs, void* tree, void* node,
 			  hpcfile_uint_t id_parent,
 			  hpcfile_cstree_cb__get_data_fn_t get_node_data_fn,
 			  hpcfile_cstree_cb__get_first_child_fn_t get_first_child_fn,
-			  hpcfile_cstree_cb__get_sibling_fn_t get_sibling_fn);
+			  hpcfile_cstree_cb__get_sibling_fn_t get_sibling_fn, 
+			  int num_metrics);
 
 int hpcfile_cstree_read_hdr(FILE* fs, hpcfile_cstree_hdr_t* hdr);
 
@@ -62,6 +64,9 @@ int hpcfile_cstree_read_hdr(FILE* fs, hpcfile_cstree_hdr_t* hdr);
 // children, the id of x is less than the id of any child and less
 // than the id of any child's descendent.
 
+/* HACK HACK HACK: this used to be static in `hpcfile_cstree_write_node',
+   but multiple invocations of `hpcfile_cstree_write' made that problematic. */
+static hpcfile_uint_t id = 0;
 
 //***************************************************************************
 // hpcfile_cstree_write()
@@ -72,9 +77,11 @@ int hpcfile_cstree_read_hdr(FILE* fs, hpcfile_cstree_hdr_t* hdr);
 int
 hpcfile_cstree_write(FILE* fs, void* tree, void* root, 
 		     hpcfile_uint_t num_nodes,
+                     hpcfile_uint_t epoch,
 		     hpcfile_cstree_cb__get_data_fn_t get_data_fn,
 		     hpcfile_cstree_cb__get_first_child_fn_t get_first_child_fn,
-		     hpcfile_cstree_cb__get_sibling_fn_t get_sibling_fn)
+		     hpcfile_cstree_cb__get_sibling_fn_t get_sibling_fn, 
+		     int num_metrics)
 {
   hpcfile_cstree_hdr_t fhdr;
   int ret;
@@ -83,14 +90,19 @@ hpcfile_cstree_write(FILE* fs, void* tree, void* root,
   
   // Write header
   hpcfile_cstree_hdr__init(&fhdr);
+  fhdr.epoch = epoch;
   fhdr.num_nodes = num_nodes;
   if (hpcfile_cstree_hdr__fwrite(&fhdr, fs) != HPCFILE_OK) { 
     return HPCFILE_ERR; 
   }
-  
+
+  /* reset the node id */
+  id = 0;
+
   // Write each node, beginning with root
   ret = hpcfile_cstree_write_node(fs, tree, root, 0, get_data_fn, 
-				  get_first_child_fn, get_sibling_fn);
+				  get_first_child_fn, get_sibling_fn,
+				  num_metrics);
   
   return ret;
 }
@@ -100,10 +112,9 @@ hpcfile_cstree_write_node(FILE* fs, void* tree, void* node,
 			  hpcfile_uint_t id_parent,
 			  hpcfile_cstree_cb__get_data_fn_t get_data_fn,
 			  hpcfile_cstree_cb__get_first_child_fn_t get_first_child_fn,
-			  hpcfile_cstree_cb__get_sibling_fn_t get_sibling_fn)
+			  hpcfile_cstree_cb__get_sibling_fn_t get_sibling_fn,
+			  int num_metrics)
 {
-  static hpcfile_uint_t id = 0;
-
   hpcfile_cstree_node_t fnode;
   hpcfile_uint_t myid;
   void* first, *c;
@@ -116,7 +127,7 @@ hpcfile_cstree_write_node(FILE* fs, void* tree, void* node,
   fnode.id_parent = id_parent;
   get_data_fn(tree, node, &fnode.data);
 
-  if (hpcfile_cstree_node__fwrite(&fnode, fs) != HPCFILE_OK) { 
+  if (hpcfile_cstree_node__fwrite(&fnode, fs, num_metrics) != HPCFILE_OK) { 
     return HPCFILE_ERR; 
   }
 
@@ -128,7 +139,7 @@ hpcfile_cstree_write_node(FILE* fs, void* tree, void* node,
   first = c = get_first_child_fn(tree, node);
   while (c) {
     if (hpcfile_cstree_write_node(fs, tree, c, myid, get_data_fn, 
-				  get_first_child_fn, get_sibling_fn) 
+				  get_first_child_fn, get_sibling_fn, num_metrics) 
 	!= HPCFILE_OK) {
       return HPCFILE_ERR;
     }
@@ -151,13 +162,14 @@ hpcfile_cstree_read(FILE* fs, void* tree,
 		    hpcfile_cstree_cb__create_node_fn_t create_node_fn,
 		    hpcfile_cstree_cb__link_parent_fn_t link_parent_fn,
 		    hpcfile_cb__alloc_fn_t alloc_fn,
-		    hpcfile_cb__free_fn_t free_fn)
+		    hpcfile_cb__free_fn_t free_fn,
+		    int num_metrics)
 {
   hpcfile_cstree_hdr_t fhdr;
   hpcfile_cstree_node_t fnode;
   void* node, *parent;
   int i, ret = HPCFILE_ERR;
-
+  
   // A vector storing created tree nodes.  The vector indices correspond to
   // the nodes' persistent ids.
   void** node_vec = NULL;
@@ -173,16 +185,20 @@ hpcfile_cstree_read(FILE* fs, void* tree,
   if (fhdr.num_nodes != 0) {
     node_vec = alloc_fn(sizeof(void*) * fhdr.num_nodes);
   }
+
+   node_vec[0] = 0; //FMZ
   
   // Read each node, creating it and linking it to its parent 
   for (i = 0; i < fhdr.num_nodes; ++i) {
 
-    if (hpcfile_cstree_node__fread(&fnode, fs) != HPCFILE_OK) { 
+    if (hpcfile_cstree_node__fread(&fnode, fs, num_metrics) != HPCFILE_OK) { 
       goto cstree_read_cleanup; // HPCFILE_ERR
     }
     if (fnode.id_parent >= fhdr.num_nodes) { 
       goto cstree_read_cleanup; // HPCFILE_ERR
-    }
+    } 
+    
+    
     parent = node_vec[fnode.id_parent];
 
     // parent should already exist unless id_parent and id are equal
@@ -191,12 +207,12 @@ hpcfile_cstree_read(FILE* fs, void* tree,
     }
 
     // Create node and link to parent
-    node = create_node_fn(tree, &fnode.data);
-    node_vec[fnode.id] = node;
-    
+    node = create_node_fn(tree, &fnode.data, num_metrics);
+    node_vec[fnode.id] = node;  
     if (parent) {
       link_parent_fn(tree, node, parent);
-    } 
+    }  
+
   }
 
   // Success! Note: We assume that it is possible for other data to
@@ -216,7 +232,7 @@ hpcfile_cstree_read(FILE* fs, void* tree,
 
 // See header file for documentation of public interface.
 int
-hpcfile_cstree_convert_to_txt(FILE* infs, FILE* outfs)
+hpcfile_cstree_convert_to_txt(FILE* infs, FILE* outfs, int num_metrics)
 {
   hpcfile_cstree_hdr_t fhdr;
   hpcfile_cstree_node_t fnode;
@@ -234,11 +250,11 @@ hpcfile_cstree_convert_to_txt(FILE* infs, FILE* outfs)
 
   // Read and print each node
   for (i = 0; i < fhdr.num_nodes; ++i) {
-    if (hpcfile_cstree_node__fread(&fnode, infs) != HPCFILE_OK) { 
+    if (hpcfile_cstree_node__fread(&fnode, infs, num_metrics) != HPCFILE_OK) { 
       fprintf(outfs, "** Error reading node number %d **\n", i);
       return HPCFILE_ERR;
     }
-    hpcfile_cstree_node__fprint(&fnode, outfs);
+    hpcfile_cstree_node__fprint(&fnode, outfs, num_metrics);
   }
   
   // Success! Note: We assume that it is possible for other data to
@@ -378,6 +394,12 @@ hpcfile_cstree_hdr__fread(hpcfile_cstree_hdr_t* x, FILE* fs)
   sz = hpc_fread_le8(&x->num_nodes, fs);
   if (sz != sizeof(x->num_nodes)) { return HPCFILE_ERR; }
 
+  sz = hpc_fread_le4(&x->epoch, fs);
+  if (sz != sizeof(x->epoch)) { return HPCFILE_ERR; } 
+
+//  printf("vma_sz=%u,uint_sz=%u,num_nodes=%lu,epoch=%u -FMZ \n",x->vma_sz,
+//          x->uint_sz,x->num_nodes,x->epoch);
+
   return HPCFILE_OK;
 }
 
@@ -396,7 +418,10 @@ hpcfile_cstree_hdr__fwrite(hpcfile_cstree_hdr_t* x, FILE* fs)
 
   sz = hpc_fwrite_le8(&x->num_nodes, fs);
   if (sz != sizeof(x->num_nodes)) { return HPCFILE_ERR; }
-  
+
+  sz = hpc_fwrite_le4(&x->epoch, fs);
+  if (sz != sizeof(x->epoch)) { return HPCFILE_ERR; }
+
   return HPCFILE_OK;
 }
 
@@ -429,38 +454,83 @@ hpcfile_cstree_nodedata__fini(hpcfile_cstree_nodedata_t* x)
 }
 
 int 
-hpcfile_cstree_nodedata__fread(hpcfile_cstree_nodedata_t* x, FILE* fs)
+hpcfile_cstree_nodedata__fread(hpcfile_cstree_nodedata_t* x, FILE* fs, int num_metrics)
 {
+  assert (num_metrics <= MAX_NUMBER_OF_METRICS);
   size_t sz;
+  int i;
 
   sz = hpc_fread_le8(&x->ip, fs);
   if (sz != sizeof(x->ip)) { return HPCFILE_ERR; }
 
-  sz = hpc_fread_le8(&x->weight, fs);
-  if (sz != sizeof(x->weight)) { return HPCFILE_ERR; }
- 
+  sz = hpc_fread_le8(&x->sp, fs);
+  if (sz != sizeof(x->sp)) { return HPCFILE_ERR; } 
+
+  xDEBUG(DEB_READ_MMETRICS, 
+	 fprintf(stderr, "reading node ip=%lx\n", x->ip);
+	 fflush(stderr););
+
+  for (i=0; i<num_metrics; i++) {
+    sz = hpc_fread_le8(&x->metrics[i], fs);
+    xDEBUG(DEB_READ_MMETRICS,
+	   fprintf(stderr, "metrics[%d]=%d\n", i, x->metrics[i]);
+	   fflush(stderr););
+    if (sz != sizeof(hpcfile_uint_t)) { 
+      return HPCFILE_ERR; 
+    }
+  }
+
   return HPCFILE_OK;
 }
 
+
 int 
-hpcfile_cstree_nodedata__fwrite(hpcfile_cstree_nodedata_t* x, FILE* fs)
-{
+hpcfile_cstree_nodedata__fwrite(hpcfile_cstree_nodedata_t* x, FILE* fs,
+				int num_metrics) {
+  assert(0);
+  assert (num_metrics <= MAX_NUMBER_OF_METRICS);
   size_t sz;
-  
+  int i;
+
   sz = hpc_fwrite_le8(&x->ip, fs);
   if (sz != sizeof(x->ip)) { return HPCFILE_ERR; }
-  
-  sz = hpc_fwrite_le8(&x->weight, fs);
-  if (sz != sizeof(x->weight)) { return HPCFILE_ERR; }
 
+  sz = hpc_fwrite_le8(&x->sp, fs);
+  if (sz != sizeof(x->sp)) { return HPCFILE_ERR; }
+
+#if 0  
+  sz = hpc_fwrite_le8(&x->weight, fs);  //metrics[[0]??? FMZ
+  if (sz != sizeof(x->weight)) { return HPCFILE_ERR; } 
+
+#ifdef CSPROF_TRAMPOLINE_BACKEND
+  sz = hpc_fwrite_le8(&x->calls, fs);
+  if (sz != sizeof(x->calls)) { return HPCFILE_ERR; }
+#endif
+#ifdef CSPROF_MALLOC_PROFILING
+  sz = hpc_fwrite_le8(&x->death, fs);
+  if (sz != sizeof(x->death)) { return HPCFILE_ERR; }
+#endif 
+# endif  
+
+  for (i=0; i<num_metrics; i++) {
+    sz = hpc_fwrite_le8(&x->metrics[i], fs);
+    if (sz != sizeof(hpcfile_uint_t)) { 
+      return HPCFILE_ERR; 
+    }
+  }
   return HPCFILE_OK;
 }
 
 int 
-hpcfile_cstree_nodedata__fprint(hpcfile_cstree_nodedata_t* x, FILE* fs)
+hpcfile_cstree_nodedata__fprint(hpcfile_cstree_nodedata_t* x, FILE* fs, 
+				int num_metrics)
 {
-  fprintf(fs, "{nodedata: (ip: %"PRIx64") (weight: %"PRIu64")}\n", 
-	  x->ip, x->weight);
+  int i;
+  fprintf(fs, "{nodedata: (ip: %lx) ", x->ip); 
+  for (i=0; i<num_metrics; i++) {
+    fprintf(fs, " %ld ", x->metrics[i]);
+  }
+  fprintf(fs,"} \n");
   
   return HPCFILE_OK;
 }
@@ -483,50 +553,49 @@ hpcfile_cstree_node__fini(hpcfile_cstree_node_t* x)
 }
 
 int 
-hpcfile_cstree_node__fread(hpcfile_cstree_node_t* x, FILE* fs)
+hpcfile_cstree_node__fread(hpcfile_cstree_node_t* x, FILE* fs, int num_metrics)
 {
   size_t sz;
 
-  if (hpcfile_cstree_nodedata__fread(&x->data, fs) != HPCFILE_OK) {
-    return HPCFILE_ERR; 
-  }
-  
   sz = hpc_fread_le8(&x->id, fs);
   if (sz != sizeof(x->id)) { return HPCFILE_ERR; }
   
   sz = hpc_fread_le8(&x->id_parent, fs);
   if (sz != sizeof(x->id_parent)) { return HPCFILE_ERR; }
   
+  if (hpcfile_cstree_nodedata__fread(&x->data, fs, num_metrics) != HPCFILE_OK) {
+    return HPCFILE_ERR; 
+  }
+  
   return HPCFILE_OK;
 }
 
 int 
-hpcfile_cstree_node__fwrite(hpcfile_cstree_node_t* x, FILE* fs)
+hpcfile_cstree_node__fwrite(hpcfile_cstree_node_t* x, FILE* fs, int num_metrics)
 {
   size_t sz;
 
-  if (hpcfile_cstree_nodedata__fwrite(&x->data, fs) != HPCFILE_OK) {
-    return HPCFILE_ERR; 
-  }
-  
   sz = hpc_fwrite_le8(&x->id, fs);
   if (sz != sizeof(x->id)) { return HPCFILE_ERR; }
   
   sz = hpc_fwrite_le8(&x->id_parent, fs);
   if (sz != sizeof(x->id_parent)) { return HPCFILE_ERR; }
   
+  if (hpcfile_cstree_nodedata__fwrite(&x->data, fs, num_metrics) != HPCFILE_OK) {
+    return HPCFILE_ERR; 
+  }
+  
   return HPCFILE_OK;
 }
 
 int 
-hpcfile_cstree_node__fprint(hpcfile_cstree_node_t* x, FILE* fs)
+hpcfile_cstree_node__fprint(hpcfile_cstree_node_t* x, FILE* fs, int num_metrics)
 {
   fputs("{node:\n", fs);
 
-  hpcfile_cstree_nodedata__fprint(&x->data, fs);
+  hpcfile_cstree_nodedata__fprint(&x->data, fs, num_metrics);
   
-  fprintf(fs, "(id: %"PRIu64") (id_parent: %"PRIu64")}\n", 
-	  x->id, x->id_parent);
+  fprintf(fs, "(id: %lu) (id_parent: %lu)}\n", x->id, x->id_parent);
   
   return HPCFILE_OK;
 }

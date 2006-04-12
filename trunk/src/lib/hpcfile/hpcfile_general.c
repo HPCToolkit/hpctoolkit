@@ -107,9 +107,10 @@ hpcfile_str__fread(hpcfile_str_t* x, FILE* fs,
   sz = hpc_fread_le4(&x->length, fs);
   if (sz != sizeof(x->length)) { return HPCFILE_ERR; }
 
-  if (x->length > 0) {
-    x->str = alloc_fn(x->length * 1);
-    sz = fread(x->str, 1, x->length, fs);
+  if (x->length > 0) { 
+    x->str = alloc_fn((x->length + 1) * 1); // add space for '\0'
+    sz = fread(x->str, 1, x->length, fs);  
+    x->str[x->length] = '\0'; 
     if (sz != x->length) { return HPCFILE_ERR; }
   }
   
