@@ -176,11 +176,15 @@ main(int argc, char* argv[])
             exit(2);
           }
 
+       cout << "Current load module is : " << csploadmd->GetName() << endl;
+
        modInfo = new LoadModuleInfo(ldmd, map);  
 
        AddSourceFileInfoToCSProfile(profData, modInfo); 
 
-       NormalizeCSProfile(profData);
+#if 0 //move out of the loop
+       NormalizeCSProfile(profData);  
+#endif 
     
       // create an extended profile representation
       // normalize call sites 
@@ -199,7 +203,9 @@ main(int argc, char* argv[])
       delete(modInfo->GetLM()); 
       modInfo = NULL;
 
-    } /* for each load module */
+    } /* for each load module */ 
+
+     NormalizeCSProfile(profData);  
 
     // prepare output directory 
     

@@ -330,7 +330,7 @@ public:
   virtual ~CSProfCallSiteNode();
   
   // Node data
-  Addr GetIP() const { return ip-8; }
+  Addr GetIP() const { return ip-1; }
   ushort GetOpIndex() const { return opIndex; }
   
   const char* GetFile() const { return file; }
