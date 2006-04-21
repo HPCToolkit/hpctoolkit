@@ -100,9 +100,9 @@ public:
 
 private: 
   LoadModuleInfo* ldminfo;
-  String name;
-  Addr vaddr ;
-  Addr mapaddr; 
+  String name ;
+  Addr vaddr  ;
+  Addr mapaddr;  
   bool used   ;
 
 } ;
@@ -131,7 +131,6 @@ public:
 
    // Data
     void  AddLoadModule(CSProfLDmodule* ldm) {loadmoduleVec.push_back(ldm);}
-    LoadModule* FindLoadModule(Addr ip); 
 
     void SetLoadmodule(suint i, const CSProfLDmodule* ldm) {
 	     loadmoduleVec[i] = const_cast<CSProfLDmodule*>(ldm);
@@ -142,7 +141,8 @@ public:
                      compare_ldmodule_by_mapaddr());
      } 
     
-   suint GetNumLdModule() {return numberofldmodule;}
+   suint GetNumLdModule() {return numberofldmodule;} 
+
    CSProfLDmodule* GetLdModule(suint i)  {return loadmoduleVec[i];}
     
     // Debug

@@ -154,13 +154,23 @@ main(int argc, char* argv[])
     int numberofldmd =profData->GetEpoch()->GetNumLdModule() ;      
     LoadModule*      ldmd   = NULL; 
     CSProfLDmodule * csploadmd= NULL; 
-    LoadModuleInfo * modInfo;
+    LoadModuleInfo * modInfo;   
+    Addr             startaddr;
+    Addr             endaddr = 0; 
+    bool             lastone ;
 
-    for (int i=0; i<numberofldmd; i++) {  
-       csploadmd = profData->GetEpoch()->GetLdModule(i);    
+    for (int i=numberofldmd-1; i>=0; i--) {   
+       if (i==numberofldmd-1)
+           lastone = true;
+       else 
+           lastone = false; 
+
+       csploadmd = profData->GetEpoch()->GetLdModule(i); 
+
+       startaddr = csploadmd->GetMapaddr(); // for next csploadmodule  
 
        if (!(csploadmd->GetUsedFlag())) //ignore unused loadmodule 
-          continue;
+          continue; 
 
        try {
          ldmd = new LoadModule();  
@@ -174,17 +184,29 @@ main(int argc, char* argv[])
           } catch (...) {
             cerr << "Error: Exception encountered while reading binary!\n";
             exit(2);
-          }
-
-       cout << "Current load module is : " << csploadmd->GetName() << endl;
+          }  
+       
+       // get the start and end PC from the text sections 
+       Addr tmp1,tmp2;
+       cout << "*****Current load module is : " << csploadmd->GetName()<<"*****"<< endl; 
+       ldmd->GetTextStartEndPC(&tmp1,&tmp2);    
+       ldmd->SetTextStart(tmp1);
+       ldmd->SetTextEnd(tmp2);     
+#if 0
+       cout<< "\t LoadModule text started from address : "<< hex <<"0x" << tmp1 << endl;
+       cout<< "\t LoadModule text end at the   address : "<< hex <<"0x" << tmp2 << endl; 
+       cout<< "\t LoadModule entry point is: "<< hex << "0x" <<  ldmd->GetTextStart() << endl;
+       cout<< "\t data file mapaddress  from   address : "<< hex <<"0x" << startaddr << endl;
+       cout<< "\t data file mapaddress  supposed end   : "<< hex <<"0x" << endaddr   <<dec<< endl; 
+       // if ldmd is not an excutable, do relocate  
+#endif   
+       if ( !(ldmd->GetType() == LoadModule::Executable) ) {
+           ldmd->Relocate(startaddr);   
+       }     
 
        modInfo = new LoadModuleInfo(ldmd, map);  
 
-       AddSourceFileInfoToCSProfile(profData, modInfo); 
-
-#if 0 //move out of the loop
-       NormalizeCSProfile(profData);  
-#endif 
+       AddSourceFileInfoToCSProfile(profData, modInfo,startaddr,endaddr,lastone);   
     
       // create an extended profile representation
       // normalize call sites 
@@ -197,7 +219,9 @@ main(int argc, char* argv[])
       //                                foo:1   foo:2 
       //  
 
-      NormalizeInternalCallSites(profData, modInfo);   
+      NormalizeInternalCallSites(profData, modInfo,startaddr, endaddr,lastone);    
+
+      endaddr = startaddr-1;
      
       // close current load module and free memory space 
       delete(modInfo->GetLM()); 
