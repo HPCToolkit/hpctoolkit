@@ -153,26 +153,33 @@ WriteCSProfile(CSProfile* prof, std::ostream& os, bool prettyPrint)
 }
 
 bool 
-AddSourceFileInfoToCSProfile(CSProfile* prof, LoadModuleInfo* lm)
+AddSourceFileInfoToCSProfile(CSProfile* prof, LoadModuleInfo* lm,
+                              Addr startaddr, Addr endaddr, bool lastone)
 {
   bool noError            = true;
   Addr curr_ip; 
-  Addr startaddr, endaddr ;
 
   /* point to the first load module in the Epoch table */
   CSProfTree* tree = prof->GetTree();
   CSProfNode* root = tree->GetRoot(); 
 
+#if 0
   startaddr = lm->GetLM()->GetTextStart();
-  endaddr   = lm->GetLM()->GetTextEnd();    
+  endaddr   = lm->GetLM()->GetTextEnd();     
+
+// FMZ debug
+// callsite IP need to adjusted to the new text start
+  cout << "startadd" << hex <<"0x"<< startaddr <<endl;
+  cout << "endadd"   << hex <<"0x"<< endaddr   <<endl;   
+#endif
 
   for (CSProfNodeIterator it(root); it.CurNode(); ++it) { 
        CSProfNode* n = it.CurNode();
        CSProfCallSiteNode* nn = dynamic_cast<CSProfCallSiteNode*>(n);
        if (nn && !(nn->GotSrcInfo()))  {
-         curr_ip = nn->GetIP(); 
+         curr_ip = nn->GetIP();  //FMZ
          if ((curr_ip >= startaddr ) &&
-                 ( curr_ip <=endaddr) ) { 
+             (lastone || curr_ip <=endaddr )) { 
               // in the current load module   
               AddSourceFileInfoToCSTreeNode(nn,lm,true);   
               nn->SetSrcInfoDone(true);
@@ -504,15 +511,17 @@ typedef std::map<String, CSProfProcedureFrameNode*, StringLt>::iterator
 typedef std::map<String, CSProfProcedureFrameNode*, StringLt>::value_type
   StringToProcedureFramesMapVal;
 
-bool NormalizeSameProcedureChildren(CSProfile* prof, LoadModuleInfo *lmi);
+bool NormalizeSameProcedureChildren(CSProfile* prof, LoadModuleInfo *lmi,
+				    Addr startaddr, Addr endaddr, bool lastone);
 
 bool 
-NormalizeInternalCallSites(CSProfile* prof, LoadModuleInfo *lmi)
+NormalizeInternalCallSites(CSProfile* prof, LoadModuleInfo *lmi, 
+                           Addr startaddr, Addr endaddr, bool lastone)
 {
   // Remove duplicate/inplied file and procedure information from tree
   bool pass1 = true;
 
-  bool pass2 = NormalizeSameProcedureChildren(prof, lmi);
+  bool pass2 = NormalizeSameProcedureChildren(prof, lmi,startaddr, endaddr, lastone);
   
   return (pass1 && pass2);
 }
@@ -521,10 +530,12 @@ NormalizeInternalCallSites(CSProfile* prof, LoadModuleInfo *lmi)
 // FIXME
 // If pc values from the leaves map to the same source file info,
 // coalese these leaves into one.
-bool NormalizeSameProcedureChildren(CSProfile* prof, CSProfNode* node, LoadModuleInfo* lmi);
+bool NormalizeSameProcedureChildren(CSProfile* prof, CSProfNode* node, LoadModuleInfo* lmi,
+                                    Addr startaddr, Addr endaddr, bool lastone);
 
 bool 
-NormalizeSameProcedureChildren(CSProfile* prof, LoadModuleInfo *lmi)
+NormalizeSameProcedureChildren(CSProfile* prof, LoadModuleInfo *lmi,
+                               Addr startaddr, Addr endaddr, bool lastone)
 {
   CSProfTree* csproftree = prof->GetTree();
   if (!csproftree) { return true; }
@@ -533,12 +544,13 @@ NormalizeSameProcedureChildren(CSProfile* prof, LoadModuleInfo *lmi)
 	 fprintf(stderr, "start normalizing same procedure children\n");
 	 );
 
-  return NormalizeSameProcedureChildren(prof, csproftree->GetRoot(), lmi);
+  return NormalizeSameProcedureChildren(prof,csproftree->GetRoot(),lmi,startaddr,endaddr,lastone);
 }
 
 
 bool 
-NormalizeSameProcedureChildren(CSProfile* prof, CSProfNode* node, LoadModuleInfo *lmi)
+NormalizeSameProcedureChildren(CSProfile* prof, CSProfNode* node, LoadModuleInfo *lmi,
+                               Addr startaddr, Addr endaddr, bool lastone)
 {
   bool noError = true;
   
@@ -557,17 +569,16 @@ NormalizeSameProcedureChildren(CSProfile* prof, CSProfNode* node, LoadModuleInfo
 
     // recur 
     if (! child->IsLeaf()) {
-      noError = noError && NormalizeSameProcedureChildren(prof, child, lmi);
+      noError = noError && NormalizeSameProcedureChildren(prof, child, lmi,startaddr, endaddr, lastone);
     }
 
     bool inspect = (child->GetType() == CSProfNode::CALLSITE);
     
     if (inspect) {
       CSProfCallSiteNode* c = dynamic_cast<CSProfCallSiteNode*>(child); 
-      Addr curr_ip = c->GetIP();
-      Addr startaddr = lmi->GetLM()->GetTextStart();
-      Addr endaddr   = lmi->GetLM()->GetTextEnd();    
-      if ((curr_ip>= startaddr) && (curr_ip<= endaddr))  {  
+      Addr curr_ip = c->GetIP(); //FMZ
+      if ((curr_ip>= startaddr) && 
+         ( lastone || curr_ip<= endaddr))  {  
        //only handle functions in the current load module
         xDEBUG(DEB_UNIFY_PROCEDURE_FRAME,
 	   fprintf(stderr, "analyzing node %s %lx\n", 
@@ -867,7 +878,7 @@ bool innerCopySourceFiles (CSProfNode* node,
   String relativeSourceFile;
   String procedureFrame;
   bool sourceFileWasCopied = false;
-  bool fileIsText; 
+  bool fileIsText = false; 
 
   switch( node->GetType()) {
   case CSProfNode::CALLSITE:
@@ -914,12 +925,13 @@ bool innerCopySourceFiles (CSProfNode* node,
   default:
     inspect = false;
     break;
-  }
+  } 
   if (inspect) {
     // copy source file for current node
     xDEBUG(DEB_MKDIR_SRC_DIR,
 	   cerr << "attempt to copy " << nodeSourceFile << std::endl;);
-    if (! nodeSourceFile.Empty()) {
+// FMZ     if (! nodeSourceFile.Empty()) {
+     if (fileIsText &&  ! nodeSourceFile.Empty()) {
       xDEBUG(DEB_MKDIR_SRC_DIR,
 	     cerr << "attempt to copy text, nonnull " << nodeSourceFile << std::endl;);
       
