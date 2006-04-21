@@ -133,7 +133,15 @@ public:
   // GetTextStart, GetTextEnd: (Unrelocated) Text start and end.
   // FIXME: only guaranteed on alpha at present
   Addr GetTextStart() const { return textStart; }
-  Addr GetTextEnd() const { return textEnd; }
+  Addr GetTextEnd() const { return textEnd; }   
+ 
+  // on platform other than alpha we need to set textStart and textEnd
+  void SetTextStart(Addr pv)  {textStart=pv; }
+  void SetTextEnd(Addr pv)    {textEnd=pv; }   
+
+  // after read in the binary, get the smallest start PC and largest end PC
+  // of all the text sections
+  void GetTextStartEndPC(Addr* startpc,Addr* endpc);
 
   // Relocate: 'Relocate' the text section to the supplied text start
   // address.  All member functions that take PCs will assume they
@@ -259,7 +267,7 @@ protected:
 private: 
   String name;
   Type   type;
-  Addr   textStart, textEnd; // text begin and end
+  Addr   textStart, textEnd; // text begin and end 
   Addr   textStartReloc;     // relocated text start
   AddrSigned unRelocDelta;   // offset to unrelocate relocated PCs
     
