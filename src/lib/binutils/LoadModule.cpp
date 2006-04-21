@@ -53,8 +53,7 @@
 
 //*************************** User Include Files ****************************
 
-#include <include/gnu_bfd.h>
-
+#include <include/gnu_bfd.h> 
 #include "LoadModule.h"
 #include "Section.h"
 #include "Instruction.h"
@@ -189,7 +188,10 @@ LoadModule::Open(const char* moduleName)
   if (bfd_get_arch(impl->abfd) == bfd_arch_alpha) {
     textStart = bfd_ecoff_get_text_start(impl->abfd);
     textEnd   = bfd_ecoff_get_text_end(impl->abfd);
-  }
+  }  
+
+  // FMZ test  
+  textStart =  bfd_get_start_address(impl->abfd); //this is the entry point
   
   // -------------------------------------------------------
   // 3. Configure ISA.  
@@ -245,10 +247,11 @@ LoadModule::Read()
     STATUS &= ReadSymbolTables();
     STATUS &= ReadSections();
     buildAddrToProcedureMap();
-    return STATUS;
+//    return STATUS;
   } else {
+//    return STATUS;
+  } 
     return STATUS;
-  }
 }
 
 
@@ -264,8 +267,10 @@ LoadModule::Relocate(Addr textStartReloc_)
   if (textStartReloc == 0) {
     unRelocDelta = 0;
   } else {
-    unRelocDelta = -(textStartReloc - textStart);
-  }
+//FMZ   unRelocDelta = -(textStartReloc - textStart);
+        unRelocDelta = -(textStartReloc);
+  } 
+
 }
 
 bool 
@@ -448,7 +453,7 @@ LoadModule::Dump(std::ostream& o, const char* pre) const
 
   o << p1 << "Load Module Contents:\n";
   DumpSelf(o, p2);
-  
+
   IFDOTRACE { // For debugging
     o << p2 << "Symbol Table (" << impl->numSyms << "):\n";
     DumpSymTab(o, p2);
@@ -586,8 +591,8 @@ LoadModule::ReadSections()
 					secStart, secEnd, secSize);
       AddSection(newSection);
     }
-  }
-  
+  } 
+
   return STATUS;
 }
 
@@ -672,12 +677,10 @@ void
 LoadModule::DumpModuleInfo(std::ostream& o, const char* pre) const
 {
   String p(pre);
-  bfd *abfd = impl->abfd;
+  bfd *abfd = impl->abfd; 
 
-  o << p << "Name: `" << GetName() << "'\n";
-
-  o << p << "Format: `" << bfd_get_target(abfd) << "'" << endl;
-
+  o << p << "Name: `" << GetName() << "'\n"; 
+  o << p << "Format: `" << bfd_get_target(abfd) << "'" << endl;  
   o << p << "Type: `";
   switch (GetType()) {
     case Executable:    
@@ -692,8 +695,8 @@ LoadModule::DumpModuleInfo(std::ostream& o, const char* pre) const
   }
   
   o << p << "Text(start,end): 0x" << hex << GetTextStart() << ", 0x"
-    << GetTextEnd() << dec << "\n";
-  
+    << GetTextEnd() << dec << "\n";  
+
   o << p << "Endianness: `"
     << ( (bfd_big_endian(abfd)) ? "Big'\n" : "Little'\n" );
   
@@ -843,4 +846,35 @@ LoadModuleSectionIterator::LoadModuleSectionIterator(const LoadModule& _lm)
 
 LoadModuleSectionIterator::~LoadModuleSectionIterator()
 {
-}
+} 
+
+
+void
+LoadModule::GetTextStartEndPC(Addr* startpc,Addr* endpc)
+{ 
+    Addr curr_startpc ;
+    Addr curr_endpc   ;
+    Addr sml_startpc = 0;
+    Addr lg_endpc    = 0;
+    for (LoadModuleSectionIterator it(*this); it.IsValid(); ++it) {
+       Section* sec = it.Current(); 
+       if (sec->GetType()==sec->Text)  {    
+          if (!(sml_startpc || lg_endpc)) {
+            sml_startpc = sec->GetStart();
+            lg_endpc    = sec->GetEnd(); 
+          } else { 
+            curr_startpc  = sec->GetStart();
+            curr_endpc    = sec->GetEnd(); 
+            if (curr_startpc < sml_startpc)
+                  sml_startpc = curr_startpc;
+            if (curr_endpc > lg_endpc)
+                  lg_endpc = curr_endpc;
+           }
+       }
+    }   
+
+    *startpc = sml_startpc;
+    *endpc   = lg_endpc; 
+
+ };
+
