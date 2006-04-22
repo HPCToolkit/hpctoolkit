@@ -192,6 +192,7 @@ LoadModule::Open(const char* moduleName)
 
   // FMZ test  
   textStart =  bfd_get_start_address(impl->abfd); //this is the entry point
+  firstaddr =  get_the_first_addr(impl->abfd);    
   
   // -------------------------------------------------------
   // 3. Configure ISA.  
@@ -268,7 +269,7 @@ LoadModule::Relocate(Addr textStartReloc_)
     unRelocDelta = 0;
   } else {
 //FMZ   unRelocDelta = -(textStartReloc - textStart);
-        unRelocDelta = -(textStartReloc);
+        unRelocDelta = -(textStartReloc-firstaddr);
   } 
 
 }
@@ -694,6 +695,9 @@ LoadModule::DumpModuleInfo(std::ostream& o, const char* pre) const
       BriefAssertion(false); 
   }
   
+  o << p << "the 1st load address : " << hex << "0x" 
+    << firstaddr<< dec <<  "\n";
+
   o << p << "Text(start,end): 0x" << hex << GetTextStart() << ", 0x"
     << GetTextEnd() << dec << "\n";  
 

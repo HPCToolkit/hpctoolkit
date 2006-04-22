@@ -139,6 +139,10 @@ public:
   void SetTextStart(Addr pv)  {textStart=pv; }
   void SetTextEnd(Addr pv)    {textEnd=pv; }   
 
+  Addr GetFirstAddr() const {return firstaddr ; }
+  void SetFirstAddr(Addr pv) {firstaddr = pv ; }
+
+
   // after read in the binary, get the smallest start PC and largest end PC
   // of all the text sections
   void GetTextStartEndPC(Addr* startpc,Addr* endpc);
@@ -268,6 +272,7 @@ private:
   String name;
   Type   type;
   Addr   textStart, textEnd; // text begin and end 
+  Addr    firstaddr ;        // shared library load address begin
   Addr   textStartReloc;     // relocated text start
   AddrSigned unRelocDelta;   // offset to unrelocate relocated PCs
     
