@@ -258,7 +258,9 @@ ReadCSProfileFile_HCSPROFILE(const char* fnm,const char *execnm)
 			     hpcfile_alloc_CB, hpcfile_free_CB, num_of_metrics); 
 
   if ( ret2 != HPCFILE_OK) { 
-      std::cerr<< "There are errors in cstree_read !"  << std::endl; 
+      std::cerr<< "There is no performance database generated, the reasons could be :\n" 
+               << "\t there is no tree nodes in the data file, i.e no sample collected.\n"
+               << "\t there are errors in cstree_read. "  << std::endl; 
       delete prof;
       return NULL;
    }
