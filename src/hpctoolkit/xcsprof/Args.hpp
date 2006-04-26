@@ -59,6 +59,7 @@ public:
   
   void Version();
   void Usage();
+  void createDatabaseDirectory();
 
 public:  
   String cmd; 
