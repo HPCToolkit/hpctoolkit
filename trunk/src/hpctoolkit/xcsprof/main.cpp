@@ -114,8 +114,8 @@ main(int argc, char* argv[])
     //profData = TheProfileReader.ReadProfileFile(args.profFile /*filetype*/); 
     // we need to know the name of the executable 
     profData = ReadCSProfileFile_HCSPROFILE(args.profFile,args.progFile);
+    if (!profData) { exit(1); } 
 
-    if (!profData) { exit(1); }
   } catch (std::bad_alloc& x) {
     cerr << "Error: Memory alloc failed while reading profile!\n";
     exit(1);
@@ -123,6 +123,9 @@ main(int argc, char* argv[])
     cerr << "Error: Exception encountered while reading profile!\n";
     exit(2);
   }
+
+  // After checking we have samples in the profile, create the database directory
+  args.createDatabaseDirectory();
 
   // ------------------------------------------------------------
   // Read 'PCToSrcLineXMap', if available

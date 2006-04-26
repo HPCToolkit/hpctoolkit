@@ -161,6 +161,8 @@ Args::Args(int argc, char* const* argv)
     databaseDirectory = normalizeFilePath (databaseDirectory);
   }
 
+  /*
+
   bool uniqueDatabaseDirectoryCreated ;
 
   if (mkdir(databaseDirectory, 
@@ -190,6 +192,7 @@ Args::Args(int argc, char* const* argv)
       exit (1);
     }
   }
+  */
 
   cerr << "executable: " << progFile << " csprof trace: " << profFile << std::endl;
   if (searchPaths.size() > 0) {
@@ -199,4 +202,38 @@ Args::Args(int argc, char* const* argv)
       }
   }
   cerr << "Database directory: " << databaseDirectory << std::endl;
+}
+
+
+void 
+Args::createDatabaseDirectory() {
+  bool uniqueDatabaseDirectoryCreated ;
+
+  if (mkdir(databaseDirectory, 
+	    S_IRWXU | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH) == -1) {
+    if (errno == EEXIST) {
+      cerr << databaseDirectory << " already exists\n";
+      // attempt to create databaseDirectory+pid;
+      char myPidChr[20];
+      pid_t myPid = getpid();
+      itoa (myPid, myPidChr);
+      String databaseDirectoryPid = databaseDirectory + myPidChr;
+      cerr << "attempting to create alternate database directory "
+	   << databaseDirectoryPid << std::endl;
+      if (mkdir(databaseDirectoryPid, 
+		S_IRWXU | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH) == -1) {
+	cerr << "could not create alternate database directory " << 
+	  databaseDirectoryPid << std::endl;
+	exit(1);
+      } else {
+	cerr << "created unique database directory " << databaseDirectoryPid << std::endl;
+	databaseDirectory = databaseDirectoryPid;
+      }
+
+    } else {
+      cerr << "could not create database directory " << 
+	databaseDirectory << endl;
+      exit (1);
+    }
+  }
 }
