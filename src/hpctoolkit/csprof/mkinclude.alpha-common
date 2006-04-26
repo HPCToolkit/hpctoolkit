@@ -10,7 +10,7 @@ INC_UNWIND :=
 # DEFINES are things which need to be seen by the assembler and the compiler
 #DEFINES := -DCSPROF_FIXED_LIBCALLS=1
 # get the 'void *' parameter in signal handlers to be what we expect
-DEFINES += -D_XOPEN_SOURCE=500 -D_OSF_SOURCE=500
+DEFINES += -D_XOPEN_SOURCE=500 -D_OSF_SOURCE=500 -D_XOPEN_SOURCE_EXTENDED
 # counting calls the Arnold and Sweeney way
 #DEFINES := -DCSPROF_LAST_EDGE_ONLY=1
 #DEFINES += -DCSPROF_LIST_BACKTRACE_CACHE

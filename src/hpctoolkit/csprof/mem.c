@@ -72,6 +72,11 @@
 #include "xpthread.h"
 #include "util.h"
 
+/* compensate for very old systems */
+#ifndef MAP_FAILED
+#define MAP_FAILED ((void *)-1)
+#endif
+
 
 /* forward declarations */
 
