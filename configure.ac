@@ -167,8 +167,17 @@ AC_MSG_CHECKING([for GNU binutils])
 
 GNUBINUTILS="${hpctoolkit_top}/../binutils/${HPCTOOLKIT_PLATFORM}"
 GNUBINUTILS_IFLAGS="-I${GNUBINUTILS}/include"
-#GNUBINUTILS_LDFLAGS="-L${GNUBINUTILS}/lib -lbfd -lopcodes -liberty -lintl"
 GNUBINUTILS_LDFLAGS="-L${GNUBINUTILS}/lib -lbfd -lopcodes -liberty ${GNUBINUTILS}/lib/libintl.a"
+
+case ${host} in
+   x86_64*-*-linux*)
+   GNUBINUTILS_LDFLAGS="-L${GNUBINUTILS}/lib -lbfd -lopcodes -liberty"
+   ;;
+   *)
+   ;;
+esac
+
+#GNUBINUTILS_LDFLAGS="-L${GNUBINUTILS}/lib -lbfd -lopcodes -liberty -lintl"
 
 AC_MSG_RESULT([${GNUBINUTILS}])
 AC_SUBST([GNUBINUTILS_IFLAGS])
