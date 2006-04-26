@@ -52,6 +52,11 @@ typedef void (*old_sig_handler_func_t)(int);
 
 /* FIXME: grotty FIXED_LIBCALLS stuff */
 
+/* we are probably in trouble if this isn't defined, but... */
+#ifndef RTLD_NEXT
+#define RTLD_NEXT -1
+#endif
+
 /* libc functions which we need to override */
 #ifdef CSPROF_FIXED_LIBCALLS
 /* these are hacks and need to be changed depending on the libc version */

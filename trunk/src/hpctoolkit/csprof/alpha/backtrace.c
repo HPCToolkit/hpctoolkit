@@ -23,6 +23,7 @@ csprof_record_metric_with_unwind(int metric_id, size_t value, int unwinds)
 {
   int ret;
   ucontext_t context;
+  csprof_state_t *state = csprof_get_state();
 
   ret = getcontext(&context);
 
@@ -39,6 +40,7 @@ csprof_record_metric_with_unwind(int metric_id, size_t value, int unwinds)
 			      &(context.uc_mcontext));
     }
   }
+}
 
 #define CSPROF_TRAMPOLINE_LOC ((void *)&csprof_trampoline)
 
@@ -204,7 +206,7 @@ unwind->sp = sptr; \
 	    {
 		csprof_cct_node_t *tn = state->treenode;
                 assert(tn != NULL);
-                tn->calls++;
+                tn->metrics[1]++;
                 state->treenode = tn->parent;
 	    }
 
