@@ -9,16 +9,16 @@
 /* Digital^WCompaq^WHP is nice enough to include these builtin */
 #include <machine/builtins.h>
 
-static inline void
+static inline long
 csprof_atomic_increment(volatile void *addr)
 {
-    (void)__ATOMIC_INCREMENT_LONG(addr);
+    return __ATOMIC_INCREMENT_LONG(addr);
 }
 
-static inline void
+static inline long
 csprof_atomic_decrement(volatile void *addr)
 {
-    (void)__ATOMIC_DECREMENT_LONG(addr);
+    return __ATOMIC_DECREMENT_LONG(addr);
 }
 
 static inline void *
@@ -31,7 +31,7 @@ csprof_atomic_exchange_pointer(volatile void **addr, void *ptr)
 
 #if defined(__i386__) && defined(__linux__)
 
-static inline void
+static inline long
 csprof_atomic_increment(volatile void *addr)
 {
     int prev;
@@ -51,7 +51,7 @@ csprof_atomic_increment(volatile void *addr)
     return prev;
 }
 
-static inline void
+static inline long
 csprof_atomic_decrement(volatile void *addr)
 {
     int prev;
@@ -129,7 +129,7 @@ cmpxchg(volatile void *ptr, long old, long new)
 
 #endif
                  
-static inline void
+static inline long
 csprof_atomic_increment(volatile void *addr)
 {
     long old, new;
@@ -138,9 +138,11 @@ csprof_atomic_increment(volatile void *addr)
         old = *((long *)addr);
         new = old + 1;
     } while(cmpxchg(addr, old, new) != old);
+
+    return old;
 }
 
-static inline void
+static inline long
 csprof_atomic_decrement(volatile void *addr)
 {
     long old, new;
@@ -149,6 +151,8 @@ csprof_atomic_decrement(volatile void *addr)
         old = *((long *)addr);
         new = old - 1;
     } while(cmpxchg(addr, old, new) != old);
+
+    return old;
 }
 
 static inline void *
