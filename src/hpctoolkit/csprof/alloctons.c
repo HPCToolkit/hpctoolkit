@@ -19,7 +19,7 @@ int main(int argc, char **argv)
 
     printf("accum = %p\n", accum);
 
-    *((void **)(NULL)) = accum;
+//    *((void **)(NULL)) = accum;
 
     return 0;
 }

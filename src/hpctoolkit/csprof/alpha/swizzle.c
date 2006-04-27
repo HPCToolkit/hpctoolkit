@@ -32,6 +32,22 @@ csprof_get_pc(void *context)
     return ctx->sc_pc;
 }
 
+extern void *csprof_trampoline_end;
+extern void *csprof_trampoline2;
+extern void *csprof_trampoline2_end;
+
+static int
+csprof_in_trampoline_code(void *pc)
+{
+    void *t1_start = (void *)&csprof_trampoline;
+    void *t1_end = (void *)&csprof_trampoline_end;
+    void *t2_start = (void *)&csprof_trampoline2;
+    void *t2_end = (void *)&csprof_trampoline2_end;
+
+    return ((t1_start <= pc) && (pc <= t1_end))
+        || ((t2_start <= pc) && (pc <= t2_end));
+}
+
 int
 csprof_find_return_address_for_context(csprof_state_t *state,
                                        struct lox *l, mcontext_t *context)

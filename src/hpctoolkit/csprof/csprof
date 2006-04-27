@@ -138,7 +138,13 @@ f_checkenv()
   # the application binary (signified by DEFAULT).
   # this turns our sampling on at the beginning of the application
   # when our library is loaded.
-  LD_PRELOAD="${RLD_LIB}"
+  sysname=`uname`
+
+  if [ $sysname = "OSF1" ]; then
+    _RLD_LIST="${RLD_LIB}"
+  else
+    LD_PRELOAD="${RLD_LIB}"
+  fi
 }
 
 # args: ($1, $2): (string_to_check, string_for_error_msg[optional])
@@ -220,8 +226,14 @@ f_getoptions()
 # assumes: all variables have been set
 f_prepareenv()
 {
+  sysname=`uname`
+
   # export the profiler library
-  export LD_PRELOAD
+  if [ $sysname = "OSF1" ]; then
+    export _RLD_LIST
+  else
+    export LD_PRELOAD
+  fi
 
   # export profiler options
   if [ -n "${opt_out_path}" ]; then

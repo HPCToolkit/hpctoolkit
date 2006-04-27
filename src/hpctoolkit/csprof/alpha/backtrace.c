@@ -27,7 +27,7 @@ csprof_record_metric_with_unwind(int metric_id, size_t value, int unwinds)
 
   ret = getcontext(&context);
 
-  if(ret != 0) {
+  if(ret == 0) {
     int i;
 
     for(i = 0; i < unwinds; ++i) {

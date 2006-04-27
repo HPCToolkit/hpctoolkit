@@ -11,6 +11,11 @@
 #include "metrics.h"
 #include "backtrace.h"
 
+/* we are probably hosed if this happens */
+#ifndef RTLD_NEXT
+#define RTLD_NEXT -1
+#endif
+
 /* flag for malloc wrapper */
 static int take_malloc_samples = 0;
 

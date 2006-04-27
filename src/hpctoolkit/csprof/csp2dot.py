@@ -119,7 +119,6 @@ def find_file(filename):
 # increase.
 class LoadModule:
     def __init__(self, filename, vaddr, mapaddr):
-        print "load module %s @ %x" % (filename, mapaddr)
         self.filename = find_file(filename)
         self.text_section_start = None
         self.vaddr = vaddr
@@ -273,7 +272,6 @@ class FileObject:
         self.data = stream.read(len)
 
     def unpack(self):
-        print self.format_string, [ i for i in self.data ]
         return struct.unpack(self.format_string, self.data)
 
 class FileString(FileObject):

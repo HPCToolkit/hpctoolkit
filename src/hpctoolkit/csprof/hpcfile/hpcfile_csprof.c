@@ -94,7 +94,6 @@ hpcfile_csprof_write(FILE* fs, hpcfile_csprof_data_t* data)
       num8.num = (uint64_t) metric.metric_flags;
       if (hpcfile_num8__fwrite(&num8, fs) != HPCFILE_OK) { return HPCFILE_ERR; }
 
-      printf("wrote metric flags\n");
       num8.tag = HPCFILE_TAG__CSPROF_PERIOD;
       num8.num = metric.sample_period;
       if (hpcfile_num8__fwrite(&num8, fs) != HPCFILE_OK) { return HPCFILE_ERR; }

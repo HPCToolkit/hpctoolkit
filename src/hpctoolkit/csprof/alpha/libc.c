@@ -6,6 +6,11 @@
 #include "util.h"
 #include "interface.h"
 
+/* we are probably hosed if this is the case */
+#ifndef RTLD_NEXT
+#define RTLD_NEXT -1
+#endif
+
 /* libexc functions--mostly hooks into the exception processing system */
 #ifdef CSPROF_FIXED_LIBCALLS
 /* the prototype for this function is technically
@@ -44,12 +49,17 @@ do { \
     } \
 } while(0)
 
+#ifndef CSPROF_SYNCHRONOUS_PROFILING_ONLY
     /* exception handling in C and C++ needs this */
     FROB(exc_continue, __exc_continue);
     FROB(exc_dispatch_exception, exc_dispatch_exception);
+#endif
     FROB(exc_virtual_unwind, exc_virtual_unwind);
 #endif
 }
+
+#ifndef CSPROF_SYNCHRONOUS_PROFILING_ONLY
+extern void csprof_swizzle_with_context(csprof_state_t *, void *);
 
 /* `nlx' = `non-local-exit'; this function handles the guts of when we
    do longjmps or similar operations (exception handling comes to mind).
@@ -220,6 +230,7 @@ exc_dispatch_exception(system_exrec_type *excrec, CONTEXT *ctx)
     /* do the normal thing */
     return libcall2(csprof_exc_dispatch_exception, excrec, ctx);
 }
+#endif
 
 unsigned long
 exc_virtual_unwind(pdsc_crd *prf, CONTEXT *ctx)
@@ -233,4 +244,3 @@ exc_virtual_unwind(pdsc_crd *prf, CONTEXT *ctx)
 
     return ret;
 }
-

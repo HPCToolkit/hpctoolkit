@@ -446,6 +446,12 @@ csprof_cct__init(csprof_cct_t* x)
     return CSPROF_OK;
 }
 
+int
+csprof_cct__fini(csprof_cct_t *x)
+{
+    return CSPROF_OK;
+}
+
 csprof_cct_node_t *
 csprof_cct_insert_backtrace(csprof_cct_t *x, void *treenode, int metric_id,
 			    csprof_frame_t *start, csprof_frame_t *end,
