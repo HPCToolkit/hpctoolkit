@@ -5,8 +5,7 @@
 CSPROFLIB := libcsprof.so.1
 CSPROFLIB_STATIC := libcsprof.a
 
-# just default to the timer-based driver if nothing was supplied
-DRIVER ?= itimer
+DRIVER ?= mallocprof
 
 all: $(CSPROFLIB)
 
@@ -22,7 +21,7 @@ INCS := -I. $(INC_CSFILE) $(INC_PFM) $(INC_UNWIND) $(INC_THREAD)
 
 # FIXME: PAPI?
 ifneq "$(DRIVER)" "itimer"
-DEFINES += -DCSPROF_SYNCHRONOUS_PROFILING=1
+DEFINES += -DCSPROF_SYNCHRONOUS_PROFILING_ONLY=1
 endif
 
 # includes might have set up their own special CFLAGS, so we add
