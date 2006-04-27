@@ -246,6 +246,7 @@ pthread_create(pthread_t *thrid, const pthread_attr_t *attr,
     struct tramp_data *ts = malloc(sizeof(struct tramp_data));
     int status;
 
+    printf("Creating thread func %lx with data %lx\n", func, ts);
     ts->func = func;
     ts->arg = funcarg;
 

@@ -137,8 +137,6 @@ csprof_driver_init(csprof_state_t *state, csprof_options_t *options)
 				      "# SIGSEGVs",
 				      CSPROF_METRIC_FLAGS_NIL, 1);
 
-    take_malloc_samples = 1;
-
     csprof_override_allocation_functions();
     csprof_set_up_alternate_signal_stack();
 
@@ -152,6 +150,8 @@ csprof_driver_init(csprof_state_t *state, csprof_options_t *options)
     if(ret != 0) {
         ERRMSG("Unable to install SIGSEGV handler", __FILE__, __LINE__);
     }
+
+    take_malloc_samples = 1;
 }
 
 void
@@ -205,7 +205,12 @@ volatile int in_debugger_p = 0;
 void *
 malloc(size_t n_bytes)
 {
-    csprof_state_t *state = csprof_get_state();
+    if(n_bytes == 0) {
+        /* weird, I know */
+        return NULL;
+    }
+    {
+    csprof_state_t *state;
     unsigned long id_bits;
 
     if(take_malloc_samples) {
@@ -220,8 +225,11 @@ malloc(size_t n_bytes)
         csprof_xmalloc = dlsym(RTLD_NEXT, "malloc");
     }
 
-    if(state != NULL && take_malloc_samples) {
+    if(take_malloc_samples) {
+        state = csprof_get_state();
         size_t samples = n_bytes;
+
+        assert(state);
 
 	/* force insertion from the root */
 	state->treenode = NULL;
@@ -229,6 +237,9 @@ malloc(size_t n_bytes)
 	state = csprof_check_for_new_epoch(state);
 
 	csprof_record_metric_with_unwind(0, samples, 2);
+    }
+    else {
+        state = NULL;
     }
 
     /* allocate extra space for extra information:
@@ -268,6 +279,7 @@ malloc(size_t n_bytes)
 
             return CHUNK_TO_POINTER(chunk);
         }
+    }
     }
 }
 

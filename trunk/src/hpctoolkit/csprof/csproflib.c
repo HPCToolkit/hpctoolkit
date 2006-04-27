@@ -182,6 +182,7 @@ csprof_init_internal()
     csprof_pthread_init_data();
 #endif
 
+
     /* private memory store for the initial thread is done below */
 #ifndef CSPROF_THREADS
     /* (Re)Initialize private memory for call-stack data. [Case 1 & 2] */
@@ -193,6 +194,7 @@ csprof_init_internal()
     } else {
         /* profiling state needs the memory manager init'd */
 #if CSPROF_THREADS
+
         csprof_pthread_state_init();
 #else
         {
@@ -218,7 +220,6 @@ csprof_init_internal()
 #if !defined(CSPROF_SYNCHRONOUS_PROFILING)
     sigemptyset(&prof_sigset);
 #endif
-
     csprof_driver_init(csprof_get_state(), &opts);
 
     /* FIXME: is this the right way to do things? */
