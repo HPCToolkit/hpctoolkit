@@ -35,11 +35,6 @@ static unsigned long (*csprof_exc_dispatch_exception)(system_exrec_type *, CONTE
 unsigned long (*csprof_exc_virtual_unwind)(PRUNTIME_FUNCTION, CONTEXT *);
 #endif
 
-void
-arch_libc_init()
-{
-#ifndef CSPROF_FIXED_LIBCALLS
-    /* specious generality which might be needed later */
 #define FROB(our_name, platform_name) \
 do { \
     csprof_ ## our_name = dlsym(RTLD_NEXT, #platform_name); \
@@ -49,6 +44,10 @@ do { \
     } \
 } while(0)
 
+void
+arch_libc_init()
+{
+#ifndef CSPROF_FIXED_LIBCALLS
 #ifndef CSPROF_SYNCHRONOUS_PROFILING_ONLY
     /* exception handling in C and C++ needs this */
     FROB(exc_continue, __exc_continue);
@@ -236,7 +235,13 @@ unsigned long
 exc_virtual_unwind(pdsc_crd *prf, CONTEXT *ctx)
 {
     csprof_state_t *state = csprof_get_state();
-    unsigned long ret = libcall2(csprof_exc_virtual_unwind, prf, ctx);
+    unsigned long ret;
+
+    if(csprof_exc_virtual_unwind == NULL) {
+        FROB(exc_virtual_unwind, exc_virtual_unwind);
+    }
+
+    ret = libcall2(csprof_exc_virtual_unwind, prf, ctx);
 
     if(ctx->sc_pc == CSPROF_TRAMPOLINE_ADDRESS) {
         ctx->sc_pc = state->swizzle_return;

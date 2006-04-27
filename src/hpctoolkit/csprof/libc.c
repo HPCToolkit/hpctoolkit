@@ -100,11 +100,6 @@ extern sigset_t prof_sigset;
 /* we need the "csprof_" libc versions of certain functions, but we don't
    want to figure out if we've already located them each and every time
    we call the function.  do all of the necessary dlsym'ing here. */
-void
-csprof_libc_init()
-{
-#ifndef CSPROF_FIXED_LIBCALLS
-    /* specious generality which might be needed later */
 #define FROB(our_name, platform_name) \
 do { \
     csprof_ ## our_name = dlsym(RTLD_NEXT, #platform_name); \
@@ -113,6 +108,12 @@ do { \
         exit(0); \
     } \
 } while(0)
+
+void
+csprof_libc_init()
+{
+#ifndef CSPROF_FIXED_LIBCALLS
+    /* specious generality which might be needed later */
 
     /* normal libc functions */
     FROB(siglongjmp, siglongjmp);
@@ -129,7 +130,7 @@ do { \
     arch_libc_init();
 }
 
-#if defined(CSPROF_SYNCHRONOUS_PROFILING)
+#if defined(CSPROF_SYNCHRONOUS_PROFILING_ONLY)
 #define NLX_GUTS
 #else
 #define NLX_GUTS \
@@ -281,6 +282,10 @@ dlopen(const char *file, int mode)
        appropriate locking here would be a win. */
 
     csprof_epoch_lock();
+
+    if(csprof_dlopen == NULL) {
+        FROB(dlopen, dlopen);
+    }
 
     ret = libcall2(csprof_dlopen, file, mode);
 
