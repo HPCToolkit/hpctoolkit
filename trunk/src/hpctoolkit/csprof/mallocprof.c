@@ -10,6 +10,7 @@
 #include "util.h"
 #include "metrics.h"
 #include "backtrace.h"
+#include "libstubs.h"
 
 /* we are probably hosed if this happens */
 #ifndef RTLD_NEXT
@@ -77,20 +78,16 @@ csprof_sigsegv_signal_handler(int sig, siginfo_t *siginfo, void *context)
     }
 }
 
+static int library_stubs_initialized = 0;
+
 static void
-csprof_override_allocation_functions()
+init_library_stubs()
 {
-#define FROB(our_name, platform_name) \
-do { \
-    csprof_ ## our_name = dlsym(RTLD_NEXT, #platform_name); \
-    if(csprof_ ## our_name == NULL) { \
-        printf("Error in locating " #platform_name "\n"); \
-        exit(0); \
-    } \
-} while(0)
-    FROB(xmalloc, malloc);
-    FROB(xrealloc, realloc);
-    FROB(xfree, free);
+    CSPROF_GRAB_FUNCPTR(xmalloc, malloc);
+    CSPROF_GRAB_FUNCPTR(xrealloc, realloc);
+    CSPROF_GRAB_FUNCPTR(xfree, free);
+
+    library_stubs_initialized = 1;
 }
 
 #define CSPROF_SIGSEGV_ALTERNATE_STACK_SIZE 16 * 1024
@@ -137,7 +134,7 @@ csprof_driver_init(csprof_state_t *state, csprof_options_t *options)
 				      "# SIGSEGVs",
 				      CSPROF_METRIC_FLAGS_NIL, 1);
 
-    csprof_override_allocation_functions();
+    MAYBE_INIT_STUBS();
     csprof_set_up_alternate_signal_stack();
 
     /* set up handler for catching sigsegv */
@@ -205,13 +202,13 @@ volatile int in_debugger_p = 0;
 void *
 malloc(size_t n_bytes)
 {
+    csprof_state_t *state;
+    unsigned long id_bits;
+
     if(n_bytes == 0) {
         /* weird, I know */
         return NULL;
     }
-    {
-    csprof_state_t *state;
-    unsigned long id_bits;
 
     if(take_malloc_samples) {
         id_bits = CSPROF_SAMPLE_CHUNK_UPPER_BITS;
@@ -221,9 +218,7 @@ malloc(size_t n_bytes)
     }
 
     /* sometimes malloc gets called before our initialization is called */
-    if(csprof_xmalloc == NULL) {
-        csprof_xmalloc = dlsym(RTLD_NEXT, "malloc");
-    }
+    MAYBE_INIT_STUBS();
 
     if(take_malloc_samples) {
         state = csprof_get_state();
@@ -280,7 +275,6 @@ malloc(size_t n_bytes)
             return CHUNK_TO_POINTER(chunk);
         }
     }
-    }
 }
 
 /* I think we need to override this.  Why?  Imagine a freelist-based
@@ -320,6 +314,8 @@ malloc(size_t n_bytes)
 void *
 realloc(void *pointer, size_t n_bytes)
 {
+    MAYBE_INIT_STUBS();
+
     /* probably what the library does underneath, but simpler for our purposes */
     if(pointer == NULL) {
         /* don't set the flag here, since this is a new allocation */
@@ -356,15 +352,20 @@ csprof_sampled_chunk_p(struct csprof_malloc_chunk *chunk)
     return bits == ((CSPROF_SAMPLE_CHUNK_UPPER_BITS >> 48) & 0xffff);
 }
 
+static void *
+csprof_remove_chunk_bits(void *x)
+{
+    unsigned long bits = (unsigned long) x;
+
+    return ((void *)(bits ^ CSPROF_SAMPLE_CHUNK_UPPER_BITS));
+}
+
 void
 free(void *ptr)
 {
     struct csprof_malloc_chunk *chunk = POINTER_TO_CHUNK(ptr);
-    if(csprof_xfree == NULL) {
-        DBGMSG_PUB(CSPROF_DBG_MALLOCPROF, "dlsym'ing free");
-        csprof_xfree = dlsym(RTLD_NEXT, "free");
-        DBGMSG_PUB(CSPROF_DBG_MALLOCPROF, "csprof_free = %#lx", csprof_xfree);
-    }
+
+    MAYBE_INIT_STUBS();
 
     /* check to see whether this was a sampled block or not */
     /* C++ library passes NULL to free... */
@@ -378,7 +379,7 @@ free(void *ptr)
                        ((unsigned long)node) >> 48);
 
             /* one of our own; lop the bits off */
-            node = (void *)(((unsigned long)node) ^ CSPROF_SAMPLE_CHUNK_UPPER_BITS);
+            node = csprof_remove_chunk_bits(node);
 
             DBGMSG_PUB(CSPROF_DBG_MALLOCPROF, "node = %#lx", node);
 

@@ -85,7 +85,7 @@ csprof_pthread_init_data()
 }
 
 /* taken from Mellor-Crummey's paper */
-void
+static void
 csprof_pthread_enqueue(csprof_list_node_t *node)
 {
     csprof_list_node_t *last;
@@ -173,7 +173,7 @@ csprof_pthread_state_init()
     }
 }
 
-void
+static void
 csprof_pthread_state_fini2(csprof_state_t *state, csprof_list_node_t *node)
 {
     sigset_t oldset;
@@ -197,7 +197,8 @@ csprof_pthread_state_fini2(csprof_state_t *state, csprof_list_node_t *node)
 
     libcall3(csprof_pthread_sigmask, SIG_SETMASK, &oldset, NULL);
 }
-void
+
+static void
 csprof_pthread_state_fini()
 {
     csprof_state_t *state;
@@ -209,7 +210,7 @@ csprof_pthread_state_fini()
     csprof_pthread_state_fini2(state, node);
 }
 
-void *
+static void *
 csprof_pthread_tramp(void *tramp_arg)
 {
     struct tramp_data *ts = (struct tramp_data *)tramp_arg;

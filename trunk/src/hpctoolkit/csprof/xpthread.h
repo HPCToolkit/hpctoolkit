@@ -18,8 +18,8 @@
 
 /* based on Mellor-Crummey's implementation */
 struct csprof_thread_queue {
-    csprof_list_node_t *head;
-    csprof_list_node_t *tail;
+    volatile csprof_list_node_t *head;
+    volatile csprof_list_node_t *tail;
 };
 
 /* the key that references the profiling state of the thread */
@@ -35,15 +35,11 @@ extern struct csprof_thread_queue all_threads;
 void csprof_pthread_init_funcptrs();
 void csprof_pthread_init_data();
 
+/* give a pthread a profiling state */
+void csprof_pthread_state_init();
+
 /* number of threads currently outstanding. */
 unsigned int csprof_pthread_count();
-
-/* per-thread state initialization */
-void csprof_pthread_state_init();
-/* per-thread state finalization */
-void csprof_pthread_state_fini();
-/* per-thread state finalization outside the context of the thread */
-void csprof_pthread_state_fini2(csprof_state_t *, csprof_list_node_t *);
 
 typedef void* pthread_func (void *);
 
