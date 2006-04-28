@@ -326,7 +326,6 @@ def read_value(format_string, stream):
 class ProfilingMetric(FileObject):
     def __init__(self, stream, format):
         self.name = FileString(stream, format)
-        print "grabbing metric flags", metrics_have_flags
         if metrics_have_flags:
             number = FileNumber(stream, format)
             self.flags = number.num
@@ -336,13 +335,17 @@ class ProfilingMetric(FileObject):
     def __str__(self):
         return "<%s, period %d>" % (self.name, self.period)
 
+the_metrics = []
+
 class ProfilingData(FileObject):
     def __init__(self, stream, format):
+        global the_metrics
         self.target = FileString(stream, format)
         num_metrics = read_value(format + "I", stream)
         self.metrics = [ 0 ] * num_metrics
         for i in range(num_metrics):
             self.metrics[i] = ProfilingMetric(stream, format)
+        the_metrics = self.metrics
     def __str__(self):
         return "<%s, %d metrics>" % (self.target, len(self.metrics))
 
@@ -1254,8 +1257,14 @@ def call_path_from_string(str):
 
 def dump_tree(root):
     def dump_tree_internal(dumper, root, depth):
-        print "%s%s ($ip %x $sp %x): %d samples, %d calls" % \
-              (" " * depth, root.func_name, root.ip, root.sp, root.weight, root.calls)
+        metrics = [root.weight, root.calls]
+        metrics.extend(root.extra_metrics)
+
+        mstrs = []
+        for i in range(len(metrics)):
+            if metrics[i] != 0:
+                mstrs.append(" %d (%s)" % (metrics[i], the_metrics[i].name))
+        print "%s%s:%s" % (" " * depth, root.func_name, string.join(mstrs, ","))
 
         for child in root.children:
             dumper(dumper, child, depth +1)
