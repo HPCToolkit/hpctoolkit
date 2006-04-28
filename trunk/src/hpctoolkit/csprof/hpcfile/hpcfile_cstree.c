@@ -105,6 +105,7 @@ hpcfile_cstree_write(FILE* fs, void* tree, void* root,
   fnode.data.metrics = malloc(num_metrics * sizeof(hpcfile_uint_t));
   ret = hpcfile_cstree_write_node(fs, tree, root, &fnode, 0, get_data_fn, 
 				  get_first_child_fn, get_sibling_fn);
+  free(fnode.data.metrics);
   
   return ret;
 }
