@@ -45,6 +45,7 @@
 #include "state.h"
 #include "util.h"
 #include "unsafe.h"
+#include "libstubs.h"
 
 #include <setjmp.h>
 
@@ -97,36 +98,36 @@ static void (*csprof__exit)(int);
 extern sigset_t prof_sigset;
 #endif
 
+static int library_stubs_initialized = 0;
+
+static void
+init_library_stubs()
+{
 /* we need the "csprof_" libc versions of certain functions, but we don't
    want to figure out if we've already located them each and every time
    we call the function.  do all of the necessary dlsym'ing here. */
-#define FROB(our_name, platform_name) \
-do { \
-    csprof_ ## our_name = dlsym(RTLD_NEXT, #platform_name); \
-    if(csprof_ ## our_name == NULL) { \
-        printf("Error in locating " #platform_name "\n"); \
-        exit(0); \
-    } \
-} while(0)
-
-void
-csprof_libc_init()
-{
 #ifndef CSPROF_FIXED_LIBCALLS
     /* specious generality which might be needed later */
 
     /* normal libc functions */
-    FROB(siglongjmp, siglongjmp);
-    FROB(longjmp, longjmp);
-    FROB(_longjmp, _longjmp);
-    FROB(signal, signal);
-    FROB(dlopen, dlopen);
-    FROB(setitimer, setitimer);
-    FROB(sigprocmask, sigprocmask);
-    FROB(exit, exit);
-    FROB(_exit, _exit);
-#endif
+    CSPROF_GRAB_FUNCPTR(siglongjmp, siglongjmp);
+    CSPROF_GRAB_FUNCPTR(longjmp, longjmp);
+    CSPROF_GRAB_FUNCPTR(_longjmp, _longjmp);
+    CSPROF_GRAB_FUNCPTR(signal, signal);
+    CSPROF_GRAB_FUNCPTR(dlopen, dlopen);
+    CSPROF_GRAB_FUNCPTR(setitimer, setitimer);
+    CSPROF_GRAB_FUNCPTR(sigprocmask, sigprocmask);
+    CSPROF_GRAB_FUNCPTR(exit, exit);
+    CSPROF_GRAB_FUNCPTR(_exit, _exit);
 
+    library_stubs_initialized = 1;
+#endif
+}
+
+void
+csprof_libc_init()
+{
+    MAYBE_INIT_STUBS();
     arch_libc_init();
 }
 
@@ -136,6 +137,7 @@ csprof_libc_init()
 #define NLX_GUTS \
     csprof_state_t *state; \
     sigset_t oldset; \
+    MAYBE_INIT_STUBS();
     csprof_sigmask(SIG_BLOCK, &prof_sigset, &oldset); \
     state = csprof_get_state(); \
     /* move the trampoline and so forth appropriately */ \
@@ -180,6 +182,8 @@ static old_sig_handler_func_t oldprof_func;
 old_sig_handler_func_t
 signal(int sig, old_sig_handler_func_t func)
 {
+    MAYBE_INIT_STUBS();
+
     if(sig != SIGPROF) {
         return libcall2(csprof_signal, sig, func);
     }
@@ -196,6 +200,8 @@ sigprocmask(int mode, const sigset_t *inset, sigset_t *outset)
     /* FIXME: duplication between pthread_sigmask and this function.
        Should have a `csprof_sanitize_sigset' somewhere. */
     sigset_t safe_inset;
+
+    MAYBE_INIT_STUBS();
 
     if(inset != NULL) {
         /* sanitize */
@@ -223,6 +229,8 @@ setitimer(int which, const struct itimerval *value, struct itimerval *ovalue)
 setitimer(__itimer_which_t which, const struct itimerval *value, struct itimerval *ovalue)
 #endif
 {
+    MAYBE_INIT_STUBS();
+
     if(which == ITIMER_PROF) {
         /* success */
         return 0;
@@ -235,6 +243,8 @@ setitimer(__itimer_which_t which, const struct itimerval *value, struct itimerva
 void
 exit(int status)
 {
+    MAYBE_INIT_STUBS();
+
     MSG(CSPROF_MSG_SHUTDOWN, "Exiting...");
 
     libcall1(csprof_exit, status);
@@ -243,13 +253,15 @@ exit(int status)
 void
 _exit(int status)
 {
-  MSG(CSPROF_MSG_SHUTDOWN, "Exiting via the _exit call");
+    MAYBE_INIT_STUBS();
+
+    MSG(CSPROF_MSG_SHUTDOWN, "Exiting via the _exit call");
 
 #ifdef CSPROF_THREADS
-  MSG(CSPROF_MSG_SHUTDOWN, "Thread %ld calling...", pthread_self());
+    MSG(CSPROF_MSG_SHUTDOWN, "Thread %ld calling...", pthread_self());
 #endif
 
-  libcall1(csprof__exit, status);
+    libcall1(csprof__exit, status);
 }
 
 /* going to have to rearrange load maps and things */
@@ -283,9 +295,7 @@ dlopen(const char *file, int mode)
 
     csprof_epoch_lock();
 
-    if(csprof_dlopen == NULL) {
-        FROB(dlopen, dlopen);
-    }
+    MAYBE_INIT_STUBS();
 
     ret = libcall2(csprof_dlopen, file, mode);
 
