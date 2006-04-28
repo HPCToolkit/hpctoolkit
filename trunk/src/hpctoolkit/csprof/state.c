@@ -26,8 +26,9 @@ static int csprof_pstate__fini(csprof_pstate_t* x);
 
 
 /* fetching states */
-csprof_state_t *
-csprof_get_state()
+
+static csprof_state_t *
+csprof_get_state_internal()
 {
 #ifdef CSPROF_THREADS
     return pthread_getspecific(prof_data_key);
@@ -36,10 +37,25 @@ csprof_get_state()
 #endif
 }
 
+csprof_state_t *
+csprof_get_state()
+{
+    csprof_state_t *state = csprof_get_state_internal();
+
+#ifdef CSPROF_THREADS
+    if(state == NULL) {
+        csprof_pthread_state_init();
+        state = csprof_get_state_internal();
+    }
+#endif
+
+    return state;
+}
+
 void
 csprof_set_state(csprof_state_t *state)
 {
-    csprof_state_t *old = csprof_get_state();
+    csprof_state_t *old = csprof_get_state_internal();
 
     state->next = old;
 

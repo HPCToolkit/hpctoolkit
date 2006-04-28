@@ -161,7 +161,7 @@ csprof_pthread_state_init()
         if(node == NULL) {
             ERRMSG("Couldn't allocate memory for thread node",
                    __FILE__, __LINE__);
-            return;             /* ? */
+            return;
         }
 
         node->ip = me;
@@ -171,6 +171,8 @@ csprof_pthread_state_init()
         csprof_pthread_enqueue(node);
         pthread_setspecific(thread_node_key, node);
     }
+
+    return;
 }
 
 static void

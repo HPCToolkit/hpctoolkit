@@ -23,6 +23,9 @@ INCS := -I. $(INC_CSFILE) $(INC_PFM) $(INC_UNWIND) $(INC_THREAD)
 ifneq "$(DRIVER)" "itimer"
 DEFINES += -DCSPROF_SYNCHRONOUS_PROFILING_ONLY=1
 endif
+ifeq "$(DRIVER)" "mallocprof"
+DEFINES += -DCSPROF_MALLOC_PROFILING=1
+endif
 
 # includes might have set up their own special CFLAGS, so we add
 CFLAGS += $(DEFINES) $(CSPROF_THREADS) $(CSPROF_TRAMPOLINE) -I./$(ARCH)
@@ -36,8 +39,6 @@ OBJS += list.o libc.o epoch.o
 OBJS += $(ARCH)/backtrace.o $(ARCH)/swizzle.o $(ARCH)/unsafe.o
 OBJS += $(ARCH)/tramp.o $(ARCH)/loadmod.o $(ARCH)/libc.o
 OBJS += $(ARCH_OBJS)
-# FIXME: we don't really want to include this if we're building for
-# synchronous drivers.  how to accomodate both at the same time?
 OBJS += $(DRIVER).o
 OBJS += state.o env.o data.o
 OBJS += last_func.o
