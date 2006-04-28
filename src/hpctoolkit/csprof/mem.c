@@ -131,13 +131,21 @@ csprof_align_malloc_request(size_t size)
     return (size + (8 - 1)) & (~(8 - 1));
 }
 
+#ifdef CSPROF_MALLOC_PROFILING
+extern void *(*csprof_xmalloc)(size_t);
+#endif
+
 // See header file for documentation of public interface.
 csprof_mem_t *
 csprof_malloc_init(offset_t sz, offset_t sz_tmp)
 {
-    /* ugh */
+    /* ugh -- avoid infinite loops during malloc profiling */
 #ifdef CSPROF_THREADS
+#ifdef CSPROF_MALLOC_PROFILING
+    csprof_mem_t *memstore = (*csprof_xmalloc)(sizeof(csprof_mem_t));
+#else
     csprof_mem_t *memstore = malloc(sizeof(csprof_mem_t));
+#endif
 #else
     csprof_mem_t *memstore = &MEM;
 #endif

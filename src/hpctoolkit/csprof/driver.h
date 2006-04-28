@@ -30,7 +30,7 @@ extern void csprof_driver_resume(csprof_state_t *);
 #if 1
 
 /* FIXME: need CSPROF_{,A}SYNCHRONOUS_PROFILING */
-#if defined(CSPROF_MALLOC_PROFILING)
+#if defined(CSPROF_SYNCHRONOUS_PROFILING_ONLY)
 typedef int csprof_profile_token_t;
 #else
 typedef sigset_t csprof_profile_token_t;

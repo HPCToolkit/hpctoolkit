@@ -24,7 +24,10 @@ static struct sigaction previous_sigsegv_handler;
 
 static int catching_sigsegv = 0;
 
-static void *(*csprof_xmalloc)(size_t);
+/* FIXME: this is a hack to ensure that when we are profiling malloc,
+   certain uses within csprof itself don't get profiled (and lead to
+   crashes) */
+void *(*csprof_xmalloc)(size_t);
 static void *(*csprof_xrealloc)(void *, size_t);
 static void (*csprof_xfree)(void *);
 
