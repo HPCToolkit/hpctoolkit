@@ -12,6 +12,10 @@
 #include "backtrace.h"
 #include "libstubs.h"
 
+#if 0
+#define TRACE_INTERFACE 1
+#endif
+
 /* we are probably hosed if this happens */
 #ifndef RTLD_NEXT
 #define RTLD_NEXT -1
@@ -43,6 +47,7 @@ csprof_sigsegv_signal_handler(int sig, siginfo_t *siginfo, void *context)
 
     if(!catching_sigsegv) {
         ERRMSG("Received SIGSEGV", __FILE__, __LINE__);
+	printf("SIGSEGV address %lx\n",ctx->uc_mcontext.sc_pc);
 
         /* make sure we don't hose ourselves by doing re-entrant backtracing */
         catching_sigsegv = 1;
@@ -205,39 +210,41 @@ volatile int in_debugger_p = 0;
 void *
 malloc(size_t n_bytes)
 {
-    csprof_state_t *state;
-    unsigned long id_bits;
+  csprof_state_t *state;
+  unsigned long id_bits;
+  void *retval = NULL;
 
-    if(n_bytes == 0) {
-        /* weird, I know */
-        return NULL;
-    }
+#ifdef TRACE_INTERFACE
+  printf("entering malloc\n");
+#endif
+
+  if(n_bytes != 0) {
 
     if(take_malloc_samples) {
-        id_bits = CSPROF_SAMPLE_CHUNK_UPPER_BITS;
+      id_bits = CSPROF_SAMPLE_CHUNK_UPPER_BITS;
     }
     else {
-        id_bits = CSPROF_LONELY_CHUNK_UPPER_BITS;
+      id_bits = CSPROF_LONELY_CHUNK_UPPER_BITS;
     }
 
     /* sometimes malloc gets called before our initialization is called */
     MAYBE_INIT_STUBS();
 
     if(take_malloc_samples) {
-        state = csprof_get_state();
-        size_t samples = n_bytes;
+      state = csprof_get_state();
+      size_t samples = n_bytes;
 
-        assert(state);
+      assert(state);
 
-	/* force insertion from the root */
-	state->treenode = NULL;
-	state->bufstk = state->bufend;
-	state = csprof_check_for_new_epoch(state);
+      /* force insertion from the root */
+      state->treenode = NULL;
+      state->bufstk = state->bufend;
+      state = csprof_check_for_new_epoch(state);
 
-	csprof_record_metric_with_unwind(0, samples, 2);
+      csprof_record_metric_with_unwind(0, samples, 2);
     }
     else {
-        state = NULL;
+      state = NULL;
     }
 
     /* allocate extra space for extra information:
@@ -247,37 +254,44 @@ malloc(size_t n_bytes)
        Point two could be obtained by groveling inside malloc's data
        structures, but would not be portable *at all*. */
     {
-        struct csprof_malloc_chunk *chunk;
-        /* modify the size only if we're not reallocing...but we have to
-           check to see if we actually have a state from which to check
-           that fact. */
-        size_t addon =
-            state ? (csprof_state_flag_isset(state,
-                                             CSPROF_MALLOCING_DURING_REALLOC) ? 0 : sizeof(struct csprof_malloc_chunk)) : sizeof(struct csprof_malloc_chunk);
-        size_t real_amount = n_bytes + addon;
-        void *node = state ? state->treenode : NULL;
+      struct csprof_malloc_chunk *chunk;
+      /* modify the size only if we're not reallocing...but we have to
+	 check to see if we actually have a state from which to check
+	 that fact. */
+      size_t addon =
+	state ? (csprof_state_flag_isset(state,
+					 CSPROF_MALLOCING_DURING_REALLOC) ? 0 : sizeof(struct csprof_malloc_chunk)) : sizeof(struct csprof_malloc_chunk);
+      size_t real_amount = n_bytes + addon;
+      void *node = state ? state->treenode : NULL;
 
-        chunk = (*csprof_xmalloc)(real_amount);
+      chunk = (*csprof_xmalloc)(real_amount);
 
-        DBGMSG_PUB(CSPROF_DBG_MALLOCPROF, "Allocated chunk(%ld) = %#lx, id=%d",
-                   real_amount, chunk, id_bits >> 48);
-        if(state != NULL)
-            DBGMSG_PUB(CSPROF_DBG_MALLOCPROF, "Realloc'ing? %s",
-                       csprof_state_flag_isset(state, CSPROF_MALLOCING_DURING_REALLOC) ? "yes" : "no");
+      DBGMSG_PUB(CSPROF_DBG_MALLOCPROF, "Allocated chunk(%ld) = %#lx, id=%d",
+		 real_amount, chunk, id_bits >> 48);
+      if(state != NULL)
+	DBGMSG_PUB(CSPROF_DBG_MALLOCPROF, "Realloc'ing? %s",
+		   csprof_state_flag_isset(state, CSPROF_MALLOCING_DURING_REALLOC) ? "yes" : "no");
 
-        if(chunk == NULL) {
-            /* don't mess with the erroneous return value */
-            return chunk;
-        }
-        else {
-            DBGMSG_PUB(CSPROF_DBG_MALLOCPROF, "Chunk data before %#lx, %#lx",
-                       chunk->bytes, chunk->allocating_node);
-            chunk->bytes = n_bytes;
-            chunk->allocating_node = (void *)(((unsigned long)node) | id_bits);
+      if(chunk == NULL) {
+	/* don't mess with the erroneous return value */
+	retval = chunk;
+      }
+      else {
+	DBGMSG_PUB(CSPROF_DBG_MALLOCPROF, "Chunk data before %#lx, %#lx",
+		   chunk->bytes, chunk->allocating_node);
+	chunk->bytes = n_bytes;
+	chunk->allocating_node = (void *)(((unsigned long)node) | id_bits);
 
-            return CHUNK_TO_POINTER(chunk);
-        }
+	retval = CHUNK_TO_POINTER(chunk);
+      }
     }
+  }
+
+#ifdef TRACE_INTERFACE
+    printf("leaving malloc\n");
+#endif
+
+  return retval;
 }
 
 /* I think we need to override this.  Why?  Imagine a freelist-based
@@ -317,32 +331,45 @@ malloc(size_t n_bytes)
 void *
 realloc(void *pointer, size_t n_bytes)
 {
-    MAYBE_INIT_STUBS();
 
-    /* probably what the library does underneath, but simpler for our purposes */
-    if(pointer == NULL) {
-        /* don't set the flag here, since this is a new allocation */
-        return malloc(n_bytes);
+  void *retval;
+
+#ifdef TRACE_INTERFACE
+  printf("entering realloc\n");
+#endif
+
+  MAYBE_INIT_STUBS();
+
+  /* probably what the library does underneath, but simpler for our purposes */
+  if(pointer == NULL) {
+    /* don't set the flag here, since this is a new allocation */
+    retval = malloc(n_bytes);
+  }
+  else {
+    csprof_state_t *state = csprof_get_state();
+    struct csprof_malloc_chunk *chunk = POINTER_TO_CHUNK(pointer);
+    size_t real_amount = n_bytes + sizeof(struct csprof_malloc_chunk);
+    struct csprof_malloc_chunk *newchunk;
+
+    csprof_state_flag_set(state, CSPROF_MALLOCING_DURING_REALLOC);
+    newchunk = csprof_xrealloc(chunk, real_amount);
+    csprof_state_flag_clear(state, CSPROF_MALLOCING_DURING_REALLOC);
+
+    if(newchunk == NULL) {
+      /* malloc failed */
+      retval = newchunk;
     }
     else {
-        csprof_state_t *state = csprof_get_state();
-        struct csprof_malloc_chunk *chunk = POINTER_TO_CHUNK(pointer);
-        size_t real_amount = n_bytes + sizeof(struct csprof_malloc_chunk);
-        struct csprof_malloc_chunk *newchunk;
-
-        csprof_state_flag_set(state, CSPROF_MALLOCING_DURING_REALLOC);
-        newchunk = csprof_xrealloc(chunk, real_amount);
-        csprof_state_flag_clear(state, CSPROF_MALLOCING_DURING_REALLOC);
-
-        if(newchunk == NULL) {
-            /* malloc failed */
-            return newchunk;
-        }
-        else {
-            newchunk->bytes = n_bytes;
-            return CHUNK_TO_POINTER(newchunk);
-        }
+      newchunk->bytes = n_bytes;
+      retval = CHUNK_TO_POINTER(newchunk);
     }
+  }
+
+#ifdef TRACE_INTERFACE
+  printf("leaving realloc\n");
+#endif
+
+  return retval;
 }
 
 static int
@@ -367,6 +394,10 @@ void
 free(void *ptr)
 {
     struct csprof_malloc_chunk *chunk = POINTER_TO_CHUNK(ptr);
+
+#ifdef TRACE_INTERFACE
+    printf("entering free\n");
+#endif
 
     MAYBE_INIT_STUBS();
 
@@ -398,4 +429,8 @@ free(void *ptr)
             csprof_xfree(chunk);
         }
     }
+
+#ifdef TRACE_INTERFACE
+    printf("leaving free\n");
+#endif
 }

@@ -15,6 +15,18 @@
 #include "util.h"
 #include "libstubs.h"
 
+#ifdef __osf__
+
+#define PTHREAD_CREATE_FN __pthread_create
+#define PTHREAD_EXIT_FN __pthread_exit
+
+#else
+
+#define PTHREAD_CREATE_FN pthread_create
+#define PTHREAD_EXIT_FN pthread_exit
+
+#endif
+
 /* FIXME: ugly platform-dependent stuff */
 #ifdef CSPROF_FIXED_LIBCALLS
 int (*csprof_pthread_create)(pthread_t *, const pthread_attr_t *,
@@ -110,8 +122,7 @@ csprof_pthread_enqueue(csprof_list_node_t *node)
    this identifier */
 static volatile long csprof_pthread_id = 0;
 
-void
-csprof_pthread_state_init()
+void csprof_pthread_state_init()
 {
     csprof_state_t *state;
     csprof_mem_t *memstore;
@@ -236,18 +247,16 @@ csprof_pthread_tramp(void *tramp_arg)
     return result;
 }
 
-/* grumble, grumble */
 int
-#if defined(__osf__)
-__pthread_create(pthread_t *thrid, const pthread_attr_t *attr,
-                 pthread_func *func, void *funcarg)
-#else
-pthread_create(pthread_t *thrid, const pthread_attr_t *attr,
-               pthread_func *func, void *funcarg)
-#endif
+PTHREAD_CREATE_FN(pthread_t *thrid, const pthread_attr_t *attr,
+		  pthread_func *func, void *funcarg)
 {
     struct tramp_data *ts = malloc(sizeof(struct tramp_data));
     int status;
+
+#ifdef TRACE_INTERFACE
+    printf("entering pthread_create (there won't be an exit)\n");
+#endif
 
     MAYBE_INIT_STUBS();
 
@@ -263,12 +272,12 @@ pthread_create(pthread_t *thrid, const pthread_attr_t *attr,
 
 /* FIXME: need to get this all figured out */
 void
-#if defined(__osf__)
-__pthread_exit(void *result)
-#else
-pthread_exit(void *result)
-#endif
+PTHREAD_EXIT_FN(void *result)
 {
+
+#ifdef TRACE_INTERFACE
+    printf("entering pthread_exit (there won't be an exit)\n");
+#endif
     MAYBE_INIT_STUBS();
 
     MSG(1, "xpthread exiting: %#lx", pthread_self());
