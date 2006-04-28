@@ -188,11 +188,11 @@ LoadModule::Open(const char* moduleName)
   if (bfd_get_arch(impl->abfd) == bfd_arch_alpha) {
     textStart = bfd_ecoff_get_text_start(impl->abfd);
     textEnd   = bfd_ecoff_get_text_end(impl->abfd);
-  }  
-
-  // FMZ test  
-  textStart =  bfd_get_start_address(impl->abfd); //this is the entry point
-  firstaddr =  get_the_first_addr(impl->abfd);    
+    firstaddr = textStart;
+   } else  {
+    textStart =  bfd_get_start_address(impl->abfd); //this is the entry point
+    firstaddr =  get_the_first_addr(impl->abfd);     
+  }
   
   // -------------------------------------------------------
   // 3. Configure ISA.  
