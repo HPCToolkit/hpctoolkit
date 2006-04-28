@@ -5,6 +5,7 @@
 #include "general.h"
 #include "util.h"
 #include "interface.h"
+#include "libstubs.h"
 
 /* we are probably hosed if this is the case */
 #ifndef RTLD_NEXT
@@ -35,26 +36,27 @@ static unsigned long (*csprof_exc_dispatch_exception)(system_exrec_type *, CONTE
 unsigned long (*csprof_exc_virtual_unwind)(PRUNTIME_FUNCTION, CONTEXT *);
 #endif
 
-#define FROB(our_name, platform_name) \
-do { \
-    csprof_ ## our_name = dlsym(RTLD_NEXT, #platform_name); \
-    if(csprof_ ## our_name == NULL) { \
-        printf("Error in locating " #platform_name "\n"); \
-        exit(0); \
-    } \
-} while(0)
+static int library_stubs_initialized = 0;
 
-void
-arch_libc_init()
+static void
+init_library_stubs()
 {
 #ifndef CSPROF_FIXED_LIBCALLS
 #ifndef CSPROF_SYNCHRONOUS_PROFILING_ONLY
     /* exception handling in C and C++ needs this */
-    FROB(exc_continue, __exc_continue);
-    FROB(exc_dispatch_exception, exc_dispatch_exception);
+    CSPROF_GRAB_FUNCPTR(exc_continue, __exc_continue);
+    CSPROF_GRAB_FUNCPTR(exc_dispatch_exception, exc_dispatch_exception);
 #endif
-    FROB(exc_virtual_unwind, exc_virtual_unwind);
+    CSPROF_GRAB_FUNCPTR(exc_virtual_unwind, exc_virtual_unwind);
+
 #endif
+    library_stubs_initialized = 1;
+}
+
+void
+arch_libc_init()
+{
+    MAYBE_INIT_STUBS();
 }
 
 #ifndef CSPROF_SYNCHRONOUS_PROFILING_ONLY
@@ -187,6 +189,8 @@ __exc_continue(CONTEXT *fake, CONTEXT *real)
     csprof_state_t *state;
     sigset_t oldset;
 
+    MAYBE_INIT_STUBS();
+
     csprof_sigmask(SIG_BLOCK, &prof_sigset, &oldset);
 
     state = csprof_get_state();
@@ -212,13 +216,9 @@ exc_dispatch_exception(system_exrec_type *excrec, CONTEXT *ctx)
     csprof_state_t *state;
     sigset_t oldset;
 
-    csprof_sigmask(SIG_BLOCK, &prof_sigset, &oldset);
+    MAYBE_INIT_STUBS();
 
-#ifndef CSPROF_FIXED_LIBCALLS
-    if(csprof_exc_dispatch_exception == NULL) {
-        FROB(exc_dispatch_exception, exc_dispatch_exception);
-    }
-#endif
+    csprof_sigmask(SIG_BLOCK, &prof_sigset, &oldset);
 
     state = csprof_get_state();
 
@@ -237,9 +237,7 @@ exc_virtual_unwind(pdsc_crd *prf, CONTEXT *ctx)
     csprof_state_t *state = csprof_get_state();
     unsigned long ret;
 
-    if(csprof_exc_virtual_unwind == NULL) {
-        FROB(exc_virtual_unwind, exc_virtual_unwind);
-    }
+    MAYBE_INIT_STUBS();
 
     ret = libcall2(csprof_exc_virtual_unwind, prf, ctx);
 

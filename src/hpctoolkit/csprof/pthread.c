@@ -13,6 +13,7 @@
 #include "general.h"
 #include "xpthread.h"
 #include "util.h"
+#include "libstubs.h"
 
 /* FIXME: ugly platform-dependent stuff */
 #ifdef CSPROF_FIXED_LIBCALLS
@@ -46,32 +47,31 @@ extern int csprof_write_profile_data(csprof_state_t *);
 /* there are some generalized interfaces (thread vs. non-thread) which
    we don't use in this file, since we already *know* we're using the
    threaded variants. */
+static int library_stubs_initialized = 0;
+
+static void
+init_library_stubs()
+{
+#ifndef CSPROF_FIXED_LIBCALLS
+#ifdef __osf__
+    /* Tru64 does some funky things to certain pthread functions */
+    CSPROF_GRAB_FUNCPTR(pthread_create, __pthread_create);
+    CSPROF_GRAB_FUNCPTR(pthread_exit, __pthread_exit);
+#else
+    /* everybody else is pretty normal */
+    CSPROF_GRAB_FUNCPTR(pthread_create, pthread_create);
+    CSPROF_GRAB_FUNCPTR(pthread_exit, pthread_exit);
+#endif
+
+    CSPROF_GRAB_FUNCPTR(pthread_sigmask, pthread_sigmask);
+#endif
+    library_stubs_initialized = 1;
+}
 
 void
 csprof_pthread_init_funcptrs()
 {
-#ifndef CSPROF_FIXED_LIBCALLS
-#define FROB(our_name, platform_name) \
-do { \
-        csprof_ ## our_name = dlsym(RTLD_NEXT, #platform_name); \
-        if(csprof_ ## our_name == NULL) { \
-            printf("Error in locating " #platform_name "\n"); \
-            exit(0); \
-        } \
-} while(0)
-
-#ifdef __osf__
-    /* Tru64 does some funky things to certain pthread functions */
-    FROB(pthread_create, __pthread_create);
-    FROB(pthread_exit, __pthread_exit);
-#else
-    /* everybody else is pretty normal */
-    FROB(pthread_create, pthread_create);
-    FROB(pthread_exit, pthread_exit);
-#endif
-
-    FROB(pthread_sigmask, pthread_sigmask);
-#endif
+    MAYBE_INIT_STUBS();
 }
 
 void
@@ -246,6 +246,8 @@ pthread_create(pthread_t *thrid, const pthread_attr_t *attr,
     struct tramp_data *ts = malloc(sizeof(struct tramp_data));
     int status;
 
+    MAYBE_INIT_STUBS();
+
     printf("Creating thread func %lx with data %lx\n", func, ts);
     ts->func = func;
     ts->arg = funcarg;
@@ -264,6 +266,8 @@ __pthread_exit(void *result)
 pthread_exit(void *result)
 #endif
 {
+    MAYBE_INIT_STUBS();
+
     MSG(1, "xpthread exiting: %#lx", pthread_self());
 
     csprof_pthread_state_fini();
@@ -274,6 +278,8 @@ int
 pthread_sigmask(int mode, const sigset_t *inset, sigset_t *outset)
 {
     sigset_t safe_inset;
+
+    MAYBE_INIT_STUBS();
 
     if(inset != NULL) {
         /* sanitize */
