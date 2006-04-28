@@ -11,6 +11,15 @@
 #include "csprof_csdata.h"
 #include "alpha_inst.h"
 
+/* 
+   defined by OSF memory layout for applications. 
+   See figure 6.3 in Alpha assembly programmers manual 
+   (seen at cs.arizona.edu) 
+*/ 
+
+#define OSF_LOW_TEXT_ADDRESS 0x120000000
+#define OSF_HIGH_TEXT_MASK ((~(0ULL)) << 42) /* high 22 bits */
+
 extern void csprof_get_primary_rpd(void *, pdsc_rpd **);
 extern void csprof_get_pc_rpd_and_crd(void *, pdsc_rpd **, pdsc_crd **);
 
@@ -114,6 +123,21 @@ push_known_good(void *addr)
 }
 #endif
 
+int csprof_isvalid_ip(void *ip)
+{ 
+  /* heuristic to test if unwind OK on alpha -- johnmc, froydnj */
+  unsigned long long lip = (unsigned long long) ip;
+  if ((lip & OSF_HIGH_TEXT_MASK) || (lip < OSF_LOW_TEXT_ADDRESS)) {
+    return 0;
+  }
+#if 0
+  if ((lip & 0x3)) { /* bogus: low order bits set! */ 
+    return 0;
+  }
+#endif
+  return 1;
+}
+
 
 /* clever return values for csprof_backtrace */
 #define CSPROF_TARGET1 3
@@ -189,6 +213,11 @@ unwind->sp = sptr; \
 
         ip = (void *)ctx.sc_pc;
         in_epilogue = 0;
+
+        if (!csprof_isvalid_ip(ip)) {
+          status = CSPROF_ERR; 
+          goto BACKTRACE_EXIT;
+        }
 
         if(unwind == state->bufstk) {
             /* bumping up against the already-recorded stack */
@@ -626,6 +655,21 @@ unwind->sp = sptr; \
     }
 
  BACKTRACE_EXIT:
+#if 0
+    /* always add dummy node for root of tree 
+       this enables us to record partial backtraces that
+       represent improperly rooted samples (ala spontaneous
+       samples in gprof) while maintaining a tree
+       (instead of a forest) for convenience.
+       johnmc & froydnj 4/28/06
+       
+       test if (treenode == 0) to make sure we only do this for
+       samples that will be inserted from the root rather than
+       at some point in the middle of the tree.
+     */
+    if (state->treenode == 0) ADD_FRAME(0, canon_sp);
+#endif
+
     *unwind_ptr = unwind;
 
     return status;
