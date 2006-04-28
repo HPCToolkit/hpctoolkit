@@ -172,8 +172,10 @@ main(int argc, char* argv[])
 
        startaddr = csploadmd->GetMapaddr(); // for next csploadmodule  
 
-       if (!(csploadmd->GetUsedFlag())) //ignore unused loadmodule 
+       if (!(csploadmd->GetUsedFlag())){     //ignore unused loadmodule 
+          endaddr = startaddr-1;
           continue; 
+        }
 
        try {
          ldmd = new LoadModule();  
@@ -190,12 +192,12 @@ main(int argc, char* argv[])
           }  
        
        // get the start and end PC from the text sections 
-       Addr tmp1,tmp2;
        cout << "*****Current load module is : " << csploadmd->GetName()<<"*****"<< endl; 
+#if 0
+       Addr tmp1,tmp2;
        ldmd->GetTextStartEndPC(&tmp1,&tmp2);    
        ldmd->SetTextStart(tmp1);
        ldmd->SetTextEnd(tmp2);     
-#if 0
        cout<< "\t LoadModule text started from address : "<< hex <<"0x" << tmp1 << endl;
        cout<< "\t LoadModule text end at the   address : "<< hex <<"0x" << tmp2 << endl; 
        cout<< "\t LoadModule entry point is: "<< hex << "0x" <<  ldmd->GetTextStart() << endl;
