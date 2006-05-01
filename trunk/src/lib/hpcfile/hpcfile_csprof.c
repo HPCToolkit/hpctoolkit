@@ -179,6 +179,14 @@ hpcfile_csprof_read(FILE* fs, hpcfile_csprof_data_t* data,
 
                  data->metrics[ii].metric_name=str.str;
 
+// read in the flags of the metric (descriptive flags such as async,etc)
+                sz = hpc_fread_le4(&tag, fs);
+                if (sz != sizeof(tag)) { return HPCFILE_ERR; }
+                if (hpcfile_num8__fread(&num8, fs) != HPCFILE_OK) {
+                  return HPCFILE_ERR;
+                } 
+                data->metrics[ii].flags =num8.num;
+
 // read in the sample period
                 sz = hpc_fread_le4(&tag, fs);
                 if (sz != sizeof(tag)) { return HPCFILE_ERR; }

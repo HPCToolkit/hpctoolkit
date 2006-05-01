@@ -105,6 +105,7 @@ int hpcfile_csprof_hdr__fprint(hpcfile_csprof_hdr_t* x, FILE* fs);
 
 typedef struct hpcfile_csprof_metric_s {
     char *metric_name;          /* name of the metric */
+    uint64_t flags;             /* flags of the metric (async, etc.) */
     uint64_t sample_period;     /* sample period of the metric */
 } hpcfile_csprof_metric_t;
 
