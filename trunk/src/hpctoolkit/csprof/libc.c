@@ -137,7 +137,7 @@ csprof_libc_init()
 #define NLX_GUTS \
     csprof_state_t *state; \
     sigset_t oldset; \
-    MAYBE_INIT_STUBS();
+    MAYBE_INIT_STUBS(); \
     csprof_sigmask(SIG_BLOCK, &prof_sigset, &oldset); \
     state = csprof_get_state(); \
     /* move the trampoline and so forth appropriately */ \
