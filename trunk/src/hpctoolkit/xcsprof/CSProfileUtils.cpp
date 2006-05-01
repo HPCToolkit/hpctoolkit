@@ -54,7 +54,7 @@
 #include <stack>
 #include <sys/stat.h>
 #include <sys/types.h>
-#include <errno.h>
+#include <sys/errno.h>
 
 #ifdef NO_STD_CHEADERS  // FIXME
 # include <string.h>

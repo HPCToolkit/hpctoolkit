@@ -41,9 +41,9 @@
 #include <iostream>
 
 #include <unistd.h> // for 'getopt'
-#include <errno.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <sys/errno.h>
 
 //*************************** User Include Files ****************************
 
