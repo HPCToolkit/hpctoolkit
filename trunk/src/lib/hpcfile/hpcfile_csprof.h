@@ -53,7 +53,7 @@ extern "C" {
 #define HPCFILE_CSPROF_MAGIC_STR     "HPC_CSPROF"
 #define HPCFILE_CSPROF_MAGIC_STR_LEN 10 /* exclude '\0' */
 
-#define HPCFILE_CSPROF_VERSION     "01.00"
+#define HPCFILE_CSPROF_VERSION     "01.01"
 #define HPCFILE_CSPROF_VERSION_LEN 5 /* exclude '\0' */
 
 #define HPCFILE_CSPROF_ENDIAN 'l'
