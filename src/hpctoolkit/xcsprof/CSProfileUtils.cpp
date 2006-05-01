@@ -136,6 +136,7 @@ WriteCSProfile(CSProfile* prof, std::ostream& os, bool prettyPrint)
       os << "<METRIC shortName"; WriteAttrNum(os, i);
       os << " nativeName";       WriteAttrNum(os, metric->GetName());
       os << " period";           WriteAttrNum(os, metric->GetPeriod());
+      os << " flags";            WriteAttrNum(os, metric->GetFlags());
       os << "/>\n";
    }
 
@@ -305,6 +306,7 @@ ReadCSProfileFile_HCSPROFILE(const char* fnm,const char *execnm)
   for (int i=0; i<num_of_metrics ; i++) {
       CSProfileMetric* metric = prof->GetMetric(i);
       metric->SetName(data.metrics[i].metric_name);
+      metric->SetFlags(data.metrics[i].flags);
       metric->SetPeriod(data.metrics[i].sample_period);
    }
 
