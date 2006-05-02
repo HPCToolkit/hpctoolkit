@@ -138,7 +138,22 @@ goto EXIT; \
         }
 
         DBGMSG_PUB(CSPROF_DBG_UNWINDING, "IP %p | RSP %p", (void *)ip, (void *)rbp);
+	/* check for bogus IPs (happens on the Altix with older Intel
+	   compilers)
 
+	   On Linux, the memory map is setup like so:
+	   0x2... - 0x3ff..ff: application
+	   0x4... - 0x5ff..ff: shared libraries
+
+	   We assume that anything outside of this range is bogus */
+	{
+	  unsigned int top_nibble = (ip >> 60);
+
+	  if(top_nibble != 0x2 && top_nibble != 0x4) {
+	    THROW_UNSAFE;
+	  }
+	}
+	  
         /* add the frame, but don't advance since we don't know the
            entire story yet */
         unwind->ip = (void *)ip;
