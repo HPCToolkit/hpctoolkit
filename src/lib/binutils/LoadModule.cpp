@@ -624,7 +624,8 @@ bool LoadModule::buildAddrToProcedureMap() {
 	Addr procEndAddr = p->GetEndAddr();
 	Instruction *instruction = p->GetFirstInst();
 	ushort opIndex = instruction->GetOpIndex();
-	Addr opPC = isa->ConvertPCToOpPC(procStartAddress, opIndex);
+	Addr startOpPC = isa->ConvertPCToOpPC(procStartAddress, opIndex);
+	Addr endOpPC = isa->ConvertPCToOpPC(procEndAddr, opIndex);
 	// Obtain the source line information.
 	// This function assumes that the interface type 'suint' can hold
 	// the bfd_find_nearest_line line number type.  
@@ -637,7 +638,8 @@ bool LoadModule::buildAddrToProcedureMap() {
 				     &bfd_line)) {
 	  STATUS = (_file && _func && IsValidLine(bfd_line));
 
-	  addrToProcedureMap.insert(AddrToProcedureMapVal( AddrPair(procStartAddress, procEndAddr), bfd_line ));
+	  //  addrToProcedureMap.insert(AddrToProcedureMapVal( AddrPair(procStartAddress, procEndAddr), bfd_line ));
+	  addrToProcedureMap.insert(AddrToProcedureMapVal( AddrPair(startOpPC, endOpPC), bfd_line ));
 	  xDEBUG(DEB_BUILD_PROC_MAP, 
 		 fprintf(stderr, "adding procedure %s start line %d\n", 
 			 _func, bfd_line););
