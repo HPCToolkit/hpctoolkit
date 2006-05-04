@@ -641,8 +641,8 @@ bool LoadModule::buildAddrToProcedureMap() {
 	  //  addrToProcedureMap.insert(AddrToProcedureMapVal( AddrPair(procStartAddress, procEndAddr), bfd_line ));
 	  addrToProcedureMap.insert(AddrToProcedureMapVal( AddrPair(startOpPC, endOpPC), bfd_line ));
 	  xDEBUG(DEB_BUILD_PROC_MAP, 
-		 fprintf(stderr, "adding procedure %s start line %d\n", 
-			 _func, bfd_line););
+		 fprintf(stderr, "adding procedure %s [%x,%x] start line %d\n", 
+			 _func, startOpPC, endOpPC, bfd_line););
 	}
       }
     } 
@@ -651,9 +651,6 @@ bool LoadModule::buildAddrToProcedureMap() {
 
 bool 
 LoadModule::GetProcedureFirstLineInfo(Addr pc, ushort opIndex, suint &line) {
-  xDEBUG( DEB_BUILD_PROC_MAP,
-	  fprintf(stderr, "LoadModule::GetProcedureFirstLineInfo %p %x\n", 
-		  this, this););
   bool STATUS = false;
 
   if (!impl->bfdSymbolTable) { return STATUS; }
@@ -666,12 +663,25 @@ LoadModule::GetProcedureFirstLineInfo(Addr pc, ushort opIndex, suint &line) {
   Addr unrelocPC = UnRelocatePC(pc);
   Addr opPC = isa->ConvertPCToOpPC(unrelocPC, opIndex);
 
-  AddrToProcedureMapIt it = addrToProcedureMap.find( AddrPair(opPC,opPC));
+  xDEBUG( DEB_BUILD_PROC_MAP,
+	  fprintf(stderr, "LoadModule::GetProcedureFirstLineInfo %p %x (%x,%x) unrelocPC=%x opPC=%x\n", 
+		  this, this, pc, (unsigned) opIndex, unrelocPC, opPC););
+
+  AddrToProcedureMapIt it = addrToProcedureMap.lower_bound( AddrPair(opPC,opPC));
   if (it != addrToProcedureMap.end()) {
+    it--; // move to predecessor
     line=it->second;
+  xDEBUG( DEB_BUILD_PROC_MAP,
+	  fprintf(stderr, "LoadModule::GetProcedureFirstLineInfo %p %x (%x,%x) unrelocPC=%x opPC=%x found line %d\n", 
+		  this, this, pc, (unsigned) opIndex, unrelocPC, opPC, line););
+
     STATUS = true;
   } else {
     line = 0;
+  xDEBUG( DEB_BUILD_PROC_MAP,
+	  fprintf(stderr, "LoadModule::GetProcedureFirstLineInfo %p %x (%x,%x) unrelocPC=%x opPC=%x line not found\n", 
+		  this, this, pc, (unsigned) opIndex, unrelocPC, opPC, line););
+
   }
   return STATUS;
 }

@@ -633,11 +633,9 @@ NormalizeSameProcedureChildren(CSProfile* prof, CSProfNode* node, LoadModuleInfo
 			 c->GetProc()););
 	  //  determine the appropriate module info for the current 
 	  //  procedure frame
-	  
+
 	  lmi->GetProcedureFirstLineInfo( c->GetIP(), c->GetOpIndex(), 
 					  procFrameLine);
-	  xDEBUG(DEB_PROC_FIRST_LINE,
-		 fprintf(stderr, "got line %d\n", procFrameLine););
 	  
 	  procFrameNode->SetLine(procFrameLine);
 	}

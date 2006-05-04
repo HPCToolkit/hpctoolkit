@@ -87,7 +87,9 @@ typedef pair< Addr, Addr > AddrPair;
 
 struct PairAddrLt {
   bool operator() (const AddrPair pair1, const AddrPair pair2) const {
-    return (pair1.second < pair2.first);
+    return ((pair1.first < pair2.first) || 
+	    ((pair1.first == pair2.first) &&  
+	    (pair1.second < pair2.second)));
   }
 };
 typedef map< pair<Addr,Addr>, suint, PairAddrLt>  AddrToProcedureMap;
