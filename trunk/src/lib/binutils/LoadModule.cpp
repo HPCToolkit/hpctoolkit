@@ -634,7 +634,7 @@ bool LoadModule::buildAddrToProcedureMap() {
 	if (bfdSection
 	    && bfd_find_nearest_line(impl->abfd, bfdSection, 
 				     impl->bfdSymbolTable,
-				     opPC - base, &_file, &_func,
+				     startOpPC - base, &_file, &_func,
 				     &bfd_line)) {
 	  STATUS = (_file && _func && IsValidLine(bfd_line));
 
@@ -882,5 +882,5 @@ LoadModule::GetTextStartEndPC(Addr* startpc,Addr* endpc)
     *startpc = sml_startpc;
     *endpc   = lg_endpc; 
 
- };
+ }
 
