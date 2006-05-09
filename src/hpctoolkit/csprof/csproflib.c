@@ -673,7 +673,6 @@ csprof_options__getopts(csprof_options_t* x)
 #endif
 
     /* Option: CSPROF_OPT_MAX_METRICS */
-#if defined(CSPROF_THREADS)
     s = getenv(CSPROF_OPT_MAX_METRICS);
     if (s) {
       i = atoi(s);
@@ -688,7 +687,6 @@ csprof_options__getopts(csprof_options_t* x)
     else {
       x->max_metrics = 5;
     }
-#endif
 
     /* Option: CSPROF_OPT_SAMPLE_PERIOD */
     s = getenv(CSPROF_OPT_SAMPLE_PERIOD);
