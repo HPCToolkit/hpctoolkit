@@ -76,15 +76,18 @@ void
 csprof_set_metric_info_and_period(int metric_id, char *name,
 				  int flags, size_t period)
 {
-  if(metric_id >= csprof_max_metrics) {
+  if(metric_id >= metric_data.num_metrics) {
     ERRMSG("Metric id `%d' is not a defined metric",
-	   __FILE__, __LINE__, metric_id);
+           __FILE__, __LINE__, metric_id);
   }
-  else {
+  if(name == NULL) {
+    DIE("Must supply a name for metric `%d'", __FILE__, __LINE__, metric_id);
+  }
+  { 
     hpcfile_csprof_metric_t *metric = &metric_data.metrics[metric_id];
     metric->metric_name = name;
-    metric->metric_flags = flags;
     metric->sample_period = period;
+    metric->metric_flags = flags;
   }
 }
 
