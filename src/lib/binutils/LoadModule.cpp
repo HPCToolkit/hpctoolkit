@@ -178,9 +178,11 @@ LoadModule::Open(const char* moduleName)
   flagword flags = bfd_get_file_flags(impl->abfd);
   if (flags & EXEC_P) {         // BFD is directly executable
     type = Executable;
-  } else if (flags & DYNAMIC) { // BFD is a dynamic object
+  } 
+  else if (flags & DYNAMIC) { // BFD is a dynamic object
     type = SharedLibrary;
-  } else if (flags) {
+  } 
+  else if (flags) {
     type = Unknown;
   }
   
@@ -189,9 +191,10 @@ LoadModule::Open(const char* moduleName)
     textStart = bfd_ecoff_get_text_start(impl->abfd);
     textEnd   = bfd_ecoff_get_text_end(impl->abfd);
     firstaddr = textStart;
-   } else  {
+   } 
+  else  {
     textStart =  bfd_get_start_address(impl->abfd); //this is the entry point
-    firstaddr =  get_the_first_addr(impl->abfd);     
+    firstaddr =  bfd_get_first_addr(impl->abfd);     
   }
   
   // -------------------------------------------------------
