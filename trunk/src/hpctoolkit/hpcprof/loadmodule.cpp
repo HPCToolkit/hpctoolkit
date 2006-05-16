@@ -265,7 +265,7 @@ BFDLoadModule::find_address_in_section(bfd* abfd, asection* section, PTR exec)
   }
 
   vma = bfd_get_section_vma (abfd, section);
-  size = bfd_get_section_size_before_reloc (section);
+  size = bfd_section_size (abfd, section); // size_before_reloc
 
   // FIXME: these debugging messages should removed or placed within
   // debug conditionals
