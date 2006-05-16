@@ -253,9 +253,14 @@ class String
       //----------------------------------------
       // Return the (read-only) character in the string at a given offset.
       char operator[] (unsigned int position) const;
+      char operator[] (int position) const 
+	{ return (*this)[(unsigned int)position]; }
 
       // Return the (modifiable) character in the string at a given offset.
       char& operator[] (unsigned int position);
+      char& operator[] (int position)
+	{ return (*this)[(unsigned int)position]; }
+
 
       //----------------------------------------
       // Type conversion
