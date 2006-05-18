@@ -710,8 +710,7 @@ LoadModule::DumpModuleInfo(std::ostream& o, const char* pre) const
       BriefAssertion(false); 
   }
   
-  o << p << "the 1st load address : " << hex << "0x" 
-    << firstaddr<< dec <<  "\n";
+  o << p << "Load Addr: " << hex << "0x" << firstaddr << dec << "\n";
 
   o << p << "Text(start,end): 0x" << hex << GetTextStart() << ", 0x"
     << GetTextEnd() << dec << "\n";  
