@@ -127,9 +127,8 @@ LoadModule::~LoadModule()
   }
   addrToInstMap.clear(); 
 
- //reset isa  
+  // reset isa  
   isa = NULL;
-
 }
 
 
@@ -191,8 +190,8 @@ LoadModule::Open(const char* moduleName)
     textStart = bfd_ecoff_get_text_start(impl->abfd);
     textEnd   = bfd_ecoff_get_text_end(impl->abfd);
     firstaddr = textStart;
-   } 
-  else  {
+  } 
+  else {
     textStart =  bfd_get_start_address(impl->abfd); //this is the entry point
     firstaddr =  bfd_get_first_addr(impl->abfd);     
   }
@@ -213,7 +212,7 @@ LoadModule::Open(const char* moduleName)
     case bfd_arch_sparc:
       newisa = new SparcISA;
       break;
-    case bfd_arch_i386:
+    case bfd_arch_i386: // binutils categorizes x86_64 here
       newisa = new i686ISA;
       break;
     case bfd_arch_ia64:
@@ -228,7 +227,8 @@ LoadModule::Open(const char* moduleName)
   // same ISA type.
   if (!isa) {
     isa = newisa;
-  } else {
+  }
+  else {
     delete newisa;
     BriefAssertion(typeid(*newisa) == typeid(*isa) &&
 		"Cannot simultaneously open LoadModules with different ISAs!");
@@ -251,11 +251,9 @@ LoadModule::Read()
     STATUS &= ReadSymbolTables();
     STATUS &= ReadSections();
     buildAddrToProcedureMap();
-//    return STATUS;
-  } else {
-//    return STATUS;
   } 
-    return STATUS;
+  
+  return STATUS;
 }
 
 
@@ -270,9 +268,10 @@ LoadModule::Relocate(Addr textStartReloc_)
   
   if (textStartReloc == 0) {
     unRelocDelta = 0;
-  } else {
-//FMZ   unRelocDelta = -(textStartReloc - textStart);
-        unRelocDelta = -(textStartReloc-firstaddr);
+  } 
+  else {
+    //unRelocDelta = -(textStartReloc - textStart); // FMZ
+      unRelocDelta = -(textStartReloc - firstaddr);
   } 
 
 }
@@ -402,9 +401,11 @@ LoadModule::GetSourceFileInfo(Addr startPC, ushort sOpIndex,
     if (func1 != func2) {
       STATUS = false; // we are accross two different functions
     }
-  } else if (!func1.Empty() && func2.Empty()) {
+  } 
+  else if (!func1.Empty() && func2.Empty()) {
     func = func1;
-  } else if (func1.Empty() && !func2.Empty()) {
+  } 
+  else if (func1.Empty() && !func2.Empty()) {
     func = func2;
   } // else (func1.Empty && func2.Empty()): use default values
 
@@ -415,18 +416,22 @@ LoadModule::GetSourceFileInfo(Addr startPC, ushort sOpIndex,
       STATUS = false; // we are accross two different files
       endLine = startLine; // 'endLine' makes no sense since we return 'file1'
     }
-  } else if (!file1.Empty() && file2.Empty()) {
+  } 
+  else if (!file1.Empty() && file2.Empty()) {
     file = file1;
-  } else if (file1.Empty() && !file2.Empty()) {
+  } 
+  else if (file1.Empty() && !file2.Empty()) {
     file = file2;
   } // else (file1.Empty && file2.Empty()): use default values
 
   // Error checking and processing: 'startLine' and 'endLine'
   if (IsValidLine(startLine) && !IsValidLine(endLine)) { 
     endLine = startLine; 
-  } else if (IsValidLine(endLine) && !IsValidLine(startLine)) {
+  } 
+  else if (IsValidLine(endLine) && !IsValidLine(startLine)) {
     startLine = endLine;
-  } else if (startLine > endLine) { // perhaps due to inst. reordering...
+  } 
+  else if (startLine > endLine) { // perhaps due to inst. reordering...
     suint tmp = startLine;          // but unlikely given the way this is
     startLine = endLine;            // typically called
     endLine = tmp;
@@ -493,9 +498,11 @@ LoadModule::SymCmpByVMAFunc(const void* s1, const void* s2)
   // Primary sort key: Symbol's VMA (ascending).
   if (bfd_asymbol_value(a) < bfd_asymbol_value(b)) {
     return -1;
-  } else if (bfd_asymbol_value(a) > bfd_asymbol_value(b)) {
+  } 
+  else if (bfd_asymbol_value(a) > bfd_asymbol_value(b)) {
     return 1; 
-  } else {
+  } 
+  else {
     return 0;
   }
 }
@@ -590,7 +597,8 @@ LoadModule::ReadSections()
 	new TextSection(this, secName, secStart, secEnd, secSize,
 			impl->sortedSymbolTable, impl->numSyms, abfd);
       AddSection(newSection);
-    } else {
+    } 
+    else {
       Section *newSection = new Section(this, secName, Section::Data,
 					secStart, secEnd, secSize);
       AddSection(newSection);
@@ -679,7 +687,8 @@ LoadModule::GetProcedureFirstLineInfo(Addr pc, ushort opIndex, suint &line) {
 		  this, this, pc, (unsigned) opIndex, unrelocPC, opPC, line););
 
     STATUS = true;
-  } else {
+  } 
+  else {
     line = 0;
   xDEBUG( DEB_BUILD_PROC_MAP,
 	  fprintf(stderr, "LoadModule::GetProcedureFirstLineInfo %p %x (%x,%x) unrelocPC=%x opPC=%x line not found\n", 
@@ -880,7 +889,8 @@ LoadModule::GetTextStartEndPC(Addr* startpc,Addr* endpc)
           if (!(sml_startpc || lg_endpc)) {
             sml_startpc = sec->GetStart();
             lg_endpc    = sec->GetEnd(); 
-          } else { 
+          } 
+	  else { 
             curr_startpc  = sec->GetStart();
             curr_endpc    = sec->GetEnd(); 
             if (curr_startpc < sml_startpc)
