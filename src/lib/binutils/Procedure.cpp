@@ -1,5 +1,5 @@
+// -*-Mode: C++;-*-
 // $Id$
-// -*-C++-*-
 // * BeginRiceCopyright *****************************************************
 // 
 // Copyright ((c)) 2002, Rice University 
@@ -69,30 +69,35 @@ using std::dec;
 suint Procedure::nextId = 0;
 
 Procedure::Procedure(TextSection* _sec, String _name, String _linkname,
-                     Procedure::Type t, Addr _start, Addr _end, suint _size)
-  : sec(_sec), name(_name), linkname(_linkname), type(t), start(_start),
-    end(_end), size(_size)
+                     Procedure::Type t, Addr _begVMA, Addr _endVMA, 
+		     suint _size)
+  : sec(_sec), name(_name), linkname(_linkname), type(t), begVMA(_begVMA),
+    endVMA(_endVMA), size(_size), filenm(""), begLine(0), parent(NULL)
 {
   id = nextId++;
   numInsts = 0; // FIXME: this is never computed
 }
+
 
 Procedure::~Procedure()
 {
   sec = NULL;
 }
 
-Instruction* Procedure::GetLastInst() const
+
+Instruction* 
+Procedure::GetLastInst() const
 {
-  Instruction* inst = GetInst(end, 0);
+  Instruction* inst = GetInst(endVMA, 0);
   if (inst) {
     ushort numOps = inst->GetNumOps();
     if (numOps != 0) {
-      inst = GetInst(end, numOps - 1); // opIndex is 0-based
+      inst = GetInst(endVMA, numOps - 1); // opIndex is 0-based
     }
   }
   return inst;
 }
+
 
 void
 Procedure::Dump(std::ostream& o, const char* pre) const
@@ -141,11 +146,13 @@ Procedure::Dump(std::ostream& o, const char* pre) const
   }
 }
 
+
 void
 Procedure::DDump() const
 {
   Dump(std::cerr);
 }
+
 
 //***************************************************************************
 // ProcedureInstructionIterator
@@ -157,27 +164,35 @@ ProcedureInstructionIterator::ProcedureInstructionIterator(const Procedure& _p)
   Reset();
 }
 
+
 ProcedureInstructionIterator::~ProcedureInstructionIterator()
 {
 }
 
+
 void
 ProcedureInstructionIterator::Reset()
 {
-  it    = lm.addrToInstMap.find(p.start);
-  endIt = lm.addrToInstMap.find(p.end); 
-
-  // p.start and p.end should have been found
-  BriefAssertion(it != lm.addrToInstMap.end() && "Internal error!");
-  BriefAssertion(endIt != lm.addrToInstMap.end() && "Internal error!");
-
-  endIt++; // 'endIt' is now one past the last valid instruction
+  it    = lm.addrToInstMap.find(p.begVMA);
+  endIt = lm.addrToInstMap.find(p.endVMA); 
   
-  // We need to ensure that all VLIW instructions that match this
-  // pc are also included.  Push 'endIt' back as needed; when done it
-  // should remain one past the last valid instruction
-  for (; // ((*endIt).second) returns Instruction*
-       endIt != lm.addrToInstMap.end() && ((*endIt).second)->GetPC() == p.end;
-       endIt++)
-    { }
+  if (it != lm.addrToInstMap.end()) {
+    // We have at least one instruction: p.endVMA should have been found
+    BriefAssertion(endIt != lm.addrToInstMap.end() && "Internal error!");
+
+    endIt++; // 'endIt' is now one past the last valid instruction
+  
+    // We need to ensure that all VLIW instructions that match this
+    // pc are also included.  Push 'endIt' back as needed; when done it
+    // should remain one past the last valid instruction
+    for (; // ((*endIt).second) returns Instruction*
+	 (endIt != lm.addrToInstMap.end() 
+	  && ((*endIt).second)->GetPC() == p.endVMA);
+	 endIt++)
+      { }
+  }
+  else {
+    // 'it' == end ==> p.begVMA == p.endVMA (but not the reverse)
+    BriefAssertion(p.begVMA == p.endVMA && "Internal error!");
+  }
 }

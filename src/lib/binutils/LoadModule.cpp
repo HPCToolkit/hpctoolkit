@@ -1,5 +1,5 @@
+// -*-Mode: C++;-*-
 // $Id$
-// -*-C++-*-
 // * BeginRiceCopyright *****************************************************
 // 
 // Copyright ((c)) 2002, Rice University 
@@ -53,7 +53,8 @@
 
 //*************************** User Include Files ****************************
 
-#include <include/gnu_bfd.h> 
+#include <include/gnu_bfd.h>
+
 #include "LoadModule.h"
 #include "Section.h"
 #include "Instruction.h"
@@ -125,7 +126,7 @@ LoadModule::~LoadModule()
   for (it = addrToInstMap.begin(); it != addrToInstMap.end(); ++it) {
     delete (*it).second; // Instruction*
   }
-  addrToInstMap.clear(); 
+  addrToInstMap.clear();
 
   // reset isa  
   isa = NULL;
@@ -273,7 +274,6 @@ LoadModule::Relocate(Addr textStartReloc_)
     //unRelocDelta = -(textStartReloc - textStart); // FMZ
       unRelocDelta = -(textStartReloc - firstaddr);
   } 
-
 }
 
 bool 
@@ -442,6 +442,37 @@ LoadModule::GetSourceFileInfo(Addr startPC, ushort sOpIndex,
 
 
 void
+LoadModule::GetTextStartEndPC(Addr* startpc,Addr* endpc)
+{ 
+  Addr curr_startpc ;
+  Addr curr_endpc   ;
+  Addr sml_startpc = 0;
+  Addr lg_endpc    = 0;
+  for (LoadModuleSectionIterator it(*this); it.IsValid(); ++it) {
+    Section* sec = it.Current(); 
+    if (sec->GetType()==sec->Text)  {    
+      if (!(sml_startpc || lg_endpc)) {
+	sml_startpc = sec->GetStart();
+	lg_endpc    = sec->GetEnd(); 
+      } 
+      else { 
+	curr_startpc  = sec->GetStart();
+	curr_endpc    = sec->GetEnd(); 
+	if (curr_startpc < sml_startpc)
+	  sml_startpc = curr_startpc;
+	if (curr_endpc > lg_endpc)
+	  lg_endpc = curr_endpc;
+      }
+    }
+  }   
+  
+  *startpc = sml_startpc;
+  *endpc   = lg_endpc; 
+  
+}
+
+
+void
 LoadModule::Dump(std::ostream& o, const char* pre) const
 {
   String p(pre);
@@ -462,7 +493,7 @@ LoadModule::Dump(std::ostream& o, const char* pre) const
 
   o << p1 << "Load Module Contents:\n";
   DumpSelf(o, p2);
-
+  
   IFDOTRACE { // For debugging
     o << p2 << "Symbol Table (" << impl->numSyms << "):\n";
     DumpSymTab(o, p2);
@@ -577,10 +608,12 @@ LoadModule::ReadSections()
   bool STATUS = true;
 
   // Create sections.
-  // Pass symbol table information for each section into that section
-  // as it is created.
+  // Pass symbol table and debug summary information for each section
+  // into that section as it is created.
   if (!impl->bfdSymbolTable) { return false; }
-  
+
+  ReadDebugFunctionSummaryInfo();
+
   // Process each section in the object file.
   bfd *abfd = impl->abfd;
   for (asection *sec = abfd->sections; sec; sec = sec->next) {
@@ -603,73 +636,61 @@ LoadModule::ReadSections()
 					secStart, secEnd, secSize);
       AddSection(newSection);
     }
-  } 
+  }
 
+  ClearDebugFunctionSummaryInfo();
+  
   return STATUS;
 }
 
+// FIXME: replace with diagnostics stuff
 #define xDEBUG( flag, code) {if (flag) {code; fflush (stderr); fflush(stdout);}} 
 #define DEB_BUILD_PROC_MAP 0
 
 // Builds the map from <proc start addr, proc end addr> pairs to 
 // procedure first line.
-bool LoadModule::buildAddrToProcedureMap() {
-    bool STATUS = false;
-    for (LoadModuleSectionIterator it(*this); it.IsValid(); ++it) {
-      Section* sec = it.Current();
-      if (sec->GetType() != Section::Text) {
-	continue;
-      }
-
-      // We have a TextSection.  Iterate over procedures.
-      // Obtain the bfd section corresponding to our Section.
-      asection *bfdSection = 
-	bfd_get_section_by_name(impl->abfd, sec->GetName());
-      Addr base = bfd_section_vma(impl->abfd, bfdSection);
-
-      TextSection* tsec = dynamic_cast<TextSection*>(sec);
-      for (TextSectionProcedureIterator it1(*tsec); it1.IsValid(); ++it1) {
-	Procedure* p = it1.Current();
+bool 
+LoadModule::buildAddrToProcedureMap() 
+{
+  bool STATUS = false;
+  for (LoadModuleSectionIterator it(*this); it.IsValid(); ++it) {
+    Section* sec = it.Current();
+    if (sec->GetType() != Section::Text) {
+      continue;
+    }
+    
+    // We have a TextSection.  Iterate over procedures.
+    // Obtain the bfd section corresponding to our Section.
+    asection *bfdSection = 
+      bfd_get_section_by_name(impl->abfd, sec->GetName());
+    Addr base = bfd_section_vma(impl->abfd, bfdSection);
+    
+    TextSection* tsec = dynamic_cast<TextSection*>(sec);
+    for (TextSectionProcedureIterator it1(*tsec); it1.IsValid(); ++it1) {
+      Procedure* p = it1.Current();
+      Addr begAddr = p->GetStartAddr();
+      Addr endAddr = begAddr + p->GetSize();
+      suint begLine = p->GetBegLine();
       
-	Addr procStartAddress = p->GetStartAddr();
-	Addr procEndAddr = p->GetEndAddr();
-	Instruction *instruction = p->GetFirstInst();
-	ushort opIndex = instruction->GetOpIndex();
-	Addr startOpPC = isa->ConvertPCToOpPC(procStartAddress, opIndex);
-	Addr endOpPC = isa->ConvertPCToOpPC(procEndAddr, opIndex);
-	// Obtain the source line information.
-	// This function assumes that the interface type 'suint' can hold
-	// the bfd_find_nearest_line line number type.  
-	unsigned int bfd_line = 0;
-	const char *_func = NULL, *_file = NULL;
-	if (bfdSection
-	    && bfd_find_nearest_line(impl->abfd, bfdSection, 
-				     impl->bfdSymbolTable,
-				     startOpPC - base, &_file, &_func,
-				     &bfd_line)) {
-	  STATUS = (_file && _func && IsValidLine(bfd_line));
-
-	  //  addrToProcedureMap.insert(AddrToProcedureMapVal( AddrPair(procStartAddress, procEndAddr), bfd_line ));
-	  addrToProcedureMap.insert(AddrToProcedureMapVal( AddrPair(startOpPC, endOpPC), bfd_line ));
-	  xDEBUG(DEB_BUILD_PROC_MAP, 
-		 fprintf(stderr, "adding procedure %s [%x,%x] start line %d\n", 
-			 _func, startOpPC, endOpPC, bfd_line););
-	}
+      if (!IsValidLine(begLine)) {
+	String func, file;
+	GetSourceFileInfo(begAddr, 0, func, file, begLine);
       }
-    } 
-    return STATUS;
-  }
+      
+      addrToProcedureMap.insert(AddrToProcedureMapVal( AddrPair(begAddr, endAddr), begLine ));
+      xDEBUG(DEB_BUILD_PROC_MAP, 
+	     fprintf(stderr, "adding procedure %s [%x,%x] start line %d\n", 
+		     (const char*)p->GetName(), begAddr, endAddr, begLine););
+    }
+  } 
+  return STATUS;
+}
+
 
 bool 
-LoadModule::GetProcedureFirstLineInfo(Addr pc, ushort opIndex, suint &line) {
+LoadModule::GetProcedureFirstLineInfo(Addr pc, ushort opIndex, suint &line) 
+{
   bool STATUS = false;
-
-  if (!impl->bfdSymbolTable) { return STATUS; }
-  
-  // This function assumes that the interface type 'suint' can hold
-  // the bfd_find_nearest_line line number type.  
-  unsigned int bfd_line = 0;
-  //BriefAssertion(sizeof(suint) >= sizeof(bfd_line));
 
   Addr unrelocPC = UnRelocatePC(pc);
   Addr opPC = isa->ConvertPCToOpPC(unrelocPC, opIndex);
@@ -681,31 +702,119 @@ LoadModule::GetProcedureFirstLineInfo(Addr pc, ushort opIndex, suint &line) {
   AddrToProcedureMapIt it = addrToProcedureMap.lower_bound( AddrPair(opPC,opPC));
   if (it != addrToProcedureMap.end()) {
     it--; // move to predecessor
-    line=it->second;
-  xDEBUG( DEB_BUILD_PROC_MAP,
-	  fprintf(stderr, "LoadModule::GetProcedureFirstLineInfo %p %x (%x,%x) unrelocPC=%x opPC=%x found line %d\n", 
-		  this, this, pc, (unsigned) opIndex, unrelocPC, opPC, line););
-
+    line = it->second;
+    xDEBUG( DEB_BUILD_PROC_MAP,
+	    fprintf(stderr, "LoadModule::GetProcedureFirstLineInfo %p %x (%x,%x) unrelocPC=%x opPC=%x found line %d\n", 
+		    this, this, pc, (unsigned) opIndex, unrelocPC, opPC, line););
+    
     STATUS = true;
   } 
   else {
     line = 0;
-  xDEBUG( DEB_BUILD_PROC_MAP,
-	  fprintf(stderr, "LoadModule::GetProcedureFirstLineInfo %p %x (%x,%x) unrelocPC=%x opPC=%x line not found\n", 
-		  this, this, pc, (unsigned) opIndex, unrelocPC, opPC, line););
-
+    xDEBUG( DEB_BUILD_PROC_MAP,
+	    fprintf(stderr, "LoadModule::GetProcedureFirstLineInfo %p %x (%x,%x) unrelocPC=%x opPC=%x line not found\n", 
+		    this, this, pc, (unsigned) opIndex, unrelocPC, opPC, line););
+    
   }
   return STATUS;
 }
+
+
+bool
+LoadModule::ReadDebugFunctionSummaryInfo()
+{
+  bool STATUS = true;
+
+  if (!impl->bfdSymbolTable) { return false; }
+  
+  bfd *abfd = impl->abfd;  
+  
+  // Construct dbgSummary: Currently we only know about ELF/DWARF2
+  if (bfd_get_flavour(abfd) == bfd_target_elf_flavour) {
+    bfd_forall_dbg_funcinfo_fn_t callback = 
+      (bfd_forall_dbg_funcinfo_fn_t)bfd_DbgFuncinfoCallback;
+    int cnt = bfd_elf_forall_dbg_funcinfo(abfd, impl->bfdSymbolTable,
+					  callback, this);
+  }
+  
+  // Post-process dbgSummary and set parent pointers
+  dbgSummary.setParentPointers();
+
+  //dbgSummary.dump(std::cout);
+  
+  return STATUS;
+}
+
+
+void
+LoadModule::ClearDebugFunctionSummaryInfo()
+{
+  dbgSummary.clear();
+}
+
+
+// Should have function type of 'bfd_forall_dbg_funcinfo_fn_t'
+int 
+LoadModule::bfd_DbgFuncinfoCallback(void* callback_obj, 
+				    void* parent, void* funcinfo)
+{
+  LoadModule* lm = (LoadModule*)callback_obj;
+  
+  LoadModule::DbgFuncSummary::Info* finfo = 
+    new LoadModule::DbgFuncSummary::Info;
+
+  // Collect information for 'funcinfo'
+  bfd_vma begVMA, endVMA;
+  const char* name, *filenm;
+  unsigned int begLine;
+  bfd_forall_dbg_funcinfo_get_decl_info(funcinfo, &name, &filenm, &begLine);
+  bfd_forall_dbg_funcinfo_get_vma_bounds(funcinfo, &begVMA, &endVMA);
+  
+  finfo->begVMA = begVMA;
+  finfo->endVMA = endVMA;
+  finfo->name = name;
+  finfo->filenm = filenm;
+  finfo->begLine = (suint)begLine;
+
+  // We are not guaranteed to see parent routines before children.
+  // Save begVMA for future processing.
+  begVMA = endVMA = 0;
+  if (parent) {
+    bfd_forall_dbg_funcinfo_get_vma_bounds(parent, &begVMA, &endVMA);
+  }
+  finfo->parentVMA = begVMA;
+
+  // For now, we assume that if we don't know an address for
+  // 'funcinfo', then we can't use it
+  if (finfo->begVMA == 0) {
+    delete finfo;
+    return 0;
+  }
+  
+  std::pair<LoadModule::DbgFuncSummary::iterator, bool> res = 
+    lm->dbgSummary.insert(std::make_pair(finfo->begVMA, finfo));
+  if (!res.second) {
+    // There are two descriptors for the same function.  I don't think
+    // this should happen in practice...
+    // finfo->dump(std::cout);
+    delete finfo;    
+  }
+
+  return 0;
+}
+
 
 void
 LoadModule::DumpModuleInfo(std::ostream& o, const char* pre) const
 {
   String p(pre);
-  bfd *abfd = impl->abfd; 
+  bfd *abfd = impl->abfd;
 
-  o << p << "Name: `" << GetName() << "'\n"; 
-  o << p << "Format: `" << bfd_get_target(abfd) << "'" << endl;  
+  o << p << "Name: `" << GetName() << "'\n";
+
+  o << p << "Format: `" << bfd_get_target(abfd) << "'" << endl;
+  // bfd_get_flavour
+
   o << p << "Type: `";
   switch (GetType()) {
     case Executable:    
@@ -722,8 +831,8 @@ LoadModule::DumpModuleInfo(std::ostream& o, const char* pre) const
   o << p << "Load Addr: " << hex << "0x" << firstaddr << dec << "\n";
 
   o << p << "Text(start,end): 0x" << hex << GetTextStart() << ", 0x"
-    << GetTextEnd() << dec << "\n";  
-
+    << GetTextEnd() << dec << "\n";
+  
   o << p << "Endianness: `"
     << ( (bfd_big_endian(abfd)) ? "Big'\n" : "Little'\n" );
   
@@ -812,6 +921,66 @@ LoadModule::DumpSymTab(std::ostream& o, const char* pre) const
 
 
 //***************************************************************************
+// DbgFuncSummary
+//***************************************************************************
+
+std::ostream&
+LoadModule::DbgFuncSummary::Info::dump(std::ostream& os) const
+{
+  os << "{ DbgFuncSummary::Info: \n";
+  os << "  " << name << " [" << hex << begVMA << "-" << endVMA << dec << "]"
+     << " parentVMA: " << hex << parentVMA << " --> " << parent << dec << "\n";
+  os << "  " << filenm << ":" << begLine << "\n";
+  os << "}\n";
+  os.flush();
+}
+
+
+LoadModule::DbgFuncSummary::DbgFuncSummary()
+{
+}
+
+
+LoadModule::DbgFuncSummary::~DbgFuncSummary()
+{
+  clear();
+}
+
+void 
+LoadModule::DbgFuncSummary::setParentPointers()
+{
+  // Set parent pointers assuming begVMA has been set.
+  for (const_iterator it = this->begin(); it != this->end(); ++it) {
+    Info* x = it->second;
+    if (x->parentVMA != 0) {
+      x->parent = (*this)[x->parentVMA];
+    }
+  }
+}
+
+void
+LoadModule::DbgFuncSummary::clear()
+{
+  for (const_iterator it = this->begin(); it != this->end(); ++it) {
+    delete it->second;
+  }
+  mMap.clear();
+}
+
+
+std::ostream&
+LoadModule::DbgFuncSummary::dump(std::ostream& os) const
+{
+  os << "{ DbgFuncSummary: \n";
+  for (const_iterator it = this->begin(); it != this->end(); ++it) {
+    //os << "(" << it->first << " --> " << it->second << ")\n";
+    it->second->dump(os);
+  }
+  os << "}\n";
+  os.flush();
+}
+
+//***************************************************************************
 // Executable
 //***************************************************************************
 
@@ -848,11 +1017,13 @@ Executable::Dump(std::ostream& o, const char* pre) const
   LoadModule::Dump(o);  
 }
 
+
 void
 Executable::DDump() const
 {
   Dump(std::cerr);
 }
+
 
 void
 Executable::DumpSelf(std::ostream& o, const char* pre) const
@@ -873,36 +1044,6 @@ LoadModuleSectionIterator::LoadModuleSectionIterator(const LoadModule& _lm)
 
 LoadModuleSectionIterator::~LoadModuleSectionIterator()
 {
-} 
+}
 
-
-void
-LoadModule::GetTextStartEndPC(Addr* startpc,Addr* endpc)
-{ 
-    Addr curr_startpc ;
-    Addr curr_endpc   ;
-    Addr sml_startpc = 0;
-    Addr lg_endpc    = 0;
-    for (LoadModuleSectionIterator it(*this); it.IsValid(); ++it) {
-       Section* sec = it.Current(); 
-       if (sec->GetType()==sec->Text)  {    
-          if (!(sml_startpc || lg_endpc)) {
-            sml_startpc = sec->GetStart();
-            lg_endpc    = sec->GetEnd(); 
-          } 
-	  else { 
-            curr_startpc  = sec->GetStart();
-            curr_endpc    = sec->GetEnd(); 
-            if (curr_startpc < sml_startpc)
-                  sml_startpc = curr_startpc;
-            if (curr_endpc > lg_endpc)
-                  lg_endpc = curr_endpc;
-           }
-       }
-    }   
-
-    *startpc = sml_startpc;
-    *endpc   = lg_endpc; 
-
- }
-
+//***************************************************************************
