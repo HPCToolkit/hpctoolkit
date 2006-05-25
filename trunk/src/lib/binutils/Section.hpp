@@ -1,5 +1,5 @@
+// -*-Mode: C++;-*-
 // $Id$
-// -*-C++-*-
 // * BeginRiceCopyright *****************************************************
 // 
 // Copyright ((c)) 2002, Rice University 
@@ -176,9 +176,12 @@ private:
   TextSection(const TextSection& s) { }
   TextSection& operator=(const TextSection& s) { return *this; }
 
+  void Create_InitializeProcs();
+  void Create_DisassembleProcs();
+
   // Construction helpers
   String FindProcedureName(bfd *abfd, asymbol *procSym) const;
-  Addr FindProcedureExtent(int funcSymIndex) const;
+  Addr FindProcedureEnd(int funcSymIndex) const;
   Instruction* MakeInstruction(bfd *abfd, MachInst* mi, Addr pc,
 			       ushort opIndex, ushort sz) const;
   

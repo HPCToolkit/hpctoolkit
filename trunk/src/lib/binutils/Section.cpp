@@ -1,5 +1,5 @@
+// -*-Mode: C++;-*-
 // $Id$
-// -*-C++-*-
 // * BeginRiceCopyright *****************************************************
 // 
 // Copyright ((c)) 2002, Rice University 
@@ -79,10 +79,12 @@ Section::Section(LoadModule* _lm, String _name, Type t,
 {
 }
 
+
 Section::~Section()
 {
   lm = NULL; 
 }
+
 
 void
 Section::Dump(std::ostream& o, const char* pre) const
@@ -102,6 +104,7 @@ Section::Dump(std::ostream& o, const char* pre) const
   o << p << "  Size(b): " << GetSize() << "\n";
 }
 
+
 void
 Section::DDump() const
 {
@@ -114,11 +117,18 @@ Section::DDump() const
 
 class TextSectionImpl { 
 public:
+  TextSectionImpl() 
+    : abfd(NULL), symTable(NULL), 
+      contentsRaw(NULL), contents(NULL), numSyms(0) { }
+  ~TextSectionImpl() { }
+    
+  bfd* abfd;          // we do not own
   asymbol **symTable; // we do not own
   char *contentsRaw; // allocated memory for section contents (we own)
   char *contents;    // contents, aligned with a 16-byte boundary
   int numSyms;
 };
+
 
 TextSection::TextSection(LoadModule* _lm, String _name, Addr _start, Addr _end,
 			 suint _size, asymbol **syms, int numSyms, bfd *abfd)
@@ -126,44 +136,16 @@ TextSection::TextSection(LoadModule* _lm, String _name, Addr _start, Addr _end,
     procedures(0)
 {
   impl = new TextSectionImpl;
+  impl->abfd = abfd;     // we do not own 'abfd'
   impl->symTable = syms; // we do not own 'syms'
   impl->numSyms = numSyms;
   impl->contents = NULL;
 
-  // ------------------------------------------------------------
-  // Each text section finds and creates its own routines.
-  // Traverse the symbol table (which is sorted by VMA) searching
-  // for function symbols in our section.  Create a Procedure for
-  // each one found.
-  // ------------------------------------------------------------
-  for (int i = 0; i < impl->numSyms; i++) {
-    // FIXME: exploit the fact that the symbol table is sorted by vma
-    asymbol *sym = impl->symTable[i]; 
-    if (IsIn(bfd_asymbol_value(sym)) && (sym->flags & BSF_FUNCTION)
-        && !bfd_is_und_section(sym->section)) {
-      Procedure::Type procType;
-
-      if (sym->flags & BSF_LOCAL)
-        procType = Procedure::Local;
-      else if (sym->flags & BSF_WEAK)
-        procType = Procedure::Weak;
-      else if (sym->flags & BSF_GLOBAL)
-        procType = Procedure::Global;
-      else
-        procType = Procedure::Unknown;
-      
-      Addr extent = FindProcedureExtent(i);
-      String procNm = FindProcedureName(abfd, sym);
-      String symNm  = bfd_asymbol_name(sym);
-      Procedure *proc = new Procedure(this, procNm, symNm, procType,
-		       /*start, end*/ bfd_asymbol_value(sym), extent,
-			     /*size*/ extent - bfd_asymbol_value(sym));
-      procedures.push_back(proc);
-    } 
-  }
+  // 1. Initialize procedures
+  Create_InitializeProcs();
 
   // ------------------------------------------------------------
-  // Next, read in the section data (usually raw instructions).
+  // 2. Read in the section data (usually raw instructions).
   // ------------------------------------------------------------
   
   // Obtain a new buffer, and align the pointer to a 16-byte boundary.
@@ -192,21 +174,138 @@ TextSection::TextSection(LoadModule* _lm, String _name, Addr _start, Addr _end,
 	 << endl;
     return;
   }
+  
+  // 3. Disassemble the instructions in each procedure
+  Create_DisassembleProcs();
+}
+
+
+TextSection::~TextSection()
+{
+  // Clear impl
+  impl->symTable = NULL;
+  delete[] impl->contentsRaw; impl->contentsRaw = NULL;
+  impl->contents = NULL;
+  delete impl;
+    
+  // Clear procedures
+  for (TextSectionProcedureIterator it(*this); it.IsValid(); ++it) {
+    delete it.Current(); // Procedure*
+  }
+  procedures.clear();
+}
+
+
+void
+TextSection::Dump(std::ostream& o, const char* pre) const
+{
+  String p(pre);
+  String p1 = p + "  ";
+
+  Section::Dump(o, pre);
+  o << p << "  Procedures (" << GetNumProcedures() << ")\n";
+  for (TextSectionProcedureIterator it(*this); it.IsValid(); ++it) {
+    Procedure* p = it.Current();
+    p->Dump(o, p1);
+  }
+}
+
+
+void
+TextSection::DDump() const
+{
+  Dump(std::cerr);
+}
+
+
+//***************************   private members    ***************************
+
+void
+TextSection::Create_InitializeProcs()
+{
+  LoadModule* lm = GetLoadModule();
+  LoadModule::DbgFuncSummary* dbgSum = lm->GetDebugFuncSummary();
 
   // ------------------------------------------------------------
-  // Now disassemble the instructions in each procedure.
+  // Each text section finds and creates its own routines.
+  // Traverse the symbol table (which is sorted by VMA) searching
+  // for function symbols in our section.  Create a Procedure for
+  // each one found.
+  // ------------------------------------------------------------
+  for (int i = 0; i < impl->numSyms; i++) {
+    // FIXME: exploit the fact that the symbol table is sorted by vma
+    asymbol *sym = impl->symTable[i]; 
+    if (IsIn(bfd_asymbol_value(sym)) && (sym->flags & BSF_FUNCTION)
+        && !bfd_is_und_section(sym->section)) {
+      Procedure::Type procType;
+
+      if (sym->flags & BSF_LOCAL)
+        procType = Procedure::Local;
+      else if (sym->flags & BSF_WEAK)
+        procType = Procedure::Weak;
+      else if (sym->flags & BSF_GLOBAL)
+        procType = Procedure::Global;
+      else
+        procType = Procedure::Unknown;
+
+      // Create a procedure based on best information we have.  We
+      // always prefer explicit debug information over that inferred
+      // from the symbol table.
+      // Note: Initially, the end addr is the *end* of the last insn.
+      // This is changed after decoding below.
+      Addr begVMA = bfd_asymbol_value(sym);
+      Addr endVMA = 0; // see note above
+      String procNm;
+      String symNm = bfd_asymbol_name(sym);
+
+      LoadModule::DbgFuncSummary::Info* dbg = (*dbgSum)[begVMA];
+      if (dbg) { // (skip until full merge ready)
+	//endVMA = dbg->endVMA; 
+	//procNm = dbg->name;
+      }
+      if (!dbg || endVMA == 0) {
+	endVMA = FindProcedureEnd(i);
+      }
+      if (!dbg || procNm.Empty()) {
+	procNm = FindProcedureName(impl->abfd, sym);
+      }
+      
+      Procedure *proc = new Procedure(this, procNm, symNm, procType,
+				      begVMA, endVMA, endVMA - begVMA);
+      procedures.push_back(proc);
+
+      // Add symbolic info
+      if (dbg) {
+	proc->GetFilename() = dbg->filenm;
+	proc->GetBegLine() = dbg->begLine;
+	//dbg->parent;
+      }
+    } 
+  }
+
+}
+
+
+void
+TextSection::Create_DisassembleProcs()
+{
+  LoadModule* lm = GetLoadModule();
+  bfd* abfd = impl->abfd;
+  
+  // ------------------------------------------------------------
+  // Disassemble the instructions in each procedure.
   // ------------------------------------------------------------
   Addr sectionBase = GetStart();
   
   for (TextSectionProcedureIterator it(*this); it.IsValid(); ++it) {
     Procedure* p = it.Current();
-    Addr procStart = p->GetStartAddr();
+    Addr procBeg = p->GetStartAddr();
     Addr procEnd = p->GetEndAddr();
     ushort instSz = 0;
-    Addr lastInstPC = procStart; // pc of last valid instruction in the proc
+    Addr lastInstPC = procBeg; // pc of last valid instruction in the proc
 
     // Iterate over each pc at which an instruction might begin
-    for (Addr pc = procStart; pc < procEnd; ) {
+    for (Addr pc = procBeg; pc < procEnd; ) {
       MachInst *mi = &(impl->contents[pc - sectionBase]);
       instSz = isa->GetInstSize(mi);
       if (instSz == 0) {
@@ -226,7 +325,7 @@ TextSection::TextSection(LoadModule* _lm, String _name, Addr _start, Addr _end,
       lastInstPC = pc;
       for (ushort opIndex = 0; opIndex < num_ops; opIndex++) {
         Instruction *newInst = MakeInstruction(abfd, mi, pc, opIndex, instSz);
-        _lm->AddInst(pc, opIndex, newInst); 
+        lm->AddInst(pc, opIndex, newInst); 
       }
       pc += instSz; 
     }
@@ -241,44 +340,6 @@ TextSection::TextSection(LoadModule* _lm, String _name, Addr _start, Addr _end,
   }
 }
 
-
-TextSection::~TextSection()
-{
-  // Clear impl
-  impl->symTable = NULL;
-  delete[] impl->contentsRaw; impl->contentsRaw = NULL;
-  impl->contents = NULL;
-  delete impl;
-    
-  // Clear procedures
-  for (TextSectionProcedureIterator it(*this); it.IsValid(); ++it) {
-    delete it.Current(); // Procedure*
-  }
-  procedures.clear();
-}
-
-void
-TextSection::Dump(std::ostream& o, const char* pre) const
-{
-  String p(pre);
-  String p1 = p + "  ";
-
-  Section::Dump(o, pre);
-  o << p << "  Procedures (" << GetNumProcedures() << ")\n";
-  for (TextSectionProcedureIterator it(*this); it.IsValid(); ++it) {
-    Procedure* p = it.Current();
-    p->Dump(o, p1);
-  }
-}
-
-void
-TextSection::DDump() const
-{
-  Dump(std::cerr);
-}
-
-
-//***************************   private members    ***************************
 
 // Returns the name of the procedure referenced by 'procSym' using
 // debugging information, if possible; otherwise returns the symbol
@@ -308,12 +369,13 @@ TextSection::FindProcedureName(bfd *abfd, asymbol *procSym) const
   return procName;
 }
 
-// Find extent of the function given by funcSymIndex.  This is
-// normally the address of the next function symbol in this section.
-// However, if this is the last function in the section, then its
-// extent is the address of the end of the section.
+
+// Approximate the end VMA of the function given by funcSymIndex.
+// This is normally the address of the next function symbol in this
+// section.  However, if this is the last function in the section,
+// then its end is the address of the end of the section.
 Addr
-TextSection::FindProcedureExtent(int funcSymIndex) const
+TextSection::FindProcedureEnd(int funcSymIndex) const
 {
   // Since the symbol table we get is sorted by VMA, we can stop
   // the search as soon as we've gone beyond the VMA of this section.
@@ -330,6 +392,7 @@ TextSection::FindProcedureExtent(int funcSymIndex) const
   }
   return ret;
 }
+
 
 // Returns a new instruction of the appropriate type.  Promises not to
 // return NULL.
@@ -359,6 +422,7 @@ TextSection::MakeInstruction(bfd *abfd, MachInst* mi, Addr pc, ushort opIndex,
   return newInst;
 }
 
+
 //***************************************************************************
 // TextSectionProcedureIterator
 //***************************************************************************
@@ -372,3 +436,5 @@ TextSectionProcedureIterator::TextSectionProcedureIterator(const TextSection& _s
 TextSectionProcedureIterator::~TextSectionProcedureIterator()
 {
 }
+
+//***************************************************************************

@@ -1,5 +1,5 @@
+// -*-Mode: C++;-*-
 // $Id$
-// -*-C++-*-
 // * BeginRiceCopyright *****************************************************
 // 
 // Copyright ((c)) 2002, Rice University 
@@ -78,7 +78,7 @@ public:
   enum Type { Local, Weak, Global, Unknown };
   
   Procedure(TextSection* _sec, String _name, String _linkname, Type t,
-	    Addr _start, Addr _end, suint _size);
+	    Addr _begVMA, Addr _endVMA, suint _size);
   virtual ~Procedure();
 
   TextSection* GetTextSection() const { return sec; }
@@ -96,21 +96,28 @@ public:
   // Return type of procedure
   Type  GetType()      const { return type; }
 
-  // Return the start and end virtual memory address of a procedure.
+  // Return the begin and end virtual memory address of a procedure.
   // The end address points to the beginning of the last instruction.
   // Note that a different convention is used for the end address of a
   // 'Section'.
-  Addr  GetStartAddr() const { return start; }
-  Addr  GetEndAddr()   const { return end; }
-  void  SetEndAddr(Addr _end) { end = _end; }
+  Addr  GetStartAddr() const { return begVMA; }
+  Addr  GetEndAddr()   const { return endVMA; }
+  void  SetEndAddr(Addr _endVMA) { endVMA = _endVMA; }
 
   // Return size, which is (end - start) + sizeof(last instruction)
   suint GetSize()      const { return size; }
   void SetSize(suint _size)  { size = _size; }
   
+  // Symbolic information: may or may not be available
+  String  GetFilename()     const { return filenm; }
+  String& GetFilename()           { return filenm; }
+
+  suint   GetBegLine()      const { return begLine; }
+  suint&  GetBegLine()            { return begLine; }
+
   // Return true if virtual memory address 'pc' is within the procedure
   // WARNING: pc must be unrelocated
-  bool  IsIn(Addr pc)  const { return (start <= pc && pc <= end); }
+  bool  IsIn(Addr pc)  const { return (begVMA <= pc && pc <= endVMA); }
 
   // Return the unique number assigned to this procedure
   suint GetId()        const { return id; }
@@ -119,7 +126,7 @@ public:
   suint GetNumInsts()  const { return numInsts; }
 
   // Return the first and last instruction in the procedure
-  Instruction* GetFirstInst() const { return GetInst(start, 0); }
+  Instruction* GetFirstInst() const { return GetInst(begVMA, 0); }
   Instruction* GetLastInst() const;
   
   // Convenient wrappers for the 'LoadModule' versions of the same.
@@ -162,9 +169,14 @@ private:
   String linkname;
   Type   type;
   
-  Addr   start; // points to the beginning of the first instruction
-  Addr   end;   // points to the beginning of the last instruction
+  Addr   begVMA; // points to the beginning of the first instruction
+  Addr   endVMA; // points to the beginning of the last instruction
   Addr   size;
+
+  // symbolic information: may or may not be known
+  String filenm;     // filename and 
+  suint  begLine;    //   begin line of definition, if known
+  Procedure* parent; // parent routine, if lexically nested
 
   suint  id;    // a unique identifier
   suint  numInsts;

@@ -68,7 +68,8 @@ struct disassemble_info;
 // i686ISA
 //***************************************************************************
 
-// 'i686ISA': Implements the i686 Instruction Set Architecture.
+// 'i686ISA': Implements the i686 Instruction Set Architecture (x86
+// and x86-64)
 // See comments in 'ISA.h'
 
 class i686ISA : public ISA {

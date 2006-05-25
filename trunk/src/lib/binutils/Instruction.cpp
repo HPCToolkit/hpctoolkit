@@ -1,5 +1,5 @@
+// -*-Mode: C++;-*-
 // $Id$
-// -*-C++-*-
 // * BeginRiceCopyright *****************************************************
 // 
 // Copyright ((c)) 2002, Rice University 
