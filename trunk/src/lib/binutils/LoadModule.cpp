@@ -214,7 +214,7 @@ LoadModule::Open(const char* moduleName)
       newisa = new SparcISA;
       break;
     case bfd_arch_i386: // x86 and x86_64
-      newisa = new x86ISA;
+      newisa = new x86ISA(bfd_get_mach(impl->abfd) == bfd_mach_x86_64);
       break;
     case bfd_arch_ia64:
       newisa = new IA64ISA;
