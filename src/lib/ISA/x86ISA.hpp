@@ -73,7 +73,7 @@ struct disassemble_info;
 
 class x86ISA : public ISA {
 public:  
-  x86ISA();
+  x86ISA(bool is_x86_64 = false);
   virtual ~x86ISA();
   
   // --------------------------------------------------------
@@ -106,6 +106,7 @@ private:
 
 protected:
 private:
+  bool mIs_x86_64;
   struct disassemble_info *di;
 };
 

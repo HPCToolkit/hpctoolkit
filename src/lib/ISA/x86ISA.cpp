@@ -94,7 +94,8 @@ static int read_memory_func (bfd_vma vma, bfd_byte *myaddr, unsigned int len,
 // x86ISA
 //****************************************************************************
 
-x86ISA::x86ISA()
+x86ISA::x86ISA(bool is_x86_64)
+  : mIs_x86_64(is_x86_64), di(NULL)
 {
   // See 'dis-asm.h'
   di = new disassemble_info;
@@ -102,7 +103,12 @@ x86ISA::x86ISA()
   //  fprintf_func: (int (*)(void *, const char *, ...))fprintf;
 
   di->arch = bfd_arch_i386;      // bfd_get_arch(abfd);
-  di->mach = bfd_mach_i386_i386; // bfd_get_mach(abfd); needed in print_insn()
+  if (mIs_x86_64) {              // bfd_get_mach(abfd); needed in print_insn()
+    di->mach = bfd_mach_x86_64;
+  }
+  else {
+    di->mach = bfd_mach_i386_i386; 
+  }
   di->endian = BFD_ENDIAN_LITTLE;
   di->read_memory_func = read_memory_func; // vs. 'buffer_read_memory'
   di->print_address_func = print_addr;     // vs. 'generic_print_address'
@@ -183,19 +189,25 @@ x86ISA::GetInstDesc(MachInst* mi, ushort opIndex, ushort s)
 Addr
 x86ISA::GetInstTargetAddr(MachInst* mi, Addr pc, ushort opIndex, ushort sz)
 {
+  static bfd_vma mask32 = (bfd_vma)0x0 | 0xffffffff;
+  
   if (CacheLookup(mi) == NULL) {
     ushort size = print_insn_i386(PTR_TO_BFDVMA(mi), di);
     CacheSet(mi, size);
   }
 
   // N.B.: The GNU decoders expect that the address of the 'mi' is
-  // actually the PC/vma.  Furthermore, because i686 is 32-bit
-  // decoding, it only keeps 32 bits of 'mi'.
-
+  // actually the PC/vma.  Furthermore for 32-bit x86 decoding, only
+  // the lower 32 bits of 'mi' are valid.
+  
   // The target field is only set on instructions with targets.
   if (di->target != 0) {
-    return (di->target - (PTR_TO_BFDVMA(mi) & 0xffffffff)) + (bfd_vma)pc;
-  } else {
+    Addr tgt = (mIs_x86_64) ?
+      ((di->target & mask32) - PTR_TO_BFDVMA(mi)) + (bfd_vma)pc :
+      (di->target - (PTR_TO_BFDVMA(mi) & mask32)) + (bfd_vma)pc;
+    return tgt;
+  } 
+  else {
     return 0;
   }
 }
