@@ -43,10 +43,10 @@
 
 #include <include/general.h> 
 
-#include "PerfMetric.h"
-#include "Driver.h"
+#include "PerfMetric.hpp"
+#include "Driver.hpp"
 
-#include <lib/support/String.h> 
+#include <lib/support/String.hpp>
 
 //************************* Xerces Declarations ******************************
 

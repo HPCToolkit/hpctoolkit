@@ -43,8 +43,8 @@
 
 //*************************** User Include Files ****************************
 
-#include "String.h"
-#include "VectorTmpl.h"
+#include "String.hpp"
+#include "VectorTmpl.hpp"
 
 //*************************** Forward Declarations **************************
 

@@ -53,7 +53,7 @@
 
 //*************************** User Include Files ****************************
 
-#include "DCPIProfile.h"
+#include "DCPIProfile.hpp"
 
 //*************************** Forward Declarations ***************************
 

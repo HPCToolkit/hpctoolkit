@@ -49,14 +49,14 @@ using namespace std; // For compatibility with non-std C headers
 
 #include <include/general.h>
 
-#include "Args.h"
-#include "HTMLScopes.h"
-#include "HTMLDriver.h"
-#include "HTMLTable.h"
-#include "HTMLTable.h"
-#include <lib/support/IntVector.h>
+#include "Args.hpp"
+#include "HTMLScopes.hpp"
+#include "HTMLDriver.hpp"
+#include "HTMLTable.hpp"
+#include "HTMLTable.hpp"
+#include <lib/support/IntVector.hpp>
 #include <lib/support/Assertion.h>
-#include <lib/support/Trace.h>
+#include <lib/support/Trace.hpp>
 
 //************************ Forward Declarations ******************************
 

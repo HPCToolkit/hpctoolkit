@@ -40,8 +40,8 @@
 
 //************************* User Include Files *******************************
 
-#include "StaticFiles.h"
-#include <lib/support/Files.h>
+#include "StaticFiles.hpp"
+#include <lib/support/Files.hpp>
 
 //************************ Forward Declarations ******************************
 

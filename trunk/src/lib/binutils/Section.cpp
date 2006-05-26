@@ -53,12 +53,12 @@
 
 #include <include/gnu_bfd.h>
 
-#include "Section.h"
-#include "Procedure.h"
-#include "Instruction.h"
+#include "Section.hpp"
+#include "Procedure.hpp"
+#include "Instruction.hpp"
 #include <lib/support/Assertion.h>
 
-#include <lib/ISA/ISA.h>
+#include <lib/ISA/ISA.hpp>
 
 //*************************** Forward Declarations **************************
 

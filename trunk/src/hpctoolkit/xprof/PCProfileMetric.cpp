@@ -53,7 +53,7 @@
 
 //*************************** User Include Files ****************************
 
-#include "PCProfileMetric.h"
+#include "PCProfileMetric.hpp"
 
 //*************************** Forward Declarations ***************************
 

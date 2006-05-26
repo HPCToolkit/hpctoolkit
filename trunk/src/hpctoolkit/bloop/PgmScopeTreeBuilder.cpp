@@ -72,17 +72,17 @@ using namespace std; // For compatibility with non-std C headers
 
 //*************************** User Include Files ****************************
 
-#include "Args.h"
-#include "PgmScopeTreeBuilder.h"
+#include "Args.hpp"
+#include "PgmScopeTreeBuilder.hpp"
 using namespace ScopeTreeBuilder;
-#include "BloopIRInterface.h"
+#include "BloopIRInterface.hpp"
 
-#include <lib/binutils/LoadModule.h>
-#include <lib/binutils/Section.h>
-#include <lib/binutils/Procedure.h>
-#include <lib/binutils/BinUtils.h>
-#include <lib/binutils/PCToSrcLineMap.h>
-#include <lib/support/Files.h>
+#include <lib/binutils/LoadModule.hpp>
+#include <lib/binutils/Section.hpp>
+#include <lib/binutils/Procedure.hpp>
+#include <lib/binutils/BinUtils.hpp>
+#include <lib/binutils/PCToSrcLineMap.hpp>
+#include <lib/support/Files.hpp>
 #include <lib/support/Assertion.h>
 #include <lib/support/pathfind.h>
 

@@ -56,13 +56,13 @@
 
 // #include "XMLAdapter.h"
 
-#include "HPCViewSAX2.h"
-#include "ScopeInfo.h"
+#include "HPCViewSAX2.hpp"
+#include "ScopeInfo.hpp"
 
 #include <map>
 
-#include <lib/support/String.h>
-#include <lib/support/PointerStack.h>
+#include <lib/support/String.hpp>
+#include <lib/support/PointerStack.hpp>
 
 //************************ Forward Declarations ******************************
 

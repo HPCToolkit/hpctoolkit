@@ -61,8 +61,8 @@
 
 #include <include/general.h>
 
-#include <lib/ISA/ISATypes.h>
-#include <lib/support/String.h>
+#include <lib/ISA/ISATypes.hpp>
+#include <lib/support/String.hpp>
 
 //*************************** Forward Declarations ***************************
 

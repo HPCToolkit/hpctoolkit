@@ -53,9 +53,9 @@
 
 //*************************** User Include Files ****************************
 
-#include "PCProfileFilter.h"
-#include "DCPIProfileFilter.h"
-#include "DCPIProfileMetric.h"
+#include "PCProfileFilter.hpp"
+#include "DCPIProfileFilter.hpp"
+#include "DCPIProfileMetric.hpp"
 
 #include <lib/support/Assertion.h>
 

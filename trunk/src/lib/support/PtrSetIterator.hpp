@@ -49,7 +49,7 @@
 
 //*************************** User Include Files ****************************
 
-#include "PtrSet.h"
+#include "PtrSet.hpp"
 
 //*************************** Forward Declarations **************************
 

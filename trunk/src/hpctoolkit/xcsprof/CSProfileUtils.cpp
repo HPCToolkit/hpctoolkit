@@ -65,12 +65,12 @@ using namespace std; // For compatibility with non-std C headers
 
 //*************************** User Include Files ****************************
 
-#include "CSProfileUtils.h"
-#include <lib/binutils/LoadModule.h>
-#include <lib/binutils/PCToSrcLineMap.h>
-#include <lib/binutils/LoadModuleInfo.h>
-#include <lib/xml/xml.h>
-#include <lib/support/String.h>
+#include "CSProfileUtils.hpp"
+#include <lib/binutils/LoadModule.hpp>
+#include <lib/binutils/PCToSrcLineMap.hpp>
+#include <lib/binutils/LoadModuleInfo.hpp>
+#include <lib/xml/xml.hpp>
+#include <lib/support/String.hpp>
 #include <lib/support/Assertion.h>
 
 #include <lib/hpcfile/hpcfile_csproflib.h>

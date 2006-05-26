@@ -52,9 +52,9 @@
 
 //*************************** User Include Files ****************************
 
-#include "PtrSet.h"
-#include "PtrSetIterator.h"
-#include "DumpMsgHandler.h"
+#include "PtrSet.hpp"
+#include "PtrSetIterator.hpp"
+#include "DumpMsgHandler.hpp"
 
 //*************************** Forward Declarations **************************
 

@@ -60,9 +60,9 @@
 
 #include <include/general.h>
 
-#include "BinUtils.h"
-#include <lib/ISA/ISATypes.h>
-#include <lib/support/String.h>
+#include "BinUtils.hpp"
+#include <lib/ISA/ISATypes.hpp>
+#include <lib/support/String.hpp>
 
 //*************************** Forward Declarations **************************
 

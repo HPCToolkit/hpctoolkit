@@ -56,9 +56,9 @@ using namespace std; // For compatibility with non-std C headers
 
 #include <include/general.h>
 
-#include "EvalNode.h"
+#include "EvalNode.hpp"
 #include <lib/support/Nan.h>
-#include <lib/support/Trace.h>
+#include <lib/support/Trace.hpp>
 
 //************************ Forward Declarations ******************************
 

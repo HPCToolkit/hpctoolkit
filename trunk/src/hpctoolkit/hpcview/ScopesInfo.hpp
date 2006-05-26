@@ -41,10 +41,10 @@
 
 //************************* User Include Files *******************************
 
-#include "ScopeInfo.h"
-#include "PerfMetric.h"
-#include "NodeRetriever.h"
-#include <lib/support/Unique.h>
+#include "ScopeInfo.hpp"
+#include "PerfMetric.hpp"
+#include "NodeRetriever.hpp"
+#include <lib/support/Unique.hpp>
 
 //************************ Forward Declarations ******************************
 

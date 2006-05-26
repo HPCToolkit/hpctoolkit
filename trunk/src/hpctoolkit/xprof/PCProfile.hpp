@@ -59,11 +59,11 @@
 
 #include <include/general.h>
 
-#include "PCProfileMetric.h"
-#include "PCProfileFilter.h"
+#include "PCProfileMetric.hpp"
+#include "PCProfileFilter.hpp"
 
-#include <lib/ISA/ISA.h>
-#include <lib/support/String.h>
+#include <lib/ISA/ISA.hpp>
+#include <lib/support/String.hpp>
 
 //*************************** Forward Declarations ***************************
 

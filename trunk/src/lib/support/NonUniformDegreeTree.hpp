@@ -72,8 +72,8 @@
 
 //*************************** User Include Files ****************************
 
-#include "IteratorStack.h"
-#include "String.h"
+#include "IteratorStack.hpp"
+#include "String.hpp"
 
 //*************************** Forward Declarations **************************
 

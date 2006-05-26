@@ -41,11 +41,12 @@
 
 //************************* System Include Files ****************************
 
-//*************************** User Include Files ****************************
-
-#include <lib/support/String.h>
 #include <vector>
 #include <string>
+
+//*************************** User Include Files ****************************
+
+#include <lib/support/String.hpp>
 
 //*************************** Forward Declarations **************************
 

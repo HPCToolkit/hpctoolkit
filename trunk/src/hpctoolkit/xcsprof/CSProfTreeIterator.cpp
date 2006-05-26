@@ -51,7 +51,7 @@
 
 //*************************** User Include Files ****************************
 
-#include "CSProfTreeIterator.h"
+#include "CSProfTreeIterator.hpp"
 #include <lib/support/Assertion.h>
 
 //*************************** Forward Declarations ***************************

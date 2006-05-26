@@ -40,7 +40,7 @@
 
 //*************************** User Include Files ****************************
 
-#include "IntVector.h"
+#include "IntVector.hpp"
 
 //*************************** Forward Declarations **************************
 

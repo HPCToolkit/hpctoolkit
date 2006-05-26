@@ -60,9 +60,9 @@
 
 #include <include/general.h> 
 
-#include "CSProfile.h"
+#include "CSProfile.hpp"
 
-#include <lib/binutils/LoadModuleInfo.h>
+#include <lib/binutils/LoadModuleInfo.hpp>
 
 //*************************** Forward Declarations ***************************
 

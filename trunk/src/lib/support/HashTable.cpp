@@ -64,7 +64,7 @@ using namespace std; // For compatibility with non-std C headers
 
 //*************************** User Include Files ****************************
 
-#include "HashTable.h"
+#include "HashTable.hpp"
 
 /******************************* local defines *******************************/
 

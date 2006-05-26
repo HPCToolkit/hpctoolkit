@@ -53,13 +53,11 @@
 
 #include <include/general.h>
 
-#include "CSProfTree.h"
+#include "CSProfTree.hpp"
 #include <lib/support/Assertion.h>
-#include <lib/support/Trace.h>
+#include <lib/support/Trace.hpp>
 
-#include <lib/xml/xml.h> 
-
-#include <assert.h> /* FMZ */
+#include <lib/xml/xml.hpp> 
 
 //*************************** Forward Declarations ***************************
 
@@ -517,8 +515,9 @@ CSProfCallSiteNode::ToDumpMetricsString(int dmpFlag) const {
  * @param c call site node to be "added" to this node
  */
 void 
-CSProfCallSiteNode::addMetrics(CSProfCallSiteNode* c) {
-  assert (metrics.size() == c->metrics.size());
+CSProfCallSiteNode::addMetrics(CSProfCallSiteNode* c) 
+{
+  BriefAssertion(metrics.size() == c->metrics.size());
   int numMetrics = metrics.size();
   int i;
   for (i=0; i<numMetrics; i++) {

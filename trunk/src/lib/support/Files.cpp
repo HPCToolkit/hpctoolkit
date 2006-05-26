@@ -60,9 +60,9 @@ using namespace std; // For compatibility with non-std C headers
 
 //*************************** User Include Files ****************************
 
-#include "Files.h"
-#include "String.h"
-#include "Trace.h"
+#include "Files.hpp"
+#include "String.hpp"
+#include "Trace.hpp"
 
 //*************************** Forward Declarations **************************
 

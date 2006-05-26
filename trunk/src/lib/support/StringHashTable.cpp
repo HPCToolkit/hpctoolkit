@@ -55,7 +55,7 @@
 
 #include <include/general.h>
 
-#include "StringHashTable.h"
+#include "StringHashTable.hpp"
 
 //*************************** Forward Declarations ***************************
 

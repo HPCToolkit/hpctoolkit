@@ -49,7 +49,7 @@
 
 //*************************** User Include Files ****************************
 
-#include "WordSet.h"
+#include "WordSet.hpp"
 
 //*************************** Forward Declarations **************************
 

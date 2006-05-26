@@ -48,7 +48,7 @@
 #elif (defined(OS_OSF1) || defined(OS_IRIX64) || defined(OS_SUNOS))
 # include <nan.h>  /* math.h does not include nan.h */
 #else
-# error "Nan.h/C: please ensure NaN support is correct."
+# error "Nan.h/c: please ensure NaN support is correct."
 #endif
 
 extern double NaNVal; 

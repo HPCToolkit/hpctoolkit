@@ -41,7 +41,7 @@
 
 #include <include/gnu_bfd.h>
 
-#include "hpcprof.h"
+#include "hpcprof.hpp"
 
 //*************************** Forward Declarations **************************
 

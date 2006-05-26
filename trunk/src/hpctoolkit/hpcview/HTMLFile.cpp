@@ -47,11 +47,11 @@ using std::strchr; // For compatibility with non-std C headers
 
 //************************* User Include Files *******************************
 
-#include "HTMLDriver.h"
-#include "HTMLTable.h"
-#include "PerfIndex.h"
-#include "HTMLFile.h"
-#include <lib/support/String.h>
+#include "HTMLDriver.hpp"
+#include "HTMLTable.hpp"
+#include "PerfIndex.hpp"
+#include "HTMLFile.hpp"
+#include <lib/support/String.hpp>
 #include <lib/support/Assertion.h>
 
 //************************ Forward Declarations ******************************

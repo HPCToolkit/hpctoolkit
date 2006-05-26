@@ -54,14 +54,14 @@
 
 //************************* User Include Files *******************************
 
-#include "Args.h"
-#include "NodeRetriever.h"
-#include "ScopeInfo.h"
-#include <lib/support/String.h>
+#include "Args.hpp"
+#include "NodeRetriever.hpp"
+#include "ScopeInfo.hpp"
+#include <lib/support/String.hpp>
 #include <lib/support/Assertion.h>
 #include <lib/support/pathfind.h>
 #include <lib/support/realpath.h>
-#include <lib/support/Trace.h>
+#include <lib/support/Trace.hpp>
 
 //************************ Forward Declarations ******************************
 

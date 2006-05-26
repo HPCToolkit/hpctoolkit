@@ -49,7 +49,7 @@ using namespace std; // For compatibility with non-std C headers
 
 /**************************** User Include Files ****************************/
 
-#include "StringUtilities.h"
+#include "StringUtilities.hpp"
 
 /**************************** Forward Declarations **************************/
 

@@ -43,7 +43,7 @@
 
 #include <include/general.h>
 
-#include <lib/support/String.h>
+#include <lib/support/String.hpp>
 
 //************************ Forward Declarations ******************************
 

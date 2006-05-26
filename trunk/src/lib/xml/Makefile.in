@@ -318,7 +318,7 @@ HPC_LIBHPCFILE = $(top_builddir)/src/lib/hpcfile/libHPCfile.la
 # Local settings
 #############################################################################
 MYSOURCES = \
-	xml.h xml.C
+	xml.hpp xml.cpp
 
 MYDTDHEADERS = \
 	$(srcdir)/PROFILE.dtd.h \
@@ -354,7 +354,7 @@ all: $(BUILT_SOURCES)
 	$(MAKE) $(AM_MAKEFLAGS) all-am
 
 .SUFFIXES:
-.SUFFIXES: .C .lo .o .obj
+.SUFFIXES: .cpp .lo .o .obj
 $(srcdir)/Makefile.in:  $(srcdir)/Makefile.am $(top_srcdir)/src/Makeinclude.config $(top_srcdir)/src/Makeinclude.rules $(am__configure_deps)
 	@for dep in $?; do \
 	  case '$(am__configure_deps)' in \
@@ -404,33 +404,33 @@ distclean-compile:
 
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCxml_la-xml.Plo@am__quote@
 
-.C.o:
+.cpp.o:
 @am__fastdepCXX_TRUE@	if $(CXXCOMPILE) -MT $@ -MD -MP -MF "$(DEPDIR)/$*.Tpo" -c -o $@ $<; \
 @am__fastdepCXX_TRUE@	then mv -f "$(DEPDIR)/$*.Tpo" "$(DEPDIR)/$*.Po"; else rm -f "$(DEPDIR)/$*.Tpo"; exit 1; fi
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='$<' object='$@' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(CXXCOMPILE) -c -o $@ $<
 
-.C.obj:
+.cpp.obj:
 @am__fastdepCXX_TRUE@	if $(CXXCOMPILE) -MT $@ -MD -MP -MF "$(DEPDIR)/$*.Tpo" -c -o $@ `$(CYGPATH_W) '$<'`; \
 @am__fastdepCXX_TRUE@	then mv -f "$(DEPDIR)/$*.Tpo" "$(DEPDIR)/$*.Po"; else rm -f "$(DEPDIR)/$*.Tpo"; exit 1; fi
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='$<' object='$@' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(CXXCOMPILE) -c -o $@ `$(CYGPATH_W) '$<'`
 
-.C.lo:
+.cpp.lo:
 @am__fastdepCXX_TRUE@	if $(LTCXXCOMPILE) -MT $@ -MD -MP -MF "$(DEPDIR)/$*.Tpo" -c -o $@ $<; \
 @am__fastdepCXX_TRUE@	then mv -f "$(DEPDIR)/$*.Tpo" "$(DEPDIR)/$*.Plo"; else rm -f "$(DEPDIR)/$*.Tpo"; exit 1; fi
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='$<' object='$@' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(LTCXXCOMPILE) -c -o $@ $<
 
-libHPCxml_la-xml.lo: xml.C
-@am__fastdepCXX_TRUE@	if $(LIBTOOL) --tag=CXX --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCxml_la_CXXFLAGS) $(CXXFLAGS) -MT libHPCxml_la-xml.lo -MD -MP -MF "$(DEPDIR)/libHPCxml_la-xml.Tpo" -c -o libHPCxml_la-xml.lo `test -f 'xml.C' || echo '$(srcdir)/'`xml.C; \
+libHPCxml_la-xml.lo: xml.cpp
+@am__fastdepCXX_TRUE@	if $(LIBTOOL) --tag=CXX --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCxml_la_CXXFLAGS) $(CXXFLAGS) -MT libHPCxml_la-xml.lo -MD -MP -MF "$(DEPDIR)/libHPCxml_la-xml.Tpo" -c -o libHPCxml_la-xml.lo `test -f 'xml.cpp' || echo '$(srcdir)/'`xml.cpp; \
 @am__fastdepCXX_TRUE@	then mv -f "$(DEPDIR)/libHPCxml_la-xml.Tpo" "$(DEPDIR)/libHPCxml_la-xml.Plo"; else rm -f "$(DEPDIR)/libHPCxml_la-xml.Tpo"; exit 1; fi
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='xml.C' object='libHPCxml_la-xml.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='xml.cpp' object='libHPCxml_la-xml.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(LIBTOOL) --tag=CXX --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCxml_la_CXXFLAGS) $(CXXFLAGS) -c -o libHPCxml_la-xml.lo `test -f 'xml.C' || echo '$(srcdir)/'`xml.C
+@am__fastdepCXX_FALSE@	$(LIBTOOL) --tag=CXX --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCxml_la_CXXFLAGS) $(CXXFLAGS) -c -o libHPCxml_la-xml.lo `test -f 'xml.cpp' || echo '$(srcdir)/'`xml.cpp
 
 mostlyclean-libtool:
 	-rm -f *.lo
@@ -624,7 +624,7 @@ uninstall-am: uninstall-info-am
 $(srcdir)/%.dtd.h : $(HPCTOOLKIT)/lib/dtd/%.dtd
 	$(srcdir)/makedtdstring $<  > $@
 
-%.C.pp : %.C
+%.cpp.pp : %.cpp
 	$(CXXCPP) $(MYCPPFLAGS_CXX) $< > $@
 
 %.c.pp : %.c

@@ -59,10 +59,10 @@
 
 #include <include/general.h>
 
-#include <lib/ISA/ISA.h>
-#include <lib/binutils/LoadModule.h>
+#include <lib/ISA/ISA.hpp>
+#include <lib/binutils/LoadModule.hpp>
 
-#include <lib/support/String.h>
+#include <lib/support/String.hpp>
 
 //*************************** Forward Declarations ***************************
 

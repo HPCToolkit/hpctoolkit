@@ -54,10 +54,10 @@
 
 //*************************** User Include Files ****************************
 
-#include "PCToSrcLineMap.h"
+#include "PCToSrcLineMap.hpp"
 #include <lib/support/Assertion.h>
 
-#include <lib/xml/xml.h>
+#include <lib/xml/xml.hpp>
 
 //*************************** Forward Declarations ***************************
 

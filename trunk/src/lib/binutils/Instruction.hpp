@@ -58,8 +58,8 @@
 
 #include <include/general.h>
 
-#include "LoadModule.h"
-#include <lib/ISA/ISA.h>
+#include "LoadModule.hpp"
+#include <lib/ISA/ISA.hpp>
 
 //*************************** Forward Declarations **************************
 

@@ -331,13 +331,13 @@ HPC_LIBHPCFILE = $(top_builddir)/src/lib/hpcfile/libHPCfile.la
 # Local settings
 #############################################################################
 MYSOURCES = \
-	main.C \
-	Args.h Args.C \
-	CSProfTree.h CSProfTree.C \
-	CSProfTreeIterator.h CSProfTreeIterator.C \
-	CSProfile.h CSProfile.C \
-	CSProfileUtils.h CSProfileUtils.C \
-	CSProfEpoch.h CSProfEpoch.C
+	main.cpp \
+	Args.hpp Args.cpp \
+	CSProfTree.hpp CSProfTree.cpp \
+	CSProfTreeIterator.hpp CSProfTreeIterator.cpp \
+	CSProfile.hpp CSProfile.cpp \
+	CSProfileUtils.hpp CSProfileUtils.cpp \
+	CSProfEpoch.hpp CSProfEpoch.cpp
 
 MYCFLAGS = @HOST_CFLAGS@   $(HPC_IFLAGS) @GNUBINUTILS_IFLAGS@
 MYCXXFLAGS = @HOST_CXXFLAGS@ $(HPC_IFLAGS) @GNUBINUTILS_IFLAGS@
@@ -366,7 +366,7 @@ MYCPPFLAGS_CC = $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) \
 all: all-am
 
 .SUFFIXES:
-.SUFFIXES: .C .lo .o .obj
+.SUFFIXES: .cpp .lo .o .obj
 $(srcdir)/Makefile.in:  $(srcdir)/Makefile.am $(top_srcdir)/src/Makeinclude.config $(top_srcdir)/src/Makeinclude.rules $(am__configure_deps)
 	@for dep in $?; do \
 	  case '$(am__configure_deps)' in \
@@ -442,124 +442,124 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/xcsprof-CSProfileUtils.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/xcsprof-main.Po@am__quote@
 
-.C.o:
+.cpp.o:
 @am__fastdepCXX_TRUE@	if $(CXXCOMPILE) -MT $@ -MD -MP -MF "$(DEPDIR)/$*.Tpo" -c -o $@ $<; \
 @am__fastdepCXX_TRUE@	then mv -f "$(DEPDIR)/$*.Tpo" "$(DEPDIR)/$*.Po"; else rm -f "$(DEPDIR)/$*.Tpo"; exit 1; fi
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='$<' object='$@' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(CXXCOMPILE) -c -o $@ $<
 
-.C.obj:
+.cpp.obj:
 @am__fastdepCXX_TRUE@	if $(CXXCOMPILE) -MT $@ -MD -MP -MF "$(DEPDIR)/$*.Tpo" -c -o $@ `$(CYGPATH_W) '$<'`; \
 @am__fastdepCXX_TRUE@	then mv -f "$(DEPDIR)/$*.Tpo" "$(DEPDIR)/$*.Po"; else rm -f "$(DEPDIR)/$*.Tpo"; exit 1; fi
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='$<' object='$@' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(CXXCOMPILE) -c -o $@ `$(CYGPATH_W) '$<'`
 
-.C.lo:
+.cpp.lo:
 @am__fastdepCXX_TRUE@	if $(LTCXXCOMPILE) -MT $@ -MD -MP -MF "$(DEPDIR)/$*.Tpo" -c -o $@ $<; \
 @am__fastdepCXX_TRUE@	then mv -f "$(DEPDIR)/$*.Tpo" "$(DEPDIR)/$*.Plo"; else rm -f "$(DEPDIR)/$*.Tpo"; exit 1; fi
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='$<' object='$@' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(LTCXXCOMPILE) -c -o $@ $<
 
-xcsprof-main.o: main.C
-@am__fastdepCXX_TRUE@	if $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(xcsprof_CXXFLAGS) $(CXXFLAGS) -MT xcsprof-main.o -MD -MP -MF "$(DEPDIR)/xcsprof-main.Tpo" -c -o xcsprof-main.o `test -f 'main.C' || echo '$(srcdir)/'`main.C; \
+xcsprof-main.o: main.cpp
+@am__fastdepCXX_TRUE@	if $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(xcsprof_CXXFLAGS) $(CXXFLAGS) -MT xcsprof-main.o -MD -MP -MF "$(DEPDIR)/xcsprof-main.Tpo" -c -o xcsprof-main.o `test -f 'main.cpp' || echo '$(srcdir)/'`main.cpp; \
 @am__fastdepCXX_TRUE@	then mv -f "$(DEPDIR)/xcsprof-main.Tpo" "$(DEPDIR)/xcsprof-main.Po"; else rm -f "$(DEPDIR)/xcsprof-main.Tpo"; exit 1; fi
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='main.C' object='xcsprof-main.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='main.cpp' object='xcsprof-main.o' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(xcsprof_CXXFLAGS) $(CXXFLAGS) -c -o xcsprof-main.o `test -f 'main.C' || echo '$(srcdir)/'`main.C
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(xcsprof_CXXFLAGS) $(CXXFLAGS) -c -o xcsprof-main.o `test -f 'main.cpp' || echo '$(srcdir)/'`main.cpp
 
-xcsprof-main.obj: main.C
-@am__fastdepCXX_TRUE@	if $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(xcsprof_CXXFLAGS) $(CXXFLAGS) -MT xcsprof-main.obj -MD -MP -MF "$(DEPDIR)/xcsprof-main.Tpo" -c -o xcsprof-main.obj `if test -f 'main.C'; then $(CYGPATH_W) 'main.C'; else $(CYGPATH_W) '$(srcdir)/main.C'; fi`; \
+xcsprof-main.obj: main.cpp
+@am__fastdepCXX_TRUE@	if $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(xcsprof_CXXFLAGS) $(CXXFLAGS) -MT xcsprof-main.obj -MD -MP -MF "$(DEPDIR)/xcsprof-main.Tpo" -c -o xcsprof-main.obj `if test -f 'main.cpp'; then $(CYGPATH_W) 'main.cpp'; else $(CYGPATH_W) '$(srcdir)/main.cpp'; fi`; \
 @am__fastdepCXX_TRUE@	then mv -f "$(DEPDIR)/xcsprof-main.Tpo" "$(DEPDIR)/xcsprof-main.Po"; else rm -f "$(DEPDIR)/xcsprof-main.Tpo"; exit 1; fi
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='main.C' object='xcsprof-main.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='main.cpp' object='xcsprof-main.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(xcsprof_CXXFLAGS) $(CXXFLAGS) -c -o xcsprof-main.obj `if test -f 'main.C'; then $(CYGPATH_W) 'main.C'; else $(CYGPATH_W) '$(srcdir)/main.C'; fi`
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(xcsprof_CXXFLAGS) $(CXXFLAGS) -c -o xcsprof-main.obj `if test -f 'main.cpp'; then $(CYGPATH_W) 'main.cpp'; else $(CYGPATH_W) '$(srcdir)/main.cpp'; fi`
 
-xcsprof-Args.o: Args.C
-@am__fastdepCXX_TRUE@	if $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(xcsprof_CXXFLAGS) $(CXXFLAGS) -MT xcsprof-Args.o -MD -MP -MF "$(DEPDIR)/xcsprof-Args.Tpo" -c -o xcsprof-Args.o `test -f 'Args.C' || echo '$(srcdir)/'`Args.C; \
+xcsprof-Args.o: Args.cpp
+@am__fastdepCXX_TRUE@	if $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(xcsprof_CXXFLAGS) $(CXXFLAGS) -MT xcsprof-Args.o -MD -MP -MF "$(DEPDIR)/xcsprof-Args.Tpo" -c -o xcsprof-Args.o `test -f 'Args.cpp' || echo '$(srcdir)/'`Args.cpp; \
 @am__fastdepCXX_TRUE@	then mv -f "$(DEPDIR)/xcsprof-Args.Tpo" "$(DEPDIR)/xcsprof-Args.Po"; else rm -f "$(DEPDIR)/xcsprof-Args.Tpo"; exit 1; fi
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='Args.C' object='xcsprof-Args.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='Args.cpp' object='xcsprof-Args.o' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(xcsprof_CXXFLAGS) $(CXXFLAGS) -c -o xcsprof-Args.o `test -f 'Args.C' || echo '$(srcdir)/'`Args.C
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(xcsprof_CXXFLAGS) $(CXXFLAGS) -c -o xcsprof-Args.o `test -f 'Args.cpp' || echo '$(srcdir)/'`Args.cpp
 
-xcsprof-Args.obj: Args.C
-@am__fastdepCXX_TRUE@	if $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(xcsprof_CXXFLAGS) $(CXXFLAGS) -MT xcsprof-Args.obj -MD -MP -MF "$(DEPDIR)/xcsprof-Args.Tpo" -c -o xcsprof-Args.obj `if test -f 'Args.C'; then $(CYGPATH_W) 'Args.C'; else $(CYGPATH_W) '$(srcdir)/Args.C'; fi`; \
+xcsprof-Args.obj: Args.cpp
+@am__fastdepCXX_TRUE@	if $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(xcsprof_CXXFLAGS) $(CXXFLAGS) -MT xcsprof-Args.obj -MD -MP -MF "$(DEPDIR)/xcsprof-Args.Tpo" -c -o xcsprof-Args.obj `if test -f 'Args.cpp'; then $(CYGPATH_W) 'Args.cpp'; else $(CYGPATH_W) '$(srcdir)/Args.cpp'; fi`; \
 @am__fastdepCXX_TRUE@	then mv -f "$(DEPDIR)/xcsprof-Args.Tpo" "$(DEPDIR)/xcsprof-Args.Po"; else rm -f "$(DEPDIR)/xcsprof-Args.Tpo"; exit 1; fi
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='Args.C' object='xcsprof-Args.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='Args.cpp' object='xcsprof-Args.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(xcsprof_CXXFLAGS) $(CXXFLAGS) -c -o xcsprof-Args.obj `if test -f 'Args.C'; then $(CYGPATH_W) 'Args.C'; else $(CYGPATH_W) '$(srcdir)/Args.C'; fi`
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(xcsprof_CXXFLAGS) $(CXXFLAGS) -c -o xcsprof-Args.obj `if test -f 'Args.cpp'; then $(CYGPATH_W) 'Args.cpp'; else $(CYGPATH_W) '$(srcdir)/Args.cpp'; fi`
 
-xcsprof-CSProfTree.o: CSProfTree.C
-@am__fastdepCXX_TRUE@	if $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(xcsprof_CXXFLAGS) $(CXXFLAGS) -MT xcsprof-CSProfTree.o -MD -MP -MF "$(DEPDIR)/xcsprof-CSProfTree.Tpo" -c -o xcsprof-CSProfTree.o `test -f 'CSProfTree.C' || echo '$(srcdir)/'`CSProfTree.C; \
+xcsprof-CSProfTree.o: CSProfTree.cpp
+@am__fastdepCXX_TRUE@	if $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(xcsprof_CXXFLAGS) $(CXXFLAGS) -MT xcsprof-CSProfTree.o -MD -MP -MF "$(DEPDIR)/xcsprof-CSProfTree.Tpo" -c -o xcsprof-CSProfTree.o `test -f 'CSProfTree.cpp' || echo '$(srcdir)/'`CSProfTree.cpp; \
 @am__fastdepCXX_TRUE@	then mv -f "$(DEPDIR)/xcsprof-CSProfTree.Tpo" "$(DEPDIR)/xcsprof-CSProfTree.Po"; else rm -f "$(DEPDIR)/xcsprof-CSProfTree.Tpo"; exit 1; fi
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='CSProfTree.C' object='xcsprof-CSProfTree.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='CSProfTree.cpp' object='xcsprof-CSProfTree.o' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(xcsprof_CXXFLAGS) $(CXXFLAGS) -c -o xcsprof-CSProfTree.o `test -f 'CSProfTree.C' || echo '$(srcdir)/'`CSProfTree.C
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(xcsprof_CXXFLAGS) $(CXXFLAGS) -c -o xcsprof-CSProfTree.o `test -f 'CSProfTree.cpp' || echo '$(srcdir)/'`CSProfTree.cpp
 
-xcsprof-CSProfTree.obj: CSProfTree.C
-@am__fastdepCXX_TRUE@	if $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(xcsprof_CXXFLAGS) $(CXXFLAGS) -MT xcsprof-CSProfTree.obj -MD -MP -MF "$(DEPDIR)/xcsprof-CSProfTree.Tpo" -c -o xcsprof-CSProfTree.obj `if test -f 'CSProfTree.C'; then $(CYGPATH_W) 'CSProfTree.C'; else $(CYGPATH_W) '$(srcdir)/CSProfTree.C'; fi`; \
+xcsprof-CSProfTree.obj: CSProfTree.cpp
+@am__fastdepCXX_TRUE@	if $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(xcsprof_CXXFLAGS) $(CXXFLAGS) -MT xcsprof-CSProfTree.obj -MD -MP -MF "$(DEPDIR)/xcsprof-CSProfTree.Tpo" -c -o xcsprof-CSProfTree.obj `if test -f 'CSProfTree.cpp'; then $(CYGPATH_W) 'CSProfTree.cpp'; else $(CYGPATH_W) '$(srcdir)/CSProfTree.cpp'; fi`; \
 @am__fastdepCXX_TRUE@	then mv -f "$(DEPDIR)/xcsprof-CSProfTree.Tpo" "$(DEPDIR)/xcsprof-CSProfTree.Po"; else rm -f "$(DEPDIR)/xcsprof-CSProfTree.Tpo"; exit 1; fi
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='CSProfTree.C' object='xcsprof-CSProfTree.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='CSProfTree.cpp' object='xcsprof-CSProfTree.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(xcsprof_CXXFLAGS) $(CXXFLAGS) -c -o xcsprof-CSProfTree.obj `if test -f 'CSProfTree.C'; then $(CYGPATH_W) 'CSProfTree.C'; else $(CYGPATH_W) '$(srcdir)/CSProfTree.C'; fi`
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(xcsprof_CXXFLAGS) $(CXXFLAGS) -c -o xcsprof-CSProfTree.obj `if test -f 'CSProfTree.cpp'; then $(CYGPATH_W) 'CSProfTree.cpp'; else $(CYGPATH_W) '$(srcdir)/CSProfTree.cpp'; fi`
 
-xcsprof-CSProfTreeIterator.o: CSProfTreeIterator.C
-@am__fastdepCXX_TRUE@	if $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(xcsprof_CXXFLAGS) $(CXXFLAGS) -MT xcsprof-CSProfTreeIterator.o -MD -MP -MF "$(DEPDIR)/xcsprof-CSProfTreeIterator.Tpo" -c -o xcsprof-CSProfTreeIterator.o `test -f 'CSProfTreeIterator.C' || echo '$(srcdir)/'`CSProfTreeIterator.C; \
+xcsprof-CSProfTreeIterator.o: CSProfTreeIterator.cpp
+@am__fastdepCXX_TRUE@	if $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(xcsprof_CXXFLAGS) $(CXXFLAGS) -MT xcsprof-CSProfTreeIterator.o -MD -MP -MF "$(DEPDIR)/xcsprof-CSProfTreeIterator.Tpo" -c -o xcsprof-CSProfTreeIterator.o `test -f 'CSProfTreeIterator.cpp' || echo '$(srcdir)/'`CSProfTreeIterator.cpp; \
 @am__fastdepCXX_TRUE@	then mv -f "$(DEPDIR)/xcsprof-CSProfTreeIterator.Tpo" "$(DEPDIR)/xcsprof-CSProfTreeIterator.Po"; else rm -f "$(DEPDIR)/xcsprof-CSProfTreeIterator.Tpo"; exit 1; fi
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='CSProfTreeIterator.C' object='xcsprof-CSProfTreeIterator.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='CSProfTreeIterator.cpp' object='xcsprof-CSProfTreeIterator.o' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(xcsprof_CXXFLAGS) $(CXXFLAGS) -c -o xcsprof-CSProfTreeIterator.o `test -f 'CSProfTreeIterator.C' || echo '$(srcdir)/'`CSProfTreeIterator.C
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(xcsprof_CXXFLAGS) $(CXXFLAGS) -c -o xcsprof-CSProfTreeIterator.o `test -f 'CSProfTreeIterator.cpp' || echo '$(srcdir)/'`CSProfTreeIterator.cpp
 
-xcsprof-CSProfTreeIterator.obj: CSProfTreeIterator.C
-@am__fastdepCXX_TRUE@	if $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(xcsprof_CXXFLAGS) $(CXXFLAGS) -MT xcsprof-CSProfTreeIterator.obj -MD -MP -MF "$(DEPDIR)/xcsprof-CSProfTreeIterator.Tpo" -c -o xcsprof-CSProfTreeIterator.obj `if test -f 'CSProfTreeIterator.C'; then $(CYGPATH_W) 'CSProfTreeIterator.C'; else $(CYGPATH_W) '$(srcdir)/CSProfTreeIterator.C'; fi`; \
+xcsprof-CSProfTreeIterator.obj: CSProfTreeIterator.cpp
+@am__fastdepCXX_TRUE@	if $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(xcsprof_CXXFLAGS) $(CXXFLAGS) -MT xcsprof-CSProfTreeIterator.obj -MD -MP -MF "$(DEPDIR)/xcsprof-CSProfTreeIterator.Tpo" -c -o xcsprof-CSProfTreeIterator.obj `if test -f 'CSProfTreeIterator.cpp'; then $(CYGPATH_W) 'CSProfTreeIterator.cpp'; else $(CYGPATH_W) '$(srcdir)/CSProfTreeIterator.cpp'; fi`; \
 @am__fastdepCXX_TRUE@	then mv -f "$(DEPDIR)/xcsprof-CSProfTreeIterator.Tpo" "$(DEPDIR)/xcsprof-CSProfTreeIterator.Po"; else rm -f "$(DEPDIR)/xcsprof-CSProfTreeIterator.Tpo"; exit 1; fi
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='CSProfTreeIterator.C' object='xcsprof-CSProfTreeIterator.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='CSProfTreeIterator.cpp' object='xcsprof-CSProfTreeIterator.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(xcsprof_CXXFLAGS) $(CXXFLAGS) -c -o xcsprof-CSProfTreeIterator.obj `if test -f 'CSProfTreeIterator.C'; then $(CYGPATH_W) 'CSProfTreeIterator.C'; else $(CYGPATH_W) '$(srcdir)/CSProfTreeIterator.C'; fi`
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(xcsprof_CXXFLAGS) $(CXXFLAGS) -c -o xcsprof-CSProfTreeIterator.obj `if test -f 'CSProfTreeIterator.cpp'; then $(CYGPATH_W) 'CSProfTreeIterator.cpp'; else $(CYGPATH_W) '$(srcdir)/CSProfTreeIterator.cpp'; fi`
 
-xcsprof-CSProfile.o: CSProfile.C
-@am__fastdepCXX_TRUE@	if $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(xcsprof_CXXFLAGS) $(CXXFLAGS) -MT xcsprof-CSProfile.o -MD -MP -MF "$(DEPDIR)/xcsprof-CSProfile.Tpo" -c -o xcsprof-CSProfile.o `test -f 'CSProfile.C' || echo '$(srcdir)/'`CSProfile.C; \
+xcsprof-CSProfile.o: CSProfile.cpp
+@am__fastdepCXX_TRUE@	if $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(xcsprof_CXXFLAGS) $(CXXFLAGS) -MT xcsprof-CSProfile.o -MD -MP -MF "$(DEPDIR)/xcsprof-CSProfile.Tpo" -c -o xcsprof-CSProfile.o `test -f 'CSProfile.cpp' || echo '$(srcdir)/'`CSProfile.cpp; \
 @am__fastdepCXX_TRUE@	then mv -f "$(DEPDIR)/xcsprof-CSProfile.Tpo" "$(DEPDIR)/xcsprof-CSProfile.Po"; else rm -f "$(DEPDIR)/xcsprof-CSProfile.Tpo"; exit 1; fi
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='CSProfile.C' object='xcsprof-CSProfile.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='CSProfile.cpp' object='xcsprof-CSProfile.o' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(xcsprof_CXXFLAGS) $(CXXFLAGS) -c -o xcsprof-CSProfile.o `test -f 'CSProfile.C' || echo '$(srcdir)/'`CSProfile.C
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(xcsprof_CXXFLAGS) $(CXXFLAGS) -c -o xcsprof-CSProfile.o `test -f 'CSProfile.cpp' || echo '$(srcdir)/'`CSProfile.cpp
 
-xcsprof-CSProfile.obj: CSProfile.C
-@am__fastdepCXX_TRUE@	if $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(xcsprof_CXXFLAGS) $(CXXFLAGS) -MT xcsprof-CSProfile.obj -MD -MP -MF "$(DEPDIR)/xcsprof-CSProfile.Tpo" -c -o xcsprof-CSProfile.obj `if test -f 'CSProfile.C'; then $(CYGPATH_W) 'CSProfile.C'; else $(CYGPATH_W) '$(srcdir)/CSProfile.C'; fi`; \
+xcsprof-CSProfile.obj: CSProfile.cpp
+@am__fastdepCXX_TRUE@	if $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(xcsprof_CXXFLAGS) $(CXXFLAGS) -MT xcsprof-CSProfile.obj -MD -MP -MF "$(DEPDIR)/xcsprof-CSProfile.Tpo" -c -o xcsprof-CSProfile.obj `if test -f 'CSProfile.cpp'; then $(CYGPATH_W) 'CSProfile.cpp'; else $(CYGPATH_W) '$(srcdir)/CSProfile.cpp'; fi`; \
 @am__fastdepCXX_TRUE@	then mv -f "$(DEPDIR)/xcsprof-CSProfile.Tpo" "$(DEPDIR)/xcsprof-CSProfile.Po"; else rm -f "$(DEPDIR)/xcsprof-CSProfile.Tpo"; exit 1; fi
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='CSProfile.C' object='xcsprof-CSProfile.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='CSProfile.cpp' object='xcsprof-CSProfile.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(xcsprof_CXXFLAGS) $(CXXFLAGS) -c -o xcsprof-CSProfile.obj `if test -f 'CSProfile.C'; then $(CYGPATH_W) 'CSProfile.C'; else $(CYGPATH_W) '$(srcdir)/CSProfile.C'; fi`
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(xcsprof_CXXFLAGS) $(CXXFLAGS) -c -o xcsprof-CSProfile.obj `if test -f 'CSProfile.cpp'; then $(CYGPATH_W) 'CSProfile.cpp'; else $(CYGPATH_W) '$(srcdir)/CSProfile.cpp'; fi`
 
-xcsprof-CSProfileUtils.o: CSProfileUtils.C
-@am__fastdepCXX_TRUE@	if $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(xcsprof_CXXFLAGS) $(CXXFLAGS) -MT xcsprof-CSProfileUtils.o -MD -MP -MF "$(DEPDIR)/xcsprof-CSProfileUtils.Tpo" -c -o xcsprof-CSProfileUtils.o `test -f 'CSProfileUtils.C' || echo '$(srcdir)/'`CSProfileUtils.C; \
+xcsprof-CSProfileUtils.o: CSProfileUtils.cpp
+@am__fastdepCXX_TRUE@	if $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(xcsprof_CXXFLAGS) $(CXXFLAGS) -MT xcsprof-CSProfileUtils.o -MD -MP -MF "$(DEPDIR)/xcsprof-CSProfileUtils.Tpo" -c -o xcsprof-CSProfileUtils.o `test -f 'CSProfileUtils.cpp' || echo '$(srcdir)/'`CSProfileUtils.cpp; \
 @am__fastdepCXX_TRUE@	then mv -f "$(DEPDIR)/xcsprof-CSProfileUtils.Tpo" "$(DEPDIR)/xcsprof-CSProfileUtils.Po"; else rm -f "$(DEPDIR)/xcsprof-CSProfileUtils.Tpo"; exit 1; fi
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='CSProfileUtils.C' object='xcsprof-CSProfileUtils.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='CSProfileUtils.cpp' object='xcsprof-CSProfileUtils.o' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(xcsprof_CXXFLAGS) $(CXXFLAGS) -c -o xcsprof-CSProfileUtils.o `test -f 'CSProfileUtils.C' || echo '$(srcdir)/'`CSProfileUtils.C
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(xcsprof_CXXFLAGS) $(CXXFLAGS) -c -o xcsprof-CSProfileUtils.o `test -f 'CSProfileUtils.cpp' || echo '$(srcdir)/'`CSProfileUtils.cpp
 
-xcsprof-CSProfileUtils.obj: CSProfileUtils.C
-@am__fastdepCXX_TRUE@	if $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(xcsprof_CXXFLAGS) $(CXXFLAGS) -MT xcsprof-CSProfileUtils.obj -MD -MP -MF "$(DEPDIR)/xcsprof-CSProfileUtils.Tpo" -c -o xcsprof-CSProfileUtils.obj `if test -f 'CSProfileUtils.C'; then $(CYGPATH_W) 'CSProfileUtils.C'; else $(CYGPATH_W) '$(srcdir)/CSProfileUtils.C'; fi`; \
+xcsprof-CSProfileUtils.obj: CSProfileUtils.cpp
+@am__fastdepCXX_TRUE@	if $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(xcsprof_CXXFLAGS) $(CXXFLAGS) -MT xcsprof-CSProfileUtils.obj -MD -MP -MF "$(DEPDIR)/xcsprof-CSProfileUtils.Tpo" -c -o xcsprof-CSProfileUtils.obj `if test -f 'CSProfileUtils.cpp'; then $(CYGPATH_W) 'CSProfileUtils.cpp'; else $(CYGPATH_W) '$(srcdir)/CSProfileUtils.cpp'; fi`; \
 @am__fastdepCXX_TRUE@	then mv -f "$(DEPDIR)/xcsprof-CSProfileUtils.Tpo" "$(DEPDIR)/xcsprof-CSProfileUtils.Po"; else rm -f "$(DEPDIR)/xcsprof-CSProfileUtils.Tpo"; exit 1; fi
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='CSProfileUtils.C' object='xcsprof-CSProfileUtils.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='CSProfileUtils.cpp' object='xcsprof-CSProfileUtils.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(xcsprof_CXXFLAGS) $(CXXFLAGS) -c -o xcsprof-CSProfileUtils.obj `if test -f 'CSProfileUtils.C'; then $(CYGPATH_W) 'CSProfileUtils.C'; else $(CYGPATH_W) '$(srcdir)/CSProfileUtils.C'; fi`
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(xcsprof_CXXFLAGS) $(CXXFLAGS) -c -o xcsprof-CSProfileUtils.obj `if test -f 'CSProfileUtils.cpp'; then $(CYGPATH_W) 'CSProfileUtils.cpp'; else $(CYGPATH_W) '$(srcdir)/CSProfileUtils.cpp'; fi`
 
-xcsprof-CSProfEpoch.o: CSProfEpoch.C
-@am__fastdepCXX_TRUE@	if $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(xcsprof_CXXFLAGS) $(CXXFLAGS) -MT xcsprof-CSProfEpoch.o -MD -MP -MF "$(DEPDIR)/xcsprof-CSProfEpoch.Tpo" -c -o xcsprof-CSProfEpoch.o `test -f 'CSProfEpoch.C' || echo '$(srcdir)/'`CSProfEpoch.C; \
+xcsprof-CSProfEpoch.o: CSProfEpoch.cpp
+@am__fastdepCXX_TRUE@	if $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(xcsprof_CXXFLAGS) $(CXXFLAGS) -MT xcsprof-CSProfEpoch.o -MD -MP -MF "$(DEPDIR)/xcsprof-CSProfEpoch.Tpo" -c -o xcsprof-CSProfEpoch.o `test -f 'CSProfEpoch.cpp' || echo '$(srcdir)/'`CSProfEpoch.cpp; \
 @am__fastdepCXX_TRUE@	then mv -f "$(DEPDIR)/xcsprof-CSProfEpoch.Tpo" "$(DEPDIR)/xcsprof-CSProfEpoch.Po"; else rm -f "$(DEPDIR)/xcsprof-CSProfEpoch.Tpo"; exit 1; fi
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='CSProfEpoch.C' object='xcsprof-CSProfEpoch.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='CSProfEpoch.cpp' object='xcsprof-CSProfEpoch.o' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(xcsprof_CXXFLAGS) $(CXXFLAGS) -c -o xcsprof-CSProfEpoch.o `test -f 'CSProfEpoch.C' || echo '$(srcdir)/'`CSProfEpoch.C
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(xcsprof_CXXFLAGS) $(CXXFLAGS) -c -o xcsprof-CSProfEpoch.o `test -f 'CSProfEpoch.cpp' || echo '$(srcdir)/'`CSProfEpoch.cpp
 
-xcsprof-CSProfEpoch.obj: CSProfEpoch.C
-@am__fastdepCXX_TRUE@	if $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(xcsprof_CXXFLAGS) $(CXXFLAGS) -MT xcsprof-CSProfEpoch.obj -MD -MP -MF "$(DEPDIR)/xcsprof-CSProfEpoch.Tpo" -c -o xcsprof-CSProfEpoch.obj `if test -f 'CSProfEpoch.C'; then $(CYGPATH_W) 'CSProfEpoch.C'; else $(CYGPATH_W) '$(srcdir)/CSProfEpoch.C'; fi`; \
+xcsprof-CSProfEpoch.obj: CSProfEpoch.cpp
+@am__fastdepCXX_TRUE@	if $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(xcsprof_CXXFLAGS) $(CXXFLAGS) -MT xcsprof-CSProfEpoch.obj -MD -MP -MF "$(DEPDIR)/xcsprof-CSProfEpoch.Tpo" -c -o xcsprof-CSProfEpoch.obj `if test -f 'CSProfEpoch.cpp'; then $(CYGPATH_W) 'CSProfEpoch.cpp'; else $(CYGPATH_W) '$(srcdir)/CSProfEpoch.cpp'; fi`; \
 @am__fastdepCXX_TRUE@	then mv -f "$(DEPDIR)/xcsprof-CSProfEpoch.Tpo" "$(DEPDIR)/xcsprof-CSProfEpoch.Po"; else rm -f "$(DEPDIR)/xcsprof-CSProfEpoch.Tpo"; exit 1; fi
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='CSProfEpoch.C' object='xcsprof-CSProfEpoch.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='CSProfEpoch.cpp' object='xcsprof-CSProfEpoch.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(xcsprof_CXXFLAGS) $(CXXFLAGS) -c -o xcsprof-CSProfEpoch.obj `if test -f 'CSProfEpoch.C'; then $(CYGPATH_W) 'CSProfEpoch.C'; else $(CYGPATH_W) '$(srcdir)/CSProfEpoch.C'; fi`
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(xcsprof_CXXFLAGS) $(CXXFLAGS) -c -o xcsprof-CSProfEpoch.obj `if test -f 'CSProfEpoch.cpp'; then $(CYGPATH_W) 'CSProfEpoch.cpp'; else $(CYGPATH_W) '$(srcdir)/CSProfEpoch.cpp'; fi`
 
 mostlyclean-libtool:
 	-rm -f *.lo
@@ -744,7 +744,7 @@ uninstall-am: uninstall-binPROGRAMS uninstall-info-am
 
 #############################################################################
 
-%.C.pp : %.C
+%.cpp.pp : %.cpp
 	$(CXXCPP) $(MYCPPFLAGS_CXX) $< > $@
 
 %.c.pp : %.c

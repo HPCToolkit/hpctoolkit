@@ -58,7 +58,7 @@
 
 #include <include/general.h>
 
-#include "ISATypes.h"
+#include "ISATypes.hpp"
 
 //*************************** Forward Declarations ***************************
 

@@ -65,13 +65,13 @@ using std::strtoul; // For compatibility with non-std C headers
 
 //*************************** User Include Files ****************************
 
-#include "ProfileReader.h"
-#include "PCProfile.h"
-#include "DCPIProfile.h"
+#include "ProfileReader.hpp"
+#include "PCProfile.hpp"
+#include "DCPIProfile.hpp"
 
-#include <lib/ISA/ISA.h>
-#include <lib/ISA/AlphaISA.h>
-#include <lib/xml/xml.h>
+#include <lib/ISA/ISA.hpp>
+#include <lib/ISA/AlphaISA.hpp>
+#include <lib/xml/xml.hpp>
 
 //*************************** Forward Declarations ***************************
 

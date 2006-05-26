@@ -56,9 +56,9 @@
 
 #include <include/general.h> 
 
-#include "PgmScopeTree.h"
+#include "PgmScopeTree.hpp"
 
-#include <lib/binutils/LoadModule.h>
+#include <lib/binutils/LoadModule.hpp>
 
 //*************************** Forward Declarations ***************************
 

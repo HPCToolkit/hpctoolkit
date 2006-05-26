@@ -55,14 +55,14 @@
 
 #include <include/general.h>
 
-#include "PgmScopeTree.h"
-#include <lib/support/VectorTmpl.h>
+#include "PgmScopeTree.hpp"
+#include <lib/support/VectorTmpl.hpp>
 #include <lib/support/Assertion.h>
-#include <lib/support/SrcFile.h>
-#include <lib/support/PtrSetIterator.h>
-#include <lib/support/Trace.h>
+#include <lib/support/SrcFile.hpp>
+#include <lib/support/PtrSetIterator.hpp>
+#include <lib/support/Trace.hpp>
 #include <lib/support/realpath.h>
-#include <lib/xml/xml.h>
+#include <lib/xml/xml.hpp>
 
 //*************************** Forward Declarations ***************************
 

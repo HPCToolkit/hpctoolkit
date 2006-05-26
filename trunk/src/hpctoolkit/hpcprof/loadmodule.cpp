@@ -31,7 +31,7 @@
 
 //*************************** User Include Files ****************************
 
-#include "loadmodule.h"
+#include "loadmodule.hpp"
 
 //*************************** Forward Declarations **************************
 

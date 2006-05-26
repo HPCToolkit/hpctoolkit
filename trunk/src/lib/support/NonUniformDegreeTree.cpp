@@ -64,7 +64,7 @@
 
 //*************************** User Include Files ****************************
 
-#include "NonUniformDegreeTree.h"
+#include "NonUniformDegreeTree.hpp"
 #include "Assertion.h"
 
 //*************************** Forward Declarations **************************

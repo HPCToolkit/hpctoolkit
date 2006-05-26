@@ -70,7 +70,7 @@
 
 #include <include/general.h>
 
-#include "String.h"
+#include "String.hpp"
 
 // ************************* Variable Definitions ***************************
 

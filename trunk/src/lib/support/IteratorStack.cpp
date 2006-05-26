@@ -53,9 +53,9 @@
 
 //*************************** User Include Files ****************************
 
-#include "IteratorStack.h"
-#include "PointerStack.h"
-#include "DumpMsgHandler.h"
+#include "IteratorStack.hpp"
+#include "PointerStack.hpp"
+#include "DumpMsgHandler.hpp"
 #include "Assertion.h"
 
 //*************************** Forward Declarations **************************

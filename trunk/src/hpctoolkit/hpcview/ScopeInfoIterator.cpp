@@ -41,9 +41,9 @@
 
 //************************* User Include Files *******************************
 
-#include "ScopeInfo.h"
-#include "ScopeInfoIterator.h"
-#include "PerfMetric.h"
+#include "ScopeInfo.hpp"
+#include "ScopeInfoIterator.hpp"
+#include "PerfMetric.hpp"
 #include <lib/support/Assertion.h>
 
 //************************ Forward Declarations ******************************

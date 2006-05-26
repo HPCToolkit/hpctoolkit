@@ -57,8 +57,8 @@
 
 //***************************************************************************
 
-#include "HashTable.h"
-#include "QuickSort.h"
+#include "HashTable.hpp"
+#include "QuickSort.hpp"
 
 /*************** HashTableSortedIterator public member functions *************/
 

@@ -38,7 +38,7 @@
 
 //*************************** User Include Files ****************************
 
-#include "VectorSupport.h"
+#include "VectorSupport.hpp"
 
 //*************************** Forward Declarations ***************************
 

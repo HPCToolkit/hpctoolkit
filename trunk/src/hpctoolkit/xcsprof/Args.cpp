@@ -47,11 +47,11 @@
 
 //*************************** User Include Files ****************************
 
-#include "Args.h"
-#include <lib/support/String.h>
-#include <lib/support/StringUtilities.h>
-#include <lib/support/Trace.h>
-#include "CSProfileUtils.h"
+#include "Args.hpp"
+#include <lib/support/String.hpp>
+#include <lib/support/StringUtilities.hpp>
+#include <lib/support/Trace.hpp>
+#include "CSProfileUtils.hpp"
 
 //*************************** Forward Declarations **************************
 

@@ -60,9 +60,9 @@
 #include <include/general.h>
 #include <include/gnu_bfd.h>
 
-#include "LoadModule.h"
-#include <lib/ISA/ISATypes.h> 
-#include <lib/support/String.h>
+#include "LoadModule.hpp"
+#include <lib/ISA/ISATypes.hpp> 
+#include <lib/support/String.hpp>
 
 
 //*************************** Forward Declarations **************************

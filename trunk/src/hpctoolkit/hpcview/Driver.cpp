@@ -41,14 +41,14 @@
 //************************* User Include Files *******************************
 
 
-#include "Driver.h" 
-#include "HPCViewSAX2.h"
-#include "HPCViewXMLErrHandler.h"
-#include "ScopesInfo.h"
+#include "Driver.hpp" 
+#include "HPCViewSAX2.hpp"
+#include "HPCViewXMLErrHandler.hpp"
+#include "ScopesInfo.hpp"
 
 #include <lib/support/Assertion.h>
 #include <lib/support/pathfind.h>
-#include <lib/support/Trace.h>
+#include <lib/support/Trace.hpp>
 
 //************************ Forward Declarations ******************************
 

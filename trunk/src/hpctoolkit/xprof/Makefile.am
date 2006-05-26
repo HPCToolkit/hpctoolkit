@@ -62,18 +62,18 @@ include $(top_srcdir)/src/Makeinclude.config
 #############################################################################
 
 MYSOURCES = \
-	main.C \
-	Args.h Args.C \
-	DCPIMetricDesc.h DCPIMetricDesc.C \
-	DCPIProfile.h DCPIProfile.C \
-	DCPIProfileFilter.h DCPIProfileFilter.C \
-	DCPIProfileMetric.h DCPIProfileMetric.C \
-	DerivedProfile.h DerivedProfile.C \
-	PCProfile.h PCProfile.C \
-	PCProfileFilter.h PCProfileFilter.C \
-	PCProfileMetric.h PCProfileMetric.C \
-	ProfileReader.h ProfileReader.C \
-	ProfileWriter.h ProfileWriter.C
+	main.cpp \
+	Args.hpp Args.cpp \
+	DCPIMetricDesc.hpp DCPIMetricDesc.cpp \
+	DCPIProfile.hpp DCPIProfile.cpp \
+	DCPIProfileFilter.hpp DCPIProfileFilter.cpp \
+	DCPIProfileMetric.hpp DCPIProfileMetric.cpp \
+	DerivedProfile.hpp DerivedProfile.cpp \
+	PCProfile.hpp PCProfile.cpp \
+	PCProfileFilter.hpp PCProfileFilter.cpp \
+	PCProfileMetric.hpp PCProfileMetric.cpp \
+	ProfileReader.hpp ProfileReader.cpp \
+	ProfileWriter.hpp ProfileWriter.cpp
 
 MYCFLAGS   = @HOST_CFLAGS@   $(HPC_IFLAGS) @GNUBINUTILS_IFLAGS@
 MYCXXFLAGS = @HOST_CXXFLAGS@ $(HPC_IFLAGS) @GNUBINUTILS_IFLAGS@

@@ -29,7 +29,7 @@ MYCPPFLAGS_CXX = $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) \
 MYCPPFLAGS_CC  = $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) \
 	$(MYCFLAGS)
 
-%.C.pp : %.C
+%.cpp.pp : %.cpp
 	$(CXXCPP) $(MYCPPFLAGS_CXX) $< > $@
 
 %.c.pp : %.c

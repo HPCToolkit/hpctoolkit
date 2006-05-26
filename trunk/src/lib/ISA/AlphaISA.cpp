@@ -51,7 +51,7 @@
 
 //*************************** User Include Files ****************************
 
-#include "AlphaISA.h"
+#include "AlphaISA.hpp"
 
 #include <include/gnu_bfd.h>  // for bfd_getl32
 

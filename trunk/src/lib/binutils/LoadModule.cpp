@@ -55,19 +55,19 @@
 
 #include <include/gnu_bfd.h>
 
-#include "LoadModule.h"
-#include "Section.h"
-#include "Instruction.h"
-#include "Procedure.h"
+#include "LoadModule.hpp"
+#include "Section.hpp"
+#include "Instruction.hpp"
+#include "Procedure.hpp"
 #include <lib/support/Assertion.h>
-#include <lib/support/QuickSort.h>
-#include <lib/support/Trace.h>
+#include <lib/support/QuickSort.hpp>
+#include <lib/support/Trace.hpp>
 
-#include <lib/ISA/MipsISA.h>
-#include <lib/ISA/AlphaISA.h>
-#include <lib/ISA/SparcISA.h>
-#include <lib/ISA/i686ISA.h>
-#include <lib/ISA/IA64ISA.h>
+#include <lib/ISA/MipsISA.hpp>
+#include <lib/ISA/AlphaISA.hpp>
+#include <lib/ISA/SparcISA.hpp>
+#include <lib/ISA/i686ISA.hpp>
+#include <lib/ISA/IA64ISA.hpp>
 
 //*************************** Forward Declarations **************************
 

@@ -48,15 +48,15 @@ using namespace std; // For compatibility with non-std C headers
 
 //************************* User Include Files *******************************
 
-#include "HTMLTable.h" 
-#include "HTMLDriver.h" 
-#include "HTMLScopes.h" 
-#include "HTMLFile.h"
-#include "StaticFiles.h"
-#include <lib/support/IntVector.h>
-#include <lib/support/String.h>
+#include "HTMLTable.hpp"
+#include "HTMLDriver.hpp"
+#include "HTMLScopes.hpp"
+#include "HTMLFile.hpp"
+#include "StaticFiles.hpp"
+#include <lib/support/IntVector.hpp>
+#include <lib/support/String.hpp>
 #include <lib/support/Assertion.h>
-#include <lib/support/Trace.h>
+#include <lib/support/Trace.hpp>
 
 //************************ Forward Declarations ******************************
 

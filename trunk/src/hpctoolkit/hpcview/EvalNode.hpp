@@ -67,8 +67,8 @@
 
 //************************* User Include Files *******************************
 
-#include "ScopeInfo.h"
-#include <lib/support/String.h>
+#include "ScopeInfo.hpp"
+#include <lib/support/String.hpp>
 
 //************************ Forward Declarations ******************************
 

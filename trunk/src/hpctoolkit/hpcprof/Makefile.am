@@ -62,10 +62,10 @@ include $(top_srcdir)/src/Makeinclude.config
 #############################################################################
 
 MYSOURCES = \
-	hpcprof.h hpcprof.cc \
-	summary.h summary.cc \
-	loadmodule.h loadmodule.cc \
-	proffile.h proffile.cc 
+	hpcprof.hpp hpcprof.cpp \
+	summary.hpp summary.cpp \
+	loadmodule.hpp loadmodule.cpp \
+	proffile.hpp proffile.cpp 
 
 MYCFLAGS   = @HOST_CFLAGS@   $(HPC_IFLAGS) @GNUBINUTILS_IFLAGS@
 MYCXXFLAGS = @HOST_CXXFLAGS@ $(HPC_IFLAGS) @GNUBINUTILS_IFLAGS@

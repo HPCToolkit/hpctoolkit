@@ -62,13 +62,13 @@ include $(top_srcdir)/src/Makeinclude.config
 #############################################################################
 
 MYSOURCES = \
-	AlphaISA.h AlphaISA.C \
-	IA64ISA.h IA64ISA.C \
-	ISA.h ISA.C \
-	ISATypes.h \
-	MipsISA.h MipsISA.C \
-	SparcISA.h SparcISA.C \
-	i686ISA.h i686ISA.C \
+	AlphaISA.hpp AlphaISA.cpp \
+	IA64ISA.hpp IA64ISA.cpp \
+	ISA.hpp ISA.cpp \
+	ISATypes.hpp \
+	MipsISA.hpp MipsISA.cpp \
+	SparcISA.hpp SparcISA.cpp \
+	i686ISA.hpp i686ISA.cpp \
 	instructionSets/alpha.h \
 	instructionSets/mips.h
 

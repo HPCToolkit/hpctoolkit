@@ -48,8 +48,8 @@
 
 #include <include/general.h>
 
-#include <lib/support/NonUniformDegreeTree.h>
-#include <lib/support/PtrSetIterator.h>
+#include <lib/support/NonUniformDegreeTree.hpp>
+#include <lib/support/PtrSetIterator.hpp>
 
 //************************ Forward Declarations ******************************
 

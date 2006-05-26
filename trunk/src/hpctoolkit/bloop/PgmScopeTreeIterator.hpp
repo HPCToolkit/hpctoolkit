@@ -58,9 +58,9 @@
 
 #include <include/general.h>               
 
-#include "PgmScopeTree.h"
-#include <lib/support/NonUniformDegreeTree.h>  
-#include <lib/support/PtrSetIterator.h>        
+#include "PgmScopeTree.hpp"
+#include <lib/support/NonUniformDegreeTree.hpp>
+#include <lib/support/PtrSetIterator.hpp>
 
 //*************************** Forward Declarations ***************************
 

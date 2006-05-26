@@ -69,8 +69,8 @@ using namespace std; // For compatibility with non-std C headers
 
 // *************************** User Include Files ****************************
 
-#include "String.h"
-#include "StringUtilities.h"
+#include "String.hpp"
+#include "StringUtilities.hpp"
 #include "Assertion.h"
 
 // **************************** Static Functions *****************************

@@ -65,23 +65,23 @@ using XERCES_CPP_NAMESPACE::XMLException;
 //************************* User Include Files *******************************
 
 // XML related includes 
-#include "PROFILEDocHandler.h" 
-#include "HPCViewDocParser.h"
-#include "HPCViewXMLErrHandler.h"
+#include "PROFILEDocHandler.hpp"
+#include "HPCViewDocParser.hpp"
+#include "HPCViewXMLErrHandler.hpp"
 
 // Argument Handling
-#include "Args.h" 
+#include "Args.hpp"
 
 // ScopeInfo tree related includes 
-#include "Driver.h" 
-#include "ScopesInfo.h" 
-#include "HTMLDriver.h"
+#include "Driver.hpp"
+#include "ScopesInfo.hpp"
+#include "HTMLDriver.hpp"
 
-#include <lib/support/String.h>
+#include <lib/support/String.hpp>
 #include <lib/support/Assertion.h>
 #include <lib/support/Nan.h>
-#include <lib/support/Files.h>
-#include <lib/support/Trace.h>
+#include <lib/support/Files.hpp>
+#include <lib/support/Trace.hpp>
 #include <lib/support/pathfind.h>
 #include <lib/support/realpath.h>
 

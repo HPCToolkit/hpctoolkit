@@ -55,8 +55,8 @@
 
 //*************************** User Include Files ****************************
 
-#include "StackableIterator.h"
-#include "DumpMsgHandler.h"
+#include "StackableIterator.hpp"
+#include "DumpMsgHandler.hpp"
 
 //*************************** Forward Declarations **************************
 

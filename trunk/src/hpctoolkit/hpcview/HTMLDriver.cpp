@@ -43,21 +43,21 @@
 
 //************************* User Include Files *******************************
 
-#include "Args.h"
-#include "Driver.h"
-#include "HTMLDriver.h"
-#include "StaticFiles.h"
-#include "ScopesInfo.h"
-#include "HTMLFile.h"
-#include "HTMLTable.h"
-#include "HTMLScopes.h"
-#include "HTMLSrcFiles.h"
+#include "Args.hpp"
+#include "Driver.hpp"
+#include "HTMLDriver.hpp"
+#include "StaticFiles.hpp"
+#include "ScopesInfo.hpp"
+#include "HTMLFile.hpp"
+#include "HTMLTable.hpp"
+#include "HTMLScopes.hpp"
+#include "HTMLSrcFiles.hpp"
 
-#include <lib/support/String.h>
-#include <lib/support/IntVector.h>
+#include <lib/support/String.hpp>
+#include <lib/support/IntVector.hpp>
 #include <lib/support/Nan.h>
 #include <lib/support/Assertion.h>
-#include <lib/support/Trace.h>
+#include <lib/support/Trace.hpp>
 
 //************************ Forward Declarations ******************************
 

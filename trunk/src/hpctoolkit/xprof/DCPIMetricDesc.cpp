@@ -53,9 +53,9 @@
 
 //*************************** User Include Files ****************************
 
-#include "DCPIMetricDesc.h"
+#include "DCPIMetricDesc.hpp"
 
-#include <lib/support/String.h>
+#include <lib/support/String.hpp>
 #include <lib/support/Assertion.h>
 
 //*************************** Forward Declarations ***************************

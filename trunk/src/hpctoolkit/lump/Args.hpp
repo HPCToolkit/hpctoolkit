@@ -58,9 +58,9 @@
 //*************************** User Include Files ****************************
 
 #include <include/general.h>
-#include <lib/support/CmdLineParser.h>
+#include <lib/support/CmdLineParser.hpp>
 
-#include <lib/ISA/ISATypes.h>
+#include <lib/ISA/ISATypes.hpp>
 
 //*************************** Forward Declarations **************************
 

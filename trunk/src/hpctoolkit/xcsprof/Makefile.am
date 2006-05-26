@@ -62,13 +62,13 @@ include $(top_srcdir)/src/Makeinclude.config
 #############################################################################
 
 MYSOURCES = \
-	main.C \
-	Args.h Args.C \
-	CSProfTree.h CSProfTree.C \
-	CSProfTreeIterator.h CSProfTreeIterator.C \
-	CSProfile.h CSProfile.C \
-	CSProfileUtils.h CSProfileUtils.C \
-	CSProfEpoch.h CSProfEpoch.C
+	main.cpp \
+	Args.hpp Args.cpp \
+	CSProfTree.hpp CSProfTree.cpp \
+	CSProfTreeIterator.hpp CSProfTreeIterator.cpp \
+	CSProfile.hpp CSProfile.cpp \
+	CSProfileUtils.hpp CSProfileUtils.cpp \
+	CSProfEpoch.hpp CSProfEpoch.cpp
 
 MYCFLAGS   = @HOST_CFLAGS@   $(HPC_IFLAGS) @GNUBINUTILS_IFLAGS@
 MYCXXFLAGS = @HOST_CXXFLAGS@ $(HPC_IFLAGS) @GNUBINUTILS_IFLAGS@

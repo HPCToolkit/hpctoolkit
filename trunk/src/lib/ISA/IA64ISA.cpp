@@ -60,7 +60,7 @@ using namespace std; // For compatibility with non-std C headers
 
 //*************************** User Include Files ****************************
 
-#include "IA64ISA.h"
+#include "IA64ISA.hpp"
 #include <lib/support/Assertion.h>
 
 //*************************** Forward Declarations ***************************

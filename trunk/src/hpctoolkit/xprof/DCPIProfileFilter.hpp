@@ -56,11 +56,11 @@
 
 #include <include/general.h>
 
-#include "PCProfileFilter.h"
-#include "DCPIMetricDesc.h"
+#include "PCProfileFilter.hpp"
+#include "DCPIMetricDesc.hpp"
 
-#include <lib/ISA/ISATypes.h>
-#include <lib/binutils/LoadModule.h>
+#include <lib/ISA/ISATypes.hpp>
+#include <lib/binutils/LoadModule.hpp>
 
 //*************************** Forward Declarations ***************************
 

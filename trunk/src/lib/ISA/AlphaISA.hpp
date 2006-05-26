@@ -60,7 +60,7 @@
 
 #include <include/general.h>
 
-#include "ISA.h"
+#include "ISA.hpp"
 
 //*************************** Forward Declarations ***************************
 

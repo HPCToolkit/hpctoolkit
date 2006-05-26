@@ -53,7 +53,7 @@
 
 //*************************** User Include Files ****************************
 
-#include "DerivedProfile.h"
+#include "DerivedProfile.hpp"
 
 //*************************** Forward Declarations ***************************
 

@@ -51,7 +51,7 @@
 
 //*************************** User Include Files ****************************
 
-#include "ISA.h"
+#include "ISA.hpp"
 #include <lib/support/Assertion.h>
 
 //*************************** Forward Declarations ***************************

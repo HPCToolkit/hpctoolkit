@@ -49,11 +49,11 @@ using std::atoi;
 //************************* User Include Files *******************************
 
 // #include "XMLAdapter.h"
-#include "MathMLExpr.h"
-#include "PerfMetric.h"
-#include <lib/support/String.h>
+#include "MathMLExpr.hpp"
+#include "PerfMetric.hpp"
+#include <lib/support/String.hpp>
 #include <lib/support/Nan.h>
-#include <lib/support/Trace.h>
+#include <lib/support/Trace.hpp>
 
 //************************ Xerces Include Files ******************************
 

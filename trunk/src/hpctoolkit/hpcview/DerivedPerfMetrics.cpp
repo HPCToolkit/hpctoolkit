@@ -40,14 +40,14 @@
 
 //************************* User Include Files *******************************
 
-#include "HPCViewSAX2.h"
-#include "DerivedPerfMetrics.h"
-#include "ScopesInfo.h"
-#include "PROFILEDocHandler.h"
-#include "MathMLExpr.h"
+#include "HPCViewSAX2.hpp"
+#include "DerivedPerfMetrics.hpp"
+#include "ScopesInfo.hpp"
+#include "PROFILEDocHandler.hpp"
+#include "MathMLExpr.hpp"
 
 #include <lib/support/pathfind.h>
-#include <lib/support/Trace.h>
+#include <lib/support/Trace.hpp>
 
 //************************ Forward Declarations ******************************
 

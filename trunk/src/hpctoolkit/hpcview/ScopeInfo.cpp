@@ -52,13 +52,13 @@ using namespace std; // For compatibility with non-std C headers
 
 #include <include/general.h>
 
-#include "ScopeInfo.h"
-#include "PerfMetric.h"
-#include "HTMLFile.h" // for HTMLEscapeStr
-#include <lib/support/PtrSetIterator.h>
+#include "ScopeInfo.hpp"
+#include "PerfMetric.hpp"
+#include "HTMLFile.hpp" // for HTMLEscapeStr
+#include <lib/support/PtrSetIterator.hpp>
 #include <lib/support/realpath.h>
 #include <lib/support/Assertion.h>
-#include <lib/support/Trace.h>
+#include <lib/support/Trace.hpp>
 
 //************************ Forward Declarations ******************************
 

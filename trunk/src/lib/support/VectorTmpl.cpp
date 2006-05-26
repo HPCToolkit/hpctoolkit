@@ -42,7 +42,7 @@
 
 //*************************** User Include Files ****************************
 
-#include "VectorTmpl.h"
+#include "VectorTmpl.hpp"
 
 //*************************** Forward Declarations ***************************
 

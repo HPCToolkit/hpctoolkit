@@ -59,15 +59,15 @@
 
 //*************************** User Include Files ****************************
 
-#include "Args.h"
+#include "Args.hpp"
 
-#include <lib/binutils/LoadModule.h>
-#include <lib/binutils/Section.h>
-#include <lib/binutils/Procedure.h>
-#include <lib/binutils/Instruction.h>
-#include <lib/binutils/BinUtils.h>
-#include <lib/support/String.h> 
-#include <lib/support/Assertion.h> 
+#include <lib/binutils/LoadModule.hpp>
+#include <lib/binutils/Section.hpp>
+#include <lib/binutils/Procedure.hpp>
+#include <lib/binutils/Instruction.hpp>
+#include <lib/binutils/BinUtils.hpp>
+#include <lib/support/String.hpp> 
+#include <lib/support/Assertion.h>
 
 //*************************** Forward Declarations ***************************
 

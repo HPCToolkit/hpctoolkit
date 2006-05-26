@@ -40,8 +40,8 @@
 
 //*************************** User Include Files ****************************
 
-#include "proffile.h"
-#include "loadmodule.h"
+#include "proffile.hpp"
+#include "loadmodule.hpp"
 
 //*************************** Forward Declarations **************************
 

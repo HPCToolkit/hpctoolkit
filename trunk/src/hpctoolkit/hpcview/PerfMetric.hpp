@@ -43,8 +43,8 @@
 
 #include <include/general.h>
 
-#include <lib/support/String.h>
-#include <lib/support/VectorTmpl.h>
+#include <lib/support/String.hpp>
+#include <lib/support/VectorTmpl.hpp>
 
 //************************ Forward Declarations ******************************
 

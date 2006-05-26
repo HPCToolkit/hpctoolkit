@@ -69,7 +69,7 @@
 
 #include <include/general.h>
 
-#include "HashTable.h"
+#include "HashTable.hpp"
 
 //*************************** Forward Declarations ***************************
 
