@@ -15,7 +15,7 @@
 @SET_MAKE@
 
 # -*-Mode: makefile;-*-
-# $Header: /Volumes/cvsrep/developer/HPCToolkit/src/hpctoolkit/bloop/Makefile.am,v 1.2 2004/10/20 20:13:27 eraxxon Exp $
+# $Header: /Volumes/cvsrep/developer/HPCToolkit/src/hpctoolkit/bloop/Makefile.am,v 1.3 2006/05/26 16:14:43 eraxxon Exp $
 
 #############################################################################
 #
@@ -50,7 +50,7 @@
 #############################################################################
 
 # -*-Mode: makefile;-*-
-# $Header: /Volumes/cvsrep/developer/HPCToolkit/src/Makeinclude.rules,v 1.1 2004/03/10 01:31:30 eraxxon Exp $
+# $Header: /Volumes/cvsrep/developer/HPCToolkit/src/Makeinclude.rules,v 1.2 2006/05/26 16:14:42 eraxxon Exp $
 
 #############################################################################
 #

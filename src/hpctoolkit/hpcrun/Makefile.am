@@ -62,7 +62,7 @@ include $(top_srcdir)/src/Makeinclude.config
 #############################################################################
 
 MYSOURCES_HPCRUN = \
-	hpcrun.h hpcrun.cc \
+	hpcrun.h hpcrun.cpp \
 	hpcpapi.h hpcpapi.c \
 	dlpapi.h dlpapi.c 
 
@@ -73,7 +73,7 @@ MYSOURCES_LIBHPCRUN_PRELOAD = \
 	rtmap.h rtmap.c 
 
 MYSOURCES_LIBHPCRUN_STATIC = \
-	monitor_static.cc \
+	monitor_static.cpp \
 	monitor.h monitor.c \
 	hpcpapi.h hpcpapi.c \
 	rtmap.h rtmap.c 
