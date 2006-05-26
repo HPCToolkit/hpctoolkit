@@ -332,18 +332,18 @@ HPC_LIBHPCFILE = $(top_builddir)/src/lib/hpcfile/libHPCfile.la
 # Local settings
 #############################################################################
 MYSOURCES = \
-	main.C \
-	Args.h Args.C \
-	DCPIMetricDesc.h DCPIMetricDesc.C \
-	DCPIProfile.h DCPIProfile.C \
-	DCPIProfileFilter.h DCPIProfileFilter.C \
-	DCPIProfileMetric.h DCPIProfileMetric.C \
-	DerivedProfile.h DerivedProfile.C \
-	PCProfile.h PCProfile.C \
-	PCProfileFilter.h PCProfileFilter.C \
-	PCProfileMetric.h PCProfileMetric.C \
-	ProfileReader.h ProfileReader.C \
-	ProfileWriter.h ProfileWriter.C
+	main.cpp \
+	Args.hpp Args.cpp \
+	DCPIMetricDesc.hpp DCPIMetricDesc.cpp \
+	DCPIProfile.hpp DCPIProfile.cpp \
+	DCPIProfileFilter.hpp DCPIProfileFilter.cpp \
+	DCPIProfileMetric.hpp DCPIProfileMetric.cpp \
+	DerivedProfile.hpp DerivedProfile.cpp \
+	PCProfile.hpp PCProfile.cpp \
+	PCProfileFilter.hpp PCProfileFilter.cpp \
+	PCProfileMetric.hpp PCProfileMetric.cpp \
+	ProfileReader.hpp ProfileReader.cpp \
+	ProfileWriter.hpp ProfileWriter.cpp
 
 MYCFLAGS = @HOST_CFLAGS@   $(HPC_IFLAGS) @GNUBINUTILS_IFLAGS@
 MYCXXFLAGS = @HOST_CXXFLAGS@ $(HPC_IFLAGS) @GNUBINUTILS_IFLAGS@
@@ -371,7 +371,7 @@ MYCPPFLAGS_CC = $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) \
 all: all-am
 
 .SUFFIXES:
-.SUFFIXES: .C .lo .o .obj
+.SUFFIXES: .cpp .lo .o .obj
 $(srcdir)/Makefile.in:  $(srcdir)/Makefile.am $(top_srcdir)/src/Makeinclude.config $(top_srcdir)/src/Makeinclude.rules $(am__configure_deps)
 	@for dep in $?; do \
 	  case '$(am__configure_deps)' in \
@@ -452,194 +452,194 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/xprof-ProfileWriter.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/xprof-main.Po@am__quote@
 
-.C.o:
+.cpp.o:
 @am__fastdepCXX_TRUE@	if $(CXXCOMPILE) -MT $@ -MD -MP -MF "$(DEPDIR)/$*.Tpo" -c -o $@ $<; \
 @am__fastdepCXX_TRUE@	then mv -f "$(DEPDIR)/$*.Tpo" "$(DEPDIR)/$*.Po"; else rm -f "$(DEPDIR)/$*.Tpo"; exit 1; fi
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='$<' object='$@' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(CXXCOMPILE) -c -o $@ $<
 
-.C.obj:
+.cpp.obj:
 @am__fastdepCXX_TRUE@	if $(CXXCOMPILE) -MT $@ -MD -MP -MF "$(DEPDIR)/$*.Tpo" -c -o $@ `$(CYGPATH_W) '$<'`; \
 @am__fastdepCXX_TRUE@	then mv -f "$(DEPDIR)/$*.Tpo" "$(DEPDIR)/$*.Po"; else rm -f "$(DEPDIR)/$*.Tpo"; exit 1; fi
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='$<' object='$@' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(CXXCOMPILE) -c -o $@ `$(CYGPATH_W) '$<'`
 
-.C.lo:
+.cpp.lo:
 @am__fastdepCXX_TRUE@	if $(LTCXXCOMPILE) -MT $@ -MD -MP -MF "$(DEPDIR)/$*.Tpo" -c -o $@ $<; \
 @am__fastdepCXX_TRUE@	then mv -f "$(DEPDIR)/$*.Tpo" "$(DEPDIR)/$*.Plo"; else rm -f "$(DEPDIR)/$*.Tpo"; exit 1; fi
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='$<' object='$@' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(LTCXXCOMPILE) -c -o $@ $<
 
-xprof-main.o: main.C
-@am__fastdepCXX_TRUE@	if $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(xprof_CXXFLAGS) $(CXXFLAGS) -MT xprof-main.o -MD -MP -MF "$(DEPDIR)/xprof-main.Tpo" -c -o xprof-main.o `test -f 'main.C' || echo '$(srcdir)/'`main.C; \
+xprof-main.o: main.cpp
+@am__fastdepCXX_TRUE@	if $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(xprof_CXXFLAGS) $(CXXFLAGS) -MT xprof-main.o -MD -MP -MF "$(DEPDIR)/xprof-main.Tpo" -c -o xprof-main.o `test -f 'main.cpp' || echo '$(srcdir)/'`main.cpp; \
 @am__fastdepCXX_TRUE@	then mv -f "$(DEPDIR)/xprof-main.Tpo" "$(DEPDIR)/xprof-main.Po"; else rm -f "$(DEPDIR)/xprof-main.Tpo"; exit 1; fi
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='main.C' object='xprof-main.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='main.cpp' object='xprof-main.o' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(xprof_CXXFLAGS) $(CXXFLAGS) -c -o xprof-main.o `test -f 'main.C' || echo '$(srcdir)/'`main.C
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(xprof_CXXFLAGS) $(CXXFLAGS) -c -o xprof-main.o `test -f 'main.cpp' || echo '$(srcdir)/'`main.cpp
 
-xprof-main.obj: main.C
-@am__fastdepCXX_TRUE@	if $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(xprof_CXXFLAGS) $(CXXFLAGS) -MT xprof-main.obj -MD -MP -MF "$(DEPDIR)/xprof-main.Tpo" -c -o xprof-main.obj `if test -f 'main.C'; then $(CYGPATH_W) 'main.C'; else $(CYGPATH_W) '$(srcdir)/main.C'; fi`; \
+xprof-main.obj: main.cpp
+@am__fastdepCXX_TRUE@	if $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(xprof_CXXFLAGS) $(CXXFLAGS) -MT xprof-main.obj -MD -MP -MF "$(DEPDIR)/xprof-main.Tpo" -c -o xprof-main.obj `if test -f 'main.cpp'; then $(CYGPATH_W) 'main.cpp'; else $(CYGPATH_W) '$(srcdir)/main.cpp'; fi`; \
 @am__fastdepCXX_TRUE@	then mv -f "$(DEPDIR)/xprof-main.Tpo" "$(DEPDIR)/xprof-main.Po"; else rm -f "$(DEPDIR)/xprof-main.Tpo"; exit 1; fi
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='main.C' object='xprof-main.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='main.cpp' object='xprof-main.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(xprof_CXXFLAGS) $(CXXFLAGS) -c -o xprof-main.obj `if test -f 'main.C'; then $(CYGPATH_W) 'main.C'; else $(CYGPATH_W) '$(srcdir)/main.C'; fi`
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(xprof_CXXFLAGS) $(CXXFLAGS) -c -o xprof-main.obj `if test -f 'main.cpp'; then $(CYGPATH_W) 'main.cpp'; else $(CYGPATH_W) '$(srcdir)/main.cpp'; fi`
 
-xprof-Args.o: Args.C
-@am__fastdepCXX_TRUE@	if $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(xprof_CXXFLAGS) $(CXXFLAGS) -MT xprof-Args.o -MD -MP -MF "$(DEPDIR)/xprof-Args.Tpo" -c -o xprof-Args.o `test -f 'Args.C' || echo '$(srcdir)/'`Args.C; \
+xprof-Args.o: Args.cpp
+@am__fastdepCXX_TRUE@	if $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(xprof_CXXFLAGS) $(CXXFLAGS) -MT xprof-Args.o -MD -MP -MF "$(DEPDIR)/xprof-Args.Tpo" -c -o xprof-Args.o `test -f 'Args.cpp' || echo '$(srcdir)/'`Args.cpp; \
 @am__fastdepCXX_TRUE@	then mv -f "$(DEPDIR)/xprof-Args.Tpo" "$(DEPDIR)/xprof-Args.Po"; else rm -f "$(DEPDIR)/xprof-Args.Tpo"; exit 1; fi
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='Args.C' object='xprof-Args.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='Args.cpp' object='xprof-Args.o' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(xprof_CXXFLAGS) $(CXXFLAGS) -c -o xprof-Args.o `test -f 'Args.C' || echo '$(srcdir)/'`Args.C
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(xprof_CXXFLAGS) $(CXXFLAGS) -c -o xprof-Args.o `test -f 'Args.cpp' || echo '$(srcdir)/'`Args.cpp
 
-xprof-Args.obj: Args.C
-@am__fastdepCXX_TRUE@	if $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(xprof_CXXFLAGS) $(CXXFLAGS) -MT xprof-Args.obj -MD -MP -MF "$(DEPDIR)/xprof-Args.Tpo" -c -o xprof-Args.obj `if test -f 'Args.C'; then $(CYGPATH_W) 'Args.C'; else $(CYGPATH_W) '$(srcdir)/Args.C'; fi`; \
+xprof-Args.obj: Args.cpp
+@am__fastdepCXX_TRUE@	if $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(xprof_CXXFLAGS) $(CXXFLAGS) -MT xprof-Args.obj -MD -MP -MF "$(DEPDIR)/xprof-Args.Tpo" -c -o xprof-Args.obj `if test -f 'Args.cpp'; then $(CYGPATH_W) 'Args.cpp'; else $(CYGPATH_W) '$(srcdir)/Args.cpp'; fi`; \
 @am__fastdepCXX_TRUE@	then mv -f "$(DEPDIR)/xprof-Args.Tpo" "$(DEPDIR)/xprof-Args.Po"; else rm -f "$(DEPDIR)/xprof-Args.Tpo"; exit 1; fi
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='Args.C' object='xprof-Args.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='Args.cpp' object='xprof-Args.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(xprof_CXXFLAGS) $(CXXFLAGS) -c -o xprof-Args.obj `if test -f 'Args.C'; then $(CYGPATH_W) 'Args.C'; else $(CYGPATH_W) '$(srcdir)/Args.C'; fi`
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(xprof_CXXFLAGS) $(CXXFLAGS) -c -o xprof-Args.obj `if test -f 'Args.cpp'; then $(CYGPATH_W) 'Args.cpp'; else $(CYGPATH_W) '$(srcdir)/Args.cpp'; fi`
 
-xprof-DCPIMetricDesc.o: DCPIMetricDesc.C
-@am__fastdepCXX_TRUE@	if $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(xprof_CXXFLAGS) $(CXXFLAGS) -MT xprof-DCPIMetricDesc.o -MD -MP -MF "$(DEPDIR)/xprof-DCPIMetricDesc.Tpo" -c -o xprof-DCPIMetricDesc.o `test -f 'DCPIMetricDesc.C' || echo '$(srcdir)/'`DCPIMetricDesc.C; \
+xprof-DCPIMetricDesc.o: DCPIMetricDesc.cpp
+@am__fastdepCXX_TRUE@	if $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(xprof_CXXFLAGS) $(CXXFLAGS) -MT xprof-DCPIMetricDesc.o -MD -MP -MF "$(DEPDIR)/xprof-DCPIMetricDesc.Tpo" -c -o xprof-DCPIMetricDesc.o `test -f 'DCPIMetricDesc.cpp' || echo '$(srcdir)/'`DCPIMetricDesc.cpp; \
 @am__fastdepCXX_TRUE@	then mv -f "$(DEPDIR)/xprof-DCPIMetricDesc.Tpo" "$(DEPDIR)/xprof-DCPIMetricDesc.Po"; else rm -f "$(DEPDIR)/xprof-DCPIMetricDesc.Tpo"; exit 1; fi
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='DCPIMetricDesc.C' object='xprof-DCPIMetricDesc.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='DCPIMetricDesc.cpp' object='xprof-DCPIMetricDesc.o' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(xprof_CXXFLAGS) $(CXXFLAGS) -c -o xprof-DCPIMetricDesc.o `test -f 'DCPIMetricDesc.C' || echo '$(srcdir)/'`DCPIMetricDesc.C
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(xprof_CXXFLAGS) $(CXXFLAGS) -c -o xprof-DCPIMetricDesc.o `test -f 'DCPIMetricDesc.cpp' || echo '$(srcdir)/'`DCPIMetricDesc.cpp
 
-xprof-DCPIMetricDesc.obj: DCPIMetricDesc.C
-@am__fastdepCXX_TRUE@	if $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(xprof_CXXFLAGS) $(CXXFLAGS) -MT xprof-DCPIMetricDesc.obj -MD -MP -MF "$(DEPDIR)/xprof-DCPIMetricDesc.Tpo" -c -o xprof-DCPIMetricDesc.obj `if test -f 'DCPIMetricDesc.C'; then $(CYGPATH_W) 'DCPIMetricDesc.C'; else $(CYGPATH_W) '$(srcdir)/DCPIMetricDesc.C'; fi`; \
+xprof-DCPIMetricDesc.obj: DCPIMetricDesc.cpp
+@am__fastdepCXX_TRUE@	if $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(xprof_CXXFLAGS) $(CXXFLAGS) -MT xprof-DCPIMetricDesc.obj -MD -MP -MF "$(DEPDIR)/xprof-DCPIMetricDesc.Tpo" -c -o xprof-DCPIMetricDesc.obj `if test -f 'DCPIMetricDesc.cpp'; then $(CYGPATH_W) 'DCPIMetricDesc.cpp'; else $(CYGPATH_W) '$(srcdir)/DCPIMetricDesc.cpp'; fi`; \
 @am__fastdepCXX_TRUE@	then mv -f "$(DEPDIR)/xprof-DCPIMetricDesc.Tpo" "$(DEPDIR)/xprof-DCPIMetricDesc.Po"; else rm -f "$(DEPDIR)/xprof-DCPIMetricDesc.Tpo"; exit 1; fi
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='DCPIMetricDesc.C' object='xprof-DCPIMetricDesc.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='DCPIMetricDesc.cpp' object='xprof-DCPIMetricDesc.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(xprof_CXXFLAGS) $(CXXFLAGS) -c -o xprof-DCPIMetricDesc.obj `if test -f 'DCPIMetricDesc.C'; then $(CYGPATH_W) 'DCPIMetricDesc.C'; else $(CYGPATH_W) '$(srcdir)/DCPIMetricDesc.C'; fi`
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(xprof_CXXFLAGS) $(CXXFLAGS) -c -o xprof-DCPIMetricDesc.obj `if test -f 'DCPIMetricDesc.cpp'; then $(CYGPATH_W) 'DCPIMetricDesc.cpp'; else $(CYGPATH_W) '$(srcdir)/DCPIMetricDesc.cpp'; fi`
 
-xprof-DCPIProfile.o: DCPIProfile.C
-@am__fastdepCXX_TRUE@	if $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(xprof_CXXFLAGS) $(CXXFLAGS) -MT xprof-DCPIProfile.o -MD -MP -MF "$(DEPDIR)/xprof-DCPIProfile.Tpo" -c -o xprof-DCPIProfile.o `test -f 'DCPIProfile.C' || echo '$(srcdir)/'`DCPIProfile.C; \
+xprof-DCPIProfile.o: DCPIProfile.cpp
+@am__fastdepCXX_TRUE@	if $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(xprof_CXXFLAGS) $(CXXFLAGS) -MT xprof-DCPIProfile.o -MD -MP -MF "$(DEPDIR)/xprof-DCPIProfile.Tpo" -c -o xprof-DCPIProfile.o `test -f 'DCPIProfile.cpp' || echo '$(srcdir)/'`DCPIProfile.cpp; \
 @am__fastdepCXX_TRUE@	then mv -f "$(DEPDIR)/xprof-DCPIProfile.Tpo" "$(DEPDIR)/xprof-DCPIProfile.Po"; else rm -f "$(DEPDIR)/xprof-DCPIProfile.Tpo"; exit 1; fi
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='DCPIProfile.C' object='xprof-DCPIProfile.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='DCPIProfile.cpp' object='xprof-DCPIProfile.o' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(xprof_CXXFLAGS) $(CXXFLAGS) -c -o xprof-DCPIProfile.o `test -f 'DCPIProfile.C' || echo '$(srcdir)/'`DCPIProfile.C
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(xprof_CXXFLAGS) $(CXXFLAGS) -c -o xprof-DCPIProfile.o `test -f 'DCPIProfile.cpp' || echo '$(srcdir)/'`DCPIProfile.cpp
 
-xprof-DCPIProfile.obj: DCPIProfile.C
-@am__fastdepCXX_TRUE@	if $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(xprof_CXXFLAGS) $(CXXFLAGS) -MT xprof-DCPIProfile.obj -MD -MP -MF "$(DEPDIR)/xprof-DCPIProfile.Tpo" -c -o xprof-DCPIProfile.obj `if test -f 'DCPIProfile.C'; then $(CYGPATH_W) 'DCPIProfile.C'; else $(CYGPATH_W) '$(srcdir)/DCPIProfile.C'; fi`; \
+xprof-DCPIProfile.obj: DCPIProfile.cpp
+@am__fastdepCXX_TRUE@	if $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(xprof_CXXFLAGS) $(CXXFLAGS) -MT xprof-DCPIProfile.obj -MD -MP -MF "$(DEPDIR)/xprof-DCPIProfile.Tpo" -c -o xprof-DCPIProfile.obj `if test -f 'DCPIProfile.cpp'; then $(CYGPATH_W) 'DCPIProfile.cpp'; else $(CYGPATH_W) '$(srcdir)/DCPIProfile.cpp'; fi`; \
 @am__fastdepCXX_TRUE@	then mv -f "$(DEPDIR)/xprof-DCPIProfile.Tpo" "$(DEPDIR)/xprof-DCPIProfile.Po"; else rm -f "$(DEPDIR)/xprof-DCPIProfile.Tpo"; exit 1; fi
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='DCPIProfile.C' object='xprof-DCPIProfile.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='DCPIProfile.cpp' object='xprof-DCPIProfile.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(xprof_CXXFLAGS) $(CXXFLAGS) -c -o xprof-DCPIProfile.obj `if test -f 'DCPIProfile.C'; then $(CYGPATH_W) 'DCPIProfile.C'; else $(CYGPATH_W) '$(srcdir)/DCPIProfile.C'; fi`
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(xprof_CXXFLAGS) $(CXXFLAGS) -c -o xprof-DCPIProfile.obj `if test -f 'DCPIProfile.cpp'; then $(CYGPATH_W) 'DCPIProfile.cpp'; else $(CYGPATH_W) '$(srcdir)/DCPIProfile.cpp'; fi`
 
-xprof-DCPIProfileFilter.o: DCPIProfileFilter.C
-@am__fastdepCXX_TRUE@	if $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(xprof_CXXFLAGS) $(CXXFLAGS) -MT xprof-DCPIProfileFilter.o -MD -MP -MF "$(DEPDIR)/xprof-DCPIProfileFilter.Tpo" -c -o xprof-DCPIProfileFilter.o `test -f 'DCPIProfileFilter.C' || echo '$(srcdir)/'`DCPIProfileFilter.C; \
+xprof-DCPIProfileFilter.o: DCPIProfileFilter.cpp
+@am__fastdepCXX_TRUE@	if $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(xprof_CXXFLAGS) $(CXXFLAGS) -MT xprof-DCPIProfileFilter.o -MD -MP -MF "$(DEPDIR)/xprof-DCPIProfileFilter.Tpo" -c -o xprof-DCPIProfileFilter.o `test -f 'DCPIProfileFilter.cpp' || echo '$(srcdir)/'`DCPIProfileFilter.cpp; \
 @am__fastdepCXX_TRUE@	then mv -f "$(DEPDIR)/xprof-DCPIProfileFilter.Tpo" "$(DEPDIR)/xprof-DCPIProfileFilter.Po"; else rm -f "$(DEPDIR)/xprof-DCPIProfileFilter.Tpo"; exit 1; fi
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='DCPIProfileFilter.C' object='xprof-DCPIProfileFilter.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='DCPIProfileFilter.cpp' object='xprof-DCPIProfileFilter.o' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(xprof_CXXFLAGS) $(CXXFLAGS) -c -o xprof-DCPIProfileFilter.o `test -f 'DCPIProfileFilter.C' || echo '$(srcdir)/'`DCPIProfileFilter.C
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(xprof_CXXFLAGS) $(CXXFLAGS) -c -o xprof-DCPIProfileFilter.o `test -f 'DCPIProfileFilter.cpp' || echo '$(srcdir)/'`DCPIProfileFilter.cpp
 
-xprof-DCPIProfileFilter.obj: DCPIProfileFilter.C
-@am__fastdepCXX_TRUE@	if $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(xprof_CXXFLAGS) $(CXXFLAGS) -MT xprof-DCPIProfileFilter.obj -MD -MP -MF "$(DEPDIR)/xprof-DCPIProfileFilter.Tpo" -c -o xprof-DCPIProfileFilter.obj `if test -f 'DCPIProfileFilter.C'; then $(CYGPATH_W) 'DCPIProfileFilter.C'; else $(CYGPATH_W) '$(srcdir)/DCPIProfileFilter.C'; fi`; \
+xprof-DCPIProfileFilter.obj: DCPIProfileFilter.cpp
+@am__fastdepCXX_TRUE@	if $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(xprof_CXXFLAGS) $(CXXFLAGS) -MT xprof-DCPIProfileFilter.obj -MD -MP -MF "$(DEPDIR)/xprof-DCPIProfileFilter.Tpo" -c -o xprof-DCPIProfileFilter.obj `if test -f 'DCPIProfileFilter.cpp'; then $(CYGPATH_W) 'DCPIProfileFilter.cpp'; else $(CYGPATH_W) '$(srcdir)/DCPIProfileFilter.cpp'; fi`; \
 @am__fastdepCXX_TRUE@	then mv -f "$(DEPDIR)/xprof-DCPIProfileFilter.Tpo" "$(DEPDIR)/xprof-DCPIProfileFilter.Po"; else rm -f "$(DEPDIR)/xprof-DCPIProfileFilter.Tpo"; exit 1; fi
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='DCPIProfileFilter.C' object='xprof-DCPIProfileFilter.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='DCPIProfileFilter.cpp' object='xprof-DCPIProfileFilter.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(xprof_CXXFLAGS) $(CXXFLAGS) -c -o xprof-DCPIProfileFilter.obj `if test -f 'DCPIProfileFilter.C'; then $(CYGPATH_W) 'DCPIProfileFilter.C'; else $(CYGPATH_W) '$(srcdir)/DCPIProfileFilter.C'; fi`
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(xprof_CXXFLAGS) $(CXXFLAGS) -c -o xprof-DCPIProfileFilter.obj `if test -f 'DCPIProfileFilter.cpp'; then $(CYGPATH_W) 'DCPIProfileFilter.cpp'; else $(CYGPATH_W) '$(srcdir)/DCPIProfileFilter.cpp'; fi`
 
-xprof-DCPIProfileMetric.o: DCPIProfileMetric.C
-@am__fastdepCXX_TRUE@	if $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(xprof_CXXFLAGS) $(CXXFLAGS) -MT xprof-DCPIProfileMetric.o -MD -MP -MF "$(DEPDIR)/xprof-DCPIProfileMetric.Tpo" -c -o xprof-DCPIProfileMetric.o `test -f 'DCPIProfileMetric.C' || echo '$(srcdir)/'`DCPIProfileMetric.C; \
+xprof-DCPIProfileMetric.o: DCPIProfileMetric.cpp
+@am__fastdepCXX_TRUE@	if $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(xprof_CXXFLAGS) $(CXXFLAGS) -MT xprof-DCPIProfileMetric.o -MD -MP -MF "$(DEPDIR)/xprof-DCPIProfileMetric.Tpo" -c -o xprof-DCPIProfileMetric.o `test -f 'DCPIProfileMetric.cpp' || echo '$(srcdir)/'`DCPIProfileMetric.cpp; \
 @am__fastdepCXX_TRUE@	then mv -f "$(DEPDIR)/xprof-DCPIProfileMetric.Tpo" "$(DEPDIR)/xprof-DCPIProfileMetric.Po"; else rm -f "$(DEPDIR)/xprof-DCPIProfileMetric.Tpo"; exit 1; fi
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='DCPIProfileMetric.C' object='xprof-DCPIProfileMetric.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='DCPIProfileMetric.cpp' object='xprof-DCPIProfileMetric.o' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(xprof_CXXFLAGS) $(CXXFLAGS) -c -o xprof-DCPIProfileMetric.o `test -f 'DCPIProfileMetric.C' || echo '$(srcdir)/'`DCPIProfileMetric.C
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(xprof_CXXFLAGS) $(CXXFLAGS) -c -o xprof-DCPIProfileMetric.o `test -f 'DCPIProfileMetric.cpp' || echo '$(srcdir)/'`DCPIProfileMetric.cpp
 
-xprof-DCPIProfileMetric.obj: DCPIProfileMetric.C
-@am__fastdepCXX_TRUE@	if $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(xprof_CXXFLAGS) $(CXXFLAGS) -MT xprof-DCPIProfileMetric.obj -MD -MP -MF "$(DEPDIR)/xprof-DCPIProfileMetric.Tpo" -c -o xprof-DCPIProfileMetric.obj `if test -f 'DCPIProfileMetric.C'; then $(CYGPATH_W) 'DCPIProfileMetric.C'; else $(CYGPATH_W) '$(srcdir)/DCPIProfileMetric.C'; fi`; \
+xprof-DCPIProfileMetric.obj: DCPIProfileMetric.cpp
+@am__fastdepCXX_TRUE@	if $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(xprof_CXXFLAGS) $(CXXFLAGS) -MT xprof-DCPIProfileMetric.obj -MD -MP -MF "$(DEPDIR)/xprof-DCPIProfileMetric.Tpo" -c -o xprof-DCPIProfileMetric.obj `if test -f 'DCPIProfileMetric.cpp'; then $(CYGPATH_W) 'DCPIProfileMetric.cpp'; else $(CYGPATH_W) '$(srcdir)/DCPIProfileMetric.cpp'; fi`; \
 @am__fastdepCXX_TRUE@	then mv -f "$(DEPDIR)/xprof-DCPIProfileMetric.Tpo" "$(DEPDIR)/xprof-DCPIProfileMetric.Po"; else rm -f "$(DEPDIR)/xprof-DCPIProfileMetric.Tpo"; exit 1; fi
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='DCPIProfileMetric.C' object='xprof-DCPIProfileMetric.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='DCPIProfileMetric.cpp' object='xprof-DCPIProfileMetric.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(xprof_CXXFLAGS) $(CXXFLAGS) -c -o xprof-DCPIProfileMetric.obj `if test -f 'DCPIProfileMetric.C'; then $(CYGPATH_W) 'DCPIProfileMetric.C'; else $(CYGPATH_W) '$(srcdir)/DCPIProfileMetric.C'; fi`
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(xprof_CXXFLAGS) $(CXXFLAGS) -c -o xprof-DCPIProfileMetric.obj `if test -f 'DCPIProfileMetric.cpp'; then $(CYGPATH_W) 'DCPIProfileMetric.cpp'; else $(CYGPATH_W) '$(srcdir)/DCPIProfileMetric.cpp'; fi`
 
-xprof-DerivedProfile.o: DerivedProfile.C
-@am__fastdepCXX_TRUE@	if $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(xprof_CXXFLAGS) $(CXXFLAGS) -MT xprof-DerivedProfile.o -MD -MP -MF "$(DEPDIR)/xprof-DerivedProfile.Tpo" -c -o xprof-DerivedProfile.o `test -f 'DerivedProfile.C' || echo '$(srcdir)/'`DerivedProfile.C; \
+xprof-DerivedProfile.o: DerivedProfile.cpp
+@am__fastdepCXX_TRUE@	if $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(xprof_CXXFLAGS) $(CXXFLAGS) -MT xprof-DerivedProfile.o -MD -MP -MF "$(DEPDIR)/xprof-DerivedProfile.Tpo" -c -o xprof-DerivedProfile.o `test -f 'DerivedProfile.cpp' || echo '$(srcdir)/'`DerivedProfile.cpp; \
 @am__fastdepCXX_TRUE@	then mv -f "$(DEPDIR)/xprof-DerivedProfile.Tpo" "$(DEPDIR)/xprof-DerivedProfile.Po"; else rm -f "$(DEPDIR)/xprof-DerivedProfile.Tpo"; exit 1; fi
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='DerivedProfile.C' object='xprof-DerivedProfile.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='DerivedProfile.cpp' object='xprof-DerivedProfile.o' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(xprof_CXXFLAGS) $(CXXFLAGS) -c -o xprof-DerivedProfile.o `test -f 'DerivedProfile.C' || echo '$(srcdir)/'`DerivedProfile.C
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(xprof_CXXFLAGS) $(CXXFLAGS) -c -o xprof-DerivedProfile.o `test -f 'DerivedProfile.cpp' || echo '$(srcdir)/'`DerivedProfile.cpp
 
-xprof-DerivedProfile.obj: DerivedProfile.C
-@am__fastdepCXX_TRUE@	if $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(xprof_CXXFLAGS) $(CXXFLAGS) -MT xprof-DerivedProfile.obj -MD -MP -MF "$(DEPDIR)/xprof-DerivedProfile.Tpo" -c -o xprof-DerivedProfile.obj `if test -f 'DerivedProfile.C'; then $(CYGPATH_W) 'DerivedProfile.C'; else $(CYGPATH_W) '$(srcdir)/DerivedProfile.C'; fi`; \
+xprof-DerivedProfile.obj: DerivedProfile.cpp
+@am__fastdepCXX_TRUE@	if $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(xprof_CXXFLAGS) $(CXXFLAGS) -MT xprof-DerivedProfile.obj -MD -MP -MF "$(DEPDIR)/xprof-DerivedProfile.Tpo" -c -o xprof-DerivedProfile.obj `if test -f 'DerivedProfile.cpp'; then $(CYGPATH_W) 'DerivedProfile.cpp'; else $(CYGPATH_W) '$(srcdir)/DerivedProfile.cpp'; fi`; \
 @am__fastdepCXX_TRUE@	then mv -f "$(DEPDIR)/xprof-DerivedProfile.Tpo" "$(DEPDIR)/xprof-DerivedProfile.Po"; else rm -f "$(DEPDIR)/xprof-DerivedProfile.Tpo"; exit 1; fi
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='DerivedProfile.C' object='xprof-DerivedProfile.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='DerivedProfile.cpp' object='xprof-DerivedProfile.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(xprof_CXXFLAGS) $(CXXFLAGS) -c -o xprof-DerivedProfile.obj `if test -f 'DerivedProfile.C'; then $(CYGPATH_W) 'DerivedProfile.C'; else $(CYGPATH_W) '$(srcdir)/DerivedProfile.C'; fi`
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(xprof_CXXFLAGS) $(CXXFLAGS) -c -o xprof-DerivedProfile.obj `if test -f 'DerivedProfile.cpp'; then $(CYGPATH_W) 'DerivedProfile.cpp'; else $(CYGPATH_W) '$(srcdir)/DerivedProfile.cpp'; fi`
 
-xprof-PCProfile.o: PCProfile.C
-@am__fastdepCXX_TRUE@	if $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(xprof_CXXFLAGS) $(CXXFLAGS) -MT xprof-PCProfile.o -MD -MP -MF "$(DEPDIR)/xprof-PCProfile.Tpo" -c -o xprof-PCProfile.o `test -f 'PCProfile.C' || echo '$(srcdir)/'`PCProfile.C; \
+xprof-PCProfile.o: PCProfile.cpp
+@am__fastdepCXX_TRUE@	if $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(xprof_CXXFLAGS) $(CXXFLAGS) -MT xprof-PCProfile.o -MD -MP -MF "$(DEPDIR)/xprof-PCProfile.Tpo" -c -o xprof-PCProfile.o `test -f 'PCProfile.cpp' || echo '$(srcdir)/'`PCProfile.cpp; \
 @am__fastdepCXX_TRUE@	then mv -f "$(DEPDIR)/xprof-PCProfile.Tpo" "$(DEPDIR)/xprof-PCProfile.Po"; else rm -f "$(DEPDIR)/xprof-PCProfile.Tpo"; exit 1; fi
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='PCProfile.C' object='xprof-PCProfile.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='PCProfile.cpp' object='xprof-PCProfile.o' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(xprof_CXXFLAGS) $(CXXFLAGS) -c -o xprof-PCProfile.o `test -f 'PCProfile.C' || echo '$(srcdir)/'`PCProfile.C
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(xprof_CXXFLAGS) $(CXXFLAGS) -c -o xprof-PCProfile.o `test -f 'PCProfile.cpp' || echo '$(srcdir)/'`PCProfile.cpp
 
-xprof-PCProfile.obj: PCProfile.C
-@am__fastdepCXX_TRUE@	if $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(xprof_CXXFLAGS) $(CXXFLAGS) -MT xprof-PCProfile.obj -MD -MP -MF "$(DEPDIR)/xprof-PCProfile.Tpo" -c -o xprof-PCProfile.obj `if test -f 'PCProfile.C'; then $(CYGPATH_W) 'PCProfile.C'; else $(CYGPATH_W) '$(srcdir)/PCProfile.C'; fi`; \
+xprof-PCProfile.obj: PCProfile.cpp
+@am__fastdepCXX_TRUE@	if $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(xprof_CXXFLAGS) $(CXXFLAGS) -MT xprof-PCProfile.obj -MD -MP -MF "$(DEPDIR)/xprof-PCProfile.Tpo" -c -o xprof-PCProfile.obj `if test -f 'PCProfile.cpp'; then $(CYGPATH_W) 'PCProfile.cpp'; else $(CYGPATH_W) '$(srcdir)/PCProfile.cpp'; fi`; \
 @am__fastdepCXX_TRUE@	then mv -f "$(DEPDIR)/xprof-PCProfile.Tpo" "$(DEPDIR)/xprof-PCProfile.Po"; else rm -f "$(DEPDIR)/xprof-PCProfile.Tpo"; exit 1; fi
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='PCProfile.C' object='xprof-PCProfile.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='PCProfile.cpp' object='xprof-PCProfile.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(xprof_CXXFLAGS) $(CXXFLAGS) -c -o xprof-PCProfile.obj `if test -f 'PCProfile.C'; then $(CYGPATH_W) 'PCProfile.C'; else $(CYGPATH_W) '$(srcdir)/PCProfile.C'; fi`
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(xprof_CXXFLAGS) $(CXXFLAGS) -c -o xprof-PCProfile.obj `if test -f 'PCProfile.cpp'; then $(CYGPATH_W) 'PCProfile.cpp'; else $(CYGPATH_W) '$(srcdir)/PCProfile.cpp'; fi`
 
-xprof-PCProfileFilter.o: PCProfileFilter.C
-@am__fastdepCXX_TRUE@	if $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(xprof_CXXFLAGS) $(CXXFLAGS) -MT xprof-PCProfileFilter.o -MD -MP -MF "$(DEPDIR)/xprof-PCProfileFilter.Tpo" -c -o xprof-PCProfileFilter.o `test -f 'PCProfileFilter.C' || echo '$(srcdir)/'`PCProfileFilter.C; \
+xprof-PCProfileFilter.o: PCProfileFilter.cpp
+@am__fastdepCXX_TRUE@	if $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(xprof_CXXFLAGS) $(CXXFLAGS) -MT xprof-PCProfileFilter.o -MD -MP -MF "$(DEPDIR)/xprof-PCProfileFilter.Tpo" -c -o xprof-PCProfileFilter.o `test -f 'PCProfileFilter.cpp' || echo '$(srcdir)/'`PCProfileFilter.cpp; \
 @am__fastdepCXX_TRUE@	then mv -f "$(DEPDIR)/xprof-PCProfileFilter.Tpo" "$(DEPDIR)/xprof-PCProfileFilter.Po"; else rm -f "$(DEPDIR)/xprof-PCProfileFilter.Tpo"; exit 1; fi
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='PCProfileFilter.C' object='xprof-PCProfileFilter.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='PCProfileFilter.cpp' object='xprof-PCProfileFilter.o' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(xprof_CXXFLAGS) $(CXXFLAGS) -c -o xprof-PCProfileFilter.o `test -f 'PCProfileFilter.C' || echo '$(srcdir)/'`PCProfileFilter.C
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(xprof_CXXFLAGS) $(CXXFLAGS) -c -o xprof-PCProfileFilter.o `test -f 'PCProfileFilter.cpp' || echo '$(srcdir)/'`PCProfileFilter.cpp
 
-xprof-PCProfileFilter.obj: PCProfileFilter.C
-@am__fastdepCXX_TRUE@	if $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(xprof_CXXFLAGS) $(CXXFLAGS) -MT xprof-PCProfileFilter.obj -MD -MP -MF "$(DEPDIR)/xprof-PCProfileFilter.Tpo" -c -o xprof-PCProfileFilter.obj `if test -f 'PCProfileFilter.C'; then $(CYGPATH_W) 'PCProfileFilter.C'; else $(CYGPATH_W) '$(srcdir)/PCProfileFilter.C'; fi`; \
+xprof-PCProfileFilter.obj: PCProfileFilter.cpp
+@am__fastdepCXX_TRUE@	if $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(xprof_CXXFLAGS) $(CXXFLAGS) -MT xprof-PCProfileFilter.obj -MD -MP -MF "$(DEPDIR)/xprof-PCProfileFilter.Tpo" -c -o xprof-PCProfileFilter.obj `if test -f 'PCProfileFilter.cpp'; then $(CYGPATH_W) 'PCProfileFilter.cpp'; else $(CYGPATH_W) '$(srcdir)/PCProfileFilter.cpp'; fi`; \
 @am__fastdepCXX_TRUE@	then mv -f "$(DEPDIR)/xprof-PCProfileFilter.Tpo" "$(DEPDIR)/xprof-PCProfileFilter.Po"; else rm -f "$(DEPDIR)/xprof-PCProfileFilter.Tpo"; exit 1; fi
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='PCProfileFilter.C' object='xprof-PCProfileFilter.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='PCProfileFilter.cpp' object='xprof-PCProfileFilter.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(xprof_CXXFLAGS) $(CXXFLAGS) -c -o xprof-PCProfileFilter.obj `if test -f 'PCProfileFilter.C'; then $(CYGPATH_W) 'PCProfileFilter.C'; else $(CYGPATH_W) '$(srcdir)/PCProfileFilter.C'; fi`
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(xprof_CXXFLAGS) $(CXXFLAGS) -c -o xprof-PCProfileFilter.obj `if test -f 'PCProfileFilter.cpp'; then $(CYGPATH_W) 'PCProfileFilter.cpp'; else $(CYGPATH_W) '$(srcdir)/PCProfileFilter.cpp'; fi`
 
-xprof-PCProfileMetric.o: PCProfileMetric.C
-@am__fastdepCXX_TRUE@	if $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(xprof_CXXFLAGS) $(CXXFLAGS) -MT xprof-PCProfileMetric.o -MD -MP -MF "$(DEPDIR)/xprof-PCProfileMetric.Tpo" -c -o xprof-PCProfileMetric.o `test -f 'PCProfileMetric.C' || echo '$(srcdir)/'`PCProfileMetric.C; \
+xprof-PCProfileMetric.o: PCProfileMetric.cpp
+@am__fastdepCXX_TRUE@	if $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(xprof_CXXFLAGS) $(CXXFLAGS) -MT xprof-PCProfileMetric.o -MD -MP -MF "$(DEPDIR)/xprof-PCProfileMetric.Tpo" -c -o xprof-PCProfileMetric.o `test -f 'PCProfileMetric.cpp' || echo '$(srcdir)/'`PCProfileMetric.cpp; \
 @am__fastdepCXX_TRUE@	then mv -f "$(DEPDIR)/xprof-PCProfileMetric.Tpo" "$(DEPDIR)/xprof-PCProfileMetric.Po"; else rm -f "$(DEPDIR)/xprof-PCProfileMetric.Tpo"; exit 1; fi
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='PCProfileMetric.C' object='xprof-PCProfileMetric.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='PCProfileMetric.cpp' object='xprof-PCProfileMetric.o' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(xprof_CXXFLAGS) $(CXXFLAGS) -c -o xprof-PCProfileMetric.o `test -f 'PCProfileMetric.C' || echo '$(srcdir)/'`PCProfileMetric.C
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(xprof_CXXFLAGS) $(CXXFLAGS) -c -o xprof-PCProfileMetric.o `test -f 'PCProfileMetric.cpp' || echo '$(srcdir)/'`PCProfileMetric.cpp
 
-xprof-PCProfileMetric.obj: PCProfileMetric.C
-@am__fastdepCXX_TRUE@	if $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(xprof_CXXFLAGS) $(CXXFLAGS) -MT xprof-PCProfileMetric.obj -MD -MP -MF "$(DEPDIR)/xprof-PCProfileMetric.Tpo" -c -o xprof-PCProfileMetric.obj `if test -f 'PCProfileMetric.C'; then $(CYGPATH_W) 'PCProfileMetric.C'; else $(CYGPATH_W) '$(srcdir)/PCProfileMetric.C'; fi`; \
+xprof-PCProfileMetric.obj: PCProfileMetric.cpp
+@am__fastdepCXX_TRUE@	if $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(xprof_CXXFLAGS) $(CXXFLAGS) -MT xprof-PCProfileMetric.obj -MD -MP -MF "$(DEPDIR)/xprof-PCProfileMetric.Tpo" -c -o xprof-PCProfileMetric.obj `if test -f 'PCProfileMetric.cpp'; then $(CYGPATH_W) 'PCProfileMetric.cpp'; else $(CYGPATH_W) '$(srcdir)/PCProfileMetric.cpp'; fi`; \
 @am__fastdepCXX_TRUE@	then mv -f "$(DEPDIR)/xprof-PCProfileMetric.Tpo" "$(DEPDIR)/xprof-PCProfileMetric.Po"; else rm -f "$(DEPDIR)/xprof-PCProfileMetric.Tpo"; exit 1; fi
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='PCProfileMetric.C' object='xprof-PCProfileMetric.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='PCProfileMetric.cpp' object='xprof-PCProfileMetric.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(xprof_CXXFLAGS) $(CXXFLAGS) -c -o xprof-PCProfileMetric.obj `if test -f 'PCProfileMetric.C'; then $(CYGPATH_W) 'PCProfileMetric.C'; else $(CYGPATH_W) '$(srcdir)/PCProfileMetric.C'; fi`
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(xprof_CXXFLAGS) $(CXXFLAGS) -c -o xprof-PCProfileMetric.obj `if test -f 'PCProfileMetric.cpp'; then $(CYGPATH_W) 'PCProfileMetric.cpp'; else $(CYGPATH_W) '$(srcdir)/PCProfileMetric.cpp'; fi`
 
-xprof-ProfileReader.o: ProfileReader.C
-@am__fastdepCXX_TRUE@	if $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(xprof_CXXFLAGS) $(CXXFLAGS) -MT xprof-ProfileReader.o -MD -MP -MF "$(DEPDIR)/xprof-ProfileReader.Tpo" -c -o xprof-ProfileReader.o `test -f 'ProfileReader.C' || echo '$(srcdir)/'`ProfileReader.C; \
+xprof-ProfileReader.o: ProfileReader.cpp
+@am__fastdepCXX_TRUE@	if $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(xprof_CXXFLAGS) $(CXXFLAGS) -MT xprof-ProfileReader.o -MD -MP -MF "$(DEPDIR)/xprof-ProfileReader.Tpo" -c -o xprof-ProfileReader.o `test -f 'ProfileReader.cpp' || echo '$(srcdir)/'`ProfileReader.cpp; \
 @am__fastdepCXX_TRUE@	then mv -f "$(DEPDIR)/xprof-ProfileReader.Tpo" "$(DEPDIR)/xprof-ProfileReader.Po"; else rm -f "$(DEPDIR)/xprof-ProfileReader.Tpo"; exit 1; fi
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='ProfileReader.C' object='xprof-ProfileReader.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='ProfileReader.cpp' object='xprof-ProfileReader.o' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(xprof_CXXFLAGS) $(CXXFLAGS) -c -o xprof-ProfileReader.o `test -f 'ProfileReader.C' || echo '$(srcdir)/'`ProfileReader.C
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(xprof_CXXFLAGS) $(CXXFLAGS) -c -o xprof-ProfileReader.o `test -f 'ProfileReader.cpp' || echo '$(srcdir)/'`ProfileReader.cpp
 
-xprof-ProfileReader.obj: ProfileReader.C
-@am__fastdepCXX_TRUE@	if $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(xprof_CXXFLAGS) $(CXXFLAGS) -MT xprof-ProfileReader.obj -MD -MP -MF "$(DEPDIR)/xprof-ProfileReader.Tpo" -c -o xprof-ProfileReader.obj `if test -f 'ProfileReader.C'; then $(CYGPATH_W) 'ProfileReader.C'; else $(CYGPATH_W) '$(srcdir)/ProfileReader.C'; fi`; \
+xprof-ProfileReader.obj: ProfileReader.cpp
+@am__fastdepCXX_TRUE@	if $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(xprof_CXXFLAGS) $(CXXFLAGS) -MT xprof-ProfileReader.obj -MD -MP -MF "$(DEPDIR)/xprof-ProfileReader.Tpo" -c -o xprof-ProfileReader.obj `if test -f 'ProfileReader.cpp'; then $(CYGPATH_W) 'ProfileReader.cpp'; else $(CYGPATH_W) '$(srcdir)/ProfileReader.cpp'; fi`; \
 @am__fastdepCXX_TRUE@	then mv -f "$(DEPDIR)/xprof-ProfileReader.Tpo" "$(DEPDIR)/xprof-ProfileReader.Po"; else rm -f "$(DEPDIR)/xprof-ProfileReader.Tpo"; exit 1; fi
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='ProfileReader.C' object='xprof-ProfileReader.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='ProfileReader.cpp' object='xprof-ProfileReader.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(xprof_CXXFLAGS) $(CXXFLAGS) -c -o xprof-ProfileReader.obj `if test -f 'ProfileReader.C'; then $(CYGPATH_W) 'ProfileReader.C'; else $(CYGPATH_W) '$(srcdir)/ProfileReader.C'; fi`
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(xprof_CXXFLAGS) $(CXXFLAGS) -c -o xprof-ProfileReader.obj `if test -f 'ProfileReader.cpp'; then $(CYGPATH_W) 'ProfileReader.cpp'; else $(CYGPATH_W) '$(srcdir)/ProfileReader.cpp'; fi`
 
-xprof-ProfileWriter.o: ProfileWriter.C
-@am__fastdepCXX_TRUE@	if $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(xprof_CXXFLAGS) $(CXXFLAGS) -MT xprof-ProfileWriter.o -MD -MP -MF "$(DEPDIR)/xprof-ProfileWriter.Tpo" -c -o xprof-ProfileWriter.o `test -f 'ProfileWriter.C' || echo '$(srcdir)/'`ProfileWriter.C; \
+xprof-ProfileWriter.o: ProfileWriter.cpp
+@am__fastdepCXX_TRUE@	if $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(xprof_CXXFLAGS) $(CXXFLAGS) -MT xprof-ProfileWriter.o -MD -MP -MF "$(DEPDIR)/xprof-ProfileWriter.Tpo" -c -o xprof-ProfileWriter.o `test -f 'ProfileWriter.cpp' || echo '$(srcdir)/'`ProfileWriter.cpp; \
 @am__fastdepCXX_TRUE@	then mv -f "$(DEPDIR)/xprof-ProfileWriter.Tpo" "$(DEPDIR)/xprof-ProfileWriter.Po"; else rm -f "$(DEPDIR)/xprof-ProfileWriter.Tpo"; exit 1; fi
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='ProfileWriter.C' object='xprof-ProfileWriter.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='ProfileWriter.cpp' object='xprof-ProfileWriter.o' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(xprof_CXXFLAGS) $(CXXFLAGS) -c -o xprof-ProfileWriter.o `test -f 'ProfileWriter.C' || echo '$(srcdir)/'`ProfileWriter.C
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(xprof_CXXFLAGS) $(CXXFLAGS) -c -o xprof-ProfileWriter.o `test -f 'ProfileWriter.cpp' || echo '$(srcdir)/'`ProfileWriter.cpp
 
-xprof-ProfileWriter.obj: ProfileWriter.C
-@am__fastdepCXX_TRUE@	if $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(xprof_CXXFLAGS) $(CXXFLAGS) -MT xprof-ProfileWriter.obj -MD -MP -MF "$(DEPDIR)/xprof-ProfileWriter.Tpo" -c -o xprof-ProfileWriter.obj `if test -f 'ProfileWriter.C'; then $(CYGPATH_W) 'ProfileWriter.C'; else $(CYGPATH_W) '$(srcdir)/ProfileWriter.C'; fi`; \
+xprof-ProfileWriter.obj: ProfileWriter.cpp
+@am__fastdepCXX_TRUE@	if $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(xprof_CXXFLAGS) $(CXXFLAGS) -MT xprof-ProfileWriter.obj -MD -MP -MF "$(DEPDIR)/xprof-ProfileWriter.Tpo" -c -o xprof-ProfileWriter.obj `if test -f 'ProfileWriter.cpp'; then $(CYGPATH_W) 'ProfileWriter.cpp'; else $(CYGPATH_W) '$(srcdir)/ProfileWriter.cpp'; fi`; \
 @am__fastdepCXX_TRUE@	then mv -f "$(DEPDIR)/xprof-ProfileWriter.Tpo" "$(DEPDIR)/xprof-ProfileWriter.Po"; else rm -f "$(DEPDIR)/xprof-ProfileWriter.Tpo"; exit 1; fi
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='ProfileWriter.C' object='xprof-ProfileWriter.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='ProfileWriter.cpp' object='xprof-ProfileWriter.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(xprof_CXXFLAGS) $(CXXFLAGS) -c -o xprof-ProfileWriter.obj `if test -f 'ProfileWriter.C'; then $(CYGPATH_W) 'ProfileWriter.C'; else $(CYGPATH_W) '$(srcdir)/ProfileWriter.C'; fi`
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(xprof_CXXFLAGS) $(CXXFLAGS) -c -o xprof-ProfileWriter.obj `if test -f 'ProfileWriter.cpp'; then $(CYGPATH_W) 'ProfileWriter.cpp'; else $(CYGPATH_W) '$(srcdir)/ProfileWriter.cpp'; fi`
 
 mostlyclean-libtool:
 	-rm -f *.lo
@@ -824,7 +824,7 @@ uninstall-am: uninstall-binPROGRAMS uninstall-info-am
 
 #############################################################################
 
-%.C.pp : %.C
+%.cpp.pp : %.cpp
 	$(CXXCPP) $(MYCPPFLAGS_CXX) $< > $@
 
 %.c.pp : %.c

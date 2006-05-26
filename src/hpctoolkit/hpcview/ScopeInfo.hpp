@@ -45,10 +45,10 @@
 
 #include <include/general.h>
 
-#include <lib/support/Unique.h>
-#include <lib/support/String.h>
-#include <lib/support/NonUniformDegreeTree.h>
-#include <lib/support/Files.h>
+#include <lib/support/Unique.hpp>
+#include <lib/support/String.hpp>
+#include <lib/support/NonUniformDegreeTree.hpp>
+#include <lib/support/Files.hpp>
 #include <lib/support/Nan.h>
 
 //************************ Forward Declarations ******************************
@@ -574,7 +574,7 @@ private:
 };
 
 
-#include "ScopeInfoIterator.h" 
+#include "ScopeInfoIterator.hpp"
 
 /************************************************************************/
 // testing 

@@ -60,7 +60,7 @@ using namespace std; // For compatibility with non-std C headers
 
 //*************************** User Include Files ****************************
 
-#include "SparcISA.h"
+#include "SparcISA.hpp"
 #include <include/gnu_dis-asm.h>
 
 //*************************** Forward Declarations ***************************

@@ -58,7 +58,7 @@
 #include <include/gnu_bfd.h>
 #include <include/gnu_dis-asm.h> // gnu binutils
 
-#include "ISA.h"
+#include "ISA.hpp"
 
 //*************************** Forward Declarations ***************************
 

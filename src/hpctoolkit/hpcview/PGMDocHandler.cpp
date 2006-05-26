@@ -69,12 +69,12 @@ using XERCES_CPP_NAMESPACE::XMLString;
 
 //************************* User Include Files *******************************
 
-#include "PGMDocHandler.h"
-#include "Driver.h" 
-#include "ScopesInfo.h"
-#include "HPCViewXMLErrHandler.h"
+#include "PGMDocHandler.hpp"
+#include "Driver.hpp"
+#include "ScopesInfo.hpp"
+#include "HPCViewXMLErrHandler.hpp"
 #include <lib/support/Assertion.h>
-#include <lib/support/Trace.h>
+#include <lib/support/Trace.hpp>
 
 //************************ Forward Declarations ******************************
 

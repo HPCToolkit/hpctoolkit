@@ -51,7 +51,7 @@
 
 //*************************** User Include Files ****************************
 
-#include "PointerMap.h"
+#include "PointerMap.hpp"
 #include "Assertion.h"
 
 //*************************** Forward Declarations ***************************

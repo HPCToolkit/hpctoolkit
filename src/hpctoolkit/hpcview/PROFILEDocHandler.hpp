@@ -54,11 +54,11 @@
 
 //************************* User Include Files *******************************
 
-#include <lib/support/String.h>
+#include <lib/support/String.hpp>
 
 //************************* Xerces Declarations ******************************
 
-#include "HPCViewSAX2.h"
+#include "HPCViewSAX2.hpp"
 
 //************************ Forward Declarations ******************************
 

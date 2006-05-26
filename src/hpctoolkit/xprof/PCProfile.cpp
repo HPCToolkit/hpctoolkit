@@ -53,7 +53,7 @@
 
 //*************************** User Include Files ****************************
 
-#include "PCProfile.h"
+#include "PCProfile.hpp"
 
 //*************************** Forward Declarations ***************************
 

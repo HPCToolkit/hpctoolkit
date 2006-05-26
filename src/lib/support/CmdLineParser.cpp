@@ -67,7 +67,7 @@ using namespace std; // For compatibility with non-std C headers
 
 //*************************** User Include Files ****************************
 
-#include "CmdLineParser.h"
+#include "CmdLineParser.hpp"
 
 //*************************** Forward Declarations ***************************
 

@@ -60,13 +60,13 @@ using std::cerr;
 
 //*************************** User Include Files ****************************
 
-#include "Args.h"
-#include "PgmScopeTree.h"
-#include "PgmScopeTreeBuilder.h"
+#include "Args.hpp"
+#include "PgmScopeTree.hpp"
+#include "PgmScopeTreeBuilder.hpp"
 using namespace ScopeTreeBuilder;
 
-#include <lib/binutils/LoadModule.h>
-#include <lib/binutils/PCToSrcLineMap.h>
+#include <lib/binutils/LoadModule.hpp>
+#include <lib/binutils/PCToSrcLineMap.hpp>
 
 //*************************** Forward Declarations ***************************
 

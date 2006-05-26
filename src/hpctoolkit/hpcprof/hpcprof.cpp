@@ -31,8 +31,8 @@
 
 //*************************** User Include Files ****************************
 
-#include "hpcprof.h"
-#include "summary.h"
+#include "hpcprof.hpp"
+#include "summary.hpp"
 
 //*************************** Forward Declarations **************************
 

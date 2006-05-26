@@ -58,9 +58,9 @@
 
 #include <include/general.h> 
 
-#include "CSProfTree.h"
-#include "CSProfMetric.h"
-#include "CSProfEpoch.h"
+#include "CSProfTree.hpp"
+#include "CSProfMetric.hpp"
+#include "CSProfEpoch.hpp"
 
 //*************************** Forward Declarations ***************************
 

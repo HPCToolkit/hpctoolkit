@@ -53,7 +53,7 @@
 
 #include <include/general.h>
 
-#include "PointerStack.h" 
+#include "PointerStack.hpp" 
 
 //*************************** Forward Declarations **************************
 

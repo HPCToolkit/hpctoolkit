@@ -59,15 +59,15 @@ using XERCES_CPP_NAMESPACE::DOMNamedNodeMap;
 
 //************************* User Include Files *******************************
 
-#include "HPCViewDocParser.h"
+#include "HPCViewDocParser.hpp"
 
-#include "Driver.h"
-#include "MathMLExpr.h"
-#include "DerivedPerfMetrics.h"
-#include "PerfMetric.h"
-#include "ScopesInfo.h"
+#include "Driver.hpp"
+#include "MathMLExpr.hpp"
+#include "DerivedPerfMetrics.hpp"
+#include "PerfMetric.hpp"
+#include "ScopesInfo.hpp"
 
-#include <lib/support/Trace.h>
+#include <lib/support/Trace.hpp>
 
 
 //************************ Forward Declarations ******************************

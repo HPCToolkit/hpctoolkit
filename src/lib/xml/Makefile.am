@@ -62,7 +62,7 @@ include $(top_srcdir)/src/Makeinclude.config
 #############################################################################
 
 MYSOURCES = \
-	xml.h xml.C
+	xml.hpp xml.cpp
 
 MYDTDHEADERS = \
 	$(srcdir)/PROFILE.dtd.h \

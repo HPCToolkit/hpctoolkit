@@ -57,12 +57,12 @@
 
 //*************************** User Include Files ****************************
 
-#include "Args.h"
+#include "Args.hpp"
 //#include "ProfileReader.h" FIXME
-#include "CSProfileUtils.h"
-#include <lib/binutils/LoadModule.h>
-#include <lib/binutils/PCToSrcLineMap.h>
-#include <lib/binutils/LoadModuleInfo.h>
+#include "CSProfileUtils.hpp"
+#include <lib/binutils/LoadModule.hpp>
+#include <lib/binutils/PCToSrcLineMap.hpp>
+#include <lib/binutils/LoadModuleInfo.hpp>
 
 //*************************** Forward Declarations ***************************
 

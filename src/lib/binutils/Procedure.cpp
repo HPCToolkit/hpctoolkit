@@ -51,8 +51,8 @@
 
 //*************************** User Include Files ****************************
 
-#include "Procedure.h"
-#include "Instruction.h"
+#include "Procedure.hpp"
+#include "Instruction.hpp"
 #include <lib/support/Assertion.h>
 
 //*************************** Forward Declarations **************************

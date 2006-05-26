@@ -53,7 +53,7 @@
 
 //*************************** User Include Files ****************************
 
-#include "xml.h"
+#include "xml.hpp"
 #include <lib/support/Assertion.h>
 
 //*************************** Forward Declarations ***************************

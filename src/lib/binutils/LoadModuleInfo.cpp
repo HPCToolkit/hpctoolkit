@@ -64,11 +64,11 @@ using namespace std; // For compatibility with non-std C headers
 
 #include <include/general.h>
 
-#include "LoadModuleInfo.h"
+#include "LoadModuleInfo.hpp"
 #include <lib/support/Assertion.h>
 
-#include <lib/binutils/LoadModule.h>
-#include <lib/binutils/PCToSrcLineMap.h>
+#include <lib/binutils/LoadModule.hpp>
+#include <lib/binutils/PCToSrcLineMap.hpp>
 
 //************************ Forward Declarations ******************************
 

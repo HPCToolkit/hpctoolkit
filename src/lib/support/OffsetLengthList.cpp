@@ -45,7 +45,7 @@ using namespace std; // For compatibility with non-std C headers
 
 //*************************** User Include Files ****************************
 
-#include "OffsetLengthList.h"
+#include "OffsetLengthList.hpp"
 
 //#include <FormattedFile.h>
 //#include <iptypes.h> // import INFINITE_INTERVAL_LENGTH 

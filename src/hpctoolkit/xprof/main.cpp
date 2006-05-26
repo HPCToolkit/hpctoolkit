@@ -61,17 +61,17 @@ using std::string;
 
 //*************************** User Include Files ****************************
 
-#include "Args.h"
-#include "ProfileReader.h"
-#include "ProfileWriter.h"
-#include "PCProfile.h"
-#include "DerivedProfile.h"
+#include "Args.hpp"
+#include "ProfileReader.hpp"
+#include "ProfileWriter.hpp"
+#include "PCProfile.hpp"
+#include "DerivedProfile.hpp"
 
-#include "DCPIProfile.h"
+#include "DCPIProfile.hpp"
 
-#include <lib/binutils/LoadModule.h>
-#include <lib/binutils/PCToSrcLineMap.h>
-#include <lib/binutils/LoadModuleInfo.h>
+#include <lib/binutils/LoadModule.hpp>
+#include <lib/binutils/PCToSrcLineMap.hpp>
+#include <lib/binutils/LoadModuleInfo.hpp>
 
 //*************************** Forward Declarations ***************************
 

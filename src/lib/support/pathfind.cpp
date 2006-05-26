@@ -51,8 +51,8 @@ using namespace std; // For compatibility with non-std C headers
 //*************************** User Include Files ****************************
 
 #include "pathfind.h"
-#include "String.h"          // for 'subdirs_to_pathlist'
-#include "StringUtilities.h" // for 'ssave' and 'sfree'
+#include "String.hpp"          // for 'subdirs_to_pathlist'
+#include "StringUtilities.hpp" // for 'ssave' and 'sfree'
 
 //*************************** Forward Declarations ***************************
 

@@ -58,10 +58,10 @@
 
 #include <include/general.h>
 
-#include "LoadModule.h"
-#include "Section.h"
+#include "LoadModule.hpp"
+#include "Section.hpp"
 
-#include <lib/ISA/ISATypes.h>
+#include <lib/ISA/ISATypes.hpp>
 
 //*************************** Forward Declarations **************************
 

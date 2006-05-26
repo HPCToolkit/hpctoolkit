@@ -53,17 +53,17 @@
 //************************* System Include Files ****************************
 
 #include <iostream>
+#include <vector>
 
 //*************************** User Include Files ****************************
 
 #include <include/general.h>
 
-#include <lib/support/NonUniformDegreeTree.h>
-#include <lib/support/Unique.h>
-#include <lib/support/String.h>
+#include <lib/support/NonUniformDegreeTree.hpp>
+#include <lib/support/Unique.hpp>
+#include <lib/support/String.hpp>
 
-#include <lib/ISA/ISATypes.h>
-#include <vector>
+#include <lib/ISA/ISATypes.hpp>
 
 //*************************** Forward Declarations ***************************
 
@@ -496,6 +496,6 @@ private:
 #define DEB_READ_MMETRICS 0
 #define DEB_UNIFY_PROCEDURE_FRAME 0
 
-#include "CSProfTreeIterator.h" 
+#include "CSProfTreeIterator.hpp"
 
 #endif

@@ -41,9 +41,9 @@
 
 //************************* User Include Files *******************************
 
-#include "ScopesInfo.h" 
-#include "PerfIndex.h" 
-#include <lib/support/String.h>
+#include "ScopesInfo.hpp"
+#include "PerfIndex.hpp"
+#include <lib/support/String.hpp>
 
 //************************ Forward Declarations ******************************
 

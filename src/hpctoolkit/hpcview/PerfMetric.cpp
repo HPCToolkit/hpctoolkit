@@ -38,10 +38,10 @@
 
 //************************* User Include Files *******************************
 
-#include "ScopesInfo.h"
-#include "PerfMetric.h"
+#include "ScopesInfo.hpp"
+#include "PerfMetric.hpp"
 #include <lib/support/Assertion.h>
-#include <lib/support/Trace.h>
+#include <lib/support/Trace.hpp>
 
 //************************ Forward Declarations ******************************
 

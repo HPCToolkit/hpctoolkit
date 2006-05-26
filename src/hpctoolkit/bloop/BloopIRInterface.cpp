@@ -54,7 +54,7 @@
 
 //*************************** User Include Files ****************************
 
-#include "BloopIRInterface.h"
+#include "BloopIRInterface.hpp"
 
 //*************************** Forward Declarations **************************
 

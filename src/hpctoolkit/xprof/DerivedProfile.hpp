@@ -59,10 +59,10 @@
 
 #include <include/general.h>
 
-#include "PCProfile.h"
+#include "PCProfile.hpp"
 
-#include <lib/ISA/ISA.h>
-#include <lib/support/String.h>
+#include <lib/ISA/ISA.hpp>
+#include <lib/support/String.hpp>
 #include <lib/support/Assertion.h>
 
 //*************************** Forward Declarations ***************************

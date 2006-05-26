@@ -62,32 +62,32 @@ include $(top_srcdir)/src/Makeinclude.config
 #############################################################################
 
 MYSOURCES = \
-	main.C \
-	Args.h Args.C \
-	Driver.h Driver.C \
+	main.cpp \
+	Args.hpp Args.cpp \
+	Driver.hpp Driver.cpp \
 	\
-	DerivedPerfMetrics.h DerivedPerfMetrics.C \
-	EvalNode.h EvalNode.C \
-	HPCViewDocParser.h HPCViewDocParser.C \
-	HPCViewSAX2.h HPCViewSAX2.C \
-	HPCViewXMLErrHandler.h HPCViewXMLErrHandler.C \
-	HTMLDriver.h HTMLDriver.C \
-	HTMLFile.h HTMLFile.C \
-	HTMLScopes.h HTMLScopes.C \
-	HTMLSrcFiles.h HTMLSrcFiles.C \
-	HTMLTable.h HTMLTable.C \
-	MathMLExpr.h MathMLExpr.C \
-	NodeRetriever.h NodeRetriever.C \
-	PGMDocHandler.h PGMDocHandler.C \
-	PROFILEDocHandler.h PROFILEDocHandler.C \
-	PerfIndex.h \
-	PerfMetric.h PerfMetric.C \
-	ScopeInfo.h ScopeInfo.C \
-	ScopeInfoIterator.h ScopeInfoIterator.C \
-	ScopesInfo.h \
-	StaticFiles.h StaticFiles.C
+	DerivedPerfMetrics.hpp DerivedPerfMetrics.cpp \
+	EvalNode.hpp EvalNode.cpp \
+	HPCViewDocParser.hpp HPCViewDocParser.cpp \
+	HPCViewSAX2.hpp HPCViewSAX2.cpp \
+	HPCViewXMLErrHandler.hpp HPCViewXMLErrHandler.cpp \
+	HTMLDriver.hpp HTMLDriver.cpp \
+	HTMLFile.hpp HTMLFile.cpp \
+	HTMLScopes.hpp HTMLScopes.cpp \
+	HTMLSrcFiles.hpp HTMLSrcFiles.cpp \
+	HTMLTable.hpp HTMLTable.cpp \
+	MathMLExpr.hpp MathMLExpr.cpp \
+	NodeRetriever.hpp NodeRetriever.cpp \
+	PGMDocHandler.hpp PGMDocHandler.cpp \
+	PROFILEDocHandler.hpp PROFILEDocHandler.cpp \
+	PerfIndex.hpp \
+	PerfMetric.hpp PerfMetric.cpp \
+	ScopeInfo.hpp ScopeInfo.cpp \
+	ScopeInfoIterator.hpp ScopeInfoIterator.cpp \
+	ScopesInfo.hpp \
+	StaticFiles.hpp StaticFiles.cpp
 
-# Deprecated: XMLAdapter.h XMLAdapter.C
+# Deprecated: XMLAdapter.hpp XMLAdapter.cpp
 
 MYCFLAGS   = @HOST_CFLAGS@   $(HPC_IFLAGS)
 MYCXXFLAGS = @HOST_CXXFLAGS@ $(HPC_IFLAGS) @XERCES_IFLAGS@

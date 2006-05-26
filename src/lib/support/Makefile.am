@@ -62,38 +62,38 @@ include $(top_srcdir)/src/Makeinclude.config
 #############################################################################
 
 MYSOURCES = \
-	Assertion.h Assertion.C \
-	CmdLineParser.h CmdLineParser.C \
-	DumpMsgHandler.h DumpMsgHandler.C \
-	Files.h Files.C \
-	HashTable.h HashTable.C \
-	HashTableSortedIterator.h HashTableSortedIterator.C \
-	IntVector.h IntVector.C \
-	IteratorStack.h IteratorStack.C \
-	Nan.h Nan.C \
-	NonUniformDegreeTree.h NonUniformDegreeTree.C \
-	OffsetLengthList.h OffsetLengthList.C \
-	PointerMap.h PointerMap.C \
-	PointerStack.h PointerStack.C \
-	PtrSet.h PtrSet.C \
-	PtrSetIterator.h PtrSetIterator.C \
-	PtrStack.h \
-	QuickSort.h QuickSort.C \
-	Set.h Set.C \
-	SrcFile.h SrcFile.C \
-	StackableIterator.h StackableIterator.C \
-	String.h String.C \
-	StringHashTable.h StringHashTable.C \
-	StringLt.h \
-	StringUtilities.h StringUtilities.C \
-	Trace.h Trace.C \
-	Unique.h Unique.C \
-	VectorSupport.h VectorSupport.C \
-	VectorTmpl.h VectorTmpl.C \
-	WordSet.h WordSet.C \
+	Assertion.h Assertion.cpp \
+	CmdLineParser.hpp CmdLineParser.cpp \
+	DumpMsgHandler.hpp DumpMsgHandler.cpp \
+	Files.hpp Files.cpp \
+	HashTable.hpp HashTable.cpp \
+	HashTableSortedIterator.hpp HashTableSortedIterator.cpp \
+	IntVector.hpp IntVector.cpp \
+	IteratorStack.hpp IteratorStack.cpp \
+	Nan.h Nan.cpp \
+	NonUniformDegreeTree.hpp NonUniformDegreeTree.cpp \
+	OffsetLengthList.hpp OffsetLengthList.cpp \
+	PointerMap.hpp PointerMap.cpp \
+	PointerStack.hpp PointerStack.cpp \
+	PtrSet.hpp PtrSet.cpp \
+	PtrSetIterator.hpp PtrSetIterator.cpp \
+	PtrStack.hpp \
+	QuickSort.hpp QuickSort.cpp \
+	Set.hpp Set.cpp \
+	SrcFile.hpp SrcFile.cpp \
+	StackableIterator.hpp StackableIterator.cpp \
+	String.hpp String.cpp \
+	StringHashTable.hpp StringHashTable.cpp \
+	StringLt.hpp \
+	StringUtilities.hpp StringUtilities.cpp \
+	Trace.hpp Trace.cpp \
+	Unique.hpp Unique.cpp \
+	VectorSupport.hpp VectorSupport.cpp \
+	VectorTmpl.hpp VectorTmpl.cpp \
+	WordSet.hpp WordSet.cpp \
 	bstring.h \
 	findinstall.h findinstall.c \
-	pathfind.h pathfind.C \
+	pathfind.h pathfind.cpp \
 	realpath.h realpath.c
 
 MYCFLAGS   = @HOST_CFLAGS@   $(HPC_IFLAGS) 

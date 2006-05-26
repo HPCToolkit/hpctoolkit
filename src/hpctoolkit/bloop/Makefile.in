@@ -329,12 +329,12 @@ HPC_LIBHPCFILE = $(top_builddir)/src/lib/hpcfile/libHPCfile.la
 # Local settings
 #############################################################################
 MYSOURCES = \
-	main.C \
-	Args.h Args.C \
-	BloopIRInterface.h BloopIRInterface.C \
-	PgmScopeTreeBuilder.h PgmScopeTreeBuilder.C \
-	PgmScopeTree.h PgmScopeTree.C \
-	PgmScopeTreeIterator.h PgmScopeTreeIterator.C
+	main.cpp \
+	Args.hpp Args.cpp \
+	BloopIRInterface.hpp BloopIRInterface.cpp \
+	PgmScopeTreeBuilder.hpp PgmScopeTreeBuilder.cpp \
+	PgmScopeTree.hpp PgmScopeTree.cpp \
+	PgmScopeTreeIterator.hpp PgmScopeTreeIterator.cpp
 
 MYCFLAGS = @HOST_CFLAGS@   $(HPC_IFLAGS) @GNUBINUTILS_IFLAGS@
 MYCXXFLAGS = @HOST_CXXFLAGS@ $(HPC_IFLAGS) @GNUBINUTILS_IFLAGS@ @OA_IFLAGS@
@@ -362,7 +362,7 @@ MYCPPFLAGS_CC = $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) \
 all: all-am
 
 .SUFFIXES:
-.SUFFIXES: .C .lo .o .obj
+.SUFFIXES: .cpp .lo .o .obj
 $(srcdir)/Makefile.in:  $(srcdir)/Makefile.am $(top_srcdir)/src/Makeinclude.config $(top_srcdir)/src/Makeinclude.rules $(am__configure_deps)
 	@for dep in $?; do \
 	  case '$(am__configure_deps)' in \
@@ -437,110 +437,110 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/bloop-PgmScopeTreeIterator.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/bloop-main.Po@am__quote@
 
-.C.o:
+.cpp.o:
 @am__fastdepCXX_TRUE@	if $(CXXCOMPILE) -MT $@ -MD -MP -MF "$(DEPDIR)/$*.Tpo" -c -o $@ $<; \
 @am__fastdepCXX_TRUE@	then mv -f "$(DEPDIR)/$*.Tpo" "$(DEPDIR)/$*.Po"; else rm -f "$(DEPDIR)/$*.Tpo"; exit 1; fi
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='$<' object='$@' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(CXXCOMPILE) -c -o $@ $<
 
-.C.obj:
+.cpp.obj:
 @am__fastdepCXX_TRUE@	if $(CXXCOMPILE) -MT $@ -MD -MP -MF "$(DEPDIR)/$*.Tpo" -c -o $@ `$(CYGPATH_W) '$<'`; \
 @am__fastdepCXX_TRUE@	then mv -f "$(DEPDIR)/$*.Tpo" "$(DEPDIR)/$*.Po"; else rm -f "$(DEPDIR)/$*.Tpo"; exit 1; fi
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='$<' object='$@' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(CXXCOMPILE) -c -o $@ `$(CYGPATH_W) '$<'`
 
-.C.lo:
+.cpp.lo:
 @am__fastdepCXX_TRUE@	if $(LTCXXCOMPILE) -MT $@ -MD -MP -MF "$(DEPDIR)/$*.Tpo" -c -o $@ $<; \
 @am__fastdepCXX_TRUE@	then mv -f "$(DEPDIR)/$*.Tpo" "$(DEPDIR)/$*.Plo"; else rm -f "$(DEPDIR)/$*.Tpo"; exit 1; fi
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='$<' object='$@' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(LTCXXCOMPILE) -c -o $@ $<
 
-bloop-main.o: main.C
-@am__fastdepCXX_TRUE@	if $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(bloop_CXXFLAGS) $(CXXFLAGS) -MT bloop-main.o -MD -MP -MF "$(DEPDIR)/bloop-main.Tpo" -c -o bloop-main.o `test -f 'main.C' || echo '$(srcdir)/'`main.C; \
+bloop-main.o: main.cpp
+@am__fastdepCXX_TRUE@	if $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(bloop_CXXFLAGS) $(CXXFLAGS) -MT bloop-main.o -MD -MP -MF "$(DEPDIR)/bloop-main.Tpo" -c -o bloop-main.o `test -f 'main.cpp' || echo '$(srcdir)/'`main.cpp; \
 @am__fastdepCXX_TRUE@	then mv -f "$(DEPDIR)/bloop-main.Tpo" "$(DEPDIR)/bloop-main.Po"; else rm -f "$(DEPDIR)/bloop-main.Tpo"; exit 1; fi
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='main.C' object='bloop-main.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='main.cpp' object='bloop-main.o' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(bloop_CXXFLAGS) $(CXXFLAGS) -c -o bloop-main.o `test -f 'main.C' || echo '$(srcdir)/'`main.C
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(bloop_CXXFLAGS) $(CXXFLAGS) -c -o bloop-main.o `test -f 'main.cpp' || echo '$(srcdir)/'`main.cpp
 
-bloop-main.obj: main.C
-@am__fastdepCXX_TRUE@	if $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(bloop_CXXFLAGS) $(CXXFLAGS) -MT bloop-main.obj -MD -MP -MF "$(DEPDIR)/bloop-main.Tpo" -c -o bloop-main.obj `if test -f 'main.C'; then $(CYGPATH_W) 'main.C'; else $(CYGPATH_W) '$(srcdir)/main.C'; fi`; \
+bloop-main.obj: main.cpp
+@am__fastdepCXX_TRUE@	if $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(bloop_CXXFLAGS) $(CXXFLAGS) -MT bloop-main.obj -MD -MP -MF "$(DEPDIR)/bloop-main.Tpo" -c -o bloop-main.obj `if test -f 'main.cpp'; then $(CYGPATH_W) 'main.cpp'; else $(CYGPATH_W) '$(srcdir)/main.cpp'; fi`; \
 @am__fastdepCXX_TRUE@	then mv -f "$(DEPDIR)/bloop-main.Tpo" "$(DEPDIR)/bloop-main.Po"; else rm -f "$(DEPDIR)/bloop-main.Tpo"; exit 1; fi
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='main.C' object='bloop-main.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='main.cpp' object='bloop-main.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(bloop_CXXFLAGS) $(CXXFLAGS) -c -o bloop-main.obj `if test -f 'main.C'; then $(CYGPATH_W) 'main.C'; else $(CYGPATH_W) '$(srcdir)/main.C'; fi`
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(bloop_CXXFLAGS) $(CXXFLAGS) -c -o bloop-main.obj `if test -f 'main.cpp'; then $(CYGPATH_W) 'main.cpp'; else $(CYGPATH_W) '$(srcdir)/main.cpp'; fi`
 
-bloop-Args.o: Args.C
-@am__fastdepCXX_TRUE@	if $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(bloop_CXXFLAGS) $(CXXFLAGS) -MT bloop-Args.o -MD -MP -MF "$(DEPDIR)/bloop-Args.Tpo" -c -o bloop-Args.o `test -f 'Args.C' || echo '$(srcdir)/'`Args.C; \
+bloop-Args.o: Args.cpp
+@am__fastdepCXX_TRUE@	if $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(bloop_CXXFLAGS) $(CXXFLAGS) -MT bloop-Args.o -MD -MP -MF "$(DEPDIR)/bloop-Args.Tpo" -c -o bloop-Args.o `test -f 'Args.cpp' || echo '$(srcdir)/'`Args.cpp; \
 @am__fastdepCXX_TRUE@	then mv -f "$(DEPDIR)/bloop-Args.Tpo" "$(DEPDIR)/bloop-Args.Po"; else rm -f "$(DEPDIR)/bloop-Args.Tpo"; exit 1; fi
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='Args.C' object='bloop-Args.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='Args.cpp' object='bloop-Args.o' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(bloop_CXXFLAGS) $(CXXFLAGS) -c -o bloop-Args.o `test -f 'Args.C' || echo '$(srcdir)/'`Args.C
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(bloop_CXXFLAGS) $(CXXFLAGS) -c -o bloop-Args.o `test -f 'Args.cpp' || echo '$(srcdir)/'`Args.cpp
 
-bloop-Args.obj: Args.C
-@am__fastdepCXX_TRUE@	if $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(bloop_CXXFLAGS) $(CXXFLAGS) -MT bloop-Args.obj -MD -MP -MF "$(DEPDIR)/bloop-Args.Tpo" -c -o bloop-Args.obj `if test -f 'Args.C'; then $(CYGPATH_W) 'Args.C'; else $(CYGPATH_W) '$(srcdir)/Args.C'; fi`; \
+bloop-Args.obj: Args.cpp
+@am__fastdepCXX_TRUE@	if $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(bloop_CXXFLAGS) $(CXXFLAGS) -MT bloop-Args.obj -MD -MP -MF "$(DEPDIR)/bloop-Args.Tpo" -c -o bloop-Args.obj `if test -f 'Args.cpp'; then $(CYGPATH_W) 'Args.cpp'; else $(CYGPATH_W) '$(srcdir)/Args.cpp'; fi`; \
 @am__fastdepCXX_TRUE@	then mv -f "$(DEPDIR)/bloop-Args.Tpo" "$(DEPDIR)/bloop-Args.Po"; else rm -f "$(DEPDIR)/bloop-Args.Tpo"; exit 1; fi
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='Args.C' object='bloop-Args.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='Args.cpp' object='bloop-Args.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(bloop_CXXFLAGS) $(CXXFLAGS) -c -o bloop-Args.obj `if test -f 'Args.C'; then $(CYGPATH_W) 'Args.C'; else $(CYGPATH_W) '$(srcdir)/Args.C'; fi`
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(bloop_CXXFLAGS) $(CXXFLAGS) -c -o bloop-Args.obj `if test -f 'Args.cpp'; then $(CYGPATH_W) 'Args.cpp'; else $(CYGPATH_W) '$(srcdir)/Args.cpp'; fi`
 
-bloop-BloopIRInterface.o: BloopIRInterface.C
-@am__fastdepCXX_TRUE@	if $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(bloop_CXXFLAGS) $(CXXFLAGS) -MT bloop-BloopIRInterface.o -MD -MP -MF "$(DEPDIR)/bloop-BloopIRInterface.Tpo" -c -o bloop-BloopIRInterface.o `test -f 'BloopIRInterface.C' || echo '$(srcdir)/'`BloopIRInterface.C; \
+bloop-BloopIRInterface.o: BloopIRInterface.cpp
+@am__fastdepCXX_TRUE@	if $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(bloop_CXXFLAGS) $(CXXFLAGS) -MT bloop-BloopIRInterface.o -MD -MP -MF "$(DEPDIR)/bloop-BloopIRInterface.Tpo" -c -o bloop-BloopIRInterface.o `test -f 'BloopIRInterface.cpp' || echo '$(srcdir)/'`BloopIRInterface.cpp; \
 @am__fastdepCXX_TRUE@	then mv -f "$(DEPDIR)/bloop-BloopIRInterface.Tpo" "$(DEPDIR)/bloop-BloopIRInterface.Po"; else rm -f "$(DEPDIR)/bloop-BloopIRInterface.Tpo"; exit 1; fi
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='BloopIRInterface.C' object='bloop-BloopIRInterface.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='BloopIRInterface.cpp' object='bloop-BloopIRInterface.o' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(bloop_CXXFLAGS) $(CXXFLAGS) -c -o bloop-BloopIRInterface.o `test -f 'BloopIRInterface.C' || echo '$(srcdir)/'`BloopIRInterface.C
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(bloop_CXXFLAGS) $(CXXFLAGS) -c -o bloop-BloopIRInterface.o `test -f 'BloopIRInterface.cpp' || echo '$(srcdir)/'`BloopIRInterface.cpp
 
-bloop-BloopIRInterface.obj: BloopIRInterface.C
-@am__fastdepCXX_TRUE@	if $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(bloop_CXXFLAGS) $(CXXFLAGS) -MT bloop-BloopIRInterface.obj -MD -MP -MF "$(DEPDIR)/bloop-BloopIRInterface.Tpo" -c -o bloop-BloopIRInterface.obj `if test -f 'BloopIRInterface.C'; then $(CYGPATH_W) 'BloopIRInterface.C'; else $(CYGPATH_W) '$(srcdir)/BloopIRInterface.C'; fi`; \
+bloop-BloopIRInterface.obj: BloopIRInterface.cpp
+@am__fastdepCXX_TRUE@	if $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(bloop_CXXFLAGS) $(CXXFLAGS) -MT bloop-BloopIRInterface.obj -MD -MP -MF "$(DEPDIR)/bloop-BloopIRInterface.Tpo" -c -o bloop-BloopIRInterface.obj `if test -f 'BloopIRInterface.cpp'; then $(CYGPATH_W) 'BloopIRInterface.cpp'; else $(CYGPATH_W) '$(srcdir)/BloopIRInterface.cpp'; fi`; \
 @am__fastdepCXX_TRUE@	then mv -f "$(DEPDIR)/bloop-BloopIRInterface.Tpo" "$(DEPDIR)/bloop-BloopIRInterface.Po"; else rm -f "$(DEPDIR)/bloop-BloopIRInterface.Tpo"; exit 1; fi
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='BloopIRInterface.C' object='bloop-BloopIRInterface.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='BloopIRInterface.cpp' object='bloop-BloopIRInterface.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(bloop_CXXFLAGS) $(CXXFLAGS) -c -o bloop-BloopIRInterface.obj `if test -f 'BloopIRInterface.C'; then $(CYGPATH_W) 'BloopIRInterface.C'; else $(CYGPATH_W) '$(srcdir)/BloopIRInterface.C'; fi`
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(bloop_CXXFLAGS) $(CXXFLAGS) -c -o bloop-BloopIRInterface.obj `if test -f 'BloopIRInterface.cpp'; then $(CYGPATH_W) 'BloopIRInterface.cpp'; else $(CYGPATH_W) '$(srcdir)/BloopIRInterface.cpp'; fi`
 
-bloop-PgmScopeTreeBuilder.o: PgmScopeTreeBuilder.C
-@am__fastdepCXX_TRUE@	if $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(bloop_CXXFLAGS) $(CXXFLAGS) -MT bloop-PgmScopeTreeBuilder.o -MD -MP -MF "$(DEPDIR)/bloop-PgmScopeTreeBuilder.Tpo" -c -o bloop-PgmScopeTreeBuilder.o `test -f 'PgmScopeTreeBuilder.C' || echo '$(srcdir)/'`PgmScopeTreeBuilder.C; \
+bloop-PgmScopeTreeBuilder.o: PgmScopeTreeBuilder.cpp
+@am__fastdepCXX_TRUE@	if $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(bloop_CXXFLAGS) $(CXXFLAGS) -MT bloop-PgmScopeTreeBuilder.o -MD -MP -MF "$(DEPDIR)/bloop-PgmScopeTreeBuilder.Tpo" -c -o bloop-PgmScopeTreeBuilder.o `test -f 'PgmScopeTreeBuilder.cpp' || echo '$(srcdir)/'`PgmScopeTreeBuilder.cpp; \
 @am__fastdepCXX_TRUE@	then mv -f "$(DEPDIR)/bloop-PgmScopeTreeBuilder.Tpo" "$(DEPDIR)/bloop-PgmScopeTreeBuilder.Po"; else rm -f "$(DEPDIR)/bloop-PgmScopeTreeBuilder.Tpo"; exit 1; fi
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='PgmScopeTreeBuilder.C' object='bloop-PgmScopeTreeBuilder.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='PgmScopeTreeBuilder.cpp' object='bloop-PgmScopeTreeBuilder.o' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(bloop_CXXFLAGS) $(CXXFLAGS) -c -o bloop-PgmScopeTreeBuilder.o `test -f 'PgmScopeTreeBuilder.C' || echo '$(srcdir)/'`PgmScopeTreeBuilder.C
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(bloop_CXXFLAGS) $(CXXFLAGS) -c -o bloop-PgmScopeTreeBuilder.o `test -f 'PgmScopeTreeBuilder.cpp' || echo '$(srcdir)/'`PgmScopeTreeBuilder.cpp
 
-bloop-PgmScopeTreeBuilder.obj: PgmScopeTreeBuilder.C
-@am__fastdepCXX_TRUE@	if $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(bloop_CXXFLAGS) $(CXXFLAGS) -MT bloop-PgmScopeTreeBuilder.obj -MD -MP -MF "$(DEPDIR)/bloop-PgmScopeTreeBuilder.Tpo" -c -o bloop-PgmScopeTreeBuilder.obj `if test -f 'PgmScopeTreeBuilder.C'; then $(CYGPATH_W) 'PgmScopeTreeBuilder.C'; else $(CYGPATH_W) '$(srcdir)/PgmScopeTreeBuilder.C'; fi`; \
+bloop-PgmScopeTreeBuilder.obj: PgmScopeTreeBuilder.cpp
+@am__fastdepCXX_TRUE@	if $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(bloop_CXXFLAGS) $(CXXFLAGS) -MT bloop-PgmScopeTreeBuilder.obj -MD -MP -MF "$(DEPDIR)/bloop-PgmScopeTreeBuilder.Tpo" -c -o bloop-PgmScopeTreeBuilder.obj `if test -f 'PgmScopeTreeBuilder.cpp'; then $(CYGPATH_W) 'PgmScopeTreeBuilder.cpp'; else $(CYGPATH_W) '$(srcdir)/PgmScopeTreeBuilder.cpp'; fi`; \
 @am__fastdepCXX_TRUE@	then mv -f "$(DEPDIR)/bloop-PgmScopeTreeBuilder.Tpo" "$(DEPDIR)/bloop-PgmScopeTreeBuilder.Po"; else rm -f "$(DEPDIR)/bloop-PgmScopeTreeBuilder.Tpo"; exit 1; fi
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='PgmScopeTreeBuilder.C' object='bloop-PgmScopeTreeBuilder.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='PgmScopeTreeBuilder.cpp' object='bloop-PgmScopeTreeBuilder.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(bloop_CXXFLAGS) $(CXXFLAGS) -c -o bloop-PgmScopeTreeBuilder.obj `if test -f 'PgmScopeTreeBuilder.C'; then $(CYGPATH_W) 'PgmScopeTreeBuilder.C'; else $(CYGPATH_W) '$(srcdir)/PgmScopeTreeBuilder.C'; fi`
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(bloop_CXXFLAGS) $(CXXFLAGS) -c -o bloop-PgmScopeTreeBuilder.obj `if test -f 'PgmScopeTreeBuilder.cpp'; then $(CYGPATH_W) 'PgmScopeTreeBuilder.cpp'; else $(CYGPATH_W) '$(srcdir)/PgmScopeTreeBuilder.cpp'; fi`
 
-bloop-PgmScopeTree.o: PgmScopeTree.C
-@am__fastdepCXX_TRUE@	if $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(bloop_CXXFLAGS) $(CXXFLAGS) -MT bloop-PgmScopeTree.o -MD -MP -MF "$(DEPDIR)/bloop-PgmScopeTree.Tpo" -c -o bloop-PgmScopeTree.o `test -f 'PgmScopeTree.C' || echo '$(srcdir)/'`PgmScopeTree.C; \
+bloop-PgmScopeTree.o: PgmScopeTree.cpp
+@am__fastdepCXX_TRUE@	if $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(bloop_CXXFLAGS) $(CXXFLAGS) -MT bloop-PgmScopeTree.o -MD -MP -MF "$(DEPDIR)/bloop-PgmScopeTree.Tpo" -c -o bloop-PgmScopeTree.o `test -f 'PgmScopeTree.cpp' || echo '$(srcdir)/'`PgmScopeTree.cpp; \
 @am__fastdepCXX_TRUE@	then mv -f "$(DEPDIR)/bloop-PgmScopeTree.Tpo" "$(DEPDIR)/bloop-PgmScopeTree.Po"; else rm -f "$(DEPDIR)/bloop-PgmScopeTree.Tpo"; exit 1; fi
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='PgmScopeTree.C' object='bloop-PgmScopeTree.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='PgmScopeTree.cpp' object='bloop-PgmScopeTree.o' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(bloop_CXXFLAGS) $(CXXFLAGS) -c -o bloop-PgmScopeTree.o `test -f 'PgmScopeTree.C' || echo '$(srcdir)/'`PgmScopeTree.C
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(bloop_CXXFLAGS) $(CXXFLAGS) -c -o bloop-PgmScopeTree.o `test -f 'PgmScopeTree.cpp' || echo '$(srcdir)/'`PgmScopeTree.cpp
 
-bloop-PgmScopeTree.obj: PgmScopeTree.C
-@am__fastdepCXX_TRUE@	if $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(bloop_CXXFLAGS) $(CXXFLAGS) -MT bloop-PgmScopeTree.obj -MD -MP -MF "$(DEPDIR)/bloop-PgmScopeTree.Tpo" -c -o bloop-PgmScopeTree.obj `if test -f 'PgmScopeTree.C'; then $(CYGPATH_W) 'PgmScopeTree.C'; else $(CYGPATH_W) '$(srcdir)/PgmScopeTree.C'; fi`; \
+bloop-PgmScopeTree.obj: PgmScopeTree.cpp
+@am__fastdepCXX_TRUE@	if $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(bloop_CXXFLAGS) $(CXXFLAGS) -MT bloop-PgmScopeTree.obj -MD -MP -MF "$(DEPDIR)/bloop-PgmScopeTree.Tpo" -c -o bloop-PgmScopeTree.obj `if test -f 'PgmScopeTree.cpp'; then $(CYGPATH_W) 'PgmScopeTree.cpp'; else $(CYGPATH_W) '$(srcdir)/PgmScopeTree.cpp'; fi`; \
 @am__fastdepCXX_TRUE@	then mv -f "$(DEPDIR)/bloop-PgmScopeTree.Tpo" "$(DEPDIR)/bloop-PgmScopeTree.Po"; else rm -f "$(DEPDIR)/bloop-PgmScopeTree.Tpo"; exit 1; fi
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='PgmScopeTree.C' object='bloop-PgmScopeTree.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='PgmScopeTree.cpp' object='bloop-PgmScopeTree.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(bloop_CXXFLAGS) $(CXXFLAGS) -c -o bloop-PgmScopeTree.obj `if test -f 'PgmScopeTree.C'; then $(CYGPATH_W) 'PgmScopeTree.C'; else $(CYGPATH_W) '$(srcdir)/PgmScopeTree.C'; fi`
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(bloop_CXXFLAGS) $(CXXFLAGS) -c -o bloop-PgmScopeTree.obj `if test -f 'PgmScopeTree.cpp'; then $(CYGPATH_W) 'PgmScopeTree.cpp'; else $(CYGPATH_W) '$(srcdir)/PgmScopeTree.cpp'; fi`
 
-bloop-PgmScopeTreeIterator.o: PgmScopeTreeIterator.C
-@am__fastdepCXX_TRUE@	if $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(bloop_CXXFLAGS) $(CXXFLAGS) -MT bloop-PgmScopeTreeIterator.o -MD -MP -MF "$(DEPDIR)/bloop-PgmScopeTreeIterator.Tpo" -c -o bloop-PgmScopeTreeIterator.o `test -f 'PgmScopeTreeIterator.C' || echo '$(srcdir)/'`PgmScopeTreeIterator.C; \
+bloop-PgmScopeTreeIterator.o: PgmScopeTreeIterator.cpp
+@am__fastdepCXX_TRUE@	if $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(bloop_CXXFLAGS) $(CXXFLAGS) -MT bloop-PgmScopeTreeIterator.o -MD -MP -MF "$(DEPDIR)/bloop-PgmScopeTreeIterator.Tpo" -c -o bloop-PgmScopeTreeIterator.o `test -f 'PgmScopeTreeIterator.cpp' || echo '$(srcdir)/'`PgmScopeTreeIterator.cpp; \
 @am__fastdepCXX_TRUE@	then mv -f "$(DEPDIR)/bloop-PgmScopeTreeIterator.Tpo" "$(DEPDIR)/bloop-PgmScopeTreeIterator.Po"; else rm -f "$(DEPDIR)/bloop-PgmScopeTreeIterator.Tpo"; exit 1; fi
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='PgmScopeTreeIterator.C' object='bloop-PgmScopeTreeIterator.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='PgmScopeTreeIterator.cpp' object='bloop-PgmScopeTreeIterator.o' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(bloop_CXXFLAGS) $(CXXFLAGS) -c -o bloop-PgmScopeTreeIterator.o `test -f 'PgmScopeTreeIterator.C' || echo '$(srcdir)/'`PgmScopeTreeIterator.C
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(bloop_CXXFLAGS) $(CXXFLAGS) -c -o bloop-PgmScopeTreeIterator.o `test -f 'PgmScopeTreeIterator.cpp' || echo '$(srcdir)/'`PgmScopeTreeIterator.cpp
 
-bloop-PgmScopeTreeIterator.obj: PgmScopeTreeIterator.C
-@am__fastdepCXX_TRUE@	if $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(bloop_CXXFLAGS) $(CXXFLAGS) -MT bloop-PgmScopeTreeIterator.obj -MD -MP -MF "$(DEPDIR)/bloop-PgmScopeTreeIterator.Tpo" -c -o bloop-PgmScopeTreeIterator.obj `if test -f 'PgmScopeTreeIterator.C'; then $(CYGPATH_W) 'PgmScopeTreeIterator.C'; else $(CYGPATH_W) '$(srcdir)/PgmScopeTreeIterator.C'; fi`; \
+bloop-PgmScopeTreeIterator.obj: PgmScopeTreeIterator.cpp
+@am__fastdepCXX_TRUE@	if $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(bloop_CXXFLAGS) $(CXXFLAGS) -MT bloop-PgmScopeTreeIterator.obj -MD -MP -MF "$(DEPDIR)/bloop-PgmScopeTreeIterator.Tpo" -c -o bloop-PgmScopeTreeIterator.obj `if test -f 'PgmScopeTreeIterator.cpp'; then $(CYGPATH_W) 'PgmScopeTreeIterator.cpp'; else $(CYGPATH_W) '$(srcdir)/PgmScopeTreeIterator.cpp'; fi`; \
 @am__fastdepCXX_TRUE@	then mv -f "$(DEPDIR)/bloop-PgmScopeTreeIterator.Tpo" "$(DEPDIR)/bloop-PgmScopeTreeIterator.Po"; else rm -f "$(DEPDIR)/bloop-PgmScopeTreeIterator.Tpo"; exit 1; fi
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='PgmScopeTreeIterator.C' object='bloop-PgmScopeTreeIterator.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='PgmScopeTreeIterator.cpp' object='bloop-PgmScopeTreeIterator.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(bloop_CXXFLAGS) $(CXXFLAGS) -c -o bloop-PgmScopeTreeIterator.obj `if test -f 'PgmScopeTreeIterator.C'; then $(CYGPATH_W) 'PgmScopeTreeIterator.C'; else $(CYGPATH_W) '$(srcdir)/PgmScopeTreeIterator.C'; fi`
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(bloop_CXXFLAGS) $(CXXFLAGS) -c -o bloop-PgmScopeTreeIterator.obj `if test -f 'PgmScopeTreeIterator.cpp'; then $(CYGPATH_W) 'PgmScopeTreeIterator.cpp'; else $(CYGPATH_W) '$(srcdir)/PgmScopeTreeIterator.cpp'; fi`
 
 mostlyclean-libtool:
 	-rm -f *.lo
@@ -725,7 +725,7 @@ uninstall-am: uninstall-binPROGRAMS uninstall-info-am
 
 #############################################################################
 
-%.C.pp : %.C
+%.cpp.pp : %.cpp
 	$(CXXCPP) $(MYCPPFLAGS_CXX) $< > $@
 
 %.c.pp : %.c

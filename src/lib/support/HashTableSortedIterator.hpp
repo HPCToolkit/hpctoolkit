@@ -77,7 +77,7 @@
 
 //*************************** User Include Files ****************************
 
-#include "HashTable.h"
+#include "HashTable.hpp"
 
 //*************************** Forward Declarations **************************
 

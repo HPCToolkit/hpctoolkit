@@ -935,7 +935,7 @@ myinstall-libhpcrun-static:
 
 .PHONY: myinstall-exec myinstall-libhpcrunso myinstall-libhpcrun-static
 
-%.C.pp : %.C
+%.cpp.pp : %.cpp
 	$(CXXCPP) $(MYCPPFLAGS_CXX) $< > $@
 
 %.c.pp : %.c

@@ -34,7 +34,7 @@
 
 //*************************** User Include Files ****************************
 
-#include "proffile.h"
+#include "proffile.hpp"
 #include <lib/hpcfile/hpcfile_hpcrun.h>
 #include <lib/hpcfile/io.h>
 

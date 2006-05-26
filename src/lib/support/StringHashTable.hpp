@@ -55,8 +55,8 @@
 
 //*************************** User Include Files ****************************
 
-#include "HashTable.h"
-#include "String.h"
+#include "HashTable.hpp"
+#include "String.hpp"
 
 //*************************** Forward Declarations ***************************
 

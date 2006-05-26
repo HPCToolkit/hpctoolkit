@@ -11,7 +11,7 @@ using XERCES_CPP_NAMESPACE::SAXParseException;
 
 //************************* User Include Files *******************************
 
-#include <lib/support/String.h>
+#include <lib/support/String.hpp>
 
 //****************************************************************************
 

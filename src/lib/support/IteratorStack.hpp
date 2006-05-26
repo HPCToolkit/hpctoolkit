@@ -59,7 +59,7 @@
 
 #include <include/general.h>
 
-#include "StackableIterator.h"
+#include "StackableIterator.hpp"
 
 //*************************** Forward Declarations **************************
 

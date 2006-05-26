@@ -48,10 +48,10 @@
 
 #include <include/general.h>
 
-#include "PGMDocHandler.h"
+#include "PGMDocHandler.hpp"
 
-#include <lib/support/Unique.h>
-#include <lib/support/String.h>
+#include <lib/support/Unique.hpp>
+#include <lib/support/String.hpp>
 
 //************************ Forward Declarations ******************************
 

@@ -380,7 +380,7 @@ class HashTableIterator
 };
 
 /****************************** HashTableSortedIterator **********************/
-#include "HashTableSortedIterator.h"
+#include "HashTableSortedIterator.hpp"
 
 #endif
 

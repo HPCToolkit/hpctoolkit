@@ -47,13 +47,13 @@ using namespace std; // For compatibility with non-std C headers
 
 //************************* User Include Files *******************************
 
-#include "HTMLSrcFiles.h" 
-#include "HTMLDriver.h" 
-#include "HTMLFile.h"
-#include "ScopesInfo.h"
-#include <lib/support/String.h>
+#include "HTMLSrcFiles.hpp"
+#include "HTMLDriver.hpp"
+#include "HTMLFile.hpp"
+#include "ScopesInfo.hpp"
+#include <lib/support/String.hpp>
 #include <lib/support/Assertion.h>
-#include <lib/support/Trace.h>
+#include <lib/support/Trace.hpp>
 
 //************************ Forward Declarations ******************************
 

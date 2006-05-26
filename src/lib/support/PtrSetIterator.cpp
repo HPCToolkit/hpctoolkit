@@ -48,7 +48,7 @@
 
 //*************************** User Include Files ****************************
 
-#include "PtrSetIterator.h"
+#include "PtrSetIterator.hpp"
 
 //*************************** Forward Declarations **************************
 

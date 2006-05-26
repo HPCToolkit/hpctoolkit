@@ -64,8 +64,8 @@ using namespace std; // For compatibility with non-std C headers
 
 //************************* User Include Files *******************************
 
-#include "Args.h"
-#include <lib/support/Trace.h>
+#include "Args.hpp"
+#include <lib/support/Trace.hpp>
 
 //************************ Forward Declarations ******************************
 

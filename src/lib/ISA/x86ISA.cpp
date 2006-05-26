@@ -60,7 +60,7 @@ using namespace std; // For compatibility with non-std C headers
 
 //*************************** User Include Files ****************************
 
-#include "i686ISA.h"
+#include "i686ISA.hpp"
 #include <include/gnu_dis-asm.h>
 
 //*************************** Forward Declarations ***************************

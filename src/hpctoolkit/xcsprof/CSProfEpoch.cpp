@@ -51,9 +51,9 @@
 
 //*************************** User Include Files ****************************
 
-#include "CSProfEpoch.h"
+#include "CSProfEpoch.hpp"
 
-#include <lib/xml/xml.h>
+#include <lib/xml/xml.hpp>
 using namespace xml;
 
 //*************************** Forward Declarations ***************************

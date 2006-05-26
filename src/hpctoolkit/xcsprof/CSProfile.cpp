@@ -53,10 +53,10 @@
 
 #include <include/general.h>
 
-#include "CSProfile.h"
-#include <lib/support/Trace.h>
+#include "CSProfile.hpp"
+#include <lib/support/Trace.hpp>
 
-#include <lib/xml/xml.h>
+#include <lib/xml/xml.hpp>
 
 //*************************** Forward Declarations ***************************
 

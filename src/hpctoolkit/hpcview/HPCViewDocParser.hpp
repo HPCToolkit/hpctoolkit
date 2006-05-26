@@ -47,9 +47,9 @@ using XERCES_CPP_NAMESPACE::DOMNode;
 
 //************************* User Include Files *******************************
 
-#include <lib/support/String.h>
+#include <lib/support/String.hpp>
 
-#include "HPCViewXMLErrHandler.h"
+#include "HPCViewXMLErrHandler.hpp"
 
 //************************ Forward Declarations ******************************
 

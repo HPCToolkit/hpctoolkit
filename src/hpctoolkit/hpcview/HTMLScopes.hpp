@@ -42,9 +42,9 @@
 
 //************************* User Include Files *******************************
 
-#include "ScopesInfo.h" 
-#include "HTMLFile.h" 
-#include <lib/support/String.h>
+#include "ScopesInfo.hpp"
+#include "HTMLFile.hpp"
+#include <lib/support/String.hpp>
 
 //************************ Forward Declarations ******************************
 

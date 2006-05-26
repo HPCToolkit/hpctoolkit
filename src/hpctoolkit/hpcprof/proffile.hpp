@@ -41,7 +41,7 @@
 
 //*************************** User Include Files ****************************
 
-#include "hpcprof.h"
+#include "hpcprof.hpp"
 
 //*************************** Forward Declarations **************************
 

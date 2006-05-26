@@ -54,7 +54,7 @@
 
 // *************************** User Include Files ****************************
 
-#include "Unique.h"
+#include "Unique.hpp"
 #include "Assertion.h"
 
 // ************************** Variable Definitions ***************************

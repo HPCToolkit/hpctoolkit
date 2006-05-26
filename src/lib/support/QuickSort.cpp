@@ -47,7 +47,7 @@ using namespace std; // For compatibility with non-std C headers
 
 #include <include/general.h>
 
-#include "QuickSort.h"
+#include "QuickSort.hpp"
 
 //*************************** Forward Declarations **************************
 

@@ -56,7 +56,7 @@
 
 #include <include/general.h>
 
-#include "VectorSupport.h"
+#include "VectorSupport.hpp"
 
 // The class T defined here must have the following members and
 // functions:

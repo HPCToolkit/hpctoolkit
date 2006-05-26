@@ -64,15 +64,15 @@ using namespace std; // For compatibility with non-std C headers
 
 #include <include/general.h>
 
-#include "ProfileWriter.h"
-#include "PCProfile.h"
-#include "DerivedProfile.h"
+#include "ProfileWriter.hpp"
+#include "PCProfile.hpp"
+#include "DerivedProfile.hpp"
 
-#include <lib/binutils/LoadModuleInfo.h>
-#include <lib/binutils/PCToSrcLineMap.h>
-#include <lib/binutils/BinUtils.h>
-#include <lib/support/String.h>
-#include <lib/xml/xml.h>
+#include <lib/binutils/LoadModuleInfo.hpp>
+#include <lib/binutils/PCToSrcLineMap.hpp>
+#include <lib/binutils/BinUtils.hpp>
+#include <lib/support/String.hpp>
+#include <lib/xml/xml.hpp>
 
 //*************************** Forward Declarations ***************************
 

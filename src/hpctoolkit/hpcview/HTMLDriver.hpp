@@ -43,12 +43,12 @@
 
 #include <include/general.h>
 
-#include "Args.h" 
-#include "PerfMetric.h" 
-#include "PerfIndex.h" 
+#include "Args.hpp"
+#include "PerfMetric.hpp"
+#include "PerfIndex.hpp"
 
-#include <lib/support/String.h>
-#include <lib/support/Unique.h>
+#include <lib/support/String.hpp>
+#include <lib/support/Unique.hpp>
 
 //************************ Forward Declarations ******************************
 

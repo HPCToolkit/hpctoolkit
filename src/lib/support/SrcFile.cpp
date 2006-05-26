@@ -45,7 +45,7 @@ using namespace std; // For compatibility with non-std C headers
 
 //*************************** User Include Files ****************************
 
-#include "SrcFile.h" 
+#include "SrcFile.hpp" 
 
 //*************************** Forward Declarations **************************
 

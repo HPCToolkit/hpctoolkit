@@ -62,12 +62,12 @@ include $(top_srcdir)/src/Makeinclude.config
 #############################################################################
 
 MYSOURCES = \
-	main.C \
-	Args.h Args.C \
-	BloopIRInterface.h BloopIRInterface.C \
-	PgmScopeTreeBuilder.h PgmScopeTreeBuilder.C \
-	PgmScopeTree.h PgmScopeTree.C \
-	PgmScopeTreeIterator.h PgmScopeTreeIterator.C
+	main.cpp \
+	Args.hpp Args.cpp \
+	BloopIRInterface.hpp BloopIRInterface.cpp \
+	PgmScopeTreeBuilder.hpp PgmScopeTreeBuilder.cpp \
+	PgmScopeTree.hpp PgmScopeTree.cpp \
+	PgmScopeTreeIterator.hpp PgmScopeTreeIterator.cpp
 
 MYCFLAGS   = @HOST_CFLAGS@   $(HPC_IFLAGS) @GNUBINUTILS_IFLAGS@
 MYCXXFLAGS = @HOST_CXXFLAGS@ $(HPC_IFLAGS) @GNUBINUTILS_IFLAGS@ @OA_IFLAGS@

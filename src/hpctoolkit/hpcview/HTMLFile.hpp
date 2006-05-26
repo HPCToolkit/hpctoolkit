@@ -50,10 +50,10 @@
 
 #include <include/general.h>
 
-#include "StaticFiles.h"
-#include "ScopeInfo.h"
+#include "StaticFiles.hpp"
+#include "ScopeInfo.hpp"
 
-#include <lib/support/String.h>
+#include <lib/support/String.hpp>
 
 //************************ Forward Declarations ******************************
 

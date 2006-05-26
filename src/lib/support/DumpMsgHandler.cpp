@@ -56,7 +56,7 @@ using namespace std; // For compatibility with non-std C headers
 
 #include <include/general.h>
 
-#include "DumpMsgHandler.h"
+#include "DumpMsgHandler.hpp"
 
 //*************************** Forward Declarations **************************
 

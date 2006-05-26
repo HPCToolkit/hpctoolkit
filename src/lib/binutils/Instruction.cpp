@@ -53,7 +53,7 @@
 
 //*************************** User Include Files ****************************
 
-#include "Instruction.h"
+#include "Instruction.hpp"
 
 //*************************** Forward Declarations ***************************
 

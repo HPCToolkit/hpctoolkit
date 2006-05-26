@@ -64,10 +64,10 @@
 
 //*************************** User Include Files ****************************
  
-#include <lib/ISA/ISA.h>
-#include <lib/binutils/Instruction.h>
-#include <lib/binutils/Procedure.h>
-#include <lib/support/String.h>
+#include <lib/ISA/ISA.hpp>
+#include <lib/binutils/Instruction.hpp>
+#include <lib/binutils/Procedure.hpp>
+#include <lib/support/String.hpp>
 #include <lib/support/Assertion.h>
 
 //*************************** Forward Declarations ***************************

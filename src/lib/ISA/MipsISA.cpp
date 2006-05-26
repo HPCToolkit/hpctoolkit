@@ -51,7 +51,7 @@
 
 //*************************** User Include Files ****************************
 
-#include "MipsISA.h"
+#include "MipsISA.hpp"
 
 #include <include/gnu_bfd.h>  // for bfd_getb32
 

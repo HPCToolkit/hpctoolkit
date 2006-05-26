@@ -51,7 +51,7 @@
 
 //*************************** User Include Files ****************************
 
-#include "PgmScopeTreeIterator.h"
+#include "PgmScopeTreeIterator.hpp"
 #include <lib/support/Assertion.h>
 
 //*************************** Forward Declarations ***************************

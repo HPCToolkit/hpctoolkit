@@ -58,9 +58,9 @@
 
 #include <include/general.h>               
 
-#include "CSProfTree.h"
-#include <lib/support/NonUniformDegreeTree.h>  
-#include <lib/support/PtrSetIterator.h>        
+#include "CSProfTree.hpp"
+#include <lib/support/NonUniformDegreeTree.hpp>
+#include <lib/support/PtrSetIterator.hpp>
 
 //*************************** Forward Declarations ***************************
 

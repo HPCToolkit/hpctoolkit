@@ -59,12 +59,12 @@
 
 #include <include/general.h>
 
-#include "PCProfile.h"
-#include "DCPIProfileMetric.h"
-#include "DCPIProfileFilter.h"
+#include "PCProfile.hpp"
+#include "DCPIProfileMetric.hpp"
+#include "DCPIProfileFilter.hpp"
 
-#include <lib/ISA/ISATypes.h>
-#include <lib/support/String.h>
+#include <lib/ISA/ISATypes.hpp>
+#include <lib/support/String.hpp>
 
 //*************************** Forward Declarations ***************************
 

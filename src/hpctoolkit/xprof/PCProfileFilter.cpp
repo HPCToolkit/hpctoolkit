@@ -53,9 +53,9 @@
 
 //*************************** User Include Files ****************************
 
-#include "PCProfileFilter.h"
+#include "PCProfileFilter.hpp"
 
-#include <lib/binutils/Instruction.h>
+#include <lib/binutils/Instruction.hpp>
 
 //*************************** Forward Declarations ***************************
 

@@ -56,7 +56,7 @@
 
 //************************* User Include Files *******************************
 
-#include <lib/support/String.h>
+#include <lib/support/String.hpp>
 
 //************************ Forward Declarations ******************************
 

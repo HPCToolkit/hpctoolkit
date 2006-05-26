@@ -56,9 +56,9 @@ using XERCES_CPP_NAMESPACE::DOMNode;
 //************************* User Include Files *******************************
 
 // #include "XMLAdapter.h"
-#include "EvalNode.h"
-#include "ScopeInfo.h"
-#include <lib/support/String.h>
+#include "EvalNode.hpp"
+#include "ScopeInfo.hpp"
+#include <lib/support/String.hpp>
 
 
 //************************ Forward Declarations ******************************

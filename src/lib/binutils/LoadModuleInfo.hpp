@@ -58,8 +58,8 @@
 
 #include <include/general.h>
 
-#include "LoadModule.h"
-#include "PCToSrcLineMap.h"
+#include "LoadModule.hpp"
+#include "PCToSrcLineMap.hpp"
 
 //*************************** Forward Declarations ***************************
 

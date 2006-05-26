@@ -56,10 +56,10 @@
 
 #include <include/general.h>
 
-#include "PCProfile.h"
-#include "DCPIProfileFilter.h"
+#include "PCProfile.hpp"
+#include "DCPIProfileFilter.hpp"
 
-#include <lib/ISA/ISATypes.h>
+#include <lib/ISA/ISATypes.hpp>
 
 //*************************** Forward Declarations ***************************
 
