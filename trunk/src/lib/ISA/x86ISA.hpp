@@ -37,7 +37,7 @@
 //***************************************************************************
 //
 // File:
-//    i686ISA.h
+//    x86ISA.h
 //
 // Purpose:
 //    [The purpose of this file]
@@ -47,8 +47,8 @@
 //
 //***************************************************************************
 
-#ifndef i686ISA_H 
-#define i686ISA_H
+#ifndef x86ISA_H 
+#define x86ISA_H
 
 //************************* System Include Files ****************************
 
@@ -65,17 +65,16 @@ struct disassemble_info;
 //****************************************************************************
 
 //***************************************************************************
-// i686ISA
+// x86ISA
 //***************************************************************************
 
-// 'i686ISA': Implements the i686 Instruction Set Architecture (x86
-// and x86-64)
+// 'x86ISA': Implements the x86 and x86-64 Instruction Set Architecture
 // See comments in 'ISA.h'
 
-class i686ISA : public ISA {
+class x86ISA : public ISA {
 public:  
-  i686ISA();
-  virtual ~i686ISA();
+  x86ISA();
+  virtual ~x86ISA();
   
   // --------------------------------------------------------
   // Instructions:
@@ -102,8 +101,8 @@ public:
 
 private: 
   // Should not be used
-  i686ISA(const i686ISA& i) { }
-  i686ISA& operator=(const i686ISA& i) { return *this; }
+  x86ISA(const x86ISA& i) { }
+  x86ISA& operator=(const x86ISA& i) { return *this; }
 
 protected:
 private:

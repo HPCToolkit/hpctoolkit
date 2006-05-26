@@ -68,7 +68,7 @@ MYSOURCES = \
 	ISATypes.hpp \
 	MipsISA.hpp MipsISA.cpp \
 	SparcISA.hpp SparcISA.cpp \
-	i686ISA.hpp i686ISA.cpp \
+	x86ISA.hpp x86ISA.cpp \
 	instructionSets/alpha.h \
 	instructionSets/mips.h
 
