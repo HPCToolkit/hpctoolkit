@@ -37,7 +37,7 @@
 //***************************************************************************
 //
 // File:
-//    i686ISA.C
+//    x86ISA.C
 //
 // Purpose:
 //    [The purpose of this file]
@@ -60,7 +60,7 @@ using namespace std; // For compatibility with non-std C headers
 
 //*************************** User Include Files ****************************
 
-#include "i686ISA.hpp"
+#include "x86ISA.hpp"
 #include <include/gnu_dis-asm.h>
 
 //*************************** Forward Declarations ***************************
@@ -91,10 +91,10 @@ static int read_memory_func (bfd_vma vma, bfd_byte *myaddr, unsigned int len,
 } // extern "C"
 
 //****************************************************************************
-// i686ISA
+// x86ISA
 //****************************************************************************
 
-i686ISA::i686ISA()
+x86ISA::x86ISA()
 {
   // See 'dis-asm.h'
   di = new disassemble_info;
@@ -108,13 +108,13 @@ i686ISA::i686ISA()
   di->print_address_func = print_addr;     // vs. 'generic_print_address'
 }
 
-i686ISA::~i686ISA()
+x86ISA::~x86ISA()
 {
   delete di;
 }
 
 ushort
-i686ISA::GetInstSize(MachInst* mi)
+x86ISA::GetInstSize(MachInst* mi)
 {
   ushort size;
   DecodingCache *cache;
@@ -129,7 +129,7 @@ i686ISA::GetInstSize(MachInst* mi)
 }
 
 ISA::InstDesc
-i686ISA::GetInstDesc(MachInst* mi, ushort opIndex, ushort s)
+x86ISA::GetInstDesc(MachInst* mi, ushort opIndex, ushort s)
 {
   ISA::InstDesc d;
 
@@ -181,7 +181,7 @@ i686ISA::GetInstDesc(MachInst* mi, ushort opIndex, ushort s)
 }
 
 Addr
-i686ISA::GetInstTargetAddr(MachInst* mi, Addr pc, ushort opIndex, ushort sz)
+x86ISA::GetInstTargetAddr(MachInst* mi, Addr pc, ushort opIndex, ushort sz)
 {
   if (CacheLookup(mi) == NULL) {
     ushort size = print_insn_i386(PTR_TO_BFDVMA(mi), di);

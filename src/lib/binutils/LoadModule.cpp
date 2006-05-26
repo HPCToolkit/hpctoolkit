@@ -66,7 +66,7 @@
 #include <lib/ISA/MipsISA.hpp>
 #include <lib/ISA/AlphaISA.hpp>
 #include <lib/ISA/SparcISA.hpp>
-#include <lib/ISA/i686ISA.hpp>
+#include <lib/ISA/x86ISA.hpp>
 #include <lib/ISA/IA64ISA.hpp>
 
 //*************************** Forward Declarations **************************
@@ -213,8 +213,8 @@ LoadModule::Open(const char* moduleName)
     case bfd_arch_sparc:
       newisa = new SparcISA;
       break;
-    case bfd_arch_i386: // binutils categorizes x86_64 here
-      newisa = new i686ISA;
+    case bfd_arch_i386: // x86 and x86_64
+      newisa = new x86ISA;
       break;
     case bfd_arch_ia64:
       newisa = new IA64ISA;
