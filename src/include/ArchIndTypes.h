@@ -102,7 +102,7 @@
 # else
 #  error "ArchIndTypes.h: Unknown MIPS platform."
 # endif
-#elif (defined(__x86_64))
+#elif (defined(__x86_64) || defined(__x86_64__))
 # define PLATFORM_X86_64_LINUX
 # define ARCH_X86_64
 # define ARCH_64
