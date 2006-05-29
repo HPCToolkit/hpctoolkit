@@ -938,6 +938,7 @@ LoadModule::DbgFuncSummary::Info::dump(std::ostream& os) const
   os << "  " << filenm << ":" << begLine << "\n";
   os << "}\n";
   os.flush();
+  return os;
 }
 
 
@@ -983,6 +984,7 @@ LoadModule::DbgFuncSummary::dump(std::ostream& os) const
   }
   os << "}\n";
   os.flush();
+  return os;
 }
 
 //***************************************************************************
