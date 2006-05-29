@@ -107,7 +107,7 @@ x86ISA::x86ISA(bool is_x86_64)
     di->mach = bfd_mach_x86_64;
   }
   else {
-    di->mach = bfd_mach_i386_i386; 
+    di->mach = bfd_mach_i386_i386;
   }
   di->endian = BFD_ENDIAN_LITTLE;
   di->read_memory_func = read_memory_func; // vs. 'buffer_read_memory'
@@ -189,7 +189,7 @@ x86ISA::GetInstDesc(MachInst* mi, ushort opIndex, ushort s)
 Addr
 x86ISA::GetInstTargetAddr(MachInst* mi, Addr pc, ushort opIndex, ushort sz)
 {
-  static bfd_vma mask32 = (bfd_vma)0x0 | 0xffffffff;
+  static const bfd_vma mask32 = 0xffffffff;
   
   if (CacheLookup(mi) == NULL) {
     ushort size = print_insn_i386(PTR_TO_BFDVMA(mi), di);
