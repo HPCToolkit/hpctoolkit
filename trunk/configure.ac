@@ -446,7 +446,7 @@ HOST_HPCRUN_LDFLAGS=""
 HOST_HPCPROF_LDFLAGS=""
 my_demangle_ldflags=""
 
-# Options
+# Options: Default for GCC
 if test "$OPT_ENABLE_DEVELOP" = "yes" ; then
   my_opt_cflags="-g -O0"
   my_opt_cxxflags="-g -O0"
@@ -459,8 +459,9 @@ fi
 
 case ${host} in
   alpha*-*-linux* | alpha*-*-osf*)
+    # Compaq compiler
     if HPCcxxcmp([cxx]); then
-      # Compaq compiler: Before using libtool, we had used local
+      # Before using libtool, we had used local
       # repositories and included template definitions in respective
       # archives.  However, libtool doesn't take kindly to including
       # .o's and .lo's in the same archive.  Thus, we now use a global
@@ -468,50 +469,89 @@ case ${host} in
       HOST_CXXFLAGS="-std strict_ansi -rtti -pt -ptr ${hpctoolkit_build}/cxx_trepository"
       #old: HOST_LIBTREPOSITORY="./cxx_trepository/*.o"
       if test "$OPT_ENABLE_DEVELOP" = "yes" ; then
-        my_opt_cflags="-g"
         my_opt_cxxflags="-gall"
       else 
-        my_opt_cflags="-g3 -O2"
         my_opt_cxxflags="-g3 -O2"
       fi
     fi
+    if HPCcccmp([cc]); then
+      if test "$OPT_ENABLE_DEVELOP" = "yes" ; then
+        my_opt_cflags="-g"
+      else 
+        my_opt_cflags="-g3 -O2"
+      fi
+    fi
+
     # DEC demangle
     my_demangle_ldflags="-lmld"
     ;;
 
   i386*-*-linux* | i686*-*-linux* | x86_64*-*-linux* | ia64*-*-linux*)
-    if HPCcxxcmp([icpc ecpc icc ecc]) ; then
+    # Intel compiler
+    if HPCcxxcmp([icpc ecpc]) ; then
       :
+    fi
+    if HPCcccmp([icc ecc]) ; then
+      :
+    fi
+
+    # PGI compiler
+    if HPCcxxcmp([pgCC]) ; then
+      if test "$OPT_ENABLE_DEVELOP" = "yes" ; then
+        my_opt_cxxflags="-g -O0"
+      else
+        my_opt_cxxflags="-gopt -O2"
+      fi
+    fi
+    if HPCcccmp([pgcc]) ; then
+      if test "$OPT_ENABLE_DEVELOP" = "yes" ; then
+        my_opt_cflags="-g -O0 -c9x"
+      else
+        my_opt_cflags="-gopt -O2 -c9x"
+      fi
     fi
     ;;
 
   mips*-*-irix*)
+    # SGI MIPSpro
     if HPCcxxcmp([CC]) ; then
-      # SGI MIPSpro
-      HOST_CFLAGS="-64"
       HOST_CXXFLAGS="-64 -LANG:std"
       HOST_AR="$CXX $CXXFLAGS ${HOST_CXXFLAGS} -ar -o"
     fi
-    if HPCcxxcmp([g++ gcc c++]) ; then
-      HOST_CFLAGS="-mabi=64"
+    if HPCcccmp([cc]) ; then
+      HOST_CFLAGS="-64"
+    fi
+    
+    # GCC
+    if HPCcxxcmp([g++ c++]) ; then
       HOST_CXXFLAGS="-mabi=64"
     fi
+    if HPCcccmp([gcc]) ; then
+      HOST_CFLAGS="-mabi=64"
+    fi
+   
     # SGI demangle
     my_demangle_ldflags="-lmangle"
     ;;
 
   sparc*-*-solaris*)
+    # Sun Forte/ONE
     if HPCcxxcmp([CC]); then
-      # Sun Forte/ONE
-      HOST_AR="$CXX $CXXFLAGS -xar -o"
       if test "$OPT_ENABLE_DEVELOP" = "yes" ; then
-        my_opt_cflags="-g"
         my_opt_cxxflags="-g"
       else 
-        my_opt_cflags="-O"
-        my_opt_cxxflags="-O"
+        my_opt_cxxflags="-fast -g"
+      fi
+      HOST_AR="$CXX $CXXFLAGS -xar -o"
+    fi
+    if HPCcccmp([cc]); then
+      if test "$OPT_ENABLE_DEVELOP" = "yes" ; then
+        my_opt_cflags="-g"
+      else 
+        my_opt_cflags="-fast -g"
       fi
     fi
+    
     # Sun demangle
     my_demangle_ldflags="-ldemangle"
     ;;
