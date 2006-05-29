@@ -872,17 +872,22 @@ LoadModule::DumpModuleInfo(std::ostream& o, const char* pre) const
         case bfd_mach_sparc_sparclet:     o << "let'\n"; break;
         case bfd_mach_sparc_sparclite:    o << "lite'\n"; break;
         case bfd_mach_sparc_sparclite_le: o << "lite_le'\n"; break;
-        case bfd_mach_sparc_v8plus:  o << "v8plus'\n"; break;
-        case bfd_mach_sparc_v8plusa: o << "v8plusa'\n"; break;
-        case bfd_mach_sparc_v8plusb: o << "v8plusb'\n"; break;
-        case bfd_mach_sparc_v9:      o << "v9'\n"; break;
-        case bfd_mach_sparc_v9a:     o << "v9a'\n"; break;
-        case bfd_mach_sparc_v9b:     o << "v9b'\n"; break;
-        default:                     o << "-unknown Sparc-'\n";
+        case bfd_mach_sparc_v8plus:       o << "v8plus'\n"; break;
+        case bfd_mach_sparc_v8plusa:      o << "v8plusa'\n"; break;
+        case bfd_mach_sparc_v8plusb:      o << "v8plusb'\n"; break;
+        case bfd_mach_sparc_v9:           o << "v9'\n"; break;
+        case bfd_mach_sparc_v9a:          o << "v9a'\n"; break;
+        case bfd_mach_sparc_v9b:          o << "v9b'\n"; break;
+        default:                          o << "-unknown Sparc-'\n";
       }
       break;
     case bfd_arch_i386:
-      o << "x86'\n";
+      switch (bfd_get_mach(abfd)) {
+        case bfd_mach_i386_i386:  o << "x86'\n"; break;
+        case bfd_mach_i386_i8086: o << "x86 (8086)'\n"; break;
+        case bfd_mach_x86_64:     o << "x86_64'\n"; break;
+        default:                  o << "-unknown x86-'\n";
+      }
       break;
     case bfd_arch_ia64:
       o << "IA-64'\n"; 
