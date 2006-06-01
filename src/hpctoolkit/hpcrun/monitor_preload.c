@@ -59,6 +59,8 @@ static int  hpcrun_execve PARAMS_EXECVE;
 
 static pid_t hpcrun_fork();
 
+static void* hpcrun_dlopen(const char *filename, int flag);
+
 static void hpcrun__exit(int status);
 
 
@@ -77,6 +79,7 @@ static execv_fptr_t                real_execv;
 static execvp_fptr_t               real_execvp;
 static execve_fptr_t               real_execve;
 static fork_fptr_t                 real_fork;
+static dlopen_fptr_t               real_dlopen;
 static _exit_fptr_t                real__exit;
 static pthread_create_fptr_t       real_pthread_create;
 static pthread_self_fptr_t         real_pthread_self;
@@ -148,6 +151,9 @@ init_library_SPECIALIZED()
   
   real_fork = (fork_fptr_t)dlsym(RTLD_NEXT, "fork");
   hpcrun_handle_any_dlerror();
+
+  real_dlopen = (dlopen_fptr_t)dlsym(RTLD_NEXT, "dlopen");
+  hpcrun_handle_any_dlerror();
   
   
   real__exit = (_exit_fptr_t)dlsym(RTLD_NEXT, "_exit");
@@ -162,14 +168,18 @@ init_library_SPECIALIZED()
     /* FIXME: I suppose it would be possible for someone to dlopen
        libpthread which means it would not be visible now. Perhaps we
        should do a dlsym on libpthread instead. */
+		void* pthandle = dlopen("/lib/libpthread.so.0", RTLD_LAZY);
+		if (!pthandle) {
+			DIE("fatal error: Cannot open libpthread");
+		}
     real_pthread_create = 
-      (pthread_create_fptr_t)dlsym(RTLD_NEXT, "pthread_create");
+      (pthread_create_fptr_t)dlsym(pthandle, "pthread_create");
     hpcrun_handle_any_dlerror();
     if (!real_pthread_create) {
       DIE("fatal error: Cannot intercept POSIX thread creation and therefore cannot profile threads.");
     }
     
-    real_pthread_self = dlsym(RTLD_NEXT, "pthread_self");
+    real_pthread_self = dlsym(pthandle, "pthread_self");
     hpcrun_handle_any_dlerror();
     if (!real_pthread_self) {
       DIE("fatal error: Cannot intercept POSIX thread id routine and therefore cannot profile threads.");
@@ -219,6 +229,9 @@ hpcrun_libc_start_main PARAMS_START_MAIN
   if (opt_debug >= 1) {
     MSG(stderr, "*** launching intercepted app: %s ***", hpcrun_cmd);
   }
+  if (opt_debug >= 4) {
+    MSG(stderr, "_libc_start_main arguments: main: %p, argc: %d, upb_ac: %p, init: %p, start: %p, rtld: %p, stack_end: %p", main, argc, ubp_av, init, hpcrun_libc_start_main_fini, rtld_fini, stack_end);
+  }
   (*real_start_main)(main, argc, ubp_av, init, hpcrun_libc_start_main_fini, 
 		     rtld_fini, stack_end);
   return 0; /* never reached */
@@ -228,6 +241,9 @@ hpcrun_libc_start_main PARAMS_START_MAIN
 static void 
 hpcrun_libc_start_main_fini()
 {
+  if (opt_debug >= 4) {
+    MSG(stderr, "Entering hpcrun_libc_start_main_fini");
+  }
   if (real_start_main_fini) {
     (*real_start_main_fini)();
   }
@@ -379,6 +395,33 @@ hpcrun_fork()
   /* Nothing to do for parent process */
   
   return pid;
+}
+
+
+/*
+ * Intercept dlopen()
+ */
+
+extern void*
+dlopen(const char *filename, int flag)
+{
+  return hpcrun_dlopen(filename, flag);
+}
+
+static void*
+hpcrun_dlopen(const char *filename, int flag)
+{
+  if (opt_debug >= 1) { MSG(stderr, "Catching dlopen of %s", filename); }
+  
+  /* execute real dlopen() */
+  void* module = (*real_dlopen)(filename, flag);
+  hpcrun_handle_any_dlerror();
+	
+  /* update profile tables */
+  handle_dlopen();
+
+  /* pass opened module pointer to profiled program */
+  return module;
 }
 
 

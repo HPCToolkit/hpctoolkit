@@ -153,6 +153,7 @@ typedef int (*execvp_fptr_t) PARAMS_EXECVP;
 typedef int (*execve_fptr_t) PARAMS_EXECVE;
 
 typedef pid_t (*fork_fptr_t) (void);
+typedef void* (*dlopen_fptr_t) (const char *filename, int flag);
 
 typedef void (*_exit_fptr_t) (int);
 
@@ -200,6 +201,8 @@ extern long hpcrun_gettid();
 extern void 
 hpcrun_parse_execl(const char*** argv, const char* const** envp,
 		   const char* arg, va_list arglist);
+
+extern void handle_dlopen();
 
 
 /* These routines must be specialized and supplied by someone else.
