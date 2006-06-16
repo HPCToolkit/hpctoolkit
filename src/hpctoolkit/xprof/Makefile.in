@@ -15,12 +15,12 @@
 @SET_MAKE@
 
 # -*-Mode: makefile;-*-
-# $Header: /Volumes/cvsrep/developer/HPCToolkit/src/hpctoolkit/xprof/Makefile.am,v 1.3 2006/05/26 16:14:46 eraxxon Exp $
+# $Header$
 
 #############################################################################
 #
 # File:
-#   $Source: /Volumes/cvsrep/developer/HPCToolkit/src/hpctoolkit/xprof/Makefile.am,v $
+#   $Source$
 #
 # Description:
 #   *Process with automake to produce Makefile.in*
@@ -31,12 +31,12 @@
 #############################################################################
 
 # -*-Mode: makefile;-*-
-# $Header: /Volumes/cvsrep/developer/HPCToolkit/src/Makeinclude.config,v 1.10 2004/11/03 16:53:28 eraxxon Exp $
+# $Header$
 
 #############################################################################
 #
 # File:
-#   $Source: /Volumes/cvsrep/developer/HPCToolkit/src/Makeinclude.config,v $
+#   $Source$
 #
 # Description:
 #   Include file for package Makefile.in
@@ -50,12 +50,12 @@
 #############################################################################
 
 # -*-Mode: makefile;-*-
-# $Header: /Volumes/cvsrep/developer/HPCToolkit/src/Makeinclude.rules,v 1.2 2006/05/26 16:14:42 eraxxon Exp $
+# $Header$
 
 #############################################################################
 #
 # File:
-#   $Source: /Volumes/cvsrep/developer/HPCToolkit/src/Makeinclude.rules,v $
+#   $Source$
 #
 # Description:
 #   Include file for package Makefile.in
