@@ -1,5 +1,5 @@
 # -*-Mode: makefile;-*-
-# $Header$
+# $Id$
 
 ## * BeginRiceCopyright *****************************************************
 ## 
@@ -100,7 +100,7 @@ install-data-local: myinstall-files myinstall-scripts \
 	myinstall-dirs myinstall-xerces
 
 myinstall-files:
-	@for pair in $(MYFILEPAIRS); do \
+	for pair in $(MYFILEPAIRS); do \
 	  src=`echo $${pair} | awk -F'!' '{print $$1}'` ; \
 	  dir=`echo $${pair} | awk -F'!' '{print $$2}'` ; \
 	  destdir=$(MYINSTALLDIR)/$${dir} ; \
@@ -109,7 +109,7 @@ myinstall-files:
 	done
 
 myinstall-scripts:
-	@for pair in $(MYSCRIPTPAIRS); do \
+	for pair in $(MYSCRIPTPAIRS); do \
 	  src=`echo $${pair} | awk -F'!' '{print $$1}'` ; \
 	  dir=`echo $${pair} | awk -F'!' '{print $$2}'` ; \
 	  destdir=$(MYINSTALLDIR)/$${dir} ; \
@@ -118,9 +118,21 @@ myinstall-scripts:
 	done
 
 myinstall-dirs:
-	@for x in $(MYDIRS); do \
-	  cp -R $(srcdir)/$$x $(MYINSTALLDIR)/. ; \
+#	Exclude CVS or .svn metadata!
+	for x in $(MYDIRS); do \
+	  for src in `find $(srcdir)/$${x} -name "*"  ! -type d`; do \
+	    if ! ( echo "$${src}" | grep "/.svn/" >/dev/null 2>&1 ); then \
+	      dst=`echo $${src} | sed s@^$(srcdir)/@@` ; \
+	      destdir=$(MYINSTALLDIR)/`dirname $${dst}` ; \
+	      $(mkinstalldirs) $${destdir} ; \
+	      $(INSTALL_DATA) $${src} $(MYINSTALLDIR)/$${dst} ; \
+	    fi \
+	  done \
 	done
+
+#	@for x in $(MYDIRS); do \
+#	  cp -R $(srcdir)/$$x $(MYINSTALLDIR)/. ; \
+#	done
 
 myinstall-xerces: 
 	@$(mkinstalldirs) $(MYXERCESINSTALLDIR)
@@ -146,8 +158,9 @@ MYTARFILE = @abs_top_builddir@/@PACKAGE_NAME@-@PACKAGE_VERSION@-webdocs.tar
 MYSRC = @abs_top_srcdir@
 
 hpc_webdocs: 
+#	Exclude CVS or .svn metadata
 	cd $(srcdir)/.. ; \
-	${MYTAR} cvf $(MYTARFILE) --exclude=CVS \
+	${MYTAR} cvf $(MYTARFILE) --exclude=CVS --exclude=".svn" \
 	 HPCToolkit/README* HPCToolkit/Sourceme* \
 	 HPCToolkit/doc \
 	 HPCToolkit/lib/html \
