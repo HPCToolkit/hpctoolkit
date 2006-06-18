@@ -186,6 +186,10 @@ Like bloop, it it can be used as a 'cross-tool'.
 4. Revision History
 --------------------
 
+HPCToolkit Version 4.2.1: [2006.06.17]
+--------------------
+- Use binutils 2.16.1
+
 HPCToolkit Version 4.2.0: [2006.04.07]
 --------------------
 - Add csprof to source tree

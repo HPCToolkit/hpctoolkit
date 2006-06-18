@@ -45,6 +45,6 @@
 package HPCToolkitVersionInfo;
 
 $HPCToolkitVersionInfo::info =
-    "A member of HPCToolkit, version 4.1.2";
+    "A member of HPCToolkit, version 4.2.1";
 
 1;
