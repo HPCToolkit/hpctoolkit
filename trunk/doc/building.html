@@ -26,7 +26,7 @@
 <div id="main">
 
 <!-- automatically updated by Emacs hook below; nicer than CVS Date -->
-<p class="lastupdated">Last Updated: 2005-03-14</p>
+<p class="lastupdated">Last Updated: 2006-06-19</p>
 
 <a name="toc"></a>
 <h1>Downloading, Building and Installing HPCToolkit</h1>
@@ -56,41 +56,40 @@
 <li>
 
 <p>To reduce the effort needed to distribute HPCToolkit, we have opted
-to distribute it in source form only. You will need a version of
-<a href="http://www.cvshome.org">CVS</a> on your PATH.
+to distribute it in source form only.
 
 <li>
 <p>HPCToolkit requires an ANSI/ISO C/C++ compliant compiler.
 Generally speaking any relatively recent vendor compiler or GCC 3.x
-should be fine.  The toolkit uses GNU binutils which requires a C
-compiler that also supports a few GNU extensions; obviously, GCC may
-be used.
+and 4.x should be fine.  The toolkit uses GNU binutils which requires
+a C compiler that also supports a few GNU extensions; obviously, GCC
+may be used.
     
   <ul class="noindent">
 
     <li>IRIX64-mips:
       <ul class="noindent">
         <li>SGI MIPSpro C++/C 7.3.x, 7.4
-        <li>GCC C++/C 3.2.1
+        <li>GCC C++/C 3.x
       </ul>
 
-    <li>Linux-i686
+    <li>Linux-x86
       <ul class="noindent">
-        <li>Intel C++/C 8.0
-        <li>GCC C++/C 3.0.4, 3.2.x, 3.3.x
+        <li>Intel C++/C 8.x, 9.x
+        <li>GCC C++/C 3.x, 4.x
       </ul>
 
     <li>Linux-ia64:
       <ul class="noindent">
-        <li>Intel C++/C 8.0
-        <li>Intel C++/C 7.0, 7.1
-        <li>Intel C++/C 6.0
-        <li>GCC C++/C 3.0.4, 3.2.x, 3.3.x
+        <li>Intel C++/C 8.x, 9.x
+        <li>GCC C++/C 3.x, 4.x
       </ul>
 
-    <li>Linux-opteron:
+    <li>Linux-x86_64:
       <ul class="noindent">
-        <li>GCC C++/C 3.3.x
+        <li>Intel C++/C 9.x
+        <li>GCC C++/C 3.x, 4.x
+        <li>Compiler bug: PGI 6.0.2, 6.1.2 (internal compiler error)
       </ul>
 
     <li>SunOS-sparc:
@@ -98,13 +97,13 @@ be used.
         <li>Sun Forte C++/C 5.3 (WorkShop 6 update 2 with patch 111685-01
             or greater (bug id 4466915))
         <li>Sun Forte C++/C 5.1 (WorkShop 6)
-        <li>GCC C++/C 3.0.4
+        <li>GCC C++/C 3.x
       </ul>
 
     <li>Tru64-alpha:
       <ul class="noindent">
         <li>Compaq C++/C 6.2, 6.3, 6.5
-        <li>GCC C++/C 3.2.1
+        <li>GCC C++/C 3.x
       </ul>
   </ul>
 
@@ -128,7 +127,7 @@ a recent Java runtime environment (JRE).  We have successfully used:
   </ul>
   <br>
   <ul class="noindent">
-    <li>Linux (i686, ia64, opteron): JRE 1.4.2
+    <li>Linux (x86, ia64, x86_64): JRE 1.4.2
     <li>Solaris-sparc: JRE 1.4.0
     <li>Tru64-alpha: JRE 1.4.2
   </ul>
@@ -157,39 +156,19 @@ succssfully used versions 5.6.x, 5.8.x.
 <ol class="noindent">
 
 <li>
-<p>Download the <a href="http://www.hipersoft.rice.edu/hpctoolkit/downloads/HPCToolkitRoot.tar.gz">HPCToolkitRoot</a> tarball and unzip/untar it.
+<p><a href="http://www.hipersoft.rice.edu/hpctoolkit/downloads.html">Download</a> a HPCToolkit OneStopShopping tarball and untar it:
 <div class="indent">
-  <code>gunzip HPCToolkitRoot.tar.gz</code><br>
-  <code>tar xvf HPCToolkitRoot.tar</code><br>
+  <code>gunzip HPCToolkit-OneStopShopping-x.y.z.tar.gz</code><br>
+  <code>tar xvf HPCToolkit-OneStopShopping-x.y.z.tar</code><br>
 </div>
-
-<li>
-<p>Change to the top-level HPCToolkitRoot directory.
-
-<li>
-
-<p>Gather the rest of the sources using our checkout tool.  If you 
-<i>only</i> want to download 
-<a href="hpcviewer.html" class="hpctool">hpcviewer</a>, use 
-the <code>--mod-hpcviewer-only</code> option.
-(We often use <a href="hpcviewer.html" class="hpctool">hpcviewer</a> on laptops
-or desktops rather than on the system on which we collect performance
-measurements.)</p>
-
-<div class="indent">
-  <code>./bin/updatesrc</code><br>
-<i>or</i><br>
-  <code>./bin/updatesrc --mod-hpcviewer-only</code><br>
-</div>
-<p>This will print a summary of progress to standard out and generate
-a log file with all the hoary details.
 
 </ol>
 
-<p>(Note: If you download HPCToolkit, it will also download three
-external libraries -- OpenAnalysis, Xerces-C++ and GNU binutils. In
-some cases it may be possible to use versions of these libraries that
-are already installed on your system.  However, we do not support such
+
+<p>(Note: The OneStopShopping tarball contains three external
+libraries -- OpenAnalysis, Xerces-C++ and GNU binutils. In some cases
+it may be possible to use versions of these libraries that are already
+installed on your system.  However, we do not support such
 configurations.)</p>
 
 
@@ -202,8 +181,7 @@ configurations.)</p>
 <p><i>[<a href="#toc">Contents</a>]</i>
 
 <p>The easiest way to build HPCToolkit is to use
-<code>Makefile.quick</code>, which will build everything you
-downloaded in the first step.  If you want to build HPCToolkit's
+<code>Makefile.quick</code>.  If you want to build HPCToolkit's
 <a href="hpcrun.html" class="hpctool">hpcrun</a>, you will need to use
 the <code>PAPI</code> option.  For a brief description, list of
 supported options and the default installation path, execute the
@@ -221,7 +199,7 @@ non-Un*x environment (e.g. Windows without Cygwin).
 <ol class="noindent">
 
 <li>
-<p>Change to the top-level HPCToolkitRoot directory.
+<p>Change to the top-level HPCToolkit-OneStopShopping-x.y.z directory.
 
 <li>
 <p>Configure, build and install. Since this will produce a lot of
