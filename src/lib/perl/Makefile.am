@@ -62,12 +62,14 @@ include $(top_srcdir)/src/Makeinclude.config
 #############################################################################
 
 MYSCRIPTS = \
-	HPCToolkitVersionInfo.pm \
 	PapiSpec.pm \
 	PROFILEXMLWriter.pm \
 	ptranDec.pm \
 	ptranSgi.pm \
 	XMLWriter.pm
+
+MYSCRIPTS_IN = \
+	HPCToolkitVersionInfo.pm
 
 MYINSTALLDIR = $(DESTDIR)$(libdir)/perl
 
@@ -89,6 +91,9 @@ myinstall-scripts:
 	@$(mkinstalldirs) $(MYINSTALLDIR)
 	@for x in $(MYSCRIPTS); do \
 	  $(INSTALL_SCRIPT) $(srcdir)/$$x $(MYINSTALLDIR)/. ; \
+	done
+	@for x in $(MYSCRIPTS_IN); do \
+	  $(INSTALL_SCRIPT) $$x $(MYINSTALLDIR)/. ; \
 	done
 
 .PHONY : myinstall-scripts

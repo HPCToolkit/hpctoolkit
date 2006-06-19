@@ -616,5 +616,7 @@ AC_OUTPUT([ \
   src/lib/perl/Makefile \
   src/lib/support/Makefile \
   src/lib/xml/Makefile \
+  \
+  src/lib/perl/HPCToolkitVersionInfo.pm \
 ])
 

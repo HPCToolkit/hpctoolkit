@@ -1,4 +1,4 @@
-## $Id$
+## $Id: HPCToolkitVersionInfo.pm 554 2006-06-18 00:27:38Z eraxxon $
 ## * BeginRiceCopyright *****************************************************
 ## 
 ## Copyright ((c)) 2002, Rice University 
@@ -45,6 +45,6 @@
 package HPCToolkitVersionInfo;
 
 $HPCToolkitVersionInfo::info =
-    "A member of HPCToolkit, version 4.2.1";
+    "A member of HPCToolkit, version @PACKAGE_VERSION@";
 
 1;
