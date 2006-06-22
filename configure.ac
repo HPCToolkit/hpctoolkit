@@ -67,7 +67,7 @@ include(config/hpc-cxxutils.m4)
 #    correctly
 #----------------------------------------------------------------------------
 
-AC_INIT([HPCToolkit], [4.2.1], [hpc@cs.rice.edu], [HPCToolkit])
+AC_INIT([HPCToolkit], [TRUNK-4.2.1], [hpc@cs.rice.edu], [HPCToolkit])
 AC_CONFIG_SRCDIR([src/include/HPCToolkitVersionInfo.h])
 AC_CONFIG_AUX_DIR([config])
 
@@ -118,6 +118,9 @@ AC_HEADER_STDC
 AC_CHECK_HEADERS(unistd.h)
 AC_CHECK_HEADERS(inttypes.h)
 HPC_CHECK_CXX_STDC_HEADERS
+
+# Check pthread.h
+HPC_CHECK_COMPILE_PTHREAD_H
 
 # Check for typedefs, structures, and compiler characteristics.
 # -none thus far-

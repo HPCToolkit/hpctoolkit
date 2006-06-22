@@ -112,13 +112,12 @@ CONFIG_CLEAN_FILES =
 LTLIBRARIES = $(noinst_LTLIBRARIES)
 am__DEPENDENCIES_1 =
 libHPCbinutils_la_DEPENDENCIES = $(am__DEPENDENCIES_1)
-am__objects_1 = libHPCbinutils_la-BinUtils.lo \
+am_libHPCbinutils_la_OBJECTS = libHPCbinutils_la-BinUtils.lo \
 	libHPCbinutils_la-Instruction.lo \
 	libHPCbinutils_la-LoadModule.lo \
 	libHPCbinutils_la-LoadModuleInfo.lo \
 	libHPCbinutils_la-PCToSrcLineMap.lo \
 	libHPCbinutils_la-Procedure.lo libHPCbinutils_la-Section.lo
-am_libHPCbinutils_la_OBJECTS = $(am__objects_1)
 libHPCbinutils_la_OBJECTS = $(am_libHPCbinutils_la_OBJECTS)
 DEFAULT_INCLUDES = -I. -I$(srcdir)
 depcomp = $(SHELL) $(top_srcdir)/config/depcomp
