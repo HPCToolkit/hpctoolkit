@@ -1,5 +1,5 @@
 # -*-Mode: autoconf;-*-
-# $Header$
+# $Id$
 
 ## * BeginRiceCopyright *****************************************************
 ## 
@@ -67,7 +67,7 @@ include(config/hpc-cxxutils.m4)
 #    correctly
 #----------------------------------------------------------------------------
 
-AC_INIT([HPCToolkit], [TRUNK-4.2.1], [hpc@cs.rice.edu], [HPCToolkit])
+AC_INIT([HPCToolkit], [BRANCH-4.2.1], [hpc@cs.rice.edu], [HPCToolkit])
 AC_CONFIG_SRCDIR([src/include/HPCToolkitVersionInfo.h])
 AC_CONFIG_AUX_DIR([config])
 
