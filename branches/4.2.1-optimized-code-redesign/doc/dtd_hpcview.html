@@ -1,0 +1,264 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+
+<!--
+  HPCToolkit Documentation: Editing within Netscape/Mozilla Composer
+  is possible, but it generates strange stuff in-line.  
+  Please use an ordinary text editor.
+-->
+
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+
+  <title>HPCToolkit: HPCVIEW file man page</title>
+
+  <link rel='stylesheet' type='text/css' href='styleForAll.css'>
+</head>
+
+<body>
+
+<!-- ********************************************************************** -->
+
+<script language="JavaScript" src="header_hpctoolkit.js"></script>
+
+<!-- ********************************************************************** -->
+
+<!-- automatically updated by Emacs hook below; nicer than CVS Date -->
+<p class="lastupdated">Last Updated: 2005-04-20</p>
+
+<h2>File Format: HPCVIEW</h2>
+
+<!-- ********************************************************************** -->
+
+<h3>SYNOPSIS</h3>
+
+<div class="indent">
+
+<p>XML DTD (Document Type Definition): 
+<a href="../lib/dtd/HPCView.dtd"><code>${HPCTOOLKIT}/lib/dtd/HPCView.dtd</code></a>.
+
+<p><span class="hpctool">HPCVIEW</span> files serve as configuration
+files for <a href="hpcview.html" class="hpctool">hpcview</a>.
+
+</div> <!-- class=indent -->
+
+<!-- ********************************************************************** -->
+
+<h3>DESCRIPTION</h3>
+
+<div class="indent">
+
+<p>An <span class="hpctool">HPCVIEW</span> document has several
+components:
+
+<div class="indent">
+
+<p>
+<span class="xmlcomment">Begin document type.</span>
+
+<br>&lt;HPCVIEW&gt; 
+
+<p>
+<span class="xmlcomment">(Optional) A title to appear at top of
+the display</span>
+
+<br>&lt;TITLE name="<span class='xmlvar'>my-document-title</span>" /&gt;
+
+<p>
+<span class="xmlcomment">(Optional) A set of path names can be given
+for directories (other than the current one) to be searched for source
+files. A path name may be either relative to the current directory
+(e.g. <code>./src</code> or absolute (e.g. <code>/home/user01/src</code>).
+An `*' (asterick) may be appended at the end of a path
+(e.g. <code>/home/user01/src/*</code>) to indicate that 
+<a href="hpcview.html" class="hpctool">hpcview</a> should
+not only inspect the given directory but also recursively search
+every directory that is a descendent of the path.
+</span>
+
+<!-- <p><span class="xmlcomment">`viewname' attribute</span> -->
+
+<br>&lt;PATH name="<span class='xmlvar'>src-code-directory-1</span>" /&gt;
+<br>&lt;PATH name="<span class='xmlvar'>src-code-directory-2</span>" /&gt;
+
+<p>
+<span class="xmlcomment">(Optional) REPLACE directives can be used
+to define one path prefix to operationally match another prefix
+occuring in profile data files or in a program structure file.  This
+can be particularly useful when trying to compare performance metrics
+between machines with different file structures, e.g., because the
+executables or the source files are installed in different
+places.</span>
+
+<br>&lt;REPLACE in="<span class='xmlvar'>old-path-prefix</span>" 
+out="<span class='xmlvar'>new-path-prefix</span>" /&gt;
+
+<p>
+<span class="xmlcomment">(Optional) A list of STRUCTURE directives provides
+the names of program structure files (type 
+<a href="dtd_pgm.html" class="hpctool">PGM</a>) created using the
+<a href="hpc_bloop.html" class="hpctool">bloop</a> tool.</span>
+
+<br>&lt;STRUCTURE name="<span class='xmlvar'>program.psxml</span>" /&gt;
+<br>&lt;STRUCTURE name="<span class='xmlvar'>key-dso1.psxml</span>" /&gt;
+<br>&lt;STRUCTURE name="<span class='xmlvar'>key-dso2.psxml</span>" /&gt;
+
+<p>
+<span class="xmlcomment">(Optional) A list of GROUP directives provides
+the names of group files (type 
+<a href="dtd_pgm.html" class="hpctool">PGM</a>)</span>
+
+<br>&lt;GROUP name="<span class='xmlvar'>program.gsxml</span>" /&gt;
+<br>&lt;GROUP name="<span class='xmlvar'>key-dso1.gsxml</span>" /&gt;
+<br>&lt;GROUP name="<span class='xmlvar'>key-dso2.gsxml</span>" /&gt;
+
+
+<p><span class="xmlcomment">
+One or more metrics must be defined. A metric may be 1) read from a
+file containing a <a href="dtd_profile.html" class="hpctool">PROFILE</a>
+document (FILE metric), or 2) computed by specifying a COMPUTE
+metric that is a MathML equation in terms of metrics defined earlier
+in the <span class="hpctool">HPCVIEW</span> document.  </span>
+
+<p><span class="xmlcomment"> Since 
+<a href="dtd_profile.html" class="hpctool">PROFILE</a>'s may
+contain multiple metrics, the FILE element has an optional `select' 
+attribute to identify a particular metric from the file.  Metrics are 
+identified by their `shortName' values from the
+<a href="dtd_profile.html" class="hpctool">PROFILE</a> header. 
+The default `select' value is `0', which corresponds with the first 
+metric in a <a href="dtd_profile.html" class="hpctool">PROFILE</a>
+(`shortName' = 0).
+</span>
+
+<p><span class="xmlcomment">Metric visibility can be controlled by
+setting the optional `display' attribute to `true' or `false'.  (One
+might read a metric and not display it because it is only useful as
+input to some computed metric.) </span>
+
+<p><span class="xmlcomment">The `percent' attribute indicates that
+viewers should display a column of percentages computed as the ratio
+of the metric for this scope to the metric for the whole
+program. Percents are useful when metrics are computed by summing
+contributions from descendants in the scope tree, but are meaningless
+for computed metrics such as ratio of flops/memory access in a scope.
+</span>
+
+<p><span class="xmlcomment">Sorting the data by a metric can be controlled
+by setting the optional `sortBy' attribute to `true' or `false'. 
+The size of the database
+and the time needed to create the database are directly proportional to the 
+number of sorting metrics. Very often one might want to display multiple 
+metrics to view the performance data in parallel, but does not need 
+to sort the database by every displayed metric. If all metrics are marked as
+non-sortable, the first displayed metric is used by default to sort the 
+database.
+</span>
+
+<br>&lt;METRIC name="<span class='xmlvar'>name1</span>" 
+  displayName="<span class='xmlvar'>name-in-display</span>"
+  display="<span class='xmlvar'>true|false</span>" 
+  percent="<span class='xmlvar'>true|false</span>" 
+  sortBy="<span class='xmlvar'>true|false</span>" &gt;
+
+<br>&lt;FILE name="<span class='xmlvar'>file1 of type PROFILE</span>"
+   select="<span class='xmlvar'>short-name-in-file1</span>" /&gt;
+
+<br>&lt;/METRIC&gt;
+
+<br>
+<br>&lt;METRIC name="<span class='xmlvar'>name2</span>" 
+  displayName="<span class='xmlvar'>other-name-in-display</span>" /&gt;
+
+<br>&lt;FILE name="<span class='xmlvar'>file2 of type PROFILE</span>"
+   select="<span class='xmlvar'>short-name-in-file2</span>" /&gt;
+
+<br>&lt;/METRIC&gt;
+
+<p>
+<span class="xmlcomment">End document type.</span>
+<br>&lt;/HPCVIEW&gt;
+
+</div> <!-- class=indent -->
+
+</div> <!-- class=indent -->
+
+<!-- ********************************************************************** -->
+
+<h3>EXAMPLES</h3>
+
+<div class="indent">
+
+<p>Below is a sample configuration file that shows how a computed
+metric expressed as a MathML equation is synthesized as the difference
+of two metrics read from
+<a href="dtd_profile.html" class="hpctool">PROFILE</a> files.
+
+<p>While all of MathML is parsed, 
+<a href="hpcview.html" class="hpctool">hpcview</a>
+currently computes only simple algebraic expressions involving
+constants and previously-defined metrics, combined with the binary
+operators plus, minus, times, divide, max, min, and power
+(exponentiation).
+
+<p>Note that the `select' attribute of the FILE elements is defaulting to
+`0'.
+
+<div class="indent">
+
+<pre>
+&lt;HPCVIEW&gt;
+
+&lt;TITLE name="heat.single"/&gt;
+
+&lt;PATH name="."/&gt;
+&lt;STRUCTURE name="structure.psxml"/&gt;
+
+&lt;METRIC name="fcy_hwc" displayName="CYCLES"&gt;
+&lt;FILE name="heat.single.fcy_hwc.pxml"/&gt;
+&lt;/METRIC&gt;
+
+&lt;METRIC name="ideal" displayName="ICYCLES"&gt;
+&lt;FILE name="heat.single.ideal.pxml"/&gt;
+&lt;/METRIC&gt;
+
+&lt;METRIC name="ratio" displayName="STALL" percent="false"&gt;
+&lt;COMPUTE&gt;
+&lt;math&gt;
+  &lt;apply&gt;
+    &lt;minus/&gt;
+    &lt;ci&gt;fcy_hwc&lt;/ci&gt;
+    &lt;ci&gt;ideal&lt;/ci&gt;
+  &lt;/apply&gt;
+&lt;/math&gt;
+&lt;/COMPUTE&gt;
+&lt;/METRIC&gt;
+
+&lt;METRIC name="gfp_hwc" displayName="FLOPS"&gt;
+&lt;FILE name="heat.single.gfp_hwc.pxml"/&gt;
+&lt;/METRIC&gt;
+
+&lt;/HPCVIEW&gt;
+</pre>
+
+</div> <!-- class=indent -->
+
+</div> <!-- class=indent -->
+
+<!-- ********************************************************************** -->
+
+<script language="JavaScript" src="footer_hpctoolkit.js"></script>
+
+<!-- ********************************************************************** -->
+
+</body>
+</html>
+
+
+<!-- Local Variables: -->
+<!-- eval: (add-hook 'write-file-hooks 'time-stamp) -->
+<!-- time-stamp-start: ">Last Updated: " -->
+<!-- time-stamp-format: "%:y-%02m-%02d" -->
+<!-- time-stamp-end: "<" -->
+<!-- time-stamp-line-limit: 35 -->
+<!-- End: -->

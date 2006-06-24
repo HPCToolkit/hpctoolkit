@@ -1,0 +1,37 @@
+<!-- Progam scope tree: represents program structure at many source
+     code levels.  Because the goal is to represent source code, Ps
+     must be children of Fs instead of simply children of a PGM or LM. -->
+<!ELEMENT PGM (G|LM|F)+>
+<!ATTLIST PGM
+	version CDATA #REQUIRED>
+  <!-- Groups create arbitrary sets of other elements except PGM. -->
+  <!ELEMENT G (G|LM|F|P|L|S)*>
+  <!ATTLIST G
+	n CDATA #REQUIRED>
+  <!-- Runtime load modules for PGM (e.g., DSOs, exe) -->
+  <!ELEMENT LM (G|F)*>
+  <!ATTLIST LM
+	n CDATA #REQUIRED>
+  <!-- Files contain procedures and source line info -->
+  <!ELEMENT F (G|P|L|S)*>
+  <!ATTLIST F
+	n CDATA #REQUIRED>
+  <!-- Procedures contain source line info 
+       n: processed name; ln: link name -->
+  <!ELEMENT P (G|L|S)*>
+  <!ATTLIST P
+	n  CDATA #REQUIRED
+	ln CDATA #IMPLIED
+	b CDATA #IMPLIED
+	e CDATA #IMPLIED>
+  <!-- Loops -->
+  <!ELEMENT L (G|L|S)*>
+  <!ATTLIST L
+	b CDATA #IMPLIED
+	e CDATA #IMPLIED>
+  <!-- Statement/Statement range -->
+  <!ELEMENT S EMPTY>
+  <!ATTLIST S
+	b CDATA #REQUIRED
+	e CDATA #IMPLIED
+	id CDATA #IMPLIED>

@@ -1,0 +1,238 @@
+// -*-Mode: C++;-*-
+// $Id$
+// * BeginRiceCopyright *****************************************************
+// 
+// Copyright ((c)) 2002, Rice University 
+// All rights reserved.
+// 
+// Redistribution and use in source and binary forms, with or without
+// modification, are permitted provided that the following conditions are
+// met:
+// 
+// * Redistributions of source code must retain the above copyright
+//   notice, this list of conditions and the following disclaimer.
+// 
+// * Redistributions in binary form must reproduce the above copyright
+//   notice, this list of conditions and the following disclaimer in the
+//   documentation and/or other materials provided with the distribution.
+// 
+// * Neither the name of Rice University (RICE) nor the names of its
+//   contributors may be used to endorse or promote products derived from
+//   this software without specific prior written permission.
+// 
+// This software is provided by RICE and contributors "as is" and any
+// express or implied warranties, including, but not limited to, the
+// implied warranties of merchantability and fitness for a particular
+// purpose are disclaimed. In no event shall RICE or contributors be
+// liable for any direct, indirect, incidental, special, exemplary, or
+// consequential damages (including, but not limited to, procurement of
+// substitute goods or services; loss of use, data, or profits; or
+// business interruption) however caused and on any theory of liability,
+// whether in contract, strict liability, or tort (including negligence
+// or otherwise) arising in any way out of the use of this software, even
+// if advised of the possibility of such damage. 
+// 
+// ******************************************************* EndRiceCopyright *
+
+//***************************************************************************
+//
+// File:
+//    BloopIRInterface.h
+//
+// Purpose:
+//   A derivation of the IR interface for the ISA (disassembler) class
+//   of bloop.
+//
+//   Note: many stubs still exist.
+//
+// Description:
+//    [The set of functions, macros, etc. defined in the file]
+//
+//***************************************************************************
+
+#ifndef BloopIRInterface_h
+#define BloopIRInterface_h
+
+//************************* System Include Files ****************************
+
+#include <list>
+#include <set>
+
+//************************ OpenAnalysis Include Files ***********************
+
+#include <OpenAnalysis/IRInterface/CFGIRInterfaceDefault.hpp>
+
+//*************************** User Include Files ****************************
+ 
+#include <lib/ISA/ISA.hpp>
+#include <lib/binutils/Instruction.hpp>
+#include <lib/binutils/Procedure.hpp>
+#include <lib/support/String.hpp>
+#include <lib/support/Assertion.h>
+
+//*************************** Forward Declarations ***************************
+
+// IRInterface types: Use OA_IRHANDLETYPE_SZ64 (size of bfd_vma/Addr)
+//   ProcHandle  - 
+//   StmtHandle  - Instruction*
+//   ExprHandle  - 
+//   LeafHandle  - 
+//   StmtLabel   - Addr
+//   SymHandle   - char* (simply dummy strings)
+//   ConstHandle - 
+
+// FIXME: eraxxon: Due to some unwariness, these types are a mixture
+// of fixed size (Addr) and relative size (Instruction*).  I think we
+// should be able to use only one so that casts are always between
+// types of the same size.
+
+// The IR handle type is 64 bits but we will need to interface with
+// 32-bit pointers at times.  Use this macro to eliminate potential
+// compiler warnings about "casting a 32-bit pointer to an integer of
+// different size".
+#define TY_TO_IRHNDL(x, totype) (totype((OA::irhandle_t)(psuint)(x)))
+#define IRHNDL_TO_TY(x, totype) ((totype)(psuint)(x.hval()))
+
+//***************************************************************************
+// Iterators
+//***************************************************************************
+
+class BloopIRRegionStmtIterator: public OA::IRRegionStmtIterator {
+public:
+  BloopIRRegionStmtIterator(Procedure &_p) : pii(_p) { }
+  virtual ~BloopIRRegionStmtIterator() { }
+
+  virtual OA::StmtHandle current () const 
+    { return TY_TO_IRHNDL(pii.Current(), OA::StmtHandle); }
+
+  virtual bool isValid () const { return pii.IsValid(); }
+  virtual void operator++ () { ++pii; }
+
+  virtual void reset() { pii.Reset(); }
+
+private:
+  ProcedureInstructionIterator pii;
+};
+
+
+//***************************************************************************
+// Abstract Interfaces
+//***************************************************************************
+
+class BloopIRInterface 
+  : public virtual OA::IRHandlesIRInterface,
+    public OA::CFG::CFGIRInterfaceDefault 
+{
+public:
+
+  // Note: We assume each instantiation of the IRInterface represents
+  // one procedure!
+  BloopIRInterface (Procedure *_p);
+  virtual ~BloopIRInterface ();
+  
+  
+  //-------------------------------------------------------------------------
+  // IRHandlesIRInterface
+  //-------------------------------------------------------------------------
+  
+  // create a string for the given handle, should be succinct
+  // and there should be no newlines
+  std::string toString(const OA::ProcHandle h);
+  std::string toString(const OA::StmtHandle h);
+  std::string toString(const OA::ExprHandle h);
+  std::string toString(const OA::OpHandle h);
+  std::string toString(const OA::MemRefHandle h);
+  std::string toString(const OA::SymHandle h);
+  std::string toString(const OA::ConstSymHandle h);
+  std::string toString(const OA::ConstValHandle h);
+  
+  // Given a statement, pretty-print it to the output stream os.
+  void dump(OA::StmtHandle stmt, std::ostream& os);
+  
+  // Given a memory reference, pretty-print it to the output stream os.
+  void dump(OA::MemRefHandle h, std::ostream& os);
+
+  void currentProc(OA::ProcHandle p);
+
+  //-------------------------------------------------------------------------
+  // CFGIRInterfaceDefault
+  //-------------------------------------------------------------------------
+  
+  //! Given a ProcHandle, return an IRRegionStmtIterator* for the
+  //! procedure. The user must free the iterator's memory via delete.
+  OA::OA_ptr<OA::IRRegionStmtIterator> procBody(OA::ProcHandle h);
+
+
+  //--------------------------------------------------------
+  // Statements: General
+  //--------------------------------------------------------
+
+  //! Are return statements allowed
+  bool returnStatementsAllowed() { return true; }
+
+  //! Given a statement, return its CFG::IRStmtType
+  OA::CFG::IRStmtType getCFGStmtType(OA::StmtHandle h);
+
+  OA::StmtLabel getLabel(OA::StmtHandle h);
+
+  OA::OA_ptr<OA::IRRegionStmtIterator> getFirstInCompound(OA::StmtHandle h);
+
+
+  //--------------------------------------------------------
+  // Loops
+  //--------------------------------------------------------
+  OA::OA_ptr<OA::IRRegionStmtIterator> loopBody(OA::StmtHandle h);
+  OA::StmtHandle loopHeader(OA::StmtHandle h);
+  OA::StmtHandle getLoopIncrement(OA::StmtHandle h);
+  bool loopIterationsDefinedAtEntry(OA::StmtHandle h);
+
+  //--------------------------------------------------------
+  // Structured two-way conditionals
+  //--------------------------------------------------------
+  OA::OA_ptr<OA::IRRegionStmtIterator> trueBody(OA::StmtHandle h);
+  OA::OA_ptr<OA::IRRegionStmtIterator> elseBody(OA::StmtHandle h);
+  
+  //--------------------------------------------------------
+  // Structured multiway conditionals
+  //--------------------------------------------------------
+  int numMultiCases(OA::StmtHandle h);
+  OA::OA_ptr<OA::IRRegionStmtIterator> multiBody(OA::StmtHandle h, 
+						 int bodyIndex);
+  bool isBreakImplied(OA::StmtHandle h);
+  bool isCatchAll(OA::StmtHandle h, int bodyIndex);
+  OA::OA_ptr<OA::IRRegionStmtIterator> getMultiCatchall(OA::StmtHandle h);
+  OA::ExprHandle getSMultiCondition (OA::StmtHandle h, int bodyIndex);
+
+  //--------------------------------------------------------
+  // Unstructured two-way conditionals
+  //--------------------------------------------------------
+  OA::StmtLabel getTargetLabel(OA::StmtHandle h, int n);
+  
+  //--------------------------------------------------------
+  // Unstructured multi-way conditionals
+  //--------------------------------------------------------
+  int numUMultiTargets(OA::StmtHandle h);
+  OA::StmtLabel getUMultiTargetLabel(OA::StmtHandle h, int targetIndex);
+  OA::StmtLabel getUMultiCatchallLabel(OA::StmtHandle h);
+  OA::ExprHandle getUMultiCondition(OA::StmtHandle h, int targetIndex);
+
+  //--------------------------------------------------------
+  // Special
+  //--------------------------------------------------------
+  bool parallelWithSuccessor(OA::StmtHandle h) { return false; }
+  int numberOfDelaySlots(OA::StmtHandle h);
+
+  //--------------------------------------------------------
+  // Symbol Handles
+  //--------------------------------------------------------  
+  OA::SymHandle getProcSymHandle(OA::ProcHandle h);
+  
+private:
+  BloopIRInterface () { BriefAssertion(0); }
+
+private:
+  Procedure *proc;
+  std::set<Addr> branchTargetSet;
+};
+
+#endif // BloopIRInterface_h

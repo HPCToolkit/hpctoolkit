@@ -1,0 +1,79 @@
+#!/bin/sh
+
+# $Id$
+
+# This script illustrates the use of mpirun and dplace in conjunction with
+# SGI's ssrun.  The program is SMG98, the ASCI benchmark program.
+#
+# From the speedshop man page --
+#   Updates to the MPI 3.1 release (MPI 3.1.x.x) reorganize the dynamic
+#   objects specified by _RLD_LIST so that they are not in the position
+#   ssrun expects them to be.  The workaround is to set environment
+#   variable MPI_RLD_HACK_OFF as follows:
+#
+#          % setenv MPI_RLD_HACK_OFF 1
+#
+# It also illustrates the measurement of loads and stores.
+
+#############################################################################
+
+# The path to smg98
+SMGPATH="/DSystem/HPCTools/tests/binaries/smg98"
+
+# The name of smg98
+SMG98="smg98.mips-IRIX64.cc-64-O3"
+
+SMGRUN="${SMGPATH}/${SMG98}"
+
+#############################################################################
+
+# cycles
+mpirun -np 1 /usr/sbin/dplace -place dplace.input-smg98 -mustrun ssrun -fcy_hwc ${SMGRUN} -n 64 64 64 -c 2.0 3.0 40
+prof -lines ${SMG98}.fcy* | ptran > fcy_hwc.pxml
+
+# flop
+mpirun -np 1 /usr/sbin/dplace -place dplace.input-smg98 -mustrun ssrun -fgfp_hwc ${SMGRUN} -n 64 64 64 -c 2.0 3.0 40
+prof -lines ${SMG98}.fgfp* | ptran > fgfp_hwc.pxml
+
+# l1miss
+mpirun -np 1 /usr/sbin/dplace -place dplace.input-smg98 -mustrun ssrun -fdc_hwc ${SMGRUN} -n 64 64 64 -c 2.0 3.0 40
+prof -lines ${SMG98}.fdc* | ptran > fdc_hwc.pxml
+
+# l2miss
+mpirun -np 1 /usr/sbin/dplace -place dplace.input-smg98 -mustrun ssrun -fdsc_hwc ${SMGRUN} -n 64 64 64 -c 2.0 3.0 40
+prof -lines ${SMG98}.fdsc* | ptran > fdsc_hwc.pxml
+
+# tlb miss
+mpirun -np 1 /usr/sbin/dplace -place dplace.input-smg98 -mustrun ssrun -tlb_hwc ${SMGRUN} -n 64 64 64 -c 2.0 3.0 40
+prof -lines ${SMG98}.tlb* | ptran > tlb_hwc.pxml
+
+
+# Loads
+_SPEEDSHOP_HWC_COUNTER_NUMBER="18"
+_SPEEDSHOP_HWC_COUNTER_OVERFLOW="1023"
+export _SPEEDSHOP_HWC_COUNTER_NUMBER
+export _SPEEDSHOP_HWC_COUNTER_OVERFLOW
+
+mpirun -np 1 /usr/sbin/dplace -place dplace.input-smg98 -mustrun ssrun -prof_hwc ${SMGRUN} -n 64 64 64 -c 2.0 3.0 40
+
+prof -lines ${SMG98}.prof_hwc* | ptran > gl_hwc.pxml
+
+for f in `ls ${SMG98}.prof_hwc*` ; do
+  mv $f `echo $f | sed 's/prof/gl/'`
+done
+
+
+# Stores
+_SPEEDSHOP_HWC_COUNTER_NUMBER="19"
+_SPEEDSHOP_HWC_COUNTER_OVERFLOW="1023"
+export _SPEEDSHOP_HWC_COUNTER_NUMBER
+export _SPEEDSHOP_HWC_COUNTER_OVERFLOW
+
+mpirun -np 1 /usr/sbin/dplace -place dplace.input-smg98 -mustrun ssrun -prof_hwc ${SMGRUN} -n 64 64 64 -c 2.0 3.0 40
+
+prof -lines ${SMG98}.prof_hwc* | ptran > gs_hwc.pxml
+
+for f in `ls ${SMG98}.prof_hwc* ` ; do
+  mv $f `echo $f | sed 's/prof/gs/'`
+done
+

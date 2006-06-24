@@ -1,0 +1,60 @@
+$Id$
+
+=============================================================================
+==
+== README
+==
+== Location: ${HPCTOOLKIT}/examples
+==
+=============================================================================
+
+This directory contains some sample scripts and configuration files
+that are useful illustrations of how to go beyond the capabilities 
+provided by hpcquick.
+
+See the individual files for more information.  Before using, we
+highly recommend that you copy each set of script and configurations
+files that you wish to try into a new temporary directory.  You will
+then be able to modify the files and generate profiling data/files
+without interfering with unrelated files.
+
+--------------------
+
+profile-alpha_uprofile : A script to collect a number of profile 
+                         metrics on Compaq/Alpha EV67 machines using 
+                         uprofile.
+
+hpcview_cfg-alpha.xml  : A simple hpcview configuration file for
+                         displaying the data collected above.
+
+--------------------
+
+profile-sgi_ssrun      : A script for collecting several profile metrics
+                         on SGI Origin machines with ssrun.
+
+profile-sgi_ssrun_mpi  : The above script configured for use with mpirun.
+
+hpcview_cfg-sgi.xml    : An hpcview configuration file for displaying
+                         the above metrics. Some combined metrics are 
+                         also computed.
+
+--------------------
+
+profile-sgi_ssrun.makefile   : Another way of collecting automating 
+                               profile data generation is by using make.
+                               This file performs some profiles using ssrun.
+            
+hpcview_cfg-sgi-makefile.xml : An hpcview configuration file for displaying 
+                               the above data.
+
+--------------------
+
+profile-sgi_ssrun-smg98   : Collects info for smg98 using mpirun and ssrun 
+                            on an SGI. 
+
+hpcview_cfg-sgi-smg98.xml : An hpcview configuration file for displaying 
+                            the above data.
+
+dplace.input-smg98        : input data for this script
+
+--------------------

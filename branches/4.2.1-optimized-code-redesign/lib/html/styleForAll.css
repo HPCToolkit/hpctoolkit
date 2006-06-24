@@ -1,0 +1,200 @@
+/****************************************************************************
+ * 
+ * HPCView style sheet
+ *
+ * Notes:
+ *   - uses features from CSS2 
+ *   - search for 'BasicFontSize' to consistently set basic font size
+ *
+ ****************************************************************************/
+
+/****************************************************************************
+ * Classes and Id styles
+ ****************************************************************************/
+
+/* 'line' id: basic style for most everything
+ */
+#line {
+  position: absolute;
+    top: 0;
+    left: 0;
+  vertical-align: top;
+  display: block;  
+  font-size: 13px;    /* BasicFontSize */
+  font-family: monospace;
+  color: black;
+  background-color: transparent;
+  z-index: 4;  /* stack index */
+}
+
+/* 'line' class: basic style for most everything
+ */
+.line {
+  position: absolute;
+    top: 0;
+    left: 0;
+  vertical-align: top;
+  display: block;  
+  font-size: 13px;    /* BasicFontSize */
+  font-family: monospace;
+  color: black;
+  background-color: transparent;
+  visibility: hidden;
+  z-index: 4;  /* stack index */
+}
+
+/* 'highlight' id
+ */
+#highlight {
+  position: absolute;
+    top: 0;
+  height: 10px;
+  visibility: hidden;
+  z-index: 1; /* stack index; css2 */
+}
+
+/* 'scopesControlLine' id: style for ancestor and descendant control
+ *  panes (left)
+ */
+#scopesControlLine {
+  position: absolute;
+    top: 0;
+    right: 0;
+  vertical-align: top;
+  text-align: right;
+  display: block;  
+  font-size: 13px;    /* BasicFontSize */
+  font-family: monospace;
+  color: black;
+  background-color: transparent;
+  z-index: 4; /* stack index */
+}
+
+.indent {
+  margin-left: 4%; /* these can be nested */
+}
+
+/* 'titleText' class: The text at the top (minus the title)
+ */
+.titleText {
+  font-size: 13px;    /* BasicFontSize */
+  font-family: sans-serif;
+  color: black;
+  background-color: transparent;
+}
+
+/* 'arrow' class
+ */
+.arrow {
+  padding-left: 10px;
+  vertical-align: top;
+  float: left;
+}
+
+div.invisible {
+  visibility: hidden;
+  height: 10px;
+}
+
+/****************************************************************************
+ * Element styles
+ ****************************************************************************/
+ 
+body {
+  margin-top:   0px;
+  margin-left:  0px;
+  margin-right: 0px;
+}
+
+head {
+  margin-top:   0px;
+  margin-left:  0px;
+  margin-right: 0px;
+}
+ 
+h1 {
+  font-size: 24px;
+  font-family: serif;
+  color: black;
+  background-color: transparent; 
+}
+
+h2 {
+  font-size: 19px;
+  font-family: serif;
+  color: black;
+  background-color: transparent;
+}
+
+h3 {
+  font-size: 16px;
+  font-family: serif;
+  color: black;
+  background-color: transparent;
+}
+
+h4 {
+  font-size: 13px;
+  font-family: serif;
+  color: black;
+  background-color: transparent;
+}
+
+hr {
+  display: block;
+  vertical-align: middle;
+  border-width : 1px;
+  height: 0px;
+  width: 100%;
+  font-size: 2px;
+  line-height: 2px;
+
+  margin-top : 3px;
+  padding-top: 0px;
+  margin-bottom : 0px;
+  padding-bottom: 0px;
+}
+
+div {
+  border-width : 0px;
+
+  padding-left: 0px;
+  padding-right: 0px;
+  padding-top : 0px;
+  padding-bottom : 0px;
+
+  margin-left : 0px;
+  margin-right : 0px;
+}
+
+a {
+  text-decoration: none;
+  color: blue;
+  background-color: transparent;
+}
+
+pre { 
+  font-size: 13px;   /* BasicFontSize */
+  color: black;
+  background-color: transparent; 
+  font-family: monospace;
+  display: block;
+  vertical-align: top;
+  margin-top: 0px;
+  padding-top: 0px;
+  margin-bottom : 0px;
+  padding-bottom: 0px;
+  line-height: 13px;
+}
+
+p {
+  font-size: 14px;  /* BasicFontSize */
+  font-family: serif;
+  color: black;
+  background-color: transparent;
+}
+
+img {
+  /*  padding-left: 5px;
+  display: float; */
+}

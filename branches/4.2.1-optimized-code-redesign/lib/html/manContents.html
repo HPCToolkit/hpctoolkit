@@ -1,0 +1,48 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+        
+  <title>manual contents</title>
+
+  <link rel='stylesheet' type='text/css' href='styleForMan.css'>
+</head>
+
+<body>
+
+<script type='text/javascript' language="JavaScript">
+
+function go(nav_id) {
+
+   htmlFile = "man.html" + nav_id; 
+
+   parent.frames["manual"].document.location.href = htmlFile;
+
+}
+
+</script>
+
+<ul class='noindent'>
+<li><a href="javascript:go('#top')">Top</a>
+</ul>
+
+<br>
+
+<ul class='noindent'>
+<li><a href="javascript:go('#titleframe')">Title Pane</a>
+<li><a href="javascript:go('#files')">Files Pane</a>
+<li><a href="javascript:go('#source_files')">Source File Pane</a>
+<li><a href="javascript:go('#scopestable')">Scope Hierarchy Display</a>
+<li><a href="javascript:go('#navigation')">Navigation</a>
+<li><a href="javascript:go('#titleframe')">Help and Reset</a>
+</ul>
+
+<br>
+
+<ul class='noindent'>
+<li><a href="javascript:go('#browser')">Browser Configuration</a>
+<li><a href="javascript:go('#hints')">Troubleshooting</a>
+</ul>
+
+</body>
+</html>

@@ -1,0 +1,110 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+
+<!--
+  HPCToolkit Documentation: Editing within Netscape/Mozilla Composer
+  is possible, but it generates strange stuff in-line.  
+  Please use an ordinary text editor.
+-->
+
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+
+  <title>HPCToolkit hpcviewer man page</title>
+
+  <link rel='stylesheet' type='text/css' href='styleForAll.css'>
+</head>
+
+<body>
+
+<!-- ********************************************************************** -->
+
+<script language="JavaScript" src="header_hpctoolkit.js"></script>
+
+<!-- ********************************************************************** -->
+
+<div id="main">
+
+<!-- automatically updated by Emacs hook below; nicer than CVS Date -->
+<p class="lastupdated">Last Updated: 2004-10-28</p>
+
+<h2>User Commands: hpcviewer(1)</h2>
+
+<!-- ********************************************************************** -->
+
+<h3>SYNOPSIS</h3>
+
+<div class="indent">
+
+<p><span class="hpctool">hpcviewer</span>
+   [<i>performance-database/hpcviewer-file</i>]
+
+<p>Location: <code>${HPCTOOLKIT}/bin</code>
+
+<p>For GUI environments, double click on the <span class="hpctool">HPCViewer.jar</span> icon in <code>${HPCTOOLKIT}/lib</code>.
+
+</div> <!-- class=indent -->
+
+<!-- ********************************************************************** -->
+
+<h3>DESCRIPTION</h3>
+
+<div class="indent">
+
+<p><span class="hpctool">hpcviewer</span> is a graphical user interface
+for exploring performance databases created by 
+<a href="hpcview.html" class="hpctool">hpcview</a> (or 
+<a href="hpcquick.html" class="hpctool">hpcquick</a>).
+Because it is written in Java, it can run anywhere -- on your cluster,
+on your desktop, or on your laptop.
+
+<p>When <span class="hpctool">hpcviewer</span> is run with no
+arguments, it will display a file chooser dialog-box so that you can 
+select the <i>performance-database/hpcviewer-file</i> to view. 
+The pathname of this file can also be specified as an argument.
+
+<p> The <span class="hpctool">hpcviewer</span> user interface enables
+one to explore an application's performance data in a top-down
+fashion.  It enables one to easily navigate back and forth between
+performance data and source code.  The browser supports a pane for
+presenting a program's source files, a navigation pane that enables
+one to move to source files associated with particular performance
+data and tables of performance data that can be sorted by each of the
+columns.</p>
+
+<p>The navigation pane presents  performance data in a hierarchical
+display.  At any time, you are looking at some program context
+(program, file, procedure, loop, or line).  Also displayed is the
+data for both the parent and the children of the current context.
+Up and down arrows on the lines of the display are used to walk the
+hierarchy. In order to speed up top-down analysis, the interface
+also provides `flatten' and `un-flatten' buttons. Their icons hint
+at their function. `Flatten' modifies the hierarchy by eliding
+non-leaf children of the current node and replacing them with the
+grandchildren. Unflatten reverses this. Since the tables are sorted,
+the flatten operation makes short work of diving into the program
+from the top to identify the most important files, procedures, loops
+and statements.
+
+</div> <!-- class=indent -->
+
+
+<!-- ********************************************************************** -->
+
+<script language="JavaScript" src="footer_hpctoolkit.js"></script>
+
+<!-- ********************************************************************** -->
+
+</div> <!-- id=main -->
+
+</body>
+</html>
+
+
+<!-- Local Variables: -->
+<!-- eval: (add-hook 'write-file-hooks 'time-stamp) -->
+<!-- time-stamp-start: ">Last Updated: " -->
+<!-- time-stamp-format: "%:y-%02m-%02d" -->
+<!-- time-stamp-end: "<" -->
+<!-- time-stamp-line-limit: 35 -->
+<!-- End: -->

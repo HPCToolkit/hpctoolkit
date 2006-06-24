@@ -1,0 +1,22 @@
+$Id$
+
+=============================================================================
+==
+== README
+==
+== Location: ${HPCTOOLKIT}/lib
+==
+=============================================================================
+
+This contains some external libraries used by HPCToolkit.
+
+=============================================================================
+
+Overview of libraries:
+--------------------
+
+dtd/           - Data type definitions for XML file formats.
+
+html/          - HTML, CSS stylesheets, and JavaScript code used when
+                 'hpcview' generates a static HTML database.
+

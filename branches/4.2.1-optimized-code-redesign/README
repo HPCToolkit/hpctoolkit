@@ -1,0 +1,47 @@
+$Id$
+
+=============================================================================
+==
+== README
+==
+== Location: ${HPCTOOLKIT}
+==
+=============================================================================
+
+This is the README for HPCToolkit.
+
+Contents:
+  0. What is HPCToolkit
+  1. For More Information
+
+=============================================================================
+
+0. What is HPCToolkit:
+--------------------
+
+HPCToolkit is a multi-platform package with tools for 1) collecting
+raw profile information, 2) converting various types of profiling
+information into platform independent XML formats and 3) synthesizing
+browsable representations that correlate performance metrics gathered
+from multiple sources with program source code.  It was formerly
+released under the name HPCView and includes code once named 'hpcprof'
+and 'papiprof'.
+
+HPCToolkit is an effort of the Center for High Performance Software
+Research (HiPerSoft) at Rice University.
+
+Development was supported in part though the Department of Energy
+Accelerated Strategic Computing Initiative (LLNL Subcontract B347884),
+the Department of Defense CEWES ERDC MSRC Programming Environment and
+Training program, the Los Alamos Computer Science Institute, and the
+National Computational Science Alliance.
+
+=============================================================================
+
+1. For More Information:
+--------------------
+
+HPCToolkit documentation (including instructions for build/installation)
+  Point your browser to ${HPCTOOLKIT}/doc/index.html
+
+HPCToolkit Website: http://www.hipersoft.rice.edu/hpctoolkit

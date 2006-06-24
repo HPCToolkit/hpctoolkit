@@ -1,0 +1,271 @@
+$Id$
+=============================================================================
+==
+== README
+==
+== John Mellor-Crummey and Nathan Tallent, Rice University
+==
+=============================================================================
+
+Contents:
+  0. Overview
+  1. A Few Details
+  2. More Details: Outline of hpcrun's monitoring scheme
+
+=============================================================================
+
+0. Overview
+--------------------
+
+This directory contains a prototype of the hpcrun profiler.  It
+consists of hpcrun and hpcprof, tools for collecting and processing
+profiling data, and is designed to be used with HPCToolkit's viewer.
+hpcrun can profile unmodified applications using either PAPI or
+native-processor events, create multiple profiles in one run and
+alleviate world hunger.  (Caveat emptor...)
+
+hpcrun launches the PAPI profiler on an unmodified application binary
+using a preloaded library that intercepts the application's execution
+during program launch.  When the application's execution is
+intercepted, the hpcrun library determines the process' list of load
+modules (including DSOs) and prepares PAPI_sprofil for profiling over
+each load module.  Once the profiler is initialized, control is passed
+back to the application.  When the application exits, control returns
+to the hpcrun library, which calls finalization routines and writes
+the profiling data to a binary file for later processing.
+
+By default, hpcrun will profile every process spawned by the profiled
+command and generate separate output for each process.  An option can
+turn off this behavior.  In order to generate multiple profiles,
+hpcrun requires corresponding hardware support.
+
+hpcprof processes data collected from hpcrun, correlates it with
+source file information and produces text, html or PROFILE output.
+Users can use the text and html output to obtain a quick overview of
+program performance.  This output consists of 1) summary lists of load
+modules, files, procedures and lines sorted by profiling metric counts
+and 2) source files with annotated metric information in their
+margins.  Uses can use the PROFILE output with HPCView (from HPCToolkit)
+in order to do a top-down analysis of the profile information.
+PROFILE output should be used with HPCTools 3.5.1 or later.
+
+hpcrun/prof is designed primarily to be used on ia64-Linux and
+i686-Linux.  In theory it could be used on any system that supports
+library preloading and PAPI, but sometimes better options are
+available.  For example, alpha-Tru64 users will want to profile using
+DCPI (HPCToolkit's xprof provides a good way of making this data
+usable).
+
+
+Caution: hpcrun refers to events using either standard PAPI or
+native-processor names.  Users should know that PAPI events do not
+always directly refer to a native event counted by a given processor's
+performance counters.  This is true *even if* a PAPI event exists for
+a given platform.  In cases where no direct hardware counter is
+available, PAPI may attempt to simulate an event counter using some
+combination of other performance counter information; typically these
+are not profilable.
+
+
+N.B.: We have not tested html output.
+   
+=============================================================================
+
+1. A Few Details
+--------------------
+
+1.1. hpcrun
+----
+
+Key files:
+  hpcrun.c/h 
+  monitor.c 
+  
+
+'hpcrun.c' is the interface to the profiling library.  It parses
+options, prepares the environment for the profiling library, forks a
+new process and exec's the application to be profiled.
+
+
+1.1.1. Dynamically linked applications
+
+'monitor.c' contains the bulk of the code for the profiling library.
+The library is automatically loaded using the linker's LD_PRELOAD
+environment variable.  Setting this variable causes the loader to load
+the referened file *before* anything else is loaded.  Since libraries
+can have initialization/finalization routines that are automatically
+executed upon load/unload, execution control first passes to this
+library.  Options are passed to it via environment variables.
+
+The initialization routine (using the special name '_init') prepares
+the library for intercepting the libc_start routine, which is the
+launch point of every application.  The _init routine uses dlsym to
+get a handle to the libc_start function that we are going to
+intercept.  The interception is done by defining a symbol with exactly
+the same prototype (C declaration) as the function to intercept:
+because this library is loaded first the linker finds our symbol first
+and passes control to our intercepting libc_start.  Profiling is then
+initialized and execution is passed back to the intercepted function
+using the handle that was obtained via dlsym.  The application then
+runs normally.
+
+
+1.1.2. Statically linked applications
+
+[FIXME]
+
+
+1.1.3. Misc
+
+We obtain a list of loaded modules (including DSOs) by examing the
+data found in /proc/pid/maps (or /proc/self/maps).
+
+After the application is finished, control passes back to the hpcrun
+library.  Profiling is stopped and the data is written to a binary
+output file.
+
+
+1.2. hpcprof
+----
+
+Key files:
+  hpcprof.cc/h
+  summary.cc/h
+
+hpcprof is still rough, though it should now produce useful
+information.  We have tested text and PROFILE output, but not html.
+
+You can pass multiple profile files with the same or different events.
+When more than one event with the same period is detected, collective
+events (min, max, sum) are automatically created to provide aggregate
+info.  These collective events are output in text and html modes, but
+are removed from PROFILE output.
+
+The PROFILE format should be fairly self-explanatory.  Metric counts
+(M) are embedded within a program scope tree, with a program (PGM),
+load modules (LM), files (F), procedures (P), and statements (S).  The
+format supports multiple metrics and thus each metric in the scope
+tree is identified by a short name previously assigned in the header
+information.  Note that unlike the text and html mode, metrics counts
+are not given in terms of *sample* counts but rather as estimated
+*event* counts, i.e., (samples) * (events/sample).
+
+=============================================================================
+
+2. More Details: Outline of hpcrun's monitoring scheme
+--------------------
+
+(Note: In order to show the relation of each case with the basic
+'Process' case, identical information is elided with '---'.)
+
+------------------------------------------------------------
+
+Process:
+  Start:
+    1. init_library()
+    2. Intercept launch point (hpcrun_libc_start_main())
+       - init_process()
+       - Launch with hpcrun_libc_start_main_fini() as exit handler
+	
+  Stop:
+    10. Return to exit handler (hpcrun_libc_start_main_fini())
+        - fini_process()
+
+------------------------------------------------------------
+
+Process + Exec:
+  Start:
+    1. ---
+    2. ---
+
+  Exec:
+    3. Intercept exec:
+       - fini_process()
+       - ld.so causes repeat of #1 and #2
+
+  Stop:
+    10. --- 
+
+------------------------------------------------------------
+
+Process + Fork:
+  Start (process 1):
+    1. ---
+    2. ---
+
+  Start (process 2)
+    3. Intercept fork (hpcrun_fork())
+       for child process: 
+       - hpcrun lib already initialized; 
+         do not return to libc_start_main again; 
+         signal and exit handler already installed
+       - init_process()
+
+  Stop (process 1):
+    9. --- 
+
+  Stop (process 2):
+    10. --- 
+
+------------------------------------------------------------
+
+Process + Fork/Exec:
+  Start (process 1):
+    1. ---
+    2. ---
+
+  Start (process 2)
+    3. Intercept fork (hpcrun_fork()) 
+       [see #3 in Process + Fork]
+
+  Exec (process 2)
+    4. Intercept exec 
+       [see #3 in Process + Exec]
+
+  Stop (process 1):
+    9. --- 
+
+  Stop (process 2):
+    10. --- 
+
+------------------------------------------------------------
+
+Multithreaded process (each thread individually)
+  Start (process):
+    1. ---
+    2. ---
+
+  Each thread:
+    3. Intercept thread creation (hpcrun_pthread_create()) 
+       - Call pthread_create with hpcrun_pthread_create_start_routine()
+         as the start routine
+    4. Execute thread: 
+       - init_thread()
+       - execute
+       - fini_thread()
+
+  Stop (process):
+    1.. --- 
+
+------------------------------------------------------------
+
+Multithreaded process (all threads as one process)* 
+  Start (process):
+    1. ---
+    2. ---
+
+  Each thread:
+    3. Intercept thread creation [see #3 in Multithreaded process]
+    4. Execute thread
+       - init_thread() // use existing profile buf; no new output file
+       - execute
+       - fini_thread() // appropriately un-init
+
+  Stop (process):
+    1.. --- 
+
+* Because PAPI does not have an atomic interrupt, it is possible that
+one could loose samples if more than one thread increments the same
+histogram bucket at the same time.
+
+------------------------------------------------------------

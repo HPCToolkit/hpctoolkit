@@ -1,0 +1,179 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+
+<!--
+  HPCToolkit Documentation: Editing within Netscape/Mozilla Composer
+  is possible, but it generates strange stuff in-line.  
+  Please use an ordinary text editor.
+-->
+
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+
+  <title>HPCToolkit hpcprof man page</title>
+
+  <link rel='stylesheet' type='text/css' href='styleForAll.css'>
+</head>
+
+<body>
+
+<!-- ********************************************************************** -->
+
+<script language="JavaScript" src="header_hpctoolkit.js"></script>
+
+<!-- ********************************************************************** -->
+
+<div id="main">
+
+<!-- automatically updated by Emacs hook below; nicer than CVS Date -->
+<p class="lastupdated">Last Updated: 2004-10-28</p>
+
+<h2>User Commands: hpcprof(1)</h2>
+
+<!-- ********************************************************************** -->
+
+<h3>SYNOPSIS</h3>
+
+<div class="indent">
+
+<p><span class="hpctool">hpcprof</span> 
+   [options] <i>executable</i> <i>hpcrun-file</i>...</p>
+
+<p><span class="hpctool">hpcprof</span> 
+   -p [options] <i>executable</i> <i>hpcrun-file</i>...</p>
+
+<p>Location: <code>${HPCTOOLKIT}/bin</code>
+ 
+</div> <!-- class=indent -->
+
+<!-- ********************************************************************** -->
+
+<h3>DESCRIPTION</h3>
+
+<div class="indent">
+
+<p><span class="hpctool">hpcprof</span> is a utility for interpreting
+execution profiles (event-based program counter historgrams collected)
+with <a href="hpcrun.html" class="hpctool">hpcrun</a>. 
+
+<span class="hpctool">hpcprof</span> has two basic modes: one to output a profile in a human-readable ASCII form, and another to output profiles in a machine-readable form (XML) for use with 
+<a href="hpcview.html" class="hpctool">hpcview</a>, which will
+correlate the profile data with program structure information
+(produced by the <a href="hpc_bloop.html" class="hpctool">bloop</a>
+binary analyzer) and source code.
+</p>
+
+
+</div> <!-- class=indent -->
+
+<!-- ********************************************************************** -->
+
+<h3>ARGUMENTS</h3>
+
+<div class="indent">
+
+<h4>Options: General</h4>
+
+<dl>
+
+<dt>-h, --help
+<dd>Print help.
+
+<dt>--debug
+<dd> Print debugging information
+
+<dt>-d, --directory <i>dir</i>
+<dd>Search <i>dir</i> for source files.
+
+<dt>-D, --recursive-directory <i>dir</i>
+<dd>Search <i>dir</i> recursively for source files.
+
+<dt>--force
+<dd>Show data that is not accurate
+
+</dl>
+
+
+<h4>Options: Text and HTML mode</h4>
+
+<dl>
+
+<dt>-e, --everything
+<dd>Show all information
+
+<dt>-f, --files
+<dd>Show all files
+
+<dt>-r, --funcs
+<dd>Show all functions
+
+<dt>-l, --lines
+<dd>Show all lines
+
+<dt>-a, --annotate <i>file</i>
+<dd>Annotate source file <i>file</i> with metrics
+
+<dt>-n, --number
+<dd>Show number of samples, not percent
+
+<dt>-s, --show <i>thres</i>
+<dd>Set threshhold to <i>thres</i> for showing aggregate data
+
+<dt>-H, --html <i>dir</i>
+<dd>Output HTML into directory <i>dir</i>.
+
+</dl>
+
+<h4>Options: PROFILE mode</h4>
+
+<dl>
+
+<dt>-p, --profile
+<dd>Dump profile data in 
+<a href="dtd_profile.html" class="hpctool">PROFILE</a> format for 
+consumption by <a href="hpcview.html" class="hpctool">hpcview</a>
+
+<dl>
+
+</div> <!-- class=indent -->
+
+<!-- ********************************************************************** -->
+
+<h3>NOTES</h3>
+
+<div class="indent">
+
+<p><span class="hpctool">hpcprof</span> currently runs only on Linux.</p>
+
+</div> <!-- class=indent -->
+
+<!-- ********************************************************************** -->
+
+<h3>RELATED</h3>
+
+<div class="indent">
+
+<p><a href="hpcrun.html" class="hpctool">hpcrun</a>
+
+</div> <!-- class=indent -->
+
+<!-- ********************************************************************** -->
+
+<script language="JavaScript" src="footer_hpctoolkit.js"></script>
+
+<!-- ********************************************************************** -->
+
+</div> <!-- id=main -->
+
+</body>
+</html>
+
+
+<!-- Local Variables: -->
+<!-- eval: (add-hook 'write-file-hooks 'time-stamp) -->
+<!-- time-stamp-start: ">Last Updated: " -->
+<!-- time-stamp-format: "%:y-%02m-%02d" -->
+<!-- time-stamp-end: "<" -->
+<!-- time-stamp-line-limit: 35 -->
+<!-- End: -->
+

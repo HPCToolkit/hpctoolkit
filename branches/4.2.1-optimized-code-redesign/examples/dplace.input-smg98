@@ -1,0 +1,3 @@
+memories 1 in topology cube # set up 2 memories which are close
+threads 1                   # number of threads
+run thread 0 on memory 0
