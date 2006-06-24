@@ -259,9 +259,9 @@ TextSection::Create_InitializeProcs()
       String symNm = bfd_asymbol_name(sym);
 
       LoadModule::DbgFuncSummary::Info* dbg = (*dbgSum)[begVMA];
-      if (dbg) { // (skip until full merge ready)
-	//endVMA = dbg->endVMA; 
-	//procNm = dbg->name;
+      if (dbg) {
+	endVMA = dbg->endVMA;
+	procNm = dbg->name;
       }
       if (!dbg || endVMA == 0) {
 	endVMA = FindProcedureEnd(i);

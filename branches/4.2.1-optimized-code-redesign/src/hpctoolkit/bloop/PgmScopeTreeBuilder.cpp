@@ -88,10 +88,19 @@ using namespace ScopeTreeBuilder;
 
 //*************************** Forward Declarations ***************************
 
+typedef std::map<ProcScope*, Procedure*> ProcScopeToProcMap;
+
 // Helpers for building a scope tree
 
+static ProcScopeToProcMap*
+BuildStructure(LoadModScope *lmScope, LoadModule* lm);
+
 static ProcScope*
-BuildFromProc(FileScope* fileScope, Procedure* p, 
+BuildProcStructure(FileScope* fileScope, Procedure* p);
+
+
+static ProcScope*
+BuildFromProc(ProcScope* pScope, Procedure* p, 
 	      bool irreducibleIntervalIsLoop); 
 
 static int
@@ -107,6 +116,9 @@ BuildFromBB(CodeInfo* enclosingScope, Procedure* p,
 
 static FileScope*
 FindOrCreateFileNode(LoadModScope* lmScope, Procedure* p);
+
+static suint 
+FindLoopBegLine(Procedure* p, OA::OA_ptr<OA::CFG::Interface::Node> bb);
 
 //*************************** Forward Declarations ***************************
 
@@ -140,7 +152,7 @@ class CFGNodeToPCMap
 {
 public:
   typedef std::map<OA::OA_ptr<OA::CFG::Interface::Node>, 
-		   std::pair<Addr, Addr>* > BaseMap;
+		   std::pair<Addr, Addr>* > My_t;
 
 public:
   CFGNodeToPCMap() { }
@@ -166,7 +178,7 @@ class StmtData;
 
 class LineToStmtMap : public std::map<suint, StmtData*> {
 public:
-  typedef std::map<suint, StmtData*> BaseMap;
+  typedef std::map<suint, StmtData*> My_t;
 
 public:
   LineToStmtMap() { }
@@ -220,7 +232,7 @@ BuildPCToSrcLineMap(PCToSrcLineXMap* map, Procedure* p);
 //#define BLOOP_DEBUG_PROC
 #define CDSDBG if (0) /* optimized away */
 
-#define BLOOP_ATTEMPT_TO_IMPROVE_INTERVAL_BOUNDARIES
+//#define BLOOP_ATTEMPT_TO_IMPROVE_INTERVAL_BOUNDARIES
 
 const char* OrphanedProcedureFile =
   "~~~No-Associated-File-Found-For-These-Procedures~~~";
@@ -249,10 +261,10 @@ WriteScopeTree(std::ostream& os, PgmScopeTree* pgmScopeTree, bool prettyPrint)
 // Set of routines to build a scope tree
 //****************************************************************************
 
-// BuildFromExe: Builds a scope tree -- with a focus on loop nest
+// BuildFromLM: Builds a scope tree -- with a focus on loop nest
 //   recovery -- representing program source code from the Executable
 //   'exe'.  
-// An executable represents binary code, which is essentially
+// A load module represents binary code, which is essentially
 //   a collection of procedures along with some extra information like
 //   symbol and debugging tables.  This routine relies on the debugging
 //   information to associate procedures with thier source code files
@@ -262,59 +274,51 @@ WriteScopeTree(std::ostream& os, PgmScopeTree* pgmScopeTree, bool prettyPrint)
 //   normalizer employs heuristics to reverse certain compiler
 //   optimizations such as loop unrolling.
 PgmScopeTree*
-ScopeTreeBuilder::BuildFromExe(/*Executable*/ LoadModule* exe, 
-			       PCToSrcLineXMap* &map,
-			       String canonicalPathList, 
-			       bool normalizeScopeTree,
-			       bool unsafeNormalizations,
-			       bool irreducibleIntervalIsLoop,
-			       bool verboseMode)
+ScopeTreeBuilder::BuildFromLM(LoadModule* lm, 
+			      PCToSrcLineXMap* &xmap,
+			      String canonicalPathList, 
+			      bool normalizeScopeTree,
+			      bool unsafeNormalizations,
+			      bool irreducibleIntervalIsLoop,
+			      bool verboseMode)
 {
-  BriefAssertion(exe);
+  BriefAssertion(lm);
 
   PgmScopeTree* pgmScopeTree = NULL;
   PgmScope* pgmScope = NULL;
 
-  if (map != NULL) { // MAP
-    map = new PCToSrcLineXMap();
+  if (xmap != NULL) { // MAP
+    xmap = new PCToSrcLineXMap();
   }
 
-  // Assume exe->Read() has been performed
+  // Assume lm->Read() has been performed
   pgmScope = new PgmScope();
   pgmScopeTree = new PgmScopeTree(pgmScope);
 
-  LoadModScope *lmScope = new LoadModScope(exe->GetName(), pgmScope);
+  LoadModScope *lmScope = new LoadModScope(lm->GetName(), pgmScope);
+
+  // 1. Build basic FileScope/ProcScope structure
+  ProcScopeToProcMap* pmap = BuildStructure(lmScope, lm);
   
-  // -----------------------------------------------------------------
-  // For each procedure, find the existing corresponding FileScope or
-  // create a new one; add procedure to FileScope and ScopeTree.
-  // -----------------------------------------------------------------
-  for (LoadModuleSectionIterator it(*exe); it.IsValid(); ++it) {
-    Section* sec = it.Current();
-    if (sec->GetType() != Section::Text) {
-      continue;
+  // 2. For each ProcScope, complete the build.
+  for (ProcScopeToProcMap::iterator it = pmap->begin(); 
+       it != pmap->end(); ++it) {
+    ProcScope* pScope = it->first;
+    Procedure* p = it->second;
+
+    if (verboseMode) {
+      cerr << "Building scope tree for [" << p->GetName()  << "] ... ";
     }
-    
-    // We have a TextSection.  Iterate over procedures.
-    TextSection* tsec = dynamic_cast<TextSection*>(sec);
-    for (TextSectionProcedureIterator it1(*tsec); it1.IsValid(); ++it1) {
-      Procedure* p = it1.Current();
-      
-      FileScope* fileScope = FindOrCreateFileNode(lmScope, p);
-      if (verboseMode){
-        cerr << "Building scope tree for [" << p->GetName()  << "] ... ";
-      }
-      BuildFromProc(fileScope, p, irreducibleIntervalIsLoop);
-      if (map) { BuildPCToSrcLineMap(map, p); } // MAP
-      if (verboseMode){
-        cerr << "done " << endl;
-      }
-       
+    BuildFromProc(pScope, p, irreducibleIntervalIsLoop);
+    if (xmap) { BuildPCToSrcLineMap(xmap, p); } // MAP
+    if (verboseMode) {
+      cerr << "done " << endl;
     }
   }
+  if (xmap) { xmap->Finalize(); } // MAP
+  delete pmap;
 
-  if (map) { map->Finalize(); } // MAP
-  
+  // 3. Normalize
   if (canonicalPathList.Length() > 0) {
     bool result = FilterFilesFromScopeTree(pgmScopeTree, canonicalPathList);
     BriefAssertion(result); // Should never be false
@@ -356,39 +360,97 @@ ScopeTreeBuilder::Normalize(PgmScopeTree* pgmScopeTree,
   return true; // no errors
 }
 
+
 //****************************************************************************
 // Helpers for building a scope tree
+//****************************************************************************
+
+// BuildStructure: Build basic file-procedure structure.  This
+// will be useful later when relocating alien lines.  Also, the
+// nesting structure allows inference of accurate boundaries on
+// procedure end lines.
+static ProcScopeToProcMap*
+BuildStructure(LoadModScope *lmScope, LoadModule* lm)
+{
+  ProcScopeToProcMap* mp = new ProcScopeToProcMap;
+  
+  for (LoadModuleSectionIterator it(*lm); it.IsValid(); ++it) {
+    Section* sec = it.Current();
+    if (sec->GetType() != Section::Text) {
+      continue;
+    }
+    
+    // We have a TextSection.  Iterate over procedures.
+    TextSection* tsec = dynamic_cast<TextSection*>(sec);
+    for (TextSectionProcedureIterator it1(*tsec); it1.IsValid(); ++it1) {
+      Procedure* p = it1.Current();
+      FileScope* fileScope = FindOrCreateFileNode(lmScope, p);
+      ProcScope* procScope = BuildProcStructure(fileScope, p);
+      (*mp)[procScope] = p;
+    }
+  }
+  
+  return mp;
+}
+
+
+// BuildProcStructure: Build skeletal ProcScope
+static ProcScope*
+BuildProcStructure(FileScope* fileScope, Procedure* p)
+{
+  // FIXME: FileScope --> CodeInfo* (procs could be scope)
+
+  // Find procedure name
+  String funcNm   = GetBestFuncName(p->GetName()); 
+  String funcLnNm = GetBestFuncName(p->GetLinkName());
+  
+  // Find preliminary procedure bounds
+  // FIXME: this is in GetProcedureFirstLineInfo
+  String func, file;
+  suint begLn1, endLn1;
+  Instruction* eInst = p->GetLastInst();
+  ushort endOp = (eInst) ? eInst->GetOpIndex() : 0;
+  p->GetSourceFileInfo(p->GetStartAddr(), 0, p->GetEndAddr(), endOp,
+		       func, file, begLn1, endLn1);
+
+  suint begLn, endLn;
+  if (IsValidLine(p->GetBegLine())) {
+    begLn = p->GetBegLine();
+    endLn = (endLn1 >= begLn) ? endLn1 : begLn;
+  }
+  else {
+    begLn = begLn1;
+    endLn = endLn1;
+  }
+  
+  // Create the scope
+  ProcScope* pScope = new ProcScope((const char*)funcNm, fileScope,
+				    (const char*)funcLnNm, begLn, endLn);
+  return pScope;
+}
+
+
 //****************************************************************************
 
 #ifdef BLOOP_DEBUG_PROC
 static bool testProcNow = false;
 #endif
 
-// BuildFromProc: 
+// BuildFromProc: Complete the representation for 'pScope' given the
+// LoadModule Procedure 'p'.  Note that pScopes parent may itself be a
+// ProcScope.
 static ProcScope* 
-BuildFromProc(FileScope* fileScope, Procedure* p, 
-	      bool irreducibleIntervalIsLoop)
-{  
-  String func, file;
-  suint startLn, endLn;
-  Instruction* eInst = p->GetLastInst();
-  ushort endOp = (eInst) ? eInst->GetOpIndex() : 0;
-  
-  p->GetSourceFileInfo(p->GetStartAddr(), 0, p->GetEndAddr(), endOp,
-		       func, file, startLn, endLn);
-
-  String funcNm   = GetBestFuncName(p->GetName()); 
-  String funcLnNm = GetBestFuncName(p->GetLinkName());
-
-  ProcScope* pScope = new ProcScope((const char*)funcNm, fileScope,
-				    (const char*)funcLnNm, startLn, endLn);
+BuildFromProc(ProcScope* pScope, Procedure* p, bool irreducibleIntervalIsLoop)
+{
+  // FIXME: We can do better for lines
+  // Look at the my parent or my sibling for a bound on line
 
 #ifdef BLOOP_DEBUG_PROC
   testProcNow = false;
   suint dbgId = p->GetId(); 
 
   const char* dbgNm = "main";
-  if (strncmp(funcNm, dbgNm, strlen(dbgNm)) == 0) { testProcNow = true; }
+  if (strncmp(p->GetName(), dbgNm, strlen(dbgNm)) == 0) { testProcNow = true; }
   //if (dbgId == 537) { testProcNow = true; }
 
   //cout << "==> Processing `" << funcNm << "' (" << dbgId << ") <==\n";
@@ -412,14 +474,14 @@ BuildFromProc(FileScope* fileScope, Procedure* p,
   
 #ifdef BLOOP_DEBUG_PROC
   if (testProcNow) {
-    cout << "*** CFG for `" << funcNm << "' ***" << endl;
+    cout << "*** CFG for `" << p->GetName() << "' ***" << endl;
     cout << "  total blocks: " << cfg->getNumNodes() << endl
 	 << "  total edges:  " << cfg->getNumEdges() << endl;
     cfg->dump(cout, irIF);
     cfg->dumpdot(cout, irIF);
 
     cout << "*** Nested SCR (Tarjan Interval) Tree for `" << 
-      funcNm << "' ***" << endl;
+      p->GetName() << "' ***" << endl;
     tarj->dump(cout);
     cout << endl;
     cout.flush(); cerr.flush();
@@ -472,8 +534,8 @@ BuildFromTarjInterval(CodeInfo* enclosingScope, Procedure* p,
 #ifdef BLOOP_ATTEMPT_TO_IMPROVE_INTERVAL_BOUNDARIES
   String func, file;
   Addr startAddr, endAddr;
-  suint startLn = UNDEF_LINE, endLn = UNDEF_LINE;
-  suint loopsStartLn = UNDEF_LINE, loopsEndLn = UNDEF_LINE;
+  suint begLn = UNDEF_LINE, endLn = UNDEF_LINE;
+  suint loopsBegLn = UNDEF_LINE, loopsEndLn = UNDEF_LINE;
 
   BriefAssertion(cfgNodeMap->find(bb) != cfgNodeMap->end());
   startAddr = (*cfgNodeMap)[bb]->first;
@@ -489,7 +551,7 @@ BuildFromTarjInterval(CodeInfo* enclosingScope, Procedure* p,
   // -------------------------------------------------------
   for (int kid = tarj->getInners(fgNode); kid != OA::RIFG::NIL; 
        kid = tarj->getNext(kid) ) {
-    OA::OA_ptr<OA::CFG::Interface::Node> crtBlk = 
+    OA::OA_ptr<OA::CFG::Interface::Node> bb1 = 
       rifg->getNode(kid).convert<OA::CFG::Interface::Node>();
     OA::NestedSCR::Node_t ity = tarj->getNodeType(kid);
     
@@ -499,12 +561,12 @@ BuildFromTarjInterval(CodeInfo* enclosingScope, Procedure* p,
     if (ity == OA::NestedSCR::NODE_ACYCLIC) { 
 #ifdef BLOOP_ATTEMPT_TO_IMPROVE_INTERVAL_BOUNDARIES
       if (tarj->getNext(kid) == OA::RIFG::NIL) {
-        BriefAssertion(cfgNodeMap->find(crtBlk) != cfgNodeMap->end());
-        endAddr = (*cfgNodeMap)[crtBlk]->second;
+        BriefAssertion(cfgNodeMap->find(bb1) != cfgNodeMap->end());
+        endAddr = (*cfgNodeMap)[bb1]->second;
       }
 #endif
       if (addStmts) {
-	BuildFromBB(enclosingScope, p, crtBlk);
+	BuildFromBB(enclosingScope, p, bb1);
       }
     }
     
@@ -514,24 +576,26 @@ BuildFromTarjInterval(CodeInfo* enclosingScope, Procedure* p,
     if (ity == OA::NestedSCR::NODE_INTERVAL || 
 	(irrIntIsLoop && ity == OA::NestedSCR::NODE_IRREDUCIBLE)) { 
       
+      suint begLn = FindLoopBegLine(p, bb1);
+
       // Build the loop nest
-      LoopScope* lScope = new LoopScope(enclosingScope, UNDEF_LINE,
-					UNDEF_LINE, crtBlk->getId());
+      LoopScope* lScope = new LoopScope(enclosingScope, begLn, begLn, 
+					bb1->getId());
       int num = BuildFromTarjInterval(lScope, p, tarj, cfg, kid, 
 				      cfgNodeMap, 1, irrIntIsLoop);
       localLoops += (num + 1);
       
 #ifdef BLOOP_ATTEMPT_TO_IMPROVE_INTERVAL_BOUNDARIES
       // Update line numbers from data collected building loop nest
-      if (loopsStartLn == UNDEF_LINE) {
+      if (loopsBegLn == UNDEF_LINE) {
 	BriefAssertion( loopsEndLn == UNDEF_LINE );
-	loopsStartLn = lScope->BegLine();
+	loopsBegLn = lScope->BegLine();
 	loopsEndLn = lScope->EndLine();
       } 
       else {
 	BriefAssertion( loopsEndLn != UNDEF_LINE );
 	if (IsValidLine(lScope->BegLine(), lScope->EndLine())) {
-	  loopsStartLn = MIN(loopsStartLn, lScope->BegLine() );
+	  loopsBegLn = MIN(loopsBegLn, lScope->BegLine() );
 	  loopsEndLn = MAX(loopsEndLn, lScope->EndLine() );
 	}
       }
@@ -559,16 +623,16 @@ BuildFromTarjInterval(CodeInfo* enclosingScope, Procedure* p,
 
 #ifdef BLOOP_ATTEMPT_TO_IMPROVE_INTERVAL_BOUNDARIES
   // FIXME: it would probably be better to include opIndices here
-  p->GetSourceFileInfo(startAddr, 0, endAddr, 0, func, file, startLn, endLn);
+  p->GetSourceFileInfo(startAddr, 0, endAddr, 0, func, file, begLn, endLn);
 
-  if (loopsStartLn != UNDEF_LINE && loopsStartLn < startLn) {
-    startLn = loopsStartLn;
+  if (loopsBegLn != UNDEF_LINE && loopsBegLn < begLn) {
+    begLn = loopsBegLn;
   }
   if (loopsEndLn != UNDEF_LINE && loopsEndLn > endLn) {
     endLn = loopsEndLn;
   }
-  if (IsValidLine(startLn, endLn)) {
-    enclosingScope->SetLineRange(startLn, endLn); // conditional
+  if (IsValidLine(begLn, endLn)) {
+    enclosingScope->SetLineRange(begLn, endLn); // conditional
   }
 #endif
   
@@ -582,7 +646,10 @@ static int
 BuildFromBB(CodeInfo* enclosingScope, Procedure* p, 
 	    OA::OA_ptr<OA::CFG::Interface::Node> bb)
 {
-  LineToStmtMap stmtMap; // maps lines to NULL (simulates a set)
+  ProcScope* pScope = enclosingScope->Proc();
+  FileScope* fileScope = pScope->File();
+  
+  LineToStmtMap stmtMap; // maps lines to NULL (to simulate a set)
   
   OA::OA_ptr<OA::CFG::Interface::NodeStatementsIterator> it =
     bb->getNodeStatementsIterator();
@@ -597,12 +664,43 @@ BuildFromBB(CodeInfo* enclosingScope, Procedure* p,
     if ( !IsValidLine(line) ) {
       continue; // cannot continue without valid symbolic info
     }
-    
+
     // eraxxon: MAP: add all PC's for BB to map
-    
-    if (stmtMap.find(line) == stmtMap.end()) {
-      stmtMap[line] = NULL;
-      new StmtRangeScope(enclosingScope, line, line);
+
+    // Determine where this line should go
+    bool done = false;
+    if (!file.Empty() && file != fileScope->Name()) {
+      // An alien line: Ignore for now (FIXME)
+      done = true;
+    }
+    if (!done) {
+      // Attempt to find a non-Procedure enclosing scope, which means
+      // LoopScope.  Note: We do not yet know loop end lines.
+      // However, we can use the procedure end line as a boundary
+      // because the only source code objects suceeding this scope
+      // that can be multiply instantiated into this scope are
+      // procedures. In contrast, Fortran statement functions or C
+      // macros must preceed this scope.
+      for (CodeInfo* x = enclosingScope;
+	   x->Type() == ScopeInfo::LOOP; x = x->CodeInfoParent()) {
+	if (x->BegLine() <= line && line <= pScope->EndLine()) {
+	  if (stmtMap.find(line) == stmtMap.end()) {
+	    stmtMap[line] = NULL;
+	    new StmtRangeScope(x, line, line);
+	  }
+	  done = true;
+	  break;
+	}
+      }
+    }
+    if (!done && pScope->BegLine() <= line && line <= pScope->EndLine()) {
+      // An alien line that belongs within 'pScope'
+      new StmtRangeScope(pScope, line, line);
+      done = true;
+    }
+    if (!done) {
+      // An alien line: ignore for now (FIXME)
+      done = true;
     }
   } 
   return 0;
@@ -613,12 +711,19 @@ BuildFromBB(CodeInfo* enclosingScope, Procedure* p,
 static FileScope* 
 FindOrCreateFileNode(LoadModScope* lmScope, Procedure* p)
 {
-  String func, file;
-  suint startLn, endLn;
-  p->GetSourceFileInfo(p->GetStartAddr(), 0, p->GetEndAddr(), 0, func, file,
-		       startLn, endLn); // FIXME: use only startAddr
+  // Attempt to find filename for procedure
+  String file = p->GetFilename();
+  if (file.Empty()) {
+    String func;
+    suint begLn, endLn;
+    p->GetSourceFileInfo(p->GetStartAddr(), 0, p->GetEndAddr(), 0, func, file,
+			 begLn, endLn); // FIXME: use only begAddr
+  }
+  if (file.Empty()) { 
+    file = OrphanedProcedureFile; 
+  }
 
-  if (file.Empty()) { file = OrphanedProcedureFile; }
+  // Obtain corresponding FileScope
   FileScope* fileScope = lmScope->FindFile(file);
   if (fileScope == NULL) {
     bool fileIsReadable = FileIsReadable(file);
@@ -627,6 +732,57 @@ FindOrCreateFileNode(LoadModScope* lmScope, Procedure* p)
   return fileScope; // guaranteed to be a valid pointer
 } 
 
+
+static suint 
+FindLoopBegLine(Procedure* p, OA::OA_ptr<OA::CFG::Interface::Node> node)
+{
+  // Given the head node of the loop, find the backward branch.
+
+  // Note: It is possible to have multiple backward branches (e.g. an
+  // 'unstructured' loop written with IFs and GOTOs).  We take the
+  // smallest source line of them all.
+  using namespace OA::CFG;
+
+  suint begLn = UNDEF_LINE;
+
+  // Find the head pc
+  OA::OA_ptr<Interface::NodeStatementsIterator> stmtIt =
+    node->getNodeStatementsIterator();
+  BriefAssertion(stmtIt->isValid());
+  Instruction* head = IRHNDL_TO_TY(stmtIt->current(), Instruction*);
+  Addr headPC = head->GetPC(); // we can ignore opIdx
+  
+  // Now find the backward branch
+  OA::OA_ptr<Interface::IncomingEdgesIterator> it 
+    = node->getIncomingEdgesIterator();
+  for ( ; it->isValid(); ++(*it)) {
+    OA::OA_ptr<Interface::Edge> e = it->current();
+    
+    OA::OA_ptr<Interface::Node> bb = e->source();
+    OA::OA_ptr<Interface::NodeStatementsRevIterator> stmtIt1 =
+      bb->getNodeStatementsRevIterator();
+    if (!stmtIt1->isValid()) {
+      continue;
+    }
+    
+    Instruction* backbranch = IRHNDL_TO_TY(stmtIt1->current(), Instruction*);
+    Addr pc = backbranch->GetPC();
+    ushort opIdx = backbranch->GetOpIndex();
+
+    // If we have a backward edge, find the source line of the
+    // backward branch.  Note: back edges are not always labeled as such!
+    if (e->getType() == Interface::BACK_EDGE || headPC <= pc) {
+      suint line;
+      String func, file;
+      p->GetSourceFileInfo(pc, opIdx, func, file, line); 
+      if (IsValidLine(line) && (!IsValidLine(begLn) || line < begLn)) {
+	begLn = line;
+      }
+    }
+  }
+  
+  return begLn;
+}
 
 //****************************************************************************
 // Helpers for normalizing a scope tree
@@ -1128,7 +1284,7 @@ CFGNodeToPCMap::clear()
   for (iterator it = this->begin(); it != this->end(); ++it) {
     delete (*it).second; // std::pair<Addr, Addr>*
   }
-  BaseMap::clear();
+  My_t::clear();
 }
 
 
@@ -1165,10 +1321,10 @@ CFG_GetBegAndEndAddrs(OA::OA_ptr<OA::CFG::Interface::Node> n,
 void
 LineToStmtMap::clear()
 {
-  for (BaseMap::iterator it = begin(); it != end(); ++it) {
+  for (iterator it = begin(); it != end(); ++it) {
     delete (*it).second;
   }
-  BaseMap::clear();
+  My_t::clear();
 }
 
 //****************************************************************************
@@ -1182,7 +1338,7 @@ LineToStmtMap::clear()
 // example, perhaps the map should be constructed with the ScopeTree).
 
 static void 
-BuildPCToSrcLineMap(PCToSrcLineXMap* map, Procedure* p)
+BuildPCToSrcLineMap(PCToSrcLineXMap* xmap, Procedure* p)
 {
   //suint dbgId = p->GetId(); 
   String theFunc = GetBestFuncName(p->GetName()); 
@@ -1217,7 +1373,7 @@ BuildPCToSrcLineMap(PCToSrcLineXMap* map, Procedure* p)
   }
   
   pmap->SetFileName(theFile);
-  map->InsertProcInList(pmap);
+  xmap->InsertProcInList(pmap);
 }
 
 
