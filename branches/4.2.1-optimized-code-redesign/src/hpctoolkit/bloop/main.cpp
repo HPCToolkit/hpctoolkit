@@ -111,13 +111,13 @@ real_main(int argc, char* argv[])
   // ------------------------------------------------------------
   // Read executable
   // ------------------------------------------------------------
-  LoadModule* exe = NULL;
+  LoadModule* lm = NULL;
   try {
-    exe = new LoadModule(); // Executable(): use LoadModule for now
-    if (!exe->Open(args.inputFile.c_str())) { 
+    lm = new LoadModule(); // Executable(): use LoadModule for now
+    if (!lm->Open(args.inputFile.c_str())) { 
       exit(1); // Error already printed 
     } 
-    if (!exe->Read()) { exit(1); } // Error already printed 
+    if (!lm->Read()) { exit(1); } // Error already printed 
   } 
   catch (std::bad_alloc& x) {
     cerr << "Error: Memory alloc failed while reading binary!\n";
@@ -126,9 +126,9 @@ real_main(int argc, char* argv[])
   
   if (args.dumpBinary) {
     // ------------------------------------------------------------
-    // Dump executable without a scope tree
+    // Dump load module without a scope tree
     // ------------------------------------------------------------
-    exe->Dump(std::cout);
+    lm->Dump(std::cout);
     
   } else {
     // ------------------------------------------------------------
@@ -141,11 +141,11 @@ real_main(int argc, char* argv[])
     
     // Build scope tree
     PgmScopeTree* pgmScopeTree =
-      BuildFromExe(exe, map, args.canonicalPathList.c_str(),
-		   args.normalizeScopeTree, 
-		   args.unsafeNormalizations,
-		   args.irreducibleIntervalIsLoop,
-		   args.verboseMode);
+      BuildFromLM(lm, map, args.canonicalPathList.c_str(),
+		  args.normalizeScopeTree, 
+		  args.unsafeNormalizations,
+		  args.irreducibleIntervalIsLoop,
+		  args.verboseMode);
     
     // Write map (map should now be a valid pointer) & scope tree
     if (map) { WriteMapFile(map, args.pcMapFile); }
@@ -156,7 +156,7 @@ real_main(int argc, char* argv[])
     delete map;
   }
   
-  delete exe;
+  delete lm;
   return (0);
 }
 

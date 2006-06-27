@@ -71,12 +71,12 @@ class PCToSrcLineXMap;
 namespace ScopeTreeBuilder {
   
   PgmScopeTree* 
-  BuildFromExe(/*Executable*/ LoadModule* exe, PCToSrcLineXMap* &map,
-	       String canonicalPathList = "",
-	       bool normalizeScopeTree = true,
-	       bool unsafeNormalizations = true,
-	       bool irreducibleIntervalIsLoop = false,
-	       bool verboseMode = false);
+  BuildFromLM(LoadModule* lm, PCToSrcLineXMap* &map,
+	      String canonicalPathList = "",
+	      bool normalizeScopeTree = true,
+	      bool unsafeNormalizations = true,
+	      bool irreducibleIntervalIsLoop = false,
+	      bool verboseMode = false);
   
   bool 
   Normalize(PgmScopeTree* pgmScopeTree, 
