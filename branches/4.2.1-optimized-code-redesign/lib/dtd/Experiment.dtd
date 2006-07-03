@@ -38,24 +38,44 @@
 
   <!ELEMENT SecHdr (TagInfo, Metrics, Groups)>
 
-    <!-- Metrics for this section -->
-    <!ELEMENT Metrics (Metric)*>
-    <!ELEMENT Metric EMPTY>
+    <!-- Metrics for this section. -->
+    <!ELEMENT Metrics (Metric|MetricComputed)*>
+
+    <!-- Metric information.  The tag info could contain period or units. -->
+    <!--   propagate: Metric data are typically at the leaves and must    -->
+    <!--     be propagated to higher levels (true); sometimes it may      -->
+    <!--     already be propagated (false).                               -->
+    <!ELEMENT Metric (TagInfo?)>
     <!ATTLIST Metric
               id          CDATA #REQUIRED
               name        CDATA #REQUIRED
-              period      CDATA #REQUIRED
-              units       CDATA #IMPLIED
+              propagate   (true|false) "true"
               format      CDATA #IMPLIED
-              percent     (true|false) #IMPLIED
-              hidden      (true|false) #IMPLIED>
+              percent     (true|false) "true"
+              hidden      (true|false) "false">
+
+    <!-- Computed metric. Refer to other metrics by 'id'. -->
+    <!--   FIXME: what does propagate mean here?          -->
+    <!ELEMENT MetricComputed (TagInfo?, math)>
+    <!ATTLIST MetricComputed
+              id          CDATA #REQUIRED
+              name        CDATA #REQUIRED
+              propagate   (true|false) "true"
+              format      CDATA #IMPLIED
+              percent     (true|false) "true"
+              hidden      (true|false) "false">
+
+    <!ENTITY % mathml-include PUBLIC "mathml definitions" "mathml/mathml.dtd">
+    %mathml-include;
 
     <!-- Groups: Two types: Defined by structure; call path refinement -->
     <!ELEMENT Groups (GroupStructure|GroupCallPathRefinement)*>
+
     <!ELEMENT GroupStructure (G|LM|F|P|S)+>
     <!ATTLIST GroupStructure
               id          CDATA #REQUIRED
               name        CDATA #REQUIRED>
+
     <!ELEMENT GroupCallPathRefinement (#PCDATA)>
     <!ATTLIST GroupCallPathRefinement
               id          CDATA #REQUIRED
