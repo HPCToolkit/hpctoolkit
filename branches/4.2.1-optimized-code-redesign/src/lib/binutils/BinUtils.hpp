@@ -62,7 +62,7 @@ bool FileIsReadable(const char *fileName);
 
 // note: 0 is the natural value of NULL for a line number
 
-bool IsValidLine(suint startLine, suint endLine);
+bool IsValidLine(suint begLine, suint endLine);
 bool IsValidLine(suint line);
 
 //****************************************************************************

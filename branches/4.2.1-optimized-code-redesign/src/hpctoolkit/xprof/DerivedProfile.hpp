@@ -225,7 +225,7 @@ public:
 
   bool FindPC(Addr pc, ushort opIndex) { 
     if (pcset) {
-      Addr oppc = mset->GetISA()->ConvertPCToOpPC(pc, opIndex);
+      Addr oppc = mset->GetISA()->ConvertVMAToOpVMA(pc, opIndex);
       PCSetIt it = pcset->find(oppc);
       return (it != pcset->end());
     } else {
@@ -234,7 +234,7 @@ public:
   }
   void InsertPC(Addr pc, ushort opIndex) {
     BriefAssertion(pcset);
-    Addr oppc = mset->GetISA()->ConvertPCToOpPC(pc, opIndex);
+    Addr oppc = mset->GetISA()->ConvertVMAToOpVMA(pc, opIndex);
     pcset->insert(oppc); // do not add duplicates!
   }
 

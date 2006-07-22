@@ -103,8 +103,8 @@ typedef AddrToProcedureMap::value_type AddrToProcedureMapVal;
 
 // 'LoadModule' represents a binary loaded into memory
 
-// Note: everywhere 'PC' (program counter) is used, read VMA (virtual
-// memory address) or instruction pointer.
+// Note: Most references to VMA (virtual memory address) could be
+// replaced with 'PC' (program counter) or IP (instruction pointer).
 
 class LoadModuleImpl; 
 
@@ -136,27 +136,27 @@ public:
   // GetType:  Return type of load module
   Type GetType() const { return type; }
 
-  // GetTextStart, GetTextEnd: (Unrelocated) Text start and end.
+  // GetTextBeg, GetTextEnd: (Unrelocated) Text begin and end.
   // FIXME: only guaranteed on alpha at present
-  Addr GetTextStart() const { return textStart; }
+  Addr GetTextBeg() const { return textBeg; }
   Addr GetTextEnd() const { return textEnd; }
 
   // FIXME: on platform other than Alpha/Tru64 we need to set these
-  void SetTextStart(Addr x)  { textStart = x; }
+  void SetTextBeg(Addr x)  { textBeg = x; }
   void SetTextEnd(Addr x)    { textEnd = x; }
   
   Addr GetFirstAddr() const { return firstaddr; }
   void SetFirstAddr(Addr x) { firstaddr = x; }
 
 
-  // after read in the binary, get the smallest start PC and largest end PC
+  // after read in the binary, get the smallest begin VMA and largest end VMA
   // of all the text sections
-  void GetTextStartEndPC(Addr* startpc,Addr* endpc);
+  void GetTextBegEndVMA(Addr* begVMA, Addr* endVMA);
 
-  // Relocate: 'Relocate' the text section to the supplied text start
-  // address.  All member functions that take PCs will assume they
+  // Relocate: 'Relocate' the text section to the supplied text begin
+  // address.  All member functions that take VMAs will assume they
   // receive *relocated* values.  A value of 0 unrelocates the module.
-  void Relocate(Addr textStartReloc_);
+  void Relocate(Addr textBegReloc_);
   bool IsRelocated() const;
 
   // GetNumSections: Return number of sections
@@ -172,55 +172,55 @@ public:
   // For the sake of generality, all instructions are viewed as
   // (potentially) variable sized instruction packets.  VLIW
   // instructions are 'unpacked' so that each operation is an
-  // 'Instruction' that may be accessed by the combination of its pc and
+  // 'Instruction' that may be accessed by the combination of its vma and
   // operation index.  
   //
   // GetMachInst: Return a pointer to beginning of the instrution
-  // bits at virtual memory address 'pc'; NULL if invalid instruction
-  // or invalid 'pc'.  Sets 'size' to the size (bytes) of the
+  // bits at virtual memory address 'vma'; NULL if invalid instruction
+  // or invalid 'vma'.  Sets 'size' to the size (bytes) of the
   // instruction.
   //
   // GetInst: Similar to the above except returns an 'Instruction',
   // not the bits.
   //
   // AddInst: Add an instruction to the map
-  MachInst*    GetMachInst(Addr pc, ushort &size) const;
-  Instruction* GetInst(Addr pc, ushort opIndex) const;
-  void AddInst(Addr pc, ushort opIndex, Instruction *inst);
+  MachInst*    GetMachInst(Addr vma, ushort &size) const;
+  Instruction* GetInst(Addr vma, ushort opIndex) const;
+  void AddInst(Addr vma, ushort opIndex, Instruction *inst);
 
   
   // GetSourceFileInfo: If possible, find the source file, function
   // name and line number that corresponds to the operation at
-  // 'pc + opIndex'.  If it is possible to find all information without
+  // 'vma + opIndex'.  If it is possible to find all information without
   // errors, return true; otherwise false.
   //
   // For convenience, another version is provided that takes a
-  // 'startPC + startOpIndex' and 'endPC + endOpIndex'.  Note that the
+  // 'begVMA + begOpIndex' and 'endVMA + endOpIndex'.  Note that the
   // following condition is enforced:
-  //   'startPC + opIndex' <= 'endPC + opIndex'.
-  // All virtual memory address pc values should point to the
+  //   'begVMA + opIndex' <= 'endVMA + opIndex'.
+  // All virtual memory address vma values should point to the
   // *beginning* of instructions (not at the end or middle).
   //
   // Note that this second version attempts to select the best
   // function, file and line information from both individual calls to
   // the first version, correcting as best it can for errors.  In
   // particular:
-  //   - If 'file' is NULL, both 'startLine' and 'endLine' will be 0.
+  //   - If 'file' is NULL, both 'begLine' and 'endLine' will be 0.
   //   - If 'file' is not NULL, *both* line numbers may or may not be non-0;
   //     never will only one line number be 0.
   //   - It is an error for either the file or function to be
   //     different accross the individual calls.  In this case
-  //     information from 'startPC' is used.
+  //     information from 'begVMA' is used.
   // The second version only returns true when all information is
   // found and no error is detected.
-  bool GetSourceFileInfo(Addr pc, ushort opIndex,
+  bool GetSourceFileInfo(Addr vma, ushort opIndex,
 			 String &func, String &file, suint &line) const;
-  bool GetSourceFileInfo(Addr startPC, ushort sOpIndex,
-			 Addr endPC, ushort eOpIndex,
+  bool GetSourceFileInfo(Addr begVMA, ushort bOpIndex,
+			 Addr endVMA, ushort eOpIndex,
 			 String &func, String &file,
-			 suint &startLine, suint &endLine) const;
+			 suint &begLine, suint &endLine) const;
 
-  bool GetProcedureFirstLineInfo(Addr pc, ushort opIndex, suint &line);
+  bool GetProcedureFirstLineInfo(Addr vma, ushort opIndex, suint &line);
 
   DbgFuncSummary* GetDebugFuncSummary() { return &dbgSummary; }
 
@@ -346,13 +346,13 @@ private:
   bool ReadDebugFunctionSummaryInfo();
   void ClearDebugFunctionSummaryInfo();
   
-  // Builds the map from <proc start addr, proc end addr> pairs to 
+  // Builds the map from <proc beg addr, proc end addr> pairs to 
   // procedure first line.
   bool buildAddrToProcedureMap();
 
-  // UnRelocatePC: Given a relocated PC, returns a non-relocated version.
-  Addr UnRelocatePC(Addr relocatedPC) const 
-    { return (relocatedPC + unRelocDelta); }
+  // UnRelocateVMA: Given a relocated VMA, returns a non-relocated version.
+  Addr UnRelocateVMA(Addr relocatedVMA) const 
+    { return (relocatedVMA + unRelocDelta); }
   
   // Comparison routines for QuickSort.
   static int SymCmpByVMAFunc(const void* s1, const void* s2);
@@ -365,8 +365,8 @@ private:
   void DumpSymTab(std::ostream& o = std::cerr, const char* pre = "") const;
   
   // Virtual memory address to Instruction* map: Note that 'Addr' is
-  // not necessarily the true pc value; rather, it is the address of
-  // the individual operation (ISA::ConvertPCToOpPC).
+  // not necessarily the true vma value; rather, it is the address of
+  // the individual operation (ISA::ConvertVMAToOpVMA).
   typedef std::map<Addr, Instruction*, lt_Addr>           AddrToInstMap;
   typedef std::map<Addr, Instruction*, lt_Addr>::iterator AddrToInstMapIt;
   typedef std::map<Addr, Instruction*, lt_Addr>::const_iterator
@@ -386,10 +386,10 @@ protected:
 private: 
   String name;
   Type   type;
-  Addr   textStart, textEnd; // text begin and end
-  Addr    firstaddr;         // shared library load address begin
-  Addr   textStartReloc;     // relocated text start
-  AddrSigned unRelocDelta;   // offset to unrelocate relocated PCs
+  Addr   textBeg, textEnd; // text begin and end
+  Addr   firstaddr;        // shared library load address begin
+  Addr   textBegReloc;     // relocated text begin
+  AddrSigned unRelocDelta; // offset to unrelocate relocated VMAs
     
   SectionSeq sections; // A list of sections
 

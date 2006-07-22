@@ -72,9 +72,9 @@ using namespace std; // For compatibility with non-std C headers
 //****************************************************************************
 
 bool
-IsValidLine(suint startLine, suint endLine)
+IsValidLine(suint begLine, suint endLine)
 {
-  return ((startLine != 0) && (endLine != 0)); 
+  return ((begLine != 0) && (endLine != 0)); 
 }
 
 bool

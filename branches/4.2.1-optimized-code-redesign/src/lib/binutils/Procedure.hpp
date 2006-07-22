@@ -100,9 +100,9 @@ public:
   // The end address points to the beginning of the last instruction.
   // Note that a different convention is used for the end address of a
   // 'Section'.
-  Addr  GetStartAddr() const { return begVMA; }
-  Addr  GetEndAddr()   const { return endVMA; }
-  void  SetEndAddr(Addr _endVMA) { endVMA = _endVMA; }
+  Addr  GetBegVMA() const { return begVMA; }
+  Addr  GetEndVMA() const { return endVMA; }
+  void  SetEndVMA(Addr _endVMA) { endVMA = _endVMA; }
 
   // Return size, which is (end - start) + sizeof(last instruction)
   suint GetSize()      const { return size; }
@@ -115,9 +115,9 @@ public:
   suint   GetBegLine()      const { return begLine; }
   suint&  GetBegLine()            { return begLine; }
 
-  // Return true if virtual memory address 'pc' is within the procedure
-  // WARNING: pc must be unrelocated
-  bool  IsIn(Addr pc)  const { return (begVMA <= pc && pc <= endVMA); }
+  // Return true if virtual memory address 'vma' is within the procedure
+  // WARNING: vma must be unrelocated
+  bool  IsIn(Addr vma)  const { return (begVMA <= vma && vma <= endVMA); }
 
   // Return the unique number assigned to this procedure
   suint GetId()        const { return id; }
@@ -130,24 +130,25 @@ public:
   Instruction* GetLastInst() const;
   
   // Convenient wrappers for the 'LoadModule' versions of the same.
-  MachInst*    GetMachInst(Addr pc, ushort &sz) const {
-    return sec->GetLoadModule()->GetMachInst(pc, sz);
+  MachInst*    GetMachInst(Addr vma, ushort &sz) const {
+    return sec->GetLoadModule()->GetMachInst(vma, sz);
   }
-  Instruction* GetInst(Addr pc, ushort opIndex) const {
-    return sec->GetLoadModule()->GetInst(pc, opIndex);
+  Instruction* GetInst(Addr vma, ushort opIndex) const {
+    return sec->GetLoadModule()->GetInst(vma, opIndex);
   }
-  bool GetSourceFileInfo(Addr pc, ushort opIndex,
+  bool GetSourceFileInfo(Addr vma, ushort opIndex,
 			 String &func, String &file, suint &line) const {
-    return sec->GetLoadModule()->GetSourceFileInfo(pc, opIndex,
+    return sec->GetLoadModule()->GetSourceFileInfo(vma, opIndex,
 						   func, file, line);
   }
-  bool GetSourceFileInfo(Addr startPC, ushort sOpIndex,
-			 Addr endPC, ushort eOpIndex,
+  bool GetSourceFileInfo(Addr begVMA, ushort bOpIndex,
+			 Addr endVMA, ushort eOpIndex,
 			 String &func, String &file,
-			 suint &startLine, suint &endLine) const {
-    return sec->GetLoadModule()->GetSourceFileInfo(startPC, sOpIndex,
-						   endPC, eOpIndex, func, file,
-						   startLine, endLine);
+			 suint &begLine, suint &endLine) const {
+    return sec->GetLoadModule()->GetSourceFileInfo(begVMA, bOpIndex,
+						   endVMA, eOpIndex, 
+						   func, file, 
+						   begLine, endLine);
   }
   
   // Dump contents for inspection
@@ -202,9 +203,9 @@ public:
     else { return NULL; }    
   }
 
-  // Note: This is the 'operation PC' and may not actually be the true
-  // PC!  Use the 'Instruction' for the true PC. 
-  Addr CurrentPC() const {
+  // Note: This is the 'operation VMA' and may not actually be the true
+  // VMA!  Use the 'Instruction' for the true VMA. 
+  Addr CurrentVMA() const {
     if (it != endIt) { return (*it).first; }
     else { return 0; } 
   }

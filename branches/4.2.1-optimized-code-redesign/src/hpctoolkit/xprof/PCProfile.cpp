@@ -145,7 +145,7 @@ PCProfile::AddPC(Addr pc, ushort opIndex)
   if (pcVec.size() == pcVec.capacity()) {
     pcVec.reserve(pcVec.capacity() * 2);
   }
-  Addr oppc = GetISA()->ConvertPCToOpPC(pc, opIndex);
+  Addr oppc = GetISA()->ConvertVMAToOpVMA(pc, opIndex);
   pcVec.push_back(oppc);
 }
 

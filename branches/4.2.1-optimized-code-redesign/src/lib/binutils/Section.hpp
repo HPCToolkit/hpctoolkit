@@ -82,7 +82,7 @@ class Section {
 public: 
   enum Type {BSS, Text, Data, Unknown};
   
-  Section(LoadModule* _lm, String _name, Type t, Addr _start,
+  Section(LoadModule* _lm, String _name, Type t, Addr _beg,
           Addr _end, Addr _sz);
   virtual ~Section();
 
@@ -92,37 +92,37 @@ public:
   String GetName() const { return name; }
   Type  GetType()  const { return type; }
   
-  // Return start/ending virtual memory address for section.  The end
-  // of a section is equal to the start address of the next section
+  // Return begin/end virtual memory address for section.  The end
+  // of a section is equal to the begin address of the next section
   // (or the end of the file).  Note that a different convention is
   // used for the end address of a 'Procedure'.
-  Addr  GetStart() const { return start; }
-  Addr  GetEnd()   const { return end; }
+  Addr GetBeg() const { return beg; }
+  Addr GetEnd() const { return end; }
 
   // Return size of section
-  Addr GetSize()  const { return size; }
+  Addr GetSize() const { return size; }
 
-  // Return true if virtual memory address 'pc' is within the section
-  // WARNING: pc must be unrelocated
-  bool  IsIn(Addr pc) const { return (start <= pc && pc < end); }
+  // Return true if virtual memory address 'vma' is within the section
+  // WARNING: vma must be unrelocated
+  bool IsIn(Addr vma) const { return (beg <= vma && vma < end); }
 
   // Convenient wrappers for the 'LoadModule' versions of the same.
-  MachInst*    GetMachInst(Addr pc, ushort &sz) const {
-    return lm->GetMachInst(pc, sz);
+  MachInst*    GetMachInst(Addr vma, ushort &sz) const {
+    return lm->GetMachInst(vma, sz);
   }
-  Instruction* GetInst(Addr pc, ushort opIndex) const {
-    return lm->GetInst(pc, opIndex);
+  Instruction* GetInst(Addr vma, ushort opIndex) const {
+    return lm->GetInst(vma, opIndex);
   }
-  bool GetSourceFileInfo(Addr pc, ushort opIndex,
+  bool GetSourceFileInfo(Addr vma, ushort opIndex,
 			 String &func, String &file, suint &line) const {
-    return lm->GetSourceFileInfo(pc, opIndex, func, file, line);
+    return lm->GetSourceFileInfo(vma, opIndex, func, file, line);
   }
-  bool GetSourceFileInfo(Addr startPC, ushort sOpIndex,
-			 Addr endPC, ushort eOpIndex,
+  bool GetSourceFileInfo(Addr begVMA, ushort bOpIndex,
+			 Addr endVMA, ushort eOpIndex,
 			 String &func, String &file,
-			 suint &startLine, suint &endLine) const {
-    return lm->GetSourceFileInfo(startPC, sOpIndex, endPC, eOpIndex,
-				 func, file, startLine, endLine);
+			 suint &begLine, suint &endLine) const {
+    return lm->GetSourceFileInfo(begVMA, bOpIndex, endVMA, eOpIndex,
+				 func, file, begLine, endLine);
   }
 
   // Dump contents for inspection
@@ -142,9 +142,9 @@ private:
 
   String name;
   Type   type;
-  Addr   start;  // beginning of section 
-  Addr   end;    // end of section [equal to the beginning of next section]
-  Addr   size;   // size in bytes
+  Addr   beg;  // beginning of section 
+  Addr   end;  // end of section [equal to the beginning of next section]
+  Addr   size; // size in bytes
 };
 
 //***************************************************************************
@@ -158,7 +158,7 @@ class TextSectionImpl;
 
 class TextSection : public Section { 
 public:
-  TextSection(LoadModule* _lm, String _name, Addr _start, Addr _end,
+  TextSection(LoadModule* _lm, String _name, Addr _beg, Addr _end,
 	      suint _size, asymbol **syms, int numSyms, bfd *abfd);
   virtual ~TextSection();
 
@@ -182,7 +182,7 @@ private:
   // Construction helpers
   String FindProcedureName(bfd *abfd, asymbol *procSym) const;
   Addr FindProcedureEnd(int funcSymIndex) const;
-  Instruction* MakeInstruction(bfd *abfd, MachInst* mi, Addr pc,
+  Instruction* MakeInstruction(bfd *abfd, MachInst* mi, Addr vma,
 			       ushort opIndex, ushort sz) const;
   
   // Procedure sequence: 'deque' supports random access iterators (and

@@ -78,8 +78,8 @@
 
 class Instruction {
 public:
-  Instruction(MachInst* _minst) : minst(_minst), pc(0) { } 
-  Instruction(MachInst* _minst, Addr _pc) : minst(_minst), pc(_pc) { } 
+  Instruction(MachInst* _minst) : minst(_minst), vma(0) { } 
+  Instruction(MachInst* _minst, Addr _vma) : minst(_minst), vma(_vma) { } 
   virtual ~Instruction() { }
   
   // Returns a classification of the instruction
@@ -94,10 +94,10 @@ public:
   virtual MachInst* GetBits() const { return minst; }
   virtual ushort    GetSize() const = 0;
 
-  // Returns the PC/VMA for the beginning of this instruction.
+  // Returns the VMA for the beginning of this instruction.
   // WARNING: this is unrelocated
-  Addr GetPC() const { return pc; }
-  void SetPC(Addr _pc) { pc = _pc; }
+  Addr GetVMA() const { return vma; }
+  void SetVMA(Addr _vma) { vma = _vma; }
   
   // Viewing each object code instruction as an instruction packet,
   // and recalling that all packets are "unpacked" in a 'LoadModule',
@@ -111,9 +111,9 @@ public:
   // Returns the target address of a jump or branch instruction. If a
   // target cannot be computed, return 0.  Note that a target is not
   // computed when it depends on values in registers (e.g. indirect
-  // jumps).  'pc' is used only to calculate PC-relative targets.
-  virtual Addr GetTargetAddr(Addr _pc) const {
-    return isa->GetInstTargetAddr(minst, _pc, GetOpIndex(), GetSize());
+  // jumps).  'vma' is used only to calculate PC-relative targets.
+  virtual Addr GetTargetAddr(Addr _vma) const {
+    return isa->GetInstTargetAddr(minst, _vma, GetOpIndex(), GetSize());
   }
   
   // Returns the number of delay slots that must be observed by
@@ -147,7 +147,7 @@ private:
 protected:
   MachInst*  minst; // pointer to machine instruction [lives in Section]
 private:
-  Addr pc;          // pc of the beginning of this instruction packet
+  Addr vma;         // vma of the beginning of this instruction packet
 };
 
 //***************************************************************************
@@ -156,8 +156,8 @@ private:
 
 class CISCInstruction : public Instruction {
 public:
-  CISCInstruction(MachInst* _minst, Addr _pc, ushort sz)
-    : Instruction(_minst, _pc), size(sz) { }    
+  CISCInstruction(MachInst* _minst, Addr _vma, ushort sz)
+    : Instruction(_minst, _vma), size(sz) { }    
 
   virtual ~CISCInstruction() { }
   
@@ -166,8 +166,8 @@ public:
   virtual ushort GetNumOps() const  { return 1; }
 
   // Given a target or branch instruction, returns the target address.
-  virtual Addr GetTargetAddr(Addr _pc) const {
-    return isa->GetInstTargetAddr(minst, _pc, size);
+  virtual Addr GetTargetAddr(Addr _vma) const {
+    return isa->GetInstTargetAddr(minst, _vma, size);
   }
 
   virtual ushort GetNumDelaySlots() const {
@@ -196,8 +196,8 @@ private:
 
 class RISCInstruction : public Instruction {
 public:
-  RISCInstruction(MachInst* _minst, Addr _pc)
-    : Instruction(_minst, _pc) { } 
+  RISCInstruction(MachInst* _minst, Addr _vma)
+    : Instruction(_minst, _vma) { } 
 
   virtual ~RISCInstruction() { }
   
@@ -226,8 +226,8 @@ private:
 
 class VLIWInstruction : public Instruction {
 public:
-  VLIWInstruction(MachInst* _minst, Addr _pc, ushort _opIndex)
-    : Instruction(_minst, _pc), opIndex(_opIndex) { } 
+  VLIWInstruction(MachInst* _minst, Addr _vma, ushort _opIndex)
+    : Instruction(_minst, _vma), opIndex(_opIndex) { } 
 
   virtual ~VLIWInstruction() { }
   

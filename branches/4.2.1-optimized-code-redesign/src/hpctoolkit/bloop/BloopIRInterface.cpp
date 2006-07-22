@@ -86,13 +86,13 @@ BloopIRInterface::BloopIRInterface (Procedure *_p)
   branchTargetSet.clear();
   for (ProcedureInstructionIterator pii(*proc); pii.IsValid(); ++pii) {
     Instruction *insn = pii.Current();
-    Addr curr_oppc = pii.CurrentPC(); // the 'operation PC'
+    Addr curr_oppc = pii.CurrentVMA(); // the 'operation VMA'
     
     // If this insn is a branch, record its target address in
     // the branch target set.
     ISA::InstDesc d = insn->GetDesc();
     if (d.IsBrRel()) {
-      branchTargetSet.insert(insn->GetTargetAddr(insn->GetPC()));
+      branchTargetSet.insert(insn->GetTargetAddr(insn->GetVMA()));
     }
   }
 }
@@ -194,7 +194,7 @@ BloopIRInterface::dump(OA::StmtHandle stmt, std::ostream& os)
   // want is a textual disassembly of the instruction from the
   // disassembler.
 
-  Addr pc = insn->GetPC();
+  Addr pc = insn->GetVMA();
   ISA::InstDesc d = insn->GetDesc();
 
   // Output pc and descriptor
@@ -263,7 +263,7 @@ BloopIRInterface::getCFGStmtType(OA::StmtHandle h)
     // Unconditional jump. If the branch targets a PC outside of its
     // procedure, then we just ignore it.  For bloop this is fine
     // since the branch won't create any loops.
-    br_targ = insn->GetTargetAddr(insn->GetPC());
+    br_targ = insn->GetTargetAddr(insn->GetVMA());
     if (proc->IsIn(br_targ)) {
       ty = OA::CFG::UNCONDITIONAL_JUMP;
     } 
@@ -280,7 +280,7 @@ BloopIRInterface::getCFGStmtType(OA::StmtHandle h)
     // Unstructured two-way branches. If the branch targets a PC
     // outside of its procedure, then we just ignore it.  For bloop
     // this is fine since the branch won't create any loops.
-    br_targ = insn->GetTargetAddr(insn->GetPC());
+    br_targ = insn->GetTargetAddr(insn->GetVMA());
     if (proc->IsIn(br_targ)) {
       ty = OA::CFG::USTRUCT_TWOWAY_CONDITIONAL_T;
     }
@@ -315,8 +315,8 @@ BloopIRInterface::getLabel(OA::StmtHandle h)
 {
   OA::StmtLabel lbl = 0;
   Instruction *insn = IRHNDL_TO_TY(h, Instruction*);
-  if (branchTargetSet.find(insn->GetPC()) != branchTargetSet.end()) {
-    lbl = insn->GetPC();
+  if (branchTargetSet.find(insn->GetVMA()) != branchTargetSet.end()) {
+    lbl = insn->GetVMA();
   } 
   return lbl;
 }
@@ -448,7 +448,7 @@ BloopIRInterface::getTargetLabel(OA::StmtHandle h, int n)
   Instruction *insn = IRHNDL_TO_TY(h, Instruction*);
   ISA::InstDesc d = insn->GetDesc();
   if (d.IsBrRel()) {
-    lbl = insn->GetTargetAddr(insn->GetPC());
+    lbl = insn->GetTargetAddr(insn->GetVMA());
   } 
   else {
     lbl = 0; // FIXME: We're seeing indirect branches.

@@ -319,8 +319,8 @@ public:
   //   File()->Name() + ":" + <Line-Range> 
   //
   // where Line-Range is either: 
-  //                     StartLine() + "-" + StopLine()      or simply 
-  //                     StartLine() 
+  //                     BegLine() + "-" + EndLine()      or simply 
+  //                     BegLine() 
   virtual String CodeName() const; 
 
   virtual String ToDumpString(int dmpFlag = PgmScopeTree::XML_TRUE) const;

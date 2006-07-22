@@ -176,7 +176,7 @@ ProfileWriter::WriteProfile(std::ostream& os, DerivedProfile* profData,
     
     Addr oppc = it.Current(); // an 'operation pc'
     ushort opIndex;
-    Addr pc = isa->ConvertOpPCToPC(oppc, opIndex);
+    Addr pc = isa->ConvertOpVMAToVMA(oppc, opIndex);
     
     // --------------------------------------------------
     // 1. Attempt to find symbolic information

@@ -107,25 +107,25 @@ Procedure::Dump(std::ostream& o, const char* pre) const
   String p2 = p + "    ";  
   
   String func, file, func1, file1, func2, file2;
-  suint startLn, endLn, startLn1, endLn2;
+  suint begLn, endLn, begLn1, endLn2;
   Instruction* eInst = GetLastInst();
   ushort endOp = (eInst) ? eInst->GetOpIndex() : 0;
 
   // This call performs some consistency checking
-  sec->GetSourceFileInfo(GetStartAddr(), 0, GetEndAddr(), endOp,
-			 func, file, startLn, endLn);
+  sec->GetSourceFileInfo(GetBegVMA(), 0, GetEndVMA(), endOp,
+			 func, file, begLn, endLn);
 
   // These calls perform no consistency checking
-  sec->GetSourceFileInfo(GetStartAddr(), 0, func1, file1, startLn1);
-  sec->GetSourceFileInfo(GetEndAddr(), endOp, func2, file2, endLn2);
+  sec->GetSourceFileInfo(GetBegVMA(), 0, func1, file1, begLn1);
+  sec->GetSourceFileInfo(GetEndVMA(), endOp, func2, file2, endLn2);
   
   o << p << "---------- Procedure Dump ----------\n";
   o << p << "  Name:     `" << GetBestFuncName(GetName()) << "'\n";
   o << p << "  LinkName: `" << GetBestFuncName(GetLinkName()) << "'\n";
   o << p << "  DbgNm(s): `" << GetBestFuncName(func1) << "'\n";
   o << p << "  DbgNm(e): `" << GetBestFuncName(func2) << "'\n";
-  o << p << "  File:    `" << file << "':" << startLn << "-" << endLn << "\n";
-  o << p << "  DbgF(s): `" << file1 << "':" << startLn1 << "\n";
+  o << p << "  File:    `" << file << "':" << begLn << "-" << endLn << "\n";
+  o << p << "  DbgF(s): `" << file1 << "':" << begLn1 << "\n";
   o << p << "  DbgF(e): `" << file2 << "':" << endLn2 << "\n";
 
   o << p << "  ID, Type: " << GetId() << ", `";
@@ -135,8 +135,8 @@ Procedure::Dump(std::ostream& o, const char* pre) const
     case Global:  o << "Global'\n"; break;
     default:      o << "-unknown-'\n"; BriefAssertion(false);
   }
-  o << p << "  PC(start,end): 0x" << hex << GetStartAddr() << ", 0x"
-    << GetEndAddr() << dec << "\n";
+  o << p << "  VMA(beg,end): 0x" << hex << GetBegVMA() << ", 0x"
+    << GetEndVMA() << dec << "\n";
   o << p << "  Size(b): " << GetSize() << "\n";
 
   o << p1 << "----- Instruction Dump -----\n";
@@ -183,11 +183,11 @@ ProcedureInstructionIterator::Reset()
     endIt++; // 'endIt' is now one past the last valid instruction
   
     // We need to ensure that all VLIW instructions that match this
-    // pc are also included.  Push 'endIt' back as needed; when done it
+    // vma are also included.  Push 'endIt' back as needed; when done it
     // should remain one past the last valid instruction
     for (; // ((*endIt).second) returns Instruction*
 	 (endIt != lm.addrToInstMap.end() 
-	  && ((*endIt).second)->GetPC() == p.endVMA);
+	  && ((*endIt).second)->GetVMA() == p.endVMA);
 	 endIt++)
       { }
   }

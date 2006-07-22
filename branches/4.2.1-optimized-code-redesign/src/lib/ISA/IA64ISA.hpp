@@ -97,20 +97,20 @@ public:
 				       ushort sz2) const
   { return false; /* FIXME */ }
 
-  virtual Addr ConvertPCToOpPC(Addr pc, ushort opIndex) const
+  virtual Addr ConvertVMAToOpVMA(Addr vma, ushort opIndex) const
   {
     // This is identical to the GNU scheme for now.  Note that the
     // offsets do not actually match the IA64 template [5,41,41,41].
     //BriefAssertion(opIndex <= 2 && "Programming Error");
-    return (pc + 6 * opIndex); // 0, 6, 12
+    return (vma + 6 * opIndex); // 0, 6, 12
   }
 
-  virtual Addr ConvertOpPCToPC(Addr oppc, ushort& opIndex) const
+  virtual Addr ConvertOpVMAToVMA(Addr opvma, ushort& opIndex) const
   {
     // See above comments
-    ushort offset = (oppc & 0xf); // 0, 6, 12
+    ushort offset = (opvma & 0xf); // 0, 6, 12
     opIndex = offset / 6;
-    return (oppc - offset);
+    return (opvma - offset);
   }
 
 private: 

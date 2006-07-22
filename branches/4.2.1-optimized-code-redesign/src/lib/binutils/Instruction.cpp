@@ -70,9 +70,9 @@ void
 Instruction::Dump(std::ostream& o, const char* pre) const
 {
   String p(pre);
-  Addr target = GetTargetAddr(pc);
+  Addr target = GetTargetAddr(vma);
 
-  o << p << hex << "0x" << pc << dec << ": " << GetDesc().ToString();
+  o << p << hex << "0x" << vma << dec << ": " << GetDesc().ToString();
 
   if (target != 0 || GetOpIndex() != 0) { 
     o << " <0x" << hex << target << dec << "> "; 

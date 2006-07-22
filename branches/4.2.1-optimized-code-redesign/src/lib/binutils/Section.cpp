@@ -74,8 +74,8 @@ using std::dec;
 //***************************************************************************
 
 Section::Section(LoadModule* _lm, String _name, Type t,
-		 Addr _start, Addr _end, Addr _sz)
-  : lm(_lm), name(_name), type(t), start(_start), end(_end), size(_sz)
+		 Addr _beg, Addr _end, Addr _sz)
+  : lm(_lm), name(_name), type(t), beg(_beg), end(_end), size(_sz)
 {
 }
 
@@ -99,7 +99,7 @@ Section::Dump(std::ostream& o, const char* pre) const
     case Data: o << "Data'\n"; break;
     default:   o << "-unknown-'\n";  BriefAssertion(false); 
   }
-  o << p << "  PC(start, end): 0x" << hex << GetStart() << ", 0x"
+  o << p << "  VMA(beg, end): 0x" << hex << GetBeg() << ", 0x"
     << GetEnd() << dec << "\n";
   o << p << "  Size(b): " << GetSize() << "\n";
 }
@@ -130,9 +130,9 @@ public:
 };
 
 
-TextSection::TextSection(LoadModule* _lm, String _name, Addr _start, Addr _end,
+TextSection::TextSection(LoadModule* _lm, String _name, Addr _beg, Addr _end,
 			 suint _size, asymbol **syms, int numSyms, bfd *abfd)
-  : Section(_lm, _name, Section::Text, _start, _end, _size), impl(NULL),
+  : Section(_lm, _name, Section::Text, _beg, _end, _size), impl(NULL),
     procedures(0)
 {
   impl = new TextSectionImpl;
@@ -295,48 +295,48 @@ TextSection::Create_DisassembleProcs()
   // ------------------------------------------------------------
   // Disassemble the instructions in each procedure.
   // ------------------------------------------------------------
-  Addr sectionBase = GetStart();
+  Addr sectionBase = GetBeg();
   
   for (TextSectionProcedureIterator it(*this); it.IsValid(); ++it) {
     Procedure* p = it.Current();
-    Addr procBeg = p->GetStartAddr();
-    Addr procEnd = p->GetEndAddr();
+    Addr procBeg = p->GetBegVMA();
+    Addr procEnd = p->GetEndVMA();
     ushort instSz = 0;
-    Addr lastInstPC = procBeg; // pc of last valid instruction in the proc
+    Addr lastInstVMA = procBeg; // vma of last valid instruction in the proc
 
-    // Iterate over each pc at which an instruction might begin
-    for (Addr pc = procBeg; pc < procEnd; ) {
-      MachInst *mi = &(impl->contents[pc - sectionBase]);
+    // Iterate over each vma at which an instruction might begin
+    for (Addr vma = procBeg; vma < procEnd; ) {
+      MachInst *mi = &(impl->contents[vma - sectionBase]);
       instSz = isa->GetInstSize(mi);
       if (instSz == 0) {
 	// This is not a recognized instruction (cf. data on CISC ISAs).
-	++pc; // Increment the PC, and try to decode again.
+	++vma; // Increment the VMA, and try to decode again.
 	continue;
       }
 
       int num_ops = isa->GetInstNumOps(mi);
       if (num_ops == 0) {
 	// This instruction contains data.  No need to decode.
-	pc += instSz;
+	vma += instSz;
 	continue;
       }
 
-      // We have a valid instruction at this pc!
-      lastInstPC = pc;
+      // We have a valid instruction at this vma!
+      lastInstVMA = vma;
       for (ushort opIndex = 0; opIndex < num_ops; opIndex++) {
-        Instruction *newInst = MakeInstruction(abfd, mi, pc, opIndex, instSz);
-        lm->AddInst(pc, opIndex, newInst); 
+        Instruction *newInst = MakeInstruction(abfd, mi, vma, opIndex, instSz);
+        lm->AddInst(vma, opIndex, newInst); 
       }
-      pc += instSz; 
+      vma += instSz; 
     }
     // 'instSz' is now the size of the last instruction or 0
 
-    // Now we can update the procedure's end address and size since we know
-    // where the last instruction begins.  The procedure's original end
-    // address was guessed to be the start address of the following procedure
-    // while determining all procedures above.
-    p->SetEndAddr(lastInstPC);
-    p->SetSize(p->GetEndAddr() - p->GetStartAddr() + instSz); 
+    // Now we can update the procedure's end address and size since we
+    // know where the last instruction begins.  The procedure's
+    // original end address was guessed to be the begin address of the
+    // following procedure while determining all procedures above.
+    p->SetEndVMA(lastInstVMA);
+    p->SetSize(p->GetEndVMA() - p->GetBegVMA() + instSz); 
   }
 }
 
@@ -397,7 +397,7 @@ TextSection::FindProcedureEnd(int funcSymIndex) const
 // Returns a new instruction of the appropriate type.  Promises not to
 // return NULL.
 Instruction*
-TextSection::MakeInstruction(bfd *abfd, MachInst* mi, Addr pc, ushort opIndex,
+TextSection::MakeInstruction(bfd *abfd, MachInst* mi, Addr vma, ushort opIndex,
 			     ushort sz) const
 {
   // Assume that there is only one instruction type per
@@ -407,13 +407,13 @@ TextSection::MakeInstruction(bfd *abfd, MachInst* mi, Addr pc, ushort opIndex,
     case bfd_arch_mips:
     case bfd_arch_alpha:
     case bfd_arch_sparc:
-      newInst = new RISCInstruction(mi, pc);
+      newInst = new RISCInstruction(mi, vma);
       break;
     case bfd_arch_i386:
-      newInst = new CISCInstruction(mi, pc, sz);
+      newInst = new CISCInstruction(mi, vma, sz);
       break;
     case bfd_arch_ia64:
-      newInst = new VLIWInstruction(mi, pc, opIndex);
+      newInst = new VLIWInstruction(mi, vma, opIndex);
       break;
     default:
       cerr << "Section.C: Could not create Instruction." << endl;

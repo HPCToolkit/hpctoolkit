@@ -332,9 +332,9 @@ public:
   // Given a jump or branch instruction 'mi', return the target address.
   // If a target cannot be computed, return 0.  Note that a target is
   // not computed when it depends on values in registers
-  // (e.g. indirect jumps).  'pc' is used only to calculate
+  // (e.g. indirect jumps).  'vma' is used only to calculate
   // PC-relative targets.
-  virtual Addr GetInstTargetAddr(MachInst* mi, Addr pc, ushort opIndex,
+  virtual Addr GetInstTargetAddr(MachInst* mi, Addr vma, ushort opIndex,
 				 ushort sz = 0) = 0;
 
   // Returns the number of delay slots that must be observed by
@@ -352,26 +352,26 @@ public:
 				       MachInst* mi2, ushort opIndex2,
 				       ushort sz2) const = 0;
 
-  // ConvertPCToOpPC: Given a pc at the beginning of an instruction
-  // and an opIndex, returns one value -- an 'operation pc' --
+  // ConvertVMAToOpVMA: Given a vma at the beginning of an instruction
+  // and an opIndex, returns one value -- an 'operation vma' --
   // representing both. 
   //
-  // ConvertOpPCToPC: Given an 'operation pc', returns the individual
-  // pc and opIndex components. (The latter is returned as a
-  // pass-by-reference parameter.)  N.B.: The 'operation pc' must
-  // follow the convetions of 'ConvertPCToOpPC'.
+  // ConvertOpVMAToVMA: Given an 'operation vma', returns the individual
+  // vma and opIndex components. (The latter is returned as a
+  // pass-by-reference parameter.)  N.B.: The 'operation vma' must
+  // follow the convetions of 'ConvertVMAToOpVMA'.
   //
   // Sometimes users need to pretend that the individual operations in
   // VLIW instructions are addressable.  This is, of course not true,
-  // but 'operation pcs' are useful for [pc->xxx] maps (e.g. debugging
+  // but 'operation vmas' are useful for [vma->xxx] maps (e.g. debugging
   // information is stored in this manner).
   //
   // The default function assumes non-VLIW architecture
-  virtual Addr ConvertPCToOpPC(Addr pc, ushort opIndex) const
-  { return pc; }
+  virtual Addr ConvertVMAToOpVMA(Addr vma, ushort opIndex) const
+  { return vma; }
 
-  virtual Addr ConvertOpPCToPC(Addr oppc, ushort& opIndex) const
-  { opIndex = 0; return oppc; }
+  virtual Addr ConvertOpVMAToVMA(Addr opvma, ushort& opIndex) const
+  { opIndex = 0; return opvma; }
   
 private:
   // Should not be used
