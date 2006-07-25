@@ -41,7 +41,7 @@
 
 //************************* User Include Files *******************************
 
-#include "ScopesInfo.hpp"
+#include "ScopeInfo.hpp"
 #include "PerfIndex.hpp"
 #include <lib/support/String.hpp>
 

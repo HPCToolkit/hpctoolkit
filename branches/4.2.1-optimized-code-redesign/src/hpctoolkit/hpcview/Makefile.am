@@ -84,7 +84,6 @@ MYSOURCES = \
 	PerfMetric.hpp PerfMetric.cpp \
 	ScopeInfo.hpp ScopeInfo.cpp \
 	ScopeInfoIterator.hpp ScopeInfoIterator.cpp \
-	ScopesInfo.hpp \
 	StaticFiles.hpp StaticFiles.cpp
 
 # Deprecated: XMLAdapter.hpp XMLAdapter.cpp

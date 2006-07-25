@@ -65,7 +65,7 @@ using XERCES_CPP_NAMESPACE::DOMNamedNodeMap;
 #include "MathMLExpr.hpp"
 #include "DerivedPerfMetrics.hpp"
 #include "PerfMetric.hpp"
-#include "ScopesInfo.hpp"
+#include "ScopeInfo.hpp"
 
 #include <lib/support/Trace.hpp>
 

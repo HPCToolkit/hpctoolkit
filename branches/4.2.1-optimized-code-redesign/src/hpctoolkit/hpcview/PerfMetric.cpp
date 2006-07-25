@@ -38,7 +38,7 @@
 
 //************************* User Include Files *******************************
 
-#include "ScopesInfo.hpp"
+#include "ScopeInfo.hpp"
 #include "PerfMetric.hpp"
 #include <lib/support/Assertion.h>
 #include <lib/support/Trace.hpp>

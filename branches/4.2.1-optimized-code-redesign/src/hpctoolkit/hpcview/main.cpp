@@ -74,7 +74,7 @@ using XERCES_CPP_NAMESPACE::XMLException;
 
 // ScopeInfo tree related includes 
 #include "Driver.hpp"
-#include "ScopesInfo.hpp"
+#include "ScopeInfo.hpp"
 #include "HTMLDriver.hpp"
 
 #include <lib/support/String.hpp>

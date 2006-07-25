@@ -72,8 +72,9 @@ using XERCES_CPP_NAMESPACE::XMLString;
 
 #include "PROFILEDocHandler.hpp"
 #include "Driver.hpp"
-#include "ScopesInfo.hpp"
-
+#include "ScopeInfo.hpp"
+#include "NodeRetriever.hpp"
+ 
 #include <lib/support/Assertion.h>
 #include <lib/support/Trace.hpp>
 

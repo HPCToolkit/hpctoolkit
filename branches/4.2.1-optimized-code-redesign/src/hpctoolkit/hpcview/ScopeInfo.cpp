@@ -97,6 +97,37 @@ class ProcScopeMap    : public std::map<String, ProcScope*, StringLt> { };
 class FileScopeMap    : public std::map<String, FileScope*, StringLt> { };
 class LineScopeMap    : public std::map<suint, LineScope*, IntLt> { };
 
+//***************************************************************************
+// PgmScopeTree
+//***************************************************************************
+
+ScopesInfo::ScopesInfo(const char* name)
+: root(new PgmScope(name)) 
+{
+}
+
+ScopesInfo::~ScopesInfo()
+{
+  delete root; 
+}
+
+void 
+ScopesInfo::SetRoot(PgmScope* newRoot)
+{
+  if (root != NULL)
+    delete root;
+  root = newRoot;
+}
+
+void 
+ScopesInfo::CollectCrossReferences() 
+{ 
+  root->NoteHeight();
+  root->NoteDepth();
+  root->CollectCrossReferences();
+};
+
+
 /*****************************************************************************/
 // ScopeType `methods'
 /*****************************************************************************/

@@ -47,7 +47,7 @@
 #include "Driver.hpp"
 #include "HTMLDriver.hpp"
 #include "StaticFiles.hpp"
-#include "ScopesInfo.hpp"
+#include "ScopeInfo.hpp"
 #include "HTMLFile.hpp"
 #include "HTMLTable.hpp"
 #include "HTMLScopes.hpp"

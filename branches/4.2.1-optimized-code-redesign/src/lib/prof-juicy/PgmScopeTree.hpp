@@ -60,8 +60,8 @@
 
 #include <include/general.h>
 
-#include <lib/support/NonUniformDegreeTree.hpp>
 #include <lib/support/Unique.hpp>
+#include <lib/support/NonUniformDegreeTree.hpp>
 #include <lib/support/String.hpp>
 #include <lib/support/Files.hpp>
 #include <lib/support/Nan.h>

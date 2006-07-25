@@ -45,13 +45,17 @@
 
 #include <include/general.h>
 
+#include "PerfMetric.hpp"
+
 #include <lib/support/Unique.hpp>
-#include <lib/support/String.hpp>
 #include <lib/support/NonUniformDegreeTree.hpp>
+#include <lib/support/String.hpp>
 #include <lib/support/Files.hpp>
 #include <lib/support/Nan.h>
 
 //************************ Forward Declarations ******************************
+
+#define UNDEF_LINE 0
 
 class WordSetSortedIterator;
 class DoubleVector;
@@ -62,9 +66,30 @@ class FileScopeMap;
 class ProcScopeMap;
 class LineScopeMap;
 
-//****************************************************************************
+//***************************************************************************
+// ScopesInfo
+//***************************************************************************
 
-#define UNDEF_LINE 0
+class PgmScope;
+
+class ScopesInfo : public Unique {
+public:
+  ScopesInfo(const char* name);
+  ~ScopesInfo();
+  
+  PgmScope* Root() const { return root; };
+  void SetRoot(PgmScope* newRoot);
+
+  void CollectCrossReferences();
+
+private:
+  PgmScope *root;
+};
+
+
+//***************************************************************************
+// ScopeInfo, CodeInfo.
+//***************************************************************************
 
 // FIXME: It would make more sense for GroupScope and LoadModScope to
 // simply be ScopeInfos and not CodeInfos, but the assumption that

@@ -50,7 +50,7 @@ using namespace std; // For compatibility with non-std C headers
 #include "HTMLSrcFiles.hpp"
 #include "HTMLDriver.hpp"
 #include "HTMLFile.hpp"
-#include "ScopesInfo.hpp"
+#include "ScopeInfo.hpp"
 #include <lib/support/String.hpp>
 #include <lib/support/Assertion.h>
 #include <lib/support/Trace.hpp>

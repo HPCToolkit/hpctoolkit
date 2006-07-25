@@ -42,7 +42,8 @@
 
 #include "HPCViewSAX2.hpp"
 #include "DerivedPerfMetrics.hpp"
-#include "ScopesInfo.hpp"
+#include "ScopeInfo.hpp"
+#include "NodeRetriever.hpp"
 #include "PROFILEDocHandler.hpp"
 #include "MathMLExpr.hpp"
 

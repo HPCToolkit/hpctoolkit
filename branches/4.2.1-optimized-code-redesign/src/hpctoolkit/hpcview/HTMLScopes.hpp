@@ -42,7 +42,7 @@
 
 //************************* User Include Files *******************************
 
-#include "ScopesInfo.hpp"
+#include "ScopeInfo.hpp"
 #include "HTMLFile.hpp"
 #include <lib/support/String.hpp>
 
