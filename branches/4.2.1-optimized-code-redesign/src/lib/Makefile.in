@@ -15,7 +15,7 @@
 @SET_MAKE@
 
 # -*-Mode: makefile;-*-
-# $Id$
+# $Id: Makefile.am 574 2006-07-25 02:22:15Z eraxxon $
 
 #############################################################################
 #
@@ -222,10 +222,10 @@ AUTOMAKE_OPTIONS = foreign
 #############################################################################
 SUBDIRS = \
 	binutils \
-	hpcfile \
 	ISA \
 	perl \
 	prof-juicy \
+	prof-lean \
 	support \
 	xml
 

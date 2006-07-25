@@ -23,7 +23,7 @@
 /************************** System Include Files ****************************/
 
 #include <stdio.h>
-#include <lib/hpcfile/hpcfile_hpcrun.h>
+#include <lib/prof-lean/hpcfile_hpcrun.h>
 
 /**************************** Forward Declarations **************************/
 

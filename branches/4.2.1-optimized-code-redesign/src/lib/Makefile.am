@@ -57,10 +57,10 @@ AUTOMAKE_OPTIONS = foreign
 
 SUBDIRS = \
 	binutils \
-	hpcfile \
 	ISA \
 	perl \
 	prof-juicy \
+	prof-lean \
 	support \
 	xml
 

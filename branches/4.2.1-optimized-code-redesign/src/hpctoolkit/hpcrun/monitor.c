@@ -48,7 +48,7 @@
 #include "hpcrun.h"
 #include "hpcpapi.h" /* <papi.h>, etc. */
 #include "rtmap.h"
-#include <lib/hpcfile/io.h>
+#include <lib/prof-lean/io.h>
 
 /**************************** Forward Declarations **************************/
 

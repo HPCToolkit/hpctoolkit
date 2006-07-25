@@ -22266,7 +22266,7 @@ fi
 # Makefiles to create
 #----------------------------------------------------------------------------
 
-                                                                                                                                                                                                                                      ac_config_files="$ac_config_files Makefile src/Makefile src/hpctoolkit/Makefile src/hpctoolkit/bloop/Makefile src/hpctoolkit/filters/Makefile src/hpctoolkit/hpcquick/Makefile src/hpctoolkit/hpcprof/Makefile src/hpctoolkit/hpcrun/Makefile src/hpctoolkit/hpcview/Makefile src/hpctoolkit/lump/Makefile src/hpctoolkit/misc/Makefile src/hpctoolkit/ptran/Makefile src/hpctoolkit/xcsprof/Makefile src/hpctoolkit/xprof/Makefile src/lib/Makefile src/lib/binutils/Makefile src/lib/hpcfile/Makefile src/lib/ISA/Makefile src/lib/perl/Makefile src/lib/prof-juicy/Makefile src/lib/support/Makefile src/lib/xml/Makefile src/lib/perl/HPCToolkitVersionInfo.pm"
+                                                                                                                                                                                                                                      ac_config_files="$ac_config_files Makefile src/Makefile src/hpctoolkit/Makefile src/hpctoolkit/bloop/Makefile src/hpctoolkit/filters/Makefile src/hpctoolkit/hpcquick/Makefile src/hpctoolkit/hpcprof/Makefile src/hpctoolkit/hpcrun/Makefile src/hpctoolkit/hpcview/Makefile src/hpctoolkit/lump/Makefile src/hpctoolkit/misc/Makefile src/hpctoolkit/ptran/Makefile src/hpctoolkit/xcsprof/Makefile src/hpctoolkit/xprof/Makefile src/lib/Makefile src/lib/binutils/Makefile src/lib/ISA/Makefile src/lib/perl/Makefile src/lib/prof-juicy/Makefile src/lib/prof-lean/Makefile src/lib/support/Makefile src/lib/xml/Makefile src/lib/perl/HPCToolkitVersionInfo.pm"
 cat >confcache <<\_ACEOF
 # This file is a shell script that caches the results of configure
 # tests run on this system so they can be shared between configure
@@ -22935,10 +22935,10 @@ do
   "src/hpctoolkit/xprof/Makefile" ) CONFIG_FILES="$CONFIG_FILES src/hpctoolkit/xprof/Makefile" ;;
   "src/lib/Makefile" ) CONFIG_FILES="$CONFIG_FILES src/lib/Makefile" ;;
   "src/lib/binutils/Makefile" ) CONFIG_FILES="$CONFIG_FILES src/lib/binutils/Makefile" ;;
-  "src/lib/hpcfile/Makefile" ) CONFIG_FILES="$CONFIG_FILES src/lib/hpcfile/Makefile" ;;
   "src/lib/ISA/Makefile" ) CONFIG_FILES="$CONFIG_FILES src/lib/ISA/Makefile" ;;
   "src/lib/perl/Makefile" ) CONFIG_FILES="$CONFIG_FILES src/lib/perl/Makefile" ;;
   "src/lib/prof-juicy/Makefile" ) CONFIG_FILES="$CONFIG_FILES src/lib/prof-juicy/Makefile" ;;
+  "src/lib/prof-lean/Makefile" ) CONFIG_FILES="$CONFIG_FILES src/lib/prof-lean/Makefile" ;;
   "src/lib/support/Makefile" ) CONFIG_FILES="$CONFIG_FILES src/lib/support/Makefile" ;;
   "src/lib/xml/Makefile" ) CONFIG_FILES="$CONFIG_FILES src/lib/xml/Makefile" ;;
   "src/lib/perl/HPCToolkitVersionInfo.pm" ) CONFIG_FILES="$CONFIG_FILES src/lib/perl/HPCToolkitVersionInfo.pm" ;;

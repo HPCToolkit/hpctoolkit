@@ -66,14 +66,14 @@ using namespace std; // For compatibility with non-std C headers
 //*************************** User Include Files ****************************
 
 #include "CSProfileUtils.hpp"
+
+#include <lib/prof-lean/hpcfile_csproflib.h>
 #include <lib/binutils/LoadModule.hpp>
 #include <lib/binutils/PCToSrcLineMap.hpp>
 #include <lib/binutils/LoadModuleInfo.hpp>
 #include <lib/xml/xml.hpp>
 #include <lib/support/String.hpp>
 #include <lib/support/Assertion.h>
-
-#include <lib/hpcfile/hpcfile_csproflib.h>
 
 #if 0
 #define XCSPROF_DEBUG 1   

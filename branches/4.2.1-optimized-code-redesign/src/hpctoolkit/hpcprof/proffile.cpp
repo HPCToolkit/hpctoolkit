@@ -35,8 +35,8 @@
 //*************************** User Include Files ****************************
 
 #include "proffile.hpp"
-#include <lib/hpcfile/hpcfile_hpcrun.h>
-#include <lib/hpcfile/io.h>
+#include <lib/prof-lean/hpcfile_hpcrun.h>
+#include <lib/prof-lean/io.h>
 
 //*************************** Forward Declarations **************************
 

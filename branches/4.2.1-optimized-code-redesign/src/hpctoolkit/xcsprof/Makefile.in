@@ -121,11 +121,12 @@ am__objects_1 = xcsprof-main.$(OBJEXT) xcsprof-Args.$(OBJEXT) \
 am_xcsprof_OBJECTS = $(am__objects_1)
 xcsprof_OBJECTS = $(am_xcsprof_OBJECTS)
 am__DEPENDENCIES_1 =  \
+	$(top_builddir)/src/lib/prof-lean/libHPCprof-lean.la
+am__DEPENDENCIES_2 =  \
 	$(top_builddir)/src/lib/binutils/libHPCbinutils.la
-am__DEPENDENCIES_2 = $(top_builddir)/src/lib/ISA/libHPCisa.la
-am__DEPENDENCIES_3 = $(top_builddir)/src/lib/xml/libHPCxml.la
-am__DEPENDENCIES_4 = $(top_builddir)/src/lib/support/libHPCsupport.la
-am__DEPENDENCIES_5 = $(top_builddir)/src/lib/hpcfile/libHPCfile.la
+am__DEPENDENCIES_3 = $(top_builddir)/src/lib/ISA/libHPCisa.la
+am__DEPENDENCIES_4 = $(top_builddir)/src/lib/xml/libHPCxml.la
+am__DEPENDENCIES_5 = $(top_builddir)/src/lib/support/libHPCsupport.la
 am__DEPENDENCIES_6 = $(am__DEPENDENCIES_1) $(am__DEPENDENCIES_2) \
 	$(am__DEPENDENCIES_3) $(am__DEPENDENCIES_4) \
 	$(am__DEPENDENCIES_5)
@@ -313,13 +314,13 @@ HPC_IFLAGS = -I$(HPCTOOLKIT)/src
 
 # Linking dependencies:
 #   HPC_LIBPROFJUICY : HPC_LIBSUPPORT
-#   HPC_LIBHPCFILE   :
+#   HPC_LIBPROFLEAN  :
 #   HPC_LIBBINUTILS  : HPC_LIBISA HPC_LIBSUPPORT
 #   HPC_LIBISA       : HPC_LIBSUPPORT
 #   HPC_LIBXML       : HPC_LIBSUPPORT
 #   HPC_LIBSUPPORT   :
 HPC_LIBPROFJUICY = $(top_builddir)/src/lib/prof-juicy/libHPCprof-juicy.la
-HPC_LIBHPCFILE = $(top_builddir)/src/lib/hpcfile/libHPCfile.la
+HPC_LIBPROFLEAN = $(top_builddir)/src/lib/prof-lean/libHPCprof-lean.la
 HPC_LIBBINUTILS = $(top_builddir)/src/lib/binutils/libHPCbinutils.la
 HPC_LIBISA = $(top_builddir)/src/lib/ISA/libHPCisa.la
 HPC_LIBXML = $(top_builddir)/src/lib/xml/libHPCxml.la
@@ -346,8 +347,7 @@ MYCXXFLAGS = @HOST_CXXFLAGS@ $(HPC_IFLAGS) @GNUBINUTILS_IFLAGS@
 MYLDFLAGS = @HOST_CXXFLAGS@
 MYLDADD = \
 	@HOST_LIBTREPOSITORY@ \
-	$(HPC_LIBBINUTILS) $(HPC_LIBISA) $(HPC_LIBXML) $(HPC_LIBSUPPORT) \
-	  $(HPC_LIBHPCFILE) \
+	$(HPC_LIBPROFLEAN) $(HPC_LIBBINUTILS) $(HPC_LIBISA) $(HPC_LIBXML) $(HPC_LIBSUPPORT) \
 	@GNUBINUTILS_LDFLAGS@ \
 	@HOST_XCSPROF_LDFLAGS@ \
 	-lm

@@ -86,13 +86,13 @@ MYCLEAN =
 # Automake rules
 #############################################################################
 
-noinst_LTLIBRARIES = libHPCfile.la
+noinst_LTLIBRARIES = libHPCprof-lean.la
 
-libHPCfile_la_SOURCES  = $(MYSOURCES)
-libHPCfile_la_CFLAGS   = $(MYCFLAGS)
-libHPCfile_la_CXXFLAGS = $(MYCXXFLAGS)
-libHPCfile_la_AR       = $(MYAR)
-libHPCfile_la_LIBADD   = $(MYLIBADD)
+libHPCprof_lean_la_SOURCES  = $(MYSOURCES)
+libHPCprof_lean_la_CFLAGS   = $(MYCFLAGS)
+libHPCprof_lean_la_CXXFLAGS = $(MYCXXFLAGS)
+libHPCprof_lean_la_AR       = $(MYAR)
+libHPCprof_lean_la_LIBADD   = $(MYLIBADD)
 
 MOSTLYCLEANFILES = $(MYCLEAN)
 

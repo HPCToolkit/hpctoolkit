@@ -614,10 +614,10 @@ AC_OUTPUT([ \
   src/hpctoolkit/xprof/Makefile \
   src/lib/Makefile \
   src/lib/binutils/Makefile \
-  src/lib/hpcfile/Makefile \
   src/lib/ISA/Makefile \
   src/lib/perl/Makefile \
   src/lib/prof-juicy/Makefile \
+  src/lib/prof-lean/Makefile \
   src/lib/support/Makefile \
   src/lib/xml/Makefile \
   \
