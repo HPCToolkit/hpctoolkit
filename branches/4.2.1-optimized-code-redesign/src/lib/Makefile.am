@@ -1,5 +1,5 @@
 # -*-Mode: makefile;-*-
-# $Header$
+# $Id$
 
 ## * BeginRiceCopyright *****************************************************
 ## 
@@ -60,6 +60,7 @@ SUBDIRS = \
 	hpcfile \
 	ISA \
 	perl \
+	prof-juicy \
 	support \
 	xml
 

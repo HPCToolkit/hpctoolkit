@@ -62,22 +62,19 @@ include $(top_srcdir)/src/Makeinclude.config
 #############################################################################
 
 MYSOURCES = \
-	main.cpp \
-	Args.hpp Args.cpp \
-	BloopIRInterface.hpp BloopIRInterface.cpp \
-	PgmScopeTreeBuilder.hpp PgmScopeTreeBuilder.cpp
+	PgmScopeTree.hpp PgmScopeTree.cpp \
+	PgmScopeTreeIterator.hpp PgmScopeTreeIterator.cpp
 
-MYCFLAGS   = @HOST_CFLAGS@   $(HPC_IFLAGS) @GNUBINUTILS_IFLAGS@
-MYCXXFLAGS = @HOST_CXXFLAGS@ $(HPC_IFLAGS) @GNUBINUTILS_IFLAGS@ @OA_IFLAGS@
+MYCFLAGS   = @HOST_CFLAGS@   $(HPC_IFLAGS)
+MYCXXFLAGS = @HOST_CXXFLAGS@ $(HPC_IFLAGS)
 
-MYLDFLAGS = @HOST_CXXFLAGS@
+if IS_HOST_AR
+  MYAR = @HOST_AR@
+else
+  MYAR = $(AR) cru
+endif
 
-MYLDADD = \
-	@HOST_LIBTREPOSITORY@ \
-	$(HPC_LIBPROFJUICY) $(HPC_LIBBINUTILS) $(HPC_LIBISA) $(HPC_LIBXML) $(HPC_LIBSUPPORT) \
-	@OA_LDFLAGS@ @GNUBINUTILS_LDFLAGS@ \
-	@HOST_BLOOP_LDFLAGS@ \
-	-lm
+MYLIBADD = @HOST_LIBTREPOSITORY@
 
 MYCLEAN = @HOST_LIBTREPOSITORY@
 
@@ -85,13 +82,13 @@ MYCLEAN = @HOST_LIBTREPOSITORY@
 # Automake rules
 #############################################################################
 
-bin_PROGRAMS = bloop
+noinst_LTLIBRARIES = libHPCprof-juicy.la
 
-bloop_SOURCES  = $(MYSOURCES)
-bloop_CFLAGS   = $(MYCFLAGS)
-bloop_CXXFLAGS = $(MYCXXFLAGS)
-bloop_LDFLAGS  = $(MYLDFLAGS)
-bloop_LDADD    = $(MYLDADD)
+libHPCprof_juicy_la_SOURCES  = $(MYSOURCES)
+libHPCprof_juicy_la_CFLAGS   = $(MYCFLAGS)
+libHPCprof_juicy_la_CXXFLAGS = $(MYCXXFLAGS)
+libHPCprof_juicy_la_AR       = $(MYAR)
+libHPCprof_juicy_la_LIBADD   = $(MYLIBADD)
 
 MOSTLYCLEANFILES = $(MYCLEAN)
 

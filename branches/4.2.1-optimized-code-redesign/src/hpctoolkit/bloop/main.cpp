@@ -61,7 +61,6 @@ using std::cerr;
 //*************************** User Include Files ****************************
 
 #include "Args.hpp"
-#include "PgmScopeTree.hpp"
 #include "PgmScopeTreeBuilder.hpp"
 using namespace ScopeTreeBuilder;
 

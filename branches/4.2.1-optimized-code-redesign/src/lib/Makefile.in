@@ -15,7 +15,7 @@
 @SET_MAKE@
 
 # -*-Mode: makefile;-*-
-# $Header$
+# $Id$
 
 #############################################################################
 #
@@ -225,6 +225,7 @@ SUBDIRS = \
 	hpcfile \
 	ISA \
 	perl \
+	prof-juicy \
 	support \
 	xml
 

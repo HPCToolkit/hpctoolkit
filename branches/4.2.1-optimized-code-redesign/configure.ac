@@ -617,6 +617,7 @@ AC_OUTPUT([ \
   src/lib/hpcfile/Makefile \
   src/lib/ISA/Makefile \
   src/lib/perl/Makefile \
+  src/lib/prof-juicy/Makefile \
   src/lib/support/Makefile \
   src/lib/xml/Makefile \
   \

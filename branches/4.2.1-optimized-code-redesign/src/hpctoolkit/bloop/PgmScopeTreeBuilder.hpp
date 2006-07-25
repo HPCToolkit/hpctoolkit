@@ -56,8 +56,7 @@
 
 #include <include/general.h> 
 
-#include "PgmScopeTree.hpp"
-
+#include <lib/prof-juicy/PgmScopeTree.hpp>
 #include <lib/binutils/LoadModule.hpp>
 
 //*************************** Forward Declarations ***************************
