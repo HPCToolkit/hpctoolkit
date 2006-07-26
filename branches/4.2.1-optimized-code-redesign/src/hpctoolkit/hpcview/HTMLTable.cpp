@@ -79,8 +79,8 @@ int HTMLTable::percentWidth =  3;
 const char* HTMLTable::highlightColor = "red"; 
  
 HTMLTable::HTMLTable(const char* nm, 
-		     const ScopesInfo &scpes, 
-		     const ScopeInfoFilter &entryFilter, 
+		     const PgmScopeTree& scpes, 
+		     const ScopeInfoFilter& entryFilter, 
 		     bool lOnly, 
 		     IntVector* perfIndices,
 		     const Args &pgmArgs)  // -1 is used as end marker

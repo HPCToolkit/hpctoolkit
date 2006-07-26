@@ -44,7 +44,7 @@
 #include <include/general.h>
 
 #include "Args.hpp"
-#include "PerfMetric.hpp"
+#include "ScopeInfo.hpp"
 #include "PerfIndex.hpp"
 
 #include <lib/support/String.hpp>
@@ -52,9 +52,6 @@
 
 //************************ Forward Declarations ******************************
 
-class ScopesInfo; 
-class ScopeInfo; 
-class FileScope; 
 class HTMLTable; 
 class HTMLScopes; 
 class Driver; 
@@ -70,7 +67,7 @@ extern const char* ScopesDir;
 
 class HTMLDriver : public Unique { // at most one instance 
 public: 
-  HTMLDriver(const ScopesInfo &scps, 
+  HTMLDriver(const PgmScopeTree &scps, 
 	         const char* fileHome,  // home of static files 
 	         const char* htmlDir,
 	         const Args &pgmArgs);  // output dir for html and js files 
@@ -97,7 +94,7 @@ private:
 		      const String & title, 
 		      const char* headerFile) const; 
 
-  const ScopesInfo &scopes; 
+  const PgmScopeTree &scopes; 
   const char* fileHome; 
   const char* htmlDir; 
 

@@ -153,7 +153,7 @@ Driver::ToString() const {
 } 
 
 void
-Driver::MakePerfData(ScopesInfo &scopes) 
+Driver::MakePerfData(PgmScopeTree& scopes) 
 {
   NodeRetriever ret(scopes.Root(), path);
   

@@ -579,8 +579,7 @@ BuildFromTarjInterval(CodeInfo* enclosingScope, Procedure* p,
       suint begLn = FindLoopBegLine(p, bb1);
 
       // Build the loop nest
-      LoopScope* lScope = new LoopScope(enclosingScope, begLn, begLn, 
-					bb1->getId());
+      LoopScope* lScope = new LoopScope(enclosingScope, begLn, begLn);
       int num = BuildFromTarjInterval(lScope, p, tarj, cfg, kid, 
 				      cfgNodeMap, 1, irrIntIsLoop);
       localLoops += (num + 1);
@@ -724,7 +723,7 @@ FindOrCreateFileNode(LoadModScope* lmScope, Procedure* p)
   }
 
   // Obtain corresponding FileScope
-  FileScope* fileScope = lmScope->FindFile(file);
+  FileScope* fileScope = lmScope->Pgm()->FindFile(file);
   if (fileScope == NULL) {
     bool fileIsReadable = FileIsReadable(file);
     fileScope = new FileScope(file, fileIsReadable, lmScope);

@@ -55,7 +55,7 @@ class Args;
 
 class HTMLScopes { 
 public: 
-  HTMLScopes(const ScopesInfo &scopes, 
+  HTMLScopes(const PgmScopeTree& scopes, 
 	     IntVector *perfIndicesForColumns, // terminate with -1 
 	     const Args &pgmArgs); 
 
@@ -113,7 +113,7 @@ private:
   
   // the fields 
   String name; 
-  const ScopesInfo &scopes;       // contains all refs/lines/loops/procs to
+  const PgmScopeTree &scopes;     // contains all refs/lines/loops/procs to
                                   // be considered
   
   IntVector *perfIndex;           // the perfIndices for perfData we should 

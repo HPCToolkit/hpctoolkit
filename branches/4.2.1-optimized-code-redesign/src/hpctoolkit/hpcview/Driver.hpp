@@ -49,6 +49,7 @@
 #include <include/general.h>
 
 #include "PGMDocHandler.hpp"
+#include "ScopeInfo.hpp"
 
 #include <lib/support/Unique.hpp>
 #include <lib/support/String.hpp>
@@ -62,10 +63,6 @@
 // PathTupleVec: the vector of all 'PathTuple'
 typedef std::pair<String, String> PathTuple;
 typedef std::vector<PathTuple> PathTupleVec;
-
-class PerfMetric; 
-class ScopesInfo;
-class PgmScope;
 
 class Driver : public Unique { // at most one instance 
 public: 
@@ -97,7 +94,7 @@ public:
   const PerfMetric& PerfDataSrc(int i) const { return *dataSrc[i]; }
   void Add(PerfMetric* metric); 
   
-  void MakePerfData(ScopesInfo& scopesInfo);
+  void MakePerfData(PgmScopeTree& scopesInfo);
 
   String ToString() const; 
   void Dump() const { std::cerr << ToString() << std::endl; }

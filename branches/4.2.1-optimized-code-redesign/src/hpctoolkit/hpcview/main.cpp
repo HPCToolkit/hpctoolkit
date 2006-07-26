@@ -145,7 +145,7 @@ realmain(int argc, char* const* argv)
   InitXML();             // exits iff failure 
   
   IFTRACE << "Initializing HTMLDriver: ..." << endl; 
-  ScopesInfo scopes(""); // name will be set as the scope tree is built
+  PgmScopeTree scopes(""); // name will be set as the scope tree is built
   HTMLDriver htmlDriver(scopes, args.fileHome, args.htmlDir, args); 
              // constructor exits if it can't write to htmlDir 
              // or read files in fileHome
@@ -301,7 +301,7 @@ realmain(int argc, char* const* argv)
   } else
   if ( args.OutputFinalScopeTree ) {
     int dumpFlags = (args.XML_DumpAllMetrics) ?
-      0 : ScopeInfo::DUMP_LEAF_METRICS;
+      0 : PgmScopeTree::DUMP_LEAF_METRICS;
 
     if ( args.XML_ToStdout ) {
       cerr << "The final scope tree (in XML) will appear on stdout" << endl; 

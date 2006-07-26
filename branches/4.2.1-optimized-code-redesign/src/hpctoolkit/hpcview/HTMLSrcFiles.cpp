@@ -88,8 +88,8 @@ static void ReformatSrc(HTMLFile &hf, const char* lineBuf,
 			CodeInfoList* list); 
 static String BuildContLineHead();
 
-HTMLSrcFiles::HTMLSrcFiles(const ScopesInfo &scpes, const Args &pgmArgs, 
-			   const ScopeInfoFilter &entryFilter, 
+HTMLSrcFiles::HTMLSrcFiles(const PgmScopeTree& scpes, const Args& pgmArgs, 
+			   const ScopeInfoFilter& entryFilter, 
 			   bool lOnly) 
   : filter(entryFilter), leavesOnly(lOnly), scopes(scpes), programArgs(pgmArgs)
 {

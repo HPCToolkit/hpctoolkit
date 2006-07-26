@@ -145,7 +145,7 @@ HTMLDriver::UniqueName(const ScopeInfo *c, int pIndex, int flattenDepth)
   return nm; 
 }
 
-HTMLDriver::HTMLDriver(const ScopesInfo &scps, 
+HTMLDriver::HTMLDriver(const PgmScopeTree& scps, 
 		       const char* fHm, 
 		       const char* htmlDr,
 		       const Args& pgmArgs)

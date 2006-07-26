@@ -91,7 +91,7 @@ HTMLScopes::HeaderDisplayInfo = DataDisplayInfo("ScopesHeader", "blue",
 
 typedef enum { OUTER, CURRENT, INNER } ScopeLevel; 
 
-HTMLScopes::HTMLScopes(const ScopesInfo &scpes, 
+HTMLScopes::HTMLScopes(const PgmScopeTree& scpes, 
 		       IntVector *perfIndicesForColumns,
 			   const Args &pgmArgs) 
   : scopes(scpes), args(pgmArgs)
