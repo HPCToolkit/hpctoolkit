@@ -201,7 +201,7 @@ HTMLTable::WriteTableHead(const char* dir,
   WriteMetricHeader(hf, perfIndex); 
   
   // third row contains totals (i.e. sum of all numbers in column) 
-  if (!WriteRow(hf, *scopes.Root(), false)) {
+  if (!WriteRow(hf, *scopes.GetRoot(), false)) {
     return false; 
   }; 
   
@@ -262,7 +262,7 @@ HTMLTable::WriteTableBody(const char* dir,
     hf.StartBodyOrFrameset();
     hf << "<pre>"; 
     
-    SortedCodeInfoIterator it(scopes.Root(), 
+    SortedCodeInfoIterator it(scopes.GetRoot(), 
 			      sortByPerfIndex, &(UseForPerfTable));
     int linesLeft = args.maxLinesPerPerfPane;
     for (; it.Current() && linesLeft-- > 0; it++) {
@@ -288,7 +288,7 @@ HTMLTable::WriteRow(HTMLFile &hf, const ScopeInfo &scope, bool labelIsLink,
       MetricMeetsThreshold(perfIndex, perfIndexForThresholding,
 			    100.0,
 //			    args.tableThresholdPercent,
-			    &scope, *scopes.Root())) {
+			    &scope, *scopes.GetRoot())) {
 
     String scopeId = HTMLDriver::UniqueName(&scope, NO_PERF_INDEX, NO_FLATTEN_DEPTH); 
     hf.Anchor(scopeId); 
@@ -305,7 +305,7 @@ HTMLTable::WriteRow(HTMLFile &hf, const ScopeInfo &scope, bool labelIsLink,
     } 
     hf.FontColorStop(HTMLDriver::NameDisplayInfo.Color()); 
     hf << " | "; 
-    if (!WriteMetricValues(hf, perfIndex, &scope, *scopes.Root())) {
+    if (!WriteMetricValues(hf, perfIndex, &scope, *scopes.GetRoot())) {
       return false; 
     } 
     hf << endl; 

@@ -111,12 +111,15 @@ public:
   };
 
 public:
-  PgmScopeTree(const char* name);
-  ~PgmScopeTree();
-  
-  PgmScope* Root() const { return root; };
-  void SetRoot(PgmScope* newRoot);
+  // Constructor/Destructor
+  PgmScopeTree(const char* name, PgmScope* _root = NULL);
+  virtual ~PgmScopeTree();
 
+  // Tree data
+  PgmScope* GetRoot() const { return root; }
+  void SetRoot(PgmScope* x) { root = x; }
+  bool IsEmpty() const { return (root == NULL); }
+  
   void CollectCrossReferences();
 
 private:
@@ -187,16 +190,16 @@ public:
   // Name() is overridden by some scopes
   virtual String Name() const        { return ScopeTypeToName(Type()); }
 
-  bool   HasPerfData(int i) const;     // checks whether PerfData(i) is set
-  double PerfData(int i) const;        // returns NaN iff !HasPerfData(i) 
-  void   SetPerfData(int i, double d); // asserts out iff HasPerfData(i) 
-
   void CollectCrossReferences();
   int NoteHeight();
   void NoteDepth();
 
   int ScopeHeight() const { return height; }
   int ScopeDepth() const { return depth; }
+
+  bool   HasPerfData(int i) const;     // checks whether PerfData(i) is set
+  double PerfData(int i) const;        // returns NaN iff !HasPerfData(i) 
+  void   SetPerfData(int i, double d); // asserts out iff HasPerfData(i) 
   
   // --------------------------------------------------------
   // Parent
@@ -294,7 +297,7 @@ public:
   // --------------------------------------------------------
   // debugging and printing 
   // --------------------------------------------------------
-  virtual String Types() ; // lists this instance's base and derived types 
+  virtual String Types() const; // instance's base and derived types 
   virtual String ToString() const;
   virtual String ToXML() const;
   
@@ -315,14 +318,12 @@ public:
                const char *file_name = NULL, const char *routine_name = NULL,
                int lLevel = 0) const;
 
-protected: 
+protected:
   ScopeType type;
   unsigned int uid;
-  DoubleVector* perfData;
-
-  // cross reference information
-  int height;
+  int height; // cross reference information
   int depth;
+  DoubleVector* perfData;
 };
 
 // --------------------------------------------------------------------------
@@ -359,13 +360,13 @@ public:
 
   void SetLineRange(suint begLn, suint endLn); // be careful when using!
 
+  CodeInfo *GetFirst() const { return first; } 
+  CodeInfo *GetLast() const { return last; } 
+
   virtual String ToString() const;
   virtual String ToXML() const;
   virtual String XMLLineNumbers() const;
   
-  CodeInfo *GetFirst() const { return first; } 
-  CodeInfo *GetLast() const { return last; } 
-
   virtual void CSV_Dump(const PgmScope &root, std::ostream &os = std::cout, 
                const char *file_name = NULL, const char *routine_name = NULL,
                int lLevel = 0) const;
@@ -379,9 +380,9 @@ protected:
   suint begLine;
   suint endLine;
 
-public:
-  CodeInfo *first;
+  CodeInfo *first; // FIXME: this seems to duplicate NonUniformDegreeTree...
   CodeInfo *last;
+  friend void ScopeInfo::CollectCrossReferences();
 };
 
 
@@ -637,7 +638,7 @@ public:
 class RefScope: public CodeInfo {
 public: 
   RefScope(CodeInfo *mom, int _begPos, int _endPos, const char *refName);
-  // mom->Type() == LINE_SCOPE 
+  // mom->Type() == STMT_RANGE_SCOPE 
   
   unsigned int BegPos() const { return begPos; };
   unsigned int EndPos() const   { return endPos; };

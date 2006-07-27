@@ -145,8 +145,9 @@ realmain(int argc, char* const* argv)
   InitXML();             // exits iff failure 
   
   IFTRACE << "Initializing HTMLDriver: ..." << endl; 
-  PgmScopeTree scopes(""); // name will be set as the scope tree is built
-  HTMLDriver htmlDriver(scopes, args.fileHome, args.htmlDir, args); 
+
+  PgmScopeTree scopes("", new PgmScope("")); // name set later
+  HTMLDriver htmlDriver(scopes, args.fileHome, args.htmlDir, args);
              // constructor exits if it can't write to htmlDir 
              // or read files in fileHome
   IFTRACE << endl; 
@@ -204,7 +205,7 @@ realmain(int argc, char* const* argv)
   if ( args.OutputInitialScopeTree ) {
     if ( args.XML_ToStdout ) { 
       cerr << "The initial scope tree (in XML) will appear on stdout" << endl; 
-      driver.XML_Dump(scopes.Root());
+       driver.XML_Dump(scopes.GetRoot());
     } else {
       String dmpFile = args.htmlDir + "/" + args.XML_Dump_File;
       cerr << "The initial scope tree (in XML) will be written to " 
@@ -214,7 +215,7 @@ realmain(int argc, char* const* argv)
 	cerr << "Output file open failed; skipping write of initial scope tree"
              << endl;
       }
-      driver.XML_Dump(scopes.Root(), XML_outFile);
+      driver.XML_Dump(scopes.GetRoot(), XML_outFile);
     }
   }
 
@@ -224,15 +225,15 @@ realmain(int argc, char* const* argv)
   //-------------------------------------------------------
   // do not remove the scopes with no profile data if the output is flat CSV
   if (! (args.FlatCSVOutput || args.FlatTSVOutput) )
-    UpdateScopeTree( scopes.Root(), driver.NumberOfMetrics() );
+    UpdateScopeTree( scopes.GetRoot(), driver.NumberOfMetrics() );
   
-  scopes.Root()->Freeze(); // disallow further additions to tree 
+  scopes.GetRoot()->Freeze(); // disallow further additions to tree 
 
   scopes.CollectCrossReferences(); // collect cross referencing information
 
   if (trace > 1) { 
     cerr << "The final scope tree, before HTML generation:" << endl; 
-    scopes.Root()->Dump(); 
+    scopes.GetRoot()->Dump(); 
   }
   // FiniXML(); eraxxon: causes a seg fault.
 
@@ -262,13 +263,13 @@ realmain(int argc, char* const* argv)
 	 << args.htmlDir << endl;
 
     // Note that this may modify file names in the ScopeTree
-    CopySourceFiles(scopes.Root(), driver.PathVec(), args.htmlDir);
+    CopySourceFiles(scopes.GetRoot(), driver.PathVec(), args.htmlDir);
   }
 
   if ( args.FlatCSVOutput ) {
     if ( args.XML_ToStdout ) {
       cerr << "The final scope tree (in CSV) will appear on stdout" << endl; 
-      driver.CSV_Dump(scopes.Root());
+      driver.CSV_Dump(scopes.GetRoot());
     } else {
       String dmpFile = args.htmlDir + "/" + args.XML_Dump_File;
       
@@ -279,13 +280,13 @@ realmain(int argc, char* const* argv)
 	cerr << "Output file open failed; skipping write of final scope tree."
              << endl;
       }
-      driver.CSV_Dump(scopes.Root(), XML_outFile);
+      driver.CSV_Dump(scopes.GetRoot(), XML_outFile);
     }
   } else
   if ( args.FlatTSVOutput ) {
     if ( args.XML_ToStdout ) {
       cerr << "The final scope tree (in TSV) will appear on stdout" << endl; 
-      driver.TSV_Dump(scopes.Root());
+      driver.TSV_Dump(scopes.GetRoot());
     } else {
       String dmpFile = args.htmlDir + "/" + args.XML_Dump_File;
       
@@ -296,7 +297,7 @@ realmain(int argc, char* const* argv)
 	cerr << "Output file open failed; skipping write of final scope tree."
              << endl;
       }
-      driver.TSV_Dump(scopes.Root(), XML_outFile);
+      driver.TSV_Dump(scopes.GetRoot(), XML_outFile);
     }
   } else
   if ( args.OutputFinalScopeTree ) {
@@ -305,7 +306,7 @@ realmain(int argc, char* const* argv)
 
     if ( args.XML_ToStdout ) {
       cerr << "The final scope tree (in XML) will appear on stdout" << endl; 
-      driver.XML_Dump(scopes.Root(), dumpFlags);
+      driver.XML_Dump(scopes.GetRoot(), dumpFlags);
     } else {
       String dmpFile = args.htmlDir + "/" + args.XML_Dump_File;
       
@@ -316,7 +317,7 @@ realmain(int argc, char* const* argv)
 	cerr << "Output file open failed; skipping write of final scope tree."
              << endl;
       }
-      driver.XML_Dump(scopes.Root(), dumpFlags, XML_outFile);
+      driver.XML_Dump(scopes.GetRoot(), dumpFlags, XML_outFile);
     }
   }
   

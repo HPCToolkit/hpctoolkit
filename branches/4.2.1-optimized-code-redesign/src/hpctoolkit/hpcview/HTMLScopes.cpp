@@ -219,7 +219,7 @@ HTMLScopes::WriteScopesForMetric(const char* htmlDir, int sortByPerfIndex,
 				 const char* bodyBgColor) const
 {
 
-  ScopeInfo *root = scopes.Root();
+  ScopeInfo *root = scopes.GetRoot();
   int numViewsOfRoot;
 
   // check whether there is flattening to do at the root level
@@ -233,11 +233,11 @@ HTMLScopes::WriteScopesForMetric(const char* htmlDir, int sortByPerfIndex,
   if (args.OldStyleHTML)
   {
      for( int flat=0 ; flat<numViewsOfRoot ; flat++ )
-        WriteScopeOldStyle(htmlDir, bodyBgColor, *scopes.Root(), 
+        WriteScopeOldStyle(htmlDir, bodyBgColor, *scopes.GetRoot(), 
                   sortByPerfIndex, flat); 
   }
   else
-     WriteScope(htmlDir, bodyBgColor, *scopes.Root(), sortByPerfIndex, 
+     WriteScope(htmlDir, bodyBgColor, *scopes.GetRoot(), sortByPerfIndex, 
  	       numViewsOfRoot); 
   return true; // for now
 }
@@ -524,7 +524,7 @@ HTMLScopes::WriteLine(HTMLFile &hf, unsigned int level,
     // filter out lines that don't meet threshold
     if (anchor && 
 	!HTMLTable::MetricMeetsThreshold
-	(perfIndex, pIndex, args.scopeThresholdPercent, si, *scopes.Root())) 
+	(perfIndex, pIndex, args.scopeThresholdPercent, si, *scopes.GetRoot()))
       return;
 
 
@@ -583,7 +583,7 @@ HTMLScopes::WriteLine(HTMLFile &hf, unsigned int level,
   }
 
   // Write performance data (ignoring return value!)
-  (void) HTMLTable::WriteMetricValues(hf, perfIndex, si, *scopes.Root());
+  (void) HTMLTable::WriteMetricValues(hf, perfIndex, si, *scopes.GetRoot());
 
   hf << endl; 
 }

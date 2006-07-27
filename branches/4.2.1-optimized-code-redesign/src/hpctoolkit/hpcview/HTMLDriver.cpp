@@ -231,7 +231,7 @@ HTMLDriver::Write(const Driver& driver)  const
   // miscellaneous files
   WriteFiles("files"); 
   WriteHeader(HEADER, driver.Title()); 
-  WriteIndexFile(scopes.Root(), table, firstSorted, scopeTables, 
+  WriteIndexFile(scopes.GetRoot(), table, firstSorted, scopeTables, 
 		 driver.Title(), HEADER);
   return true; 
 } 
@@ -472,7 +472,7 @@ HTMLDriver::WriteFiles(const char* filesFileName) const
   hf << "<br>" << endl;
 
   // Iterate over load modules and print source files for each 
-  ScopeInfoIterator it1(scopes.Root(), &ScopeTypeFilter[ScopeInfo::LM]);
+  ScopeInfoIterator it1(scopes.GetRoot(), &ScopeTypeFilter[ScopeInfo::LM]);
   //NameSortedChildIterator it1(scopes.Root());
   for (; it1.Current(); it1++) {
     LoadModScope* lm = dynamic_cast<LoadModScope*>(it1.Current());

@@ -113,15 +113,16 @@ public:
 
 public:
   // Constructor/Destructor
-  PgmScopeTree(PgmScope* _root = NULL);
+  PgmScopeTree(const char* name, PgmScope* _root = NULL);
   virtual ~PgmScopeTree();
 
   // Tree data
   PgmScope* GetRoot() const { return root; }
-  bool      IsEmpty() const { return (root == NULL); }
-
   void SetRoot(PgmScope* x) { root = x; }
+  bool IsEmpty() const { return (root == NULL); }
   
+  void CollectCrossReferences();
+
   // Dump contents for inspection (use flags from ScopeInfo)
   virtual void Dump(std::ostream& os = std::cerr, 
 		    int dmpFlag = XML_TRUE) const;
@@ -193,7 +194,14 @@ public:
 
   // Name() is overridden by some scopes
   virtual String Name() const        { return ScopeTypeToName(Type()); }
-  
+
+  void CollectCrossReferences();
+  int NoteHeight();
+  void NoteDepth();
+
+  int ScopeHeight() const { return height; }
+  int ScopeDepth() const { return depth; }
+
   // --------------------------------------------------------
   // Parent
   // --------------------------------------------------------
@@ -290,7 +298,7 @@ public:
   // --------------------------------------------------------
   // debugging and printing 
   // --------------------------------------------------------
-  virtual String Types() ; // lists this instance's base and derived types 
+  virtual String Types() const; // instance's base and derived types 
   virtual String ToString(int dmpFlag = PgmScopeTree::XML_TRUE) const;
   
   void DumpSelfBefore(std::ostream &os = std::cerr, 
@@ -312,6 +320,8 @@ public:
 protected:
   ScopeType type;
   unsigned int uid;
+  int height; // cross reference information
+  int depth;
 };
 
 // --------------------------------------------------------------------------
@@ -346,6 +356,9 @@ public:
 
   void SetLineRange(suint begLn, suint endLn); // be careful when using!
 
+  CodeInfo *GetFirst() const { return first; } 
+  CodeInfo *GetLast() const { return last; } 
+
   virtual String ToString(int dmpFlag = PgmScopeTree::XML_TRUE) const;
   virtual String DumpLineRange(int dmpFlag = PgmScopeTree::XML_TRUE) const;
   
@@ -353,6 +366,10 @@ protected:
   void Relocate();
   suint begLine;
   suint endLine;
+
+  CodeInfo *first; // FIXME: this seems to duplicate NonUniformDegreeTree...
+  CodeInfo *last;
+  friend void ScopeInfo::CollectCrossReferences();
 };
 
 

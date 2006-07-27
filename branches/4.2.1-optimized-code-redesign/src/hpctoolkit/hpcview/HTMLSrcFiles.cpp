@@ -133,7 +133,7 @@ HTMLSrcFiles::WriteLabels(const char* dir,
   WriteSourceLabel(dir, NULL, fgColor, bgColor); 
 
   // for each FILE write a label file 
-  ScopeInfoIterator it(scopes.Root(), &ScopeTypeFilter[ScopeInfo::FILE]); 
+  ScopeInfoIterator it(scopes.GetRoot(), &ScopeTypeFilter[ScopeInfo::FILE]);
   for (; it.Current(); it++) {
      const FileScope *fi = dynamic_cast<FileScope*>(it.Current()); 
      BriefAssertion(fi != NULL); 
@@ -145,7 +145,7 @@ void
 HTMLSrcFiles::WriteSrcFiles(const char* dir) const 
 {
    // for each FILE write a label file 
-  ScopeInfoIterator it(scopes.Root(), &ScopeTypeFilter[ScopeInfo::FILE]); 
+  ScopeInfoIterator it(scopes.GetRoot(), &ScopeTypeFilter[ScopeInfo::FILE]);
   for (; it.Current(); it++) {
      WriteSrcFile(dir, *dynamic_cast<FileScope*>(it.Current())); 
   } 

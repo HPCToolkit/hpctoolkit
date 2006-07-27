@@ -107,8 +107,8 @@ class StmtRangeScopeMap : public std::map<suint, StmtRangeScope*> { };
 // PgmScopeTree
 //***************************************************************************
 
-PgmScopeTree::PgmScopeTree(const char* name)
-: root(new PgmScope(name)) 
+PgmScopeTree::PgmScopeTree(const char* name, PgmScope* _root)
+  : root(_root)
 {
 }
 
@@ -118,21 +118,12 @@ PgmScopeTree::~PgmScopeTree()
 }
 
 void 
-PgmScopeTree::SetRoot(PgmScope* newRoot)
-{
-  if (root != NULL)
-    delete root;
-  root = newRoot;
-}
-
-void 
 PgmScopeTree::CollectCrossReferences() 
 { 
   root->NoteHeight();
   root->NoteDepth();
   root->CollectCrossReferences();
-};
-
+}
 
 /*****************************************************************************/
 // ScopeType `methods' (could completely replace with dynamic typing)
@@ -163,10 +154,11 @@ ScopeInfo::ScopeInfo(ScopeType t, ScopeInfo* mom)
   : NonUniformDegreeTreeNode(mom), type(t)
 { 
   BriefAssertion((type == PGM) || (Pgm() == NULL) || !Pgm()->IsFrozen());
-  perfData = new DoubleVector();
   static unsigned int uniqueId = 0;
   uid = uniqueId++;
   height = 0;
+  depth = 0;
+  perfData = new DoubleVector();
 }
 
 ScopeInfo& 
@@ -176,16 +168,17 @@ ScopeInfo::operator=(const ScopeInfo& other)
   if (&other != this) {
     type     = other.type;
     uid      = other.uid;
-    perfData = other.perfData;
     height   = 0;
     depth    = 0;
+    perfData = other.perfData;
     
     ZeroLinks(); // NonUniformDegreeTreeNode
   }
   return *this;
 }
 
-void ScopeInfo::CollectCrossReferences() 
+void 
+ScopeInfo::CollectCrossReferences() 
 {
   for (ScopeInfoChildIterator it(this); it.Current(); it++) {
     it.CurScope()->CollectCrossReferences();
@@ -995,37 +988,37 @@ RefScope::CodeName() const
 //***************************************************************************
 
 String 
-ScopeInfo::Types() 
+ScopeInfo::Types() const
 {
   String types;
-  if (dynamic_cast<ScopeInfo*>(this)) {
+  if (dynamic_cast<const ScopeInfo*>(this)) {
     types += "ScopeInfo ";
   } 
-  if (dynamic_cast<CodeInfo*>(this)) {
+  if (dynamic_cast<const CodeInfo*>(this)) {
     types += "CodeInfo ";
   } 
-  if (dynamic_cast<PgmScope*>(this)) {
+  if (dynamic_cast<const PgmScope*>(this)) {
     types += "PgmScope ";
   } 
-  if (dynamic_cast<GroupScope*>(this)) {
+  if (dynamic_cast<const GroupScope*>(this)) {
     types += "GroupScope ";
   } 
-  if (dynamic_cast<LoadModScope*>(this)) {
+  if (dynamic_cast<const LoadModScope*>(this)) {
     types += "LoadModScope ";
   } 
-  if (dynamic_cast<FileScope*>(this)) {
+  if (dynamic_cast<const FileScope*>(this)) {
     types += "FileScope ";
   } 
-  if (dynamic_cast<ProcScope*>(this)) {
+  if (dynamic_cast<const ProcScope*>(this)) {
     types += "ProcScope ";
   } 
-  if (dynamic_cast<LoopScope*>(this)) {
+  if (dynamic_cast<const LoopScope*>(this)) {
     types += "LoopScope ";
   } 
-  if (dynamic_cast<StmtRangeScope*>(this)) {
+  if (dynamic_cast<const StmtRangeScope*>(this)) {
     types += "StmtRangeScope ";
   } 
-  if (dynamic_cast<RefScope*>(this)) {
+  if (dynamic_cast<const RefScope*>(this)) {
     types += "RefScope ";
   }
   return types;

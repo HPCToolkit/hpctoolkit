@@ -117,7 +117,7 @@ class StmtRangeScopeMap : public std::map<suint, StmtRangeScope*> { };
 // PgmScopeTree
 //***************************************************************************
 
-PgmScopeTree::PgmScopeTree(PgmScope* _root)
+PgmScopeTree::PgmScopeTree(const char* name, PgmScope* _root)
   : root(_root)
 {
 }
@@ -125,6 +125,14 @@ PgmScopeTree::PgmScopeTree(PgmScope* _root)
 PgmScopeTree::~PgmScopeTree()
 {
   delete root;
+}
+
+void 
+PgmScopeTree::CollectCrossReferences() 
+{ 
+  root->NoteHeight();
+  root->NoteDepth();
+  root->CollectCrossReferences();
 }
 
 void 
@@ -172,6 +180,8 @@ ScopeInfo::ScopeInfo(ScopeType t, ScopeInfo* mom)
   BriefAssertion((type == PGM) || (Pgm() == NULL) || !Pgm()->IsFrozen());
   static unsigned int uniqueId = 0;
   uid = uniqueId++;
+  height = 0;
+  depth = 0;
 }
 
 ScopeInfo& 
@@ -181,10 +191,72 @@ ScopeInfo::operator=(const ScopeInfo& other)
   if (&other != this) {
     type     = other.type;
     uid      = other.uid;
+    height   = 0;
+    depth    = 0;
     
     ZeroLinks(); // NonUniformDegreeTreeNode
   }
   return *this;
+}
+
+void 
+ScopeInfo::CollectCrossReferences() 
+{
+  for (ScopeInfoChildIterator it(this); it.Current(); it++) {
+    it.CurScope()->CollectCrossReferences();
+  } 
+
+  CodeInfo *self = dynamic_cast<CodeInfo*>(this);  
+  if (self) {
+    if (IsLeaf()) {
+      self->first = self->last = self;
+    } else {
+      self->first = self->last = 0;
+
+      int minline = INT_MAX;
+      int maxline = -1;
+      for (ScopeInfoChildIterator it(this); it.Current(); it++) {
+	CodeInfo *child = dynamic_cast<CodeInfo*>(it.CurScope());
+	int cmin = child->BegLine();
+	int cmax = child->EndLine();
+	if (cmin < minline) {
+	  minline = cmin;
+	  self->first = child->first;
+	}
+	if (cmax > maxline) {
+	  maxline = cmax;
+	  self->last = child->last;
+	} 
+      }
+    }
+  }
+}
+
+int ScopeInfo::NoteHeight() 
+{
+  if (IsLeaf()) {
+    height = 0;
+  } else {
+    height = 0;
+    for (ScopeInfoChildIterator it(this); it.Current(); it++) {
+      int childHeight = it.CurScope()->NoteHeight();
+      height = MAX(height, childHeight + 1);
+    } 
+  }
+  return height;
+}
+
+void ScopeInfo::NoteDepth() 
+{
+  ScopeInfo* p = Parent();
+  if (p) {
+    depth = p->depth + 1;
+  } else {
+    depth = 0;
+  }
+  for (ScopeInfoChildIterator it(this); it.Current(); it++) {
+    it.CurScope()->NoteDepth();
+  } 
 }
 
 static bool
@@ -217,6 +289,7 @@ CodeInfo::operator=(const CodeInfo& other)
   if (&other != this) {
     begLine = other.begLine;
     endLine = other.endLine;
+    first = last = NULL;
   }
   return *this;
 }
@@ -889,37 +962,37 @@ RefScope::CodeName() const
 //***************************************************************************
 
 String 
-ScopeInfo::Types() 
+ScopeInfo::Types() const
 {
   String types;
-  if (dynamic_cast<ScopeInfo*>(this)) {
+  if (dynamic_cast<const ScopeInfo*>(this)) {
     types += "ScopeInfo ";
   } 
-  if (dynamic_cast<CodeInfo*>(this)) {
+  if (dynamic_cast<const CodeInfo*>(this)) {
     types += "CodeInfo ";
   } 
-  if (dynamic_cast<PgmScope*>(this)) {
+  if (dynamic_cast<const PgmScope*>(this)) {
     types += "PgmScope ";
   } 
-  if (dynamic_cast<GroupScope*>(this)) {
+  if (dynamic_cast<const GroupScope*>(this)) {
     types += "GroupScope ";
   } 
-  if (dynamic_cast<LoadModScope*>(this)) {
+  if (dynamic_cast<const LoadModScope*>(this)) {
     types += "LoadModScope ";
   } 
-  if (dynamic_cast<FileScope*>(this)) {
+  if (dynamic_cast<const FileScope*>(this)) {
     types += "FileScope ";
   } 
-  if (dynamic_cast<ProcScope*>(this)) {
+  if (dynamic_cast<const ProcScope*>(this)) {
     types += "ProcScope ";
   } 
-  if (dynamic_cast<LoopScope*>(this)) {
+  if (dynamic_cast<const LoopScope*>(this)) {
     types += "LoopScope ";
   } 
-  if (dynamic_cast<StmtRangeScope*>(this)) {
+  if (dynamic_cast<const StmtRangeScope*>(this)) {
     types += "StmtRangeScope ";
   } 
-  if (dynamic_cast<RefScope*>(this)) {
+  if (dynamic_cast<const RefScope*>(this)) {
     types += "RefScope ";
   }
   return types;

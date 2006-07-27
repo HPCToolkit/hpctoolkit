@@ -155,7 +155,7 @@ Driver::ToString() const {
 void
 Driver::MakePerfData(PgmScopeTree& scopes) 
 {
-  NodeRetriever ret(scopes.Root(), path);
+  NodeRetriever ret(scopes.GetRoot(), path);
   
   //-------------------------------------------------------
   // if a PGM/Structure document has been provided, use it to 
