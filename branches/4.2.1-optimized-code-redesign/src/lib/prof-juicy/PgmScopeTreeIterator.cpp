@@ -74,7 +74,7 @@ bool
 HasScopeType(const ScopeInfo& sinfo, long type)
 {
   return (type == ScopeInfo::ANY
-	  || sinfo.Type() == ScopeInfo::IntToScopeType(type)); 
+	  || sinfo.Type() == ScopeInfo::IntToScopeType(type));
 }
 
 const ScopeInfoFilter ScopeTypeFilter[ScopeInfo::NUMBER_OF_SCOPES] = {
@@ -100,9 +100,12 @@ const ScopeInfoFilter ScopeTypeFilter[ScopeInfo::NUMBER_OF_SCOPES] = {
 		  ScopeInfo::ScopeTypeToName(ScopeInfo::STMT_RANGE),
 		  ScopeInfo::STMT_RANGE),
   ScopeInfoFilter(HasScopeType,
+		  ScopeInfo::ScopeTypeToName(ScopeInfo::REF),
+		  ScopeInfo::REF),
+  ScopeInfoFilter(HasScopeType,
 		  ScopeInfo::ScopeTypeToName(ScopeInfo::ANY),
 		  ScopeInfo::ANY)
-}; 
+};
 
 //***************************************************************************
 // ScopeInfoChildIterator
@@ -117,14 +120,14 @@ ScopeInfoChildIterator::ScopeInfoChildIterator(const ScopeInfo *root,
 NonUniformDegreeTreeNode* 
 ScopeInfoChildIterator::Current()  const
 {
-  NonUniformDegreeTreeNode *s; 
-  ScopeInfo *si; 
+  NonUniformDegreeTreeNode *s;
+  ScopeInfo *si;
   while ( (s = NonUniformDegreeTreeNodeChildIterator::Current()) ) {
     si = dynamic_cast<ScopeInfo*>(s);
     if ((filter == NULL) || filter->Apply(*si)) { 
       break; 	
     }
-    ((ScopeInfoChildIterator*) this)->operator++(); 
+    ((ScopeInfoChildIterator*) this)->operator++();
   } 
   return dynamic_cast<ScopeInfo*>(s);
 } 
@@ -156,17 +159,17 @@ ScopeInfoIterator::ScopeInfoIterator(const ScopeInfo *root,
 NonUniformDegreeTreeNode* 
 ScopeInfoIterator::Current()  const
 {
-  NonUniformDegreeTreeNode *s; 
-  ScopeInfo *si; 
+  NonUniformDegreeTreeNode *s;
+  ScopeInfo *si;
   while ( (s = NonUniformDegreeTreeIterator::Current()) ) {
-    si = dynamic_cast<ScopeInfo*>(s); 
-    BriefAssertion(si != NULL); 
+    si = dynamic_cast<ScopeInfo*>(s);
+    BriefAssertion(si != NULL);
     if ((filter == NULL) || filter->Apply(*si)) { 
       break; 	
     }
-    ((ScopeInfoIterator*) this)->operator++(); 
+    ((ScopeInfoIterator*) this)->operator++();
   } 
-  return dynamic_cast<ScopeInfo*>(s); 
+  return dynamic_cast<ScopeInfo*>(s);
 } 
 
 //***************************************************************************
@@ -178,55 +181,55 @@ ScopeInfoLineSortedIterator(const CodeInfo *file,
 			    const ScopeInfoFilter *filterFunc, 
 			    bool leavesOnly)
 {
-  ScopeInfoIterator it(file, filterFunc, leavesOnly); 
-  ScopeInfo *cur; 
+  ScopeInfoIterator it(file, filterFunc, leavesOnly);
+  ScopeInfo *cur;
   for (; (cur = it.CurScope()); ) {
-    scopes.Add((unsigned long) cur); 
-    it++; 
+    scopes.Add((unsigned long) cur);
+    it++;
   }
-  ptrSetIt = new WordSetSortedIterator(&scopes, CompareByLine); 
+  ptrSetIt = new WordSetSortedIterator(&scopes, CompareByLine);
 }
 
 
 ScopeInfoLineSortedIterator::~ScopeInfoLineSortedIterator() 
 {
-  delete ptrSetIt; 
+  delete ptrSetIt;
 }
  
 CodeInfo* 
 ScopeInfoLineSortedIterator::Current() const
 {
-  CodeInfo *cur = NULL; 
+  CodeInfo *cur = NULL;
   if (ptrSetIt->Current()) {
-    cur = (CodeInfo*) (*ptrSetIt->Current()); 
-    BriefAssertion(cur != NULL); 
+    cur = (CodeInfo*) (*ptrSetIt->Current());
+    BriefAssertion(cur != NULL);
   }
-  return cur; 
+  return cur;
 } 
 
 void 
 ScopeInfoLineSortedIterator::DumpAndReset(ostream &os)
 {
-  os << "ScopeInfoLineSortedIterator: " << endl; 
+  os << "ScopeInfoLineSortedIterator: " << endl;
   while (Current()) {
-    os << Current()->ToDumpString() << endl; 
-    (*this)++; 
+    os << Current()->ToString() << endl;
+    (*this)++;
   } 
-  Reset(); 
+  Reset();
 }
 
 void 
 ScopeInfoLineSortedIterator::Reset()
 {
-  ptrSetIt->Reset(); 
+  ptrSetIt->Reset();
 }
 
 static int 
 CompareByLine(const void* a, const void *b) 
 {
-  CodeInfo* x = (*(CodeInfo**)a); 
-  CodeInfo* y = (*(CodeInfo**)b); 
-  BriefAssertion (x != NULL); 
+  CodeInfo* x = (*(CodeInfo**)a);
+  CodeInfo* y = (*(CodeInfo**)b);
+  BriefAssertion (x != NULL);
   BriefAssertion (y != NULL);
   return CodeInfoLineComp(x, y);
 }
@@ -275,7 +278,7 @@ ScopeInfoLineSortedChildIterator::DumpAndReset(ostream &os)
 {
   os << "ScopeInfoLineSortedChildIterator: " << endl;
   while (Current()) {
-    os << Current()->ToDumpString() << endl;
+    os << Current()->ToString() << endl;
     (*this)++;
   }
   Reset();
@@ -290,45 +293,45 @@ ScopeInfoNameSortedChildIterator::
 ScopeInfoNameSortedChildIterator(const ScopeInfo *scope, 
 				 const ScopeInfoFilter * f)
 {
-  ScopeInfoChildIterator it(scope, f); 
-  ScopeInfo *cur; 
+  ScopeInfoChildIterator it(scope, f);
+  ScopeInfo *cur;
   for (; (cur = it.CurScope()); ) {
-    scopes.Add((unsigned long) cur); 
-    it++; 
+    scopes.Add((unsigned long) cur);
+    it++;
   }
-  ptrSetIt = new WordSetSortedIterator(&scopes, CompareByName); 
+  ptrSetIt = new WordSetSortedIterator(&scopes, CompareByName);
 }
 
 ScopeInfoNameSortedChildIterator::~ScopeInfoNameSortedChildIterator() 
 {
-  delete ptrSetIt; 
+  delete ptrSetIt;
 }
  
 CodeInfo* 
 ScopeInfoNameSortedChildIterator::Current() const
 {
-  CodeInfo *cur = NULL; 
+  CodeInfo *cur = NULL;
   if (ptrSetIt->Current()) {
-    cur = (CodeInfo*) (*ptrSetIt->Current()); 
-    BriefAssertion(cur != NULL); 
+    cur = (CodeInfo*) (*ptrSetIt->Current());
+    BriefAssertion(cur != NULL);
   }
-  return cur; 
+  return cur;
 }
 
 void 
 ScopeInfoNameSortedChildIterator::Reset()
 {
-  ptrSetIt->Reset(); 
+  ptrSetIt->Reset();
 }
 
 int 
 ScopeInfoNameSortedChildIterator::CompareByName(const void* a, const void *b) 
 {
-  ScopeInfo* x = (*(ScopeInfo**)a); 
-  ScopeInfo* y = (*(ScopeInfo**)b); 
-  BriefAssertion (x != NULL); 
-  BriefAssertion (y != NULL); 
-  return strcmp(x->Name(), y->Name()); 
+  ScopeInfo* x = (*(ScopeInfo**)a);
+  ScopeInfo* y = (*(ScopeInfo**)b);
+  BriefAssertion (x != NULL);
+  BriefAssertion (y != NULL);
+  return strcmp(x->Name(), y->Name());
 }
 
 //***************************************************************************

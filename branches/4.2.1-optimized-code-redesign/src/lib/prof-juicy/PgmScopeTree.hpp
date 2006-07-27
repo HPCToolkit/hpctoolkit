@@ -101,6 +101,8 @@ public:
 
     COMPRESSED_OUTPUT = (1 << 1),  /* Use compressed output format */
 
+    DUMP_LEAF_METRICS = (1 << 2),  /* Dump only leaf metrics */
+
     // Not-generally-user-level bit flags
     XML_NO_ESC_CHARS = (1 << 10), /* don't substitute XML escape characters */
 
@@ -149,6 +151,7 @@ class FileScope;
 class ProcScope;
 class LoopScope;
 class StmtRangeScope;
+class RefScope;
 
 // ---------------------------------------------------------
 // ScopeInfo: The base node for a program scope tree
@@ -163,6 +166,7 @@ public:
     PROC,
     LOOP,
     STMT_RANGE,
+    REF,
     ANY,
     NUMBER_OF_SCOPES
   };
@@ -179,7 +183,7 @@ private:
   
 public:
   ScopeInfo(ScopeType type, ScopeInfo* parent = NULL);
-  virtual ~ScopeInfo(); 
+  virtual ~ScopeInfo();
   
   // --------------------------------------------------------
   // General Interface to fields 
@@ -202,7 +206,7 @@ public:
   // Ancestor: find first ScopeInfo in path from this to root with given type
   // (Note: We assume that a node cannot be an ancestor of itself.)
   // --------------------------------------------------------
-  ScopeInfo* Ancestor(ScopeType type) const; 
+  ScopeInfo* Ancestor(ScopeType type) const;
   
   PgmScope*       Pgm() const;           // return Ancestor(PGM)
   GroupScope*     Group() const;         // return Ancestor(GROUP)
@@ -219,7 +223,7 @@ public:
   // --------------------------------------------------------
   // Tree navigation 
   //   1) all ScopeInfos contain CodeInfos as children 
-  //   2) PgmRoot is the only ScopeInfo type that is not also a CodeInfo; 
+  //   2) PgmRoot is the only ScopeInfo type that is not also a CodeInfo;
   //      since PgmScopes have no siblings, it is safe to make Next/PrevScope 
   //      return CodeInfo pointers 
   // --------------------------------------------------------
@@ -287,7 +291,7 @@ public:
   // debugging and printing 
   // --------------------------------------------------------
   virtual String Types() ; // lists this instance's base and derived types 
-  virtual String ToDumpString(int dmpFlag = PgmScopeTree::XML_TRUE) const; 
+  virtual String ToString(int dmpFlag = PgmScopeTree::XML_TRUE) const;
   
   void DumpSelfBefore(std::ostream &os = std::cerr, 
 		      int dmpFlag = PgmScopeTree::XML_TRUE,
@@ -306,9 +310,8 @@ public:
   void DDumpSort(); // stupid SGI dbx...
   
 protected:
-
   ScopeType type;
-  unsigned int uid; 
+  unsigned int uid;
 };
 
 // --------------------------------------------------------------------------
@@ -318,7 +321,7 @@ protected:
 class CodeInfo : public ScopeInfo {
 protected: 
   CodeInfo(ScopeType t, ScopeInfo* mom = NULL, 
-	   suint begLn = UNDEF_LINE, suint endLn = UNDEF_LINE); 
+	   suint begLn = UNDEF_LINE, suint endLn = UNDEF_LINE);
   CodeInfo(const CodeInfo& other) : ScopeInfo(other.type) { *this = other; }
   CodeInfo& operator=(const CodeInfo& other);
 
@@ -328,8 +331,8 @@ public:
   suint BegLine() const { return begLine; } // in source code
   suint EndLine() const { return endLine; } // in source code
   
-  bool      ContainsLine(suint ln) const; 
-  CodeInfo* CodeInfoWithLine(suint ln) const; 
+  bool      ContainsLine(suint ln) const;
+  CodeInfo* CodeInfoWithLine(suint ln) const;
 
   // returns a string of the form: 
   //   File()->Name() + ":" + <Line-Range> 
@@ -337,20 +340,20 @@ public:
   // where Line-Range is either: 
   //                     BegLine() + "-" + EndLine()      or simply 
   //                     BegLine() 
-  virtual String CodeName() const; 
+  virtual String CodeName() const;
 
   virtual ScopeInfo* Clone() { return new CodeInfo(*this); }
 
   void SetLineRange(suint begLn, suint endLn); // be careful when using!
 
-  virtual String ToDumpString(int dmpFlag = PgmScopeTree::XML_TRUE) const;
+  virtual String ToString(int dmpFlag = PgmScopeTree::XML_TRUE) const;
   virtual String DumpLineRange(int dmpFlag = PgmScopeTree::XML_TRUE) const;
   
 protected: 
-  void Relocate(); 
-  suint begLine; 
-  suint endLine; 
-}; 
+  void Relocate();
+  suint begLine;
+  suint endLine;
+};
 
 
 // - if x < y; 0 if x == y; + otherwise
@@ -372,8 +375,8 @@ protected:
   PgmScope& operator=(const PgmScope& other);
 
 public: 
-  PgmScope(const char* nm); 
-  virtual ~PgmScope(); 
+  PgmScope(const char* nm);
+  virtual ~PgmScope();
 
   String Name() const { return name; }
   void   SetName(const char* n) { name = n; }
@@ -387,7 +390,7 @@ public:
 
   virtual ScopeInfo* Clone() { return new PgmScope(*this); }
 
-  virtual String ToDumpString(int dmpFlag = PgmScopeTree::XML_TRUE) const; 
+  virtual String ToString(int dmpFlag = PgmScopeTree::XML_TRUE) const;
 
   void DumpLineSorted(std::ostream &os = std::cerr, 
 		      int dmpFlag = PgmScopeTree::XML_TRUE,
@@ -398,9 +401,9 @@ private:
   void AddToGroupMap(GroupScope& grp);
   void AddToLoadModMap(LoadModScope& lm);
   void AddToFileMap(FileScope& file);
-  friend class GroupScope; 
+  friend class GroupScope;
   friend class LoadModScope;
-  friend class FileScope; 
+  friend class FileScope;
 
   bool frozen;
   String name; // the program name
@@ -408,7 +411,7 @@ private:
   GroupScopeMap*   groupMap;
   LoadModScopeMap* lmMap;     // mapped by 'realpath'
   FileScopeMap*    fileMap;   // mapped by 'realpath'
-}; 
+};
 
 // --------------------------------------------------------------------------
 // GroupScopes are children of PgmScope's, GroupScope's, LoadModScopes's, 
@@ -430,10 +433,10 @@ public:
 
   virtual ScopeInfo* Clone() { return new GroupScope(*this); }
 
-  virtual String ToDumpString(int dmpFlag = PgmScopeTree::XML_TRUE) const;
+  virtual String ToString(int dmpFlag = PgmScopeTree::XML_TRUE) const;
 
 private: 
-  String name; 
+  String name;
 };
 
 // --------------------------------------------------------------------------
@@ -444,7 +447,7 @@ private:
 class LoadModScope: public CodeInfo {
 public: 
   LoadModScope(const char* nm, ScopeInfo* mom);
-  virtual ~LoadModScope(); 
+  virtual ~LoadModScope();
 
   virtual String BaseName() const  { return BaseFileName(name); }
   String Name() const { return name; }
@@ -453,7 +456,7 @@ public:
 
   virtual ScopeInfo* Clone() { return new LoadModScope(*this); }
 
-  virtual String ToDumpString(int dmpFlag = PgmScopeTree::XML_TRUE) const;
+  virtual String ToString(int dmpFlag = PgmScopeTree::XML_TRUE) const;
   
   void DumpLineSorted(std::ostream &os = std::cerr, 
 		      int dmpFlag = PgmScopeTree::XML_TRUE,
@@ -462,7 +465,7 @@ public:
 protected: 
 private: 
   String name; // the load module name
-}; 
+};
 
 // --------------------------------------------------------------------------
 // FileScopes are children of PgmScope's, GroupScope's and LoadModScope's.
@@ -480,7 +483,7 @@ public:
 	    suint begLn = UNDEF_LINE, suint endLn = UNDEF_LINE);
             // fileNameWithPath/mom must not be NULL
             // srcIsReadable == fopen(fileNameWithPath, "r") works 
-  virtual ~FileScope(); 
+  virtual ~FileScope();
 
   String Name() const { return name; } // fileNameWithPath from constructor 
 
@@ -495,15 +498,15 @@ public:
 
   virtual ScopeInfo* Clone() { return new FileScope(*this); }
 
-  virtual String ToDumpString(int dmpFlag = PgmScopeTree::XML_TRUE) const; 
+  virtual String ToString(int dmpFlag = PgmScopeTree::XML_TRUE) const;
 
 private: 
-  void AddToProcMap(ProcScope& proc); 
-  friend class ProcScope; 
+  void AddToProcMap(ProcScope& proc);
+  friend class ProcScope;
 
-  bool srcIsReadable; 
+  bool srcIsReadable;
   String name; // the file name including the path 
-  ProcScopeMap* procMap; 
+  ProcScopeMap* procMap;
 };
 
 // --------------------------------------------------------------------------
@@ -523,15 +526,15 @@ public:
   
   virtual String Name() const       { return name; }
   virtual String LinkName() const   { return linkname; }
-  virtual String CodeName() const; 
+  virtual String CodeName() const;
 
   virtual ScopeInfo* Clone() { return new ProcScope(*this); }
 
   // Find StmtRangeScope *or* return a new one if none is found
   StmtRangeScope* FindStmtRange(suint line);  
 
-  virtual String ToDumpString(int dmpFlag = PgmScopeTree::XML_TRUE) const;
-  
+  virtual String ToString(int dmpFlag = PgmScopeTree::XML_TRUE) const;
+
 private:
   void AddToStmtMap(StmtRangeScope& stmt);
   friend class StmtRangeScope;
@@ -557,7 +560,7 @@ public:
 
   virtual ScopeInfo* Clone() { return new LoopScope(*this); }
 
-  virtual String ToDumpString(int dmpFlag = PgmScopeTree::XML_TRUE) const; 
+  virtual String ToString(int dmpFlag = PgmScopeTree::XML_TRUE) const;
 
 };
 
@@ -568,23 +571,53 @@ public:
 // --------------------------------------------------------------------------
 class StmtRangeScope: public CodeInfo {
 public: 
-  StmtRangeScope(CodeInfo *mom, suint begLn, suint endLn); 
+  StmtRangeScope(CodeInfo *mom, suint begLn, suint endLn);
   virtual ~StmtRangeScope();
   
   virtual String CodeName() const;
 
   virtual ScopeInfo* Clone() { return new StmtRangeScope(*this); }
 
-  virtual String ToDumpString(int dmpFlag = PgmScopeTree::XML_TRUE) const;
+  virtual String ToString(int dmpFlag = PgmScopeTree::XML_TRUE) const;
 
 };
 
+// ----------------------------------------------------------------------
+// RefScopes are chldren of LineScopes 
+// They are used to describe a reference in source code.
+// RefScopes are build only iff we have preprocessing information.
+// ----------------------------------------------------------------------
+class RefScope: public CodeInfo {
+public: 
+  RefScope(CodeInfo *mom, int _begPos, int _endPos, const char *refName);
+  // mom->Type() == STMT_RANGE_SCOPE 
+  
+  unsigned int BegPos() const { return begPos; };
+  unsigned int EndPos() const   { return endPos; };
+  
+  virtual String Name() const   { return name; }
+  virtual String CodeName() const;
+
+  virtual ScopeInfo* Clone() { return new RefScope(*this); }
+
+  virtual String ToString(int dmpFlag = PgmScopeTree::XML_TRUE) const;
+
+private: 
+  void RelocateRef();
+  unsigned int begPos;
+  unsigned int endPos;
+  String name;
+};
+
+/************************************************************************/
+// Iterators
+/************************************************************************/
 
 #include "PgmScopeTreeIterator.hpp" 
 
 /************************************************************************/
 // testing 
 /************************************************************************/
-extern void ScopeInfoTester(int argc, const char** argv); 
+extern void ScopeInfoTester(int argc, const char** argv);
 
 #endif 

@@ -89,13 +89,13 @@ public:
    const char* Name() const { return name; }
 
 private:
-   const ScopeInfoFilterFct fct; 
-   const char* name; 
-   long arg; 
+   const ScopeInfoFilterFct fct;
+   const char* name;
+   long arg;
 };
 
 // HasScopeType(s,tp) == ((tp == ANY) || (s.Type() == tp));
-extern bool HasScopeType(const ScopeInfo &sinfo, long type); 
+extern bool HasScopeType(const ScopeInfo &sinfo, long type);
 
 // ScopeTypeFile[tp].Apply(s) == HasScopeType(s,tp) 
 extern const ScopeInfoFilter ScopeTypeFilter[ScopeInfo::NUMBER_OF_SCOPES];
@@ -111,7 +111,7 @@ extern const ScopeInfoFilter ScopeTypeFilter[ScopeInfo::NUMBER_OF_SCOPES];
 class ScopeInfoChildIterator : public NonUniformDegreeTreeNodeChildIterator {
 public: 
   ScopeInfoChildIterator(const ScopeInfo *root, 
-			 const ScopeInfoFilter *filter = NULL); 
+			 const ScopeInfoFilter *filter = NULL);
 	             // filter == NULL enumerate all entries
 	             // otherwise: only entries with filter->fct(e) == true
   
@@ -132,7 +132,7 @@ private:
 
 class CodeInfoChildIterator : public NonUniformDegreeTreeNodeChildIterator {
 public: 
-  CodeInfoChildIterator(const CodeInfo *root); 
+  CodeInfoChildIterator(const CodeInfo *root);
   CodeInfo* CurCodeInfo() const { return dynamic_cast<CodeInfo*>(Current()); }
 };  
 
@@ -153,13 +153,13 @@ public:
    ScopeInfoIterator(const ScopeInfo *root,
 		     const ScopeInfoFilter* filter = NULL,
 		     bool leavesOnly = false,
-		     TraversalOrder torder = PreOrder); 
+		     TraversalOrder torder = PreOrder);
    
   virtual NonUniformDegreeTreeNode* Current() const; // really ScopeInfo
   
   ScopeInfo* CurScope() const { return dynamic_cast<ScopeInfo*>(Current()); }
 private: 
-  const ScopeInfoFilter *filter; 
+  const ScopeInfoFilter *filter;
 };  
 
 
@@ -188,13 +188,13 @@ public:
 			      bool leavesOnly = true);
   ~ScopeInfoLineSortedIterator();
   
-  CodeInfo* Current() const; 
+  CodeInfo* Current() const;
   void  operator++(int)   { (*ptrSetIt)++;}
-  void Reset(); 
-  void DumpAndReset(std::ostream &os = std::cerr); 
+  void Reset();
+  void DumpAndReset(std::ostream &os = std::cerr);
 
 private:
-  static int CompareByLine(const void *a, const void *b); 
+  static int CompareByLine(const void *a, const void *b);
   WordSet scopes;  // the scopes we want to have sorted
   WordSetSortedIterator *ptrSetIt;  
 };
@@ -208,7 +208,8 @@ public:
   CodeInfo* Current() const;
   void  operator++(int)   { (*ptrSetIt)++;}
   void Reset();
-  
+  void DumpAndReset(std::ostream &os = std::cerr);
+
   // both of these are buried in other parts of the HPCView code :-(
   CodeInfo* CurScope() const { return dynamic_cast<CodeInfo*>(Current()); }
   CodeInfo* CurCode()  const { return dynamic_cast<CodeInfo*>(Current()); }
@@ -216,9 +217,8 @@ public:
 private:
   static int CompareByLine(const void *a, const void *b);
   WordSet scopes;  // the scopes we want to have sorted
-  WordSetSortedIterator *ptrSetIt;
+  WordSetSortedIterator* ptrSetIt;
 };
-
 
 //***************************************************************************
 // CodeInfoLine
@@ -281,13 +281,13 @@ public:
 			      bool leavesOnly = true);
   ~ScopeInfoLineSortedIteratorForLargeScopes();
   
-  CodeInfoLine* Current() const; 
+  CodeInfoLine* Current() const;
   void  operator++(int)   { (*ptrSetIt)++;}
-  void Reset(); 
-  void DumpAndReset(std::ostream &os = std::cerr); 
+  void Reset();
+  void DumpAndReset(std::ostream &os = std::cerr);
 
 private:
-  static int CompareByLine(const void *a, const void *b); 
+  static int CompareByLine(const void *a, const void *b);
   WordSet scopes;  // the scopes we want to have sorted
   WordSetSortedIterator *ptrSetIt;  
 };
@@ -304,16 +304,15 @@ public:
 				   const ScopeInfoFilter* filterFunc = NULL);
   ~ScopeInfoNameSortedChildIterator();
   
-  CodeInfo* Current() const; 
+  CodeInfo* Current() const;
   void  operator++(int)   { (*ptrSetIt)++;}
-  void Reset(); 
+  void Reset();
 
 private:
-  static int CompareByName(const void *a, const void *b); 
+  static int CompareByName(const void *a, const void *b);
   WordSet scopes;  // the scopes we want to have sorted
   WordSetSortedIterator *ptrSetIt;  
 };
-
 
 //***************************************************************************
 // SortedCodeInfoIterator
@@ -328,7 +327,7 @@ private:
 class SortedCodeInfoIterator {
 public:
   SortedCodeInfoIterator(const PgmScope *scope, int perfInfoIndex, 
-			  const ScopeInfoFilter *filterFunc = NULL); 
+			  const ScopeInfoFilter *filterFunc = NULL);
   virtual ~SortedCodeInfoIterator();
 
   CodeInfo *Current() const;
@@ -358,7 +357,7 @@ class SortedCodeInfoChildIterator {
 public:
   SortedCodeInfoChildIterator(const ScopeInfo *scope, int flattenDepth,
 			      int compare(const void* a, const void *b),
-			      const ScopeInfoFilter *filterFunc = NULL); 
+			      const ScopeInfoFilter *filterFunc = NULL);
   virtual ~SortedCodeInfoChildIterator();
 
   CodeInfo *Current() const;

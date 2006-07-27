@@ -185,7 +185,7 @@ NodeRetriever::MoveToFile(const char* name)
     if (!currentLM) {
       currentLM = MoveToLoadMod(root->Name());
     } 
-    f = new FileScope(filePath, srcIsReadable, "", currentLM); 
+    f = new FileScope(filePath, srcIsReadable, currentLM); 
 
     msg = "File Scope Created for ";
     IFTRACE << "NodeRetriever::MoveToFile makes new FileScope:" << endl

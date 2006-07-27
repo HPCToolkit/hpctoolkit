@@ -98,9 +98,9 @@ class PgmScopeTree : public Unique {
 public:
   enum {
     // User-level bit flags
-    DUMP_LEAF_METRICS = (1 << 0), /* Dump only leaf metrics */
-
     COMPRESSED_OUTPUT = (1 << 1),  /* Use compressed output format */
+
+    DUMP_LEAF_METRICS = (1 << 2),  /* Dump only leaf metrics */
 
     // Not-generally-user-level bit flags
     XML_NO_ESC_CHARS = (1 << 10), /* don't substitute XML escape characters */
@@ -143,7 +143,7 @@ class FileScope;
 class ProcScope;
 class LoopScope;
 class StmtRangeScope;
-class RefScope;   // to be deprecated
+class RefScope;
 
 // ---------------------------------------------------------
 // ScopeInfo: The base node for a program scope tree
@@ -158,13 +158,13 @@ public:
     PROC,
     LOOP,
     STMT_RANGE,
-    REF,   // to be deprecated
+    REF,
     ANY,
     NUMBER_OF_SCOPES
   };
 
   static const char* ScopeTypeToName(ScopeType tp);
-  static const char* ScopeTypeToXMLelement(ScopeType tp); 
+  static const char* ScopeTypeToXMLelement(ScopeType tp);
   static ScopeType   IntToScopeType(long i);
 
 protected:
@@ -176,7 +176,7 @@ private:
   
 public:
   ScopeInfo(ScopeType type, ScopeInfo* parent = NULL);
-  virtual ~ScopeInfo(); 
+  virtual ~ScopeInfo();
   
   // --------------------------------------------------------
   // General Interface to fields 
@@ -190,6 +190,13 @@ public:
   bool   HasPerfData(int i) const;     // checks whether PerfData(i) is set
   double PerfData(int i) const;        // returns NaN iff !HasPerfData(i) 
   void   SetPerfData(int i, double d); // asserts out iff HasPerfData(i) 
+
+  void CollectCrossReferences();
+  int NoteHeight();
+  void NoteDepth();
+
+  int ScopeHeight() const { return height; }
+  int ScopeDepth() const { return depth; }
   
   // --------------------------------------------------------
   // Parent
@@ -203,7 +210,7 @@ public:
   // Ancestor: find first ScopeInfo in path from this to root with given type
   // (Note: We assume that a node cannot be an ancestor of itself.)
   // --------------------------------------------------------
-  ScopeInfo* Ancestor(ScopeType type) const; 
+  ScopeInfo* Ancestor(ScopeType type) const;
   
   PgmScope*       Pgm() const;           // return Ancestor(PGM)
   GroupScope*     Group() const;         // return Ancestor(GROUP)
@@ -220,7 +227,7 @@ public:
   // --------------------------------------------------------
   // Tree navigation 
   //   1) all ScopeInfos contain CodeInfos as children 
-  //   2) PgmRoot is the only ScopeInfo type that is not also a CodeInfo; 
+  //   2) PgmRoot is the only ScopeInfo type that is not also a CodeInfo;
   //      since PgmScopes have no siblings, it is safe to make Next/PrevScope 
   //      return CodeInfo pointers 
   // --------------------------------------------------------
@@ -288,38 +295,30 @@ public:
   // debugging and printing 
   // --------------------------------------------------------
   virtual String Types() ; // lists this instance's base and derived types 
-  virtual String ToString() const; 
-  virtual String ToXML() const; 
+  virtual String ToString() const;
+  virtual String ToXML() const;
   
   void DumpSelf(std::ostream &os = std::cerr, const char *prefix = "") const;
-  void Dump    (std::ostream &os = std::cerr, const char *pre = "") const; 
+  void Dump    (std::ostream &os = std::cerr, const char *pre = "") const;
   void XML_DumpSelf(std::ostream &os = std::cout, int dmpFlag = 0,
 		    const char *prefix = "") const;
   void XML_Dump(std::ostream &os = std::cout, int dmpFlag = 0,
-		const char *pre = "") const; 
+		const char *pre = "") const;
 
   void CSV_DumpSelf(const PgmScope &root, std::ostream &os = std::cout) const;
   virtual void CSV_Dump(const PgmScope &root, std::ostream &os = std::cout, 
                const char *file_name = NULL, const char *routine_name = NULL,
-               int lLevel = 0) const; 
+               int lLevel = 0) const;
 
   void TSV_DumpSelf(const PgmScope &root, std::ostream &os = std::cout) const;
   virtual void TSV_Dump(const PgmScope &root, std::ostream &os = std::cout, 
                const char *file_name = NULL, const char *routine_name = NULL,
-               int lLevel = 0) const; 
-
-  void CollectCrossReferences();
-  int NoteHeight();
-  void NoteDepth();
-
-  int ScopeHeight() const { return height; }
-  int ScopeDepth() const { return depth; }
+               int lLevel = 0) const;
 
 protected: 
-
   ScopeType type;
-  unsigned int uid; 
-  DoubleVector* perfData; 
+  unsigned int uid;
+  DoubleVector* perfData;
 
   // cross reference information
   int height;
@@ -333,7 +332,7 @@ protected:
 class CodeInfo : public ScopeInfo {
 protected: 
   CodeInfo(ScopeType t, ScopeInfo* mom = NULL, 
-	   suint begLn = UNDEF_LINE, suint endLn = UNDEF_LINE); 
+	   suint begLn = UNDEF_LINE, suint endLn = UNDEF_LINE);
   CodeInfo(const CodeInfo& other) : ScopeInfo(other.type) { *this = other; }
   CodeInfo& operator=(const CodeInfo& other);
 
@@ -343,8 +342,8 @@ public:
   suint BegLine() const { return begLine; } // in source code
   suint EndLine() const { return endLine; } // in source code
   
-  bool      ContainsLine(suint ln) const; 
-  CodeInfo* CodeInfoWithLine(suint ln) const; 
+  bool      ContainsLine(suint ln) const;
+  CodeInfo* CodeInfoWithLine(suint ln) const;
 
   // returns a string of the form: 
   //   File()->Name() + ":" + <Line-Range> 
@@ -352,16 +351,16 @@ public:
   // where Line-Range is either: 
   //                     BegLine() + "-" + EndLine()      or simply 
   //                     BegLine() 
-  virtual String CodeName() const; 
+  virtual String CodeName() const;
 
-  String CodeLineName(suint line) const; 
+  String CodeLineName(suint line) const;
 
   virtual ScopeInfo* Clone() { return new CodeInfo(*this); }
 
   void SetLineRange(suint begLn, suint endLn); // be careful when using!
 
-  virtual String ToString() const; 
-  virtual String ToXML() const; 
+  virtual String ToString() const;
+  virtual String ToXML() const;
   virtual String XMLLineNumbers() const;
   
   CodeInfo *GetFirst() const { return first; } 
@@ -369,21 +368,21 @@ public:
 
   virtual void CSV_Dump(const PgmScope &root, std::ostream &os = std::cout, 
                const char *file_name = NULL, const char *routine_name = NULL,
-               int lLevel = 0) const; 
+               int lLevel = 0) const;
 
   virtual void TSV_Dump(const PgmScope &root, std::ostream &os = std::cout, 
                const char *file_name = NULL, const char *routine_name = NULL,
-               int lLevel = 0) const; 
+               int lLevel = 0) const;
 
 protected: 
-  void Relocate(); 
-  suint begLine; 
-  suint endLine; 
+  void Relocate();
+  suint begLine;
+  suint endLine;
 
 public:
   CodeInfo *first;
   CodeInfo *last;
-}; 
+};
 
 
 // - if x < y; 0 if x == y; + otherwise
@@ -405,8 +404,8 @@ protected:
   PgmScope& operator=(const PgmScope& other);
 
 public: 
-  PgmScope(const char* nm); 
-  virtual ~PgmScope(); 
+  PgmScope(const char* nm);
+  virtual ~PgmScope();
 
   String Name() const { return name; }
   void   SetName(const char* n) { name = n; }
@@ -433,9 +432,9 @@ private:
   void AddToGroupMap(GroupScope& grp);
   void AddToLoadModMap(LoadModScope& lm);
   void AddToFileMap(FileScope& file);
-  friend class GroupScope; 
+  friend class GroupScope;
   friend class LoadModScope;
-  friend class FileScope; 
+  friend class FileScope;
 
   bool frozen;
   String name; // the program name
@@ -443,7 +442,7 @@ private:
   GroupScopeMap*   groupMap;
   LoadModScopeMap* lmMap;     // mapped by 'realpath'
   FileScopeMap*    fileMap;   // mapped by 'realpath'
-}; 
+};
 
 // --------------------------------------------------------------------------
 // GroupScopes are children of PgmScope's, GroupScope's, LoadModScopes's, 
@@ -469,7 +468,7 @@ public:
   virtual String ToXML() const;
 
 private: 
-  String name; 
+  String name;
 };
 
 // --------------------------------------------------------------------------
@@ -480,7 +479,7 @@ private:
 class LoadModScope: public CodeInfo {
 public: 
   LoadModScope(const char* nm, ScopeInfo* mom);
-  virtual ~LoadModScope(); 
+  virtual ~LoadModScope();
 
   virtual String BaseName() const  { return BaseFileName(name); }
   String Name() const { return name; }
@@ -490,12 +489,12 @@ public:
   virtual ScopeInfo* Clone() { return new LoadModScope(*this); }
 
   virtual String ToString() const;
-  virtual String ToXML() const; 
+  virtual String ToXML() const;
 
 protected: 
 private: 
   String name; // the load module name
-}; 
+};
 
 // --------------------------------------------------------------------------
 // FileScopes are children of PgmScope's, GroupScope's and LoadModScope's.
@@ -509,12 +508,11 @@ protected:
 
 public: 
   FileScope(const char *fileNameWithPath, bool srcIsReadable_, 
-	    const char* preproc, 
 	    ScopeInfo *mom, 
 	    suint begLn = UNDEF_LINE, suint endLn = UNDEF_LINE);
             // fileNameWithPath/mom must not be NULL
             // srcIsReadable == fopen(fileNameWithPath, "r") works 
-  virtual ~FileScope(); 
+  virtual ~FileScope();
 
   String Name() const { return name; } // fileNameWithPath from constructor 
 
@@ -528,24 +526,24 @@ public:
   bool HasSourceFile() const { return srcIsReadable; } // srcIsReadable
 
   virtual ScopeInfo* Clone() { return new FileScope(*this); }
-  
-  virtual String ToString() const; 
-  virtual String ToXML() const; 
+
+  virtual String ToString() const;
+  virtual String ToXML() const;
 
   virtual void CSV_Dump(const PgmScope &root, std::ostream &os = std::cout, 
                const char *file_name = NULL, const char *routine_name = NULL,
-               int lLevel = 0) const; 
+               int lLevel = 0) const;
   virtual void TSV_Dump(const PgmScope &root, std::ostream &os = std::cout, 
                const char *file_name = NULL, const char *routine_name = NULL,
-               int lLevel = 0) const; 
+               int lLevel = 0) const;
 
 private: 
-  void AddToProcMap(ProcScope& proc); 
-  friend class ProcScope; 
+  void AddToProcMap(ProcScope& proc);
+  friend class ProcScope;
 
-  bool srcIsReadable; 
+  bool srcIsReadable;
   String name; // the file name including the path 
-  ProcScopeMap* procMap; 
+  ProcScopeMap* procMap;
 };
 
 // --------------------------------------------------------------------------
@@ -565,22 +563,22 @@ public:
   
   virtual String Name() const       { return name; }
   virtual String LinkName() const   { return linkname; }
-  virtual String CodeName() const; 
+  virtual String CodeName() const;
 
   virtual ScopeInfo* Clone() { return new ProcScope(*this); }
 
   // Find StmtRangeScope *or* return a new one if none is found
   StmtRangeScope* FindStmtRange(suint line);  
 
-  virtual String ToString() const; 
-  virtual String ToXML() const; 
+  virtual String ToString() const;
+  virtual String ToXML() const;
 
   virtual void CSV_Dump(const PgmScope &root, std::ostream &os = std::cout, 
                const char *file_name = NULL, const char *routine_name = NULL,
-               int lLevel = 0) const; 
+               int lLevel = 0) const;
   virtual void TSV_Dump(const PgmScope &root, std::ostream &os = std::cout, 
                const char *file_name = NULL, const char *routine_name = NULL,
-               int lLevel = 0) const; 
+               int lLevel = 0) const;
 
 private:
   void AddToStmtMap(StmtRangeScope& stmt);
@@ -607,9 +605,9 @@ public:
 
   virtual ScopeInfo* Clone() { return new LoopScope(*this); }
 
-  virtual String ToString() const; 
-  virtual String ToXML() const; 
-  
+  virtual String ToString() const;
+  virtual String ToXML() const;
+
 };
 
 // --------------------------------------------------------------------------
@@ -619,7 +617,7 @@ public:
 // --------------------------------------------------------------------------
 class StmtRangeScope: public CodeInfo {
 public: 
-  StmtRangeScope(CodeInfo *mom, suint begLn, suint endLn); 
+  StmtRangeScope(CodeInfo *mom, suint begLn, suint endLn);
   virtual ~StmtRangeScope();
   
   virtual String CodeName() const;
@@ -638,33 +636,36 @@ public:
 // ----------------------------------------------------------------------
 class RefScope: public CodeInfo {
 public: 
-  RefScope(CodeInfo *mom, int _begPos, int _endPos, const char *refName); 
+  RefScope(CodeInfo *mom, int _begPos, int _endPos, const char *refName);
   // mom->Type() == LINE_SCOPE 
   
-  unsigned int BegPos() const { return begPos; }; 
-  unsigned int EndPos() const   { return endPos; }; 
+  unsigned int BegPos() const { return begPos; };
+  unsigned int EndPos() const   { return endPos; };
   
   virtual String Name() const   { return name; }
-  virtual String CodeName() const; 
+  virtual String CodeName() const;
 
   virtual ScopeInfo* Clone() { return new RefScope(*this); }
 
-  virtual String ToString() const; 
-  virtual String ToXML() const; 
+  virtual String ToString() const;
+  virtual String ToXML() const;
 
 private: 
-  void RelocateRef(); 
-  unsigned int begPos; 
-  unsigned int endPos; 
-  String name; 
+  void RelocateRef();
+  unsigned int begPos;
+  unsigned int endPos;
+  String name;
 };
 
+/************************************************************************/
+// Iterators
+/************************************************************************/
 
 #include "ScopeInfoIterator.hpp"
 
 /************************************************************************/
 // testing 
 /************************************************************************/
-extern void ScopeInfoTester(int argc, const char** argv); 
+extern void ScopeInfoTester(int argc, const char** argv);
 
 #endif 
