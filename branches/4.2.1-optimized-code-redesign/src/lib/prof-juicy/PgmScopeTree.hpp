@@ -84,7 +84,7 @@ class GroupScopeMap;
 class LoadModScopeMap;
 class FileScopeMap;
 class ProcScopeMap;
-class LineScopeMap;
+class StmtRangeScopeMap;
 
 //***************************************************************************
 // PgmScopeTree
@@ -286,8 +286,8 @@ public:
   // --------------------------------------------------------
   // debugging and printing 
   // --------------------------------------------------------
-  virtual String ToDumpString(int dmpFlag = PgmScopeTree::XML_TRUE) const; 
   virtual String Types() ; // lists this instance's base and derived types 
+  virtual String ToDumpString(int dmpFlag = PgmScopeTree::XML_TRUE) const; 
   
   void DumpSelfBefore(std::ostream &os = std::cerr, 
 		      int dmpFlag = PgmScopeTree::XML_TRUE,
@@ -372,17 +372,15 @@ protected:
   PgmScope& operator=(const PgmScope& other);
 
 public: 
-  PgmScope(); 
+  PgmScope(const char* nm); 
   virtual ~PgmScope(); 
 
   String Name() const { return name; }
   void   SetName(const char* n) { name = n; }
 
-  GroupScope* FindGroup(const char* nm) const;
-
-  // find by 'realpath'
-  LoadModScope* FindLoadMod(const char* nm) const;
-  FileScope*    FindFile(const char* nm) const;
+  LoadModScope* FindLoadMod(const char* nm) const; // find by 'realpath'
+  FileScope*    FindFile(const char* nm) const;    // find by 'realpath'
+  GroupScope*   FindGroup(const char* nm) const;
 
   void Freeze() { frozen = true;} // disallow additions to/deletions from tree
   bool IsFrozen() const { return frozen; }
@@ -422,9 +420,8 @@ private:
 // --------------------------------------------------------------------------
 class GroupScope: public CodeInfo {
 public: 
-  GroupScope(const char* grpName, ScopeInfo* mom,
-	     int begLn = UNDEF_LINE,
-	     int endLn = UNDEF_LINE);
+  GroupScope(const char* nm, ScopeInfo* mom,
+	     int begLn = UNDEF_LINE, int endLn = UNDEF_LINE);
   virtual ~GroupScope();
   
   String Name() const { return name; } // same as grpName
@@ -446,7 +443,7 @@ private:
 // FIXME: See note about LoadModScope above.
 class LoadModScope: public CodeInfo {
 public: 
-  LoadModScope(const char* lmName, ScopeInfo* mom);
+  LoadModScope(const char* nm, ScopeInfo* mom);
   virtual ~LoadModScope(); 
 
   virtual String BaseName() const  { return BaseFileName(name); }
@@ -530,11 +527,19 @@ public:
 
   virtual ScopeInfo* Clone() { return new ProcScope(*this); }
 
+  // Find StmtRangeScope *or* return a new one if none is found
+  StmtRangeScope* FindStmtRange(suint line);  
+
   virtual String ToDumpString(int dmpFlag = PgmScopeTree::XML_TRUE) const;
   
-private: 
-  String name; 
+private:
+  void AddToStmtMap(StmtRangeScope& stmt);
+  friend class StmtRangeScope;
+
+private:
+  String name;
   String linkname;
+  StmtRangeScopeMap* stmtMap;
 };
 
 // --------------------------------------------------------------------------

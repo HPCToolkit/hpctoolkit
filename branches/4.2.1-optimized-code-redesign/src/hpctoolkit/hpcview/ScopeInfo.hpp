@@ -68,7 +68,7 @@
 #include <lib/support/Files.hpp>
 #include <lib/support/Nan.h>
 
-//*************************** Forward Declarations ***************************
+//*************************** Forward Declarations **************************
 
 class ScopeInfo;
 
@@ -76,7 +76,7 @@ class ScopeInfo;
 typedef std::list<ScopeInfo*> ScopeInfoList;
 typedef std::set<ScopeInfo*> ScopeInfoSet;
 
-//*************************** Forward Declarations ***************************
+//*************************** Forward Declarations **************************
 
 const suint UNDEF_LINE = 0;
 
@@ -86,7 +86,7 @@ class GroupScopeMap;
 class LoadModScopeMap;
 class FileScopeMap;
 class ProcScopeMap;
-class LineScopeMap;
+class StmtRangeScopeMap;
 
 //***************************************************************************
 // PgmScopeTree
@@ -143,8 +143,6 @@ class FileScope;
 class ProcScope;
 class LoopScope;
 class StmtRangeScope;
-
-class LineScope;  // to be deprecated FIXME
 class RefScope;   // to be deprecated
 
 // ---------------------------------------------------------
@@ -160,10 +158,7 @@ public:
     PROC,
     LOOP,
     STMT_RANGE,
-    
-    LINE,  // to be deprecated FIXME
     REF,   // to be deprecated
-    
     ANY,
     NUMBER_OF_SCOPES
   };
@@ -217,7 +212,6 @@ public:
   ProcScope*      Proc() const;          // return Ancestor(PROC)
   LoopScope*      Loop() const;          // return Ancestor(LOOP)
   StmtRangeScope* StmtRange() const;     // return Ancestor(STMT_RANGE)
-  LineScope*      Line()  const;         // return Ancestor(LINE_SCOPE)
 
   // LeastCommonAncestor: Given two ScopeInfo nodes, return the least
   // common ancestor (deepest nested common ancestor) or NULL.
@@ -293,9 +287,9 @@ public:
   // --------------------------------------------------------
   // debugging and printing 
   // --------------------------------------------------------
+  virtual String Types() ; // lists this instance's base and derived types 
   virtual String ToString() const; 
   virtual String ToXML() const; 
-  virtual String Types() ; // lists this instance's base and derived types 
   
   void DumpSelf(std::ostream &os = std::cerr, const char *prefix = "") const;
   void Dump    (std::ostream &os = std::cerr, const char *pre = "") const; 
@@ -411,17 +405,15 @@ protected:
   PgmScope& operator=(const PgmScope& other);
 
 public: 
-  PgmScope(const char* n); 
+  PgmScope(const char* nm); 
   virtual ~PgmScope(); 
 
   String Name() const { return name; }
   void   SetName(const char* n) { name = n; }
 
-  GroupScope* FindGroup(const char* nm) const;
-
-  // find by 'realpath'
-  LoadModScope* FindLoadMod(const char* nm) const;
-  FileScope*    FindFile(const char* nm) const;
+  LoadModScope* FindLoadMod(const char* nm) const; // find by 'realpath'
+  FileScope*    FindFile(const char* nm) const;    // find by 'realpath'
+  GroupScope*   FindGroup(const char* nm) const;
 
   void Freeze() { frozen = true;} // disallow additions to/deletions from tree
   bool IsFrozen() const { return frozen; }
@@ -463,9 +455,8 @@ private:
 // --------------------------------------------------------------------------
 class GroupScope: public CodeInfo {
 public: 
-  GroupScope(const char* grpName, ScopeInfo* mom,
-	     int begLn = UNDEF_LINE,
-	     int endLn = UNDEF_LINE);
+  GroupScope(const char* nm, ScopeInfo* mom,
+	     int begLn = UNDEF_LINE, int endLn = UNDEF_LINE);
   virtual ~GroupScope();
   
   String Name() const { return name; } // same as grpName
@@ -488,7 +479,7 @@ private:
 // FIXME: See note about LoadModScope above.
 class LoadModScope: public CodeInfo {
 public: 
-  LoadModScope(const char* lmName, ScopeInfo* mom);
+  LoadModScope(const char* nm, ScopeInfo* mom);
   virtual ~LoadModScope(); 
 
   virtual String BaseName() const  { return BaseFileName(name); }
@@ -547,7 +538,7 @@ public:
   virtual void TSV_Dump(const PgmScope &root, std::ostream &os = std::cout, 
                const char *file_name = NULL, const char *routine_name = NULL,
                int lLevel = 0) const; 
-  
+
 private: 
   void AddToProcMap(ProcScope& proc); 
   friend class ProcScope; 
@@ -568,21 +559,21 @@ protected:
 
 public: 
   ProcScope(const char* name, CodeInfo *mom, 
+	    const char* linkname,
 	    suint begLn = UNDEF_LINE, suint endLn = UNDEF_LINE);
   virtual ~ProcScope();
   
   virtual String Name() const       { return name; }
+  virtual String LinkName() const   { return linkname; }
   virtual String CodeName() const; 
 
   virtual ScopeInfo* Clone() { return new ProcScope(*this); }
 
+  // Find StmtRangeScope *or* return a new one if none is found
+  StmtRangeScope* FindStmtRange(suint line);  
+
   virtual String ToString() const; 
   virtual String ToXML() const; 
-
-  // FIXME: deprecated
-  // return a line scope from lineMap or a new one if none is found
-  LineScope *GetLineScope(suint line);  
-  LineScope *CreateLineScope(CodeInfo *mom, suint lineNumber); 
 
   virtual void CSV_Dump(const PgmScope &root, std::ostream &os = std::cout, 
                const char *file_name = NULL, const char *routine_name = NULL,
@@ -591,9 +582,14 @@ public:
                const char *file_name = NULL, const char *routine_name = NULL,
                int lLevel = 0) const; 
 
-private: 
-  String name; 
-  LineScopeMap *lineMap; 
+private:
+  void AddToStmtMap(StmtRangeScope& stmt);
+  friend class StmtRangeScope;
+
+private:
+  String name;
+  String linkname;
+  StmtRangeScopeMap* stmtMap;
 };
 
 // --------------------------------------------------------------------------
@@ -633,18 +629,6 @@ public:
   virtual String ToString() const;  
   virtual String ToXML() const;  
 
-};
-
-// ----------------------------------------------------------------------
-// LineScopes are chldren of ProcScopes
-// They are used to describe a line of source code, which may correspond 
-// to multiple lines of measured code, iff the source was preprocessed
-// ----------------------------------------------------------------------
-class LineScope: public CodeInfo {
-public: 
-  LineScope(CodeInfo *mom, suint srcLine); 
-  
-  virtual ScopeInfo* Clone() { return new LineScope(*this); }
 };
 
 // ----------------------------------------------------------------------

@@ -37,7 +37,7 @@
 //***************************************************************************
 //
 // File:
-//    PgmScopeTreeIterator.C
+//    $Source$
 //
 // Purpose:
 //    [The purpose of this file]
@@ -49,35 +49,40 @@
 
 //************************* System Include Files ****************************
 
+#include <iostream>
+using std::ostream;
+using std::cerr;
+using std::endl;
+
 //*************************** User Include Files ****************************
 
+#include "PgmScopeTree.hpp"
 #include "PgmScopeTreeIterator.hpp"
 #include <lib/support/Assertion.h>
 
-//*************************** Forward Declarations ***************************
+//*************************** Forward Declarations **************************
 
 static int CompareByLine(const void *a, const void *b);
 
-using std::ostream;
-using std::endl;
+//***************************************************************************
 
-//****************************************************************************
-
-//*****************************************************************************
+//***************************************************************************
 // ScopeInfoFilter support
-//*****************************************************************************
-bool HasScopeType(const ScopeInfo &sinfo, long type) 
+//***************************************************************************
+
+bool 
+HasScopeType(const ScopeInfo& sinfo, long type)
 {
-   return (type == ScopeInfo::ANY) ||
-     (sinfo.Type() == ScopeInfo::IntToScopeType(type)); 
+  return (type == ScopeInfo::ANY
+	  || sinfo.Type() == ScopeInfo::IntToScopeType(type)); 
 }
 
 const ScopeInfoFilter ScopeTypeFilter[ScopeInfo::NUMBER_OF_SCOPES] = {
-  ScopeInfoFilter(HasScopeType, 
-		  ScopeInfo::ScopeTypeToName(ScopeInfo::PGM), 
+  ScopeInfoFilter(HasScopeType,
+		  ScopeInfo::ScopeTypeToName(ScopeInfo::PGM),
 		  ScopeInfo::PGM),
   ScopeInfoFilter(HasScopeType,
-		  ScopeInfo::ScopeTypeToName(ScopeInfo::GROUP), 
+		  ScopeInfo::ScopeTypeToName(ScopeInfo::GROUP),
 		  ScopeInfo::GROUP),
   ScopeInfoFilter(HasScopeType,
 		  ScopeInfo::ScopeTypeToName(ScopeInfo::LM), 
@@ -89,9 +94,9 @@ const ScopeInfoFilter ScopeTypeFilter[ScopeInfo::NUMBER_OF_SCOPES] = {
 		  ScopeInfo::ScopeTypeToName(ScopeInfo::PROC),
 		  ScopeInfo::PROC),
   ScopeInfoFilter(HasScopeType,
-		  ScopeInfo::ScopeTypeToName(ScopeInfo::LOOP), 
+		  ScopeInfo::ScopeTypeToName(ScopeInfo::LOOP),
 		  ScopeInfo::LOOP),
-  ScopeInfoFilter(HasScopeType, 
+  ScopeInfoFilter(HasScopeType,
 		  ScopeInfo::ScopeTypeToName(ScopeInfo::STMT_RANGE),
 		  ScopeInfo::STMT_RANGE),
   ScopeInfoFilter(HasScopeType,
@@ -99,14 +104,15 @@ const ScopeInfoFilter ScopeTypeFilter[ScopeInfo::NUMBER_OF_SCOPES] = {
 		  ScopeInfo::ANY)
 }; 
 
-//*****************************************************************************
+//***************************************************************************
 // ScopeInfoChildIterator
-//*****************************************************************************
+//***************************************************************************
+
 ScopeInfoChildIterator::ScopeInfoChildIterator(const ScopeInfo *root, 
-					       const ScopeInfoFilter *f)
+					       const ScopeInfoFilter* f) 
   : NonUniformDegreeTreeNodeChildIterator(root, /*firstToLast*/ false),
     filter(f)
-  {}
+{ }
 
 NonUniformDegreeTreeNode* 
 ScopeInfoChildIterator::Current()  const
@@ -114,35 +120,36 @@ ScopeInfoChildIterator::Current()  const
   NonUniformDegreeTreeNode *s; 
   ScopeInfo *si; 
   while ( (s = NonUniformDegreeTreeNodeChildIterator::Current()) ) {
-    si = dynamic_cast<ScopeInfo*>(s);  
+    si = dynamic_cast<ScopeInfo*>(s);
     if ((filter == NULL) || filter->Apply(*si)) { 
       break; 	
     }
     ((ScopeInfoChildIterator*) this)->operator++(); 
   } 
-  return dynamic_cast<ScopeInfo*>(s); 
+  return dynamic_cast<ScopeInfo*>(s);
 } 
 
 
-//*****************************************************************************
-// ScopeInfoChildIterator
-//*****************************************************************************
+//***************************************************************************
+// CodeInfoChildIterator
+//***************************************************************************
+
 CodeInfoChildIterator::CodeInfoChildIterator(const CodeInfo *root) 
   : NonUniformDegreeTreeNodeChildIterator(root, /*firstToLast*/ false)
   {}
 
-//*****************************************************************************
+//***************************************************************************
 // ScopeInfoIterator
-//*****************************************************************************
+//***************************************************************************
+
 ScopeInfoIterator::ScopeInfoIterator(const ScopeInfo *root, 
 	                             const ScopeInfoFilter *f, 
                                      bool leavesOnly, 
 				     TraversalOrder torder)
   : NonUniformDegreeTreeIterator(root, torder, 
-	             (leavesOnly) ? NON_UNIFORM_DEGREE_TREE_ENUM_LEAVES_ONLY
+			(leavesOnly) ? NON_UNIFORM_DEGREE_TREE_ENUM_LEAVES_ONLY
 				 : NON_UNIFORM_DEGREE_TREE_ENUM_ALL_NODES),
-    filter(f)
-
+  filter(f)
 {
 }
 
@@ -162,9 +169,9 @@ ScopeInfoIterator::Current()  const
   return dynamic_cast<ScopeInfo*>(s); 
 } 
 
-//*****************************************************************************
+//***************************************************************************
 // ScopeInfoLineSortedIterator
-//*****************************************************************************
+//***************************************************************************
 
 ScopeInfoLineSortedIterator::
 ScopeInfoLineSortedIterator(const CodeInfo *file, 
@@ -197,7 +204,8 @@ ScopeInfoLineSortedIterator::Current() const
   return cur; 
 } 
 
-void ScopeInfoLineSortedIterator::DumpAndReset(ostream &os)
+void 
+ScopeInfoLineSortedIterator::DumpAndReset(ostream &os)
 {
   os << "ScopeInfoLineSortedIterator: " << endl; 
   while (Current()) {
@@ -223,60 +231,60 @@ CompareByLine(const void* a, const void *b)
   return CodeInfoLineComp(x, y);
 }
 
-//*****************************************************************************
+//***************************************************************************
 // ScopeInfoLineSortedChildIterator
-//*****************************************************************************
+//***************************************************************************
 
 ScopeInfoLineSortedChildIterator::
 ScopeInfoLineSortedChildIterator(const ScopeInfo *scope, 
 				 const ScopeInfoFilter * f)
 {
-  ScopeInfoChildIterator it(scope, f); 
-  ScopeInfo *cur; 
+  ScopeInfoChildIterator it(scope, f);
+  ScopeInfo *cur;
   for (; (cur = it.CurScope()); ) {
-    scopes.Add((unsigned long) cur); 
-    it++; 
+    scopes.Add((unsigned long) cur);
+    it++;
   }
-  ptrSetIt = new WordSetSortedIterator(&scopes, CompareByLine); 
+  ptrSetIt = new WordSetSortedIterator(&scopes, CompareByLine);
 }
 
-ScopeInfoLineSortedChildIterator::~ScopeInfoLineSortedChildIterator() 
+ScopeInfoLineSortedChildIterator::~ScopeInfoLineSortedChildIterator()
 {
-  delete ptrSetIt; 
+  delete ptrSetIt;
 }
- 
-CodeInfo* 
+
+CodeInfo*
 ScopeInfoLineSortedChildIterator::Current() const
 {
-  CodeInfo *cur = NULL; 
+  CodeInfo *cur = NULL;
   if (ptrSetIt->Current()) {
-    cur = (CodeInfo*) (*ptrSetIt->Current()); 
-    BriefAssertion(cur != NULL); 
+    cur = (CodeInfo*) (*ptrSetIt->Current());
+    BriefAssertion(cur != NULL);
   }
-  return cur; 
+  return cur;
 }
 
-void 
+void
 ScopeInfoLineSortedChildIterator::Reset()
 {
-  ptrSetIt->Reset(); 
+  ptrSetIt->Reset();
 }
-
 
 void
 ScopeInfoLineSortedChildIterator::DumpAndReset(ostream &os)
 {
-  os << "ScopeInfoLineSortedChildIterator: " << endl; 
+  os << "ScopeInfoLineSortedChildIterator: " << endl;
   while (Current()) {
-    os << Current()->ToDumpString() << endl; 
-    (*this)++; 
-  } 
-  Reset(); 
+    os << Current()->ToDumpString() << endl;
+    (*this)++;
+  }
+  Reset();
 }
 
-//*****************************************************************************
+
+//***************************************************************************
 // ScopeInfoNameSortedChildIterator
-//*****************************************************************************
+//***************************************************************************
 
 ScopeInfoNameSortedChildIterator::
 ScopeInfoNameSortedChildIterator(const ScopeInfo *scope, 

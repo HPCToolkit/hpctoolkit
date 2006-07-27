@@ -98,10 +98,11 @@ public:
   DoubleVector() : VectorTmpl<double>(NaNVal, true) { }
 }; 
 
-class GroupScopeMap   : public std::map<String, GroupScope*, StringLt> { };
-class LoadModScopeMap : public std::map<String, LoadModScope*, StringLt> { };
-class ProcScopeMap    : public std::map<String, ProcScope*, StringLt> { }; 
-class FileScopeMap    : public std::map<String, FileScope*, StringLt> { };
+class GroupScopeMap     : public std::map<String, GroupScope*, StringLt> { };
+class LoadModScopeMap   : public std::map<String, LoadModScope*, StringLt> { };
+class ProcScopeMap      : public std::map<String, ProcScope*, StringLt> { }; 
+class FileScopeMap      : public std::map<String, FileScope*, StringLt> { };
+class StmtRangeScopeMap : public std::map<suint, StmtRangeScope*> { };
 
 //***************************************************************************
 // PgmScopeTree
@@ -213,11 +214,12 @@ CodeInfo::~CodeInfo()
 }
 
 
-PgmScope::PgmScope() 
+PgmScope::PgmScope(const char* nm) 
   : ScopeInfo(PGM, NULL) 
 { 
+  BriefAssertion(nm);
   frozen = false;
-  name = (char *) NULL; 
+  name = nm;
   groupMap = new GroupScopeMap();
   lmMap = new LoadModScopeMap();
   fileMap = new FileScopeMap(); 
@@ -246,16 +248,15 @@ PgmScope::~PgmScope()
 }
 
 
-GroupScope::GroupScope(const char* grpName,
-		       ScopeInfo* mom, 
+GroupScope::GroupScope(const char* nm, ScopeInfo* mom, 
 		       int begLn, int endLn) 
   : CodeInfo(GROUP, mom, begLn, endLn)
 {
-  BriefAssertion(grpName);
+  BriefAssertion(nm);
   ScopeType t = (mom) ? mom->Type() : ANY;
   BriefAssertion((mom == NULL) || (t == PGM) || (t == GROUP) || (t == LM) 
 		 || (t == FILE) || (t == PROC) || (t == LOOP));
-  name = grpName;
+  name = nm;
   Pgm()->AddToGroupMap(*this); 
 }
 
@@ -264,14 +265,14 @@ GroupScope::~GroupScope()
 }
 
 
-LoadModScope::LoadModScope(const char* lmName, ScopeInfo* mom) 
+LoadModScope::LoadModScope(const char* nm, ScopeInfo* mom) 
   : CodeInfo(LM, mom, UNDEF_LINE, UNDEF_LINE) // ScopeInfo
 { 
-  BriefAssertion(lmName);
+  BriefAssertion(nm);
   ScopeType t = (mom) ? mom->Type() : ANY;
   BriefAssertion((mom == NULL) || (t == PGM) || (t == GROUP));
 
-  name = lmName;
+  name = nm;
   Pgm()->AddToLoadModMap(*this); 
 }
 
@@ -322,9 +323,10 @@ ProcScope::ProcScope(const char* n, CodeInfo *mom, const char* ln,
   ScopeType t = (mom) ? mom->Type() : ANY;
   BriefAssertion((mom == NULL) || (t == GROUP) || (t == FILE));
 
-  name = n; 
+  name = n;
   linkname = ln;
-  if (File()) File()->AddToProcMap(*this); 
+  stmtMap = new StmtRangeScopeMap();
+  if (File()) { File()->AddToProcMap(*this); }
 }
 
 ProcScope& 
@@ -333,14 +335,15 @@ ProcScope::operator=(const ProcScope& other)
   // shallow copy
   if (&other != this) {
     name    = other.name;
+    stmtMap = new StmtRangeScopeMap();
   }
   return *this;
 }
 
 ProcScope::~ProcScope() 
 {
+  delete stmtMap;
 }
-
 
 LoopScope::LoopScope(CodeInfo *mom, suint begLn, suint endLn) 
   : CodeInfo(LOOP, mom, begLn, endLn)
@@ -361,6 +364,7 @@ StmtRangeScope::StmtRangeScope(CodeInfo *mom, suint begLn, suint endLn)
   ScopeType t = (mom) ? mom->Type() : ANY;
   BriefAssertion((mom == NULL) || (t == GROUP) || (t == FILE) || (t == PROC)
 		 || (t == LOOP));
+  if (Proc()) { Proc()->AddToStmtMap(*this); }
 }
 
 StmtRangeScope::~StmtRangeScope()
@@ -711,7 +715,7 @@ PgmScope::AddToFileMap(FileScope& f)
 }
 
 void 
-FileScope::AddToProcMap(ProcScope &p) 
+FileScope::AddToProcMap(ProcScope& p) 
 {
   // STL::map is a Unique Associative Container
   bool duplicate = (procMap->count(p.Name()) != 0);
@@ -726,6 +730,14 @@ FileScope::AddToProcMap(ProcScope &p)
 	  << ") namemap: mapping proc name '" << p.Name()
 	  << "' to ProcScope* " << hex << &p << dec << endl;
 } 
+
+void 
+ProcScope::AddToStmtMap(StmtRangeScope& stmt)
+{
+  // STL::map is a Unique Associative Container
+  (*stmtMap)[stmt.BegLine()] = &stmt;
+}
+
 
 GroupScope*
 PgmScope::FindGroup(const char* nm) const
@@ -756,9 +768,19 @@ PgmScope::FindFile(const char* nm) const
 ProcScope*
 FileScope::FindProc(const char* nm) const
 {
-  if (procMap && procMap->count(nm) != 0) 
-    return (*procMap)[nm]; 
+  if (procMap && procMap->count(nm) != 0)
+    return (*procMap)[nm];
   return NULL;
+}
+
+StmtRangeScope*
+ProcScope::FindStmtRange(suint begLn)
+{
+  StmtRangeScope* stmt = (*stmtMap)[begLn];
+  if (!stmt) {
+    stmt = new StmtRangeScope(this, begLn, begLn);
+  }
+  return stmt;
 }
 
 //***************************************************************************
@@ -1066,8 +1088,10 @@ LoadModScope::DumpLineSorted(ostream &os, int dmpFlag, const char *pre) const
 void 
 CodeInfo::SetLineRange(suint begLn, suint endLn) 
 {
-  // Sanity Checking
-  BriefAssertion(begLn <= endLn);   // begLn <= endLn
+  // Sanity Checking:
+  //   begLn <= endLn
+  //   (begLn == UNDEF_LINE) <==> (endLn == UNDEF_LINE)
+  BriefAssertion(begLn <= endLn);
 
   if (begLn == UNDEF_LINE) {
     BriefAssertion(endLn == UNDEF_LINE);

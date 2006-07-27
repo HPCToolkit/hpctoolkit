@@ -34,34 +34,40 @@
 // 
 // ******************************************************* EndRiceCopyright *
 
-#ifndef ScopeInfoIterator_h
-#define ScopeInfoIterator_h
+//***************************************************************************
+//
+// File:
+//    $Source$
+//
+// Purpose:
+//    [The purpose of this file]
+//
+// Description:
+//    [The set of functions, macros, etc. defined in the file]
+//
+//***************************************************************************
 
-// Note: Do not include this file; include ScopeInfo.h instead.  (This
-// file depends on ScopeInfo.h)
+#ifndef PgmScopeTreeIterator_h
+#define PgmScopeTreeIterator_h
 
-//************************ System Include Files ******************************
+//************************* System Include Files ****************************
 
 #include <iostream>
 
-//************************* User Include Files *******************************
+//*************************** User Include Files ****************************
 
 #include <include/general.h>
 
+#include "ScopeInfo.hpp"
 #include <lib/support/NonUniformDegreeTree.hpp>
 #include <lib/support/PtrSetIterator.hpp>
 
-//************************ Forward Declarations ******************************
-
-class ScopeInfo;
-class CodeInfo;
-
-//****************************************************************************
+//*************************** Forward Declarations **************************
 
 int HasPerfData( const ScopeInfo *si, int nm );
 void UpdateScopeTree( const ScopeInfo *node, int noMetrics );
 
-//*****************************************************************************
+//***************************************************************************
 // ScopeInfoFilter
 //    filters are used in iterators to make sure only desirable ScopeInfos 
 //    are iterated 
@@ -69,7 +75,7 @@ void UpdateScopeTree( const ScopeInfo *node, int noMetrics );
 //    for ScopeInfos with a given type only 
 // HasScopeType 
 //    global fct used in filters from ScopeTypeFilter array
-//*****************************************************************************
+//***************************************************************************
 
 typedef bool (*ScopeInfoFilterFct)(const ScopeInfo &info, long addArg);
 
@@ -95,12 +101,12 @@ extern bool HasScopeType(const ScopeInfo &sinfo, long type);
 extern const ScopeInfoFilter ScopeTypeFilter[ScopeInfo::NUMBER_OF_SCOPES];
 
 
-//*****************************************************************************
+//***************************************************************************
 // ScopeInfoChildIterator
 //    iterates over all children of a ScopeInfo that pass the given 
 //    filter or if a NULL filter was given over all children 
 //    no particular order is garanteed 
-//*****************************************************************************
+//***************************************************************************
 
 class ScopeInfoChildIterator : public NonUniformDegreeTreeNodeChildIterator {
 public: 
@@ -113,28 +119,42 @@ public:
   
   ScopeInfo* CurScope() const { return dynamic_cast<ScopeInfo*>(Current()); }
 private: 
-  const ScopeInfoFilter *filter; 
+  const ScopeInfoFilter *filter;
+};
+
+
+//***************************************************************************
+// CodeInfoChildIterator
+//    iterates over all children of a ScopeInfo that pass the given 
+//    filter or if a NULL filter was given over all children 
+//    no particular order is garanteed 
+//***************************************************************************
+
+class CodeInfoChildIterator : public NonUniformDegreeTreeNodeChildIterator {
+public: 
+  CodeInfoChildIterator(const CodeInfo *root); 
+  CodeInfo* CurCodeInfo() const { return dynamic_cast<CodeInfo*>(Current()); }
 };  
 
 
-//*****************************************************************************
+//***************************************************************************
 // ScopeInfoIterator
 //    iterates over all ScopeInfos in the tree rooted at a given ScopeInfo 
 //    that pass the given filter or if a NULL filter was given over all 
 //    ScopeInfos in the tree.
 //    no particular order is garanteed, unless stated explicitly , i.e. we 
 //    may change the default value for torder
-//*****************************************************************************
+//***************************************************************************
 
 class ScopeInfoIterator : public NonUniformDegreeTreeIterator {
 public: 
-   ScopeInfoIterator(const ScopeInfo *root, 
-	             const ScopeInfoFilter *filter = NULL, 
-                     bool leavesOnly = false, 
+   // filter == NULL enumerate all entries
+   // otherwise: only entries with filter->fct(e) == true
+   ScopeInfoIterator(const ScopeInfo *root,
+		     const ScopeInfoFilter* filter = NULL,
+		     bool leavesOnly = false,
 		     TraversalOrder torder = PreOrder); 
-	             // filter == NULL enumerate all entries
-	             // otherwise: only entries with filter->fct(e) == true
-  
+   
   virtual NonUniformDegreeTreeNode* Current() const; // really ScopeInfo
   
   ScopeInfo* CurScope() const { return dynamic_cast<ScopeInfo*>(Current()); }
@@ -143,10 +163,10 @@ private:
 };  
 
 
-//*****************************************************************************
-// LineSortedIterator
+//***************************************************************************
+// ScopeInfoLineSortedIterator
 //
-// LineSortedChildIterator
+// ScopeInfoLineSortedChildIterator
 //    behaves as ScopeInfoIterator (PreOrder), 
 //    except that it gurantees LineOrder among siblings  
 //
@@ -159,15 +179,14 @@ private:
 //       that children in the tree contain non-overlapping ranges. all
 //       lines are gathered into a set, sorted, and then enumerated out
 //       of the set in sorted order. -- johnmc 5/31/00
-//
-//*****************************************************************************
+//***************************************************************************
 
-class LineSortedIterator {
+class ScopeInfoLineSortedIterator {
 public: 
-  LineSortedIterator(const CodeInfo *file, 
-		     const ScopeInfoFilter *filterFunc = NULL, 
-		     bool leavesOnly = true);
-  ~LineSortedIterator();
+  ScopeInfoLineSortedIterator(const CodeInfo *file, 
+			      const ScopeInfoFilter* filterFunc = NULL, 
+			      bool leavesOnly = true);
+  ~ScopeInfoLineSortedIterator();
   
   CodeInfo* Current() const; 
   void  operator++(int)   { (*ptrSetIt)++;}
@@ -180,11 +199,11 @@ private:
   WordSetSortedIterator *ptrSetIt;  
 };
 
-class LineSortedChildIterator {
+class ScopeInfoLineSortedChildIterator {
 public: 
-  LineSortedChildIterator(const ScopeInfo *root, 
-			  const ScopeInfoFilter *filterFunc = NULL);
-  ~LineSortedChildIterator();
+  ScopeInfoLineSortedChildIterator(const ScopeInfo *root, 
+				   const ScopeInfoFilter* filterFunc = NULL);
+  ~ScopeInfoLineSortedChildIterator();
 
   CodeInfo* Current() const;
   void  operator++(int)   { (*ptrSetIt)++;}
@@ -235,11 +254,12 @@ private:
    ScopeInfo::ScopeType _type;
 };
 
-//*****************************************************************************
-// LineSortedIteratorForLargeScopes
+//***************************************************************************
+// ScopeInfoLineSortedIteratorForLargeScopes
 //
-//   behaves as LineSortedIterator, but it consider both the StartLine and 
-//   the EndLine for scopes such as LOOPs or PROCs or even GROUPs.
+//   behaves as ScopeInfoLineSortedIterator, but it consider both the
+//   StartLine and the EndLine for scopes such as LOOPs or PROCs or
+//   even GROUPs.
 //    -- mgabi 08/18/01
 //   it gurantees LineOrder among siblings  
 //
@@ -252,14 +272,14 @@ private:
 //       that children in the tree contain non-overlapping ranges. all
 //       lines are gathered into a set, sorted, and then enumerated out
 //       of the set in sorted order. -- johnmc 5/31/00
-//*****************************************************************************
+//***************************************************************************
 
-class LineSortedIteratorForLargeScopes {
+class ScopeInfoLineSortedIteratorForLargeScopes {
 public: 
-  LineSortedIteratorForLargeScopes(const CodeInfo *file, 
+  ScopeInfoLineSortedIteratorForLargeScopes(const CodeInfo *file, 
 			      const ScopeInfoFilter *filterFunc = NULL, 
 			      bool leavesOnly = true);
-  ~LineSortedIteratorForLargeScopes();
+  ~ScopeInfoLineSortedIteratorForLargeScopes();
   
   CodeInfoLine* Current() const; 
   void  operator++(int)   { (*ptrSetIt)++;}
@@ -272,18 +292,17 @@ private:
   WordSetSortedIterator *ptrSetIt;  
 };
 
-
-//*****************************************************************************
-// NameSortedChildIterator
+//***************************************************************************
+// ScopeInfoNameSortedChildIterator
 //    behaves as ScopeInfoChildIterator, except that it gurantees NameOrder 
 //    NameOrder: a is enumerated before b iff a->Name() < b->Name() 
-//*****************************************************************************
+//***************************************************************************
 
-class NameSortedChildIterator {
+class ScopeInfoNameSortedChildIterator {
 public: 
-  NameSortedChildIterator(const ScopeInfo *root, 
-			  const ScopeInfoFilter *filterFunc = NULL); 
-  ~NameSortedChildIterator(); 
+  ScopeInfoNameSortedChildIterator(const ScopeInfo *root,
+				   const ScopeInfoFilter* filterFunc = NULL);
+  ~ScopeInfoNameSortedChildIterator();
   
   CodeInfo* Current() const; 
   void  operator++(int)   { (*ptrSetIt)++;}
@@ -296,7 +315,7 @@ private:
 };
 
 
-//*****************************************************************************
+//***************************************************************************
 // SortedCodeInfoIterator
 //    behaves as ScopeInfoIterator, except that it gurantees PerformanceOrder
 //    PerformanceOrder:
@@ -304,7 +323,7 @@ private:
 //          iff a->PerfInfos().GetVal(i) > b->PerfInfos().GetVal(i)
 //             where GetVal(i) retrieves the value for the performace
 //             statistic that the iterator is to sort for
-//*****************************************************************************
+//***************************************************************************
 
 class SortedCodeInfoIterator {
 public:
@@ -323,7 +342,7 @@ private:
 };
 
 
-//*****************************************************************************
+//***************************************************************************
 // SortedCodeInfoChildIterator
 //    behaves as ScopeInfoChildIterator, except that it guarantees children in 
 //    PerformanceOrder.
@@ -333,7 +352,7 @@ private:
 //          iff a->PerfInfos().GetVal(i) > b->PerfInfos().GetVal(i)
 //             where GetVal(i) retrieves the value for the performace
 //             statistic that the iterator is to sort for
-//*****************************************************************************
+//***************************************************************************
 
 class SortedCodeInfoChildIterator {
 public:
@@ -354,7 +373,7 @@ private:
   int depth;
 };
 
-//*****************************************************************************
+//***************************************************************************
 // Function CompareByPerfInfo
 //
 // Description:
@@ -368,7 +387,7 @@ private:
 //   constructor, so the value of CompareByPerfInfo_MetricIndex needs only 
 //   to remain constant for the duration of the constructor to which 
 //   CompareByPerfInfo is passed.
-//*****************************************************************************
+//***************************************************************************
 
 int CompareByPerfInfo(const void* a, const void *b);
 extern int CompareByPerfInfo_MetricIndex;

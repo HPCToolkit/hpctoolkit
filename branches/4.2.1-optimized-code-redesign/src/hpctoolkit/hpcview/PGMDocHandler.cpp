@@ -357,7 +357,7 @@ void PGMDocHandler:: startElement(const XMLCh* const uri,
     // Find/Create the procedure.
     currentFuncScope = curFile->FindProc(name);
     if (!currentFuncScope) {
-      currentFuncScope = new ProcScope(name, curFile, lnB, lnE);
+      currentFuncScope = new ProcScope(name, curFile, lname, lnB, lnE);
     }
     else {
       if (docty == Doc_STRUCT) {
@@ -423,10 +423,8 @@ void PGMDocHandler:: startElement(const XMLCh* const uri,
     CodeInfo* enclScope = 
       dynamic_cast<CodeInfo*>(GetCurrentScope()); // enclosing scope
     BriefAssertion(currentFuncScope != NULL);
-    LineScope* lineNode = currentFuncScope->CreateLineScope(enclScope, lnB);
-    // FIXME: we should be using stmt ranges not line scopes
-    // CodeInfo* lineNode = new StmtRangeScope(enclScope, lnB, lnE);
-    currentScope = lineNode;
+    StmtRangeScope* stmtNode = new StmtRangeScope(enclScope, lnB, lnE);
+    currentScope = stmtNode;
   }
 
   

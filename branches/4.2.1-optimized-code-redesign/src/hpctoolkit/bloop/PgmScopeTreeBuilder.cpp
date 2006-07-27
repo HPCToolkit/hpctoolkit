@@ -292,7 +292,7 @@ ScopeTreeBuilder::BuildFromLM(LoadModule* lm,
   }
 
   // Assume lm->Read() has been performed
-  pgmScope = new PgmScope();
+  pgmScope = new PgmScope("");
   pgmScopeTree = new PgmScopeTree(pgmScope);
 
   LoadModScope *lmScope = new LoadModScope(lm->GetName(), pgmScope);

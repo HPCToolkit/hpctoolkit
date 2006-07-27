@@ -37,7 +37,7 @@
 //***************************************************************************
 //
 // File:
-//    PgmScopeTreeIterator.h
+//    $Source$
 //
 // Purpose:
 //    [The purpose of this file]
@@ -56,17 +56,15 @@
 
 //*************************** User Include Files ****************************
 
-#include <include/general.h>               
+#include <include/general.h>
 
 #include "PgmScopeTree.hpp"
 #include <lib/support/NonUniformDegreeTree.hpp>
 #include <lib/support/PtrSetIterator.hpp>
 
-//*************************** Forward Declarations ***************************
+//*************************** Forward Declarations **************************
 
-class ScopesInfo; 
-
-//*****************************************************************************
+//***************************************************************************
 // ScopeInfoFilter
 //    filters are used in iterators to make sure only desirable ScopeInfos 
 //    are iterated 
@@ -74,22 +72,23 @@ class ScopesInfo;
 //    for ScopeInfos with a given type only 
 // HasScopeType 
 //    global fct used in filters from ScopeTypeFilter array
-//*****************************************************************************
+//***************************************************************************
 
 typedef bool (*ScopeInfoFilterFct)(const ScopeInfo &info, long addArg);
 
 class ScopeInfoFilter {
 public:
-   ScopeInfoFilter(ScopeInfoFilterFct f, const char* n, long a)
-     : fct(f), arg(a), name(n) {};
+   ScopeInfoFilter(ScopeInfoFilterFct f, const char* n, long a) 
+     : fct(f), name(n), arg(a) { }
 
-   virtual ~ScopeInfoFilter() { };
+   virtual ~ScopeInfoFilter() { }
    bool Apply(const ScopeInfo& s) const { return fct(s, arg); }
-   const char* Name() const {return name;};
+   const char* Name() const { return name; }
+
 private:
    const ScopeInfoFilterFct fct; 
-   long arg; 
    const char* name; 
+   long arg; 
 };
 
 // HasScopeType(s,tp) == ((tp == ANY) || (s.Type() == tp));
@@ -99,12 +98,12 @@ extern bool HasScopeType(const ScopeInfo &sinfo, long type);
 extern const ScopeInfoFilter ScopeTypeFilter[ScopeInfo::NUMBER_OF_SCOPES];
 
 
-//*****************************************************************************
+//***************************************************************************
 // ScopeInfoChildIterator
 //    iterates over all children of a ScopeInfo that pass the given 
 //    filter or if a NULL filter was given over all children 
 //    no particular order is garanteed 
-//*****************************************************************************
+//***************************************************************************
 
 class ScopeInfoChildIterator : public NonUniformDegreeTreeNodeChildIterator {
 public: 
@@ -115,53 +114,53 @@ public:
   
   virtual NonUniformDegreeTreeNode* Current() const; // really ScopeInfo
   
-  ScopeInfo* CurScope() const { return dynamic_cast<ScopeInfo*>(Current()); };
+  ScopeInfo* CurScope() const { return dynamic_cast<ScopeInfo*>(Current()); }
 private: 
-   const ScopeInfoFilter *filter; 
-};  
+  const ScopeInfoFilter *filter;
+};
 
 
-//*****************************************************************************
+//***************************************************************************
 // CodeInfoChildIterator
 //    iterates over all children of a ScopeInfo that pass the given 
 //    filter or if a NULL filter was given over all children 
 //    no particular order is garanteed 
-//*****************************************************************************
+//***************************************************************************
 
 class CodeInfoChildIterator : public NonUniformDegreeTreeNodeChildIterator {
 public: 
   CodeInfoChildIterator(const CodeInfo *root); 
-  CodeInfo* CurCodeInfo() const { return dynamic_cast<CodeInfo*>(Current()); };
+  CodeInfo* CurCodeInfo() const { return dynamic_cast<CodeInfo*>(Current()); }
 };  
 
 
-//*****************************************************************************
+//***************************************************************************
 // ScopeInfoIterator
 //    iterates over all ScopeInfos in the tree rooted at a given ScopeInfo 
 //    that pass the given filter or if a NULL filter was given over all 
 //    ScopeInfos in the tree.
 //    no particular order is garanteed, unless stated explicitly , i.e. we 
 //    may change the default value for torder
-//*****************************************************************************
+//***************************************************************************
 
 class ScopeInfoIterator : public NonUniformDegreeTreeIterator {
 public: 
    // filter == NULL enumerate all entries
    // otherwise: only entries with filter->fct(e) == true
-   ScopeInfoIterator(const ScopeInfo *root, 
-		     const ScopeInfoFilter *filter = NULL, 
-		     bool leavesOnly = false, 
+   ScopeInfoIterator(const ScopeInfo *root,
+		     const ScopeInfoFilter* filter = NULL,
+		     bool leavesOnly = false,
 		     TraversalOrder torder = PreOrder); 
    
   virtual NonUniformDegreeTreeNode* Current() const; // really ScopeInfo
   
-  ScopeInfo* CurScope() const { return dynamic_cast<ScopeInfo*>(Current()); }; 
+  ScopeInfo* CurScope() const { return dynamic_cast<ScopeInfo*>(Current()); }
 private: 
   const ScopeInfoFilter *filter; 
 };  
 
 
-//*****************************************************************************
+//***************************************************************************
 // ScopeInfoLineSortedIterator
 //
 // ScopeInfoLineSortedChildIterator
@@ -175,12 +174,12 @@ private:
 //       that children in the tree contain non-overlapping ranges. all
 //       lines are gathered into a set, sorted, and then enumerated out
 //       of the set in sorted order. -- johnmc 5/31/00
-//*****************************************************************************
+//***************************************************************************
 
 class ScopeInfoLineSortedIterator {
 public: 
   ScopeInfoLineSortedIterator(const CodeInfo *file, 
-			      const ScopeInfoFilter *filterFunc = NULL, 
+			      const ScopeInfoFilter* filterFunc = NULL, 
 			      bool leavesOnly = true);
   ~ScopeInfoLineSortedIterator();
   
@@ -197,10 +196,10 @@ private:
 class ScopeInfoLineSortedChildIterator {
 public: 
   ScopeInfoLineSortedChildIterator(const ScopeInfo *root, 
-				   const ScopeInfoFilter *filterFunc = NULL);
-  ~ScopeInfoLineSortedChildIterator(); 
-  
-  CodeInfo* Current() const; 
+				   const ScopeInfoFilter* filterFunc = NULL);
+  ~ScopeInfoLineSortedChildIterator();
+
+  CodeInfo* Current() const;
   void  operator++(int)   { (*ptrSetIt)++;}
   void Reset();
   void DumpAndReset(std::ostream &os = std::cerr);
@@ -210,16 +209,16 @@ private:
   WordSetSortedIterator *ptrSetIt;  
 };
 
-//*****************************************************************************
+//***************************************************************************
 // ScopeInfoNameSortedChildIterator
 //    behaves as ScopeInfoChildIterator, except that it gurantees NameOrder 
 //    NameOrder: a is enumerated before b iff a->Name() < b->Name() 
-//*****************************************************************************
+//***************************************************************************
 
 class ScopeInfoNameSortedChildIterator {
 public: 
-  ScopeInfoNameSortedChildIterator(const ScopeInfo *root, 
-				   const ScopeInfoFilter *filterFunc = NULL);
+  ScopeInfoNameSortedChildIterator(const ScopeInfo *root,
+				   const ScopeInfoFilter* filterFunc = NULL);
   ~ScopeInfoNameSortedChildIterator();
   
   CodeInfo* Current() const; 

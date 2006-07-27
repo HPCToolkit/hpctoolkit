@@ -344,18 +344,20 @@ void PROFILEDocHandler::startElement(const XMLCh* const uri, const XMLCh* const 
 
     // Consider only the one metric we are interested in
     if (strcmp(name, metricNameShort) == 0) {
-      // FIXME: Metrics can be attached to any element of the tree,
-      // not just stmts.  (use StmtRangeScope not LineScope)
+      // Metrics can be attached to any element of the tree (not just stmts).
       double val = atof(value);
       if (line != -1) { // FIXME change to IsValid
-	CodeInfo* lineNode = procScope->GetLineScope(line); 
+	CodeInfo* lineNode = procScope->FindStmtRange(line); 
 	lineNode->SetPerfData(metricPerfDataTblIndx, val); 
-      } else {
+      } 
+      else {
 	if (procScope) {
 	  procScope->SetPerfData(metricPerfDataTblIndx, val); 
-	} else if (fileScope) {
+	} 
+	else if (fileScope) {
 	  fileScope->SetPerfData(metricPerfDataTblIndx, val); 
-	} else {
+	} 
+	else {
 	  lmScope->SetPerfData(metricPerfDataTblIndx, val); 
 	}
       }

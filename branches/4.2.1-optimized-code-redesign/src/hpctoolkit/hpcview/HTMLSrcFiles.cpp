@@ -201,7 +201,7 @@ HTMLSrcFiles::WriteSrc(HTMLFile &hf, FileScope &file) const
   IFTRACE << "WRITESRC: file name=" << file.Name() << endl;
 
   // go through leaves in LineOrder and generate source lines 
-  LineSortedIteratorForLargeScopes it(&file, 
+  ScopeInfoLineSortedIteratorForLargeScopes it(&file, 
 				  &(UseForSrcCode), 0); // leaves,loops,procs
   CodeInfoLine *cil = it.Current(); 
   unsigned int curLine = 1; 
@@ -250,7 +250,8 @@ HTMLSrcFiles::GenerateSrc(HTMLFile &hf, FileScope &file) const
 
   // go through leaves in LineOrder and generate source lines 
   unsigned int lastLine = 0; 
-  LineSortedChildIterator it(&file, &ScopeTypeFilter[ScopeInfo::PROC]);
+  ScopeInfoLineSortedChildIterator it(&file, 
+				      &ScopeTypeFilter[ScopeInfo::PROC]);
   for (; it.Current(); it++) {
     GenSrc(hf, *it.CurCode(), 0, lastLine); 
   }
@@ -365,7 +366,7 @@ WriteLineNumber(HTMLFile &hf, suint curLine, CodeInfoList *list)
                   anchor += "s";
                }
             }
-            if (aci->Type() == ScopeInfo::LINE) 
+            if (aci->Type() == ScopeInfo::STMT_RANGE) 
             { 
                anchor = HTMLDriver::UniqueName( aci,
                              NO_PERF_INDEX, NO_FLATTEN_DEPTH);
