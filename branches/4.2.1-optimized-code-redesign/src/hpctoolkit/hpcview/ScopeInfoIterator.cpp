@@ -288,7 +288,7 @@ CompareByLine(const void* a, const void *b)
   CodeInfo* y = (*(CodeInfo**)b);
   BriefAssertion (x != NULL);
   BriefAssertion (y != NULL);
-  return x->BegLine() - y->BegLine();
+  return CodeInfoLineComp(x, y);
 }
 
 //***************************************************************************

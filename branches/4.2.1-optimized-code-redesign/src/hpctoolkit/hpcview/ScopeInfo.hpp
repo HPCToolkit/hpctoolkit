@@ -309,20 +309,34 @@ public:
   void Dump    (std::ostream &os = std::cerr, 
 		int dmpFlag = 0, const char* pre = "") const;
 
-  void XML_DumpSelf(std::ostream &os = std::cout, int dmpFlag = 0,
-		    const char* prefix = "") const;
-  void XML_Dump(std::ostream &os = std::cout, int dmpFlag = 0,
+  // circumvent pain caused by debuggers that choke on default
+  // arguments or that remove all traces of functions defined in the
+  // class declaration (stupid SGI dbx...)
+  void DDump();
+  void DDumpSort();
+
+  void XML_DumpSelfBefore(std::ostream &os = std::cout,
+		int dmpFlag = 0, const char* prefix = "") const;
+  void XML_DumpSelfAfter (std::ostream &os = std::cout,
+		int dmpFlag = 0, const char* prefix = "") const;
+  void XML_Dump(std::ostream &os = std::cout,
+		int dmpFlag = 0, const char* pre = "") const;
+  
+  void XML_DumpLineSorted(std::ostream &os = std::cout,
+		int dmpFlag = 0,
 		const char* pre = "") const;
 
   void CSV_DumpSelf(const PgmScope &root, std::ostream &os = std::cout) const;
   virtual void CSV_Dump(const PgmScope &root, std::ostream &os = std::cout, 
-               const char *file_name = NULL, const char *routine_name = NULL,
-               int lLevel = 0) const;
+			const char *file_name = NULL, 
+			const char *proc_name = NULL,
+			int lLevel = 0) const;
 
   void TSV_DumpSelf(const PgmScope &root, std::ostream &os = std::cout) const;
   virtual void TSV_Dump(const PgmScope &root, std::ostream &os = std::cout, 
-               const char *file_name = NULL, const char *routine_name = NULL,
-               int lLevel = 0) const;
+			const char *file_name = NULL, 
+			const char *proc_name = NULL,
+			int lLevel = 0) const;
 
 protected:
   ScopeType type;
@@ -376,11 +390,11 @@ public:
   virtual String XMLLineRange(int dmpFlag) const;
   
   virtual void CSV_Dump(const PgmScope &root, std::ostream &os = std::cout, 
-               const char *file_name = NULL, const char *routine_name = NULL,
+               const char *file_name = NULL, const char *proc_name = NULL,
                int lLevel = 0) const;
 
   virtual void TSV_Dump(const PgmScope &root, std::ostream &os = std::cout, 
-               const char *file_name = NULL, const char *routine_name = NULL,
+               const char *file_name = NULL, const char *proc_name = NULL,
                int lLevel = 0) const;
 
 protected: 
@@ -431,8 +445,8 @@ public:
   virtual String ToString(int dmpFlag = 0) const;
   virtual String ToXML(int dmpFlag = 0) const;
 
-  void XML_Dump(std::ostream &os = std::cout, int dmpFlag = 0, 
-		const char *pre = "") const;
+  void XML_DumpLineSorted(std::ostream &os = std::cout, int dmpFlag = 0, 
+			  const char *pre = "") const;
   void CSV_TreeDump(std::ostream &os = std::cout) const;
   void TSV_TreeDump(std::ostream &os = std::cout) const;
    
@@ -500,6 +514,9 @@ public:
   virtual String ToString(int dmpFlag = 0) const;
   virtual String ToXML(int dmpFlag = 0) const;
 
+  void XML_DumpLineSorted(std::ostream &os = std::cout, 
+			  int dmpFlag = 0, const char *pre = "") const;
+  
 protected: 
 private: 
   String name; // the load module name
@@ -540,11 +557,13 @@ public:
   virtual String ToXML(int dmpFlag = 0) const;
 
   virtual void CSV_Dump(const PgmScope &root, std::ostream &os = std::cout, 
-               const char *file_name = NULL, const char *routine_name = NULL,
-               int lLevel = 0) const;
+			const char *file_name = NULL, 
+			const char *proc_name = NULL,
+			int lLevel = 0) const;
   virtual void TSV_Dump(const PgmScope &root, std::ostream &os = std::cout, 
-               const char *file_name = NULL, const char *routine_name = NULL,
-               int lLevel = 0) const;
+			const char *file_name = NULL, 
+			const char *proc_name = NULL,
+			int lLevel = 0) const;
 
 private: 
   void AddToProcMap(ProcScope& proc);
@@ -583,11 +602,13 @@ public:
   virtual String ToXML(int dmpFlag = 0) const;
 
   virtual void CSV_Dump(const PgmScope &root, std::ostream &os = std::cout, 
-               const char *file_name = NULL, const char *routine_name = NULL,
-               int lLevel = 0) const;
+			const char *file_name = NULL, 
+			const char *proc_name = NULL,
+			int lLevel = 0) const;
   virtual void TSV_Dump(const PgmScope &root, std::ostream &os = std::cout, 
-               const char *file_name = NULL, const char *routine_name = NULL,
-               int lLevel = 0) const;
+			const char *file_name = NULL, 
+			const char *proc_name = NULL,
+			int lLevel = 0) const;
 
 private:
   void AddToStmtMap(StmtRangeScope& stmt);

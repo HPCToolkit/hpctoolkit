@@ -135,7 +135,7 @@ PgmScopeTree::CollectCrossReferences()
 }
 
 void 
-PgmScopeTree::Dump(std::ostream& os, int dmpFlags) const
+PgmScopeTree::Dump(ostream& os, int dmpFlags) const
 {
   if (root) {
     root->XML_DumpLineSorted(os, dmpFlags);
@@ -1077,23 +1077,34 @@ RefScope::ToString(int dmpFlag) const
 }
 
 void 
-ScopeInfo::DumpSelf(std::ostream &os, int dmpFlag, const char *prefix) const
+ScopeInfo::DumpSelf(ostream &os, int dmpFlag, const char *prefix) const
 { 
   os << prefix << ToString() << endl;
-  os << prefix << "   " ;
+  os << prefix << "  " ;
   os << endl;
 }
 
 void
-ScopeInfo::Dump(std::ostream &os, int dmpFlag, const char *pre) const 
+ScopeInfo::Dump(ostream &os, int dmpFlag, const char *pre) const 
 {
   DumpSelf(os, dmpFlag, pre);
-  String prefix = String(pre) + "   ";
+  String prefix = String(pre) + "  ";
   for (ScopeInfoChildIterator it(this); it.Current(); it++) {
     it.CurScope()->Dump(os, dmpFlag, prefix);
   } 
 }
 
+void
+ScopeInfo::DDump()
+{ 
+  XML_Dump(std::cerr, 0, "");
+}
+
+void
+ScopeInfo::DDumpSort() 
+{ 
+  XML_DumpLineSorted(std::cerr, 0, "");
+}
 
 //***************************************************************************
 // ScopeInfo, etc: XML output support
@@ -1194,7 +1205,8 @@ RefScope::ToXML(int dmpFlag) const
 }
 
 void 
-ScopeInfo::XML_DumpSelfBefore(ostream &os, int dmpFlag, const char *prefix) const
+ScopeInfo::XML_DumpSelfBefore(ostream &os, int dmpFlag, 
+			      const char *prefix) const
 {
   os << prefix << "<" << ToXML(dmpFlag);
   if (dmpFlag & PgmScopeTree::XML_EMPTY_TAG) { 
@@ -1209,7 +1221,7 @@ void
 ScopeInfo::XML_DumpSelfAfter(ostream &os, int dmpFlag, const char *prefix) const
 {
   if (!(dmpFlag & PgmScopeTree::XML_EMPTY_TAG)) {
-    os << prefix << "</" << String(ScopeTypeToName(Type())) << ">";
+    os << prefix << "</" << String(ScopeTypeToXMLelement(Type())) << ">";
     if (!(dmpFlag & PgmScopeTree::COMPRESSED_OUTPUT)) { os << endl; }
   } 
 }
@@ -1217,12 +1229,12 @@ ScopeInfo::XML_DumpSelfAfter(ostream &os, int dmpFlag, const char *prefix) const
 void
 ScopeInfo::XML_Dump(ostream &os, int dmpFlag, const char *pre) const 
 {
-  String indent = "   ";
+  String indent = "  ";
   if (dmpFlag & PgmScopeTree::COMPRESSED_OUTPUT) { pre = ""; indent = ""; }  
   if (IsLeaf()) { 
     dmpFlag |= PgmScopeTree::XML_EMPTY_TAG;
   }
-  
+
   XML_DumpSelfBefore(os, dmpFlag, pre);
   String prefix = String(pre) + indent;
   for (ScopeInfoChildIterator it(this); it.Current(); it++) {
@@ -1231,29 +1243,10 @@ ScopeInfo::XML_Dump(ostream &os, int dmpFlag, const char *pre) const
   XML_DumpSelfAfter(os, dmpFlag, pre);
 }
 
-// circumvent pain caused by debuggers that choke on default arguments
-// or that remove all traces of functions defined in the class declaration.
-void
-ScopeInfo::DDump()
-{ 
-  XML_Dump(std::cerr, 0, "");
-}
-
-void
-ScopeInfo::DDumpSort() 
-{ 
-  XML_DumpLineSorted(std::cerr, 0, "");
-}
-
-
-//***************************************************************************
-// 
-//***************************************************************************
-
 void
 ScopeInfo::XML_DumpLineSorted(ostream &os, int dmpFlag, const char *pre) const 
 {
-  String indent = "   ";
+  String indent = "  ";
   if (dmpFlag & PgmScopeTree::COMPRESSED_OUTPUT) { pre = ""; indent = ""; }
   if (IsLeaf()) {
     dmpFlag |= PgmScopeTree::XML_EMPTY_TAG;
@@ -1271,7 +1264,7 @@ void
 PgmScope::XML_DumpLineSorted(ostream &os, int dmpFlag, const char *pre) const
 {
   // N.B.: Typically LoadModScope are children
-  String indent = "   ";
+  String indent = "  ";
   if (dmpFlag & PgmScopeTree::COMPRESSED_OUTPUT) { pre = ""; indent = ""; }
 
   ScopeInfo::XML_DumpSelfBefore(os, dmpFlag, pre);
@@ -1287,7 +1280,7 @@ void
 LoadModScope::XML_DumpLineSorted(ostream &os, int dmpFlag, const char *pre) const
 {
   // N.B.: Typically FileScopes are children
-  String indent = "   ";
+  String indent = "  ";
   if (dmpFlag & PgmScopeTree::COMPRESSED_OUTPUT) { pre = ""; indent = ""; }
 
   ScopeInfo::XML_DumpSelfBefore(os, dmpFlag, pre);
@@ -1297,6 +1290,155 @@ LoadModScope::XML_DumpLineSorted(ostream &os, int dmpFlag, const char *pre) cons
     scope->XML_DumpLineSorted(os, dmpFlag, prefix);
   }
   ScopeInfo::XML_DumpSelfAfter(os, dmpFlag, pre);
+}
+
+//***************************************************************************
+// ScopeInfo, etc: 
+//***************************************************************************
+
+void 
+ScopeInfo::CSV_DumpSelf(const PgmScope &root, ostream &os) const
+{ 
+}
+
+
+void
+ScopeInfo::CSV_Dump(const PgmScope &root, ostream &os, 
+          const char *file_name, const char *proc_name,
+          int lLevel) const 
+{
+  // print file name, routine name, start and end line, loop level
+  os << Name() << ",,,,";
+  CSV_DumpSelf(root, os);
+  for (ScopeInfoNameSortedChildIterator it(this); it.Current(); it++) {
+    it.Current()->CSV_Dump(root, os);
+  }
+}
+
+void
+FileScope::CSV_Dump(const PgmScope &root, ostream &os, 
+          const char *file_name, const char *proc_name,
+          int lLevel) const 
+{
+  // print file name, routine name, start and end line, loop level
+  os << BaseName() << ",," << begLine << "," << endLine << ",";
+  CSV_DumpSelf(root, os);
+  for (ScopeInfoNameSortedChildIterator it(this); it.Current(); it++) {
+    it.Current()->CSV_Dump(root, os, BaseName());
+  }
+}
+
+void
+ProcScope::CSV_Dump(const PgmScope &root, ostream &os, 
+          const char *file_name, const char *proc_name,
+          int lLevel) const 
+{
+  // print file name, routine name, start and end line, loop level
+  os << file_name << "," << Name() << "," << begLine << "," << endLine 
+     << ",0";
+  CSV_DumpSelf(root, os);
+  for (ScopeInfoLineSortedChildIterator it(this); it.Current(); it++) {
+    it.CurScope()->CSV_Dump(root, os, file_name, Name(), 1);
+  } 
+}
+
+void
+CodeInfo::CSV_Dump(const PgmScope &root, ostream &os, 
+          const char *file_name, const char *proc_name,
+          int lLevel) const 
+{
+  ScopeType myScopeType = this->Type();
+  // do not display info for single lines
+  if (myScopeType == STMT_RANGE)
+    return;
+  // print file name, routine name, start and end line, loop level
+  os << (file_name?file_name:(const char*)Name()) << "," 
+     << (proc_name?proc_name:"") << "," 
+     << begLine << "," << endLine << ",";
+  if (lLevel)
+    os << lLevel;
+  CSV_DumpSelf(root, os);
+  for (ScopeInfoLineSortedChildIterator it(this); it.Current(); it++) {
+    it.CurScope()->CSV_Dump(root, os, file_name, proc_name, lLevel+1);
+  } 
+}
+
+void
+PgmScope::CSV_TreeDump(ostream &os) const
+{
+  ScopeInfo::CSV_Dump(*this, os);
+}
+
+//***************************************************************************
+// ScopeInfo, etc: 
+//***************************************************************************
+
+void 
+ScopeInfo::TSV_DumpSelf(const PgmScope &root, ostream &os) const
+{ 
+}
+
+
+// Dumps the scope tree PGM
+void
+ScopeInfo::TSV_Dump(const PgmScope &root, ostream &os, 
+          const char *file_name, const char *proc_name,
+          int lLevel) const 
+{
+  //Dump children
+  for (ScopeInfoNameSortedChildIterator it(this); it.Current(); it++) {
+    it.Current()->TSV_Dump(root, os);
+  }
+}
+
+void
+FileScope::TSV_Dump(const PgmScope &root, ostream &os, 
+          const char *file_name, const char *proc_name,
+          int lLevel) const 
+{
+  //Dump children
+  for (ScopeInfoNameSortedChildIterator it(this); it.Current(); it++) {
+    it.Current()->TSV_Dump(root, os, BaseName());
+  }
+}
+
+void
+ProcScope::TSV_Dump(const PgmScope &root, ostream &os, 
+          const char *file_name, const char *proc_name,
+          int lLevel) const 
+{
+  // print file name, routine name, start and end line, loop level
+  // os << file_name << "," << Name() << "," << begLine << "," << endLine << ",0";
+  for (ScopeInfoLineSortedChildIterator it(this); it.Current(); it++) {
+    it.CurScope()->TSV_Dump(root, os, file_name, Name(), 1);
+  } 
+}
+
+void
+CodeInfo::TSV_Dump(const PgmScope &root, ostream &os, 
+          const char *file_name, const char *proc_name,
+          int lLevel) const 
+{
+  ScopeType myScopeType = this->Type();
+  // recurse into loops until we have single lines
+  if (myScopeType == STMT_RANGE) {
+	  // print file name, routine name, start and end line, loop level
+	  os << (file_name ? file_name : (const char*)Name()) << "," 
+	     << (proc_name ? proc_name : "") << ":" 
+	     << begLine;
+	  TSV_DumpSelf(root, os);
+	  return;
+  }
+
+  for (ScopeInfoLineSortedChildIterator it(this); it.Current(); it++) {
+    it.CurScope()->TSV_Dump(root, os, file_name, proc_name, lLevel+1);
+  } 
+}
+
+void
+PgmScope::TSV_TreeDump(ostream &os) const
+{
+  ScopeInfo::TSV_Dump(*this, os);
 }
 
 //***************************************************************************

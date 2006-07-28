@@ -288,7 +288,7 @@ Driver::XML_Dump(PgmScope* pgm, int dumpFlags, std::ostream &os,
   
   // Dump SCOPETREE
   os << pre << "<SCOPETREE>" << endl;
-  pgm->XML_Dump(os, dumpFlags, pre);
+  pgm->XML_DumpLineSorted(os, dumpFlags, pre);
   os << pre << "</SCOPETREE>" << endl;
 
   os << pre << "</HPCVIEWER>" << endl;
