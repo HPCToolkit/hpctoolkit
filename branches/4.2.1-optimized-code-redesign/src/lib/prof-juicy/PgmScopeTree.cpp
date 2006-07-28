@@ -153,7 +153,7 @@ PgmScopeTree::DDump() const
 /*****************************************************************************/
 
 const char* ScopeInfo::ScopeNames[ScopeInfo::NUMBER_OF_SCOPES] = {
-  "PGM", "G", "LM", "F", "P", "L", "S", "ANY"
+  "PGM", "GRP", "LM", "FIL", "PRC", "LP", "LN" /*SR*/, "REF", "ANY"
 };
 
 const char* 
@@ -1110,10 +1110,14 @@ ScopeInfo::DDumpSort()
 // ScopeInfo, etc: XML output support
 //***************************************************************************
 
+static const char* XMLelements[ScopeInfo::NUMBER_OF_SCOPES] = {
+  "PGM", "G", "LM", "F", "P", "L", "S", "REF", "ANY"
+};
+
 const char*
 ScopeInfo::ScopeTypeToXMLelement(ScopeType tp)
 {
-   return ScopeTypeToName(tp);
+   return XMLelements[tp];
 }
 
 String 
@@ -1204,17 +1208,35 @@ RefScope::ToXML(int dmpFlag) const
   return self;
 }
 
-void 
+bool 
 ScopeInfo::XML_DumpSelfBefore(ostream &os, int dmpFlag, 
 			      const char *prefix) const
 {
+  bool attemptToDumpMetrics = true;
+  if ((dmpFlag & PgmScopeTree::DUMP_LEAF_METRICS) && Type() != STMT_RANGE) {
+    attemptToDumpMetrics = false;
+  }
+  
+  bool dumpMetrics = false;
+  if (attemptToDumpMetrics) {
+  }
+
   os << prefix << "<" << ToXML(dmpFlag);
-  if (dmpFlag & PgmScopeTree::XML_EMPTY_TAG) { 
-    os << "/>";
-  } else { 
+  if (dumpMetrics) {
+    // by definition this element is not empty
     os << ">";
   }
+  else {
+    if (dmpFlag & PgmScopeTree::XML_EMPTY_TAG) {
+      os << "/>";
+    } 
+    else { 
+      os << ">";
+    }
+  }
   if (!(dmpFlag & PgmScopeTree::COMPRESSED_OUTPUT)) { os << endl; }
+
+  return (dumpMetrics);
 }
 
 void
@@ -1235,7 +1257,10 @@ ScopeInfo::XML_Dump(ostream &os, int dmpFlag, const char *pre) const
     dmpFlag |= PgmScopeTree::XML_EMPTY_TAG;
   }
 
-  XML_DumpSelfBefore(os, dmpFlag, pre);
+  bool dumpedMetrics = XML_DumpSelfBefore(os, dmpFlag, pre);
+  if (dumpedMetrics) {
+    dmpFlag &= ~PgmScopeTree::XML_EMPTY_TAG; // clear empty flag
+  }
   String prefix = String(pre) + indent;
   for (ScopeInfoChildIterator it(this); it.Current(); it++) {
     it.CurScope()->XML_Dump(os, dmpFlag, prefix);
@@ -1252,7 +1277,10 @@ ScopeInfo::XML_DumpLineSorted(ostream &os, int dmpFlag, const char *pre) const
     dmpFlag |= PgmScopeTree::XML_EMPTY_TAG;
   }
   
-  XML_DumpSelfBefore(os, dmpFlag, pre);
+  bool dumpedMetrics = XML_DumpSelfBefore(os, dmpFlag, pre);
+  if (dumpedMetrics) {
+    dmpFlag &= ~PgmScopeTree::XML_EMPTY_TAG; // clear empty flag
+  }
   String prefix = String(pre) + indent;
   for (ScopeInfoLineSortedChildIterator it(this); it.Current(); it++) {
     it.Current()->XML_DumpLineSorted(os, dmpFlag, prefix);

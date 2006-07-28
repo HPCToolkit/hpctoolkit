@@ -125,6 +125,11 @@ public:
   
   void CollectCrossReferences();
 
+  // Dump contents for inspection (use flags from ScopeInfo)
+  virtual void Dump(std::ostream& os = std::cerr, 
+		    int dmpFlag = XML_TRUE) const;
+  virtual void DDump() const;
+ 
 private:
   PgmScope* root;
 };
@@ -315,7 +320,7 @@ public:
   void DDump();
   void DDumpSort();
 
-  void XML_DumpSelfBefore(std::ostream &os = std::cout,
+  bool XML_DumpSelfBefore(std::ostream &os = std::cout,
 		int dmpFlag = 0, const char* prefix = "") const;
   void XML_DumpSelfAfter (std::ostream &os = std::cout,
 		int dmpFlag = 0, const char* prefix = "") const;

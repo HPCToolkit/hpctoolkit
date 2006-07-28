@@ -84,6 +84,13 @@ using namespace std; // For compatibility with non-std C headers
 
 //*************************** Forward Declarations **************************
 
+// Enabling this flag (not allowing duplicate function names in a
+// file) can cause problems if proper file scoping is not maintained.
+// This can happen when static functions are lumped together b/c a
+// lack of debugging information has made file identification
+// impossible
+//#define SCOPE_TREE_DISALLOW_DUPLICATE_FUNCTION_NAMES_IN_FILE
+
 int SimpleLineCmp(suint x, suint y);
 int AddXMLEscapeChars(int dmpFlag);
 
@@ -126,6 +133,20 @@ PgmScopeTree::CollectCrossReferences()
   root->NoteHeight();
   root->NoteDepth();
   root->CollectCrossReferences();
+}
+
+void 
+PgmScopeTree::Dump(ostream& os, int dmpFlags) const
+{
+  if (root) {
+    root->XML_DumpLineSorted(os, dmpFlags);
+  }
+}
+
+void 
+PgmScopeTree::DDump() const
+{
+  Dump();
 }
 
 /*****************************************************************************/
@@ -831,9 +852,11 @@ FileScope::AddToProcMap(ProcScope& p)
 {
   // STL::map is a Unique Associative Container
   bool duplicate = (procMap->count(p.Name()) != 0);
+#ifdef SCOPE_TREE_DISALLOW_DUPLICATE_FUNCTION_NAMES_IN_FILE
   // We cannot tolerate any duplicates
   BriefAssertion(!duplicate && "Duplicate procedure added to file!");
-  if (!duplicate) {
+#endif  
+  if (!duplicate) { 
     (*procMap)[p.Name()] = &p;
   }
   IFTRACE << "FileScope (" << hex << this << dec
@@ -1132,7 +1155,7 @@ ScopeInfo::DDumpSort()
 //***************************************************************************
 
 static const char* XMLelements[ScopeInfo::NUMBER_OF_SCOPES] = {
-  "PGM", "G", "LM", "F", "P", "L", "LN" /*S*/, "REF", "ANY"
+  "PGM", "G", "LM", "F", "P", "L", "S", "REF", "ANY"
 };
 
 const char*
@@ -1166,7 +1189,7 @@ String
 PgmScope::ToXML(int dmpFlag) const
 {
   String self = ScopeInfo::ToXML(dmpFlag)
-    //+ " version=\"4.0\""
+    + " version=\"4.0\""
     + " n" + MakeAttrStr(name, AddXMLEscapeChars(dmpFlag));
   return self;
 }
@@ -1201,7 +1224,7 @@ ProcScope::ToXML(int dmpFlag) const
   String self = ScopeInfo::ToXML(dmpFlag) 
     + " n" + MakeAttrStr(name, AddXMLEscapeChars(dmpFlag));
   if (strcmp(name, linkname) != 0) { // if different, print both
-    //self = self + " ln" + MakeAttrStr(linkname, AddXMLEscapeChars(dmpFlag));
+    self = self + " ln" + MakeAttrStr(linkname, AddXMLEscapeChars(dmpFlag));
   }
   self = self + " " + XMLLineRange(dmpFlag);
   return self;
@@ -1229,33 +1252,56 @@ RefScope::ToXML(int dmpFlag) const
   return self;
 }
 
-void 
+bool 
 ScopeInfo::XML_DumpSelfBefore(ostream &os, int dmpFlag, 
 			      const char *prefix) const
 {
-  os << prefix << "<" << ToXML(dmpFlag) << ">" << endl;
-
   bool attemptToDumpMetrics = true;
-  if ((dmpFlag & PgmScopeTree::DUMP_LEAF_METRICS) 
-      && this->Type() != STMT_RANGE) {
+  if ((dmpFlag & PgmScopeTree::DUMP_LEAF_METRICS) && Type() != STMT_RANGE) {
     attemptToDumpMetrics = false;
   }
   
+  bool dumpMetrics = false;
   if (attemptToDumpMetrics) {
     for (unsigned int i=0; i < NumberOfPerfDataInfos(); i++) {
       if (HasPerfData(i)) {
-	os << prefix << "  <M n=\"" << i << "\" v=\""
-	   << PerfData(i) << "\"/>"
-	   << endl;
+	dumpMetrics = true;
+	break;
       }
     }
   }
+
+  os << prefix << "<" << ToXML(dmpFlag);
+  if (dumpMetrics) {
+    // by definition this element is not empty
+    os << ">";
+    for (unsigned int i=0; i < NumberOfPerfDataInfos(); i++) {
+      if (HasPerfData(i)) {
+	if (!(dmpFlag & PgmScopeTree::COMPRESSED_OUTPUT)) { os << endl; }
+	os << prefix << "  <M n=\"" << i << "\" v=\"" << PerfData(i) << "\"/>";
+      }
+    }
+  }
+  else {
+    if (dmpFlag & PgmScopeTree::XML_EMPTY_TAG) {
+      os << "/>";
+    } 
+    else { 
+      os << ">";
+    }
+  }
+  if (!(dmpFlag & PgmScopeTree::COMPRESSED_OUTPUT)) { os << endl; }
+
+  return (dumpMetrics);
 }
 
 void
 ScopeInfo::XML_DumpSelfAfter(ostream &os, int dmpFlag, const char *prefix) const
 {
-  os << prefix << "</" << String(ScopeTypeToXMLelement(Type())) << ">" << endl;
+  if (!(dmpFlag & PgmScopeTree::XML_EMPTY_TAG)) {
+    os << prefix << "</" << String(ScopeTypeToXMLelement(Type())) << ">";
+    if (!(dmpFlag & PgmScopeTree::COMPRESSED_OUTPUT)) { os << endl; }
+  } 
 }
 
 void
@@ -1263,8 +1309,14 @@ ScopeInfo::XML_Dump(ostream &os, int dmpFlag, const char *pre) const
 {
   String indent = "  ";
   if (dmpFlag & PgmScopeTree::COMPRESSED_OUTPUT) { pre = ""; indent = ""; }  
+  if (IsLeaf()) { 
+    dmpFlag |= PgmScopeTree::XML_EMPTY_TAG;
+  }
 
-  XML_DumpSelfBefore(os, dmpFlag, pre);
+  bool dumpedMetrics = XML_DumpSelfBefore(os, dmpFlag, pre);
+  if (dumpedMetrics) {
+    dmpFlag &= ~PgmScopeTree::XML_EMPTY_TAG; // clear empty flag
+  }
   String prefix = String(pre) + indent;
   for (ScopeInfoChildIterator it(this); it.Current(); it++) {
     it.CurScope()->XML_Dump(os, dmpFlag, prefix);
@@ -1277,8 +1329,14 @@ ScopeInfo::XML_DumpLineSorted(ostream &os, int dmpFlag, const char *pre) const
 {
   String indent = "  ";
   if (dmpFlag & PgmScopeTree::COMPRESSED_OUTPUT) { pre = ""; indent = ""; }
+  if (IsLeaf()) {
+    dmpFlag |= PgmScopeTree::XML_EMPTY_TAG;
+  }
   
-  XML_DumpSelfBefore(os, dmpFlag, pre);
+  bool dumpedMetrics = XML_DumpSelfBefore(os, dmpFlag, pre);
+  if (dumpedMetrics) {
+    dmpFlag &= ~PgmScopeTree::XML_EMPTY_TAG; // clear empty flag
+  }
   String prefix = String(pre) + indent;
   for (ScopeInfoLineSortedChildIterator it(this); it.Current(); it++) {
     it.Current()->XML_DumpLineSorted(os, dmpFlag, prefix);
