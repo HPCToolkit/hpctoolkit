@@ -74,17 +74,20 @@ using namespace std; // For compatibility with non-std C headers
 
 #include "ScopeInfo.hpp"
 #include "PerfMetric.hpp"
-#include "HTMLFile.hpp" // for HTMLEscapeStr
 #include <lib/support/VectorTmpl.hpp>
 #include <lib/support/SrcFile.hpp>
 #include <lib/support/PtrSetIterator.hpp>
 #include <lib/support/Assertion.h>
 #include <lib/support/Trace.hpp>
 #include <lib/support/realpath.h>
+#include <lib/xml/xml.hpp>
 
 //*************************** Forward Declarations **************************
 
 int SimpleLineCmp(suint x, suint y);
+int AddXMLEscapeChars(int dmpFlag);
+
+using namespace xml;
 
 //***************************************************************************
 
@@ -900,22 +903,20 @@ CodeInfo::CodeName() const
   FileScope *f = File();
   String name;
   if (f != NULL) { 
-    name = File()->BaseName();
+    name = File()->BaseName() + ": " ;
   } 
-  if (begLine != UNDEF_LINE || endLine != UNDEF_LINE) {
-    name += ": " + CodeLineName(begLine);
-    if (begLine != endLine) {
-      name += "-" +  CodeLineName(endLine);
-    }
+  name += String(begLine);
+  if (begLine != endLine) {
+    name += "-" +  String(endLine) ;
   }
   return name;
 } 
 
 String
-CodeInfo::CodeLineName(suint line) const
+CodeInfo::LineRange() const
 {
-  if (line == UNDEF_LINE) return String("?");
-  else return String(line);
+  String self = "b=" + String(begLine) + " e=" + String(endLine);
+  return self;
 }
 
 String
@@ -944,14 +945,11 @@ String
 ProcScope::CodeName() const 
 {
   FileScope *f = File();
-  String  cName = name;
+  String cName = name + " (";
   if (f != NULL) { 
-     cName += " (" + f->BaseName();
-     if (begLine != UNDEF_LINE) {
-       cName += ":" + CodeLineName(begLine);
-     }
-     cName += ")";
+    cName += f->BaseName() + ":";
   } 
+  cName += String((long)begLine) + ")";
   return cName;
 } 
 
@@ -959,13 +957,7 @@ String
 LoopScope::CodeName() const 
 {
   String result =  ScopeTypeToName(Type());
-  FileScope *f = File();
-  BriefAssertion (f != NULL);
-  result += " " + String(begLine);
-  if (begLine != endLine) {
-    result += "-" +  String(endLine) ;
-  }
-  result += ":" + f->BaseName();
+  result += " " + CodeInfo::CodeName();
   return result;
 } 
 
@@ -1025,75 +1017,71 @@ ScopeInfo::Types() const
 }
 
 String 
-ScopeInfo::ToString() const
+ScopeInfo::ToString(int dmpFlag) const
 { 
-  String self = String(ScopeTypeToName(Type())) + 
-    " uid=" + String((unsigned long)UniqueId());
+  String self = String(ScopeTypeToName(Type())) 
+    + " uid=" + String((unsigned long)UniqueId());
   return self;
 }
 
 String
-CodeInfo::ToString() const
-{
-  String self = ScopeInfo::ToString() +" lines:" + String(begLine) +
-    "-" + String(endLine);
-  return self;
-}
-
-String
-PgmScope::ToString() const
-{
-  String self = ScopeInfo::ToString() + " name=" + name;
-  return self;
-}
-
-String 
-GroupScope::ToString() const
-{
-  String self = ScopeInfo::ToString() + " name:" +  name;
-  return self;
-}
-
-String 
-LoadModScope::ToString() const
-{
-  String self = ScopeInfo::ToString() + " name:" +  name;
-  return self;
-}
-
-String
-FileScope::ToString() const
+CodeInfo::ToString(int dmpFlag) const
 { 
-  String self = CodeInfo::ToString() + 
-    " name=" +  name;
+  String self = ScopeInfo::ToString(dmpFlag) + " " + LineRange();
   return self;
 }
 
-String 
-ProcScope::ToString() const
+String
+PgmScope::ToString(int dmpFlag) const
 { 
-  String self = CodeInfo::ToString() +" name:" + name;
+  String self = ScopeInfo::ToString(dmpFlag) + " n=" + name;
   return self;
 }
 
 String 
-LoopScope::ToString() const
+GroupScope::ToString(int dmpFlag) const
 {
-  String self;
-  self = CodeInfo::ToString();  
+  String self = ScopeInfo::ToString(dmpFlag) + " n=" + name;
+  return self;
+}
+
+String 
+LoadModScope::ToString(int dmpFlag) const
+{
+  String self = ScopeInfo::ToString(dmpFlag) + " n=" + name;
   return self;
 }
 
 String
-StmtRangeScope::ToString() const
+FileScope::ToString(int dmpFlag) const
+{ 
+  String self = CodeInfo::ToString() + " n=" +  name;
+  return self;
+}
+
+String 
+ProcScope::ToString(int dmpFlag) const
+{ 
+  String self = CodeInfo::ToString() +" n=" + name;
+  return self;
+}
+
+String 
+LoopScope::ToString(int dmpFlag) const
 {
-  String self;
-  self = CodeInfo::ToString();
+  String self = CodeInfo::ToString(dmpFlag);
   return self;
 }
 
 String
-RefScope::ToString() const
+StmtRangeScope::ToString(int dmpFlag) const
+{
+  String self = CodeInfo::ToString(dmpFlag);
+  return self;
+}
+
+String
+RefScope::ToString(int dmpFlag) const
 { 
   String self = CodeInfo::ToString() + " pos:" 
     + String((unsigned long)begPos) + "-" + String((unsigned long)endPos);
@@ -1101,7 +1089,7 @@ RefScope::ToString() const
 }
 
 void 
-ScopeInfo::DumpSelf(std::ostream &os, const char *prefix) const
+ScopeInfo::DumpSelf(std::ostream &os, int dmpFlag, const char *prefix) const
 { 
   os << prefix << ToString() << endl;
   os << prefix << "   " ;
@@ -1118,19 +1106,19 @@ ScopeInfo::DumpSelf(std::ostream &os, const char *prefix) const
 }
 
 void
-ScopeInfo::Dump(std::ostream &os, const char *pre) const 
+ScopeInfo::Dump(std::ostream &os, int dmpFlag, const char *pre) const 
 {
-  DumpSelf(os, pre);
+  DumpSelf(os, dmpFlag, pre);
   String prefix = String(pre) + "   ";
   for (ScopeInfoChildIterator it(this); it.Current(); it++) {
-    it.CurScope()->Dump(os, prefix);
+    it.CurScope()->Dump(os, dmpFlag, prefix);
   } 
 }
 
 
-//**********************************************************************
-// XML output support 
-//**********************************************************************
+//***************************************************************************
+// ScopeInfo, etc: XML output support
+//***************************************************************************
 
 static const char* XMLelements[ScopeInfo::NUMBER_OF_SCOPES] = {
   "PGM", "G", "LM", "F", "P", "L", "LN" /*S*/, "REF", "ANY"
@@ -1143,85 +1131,90 @@ ScopeInfo::ScopeTypeToXMLelement(ScopeType tp)
 }
 
 String 
-ScopeInfo::ToXML() const
-{ 
+ScopeInfo::ToXML(int dmpFlag) const
+{
   String self = String(ScopeTypeToXMLelement(Type()));
   return self;
 }
 
 String
-CodeInfo::ToXML() const
-{
-  String self = ScopeInfo::ToXML() + " " + XMLLineNumbers();
-  return self;
-}
-
-String
-CodeInfo::XMLLineNumbers() const
-{
-  String self = "b=\042" + String(begLine) + "\042 e=\042" +
-    String(endLine) + "\042";
-  return self;
-}
-
-String
-PgmScope::ToXML() const
-{
-  String self = ScopeInfo::ToXML() + " n=\042" + HTMLEscapeStr(name) + "\042";
-  return self;
-}
-
-String 
-GroupScope::ToXML() const
-{
-  String self = ScopeInfo::ToXML() + " n=\042" + HTMLEscapeStr(name) + "\042";
-  return self;
-}
-
-String 
-LoadModScope::ToXML() const
-{
-  String self = ScopeInfo::ToXML() + " n=\042" + HTMLEscapeStr(name) + "\042";
-  return self;
-}
-
-String
-FileScope::ToXML() const
+CodeInfo::ToXML(int dmpFlag) const
 { 
-  String self = ScopeInfo::ToXML() + " n=\042" +  HTMLEscapeStr(name) + "\042";
-  return self;
-}
-
-String 
-ProcScope::ToXML() const
-{ 
-  String self = ScopeInfo::ToXML() + " n=\042" + HTMLEscapeStr(name) 
-    + "\042 " + XMLLineNumbers();
-  return self;
-}
-
-String 
-LoopScope::ToXML() const
-{
-  String self;
-  self = CodeInfo::ToXML();  
+  String self = ScopeInfo::ToXML(dmpFlag) + " " + XMLLineRange(dmpFlag);
   return self;
 }
 
 String
-StmtRangeScope::ToXML() const
+CodeInfo::XMLLineRange(int dmpFlag) const
 {
-  String self;
-  self = CodeInfo::ToXML();
+  String self = "b" + MakeAttrNum(begLine) + " e" + MakeAttrNum(endLine);
   return self;
 }
 
 String
-RefScope::ToXML() const
+PgmScope::ToXML(int dmpFlag) const
+{
+  String self = ScopeInfo::ToXML(dmpFlag)
+    //+ " version=\"4.0\""
+    + " n" + MakeAttrStr(name, AddXMLEscapeChars(dmpFlag));
+  return self;
+}
+
+String 
+GroupScope::ToXML(int dmpFlag) const
+{
+  String self = ScopeInfo::ToXML(dmpFlag) 
+    + " n" + MakeAttrStr(name, AddXMLEscapeChars(dmpFlag));
+  return self;
+}
+
+String 
+LoadModScope::ToXML(int dmpFlag) const
+{
+  String self = ScopeInfo::ToXML(dmpFlag) 
+    + " n" + MakeAttrStr(name, AddXMLEscapeChars(dmpFlag));
+  return self;
+}
+
+String
+FileScope::ToXML(int dmpFlag) const
+{
+  String self = ScopeInfo::ToXML(dmpFlag) 
+    + " n" + MakeAttrStr(name, AddXMLEscapeChars(dmpFlag));
+  return self;
+}
+
+String 
+ProcScope::ToXML(int dmpFlag) const
 { 
-  String self = CodeInfo::ToXML() + " b=\042" 
-    + String((unsigned long)begPos) + "\042 e=\042"
-    + String((unsigned long)endPos) + "\042";
+  String self = ScopeInfo::ToXML(dmpFlag) 
+    + " n" + MakeAttrStr(name, AddXMLEscapeChars(dmpFlag));
+  if (strcmp(name, linkname) != 0) { // if different, print both
+    //self = self + " ln" + MakeAttrStr(linkname, AddXMLEscapeChars(dmpFlag));
+  }
+  self = self + " " + XMLLineRange(dmpFlag);
+  return self;
+}
+
+String 
+LoopScope::ToXML(int dmpFlag) const
+{
+  String self = CodeInfo::ToXML(dmpFlag);
+  return self;
+}
+
+String
+StmtRangeScope::ToXML(int dmpFlag) const
+{
+  String self = CodeInfo::ToXML(dmpFlag);
+  return self;
+}
+
+String
+RefScope::ToXML(int dmpFlag) const
+{ 
+  String self = CodeInfo::ToXML() 
+    + " b" + MakeAttrNum(begPos) + " e" + MakeAttrNum(endPos);
   return self;
 }
 
@@ -1240,8 +1233,8 @@ ScopeInfo::XML_DumpSelf(std::ostream &os, int dmpFlag,
   if (attemptToDumpMetrics) {
     for (unsigned int i=0; i < NumberOfPerfDataInfos(); i++) {
       if (HasPerfData(i)) {
-	os << prefix << "  <M n=\042" << i << "\042 v=\042"
-	   << PerfData(i) << "\042/>"
+	os << prefix << "  <M n=\"" << i << "\" v=\""
+	   << PerfData(i) << "\"/>"
 	   << endl;
       }
     }
@@ -1599,6 +1592,19 @@ SimpleLineCmp(suint x, suint y)
   if (x < y)       { return -1; }
   else if (x == y) { return 0; }
   else             { return 1; }
+}
+
+// Returns a flag indicating whether XML escape characters should be used
+// not modify 'str'
+int 
+AddXMLEscapeChars(int dmpFlag)
+{
+  if (dmpFlag & PgmScopeTree::XML_NO_ESC_CHARS) {
+    return xml::ESC_FALSE;
+  }
+  else {
+    return xml::ESC_TRUE;
+  }
 }
 
 //***************************************************************************

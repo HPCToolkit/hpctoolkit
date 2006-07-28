@@ -98,6 +98,9 @@ class PgmScopeTree : public Unique {
 public:
   enum {
     // User-level bit flags
+    XML_FALSE =	(0 << 0),	/* No XML format */
+    XML_TRUE  =	(1 << 0),	/* XML format */
+
     COMPRESSED_OUTPUT = (1 << 1),  /* Use compressed output format */
 
     DUMP_LEAF_METRICS = (1 << 2),  /* Dump only leaf metrics */
@@ -298,15 +301,18 @@ public:
   // debugging and printing 
   // --------------------------------------------------------
   virtual String Types() const; // instance's base and derived types 
-  virtual String ToString() const;
-  virtual String ToXML() const;
+  virtual String ToString(int dmpFlag = 0) const;
+  virtual String ToXML(int dmpFlag = 0) const;
   
-  void DumpSelf(std::ostream &os = std::cerr, const char *prefix = "") const;
-  void Dump    (std::ostream &os = std::cerr, const char *pre = "") const;
+  void DumpSelf(std::ostream &os = std::cerr, 
+		int dmpFlag = 0, const char* prefix = "") const;
+  void Dump    (std::ostream &os = std::cerr, 
+		int dmpFlag = 0, const char* pre = "") const;
+
   void XML_DumpSelf(std::ostream &os = std::cout, int dmpFlag = 0,
-		    const char *prefix = "") const;
+		    const char* prefix = "") const;
   void XML_Dump(std::ostream &os = std::cout, int dmpFlag = 0,
-		const char *pre = "") const;
+		const char* pre = "") const;
 
   void CSV_DumpSelf(const PgmScope &root, std::ostream &os = std::cout) const;
   virtual void CSV_Dump(const PgmScope &root, std::ostream &os = std::cout, 
@@ -353,8 +359,9 @@ public:
   //                     BegLine() + "-" + EndLine()      or simply 
   //                     BegLine() 
   virtual String CodeName() const;
+  virtual String LineRange() const;
 
-  String CodeLineName(suint line) const;
+  static String CodeLineName(suint line);
 
   virtual ScopeInfo* Clone() { return new CodeInfo(*this); }
 
@@ -363,9 +370,10 @@ public:
   CodeInfo *GetFirst() const { return first; } 
   CodeInfo *GetLast() const { return last; } 
 
-  virtual String ToString() const;
-  virtual String ToXML() const;
-  virtual String XMLLineNumbers() const;
+  virtual String ToString(int dmpFlag = 0) const;
+  virtual String ToXML(int dmpFlag = 0) const;
+
+  virtual String XMLLineRange(int dmpFlag) const;
   
   virtual void CSV_Dump(const PgmScope &root, std::ostream &os = std::cout, 
                const char *file_name = NULL, const char *routine_name = NULL,
@@ -420,8 +428,8 @@ public:
 
   virtual ScopeInfo* Clone() { return new PgmScope(*this); }
 
-  virtual String ToString() const;
-  virtual String ToXML() const;
+  virtual String ToString(int dmpFlag = 0) const;
+  virtual String ToXML(int dmpFlag = 0) const;
 
   void XML_Dump(std::ostream &os = std::cout, int dmpFlag = 0, 
 		const char *pre = "") const;
@@ -465,8 +473,8 @@ public:
 
   virtual ScopeInfo* Clone() { return new GroupScope(*this); }
 
-  virtual String ToString() const;
-  virtual String ToXML() const;
+  virtual String ToString(int dmpFlag = 0) const;
+  virtual String ToXML(int dmpFlag = 0) const;
 
 private: 
   String name;
@@ -489,8 +497,8 @@ public:
 
   virtual ScopeInfo* Clone() { return new LoadModScope(*this); }
 
-  virtual String ToString() const;
-  virtual String ToXML() const;
+  virtual String ToString(int dmpFlag = 0) const;
+  virtual String ToXML(int dmpFlag = 0) const;
 
 protected: 
 private: 
@@ -528,8 +536,8 @@ public:
 
   virtual ScopeInfo* Clone() { return new FileScope(*this); }
 
-  virtual String ToString() const;
-  virtual String ToXML() const;
+  virtual String ToString(int dmpFlag = 0) const;
+  virtual String ToXML(int dmpFlag = 0) const;
 
   virtual void CSV_Dump(const PgmScope &root, std::ostream &os = std::cout, 
                const char *file_name = NULL, const char *routine_name = NULL,
@@ -571,8 +579,8 @@ public:
   // Find StmtRangeScope *or* return a new one if none is found
   StmtRangeScope* FindStmtRange(suint line);  
 
-  virtual String ToString() const;
-  virtual String ToXML() const;
+  virtual String ToString(int dmpFlag = 0) const;
+  virtual String ToXML(int dmpFlag = 0) const;
 
   virtual void CSV_Dump(const PgmScope &root, std::ostream &os = std::cout, 
                const char *file_name = NULL, const char *routine_name = NULL,
@@ -606,8 +614,8 @@ public:
 
   virtual ScopeInfo* Clone() { return new LoopScope(*this); }
 
-  virtual String ToString() const;
-  virtual String ToXML() const;
+  virtual String ToString(int dmpFlag = 0) const;
+  virtual String ToXML(int dmpFlag = 0) const;
 
 };
 
@@ -625,8 +633,8 @@ public:
 
   virtual ScopeInfo* Clone() { return new StmtRangeScope(*this); }
 
-  virtual String ToString() const;  
-  virtual String ToXML() const;  
+  virtual String ToString(int dmpFlag = 0) const;
+  virtual String ToXML(int dmpFlag = 0) const;  
 
 };
 
@@ -648,8 +656,8 @@ public:
 
   virtual ScopeInfo* Clone() { return new RefScope(*this); }
 
-  virtual String ToString() const;
-  virtual String ToXML() const;
+  virtual String ToString(int dmpFlag = 0) const;
+  virtual String ToXML(int dmpFlag = 0) const;
 
 private: 
   void RelocateRef();

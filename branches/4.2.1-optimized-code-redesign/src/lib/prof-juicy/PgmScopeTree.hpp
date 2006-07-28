@@ -173,6 +173,7 @@ public:
   };
 
   static const char* ScopeTypeToName(ScopeType tp);
+  static const char* ScopeTypeToXMLelement(ScopeType tp);
   static ScopeType   IntToScopeType(long i);
 
 protected:
@@ -299,24 +300,28 @@ public:
   // debugging and printing 
   // --------------------------------------------------------
   virtual String Types() const; // instance's base and derived types 
-  virtual String ToString(int dmpFlag = PgmScopeTree::XML_TRUE) const;
+  virtual String ToString(int dmpFlag = 0) const;
+  virtual String ToXML(int dmpFlag = 0) const;
   
-  void DumpSelfBefore(std::ostream &os = std::cerr, 
-		      int dmpFlag = PgmScopeTree::XML_TRUE,
-		      const char* prefix = "") const;
-  void DumpSelfAfter (std::ostream &os = std::cerr, 
-		      int dmpFlag = PgmScopeTree::XML_TRUE,
-		      const char* prefix = "") const;
-  void Dump          (std::ostream &os = std::cerr, 
-		      int dmpFlag = PgmScopeTree::XML_TRUE,
-		      const char* pre = "") const;
-  void DumpLineSorted(std::ostream &os = std::cerr, 
-		      int dmpFlag = PgmScopeTree::XML_TRUE,
-		      const char* pre = "") const;
+  void DumpSelf(std::ostream &os = std::cerr, 
+		int dmpFlag = 0, const char* prefix = "") const;
+  void Dump    (std::ostream &os = std::cerr, 
+		int dmpFlag = 0, const char* pre = "") const;
+
+  void XML_DumpSelfBefore(std::ostream &os = std::cout,
+		int dmpFlag = 0, const char* prefix = "") const;
+  void XML_DumpSelfAfter (std::ostream &os = std::cout,
+		int dmpFlag = 0, const char* prefix = "") const;
+  void XML_Dump(std::ostream &os = std::cout,
+		int dmpFlag = 0, const char* pre = "") const;
+  
+  void XML_DumpLineSorted(std::ostream &os = std::cout,
+		int dmpFlag = 0,
+		const char* pre = "") const;
 
   void DDump();     // stupid SGI dbx...
   void DDumpSort(); // stupid SGI dbx...
-  
+
 protected:
   ScopeType type;
   unsigned int uid;
@@ -351,6 +356,9 @@ public:
   //                     BegLine() + "-" + EndLine()      or simply 
   //                     BegLine() 
   virtual String CodeName() const;
+  virtual String LineRange() const;
+
+  static String CodeLineName(suint line);
 
   virtual ScopeInfo* Clone() { return new CodeInfo(*this); }
 
@@ -359,8 +367,10 @@ public:
   CodeInfo *GetFirst() const { return first; } 
   CodeInfo *GetLast() const { return last; } 
 
-  virtual String ToString(int dmpFlag = PgmScopeTree::XML_TRUE) const;
-  virtual String DumpLineRange(int dmpFlag = PgmScopeTree::XML_TRUE) const;
+  virtual String ToString(int dmpFlag = 0) const;
+  virtual String ToXML(int dmpFlag = 0) const;
+
+  virtual String XMLLineRange(int dmpFlag) const;
   
 protected: 
   void Relocate();
@@ -407,11 +417,11 @@ public:
 
   virtual ScopeInfo* Clone() { return new PgmScope(*this); }
 
-  virtual String ToString(int dmpFlag = PgmScopeTree::XML_TRUE) const;
+  virtual String ToString(int dmpFlag = 0) const;
+  virtual String ToXML(int dmpFlag = 0) const;
 
-  void DumpLineSorted(std::ostream &os = std::cerr, 
-		      int dmpFlag = PgmScopeTree::XML_TRUE,
-		      const char *pre = "") const;
+  void XML_DumpLineSorted(std::ostream &os = std::cout, 
+			  int dmpFlag = 0, const char *pre = "") const;
   
 protected: 
 private: 
@@ -450,7 +460,8 @@ public:
 
   virtual ScopeInfo* Clone() { return new GroupScope(*this); }
 
-  virtual String ToString(int dmpFlag = PgmScopeTree::XML_TRUE) const;
+  virtual String ToString(int dmpFlag = 0) const;
+  virtual String ToXML(int dmpFlag = 0) const;
 
 private: 
   String name;
@@ -473,11 +484,11 @@ public:
 
   virtual ScopeInfo* Clone() { return new LoadModScope(*this); }
 
-  virtual String ToString(int dmpFlag = PgmScopeTree::XML_TRUE) const;
-  
-  void DumpLineSorted(std::ostream &os = std::cerr, 
-		      int dmpFlag = PgmScopeTree::XML_TRUE,
-		      const char *pre = "") const;
+  virtual String ToString(int dmpFlag = 0) const;
+  virtual String ToXML(int dmpFlag = 0) const;
+
+  void XML_DumpLineSorted(std::ostream &os = std::cout, 
+			  int dmpFlag = 0, const char *pre = "") const;
   
 protected: 
 private: 
@@ -515,7 +526,8 @@ public:
 
   virtual ScopeInfo* Clone() { return new FileScope(*this); }
 
-  virtual String ToString(int dmpFlag = PgmScopeTree::XML_TRUE) const;
+  virtual String ToString(int dmpFlag = 0) const;
+  virtual String ToXML(int dmpFlag = 0) const;
 
 private: 
   void AddToProcMap(ProcScope& proc);
@@ -550,7 +562,8 @@ public:
   // Find StmtRangeScope *or* return a new one if none is found
   StmtRangeScope* FindStmtRange(suint line);  
 
-  virtual String ToString(int dmpFlag = PgmScopeTree::XML_TRUE) const;
+  virtual String ToString(int dmpFlag = 0) const;
+  virtual String ToXML(int dmpFlag = 0) const;
 
 private:
   void AddToStmtMap(StmtRangeScope& stmt);
@@ -577,7 +590,8 @@ public:
 
   virtual ScopeInfo* Clone() { return new LoopScope(*this); }
 
-  virtual String ToString(int dmpFlag = PgmScopeTree::XML_TRUE) const;
+  virtual String ToString(int dmpFlag = 0) const;
+  virtual String ToXML(int dmpFlag = 0) const;
 
 };
 
@@ -595,7 +609,8 @@ public:
 
   virtual ScopeInfo* Clone() { return new StmtRangeScope(*this); }
 
-  virtual String ToString(int dmpFlag = PgmScopeTree::XML_TRUE) const;
+  virtual String ToString(int dmpFlag = 0) const;
+  virtual String ToXML(int dmpFlag = 0) const;  
 
 };
 
@@ -617,7 +632,8 @@ public:
 
   virtual ScopeInfo* Clone() { return new RefScope(*this); }
 
-  virtual String ToString(int dmpFlag = PgmScopeTree::XML_TRUE) const;
+  virtual String ToString(int dmpFlag = 0) const;
+  virtual String ToXML(int dmpFlag = 0) const;
 
 private: 
   void RelocateRef();

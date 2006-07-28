@@ -136,9 +136,10 @@ am__objects_1 = hpcview_bin-main.$(OBJEXT) hpcview_bin-Args.$(OBJEXT) \
 	hpcview_bin-StaticFiles.$(OBJEXT)
 am_hpcview_bin_OBJECTS = $(am__objects_1)
 hpcview_bin_OBJECTS = $(am_hpcview_bin_OBJECTS)
-am__DEPENDENCIES_1 = $(top_builddir)/src/lib/support/libHPCsupport.la
-am__DEPENDENCIES_2 = $(am__DEPENDENCIES_1)
-hpcview_bin_DEPENDENCIES = $(am__DEPENDENCIES_2)
+am__DEPENDENCIES_1 = $(top_builddir)/src/lib/xml/libHPCxml.la
+am__DEPENDENCIES_2 = $(top_builddir)/src/lib/support/libHPCsupport.la
+am__DEPENDENCIES_3 = $(am__DEPENDENCIES_1) $(am__DEPENDENCIES_2)
+hpcview_bin_DEPENDENCIES = $(am__DEPENDENCIES_3)
 binSCRIPT_INSTALL = $(INSTALL_SCRIPT)
 SCRIPTS = $(bin_SCRIPTS)
 DEFAULT_INCLUDES = -I. -I$(srcdir)
@@ -375,7 +376,7 @@ MYCXXFLAGS = @HOST_CXXFLAGS@ $(HPC_IFLAGS) @XERCES_IFLAGS@
 MYLDFLAGS = @HOST_CXXFLAGS@
 MYLDADD = \
 	@HOST_LIBTREPOSITORY@ \
-	$(HPC_LIBSUPPORT) \
+	$(HPC_LIBXML) $(HPC_LIBSUPPORT) \
 	@XERCES_LDFLAGS@ \
 	@HOST_HPCVIEW_LDFLAGS@ \
 	-lm

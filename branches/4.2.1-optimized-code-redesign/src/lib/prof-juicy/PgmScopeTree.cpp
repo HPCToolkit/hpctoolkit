@@ -95,7 +95,6 @@ int AddXMLEscapeChars(int dmpFlag);
 
 using namespace xml;
 
-
 //***************************************************************************
 
 //***************************************************************************
@@ -139,7 +138,7 @@ void
 PgmScopeTree::Dump(std::ostream& os, int dmpFlags) const
 {
   if (root) {
-    root->DumpLineSorted(os, dmpFlags);
+    root->XML_DumpLineSorted(os, dmpFlags);
   }
 }
 
@@ -902,6 +901,13 @@ CodeInfo::CodeName() const
 } 
 
 String
+CodeInfo::LineRange() const
+{
+  String self = "b=" + String(begLine) + " e=" + String(endLine);
+  return self;
+}
+
+String
 GroupScope::CodeName() const 
 {
   String result =  ScopeTypeToName(Type());
@@ -927,9 +933,9 @@ String
 ProcScope::CodeName() const 
 {
   FileScope *f = File();
-  String  cName = name + " (";
+  String cName = name + " (";
   if (f != NULL) { 
-     cName += f->BaseName() + ":" ;
+    cName += f->BaseName() + ":";
   } 
   cName += String((long)begLine) + ")";
   return cName;
@@ -1001,87 +1007,64 @@ ScopeInfo::Types() const
 String 
 ScopeInfo::ToString(int dmpFlag) const
 { 
-  String self;
-  self = String(ScopeTypeToName(Type()));
-  if ((dmpFlag & PgmScopeTree::XML_TRUE) == PgmScopeTree::XML_FALSE) {
-    self = self + " uid=" + String((long)UniqueId());
-  }
-  return self;
-}
-
-String
-CodeInfo::DumpLineRange(int dmpFlag) const
-{
-  String self = "b" + MakeAttrNum(begLine) + " e" + MakeAttrNum(endLine);
+  String self = String(ScopeTypeToName(Type())) 
+    + " uid=" + String((unsigned long)UniqueId());
   return self;
 }
 
 String
 CodeInfo::ToString(int dmpFlag) const
 { 
-  String self = ScopeInfo::ToString(dmpFlag) + " "+ DumpLineRange(dmpFlag);
+  String self = ScopeInfo::ToString(dmpFlag) + " " + LineRange();
   return self;
 }
 
 String
 PgmScope::ToString(int dmpFlag) const
 { 
-  String self = ScopeInfo::ToString(dmpFlag) + " version=\"4.0\"";
+  String self = ScopeInfo::ToString(dmpFlag) + " n=" + name;
   return self;
 }
 
 String 
 GroupScope::ToString(int dmpFlag) const
 {
-  String self = ScopeInfo::ToString(dmpFlag) + " n" +
-    MakeAttrStr(name, AddXMLEscapeChars(dmpFlag));
+  String self = ScopeInfo::ToString(dmpFlag) + " n=" + name;
   return self;
 }
 
 String 
 LoadModScope::ToString(int dmpFlag) const
 {
-  String self = ScopeInfo::ToString(dmpFlag) + " n" +
-    MakeAttrStr(name, AddXMLEscapeChars(dmpFlag));
+  String self = ScopeInfo::ToString(dmpFlag) + " n=" + name;
   return self;
 }
 
 String
 FileScope::ToString(int dmpFlag) const
-{
-  String self;
-  if (dmpFlag & PgmScopeTree::XML_TRUE) {
-    self = ScopeInfo::ToString(dmpFlag);
-  } else {
-    self = CodeInfo::ToString(dmpFlag);
-  }
-  self = self + " n" + MakeAttrStr(name, AddXMLEscapeChars(dmpFlag));
+{ 
+  String self = CodeInfo::ToString() + " n=" +  name;
   return self;
 }
 
 String 
 ProcScope::ToString(int dmpFlag) const
 { 
-  String self = ScopeInfo::ToString(dmpFlag) +
-    " n" + MakeAttrStr(name, AddXMLEscapeChars(dmpFlag));
-  if (strcmp(name, linkname) != 0) { // if different, print both
-    self = self + " ln" + MakeAttrStr(linkname, AddXMLEscapeChars(dmpFlag));
-  }
-  self = self + " " + DumpLineRange(dmpFlag);
+  String self = CodeInfo::ToString() +" n=" + name;
   return self;
 }
 
 String 
 LoopScope::ToString(int dmpFlag) const
 {
-  String self = CodeInfo::ToString(dmpFlag); // + " i" + MakeAttr(id);
+  String self = CodeInfo::ToString(dmpFlag);
   return self;
 }
 
 String
 StmtRangeScope::ToString(int dmpFlag) const
 {
-  String self = CodeInfo::ToString(dmpFlag); // + " i" + MakeAttr(id);
+  String self = CodeInfo::ToString(dmpFlag);
   return self;
 }
 
@@ -1094,11 +1077,127 @@ RefScope::ToString(int dmpFlag) const
 }
 
 void 
-ScopeInfo::DumpSelfBefore(ostream &os, int dmpFlag, const char *prefix) const
+ScopeInfo::DumpSelf(std::ostream &os, int dmpFlag, const char *prefix) const
+{ 
+  os << prefix << ToString() << endl;
+  os << prefix << "   " ;
+  os << endl;
+}
+
+void
+ScopeInfo::Dump(std::ostream &os, int dmpFlag, const char *pre) const 
 {
-  os << prefix << "<" << ToString(dmpFlag);
-  if ((dmpFlag & PgmScopeTree::XML_TRUE) 
-      && (dmpFlag & PgmScopeTree::XML_EMPTY_TAG)) { 
+  DumpSelf(os, dmpFlag, pre);
+  String prefix = String(pre) + "   ";
+  for (ScopeInfoChildIterator it(this); it.Current(); it++) {
+    it.CurScope()->Dump(os, dmpFlag, prefix);
+  } 
+}
+
+
+//***************************************************************************
+// ScopeInfo, etc: XML output support
+//***************************************************************************
+
+const char*
+ScopeInfo::ScopeTypeToXMLelement(ScopeType tp)
+{
+   return ScopeTypeToName(tp);
+}
+
+String 
+ScopeInfo::ToXML(int dmpFlag) const
+{
+  String self = String(ScopeTypeToXMLelement(Type()));
+  return self;
+}
+
+String
+CodeInfo::ToXML(int dmpFlag) const
+{ 
+  String self = ScopeInfo::ToXML(dmpFlag) + " " + XMLLineRange(dmpFlag);
+  return self;
+}
+
+String
+CodeInfo::XMLLineRange(int dmpFlag) const
+{
+  String self = "b" + MakeAttrNum(begLine) + " e" + MakeAttrNum(endLine);
+  return self;
+}
+
+String
+PgmScope::ToXML(int dmpFlag) const
+{
+  String self = ScopeInfo::ToXML(dmpFlag)
+    + " version=\"4.0\""
+    + " n" + MakeAttrStr(name, AddXMLEscapeChars(dmpFlag));
+  return self;
+}
+
+String 
+GroupScope::ToXML(int dmpFlag) const
+{
+  String self = ScopeInfo::ToXML(dmpFlag) 
+    + " n" + MakeAttrStr(name, AddXMLEscapeChars(dmpFlag));
+  return self;
+}
+
+String 
+LoadModScope::ToXML(int dmpFlag) const
+{
+  String self = ScopeInfo::ToXML(dmpFlag) 
+    + " n" + MakeAttrStr(name, AddXMLEscapeChars(dmpFlag));
+  return self;
+}
+
+String
+FileScope::ToXML(int dmpFlag) const
+{
+  String self = ScopeInfo::ToXML(dmpFlag) 
+    + " n" + MakeAttrStr(name, AddXMLEscapeChars(dmpFlag));
+  return self;
+}
+
+String 
+ProcScope::ToXML(int dmpFlag) const
+{ 
+  String self = ScopeInfo::ToXML(dmpFlag) 
+    + " n" + MakeAttrStr(name, AddXMLEscapeChars(dmpFlag));
+  if (strcmp(name, linkname) != 0) { // if different, print both
+    self = self + " ln" + MakeAttrStr(linkname, AddXMLEscapeChars(dmpFlag));
+  }
+  self = self + " " + XMLLineRange(dmpFlag);
+  return self;
+}
+
+String 
+LoopScope::ToXML(int dmpFlag) const
+{
+  String self = CodeInfo::ToXML(dmpFlag);
+  return self;
+}
+
+String
+StmtRangeScope::ToXML(int dmpFlag) const
+{
+  String self = CodeInfo::ToXML(dmpFlag);
+  return self;
+}
+
+String
+RefScope::ToXML(int dmpFlag) const
+{ 
+  String self = CodeInfo::ToXML() 
+    + " b" + MakeAttrNum(begPos) + " e" + MakeAttrNum(endPos);
+  return self;
+}
+
+void 
+ScopeInfo::XML_DumpSelfBefore(ostream &os, int dmpFlag, const char *prefix) const
+{
+  os << prefix << "<" << ToXML(dmpFlag);
+  if (dmpFlag & PgmScopeTree::XML_EMPTY_TAG) { 
     os << "/>";
   } else { 
     os << ">";
@@ -1107,30 +1206,29 @@ ScopeInfo::DumpSelfBefore(ostream &os, int dmpFlag, const char *prefix) const
 }
 
 void
-ScopeInfo::DumpSelfAfter(ostream &os, int dmpFlag, const char *prefix) const
+ScopeInfo::XML_DumpSelfAfter(ostream &os, int dmpFlag, const char *prefix) const
 {
-  if ((dmpFlag & PgmScopeTree::XML_TRUE) 
-      && !(dmpFlag & PgmScopeTree::XML_EMPTY_TAG)) {
+  if (!(dmpFlag & PgmScopeTree::XML_EMPTY_TAG)) {
     os << prefix << "</" << String(ScopeTypeToName(Type())) << ">";
     if (!(dmpFlag & PgmScopeTree::COMPRESSED_OUTPUT)) { os << endl; }
   } 
 }
 
 void
-ScopeInfo::Dump(ostream &os, int dmpFlag, const char *pre) const 
+ScopeInfo::XML_Dump(ostream &os, int dmpFlag, const char *pre) const 
 {
   String indent = "   ";
   if (dmpFlag & PgmScopeTree::COMPRESSED_OUTPUT) { pre = ""; indent = ""; }  
-  if ((dmpFlag & PgmScopeTree::XML_TRUE) && IsLeaf()) { 
+  if (IsLeaf()) { 
     dmpFlag |= PgmScopeTree::XML_EMPTY_TAG;
   }
   
-  DumpSelfBefore(os, dmpFlag, pre);
+  XML_DumpSelfBefore(os, dmpFlag, pre);
   String prefix = String(pre) + indent;
   for (ScopeInfoChildIterator it(this); it.Current(); it++) {
-    it.CurScope()->Dump(os, dmpFlag, prefix);
+    it.CurScope()->XML_Dump(os, dmpFlag, prefix);
   }
-  DumpSelfAfter(os, dmpFlag, pre);
+  XML_DumpSelfAfter(os, dmpFlag, pre);
 }
 
 // circumvent pain caused by debuggers that choke on default arguments
@@ -1138,64 +1236,68 @@ ScopeInfo::Dump(ostream &os, int dmpFlag, const char *pre) const
 void
 ScopeInfo::DDump()
 { 
-  Dump(std::cerr, PgmScopeTree::XML_TRUE, "");
+  XML_Dump(std::cerr, 0, "");
 }
 
 void
 ScopeInfo::DDumpSort() 
 { 
-  DumpLineSorted(std::cerr, PgmScopeTree::XML_TRUE, "");
+  XML_DumpLineSorted(std::cerr, 0, "");
 }
 
+
+//***************************************************************************
+// 
+//***************************************************************************
+
 void
-ScopeInfo::DumpLineSorted(ostream &os, int dmpFlag, const char *pre) const 
+ScopeInfo::XML_DumpLineSorted(ostream &os, int dmpFlag, const char *pre) const 
 {
   String indent = "   ";
-  if (dmpFlag & PgmScopeTree::COMPRESSED_OUTPUT) { pre = ""; indent = ""; }  
-  if ((dmpFlag & PgmScopeTree::XML_TRUE) && IsLeaf()) { 
+  if (dmpFlag & PgmScopeTree::COMPRESSED_OUTPUT) { pre = ""; indent = ""; }
+  if (IsLeaf()) {
     dmpFlag |= PgmScopeTree::XML_EMPTY_TAG;
   }
   
-  DumpSelfBefore(os, dmpFlag, pre);
+  XML_DumpSelfBefore(os, dmpFlag, pre);
   String prefix = String(pre) + indent;
   for (ScopeInfoLineSortedChildIterator it(this); it.Current(); it++) {
-    it.Current()->DumpLineSorted(os, dmpFlag, prefix);
-  }   
-  DumpSelfAfter(os, dmpFlag, pre);
+    it.Current()->XML_DumpLineSorted(os, dmpFlag, prefix);
+  }
+  XML_DumpSelfAfter(os, dmpFlag, pre);
 }
 
 void
-PgmScope::DumpLineSorted(ostream &os, int dmpFlag, const char *pre) const
+PgmScope::XML_DumpLineSorted(ostream &os, int dmpFlag, const char *pre) const
 {
   // N.B.: Typically LoadModScope are children
   String indent = "   ";
-  if (dmpFlag & PgmScopeTree::COMPRESSED_OUTPUT) { pre = ""; indent = ""; }  
+  if (dmpFlag & PgmScopeTree::COMPRESSED_OUTPUT) { pre = ""; indent = ""; }
 
-  ScopeInfo::DumpSelfBefore(os, dmpFlag, pre);
-  String prefix = String(pre) + indent;  
+  ScopeInfo::XML_DumpSelfBefore(os, dmpFlag, pre);
+  String prefix = String(pre) + indent;
   for (ScopeInfoNameSortedChildIterator it(this); it.Current(); it++) { 
     ScopeInfo* scope = it.Current();
-    scope->DumpLineSorted(os, dmpFlag, prefix);
+    scope->XML_DumpLineSorted(os, dmpFlag, prefix);
   }
-  ScopeInfo::DumpSelfAfter(os, dmpFlag, pre);
+  ScopeInfo::XML_DumpSelfAfter(os, dmpFlag, pre);
 }
 
 void
-LoadModScope::DumpLineSorted(ostream &os, int dmpFlag, const char *pre) const
+LoadModScope::XML_DumpLineSorted(ostream &os, int dmpFlag, const char *pre) const
 {
   // N.B.: Typically FileScopes are children
   String indent = "   ";
-  if (dmpFlag & PgmScopeTree::COMPRESSED_OUTPUT) { pre = ""; indent = ""; }  
+  if (dmpFlag & PgmScopeTree::COMPRESSED_OUTPUT) { pre = ""; indent = ""; }
 
-  ScopeInfo::DumpSelfBefore(os, dmpFlag, pre);
-  String prefix = String(pre) + indent;  
-  for (ScopeInfoNameSortedChildIterator it(this); it.Current(); it++) { 
+  ScopeInfo::XML_DumpSelfBefore(os, dmpFlag, pre);
+  String prefix = String(pre) + indent;
+  for (ScopeInfoNameSortedChildIterator it(this); it.Current(); it++) {
     ScopeInfo* scope = it.Current();
-    scope->DumpLineSorted(os, dmpFlag, prefix);
+    scope->XML_DumpLineSorted(os, dmpFlag, prefix);
   }
-  ScopeInfo::DumpSelfAfter(os, dmpFlag, pre);
+  ScopeInfo::XML_DumpSelfAfter(os, dmpFlag, pre);
 }
-
 
 //***************************************************************************
 // CodeInfo specific methods 
@@ -1293,11 +1395,20 @@ CodeInfo::CodeInfoWithLine(suint ln) const
        ci = dynamic_cast<CodeInfo*>(it.Current());
        BriefAssertion(ci);
        if  (ci->ContainsLine(ln)) {
-	 return ci->CodeInfoWithLine(ln);
+         if (ci->Type() == STMT_RANGE) {  
+	   return ci; // never look inside LINE_SCOPEs 
+         } 
+
+	 // desired line might be in inner scope; however, it might be
+	 // elsewhere because optimization left procedure with 
+	 // non-contiguous line ranges in scopes at various levels.
+	 CodeInfo *inner = ci->CodeInfoWithLine(ln);
+	 if (inner) return inner;
        } 
      }
    }
-   return (CodeInfo*) this; // base case
+   if (ci->Type() == PROC) return (CodeInfo*) this;
+   else return 0;
 }
 
 int 
@@ -1350,11 +1461,11 @@ SimpleLineCmp(suint x, suint y)
 int 
 AddXMLEscapeChars(int dmpFlag)
 {
-  if ((dmpFlag & PgmScopeTree::XML_TRUE) &&
-      !(dmpFlag & PgmScopeTree::XML_NO_ESC_CHARS)) {
-    return xml::ESC_TRUE;
-  } else {
+  if (dmpFlag & PgmScopeTree::XML_NO_ESC_CHARS) {
     return xml::ESC_FALSE;
+  }
+  else {
+    return xml::ESC_TRUE;
   }
 }
 

@@ -194,7 +194,6 @@ public:
   void DumpAndReset(std::ostream &os = std::cerr);
 
 private:
-  static int CompareByLine(const void *a, const void *b);
   WordSet scopes;  // the scopes we want to have sorted
   WordSetSortedIterator *ptrSetIt;  
 };
@@ -215,7 +214,6 @@ public:
   CodeInfo* CurCode()  const { return dynamic_cast<CodeInfo*>(Current()); }
 
 private:
-  static int CompareByLine(const void *a, const void *b);
   WordSet scopes;  // the scopes we want to have sorted
   WordSetSortedIterator* ptrSetIt;
 };
@@ -287,7 +285,6 @@ public:
   void DumpAndReset(std::ostream &os = std::cerr);
 
 private:
-  static int CompareByLine(const void *a, const void *b);
   WordSet scopes;  // the scopes we want to have sorted
   WordSetSortedIterator *ptrSetIt;  
 };

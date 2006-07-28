@@ -65,6 +65,7 @@ using std::endl;
 
 //*************************** Forward Declarations **************************
 
+static int CompareByLine(const void *a, const void *b);
 
 //***************************************************************************
 
@@ -115,12 +116,13 @@ const ScopeInfoFilter ScopeTypeFilter[ScopeInfo::NUMBER_OF_SCOPES] = {
 //    check if this node has any profile data associated with it
 //***************************************************************************
 
-int HasPerfData( const ScopeInfo *si, int nm )
+int 
+HasPerfData( const ScopeInfo *si, int nm )
 {
-   for ( int i = 0 ; i<nm ; i++ )
-      if (si->HasPerfData(i))
-         return 1;
-   return 0;
+  for ( int i = 0 ; i<nm ; i++ )
+    if (si->HasPerfData(i))
+      return 1;
+  return 0;
 }
 
 
@@ -130,38 +132,35 @@ int HasPerfData( const ScopeInfo *si, int nm )
 //    data associated
 //***************************************************************************
 
-void UpdateScopeTree( const ScopeInfo *node, int noMetrics )
+void 
+UpdateScopeTree( const ScopeInfo *node, int noMetrics )
 {
-   ScopeInfo *si;
-   std::vector<ScopeInfo*> toBeRemoved;
-
-   ScopeInfoChildIterator it( node, NULL );
-   for ( ; it.Current() ; it++ )
-   {
-      si = dynamic_cast<ScopeInfo*>(it.Current());
-      if ( HasPerfData( si, noMetrics ) )
-         UpdateScopeTree( si, noMetrics );
-      else
-         toBeRemoved.push_back(si);
-   }
-   for ( unsigned int i=0 ; i<toBeRemoved.size() ; i++ )
-   {
-      si = toBeRemoved[i];
-      si->Unlink();
-      switch( si->Type() )
+  ScopeInfo *si;
+  std::vector<ScopeInfo*> toBeRemoved;
+  
+  ScopeInfoChildIterator it( node, NULL );
+  for ( ; it.Current() ; it++ ) {
+    si = dynamic_cast<ScopeInfo*>(it.Current());
+    if ( HasPerfData( si, noMetrics ) )
+      UpdateScopeTree( si, noMetrics );
+    else
+      toBeRemoved.push_back(si);
+  }
+  for ( unsigned int i=0 ; i<toBeRemoved.size() ; i++ ) {
+    si = toBeRemoved[i];
+    si->Unlink();
+    switch( si->Type() )
       {
-        case ScopeInfo::PGM: delete dynamic_cast<PgmScope*>(si); break;
-        case ScopeInfo::GROUP: delete dynamic_cast<GroupScope*>(si); break;
-        case ScopeInfo::LM: delete dynamic_cast<LoadModScope*>(si); break;
-        case ScopeInfo::FILE: delete dynamic_cast<FileScope*>(si); break;
-        case ScopeInfo::PROC: delete dynamic_cast<ProcScope*>(si); break;
-        case ScopeInfo::LOOP: delete dynamic_cast<LoopScope*>(si); break;
-        case ScopeInfo::STMT_RANGE: delete dynamic_cast<StmtRangeScope*>(si); break;
-	  // FIXME: deprecated
-        //case ScopeInfo::LINE: delete dynamic_cast<LineScope*>(si); break;
-        default: delete si; break;
+      case ScopeInfo::PGM: delete dynamic_cast<PgmScope*>(si); break;
+      case ScopeInfo::GROUP: delete dynamic_cast<GroupScope*>(si); break;
+      case ScopeInfo::LM: delete dynamic_cast<LoadModScope*>(si); break;
+      case ScopeInfo::FILE: delete dynamic_cast<FileScope*>(si); break;
+      case ScopeInfo::PROC: delete dynamic_cast<ProcScope*>(si); break;
+      case ScopeInfo::LOOP: delete dynamic_cast<LoopScope*>(si); break;
+      case ScopeInfo::STMT_RANGE: delete dynamic_cast<StmtRangeScope*>(si); break;
+      default: delete si; break;
       }
-   }
+  }
 }
 
 
@@ -282,8 +281,8 @@ ScopeInfoLineSortedIterator::Reset()
   ptrSetIt->Reset();
 }
 
-int 
-ScopeInfoLineSortedIterator::CompareByLine(const void* a, const void *b) 
+static int 
+CompareByLine(const void* a, const void *b) 
 {
   CodeInfo* x = (*(CodeInfo**)a);
   CodeInfo* y = (*(CodeInfo**)b);
@@ -340,16 +339,6 @@ ScopeInfoLineSortedChildIterator::DumpAndReset(ostream &os)
     (*this)++;
   }
   Reset();
-}
-
-int 
-ScopeInfoLineSortedChildIterator::CompareByLine(const void* a, const void *b)
-{
-  CodeInfo* x = *(CodeInfo**) a;
-  CodeInfo* y = *(CodeInfo**) b;
-  BriefAssertion (x != NULL);
-  BriefAssertion (y != NULL);
-  return x->BegLine() - y->BegLine();
 }
 
 
@@ -417,17 +406,6 @@ ScopeInfoLineSortedIteratorForLargeScopes::Reset()
 {
   ptrSetIt->Reset();
 }
-
-int 
-ScopeInfoLineSortedIteratorForLargeScopes::CompareByLine(const void* a, const void *b) 
-{
-  CodeInfoLine* x = *(CodeInfoLine**) a;
-  CodeInfoLine* y = *(CodeInfoLine**) b;
-  BriefAssertion (x != NULL);
-  BriefAssertion (y != NULL);
-  return x->GetLine() -  y->GetLine();
-}
-
 
 //***************************************************************************
 // ScopeInfoNameSortedChildIterator
