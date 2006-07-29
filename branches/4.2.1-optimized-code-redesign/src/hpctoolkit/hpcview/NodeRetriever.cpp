@@ -56,7 +56,9 @@
 
 #include "Args.hpp"
 #include "NodeRetriever.hpp"
-#include "ScopeInfo.hpp"
+
+#include <lib/prof-juicy/PgmScopeTree.hpp>
+
 #include <lib/support/String.hpp>
 #include <lib/support/Assertion.h>
 #include <lib/support/pathfind.h>

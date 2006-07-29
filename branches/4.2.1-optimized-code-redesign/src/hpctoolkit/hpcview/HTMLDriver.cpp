@@ -47,11 +47,12 @@
 #include "Driver.hpp"
 #include "HTMLDriver.hpp"
 #include "StaticFiles.hpp"
-#include "ScopeInfo.hpp"
 #include "HTMLFile.hpp"
 #include "HTMLTable.hpp"
 #include "HTMLScopes.hpp"
 #include "HTMLSrcFiles.hpp"
+
+#include <lib/prof-juicy/PgmScopeTree.hpp>
 
 #include <lib/support/String.hpp>
 #include <lib/support/IntVector.hpp>

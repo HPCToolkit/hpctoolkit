@@ -64,8 +64,9 @@ using XERCES_CPP_NAMESPACE::DOMNamedNodeMap;
 #include "Driver.hpp"
 #include "MathMLExpr.hpp"
 #include "DerivedPerfMetrics.hpp"
-#include "PerfMetric.hpp"
-#include "ScopeInfo.hpp"
+
+#include <lib/prof-juicy/PgmScopeTree.hpp>
+#include <lib/prof-juicy/PerfMetric.hpp>
 
 #include <lib/support/Trace.hpp>
 

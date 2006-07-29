@@ -74,8 +74,9 @@ using XERCES_CPP_NAMESPACE::XMLException;
 
 // ScopeInfo tree related includes 
 #include "Driver.hpp"
-#include "ScopeInfo.hpp"
 #include "HTMLDriver.hpp"
+
+#include <lib/prof-juicy/PgmScopeTree.hpp>
 
 #include <lib/support/String.hpp>
 #include <lib/support/Assertion.h>

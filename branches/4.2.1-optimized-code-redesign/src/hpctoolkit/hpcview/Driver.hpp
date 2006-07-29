@@ -49,8 +49,8 @@
 #include <include/general.h>
 
 #include "PGMDocHandler.hpp"
-#include "ScopeInfo.hpp"
 
+#include <lib/prof-juicy/PgmScopeTree.hpp>
 #include <lib/support/Unique.hpp>
 #include <lib/support/String.hpp>
 

@@ -73,6 +73,7 @@ using namespace std; // For compatibility with non-std C headers
 #include <include/general.h>
 
 #include "PgmScopeTree.hpp"
+#include "PerfMetric.hpp"
 #include <lib/support/VectorTmpl.hpp>
 #include <lib/support/SrcFile.hpp>
 #include <lib/support/PtrSetIterator.hpp>
@@ -181,6 +182,7 @@ ScopeInfo::ScopeInfo(ScopeType t, ScopeInfo* mom)
   uid = uniqueId++;
   height = 0;
   depth = 0;
+  perfData = new DoubleVector();
 }
 
 ScopeInfo& 
@@ -192,6 +194,7 @@ ScopeInfo::operator=(const ScopeInfo& other)
     uid      = other.uid;
     height   = 0;
     depth    = 0;
+    perfData = other.perfData;
     
     ZeroLinks(); // NonUniformDegreeTreeNode
   }
@@ -779,6 +782,38 @@ ScopeInfo::IsMergable(ScopeInfo* toNode, ScopeInfo* fromNode)
 
 
 //***************************************************************************
+// Performance Data
+//***************************************************************************
+
+void 
+ScopeInfo::SetPerfData(int i, double d) 
+{
+  BriefAssertion(IsPerfDataIndex(i));
+  if (IsNaN((*perfData)[i])) {
+    (*perfData)[i] = d;
+  } else {
+    (*perfData)[i] += d;
+  }
+}
+
+bool 
+ScopeInfo::HasPerfData(int i) const
+{
+  BriefAssertion(IsPerfDataIndex(i));
+  ScopeInfo *si = (ScopeInfo*) this;
+  return ! IsNaN((*si->perfData)[i]);
+}
+
+double 
+ScopeInfo::PerfData(int i) const
+{
+  //BriefAssertion(HasPerfData(i));
+  ScopeInfo *si = (ScopeInfo*) this;
+  return (*si->perfData)[i];
+}
+
+
+//***************************************************************************
 // ScopeInfo, etc: Names, Name Maps, and Retrieval by Name
 //***************************************************************************
 
@@ -1081,6 +1116,15 @@ ScopeInfo::DumpSelf(ostream &os, int dmpFlag, const char *prefix) const
 { 
   os << prefix << ToString() << endl;
   os << prefix << "  " ;
+  for (unsigned int i = 0; i < NumberOfPerfDataInfos(); i++) {
+    os << IndexToPerfDataInfo(i).Name() << "=" ;
+    if (HasPerfData(i)) {
+      os << PerfData(i);
+    } else {
+      os << "UNDEF";
+    }
+    os << "; ";
+  }
   os << endl;
 }
 
@@ -1219,12 +1263,24 @@ ScopeInfo::XML_DumpSelfBefore(ostream &os, int dmpFlag,
   
   bool dumpMetrics = false;
   if (attemptToDumpMetrics) {
+    for (unsigned int i=0; i < NumberOfPerfDataInfos(); i++) {
+      if (HasPerfData(i)) {
+	dumpMetrics = true;
+	break;
+      }
+    }
   }
 
   os << prefix << "<" << ToXML(dmpFlag);
   if (dumpMetrics) {
     // by definition this element is not empty
     os << ">";
+    for (unsigned int i=0; i < NumberOfPerfDataInfos(); i++) {
+      if (HasPerfData(i)) {
+	if (!(dmpFlag & PgmScopeTree::COMPRESSED_OUTPUT)) { os << endl; }
+	os << prefix << "  <M n=\"" << i << "\" v=\"" << PerfData(i) << "\"/>";
+      }
+    }
   }
   else {
     if (dmpFlag & PgmScopeTree::XML_EMPTY_TAG) {
@@ -1327,6 +1383,18 @@ LoadModScope::XML_DumpLineSorted(ostream &os, int dmpFlag, const char *pre) cons
 void 
 ScopeInfo::CSV_DumpSelf(const PgmScope &root, ostream &os) const
 { 
+  char temp[32];
+  for (unsigned int i=0; i < NumberOfPerfDataInfos(); i++) {
+    double val = (HasPerfData(i) ? PerfData(i) : 0);
+    os << "," << val;
+    const PerfMetric& metric = IndexToPerfDataInfo(i);
+    if (metric.Percent()) {
+      double percVal = val / root.PerfData(i) * 100;
+      sprintf(temp, "%5.2lf", percVal);
+      os << "," << temp;
+    }
+  }
+  os << endl;
 }
 
 
@@ -1404,6 +1472,19 @@ PgmScope::CSV_TreeDump(ostream &os) const
 void 
 ScopeInfo::TSV_DumpSelf(const PgmScope &root, ostream &os) const
 { 
+  char temp[32];
+  for (unsigned int i=0; i < NumberOfPerfDataInfos(); i++) {
+    double val = (HasPerfData(i) ? PerfData(i) : 0);
+    os << "\t" << val;
+    /*const PerfMetric& metric = IndexToPerfDataInfo(i);
+    if (metric.Percent()) {
+      double percVal = val / root.PerfData(i) * 100;
+      sprintf(temp, "%5.2lf", percVal);
+      os << "\t" << temp;
+    }
+    */
+  }
+  os << endl;
 }
 
 

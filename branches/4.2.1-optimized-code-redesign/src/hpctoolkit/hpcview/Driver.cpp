@@ -44,8 +44,9 @@
 #include "Driver.hpp" 
 #include "HPCViewSAX2.hpp"
 #include "HPCViewXMLErrHandler.hpp"
-#include "ScopeInfo.hpp"
 #include "NodeRetriever.hpp"
+
+#include <lib/prof-juicy/PgmScopeTree.hpp>
 
 #include <lib/support/Assertion.h>
 #include <lib/support/pathfind.h>

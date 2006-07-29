@@ -60,6 +60,7 @@ using std::endl;
 
 #include "PgmScopeTree.hpp"
 #include "PgmScopeTreeIterator.hpp"
+#include "PerfMetric.hpp"
 #include <lib/support/Assertion.h>
 
 //*************************** Forward Declarations **************************
@@ -118,6 +119,9 @@ const ScopeInfoFilter ScopeTypeFilter[ScopeInfo::NUMBER_OF_SCOPES] = {
 int 
 HasPerfData( const ScopeInfo *si, int nm )
 {
+  for ( int i = 0 ; i<nm ; i++ )
+    if (si->HasPerfData(i))
+      return 1;
   return 0;
 }
 
@@ -557,6 +561,22 @@ int CompareByPerfInfo_MetricIndex = -1;
 
 int CompareByPerfInfo(const void* a, const void *b)
 {
+  ScopeInfo* x = *(ScopeInfo**) a;
+  ScopeInfo* y = *(ScopeInfo**) b;
+  BriefAssertion(x != NULL);
+  BriefAssertion(y != NULL);
+  double vx = 0.0;
+  if (x->HasPerfData(CompareByPerfInfo_MetricIndex)) {
+    vx = x->PerfData(CompareByPerfInfo_MetricIndex);
+  }
+  double vy = 0.0;
+  if (y->HasPerfData(CompareByPerfInfo_MetricIndex)) {
+    vy = y->PerfData(CompareByPerfInfo_MetricIndex);
+  }
+  double difference = vy-vx;
+  
+  if ( difference < 0) return -1;	
+  else if ( difference > 0) return 1;	
   return 0;
 }
 

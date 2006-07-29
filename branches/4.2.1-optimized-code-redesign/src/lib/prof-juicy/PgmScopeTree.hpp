@@ -60,6 +60,8 @@
 
 #include <include/general.h>
 
+#include "PerfMetric.hpp"
+
 #include <lib/support/Unique.hpp>
 #include <lib/support/NonUniformDegreeTree.hpp>
 #include <lib/support/String.hpp>
@@ -203,6 +205,10 @@ public:
   int ScopeHeight() const { return height; }
   int ScopeDepth() const { return depth; }
 
+  bool   HasPerfData(int i) const;     // checks whether PerfData(i) is set
+  double PerfData(int i) const;        // returns NaN iff !HasPerfData(i) 
+  void   SetPerfData(int i, double d); // asserts out iff HasPerfData(i) 
+  
   // --------------------------------------------------------
   // Parent
   // --------------------------------------------------------
@@ -342,6 +348,7 @@ protected:
   unsigned int uid;
   int height; // cross reference information
   int depth;
+  DoubleVector* perfData;
 };
 
 // --------------------------------------------------------------------------

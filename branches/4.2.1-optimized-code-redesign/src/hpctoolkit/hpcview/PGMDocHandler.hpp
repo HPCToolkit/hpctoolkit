@@ -57,9 +57,10 @@
 // #include "XMLAdapter.h"
 
 #include "HPCViewSAX2.hpp"
-#include "ScopeInfo.hpp"
 
 #include <map>
+
+#include <lib/prof-juicy/PgmScopeTree.hpp>
 
 #include <lib/support/String.hpp>
 #include <lib/support/PointerStack.hpp>

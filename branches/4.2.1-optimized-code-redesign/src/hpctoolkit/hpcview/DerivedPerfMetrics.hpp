@@ -43,8 +43,9 @@
 
 #include <include/general.h> 
 
-#include "PerfMetric.hpp"
 #include "Driver.hpp"
+
+#include <lib/prof-juicy/PerfMetric.hpp>
 
 #include <lib/support/String.hpp>
 

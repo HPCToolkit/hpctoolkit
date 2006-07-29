@@ -38,8 +38,9 @@
 
 //************************* User Include Files *******************************
 
-#include "ScopeInfo.hpp"
 #include "PerfMetric.hpp"
+#include "PgmScopeTree.hpp"
+
 #include <lib/support/Assertion.h>
 #include <lib/support/Trace.hpp>
 

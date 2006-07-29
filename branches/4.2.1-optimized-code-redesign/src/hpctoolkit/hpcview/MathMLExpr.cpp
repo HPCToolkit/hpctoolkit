@@ -50,7 +50,9 @@ using std::atoi;
 
 // #include "XMLAdapter.h"
 #include "MathMLExpr.hpp"
-#include "PerfMetric.hpp"
+
+#include <lib/prof-juicy/PerfMetric.hpp>
+
 #include <lib/support/String.hpp>
 #include <lib/support/Nan.h>
 #include <lib/support/Trace.hpp>

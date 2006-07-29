@@ -42,10 +42,11 @@
 
 #include "HPCViewSAX2.hpp"
 #include "DerivedPerfMetrics.hpp"
-#include "ScopeInfo.hpp"
 #include "NodeRetriever.hpp"
 #include "PROFILEDocHandler.hpp"
 #include "MathMLExpr.hpp"
+
+#include <lib/prof-juicy/PgmScopeTree.hpp>
 
 #include <lib/support/pathfind.h>
 #include <lib/support/Trace.hpp>

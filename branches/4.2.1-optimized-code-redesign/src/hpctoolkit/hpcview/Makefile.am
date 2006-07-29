@@ -81,9 +81,6 @@ MYSOURCES = \
 	PGMDocHandler.hpp PGMDocHandler.cpp \
 	PROFILEDocHandler.hpp PROFILEDocHandler.cpp \
 	PerfIndex.hpp \
-	PerfMetric.hpp PerfMetric.cpp \
-	ScopeInfo.hpp ScopeInfo.cpp \
-	ScopeInfoIterator.hpp ScopeInfoIterator.cpp \
 	StaticFiles.hpp StaticFiles.cpp
 
 # Deprecated: XMLAdapter.hpp XMLAdapter.cpp
@@ -95,7 +92,7 @@ MYLDFLAGS = @HOST_CXXFLAGS@
 
 MYLDADD = \
 	@HOST_LIBTREPOSITORY@ \
-	$(HPC_LIBXML) $(HPC_LIBSUPPORT) \
+	$(HPC_LIBPROFJUICY) $(HPC_LIBXML) $(HPC_LIBSUPPORT) \
 	@XERCES_LDFLAGS@ \
 	@HOST_HPCVIEW_LDFLAGS@ \
 	-lm

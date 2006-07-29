@@ -57,7 +57,9 @@ using XERCES_CPP_NAMESPACE::DOMNode;
 
 // #include "XMLAdapter.h"
 #include "EvalNode.hpp"
-#include "ScopeInfo.hpp"
+
+#include <lib/prof-juicy/PgmScopeTree.hpp>
+
 #include <lib/support/String.hpp>
 
 

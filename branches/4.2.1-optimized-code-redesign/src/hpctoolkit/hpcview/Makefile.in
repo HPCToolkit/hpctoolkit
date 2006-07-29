@@ -130,16 +130,16 @@ am__objects_1 = hpcview_bin-main.$(OBJEXT) hpcview_bin-Args.$(OBJEXT) \
 	hpcview_bin-NodeRetriever.$(OBJEXT) \
 	hpcview_bin-PGMDocHandler.$(OBJEXT) \
 	hpcview_bin-PROFILEDocHandler.$(OBJEXT) \
-	hpcview_bin-PerfMetric.$(OBJEXT) \
-	hpcview_bin-ScopeInfo.$(OBJEXT) \
-	hpcview_bin-ScopeInfoIterator.$(OBJEXT) \
 	hpcview_bin-StaticFiles.$(OBJEXT)
 am_hpcview_bin_OBJECTS = $(am__objects_1)
 hpcview_bin_OBJECTS = $(am_hpcview_bin_OBJECTS)
-am__DEPENDENCIES_1 = $(top_builddir)/src/lib/xml/libHPCxml.la
-am__DEPENDENCIES_2 = $(top_builddir)/src/lib/support/libHPCsupport.la
-am__DEPENDENCIES_3 = $(am__DEPENDENCIES_1) $(am__DEPENDENCIES_2)
-hpcview_bin_DEPENDENCIES = $(am__DEPENDENCIES_3)
+am__DEPENDENCIES_1 =  \
+	$(top_builddir)/src/lib/prof-juicy/libHPCprof-juicy.la
+am__DEPENDENCIES_2 = $(top_builddir)/src/lib/xml/libHPCxml.la
+am__DEPENDENCIES_3 = $(top_builddir)/src/lib/support/libHPCsupport.la
+am__DEPENDENCIES_4 = $(am__DEPENDENCIES_1) $(am__DEPENDENCIES_2) \
+	$(am__DEPENDENCIES_3)
+hpcview_bin_DEPENDENCIES = $(am__DEPENDENCIES_4)
 binSCRIPT_INSTALL = $(INSTALL_SCRIPT)
 SCRIPTS = $(bin_SCRIPTS)
 DEFAULT_INCLUDES = -I. -I$(srcdir)
@@ -364,9 +364,6 @@ MYSOURCES = \
 	PGMDocHandler.hpp PGMDocHandler.cpp \
 	PROFILEDocHandler.hpp PROFILEDocHandler.cpp \
 	PerfIndex.hpp \
-	PerfMetric.hpp PerfMetric.cpp \
-	ScopeInfo.hpp ScopeInfo.cpp \
-	ScopeInfoIterator.hpp ScopeInfoIterator.cpp \
 	StaticFiles.hpp StaticFiles.cpp
 
 
@@ -376,7 +373,7 @@ MYCXXFLAGS = @HOST_CXXFLAGS@ $(HPC_IFLAGS) @XERCES_IFLAGS@
 MYLDFLAGS = @HOST_CXXFLAGS@
 MYLDADD = \
 	@HOST_LIBTREPOSITORY@ \
-	$(HPC_LIBXML) $(HPC_LIBSUPPORT) \
+	$(HPC_LIBPROFJUICY) $(HPC_LIBXML) $(HPC_LIBSUPPORT) \
 	@XERCES_LDFLAGS@ \
 	@HOST_HPCVIEW_LDFLAGS@ \
 	-lm
@@ -505,9 +502,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/hpcview_bin-NodeRetriever.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/hpcview_bin-PGMDocHandler.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/hpcview_bin-PROFILEDocHandler.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/hpcview_bin-PerfMetric.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/hpcview_bin-ScopeInfo.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/hpcview_bin-ScopeInfoIterator.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/hpcview_bin-StaticFiles.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/hpcview_bin-main.Po@am__quote@
 
@@ -769,48 +763,6 @@ hpcview_bin-PROFILEDocHandler.obj: PROFILEDocHandler.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='PROFILEDocHandler.cpp' object='hpcview_bin-PROFILEDocHandler.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(hpcview_bin_CXXFLAGS) $(CXXFLAGS) -c -o hpcview_bin-PROFILEDocHandler.obj `if test -f 'PROFILEDocHandler.cpp'; then $(CYGPATH_W) 'PROFILEDocHandler.cpp'; else $(CYGPATH_W) '$(srcdir)/PROFILEDocHandler.cpp'; fi`
-
-hpcview_bin-PerfMetric.o: PerfMetric.cpp
-@am__fastdepCXX_TRUE@	if $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(hpcview_bin_CXXFLAGS) $(CXXFLAGS) -MT hpcview_bin-PerfMetric.o -MD -MP -MF "$(DEPDIR)/hpcview_bin-PerfMetric.Tpo" -c -o hpcview_bin-PerfMetric.o `test -f 'PerfMetric.cpp' || echo '$(srcdir)/'`PerfMetric.cpp; \
-@am__fastdepCXX_TRUE@	then mv -f "$(DEPDIR)/hpcview_bin-PerfMetric.Tpo" "$(DEPDIR)/hpcview_bin-PerfMetric.Po"; else rm -f "$(DEPDIR)/hpcview_bin-PerfMetric.Tpo"; exit 1; fi
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='PerfMetric.cpp' object='hpcview_bin-PerfMetric.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(hpcview_bin_CXXFLAGS) $(CXXFLAGS) -c -o hpcview_bin-PerfMetric.o `test -f 'PerfMetric.cpp' || echo '$(srcdir)/'`PerfMetric.cpp
-
-hpcview_bin-PerfMetric.obj: PerfMetric.cpp
-@am__fastdepCXX_TRUE@	if $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(hpcview_bin_CXXFLAGS) $(CXXFLAGS) -MT hpcview_bin-PerfMetric.obj -MD -MP -MF "$(DEPDIR)/hpcview_bin-PerfMetric.Tpo" -c -o hpcview_bin-PerfMetric.obj `if test -f 'PerfMetric.cpp'; then $(CYGPATH_W) 'PerfMetric.cpp'; else $(CYGPATH_W) '$(srcdir)/PerfMetric.cpp'; fi`; \
-@am__fastdepCXX_TRUE@	then mv -f "$(DEPDIR)/hpcview_bin-PerfMetric.Tpo" "$(DEPDIR)/hpcview_bin-PerfMetric.Po"; else rm -f "$(DEPDIR)/hpcview_bin-PerfMetric.Tpo"; exit 1; fi
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='PerfMetric.cpp' object='hpcview_bin-PerfMetric.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(hpcview_bin_CXXFLAGS) $(CXXFLAGS) -c -o hpcview_bin-PerfMetric.obj `if test -f 'PerfMetric.cpp'; then $(CYGPATH_W) 'PerfMetric.cpp'; else $(CYGPATH_W) '$(srcdir)/PerfMetric.cpp'; fi`
-
-hpcview_bin-ScopeInfo.o: ScopeInfo.cpp
-@am__fastdepCXX_TRUE@	if $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(hpcview_bin_CXXFLAGS) $(CXXFLAGS) -MT hpcview_bin-ScopeInfo.o -MD -MP -MF "$(DEPDIR)/hpcview_bin-ScopeInfo.Tpo" -c -o hpcview_bin-ScopeInfo.o `test -f 'ScopeInfo.cpp' || echo '$(srcdir)/'`ScopeInfo.cpp; \
-@am__fastdepCXX_TRUE@	then mv -f "$(DEPDIR)/hpcview_bin-ScopeInfo.Tpo" "$(DEPDIR)/hpcview_bin-ScopeInfo.Po"; else rm -f "$(DEPDIR)/hpcview_bin-ScopeInfo.Tpo"; exit 1; fi
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='ScopeInfo.cpp' object='hpcview_bin-ScopeInfo.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(hpcview_bin_CXXFLAGS) $(CXXFLAGS) -c -o hpcview_bin-ScopeInfo.o `test -f 'ScopeInfo.cpp' || echo '$(srcdir)/'`ScopeInfo.cpp
-
-hpcview_bin-ScopeInfo.obj: ScopeInfo.cpp
-@am__fastdepCXX_TRUE@	if $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(hpcview_bin_CXXFLAGS) $(CXXFLAGS) -MT hpcview_bin-ScopeInfo.obj -MD -MP -MF "$(DEPDIR)/hpcview_bin-ScopeInfo.Tpo" -c -o hpcview_bin-ScopeInfo.obj `if test -f 'ScopeInfo.cpp'; then $(CYGPATH_W) 'ScopeInfo.cpp'; else $(CYGPATH_W) '$(srcdir)/ScopeInfo.cpp'; fi`; \
-@am__fastdepCXX_TRUE@	then mv -f "$(DEPDIR)/hpcview_bin-ScopeInfo.Tpo" "$(DEPDIR)/hpcview_bin-ScopeInfo.Po"; else rm -f "$(DEPDIR)/hpcview_bin-ScopeInfo.Tpo"; exit 1; fi
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='ScopeInfo.cpp' object='hpcview_bin-ScopeInfo.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(hpcview_bin_CXXFLAGS) $(CXXFLAGS) -c -o hpcview_bin-ScopeInfo.obj `if test -f 'ScopeInfo.cpp'; then $(CYGPATH_W) 'ScopeInfo.cpp'; else $(CYGPATH_W) '$(srcdir)/ScopeInfo.cpp'; fi`
-
-hpcview_bin-ScopeInfoIterator.o: ScopeInfoIterator.cpp
-@am__fastdepCXX_TRUE@	if $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(hpcview_bin_CXXFLAGS) $(CXXFLAGS) -MT hpcview_bin-ScopeInfoIterator.o -MD -MP -MF "$(DEPDIR)/hpcview_bin-ScopeInfoIterator.Tpo" -c -o hpcview_bin-ScopeInfoIterator.o `test -f 'ScopeInfoIterator.cpp' || echo '$(srcdir)/'`ScopeInfoIterator.cpp; \
-@am__fastdepCXX_TRUE@	then mv -f "$(DEPDIR)/hpcview_bin-ScopeInfoIterator.Tpo" "$(DEPDIR)/hpcview_bin-ScopeInfoIterator.Po"; else rm -f "$(DEPDIR)/hpcview_bin-ScopeInfoIterator.Tpo"; exit 1; fi
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='ScopeInfoIterator.cpp' object='hpcview_bin-ScopeInfoIterator.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(hpcview_bin_CXXFLAGS) $(CXXFLAGS) -c -o hpcview_bin-ScopeInfoIterator.o `test -f 'ScopeInfoIterator.cpp' || echo '$(srcdir)/'`ScopeInfoIterator.cpp
-
-hpcview_bin-ScopeInfoIterator.obj: ScopeInfoIterator.cpp
-@am__fastdepCXX_TRUE@	if $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(hpcview_bin_CXXFLAGS) $(CXXFLAGS) -MT hpcview_bin-ScopeInfoIterator.obj -MD -MP -MF "$(DEPDIR)/hpcview_bin-ScopeInfoIterator.Tpo" -c -o hpcview_bin-ScopeInfoIterator.obj `if test -f 'ScopeInfoIterator.cpp'; then $(CYGPATH_W) 'ScopeInfoIterator.cpp'; else $(CYGPATH_W) '$(srcdir)/ScopeInfoIterator.cpp'; fi`; \
-@am__fastdepCXX_TRUE@	then mv -f "$(DEPDIR)/hpcview_bin-ScopeInfoIterator.Tpo" "$(DEPDIR)/hpcview_bin-ScopeInfoIterator.Po"; else rm -f "$(DEPDIR)/hpcview_bin-ScopeInfoIterator.Tpo"; exit 1; fi
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='ScopeInfoIterator.cpp' object='hpcview_bin-ScopeInfoIterator.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(hpcview_bin_CXXFLAGS) $(CXXFLAGS) -c -o hpcview_bin-ScopeInfoIterator.obj `if test -f 'ScopeInfoIterator.cpp'; then $(CYGPATH_W) 'ScopeInfoIterator.cpp'; else $(CYGPATH_W) '$(srcdir)/ScopeInfoIterator.cpp'; fi`
 
 hpcview_bin-StaticFiles.o: StaticFiles.cpp
 @am__fastdepCXX_TRUE@	if $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(hpcview_bin_CXXFLAGS) $(CXXFLAGS) -MT hpcview_bin-StaticFiles.o -MD -MP -MF "$(DEPDIR)/hpcview_bin-StaticFiles.Tpo" -c -o hpcview_bin-StaticFiles.o `test -f 'StaticFiles.cpp' || echo '$(srcdir)/'`StaticFiles.cpp; \

@@ -42,8 +42,10 @@
 
 //************************* User Include Files *******************************
 
-#include "ScopeInfo.hpp"
 #include "HTMLFile.hpp"
+
+#include <lib/prof-juicy/PgmScopeTree.hpp>
+
 #include <lib/support/String.hpp>
 
 //************************ Forward Declarations ******************************

@@ -44,8 +44,9 @@
 #include <include/general.h>
 
 #include "Args.hpp"
-#include "ScopeInfo.hpp"
 #include "PerfIndex.hpp"
+
+#include <lib/prof-juicy/PgmScopeTree.hpp>
 
 #include <lib/support/String.hpp>
 #include <lib/support/Unique.hpp>

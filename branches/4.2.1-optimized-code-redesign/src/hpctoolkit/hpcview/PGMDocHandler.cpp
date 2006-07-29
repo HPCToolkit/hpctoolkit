@@ -71,10 +71,11 @@ using XERCES_CPP_NAMESPACE::XMLString;
 
 #include "PGMDocHandler.hpp"
 #include "Driver.hpp"
-#include "ScopeInfo.hpp"
 #include "NodeRetriever.hpp"
-
 #include "HPCViewXMLErrHandler.hpp"
+
+#include <lib/prof-juicy/PgmScopeTree.hpp>
+
 #include <lib/support/Assertion.h>
 #include <lib/support/Trace.hpp>
 

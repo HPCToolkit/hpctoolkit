@@ -112,7 +112,8 @@ CONFIG_CLEAN_FILES =
 LTLIBRARIES = $(noinst_LTLIBRARIES)
 am__DEPENDENCIES_1 =
 libHPCprof_juicy_la_DEPENDENCIES = $(am__DEPENDENCIES_1)
-am__objects_1 = libHPCprof_juicy_la-PgmScopeTree.lo \
+am__objects_1 = libHPCprof_juicy_la-PerfMetric.lo \
+	libHPCprof_juicy_la-PgmScopeTree.lo \
 	libHPCprof_juicy_la-PgmScopeTreeIterator.lo
 am_libHPCprof_juicy_la_OBJECTS = $(am__objects_1)
 libHPCprof_juicy_la_OBJECTS = $(am_libHPCprof_juicy_la_OBJECTS)
@@ -319,6 +320,7 @@ HPC_LIBSUPPORT = $(top_builddir)/src/lib/support/libHPCsupport.la
 # Local settings
 #############################################################################
 MYSOURCES = \
+	PerfMetric.hpp PerfMetric.cpp \
 	PgmScopeTree.hpp PgmScopeTree.cpp \
 	PgmScopeTreeIterator.hpp PgmScopeTreeIterator.cpp
 
@@ -396,6 +398,7 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCprof_juicy_la-PerfMetric.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCprof_juicy_la-PgmScopeTree.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCprof_juicy_la-PgmScopeTreeIterator.Plo@am__quote@
 
@@ -419,6 +422,13 @@ distclean-compile:
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='$<' object='$@' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(LTCXXCOMPILE) -c -o $@ $<
+
+libHPCprof_juicy_la-PerfMetric.lo: PerfMetric.cpp
+@am__fastdepCXX_TRUE@	if $(LIBTOOL) --tag=CXX --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprof_juicy_la_CXXFLAGS) $(CXXFLAGS) -MT libHPCprof_juicy_la-PerfMetric.lo -MD -MP -MF "$(DEPDIR)/libHPCprof_juicy_la-PerfMetric.Tpo" -c -o libHPCprof_juicy_la-PerfMetric.lo `test -f 'PerfMetric.cpp' || echo '$(srcdir)/'`PerfMetric.cpp; \
+@am__fastdepCXX_TRUE@	then mv -f "$(DEPDIR)/libHPCprof_juicy_la-PerfMetric.Tpo" "$(DEPDIR)/libHPCprof_juicy_la-PerfMetric.Plo"; else rm -f "$(DEPDIR)/libHPCprof_juicy_la-PerfMetric.Tpo"; exit 1; fi
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='PerfMetric.cpp' object='libHPCprof_juicy_la-PerfMetric.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(LIBTOOL) --tag=CXX --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprof_juicy_la_CXXFLAGS) $(CXXFLAGS) -c -o libHPCprof_juicy_la-PerfMetric.lo `test -f 'PerfMetric.cpp' || echo '$(srcdir)/'`PerfMetric.cpp
 
 libHPCprof_juicy_la-PgmScopeTree.lo: PgmScopeTree.cpp
 @am__fastdepCXX_TRUE@	if $(LIBTOOL) --tag=CXX --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprof_juicy_la_CXXFLAGS) $(CXXFLAGS) -MT libHPCprof_juicy_la-PgmScopeTree.lo -MD -MP -MF "$(DEPDIR)/libHPCprof_juicy_la-PgmScopeTree.Tpo" -c -o libHPCprof_juicy_la-PgmScopeTree.lo `test -f 'PgmScopeTree.cpp' || echo '$(srcdir)/'`PgmScopeTree.cpp; \
