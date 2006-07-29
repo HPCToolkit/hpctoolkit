@@ -222,6 +222,8 @@ private:
 // CodeInfoLine
 //  is a dummy class used just for the large scopes iterators.
 //  the instance can be created either for the start line or for the end line
+//
+// FIXME: do we need this?
 //***************************************************************************
 
 #define IS_BEG_LINE 0
@@ -270,6 +272,8 @@ private:
 //       that children in the tree contain non-overlapping ranges. all
 //       lines are gathered into a set, sorted, and then enumerated out
 //       of the set in sorted order. -- johnmc 5/31/00
+//
+// FIXME: do we need this?
 //***************************************************************************
 
 class ScopeInfoLineSortedIteratorForLargeScopes {
@@ -319,6 +323,8 @@ private:
 //          iff a->PerfInfos().GetVal(i) > b->PerfInfos().GetVal(i)
 //             where GetVal(i) retrieves the value for the performace
 //             statistic that the iterator is to sort for
+//
+// FIXME: do we need this
 //***************************************************************************
 
 class SortedCodeInfoIterator {
@@ -348,6 +354,8 @@ private:
 //          iff a->PerfInfos().GetVal(i) > b->PerfInfos().GetVal(i)
 //             where GetVal(i) retrieves the value for the performace
 //             statistic that the iterator is to sort for
+//
+// FIXME: do we need this
 //***************************************************************************
 
 class SortedCodeInfoChildIterator {
@@ -383,6 +391,8 @@ private:
 //   constructor, so the value of CompareByPerfInfo_MetricIndex needs only 
 //   to remain constant for the duration of the constructor to which 
 //   CompareByPerfInfo is passed.
+//
+// FIXME: do we need this
 //***************************************************************************
 
 int CompareByPerfInfo(const void* a, const void *b);

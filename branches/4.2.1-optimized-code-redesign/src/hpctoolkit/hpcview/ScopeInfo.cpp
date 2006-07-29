@@ -1585,7 +1585,7 @@ CodeInfo::SetLineRange(suint begLn, suint endLn)
     }
     CodeInfo *mom = CodeInfoParent();
     if (changed && (mom != NULL)) {
-      // Relocate(); // this doesn't achieve the result we want
+      Relocate();
       mom->SetLineRange(begLine, endLine);
     }
   }

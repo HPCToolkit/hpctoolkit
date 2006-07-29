@@ -1,4 +1,4 @@
-// $Id$
+// $id: PgmScopeTreeIterator.cpp 580 2006-07-27 14:16:10Z eraxxon $
 // -*-C++-*-
 // * BeginRiceCopyright *****************************************************
 // 
@@ -54,6 +54,8 @@ using std::ostream;
 using std::cerr;
 using std::endl;
 
+#include <vector>
+
 //*************************** User Include Files ****************************
 
 #include "PgmScopeTree.hpp"
@@ -106,6 +108,57 @@ const ScopeInfoFilter ScopeTypeFilter[ScopeInfo::NUMBER_OF_SCOPES] = {
 		  ScopeInfo::ScopeTypeToName(ScopeInfo::ANY),
 		  ScopeInfo::ANY)
 };
+
+
+//***************************************************************************
+// HasPerfData
+//    check if this node has any profile data associated with it
+//***************************************************************************
+
+int 
+HasPerfData( const ScopeInfo *si, int nm )
+{
+  return 0;
+}
+
+
+//***************************************************************************
+// UpdateScopeTree - not a member of any class
+//    traverses a tree and removes all the nodes that don't have any profile
+//    data associated
+//***************************************************************************
+
+void 
+UpdateScopeTree( const ScopeInfo *node, int noMetrics )
+{
+  ScopeInfo *si;
+  std::vector<ScopeInfo*> toBeRemoved;
+  
+  ScopeInfoChildIterator it( node, NULL );
+  for ( ; it.Current() ; it++ ) {
+    si = dynamic_cast<ScopeInfo*>(it.Current());
+    if ( HasPerfData( si, noMetrics ) )
+      UpdateScopeTree( si, noMetrics );
+    else
+      toBeRemoved.push_back(si);
+  }
+  for ( unsigned int i=0 ; i<toBeRemoved.size() ; i++ ) {
+    si = toBeRemoved[i];
+    si->Unlink();
+    switch( si->Type() )
+      {
+      case ScopeInfo::PGM:   delete dynamic_cast<PgmScope*>(si); break;
+      case ScopeInfo::GROUP: delete dynamic_cast<GroupScope*>(si); break;
+      case ScopeInfo::LM:    delete dynamic_cast<LoadModScope*>(si); break;
+      case ScopeInfo::FILE:  delete dynamic_cast<FileScope*>(si); break;
+      case ScopeInfo::PROC:  delete dynamic_cast<ProcScope*>(si); break;
+      case ScopeInfo::LOOP:  delete dynamic_cast<LoopScope*>(si); break;
+      case ScopeInfo::STMT_RANGE: delete dynamic_cast<StmtRangeScope*>(si); break;
+      default: delete si; break;
+      }
+  }
+}
+
 
 //***************************************************************************
 // ScopeInfoChildIterator
@@ -286,6 +339,71 @@ ScopeInfoLineSortedChildIterator::DumpAndReset(ostream &os)
 
 
 //***************************************************************************
+// ScopeInfoLineSortedIteratorForLargeScopes
+//***************************************************************************
+
+ScopeInfoLineSortedIteratorForLargeScopes::ScopeInfoLineSortedIteratorForLargeScopes(
+					const CodeInfo *file, 
+					const ScopeInfoFilter *filterFunc, 
+					bool leavesOnly)
+{
+  ScopeInfoIterator it(file, filterFunc, leavesOnly);
+  ScopeInfo *cur;
+  for (; (cur = it.CurScope()); ) {
+    CodeInfoLine *cur1 = new CodeInfoLine(dynamic_cast<CodeInfo*>(cur), 
+                         IS_BEG_LINE);
+    scopes.Add((unsigned long) cur1);
+    if (cur->Type() == ScopeInfo::LOOP)
+    {  // create a CodeInfoLine object for both begin and end line
+       // only for Loops. For PROCs we are interested only in BegLine
+      CodeInfoLine *cur2 = new CodeInfoLine(dynamic_cast<CodeInfo*>(cur), 
+                         IS_END_LINE);
+      scopes.Add((unsigned long) cur2);
+    }
+    it++;
+  }
+  ptrSetIt = new WordSetSortedIterator(&scopes, CompareByLine);
+}
+
+
+ScopeInfoLineSortedIteratorForLargeScopes::~ScopeInfoLineSortedIteratorForLargeScopes() 
+{
+  // First deallocate all CodeInfoLine objects created
+  ptrSetIt->Reset();
+  for ( ; ptrSetIt->Current() ; (*ptrSetIt)++ )
+    delete ((CodeInfoLine*) (*ptrSetIt->Current()));
+  delete ptrSetIt;
+}
+ 
+CodeInfoLine* 
+ScopeInfoLineSortedIteratorForLargeScopes::Current() const
+{
+  CodeInfoLine *cur = NULL;
+  if (ptrSetIt->Current()) {
+    cur = (CodeInfoLine*) (*ptrSetIt->Current());
+    BriefAssertion(cur != NULL);
+  }
+  return cur;
+} 
+
+void 
+ScopeInfoLineSortedIteratorForLargeScopes::DumpAndReset(std::ostream &os)
+{
+  os << "ScopeInfoLineSortedIteratorForLargeScopes: " << endl;
+  while (Current()) {
+    os << Current()->GetCodeInfo()->ToString() << endl;
+    (*this)++;
+  } 
+  Reset();
+}
+
+void 
+ScopeInfoLineSortedIteratorForLargeScopes::Reset()
+{
+  ptrSetIt->Reset();
+}
+
+//***************************************************************************
 // ScopeInfoNameSortedChildIterator
 //***************************************************************************
 
@@ -335,3 +453,110 @@ ScopeInfoNameSortedChildIterator::CompareByName(const void* a, const void *b)
 }
 
 //***************************************************************************
+// SortedCodeInfoIterator
+//***************************************************************************
+
+SortedCodeInfoIterator::SortedCodeInfoIterator(const PgmScope *pgm,
+					       int perfInfoIndex,
+					     const ScopeInfoFilter *filterFunc)
+{
+  BriefAssertion(pgm != NULL);
+  compareByPerfInfo = perfInfoIndex;
+  
+  ScopeInfoIterator it(pgm, filterFunc, false);
+  ScopeInfo *cur;
+  for (; (cur = it.CurScope()); ) {
+    scopes.Add((unsigned long) cur);
+    it++;
+  }
+  CompareByPerfInfo_MetricIndex = compareByPerfInfo;
+  ptrSetIt = new WordSetSortedIterator(&scopes, CompareByPerfInfo);
+}
+
+SortedCodeInfoIterator::~SortedCodeInfoIterator()
+{
+  delete ptrSetIt;
+}
+
+CodeInfo*
+SortedCodeInfoIterator::Current() const
+{
+  CodeInfo *cur = NULL;
+  if (ptrSetIt->Current()) {
+    cur = (CodeInfo*) (*ptrSetIt->Current());
+    BriefAssertion(cur != NULL);
+  }
+  return cur;
+}
+
+void
+SortedCodeInfoIterator::Reset()
+{
+  ptrSetIt->Reset();
+}
+
+
+//***************************************************************************
+// SortedCodeInfoChildIterator
+//***************************************************************************
+
+SortedCodeInfoChildIterator::SortedCodeInfoChildIterator
+(const ScopeInfo *scope, int flattenDepth, 
+ int compare(const void* a, const void *b),
+ const ScopeInfoFilter *filterFunc)
+{
+  depth = flattenDepth;
+  AddChildren(scope, 0, filterFunc);
+  ptrSetIt = new WordSetSortedIterator(&scopes, compare);
+}
+
+SortedCodeInfoChildIterator::~SortedCodeInfoChildIterator()
+{
+  delete ptrSetIt;
+}
+
+CodeInfo*
+SortedCodeInfoChildIterator::Current() const
+{
+  CodeInfo *cur = NULL;
+  if (ptrSetIt->Current()) {
+    cur = (CodeInfo*) (*ptrSetIt->Current());
+    BriefAssertion(cur != NULL);
+  }
+  return cur;
+}
+
+void
+SortedCodeInfoChildIterator::Reset()
+{
+  ptrSetIt->Reset();
+}
+
+void SortedCodeInfoChildIterator::AddChildren
+(const ScopeInfo *scope, int curDepth, const ScopeInfoFilter *filterFunc)
+{
+  BriefAssertion(scope != NULL);
+  
+  ScopeInfoChildIterator it(scope, filterFunc);
+  ScopeInfo *cur;
+  for (; (cur = it.CurScope()); ) {
+    if ((curDepth == depth) || cur->IsLeaf()) {
+      scopes.Add((unsigned long) cur);
+    } else {
+      AddChildren(cur, curDepth+1, filterFunc);
+    }
+    it++;
+  }
+}
+
+//***************************************************************************
+// static functions
+//***************************************************************************
+
+int CompareByPerfInfo_MetricIndex = -1;
+
+int CompareByPerfInfo(const void* a, const void *b)
+{
+  return 0;
+}
+
