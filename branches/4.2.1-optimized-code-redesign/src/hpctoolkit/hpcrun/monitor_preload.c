@@ -168,22 +168,28 @@ init_library_SPECIALIZED()
     /* FIXME: I suppose it would be possible for someone to dlopen
        libpthread which means it would not be visible now. Perhaps we
        should do a dlsym on libpthread instead. */
-		void* pthandle = dlopen("/lib/libpthread.so.0", RTLD_LAZY);
-		if (!pthandle) {
-			DIE("fatal error: Cannot open libpthread");
-		}
     real_pthread_create = 
-      (pthread_create_fptr_t)dlsym(pthandle, "pthread_create");
+      (pthread_create_fptr_t)dlsym(RTLD_NEXT, "pthread_create");
     hpcrun_handle_any_dlerror();
     if (!real_pthread_create) {
       DIE("fatal error: Cannot intercept POSIX thread creation and therefore cannot profile threads.");
     }
     
-    real_pthread_self = dlsym(pthandle, "pthread_self");
+    real_pthread_self = dlsym(RTLD_NEXT, "pthread_self");
     hpcrun_handle_any_dlerror();
     if (!real_pthread_self) {
       DIE("fatal error: Cannot intercept POSIX thread id routine and therefore cannot profile threads.");
     }
+
+#if 0
+    // Note: this is dangerous becuase the app could use /lib/tls/libpthread!
+    void* pthandle = dlopen("/lib/libpthread.so.0", RTLD_LAZY);
+    if (!pthandle) {
+      DIE("fatal error: Cannot open libpthread");
+    }
+    real_pthread_create = 
+      (pthread_create_fptr_t)dlsym(pthandle, "pthread_create");
+#endif
   }
 }
 
