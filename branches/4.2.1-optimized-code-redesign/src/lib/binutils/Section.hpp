@@ -61,7 +61,7 @@
 #include <include/gnu_bfd.h>
 
 #include "LoadModule.hpp"
-#include <lib/ISA/ISATypes.hpp> 
+#include <lib/isa/ISATypes.hpp> 
 #include <lib/support/String.hpp>
 
 

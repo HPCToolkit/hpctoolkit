@@ -60,13 +60,14 @@
 
 #include <include/general.h>
 
-#include <lib/support/NonUniformDegreeTree.hpp>
-#include <lib/support/Unique.hpp>
-#include <lib/support/String.hpp>
-#include <lib/ISA/ISATypes.hpp>
+#include <lib/isa/ISATypes.hpp>
+
 #include <lib/binutils/LoadModule.hpp>
 #include <lib/binutils/LoadModuleInfo.hpp>
 
+#include <lib/support/NonUniformDegreeTree.hpp>
+#include <lib/support/Unique.hpp>
+#include <lib/support/String.hpp>
 
 //*************************** Forward Declarations ***************************
 

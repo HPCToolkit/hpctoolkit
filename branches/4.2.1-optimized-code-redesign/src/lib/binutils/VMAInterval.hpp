@@ -60,7 +60,7 @@
 
 #include <include/general.h>
 
-#include <lib/ISA/ISATypes.hpp>
+#include <lib/isa/ISATypes.hpp>
 
 #include <lib/support/String.hpp>
 

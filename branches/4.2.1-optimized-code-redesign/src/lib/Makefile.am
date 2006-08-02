@@ -57,7 +57,7 @@ AUTOMAKE_OPTIONS = foreign
 
 SUBDIRS = \
 	binutils \
-	ISA \
+	isa \
 	perl \
 	prof-juicy \
 	prof-lean \

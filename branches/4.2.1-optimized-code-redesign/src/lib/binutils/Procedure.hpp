@@ -61,7 +61,7 @@
 #include "LoadModule.hpp"
 #include "Section.hpp"
 
-#include <lib/ISA/ISATypes.hpp>
+#include <lib/isa/ISATypes.hpp>
 
 //*************************** Forward Declarations **************************
 

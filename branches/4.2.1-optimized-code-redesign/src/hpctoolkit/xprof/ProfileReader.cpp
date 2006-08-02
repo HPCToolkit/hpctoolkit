@@ -69,8 +69,9 @@ using std::strtoul; // For compatibility with non-std C headers
 #include "PCProfile.hpp"
 #include "DCPIProfile.hpp"
 
-#include <lib/ISA/ISA.hpp>
-#include <lib/ISA/AlphaISA.hpp>
+#include <lib/isa/ISA.hpp>
+#include <lib/isa/AlphaISA.hpp>
+
 #include <lib/xml/xml.hpp>
 
 //*************************** Forward Declarations ***************************

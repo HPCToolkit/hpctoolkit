@@ -31,7 +31,7 @@
 #############################################################################
 
 # -*-Mode: makefile;-*-
-# $Id: Makeinclude.config 576 2006-07-25 03:19:04Z eraxxon $
+# $Id: Makeinclude.config 589 2006-08-02 17:12:26Z eraxxon $
 
 #############################################################################
 #
@@ -101,7 +101,7 @@ host_triplet = @host@
 DIST_COMMON = $(srcdir)/Makefile.am $(srcdir)/Makefile.in \
 	$(top_srcdir)/src/Makeinclude.config \
 	$(top_srcdir)/src/Makeinclude.rules
-subdir = src/lib/ISA
+subdir = src/lib/isa
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/config/hpc-cxxutils.m4 \
 	$(top_srcdir)/configure.ac
@@ -366,9 +366,9 @@ $(srcdir)/Makefile.in:  $(srcdir)/Makefile.am $(top_srcdir)/src/Makeinclude.conf
 	      exit 1;; \
 	  esac; \
 	done; \
-	echo ' cd $(top_srcdir) && $(AUTOMAKE) --foreign  src/lib/ISA/Makefile'; \
+	echo ' cd $(top_srcdir) && $(AUTOMAKE) --foreign  src/lib/isa/Makefile'; \
 	cd $(top_srcdir) && \
-	  $(AUTOMAKE) --foreign  src/lib/ISA/Makefile
+	  $(AUTOMAKE) --foreign  src/lib/isa/Makefile
 .PRECIOUS: Makefile
 Makefile: $(srcdir)/Makefile.in $(top_builddir)/config.status
 	@case '$?' in \

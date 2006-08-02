@@ -64,7 +64,7 @@
 
 //*************************** User Include Files ****************************
  
-#include <lib/ISA/ISA.hpp>
+#include <lib/isa/ISA.hpp>
 #include <lib/binutils/Instruction.hpp>
 #include <lib/binutils/Procedure.hpp>
 #include <lib/support/String.hpp>

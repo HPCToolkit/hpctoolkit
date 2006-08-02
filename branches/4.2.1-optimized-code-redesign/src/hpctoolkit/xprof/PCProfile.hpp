@@ -62,7 +62,8 @@
 #include "PCProfileMetric.hpp"
 #include "PCProfileFilter.hpp"
 
-#include <lib/ISA/ISA.hpp>
+#include <lib/isa/ISA.hpp>
+
 #include <lib/support/String.hpp>
 
 //*************************** Forward Declarations ***************************

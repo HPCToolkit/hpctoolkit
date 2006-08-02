@@ -61,7 +61,8 @@
 
 #include "PCProfile.hpp"
 
-#include <lib/ISA/ISA.hpp>
+#include <lib/isa/ISA.hpp>
+
 #include <lib/support/String.hpp>
 #include <lib/support/Assertion.h>
 

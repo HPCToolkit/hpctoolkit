@@ -63,7 +63,7 @@
 #include "VMAInterval.hpp"
 #include "BinUtils.hpp"
 
-#include <lib/ISA/ISATypes.hpp>
+#include <lib/isa/ISATypes.hpp>
 #include <lib/support/String.hpp>
 
 //*************************** Forward Declarations **************************

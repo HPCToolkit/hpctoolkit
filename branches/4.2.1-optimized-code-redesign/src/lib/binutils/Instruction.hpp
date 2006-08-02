@@ -59,7 +59,7 @@
 #include <include/general.h>
 
 #include "LoadModule.hpp"
-#include <lib/ISA/ISA.hpp>
+#include <lib/isa/ISA.hpp>
 
 //*************************** Forward Declarations **************************
 

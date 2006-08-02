@@ -59,7 +59,8 @@
 #include "PCProfileFilter.hpp"
 #include "DCPIMetricDesc.hpp"
 
-#include <lib/ISA/ISATypes.hpp>
+#include <lib/isa/ISATypes.hpp>
+
 #include <lib/binutils/LoadModule.hpp>
 
 //*************************** Forward Declarations ***************************

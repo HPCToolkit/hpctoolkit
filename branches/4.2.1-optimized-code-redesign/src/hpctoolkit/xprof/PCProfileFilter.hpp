@@ -59,7 +59,8 @@
 
 #include <include/general.h>
 
-#include <lib/ISA/ISA.hpp>
+#include <lib/isa/ISA.hpp>
+
 #include <lib/binutils/LoadModule.hpp>
 
 #include <lib/support/String.hpp>

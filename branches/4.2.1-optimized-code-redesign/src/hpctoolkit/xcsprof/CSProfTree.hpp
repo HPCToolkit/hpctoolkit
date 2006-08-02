@@ -59,11 +59,11 @@
 
 #include <include/general.h>
 
+#include <lib/isa/ISATypes.hpp>
+
 #include <lib/support/NonUniformDegreeTree.hpp>
 #include <lib/support/Unique.hpp>
 #include <lib/support/String.hpp>
-
-#include <lib/ISA/ISATypes.hpp>
 
 //*************************** Forward Declarations ***************************
 

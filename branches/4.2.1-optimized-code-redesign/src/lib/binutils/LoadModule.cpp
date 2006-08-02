@@ -63,11 +63,11 @@
 #include <lib/support/QuickSort.hpp>
 #include <lib/support/Trace.hpp>
 
-#include <lib/ISA/MipsISA.hpp>
-#include <lib/ISA/AlphaISA.hpp>
-#include <lib/ISA/SparcISA.hpp>
-#include <lib/ISA/x86ISA.hpp>
-#include <lib/ISA/IA64ISA.hpp>
+#include <lib/isa/MipsISA.hpp>
+#include <lib/isa/AlphaISA.hpp>
+#include <lib/isa/SparcISA.hpp>
+#include <lib/isa/x86ISA.hpp>
+#include <lib/isa/IA64ISA.hpp>
 
 //*************************** Forward Declarations **************************
 

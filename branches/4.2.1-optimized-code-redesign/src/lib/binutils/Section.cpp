@@ -58,7 +58,7 @@
 #include "Instruction.hpp"
 #include <lib/support/Assertion.h>
 
-#include <lib/ISA/ISA.hpp>
+#include <lib/isa/ISA.hpp>
 
 //*************************** Forward Declarations **************************
 

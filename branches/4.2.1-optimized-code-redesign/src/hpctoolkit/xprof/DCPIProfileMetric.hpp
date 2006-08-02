@@ -59,7 +59,7 @@
 #include "PCProfile.hpp"
 #include "DCPIProfileFilter.hpp"
 
-#include <lib/ISA/ISATypes.hpp>
+#include <lib/isa/ISATypes.hpp>
 
 //*************************** Forward Declarations ***************************
 
