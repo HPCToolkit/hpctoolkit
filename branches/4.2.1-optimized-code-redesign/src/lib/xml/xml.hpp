@@ -64,6 +64,8 @@
 
 //*************************** Forward Declarations ***************************
 
+// FIXME: should use the versions now in support/IOUtil.*
+
 // just like std::get and std::getline, except is not limited by a
 // fixed input buffer size
 String Get(std::istream& is, char end = '\n');

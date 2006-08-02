@@ -319,6 +319,9 @@ private:
   void Reset();
   void CheckForErrors(const OptArgDesc* optArgDescs);
 
+  const OptArgDesc* 
+  CreateSortedCopy(const OptArgDesc* optArgDescs);
+
   // Parsing helpers
   SwDesc
   MakeSwitchDesc(const char* str);

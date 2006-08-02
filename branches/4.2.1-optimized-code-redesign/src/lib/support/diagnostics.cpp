@@ -1,5 +1,6 @@
+// -*-Mode: C++;-*-
 // $Id$
-// -*-C++-*-
+
 // * BeginRiceCopyright *****************************************************
 // 
 // Copyright ((c)) 2002, Rice University 
@@ -34,32 +35,62 @@
 // 
 // ******************************************************* EndRiceCopyright *
 
-#ifndef __StringLt_h__
-#define __StringLt_h__
-
-//************************** System Include Files ***************************
-
-//*************************** User Include Files ****************************
-
-#include "String.h"
-
-//*************************** Forward Declarations **************************
-
-//***************************************************************************
-
-// StringLt
+//****************************************************************************
 //
-// Strict comparison (less-than) operator for String class, based on the 
-// < operator.
+// File:
+//   $Source$
+//
+// Purpose:
+//   [The purpose of this file]
+//
+// Description:
+//   [The set of functions, macros, etc. defined in the file]
+// 
+// Author:
+//   Nathan Tallent
+//
+//****************************************************************************
 
-class StringLt {
-public:
+//************************** System Include Files ****************************
 
-  // strict comparison (less-than) operator for Strings
+//************************** Open64 Include Files ***************************
 
-  int operator()( String s1, String s2 ) const 
-    { return s1 < s2; }
+//*************************** User Include Files *****************************
 
-};
+#include "diagnostics.h"
 
-#endif 
+//****************************************************************************
+
+int DIAG_DBG_LVL_PUB = 0;
+
+void 
+Diagnostics_SetDiagnosticFilterLevel(int lvl)
+{
+  DIAG_DBG_LVL_PUB = lvl;
+}
+
+int
+Diagnostics_GetDiagnosticFilterLevel()
+{
+  return DIAG_DBG_LVL_PUB;
+}
+
+void 
+Diagnostics_TheMostVisitedBreakpointInHistory(const char* filenm, 
+					      unsigned int lineno)
+{
+  // Prevent this routine from ever being inlined
+  static unsigned count = 0;
+  count++;
+}
+
+
+const char* DIAG_UNIMPLEMENTED = 
+  "Unimplemented feature: ";
+const char* DIAG_UNEXPECTED_INPUT = 
+  "Unexpected input: ";
+const char* DIAG_UNEXPECTED_OPR = 
+  "Unexpected operator: ";
+
+
+//****************************************************************************

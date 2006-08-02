@@ -70,7 +70,7 @@ using namespace std; // For compatibility with non-std C headers
 // *************************** User Include Files ****************************
 
 #include "String.hpp"
-#include "StringUtilities.hpp"
+#include "CStrUtil.hpp"
 #include "Assertion.h"
 
 // **************************** Static Functions *****************************

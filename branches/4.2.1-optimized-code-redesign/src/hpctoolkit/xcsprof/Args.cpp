@@ -49,7 +49,7 @@
 
 #include "Args.hpp"
 #include <lib/support/String.hpp>
-#include <lib/support/StringUtilities.hpp>
+#include <lib/support/CStrUtil.hpp>
 #include <lib/support/Trace.hpp>
 #include "CSProfileUtils.hpp"
 
