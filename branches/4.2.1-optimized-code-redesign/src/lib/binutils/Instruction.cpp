@@ -70,7 +70,7 @@ void
 Instruction::Dump(std::ostream& o, const char* pre) const
 {
   String p(pre);
-  Addr target = GetTargetAddr(vma);
+  VMA target = GetTargetVMA(vma);
 
   o << p << hex << "0x" << vma << dec << ": " << GetDesc().ToString();
 

@@ -174,9 +174,9 @@ ProfileWriter::WriteProfile(std::ostream& os, DerivedProfile* profData,
   // Iterate over PC values in the profile
   for (PCProfile_PCIterator it(*rawprofData); it.IsValid(); ++it) {
     
-    Addr oppc = it.Current(); // an 'operation pc'
+    VMA oppc = it.Current(); // an 'operation pc'
     ushort opIndex;
-    Addr pc = isa->ConvertOpVMAToVMA(oppc, opIndex);
+    VMA pc = isa->ConvertOpVMAToVMA(oppc, opIndex);
     
     // --------------------------------------------------
     // 1. Attempt to find symbolic information

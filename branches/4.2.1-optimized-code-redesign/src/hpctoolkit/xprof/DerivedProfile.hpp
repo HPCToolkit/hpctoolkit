@@ -223,18 +223,18 @@ public:
   // A special function for saving some memory; use with caution
   void MakeDerivedPCSetCoterminousWithPCSet() { delete pcset; pcset = NULL; }
 
-  bool FindPC(Addr pc, ushort opIndex) { 
+  bool FindPC(VMA pc, ushort opIndex) { 
     if (pcset) {
-      Addr oppc = mset->GetISA()->ConvertVMAToOpVMA(pc, opIndex);
+      VMA oppc = mset->GetISA()->ConvertVMAToOpVMA(pc, opIndex);
       PCSetIt it = pcset->find(oppc);
       return (it != pcset->end());
     } else {
       return (mset->DataExists(pc, opIndex) >= 0);
     }
   }
-  void InsertPC(Addr pc, ushort opIndex) {
+  void InsertPC(VMA pc, ushort opIndex) {
     BriefAssertion(pcset);
-    Addr oppc = mset->GetISA()->ConvertVMAToOpVMA(pc, opIndex);
+    VMA oppc = mset->GetISA()->ConvertVMAToOpVMA(pc, opIndex);
     pcset->insert(oppc); // do not add duplicates!
   }
 

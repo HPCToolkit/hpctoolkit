@@ -112,7 +112,7 @@ InsnFilter::~InsnFilter()
 }
 
 bool 
-InsnFilter::operator()(Addr pc, ushort opIndex)
+InsnFilter::operator()(VMA pc, ushort opIndex)
 {
   Instruction* inst = lm->GetInst(pc, opIndex);
   if (!inst) {

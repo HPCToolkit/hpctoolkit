@@ -268,7 +268,7 @@ HTMLSrcFiles::GenSrc(HTMLFile &hf, CodeInfo &ci, unsigned int level,
   
   String line = String((char)' ', (unsigned int)(level * 3)); 
   line += ci.Name() + "(...) "; 
-  if (ci.BegLine() == ci.EndLine()) {
+  if (ci.begLine() == ci.endLine()) {
     line += "{ ... }\n"; 
   } else {
     line += "{\n"; 
@@ -278,16 +278,16 @@ HTMLSrcFiles::GenSrc(HTMLFile &hf, CodeInfo &ci, unsigned int level,
   CodeInfoList lst; 
   lst[0] = &cil; 
   lst[1] = NULL; 
-  ReformatSrc(hf, line, ci.BegLine(), &lst); 
+  ReformatSrc(hf, line, ci.begLine(), &lst); 
 
-  if (ci.BegLine() != ci.EndLine()) {
+  if (ci.begLine() != ci.endLine()) {
   
     line = String((char)' ', (unsigned int)(level * 3)) + "..." + "\n"; 
     ReformatSrc(hf, line, UNDEF_LINE, NULL); 
   
     line = String((char)' ', (unsigned int)(level * 3)) + "} /* end " 
       + ci.Name() + " */\n"; 
-    ReformatSrc(hf, line, ci.EndLine(), NULL); 
+    ReformatSrc(hf, line, ci.endLine(), NULL); 
   }
   line = String((char)' ', (unsigned int)(level * 3)) + "\n"; 
   ReformatSrc(hf, line, UNDEF_LINE, NULL); 
@@ -349,7 +349,7 @@ WriteLineNumber(HTMLFile &hf, suint curLine, CodeInfoList *list)
 		|| aci->Type() == ScopeInfo::PROC) 
             { 
                if (list->Element(i)->IsEndLine()) {
-                  if (aci->GetLast()->EndLine() == aci->EndLine())
+                  if (aci->GetLast()->endLine() == aci->endLine())
                     anchor = HTMLDriver::UniqueName( aci->GetLast(),
                              NO_PERF_INDEX, NO_FLATTEN_DEPTH) + "X" +
                              HTMLDriver::UniqueNameForSelf(aci);
@@ -358,7 +358,7 @@ WriteLineNumber(HTMLFile &hf, suint curLine, CodeInfoList *list)
                              NO_PERF_INDEX, NO_FLATTEN_DEPTH);
                   anchor += "e";
                } else {
-                  if (aci->GetFirst()->BegLine() == aci->BegLine())
+                  if (aci->GetFirst()->begLine() == aci->begLine())
                     anchor = HTMLDriver::UniqueName( aci->GetFirst(),
                              NO_PERF_INDEX, NO_FLATTEN_DEPTH) + "X" +
                              HTMLDriver::UniqueNameForSelf(aci);

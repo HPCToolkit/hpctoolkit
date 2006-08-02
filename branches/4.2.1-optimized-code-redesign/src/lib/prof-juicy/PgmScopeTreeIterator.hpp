@@ -243,7 +243,7 @@ public:
    
    suint GetLine()
    { 
-      return (_forEndLine?_ci->EndLine():_ci->BegLine());
+      return (_forEndLine ? _ci->endLine() : _ci->begLine());
    }
    
    ScopeInfo::ScopeType Type()   { return _type; }

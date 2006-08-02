@@ -82,6 +82,7 @@ using namespace ScopeTreeBuilder;
 #include <lib/binutils/Procedure.hpp>
 #include <lib/binutils/BinUtils.hpp>
 #include <lib/binutils/PCToSrcLineMap.hpp>
+
 #include <lib/support/Files.hpp>
 #include <lib/support/Assertion.h>
 #include <lib/support/pathfind.h>
@@ -145,14 +146,14 @@ FilterFilesFromScopeTree(PgmScopeTree* pgmScopeTree, String canonicalPathList);
 // Helpers for traversing the Nested SCR (Tarjan Tree)
 // ------------------------------------------------------------
 
-// CFGNode -> <begAddr, endAddr>
+// CFGNode -> <begVMA, endVMA>
 class CFGNodeToVMAMap 
   : public std::map<OA::OA_ptr<OA::CFG::Interface::Node>, 
-		    std::pair<Addr, Addr>* > 
+		    std::pair<VMA, VMA>* > 
 {
 public:
   typedef std::map<OA::OA_ptr<OA::CFG::Interface::Node>, 
-		   std::pair<Addr, Addr>* > My_t;
+		   std::pair<VMA, VMA>* > My_t;
 
 public:
   CFGNodeToVMAMap() { }
@@ -163,12 +164,12 @@ public:
 
   void build(OA::OA_ptr<OA::CFG::Interface> cfg, 
 	     OA::OA_ptr<OA::CFG::Interface::Node> n, 
-	     Procedure* p, Addr _end);
+	     Procedure* p, VMA _end);
 };
 
 static void 
 CFG_GetBegAndEndVMAs(OA::OA_ptr<OA::CFG::Interface::Node> n, 
-		     Addr &beg, Addr &end);
+		     VMA &beg, VMA &end);
 
 
 // ------------------------------------------------------------
@@ -533,7 +534,7 @@ BuildFromTarjInterval(CodeInfo* enclosingScope, Procedure* p,
 
 #ifdef BLOOP_ATTEMPT_TO_IMPROVE_INTERVAL_BOUNDARIES
   String func, file;
-  Addr begVMA, endVMA;
+  VMA begVMA, endVMA;
   suint begLn = UNDEF_LINE, endLn = UNDEF_LINE;
   suint loopsBegLn = UNDEF_LINE, loopsEndLn = UNDEF_LINE;
 
@@ -601,7 +602,7 @@ BuildFromTarjInterval(CodeInfo* enclosingScope, Procedure* p,
 #endif
       
       // Remove the loop nest if we could not find valid line numbers
-      if (!IsValidLine(lScope->BegLine(), lScope->EndLine())) {
+      if (!IsValidLine(lScope->begLine(), lScope->endLine())) {
 	lScope->Unlink();
 	delete lScope;
 	localLoops -= (num + 1); // N.B.: 'num' should always be 0
@@ -654,7 +655,7 @@ BuildFromBB(CodeInfo* enclosingScope, Procedure* p,
     bb->getNodeStatementsIterator();
   for ( ; it->isValid(); ++(*it)) {
     Instruction* insn = IRHNDL_TO_TY(it->current(), Instruction*);
-    Addr vma = insn->GetVMA();
+    VMA vma = insn->GetVMA();
     ushort opIdx = insn->GetOpIndex();
 
     String func, file;
@@ -682,17 +683,18 @@ BuildFromBB(CodeInfo* enclosingScope, Procedure* p,
       // macros must preceed this scope.
       for (CodeInfo* x = enclosingScope;
 	   x->Type() == ScopeInfo::LOOP; x = x->CodeInfoParent()) {
-	if (x->BegLine() <= line && line <= pScope->EndLine()) {
+	if (x->begLine() <= line && line <= pScope->endLine()) {
 	  if (stmtMap.find(line) == stmtMap.end()) {
 	    stmtMap[line] = NULL;
 	    new StmtRangeScope(x, line, line);
 	  }
+	  // else: FIXME: MAP: add this vma to the statement-range
 	  done = true;
 	  break;
 	}
       }
     }
-    if (!done && pScope->BegLine() <= line && line <= pScope->EndLine()) {
+    if (!done && pScope->begLine() <= line && line <= pScope->endLine()) {
       // An alien line that belongs within 'pScope'
       new StmtRangeScope(pScope, line, line);
       done = true;
@@ -716,7 +718,7 @@ FindOrCreateFileNode(LoadModScope* lmScope, Procedure* p)
     String func;
     suint begLn, endLn;
     p->GetSourceFileInfo(p->GetBegVMA(), 0, p->GetEndVMA(), 0, func, file,
-			 begLn, endLn); // FIXME: use only begAddr
+			 begLn, endLn); // FIXME: use only begVMA
   }
   if (file.Empty()) { 
     file = OrphanedProcedureFile; 
@@ -749,7 +751,7 @@ FindLoopBegLine(Procedure* p, OA::OA_ptr<OA::CFG::Interface::Node> node)
     node->getNodeStatementsIterator();
   BriefAssertion(stmtIt->isValid());
   Instruction* head = IRHNDL_TO_TY(stmtIt->current(), Instruction*);
-  Addr headVMA = head->GetVMA(); // we can ignore opIdx
+  VMA headVMA = head->GetVMA(); // we can ignore opIdx
   
   // Now find the backward branch
   OA::OA_ptr<Interface::IncomingEdgesIterator> it 
@@ -765,7 +767,7 @@ FindLoopBegLine(Procedure* p, OA::OA_ptr<OA::CFG::Interface::Node> node)
     }
     
     Instruction* backbranch = IRHNDL_TO_TY(stmtIt1->current(), Instruction*);
-    Addr vma = backbranch->GetVMA();
+    VMA vma = backbranch->GetVMA();
     ushort opIdx = backbranch->GetOpIndex();
 
     // If we have a backward edge, find the source line of the
@@ -1035,7 +1037,7 @@ CDS_InspectStmt(StmtRangeScope* stmt1, LineToStmtMap* stmtMap,
 {
   bool changed = false;
   
-  suint line = stmt1->BegLine();
+  suint line = stmt1->begLine();
   StmtData* stmtdata = (*stmtMap)[line];
   if (stmtdata) {
     
@@ -1135,9 +1137,9 @@ MergePerfectlyNestedLoops(ScopeInfo* node)
     bool perfNested = (child->Type() == ScopeInfo::LOOP &&
 		       node->Type() == ScopeInfo::LOOP &&
 		       node->ChildCount() == 1);
-    if (perfNested && IsValidLine(child->BegLine(), child->EndLine()) &&
-	child->BegLine() == n_CI->BegLine() &&
-	child->EndLine() == n_CI->EndLine()) { 
+    if (perfNested && IsValidLine(child->begLine(), child->endLine()) &&
+	child->begLine() == n_CI->begLine() &&
+	child->endLine() == n_CI->endLine()) { 
       
       // Move all children of 'child' so that they are children of 'node'
       for (ScopeInfoChildIterator it1(child); it1.Current(); /* */) {
@@ -1241,12 +1243,12 @@ FilterFilesFromScopeTree(PgmScopeTree* pgmScopeTree, String canonicalPathList)
 void
 CFGNodeToVMAMap::build(OA::OA_ptr<OA::CFG::Interface> cfg, 
 		      OA::OA_ptr<OA::CFG::Interface::Node> n, 
-		      Procedure* p, Addr _end)
+		      Procedure* p, VMA _end)
 {
   // NEWS FLASH: We could use OA's getReversePostDFSIterator to do this
   // pre-order traversal of the CFG.
 
-  Addr curBeg = 0, curEnd = 0;
+  VMA curBeg = 0, curEnd = 0;
 
   // If n is not in the map, it hasn't been visited yet.
   if (this->find(n) == this->end()) {
@@ -1265,7 +1267,7 @@ CFGNodeToVMAMap::build(OA::OA_ptr<OA::CFG::Interface> cfg,
       // Non-empty blocks will have some instructions to get VMAs from.
       CFG_GetBegAndEndVMAs(n, curBeg, curEnd);
     }
-    (*this)[n] = new std::pair<Addr, Addr>(curBeg, curEnd);
+    (*this)[n] = new std::pair<VMA, VMA>(curBeg, curEnd);
 
     // Visit descendents.
     OA::OA_ptr<OA::CFG::Interface::SinkNodesIterator> it = 
@@ -1281,7 +1283,7 @@ void
 CFGNodeToVMAMap::clear()
 {
   for (iterator it = this->begin(); it != this->end(); ++it) {
-    delete (*it).second; // std::pair<Addr, Addr>*
+    delete (*it).second; // std::pair<VMA, VMA>*
   }
   My_t::clear();
 }
@@ -1289,7 +1291,7 @@ CFGNodeToVMAMap::clear()
 
 static void 
 CFG_GetBegAndEndVMAs(OA::OA_ptr<OA::CFG::Interface::Node> n, 
-		     Addr& beg, Addr& end)
+		     VMA& beg, VMA& end)
 {
   beg = 0;
   end = 0;
@@ -1349,7 +1351,7 @@ BuildVMAToSrcLineMap(PCToSrcLineXMap* xmap, Procedure* p)
   
   for (ProcedureInstructionIterator it(*p); it.IsValid(); ++it) {
     Instruction* inst = it.Current();
-    Addr vma = inst->GetVMA();
+    VMA vma = inst->GetVMA();
     
     // 1. Attempt to find symbolic information
     String func, file;

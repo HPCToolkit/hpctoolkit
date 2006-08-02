@@ -84,7 +84,7 @@ public:
 
   virtual InstDesc GetInstDesc(MachInst* mi, ushort opIndex, ushort sz = 0);
 
-  virtual Addr GetInstTargetAddr(MachInst* mi, Addr pc, ushort opIndex,
+  virtual VMA GetInstTargetVMA(MachInst* mi, VMA pc, ushort opIndex,
 				 ushort sz = 0);
   
   virtual ushort GetInstNumDelaySlots(MachInst* mi, ushort opIndex,
@@ -97,7 +97,7 @@ public:
 				       ushort sz2) const
   { return false; /* FIXME */ }
 
-  virtual Addr ConvertVMAToOpVMA(Addr vma, ushort opIndex) const
+  virtual VMA ConvertVMAToOpVMA(VMA vma, ushort opIndex) const
   {
     // This is identical to the GNU scheme for now.  Note that the
     // offsets do not actually match the IA64 template [5,41,41,41].
@@ -105,7 +105,7 @@ public:
     return (vma + 6 * opIndex); // 0, 6, 12
   }
 
-  virtual Addr ConvertOpVMAToVMA(Addr opvma, ushort& opIndex) const
+  virtual VMA ConvertOpVMAToVMA(VMA opvma, ushort& opIndex) const
   {
     // See above comments
     ushort offset = (opvma & 0xf); // 0, 6, 12

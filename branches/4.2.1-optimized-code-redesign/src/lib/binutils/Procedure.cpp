@@ -69,7 +69,7 @@ using std::dec;
 suint Procedure::nextId = 0;
 
 Procedure::Procedure(TextSection* _sec, String _name, String _linkname,
-                     Procedure::Type t, Addr _begVMA, Addr _endVMA, 
+                     Procedure::Type t, VMA _begVMA, VMA _endVMA, 
 		     suint _size)
   : sec(_sec), name(_name), linkname(_linkname), type(t), begVMA(_begVMA),
     endVMA(_endVMA), size(_size), filenm(""), begLine(0), parent(NULL)

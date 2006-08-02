@@ -91,7 +91,7 @@ CSProfEpoch::~CSProfEpoch()
 }
 
 CSProfLDmodule* 
-CSProfEpoch::FindLDmodule(Addr ip)
+CSProfEpoch::FindLDmodule(VMA ip)
 {
  CSProfLDmodule* pre=loadmoduleVec[0];
  for (int i=0; i< numberofldmodule; i++)

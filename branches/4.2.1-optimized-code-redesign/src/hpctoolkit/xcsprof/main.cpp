@@ -158,8 +158,8 @@ main(int argc, char* argv[])
     LoadModule*      ldmd   = NULL; 
     CSProfLDmodule * csploadmd= NULL; 
     LoadModuleInfo * modInfo;   
-    Addr             startaddr;
-    Addr             endaddr = 0; 
+    VMA             startaddr;
+    VMA             endaddr = 0; 
     bool             lastone ;
 
     for (int i=numberofldmd-1; i>=0; i--) {   
@@ -194,7 +194,7 @@ main(int argc, char* argv[])
        // get the start and end PC from the text sections 
        cout << "*****Current load module is : " << csploadmd->GetName()<<"*****"<< endl; 
 #if 0
-       Addr tmp1,tmp2;
+       VMA tmp1,tmp2;
        ldmd->GetTextStartEndPC(&tmp1,&tmp2);    
        ldmd->SetTextStart(tmp1);
        ldmd->SetTextEnd(tmp2);     

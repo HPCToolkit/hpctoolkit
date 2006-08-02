@@ -15,7 +15,7 @@
 @SET_MAKE@
 
 # -*-Mode: makefile;-*-
-# $Id: Makefile.am 582 2006-07-28 14:35:42Z eraxxon $
+# $Id: Makefile.am 586 2006-07-29 21:59:10Z eraxxon $
 
 #############################################################################
 #
@@ -135,11 +135,13 @@ am_hpcview_bin_OBJECTS = $(am__objects_1)
 hpcview_bin_OBJECTS = $(am_hpcview_bin_OBJECTS)
 am__DEPENDENCIES_1 =  \
 	$(top_builddir)/src/lib/prof-juicy/libHPCprof-juicy.la
-am__DEPENDENCIES_2 = $(top_builddir)/src/lib/xml/libHPCxml.la
-am__DEPENDENCIES_3 = $(top_builddir)/src/lib/support/libHPCsupport.la
-am__DEPENDENCIES_4 = $(am__DEPENDENCIES_1) $(am__DEPENDENCIES_2) \
-	$(am__DEPENDENCIES_3)
-hpcview_bin_DEPENDENCIES = $(am__DEPENDENCIES_4)
+am__DEPENDENCIES_2 =  \
+	$(top_builddir)/src/lib/binutils/libHPCbinutils.la
+am__DEPENDENCIES_3 = $(top_builddir)/src/lib/xml/libHPCxml.la
+am__DEPENDENCIES_4 = $(top_builddir)/src/lib/support/libHPCsupport.la
+am__DEPENDENCIES_5 = $(am__DEPENDENCIES_1) $(am__DEPENDENCIES_2) \
+	$(am__DEPENDENCIES_3) $(am__DEPENDENCIES_4)
+hpcview_bin_DEPENDENCIES = $(am__DEPENDENCIES_5)
 binSCRIPT_INSTALL = $(INSTALL_SCRIPT)
 SCRIPTS = $(bin_SCRIPTS)
 DEFAULT_INCLUDES = -I. -I$(srcdir)
@@ -324,7 +326,7 @@ HPC_IFLAGS = -I$(HPCTOOLKIT)/src
 ############################################################
 
 # Linking dependencies:
-#   HPC_LIBPROFJUICY : HPC_LIBSUPPORT
+#   HPC_LIBPROFJUICY : HPC_LIBBINUTILS HPC_LIBSUPPORT
 #   HPC_LIBPROFLEAN  :
 #   HPC_LIBBINUTILS  : HPC_LIBISA HPC_LIBSUPPORT
 #   HPC_LIBISA       : HPC_LIBSUPPORT
@@ -373,7 +375,7 @@ MYCXXFLAGS = @HOST_CXXFLAGS@ $(HPC_IFLAGS) @XERCES_IFLAGS@
 MYLDFLAGS = @HOST_CXXFLAGS@
 MYLDADD = \
 	@HOST_LIBTREPOSITORY@ \
-	$(HPC_LIBPROFJUICY) $(HPC_LIBXML) $(HPC_LIBSUPPORT) \
+	$(HPC_LIBPROFJUICY) $(HPC_LIBBINUTILS) $(HPC_LIBXML) $(HPC_LIBSUPPORT) \
 	@XERCES_LDFLAGS@ \
 	@HOST_HPCVIEW_LDFLAGS@ \
 	-lm

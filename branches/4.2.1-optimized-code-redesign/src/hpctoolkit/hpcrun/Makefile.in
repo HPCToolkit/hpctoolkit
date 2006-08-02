@@ -329,7 +329,7 @@ HPC_IFLAGS = -I$(HPCTOOLKIT)/src
 ############################################################
 
 # Linking dependencies:
-#   HPC_LIBPROFJUICY : HPC_LIBSUPPORT
+#   HPC_LIBPROFJUICY : HPC_LIBBINUTILS HPC_LIBSUPPORT
 #   HPC_LIBPROFLEAN  :
 #   HPC_LIBBINUTILS  : HPC_LIBISA HPC_LIBSUPPORT
 #   HPC_LIBISA       : HPC_LIBSUPPORT

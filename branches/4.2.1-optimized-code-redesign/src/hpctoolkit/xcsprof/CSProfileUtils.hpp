@@ -76,8 +76,8 @@ void WriteCSProfileInDatabase(CSProfile* prof, String dbDirectory);
 void WriteCSProfile(CSProfile* prof, std::ostream& os,
 		    bool prettyPrint = true);
 
-bool AddSourceFileInfoToCSProfile(CSProfile* prof, LoadModuleInfo* lm,Addr startaddr, 
-                                  Addr endaddr, bool lastone);
+bool AddSourceFileInfoToCSProfile(CSProfile* prof, LoadModuleInfo* lm,VMA startaddr, 
+                                  VMA endaddr, bool lastone);
 bool AddSourceFileInfoToCSTreeNode(CSProfCallSiteNode* node, 
                                    LoadModuleInfo*     lm  ,
                                    bool                istext);
@@ -92,7 +92,7 @@ void LdmdSetUsedFlag(CSProfile* prof);
 
 bool NormalizeCSProfile(CSProfile* prof);
 bool NormalizeInternalCallSites(CSProfile* prof, LoadModuleInfo* lmi,
-                                Addr startaddr, Addr endaddr, bool lastone);
+                                VMA startaddr, VMA endaddr, bool lastone);
 
 //****************************************************************************
 

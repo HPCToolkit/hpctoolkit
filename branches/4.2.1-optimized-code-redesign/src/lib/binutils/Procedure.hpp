@@ -78,7 +78,7 @@ public:
   enum Type { Local, Weak, Global, Unknown };
   
   Procedure(TextSection* _sec, String _name, String _linkname, Type t,
-	    Addr _begVMA, Addr _endVMA, suint _size);
+	    VMA _begVMA, VMA _endVMA, suint _size);
   virtual ~Procedure();
 
   TextSection* GetTextSection() const { return sec; }
@@ -100,9 +100,9 @@ public:
   // The end address points to the beginning of the last instruction.
   // Note that a different convention is used for the end address of a
   // 'Section'.
-  Addr  GetBegVMA() const { return begVMA; }
-  Addr  GetEndVMA() const { return endVMA; }
-  void  SetEndVMA(Addr _endVMA) { endVMA = _endVMA; }
+  VMA  GetBegVMA() const { return begVMA; }
+  VMA  GetEndVMA() const { return endVMA; }
+  void  SetEndVMA(VMA _endVMA) { endVMA = _endVMA; }
 
   // Return size, which is (end - start) + sizeof(last instruction)
   suint GetSize()      const { return size; }
@@ -117,7 +117,7 @@ public:
 
   // Return true if virtual memory address 'vma' is within the procedure
   // WARNING: vma must be unrelocated
-  bool  IsIn(Addr vma)  const { return (begVMA <= vma && vma <= endVMA); }
+  bool  IsIn(VMA vma)  const { return (begVMA <= vma && vma <= endVMA); }
 
   // Return the unique number assigned to this procedure
   suint GetId()        const { return id; }
@@ -130,19 +130,19 @@ public:
   Instruction* GetLastInst() const;
   
   // Convenient wrappers for the 'LoadModule' versions of the same.
-  MachInst*    GetMachInst(Addr vma, ushort &sz) const {
+  MachInst*    GetMachInst(VMA vma, ushort &sz) const {
     return sec->GetLoadModule()->GetMachInst(vma, sz);
   }
-  Instruction* GetInst(Addr vma, ushort opIndex) const {
+  Instruction* GetInst(VMA vma, ushort opIndex) const {
     return sec->GetLoadModule()->GetInst(vma, opIndex);
   }
-  bool GetSourceFileInfo(Addr vma, ushort opIndex,
+  bool GetSourceFileInfo(VMA vma, ushort opIndex,
 			 String &func, String &file, suint &line) const {
     return sec->GetLoadModule()->GetSourceFileInfo(vma, opIndex,
 						   func, file, line);
   }
-  bool GetSourceFileInfo(Addr begVMA, ushort bOpIndex,
-			 Addr endVMA, ushort eOpIndex,
+  bool GetSourceFileInfo(VMA begVMA, ushort bOpIndex,
+			 VMA endVMA, ushort eOpIndex,
 			 String &func, String &file,
 			 suint &begLine, suint &endLine) const {
     return sec->GetLoadModule()->GetSourceFileInfo(begVMA, bOpIndex,
@@ -170,9 +170,9 @@ private:
   String linkname;
   Type   type;
   
-  Addr   begVMA; // points to the beginning of the first instruction
-  Addr   endVMA; // points to the beginning of the last instruction
-  Addr   size;
+  VMA   begVMA; // points to the beginning of the first instruction
+  VMA   endVMA; // points to the beginning of the last instruction
+  VMA   size;
 
   // symbolic information: may or may not be known
   String filenm;     // filename and 
@@ -205,7 +205,7 @@ public:
 
   // Note: This is the 'operation VMA' and may not actually be the true
   // VMA!  Use the 'Instruction' for the true VMA. 
-  Addr CurrentVMA() const {
+  VMA CurrentVMA() const {
     if (it != endIt) { return (*it).first; }
     else { return 0; } 
   }
@@ -229,8 +229,8 @@ protected:
 private:
   const Procedure& p;
   const LoadModule& lm;
-  LoadModule::AddrToInstMapItC it;
-  LoadModule::AddrToInstMapItC endIt;
+  LoadModule::VMAToInstMapItC it;
+  LoadModule::VMAToInstMapItC endIt;
 };
 
 //***************************************************************************

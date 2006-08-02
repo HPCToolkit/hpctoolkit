@@ -122,7 +122,7 @@ LoadModule::~LoadModule()
   sections.clear();
     
   // Clear addrToInstMap
-  AddrToInstMapIt it;
+  VMAToInstMapIt it;
   for (it = addrToInstMap.begin(); it != addrToInstMap.end(); ++it) {
     delete (*it).second; // Instruction*
   }
@@ -251,7 +251,7 @@ LoadModule::Read()
       && sections.size() == 0 && addrToInstMap.size() == 0) {
     STATUS &= ReadSymbolTables();
     STATUS &= ReadSections();
-    buildAddrToProcedureMap();
+    buildVMAToProcedureMap();
   } 
   
   return STATUS;
@@ -262,7 +262,7 @@ LoadModule::Read()
 // VMAs.  All routines operating on VMAs should call UnRelocateVMA(),
 // which will do the right thing.
 void 
-LoadModule::Relocate(Addr textBegReloc_)
+LoadModule::Relocate(VMA textBegReloc_)
 {
   BriefAssertion(textBeg != 0 && "Relocation not supported on this arch!");
   textBegReloc = textBegReloc_;
@@ -285,7 +285,7 @@ LoadModule::IsRelocated() const
 
 
 MachInst*
-LoadModule::GetMachInst(Addr vma, ushort &size) const
+LoadModule::GetMachInst(VMA vma, ushort &size) const
 {
   MachInst* minst = NULL;
   size = 0;
@@ -298,13 +298,13 @@ LoadModule::GetMachInst(Addr vma, ushort &size) const
 }
 
 Instruction*
-LoadModule::GetInst(Addr vma, ushort opIndex) const
+LoadModule::GetInst(VMA vma, ushort opIndex) const
 {
-  Addr unrelocVMA = UnRelocateVMA(vma);
-  Addr mapVMA = isa->ConvertVMAToOpVMA(unrelocVMA, opIndex);
+  VMA unrelocVMA = UnRelocateVMA(vma);
+  VMA mapVMA = isa->ConvertVMAToOpVMA(unrelocVMA, opIndex);
   
   Instruction* inst = NULL;
-  AddrToInstMapItC it = addrToInstMap.find(mapVMA);
+  VMAToInstMapItC it = addrToInstMap.find(mapVMA);
   if (it != addrToInstMap.end()) {
     inst = (*it).second;
   }
@@ -312,18 +312,18 @@ LoadModule::GetInst(Addr vma, ushort opIndex) const
 }
 
 void
-LoadModule::AddInst(Addr vma, ushort opIndex, Instruction *inst)
+LoadModule::AddInst(VMA vma, ushort opIndex, Instruction *inst)
 {
-  Addr unrelocVMA = UnRelocateVMA(vma);
-  Addr mapVMA = isa->ConvertVMAToOpVMA(unrelocVMA, opIndex);
+  VMA unrelocVMA = UnRelocateVMA(vma);
+  VMA mapVMA = isa->ConvertVMAToOpVMA(unrelocVMA, opIndex);
 
   // FIXME: It wouldn't hurt to verify this isn't a duplicate
-  addrToInstMap.insert(AddrToInstMapVal(mapVMA, inst));
+  addrToInstMap.insert(VMAToInstMapVal(mapVMA, inst));
 }
 
 
 bool
-LoadModule::GetSourceFileInfo(Addr vma, ushort opIndex,
+LoadModule::GetSourceFileInfo(VMA vma, ushort opIndex,
 			      String &func, String &file, suint &line) const
 {
   bool STATUS = false;
@@ -337,12 +337,12 @@ LoadModule::GetSourceFileInfo(Addr vma, ushort opIndex,
   unsigned int bfd_line = 0;
   //BriefAssertion(sizeof(suint) >= sizeof(bfd_line));
 
-  Addr unrelocVMA = UnRelocateVMA(vma);
-  Addr opVMA = isa->ConvertVMAToOpVMA(unrelocVMA, opIndex);
+  VMA unrelocVMA = UnRelocateVMA(vma);
+  VMA opVMA = isa->ConvertVMAToOpVMA(unrelocVMA, opIndex);
   
   // Find the Section where this vma lives.
   asection *bfdSection = NULL;
-  Addr base = 0;
+  VMA base = 0;
   for (LoadModuleSectionIterator it(*this); it.IsValid(); ++it) {
     Section* sec = it.Current();
     if (sec->IsIn(opVMA)) {
@@ -368,8 +368,8 @@ LoadModule::GetSourceFileInfo(Addr vma, ushort opIndex,
 }
 
 bool
-LoadModule::GetSourceFileInfo(Addr begVMA, ushort bOpIndex,
-			      Addr endVMA, ushort eOpIndex,
+LoadModule::GetSourceFileInfo(VMA begVMA, ushort bOpIndex,
+			      VMA endVMA, ushort eOpIndex,
 			      String &func, String &file,
 			      suint &begLine, suint &endLine) const
 {
@@ -378,10 +378,10 @@ LoadModule::GetSourceFileInfo(Addr begVMA, ushort bOpIndex,
   begLine = endLine = 0;
 
   // Enforce condition that 'begVMA' <= 'endVMA'. (No need to unrelocate!)
-  Addr begOpVMA = isa->ConvertVMAToOpVMA(begVMA, bOpIndex);
-  Addr endOpVMA = isa->ConvertVMAToOpVMA(endVMA, eOpIndex);
+  VMA begOpVMA = isa->ConvertVMAToOpVMA(begVMA, bOpIndex);
+  VMA endOpVMA = isa->ConvertVMAToOpVMA(endVMA, eOpIndex);
   if (! (begOpVMA <= endOpVMA) ) {
-    Addr tmpVMA = begVMA;       // swap 'begVMA' with 'endVMA'
+    VMA tmpVMA = begVMA;       // swap 'begVMA' with 'endVMA'
     begVMA = endVMA; 
     endVMA = tmpVMA;
     ushort tmpOpIdx = bOpIndex; // swap 'bOpIndex' with 'eOpIndex'
@@ -442,12 +442,12 @@ LoadModule::GetSourceFileInfo(Addr begVMA, ushort bOpIndex,
 
 
 void
-LoadModule::GetTextBegEndVMA(Addr* begVMA, Addr* endVMA)
+LoadModule::GetTextBegEndVMA(VMA* begVMA, VMA* endVMA)
 { 
-  Addr curr_begVMA;
-  Addr curr_endVMA;
-  Addr sml_begVMA = 0;
-  Addr lg_endVMA  = 0;
+  VMA curr_begVMA;
+  VMA curr_endVMA;
+  VMA sml_begVMA = 0;
+  VMA lg_endVMA  = 0;
   for (LoadModuleSectionIterator it(*this); it.IsValid(); ++it) {
     Section* sec = it.Current(); 
     if (sec->GetType() == sec->Text)  {    
@@ -649,7 +649,7 @@ LoadModule::ReadSections()
 // Builds the map from <proc beg addr, proc end addr> pairs to 
 // procedure first line.
 bool 
-LoadModule::buildAddrToProcedureMap() 
+LoadModule::buildVMAToProcedureMap() 
 {
   bool STATUS = false;
   for (LoadModuleSectionIterator it(*this); it.IsValid(); ++it) {
@@ -662,13 +662,13 @@ LoadModule::buildAddrToProcedureMap()
     // Obtain the bfd section corresponding to our Section.
     asection *bfdSection = 
       bfd_get_section_by_name(impl->abfd, sec->GetName());
-    Addr base = bfd_section_vma(impl->abfd, bfdSection);
+    VMA base = bfd_section_vma(impl->abfd, bfdSection);
     
     TextSection* tsec = dynamic_cast<TextSection*>(sec);
     for (TextSectionProcedureIterator it1(*tsec); it1.IsValid(); ++it1) {
       Procedure* p = it1.Current();
-      Addr begVMA = p->GetBegVMA();
-      Addr endVMA = begVMA + p->GetSize();
+      VMA begVMA = p->GetBegVMA();
+      VMA endVMA = begVMA + p->GetSize();
       suint begLine = p->GetBegLine();
       
       if (!IsValidLine(begLine)) {
@@ -676,7 +676,7 @@ LoadModule::buildAddrToProcedureMap()
 	GetSourceFileInfo(begVMA, 0, func, file, begLine);
       }
       
-      addrToProcedureMap.insert(AddrToProcedureMapVal( AddrPair(begVMA, endVMA), begLine ));
+      addrToProcMap.insert(VMAToProcedureMap::value_type( VMAInterval(begVMA, endVMA), begLine ));
       xDEBUG(DEB_BUILD_PROC_MAP, 
 	     fprintf(stderr, "adding procedure %s [%x,%x] beg line %d\n", 
 		     (const char*)p->GetName(), begVMA, endVMA, begLine););
@@ -687,19 +687,19 @@ LoadModule::buildAddrToProcedureMap()
 
 
 bool 
-LoadModule::GetProcedureFirstLineInfo(Addr vma, ushort opIndex, suint &line) 
+LoadModule::GetProcedureFirstLineInfo(VMA vma, ushort opIndex, suint &line) 
 {
   bool STATUS = false;
 
-  Addr unrelocVMA = UnRelocateVMA(vma);
-  Addr opVMA = isa->ConvertVMAToOpVMA(unrelocVMA, opIndex);
+  VMA unrelocVMA = UnRelocateVMA(vma);
+  VMA opVMA = isa->ConvertVMAToOpVMA(unrelocVMA, opIndex);
 
   xDEBUG( DEB_BUILD_PROC_MAP,
 	  fprintf(stderr, "LoadModule::GetProcedureFirstLineInfo %p %x (%x,%x) unrelocVMA=%x opVMA=%x\n", 
 		  this, this, vma, (unsigned) opIndex, unrelocVMA, opVMA););
 
-  AddrToProcedureMapIt it = addrToProcedureMap.lower_bound( AddrPair(opVMA,opVMA));
-  if (it != addrToProcedureMap.end()) {
+  VMAToProcedureMap::iterator it = addrToProcMap.lower_bound( VMAInterval(opVMA,opVMA));
+  if (it != addrToProcMap.end()) {
     it--; // move to predecessor
     line = it->second;
     xDEBUG( DEB_BUILD_PROC_MAP,
@@ -827,7 +827,7 @@ LoadModule::DumpModuleInfo(std::ostream& o, const char* pre) const
       BriefAssertion(false); 
   }
   
-  o << p << "Load Addr: " << hex << "0x" << firstaddr << dec << "\n";
+  o << p << "Load VMA: " << hex << "0x" << firstaddr << dec << "\n";
 
   o << p << "Text(beg,end): 0x" << hex << GetTextBeg() << ", 0x"
     << GetTextEnd() << dec << "\n";
@@ -991,7 +991,7 @@ LoadModule::DbgFuncSummary::dump(std::ostream& os) const
 //***************************************************************************
 
 Executable::Executable()
-  : startAddr(0)
+  : startVMA(0)
 {
 }
 
@@ -1011,7 +1011,7 @@ Executable::Open(const char* moduleName)
       return false;
     }
 
-    startAddr = bfd_get_start_address(impl->abfd);
+    startVMA = bfd_get_start_address(impl->abfd);
   }
   return STATUS;
 }
@@ -1034,7 +1034,7 @@ Executable::DDump() const
 void
 Executable::DumpSelf(std::ostream& o, const char* pre) const
 {
-  o << pre << "Program start address: 0x" << hex << GetStartAddr()
+  o << pre << "Program start address: 0x" << hex << GetStartVMA()
     << dec << endl;
 }
 

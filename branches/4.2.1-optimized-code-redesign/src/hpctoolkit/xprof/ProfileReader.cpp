@@ -180,8 +180,8 @@ ProfileReader::ReadProfileFile_DCPICat(std::istream& is)
   std::stringstream hdr;   // header info
   String profiledFile;     // name of profiled file
   String profiledFilePath; // path to profiled file
-  Addr txtStart = 0;       // starting address of text segment
-  Addr txtSz    = 0;       // byte-size of text section
+  VMA txtStart = 0;       // starting address of text segment
+  VMA txtSz    = 0;       // byte-size of text section
   
   // ------------------------------------------------------------
   // Read header
@@ -325,7 +325,7 @@ ProfileReader::ReadProfileFile_DCPICat(std::istream& is)
   {
     unsigned long pcCount = 0; // number of PC entries
     PCProfileDatum profileDatum;
-    Addr PC;
+    VMA PC;
     is >> std::ws;
     while ( (!is.eof() && !is.fail()) ) {
       Skip(is, "0x");         // eat up '0x' prefix

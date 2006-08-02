@@ -148,9 +148,9 @@ DerivedProfile::Create(const PCProfile* pcprof_,
     // Iterate over PC values in the profile
     for (PCProfile_PCIterator it(*pcprof); it.IsValid(); ++it) {
       
-      Addr oppc = it.Current(); // an 'operation pc'
+      VMA oppc = it.Current(); // an 'operation pc'
       ushort opIndex;
-      Addr pc = isa->ConvertOpVMAToVMA(oppc, opIndex);
+      VMA pc = isa->ConvertOpVMAToVMA(oppc, opIndex);
       
       // For each derived metric and its insn filter
       PCProfileFilterList::const_iterator fIt = filtlist->begin();

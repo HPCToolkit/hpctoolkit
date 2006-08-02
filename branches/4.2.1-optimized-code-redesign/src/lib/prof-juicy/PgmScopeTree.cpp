@@ -74,13 +74,15 @@ using namespace std; // For compatibility with non-std C headers
 
 #include "PgmScopeTree.hpp"
 #include "PerfMetric.hpp"
+
+#include <lib/xml/xml.hpp>
+
 #include <lib/support/VectorTmpl.hpp>
 #include <lib/support/SrcFile.hpp>
 #include <lib/support/PtrSetIterator.hpp>
 #include <lib/support/Assertion.h>
 #include <lib/support/Trace.hpp>
 #include <lib/support/realpath.h>
-#include <lib/xml/xml.hpp>
 
 //*************************** Forward Declarations **************************
 
@@ -219,8 +221,8 @@ ScopeInfo::CollectCrossReferences()
       int maxline = -1;
       for (ScopeInfoChildIterator it(this); it.Current(); it++) {
 	CodeInfo *child = dynamic_cast<CodeInfo*>(it.CurScope());
-	int cmin = child->BegLine();
-	int cmax = child->EndLine();
+	int cmin = child->begLine();
+	int cmax = child->endLine();
 	if (cmin < minline) {
 	  minline = cmin;
 	  self->first = child->first;
@@ -279,7 +281,7 @@ ScopeInfo::~ScopeInfo()
 
 
 CodeInfo::CodeInfo(ScopeType t, ScopeInfo* mom, suint begLn, suint endLn) 
-  : ScopeInfo(t, mom), begLine(UNDEF_LINE), endLine(UNDEF_LINE)
+  : ScopeInfo(t, mom), mbegLine(UNDEF_LINE), mendLine(UNDEF_LINE)
 { 
   SetLineRange(begLn, endLn);
 }
@@ -289,8 +291,8 @@ CodeInfo::operator=(const CodeInfo& other)
 {
   // shallow copy
   if (&other != this) {
-    begLine = other.begLine;
-    endLine = other.endLine;
+    mbegLine = other.mbegLine;
+    mendLine = other.mendLine;
     first = last = NULL;
   }
   return *this;
@@ -460,7 +462,7 @@ StmtRangeScope::~StmtRangeScope()
 
 RefScope::RefScope(CodeInfo *mom, int _begPos, int _endPos, 
 		   const char* refName) 
-  : CodeInfo(REF, mom, mom->BegLine(), mom->BegLine())      
+  : CodeInfo(REF, mom, mom->begLine(), mom->begLine())      
 {
   BriefAssertion(mom->Type() == STMT_RANGE);
   begPos = _begPos;
@@ -759,8 +761,8 @@ ScopeInfo::Merge(ScopeInfo* toNode, ScopeInfo* fromNode)
   CodeInfo* toCI = dynamic_cast<CodeInfo*>(toNode);
   CodeInfo* fromCI = dynamic_cast<CodeInfo*>(fromNode);
   if (toCI && fromCI) {
-    suint begLn = MIN(toCI->BegLine(), fromCI->BegLine());
-    suint endLn = MAX(toCI->EndLine(), fromCI->EndLine());
+    suint begLn = MIN(toCI->begLine(), fromCI->begLine());
+    suint endLn = MAX(toCI->endLine(), fromCI->endLine());
     toCI->SetLineRange(begLn, endLn);
   }
   
@@ -868,7 +870,7 @@ void
 ProcScope::AddToStmtMap(StmtRangeScope& stmt)
 {
   // STL::map is a Unique Associative Container
-  (*stmtMap)[stmt.BegLine()] = &stmt;
+  (*stmtMap)[stmt.begLine()] = &stmt;
 }
 
 
@@ -928,9 +930,9 @@ CodeInfo::CodeName() const
   if (f != NULL) { 
     name = File()->BaseName() + ": " ;
   } 
-  name += String(begLine);
-  if (begLine != endLine) {
-    name += "-" +  String(endLine) ;
+  name += String(mbegLine);
+  if (mbegLine != mendLine) {
+    name += "-" +  String(mendLine) ;
   }
   return name;
 } 
@@ -938,7 +940,7 @@ CodeInfo::CodeName() const
 String
 CodeInfo::LineRange() const
 {
-  String self = "b=" + String(begLine) + " e=" + String(endLine);
+  String self = "b=" + String(mbegLine) + " e=" + String(mendLine);
   return self;
 }
 
@@ -972,7 +974,7 @@ ProcScope::CodeName() const
   if (f != NULL) { 
     cName += f->BaseName() + ":";
   } 
-  cName += String((long)begLine) + ")";
+  cName += String((long)mbegLine) + ")";
   return cName;
 } 
 
@@ -1174,14 +1176,23 @@ ScopeInfo::ToXML(int dmpFlag) const
 String
 CodeInfo::ToXML(int dmpFlag) const
 { 
-  String self = ScopeInfo::ToXML(dmpFlag) + " " + XMLLineRange(dmpFlag);
+  String self = ScopeInfo::ToXML(dmpFlag) 
+    + " " + XMLLineRange(dmpFlag)
+    + " " + XMLVMAIntervals(dmpFlag);
   return self;
 }
 
 String
 CodeInfo::XMLLineRange(int dmpFlag) const
 {
-  String self = "b" + MakeAttrNum(begLine) + " e" + MakeAttrNum(endLine);
+  String self = "b" + MakeAttrNum(mbegLine) + " e" + MakeAttrNum(mendLine);
+  return self;
+}
+
+String
+CodeInfo::XMLVMAIntervals(int dmpFlag) const
+{
+  String self = "vma" + MakeAttrStr(mvmaSet.toString(), xml::ESC_FALSE);
   return self;
 }
 
@@ -1206,7 +1217,8 @@ String
 LoadModScope::ToXML(int dmpFlag) const
 {
   String self = ScopeInfo::ToXML(dmpFlag) 
-    + " n" + MakeAttrStr(name, AddXMLEscapeChars(dmpFlag));
+    + " n" + MakeAttrStr(name, AddXMLEscapeChars(dmpFlag))
+    + " " + XMLVMAIntervals(dmpFlag);
   return self;
 }
 
@@ -1226,7 +1238,7 @@ ProcScope::ToXML(int dmpFlag) const
   if (strcmp(name, linkname) != 0) { // if different, print both
     self = self + " ln" + MakeAttrStr(linkname, AddXMLEscapeChars(dmpFlag));
   }
-  self = self + " " + XMLLineRange(dmpFlag);
+  self = self + " " + XMLLineRange(dmpFlag) + " " + XMLVMAIntervals(dmpFlag);
   return self;
 }
 
@@ -1417,7 +1429,7 @@ FileScope::CSV_Dump(const PgmScope &root, ostream &os,
           int lLevel) const 
 {
   // print file name, routine name, start and end line, loop level
-  os << BaseName() << ",," << begLine << "," << endLine << ",";
+  os << BaseName() << ",," << mbegLine << "," << mendLine << ",";
   CSV_DumpSelf(root, os);
   for (ScopeInfoNameSortedChildIterator it(this); it.Current(); it++) {
     it.Current()->CSV_Dump(root, os, BaseName());
@@ -1430,7 +1442,7 @@ ProcScope::CSV_Dump(const PgmScope &root, ostream &os,
           int lLevel) const 
 {
   // print file name, routine name, start and end line, loop level
-  os << file_name << "," << Name() << "," << begLine << "," << endLine 
+  os << file_name << "," << Name() << "," << mbegLine << "," << mendLine 
      << ",0";
   CSV_DumpSelf(root, os);
   for (ScopeInfoLineSortedChildIterator it(this); it.Current(); it++) {
@@ -1450,7 +1462,7 @@ CodeInfo::CSV_Dump(const PgmScope &root, ostream &os,
   // print file name, routine name, start and end line, loop level
   os << (file_name?file_name:(const char*)Name()) << "," 
      << (proc_name?proc_name:"") << "," 
-     << begLine << "," << endLine << ",";
+     << mbegLine << "," << mendLine << ",";
   if (lLevel)
     os << lLevel;
   CSV_DumpSelf(root, os);
@@ -1517,7 +1529,7 @@ ProcScope::TSV_Dump(const PgmScope &root, ostream &os,
           int lLevel) const 
 {
   // print file name, routine name, start and end line, loop level
-  // os << file_name << "," << Name() << "," << begLine << "," << endLine << ",0";
+  // os << file_name << "," << Name() << "," << mbegLine << "," << mendLine << ",0";
   for (ScopeInfoLineSortedChildIterator it(this); it.Current(); it++) {
     it.CurScope()->TSV_Dump(root, os, file_name, Name(), 1);
   } 
@@ -1534,7 +1546,7 @@ CodeInfo::TSV_Dump(const PgmScope &root, ostream &os,
 	  // print file name, routine name, start and end line, loop level
 	  os << (file_name ? file_name : (const char*)Name()) << "," 
 	     << (proc_name ? proc_name : "") << ":" 
-	     << begLine;
+	     << mbegLine;
 	  TSV_DumpSelf(root, os);
 	  return;
   }
@@ -1566,27 +1578,27 @@ CodeInfo::SetLineRange(suint begLn, suint endLn)
     BriefAssertion(endLn == UNDEF_LINE);
     // simply relocate at beginning of sibling list 
     // no range update in parents is necessary
-    BriefAssertion((begLine == UNDEF_LINE) && (endLine == UNDEF_LINE));
+    BriefAssertion((mbegLine == UNDEF_LINE) && (mendLine == UNDEF_LINE));
     if (Parent() != NULL) Relocate();
   } 
   else {
     bool changed = false;
-    if (begLine == UNDEF_LINE) {
-      BriefAssertion(endLine == UNDEF_LINE);
+    if (mbegLine == UNDEF_LINE) {
+      BriefAssertion(mendLine == UNDEF_LINE);
       // initialize range
-      begLine = begLn;
-      endLine = endLn;
+      mbegLine = begLn;
+      mendLine = endLn;
       changed = true;
     } else {
-      BriefAssertion((begLine != UNDEF_LINE) && (endLine != UNDEF_LINE));
+      BriefAssertion((mbegLine != UNDEF_LINE) && (mendLine != UNDEF_LINE));
       // expand range ?
-      if (begLn < begLine) { begLine = begLn; changed = true; }
-      if (endLn > endLine) { endLine = endLn; changed = true; }
+      if (begLn < mbegLine) { mbegLine = begLn; changed = true; }
+      if (endLn > mendLine) { mendLine = endLn; changed = true; }
     }
     CodeInfo *mom = CodeInfoParent();
     if (changed && (mom != NULL)) {
       Relocate();
-      mom->SetLineRange(begLine, endLine);
+      mom->SetLineRange(mbegLine, mendLine);
     }
   }
 }
@@ -1596,8 +1608,8 @@ CodeInfo::Relocate()
 {
   CodeInfo *prev = PrevScope();
   CodeInfo *next = NextScope();
-  if (((!prev) || (prev->endLine <= begLine)) && 
-      ((!next) || (next->begLine >= endLine))) {
+  if (((!prev) || (prev->mendLine <= mbegLine)) && 
+      ((!next) || (next->mbegLine >= mendLine))) {
      return;
   } 
   ScopeInfo *mom = Parent();
@@ -1605,16 +1617,16 @@ CodeInfo::Relocate()
   if (mom->FirstChild() == NULL) {
     Link(mom);
   }
-  else if (begLine == UNDEF_LINE) {
+  else if (mbegLine == UNDEF_LINE) {
     // insert as first child
     LinkBefore(mom->FirstChild());
   } else {
-    // insert after sibling with sibling->endLine < begLine 
+    // insert after sibling with sibling->mendLine < mbegLine 
     // or iff that does not exist insert as first in sibling list
     CodeInfo* sibling = NULL;
     for (sibling = mom->LastEnclScope(); sibling;
 	 sibling = sibling->PrevScope()) {
-      if (sibling->endLine < begLine)  
+      if (sibling->mendLine < mbegLine)  
 	break;
     } 
     if (sibling != NULL) {
@@ -1632,7 +1644,7 @@ CodeInfo::ContainsLine(suint ln) const
    if (Type() == FILE) {
      return true;
    } 
-   return ((begLine >= 1) && (begLine <= ln) && (ln <= endLine));
+   return ((mbegLine >= 1) && (mbegLine <= ln) && (ln <= mendLine));
 } 
 
 CodeInfo* 
@@ -1640,8 +1652,8 @@ CodeInfo::CodeInfoWithLine(suint ln) const
 {
    BriefAssertion(ln != UNDEF_LINE);
    CodeInfo *ci;
-   // ln > endLine means there is no child that contains ln
-   if (ln <= endLine) {
+   // ln > mendLine means there is no child that contains ln
+   if (ln <= mendLine) {
      for (ScopeInfoChildIterator it(this); it.Current(); it++) {
        ci = dynamic_cast<CodeInfo*>(it.Current());
        BriefAssertion(ci);
@@ -1665,10 +1677,10 @@ CodeInfo::CodeInfoWithLine(suint ln) const
 int 
 CodeInfoLineComp(CodeInfo* x, CodeInfo* y)
 {
-  if (x->BegLine() == y->BegLine()) {
+  if (x->begLine() == y->begLine()) {
     // Given two CodeInfo's with identical endpoints consider two
     // special cases:
-    bool endLinesEqual = (x->EndLine() == y->EndLine());
+    bool endLinesEqual = (x->endLine() == y->endLine());
     
     // 1. If a ProcScope, use a lexiocraphic compare
     if (endLinesEqual
@@ -1687,9 +1699,9 @@ CodeInfoLineComp(CodeInfo* x, CodeInfo* y)
     }
     
     // 3. General case
-    return SimpleLineCmp(x->EndLine(), y->EndLine());
+    return SimpleLineCmp(x->endLine(), y->endLine());
   } else {
-    return SimpleLineCmp(x->BegLine(), y->BegLine());
+    return SimpleLineCmp(x->begLine(), y->begLine());
   }
 }
 

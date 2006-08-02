@@ -165,7 +165,7 @@ public:
   
   // Returns true if the operation at 'pc' and 'opIndex' is within the
   // 'in' set; false otherwise.
-  virtual bool operator()(Addr pc, ushort opIndex) = 0;
+  virtual bool operator()(VMA pc, ushort opIndex) = 0;
 
 private:
 };
@@ -272,7 +272,7 @@ public:
   
   // Returns true if the operation at 'pc' and 'opIndex' satisfies
   // 'expr'; false otherwise.
-  virtual bool operator()(Addr pc, ushort opIndex);
+  virtual bool operator()(VMA pc, ushort opIndex);
   
 private:
   InsnClassExpr expr;

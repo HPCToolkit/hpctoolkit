@@ -415,20 +415,20 @@ HTMLFile::NavigateFrameHrefForLoop(LoopScope* ls, unsigned int width,
   String text1 = ScopeInfo::ScopeTypeToName(ScopeInfo::LOOP);
   text1 += " " + fs->BaseName() + ": ";
   String text2 = text1;
-  text1 += String(ls->BegLine());
-  text2 += String(ls->EndLine());
+  text1 += String(ls->begLine());
+  text2 += String(ls->endLine());
   String anchor1 = 
      HTMLDriver::UniqueName(first, NO_PERF_INDEX, NO_FLATTEN_DEPTH);
   String anchor2 = 
      HTMLDriver::UniqueName(last, NO_PERF_INDEX, NO_FLATTEN_DEPTH);
   String realanchor1, realanchor2;
-  if (first->BegLine() == ls->BegLine()) {
+  if (first->begLine() == ls->begLine()) {
     realanchor1 = anchor1 + "X" + HTMLDriver::UniqueNameForSelf(ls) + "s";
   } else {
     realanchor1 = 
       HTMLDriver::UniqueName(ls, NO_PERF_INDEX, NO_FLATTEN_DEPTH) + "s";
   }
-  if (last->EndLine() == ls->EndLine() ) {
+  if (last->endLine() == ls->endLine() ) {
     realanchor2 = anchor2 + "X" + HTMLDriver::UniqueNameForSelf(ls) + "e";
   } else {
     realanchor2 = 
@@ -436,7 +436,7 @@ HTMLFile::NavigateFrameHrefForLoop(LoopScope* ls, unsigned int width,
   }
 
   String text = ScopeInfo::ScopeTypeToName(ScopeInfo::LOOP);
-  text += " " + String(ls->BegLine()) + "-" + String(last->EndLine());
+  text += " " + String(ls->begLine()) + "-" + String(last->endLine());
 
   BriefAssertion( width >= strlen(text) );
   String txt = ":" + fs->BaseName(); 
@@ -450,21 +450,21 @@ HTMLFile::NavigateFrameHrefForLoop(LoopScope* ls, unsigned int width,
     << ScopeInfo::ScopeTypeToName(ScopeInfo::LOOP) << " <a"
     << " onMouseOver=\"window.status ='" << text1 << "'; return true\"" 
     << " href=\"javascript:navframes('" << realanchor1 << "'" << ")\">" 
-    << String(ls->BegLine()) << "</a>-" 
+    << String(ls->begLine()) << "</a>-" 
     << "<a" << " onMouseOver=\"window.status ='" << text2 << "'; return true\""
     << " href=\"javascript:navframes('" << realanchor2 << "'" << ")\">" 
-    << String(ls->EndLine()) << "</a>"
+    << String(ls->endLine()) << "</a>"
     << HTMLEscapeStr(txt) << fill;
   if (flattening == NO_FLATTEN_DEPTH)
   {
     (*this)
       << "<a name='" << realanchor1 << "'></a>" 
       << "<a name='" << realanchor2 << "'></a>";
-    if (first->BegLine() == ls->BegLine()) {
+    if (first->begLine() == ls->begLine()) {
       (*this) << "<a name='" << anchor1 << "Y'></a>";
     }
-    if (last->EndLine() == ls->EndLine() 
-        && !(first->BegLine() == ls->BegLine() && first == last)) {
+    if (last->endLine() == ls->endLine() 
+        && !(first->begLine() == ls->begLine() && first == last)) {
       // just check not to put the same anchor twice
       (*this) << "<a name='" << anchor2 << "Y'></a>";
     }
@@ -475,11 +475,11 @@ HTMLFile::NavigateFrameHrefForLoop(LoopScope* ls, unsigned int width,
       << "<a name='l" << flattening << "_" << realanchor1 << "'></a>" 
       << "<a name='l" << flattening << "_" << realanchor2 << "'></a>";
 
-    if (first->BegLine() == ls->BegLine()) {
+    if (first->begLine() == ls->begLine()) {
       (*this) << "<a name='l" << flattening << "_" << anchor1 << "Y'></a>";
     }
-    if (last->EndLine() == ls->EndLine() 
-        && !(first->BegLine() == ls->BegLine() && first == last)) {
+    if (last->endLine() == ls->endLine() 
+        && !(first->begLine() == ls->begLine() && first == last)) {
       // just check not to put the same anchor twice
       (*this) << "<a name='l" << flattening << "_" << anchor2 << "Y'></a>";
     }
@@ -498,7 +498,7 @@ HTMLFile::NavigateFrameHrefForProc(ProcScope* ps, unsigned int width,
   BriefAssertion( fs != NULL );
   String text  = HTMLTable::CodeName(*ps); 
   String anchor;
-  if (first->BegLine() == ps->BegLine() ) {
+  if (first->begLine() == ps->begLine() ) {
     anchor = HTMLDriver::UniqueName(first, NO_PERF_INDEX, NO_FLATTEN_DEPTH)
       + "X" + HTMLDriver::UniqueNameForSelf(ps);
   } else {

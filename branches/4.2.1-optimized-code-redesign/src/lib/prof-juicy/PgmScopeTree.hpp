@@ -62,6 +62,8 @@
 
 #include "PerfMetric.hpp"
 
+#include <lib/binutils/VMAInterval.hpp>
+
 #include <lib/support/Unique.hpp>
 #include <lib/support/NonUniformDegreeTree.hpp>
 #include <lib/support/String.hpp>
@@ -365,8 +367,11 @@ protected:
 public: 
   virtual ~CodeInfo();
 
-  suint BegLine() const { return begLine; } // in source code
-  suint EndLine() const { return endLine; } // in source code
+  suint begLine() const { return mbegLine; } // in source code
+  suint endLine() const { return mendLine; } // in source code
+
+  VMAIntervalSet&       vmaSet()       { return mvmaSet; }
+  const VMAIntervalSet& vmaSet() const { return mvmaSet; }
   
   bool      ContainsLine(suint ln) const;
   CodeInfo* CodeInfoWithLine(suint ln) const;
@@ -393,6 +398,7 @@ public:
   virtual String ToXML(int dmpFlag = 0) const;
 
   virtual String XMLLineRange(int dmpFlag) const;
+  virtual String XMLVMAIntervals(int dmpFlag) const;
   
   virtual void CSV_Dump(const PgmScope &root, std::ostream &os = std::cout, 
                const char *file_name = NULL, const char *proc_name = NULL,
@@ -404,8 +410,11 @@ public:
 
 protected: 
   void Relocate();
-  suint begLine;
-  suint endLine;
+
+protected:
+  suint mbegLine;
+  suint mendLine;
+  VMAIntervalSet mvmaSet;
 
   CodeInfo *first; // FIXME: this seems to duplicate NonUniformDegreeTree...
   CodeInfo *last;

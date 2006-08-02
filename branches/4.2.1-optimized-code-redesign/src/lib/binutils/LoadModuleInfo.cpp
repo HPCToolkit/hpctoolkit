@@ -96,7 +96,7 @@ LoadModuleInfo::~LoadModuleInfo()
 }
 
 bool
-LoadModuleInfo::GetSymbolicInfo(Addr pc, ushort opIndex,
+LoadModuleInfo::GetSymbolicInfo(VMA pc, ushort opIndex,
 				String& func, String& file, SrcLineX& srcLn)
 {
   // 'PCToSrcLineXMap' has priority over 'LoadModule'.
@@ -104,7 +104,7 @@ LoadModuleInfo::GetSymbolicInfo(Addr pc, ushort opIndex,
   if (map) {
     // FIXME: add opindex to map
     // Look in 'PCToSrcLineXMap'.
-    Addr strta = map->GetStartAddr(), enda = map->GetEndAddr();
+    VMA strta = map->GetStartVMA(), enda = map->GetEndVMA();
     if ( strta <= pc && pc <= enda ) {
       ProcPCToSrcLineXMap* pmap = map->FindProc(pc);
       SrcLineX* s = pmap->Find(pc);
@@ -132,7 +132,7 @@ LoadModuleInfo::GetSymbolicInfo(Addr pc, ushort opIndex,
 
 
 bool 
-LoadModuleInfo::GetProcedureFirstLineInfo(Addr pc, 
+LoadModuleInfo::GetProcedureFirstLineInfo(VMA pc, 
 					  ushort opIndex, 
 					  suint &line) {
   return lm->GetProcedureFirstLineInfo(pc, opIndex, line);

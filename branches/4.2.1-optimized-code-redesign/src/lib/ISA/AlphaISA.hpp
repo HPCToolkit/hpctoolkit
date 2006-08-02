@@ -86,8 +86,8 @@ public:
 
   virtual InstDesc GetInstDesc(MachInst* mi, ushort opIndex, ushort sz = 0);
 
-  virtual Addr GetInstTargetAddr(MachInst* mi, Addr pc, ushort opIndex,
-				 ushort sz = 0);
+  virtual VMA GetInstTargetVMA(MachInst* mi, VMA pc, ushort opIndex,
+			       ushort sz = 0);
   
   virtual ushort GetInstNumDelaySlots(MachInst* mi, ushort opIndex,
 				      ushort sz = 0)

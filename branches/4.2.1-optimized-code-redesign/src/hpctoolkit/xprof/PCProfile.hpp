@@ -76,7 +76,7 @@ typedef std::vector<PCProfileMetric*>      PCProfileMetricVec;
 typedef PCProfileMetricVec::iterator       PCProfileMetricVecIt;
 typedef PCProfileMetricVec::const_iterator PCProfileMetricVecCIt;
 
-typedef std::vector<Addr>     PCVec;
+typedef std::vector<VMA>     PCVec;
 typedef PCVec::iterator       PCVecIt;
 typedef PCVec::const_iterator PCVecCIt;
 
@@ -129,7 +129,7 @@ public:
   // operation designated by 'pc' and 'opIndex'?  If yes, returns the
   // index of the first metric with non-nil data (forward iteration
   // from 0 to size); otherwise, returns negative.  
-  sint DataExists(Addr pc, ushort opIndex) const;
+  sint DataExists(VMA pc, ushort opIndex) const;
 
   // Filter(): Returns a new, non-null but possibly empty, set of
   // metrics that pass the filter (i.e., every metric metric 'm' for
@@ -228,8 +228,8 @@ public:
   // Text start and size (redundant).  Note: all metrics for one
   // profile should have identical values for
   // PCProfileMetric::GetTxtStart() and PCProfileMetric::GetTxtSz()
-  Addr GetTxtStart() const { return (GetSz()) ? Index(0)->GetTxtStart() : 0; }
-  Addr GetTxtSz()    const { return (GetSz()) ? Index(0)->GetTxtSz() : 0; }
+  VMA GetTxtStart() const { return (GetSz()) ? Index(0)->GetTxtStart() : 0; }
+  VMA GetTxtSz()    const { return (GetSz()) ? Index(0)->GetTxtSz() : 0; }
   
   // Access to metrics (redundant)
   const PCProfileMetric* GetMetric(suint i) const { return Index(i); }
@@ -240,7 +240,7 @@ public:
 
   // Access to PCs containing non-zero profiling info
   suint GetNumPCs() { return pcVec.size(); }
-  void AddPC(Addr pc, ushort opIndex); // be careful: should be no duplicates
+  void AddPC(VMA pc, ushort opIndex); // be careful: should be no duplicates
 
   void Dump(std::ostream& o = std::cerr);
   void DDump(); 
@@ -272,7 +272,7 @@ public:
 
   // Note: This is the 'operation PC' and may not actually be the true
   // PC!  cf. ISA::ConvertOpPCToPC(...).
-  Addr Current() const { return (*it); }
+  VMA Current() const { return (*it); }
 
   void operator++()    { it++; } // prefix
   void operator++(int) { ++it; } // postfix

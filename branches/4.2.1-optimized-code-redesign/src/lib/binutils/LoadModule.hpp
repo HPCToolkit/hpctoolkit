@@ -47,8 +47,8 @@
 //
 //***************************************************************************
 
-#ifndef LoadModule_H 
-#define LoadModule_H
+#ifndef LoadModule_hpp 
+#define LoadModule_hpp
 
 //************************* System Include Files ****************************
 
@@ -60,7 +60,9 @@
 
 #include <include/general.h>
 
+#include "VMAInterval.hpp"
 #include "BinUtils.hpp"
+
 #include <lib/ISA/ISATypes.hpp>
 #include <lib/support/String.hpp>
 
@@ -84,18 +86,7 @@ extern ISA* isa; // current ISA
 // first line of the procedure. This map is built upon reading the
 // module. 
 // [FIXME: this should be hidden within LoadModule and should be a general addr => procedure map.]
-typedef std::pair< Addr, Addr > AddrPair;
-
-struct PairAddrLt {
-  bool operator() (const AddrPair pair1, const AddrPair pair2) const {
-    return ((pair1.first < pair2.first) || 
-	    ((pair1.first == pair2.first) &&  
-	    (pair1.second < pair2.second)));
-  }
-};
-typedef std::map< std::pair<Addr,Addr>, suint, PairAddrLt>  AddrToProcedureMap;
-typedef AddrToProcedureMap::iterator AddrToProcedureMapIt;
-typedef AddrToProcedureMap::value_type AddrToProcedureMapVal;
+typedef std::map<VMAInterval, suint, lt_VMAInterval> VMAToProcedureMap;
 
 //***************************************************************************
 // LoadModule
@@ -138,25 +129,25 @@ public:
 
   // GetTextBeg, GetTextEnd: (Unrelocated) Text begin and end.
   // FIXME: only guaranteed on alpha at present
-  Addr GetTextBeg() const { return textBeg; }
-  Addr GetTextEnd() const { return textEnd; }
+  VMA GetTextBeg() const { return textBeg; }
+  VMA GetTextEnd() const { return textEnd; }
 
   // FIXME: on platform other than Alpha/Tru64 we need to set these
-  void SetTextBeg(Addr x)  { textBeg = x; }
-  void SetTextEnd(Addr x)    { textEnd = x; }
+  void SetTextBeg(VMA x)  { textBeg = x; }
+  void SetTextEnd(VMA x)    { textEnd = x; }
   
-  Addr GetFirstAddr() const { return firstaddr; }
-  void SetFirstAddr(Addr x) { firstaddr = x; }
+  VMA GetFirstVMA() const { return firstaddr; }
+  void SetFirstVMA(VMA x) { firstaddr = x; }
 
 
   // after read in the binary, get the smallest begin VMA and largest end VMA
   // of all the text sections
-  void GetTextBegEndVMA(Addr* begVMA, Addr* endVMA);
+  void GetTextBegEndVMA(VMA* begVMA, VMA* endVMA);
 
   // Relocate: 'Relocate' the text section to the supplied text begin
   // address.  All member functions that take VMAs will assume they
   // receive *relocated* values.  A value of 0 unrelocates the module.
-  void Relocate(Addr textBegReloc_);
+  void Relocate(VMA textBegReloc_);
   bool IsRelocated() const;
 
   // GetNumSections: Return number of sections
@@ -184,9 +175,9 @@ public:
   // not the bits.
   //
   // AddInst: Add an instruction to the map
-  MachInst*    GetMachInst(Addr vma, ushort &size) const;
-  Instruction* GetInst(Addr vma, ushort opIndex) const;
-  void AddInst(Addr vma, ushort opIndex, Instruction *inst);
+  MachInst*    GetMachInst(VMA vma, ushort &size) const;
+  Instruction* GetInst(VMA vma, ushort opIndex) const;
+  void AddInst(VMA vma, ushort opIndex, Instruction *inst);
 
   
   // GetSourceFileInfo: If possible, find the source file, function
@@ -213,14 +204,14 @@ public:
   //     information from 'begVMA' is used.
   // The second version only returns true when all information is
   // found and no error is detected.
-  bool GetSourceFileInfo(Addr vma, ushort opIndex,
+  bool GetSourceFileInfo(VMA vma, ushort opIndex,
 			 String &func, String &file, suint &line) const;
-  bool GetSourceFileInfo(Addr begVMA, ushort bOpIndex,
-			 Addr endVMA, ushort eOpIndex,
+  bool GetSourceFileInfo(VMA begVMA, ushort bOpIndex,
+			 VMA endVMA, ushort eOpIndex,
 			 String &func, String &file,
 			 suint &begLine, suint &endLine) const;
 
-  bool GetProcedureFirstLineInfo(Addr vma, ushort opIndex, suint &line);
+  bool GetProcedureFirstLineInfo(VMA vma, ushort opIndex, suint &line);
 
   DbgFuncSummary* GetDebugFuncSummary() { return &dbgSummary; }
 
@@ -255,17 +246,17 @@ public:
       ~Info() { }
       
       Info* parent;
-      Addr  parentVMA;
+      VMA  parentVMA;
 
-      Addr begVMA; // begin VMA
-      Addr endVMA; // end VMA (at the end of the last insn)
+      VMA begVMA; // begin VMA
+      VMA endVMA; // end VMA (at the end of the last insn)
       String name, filenm;
       suint begLine;
 
       std::ostream& dump(std::ostream& os) const;
     };
 
-    typedef Addr                                              key_type;
+    typedef VMA                                               key_type;
     typedef Info*                                             mapped_type;
   
     typedef std::map<key_type, mapped_type>                   My_t;
@@ -348,10 +339,10 @@ private:
   
   // Builds the map from <proc beg addr, proc end addr> pairs to 
   // procedure first line.
-  bool buildAddrToProcedureMap();
+  bool buildVMAToProcedureMap();
 
   // UnRelocateVMA: Given a relocated VMA, returns a non-relocated version.
-  Addr UnRelocateVMA(Addr relocatedVMA) const 
+  VMA UnRelocateVMA(VMA relocatedVMA) const 
     { return (relocatedVMA + unRelocDelta); }
   
   // Comparison routines for QuickSort.
@@ -364,14 +355,14 @@ private:
   void DumpModuleInfo(std::ostream& o = std::cerr, const char* pre = "") const;
   void DumpSymTab(std::ostream& o = std::cerr, const char* pre = "") const;
   
-  // Virtual memory address to Instruction* map: Note that 'Addr' is
+  // Virtual memory address to Instruction* map: Note that 'VMA' is
   // not necessarily the true vma value; rather, it is the address of
   // the individual operation (ISA::ConvertVMAToOpVMA).
-  typedef std::map<Addr, Instruction*, lt_Addr>           AddrToInstMap;
-  typedef std::map<Addr, Instruction*, lt_Addr>::iterator AddrToInstMapIt;
-  typedef std::map<Addr, Instruction*, lt_Addr>::const_iterator
-    AddrToInstMapItC;  
-  typedef std::map<Addr, Instruction*>::value_type        AddrToInstMapVal;
+  typedef std::map<VMA, Instruction*, lt_VMA>           VMAToInstMap;
+  typedef std::map<VMA, Instruction*, lt_VMA>::iterator VMAToInstMapIt;
+  typedef std::map<VMA, Instruction*, lt_VMA>::const_iterator
+    VMAToInstMapItC;  
+  typedef std::map<VMA, Instruction*>::value_type        VMAToInstMapVal;
   
   // Section sequence: 'deque' supports random access iterators (and
   // is thus sortable with std::sort) and constant time insertion/deletion at
@@ -386,16 +377,16 @@ protected:
 private: 
   String name;
   Type   type;
-  Addr   textBeg, textEnd; // text begin and end
-  Addr   firstaddr;        // shared library load address begin
-  Addr   textBegReloc;     // relocated text begin
-  AddrSigned unRelocDelta; // offset to unrelocate relocated VMAs
+  VMA   textBeg, textEnd; // text begin and end
+  VMA   firstaddr;        // shared library load address begin
+  VMA   textBegReloc;     // relocated text begin
+  VMASigned unRelocDelta; // offset to unrelocate relocated VMAs
     
   SectionSeq sections; // A list of sections
 
   // A map of virtual memory addresses to Instruction*
-  AddrToInstMap addrToInstMap;  // owns all Instruction*
-  AddrToProcedureMap addrToProcedureMap; // CC
+  VMAToInstMap addrToInstMap;  // owns all Instruction*
+  VMAToProcedureMap addrToProcMap; // CC
 
   // symbolic info used in building procedures
   DbgFuncSummary dbgSummary; 
@@ -415,7 +406,7 @@ public:
   // See LoadModule::Open comments
   virtual bool Open(const char* moduleName);
   
-  Addr GetStartAddr() const { return startAddr; }
+  VMA GetStartVMA() const { return startVMA; }
   
   virtual void Dump(std::ostream& o = std::cerr, const char* pre = "") const;
   virtual void DDump() const; 
@@ -428,7 +419,7 @@ private:
   
 protected:
 private:
-  Addr startAddr;
+  VMA startVMA;
 };
 
 //***************************************************************************

@@ -82,7 +82,7 @@ PCProfileMetricSet::~PCProfileMetricSet()
 }
 
 sint
-PCProfileMetricSet::DataExists(Addr pc, ushort opIndex) const
+PCProfileMetricSet::DataExists(VMA pc, ushort opIndex) const
 {
   for (suint i = 0; i < GetSz(); i++) {
     const PCProfileMetric* m = Index(i);
@@ -140,12 +140,12 @@ PCProfile::~PCProfile()
 }
 
 void
-PCProfile::AddPC(Addr pc, ushort opIndex) 
+PCProfile::AddPC(VMA pc, ushort opIndex) 
 {
   if (pcVec.size() == pcVec.capacity()) {
     pcVec.reserve(pcVec.capacity() * 2);
   }
-  Addr oppc = GetISA()->ConvertVMAToOpVMA(pc, opIndex);
+  VMA oppc = GetISA()->ConvertVMAToOpVMA(pc, opIndex);
   pcVec.push_back(oppc);
 }
 

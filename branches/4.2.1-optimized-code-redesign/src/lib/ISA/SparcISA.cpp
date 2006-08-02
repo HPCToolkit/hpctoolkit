@@ -176,8 +176,8 @@ SparcISA::GetInstDesc(MachInst* mi, ushort opIndex, ushort sz)
 }
 
 
-Addr
-SparcISA::GetInstTargetAddr(MachInst* mi, Addr pc, ushort opIndex, ushort sz)
+VMA
+SparcISA::GetInstTargetVMA(MachInst* mi, VMA pc, ushort opIndex, ushort sz)
 {
   // N.B.: The GNU decoders assume that the address of 'mi' is
   // actually the PC/vma in order to calculate PC-relative targets.

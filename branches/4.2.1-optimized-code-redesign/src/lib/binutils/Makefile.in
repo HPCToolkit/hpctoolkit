@@ -112,12 +112,12 @@ CONFIG_CLEAN_FILES =
 LTLIBRARIES = $(noinst_LTLIBRARIES)
 am__DEPENDENCIES_1 =
 libHPCbinutils_la_DEPENDENCIES = $(am__DEPENDENCIES_1)
-am__objects_1 = libHPCbinutils_la-BinUtils.lo \
-	libHPCbinutils_la-Instruction.lo \
-	libHPCbinutils_la-LoadModule.lo \
+am__objects_1 = libHPCbinutils_la-Instruction.lo \
+	libHPCbinutils_la-LoadModule.lo libHPCbinutils_la-Procedure.lo \
+	libHPCbinutils_la-Section.lo \
 	libHPCbinutils_la-LoadModuleInfo.lo \
-	libHPCbinutils_la-PCToSrcLineMap.lo \
-	libHPCbinutils_la-Procedure.lo libHPCbinutils_la-Section.lo
+	libHPCbinutils_la-BinUtils.lo libHPCbinutils_la-VMAInterval.lo \
+	libHPCbinutils_la-PCToSrcLineMap.lo
 am_libHPCbinutils_la_OBJECTS = $(am__objects_1)
 libHPCbinutils_la_OBJECTS = $(am_libHPCbinutils_la_OBJECTS)
 DEFAULT_INCLUDES = -I. -I$(srcdir)
@@ -302,7 +302,7 @@ HPC_IFLAGS = -I$(HPCTOOLKIT)/src
 ############################################################
 
 # Linking dependencies:
-#   HPC_LIBPROFJUICY : HPC_LIBSUPPORT
+#   HPC_LIBPROFJUICY : HPC_LIBBINUTILS HPC_LIBSUPPORT
 #   HPC_LIBPROFLEAN  :
 #   HPC_LIBBINUTILS  : HPC_LIBISA HPC_LIBSUPPORT
 #   HPC_LIBISA       : HPC_LIBSUPPORT
@@ -323,13 +323,17 @@ HPC_LIBSUPPORT = $(top_builddir)/src/lib/support/libHPCsupport.la
 # Local settings
 #############################################################################
 MYSOURCES = \
-	BinUtils.hpp BinUtils.cpp \
 	Instruction.hpp Instruction.cpp \
 	LoadModule.hpp LoadModule.cpp \
-	LoadModuleInfo.hpp LoadModuleInfo.cpp \
-	PCToSrcLineMap.hpp PCToSrcLineMap.cpp \
 	Procedure.hpp Procedure.cpp \
-	Section.hpp Section.cpp
+	Section.hpp Section.cpp \
+	\
+	LoadModuleInfo.hpp LoadModuleInfo.cpp \
+	\
+	BinUtils.hpp BinUtils.cpp \
+	VMAInterval.hpp VMAInterval.cpp \
+	\
+	PCToSrcLineMap.hpp PCToSrcLineMap.cpp
 
 MYCFLAGS = @HOST_CFLAGS@   $(HPC_IFLAGS) @GNUBINUTILS_IFLAGS@
 MYCXXFLAGS = @HOST_CXXFLAGS@ $(HPC_IFLAGS) @GNUBINUTILS_IFLAGS@
@@ -412,6 +416,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCbinutils_la-PCToSrcLineMap.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCbinutils_la-Procedure.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCbinutils_la-Section.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCbinutils_la-VMAInterval.Plo@am__quote@
 
 .cpp.o:
 @am__fastdepCXX_TRUE@	if $(CXXCOMPILE) -MT $@ -MD -MP -MF "$(DEPDIR)/$*.Tpo" -c -o $@ $<; \
@@ -434,13 +439,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(LTCXXCOMPILE) -c -o $@ $<
 
-libHPCbinutils_la-BinUtils.lo: BinUtils.cpp
-@am__fastdepCXX_TRUE@	if $(LIBTOOL) --tag=CXX --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCbinutils_la_CXXFLAGS) $(CXXFLAGS) -MT libHPCbinutils_la-BinUtils.lo -MD -MP -MF "$(DEPDIR)/libHPCbinutils_la-BinUtils.Tpo" -c -o libHPCbinutils_la-BinUtils.lo `test -f 'BinUtils.cpp' || echo '$(srcdir)/'`BinUtils.cpp; \
-@am__fastdepCXX_TRUE@	then mv -f "$(DEPDIR)/libHPCbinutils_la-BinUtils.Tpo" "$(DEPDIR)/libHPCbinutils_la-BinUtils.Plo"; else rm -f "$(DEPDIR)/libHPCbinutils_la-BinUtils.Tpo"; exit 1; fi
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='BinUtils.cpp' object='libHPCbinutils_la-BinUtils.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(LIBTOOL) --tag=CXX --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCbinutils_la_CXXFLAGS) $(CXXFLAGS) -c -o libHPCbinutils_la-BinUtils.lo `test -f 'BinUtils.cpp' || echo '$(srcdir)/'`BinUtils.cpp
-
 libHPCbinutils_la-Instruction.lo: Instruction.cpp
 @am__fastdepCXX_TRUE@	if $(LIBTOOL) --tag=CXX --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCbinutils_la_CXXFLAGS) $(CXXFLAGS) -MT libHPCbinutils_la-Instruction.lo -MD -MP -MF "$(DEPDIR)/libHPCbinutils_la-Instruction.Tpo" -c -o libHPCbinutils_la-Instruction.lo `test -f 'Instruction.cpp' || echo '$(srcdir)/'`Instruction.cpp; \
 @am__fastdepCXX_TRUE@	then mv -f "$(DEPDIR)/libHPCbinutils_la-Instruction.Tpo" "$(DEPDIR)/libHPCbinutils_la-Instruction.Plo"; else rm -f "$(DEPDIR)/libHPCbinutils_la-Instruction.Tpo"; exit 1; fi
@@ -455,20 +453,6 @@ libHPCbinutils_la-LoadModule.lo: LoadModule.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(LIBTOOL) --tag=CXX --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCbinutils_la_CXXFLAGS) $(CXXFLAGS) -c -o libHPCbinutils_la-LoadModule.lo `test -f 'LoadModule.cpp' || echo '$(srcdir)/'`LoadModule.cpp
 
-libHPCbinutils_la-LoadModuleInfo.lo: LoadModuleInfo.cpp
-@am__fastdepCXX_TRUE@	if $(LIBTOOL) --tag=CXX --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCbinutils_la_CXXFLAGS) $(CXXFLAGS) -MT libHPCbinutils_la-LoadModuleInfo.lo -MD -MP -MF "$(DEPDIR)/libHPCbinutils_la-LoadModuleInfo.Tpo" -c -o libHPCbinutils_la-LoadModuleInfo.lo `test -f 'LoadModuleInfo.cpp' || echo '$(srcdir)/'`LoadModuleInfo.cpp; \
-@am__fastdepCXX_TRUE@	then mv -f "$(DEPDIR)/libHPCbinutils_la-LoadModuleInfo.Tpo" "$(DEPDIR)/libHPCbinutils_la-LoadModuleInfo.Plo"; else rm -f "$(DEPDIR)/libHPCbinutils_la-LoadModuleInfo.Tpo"; exit 1; fi
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='LoadModuleInfo.cpp' object='libHPCbinutils_la-LoadModuleInfo.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(LIBTOOL) --tag=CXX --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCbinutils_la_CXXFLAGS) $(CXXFLAGS) -c -o libHPCbinutils_la-LoadModuleInfo.lo `test -f 'LoadModuleInfo.cpp' || echo '$(srcdir)/'`LoadModuleInfo.cpp
-
-libHPCbinutils_la-PCToSrcLineMap.lo: PCToSrcLineMap.cpp
-@am__fastdepCXX_TRUE@	if $(LIBTOOL) --tag=CXX --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCbinutils_la_CXXFLAGS) $(CXXFLAGS) -MT libHPCbinutils_la-PCToSrcLineMap.lo -MD -MP -MF "$(DEPDIR)/libHPCbinutils_la-PCToSrcLineMap.Tpo" -c -o libHPCbinutils_la-PCToSrcLineMap.lo `test -f 'PCToSrcLineMap.cpp' || echo '$(srcdir)/'`PCToSrcLineMap.cpp; \
-@am__fastdepCXX_TRUE@	then mv -f "$(DEPDIR)/libHPCbinutils_la-PCToSrcLineMap.Tpo" "$(DEPDIR)/libHPCbinutils_la-PCToSrcLineMap.Plo"; else rm -f "$(DEPDIR)/libHPCbinutils_la-PCToSrcLineMap.Tpo"; exit 1; fi
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='PCToSrcLineMap.cpp' object='libHPCbinutils_la-PCToSrcLineMap.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(LIBTOOL) --tag=CXX --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCbinutils_la_CXXFLAGS) $(CXXFLAGS) -c -o libHPCbinutils_la-PCToSrcLineMap.lo `test -f 'PCToSrcLineMap.cpp' || echo '$(srcdir)/'`PCToSrcLineMap.cpp
-
 libHPCbinutils_la-Procedure.lo: Procedure.cpp
 @am__fastdepCXX_TRUE@	if $(LIBTOOL) --tag=CXX --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCbinutils_la_CXXFLAGS) $(CXXFLAGS) -MT libHPCbinutils_la-Procedure.lo -MD -MP -MF "$(DEPDIR)/libHPCbinutils_la-Procedure.Tpo" -c -o libHPCbinutils_la-Procedure.lo `test -f 'Procedure.cpp' || echo '$(srcdir)/'`Procedure.cpp; \
 @am__fastdepCXX_TRUE@	then mv -f "$(DEPDIR)/libHPCbinutils_la-Procedure.Tpo" "$(DEPDIR)/libHPCbinutils_la-Procedure.Plo"; else rm -f "$(DEPDIR)/libHPCbinutils_la-Procedure.Tpo"; exit 1; fi
@@ -482,6 +466,34 @@ libHPCbinutils_la-Section.lo: Section.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='Section.cpp' object='libHPCbinutils_la-Section.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(LIBTOOL) --tag=CXX --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCbinutils_la_CXXFLAGS) $(CXXFLAGS) -c -o libHPCbinutils_la-Section.lo `test -f 'Section.cpp' || echo '$(srcdir)/'`Section.cpp
+
+libHPCbinutils_la-LoadModuleInfo.lo: LoadModuleInfo.cpp
+@am__fastdepCXX_TRUE@	if $(LIBTOOL) --tag=CXX --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCbinutils_la_CXXFLAGS) $(CXXFLAGS) -MT libHPCbinutils_la-LoadModuleInfo.lo -MD -MP -MF "$(DEPDIR)/libHPCbinutils_la-LoadModuleInfo.Tpo" -c -o libHPCbinutils_la-LoadModuleInfo.lo `test -f 'LoadModuleInfo.cpp' || echo '$(srcdir)/'`LoadModuleInfo.cpp; \
+@am__fastdepCXX_TRUE@	then mv -f "$(DEPDIR)/libHPCbinutils_la-LoadModuleInfo.Tpo" "$(DEPDIR)/libHPCbinutils_la-LoadModuleInfo.Plo"; else rm -f "$(DEPDIR)/libHPCbinutils_la-LoadModuleInfo.Tpo"; exit 1; fi
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='LoadModuleInfo.cpp' object='libHPCbinutils_la-LoadModuleInfo.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(LIBTOOL) --tag=CXX --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCbinutils_la_CXXFLAGS) $(CXXFLAGS) -c -o libHPCbinutils_la-LoadModuleInfo.lo `test -f 'LoadModuleInfo.cpp' || echo '$(srcdir)/'`LoadModuleInfo.cpp
+
+libHPCbinutils_la-BinUtils.lo: BinUtils.cpp
+@am__fastdepCXX_TRUE@	if $(LIBTOOL) --tag=CXX --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCbinutils_la_CXXFLAGS) $(CXXFLAGS) -MT libHPCbinutils_la-BinUtils.lo -MD -MP -MF "$(DEPDIR)/libHPCbinutils_la-BinUtils.Tpo" -c -o libHPCbinutils_la-BinUtils.lo `test -f 'BinUtils.cpp' || echo '$(srcdir)/'`BinUtils.cpp; \
+@am__fastdepCXX_TRUE@	then mv -f "$(DEPDIR)/libHPCbinutils_la-BinUtils.Tpo" "$(DEPDIR)/libHPCbinutils_la-BinUtils.Plo"; else rm -f "$(DEPDIR)/libHPCbinutils_la-BinUtils.Tpo"; exit 1; fi
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='BinUtils.cpp' object='libHPCbinutils_la-BinUtils.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(LIBTOOL) --tag=CXX --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCbinutils_la_CXXFLAGS) $(CXXFLAGS) -c -o libHPCbinutils_la-BinUtils.lo `test -f 'BinUtils.cpp' || echo '$(srcdir)/'`BinUtils.cpp
+
+libHPCbinutils_la-VMAInterval.lo: VMAInterval.cpp
+@am__fastdepCXX_TRUE@	if $(LIBTOOL) --tag=CXX --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCbinutils_la_CXXFLAGS) $(CXXFLAGS) -MT libHPCbinutils_la-VMAInterval.lo -MD -MP -MF "$(DEPDIR)/libHPCbinutils_la-VMAInterval.Tpo" -c -o libHPCbinutils_la-VMAInterval.lo `test -f 'VMAInterval.cpp' || echo '$(srcdir)/'`VMAInterval.cpp; \
+@am__fastdepCXX_TRUE@	then mv -f "$(DEPDIR)/libHPCbinutils_la-VMAInterval.Tpo" "$(DEPDIR)/libHPCbinutils_la-VMAInterval.Plo"; else rm -f "$(DEPDIR)/libHPCbinutils_la-VMAInterval.Tpo"; exit 1; fi
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='VMAInterval.cpp' object='libHPCbinutils_la-VMAInterval.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(LIBTOOL) --tag=CXX --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCbinutils_la_CXXFLAGS) $(CXXFLAGS) -c -o libHPCbinutils_la-VMAInterval.lo `test -f 'VMAInterval.cpp' || echo '$(srcdir)/'`VMAInterval.cpp
+
+libHPCbinutils_la-PCToSrcLineMap.lo: PCToSrcLineMap.cpp
+@am__fastdepCXX_TRUE@	if $(LIBTOOL) --tag=CXX --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCbinutils_la_CXXFLAGS) $(CXXFLAGS) -MT libHPCbinutils_la-PCToSrcLineMap.lo -MD -MP -MF "$(DEPDIR)/libHPCbinutils_la-PCToSrcLineMap.Tpo" -c -o libHPCbinutils_la-PCToSrcLineMap.lo `test -f 'PCToSrcLineMap.cpp' || echo '$(srcdir)/'`PCToSrcLineMap.cpp; \
+@am__fastdepCXX_TRUE@	then mv -f "$(DEPDIR)/libHPCbinutils_la-PCToSrcLineMap.Tpo" "$(DEPDIR)/libHPCbinutils_la-PCToSrcLineMap.Plo"; else rm -f "$(DEPDIR)/libHPCbinutils_la-PCToSrcLineMap.Tpo"; exit 1; fi
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='PCToSrcLineMap.cpp' object='libHPCbinutils_la-PCToSrcLineMap.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(LIBTOOL) --tag=CXX --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCbinutils_la_CXXFLAGS) $(CXXFLAGS) -c -o libHPCbinutils_la-PCToSrcLineMap.lo `test -f 'PCToSrcLineMap.cpp' || echo '$(srcdir)/'`PCToSrcLineMap.cpp
 
 mostlyclean-libtool:
 	-rm -f *.lo

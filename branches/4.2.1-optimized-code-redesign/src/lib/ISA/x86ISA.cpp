@@ -186,8 +186,8 @@ x86ISA::GetInstDesc(MachInst* mi, ushort opIndex, ushort s)
   return d;
 }
 
-Addr
-x86ISA::GetInstTargetAddr(MachInst* mi, Addr pc, ushort opIndex, ushort sz)
+VMA
+x86ISA::GetInstTargetVMA(MachInst* mi, VMA pc, ushort opIndex, ushort sz)
 {
   static const bfd_vma M32 = 0xffffffff;
   
@@ -202,10 +202,10 @@ x86ISA::GetInstTargetAddr(MachInst* mi, Addr pc, ushort opIndex, ushort sz)
   
   // The target field is only set on instructions with targets.
   if (di->target != 0) {
-    //Addr t = (mIs_x86_64) ?
+    //VMA t = (mIs_x86_64) ?
     //  ((di->target & M32) - (PTR_TO_BFDVMA(mi) & M32)) + (bfd_vma)pc :
     //  ((di->target)       - (PTR_TO_BFDVMA(mi) & M32)) + (bfd_vma)pc;
-    Addr t = ((di->target & M32) - (PTR_TO_BFDVMA(mi) & M32)) + (bfd_vma)pc;
+    VMA t = ((di->target & M32) - (PTR_TO_BFDVMA(mi) & M32)) + (bfd_vma)pc;
     return t;
   } 
   else {

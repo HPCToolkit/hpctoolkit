@@ -72,17 +72,17 @@
 
 //*************************** Forward Declarations ***************************
 
-// IRInterface types: Use OA_IRHANDLETYPE_SZ64 (size of bfd_vma/Addr)
+// IRInterface types: Use OA_IRHANDLETYPE_SZ64 (size of bfd_vma/VMA)
 //   ProcHandle  - 
 //   StmtHandle  - Instruction*
 //   ExprHandle  - 
 //   LeafHandle  - 
-//   StmtLabel   - Addr
+//   StmtLabel   - VMA
 //   SymHandle   - char* (simply dummy strings)
 //   ConstHandle - 
 
 // FIXME: eraxxon: Due to some unwariness, these types are a mixture
-// of fixed size (Addr) and relative size (Instruction*).  I think we
+// of fixed size (VMA) and relative size (Instruction*).  I think we
 // should be able to use only one so that casts are always between
 // types of the same size.
 
@@ -232,7 +232,7 @@ private:
 
 private:
   Procedure *proc;
-  std::set<Addr> branchTargetSet;
+  std::set<VMA> branchTargetSet;
 };
 
 #endif // BloopIRInterface_h

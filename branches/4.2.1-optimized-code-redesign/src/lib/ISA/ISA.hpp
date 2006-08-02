@@ -334,8 +334,8 @@ public:
   // not computed when it depends on values in registers
   // (e.g. indirect jumps).  'vma' is used only to calculate
   // PC-relative targets.
-  virtual Addr GetInstTargetAddr(MachInst* mi, Addr vma, ushort opIndex,
-				 ushort sz = 0) = 0;
+  virtual VMA GetInstTargetVMA(MachInst* mi, VMA vma, ushort opIndex,
+			       ushort sz = 0) = 0;
 
   // Returns the number of delay slots that must be observed by
   // schedulers before the effect of instruction 'mi' can be
@@ -351,7 +351,7 @@ public:
 				       ushort sz1,
 				       MachInst* mi2, ushort opIndex2,
 				       ushort sz2) const = 0;
-
+  
   // ConvertVMAToOpVMA: Given a vma at the beginning of an instruction
   // and an opIndex, returns one value -- an 'operation vma' --
   // representing both. 
@@ -367,10 +367,10 @@ public:
   // information is stored in this manner).
   //
   // The default function assumes non-VLIW architecture
-  virtual Addr ConvertVMAToOpVMA(Addr vma, ushort opIndex) const
+  virtual VMA ConvertVMAToOpVMA(VMA vma, ushort opIndex) const
   { return vma; }
 
-  virtual Addr ConvertOpVMAToVMA(Addr opvma, ushort& opIndex) const
+  virtual VMA ConvertOpVMAToVMA(VMA opvma, ushort& opIndex) const
   { opIndex = 0; return opvma; }
   
 private:

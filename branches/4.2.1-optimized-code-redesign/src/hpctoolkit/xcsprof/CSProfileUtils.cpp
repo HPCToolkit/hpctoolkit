@@ -97,7 +97,7 @@ extern "C" {
 
 bool AddPGMToCSProfTree(CSProfTree* tree, const char* progName);
 
-void ConvertOpIPToIP(Addr opIP, Addr& ip, ushort& opIdx);
+void ConvertOpIPToIP(VMA opIP, VMA& ip, ushort& opIdx);
 
 //****************************************************************************
 // Dump a CSProfTree and collect source file information
@@ -155,10 +155,10 @@ WriteCSProfile(CSProfile* prof, std::ostream& os, bool prettyPrint)
 
 bool 
 AddSourceFileInfoToCSProfile(CSProfile* prof, LoadModuleInfo* lm,
-                              Addr startaddr, Addr endaddr, bool lastone)
+                              VMA startaddr, VMA endaddr, bool lastone)
 {
   bool noError            = true;
-  Addr curr_ip; 
+  VMA curr_ip; 
 
   /* point to the first load module in the Epoch table */
   CSProfTree* tree = prof->GetTree();
@@ -283,7 +283,7 @@ ReadCSProfileFile_HCSPROFILE(const char* fnm,const char *execnm)
 
     }
   
-  epochmdlist->SortLoadmoduleByAddr(); 
+  epochmdlist->SortLoadmoduleByVMA(); 
 
 #ifdef XCSPROF_DEBUG 
   std::cerr<<"after sorting" << std::endl;
@@ -335,9 +335,9 @@ cstree_create_node_CB(void* tree,
  {
   CSProfTree* t = (CSProfTree*)tree; 
   
-  Addr ip;
+  VMA ip;
   ushort opIdx;
-  ConvertOpIPToIP((Addr)data->ip, ip, opIdx);
+  ConvertOpIPToIP((VMA)data->ip, ip, opIdx);
   vector<suint> metricsVector;
   metricsVector.clear();
   int i;
@@ -382,7 +382,7 @@ hpcfile_free_CB(void* mem)
 // pointer is represented by adding 0, 1, or 2 to the instruction
 // pointer for the first, second and third operation, respectively.
 void 
-ConvertOpIPToIP(Addr opIP, Addr& ip, ushort& opIdx)
+ConvertOpIPToIP(VMA opIP, VMA& ip, ushort& opIdx)
 {
   opIdx = (ushort)(opIP & 0x3); // the mask ...00011 covers 0, 1 and 2
   ip = opIP - opIdx;
@@ -516,11 +516,11 @@ typedef std::map<String, CSProfProcedureFrameNode*, StringLt>::value_type
   StringToProcedureFramesMapVal;
 
 bool NormalizeSameProcedureChildren(CSProfile* prof, LoadModuleInfo *lmi,
-				    Addr startaddr, Addr endaddr, bool lastone);
+				    VMA startaddr, VMA endaddr, bool lastone);
 
 bool 
 NormalizeInternalCallSites(CSProfile* prof, LoadModuleInfo *lmi, 
-                           Addr startaddr, Addr endaddr, bool lastone)
+                           VMA startaddr, VMA endaddr, bool lastone)
 {
   // Remove duplicate/inplied file and procedure information from tree
   bool pass1 = true;
@@ -535,11 +535,11 @@ NormalizeInternalCallSites(CSProfile* prof, LoadModuleInfo *lmi,
 // If pc values from the leaves map to the same source file info,
 // coalese these leaves into one.
 bool NormalizeSameProcedureChildren(CSProfile* prof, CSProfNode* node, LoadModuleInfo* lmi,
-                                    Addr startaddr, Addr endaddr, bool lastone);
+                                    VMA startaddr, VMA endaddr, bool lastone);
 
 bool 
 NormalizeSameProcedureChildren(CSProfile* prof, LoadModuleInfo *lmi,
-                               Addr startaddr, Addr endaddr, bool lastone)
+                               VMA startaddr, VMA endaddr, bool lastone)
 {
   CSProfTree* csproftree = prof->GetTree();
   if (!csproftree) { return true; }
@@ -554,7 +554,7 @@ NormalizeSameProcedureChildren(CSProfile* prof, LoadModuleInfo *lmi,
 
 bool 
 NormalizeSameProcedureChildren(CSProfile* prof, CSProfNode* node, LoadModuleInfo *lmi,
-                               Addr startaddr, Addr endaddr, bool lastone)
+                               VMA startaddr, VMA endaddr, bool lastone)
 {
   bool noError = true;
   
@@ -580,7 +580,7 @@ NormalizeSameProcedureChildren(CSProfile* prof, CSProfNode* node, LoadModuleInfo
     
     if (inspect) {
       CSProfCallSiteNode* c = dynamic_cast<CSProfCallSiteNode*>(child); 
-      Addr curr_ip = c->GetIP(); //FMZ
+      VMA curr_ip = c->GetIP(); //FMZ
       if ((curr_ip>= startaddr) && 
          ( lastone || curr_ip<= endaddr))  {  
        //only handle functions in the current load module
@@ -1081,7 +1081,7 @@ bool innerCopySourceFiles (CSProfNode* node,
 void
 LdmdSetUsedFlag(CSProfile* prof)
 { 
-   Addr curr_ip;  
+   VMA curr_ip;  
 
    CSProfTree* tree = prof->GetTree();
    CSProfNode* root = tree->GetRoot();

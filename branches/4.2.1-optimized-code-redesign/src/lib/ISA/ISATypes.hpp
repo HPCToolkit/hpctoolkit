@@ -63,11 +63,11 @@
 
 // Architectural datatypes: 
 
-// A memory address for an arbitrary target machine.  Take advantage
-// of 'bfd_vma' so we don't have to mess with differently sized address
-// spaces.  (0 is the null value)
-typedef bfd_vma Addr;
-typedef bfd_signed_vma AddrSigned; // useful for offsets
+// A virtual memory address for an arbitrary target machine.  Take
+// advantage of 'bfd_vma' so we don't have to mess with differently
+// sized address spaces.  (0 is the null value)
+typedef bfd_vma VMA;
+typedef bfd_signed_vma VMASigned; // useful for offsets
 
 // MachInst* can point to (non-)variable length instructions (or
 // instruction words) and should not be dereferenced.  To examine the
@@ -82,15 +82,15 @@ typedef unsigned char MachInstByte;
 #define PTR_TO_BFDVMA(x)         ((bfd_vma)(psuint)(x))
 #define BFDVMA_TO_PTR(x, totype) ((totype)(psuint)(x))
 
-#define PTR_TO_ADDR(x)          PTR_TO_BFDVMA(x)
-#define ADDR_TO_PTR(x, totype)  BFDVMA_TO_PTR(x, totype)
+#define PTR_TO_VMA(x)          PTR_TO_BFDVMA(x)
+#define VMA_TO_PTR(x, totype)  BFDVMA_TO_PTR(x, totype)
 
 
 //****************************************************************************
 
-struct lt_Addr {
+struct lt_VMA {
   // return true if s1 < s2; false otherwise
-  bool operator()(const Addr a1, const Addr a2) const { return a1 < a2; }
+  bool operator()(const VMA x, const VMA y) const { return x < y; }
 };
 
 #endif 

@@ -82,8 +82,8 @@ class Section {
 public: 
   enum Type {BSS, Text, Data, Unknown};
   
-  Section(LoadModule* _lm, String _name, Type t, Addr _beg,
-          Addr _end, Addr _sz);
+  Section(LoadModule* _lm, String _name, Type t, VMA _beg,
+          VMA _end, VMA _sz);
   virtual ~Section();
 
   LoadModule* GetLoadModule() const { return lm; }
@@ -96,29 +96,29 @@ public:
   // of a section is equal to the begin address of the next section
   // (or the end of the file).  Note that a different convention is
   // used for the end address of a 'Procedure'.
-  Addr GetBeg() const { return beg; }
-  Addr GetEnd() const { return end; }
+  VMA GetBeg() const { return beg; }
+  VMA GetEnd() const { return end; }
 
   // Return size of section
-  Addr GetSize() const { return size; }
+  VMA GetSize() const { return size; }
 
   // Return true if virtual memory address 'vma' is within the section
   // WARNING: vma must be unrelocated
-  bool IsIn(Addr vma) const { return (beg <= vma && vma < end); }
+  bool IsIn(VMA vma) const { return (beg <= vma && vma < end); }
 
   // Convenient wrappers for the 'LoadModule' versions of the same.
-  MachInst*    GetMachInst(Addr vma, ushort &sz) const {
+  MachInst*    GetMachInst(VMA vma, ushort &sz) const {
     return lm->GetMachInst(vma, sz);
   }
-  Instruction* GetInst(Addr vma, ushort opIndex) const {
+  Instruction* GetInst(VMA vma, ushort opIndex) const {
     return lm->GetInst(vma, opIndex);
   }
-  bool GetSourceFileInfo(Addr vma, ushort opIndex,
+  bool GetSourceFileInfo(VMA vma, ushort opIndex,
 			 String &func, String &file, suint &line) const {
     return lm->GetSourceFileInfo(vma, opIndex, func, file, line);
   }
-  bool GetSourceFileInfo(Addr begVMA, ushort bOpIndex,
-			 Addr endVMA, ushort eOpIndex,
+  bool GetSourceFileInfo(VMA begVMA, ushort bOpIndex,
+			 VMA endVMA, ushort eOpIndex,
 			 String &func, String &file,
 			 suint &begLine, suint &endLine) const {
     return lm->GetSourceFileInfo(begVMA, bOpIndex, endVMA, eOpIndex,
@@ -142,9 +142,9 @@ private:
 
   String name;
   Type   type;
-  Addr   beg;  // beginning of section 
-  Addr   end;  // end of section [equal to the beginning of next section]
-  Addr   size; // size in bytes
+  VMA   beg;  // beginning of section 
+  VMA   end;  // end of section [equal to the beginning of next section]
+  VMA   size; // size in bytes
 };
 
 //***************************************************************************
@@ -158,7 +158,7 @@ class TextSectionImpl;
 
 class TextSection : public Section { 
 public:
-  TextSection(LoadModule* _lm, String _name, Addr _beg, Addr _end,
+  TextSection(LoadModule* _lm, String _name, VMA _beg, VMA _end,
 	      suint _size, asymbol **syms, int numSyms, bfd *abfd);
   virtual ~TextSection();
 
@@ -181,8 +181,8 @@ private:
 
   // Construction helpers
   String FindProcedureName(bfd *abfd, asymbol *procSym) const;
-  Addr FindProcedureEnd(int funcSymIndex) const;
-  Instruction* MakeInstruction(bfd *abfd, MachInst* mi, Addr vma,
+  VMA FindProcedureEnd(int funcSymIndex) const;
+  Instruction* MakeInstruction(bfd *abfd, MachInst* mi, VMA vma,
 			       ushort opIndex, ushort sz) const;
   
   // Procedure sequence: 'deque' supports random access iterators (and

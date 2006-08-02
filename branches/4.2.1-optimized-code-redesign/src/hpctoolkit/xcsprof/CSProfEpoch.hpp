@@ -81,14 +81,14 @@ public:
 
     String  GetName() const{return name;}
 
-    Addr GetVaddr() const {return vaddr; }
+    VMA GetVaddr() const {return vaddr; }
 
-    Addr GetMapaddr() const {return mapaddr;} 
+    VMA GetMapaddr() const {return mapaddr;} 
     bool GetUsedFlag() const {return used;}
 
     void SetName(const char* s) {name = s; }
-    void SetVaddr(Addr  v) {vaddr=v;}
-    void SetMapaddr(Addr  m) {mapaddr=m; }  
+    void SetVaddr(VMA  v) {vaddr=v;}
+    void SetMapaddr(VMA  m) {mapaddr=m; }  
     void SetUsedFlag(bool b) {used=b;}
     
     bool LdMdInfoIsEmpty() {return (ldminfo==NULL); } 
@@ -101,8 +101,8 @@ public:
 private: 
   LoadModuleInfo* ldminfo;
   String name ;
-  Addr vaddr  ;
-  Addr mapaddr;  
+  VMA vaddr  ;
+  VMA mapaddr;  
   bool used   ;
 
 } ;
@@ -136,7 +136,7 @@ public:
 	     loadmoduleVec[i] = const_cast<CSProfLDmodule*>(ldm);
      }
 
-    void SortLoadmoduleByAddr(){
+    void SortLoadmoduleByVMA(){
       std::sort(loadmoduleVec.begin(), loadmoduleVec.end(), 
                      compare_ldmodule_by_mapaddr());
      } 
@@ -149,7 +149,7 @@ public:
     void Dump(std::ostream& o = std::cerr);
     void DDump();
 
-    CSProfLDmodule* FindLDmodule(Addr i);
+    CSProfLDmodule* FindLDmodule(VMA i);
 
     friend class CSProfEpoch_LdModuleIterator ;
 

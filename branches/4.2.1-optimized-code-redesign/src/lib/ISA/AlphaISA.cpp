@@ -753,8 +753,8 @@ AlphaISA::GetInstDesc(MachInst* mi, ushort opIndex, ushort sz)
   return InstDesc(InstDesc::INVALID);
 }
 
-Addr
-AlphaISA::GetInstTargetAddr(MachInst* mi, Addr pc, ushort opIndex, ushort sz)
+VMA
+AlphaISA::GetInstTargetVMA(MachInst* mi, VMA pc, ushort opIndex, ushort sz)
 {
   // We know that instruction sizes are guaranteed to be 4 bytes, but
   // the host may have a different byte order than the executable.

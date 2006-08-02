@@ -79,7 +79,7 @@
 class Instruction {
 public:
   Instruction(MachInst* _minst) : minst(_minst), vma(0) { } 
-  Instruction(MachInst* _minst, Addr _vma) : minst(_minst), vma(_vma) { } 
+  Instruction(MachInst* _minst, VMA _vma) : minst(_minst), vma(_vma) { } 
   virtual ~Instruction() { }
   
   // Returns a classification of the instruction
@@ -96,8 +96,8 @@ public:
 
   // Returns the VMA for the beginning of this instruction.
   // WARNING: this is unrelocated
-  Addr GetVMA() const { return vma; }
-  void SetVMA(Addr _vma) { vma = _vma; }
+  VMA GetVMA() const { return vma; }
+  void SetVMA(VMA _vma) { vma = _vma; }
   
   // Viewing each object code instruction as an instruction packet,
   // and recalling that all packets are "unpacked" in a 'LoadModule',
@@ -112,8 +112,8 @@ public:
   // target cannot be computed, return 0.  Note that a target is not
   // computed when it depends on values in registers (e.g. indirect
   // jumps).  'vma' is used only to calculate PC-relative targets.
-  virtual Addr GetTargetAddr(Addr _vma) const {
-    return isa->GetInstTargetAddr(minst, _vma, GetOpIndex(), GetSize());
+  virtual VMA GetTargetVMA(VMA _vma) const {
+    return isa->GetInstTargetVMA(minst, _vma, GetOpIndex(), GetSize());
   }
   
   // Returns the number of delay slots that must be observed by
@@ -147,7 +147,7 @@ private:
 protected:
   MachInst*  minst; // pointer to machine instruction [lives in Section]
 private:
-  Addr vma;         // vma of the beginning of this instruction packet
+  VMA vma;         // vma of the beginning of this instruction packet
 };
 
 //***************************************************************************
@@ -156,7 +156,7 @@ private:
 
 class CISCInstruction : public Instruction {
 public:
-  CISCInstruction(MachInst* _minst, Addr _vma, ushort sz)
+  CISCInstruction(MachInst* _minst, VMA _vma, ushort sz)
     : Instruction(_minst, _vma), size(sz) { }    
 
   virtual ~CISCInstruction() { }
@@ -166,8 +166,8 @@ public:
   virtual ushort GetNumOps() const  { return 1; }
 
   // Given a target or branch instruction, returns the target address.
-  virtual Addr GetTargetAddr(Addr _vma) const {
-    return isa->GetInstTargetAddr(minst, _vma, size);
+  virtual VMA GetTargetVMA(VMA _vma) const {
+    return isa->GetInstTargetVMA(minst, _vma, size);
   }
 
   virtual ushort GetNumDelaySlots() const {
@@ -196,7 +196,7 @@ private:
 
 class RISCInstruction : public Instruction {
 public:
-  RISCInstruction(MachInst* _minst, Addr _vma)
+  RISCInstruction(MachInst* _minst, VMA _vma)
     : Instruction(_minst, _vma) { } 
 
   virtual ~RISCInstruction() { }
@@ -226,7 +226,7 @@ private:
 
 class VLIWInstruction : public Instruction {
 public:
-  VLIWInstruction(MachInst* _minst, Addr _vma, ushort _opIndex)
+  VLIWInstruction(MachInst* _minst, VMA _vma, ushort _opIndex)
     : Instruction(_minst, _vma), opIndex(_opIndex) { } 
 
   virtual ~VLIWInstruction() { }

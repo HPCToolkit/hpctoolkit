@@ -326,18 +326,18 @@ public:
   // Constructor/Destructor
   CSProfCallSiteNode(CSProfNode* _parent);
   CSProfCallSiteNode(CSProfNode* _parent, 
-		     Addr _ip, ushort _opIndex, vector<suint> _metrics);
+		     VMA _ip, ushort _opIndex, vector<suint> _metrics);
   virtual ~CSProfCallSiteNode();
   
   // Node data
-  Addr GetIP() const { return ip-1; }
+  VMA GetIP() const { return ip-1; }
   ushort GetOpIndex() const { return opIndex; }
   
   const char* GetFile() const { return file; }
   const char* GetProc() const { return proc; }
   suint       GetLine() const { return begLine; }
 
-  void SetIP(Addr _ip, ushort _opIndex) { ip = _ip; opIndex = _opIndex; }
+  void SetIP(VMA _ip, ushort _opIndex) { ip = _ip; opIndex = _opIndex; }
 
   void SetFile(const char* fnm) { file = fnm; }
   void SetProc(const char* pnm) { proc = pnm; }
@@ -357,7 +357,7 @@ public:
   /// add metrics from call site node c to current node.
   void addMetrics(CSProfCallSiteNode* c);
 protected: 
-  Addr ip;        // instruction pointer for this node
+  VMA ip;        // instruction pointer for this node
   ushort opIndex; // index in the instruction 
 
   vector<suint> metrics;  
@@ -383,14 +383,14 @@ class CSProfStatementNode: public CSProfCodeNode {
   void copyCallSiteNode(CSProfCallSiteNode* _node);
 
   // Node data
-  Addr GetIP() const { return ip; }
+  VMA GetIP() const { return ip; }
   ushort GetOpIndex() const { return opIndex; }
   
   const char* GetFile() const { return file; }
   const char* GetProc() const { return proc; }
   suint       GetLine() const { return begLine; }
 
-  void SetIP(Addr _ip, ushort _opIndex) { ip = _ip; opIndex = _opIndex; }
+  void SetIP(VMA _ip, ushort _opIndex) { ip = _ip; opIndex = _opIndex; }
 
   void SetFile(const char* fnm) { file = fnm; }
   void SetProc(const char* pnm) { proc = pnm; }
@@ -405,7 +405,7 @@ class CSProfStatementNode: public CSProfCodeNode {
   virtual String ToDumpMetricsString(int dmpFlag = CSProfTree::XML_TRUE) const;
  
 protected: 
-  Addr ip;        // instruction pointer for this node
+  VMA ip;        // instruction pointer for this node
   ushort opIndex; // index in the instruction 
 
   vector<suint> metrics;  

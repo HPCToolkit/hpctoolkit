@@ -62,13 +62,17 @@ include $(top_srcdir)/src/Makeinclude.config
 #############################################################################
 
 MYSOURCES = \
-	BinUtils.hpp BinUtils.cpp \
 	Instruction.hpp Instruction.cpp \
 	LoadModule.hpp LoadModule.cpp \
-	LoadModuleInfo.hpp LoadModuleInfo.cpp \
-	PCToSrcLineMap.hpp PCToSrcLineMap.cpp \
 	Procedure.hpp Procedure.cpp \
-	Section.hpp Section.cpp
+	Section.hpp Section.cpp \
+	\
+	LoadModuleInfo.hpp LoadModuleInfo.cpp \
+	\
+	BinUtils.hpp BinUtils.cpp \
+	VMAInterval.hpp VMAInterval.cpp \
+	\
+	PCToSrcLineMap.hpp PCToSrcLineMap.cpp
 
 MYCFLAGS   = @HOST_CFLAGS@   $(HPC_IFLAGS) @GNUBINUTILS_IFLAGS@
 MYCXXFLAGS = @HOST_CXXFLAGS@ $(HPC_IFLAGS) @GNUBINUTILS_IFLAGS@

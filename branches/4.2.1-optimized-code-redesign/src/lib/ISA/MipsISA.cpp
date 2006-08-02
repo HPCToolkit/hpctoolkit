@@ -213,8 +213,8 @@ MipsISA::GetInstDesc(MachInst* mi, ushort opIndex, ushort sz)
 }
 
 
-Addr
-MipsISA::GetInstTargetAddr(MachInst* mi, Addr pc, ushort opIndex, ushort sz)
+VMA
+MipsISA::GetInstTargetVMA(MachInst* mi, VMA pc, ushort opIndex, ushort sz)
 {
   // We know that instruction sizes are guaranteed to be 4 bytes, but
   // the host may have a different byte order than the executable.

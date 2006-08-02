@@ -86,13 +86,13 @@ BloopIRInterface::BloopIRInterface (Procedure *_p)
   branchTargetSet.clear();
   for (ProcedureInstructionIterator pii(*proc); pii.IsValid(); ++pii) {
     Instruction *insn = pii.Current();
-    Addr curr_oppc = pii.CurrentVMA(); // the 'operation VMA'
+    VMA curr_oppc = pii.CurrentVMA(); // the 'operation VMA'
     
     // If this insn is a branch, record its target address in
     // the branch target set.
     ISA::InstDesc d = insn->GetDesc();
     if (d.IsBrRel()) {
-      branchTargetSet.insert(insn->GetTargetAddr(insn->GetVMA()));
+      branchTargetSet.insert(insn->GetTargetVMA(insn->GetVMA()));
     }
   }
 }
@@ -194,7 +194,7 @@ BloopIRInterface::dump(OA::StmtHandle stmt, std::ostream& os)
   // want is a textual disassembly of the instruction from the
   // disassembler.
 
-  Addr pc = insn->GetVMA();
+  VMA pc = insn->GetVMA();
   ISA::InstDesc d = insn->GetDesc();
 
   // Output pc and descriptor
@@ -205,7 +205,7 @@ BloopIRInterface::dump(OA::StmtHandle stmt, std::ostream& os)
     cout << " [branch target]";
   }
   if (d.IsBrRel()) {
-    Addr targ = insn->GetTargetAddr(pc);
+    VMA targ = insn->GetTargetVMA(pc);
     os << " <" << hex << "0x" << targ << dec << ">";
     if (proc->IsIn(targ) == false) {
       cout << " [out of procedure -- treated as SIMPLE]";
@@ -256,14 +256,14 @@ BloopIRInterface::getCFGStmtType(OA::StmtHandle h)
 {
   OA::CFG::IRStmtType ty;
   Instruction *insn = IRHNDL_TO_TY(h, Instruction*);
-  Addr br_targ = 0;
+  VMA br_targ = 0;
 
   ISA::InstDesc d = insn->GetDesc();
   if (d.IsBrUnCondRel()) {
     // Unconditional jump. If the branch targets a PC outside of its
     // procedure, then we just ignore it.  For bloop this is fine
     // since the branch won't create any loops.
-    br_targ = insn->GetTargetAddr(insn->GetVMA());
+    br_targ = insn->GetTargetVMA(insn->GetVMA());
     if (proc->IsIn(br_targ)) {
       ty = OA::CFG::UNCONDITIONAL_JUMP;
     } 
@@ -280,7 +280,7 @@ BloopIRInterface::getCFGStmtType(OA::StmtHandle h)
     // Unstructured two-way branches. If the branch targets a PC
     // outside of its procedure, then we just ignore it.  For bloop
     // this is fine since the branch won't create any loops.
-    br_targ = insn->GetTargetAddr(insn->GetVMA());
+    br_targ = insn->GetTargetVMA(insn->GetVMA());
     if (proc->IsIn(br_targ)) {
       ty = OA::CFG::USTRUCT_TWOWAY_CONDITIONAL_T;
     }
@@ -448,7 +448,7 @@ BloopIRInterface::getTargetLabel(OA::StmtHandle h, int n)
   Instruction *insn = IRHNDL_TO_TY(h, Instruction*);
   ISA::InstDesc d = insn->GetDesc();
   if (d.IsBrRel()) {
-    lbl = insn->GetTargetAddr(insn->GetVMA());
+    lbl = insn->GetTargetVMA(insn->GetVMA());
   } 
   else {
     lbl = 0; // FIXME: We're seeing indirect branches.

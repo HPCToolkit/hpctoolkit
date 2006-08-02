@@ -74,7 +74,7 @@ using std::dec;
 //***************************************************************************
 
 Section::Section(LoadModule* _lm, String _name, Type t,
-		 Addr _beg, Addr _end, Addr _sz)
+		 VMA _beg, VMA _end, VMA _sz)
   : lm(_lm), name(_name), type(t), beg(_beg), end(_end), size(_sz)
 {
 }
@@ -130,7 +130,7 @@ public:
 };
 
 
-TextSection::TextSection(LoadModule* _lm, String _name, Addr _beg, Addr _end,
+TextSection::TextSection(LoadModule* _lm, String _name, VMA _beg, VMA _end,
 			 suint _size, asymbol **syms, int numSyms, bfd *abfd)
   : Section(_lm, _name, Section::Text, _beg, _end, _size), impl(NULL),
     procedures(0)
@@ -253,8 +253,8 @@ TextSection::Create_InitializeProcs()
       // from the symbol table.
       // Note: Initially, the end addr is the *end* of the last insn.
       // This is changed after decoding below.
-      Addr begVMA = bfd_asymbol_value(sym);
-      Addr endVMA = 0; // see note above
+      VMA begVMA = bfd_asymbol_value(sym);
+      VMA endVMA = 0; // see note above
       String procNm;
       String symNm = bfd_asymbol_name(sym);
 
@@ -295,17 +295,17 @@ TextSection::Create_DisassembleProcs()
   // ------------------------------------------------------------
   // Disassemble the instructions in each procedure.
   // ------------------------------------------------------------
-  Addr sectionBase = GetBeg();
+  VMA sectionBase = GetBeg();
   
   for (TextSectionProcedureIterator it(*this); it.IsValid(); ++it) {
     Procedure* p = it.Current();
-    Addr procBeg = p->GetBegVMA();
-    Addr procEnd = p->GetEndVMA();
+    VMA procBeg = p->GetBegVMA();
+    VMA procEnd = p->GetEndVMA();
     ushort instSz = 0;
-    Addr lastInstVMA = procBeg; // vma of last valid instruction in the proc
+    VMA lastInstVMA = procBeg; // vma of last valid instruction in the proc
 
     // Iterate over each vma at which an instruction might begin
-    for (Addr vma = procBeg; vma < procEnd; ) {
+    for (VMA vma = procBeg; vma < procEnd; ) {
       MachInst *mi = &(impl->contents[vma - sectionBase]);
       instSz = isa->GetInstSize(mi);
       if (instSz == 0) {
@@ -374,12 +374,12 @@ TextSection::FindProcedureName(bfd *abfd, asymbol *procSym) const
 // This is normally the address of the next function symbol in this
 // section.  However, if this is the last function in the section,
 // then its end is the address of the end of the section.
-Addr
+VMA
 TextSection::FindProcedureEnd(int funcSymIndex) const
 {
   // Since the symbol table we get is sorted by VMA, we can stop
   // the search as soon as we've gone beyond the VMA of this section.
-  Addr ret = GetEnd();
+  VMA ret = GetEnd();
   for (int next = funcSymIndex + 1; next < impl->numSyms; next++) {
     asymbol *sym = impl->symTable[next];
     if (!IsIn(bfd_asymbol_value(sym))) {
@@ -397,7 +397,7 @@ TextSection::FindProcedureEnd(int funcSymIndex) const
 // Returns a new instruction of the appropriate type.  Promises not to
 // return NULL.
 Instruction*
-TextSection::MakeInstruction(bfd *abfd, MachInst* mi, Addr vma, ushort opIndex,
+TextSection::MakeInstruction(bfd *abfd, MachInst* mi, VMA vma, ushort opIndex,
 			     ushort sz) const
 {
   // Assume that there is only one instruction type per

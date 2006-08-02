@@ -211,7 +211,7 @@ CSProfCallSiteNode::CSProfCallSiteNode(CSProfNode* _parent)
   CSProfCallSiteNode_Check(this, _parent);
 }
 
-CSProfCallSiteNode::CSProfCallSiteNode(CSProfNode* _parent, Addr _ip, 
+CSProfCallSiteNode::CSProfCallSiteNode(CSProfNode* _parent, VMA _ip, 
 			      ushort _opIndex, vector<suint> _metrics)
   : CSProfCodeNode(CALLSITE, _parent, UNDEF_LINE, UNDEF_LINE), 
     ip(_ip), opIndex(_opIndex), metrics(_metrics) 

@@ -79,9 +79,9 @@ public:
   LoadModuleInfo(LoadModule* _lm, PCToSrcLineXMap* _map);
   ~LoadModuleInfo();
 
-  bool GetSymbolicInfo(Addr pc, ushort opIndex,
+  bool GetSymbolicInfo(VMA pc, ushort opIndex,
 		       String& func, String& file, SrcLineX& srcLn);
-  bool GetProcedureFirstLineInfo(Addr pc, ushort opIndex, suint &line);
+  bool GetProcedureFirstLineInfo(VMA pc, ushort opIndex, suint &line);
   
   LoadModule*      GetLM() const { return lm; }
   PCToSrcLineXMap* GetMap() const { return map; }

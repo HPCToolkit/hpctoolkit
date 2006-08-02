@@ -172,9 +172,8 @@ IA64ISA::GetInstDesc(MachInst* mi, ushort opIndex, ushort sz)
   return d;
 }
 
-Addr
-IA64ISA::GetInstTargetAddr(MachInst* mi, Addr pc, ushort opIndex,
-                           ushort sz)
+VMA
+IA64ISA::GetInstTargetVMA(MachInst* mi, VMA pc, ushort opIndex, ushort sz)
 {
   MachInst* gnuMI = ConvertMIToOpMI(mi, opIndex);
 
