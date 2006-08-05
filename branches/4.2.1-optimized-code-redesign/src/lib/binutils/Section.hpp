@@ -1,5 +1,6 @@
 // -*-Mode: C++;-*-
 // $Id$
+
 // * BeginRiceCopyright *****************************************************
 // 
 // Copyright ((c)) 2002, Rice University 
@@ -52,6 +53,7 @@
 
 //************************* System Include Files ****************************
 
+#include <string>
 #include <deque>
 #include <iostream>
 
@@ -61,9 +63,8 @@
 #include <include/gnu_bfd.h>
 
 #include "LoadModule.hpp"
-#include <lib/isa/ISATypes.hpp> 
-#include <lib/support/String.hpp>
 
+#include <lib/isa/ISATypes.hpp> 
 
 //*************************** Forward Declarations **************************
 
@@ -82,14 +83,14 @@ class Section {
 public: 
   enum Type {BSS, Text, Data, Unknown};
   
-  Section(LoadModule* _lm, String _name, Type t, VMA _beg,
+  Section(LoadModule* _lm, std::string& _name, Type t, VMA _beg,
           VMA _end, VMA _sz);
   virtual ~Section();
 
   LoadModule* GetLoadModule() const { return lm; }
 
   // Return name and type of section
-  String GetName() const { return name; }
+  const std::string& GetName() const { return name; }
   Type  GetType()  const { return type; }
   
   // Return begin/end virtual memory address for section.  The end
@@ -114,13 +115,15 @@ public:
     return lm->GetInst(vma, opIndex);
   }
   bool GetSourceFileInfo(VMA vma, ushort opIndex,
-			 String &func, String &file, suint &line) const {
+			 std::string& func, std::string& file, 
+			 suint& line) const {
     return lm->GetSourceFileInfo(vma, opIndex, func, file, line);
   }
+
   bool GetSourceFileInfo(VMA begVMA, ushort bOpIndex,
 			 VMA endVMA, ushort eOpIndex,
-			 String &func, String &file,
-			 suint &begLine, suint &endLine) const {
+			 std::string& func, std::string& file,
+			 suint& begLine, suint& endLine) const {
     return lm->GetSourceFileInfo(begVMA, bOpIndex, endVMA, eOpIndex,
 				 func, file, begLine, endLine);
   }
@@ -140,7 +143,7 @@ protected:
 private:
   LoadModule* lm; // we are not owners
 
-  String name;
+  std::string name;
   Type   type;
   VMA   beg;  // beginning of section 
   VMA   end;  // end of section [equal to the beginning of next section]
@@ -158,7 +161,7 @@ class TextSectionImpl;
 
 class TextSection : public Section { 
 public:
-  TextSection(LoadModule* _lm, String _name, VMA _beg, VMA _end,
+  TextSection(LoadModule* _lm, std::string& _name, VMA _beg, VMA _end,
 	      suint _size, asymbol **syms, int numSyms, bfd *abfd);
   virtual ~TextSection();
 
@@ -180,7 +183,7 @@ private:
   void Create_DisassembleProcs();
 
   // Construction helpers
-  String FindProcedureName(bfd *abfd, asymbol *procSym) const;
+  std::string FindProcedureName(bfd *abfd, asymbol *procSym) const;
   VMA FindProcedureEnd(int funcSymIndex) const;
   Instruction* MakeInstruction(bfd *abfd, MachInst* mi, VMA vma,
 			       ushort opIndex, ushort sz) const;

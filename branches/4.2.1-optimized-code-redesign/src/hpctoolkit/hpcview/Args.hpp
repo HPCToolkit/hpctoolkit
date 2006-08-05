@@ -53,10 +53,9 @@
 //************************ System Include Files ******************************
 
 #include <iostream>
+#include <string>
 
 //************************* User Include Files *******************************
-
-#include <lib/support/String.hpp>
 
 //************************ Forward Declarations ******************************
 
@@ -91,15 +90,15 @@ public:
   void Usage();
 
 public:  
-  static const String HPCTOOLKIT;
-  String hpcHome;
-  String fileHome; 
+  static const std::string HPCTOOLKIT;
+  std::string hpcHome;
+  std::string fileHome; 
 
   // Parsed Data: Command
-  String cmd; 
+  std::string cmd; 
 
   // Parsed Data: optional arguments
-  String htmlDir;
+  std::string htmlDir;
   bool OutputInitialScopeTree;
   bool OutputFinalScopeTree;
   bool CopySrcFiles;
@@ -107,7 +106,7 @@ public:
   bool OldStyleHTML;
   bool XML_ToStdout;
   bool XML_DumpAllMetrics;
-  String XML_Dump_File;
+  std::string XML_Dump_File;
   bool FlatCSVOutput;
   bool FlatTSVOutput;
 
@@ -119,7 +118,7 @@ public:
   float scopeThresholdPercent; 
 
   // Parsed Data: arguments
-  String configurationFile;
+  std::string configurationFile;
 
 private:
   void Ctor();

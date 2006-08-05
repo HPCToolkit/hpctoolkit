@@ -412,8 +412,8 @@ HTMLFile::NavigateFrameHrefForLoop(LoopScope* ls, unsigned int width,
 
   FileScope *fs = ls->File();
   BriefAssertion( fs != NULL );
-  String text1 = ScopeInfo::ScopeTypeToName(ScopeInfo::LOOP);
-  text1 += " " + fs->BaseName() + ": ";
+  String text1 = ScopeInfo::ScopeTypeToName(ScopeInfo::LOOP).c_str();
+  text1 += String(" ") + fs->BaseName().c_str() + ": ";
   String text2 = text1;
   text1 += String(ls->begLine());
   text2 += String(ls->endLine());
@@ -435,11 +435,11 @@ HTMLFile::NavigateFrameHrefForLoop(LoopScope* ls, unsigned int width,
       HTMLDriver::UniqueName(ls, NO_PERF_INDEX, NO_FLATTEN_DEPTH) + "e";
   }
 
-  String text = ScopeInfo::ScopeTypeToName(ScopeInfo::LOOP);
+  String text = ScopeInfo::ScopeTypeToName(ScopeInfo::LOOP).c_str();
   text += " " + String(ls->begLine()) + "-" + String(last->endLine());
 
   BriefAssertion( width >= strlen(text) );
-  String txt = ":" + fs->BaseName(); 
+  String txt = String(":") + fs->BaseName().c_str(); 
   String fill; 
   MakeFill(txt, fill, width - strlen(text)); 
 

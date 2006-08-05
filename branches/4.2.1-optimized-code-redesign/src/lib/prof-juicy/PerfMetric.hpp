@@ -1,5 +1,6 @@
-// $Id$
 // -*-C++-*-
+// $Id$
+
 // * BeginRiceCopyright *****************************************************
 // 
 // Copyright ((c)) 2002, Rice University 
@@ -39,11 +40,12 @@
 
 //************************ System Include Files ******************************
 
+#include <string>
+
 //************************* User Include Files *******************************
 
 #include <include/general.h>
 
-#include <lib/support/String.hpp>
 #include <lib/support/VectorTmpl.hpp>
 
 //************************ Forward Declarations ******************************
@@ -59,24 +61,24 @@ public:
 		  const char* col, // may be NULL for undefined 
 		  unsigned int w, 
                   bool formtAsInt)
-    : color(col), name(nam), width(w), formatAsInt(formtAsInt)
+    : name(nam), color((col ? col : "")), width(w), formatAsInt(formtAsInt)
     { }
 
   ~DataDisplayInfo();
 
-  const char*         Color()       const { return color; }
+  const std::string&  Name()        const { return name; }; 
+  const std::string&  Color()       const { return color; }
   unsigned int        Width()       const { return width; }
   bool                FormatAsInt() const { return formatAsInt; }
-  String              Name()        const { return name; }; 
   
-  String ToString() const; 
+  std::string ToString() const; 
 
 private:
   void SetWidth(unsigned int w) { width = w; } 
   friend class HTMLTable; 
 
-  String color;  
-  String name; 
+  std::string name; 
+  std::string color;  
   unsigned int width; 
   bool formatAsInt; 
 }; 
@@ -89,6 +91,8 @@ extern unsigned int      NumberOfPerfDataInfos();
 
 #define UNDEF_METRIC_INDEX (-1)
 extern int               NameToPerfDataIndex(const char* name); 
+inline int               NameToPerfDataIndex(const std::string& name)
+{ return NameToPerfDataIndex(name.c_str()); }
                          // returns UNDEF_METRIC_INDEX 
                          // if name is not a PerfMetric name
 
@@ -116,8 +120,8 @@ public:
   
   virtual ~PerfMetric();       
 
-  const String& Name() const          { return name; }
-  const String& NativeName() const    { return nativeName; }
+  const std::string& Name() const          { return name; }
+  const std::string& NativeName() const    { return nativeName; }
   unsigned int Index() const          { return perfInfoIndex; } 
   
   bool Display() const                { return display; }
@@ -133,7 +137,7 @@ public:
   
   virtual void Make(NodeRetriever &ret)  = 0;
 
-  String ToString() const; 
+  std::string ToString() const; 
 private: 
   static VectorTmpl<PerfMetric*> PerfMetricTable; 
   friend bool              IsPerfDataIndex(int i); 
@@ -142,8 +146,8 @@ private:
   friend PerfMetric&       IndexToPerfDataInfo(int i);
   friend void              ClearPerfDataSrcTable(); 
 
-  String name;
-  String nativeName;
+  std::string name;
+  std::string nativeName;
   unsigned int eventsPerCount; 
   DataDisplayInfo *dispInfo; 
   bool display; 
@@ -158,7 +162,10 @@ protected:
 class MetricException {
 public: 
   MetricException(const char* str) { error = str; } 
-  String error; 
+  MetricException(const std::string& str) { error = str; } 
+
+public:
+  std::string error; 
 }; 
 
 #endif 

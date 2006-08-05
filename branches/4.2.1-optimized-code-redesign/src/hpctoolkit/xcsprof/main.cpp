@@ -1,5 +1,6 @@
-// $Id$
 // -*-C++-*-
+// $Id$
+
 // * BeginRiceCopyright *****************************************************
 // 
 // Copyright ((c)) 2002, Rice University 
@@ -52,6 +53,10 @@
 #include <iostream>
 #include <fstream>
 #include <new>
+
+#include <string>
+using std::string;
+
 #include <sys/stat.h>
 #include <sys/types.h>
 
@@ -60,6 +65,7 @@
 #include "Args.hpp"
 //#include "ProfileReader.h" FIXME
 #include "CSProfileUtils.hpp"
+
 #include <lib/binutils/LoadModule.hpp>
 #include <lib/binutils/PCToSrcLineMap.hpp>
 #include <lib/binutils/LoadModuleInfo.hpp>
@@ -113,7 +119,8 @@ main(int argc, char* argv[])
   try {
     //profData = TheProfileReader.ReadProfileFile(args.profFile /*filetype*/); 
     // we need to know the name of the executable 
-    profData = ReadCSProfileFile_HCSPROFILE(args.profFile,args.progFile);
+    profData = ReadCSProfileFile_HCSPROFILE(args.profFile.c_str(), 
+					    args.progFile.c_str());
     if (!profData) { exit(1); } 
 
   } catch (std::bad_alloc& x) {
@@ -247,8 +254,8 @@ main(int argc, char* argv[])
       }
     */
 
-    String dbSourceDirectory = args.databaseDirectory+"/src";
-    if (mkdir(dbSourceDirectory,
+    string dbSourceDirectory = args.databaseDirectory + "/src";
+    if (mkdir(dbSourceDirectory.c_str(),
 	      S_IRWXU | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH) == -1) {
       cerr << "could not create database source code directory " << 
 	dbSourceDirectory << endl;

@@ -62,21 +62,21 @@ include $(top_srcdir)/src/Makeinclude.config
 #############################################################################
 
 MYSOURCES = \
-	Assertion.h Assertion.cpp \
 	CmdLineParser.hpp CmdLineParser.cpp \
+	Assertion.h Assertion.cpp \
 	diagnostics.h diagnostics.cpp \
 	DumpMsgHandler.hpp DumpMsgHandler.cpp \
 	Exception.hpp Exception.cpp \
 	Trace.hpp Trace.cpp \
 	\
 	bstring.h \
-	CStrUtil.h CStrUtil.cpp \
 	Nan.h Nan.cpp \
+	CStrUtil.h CStrUtil.cpp \
 	StrUtil.hpp StrUtil.cpp \
 	String.hpp String.cpp \
 	\
-	Files.hpp Files.cpp \
 	IOUtil.hpp IOUtil.cpp \
+	Files.hpp Files.cpp \
 	SrcFile.hpp SrcFile.cpp \
 	findinstall.h findinstall.c \
 	pathfind.h pathfind.cpp \

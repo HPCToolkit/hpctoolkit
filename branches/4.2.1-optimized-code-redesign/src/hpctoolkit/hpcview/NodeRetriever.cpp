@@ -51,6 +51,11 @@
 //************************ System Include Files ******************************
 
 #include <iostream>
+using std::endl;
+using std::cerr;
+
+#include <string>
+using std::string;
 
 //************************* User Include Files *******************************
 
@@ -59,7 +64,6 @@
 
 #include <lib/prof-juicy/PgmScopeTree.hpp>
 
-#include <lib/support/String.hpp>
 #include <lib/support/Assertion.h>
 #include <lib/support/pathfind.h>
 #include <lib/support/realpath.h>
@@ -67,46 +71,42 @@
 
 //************************ Forward Declarations ******************************
 
-using std::endl;
-using std::cerr;
-
-
 //************************ Local Declarations ******************************
 
 const char *unknownFileName = "<unknown>";
 
 //****************************************************************************
 
-static String 
-RemoveTrailingBlanks(const char* name)
+static string 
+RemoveTrailingBlanks(const string& name)
 {
   int i;
-  String noBlanks = name; 
-  for (i = strlen(name) - 1; i >= 0; i--) { 
+  string noBlanks = name; 
+  for (i = name.length() - 1; i >= 0; i--) { 
     if (noBlanks[(unsigned int)i] != ' ') 
       break;
   }
   i++; 
-  if ((unsigned int)i < strlen(name) ) { 
+  if ((unsigned int)i < name.length() ) { 
     noBlanks[(unsigned int)i] = '\0'; 
   }
   return noBlanks; 
 }
 
-static String 
-GetFormattedSourceFileName(const char* nm)
+static string 
+GetFormattedSourceFileName(const string& nm)
 { 
-  String name = RemoveTrailingBlanks(nm); 
+  string name = RemoveTrailingBlanks(nm); 
   return name; 
 }
 
 //****************************************************************************
 
-NodeRetriever::NodeRetriever(PgmScope* _root, const String& p) 
+NodeRetriever::NodeRetriever(PgmScope* _root, const string& p) 
   : root(_root), currentLM(NULL), currentFile(NULL), currentProc(NULL), path(p)
 {
   BriefAssertion(root != NULL);
-  BriefAssertion(p.Length() > 0);
+  BriefAssertion(!p.empty());
 }
 
 NodeRetriever::~NodeRetriever()
@@ -151,7 +151,7 @@ FileScope *
 NodeRetriever::MoveToFile(const char* name) 
 {
   static long unknownFileIndex = 0;
-  String knownByName;
+  string knownByName;
   
   BriefAssertion(name);
 
@@ -162,21 +162,24 @@ NodeRetriever::MoveToFile(const char* name)
     knownByName = "Unknown file in " + currentLM->BaseName();
     unknownFileIndex++;
     
-  } else {
+  } 
+  else {
     knownByName = name;
   }
  
   // Obtain a 'canonical' file name
-  String fileName = GetFormattedSourceFileName(knownByName);  
+  string fileName = GetFormattedSourceFileName(knownByName);
   
   bool srcIsReadable = true; 
 
-  String filePath = String(pathfind_r(path, fileName, "r")); 
-  if (filePath.Length() == 0) {
-    srcIsReadable = false; 
+  string filePath;
+  const char* pf = pathfind_r(path.c_str(), fileName.c_str(), "r");
+  if (!pf) {
+    srcIsReadable = false;
     filePath = fileName; 
-  } else {
-    filePath = RealPath(filePath); 
+  } 
+  else {
+    filePath = RealPath(pf);
   }
 
   // Search for the file

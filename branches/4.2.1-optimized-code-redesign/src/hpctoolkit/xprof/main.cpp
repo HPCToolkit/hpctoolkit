@@ -396,7 +396,7 @@ IsPredefDCPIFilterAvail(DCPIProfile* prof, PredefinedDCPIMetricTable::Entry* e)
     // mode or not): must check each metric
     for (PCProfileMetricSetIterator it(*prof); it.IsValid(); ++it) {
       PCProfileMetric* m = it.Current();
-      if (strcmp(e->availStr, m->GetName()) == 0) {
+      if (strcmp(e->availStr, m->GetName().c_str()) == 0) {
 	return true;
       }
     }

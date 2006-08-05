@@ -1,5 +1,6 @@
-// $Id$
 // -*-C++-*-
+// $Id$
+
 // * BeginRiceCopyright *****************************************************
 // 
 // Copyright ((c)) 2002, Rice University 
@@ -52,6 +53,8 @@
 
 //************************* System Include Files ****************************
 
+#include <string>
+
 //*************************** User Include Files ****************************
 
 #include <include/general.h>
@@ -74,8 +77,13 @@ public:
   // A metric can be created from a 'DCPIMetricDesc' or a string that
   // will be used to create a 'DCPIMetricDesc'.
   DCPIProfileMetric(ISA* isa_) : PCProfileMetric(isa_) { }
+
   DCPIProfileMetric(ISA* isa_, const char* name) 
     : PCProfileMetric(isa_), desc(name) { }
+
+  DCPIProfileMetric(ISA* isa_, const std::string& name) 
+    : PCProfileMetric(isa_), desc(name) { }
+
   DCPIProfileMetric(ISA* isa_, const DCPIMetricDesc& x) 
     : PCProfileMetric(isa_), desc(x) { }
 

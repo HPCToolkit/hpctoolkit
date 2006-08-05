@@ -1,5 +1,6 @@
-// $Id$
 // -*-C++-*-
+// $Id$
+
 // * BeginRiceCopyright *****************************************************
 // 
 // Copyright ((c)) 2002, Rice University 
@@ -154,7 +155,7 @@ HTMLTable::WriteTableHead(const char* dir,
 			  const char* bgColor) const {
   HTMLFile hf(dir, HeadFileName(sortByPerfIndex), NULL); 
   hf.SetBgColor(bgColor); 
-  hf.TableStart(name, IndexToPerfDataInfo(sortByPerfIndex).Name(), NULL); 
+  hf.TableStart(name, IndexToPerfDataInfo(sortByPerfIndex).Name().c_str(), NULL); 
   hf << "<div id=\"" << LINES_DIV_NAME << "\">" << endl;
   hf << "<pre>" << endl;
     
@@ -183,8 +184,8 @@ HTMLTable::WriteTableHead(const char* dir,
 			   // HTMLScopes::SelfFileName(scopes.Root(),index),
 			   HTMLScopes::KidsFrameName(), 
 			   // HTMLScopes::KidsFileName(scopes.Root(),index),
-			   IndexToPerfDataInfo(index).Name(),
-			   IndexToPerfDataInfo(index).DisplayInfo().Name(),
+			   IndexToPerfDataInfo(index).Name().c_str(),
+			   IndexToPerfDataInfo(index).DisplayInfo().Name().c_str(),
 			   dspInfo.Width() - noPercentAdjustment); 
       } else {
          String label = ""; 
@@ -294,7 +295,7 @@ HTMLTable::WriteRow(HTMLFile &hf, const ScopeInfo &scope, bool labelIsLink,
     hf.Anchor(scopeId); 
   
     // write row's label 
-    hf.FontColorStart(HTMLDriver::NameDisplayInfo.Color()); 
+    hf.FontColorStart(HTMLDriver::NameDisplayInfo.Color().c_str()); 
     String nm = CodeName(scope); 
     hf << NOARROW;
     if (labelIsLink) {
@@ -303,7 +304,7 @@ HTMLTable::WriteRow(HTMLFile &hf, const ScopeInfo &scope, bool labelIsLink,
       nm.LeftFormat(HTMLDriver::NameDisplayInfo.Width()); 
       hf << nm; 
     } 
-    hf.FontColorStop(HTMLDriver::NameDisplayInfo.Color()); 
+    hf.FontColorStop(HTMLDriver::NameDisplayInfo.Color().c_str()); 
     hf << " | "; 
     if (!WriteMetricValues(hf, perfIndex, &scope, *scopes.GetRoot())) {
       return false; 
@@ -321,11 +322,11 @@ HTMLTable::CodeName(const ScopeInfo& scope)
   if (t == ScopeInfo::PGM) {
     nm = "Program"; 
   } else if (t == ScopeInfo::LM || t == ScopeInfo::GROUP) {
-    nm = String(ScopeInfo::ScopeTypeToName(t)) + ":" + scope.Name();
+    nm = String(ScopeInfo::ScopeTypeToName(t).c_str()) + String(":") + scope.Name().c_str();
   } else {
     const CodeInfo* code = dynamic_cast<const CodeInfo*>(&scope);
     BriefAssertion(code);
-    nm = code->CodeName(); 
+    nm = code->CodeName().c_str(); 
   }
   return nm; 
 }
@@ -333,11 +334,11 @@ HTMLTable::CodeName(const ScopeInfo& scope)
 void
 HTMLTable::WriteMetricHeader(HTMLFile& hf, const IntVector *perfIndex)
 { 
-  hf.FontColorStart(HTMLDriver::NameDisplayInfo.Color()); 
-  String label = HTMLDriver::NameDisplayInfo.Name();
+  hf.FontColorStart(HTMLDriver::NameDisplayInfo.Color().c_str()); 
+  String label = HTMLDriver::NameDisplayInfo.Name().c_str();
   label.LeftFormat(HTMLDriver::NameDisplayInfo.Width());
   hf << NOARROW << label;
-  hf.FontColorStop(HTMLDriver::NameDisplayInfo.Color()); 
+  hf.FontColorStop(HTMLDriver::NameDisplayInfo.Color().c_str()); 
   hf << " | " ; 
   
   String percentStr; 
@@ -346,7 +347,7 @@ HTMLTable::WriteMetricHeader(HTMLFile& hf, const IntVector *perfIndex)
     const DataDisplayInfo& dspInfo = IndexToPerfDataInfo(index).DisplayInfo(); 
     int valWidth =  dspInfo.Width() - percentWidth - 1; 
     int myPercentWidth = percentWidth;
-    label = dspInfo.Name(); 
+    label = dspInfo.Name().c_str(); 
     label.LeftFormat(valWidth); 
     if (IndexToPerfDataInfo(index).Percent()) { 
       percentStr = "%"; 
@@ -355,7 +356,7 @@ HTMLTable::WriteMetricHeader(HTMLFile& hf, const IntVector *perfIndex)
       myPercentWidth = 0;
     }
     if (myPercentWidth > 0) percentStr.RightFormat(myPercentWidth + 1); 
-    const char* color =  dspInfo.Color();
+    const char* color = dspInfo.Color().c_str();
     hf.FontColorStart(color);
     hf << label << percentStr; 
     hf.FontColorStop(color); 
@@ -377,7 +378,7 @@ HTMLTable::WriteMetricValues(HTMLFile& hf, const IntVector *perfIndex,
     DataDisplayInfo& dspInfo = IndexToPerfDataInfo(index).DisplayInfo(); 
     int valWidth =  dspInfo.Width() - percentWidth - 1; 
     int myPercentWidth = percentWidth;
-    hf.FontColorStart(dspInfo.Color()); 
+    hf.FontColorStart(dspInfo.Color().c_str()); 
     String valStr, percentStr; 
     if (scope != NULL) {
       if (scope->HasPerfData(index)) { 
@@ -391,7 +392,7 @@ HTMLTable::WriteMetricValues(HTMLFile& hf, const IntVector *perfIndex,
 	} 
 	if (valStr.Length() > (unsigned int)valWidth) {
 	  dspInfo.SetWidth(valStr.Length() + percentWidth + 1);
-	  hf.FontColorStop(dspInfo.Color()); // eraxxon: must stop font
+	  hf.FontColorStop(dspInfo.Color().c_str()); // eraxxon: must stop font
 	  return false; 
 	}  
 	int valPercent = (int) ((val / root.PerfData(index)) * 100 + 0.5);
@@ -410,7 +411,7 @@ HTMLTable::WriteMetricValues(HTMLFile& hf, const IntVector *perfIndex,
     if (myPercentWidth > 0) percentStr.RightFormat(myPercentWidth + 1); 
     
     hf << valStr << percentStr << " | "; 
-    hf.FontColorStop(dspInfo.Color()); 
+    hf.FontColorStop(dspInfo.Color().c_str()); 
   }
   return true; 
 }
@@ -440,11 +441,11 @@ String
 HTMLTable::TableFileName(int pIndex) const 
 {
   return name + "." + filter.Name() + "." 
-              + IndexToPerfDataInfo(pIndex).Name() ; 
+              + IndexToPerfDataInfo(pIndex).Name().c_str(); 
 }
 
 String
 HTMLTable::HeadFileName(int pIndex) const {
   return name + "." + filter.Name() + "." 
-              + IndexToPerfDataInfo(pIndex).Name() + ".head" ; 
+              + String(IndexToPerfDataInfo(pIndex).Name().c_str()) + ".head" ; 
 } 

@@ -49,6 +49,13 @@
 
 //************************* System Include Files ****************************
 
+#include <iostream>
+using std::hex;
+using std::dec;
+
+#include <string>
+using std::string;
+
 //*************************** User Include Files ****************************
 
 #include "Procedure.hpp"
@@ -56,9 +63,6 @@
 #include <lib/support/Assertion.h>
 
 //*************************** Forward Declarations **************************
-
-using std::hex;
-using std::dec;
 
 //***************************************************************************
 
@@ -68,7 +72,7 @@ using std::dec;
 
 suint Procedure::nextId = 0;
 
-Procedure::Procedure(TextSection* _sec, String _name, String _linkname,
+Procedure::Procedure(TextSection* _sec, string& _name, string& _linkname,
                      Procedure::Type t, VMA _begVMA, VMA _endVMA, 
 		     suint _size)
   : sec(_sec), name(_name), linkname(_linkname), type(t), begVMA(_begVMA),
@@ -102,11 +106,11 @@ Procedure::GetLastInst() const
 void
 Procedure::Dump(std::ostream& o, const char* pre) const
 {
-  String p(pre);
-  String p1 = p + "  ";
-  String p2 = p + "    ";  
+  string p(pre);
+  string p1 = p + "  ";
+  string p2 = p + "    ";  
   
-  String func, file, func1, file1, func2, file2;
+  string func, file, func1, file1, func2, file2;
   suint begLn, endLn, begLn1, endLn2;
   Instruction* eInst = GetLastInst();
   ushort endOp = (eInst) ? eInst->GetOpIndex() : 0;
@@ -142,7 +146,7 @@ Procedure::Dump(std::ostream& o, const char* pre) const
   o << p1 << "----- Instruction Dump -----\n";
   for (ProcedureInstructionIterator it(*this); it.IsValid(); ++it) {
     Instruction* inst = it.Current();
-    inst->Dump(o, p2);
+    inst->Dump(o, p2.c_str());
   }
 }
 

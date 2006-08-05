@@ -79,32 +79,32 @@ namespace StrUtil {
 // --------------------------------------------------------------------------
 
 long
-ToLong(const char* str);
+toLong(const char* str);
 
 inline long
-ToLong(const std::string& str)
+toLong(const std::string& str)
 {
-  return ToLong(str.c_str());
+  return toLong(str.c_str());
 }
 
 
 uint64_t
-ToUInt64(const char* str);
+toUInt64(const char* str);
 
 inline uint64_t
-ToUInt64(const std::string& str)
+toUInt64(const std::string& str)
 {
-  return ToUInt64(str.c_str());
+  return toUInt64(str.c_str());
 }
 
 
 double   
-ToDbl(const char* str);
+toDbl(const char* str);
 
 inline double   
-ToDbl(const std::string& str)
+toDbl(const std::string& str)
 {
-  return ToDbl(str.c_str());
+  return toDbl(str.c_str());
 }
 
 
@@ -114,19 +114,22 @@ ToDbl(const std::string& str)
 // --------------------------------------------------------------------------
 
 std::string
-toStr(int x, int base = 10);
+toStr(const int x, int base = 10);
 
 std::string
-toStr(unsigned x, int base = 10);
+toStr(const unsigned x, int base = 10);
 
 std::string
-toStr(int64_t x, int base = 10);
+toStr(const int64_t x, int base = 10);
 
 std::string
-toStr(uint64_t x, int base = 10);
+toStr(const uint64_t x, int base = 10);
 
 std::string
-toStr(double x, const char* format = "%.3f");
+toStr(const void* x, int base = 16);
+
+std::string
+toStr(const double x, const char* format = "%.3f");
 
 
 } // end of StrUtil namespace

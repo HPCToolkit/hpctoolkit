@@ -514,8 +514,8 @@ BloopIRInterface::getProcSymHandle(OA::ProcHandle h)
 { 
   Procedure* p = IRHNDL_TO_TY(h, Procedure*);
   BriefAssertion(p == proc);
-  String& name = p->GetName(); // this gives us persistent data!
-  const char* nm = (const char *)name;
+  std::string& name = p->GetName(); // this gives us persistent data!
+  const char* nm = name.c_str();
   return TY_TO_IRHNDL(nm, OA::SymHandle);
 }
 

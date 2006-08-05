@@ -55,6 +55,8 @@
 
 #include "VMAInterval.hpp"
 
+#include <lib/support/StrUtil.hpp>
+
 //*************************** Forward Declarations **************************
 
 using std::cerr;
@@ -68,12 +70,12 @@ using std::dec;
 // VMAInterval
 //***************************************************************************
 
-String
+std::string
 VMAInterval::toString() const
 {
-  String self = "[0x"
-    + String(mBeg, true /*hex*/) + "-0x" 
-    + String(mEnd, true /*hex*/) + "]";
+  std::string self = "[0x"
+    + StrUtil::toStr(mBeg, 16) + "-0x" 
+    + StrUtil::toStr(mEnd, 16) + "]";
   return self;
 }
 
@@ -281,10 +283,10 @@ VMAIntervalSet::erase(const VMAIntervalSet::key_type& x)
 }
 
 
-String
+std::string
 VMAIntervalSet::toString() const
 {
-  String self;
+  std::string self;
   for (const_iterator it = this->begin(); it != this->end(); ++it) {
     self += (*it).toString() + " ";
   }

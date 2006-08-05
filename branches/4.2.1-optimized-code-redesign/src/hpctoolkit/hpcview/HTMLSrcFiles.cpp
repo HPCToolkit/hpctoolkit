@@ -113,7 +113,7 @@ HTMLSrcFiles::WriteSourceLabel(const char* dir,
   String pgmName = "";  
   String name = "";  
   if (file) {
-    pgmName = file->Name(); 
+    pgmName = file->Name().c_str(); 
     name = HTMLDriver::UniqueName(file, NO_PERF_INDEX, NO_FLATTEN_DEPTH); 
   }
   
@@ -121,7 +121,7 @@ HTMLSrcFiles::WriteSourceLabel(const char* dir,
   hf.SetFgColor(fgColor); 
   hf.SetBgColor(bgColor);
   hf.StartBodyOrFrameset(); 
-  if (file && (file->Name().Length() > 0)) { 
+  if (file && (file->Name().length() > 0)) { 
     hf << "<pre> SOURCE FILE: " << pgmName << "</pre>" << endl; 
   } else {
     hf << "<pre> FILE SYNOPSIS: " << pgmName << "</pre>" << endl; 
@@ -198,7 +198,7 @@ static ScopeInfoFilter UseForSrcCode(UseForSrc, "SrcCodeEntryFilter", 0);
 void
 HTMLSrcFiles::WriteSrc(HTMLFile &hf, FileScope &file) const
 {
-  FILE *srcFile = fopen(file.Name(), "r");
+  FILE *srcFile = fopen(file.Name().c_str(), "r");
   BriefAssertion(srcFile); 
   IFTRACE << "WRITESRC: file name=" << file.Name() << endl;
 
@@ -267,7 +267,7 @@ HTMLSrcFiles::GenSrc(HTMLFile &hf, CodeInfo &ci, unsigned int level,
   ReformatSrc(hf, "\n", UNDEF_LINE, NULL); 
   
   String line = String((char)' ', (unsigned int)(level * 3)); 
-  line += ci.Name() + "(...) "; 
+  line += ci.Name().c_str() + String("(...) "); 
   if (ci.begLine() == ci.endLine()) {
     line += "{ ... }\n"; 
   } else {
@@ -286,7 +286,7 @@ HTMLSrcFiles::GenSrc(HTMLFile &hf, CodeInfo &ci, unsigned int level,
     ReformatSrc(hf, line, UNDEF_LINE, NULL); 
   
     line = String((char)' ', (unsigned int)(level * 3)) + "} /* end " 
-      + ci.Name() + " */\n"; 
+      + String(ci.Name().c_str()) + " */\n"; 
     ReformatSrc(hf, line, ci.endLine(), NULL); 
   }
   line = String((char)' ', (unsigned int)(level * 3)) + "\n"; 

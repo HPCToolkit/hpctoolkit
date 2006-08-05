@@ -50,27 +50,28 @@
 //************************* System Include Files ****************************
 
 #include <fstream>
+
 #include <iostream>
-
-//*************************** User Include Files ****************************
-
-#include "PCToSrcLineMap.hpp"
-#include <lib/support/Assertion.h>
-
-#include <lib/xml/xml.hpp>
-
-//*************************** Forward Declarations ***************************
-
 using std::endl;
 using std::hex;
 using std::dec;
 
+//*************************** User Include Files ****************************
+
+#include "PCToSrcLineMap.hpp"
+
+#include <lib/support/Assertion.h>
+#include <lib/support/IOUtil.hpp>
+
+#include <lib/xml/xml.hpp>
 using namespace xml;
 
+//*************************** Forward Declarations ***************************
+
 // Data Reading/Writing Elements.  Index using 'XMLElementI'
-const String MapEle[]   = { "PCToSrcLineXMap", "sz"};     // ATT1
-const String ProcEle[]  = { "PROC", "n", "fn", "b", "e", "sz"}; // ATT5
-const String EntryEle[] = { "ENTRY", "pc", "l", "lx"};    // ATT3
+const char* MapEle[]   = { "PCToSrcLineXMap", "sz"};           // ATT1
+const char* ProcEle[]  = { "PROC", "n", "fn", "b", "e", "sz"}; // ATT5
+const char* EntryEle[] = { "ENTRY", "pc", "l", "lx"};          // ATT3
 
 //****************************************************************************
 
@@ -169,7 +170,7 @@ ProcPCToSrcLineXMap* PCToSrcLineXMap::FindProc(const char* s) const
   BriefAssertion(IsFinalized());
   for (suint i = 0; i < procVec->size(); i++) {
     ProcPCToSrcLineXMap* map = (*procVec)[i];
-    if (strcmp(map->GetProcName(), s) == 0) {
+    if (map->GetProcName() == s) {
       return map;
     }
   }
@@ -240,10 +241,10 @@ bool PCToSrcLineXMap::Read(std::istream& is)
   bool STATE = true; // false indicates an error
   suint numProc;     
   is >> std::ws;
-  STATE &= Skip(is, eleB);          is >> std::ws;
-  STATE &= Skip(is, MapEle[TOKEN]); is >> std::ws;
-  STATE &= Skip(is, MapEle[ATT1]) && ReadAttrNum(is, numProc);
-  STATE &= Skip(is, eleE);          is >> std::ws;
+  STATE &= IOUtil::Skip(is, eleB);          is >> std::ws;
+  STATE &= IOUtil::Skip(is, MapEle[TOKEN]); is >> std::ws;
+  STATE &= IOUtil::Skip(is, MapEle[ATT1]) && ReadAttrNum(is, numProc);
+  STATE &= IOUtil::Skip(is, eleE);          is >> std::ws;
   if (!STATE) { goto PCToSrcLineXMap_Read_fini; }
   
   for (suint i = 0; i < numProc; i++) {
@@ -254,9 +255,9 @@ bool PCToSrcLineXMap::Read(std::istream& is)
   }
   
   is >> std::ws;
-  STATE &= Skip(is, eleBf);         is >> std::ws; 
-  STATE &= Skip(is, MapEle[TOKEN]); is >> std::ws;
-  STATE &= Skip(is, eleE);          is >> std::ws;
+  STATE &= IOUtil::Skip(is, eleBf);         is >> std::ws; 
+  STATE &= IOUtil::Skip(is, MapEle[TOKEN]); is >> std::ws;
+  STATE &= IOUtil::Skip(is, eleE);          is >> std::ws;
   
  PCToSrcLineXMap_Read_fini:
   Finalize();
@@ -316,38 +317,38 @@ bool ProcPCToSrcLineXMap::Read(std::istream& is)
   bool STATE = true; // false indicates an error
   suint _numEntries = 0;
   is >> std::ws;
-  STATE &= Skip(is, eleB);             is >> std::ws;
-  STATE &= Skip(is, ProcEle[TOKEN]);   is >> std::ws;
-  STATE &= Skip(is, ProcEle[ATT1]) && ReadAttrStr(is, procName);
-  STATE &= Skip(is, ProcEle[ATT2]) && ReadAttrStr(is, fileName);
-  STATE &= Skip(is, ProcEle[ATT3]);    is >> hex;
+  STATE &= IOUtil::Skip(is, eleB);             is >> std::ws;
+  STATE &= IOUtil::Skip(is, ProcEle[TOKEN]);   is >> std::ws;
+  STATE &= IOUtil::Skip(is, ProcEle[ATT1]) && ReadAttrStr(is, procName);
+  STATE &= IOUtil::Skip(is, ProcEle[ATT2]) && ReadAttrStr(is, fileName);
+  STATE &= IOUtil::Skip(is, ProcEle[ATT3]);    is >> hex;
   STATE &= ReadAttrNum(is, startVMA); is >> dec;
-  STATE &= Skip(is, ProcEle[ATT4]);    is >> hex;
+  STATE &= IOUtil::Skip(is, ProcEle[ATT4]);    is >> hex;
   STATE &= ReadAttrNum(is, endVMA);   is >> dec;
-  STATE &= Skip(is, ProcEle[ATT5]) && ReadAttrNum(is, _numEntries);
-  STATE &= Skip(is, eleE);
+  STATE &= IOUtil::Skip(is, ProcEle[ATT5]) && ReadAttrNum(is, _numEntries);
+  STATE &= IOUtil::Skip(is, eleE);
   if (!STATE) { return false; }
 
   VMA pc;
   for (suint i = 0; i < _numEntries; i++) {
     is >> std::ws;
-    STATE &= Skip(is, eleB);            is >> std::ws;
-    STATE &= Skip(is, EntryEle[TOKEN]); is >> std::ws;
-    STATE &= Skip(is, EntryEle[ATT1]);  is >> hex;
+    STATE &= IOUtil::Skip(is, eleB);            is >> std::ws;
+    STATE &= IOUtil::Skip(is, EntryEle[TOKEN]); is >> std::ws;
+    STATE &= IOUtil::Skip(is, EntryEle[ATT1]);  is >> hex;
     STATE &= ReadAttrNum(is, pc);       is >> dec;
 
     SrcLineX* lineInstance = new SrcLineX();
     STATE &= lineInstance->Read(is);
-    STATE &= Skip(is, eleEc);
+    STATE &= IOUtil::Skip(is, eleEc);
     
     if (!STATE) { delete lineInstance; return false; }
     Insert(pc, lineInstance);
   }
 
   is >> std::ws;
-  STATE &= Skip(is, eleBf);          is >> std::ws;
-  STATE &= Skip(is, ProcEle[TOKEN]); is >> std::ws;
-  STATE &= Skip(is, eleE);           is >> std::ws;
+  STATE &= IOUtil::Skip(is, eleBf);          is >> std::ws;
+  STATE &= IOUtil::Skip(is, ProcEle[TOKEN]); is >> std::ws;
+  STATE &= IOUtil::Skip(is, eleE);           is >> std::ws;
 
   return STATE;
 }
@@ -396,8 +397,8 @@ bool SrcLineX::Read(std::istream& is)
 {
   bool STATE = true; // false indicates an error
   is >> std::ws;
-  STATE &= Skip(is, EntryEle[ATT2]) && ReadAttrNum(is, srcLine);
-  STATE &= Skip(is, EntryEle[ATT3]) && ReadAttrNum(is, srcLineX);
+  STATE &= IOUtil::Skip(is, EntryEle[ATT2]) && ReadAttrNum(is, srcLine);
+  STATE &= IOUtil::Skip(is, EntryEle[ATT3]) && ReadAttrNum(is, srcLineX);
   return STATE;
 }
 

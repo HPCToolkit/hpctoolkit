@@ -1,5 +1,6 @@
-// $Id$
 // -*-C++-*-
+// $Id$
+
 // * BeginRiceCopyright *****************************************************
 // 
 // Copyright ((c)) 2002, Rice University 
@@ -52,15 +53,10 @@
 #include <iostream> 
 using std::cerr;
 
-#ifdef NO_STD_CHEADERS
-# include <stdlib.h>
-#else
-# include <cstdlib>
-using std::atof; // For compatibility with non-std C headers
-using std::atoi;
-#endif
+#include <string>
+using std::string;
 
-//************************* Xerces Include Files *******************************
+//************************* Xerces Include Files *****************************
 
 #include "HPCViewSAX2.hpp"
 #include "HPCViewXMLErrHandler.hpp"
@@ -78,6 +74,8 @@ using XERCES_CPP_NAMESPACE::XMLString;
 
 #include <lib/support/Assertion.h>
 #include <lib/support/Trace.hpp>
+#include <lib/support/diagnostics.h>
+#include <lib/support/StrUtil.hpp>
 
 //************************ Forward Declarations ******************************
 
@@ -175,13 +173,13 @@ void PROFILEDocHandler::startElement(const XMLCh* const uri, const XMLCh* const 
   // PROFILE
   // -----------------------------------------------------------------  
   if (XMLString::equals(name, elemProfile)) {
-    String verStr = getAttr(attributes, attrVer);
-    double ver = atof(verStr);
+    string verStr = getAttr(attributes, attrVer);
+    double ver = StrUtil::toDbl(verStr);
     
     // We can handle versions 3.0+
     profVersion = ver;
     if (profVersion < 3.0) {
-      String error = "This file format version is outdated; please regenerate the file."; 
+      string error = "This file format version is outdated; please regenerate the file."; 
       throw PROFILEException(error); 
     }
     
@@ -204,7 +202,7 @@ void PROFILEDocHandler::startElement(const XMLCh* const uri, const XMLCh* const 
 
   // TARGET: executable name
   if (XMLString::equals(name, elemTarget)) {
-    String target = getAttr(attributes, 0 /*name*/); 
+    string target = getAttr(attributes, 0 /*name*/); 
     IFTRACE << "TARGET: name=" << target << endl;
   }
   
@@ -215,19 +213,19 @@ void PROFILEDocHandler::startElement(const XMLCh* const uri, const XMLCh* const 
 
   // METRIC: list of profiling metrics
   if (XMLString::equals(name, elemMetricDef)) {
-    String shortName   = getAttr(attributes, attrShortName);
-    String nativeName  = getAttr(attributes, attrNativeName);
-    String period      = getAttr(attributes, attrPeriod);
-    String units       = getAttr(attributes, attrUnits);       // optional
-    String displayName = getAttr(attributes, attrDisplayName); // optional
-    String display     = getAttr(attributes, attrDisplay);     // optional
+    string shortName   = getAttr(attributes, attrShortName);
+    string nativeName  = getAttr(attributes, attrNativeName);
+    string period      = getAttr(attributes, attrPeriod);
+    string units       = getAttr(attributes, attrUnits);       // optional
+    string displayName = getAttr(attributes, attrDisplayName); // optional
+    string display     = getAttr(attributes, attrDisplay);     // optional
 
     // if this is the metric we are particularly interested in, save it
-    if (strcmp(metricName, shortName) == 0) {
+    if (metricName == shortName) {
       metricNameShort = shortName;
     }
     
-    int prd = atoi(period); 
+    int prd = (int)StrUtil::toLong(period); 
     IndexToPerfDataInfo(metricPerfDataTblIndx).SetEventsPerCount(prd); 
     
     IFTRACE << "METRIC: shortName=" << shortName
@@ -249,12 +247,12 @@ void PROFILEDocHandler::startElement(const XMLCh* const uri, const XMLCh* const 
 
   // PGM [See PGMDocHandler.C]
   if (XMLString::equals(name, elemPgm)) {
-    String pgmName = getAttr(attributes, attrName);
+    string pgmName = getAttr(attributes, attrName);
     pgmName = driver->ReplacePath(pgmName);
     IFTRACE << "PGM: name= " << pgmName << endl;
 
     PgmScope* root = nodeRetriever->GetRoot(); 
-    if (root->Name().Length() == 0) { root->SetName(pgmName); }
+    if (root->Name().empty()) { root->SetName(pgmName); }
   }
 
   // G(roup)
@@ -265,10 +263,10 @@ void PROFILEDocHandler::startElement(const XMLCh* const uri, const XMLCh* const 
 
   // LM (load module)
   if (XMLString::equals(name, elemLM)) {
-    String lm = getAttr(attributes, attrName); // must exist
+    string lm = getAttr(attributes, attrName); // must exist
     lm = driver->ReplacePath(lm);
 
-    BriefAssertion(lmName.Length() == 0);
+    BriefAssertion(lmName.empty());
     lmName = lm;
     lmScope = nodeRetriever->MoveToLoadMod(lmName);
     
@@ -277,10 +275,10 @@ void PROFILEDocHandler::startElement(const XMLCh* const uri, const XMLCh* const 
 
   // F(ile)
   if (XMLString::equals(name, elemFile)) {
-    String srcFile = getAttr(attributes, attrName); // must exist
+    string srcFile = getAttr(attributes, attrName); // must exist
     srcFile = driver->ReplacePath(srcFile);
 
-    BriefAssertion(srcFileName.Length() == 0);
+    BriefAssertion(srcFileName.empty());
     srcFileName = srcFile;
     fileScope = nodeRetriever->MoveToFile(srcFileName); 
 
@@ -289,10 +287,10 @@ void PROFILEDocHandler::startElement(const XMLCh* const uri, const XMLCh* const 
   
   // P(roc)
   if (XMLString::equals(name, elemProc)) {
-    String name = getAttr(attributes, attrName); // must exist
+    string name = getAttr(attributes, attrName); // must exist
     if (driver->MustDeleteUnderscore()) {
-      if ((name.Length() > 0) && (name[name.Length()-1] == '_')) {
-	name[name.Length()-1] = '\0';
+      if (!name.empty() && (name[name.length()-1] == '_')) {
+	name[name.length()-1] = '\0';
       }
     }
     IFTRACE << "P(roc): name="  << name << endl;
@@ -300,7 +298,7 @@ void PROFILEDocHandler::startElement(const XMLCh* const uri, const XMLCh* const 
     // For now, 'attrLnName,' 'attrBegin,' and 'attrEnd' are
     // meaningless in a PROFILE.  See PGMDocHandler.C
     
-    BriefAssertion(funcName.Length() == 0);
+    BriefAssertion(funcName.empty());
     funcName = name;
     procScope = nodeRetriever->MoveToProc(funcName);
     
@@ -320,12 +318,12 @@ void PROFILEDocHandler::startElement(const XMLCh* const uri, const XMLCh* const 
     
     // For now, we are not interested in 'attrEnd' or 'attrId'
     int lnB = UNDEF_LINE, lnE = UNDEF_LINE, lnId = UNDEF_LINE;
-    String lineB  = getAttr(attributes, attrBegin);
-    String lineE  = getAttr(attributes, attrEnd);
-    String lineId = getAttr(attributes, attrId);
-    if (lineB.Length() > 0) { lnB = atoi(lineB); }
-    if (lineE.Length() > 0) { lnE = atoi(lineE); }
-    if (lineId.Length() > 0) { lnId = atoi(lineE); }
+    string lineB  = getAttr(attributes, attrBegin);
+    string lineE  = getAttr(attributes, attrEnd);
+    string lineId = getAttr(attributes, attrId);
+    if (!lineB.empty()) { lnB = (int)StrUtil::toLong(lineB); }
+    if (!lineE.empty()) { lnE = (int)StrUtil::toLong(lineE); }
+    if (!lineId.empty()) { lnId = (int)StrUtil::toLong(lineE); }
 
     // IF lineE is undefined, set it to lineB
     if (lnE == UNDEF_LINE) { lnE = lnB; }
@@ -340,13 +338,13 @@ void PROFILEDocHandler::startElement(const XMLCh* const uri, const XMLCh* const 
 
   // M(etric)
   if (XMLString::equals(name, elemMetric)) {
-    String name  = getAttr(attributes, attrName);
-    String value = getAttr(attributes, attrVal);
+    string name  = getAttr(attributes, attrName);
+    string value = getAttr(attributes, attrVal);
 
     // Consider only the one metric we are interested in
-    if (strcmp(name, metricNameShort) == 0) {
+    if (name == metricNameShort) {
       // Metrics can be attached to any element of the tree (not just stmts).
-      double val = atof(value);
+      double val = StrUtil::toDbl(value);
       if (line != -1) { // FIXME change to IsValid
 	CodeInfo* lineNode = procScope->FindStmtRange(line); 
 	lineNode->SetPerfData(metricPerfDataTblIndx, val); 
@@ -384,8 +382,8 @@ void PROFILEDocHandler::endElement(const XMLCh* const uri,
   // METRICS
   if (XMLString::equals(name, elemMetrics)) {
     // If 'metricNameShort' has not been found then 'metricName' is invalid
-    if ( metricNameShort.Length() == 0 ){
-      String error = "METRIC with shortName=" + metricName 
+    if ( metricNameShort.empty() ){
+      string error = "METRIC with shortName=" + metricName 
 	+ " not found in PROFILE file '" + profileFile + "'."; 
       throw PROFILEException(error); 
     }

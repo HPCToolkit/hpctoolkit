@@ -1,5 +1,6 @@
 // -*-Mode: C++;-*-
 // $Id$
+
 // * BeginRiceCopyright *****************************************************
 // 
 // Copyright ((c)) 2002, Rice University 
@@ -39,17 +40,18 @@
 
 //************************ System Include Files ******************************
 
-//************************* Xerces Include Files *******************************
+#include <string>
 
+//*********************** Xerces Include Files *******************************
 
 #include <xercesc/dom/DOMNode.hpp> 
 using XERCES_CPP_NAMESPACE::DOMNode;
 
 //************************* User Include Files *******************************
 
-#include <lib/support/String.hpp>
-
 #include "HPCViewXMLErrHandler.hpp"
+
+#include <lib/support/diagnostics.h>
 
 //************************ Forward Declarations ******************************
 
@@ -57,19 +59,24 @@ class Driver;
 
 //****************************************************************************
 
-void HPCViewDocParser(Driver &driver, String &inputFile, 
+void HPCViewDocParser(Driver& driver, const std::string& inputFile, 
 		      HPCViewXMLErrHandler &errReporter);
 
-class HPCViewDocException {
+class HPCViewDocException : public Diagnostics::Exception {
 public:
-  HPCViewDocException (String msg) {
-    msgtext = msg;
+  HPCViewDocException(const std::string m,
+		      const char* filenm = NULL, unsigned int lineno = 0)
+    : Diagnostics::Exception(m, filenm, lineno)
+    { }
+  
+  virtual void report(std::ostream& os) const { 
+    os << "CONFIGURATION file processing error (HPCViewDocException): " 
+       << message() << std::endl;
   }
-  String getMessage() const { 
-    return msgtext; 
-  }
+  
+  virtual void report() const { report(std::cerr); }
+
 private:
-  String msgtext;
 };
 
 

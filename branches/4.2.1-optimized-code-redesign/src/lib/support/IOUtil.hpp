@@ -111,6 +111,10 @@ GetLine(std::istream& is, char end = '\n');
 bool 
 Skip(std::istream& is, const char* s);
 
+inline bool 
+Skip(std::istream& is, const std::string& s)
+{ return Skip(is, s.c_str()); }
+
 
 } // end of IOUtil namespace
 

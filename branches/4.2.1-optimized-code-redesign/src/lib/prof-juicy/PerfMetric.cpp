@@ -1,5 +1,6 @@
-// $Id$
 // -*-C++-*-
+// $Id$
+
 // * BeginRiceCopyright *****************************************************
 // 
 // Copyright ((c)) 2002, Rice University 
@@ -36,6 +37,12 @@
 
 //************************ System Include Files ******************************
 
+#include <iostream> 
+using std::endl;
+
+#include <string>
+using std::string;
+
 //************************* User Include Files *******************************
 
 #include "PerfMetric.hpp"
@@ -43,10 +50,9 @@
 
 #include <lib/support/Assertion.h>
 #include <lib/support/Trace.hpp>
+#include <lib/support/StrUtil.hpp>
 
 //************************ Forward Declarations ******************************
-
-using std::endl;
 
 //****************************************************************************
 
@@ -153,24 +159,24 @@ DataDisplayInfo::~DataDisplayInfo()
 // ************************************************************************** //
 // ToString methods 
 // ************************************************************************** //
-String 
+string 
 DataDisplayInfo::ToString() const 
 {
-  return String("DisplayInfo ") + 
+  return string("DisplayInfo ") + 
     "name=" + name + " " + 
     "color=" + color + " " + 
-    "width=" + String((long) width) + " " + 
+    "width=" + StrUtil::toStr(width) + " " + 
     "asInt=" + ((formatAsInt) ? "true" : "false"); 
 }
 
-String
+string
 PerfMetric::ToString() const 
 {
-  return String("PerfMetric: ") + 
+  return string("PerfMetric: ") + 
     "name=" + name + " " + 
     "display=" + ((display) ? "true " : "false ") + 
-    "perfInfoIndex=" + String((long) perfInfoIndex) + " " + 
-    "eventsPerCount=" + String((long) eventsPerCount) + " " + 
+    "perfInfoIndex=" + StrUtil::toStr(perfInfoIndex) + " " + 
+    "eventsPerCount=" + StrUtil::toStr(eventsPerCount) + " " + 
     "dispInfo=" + dispInfo->ToString(); 
 }
 

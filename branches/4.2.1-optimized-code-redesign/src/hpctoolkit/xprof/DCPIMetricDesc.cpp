@@ -1,5 +1,6 @@
-// $Id$
 // -*-C++-*-
+// $Id$
+
 // * BeginRiceCopyright *****************************************************
 // 
 // Copyright ((c)) 2002, Rice University 
@@ -50,19 +51,20 @@
 //************************* System Include Files ****************************
 
 #include <iostream>
+using std::endl;
+using std::hex;
+using std::dec;
+
+#include <string>
+using std::string;
 
 //*************************** User Include Files ****************************
 
 #include "DCPIMetricDesc.hpp"
 
-#include <lib/support/String.hpp>
 #include <lib/support/Assertion.h>
 
 //*************************** Forward Declarations ***************************
-
-using std::endl;
-using std::hex;
-using std::dec;
 
 int
 SetDCPIMetricDescBit(const char* token, DCPIMetricDesc& m);
@@ -207,9 +209,22 @@ DCPITranslationTable::FindEntry(const char* token)
 
 DCPIMetricDesc::DCPIMetricDesc(const char* str)
 {
+  Ctor(str);
+}
+
+
+DCPIMetricDesc::DCPIMetricDesc(const std::string& str)
+{
+  Ctor(str.c_str());
+}
+
+
+void DCPIMetricDesc::Ctor(const char* str)
+{
   DCPIMetricDesc m = String2DCPIMetricDesc(str);
   bits = m.bits;
 }
+
 
 // String2DCPIMetricDesc: See header for accepted syntax.  If an error
 // occurs, the DCPIMetricDesc::IsValid() will return false.
@@ -229,11 +244,11 @@ String2DCPIMetricDesc(const char* str)
   char* sep = const_cast<char*>(strchr(str, ':')); // separator
   if (sep != NULL) {
     *sep = '\0'; // temporarily modify to get first part
-    String sampleset = str;
+    string sampleset = str;
     *sep = ':';
-    String counter = sep+1;
-    DCPIMetricDesc m1 = String2DCPIMetricDesc(sampleset);
-    DCPIMetricDesc m2 = String2DCPIMetricDesc(counter);
+    string counter = sep+1;
+    DCPIMetricDesc m1 = String2DCPIMetricDesc(sampleset.c_str());
+    DCPIMetricDesc m2 = String2DCPIMetricDesc(counter.c_str());
 	
     if (m1.IsValid() && m2.IsValid()) {
       m.Set(m1);

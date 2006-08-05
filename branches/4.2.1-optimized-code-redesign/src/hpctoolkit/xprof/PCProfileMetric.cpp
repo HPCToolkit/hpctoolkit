@@ -1,5 +1,6 @@
-// $Id$
 // -*-C++-*-
+// $Id$
+
 // * BeginRiceCopyright *****************************************************
 // 
 // Copyright ((c)) 2002, Rice University 
@@ -50,16 +51,18 @@
 //************************* System Include Files ****************************
 
 #include <iostream>
+using std::endl;
+using std::hex;
+using std::dec;
+
+#include <string>
+using std::string;
 
 //*************************** User Include Files ****************************
 
 #include "PCProfileMetric.hpp"
 
 //*************************** Forward Declarations ***************************
-
-using std::endl;
-using std::hex;
-using std::dec;
 
 //****************************************************************************
 // PCProfileMetric

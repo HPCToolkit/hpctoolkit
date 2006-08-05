@@ -1,5 +1,6 @@
-// $Id$
 // -*-C++-*-
+// $Id$
+
 // * BeginRiceCopyright *****************************************************
 // 
 // Copyright ((c)) 2002, Rice University 
@@ -52,9 +53,9 @@
 
 //************************ System Include Files ******************************
 
-//************************* User Include Files *******************************
+#include <string>
 
-#include <lib/support/String.hpp>
+//************************* User Include Files *******************************
 
 //************************* Xerces Declarations ******************************
 
@@ -79,6 +80,8 @@ public:
   // Must be called before parsing starts.  Notifies the handler
   // which metric data to extract from the profile. 
   void Initialize(int metricIndx, const char* profileFileName);
+  void Initialize(int metricIndx, const std::string& profileFileName)
+    { Initialize(metricIndx, profileFileName.c_str()); }
 
   // overridden functions
   void startElement(const XMLCh* const uri, const XMLCh* const name, const XMLCh* const qname, const Attributes& attributes);
@@ -96,16 +99,16 @@ private:
   Driver* driver;
 
   // variables for constant values during file processing
-  String profileFile;
+  std::string profileFile;
   int metricPerfDataTblIndx; // index into PerfData table
-  String metricName; // metric name; must match with a name in 'profileFile'
-  String metricNameShort; // a short version of the metric name 
+  std::string metricName; // metric name; must match with a name in 'profileFile'
+  std::string metricNameShort; // a short version of the metric name 
   double profVersion;     // initialized to a negative
   
   // variables for transient values during file processing
-  String lmName;
-  String srcFileName;
-  String funcName;
+  std::string lmName;
+  std::string srcFileName;
+  std::string funcName;
   ProcScope *procScope;
   FileScope *fileScope;
   LoadModScope *lmScope;
@@ -150,14 +153,14 @@ private:
 
 class PROFILEException {
 public:
-  PROFILEException (String msg) {
+  PROFILEException (const std::string& msg) {
     msgtext = msg;
   }
-  String message() const { 
+  std::string message() const { 
     return msgtext; 
   }
 private:
-  String msgtext;
+  std::string msgtext;
 };
 
 #endif  // PROFILEDocHandler_h

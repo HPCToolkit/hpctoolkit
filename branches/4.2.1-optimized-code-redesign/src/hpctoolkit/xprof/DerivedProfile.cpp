@@ -1,5 +1,6 @@
-// $Id$
 // -*-C++-*-
+// $Id$
+
 // * BeginRiceCopyright *****************************************************
 // 
 // Copyright ((c)) 2002, Rice University 
@@ -50,6 +51,12 @@
 //************************* System Include Files ****************************
 
 #include <iostream>
+using std::endl;
+using std::hex;
+using std::dec;
+
+#include <string>
+using std::string;
 
 //*************************** User Include Files ****************************
 
@@ -57,15 +64,13 @@
 
 //*************************** Forward Declarations ***************************
 
-using std::endl;
-using std::hex;
-using std::dec;
-
 static bool 
 VerifyPeriod(const PCProfileMetricSet* s);
+
 static ulong 
 GetPeriod(const PCProfileMetricSet* s);
-String
+
+string
 GetNativeName(const PCProfileMetricSet* s);
 
 //****************************************************************************
@@ -273,17 +278,17 @@ GetPeriod(const PCProfileMetricSet* s)
   }
 }
 
-String
+string
 GetNativeName(const PCProfileMetricSet* s)
 {
-  String nm;
+  string nm;
   PCProfileMetricSetIterator it(*s);
   for (suint i = 0; it.IsValid(); ++it, ++i) {
     PCProfileMetric* m = it.Current();
     if (i != 0) { nm += "+"; }
-    nm += String("[") + m->GetName() + "]";
+    nm += "[" + m->GetName() + "]";
   }
   
-  if (nm.Empty()) { nm = "[no-matching-metrics]"; }
+  if (nm.empty()) { nm = "[no-matching-metrics]"; }
   return nm;
 }

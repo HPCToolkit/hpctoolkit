@@ -1,5 +1,6 @@
-// $Id$
 // -*-C++-*-
+// $Id$
+
 // * BeginRiceCopyright *****************************************************
 // 
 // Copyright ((c)) 2002, Rice University 
@@ -37,6 +38,12 @@
 //************************ System Include Files ******************************
 
 #include <iostream>
+using std::cout;
+using std::cerr;
+using std::endl;
+
+#include <string>
+using std::string;
 
 //************************* User Include Files *******************************
 
@@ -48,14 +55,11 @@
 
 #include <lib/prof-juicy/PgmScopeTree.hpp>
 
-#include <lib/support/pathfind.h>
 #include <lib/support/Trace.hpp>
+#include <lib/support/pathfind.h>
+#include <lib/support/StrUtil.hpp>
 
 //************************ Forward Declarations ******************************
-
-using std::cout;
-using std::cerr;
-using std::endl;
 
 //****************************************************************************
 
@@ -150,8 +154,8 @@ void FilePerfMetric::Make(NodeRetriever &ret)
   parser->setContentHandler(&handler);
   parser->setErrorHandler(&handler); 
 
-  String filePath = String(pathfind(".", file, "r")); 
-  if (filePath.Length() == 0) {
+  const char* filePath = pathfind(".", file.c_str(), "r");
+  if (!filePath) {
     cerr << "hpcview fatal error: could not open PROFILE file '" 
 	 << file << "'." << endl;
     exit(1);
@@ -162,7 +166,7 @@ void FilePerfMetric::Make(NodeRetriever &ret)
     parser->parse(filePath);
   }
   catch (const PROFILEException& toCatch) {
-    String msg = toCatch.message();
+    string msg = toCatch.message();
     throw MetricException(msg); 
   }
   delete parser;
@@ -171,7 +175,7 @@ void FilePerfMetric::Make(NodeRetriever &ret)
   
   if (!ret.GetRoot()->HasPerfData(Index())) {
     // eraxxon: Instead of throwning an exception, let's emit a warning.
-    String msg = "File '" + file + 
+    string msg = "File '" + file + 
       "' does not contain any information for metric '" + Name() + "'";
     //throw MetricException(msg);
     cerr << "hpcview warning: " << msg << endl;
@@ -202,18 +206,18 @@ void ComputedPerfMetric::Make(NodeRetriever &ret)
 // **************************************************************************
 // ToString methods 
 // **************************************************************************
-String
+string
 FilePerfMetric::ToString() const 
 {
-  return PerfMetric::ToString() + " " +  String("FilePerfMetric: " ) + 
+  return PerfMetric::ToString() + " " +  string("FilePerfMetric: " ) + 
          "file=\"" + file + "\" " + 
          "type=\"" + type + "\""; 
 } 
 
-String
-ComputedPerfMetric:: ToString() const 
+string
+ComputedPerfMetric::ToString() const 
 {
-  return PerfMetric::ToString() + " " + String("ComputeMetricInfo: " ) + 
-         "MathMLExpr=\"" + String((unsigned long) mathExpr); 
+  return PerfMetric::ToString() + " " + string("ComputeMetricInfo: " ) + 
+         "MathMLExpr=\"" + StrUtil::toStr((void*)mathExpr);
 } 
 

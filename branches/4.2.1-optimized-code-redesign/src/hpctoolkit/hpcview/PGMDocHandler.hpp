@@ -1,5 +1,6 @@
 // -*-Mode: C++;-*-
 // $Id$
+
 // * BeginRiceCopyright *****************************************************
 // 
 // Copyright ((c)) 2002, Rice University 
@@ -52,17 +53,18 @@
 
 //************************ System Include Files ******************************
 
+#include <string>
+#include <map>
+
 //************************* User Include Files *******************************
 
 // #include "XMLAdapter.h"
 
 #include "HPCViewSAX2.hpp"
 
-#include <map>
-
 #include <lib/prof-juicy/PgmScopeTree.hpp>
 
-#include <lib/support/String.hpp>
+#include <lib/support/diagnostics.h>
 #include <lib/support/PointerStack.hpp>
 
 //************************ Forward Declarations ******************************
@@ -175,9 +177,9 @@ private:
   double pgmVersion;     // initialized to a negative
 
   // variables for transient values during file processing
-  String currentLmName;    // only one LM on the stack at a time
-  String currentFileName;  // only one File on the stack at a time
-  String currentFuncName;
+  std::string currentLmName;    // only one LM on the stack at a time
+  std::string currentFileName;  // only one File on the stack at a time
+  std::string currentFuncName;
   ProcScope* currentFuncScope;
   unsigned groupNestingLvl;
 
@@ -208,16 +210,21 @@ private:
   const XMLCh *const attrId;
 };
 
-class PGMException {
+//****************************************************************************
+
+class PGMException : public Diagnostics::Exception {
 public:
-  PGMException (String msg) {
-    msgtext = msg;
+  PGMException(const std::string m,
+	       const char* filenm = NULL, unsigned int lineno = 0) 
+    : Diagnostics::Exception(m, filenm, lineno)
+  { }
+
+  virtual void report(std::ostream& os) const { 
+    os << "PGM file processing error (PGMException): " 
+       << message() << std::endl;
   }
-  String message() const { 
-    return msgtext; 
-  }
+
 private:
-  String msgtext;
 };
 
 #endif  // PGMDocHandler_H

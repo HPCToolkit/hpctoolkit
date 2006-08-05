@@ -1,5 +1,6 @@
 // -*-Mode: C++;-*-
 // $Id$
+
 // * BeginRiceCopyright *****************************************************
 // 
 // Copyright ((c)) 2002, Rice University 
@@ -50,6 +51,8 @@
 //************************* System Include Files ****************************
 
 #include <typeinfo>
+#include <string>
+using std::string;
 
 //*************************** User Include Files ****************************
 
@@ -59,6 +62,8 @@
 #include "Section.hpp"
 #include "Instruction.hpp"
 #include "Procedure.hpp"
+
+#include <lib/support/diagnostics.h>
 #include <lib/support/Assertion.h>
 #include <lib/support/QuickSort.hpp>
 #include <lib/support/Trace.hpp>
@@ -138,9 +143,9 @@ LoadModule::Open(const char* moduleName)
 {
   IFTRACE << "LoadModule::Open: " << moduleName << endl;
 
-  if (!name.Empty()) {
+  if (!name.empty()) {
     // 'moduleName' should be equal to what already exists
-    BriefAssertion(strcmp(name, moduleName) == 0);
+    DIAG_ASSERT(name == moduleName, "Cannot open a different file!");
     return true;
   }
 
@@ -244,7 +249,7 @@ LoadModule::Read()
 {
   bool STATUS = true;
   // If the file has not been opened...
-  BriefAssertion(!name.Empty() && "Must call LoadModule::Open first");
+  DIAG_ASSERT(!name.empty(), "Must call LoadModule::Open first");
 
   // Read if we have not already done so
   if (impl->bfdSymbolTable == NULL
@@ -324,10 +329,10 @@ LoadModule::AddInst(VMA vma, ushort opIndex, Instruction *inst)
 
 bool
 LoadModule::GetSourceFileInfo(VMA vma, ushort opIndex,
-			      String &func, String &file, suint &line) const
+			      string& func, string& file, suint &line) const
 {
   bool STATUS = false;
-  func = file = '\0';
+  func = file = "";
   line = 0;
 
   if (!impl->bfdSymbolTable) { return STATUS; }
@@ -347,7 +352,7 @@ LoadModule::GetSourceFileInfo(VMA vma, ushort opIndex,
     Section* sec = it.Current();
     if (sec->IsIn(opVMA)) {
       // Obtain the bfd section corresponding to our Section.
-      bfdSection = bfd_get_section_by_name(impl->abfd, sec->GetName());
+      bfdSection = bfd_get_section_by_name(impl->abfd, sec->GetName().c_str());
       base = bfd_section_vma(impl->abfd, bfdSection);
       break; 
     } 
@@ -370,11 +375,11 @@ LoadModule::GetSourceFileInfo(VMA vma, ushort opIndex,
 bool
 LoadModule::GetSourceFileInfo(VMA begVMA, ushort bOpIndex,
 			      VMA endVMA, ushort eOpIndex,
-			      String &func, String &file,
+			      string& func, string& file,
 			      suint &begLine, suint &endLine) const
 {
   bool STATUS = false;
-  func = file = '\0';
+  func = file = "";
   begLine = endLine = 0;
 
   // Enforce condition that 'begVMA' <= 'endVMA'. (No need to unrelocate!)
@@ -390,39 +395,39 @@ LoadModule::GetSourceFileInfo(VMA begVMA, ushort bOpIndex,
   } 
 
   // Attempt to find source file info
-  String func1, func2, file1, file2;
+  string func1, func2, file1, file2;
   bool call1 = GetSourceFileInfo(begVMA, bOpIndex, func1, file1, begLine);
   bool call2 = GetSourceFileInfo(endVMA, eOpIndex, func2, file2, endLine);
   STATUS = (call1 && call2);
 
   // Error checking and processing: 'func'
-  if (!func1.Empty() && !func2.Empty()) {
+  if (!func1.empty() && !func2.empty()) {
     func = func1; // prefer the first call
     if (func1 != func2) {
       STATUS = false; // we are accross two different functions
     }
   } 
-  else if (!func1.Empty() && func2.Empty()) {
+  else if (!func1.empty() && func2.empty()) {
     func = func1;
   } 
-  else if (func1.Empty() && !func2.Empty()) {
+  else if (func1.empty() && !func2.empty()) {
     func = func2;
-  } // else (func1.Empty && func2.Empty()): use default values
+  } // else (func1.empty && func2.empty()): use default values
 
   // Error checking and processing: 'file'
-  if (!file1.Empty() && !file2.Empty()) {
+  if (!file1.empty() && !file2.empty()) {
     file = file1; // prefer the first call
     if (file1 != file2) {
       STATUS = false; // we are accross two different files
       endLine = begLine; // 'endLine' makes no sense since we return 'file1'
     }
   } 
-  else if (!file1.Empty() && file2.Empty()) {
+  else if (!file1.empty() && file2.empty()) {
     file = file1;
   } 
-  else if (file1.Empty() && !file2.Empty()) {
+  else if (file1.empty() && !file2.empty()) {
     file = file2;
-  } // else (file1.Empty && file2.Empty()): use default values
+  } // else (file1.empty && file2.empty()): use default values
 
   // Error checking and processing: 'begLine' and 'endLine'
   if (IsValidLine(begLine) && !IsValidLine(endLine)) { 
@@ -474,9 +479,9 @@ LoadModule::GetTextBegEndVMA(VMA* begVMA, VMA* endVMA)
 void
 LoadModule::Dump(std::ostream& o, const char* pre) const
 {
-  String p(pre);
-  String p1 = p + "  ";
-  String p2 = p1 + "  ";
+  string p(pre);
+  string p1 = p + "  ";
+  string p2 = p1 + "  ";
 
   o << p << "==================== Load Module Dump ====================\n";
 
@@ -488,20 +493,20 @@ LoadModule::Dump(std::ostream& o, const char* pre) const
 #endif
 
   o << p1 << "Load Module Information:\n";
-  DumpModuleInfo(o, p2);
+  DumpModuleInfo(o, p2.c_str());
 
   o << p1 << "Load Module Contents:\n";
-  DumpSelf(o, p2);
+  DumpSelf(o, p2.c_str());
   
   IFDOTRACE { // For debugging
     o << p2 << "Symbol Table (" << impl->numSyms << "):\n";
-    DumpSymTab(o, p2);
+    DumpSymTab(o, p2.c_str());
   }
   
   o << p2 << "Sections (" << GetNumSections() << "):\n";
   for (LoadModuleSectionIterator it(*this); it.IsValid(); ++it) {
     Section* sec = it.Current();
-    sec->Dump(o, p2);
+    sec->Dump(o, p2.c_str());
   }
 }
 
@@ -618,7 +623,7 @@ LoadModule::ReadSections()
   for (asection *sec = abfd->sections; sec; sec = sec->next) {
 
     // 1. Determine initial section attributes
-    String secName(bfd_section_name(abfd, sec));
+    string secName(bfd_section_name(abfd, sec));
     bfd_vma secBeg = bfd_section_vma(abfd, sec);
     suint secSize = bfd_section_size(abfd, sec) / bfd_octets_per_byte(abfd);
     bfd_vma secEnd = secBeg + secSize;
@@ -661,7 +666,7 @@ LoadModule::buildVMAToProcedureMap()
     // We have a TextSection.  Iterate over procedures.
     // Obtain the bfd section corresponding to our Section.
     asection *bfdSection = 
-      bfd_get_section_by_name(impl->abfd, sec->GetName());
+      bfd_get_section_by_name(impl->abfd, sec->GetName().c_str());
     VMA base = bfd_section_vma(impl->abfd, bfdSection);
     
     TextSection* tsec = dynamic_cast<TextSection*>(sec);
@@ -672,14 +677,14 @@ LoadModule::buildVMAToProcedureMap()
       suint begLine = p->GetBegLine();
       
       if (!IsValidLine(begLine)) {
-	String func, file;
+	string func, file;
 	GetSourceFileInfo(begVMA, 0, func, file, begLine);
       }
       
-      addrToProcMap.insert(VMAToProcedureMap::value_type( VMAInterval(begVMA, endVMA), begLine ));
+      addrToProcMap.insert(VMAToProcedureMap::value_type( VMAInterval(begVMA, endVMA), begLine));
       xDEBUG(DEB_BUILD_PROC_MAP, 
 	     fprintf(stderr, "adding procedure %s [%x,%x] beg line %d\n", 
-		     (const char*)p->GetName(), begVMA, endVMA, begLine););
+		     p->GetName().c_str(), begVMA, endVMA, begLine););
     }
   } 
   return STATUS;
@@ -768,6 +773,8 @@ LoadModule::bfd_DbgFuncinfoCallback(void* callback_obj,
   unsigned int begLine;
   bfd_forall_dbg_funcinfo_get_decl_info(funcinfo, &name, &filenm, &begLine);
   bfd_forall_dbg_funcinfo_get_vma_bounds(funcinfo, &begVMA, &endVMA);
+  if (!name)   { name = ""; }
+  if (!filenm) { filenm = ""; }
   
   finfo->begVMA = begVMA;
   finfo->endVMA = endVMA;
@@ -806,7 +813,7 @@ LoadModule::bfd_DbgFuncinfoCallback(void* callback_obj,
 void
 LoadModule::DumpModuleInfo(std::ostream& o, const char* pre) const
 {
-  String p(pre);
+  string p(pre);
   bfd *abfd = impl->abfd;
 
   o << p << "Name: `" << GetName() << "'\n";
@@ -905,8 +912,8 @@ LoadModule::DumpModuleInfo(std::ostream& o, const char* pre) const
 void
 LoadModule::DumpSymTab(std::ostream& o, const char* pre) const
 {
-  String p(pre);
-  String p1 = p + "  ";
+  string p(pre);
+  string p1 = p + "  ";
 
   o << p << "------------------- Symbol Table Dump ------------------\n";
 

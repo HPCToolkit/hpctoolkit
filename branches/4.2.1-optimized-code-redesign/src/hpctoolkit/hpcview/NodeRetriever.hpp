@@ -1,5 +1,6 @@
-// $Id$
 // -*-C++-*-
+// $Id$
+
 // * BeginRiceCopyright *****************************************************
 // 
 // Copyright ((c)) 2002, Rice University 
@@ -53,9 +54,9 @@
 
 //************************ System Include Files ******************************
 
-//************************* User Include Files *******************************
+#include <string>
 
-#include <lib/support/String.hpp>
+//************************* User Include Files *******************************
 
 //************************ Forward Declarations ******************************
 
@@ -74,7 +75,7 @@ class NodeRetriever{
 public: 
   // root must not be NULL
   // path = non empty list of directories 
-  NodeRetriever(PgmScope *root, const String& path); 
+  NodeRetriever(PgmScope *root, const std::string& path); 
   ~NodeRetriever();
   
   PgmScope* GetRoot() const { return root; }; 
@@ -83,28 +84,36 @@ public:
   // parent scope for now because a Group can be a child of basically
   // anything and we do not keep an 'enclosingscope' pointer.
   GroupScope* MoveToGroup(ScopeInfo* parent, const char* name);
+  GroupScope* MoveToGroup(ScopeInfo* parent, const std::string& name)
+    { return MoveToGroup(parent, name.c_str()); }
 
 
   // get/make load module with name 'name' and remember it as current
   // load module.  Resets current file and proc.
   LoadModScope* MoveToLoadMod(const char* name);
+  LoadModScope* MoveToLoadMod(const std::string& name)
+    { return MoveToLoadMod(name.c_str()); }
 
   // get/make file with name 'name' and remember it as current file.
   // Both the current file and load module will be set.  If the file
   // is not found, a load module will be created, if needed, with the
   // same name as the root.
   FileScope* MoveToFile(const char* name);
+  FileScope* MoveToFile(const std::string& name)
+    { return MoveToFile(name.c_str()); }
 
   // get/make procedure with name 'name' within current file and load
   // module (i.e. these must not be NULL).
   ProcScope* MoveToProc(const char* name);
+  ProcScope* MoveToProc(const std::string& name)
+    { return MoveToProc(name.c_str()); }
 
 private:
   PgmScope *root;
   LoadModScope* currentLM;
   FileScope* currentFile;
   ProcScope* currentProc;
-  String path; 
+  std::string path; 
 };
 
 #endif

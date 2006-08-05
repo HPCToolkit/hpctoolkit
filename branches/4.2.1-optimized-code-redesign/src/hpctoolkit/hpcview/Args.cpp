@@ -50,6 +50,11 @@
 //************************ System Include Files ******************************
 
 #include <iostream>
+using std::cerr;
+using std::endl;
+
+#include <string>
+using std::string;
 
 #ifdef NO_STD_CHEADERS
 # include <limits.h>
@@ -65,18 +70,16 @@ using namespace std; // For compatibility with non-std C headers
 //************************* User Include Files *******************************
 
 #include "Args.hpp"
+
 #include <lib/support/Trace.hpp>
 
 //************************ Forward Declarations ******************************
-
-using std::cerr;
-using std::endl;
 
 //****************************************************************************
 
 int fileTrace = 0;
 
-const String Args::HPCTOOLKIT = "HPCTOOLKIT"; 
+const string Args::HPCTOOLKIT = "HPCTOOLKIT"; 
 
 static const char* version_info =
 #include <include/HPCToolkitVersionInfo.h>
@@ -161,7 +164,7 @@ void
 Args::Ctor()
 {
   setHPCHome(); 
-  fileHome = String(hpcHome) + "/lib/html"; 
+  fileHome = hpcHome + "/lib/html"; 
 
   htmlDir                = "hpcview.output"; 
   OutputInitialScopeTree = false; // used for debugging at this point
@@ -380,7 +383,7 @@ Args::DDump() const
 void 
 Args::setHPCHome() 
 {
-  char * home = getenv(HPCTOOLKIT); 
+  char * home = getenv(HPCTOOLKIT.c_str()); 
   if (home == NULL) {
     cerr << "Error: Please set your " << HPCTOOLKIT << " environment variable."
 	 << endl; 
@@ -397,6 +400,6 @@ Args::setHPCHome()
     exit(1); 
   } 
   closedir(fp); 
-  hpcHome = String(home); 
+  hpcHome = home; 
 } 
 

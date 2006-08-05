@@ -1,5 +1,6 @@
-// $Id$
 // -*-C++-*-
+// $Id$
+
 // * BeginRiceCopyright *****************************************************
 // 
 // Copyright ((c)) 2002, Rice University 
@@ -39,6 +40,8 @@
 
 //************************ System Include Files ******************************
 
+#include <string>
+
 //************************* User Include Files *******************************
 
 #include <include/general.h> 
@@ -46,8 +49,6 @@
 #include "Driver.hpp"
 
 #include <lib/prof-juicy/PerfMetric.hpp>
-
-#include <lib/support/String.hpp>
 
 //************************* Xerces Declarations ******************************
 
@@ -67,15 +68,15 @@ public:
 		 const char* fname, const char* ftype, Driver* _driver); 
   virtual ~FilePerfMetric(); 
   
-  const String& FileName() const        { return file; }; 
-  const String& FileType() const;       // not yet implemented, is for later 
+  const std::string& FileName() const   { return file; }; 
+  const std::string& FileType() const;  // not yet implemented, is for later 
   
   virtual void Make(NodeRetriever &ret); // read the file
   
-  virtual String ToString() const; 
+  virtual std::string ToString() const; 
 private: 
-  String file;
-  String type; // for later use
+  std::string file;
+  std::string type; // for later use
   Driver* driver;
 };
 
@@ -88,7 +89,7 @@ public:
 
   virtual void Make(NodeRetriever &ret); // compute node by node
   
-  virtual String ToString() const; 
+  virtual std::string ToString() const; 
 private: 
   MathMLExpr *mathExpr; 
 };

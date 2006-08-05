@@ -1,5 +1,6 @@
-// $Id$
 // -*-C++-*-
+// $Id$
+
 // * BeginRiceCopyright *****************************************************
 // 
 // Copyright ((c)) 2002, Rice University 
@@ -52,6 +53,7 @@
 
 //************************* System Include Files ****************************
 
+#include <string>
 #include <vector>
 #include <list>
 
@@ -63,8 +65,6 @@
 #include "PCProfileFilter.hpp"
 
 #include <lib/isa/ISA.hpp>
-
-#include <lib/support/String.hpp>
 
 //*************************** Forward Declarations ***************************
 
@@ -220,11 +220,14 @@ public:
   
   // ProfiledFile: the name of the profiled program image
   // HdrInfo: a copy of the unparsed header info. 
-  const char* GetProfiledFile() const { return profiledFile; }
-  const char* GetHdrInfo()      const { return fHdrInfo; }
+  const std::string& GetProfiledFile() const { return profiledFile; }
+  const std::string& GetHdrInfo()      const { return fHdrInfo; }
   
-  void SetProfiledFile(const char* s)  { profiledFile = s; }
-  void SetHdrInfo(const char* s)       { fHdrInfo = s; }
+  void SetProfiledFile(const char* s)        { profiledFile = s; }
+  void SetProfiledFile(const std::string& s) { profiledFile = s; }
+
+  void SetHdrInfo(const char* s)        { fHdrInfo = s; }
+  void SetHdrInfo(const std::string& s) { fHdrInfo = s; }
   
   // Text start and size (redundant).  Note: all metrics for one
   // profile should have identical values for
@@ -255,8 +258,8 @@ private:
 
 protected:
 private:
-  String profiledFile; // name of profiled file
-  String fHdrInfo;     // unparsed file header info
+  std::string profiledFile; // name of profiled file
+  std::string fHdrInfo;     // unparsed file header info
 
   PCVec pcVec; // PCs for which some metric has non-zero data
 };

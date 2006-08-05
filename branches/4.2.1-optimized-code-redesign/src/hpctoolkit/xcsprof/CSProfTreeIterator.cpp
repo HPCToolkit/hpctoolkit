@@ -75,30 +75,30 @@ bool HasNodeType(const CSProfNode& sinfo, long type)
 
 const CSProfNodeFilter NodeTypeFilter[CSProfNode::NUMBER_OF_TYPES] = {
   CSProfNodeFilter(HasNodeType,
-		   CSProfNode::NodeTypeToName(CSProfNode::PGM), 
+		   CSProfNode::NodeTypeToName(CSProfNode::PGM).c_str(),
 		   CSProfNode::PGM),
   CSProfNodeFilter(HasNodeType,
-		   CSProfNode::NodeTypeToName(CSProfNode::GROUP), 
+		   CSProfNode::NodeTypeToName(CSProfNode::GROUP).c_str(),
 		   CSProfNode::GROUP),
   CSProfNodeFilter(HasNodeType,
-		   CSProfNode::NodeTypeToName(CSProfNode::GROUP), 
+		   CSProfNode::NodeTypeToName(CSProfNode::GROUP).c_str(),
 		   CSProfNode::CALLSITE),
   CSProfNodeFilter(HasNodeType,
-		   CSProfNode::NodeTypeToName(CSProfNode::LOOP), 
+		   CSProfNode::NodeTypeToName(CSProfNode::LOOP).c_str(),
 		   CSProfNode::LOOP),
   CSProfNodeFilter(HasNodeType,
-		   CSProfNode::NodeTypeToName(CSProfNode::STMT_RANGE),
+		   CSProfNode::NodeTypeToName(CSProfNode::STMT_RANGE).c_str(),
 		   CSProfNode::STMT_RANGE),
   CSProfNodeFilter(HasNodeType,
-		   CSProfNode::NodeTypeToName(CSProfNode::GROUP), 
+		   CSProfNode::NodeTypeToName(CSProfNode::GROUP).c_str(),
 		   CSProfNode::PROCEDURE_FRAME),
   CSProfNodeFilter(HasNodeType,
-		   CSProfNode::NodeTypeToName(CSProfNode::GROUP), 
+		   CSProfNode::NodeTypeToName(CSProfNode::GROUP).c_str(),
 		   CSProfNode::STATEMENT),
   CSProfNodeFilter(HasNodeType,
-		   CSProfNode::NodeTypeToName(CSProfNode::ANY),
+		   CSProfNode::NodeTypeToName(CSProfNode::ANY).c_str(),
 		   CSProfNode::ANY)
-}; 
+};
 
 //*****************************************************************************
 // CSProfNodeChildIterator
@@ -315,7 +315,7 @@ CSProfNodeNameSortedChildIterator::CompareByName(const void* a, const void* b)
   CSProfNode* y = (*(CSProfNode**)b); 
   BriefAssertion (x != NULL); 
   BriefAssertion (y != NULL); 
-  return strcmp(x->GetName(), y->GetName()); 
+  return strcmp(x->GetName().c_str(), y->GetName().c_str()); 
 }
 
 //***************************************************************************

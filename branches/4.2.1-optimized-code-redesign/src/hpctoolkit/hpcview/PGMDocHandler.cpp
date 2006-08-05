@@ -1,5 +1,6 @@
 // -*-Mode: C++;-*-
 // $Id$
+
 // * BeginRiceCopyright *****************************************************
 // 
 // Copyright ((c)) 2002, Rice University 
@@ -50,14 +51,11 @@
 //************************ System Include Files ******************************
 
 #include <iostream> 
+using std::cerr;
+using std::endl;
 
-#ifdef NO_STD_CHEADERS
-# include <stdlib.h>
-#else
-# include <cstdlib>
-using std::atof; // For compatibility with non-std C headers
-using std::atoi;
-#endif
+#include <string>
+using std::string;
 
 //************************ Xerces Include Files ******************************
 
@@ -77,12 +75,11 @@ using XERCES_CPP_NAMESPACE::XMLString;
 #include <lib/prof-juicy/PgmScopeTree.hpp>
 
 #include <lib/support/Assertion.h>
+#include <lib/support/diagnostics.h>
 #include <lib/support/Trace.hpp>
+#include <lib/support/StrUtil.hpp>
 
 //************************ Forward Declarations ******************************
-
-using std::cerr;
-using std::endl;
 
 //****************************************************************************
 
@@ -238,7 +235,7 @@ PGMDocHandler::PGMDocHandler(Doc_t ty,
 
 PGMDocHandler::~PGMDocHandler() 
 {
-  BriefAssertion(scopeStack.Depth() == 0);
+  DIAG_ASSERT(scopeStack.Depth() == 0, "Invalid state reading PGM.");
 }
 
 
@@ -266,14 +263,13 @@ void PGMDocHandler:: startElement(const XMLCh* const uri,
   // PGM
   // -----------------------------------------------------------------
   if (XMLString::equals(name, elemPgm)) {
-    String verStr = getAttr(attributes, attrVer);
-    
-    double ver = atof(verStr);
+    string verStr = getAttr(attributes, attrVer);
+    double ver = StrUtil::toDbl(verStr);
 
     pgmVersion = ver;
     if (pgmVersion < 4.0) {
-      String error = "This file format version is outdated; please regenerate the file."; 
-      throw PGMException(error); 
+      string error = "This file format version is outdated; please regenerate the file."; 
+      throw PGMException(error);
     }
     
     IFTRACE << "PGM: ver=" << ver << endl;
@@ -284,8 +280,8 @@ void PGMDocHandler:: startElement(const XMLCh* const uri,
   
   // G(roup)
   else if (XMLString::equals(name, elemGroup)) {
-    String grpnm = getAttr(attributes, attrName); // must exist
-    BriefAssertion(!grpnm.Empty());
+    string grpnm = getAttr(attributes, attrName); // must exist
+    BriefAssertion(!grpnm.empty());
     IFTRACE << "G(roup): name= " << grpnm << endl;
 
     ScopeInfo* enclScope = GetCurrentScope(); // enclosing scope
@@ -297,9 +293,9 @@ void PGMDocHandler:: startElement(const XMLCh* const uri,
   
   // LM (load module)
   else if (XMLString::equals(name, elemLM)) {
-    String lm = getAttr(attributes, attrName); // must exist
+    string lm = getAttr(attributes, attrName); // must exist
     lm = driver->ReplacePath(lm);
-    BriefAssertion(currentLmName.Empty());
+    DIAG_ASSERT(currentLmName.empty(), "Parse or internal error!");
     currentLmName = lm;
     IFTRACE << "LM (load module): name= " << currentLmName << endl;
     
@@ -310,7 +306,7 @@ void PGMDocHandler:: startElement(const XMLCh* const uri,
   
   // F(ile)
   else if (XMLString::equals(name, elemFile)) {
-    String srcFile = getAttr(attributes, attrName);
+    string srcFile = getAttr(attributes, attrName);
     srcFile = driver->ReplacePath(srcFile);
     IFTRACE << "F(ile): name=" << srcFile << endl;
     
@@ -329,29 +325,29 @@ void PGMDocHandler:: startElement(const XMLCh* const uri,
   else if (XMLString::equals(name, elemProc)) {
     BriefAssertion(scopeStack.Depth() >= 2); // at least has File, LM
     
-    String name  = getAttr(attributes, attrName);   // must exist
-    String lname = getAttr(attributes, attrLnName); // optional
+    string name  = getAttr(attributes, attrName);   // must exist
+    string lname = getAttr(attributes, attrLnName); // optional
     if (driver->MustDeleteUnderscore()) {
-      if (!name.Empty() && (name[name.Length()-1] == '_')) {
-	name[name.Length()-1] = '\0';
+      if (!name.empty() && (name[name.length()-1] == '_')) {
+	name[name.length()-1] = '\0';
       }
-      if (!lname.Empty() && (lname[lname.Length()-1] == '_')) {
-	lname[lname.Length()-1] = '\0';
+      if (!lname.empty() && (lname[lname.length()-1] == '_')) {
+	lname[lname.length()-1] = '\0';
       }
     }
     IFTRACE << "P(roc): name="  << name << " lname=" << lname << endl;
     
     int lnB = UNDEF_LINE, lnE = UNDEF_LINE;
-    String lineB = getAttr(attributes, attrBegin);
-    String lineE = getAttr(attributes, attrEnd);
-    if (!lineB.Empty()) { lnB = atoi(lineB); }
-    if (!lineE.Empty()) { lnE = atoi(lineE); }
+    string lineB = getAttr(attributes, attrBegin);
+    string lineE = getAttr(attributes, attrEnd);
+    if (!lineB.empty()) { lnB = (int)StrUtil::toLong(lineB); }
+    if (!lineE.empty()) { lnE = (int)StrUtil::toLong(lineE); }
     IFTRACE << " b="  << lnB << " e=" << lnE << endl;
     
     // Find enclosing File scope
     FileScope* curFile = FindCurrentFileScope();
     if (!curFile) {
-      String error = "No F(ile) scope for P(roc) scope '" + name + "'";
+      string error = "No F(ile) scope for P(roc) scope '" + name + "'";
       throw PGMException(error);
     }
 
@@ -382,10 +378,10 @@ void PGMDocHandler:: startElement(const XMLCh* const uri,
     BriefAssertion(numAttr >= 0 && numAttr <= 2);
 
     int lnB = UNDEF_LINE, lnE = UNDEF_LINE;
-    String lineB = getAttr(attributes, attrBegin);
-    String lineE = getAttr(attributes, attrEnd);
-    if (!lineB.Empty()) { lnB = atoi(lineB); }
-    if (!lineE.Empty()) { lnE = atoi(lineE); }
+    string lineB = getAttr(attributes, attrBegin);
+    string lineE = getAttr(attributes, attrEnd);
+    if (!lineB.empty()) { lnB = (int)StrUtil::toLong(lineB); }
+    if (!lineE.empty()) { lnE = (int)StrUtil::toLong(lineE); }
 
     IFTRACE << "L(oop): numberB=" << lineB << " numberE=" << lineE << endl;
     
@@ -404,10 +400,10 @@ void PGMDocHandler:: startElement(const XMLCh* const uri,
     BriefAssertion(numAttr == 1 || numAttr == 2);
     
     int lnB = UNDEF_LINE, lnE = UNDEF_LINE;
-    String lineB = getAttr(attributes, attrBegin);
-    String lineE = getAttr(attributes, attrEnd);
-    if (!lineB.Empty()) { lnB = atoi(lineB); }
-    if (!lineE.Empty()) { lnE = atoi(lineE); }
+    string lineB = getAttr(attributes, attrBegin);
+    string lineE = getAttr(attributes, attrEnd);
+    if (!lineB.empty()) { lnB = (int)StrUtil::toLong(lineB); }
+    if (!lineE.empty()) { lnE = (int)StrUtil::toLong(lineE); }
     BriefAssertion(lnB != UNDEF_LINE);
 
     // IF lineE is undefined, set it to lineB

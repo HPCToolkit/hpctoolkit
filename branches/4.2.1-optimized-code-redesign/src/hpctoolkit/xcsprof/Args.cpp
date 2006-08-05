@@ -1,5 +1,6 @@
-// $Id$
 // -*-C++-*-
+// $Id$
+
 // * BeginRiceCopyright *****************************************************
 // 
 // Copyright ((c)) 2002, Rice University 
@@ -39,6 +40,10 @@
 //************************* System Include Files ****************************
 
 #include <iostream>
+using std::cerr;
+using std::endl;
+
+#include <string>
 
 #include <unistd.h> // for 'getopt'
 #include <sys/stat.h>
@@ -48,15 +53,11 @@
 //*************************** User Include Files ****************************
 
 #include "Args.hpp"
-#include <lib/support/String.hpp>
-#include <lib/support/CStrUtil.hpp>
+#include <lib/support/StrUtil.hpp>
 #include <lib/support/Trace.hpp>
 #include "CSProfileUtils.hpp"
 
 //*************************** Forward Declarations **************************
-
-using std::cerr;
-using std::endl;
 
 //***************************************************************************
 
@@ -128,7 +129,7 @@ Args::Args(int argc, char* const* argv)
 
   char cwdName[MAX_PATH_SIZE +1];
   getcwd(cwdName, MAX_PATH_SIZE);
-  String crtDir=cwdName; 
+  string crtDir = cwdName; 
   if ( (argc>argIndex) && !strcmp(argv[argIndex], "-I")) {
     xDEBUG (DEB_PROCESS_ARGUMENTS, 
 	    cerr << "adding search paths" << endl;);
@@ -137,12 +138,12 @@ Args::Args(int argc, char* const* argv)
       xDEBUG (DEB_PROCESS_ARGUMENTS, 
 	      cerr << "adding search path  " << 
 	      argv[argIndex] << endl;);
-      String searchPath = argv[argIndex];
+      string searchPath = argv[argIndex];
       if (chdir (argv[argIndex]) == 0) {
 	char searchPathChr[MAX_PATH_SIZE +1];
 	getcwd(searchPathChr, MAX_PATH_SIZE);
-	String normSearchPath=searchPathChr; 
-	//String normSearchPath = normalizeFilePath(searchPath);
+	string normSearchPath = searchPathChr; 
+	//string normSearchPath = normalizeFilePath(searchPath);
 	searchPaths.push_back(normSearchPath);
       }
       chdir (cwdName);
@@ -209,18 +210,17 @@ void
 Args::createDatabaseDirectory() {
   bool uniqueDatabaseDirectoryCreated ;
 
-  if (mkdir(databaseDirectory, 
+  if (mkdir(databaseDirectory.c_str(), 
 	    S_IRWXU | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH) == -1) {
     if (errno == EEXIST) {
       cerr << databaseDirectory << " already exists\n";
       // attempt to create databaseDirectory+pid;
-      char myPidChr[20];
       pid_t myPid = getpid();
-      itoa (myPid, myPidChr);
-      String databaseDirectoryPid = databaseDirectory + myPidChr;
+      string myPidStr = StrUtil::toStr(myPid);
+      string databaseDirectoryPid = databaseDirectory + myPidStr;
       cerr << "attempting to create alternate database directory "
 	   << databaseDirectoryPid << std::endl;
-      if (mkdir(databaseDirectoryPid, 
+      if (mkdir(databaseDirectoryPid.c_str(), 
 		S_IRWXU | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH) == -1) {
 	cerr << "could not create alternate database directory " << 
 	  databaseDirectoryPid << std::endl;

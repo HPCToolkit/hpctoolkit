@@ -1,5 +1,6 @@
 // -*-Mode: C++;-*-
 // $Id$
+
 // * BeginRiceCopyright *****************************************************
 // 
 // Copyright ((c)) 2002, Rice University 
@@ -62,8 +63,6 @@
 
 #include <lib/isa/ISATypes.hpp>
 
-#include <lib/support/String.hpp>
-
 //*************************** Forward Declarations **************************
 
 
@@ -95,8 +94,11 @@ public:
   // -------------------------------------------------------
 
   // Format: "[lb1-ub1]"
-  String toString() const;
-  void   fromString(const char* formattedstr);
+  std::string toString() const;
+
+  void fromString(const char* formattedstr);
+  void fromString(std::string& formattedstr)
+    { fromString(formattedstr.c_str()); }
 
   std::ostream& dump(std::ostream& os) const;
   std::istream& slurp(std::istream& is);
@@ -184,9 +186,12 @@ public:
   // -------------------------------------------------------
 
   // Format: space-separated list of intervals: "[lb1-ub1] [lb2-ub2] ..."
-  String toString() const;
-  void   fromString(const char* formattedstr);
-  
+  std::string toString() const;
+
+  void fromString(const char* formattedstr);
+  void fromString(std::string& formattedstr)
+    { fromString(formattedstr.c_str()); }
+
   std::ostream& dump(std::ostream& os) const;
   std::istream& slurp(std::istream& is);
 

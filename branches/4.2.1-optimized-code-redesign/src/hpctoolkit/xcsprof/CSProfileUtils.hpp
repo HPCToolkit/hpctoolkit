@@ -1,5 +1,6 @@
-// $Id$
 // -*-C++-*-
+// $Id$
+
 // * BeginRiceCopyright *****************************************************
 // 
 // Copyright ((c)) 2002, Rice University 
@@ -55,6 +56,7 @@
 #include <iostream>
 #include <vector>
 #include <stack>
+#include <string>
 
 //*************************** User Include Files ****************************
 
@@ -68,11 +70,12 @@
 
 //*************************** Forward Declarations ***************************
 
-CSProfile* ReadCSProfileFile_HCSPROFILE(const char* fnm,const char *execnm);
+CSProfile* ReadCSProfileFile_HCSPROFILE(const char* fnm, const char *execnm);
 
 //****************************************************************************
 
-void WriteCSProfileInDatabase(CSProfile* prof, String dbDirectory);
+void WriteCSProfileInDatabase(CSProfile* prof, 
+			      const std::string& dbDirectory);
 void WriteCSProfile(CSProfile* prof, std::ostream& os,
 		    bool prettyPrint = true);
 
@@ -83,8 +86,8 @@ bool AddSourceFileInfoToCSTreeNode(CSProfCallSiteNode* node,
                                    bool                istext);
 
 void copySourceFiles (CSProfile *prof, 
-		      std::vector<String>& searchPaths,
-		      String dbSourceDirectory);  
+		      std::vector<std::string>& searchPaths,
+		      const std::string& dbSourceDirectory);  
 
 void LdmdSetUsedFlag(CSProfile* prof); 
 
@@ -98,11 +101,11 @@ bool NormalizeInternalCallSites(CSProfile* prof, LoadModuleInfo* lmi,
 
 #define MAX_PATH_SIZE 2048 
 /** Normalizes a file path.*/
-String normalizeFilePath(String filePath);
-String normalizeFilePath(String filePath, 
-			 std::stack<String>& pathSegmentsStack);
-void breakPathIntoSegments(String normFilePath, 
-			   std::stack<String>& pathSegmentsStack);
+std::string normalizeFilePath(const std::string& filePath);
+std::string normalizeFilePath(const std::string& filePath, 
+			      std::stack<std::string>& pathSegmentsStack);
+void breakPathIntoSegments(const std::string& normFilePath, 
+			   std::stack<std::string>& pathSegmentsStack);
 
 #define DEB_READ_MMETRICS 0
 #define DEB_LOAD_MODULE 0

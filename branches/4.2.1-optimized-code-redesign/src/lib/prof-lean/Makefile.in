@@ -300,7 +300,7 @@ HPC_IFLAGS = -I$(HPCTOOLKIT)/src
 HPC_LIBPROFJUICY = $(top_builddir)/src/lib/prof-juicy/libHPCprof-juicy.la
 HPC_LIBPROFLEAN = $(top_builddir)/src/lib/prof-lean/libHPCprof-lean.la
 HPC_LIBBINUTILS = $(top_builddir)/src/lib/binutils/libHPCbinutils.la
-HPC_LIBISA = $(top_builddir)/src/lib/ISA/libHPCisa.la
+HPC_LIBISA = $(top_builddir)/src/lib/isa/libHPCisa.la
 HPC_LIBXML = $(top_builddir)/src/lib/xml/libHPCxml.la
 HPC_LIBSUPPORT = $(top_builddir)/src/lib/support/libHPCsupport.la
 

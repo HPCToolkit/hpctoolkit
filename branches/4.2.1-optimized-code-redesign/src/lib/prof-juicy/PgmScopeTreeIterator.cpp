@@ -82,31 +82,31 @@ HasScopeType(const ScopeInfo& sinfo, long type)
 
 const ScopeInfoFilter ScopeTypeFilter[ScopeInfo::NUMBER_OF_SCOPES] = {
   ScopeInfoFilter(HasScopeType,
-		  ScopeInfo::ScopeTypeToName(ScopeInfo::PGM),
+		  ScopeInfo::ScopeTypeToName(ScopeInfo::PGM).c_str(),
 		  ScopeInfo::PGM),
   ScopeInfoFilter(HasScopeType,
-		  ScopeInfo::ScopeTypeToName(ScopeInfo::GROUP),
+		  ScopeInfo::ScopeTypeToName(ScopeInfo::GROUP).c_str(),
 		  ScopeInfo::GROUP),
   ScopeInfoFilter(HasScopeType,
-		  ScopeInfo::ScopeTypeToName(ScopeInfo::LM), 
+		  ScopeInfo::ScopeTypeToName(ScopeInfo::LM).c_str(), 
 		  ScopeInfo::LM),
   ScopeInfoFilter(HasScopeType,
-		  ScopeInfo::ScopeTypeToName(ScopeInfo::FILE),
+		  ScopeInfo::ScopeTypeToName(ScopeInfo::FILE).c_str(),
 		  ScopeInfo::FILE),
   ScopeInfoFilter(HasScopeType,
-		  ScopeInfo::ScopeTypeToName(ScopeInfo::PROC),
+		  ScopeInfo::ScopeTypeToName(ScopeInfo::PROC).c_str(),
 		  ScopeInfo::PROC),
   ScopeInfoFilter(HasScopeType,
-		  ScopeInfo::ScopeTypeToName(ScopeInfo::LOOP),
+		  ScopeInfo::ScopeTypeToName(ScopeInfo::LOOP).c_str(),
 		  ScopeInfo::LOOP),
   ScopeInfoFilter(HasScopeType,
-		  ScopeInfo::ScopeTypeToName(ScopeInfo::STMT_RANGE),
+		  ScopeInfo::ScopeTypeToName(ScopeInfo::STMT_RANGE).c_str(),
 		  ScopeInfo::STMT_RANGE),
   ScopeInfoFilter(HasScopeType,
-		  ScopeInfo::ScopeTypeToName(ScopeInfo::REF),
+		  ScopeInfo::ScopeTypeToName(ScopeInfo::REF).c_str(),
 		  ScopeInfo::REF),
   ScopeInfoFilter(HasScopeType,
-		  ScopeInfo::ScopeTypeToName(ScopeInfo::ANY),
+		  ScopeInfo::ScopeTypeToName(ScopeInfo::ANY).c_str(),
 		  ScopeInfo::ANY)
 };
 
@@ -453,7 +453,7 @@ ScopeInfoNameSortedChildIterator::CompareByName(const void* a, const void *b)
   ScopeInfo* y = (*(ScopeInfo**)b);
   BriefAssertion (x != NULL);
   BriefAssertion (y != NULL);
-  return strcmp(x->Name(), y->Name());
+  return x->Name().compare(y->Name());
 }
 
 //***************************************************************************

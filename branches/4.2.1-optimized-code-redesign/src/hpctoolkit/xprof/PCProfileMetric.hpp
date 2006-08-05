@@ -1,5 +1,6 @@
-// $Id$
 // -*-C++-*-
+// $Id$
+
 // * BeginRiceCopyright *****************************************************
 // 
 // Copyright ((c)) 2002, Rice University 
@@ -55,6 +56,8 @@
 #include <map>
 #include <set>
 
+#include <string>
+
 #ifdef NO_STD_CHEADERS
 # include <limits.h>
 #else
@@ -68,8 +71,6 @@
 #include "PCProfileFilter.hpp"
 
 #include <lib/isa/ISA.hpp>
-
-#include <lib/support/String.hpp>
 
 //*************************** Forward Declarations ***************************
 
@@ -113,15 +114,20 @@ public:
   // TotalCount: The sum of all raw data for this metric
   // Period: The sampling period (whether event or instruction based)
   // TxtStart, TxtSz: Beginning of the text segment and the text segment size
-  const char*    GetName()        const { return name; }
-  const char*    GetDescription() const { return description; }
+  const std::string& GetName()        const { return name; }
+  const std::string& GetDescription() const { return description; }
+
   PCProfileDatum GetTotalCount()  const { return total; }
   ulong          GetPeriod()      const { return period; }
-  VMA           GetTxtStart()    const { return txtStart; }
-  VMA           GetTxtSz()       const { return txtSz; }
+  VMA            GetTxtStart()    const { return txtStart; }
+  VMA            GetTxtSz()       const { return txtSz; }
   
   void SetName(const char* s)          { name = s; }
-  void SetDescription(const char* s)   { description = s; }
+  void SetName(const std::string& s)   { name = s; }
+
+  void SetDescription(const char* s)        { description = s; }
+  void SetDescription(const std::string& s) { description = s; }
+
   void SetTotalCount(PCProfileDatum d) { total = d; }
   void SetPeriod(ulong p)              { period = p; }
   void SetTxtStart(VMA a)             { txtStart = a; }
@@ -171,8 +177,8 @@ private:
   
 protected:
 private:  
-  String name;
-  String description;
+  std::string name;
+  std::string description;
   
   PCProfileDatum total;    // sum across all pc values recorded for this event
   ulong          period;   // sampling period

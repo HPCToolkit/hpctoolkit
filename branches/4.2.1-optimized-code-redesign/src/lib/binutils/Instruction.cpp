@@ -50,15 +50,17 @@
 //************************* System Include Files ****************************
 
 #include <iostream>
+using std::hex;
+using std::dec;
+
+#include <string>
+using std::string;
 
 //*************************** User Include Files ****************************
 
 #include "Instruction.hpp"
 
 //*************************** Forward Declarations ***************************
-
-using std::hex;
-using std::dec;
 
 //****************************************************************************
 
@@ -69,7 +71,7 @@ using std::dec;
 void
 Instruction::Dump(std::ostream& o, const char* pre) const
 {
-  String p(pre);
+  string p(pre);
   VMA target = GetTargetVMA(vma);
 
   o << p << hex << "0x" << vma << dec << ": " << GetDesc().ToString();
@@ -81,7 +83,7 @@ Instruction::Dump(std::ostream& o, const char* pre) const
     o << " "; 
   }
 
-  DumpSelf(o, p);
+  DumpSelf(o, p.c_str());
   o << "\n";
 }
 

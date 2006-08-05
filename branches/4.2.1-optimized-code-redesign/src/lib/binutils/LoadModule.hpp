@@ -1,5 +1,6 @@
 // -*-Mode: C++;-*-
 // $Id$
+
 // * BeginRiceCopyright *****************************************************
 // 
 // Copyright ((c)) 2002, Rice University 
@@ -52,6 +53,7 @@
 
 //************************* System Include Files ****************************
 
+#include <string>
 #include <deque>
 #include <map>
 #include <iostream>
@@ -64,7 +66,6 @@
 #include "BinUtils.hpp"
 
 #include <lib/isa/ISATypes.hpp>
-#include <lib/support/String.hpp>
 
 //*************************** Forward Declarations **************************
 
@@ -122,7 +123,7 @@ public:
   virtual bool Read();
 
   // GetName: Return name of load module
-  String GetName() const { return name; }
+  const std::string& GetName() const { return name; }
 
   // GetType:  Return type of load module
   Type GetType() const { return type; }
@@ -205,10 +206,12 @@ public:
   // The second version only returns true when all information is
   // found and no error is detected.
   bool GetSourceFileInfo(VMA vma, ushort opIndex,
-			 String &func, String &file, suint &line) const;
+			 std::string& func, std::string& file, 
+			 suint &line) const;
+
   bool GetSourceFileInfo(VMA begVMA, ushort bOpIndex,
 			 VMA endVMA, ushort eOpIndex,
-			 String &func, String &file,
+			 std::string& func, std::string& file,
 			 suint &begLine, suint &endLine) const;
 
   bool GetProcedureFirstLineInfo(VMA vma, ushort opIndex, suint &line);
@@ -250,7 +253,7 @@ public:
 
       VMA begVMA; // begin VMA
       VMA endVMA; // end VMA (at the end of the last insn)
-      String name, filenm;
+      std::string name, filenm;
       suint begLine;
 
       std::ostream& dump(std::ostream& os) const;
@@ -375,8 +378,8 @@ protected:
   LoadModuleImpl* impl; 
 
 private: 
-  String name;
-  Type   type;
+  std::string name;
+  Type  type;
   VMA   textBeg, textEnd; // text begin and end
   VMA   firstaddr;        // shared library load address begin
   VMA   textBegReloc;     // relocated text begin

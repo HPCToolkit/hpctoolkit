@@ -1,5 +1,6 @@
 // -*-Mode: C++;-*-
 // $Id$
+
 // * BeginRiceCopyright *****************************************************
 // 
 // Copyright ((c)) 2002, Rice University 
@@ -38,6 +39,9 @@
 
 #include <iostream>
 
+#include <string>
+using std::string;
+
 //************************* User Include Files *******************************
 
 
@@ -68,7 +72,7 @@ Driver::Driver(int deleteUnderscores, bool _cpySrcFiles)
   cpySrcFiles = _cpySrcFiles;
 } 
 
-Driver::~Driver() 
+Driver::~Driver( )
 {
   IFTRACE << "~Driver " << endl; // << ToString() << endl; 
 } 
@@ -76,8 +80,8 @@ Driver::~Driver()
 void
 Driver::AddPath(const char* _path, const char* _viewname)
 {
-  path += String(":") + _path;
-  pathVec.push_back( PathTuple(String(_path), String(_viewname)) );
+  path += string(":") + _path;
+  pathVec.push_back( PathTuple(string(_path), string(_viewname)) );
 }
 
 
@@ -94,12 +98,12 @@ Driver::AddReplacePath(const char* inPath, const char* outPath)
   // path, too because when is time to replace we don't know if we
   // added one or not to the IN path.
   if (strlen(inPath)>0 && inPath[strlen(inPath)-1] != '/') {
-    replaceInPath.push_back(String(inPath) + String('/') );
-    replaceOutPath.push_back(String(outPath) + String('/') );
+    replaceInPath.push_back(string(inPath) + '/');
+    replaceOutPath.push_back(string(outPath) + '/');
   }
   else {
-    replaceInPath.push_back(String(inPath));
-    replaceOutPath.push_back(String(outPath)); 
+    replaceInPath.push_back(string(inPath));
+    replaceOutPath.push_back(string(outPath)); 
   }
   IFTRACE << "AddReplacePath: " << inPath << " -to- " << outPath << endl; 
 }
@@ -107,24 +111,25 @@ Driver::AddReplacePath(const char* inPath, const char* outPath)
 /* Test the specified path against each of the paths in the database. 
  * Replace with the pair of the first matching path.
  */
-String 
+string 
 Driver::ReplacePath(const char* oldpath)
 {
   BriefAssertion( replaceInPath.size() == replaceOutPath.size() );
   for( unsigned int i=0 ; i<replaceInPath.size() ; i++ ) {
-    unsigned int length = replaceInPath[i].Length();
+    unsigned int length = replaceInPath[i].length();
     // it makes sense to test for matching only if 'oldpath' is strictly longer
     // than this replacement inPath.
     if (strlen(oldpath) > length &&  
-	strncmp(oldpath, replaceInPath[i], length) == 0 ) { // it's a match
-      String s = replaceOutPath[i] + &oldpath[length];
+	strncmp(oldpath, replaceInPath[i].c_str(), length) == 0 ) { 
+      // it's a match
+      string s = replaceOutPath[i] + &oldpath[length];
       IFTRACE << "ReplacePath: Found a match! New path: " << s << endl;
       return s;
     }
   }
   // If nothing matched, return the original path
   IFTRACE << "ReplacePath: Nothing matched! Init path: " << oldpath << endl;
-  return String(oldpath);
+  return string(oldpath);
 }
 
 
@@ -142,9 +147,9 @@ Driver::Add(PerfMetric *m)
 	  << m->ToString() << endl; 
 } 
 
-String
+string
 Driver::ToString() const {
-  String s =  String("Driver: " ) + "title=" + title + " " + 
+  string s =  string("Driver: " ) + "title=" + title + " " + 
     "path=" + path; 
   s += "\ndataSrc::\n"; 
   for (unsigned int i =0; i < dataSrc.size(); i++) {
@@ -196,17 +201,17 @@ Driver::MakePerfData(PgmScopeTree& scopes)
 void
 Driver::ProcessPGMFile(NodeRetriever* nretriever, 
 		       PGMDocHandler::Doc_t docty, 
-		       std::vector<String*>* files)
+		       std::vector<string*>* files)
 {
   if (!files) {
     return;
   }
   
   for (unsigned int i = 0; i < files->size(); i++) {
-    String& pgmFileName = *((*files)[i]);
-    if (!pgmFileName.Empty()) {
-      String filePath = String(pathfind(".", pgmFileName, "r")); 
-      if (!filePath.Empty()) {
+    const string& pgmFileName = *((*files)[i]);
+    if (!pgmFileName.empty()) {
+      const char* filePath = pathfind(".", pgmFileName.c_str(), "r"); 
+      if (filePath) {
 	SAX2XMLReader* parser = XMLReaderFactory::createXMLReader();
 	
 	parser->setFeature(XMLUni::fgSAX2CoreValidation, true);
@@ -255,8 +260,8 @@ void
 Driver::XML_Dump(PgmScope* pgm, int dumpFlags, std::ostream &os,
 		 const char *pre) const
 {
-  String pre1 = String(pre) + "  ";
-  String pre2 = String(pre1) + "  ";
+  string pre1 = string(pre) + "  ";
+  string pre2 = string(pre1) + "  ";
   
   os << pre << "<HPCVIEWER>" << endl;
 
@@ -267,7 +272,7 @@ Driver::XML_Dump(PgmScope* pgm, int dumpFlags, std::ostream &os,
 
   const PathTupleVec& pVec = PathVec();
   for (unsigned int i = 0; i < pVec.size(); i++) {
-    const char* pathStr = pVec[i].first;
+    const string& pathStr = pVec[i].first;
     os << pre1 << "<PATH name=\042" << pathStr << "\042/>" << endl;
   }
   

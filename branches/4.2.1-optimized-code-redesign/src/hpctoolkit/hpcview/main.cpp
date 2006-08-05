@@ -1,5 +1,6 @@
-// $Id$
 // -*-C++-*-
+// $Id$
+
 // * BeginRiceCopyright *****************************************************
 // 
 // Copyright ((c)) 2002, Rice University 
@@ -36,8 +37,17 @@
 
 //************************ System Include Files ******************************
 
-#include <iostream> 
-#include <fstream> 
+#include <iostream>
+using std::cout;
+using std::cerr;
+using std::endl;
+
+#include <fstream>
+
+#include <string>
+using std::string;
+
+#include <exception>
 
 #ifdef NO_STD_CHEADERS
 # include <string.h>
@@ -78,9 +88,9 @@ using XERCES_CPP_NAMESPACE::XMLException;
 
 #include <lib/prof-juicy/PgmScopeTree.hpp>
 
-#include <lib/support/String.hpp>
 #include <lib/support/Assertion.h>
 #include <lib/support/Nan.h>
+#include <lib/support/diagnostics.h>
 #include <lib/support/Files.hpp>
 #include <lib/support/Trace.hpp>
 #include <lib/support/pathfind.h>
@@ -88,33 +98,29 @@ using XERCES_CPP_NAMESPACE::XMLException;
 
 //************************ Forward Declarations ******************************
 
-using std::cout;
-using std::cerr;
-using std::endl;
-
 static void InitXML();
 static void FiniXML();
 
 class FileException
 {
 public:
-  FileException(String s) {
+  FileException(const string& s) {
     error = s;
   }
-  String GetError() const { return error; };
+  const string& GetError() const { return error; };
 private:
-  String error;
+  string error;
 };
 
 #define NUM_PREFIX_LINES 2
 
 static void AppendContents(std::ofstream &dest, const char *srcFile);
 
-static String BuildConfFile(const char* hpcHome, const char* confFile);
+static string BuildConfFile(const string& hpcHome, const string& confFile);
 
 static bool CopySourceFiles(PgmScope* pgmScopeTree, 
 			    const PathTupleVec& pathVec, 
-			    const char* dstDir);
+			    const string& dstDir);
 
 //****************************************************************************
 
@@ -127,10 +133,21 @@ main(int argc, char* const* argv)
 
   try {
     ret = realmain(argc, argv);
-  } catch (std::bad_alloc& x) {
-    cerr << "hpcview fatal error: Memory alloc failed!\n";
+  } 
+  catch (const Diagnostics::Exception& x) {
+    cerr << "hpcview fatal error: ";
+    x.report(cerr);
     exit(1);
-  } catch (...) {
+  } 
+  catch (const std::bad_alloc& x) {
+    cerr << "hpcview fatal error: Memory alloc failed: " << x.what() << endl;
+    exit(1);
+  } 
+  catch (const std::exception& x) {
+    cerr << "hpcview fatal error: std::exception: " << x.what() << endl;
+    exit(1);
+  } 
+  catch (...) {
     cerr << "hpcview fatal error: Unknown exception encountered!\n";
     exit(2);
   }
@@ -148,7 +165,7 @@ realmain(int argc, char* const* argv)
   IFTRACE << "Initializing HTMLDriver: ..." << endl; 
 
   PgmScopeTree scopes("", new PgmScope("")); // name set later
-  HTMLDriver htmlDriver(scopes, args.fileHome, args.htmlDir, args);
+  HTMLDriver htmlDriver(scopes, args.fileHome.c_str(), args.htmlDir.c_str(), args);
              // constructor exits if it can't write to htmlDir 
              // or read files in fileHome
   IFTRACE << endl; 
@@ -159,36 +176,36 @@ realmain(int argc, char* const* argv)
   //-------------------------------------------------------
   // Read configuration file
   //-------------------------------------------------------
-  String tmpFile;
+  string tmpFile;
   try {
     tmpFile = BuildConfFile(args.hpcHome, args.configurationFile); 
     // exits iff it fails 
   }
-  catch (const FileException &e) {
-    cerr << e.GetError() << endl;
+  catch (const FileException& x) {
+    cerr << x.GetError() << endl;
     exit(1);
   }
 
   Driver driver(args.deleteUnderscores, args.CopySrcFiles); 
 
-  String userFile(args.configurationFile);
+  string userFile = args.configurationFile;
   HPCViewXMLErrHandler errReporter(userFile, tmpFile, NUM_PREFIX_LINES, true);
   try {
     HPCViewDocParser(driver, tmpFile, errReporter);
   }
-  catch (const HPCViewDocException &d){
-    unlink(tmpFile); 
-    cerr << "hpcview fatal error: CONFIGURATION file processing error." << endl
-    << "\t" << d.getMessage() << endl;
+  catch (const HPCViewDocException& x) {
+    unlink(tmpFile.c_str());
+    cerr << "hpcview fatal error: ";
+    x.report(cerr);
     exit(1);
   }
   catch (...) {
-    unlink(tmpFile); 
-    cerr << "hpcview fatal error: terminating because of previously reported CONFIGURATION file errors." << endl;
-    exit(1);
+    unlink(tmpFile.c_str()); 
+    cerr << "hpcview: Fatal error processing CONFIGURATION file." << endl;
+    throw;
   };
 
-  unlink(tmpFile); 
+  unlink(tmpFile.c_str()); 
 
   //-------------------------------------------------------
   // Create metrics
@@ -206,12 +223,12 @@ realmain(int argc, char* const* argv)
   if ( args.OutputInitialScopeTree ) {
     if ( args.XML_ToStdout ) { 
       cerr << "The initial scope tree (in XML) will appear on stdout" << endl; 
-       driver.XML_Dump(scopes.GetRoot());
+      driver.XML_Dump(scopes.GetRoot());
     } else {
-      String dmpFile = args.htmlDir + "/" + args.XML_Dump_File;
+      string dmpFile = args.htmlDir + "/" + args.XML_Dump_File;
       cerr << "The initial scope tree (in XML) will be written to " 
 	   << dmpFile << endl;
-      std::ofstream XML_outFile(dmpFile);
+      std::ofstream XML_outFile(dmpFile.c_str());
       if ( !XML_outFile ) {
 	cerr << "Output file open failed; skipping write of initial scope tree"
              << endl;
@@ -272,11 +289,11 @@ realmain(int argc, char* const* argv)
       cerr << "The final scope tree (in CSV) will appear on stdout" << endl; 
       driver.CSV_Dump(scopes.GetRoot());
     } else {
-      String dmpFile = args.htmlDir + "/" + args.XML_Dump_File;
+      string dmpFile = args.htmlDir + "/" + args.XML_Dump_File;
       
       cerr << "The final scope tree (in CSV) will be written to "
 	   << dmpFile << endl;
-      std::ofstream XML_outFile(dmpFile);
+      std::ofstream XML_outFile(dmpFile.c_str());
       if ( !XML_outFile ) {
 	cerr << "Output file open failed; skipping write of final scope tree."
              << endl;
@@ -289,11 +306,11 @@ realmain(int argc, char* const* argv)
       cerr << "The final scope tree (in TSV) will appear on stdout" << endl; 
       driver.TSV_Dump(scopes.GetRoot());
     } else {
-      String dmpFile = args.htmlDir + "/" + args.XML_Dump_File;
+      string dmpFile = args.htmlDir + "/" + args.XML_Dump_File;
       
       cerr << "The final scope tree (in TSV) will be written to "
 	   << dmpFile << endl;
-      std::ofstream XML_outFile(dmpFile);
+      std::ofstream XML_outFile(dmpFile.c_str());
       if ( !XML_outFile ) {
 	cerr << "Output file open failed; skipping write of final scope tree."
              << endl;
@@ -309,11 +326,11 @@ realmain(int argc, char* const* argv)
       cerr << "The final scope tree (in XML) will appear on stdout" << endl; 
       driver.XML_Dump(scopes.GetRoot(), dumpFlags);
     } else {
-      String dmpFile = args.htmlDir + "/" + args.XML_Dump_File;
+      string dmpFile = args.htmlDir + "/" + args.XML_Dump_File;
       
       cerr << "The final scope tree (in XML) will be written to "
 	   << dmpFile << endl;
-      std::ofstream XML_outFile(dmpFile);
+      std::ofstream XML_outFile(dmpFile.c_str());
       if ( !XML_outFile ) {
 	cerr << "Output file open failed; skipping write of final scope tree."
              << endl;
@@ -360,7 +377,7 @@ AppendContents(std::ofstream &dest, const char *srcFile)
 {
   std::ifstream src(srcFile);
   if (src.fail()) {
-    String error = String("Unable to open ") + srcFile + " for reading.";
+    string error = string("Unable to open ") + srcFile + " for reading.";
     throw FileException(error);
   }
 
@@ -376,18 +393,18 @@ AppendContents(std::ofstream &dest, const char *srcFile)
   src.close();
 }
 
-static String
-BuildConfFile(const char* hpcHome, const char* confFile) 
+static string
+BuildConfFile(const string& hpcHome, const string& confFile) 
 {
-  String tmpFile = TmpFileName(); 
-  String hpcloc = String(hpcHome);
-  if (hpcloc[hpcloc.Length()-1] != '/') {
+  string tmpFile = TmpFileName(); 
+  string hpcloc = hpcHome;
+  if (hpcloc[hpcloc.length()-1] != '/') {
     hpcloc += "/";
   }
-  std::ofstream tmp(tmpFile, std::ios_base::out);
+  std::ofstream tmp(tmpFile.c_str(), std::ios_base::out);
 
   if (tmp.fail()) {
-    String error = String("Unable to open temporary file ") + tmpFile + 
+    string error = "Unable to open temporary file " + tmpFile + 
       " for writing.";
     throw FileException(error);
   }
@@ -400,7 +417,7 @@ BuildConfFile(const char* hpcHome, const char* confFile)
   //std::cout << "TMP DTD file: '" << tmpFile << "'" << std::endl;
   //std::cout << "  " << hpcloc << std::endl;
 
-  AppendContents(tmp,confFile);
+  AppendContents(tmp, confFile.c_str());
   tmp.close();
   return tmpFile; 
 }
@@ -408,14 +425,14 @@ BuildConfFile(const char* hpcHome, const char* confFile)
 //****************************************************************************
 
 static int
-MatchFileWithPath(const char* filenm, const PathTupleVec& pathVec);
+MatchFileWithPath(const string& filenm, const PathTupleVec& pathVec);
 
 // 'CopySourceFiles': For every file F in 'pgmScopeTree' that can be
 // reached with paths in 'pathVec', copy F to its appropriate
 // viewname path and update F's path to be relative to this location.
 static bool
 CopySourceFiles(PgmScope* pgmScopeTree, const PathTupleVec& pathVec,
-		const char* dstDir)
+		const string& dstDir)
 {
   bool noError = true;
 
@@ -428,43 +445,43 @@ CopySourceFiles(PgmScope* pgmScopeTree, const PathTupleVec& pathVec,
     
     // Note: 'fileOrig' will be not be absolute if it is not possible to find
     // the file on the current filesystem. (cf. NodeRetriever::MoveToFile)
-    String fileOrig(file->Name());
-    if (fileOrig[(unsigned int)0] == '/') { 
+    string fileOrig = file->Name();
+    if (fileOrig[0] == '/') {
       int indx = MatchFileWithPath(fileOrig, pathVec);
       if (indx >= 0) {
-	const String& path     = pathVec[indx].first;
-	const String& viewname = pathVec[indx].second;
+	const string& path     = pathVec[indx].first;
+	const string& viewname = pathVec[indx].second;
 	
 	// find the absolute form of 'path'
-	String realpath(path);
-	if (is_recursive_path(realpath)) {
-	  realpath[realpath.Length()-RECURSIVE_PATH_SUFFIX_LN] = '\0';
+	string realpath(path);
+	if (is_recursive_path(realpath.c_str())) {
+	  realpath[realpath.length()-RECURSIVE_PATH_SUFFIX_LN] = '\0';
 	}
-	realpath = RealPath(realpath); 
+	realpath = RealPath(realpath.c_str()); 
 	
 	// 'realpath' must be a prefix of 'fileOrig'; find left-over portion
-	char* pathSuffx = const_cast<char*>((const char*)fileOrig);
-	pathSuffx = &pathSuffx[strlen(realpath)];
+	char* pathSuffx = const_cast<char*>(fileOrig.c_str());
+	pathSuffx = &pathSuffx[realpath.length()];
 	while (pathSuffx[0] != '/') { --pathSuffx; } // should start with '/'
 	
 	// Create new file name and copy commands
-	String newSIFileNm = "./" + viewname + pathSuffx;
-	String toFile ;
+	string newSIFileNm = "./" + viewname + pathSuffx;
+	string toFile;
 	if (dstDir[0]  != '/') {
-	  toFile = String("./");
+	  toFile = "./";
 	}
 	toFile = toFile + dstDir + "/" + viewname + pathSuffx;
-	String toDir(toFile); // need to strip off ending filename to 
+	string toDir(toFile); // need to strip off ending filename to 
 	unsigned int end;     // get full path for 'toFile'
-	for (end = toDir.Length() - 1; toDir[end] != '/'; end--) { }
+	for (end = toDir.length() - 1; toDir[end] != '/'; end--) { }
 	toDir[end] = '\0'; // should not end with '/'
 	
-	String cmdMkdir = "mkdir -p " + toDir;
-	String cmdCp    = "cp -f " + fileOrig + " " + toFile;
+	string cmdMkdir = "mkdir -p " + toDir;
+	string cmdCp    = "cp -f " + fileOrig + " " + toFile;
 	//cerr << cmdCp << endl;
 	
 	// could use CopyFile; see StaticFiles::Copy
-	if (system(cmdMkdir) == 0 && system(cmdCp) == 0) {
+	if (system(cmdMkdir.c_str()) == 0 && system(cmdCp.c_str()) == 0) {
 	  cerr << "  " << toFile << endl;
 	  file->SetName(newSIFileNm);
 	} else {
@@ -481,7 +498,7 @@ CopySourceFiles(PgmScope* pgmScopeTree, const PathTupleVec& pathVec,
 // 'pathVec', if any, reaches 'filenm'.  If a match is found, returns
 // an index in pathVec; otherwise returns a negative.
 static int
-MatchFileWithPath(const char* filenm, const PathTupleVec& pathVec)
+MatchFileWithPath(const string& filenm, const PathTupleVec& pathVec)
 {
   // Find the index to the path that reaches 'filenm'.
   // It is possible that more than one path could reach the same
@@ -493,28 +510,29 @@ MatchFileWithPath(const char* filenm, const PathTupleVec& pathVec)
   int foundPathLn = 0; // length of the path represented by 'foundIndex'
   for (unsigned int i = 0; i < pathVec.size(); i++) {
     // find the absolute form of 'curPath'
-    const char* curPath = pathVec[i].first;
-    String realPath(curPath);
-    if (is_recursive_path(curPath)) {
-      realPath[realPath.Length()-RECURSIVE_PATH_SUFFIX_LN] = '\0';
+    const string& curPath = pathVec[i].first;
+    string realPath(curPath);
+    if (is_recursive_path(curPath.c_str())) {
+      realPath[realPath.length()-RECURSIVE_PATH_SUFFIX_LN] = '\0';
     }
-    realPath = RealPath(realPath);
-    int realPathLn = realPath.Length();
+    realPath = RealPath(realPath.c_str());
+    int realPathLn = realPath.length();
        
     // 'filenm' should be relative as input for pathfind_r.  If 'filenm'
     // is absolute and 'realPath' is a prefix, make it relative. 
-    String tmpFile(filenm);
-    char* curFile = const_cast<char*>((const char*)tmpFile);
+    string tmpFile(filenm);
+    char* curFile = const_cast<char*>(tmpFile.c_str());
     if (filenm[0] == '/') { // is 'filenm' absolute?
-      if (strncmp(curFile, realPath, realPathLn) == 0) {
+      if (strncmp(curFile, realPath.c_str(), realPathLn) == 0) {
 	curFile = &curFile[realPathLn];
 	while (curFile[0] == '/') { ++curFile; } // should not start with '/'
-      } else {
+      } 
+      else {
 	continue; // pathfind_r can't posibly find anything
       }
     }
     
-    char* result = pathfind_r(curPath, curFile, "r");
+    const char* result = pathfind_r(curPath.c_str(), curFile, "r");
     if (result) {
       bool update = false;
       if (foundIndex < 0) {

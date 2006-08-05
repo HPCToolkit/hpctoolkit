@@ -39,6 +39,8 @@
 
 //************************ System Include Files ******************************
 
+#include <string>
+
 //************************* User Include Files *******************************
 
 #include <include/general.h>
@@ -48,8 +50,8 @@
 
 #include <lib/prof-juicy/PgmScopeTree.hpp>
 
-#include <lib/support/String.hpp>
 #include <lib/support/Unique.hpp>
+#include <lib/support/String.hpp> // FIXME
 
 //************************ Forward Declarations ******************************
 
@@ -78,21 +80,21 @@ public:
   bool Write(const Driver& driver) const; // terminate with -1
   
   static String UniqueName(const ScopeInfo *s, 
-			   int pIndex, int flattenDepth); // s non-NULL 
+				int pIndex, int flattenDepth); // s non-NULL 
 
   static String UniqueNameForSelf(const ScopeInfo *s);
 
   static const DataDisplayInfo NameDisplayInfo; 
  
-  String ToString() const; 
+  std::string ToString() const; 
 
 private:
   void WriteFiles(const char* name) const; 
-  void WriteHeader(const char* name, const String& tit) const; 
+  void WriteHeader(const char* name, const std::string& tit) const; 
   void WriteIndexFile(PgmScope *pgmScope, 
 		      HTMLTable &table, int perfIndex, 
 		      HTMLScopes& scopes, 
-		      const String & title, 
+		      const std::string& title, 
 		      const char* headerFile) const; 
 
   const PgmScopeTree &scopes; 

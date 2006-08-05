@@ -1,5 +1,6 @@
 // -*-Mode: C++;-*-
 // $Id$
+
 // * BeginRiceCopyright *****************************************************
 // 
 // Copyright ((c)) 2002, Rice University 
@@ -137,7 +138,7 @@ Args::Ctor()
 {
   symbolicDump = false;
   symbolicDumpOld = false;
-  loadAddr = 0x0;
+  loadVMA = 0x0;
   debugLevel = 0;
 }
 
@@ -218,7 +219,7 @@ Args::Parse(int argc, const char* const argv[])
     } 
     if (parser.IsOpt("load-addr")) { 
       const string& arg = parser.GetOptArg("load-addr");
-      loadAddr = CmdLineParser::ToLong(arg);
+      loadVMA = CmdLineParser::ToLong(arg);
 
 #if 0
       errno = 0;
@@ -227,7 +228,7 @@ Args::Parse(int argc, const char* const argv[])
 	PrintError(std::cerr, "Invalid address given to -r\n");
 	exit(1);
       }
-      loadAddr = (Addr)l;
+      loadVMA = (VMA)l;
 #endif
     }
     

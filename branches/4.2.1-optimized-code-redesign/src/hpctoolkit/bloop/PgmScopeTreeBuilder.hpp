@@ -71,7 +71,7 @@ namespace ScopeTreeBuilder {
   
   PgmScopeTree* 
   BuildFromLM(LoadModule* lm, PCToSrcLineXMap* &map,
-	      String canonicalPathList = "",
+	      const char* canonicalPathList = "",
 	      bool normalizeScopeTree = true,
 	      bool unsafeNormalizations = true,
 	      bool irreducibleIntervalIsLoop = false,

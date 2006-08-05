@@ -50,7 +50,16 @@
 //************************ System Include Files ******************************
 
 #include <iostream>
+using std::cerr;
+using std::hex;
+using std::dec;
+using std::endl;
+
 #include <fstream>
+
+#include <string>
+using std::string;
+
 #include <map>
 
 #ifdef NO_STD_CHEADERS
@@ -72,11 +81,6 @@ using namespace std; // For compatibility with non-std C headers
 
 //************************ Forward Declarations ******************************
 
-using std::cerr;
-using std::hex;
-using std::dec;
-using std::endl;
-
 //****************************************************************************
 
 //***************************************************************************
@@ -97,7 +101,7 @@ LoadModuleInfo::~LoadModuleInfo()
 
 bool
 LoadModuleInfo::GetSymbolicInfo(VMA pc, ushort opIndex,
-				String& func, String& file, SrcLineX& srcLn)
+				string& func, string& file, SrcLineX& srcLn)
 {
   // 'PCToSrcLineXMap' has priority over 'LoadModule'.
   bool foundInfo = false;

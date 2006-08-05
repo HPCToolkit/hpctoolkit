@@ -53,6 +53,7 @@
 //************************* System Include Files ****************************
 
 #include <fstream>
+#include <string>
 
 //*************************** User Include Files ****************************
 
@@ -80,7 +81,7 @@ public:
   ~LoadModuleInfo();
 
   bool GetSymbolicInfo(VMA pc, ushort opIndex,
-		       String& func, String& file, SrcLineX& srcLn);
+		       std::string& func, std::string& file, SrcLineX& srcLn);
   bool GetProcedureFirstLineInfo(VMA pc, ushort opIndex, suint &line);
   
   LoadModule*      GetLM() const { return lm; }

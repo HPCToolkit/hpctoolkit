@@ -53,6 +53,7 @@
 //************************* System Include Files ****************************
 
 #include <iostream>
+#include <string>
 #include <list>
 #include <vector>
 #include <map>
@@ -62,8 +63,6 @@
 #include <include/general.h>
 
 #include <lib/isa/ISATypes.hpp>
-
-#include <lib/support/String.hpp>
 
 //*************************** Forward Declarations ***************************
 
@@ -140,6 +139,10 @@ class ProcPCToSrcLineXMap
 public:
   ProcPCToSrcLineXMap(VMA start, VMA end, const char* proc = NULL,
 		      const char* file = NULL);
+  ProcPCToSrcLineXMap(VMA start, VMA end, const std::string& proc,
+		      const std::string& file)
+    { ProcPCToSrcLineXMap(start, end, proc.c_str(), file.c_str()); }
+
   ~ProcPCToSrcLineXMap();
 
   // 'startVMA' <= 'pc' <= 'endVMA'.  'Insert' inserts only if no
@@ -153,14 +156,18 @@ public:
     map.insert(VMAToSrcLineXMapVal(pc, s));
   }
   
-  const char* GetProcName()   const { return procName; }
-  const char* GetFileName()   const { return fileName; }
-  VMA        GetStartVMA()  const { return startVMA; }
-  VMA        GetEndVMA()    const { return endVMA; }
-  suint       GetNumEntries() const { return map.size(); }
+  const std::string& GetProcName() const { return procName; }
+  const std::string& GetFileName() const { return fileName; }
+  VMA   GetStartVMA()  const { return startVMA; }
+  VMA   GetEndVMA()    const { return endVMA; }
+  suint GetNumEntries() const { return map.size(); }
   
   void SetProcName(const char* s) { procName = s; }
+  void SetProcName(const std::string& s) { procName = s; }
+
   void SetFileName(const char* s) { fileName = s; }
+  void SetFileName(const std::string& s) { fileName = s; }
+
   void SetStartVMA(VMA a)   { startVMA = a; } 
   void SetEndVMA(VMA a)     { endVMA = a; }  
   
@@ -188,8 +195,8 @@ private:
   
 protected:
 private:
-  String procName;
-  String fileName;
+  std::string procName;
+  std::string fileName;
   VMA startVMA; // the address of the *start* of the first instruction
   VMA endVMA;   // the address of the *end* of the last instruction
   

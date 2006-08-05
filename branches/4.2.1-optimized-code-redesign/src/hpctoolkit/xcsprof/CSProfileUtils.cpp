@@ -1,5 +1,6 @@
-// $Id$
 // -*-C++-*-
+// $Id$
+
 // * BeginRiceCopyright *****************************************************
 // 
 // Copyright ((c)) 2002, Rice University 
@@ -56,6 +57,9 @@
 #include <sys/types.h>
 #include <sys/errno.h>
 
+#include <string>
+using std::string;
+
 #ifdef NO_STD_CHEADERS  // FIXME
 # include <string.h>
 #else
@@ -68,11 +72,13 @@ using namespace std; // For compatibility with non-std C headers
 #include "CSProfileUtils.hpp"
 
 #include <lib/prof-lean/hpcfile_csproflib.h>
+
 #include <lib/binutils/LoadModule.hpp>
 #include <lib/binutils/PCToSrcLineMap.hpp>
 #include <lib/binutils/LoadModuleInfo.hpp>
+
 #include <lib/xml/xml.hpp>
-#include <lib/support/String.hpp>
+
 #include <lib/support/Assertion.h>
 
 #if 0
@@ -107,10 +113,10 @@ const char *CSPROFILEdtd =
 #include <lib/xml/CSPROFILE.dtd.h>
 
 
-void WriteCSProfileInDatabase(CSProfile* prof, String dbDirectory) {
-  String csxmlFileName = dbDirectory+"/profile.xml";
+void WriteCSProfileInDatabase(CSProfile* prof, const string& dbDirectory) {
+  string csxmlFileName = dbDirectory+"/profile.xml";
   filebuf fb;
-  fb.open (csxmlFileName, ios::out);
+  fb.open(csxmlFileName.c_str(), ios::out);
   std::ostream os(&fb);
   WriteCSProfile(prof, os, true);
   fb.close();
@@ -199,7 +205,7 @@ AddSourceFileInfoToCSTreeNode(CSProfCallSiteNode* node,
   CSProfCallSiteNode* n = node;  
 
   if (n) {
-    String func, file;
+    string func, file;
     SrcLineX srcLn;   
     lm->GetSymbolicInfo(n->GetIP(), n->GetOpIndex(), func, file, srcLn);   
 
@@ -212,10 +218,10 @@ AddSourceFileInfoToCSTreeNode(CSProfCallSiteNode* node,
     suint procFrameLine;
     lm->GetProcedureFirstLineInfo( n->GetIP(), n->GetOpIndex(), procFrameLine);
     xDEBUG(DEB_PROC_FIRST_LINE,
-	   fprintf(stderr, "after AddSourceFileInfoToCSTreeNode: %s starts at %d, file=%s and p=%s=\n", n->GetProc(), procFrameLine, (const char*)file, (const char*)func););
+	   fprintf(stderr, "after AddSourceFileInfoToCSTreeNode: %s starts at %d, file=%s and p=%s=\n", n->GetProc().c_str(), procFrameLine, file.c_str(), func.c_str()););
 
     // if file name is missing then using load module name. 
-    if (file.Empty() || func.Empty()) {
+    if (file.empty() || func.empty()) {
         n->SetFile(lm->GetLM()->GetName());  
         n->SetLine(0); //don't need to have line number for loadmodule
         n->SetFileIsText(false);
@@ -441,10 +447,10 @@ CoalesceCallsiteLeaves(CSProfile* prof)
 
 
 // FIXME
-typedef std::map<String, CSProfCallSiteNode*, StringLt> StringToCallSiteMap;
-typedef std::map<String, CSProfCallSiteNode*, StringLt>::iterator 
+typedef std::map<string, CSProfCallSiteNode*> StringToCallSiteMap;
+typedef std::map<string, CSProfCallSiteNode*>::iterator 
   StringToCallSiteMapIt;
-typedef std::map<String, CSProfCallSiteNode*, StringLt>::value_type
+typedef std::map<string, CSProfCallSiteNode*>::value_type
   StringToCallSiteMapVal;
 
 bool 
@@ -470,8 +476,8 @@ CoalesceCallsiteLeaves(CSProfNode* node)
 
       // This child is a leaf. Test for duplicate source line info.
       CSProfCallSiteNode* c = dynamic_cast<CSProfCallSiteNode*>(child);
-      String myid = String(c->GetFile()) + String(c->GetProc()) 
-	+ String(c->GetLine());
+      string myid = string(c->GetFile()) + string(c->GetProc()) 
+	+ StrUtil::toStr(c->GetLine());
       
       StringToCallSiteMapIt it = sourceInfoMap.find(myid);
       if (it != sourceInfoMap.end()) { 
@@ -509,10 +515,10 @@ CoalesceCallsiteLeaves(CSProfNode* node)
 //***************************************************************************
 // Routines for normalizing sibling call sites withing the same procedure
 //***************************************************************************
-typedef std::map<String, CSProfProcedureFrameNode*, StringLt> StringToProcedureFramesMap;
-typedef std::map<String, CSProfProcedureFrameNode*, StringLt>::iterator 
+typedef std::map<string, CSProfProcedureFrameNode*> StringToProcedureFramesMap;
+typedef std::map<string, CSProfProcedureFrameNode*>::iterator 
   StringToProcedureFramesMapIt;
-typedef std::map<String, CSProfProcedureFrameNode*, StringLt>::value_type
+typedef std::map<string, CSProfProcedureFrameNode*>::value_type
   StringToProcedureFramesMapVal;
 
 bool NormalizeSameProcedureChildren(CSProfile* prof, LoadModuleInfo *lmi,
@@ -586,9 +592,9 @@ NormalizeSameProcedureChildren(CSProfile* prof, CSProfNode* node, LoadModuleInfo
        //only handle functions in the current load module
         xDEBUG(DEB_UNIFY_PROCEDURE_FRAME,
 	   fprintf(stderr, "analyzing node %s %lx\n", 
-		   c->GetProc(), c->GetIP()););
+		   c->GetProc().c_str(), c->GetIP()););
 
-      String myid = String(c->GetFile()) + String(c->GetProc());
+      string myid = c->GetFile() + c->GetProc();
       StringToProcedureFramesMapIt it = proceduresMap.find(myid);
       CSProfProcedureFrameNode* procFrameNode;
       if (it != proceduresMap.end()) { 
@@ -599,18 +605,18 @@ NormalizeSameProcedureChildren(CSProfile* prof, CSProfNode* node, LoadModuleInfo
 	procFrameNode= new CSProfProcedureFrameNode(NULL); 
 	procFrameNode->SetFile(c->GetFile());
 	
-	String procFrameName = c->GetProc();
+	string procFrameName = c->GetProc();
 
 	xDEBUG(DEB_UNIFY_PROCEDURE_FRAME,
 	       std::cerr << "c->GetProc:" << procFrameName << std::endl;
 	       );
 
-	if ( !procFrameName.Empty() ) {
+	if ( !procFrameName.empty() ) {
 	  xDEBUG(DEB_UNIFY_PROCEDURE_FRAME,
 		 std::cerr << "non empty procedure" << std::endl;
 		 );
 	} else {
-	  procFrameName = String("unknown ")+String((long unsigned) c->GetIP(), true);
+	  procFrameName = string("unknown ") + StrUtil::toStr(c->GetIP(), 16);
 	  xDEBUG(DEB_UNIFY_PROCEDURE_FRAME,
 		 std::cerr << "empty procedure; use procedure name" << procFrameName << std::endl;
 		 );
@@ -630,7 +636,7 @@ NormalizeSameProcedureChildren(CSProfile* prof, CSProfNode* node, LoadModuleInfo
 	  suint procFrameLine;
 	  xDEBUG(DEB_PROC_FIRST_LINE,
 		 fprintf(stderr, "looking up the first line for %s\n",
-			 c->GetProc()););
+			 c->GetProc().c_str()););
 	  //  determine the appropriate module info for the current 
 	  //  procedure frame
 
@@ -648,12 +654,12 @@ NormalizeSameProcedureChildren(CSProfile* prof, CSProfNode* node, LoadModuleInfo
       if ( child->IsLeaf() ) {
 	xDEBUG(DEB_UNIFY_PROCEDURE_FRAME,
 	       fprintf(stderr, "converting node %s %lx into stmt node begin\n", 
-		       c->GetProc(), c->GetIP()););
+		       c->GetProc().c_str(), c->GetIP()););
 	CSProfStatementNode *stmtNode = new CSProfStatementNode(NULL);
 	stmtNode->copyCallSiteNode(c);
 	xDEBUG(DEB_UNIFY_PROCEDURE_FRAME,
 	       fprintf(stderr, "converting node %s %lx into stmt node end\n", 
-		       c->GetProc(), c->GetIP()););
+		       c->GetProc().c_str(), c->GetIP()););
 	stmtNode -> Link(procFrameNode);
 	child->Unlink();
 	delete child;
@@ -673,14 +679,14 @@ NormalizeSameProcedureChildren(CSProfile* prof, CSProfNode* node, LoadModuleInfo
     the source files for the executable into the database
     directory. */
 bool copySourceFiles(CSProfNode* node, 
-		     std::vector<String>& searchPaths,
-		     String& dbSourceDirectory);
+		     std::vector<string>& searchPaths,
+		     const string& dbSourceDirectory);
 
 /** Copies the source files for the executable into the database 
     directory. */
-void copySourceFiles (CSProfile *prof, 
-		      std::vector<String>& searchPaths,
-		      String dbSourceDirectory) {
+void copySourceFiles(CSProfile *prof, 
+		     std::vector<string>& searchPaths,
+		     const string& dbSourceDirectory) {
   CSProfTree* csproftree = prof->GetTree();
   if (!csproftree) { return ; }
 
@@ -690,16 +696,16 @@ void copySourceFiles (CSProfile *prof,
 }
 
 
-bool innerCopySourceFiles (CSProfNode* node, 
-			   std::vector<String>& searchPaths,
-			   String& dbSourceDirectory);
+bool innerCopySourceFiles(CSProfNode* node, 
+			  std::vector<string>& searchPaths,
+			  const string& dbSourceDirectory);
 
 /** Perform DFS traversal of the tree nodes and copy
     the source files for the executable into the database
     directory. */
 bool copySourceFiles(CSProfNode* node, 
-		     std::vector<String>& searchPaths,
-		     String& dbSourceDirectory) {
+		     std::vector<string>& searchPaths,
+		     const string& dbSourceDirectory) {
   xDEBUG(DEB_MKDIR_SRC_DIR, 
 	 cerr << "descend into node" << std::endl;);
   bool noError = true;
@@ -709,9 +715,9 @@ bool copySourceFiles(CSProfNode* node,
   // For each immediate child of this node...
   for (CSProfNodeChildIterator it(node); it.CurNode(); it++) {
     // recur 
-    noError = noError && copySourceFiles( it.CurNode(), 
-					  searchPaths,
-					  dbSourceDirectory);
+    noError = noError && copySourceFiles(it.CurNode(), 
+					 searchPaths,
+					 dbSourceDirectory);
   }
  
   noError = noError && 
@@ -726,23 +732,23 @@ bool copySourceFiles(CSProfNode* node,
  .../dir1/./.... 
  ............./
 */
-String normalizeFilePath(String filePath, 
-			 std::stack<String>& pathSegmentsStack) {
+string normalizeFilePath(const string& filePath, 
+			 std::stack<string>& pathSegmentsStack) {
 
   char cwdName[MAX_PATH_SIZE +1];
   getcwd(cwdName, MAX_PATH_SIZE);
-  String crtDir=cwdName; 
+  string crtDir=cwdName; 
   
-  String filePathString = filePath;
+  string filePathString = filePath;
   char filePathChr[MAX_PATH_SIZE +1];
-  strcpy(filePathChr, filePathString);
+  strcpy(filePathChr, filePathString.c_str());
 
   // ~/...
   if ( filePathChr[0] == '~' ) {
     if ( filePathChr[1]=='\0' ||
 	 filePathChr[1]=='/' ) {
       // reference to our home directory
-      String homeDir = getenv("HOME"); 
+      string homeDir = getenv("HOME"); 
       xDEBUG(DEB_NORM_SEARCH_PATH, 
 	     cerr << "home dir:" << homeDir << std::endl;);
       filePathString = homeDir + (filePathChr+1); 
@@ -776,7 +782,7 @@ String normalizeFilePath(String filePath,
   if ( filePathChr[0] == '.') {
     xDEBUG(DEB_NORM_SEARCH_PATH, 
 	   cerr << "crt dir:" << crtDir << std::endl;);
-    filePathString = crtDir + "/"+String(filePathChr+1); 
+    filePathString = crtDir + "/"+string(filePathChr+1); 
     xDEBUG(DEB_NORM_SEARCH_PATH, 
 	   cerr << "updated filePathString=" << filePathString << std::endl;);
   }
@@ -784,14 +790,14 @@ String normalizeFilePath(String filePath,
   if ( filePathChr[0] != '/') {
     xDEBUG(DEB_NORM_SEARCH_PATH, 
 	   cerr << "crt dir:" << crtDir << std::endl;);
-    filePathString = crtDir + "/"+ String(filePathChr); 
+    filePathString = crtDir + "/"+ string(filePathChr); 
     xDEBUG(DEB_NORM_SEARCH_PATH, 
 	   cerr << "applied crtDir: " << crtDir << " and got updated filePathString=" << filePathString << std::endl;);
   }
 
   // ............./
   if ( filePathChr[ strlen(filePathChr) -1] == '/') {
-    strcpy(filePathChr, filePathString);
+    strcpy(filePathChr, filePathString.c_str());
     filePathChr [strlen(filePathChr)-1]='\0';
     filePathString = filePathChr; 
     xDEBUG(DEB_NORM_SEARCH_PATH, 
@@ -799,7 +805,7 @@ String normalizeFilePath(String filePath,
   }
 
   // parse the path and determine segments separated by '/' 
-  strcpy(filePathChr, filePathString);
+  strcpy(filePathChr, filePathString.c_str());
 
   int crtPos=0;
   char crtSegment[MAX_PATH_SIZE+1];
@@ -826,7 +832,7 @@ String normalizeFilePath(String filePath,
 	}
       }  else {
 	if (crtSegmentPos>0) {
-	  pathSegmentsStack.push(String(crtSegment));
+	  pathSegmentsStack.push(string(crtSegment));
 	  xDEBUG(DEB_NORM_SEARCH_PATH, 
 		 cerr << "pushed segment " << crtSegment << std::endl;);
 	}
@@ -844,8 +850,8 @@ String normalizeFilePath(String filePath,
     return "";
   }
 
-  std::stack<String> stackCopy = pathSegmentsStack;
-  String resultPath = stackCopy.top();
+  std::stack<string> stackCopy = pathSegmentsStack;
+  string resultPath = stackCopy.top();
   stackCopy.pop();
   for (;! stackCopy.empty(); ) {
     resultPath = stackCopy.top() + "/"+resultPath;
@@ -857,28 +863,28 @@ String normalizeFilePath(String filePath,
   return resultPath;
 }
 
-String normalizeFilePath(String filePath) {
-  std::stack<String> pathSegmentsStack;
-  String resultPath = normalizeFilePath(filePath, pathSegmentsStack);
+string normalizeFilePath(const string& filePath) {
+  std::stack<string> pathSegmentsStack;
+  string resultPath = normalizeFilePath(filePath, pathSegmentsStack);
   return resultPath;
 }
 
 /** Decompose a normalized path into path segments.*/
-void breakPathIntoSegments(String normFilePath, 
-			   std::stack<String>& pathSegmentsStack) {
-  String resultPath = normalizeFilePath(normFilePath,
+void breakPathIntoSegments(const string& normFilePath, 
+			   std::stack<string>& pathSegmentsStack) {
+  string resultPath = normalizeFilePath(normFilePath,
 					pathSegmentsStack);
 }
 
 
 
 bool innerCopySourceFiles (CSProfNode* node, 
-			   std::vector<String>& searchPaths,
-			   String& dbSourceDirectory) {
+			   std::vector<string>& searchPaths,
+			   const string& dbSourceDirectory) {
   bool inspect; 
-  String nodeSourceFile;
-  String relativeSourceFile;
-  String procedureFrame;
+  string nodeSourceFile;
+  string relativeSourceFile;
+  string procedureFrame;
   bool sourceFileWasCopied = false;
   bool fileIsText = false; 
 
@@ -932,8 +938,8 @@ bool innerCopySourceFiles (CSProfNode* node,
     // copy source file for current node
     xDEBUG(DEB_MKDIR_SRC_DIR,
 	   cerr << "attempt to copy " << nodeSourceFile << std::endl;);
-// FMZ     if (! nodeSourceFile.Empty()) {
-     if (fileIsText &&  ! nodeSourceFile.Empty()) {
+// FMZ     if (! nodeSourceFile.empty()) {
+     if (fileIsText && !nodeSourceFile.empty()) {
       xDEBUG(DEB_MKDIR_SRC_DIR,
 	     cerr << "attempt to copy text, nonnull " << nodeSourceFile << std::endl;);
       
@@ -946,7 +952,7 @@ bool innerCopySourceFiles (CSProfNode* node,
       int ii;
       bool searchDone = false;
       for (ii=0; !searchDone && ii<searchPaths.size(); ii++) {
-	String testPath;
+	string testPath;
 	if ( nodeSourceFile[0] == '/') {
 	  testPath = nodeSourceFile;
 	  searchDone = true;
@@ -955,7 +961,7 @@ bool innerCopySourceFiles (CSProfNode* node,
 	}
 	xDEBUG(DEB_MKDIR_SRC_DIR,
 	       cerr << "search test path " << testPath << std::endl;);
-	String normTestPath = normalizeFilePath(testPath);
+	string normTestPath = normalizeFilePath(testPath);
 	xDEBUG(DEB_MKDIR_SRC_DIR,
 	       cerr << "normalized test path " << normTestPath << std::endl;);
 	if (normTestPath == "") {
@@ -964,11 +970,11 @@ bool innerCopySourceFiles (CSProfNode* node,
 	} else {
 	  xDEBUG(DEB_MKDIR_SRC_DIR,
 		 cerr << "attempt to text open" << normTestPath << std::endl;);
-	  FILE *sourceFileHandle = fopen(normTestPath, "rt");
+	  FILE *sourceFileHandle = fopen(normTestPath.c_str(), "rt");
 	  if (sourceFileHandle != NULL) {
 	    searchDone = true;
 	    char normTestPathChr[MAX_PATH_SIZE+1];
-	    strcpy(normTestPathChr, normTestPath);
+	    strcpy(normTestPathChr, normTestPath.c_str());
 	    relativeSourceFile = normTestPathChr+1;
 	    sourceFileWasCopied = true;
 	    xDEBUG(DEB_MKDIR_SRC_DIR,
@@ -977,18 +983,18 @@ bool innerCopySourceFiles (CSProfNode* node,
 	    fclose (sourceFileHandle);
 
 	    // check if the file already exists (we've copied it for a previous sample)
-	    String testFilePath = dbSourceDirectory + normTestPath;
-	    FILE *testFileHandle = fopen(testFilePath, "rt");
+	    string testFilePath = dbSourceDirectory + normTestPath;
+	    FILE *testFileHandle = fopen(testFilePath.c_str(), "rt");
 	    if (testFileHandle != NULL) {
 	      fclose(testFileHandle);
 	    } else {
 	      // we've found the source file and we need to copy it into the database
-	      std::stack<String> pathSegmentsStack;
+	      std::stack<string> pathSegmentsStack;
 	      breakPathIntoSegments (normTestPath,
 				     pathSegmentsStack);
-	      std::vector<String> pathSegmentsVector;
+	      std::vector<string> pathSegmentsVector;
 	      for (; !pathSegmentsStack.empty();) {
-		String crtSegment = pathSegmentsStack.top();
+		string crtSegment = pathSegmentsStack.top();
 		pathSegmentsStack.pop(); 
 		pathSegmentsVector.insert(pathSegmentsVector.begin(),
 					  crtSegment);
@@ -1001,13 +1007,13 @@ bool innerCopySourceFiles (CSProfNode* node,
 		     cerr << "converted stack to vector" << std::endl;);
 
 	      char filePathChr[MAX_PATH_SIZE +1];
-	      strcpy(filePathChr, dbSourceDirectory);
+	      strcpy(filePathChr, dbSourceDirectory.c_str());
 	      chdir(filePathChr);
 
 	      xDEBUG(DEB_MKDIR_SRC_DIR,
 		     cerr << "after chdir " << std::endl;);
 
-	      String subPath = dbSourceDirectory;
+	      string subPath = dbSourceDirectory;
 	      int pathSegmentIndex;
 	      for (pathSegmentIndex=0; 
 		   pathSegmentIndex<pathSegmentsVector.size()-1;
@@ -1017,7 +1023,7 @@ bool innerCopySourceFiles (CSProfNode* node,
 		       cerr << "about to mkdir " 
 		       << subPath << std::endl;);
 		int mkdirResult =  
-		  mkdir (subPath, 
+		  mkdir (subPath.c_str(), 
 			 S_IRWXU | S_IRGRP | S_IXGRP 
 			 | S_IROTH | S_IXOTH); 
 		if (mkdirResult == -1) {
@@ -1035,10 +1041,10 @@ bool innerCopySourceFiles (CSProfNode* node,
 		  }
 		}
 	      }
-	      strcpy(filePathChr, subPath);
+	      strcpy(filePathChr, subPath.c_str());
 	      chdir(filePathChr);
-	      String cpCommand = "cp -f "+normTestPath+" .";
-	      system (cpCommand);
+	      string cpCommand = "cp -f "+normTestPath+" .";
+	      system (cpCommand.c_str());
 	      // fix the file name  so it points to the one in the source directory
 	    }
 	  }

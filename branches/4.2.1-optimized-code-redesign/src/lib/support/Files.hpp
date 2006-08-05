@@ -39,37 +39,54 @@
 
 //************************* System Include Files ****************************
 
-//*************************** User Include Files ****************************
+#include <string>
 
-#include "String.hpp" 
+//*************************** User Include Files ****************************
 
 //*************************** Forward Declarations ***************************
 
 //****************************************************************************
 
-extern const char*  CopyFile(const char* destFile, ...); 
-           // ... is a NULL terminated list of file names 
-           // CopyFile appends these files into destFile 
-           //          returns NULL upon success
-           //          otherwise returns an error message in a static variable 
-           //          which is overwritten with each call to CopyFile
+// ... is a NULL terminated list of file names 
+// CopyFile appends these files into destFile 
+//          returns NULL upon success
+//          otherwise returns an error message in a static variable 
+//          which is overwritten with each call to CopyFile
+extern const char* CopyFile(const char* destFile, ...); 
 
+
+// retuns a name that can safely be used for a temporary file 
+// in a static variable, which is overwritten with each call to 
+// TmpFileName
 extern const char* TmpFileName(); 
-           // retuns a name that can safely be used for a temporary file 
-           // in a static variable, which is overwritten with each call to 
-           // TmpFileName
 
+
+// count how often char appears in file
+// return that number or -1 upon failure to open file for reading
 extern int CountChar(const char* file, char c); 
-           // count how often char appears in file
-           // return that number or -1 upon failure to open file for reading
 
-extern int DeleteFile(const char *fname); 
-           // deletes fname (unlink) 
+
+// deletes fname (unlink) 
+extern int DeleteFile(const char *fname);
+
 
 // 'BaseFileName': returns the 'fname.ext' component of fname=/path/fname.ext
-extern String BaseFileName(const char* fname); 
+extern std::string BaseFileName(const char* fname); 
+
+inline std::string 
+BaseFileName(const std::string& fname)
+{
+  return BaseFileName(fname.c_str());
+}
+
 
 // 'PathComponent': returns the '/path' component of fname=/path/fname.ext
-extern String PathComponent(const char* fname); 
+extern std::string PathComponent(const char* fname); 
+
+inline std::string 
+PathComponent(const std::string& fname)
+{
+  return PathComponent(fname.c_str());
+}
 
 #endif 

@@ -73,7 +73,7 @@ Diagnostics::Exception::Exception(const char* m,
 }
 
 
-Diagnostics::Exception::Exception(std::string m,
+Diagnostics::Exception::Exception(const std::string m,
 				  const char* filenm, unsigned int lineno)
 {
   Ctor(m, filenm, lineno);
@@ -87,7 +87,7 @@ Diagnostics::Exception::~Exception()
 
 
 void 
-Diagnostics::Exception::Ctor(std::string& m, 
+Diagnostics::Exception::Ctor(const std::string& m, 
 			     const char* filenm, unsigned int lineno)
 {
   if (filenm && lineno != 0) {
@@ -112,7 +112,7 @@ Diagnostics::FatalException::FatalException(const char* m,
 }
 
 
-Diagnostics::FatalException::FatalException(std::string m,
+Diagnostics::FatalException::FatalException(const std::string m,
 					    const char* filenm, 
 					    unsigned int lineno)
   : Diagnostics::Exception(m, filenm, lineno)

@@ -1,5 +1,6 @@
-// $Id$
 // -*-C++-*-
+// $Id$
+
 // * BeginRiceCopyright *****************************************************
 // 
 // Copyright ((c)) 2003, Rice University 
@@ -40,6 +41,9 @@
 using std::cerr;
 using std::endl;
 
+#include <string>
+using std::string;
+
 //************************ Xerces Include Files ******************************
 
 #include <xercesc/util/XMLString.hpp>        
@@ -51,22 +55,24 @@ using XERCES_CPP_NAMESPACE::XMLString;
 
 //****************************************************************************
 
-String getAttr(const Attributes& attributes, int i) 
+string 
+getAttr(const Attributes& attributes, int i) 
 {
-  const XMLCh* const xmlStr = attributes.getValue((unsigned int) i); 
-  String s = "";
+  const XMLCh* const xmlStr = attributes.getValue((unsigned int) i);
+  string s = "";
   if (xmlStr) {
     s = XMLString::transcode(xmlStr); 
   }
   return s; 
 }
 
-String getAttr(const Attributes& attributes, const XMLCh* const name)
+string 
+getAttr(const Attributes& attributes, const XMLCh* const name)
 {
   const XMLCh* const xmlStr = attributes.getValue(name); 
-  String s = "";
+  string s = "";
   if (xmlStr) {
-    s = XMLString::transcode(xmlStr); 
+    s = XMLString::transcode(xmlStr);
   }
   return s;
 }

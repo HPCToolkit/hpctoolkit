@@ -62,6 +62,9 @@ using std::endl;
 using namespace std; // For compatibility with non-std C headers
 #endif
 
+#include <string>
+using std::string;
+
 #include <map> // STL
 
 //************************ OpenAnalysis Include Files ***********************
@@ -84,6 +87,7 @@ using namespace ScopeTreeBuilder;
 #include <lib/binutils/PCToSrcLineMap.hpp>
 
 #include <lib/support/Files.hpp>
+#include <lib/support/diagnostics.h>
 #include <lib/support/Assertion.h>
 #include <lib/support/pathfind.h>
 
@@ -138,7 +142,8 @@ static bool
 RemoveEmptyScopes(PgmScopeTree* pgmScopeTree);
 
 static bool 
-FilterFilesFromScopeTree(PgmScopeTree* pgmScopeTree, String canonicalPathList);
+FilterFilesFromScopeTree(PgmScopeTree* pgmScopeTree, 
+			 const char* canonicalPathList);
 
 //*************************** Forward Declarations ***************************
 
@@ -235,7 +240,7 @@ BuildVMAToSrcLineMap(PCToSrcLineXMap* map, Procedure* p);
 
 //#define BLOOP_ATTEMPT_TO_IMPROVE_INTERVAL_BOUNDARIES
 
-const char* OrphanedProcedureFile =
+const string OrphanedProcedureFile =
   "~~~No-Associated-File-Found-For-These-Procedures~~~";
 
 const char *PGMdtd =
@@ -277,7 +282,7 @@ WriteScopeTree(std::ostream& os, PgmScopeTree* pgmScopeTree, bool prettyPrint)
 PgmScopeTree*
 ScopeTreeBuilder::BuildFromLM(LoadModule* lm, 
 			      PCToSrcLineXMap* &xmap,
-			      String canonicalPathList, 
+			      const char* canonicalPathList, 
 			      bool normalizeScopeTree,
 			      bool unsafeNormalizations,
 			      bool irreducibleIntervalIsLoop,
@@ -296,7 +301,7 @@ ScopeTreeBuilder::BuildFromLM(LoadModule* lm,
   pgmScope = new PgmScope("");
   pgmScopeTree = new PgmScopeTree("", pgmScope);
 
-  LoadModScope *lmScope = new LoadModScope(lm->GetName(), pgmScope);
+  LoadModScope* lmScope = new LoadModScope(lm->GetName(), pgmScope);
 
   // 1. Build basic FileScope/ProcScope structure
   ProcScopeToProcMap* pmap = BuildStructure(lmScope, lm);
@@ -320,7 +325,7 @@ ScopeTreeBuilder::BuildFromLM(LoadModule* lm,
   delete pmap;
 
   // 3. Normalize
-  if (canonicalPathList.Length() > 0) {
+  if (canonicalPathList && canonicalPathList[0] != '\0') {
     bool result = FilterFilesFromScopeTree(pgmScopeTree, canonicalPathList);
     BriefAssertion(result); // Should never be false
   }
@@ -402,12 +407,12 @@ BuildProcStructure(FileScope* fileScope, Procedure* p)
   // FIXME: FileScope --> CodeInfo* (procs could be scope)
 
   // Find procedure name
-  String funcNm   = GetBestFuncName(p->GetName()); 
-  String funcLnNm = GetBestFuncName(p->GetLinkName());
+  string funcNm   = GetBestFuncName(p->GetName()); 
+  string funcLnNm = GetBestFuncName(p->GetLinkName());
   
   // Find preliminary procedure bounds
   // FIXME: this is in GetProcedureFirstLineInfo
-  String func, file;
+  string func, file;
   suint begLn1, endLn1;
   Instruction* eInst = p->GetLastInst();
   ushort endOp = (eInst) ? eInst->GetOpIndex() : 0;
@@ -425,8 +430,7 @@ BuildProcStructure(FileScope* fileScope, Procedure* p)
   }
   
   // Create the scope
-  ProcScope* pScope = new ProcScope((const char*)funcNm, fileScope,
-				    (const char*)funcLnNm, begLn, endLn);
+  ProcScope* pScope = new ProcScope(funcNm, fileScope, funcLnNm, begLn, endLn);
   return pScope;
 }
 
@@ -533,7 +537,7 @@ BuildFromTarjInterval(CodeInfo* enclosingScope, Procedure* p,
     rifg->getNode(fgNode).convert<OA::CFG::Interface::Node>();
 
 #ifdef BLOOP_ATTEMPT_TO_IMPROVE_INTERVAL_BOUNDARIES
-  String func, file;
+  string func, file;
   VMA begVMA, endVMA;
   suint begLn = UNDEF_LINE, endLn = UNDEF_LINE;
   suint loopsBegLn = UNDEF_LINE, loopsEndLn = UNDEF_LINE;
@@ -658,7 +662,7 @@ BuildFromBB(CodeInfo* enclosingScope, Procedure* p,
     VMA vma = insn->GetVMA();
     ushort opIdx = insn->GetOpIndex();
 
-    String func, file;
+    string func, file;
     suint line;
     p->GetSourceFileInfo(vma, opIdx, func, file, line); 
     if ( !IsValidLine(line) ) {
@@ -669,7 +673,7 @@ BuildFromBB(CodeInfo* enclosingScope, Procedure* p,
 
     // Determine where this line should go
     bool done = false;
-    if (!file.Empty() && file != fileScope->Name()) {
+    if (!file.empty() && file != fileScope->Name()) {
       // An alien line: Ignore for now (FIXME)
       done = true;
     }
@@ -713,21 +717,21 @@ static FileScope*
 FindOrCreateFileNode(LoadModScope* lmScope, Procedure* p)
 {
   // Attempt to find filename for procedure
-  String file = p->GetFilename();
-  if (file.Empty()) {
-    String func;
+  string file = p->GetFilename();
+  if (file.empty()) {
+    string func;
     suint begLn, endLn;
     p->GetSourceFileInfo(p->GetBegVMA(), 0, p->GetEndVMA(), 0, func, file,
 			 begLn, endLn); // FIXME: use only begVMA
   }
-  if (file.Empty()) { 
+  if (file.empty()) { 
     file = OrphanedProcedureFile; 
-  }
+ }
 
   // Obtain corresponding FileScope
   FileScope* fileScope = lmScope->Pgm()->FindFile(file);
   if (fileScope == NULL) {
-    bool fileIsReadable = FileIsReadable(file);
+    bool fileIsReadable = FileIsReadable(file.c_str());
     fileScope = new FileScope(file, fileIsReadable, lmScope);
   }
   return fileScope; // guaranteed to be a valid pointer
@@ -774,7 +778,7 @@ FindLoopBegLine(Procedure* p, OA::OA_ptr<OA::CFG::Interface::Node> node)
     // backward branch.  Note: back edges are not always labeled as such!
     if (e->getType() == Interface::BACK_EDGE || headVMA <= vma) {
       suint line;
-      String func, file;
+      string func, file;
       p->GetSourceFileInfo(vma, opIdx, func, file, line); 
       if (IsValidLine(line) && (!IsValidLine(begLn) || line < begLn)) {
 	begLn = line;
@@ -809,7 +813,7 @@ RemoveOrphanedProcedureRepository(PgmScopeTree* pgmScopeTree)
       FileScope* file = dynamic_cast<FileScope*>(it.Current()); // always true
       it++; // advance iterator -- it is pointing at 'file'
       
-      if (strcmp(file->Name(), OrphanedProcedureFile) == 0) {
+      if (file->Name() == OrphanedProcedureFile) {
         file->Unlink(); // unlink 'file' from tree
         delete file;
         changed = true;
@@ -1209,7 +1213,8 @@ RemoveEmptyScopes(ScopeInfo* node)
 
 // FilterFilesFromScopeTree: 
 static bool 
-FilterFilesFromScopeTree(PgmScopeTree* pgmScopeTree, String canonicalPathList)
+FilterFilesFromScopeTree(PgmScopeTree* pgmScopeTree, 
+			 const char* canonicalPathList)
 {
   bool changed = false;
   
@@ -1223,9 +1228,9 @@ FilterFilesFromScopeTree(PgmScopeTree* pgmScopeTree, String canonicalPathList)
     it++; // advance iterator -- it is pointing at 'file'
 
     // Verify this file in the current list of acceptible paths
-    String baseFileName = BaseFileName(file->Name());
-    BriefAssertion(baseFileName.Length() > 0);
-    if (!pathfind(canonicalPathList, baseFileName, "r")) {
+    string baseFileName = BaseFileName(file->Name());
+    DIAG_ASSERT(baseFileName.length() > 0, "Invalid path!");
+    if (!pathfind(canonicalPathList, baseFileName.c_str(), "r")) {
       file->Unlink(); // unlink 'file' from tree
       delete file;
       changed = true;
@@ -1342,8 +1347,8 @@ static void
 BuildVMAToSrcLineMap(PCToSrcLineXMap* xmap, Procedure* p)
 {
   //suint dbgId = p->GetId(); 
-  String theFunc = GetBestFuncName(p->GetName()); 
-  String theFile = "";
+  string theFunc = GetBestFuncName(p->GetName()); 
+  string theFile = "";
   
   ProcPCToSrcLineXMap* pmap = 
     new ProcPCToSrcLineXMap(p->GetBegVMA(), p->GetEndVMA(), 
@@ -1354,12 +1359,12 @@ BuildVMAToSrcLineMap(PCToSrcLineXMap* xmap, Procedure* p)
     VMA vma = inst->GetVMA();
     
     // 1. Attempt to find symbolic information
-    String func, file;
+    string func, file;
     suint line;
     p->GetSourceFileInfo(vma, inst->GetOpIndex(), func, file, line);
     
     if ( !IsValidLine(line) ) { continue; } // need valid symbolic info
-    if (theFile.Empty() && !file.Empty()) {
+    if (theFile.empty() && !file.empty()) {
       theFile = file; 
     }
     

@@ -76,31 +76,50 @@ namespace Diagnostics {
 
   class BaseException {
   public:
+    // -------------------------------------------------------
+    // constructor/destructor
+    // -------------------------------------------------------
     BaseException() { }
+
     virtual ~BaseException() { }
-    
-    virtual const std::string& getMessage() const = 0;
+
+    // -------------------------------------------------------
+    // message
+    // -------------------------------------------------------
+    virtual const std::string& message() const = 0;
+
     virtual void report(std::ostream& os) const = 0;
+
     virtual void report() const = 0;
   };
 
   // A generic Diagnostics exception with file/line information
   class Exception : public BaseException {
   public:
+    // -------------------------------------------------------
+    // constructor/destructor
+    // -------------------------------------------------------
     Exception(const char* m,
 	      const char* filenm = NULL, unsigned int lineno = 0);
-    Exception(std::string m,
+
+    Exception(const std::string m,
 	      const char* filenm = NULL, unsigned int lineno = 0);
+
     virtual ~Exception();
-    
-    virtual const std::string& getMessage() const { return msg; }
+
+    // -------------------------------------------------------
+    // message
+    // -------------------------------------------------------
+    virtual const std::string& message() const { return msg; }
+
     virtual void report(std::ostream& os) const { 
       os << "Diagnostics::Exception: " << msg << std::endl;
     }
+
     virtual void report() const { report(std::cerr); }
 
   protected:
-    void Ctor(std::string& m, 
+    void Ctor(const std::string& m,
 	      const char* filenm = NULL, unsigned int lineno = 0);
     
     std::string msg;
@@ -109,15 +128,24 @@ namespace Diagnostics {
   // A fatal Diagnostics exception that generally should be unrecoverable
   class FatalException : public Exception {
   public:
+    // -------------------------------------------------------
+    // constructor/destructor
+    // -------------------------------------------------------
     FatalException(const char* m,
 		   const char* filenm = NULL, unsigned int lineno = 0);
-    FatalException(std::string m,
+
+    FatalException(const std::string m,
 		   const char* filenm = NULL, unsigned int lineno = 0);
+
     virtual ~FatalException();
-    
+
+    // -------------------------------------------------------
+    // message
+    // -------------------------------------------------------
     virtual void report(std::ostream& os) const { 
-      os << "Diagnostics::FatalException: " << getMessage() << std::endl;
+      os << "Diagnostics::FatalException: " << message() << std::endl;
     }
+
     virtual void report() const { report(std::cerr); }
 
   };

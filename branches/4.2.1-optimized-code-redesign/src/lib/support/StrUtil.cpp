@@ -58,6 +58,14 @@
 
 #include <errno.h>
 
+#ifdef NO_STD_CHEADERS
+# include <stdlib.h>
+#else
+# include <cstdlib>
+using std::strtol; // For compatibility with non-std C headers
+using std::strtod;
+#endif
+
 //*************************** User Include Files *****************************
 
 #include "StrUtil.hpp"
@@ -78,16 +86,16 @@ namespace StrUtil {
 // --------------------------------------------------------------------------
 
 long
-ToLong(const char* str)
+toLong(const char* str)
 {
   long value = 0;
-  DIAG_ASSERT((str && str[0] != '\0'), "StrUtil::ToLong: empty string!");
+  DIAG_ASSERT((str && str[0] != '\0'), "StrUtil::toLong: empty string!");
   
   errno = 0;
   char* endptr = NULL;
   value = strtol(str, &endptr, 0);
   if (errno || (endptr && strlen(endptr) > 0)) {
-    std::string msg = "StrUtil::ToLong: Cannot convert `" + std::string(str) 
+    std::string msg = "StrUtil::toLong: Cannot convert `" + std::string(str) 
       + "'";
     if (errno) { // not always set
       msg += ". ";
@@ -100,16 +108,16 @@ ToLong(const char* str)
 
 
 uint64_t
-ToUInt64(const char* str)
+toUInt64(const char* str)
 {
   uint64_t value = 0;
-  DIAG_ASSERT((str && str[0] != '\0'), "StrUtil::ToUInt64: empty string!");
+  DIAG_ASSERT((str && str[0] != '\0'), "StrUtil::toUInt64: empty string!");
   
   errno = 0;
   char* endptr = NULL;
   value = strtoul(str, &endptr, 0);
   if (errno || (endptr && strlen(endptr) > 0)) {
-    std::string msg = "StrUtil::ToUInt64: Cannot convert `" + std::string(str)
+    std::string msg = "StrUtil::toUInt64: Cannot convert `" + std::string(str)
       + "'";
     if (errno) { // not always set
       msg += ". ";
@@ -122,16 +130,16 @@ ToUInt64(const char* str)
 
 
 double   
-ToDbl(const char* str)
+toDbl(const char* str)
 {
   double value = 0;
-  DIAG_ASSERT((str && str[0] != '\0'), "StrUtil::ToDbl: empty string!");
+  DIAG_ASSERT((str && str[0] != '\0'), "StrUtil::toDbl: empty string!");
   
   errno = 0;
   char* endptr = NULL;
   value = strtod(str, &endptr);
   if (errno || (endptr && strlen(endptr) > 0)) {
-    std::string msg = "StrUtil::ToDbl: Cannot convert `" + std::string(str)
+    std::string msg = "StrUtil::toDbl: Cannot convert `" + std::string(str)
       + "'";
     if (errno) { // not always set
       msg += ". ";
@@ -150,7 +158,7 @@ ToDbl(const char* str)
 static char buf[32];
 
 std::string
-toStr(int x, int base)
+toStr(const int x, int base)
 {
   const char* format = NULL;
 
@@ -169,7 +177,7 @@ toStr(int x, int base)
 
 
 std::string
-toStr(unsigned x, int base)
+toStr(const unsigned x, int base)
 {
   const char* format = NULL;
 
@@ -196,7 +204,7 @@ toStr(unsigned x, int base)
 
 
 std::string
-toStr(int64_t x, int base)
+toStr(const int64_t x, int base)
 {
   const char* format = NULL;
   
@@ -215,7 +223,7 @@ toStr(int64_t x, int base)
 
 
 std::string
-toStr(uint64_t x, int base)
+toStr(const uint64_t x, int base)
 {
   const char* format = NULL;
   
@@ -238,7 +246,15 @@ toStr(uint64_t x, int base)
 
 
 std::string
-toStr(double x, const char* format)
+toStr(const void* x, int base)
+{
+  sprintf(buf, "%#p", x);
+  return std::string(buf);
+}
+
+
+std::string
+toStr(const double x, const char* format)
 {
   //static char buf[19]; // 0xhhhhhhhhhhhhhhhh format
   sprintf(buf, format, x);

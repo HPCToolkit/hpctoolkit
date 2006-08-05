@@ -1,5 +1,6 @@
 // -*-Mode: C++;-*-
 // $Id$
+
 // * BeginRiceCopyright *****************************************************
 // 
 // Copyright ((c)) 2002, Rice University 
@@ -49,6 +50,9 @@
 
 //************************* System Include Files ****************************
 
+#include <string>
+using std::string;
+
 //*************************** User Include Files ****************************
 
 #include <include/gnu_bfd.h>
@@ -73,7 +77,7 @@ using std::dec;
 // Section
 //***************************************************************************
 
-Section::Section(LoadModule* _lm, String _name, Type t,
+Section::Section(LoadModule* _lm, string& _name, Type t,
 		 VMA _beg, VMA _end, VMA _sz)
   : lm(_lm), name(_name), type(t), beg(_beg), end(_end), size(_sz)
 {
@@ -89,7 +93,7 @@ Section::~Section()
 void
 Section::Dump(std::ostream& o, const char* pre) const
 {
-  String p(pre);
+  string p(pre);
   o << p << "------------------- Section Dump ------------------\n";
   o << p << "  Name: `" << GetName() << "'\n";
   o << p << "  Type: `";
@@ -130,7 +134,7 @@ public:
 };
 
 
-TextSection::TextSection(LoadModule* _lm, String _name, VMA _beg, VMA _end,
+TextSection::TextSection(LoadModule* _lm, string& _name, VMA _beg, VMA _end,
 			 suint _size, asymbol **syms, int numSyms, bfd *abfd)
   : Section(_lm, _name, Section::Text, _beg, _end, _size), impl(NULL),
     procedures(0)
@@ -163,7 +167,7 @@ TextSection::TextSection(LoadModule* _lm, String _name, VMA _beg, VMA _end,
   char* contentsTmp = impl->contentsRaw + 16; // add the padding
   impl->contents = (char *)( ((psuint)contentsTmp + 15) & ~15 ); // align
 
-  const char *nameStr = (const char *)_name;
+  const char *nameStr = _name.c_str();
   int result = bfd_get_section_contents(abfd,
                                         bfd_get_section_by_name(abfd, nameStr),
                                         impl->contents, 0, _size);
@@ -199,14 +203,14 @@ TextSection::~TextSection()
 void
 TextSection::Dump(std::ostream& o, const char* pre) const
 {
-  String p(pre);
-  String p1 = p + "  ";
+  string p(pre);
+  string p1 = p + "  ";
 
   Section::Dump(o, pre);
   o << p << "  Procedures (" << GetNumProcedures() << ")\n";
   for (TextSectionProcedureIterator it(*this); it.IsValid(); ++it) {
     Procedure* p = it.Current();
-    p->Dump(o, p1);
+    p->Dump(o, p1.c_str());
   }
 }
 
@@ -255,8 +259,8 @@ TextSection::Create_InitializeProcs()
       // This is changed after decoding below.
       VMA begVMA = bfd_asymbol_value(sym);
       VMA endVMA = 0; // see note above
-      String procNm;
-      String symNm = bfd_asymbol_name(sym);
+      string procNm;
+      string symNm = bfd_asymbol_name(sym);
 
       LoadModule::DbgFuncSummary::Info* dbg = (*dbgSum)[begVMA];
       if (dbg) {
@@ -266,7 +270,7 @@ TextSection::Create_InitializeProcs()
       if (!dbg || endVMA == 0) {
 	endVMA = FindProcedureEnd(i);
       }
-      if (!dbg || procNm.Empty()) {
+      if (!dbg || procNm.empty()) {
 	procNm = FindProcedureName(impl->abfd, sym);
       }
       
@@ -344,15 +348,15 @@ TextSection::Create_DisassembleProcs()
 // Returns the name of the procedure referenced by 'procSym' using
 // debugging information, if possible; otherwise returns the symbol
 // name.
-String
+string
 TextSection::FindProcedureName(bfd *abfd, asymbol *procSym) const
 {
-  String procName;
+  string procName;
   const char* func = NULL, * file = NULL;
   unsigned int bfd_line = 0;
 
   // cf. LoadModule::GetSourceFileInfo
-  asection *bfdSection = bfd_get_section_by_name(abfd, GetName());
+  asection *bfdSection = bfd_get_section_by_name(abfd, GetName().c_str());
   bfd_vma secBase = bfd_section_vma(abfd, bfdSection);
   bfd_vma symVal = bfd_asymbol_value(procSym);
   if (bfdSection) {

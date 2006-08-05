@@ -1,5 +1,6 @@
-// $Id$
 // -*-C++-*-
+// $Id$
+
 // * BeginRiceCopyright *****************************************************
 // 
 // Copyright ((c)) 2002, Rice University 
@@ -54,6 +55,7 @@
 
 #include <vector>
 #include <list>
+#include <string>
 
 //*************************** User Include Files ****************************
 
@@ -63,7 +65,6 @@
 
 #include <lib/isa/ISA.hpp>
 
-#include <lib/support/String.hpp>
 #include <lib/support/Assertion.h>
 
 //*************************** Forward Declarations ***************************
@@ -203,15 +204,21 @@ public:
   // Name, Description: The metric name (high level name) and a description
   // NativeName: A name that is a combination of the raw metrics
   // Period: The sampling period (whether event or instruction based)
-  const char* GetName()        const { return name; }
-  const char* GetNativeName()  const { return nativeName; }
-  const char* GetDescription() const { return description; }
-  ulong       GetPeriod()      const { return period; }
+  const std::string& GetName()        const { return name; }
+  const std::string& GetNativeName()  const { return nativeName; }
+  const std::string& GetDescription() const { return description; }
+  ulong              GetPeriod()      const { return period; }
 
   void SetName(const char* s)        { name = s; }
-  void SetNativeName(const char* s)  { nativeName = s; }
-  void SetDescription(const char* s) { description = s; }
-  void SetPeriod(ulong p)            { period = p; }
+  void SetName(const std::string& s) { name = s; }
+
+  void SetNativeName(const char* s)        { nativeName = s; }
+  void SetNativeName(const std::string& s) { nativeName = s; }
+
+  void SetDescription(const char* s)        { description = s; }
+  void SetDescription(const std::string& s) { description = s; }
+
+  void SetPeriod(ulong p) { period = p; }
 
   // MetricSet: The set of 'PCProfileMetric's
   const PCProfileMetricSet* GetMetricSet() const { return mset; }
@@ -252,9 +259,9 @@ private:
   
 protected:
 private:
-  String name;
-  String nativeName;
-  String description;
+  std::string name;
+  std::string nativeName;
+  std::string description;
   ulong period; // sampling period
 
   PCProfileMetricSet* mset; // we own the set container, but not the contents!

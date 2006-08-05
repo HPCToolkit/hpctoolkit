@@ -1,5 +1,6 @@
 // -*-Mode: C++;-*-
 // $Id$
+
 // * BeginRiceCopyright *****************************************************
 // 
 // Copyright ((c)) 2002, Rice University 
@@ -53,6 +54,7 @@
 //************************* System Include Files ****************************
 
 #include <iostream>
+#include <string>
 
 //*************************** User Include Files ****************************
 
@@ -77,8 +79,8 @@ class Procedure {
 public:
   enum Type { Local, Weak, Global, Unknown };
   
-  Procedure(TextSection* _sec, String _name, String _linkname, Type t,
-	    VMA _begVMA, VMA _endVMA, suint _size);
+  Procedure(TextSection* _sec, std::string& _name, std::string& _linkname, 
+	    Type t, VMA _begVMA, VMA _endVMA, suint _size);
   virtual ~Procedure();
 
   TextSection* GetTextSection() const { return sec; }
@@ -87,11 +89,11 @@ public:
   // Returns the name as determined by debugging information; if this
   // is unavailable returns the name found in the symbol table.  (Note
   // that no demangling is performed.)
-  String  GetName()     const { return name; }
-  String& GetName()           { return name; }
+  const std::string& GetName()     const { return name; }
+  std::string&       GetName()           { return name; }
 
   // Returns the name as found in the symbol table
-  String GetLinkName() const { return linkname; }
+  const std::string& GetLinkName() const { return linkname; }
 
   // Return type of procedure
   Type  GetType()      const { return type; }
@@ -109,8 +111,8 @@ public:
   void SetSize(suint _size)  { size = _size; }
   
   // Symbolic information: may or may not be available
-  String  GetFilename()     const { return filenm; }
-  String& GetFilename()           { return filenm; }
+  const std::string&  GetFilename() const { return filenm; }
+  std::string& GetFilename()              { return filenm; }
 
   suint   GetBegLine()      const { return begLine; }
   suint&  GetBegLine()            { return begLine; }
@@ -137,14 +139,15 @@ public:
     return sec->GetLoadModule()->GetInst(vma, opIndex);
   }
   bool GetSourceFileInfo(VMA vma, ushort opIndex,
-			 String &func, String &file, suint &line) const {
+			 std::string& func, std::string& file, 
+			 suint& line) const {
     return sec->GetLoadModule()->GetSourceFileInfo(vma, opIndex,
 						   func, file, line);
   }
   bool GetSourceFileInfo(VMA begVMA, ushort bOpIndex,
 			 VMA endVMA, ushort eOpIndex,
-			 String &func, String &file,
-			 suint &begLine, suint &endLine) const {
+			 std::string& func, std::string& file,
+			 suint& begLine, suint& endLine) const {
     return sec->GetLoadModule()->GetSourceFileInfo(begVMA, bOpIndex,
 						   endVMA, eOpIndex, 
 						   func, file, 
@@ -166,8 +169,8 @@ private:
 protected:
 private:
   TextSection* sec; // we do not own
-  String name;
-  String linkname;
+  std::string name;
+  std::string linkname;
   Type   type;
   
   VMA   begVMA; // points to the beginning of the first instruction
@@ -175,9 +178,9 @@ private:
   VMA   size;
 
   // symbolic information: may or may not be known
-  String filenm;     // filename and 
-  suint  begLine;    //   begin line of definition, if known
-  Procedure* parent; // parent routine, if lexically nested
+  std::string filenm; // filename and 
+  suint  begLine;     //   begin line of definition, if known
+  Procedure* parent;  // parent routine, if lexically nested
 
   suint  id;    // a unique identifier
   suint  numInsts;

@@ -1,5 +1,6 @@
-// $Id$
 // -*-C++-*-
+// $Id$
+
 // * BeginRiceCopyright *****************************************************
 // 
 // Copyright ((c)) 2002, Rice University 
@@ -51,6 +52,8 @@
 #define DCPIMetricDesc_H
 
 //************************* System Include Files ****************************
+
+#include <string>
 
 //*************************** User Include Files ****************************
 
@@ -217,6 +220,7 @@ public:
   // 'dcpicat'.
   DCPIMetricDesc(bitvec_t bv = 0) : bits(bv) { }
   DCPIMetricDesc(const char* str);
+  DCPIMetricDesc(const std::string& str);
   virtual ~DCPIMetricDesc() { }
   
   DCPIMetricDesc(const DCPIMetricDesc& x) { *this = x; }
@@ -266,6 +270,7 @@ public:
   void DDump();
 
 private:
+  void Ctor(const char* str);
 
 protected:
   bitvec_t bits;
