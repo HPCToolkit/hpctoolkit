@@ -1,5 +1,6 @@
 // -*-Mode: C++;-*-
 // $Id$
+
 // * BeginRiceCopyright *****************************************************
 // 
 // Copyright ((c)) 2002, Rice University 
@@ -90,14 +91,13 @@ public:
   const std::string& GetCmd() const { return parser.GetCmd(); }
 
   // Parsed Data: optional arguments
-  bool verboseMode;          // default: false
-  bool normalizeScopeTree;   // default: true
-  bool unsafeNormalizations; // default: true
+  bool verboseMode;               // default: false
+  bool normalizeScopeTree;        // default: true
+  bool unsafeNormalizations;      // default: true
   bool irreducibleIntervalIsLoop; // default: false
-  bool prettyPrintOutput;    // default: true
+  bool prettyPrintOutput;         // default: true
   std::string canonicalPathList;
-  std::string pcMapFile; 
-  bool dumpBinary;           // defaults: false
+  bool dumpBinary;                // defaults: false
 
   // Parsed Data: arguments
   std::string inputFile;

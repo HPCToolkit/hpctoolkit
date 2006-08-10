@@ -1,5 +1,6 @@
 // -*-Mode: C++;-*-
 // $Id$
+
 // * BeginRiceCopyright *****************************************************
 // 
 // Copyright ((c)) 2002, Rice University 
@@ -59,6 +60,7 @@
 #include <include/general.h>
 
 #include "LoadModule.hpp"
+
 #include <lib/isa/ISA.hpp>
 
 //*************************** Forward Declarations **************************

@@ -51,10 +51,11 @@
 //************************* System Include Files ****************************
 
 #include <iostream>
-#include <fstream>
 using std::cout;
 using std::cerr;
 using std::endl;
+
+#include <fstream>
 
 #ifdef NO_STD_CHEADERS
 # include <string.h>
@@ -87,9 +88,8 @@ using namespace ScopeTreeBuilder;
 #include <lib/binutils/BinUtils.hpp>
 #include <lib/binutils/PCToSrcLineMap.hpp>
 
-#include <lib/support/Files.hpp>
 #include <lib/support/diagnostics.h>
-#include <lib/support/Assertion.h>
+#include <lib/support/Files.hpp>
 #include <lib/support/pathfind.h>
 
 //*************************** Forward Declarations ***************************
@@ -228,16 +228,10 @@ private:
   CodeInfo* node;
 };
 
-
-// MAP: Temporary and inadequate implementation.  Note more specific
-// comments above function def.
-static void 
-BuildVMAToSrcLineMap(PCToSrcLineXMap* map, Procedure* p); 
-
 //*************************** Forward Declarations ***************************
 
-//#define BLOOP_DEBUG_PROC
-#define CDSDBG if (0) /* optimized away */
+#define DBG_PROC 0 /* debug BuildFromProc */
+#define DBG_CDS  0 /* debug CoalesceDuplicateStmts */
 
 //#define BLOOP_ATTEMPT_TO_IMPROVE_INTERVAL_BOUNDARIES
 
@@ -282,21 +276,16 @@ WriteScopeTree(std::ostream& os, PgmScopeTree* pgmScopeTree, bool prettyPrint)
 //   optimizations such as loop unrolling.
 PgmScopeTree*
 ScopeTreeBuilder::BuildFromLM(LoadModule* lm, 
-			      PCToSrcLineXMap* &xmap,
 			      const char* canonicalPathList, 
 			      bool normalizeScopeTree,
 			      bool unsafeNormalizations,
 			      bool irreducibleIntervalIsLoop,
 			      bool verboseMode)
 {
-  BriefAssertion(lm);
+  DIAG_Assert(lm, DIAG_UnexpectedInput);
 
   PgmScopeTree* pgmScopeTree = NULL;
   PgmScope* pgmScope = NULL;
-
-  if (xmap != NULL) { // MAP
-    xmap = new PCToSrcLineXMap();
-  }
 
   // Assume lm->Read() has been performed
   pgmScope = new PgmScope("");
@@ -317,23 +306,21 @@ ScopeTreeBuilder::BuildFromLM(LoadModule* lm,
       cerr << "Building scope tree for [" << p->GetName()  << "] ... ";
     }
     BuildFromProc(pScope, p, irreducibleIntervalIsLoop);
-    if (xmap) { BuildVMAToSrcLineMap(xmap, p); } // MAP
     if (verboseMode) {
       cerr << "done " << endl;
     }
   }
-  if (xmap) { xmap->Finalize(); } // MAP
   delete pmap;
 
   // 3. Normalize
   if (canonicalPathList && canonicalPathList[0] != '\0') {
     bool result = FilterFilesFromScopeTree(pgmScopeTree, canonicalPathList);
-    BriefAssertion(result); // Should never be false
+    DIAG_Assert(result, "Path canonicalization result should never be false!");
   }
 
   if (normalizeScopeTree) {
     bool result = Normalize(pgmScopeTree, unsafeNormalizations);
-    BriefAssertion(result); // Should never be false
+    DIAG_Assert(result, "Normalization result should never be false!");
   }
 
   return pgmScopeTree;
@@ -432,13 +419,16 @@ BuildProcStructure(FileScope* fileScope, Procedure* p)
   
   // Create the scope
   ProcScope* pScope = new ProcScope(funcNm, fileScope, funcLnNm, begLn, endLn);
+  VMA endVMA = p->GetBegVMA() + p->GetSize();
+  pScope->vmaSet().insert(p->GetBegVMA(), endVMA);
+  
   return pScope;
 }
 
 
 //****************************************************************************
 
-#ifdef BLOOP_DEBUG_PROC
+#if (DBG_PROC)
 static bool testProcNow = false;
 #endif
 
@@ -451,7 +441,7 @@ BuildFromProc(ProcScope* pScope, Procedure* p, bool irreducibleIntervalIsLoop)
   // FIXME: We can do better for lines
   // Look at the my parent or my sibling for a bound on line
 
-#ifdef BLOOP_DEBUG_PROC
+#if (DBG_PROC)
   testProcNow = false;
   suint dbgId = p->GetId(); 
 
@@ -478,7 +468,7 @@ BuildFromProc(ProcScope* pScope, Procedure* p, bool irreducibleIntervalIsLoop)
   
   OA::RIFG::NodeId fgRoot = rifg->getSource();
   
-#ifdef BLOOP_DEBUG_PROC
+#if (DBG_PROC)
   if (testProcNow) {
     cout << "*** CFG for `" << p->GetName() << "' ***" << endl;
     cout << "  total blocks: " << cfg->getNumNodes() << endl
@@ -543,7 +533,7 @@ BuildFromTarjInterval(CodeInfo* enclosingScope, Procedure* p,
   suint begLn = UNDEF_LINE, endLn = UNDEF_LINE;
   suint loopsBegLn = UNDEF_LINE, loopsEndLn = UNDEF_LINE;
 
-  BriefAssertion(cfgNodeMap->find(bb) != cfgNodeMap->end());
+  DIAG_Assert(cfgNodeMap->find(bb) != cfgNodeMap->end(), "");
   begVMA = (*cfgNodeMap)[bb]->first;
   endVMA = (*cfgNodeMap)[bb]->second;
 #endif
@@ -567,7 +557,7 @@ BuildFromTarjInterval(CodeInfo* enclosingScope, Procedure* p,
     if (ity == OA::NestedSCR::NODE_ACYCLIC) { 
 #ifdef BLOOP_ATTEMPT_TO_IMPROVE_INTERVAL_BOUNDARIES
       if (tarj->getNext(kid) == OA::RIFG::NIL) {
-        BriefAssertion(cfgNodeMap->find(bb1) != cfgNodeMap->end());
+        DIAG_Assert(cfgNodeMap->find(bb1) != cfgNodeMap->end(), "");
         endVMA = (*cfgNodeMap)[bb1]->second;
       }
 #endif
@@ -593,12 +583,12 @@ BuildFromTarjInterval(CodeInfo* enclosingScope, Procedure* p,
 #ifdef BLOOP_ATTEMPT_TO_IMPROVE_INTERVAL_BOUNDARIES
       // Update line numbers from data collected building loop nest
       if (loopsBegLn == UNDEF_LINE) {
-	BriefAssertion( loopsEndLn == UNDEF_LINE );
+	DIAG_Assert(loopsEndLn == UNDEF_LINE, "");
 	loopsBegLn = lScope->BegLine();
 	loopsEndLn = lScope->EndLine();
       } 
       else {
-	BriefAssertion( loopsEndLn != UNDEF_LINE );
+	DIAG_Assert(loopsEndLn != UNDEF_LINE, "");
 	if (IsValidLine(lScope->BegLine(), lScope->EndLine())) {
 	  loopsBegLn = MIN(loopsBegLn, lScope->BegLine() );
 	  loopsEndLn = MAX(loopsEndLn, lScope->EndLine() );
@@ -653,34 +643,65 @@ BuildFromBB(CodeInfo* enclosingScope, Procedure* p,
 {
   ProcScope* pScope = enclosingScope->Proc();
   FileScope* fileScope = pScope->File();
-  
-  LineToStmtMap stmtMap; // maps lines to NULL (to simulate a set)
-  
+
+  // Use this map so we do not add multiple StmtRangeScopes for the
+  // same line from this basic-block.  We could allow the
+  // normalization phase to remove the redundancy, but this is an easy
+  // optimization.
+  std::map<suint, StmtRangeScope*> stmtMap;
+
   OA::OA_ptr<OA::CFG::Interface::NodeStatementsIterator> it =
     bb->getNodeStatementsIterator();
-  for ( ; it->isValid(); ++(*it)) {
+  for ( ; it->isValid(); ) {
     Instruction* insn = IRHNDL_TO_TY(it->current(), Instruction*);
     VMA vma = insn->GetVMA();
     ushort opIdx = insn->GetOpIndex();
+    VMA opvma = isa->ConvertVMAToOpVMA(vma, opIdx);
 
+    // advance iterator [needed to create VMA interval]
+    ++(*it);
+
+    // -----------------------------------------------------
+    // 1. find source line info (if possible)
+    // -----------------------------------------------------
     string func, file;
     suint line;
     p->GetSourceFileInfo(vma, opIdx, func, file, line); 
     if ( !IsValidLine(line) ) {
       continue; // cannot continue without valid symbolic info
     }
+    
+    // -----------------------------------------------------
+    // 2. Create a VMA interval for this line
+    // -----------------------------------------------------
+    VMA nextopvma;
+    Instruction* nextinsn = (it->isValid()) ? 
+      IRHNDL_TO_TY(it->current(), Instruction*) : NULL;
+    if (nextinsn) {
+      nextopvma = isa->ConvertVMAToOpVMA(nextinsn->GetVMA(),
+					 nextinsn->GetOpIndex());
+    }
+    else {
+      // the (hypothetical) next insn must begins no earlier than:
+      nextopvma = isa->ConvertVMAToOpVMA(insn->GetVMA(), 0) + insn->GetSize();
+    }
+    DIAG_Assert(opvma < nextopvma, "Invalid VMAInterval: [" << opvma << ", "
+		<< nextopvma << ")");
 
-    // eraxxon: MAP: add all VMA's for BB to map
-
-    // Determine where this line should go
+    VMAInterval vmaint(opvma, nextopvma);
+    
+    // -----------------------------------------------------
+    // 3. Determine where this line should go
+    // -----------------------------------------------------
     bool done = false;
+
     if (!file.empty() && file != fileScope->Name()) {
-      // An alien line: Ignore for now (FIXME)
+      // 3a. An alien line: Ignore for now (FIXME)
       done = true;
     }
     if (!done) {
-      // Attempt to find a non-Procedure enclosing scope, which means
-      // LoopScope.  Note: We do not yet know loop end lines.
+      // 3b. Attempt to find a non-Procedure enclosing scope, which
+      // means LoopScope.  Note: We do not yet know loop end lines.
       // However, we can use the procedure end line as a boundary
       // because the only source code objects suceeding this scope
       // that can be multiply instantiated into this scope are
@@ -689,23 +710,27 @@ BuildFromBB(CodeInfo* enclosingScope, Procedure* p,
       for (CodeInfo* x = enclosingScope;
 	   x->Type() == ScopeInfo::LOOP; x = x->CodeInfoParent()) {
 	if (x->begLine() <= line && line <= pScope->endLine()) {
-	  if (stmtMap.find(line) == stmtMap.end()) {
-	    stmtMap[line] = NULL;
-	    new StmtRangeScope(x, line, line);
+	  // We found a home for the line
+	  StmtRangeScope* stmt = stmtMap[line];
+	  if (!stmt) {
+	    stmtMap[line] = new StmtRangeScope(x, line, line, 
+					       vmaint.beg(), vmaint.end());
 	  }
-	  // else: FIXME: MAP: add this vma to the statement-range
+	  else {
+	    stmt->vmaSet().insert(vmaint); // expand VMA range
+	  }
 	  done = true;
 	  break;
 	}
       }
     }
     if (!done && pScope->begLine() <= line && line <= pScope->endLine()) {
-      // An alien line that belongs within 'pScope'
-      new StmtRangeScope(pScope, line, line);
+      // 3c. An alien line that belongs within 'pScope'
+      new StmtRangeScope(pScope, line, line, vmaint.beg(), vmaint.end());
       done = true;
     }
     if (!done) {
-      // An alien line: ignore for now (FIXME)
+      // 3d. An alien line: ignore for now (FIXME)
       done = true;
     }
   } 
@@ -754,7 +779,7 @@ FindLoopBegLine(Procedure* p, OA::OA_ptr<OA::CFG::Interface::Node> node)
   // Find the head vma
   OA::OA_ptr<Interface::NodeStatementsIterator> stmtIt =
     node->getNodeStatementsIterator();
-  BriefAssertion(stmtIt->isValid());
+  DIAG_Assert(stmtIt->isValid(), "");
   Instruction* head = IRHNDL_TO_TY(stmtIt->current(), Instruction*);
   VMA headVMA = head->GetVMA(); // we can ignore opIdx
   
@@ -805,12 +830,12 @@ RemoveOrphanedProcedureRepository(PgmScopeTree* pgmScopeTree)
   if (!pgmScope) { return changed; }
 
   for (ScopeInfoChildIterator lmit(pgmScope); lmit.Current(); lmit++) {
-    BriefAssertion(((ScopeInfo*)lmit.Current())->Type() == ScopeInfo::LM);
+    DIAG_Assert(((ScopeInfo*)lmit.Current())->Type() == ScopeInfo::LM, "");
     LoadModScope* lm = dynamic_cast<LoadModScope*>(lmit.Current()); // always true
 
     // For each immediate child of this node...
     for (ScopeInfoChildIterator it(lm); it.Current(); /* */) {
-      BriefAssertion(((ScopeInfo*)it.Current())->Type() == ScopeInfo::FILE);
+      DIAG_Assert(((ScopeInfo*)it.Current())->Type() == ScopeInfo::FILE, "");
       FileScope* file = dynamic_cast<FileScope*>(it.Current()); // always true
       it++; // advance iterator -- it is pointing at 'file'
       
@@ -824,6 +849,7 @@ RemoveOrphanedProcedureRepository(PgmScopeTree* pgmScopeTree)
   
   return changed;
 }
+
 
 //****************************************************************************
 
@@ -865,18 +891,15 @@ static bool CDS_unsafeNormalizations = true;
 static bool
 CoalesceDuplicateStmts(CodeInfo* scope, LineToStmtMap* stmtMap, 
 		       ScopeInfoSet* visited, ScopeInfoSet* toDelete,
-		       int level)
-  throw (CDS_RestartException);
+		       int level);
 
 static bool
 CDS_Main(CodeInfo* scope, LineToStmtMap* stmtMap, 
-	 ScopeInfoSet* visited, ScopeInfoSet* toDelete, int level)
-  throw (CDS_RestartException); /* indirect */
+	 ScopeInfoSet* visited, ScopeInfoSet* toDelete, int level);
 
 static bool
 CDS_InspectStmt(StmtRangeScope* stmt1, LineToStmtMap* stmtMap, 
-		ScopeInfoSet* toDelete, int level)
-  throw (CDS_RestartException);
+		ScopeInfoSet* toDelete, int level);
 
 static bool
 CoalesceDuplicateStmts(PgmScopeTree* pgmScopeTree, bool unsafeNormalizations)
@@ -889,7 +912,7 @@ CoalesceDuplicateStmts(PgmScopeTree* pgmScopeTree, bool unsafeNormalizations)
   ScopeInfoSet toDelete;      // nodes to delete
 
   for (ScopeInfoChildIterator lmit(pgmScope); lmit.Current(); lmit++) {
-    BriefAssertion(((ScopeInfo*)lmit.Current())->Type() == ScopeInfo::LM);
+    DIAG_Assert(((ScopeInfo*)lmit.Current())->Type() == ScopeInfo::LM, "");
     LoadModScope* lm = dynamic_cast<LoadModScope*>(lmit.Current()); // always true
     
     // We apply the normalization routine to each FileScope so that 1)
@@ -897,7 +920,7 @@ CoalesceDuplicateStmts(PgmScopeTree* pgmScopeTree, bool unsafeNormalizations)
     // that all line numbers encountered are within the same file
     // (keeping the LineToStmtMap simple and fast).
     for (ScopeInfoChildIterator it(lm); it.Current(); ++it) {
-      BriefAssertion(((ScopeInfo*)it.Current())->Type() == ScopeInfo::FILE);
+      DIAG_Assert(((ScopeInfo*)it.Current())->Type() == ScopeInfo::FILE, "");
       FileScope* file = dynamic_cast<FileScope*>(it.Current()); // always true
       
       changed |= CoalesceDuplicateStmts(file, &stmtMap, &visitedScopes, 
@@ -907,6 +930,7 @@ CoalesceDuplicateStmts(PgmScopeTree* pgmScopeTree, bool unsafeNormalizations)
 
   return changed;
 }
+
 
 // CoalesceDuplicateStmts Helper: 
 //
@@ -972,7 +996,6 @@ static bool
 CoalesceDuplicateStmts(CodeInfo* scope, LineToStmtMap* stmtMap, 
 		       ScopeInfoSet* visited, ScopeInfoSet* toDelete, 
 		       int level)
-  throw (CDS_RestartException)
 {
   try {
     return CDS_Main(scope, stmtMap, visited, toDelete, level);
@@ -989,6 +1012,7 @@ CoalesceDuplicateStmts(CodeInfo* scope, LineToStmtMap* stmtMap,
   }
 }
 
+
 // CDS_Main: Helper for the above. Assumes that all statement line
 // numbers are within the same file.  We operate on the children of
 // 'scope' to support support node deletion (case 1 above).  When we
@@ -996,7 +1020,6 @@ CoalesceDuplicateStmts(CodeInfo* scope, LineToStmtMap* stmtMap,
 static bool
 CDS_Main(CodeInfo* scope, LineToStmtMap* stmtMap, ScopeInfoSet* visited, 
 	 ScopeInfoSet* toDelete, int level)
-  throw (CDS_RestartException) /* indirect */
 {
   bool changed = false;
   
@@ -1007,11 +1030,11 @@ CDS_Main(CodeInfo* scope, LineToStmtMap* stmtMap, ScopeInfoSet* visited,
   // A post-order traversal of this node (visit children before parent)...
   for (ScopeInfoChildIterator it(scope); it.Current(); ++it) {
     CodeInfo* child = dynamic_cast<CodeInfo*>(it.Current()); // always true
-    BriefAssertion(child);
+    DIAG_Assert(child, "");
     
     if (toDelete->find(child) != toDelete->end()) { continue; }
     
-    CDSDBG { cout << "CDS: " << child << endl; }
+    DIAG_DevMsgIf(DBG_CDS, "CDS: " << child);
     
     // 1. Recursively perform re-nesting on 'child'.
     changed |= CoalesceDuplicateStmts(child, stmtMap, visited, toDelete,
@@ -1033,12 +1056,12 @@ CDS_Main(CodeInfo* scope, LineToStmtMap* stmtMap, ScopeInfoSet* visited,
   visited->insert(scope);
   return changed; 
 }
+
   
 // CDS_InspectStmt: applies case 1 or 2, as described above
 static bool
 CDS_InspectStmt(StmtRangeScope* stmt1, LineToStmtMap* stmtMap, 
 		ScopeInfoSet* toDelete, int level)
-  throw (CDS_RestartException)
 {
   bool changed = false;
   
@@ -1047,7 +1070,7 @@ CDS_InspectStmt(StmtRangeScope* stmt1, LineToStmtMap* stmtMap,
   if (stmtdata) {
     
     StmtRangeScope* stmt2 = stmtdata->GetStmt();
-    CDSDBG { cout << " Find: " << stmt1 << " " << stmt2 << endl; }
+    DIAG_DevMsgIf(DBG_CDS, " Find: " << stmt1 << " " << stmt2);
     
     // Ensure we have two different instances of the same line
     if (stmt1 == stmt2) { return false; }
@@ -1055,7 +1078,7 @@ CDS_InspectStmt(StmtRangeScope* stmt1, LineToStmtMap* stmtMap,
     // Find the least common ancestor.  At most it should be a
     // procedure scope.
     ScopeInfo* lca = ScopeInfo::LeastCommonAncestor(stmt1, stmt2);
-    BriefAssertion(lca);
+    DIAG_Assert(lca, "");
     
     // Because we have the lca and know that the descendent nodes are
     // statements (leafs), the test for case 1 is very simple:
@@ -1063,6 +1086,7 @@ CDS_InspectStmt(StmtRangeScope* stmt1, LineToStmtMap* stmtMap,
     if (case1) {
       // Case 1: Duplicate statements. Delete shallower one.
       StmtRangeScope* toRemove = NULL;
+      
       if (stmtdata->GetLevel() < level) { // stmt2.level < stmt1.level
 	toRemove = stmt2;
 	stmtdata->SetStmt(stmt1);  // replace stmt2 with stmt1
@@ -1073,13 +1097,14 @@ CDS_InspectStmt(StmtRangeScope* stmt1, LineToStmtMap* stmtMap,
       }
       
       toDelete->insert(toRemove);
-      CDSDBG { cout << "  Delete: " << toRemove << endl; }
+      stmtdata->GetStmt()->vmaSet().merge(toRemove->vmaSet()); // merge VMAs
+      DIAG_DevMsgIf(DBG_CDS, "  Delete: " << toRemove);
       changed = true;
     } 
     else if (CDS_unsafeNormalizations) {
       // Case 2: Duplicate statements in different loops (or scopes).
       // Merge the nodes from stmt2->lca into those from stmt1->lca.
-      CDSDBG { cout << "  Merge: " << stmt1 << " <- " << stmt2 << endl; }
+      DIAG_DevMsgIf(DBG_CDS, "  Merge: " << stmt1 << " <- " << stmt2);
       changed = ScopeInfo::MergePaths(lca, stmt1, stmt2);
       if (changed) {
 	// We may have created instances of case 1.  Furthermore,
@@ -1087,7 +1112,7 @@ CDS_InspectStmt(StmtRangeScope* stmt1, LineToStmtMap* stmtMap,
 	// valid), iterators between stmt1 and 'lca' are invalidated.
 	// Restart at lca.
 	CodeInfo* lca_CI = dynamic_cast<CodeInfo*>(lca);
-	BriefAssertion(lca_CI);
+	DIAG_Assert(lca_CI, "");
 	throw CDS_RestartException(lca_CI);
       }
     }
@@ -1096,11 +1121,12 @@ CDS_InspectStmt(StmtRangeScope* stmt1, LineToStmtMap* stmtMap,
     // Add the statement instance to the map
     stmtdata = new StmtData(stmt1, level);
     (*stmtMap)[line] = stmtdata;
-    CDSDBG { cout << " Map: " << stmt1 << endl; }
+    DIAG_DevMsgIf(DBG_CDS, " Map: " << stmt1);
   }
   
   return changed;
 }
+
 
 //****************************************************************************
 
@@ -1109,11 +1135,13 @@ CDS_InspectStmt(StmtRangeScope* stmt1, LineToStmtMap* stmtMap,
 static bool 
 MergePerfectlyNestedLoops(ScopeInfo* node);
 
+
 static bool 
 MergePerfectlyNestedLoops(PgmScopeTree* pgmScopeTree)
 {
   return MergePerfectlyNestedLoops(pgmScopeTree->GetRoot());
 }
+
 
 static bool 
 MergePerfectlyNestedLoops(ScopeInfo* node)
@@ -1125,7 +1153,7 @@ MergePerfectlyNestedLoops(ScopeInfo* node)
   // A post-order traversal of this node (visit children before parent)...
   for (ScopeInfoChildIterator it(node); it.Current(); /* */) {
     CodeInfo* child = dynamic_cast<CodeInfo*>(it.Current()); // always true
-    BriefAssertion(child);
+    DIAG_Assert(child, "");
     it++; // advance iterator -- it is pointing at 'child'
     
     // 1. Recursively do any merging for this tree's children
@@ -1149,7 +1177,7 @@ MergePerfectlyNestedLoops(ScopeInfo* node)
       // Move all children of 'child' so that they are children of 'node'
       for (ScopeInfoChildIterator it1(child); it1.Current(); /* */) {
 	CodeInfo* i = dynamic_cast<CodeInfo*>(it1.Current()); // always true
-	BriefAssertion(i);
+	DIAG_Assert(i, "");
 	it1++; // advance iterator -- it is pointing at 'i'
 	
 	i->Unlink();   // no longer a child of 'child'
@@ -1164,6 +1192,7 @@ MergePerfectlyNestedLoops(ScopeInfo* node)
   return changed; 
 }
 
+
 //****************************************************************************
 
 // RemoveEmptyScopes: Removes certain empty scopes from the tree,
@@ -1173,12 +1202,14 @@ MergePerfectlyNestedLoops(ScopeInfo* node)
 static bool 
 RemoveEmptyScopes(ScopeInfo* node);
 
+
 static bool 
 RemoveEmptyScopes(PgmScopeTree* pgmScopeTree)
 {
   // Always maintain the top level PGM scope, even if empty
   return RemoveEmptyScopes(pgmScopeTree->GetRoot());
 }
+
 
 static bool 
 RemoveEmptyScopes(ScopeInfo* node)
@@ -1210,6 +1241,7 @@ RemoveEmptyScopes(ScopeInfo* node)
   return changed; 
 }
 
+
 //****************************************************************************
 
 // FilterFilesFromScopeTree: 
@@ -1224,13 +1256,13 @@ FilterFilesFromScopeTree(PgmScopeTree* pgmScopeTree,
   
   // For each immediate child of this node...
   for (ScopeInfoChildIterator it(pgmScope); it.Current(); /* */) {
-    BriefAssertion(((ScopeInfo*)it.Current())->Type() == ScopeInfo::FILE);
+    DIAG_Assert(((ScopeInfo*)it.Current())->Type() == ScopeInfo::FILE, "");
     FileScope* file = dynamic_cast<FileScope*>(it.Current()); // always true
     it++; // advance iterator -- it is pointing at 'file'
 
     // Verify this file in the current list of acceptible paths
     string baseFileName = BaseFileName(file->Name());
-    DIAG_ASSERT(baseFileName.length() > 0, "Invalid path!");
+    DIAG_Assert(!baseFileName.empty(), "Invalid path!");
     if (!pathfind(canonicalPathList, baseFileName.c_str(), "r")) {
       file->Unlink(); // unlink 'file' from tree
       delete file;
@@ -1304,7 +1336,7 @@ CFG_GetBegAndEndVMAs(OA::OA_ptr<OA::CFG::Interface::Node> n,
 
   // FIXME: It would be a lot faster and easier if we could just grab
   // the first and last statements from a block. Perhaps we'll
-  // modify the CFG code, this works for now.
+  // modify the CFG code; this works for now.
   bool first = true;
   Instruction* insn;
   OA::OA_ptr<OA::CFG::Interface::NodeStatementsIterator> it =
@@ -1337,52 +1369,6 @@ LineToStmtMap::clear()
 //****************************************************************************
 // Helper Routines
 //****************************************************************************
-
-// MAP: This is a temporary and inadequate implementation for building
-// the [VMA -> src-line] map.  In particular, the map should be built
-// with the source-code recovery information that is computed as the
-// ScopeTree is construced, esp. the loop nesting information.  (For
-// example, perhaps the map should be constructed with the ScopeTree).
-
-static void 
-BuildVMAToSrcLineMap(PCToSrcLineXMap* xmap, Procedure* p)
-{
-  //suint dbgId = p->GetId(); 
-  string theFunc = GetBestFuncName(p->GetName()); 
-  string theFile = "";
-  
-  ProcPCToSrcLineXMap* pmap = 
-    new ProcPCToSrcLineXMap(p->GetBegVMA(), p->GetEndVMA(), 
-			    theFunc, theFile);
-  
-  for (ProcedureInstructionIterator it(*p); it.IsValid(); ++it) {
-    Instruction* inst = it.Current();
-    VMA vma = inst->GetVMA();
-    
-    // 1. Attempt to find symbolic information
-    string func, file;
-    suint line;
-    p->GetSourceFileInfo(vma, inst->GetOpIndex(), func, file, line);
-    
-    if ( !IsValidLine(line) ) { continue; } // need valid symbolic info
-    if (theFile.empty() && !file.empty()) {
-      theFile = file; 
-    }
-    
-#if 0
-    cerr << hex << vma << dec << ": " 
-	 << file << ":" << func << ":" << line << endl;
-#endif
-    
-    // 2. Update 'pmap'
-    SrcLineX* lineInstance = new SrcLineX(line, 0); // MAP
-    pmap->Insert(vma, lineInstance);
-  }
-  
-  pmap->SetFileName(theFile);
-  xmap->InsertProcInList(pmap);
-}
-
 
 static void 
 DeleteContents(ScopeInfoSet* s)

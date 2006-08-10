@@ -56,7 +56,8 @@
 #include <iostream>
 #include <fstream>
 
-#include <errno.h>
+#include <string>
+using std::string;
 
 #ifdef NO_STD_CHEADERS
 # include <stdlib.h>
@@ -65,6 +66,8 @@
 using std::strtol; // For compatibility with non-std C headers
 using std::strtod;
 #endif
+
+#include <errno.h>
 
 //*************************** User Include Files *****************************
 
@@ -86,66 +89,75 @@ namespace StrUtil {
 // --------------------------------------------------------------------------
 
 long
-toLong(const char* str)
+toLong(const char* str, unsigned* endidx)
 {
   long value = 0;
-  DIAG_ASSERT((str && str[0] != '\0'), "StrUtil::toLong: empty string!");
+  DIAG_Assert((str && str[0] != '\0'), "StrUtil::toLong: empty string!");
   
   errno = 0;
   char* endptr = NULL;
   value = strtol(str, &endptr, 0);
-  if (errno || (endptr && strlen(endptr) > 0)) {
-    std::string msg = "StrUtil::toLong: Cannot convert `" + std::string(str) 
-      + "'";
+  if (endidx) {
+    *endidx = (endptr - str) / sizeof(char);
+  }
+  if (errno || (!endidx && endptr && strlen(endptr) > 0)) {
+    string msg = "StrUtil::toLong: Cannot convert `" + string(str) 
+      + "' to integral value.";
     if (errno) { // not always set
       msg += ". ";
       msg += strerror(errno);
     }
-    DIAG_THROW(msg);
-  } 
+    DIAG_Throw(msg);
+  }
   return value;
 }
 
 
 uint64_t
-toUInt64(const char* str)
+toUInt64(const char* str, unsigned* endidx)
 {
   uint64_t value = 0;
-  DIAG_ASSERT((str && str[0] != '\0'), "StrUtil::toUInt64: empty string!");
+  DIAG_Assert((str && str[0] != '\0'), "StrUtil::toUInt64: empty string!");
   
   errno = 0;
   char* endptr = NULL;
   value = strtoul(str, &endptr, 0);
-  if (errno || (endptr && strlen(endptr) > 0)) {
-    std::string msg = "StrUtil::toUInt64: Cannot convert `" + std::string(str)
-      + "'";
+  if (endidx) {
+    *endidx = (endptr - str) / sizeof(char);
+  }
+  if (errno || (!endidx && endptr && strlen(endptr) > 0)) {
+    string msg = "StrUtil::toUInt64: Cannot convert `" + string(str)
+      + "' to integral value.";
     if (errno) { // not always set
       msg += ". ";
       msg += strerror(errno);
     }
-    DIAG_THROW(msg);
+    DIAG_Throw(msg);
   } 
   return value;
 }
 
 
 double   
-toDbl(const char* str)
+toDbl(const char* str, unsigned* endidx)
 {
   double value = 0;
-  DIAG_ASSERT((str && str[0] != '\0'), "StrUtil::toDbl: empty string!");
+  DIAG_Assert((str && str[0] != '\0'), "StrUtil::toDbl: empty string!");
   
   errno = 0;
   char* endptr = NULL;
   value = strtod(str, &endptr);
-  if (errno || (endptr && strlen(endptr) > 0)) {
-    std::string msg = "StrUtil::toDbl: Cannot convert `" + std::string(str)
-      + "'";
+  if (endidx) {
+    *endidx = (endptr - str) / sizeof(char);
+  }
+  if (errno || (!endidx && endptr && strlen(endptr) > 0)) {
+    string msg = "StrUtil::toDbl: Cannot convert `" + string(str)
+      + "' to real value.";
     if (errno) { // not always set
       msg += ". ";
       msg += strerror(errno);
     }
-    DIAG_THROW(msg);
+    DIAG_Throw(msg);
   } 
   return value;
 }
@@ -157,7 +169,7 @@ toDbl(const char* str)
 
 static char buf[32];
 
-std::string
+string
 toStr(const int x, int base)
 {
   const char* format = NULL;
@@ -168,15 +180,15 @@ toStr(const int x, int base)
     break;
     
   default:
-    DIAG_DIE(DIAG_UNIMPLEMENTED);
+    DIAG_Die(DIAG_Unimplemented);
   }
   
   sprintf(buf, format, x);
-  return std::string(buf);
+  return string(buf);
 }
 
 
-std::string
+string
 toStr(const unsigned x, int base)
 {
   const char* format = NULL;
@@ -195,15 +207,15 @@ toStr(const unsigned x, int base)
     break;
 
   default:
-    DIAG_DIE(DIAG_UNIMPLEMENTED);
+    DIAG_Die(DIAG_Unimplemented);
   }
   
   sprintf(buf, format, x);
-  return std::string(buf);
+  return string(buf);
 }
 
 
-std::string
+string
 toStr(const int64_t x, int base)
 {
   const char* format = NULL;
@@ -214,15 +226,15 @@ toStr(const int64_t x, int base)
     break;
     
   default:
-    DIAG_DIE(DIAG_UNIMPLEMENTED);
+    DIAG_Die(DIAG_Unimplemented);
   }
   
   sprintf(buf, format, x);
-  return std::string(buf);
+  return string(buf);
 }
 
 
-std::string
+string
 toStr(const uint64_t x, int base)
 {
   const char* format = NULL;
@@ -237,28 +249,28 @@ toStr(const uint64_t x, int base)
     break;
 
   default:
-    DIAG_DIE(DIAG_UNIMPLEMENTED);
+    DIAG_Die(DIAG_Unimplemented);
   }
   
   sprintf(buf, format, x);
-  return std::string(buf);
+  return string(buf);
 }
 
 
-std::string
+string
 toStr(const void* x, int base)
 {
   sprintf(buf, "%#p", x);
-  return std::string(buf);
+  return string(buf);
 }
 
 
-std::string
+string
 toStr(const double x, const char* format)
 {
   //static char buf[19]; // 0xhhhhhhhhhhhhhhhh format
   sprintf(buf, format, x);
-  return std::string(buf);
+  return string(buf);
 }
 
 

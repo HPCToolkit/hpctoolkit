@@ -365,7 +365,8 @@ protected:
 class CodeInfo : public ScopeInfo {
 protected: 
   CodeInfo(ScopeType t, ScopeInfo* mom = NULL, 
-	   suint begLn = UNDEF_LINE, suint endLn = UNDEF_LINE);
+	   suint begLn = UNDEF_LINE, suint endLn = UNDEF_LINE,
+	   VMA begVMA = 0, VMA endVMA = 0);
   CodeInfo(const CodeInfo& other) : ScopeInfo(other.type) { *this = other; }
   CodeInfo& operator=(const CodeInfo& other);
 
@@ -705,7 +706,8 @@ public:
 // --------------------------------------------------------------------------
 class StmtRangeScope: public CodeInfo {
 public: 
-  StmtRangeScope(CodeInfo *mom, suint begLn, suint endLn);
+  StmtRangeScope(CodeInfo *mom, suint begLn, suint endLn,
+		 VMA begVMA, VMA endVMA);
   virtual ~StmtRangeScope();
   
   virtual std::string CodeName() const;

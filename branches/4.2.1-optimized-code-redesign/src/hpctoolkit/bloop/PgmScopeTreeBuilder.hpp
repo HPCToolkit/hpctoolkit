@@ -71,7 +71,7 @@ class PCToSrcLineXMap;
 namespace ScopeTreeBuilder {
   
   PgmScopeTree* 
-  BuildFromLM(LoadModule* lm, PCToSrcLineXMap* &map,
+  BuildFromLM(LoadModule* lm, 
 	      const char* canonicalPathList = "",
 	      bool normalizeScopeTree = true,
 	      bool unsafeNormalizations = true,

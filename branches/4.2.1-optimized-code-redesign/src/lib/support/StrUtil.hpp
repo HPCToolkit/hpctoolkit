@@ -76,35 +76,42 @@ namespace StrUtil {
 
 // --------------------------------------------------------------------------
 // string -> numerical types
+//
+// Comments [FIXME]: see strtol.  If 'endidx' is non-NULL, it is set
+// to the index (relative to 'str') of the first non-numerical
+// character.  (Thus, the entire string is valid if endidx ==
+// length(str).)  If 'endidx' is NULL, an error is raised if any
+// 'junk' appears after the proposed string.
+// 
 // --------------------------------------------------------------------------
 
 long
-toLong(const char* str);
+toLong(const char* str, unsigned* endidx = NULL);
 
 inline long
-toLong(const std::string& str)
+toLong(const std::string& str, unsigned* endidx = NULL)
 {
-  return toLong(str.c_str());
+  return toLong(str.c_str(), endidx);
 }
 
 
 uint64_t
-toUInt64(const char* str);
+toUInt64(const char* str, unsigned* endidx = NULL);
 
 inline uint64_t
-toUInt64(const std::string& str)
+toUInt64(const std::string& str, unsigned* endidx = NULL)
 {
-  return toUInt64(str.c_str());
+  return toUInt64(str.c_str(), endidx);
 }
 
 
 double   
-toDbl(const char* str);
+toDbl(const char* str, unsigned* endidx = NULL);
 
 inline double   
-toDbl(const std::string& str)
+toDbl(const std::string& str, unsigned* endidx = NULL)
 {
-  return toDbl(str.c_str());
+  return toDbl(str.c_str(), endidx);
 }
 
 

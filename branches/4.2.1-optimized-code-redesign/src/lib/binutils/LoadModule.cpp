@@ -145,7 +145,7 @@ LoadModule::Open(const char* moduleName)
 
   if (!name.empty()) {
     // 'moduleName' should be equal to what already exists
-    DIAG_ASSERT(name == moduleName, "Cannot open a different file!");
+    DIAG_Assert(name == moduleName, "Cannot open a different file!");
     return true;
   }
 
@@ -249,7 +249,7 @@ LoadModule::Read()
 {
   bool STATUS = true;
   // If the file has not been opened...
-  DIAG_ASSERT(!name.empty(), "Must call LoadModule::Open first");
+  DIAG_Assert(!name.empty(), "Must call LoadModule::Open first");
 
   // Read if we have not already done so
   if (impl->bfdSymbolTable == NULL

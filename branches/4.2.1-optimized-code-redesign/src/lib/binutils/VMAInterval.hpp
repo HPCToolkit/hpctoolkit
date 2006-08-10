@@ -71,7 +71,7 @@
 //***************************************************************************
 
 // --------------------------------------------------------------------------
-// VMAInterval: Represents an inclusive VMA interval [beg, end]
+// VMAInterval: Represents the VMA interval [beg, end)
 // --------------------------------------------------------------------------
 class VMAInterval
 {
@@ -89,11 +89,13 @@ public:
   VMA  end() const { return mEnd; }
   VMA& end()       { return mEnd; }
 
+  bool empty() const { return mBeg >= mEnd; }
+
   // -------------------------------------------------------
   // printing/slurping
   // -------------------------------------------------------
 
-  // Format: "[lb1-ub1]"
+  // Format: "[lb1-ub1)"
   std::string toString() const;
 
   void fromString(const char* formattedstr);
@@ -112,7 +114,9 @@ private:
 
 
 // --------------------------------------------------------------------------
-// lt_VMAInterval: for ordering VMAInterval:
+// lt_VMAInterval: for ordering VMAInterval: Should work for any kind
+// of interval: [ ], ( ), [ ), ( ].  For example:
+//   
 //   [1,1]  < [1,2] --> true
 //   [1,1]  < [1,1] --> false
 //   [1,10] < [4,6] --> true
@@ -131,8 +135,7 @@ public:
 //***************************************************************************
 
 // --------------------------------------------------------------------------
-// VMAIntervalSet: A set of non-overlapping VMAIntervals (inclusive
-// intervals)
+// VMAIntervalSet: A set of *non-overlapping* VMAIntervals
 // --------------------------------------------------------------------------
 class VMAIntervalSet
   : public std::set<VMAInterval, lt_VMAInterval>
@@ -169,23 +172,26 @@ public:
   // -------------------------------------------------------
   // use inherited std::set routines
 
-  // Insert a VMA or VMAInterval and maintain the non-overlapping
-  // interval invariant
-  std::pair<iterator, bool> insert(const VMA x)
-    { return insert(value_type(x,x)); }
+  // insert: Insert a VMA or VMAInterval and maintain the
+  // non-overlapping interval invariant
+  std::pair<iterator, bool> insert(const VMA beg, const VMA end)
+    { return insert(value_type(beg, end)); }
   std::pair<iterator, bool> insert(const value_type& x);
 
-  // Erase a VMA or VMAInterval and maintain the non-overlapping
-  // interval invariant
-  size_type erase(const VMA x)
-    { return erase(value_type(x,x)); }
+  // erase: Erase a VMA or VMAInterval and maintain the
+  // non-overlapping interval invariant
+  size_type erase(const VMA beg, const VMA end)
+    { return erase(value_type(beg, end)); }
   size_type erase(const key_type& x);
+
+  // merge: Merge 'x' with this set
+  void merge(const VMAIntervalSet& x);
 
   // -------------------------------------------------------
   // printing/slurping
   // -------------------------------------------------------
 
-  // Format: space-separated list of intervals: "[lb1-ub1] [lb2-ub2] ..."
+  // Format: space-separated list of intervals: "{[lb1-ub1) [lb2-ub2) ...}"
   std::string toString() const;
 
   void fromString(const char* formattedstr);

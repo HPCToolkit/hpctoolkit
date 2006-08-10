@@ -194,6 +194,9 @@ Driver::MakePerfData(PgmScopeTree& scopes)
 	   << "\t" << mex.error << endl;
       exit(1);
     } 
+    catch (...) {
+      throw;
+    }
   } 
 }
 
@@ -210,8 +213,9 @@ Driver::ProcessPGMFile(NodeRetriever* nretriever,
   for (unsigned int i = 0; i < files->size(); i++) {
     const string& pgmFileName = *((*files)[i]);
     if (!pgmFileName.empty()) {
-      const char* filePath = pathfind(".", pgmFileName.c_str(), "r"); 
-      if (filePath) {
+      const char* pf = pathfind(".", pgmFileName.c_str(), "r");
+      string filePath = (pf) ? pf : "";
+      if (!filePath.empty()) {
 	SAX2XMLReader* parser = XMLReaderFactory::createXMLReader();
 	
 	parser->setFeature(XMLUni::fgSAX2CoreValidation, true);
@@ -221,21 +225,25 @@ Driver::ProcessPGMFile(NodeRetriever* nretriever,
 	PGMDocHandler handler(docty, nretriever, this);
 	parser->setContentHandler(&handler);
 	parser->setErrorHandler(&handler);
-	
+
 	try {
-	  parser->parse(filePath);
+	  parser->parse(filePath.c_str());
 	  if (parser->getErrorCount() > 0) {
 	    cerr << "hpcview fatal error: terminating because of previously reported " << PGMDocHandler::ToString(docty) << " file parse errors." << endl;
 	    exit(1);
 	  }
 	}
-	catch (const SAXException& toCatch) {
-	  cerr << "hpcview fatal error: terminating because of previously reported " << PGMDocHandler::ToString(docty) << " file parse errors." << endl;
+	catch (const SAXException& x) {
+	  cerr << "hpcview: Error parsing '" << filePath << "'" << endl;
 	  exit(1);
 	}
-	catch (const PGMException& toCatch) {
-	  cerr << "ERROR: '" << filePath << "': " << toCatch.message() << endl;
+	catch (const PGMException& x) {
+	  cerr << "hpcview: Error reading '" << filePath << "': ";
+	  x.report(cerr);
 	  exit(1);
+	}
+	catch (...) {
+	  throw;
 	}
       } 
       else {

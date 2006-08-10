@@ -26,6 +26,7 @@
 
 #include <stdlib.h>
 #include <stdarg.h>   /* va_arg */
+#include <string.h>   /* memset */
 #include <errno.h>
 #include <pthread.h>
 

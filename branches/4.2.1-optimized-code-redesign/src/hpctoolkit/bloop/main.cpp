@@ -1,5 +1,6 @@
 // -*-Mode: C++;-*-
 // $Id$
+
 // * BeginRiceCopyright *****************************************************
 // 
 // Copyright ((c)) 2002, Rice University 
@@ -51,6 +52,8 @@
 
 #include <iostream>
 using std::cerr;
+using std::endl;
+
 #include <fstream>
 #include <new>
 
@@ -66,6 +69,8 @@ using namespace ScopeTreeBuilder;
 
 #include <lib/binutils/LoadModule.hpp>
 #include <lib/binutils/PCToSrcLineMap.hpp>
+
+#include <lib/support/diagnostics.h>
 
 //*************************** Forward Declarations ***************************
 
@@ -83,18 +88,27 @@ main(int argc, char* argv[])
   try {
     return real_main(argc, argv);
   }
-  catch (CmdLineParser::Exception& e) {
+  catch (const CmdLineParser::Exception& e) {
     e.Report(cerr); // fatal error
     exit(1);
   }
-  catch (OA::Exception& e) {
+  catch (const Diagnostics::Exception& x) {
+    cerr << "Error: ";
+    x.report(cerr);
+    exit(1);
+  } 
+  catch (const OA::Exception& e) {
     e.report(cerr);
     exit(1);
   }
-  catch (std::bad_alloc& x) {
-    cerr << "Error: Memory alloc failed!\n";
+  catch (const std::bad_alloc& x) {
+    cerr << "Error: Memory alloc failed: " << x.what() << endl;
     exit(1);
-  }
+  } 
+  catch (const std::exception& x) {
+    cerr << "Error: std::exception: " << x.what() << endl;
+    exit(1);
+  } 
   catch (...) {
     cerr << "Unknown exception caught\n";
     exit(2);
@@ -118,7 +132,7 @@ real_main(int argc, char* argv[])
     } 
     if (!lm->Read()) { exit(1); } // Error already printed 
   } 
-  catch (std::bad_alloc& x) {
+  catch (const std::bad_alloc& x) {
     cerr << "Error: Memory alloc failed while reading binary!\n";
     exit(1);
   }
@@ -128,31 +142,25 @@ real_main(int argc, char* argv[])
     // Dump load module without a scope tree
     // ------------------------------------------------------------
     lm->Dump(std::cout);
-    
-  } else {
+  } 
+  else {
     // ------------------------------------------------------------
     // Build and print the ScopeTree
     // ------------------------------------------------------------
-    PCToSrcLineXMap* map = NULL;
-    if (!args.pcMapFile.empty()) {
-      map = (PCToSrcLineXMap*)1; // FIXME:indicate that map should be created
-    }
-    
+
     // Build scope tree
     PgmScopeTree* pgmScopeTree =
-      BuildFromLM(lm, map, args.canonicalPathList.c_str(),
+      BuildFromLM(lm, args.canonicalPathList.c_str(),
 		  args.normalizeScopeTree, 
 		  args.unsafeNormalizations,
 		  args.irreducibleIntervalIsLoop,
 		  args.verboseMode);
     
-    // Write map (map should now be a valid pointer) & scope tree
-    if (map) { WriteMapFile(map, args.pcMapFile); }
+    // Write scope tree
     WriteScopeTree(std::cout, pgmScopeTree, args.prettyPrintOutput);
     
     // Cleanup
     delete pgmScopeTree;
-    delete map;
   }
   
   delete lm;
@@ -161,34 +169,3 @@ real_main(int argc, char* argv[])
 
 //****************************************************************************
 
-bool 
-WriteMapFile(PCToSrcLineXMap* map, std::string& fname)
-{
-  std::ofstream ofile(fname.c_str());
-  if ( !ofile.is_open() || ofile.fail() ) {
-    cerr << "Error opening file `" << fname << "'\n";
-    return false;
-  }
-  
-  bool status = map->Write(ofile);
-  ofile.close();
-  
-  if (!status) {
-    cerr << "Error writing file `" << fname << "'\n";
-    return false;
-  }
-  
-#if 0
-  std::ifstream file1(fname);
-  std::ofstream file2((fname+".tmp"));
-  
-  // Try reading the map and writing it to a second file for comparison
-  PCToSrcLineXMap* map1 = new PCToSrcLineXMap();
-  map1->Read(file1);
-  map1->Write(file2);
-  delete map1;
-  file1.close();
-  file2.close();
-#endif
-  return true;
-}

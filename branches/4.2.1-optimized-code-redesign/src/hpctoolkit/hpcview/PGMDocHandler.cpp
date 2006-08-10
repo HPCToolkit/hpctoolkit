@@ -235,7 +235,7 @@ PGMDocHandler::PGMDocHandler(Doc_t ty,
 
 PGMDocHandler::~PGMDocHandler() 
 {
-  DIAG_ASSERT(scopeStack.Depth() == 0, "Invalid state reading PGM.");
+  DIAG_Assert(scopeStack.Depth() == 0, "Invalid state reading PGM.");
 }
 
 
@@ -295,7 +295,7 @@ void PGMDocHandler:: startElement(const XMLCh* const uri,
   else if (XMLString::equals(name, elemLM)) {
     string lm = getAttr(attributes, attrName); // must exist
     lm = driver->ReplacePath(lm);
-    DIAG_ASSERT(currentLmName.empty(), "Parse or internal error!");
+    DIAG_Assert(currentLmName.empty(), "Parse or internal error!");
     currentLmName = lm;
     IFTRACE << "LM (load module): name= " << currentLmName << endl;
     
@@ -343,7 +343,7 @@ void PGMDocHandler:: startElement(const XMLCh* const uri,
     if (!lineB.empty()) { lnB = (int)StrUtil::toLong(lineB); }
     if (!lineE.empty()) { lnE = (int)StrUtil::toLong(lineE); }
     IFTRACE << " b="  << lnB << " e=" << lnE << endl;
-    
+
     // Find enclosing File scope
     FileScope* curFile = FindCurrentFileScope();
     if (!curFile) {
@@ -372,7 +372,7 @@ void PGMDocHandler:: startElement(const XMLCh* const uri,
   // L(oop)
   else if (XMLString::equals(name, elemLoop)) {
     BriefAssertion(scopeStack.Depth() >= 3); // at least has Proc, File, LM
-    
+
     // both 'begin' and 'end' are implied (and can be in any order)
     int numAttr = attributes.getLength();
     BriefAssertion(numAttr >= 0 && numAttr <= 2);
@@ -420,7 +420,7 @@ void PGMDocHandler:: startElement(const XMLCh* const uri,
     CodeInfo* enclScope = 
       dynamic_cast<CodeInfo*>(GetCurrentScope()); // enclosing scope
     BriefAssertion(currentFuncScope != NULL);
-    StmtRangeScope* stmtNode = new StmtRangeScope(enclScope, lnB, lnE);
+    StmtRangeScope* stmtNode = new StmtRangeScope(enclScope, lnB, lnE, 0, 0);
     currentScope = stmtNode;
   }
 

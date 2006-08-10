@@ -71,6 +71,9 @@ using namespace std; // For compatibility with non-std C headers
 
 #include "CmdLineParser.hpp"
 
+#include "diagnostics.h"
+#include "StrUtil.hpp"
+
 //*************************** Forward Declarations ***************************
 
 using std::string;
@@ -362,68 +365,42 @@ CmdLineParser::GetArg(unsigned int i) const
 long
 CmdLineParser::ToLong(const string& str)
 {
-  // FIXME: implement as a wrapper using StrUtil
-  long value = 0;
   if (str.empty()) { throw InternalError("ToLong"); }
   
-  errno = 0;
-  char* endptr = NULL;
-  value = strtol(str.c_str(), &endptr, 0);
-  if (errno || (endptr && strlen(endptr) > 0)) {
-    string msg = "Argument `" + str 
-      + "' cannot be converted to integral value.";
-    if (errno) { // not always set
-      msg += " ";
-      msg += strerror(errno);
-    }
-    throw ParseError(msg);
-  } 
-  return value;
+  try {
+    return StrUtil::toLong(str);
+  }
+  catch (const Diagnostics::FatalException& x) {
+    throw ParseError(x.message());
+  }
 }
 
 
 uint64_t
 CmdLineParser::ToUInt64(const string& str)
 {
-  // FIXME: implement as a wrapper using StrUtil
-  uint64_t value = 0;
   if (str.empty()) { throw InternalError("ToUInt64"); }
   
-  errno = 0;
-  char* endptr = NULL;
-  value = strtoul(str.c_str(), &endptr, 0);
-  if (errno || (endptr && strlen(endptr) > 0)) {
-    string msg = "Argument `" + str 
-      + " cannot be converted to integral value.";
-    if (errno) { // not always set
-      msg += " ";
-      msg += strerror(errno);
-    }
-    throw ParseError(msg);
-  } 
-  return value;
+  try {
+    return StrUtil::toUInt64(str);
+  }
+  catch (const Diagnostics::FatalException& x) {
+    throw ParseError(x.message());
+  }
 }
 
 
 double   
 CmdLineParser::ToDbl(const string& str)
 {
-  // FIXME: implement as a wrapper using StrUtil
-  double value = 0;
   if (str.empty()) { throw InternalError("ToDbl"); }
   
-  errno = 0;
-  char* endptr = NULL;
-  value = strtod(str.c_str(), &endptr);
-  if (errno || (endptr && strlen(endptr) > 0)) {
-    string msg = "Argument `" + str + "' cannot be converted to real value.";
-    if (errno) { // not always set
-      msg += " ";
-      msg += strerror(errno);
-    }
-    throw ParseError(msg);
-  } 
-  return value;
+  try {
+    return StrUtil::toDbl(str);
+  }
+  catch (const Diagnostics::FatalException& x) {
+    throw ParseError(x.message());
+  }
 }
 
 

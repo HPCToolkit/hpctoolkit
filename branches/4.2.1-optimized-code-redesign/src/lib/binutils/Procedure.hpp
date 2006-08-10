@@ -106,7 +106,7 @@ public:
   VMA  GetEndVMA() const { return endVMA; }
   void  SetEndVMA(VMA _endVMA) { endVMA = _endVMA; }
 
-  // Return size, which is (end - start) + sizeof(last instruction)
+  // Return size, which is (endVMA - startVMA) + sizeof(last instruction)
   suint GetSize()      const { return size; }
   void SetSize(suint _size)  { size = _size; }
   

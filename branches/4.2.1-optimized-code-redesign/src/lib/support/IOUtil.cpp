@@ -148,7 +148,7 @@ OpenIFile(std::ifstream& fs, const char* filenm)
 
   fs.open(filenm, ios::in);
   if (!fs.is_open() || fs.fail()) {
-    DIAG_THROW("Cannot open file '" << filenm << "'");
+    DIAG_Throw("Cannot open file '" << filenm << "'");
   }
 }
 
@@ -160,7 +160,7 @@ OpenOFile(std::ofstream& fs, const char* filenm)
 
   fs.open(filenm, ios::out | ios::trunc);
   if (!fs.is_open() || fs.fail()) {
-    DIAG_THROW("Cannot open file '" << filenm << "'");
+    DIAG_Throw("Cannot open file '" << filenm << "'");
   }
 }
 
@@ -200,7 +200,7 @@ GetLine(std::istream& is, char end)
 bool 
 Skip(std::istream& is, const char* s)
 {
-  DIAG_ASSERT(s, DIAG_UNEXPECTED_INPUT);
+  DIAG_Assert(s, DIAG_UnexpectedInput);
   char c;
   for (int i = 0; s[i] != '\0'; i++) {
     is.get(c);

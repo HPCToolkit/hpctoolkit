@@ -1,5 +1,6 @@
 // -*-Mode: C++;-*-
 // $Id$
+
 // * BeginRiceCopyright *****************************************************
 // 
 // Copyright ((c)) 2002, Rice University 
@@ -52,7 +53,8 @@
 //*************************** User Include Files ****************************
 
 #include "Args.hpp"
-#include <lib/support/Trace.hpp>
+
+#include <lib/support/diagnostics.h>
 
 //*************************** Forward Declarations **************************
 
@@ -101,13 +103,6 @@ static const char* usage_details =
 "  GNU's demangler, but if <binary> was produced with a proprietary compiler\n"
 "  demangling will likely be unsuccessful. (Also, cross-platform usage.)\n";
 
-#if 0 // FIXME: '[-m <pcmap>]'
-"  -m: Create and write a [PC -> source-line] map to <pcmap>.\n"
-"      The map is extended with loop analysis information and  \n"
-"      can be used to improve the output of 'xProf'.\n"
-"      [*Not fully implemented.*]\n"
-#endif     
-
 
 #define CLP CmdLineParser
 
@@ -123,7 +118,6 @@ CmdLineParser::OptArgDesc Args::optArgs[] = {
                             CLP::ARG_NONE, CLP::DUPOPT_CLOB, NULL },
   { 'c', "compact",         CLP::ARG_NONE, CLP::DUPOPT_CLOB, NULL },
   { 'p', "canonical-paths", CLP::ARG_REQ , CLP::DUPOPT_CAT,  ":" },
-  {  0 , "pcmap",           CLP::ARG_REQ , CLP::DUPOPT_ERR,  NULL }, // hidden
   
   { 'V', "version",     CLP::ARG_NONE, CLP::DUPOPT_CLOB, NULL },
   { 'h', "help",        CLP::ARG_NONE, CLP::DUPOPT_CLOB, NULL },
@@ -211,14 +205,13 @@ Args::Parse(int argc, const char* const argv[])
     // -------------------------------------------------------
     
     // Special options that should be checked first
-    trace = 0;
-    
     if (parser.IsOpt("debug")) { 
-      trace = 1; 
+      int dbg = 1;
       if (parser.IsOptArg("debug")) {
 	const string& arg = parser.GetOptArg("debug");
-	trace = (int)CmdLineParser::ToLong(arg);
+	dbg = (int)CmdLineParser::ToLong(arg);
       }
+      Diagnostics_SetDiagnosticFilterLevel(dbg);
     }
     if (parser.IsOpt("help")) { 
       PrintUsage(std::cerr); 
@@ -248,9 +241,6 @@ Args::Parse(int argc, const char* const argv[])
     if (parser.IsOpt("canonical-paths")) { 
       canonicalPathList = parser.GetOptArg("canonical-paths");
     }
-    if (parser.IsOpt("pcmap")) { 
-      pcMapFile = parser.GetOptArg("pcmap");
-    }
     if (parser.IsOpt("dump-binary")) { 
       dumpBinary = true;
     } 
@@ -278,12 +268,10 @@ Args::Dump(std::ostream& os) const
 {
   os << "Args.cmd= " << GetCmd() << endl; 
   os << "Args.dumpBinary= " << dumpBinary << endl;
-  os << "Args.pcMapFile= " << pcMapFile << endl;
   os << "Args.prettyPrintOutput= " << prettyPrintOutput << endl;
   os << "Args.normalizeScopeTree= " << normalizeScopeTree << endl;
   os << "Args.canonicalPathList= " << canonicalPathList << endl;
   os << "Args.inputFile= " << inputFile << endl;
-  os << "::trace " << ::trace << endl; 
 }
 
 void 

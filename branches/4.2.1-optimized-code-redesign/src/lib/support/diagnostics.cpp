@@ -85,11 +85,11 @@ Diagnostics_TheMostVisitedBreakpointInHistory(const char* filenm,
 }
 
 
-const char* DIAG_UNIMPLEMENTED = 
+const char* DIAG_Unimplemented = 
   "Unimplemented feature: ";
-const char* DIAG_UNEXPECTED_INPUT = 
+const char* DIAG_UnexpectedInput = 
   "Unexpected input: ";
-const char* DIAG_UNEXPECTED_OPR = 
+const char* DIAG_UnexpectedOpr = 
   "Unexpected operator: ";
 
 

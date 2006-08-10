@@ -88,9 +88,9 @@ using XERCES_CPP_NAMESPACE::XMLException;
 
 #include <lib/prof-juicy/PgmScopeTree.hpp>
 
+#include <lib/support/diagnostics.h>
 #include <lib/support/Assertion.h>
 #include <lib/support/Nan.h>
-#include <lib/support/diagnostics.h>
 #include <lib/support/Files.hpp>
 #include <lib/support/Trace.hpp>
 #include <lib/support/pathfind.h>
@@ -133,7 +133,7 @@ main(int argc, char* const* argv)
 
   try {
     ret = realmain(argc, argv);
-  } 
+  }
   catch (const Diagnostics::Exception& x) {
     cerr << "hpcview fatal error: ";
     x.report(cerr);
@@ -163,7 +163,7 @@ realmain(int argc, char* const* argv)
   InitXML();             // exits iff failure 
   
   IFTRACE << "Initializing HTMLDriver: ..." << endl; 
-
+  
   PgmScopeTree scopes("", new PgmScope("")); // name set later
   HTMLDriver htmlDriver(scopes, args.fileHome.c_str(), args.htmlDir.c_str(), args);
              // constructor exits if it can't write to htmlDir 
@@ -185,7 +185,10 @@ realmain(int argc, char* const* argv)
     cerr << x.GetError() << endl;
     exit(1);
   }
-
+  catch (...) {
+    throw;
+  }
+  
   Driver driver(args.deleteUnderscores, args.CopySrcFiles); 
 
   string userFile = args.configurationFile;

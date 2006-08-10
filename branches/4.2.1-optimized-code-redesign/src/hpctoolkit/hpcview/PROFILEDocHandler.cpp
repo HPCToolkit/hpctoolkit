@@ -346,8 +346,11 @@ void PROFILEDocHandler::startElement(const XMLCh* const uri, const XMLCh* const 
       // Metrics can be attached to any element of the tree (not just stmts).
       double val = StrUtil::toDbl(value);
       if (line != -1) { // FIXME change to IsValid
-	CodeInfo* lineNode = procScope->FindStmtRange(line); 
-	lineNode->SetPerfData(metricPerfDataTblIndx, val); 
+	StmtRangeScope* stmt = procScope->FindStmtRange(line);
+	if (!stmt) {
+	  stmt = new StmtRangeScope(procScope, line, line, 0, 0);
+	}
+	stmt->SetPerfData(metricPerfDataTblIndx, val);
       } 
       else {
 	if (procScope) {

@@ -1,5 +1,6 @@
 // -*-Mode: C++;-*-
 // $Id$
+
 // * BeginRiceCopyright *****************************************************
 // 
 // Copyright ((c)) 2002, Rice University 
@@ -80,11 +81,11 @@ using namespace std; // For compatibility with non-std C headers
 
 #include <lib/xml/xml.hpp>
 
+#include <lib/support/diagnostics.h>
 #include <lib/support/StrUtil.hpp>
 #include <lib/support/VectorTmpl.hpp>
 #include <lib/support/SrcFile.hpp>
 #include <lib/support/PtrSetIterator.hpp>
-#include <lib/support/Assertion.h>
 #include <lib/support/Trace.hpp>
 #include <lib/support/realpath.h>
 
@@ -172,7 +173,7 @@ ScopeInfo::ScopeTypeToName(ScopeType tp)
 ScopeInfo::ScopeType 
 ScopeInfo::IntToScopeType(long i)
 {
-  BriefAssertion((i >= 0) && (i < NUMBER_OF_SCOPES));
+  DIAG_Assert((i >= 0) && (i < NUMBER_OF_SCOPES), "");
   return (ScopeType) i;
 }
 
@@ -183,7 +184,7 @@ ScopeInfo::IntToScopeType(long i)
 ScopeInfo::ScopeInfo(ScopeType t, ScopeInfo* mom) 
   : NonUniformDegreeTreeNode(mom), type(t)
 { 
-  BriefAssertion((type == PGM) || (Pgm() == NULL) || !Pgm()->IsFrozen());
+  DIAG_Assert((type == PGM) || (Pgm() == NULL) || !Pgm()->IsFrozen(), "");
   static unsigned int uniqueId = 0;
   uid = uniqueId++;
   height = 0;
@@ -273,21 +274,25 @@ OkToDelete(ScopeInfo *si)
   PgmScope *pgm = si->Pgm();
   if (pgm && pgm->Type() != ScopeInfo::PGM)
      return true;
-  BriefAssertion( pgm == NULL || pgm->Type() == ScopeInfo::PGM);
+  DIAG_Assert( pgm == NULL || pgm->Type() == ScopeInfo::PGM, "");
   return ((pgm == NULL) || !(pgm->IsFrozen()));
 } 
 
 ScopeInfo::~ScopeInfo() 
 {
-  BriefAssertion(OkToDelete(this));
+  DIAG_Assert(OkToDelete(this), "");
   IFTRACE << "~ScopeInfo " << this << " " << ToString() << endl;
 }
 
 
-CodeInfo::CodeInfo(ScopeType t, ScopeInfo* mom, suint begLn, suint endLn) 
+CodeInfo::CodeInfo(ScopeType t, ScopeInfo* mom, suint begLn, suint endLn,
+		   VMA begVMA, VMA endVMA) 
   : ScopeInfo(t, mom), mbegLine(UNDEF_LINE), mendLine(UNDEF_LINE)
 { 
   SetLineRange(begLn, endLn);
+  if (begVMA != 0 && endVMA != 0) {
+    mvmaSet.insert(begVMA, endVMA);
+  }
 }
 
 CodeInfo& 
@@ -324,7 +329,7 @@ PgmScope::PgmScope(const std::string& nm)
 void
 PgmScope::Ctor(const char* nm)
 {
-  BriefAssertion(nm);
+  DIAG_Assert(nm, "");
   frozen = false;
   name = nm;
   groupMap = new GroupScopeMap();
@@ -358,7 +363,7 @@ PgmScope::~PgmScope()
 
 GroupScope::GroupScope(const char* nm, ScopeInfo* mom, 
 		       int begLn, int endLn) 
-  : CodeInfo(GROUP, mom, begLn, endLn)
+  : CodeInfo(GROUP, mom, begLn, endLn, 0, 0)
 {
   Ctor(nm, mom);
 }
@@ -366,7 +371,7 @@ GroupScope::GroupScope(const char* nm, ScopeInfo* mom,
 
 GroupScope::GroupScope(const string& nm, ScopeInfo* mom, 
 		       int begLn, int endLn) 
-  : CodeInfo(GROUP, mom, begLn, endLn)
+  : CodeInfo(GROUP, mom, begLn, endLn, 0, 0)
 {
   Ctor(nm.c_str(), mom);
 }
@@ -375,10 +380,10 @@ GroupScope::GroupScope(const string& nm, ScopeInfo* mom,
 void
 GroupScope::Ctor(const char* nm, ScopeInfo* mom)
 {
-  BriefAssertion(nm);
+  DIAG_Assert(nm, "");
   ScopeType t = (mom) ? mom->Type() : ANY;
-  BriefAssertion((mom == NULL) || (t == PGM) || (t == GROUP) || (t == LM) 
-		 || (t == FILE) || (t == PROC) || (t == LOOP));
+  DIAG_Assert((mom == NULL) || (t == PGM) || (t == GROUP) || (t == LM) 
+	      || (t == FILE) || (t == PROC) || (t == LOOP), "");
   name = nm;
   Pgm()->AddToGroupMap(*this);
 }
@@ -390,14 +395,14 @@ GroupScope::~GroupScope()
 
 
 LoadModScope::LoadModScope(const char* nm, ScopeInfo* mom)
-  : CodeInfo(LM, mom, UNDEF_LINE, UNDEF_LINE)
+  : CodeInfo(LM, mom, UNDEF_LINE, UNDEF_LINE, 0, 0)
 { 
   Ctor(nm, mom);
 }
 
 
 LoadModScope::LoadModScope(const std::string& nm, ScopeInfo* mom)
-  : CodeInfo(LM, mom, UNDEF_LINE, UNDEF_LINE)
+  : CodeInfo(LM, mom, UNDEF_LINE, UNDEF_LINE, 0, 0)
 {
   Ctor(nm.c_str(), mom);
 }
@@ -406,9 +411,9 @@ LoadModScope::LoadModScope(const std::string& nm, ScopeInfo* mom)
 void
 LoadModScope::Ctor(const char* nm, ScopeInfo* mom)
 {
-  BriefAssertion(nm);
+  DIAG_Assert(nm, "");
   ScopeType t = (mom) ? mom->Type() : ANY;
-  BriefAssertion((mom == NULL) || (t == PGM) || (t == GROUP));
+  DIAG_Assert((mom == NULL) || (t == PGM) || (t == GROUP), "");
 
   name = nm;
   Pgm()->AddToLoadModMap(*this);
@@ -423,7 +428,7 @@ LoadModScope::~LoadModScope()
 FileScope::FileScope(const char* srcFileWithPath, bool srcIsReadble_, 
 		     ScopeInfo *mom,
 		     suint begLn, suint endLn)
-  : CodeInfo(FILE, mom, begLn, endLn)
+  : CodeInfo(FILE, mom, begLn, endLn, 0, 0)
 {
   Ctor(srcFileWithPath, srcIsReadble_, mom);
 }
@@ -432,7 +437,7 @@ FileScope::FileScope(const char* srcFileWithPath, bool srcIsReadble_,
 FileScope::FileScope(const string& srcFileWithPath, bool srcIsReadble_, 
 		     ScopeInfo *mom,
 		     suint begLn, suint endLn)
-  : CodeInfo(FILE, mom, begLn, endLn)
+  : CodeInfo(FILE, mom, begLn, endLn, 0, 0)
 {
   Ctor(srcFileWithPath.c_str(), srcIsReadble_, mom);
 }
@@ -442,9 +447,9 @@ void
 FileScope::Ctor(const char* srcFileWithPath, bool srcIsReadble_, 
 		ScopeInfo* mom)
 {
-  BriefAssertion(srcFileWithPath);
+  DIAG_Assert(srcFileWithPath, "");
   ScopeType t = (mom) ? mom->Type() : ANY;
-  BriefAssertion((mom == NULL) || (t == PGM) || (t == GROUP) || (t == LM));
+  DIAG_Assert((mom == NULL) || (t == PGM) || (t == GROUP) || (t == LM), "");
 
   srcIsReadable = srcIsReadble_;
   name = srcFileWithPath;
@@ -473,7 +478,7 @@ FileScope::~FileScope()
 
 ProcScope::ProcScope(const char* n, CodeInfo *mom, const char* ln, 
 		     suint begLn, suint endLn) 
-  : CodeInfo(PROC, mom, begLn, endLn)
+  : CodeInfo(PROC, mom, begLn, endLn, 0, 0)
 {
   Ctor(n, mom, ln);
 }
@@ -481,7 +486,7 @@ ProcScope::ProcScope(const char* n, CodeInfo *mom, const char* ln,
 
 ProcScope::ProcScope(const string& n, CodeInfo *mom, const string& ln, 
 		     suint begLn, suint endLn) 
-  : CodeInfo(PROC, mom, begLn, endLn)
+  : CodeInfo(PROC, mom, begLn, endLn, 0, 0)
 {
   Ctor(n.c_str(), mom, ln.c_str());
 }
@@ -489,9 +494,9 @@ ProcScope::ProcScope(const string& n, CodeInfo *mom, const string& ln,
 void
 ProcScope::Ctor(const char* n, CodeInfo *mom, const char* ln)
 {
-  BriefAssertion(n);
+  DIAG_Assert(n, "");
   ScopeType t = (mom) ? mom->Type() : ANY;
-  BriefAssertion((mom == NULL) || (t == GROUP) || (t == FILE));
+  DIAG_Assert((mom == NULL) || (t == GROUP) || (t == FILE), "");
 
   name = (n) ? n : "";
   linkname = (ln) ? ln : "";
@@ -517,11 +522,11 @@ ProcScope::~ProcScope()
 }
 
 LoopScope::LoopScope(CodeInfo *mom, suint begLn, suint endLn) 
-  : CodeInfo(LOOP, mom, begLn, endLn)
+  : CodeInfo(LOOP, mom, begLn, endLn, 0, 0)
 {
   ScopeType t = (mom) ? mom->Type() : ANY;
-  BriefAssertion((mom == NULL) || (t == GROUP) || (t == FILE) || (t == PROC) 
-		 || (t == LOOP));
+  DIAG_Assert((mom == NULL) || (t == GROUP) || (t == FILE) || (t == PROC) 
+	      || (t == LOOP), "");
 }
 
 LoopScope::~LoopScope()
@@ -529,12 +534,13 @@ LoopScope::~LoopScope()
 }
 
 
-StmtRangeScope::StmtRangeScope(CodeInfo *mom, suint begLn, suint endLn)
-  : CodeInfo(STMT_RANGE, mom, begLn, endLn)
+StmtRangeScope::StmtRangeScope(CodeInfo *mom, suint begLn, suint endLn,
+			       VMA begVMA, VMA endVMA)
+  : CodeInfo(STMT_RANGE, mom, begLn, endLn, begVMA, endVMA)
 {
   ScopeType t = (mom) ? mom->Type() : ANY;
-  BriefAssertion((mom == NULL) || (t == GROUP) || (t == FILE) || (t == PROC)
-		 || (t == LOOP));
+  DIAG_Assert((mom == NULL) || (t == GROUP) || (t == FILE) || (t == PROC)
+	      || (t == LOOP), "");
   if (Proc()) { Proc()->AddToStmtMap(*this); }
 }
 
@@ -544,16 +550,16 @@ StmtRangeScope::~StmtRangeScope()
 
 RefScope::RefScope(CodeInfo *mom, int _begPos, int _endPos, 
 		   const char* refName) 
-  : CodeInfo(REF, mom, mom->begLine(), mom->begLine())      
+  : CodeInfo(REF, mom, mom->begLine(), mom->begLine(), 0, 0)
 {
-  BriefAssertion(mom->Type() == STMT_RANGE);
+  DIAG_Assert(mom->Type() == STMT_RANGE, "");
   begPos = _begPos;
   endPos = _endPos;
   name = refName;
   RelocateRef();
-  BriefAssertion(begPos <= endPos);
-  BriefAssertion(begPos > 0);
-  BriefAssertion(name.length() > 0);
+  DIAG_Assert(begPos <= endPos, "");
+  DIAG_Assert(begPos > 0, "");
+  DIAG_Assert(name.length() > 0, "");
 }
 
 //***************************************************************************
@@ -710,7 +716,7 @@ ScopeInfo::NextScope() const
   } 
   if (next) { 
     CodeInfo *ci = dynamic_cast<CodeInfo*>(next);
-    BriefAssertion(ci);
+    DIAG_Assert(ci, "");
     return ci;
   }
   return NULL;  
@@ -725,7 +731,7 @@ ScopeInfo::PrevScope() const
   } 
   if (prev) { 
     CodeInfo *ci = dynamic_cast<CodeInfo*>(prev);
-    BriefAssertion(ci);
+    DIAG_Assert(ci, "");
     return ci;
   }
   return NULL;
@@ -791,7 +797,7 @@ ScopeInfo::MergePaths(ScopeInfo* lca, ScopeInfo* toDesc, ScopeInfo* fromDesc)
   for (ScopeInfo* x = fromDesc; x != lca; x = x->Parent()) {
     fromPath.push_front(x);
   }
-  BriefAssertion(toPath.size() > 0 && fromPath.size() > 0);
+  DIAG_Assert(toPath.size() > 0 && fromPath.size() > 0, "");
   
   // We merge from the deepest _common_ level of nesting out to lca
   // (shallowest).  
@@ -872,7 +878,7 @@ ScopeInfo::IsMergable(ScopeInfo* toNode, ScopeInfo* fromNode)
 void 
 ScopeInfo::SetPerfData(int i, double d) 
 {
-  BriefAssertion(IsPerfDataIndex(i));
+  DIAG_Assert(IsPerfDataIndex(i), "");
   if (IsNaN((*perfData)[i])) {
     (*perfData)[i] = d;
   } else {
@@ -883,7 +889,7 @@ ScopeInfo::SetPerfData(int i, double d)
 bool 
 ScopeInfo::HasPerfData(int i) const
 {
-  BriefAssertion(IsPerfDataIndex(i));
+  DIAG_Assert(IsPerfDataIndex(i), "");
   ScopeInfo *si = (ScopeInfo*) this;
   return ! IsNaN((*si->perfData)[i]);
 }
@@ -891,7 +897,7 @@ ScopeInfo::HasPerfData(int i) const
 double 
 ScopeInfo::PerfData(int i) const
 {
-  //BriefAssertion(HasPerfData(i));
+  //DIAG_Assert(HasPerfData(i), "");
   ScopeInfo *si = (ScopeInfo*) this;
   return (*si->perfData)[i];
 }
@@ -906,7 +912,7 @@ PgmScope::AddToGroupMap(GroupScope& grp)
 {
   string grpName = grp.Name();
   // STL::map is a Unique Associative Container
-  BriefAssertion(groupMap->count(grpName) == 0);
+  DIAG_Assert(groupMap->count(grpName) == 0, "");
   (*groupMap)[grpName] = &grp;
 }
 
@@ -915,7 +921,7 @@ PgmScope::AddToLoadModMap(LoadModScope& lm)
 {
   string lmName = RealPath(lm.Name().c_str());
   // STL::map is a Unique Associative Container  
-  BriefAssertion(lmMap->count(lmName) == 0);
+  DIAG_Assert(lmMap->count(lmName) == 0, "");
   (*lmMap)[lmName] = &lm;
 }
 
@@ -924,7 +930,7 @@ PgmScope::AddToFileMap(FileScope& f)
 {
   string fName = RealPath(f.Name().c_str());
   // STL::map is a Unique Associative Container  
-  BriefAssertion(fileMap->count(fName) == 0);
+  DIAG_Assert(fileMap->count(fName) == 0, "");
   (*fileMap)[fName] = &f;
 
   IFTRACE << "PgmScope namemap: mapping file name '" << fName 
@@ -938,7 +944,7 @@ FileScope::AddToProcMap(ProcScope& p)
   bool duplicate = (procMap->count(p.Name()) != 0);
 #ifdef SCOPE_TREE_DISALLOW_DUPLICATE_FUNCTION_NAMES_IN_FILE
   // We cannot tolerate any duplicates
-  BriefAssertion(!duplicate && "Duplicate procedure added to file!");
+  DIAG_Assert(!duplicate && "Duplicate procedure added to file!", "");
 #endif  
   if (!duplicate) { 
     (*procMap)[p.Name()] = &p;
@@ -985,7 +991,7 @@ PgmScope::FindFile(const char* nm) const
 ProcScope*
 FileScope::FindProc(const char* nm) const
 {
-  if (procMap && procMap->count(nm) != 0)
+  if (procMap->count(nm) != 0)
     return (*procMap)[nm];
   return NULL;
 }
@@ -993,11 +999,7 @@ FileScope::FindProc(const char* nm) const
 StmtRangeScope*
 ProcScope::FindStmtRange(suint begLn)
 {
-  StmtRangeScope* stmt = (*stmtMap)[begLn];
-  if (!stmt) {
-    stmt = new StmtRangeScope(this, begLn, begLn);
-  }
-  return stmt;
+  return (*stmtMap)[begLn];
 }
 
 //***************************************************************************
@@ -1651,25 +1653,25 @@ CodeInfo::SetLineRange(suint begLn, suint endLn)
   // Sanity Checking:
   //   begLn <= endLn
   //   (begLn == UNDEF_LINE) <==> (endLn == UNDEF_LINE)
-  BriefAssertion(begLn <= endLn);
+  DIAG_Assert(begLn <= endLn, "");
 
   if (begLn == UNDEF_LINE) {
-    BriefAssertion(endLn == UNDEF_LINE);
+    DIAG_Assert(endLn == UNDEF_LINE, "");
     // simply relocate at beginning of sibling list 
     // no range update in parents is necessary
-    BriefAssertion((mbegLine == UNDEF_LINE) && (mendLine == UNDEF_LINE));
+    DIAG_Assert((mbegLine == UNDEF_LINE) && (mendLine == UNDEF_LINE), "");
     if (Parent() != NULL) Relocate();
   } 
   else {
     bool changed = false;
     if (mbegLine == UNDEF_LINE) {
-      BriefAssertion(mendLine == UNDEF_LINE);
+      DIAG_Assert(mendLine == UNDEF_LINE, "");
       // initialize range
       mbegLine = begLn;
       mendLine = endLn;
       changed = true;
     } else {
-      BriefAssertion((mbegLine != UNDEF_LINE) && (mendLine != UNDEF_LINE));
+      DIAG_Assert((mbegLine != UNDEF_LINE) && (mendLine != UNDEF_LINE), "");
       // expand range ?
       if (begLn < mbegLine) { mbegLine = begLn; changed = true; }
       if (endLn > mendLine) { mendLine = endLn; changed = true; }
@@ -1719,7 +1721,7 @@ CodeInfo::Relocate()
 bool
 CodeInfo::ContainsLine(suint ln) const
 {
-   BriefAssertion(ln != UNDEF_LINE);
+   DIAG_Assert(ln != UNDEF_LINE, "");
    if (Type() == FILE) {
      return true;
    } 
@@ -1729,13 +1731,13 @@ CodeInfo::ContainsLine(suint ln) const
 CodeInfo* 
 CodeInfo::CodeInfoWithLine(suint ln) const
 {
-   BriefAssertion(ln != UNDEF_LINE);
+   DIAG_Assert(ln != UNDEF_LINE, "");
    CodeInfo *ci;
    // ln > mendLine means there is no child that contains ln
    if (ln <= mendLine) {
      for (ScopeInfoChildIterator it(this); it.Current(); it++) {
        ci = dynamic_cast<CodeInfo*>(it.Current());
-       BriefAssertion(ci);
+       DIAG_Assert(ci, "");
        if  (ci->ContainsLine(ln)) {
          if (ci->Type() == STMT_RANGE) {  
 	   return ci; // never look inside LINE_SCOPEs 
@@ -1820,7 +1822,7 @@ RefScope::RelocateRef()
 {
   RefScope *prev = dynamic_cast<RefScope*>(PrevScope());
   RefScope *next = dynamic_cast<RefScope*>(NextScope());
-  BriefAssertion((PrevScope() == prev) && (NextScope() == next));
+  DIAG_Assert((PrevScope() == prev) && (NextScope() == next), "");
   if (((!prev) || (prev->endPos <= begPos)) && 
       ((!next) || (next->begPos >= endPos))) {
     return;
@@ -1837,13 +1839,13 @@ RefScope::RelocateRef()
 	 sibling;
 	 sibling = sibling->PrevScope()) {
       RefScope *ref = dynamic_cast<RefScope*>(sibling);
-      BriefAssertion(ref == sibling);
+      DIAG_Assert(ref == sibling, "");
       if (ref->endPos < begPos)  
 	break;
       } 
     if (sibling != NULL) {
       RefScope *nxt = dynamic_cast<RefScope*>(sibling->NextScope());
-      BriefAssertion((nxt == NULL) || (nxt->begPos > endPos));
+      DIAG_Assert((nxt == NULL) || (nxt->begPos > endPos), "");
       LinkAfter(sibling);
     } else {
       LinkBefore(mom->FirstChild());
@@ -1912,11 +1914,11 @@ ScopeInfoTester(int argc, const char** argv)
   cout << "Iterators " << endl;
   { 
     FileScope *file_c = lmScope->FindFile("file.c");
-    BriefAssertion(file_c);
+    DIAG_Assert(file_c, "");
     ProcScope *proc = file_c->FindProc("proc");
-    BriefAssertion(proc);
+    DIAG_Assert(proc, "");
     CodeInfo *loop3 = proc->CodeInfoWithLine(12);
-    BriefAssertion(loop3);
+    DIAG_Assert(loop3, "");
     
     {
       cerr << "*** everything under root " << endl;
