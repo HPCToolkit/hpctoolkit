@@ -43,6 +43,8 @@
 
 #include "hpcprof.hpp"
 
+#include <lib/isa/ISATypes.hpp>
+
 //*************************** Forward Declarations **************************
 
 //***************************************************************************
@@ -90,14 +92,14 @@ class LoadModule {
     
     // FIXME: deprecated
     /// Return the offset to the start of the text segment.
-    virtual pprof_off_t textstart() const = 0;
+    virtual VMA textstart() const = 0;
     /** Retrieve symbol information about a program counter.
         @param pc The program counter.
         @param filename A pointer to the file name or 0 is written here.
         @param lineno The line number or 0 is written here.
         @param funcname The function name or 0 is written here.
     */
-    virtual int find(pprof_off_t pc, const char **filename,
+    virtual int find(VMA pc, const char **filename,
                      unsigned int *lineno, const char **funcname) const = 0;
 };
 
@@ -145,12 +147,12 @@ class BFDLoadModule: public LoadModule {
     // Using locmap will speed up the case where multiple vmon.out files
     // are used and the BFD bug which requires BFD be reinitialized after
     // most line number lookups exists.
-    mutable std::map<pprof_off_t,FuncInfo> locmap_;
+    mutable std::map<VMA,FuncInfo> locmap_;
 
     void cleanup(bool clear_cache = true);
     void read_file(const std::string& name, bool clear_cache = true);
 
-    void find_bfd(pprof_off_t pc, const char **filename,
+    void find_bfd(VMA pc, const char **filename,
                   unsigned int *lineno, const char **funcname) const;
   public:
     BFDLoadModule(const std::string &);
@@ -162,8 +164,8 @@ class BFDLoadModule: public LoadModule {
     std::string name() const;
     void read(const std::string &);
     std::string demangle(const std::string &) const;
-    pprof_off_t textstart() const;
-    int find(pprof_off_t pc, const char **filename,
+    VMA textstart() const;
+    int find(VMA pc, const char **filename,
              unsigned int *lineno, const char **funcname) const;
 };
 

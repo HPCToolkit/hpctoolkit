@@ -40,8 +40,9 @@
 
 //*************************** User Include Files ****************************
 
-#include "proffile.hpp"
 #include "loadmodule.hpp"
+
+#include <lib/prof-juicy/FlatProfileReader.hpp>
 
 //*************************** Forward Declarations **************************
 

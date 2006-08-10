@@ -20,10 +20,6 @@
 //
 //***************************************************************************
 
-#ifdef __GNUC__
-#pragma implementation
-#endif
-
 //************************* System Include Files ****************************
 
 #include <iostream>
@@ -34,9 +30,12 @@
 
 //*************************** User Include Files ****************************
 
-#include "proffile.hpp"
+#include "FlatProfileReader.hpp"
+
 #include <lib/prof-lean/hpcfile_hpcrun.h>
 #include <lib/prof-lean/io.h>
+
+#include <lib/support/diagnostics.h>
 
 //*************************** Forward Declarations **************************
 
@@ -241,7 +240,7 @@ ProfFileEvent::read(FILE *fp, uint64_t load_addr)
   cerr << "  (cnt,offset)=(" << count << "," << offset << ")" << endl; 
 #endif
     
-    pprof_off_t pc = load_addr + offset;
+    VMA pc = load_addr + offset;
     dat_[i] = make_pair(pc, count);
   }
 

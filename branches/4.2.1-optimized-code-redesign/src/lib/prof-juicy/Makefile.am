@@ -64,7 +64,9 @@ include $(top_srcdir)/src/Makeinclude.config
 MYSOURCES = \
 	PerfMetric.hpp PerfMetric.cpp \
 	PgmScopeTree.hpp PgmScopeTree.cpp \
-	PgmScopeTreeIterator.hpp PgmScopeTreeIterator.cpp
+	PgmScopeTreeIterator.hpp PgmScopeTreeIterator.cpp \
+	\
+	FlatProfileReader.hpp FlatProfileReader.cpp
 
 MYCFLAGS   = @HOST_CFLAGS@   $(HPC_IFLAGS)
 MYCXXFLAGS = @HOST_CXXFLAGS@ $(HPC_IFLAGS)

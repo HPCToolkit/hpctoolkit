@@ -64,8 +64,7 @@ include $(top_srcdir)/src/Makeinclude.config
 MYSOURCES = \
 	hpcprof.hpp hpcprof.cpp \
 	summary.hpp summary.cpp \
-	loadmodule.hpp loadmodule.cpp \
-	proffile.hpp proffile.cpp 
+	loadmodule.hpp loadmodule.cpp
 
 MYCFLAGS   = @HOST_CFLAGS@   $(HPC_IFLAGS) @GNUBINUTILS_IFLAGS@
 MYCXXFLAGS = @HOST_CXXFLAGS@ $(HPC_IFLAGS) @GNUBINUTILS_IFLAGS@
@@ -74,7 +73,7 @@ MYLDFLAGS   = \
 	@HOST_CXXFLAGS@
 
 MYLDADD   = \
-	$(HPC_LIBPROFLEAN) \
+	$(HPC_LIBPROFJUICY) $(HPC_LIBPROFLEAN) \
 	@HOST_LIBTREPOSITORY@ \
 	@GNUBINUTILS_LDFLAGS@
 

@@ -114,7 +114,8 @@ am__DEPENDENCIES_1 =
 libHPCprof_juicy_la_DEPENDENCIES = $(am__DEPENDENCIES_1)
 am__objects_1 = libHPCprof_juicy_la-PerfMetric.lo \
 	libHPCprof_juicy_la-PgmScopeTree.lo \
-	libHPCprof_juicy_la-PgmScopeTreeIterator.lo
+	libHPCprof_juicy_la-PgmScopeTreeIterator.lo \
+	libHPCprof_juicy_la-FlatProfileReader.lo
 am_libHPCprof_juicy_la_OBJECTS = $(am__objects_1)
 libHPCprof_juicy_la_OBJECTS = $(am_libHPCprof_juicy_la_OBJECTS)
 DEFAULT_INCLUDES = -I. -I$(srcdir)
@@ -322,7 +323,9 @@ HPC_LIBSUPPORT = $(top_builddir)/src/lib/support/libHPCsupport.la
 MYSOURCES = \
 	PerfMetric.hpp PerfMetric.cpp \
 	PgmScopeTree.hpp PgmScopeTree.cpp \
-	PgmScopeTreeIterator.hpp PgmScopeTreeIterator.cpp
+	PgmScopeTreeIterator.hpp PgmScopeTreeIterator.cpp \
+	\
+	FlatProfileReader.hpp FlatProfileReader.cpp
 
 MYCFLAGS = @HOST_CFLAGS@   $(HPC_IFLAGS)
 MYCXXFLAGS = @HOST_CXXFLAGS@ $(HPC_IFLAGS)
@@ -398,6 +401,7 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCprof_juicy_la-FlatProfileReader.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCprof_juicy_la-PerfMetric.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCprof_juicy_la-PgmScopeTree.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCprof_juicy_la-PgmScopeTreeIterator.Plo@am__quote@
@@ -443,6 +447,13 @@ libHPCprof_juicy_la-PgmScopeTreeIterator.lo: PgmScopeTreeIterator.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='PgmScopeTreeIterator.cpp' object='libHPCprof_juicy_la-PgmScopeTreeIterator.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(LIBTOOL) --tag=CXX --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprof_juicy_la_CXXFLAGS) $(CXXFLAGS) -c -o libHPCprof_juicy_la-PgmScopeTreeIterator.lo `test -f 'PgmScopeTreeIterator.cpp' || echo '$(srcdir)/'`PgmScopeTreeIterator.cpp
+
+libHPCprof_juicy_la-FlatProfileReader.lo: FlatProfileReader.cpp
+@am__fastdepCXX_TRUE@	if $(LIBTOOL) --tag=CXX --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprof_juicy_la_CXXFLAGS) $(CXXFLAGS) -MT libHPCprof_juicy_la-FlatProfileReader.lo -MD -MP -MF "$(DEPDIR)/libHPCprof_juicy_la-FlatProfileReader.Tpo" -c -o libHPCprof_juicy_la-FlatProfileReader.lo `test -f 'FlatProfileReader.cpp' || echo '$(srcdir)/'`FlatProfileReader.cpp; \
+@am__fastdepCXX_TRUE@	then mv -f "$(DEPDIR)/libHPCprof_juicy_la-FlatProfileReader.Tpo" "$(DEPDIR)/libHPCprof_juicy_la-FlatProfileReader.Plo"; else rm -f "$(DEPDIR)/libHPCprof_juicy_la-FlatProfileReader.Tpo"; exit 1; fi
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='FlatProfileReader.cpp' object='libHPCprof_juicy_la-FlatProfileReader.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(LIBTOOL) --tag=CXX --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprof_juicy_la_CXXFLAGS) $(CXXFLAGS) -c -o libHPCprof_juicy_la-FlatProfileReader.lo `test -f 'FlatProfileReader.cpp' || echo '$(srcdir)/'`FlatProfileReader.cpp
 
 mostlyclean-libtool:
 	-rm -f *.lo

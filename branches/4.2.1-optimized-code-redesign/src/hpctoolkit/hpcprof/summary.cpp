@@ -42,6 +42,8 @@
 #include "hpcprof.hpp"
 #include "summary.hpp"
 
+#include <lib/isa/ISATypes.hpp>
+
 //*************************** Forward Declarations **************************
 
 using namespace std;
@@ -524,7 +526,7 @@ Summary::process_lm(const ProfFileLM& proflm, int ev_i_start)
       // Inspect the event data and try to find symbolic info
       for (unsigned int m = 0; m < profevent.num_data(); ++m) {
 	  const ProfFileEventDatum& dat = profevent.datum(m);
-	  pprof_off_t pc = dat.first;
+	  VMA pc = dat.first;
 	  uint32_t count = dat.second;
 
 	  n_sample_[ev_i] += count;
@@ -538,7 +540,7 @@ Summary::process_lm(const ProfFileLM& proflm, int ev_i_start)
 	  const char *c_funcname, *c_filename;
 	  unsigned int lineno;
 	  
-	  pprof_off_t pc1 = pc;
+	  VMA pc1 = pc;
 	  if (lm->type() == LoadModule::DSO && pc > proflm.load_addr()) {
 	      pc1 = pc - proflm.load_addr(); // adjust lookup pc for DSOs
 	      if (debug_) {

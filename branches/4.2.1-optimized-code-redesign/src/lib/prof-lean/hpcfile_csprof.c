@@ -224,8 +224,8 @@ hpcfile_csprof_read(FILE* fs, hpcfile_csprof_data_t* data,
   {
     int num_epoch;
     int num_modules;
-    unsigned int num_trees ;
-    unsigned long long tsamps ;
+    unsigned int num_trees;
+    uint64_t tsamps;
     size_t namelen;
     char module_name[256];
     int i,jj;

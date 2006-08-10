@@ -188,12 +188,12 @@ Driver::MakePerfData(PgmScopeTree& scopes)
     try {
       dataSrc[i]->Make(ret);
     } 
-    catch (const MetricException &mex) {
+    catch (const MetricException &x) {
       cerr << "hpcview fatal error: Could not construct METRIC '" 
 	   << dataSrc[i]->Name() << "'." << endl
-	   << "\t" << mex.error << endl;
+	   << "\t" << x.error << endl;
       exit(1);
-    } 
+    }
     catch (...) {
       throw;
     }

@@ -20,33 +20,35 @@
 //
 //***************************************************************************
 
-#ifndef _proffile_h
-#define _proffile_h
-
-#ifdef __GNUG__
-#pragma interface
-#endif
+#ifndef _FlatProfileReader_
+#define _FlatProfileReader_
 
 //************************* System Include Files ****************************
 
 #include <vector>
 #include <string>
 #include <utility>
-#include <inttypes.h>
 
 #include <stdlib.h>
 #include <stdio.h>
+#include <inttypes.h>
 
 #include <sys/time.h>
 
 //*************************** User Include Files ****************************
 
-#include "hpcprof.hpp"
+#include <include/general.h>
+
+#include "FlatProfileReader.hpp"
+
+#include <lib/isa/ISATypes.hpp>
 
 //*************************** Forward Declarations **************************
 
 
 //***************************************************************************
+
+// FIXME FIXME FIXME: should incrementally read the file
 
 // Basic format for the hpcprof data file:
 //   A profile file (ProfFile) contains one or more load module sections
@@ -55,8 +57,8 @@
 
 //***************************************************************************
 
-// <pc, count>
-typedef std::pair<pprof_off_t, uint32_t> ProfFileEventDatum;
+// <VMA, count>
+typedef std::pair<VMA, uint32_t> ProfFileEventDatum;
 
 // ProfFileEvent: contains the event name, profiling period and
 // profiling data for the event
@@ -141,5 +143,7 @@ class ProfFile {
 
     void dump(std::ostream& o = std::cerr, const char* pre = "") const;
   };
+
+//***************************************************************************
 
 #endif
