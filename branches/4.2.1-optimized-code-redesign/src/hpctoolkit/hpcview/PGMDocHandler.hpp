@@ -207,7 +207,7 @@ private:
   const XMLCh *const attrLnName; 
   const XMLCh *const attrBegin; 
   const XMLCh *const attrEnd; 
-  const XMLCh *const attrId;
+  const XMLCh *const attrVMA;
 };
 
 //****************************************************************************

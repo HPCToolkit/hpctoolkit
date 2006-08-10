@@ -1281,7 +1281,7 @@ string
 PgmScope::ToXML(int dmpFlag) const
 {
   string self = ScopeInfo::ToXML(dmpFlag)
-    + " version=\"4.0\""
+    + " version=\"4.5\""
     + " n" + MakeAttrStr(name, AddXMLEscapeChars(dmpFlag));
   return self;
 }

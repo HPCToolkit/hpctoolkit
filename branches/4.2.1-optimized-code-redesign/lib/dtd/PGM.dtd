@@ -12,27 +12,30 @@
   <!-- Runtime load modules for PGM (e.g., DSOs, exe) -->
   <!ELEMENT LM (G|F)*>
   <!ATTLIST LM
-	n CDATA #REQUIRED>
+	n   CDATA #REQUIRED
+	vma CDATA #IMPLIED>
   <!-- Files contain procedures and source line info -->
   <!ELEMENT F (G|P|L|S)*>
   <!ATTLIST F
 	n CDATA #REQUIRED>
-  <!-- Procedures contain source line info 
-       n: processed name; ln: link name -->
+  <!-- Procedures contain source line info -->
+  <!-- n: processed name; ln: link name    -->
   <!ELEMENT P (G|L|S)*>
   <!ATTLIST P
 	n  CDATA #REQUIRED
 	ln CDATA #IMPLIED
 	b CDATA #IMPLIED
-	e CDATA #IMPLIED>
+	e CDATA #IMPLIED
+	vma CDATA #IMPLIED>
   <!-- Loops -->
   <!ELEMENT L (G|L|S)*>
   <!ATTLIST L
 	b CDATA #IMPLIED
-	e CDATA #IMPLIED>
+	e CDATA #IMPLIED
+	vma CDATA #IMPLIED>
   <!-- Statement/Statement range -->
   <!ELEMENT S EMPTY>
   <!ATTLIST S
 	b CDATA #REQUIRED
 	e CDATA #IMPLIED
-	id CDATA #IMPLIED>
+	vma CDATA #IMPLIED>

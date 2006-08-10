@@ -210,7 +210,7 @@ PGMDocHandler::PGMDocHandler(Doc_t ty,
     attrLnName(XMLString::transcode("ln")),
     attrBegin(XMLString::transcode("b")),
     attrEnd(XMLString::transcode("e")),
-    attrId(XMLString::transcode("id"))
+    attrVMA(XMLString::transcode("vma"))
 {
   // trace = 1;
   docty = ty;
@@ -267,8 +267,9 @@ void PGMDocHandler:: startElement(const XMLCh* const uri,
     double ver = StrUtil::toDbl(verStr);
 
     pgmVersion = ver;
-    if (pgmVersion < 4.0) {
-      string error = "This file format version is outdated; please regenerate the file."; 
+    if (pgmVersion < 4.5) {
+      string error = "Found file format version " + StrUtil::toStr(pgmVersion)
+	+ ": This format is outdated; please regenerate the file."; 
       throw PGMException(error);
     }
     
@@ -375,7 +376,7 @@ void PGMDocHandler:: startElement(const XMLCh* const uri,
 
     // both 'begin' and 'end' are implied (and can be in any order)
     int numAttr = attributes.getLength();
-    BriefAssertion(numAttr >= 0 && numAttr <= 2);
+    BriefAssertion(0 <= numAttr && numAttr <= 3);
 
     int lnB = UNDEF_LINE, lnE = UNDEF_LINE;
     string lineB = getAttr(attributes, attrBegin);
@@ -397,11 +398,12 @@ void PGMDocHandler:: startElement(const XMLCh* const uri,
     int numAttr = attributes.getLength();
     
     // 'begin' is required but 'end' is implied (and can be in any order)
-    BriefAssertion(numAttr == 1 || numAttr == 2);
+    DIAG_Assert(1 <= numAttr && numAttr <= 3, DIAG_UnexpectedInput);
     
     int lnB = UNDEF_LINE, lnE = UNDEF_LINE;
     string lineB = getAttr(attributes, attrBegin);
     string lineE = getAttr(attributes, attrEnd);
+    string vma   = getAttr(attributes, attrVMA);
     if (!lineB.empty()) { lnB = (int)StrUtil::toLong(lineB); }
     if (!lineE.empty()) { lnE = (int)StrUtil::toLong(lineE); }
     BriefAssertion(lnB != UNDEF_LINE);

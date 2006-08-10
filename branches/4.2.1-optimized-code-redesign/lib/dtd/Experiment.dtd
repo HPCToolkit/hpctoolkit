@@ -31,8 +31,8 @@
   <!-- Section profile data                                               -->
   <!-- ****************************************************************** -->
 
-  <!-- The 'vma' attribute below is a list of VMA ranges, e.g.:  -->
-  <!--  vma="[0xbeef-0xdead] [0x1beef-0x1dead]"                    -->
+  <!-- The 'vma' attribute below is a set of VMA ranges, e.g.:  -->
+  <!--  vma="{[0xbeef-0xdead) [0x1beef-0x1dead)}"               -->
 
   <!-- <!ENTITY % Sections "(FlatProfile|CCProfile)+"> -->
 
