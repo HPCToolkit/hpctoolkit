@@ -182,6 +182,8 @@ my ($hpcrunType,
     $PROFILEType) =
     (0, 1, 2, 3);
 
+my $hpcrunIdSuffix = '[hpcrun]';
+
 my $pxmlExt        = '.pxml';
 my $xmlAttrRE      = '\s*=\s*\"([^\"]+)\"'; # grabs everything between ""
 
@@ -982,6 +984,10 @@ sub canonicalizeProfileData
     my $ty = getProfileType($x);
     if ($ty == $PROFILEType) {
       $PROFILEFile = $x;
+    }
+    # NOTE: We now let hpcrun files pass through
+    elsif ($ty == $hpcrunType) {
+      $PROFILEFile = $x + $hpcrunIdSuffix;
     }
     else {
       $rawFile = $x;

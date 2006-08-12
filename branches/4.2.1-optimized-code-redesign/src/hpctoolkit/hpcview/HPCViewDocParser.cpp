@@ -37,7 +37,7 @@
 
 //************************ System Include Files ******************************
 
-#include <iostream> 
+#include <iostream>
 using std::cerr;
 using std::endl;
 

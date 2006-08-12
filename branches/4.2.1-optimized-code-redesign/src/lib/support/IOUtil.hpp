@@ -72,11 +72,13 @@
 
 namespace IOUtil {
 
-// Open either the file 'filenm' or std::cin.  Throws an exception on failure.
+// Open either the file 'filenm' or std::cin (if 'filenm' is
+// NULL). Throws an exception on failure.
 std::istream*
 OpenIStream(const char* filenm);
 
-// Open either the file 'filenm' or std::cout. Throws an exception on failure.
+// Open either the file 'filenm' or std::cout (if 'filenm' is
+// NULL). Throws an exception on failure.
 std::ostream*
 OpenOStream(const char* filenm);
 

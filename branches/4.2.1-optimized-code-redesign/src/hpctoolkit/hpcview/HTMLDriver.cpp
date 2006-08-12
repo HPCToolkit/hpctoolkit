@@ -65,6 +65,7 @@ using std::string;
 #include <lib/support/IntVector.hpp>
 #include <lib/support/StrUtil.hpp>
 #include <lib/support/String.hpp> // FIXME
+#include <lib/support/Files.hpp>
 #include <lib/support/Nan.h>
 #include <lib/support/Assertion.h>
 #include <lib/support/Trace.hpp>
@@ -95,13 +96,6 @@ static const char* HEADER  = "header";
 const DataDisplayInfo 
 HTMLDriver::NameDisplayInfo = DataDisplayInfo("Location", "black", 25, false); 
 
-
-static int makeDir(const char* dir) 
-{
-  /* int ret = */ // should check for success 
-  mkdir(dir, 00755); 
-  return 0; 
-} 
 
 static String
 UniqueNameFilePrefix(const FileScope *f) 
@@ -159,12 +153,9 @@ HTMLDriver::HTMLDriver(const PgmScopeTree& scps,
     htmlDir(htmlDr), args(pgmArgs)
 {
   string scpsDir = string(htmlDir) + "/" + ScopesDir; 
-  if (makeDir(htmlDir) != 0) { exit(1); }
-  if (!pgmArgs.SkipHTMLfiles) {
-    if (makeDir(scpsDir.c_str()) != 0 ||
-	StaticFiles(fileHome, htmlDir).CopyAllFiles(args.OldStyleHTML) != 0) {
-      exit(1);
-    }
+  if (MakeDir(scpsDir.c_str()) != 0 ||
+      StaticFiles(fileHome, htmlDir).CopyAllFiles(args.OldStyleHTML) != 0) {
+    exit(1);
   }
   IFTRACE << "HTMLDriver::" << ToString() << endl; 
 }
@@ -358,9 +349,9 @@ HTMLDriver::WriteIndexFile(PgmScope *pgmScope,
 			   const string& title, const char* header) const
 {
   ::WriteIndexFile(htmlDir, pgmScope, table, perfIndex, 
-           htmlScopes, title, header, true, args.OldStyleHTML); 
+		   htmlScopes, title, header, true, args.OldStyleHTML); 
   ::WriteIndexFile(htmlDir, pgmScope, table, perfIndex, 
-           htmlScopes, title, header, false, args.OldStyleHTML); 
+		   htmlScopes, title, header, false, args.OldStyleHTML); 
 }
 
 static void

@@ -1,4 +1,4 @@
-// -*-C++-*-
+// -*-Mode: C++;-*-
 // $Id$
 
 // * BeginRiceCopyright *****************************************************
@@ -56,11 +56,7 @@ using std::string;
 using namespace std; // For compatibility with non-std C headers
 #endif
 
-#include <unistd.h>
-#include <dirent.h>
-#include <sys/types.h>
-
-//************************* Xerces Include Files *******************************
+//*********************** Xerces Include Files *******************************
 
 #include <xercesc/util/XMLString.hpp>        
 using XERCES_CPP_NAMESPACE::XMLString;
@@ -74,25 +70,20 @@ using XERCES_CPP_NAMESPACE::XMLException;
 
 //************************* User Include Files *******************************
 
-// XML related includes 
+#include "Args.hpp"
+#include "Driver.hpp"
 #include "PROFILEDocHandler.hpp"
 #include "HPCViewDocParser.hpp"
 #include "HPCViewXMLErrHandler.hpp"
 
-// Argument Handling
-#include "Args.hpp"
-
-// ScopeInfo tree related includes 
-#include "Driver.hpp"
-#include "HTMLDriver.hpp"
-
 #include <lib/prof-juicy/PgmScopeTree.hpp>
 
 #include <lib/support/diagnostics.h>
+#include <lib/support/Trace.hpp>
 #include <lib/support/Assertion.h>
 #include <lib/support/Nan.h>
 #include <lib/support/Files.hpp>
-#include <lib/support/Trace.hpp>
+#include <lib/support/IOUtil.hpp>
 #include <lib/support/pathfind.h>
 #include <lib/support/realpath.h>
 
@@ -161,14 +152,11 @@ realmain(int argc, char* const* argv)
   InitNaN();
   Args args(argc,argv);  // exits if error on command line
   InitXML();             // exits iff failure 
-  
-  IFTRACE << "Initializing HTMLDriver: ..." << endl; 
-  
-  PgmScopeTree scopes("", new PgmScope("")); // name set later
-  HTMLDriver htmlDriver(scopes, args.fileHome.c_str(), args.htmlDir.c_str(), args);
-             // constructor exits if it can't write to htmlDir 
-             // or read files in fileHome
-  IFTRACE << endl; 
+
+  // FIXME: pulled out of HTMLDriver
+  if (MakeDir(args.dbDir.c_str()) != 0) {
+    exit(1);
+  }
   
   IFTRACE << "Initializing Driver from " << args.configurationFile 
 	  << ": ..." << endl; 
@@ -185,16 +173,13 @@ realmain(int argc, char* const* argv)
     cerr << x.GetError() << endl;
     exit(1);
   }
-  catch (...) {
-    throw;
-  }
   
   Driver driver(args.deleteUnderscores, args.CopySrcFiles); 
 
   string userFile = args.configurationFile;
-  HPCViewXMLErrHandler errReporter(userFile, tmpFile, NUM_PREFIX_LINES, true);
   try {
-    HPCViewDocParser(driver, tmpFile, errReporter);
+    HPCViewXMLErrHandler errHndlr(userFile, tmpFile, NUM_PREFIX_LINES, true);
+    HPCViewDocParser(driver, tmpFile, errHndlr);
   }
   catch (const HPCViewDocException& x) {
     unlink(tmpFile.c_str());
@@ -211,45 +196,29 @@ realmain(int argc, char* const* argv)
   unlink(tmpFile.c_str()); 
 
   //-------------------------------------------------------
-  // Create metrics
+  // Correlate program source with metrics
   //-------------------------------------------------------
   IFTRACE << "The Driver is now: " << driver.ToString() << endl; 
   IFTRACE << "Reading the metrics: ..." << endl; 
+  PgmScopeTree scopes("", new PgmScope("")); // name set later  
   driver.MakePerfData(scopes); 
   IFTRACE << endl; 
 
-  if ( args.OutputInitialScopeTree && args.OutputFinalScopeTree ) {
-    cerr << "Only final scope tree (in XML) will be output" << endl;
-    args.OutputInitialScopeTree = false;
-  }
-
-  if ( args.OutputInitialScopeTree ) {
-    if ( args.XML_ToStdout ) { 
-      cerr << "The initial scope tree (in XML) will appear on stdout" << endl; 
-      driver.XML_Dump(scopes.GetRoot());
-    } else {
-      string dmpFile = args.htmlDir + "/" + args.XML_Dump_File;
-      cerr << "The initial scope tree (in XML) will be written to " 
-	   << dmpFile << endl;
-      std::ofstream XML_outFile(dmpFile.c_str());
-      if ( !XML_outFile ) {
-	cerr << "Output file open failed; skipping write of initial scope tree"
-             << endl;
-      }
-      driver.XML_Dump(scopes.GetRoot(), XML_outFile);
-    }
+  if (args.OutputInitialScopeTree) {
+    int flg = (args.XML_DumpAllMetrics) ? 0 : PgmScopeTree::DUMP_LEAF_METRICS;
+    driver.XML_Dump(scopes.GetRoot(), flg, cerr);
   }
 
   //-------------------------------------------------------
-  // Traverse the tree and removes all the nodes that don't have profile
-  // data associated with them.
+  // Prune the scope tree (remove scopes without metrics)
   //-------------------------------------------------------
-  // do not remove the scopes with no profile data if the output is flat CSV
-  if (! (args.FlatCSVOutput || args.FlatTSVOutput) )
+  
+  if (args.OutFilename_CSV.empty() && args.OutFilename_TSV.empty()) {
+    // do not prune
     UpdateScopeTree( scopes.GetRoot(), driver.NumberOfMetrics() );
+  }
   
   scopes.GetRoot()->Freeze(); // disallow further additions to tree 
-
   scopes.CollectCrossReferences(); // collect cross referencing information
 
   if (trace > 1) { 
@@ -259,94 +228,57 @@ realmain(int argc, char* const* argv)
   // FiniXML(); eraxxon: causes a seg fault.
 
   //-------------------------------------------------------
-  // browseable database generation
+  // Generate Experiment database
   //-------------------------------------------------------
-  if ( !args.SkipHTMLfiles ) {
-    IFTRACE << "Writing html output to " << args.htmlDir << ". ";
-    if ( args.OldStyleHTML ) {
-      IFTRACE << "Generate old style HTML (flatten views in separate files): ..." 
-              << endl; 
-    }
-    else {
-      IFTRACE << "Generate new style HTML (default: flatten views of a scope are in the same files): ..." 
-              << endl; 
-    }
-    if (htmlDriver.Write(driver) == false) {
-      cerr << "ERROR: Could not generate html output." << endl; 
-    }; 
-    IFTRACE << endl; 
-  } else {
-    cerr << "HTML file generation being suppressed." << endl;
-  }
-
-  if ( args.CopySrcFiles ) {
+  if (args.CopySrcFiles) {
     cerr << "Copying all source files reached by REPLACE/PATH statements to "
-	 << args.htmlDir << endl;
+	 << args.dbDir << endl;
 
     // Note that this may modify file names in the ScopeTree
-    CopySourceFiles(scopes.GetRoot(), driver.PathVec(), args.htmlDir);
+    CopySourceFiles(scopes.GetRoot(), driver.PathVec(), args.dbDir);
   }
 
-  if ( args.FlatCSVOutput ) {
-    if ( args.XML_ToStdout ) {
-      cerr << "The final scope tree (in CSV) will appear on stdout" << endl; 
-      driver.CSV_Dump(scopes.GetRoot());
-    } else {
-      string dmpFile = args.htmlDir + "/" + args.XML_Dump_File;
-      
-      cerr << "The final scope tree (in CSV) will be written to "
-	   << dmpFile << endl;
-      std::ofstream XML_outFile(dmpFile.c_str());
-      if ( !XML_outFile ) {
-	cerr << "Output file open failed; skipping write of final scope tree."
-             << endl;
-      }
-      driver.CSV_Dump(scopes.GetRoot(), XML_outFile);
-    }
-  } else
-  if ( args.FlatTSVOutput ) {
-    if ( args.XML_ToStdout ) {
-      cerr << "The final scope tree (in TSV) will appear on stdout" << endl; 
-      driver.TSV_Dump(scopes.GetRoot());
-    } else {
-      string dmpFile = args.htmlDir + "/" + args.XML_Dump_File;
-      
-      cerr << "The final scope tree (in TSV) will be written to "
-	   << dmpFile << endl;
-      std::ofstream XML_outFile(dmpFile.c_str());
-      if ( !XML_outFile ) {
-	cerr << "Output file open failed; skipping write of final scope tree."
-             << endl;
-      }
-      driver.TSV_Dump(scopes.GetRoot(), XML_outFile);
-    }
-  } else
-  if ( args.OutputFinalScopeTree ) {
-    int dumpFlags = (args.XML_DumpAllMetrics) ?
-      0 : PgmScopeTree::DUMP_LEAF_METRICS;
+  if (!args.OutFilename_CSV.empty()) {
+    const string& fnm = args.OutFilename_CSV;
+    string fpath = args.dbDir + "/" + fnm;
+    const char* osnm = (fnm == "-") ? NULL : fpath.c_str();
+    std::ostream* os = IOUtil::OpenOStream(osnm);
+    cerr << "Writing final scope tree (in CSV) to " << fnm << endl;
+    driver.CSV_Dump(scopes.GetRoot(), *os);
+    IOUtil::CloseStream(os);
+  } 
 
-    if ( args.XML_ToStdout ) {
-      cerr << "The final scope tree (in XML) will appear on stdout" << endl; 
-      driver.XML_Dump(scopes.GetRoot(), dumpFlags);
-    } else {
-      string dmpFile = args.htmlDir + "/" + args.XML_Dump_File;
-      
-      cerr << "The final scope tree (in XML) will be written to "
-	   << dmpFile << endl;
-      std::ofstream XML_outFile(dmpFile.c_str());
-      if ( !XML_outFile ) {
-	cerr << "Output file open failed; skipping write of final scope tree."
-             << endl;
-      }
-      driver.XML_Dump(scopes.GetRoot(), dumpFlags, XML_outFile);
-    }
+  if (!args.OutFilename_TSV.empty()) {
+    const string& fnm = args.OutFilename_TSV;
+    string fpath = args.dbDir + "/" + fnm;
+    const char* osnm = (fnm == "-") ? NULL : fpath.c_str();
+    std::ostream* os = IOUtil::OpenOStream(osnm);
+    cerr << "Writing final scope tree (in TSV) to " << fnm << endl;
+    driver.TSV_Dump(scopes.GetRoot(), *os);
+    IOUtil::CloseStream(os);
   }
   
+  if (args.OutFilename_XML != "no") {
+    int flg = (args.XML_DumpAllMetrics) ? 0 : PgmScopeTree::DUMP_LEAF_METRICS;
+
+    const string& fnm = args.OutFilename_XML;
+    string fpath = args.dbDir + "/" + fnm;
+    const char* osnm = (fnm == "-") ? NULL : fpath.c_str();
+    std::ostream* os = IOUtil::OpenOStream(osnm);
+    cerr << "Writing scope tree (in XML) to " << fnm << endl;
+    driver.XML_Dump(scopes.GetRoot(), flg, *os);
+    IOUtil::CloseStream(os);
+  }
+
+  //-------------------------------------------------------
+  // Cleanup
+  //-------------------------------------------------------
   ClearPerfDataSrcTable(); 
   FiniXML();
   
   return 0; 
 } 
+
 
 //****************************************************************************
 

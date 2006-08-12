@@ -1,5 +1,6 @@
+// -*-Mode: C++;-*-
 // $Id$
-// -*-C++-*-
+
 // * BeginRiceCopyright *****************************************************
 // 
 // Copyright ((c)) 2002, Rice University 
@@ -53,6 +54,9 @@
 //          otherwise returns an error message in a static variable 
 //          which is overwritten with each call to CopyFile
 extern const char* CopyFile(const char* destFile, ...); 
+
+
+extern int MakeDir(const char* dir);
 
 
 // retuns a name that can safely be used for a temporary file 

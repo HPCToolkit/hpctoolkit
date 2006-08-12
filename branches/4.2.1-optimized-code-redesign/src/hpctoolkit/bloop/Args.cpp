@@ -50,6 +50,13 @@
 
 //************************* System Include Files ****************************
 
+#include <iostream>
+using std::cerr;
+using std::endl;
+
+#include <string>
+using std::string;
+
 //*************************** User Include Files ****************************
 
 #include "Args.hpp"
@@ -57,10 +64,6 @@
 #include <lib/support/diagnostics.h>
 
 //*************************** Forward Declarations **************************
-
-using std::cerr;
-using std::endl;
-using std::string;
 
 //***************************************************************************
 
@@ -194,7 +197,6 @@ void
 Args::Parse(int argc, const char* const argv[])
 {
   try {
-
     // -------------------------------------------------------
     // Parse the command line
     // -------------------------------------------------------
@@ -252,12 +254,12 @@ Args::Parse(int argc, const char* const argv[])
     }
     inputFile = parser.GetArg(0);
   }
-  catch (CmdLineParser::ParseError& e) {
-    PrintError(std::cerr, e.GetMessage());
+  catch (const CmdLineParser::ParseError& x) {
+    PrintError(std::cerr, x.GetMessage());
     exit(1);
   }
-  catch (CmdLineParser::Exception& e) {
-    e.Report(std::cerr);
+  catch (const CmdLineParser::Exception& x) {
+    x.Report(std::cerr);
     exit(1);
   }
 }
@@ -284,12 +286,12 @@ Args::DDump() const
 //***************************************************************************
 
 #if 0
-#include <dirent.h>
-void Args::setBloopHome() 
+void 
+Args::setHPCHome() 
 {
-  char * home = getenv(HPCTOOLS); 
+  char * home = getenv(HPCTOOLKIT.c_str()); 
   if (home == NULL) {
-    cerr << "Error: Please set your " << HPCTOOLS << " environment variable."
+    cerr << "Error: Please set your " << HPCTOOLKIT << " environment variable."
 	 << endl; 
     exit(1); 
   } 
@@ -304,7 +306,7 @@ void Args::setBloopHome()
     exit(1); 
   } 
   closedir(fp); 
-  bloopHome = String(home);
+  hpcHome = home; 
 } 
 #endif  
 

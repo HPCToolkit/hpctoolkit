@@ -1,5 +1,6 @@
+// -*-Mode: C++;-*-
 // $Id$
-// -*-C++-*-
+
 // * BeginRiceCopyright *****************************************************
 // 
 // Copyright ((c)) 2002, Rice University 
@@ -118,6 +119,16 @@ CopyFile(const char* destFile, ...)
     return NULL; 
   } 
 } 
+
+
+int 
+MakeDir(const char* dir)
+{
+  /* int ret = */ // should check for success 
+  mkdir(dir, 00755); 
+  return 0; 
+} 
+
 
 int 
 CountChar(const char* file, char c) 

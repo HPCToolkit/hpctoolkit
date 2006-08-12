@@ -66,24 +66,27 @@ MYSOURCES = \
 	Args.hpp Args.cpp \
 	Driver.hpp Driver.cpp \
 	\
+	PerfIndex.hpp \
 	DerivedPerfMetrics.hpp DerivedPerfMetrics.cpp \
 	EvalNode.hpp EvalNode.cpp \
-	HPCViewDocParser.hpp HPCViewDocParser.cpp \
+	NodeRetriever.hpp NodeRetriever.cpp \
+	\
 	HPCViewSAX2.hpp HPCViewSAX2.cpp \
 	HPCViewXMLErrHandler.hpp HPCViewXMLErrHandler.cpp \
-	HTMLDriver.hpp HTMLDriver.cpp \
-	HTMLFile.hpp HTMLFile.cpp \
-	HTMLScopes.hpp HTMLScopes.cpp \
-	HTMLSrcFiles.hpp HTMLSrcFiles.cpp \
-	HTMLTable.hpp HTMLTable.cpp \
+	HPCViewDocParser.hpp HPCViewDocParser.cpp \
 	MathMLExpr.hpp MathMLExpr.cpp \
-	NodeRetriever.hpp NodeRetriever.cpp \
 	PGMDocHandler.hpp PGMDocHandler.cpp \
-	PROFILEDocHandler.hpp PROFILEDocHandler.cpp \
-	PerfIndex.hpp \
-	StaticFiles.hpp StaticFiles.cpp
+	PROFILEDocHandler.hpp PROFILEDocHandler.cpp
 
 # Deprecated: XMLAdapter.hpp XMLAdapter.cpp
+# Deprecated:
+#	HTMLDriver.hpp HTMLDriver.cpp
+#	HTMLFile.hpp HTMLFile.cpp
+#	HTMLScopes.hpp HTMLScopes.cpp
+#	HTMLSrcFiles.hpp HTMLSrcFiles.cpp
+#	HTMLTable.hpp HTMLTable.cpp
+#	StaticFiles.hpp StaticFiles.cpp
+
 
 MYCFLAGS   = @HOST_CFLAGS@   $(HPC_IFLAGS)
 MYCXXFLAGS = @HOST_CXXFLAGS@ $(HPC_IFLAGS) @XERCES_IFLAGS@

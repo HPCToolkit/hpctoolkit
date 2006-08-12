@@ -97,7 +97,7 @@ std::ostream*
 OpenOStream(const char* filenm)
 {
   if (!filenm || filenm[0] == '\0') {
-    // Use cin
+    // Use cout
     return &std::cout;
   } 
   else {

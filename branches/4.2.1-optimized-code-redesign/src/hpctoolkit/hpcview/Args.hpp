@@ -1,5 +1,6 @@
+// -*-Mode: C++;-*-
 // $Id$
-// -*-C++-*-
+
 // * BeginRiceCopyright *****************************************************
 // 
 // Copyright ((c)) 2002, Rice University 
@@ -50,20 +51,21 @@
 #ifndef Args_h
 #define Args_h
 
-//************************ System Include Files ******************************
+//************************* System Include Files ****************************
 
 #include <iostream>
 #include <string>
 
-//************************* User Include Files *******************************
+//*************************** User Include Files ****************************
 
-//************************ Forward Declarations ******************************
+#include <include/general.h>
+#include <lib/support/CmdLineParser.hpp>
 
-#define THRESHOLDING_DISABLED -1.0
+//*************************** Forward Declarations **************************
 
 extern int fileTrace;
 
-//****************************************************************************
+//***************************************************************************
 
 class Args {
 public: 
@@ -80,42 +82,31 @@ public:
   
   // Error
   void PrintError(std::ostream& os, const char* msg) const;
-  //void PrintError(std::ostream& os, const std::string& msg) const;
+  void PrintError(std::ostream& os, const std::string& msg) const;
 
   // Dump
   void Dump(std::ostream& os = std::cerr) const;
   void DDump() const;
-  
-  void Version();
-  void Usage();
 
 public:  
   static const std::string HPCTOOLKIT;
   std::string hpcHome;
-  std::string fileHome; 
 
   // Parsed Data: Command
-  std::string cmd; 
+  const std::string& GetCmd() const;
 
   // Parsed Data: optional arguments
-  std::string htmlDir;
-  bool OutputInitialScopeTree;
-  bool OutputFinalScopeTree;
-  bool CopySrcFiles;
-  bool SkipHTMLfiles;
-  bool OldStyleHTML;
-  bool XML_ToStdout;
-  bool XML_DumpAllMetrics;
-  std::string XML_Dump_File;
-  bool FlatCSVOutput;
-  bool FlatTSVOutput;
+  std::string dbDir;
+  std::string OutFilename_XML; // disable: "no", stdout: "-"
+  std::string OutFilename_CSV; // disable: ""  , stdout: "-"
+  std::string OutFilename_TSV; // disable: ""  , stdout: "-"
 
-  int depthToFlatten; 
-  int maxLinesPerPerfPane; 
+  bool CopySrcFiles;
+  bool XML_DumpAllMetrics;
+
   int deleteUnderscores;
   int warningLevel;
-
-  float scopeThresholdPercent; 
+  bool OutputInitialScopeTree;
 
   // Parsed Data: arguments
   std::string configurationFile;
@@ -124,6 +115,9 @@ private:
   void Ctor();
   void setHPCHome(); 
 
+private:
+  static CmdLineParser::OptArgDesc optArgs[];
+  CmdLineParser parser;
 }; 
 
 #endif
