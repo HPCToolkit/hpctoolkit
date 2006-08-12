@@ -86,7 +86,6 @@ using namespace std; // For compatibility with non-std C headers
 #include <lib/support/VectorTmpl.hpp>
 #include <lib/support/SrcFile.hpp>
 #include <lib/support/PtrSetIterator.hpp>
-#include <lib/support/Trace.hpp>
 #include <lib/support/realpath.h>
 
 //*************************** Forward Declarations **************************
@@ -281,7 +280,7 @@ OkToDelete(ScopeInfo *si)
 ScopeInfo::~ScopeInfo() 
 {
   DIAG_Assert(OkToDelete(this), "");
-  IFTRACE << "~ScopeInfo " << this << " " << ToString() << endl;
+  DIAG_DevMsg(3, "~ScopeInfo " << this << " " << ToString());
 }
 
 
@@ -933,8 +932,8 @@ PgmScope::AddToFileMap(FileScope& f)
   DIAG_Assert(fileMap->count(fName) == 0, "");
   (*fileMap)[fName] = &f;
 
-  IFTRACE << "PgmScope namemap: mapping file name '" << fName 
-	  << "' to FileScope* " << hex << &f << dec << endl;
+  DIAG_DevMsg(2, "PgmScope namemap: mapping file name '" << fName 
+	      << "' to FileScope* " << &f);
 }
 
 void 
@@ -949,9 +948,9 @@ FileScope::AddToProcMap(ProcScope& p)
   if (!duplicate) { 
     (*procMap)[p.Name()] = &p;
   }
-  IFTRACE << "FileScope (" << hex << this << dec
-	  << ") namemap: mapping proc name '" << p.Name()
-	  << "' to ProcScope* " << hex << &p << dec << endl;
+  DIAG_DevMsg(2, "FileScope (" << this 
+	      << ") namemap: mapping proc name '" << p.Name()
+		<< "' to ProcScope* " << &p);
 } 
 
 void 

@@ -214,14 +214,13 @@ private:
 
 class PGMException : public Diagnostics::Exception {
 public:
-  PGMException(const std::string m,
+  PGMException(const std::string x,
 	       const char* filenm = NULL, unsigned int lineno = 0) 
-    : Diagnostics::Exception(m, filenm, lineno)
+    : Diagnostics::Exception(x, filenm, lineno)
   { }
 
-  virtual void report(std::ostream& os) const { 
-    os << "PGM file processing error (PGMException): " 
-       << message() << std::endl;
+  virtual std::string message() const { 
+    return "PGM file error [PGMException]: " + what();
   }
 
 private:

@@ -73,6 +73,8 @@ using std::string;
 #include <lib/binutils/PCToSrcLineMap.hpp>
 #include <lib/binutils/LoadModuleInfo.hpp>
 
+#include <lib/support/diagnostics.h>
+
 //*************************** Forward Declarations ***************************
 
 typedef std::list<string>          StringList;
@@ -97,16 +99,20 @@ main(int argc, char* argv[])
   try {
     return real_main(argc, argv);
   }
-  catch (CmdLineParser::Exception& e) {
-    e.Report(cerr); // fatal error
+  catch (const Diagnostics::Exception& x) {
+    DIAG_EMsg(x.message());
     exit(1);
-  }
-  catch (std::bad_alloc& x) {
-    cerr << "Error: Memory alloc failed!\n";
+  } 
+  catch (const std::bad_alloc& x) {
+    DIAG_EMsg("[std::bad_alloc] " << x.what());
     exit(1);
-  }
+  } 
+  catch (const std::exception& x) {
+    DIAG_EMsg("[std::exception] " << x.what());
+    exit(1);
+  } 
   catch (...) {
-    cerr << "Unknown exception caught\n";
+    DIAG_EMsg("Unknown exception encountered!");
     exit(2);
   }
 }

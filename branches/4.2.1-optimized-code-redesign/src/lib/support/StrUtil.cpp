@@ -101,7 +101,7 @@ toLong(const char* str, unsigned* endidx)
     *endidx = (endptr - str) / sizeof(char);
   }
   if (errno || (!endidx && endptr && strlen(endptr) > 0)) {
-    string msg = "StrUtil::toLong: Cannot convert `" + string(str) 
+    string msg = "[StrUtil::toLong] Cannot convert `" + string(str) 
       + "' to integral value.";
     if (errno) { // not always set
       msg += ". ";
@@ -126,7 +126,7 @@ toUInt64(const char* str, unsigned* endidx)
     *endidx = (endptr - str) / sizeof(char);
   }
   if (errno || (!endidx && endptr && strlen(endptr) > 0)) {
-    string msg = "StrUtil::toUInt64: Cannot convert `" + string(str)
+    string msg = "[StrUtil::toUInt64] Cannot convert `" + string(str)
       + "' to integral value.";
     if (errno) { // not always set
       msg += ". ";
@@ -151,7 +151,7 @@ toDbl(const char* str, unsigned* endidx)
     *endidx = (endptr - str) / sizeof(char);
   }
   if (errno || (!endidx && endptr && strlen(endptr) > 0)) {
-    string msg = "StrUtil::toDbl: Cannot convert `" + string(str)
+    string msg = "[StrUtil::toDbl] Cannot convert `" + string(str)
       + "' to real value.";
     if (errno) { // not always set
       msg += ". ";

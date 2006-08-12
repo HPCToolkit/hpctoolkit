@@ -64,19 +64,19 @@
 // Exception
 //****************************************************************************
 
-Diagnostics::Exception::Exception(const char* m,
+Diagnostics::Exception::Exception(const char* x,
 				  const char* filenm, unsigned int lineno)
 {
-  std::string str = m;
+  std::string str = x;
   Ctor(str, filenm, lineno);
   Diagnostics_TheMostVisitedBreakpointInHistory(filenm, lineno);
 }
 
 
-Diagnostics::Exception::Exception(const std::string m,
+Diagnostics::Exception::Exception(const std::string x,
 				  const char* filenm, unsigned int lineno)
 {
-  Ctor(m, filenm, lineno);
+  Ctor(x, filenm, lineno);
   Diagnostics_TheMostVisitedBreakpointInHistory(filenm, lineno);
 }
 
@@ -87,35 +87,33 @@ Diagnostics::Exception::~Exception()
 
 
 void 
-Diagnostics::Exception::Ctor(const std::string& m, 
+Diagnostics::Exception::Ctor(const std::string& x, 
 			     const char* filenm, unsigned int lineno)
 {
+  mWhat = x;
   if (filenm && lineno != 0) {
     std::ostringstream os;
-    os << "[" << filenm << ":" << lineno << "]: " << m;
-    msg = os.str();
+    os << "[" << filenm << ":" << lineno << "]: " << x;
+    mWhere = os.str();
   } 
-  else {
-    msg = m;
-  }
 }
 
 //****************************************************************************
 // FatalException
 //****************************************************************************
 
-Diagnostics::FatalException::FatalException(const char* m,
+Diagnostics::FatalException::FatalException(const char* x,
 					    const char* filenm, 
 					    unsigned int lineno)
-  : Diagnostics::Exception(m, filenm, lineno)
+  : Diagnostics::Exception(x, filenm, lineno)
 {
 }
 
 
-Diagnostics::FatalException::FatalException(const std::string m,
+Diagnostics::FatalException::FatalException(const std::string x,
 					    const char* filenm, 
 					    unsigned int lineno)
-  : Diagnostics::Exception(m, filenm, lineno)
+  : Diagnostics::Exception(x, filenm, lineno)
 {
 }
 

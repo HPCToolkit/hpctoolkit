@@ -79,7 +79,7 @@ static const char* version_info =
 #include <include/HPCToolkitVersionInfo.h>
 
 static const char* usage_summary =
-"[options] <config-file>\n";
+"[options] <config-file> [<profile-files>]\n";
 
 static const char* usage_details =
 "[hpcprof] generates high level metrics from raw profiling data and\n"
@@ -87,11 +87,13 @@ static const char* usage_details =
 "generates an Experiment database (ExperimentXML format) for use with\n"
 "hpcviewer.\n"
 "\n"
+"(<profile-files> is a list of hpcrun files.)\n"
+"\n"
 "General options:\n"
 "  -v, --verbose [<n>]  Verbose: generate progress messages to stderr at\n"
-"                       verbosity level <n>.  (Use n=1 to debug path\n"
+"                       verbosity level <n>.  [1]  (Use n=2 to debug path\n"
 "                       replacement if metric and program structure is not\n"
-"                       properly matched.) *** \n"
+"                       properly matched.)\n"
 "  -V, --version        Print version information.\n"
 "  -h, --help           Print this help.\n"
 #if 0
@@ -194,8 +196,9 @@ Args::Ctor()
   XML_DumpAllMetrics   = true;  // dump metrics on interior nodes
 
   deleteUnderscores = 1;
-  warningLevel = 0;
   OutputInitialScopeTree = false; // used for debugging at this point
+
+  Diagnostics_SetDiagnosticFilterLevel(1);
 }
 
 
@@ -276,14 +279,12 @@ Args::Parse(int argc, const char* const argv[])
 
     // Check for other options:
     if (parser.IsOpt("verbose")) { 
-      warningLevel = 1;
+      int verb = 1;
       if (parser.IsOptArg("verbose")) {
 	const string& arg = parser.GetOptArg("verbose");
-	warningLevel = (int)CmdLineParser::ToLong(arg);
+	verb = (int)CmdLineParser::ToLong(arg);
       }
-      if (warningLevel >= 1) {
-	fileTrace++; 
-      }
+      Diagnostics_SetDiagnosticFilterLevel(verb);
     }
     
     // Check for other options: Output options
@@ -333,18 +334,23 @@ Args::Parse(int argc, const char* const argv[])
     }
     
     // Check for required arguments
-    if (parser.GetNumArgs() != 1) {
+    if (parser.GetNumArgs() < 1) {
       PrintError(std::cerr, "Incorrect number of arguments!");
       exit(1);
     }
     configurationFile = parser.GetArg(0);
+
+    for (unsigned i = 1; i < parser.GetNumArgs(); ++i) {
+      profileFiles.push_back(parser.GetArg(0));
+    }
+
   }
   catch (const CmdLineParser::ParseError& x) {
-    PrintError(std::cerr, x.GetMessage());
+    PrintError(std::cerr, x.what());
     exit(1);
   }
   catch (const CmdLineParser::Exception& x) {
-    x.Report(std::cerr);
+    DIAG_EMsg(x.message());
     exit(1);
   }
 }

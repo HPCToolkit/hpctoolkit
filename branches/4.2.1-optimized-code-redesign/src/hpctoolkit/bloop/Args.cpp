@@ -255,11 +255,11 @@ Args::Parse(int argc, const char* const argv[])
     inputFile = parser.GetArg(0);
   }
   catch (const CmdLineParser::ParseError& x) {
-    PrintError(std::cerr, x.GetMessage());
+    PrintError(std::cerr, x.what());
     exit(1);
   }
   catch (const CmdLineParser::Exception& x) {
-    x.Report(std::cerr);
+    DIAG_EMsg(x.message());
     exit(1);
   }
 }

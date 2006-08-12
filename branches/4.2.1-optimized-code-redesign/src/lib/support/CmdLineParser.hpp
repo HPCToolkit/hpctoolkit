@@ -60,9 +60,11 @@
 #include <vector>
 #include <string>
 
+#include <inttypes.h> /* commonly available, unlike <stdint.h> */
+
 //*************************** User Include Files ****************************
 
-#include <inttypes.h> /* commonly available, unlike <stdint.h> */
+#include "diagnostics.h"
 
 //*************************** Forward Declarations ***************************
 
@@ -182,37 +184,52 @@ public:
   // Exception thrown when errors are encountered
   // ---------------------------------------------------------
   
-  class Exception {
+  class Exception : public Diagnostics::Exception {
   public:
-    Exception(const char* m) : msg(m) { }
-    Exception(std::string m) : msg(m) { }
-    virtual ~Exception () { }
+    Exception(const char* x,
+	      const char* filenm = NULL, unsigned int lineno = 0)
+      : Diagnostics::Exception(x, filenm, lineno) 
+      { }
 
-    virtual const std::string& GetMessage() const { return msg; }
-    virtual void Report(std::ostream& os) const { 
-      os << "CmdLineParser::Exception: " << msg << std::endl; 
-    }    
-    virtual void Report() const { Report(std::cerr); }
+    Exception(std::string x,
+	      const char* filenm = NULL, unsigned int lineno = 0) 
+      : Diagnostics::Exception(x, filenm, lineno) 
+      { }
 
-  protected: 
-    std::string msg;
+    ~Exception() { }
   };
 
   class ParseError : public Exception {
   public:
-    ParseError(const char* m) : Exception(m) { }
-    ParseError(std::string m) : Exception(m) { }
-    virtual ~ParseError () { }
+    ParseError(const char* x,
+	       const char* filenm = NULL, unsigned int lineno = 0) 
+      : Exception(x, filenm, lineno) 
+      { }
+
+    ParseError(std::string x,
+	       const char* filenm = NULL, unsigned int lineno = 0) 
+      : Exception(x, filenm, lineno) 
+      { }
+    
+    virtual std::string message() const { 
+      return "[CmdLineParser::ParseError]: " + what();
+    }
   };
 
   class InternalError : public Exception {
   public:
-    InternalError(const char* m) : Exception(m) { }
-    InternalError(std::string m) : Exception(m) { }
-    virtual ~InternalError () { }
-  private:
-    void Ctor() {
-      msg = "CmdLineParser internal error (Don't abuse me!): " + msg;
+    InternalError(const char* x,
+		  const char* filenm = NULL, unsigned int lineno = 0) 
+      : Exception(x, filenm, lineno) 
+      { }
+
+    InternalError(std::string x, 
+		  const char* filenm = NULL, unsigned int lineno = 0)
+      : Exception(x, filenm, lineno) 
+      { }
+
+    virtual std::string message() const { 
+      return "[CmdLineParser::InternalError]: " + what();
     }
   };
   

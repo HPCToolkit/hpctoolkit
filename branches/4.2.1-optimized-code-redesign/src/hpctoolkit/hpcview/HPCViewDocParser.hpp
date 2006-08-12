@@ -64,17 +64,14 @@ void HPCViewDocParser(Driver& driver, const std::string& inputFile,
 
 class HPCViewDocException : public Diagnostics::Exception {
 public:
-  HPCViewDocException(const std::string m,
+  HPCViewDocException(const std::string x,
 		      const char* filenm = NULL, unsigned int lineno = 0)
-    : Diagnostics::Exception(m, filenm, lineno)
+    : Diagnostics::Exception(x, filenm, lineno)
     { }
   
-  virtual void report(std::ostream& os) const { 
-    os << "CONFIGURATION file processing error (HPCViewDocException): " 
-       << message() << std::endl;
+  virtual std::string message() const { 
+    return "CONFIGURATION file error [HPCViewDocException]: " + what();
   }
-  
-  virtual void report() const { report(std::cerr); }
 
 private:
 };

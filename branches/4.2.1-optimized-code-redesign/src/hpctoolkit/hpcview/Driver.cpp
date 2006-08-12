@@ -179,6 +179,8 @@ Driver::MakePerfData(PgmScopeTree& scopes)
     ProcessPGMFile(&ret, PGMDocHandler::Doc_GROUP, &groupFiles);
   }
   
+  // TODO: plug metric data into scope tree by VMA
+  
   //-------------------------------------------------------
   // Create metrics, file and computed. (File metrics are read from
   // PROFILE files and will update the scope tree with any new

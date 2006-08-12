@@ -64,10 +64,10 @@ using std::string;
 
 #include <lib/prof-juicy/PgmScopeTree.hpp>
 
+#include <lib/support/diagnostics.h>
 #include <lib/support/Assertion.h>
 #include <lib/support/pathfind.h>
 #include <lib/support/realpath.h>
-#include <lib/support/Trace.hpp>
 
 //************************ Forward Declarations ******************************
 
@@ -121,8 +121,7 @@ NodeRetriever::MoveToGroup(ScopeInfo* parent, const char* name)
   GroupScope* grp = root->FindGroup(name);
   if (grp == NULL) {
     grp = new GroupScope(name, parent);
-    IFTRACE << "NodeRetriever::MoveToGroup new GroupScope: " << name
-	    << endl;
+    DIAG_DevMsg(3, "NodeRetriever::MoveToGroup new GroupScope: " << name);
   } 
   return grp;
 }
@@ -135,8 +134,7 @@ NodeRetriever::MoveToLoadMod(const char* name)
   LoadModScope* lm = root->FindLoadMod(name);
   if (lm == NULL) {
     lm = new LoadModScope(name, root);
-    IFTRACE << "NodeRetriever::MoveToLoadMod new LoadModScope: " << name
-	    << endl;
+    DIAG_DevMsg(3, "NodeRetriever::MoveToLoadMod new LoadModScope: " << name);
   } 
   currentLM = lm; 
 
@@ -193,8 +191,8 @@ NodeRetriever::MoveToFile(const char* name)
     f = new FileScope(filePath, srcIsReadable, currentLM); 
 
     msg = "File Scope Created for ";
-    IFTRACE << "NodeRetriever::MoveToFile makes new FileScope:" << endl
-	    << "  name=" << name << "  fname=" << filePath  << endl;
+    DIAG_DevMsg(3, "NodeRetriever::MoveToFile makes new FileScope:" << endl
+		<< "  name=" << name << "  fname=" << filePath);
   } else {
     currentLM = f->LoadMod();
     BriefAssertion(currentLM);
@@ -202,11 +200,9 @@ NodeRetriever::MoveToFile(const char* name)
   currentFile = f;
 
   // Invalidate any previous proc
-  currentProc = NULL; 
+  currentProc = NULL;
 
-  if (fileTrace) {
-    cerr << msg << filePath << endl;
-  }
+  DIAG_Msg(2, msg << filePath); // debug path replacement
   return f;
 }
 

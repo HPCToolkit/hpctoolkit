@@ -1,4 +1,4 @@
-// -*-C++-*-
+// -*-Mode: C++;-*-
 // $Id$
 
 // * BeginRiceCopyright *****************************************************
@@ -98,8 +98,39 @@ void DumpSymbolicInfoOld(std::ostream& os, LoadModule* lm);
 
 //****************************************************************************
 
+int realmain(int argc, char* const* argv);
+
+int 
+main(int argc, char* const* argv) 
+{
+  int ret;
+
+  try {
+    ret = realmain(argc, argv);
+  }
+  catch (const Diagnostics::Exception& x) {
+    DIAG_EMsg(x.message());
+    exit(1);
+  } 
+  catch (const std::bad_alloc& x) {
+    DIAG_EMsg("[std::bad_alloc] " << x.what());
+    exit(1);
+  } 
+  catch (const std::exception& x) {
+    DIAG_EMsg("[std::exception] " << x.what());
+    exit(1);
+  } 
+  catch (...) {
+    DIAG_EMsg("Unknown exception encountered!");
+    exit(2);
+  }
+
+  return ret;
+}
+
+
 int
-main(int argc, char* argv[])
+realmain(int argc, char* const argv[])
 {
   Args args(argc, argv);
 
@@ -115,19 +146,16 @@ main(int argc, char* argv[])
     if (!lm->Read()) { 
       exit(1); // Error already printed 
     }
-  } catch (std::bad_alloc& x) {
-    cerr << "Error: Memory alloc failed while reading load module!\n";
-    exit(1);
-  } catch (...) {
-    cerr << "Error: Exception encountered while reading load module!\n";
-    exit(2);
-  }
+  } 
+  catch (...) {
+    DIAG_EMsg("Exception encountered while reading " << args.inputFile);
+    throw;
+  } 
 
   // ------------------------------------------------------------
   // Dump load module
   // ------------------------------------------------------------
   try {
-
     if (args.symbolicDump) {
       DumpSymbolicInfo(std::cout, lm);
     } 
@@ -138,9 +166,10 @@ main(int argc, char* argv[])
       lm->Dump(std::cout);
     }
     
-  } catch (...) {
-    cerr << "Error: Exception encountered while dumping load module!\n";
-    exit(2);
+  } 
+  catch (...) {
+    DIAG_EMsg("Exception encountered while dumping " << args.inputFile);
+    throw;
   }
 
   delete lm;
@@ -169,8 +198,6 @@ DumpHeaderInfo(std::ostream& os, LoadModule* lm, const char* pre = "")
   }
   os << pre << "ISA: `" << typeid(*isa).name() << "'\n"; // std::type_info
 }
-
-
 
 
 //****************************************************************************

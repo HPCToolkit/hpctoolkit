@@ -50,6 +50,13 @@
 
 //************************* System Include Files ****************************
 
+#include <iostream>
+using std::cerr;
+using std::endl;
+
+#include <string>
+using std::string;
+
 #ifdef NO_STD_CHEADERS
 # include <stdlib.h>
 #else
@@ -62,13 +69,11 @@ using std::strtol; // For compatibility with non-std C headers
 //*************************** User Include Files ****************************
 
 #include "Args.hpp"
+
+#include <lib/support/diagnostics.h>
 #include <lib/support/Trace.hpp>
 
 //*************************** Forward Declarations **************************
-
-using std::cerr;
-using std::endl;
-using std::string;
 
 //***************************************************************************
 
@@ -239,12 +244,12 @@ Args::Parse(int argc, const char* const argv[])
     }
     inputFile = parser.GetArg(0);
   }
-  catch (CmdLineParser::ParseError& e) {
-    PrintError(std::cerr, e.GetMessage());
+  catch (const CmdLineParser::ParseError& x) {
+    PrintError(std::cerr, x.what());
     exit(1);
   }
-  catch (CmdLineParser::Exception& e) {
-    e.Report(std::cerr);
+  catch (const CmdLineParser::Exception& x) {
+    DIAG_EMsg(x.message());
     exit(1);
   }
 }

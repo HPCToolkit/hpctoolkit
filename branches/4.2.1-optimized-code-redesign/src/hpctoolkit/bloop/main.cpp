@@ -68,7 +68,6 @@ using std::endl;
 using namespace ScopeTreeBuilder;
 
 #include <lib/binutils/LoadModule.hpp>
-#include <lib/binutils/PCToSrcLineMap.hpp>
 
 #include <lib/support/diagnostics.h>
 
@@ -76,9 +75,6 @@ using namespace ScopeTreeBuilder;
 
 int
 real_main(int argc, char* argv[]);
-
-bool 
-WriteMapFile(PCToSrcLineXMap* map, std::string& fname);
 
 //****************************************************************************
 
@@ -88,29 +84,24 @@ main(int argc, char* argv[])
   try {
     return real_main(argc, argv);
   }
-  catch (const CmdLineParser::Exception& e) {
-    e.Report(cerr); // fatal error
-    exit(1);
-  }
   catch (const Diagnostics::Exception& x) {
-    cerr << "Error: ";
-    x.report(cerr);
+    DIAG_EMsg(x.message());
     exit(1);
   } 
-  catch (const OA::Exception& e) {
-    e.report(cerr);
+  catch (const OA::Exception& x) {
+    x.report(cerr);
     exit(1);
   }
   catch (const std::bad_alloc& x) {
-    cerr << "Error: Memory alloc failed: " << x.what() << endl;
+    DIAG_EMsg("[std::bad_alloc] " << x.what());
     exit(1);
   } 
   catch (const std::exception& x) {
-    cerr << "Error: std::exception: " << x.what() << endl;
+    DIAG_EMsg("[std::exception] " << x.what());
     exit(1);
   } 
   catch (...) {
-    cerr << "Unknown exception caught\n";
+    DIAG_EMsg("Unknown exception encountered!");
     exit(2);
   }
 }
@@ -133,7 +124,7 @@ real_main(int argc, char* argv[])
     if (!lm->Read()) { exit(1); } // Error already printed 
   } 
   catch (const std::bad_alloc& x) {
-    cerr << "Error: Memory alloc failed while reading binary!\n";
+    DIAG_EMsg("Memory alloc failed while reading binary! " << x.what());
     exit(1);
   }
   

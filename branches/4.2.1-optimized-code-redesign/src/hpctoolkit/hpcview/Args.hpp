@@ -55,6 +55,7 @@
 
 #include <iostream>
 #include <string>
+#include <list>
 
 //*************************** User Include Files ****************************
 
@@ -105,11 +106,11 @@ public:
   bool XML_DumpAllMetrics;
 
   int deleteUnderscores;
-  int warningLevel;
   bool OutputInitialScopeTree;
 
   // Parsed Data: arguments
   std::string configurationFile;
+  std::list<std::string> profileFiles;
 
 private:
   void Ctor();

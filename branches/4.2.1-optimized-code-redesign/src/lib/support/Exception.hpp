@@ -84,12 +84,16 @@ namespace Diagnostics {
     virtual ~BaseException() { }
 
     // -------------------------------------------------------
-    // message
+    // message/reporting
     // -------------------------------------------------------
-    virtual const std::string& message() const = 0;
+    // what: what the exception was about (cv. std::exception)
+    virtual const std::string& what() const = 0;
 
+    // message: a reporting message
+    virtual std::string message() const = 0;
+
+    // report: generate message using 'message'
     virtual void report(std::ostream& os) const = 0;
-
     virtual void report() const = 0;
   };
 
@@ -99,30 +103,41 @@ namespace Diagnostics {
     // -------------------------------------------------------
     // constructor/destructor
     // -------------------------------------------------------
-    Exception(const char* m,
+    Exception(const char* x,
 	      const char* filenm = NULL, unsigned int lineno = 0);
 
-    Exception(const std::string m,
+    Exception(const std::string x,
 	      const char* filenm = NULL, unsigned int lineno = 0);
 
     virtual ~Exception();
 
     // -------------------------------------------------------
-    // message
+    // what/where
     // -------------------------------------------------------
-    virtual const std::string& message() const { return msg; }
+    virtual const std::string& what() const { return mWhat; }
+
+    // where: where (in the source code) the exception was raised
+    virtual const std::string& where() const { return mWhere; }
+
+    // -------------------------------------------------------
+    // message/reporting
+    // -------------------------------------------------------
+    virtual std::string message() const { 
+      return "[Diagnostics::Exception] " + mWhat + " (" + mWhere + ")";
+    }
 
     virtual void report(std::ostream& os) const { 
-      os << "Diagnostics::Exception: " << msg << std::endl;
+      os << message() << std::endl;
     }
 
     virtual void report() const { report(std::cerr); }
 
   protected:
-    void Ctor(const std::string& m,
+    void Ctor(const std::string& x,
 	      const char* filenm = NULL, unsigned int lineno = 0);
     
-    std::string msg;
+    std::string mWhat;
+    std::string mWhere;
   };
 
   // A fatal Diagnostics exception that generally should be unrecoverable
@@ -131,22 +146,20 @@ namespace Diagnostics {
     // -------------------------------------------------------
     // constructor/destructor
     // -------------------------------------------------------
-    FatalException(const char* m,
+    FatalException(const char* x,
 		   const char* filenm = NULL, unsigned int lineno = 0);
 
-    FatalException(const std::string m,
+    FatalException(const std::string x,
 		   const char* filenm = NULL, unsigned int lineno = 0);
 
     virtual ~FatalException();
 
     // -------------------------------------------------------
-    // message
+    // message/reporting
     // -------------------------------------------------------
-    virtual void report(std::ostream& os) const { 
-      os << "Diagnostics::FatalException: " << message() << std::endl;
+    virtual std::string message() const { 
+      return "[Diagnostics::FatalException] " + mWhat + " (" + mWhere + ")";
     }
-
-    virtual void report() const { report(std::cerr); }
 
   };
   

@@ -38,8 +38,6 @@
 //************************ System Include Files ******************************
 
 #include <iostream>
-using std::cout;
-using std::cerr;
 using std::endl;
 
 #include <fstream>
@@ -79,8 +77,6 @@ using XERCES_CPP_NAMESPACE::XMLException;
 #include <lib/prof-juicy/PgmScopeTree.hpp>
 
 #include <lib/support/diagnostics.h>
-#include <lib/support/Trace.hpp>
-#include <lib/support/Assertion.h>
 #include <lib/support/Nan.h>
 #include <lib/support/Files.hpp>
 #include <lib/support/IOUtil.hpp>
@@ -126,25 +122,25 @@ main(int argc, char* const* argv)
     ret = realmain(argc, argv);
   }
   catch (const Diagnostics::Exception& x) {
-    cerr << "hpcview fatal error: ";
-    x.report(cerr);
+    DIAG_EMsg(x.message());
     exit(1);
   } 
   catch (const std::bad_alloc& x) {
-    cerr << "hpcview fatal error: Memory alloc failed: " << x.what() << endl;
+    DIAG_EMsg("[std::bad_alloc] " << x.what());
     exit(1);
   } 
   catch (const std::exception& x) {
-    cerr << "hpcview fatal error: std::exception: " << x.what() << endl;
+    DIAG_EMsg("[std::exception] " << x.what());
     exit(1);
   } 
   catch (...) {
-    cerr << "hpcview fatal error: Unknown exception encountered!\n";
+    DIAG_EMsg("Unknown exception encountered!");
     exit(2);
   }
 
   return ret;
 }
+
 
 int 
 realmain(int argc, char* const* argv) 
@@ -158,61 +154,60 @@ realmain(int argc, char* const* argv)
     exit(1);
   }
   
-  IFTRACE << "Initializing Driver from " << args.configurationFile 
-	  << ": ..." << endl; 
-
   //-------------------------------------------------------
   // Read configuration file
   //-------------------------------------------------------
+  DIAG_Msg(3, "Initializing Driver from " << args.configurationFile); 
+  
   string tmpFile;
   try {
     tmpFile = BuildConfFile(args.hpcHome, args.configurationFile); 
     // exits iff it fails 
   }
   catch (const FileException& x) {
-    cerr << x.GetError() << endl;
+    DIAG_EMsg(x.GetError());
     exit(1);
   }
   
   Driver driver(args.deleteUnderscores, args.CopySrcFiles); 
-
-  string userFile = args.configurationFile;
+  
+  // TODO: Read hpcrun file headers; create metrics; allow refs to them
+  // in the config file
+  
+  string cfgFile = args.configurationFile;
   try {
-    HPCViewXMLErrHandler errHndlr(userFile, tmpFile, NUM_PREFIX_LINES, true);
+    HPCViewXMLErrHandler errHndlr(cfgFile, tmpFile, NUM_PREFIX_LINES, true);
     HPCViewDocParser(driver, tmpFile, errHndlr);
   }
   catch (const HPCViewDocException& x) {
     unlink(tmpFile.c_str());
-    cerr << "hpcview fatal error: ";
-    x.report(cerr);
+    DIAG_EMsg(x.message());
     exit(1);
   }
   catch (...) {
     unlink(tmpFile.c_str()); 
-    cerr << "hpcview: Fatal error processing CONFIGURATION file." << endl;
+    DIAG_EMsg("Fatal error processing CONFIGURATION file.");
     throw;
   };
 
   unlink(tmpFile.c_str()); 
-
+  DIAG_Msg(3, "Driver is now: " << driver.ToString());
+  
   //-------------------------------------------------------
   // Correlate program source with metrics
   //-------------------------------------------------------
-  IFTRACE << "The Driver is now: " << driver.ToString() << endl; 
-  IFTRACE << "Reading the metrics: ..." << endl; 
-  PgmScopeTree scopes("", new PgmScope("")); // name set later  
+  DIAG_Msg(3, "Reading/Creating metrics: ...");
+  PgmScopeTree scopes("", new PgmScope("")); // name set later
   driver.MakePerfData(scopes); 
-  IFTRACE << endl; 
 
   if (args.OutputInitialScopeTree) {
     int flg = (args.XML_DumpAllMetrics) ? 0 : PgmScopeTree::DUMP_LEAF_METRICS;
-    driver.XML_Dump(scopes.GetRoot(), flg, cerr);
+    driver.XML_Dump(scopes.GetRoot(), flg, std::cerr);
   }
 
   //-------------------------------------------------------
   // Prune the scope tree (remove scopes without metrics)
   //-------------------------------------------------------
-  
   if (args.OutFilename_CSV.empty() && args.OutFilename_TSV.empty()) {
     // do not prune
     UpdateScopeTree( scopes.GetRoot(), driver.NumberOfMetrics() );
@@ -221,8 +216,8 @@ realmain(int argc, char* const* argv)
   scopes.GetRoot()->Freeze(); // disallow further additions to tree 
   scopes.CollectCrossReferences(); // collect cross referencing information
 
-  if (trace > 1) { 
-    cerr << "The final scope tree, before HTML generation:" << endl; 
+  DIAG_If(4) {
+    DIAG_Msg(4, "The final scope tree, before HTML generation:");
     scopes.GetRoot()->Dump(); 
   }
   // FiniXML(); eraxxon: causes a seg fault.
@@ -231,29 +226,28 @@ realmain(int argc, char* const* argv)
   // Generate Experiment database
   //-------------------------------------------------------
   if (args.CopySrcFiles) {
-    cerr << "Copying all source files reached by REPLACE/PATH statements to "
-	 << args.dbDir << endl;
-
+    DIAG_Msg(1, "Copying source files reached by REPLACE/PATH statements to " << args.dbDir);
+    
     // Note that this may modify file names in the ScopeTree
     CopySourceFiles(scopes.GetRoot(), driver.PathVec(), args.dbDir);
   }
 
   if (!args.OutFilename_CSV.empty()) {
     const string& fnm = args.OutFilename_CSV;
+    DIAG_Msg(1, "Writing final scope tree (in CSV) to " << fnm);
     string fpath = args.dbDir + "/" + fnm;
     const char* osnm = (fnm == "-") ? NULL : fpath.c_str();
     std::ostream* os = IOUtil::OpenOStream(osnm);
-    cerr << "Writing final scope tree (in CSV) to " << fnm << endl;
     driver.CSV_Dump(scopes.GetRoot(), *os);
     IOUtil::CloseStream(os);
   } 
 
   if (!args.OutFilename_TSV.empty()) {
     const string& fnm = args.OutFilename_TSV;
+    DIAG_Msg(1, "Writing final scope tree (in TSV) to " << fnm);
     string fpath = args.dbDir + "/" + fnm;
     const char* osnm = (fnm == "-") ? NULL : fpath.c_str();
     std::ostream* os = IOUtil::OpenOStream(osnm);
-    cerr << "Writing final scope tree (in TSV) to " << fnm << endl;
     driver.TSV_Dump(scopes.GetRoot(), *os);
     IOUtil::CloseStream(os);
   }
@@ -262,10 +256,10 @@ realmain(int argc, char* const* argv)
     int flg = (args.XML_DumpAllMetrics) ? 0 : PgmScopeTree::DUMP_LEAF_METRICS;
 
     const string& fnm = args.OutFilename_XML;
+    DIAG_Msg(1, "Writing final scope tree (in XML) to " << fnm);
     string fpath = args.dbDir + "/" + fnm;
     const char* osnm = (fnm == "-") ? NULL : fpath.c_str();
     std::ostream* os = IOUtil::OpenOStream(osnm);
-    cerr << "Writing scope tree (in XML) to " << fnm << endl;
     driver.XML_Dump(scopes.GetRoot(), flg, *os);
     IOUtil::CloseStream(os);
   }
@@ -285,31 +279,31 @@ realmain(int argc, char* const* argv)
 static void 
 InitXML() 
 {
-  IFTRACE << "Initializing XML: ..." << endl; 
+  DIAG_Msg(3, "Initializing XML: ...");
   try {
     XMLPlatformUtils::Initialize();
   } 
-  catch (const XMLException& toCatch) {
-    cerr << "hpcview fatal error: unable to initialize XML processor." << endl 
-	 << "\t" << XMLString::transcode(toCatch.getMessage()) << endl;
+  catch (const XMLException& x) {
+    DIAG_EMsg("Unable to initialize XML processor: " 
+	      << XMLString::transcode(x.getMessage()));
     exit(1); 
   }
-  IFTRACE << endl; 
 }
+
 
 static void
 FiniXML()
 {
-  IFTRACE << "Finalizing XML: ..." << endl; 
+  DIAG_Msg(3, "Finalizing XML: ...");
   XMLPlatformUtils::Terminate();
-  IFTRACE << endl; 
 }
 
-#define MAX_IO_SIZE (64 * 1024)
 
 static void 
 AppendContents(std::ofstream &dest, const char *srcFile)
 {
+#define MAX_IO_SIZE (64 * 1024)
+
   std::ifstream src(srcFile);
   if (src.fail()) {
     string error = string("Unable to open ") + srcFile + " for reading.";
@@ -327,6 +321,7 @@ AppendContents(std::ofstream &dest, const char *srcFile)
   } 
   src.close();
 }
+
 
 static string
 BuildConfFile(const string& hpcHome, const string& confFile) 
@@ -362,6 +357,7 @@ BuildConfFile(const string& hpcHome, const string& confFile)
 static int
 MatchFileWithPath(const string& filenm, const PathTupleVec& pathVec);
 
+
 // 'CopySourceFiles': For every file F in 'pgmScopeTree' that can be
 // reached with paths in 'pathVec', copy F to its appropriate
 // viewname path and update F's path to be relative to this location.
@@ -375,7 +371,7 @@ CopySourceFiles(PgmScope* pgmScopeTree, const PathTupleVec& pathVec,
   ScopeInfoIterator it(pgmScopeTree, &ScopeTypeFilter[ScopeInfo::FILE]); 
   for (; it.Current(); /* */) {
     FileScope* file = dynamic_cast<FileScope*>(it.Current());
-    BriefAssertion(file != NULL);
+    DIAG_Assert(file != NULL, "");
     it++; // advance iterator -- it is pointing at 'file'
     
     // Note: 'fileOrig' will be not be absolute if it is not possible to find
@@ -417,10 +413,11 @@ CopySourceFiles(PgmScope* pgmScopeTree, const PathTupleVec& pathVec,
 	
 	// could use CopyFile; see StaticFiles::Copy
 	if (system(cmdMkdir.c_str()) == 0 && system(cmdCp.c_str()) == 0) {
-	  cerr << "  " << toFile << endl;
+	  DIAG_Msg(1, "  " << toFile);
 	  file->SetName(newSIFileNm);
-	} else {
-	  cerr << "ERROR copying: '" << toFile << "'\n";
+	} 
+	else {
+	  DIAG_EMsg("copying: '" << toFile);
 	}
       }
     } 
@@ -428,6 +425,7 @@ CopySourceFiles(PgmScope* pgmScopeTree, const PathTupleVec& pathVec,
   
   return noError;
 }
+
 
 // 'MatchFileWithPath': use 'pathfind_r' to determine which path in
 // 'pathVec', if any, reaches 'filenm'.  If a match is found, returns

@@ -140,18 +140,18 @@ Diagnostics_TheMostVisitedBreakpointInHistory(const char* filenm = NULL,
 
 #define DIAG_MsgIf(ifexpr, streamArgs)                              \
   if (ifexpr) {                                                     \
-    DIAG_CERR << "Diagnostics: " << streamArgs << std::endl; }
+    DIAG_CERR << "Msg: " << streamArgs << std::endl; }
 
 #define DIAG_Msg(level, streamArgs)                                 \
   DIAG_MsgIf((level <= DIAG_DBG_LVL_PUB), streamArgs)
 
 #define DIAG_DevMsgIf(ifexpr, streamArgs)                           \
   if (ifexpr) {                                                     \
-    DIAG_CERR << "Diagnostics*: " << streamArgs << std::endl; }
+    DIAG_CERR << "Msg*: " << streamArgs << std::endl; }
 
 #define DIAG_DevMsg(level, streamArgs)                              \
   if (level <= DIAG_DBG_LVL) {                                      \
-    DIAG_CERR << "Diagnostics* [" << level << "]: " << streamArgs << std::endl; }
+    DIAG_CERR << "Msg* [" << level << "]: " << streamArgs << std::endl; }
 
 #define DIAG_EMsg(streamArgs)                                       \
   { DIAG_CERR << "error";                                           \

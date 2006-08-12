@@ -371,7 +371,7 @@ CmdLineParser::ToLong(const string& str)
     return StrUtil::toLong(str);
   }
   catch (const Diagnostics::FatalException& x) {
-    throw ParseError(x.message());
+    throw ParseError(x.what());
   }
 }
 
@@ -385,7 +385,7 @@ CmdLineParser::ToUInt64(const string& str)
     return StrUtil::toUInt64(str);
   }
   catch (const Diagnostics::FatalException& x) {
-    throw ParseError(x.message());
+    throw ParseError(x.what());
   }
 }
 
@@ -399,7 +399,7 @@ CmdLineParser::ToDbl(const string& str)
     return StrUtil::toDbl(str);
   }
   catch (const Diagnostics::FatalException& x) {
-    throw ParseError(x.message());
+    throw ParseError(x.what());
   }
 }
 
