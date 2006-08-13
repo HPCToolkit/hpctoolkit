@@ -111,9 +111,8 @@ public:
   const PerfMetric& PerfDataSrc(int i) const { return *dataSrc[i]; }
   void Add(PerfMetric* metric); 
   
-
-
-  void MakePerfData(PgmScopeTree& scopesInfo);
+  void ScopeTreeInitialize(PgmScopeTree& scopesInfo);
+  void ScopeTreeInsertPROFILEData(PgmScopeTree& scopesInfo);
 
   std::string ToString() const; 
   void Dump() const { std::cerr << ToString() << std::endl; }

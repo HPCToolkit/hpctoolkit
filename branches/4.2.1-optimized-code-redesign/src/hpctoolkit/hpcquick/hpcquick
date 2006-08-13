@@ -985,10 +985,10 @@ sub canonicalizeProfileData
     if ($ty == $PROFILEType) {
       $PROFILEFile = $x;
     }
-    # NOTE: We now let hpcrun files pass through
-    elsif ($ty == $hpcrunType) {
-      $PROFILEFile = $x + $hpcrunIdSuffix;
-    }
+    # FIXME: We now let hpcrun files pass through
+    #elsif ($ty == $hpcrunType) {
+    #  $PROFILEFile = $x + $hpcrunIdSuffix;
+    #}
     else {
       $rawFile = $x;
       $PROFILEFile = canonicalizeProfile($rawFile, $ty, $logFhndl);

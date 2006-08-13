@@ -55,6 +55,7 @@ using std::string;
 
 #include <lib/prof-juicy/PgmScopeTree.hpp>
 
+#include <lib/support/diagnostics.h>
 #include <lib/support/Trace.hpp>
 #include <lib/support/pathfind.h>
 #include <lib/support/StrUtil.hpp>
@@ -103,8 +104,8 @@ ComputedPerfMetric::ComputedPerfMetric(const char* nm, const char* displayNm,
      exit(1);
    }
    if (mathExpr != NULL) { // catch exception really 
-     cout << "Computed METRIC " << nm << ": "
-	  << nm << " = "; mathExpr->print(); cout << endl;
+     DIAG_Msg(1, "Computed METRIC " << nm << ": " << nm << " = " 
+	      << mathExpr->toString());
    } 
 }
 
@@ -174,11 +175,7 @@ void FilePerfMetric::Make(NodeRetriever &ret)
   AccumulateFromChildren(*ret.GetRoot(), Index());
   
   if (!ret.GetRoot()->HasPerfData(Index())) {
-    // eraxxon: Instead of throwning an exception, let's emit a warning.
-    string msg = "File '" + file + 
-      "' does not contain any information for metric '" + Name() + "'";
-    //throw MetricException(msg);
-    cerr << "hpcview warning: " << msg << endl;
+    DIAG_Msg(1, "Warning: File '" << file << "' does not contain any information for metric '" << Name() << "'");
   }
   IFTRACE << "FilePerfMetric::Make yields: " << ToString() << endl;
 }

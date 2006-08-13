@@ -48,6 +48,9 @@
 
 //************************ System Include Files ******************************
 
+#include <iostream>
+#include <string>
+
 //************************ Xerces Include Files ******************************
 
 // class DOMNode;
@@ -56,13 +59,11 @@ using XERCES_CPP_NAMESPACE::DOMNode;
 
 //************************* User Include Files *******************************
 
-// #include "XMLAdapter.h"
 #include "EvalNode.hpp"
 
 #include <lib/prof-juicy/PgmScopeTree.hpp>
 
 #include <lib/support/String.hpp>
-
 
 //************************ Forward Declarations ******************************
 
@@ -159,7 +160,9 @@ public:
   //   Simple printout of nodes.
   // ------------------------------------------------------------
   
-  void print();
+  std::string toString() const;
+
+  std::ostream& dump(std::ostream& os = std::cout) const;
   
 private:
   EvalNode* topNode;

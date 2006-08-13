@@ -153,9 +153,11 @@ realmain(int argc, char* const* argv)
   if (MakeDir(args.dbDir.c_str()) != 0) {
     exit(1);
   }
+
+  Driver driver(args.deleteUnderscores, args.CopySrcFiles); 
   
   //-------------------------------------------------------
-  // Read configuration file
+  // Read configuration file [First pass]
   //-------------------------------------------------------
   DIAG_Msg(3, "Initializing Driver from " << args.configurationFile); 
   
@@ -169,15 +171,12 @@ realmain(int argc, char* const* argv)
     exit(1);
   }
   
-  Driver driver(args.deleteUnderscores, args.CopySrcFiles); 
-  
-  // TODO: Read hpcrun file headers; create metrics; allow refs to them
-  // in the config file
-  
-  string cfgFile = args.configurationFile;
   try {
-    HPCViewXMLErrHandler errHndlr(cfgFile, tmpFile, NUM_PREFIX_LINES, true);
-    HPCViewDocParser(driver, tmpFile, errHndlr);
+    HPCViewXMLErrHandler errHndlr(args.configurationFile, tmpFile, 
+				  NUM_PREFIX_LINES, true);
+    HPCViewDocParser parser(tmpFile, errHndlr);
+    parser.pass1(driver);
+    parser.pass2(driver);
   }
   catch (const HPCViewDocException& x) {
     unlink(tmpFile.c_str());
@@ -192,18 +191,35 @@ realmain(int argc, char* const* argv)
 
   unlink(tmpFile.c_str()); 
   DIAG_Msg(3, "Driver is now: " << driver.ToString());
-  
+
+
+  //-------------------------------------------------------
+  // Initialize scope tree
+  //-------------------------------------------------------
+  DIAG_Msg(3, "Initializing scope tree...");
+  PgmScopeTree scopes("", new PgmScope("")); // name set later
+  driver.ScopeTreeInitialize(scopes); 
+
+
   //-------------------------------------------------------
   // Correlate program source with metrics
   //-------------------------------------------------------
-  DIAG_Msg(3, "Reading/Creating metrics: ...");
-  PgmScopeTree scopes("", new PgmScope("")); // name set later
-  driver.MakePerfData(scopes); 
+  
+  // FIXME: read hpcrun data
+  //   Create metrics (by def, all 'FILE' metrics)
+  //   Insert data
+
+  // FIXME: Reread config file and suck up metrics.  This way computed
+  //   metrics can reference hpcrun metrics.
+
+  DIAG_Msg(3, "Creating traditional metrics: ...");
+  driver.ScopeTreeInsertPROFILEData(scopes);
 
   if (args.OutputInitialScopeTree) {
     int flg = (args.XML_DumpAllMetrics) ? 0 : PgmScopeTree::DUMP_LEAF_METRICS;
     driver.XML_Dump(scopes.GetRoot(), flg, std::cerr);
   }
+
 
   //-------------------------------------------------------
   // Prune the scope tree (remove scopes without metrics)

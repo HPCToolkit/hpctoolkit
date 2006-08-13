@@ -44,6 +44,9 @@
 
 //*********************** Xerces Include Files *******************************
 
+#include <xercesc/parsers/XercesDOMParser.hpp>
+using XERCES_CPP_NAMESPACE::XercesDOMParser;
+
 #include <xercesc/dom/DOMNode.hpp> 
 using XERCES_CPP_NAMESPACE::DOMNode;
 
@@ -59,8 +62,22 @@ class Driver;
 
 //****************************************************************************
 
-void HPCViewDocParser(Driver& driver, const std::string& inputFile, 
-		      HPCViewXMLErrHandler &errReporter);
+class HPCViewDocParser {
+public:
+  HPCViewDocParser(const std::string& inputFile, 
+		   HPCViewXMLErrHandler &errHndlr);
+  
+  ~HPCViewDocParser();
+
+  void pass1(Driver& driver);
+  void pass2(Driver& driver);
+
+private:
+  XercesDOMParser* mParser;
+  DOMNode* mDoc;
+};
+
+
 
 class HPCViewDocException : public Diagnostics::Exception {
 public:

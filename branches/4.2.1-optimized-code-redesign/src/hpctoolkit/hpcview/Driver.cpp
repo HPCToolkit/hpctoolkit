@@ -159,7 +159,7 @@ Driver::ToString() const {
 } 
 
 void
-Driver::MakePerfData(PgmScopeTree& scopes) 
+Driver::ScopeTreeInitialize(PgmScopeTree& scopes) 
 {
   NodeRetriever ret(scopes.GetRoot(), path);
   
@@ -178,9 +178,14 @@ Driver::MakePerfData(PgmScopeTree& scopes)
   if (NumberOfGroupFiles() > 0) {
     ProcessPGMFile(&ret, PGMDocHandler::Doc_GROUP, &groupFiles);
   }
-  
-  // TODO: plug metric data into scope tree by VMA
-  
+}
+
+
+void
+Driver::ScopeTreeInsertPROFILEData(PgmScopeTree& scopes) 
+{
+  NodeRetriever ret(scopes.GetRoot(), path);
+
   //-------------------------------------------------------
   // Create metrics, file and computed. (File metrics are read from
   // PROFILE files and will update the scope tree with any new

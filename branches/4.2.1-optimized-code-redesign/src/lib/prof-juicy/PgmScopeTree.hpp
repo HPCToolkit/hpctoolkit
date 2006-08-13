@@ -316,9 +316,9 @@ public:
   virtual std::string ToString(int dmpFlag = 0) const;
   virtual std::string ToXML(int dmpFlag = 0) const;
   
-  void DumpSelf(std::ostream &os = std::cerr, 
+  void DumpSelf(std::ostream& os = std::cerr, 
 		int dmpFlag = 0, const char* prefix = "") const;
-  void Dump    (std::ostream &os = std::cerr, 
+  void Dump    (std::ostream& os = std::cerr, 
 		int dmpFlag = 0, const char* pre = "") const;
 
   // circumvent pain caused by debuggers that choke on default
@@ -327,25 +327,25 @@ public:
   void DDump();
   void DDumpSort();
 
-  bool XML_DumpSelfBefore(std::ostream &os = std::cout,
+  bool XML_DumpSelfBefore(std::ostream& os = std::cout,
 		int dmpFlag = 0, const char* prefix = "") const;
-  void XML_DumpSelfAfter (std::ostream &os = std::cout,
+  void XML_DumpSelfAfter (std::ostream& os = std::cout,
 		int dmpFlag = 0, const char* prefix = "") const;
-  void XML_Dump(std::ostream &os = std::cout,
+  void XML_Dump(std::ostream& os = std::cout,
 		int dmpFlag = 0, const char* pre = "") const;
   
-  void XML_DumpLineSorted(std::ostream &os = std::cout,
+  void XML_DumpLineSorted(std::ostream& os = std::cout,
 		int dmpFlag = 0,
 		const char* pre = "") const;
 
-  void CSV_DumpSelf(const PgmScope &root, std::ostream &os = std::cout) const;
-  virtual void CSV_Dump(const PgmScope &root, std::ostream &os = std::cout, 
+  void CSV_DumpSelf(const PgmScope &root, std::ostream& os = std::cout) const;
+  virtual void CSV_Dump(const PgmScope &root, std::ostream& os = std::cout, 
 			const char* file_name = NULL, 
 			const char* proc_name = NULL,
 			int lLevel = 0) const;
 
-  void TSV_DumpSelf(const PgmScope &root, std::ostream &os = std::cout) const;
-  virtual void TSV_Dump(const PgmScope &root, std::ostream &os = std::cout, 
+  void TSV_DumpSelf(const PgmScope &root, std::ostream& os = std::cout) const;
+  virtual void TSV_Dump(const PgmScope &root, std::ostream& os = std::cout, 
 			const char* file_name = NULL, 
 			const char* proc_name = NULL,
 			int lLevel = 0) const;
@@ -406,11 +406,11 @@ public:
   virtual std::string XMLLineRange(int dmpFlag) const;
   virtual std::string XMLVMAIntervals(int dmpFlag) const;
   
-  virtual void CSV_Dump(const PgmScope &root, std::ostream &os = std::cout, 
+  virtual void CSV_Dump(const PgmScope &root, std::ostream& os = std::cout, 
                const char* file_name = NULL, const char* proc_name = NULL,
                int lLevel = 0) const;
 
-  virtual void TSV_Dump(const PgmScope &root, std::ostream &os = std::cout, 
+  virtual void TSV_Dump(const PgmScope &root, std::ostream& os = std::cout, 
                const char* file_name = NULL, const char* proc_name = NULL,
                int lLevel = 0) const;
 
@@ -476,10 +476,10 @@ public:
   virtual std::string ToString(int dmpFlag = 0) const;
   virtual std::string ToXML(int dmpFlag = 0) const;
 
-  void XML_DumpLineSorted(std::ostream &os = std::cout, int dmpFlag = 0, 
+  void XML_DumpLineSorted(std::ostream& os = std::cout, int dmpFlag = 0, 
 			  const char* pre = "") const;
-  void CSV_TreeDump(std::ostream &os = std::cout) const;
-  void TSV_TreeDump(std::ostream &os = std::cout) const;
+  void CSV_TreeDump(std::ostream& os = std::cout) const;
+  void TSV_TreeDump(std::ostream& os = std::cout) const;
    
 protected: 
 private: 
@@ -554,7 +554,7 @@ public:
   virtual std::string ToString(int dmpFlag = 0) const;
   virtual std::string ToXML(int dmpFlag = 0) const;
 
-  void XML_DumpLineSorted(std::ostream &os = std::cout, 
+  void XML_DumpLineSorted(std::ostream& os = std::cout, 
 			  int dmpFlag = 0, const char* pre = "") const;
   
 protected: 
@@ -605,11 +605,11 @@ public:
   virtual std::string ToString(int dmpFlag = 0) const;
   virtual std::string ToXML(int dmpFlag = 0) const;
 
-  virtual void CSV_Dump(const PgmScope &root, std::ostream &os = std::cout, 
+  virtual void CSV_Dump(const PgmScope &root, std::ostream& os = std::cout, 
 			const char* file_name = NULL, 
 			const char* proc_name = NULL,
 			int lLevel = 0) const;
-  virtual void TSV_Dump(const PgmScope &root, std::ostream &os = std::cout, 
+  virtual void TSV_Dump(const PgmScope &root, std::ostream& os = std::cout, 
 			const char* file_name = NULL, 
 			const char* proc_name = NULL,
 			int lLevel = 0) const;
@@ -658,11 +658,11 @@ public:
   virtual std::string ToString(int dmpFlag = 0) const;
   virtual std::string ToXML(int dmpFlag = 0) const;
 
-  virtual void CSV_Dump(const PgmScope &root, std::ostream &os = std::cout, 
+  virtual void CSV_Dump(const PgmScope &root, std::ostream& os = std::cout, 
 			const char* file_name = NULL, 
 			const char* proc_name = NULL,
 			int lLevel = 0) const;
-  virtual void TSV_Dump(const PgmScope &root, std::ostream &os = std::cout, 
+  virtual void TSV_Dump(const PgmScope &root, std::ostream& os = std::cout, 
 			const char* file_name = NULL, 
 			const char* proc_name = NULL,
 			int lLevel = 0) const;

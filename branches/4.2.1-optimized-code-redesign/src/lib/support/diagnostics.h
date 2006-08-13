@@ -129,6 +129,8 @@ Diagnostics_TheMostVisitedBreakpointInHistory(const char* filenm = NULL,
 
 #if defined(__cplusplus)
 
+#include <sstream>
+
 #include "Exception.hpp"
 
 #define DIAG_CERR std::cerr
@@ -154,10 +156,10 @@ Diagnostics_TheMostVisitedBreakpointInHistory(const char* filenm = NULL,
     DIAG_CERR << "Msg* [" << level << "]: " << streamArgs << std::endl; }
 
 #define DIAG_EMsg(streamArgs)                                       \
-  { DIAG_CERR << "error";                                           \
+  { DIAG_CERR << "error: " << streamArgs << std::endl;              \
     if (DIAG_DBG_LVL_PUB) {                                         \
-      DIAG_CERR << "[" << __FILE__ << ":" << __LINE__ << "]"; }     \
-    DIAG_CERR << ": " << streamArgs << std::endl; }
+      DIAG_CERR << "[" << __FILE__ << ":" << __LINE__ << "]" << std::endl; } \
+  }
 
 #define DIAG_Assert(expr, streamArgs)                               \
   if (!(expr)) DIAG_Throw(streamArgs)
