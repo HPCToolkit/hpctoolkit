@@ -142,23 +142,23 @@ Diagnostics_TheMostVisitedBreakpointInHistory(const char* filenm = NULL,
 
 #define DIAG_MsgIf(ifexpr, streamArgs)                              \
   if (ifexpr) {                                                     \
-    DIAG_CERR << "Msg: " << streamArgs << std::endl; }
+    DIAG_CERR << "msg: " << streamArgs << std::endl; }
 
 #define DIAG_Msg(level, streamArgs)                                 \
   DIAG_MsgIf((level <= DIAG_DBG_LVL_PUB), streamArgs)
 
 #define DIAG_DevMsgIf(ifexpr, streamArgs)                           \
   if (ifexpr) {                                                     \
-    DIAG_CERR << "Msg*: " << streamArgs << std::endl; }
+    DIAG_CERR << "msg*: " << streamArgs << std::endl; }
 
 #define DIAG_DevMsg(level, streamArgs)                              \
   if (level <= DIAG_DBG_LVL) {                                      \
-    DIAG_CERR << "Msg* [" << level << "]: " << streamArgs << std::endl; }
+    DIAG_CERR << "msg* [" << level << "]: " << streamArgs << std::endl; }
 
 #define DIAG_EMsg(streamArgs)                                       \
   { DIAG_CERR << "error: " << streamArgs << std::endl;              \
     if (DIAG_DBG_LVL_PUB) {                                         \
-      DIAG_CERR << "[" << __FILE__ << ":" << __LINE__ << "]" << std::endl; } \
+      DIAG_CERR << "\t[" << __FILE__ << ":" << __LINE__ << "]" << std::endl; } \
   }
 
 #define DIAG_Assert(expr, streamArgs)                               \

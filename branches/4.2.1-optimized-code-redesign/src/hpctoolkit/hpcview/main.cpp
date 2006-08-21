@@ -155,15 +155,18 @@ realmain(int argc, char* const* argv)
   }
 
   Driver driver(args.deleteUnderscores, args.CopySrcFiles); 
+
+  PgmScopeTree scopes("", new PgmScope("")); // FIXME: better location
   
   //-------------------------------------------------------
   // Read configuration file [First pass]
   //-------------------------------------------------------
-  DIAG_Msg(3, "Initializing Driver from " << args.configurationFile); 
+  const string& cfgFile = args.configurationFile;
+  DIAG_Msg(3, "Initializing Driver from " << cfgFile); 
   
   string tmpFile;
   try {
-    tmpFile = BuildConfFile(args.hpcHome, args.configurationFile); 
+    tmpFile = BuildConfFile(args.hpcHome, cfgFile); 
     // exits iff it fails 
   }
   catch (const FileException& x) {
@@ -172,10 +175,24 @@ realmain(int argc, char* const* argv)
   }
   
   try {
-    HPCViewXMLErrHandler errHndlr(args.configurationFile, tmpFile, 
-				  NUM_PREFIX_LINES, true);
+    HPCViewXMLErrHandler errHndlr(cfgFile, tmpFile, NUM_PREFIX_LINES, true);
     HPCViewDocParser parser(tmpFile, errHndlr);
     parser.pass1(driver);
+    
+    //-------------------------------------------------------
+    // Initialize scope tree
+    //-------------------------------------------------------
+    DIAG_Msg(3, "Initializing scope tree...");
+    driver.ScopeTreeInitialize(scopes); 
+
+    //-------------------------------------------------------
+    // Correlate program source with metrics (I)
+    //-------------------------------------------------------
+    // Read hpcrun data [by def. these are all 'FILE' metrics] (FIXME)
+    driver.ScopeTreeInsertProfileData(scopes, args.profileFiles);
+    
+    // Reread config file and process metrics.  This way computed
+    //   metrics can reference hpcrun metrics. (FIXME)
     parser.pass2(driver);
   }
   catch (const HPCViewDocException& x) {
@@ -184,8 +201,8 @@ realmain(int argc, char* const* argv)
     exit(1);
   }
   catch (...) {
-    unlink(tmpFile.c_str()); 
-    DIAG_EMsg("Fatal error processing CONFIGURATION file.");
+    unlink(tmpFile.c_str());
+    DIAG_EMsg("While processing '" << cfgFile << "'...");
     throw;
   };
 
@@ -194,28 +211,13 @@ realmain(int argc, char* const* argv)
 
 
   //-------------------------------------------------------
-  // Initialize scope tree
+  // Correlate program source with metrics (II)
   //-------------------------------------------------------
-  DIAG_Msg(3, "Initializing scope tree...");
-  PgmScopeTree scopes("", new PgmScope("")); // name set later
-  driver.ScopeTreeInitialize(scopes); 
-
-
-  //-------------------------------------------------------
-  // Correlate program source with metrics
-  //-------------------------------------------------------
-  
-  // FIXME: read hpcrun data
-  //   Create metrics (by def, all 'FILE' metrics)
-  //   Insert data
-
-  // FIXME: Reread config file and suck up metrics.  This way computed
-  //   metrics can reference hpcrun metrics.
-
   DIAG_Msg(3, "Creating traditional metrics: ...");
   driver.ScopeTreeInsertPROFILEData(scopes);
 
-  if (args.OutputInitialScopeTree) {
+  DIAG_If(4) {
+    DIAG_Msg(4, "Initial scope tree:");
     int flg = (args.XML_DumpAllMetrics) ? 0 : PgmScopeTree::DUMP_LEAF_METRICS;
     driver.XML_Dump(scopes.GetRoot(), flg, std::cerr);
   }
@@ -225,18 +227,20 @@ realmain(int argc, char* const* argv)
   // Prune the scope tree (remove scopes without metrics)
   //-------------------------------------------------------
   if (args.OutFilename_CSV.empty() && args.OutFilename_TSV.empty()) {
-    // do not prune
-    UpdateScopeTree( scopes.GetRoot(), driver.NumberOfMetrics() );
+    PruneScopeTreeMetrics(scopes.GetRoot(), driver.NumberOfMetrics());
   }
   
-  scopes.GetRoot()->Freeze(); // disallow further additions to tree 
+  scopes.GetRoot()->Freeze();      // disallow further additions to tree 
   scopes.CollectCrossReferences(); // collect cross referencing information
 
+  FiniXML();
+
   DIAG_If(4) {
-    DIAG_Msg(4, "The final scope tree, before HTML generation:");
-    scopes.GetRoot()->Dump(); 
+    DIAG_Msg(4, "Final scope tree:");
+    int flg = (args.XML_DumpAllMetrics) ? 0 : PgmScopeTree::DUMP_LEAF_METRICS;
+    driver.XML_Dump(scopes.GetRoot(), flg, std::cerr);
   }
-  // FiniXML(); eraxxon: causes a seg fault.
+
 
   //-------------------------------------------------------
   // Generate Experiment database
@@ -284,7 +288,6 @@ realmain(int argc, char* const* argv)
   // Cleanup
   //-------------------------------------------------------
   ClearPerfDataSrcTable(); 
-  FiniXML();
   
   return 0; 
 } 

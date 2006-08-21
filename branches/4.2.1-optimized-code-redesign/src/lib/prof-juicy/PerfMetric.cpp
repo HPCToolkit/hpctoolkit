@@ -65,11 +65,28 @@ PerfMetric::PerfMetric(const char *nm, const char *nativeNm,
  : name(nm), nativeName(nativeNm), eventsPerCount(0), dispInfo(NULL), 
    display(disp), percent(perc), pcomputed(propComputed), sortBy(sort) 
 {
+  Ctor(nm, displayNm);
+}
+
+
+PerfMetric::PerfMetric(const std::string& nm, const std::string& nativeNm, 
+		       const std::string& displayNm, 
+		       bool disp, bool perc, bool propComputed, bool sort)
+ : name(nm), nativeName(nativeNm), eventsPerCount(0), dispInfo(NULL), 
+   display(disp), percent(perc), pcomputed(propComputed), sortBy(sort) 
+{
+  Ctor(nm.c_str(), displayNm.c_str());
+}
+
+
+void
+PerfMetric::Ctor(const char *nm, const char* displayNm)
+{
   // trace = 1; 
-  BriefAssertion(!IsPerfDataIndex(NameToPerfDataIndex(nm))); 
+  BriefAssertion(!IsPerfDataIndex(NameToPerfDataIndex(nm)));
   int i = PerfMetricTable.GetNumElements();
-  PerfMetricTable[i] = this; 
-  perfInfoIndex = i; 
+  PerfMetricTable[i] = this;
+  perfInfoIndex = i;
 
   BriefAssertion( (displayNm != NULL) && (strlen(displayNm) > 0) ); 
   dispInfo = new DataDisplayInfo(displayNm, NULL, 9, false); 
@@ -77,11 +94,13 @@ PerfMetric::PerfMetric(const char *nm, const char *nativeNm,
   IFTRACE << "PerfMetric: " << ToString() << endl; 
 }
 
+
 PerfMetric::~PerfMetric() 
 {
   IFTRACE << "~PerfMetric: " << ToString() << endl; 
   delete dispInfo; 
 }
+
 
 unsigned int
 PerfMetric::EventsPerCount()  const 
@@ -90,6 +109,7 @@ PerfMetric::EventsPerCount()  const
   return eventsPerCount; 
 }
 
+
 void
 PerfMetric::SetEventsPerCount(int events) 
 {
@@ -97,6 +117,14 @@ PerfMetric::SetEventsPerCount(int events)
   eventsPerCount = events; 
   // BriefAssertion(eventsPerCount > 0); 
 }
+
+
+void
+PerfMetric::Make(NodeRetriever& ret) 
+{
+  // nothing to do
+}
+
 
 VectorTmpl<PerfMetric*> PerfMetric::PerfMetricTable; 
 
@@ -113,6 +141,7 @@ NumberOfPerfDataInfos()
    return PerfMetric::PerfMetricTable.GetNumElements(); 
 }
 
+
 PerfMetric&    
 IndexToPerfDataInfo(int i)
 {
@@ -121,6 +150,7 @@ IndexToPerfDataInfo(int i)
    BriefAssertion(pds); 
    return *pds; 
 }
+
 
 int       
 NameToPerfDataIndex(const char* name)
@@ -134,6 +164,7 @@ NameToPerfDataIndex(const char* name)
   } 
   return UNDEF_METRIC_INDEX; 
 } 
+
 
 void 
 ClearPerfDataSrcTable() 
@@ -151,6 +182,7 @@ ClearPerfDataSrcTable()
 // ************************************************************************* //
 // DataDisplayInfo
 // ************************************************************************* //
+
 DataDisplayInfo::~DataDisplayInfo() 
 {
    IFTRACE << "~DataDisplayInfo " << ToString() << endl; 
@@ -168,6 +200,7 @@ DataDisplayInfo::ToString() const
     "width=" + StrUtil::toStr(width) + " " + 
     "asInt=" + ((formatAsInt) ? "true" : "false"); 
 }
+
 
 string
 PerfMetric::ToString() const 

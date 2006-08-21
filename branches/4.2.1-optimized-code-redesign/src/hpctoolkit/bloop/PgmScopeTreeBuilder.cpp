@@ -86,7 +86,6 @@ using namespace ScopeTreeBuilder;
 #include <lib/binutils/Section.hpp>
 #include <lib/binutils/Procedure.hpp>
 #include <lib/binutils/BinUtils.hpp>
-#include <lib/binutils/PCToSrcLineMap.hpp>
 
 #include <lib/support/diagnostics.h>
 #include <lib/support/Files.hpp>
@@ -94,7 +93,7 @@ using namespace ScopeTreeBuilder;
 
 //*************************** Forward Declarations ***************************
 
-typedef std::map<ProcScope*, Procedure*> ProcScopeToProcMap;
+typedef std::multimap<ProcScope*, Procedure*> ProcScopeToProcMap;
 
 // Helpers for building a scope tree
 
@@ -235,10 +234,10 @@ private:
 
 //#define BLOOP_ATTEMPT_TO_IMPROVE_INTERVAL_BOUNDARIES
 
-const string OrphanedProcedureFile =
-  "~~~No-Associated-File-Found-For-These-Procedures~~~";
+static string OrphanedProcedureFile =
+  "~~~<unknown-file>~~~";
 
-const char *PGMdtd =
+static const char *PGMdtd =
 #include <lib/xml/PGM.dtd.h>
 
 //****************************************************************************
@@ -255,7 +254,7 @@ WriteScopeTree(std::ostream& os, PgmScopeTree* pgmScopeTree, bool prettyPrint)
   int dumpFlags = (PgmScopeTree::XML_TRUE); // ScopeInfo::XML_NO_ESC_CHARS
   if (!prettyPrint) { dumpFlags |= PgmScopeTree::COMPRESSED_OUTPUT; }
   
-  pgmScopeTree->Dump(os, dumpFlags);
+  pgmScopeTree->xml_dump(os, dumpFlags);
 }
 
 //****************************************************************************
@@ -287,6 +286,9 @@ ScopeTreeBuilder::BuildFromLM(LoadModule* lm,
   PgmScopeTree* pgmScopeTree = NULL;
   PgmScope* pgmScope = NULL;
 
+  // FIXME: relocate
+  OrphanedProcedureFile = "~~~" + lm->GetName() + ":<unknown-file>~~~";
+
   // Assume lm->Read() has been performed
   pgmScope = new PgmScope("");
   pgmScopeTree = new PgmScopeTree("", pgmScope);
@@ -296,7 +298,9 @@ ScopeTreeBuilder::BuildFromLM(LoadModule* lm,
   // 1. Build basic FileScope/ProcScope structure
   ProcScopeToProcMap* pmap = BuildStructure(lmScope, lm);
   
-  // 2. For each ProcScope, complete the build.
+  // 2. For each [ProcScope, Procedure] pair, complete the build.
+  // Note that a ProcScope may be associated with more than one
+  // Procedure.
   for (ProcScopeToProcMap::iterator it = pmap->begin(); 
        it != pmap->end(); ++it) {
     ProcScope* pScope = it->first;
@@ -336,7 +340,7 @@ ScopeTreeBuilder::Normalize(PgmScopeTree* pgmScopeTree,
 			    bool unsafeNormalizations)
 {
   bool changed = false;
-  changed |= RemoveOrphanedProcedureRepository(pgmScopeTree);
+  // changed |= RemoveOrphanedProcedureRepository(pgmScopeTree);
   
 #if 0 /* not necessary */
   // Apply following routines until a fixed point is reached.
@@ -363,6 +367,8 @@ ScopeTreeBuilder::Normalize(PgmScopeTree* pgmScopeTree,
 // will be useful later when relocating alien lines.  Also, the
 // nesting structure allows inference of accurate boundaries on
 // procedure end lines.
+//
+// A ProcScope can be associated with multiple Procedures
 static ProcScopeToProcMap*
 BuildStructure(LoadModScope *lmScope, LoadModule* lm)
 {
@@ -380,7 +386,7 @@ BuildStructure(LoadModScope *lmScope, LoadModule* lm)
       Procedure* p = it1.Current();
       FileScope* fileScope = FindOrCreateFileNode(lmScope, p);
       ProcScope* procScope = BuildProcStructure(fileScope, p);
-      (*mp)[procScope] = p;
+      mp->insert(make_pair(procScope, p));
     }
   }
   
@@ -393,12 +399,17 @@ static ProcScope*
 BuildProcStructure(FileScope* fileScope, Procedure* p)
 {
   // FIXME: FileScope --> CodeInfo* (procs could be scope)
-
+  
+  // Find VMA boundaries: [beg, end)
+  VMA endVMA = p->GetBegVMA() + p->GetSize();
+  VMAInterval bounds(p->GetBegVMA(), endVMA);
+  DIAG_Assert(!bounds.empty(), "Attempting to add empty procedure " << bounds.toString());
+  
   // Find procedure name
   string funcNm   = GetBestFuncName(p->GetName()); 
   string funcLnNm = GetBestFuncName(p->GetLinkName());
   
-  // Find preliminary procedure bounds
+  // Find preliminary source line bounds
   // FIXME: this is in GetProcedureFirstLineInfo
   string func, file;
   suint begLn1, endLn1;
@@ -417,10 +428,20 @@ BuildProcStructure(FileScope* fileScope, Procedure* p)
     endLn = endLn1;
   }
   
-  // Create the scope
-  ProcScope* pScope = new ProcScope(funcNm, fileScope, funcLnNm, begLn, endLn);
-  VMA endVMA = p->GetBegVMA() + p->GetSize();
-  pScope->vmaSet().insert(p->GetBegVMA(), endVMA);
+  // Create or find the scope
+  ProcScope* pScope = fileScope->FindProc(funcNm, funcLnNm);
+
+  if (!pScope) {
+    pScope = new ProcScope(funcNm, fileScope, funcLnNm, begLn, endLn);
+  }
+  else {
+    // Assume the procedure was split.  Fuse it together.
+    DIAG_DevMsg(3, "Merging multiple instances of procedure [" << pScope->toStringXML() << "] with " << funcNm << " " << funcLnNm << " " << bounds.toString());
+    begLn = MIN(begLn, pScope->begLine());
+    endLn = MAX(endLn, pScope->endLine());
+    pScope->SetLineRange(begLn, endLn);
+  }
+  pScope->vmaSet().insert(bounds);
   
   return pScope;
 }
@@ -656,7 +677,7 @@ BuildFromBB(CodeInfo* enclosingScope, Procedure* p,
     Instruction* insn = IRHNDL_TO_TY(it->current(), Instruction*);
     VMA vma = insn->GetVMA();
     ushort opIdx = insn->GetOpIndex();
-    VMA opvma = isa->ConvertVMAToOpVMA(vma, opIdx);
+    VMA opvma = LoadModule::isa->ConvertVMAToOpVMA(vma, opIdx);
 
     // advance iterator [needed to create VMA interval]
     ++(*it);
@@ -678,12 +699,13 @@ BuildFromBB(CodeInfo* enclosingScope, Procedure* p,
     Instruction* nextinsn = (it->isValid()) ? 
       IRHNDL_TO_TY(it->current(), Instruction*) : NULL;
     if (nextinsn) {
-      nextopvma = isa->ConvertVMAToOpVMA(nextinsn->GetVMA(),
-					 nextinsn->GetOpIndex());
+      nextopvma = LoadModule::isa->ConvertVMAToOpVMA(nextinsn->GetVMA(),
+						     nextinsn->GetOpIndex());
     }
     else {
       // the (hypothetical) next insn must begins no earlier than:
-      nextopvma = isa->ConvertVMAToOpVMA(insn->GetVMA(), 0) + insn->GetSize();
+      nextopvma = LoadModule::isa->ConvertVMAToOpVMA(insn->GetVMA(), 0) 
+	+ insn->GetSize();
     }
     DIAG_Assert(opvma < nextopvma, "Invalid VMAInterval: [" << opvma << ", "
 		<< nextopvma << ")");
@@ -1195,12 +1217,14 @@ MergePerfectlyNestedLoops(ScopeInfo* node)
 
 //****************************************************************************
 
-// RemoveEmptyScopes: Removes certain empty scopes from the tree,
-// always maintaining the top level PgmScope (PGM) scope.  The
-// following scope are deleted if empty:
-//   FileScope, ProcScope, LoopScope
+// RemoveEmptyScopes: Removes certain 'empty' scopes from the tree,
+// always maintaining the top level PgmScope (PGM) scope.  See the
+// predicate 'RemoveEmptyScopes_isEmpty' for details.
 static bool 
 RemoveEmptyScopes(ScopeInfo* node);
+
+static bool 
+RemoveEmptyScopes_isEmpty(const ScopeInfo* node);
 
 
 static bool 
@@ -1227,18 +1251,33 @@ RemoveEmptyScopes(ScopeInfo* node)
     changed |= RemoveEmptyScopes(child);
 
     // 2. Trim this node if necessary
-    if (child->Type() == ScopeInfo::FILE 
-	|| child->Type() == ScopeInfo::PROC
-	|| child->Type() == ScopeInfo::LOOP) {
-      if (child->ChildCount() == 0) {
-	child->Unlink(); // unlink 'child' from tree
-	delete child;
-	changed = true;
-      }
+    if (RemoveEmptyScopes_isEmpty(child)) {
+      child->Unlink(); // unlink 'child' from tree
+      delete child;
+      changed = true;
     }
   } 
   
   return changed; 
+}
+
+// RemoveEmptyScopes_isEmpty: determines whether a scope is 'empty':
+//   true, if a FileScope has no children.
+//   true, if a LoopScope or ProcScope has no children *and* an empty
+//     VMAIntervalSet.
+//   false, otherwise
+static bool 
+RemoveEmptyScopes_isEmpty(const ScopeInfo* node)
+{
+  if (node->Type() == ScopeInfo::FILE && node->ChildCount() == 0) {
+    return true;
+  }
+  if ((node->Type() == ScopeInfo::PROC || node->Type() == ScopeInfo::LOOP)
+      && node->ChildCount() == 0) {
+    const CodeInfo* n = dynamic_cast<const CodeInfo*>(node);
+    return n->vmaSet().empty();
+  }
+  return false;
 }
 
 

@@ -52,6 +52,7 @@
 
 #include <iostream> 
 using std::cerr;
+using std::endl;
 
 #include <string>
 using std::string;
@@ -79,8 +80,6 @@ using XERCES_CPP_NAMESPACE::XMLString;
 
 //************************ Forward Declarations ******************************
 
-using std::endl;
-
 //****************************************************************************
 
 // ----------------------------------------------------------------------
@@ -92,39 +91,39 @@ using std::endl;
 // ----------------------------------------------------------------------
 
 PROFILEDocHandler::PROFILEDocHandler(NodeRetriever* const retriever, 
-				     Driver* _driver)  :
-  elemProfile(XMLString::transcode("PROFILE")),
-  elemProfileHdr(XMLString::transcode("PROFILEHDR")),
-  elemProfileParams(XMLString::transcode("PROFILEPARAMS")),
-  elemTarget(XMLString::transcode("TARGET")),
-  elemMetrics(XMLString::transcode("METRICS")),
-  elemMetricDef(XMLString::transcode("METRIC")),
-  elemProfileScopeTree(XMLString::transcode("PROFILESCOPETREE")),
-  elemPgm(XMLString::transcode("PGM")),
-  elemGroup(XMLString::transcode("G")),
-  elemLM(XMLString::transcode("LM")),
-  elemFile(XMLString::transcode("F")),
-  elemProc(XMLString::transcode("P")),
-  elemLoop(XMLString::transcode("L")),
-  elemStmt(XMLString::transcode("S")),
-  elemMetric(XMLString::transcode("M")),
-  
-  // attribute names for PROFILE elements
-  attrVer(XMLString::transcode("version")),
-  attrShortName(XMLString::transcode("shortName")),
-  attrNativeName(XMLString::transcode("nativeName")),
-  attrPeriod(XMLString::transcode("period")),
-  attrUnits(XMLString::transcode("units")),
-  attrDisplayName(XMLString::transcode("displayName")),
-  attrDisplay(XMLString::transcode("display")),
-  
-  // attribute names for PGM elements
-  attrName(XMLString::transcode("n")),
-  attrLnName(XMLString::transcode("ln")),
-  attrBegin(XMLString::transcode("b")),
-  attrEnd(XMLString::transcode("e")),
-  attrId(XMLString::transcode("id")),
-  attrVal(XMLString::transcode("v"))
+				     Driver* _driver)  
+  : elemProfile(XMLString::transcode("PROFILE")),
+    elemProfileHdr(XMLString::transcode("PROFILEHDR")),
+    elemProfileParams(XMLString::transcode("PROFILEPARAMS")),
+    elemTarget(XMLString::transcode("TARGET")),
+    elemMetrics(XMLString::transcode("METRICS")),
+    elemMetricDef(XMLString::transcode("METRIC")),
+    elemProfileScopeTree(XMLString::transcode("PROFILESCOPETREE")),
+    elemPgm(XMLString::transcode("PGM")),
+    elemGroup(XMLString::transcode("G")),
+    elemLM(XMLString::transcode("LM")),
+    elemFile(XMLString::transcode("F")),
+    elemProc(XMLString::transcode("P")),
+    elemLoop(XMLString::transcode("L")),
+    elemStmt(XMLString::transcode("S")),
+    elemMetric(XMLString::transcode("M")),
+    
+    // attribute names for PROFILE elements
+    attrVer(XMLString::transcode("version")),
+    attrShortName(XMLString::transcode("shortName")),
+    attrNativeName(XMLString::transcode("nativeName")),
+    attrPeriod(XMLString::transcode("period")),
+    attrUnits(XMLString::transcode("units")),
+    attrDisplayName(XMLString::transcode("displayName")),
+    attrDisplay(XMLString::transcode("display")),
+    
+    // attribute names for PGM elements
+    attrName(XMLString::transcode("n")),
+    attrLnName(XMLString::transcode("ln")),
+    attrBegin(XMLString::transcode("b")),
+    attrEnd(XMLString::transcode("e")),
+    attrId(XMLString::transcode("id")),
+    attrVal(XMLString::transcode("v"))
 {
   nodeRetriever = retriever;
   driver = _driver;
@@ -301,6 +300,7 @@ void PROFILEDocHandler::startElement(const XMLCh* const uri, const XMLCh* const 
     BriefAssertion(funcName.empty());
     funcName = name;
     procScope = nodeRetriever->MoveToProc(funcName);
+    // FIXME: should take linkname into account
     
     IFTRACE << "P(roc): name= " << name << endl;       
   }

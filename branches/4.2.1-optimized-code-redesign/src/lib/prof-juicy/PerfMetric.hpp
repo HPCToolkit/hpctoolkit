@@ -1,4 +1,4 @@
-// -*-C++-*-
+// -*-Mode: C++;-*-
 // $Id$
 
 // * BeginRiceCopyright *****************************************************
@@ -50,7 +50,6 @@
 
 //************************ Forward Declarations ******************************
 
-class PgmScope; 
 class NodeRetriever; 
 
 //****************************************************************************
@@ -114,7 +113,12 @@ public:
   // fastest).
   
   PerfMetric(const char *name, const char *nativeName, const char* displayName,
-	     bool display, bool percent, bool propComputed, bool sortBy); 
+	     bool display, bool percent, bool propComputed, bool sortBy);
+
+  PerfMetric(const std::string& name, const std::string& nativeName, 
+	     const std::string& displayName, 
+	     bool display, bool percent, bool propComputed, bool sortBy);
+
   // constructor automatically adds new instance to PerfMetricTable
   // and sets this->perfInfoIndex to instance's index in the table
   
@@ -130,14 +134,18 @@ public:
   bool SortBy() const                 { return sortBy; }
   void setSortBy()                    { sortBy = true; }
   
-  DataDisplayInfo& DisplayInfo()const { return *dispInfo; }; 
+  DataDisplayInfo& DisplayInfo() const { return *dispInfo; }; 
   
   unsigned int EventsPerCount()      const; 
   void SetEventsPerCount(int eventsPerCount); 
   
-  virtual void Make(NodeRetriever &ret)  = 0;
-
+  virtual void Make(NodeRetriever& ret);
+  
   std::string ToString() const; 
+
+private:
+  void Ctor(const char *name, const char* displayName); 
+
 private: 
   static VectorTmpl<PerfMetric*> PerfMetricTable; 
   friend bool              IsPerfDataIndex(int i); 

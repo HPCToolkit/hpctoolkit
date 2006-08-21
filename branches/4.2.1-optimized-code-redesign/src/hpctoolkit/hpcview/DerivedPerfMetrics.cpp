@@ -1,4 +1,4 @@
-// -*-C++-*-
+// -*-Mode: C++;-*-
 // $Id$
 
 // * BeginRiceCopyright *****************************************************
@@ -68,9 +68,11 @@ using std::string;
 // classes derived from PerfMetric
 // *************************************************************************
 
-FilePerfMetric::FilePerfMetric(const char* nm, const char* nativeNm,
-			       const char* displayNm, bool doDisp, 
-			       bool doPerc, bool doSort, const char* fName,
+FilePerfMetric::FilePerfMetric(const char* nm, 
+			       const char* nativeNm,
+			       const char* displayNm, 
+			       bool doDisp, bool doPerc, bool doSort, 
+			       const char* fName,
 			       const char* tp, Driver* _driver) 
   : PerfMetric(nm, nativeNm, displayNm, doDisp, doPerc, false, doSort),
     file(fName), type(tp), driver(_driver)
@@ -78,36 +80,71 @@ FilePerfMetric::FilePerfMetric(const char* nm, const char* nativeNm,
   // trace = 1;
 }
 
+
+FilePerfMetric::FilePerfMetric(const std::string& nm, 
+			       const std::string& nativeNm, 
+			       const std::string& displayNm,
+			       bool doDisp, bool doPerc, bool doSort, 
+			       const std::string& fName, 
+			       const std::string& tp, 
+			       Driver* _driver)
+  : PerfMetric(nm, nativeNm, displayNm, doDisp, doPerc, false, doSort),
+    file(fName), type(tp), driver(_driver)
+{ 
+  // trace = 1;
+}
+
+
 FilePerfMetric::~FilePerfMetric() 
 {
   IFTRACE << "~FilePerfMetric " << ToString() << endl; 
 }
 
-ComputedPerfMetric::ComputedPerfMetric(const char* nm, const char* displayNm, 
-				       bool doDisp, bool doPerc, bool doSort, 
-				       bool propagateComputed, 
+
+ComputedPerfMetric::ComputedPerfMetric(const char* nm, const char* displayNm,
+				       bool doDisp, bool doPerc, bool doSort,
+				       bool propagateComputed,
 				       DOMNode *expr)
-  : PerfMetric(nm, NULL, displayNm, doDisp, doPerc, propagateComputed, doSort)
+  : PerfMetric(nm, "", displayNm, doDisp, doPerc, propagateComputed, doSort)
 {
-   try {
-     mathExpr = new MathMLExpr(expr); 
-   }
-   catch (const MathMLExprException &e) {
-     cerr << "hpcview fatal error: Could not construct METRIC '" << nm << "'." << endl 
-	  << "\tXML exception encountered when processing MathML expression: " 
-	  << e.getMessage() << "." << endl;
-     exit(1);
-   }
-   catch (...) {
+  Ctor(nm, expr);
+}
+
+
+ComputedPerfMetric::ComputedPerfMetric(const std::string& nm,
+				       const std::string& displayNm,
+				       bool doDisp, bool doPerc, bool doSort,
+				       bool propagateComputed,
+				       DOMNode *expr)
+  : PerfMetric(nm, "", displayNm, doDisp, doPerc, propagateComputed, doSort)
+{
+  Ctor(nm.c_str(), expr);
+}
+
+
+void
+ComputedPerfMetric::Ctor(const char* nm, DOMNode *expr)
+{
+  try {
+    mathExpr = new MathMLExpr(expr); 
+  }
+  catch (const MathMLExprException &e) {
+    cerr << "hpcview fatal error: Could not construct METRIC '" << nm << "'." << endl 
+	 << "\tXML exception encountered when processing MathML expression: " 
+	 << e.getMessage() << "." << endl;
+    exit(1);
+  }
+  catch (...) {
      cerr << "hpcview fatal error: Could not construct metric " << endl 
 	  << "\tUnknown exception encountered handling MathML expression." << endl; 
      exit(1);
    }
-   if (mathExpr != NULL) { // catch exception really 
-     DIAG_Msg(1, "Computed METRIC " << nm << ": " << nm << " = " 
-	      << mathExpr->toString());
-   } 
+  if (mathExpr != NULL) { // catch exception really 
+    DIAG_Msg(1, "Computed METRIC " << nm << ": " << nm << " = " 
+	     << mathExpr->toString());
+  } 
 }
+
 
 ComputedPerfMetric::~ComputedPerfMetric() 
 {
@@ -119,12 +156,12 @@ ComputedPerfMetric::~ComputedPerfMetric()
 // Make methods 
 // **************************************************************************
 
-static void
-AccumulateFromChildren(ScopeInfo &si, int perfInfoIndex) 
+void
+AccumulateMetricsFromChildren(ScopeInfo* si, int perfInfoIndex) 
 {
-  ScopeInfoChildIterator it(&si); 
+  ScopeInfoChildIterator it(si); 
   for (; it.Current(); it++) { 
-     AccumulateFromChildren(*it.CurScope(), perfInfoIndex); 
+     AccumulateMetricsFromChildren(it.CurScope(), perfInfoIndex); 
   } 
   it.Reset(); 
   if (it.Current() != NULL) { // its not a leaf 
@@ -137,12 +174,14 @@ AccumulateFromChildren(ScopeInfo &si, int perfInfoIndex)
       }
     } 
     if (hasVal) { 
-      si.SetPerfData(perfInfoIndex, val); 
+      si->SetPerfData(perfInfoIndex, val); 
     }
   }
 }
 
-void FilePerfMetric::Make(NodeRetriever &ret)
+
+void 
+FilePerfMetric::Make(NodeRetriever &ret)
 {
   IFTRACE << "FilePerfMetric::Make " << endl << " " << ToString() << endl;
   
@@ -172,7 +211,7 @@ void FilePerfMetric::Make(NodeRetriever &ret)
   }
   delete parser;
   
-  AccumulateFromChildren(*ret.GetRoot(), Index());
+  AccumulateMetricsFromChildren(ret.GetRoot(), Index());
   
   if (!ret.GetRoot()->HasPerfData(Index())) {
     DIAG_Msg(1, "Warning: File '" << file << "' does not contain any information for metric '" << Name() << "'");
@@ -180,7 +219,9 @@ void FilePerfMetric::Make(NodeRetriever &ret)
   IFTRACE << "FilePerfMetric::Make yields: " << ToString() << endl;
 }
 
-void ComputedPerfMetric::Make(NodeRetriever &ret)
+
+void 
+ComputedPerfMetric::Make(NodeRetriever &ret)
 {
   ScopeInfoIterator it(ret.GetRoot(), 
 		       /*filter*/ NULL, /*leavesOnly*/ false, PostOrder); 
@@ -196,7 +237,7 @@ void ComputedPerfMetric::Make(NodeRetriever &ret)
   }
 
   if (IndexToPerfDataInfo(Index()).PropComputed()) {
-    AccumulateFromChildren(*ret.GetRoot(), Index());
+    AccumulateMetricsFromChildren(ret.GetRoot(), Index());
   }
 }
 

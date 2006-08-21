@@ -1,4 +1,4 @@
-// -*-C++-*-
+// -*-Mode: C++;-*-
 // $Id$
 
 // * BeginRiceCopyright *****************************************************
@@ -77,7 +77,7 @@ typedef std::vector<PCProfileMetric*>      PCProfileMetricVec;
 typedef PCProfileMetricVec::iterator       PCProfileMetricVecIt;
 typedef PCProfileMetricVec::const_iterator PCProfileMetricVecCIt;
 
-typedef std::vector<VMA>     PCVec;
+typedef std::vector<VMA>      PCVec;
 typedef PCVec::iterator       PCVecIt;
 typedef PCVec::const_iterator PCVecCIt;
 

@@ -93,10 +93,10 @@ public:
   const std::string& GetName() const { return name; }
   Type  GetType()  const { return type; }
   
-  // Return begin/end virtual memory address for section.  The end
-  // of a section is equal to the begin address of the next section
-  // (or the end of the file).  Note that a different convention is
-  // used for the end address of a 'Procedure'.
+  // Return begin/end virtual memory address for section: [beg, end).
+  // Note that the end of a section is equal to the begin address of
+  // the next section (or the end of the file) which is different than
+  // the convention used for a 'Procedure'.
   VMA GetBeg() const { return beg; }
   VMA GetEnd() const { return end; }
 

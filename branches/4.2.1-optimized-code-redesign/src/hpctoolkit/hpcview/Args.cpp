@@ -156,6 +156,8 @@ CmdLineParser::OptArgDesc Args::optArgs[] = {
   {  0 , "csv",             CLP::ARG_OPT,  CLP::DUPOPT_CLOB, NULL },
   {  0 , "tsv",             CLP::ARG_OPT,  CLP::DUPOPT_CLOB, NULL },
 
+  { 'u', NULL,              CLP::ARG_NONE, CLP::DUPOPT_CLOB, NULL },
+
   // General
   { 'v', "verbose",         CLP::ARG_OPT,  CLP::DUPOPT_CLOB, NULL },
   { 'V', "version",         CLP::ARG_NONE, CLP::DUPOPT_CLOB, NULL },
@@ -194,9 +196,7 @@ Args::Ctor()
 
   CopySrcFiles         = true;
   XML_DumpAllMetrics   = true;  // dump metrics on interior nodes
-
   deleteUnderscores = 1;
-  OutputInitialScopeTree = false; // used for debugging at this point
 
   Diagnostics_SetDiagnosticFilterLevel(1);
 }
@@ -341,7 +341,7 @@ Args::Parse(int argc, const char* const argv[])
     configurationFile = parser.GetArg(0);
 
     for (unsigned i = 1; i < parser.GetNumArgs(); ++i) {
-      profileFiles.push_back(parser.GetArg(0));
+      profileFiles.push_back(parser.GetArg(i));
     }
 
   }
@@ -362,7 +362,6 @@ Args::Dump(std::ostream& os) const
   os << "Args.cmd= " << GetCmd() << endl; 
   os << "Args.hpcHome= " << hpcHome << endl; 
   os << "Args.dbDir= " << dbDir << endl; 
-  os << "Args.OutputInitialScopeTree= " << OutputInitialScopeTree << endl; 
   os << "Args.OutFilename_XML= " << OutFilename_XML << endl; 
   os << "Args.OutFilename_CSV= " << OutFilename_CSV << endl; 
   os << "Args.OutFilename_TSV= " << OutFilename_TSV << endl; 

@@ -1,5 +1,6 @@
 // -*-Mode: C++;-*-
 // $Id$
+
 // * BeginRiceCopyright *****************************************************
 // 
 // Copyright ((c)) 2002, Rice University 
@@ -139,8 +140,8 @@ Procedure::Dump(std::ostream& o, const char* pre) const
     case Global:  o << "Global'\n"; break;
     default:      o << "-unknown-'\n"; BriefAssertion(false);
   }
-  o << p << "  VMA(beg,end): 0x" << hex << GetBegVMA() << ", 0x"
-    << GetEndVMA() << dec << "\n";
+  o << p << "  VMA: [0x" << hex << GetBegVMA() << ", 0x"
+    << GetEndVMA() << dec << "]\n";
   o << p << "  Size(b): " << GetSize() << "\n";
 
   o << p1 << "----- Instruction Dump -----\n";
@@ -177,12 +178,12 @@ ProcedureInstructionIterator::~ProcedureInstructionIterator()
 void
 ProcedureInstructionIterator::Reset()
 {
-  it    = lm.addrToInstMap.find(p.begVMA);
-  endIt = lm.addrToInstMap.find(p.endVMA); 
+  it    = lm.vmaToInsnMap.find(p.begVMA);
+  endIt = lm.vmaToInsnMap.find(p.endVMA); 
   
-  if (it != lm.addrToInstMap.end()) {
+  if (it != lm.vmaToInsnMap.end()) {
     // We have at least one instruction: p.endVMA should have been found
-    BriefAssertion(endIt != lm.addrToInstMap.end() && "Internal error!");
+    BriefAssertion(endIt != lm.vmaToInsnMap.end() && "Internal error!");
 
     endIt++; // 'endIt' is now one past the last valid instruction
   
@@ -190,8 +191,8 @@ ProcedureInstructionIterator::Reset()
     // vma are also included.  Push 'endIt' back as needed; when done it
     // should remain one past the last valid instruction
     for (; // ((*endIt).second) returns Instruction*
-	 (endIt != lm.addrToInstMap.end() 
-	  && ((*endIt).second)->GetVMA() == p.endVMA);
+	 (endIt != lm.vmaToInsnMap.end() 
+	  && endIt->second->GetVMA() == p.endVMA);
 	 endIt++)
       { }
   }

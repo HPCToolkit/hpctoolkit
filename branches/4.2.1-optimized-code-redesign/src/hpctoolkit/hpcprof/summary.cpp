@@ -348,7 +348,7 @@ Summary::init(const string& pgm, const vector<ProfFile>& profs)
       
       // We inspect only the first load module of each prof file because
       // while one prof file contains multiple load modules, each load
-      // module contains the same PAPI events.  
+      // module contains the same events.  
       const ProfFileLM& proflm = prof.load_module(0);
       n_event_ += proflm.num_events();
       for (unsigned int k = 0; k < proflm.num_events(); ++k, ++ev_i) {

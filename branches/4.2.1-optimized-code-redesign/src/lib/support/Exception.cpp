@@ -93,7 +93,7 @@ Diagnostics::Exception::Ctor(const std::string& x,
   mWhat = x;
   if (filenm && lineno != 0) {
     std::ostringstream os;
-    os << "[" << filenm << ":" << lineno << "]: " << x;
+    os << filenm << ":" << lineno;
     mWhere = os.str();
   } 
 }

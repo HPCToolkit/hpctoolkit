@@ -106,7 +106,6 @@ public:
   bool XML_DumpAllMetrics;
 
   int deleteUnderscores;
-  bool OutputInitialScopeTree;
 
   // Parsed Data: arguments
   std::string configurationFile;

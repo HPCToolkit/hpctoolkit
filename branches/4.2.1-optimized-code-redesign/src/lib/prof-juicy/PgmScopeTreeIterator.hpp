@@ -1,5 +1,6 @@
+// -*-Mode: C++;-*-
 // $Id$
-// -*-C++-*-
+
 // * BeginRiceCopyright *****************************************************
 // 
 // Copyright ((c)) 2002, Rice University 
@@ -64,8 +65,8 @@
 
 //*************************** Forward Declarations **************************
 
-int HasPerfData( const ScopeInfo *si, int nm );
-void UpdateScopeTree( const ScopeInfo *node, int noMetrics );
+int HasPerfData(const ScopeInfo *si, int nm);
+void PruneScopeTreeMetrics(const ScopeInfo *node, int noMetrics);
 
 //***************************************************************************
 // ScopeInfoFilter

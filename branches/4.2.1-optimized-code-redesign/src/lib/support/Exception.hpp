@@ -158,7 +158,7 @@ namespace Diagnostics {
     // message/reporting
     // -------------------------------------------------------
     virtual std::string message() const { 
-      return "[Diagnostics::FatalException] " + mWhat + " (" + mWhere + ")";
+      return "[Diagnostics::FatalException] " + mWhat + " [" + mWhere + "]";
     }
 
   };

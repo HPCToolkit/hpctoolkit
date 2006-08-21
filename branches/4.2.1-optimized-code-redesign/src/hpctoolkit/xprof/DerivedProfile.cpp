@@ -150,12 +150,12 @@ DerivedProfile::Create(const PCProfile* pcprof_,
     // FIXME: Save memory by using MakeDerivedPCSetCoterminousWithPCSet() 
     // when the insn filter is the identity filter.
     
-    // Iterate over PC values in the profile
+    // Iterate over VMA values in the profile
     for (PCProfile_PCIterator it(*pcprof); it.IsValid(); ++it) {
       
-      VMA oppc = it.Current(); // an 'operation pc'
+      VMA opvma = it.Current(); // an 'operation vma'
       ushort opIndex;
-      VMA pc = isa->ConvertOpVMAToVMA(oppc, opIndex);
+      VMA vma = LoadModule::isa->ConvertOpVMAToVMA(opvma, opIndex);
       
       // For each derived metric and its insn filter
       PCProfileFilterList::const_iterator fIt = filtlist->begin();
@@ -167,9 +167,9 @@ DerivedProfile::Create(const PCProfile* pcprof_,
 	  = const_cast<DerivedProfileMetric*>(GetMetric(i));
 	const PCProfileMetricSet* rawMSet = dm->GetMetricSet();
 	
-	// if pc has data && insn filter is satisfied for pc, record pc
-	if (rawMSet->DataExists(pc, opIndex) >= 0 && (*pcfilt)(pc, opIndex)) {
-	  dm->InsertPC(pc, opIndex);
+	// if vma has data && insn filter is satisfied for vma, record vma
+	if (rawMSet->DataExists(vma, opIndex) >= 0 && (*pcfilt)(vma, opIndex)) {
+	  dm->InsertPC(vma, opIndex);
 	}
       }  
     }

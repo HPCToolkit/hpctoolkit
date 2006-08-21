@@ -58,8 +58,6 @@
 
 //************************* User Include Files *******************************
 
-// #include "XMLAdapter.h"
-
 #include "HPCViewSAX2.hpp"
 
 #include <lib/prof-juicy/PgmScopeTree.hpp>

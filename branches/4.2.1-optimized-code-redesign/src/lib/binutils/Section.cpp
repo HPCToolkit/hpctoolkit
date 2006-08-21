@@ -103,8 +103,8 @@ Section::Dump(std::ostream& o, const char* pre) const
     case Data: o << "Data'\n"; break;
     default:   o << "-unknown-'\n";  BriefAssertion(false); 
   }
-  o << p << "  VMA(beg, end): 0x" << hex << GetBeg() << ", 0x"
-    << GetEnd() << dec << "\n";
+  o << p << "  VMA: [0x" << hex << GetBeg() << ", 0x"
+    << GetEnd() << dec << ")\n";
   o << p << "  Size(b): " << GetSize() << "\n";
 }
 
@@ -255,7 +255,7 @@ TextSection::Create_InitializeProcs()
       // Create a procedure based on best information we have.  We
       // always prefer explicit debug information over that inferred
       // from the symbol table.
-      // Note: Initially, the end addr is the *end* of the last insn.
+      // NOTE: Initially, the end addr is the *end* of the last insn.
       // This is changed after decoding below.
       VMA begVMA = bfd_asymbol_value(sym);
       VMA endVMA = 0; // see note above
@@ -264,7 +264,7 @@ TextSection::Create_InitializeProcs()
 
       LoadModule::DbgFuncSummary::Info* dbg = (*dbgSum)[begVMA];
       if (dbg) {
-	endVMA = dbg->endVMA;
+	endVMA = dbg->endVMA; // end of last insn
 	procNm = dbg->name;
       }
       if (!dbg || endVMA == 0) {
@@ -272,10 +272,16 @@ TextSection::Create_InitializeProcs()
       }
       if (!dbg || procNm.empty()) {
 	procNm = FindProcedureName(impl->abfd, sym);
+      }      
+      suint size = endVMA - begVMA; // see note above
+
+      if (size == 0) {
+	continue;
       }
       
+      // We now have a valid procedure
       Procedure *proc = new Procedure(this, procNm, symNm, procType,
-				      begVMA, endVMA, endVMA - begVMA);
+				      begVMA, endVMA, size);
       procedures.push_back(proc);
 
       // Add symbolic info
@@ -311,14 +317,14 @@ TextSection::Create_DisassembleProcs()
     // Iterate over each vma at which an instruction might begin
     for (VMA vma = procBeg; vma < procEnd; ) {
       MachInst *mi = &(impl->contents[vma - sectionBase]);
-      instSz = isa->GetInstSize(mi);
+      instSz = LoadModule::isa->GetInstSize(mi);
       if (instSz == 0) {
 	// This is not a recognized instruction (cf. data on CISC ISAs).
 	++vma; // Increment the VMA, and try to decode again.
 	continue;
       }
 
-      int num_ops = isa->GetInstNumOps(mi);
+      int num_ops = LoadModule::isa->GetInstNumOps(mi);
       if (num_ops == 0) {
 	// This instruction contains data.  No need to decode.
 	vma += instSz;
@@ -377,7 +383,7 @@ TextSection::FindProcedureName(bfd *abfd, asymbol *procSym) const
 // Approximate the end VMA of the function given by funcSymIndex.
 // This is normally the address of the next function symbol in this
 // section.  However, if this is the last function in the section,
-// then its end is the address of the end of the section.
+// then it is the address of the end of the section.
 VMA
 TextSection::FindProcedureEnd(int funcSymIndex) const
 {

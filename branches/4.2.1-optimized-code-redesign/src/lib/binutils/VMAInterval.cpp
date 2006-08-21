@@ -194,7 +194,7 @@ VMAIntervalSet::insert(const VMAIntervalSet::value_type& x)
   // find (lb <= x < ub) such that lb != x
   if (lb == end()) {
     if (!empty()) { // all elements are less than x
-      lb = --end(); 
+      lb = --end();
     }
   }
   else {
@@ -294,7 +294,7 @@ VMAIntervalSet::erase(const VMAIntervalSet::key_type& x)
   // find (lb <= x < ub) such that lb != x
   if (lb == end()) {
     if (!empty()) { // all elements are less than x
-      lb = --end(); 
+      lb = --end();
     }
   }
   else {
@@ -398,11 +398,18 @@ VMAIntervalSet::fromString(const char* formattedstr)
   // skip '{'
   DIAG_Assert(*p == '{', DIAG_UnexpectedInput << "'" << s << "'");
   p++;
-  
-  // strtok on " " or "]"
 
+  // find intervals: p points to '[' and q points to ')'
+  const char* q = p;
+  while ( (p = strchr(q, '[')) ) {
+    VMAInterval vmaint(p);
+    insert(vmaint); // the overloaded insert
+    q = strchr(p, ')'); // q point
+  }
+  q++;
+  
   // skip '}'
-  DIAG_Assert(*p == '}', DIAG_UnexpectedInput << "'" << s << "'");
+  DIAG_Assert(*q == '}', DIAG_UnexpectedInput << "'" << s << "'");
   p++;
 }
 

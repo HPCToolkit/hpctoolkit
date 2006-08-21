@@ -86,7 +86,7 @@ public:
   
   // Returns a classification of the instruction
   ISA::InstDesc GetDesc() const {
-    return isa->GetInstDesc(minst, GetOpIndex(), GetSize());
+    return LoadModule::isa->GetInstDesc(minst, GetOpIndex(), GetSize());
   }
   
   // 'GetBits' returns a pointer to the bits of the instruction;
@@ -115,14 +115,14 @@ public:
   // computed when it depends on values in registers (e.g. indirect
   // jumps).  'vma' is used only to calculate PC-relative targets.
   virtual VMA GetTargetVMA(VMA _vma) const {
-    return isa->GetInstTargetVMA(minst, _vma, GetOpIndex(), GetSize());
+    return LoadModule::isa->GetInstTargetVMA(minst, _vma, GetOpIndex(), GetSize());
   }
   
   // Returns the number of delay slots that must be observed by
   // schedulers before the effect of instruction 'mi' can be
   // assumed to be fully obtained (e.g., RISC braches).
   virtual ushort GetNumDelaySlots() const {
-    return isa->GetInstNumDelaySlots(minst, GetOpIndex(), GetSize());
+    return LoadModule::isa->GetInstNumDelaySlots(minst, GetOpIndex(), GetSize());
   }
 
   // Returns whether or not the instruction "explicitly" executes in
@@ -130,7 +130,7 @@ public:
   // sense).  IOW, this has special reference to "explicitly parallel"
   // architecture, not superscalar design.
   virtual bool IsParallelWithSuccessor(Instruction* mi2) const {
-    return isa->IsParallelWithSuccessor(minst, GetOpIndex(), GetSize(),
+    return LoadModule::isa->IsParallelWithSuccessor(minst, GetOpIndex(), GetSize(),
 					mi2->GetBits(), mi2->GetOpIndex(),
 					mi2->GetSize());
   }
@@ -169,11 +169,11 @@ public:
 
   // Given a target or branch instruction, returns the target address.
   virtual VMA GetTargetVMA(VMA _vma) const {
-    return isa->GetInstTargetVMA(minst, _vma, size);
+    return LoadModule::isa->GetInstTargetVMA(minst, _vma, size);
   }
 
   virtual ushort GetNumDelaySlots() const {
-    return isa->GetInstNumDelaySlots(minst, size);
+    return LoadModule::isa->GetInstNumDelaySlots(minst, size);
   }
 
   // Dump contents for inspection
@@ -203,8 +203,9 @@ public:
 
   virtual ~RISCInstruction() { }
   
-  virtual ushort GetSize() const { return isa->GetInstSize(minst); }
+  virtual ushort GetSize() const { return LoadModule::isa->GetInstSize(minst); }
   virtual ushort GetOpIndex() const { return 0; }
+
   virtual ushort GetNumOps() const  { return 1; }
 
   // Dump contents for inspection
@@ -233,9 +234,14 @@ public:
 
   virtual ~VLIWInstruction() { }
   
-  virtual ushort GetSize() const { return isa->GetInstSize(minst); }
-  virtual ushort GetOpIndex() const { return opIndex; }
-  virtual ushort GetNumOps() const  { return isa->GetInstNumOps(minst); }
+  virtual ushort GetSize() const 
+    { return LoadModule::isa->GetInstSize(minst); }
+
+  virtual ushort GetOpIndex() const 
+    { return opIndex; }
+
+  virtual ushort GetNumOps() const  
+    { return LoadModule::isa->GetInstNumOps(minst); }
 
   // Dump contents for inspection
   virtual void Dump(std::ostream& o = std::cerr, const char* pre = "") const;

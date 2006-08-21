@@ -88,7 +88,8 @@ using std::dec;
 //***************************************************************************
 
 // current ISA (see comments in header)
-ISA* isa = NULL;  
+ISA* LoadModule::isa = NULL;
+
 
 class LoadModuleImpl {
 public:
@@ -126,14 +127,15 @@ LoadModule::~LoadModule()
   }
   sections.clear();
     
-  // Clear addrToInstMap
-  VMAToInstMapIt it;
-  for (it = addrToInstMap.begin(); it != addrToInstMap.end(); ++it) {
+  // Clear vmaToInsMap
+  VMAToInsnMap::iterator it;
+  for (it = vmaToInsnMap.begin(); it != vmaToInsnMap.end(); ++it) {
     delete (*it).second; // Instruction*
   }
-  addrToInstMap.clear();
+  vmaToInsnMap.clear();
 
   // reset isa  
+  delete isa;
   isa = NULL;
 }
 
@@ -236,7 +238,7 @@ LoadModule::Open(const char* moduleName)
   }
   else {
     delete newisa;
-    BriefAssertion(typeid(*newisa) == typeid(*isa) &&
+    DIAG_Assert(typeid(*newisa) == typeid(*isa),
 		"Cannot simultaneously open LoadModules with different ISAs!");
   }
   
@@ -253,7 +255,7 @@ LoadModule::Read()
 
   // Read if we have not already done so
   if (impl->bfdSymbolTable == NULL
-      && sections.size() == 0 && addrToInstMap.size() == 0) {
+      && sections.size() == 0 && vmaToInsnMap.size() == 0) {
     STATUS &= ReadSymbolTables();
     STATUS &= ReadSections();
     buildVMAToProcedureMap();
@@ -309,8 +311,8 @@ LoadModule::GetInst(VMA vma, ushort opIndex) const
   VMA mapVMA = isa->ConvertVMAToOpVMA(unrelocVMA, opIndex);
   
   Instruction* inst = NULL;
-  VMAToInstMapItC it = addrToInstMap.find(mapVMA);
-  if (it != addrToInstMap.end()) {
+  VMAToInsnMap::const_iterator it = vmaToInsnMap.find(mapVMA);
+  if (it != vmaToInsnMap.end()) {
     inst = (*it).second;
   }
   return inst;
@@ -323,13 +325,13 @@ LoadModule::AddInst(VMA vma, ushort opIndex, Instruction *inst)
   VMA mapVMA = isa->ConvertVMAToOpVMA(unrelocVMA, opIndex);
 
   // FIXME: It wouldn't hurt to verify this isn't a duplicate
-  addrToInstMap.insert(VMAToInstMapVal(mapVMA, inst));
+  vmaToInsnMap.insert(VMAToInsnMap::value_type(mapVMA, inst));
 }
 
 
 bool
 LoadModule::GetSourceFileInfo(VMA vma, ushort opIndex,
-			      string& func, string& file, suint &line) const
+			      string& func, string& file, suint& line) const
 {
   bool STATUS = false;
   func = file = "";
@@ -681,7 +683,7 @@ LoadModule::buildVMAToProcedureMap()
 	GetSourceFileInfo(begVMA, 0, func, file, begLine);
       }
       
-      addrToProcMap.insert(VMAToProcedureMap::value_type( VMAInterval(begVMA, endVMA), begLine));
+      vmaToProcMap.insert(VMAToProcedureMap::value_type( VMAInterval(begVMA, endVMA), begLine));
       xDEBUG(DEB_BUILD_PROC_MAP, 
 	     fprintf(stderr, "adding procedure %s [%x,%x] beg line %d\n", 
 		     p->GetName().c_str(), begVMA, endVMA, begLine););
@@ -703,8 +705,8 @@ LoadModule::GetProcedureFirstLineInfo(VMA vma, ushort opIndex, suint &line)
 	  fprintf(stderr, "LoadModule::GetProcedureFirstLineInfo %p %x (%x,%x) unrelocVMA=%x opVMA=%x\n", 
 		  this, this, vma, (unsigned) opIndex, unrelocVMA, opVMA););
 
-  VMAToProcedureMap::iterator it = addrToProcMap.lower_bound( VMAInterval(opVMA,opVMA));
-  if (it != addrToProcMap.end()) {
+  VMAToProcedureMap::iterator it = vmaToProcMap.lower_bound( VMAInterval(opVMA,opVMA));
+  if (it != vmaToProcMap.end()) {
     it--; // move to predecessor
     line = it->second;
     xDEBUG( DEB_BUILD_PROC_MAP,

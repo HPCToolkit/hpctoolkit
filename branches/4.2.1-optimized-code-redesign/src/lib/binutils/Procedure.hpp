@@ -98,10 +98,10 @@ public:
   // Return type of procedure
   Type  GetType()      const { return type; }
 
-  // Return the begin and end virtual memory address of a procedure.
-  // The end address points to the beginning of the last instruction.
-  // Note that a different convention is used for the end address of a
-  // 'Section'.
+  // Return the begin and end virtual memory address of a procedure:
+  // [beg, end].  Note that the end address points to the beginning of
+  // the last instruction which is different than the convention used
+  // for 'Section'.
   VMA  GetBegVMA() const { return begVMA; }
   VMA  GetEndVMA() const { return endVMA; }
   void  SetEndVMA(VMA _endVMA) { endVMA = _endVMA; }
@@ -232,8 +232,8 @@ protected:
 private:
   const Procedure& p;
   const LoadModule& lm;
-  LoadModule::VMAToInstMapItC it;
-  LoadModule::VMAToInstMapItC endIt;
+  LoadModule::VMAToInsnMap::const_iterator it;
+  LoadModule::VMAToInsnMap::const_iterator endIt;
 };
 
 //***************************************************************************

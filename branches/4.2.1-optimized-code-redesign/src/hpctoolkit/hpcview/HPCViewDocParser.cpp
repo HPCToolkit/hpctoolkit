@@ -382,8 +382,7 @@ ProcessMETRIC(DOMNode *node, Driver &driver)
 	  continue;
 	}
 	
-	driver.Add(new ComputedPerfMetric(metricName.c_str(), 
-					  metricDisplayName.c_str(), 
+	driver.Add(new ComputedPerfMetric(metricName, metricDisplayName, 
 					  metricDoDisplay, metricDoPercent, 
 					  metricDoSortBy,
 					  propagateComputed, child)); 
@@ -420,11 +419,9 @@ ProcessFILE(DOMNode* fileNode, Driver& driver,
   }
 
   if (!metricFile.empty()) { 
-    driver.Add(new FilePerfMetric(metricName.c_str(), nativeName.c_str(), 
-				  metricDisplayName.c_str(), 
+    driver.Add(new FilePerfMetric(metricName, nativeName, metricDisplayName, 
 				  metricDoDisplay, metricDoPercent, 
-				  metricDoSortBy, 
-				  metricFile.c_str(), metricFileType.c_str(), 
+				  metricDoSortBy, metricFile, metricFileType, 
 				  &driver)); 
   } 
   else {

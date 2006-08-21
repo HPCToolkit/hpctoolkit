@@ -1,5 +1,6 @@
+// -*-Mode: C++;-*-
 // $id: PgmScopeTreeIterator.cpp 580 2006-07-27 14:16:10Z eraxxon $
-// -*-C++-*-
+
 // * BeginRiceCopyright *****************************************************
 // 
 // Copyright ((c)) 2002, Rice University 
@@ -117,49 +118,43 @@ const ScopeInfoFilter ScopeTypeFilter[ScopeInfo::NUMBER_OF_SCOPES] = {
 //***************************************************************************
 
 int 
-HasPerfData( const ScopeInfo *si, int nm )
+HasPerfData(const ScopeInfo *si, int nm)
 {
-  for ( int i = 0 ; i<nm ; i++ )
-    if (si->HasPerfData(i))
+  for (int i = 0; i < nm ; i++) {
+    if (si->HasPerfData(i)) {
       return 1;
+    }
+  }
   return 0;
 }
 
 
 //***************************************************************************
-// UpdateScopeTree - not a member of any class
+// PruneScopeTreeMetrics - not a member of any class
 //    traverses a tree and removes all the nodes that don't have any profile
 //    data associated
 //***************************************************************************
 
 void 
-UpdateScopeTree( const ScopeInfo *node, int noMetrics )
+PruneScopeTreeMetrics(const ScopeInfo *node, int numMetrics)
 {
-  ScopeInfo *si;
   std::vector<ScopeInfo*> toBeRemoved;
   
   ScopeInfoChildIterator it( node, NULL );
-  for ( ; it.Current() ; it++ ) {
-    si = dynamic_cast<ScopeInfo*>(it.Current());
-    if ( HasPerfData( si, noMetrics ) )
-      UpdateScopeTree( si, noMetrics );
-    else
+  for ( ; it.Current(); it++) {
+    ScopeInfo* si = dynamic_cast<ScopeInfo*>(it.Current());
+    if (HasPerfData(si, numMetrics)) {
+      PruneScopeTreeMetrics(si, numMetrics);
+    }
+    else {
       toBeRemoved.push_back(si);
+    }
   }
-  for ( unsigned int i=0 ; i<toBeRemoved.size() ; i++ ) {
-    si = toBeRemoved[i];
+  
+  for (unsigned int i = 0; i < toBeRemoved.size(); i++) {
+    ScopeInfo* si = toBeRemoved[i];
     si->Unlink();
-    switch( si->Type() )
-      {
-      case ScopeInfo::PGM:   delete dynamic_cast<PgmScope*>(si); break;
-      case ScopeInfo::GROUP: delete dynamic_cast<GroupScope*>(si); break;
-      case ScopeInfo::LM:    delete dynamic_cast<LoadModScope*>(si); break;
-      case ScopeInfo::FILE:  delete dynamic_cast<FileScope*>(si); break;
-      case ScopeInfo::PROC:  delete dynamic_cast<ProcScope*>(si); break;
-      case ScopeInfo::LOOP:  delete dynamic_cast<LoopScope*>(si); break;
-      case ScopeInfo::STMT_RANGE: delete dynamic_cast<StmtRangeScope*>(si); break;
-      default: delete si; break;
-      }
+    delete si;
   }
 }
 

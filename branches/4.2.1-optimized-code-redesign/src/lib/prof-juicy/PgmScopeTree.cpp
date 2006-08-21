@@ -52,16 +52,13 @@
 
 #include <iostream>
 using std::ostream;
-using std::cout;
-using std::cerr;
 using std::endl;
-using std::hex;
-using std::dec;
 
 #include <string>
 using std::string;
 
 #include <map> // STL
+using std::map;
 
 #ifdef NO_STD_CHEADERS
 # include <stdio.h>
@@ -90,13 +87,6 @@ using namespace std; // For compatibility with non-std C headers
 
 //*************************** Forward Declarations **************************
 
-// Enabling this flag (not allowing duplicate function names in a
-// file) can cause problems if proper file scoping is not maintained.
-// This can happen when static functions are lumped together b/c a
-// lack of debugging information has made file identification
-// impossible
-//#define SCOPE_TREE_DISALLOW_DUPLICATE_FUNCTION_NAMES_IN_FILE
-
 int SimpleLineCmp(suint x, suint y);
 int AddXMLEscapeChars(int dmpFlag);
 
@@ -113,11 +103,18 @@ public:
   DoubleVector() : VectorTmpl<double>(NaNVal, true) { }
 };
 
-class GroupScopeMap     : public std::map<string, GroupScope*> { };
-class LoadModScopeMap   : public std::map<string, LoadModScope*> { };
-class ProcScopeMap      : public std::map<string, ProcScope*> { };
-class FileScopeMap      : public std::map<string, FileScope*> { };
-class StmtRangeScopeMap : public std::map<suint, StmtRangeScope*> { };
+class GroupScopeMap     : public map<string, GroupScope*> { };
+
+class LoadModScopeMap   : public map<string, LoadModScope*> { };
+
+// ProcScopeMap: This is is a multimap because procedure names are
+// sometimes "generic", i.e. not qualified by types in the case of
+// templates, resulting in duplicate names
+class ProcScopeMap      : public multimap<string, ProcScope*> { };
+
+class FileScopeMap      : public map<string, FileScope*> { };
+
+class StmtRangeScopeMap : public map<suint, StmtRangeScope*> { };
 
 //***************************************************************************
 // PgmScopeTree
@@ -142,7 +139,7 @@ PgmScopeTree::CollectCrossReferences()
 }
 
 void 
-PgmScopeTree::Dump(ostream& os, int dmpFlags) const
+PgmScopeTree::xml_dump(ostream& os, int dmpFlags) const
 {
   if (root) {
     root->XML_DumpLineSorted(os, dmpFlags);
@@ -150,9 +147,15 @@ PgmScopeTree::Dump(ostream& os, int dmpFlags) const
 }
 
 void 
-PgmScopeTree::DDump() const
+PgmScopeTree::dump(ostream& os, int dmpFlags) const
 {
-  Dump();
+  xml_dump(os, dmpFlags);
+}
+
+void 
+PgmScopeTree::ddump() const
+{
+  dump();
 }
 
 /*****************************************************************************/
@@ -192,15 +195,15 @@ ScopeInfo::ScopeInfo(ScopeType t, ScopeInfo* mom)
 }
 
 ScopeInfo& 
-ScopeInfo::operator=(const ScopeInfo& other) 
+ScopeInfo::operator=(const ScopeInfo& x) 
 {
   // shallow copy
-  if (&other != this) {
-    type     = other.type;
-    uid      = other.uid;
+  if (&x != this) {
+    type     = x.type;
+    uid      = x.uid;
     height   = 0;
     depth    = 0;
-    perfData = other.perfData;
+    perfData = x.perfData;
     
     ZeroLinks(); // NonUniformDegreeTreeNode
   }
@@ -295,12 +298,12 @@ CodeInfo::CodeInfo(ScopeType t, ScopeInfo* mom, suint begLn, suint endLn,
 }
 
 CodeInfo& 
-CodeInfo::operator=(const CodeInfo& other) 
+CodeInfo::operator=(const CodeInfo& x) 
 {
   // shallow copy
-  if (&other != this) {
-    mbegLine = other.mbegLine;
-    mendLine = other.mendLine;
+  if (&x != this) {
+    mbegLine = x.mbegLine;
+    mendLine = x.mendLine;
     first = last = NULL;
   }
   return *this;
@@ -338,18 +341,19 @@ PgmScope::Ctor(const char* nm)
 
 
 PgmScope& 
-PgmScope::operator=(const PgmScope& other) 
+PgmScope::operator=(const PgmScope& x) 
 {
   // shallow copy
-  if (&other != this) {
-    frozen   = other.frozen;
-    name     = other.name;
+  if (&x != this) {
+    frozen   = x.frozen;
+    name     = x.name;
     groupMap = NULL;
     lmMap    = NULL;
     fileMap  = NULL;
   }
   return *this;
 }
+
 
 PgmScope::~PgmScope() 
 {
@@ -415,12 +419,30 @@ LoadModScope::Ctor(const char* nm, ScopeInfo* mom)
   DIAG_Assert((mom == NULL) || (t == PGM) || (t == GROUP), "");
 
   name = nm;
+  procMap = NULL;
+  stmtMap = NULL;
+
   Pgm()->AddToLoadModMap(*this);
+}
+
+
+LoadModScope& 
+LoadModScope::operator=(const LoadModScope& x)
+{
+  // shallow copy
+  if (&x != this) {
+    name     = x.name;
+    procMap  = NULL;
+    stmtMap  = NULL;
+  }
+  return *this;
 }
 
 
 LoadModScope::~LoadModScope() 
 {
+  delete procMap;
+  delete stmtMap;
 }
 
 
@@ -458,12 +480,12 @@ FileScope::Ctor(const char* srcFileWithPath, bool srcIsReadble_,
 
 
 FileScope& 
-FileScope::operator=(const FileScope& other) 
+FileScope::operator=(const FileScope& x) 
 {
   // shallow copy
-  if (&other != this) {
-    srcIsReadable = other.srcIsReadable;
-    name          = other.name;
+  if (&x != this) {
+    srcIsReadable = x.srcIsReadable;
+    name          = x.name;
     procMap       = NULL;
   }
   return *this;
@@ -505,11 +527,11 @@ ProcScope::Ctor(const char* n, CodeInfo *mom, const char* ln)
 
 
 ProcScope& 
-ProcScope::operator=(const ProcScope& other) 
+ProcScope::operator=(const ProcScope& x) 
 {
   // shallow copy
-  if (&other != this) {
-    name    = other.name;
+  if (&x != this) {
+    name    = x.name;
     stmtMap = new StmtRangeScopeMap();
   }
   return *this;
@@ -641,7 +663,8 @@ ScopeInfo::Pgm() const
     //   (the LoopInfo itself) was queried for PgmInfo member data.  Ouch!
     // eraxxon: return (PgmScope*) this;
     return NULL;
-  } else { 
+  } 
+  else { 
     dyn_cast_return(ScopeInfo, PgmScope, Ancestor(PGM));
   }
 }
@@ -915,6 +938,7 @@ PgmScope::AddToGroupMap(GroupScope& grp)
   (*groupMap)[grpName] = &grp;
 }
 
+
 void 
 PgmScope::AddToLoadModMap(LoadModScope& lm)
 {
@@ -924,40 +948,54 @@ PgmScope::AddToLoadModMap(LoadModScope& lm)
   (*lmMap)[lmName] = &lm;
 }
 
+
 void 
 PgmScope::AddToFileMap(FileScope& f)
 {
   string fName = RealPath(f.Name().c_str());
-  // STL::map is a Unique Associative Container  
-  DIAG_Assert(fileMap->count(fName) == 0, "");
-  (*fileMap)[fName] = &f;
-
-  DIAG_DevMsg(2, "PgmScope namemap: mapping file name '" << fName 
+  DIAG_DevMsg(2, "PgmScope: mapping file name '" << fName 
 	      << "' to FileScope* " << &f);
+  DIAG_Assert(fileMap->count(fName) == 0, "Adding multiple instances of file " 
+	      << f.Name() << " to\n" << toStringXML());
+  (*fileMap)[fName] = &f;
 }
+
 
 void 
 FileScope::AddToProcMap(ProcScope& p) 
 {
-  // STL::map is a Unique Associative Container
-  bool duplicate = (procMap->count(p.Name()) != 0);
-#ifdef SCOPE_TREE_DISALLOW_DUPLICATE_FUNCTION_NAMES_IN_FILE
-  // We cannot tolerate any duplicates
-  DIAG_Assert(!duplicate && "Duplicate procedure added to file!", "");
-#endif  
-  if (!duplicate) { 
-    (*procMap)[p.Name()] = &p;
-  }
-  DIAG_DevMsg(2, "FileScope (" << this 
-	      << ") namemap: mapping proc name '" << p.Name()
-		<< "' to ProcScope* " << &p);
+  DIAG_DevMsg(2, "FileScope (" << this << "): mapping proc name '" << p.Name()
+	      << "' to ProcScope* " << &p);
+  
+  procMap->insert(make_pair(p.Name(), &p));
 } 
+
 
 void 
 ProcScope::AddToStmtMap(StmtRangeScope& stmt)
 {
   // STL::map is a Unique Associative Container
   (*stmtMap)[stmt.begLine()] = &stmt;
+}
+
+
+LoadModScope*
+PgmScope::FindLoadMod(const char* nm) const
+{
+  string lmName = RealPath(nm);
+  if (lmMap->count(lmName) != 0) 
+    return (*lmMap)[lmName];
+  return NULL;
+}
+
+
+FileScope*
+PgmScope::FindFile(const char* nm) const
+{
+  string fName = RealPath(nm);
+  if (fileMap->count(fName) != 0) 
+    return (*fileMap)[fName];
+  return NULL;
 }
 
 
@@ -969,37 +1007,103 @@ PgmScope::FindGroup(const char* nm) const
   return NULL;
 }
 
-LoadModScope*
-PgmScope::FindLoadMod(const char* nm) const
+
+CodeInfo*
+LoadModScope::findByVMA(VMA vma)
 {
-  string lmName = RealPath(nm);
-  if (lmMap->count(lmName) != 0) 
-    return (*lmMap)[lmName];
+  if (!procMap) {
+    buildMap(procMap, ScopeInfo::PROC);
+  }
+  if (!stmtMap) {
+    buildMap(stmtMap, ScopeInfo::STMT_RANGE);
+  }
+  
+  CodeInfo* found = NULL;
+  VMAInterval toFind(vma, vma+1); // [vma, vma+1)
+  
+  // Attempt to find StatementRange and then Proc
+  found = findInMap(stmtMap, toFind);
+  if (!found) {
+    found = findInMap(procMap, toFind);
+  }
+  return found;
+}
+
+
+template<typename T>
+T*
+LoadModScope::findInMap(map<VMAInterval, T*>* m, VMAInterval& toFind)
+{
+  // find [lb, ub) where lb is the first element !< toFind 
+  typename map<VMAInterval, T*>::const_reverse_iterator lb(m->lower_bound(toFind));
+  
+  // Reverse-search for match
+  if (lb.base() == m->end() && !m->empty()) {
+    lb = m->rbegin();
+  }
+  for ( ; lb != m->rend(); --lb) {
+    const VMAInterval& vmaint = lb->first;
+    if (vmaint.contains(toFind)) {
+      return lb->second;
+    }
+    else if (vmaint < toFind) {
+      break; // (toFind > vmaint) AND !vmaint.contains(toFind)
+    }
+  }
+  
   return NULL;
 }
 
-FileScope*
-PgmScope::FindFile(const char* nm) const
+
+template<typename T>
+void 
+LoadModScope::buildMap(map<VMAInterval, T*>*& m, ScopeInfo::ScopeType ty)
 {
-  string fName = RealPath(nm);
-  if (fileMap->count(fName) != 0) 
-    return (*fileMap)[fName];
-  return NULL;
+  if (!m) {
+    m = new map<VMAInterval, T*>;
+  }
+  
+  ScopeInfoIterator it(this, &ScopeTypeFilter[ty]);
+  for (; it.Current(); ++it) {
+    T* x = dynamic_cast<T*>(it.Current());
+    
+    const VMAIntervalSet& vmaset = x->vmaSet();
+    for (VMAIntervalSet::const_iterator it = vmaset.begin();
+	 it != vmaset.end(); ++it) {
+      (*m)[*it] = x;
+    }
+  }
 }
+
 
 ProcScope*
-FileScope::FindProc(const char* nm) const
+FileScope::FindProc(const char* nm, const char* lnm) const
 {
-  if (procMap->count(nm) != 0)
-    return (*procMap)[nm];
-  return NULL;
+  ProcScope* found = NULL;
+  if (procMap->count(nm) != 0) {
+    ProcScopeMap::const_iterator it = procMap->find(nm);
+    if (lnm && lnm != '\0') {
+      for ( ; (it != procMap->end() && it->first == nm); ++it) {
+	ProcScope* p = it->second;
+	if (p->LinkName() == lnm) {
+	  return p; // found = p
+	}
+      }
+    }
+    else {
+      found = it->second;
+    }
+  }
+  return found;
 }
+
 
 StmtRangeScope*
 ProcScope::FindStmtRange(suint begLn)
 {
   return (*stmtMap)[begLn];
 }
+
 
 //***************************************************************************
 // CodeInfo, etc: CodeName methods
@@ -1020,6 +1124,7 @@ CodeInfo::CodeName() const
   return name;
 } 
 
+
 string
 CodeInfo::LineRange() const
 {
@@ -1028,12 +1133,14 @@ CodeInfo::LineRange() const
   return self;
 }
 
+
 string
 GroupScope::CodeName() const 
 {
   string self = ScopeTypeToName(Type()) + " " + CodeInfo::CodeName();
   return self;
 }
+
 
 string
 LoadModScope::CodeName() const 
@@ -1042,11 +1149,13 @@ LoadModScope::CodeName() const
   return self;
 }
 
+
 string
 FileScope::CodeName() const 
 {
   return BaseName();
 }
+
 
 string
 ProcScope::CodeName() const 
@@ -1060,12 +1169,14 @@ ProcScope::CodeName() const
   return cName;
 } 
 
+
 string
 LoopScope::CodeName() const 
 {
   string self = ScopeTypeToName(Type()) + " " + CodeInfo::CodeName();
   return self;
 } 
+
 
 string
 StmtRangeScope::CodeName() const 
@@ -1074,11 +1185,13 @@ StmtRangeScope::CodeName() const
   return self;
 }
 
+
 string
 RefScope::CodeName() const 
 {
   return name + " " + CodeInfo::CodeName();
 }
+
 
 //***************************************************************************
 // ScopeInfo, etc: Output and Debugging support 
@@ -1121,116 +1234,164 @@ ScopeInfo::Types() const
   return types;
 }
 
-string 
-ScopeInfo::ToString(int dmpFlag) const
-{ 
-  string self = ScopeTypeToName(Type()) 
-    + " uid=" + StrUtil::toStr(UniqueId());
-  return self;
-}
-
-string
-CodeInfo::ToString(int dmpFlag) const
-{ 
-  string self = ScopeInfo::ToString(dmpFlag) + " " + LineRange();
-  return self;
-}
-
-string
-PgmScope::ToString(int dmpFlag) const
-{ 
-  string self = ScopeInfo::ToString(dmpFlag) + " n=" + name;
-  return self;
-}
 
 string 
-GroupScope::ToString(int dmpFlag) const
+ScopeInfo::toString(int dmpFlag, const char* pre) const
+{ 
+  std::ostringstream os;
+  dump(os, dmpFlag, pre);
+  os << ends;
+  return os.str();
+}
+
+
+std::ostream&
+ScopeInfo::dump(ostream& os, int dmpFlag, const char* pre) const 
 {
-  string self = ScopeInfo::ToString(dmpFlag) + " n=" + name;
-  return self;
-}
+  string prefix = string(pre) + "  ";
 
-string 
-LoadModScope::ToString(int dmpFlag) const
-{
-  string self = ScopeInfo::ToString(dmpFlag) + " n=" + name;
-  return self;
-}
-
-string
-FileScope::ToString(int dmpFlag) const
-{ 
-  string self = CodeInfo::ToString() + " n=" +  name;
-  return self;
-}
-
-string 
-ProcScope::ToString(int dmpFlag) const
-{ 
-  string self = CodeInfo::ToString() +" n=" + name;
-  return self;
-}
-
-string 
-LoopScope::ToString(int dmpFlag) const
-{
-  string self = CodeInfo::ToString(dmpFlag);
-  return self;
-}
-
-string
-StmtRangeScope::ToString(int dmpFlag) const
-{
-  string self = CodeInfo::ToString(dmpFlag);
-  return self;
-}
-
-string
-RefScope::ToString(int dmpFlag) const
-{ 
-  string self = CodeInfo::ToString() + " pos:" 
-    + StrUtil::toStr(begPos) + "-" + StrUtil::toStr(endPos);
-  return self;
-}
-
-void 
-ScopeInfo::DumpSelf(ostream& os, int dmpFlag, const char* prefix) const
-{ 
-  os << prefix << ToString() << endl;
-  os << prefix << "  " ;
+  dumpme(os, dmpFlag, pre);
+  
   for (unsigned int i = 0; i < NumberOfPerfDataInfos(); i++) {
     os << IndexToPerfDataInfo(i).Name() << "=" ;
     if (HasPerfData(i)) {
       os << PerfData(i);
-    } else {
+    } 
+    else {
       os << "UNDEF";
     }
     os << "; ";
   }
-  os << endl;
-}
-
-void
-ScopeInfo::Dump(ostream& os, int dmpFlag, const char* pre) const 
-{
-  DumpSelf(os, dmpFlag, pre);
-  string prefix = string(pre) + "  ";
+  
   for (ScopeInfoChildIterator it(this); it.Current(); it++) {
-    it.CurScope()->Dump(os, dmpFlag, prefix.c_str());
+    it.CurScope()->dump(os, dmpFlag, prefix.c_str());
   } 
+  return os;
 }
 
-void
-ScopeInfo::DDump()
-{ 
-  XML_Dump(std::cerr, 0, "");
-}
 
 void
-ScopeInfo::DDumpSort() 
+ScopeInfo::ddump() const
 { 
-  XML_DumpLineSorted(std::cerr, 0, "");
+  //XML_DumpLineSorted(std::cerr, 0, "");
+  dump(std::cerr, 0, "");
 }
+
+
+ostream&
+ScopeInfo::dumpme(ostream& os, int dmpFlag, const char* prefix) const
+{ 
+  os << prefix;
+  dumpid(os, dmpFlag, prefix) << endl;
+  return os;
+}
+
+
+ostream& 
+ScopeInfo::dumpid(ostream& os, int dmpFlag, const char* prefix) const
+{ 
+  ScopeTypeToName(Type());
+  os << " uid=" + UniqueId();
+  return os;
+}
+
+
+ostream&
+CodeInfo::dumpme(ostream& os, int dmpFlag, const char* prefix) const
+{ 
+  dumpid(os, dmpFlag, prefix) << " " << LineRange() << " " 
+			      << mvmaSet.toString();
+  return os;
+}
+
+
+ostream&
+PgmScope::dumpme(ostream& os, int dmpFlag, const char* prefix) const
+{ 
+  dumpid(os, dmpFlag, prefix) << " n=" << name;
+  return os;
+}
+
+
+ostream& 
+GroupScope::dumpme(ostream& os, int dmpFlag, const char* prefix) const
+{
+  dumpid(os, dmpFlag, prefix) << " n=" << name;
+  return os;
+}
+
+
+ostream& 
+LoadModScope::dumpme(ostream& os, int dmpFlag, const char* prefix) const
+{
+  dumpid(os, dmpFlag, prefix) << " n=" << name;
+  return os;
+}
+
+
+ostream&
+FileScope::dumpme(ostream& os, int dmpFlag, const char* prefix) const
+{ 
+  CodeInfo::dumpme(os, dmpFlag, prefix) << " n=" <<  name;
+  return os;
+}
+
+
+ostream& 
+ProcScope::dumpme(ostream& os, int dmpFlag, const char* prefix) const
+{ 
+  CodeInfo::dumpme(os, dmpFlag, prefix) << " n=" << name;
+  return os;
+}
+
+
+ostream& 
+LoopScope::dumpme(ostream& os, int dmpFlag, const char* prefix) const
+{
+  CodeInfo::dumpme(os, dmpFlag, prefix);
+  return os;
+}
+
+
+ostream&
+StmtRangeScope::dumpme(ostream& os, int dmpFlag, const char* prefix) const
+{
+  CodeInfo::dumpme(os, dmpFlag, prefix);
+  return os;
+}
+
+
+ostream&
+RefScope::dumpme(ostream& os, int dmpFlag, const char* prefix) const
+{ 
+  CodeInfo::dumpme(os, dmpFlag, prefix);
+  os << " pos:"  << begPos << "-" << endPos;
+  return os;
+}
+
+
+void
+LoadModScope::dumpmaps() const 
+{
+  ostream& os = std::cerr;
+  int dmpFlag = 0;
+  const char* pre = "";
+  
+  for (VMAToProcMap::const_iterator it = procMap->begin(); 
+       it != procMap->end(); ++it) {
+    it->first.dump(os);
+    os << " --> " << hex << "Ox" << it->second << dec << endl;
+  }
+  
+  os << endl;
+
+  for (VMAToStmtRangeMap::const_iterator it = stmtMap->begin(); 
+       it != stmtMap->end(); ++it) {
+    it->first.dump(os);
+    os << " --> " << hex << "Ox" << it->second << dec << endl;
+  }
+}
+
 
 //***************************************************************************
 // ScopeInfo, etc: XML output support
@@ -1246,21 +1407,34 @@ ScopeInfo::ScopeTypeToXMLelement(ScopeType tp)
    return XMLelements[tp];
 }
 
+
 string 
-ScopeInfo::ToXML(int dmpFlag) const
+ScopeInfo::toStringXML(int dmpFlag, const char* pre) const
+{ 
+  std::ostringstream os;
+  XML_DumpLineSorted(os, dmpFlag, pre);
+  os << ends;
+  return os.str();
+}
+
+
+string 
+ScopeInfo::toXML(int dmpFlag) const
 {
   string self = ScopeTypeToXMLelement(Type());
   return self;
 }
 
+
 string
-CodeInfo::ToXML(int dmpFlag) const
+CodeInfo::toXML(int dmpFlag) const
 { 
-  string self = ScopeInfo::ToXML(dmpFlag) 
+  string self = ScopeInfo::toXML(dmpFlag) 
     + " " + XMLLineRange(dmpFlag)
     + " " + XMLVMAIntervals(dmpFlag);
   return self;
 }
+
 
 string
 CodeInfo::XMLLineRange(int dmpFlag) const
@@ -1269,6 +1443,7 @@ CodeInfo::XMLLineRange(int dmpFlag) const
   return self;
 }
 
+
 string
 CodeInfo::XMLVMAIntervals(int dmpFlag) const
 {
@@ -1276,44 +1451,49 @@ CodeInfo::XMLVMAIntervals(int dmpFlag) const
   return self;
 }
 
+
 string
-PgmScope::ToXML(int dmpFlag) const
+PgmScope::toXML(int dmpFlag) const
 {
-  string self = ScopeInfo::ToXML(dmpFlag)
+  string self = ScopeInfo::toXML(dmpFlag)
     + " version=\"4.5\""
     + " n" + MakeAttrStr(name, AddXMLEscapeChars(dmpFlag));
   return self;
 }
 
+
 string 
-GroupScope::ToXML(int dmpFlag) const
+GroupScope::toXML(int dmpFlag) const
 {
-  string self = ScopeInfo::ToXML(dmpFlag) 
+  string self = ScopeInfo::toXML(dmpFlag) 
     + " n" + MakeAttrStr(name, AddXMLEscapeChars(dmpFlag));
   return self;
 }
 
+
 string 
-LoadModScope::ToXML(int dmpFlag) const
+LoadModScope::toXML(int dmpFlag) const
 {
-  string self = ScopeInfo::ToXML(dmpFlag) 
+  string self = ScopeInfo::toXML(dmpFlag) 
     + " n" + MakeAttrStr(name, AddXMLEscapeChars(dmpFlag))
     + " " + XMLVMAIntervals(dmpFlag);
   return self;
 }
 
+
 string
-FileScope::ToXML(int dmpFlag) const
+FileScope::toXML(int dmpFlag) const
 {
-  string self = ScopeInfo::ToXML(dmpFlag) 
+  string self = ScopeInfo::toXML(dmpFlag) 
     + " n" + MakeAttrStr(name, AddXMLEscapeChars(dmpFlag));
   return self;
 }
 
+
 string 
-ProcScope::ToXML(int dmpFlag) const
+ProcScope::toXML(int dmpFlag) const
 { 
-  string self = ScopeInfo::ToXML(dmpFlag) 
+  string self = ScopeInfo::toXML(dmpFlag) 
     + " n" + MakeAttrStr(name, AddXMLEscapeChars(dmpFlag));
   if (name != linkname) { // if different, print both
     self = self + " ln" + MakeAttrStr(linkname, AddXMLEscapeChars(dmpFlag));
@@ -1322,27 +1502,31 @@ ProcScope::ToXML(int dmpFlag) const
   return self;
 }
 
+
 string 
-LoopScope::ToXML(int dmpFlag) const
+LoopScope::toXML(int dmpFlag) const
 {
-  string self = CodeInfo::ToXML(dmpFlag);
+  string self = CodeInfo::toXML(dmpFlag);
   return self;
 }
 
+
 string
-StmtRangeScope::ToXML(int dmpFlag) const
+StmtRangeScope::toXML(int dmpFlag) const
 {
-  string self = CodeInfo::ToXML(dmpFlag);
+  string self = CodeInfo::toXML(dmpFlag);
   return self;
 }
 
+
 string
-RefScope::ToXML(int dmpFlag) const
+RefScope::toXML(int dmpFlag) const
 { 
-  string self = CodeInfo::ToXML() 
+  string self = CodeInfo::toXML(dmpFlag) 
     + " b" + MakeAttrNum(begPos) + " e" + MakeAttrNum(endPos);
   return self;
 }
+
 
 bool 
 ScopeInfo::XML_DumpSelfBefore(ostream& os, int dmpFlag, 
@@ -1363,7 +1547,7 @@ ScopeInfo::XML_DumpSelfBefore(ostream& os, int dmpFlag,
     }
   }
 
-  os << prefix << "<" << ToXML(dmpFlag);
+  os << prefix << "<" << toXML(dmpFlag);
   if (dumpMetrics) {
     // by definition this element is not empty
     os << ">";
@@ -1387,6 +1571,7 @@ ScopeInfo::XML_DumpSelfBefore(ostream& os, int dmpFlag,
   return (dumpMetrics);
 }
 
+
 void
 ScopeInfo::XML_DumpSelfAfter(ostream& os, int dmpFlag, const char* prefix) const
 {
@@ -1396,8 +1581,9 @@ ScopeInfo::XML_DumpSelfAfter(ostream& os, int dmpFlag, const char* prefix) const
   } 
 }
 
+
 void
-ScopeInfo::XML_Dump(ostream& os, int dmpFlag, const char* pre) const 
+ScopeInfo::XML_dump(ostream& os, int dmpFlag, const char* pre) const 
 {
   string indent = "  ";
   if (dmpFlag & PgmScopeTree::COMPRESSED_OUTPUT) { pre = ""; indent = ""; }  
@@ -1411,10 +1597,11 @@ ScopeInfo::XML_Dump(ostream& os, int dmpFlag, const char* pre) const
   }
   string prefix = pre + indent;
   for (ScopeInfoChildIterator it(this); it.Current(); it++) {
-    it.CurScope()->XML_Dump(os, dmpFlag, prefix.c_str());
+    it.CurScope()->XML_dump(os, dmpFlag, prefix.c_str());
   }
   XML_DumpSelfAfter(os, dmpFlag, pre);
 }
+
 
 void
 ScopeInfo::XML_DumpLineSorted(ostream& os, int dmpFlag, const char* pre) const 
@@ -1436,6 +1623,14 @@ ScopeInfo::XML_DumpLineSorted(ostream& os, int dmpFlag, const char* pre) const
   XML_DumpSelfAfter(os, dmpFlag, pre);
 }
 
+
+void
+ScopeInfo::xml_ddump() const
+{
+  XML_DumpLineSorted();
+}
+
+
 void
 PgmScope::XML_DumpLineSorted(ostream& os, int dmpFlag, const char* pre) const
 {
@@ -1452,6 +1647,7 @@ PgmScope::XML_DumpLineSorted(ostream& os, int dmpFlag, const char* pre) const
   ScopeInfo::XML_DumpSelfAfter(os, dmpFlag, pre);
 }
 
+
 void
 LoadModScope::XML_DumpLineSorted(ostream& os, int dmpFlag, const char* pre) const
 {
@@ -1467,6 +1663,7 @@ LoadModScope::XML_DumpLineSorted(ostream& os, int dmpFlag, const char* pre) cons
   }
   ScopeInfo::XML_DumpSelfAfter(os, dmpFlag, pre);
 }
+
 
 //***************************************************************************
 // ScopeInfo, etc: 
@@ -1491,7 +1688,7 @@ ScopeInfo::CSV_DumpSelf(const PgmScope &root, ostream& os) const
 
 
 void
-ScopeInfo::CSV_Dump(const PgmScope &root, ostream& os, 
+ScopeInfo::CSV_dump(const PgmScope &root, ostream& os, 
           const char* file_name, const char* proc_name,
           int lLevel) const 
 {
@@ -1499,12 +1696,13 @@ ScopeInfo::CSV_Dump(const PgmScope &root, ostream& os,
   os << Name() << ",,,,";
   CSV_DumpSelf(root, os);
   for (ScopeInfoNameSortedChildIterator it(this); it.Current(); it++) {
-    it.Current()->CSV_Dump(root, os);
+    it.Current()->CSV_dump(root, os);
   }
 }
 
+
 void
-FileScope::CSV_Dump(const PgmScope &root, ostream& os, 
+FileScope::CSV_dump(const PgmScope &root, ostream& os, 
           const char* file_name, const char* proc_name,
           int lLevel) const 
 {
@@ -1512,12 +1710,13 @@ FileScope::CSV_Dump(const PgmScope &root, ostream& os,
   os << BaseName() << ",," << mbegLine << "," << mendLine << ",";
   CSV_DumpSelf(root, os);
   for (ScopeInfoNameSortedChildIterator it(this); it.Current(); it++) {
-    it.Current()->CSV_Dump(root, os, BaseName().c_str());
+    it.Current()->CSV_dump(root, os, BaseName().c_str());
   }
 }
 
+
 void
-ProcScope::CSV_Dump(const PgmScope &root, ostream& os, 
+ProcScope::CSV_dump(const PgmScope &root, ostream& os, 
           const char* file_name, const char* proc_name,
           int lLevel) const 
 {
@@ -1526,12 +1725,13 @@ ProcScope::CSV_Dump(const PgmScope &root, ostream& os,
      << ",0";
   CSV_DumpSelf(root, os);
   for (ScopeInfoLineSortedChildIterator it(this); it.Current(); it++) {
-    it.CurScope()->CSV_Dump(root, os, file_name, Name().c_str(), 1);
+    it.CurScope()->CSV_dump(root, os, file_name, Name().c_str(), 1);
   } 
 }
 
+
 void
-CodeInfo::CSV_Dump(const PgmScope &root, ostream& os, 
+CodeInfo::CSV_dump(const PgmScope &root, ostream& os, 
           const char* file_name, const char* proc_name,
           int lLevel) const 
 {
@@ -1547,15 +1747,17 @@ CodeInfo::CSV_Dump(const PgmScope &root, ostream& os,
     os << lLevel;
   CSV_DumpSelf(root, os);
   for (ScopeInfoLineSortedChildIterator it(this); it.Current(); it++) {
-    it.CurScope()->CSV_Dump(root, os, file_name, proc_name, lLevel+1);
+    it.CurScope()->CSV_dump(root, os, file_name, proc_name, lLevel+1);
   } 
 }
+
 
 void
 PgmScope::CSV_TreeDump(ostream& os) const
 {
-  ScopeInfo::CSV_Dump(*this, os);
+  ScopeInfo::CSV_dump(*this, os);
 }
+
 
 //***************************************************************************
 // ScopeInfo, etc: 
@@ -1582,41 +1784,44 @@ ScopeInfo::TSV_DumpSelf(const PgmScope &root, ostream& os) const
 
 // Dumps the scope tree PGM
 void
-ScopeInfo::TSV_Dump(const PgmScope &root, ostream& os, 
+ScopeInfo::TSV_dump(const PgmScope &root, ostream& os, 
           const char* file_name, const char* proc_name,
           int lLevel) const 
 {
   //Dump children
   for (ScopeInfoNameSortedChildIterator it(this); it.Current(); it++) {
-    it.Current()->TSV_Dump(root, os);
+    it.Current()->TSV_dump(root, os);
   }
 }
 
+
 void
-FileScope::TSV_Dump(const PgmScope &root, ostream& os, 
+FileScope::TSV_dump(const PgmScope &root, ostream& os, 
           const char* file_name, const char* proc_name,
           int lLevel) const 
 {
   //Dump children
   for (ScopeInfoNameSortedChildIterator it(this); it.Current(); it++) {
-    it.Current()->TSV_Dump(root, os, BaseName().c_str());
+    it.Current()->TSV_dump(root, os, BaseName().c_str());
   }
 }
 
+
 void
-ProcScope::TSV_Dump(const PgmScope &root, ostream& os, 
+ProcScope::TSV_dump(const PgmScope &root, ostream& os, 
           const char* file_name, const char* proc_name,
           int lLevel) const 
 {
   // print file name, routine name, start and end line, loop level
   // os << file_name << "," << Name() << "," << mbegLine << "," << mendLine << ",0";
   for (ScopeInfoLineSortedChildIterator it(this); it.Current(); it++) {
-    it.CurScope()->TSV_Dump(root, os, file_name, Name().c_str(), 1);
+    it.CurScope()->TSV_dump(root, os, file_name, Name().c_str(), 1);
   } 
 }
 
+
 void
-CodeInfo::TSV_Dump(const PgmScope &root, ostream& os, 
+CodeInfo::TSV_dump(const PgmScope &root, ostream& os, 
           const char* file_name, const char* proc_name,
           int lLevel) const 
 {
@@ -1632,14 +1837,15 @@ CodeInfo::TSV_Dump(const PgmScope &root, ostream& os,
   }
 
   for (ScopeInfoLineSortedChildIterator it(this); it.Current(); it++) {
-    it.CurScope()->TSV_Dump(root, os, file_name, proc_name, lLevel+1);
+    it.CurScope()->TSV_dump(root, os, file_name, proc_name, lLevel+1);
   } 
 }
+
 
 void
 PgmScope::TSV_TreeDump(ostream& os) const
 {
-  ScopeInfo::TSV_Dump(*this, os);
+  ScopeInfo::TSV_dump(*this, os);
 }
 
 //***************************************************************************
@@ -1669,7 +1875,8 @@ CodeInfo::SetLineRange(suint begLn, suint endLn)
       mbegLine = begLn;
       mendLine = endLn;
       changed = true;
-    } else {
+    } 
+    else {
       DIAG_Assert((mbegLine != UNDEF_LINE) && (mendLine != UNDEF_LINE), "");
       // expand range ?
       if (begLn < mbegLine) { mbegLine = begLn; changed = true; }
@@ -1886,11 +2093,11 @@ ScopeInfoTester(int argc, const char** argv)
   group = new GroupScope("g1", proc->CodeInfoWithLine(14), 14, 18);
   stmtRange = new StmtRangeScope(proc->CodeInfoWithLine(15), 15, 15);
   
-  cout << "root->Dump()" << endl;
-  root->Dump();
-  cout << "------------------------------------------" << endl << endl;
+  std::cout << "root->dump()" << endl;
+  root->dump();
+  std::cout << "------------------------------------------" << endl << endl;
   
-  cout << "Type Casts" << endl;
+  std::cout << "Type Casts" << endl;
   {
     ScopeInfo* sinfo[10];
     int sn = 0;
@@ -1902,15 +2109,15 @@ ScopeInfoTester(int argc, const char** argv)
     sinfo[sn++] = stmtRange;
     
     for (int i = 0; i < sn; i++) {
-      cout << sinfo[i]->ToString() << "::\t" ;
-      cout << sinfo[i]->Types() << endl;
-      cout << endl;
+      std::cout << sinfo[i]->ToString() << "::\t" ;
+      std::cout << sinfo[i]->Types() << endl;
+      std::cout << endl;
     } 
-    cout << endl;
+    std::cout << endl;
   } 
-  cout << "------------------------------------------" << endl << endl;
+  std::cout << "------------------------------------------" << endl << endl;
   
-  cout << "Iterators " << endl;
+  std::cout << "Iterators " << endl;
   { 
     FileScope *file_c = lmScope->FindFile("file.c");
     DIAG_Assert(file_c, "");
@@ -1920,33 +2127,33 @@ ScopeInfoTester(int argc, const char** argv)
     DIAG_Assert(loop3, "");
     
     {
-      cerr << "*** everything under root " << endl;
+      std::cerr << "*** everything under root " << endl;
       ScopeInfoIterator it(root);
       for (; it.CurScope(); it++) {
 	CodeInfo *ci = dynamic_cast<CodeInfo*>(it.CurScope());
-	cout << it.CurScope()->ToString();
+	std::cout << it.CurScope()->ToString();
 	if (ci != NULL) { 
-	  cout << " Name=" << ci->Name();
+	  std::cout << " Name=" << ci->Name();
 	} 
-	cout << endl;
+	std::cout << endl;
       }  
     }
 
     { 
-      cerr << "*** file.c in line order" << endl;  
+      std::cerr << "*** file.c in line order" << endl;  
       LineSortedIterator it(file_c, NULL, false);
       it.DumpAndReset();
-      cerr << "***" << endl << endl;
+      std::cerr << "***" << endl << endl;
     }
     
     { 
-      cerr << "*** loop3's children in line order" << endl;  
+      std::cerr << "*** loop3's children in line order" << endl;  
       ScopeInfoLineSortedChildIterator it(loop3);
       it.DumpAndReset();
-      cerr << "***" << endl << endl;
+      std::cerr << "***" << endl << endl;
     }
   }
-  cout << "------------------------------------------" << endl << endl;
+  std::cout << "------------------------------------------" << endl << endl;
 
   delete root;
 } 

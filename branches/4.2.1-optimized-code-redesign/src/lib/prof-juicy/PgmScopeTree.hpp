@@ -57,6 +57,7 @@
 #include <string>
 #include <list> // STL
 #include <set>  // STL
+#include <map>  // STL
 #include <string>
  
 //*************************** User Include Files ****************************
@@ -132,10 +133,14 @@ public:
   
   void CollectCrossReferences();
 
+  virtual void xml_dump(std::ostream& os = std::cerr, 
+			int dmpFlag = XML_TRUE) const;
+
+
   // Dump contents for inspection (use flags from ScopeInfo)
-  virtual void Dump(std::ostream& os = std::cerr, 
+  virtual void dump(std::ostream& os = std::cerr, 
 		    int dmpFlag = XML_TRUE) const;
-  virtual void DDump() const;
+  virtual void ddump() const;
  
 private:
   PgmScope* root;
@@ -186,8 +191,8 @@ public:
   static ScopeType     IntToScopeType(long i);
 
 protected:
-  ScopeInfo(const ScopeInfo& other) { *this = other; }
-  ScopeInfo& operator=(const ScopeInfo& other);
+  ScopeInfo(const ScopeInfo& x) { *this = x; }
+  ScopeInfo& operator=(const ScopeInfo& x);
 
 private:
   static const std::string ScopeNames[NUMBER_OF_SCOPES];
@@ -310,45 +315,63 @@ public:
   virtual ScopeInfo* Clone() { return new ScopeInfo(*this); }
   
   // --------------------------------------------------------
-  // debugging and printing 
+  // XML output
   // --------------------------------------------------------
-  virtual std::string Types() const; // instance's base and derived types 
-  virtual std::string ToString(int dmpFlag = 0) const;
-  virtual std::string ToXML(int dmpFlag = 0) const;
-  
-  void DumpSelf(std::ostream& os = std::cerr, 
-		int dmpFlag = 0, const char* prefix = "") const;
-  void Dump    (std::ostream& os = std::cerr, 
-		int dmpFlag = 0, const char* pre = "") const;
 
-  // circumvent pain caused by debuggers that choke on default
-  // arguments or that remove all traces of functions defined in the
-  // class declaration (stupid SGI dbx...)
-  void DDump();
-  void DDumpSort();
+  std::string toStringXML(int dmpFlag = 0, const char* pre = "") const;
+  
+  virtual std::string toXML(int dmpFlag = 0) const;
 
   bool XML_DumpSelfBefore(std::ostream& os = std::cout,
 		int dmpFlag = 0, const char* prefix = "") const;
   void XML_DumpSelfAfter (std::ostream& os = std::cout,
 		int dmpFlag = 0, const char* prefix = "") const;
-  void XML_Dump(std::ostream& os = std::cout,
+  void XML_dump(std::ostream& os = std::cout,
 		int dmpFlag = 0, const char* pre = "") const;
   
-  void XML_DumpLineSorted(std::ostream& os = std::cout,
-		int dmpFlag = 0,
-		const char* pre = "") const;
+  virtual void XML_DumpLineSorted(std::ostream& os = std::cout,
+				  int dmpFlag = 0,
+				  const char* pre = "") const;
+
+  void xml_ddump() const;
+
+  // --------------------------------------------------------
+  // Other output
+  // --------------------------------------------------------
 
   void CSV_DumpSelf(const PgmScope &root, std::ostream& os = std::cout) const;
-  virtual void CSV_Dump(const PgmScope &root, std::ostream& os = std::cout, 
+  virtual void CSV_dump(const PgmScope &root, std::ostream& os = std::cout, 
 			const char* file_name = NULL, 
 			const char* proc_name = NULL,
 			int lLevel = 0) const;
 
   void TSV_DumpSelf(const PgmScope &root, std::ostream& os = std::cout) const;
-  virtual void TSV_Dump(const PgmScope &root, std::ostream& os = std::cout, 
+  virtual void TSV_dump(const PgmScope &root, std::ostream& os = std::cout, 
 			const char* file_name = NULL, 
 			const char* proc_name = NULL,
 			int lLevel = 0) const;
+
+  // --------------------------------------------------------
+  // debugging
+  // --------------------------------------------------------
+
+  virtual std::string Types() const; // instance's base and derived types 
+
+  std::string toString(int dmpFlag = 0, const char* pre = "") const;  
+
+  // dump
+  std::ostream& dump(std::ostream& os = std::cerr, 
+		     int dmpFlag = 0, const char* pre = "") const;
+  
+  void ddump() const;
+
+  // dump helpers
+  virtual std::ostream& dumpme(std::ostream& os = std::cerr, 
+			       int dmpFlag = 0,
+			       const char* pre = "") const;
+
+  std::ostream& dumpid(std::ostream& os = std::cerr, 
+		       int dmpFlag = 0, const char* prefix = "") const;
 
 protected:
   ScopeType type;
@@ -367,8 +390,8 @@ protected:
   CodeInfo(ScopeType t, ScopeInfo* mom = NULL, 
 	   suint begLn = UNDEF_LINE, suint endLn = UNDEF_LINE,
 	   VMA begVMA = 0, VMA endVMA = 0);
-  CodeInfo(const CodeInfo& other) : ScopeInfo(other.type) { *this = other; }
-  CodeInfo& operator=(const CodeInfo& other);
+  CodeInfo(const CodeInfo& x) : ScopeInfo(x.type) { *this = x; }
+  CodeInfo& operator=(const CodeInfo& x);
 
 public: 
   virtual ~CodeInfo();
@@ -376,6 +399,7 @@ public:
   suint begLine() const { return mbegLine; } // in source code
   suint endLine() const { return mendLine; } // in source code
 
+  // A set of *unrelocated* VMAs associated with this scope
   VMAIntervalSet&       vmaSet()       { return mvmaSet; }
   const VMAIntervalSet& vmaSet() const { return mvmaSet; }
   
@@ -400,19 +424,30 @@ public:
   CodeInfo *GetFirst() const { return first; } 
   CodeInfo *GetLast() const { return last; } 
 
-  virtual std::string ToString(int dmpFlag = 0) const;
-  virtual std::string ToXML(int dmpFlag = 0) const;
+  // --------------------------------------------------------
+  // XML output
+  // --------------------------------------------------------
+
+  virtual std::string toXML(int dmpFlag = 0) const;
 
   virtual std::string XMLLineRange(int dmpFlag) const;
   virtual std::string XMLVMAIntervals(int dmpFlag) const;
-  
-  virtual void CSV_Dump(const PgmScope &root, std::ostream& os = std::cout, 
+
+  virtual void CSV_dump(const PgmScope &root, std::ostream& os = std::cout, 
                const char* file_name = NULL, const char* proc_name = NULL,
                int lLevel = 0) const;
 
-  virtual void TSV_Dump(const PgmScope &root, std::ostream& os = std::cout, 
+  virtual void TSV_dump(const PgmScope &root, std::ostream& os = std::cout, 
                const char* file_name = NULL, const char* proc_name = NULL,
                int lLevel = 0) const;
+
+  // --------------------------------------------------------
+  // debugging
+  // --------------------------------------------------------
+  
+  virtual std::ostream& dumpme(std::ostream& os = std::cerr, 
+			       int dmpFlag = 0,
+			       const char* pre = "") const;
 
 protected: 
   void Relocate();
@@ -443,8 +478,8 @@ int CodeInfoLineComp(CodeInfo* x, CodeInfo* y);
 // --------------------------------------------------------------------------
 class PgmScope: public ScopeInfo {
 protected:
-  PgmScope(const PgmScope& other) : ScopeInfo(other.type) { *this = other; }
-  PgmScope& operator=(const PgmScope& other);
+  PgmScope(const PgmScope& x) : ScopeInfo(x.type) { *this = x; }
+  PgmScope& operator=(const PgmScope& x);
 
 public: 
   PgmScope(const char* nm);
@@ -473,13 +508,25 @@ public:
 
   virtual ScopeInfo* Clone() { return new PgmScope(*this); }
 
-  virtual std::string ToString(int dmpFlag = 0) const;
-  virtual std::string ToXML(int dmpFlag = 0) const;
+  // --------------------------------------------------------
+  // XML output
+  // --------------------------------------------------------
 
-  void XML_DumpLineSorted(std::ostream& os = std::cout, int dmpFlag = 0, 
-			  const char* pre = "") const;
+  virtual std::string toXML(int dmpFlag = 0) const;
+
+  virtual void XML_DumpLineSorted(std::ostream& os = std::cout, 
+				  int dmpFlag = 0, 
+				  const char* pre = "") const;
   void CSV_TreeDump(std::ostream& os = std::cout) const;
   void TSV_TreeDump(std::ostream& os = std::cout) const;
+
+  // --------------------------------------------------------
+  // debugging
+  // --------------------------------------------------------
+  
+  virtual std::ostream& dumpme(std::ostream& os = std::cerr, 
+			       int dmpFlag = 0,
+			       const char* pre = "") const;
    
 protected: 
 private: 
@@ -488,6 +535,7 @@ private:
   void AddToGroupMap(GroupScope& grp);
   void AddToLoadModMap(LoadModScope& lm);
   void AddToFileMap(FileScope& file);
+
   friend class GroupScope;
   friend class LoadModScope;
   friend class FileScope;
@@ -496,9 +544,9 @@ private:
   bool frozen;
   std::string name; // the program name
 
-  GroupScopeMap*   groupMap;
-  LoadModScopeMap* lmMap;     // mapped by 'realpath'
-  FileScopeMap*    fileMap;   // mapped by 'realpath'
+  GroupScopeMap*     groupMap;
+  LoadModScopeMap*   lmMap;     // mapped by 'realpath'
+  FileScopeMap*      fileMap;   // mapped by 'realpath'
 };
 
 // --------------------------------------------------------------------------
@@ -523,8 +571,15 @@ public:
 
   virtual ScopeInfo* Clone() { return new GroupScope(*this); }
 
-  virtual std::string ToString(int dmpFlag = 0) const;
-  virtual std::string ToXML(int dmpFlag = 0) const;
+  virtual std::string toXML(int dmpFlag = 0) const;
+
+  // --------------------------------------------------------
+  // debugging
+  // --------------------------------------------------------
+  
+  virtual std::ostream& dumpme(std::ostream& os = std::cerr, 
+			       int dmpFlag = 0,
+			       const char* pre = "") const;
 
 private:
   void Ctor(const char* nm, ScopeInfo* mom);
@@ -539,6 +594,9 @@ private:
 // --------------------------------------------------------------------------
 // FIXME: See note about LoadModScope above.
 class LoadModScope: public CodeInfo {
+protected:
+  LoadModScope& operator=(const LoadModScope& x);
+
 public: 
   LoadModScope(const char* nm, ScopeInfo* mom);
   LoadModScope(const std::string& nm, ScopeInfo* mom);
@@ -551,17 +609,42 @@ public:
 
   virtual ScopeInfo* Clone() { return new LoadModScope(*this); }
 
-  virtual std::string ToString(int dmpFlag = 0) const;
-  virtual std::string ToXML(int dmpFlag = 0) const;
+  // find scope by *unrelocated* VMA
+  CodeInfo* findByVMA(VMA vma);
 
-  void XML_DumpLineSorted(std::ostream& os = std::cout, 
-			  int dmpFlag = 0, const char* pre = "") const;
+  virtual std::string toXML(int dmpFlag = 0) const;
+
+  virtual void XML_DumpLineSorted(std::ostream& os = std::cout, 
+				  int dmpFlag = 0, 
+				  const char* pre = "") const;
+
+  // --------------------------------------------------------
+  // debugging
+  // --------------------------------------------------------
   
+  virtual std::ostream& dumpme(std::ostream& os = std::cerr, 
+			       int dmpFlag = 0,
+			       const char* pre = "") const;
+  void dumpmaps() const;
+  
+public:
+  typedef std::map<VMAInterval, ProcScope*> VMAToProcMap;
+  typedef std::map<VMAInterval, StmtRangeScope*> VMAToStmtRangeMap;
+
 protected: 
   void Ctor(const char* nm, ScopeInfo* mom);
 
+  template<typename T>
+  T* findInMap(std::map<VMAInterval, T*>* m, VMAInterval& toFind);
+  
+  template<typename T> 
+  void buildMap(std::map<VMAInterval, T*>*& m, ScopeInfo::ScopeType ty);
+
 private: 
   std::string name; // the load module name
+  
+  VMAToProcMap*      procMap;
+  VMAToStmtRangeMap* stmtMap;
 };
 
 // --------------------------------------------------------------------------
@@ -571,8 +654,8 @@ private:
 // --------------------------------------------------------------------------
 class FileScope: public CodeInfo {
 protected:
-  FileScope(const FileScope& other) : CodeInfo(other.type) { *this = other; }
-  FileScope& operator=(const FileScope& other);
+  FileScope(const FileScope& x) : CodeInfo(x.type) { *this = x; }
+  FileScope& operator=(const FileScope& x);
 
 public: 
   // fileNameWithPath/mom must not be NULL
@@ -588,9 +671,12 @@ public:
  // fileNameWithPath from constructor 
   const std::string& Name() const { return name; }
 
-  ProcScope* FindProc(const char* nm) const;
-  ProcScope* FindProc(const std::string& nm) const
-    { return FindProc(nm.c_str()); }
+
+  // FindProc: Attempt to find the procedure within the multimap.  If
+  // 'lnm' is provided, require that link names match.
+  ProcScope* FindProc(const char* nm, const char* lnm = NULL) const;
+  ProcScope* FindProc(const std::string& nm, const std::string& lnm = "") const
+    { return FindProc(nm.c_str(), lnm.c_str()); }
                                         
   void SetName(const char* fname) { name = fname; }
   void SetName(const std::string& fname) { name = fname; }
@@ -602,17 +688,24 @@ public:
 
   virtual ScopeInfo* Clone() { return new FileScope(*this); }
 
-  virtual std::string ToString(int dmpFlag = 0) const;
-  virtual std::string ToXML(int dmpFlag = 0) const;
+  virtual std::string toXML(int dmpFlag = 0) const;
 
-  virtual void CSV_Dump(const PgmScope &root, std::ostream& os = std::cout, 
+  virtual void CSV_dump(const PgmScope &root, std::ostream& os = std::cout, 
 			const char* file_name = NULL, 
 			const char* proc_name = NULL,
 			int lLevel = 0) const;
-  virtual void TSV_Dump(const PgmScope &root, std::ostream& os = std::cout, 
+  virtual void TSV_dump(const PgmScope &root, std::ostream& os = std::cout, 
 			const char* file_name = NULL, 
 			const char* proc_name = NULL,
 			int lLevel = 0) const;
+
+  // --------------------------------------------------------
+  // debugging
+  // --------------------------------------------------------
+  
+  virtual std::ostream& dumpme(std::ostream& os = std::cerr, 
+			       int dmpFlag = 0,
+			       const char* pre = "") const;
 
 private: 
   void Ctor(const char* srcFileWithPath, bool srcIsReadble_, 
@@ -633,8 +726,8 @@ private:
 // --------------------------------------------------------------------------
 class ProcScope: public CodeInfo {
 protected:
-  ProcScope(const ProcScope& other) : CodeInfo(other.type) { *this = other; }
-  ProcScope& operator=(const ProcScope& other);
+  ProcScope(const ProcScope& x) : CodeInfo(x.type) { *this = x; }
+  ProcScope& operator=(const ProcScope& x);
 
 public: 
   ProcScope(const char* name, CodeInfo *mom, 
@@ -655,17 +748,24 @@ public:
   // Find StmtRangeScope *or* return a new one if none is found
   StmtRangeScope* FindStmtRange(suint line);  
 
-  virtual std::string ToString(int dmpFlag = 0) const;
-  virtual std::string ToXML(int dmpFlag = 0) const;
+  virtual std::string toXML(int dmpFlag = 0) const;
 
-  virtual void CSV_Dump(const PgmScope &root, std::ostream& os = std::cout, 
+  virtual void CSV_dump(const PgmScope &root, std::ostream& os = std::cout, 
 			const char* file_name = NULL, 
 			const char* proc_name = NULL,
 			int lLevel = 0) const;
-  virtual void TSV_Dump(const PgmScope &root, std::ostream& os = std::cout, 
+  virtual void TSV_dump(const PgmScope &root, std::ostream& os = std::cout, 
 			const char* file_name = NULL, 
 			const char* proc_name = NULL,
 			int lLevel = 0) const;
+
+  // --------------------------------------------------------
+  // debugging
+  // --------------------------------------------------------
+  
+  virtual std::ostream& dumpme(std::ostream& os = std::cerr, 
+			       int dmpFlag = 0,
+			       const char* pre = "") const;
 
 private:
   void Ctor(const char* n, CodeInfo *mom, const char* ln);
@@ -694,8 +794,15 @@ public:
 
   virtual ScopeInfo* Clone() { return new LoopScope(*this); }
 
-  virtual std::string ToString(int dmpFlag = 0) const;
-  virtual std::string ToXML(int dmpFlag = 0) const;
+  virtual std::string toXML(int dmpFlag = 0) const;
+
+  // --------------------------------------------------------
+  // debugging
+  // --------------------------------------------------------
+  
+  virtual std::ostream& dumpme(std::ostream& os = std::cerr, 
+			       int dmpFlag = 0,
+			       const char* pre = "") const;
 
 };
 
@@ -707,16 +814,22 @@ public:
 class StmtRangeScope: public CodeInfo {
 public: 
   StmtRangeScope(CodeInfo *mom, suint begLn, suint endLn,
-		 VMA begVMA, VMA endVMA);
+		 VMA begVMA = 0, VMA endVMA = 0);
   virtual ~StmtRangeScope();
   
   virtual std::string CodeName() const;
 
   virtual ScopeInfo* Clone() { return new StmtRangeScope(*this); }
 
-  virtual std::string ToString(int dmpFlag = 0) const;
-  virtual std::string ToXML(int dmpFlag = 0) const;  
+  virtual std::string toXML(int dmpFlag = 0) const;  
 
+  // --------------------------------------------------------
+  // debugging
+  // --------------------------------------------------------
+  
+  virtual std::ostream& dumpme(std::ostream& os = std::cerr, 
+			       int dmpFlag = 0,
+			       const char* pre = "") const;
 };
 
 // ----------------------------------------------------------------------
@@ -737,8 +850,15 @@ public:
 
   virtual ScopeInfo* Clone() { return new RefScope(*this); }
 
-  virtual std::string ToString(int dmpFlag = 0) const;
-  virtual std::string ToXML(int dmpFlag = 0) const;
+  virtual std::string toXML(int dmpFlag = 0) const;
+
+  // --------------------------------------------------------
+  // debugging
+  // --------------------------------------------------------
+  
+  virtual std::ostream& dumpme(std::ostream& os = std::cerr, 
+			       int dmpFlag = 0,
+			       const char* pre = "") const;
 
 private: 
   void RelocateRef();

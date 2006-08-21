@@ -149,7 +149,7 @@ MathMLExpr::~MathMLExpr()
 double 
 MathMLExpr::eval(const ScopeInfo *si) 
 {
-  IFDOTRACE { si->DumpSelf(cerr); }
+  IFDOTRACE { si->dumpme(cerr); }
   if (topNode != NULL)
     return topNode->eval(si);
   return NaNVal;

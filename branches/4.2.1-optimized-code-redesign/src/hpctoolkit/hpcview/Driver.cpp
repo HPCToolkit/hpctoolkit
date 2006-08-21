@@ -38,9 +38,18 @@
 //************************ System Include Files ******************************
 
 #include <iostream>
+using std::hex;
+using std::dec;
+using std::endl;
 
 #include <string>
 using std::string;
+
+#include <map>
+using std::map;
+
+#include <vector>
+using std::vector;
 
 //************************* User Include Files *******************************
 
@@ -49,18 +58,21 @@ using std::string;
 #include "HPCViewSAX2.hpp"
 #include "HPCViewXMLErrHandler.hpp"
 #include "NodeRetriever.hpp"
+#include "NodeRetriever.hpp"
+#include "DerivedPerfMetrics.hpp" // FIXME: for AccumulateMetricsFromChildren
 
 #include <lib/prof-juicy/PgmScopeTree.hpp>
+#include <lib/prof-juicy/FlatProfileReader.hpp>
 
+#include <lib/binutils/LoadModule.hpp>
+
+#include <lib/support/diagnostics.h>
 #include <lib/support/Assertion.h>
-#include <lib/support/pathfind.h>
 #include <lib/support/Trace.hpp>
+#include <lib/support/StrUtil.hpp>
+#include <lib/support/pathfind.h>
 
 //************************ Forward Declarations ******************************
-
-using std::cout;
-using std::cerr;
-using std::endl;
 
 //****************************************************************************
 
@@ -74,7 +86,6 @@ Driver::Driver(int deleteUnderscores, bool _cpySrcFiles)
 
 Driver::~Driver( )
 {
-  IFTRACE << "~Driver " << endl; // << ToString() << endl; 
 } 
 
 void
@@ -105,7 +116,7 @@ Driver::AddReplacePath(const char* inPath, const char* outPath)
     replaceInPath.push_back(string(inPath));
     replaceOutPath.push_back(string(outPath)); 
   }
-  IFTRACE << "AddReplacePath: " << inPath << " -to- " << outPath << endl; 
+  DIAG_Msg(3, "AddReplacePath: " << inPath << " -to- " << outPath);
 }
 
 /* Test the specified path against each of the paths in the database. 
@@ -123,12 +134,12 @@ Driver::ReplacePath(const char* oldpath)
 	strncmp(oldpath, replaceInPath[i].c_str(), length) == 0 ) { 
       // it's a match
       string s = replaceOutPath[i] + &oldpath[length];
-      IFTRACE << "ReplacePath: Found a match! New path: " << s << endl;
+      DIAG_Msg(3, "ReplacePath: Found a match! New path: " << s);
       return s;
     }
   }
   // If nothing matched, return the original path
-  IFTRACE << "ReplacePath: Nothing matched! Init path: " << oldpath << endl;
+  DIAG_Msg(3, "ReplacePath: Nothing matched! Init path: " << oldpath);
   return string(oldpath);
 }
 
@@ -143,8 +154,7 @@ void
 Driver::Add(PerfMetric *m) 
 {
   dataSrc.push_back(m); 
-  IFTRACE << "Add:: dataSrc[" << dataSrc.size()-1 << "]=" 
-	  << m->ToString() << endl; 
+  DIAG_Msg(3, "Add:: dataSrc[" << dataSrc.size()-1 << "]=" << m->ToString());
 } 
 
 string
@@ -182,6 +192,117 @@ Driver::ScopeTreeInitialize(PgmScopeTree& scopes)
 
 
 void
+Driver::ScopeTreeInsertProfileData(PgmScopeTree& scopes,
+				   const std::list<std::string>& profileFiles)
+{
+  PgmScope* pgm = scopes.GetRoot();
+  NodeRetriever nodeRet(pgm, path);
+  
+  map<string, int> disambiguationMap;
+  vector<PerfMetric*> eventToPerfMetricMap;
+
+  //-------------------------------------------------------
+  // Read the profiles and insert the data
+  //-------------------------------------------------------
+  for (std::list<string>::const_iterator it = profileFiles.begin();
+       it != profileFiles.end(); ++it) {
+    
+    ProfFile prof;
+    int ret = prof.read(*it);
+    DIAG_Assert(ret == 0, "While reading profile '" << *it << "'");
+
+    for (unsigned int i = 0; i < prof.num_load_modules(); ++i) {
+
+      const ProfFileLM& proflm = prof.load_module(i);
+      const std::string& lmname = proflm.name();
+      LoadModScope* lmScope = nodeRet.MoveToLoadMod(lmname);
+      
+      LoadModule lm;
+      if (!lm.Open(lmname.c_str())) { 
+	exit(1); // Error already printed 
+      }
+
+      //-------------------------------------------------------
+      // Create metrics for this profile (if necessary)
+      //-------------------------------------------------------
+      if (i == 0) {
+	// Inspect only the first load module of each prof file because
+	// while one prof file contains multiple load modules, each load
+	// module contains the same events.
+	eventToPerfMetricMap.resize(proflm.num_events());
+	for (unsigned int j = 0; j < proflm.num_events(); ++j) {
+	  const ProfFileEvent& profevent = proflm.event(j);
+	  string name = profevent.name();
+	  string qname = name;
+	  
+	  map<string, int>::iterator it = disambiguationMap.find(name);
+	  if (it == disambiguationMap.end()) {
+	    disambiguationMap[name] = 1;
+	  }
+	  else {
+	    int qualification = it->second;
+	    qname = name + StrUtil::toStr(qualification);
+	    it->second++;
+	  }
+	  PerfMetric* m 
+	    = new PerfMetric(qname, name, qname,
+			     true/*display*/, false/*percent*/, 
+			     false /*propComputed*/, false/*sortBy*/);
+	  Add(m);
+	  eventToPerfMetricMap[j] = m;
+	}
+      }
+      
+      //-------------------------------------------------------
+      // Insert performance data into scope tree
+      //-------------------------------------------------------
+      for (unsigned int j = 0; j < proflm.num_events(); ++j) {
+	const ProfFileEvent& profevent = proflm.event(j);
+	PerfMetric* m = eventToPerfMetricMap[j];
+	uint64_t period = profevent.period();
+	
+	for (unsigned int k = 0; k < profevent.num_data(); ++k) {
+	  const ProfFileEventDatum& dat = profevent.datum(k);
+	  VMA vma = dat.first; // relocated VMA
+	  uint32_t samples = dat.second;
+	  double events = samples * period; // samples * (events/sample)
+	  
+	  // 1. Unrelocate vma.
+	  VMA ur_vma = vma;
+	  if (lm.GetType() == LoadModule::SharedLibrary 
+	      && vma > proflm.load_addr()) {
+	    ur_vma = vma - proflm.load_addr();
+	  }
+	  
+	  // 2. Find associated scope and insert into scope tree
+	  ScopeInfo* scope = lmScope->findByVMA(ur_vma);
+	  if (!scope) {
+	    DIAG_DevMsg(3, "Can't find non-LM scope for " << lmname << ":0x" 
+			<< hex << ur_vma << dec);
+	    scope = lmScope;
+	  }
+	  
+	  double perfdata = events;
+	  if (scope->HasPerfData(m->Index())) {
+	    perfdata += scope->PerfData(m->Index());
+	  }
+	  scope->SetPerfData(m->Index(), perfdata);
+	}
+      }
+    }
+  }
+
+  //-------------------------------------------------------
+  // Accumulate metrics
+  //-------------------------------------------------------
+  for (unsigned i = 0; i < eventToPerfMetricMap.size(); ++i) {
+    PerfMetric* m = eventToPerfMetricMap[i];
+    AccumulateMetricsFromChildren(pgm, m->Index());
+  }
+}
+
+
+void
 Driver::ScopeTreeInsertPROFILEData(PgmScopeTree& scopes) 
 {
   NodeRetriever ret(scopes.GetRoot(), path);
@@ -196,9 +317,8 @@ Driver::ScopeTreeInsertPROFILEData(PgmScopeTree& scopes)
       dataSrc[i]->Make(ret);
     } 
     catch (const MetricException &x) {
-      cerr << "hpcview fatal error: Could not construct METRIC '" 
-	   << dataSrc[i]->Name() << "'." << endl
-	   << "\t" << x.error << endl;
+      DIAG_EMsg("Could not construct METRIC '" << dataSrc[i]->Name() << "':" 
+		<< x.error);
       exit(1);
     }
     catch (...) {
@@ -218,45 +338,48 @@ Driver::ProcessPGMFile(NodeRetriever* nretriever,
   }
   
   for (unsigned int i = 0; i < files->size(); i++) {
-    const string& pgmFileName = *((*files)[i]);
-    if (!pgmFileName.empty()) {
-      const char* pf = pathfind(".", pgmFileName.c_str(), "r");
-      string filePath = (pf) ? pf : "";
-      if (!filePath.empty()) {
-	SAX2XMLReader* parser = XMLReaderFactory::createXMLReader();
-	
-	parser->setFeature(XMLUni::fgSAX2CoreValidation, true);
-	parser->setFeature(XMLUni::fgXercesDynamic, true);
-	parser->setFeature(XMLUni::fgXercesValidationErrorAsFatal, true);
-	
-	PGMDocHandler handler(docty, nretriever, this);
-	parser->setContentHandler(&handler);
-	parser->setErrorHandler(&handler);
-
+    const string& fnm = *((*files)[i]);
+    if (!fnm.empty()) {
+      const char* pf = pathfind(".", fnm.c_str(), "r");
+      string fpath = (pf) ? pf : "";
+      if (!fpath.empty()) {
 	try {
-	  parser->parse(filePath.c_str());
+	  SAX2XMLReader* parser = XMLReaderFactory::createXMLReader();
+	
+	  parser->setFeature(XMLUni::fgSAX2CoreValidation, true);
+	  parser->setFeature(XMLUni::fgXercesDynamic, true);
+	  parser->setFeature(XMLUni::fgXercesValidationErrorAsFatal, true);
+	  
+	  PGMDocHandler* handler = new PGMDocHandler(docty, nretriever, this);
+	  parser->setContentHandler(handler);
+	  parser->setErrorHandler(handler);
+	  
+	  parser->parse(fpath.c_str());
+
 	  if (parser->getErrorCount() > 0) {
-	    cerr << "hpcview fatal error: terminating because of previously reported " << PGMDocHandler::ToString(docty) << " file parse errors." << endl;
+	    DIAG_EMsg("terminating because of previously reported " << PGMDocHandler::ToString(docty) << " file parse errors.");
 	    exit(1);
 	  }
+	  delete handler;
+	  delete parser;
 	}
 	catch (const SAXException& x) {
-	  cerr << "hpcview: Error parsing '" << filePath << "'" << endl;
+	  DIAG_EMsg("parsing '" << fpath << "'");
 	  exit(1);
 	}
 	catch (const PGMException& x) {
-	  cerr << "hpcview: Error reading '" << filePath << "': ";
-	  x.report(cerr);
+	  DIAG_EMsg("reading '" << fpath << "'");
+	  x.report(std::cerr);
 	  exit(1);
 	}
 	catch (...) {
+	  DIAG_EMsg("While processing '" << fpath << "'...");
 	  throw;
-	}
+	};
       } 
       else {
-	cerr << "hpcview fatal error: could not open " 
-	     << PGMDocHandler::ToString(docty) << " file '" 
-	     << pgmFileName << "'." << endl;
+	DIAG_EMsg("Could not open " << PGMDocHandler::ToString(docty) 
+		  << " file '" << fnm << "'.");
 	exit(1);
       }
     }

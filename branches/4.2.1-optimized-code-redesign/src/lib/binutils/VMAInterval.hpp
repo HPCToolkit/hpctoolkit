@@ -76,15 +76,30 @@
 class VMAInterval
 {
 public:
+  // -------------------------------------------------------
+  // constructor/destructor
+  // -------------------------------------------------------
   VMAInterval(VMA beg, VMA end)
     : mBeg(beg), mEnd(end) { }
   VMAInterval(const char* formattedstr)
     { fromString(formattedstr); }
 
+  VMAInterval(const VMAInterval& x)
+    { *this = x; }
+
+  VMAInterval& operator=(const VMAInterval& x) { 
+    mBeg = x.mBeg;
+    mEnd = x.mEnd;
+    return *this; 
+  }
+
   ~VMAInterval() { }
-  
+
+  // -------------------------------------------------------
+  // data
+  // -------------------------------------------------------
   VMA  beg() const { return mBeg; }
-  VMA& beg()       { return mBeg; };
+  VMA& beg()       { return mBeg; }
   
   VMA  end() const { return mEnd; }
   VMA& end()       { return mEnd; }
@@ -92,7 +107,18 @@ public:
   bool empty() const { return mBeg >= mEnd; }
 
   // -------------------------------------------------------
-  // printing/slurping
+  // interval comparison
+  // -------------------------------------------------------
+  
+  // overlaps: does this interval overlap x
+  bool overlaps(VMAInterval x) const;
+  
+  // contains: does this interval contain x
+  bool contains(VMAInterval x) const
+    { return ((beg() <= x.beg()) && (end() >= x.end())); }
+  
+  // -------------------------------------------------------
+  // print/read/write
   // -------------------------------------------------------
 
   // Format: "[lb1-ub1)"
@@ -114,20 +140,44 @@ private:
 
 
 // --------------------------------------------------------------------------
-// lt_VMAInterval: for ordering VMAInterval: Should work for any kind
-// of interval: [ ], ( ), [ ), ( ].  For example:
+// operator <, lt_VMAInterval: for ordering VMAInterval: Should work
+// for any kind of interval: [ ], ( ), [ ), ( ].  For example:
 //   
 //   [1,1]  < [1,2] --> true
 //   [1,1]  < [1,1] --> false
 //   [1,10] < [4,6] --> true
 // --------------------------------------------------------------------------
+
+inline bool 
+operator<(const VMAInterval& x, const VMAInterval& y) 
+{
+  return ((x.beg() < y.beg()) || 
+	  ((x.beg() == y.beg()) && (x.end() < y.end())));
+}
+
 class lt_VMAInterval {
 public:
   bool operator() (const VMAInterval& x, const VMAInterval& y) const {
-    return ((x.beg() < y.beg()) || 
-	    ((x.beg() == y.beg()) && (x.end() < y.end())));
+    return (x < y);
   }
 };
+
+
+// --------------------------------------------------------------------------
+// operators
+// --------------------------------------------------------------------------
+
+inline bool 
+operator==(const VMAInterval& x, const VMAInterval& y) 
+{
+  return ((x.beg() == y.beg()) && (x.end() == y.end()));
+}
+
+inline bool 
+operator!=(const VMAInterval& x, const VMAInterval& y) 
+{
+  return ( !(x == y) );
+}
 
 
 //***************************************************************************
@@ -188,7 +238,7 @@ public:
   void merge(const VMAIntervalSet& x);
 
   // -------------------------------------------------------
-  // printing/slurping
+  // print/read/write
   // -------------------------------------------------------
 
   // Format: space-separated list of intervals: "{[lb1-ub1) [lb2-ub2) ...}"

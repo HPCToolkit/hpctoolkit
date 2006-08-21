@@ -130,12 +130,16 @@ hpcview_bin_OBJECTS = $(am_hpcview_bin_OBJECTS)
 am__DEPENDENCIES_1 =  \
 	$(top_builddir)/src/lib/prof-juicy/libHPCprof-juicy.la
 am__DEPENDENCIES_2 =  \
+	$(top_builddir)/src/lib/prof-lean/libHPCprof-lean.la
+am__DEPENDENCIES_3 =  \
 	$(top_builddir)/src/lib/binutils/libHPCbinutils.la
-am__DEPENDENCIES_3 = $(top_builddir)/src/lib/xml/libHPCxml.la
-am__DEPENDENCIES_4 = $(top_builddir)/src/lib/support/libHPCsupport.la
-am__DEPENDENCIES_5 = $(am__DEPENDENCIES_1) $(am__DEPENDENCIES_2) \
-	$(am__DEPENDENCIES_3) $(am__DEPENDENCIES_4)
-hpcview_bin_DEPENDENCIES = $(am__DEPENDENCIES_5)
+am__DEPENDENCIES_4 = $(top_builddir)/src/lib/isa/libHPCisa.la
+am__DEPENDENCIES_5 = $(top_builddir)/src/lib/xml/libHPCxml.la
+am__DEPENDENCIES_6 = $(top_builddir)/src/lib/support/libHPCsupport.la
+am__DEPENDENCIES_7 = $(am__DEPENDENCIES_1) $(am__DEPENDENCIES_2) \
+	$(am__DEPENDENCIES_3) $(am__DEPENDENCIES_4) \
+	$(am__DEPENDENCIES_5) $(am__DEPENDENCIES_6)
+hpcview_bin_DEPENDENCIES = $(am__DEPENDENCIES_7)
 binSCRIPT_INSTALL = $(INSTALL_SCRIPT)
 SCRIPTS = $(bin_SCRIPTS)
 DEFAULT_INCLUDES = -I. -I$(srcdir)
@@ -371,8 +375,8 @@ MYCXXFLAGS = @HOST_CXXFLAGS@ $(HPC_IFLAGS) @XERCES_IFLAGS@
 MYLDFLAGS = @HOST_CXXFLAGS@
 MYLDADD = \
 	@HOST_LIBTREPOSITORY@ \
-	$(HPC_LIBPROFJUICY) $(HPC_LIBBINUTILS) $(HPC_LIBXML) $(HPC_LIBSUPPORT) \
-	@XERCES_LDFLAGS@ \
+	$(HPC_LIBPROFJUICY) $(HPC_LIBPROFLEAN) $(HPC_LIBBINUTILS) $(HPC_LIBISA) $(HPC_LIBXML) $(HPC_LIBSUPPORT) \
+	@XERCES_LDFLAGS@ @GNUBINUTILS_LDFLAGS@ \
 	@HOST_HPCVIEW_LDFLAGS@ \
 	-lm
 

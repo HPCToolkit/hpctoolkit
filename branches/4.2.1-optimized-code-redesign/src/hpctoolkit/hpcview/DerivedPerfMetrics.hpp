@@ -1,4 +1,4 @@
-// -*-C++-*-
+// -*-Mode: C++;-*-
 // $Id$
 
 // * BeginRiceCopyright *****************************************************
@@ -61,11 +61,22 @@ class MathMLExpr;
 
 //****************************************************************************
 
+// FIXME: relocate
+class ScopeInfo;
+void AccumulateMetricsFromChildren(ScopeInfo* si, int perfInfoIndex);
+
+
 class FilePerfMetric : public PerfMetric {
 public: 
   FilePerfMetric(const char* nm, const char* nativeNm, const char* displayNm,
 		 bool display, bool percent, bool sortBy, 
 		 const char* fname, const char* ftype, Driver* _driver); 
+  FilePerfMetric(const std::string& nm, const std::string& nativeNm, 
+		 const std::string& displayNm,
+		 bool display, bool percent, bool sortBy, 
+		 const std::string& fname, const std::string& ftype, 
+		 Driver* _driver); 
+
   virtual ~FilePerfMetric(); 
   
   const std::string& FileName() const   { return file; }; 
@@ -74,6 +85,7 @@ public:
   virtual void Make(NodeRetriever &ret); // read the file
   
   virtual std::string ToString() const; 
+
 private: 
   std::string file;
   std::string type; // for later use
@@ -85,11 +97,19 @@ public:
   ComputedPerfMetric(const char* nm, const char* displayNm,
 		     bool display, bool percent, bool sortBy, 
 		     bool propagateComputed, DOMNode *expr);
+  ComputedPerfMetric(const std::string& nm, const std::string& displayNm,
+		     bool display, bool percent, bool sortBy, 
+		     bool propagateComputed, DOMNode *expr);
+
   virtual ~ComputedPerfMetric(); 
 
   virtual void Make(NodeRetriever &ret); // compute node by node
   
   virtual std::string ToString() const; 
+
+private:
+  void Ctor(const char* nm, DOMNode *expr);
+
 private: 
   MathMLExpr *mathExpr; 
 };

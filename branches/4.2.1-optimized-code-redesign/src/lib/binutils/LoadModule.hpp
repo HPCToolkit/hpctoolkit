@@ -75,14 +75,6 @@ class Instruction;
 
 class ISA;
 
-// FIXME: It is a little unfortunate to have to make 'isa' global.
-// Though multiple 'LoadModules' from the ISA may coexist, only one
-// ISA may be used at a time.  Allowing many types of ISA's to exist
-// at the same time would significantly complicate things and we do
-// not anticiapte such generality being very useful.
-extern ISA* isa; // current ISA
-
-
 // A map between pairs of addresses in the same procedure and the
 // first line of the procedure. This map is built upon reading the
 // module. 
@@ -218,6 +210,15 @@ public:
 
   DbgFuncSummary* GetDebugFuncSummary() { return &dbgSummary; }
 
+  // It is a little unfortunate to have to make 'isa' global across
+  // all intances since it implies that while multiple 'LoadModules'
+  // from the ISA may coexist, only one ISA may be used at a time.
+  // The issue is that allowing many types of ISA's to exist at the
+  // same time would significantly complicate things and we do not
+  // anticiapte such generality being very useful.  For example,
+  // having multiple load modules open at the same time is generally
+  // not a good idea anyway.
+  static ISA* isa; // current ISA
 
   // Dump contents for inspection
   virtual void Dump(std::ostream& o = std::cerr, const char* pre = "") const;
@@ -361,11 +362,7 @@ private:
   // Virtual memory address to Instruction* map: Note that 'VMA' is
   // not necessarily the true vma value; rather, it is the address of
   // the individual operation (ISA::ConvertVMAToOpVMA).
-  typedef std::map<VMA, Instruction*, lt_VMA>           VMAToInstMap;
-  typedef std::map<VMA, Instruction*, lt_VMA>::iterator VMAToInstMapIt;
-  typedef std::map<VMA, Instruction*, lt_VMA>::const_iterator
-    VMAToInstMapItC;  
-  typedef std::map<VMA, Instruction*>::value_type        VMAToInstMapVal;
+  typedef std::map<VMA, Instruction*, lt_VMA> VMAToInsnMap;
   
   // Section sequence: 'deque' supports random access iterators (and
   // is thus sortable with std::sort) and constant time insertion/deletion at
@@ -377,7 +374,7 @@ private:
 protected:
   LoadModuleImpl* impl; 
 
-private: 
+private:
   std::string name;
   Type  type;
   VMA   textBeg, textEnd; // text begin and end
@@ -388,8 +385,8 @@ private:
   SectionSeq sections; // A list of sections
 
   // A map of virtual memory addresses to Instruction*
-  VMAToInstMap addrToInstMap;  // owns all Instruction*
-  VMAToProcedureMap addrToProcMap; // CC
+  VMAToInsnMap vmaToInsnMap;  // owns all Instruction*
+  VMAToProcedureMap vmaToProcMap; // CC
 
   // symbolic info used in building procedures
   DbgFuncSummary dbgSummary; 

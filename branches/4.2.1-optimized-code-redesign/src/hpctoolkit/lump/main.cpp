@@ -196,7 +196,7 @@ DumpHeaderInfo(std::ostream& os, LoadModule* lm, const char* pre = "")
       os << "-unknown-'\n";
       BriefAssertion(false); 
   }
-  os << pre << "ISA: `" << typeid(*isa).name() << "'\n"; // std::type_info
+  os << pre << "ISA: `" << typeid(*LoadModule::isa).name() << "'\n"; // std::type_info
 }
 
 
@@ -233,13 +233,13 @@ DumpSymbolicInfo(std::ostream& os, LoadModule* lm)
       // We have a 'Procedure'.  Iterate over VMA values     
       for (ProcedureInstructionIterator it(*p); it.IsValid(); ++it) {
 	Instruction* inst = it.Current();
-	VMA pc = inst->GetVMA();
-	VMA opVMA = isa->ConvertVMAToOpVMA(pc, inst->GetOpIndex());
+	VMA vma = inst->GetVMA();
+	VMA opVMA = LoadModule::isa->ConvertVMAToOpVMA(vma, inst->GetOpIndex());
 	
 	// Find and dump symbolic info attched to VMA
 	string func, file;
 	suint line;
-	p->GetSourceFileInfo(pc, inst->GetOpIndex(), func, file, line);
+	p->GetSourceFileInfo(vma, inst->GetOpIndex(), func, file, line);
 	func = GetBestFuncName(func);
 	
 	os << pre << "0x" << hex << opVMA << dec 
@@ -288,13 +288,13 @@ DumpSymbolicInfoOld(std::ostream& os, LoadModule* lm)
 
       for (ProcedureInstructionIterator it(*p); it.IsValid(); ++it) {
 	Instruction* inst = it.Current();
-	VMA pc = inst->GetVMA();
-	VMA opVMA = isa->ConvertVMAToOpVMA(pc, inst->GetOpIndex());
+	VMA vma = inst->GetVMA();
+	VMA opVMA = LoadModule::isa->ConvertVMAToOpVMA(vma, inst->GetOpIndex());
 	
 	// 1. Attempt to find symbolic information
 	string func, file;
 	suint line;
-	p->GetSourceFileInfo(pc, inst->GetOpIndex(), func, file, line);
+	p->GetSourceFileInfo(vma, inst->GetOpIndex(), func, file, line);
 	func = GetBestFuncName(func);
 	
 	// Bad line number: cannot fix; advance iteration
@@ -359,8 +359,8 @@ DumpSymbolicInfoForFunc(std::ostream& os, const char* pre,
 
     VMAListIt it1;
     for (it1 = list->begin(); it1 != list->end(); ++it1) {
-      VMA pc = *it1;
-      os << " 0x" << pc;
+      VMA vma = *it1;
+      os << " 0x" << vma;
     }
     os << " }" << dec << endl;
   }

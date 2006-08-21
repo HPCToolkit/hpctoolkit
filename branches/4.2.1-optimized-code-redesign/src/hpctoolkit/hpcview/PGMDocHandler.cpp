@@ -344,6 +344,8 @@ void PGMDocHandler:: startElement(const XMLCh* const uri,
     if (!lineB.empty()) { lnB = (int)StrUtil::toLong(lineB); }
     if (!lineE.empty()) { lnE = (int)StrUtil::toLong(lineE); }
     IFTRACE << " b="  << lnB << " e=" << lnE << endl;
+    
+    string vma = getAttr(attributes, attrVMA);
 
     // Find enclosing File scope
     FileScope* curFile = FindCurrentFileScope();
@@ -356,14 +358,14 @@ void PGMDocHandler:: startElement(const XMLCh* const uri,
     currentFuncScope = curFile->FindProc(name);
     if (!currentFuncScope) {
       currentFuncScope = new ProcScope(name, curFile, lname, lnB, lnE);
+      if (!vma.empty()) {
+	currentFuncScope->vmaSet().fromString(vma.c_str());
+      }
     }
     else {
       if (docty == Doc_STRUCT) {
 	// If a proc with the same name already exists, print a warning.
-	cerr << "WARNING: Procedure " << name << " was found multiple times"
-	     << " in the file " << curFile->Name() << "; information for this"
-	     << " procedure will be aggregated. If you do not want this,"
-	     << " edit the STRUCTURE file and adjust the names by hand.\n";
+	DIAG_Msg(0, "Warning: Found procedure '" << name << "' multiple times within file '" << curFile->Name() << "'; information for this procedure will be aggregated. If you do not want this, edit the STRUCTURE file and adjust the names by hand.");
       }
     }
     
@@ -403,26 +405,28 @@ void PGMDocHandler:: startElement(const XMLCh* const uri,
     int lnB = UNDEF_LINE, lnE = UNDEF_LINE;
     string lineB = getAttr(attributes, attrBegin);
     string lineE = getAttr(attributes, attrEnd);
-    string vma   = getAttr(attributes, attrVMA);
     if (!lineB.empty()) { lnB = (int)StrUtil::toLong(lineB); }
     if (!lineE.empty()) { lnE = (int)StrUtil::toLong(lineE); }
     BriefAssertion(lnB != UNDEF_LINE);
 
-    // IF lineE is undefined, set it to lineB
+    // Check that lnB and lnE are valid line numbers:
+    //   if lineE is undefined, set it to lineB
     if (lnE == UNDEF_LINE) { lnE = lnB; }
-
-    // Check that lnB and lnE are valid line numbers: FIXME
-
     IFTRACE << "S(tmt): numberB=" << lineB << " numberE=" << lineE << endl;
-    
+
     // for now assume that lnB and lnE are equals, exit otherwise
     BriefAssertion(lnB == lnE);
+    
+    string vma = getAttr(attributes, attrVMA);
 
     // by now the file and function names should have been found
     CodeInfo* enclScope = 
       dynamic_cast<CodeInfo*>(GetCurrentScope()); // enclosing scope
     BriefAssertion(currentFuncScope != NULL);
-    StmtRangeScope* stmtNode = new StmtRangeScope(enclScope, lnB, lnE, 0, 0);
+    StmtRangeScope* stmtNode = new StmtRangeScope(enclScope, lnB, lnE);
+    if (!vma.empty()) {
+      stmtNode->vmaSet().fromString(vma.c_str());
+    }
     currentScope = stmtNode;
   }
 

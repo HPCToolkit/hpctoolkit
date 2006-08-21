@@ -112,6 +112,8 @@ public:
   void Add(PerfMetric* metric); 
   
   void ScopeTreeInitialize(PgmScopeTree& scopesInfo);
+  void ScopeTreeInsertProfileData(PgmScopeTree& scopesInfo,
+				  const std::list<std::string>& profileFiles);
   void ScopeTreeInsertPROFILEData(PgmScopeTree& scopesInfo);
 
   std::string ToString() const; 
