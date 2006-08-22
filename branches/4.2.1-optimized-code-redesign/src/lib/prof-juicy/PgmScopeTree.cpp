@@ -1032,7 +1032,8 @@ LoadModScope::findByVMA(VMA vma)
 
 template<typename T>
 T*
-LoadModScope::findInMap(map<VMAInterval, T*>* m, VMAInterval& toFind)
+LoadModScope::findInMap(const map<VMAInterval, T*>* m, 
+			VMAInterval& toFind) const
 {
   // find [lb, ub) where lb is the first element !< toFind 
   typename map<VMAInterval, T*>::const_reverse_iterator lb(m->lower_bound(toFind));

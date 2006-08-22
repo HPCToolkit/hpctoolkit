@@ -408,4 +408,5 @@ std::ostream&
 MathMLExpr::dump(std::ostream& os) const
 { 
   topNode->dump(os); 
+  return os;
 }

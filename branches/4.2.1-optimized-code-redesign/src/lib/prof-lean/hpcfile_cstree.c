@@ -1,5 +1,6 @@
+// -*-Mode: C;-*-
 // $Id$
-// -*-C-*-
+
 // * BeginRiceCopyright *****************************************************
 // ******************************************************* EndRiceCopyright *
 
@@ -38,7 +39,13 @@
 #include "hpcfile_cstreelib.h"
 #include "hpcfile_cstree.h"
 
+#include "hpcfile_cstree.h"
+
+#include <lib/support/diagnostics.h>
+
 //*************************** Forward Declarations **************************
+
+#define DBG_READ_METRICS 0
 
 int
 hpcfile_cstree_write_node(FILE* fs, void* tree, void* node, 
@@ -466,15 +473,10 @@ hpcfile_cstree_nodedata__fread(hpcfile_cstree_nodedata_t* x, FILE* fs, int num_m
   sz = hpc_fread_le8(&x->sp, fs);
   if (sz != sizeof(x->sp)) { return HPCFILE_ERR; } 
 
-  xDEBUG(DEB_READ_MMETRICS, 
-	 fprintf(stderr, "reading node ip=%lx\n", x->ip);
-	 fflush(stderr););
-
-  for (i=0; i<num_metrics; i++) {
+  DIAG_MsgIf(DBG_READ_METRICS, "reading node ip=%"PRIx64, x->ip);
+  for (i = 0; i < num_metrics; i++) {
     sz = hpc_fread_le8(&x->metrics[i], fs);
-    xDEBUG(DEB_READ_MMETRICS,
-	   fprintf(stderr, "metrics[%d]=%d\n", i, x->metrics[i]);
-	   fflush(stderr););
+    DIAG_MsgIf(DBG_READ_METRICS, "metrics[%d]=%"PRIu64, i, x->metrics[i]);
     if (sz != sizeof(hpcfile_uint_t)) { 
       return HPCFILE_ERR; 
     }
@@ -526,9 +528,9 @@ hpcfile_cstree_nodedata__fprint(hpcfile_cstree_nodedata_t* x, FILE* fs,
 				int num_metrics)
 {
   int i;
-  fprintf(fs, "{nodedata: (ip: %lx) ", x->ip); 
+  fprintf(fs, "{nodedata: (ip: %"PRIx64") ", x->ip); 
   for (i=0; i<num_metrics; i++) {
-    fprintf(fs, " %ld ", x->metrics[i]);
+    fprintf(fs, " %"PRIu64" ", x->metrics[i]);
   }
   fprintf(fs,"} \n");
   
@@ -595,7 +597,7 @@ hpcfile_cstree_node__fprint(hpcfile_cstree_node_t* x, FILE* fs, int num_metrics)
 
   hpcfile_cstree_nodedata__fprint(&x->data, fs, num_metrics);
   
-  fprintf(fs, "(id: %lu) (id_parent: %lu)}\n", x->id, x->id_parent);
+  fprintf(fs, "(id: %"PRIu64") (id_parent: %"PRIu64")}\n", x->id, x->id_parent);
   
   return HPCFILE_OK;
 }

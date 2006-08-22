@@ -74,8 +74,8 @@ using XERCES_CPP_NAMESPACE::XMLString;
 
 #include <lib/prof-juicy/PgmScopeTree.hpp>
 
-#include <lib/support/Assertion.h>
 #include <lib/support/diagnostics.h>
+#include <lib/support/Assertion.h>
 #include <lib/support/Trace.hpp>
 #include <lib/support/StrUtil.hpp>
 
@@ -508,7 +508,7 @@ PGMDocHandler::ToString(Doc_t docty)
     case Doc_NULL:   return "Document:NULL";
     case Doc_STRUCT: return "Document:STRUCTURE";
     case Doc_GROUP:  return "Document:GROUP";
-    default:  BriefAssertion(false);
+    default: DIAG_Die("Invalid Doc_t!");
   }
 }
 

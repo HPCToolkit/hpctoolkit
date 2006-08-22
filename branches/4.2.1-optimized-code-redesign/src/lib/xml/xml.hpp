@@ -58,6 +58,8 @@
 #include <iostream>
 #include <string>
 
+#include <inttypes.h> /* commonly available, unlike <stdint.h> */
+
 //*************************** User Include Files ****************************
 
 #include <include/general.h>
@@ -164,43 +166,32 @@ namespace xml {
   // -------------------------------------------------------  
 
   inline std::string 
-  MakeAttrStr(const char* s, int flags = ESC_TRUE) {
-    std::string str = ((flags & ESC_TRUE) ? EscapeStr(s) : s);
+  MakeAttrStr(const char* x, int flags = ESC_TRUE) {
+    std::string str = ((flags & ESC_TRUE) ? EscapeStr(x) : x);
     return (attB + str + attE);
   }
 
   inline std::string 
-  MakeAttrStr(const std::string& s, int flags = ESC_TRUE) {
-    return MakeAttrStr(s.c_str(), flags);
+  MakeAttrStr(const std::string& x, int flags = ESC_TRUE) {
+    return MakeAttrStr(x.c_str(), flags);
   }
 
   inline std::string 
-  MakeAttrNum(int n) {
-    return (attB + StrUtil::toStr(n) + attE);
+  MakeAttrNum(int x) {
+    return (attB + StrUtil::toStr(x) + attE);
   }
   inline std::string 
-  MakeAttrNum(unsigned int n, int base = 10) {
-    return (attB + StrUtil::toStr(n, base) + attE);
+  MakeAttrNum(unsigned int x, int base = 10) {
+    return (attB + StrUtil::toStr(x, base) + attE);
   }
   inline std::string 
-  MakeAttrNum(long n) {
-    return (attB + StrUtil::toStr(n) + attE);
+  MakeAttrNum(int64_t x) {
+    return (attB + StrUtil::toStr(x) + attE);
   }
   inline std::string 
-  MakeAttrNum(unsigned long n, int base = 10) {
-    return (attB + StrUtil::toStr(n, base) + attE);
+  MakeAttrNum(uint64_t x, int base = 10) {
+    return (attB + StrUtil::toStr(x, base) + attE);
   }
- 
-#ifdef ARCH_USE_LONG_LONG // FIXME
-  inline std::string 
-  MakeAttrNum(long long n) {
-    return (attB + StrUtil::toStr(n) + attE);
-  }
-  inline std::string 
-  MakeAttrNum(unsigned long long n, int base = 10) {
-    return (attB + StrUtil::toStr(n, base) + attE);
-  }
-#endif  
 }
 
 #endif

@@ -25,10 +25,6 @@
 #ifndef _loadmodule_h
 #define _loadmodule_h
 
-#ifdef __GNUC__
-#pragma interface
-#endif
-
 //************************* System Include Files ****************************
 
 #include <stdio.h>

@@ -1,5 +1,6 @@
+// -*-Mode: C++;-*-
 // $Id$
-// -*-C++-*-
+
 // * BeginRiceCopyright *****************************************************
 // 
 // Copyright ((c)) 2002, Rice University 
@@ -61,7 +62,8 @@ using namespace std; // For compatibility with non-std C headers
 //*************************** User Include Files ****************************
 
 #include "IA64ISA.hpp"
-#include <lib/support/Assertion.h>
+
+#include <lib/support/diagnostics.h>
 
 //*************************** Forward Declarations ***************************
 
@@ -95,7 +97,7 @@ static MachInst* ConvertMIToOpMI(MachInst* mi, ushort opIndex)
   // Do not change; the GNU decoders depend upon these particular
   // offsets.  Note that the offsets do not actually match the IA64
   // template [5,41,41,41].
-  BriefAssertion(opIndex <= 2 && "Programming Error");
+  DIAG_Assert(opIndex <= 2, "Programming Error");
   return (MachInst*)((MachInstByte*)mi + (6 * opIndex)); // 0, 6, 12
 }
 

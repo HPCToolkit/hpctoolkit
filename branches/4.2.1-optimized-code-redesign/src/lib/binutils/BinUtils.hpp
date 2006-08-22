@@ -78,7 +78,7 @@ GetBestFuncName(const char* name);
 inline const char* 
 GetBestFuncName(const std::string& name)
 {
-  GetBestFuncName(name.c_str());
+  return GetBestFuncName(name.c_str());
 }
 
 

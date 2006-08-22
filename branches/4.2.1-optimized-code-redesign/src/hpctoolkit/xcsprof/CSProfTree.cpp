@@ -463,8 +463,8 @@ CSProfCallSiteNode::ToDumpString(int dmpFlag) const
   string self = CSProfNode::ToDumpString(dmpFlag);
   
   if (!(dmpFlag & CSProfTree::XML_TRUE)) {
-    self = self + " ip" + MakeAttrNum((unsigned long)ip, true) 
-      + " op" + MakeAttrNum(opIndex); // FIXME: cast for *&^ SGI compiler
+    self = self + " ip" + MakeAttrNum(ip, 16) 
+      + " op" + MakeAttrNum(opIndex);
   } 
 
   if (!file.empty()) { 
@@ -476,10 +476,11 @@ CSProfCallSiteNode::ToDumpString(int dmpFlag) const
 
   if (!proc.empty()) {
     self = self + " p" + MakeAttrStr(proc, AddXMLEscapeChars(dmpFlag));
-   } else {
-       self = self + " ip" + MakeAttrNum((unsigned long)ip,true) ; 
-     }
-    
+   } 
+  else {
+    self = self + " ip" + MakeAttrNum(ip, 16);
+  }
+  
 
   if (GetBegLine() != UNDEF_LINE) {
     self = self + " l" + MakeAttrNum(GetBegLine());
@@ -535,8 +536,8 @@ CSProfStatementNode::ToDumpString(int dmpFlag) const
   string self = CSProfNode::ToDumpString(dmpFlag);
   
   if (!(dmpFlag & CSProfTree::XML_TRUE)) {
-    self = self + " ip" + MakeAttrNum((unsigned long)ip, true) 
-      + " op" + MakeAttrNum(opIndex); // FIXME: cast for *&^ SGI compiler
+    self = self + " ip" + MakeAttrNum(ip, 16) 
+      + " op" + MakeAttrNum(opIndex);
   } 
 
   if (!file.empty()) { 
@@ -548,10 +549,11 @@ CSProfStatementNode::ToDumpString(int dmpFlag) const
 
   if (!proc.empty()) {
     self = self + " p" + MakeAttrStr(proc, AddXMLEscapeChars(dmpFlag));
-   } else {
-       self = self + " ip" + MakeAttrNum((unsigned long)ip,true) ; 
-     }
-    
+   } 
+  else {
+    self = self + " ip" + MakeAttrNum(ip, 16);
+  }
+  
 
   if (GetBegLine() != UNDEF_LINE) {
     self = self + " l" + MakeAttrNum(GetBegLine());
@@ -579,9 +581,9 @@ CSProfStatementNode::ToDumpMetricsString(int dmpFlag) const {
   for (i=0; i<metrics.size(); i++) {
     suint crtMetric = metrics[i];
     if (crtMetric!= 0) {
-      metricsString  +=  " <M ";
-      metricsString  +=  "n"+MakeAttrNum(i)+" v" + MakeAttrNum(crtMetric);
-      metricsString  +=  " />";
+      metricsString  += " <M ";
+      metricsString  += "n" + MakeAttrNum(i) + " v" + MakeAttrNum(crtMetric);
+      metricsString  += " />";
     }
   }
   return metricsString;

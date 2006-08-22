@@ -61,7 +61,8 @@ using std::string;
 
 #include "Procedure.hpp"
 #include "Instruction.hpp"
-#include <lib/support/Assertion.h>
+
+#include <lib/support/diagnostics.h>
 
 //*************************** Forward Declarations **************************
 
@@ -138,7 +139,8 @@ Procedure::Dump(std::ostream& o, const char* pre) const
     case Local:   o << "Local'\n";  break;
     case Weak:    o << "Weak'\n";   break;
     case Global:  o << "Global'\n"; break;
-    default:      o << "-unknown-'\n"; BriefAssertion(false);
+    default:      o << "-unknown-'\n"; 
+      DIAG_Die("Unknown Procedure type: " << GetType());
   }
   o << p << "  VMA: [0x" << hex << GetBegVMA() << ", 0x"
     << GetEndVMA() << dec << "]\n";
@@ -183,8 +185,8 @@ ProcedureInstructionIterator::Reset()
   
   if (it != lm.vmaToInsnMap.end()) {
     // We have at least one instruction: p.endVMA should have been found
-    BriefAssertion(endIt != lm.vmaToInsnMap.end() && "Internal error!");
-
+    DIAG_Assert(endIt != lm.vmaToInsnMap.end(), "Internal error!");
+    
     endIt++; // 'endIt' is now one past the last valid instruction
   
     // We need to ensure that all VLIW instructions that match this
@@ -198,6 +200,6 @@ ProcedureInstructionIterator::Reset()
   }
   else {
     // 'it' == end ==> p.begVMA == p.endVMA (but not the reverse)
-    BriefAssertion(p.begVMA == p.endVMA && "Internal error!");
+    DIAG_Assert(p.begVMA == p.endVMA, "Internal error!");
   }
 }

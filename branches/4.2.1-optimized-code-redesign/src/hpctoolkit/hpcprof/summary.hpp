@@ -24,10 +24,6 @@
 #ifndef _summary_h
 #define _summary_h
 
-#ifdef __GNUG__
-#pragma interface
-#endif
-
 //************************* System Include Files ****************************
 
 #include <iostream>

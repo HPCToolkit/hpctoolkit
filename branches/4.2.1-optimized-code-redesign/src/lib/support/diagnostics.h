@@ -66,6 +66,12 @@
 
 //************************** Forward Declarations ****************************
 
+#if defined(__cplusplus)
+#define DIAG_EXTERN extern "C"
+#else
+#define DIAG_EXTERN extern
+#endif
+
 // Debug and verbosity levels: higher level --> more info; 0 turns
 // respective messages off
 
@@ -75,19 +81,18 @@
 // Public debugging level: stuff that a few users may find interesting [0-9]
 extern int DIAG_DBG_LVL_PUB; // default: 0
 
-
-extern "C" void 
+DIAG_EXTERN void
 Diagnostics_SetDiagnosticFilterLevel(int lvl);
 
-extern "C" int
+DIAG_EXTERN int
 Diagnostics_GetDiagnosticFilterLevel();
 
 // This routine is called before an error that stops execution.  It is
 // especially useful for use with debuggers that do not have good
 // exception support.
-extern "C" void 
-Diagnostics_TheMostVisitedBreakpointInHistory(const char* filenm = NULL, 
-					      unsigned int lineno = 0);
+DIAG_EXTERN void
+Diagnostics_TheMostVisitedBreakpointInHistory(const char* filenm, 
+					      unsigned int lineno);
 
 
 //****************************************************************************
@@ -188,21 +193,27 @@ Diagnostics_TheMostVisitedBreakpointInHistory(const char* filenm = NULL,
 
 #include <stdio.h>
 
+#define DIAG_MsgIf(ifexpr, ...)                                     \
+  if (ifexpr) {                                                     \
+    fputs("msg: ", stderr);                                         \
+    fprintf(stderr, __VA_ARGS__); fputs("\n", stderr); }
+
 #define DIAG_Msg(level, ...)                                        \
   if (level <= DIAG_DBG_LVL_PUB) {                                  \
-    fprintf(stderr, "Diagnostics [%d]: ", level);                   \
+    fprintf(stderr, "msg [%d]: ", level);                   \
     fprintf(stderr, __VA_ARGS__); fputs("\n", stderr); }
 
 #define DIAG_DevMsg(level, ...)                                     \
   if (level <= DIAG_DBG_LVL) {                                      \
-    fprintf(stderr, "Diagnostics* [%d]: ", level);                  \
+    fprintf(stderr, "msg* [%d]: ", level);                  \
     fprintf(stderr, __VA_ARGS__); fputs("\n", stderr); }
 
 #define DIAG_EMsg(...)                                              \
-  { fputs("error", stderr);                                         \
+  { fputs("error: ", stderr);                                       \
+    fprintf(stderr, __VA_ARGS__); fputs("\n", stderr);              \
     if (DIAG_DBG_LVL_PUB) {                                         \
-      fprintf(stderr, " [%s:%d]", __FILE__, __LINE__); }            \
-    fputs(": ", stderr); fprintf(stderr, __VA_ARGS__); fputs("\n", stderr); }
+      fprintf(stderr, "\t[%s:%d]\n", __FILE__, __LINE__); }         \
+  }
 
 //#define DIAG_Assert(expr, ...) // cf. Open64's FmtAssert
 

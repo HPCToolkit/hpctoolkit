@@ -1,4 +1,4 @@
-// -*-C++-*-
+// -*-Mode: C++;-*-
 // $Id$
 
 // * BeginRiceCopyright *****************************************************
@@ -53,7 +53,8 @@
 //*************************** User Include Files ****************************
 
 #include "ISA.hpp"
-#include <lib/support/Assertion.h>
+
+#include <lib/support/diagnostics.h>
 
 //*************************** Forward Declarations ***************************
 
@@ -121,7 +122,7 @@ ISA::InstDesc::ToString() const
   case OTHER:           return "OTHER";
   case INVALID:         return "INVALID";
 
-  default: BriefAssertion(false && "Programming Error");
+  default: DIAG_Die("Programming Error");
   }
   return NULL;
 }

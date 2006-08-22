@@ -271,7 +271,7 @@ LoadModule::Read()
 void 
 LoadModule::Relocate(VMA textBegReloc_)
 {
-  BriefAssertion(textBeg != 0 && "Relocation not supported on this arch!");
+  DIAG_Assert(textBeg != 0, "LoadModule::Relocate not supported!");
   textBegReloc = textBegReloc_;
   
   if (textBegReloc == 0) {
@@ -650,7 +650,8 @@ LoadModule::ReadSections()
 }
 
 // FIXME: replace with diagnostics stuff
-#define xDEBUG( flag, code) {if (flag) {code; fflush (stderr); fflush(stdout);}} 
+//#define xDEBUG(flag, code) {if (flag) {code; fflush (stderr); fflush(stdout);}} 
+#define xDEBUG(flag, code) /* null */
 #define DEB_BUILD_PROC_MAP 0
 
 // Builds the map from <proc beg addr, proc end addr> pairs to 

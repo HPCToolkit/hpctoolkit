@@ -1,5 +1,6 @@
+// -*-Mode: C;-*-
 // $Id$
-// -*-C-*-
+
 // * BeginRiceCopyright *****************************************************
 // ******************************************************* EndRiceCopyright *
 
@@ -222,9 +223,9 @@ hpcfile_csprof_read(FILE* fs, hpcfile_csprof_data_t* data,
 
   // processing the epoch part here to reach the trees part--FMZ
   {
-    int num_epoch;
-    int num_modules;
-    unsigned int num_trees;
+    uint32_t num_epoch;
+    uint32_t num_modules;
+    uint32_t num_trees;
     uint64_t tsamps;
     size_t namelen;
     char module_name[256];
@@ -476,8 +477,10 @@ hpcfile_csprof_data__fprint(hpcfile_csprof_data_t* x, FILE* fs)
   for(i = 0; i < x->num_metrics; ++i) {
     hpcfile_csprof_metric_t metric = x->metrics[i];
     
-    if (metric.metric_name) { fprintf(fs, "# event: %s\n", metric.metric_name); }
-    fprintf(fs, "# sample period: %lu\n", metric.sample_period); 
+    if (metric.metric_name) { 
+      fprintf(fs, "# event: %s\n", metric.metric_name); 
+    }
+    fprintf(fs, "# sample period: %"PRIu64"\n", metric.sample_period); 
   }
   
   return HPCFILE_OK;

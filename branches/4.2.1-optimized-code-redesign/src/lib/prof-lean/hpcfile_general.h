@@ -1,5 +1,6 @@
+// -*-Mode: C;-*-
 // $Id$
-// -*-C-*-
+
 // * BeginRiceCopyright *****************************************************
 // ******************************************************* EndRiceCopyright *
 
@@ -207,11 +208,6 @@ int hpcfile_num8s__fwrite(hpcfile_num8s_t* x, FILE* fs);
 int hpcfile_num8s__fprint(hpcfile_num8s_t* x, FILE* fs);
 
 //***************************************************************************
-
-#ifndef xDEBUG
-#define xDEBUG(flag, code) {if (flag) {code; fflush(stdout); fflush(stderr);}} 
-#endif
-#define DEB_READ_MMETRICS 0
 
 #if defined(__cplusplus)
 } /* extern "C" */

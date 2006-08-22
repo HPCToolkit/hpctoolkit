@@ -147,10 +147,6 @@
 # define PSINT_MAX  (INT_MAX)
 # define PSUINT_MAX (UINT_MAX)
 
-# if (defined(ARCH_SPARC32))
-#  define ARCH_USE_LONG_LONG 1 /* FIXME */
-# endif
-
 #elif (defined(ARCH_ALPHA64) || defined(ARCH_IA64) || defined(ARCH_MIPS64) \
        || defined(ARCH_SPARC64)|| defined(ARCH_X86_64))
 

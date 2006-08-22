@@ -635,7 +635,7 @@ protected:
   void Ctor(const char* nm, ScopeInfo* mom);
 
   template<typename T>
-  T* findInMap(std::map<VMAInterval, T*>* m, VMAInterval& toFind);
+  T* findInMap(const std::map<VMAInterval, T*>* m, VMAInterval& toFind) const;
   
   template<typename T> 
   void buildMap(std::map<VMAInterval, T*>*& m, ScopeInfo::ScopeType ty);
