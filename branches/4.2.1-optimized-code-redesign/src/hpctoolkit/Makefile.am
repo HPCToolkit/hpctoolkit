@@ -65,6 +65,7 @@ SUBDIRS = \
 	hpcquick \
 	hpcprof \
 	hpcview \
+	lump \
 	misc \
 	ptran \
 	xcsprof \
@@ -74,9 +75,9 @@ if OPT_ENABLE_HPCRUN
   SUBDIRS += hpcrun
 endif
 
-if OPT_ENABLE_DEVTOOLS
-  SUBDIRS += lump
-endif
+#if OPT_ENABLE_DEVTOOLS
+#  SUBDIRS += lump
+#endif
 
 #############################################################################
 # Other rules

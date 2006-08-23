@@ -48,8 +48,8 @@
 //
 //***************************************************************************
 
-#ifndef PgmScopeTreeBuilder_H 
-#define PgmScopeTreeBuilder_H
+#ifndef bloop_hpp
+#define bloop_hpp
 
 //************************* System Include Files ****************************
 
@@ -62,13 +62,7 @@
 
 //*************************** Forward Declarations ***************************
 
-class PCToSrcLineXMap;
-
-//*************************** Forward Declarations ***************************
-
-// Functions to build and dump a scope tree from an Executable
-
-namespace ScopeTreeBuilder {
+namespace banal {
   
   PgmScopeTree* 
   BuildFromLM(LoadModule* lm, 
@@ -81,12 +75,12 @@ namespace ScopeTreeBuilder {
   bool 
   Normalize(PgmScopeTree* pgmScopeTree, 
 	    bool unsafeNormalizations = true);
-  
-}
 
-void
-WriteScopeTree(std::ostream& os, PgmScopeTree* pgmScopeTree,
-	       bool prettyPrint = true);
+
+  void
+  WriteScopeTree(std::ostream& os, PgmScopeTree* pgmScopeTree,
+		 bool prettyPrint = true);
+}
 
 //****************************************************************************
 

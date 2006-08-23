@@ -51,8 +51,8 @@
 //
 //***************************************************************************
 
-#ifndef BloopIRInterface_h
-#define BloopIRInterface_h
+#ifndef OAInterface_hpp
+#define OAInterface_hpp
 
 //************************* System Include Files ****************************
 
@@ -66,10 +66,11 @@
 //*************************** User Include Files ****************************
  
 #include <lib/isa/ISA.hpp>
-#include <lib/binutils/Instruction.hpp>
+
 #include <lib/binutils/Procedure.hpp>
-#include <lib/support/String.hpp>
-#include <lib/support/Assertion.h>
+#include <lib/binutils/Instruction.hpp>
+
+#include <lib/support/diagnostics.h>
 
 //*************************** Forward Declarations ***************************
 
@@ -229,11 +230,11 @@ public:
   OA::SymHandle getProcSymHandle(OA::ProcHandle h);
   
 private:
-  BloopIRInterface () { BriefAssertion(0); }
+  BloopIRInterface () { DIAG_Die(DIAG_Unimplemented); }
 
 private:
   Procedure *proc;
   std::set<VMA> branchTargetSet;
 };
 
-#endif // BloopIRInterface_h
+#endif // OAInterface_hpp

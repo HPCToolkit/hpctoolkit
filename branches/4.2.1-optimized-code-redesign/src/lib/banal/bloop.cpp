@@ -56,6 +56,7 @@ using std::cerr;
 using std::endl;
 
 #include <fstream>
+#include <sstream>
 
 #ifdef NO_STD_CHEADERS
 # include <string.h>
@@ -74,13 +75,12 @@ using std::string;
 #include <OpenAnalysis/CFG/ManagerCFGStandard.hpp>
 #include <OpenAnalysis/Utils/RIFG.hpp>
 #include <OpenAnalysis/Utils/NestedSCR.hpp>
+#include <OpenAnalysis/Utils/Exception.hpp>
 
 //*************************** User Include Files ****************************
 
-#include "Args.hpp"
-#include "PgmScopeTreeBuilder.hpp"
-using namespace ScopeTreeBuilder;
-#include "BloopIRInterface.hpp"
+#include "bloop.hpp"
+#include "OAInterface.hpp"
 
 #include <lib/binutils/LoadModule.hpp>
 #include <lib/binutils/Section.hpp>
@@ -245,7 +245,8 @@ static const char *PGMdtd =
 //****************************************************************************
 
 void
-WriteScopeTree(std::ostream& os, PgmScopeTree* pgmScopeTree, bool prettyPrint)
+banal::WriteScopeTree(std::ostream& os, PgmScopeTree* pgmScopeTree, 
+		      bool prettyPrint)
 {
   os << "<?xml version=\"1.0\"?>" << std::endl;
   os << "<!DOCTYPE PGM [\n" << PGMdtd << "]>" << std::endl;
@@ -274,12 +275,13 @@ WriteScopeTree(std::ostream& os, PgmScopeTree* pgmScopeTree, bool prettyPrint)
 //   normalizer employs heuristics to reverse certain compiler
 //   optimizations such as loop unrolling.
 PgmScopeTree*
-ScopeTreeBuilder::BuildFromLM(LoadModule* lm, 
-			      const char* canonicalPathList, 
-			      bool normalizeScopeTree,
-			      bool unsafeNormalizations,
-			      bool irreducibleIntervalIsLoop,
-			      bool verboseMode)
+banal::BuildFromLM(LoadModule* lm, 
+		   const char* canonicalPathList, 
+		   bool normalizeScopeTree,
+		   bool unsafeNormalizations,
+		   bool irreducibleIntervalIsLoop,
+		   bool verboseMode)
+
 {
   DIAG_Assert(lm, DIAG_UnexpectedInput);
 
@@ -331,12 +333,16 @@ ScopeTreeBuilder::BuildFromLM(LoadModule* lm,
 }
 
 
+
+
+
+
 // Normalize: Because of compiler optimizations and other things, it
 // is almost always desirable normalize a scope tree.  For example,
 // almost all unnormalized scope tree contain duplicate statement
 // instances.  See each normalizing routine for more information.
 bool 
-ScopeTreeBuilder::Normalize(PgmScopeTree* pgmScopeTree, 
+banal::Normalize(PgmScopeTree* pgmScopeTree, 
 			    bool unsafeNormalizations)
 {
   bool changed = false;
@@ -476,37 +482,44 @@ BuildFromProc(ProcScope* pScope, Procedure* p, bool irreducibleIntervalIsLoop)
   // -------------------------------------------------------
   // Build and traverse the Nested SCR (Tarjan tree) to create loop nests
   // -------------------------------------------------------
-  OA::OA_ptr<BloopIRInterface> irIF; irIF = new BloopIRInterface(p);
-  
-  OA::OA_ptr<OA::CFG::ManagerStandard> cfgmanstd;
-  cfgmanstd = new OA::CFG::ManagerStandard(irIF);
-  OA::OA_ptr<OA::CFG::CFGStandard> cfg = 
-    cfgmanstd->performAnalysis(TY_TO_IRHNDL(p, OA::ProcHandle));
-  
-  OA::OA_ptr<OA::RIFG> rifg; 
-  rifg = new OA::RIFG(cfg, cfg->getEntry(), cfg->getExit());
-  OA::OA_ptr<OA::NestedSCR> tarj; tarj = new OA::NestedSCR(rifg);
-  
-  OA::RIFG::NodeId fgRoot = rifg->getSource();
-  
+  try {
+    OA::OA_ptr<BloopIRInterface> irIF; irIF = new BloopIRInterface(p);
+    
+    OA::OA_ptr<OA::CFG::ManagerStandard> cfgmanstd;
+    cfgmanstd = new OA::CFG::ManagerStandard(irIF);
+    OA::OA_ptr<OA::CFG::CFGStandard> cfg = 
+      cfgmanstd->performAnalysis(TY_TO_IRHNDL(p, OA::ProcHandle));
+    
+    OA::OA_ptr<OA::RIFG> rifg; 
+    rifg = new OA::RIFG(cfg, cfg->getEntry(), cfg->getExit());
+    OA::OA_ptr<OA::NestedSCR> tarj; tarj = new OA::NestedSCR(rifg);
+    
+    OA::RIFG::NodeId fgRoot = rifg->getSource();
+    
 #if (DBG_PROC)
-  if (testProcNow) {
-    cout << "*** CFG for `" << p->GetName() << "' ***" << endl;
-    cout << "  total blocks: " << cfg->getNumNodes() << endl
-	 << "  total edges:  " << cfg->getNumEdges() << endl;
-    cfg->dump(cout, irIF);
-    cfg->dumpdot(cout, irIF);
-
-    cout << "*** Nested SCR (Tarjan Interval) Tree for `" << 
-      p->GetName() << "' ***" << endl;
-    tarj->dump(cout);
-    cout << endl;
-    cout.flush(); cerr.flush();
+    if (testProcNow) {
+      cout << "*** CFG for `" << p->GetName() << "' ***" << endl;
+      cout << "  total blocks: " << cfg->getNumNodes() << endl
+	   << "  total edges:  " << cfg->getNumEdges() << endl;
+      cfg->dump(cout, irIF);
+      cfg->dumpdot(cout, irIF);
+      
+      cout << "*** Nested SCR (Tarjan Interval) Tree for `" << 
+	p->GetName() << "' ***" << endl;
+      tarj->dump(cout);
+      cout << endl;
+      cout.flush(); cerr.flush();
+    }
+#endif
+    
+    BuildFromTarjTree(pScope, p, tarj, cfg, fgRoot, irreducibleIntervalIsLoop);
+    return pScope;
   }
-#endif 
-  
-  BuildFromTarjTree(pScope, p, tarj, cfg, fgRoot, irreducibleIntervalIsLoop);
-  return pScope;
+  catch (const OA::Exception& x) {
+    std::ostringstream os;
+    x.report(os);
+    DIAG_Throw("[OpenAnalysis] " << os.str());
+  }
 }
 
 

@@ -113,22 +113,21 @@ CONFIG_CLEAN_FILES =
 am__installdirs = "$(DESTDIR)$(bindir)"
 binPROGRAMS_INSTALL = $(INSTALL_PROGRAM)
 PROGRAMS = $(bin_PROGRAMS)
-am__objects_1 = bloop-main.$(OBJEXT) bloop-Args.$(OBJEXT) \
-	bloop-BloopIRInterface.$(OBJEXT) \
-	bloop-PgmScopeTreeBuilder.$(OBJEXT)
+am__objects_1 = bloop-main.$(OBJEXT) bloop-Args.$(OBJEXT)
 am_bloop_OBJECTS = $(am__objects_1)
 bloop_OBJECTS = $(am_bloop_OBJECTS)
-am__DEPENDENCIES_1 =  \
-	$(top_builddir)/src/lib/prof-juicy/libHPCprof-juicy.la
+am__DEPENDENCIES_1 = $(top_builddir)/src/lib/banal/libHPCbanal.la
 am__DEPENDENCIES_2 =  \
+	$(top_builddir)/src/lib/prof-juicy/libHPCprof-juicy.la
+am__DEPENDENCIES_3 =  \
 	$(top_builddir)/src/lib/binutils/libHPCbinutils.la
-am__DEPENDENCIES_3 = $(top_builddir)/src/lib/isa/libHPCisa.la
-am__DEPENDENCIES_4 = $(top_builddir)/src/lib/xml/libHPCxml.la
-am__DEPENDENCIES_5 = $(top_builddir)/src/lib/support/libHPCsupport.la
-am__DEPENDENCIES_6 = $(am__DEPENDENCIES_1) $(am__DEPENDENCIES_2) \
+am__DEPENDENCIES_4 = $(top_builddir)/src/lib/isa/libHPCisa.la
+am__DEPENDENCIES_5 = $(top_builddir)/src/lib/xml/libHPCxml.la
+am__DEPENDENCIES_6 = $(top_builddir)/src/lib/support/libHPCsupport.la
+am__DEPENDENCIES_7 = $(am__DEPENDENCIES_1) $(am__DEPENDENCIES_2) \
 	$(am__DEPENDENCIES_3) $(am__DEPENDENCIES_4) \
-	$(am__DEPENDENCIES_5)
-bloop_DEPENDENCIES = $(am__DEPENDENCIES_6)
+	$(am__DEPENDENCIES_5) $(am__DEPENDENCIES_6)
+bloop_DEPENDENCIES = $(am__DEPENDENCIES_7)
 DEFAULT_INCLUDES = -I. -I$(srcdir)
 depcomp = $(SHELL) $(top_srcdir)/config/depcomp
 am__depfiles_maybe = depfiles
@@ -311,12 +310,14 @@ HPC_IFLAGS = -I$(HPCTOOLKIT)/src
 ############################################################
 
 # Linking dependencies:
+#   HPC_LIBBANAL     : HPC_LIBPROFJUICY HPC_LIBBINUTILS
 #   HPC_LIBPROFJUICY : HPC_LIBBINUTILS HPC_LIBSUPPORT
 #   HPC_LIBPROFLEAN  :
 #   HPC_LIBBINUTILS  : HPC_LIBISA HPC_LIBSUPPORT
 #   HPC_LIBISA       : HPC_LIBSUPPORT
 #   HPC_LIBXML       : HPC_LIBSUPPORT
 #   HPC_LIBSUPPORT   :
+HPC_LIBBANAL = $(top_builddir)/src/lib/banal/libHPCbanal.la
 HPC_LIBPROFJUICY = $(top_builddir)/src/lib/prof-juicy/libHPCprof-juicy.la
 HPC_LIBPROFLEAN = $(top_builddir)/src/lib/prof-lean/libHPCprof-lean.la
 HPC_LIBBINUTILS = $(top_builddir)/src/lib/binutils/libHPCbinutils.la
@@ -333,16 +334,14 @@ HPC_LIBSUPPORT = $(top_builddir)/src/lib/support/libHPCsupport.la
 #############################################################################
 MYSOURCES = \
 	main.cpp \
-	Args.hpp Args.cpp \
-	BloopIRInterface.hpp BloopIRInterface.cpp \
-	PgmScopeTreeBuilder.hpp PgmScopeTreeBuilder.cpp
+	Args.hpp Args.cpp
 
-MYCFLAGS = @HOST_CFLAGS@   $(HPC_IFLAGS) @GNUBINUTILS_IFLAGS@
-MYCXXFLAGS = @HOST_CXXFLAGS@ $(HPC_IFLAGS) @GNUBINUTILS_IFLAGS@ @OA_IFLAGS@
+MYCFLAGS = @HOST_CFLAGS@   $(HPC_IFLAGS)
+MYCXXFLAGS = @HOST_CXXFLAGS@ $(HPC_IFLAGS) @OA_IFLAGS@
 MYLDFLAGS = @HOST_CXXFLAGS@
 MYLDADD = \
 	@HOST_LIBTREPOSITORY@ \
-	$(HPC_LIBPROFJUICY) $(HPC_LIBBINUTILS) $(HPC_LIBISA) $(HPC_LIBXML) $(HPC_LIBSUPPORT) \
+	$(HPC_LIBBANAL) $(HPC_LIBPROFJUICY) $(HPC_LIBBINUTILS) $(HPC_LIBISA) $(HPC_LIBXML) $(HPC_LIBSUPPORT) \
 	@OA_LDFLAGS@ @GNUBINUTILS_LDFLAGS@ \
 	@HOST_BLOOP_LDFLAGS@ \
 	-lm
@@ -432,8 +431,6 @@ distclean-compile:
 	-rm -f *.tab.c
 
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/bloop-Args.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/bloop-BloopIRInterface.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/bloop-PgmScopeTreeBuilder.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/bloop-main.Po@am__quote@
 
 .cpp.o:
@@ -484,34 +481,6 @@ bloop-Args.obj: Args.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='Args.cpp' object='bloop-Args.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(bloop_CXXFLAGS) $(CXXFLAGS) -c -o bloop-Args.obj `if test -f 'Args.cpp'; then $(CYGPATH_W) 'Args.cpp'; else $(CYGPATH_W) '$(srcdir)/Args.cpp'; fi`
-
-bloop-BloopIRInterface.o: BloopIRInterface.cpp
-@am__fastdepCXX_TRUE@	if $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(bloop_CXXFLAGS) $(CXXFLAGS) -MT bloop-BloopIRInterface.o -MD -MP -MF "$(DEPDIR)/bloop-BloopIRInterface.Tpo" -c -o bloop-BloopIRInterface.o `test -f 'BloopIRInterface.cpp' || echo '$(srcdir)/'`BloopIRInterface.cpp; \
-@am__fastdepCXX_TRUE@	then mv -f "$(DEPDIR)/bloop-BloopIRInterface.Tpo" "$(DEPDIR)/bloop-BloopIRInterface.Po"; else rm -f "$(DEPDIR)/bloop-BloopIRInterface.Tpo"; exit 1; fi
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='BloopIRInterface.cpp' object='bloop-BloopIRInterface.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(bloop_CXXFLAGS) $(CXXFLAGS) -c -o bloop-BloopIRInterface.o `test -f 'BloopIRInterface.cpp' || echo '$(srcdir)/'`BloopIRInterface.cpp
-
-bloop-BloopIRInterface.obj: BloopIRInterface.cpp
-@am__fastdepCXX_TRUE@	if $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(bloop_CXXFLAGS) $(CXXFLAGS) -MT bloop-BloopIRInterface.obj -MD -MP -MF "$(DEPDIR)/bloop-BloopIRInterface.Tpo" -c -o bloop-BloopIRInterface.obj `if test -f 'BloopIRInterface.cpp'; then $(CYGPATH_W) 'BloopIRInterface.cpp'; else $(CYGPATH_W) '$(srcdir)/BloopIRInterface.cpp'; fi`; \
-@am__fastdepCXX_TRUE@	then mv -f "$(DEPDIR)/bloop-BloopIRInterface.Tpo" "$(DEPDIR)/bloop-BloopIRInterface.Po"; else rm -f "$(DEPDIR)/bloop-BloopIRInterface.Tpo"; exit 1; fi
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='BloopIRInterface.cpp' object='bloop-BloopIRInterface.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(bloop_CXXFLAGS) $(CXXFLAGS) -c -o bloop-BloopIRInterface.obj `if test -f 'BloopIRInterface.cpp'; then $(CYGPATH_W) 'BloopIRInterface.cpp'; else $(CYGPATH_W) '$(srcdir)/BloopIRInterface.cpp'; fi`
-
-bloop-PgmScopeTreeBuilder.o: PgmScopeTreeBuilder.cpp
-@am__fastdepCXX_TRUE@	if $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(bloop_CXXFLAGS) $(CXXFLAGS) -MT bloop-PgmScopeTreeBuilder.o -MD -MP -MF "$(DEPDIR)/bloop-PgmScopeTreeBuilder.Tpo" -c -o bloop-PgmScopeTreeBuilder.o `test -f 'PgmScopeTreeBuilder.cpp' || echo '$(srcdir)/'`PgmScopeTreeBuilder.cpp; \
-@am__fastdepCXX_TRUE@	then mv -f "$(DEPDIR)/bloop-PgmScopeTreeBuilder.Tpo" "$(DEPDIR)/bloop-PgmScopeTreeBuilder.Po"; else rm -f "$(DEPDIR)/bloop-PgmScopeTreeBuilder.Tpo"; exit 1; fi
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='PgmScopeTreeBuilder.cpp' object='bloop-PgmScopeTreeBuilder.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(bloop_CXXFLAGS) $(CXXFLAGS) -c -o bloop-PgmScopeTreeBuilder.o `test -f 'PgmScopeTreeBuilder.cpp' || echo '$(srcdir)/'`PgmScopeTreeBuilder.cpp
-
-bloop-PgmScopeTreeBuilder.obj: PgmScopeTreeBuilder.cpp
-@am__fastdepCXX_TRUE@	if $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(bloop_CXXFLAGS) $(CXXFLAGS) -MT bloop-PgmScopeTreeBuilder.obj -MD -MP -MF "$(DEPDIR)/bloop-PgmScopeTreeBuilder.Tpo" -c -o bloop-PgmScopeTreeBuilder.obj `if test -f 'PgmScopeTreeBuilder.cpp'; then $(CYGPATH_W) 'PgmScopeTreeBuilder.cpp'; else $(CYGPATH_W) '$(srcdir)/PgmScopeTreeBuilder.cpp'; fi`; \
-@am__fastdepCXX_TRUE@	then mv -f "$(DEPDIR)/bloop-PgmScopeTreeBuilder.Tpo" "$(DEPDIR)/bloop-PgmScopeTreeBuilder.Po"; else rm -f "$(DEPDIR)/bloop-PgmScopeTreeBuilder.Tpo"; exit 1; fi
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='PgmScopeTreeBuilder.cpp' object='bloop-PgmScopeTreeBuilder.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(bloop_CXXFLAGS) $(CXXFLAGS) -c -o bloop-PgmScopeTreeBuilder.obj `if test -f 'PgmScopeTreeBuilder.cpp'; then $(CYGPATH_W) 'PgmScopeTreeBuilder.cpp'; else $(CYGPATH_W) '$(srcdir)/PgmScopeTreeBuilder.cpp'; fi`
 
 mostlyclean-libtool:
 	-rm -f *.lo

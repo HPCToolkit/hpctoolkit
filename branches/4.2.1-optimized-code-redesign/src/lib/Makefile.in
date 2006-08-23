@@ -221,6 +221,7 @@ AUTOMAKE_OPTIONS = foreign
 # Automake rules
 #############################################################################
 SUBDIRS = \
+	banal \
 	binutils \
 	isa \
 	perl \

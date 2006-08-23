@@ -56,6 +56,7 @@ AUTOMAKE_OPTIONS = foreign
 #############################################################################
 
 SUBDIRS = \
+	banal \
 	binutils \
 	isa \
 	perl \

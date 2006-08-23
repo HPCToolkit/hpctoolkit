@@ -53,17 +53,19 @@
 
 //************************* System Include Files ****************************
 
-//*************************** User Include Files ****************************
-
-#include "BloopIRInterface.hpp"
-
-//*************************** Forward Declarations **************************
-
 #include <iostream>
 using std::cout;
 using std::endl;
 using std::hex;
 using std::dec;
+
+//*************************** User Include Files ****************************
+
+#include "OAInterface.hpp"
+
+#include <lib/support/diagnostics.h>
+
+//*************************** Forward Declarations **************************
 
 //****************************************************************************
 
@@ -222,14 +224,14 @@ BloopIRInterface::dump(OA::StmtHandle stmt, std::ostream& os)
 void 
 BloopIRInterface::dump(OA::MemRefHandle h, std::ostream& os)
 {
-  BriefAssertion(0);
+  DIAG_Die(DIAG_Unimplemented);
 }
 
 
 void 
 BloopIRInterface::currentProc(OA::ProcHandle p)
 {
-  BriefAssertion(0);
+  DIAG_Die(DIAG_Unimplemented);
 }
 
 
@@ -241,7 +243,7 @@ OA::OA_ptr<OA::IRRegionStmtIterator>
 BloopIRInterface::procBody(OA::ProcHandle h)
 {
   Procedure* p = IRHNDL_TO_TY(h, Procedure*);
-  BriefAssertion(p == proc);
+  DIAG_Assert(p == proc, "");
   OA::OA_ptr<OA::IRRegionStmtIterator> it;
   it = new BloopIRRegionStmtIterator(*p);
   return it;
@@ -327,7 +329,7 @@ BloopIRInterface::getLabel(OA::StmtHandle h)
 OA::OA_ptr<OA::IRRegionStmtIterator>
 BloopIRInterface::getFirstInCompound(OA::StmtHandle h)
 {
-  BriefAssertion(0);
+  DIAG_Die(DIAG_Unimplemented);
   return OA::OA_ptr<BloopIRRegionStmtIterator>();
 }
 
@@ -339,7 +341,7 @@ BloopIRInterface::getFirstInCompound(OA::StmtHandle h)
 OA::OA_ptr<OA::IRRegionStmtIterator>
 BloopIRInterface::loopBody(OA::StmtHandle h)
 {
-  BriefAssertion(0);
+  DIAG_Die(DIAG_Unimplemented);
   return OA::OA_ptr<OA::IRRegionStmtIterator>();
 }
 
@@ -347,7 +349,7 @@ BloopIRInterface::loopBody(OA::StmtHandle h)
 OA::StmtHandle
 BloopIRInterface::loopHeader(OA::StmtHandle h)
 {
-  BriefAssertion(0);
+  DIAG_Die(DIAG_Unimplemented);
   return OA::StmtHandle(0);
 }
 
@@ -355,7 +357,7 @@ BloopIRInterface::loopHeader(OA::StmtHandle h)
 OA::StmtHandle
 BloopIRInterface::getLoopIncrement(OA::StmtHandle h)
 {
-  BriefAssertion(0);
+  DIAG_Die(DIAG_Unimplemented);
   return OA::StmtHandle(0);
 }
 
@@ -374,7 +376,7 @@ BloopIRInterface::loopIterationsDefinedAtEntry(OA::StmtHandle h)
 OA::OA_ptr<OA::IRRegionStmtIterator>
 BloopIRInterface::trueBody(OA::StmtHandle h)
 {
-  BriefAssertion(0);
+  DIAG_Die(DIAG_Unimplemented);
   return OA::OA_ptr<BloopIRRegionStmtIterator>();
 }
 
@@ -382,7 +384,7 @@ BloopIRInterface::trueBody(OA::StmtHandle h)
 OA::OA_ptr<OA::IRRegionStmtIterator>
 BloopIRInterface::elseBody(OA::StmtHandle h)
 {
-  BriefAssertion(0);
+  DIAG_Die(DIAG_Unimplemented);
   return OA::OA_ptr<BloopIRRegionStmtIterator>();
 }
 
@@ -394,7 +396,7 @@ BloopIRInterface::elseBody(OA::StmtHandle h)
 int
 BloopIRInterface::numMultiCases(OA::StmtHandle h)
 {
-  BriefAssertion(0);
+  DIAG_Die(DIAG_Unimplemented);
   return -1;
 }
 
@@ -402,7 +404,7 @@ BloopIRInterface::numMultiCases(OA::StmtHandle h)
 OA::OA_ptr<OA::IRRegionStmtIterator>
 BloopIRInterface::multiBody(OA::StmtHandle h, int bodyIndex)
 {
-  BriefAssertion(0);
+  DIAG_Die(DIAG_Unimplemented);
   return OA::OA_ptr<BloopIRRegionStmtIterator>();
 }
 
@@ -410,7 +412,7 @@ BloopIRInterface::multiBody(OA::StmtHandle h, int bodyIndex)
 bool
 BloopIRInterface::isBreakImplied(OA::StmtHandle h)
 {
-  BriefAssertion(0);
+  DIAG_Die(DIAG_Unimplemented);
   return false;
 }
 
@@ -418,7 +420,7 @@ BloopIRInterface::isBreakImplied(OA::StmtHandle h)
 bool
 BloopIRInterface::isCatchAll(OA::StmtHandle h, int bodyIndex)
 {
-  BriefAssertion(0);
+  DIAG_Die(DIAG_Unimplemented);
   return false;
 }
 
@@ -426,7 +428,7 @@ BloopIRInterface::isCatchAll(OA::StmtHandle h, int bodyIndex)
 OA::OA_ptr<OA::IRRegionStmtIterator>
 BloopIRInterface::getMultiCatchall(OA::StmtHandle h)
 {
-  BriefAssertion(0);
+  DIAG_Die(DIAG_Unimplemented);
   return OA::OA_ptr<BloopIRRegionStmtIterator>();
 }
 
@@ -434,7 +436,7 @@ BloopIRInterface::getMultiCatchall(OA::StmtHandle h)
 OA::ExprHandle
 BloopIRInterface::getSMultiCondition(OA::StmtHandle h, int bodyIndex)
 {
-  BriefAssertion(0);
+  DIAG_Die(DIAG_Unimplemented);
   return OA::ExprHandle(0);
 }
 
@@ -466,7 +468,7 @@ BloopIRInterface::getTargetLabel(OA::StmtHandle h, int n)
 int
 BloopIRInterface::numUMultiTargets(OA::StmtHandle h)
 { 
-  BriefAssertion(0);
+  DIAG_Die(DIAG_Unimplemented);
   return -1;
 }
 
@@ -474,7 +476,7 @@ BloopIRInterface::numUMultiTargets(OA::StmtHandle h)
 OA::StmtLabel
 BloopIRInterface::getUMultiTargetLabel(OA::StmtHandle h, int targetIndex)
 {
-  BriefAssertion(0);
+  DIAG_Die(DIAG_Unimplemented);
   return OA::StmtLabel(0);
 }
 
@@ -482,7 +484,7 @@ BloopIRInterface::getUMultiTargetLabel(OA::StmtHandle h, int targetIndex)
 OA::StmtLabel
 BloopIRInterface::getUMultiCatchallLabel(OA::StmtHandle h)
 { 
-  BriefAssertion(0);
+  DIAG_Die(DIAG_Unimplemented);
   return OA::StmtLabel(0);
 }
 
@@ -490,7 +492,7 @@ BloopIRInterface::getUMultiCatchallLabel(OA::StmtHandle h)
 OA::ExprHandle
 BloopIRInterface::getUMultiCondition(OA::StmtHandle h, int targetIndex)
 {
-  BriefAssertion(0);
+  DIAG_Die(DIAG_Unimplemented);
   return OA::ExprHandle(0);
 }
 
@@ -515,7 +517,7 @@ OA::SymHandle
 BloopIRInterface::getProcSymHandle(OA::ProcHandle h)
 { 
   Procedure* p = IRHNDL_TO_TY(h, Procedure*);
-  BriefAssertion(p == proc);
+  DIAG_Assert(p == proc, "");
   std::string& name = p->GetName(); // this gives us persistent data!
   const char* nm = name.c_str();
   return TY_TO_IRHNDL(nm, OA::SymHandle);

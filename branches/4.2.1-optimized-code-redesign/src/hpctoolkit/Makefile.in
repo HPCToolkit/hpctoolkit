@@ -52,7 +52,6 @@ POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
 @OPT_ENABLE_HPCRUN_TRUE@am__append_1 = hpcrun
-@OPT_ENABLE_DEVTOOLS_TRUE@am__append_2 = lump
 subdir = src/hpctoolkit
 DIST_COMMON = $(srcdir)/Makefile.am $(srcdir)/Makefile.in
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
@@ -72,8 +71,8 @@ RECURSIVE_TARGETS = all-recursive check-recursive dvi-recursive \
 	uninstall-recursive
 ETAGS = etags
 CTAGS = ctags
-DIST_SUBDIRS = bloop filters hpcquick hpcprof hpcview misc ptran \
-	xcsprof xprof hpcrun lump
+DIST_SUBDIRS = bloop filters hpcquick hpcprof hpcview lump misc ptran \
+	xcsprof xprof hpcrun
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
 ACLOCAL = @ACLOCAL@
 AMDEP_FALSE = @AMDEP_FALSE@
@@ -227,8 +226,8 @@ AUTOMAKE_OPTIONS = foreign
 #############################################################################
 # Automake rules
 #############################################################################
-SUBDIRS = bloop filters hpcquick hpcprof hpcview misc ptran xcsprof \
-	xprof $(am__append_1) $(am__append_2)
+SUBDIRS = bloop filters hpcquick hpcprof hpcview lump misc ptran \
+	xcsprof xprof $(am__append_1)
 all: all-recursive
 
 .SUFFIXES:
@@ -537,6 +536,10 @@ uninstall-info: uninstall-info-recursive
 	mostlyclean-recursive pdf pdf-am ps ps-am tags tags-recursive \
 	uninstall uninstall-am uninstall-info-am
 
+
+#if OPT_ENABLE_DEVTOOLS
+#  SUBDIRS += lump
+#endif
 
 #############################################################################
 # Other rules

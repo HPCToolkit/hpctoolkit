@@ -613,6 +613,7 @@ AC_OUTPUT([ \
   src/hpctoolkit/xcsprof/Makefile \
   src/hpctoolkit/xprof/Makefile \
   src/lib/Makefile \
+  src/lib/banal/Makefile \
   src/lib/binutils/Makefile \
   src/lib/isa/Makefile \
   src/lib/perl/Makefile \

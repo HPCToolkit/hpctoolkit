@@ -57,15 +57,11 @@ using std::endl;
 #include <fstream>
 #include <new>
 
-//************************ OpenAnalysis Include Files ***********************
-
-#include <OpenAnalysis/Utils/Exception.hpp>
-
 //*************************** User Include Files ****************************
 
 #include "Args.hpp"
-#include "PgmScopeTreeBuilder.hpp"
-using namespace ScopeTreeBuilder;
+
+#include <lib/banal/bloop.hpp>
 
 #include <lib/binutils/LoadModule.hpp>
 
@@ -88,10 +84,6 @@ main(int argc, char* argv[])
     DIAG_EMsg(x.message());
     exit(1);
   } 
-  catch (const OA::Exception& x) {
-    x.report(cerr);
-    exit(1);
-  }
   catch (const std::bad_alloc& x) {
     DIAG_EMsg("[std::bad_alloc] " << x.what());
     exit(1);
@@ -141,14 +133,14 @@ real_main(int argc, char* argv[])
 
     // Build scope tree
     PgmScopeTree* pgmScopeTree =
-      BuildFromLM(lm, args.canonicalPathList.c_str(),
-		  args.normalizeScopeTree, 
-		  args.unsafeNormalizations,
-		  args.irreducibleIntervalIsLoop,
-		  args.verboseMode);
+      banal::BuildFromLM(lm, args.canonicalPathList.c_str(),
+			 args.normalizeScopeTree, 
+			 args.unsafeNormalizations,
+			 args.irreducibleIntervalIsLoop,
+			 args.verboseMode);
     
     // Write scope tree
-    WriteScopeTree(std::cout, pgmScopeTree, args.prettyPrintOutput);
+    banal::WriteScopeTree(std::cout, pgmScopeTree, args.prettyPrintOutput);
     
     // Cleanup
     delete pgmScopeTree;

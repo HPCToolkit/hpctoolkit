@@ -62,10 +62,10 @@ include $(top_srcdir)/src/Makeinclude.config
 #############################################################################
 
 MYSOURCES = \
-	Instruction.hpp Instruction.cpp \
 	LoadModule.hpp LoadModule.cpp \
-	Procedure.hpp Procedure.cpp \
 	Section.hpp Section.cpp \
+	Procedure.hpp Procedure.cpp \
+	Instruction.hpp Instruction.cpp \
 	\
 	LoadModuleInfo.hpp LoadModuleInfo.cpp \
 	\
