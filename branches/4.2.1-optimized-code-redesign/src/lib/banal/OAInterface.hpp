@@ -99,6 +99,8 @@
 // Iterators
 //***************************************************************************
 
+namespace banal {
+
 class BloopIRRegionStmtIterator: public OA::IRRegionStmtIterator {
 public:
   BloopIRRegionStmtIterator(Procedure &_p) : pii(_p) { }
@@ -116,12 +118,15 @@ private:
   ProcedureInstructionIterator pii;
 };
 
+}
 
 //***************************************************************************
 // Abstract Interfaces
 //***************************************************************************
 
-class BloopIRInterface 
+namespace banal {
+
+class OAInterface 
   : public virtual OA::IRHandlesIRInterface,
     public OA::CFG::CFGIRInterfaceDefault 
 {
@@ -129,8 +134,8 @@ public:
 
   // Note: We assume each instantiation of the IRInterface represents
   // one procedure!
-  BloopIRInterface (Procedure *_p);
-  virtual ~BloopIRInterface ();
+  OAInterface (Procedure *_p);
+  virtual ~OAInterface ();
   
   
   //-------------------------------------------------------------------------
@@ -230,11 +235,13 @@ public:
   OA::SymHandle getProcSymHandle(OA::ProcHandle h);
   
 private:
-  BloopIRInterface () { DIAG_Die(DIAG_Unimplemented); }
+  OAInterface () { DIAG_Die(DIAG_Unimplemented); }
 
 private:
   Procedure *proc;
   std::set<VMA> branchTargetSet;
 };
+
+} // namespace banal
 
 #endif // OAInterface_hpp

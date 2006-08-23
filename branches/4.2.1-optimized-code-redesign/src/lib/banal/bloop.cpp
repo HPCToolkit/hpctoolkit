@@ -244,6 +244,7 @@ static const char *PGMdtd =
 // Set of routines to write a scope tree
 //****************************************************************************
 
+// FIXME: move to prof-juicy library for experiment writer
 void
 banal::WriteScopeTree(std::ostream& os, PgmScopeTree* pgmScopeTree, 
 		      bool prettyPrint)
@@ -331,10 +332,6 @@ banal::BuildFromLM(LoadModule* lm,
 
   return pgmScopeTree;
 }
-
-
-
-
 
 
 // Normalize: Because of compiler optimizations and other things, it
@@ -483,7 +480,9 @@ BuildFromProc(ProcScope* pScope, Procedure* p, bool irreducibleIntervalIsLoop)
   // Build and traverse the Nested SCR (Tarjan tree) to create loop nests
   // -------------------------------------------------------
   try {
-    OA::OA_ptr<BloopIRInterface> irIF; irIF = new BloopIRInterface(p);
+    using banal::OAInterface;
+    
+    OA::OA_ptr<OAInterface> irIF; irIF = new OAInterface(p);
     
     OA::OA_ptr<OA::CFG::ManagerStandard> cfgmanstd;
     cfgmanstd = new OA::CFG::ManagerStandard(irIF);
