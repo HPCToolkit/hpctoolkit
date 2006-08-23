@@ -1,5 +1,6 @@
 // -*-Mode: C++;-*-
 // $Id$
+
 // * BeginRiceCopyright *****************************************************
 // 
 // Copyright ((c)) 2002, Rice University 
@@ -37,7 +38,7 @@
 //***************************************************************************
 //
 // File:
-//    BloopIRInterface.C
+//   $Source$
 //
 // Purpose:
 //   A derivation of the IR interface for the ISA (disassembler) class
@@ -46,7 +47,7 @@
 //   Note: many stubs still exist.
 //
 // Description:
-//    [The set of functions, macros, etc. defined in the file]
+//   [The set of functions, macros, etc. defined in the file]
 //
 //***************************************************************************
 
@@ -58,6 +59,7 @@
 
 //*************************** Forward Declarations **************************
 
+#include <iostream>
 using std::cout;
 using std::endl;
 using std::hex;
