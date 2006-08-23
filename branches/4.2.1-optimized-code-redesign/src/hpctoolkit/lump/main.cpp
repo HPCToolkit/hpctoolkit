@@ -76,7 +76,7 @@ using std::string;
 #include <lib/binutils/Instruction.hpp>
 #include <lib/binutils/BinUtils.hpp>
 
-#include <lib/support/Assertion.h>
+#include <lib/support/diagnostics.h>
 
 //*************************** Forward Declarations ***************************
 
@@ -93,8 +93,8 @@ typedef std::map<suint, VMAList*>::value_type LineToVMAListMapItVal;
 void ClearLineToVMAListMap(LineToVMAListMap* map);
 
 // Dump Helpers
-void DumpSymbolicInfo(std::ostream& os, LoadModule* lm);
-void DumpSymbolicInfoOld(std::ostream& os, LoadModule* lm);
+void DumpSymbolicInfo(std::ostream& os, binutils::LM* lm);
+void DumpSymbolicInfoOld(std::ostream& os, binutils::LM* lm);
 
 //****************************************************************************
 
@@ -137,9 +137,9 @@ realmain(int argc, char* const argv[])
   // ------------------------------------------------------------
   // Read load module
   // ------------------------------------------------------------
-  LoadModule* lm = NULL;
+  binutils::LM* lm = NULL;
   try {
-    lm = new LoadModule();
+    lm = new binutils::LM();
     if (!lm->Open(args.inputFile.c_str())) { 
       exit(1); // Error already printed 
     }
@@ -180,30 +180,29 @@ realmain(int argc, char* const argv[])
 //****************************************************************************
 
 void 
-DumpHeaderInfo(std::ostream& os, LoadModule* lm, const char* pre = "")
+DumpHeaderInfo(std::ostream& os, binutils::LM* lm, const char* pre = "")
 {
   os << "Begin LoadModule Stmt Dump\n";
   os << pre << "Name: `" << lm->GetName() << "'\n";
   os << pre << "Type: `";
   switch (lm->GetType()) {
-    case LoadModule::Executable:
+    case binutils::LM::Executable:
       os << "Executable (fully linked except for possible DSOs)'\n";
       break;
-    case LoadModule::SharedLibrary:
+    case binutils::LM::SharedLibrary:
       os << "Dynamically Shared Library'\n";
       break;
     default:
-      os << "-unknown-'\n";
-      BriefAssertion(false); 
+      DIAG_Die("Unknown LM type!"); 
   }
-  os << pre << "ISA: `" << typeid(*LoadModule::isa).name() << "'\n"; // std::type_info
+  os << pre << "ISA: `" << typeid(*binutils::LM::isa).name() << "'\n"; // std::type_info
 }
 
 
 //****************************************************************************
 
 void 
-DumpSymbolicInfo(std::ostream& os, LoadModule* lm)
+DumpSymbolicInfo(std::ostream& os, binutils::LM* lm)
 {
   string pre = "  ";
   string pre1 = pre + "  ";
@@ -216,14 +215,14 @@ DumpSymbolicInfo(std::ostream& os, LoadModule* lm)
   // ------------------------------------------------------------------------  
 
   os << pre << "Dump:\n";
-  for (LoadModuleSectionIterator it(*lm); it.IsValid(); ++it) {
-    Section* sec = it.Current();
-    if (sec->GetType() != Section::Text) { continue; }
+  for (binutils::LMSegIterator it(*lm); it.IsValid(); ++it) {
+    binutils::Seg* sec = it.Current();
+    if (sec->GetType() != binutils::Seg::Text) { continue; }
     
-    // We have a 'TextSection'.  Iterate over procedures.
-    TextSection* tsec = dynamic_cast<TextSection*>(sec);
-    for (TextSectionProcedureIterator it(*tsec); it.IsValid(); ++it) {
-      Procedure* p = it.Current();
+    // We have a 'TextSeg'.  Iterate over procedures.
+    binutils::TextSeg* tsec = dynamic_cast<binutils::TextSeg*>(sec);
+    for (binutils::TextSegProcIterator it(*tsec); it.IsValid(); ++it) {
+      binutils::Proc* p = it.Current();
       string pName = GetBestFuncName(p->GetName());
 
       os << "* " << pName << hex
@@ -231,10 +230,10 @@ DumpSymbolicInfo(std::ostream& os, LoadModule* lm)
 	 << "]\n" << dec;
 
       // We have a 'Procedure'.  Iterate over VMA values     
-      for (ProcedureInstructionIterator it(*p); it.IsValid(); ++it) {
-	Instruction* inst = it.Current();
+      for (binutils::ProcInsnIterator it(*p); it.IsValid(); ++it) {
+	binutils::Insn* inst = it.Current();
 	VMA vma = inst->GetVMA();
-	VMA opVMA = LoadModule::isa->ConvertVMAToOpVMA(vma, inst->GetOpIndex());
+	VMA opVMA = binutils::LM::isa->ConvertVMAToOpVMA(vma, inst->GetOpIndex());
 	
 	// Find and dump symbolic info attched to VMA
 	string func, file;
@@ -258,7 +257,7 @@ void DumpSymbolicInfoForFunc(std::ostream& os, const char* pre,
 			     const char* file);
 
 void 
-DumpSymbolicInfoOld(std::ostream& os, LoadModule* lm)
+DumpSymbolicInfoOld(std::ostream& os, binutils::LM* lm)
 {
   string pre = "  ";
   string pre1 = pre + "  ";
@@ -271,14 +270,14 @@ DumpSymbolicInfoOld(std::ostream& os, LoadModule* lm)
   // ------------------------------------------------------------------------  
 
   os << pre << "Dump:\n";
-  for (LoadModuleSectionIterator it(*lm); it.IsValid(); ++it) {
-    Section* sec = it.Current();
-    if (sec->GetType() != Section::Text) { continue; }
+  for (binutils::LMSegIterator it(*lm); it.IsValid(); ++it) {
+    binutils::Seg* sec = it.Current();
+    if (sec->GetType() != binutils::Seg::Text) { continue; }
     
-    // We have a 'TextSection'.  Iterate over procedures.
-    TextSection* tsec = dynamic_cast<TextSection*>(sec);
-    for (TextSectionProcedureIterator it(*tsec); it.IsValid(); ++it) {
-      Procedure* p = it.Current();
+    // We have a 'TextSeg'.  Iterate over procedures.
+    binutils::TextSeg* tsec = dynamic_cast<binutils::TextSeg*>(sec);
+    for (binutils::TextSegProcIterator it(*tsec); it.IsValid(); ++it) {
+      binutils::Proc* p = it.Current();
       string pName = GetBestFuncName(p->GetName());
 
       
@@ -286,10 +285,10 @@ DumpSymbolicInfoOld(std::ostream& os, LoadModule* lm)
       string theFunc = pName, theFile;
       LineToVMAListMap map;
 
-      for (ProcedureInstructionIterator it(*p); it.IsValid(); ++it) {
-	Instruction* inst = it.Current();
+      for (binutils::ProcInsnIterator it(*p); it.IsValid(); ++it) {
+	binutils::Insn* inst = it.Current();
 	VMA vma = inst->GetVMA();
-	VMA opVMA = LoadModule::isa->ConvertVMAToOpVMA(vma, inst->GetOpIndex());
+	VMA opVMA = binutils::LM::isa->ConvertVMAToOpVMA(vma, inst->GetOpIndex());
 	
 	// 1. Attempt to find symbolic information
 	string func, file;

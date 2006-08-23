@@ -162,7 +162,7 @@ main(int argc, char* argv[])
     LdmdSetUsedFlag(profData); 
 
     int numberofldmd =profData->GetEpoch()->GetNumLdModule() ;      
-    LoadModule*      ldmd   = NULL; 
+    binutils::LM*      ldmd   = NULL; 
     CSProfLDmodule * csploadmd= NULL; 
     LoadModuleInfo * modInfo;   
     VMA             startaddr;
@@ -185,7 +185,7 @@ main(int argc, char* argv[])
         }
 
        try {
-         ldmd = new LoadModule();  
+         ldmd = new binutils::LM();  
          if (!ldmd ->Open(csploadmd->GetName()))   //Error message already printed
             continue; 
          if (!ldmd->Read())   //Error message already printed
@@ -205,14 +205,14 @@ main(int argc, char* argv[])
        ldmd->GetTextStartEndPC(&tmp1,&tmp2);    
        ldmd->SetTextStart(tmp1);
        ldmd->SetTextEnd(tmp2);     
-       cout<< "\t LoadModule text started from address : "<< hex <<"0x" << tmp1 << endl;
-       cout<< "\t LoadModule text end at the   address : "<< hex <<"0x" << tmp2 << endl; 
-       cout<< "\t LoadModule entry point is: "<< hex << "0x" <<  ldmd->GetTextStart() << endl;
+       cout<< "\t LM text started from address : "<< hex <<"0x" << tmp1 << endl;
+       cout<< "\t LM text end at the   address : "<< hex <<"0x" << tmp2 << endl; 
+       cout<< "\t LM entry point is: "<< hex << "0x" <<  ldmd->GetTextStart() << endl;
        cout<< "\t data file mapaddress  from   address : "<< hex <<"0x" << startaddr << endl;
        cout<< "\t data file mapaddress  supposed end   : "<< hex <<"0x" << endaddr   <<dec<< endl; 
        // if ldmd is not an excutable, do relocate  
 #endif   
-       if ( !(ldmd->GetType() == LoadModule::Executable) ) {
+       if ( !(ldmd->GetType() == binutils::LM::Executable) ) {
            ldmd->Relocate(startaddr);   
        }     
 

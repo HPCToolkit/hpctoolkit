@@ -67,15 +67,15 @@
 
 // See 'ISA.h' for comments on the interface
 
-ISA::InstDesc
-AlphaISA::GetInstDesc(MachInst* mi, ushort opIndex, ushort sz)
+ISA::InsnDesc
+AlphaISA::GetInsnDesc(MachInsn* mi, ushort opIndex, ushort sz)
 {
   // We know that instruction sizes are guaranteed to be 4 bytes, but
   // the host may have a different byte order than the executable.
-  uint32_t inst = (uint32_t)bfd_getl32((const unsigned char*)mi);
+  uint32_t insn = (uint32_t)bfd_getl32((const unsigned char*)mi);
   // FIXME: should we test for little vs. big (same with MIPS)
   
-  switch (inst & OP_MASK)
+  switch (insn & OP_MASK)
     {
       // ---------------------------------------------------
       // Memory Load/Store Instructions (SS 4.2 & 4.8; Tables 4-2 & 4-14)
@@ -89,7 +89,7 @@ AlphaISA::GetInstDesc(MachInst* mi, ushort opIndex, ushort sz)
     case LDQ_L:
     case LDQ_U:
     case LDWU:
-      return InstDesc(InstDesc::MEM_LOAD);
+      return InsnDesc(InsnDesc::MEM_LOAD);
       
     case STB:  // Integer stores (Table 4-2)
     case STL:
@@ -98,25 +98,25 @@ AlphaISA::GetInstDesc(MachInst* mi, ushort opIndex, ushort sz)
     case STQ_C:
     case STQ_U:
     case STW:
-      return InstDesc(InstDesc::MEM_STORE);
+      return InsnDesc(InsnDesc::MEM_STORE);
 
     case LDF:  // FP loads (Table 4-14)
     case LDG:
     case LDS:
     case LDT:
-      return InstDesc(InstDesc::MEM_LOAD);
+      return InsnDesc(InsnDesc::MEM_LOAD);
 
     case STF:  // FP stores (Table 4-14)
     case STG:
     case STS:
     case STT:
-      return InstDesc(InstDesc::MEM_STORE);
+      return InsnDesc(InsnDesc::MEM_STORE);
 
     case HW_LD: // PALcode
-      return InstDesc(InstDesc::MEM_LOAD); // Doubleword
+      return InsnDesc(InsnDesc::MEM_LOAD); // Doubleword
 
     case HW_ST: // PALcode
-      return InstDesc(InstDesc::MEM_STORE); // Doubleword
+      return InsnDesc(InsnDesc::MEM_STORE); // Doubleword
 
       // ---------------------------------------------------
       // Control Instructions (SS 4.3 & 4.9; Tables 4-3 & 4-15)
@@ -129,7 +129,7 @@ AlphaISA::GetInstDesc(MachInst* mi, ushort opIndex, ushort sz)
     case BLE:
     case BLT:
     case BNE:
-      return InstDesc(InstDesc::INT_BR_COND_REL);
+      return InsnDesc(InsnDesc::INT_BR_COND_REL);
 
     case FBEQ: // FP branch (Table 4-15)
     case FBGE:
@@ -137,26 +137,26 @@ AlphaISA::GetInstDesc(MachInst* mi, ushort opIndex, ushort sz)
     case FBLE:
     case FBLT:
     case FBNE:
-      return InstDesc(InstDesc::FP_BR_COND_REL);
+      return InsnDesc(InsnDesc::FP_BR_COND_REL);
       
     case BR:   // (Table 4-3)
-      return InstDesc(InstDesc::BR_UN_COND_REL);
+      return InsnDesc(InsnDesc::BR_UN_COND_REL);
     case BSR:  // branch and call
-      return InstDesc(InstDesc::SUBR_REL);
+      return InsnDesc(InsnDesc::SUBR_REL);
 
       // Technically all these instructions are identical except for
       // hints.  We have to assume the compiler's hint is actually
       // what generally happens...      
     case OpJump: // (Table 4-3)
-      switch (inst & MBR_MASK)
+      switch (insn & MBR_MASK)
 	{
 	case JMP:
-	  return InstDesc(InstDesc::BR_UN_COND_IND);
+	  return InsnDesc(InsnDesc::BR_UN_COND_IND);
 	case JSR:
 	case JSR_COROUTINE:  // FIXME: return and call
-	  return InstDesc(InstDesc::SUBR_IND);
+	  return InsnDesc(InsnDesc::SUBR_IND);
 	case RET:
-	  return InstDesc(InstDesc::SUBR_RET);
+	  return InsnDesc(InsnDesc::SUBR_RET);
 	}
       break;
 
@@ -165,7 +165,7 @@ AlphaISA::GetInstDesc(MachInst* mi, ushort opIndex, ushort sz)
       // ---------------------------------------------------
     case OpIntArith:
       // (Mostly) SS 4.4, Table 4-5: Integer Arithmetic
-      switch (inst & OPR_MASK) 
+      switch (insn & OPR_MASK) 
 	{
 	case ADDL:		/* (SS 4.4, Table 4-5) */
 	case ADDL_V:		/* (SS 4.4, Table 4-5) */
@@ -175,14 +175,14 @@ AlphaISA::GetInstDesc(MachInst* mi, ushort opIndex, ushort sz)
 	case S4ADDQ:		/* (SS 4.4, Table 4-5) */
 	case S8ADDL:		/* (SS 4.4, Table 4-5) */
 	case S8ADDQ:		/* (SS 4.4, Table 4-5) */
-	  return InstDesc(InstDesc::INT_ADD); // Integer add
+	  return InsnDesc(InsnDesc::INT_ADD); // Integer add
 	case CMPEQ:		/* (SS 4.4, Table 4-5) */
 	case CMPLT:		/* (SS 4.4, Table 4-5) */
 	case CMPLE:		/* (SS 4.4, Table 4-5) */
 	case CMPULT:		/* (SS 4.4, Table 4-5) */
 	case CMPULE:		/* (SS 4.4, Table 4-5) */
 	case CMPBGE:		/* (SS 4.6, Table 4-7) */
-	  return InstDesc(InstDesc::INT_CMP); // Integer compare
+	  return InsnDesc(InsnDesc::INT_CMP); // Integer compare
 	case SUBL:		/* (SS 4.4, Table 4-5) */
 	case SUBL_V:		/* (SS 4.4, Table 4-5) */
 	case SUBQ:		/* (SS 4.4, Table 4-5) */
@@ -191,24 +191,24 @@ AlphaISA::GetInstDesc(MachInst* mi, ushort opIndex, ushort sz)
 	case S4SUBQ:		/* (SS 4.4, Table 4-5) */
 	case S8SUBL:		/* (SS 4.4, Table 4-5) */
 	case S8SUBQ:		/* (SS 4.4, Table 4-5) */
-	  return InstDesc(InstDesc::INT_SUB); // Integer subtract
+	  return InsnDesc(InsnDesc::INT_SUB); // Integer subtract
 	}
       break;
 
       // (Mostly) SS 4.5, Table 4-6: Logical and Shift Instructions      
     case OpIntLogic:
-      switch (inst & OPR_MASK) 
+      switch (insn & OPR_MASK) 
 	{
 	case AND:		/* (SS 4.5, Table 4-6) */
 	case BIC:		/* (SS 4.5, Table 4-6) */ /* ANDNOT */
-	  return InstDesc(InstDesc::INT_LOGIC); // AND
+	  return InsnDesc(InsnDesc::INT_LOGIC); // AND
 	case BIS:		/* (SS 4.5, Table 4-6) */ /* OR */
 	  // nop: ra=31,rb=31,rc=31
 	case ORNOT:		/* (SS 4.5, Table 4-6) */
-	  return InstDesc(InstDesc::INT_LOGIC); // OR
+	  return InsnDesc(InsnDesc::INT_LOGIC); // OR
 	case EQV:		/* (SS 4.5, Table 4-6) */ /* XORNOT */
 	case XOR:		/* (SS 4.5, Table 4-6) */
-	  return InstDesc(InstDesc::INT_LOGIC); // XOR
+	  return InsnDesc(InsnDesc::INT_LOGIC); // XOR
 	case CMOVLBS:		/* (SS 4.5, Table 4-6) */
 	case CMOVLBC:		/* (SS 4.5, Table 4-6) */
 	case CMOVEQ:		/* (SS 4.5, Table 4-6) */
@@ -217,16 +217,16 @@ AlphaISA::GetInstDesc(MachInst* mi, ushort opIndex, ushort sz)
 	case CMOVGE:		/* (SS 4.5, Table 4-6) */
 	case CMOVLE:		/* (SS 4.5, Table 4-6) */
 	case CMOVGT:		/* (SS 4.5, Table 4-6) */
-	  return InstDesc(InstDesc::INT_MOV); // comparison and move
+	  return InsnDesc(InsnDesc::INT_MOV); // comparison and move
 	case AMASK:		/* (SS 4.11, Table 4-17) */ 
 	case IMPLVER:		/* (SS 4.11, Table 4-17) */ 
-	  return InstDesc(InstDesc::OTHER);
+	  return InsnDesc(InsnDesc::OTHER);
 	}
       break;
       
       // (Mostly) SS 4.6, Table 4-7: Byte Manipulation Instructions
     case OpIntShift:
-      switch (inst & OPR_MASK) 
+      switch (insn & OPR_MASK) 
 	{
 	case EXTBL:		/* (SS 4.6, Table 4-7) */
 	case EXTWL:		/* (SS 4.6, Table 4-7) */
@@ -251,23 +251,23 @@ AlphaISA::GetInstDesc(MachInst* mi, ushort opIndex, ushort sz)
 	case MSKQH:		/* (SS 4.6, Table 4-7) */
 	case ZAP:		/* (SS 4.6, Table 4-7) */
 	case ZAPNOT:		/* (SS 4.6, Table 4-7) */
-	  return InstDesc(InstDesc::INT_SHIFT);
+	  return InsnDesc(InsnDesc::INT_SHIFT);
 	case SLL:		/* (SS 4.5, Table 4-6) */
 	case SRA:		/* (SS 4.5, Table 4-6) */
 	case SRL:		/* (SS 4.5, Table 4-6) */
-	  return InstDesc(InstDesc::INT_SHIFT);
+	  return InsnDesc(InsnDesc::INT_SHIFT);
 	}
       break;
       
     case OpIntMult:
-      switch (inst & OPR_MASK) 
+      switch (insn & OPR_MASK) 
 	{
 	case MULL:		/* (SS 4.4, Table 4-5) */
 	case MULL_V:		/* (SS 4.4, Table 4-5) */
 	case MULQ:		/* (SS 4.4, Table 4-5) */
 	case MULQ_V:		/* (SS 4.4, Table 4-5) */
 	case UMULH:		/* (SS 4.4, Table 4-5) */
-	  return InstDesc(InstDesc::INT_MUL);
+	  return InsnDesc(InsnDesc::INT_MUL);
 	}
       break;
 
@@ -275,12 +275,12 @@ AlphaISA::GetInstDesc(MachInst* mi, ushort opIndex, ushort sz)
       // FP operate Instructions (SS 4.10, Table 4-16)
       // ---------------------------------------------------
     case OpIntToFlt:
-       switch (inst & FP_MASK) 
+       switch (insn & FP_MASK) 
 	 {
 	 case ITOFF:		/* (SS 4.10, Table 4-16) */ 
 	 case ITOFS:		/* (SS 4.10, Table 4-16) */
 	 case ITOFT:		/* (SS 4.10, Table 4-16) */
-	   return InstDesc(InstDesc::OTHER); 
+	   return InsnDesc(InsnDesc::OTHER); 
 	 case SQRTF:		/* (SS 4.10, Table 4-16) */
 	 case SQRTF_C:		/* (SS 4.10, Table 4-16) */
 	 case SQRTF_UC:		/* (SS 4.10, Table 4-16) */
@@ -329,12 +329,12 @@ AlphaISA::GetInstDesc(MachInst* mi, ushort opIndex, ushort sz)
 	 case SQRTT_SUIM:	/* (SS 4.10, Table 4-16) */
 	 case SQRTT_SUI:	/* (SS 4.10, Table 4-16) */
 	 case SQRTT_SUID:	/* (SS 4.10, Table 4-16) */
-	   return InstDesc(InstDesc::FP_SQRT);
+	   return InsnDesc(InsnDesc::FP_SQRT);
 	 }
        break;
        
     case OpFltVAX:
-      switch (inst & FP_MASK) 
+      switch (insn & FP_MASK) 
 	{
 	case ADDF:		/* (SS 4.10, Table 4-16) */
 	case ADDF_C:		/* (SS 4.10, Table 4-16) */
@@ -352,7 +352,7 @@ AlphaISA::GetInstDesc(MachInst* mi, ushort opIndex, ushort sz)
 	case ADDG_S:		/* (SS 4.10, Table 4-16) */
 	case ADDG_SUC:		/* (SS 4.10, Table 4-16) */
 	case ADDG_SU:		/* (SS 4.10, Table 4-16) */
-	  return InstDesc(InstDesc::FP_ADD);
+	  return InsnDesc(InsnDesc::FP_ADD);
 	case SUBF:		/* (SS 4.10, Table 4-16) */
 	case SUBF_C:		/* (SS 4.10, Table 4-16) */
 	case SUBF_UC:		/* (SS 4.10, Table 4-16) */
@@ -369,14 +369,14 @@ AlphaISA::GetInstDesc(MachInst* mi, ushort opIndex, ushort sz)
 	case SUBG_S:		/* (SS 4.10, Table 4-16) */
 	case SUBG_SUC:		/* (SS 4.10, Table 4-16) */
 	case SUBG_SU:		/* (SS 4.10, Table 4-16) */
-	  return InstDesc(InstDesc::FP_SUB);
+	  return InsnDesc(InsnDesc::FP_SUB);
 	case CMPGEQ:		/* (SS 4.10, Table 4-16) */
 	case CMPGLT:		/* (SS 4.10, Table 4-16) */
 	case CMPGLE:		/* (SS 4.10, Table 4-16) */
 	case CMPGEQ_S:		/* (SS 4.10, Table 4-16) */
 	case CMPGLT_S:		/* (SS 4.10, Table 4-16) */
 	case CMPGLE_S:		/* (SS 4.10, Table 4-16) */
-	  return InstDesc(InstDesc::FP_CMP);
+	  return InsnDesc(InsnDesc::FP_CMP);
   	case CVTDG:		/* (SS 4.10, Table 4-16) */
 	case CVTDG_C:		/* (SS 4.10, Table 4-16) */
 	case CVTDG_UC:		/* (SS 4.10, Table 4-16) */
@@ -413,7 +413,7 @@ AlphaISA::GetInstDesc(MachInst* mi, ushort opIndex, ushort sz)
 	case CVTQF_C:		/* (SS 4.10, Table 4-16) */
 	case CVTQG:		/* (SS 4.10, Table 4-16) */
 	case CVTQG_C:		/* (SS 4.10, Table 4-16) */
-	  return InstDesc(InstDesc::FP_CVT);
+	  return InsnDesc(InsnDesc::FP_CVT);
 	case DIVF:		/* (SS 4.10, Table 4-16) */
 	case DIVF_C:		/* (SS 4.10, Table 4-16) */
 	case DIVF_UC:		/* (SS 4.10, Table 4-16) */
@@ -430,7 +430,7 @@ AlphaISA::GetInstDesc(MachInst* mi, ushort opIndex, ushort sz)
 	case DIVG_S:		/* (SS 4.10, Table 4-16) */
 	case DIVG_SUC:		/* (SS 4.10, Table 4-16) */
 	case DIVG_SU:		/* (SS 4.10, Table 4-16) */
-	  return InstDesc(InstDesc::FP_DIV);
+	  return InsnDesc(InsnDesc::FP_DIV);
 	case MULF:		/* (SS 4.10, Table 4-16) */
 	case MULF_C:		/* (SS 4.10, Table 4-16) */
 	case MULF_UC:		/* (SS 4.10, Table 4-16) */
@@ -447,12 +447,12 @@ AlphaISA::GetInstDesc(MachInst* mi, ushort opIndex, ushort sz)
 	case MULG_S:		/* (SS 4.10, Table 4-16) */
 	case MULG_SUC:		/* (SS 4.10, Table 4-16) */
 	case MULG_SU:		/* (SS 4.10, Table 4-16) */
-	  return InstDesc(InstDesc::FP_MUL);
+	  return InsnDesc(InsnDesc::FP_MUL);
 	}
       break;
       
     case OpFltIEEE:
-      switch (inst & FP_MASK) 
+      switch (insn & FP_MASK) 
 	{
 	case ADDS:		/* (SS 4.10, Table 4-16) */
 	case ADDS_C:		/* (SS 4.10, Table 4-16) */
@@ -486,7 +486,7 @@ AlphaISA::GetInstDesc(MachInst* mi, ushort opIndex, ushort sz)
 	case ADDT_SUIM:		/* (SS 4.10, Table 4-16) */
 	case ADDT_SUI:		/* (SS 4.10, Table 4-16) */
 	case ADDT_SUID:		/* (SS 4.10, Table 4-16) */
-	  return InstDesc(InstDesc::FP_ADD);
+	  return InsnDesc(InsnDesc::FP_ADD);
  	case CMPTUN:		/* (SS 4.10, Table 4-16) */
 	case CMPTEQ:		/* (SS 4.10, Table 4-16) */
 	case CMPTLT:		/* (SS 4.10, Table 4-16) */
@@ -495,7 +495,7 @@ AlphaISA::GetInstDesc(MachInst* mi, ushort opIndex, ushort sz)
 	case CMPTEQ_SU:		/* (SS 4.10, Table 4-16) */
 	case CMPTLT_SU:		/* (SS 4.10, Table 4-16) */
 	case CMPTLE_SU:		/* (SS 4.10, Table 4-16) */
-	  return InstDesc(InstDesc::FP_CMP);
+	  return InsnDesc(InsnDesc::FP_CMP);
 	case CVTQS:		/* (SS 4.10, Table 4-16) */
 	case CVTQS_C:		/* (SS 4.10, Table 4-16) */
 	case CVTQS_M:		/* (SS 4.10, Table 4-16) */
@@ -546,7 +546,7 @@ AlphaISA::GetInstDesc(MachInst* mi, ushort opIndex, ushort sz)
 	case CVTTS_SUIM:	/* (SS 4.10, Table 4-16) */
 	case CVTTS_SUI:		/* (SS 4.10, Table 4-16) */
 	case CVTTS_SUID:	/* (SS 4.10, Table 4-16) */
-	  return InstDesc(InstDesc::FP_CVT);
+	  return InsnDesc(InsnDesc::FP_CVT);
 	case DIVS:		/* (SS 4.10, Table 4-16) */
 	case DIVS_C:		/* (SS 4.10, Table 4-16) */
 	case DIVS_M:		/* (SS 4.10, Table 4-16) */
@@ -579,7 +579,7 @@ AlphaISA::GetInstDesc(MachInst* mi, ushort opIndex, ushort sz)
 	case DIVT_SUIM:		/* (SS 4.10, Table 4-16) */
 	case DIVT_SUI:		/* (SS 4.10, Table 4-16) */
 	case DIVT_SUID:		/* (SS 4.10, Table 4-16) */
-	  return InstDesc(InstDesc::FP_DIV);
+	  return InsnDesc(InsnDesc::FP_DIV);
 	case MULS:		/* (SS 4.10, Table 4-16) */
 	case MULS_C:		/* (SS 4.10, Table 4-16) */
 	case MULS_M:		/* (SS 4.10, Table 4-16) */
@@ -612,7 +612,7 @@ AlphaISA::GetInstDesc(MachInst* mi, ushort opIndex, ushort sz)
 	case MULT_SUIM:		/* (SS 4.10, Table 4-16) */
 	case MULT_SUI:		/* (SS 4.10, Table 4-16) */
 	case MULT_SUID:		/* (SS 4.10, Table 4-16) */
-	  return InstDesc(InstDesc::FP_MUL);
+	  return InsnDesc(InsnDesc::FP_MUL);
 	case SUBS:		/* (SS 4.10, Table 4-16) */
 	case SUBS_C:		/* (SS 4.10, Table 4-16) */
 	case SUBS_M:		/* (SS 4.10, Table 4-16) */
@@ -645,22 +645,22 @@ AlphaISA::GetInstDesc(MachInst* mi, ushort opIndex, ushort sz)
 	case SUBT_SUIM:		/* (SS 4.10, Table 4-16) */
 	case SUBT_SUI:		/* (SS 4.10, Table 4-16) */
 	case SUBT_SUID:		/* (SS 4.10, Table 4-16) */
-	  return InstDesc(InstDesc::FP_SUB);
+	  return InsnDesc(InsnDesc::FP_SUB);
 	}
       break;
       
     case OpFltOp:
-      switch (inst & FP_MASK) 
+      switch (insn & FP_MASK) 
 	{
 	case CPYS:		/* (SS 4.10, Table 4-16) */
 	case CPYSE:		/* (SS 4.10, Table 4-16) */
 	case CPYSN:		/* (SS 4.10, Table 4-16) */
-	  return InstDesc(InstDesc::FP_OTHER);
+	  return InsnDesc(InsnDesc::FP_OTHER);
 	case CVTLQ:		/* (SS 4.10, Table 4-16) */
 	case CVTQL:		/* (SS 4.10, Table 4-16) */
 	case CVTQL_V:		/* (SS 4.10, Table 4-16) */
 	case CVTQL_SV:		/* (SS 4.10, Table 4-16) */
-	  return InstDesc(InstDesc::FP_CVT);
+	  return InsnDesc(InsnDesc::FP_CVT);
 	case FCMOVEQ:		/* (SS 4.10, Table 4-16) */
 	case FCMOVNE:		/* (SS 4.10, Table 4-16) */
 	case FCMOVLT:		/* (SS 4.10, Table 4-16) */
@@ -669,7 +669,7 @@ AlphaISA::GetInstDesc(MachInst* mi, ushort opIndex, ushort sz)
 	case FCMOVGT:		/* (SS 4.10, Table 4-16) */
 	case MF_FPCR:		/* (SS 4.10, Table 4-16) */
 	case MT_FPCR:		/* (SS 4.10, Table 4-16) */
-	  return InstDesc(InstDesc::FP_MOV);
+	  return InsnDesc(InsnDesc::FP_MOV);
 	}
       break;
 
@@ -677,7 +677,7 @@ AlphaISA::GetInstDesc(MachInst* mi, ushort opIndex, ushort sz)
       // Other/Misc Instructions (SS 4.11 & 4.12, Table 4-17, 4-18)
       // ---------------------------------------------------
     case OpMisc:
-      switch (inst & MFC_MASK) 
+      switch (insn & MFC_MASK) 
 	{
 	  // Miscellaneous Instructions: (SS 4.11, Table 4-17)
 	case ECB:		/* (SS 4.11, Table 4-17) */
@@ -689,12 +689,12 @@ AlphaISA::GetInstDesc(MachInst* mi, ushort opIndex, ushort sz)
 	case TRAPB:		/* (SS 4.11, Table 4-17) */
 	case WH64:		/* (SS 4.11, Table 4-17) */
 	case WMB:		/* (SS 4.11, Table 4-17) */
-	  return InstDesc(InstDesc::OTHER);
+	  return InsnDesc(InsnDesc::OTHER);
 
 	  // VAX compatibility Instructions: (SS 4.12, Table 4-18)
 	case RC:		/* (SS 4.12, Table 4-18) */
 	case RS:		/* (SS 4.12, Table 4-18) */
-	  return InstDesc(InstDesc::OTHER);
+	  return InsnDesc(InsnDesc::OTHER);
 	}
       break;
       
@@ -702,7 +702,7 @@ AlphaISA::GetInstDesc(MachInst* mi, ushort opIndex, ushort sz)
       // (Mostly) Multimedia Instructions: (SS 4.13, Table 4-19(?))
       // ---------------------------------------------------
     case OpFltToInt:
-      switch (inst & FP_MASK) 
+      switch (insn & FP_MASK) 
 	{
 	case MINUB8:		/* (SS 4.13, Table 4-19(?)) */
 	case MINSB8:		/* (SS 4.13, Table 4-19(?)) */
@@ -717,17 +717,17 @@ AlphaISA::GetInstDesc(MachInst* mi, ushort opIndex, ushort sz)
 	case PKWB:		/* (SS 4.13, Table 4-19(?)) */
 	case UNPKBL:		/* (SS 4.13, Table 4-19(?)) */
 	case UNPKBW:		/* (SS 4.13, Table 4-19(?)) */
-	  return InstDesc(InstDesc::INT_OTHER);
+	  return InsnDesc(InsnDesc::INT_OTHER);
 	case CTLZ:		/* (SS 4.4, Table 4-5) */
 	case CTPOP:		/* (SS 4.4, Table 4-5) */
 	case CTTZ:		/* (SS 4.4, Table 4-5) */
-	  return InstDesc(InstDesc::INT_OTHER);
+	  return InsnDesc(InsnDesc::INT_OTHER);
 	case SEXTB:		/* (SS 4.6, Table 4-7) */
 	case SEXTW:		/* (SS 4.6, Table 4-7) */
-	  return InstDesc(InstDesc::INT_OTHER);
+	  return InsnDesc(InsnDesc::INT_OTHER);
 	case FTOIS:		/* (SS 4.10, Table 4-16) */
 	case FTOIT:		/* (SS 4.10, Table 4-16) */
-	  return InstDesc(InstDesc::OTHER);
+	  return InsnDesc(InsnDesc::OTHER);
 	}
       break;
       
@@ -740,28 +740,28 @@ AlphaISA::GetInstDesc(MachInst* mi, ushort opIndex, ushort sz)
     case PAL1D:
     case PAL1E:
     // case PAL1F: // already referenced as HW_ST
-      return InstDesc(InstDesc::OTHER);
+      return InsnDesc(InsnDesc::OTHER);
       
       // PALcode format instructions
     case CALLSYS:
-      return InstDesc(InstDesc::SYS_CALL); 
+      return InsnDesc(InsnDesc::SYS_CALL); 
       
     default:
       break;
     }
   
-  return InstDesc(InstDesc::INVALID);
+  return InsnDesc(InsnDesc::INVALID);
 }
 
 VMA
-AlphaISA::GetInstTargetVMA(MachInst* mi, VMA pc, ushort opIndex, ushort sz)
+AlphaISA::GetInsnTargetVMA(MachInsn* mi, VMA pc, ushort opIndex, ushort sz)
 {
   // We know that instruction sizes are guaranteed to be 4 bytes, but
   // the host may have a different byte order than the executable.
-  uint32_t inst = (uint32_t)bfd_getl32((const unsigned char*)mi);
+  uint32_t insn = (uint32_t)bfd_getl32((const unsigned char*)mi);
   
   psint offset;
-  switch (inst & OP_MASK)
+  switch (insn & OP_MASK)
     {
       // Integer/FP control Instructions (SS 4.3 and 4.9; Tables 4-3
       // and 4-15)
@@ -782,9 +782,9 @@ AlphaISA::GetInstTargetVMA(MachInst* mi, VMA pc, ushort opIndex, ushort sz)
     case FBLT:
     case FBNE:
       // Added to the address of the *updated* pc
-      offset = BR_DISP(inst);
+      offset = BR_DISP(insn);
       if (offset & BR_DISP_SIGN) { offset |= ~BR_DISP_MASK; } // sign extend
-      return ((pc + MINST_SIZE) + (offset << 2));  
+      return ((pc + MINSN_SIZE) + (offset << 2));  
 
     case OpJump: // JMP, JSR, JSR_COROUTINE, RET
       break;  // branch content in register

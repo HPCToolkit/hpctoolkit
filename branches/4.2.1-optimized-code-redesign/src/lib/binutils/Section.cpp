@@ -38,17 +38,23 @@
 //***************************************************************************
 //
 // File:
-//    Section.C
+//   $Source$
 //
 // Purpose:
-//    [The purpose of this file]
+//   [The purpose of this file]
 //
 // Description:
-//    [The set of functions, macros, etc. defined in the file]
+//   [The set of functions, macros, etc. defined in the file]
 //
 //***************************************************************************
 
 //************************* System Include Files ****************************
+
+#include <iostream>
+using std::cerr;
+using std::endl;
+using std::hex;
+using std::dec;
 
 #include <string>
 using std::string;
@@ -60,38 +66,34 @@ using std::string;
 #include "Section.hpp"
 #include "Procedure.hpp"
 #include "Instruction.hpp"
-#include <lib/support/Assertion.h>
 
 #include <lib/isa/ISA.hpp>
 
+#include <lib/support/diagnostics.h>
+
 //*************************** Forward Declarations **************************
 
-using std::cerr;
-using std::endl;
-using std::hex;
-using std::dec;
-
 //***************************************************************************
 
 //***************************************************************************
-// Section
+// Seg
 //***************************************************************************
 
-Section::Section(LoadModule* _lm, string& _name, Type t,
-		 VMA _beg, VMA _end, VMA _sz)
+binutils::Seg::Seg(binutils::LM* _lm, string& _name, Type t,
+		   VMA _beg, VMA _end, VMA _sz)
   : lm(_lm), name(_name), type(t), beg(_beg), end(_end), size(_sz)
 {
 }
 
 
-Section::~Section()
+binutils::Seg::~Seg()
 {
   lm = NULL; 
 }
 
 
 void
-Section::Dump(std::ostream& o, const char* pre) const
+binutils::Seg::Dump(std::ostream& o, const char* pre) const
 {
   string p(pre);
   o << p << "------------------- Section Dump ------------------\n";
@@ -101,7 +103,7 @@ Section::Dump(std::ostream& o, const char* pre) const
     case BSS:  o << "BSS'\n";  break;
     case Text: o << "Text'\n"; break;
     case Data: o << "Data'\n"; break;
-    default:   o << "-unknown-'\n";  BriefAssertion(false); 
+    default:   DIAG_Die("Unknown segment type");
   }
   o << p << "  VMA: [0x" << hex << GetBeg() << ", 0x"
     << GetEnd() << dec << ")\n";
@@ -110,21 +112,21 @@ Section::Dump(std::ostream& o, const char* pre) const
 
 
 void
-Section::DDump() const
+binutils::Seg::DDump() const
 {
   Dump(std::cerr);
 }
 
 //***************************************************************************
-// TextSection
+// TextSeg
 //***************************************************************************
 
-class TextSectionImpl { 
+class binutils::TextSegImpl { 
 public:
-  TextSectionImpl() 
+  TextSegImpl() 
     : abfd(NULL), symTable(NULL), 
       contentsRaw(NULL), contents(NULL), numSyms(0) { }
-  ~TextSectionImpl() { }
+  ~TextSegImpl() { }
     
   bfd* abfd;          // we do not own
   asymbol **symTable; // we do not own
@@ -134,12 +136,13 @@ public:
 };
 
 
-TextSection::TextSection(LoadModule* _lm, string& _name, VMA _beg, VMA _end,
-			 suint _size, asymbol **syms, int numSyms, bfd *abfd)
-  : Section(_lm, _name, Section::Text, _beg, _end, _size), impl(NULL),
+binutils::TextSeg::TextSeg(binutils::LM* _lm, string& _name, 
+			   VMA _beg, VMA _end,
+			   suint _size, asymbol **syms, int numSyms, bfd *abfd)
+  : Seg(_lm, _name, Seg::Text, _beg, _end, _size), impl(NULL),
     procedures(0)
 {
-  impl = new TextSectionImpl;
+  impl = new TextSegImpl;
   impl->abfd = abfd;     // we do not own 'abfd'
   impl->symTable = syms; // we do not own 'syms'
   impl->numSyms = numSyms;
@@ -184,7 +187,7 @@ TextSection::TextSection(LoadModule* _lm, string& _name, VMA _beg, VMA _end,
 }
 
 
-TextSection::~TextSection()
+binutils::TextSeg::~TextSeg()
 {
   // Clear impl
   impl->symTable = NULL;
@@ -193,30 +196,30 @@ TextSection::~TextSection()
   delete impl;
     
   // Clear procedures
-  for (TextSectionProcedureIterator it(*this); it.IsValid(); ++it) {
-    delete it.Current(); // Procedure*
+  for (TextSegProcIterator it(*this); it.IsValid(); ++it) {
+    delete it.Current(); // Proc*
   }
   procedures.clear();
 }
 
 
 void
-TextSection::Dump(std::ostream& o, const char* pre) const
+binutils::TextSeg::Dump(std::ostream& o, const char* pre) const
 {
   string p(pre);
   string p1 = p + "  ";
 
-  Section::Dump(o, pre);
-  o << p << "  Procedures (" << GetNumProcedures() << ")\n";
-  for (TextSectionProcedureIterator it(*this); it.IsValid(); ++it) {
-    Procedure* p = it.Current();
+  Seg::Dump(o, pre);
+  o << p << "  Procedures (" << GetNumProcs() << ")\n";
+  for (TextSegProcIterator it(*this); it.IsValid(); ++it) {
+    Proc* p = it.Current();
     p->Dump(o, p1.c_str());
   }
 }
 
 
 void
-TextSection::DDump() const
+binutils::TextSeg::DDump() const
 {
   Dump(std::cerr);
 }
@@ -225,15 +228,15 @@ TextSection::DDump() const
 //***************************   private members    ***************************
 
 void
-TextSection::Create_InitializeProcs()
+binutils::TextSeg::Create_InitializeProcs()
 {
-  LoadModule* lm = GetLoadModule();
-  LoadModule::DbgFuncSummary* dbgSum = lm->GetDebugFuncSummary();
+  LM* lm = GetLM();
+  LM::DbgFuncSummary* dbgSum = lm->GetDebugFuncSummary();
 
   // ------------------------------------------------------------
   // Each text section finds and creates its own routines.
   // Traverse the symbol table (which is sorted by VMA) searching
-  // for function symbols in our section.  Create a Procedure for
+  // for function symbols in our section.  Create a Proc for
   // each one found.
   // ------------------------------------------------------------
   for (int i = 0; i < impl->numSyms; i++) {
@@ -241,16 +244,16 @@ TextSection::Create_InitializeProcs()
     asymbol *sym = impl->symTable[i]; 
     if (IsIn(bfd_asymbol_value(sym)) && (sym->flags & BSF_FUNCTION)
         && !bfd_is_und_section(sym->section)) {
-      Procedure::Type procType;
+      Proc::Type procType;
 
       if (sym->flags & BSF_LOCAL)
-        procType = Procedure::Local;
+        procType = Proc::Local;
       else if (sym->flags & BSF_WEAK)
-        procType = Procedure::Weak;
+        procType = Proc::Weak;
       else if (sym->flags & BSF_GLOBAL)
-        procType = Procedure::Global;
+        procType = Proc::Global;
       else
-        procType = Procedure::Unknown;
+        procType = Proc::Unknown;
 
       // Create a procedure based on best information we have.  We
       // always prefer explicit debug information over that inferred
@@ -262,16 +265,16 @@ TextSection::Create_InitializeProcs()
       string procNm;
       string symNm = bfd_asymbol_name(sym);
 
-      LoadModule::DbgFuncSummary::Info* dbg = (*dbgSum)[begVMA];
+      LM::DbgFuncSummary::Info* dbg = (*dbgSum)[begVMA];
       if (dbg) {
 	endVMA = dbg->endVMA; // end of last insn
 	procNm = dbg->name;
       }
       if (!dbg || endVMA == 0) {
-	endVMA = FindProcedureEnd(i);
+	endVMA = FindProcEnd(i);
       }
       if (!dbg || procNm.empty()) {
-	procNm = FindProcedureName(impl->abfd, sym);
+	procNm = FindProcName(impl->abfd, sym);
       }      
       suint size = endVMA - begVMA; // see note above
 
@@ -280,7 +283,7 @@ TextSection::Create_InitializeProcs()
       }
       
       // We now have a valid procedure
-      Procedure *proc = new Procedure(this, procNm, symNm, procType,
+      Proc *proc = new Proc(this, procNm, symNm, procType,
 				      begVMA, endVMA, size);
       procedures.push_back(proc);
 
@@ -297,9 +300,9 @@ TextSection::Create_InitializeProcs()
 
 
 void
-TextSection::Create_DisassembleProcs()
+binutils::TextSeg::Create_DisassembleProcs()
 {
-  LoadModule* lm = GetLoadModule();
+  LM* lm = GetLM();
   bfd* abfd = impl->abfd;
   
   // ------------------------------------------------------------
@@ -307,46 +310,46 @@ TextSection::Create_DisassembleProcs()
   // ------------------------------------------------------------
   VMA sectionBase = GetBeg();
   
-  for (TextSectionProcedureIterator it(*this); it.IsValid(); ++it) {
-    Procedure* p = it.Current();
+  for (TextSegProcIterator it(*this); it.IsValid(); ++it) {
+    Proc* p = it.Current();
     VMA procBeg = p->GetBegVMA();
     VMA procEnd = p->GetEndVMA();
-    ushort instSz = 0;
-    VMA lastInstVMA = procBeg; // vma of last valid instruction in the proc
+    ushort insnSz = 0;
+    VMA lastInsnVMA = procBeg; // vma of last valid instruction in the proc
 
     // Iterate over each vma at which an instruction might begin
     for (VMA vma = procBeg; vma < procEnd; ) {
-      MachInst *mi = &(impl->contents[vma - sectionBase]);
-      instSz = LoadModule::isa->GetInstSize(mi);
-      if (instSz == 0) {
+      MachInsn *mi = &(impl->contents[vma - sectionBase]);
+      insnSz = LM::isa->GetInsnSize(mi);
+      if (insnSz == 0) {
 	// This is not a recognized instruction (cf. data on CISC ISAs).
 	++vma; // Increment the VMA, and try to decode again.
 	continue;
       }
 
-      int num_ops = LoadModule::isa->GetInstNumOps(mi);
+      int num_ops = LM::isa->GetInsnNumOps(mi);
       if (num_ops == 0) {
 	// This instruction contains data.  No need to decode.
-	vma += instSz;
+	vma += insnSz;
 	continue;
       }
 
       // We have a valid instruction at this vma!
-      lastInstVMA = vma;
+      lastInsnVMA = vma;
       for (ushort opIndex = 0; opIndex < num_ops; opIndex++) {
-        Instruction *newInst = MakeInstruction(abfd, mi, vma, opIndex, instSz);
-        lm->AddInst(vma, opIndex, newInst); 
+        Insn *newInsn = MakeInsn(abfd, mi, vma, opIndex, insnSz);
+        lm->AddInsn(vma, opIndex, newInsn); 
       }
-      vma += instSz; 
+      vma += insnSz; 
     }
-    // 'instSz' is now the size of the last instruction or 0
+    // 'insnSz' is now the size of the last instruction or 0
 
     // Now we can update the procedure's end address and size since we
     // know where the last instruction begins.  The procedure's
     // original end address was guessed to be the begin address of the
     // following procedure while determining all procedures above.
-    p->SetEndVMA(lastInstVMA);
-    p->SetSize(p->GetEndVMA() - p->GetBegVMA() + instSz); 
+    p->SetEndVMA(lastInsnVMA);
+    p->SetSize(p->GetEndVMA() - p->GetBegVMA() + insnSz); 
   }
 }
 
@@ -355,18 +358,18 @@ TextSection::Create_DisassembleProcs()
 // debugging information, if possible; otherwise returns the symbol
 // name.
 string
-TextSection::FindProcedureName(bfd *abfd, asymbol *procSym) const
+binutils::TextSeg::FindProcName(bfd *abfd, asymbol *procSym) const
 {
   string procName;
   const char* func = NULL, * file = NULL;
   unsigned int bfd_line = 0;
 
-  // cf. LoadModule::GetSourceFileInfo
-  asection *bfdSection = bfd_get_section_by_name(abfd, GetName().c_str());
-  bfd_vma secBase = bfd_section_vma(abfd, bfdSection);
+  // cf. LM::GetSourceFileInfo
+  asection *bfdSeg = bfd_get_section_by_name(abfd, GetName().c_str());
+  bfd_vma secBase = bfd_section_vma(abfd, bfdSeg);
   bfd_vma symVal = bfd_asymbol_value(procSym);
-  if (bfdSection) {
-    bfd_find_nearest_line(abfd, bfdSection, impl->symTable,
+  if (bfdSeg) {
+    bfd_find_nearest_line(abfd, bfdSeg, impl->symTable,
 			  symVal - secBase, &file, &func, &bfd_line);
   }
 
@@ -385,7 +388,7 @@ TextSection::FindProcedureName(bfd *abfd, asymbol *procSym) const
 // section.  However, if this is the last function in the section,
 // then it is the address of the end of the section.
 VMA
-TextSection::FindProcedureEnd(int funcSymIndex) const
+binutils::TextSeg::FindProcEnd(int funcSymIndex) const
 {
   // Since the symbol table we get is sorted by VMA, we can stop
   // the search as soon as we've gone beyond the VMA of this section.
@@ -406,44 +409,43 @@ TextSection::FindProcedureEnd(int funcSymIndex) const
 
 // Returns a new instruction of the appropriate type.  Promises not to
 // return NULL.
-Instruction*
-TextSection::MakeInstruction(bfd *abfd, MachInst* mi, VMA vma, ushort opIndex,
+binutils::Insn*
+binutils::TextSeg::MakeInsn(bfd *abfd, MachInsn* mi, VMA vma, ushort opIndex,
 			     ushort sz) const
 {
   // Assume that there is only one instruction type per
   // architecture (unlike i860 for example).
-  Instruction *newInst = NULL;
+  Insn *newInsn = NULL;
   switch (bfd_get_arch(abfd)) {
     case bfd_arch_mips:
     case bfd_arch_alpha:
     case bfd_arch_sparc:
-      newInst = new RISCInstruction(mi, vma);
+      newInsn = new RISCInsn(mi, vma);
       break;
     case bfd_arch_i386:
-      newInst = new CISCInstruction(mi, vma, sz);
+      newInsn = new CISCInsn(mi, vma, sz);
       break;
     case bfd_arch_ia64:
-      newInst = new VLIWInstruction(mi, vma, opIndex);
+      newInsn = new VLIWInsn(mi, vma, opIndex);
       break;
     default:
-      cerr << "Section.C: Could not create Instruction." << endl;
-      BriefAssertion(false);
+      DIAG_Die("TextSeg::MakeInsn encountered unknown instruction type!");
   }
-  return newInst;
+  return newInsn;
 }
 
 
 //***************************************************************************
-// TextSectionProcedureIterator
+// TextSegProcIterator
 //***************************************************************************
 
-TextSectionProcedureIterator::TextSectionProcedureIterator(const TextSection& _sec)
+binutils::TextSegProcIterator::TextSegProcIterator(const TextSeg& _sec)
   : sec(_sec)
 {
   Reset();
 }
 
-TextSectionProcedureIterator::~TextSectionProcedureIterator()
+binutils::TextSegProcIterator::~TextSegProcIterator()
 {
 }
 

@@ -38,13 +38,13 @@
 //***************************************************************************
 //
 // File:
-//    Instruction.C
+//   $Source$
 //
 // Purpose:
-//    [The purpose of this file]
+//   [The purpose of this file]
 //
 // Description:
-//    [The set of functions, macros, etc. defined in the file]
+//   [The set of functions, macros, etc. defined in the file]
 //
 //***************************************************************************
 
@@ -70,7 +70,7 @@ using std::string;
 //****************************************************************************
 
 void
-Instruction::Dump(std::ostream& o, const char* pre) const
+binutils::Insn::Dump(std::ostream& o, const char* pre) const
 {
   string p(pre);
   VMA target = GetTargetVMA(vma);
@@ -88,79 +88,90 @@ Instruction::Dump(std::ostream& o, const char* pre) const
   o << "\n";
 }
 
+
 void
-Instruction::DDump() const
+binutils::Insn::DDump() const
 {
   Dump(std::cerr);
 }
 
+
 void
-Instruction::DumpSelf(std::ostream& o, const char* pre) const
+binutils::Insn::DumpSelf(std::ostream& o, const char* pre) const
 {
 }
 
+
 //***************************************************************************
-// CISCInstruction
+// CISCInsn
 //***************************************************************************
 
 void
-CISCInstruction::Dump(std::ostream& o, const char* pre) const
+binutils::CISCInsn::Dump(std::ostream& o, const char* pre) const
 {
-  Instruction::Dump(o, pre);
+  Insn::Dump(o, pre);
 }
 
+
 void
-CISCInstruction::DDump() const
+binutils::CISCInsn::DDump() const
 {
   Dump(std::cerr);
 }
 
+
 void
-CISCInstruction::DumpSelf(std::ostream& o, const char* pre) const
+binutils::CISCInsn::DumpSelf(std::ostream& o, const char* pre) const
 {
   o << "(CISC sz:" << GetSize() << ")";
 }
 
+
 //***************************************************************************
-// RISCInstruction
+// RISCInsn
 //***************************************************************************
 
 void
-RISCInstruction::Dump(std::ostream& o, const char* pre) const
+binutils::RISCInsn::Dump(std::ostream& o, const char* pre) const
 {
-  Instruction::Dump(o, pre);
+  Insn::Dump(o, pre);
 }
 
+
 void
-RISCInstruction::DDump() const
+binutils::RISCInsn::DDump() const
 {
   Dump(std::cerr);
 }
 
+
 void
-RISCInstruction::DumpSelf(std::ostream& o, const char* pre) const
+binutils::RISCInsn::DumpSelf(std::ostream& o, const char* pre) const
 {
   o << "(RISC)";
 }
 
+
 //***************************************************************************
-// VLIWInstruction
+// VLIWInsn
 //***************************************************************************
 
 void
-VLIWInstruction::Dump(std::ostream& o, const char* pre) const
+binutils::VLIWInsn::Dump(std::ostream& o, const char* pre) const
 {
-  Instruction::Dump(o, pre);
+  Insn::Dump(o, pre);
 }
 
+
 void
-VLIWInstruction::DDump() const
+binutils::VLIWInsn::DDump() const
 {
   Dump(std::cerr);
 }
 
+
 void
-VLIWInstruction::DumpSelf(std::ostream& o, const char* pre) const
+binutils::VLIWInsn::DumpSelf(std::ostream& o, const char* pre) const
 {
   o << "(VLIW opIdx:" << GetOpIndex() << ")";
 }

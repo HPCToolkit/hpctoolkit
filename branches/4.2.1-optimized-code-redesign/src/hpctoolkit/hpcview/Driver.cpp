@@ -217,7 +217,7 @@ Driver::ScopeTreeInsertProfileData(PgmScopeTree& scopes,
       const std::string& lmname = proflm.name();
       LoadModScope* lmScope = nodeRet.MoveToLoadMod(lmname);
       
-      LoadModule lm;
+      binutils::LM lm;
       if (!lm.Open(lmname.c_str())) { 
 	exit(1); // Error already printed 
       }
@@ -269,7 +269,7 @@ Driver::ScopeTreeInsertProfileData(PgmScopeTree& scopes,
 	  
 	  // 1. Unrelocate vma.
 	  VMA ur_vma = vma;
-	  if (lm.GetType() == LoadModule::SharedLibrary 
+	  if (lm.GetType() == binutils::LM::SharedLibrary 
 	      && vma > proflm.load_addr()) {
 	    ur_vma = vma - proflm.load_addr();
 	  }

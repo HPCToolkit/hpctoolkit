@@ -68,27 +68,27 @@
 
 // See 'ISA.h' for comments on the interface
 
-ISA::InstDesc
-MipsISA::GetInstDesc(MachInst* mi, ushort opIndex, ushort sz)
+ISA::InsnDesc
+MipsISA::GetInsnDesc(MachInsn* mi, ushort opIndex, ushort sz)
 {
   // We know that instruction sizes are guaranteed to be 4 bytes, but
   // the host may have a different byte order than the executable.
-  uint32_t inst = (uint32_t)bfd_getb32((const unsigned char*)mi);
+  uint32_t insn = (uint32_t)bfd_getb32((const unsigned char*)mi);
   
-  switch (inst & OP_MASK)
+  switch (insn & OP_MASK)
     {
     case OPSpecial:
-      switch (inst & OPSpecial_MASK)
+      switch (insn & OPSpecial_MASK)
 	{
 	case JR:                        // Instructions from Table A-13
 	  // JR $31 returns from a JAL call instruction.
-	  if (REG_S(inst) == REG_RA) {
-	    return InstDesc(InstDesc::SUBR_RET);
+	  if (REG_S(insn) == REG_RA) {
+	    return InsnDesc(InsnDesc::SUBR_RET);
 	  } else {
-	    return InstDesc(InstDesc::BR_UN_COND_IND);
+	    return InsnDesc(InsnDesc::BR_UN_COND_IND);
 	  }
 	case JALR:
-	  return InstDesc(InstDesc::SUBR_IND);
+	  return InsnDesc(InsnDesc::SUBR_IND);
 	  
 	case SYSCALL:                   // Instructions from Table A-16, 
 	case BREAK:                     //   Table A-17
@@ -98,26 +98,26 @@ MipsISA::GetInstDesc(MachInst* mi, ushort opIndex, ushort sz)
 	case TLTU:
 	case TEQ:
 	case TNE:
-	  return InstDesc(InstDesc::SYS_CALL); 
+	  return InsnDesc(InsnDesc::SYS_CALL); 
 
 	case SYNC:
-	  return InstDesc(InstDesc::OTHER);
+	  return InsnDesc(InsnDesc::OTHER);
 	}
       break;
     case OPRegImm:
-      switch (inst & OPRegImm_MASK)
+      switch (insn & OPRegImm_MASK)
 	{
 	case BLTZ:                      // Instructions from Table A-15
 	case BGEZ:
 	case BLTZL:
 	case BGEZL:
-	  return InstDesc(InstDesc::INT_BR_COND_REL);
+	  return InsnDesc(InsnDesc::INT_BR_COND_REL);
 	  
 	case BLTZAL:  // Link
 	case BGEZAL:  // Link
 	case BLTZALL: // Link
 	case BGEZALL: // Link
-	  return InstDesc(InstDesc::SUBR_REL); 
+	  return InsnDesc(InsnDesc::SUBR_REL); 
 
 	case TGEI:                      // Instructions from Table A-18 
 	case TGEIU: // Trap-on-Condition...
@@ -125,20 +125,20 @@ MipsISA::GetInstDesc(MachInst* mi, ushort opIndex, ushort sz)
 	case TLTIU:
 	case TEQI:
 	case TNEI:
-	  return InstDesc(InstDesc::OTHER); 
+	  return InsnDesc(InsnDesc::OTHER); 
 	}
       break;
     case OPCop1x:
-      switch (inst & OPCop1x_MASK)
+      switch (insn & OPCop1x_MASK)
 	{
 	case LWXC1: // Word	        // Instructions from Table A-7
-	  return InstDesc(InstDesc::MEM_LOAD);
+	  return InsnDesc(InsnDesc::MEM_LOAD);
 	case LDXC1: // Doubleword
-	  return InstDesc(InstDesc::MEM_LOAD);
+	  return InsnDesc(InsnDesc::MEM_LOAD);
 	case SWXC1: // Word
-	  return InstDesc(InstDesc::MEM_STORE);
+	  return InsnDesc(InsnDesc::MEM_STORE);
 	case SDXC1: // Doubleword
-	  return InstDesc(InstDesc::MEM_STORE);
+	  return InsnDesc(InsnDesc::MEM_STORE);
 	}
       break;
 
@@ -154,7 +154,7 @@ MipsISA::GetInstDesc(MachInst* mi, ushort opIndex, ushort sz)
     case LL:   // Linked Word
     case LWC1: // Word
     case LWC2: // Word
-      return InstDesc(InstDesc::MEM_LOAD);
+      return InsnDesc(InsnDesc::MEM_LOAD);
 
     case LD:   // Doubleword
     case LDL:  // Doubleword Left
@@ -162,7 +162,7 @@ MipsISA::GetInstDesc(MachInst* mi, ushort opIndex, ushort sz)
     case LLD:  // Linked Doubleword
     case LDC1: // Doubleword
     case LDC2: // Doubleword
-      return InstDesc(InstDesc::MEM_LOAD); // Doubleword
+      return InsnDesc(InsnDesc::MEM_LOAD); // Doubleword
 
     case SB:   // Byte
     case SH:   // Halfword
@@ -172,7 +172,7 @@ MipsISA::GetInstDesc(MachInst* mi, ushort opIndex, ushort sz)
     case SC:   // Conditional Word
     case SWC1: // Word
     case SWC2: // Word
-      return InstDesc(InstDesc::MEM_STORE);
+      return InsnDesc(InsnDesc::MEM_STORE);
       
     case SD:   // Doubleword
     case SDL:  // Doubleword Left
@@ -180,23 +180,23 @@ MipsISA::GetInstDesc(MachInst* mi, ushort opIndex, ushort sz)
     case SCD:  // Conditional Doubleword
     case SDC1: // Doubleword
     case SDC2: // Doubleword
-      return InstDesc(InstDesc::MEM_STORE); // Doubleword
+      return InsnDesc(InsnDesc::MEM_STORE); // Doubleword
 
                                         // Instructions from Table A-12
       // N.B.: These instructions are PC-region but we will treat them
       // as PC-relative
     case J:                             
-      return InstDesc(InstDesc::BR_UN_COND_REL);  
+      return InsnDesc(InsnDesc::BR_UN_COND_REL);  
     case JAL:                           
-      return InstDesc(InstDesc::SUBR_REL);     
+      return InsnDesc(InsnDesc::SUBR_REL);     
       
     case BEQ:                           // Instructions from Table A-14
       // If operands are the same then then there is no fall-thru branch.
       // Test for general case.
-      if (REG_S(inst) == REG_T(inst))
-	return InstDesc(InstDesc::BR_UN_COND_REL);
+      if (REG_S(insn) == REG_T(insn))
+	return InsnDesc(InsnDesc::BR_UN_COND_REL);
       else
-	return InstDesc(InstDesc::INT_BR_COND_REL);
+	return InsnDesc(InsnDesc::INT_BR_COND_REL);
     case BNE:
     case BLEZ:
     case BGTZ:
@@ -204,28 +204,28 @@ MipsISA::GetInstDesc(MachInst* mi, ushort opIndex, ushort sz)
     case BNEL:
     case BLEZL:
     case BGTZL:
-      return InstDesc(InstDesc::INT_BR_COND_REL);
+      return InsnDesc(InsnDesc::INT_BR_COND_REL);
 
     default:
       break;
     }
   
-  return InstDesc(InstDesc::OTHER);
+  return InsnDesc(InsnDesc::OTHER);
 }
 
 
 VMA
-MipsISA::GetInstTargetVMA(MachInst* mi, VMA pc, ushort opIndex, ushort sz)
+MipsISA::GetInsnTargetVMA(MachInsn* mi, VMA pc, ushort opIndex, ushort sz)
 {
   // We know that instruction sizes are guaranteed to be 4 bytes, but
   // the host may have a different byte order than the executable.
-  uint32_t inst = (uint32_t)bfd_getb32((const unsigned char*)mi);
+  uint32_t insn = (uint32_t)bfd_getb32((const unsigned char*)mi);
 
   psint offset;
-  switch (inst & OP_MASK)
+  switch (insn & OP_MASK)
     {
     case OPSpecial:
-      switch (inst & OPSpecial_MASK)
+      switch (insn & OPSpecial_MASK)
 	{
 	case JR:                        // Instructions from Table A-13
 	case JALR:
@@ -233,7 +233,7 @@ MipsISA::GetInstTargetVMA(MachInst* mi, VMA pc, ushort opIndex, ushort sz)
 	}
       break;
     case OPRegImm:
-      switch (inst & OPRegImm_MASK)
+      switch (insn & OPRegImm_MASK)
 	{
 	case BLTZ:                      // Instructions from Table A-15
 	case BGEZ:
@@ -244,9 +244,9 @@ MipsISA::GetInstTargetVMA(MachInst* mi, VMA pc, ushort opIndex, ushort sz)
 	case BLTZALL: 
 	case BGEZALL:
 	  // Added to the address of the instruction *following* the branch
-	  offset = IMM(inst);
+	  offset = IMM(insn);
 	  if (offset & IMM_SIGN) { offset |= ~IMM_MASK; } // sign extend
-	  return ((pc + MINST_SIZE) + (offset << 2));
+	  return ((pc + MINSN_SIZE) + (offset << 2));
 	}
       break;
 
@@ -255,8 +255,8 @@ MipsISA::GetInstTargetVMA(MachInst* mi, VMA pc, ushort opIndex, ushort sz)
     case JAL:
       // These are PC-Region and not PC-Relative instructions.
       // Upper order bits come from the address of the delay-slot instruction
-      offset = INST_INDEX(inst) << 2;
-      return (((pc + MINST_SIZE) & INST_INDEX_UPPER_MASK) | offset);
+      offset = INSN_INDEX(insn) << 2;
+      return (((pc + MINSN_SIZE) & INSN_INDEX_UPPER_MASK) | offset);
       
     case BEQ:                           // Instructions from Table A-14
     case BNE:
@@ -267,9 +267,9 @@ MipsISA::GetInstTargetVMA(MachInst* mi, VMA pc, ushort opIndex, ushort sz)
     case BLEZL:
     case BGTZL:
       // Added to the address of the instruction *following* the branch
-      offset = IMM(inst);
+      offset = IMM(insn);
       if (offset & IMM_SIGN) { offset |= ~IMM_MASK; } // sign extend
-      return ((pc + MINST_SIZE) + (offset << 2));
+      return ((pc + MINSN_SIZE) + (offset << 2));
       
     default:
       break;
@@ -279,14 +279,14 @@ MipsISA::GetInstTargetVMA(MachInst* mi, VMA pc, ushort opIndex, ushort sz)
 }
 
 ushort
-MipsISA::GetInstNumDelaySlots(MachInst* mi, ushort opIndex, ushort sz)
+MipsISA::GetInsnNumDelaySlots(MachInsn* mi, ushort opIndex, ushort sz)
 { 
   // All branches have an architectural delay of one
   // instruction. Treat branch-likely instructions as regular
   // branches.
 
   // (We don't care about delays on instructions such as loads/stores)
-  InstDesc d = GetInstDesc(mi, opIndex, sz);
+  InsnDesc d = GetInsnDesc(mi, opIndex, sz);
   if (d.IsBr() || d.IsSubr() || d.IsSubrRet()) {
     return 1;
   } else {

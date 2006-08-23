@@ -38,18 +38,18 @@
 //***************************************************************************
 //
 // File:
-//    Instruction.h
+//   $Source$
 //
 // Purpose:
-//    [The purpose of this file]
+//   [The purpose of this file]
 //
 // Description:
-//    [The set of functions, macros, etc. defined in the file]
+//   [The set of functions, macros, etc. defined in the file]
 //
 //***************************************************************************
 
-#ifndef Instruction_H 
-#define Instruction_H
+#ifndef binutils_Insn_hpp 
+#define binutils_Insn_hpp
 
 //************************* System Include Files ****************************
 
@@ -66,34 +66,36 @@
 //*************************** Forward Declarations **************************
 
 //***************************************************************************
-// Instruction
+// Insn
 //***************************************************************************
 
-// 'Instruction' is an abstract class that represents one single
+namespace binutils {
+
+// 'Insn' is an abstract class that represents one single
 // processor instruction instruction in the 'TextSection' of a
 // 'LoadModule'.  For the sake of generality, all instructions are
 // viewed as (potentially) variable sized instruction packets.
 //
 // VLIW instructions (or 'packets') that consist of multiple
 // operations, are "unpacked" or "flattened" into their component
-// operations; thus each operation is an 'Instruction'.
+// operations; thus each operation is an 'Insn'.
 
-class Instruction {
+class Insn {
 public:
-  Instruction(MachInst* _minst) : minst(_minst), vma(0) { } 
-  Instruction(MachInst* _minst, VMA _vma) : minst(_minst), vma(_vma) { } 
-  virtual ~Instruction() { }
+  Insn(MachInsn* _minsn) : minsn(_minsn), vma(0) { } 
+  Insn(MachInsn* _minsn, VMA _vma) : minsn(_minsn), vma(_vma) { } 
+  virtual ~Insn() { }
   
   // Returns a classification of the instruction
-  ISA::InstDesc GetDesc() const {
-    return LoadModule::isa->GetInstDesc(minst, GetOpIndex(), GetSize());
+  ISA::InsnDesc GetDesc() const {
+    return LM::isa->GetInsnDesc(minsn, GetOpIndex(), GetSize());
   }
   
   // 'GetBits' returns a pointer to the bits of the instruction;
   // 'GetSize' returns the size of the machine instruction.
   // In the case of VLIW instructions, returns the {bits, size} not of
   // the individual operation but the whole "packet".
-  virtual MachInst* GetBits() const { return minst; }
+  virtual MachInsn* GetBits() const { return minsn; }
   virtual ushort    GetSize() const = 0;
 
   // Returns the VMA for the beginning of this instruction.
@@ -102,7 +104,7 @@ public:
   void SetVMA(VMA _vma) { vma = _vma; }
   
   // Viewing each object code instruction as an instruction packet,
-  // and recalling that all packets are "unpacked" in a 'LoadModule',
+  // and recalling that all packets are "unpacked" in a 'LM',
   // 'GetOpIndex' retuns the (0 based) index of this instruction in
   // the original packet.  'GetNumOps' returns the number of
   // operations in this packet.  For RISC and CISC machines these
@@ -115,22 +117,22 @@ public:
   // computed when it depends on values in registers (e.g. indirect
   // jumps).  'vma' is used only to calculate PC-relative targets.
   virtual VMA GetTargetVMA(VMA _vma) const {
-    return LoadModule::isa->GetInstTargetVMA(minst, _vma, GetOpIndex(), GetSize());
+    return LM::isa->GetInsnTargetVMA(minsn, _vma, GetOpIndex(), GetSize());
   }
   
   // Returns the number of delay slots that must be observed by
   // schedulers before the effect of instruction 'mi' can be
   // assumed to be fully obtained (e.g., RISC braches).
   virtual ushort GetNumDelaySlots() const {
-    return LoadModule::isa->GetInstNumDelaySlots(minst, GetOpIndex(), GetSize());
+    return LM::isa->GetInsnNumDelaySlots(minsn, GetOpIndex(), GetSize());
   }
 
   // Returns whether or not the instruction "explicitly" executes in
   // parallel with its successor 'mi2' (successor in the sequential
   // sense).  IOW, this has special reference to "explicitly parallel"
   // architecture, not superscalar design.
-  virtual bool IsParallelWithSuccessor(Instruction* mi2) const {
-    return LoadModule::isa->IsParallelWithSuccessor(minst, GetOpIndex(), GetSize(),
+  virtual bool IsParallelWithSuccessor(Insn* mi2) const {
+    return LM::isa->IsParallelWithSuccessor(minsn, GetOpIndex(), GetSize(),
 					mi2->GetBits(), mi2->GetOpIndex(),
 					mi2->GetSize());
   }
@@ -142,26 +144,31 @@ public:
   
 private:
   // Should not be used
-  Instruction() { }
-  Instruction(const Instruction& i) { }
-  Instruction& operator=(const Instruction& i) { return *this; }
+  Insn() { }
+  Insn(const Insn& i) { }
+  Insn& operator=(const Insn& i) { return *this; }
   
 protected:
-  MachInst*  minst; // pointer to machine instruction [lives in Section]
+  MachInsn*  minsn; // pointer to machine instruction [lives in Section]
 private:
   VMA vma;         // vma of the beginning of this instruction packet
 };
 
+} // namespace binutils
+
+
 //***************************************************************************
-// CISCInstruction
+// CISCInsn
 //***************************************************************************
 
-class CISCInstruction : public Instruction {
+namespace binutils {
+
+class CISCInsn : public Insn {
 public:
-  CISCInstruction(MachInst* _minst, VMA _vma, ushort sz)
-    : Instruction(_minst, _vma), size(sz) { }    
+  CISCInsn(MachInsn* _minsn, VMA _vma, ushort sz)
+    : Insn(_minsn, _vma), size(sz) { }    
 
-  virtual ~CISCInstruction() { }
+  virtual ~CISCInsn() { }
   
   virtual ushort GetSize() const { return size; }
   virtual ushort GetOpIndex() const { return 0; }
@@ -169,11 +176,11 @@ public:
 
   // Given a target or branch instruction, returns the target address.
   virtual VMA GetTargetVMA(VMA _vma) const {
-    return LoadModule::isa->GetInstTargetVMA(minst, _vma, size);
+    return LM::isa->GetInsnTargetVMA(minsn, _vma, size);
   }
 
   virtual ushort GetNumDelaySlots() const {
-    return LoadModule::isa->GetInstNumDelaySlots(minst, size);
+    return LM::isa->GetInsnNumDelaySlots(minsn, size);
   }
 
   // Dump contents for inspection
@@ -183,27 +190,32 @@ public:
   
 private:
   // Should not be used
-  CISCInstruction();
-  CISCInstruction(const CISCInstruction& i);
-  CISCInstruction& operator=(const CISCInstruction& i) { return *this; }
+  CISCInsn();
+  CISCInsn(const CISCInsn& i);
+  CISCInsn& operator=(const CISCInsn& i) { return *this; }
   
 protected:
 private:
   ushort size;
 };
 
+} // namespace binutils
+
+
 //***************************************************************************
-// RISCInstruction
+// RISCInsn
 //***************************************************************************
 
-class RISCInstruction : public Instruction {
+namespace binutils {
+
+class RISCInsn : public Insn {
 public:
-  RISCInstruction(MachInst* _minst, VMA _vma)
-    : Instruction(_minst, _vma) { } 
+  RISCInsn(MachInsn* _minsn, VMA _vma)
+    : Insn(_minsn, _vma) { } 
 
-  virtual ~RISCInstruction() { }
+  virtual ~RISCInsn() { }
   
-  virtual ushort GetSize() const { return LoadModule::isa->GetInstSize(minst); }
+  virtual ushort GetSize() const { return LM::isa->GetInsnSize(minsn); }
   virtual ushort GetOpIndex() const { return 0; }
 
   virtual ushort GetNumOps() const  { return 1; }
@@ -215,33 +227,38 @@ public:
   
 private:
   // Should not be used
-  RISCInstruction();
-  RISCInstruction(const RISCInstruction& i);
-  RISCInstruction& operator=(const RISCInstruction& i) { return *this; }
+  RISCInsn();
+  RISCInsn(const RISCInsn& i);
+  RISCInsn& operator=(const RISCInsn& i) { return *this; }
   
 protected:
 private:
 };
 
+} // namespace binutils
+
+
 //***************************************************************************
-// VLIWInstruction
+// VLIWInsn
 //***************************************************************************
 
-class VLIWInstruction : public Instruction {
+namespace binutils {
+
+class VLIWInsn : public Insn {
 public:
-  VLIWInstruction(MachInst* _minst, VMA _vma, ushort _opIndex)
-    : Instruction(_minst, _vma), opIndex(_opIndex) { } 
+  VLIWInsn(MachInsn* _minsn, VMA _vma, ushort _opIndex)
+    : Insn(_minsn, _vma), opIndex(_opIndex) { } 
 
-  virtual ~VLIWInstruction() { }
+  virtual ~VLIWInsn() { }
   
   virtual ushort GetSize() const 
-    { return LoadModule::isa->GetInstSize(minst); }
+    { return LM::isa->GetInsnSize(minsn); }
 
   virtual ushort GetOpIndex() const 
     { return opIndex; }
 
   virtual ushort GetNumOps() const  
-    { return LoadModule::isa->GetInstNumOps(minst); }
+    { return LM::isa->GetInsnNumOps(minsn); }
 
   // Dump contents for inspection
   virtual void Dump(std::ostream& o = std::cerr, const char* pre = "") const;
@@ -250,14 +267,16 @@ public:
   
 private:
   // Should not be used
-  VLIWInstruction();
-  VLIWInstruction(const VLIWInstruction& i);
-  VLIWInstruction& operator=(const VLIWInstruction& i) { return *this; }
+  VLIWInsn();
+  VLIWInsn(const VLIWInsn& i);
+  VLIWInsn& operator=(const VLIWInsn& i) { return *this; }
   
 protected:
 private:
   ushort opIndex;
 };
+
+} // namespace binutils
 
 //***************************************************************************
 

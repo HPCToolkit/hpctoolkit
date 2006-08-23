@@ -113,10 +113,10 @@ SparcISA::~SparcISA()
   delete di;
 }
 
-ISA::InstDesc
-SparcISA::GetInstDesc(MachInst* mi, ushort opIndex, ushort sz)
+ISA::InsnDesc
+SparcISA::GetInsnDesc(MachInsn* mi, ushort opIndex, ushort sz)
 {
-  ISA::InstDesc d;
+  ISA::InsnDesc d;
 
   if (CacheLookup(mi) == NULL) {
     ushort size = print_insn_sparc(PTR_TO_BFDVMA(mi), di);
@@ -135,41 +135,41 @@ SparcISA::GetInstDesc(MachInst* mi, ushort opIndex, ushort sz)
 
   switch (di->insn_type) {
     case dis_noninsn:
-      d.Set(InstDesc::INVALID);
+      d.Set(InsnDesc::INVALID);
       break;
     case dis_branch:
       if (di->target != 0 && isPCRel) {
-	d.Set(InstDesc::BR_UN_COND_REL);
+	d.Set(InsnDesc::BR_UN_COND_REL);
       } else {
-	d.Set(InstDesc::BR_UN_COND_IND);
+	d.Set(InsnDesc::BR_UN_COND_IND);
       }
       break;
     case dis_condbranch:
       if (di->target != 0 && isPCRel) {
-	d.Set(InstDesc::INT_BR_COND_REL); // arbitrarily choose int
+	d.Set(InsnDesc::INT_BR_COND_REL); // arbitrarily choose int
       } else {
-	d.Set(InstDesc::INT_BR_COND_IND); // arbitrarily choose int
+	d.Set(InsnDesc::INT_BR_COND_IND); // arbitrarily choose int
       }
       break;
     case dis_jsr:
       if (di->target != 0 && isPCRel) {
-	d.Set(InstDesc::SUBR_REL);
+	d.Set(InsnDesc::SUBR_REL);
       } else {
-	d.Set(InstDesc::SUBR_IND);
+	d.Set(InsnDesc::SUBR_IND);
       }
       break;
     case dis_condjsr:
-      d.Set(InstDesc::OTHER);
+      d.Set(InsnDesc::OTHER);
       break;
     case dis_return:
-      d.Set(InstDesc::SUBR_RET);
+      d.Set(InsnDesc::SUBR_RET);
       break;
     case dis_dref:
     case dis_dref2:
-      d.Set(InstDesc::MEM_OTHER);
+      d.Set(InsnDesc::MEM_OTHER);
       break;
     default:
-      d.Set(InstDesc::OTHER);
+      d.Set(InsnDesc::OTHER);
       break;
   }
   return d;
@@ -177,7 +177,7 @@ SparcISA::GetInstDesc(MachInst* mi, ushort opIndex, ushort sz)
 
 
 VMA
-SparcISA::GetInstTargetVMA(MachInst* mi, VMA pc, ushort opIndex, ushort sz)
+SparcISA::GetInsnTargetVMA(MachInsn* mi, VMA pc, ushort opIndex, ushort sz)
 {
   // N.B.: The GNU decoders assume that the address of 'mi' is
   // actually the PC/vma in order to calculate PC-relative targets.
@@ -187,7 +187,7 @@ SparcISA::GetInstTargetVMA(MachInst* mi, VMA pc, ushort opIndex, ushort sz)
     CacheSet(mi, size);
   }
   
-  ISA::InstDesc d = GetInstDesc(mi, opIndex, sz);
+  ISA::InsnDesc d = GetInsnDesc(mi, opIndex, sz);
   if (d.IsBrRel() || d.IsSubrRel()) {
     return (di->target - PTR_TO_BFDVMA(mi)) + (bfd_vma)pc;
   } else {
@@ -197,7 +197,7 @@ SparcISA::GetInstTargetVMA(MachInst* mi, VMA pc, ushort opIndex, ushort sz)
 }
 
 ushort
-SparcISA::GetInstNumDelaySlots(MachInst* mi, ushort opIndex, ushort sz)
+SparcISA::GetInsnNumDelaySlots(MachInsn* mi, ushort opIndex, ushort sz)
 { 
   // SPARC branch instructions have an architectural delay slot of one
   // instruction, but in certain cases it can effectively be zero.  If
@@ -212,7 +212,7 @@ SparcISA::GetInstNumDelaySlots(MachInst* mi, ushort opIndex, ushort sz)
 
   // (We don't care about delays on instructions such as loads/stores)
 
-  ISA::InstDesc d = GetInstDesc(mi, opIndex, sz);
+  ISA::InsnDesc d = GetInsnDesc(mi, opIndex, sz);
   if (d.IsBr() || d.IsSubr() || d.IsSubrRet()) {
     return 1;
   } else {

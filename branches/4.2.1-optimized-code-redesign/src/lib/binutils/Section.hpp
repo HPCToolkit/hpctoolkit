@@ -38,18 +38,18 @@
 //***************************************************************************
 //
 // File:
-//    Section.h
+//   $Source$
 //
 // Purpose:
-//    [The purpose of this file]
+//   [The purpose of this file]
 //
 // Description:
-//    [The set of functions, macros, etc. defined in the file]
+//   [The set of functions, macros, etc. defined in the file]
 //
 //***************************************************************************
 
-#ifndef Section_H 
-#define Section_H
+#ifndef binutils_Seg_hpp 
+#define binutils_Seg_hpp
 
 //************************* System Include Files ****************************
 
@@ -68,26 +68,27 @@
 
 //*************************** Forward Declarations **************************
 
-class LoadModule;
-class Procedure;
-class Instruction;
+class binutils::Proc;
+class binutils::Insn;
 
 //***************************************************************************
-// Section
+// Seg
 //***************************************************************************
 
-// 'Section' is a base class for representing file segments/sections
+namespace binutils {
+
+// 'Seg' is a base class for representing file segments/sections
 // of a 'LoadModule'.
 
-class Section {
+class Seg {
 public: 
-  enum Type {BSS, Text, Data, Unknown};
+  enum Type { BSS, Text, Data, Unknown };
   
-  Section(LoadModule* _lm, std::string& _name, Type t, VMA _beg,
+  Seg(LM* _lm, std::string& _name, Type t, VMA _beg,
           VMA _end, VMA _sz);
-  virtual ~Section();
+  virtual ~Seg();
 
-  LoadModule* GetLoadModule() const { return lm; }
+  LM* GetLM() const { return lm; }
 
   // Return name and type of section
   const std::string& GetName() const { return name; }
@@ -96,7 +97,7 @@ public:
   // Return begin/end virtual memory address for section: [beg, end).
   // Note that the end of a section is equal to the begin address of
   // the next section (or the end of the file) which is different than
-  // the convention used for a 'Procedure'.
+  // the convention used for a 'Proc'.
   VMA GetBeg() const { return beg; }
   VMA GetEnd() const { return end; }
 
@@ -107,12 +108,12 @@ public:
   // WARNING: vma must be unrelocated
   bool IsIn(VMA vma) const { return (beg <= vma && vma < end); }
 
-  // Convenient wrappers for the 'LoadModule' versions of the same.
-  MachInst*    GetMachInst(VMA vma, ushort &sz) const {
-    return lm->GetMachInst(vma, sz);
+  // Convenient wrappers for the 'LM' versions of the same.
+  MachInsn*    GetMachInsn(VMA vma, ushort &sz) const {
+    return lm->GetMachInsn(vma, sz);
   }
-  Instruction* GetInst(VMA vma, ushort opIndex) const {
-    return lm->GetInst(vma, opIndex);
+  Insn* GetInsn(VMA vma, ushort opIndex) const {
+    return lm->GetInsn(vma, opIndex);
   }
   bool GetSourceFileInfo(VMA vma, ushort opIndex,
 			 std::string& func, std::string& file, 
@@ -134,14 +135,14 @@ public:
   
 protected:
   // Should not be used
-  Section() { } 
-  Section(const Section& s) { }
-  Section& operator=(const Section& s) { return *this; }
+  Seg() { } 
+  Seg(const Seg& s) { }
+  Seg& operator=(const Seg& s) { return *this; }
 private:
   
 protected:
 private:
-  LoadModule* lm; // we are not owners
+  LM* lm; // we are not owners
 
   std::string name;
   Type   type;
@@ -150,71 +151,81 @@ private:
   VMA   size; // size in bytes
 };
 
+} // namespace binutils
+
+
 //***************************************************************************
-// TextSection
+// TextSeg
 //***************************************************************************
 
-// 'TextSection' represents a text segment in a 'LoadModule' and
+namespace binutils {
+
+// 'TextSeg' represents a text segment in a 'LM' and
 // implements special functionality pertaining to it.
 
-class TextSectionImpl; 
+class TextSegImpl; 
 
-class TextSection : public Section { 
+class TextSeg : public Seg { 
 public:
-  TextSection(LoadModule* _lm, std::string& _name, VMA _beg, VMA _end,
+  TextSeg(LM* _lm, std::string& _name, VMA _beg, VMA _end,
 	      suint _size, asymbol **syms, int numSyms, bfd *abfd);
-  virtual ~TextSection();
+  virtual ~TextSeg();
 
-  suint GetNumProcedures() const { return procedures.size(); }
+  suint GetNumProcs() const { return procedures.size(); }
 
   // Dump contents for inspection
   virtual void Dump(std::ostream& o = std::cerr, const char* pre = "") const;
   virtual void DDump() const;
   
-  friend class TextSectionProcedureIterator;
+  friend class TextSegProcIterator;
 
 private:
   // Should not be used
-  TextSection() { }
-  TextSection(const TextSection& s) { }
-  TextSection& operator=(const TextSection& s) { return *this; }
+  TextSeg() { }
+  TextSeg(const TextSeg& s) { }
+  TextSeg& operator=(const TextSeg& s) { return *this; }
 
   void Create_InitializeProcs();
   void Create_DisassembleProcs();
 
   // Construction helpers
-  std::string FindProcedureName(bfd *abfd, asymbol *procSym) const;
-  VMA FindProcedureEnd(int funcSymIndex) const;
-  Instruction* MakeInstruction(bfd *abfd, MachInst* mi, VMA vma,
-			       ushort opIndex, ushort sz) const;
+  std::string FindProcName(bfd *abfd, asymbol *procSym) const;
+  VMA FindProcEnd(int funcSymIndex) const;
+  Insn* MakeInsn(bfd *abfd, MachInsn* mi, VMA vma,
+		 ushort opIndex, ushort sz) const;
   
-  // Procedure sequence: 'deque' supports random access iterators (and
+  // Proc sequence: 'deque' supports random access iterators (and
   // is thus sortable with std::sort) and constant time insertion/deletion at
   // beginning/end.
-  typedef std::deque<Procedure*>           ProcedureSeq;
-  typedef std::deque<Procedure*>::iterator ProcedureSeqIt;
-  typedef std::deque<Procedure*>::const_iterator ProcedureSeqItC;
+  typedef std::deque<Proc*> ProcSeq;
+  typedef std::deque<Proc*>::iterator ProcSeqIt;
+  typedef std::deque<Proc*>::const_iterator ProcSeqItC;
 
 protected:
 private:
-  TextSectionImpl* impl;
-  ProcedureSeq procedures;
+  TextSegImpl* impl;
+  ProcSeq procedures;
 };
 
+} // namespace binutils
+
+
 //***************************************************************************
-// TextSectionProcedureIterator
+// TextSegProcIterator
 //***************************************************************************
 
-// 'TextSectionProcedureIterator': iterate over the 'Procedure' in a
-// 'TextSection'.  No order is guaranteed.
+namespace binutils {
 
-class TextSectionProcedureIterator {
+// 'TextSegProcIterator': iterate over the 'Proc' in a
+// 'TextSeg'.  No order is guaranteed.
+
+class TextSegProcIterator {
 public: 
-  TextSectionProcedureIterator(const TextSection& _sec);
-  ~TextSectionProcedureIterator();
+  TextSegProcIterator(const TextSeg& _sec);
+  ~TextSegProcIterator();
 
   // Returns the current object or NULL
-  Procedure* Current() const {
+  Proc* Current() const {
     if (it != sec.procedures.end()) { return *it; }
     else { return NULL; }
   }
@@ -230,16 +241,18 @@ public:
 
 private:
   // Should not be used
-  TextSectionProcedureIterator();
-  TextSectionProcedureIterator(const TextSectionProcedureIterator& i);
-  TextSectionProcedureIterator& operator=(const TextSectionProcedureIterator& i) { return *this; }
+  TextSegProcIterator();
+  TextSegProcIterator(const TextSegProcIterator& i);
+  TextSegProcIterator& operator=(const TextSegProcIterator& i) { return *this; }
 
 protected:
 private:
-  const TextSection& sec;
-  TextSection::ProcedureSeqItC it;
+  const TextSeg& sec;
+  TextSeg::ProcSeqItC it;
 };
+
+} // namespace binutils
 
 //****************************************************************************
 
-#endif 
+#endif // binutils_Seg_hpp

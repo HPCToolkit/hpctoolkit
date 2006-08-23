@@ -1,5 +1,6 @@
+// -*-Mode: C++;-*-
 // $Id$
-// -*-C++-*-
+
 // * BeginRiceCopyright *****************************************************
 // 
 // Copyright ((c)) 2002, Rice University 
@@ -77,14 +78,14 @@
 // assume ownership of data sources.
 class LoadModuleInfo {
 public:
-  LoadModuleInfo(LoadModule* _lm, PCToSrcLineXMap* _map);
+  LoadModuleInfo(binutils::LM* _lm, PCToSrcLineXMap* _map);
   ~LoadModuleInfo();
 
   bool GetSymbolicInfo(VMA pc, ushort opIndex,
 		       std::string& func, std::string& file, SrcLineX& srcLn);
   bool GetProcedureFirstLineInfo(VMA pc, ushort opIndex, suint &line);
   
-  LoadModule*      GetLM() const { return lm; }
+  binutils::LM*    GetLM() const { return lm; }
   PCToSrcLineXMap* GetMap() const { return map; }
   
 private:
@@ -95,7 +96,7 @@ private:
 
 protected:  
 private:
-  LoadModule* lm;
+  binutils::LM* lm;
   PCToSrcLineXMap* map;  
 };
 

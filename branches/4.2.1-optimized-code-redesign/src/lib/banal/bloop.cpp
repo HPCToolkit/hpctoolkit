@@ -38,13 +38,13 @@
 //***************************************************************************
 //
 // File:
-//    $Source$
+//   $Source$
 //
 // Purpose:
-//    [The purpose of this file]
+//   [The purpose of this file]
 //
 // Description:
-//    [The set of functions, macros, etc. defined in the file]
+//   [The set of functions, macros, etc. defined in the file]
 //
 //***************************************************************************
 
@@ -93,37 +93,37 @@ using std::string;
 
 //*************************** Forward Declarations ***************************
 
-typedef std::multimap<ProcScope*, Procedure*> ProcScopeToProcMap;
+typedef std::multimap<ProcScope*, binutils::Proc*> ProcScopeToProcMap;
 
 // Helpers for building a scope tree
 
 static ProcScopeToProcMap*
-BuildStructure(LoadModScope *lmScope, LoadModule* lm);
+BuildStructure(LoadModScope *lmScope, binutils::LM* lm);
 
 static ProcScope*
-BuildProcStructure(FileScope* fileScope, Procedure* p);
+BuildProcStructure(FileScope* fileScope, binutils::Proc* p);
 
 
 static ProcScope*
-BuildFromProc(ProcScope* pScope, Procedure* p, 
+BuildFromProc(ProcScope* pScope, binutils::Proc* p, 
 	      bool irreducibleIntervalIsLoop); 
 
 static int
-BuildFromTarjTree(ProcScope* pScope, Procedure* p, 
+BuildFromTarjTree(ProcScope* pScope, binutils::Proc* p, 
 		  OA::OA_ptr<OA::NestedSCR> tarj,
 		  OA::OA_ptr<OA::CFG::Interface> cfg, 
 		  OA::RIFG::NodeId fgNode,
 		  bool irreducibleIntervalIsLoop);
 
 static int
-BuildFromBB(CodeInfo* enclosingScope, Procedure* p, 
+BuildFromBB(CodeInfo* enclosingScope, binutils::Proc* p, 
 	    OA::OA_ptr<OA::CFG::Interface::Node> bb);
 
 static FileScope*
-FindOrCreateFileNode(LoadModScope* lmScope, Procedure* p);
+FindOrCreateFileNode(LoadModScope* lmScope, binutils::Proc* p);
 
 static suint 
-FindLoopBegLine(Procedure* p, OA::OA_ptr<OA::CFG::Interface::Node> bb);
+FindLoopBegLine(binutils::Proc* p, OA::OA_ptr<OA::CFG::Interface::Node> bb);
 
 //*************************** Forward Declarations ***************************
 
@@ -162,14 +162,14 @@ public:
 
 public:
   CFGNodeToVMAMap() { }
-  CFGNodeToVMAMap(OA::OA_ptr<OA::CFG::Interface> cfg, Procedure* p) 
+  CFGNodeToVMAMap(OA::OA_ptr<OA::CFG::Interface> cfg, binutils::Proc* p) 
     { build(cfg, cfg->getEntry(), p, 0); }
   virtual ~CFGNodeToVMAMap() { clear(); }
   virtual void clear();
 
   void build(OA::OA_ptr<OA::CFG::Interface> cfg, 
 	     OA::OA_ptr<OA::CFG::Interface::Node> n, 
-	     Procedure* p, VMA _end);
+	     binutils::Proc* p, VMA _end);
 };
 
 static void 
@@ -276,7 +276,7 @@ banal::WriteScopeTree(std::ostream& os, PgmScopeTree* pgmScopeTree,
 //   normalizer employs heuristics to reverse certain compiler
 //   optimizations such as loop unrolling.
 PgmScopeTree*
-banal::BuildFromLM(LoadModule* lm, 
+banal::BuildFromLM(binutils::LM* lm, 
 		   const char* canonicalPathList, 
 		   bool normalizeScopeTree,
 		   bool unsafeNormalizations,
@@ -301,13 +301,13 @@ banal::BuildFromLM(LoadModule* lm,
   // 1. Build basic FileScope/ProcScope structure
   ProcScopeToProcMap* pmap = BuildStructure(lmScope, lm);
   
-  // 2. For each [ProcScope, Procedure] pair, complete the build.
+  // 2. For each [ProcScope, binutils::Proc] pair, complete the build.
   // Note that a ProcScope may be associated with more than one
-  // Procedure.
+  // binutils::Proc.
   for (ProcScopeToProcMap::iterator it = pmap->begin(); 
        it != pmap->end(); ++it) {
     ProcScope* pScope = it->first;
-    Procedure* p = it->second;
+    binutils::Proc* p = it->second;
 
     if (verboseMode) {
       cerr << "Building scope tree for [" << p->GetName()  << "] ... ";
@@ -371,22 +371,22 @@ banal::Normalize(PgmScopeTree* pgmScopeTree,
 // nesting structure allows inference of accurate boundaries on
 // procedure end lines.
 //
-// A ProcScope can be associated with multiple Procedures
+// A ProcScope can be associated with multiple binutils::Procs
 static ProcScopeToProcMap*
-BuildStructure(LoadModScope *lmScope, LoadModule* lm)
+BuildStructure(LoadModScope *lmScope, binutils::LM* lm)
 {
   ProcScopeToProcMap* mp = new ProcScopeToProcMap;
   
-  for (LoadModuleSectionIterator it(*lm); it.IsValid(); ++it) {
-    Section* sec = it.Current();
-    if (sec->GetType() != Section::Text) {
+  for (binutils::LMSegIterator it(*lm); it.IsValid(); ++it) {
+    binutils::Seg* sec = it.Current();
+    if (sec->GetType() != binutils::Seg::Text) {
       continue;
     }
     
-    // We have a TextSection.  Iterate over procedures.
-    TextSection* tsec = dynamic_cast<TextSection*>(sec);
-    for (TextSectionProcedureIterator it1(*tsec); it1.IsValid(); ++it1) {
-      Procedure* p = it1.Current();
+    // We have a TextSeg.  Iterate over procedures.
+    binutils::TextSeg* tsec = dynamic_cast<binutils::TextSeg*>(sec);
+    for (binutils::TextSegProcIterator it1(*tsec); it1.IsValid(); ++it1) {
+      binutils::Proc* p = it1.Current();
       FileScope* fileScope = FindOrCreateFileNode(lmScope, p);
       ProcScope* procScope = BuildProcStructure(fileScope, p);
       mp->insert(make_pair(procScope, p));
@@ -399,7 +399,7 @@ BuildStructure(LoadModScope *lmScope, LoadModule* lm)
 
 // BuildProcStructure: Build skeletal ProcScope
 static ProcScope*
-BuildProcStructure(FileScope* fileScope, Procedure* p)
+BuildProcStructure(FileScope* fileScope, binutils::Proc* p)
 {
   // FIXME: FileScope --> CodeInfo* (procs could be scope)
   
@@ -416,8 +416,8 @@ BuildProcStructure(FileScope* fileScope, Procedure* p)
   // FIXME: this is in GetProcedureFirstLineInfo
   string func, file;
   suint begLn1, endLn1;
-  Instruction* eInst = p->GetLastInst();
-  ushort endOp = (eInst) ? eInst->GetOpIndex() : 0;
+  binutils::Insn* eInsn = p->GetLastInsn();
+  ushort endOp = (eInsn) ? eInsn->GetOpIndex() : 0;
   p->GetSourceFileInfo(p->GetBegVMA(), 0, p->GetEndVMA(), endOp,
 		       func, file, begLn1, endLn1);
 
@@ -457,10 +457,9 @@ static bool testProcNow = false;
 #endif
 
 // BuildFromProc: Complete the representation for 'pScope' given the
-// LoadModule Procedure 'p'.  Note that pScopes parent may itself be a
-// ProcScope.
+// binutils::Proc 'p'.  Note that pScopes parent may itself be a ProcScope.
 static ProcScope* 
-BuildFromProc(ProcScope* pScope, Procedure* p, bool irreducibleIntervalIsLoop)
+BuildFromProc(ProcScope* pScope, binutils::Proc* p, bool irreducibleIntervalIsLoop)
 {
   // FIXME: We can do better for lines
   // Look at the my parent or my sibling for a bound on line
@@ -525,14 +524,14 @@ BuildFromProc(ProcScope* pScope, Procedure* p, bool irreducibleIntervalIsLoop)
 // BuildFromTarjTree: Recursively build loops using Nested SCR (Tarjan
 // interval) analysis and returns the number of loops created.
 static int 
-BuildFromTarjInterval(CodeInfo* enclosingScope, Procedure* p,
+BuildFromTarjInterval(CodeInfo* enclosingScope, binutils::Proc* p,
 		      OA::OA_ptr<OA::NestedSCR> tarj,
 		      OA::OA_ptr<OA::CFG::Interface> cfg,
 		      OA::RIFG::NodeId fgNode, CFGNodeToVMAMap* cfgNodeMap,
 		      int addStmts, bool irreducibleIntervalIsLoop);
 
 static int
-BuildFromTarjTree(ProcScope* pScope, Procedure* p, 
+BuildFromTarjTree(ProcScope* pScope, binutils::Proc* p, 
 		  OA::OA_ptr<OA::NestedSCR> tarj,
 		  OA::OA_ptr<OA::CFG::Interface> cfg, 
 		  OA::RIFG::NodeId fgNode,
@@ -549,7 +548,7 @@ BuildFromTarjTree(ProcScope* pScope, Procedure* p,
 }
 
 static int 
-BuildFromTarjInterval(CodeInfo* enclosingScope, Procedure* p,
+BuildFromTarjInterval(CodeInfo* enclosingScope, binutils::Proc* p,
 		      OA::OA_ptr<OA::NestedSCR> tarj,
 		      OA::OA_ptr<OA::CFG::Interface> cfg, 
 		      OA::RIFG::NodeId fgNode, CFGNodeToVMAMap* cfgNodeMap,
@@ -671,7 +670,7 @@ BuildFromTarjInterval(CodeInfo* enclosingScope, Procedure* p,
 // BuildFromBB: Adds statements from the current basic block to
 // 'enclosingScope'.  Does not add duplicates.
 static int 
-BuildFromBB(CodeInfo* enclosingScope, Procedure* p, 
+BuildFromBB(CodeInfo* enclosingScope, binutils::Proc* p, 
 	    OA::OA_ptr<OA::CFG::Interface::Node> bb)
 {
   ProcScope* pScope = enclosingScope->Proc();
@@ -686,10 +685,10 @@ BuildFromBB(CodeInfo* enclosingScope, Procedure* p,
   OA::OA_ptr<OA::CFG::Interface::NodeStatementsIterator> it =
     bb->getNodeStatementsIterator();
   for ( ; it->isValid(); ) {
-    Instruction* insn = IRHNDL_TO_TY(it->current(), Instruction*);
+    binutils::Insn* insn = IRHNDL_TO_TY(it->current(), binutils::Insn*);
     VMA vma = insn->GetVMA();
     ushort opIdx = insn->GetOpIndex();
-    VMA opvma = LoadModule::isa->ConvertVMAToOpVMA(vma, opIdx);
+    VMA opvma = binutils::LM::isa->ConvertVMAToOpVMA(vma, opIdx);
 
     // advance iterator [needed to create VMA interval]
     ++(*it);
@@ -708,15 +707,15 @@ BuildFromBB(CodeInfo* enclosingScope, Procedure* p,
     // 2. Create a VMA interval for this line
     // -----------------------------------------------------
     VMA nextopvma;
-    Instruction* nextinsn = (it->isValid()) ? 
-      IRHNDL_TO_TY(it->current(), Instruction*) : NULL;
+    binutils::Insn* nextinsn = (it->isValid()) ? 
+      IRHNDL_TO_TY(it->current(), binutils::Insn*) : NULL;
     if (nextinsn) {
-      nextopvma = LoadModule::isa->ConvertVMAToOpVMA(nextinsn->GetVMA(),
+      nextopvma = binutils::LM::isa->ConvertVMAToOpVMA(nextinsn->GetVMA(),
 						     nextinsn->GetOpIndex());
     }
     else {
       // the (hypothetical) next insn must begins no earlier than:
-      nextopvma = LoadModule::isa->ConvertVMAToOpVMA(insn->GetVMA(), 0) 
+      nextopvma = binutils::LM::isa->ConvertVMAToOpVMA(insn->GetVMA(), 0) 
 	+ insn->GetSize();
     }
     DIAG_Assert(opvma < nextopvma, "Invalid VMAInterval: [" << opvma << ", "
@@ -734,7 +733,7 @@ BuildFromBB(CodeInfo* enclosingScope, Procedure* p,
       done = true;
     }
     if (!done) {
-      // 3b. Attempt to find a non-Procedure enclosing scope, which
+      // 3b. Attempt to find a non-procedure enclosing scope, which
       // means LoopScope.  Note: We do not yet know loop end lines.
       // However, we can use the procedure end line as a boundary
       // because the only source code objects suceeding this scope
@@ -774,7 +773,7 @@ BuildFromBB(CodeInfo* enclosingScope, Procedure* p,
 
 // FindOrCreateFileNode: 
 static FileScope* 
-FindOrCreateFileNode(LoadModScope* lmScope, Procedure* p)
+FindOrCreateFileNode(LoadModScope* lmScope, binutils::Proc* p)
 {
   // Attempt to find filename for procedure
   string file = p->GetFilename();
@@ -799,7 +798,7 @@ FindOrCreateFileNode(LoadModScope* lmScope, Procedure* p)
 
 
 static suint 
-FindLoopBegLine(Procedure* p, OA::OA_ptr<OA::CFG::Interface::Node> node)
+FindLoopBegLine(binutils::Proc* p, OA::OA_ptr<OA::CFG::Interface::Node> node)
 {
   // Given the head node of the loop, find the backward branch.
 
@@ -814,7 +813,7 @@ FindLoopBegLine(Procedure* p, OA::OA_ptr<OA::CFG::Interface::Node> node)
   OA::OA_ptr<Interface::NodeStatementsIterator> stmtIt =
     node->getNodeStatementsIterator();
   DIAG_Assert(stmtIt->isValid(), "");
-  Instruction* head = IRHNDL_TO_TY(stmtIt->current(), Instruction*);
+  binutils::Insn* head = IRHNDL_TO_TY(stmtIt->current(), binutils::Insn*);
   VMA headVMA = head->GetVMA(); // we can ignore opIdx
   
   // Now find the backward branch
@@ -830,7 +829,7 @@ FindLoopBegLine(Procedure* p, OA::OA_ptr<OA::CFG::Interface::Node> node)
       continue;
     }
     
-    Instruction* backbranch = IRHNDL_TO_TY(stmtIt1->current(), Instruction*);
+    binutils::Insn* backbranch = IRHNDL_TO_TY(stmtIt1->current(), binutils::Insn*);
     VMA vma = backbranch->GetVMA();
     ushort opIdx = backbranch->GetOpIndex();
 
@@ -1332,7 +1331,7 @@ FilterFilesFromScopeTree(PgmScopeTree* pgmScopeTree,
 void
 CFGNodeToVMAMap::build(OA::OA_ptr<OA::CFG::Interface> cfg, 
 		      OA::OA_ptr<OA::CFG::Interface::Node> n, 
-		      Procedure* p, VMA _end)
+		      binutils::Proc* p, VMA _end)
 {
   // NEWS FLASH: We could use OA's getReversePostDFSIterator to do this
   // pre-order traversal of the CFG.
@@ -1389,16 +1388,16 @@ CFG_GetBegAndEndVMAs(OA::OA_ptr<OA::CFG::Interface::Node> n,
   // the first and last statements from a block. Perhaps we'll
   // modify the CFG code; this works for now.
   bool first = true;
-  Instruction* insn;
+  binutils::Insn* insn;
   OA::OA_ptr<OA::CFG::Interface::NodeStatementsIterator> it =
     n->getNodeStatementsIterator();
   for ( ; it->isValid(); ++(*it)) {
     if (first == true) {
-      insn = IRHNDL_TO_TY(it->current(), Instruction*);
+      insn = IRHNDL_TO_TY(it->current(), binutils::Insn*);
       beg = insn->GetVMA();
       first = false;
     }
-    insn = IRHNDL_TO_TY(it->current(), Instruction*);
+    insn = IRHNDL_TO_TY(it->current(), binutils::Insn*);
     end = insn->GetVMA();
   }
 }

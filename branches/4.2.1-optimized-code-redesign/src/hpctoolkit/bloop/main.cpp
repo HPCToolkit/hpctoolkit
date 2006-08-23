@@ -107,9 +107,9 @@ real_main(int argc, char* argv[])
   // ------------------------------------------------------------
   // Read executable
   // ------------------------------------------------------------
-  LoadModule* lm = NULL;
+  binutils::LM* lm = NULL;
   try {
-    lm = new LoadModule(); // Executable(): use LoadModule for now
+    lm = new binutils::LM();
     if (!lm->Open(args.inputFile.c_str())) { 
       exit(1); // Error already printed 
     } 

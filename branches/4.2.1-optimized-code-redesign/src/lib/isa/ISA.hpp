@@ -67,17 +67,17 @@
 // of multiple calls to the disassemblers (especially the GNU ones).
 class DecodingCache {
 public:
-  DecodingCache() { tag = NULL; instSize = 0; }
+  DecodingCache() { tag = NULL; insnSize = 0; }
 
-  // Cache `tag' (Currently, this is just the MachInst*.  Later,
+  // Cache `tag' (Currently, this is just the MachInsn*.  Later,
   // we may need secondary tags, such as opIndex).
-  MachInst *tag;
+  MachInsn *tag;
 
   // Cached data.
   // Note, Non-GNU decoders may need more data members (the previous
   // `disassemble_info' struct is used as an implicit cache for the GNU
   // decoders). 
-  ushort instSize; 
+  ushort insnSize; 
 };
 
 //*************************** Forward Declarations ***************************
@@ -100,13 +100,13 @@ public:
 
   // ------------------------------------------------------------------------
 
-  // InstDesc: Describes an instruction's class in various levels.
+  // InsnDesc: Describes an instruction's class in various levels.
   // Note: This should not have virtual functions so that objects can be
   // passed around by value.
-  class InstDesc {
+  class InsnDesc {
   public:
   
-    // Used to implement InstDesc.  These are mutually exclusive
+    // Used to implement InsnDesc.  These are mutually exclusive
     // instruction classes.  They are not intended for general use!
     enum IType {
       // Note: only the Alpha ISA can reliably uses all categories.
@@ -115,7 +115,7 @@ public:
 
       MEM_LOAD,                 // Memory load (integer and FP)
       MEM_STORE,                // Memory store (integer and FP)
-      MEM_OTHER,                // Other memory inst
+      MEM_OTHER,                // Other memory insn
 
       INT_BR_COND_REL,          // PC-relative conditional branch (int compare)
       INT_BR_COND_IND,          // Register/Indirect conditional branch
@@ -160,12 +160,12 @@ public:
     };
     
   public:
-    // A 'InstDesc' can be created using the bit definitions above.
-    InstDesc(IType t = INVALID) : ty(t) { }
-    ~InstDesc() { }
+    // A 'InsnDesc' can be created using the bit definitions above.
+    InsnDesc(IType t = INVALID) : ty(t) { }
+    ~InsnDesc() { }
     
-    InstDesc(const InstDesc& x) { *this = x; }
-    InstDesc& operator=(const InstDesc& x) { 
+    InsnDesc(const InsnDesc& x) { *this = x; }
+    InsnDesc& operator=(const InsnDesc& x) { 
       ty = x.ty; 
       return *this;
     }
@@ -310,24 +310,24 @@ public:
   //     operation we are currently interested in (0-based).  For
   //     non-VLIW instructions, this argument should typically be 0.
   //   - Functions with an optional 'sz' parameter: If already available,
-  //     'sz' should be supplied to save an extra call to 'GetInstSize'.
+  //     'sz' should be supplied to save an extra call to 'GetInsnSize'.
   
   
   // Returns the size (in bytes) of the instruction.  In the case of
   // VLIW instructions, returns the size not of the individual
   // operation but the whole "packet".  For CISC ISAs, if the return
   // value is 0, 'mi' is not a valid instruction.
-  virtual ushort GetInstSize(MachInst* mi) = 0;
+  virtual ushort GetInsnSize(MachInsn* mi) = 0;
 
   // Viewing this instruction as a VLIW packet, return the maximum
   // number of operations within the packet.  For non-VLIW
   // instructions, the return value will typically be 1.  A return
   // value of 0 indicates the 'packet' contains data.
-  virtual ushort GetInstNumOps(MachInst* mi) = 0;
+  virtual ushort GetInsnNumOps(MachInsn* mi) = 0;
   
   // Returns an instruction descriptor which provides a high level
   // classifications of the operation performed
-  virtual InstDesc GetInstDesc(MachInst* mi, ushort opIndex, ushort sz = 0)
+  virtual InsnDesc GetInsnDesc(MachInsn* mi, ushort opIndex, ushort sz = 0)
     = 0;
   
   // Given a jump or branch instruction 'mi', return the target address.
@@ -335,22 +335,22 @@ public:
   // not computed when it depends on values in registers
   // (e.g. indirect jumps).  'vma' is used only to calculate
   // PC-relative targets.
-  virtual VMA GetInstTargetVMA(MachInst* mi, VMA vma, ushort opIndex,
+  virtual VMA GetInsnTargetVMA(MachInsn* mi, VMA vma, ushort opIndex,
 			       ushort sz = 0) = 0;
 
   // Returns the number of delay slots that must be observed by
   // schedulers before the effect of instruction 'mi' can be
   // assumed to be fully obtained (e.g., RISC braches).
-  virtual ushort GetInstNumDelaySlots(MachInst* mi, ushort opIndex,
+  virtual ushort GetInsnNumDelaySlots(MachInsn* mi, ushort opIndex,
 				      ushort sz = 0) = 0;
   
   // Returns whether or not the instruction 'mi1' "explicitly"
   // executes in parallel with its successor 'mi2' (successor in the
   // sequential sense).  IOW, this has special reference to
   // "explicitly parallel" architecture, not superscalar design.
-  virtual bool IsParallelWithSuccessor(MachInst* mi1, ushort opIndex1,
+  virtual bool IsParallelWithSuccessor(MachInsn* mi1, ushort opIndex1,
 				       ushort sz1,
-				       MachInst* mi2, ushort opIndex2,
+				       MachInsn* mi2, ushort opIndex2,
 				       ushort sz2) const = 0;
   
   // ConvertVMAToOpVMA: Given a vma at the beginning of an instruction
@@ -380,7 +380,7 @@ private:
   ISA& operator=(const ISA& i) { return *this; }
 
 protected:
-  DecodingCache *CacheLookup(MachInst* cmi) {
+  DecodingCache *CacheLookup(MachInsn* cmi) {
     if (cmi == _cache->tag) {
       return _cache;
     } else {
@@ -388,8 +388,8 @@ protected:
       return NULL;
     }
   }
-  void CacheSet(MachInst* cmi, ushort size) {
-    _cache->tag = cmi; _cache->instSize = size;
+  void CacheSet(MachInsn* cmi, ushort size) {
+    _cache->tag = cmi; _cache->insnSize = size;
   }
 
 private:

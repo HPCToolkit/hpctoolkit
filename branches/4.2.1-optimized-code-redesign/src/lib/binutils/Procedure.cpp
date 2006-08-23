@@ -69,44 +69,44 @@ using std::string;
 //***************************************************************************
 
 //***************************************************************************
-// Procedure
+// Proc
 //***************************************************************************
 
-suint Procedure::nextId = 0;
+suint binutils::Proc::nextId = 0;
 
-Procedure::Procedure(TextSection* _sec, string& _name, string& _linkname,
-                     Procedure::Type t, VMA _begVMA, VMA _endVMA, 
+binutils::Proc::Proc(binutils::TextSeg* _sec, string& _name, string& _linkname,
+                     binutils::Proc::Type t, VMA _begVMA, VMA _endVMA, 
 		     suint _size)
   : sec(_sec), name(_name), linkname(_linkname), type(t), begVMA(_begVMA),
     endVMA(_endVMA), size(_size), filenm(""), begLine(0), parent(NULL)
 {
   id = nextId++;
-  numInsts = 0; // FIXME: this is never computed
+  numInsns = 0; // FIXME: this is never computed
 }
 
 
-Procedure::~Procedure()
+binutils::Proc::~Proc()
 {
   sec = NULL;
 }
 
 
-Instruction* 
-Procedure::GetLastInst() const
+binutils::Insn* 
+binutils::Proc::GetLastInsn() const
 {
-  Instruction* inst = GetInst(endVMA, 0);
-  if (inst) {
-    ushort numOps = inst->GetNumOps();
+  Insn* insn = GetInsn(endVMA, 0);
+  if (insn) {
+    ushort numOps = insn->GetNumOps();
     if (numOps != 0) {
-      inst = GetInst(endVMA, numOps - 1); // opIndex is 0-based
+      insn = GetInsn(endVMA, numOps - 1); // opIndex is 0-based
     }
   }
-  return inst;
+  return insn;
 }
 
 
 void
-Procedure::Dump(std::ostream& o, const char* pre) const
+binutils::Proc::Dump(std::ostream& o, const char* pre) const
 {
   string p(pre);
   string p1 = p + "  ";
@@ -114,8 +114,8 @@ Procedure::Dump(std::ostream& o, const char* pre) const
   
   string func, file, func1, file1, func2, file2;
   suint begLn, endLn, begLn1, endLn2;
-  Instruction* eInst = GetLastInst();
-  ushort endOp = (eInst) ? eInst->GetOpIndex() : 0;
+  Insn* eInsn = GetLastInsn();
+  ushort endOp = (eInsn) ? eInsn->GetOpIndex() : 0;
 
   // This call performs some consistency checking
   sec->GetSourceFileInfo(GetBegVMA(), 0, GetEndVMA(), endOp,
@@ -147,38 +147,38 @@ Procedure::Dump(std::ostream& o, const char* pre) const
   o << p << "  Size(b): " << GetSize() << "\n";
 
   o << p1 << "----- Instruction Dump -----\n";
-  for (ProcedureInstructionIterator it(*this); it.IsValid(); ++it) {
-    Instruction* inst = it.Current();
-    inst->Dump(o, p2.c_str());
+  for (ProcInsnIterator it(*this); it.IsValid(); ++it) {
+    Insn* insn = it.Current();
+    insn->Dump(o, p2.c_str());
   }
 }
 
 
 void
-Procedure::DDump() const
+binutils::Proc::DDump() const
 {
   Dump(std::cerr);
 }
 
 
 //***************************************************************************
-// ProcedureInstructionIterator
+// ProcInsnIterator
 //***************************************************************************
 
-ProcedureInstructionIterator::ProcedureInstructionIterator(const Procedure& _p)
-  : p(_p), lm(*(p.GetLoadModule()))
+binutils::ProcInsnIterator::ProcInsnIterator(const Proc& _p)
+  : p(_p), lm(*(p.GetLM()))
 {
   Reset();
 }
 
 
-ProcedureInstructionIterator::~ProcedureInstructionIterator()
+binutils::ProcInsnIterator::~ProcInsnIterator()
 {
 }
 
 
 void
-ProcedureInstructionIterator::Reset()
+binutils::ProcInsnIterator::Reset()
 {
   it    = lm.vmaToInsnMap.find(p.begVMA);
   endIt = lm.vmaToInsnMap.find(p.endVMA); 
@@ -192,7 +192,7 @@ ProcedureInstructionIterator::Reset()
     // We need to ensure that all VLIW instructions that match this
     // vma are also included.  Push 'endIt' back as needed; when done it
     // should remain one past the last valid instruction
-    for (; // ((*endIt).second) returns Instruction*
+    for (; // ((*endIt).second) returns Insn*
 	 (endIt != lm.vmaToInsnMap.end() 
 	  && endIt->second->GetVMA() == p.endVMA);
 	 endIt++)

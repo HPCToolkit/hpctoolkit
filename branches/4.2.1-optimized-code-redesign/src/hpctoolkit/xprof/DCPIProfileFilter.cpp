@@ -289,7 +289,7 @@ PredefinedDCPIMetricTable::Index(suint i)
 //****************************************************************************
 
 PCProfileFilter* 
-GetPredefinedDCPIFilter(const char* metric, LoadModule* lm)
+GetPredefinedDCPIFilter(const char* metric, binutils::LM* lm)
 {
   PredefinedDCPIMetricTable::Entry* e =
     PredefinedDCPIMetricTable::FindEntry(metric);

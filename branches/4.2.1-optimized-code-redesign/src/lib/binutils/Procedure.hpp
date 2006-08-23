@@ -38,18 +38,18 @@
 //***************************************************************************
 //
 // File:
-//    Procedure.h
+//   $Source$
 //
 // Purpose:
-//    [The purpose of this file]
+//   [The purpose of this file]
 //
 // Description:
-//    [The set of functions, macros, etc. defined in the file]
+//   [The set of functions, macros, etc. defined in the file]
 //
 //***************************************************************************
 
-#ifndef Procedure_H 
-#define Procedure_H
+#ifndef binutils_Proc_hpp 
+#define binutils_Proc_hpp
 
 //************************* System Include Files ****************************
 
@@ -67,24 +67,26 @@
 
 //*************************** Forward Declarations **************************
 
-class TextSection;
+class TextSeg;
 
 //***************************************************************************
-// Procedure
+// Proc
 //***************************************************************************
 
-// 'Procedure' represents a procedure in the 'TextSection' of a 'LoadModule'
+namespace binutils {
 
-class Procedure {
+// 'Proc' represents a procedure in the 'TextSeg' of a 'LM'
+
+class Proc {
 public:
   enum Type { Local, Weak, Global, Unknown };
   
-  Procedure(TextSection* _sec, std::string& _name, std::string& _linkname, 
+  Proc(TextSeg* _sec, std::string& _name, std::string& _linkname, 
 	    Type t, VMA _begVMA, VMA _endVMA, suint _size);
-  virtual ~Procedure();
+  virtual ~Proc();
 
-  TextSection* GetTextSection() const { return sec; }
-  LoadModule*  GetLoadModule()  const { return sec->GetLoadModule(); }
+  TextSeg* GetTextSeg() const { return sec; }
+  LM*  GetLM()  const { return sec->GetLM(); }
 
   // Returns the name as determined by debugging information; if this
   // is unavailable returns the name found in the symbol table.  (Note
@@ -101,7 +103,7 @@ public:
   // Return the begin and end virtual memory address of a procedure:
   // [beg, end].  Note that the end address points to the beginning of
   // the last instruction which is different than the convention used
-  // for 'Section'.
+  // for 'Seg'.
   VMA  GetBegVMA() const { return begVMA; }
   VMA  GetEndVMA() const { return endVMA; }
   void  SetEndVMA(VMA _endVMA) { endVMA = _endVMA; }
@@ -125,30 +127,30 @@ public:
   suint GetId()        const { return id; }
 
   // Return the number of instructions in the procedure: FIXME
-  suint GetNumInsts()  const { return numInsts; }
+  suint GetNumInsns()  const { return numInsns; }
 
   // Return the first and last instruction in the procedure
-  Instruction* GetFirstInst() const { return GetInst(begVMA, 0); }
-  Instruction* GetLastInst() const;
+  Insn* GetFirstInsn() const { return GetInsn(begVMA, 0); }
+  Insn* GetLastInsn() const;
   
-  // Convenient wrappers for the 'LoadModule' versions of the same.
-  MachInst*    GetMachInst(VMA vma, ushort &sz) const {
-    return sec->GetLoadModule()->GetMachInst(vma, sz);
+  // Convenient wrappers for the 'LM' versions of the same.
+  MachInsn*    GetMachInsn(VMA vma, ushort &sz) const {
+    return sec->GetLM()->GetMachInsn(vma, sz);
   }
-  Instruction* GetInst(VMA vma, ushort opIndex) const {
-    return sec->GetLoadModule()->GetInst(vma, opIndex);
+  Insn* GetInsn(VMA vma, ushort opIndex) const {
+    return sec->GetLM()->GetInsn(vma, opIndex);
   }
   bool GetSourceFileInfo(VMA vma, ushort opIndex,
 			 std::string& func, std::string& file, 
 			 suint& line) const {
-    return sec->GetLoadModule()->GetSourceFileInfo(vma, opIndex,
+    return sec->GetLM()->GetSourceFileInfo(vma, opIndex,
 						   func, file, line);
   }
   bool GetSourceFileInfo(VMA begVMA, ushort bOpIndex,
 			 VMA endVMA, ushort eOpIndex,
 			 std::string& func, std::string& file,
 			 suint& begLine, suint& endLine) const {
-    return sec->GetLoadModule()->GetSourceFileInfo(begVMA, bOpIndex,
+    return sec->GetLM()->GetSourceFileInfo(begVMA, bOpIndex,
 						   endVMA, eOpIndex, 
 						   func, file, 
 						   begLine, endLine);
@@ -158,17 +160,17 @@ public:
   virtual void Dump(std::ostream& o = std::cerr, const char* pre = "") const;
   virtual void DDump() const;
 
-  friend class ProcedureInstructionIterator;
+  friend class ProcInsnIterator;
 
 private:
   // Should not be used
-  Procedure() { } 
-  Procedure(const Procedure& p) { }
-  Procedure& operator=(const Procedure& p) { return *this; }
+  Proc() { } 
+  Proc(const Proc& p) { }
+  Proc& operator=(const Proc& p) { return *this; }
 
 protected:
 private:
-  TextSection* sec; // we do not own
+  TextSeg* sec; // we do not own
   std::string name;
   std::string linkname;
   Type   type;
@@ -180,34 +182,39 @@ private:
   // symbolic information: may or may not be known
   std::string filenm; // filename and 
   suint  begLine;     //   begin line of definition, if known
-  Procedure* parent;  // parent routine, if lexically nested
+  Proc* parent;  // parent routine, if lexically nested
 
   suint  id;    // a unique identifier
-  suint  numInsts;
+  suint  numInsns;
   
   static suint nextId;
 };
 
+} // namespace binutils
+
+
 //***************************************************************************
-// ProcedureInstructionIterator
+// ProcInsnIterator
 //***************************************************************************
 
-// 'ProcedureInstructionIterator' enumerates a procedure's
+namespace binutils {
+
+// 'ProcInsnIterator' enumerates a procedure's
 // instructions maintaining relative order.
 
-class ProcedureInstructionIterator {
+class ProcInsnIterator {
 public:
-  ProcedureInstructionIterator(const Procedure& _p);
-  ~ProcedureInstructionIterator();
+  ProcInsnIterator(const Proc& _p);
+  ~ProcInsnIterator();
 
   // Returns the current object or NULL
-  Instruction* Current() const {
+  Insn* Current() const {
     if (it != endIt) { return (*it).second; }
     else { return NULL; }    
   }
 
   // Note: This is the 'operation VMA' and may not actually be the true
-  // VMA!  Use the 'Instruction' for the true VMA. 
+  // VMA!  Use the 'Insn' for the true VMA. 
   VMA CurrentVMA() const {
     if (it != endIt) { return (*it).first; }
     else { return 0; } 
@@ -224,18 +231,21 @@ public:
 
 private:
   // Should not be used
-  ProcedureInstructionIterator();
-  ProcedureInstructionIterator(const ProcedureInstructionIterator& i);
-  ProcedureInstructionIterator& operator=(const ProcedureInstructionIterator& i) { return *this; }
+  ProcInsnIterator();
+  ProcInsnIterator(const ProcInsnIterator& i);
+  ProcInsnIterator& operator=(const ProcInsnIterator& i) { return *this; }
 
 protected:
 private:
-  const Procedure& p;
-  const LoadModule& lm;
-  LoadModule::VMAToInsnMap::const_iterator it;
-  LoadModule::VMAToInsnMap::const_iterator endIt;
+  const Proc& p;
+  const LM& lm;
+  LM::VMAToInsnMap::const_iterator it;
+  LM::VMAToInsnMap::const_iterator endIt;
 };
+
+} // namespace binutils
+
 
 //***************************************************************************
 
-#endif 
+#endif // binutils_Proc_hpp

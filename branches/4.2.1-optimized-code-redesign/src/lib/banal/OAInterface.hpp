@@ -51,8 +51,8 @@
 //
 //***************************************************************************
 
-#ifndef OAInterface_hpp
-#define OAInterface_hpp
+#ifndef banal_OAInterface_hpp
+#define banal_OAInterface_hpp
 
 //************************* System Include Files ****************************
 
@@ -75,8 +75,8 @@
 //*************************** Forward Declarations ***************************
 
 // IRInterface types: Use OA_IRHANDLETYPE_SZ64 (size of bfd_vma/VMA)
-//   ProcHandle  - 
-//   StmtHandle  - Instruction*
+//   ProcHandle  - binutils::Proc*
+//   StmtHandle  - binutils::Insn*
 //   ExprHandle  - 
 //   LeafHandle  - 
 //   StmtLabel   - VMA
@@ -84,7 +84,7 @@
 //   ConstHandle - 
 
 // FIXME: eraxxon: Due to some unwariness, these types are a mixture
-// of fixed size (VMA) and relative size (Instruction*).  I think we
+// of fixed size (VMA) and relative size (binutils::Insn*).  I think we
 // should be able to use only one so that casts are always between
 // types of the same size.
 
@@ -101,10 +101,10 @@
 
 namespace banal {
 
-class BloopIRRegionStmtIterator: public OA::IRRegionStmtIterator {
+class RegionStmtIterator: public OA::IRRegionStmtIterator {
 public:
-  BloopIRRegionStmtIterator(Procedure &_p) : pii(_p) { }
-  virtual ~BloopIRRegionStmtIterator() { }
+  RegionStmtIterator(binutils::Proc& _p) : pii(_p) { }
+  virtual ~RegionStmtIterator() { }
 
   virtual OA::StmtHandle current () const 
     { return TY_TO_IRHNDL(pii.Current(), OA::StmtHandle); }
@@ -115,7 +115,7 @@ public:
   virtual void reset() { pii.Reset(); }
 
 private:
-  ProcedureInstructionIterator pii;
+  binutils::ProcInsnIterator pii;
 };
 
 }
@@ -134,7 +134,7 @@ public:
 
   // Note: We assume each instantiation of the IRInterface represents
   // one procedure!
-  OAInterface (Procedure *_p);
+  OAInterface (binutils::Proc* _p);
   virtual ~OAInterface ();
   
   
@@ -238,10 +238,10 @@ private:
   OAInterface () { DIAG_Die(DIAG_Unimplemented); }
 
 private:
-  Procedure *proc;
+  binutils::Proc* proc;
   std::set<VMA> branchTargetSet;
 };
 
 } // namespace banal
 
-#endif // OAInterface_hpp
+#endif // banal_OAInterface_hpp

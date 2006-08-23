@@ -92,13 +92,13 @@ static int read_memory_func (bfd_vma vma, bfd_byte *myaddr, unsigned int len,
 
 } // extern "C"
 
-static MachInst* ConvertMIToOpMI(MachInst* mi, ushort opIndex)
+static MachInsn* ConvertMIToOpMI(MachInsn* mi, ushort opIndex)
 {
   // Do not change; the GNU decoders depend upon these particular
   // offsets.  Note that the offsets do not actually match the IA64
   // template [5,41,41,41].
   DIAG_Assert(opIndex <= 2, "Programming Error");
-  return (MachInst*)((MachInstByte*)mi + (6 * opIndex)); // 0, 6, 12
+  return (MachInsn*)((MachInsnByte*)mi + (6 * opIndex)); // 0, 6, 12
 }
 
 //****************************************************************************
@@ -119,11 +119,11 @@ IA64ISA::IA64ISA()
 }
 
 
-ISA::InstDesc
-IA64ISA::GetInstDesc(MachInst* mi, ushort opIndex, ushort sz)
+ISA::InsnDesc
+IA64ISA::GetInsnDesc(MachInsn* mi, ushort opIndex, ushort sz)
 {
-  MachInst* gnuMI = ConvertMIToOpMI(mi, opIndex);
-  InstDesc d;
+  MachInsn* gnuMI = ConvertMIToOpMI(mi, opIndex);
+  InsnDesc d;
 
   if (CacheLookup(gnuMI) == NULL) {
     int size = print_insn_ia64(PTR_TO_BFDVMA(gnuMI), di);
@@ -132,52 +132,52 @@ IA64ISA::GetInstDesc(MachInst* mi, ushort opIndex, ushort sz)
 
   switch(di->insn_type) {
     case dis_noninsn:
-      d.Set(InstDesc::INVALID);
+      d.Set(InsnDesc::INVALID);
       break;
     case dis_branch:
       if (di->target != 0) {
-        d.Set(InstDesc::BR_UN_COND_REL);
+        d.Set(InsnDesc::BR_UN_COND_REL);
       } else {
-        d.Set(InstDesc::BR_UN_COND_IND);
+        d.Set(InsnDesc::BR_UN_COND_IND);
       }
       break;
     case dis_condbranch:
       // N.B.: On the Itanium it is possible to have a one-bundle loop
       // (where the third slot branches to the first slot)!
       if (di->target != 0 || opIndex != 0) {
-        d.Set(InstDesc::INT_BR_COND_REL); // arbitrarily choose int
+        d.Set(InsnDesc::INT_BR_COND_REL); // arbitrarily choose int
       } else {
-        d.Set(InstDesc::INT_BR_COND_IND); // arbitrarily choose int
+        d.Set(InsnDesc::INT_BR_COND_IND); // arbitrarily choose int
       }
       break;
     case dis_jsr:
       if (di->target != 0) {
-        d.Set(InstDesc::SUBR_REL);
+        d.Set(InsnDesc::SUBR_REL);
       } else {
-        d.Set(InstDesc::SUBR_IND);
+        d.Set(InsnDesc::SUBR_IND);
       }
       break;
     case dis_condjsr:
-      d.Set(InstDesc::OTHER);
+      d.Set(InsnDesc::OTHER);
       break;
     case dis_return:
-      d.Set(InstDesc::SUBR_RET);
+      d.Set(InsnDesc::SUBR_RET);
       break;
     case dis_dref:
     case dis_dref2:
-      d.Set(InstDesc::MEM_OTHER);
+      d.Set(InsnDesc::MEM_OTHER);
       break;
     default:
-      d.Set(InstDesc::OTHER);
+      d.Set(InsnDesc::OTHER);
       break;
   }
   return d;
 }
 
 VMA
-IA64ISA::GetInstTargetVMA(MachInst* mi, VMA pc, ushort opIndex, ushort sz)
+IA64ISA::GetInsnTargetVMA(MachInsn* mi, VMA pc, ushort opIndex, ushort sz)
 {
-  MachInst* gnuMI = ConvertMIToOpMI(mi, opIndex);
+  MachInsn* gnuMI = ConvertMIToOpMI(mi, opIndex);
 
   if (CacheLookup(gnuMI) == NULL) {
     int size = print_insn_ia64(PTR_TO_BFDVMA(gnuMI), di);
@@ -195,7 +195,7 @@ IA64ISA::GetInstTargetVMA(MachInst* mi, VMA pc, ushort opIndex, ushort sz)
 }
 
 ushort
-IA64ISA::GetInstNumOps(MachInst* mi)
+IA64ISA::GetInsnNumOps(MachInsn* mi)
 {
   // Because of the MLX template and data, we can't just return 3 here.
   if (CacheLookup(mi) == NULL) {

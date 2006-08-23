@@ -329,19 +329,19 @@
 
 #define REG_S_MASK  0x03e00000 /* Immediate and Register formats; bits 25-21 */
 #define REG_S_SHIFT 21
-#define REG_S(INST) (((INST) & REG_S_MASK) >> REG_S_SHIFT)
+#define REG_S(INSN) (((INSN) & REG_S_MASK) >> REG_S_SHIFT)
 
 #define REG_T_MASK  0x001f0000 /* Immediate and Register formats; bits 20-16 */
 #define REG_T_SHIFT 16
-#define REG_T(INST) (((INST) & REG_T_MASK) >> REG_T_SHIFT)
+#define REG_T(INSN) (((INSN) & REG_T_MASK) >> REG_T_SHIFT)
 
 #define REG_D_MASK  0x0000f800 /* Register format; bits 15-11 */
 #define REG_D_SHIFT 11
-#define REG_D(INST) (((INST) & REG_D_MASK) >> REG_D_SHIFT)
+#define REG_D(INSN) (((INSN) & REG_D_MASK) >> REG_D_SHIFT)
 
 #define SA_MASK  0x000007c0 /* Register format; bits 10-6 */
 #define SA_SHIFT 6
-#define SA(INST) (((INST) & SA_MASK) >> SA_SHIFT)
+#define SA(INSN) (((INSN) & SA_MASK) >> SA_SHIFT)
 
 // Masks for looking at immediates in MIPS instructions
 
@@ -351,18 +351,18 @@
 #define IMM_MASK  0x0000ffff
 #define IMM_SIGN  0x00008000
 #define IMM_SHIFT 0
-#define IMM(INST) (((INST) & IMM_MASK) >> IMM_SHIFT)
+#define IMM(INSN) (((INSN) & IMM_MASK) >> IMM_SHIFT)
 
-// instr_index: 26-bit index shifted left two bits to supply the
+// insn_index: 26-bit index shifted left two bits to supply the
 // low-order 28 bits of the jump target address (PC-region).  The
 // remaining upper bits are the corresponding bits of
 // the address of the instruction in the delay slot (not the branch
 // itself).
-#define INST_INDEX_MASK  0x03ffffff
-#define INST_INDEX_SHIFT 0
-#define INST_INDEX(INST) (((INST) & INST_INDEX_MASK) >> INST_INDEX_SHIFT)
+#define INSN_INDEX_MASK  0x03ffffff
+#define INSN_INDEX_SHIFT 0
+#define INSN_INDEX(INSN) (((INSN) & INSN_INDEX_MASK) >> INSN_INDEX_SHIFT)
 
-#define INST_INDEX_UPPER_MASK 0xf0000000 /* upper 4 bits */
+#define INSN_INDEX_UPPER_MASK 0xf0000000 /* upper 4 bits */
 
 // ==========================================================================
 

@@ -88,7 +88,7 @@ void
 ListAvailPredefDCPIFilters(DCPIProfile* prof, bool longlist = false);
 
 PCProfileFilterList*
-GetDCPIFilters(DCPIProfile* prof, LoadModule* lm, 
+GetDCPIFilters(DCPIProfile* prof, binutils::LM* lm, 
 	       const char* metricList, const char* excludeMList);
 
 //****************************************************************************
@@ -146,7 +146,7 @@ real_main(int argc, char* argv[])
   // ------------------------------------------------------------
   // Read executable
   // ------------------------------------------------------------
-  LoadModule* exe = NULL; // Executable*: use LoadModule for now (Alpha)
+  binutils::LM* exe = NULL;
   try {
     string exeNm = args.progFile;
 
@@ -162,7 +162,7 @@ real_main(int argc, char* argv[])
       }
     }
     
-    exe = new LoadModule(); // Executable(): use LoadModule for now (Alpha)
+    exe = new binutils::LM();
     if (!exe->Open(exeNm.c_str())) { exit(1); } // Error already printed 
     if (!exe->Read()) { exit(1); }              // Error already printed 
   }
@@ -231,10 +231,10 @@ real_main(int argc, char* argv[])
 //****************************************************************************
 
 PCProfileFilterList*
-GetDCPIFilters(StringList* mlist, LoadModule* lm);
+GetDCPIFilters(StringList* mlist, binutils::LM* lm);
 
 StringList*
-GetAvailPredefDCPIFilterNms(DCPIProfile* prof, LoadModule* lm);
+GetAvailPredefDCPIFilterNms(DCPIProfile* prof, binutils::LM* lm);
 
 bool
 IsPredefDCPIFilterAvail(DCPIProfile* prof, StringList* flist, 
@@ -297,7 +297,7 @@ ListAvailPredefDCPIFilters(DCPIProfile* prof, bool longlist)
 // printed and NULL will be returned.  User is responsible for memory
 // deallocation.
 PCProfileFilterList*
-GetDCPIFilters(DCPIProfile* prof, LoadModule* lm, 
+GetDCPIFilters(DCPIProfile* prof, binutils::LM* lm, 
 	       const char* metricList, const char* excludeMList)
 {
   bool noError = true;
@@ -338,7 +338,7 @@ GetDCPIFilters(DCPIProfile* prof, LoadModule* lm,
 // User is responsible for memory deallocation of list and its contents. 
 // Note: assumes that every filter name in 'mlist' is available.
 PCProfileFilterList*
-GetDCPIFilters(StringList* mlist, LoadModule* lm) 
+GetDCPIFilters(StringList* mlist, binutils::LM* lm) 
 {
   PCProfileFilterList* flist = new PCProfileFilterList;
   for (StringListIt it = mlist->begin(); it != mlist->end(); ++it) {
@@ -352,7 +352,7 @@ GetDCPIFilters(StringList* mlist, LoadModule* lm)
 // within the DCPI predefined metric table that are available for this
 // profile.
 StringList*
-GetAvailPredefDCPIFilterNms(DCPIProfile* prof, LoadModule* lm)
+GetAvailPredefDCPIFilterNms(DCPIProfile* prof, binutils::LM* lm)
 {
   StringList* flist = new StringList;
   for (suint i = 0; i < PredefinedDCPIMetricTable::GetSize(); ++i) {

@@ -38,18 +38,18 @@
 //***************************************************************************
 //
 // File:
-//    LoadModule.h
+//   $Source$
 //
 // Purpose:
-//    [The purpose of this file]
+//   [The purpose of this file]
 //
 // Description:
-//    [The set of functions, macros, etc. defined in the file]
+//   [The set of functions, macros, etc. defined in the file]
 //
 //***************************************************************************
 
-#ifndef LoadModule_hpp 
-#define LoadModule_hpp
+#ifndef binutils_LM_hpp 
+#define binutils_LM_hpp
 
 //************************* System Include Files ****************************
 
@@ -69,30 +69,32 @@
 
 //*************************** Forward Declarations **************************
 
-class Section;
-class Procedure;
-class Instruction;
-
 class ISA;
 
 // A map between pairs of addresses in the same procedure and the
 // first line of the procedure. This map is built upon reading the
 // module. 
 // [FIXME: this should be hidden within LoadModule and should be a general addr => procedure map.]
-typedef std::map<VMAInterval, suint, lt_VMAInterval> VMAToProcedureMap;
+typedef std::map<VMAInterval, suint, lt_VMAInterval> VMAToProcMap;
 
 //***************************************************************************
 // LoadModule
 //***************************************************************************
 
-// 'LoadModule' represents a binary loaded into memory
+namespace binutils {
+
+class Seg;
+class Proc;
+class Insn;
+class LMImpl; 
+
+// --------------------------------------------------------------------------
+// 'LM' represents a load module, a binary loaded into memory
+// --------------------------------------------------------------------------
 
 // Note: Most references to VMA (virtual memory address) could be
 // replaced with 'PC' (program counter) or IP (instruction pointer).
-
-class LoadModuleImpl; 
-
-class LoadModule {
+class LM {
 public:
   class DbgFuncSummary;
 
@@ -100,12 +102,12 @@ public:
   enum Type {Executable, SharedLibrary, Unknown};
   
   // Constructor allocates an empty data structure
-  LoadModule();
-  virtual ~LoadModule();
+  LM();
+  virtual ~LM();
 
   // Open: If 'moduleName' is not already open, attempt to do so;
   // return true on success and false otherwise.  If a file is already
-  // open return true. (Sections, Procedures and Instructions are not
+  // open return true. (Segs, Procs and Insns are not
   // constructed yet.)
   virtual bool Open(const char* moduleName);
 
@@ -143,34 +145,34 @@ public:
   void Relocate(VMA textBegReloc_);
   bool IsRelocated() const;
 
-  // GetNumSections: Return number of sections
-  suint GetNumSections() const { return sections.size(); }
+  // GetNumSegs: Return number of segments/sections
+  suint GetNumSegs() const { return sections.size(); }
 
-  // AddSection: Add a section
-  void AddSection(Section *section) { sections.push_back(section); }
+  // AddSeg: Add a segment/section
+  void AddSeg(Seg *section) { sections.push_back(section); }
 
 
   // Instructions: All instructions found in text sections may be
-  // accessed here, or through other classes (such as a 'Procedure').
+  // accessed here, or through other classes (such as a 'Proc').
   //
   // For the sake of generality, all instructions are viewed as
   // (potentially) variable sized instruction packets.  VLIW
   // instructions are 'unpacked' so that each operation is an
-  // 'Instruction' that may be accessed by the combination of its vma and
+  // 'Insn' that may be accessed by the combination of its vma and
   // operation index.  
   //
-  // GetMachInst: Return a pointer to beginning of the instrution
+  // GetMachInsn: Return a pointer to beginning of the instrution
   // bits at virtual memory address 'vma'; NULL if invalid instruction
   // or invalid 'vma'.  Sets 'size' to the size (bytes) of the
   // instruction.
   //
-  // GetInst: Similar to the above except returns an 'Instruction',
+  // GetInsn: Similar to the above except returns an 'Insn',
   // not the bits.
   //
-  // AddInst: Add an instruction to the map
-  MachInst*    GetMachInst(VMA vma, ushort &size) const;
-  Instruction* GetInst(VMA vma, ushort opIndex) const;
-  void AddInst(VMA vma, ushort opIndex, Instruction *inst);
+  // AddInsn: Add an instruction to the map
+  MachInsn* GetMachInsn(VMA vma, ushort &size) const;
+  Insn*     GetInsn(VMA vma, ushort opIndex) const;
+  void      AddInsn(VMA vma, ushort opIndex, Insn *insn);
 
   
   // GetSourceFileInfo: If possible, find the source file, function
@@ -206,12 +208,12 @@ public:
 			 std::string& func, std::string& file,
 			 suint &begLine, suint &endLine) const;
 
-  bool GetProcedureFirstLineInfo(VMA vma, ushort opIndex, suint &line);
+  bool GetProcFirstLineInfo(VMA vma, ushort opIndex, suint &line);
 
   DbgFuncSummary* GetDebugFuncSummary() { return &dbgSummary; }
 
   // It is a little unfortunate to have to make 'isa' global across
-  // all intances since it implies that while multiple 'LoadModules'
+  // all intances since it implies that while multiple 'LMs'
   // from the ISA may coexist, only one ISA may be used at a time.
   // The issue is that allowing many types of ISA's to exist at the
   // same time would significantly complicate things and we do not
@@ -225,19 +227,19 @@ public:
   virtual void DDump() const;
   virtual void DumpSelf(std::ostream& o = std::cerr, const char* pre = "") const;
   
-  friend class LoadModuleSectionIterator;
-  friend class ProcedureInstructionIterator;
+  friend class LMSegIterator;
+  friend class ProcInsnIterator;
   
 protected:
   // Should not be used
-  LoadModule(const LoadModule& lm) { }
-  LoadModule& operator=(const LoadModule& lm) { return *this; }
+  LM(const LM& lm) { }
+  LM& operator=(const LM& lm) { return *this; }
 
 public:
 
   // Classes used to represent function summary information obtained
-  // from the LoadModule's debugging sections.  This will typically be
-  // used in constructing Procedures.
+  // from the LM's debugging sections.  This will typically be
+  // used in constructing Procs.
 
   class DbgFuncSummary {
   public:
@@ -337,13 +339,13 @@ public:
 private: 
   // Constructing routines: return true on success; false on error
   bool ReadSymbolTables();
-  bool ReadSections();
+  bool ReadSegs();
   bool ReadDebugFunctionSummaryInfo();
   void ClearDebugFunctionSummaryInfo();
   
   // Builds the map from <proc beg addr, proc end addr> pairs to 
   // procedure first line.
-  bool buildVMAToProcedureMap();
+  bool buildVMAToProcMap();
 
   // UnRelocateVMA: Given a relocated VMA, returns a non-relocated version.
   VMA UnRelocateVMA(VMA relocatedVMA) const 
@@ -359,20 +361,20 @@ private:
   void DumpModuleInfo(std::ostream& o = std::cerr, const char* pre = "") const;
   void DumpSymTab(std::ostream& o = std::cerr, const char* pre = "") const;
   
-  // Virtual memory address to Instruction* map: Note that 'VMA' is
+  // Virtual memory address to Insn* map: Note that 'VMA' is
   // not necessarily the true vma value; rather, it is the address of
   // the individual operation (ISA::ConvertVMAToOpVMA).
-  typedef std::map<VMA, Instruction*, lt_VMA> VMAToInsnMap;
+  typedef std::map<VMA, Insn*, lt_VMA> VMAToInsnMap;
   
-  // Section sequence: 'deque' supports random access iterators (and
+  // Seg sequence: 'deque' supports random access iterators (and
   // is thus sortable with std::sort) and constant time insertion/deletion at
   // beginning/end.
-  typedef std::deque<Section*>           SectionSeq;
-  typedef std::deque<Section*>::iterator SectionSeqIt;
-  typedef std::deque<Section*>::const_iterator SectionSeqItC;
+  typedef std::deque<Seg*> SegSeq;
+  typedef std::deque<Seg*>::iterator SegSeqIt;
+  typedef std::deque<Seg*>::const_iterator SegSeqItC;
   
 protected:
-  LoadModuleImpl* impl; 
+  LMImpl* impl; 
 
 private:
   std::string name;
@@ -382,28 +384,34 @@ private:
   VMA   textBegReloc;     // relocated text begin
   VMASigned unRelocDelta; // offset to unrelocate relocated VMAs
     
-  SectionSeq sections; // A list of sections
+  SegSeq sections; // A list of sections
 
-  // A map of virtual memory addresses to Instruction*
-  VMAToInsnMap vmaToInsnMap;  // owns all Instruction*
-  VMAToProcedureMap vmaToProcMap; // CC
+  // A map of virtual memory addresses to Insn*
+  VMAToInsnMap vmaToInsnMap;  // owns all Insn*
+  VMAToProcMap vmaToProcMap; // CC
 
   // symbolic info used in building procedures
   DbgFuncSummary dbgSummary; 
 };
 
+} // namespace binutils
+
 //***************************************************************************
 // Executable
 //***************************************************************************
 
+namespace binutils {
+
+// --------------------------------------------------------------------------
 // 'Executable' represents an executable binary
+// --------------------------------------------------------------------------
 
-class Executable : public LoadModule {
+class Exe : public LM {
 public:
-  Executable(); // set type to executable
-  virtual ~Executable();
+  Exe(); // set type to executable
+  virtual ~Exe();
 
-  // See LoadModule::Open comments
+  // See LM::Open comments
   virtual bool Open(const char* moduleName);
   
   VMA GetStartVMA() const { return startVMA; }
@@ -414,27 +422,35 @@ public:
 
 private:
   // Should not be used
-  Executable(const Executable& e) { }
-  Executable& operator=(const Executable& e) { return *this; }
+  Exe(const Exe& e) { }
+  Exe& operator=(const Exe& e) { return *this; }
   
 protected:
 private:
   VMA startVMA;
 };
 
+} // namespace binutils
+
 //***************************************************************************
-// LoadModuleSectionIterator
+// LMSegIterator
 //***************************************************************************
 
-// 'LoadModuleSectionIterator': iterator over the sections in a 'LoadModule'
+namespace binutils {
 
-class LoadModuleSectionIterator {
+class Seg;
+
+// --------------------------------------------------------------------------
+// 'LMSegIterator': iterator over the sections in a 'LM'
+// --------------------------------------------------------------------------
+
+class LMSegIterator {
 public:   
-  LoadModuleSectionIterator(const LoadModule& _lm);
-  ~LoadModuleSectionIterator();
+  LMSegIterator(const LM& _lm);
+  ~LMSegIterator();
 
   // Returns the current object or NULL
-  Section* Current() const {
+  Seg* Current() const {
     if (it != lm.sections.end()) { return *it; }
     else { return NULL; }
   }
@@ -450,17 +466,19 @@ public:
 
 private:
   // Should not be used
-  LoadModuleSectionIterator();
-  LoadModuleSectionIterator(const LoadModuleSectionIterator& i);
-  LoadModuleSectionIterator& operator=(const LoadModuleSectionIterator& i)
+  LMSegIterator();
+  LMSegIterator(const LMSegIterator& i);
+  LMSegIterator& operator=(const LMSegIterator& i)
     { return *this; }
 
 protected:
 private:
-  const LoadModule& lm;
-  LoadModule::SectionSeqItC it;
+  const LM& lm;
+  LM::SegSeqItC it;
 };
+
+} // namespace binutils
 
 //***************************************************************************
 
-#endif 
+#endif // binutils_LM_hpp

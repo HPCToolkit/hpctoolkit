@@ -38,13 +38,13 @@
 //***************************************************************************
 //
 // File:
-//    LoadModule.C
+//   $Source$
 //
 // Purpose:
-//    [The purpose of this file]
+//   [The purpose of this file]
 //
 // Description:
-//    [The set of functions, macros, etc. defined in the file]
+//   [The set of functions, macros, etc. defined in the file]
 //
 //***************************************************************************
 
@@ -53,6 +53,12 @@
 #include <typeinfo>
 #include <string>
 using std::string;
+
+#include <iostream>
+using std::cerr;
+using std::endl;
+using std::hex;
+using std::dec;
 
 //*************************** User Include Files ****************************
 
@@ -76,22 +82,17 @@ using std::string;
 
 //*************************** Forward Declarations **************************
 
-using std::cerr;
-using std::endl;
-using std::hex;
-using std::dec;
-
 //***************************************************************************
 
 //***************************************************************************
-// LoadModule
+// LM
 //***************************************************************************
 
 // current ISA (see comments in header)
-ISA* LoadModule::isa = NULL;
+ISA* binutils::LM::isa = NULL;
 
 
-class LoadModuleImpl {
+class binutils::LMImpl {
 public:
   asymbol** bfdSymbolTable;        // Unmodified BFD symbol table
   asymbol** sortedSymbolTable;     // Sorted BFD symbol table
@@ -100,17 +101,17 @@ public:
 };
 
 
-LoadModule::LoadModule()
+binutils::LM::LM()
   : type(Unknown), textBeg(0), textEnd(0), 
     textBegReloc(0), unRelocDelta(0)
 {
-  impl = new LoadModuleImpl;
+  impl = new LMImpl;
   impl->bfdSymbolTable = impl->sortedSymbolTable = NULL;
   impl->abfd = NULL;
 }
 
 
-LoadModule::~LoadModule()
+binutils::LM::~LM()
 {
   // Clear impl
   delete[] impl->bfdSymbolTable;    impl->bfdSymbolTable = NULL;
@@ -122,15 +123,15 @@ LoadModule::~LoadModule()
   delete impl;
 
   // Clear sections
-  for (LoadModuleSectionIterator it(*this); it.IsValid(); ++it) {
-    delete it.Current(); // Section*
+  for (LMSegIterator it(*this); it.IsValid(); ++it) {
+    delete it.Current(); // Seg*
   }
   sections.clear();
     
   // Clear vmaToInsMap
   VMAToInsnMap::iterator it;
   for (it = vmaToInsnMap.begin(); it != vmaToInsnMap.end(); ++it) {
-    delete (*it).second; // Instruction*
+    delete (*it).second; // Insn*
   }
   vmaToInsnMap.clear();
 
@@ -141,9 +142,9 @@ LoadModule::~LoadModule()
 
 
 bool
-LoadModule::Open(const char* moduleName)
+binutils::LM::Open(const char* moduleName)
 {
-  IFTRACE << "LoadModule::Open: " << moduleName << endl;
+  IFTRACE << "LM::Open: " << moduleName << endl;
 
   if (!name.empty()) {
     // 'moduleName' should be equal to what already exists
@@ -231,7 +232,7 @@ LoadModule::Open(const char* moduleName)
       BriefAssertion(false);
   }
 
-  // Sanity check.  Test to make sure the new LoadModule is using the
+  // Sanity check.  Test to make sure the new LM is using the
   // same ISA type.
   if (!isa) {
     isa = newisa;
@@ -239,7 +240,7 @@ LoadModule::Open(const char* moduleName)
   else {
     delete newisa;
     DIAG_Assert(typeid(*newisa) == typeid(*isa),
-		"Cannot simultaneously open LoadModules with different ISAs!");
+		"Cannot simultaneously open LMs with different ISAs!");
   }
   
   return true;
@@ -247,18 +248,18 @@ LoadModule::Open(const char* moduleName)
 
 
 bool
-LoadModule::Read()
+binutils::LM::Read()
 {
   bool STATUS = true;
   // If the file has not been opened...
-  DIAG_Assert(!name.empty(), "Must call LoadModule::Open first");
+  DIAG_Assert(!name.empty(), "Must call LM::Open first");
 
   // Read if we have not already done so
   if (impl->bfdSymbolTable == NULL
       && sections.size() == 0 && vmaToInsnMap.size() == 0) {
     STATUS &= ReadSymbolTables();
-    STATUS &= ReadSections();
-    buildVMAToProcedureMap();
+    STATUS &= ReadSegs();
+    buildVMAToProcMap();
   } 
   
   return STATUS;
@@ -269,9 +270,9 @@ LoadModule::Read()
 // VMAs.  All routines operating on VMAs should call UnRelocateVMA(),
 // which will do the right thing.
 void 
-LoadModule::Relocate(VMA textBegReloc_)
+binutils::LM::Relocate(VMA textBegReloc_)
 {
-  DIAG_Assert(textBeg != 0, "LoadModule::Relocate not supported!");
+  DIAG_Assert(textBeg != 0, "LM::Relocate not supported!");
   textBegReloc = textBegReloc_;
   
   if (textBegReloc == 0) {
@@ -284,54 +285,54 @@ LoadModule::Relocate(VMA textBegReloc_)
 }
 
 bool 
-LoadModule::IsRelocated() const 
+binutils::LM::IsRelocated() const 
 { 
   return (textBegReloc != 0);
 }
 
 
 
-MachInst*
-LoadModule::GetMachInst(VMA vma, ushort &size) const
+MachInsn*
+binutils::LM::GetMachInsn(VMA vma, ushort &size) const
 {
-  MachInst* minst = NULL;
+  MachInsn* minsn = NULL;
   size = 0;
-  Instruction* inst = GetInst(vma, 0);
-  if (inst) {
-    size  = inst->GetSize();
-    minst = inst->GetBits();
+  Insn* insn = GetInsn(vma, 0);
+  if (insn) {
+    size  = insn->GetSize();
+    minsn = insn->GetBits();
   }
-  return minst; 
+  return minsn; 
 }
 
-Instruction*
-LoadModule::GetInst(VMA vma, ushort opIndex) const
+binutils::Insn*
+binutils::LM::GetInsn(VMA vma, ushort opIndex) const
 {
   VMA unrelocVMA = UnRelocateVMA(vma);
   VMA mapVMA = isa->ConvertVMAToOpVMA(unrelocVMA, opIndex);
   
-  Instruction* inst = NULL;
+  Insn* insn = NULL;
   VMAToInsnMap::const_iterator it = vmaToInsnMap.find(mapVMA);
   if (it != vmaToInsnMap.end()) {
-    inst = (*it).second;
+    insn = (*it).second;
   }
-  return inst;
+  return insn;
 }
 
 void
-LoadModule::AddInst(VMA vma, ushort opIndex, Instruction *inst)
+binutils::LM::AddInsn(VMA vma, ushort opIndex, binutils::Insn *insn)
 {
   VMA unrelocVMA = UnRelocateVMA(vma);
   VMA mapVMA = isa->ConvertVMAToOpVMA(unrelocVMA, opIndex);
 
   // FIXME: It wouldn't hurt to verify this isn't a duplicate
-  vmaToInsnMap.insert(VMAToInsnMap::value_type(mapVMA, inst));
+  vmaToInsnMap.insert(VMAToInsnMap::value_type(mapVMA, insn));
 }
 
 
 bool
-LoadModule::GetSourceFileInfo(VMA vma, ushort opIndex,
-			      string& func, string& file, suint& line) const
+binutils::LM::GetSourceFileInfo(VMA vma, ushort opIndex,
+				string& func, string& file, suint& line) const
 {
   bool STATUS = false;
   func = file = "";
@@ -347,23 +348,23 @@ LoadModule::GetSourceFileInfo(VMA vma, ushort opIndex,
   VMA unrelocVMA = UnRelocateVMA(vma);
   VMA opVMA = isa->ConvertVMAToOpVMA(unrelocVMA, opIndex);
   
-  // Find the Section where this vma lives.
-  asection *bfdSection = NULL;
+  // Find the Seg where this vma lives.
+  asection *bfdSeg = NULL;
   VMA base = 0;
-  for (LoadModuleSectionIterator it(*this); it.IsValid(); ++it) {
-    Section* sec = it.Current();
+  for (LMSegIterator it(*this); it.IsValid(); ++it) {
+    Seg* sec = it.Current();
     if (sec->IsIn(opVMA)) {
-      // Obtain the bfd section corresponding to our Section.
-      bfdSection = bfd_get_section_by_name(impl->abfd, sec->GetName().c_str());
-      base = bfd_section_vma(impl->abfd, bfdSection);
+      // Obtain the bfd section corresponding to our Seg.
+      bfdSeg = bfd_get_section_by_name(impl->abfd, sec->GetName().c_str());
+      base = bfd_section_vma(impl->abfd, bfdSeg);
       break; 
     } 
   } 
 
   // Obtain the source line information.
   const char *_func = NULL, *_file = NULL;
-  if (bfdSection
-      && bfd_find_nearest_line(impl->abfd, bfdSection, impl->bfdSymbolTable,
+  if (bfdSeg
+      && bfd_find_nearest_line(impl->abfd, bfdSeg, impl->bfdSymbolTable,
 			       opVMA - base, &_file, &_func, &bfd_line)) {
     STATUS = (_file && _func && IsValidLine(bfd_line));
     if (_func) { func = _func; }
@@ -375,10 +376,10 @@ LoadModule::GetSourceFileInfo(VMA vma, ushort opIndex,
 }
 
 bool
-LoadModule::GetSourceFileInfo(VMA begVMA, ushort bOpIndex,
-			      VMA endVMA, ushort eOpIndex,
-			      string& func, string& file,
-			      suint &begLine, suint &endLine) const
+binutils::LM::GetSourceFileInfo(VMA begVMA, ushort bOpIndex,
+				VMA endVMA, ushort eOpIndex,
+				string& func, string& file,
+				suint &begLine, suint &endLine) const
 {
   bool STATUS = false;
   func = file = "";
@@ -438,7 +439,7 @@ LoadModule::GetSourceFileInfo(VMA begVMA, ushort bOpIndex,
   else if (IsValidLine(endLine) && !IsValidLine(begLine)) {
     begLine = endLine;
   } 
-  else if (begLine > endLine) { // perhaps due to inst. reordering...
+  else if (begLine > endLine) { // perhaps due to insn. reordering...
     suint tmp = begLine;          // but unlikely given the way this is
     begLine = endLine;            // typically called
     endLine = tmp;
@@ -449,14 +450,14 @@ LoadModule::GetSourceFileInfo(VMA begVMA, ushort bOpIndex,
 
 
 void
-LoadModule::GetTextBegEndVMA(VMA* begVMA, VMA* endVMA)
+binutils::LM::GetTextBegEndVMA(VMA* begVMA, VMA* endVMA)
 { 
   VMA curr_begVMA;
   VMA curr_endVMA;
   VMA sml_begVMA = 0;
   VMA lg_endVMA  = 0;
-  for (LoadModuleSectionIterator it(*this); it.IsValid(); ++it) {
-    Section* sec = it.Current(); 
+  for (LMSegIterator it(*this); it.IsValid(); ++it) {
+    Seg* sec = it.Current(); 
     if (sec->GetType() == sec->Text)  {    
       if (!(sml_begVMA || lg_endVMA)) {
 	sml_begVMA = sec->GetBeg();
@@ -479,7 +480,7 @@ LoadModule::GetTextBegEndVMA(VMA* begVMA, VMA* endVMA)
 
 
 void
-LoadModule::Dump(std::ostream& o, const char* pre) const
+binutils::LM::Dump(std::ostream& o, const char* pre) const
 {
   string p(pre);
   string p1 = p + "  ";
@@ -505,21 +506,21 @@ LoadModule::Dump(std::ostream& o, const char* pre) const
     DumpSymTab(o, p2.c_str());
   }
   
-  o << p2 << "Sections (" << GetNumSections() << "):\n";
-  for (LoadModuleSectionIterator it(*this); it.IsValid(); ++it) {
-    Section* sec = it.Current();
+  o << p2 << "Sections (" << GetNumSegs() << "):\n";
+  for (LMSegIterator it(*this); it.IsValid(); ++it) {
+    Seg* sec = it.Current();
     sec->Dump(o, p2.c_str());
   }
 }
 
 void
-LoadModule::DDump() const
+binutils::LM::DDump() const
 {
   Dump(std::cerr);
 }
 
 void
-LoadModule::DumpSelf(std::ostream& o, const char* pre) const
+binutils::LM::DumpSelf(std::ostream& o, const char* pre) const
 {
 }
 
@@ -527,7 +528,7 @@ LoadModule::DumpSelf(std::ostream& o, const char* pre) const
 //***************************   private members    ***************************
 
 int
-LoadModule::SymCmpByVMAFunc(const void* s1, const void* s2)
+binutils::LM::SymCmpByVMAFunc(const void* s1, const void* s2)
 {
   asymbol *a = (asymbol *)s1;
   asymbol *b = (asymbol *)s2;
@@ -546,7 +547,7 @@ LoadModule::SymCmpByVMAFunc(const void* s1, const void* s2)
 
 
 bool
-LoadModule::ReadSymbolTables()
+binutils::LM::ReadSymbolTables()
 {
   bool STATUS = true;
 
@@ -602,14 +603,14 @@ LoadModule::ReadSymbolTables()
   // Sort scratch symbol table by VMA.
   QuickSort QSort;
   QSort.Create((void **)(impl->sortedSymbolTable),
-               &(LoadModule::SymCmpByVMAFunc));
+               &(LM::SymCmpByVMAFunc));
   QSort.Sort(0, numSyms - 1);
   return STATUS;
 }
 
 
 bool
-LoadModule::ReadSections()
+binutils::LM::ReadSegs()
 {
   bool STATUS = true;
 
@@ -632,15 +633,15 @@ LoadModule::ReadSections()
     
     // 2. Create section
     if (sec->flags & SEC_CODE) {
-      TextSection *newSection =
-	new TextSection(this, secName, secBeg, secEnd, secSize,
+      TextSeg *newSeg =
+	new TextSeg(this, secName, secBeg, secEnd, secSize,
 			impl->sortedSymbolTable, impl->numSyms, abfd);
-      AddSection(newSection);
+      AddSeg(newSeg);
     } 
     else {
-      Section *newSection = new Section(this, secName, Section::Data,
+      Seg *newSeg = new Seg(this, secName, Seg::Data,
 					secBeg, secEnd, secSize);
-      AddSection(newSection);
+      AddSeg(newSeg);
     }
   }
 
@@ -657,24 +658,24 @@ LoadModule::ReadSections()
 // Builds the map from <proc beg addr, proc end addr> pairs to 
 // procedure first line.
 bool 
-LoadModule::buildVMAToProcedureMap() 
+binutils::LM::buildVMAToProcMap() 
 {
   bool STATUS = false;
-  for (LoadModuleSectionIterator it(*this); it.IsValid(); ++it) {
-    Section* sec = it.Current();
-    if (sec->GetType() != Section::Text) {
+  for (LMSegIterator it(*this); it.IsValid(); ++it) {
+    Seg* sec = it.Current();
+    if (sec->GetType() != Seg::Text) {
       continue;
     }
     
-    // We have a TextSection.  Iterate over procedures.
-    // Obtain the bfd section corresponding to our Section.
-    asection *bfdSection = 
+    // We have a TextSeg.  Iterate over procedures.
+    // Obtain the bfd section corresponding to our Seg.
+    asection *bfdSeg = 
       bfd_get_section_by_name(impl->abfd, sec->GetName().c_str());
-    VMA base = bfd_section_vma(impl->abfd, bfdSection);
+    VMA base = bfd_section_vma(impl->abfd, bfdSeg);
     
-    TextSection* tsec = dynamic_cast<TextSection*>(sec);
-    for (TextSectionProcedureIterator it1(*tsec); it1.IsValid(); ++it1) {
-      Procedure* p = it1.Current();
+    TextSeg* tsec = dynamic_cast<TextSeg*>(sec);
+    for (TextSegProcIterator it1(*tsec); it1.IsValid(); ++it1) {
+      Proc* p = it1.Current();
       VMA begVMA = p->GetBegVMA();
       VMA endVMA = begVMA + p->GetSize();
       suint begLine = p->GetBegLine();
@@ -684,7 +685,7 @@ LoadModule::buildVMAToProcedureMap()
 	GetSourceFileInfo(begVMA, 0, func, file, begLine);
       }
       
-      vmaToProcMap.insert(VMAToProcedureMap::value_type( VMAInterval(begVMA, endVMA), begLine));
+      vmaToProcMap.insert(VMAToProcMap::value_type( VMAInterval(begVMA, endVMA), begLine));
       xDEBUG(DEB_BUILD_PROC_MAP, 
 	     fprintf(stderr, "adding procedure %s [%x,%x] beg line %d\n", 
 		     p->GetName().c_str(), begVMA, endVMA, begLine););
@@ -695,7 +696,7 @@ LoadModule::buildVMAToProcedureMap()
 
 
 bool 
-LoadModule::GetProcedureFirstLineInfo(VMA vma, ushort opIndex, suint &line) 
+binutils::LM::GetProcFirstLineInfo(VMA vma, ushort opIndex, suint &line) 
 {
   bool STATUS = false;
 
@@ -703,15 +704,15 @@ LoadModule::GetProcedureFirstLineInfo(VMA vma, ushort opIndex, suint &line)
   VMA opVMA = isa->ConvertVMAToOpVMA(unrelocVMA, opIndex);
 
   xDEBUG( DEB_BUILD_PROC_MAP,
-	  fprintf(stderr, "LoadModule::GetProcedureFirstLineInfo %p %x (%x,%x) unrelocVMA=%x opVMA=%x\n", 
+	  fprintf(stderr, "LM::GetProcFirstLineInfo %p %x (%x,%x) unrelocVMA=%x opVMA=%x\n", 
 		  this, this, vma, (unsigned) opIndex, unrelocVMA, opVMA););
 
-  VMAToProcedureMap::iterator it = vmaToProcMap.lower_bound( VMAInterval(opVMA,opVMA));
+  VMAToProcMap::iterator it = vmaToProcMap.lower_bound( VMAInterval(opVMA,opVMA));
   if (it != vmaToProcMap.end()) {
     it--; // move to predecessor
     line = it->second;
     xDEBUG( DEB_BUILD_PROC_MAP,
-	    fprintf(stderr, "LoadModule::GetProcedureFirstLineInfo %p %x (%x,%x) unrelocVMA=%x opVMA=%x found line %d\n", 
+	    fprintf(stderr, "LM::GetProcFirstLineInfo %p %x (%x,%x) unrelocVMA=%x opVMA=%x found line %d\n", 
 		    this, this, vma, (unsigned) opIndex, unrelocVMA, opVMA, line););
     
     STATUS = true;
@@ -719,7 +720,7 @@ LoadModule::GetProcedureFirstLineInfo(VMA vma, ushort opIndex, suint &line)
   else {
     line = 0;
     xDEBUG( DEB_BUILD_PROC_MAP,
-	    fprintf(stderr, "LoadModule::GetProcedureFirstLineInfo %p %x (%x,%x) unrelocVMA=%x opVMA=%x line not found\n", 
+	    fprintf(stderr, "LM::GetProcFirstLineInfo %p %x (%x,%x) unrelocVMA=%x opVMA=%x line not found\n", 
 		    this, this, vma, (unsigned) opIndex, unrelocVMA, opVMA, line););
     
   }
@@ -728,7 +729,7 @@ LoadModule::GetProcedureFirstLineInfo(VMA vma, ushort opIndex, suint &line)
 
 
 bool
-LoadModule::ReadDebugFunctionSummaryInfo()
+binutils::LM::ReadDebugFunctionSummaryInfo()
 {
   bool STATUS = true;
 
@@ -754,7 +755,7 @@ LoadModule::ReadDebugFunctionSummaryInfo()
 
 
 void
-LoadModule::ClearDebugFunctionSummaryInfo()
+binutils::LM::ClearDebugFunctionSummaryInfo()
 {
   dbgSummary.clear();
 }
@@ -762,13 +763,12 @@ LoadModule::ClearDebugFunctionSummaryInfo()
 
 // Should have function type of 'bfd_forall_dbg_funcinfo_fn_t'
 int 
-LoadModule::bfd_DbgFuncinfoCallback(void* callback_obj, 
+binutils::LM::bfd_DbgFuncinfoCallback(void* callback_obj, 
 				    void* parent, void* funcinfo)
 {
-  LoadModule* lm = (LoadModule*)callback_obj;
+  LM* lm = (LM*)callback_obj;
   
-  LoadModule::DbgFuncSummary::Info* finfo = 
-    new LoadModule::DbgFuncSummary::Info;
+  DbgFuncSummary::Info* finfo = new DbgFuncSummary::Info;
 
   // Collect information for 'funcinfo'
   bfd_vma begVMA, endVMA;
@@ -800,7 +800,7 @@ LoadModule::bfd_DbgFuncinfoCallback(void* callback_obj,
     return 0;
   }
   
-  std::pair<LoadModule::DbgFuncSummary::iterator, bool> res = 
+  std::pair<DbgFuncSummary::iterator, bool> res = 
     lm->dbgSummary.insert(std::make_pair(finfo->begVMA, finfo));
   if (!res.second) {
     // There are two descriptors for the same function.  I don't think
@@ -814,7 +814,7 @@ LoadModule::bfd_DbgFuncinfoCallback(void* callback_obj,
 
 
 void
-LoadModule::DumpModuleInfo(std::ostream& o, const char* pre) const
+binutils::LM::DumpModuleInfo(std::ostream& o, const char* pre) const
 {
   string p(pre);
   bfd *abfd = impl->abfd;
@@ -913,7 +913,7 @@ LoadModule::DumpModuleInfo(std::ostream& o, const char* pre) const
 
 
 void
-LoadModule::DumpSymTab(std::ostream& o, const char* pre) const
+binutils::LM::DumpSymTab(std::ostream& o, const char* pre) const
 {
   string p(pre);
   string p1 = p + "  ";
@@ -939,7 +939,7 @@ LoadModule::DumpSymTab(std::ostream& o, const char* pre) const
 //***************************************************************************
 
 std::ostream&
-LoadModule::DbgFuncSummary::Info::dump(std::ostream& os) const
+binutils::LM::DbgFuncSummary::Info::dump(std::ostream& os) const
 {
   os << "{ DbgFuncSummary::Info: \n";
   os << "  " << name << " [" << hex << begVMA << "-" << endVMA << dec << "]"
@@ -951,18 +951,18 @@ LoadModule::DbgFuncSummary::Info::dump(std::ostream& os) const
 }
 
 
-LoadModule::DbgFuncSummary::DbgFuncSummary()
+binutils::LM::DbgFuncSummary::DbgFuncSummary()
 {
 }
 
 
-LoadModule::DbgFuncSummary::~DbgFuncSummary()
+binutils::LM::DbgFuncSummary::~DbgFuncSummary()
 {
   clear();
 }
 
 void 
-LoadModule::DbgFuncSummary::setParentPointers()
+binutils::LM::DbgFuncSummary::setParentPointers()
 {
   // Set parent pointers assuming begVMA has been set.
   for (const_iterator it = this->begin(); it != this->end(); ++it) {
@@ -974,7 +974,7 @@ LoadModule::DbgFuncSummary::setParentPointers()
 }
 
 void
-LoadModule::DbgFuncSummary::clear()
+binutils::LM::DbgFuncSummary::clear()
 {
   for (const_iterator it = this->begin(); it != this->end(); ++it) {
     delete it->second;
@@ -984,7 +984,7 @@ LoadModule::DbgFuncSummary::clear()
 
 
 std::ostream&
-LoadModule::DbgFuncSummary::dump(std::ostream& os) const
+binutils::LM::DbgFuncSummary::dump(std::ostream& os) const
 {
   os << "{ DbgFuncSummary: \n";
   for (const_iterator it = this->begin(); it != this->end(); ++it) {
@@ -997,26 +997,26 @@ LoadModule::DbgFuncSummary::dump(std::ostream& os) const
 }
 
 //***************************************************************************
-// Executable
+// Exe
 //***************************************************************************
 
-Executable::Executable()
+binutils::Exe::Exe()
   : startVMA(0)
 {
 }
 
 
-Executable::~Executable()
+binutils::Exe::~Exe()
 {
 }
 
 
 bool
-Executable::Open(const char* moduleName)
+binutils::Exe::Open(const char* moduleName)
 {
-  bool STATUS = LoadModule::Open(moduleName);
+  bool STATUS = LM::Open(moduleName);
   if (STATUS) {
-    if (GetType() != LoadModule::Executable) {
+    if (GetType() != LM::Executable) {
       cerr << "Error: `" << moduleName << "' is not an executable.\n";
       return false;
     }
@@ -1028,37 +1028,37 @@ Executable::Open(const char* moduleName)
 
 
 void
-Executable::Dump(std::ostream& o, const char* pre) const
+binutils::Exe::Dump(std::ostream& o, const char* pre) const
 {
-  LoadModule::Dump(o);  
+  LM::Dump(o);  
 }
 
 
 void
-Executable::DDump() const
+binutils::Exe::DDump() const
 {
   Dump(std::cerr);
 }
 
 
 void
-Executable::DumpSelf(std::ostream& o, const char* pre) const
+binutils::Exe::DumpSelf(std::ostream& o, const char* pre) const
 {
   o << pre << "Program start address: 0x" << hex << GetStartVMA()
     << dec << endl;
 }
 
 //***************************************************************************
-// LoadModuleSectionIterator
+// LMSegIterator
 //***************************************************************************
 
-LoadModuleSectionIterator::LoadModuleSectionIterator(const LoadModule& _lm)
+binutils::LMSegIterator::LMSegIterator(const LM& _lm)
   : lm(_lm)
 {
   Reset();
 }
 
-LoadModuleSectionIterator::~LoadModuleSectionIterator()
+binutils::LMSegIterator::~LMSegIterator()
 {
 }
 

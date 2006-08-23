@@ -65,7 +65,7 @@
 namespace banal {
   
   PgmScopeTree* 
-  BuildFromLM(LoadModule* lm, 
+  BuildFromLM(binutils::LM* lm, 
 	      const char* canonicalPathList = "",
 	      bool normalizeScopeTree = true,
 	      bool unsafeNormalizations = true,

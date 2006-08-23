@@ -120,7 +120,7 @@ x86ISA::~x86ISA()
 }
 
 ushort
-x86ISA::GetInstSize(MachInst* mi)
+x86ISA::GetInsnSize(MachInsn* mi)
 {
   ushort size;
   DecodingCache *cache;
@@ -129,15 +129,15 @@ x86ISA::GetInstSize(MachInst* mi)
     size = print_insn_i386(PTR_TO_BFDVMA(mi), di);
     CacheSet(mi, size);
   } else {
-    size = cache->instSize;
+    size = cache->insnSize;
   }
   return size;
 }
 
-ISA::InstDesc
-x86ISA::GetInstDesc(MachInst* mi, ushort opIndex, ushort s)
+ISA::InsnDesc
+x86ISA::GetInsnDesc(MachInsn* mi, ushort opIndex, ushort s)
 {
-  ISA::InstDesc d;
+  ISA::InsnDesc d;
 
   if (CacheLookup(mi) == NULL) {
     ushort size = print_insn_i386(PTR_TO_BFDVMA(mi), di);
@@ -146,48 +146,48 @@ x86ISA::GetInstDesc(MachInst* mi, ushort opIndex, ushort s)
 
   switch(di->insn_type) {
     case dis_noninsn:
-      d.Set(InstDesc::INVALID);
+      d.Set(InsnDesc::INVALID);
       break;
     case dis_branch:
       if (di->target != 0) {
-	d.Set(InstDesc::BR_UN_COND_REL);
+	d.Set(InsnDesc::BR_UN_COND_REL);
       } else {
-	d.Set(InstDesc::BR_UN_COND_IND);
+	d.Set(InsnDesc::BR_UN_COND_IND);
       }
       break;
     case dis_condbranch:
       if (di->target != 0) {
-	d.Set(InstDesc::INT_BR_COND_REL); // arbitrarily choose int
+	d.Set(InsnDesc::INT_BR_COND_REL); // arbitrarily choose int
       } else {
-	d.Set(InstDesc::INT_BR_COND_IND); // arbitrarily choose int
+	d.Set(InsnDesc::INT_BR_COND_IND); // arbitrarily choose int
       }
       break;
     case dis_jsr:
       if (di->target != 0) {
-	d.Set(InstDesc::SUBR_REL);
+	d.Set(InsnDesc::SUBR_REL);
       } else {
-	d.Set(InstDesc::SUBR_IND);
+	d.Set(InsnDesc::SUBR_IND);
       }
       break;
     case dis_condjsr:
-      d.Set(InstDesc::OTHER);
+      d.Set(InsnDesc::OTHER);
       break;
     case dis_return:
-      d.Set(InstDesc::SUBR_RET);
+      d.Set(InsnDesc::SUBR_RET);
       break;
     case dis_dref:
     case dis_dref2:
-      d.Set(InstDesc::MEM_OTHER);
+      d.Set(InsnDesc::MEM_OTHER);
       break;
     default:
-      d.Set(InstDesc::OTHER);
+      d.Set(InsnDesc::OTHER);
       break;
   }
   return d;
 }
 
 VMA
-x86ISA::GetInstTargetVMA(MachInst* mi, VMA pc, ushort opIndex, ushort sz)
+x86ISA::GetInsnTargetVMA(MachInsn* mi, VMA pc, ushort opIndex, ushort sz)
 {
   static const bfd_vma M32 = 0xffffffff;
   

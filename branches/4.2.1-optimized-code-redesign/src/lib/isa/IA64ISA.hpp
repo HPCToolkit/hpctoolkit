@@ -77,23 +77,23 @@ public:
   // Instructions:
   // --------------------------------------------------------  
   
-  virtual ushort GetInstSize(MachInst* mi)
+  virtual ushort GetInsnSize(MachInsn* mi)
   { return 16; /* Each IA64 VLIW packet is 16 bytes long. */ }
   
-  virtual ushort GetInstNumOps(MachInst *mi);
+  virtual ushort GetInsnNumOps(MachInsn *mi);
 
-  virtual InstDesc GetInstDesc(MachInst* mi, ushort opIndex, ushort sz = 0);
+  virtual InsnDesc GetInsnDesc(MachInsn* mi, ushort opIndex, ushort sz = 0);
 
-  virtual VMA GetInstTargetVMA(MachInst* mi, VMA pc, ushort opIndex,
-				 ushort sz = 0);
+  virtual VMA GetInsnTargetVMA(MachInsn* mi, VMA pc, ushort opIndex,
+			       ushort sz = 0);
   
-  virtual ushort GetInstNumDelaySlots(MachInst* mi, ushort opIndex,
+  virtual ushort GetInsnNumDelaySlots(MachInsn* mi, ushort opIndex,
 				      ushort sz = 0)
   { return 0; }
 
-  virtual bool IsParallelWithSuccessor(MachInst* mi1, ushort opIndex1,
+  virtual bool IsParallelWithSuccessor(MachInsn* mi1, ushort opIndex1,
 				       ushort sz1,
-				       MachInst* mi2, ushort opIndex2,
+				       MachInsn* mi2, ushort opIndex2,
 				       ushort sz2) const
   { return false; /* FIXME */ }
 

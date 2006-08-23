@@ -66,6 +66,10 @@ using std::string;
 
 #include "OAInterface.hpp"
 
+#include <lib/binutils/Procedure.hpp>
+#include <lib/binutils/Instruction.hpp>
+using namespace binutils;
+
 #include <lib/support/diagnostics.h>
 
 //*************************** Forward Declarations **************************
@@ -87,17 +91,17 @@ using std::string;
 // OAInterface: We assume each instantiation of the IRInterface
 // represents one procedure.  We then need to find all the possible
 // branch targets.
-banal::OAInterface::OAInterface (Procedure *_p) 
+banal::OAInterface::OAInterface (Proc* _p) 
   : proc(_p)
 {
   branchTargetSet.clear();
-  for (ProcedureInstructionIterator pii(*proc); pii.IsValid(); ++pii) {
-    Instruction *insn = pii.Current();
+  for (ProcInsnIterator pii(*proc); pii.IsValid(); ++pii) {
+    Insn* insn = pii.Current();
     VMA curr_oppc = pii.CurrentVMA(); // the 'operation VMA'
     
     // If this insn is a branch, record its target address in
     // the branch target set.
-    ISA::InstDesc d = insn->GetDesc();
+    ISA::InsnDesc d = insn->GetDesc();
     if (d.IsBrRel()) {
       branchTargetSet.insert(insn->GetTargetVMA(insn->GetVMA()));
     }
@@ -195,14 +199,14 @@ banal::OAInterface::toString(const OA::ConstValHandle h)
 void 
 banal::OAInterface::dump(OA::StmtHandle stmt, std::ostream& os)
 {
-  Instruction *insn = IRHNDL_TO_TY(stmt, Instruction*);
+  Insn* insn = IRHNDL_TO_TY(stmt, Insn*);
  
   // Currently, we just print the instruction type.  What we really
   // want is a textual disassembly of the instruction from the
   // disassembler.
 
   VMA pc = insn->GetVMA();
-  ISA::InstDesc d = insn->GetDesc();
+  ISA::InsnDesc d = insn->GetDesc();
 
   // Output pc and descriptor
   cout << hex << "0x" << pc << dec << ": " << d.ToString();
@@ -245,10 +249,10 @@ banal::OAInterface::currentProc(OA::ProcHandle p)
 OA::OA_ptr<OA::IRRegionStmtIterator> 
 banal::OAInterface::procBody(OA::ProcHandle h)
 {
-  Procedure* p = IRHNDL_TO_TY(h, Procedure*);
+  Proc* p = IRHNDL_TO_TY(h, Proc*);
   DIAG_Assert(p == proc, "");
   OA::OA_ptr<OA::IRRegionStmtIterator> it;
-  it = new BloopIRRegionStmtIterator(*p);
+  it = new RegionStmtIterator(*p);
   return it;
 }
 
@@ -262,10 +266,10 @@ OA::CFG::IRStmtType
 banal::OAInterface::getCFGStmtType(OA::StmtHandle h) 
 {
   OA::CFG::IRStmtType ty;
-  Instruction *insn = IRHNDL_TO_TY(h, Instruction*);
+  Insn* insn = IRHNDL_TO_TY(h, Insn*);
   VMA br_targ = 0;
 
-  ISA::InstDesc d = insn->GetDesc();
+  ISA::InsnDesc d = insn->GetDesc();
   if (d.IsBrUnCondRel()) {
     // Unconditional jump. If the branch targets a PC outside of its
     // procedure, then we just ignore it.  For bloop this is fine
@@ -321,7 +325,7 @@ OA::StmtLabel
 banal::OAInterface::getLabel(OA::StmtHandle h)
 {
   OA::StmtLabel lbl = 0;
-  Instruction *insn = IRHNDL_TO_TY(h, Instruction*);
+  Insn* insn = IRHNDL_TO_TY(h, Insn*);
   if (branchTargetSet.find(insn->GetVMA()) != branchTargetSet.end()) {
     lbl = insn->GetVMA();
   } 
@@ -333,7 +337,7 @@ OA::OA_ptr<OA::IRRegionStmtIterator>
 banal::OAInterface::getFirstInCompound(OA::StmtHandle h)
 {
   DIAG_Die(DIAG_Unimplemented);
-  return OA::OA_ptr<BloopIRRegionStmtIterator>();
+  return OA::OA_ptr<RegionStmtIterator>();
 }
 
 
@@ -380,7 +384,7 @@ OA::OA_ptr<OA::IRRegionStmtIterator>
 banal::OAInterface::trueBody(OA::StmtHandle h)
 {
   DIAG_Die(DIAG_Unimplemented);
-  return OA::OA_ptr<BloopIRRegionStmtIterator>();
+  return OA::OA_ptr<RegionStmtIterator>();
 }
 
 
@@ -388,7 +392,7 @@ OA::OA_ptr<OA::IRRegionStmtIterator>
 banal::OAInterface::elseBody(OA::StmtHandle h)
 {
   DIAG_Die(DIAG_Unimplemented);
-  return OA::OA_ptr<BloopIRRegionStmtIterator>();
+  return OA::OA_ptr<RegionStmtIterator>();
 }
 
 
@@ -408,7 +412,7 @@ OA::OA_ptr<OA::IRRegionStmtIterator>
 banal::OAInterface::multiBody(OA::StmtHandle h, int bodyIndex)
 {
   DIAG_Die(DIAG_Unimplemented);
-  return OA::OA_ptr<BloopIRRegionStmtIterator>();
+  return OA::OA_ptr<RegionStmtIterator>();
 }
 
 
@@ -432,7 +436,7 @@ OA::OA_ptr<OA::IRRegionStmtIterator>
 banal::OAInterface::getMultiCatchall(OA::StmtHandle h)
 {
   DIAG_Die(DIAG_Unimplemented);
-  return OA::OA_ptr<BloopIRRegionStmtIterator>();
+  return OA::OA_ptr<RegionStmtIterator>();
 }
 
 
@@ -452,8 +456,8 @@ OA::StmtLabel
 banal::OAInterface::getTargetLabel(OA::StmtHandle h, int n)
 {
   OA::StmtLabel lbl = 0;
-  Instruction *insn = IRHNDL_TO_TY(h, Instruction*);
-  ISA::InstDesc d = insn->GetDesc();
+  Insn* insn = IRHNDL_TO_TY(h, Insn*);
+  ISA::InsnDesc d = insn->GetDesc();
   if (d.IsBrRel()) {
     lbl = insn->GetTargetVMA(insn->GetVMA());
   } 
@@ -507,7 +511,7 @@ banal::OAInterface::getUMultiCondition(OA::StmtHandle h, int targetIndex)
 int
 banal::OAInterface::numberOfDelaySlots(OA::StmtHandle h)
 {
-  Instruction *insn = IRHNDL_TO_TY(h, Instruction*);
+  Insn* insn = IRHNDL_TO_TY(h, Insn*);
   return insn->GetNumDelaySlots();
 }
 
@@ -519,7 +523,7 @@ banal::OAInterface::numberOfDelaySlots(OA::StmtHandle h)
 OA::SymHandle 
 banal::OAInterface::getProcSymHandle(OA::ProcHandle h)
 { 
-  Procedure* p = IRHNDL_TO_TY(h, Procedure*);
+  Proc* p = IRHNDL_TO_TY(h, Proc*);
   DIAG_Assert(p == proc, "");
   string& name = p->GetName(); // this gives us persistent data!
   const char* nm = name.c_str();

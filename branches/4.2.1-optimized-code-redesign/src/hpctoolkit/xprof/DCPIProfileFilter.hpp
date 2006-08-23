@@ -74,7 +74,7 @@ class DCPIMetricFilter;
 // if available, or NULL.  The user is responsible for unallocating
 // the returned object.
 PCProfileFilter* 
-GetPredefinedDCPIFilter(const char* metric, LoadModule* lm);
+GetPredefinedDCPIFilter(const char* metric, binutils::LM* lm);
 
 //****************************************************************************
 // DCPIMetricExpr

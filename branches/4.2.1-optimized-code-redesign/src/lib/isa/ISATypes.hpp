@@ -69,11 +69,11 @@
 typedef bfd_vma VMA;
 typedef bfd_signed_vma VMASigned; // useful for offsets
 
-// MachInst* can point to (non-)variable length instructions (or
+// MachInsn* can point to (non-)variable length instructions (or
 // instruction words) and should not be dereferenced.  To examine the
-// individual bytes of a MachInst*, use a 'MachInstByte'.
-typedef void MachInst;
-typedef unsigned char MachInstByte;
+// individual bytes of a MachInsn*, use a 'MachInsnByte'.
+typedef void MachInsn;
+typedef unsigned char MachInsnByte;
 
 // When GNU binutils is built as a cross-platform tool, bfd_vma will
 // be 64-bits on a 32-bit machine.  Use these casting macros to

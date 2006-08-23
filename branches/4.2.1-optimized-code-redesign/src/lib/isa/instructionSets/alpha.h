@@ -818,15 +818,15 @@
 
 #define REG_A_MASK  0x03e00000 /* Register format; bits 25-21 */
 #define REG_A_SHIFT 21
-#define REG_A(INST) (((INST) & REG_A_MASK) >> REG_A_SHIFT)
+#define REG_A(INSN) (((INSN) & REG_A_MASK) >> REG_A_SHIFT)
 
 #define REG_B_MASK  0x001f0000 /* Register format; bits 20-16 */
 #define REG_B_SHIFT 16
-#define REG_B(INST) (((INST) & REG_B_MASK) >> REG_B_SHIFT)
+#define REG_B(INSN) (((INSN) & REG_B_MASK) >> REG_B_SHIFT)
 
 #define REG_C_MASK  0x0000001f /* Register format; bits 4-0 */
 #define REG_C_SHIFT 0
-#define REG_C(INST) (((INST) & REG_C_MASK) >> REG_C_SHIFT)
+#define REG_C(INSN) (((INSN) & REG_C_MASK) >> REG_C_SHIFT)
 
 // Masks for looking at immediates in Alpha instructions.
 
@@ -838,14 +838,14 @@
 #define IMM_MASK  0x001fe000 /* bits 20-13 */
 #define IMM_SIGN  0x00000000 /* unsigned */
 #define IMM_SHIFT 13
-#define IMM(INST) (((INST) & IMM_MASK) >> IMM_SHIFT)
+#define IMM(INSN) (((INSN) & IMM_MASK) >> IMM_SHIFT)
 
 // mem_disp:
 // memory displacement: 16-bit sign-extended displacement for load/stores.
 #define MEM_DISP_MASK  0x0000ffff /* bits 15-0 */
 #define MEM_DISP_SIGN  0x00008000 /* bit 15 */
 #define MEM_DISP_SHIFT 0
-#define MEM_DISP(INST) (((INST) & MEM_DISP_MASK) >> MEM_DISP_SHIFT)
+#define MEM_DISP(INSN) (((INSN) & MEM_DISP_MASK) >> MEM_DISP_SHIFT)
 
 // br_disp:
 // branch displacement: 21-bit displacement is treated as
@@ -857,7 +857,7 @@
 #define BR_DISP_MASK  0x001fffff /* bits 20-0 */
 #define BR_DISP_SIGN  0x00100000 /* bit 20 */
 #define BR_DISP_SHIFT 0
-#define BR_DISP(INST) (((INST) & BR_DISP_MASK) >> BR_DISP_SHIFT)
+#define BR_DISP(INSN) (((INSN) & BR_DISP_MASK) >> BR_DISP_SHIFT)
 
 // ==========================================================================
 

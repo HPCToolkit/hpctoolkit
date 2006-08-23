@@ -1,5 +1,6 @@
+// -*-Mode: C++;-*-
 // $Id$
-// -*-C++-*-
+
 // * BeginRiceCopyright *****************************************************
 // 
 // Copyright ((c)) 2002, Rice University 
@@ -87,7 +88,7 @@ using namespace std; // For compatibility with non-std C headers
 // LoadModuleInfo
 //***************************************************************************
 
-LoadModuleInfo::LoadModuleInfo(LoadModule* _lm, PCToSrcLineXMap* _map)
+LoadModuleInfo::LoadModuleInfo(binutils::LM* _lm, PCToSrcLineXMap* _map)
   : lm(_lm), map(_map)
 {
   BriefAssertion(lm != NULL);
@@ -103,7 +104,7 @@ bool
 LoadModuleInfo::GetSymbolicInfo(VMA pc, ushort opIndex,
 				string& func, string& file, SrcLineX& srcLn)
 {
-  // 'PCToSrcLineXMap' has priority over 'LoadModule'.
+  // 'PCToSrcLineXMap' has priority over 'LM'.
   bool foundInfo = false;
   if (map) {
     // FIXME: add opindex to map
@@ -125,7 +126,7 @@ LoadModuleInfo::GetSymbolicInfo(VMA pc, ushort opIndex,
   } 
 
   if (!foundInfo) {
-    // Look in 'LoadModule'.
+    // Look in 'binutils::LM'.
     suint line;
     lm->GetSourceFileInfo(pc, opIndex, func, file, line);
     func = GetBestFuncName(func);
@@ -139,5 +140,5 @@ bool
 LoadModuleInfo::GetProcedureFirstLineInfo(VMA pc, 
 					  ushort opIndex, 
 					  suint &line) {
-  return lm->GetProcedureFirstLineInfo(pc, opIndex, line);
+  return lm->GetProcFirstLineInfo(pc, opIndex, line);
 }

@@ -80,7 +80,7 @@ ISA::~ISA()
 //****************************************************************************
 
 const char* 
-ISA::InstDesc::ToString() const
+ISA::InsnDesc::ToString() const
 {
   switch(ty) {
   case MEM_LOAD:        return "MEM_LOAD";
@@ -128,13 +128,13 @@ ISA::InstDesc::ToString() const
 }
 
 void 
-ISA::InstDesc::Dump(std::ostream& o)
+ISA::InsnDesc::Dump(std::ostream& o)
 {
   o << ToString();
 }
 
 void 
-ISA::InstDesc::DDump()
+ISA::InsnDesc::DDump()
 {
   Dump(std::cerr);
 }
