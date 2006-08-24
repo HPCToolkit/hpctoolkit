@@ -215,7 +215,7 @@ NodeRetriever::MoveToProc(const char* name)
 
   ProcScope *p = currentFile->FindProc(name);
   if (p == NULL) {
-    p = new ProcScope(name, currentFile, UNDEF_LINE, UNDEF_LINE);
+    p = new ProcScope(name, currentFile, "");
   }
   currentProc = p;
 
