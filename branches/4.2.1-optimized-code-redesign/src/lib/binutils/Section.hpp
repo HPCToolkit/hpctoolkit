@@ -68,17 +68,19 @@
 
 //*************************** Forward Declarations **************************
 
-class binutils::Proc;
-class binutils::Insn;
-
 //***************************************************************************
 // Seg
 //***************************************************************************
 
 namespace binutils {
 
+class Proc;
+class Insn;
+
+// --------------------------------------------------------------------------
 // 'Seg' is a base class for representing file segments/sections
 // of a 'LoadModule'.
+// --------------------------------------------------------------------------
 
 class Seg {
 public: 
@@ -160,10 +162,13 @@ private:
 
 namespace binutils {
 
+class TextSegImpl; 
+
+
+// --------------------------------------------------------------------------
 // 'TextSeg' represents a text segment in a 'LM' and
 // implements special functionality pertaining to it.
-
-class TextSegImpl; 
+// --------------------------------------------------------------------------
 
 class TextSeg : public Seg { 
 public:
@@ -216,8 +221,10 @@ private:
 
 namespace binutils {
 
+// --------------------------------------------------------------------------
 // 'TextSegProcIterator': iterate over the 'Proc' in a
 // 'TextSeg'.  No order is guaranteed.
+// --------------------------------------------------------------------------
 
 class TextSegProcIterator {
 public: 
