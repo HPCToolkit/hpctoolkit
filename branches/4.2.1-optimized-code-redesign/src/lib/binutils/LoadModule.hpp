@@ -102,7 +102,11 @@ public:
 
 public:
   enum Type {Executable, SharedLibrary, Unknown};
-  
+
+  // -------------------------------------------------------  
+  //
+  // -------------------------------------------------------
+
   // Constructor allocates an empty data structure
   LM();
   virtual ~LM();
@@ -118,6 +122,11 @@ public:
   // already been read, return true.
   virtual bool Read();
 
+
+  // -------------------------------------------------------
+  // 
+  // -------------------------------------------------------
+
   // GetName: Return name of load module
   const std::string& GetName() const { return name; }
 
@@ -131,13 +140,13 @@ public:
 
   // FIXME: on platform other than Alpha/Tru64 we need to set these
   void SetTextBeg(VMA x)  { textBeg = x; }
-  void SetTextEnd(VMA x)    { textEnd = x; }
+  void SetTextEnd(VMA x)  { textEnd = x; }
   
   VMA GetFirstVMA() const { return firstaddr; }
   void SetFirstVMA(VMA x) { firstaddr = x; }
 
 
-  // after read in the binary, get the smallest begin VMA and largest end VMA
+  // after reading the binary, get the smallest begin VMA and largest end VMA
   // of all the text sections
   void GetTextBegEndVMA(VMA* begVMA, VMA* endVMA);
 
@@ -154,6 +163,7 @@ public:
   void AddSeg(Seg *section) { sections.push_back(section); }
 
 
+  // -------------------------------------------------------
   // Instructions: All instructions found in text sections may be
   // accessed here, or through other classes (such as a 'Proc').
   //
@@ -172,11 +182,13 @@ public:
   // not the bits.
   //
   // AddInsn: Add an instruction to the map
+  // -------------------------------------------------------
   MachInsn* GetMachInsn(VMA vma, ushort &size) const;
   Insn*     GetInsn(VMA vma, ushort opIndex) const;
   void      AddInsn(VMA vma, ushort opIndex, Insn *insn);
 
   
+  // -------------------------------------------------------
   // GetSourceFileInfo: If possible, find the source file, function
   // name and line number that corresponds to the operation at
   // 'vma + opIndex'.  If it is possible to find all information without
@@ -201,6 +213,7 @@ public:
   //     information from 'begVMA' is used.
   // The second version only returns true when all information is
   // found and no error is detected.
+  // -------------------------------------------------------
   bool GetSourceFileInfo(VMA vma, ushort opIndex,
 			 std::string& func, std::string& file, 
 			 suint &line) const;
@@ -214,6 +227,15 @@ public:
 
   DbgFuncSummary* GetDebugFuncSummary() { return &dbgSummary; }
 
+
+  // -------------------------------------------------------
+  // Dump contents for inspection
+  // -------------------------------------------------------
+  virtual void Dump(std::ostream& o = std::cerr, const char* pre = "") const;
+  virtual void DDump() const;
+  virtual void DumpSelf(std::ostream& o = std::cerr, const char* pre = "") const;
+
+  // -------------------------------------------------------
   // It is a little unfortunate to have to make 'isa' global across
   // all intances since it implies that while multiple 'LMs'
   // from the ISA may coexist, only one ISA may be used at a time.
@@ -222,12 +244,8 @@ public:
   // anticiapte such generality being very useful.  For example,
   // having multiple load modules open at the same time is generally
   // not a good idea anyway.
+  // -------------------------------------------------------
   static ISA* isa; // current ISA
-
-  // Dump contents for inspection
-  virtual void Dump(std::ostream& o = std::cerr, const char* pre = "") const;
-  virtual void DDump() const;
-  virtual void DumpSelf(std::ostream& o = std::cerr, const char* pre = "") const;
   
   friend class LMSegIterator;
   friend class ProcInsnIterator;
@@ -239,9 +257,11 @@ protected:
 
 public:
 
+  // -------------------------------------------------------
   // Classes used to represent function summary information obtained
   // from the LM's debugging sections.  This will typically be
   // used in constructing Procs.
+  // -------------------------------------------------------
 
   class DbgFuncSummary {
   public:
@@ -389,7 +409,7 @@ private:
   SegSeq sections; // A list of sections
 
   // A map of virtual memory addresses to Insn*
-  VMAToInsnMap vmaToInsnMap;  // owns all Insn*
+  VMAToInsnMap vmaToInsnMap; // owns all Insn*
   VMAToProcMap vmaToProcMap; // CC
 
   // symbolic info used in building procedures

@@ -70,9 +70,7 @@ using std::dec;
 #include "Procedure.hpp"
 
 #include <lib/support/diagnostics.h>
-#include <lib/support/Assertion.h>
 #include <lib/support/QuickSort.hpp>
-#include <lib/support/Trace.hpp>
 
 #include <lib/isa/MipsISA.hpp>
 #include <lib/isa/AlphaISA.hpp>
@@ -81,6 +79,8 @@ using std::dec;
 #include <lib/isa/IA64ISA.hpp>
 
 //*************************** Forward Declarations **************************
+
+#define DBG_BLD_PROC_MAP 0
 
 //***************************************************************************
 
@@ -144,8 +144,6 @@ binutils::LM::~LM()
 bool
 binutils::LM::Open(const char* moduleName)
 {
-  IFTRACE << "LM::Open: " << moduleName << endl;
-
   if (!name.empty()) {
     // 'moduleName' should be equal to what already exists
     DIAG_Assert(name == moduleName, "Cannot open a different file!");
@@ -228,8 +226,7 @@ binutils::LM::Open(const char* moduleName)
       newisa = new IA64ISA;
       break;
     default:
-      cerr << "Could not configure ISA." << endl;
-      BriefAssertion(false);
+      DIAG_Die("Unknown bfd arch: " << bfd_get_arch(abfd));
   }
 
   // Sanity check.  Test to make sure the new LM is using the
@@ -343,7 +340,7 @@ binutils::LM::GetSourceFileInfo(VMA vma, ushort opIndex,
   // This function assumes that the interface type 'suint' can hold
   // the bfd_find_nearest_line line number type.  
   unsigned int bfd_line = 0;
-  //BriefAssertion(sizeof(suint) >= sizeof(bfd_line));
+  //DIAG_Assert(sizeof(suint) >= sizeof(bfd_line));
 
   VMA unrelocVMA = UnRelocateVMA(vma);
   VMA opVMA = isa->ConvertVMAToOpVMA(unrelocVMA, opIndex);
@@ -500,8 +497,8 @@ binutils::LM::Dump(std::ostream& o, const char* pre) const
 
   o << p1 << "Load Module Contents:\n";
   DumpSelf(o, p2.c_str());
-  
-  IFDOTRACE { // For debugging
+
+  DIAG_DevIf(1) {
     o << p2 << "Symbol Table (" << impl->numSyms << "):\n";
     DumpSymTab(o, p2.c_str());
   }
@@ -593,7 +590,7 @@ binutils::LM::ReadSymbolTables()
     numSyms = bfd_canonicalize_dynamic_symtab(impl->abfd,
 					      impl->bfdSymbolTable);
   }
-  BriefAssertion(numSyms >= 0);
+  DIAG_Assert(numSyms >= 0, "");
   impl->numSyms = numSyms;
 
   // Make a scratch copy of the symbol table.
@@ -650,10 +647,6 @@ binutils::LM::ReadSegs()
   return STATUS;
 }
 
-// FIXME: replace with diagnostics stuff
-//#define xDEBUG(flag, code) {if (flag) {code; fflush (stderr); fflush(stdout);}} 
-#define xDEBUG(flag, code) /* null */
-#define DEB_BUILD_PROC_MAP 0
 
 // Builds the map from <proc beg addr, proc end addr> pairs to 
 // procedure first line.
@@ -685,10 +678,10 @@ binutils::LM::buildVMAToProcMap()
 	GetSourceFileInfo(begVMA, 0, func, file, begLine);
       }
       
-      vmaToProcMap.insert(VMAToProcMap::value_type( VMAInterval(begVMA, endVMA), begLine));
-      xDEBUG(DEB_BUILD_PROC_MAP, 
-	     fprintf(stderr, "adding procedure %s [%x,%x] beg line %d\n", 
-		     p->GetName().c_str(), begVMA, endVMA, begLine););
+      VMAInterval vmaint(begVMA, endVMA);
+      vmaToProcMap.insert(VMAToProcMap::value_type(vmaint , begLine));
+      DIAG_MsgIf(DBG_BLD_PROC_MAP, "adding procedure " << p->GetName() << ":" 
+		 << begLine << " " << vmaint.toString());
     }
   } 
   return STATUS;
@@ -703,26 +696,24 @@ binutils::LM::GetProcFirstLineInfo(VMA vma, ushort opIndex, suint &line)
   VMA unrelocVMA = UnRelocateVMA(vma);
   VMA opVMA = isa->ConvertVMAToOpVMA(unrelocVMA, opIndex);
 
-  xDEBUG( DEB_BUILD_PROC_MAP,
-	  fprintf(stderr, "LM::GetProcFirstLineInfo %p %x (%x,%x) unrelocVMA=%x opVMA=%x\n", 
-		  this, this, vma, (unsigned) opIndex, unrelocVMA, opVMA););
+  DIAG_MsgIf(DBG_BLD_PROC_MAP, "LM::GetProcFirstLineInfo " << hex 
+	     << this << " (" << vma << "," << opIndex 
+	     << ") unrelocVMA=" << unrelocVMA << " opVMA=" << opVMA << dec);
 
-  VMAToProcMap::iterator it = vmaToProcMap.lower_bound( VMAInterval(opVMA,opVMA));
+  VMAToProcMap::iterator it = vmaToProcMap.lower_bound(VMAInterval(opVMA,opVMA));
   if (it != vmaToProcMap.end()) {
     it--; // move to predecessor
     line = it->second;
-    xDEBUG( DEB_BUILD_PROC_MAP,
-	    fprintf(stderr, "LM::GetProcFirstLineInfo %p %x (%x,%x) unrelocVMA=%x opVMA=%x found line %d\n", 
-		    this, this, vma, (unsigned) opIndex, unrelocVMA, opVMA, line););
-    
+    DIAG_MsgIf(DBG_BLD_PROC_MAP, "LM::GetProcFirstLineInfo (found) " << hex 
+	       << this << " (" << vma << "," << opIndex 
+	       << ") unrelocVMA=" << unrelocVMA << " opVMA=" << opVMA << dec);
     STATUS = true;
   } 
   else {
     line = 0;
-    xDEBUG( DEB_BUILD_PROC_MAP,
-	    fprintf(stderr, "LM::GetProcFirstLineInfo %p %x (%x,%x) unrelocVMA=%x opVMA=%x line not found\n", 
-		    this, this, vma, (unsigned) opIndex, unrelocVMA, opVMA, line););
-    
+    DIAG_MsgIf(DBG_BLD_PROC_MAP, "LM::GetProcFirstLineInfo (*not* found) " 
+	       << hex << this << " (" << vma << "," << opIndex 
+	       << ") unrelocVMA=" << unrelocVMA << " opVMA=" << opVMA << dec);
   }
   return STATUS;
 }
@@ -832,9 +823,8 @@ binutils::LM::DumpModuleInfo(std::ostream& o, const char* pre) const
     case SharedLibrary: 
       o << "Dynamically Shared Library'\n";
       break;
-    default:            
-      o << "-unknown-'\n";
-      BriefAssertion(false); 
+    default:
+      DIAG_Die("Unknown load module type: " << GetType());
   }
   
   o << p << "Load VMA: " << hex << "0x" << firstaddr << dec << "\n";
@@ -852,7 +842,7 @@ binutils::LM::DumpModuleInfo(std::ostream& o, const char* pre) const
     case bfd_arch_sparc: o << "Sparc'\n"; break;
     case bfd_arch_i386:  o << "x86'\n";   break;
     case bfd_arch_ia64:  o << "IA-64'\n"; break; 
-    default:             o << "-unknown-'\n";   BriefAssertion(false);
+    default: DIAG_Die("Unknown bfd arch: " << bfd_get_arch(abfd));
   }
 
   o << p << "Architectural implementation: `";
@@ -902,8 +892,7 @@ binutils::LM::DumpModuleInfo(std::ostream& o, const char* pre) const
       o << "IA-64'\n"; 
       break; 
     default: 
-      o << "-unknown-'\n"; 
-      BriefAssertion(false);
+      DIAG_Die("Unknown bfd arch: " << bfd_get_arch(abfd));
   }
   
   o << p << "Bits per byte: "    << bfd_arch_bits_per_byte(abfd)    << endl;
