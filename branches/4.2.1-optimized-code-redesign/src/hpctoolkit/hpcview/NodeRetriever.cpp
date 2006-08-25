@@ -1,5 +1,6 @@
+// -*-Mode: C++;-*-
 // $Id$
-// -*-C++-*-
+
 // * BeginRiceCopyright *****************************************************
 // 
 // Copyright ((c)) 2002, Rice University 
@@ -37,14 +38,14 @@
 //***************************************************************************
 //
 // File:
-//    NodeRetriever.C
+//   $Source$
 //
 // Purpose:
-//    Class NodeRetriever provides an interface between the scope info
-//    tree (ScopeInfo) and performance information parsing logic.
+//   Class NodeRetriever provides an interface between the scope info
+//   tree (ScopeInfo) and performance information parsing logic.
 //
 // Description:
-//    [The set of functions, macros, etc. defined in the file]
+//   [The set of functions, macros, etc. defined in the file]
 //
 //***************************************************************************
 

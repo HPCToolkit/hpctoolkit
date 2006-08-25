@@ -1,4 +1,4 @@
-// -*-C++-*-
+// -*-Mode: C++;-*-
 // $Id$
 
 // * BeginRiceCopyright *****************************************************
@@ -38,14 +38,14 @@
 //***************************************************************************
 //
 // File:
-//    NodeRetriever.h
+//   $Source$
 //
 // Purpose:
-//    Class NodeRetriever provides an interface between the scope info
-//    tree (ScopeInfo) and performance information parsing logic.
+//   Class NodeRetriever provides an interface between the scope info
+//   tree (ScopeInfo) and performance information parsing logic.
 //
 // Description:
-//    [The set of functions, macros, etc. defined in the file]
+//   [The set of functions, macros, etc. defined in the file]
 //
 //***************************************************************************
 
