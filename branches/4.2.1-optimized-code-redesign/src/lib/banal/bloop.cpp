@@ -264,8 +264,8 @@ banal::WriteScopeTree(std::ostream& os, PgmScopeTree* pgmScopeTree,
 //****************************************************************************
 
 // BuildFromLM: Builds a scope tree -- with a focus on loop nest
-//   recovery -- representing program source code from the Executable
-//   'exe'.  
+//   recovery -- representing program source code from the load module
+// '  lm'.
 // A load module represents binary code, which is essentially
 //   a collection of procedures along with some extra information like
 //   symbol and debugging tables.  This routine relies on the debugging
@@ -282,7 +282,6 @@ banal::BuildFromLM(binutils::LM* lm,
 		   bool unsafeNormalizations,
 		   bool irreducibleIntervalIsLoop,
 		   bool verboseMode)
-
 {
   DIAG_Assert(lm, DIAG_UnexpectedInput);
 
@@ -378,14 +377,14 @@ BuildStructure(LoadModScope *lmScope, binutils::LM* lm)
   ProcScopeToProcMap* mp = new ProcScopeToProcMap;
   
   for (binutils::LMSegIterator it(*lm); it.IsValid(); ++it) {
-    binutils::Seg* sec = it.Current();
-    if (sec->GetType() != binutils::Seg::Text) {
+    binutils::Seg* seg = it.Current();
+    if (seg->GetType() != binutils::Seg::Text) {
       continue;
     }
     
-    // We have a TextSeg.  Iterate over procedures.
-    binutils::TextSeg* tsec = dynamic_cast<binutils::TextSeg*>(sec);
-    for (binutils::TextSegProcIterator it1(*tsec); it1.IsValid(); ++it1) {
+    // We have a text segment.  Iterate over procedures.
+    binutils::TextSeg* tseg = dynamic_cast<binutils::TextSeg*>(seg);
+    for (binutils::TextSegProcIterator it1(*tseg); it1.IsValid(); ++it1) {
       binutils::Proc* p = it1.Current();
       FileScope* fileScope = FindOrCreateFileNode(lmScope, p);
       ProcScope* procScope = BuildProcStructure(fileScope, p);
@@ -413,7 +412,7 @@ BuildProcStructure(FileScope* fileScope, binutils::Proc* p)
   string funcLnNm = GetBestFuncName(p->GetLinkName());
   
   // Find preliminary source line bounds
-  // FIXME: this is in GetProcedureFirstLineInfo
+  // FIXME: this is in GetProcFirstLineInfo
   string func, file;
   suint begLn1, endLn1;
   binutils::Insn* eInsn = p->GetLastInsn();

@@ -75,7 +75,7 @@ class ISA;
 // first line of the procedure. This map is built upon reading the
 // module. 
 // [FIXME: this should be hidden within LoadModule and should be a general addr => procedure map.]
-typedef std::map<VMAInterval, suint, lt_VMAInterval> VMAToProcMap;
+typedef std::map<VMAInterval, suint> VMAToProcMap;
 
 //***************************************************************************
 // LoadModule
@@ -90,10 +90,12 @@ class LMImpl;
 
 // --------------------------------------------------------------------------
 // 'LM' represents a load module, a binary loaded into memory
-// --------------------------------------------------------------------------
-
+//
+//
 // Note: Most references to VMA (virtual memory address) could be
 // replaced with 'PC' (program counter) or IP (instruction pointer).
+// --------------------------------------------------------------------------
+
 class LM {
 public:
   class DbgFuncSummary;

@@ -38,13 +38,13 @@
 //***************************************************************************
 //
 // File:
-//    Args.C
+//   $Source$
 //
 // Purpose:
-//    [The purpose of this file]
+//   [The purpose of this file]
 //
 // Description:
-//    [The set of functions, macros, etc. defined in the file]
+//   [The set of functions, macros, etc. defined in the file]
 //
 //***************************************************************************
 
@@ -94,7 +94,6 @@ static const char* usage_details =
 "                       times.\n"
 "  -V, --version        Print version information.\n"
 "  -h, --help           Print this help.\n"
-"  -D, --dump-binary    Dump binary information and suppress loop recovery\n"
 "\n"
 "Caveats:\n"
 "* <binary> should be compiled with as much debugging info as possible (e.g.\n"
@@ -124,7 +123,6 @@ CmdLineParser::OptArgDesc Args::optArgs[] = {
   
   { 'V', "version",     CLP::ARG_NONE, CLP::DUPOPT_CLOB, NULL },
   { 'h', "help",        CLP::ARG_NONE, CLP::DUPOPT_CLOB, NULL },
-  { 'D', "dump-binary", CLP::ARG_NONE, CLP::DUPOPT_CLOB, NULL },
   {  0 , "debug",       CLP::ARG_OPT,  CLP::DUPOPT_CLOB, NULL }, // hidden
   CmdLineParser_OptArgDesc_NULL_MACRO // SGI's compiler requires this version
 };
@@ -155,7 +153,6 @@ Args::Ctor()
   unsafeNormalizations = true;
   irreducibleIntervalIsLoop = false;
   prettyPrintOutput = true;
-  dumpBinary = false;
 }
 
 
@@ -243,9 +240,6 @@ Args::Parse(int argc, const char* const argv[])
     if (parser.IsOpt("canonical-paths")) { 
       canonicalPathList = parser.GetOptArg("canonical-paths");
     }
-    if (parser.IsOpt("dump-binary")) { 
-      dumpBinary = true;
-    } 
     
     // Check for required arguments
     if (parser.GetNumArgs() != 1) {
@@ -269,7 +263,6 @@ void
 Args::Dump(std::ostream& os) const
 {
   os << "Args.cmd= " << GetCmd() << endl; 
-  os << "Args.dumpBinary= " << dumpBinary << endl;
   os << "Args.prettyPrintOutput= " << prettyPrintOutput << endl;
   os << "Args.normalizeScopeTree= " << normalizeScopeTree << endl;
   os << "Args.canonicalPathList= " << canonicalPathList << endl;

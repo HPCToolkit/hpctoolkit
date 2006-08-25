@@ -150,7 +150,7 @@ realmain(int argc, char* const argv[])
   catch (...) {
     DIAG_EMsg("Exception encountered while reading " << args.inputFile);
     throw;
-  } 
+  }
 
   // ------------------------------------------------------------
   // Dump load module
@@ -165,7 +165,6 @@ realmain(int argc, char* const argv[])
     else {
       lm->Dump(std::cout);
     }
-    
   } 
   catch (...) {
     DIAG_EMsg("Exception encountered while dumping " << args.inputFile);

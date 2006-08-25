@@ -38,13 +38,13 @@
 //***************************************************************************
 //
 // File:
-//    main.C
+//   $Source$
 //
 // Purpose:
-//    [The purpose of this file]
+//   [The purpose of this file]
 //
 // Description:
-//    [The set of functions, macros, etc. defined in the file]
+//   [The set of functions, macros, etc. defined in the file]
 //
 //***************************************************************************
 
@@ -120,33 +120,22 @@ real_main(int argc, char* argv[])
     exit(1);
   }
   
-  if (args.dumpBinary) {
-    // ------------------------------------------------------------
-    // Dump load module without a scope tree
-    // ------------------------------------------------------------
-    lm->Dump(std::cout);
-  } 
-  else {
-    // ------------------------------------------------------------
-    // Build and print the ScopeTree
-    // ------------------------------------------------------------
-
-    // Build scope tree
-    PgmScopeTree* pgmScopeTree =
-      banal::BuildFromLM(lm, args.canonicalPathList.c_str(),
-			 args.normalizeScopeTree, 
-			 args.unsafeNormalizations,
-			 args.irreducibleIntervalIsLoop,
-			 args.verboseMode);
-    
-    // Write scope tree
-    banal::WriteScopeTree(std::cout, pgmScopeTree, args.prettyPrintOutput);
-    
-    // Cleanup
-    delete pgmScopeTree;
-  }
+  // ------------------------------------------------------------
+  // Build and print the ScopeTree
+  // ------------------------------------------------------------
+  PgmScopeTree* pgmScopeTree =
+    banal::BuildFromLM(lm, args.canonicalPathList.c_str(),
+		       args.normalizeScopeTree, 
+		       args.unsafeNormalizations,
+		       args.irreducibleIntervalIsLoop,
+		       args.verboseMode);
   
+  banal::WriteScopeTree(std::cout, pgmScopeTree, args.prettyPrintOutput);
+  
+  // Cleanup
+  delete pgmScopeTree;
   delete lm;
+  
   return (0);
 }
 

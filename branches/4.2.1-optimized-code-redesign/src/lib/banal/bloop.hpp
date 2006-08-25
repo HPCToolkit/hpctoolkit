@@ -48,8 +48,8 @@
 //
 //***************************************************************************
 
-#ifndef bloop_hpp
-#define bloop_hpp
+#ifndef banal_bloop_hpp
+#define banal_bloop_hpp
 
 //************************* System Include Files ****************************
 
@@ -84,4 +84,4 @@ namespace banal {
 
 //****************************************************************************
 
-#endif
+#endif // banal_bloop_hpp
