@@ -43,6 +43,8 @@
 
 #include <lib/isa/ISATypes.hpp>
 
+#include <lib/support/diagnostics.h>
+
 //*************************** Forward Declarations **************************
 
 
@@ -126,6 +128,8 @@ public:
   ProfFile();
   ~ProfFile();
   
+  ProfFile(const ProfFile& f) { DIAG_Die(DIAG_Unimplemented); }
+  
   // read: Return 0 on success; non-zero (1) on error.
   int read(const std::string &filename);
   
@@ -137,7 +141,7 @@ public:
   const ProfFileLM& load_module(unsigned int i) const { return lmvec_[i]; }
   
   void dump(std::ostream& o = std::cerr, const char* pre = "") const;
-  
+
 private:
   std::string name_; 
   time_t mtime_;
