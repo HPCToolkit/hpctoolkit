@@ -26,6 +26,7 @@
 
 #include <stdlib.h>
 #include <stdarg.h>   /* va_arg */
+#include <string.h>   /* memset */
 #include <errno.h>
 #include <pthread.h>
 
@@ -175,7 +176,7 @@ init_library_SPECIALIZED()
       DIE("fatal error: Cannot intercept POSIX thread creation and therefore cannot profile threads.");
     }
     
-    real_pthread_self = dlsym(RTLD_NEXT, "pthread_self");
+    real_pthread_self = (pthread_self_fptr_t)dlsym(RTLD_NEXT, "pthread_self");
     hpcrun_handle_any_dlerror();
     if (!real_pthread_self) {
       DIE("fatal error: Cannot intercept POSIX thread id routine and therefore cannot profile threads.");

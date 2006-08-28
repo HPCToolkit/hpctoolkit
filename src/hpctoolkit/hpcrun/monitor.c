@@ -162,7 +162,8 @@ init_options()
   
   /* Threaded profiling: default is off */
   env_thread = getenv("HPCRUN_THREAD");
-  opt_thread = (env_thread ? atoi(env_thread) : HPCRUN_THREADPROF_NO);
+  opt_thread = (env_thread ? 
+		(hpc_threadprof_t)atoi(env_thread) : HPCRUN_THREADPROF_NO);
   
   /* Profiling event list: default PAPI_TOT_CYC:32767 (default_period) */
   opt_eventlist = "PAPI_TOT_CYC:32767"; 
@@ -1467,7 +1468,8 @@ static void
 write_module_profile(FILE* fs, rtloadmod_desc_t* mod,
 		     hpcrun_profiles_desc_t* profdesc, int sprofidx)
 {
-  int i, numEv = 0;
+  int i;
+  unsigned numEv = 0;
   unsigned numSysEv = 0, numPapiEv = 0;
   
   if (opt_debug >= 2) { 
