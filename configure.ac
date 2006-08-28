@@ -1,5 +1,5 @@
 # -*-Mode: autoconf;-*-
-# $Header$
+# $Id$
 
 ## * BeginRiceCopyright *****************************************************
 ## 
@@ -168,9 +168,15 @@ AC_SUBST([OA_LDFLAGS])
 
 AC_MSG_CHECKING([for GNU binutils])
 
+# The binutils installer (2.16.1, 2.17) creates libbfd.la and
+# libopcodes.la but only libiberty.a.  Apparently, not having
+# libiberty.la can cause libtool (1.5.20, 1.5.22) to prefer a system
+# library (without a .la!) -- thus ignoring the -L directive.  So we
+# provide an absolute reference.
+
 GNUBINUTILS="${hpctoolkit_top}/../binutils/${HPCTOOLKIT_PLATFORM}"
 GNUBINUTILS_IFLAGS="-I${GNUBINUTILS}/include"
-GNUBINUTILS_LDFLAGS="-L${GNUBINUTILS}/lib -lbfd -lopcodes -liberty"
+GNUBINUTILS_LDFLAGS="-L${GNUBINUTILS}/lib -lbfd -lopcodes ${GNUBINUTILS}/lib/libiberty.a"
 
 # on non-Linux systems we build libintl
 case ${host} in
