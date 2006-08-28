@@ -43,8 +43,9 @@
 
 #include "hpcprof.hpp"
 
-//*************************** Forward Declarations **************************
+#include <lib/support/Assertion.h>
 
+//*************************** Forward Declarations **************************
 
 //***************************************************************************
 
@@ -128,6 +129,8 @@ class ProfFile {
   public:
     ProfFile();
     ~ProfFile();
+
+    ProfFile(const ProfFile& f) { BriefAssertion(0); }
 
     // read: Return 0 on success; non-zero (1) on error.
     int read(const std::string &filename);
