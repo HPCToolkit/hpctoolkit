@@ -62,6 +62,7 @@
 
 #include <include/general.h>
 
+#include "dbg_LM.hpp"
 #include "VMAInterval.hpp"
 #include "BinUtils.hpp"
 
@@ -78,7 +79,7 @@ class ISA;
 typedef std::map<VMAInterval, suint> VMAToProcMap;
 
 //***************************************************************************
-// LoadModule
+// LM (LoadModule)
 //***************************************************************************
 
 namespace binutils {
@@ -225,7 +226,7 @@ public:
 
   bool GetProcFirstLineInfo(VMA vma, ushort opIndex, suint &line);
 
-  DbgFuncSummary* GetDebugFuncSummary() { return &dbgSummary; }
+  binutils::dbg::LM* GetDebugInfo() { return &dbgInfo; }
 
 
   // -------------------------------------------------------
@@ -362,8 +363,6 @@ private:
   // Constructing routines: return true on success; false on error
   bool ReadSymbolTables();
   bool ReadSegs();
-  bool ReadDebugFunctionSummaryInfo();
-  void ClearDebugFunctionSummaryInfo();
   
   // Builds the map from <proc beg addr, proc end addr> pairs to 
   // procedure first line.
@@ -413,7 +412,7 @@ private:
   VMAToProcMap vmaToProcMap; // CC
 
   // symbolic info used in building procedures
-  DbgFuncSummary dbgSummary; 
+  binutils::dbg::LM dbgInfo;
 };
 
 } // namespace binutils

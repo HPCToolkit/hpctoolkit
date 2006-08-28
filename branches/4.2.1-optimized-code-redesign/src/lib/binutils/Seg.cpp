@@ -63,9 +63,13 @@ using std::string;
 
 #include <include/gnu_bfd.h>
 
+#include "LM.hpp"
 #include "Seg.hpp"
 #include "Proc.hpp"
 #include "Insn.hpp"
+
+#include "dbg_LM.hpp"
+#include "dbg_Proc.hpp"
 
 #include <lib/isa/ISA.hpp>
 
@@ -231,7 +235,7 @@ void
 binutils::TextSeg::Create_InitializeProcs()
 {
   LM* lm = GetLM();
-  LM::DbgFuncSummary* dbgSum = lm->GetDebugFuncSummary();
+  dbg::LM* dbgInfo = lm->GetDebugInfo();
 
   // ------------------------------------------------------------
   // Each text section finds and creates its own routines.
@@ -265,7 +269,7 @@ binutils::TextSeg::Create_InitializeProcs()
       string procNm;
       string symNm = bfd_asymbol_name(sym);
 
-      LM::DbgFuncSummary::Info* dbg = (*dbgSum)[begVMA];
+      dbg::Proc* dbg = (*dbgInfo)[begVMA];
       if (dbg) {
 	endVMA = dbg->endVMA; // end of last insn
 	procNm = dbg->name;

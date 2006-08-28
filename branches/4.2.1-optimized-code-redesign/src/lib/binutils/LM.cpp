@@ -51,6 +51,7 @@
 //************************* System Include Files ****************************
 
 #include <typeinfo>
+
 #include <string>
 using std::string;
 
@@ -69,14 +70,16 @@ using std::dec;
 #include "Insn.hpp"
 #include "Proc.hpp"
 
-#include <lib/support/diagnostics.h>
-#include <lib/support/QuickSort.hpp>
+#include "dbg_LM.hpp"
 
 #include <lib/isa/MipsISA.hpp>
 #include <lib/isa/AlphaISA.hpp>
 #include <lib/isa/SparcISA.hpp>
 #include <lib/isa/x86ISA.hpp>
 #include <lib/isa/IA64ISA.hpp>
+
+#include <lib/support/diagnostics.h>
+#include <lib/support/QuickSort.hpp>
 
 //*************************** Forward Declarations **************************
 
@@ -288,7 +291,6 @@ binutils::LM::IsRelocated() const
 }
 
 
-
 MachInsn*
 binutils::LM::GetMachInsn(VMA vma, ushort &size) const
 {
@@ -301,6 +303,7 @@ binutils::LM::GetMachInsn(VMA vma, ushort &size) const
   }
   return minsn; 
 }
+
 
 binutils::Insn*
 binutils::LM::GetInsn(VMA vma, ushort opIndex) const
@@ -315,6 +318,7 @@ binutils::LM::GetInsn(VMA vma, ushort opIndex) const
   }
   return insn;
 }
+
 
 void
 binutils::LM::AddInsn(VMA vma, ushort opIndex, binutils::Insn *insn)
@@ -371,6 +375,7 @@ binutils::LM::GetSourceFileInfo(VMA vma, ushort opIndex,
 
   return STATUS;
 }
+
 
 bool
 binutils::LM::GetSourceFileInfo(VMA begVMA, ushort bOpIndex,
@@ -510,11 +515,13 @@ binutils::LM::Dump(std::ostream& o, const char* pre) const
   }
 }
 
+
 void
 binutils::LM::DDump() const
 {
   Dump(std::cerr);
 }
+
 
 void
 binutils::LM::DumpSelf(std::ostream& o, const char* pre) const
@@ -615,11 +622,11 @@ binutils::LM::ReadSegs()
   // Pass symbol table and debug summary information for each section
   // into that section as it is created.
   if (!impl->bfdSymbolTable) { return false; }
+  bfd *abfd = impl->abfd;
 
-  ReadDebugFunctionSummaryInfo();
+  dbgInfo.read(abfd, impl->bfdSymbolTable);
 
   // Process each section in the object file.
-  bfd *abfd = impl->abfd;
   for (asection *sec = abfd->sections; sec; sec = sec->next) {
 
     // 1. Determine initial section attributes
@@ -632,17 +639,16 @@ binutils::LM::ReadSegs()
     if (sec->flags & SEC_CODE) {
       TextSeg *newSeg =
 	new TextSeg(this, secName, secBeg, secEnd, secSize,
-			impl->sortedSymbolTable, impl->numSyms, abfd);
+		    impl->sortedSymbolTable, impl->numSyms, abfd);
       AddSeg(newSeg);
     } 
     else {
-      Seg *newSeg = new Seg(this, secName, Seg::Data,
-					secBeg, secEnd, secSize);
+      Seg *newSeg = new Seg(this, secName, Seg::Data, secBeg, secEnd, secSize);
       AddSeg(newSeg);
     }
   }
 
-  ClearDebugFunctionSummaryInfo();
+  dbgInfo.clear();
   
   return STATUS;
 }
@@ -716,91 +722,6 @@ binutils::LM::GetProcFirstLineInfo(VMA vma, ushort opIndex, suint &line)
 	       << ") unrelocVMA=" << unrelocVMA << " opVMA=" << opVMA << dec);
   }
   return STATUS;
-}
-
-
-bool
-binutils::LM::ReadDebugFunctionSummaryInfo()
-{
-  bool STATUS = true;
-
-  if (!impl->bfdSymbolTable) { return false; }
-  
-  bfd *abfd = impl->abfd;  
-  
-  // Construct dbgSummary: Currently we only know about ELF/DWARF2
-  if (bfd_get_flavour(abfd) == bfd_target_elf_flavour) {
-    bfd_forall_dbg_funcinfo_fn_t callback = 
-      (bfd_forall_dbg_funcinfo_fn_t)bfd_DbgFuncinfoCallback;
-    int cnt = bfd_elf_forall_dbg_funcinfo(abfd, impl->bfdSymbolTable,
-					  callback, this);
-  }
-  
-  // Post-process dbgSummary and set parent pointers
-  dbgSummary.setParentPointers();
-
-  //dbgSummary.dump(std::cout);
-  
-  return STATUS;
-}
-
-
-void
-binutils::LM::ClearDebugFunctionSummaryInfo()
-{
-  dbgSummary.clear();
-}
-
-
-// Should have function type of 'bfd_forall_dbg_funcinfo_fn_t'
-int 
-binutils::LM::bfd_DbgFuncinfoCallback(void* callback_obj, 
-				    void* parent, void* funcinfo)
-{
-  LM* lm = (LM*)callback_obj;
-  
-  DbgFuncSummary::Info* finfo = new DbgFuncSummary::Info;
-
-  // Collect information for 'funcinfo'
-  bfd_vma begVMA, endVMA;
-  const char* name, *filenm;
-  unsigned int begLine;
-  bfd_forall_dbg_funcinfo_get_decl_info(funcinfo, &name, &filenm, &begLine);
-  bfd_forall_dbg_funcinfo_get_vma_bounds(funcinfo, &begVMA, &endVMA);
-  if (!name)   { name = ""; }
-  if (!filenm) { filenm = ""; }
-  
-  finfo->begVMA = begVMA;
-  finfo->endVMA = endVMA;
-  finfo->name = name;
-  finfo->filenm = filenm;
-  finfo->begLine = (suint)begLine;
-
-  // We are not guaranteed to see parent routines before children.
-  // Save begVMA for future processing.
-  begVMA = endVMA = 0;
-  if (parent) {
-    bfd_forall_dbg_funcinfo_get_vma_bounds(parent, &begVMA, &endVMA);
-  }
-  finfo->parentVMA = begVMA;
-
-  // For now, we assume that if we don't know an address for
-  // 'funcinfo', then we can't use it
-  if (finfo->begVMA == 0) {
-    delete finfo;
-    return 0;
-  }
-  
-  std::pair<DbgFuncSummary::iterator, bool> res = 
-    lm->dbgSummary.insert(std::make_pair(finfo->begVMA, finfo));
-  if (!res.second) {
-    // There are two descriptors for the same function.  I don't think
-    // this should happen in practice...
-    // finfo->dump(std::cout);
-    delete finfo;    
-  }
-
-  return 0;
 }
 
 
@@ -924,68 +845,6 @@ binutils::LM::DumpSymTab(std::ostream& o, const char* pre) const
 
 
 //***************************************************************************
-// DbgFuncSummary
-//***************************************************************************
-
-std::ostream&
-binutils::LM::DbgFuncSummary::Info::dump(std::ostream& os) const
-{
-  os << "{ DbgFuncSummary::Info: \n";
-  os << "  " << name << " [" << hex << begVMA << "-" << endVMA << dec << "]"
-     << " parentVMA: " << hex << parentVMA << " --> " << parent << dec << "\n";
-  os << "  " << filenm << ":" << begLine << "\n";
-  os << "}\n";
-  os.flush();
-  return os;
-}
-
-
-binutils::LM::DbgFuncSummary::DbgFuncSummary()
-{
-}
-
-
-binutils::LM::DbgFuncSummary::~DbgFuncSummary()
-{
-  clear();
-}
-
-void 
-binutils::LM::DbgFuncSummary::setParentPointers()
-{
-  // Set parent pointers assuming begVMA has been set.
-  for (const_iterator it = this->begin(); it != this->end(); ++it) {
-    Info* x = it->second;
-    if (x->parentVMA != 0) {
-      x->parent = (*this)[x->parentVMA];
-    }
-  }
-}
-
-void
-binutils::LM::DbgFuncSummary::clear()
-{
-  for (const_iterator it = this->begin(); it != this->end(); ++it) {
-    delete it->second;
-  }
-  mMap.clear();
-}
-
-
-std::ostream&
-binutils::LM::DbgFuncSummary::dump(std::ostream& os) const
-{
-  os << "{ DbgFuncSummary: \n";
-  for (const_iterator it = this->begin(); it != this->end(); ++it) {
-    //os << "(" << it->first << " --> " << it->second << ")\n";
-    it->second->dump(os);
-  }
-  os << "}\n";
-  os.flush();
-  return os;
-}
-
-//***************************************************************************
 // Exe
 //***************************************************************************
 
@@ -1036,6 +895,7 @@ binutils::Exe::DumpSelf(std::ostream& o, const char* pre) const
   o << pre << "Program start address: 0x" << hex << GetStartVMA()
     << dec << endl;
 }
+
 
 //***************************************************************************
 // LMSegIterator

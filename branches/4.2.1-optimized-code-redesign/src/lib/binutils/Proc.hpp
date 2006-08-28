@@ -75,7 +75,9 @@ class TextSeg;
 
 namespace binutils {
 
+// --------------------------------------------------------------------------
 // 'Proc' represents a procedure in the 'TextSeg' of a 'LM'
+// --------------------------------------------------------------------------
 
 class Proc {
 public:
@@ -199,8 +201,10 @@ private:
 
 namespace binutils {
 
+// --------------------------------------------------------------------------
 // 'ProcInsnIterator' enumerates a procedure's
 // instructions maintaining relative order.
+// --------------------------------------------------------------------------
 
 class ProcInsnIterator {
 public:

@@ -15,7 +15,7 @@
 @SET_MAKE@
 
 # -*-Mode: makefile;-*-
-# $Id: Makefile.am 614 2006-08-28 13:43:25Z eraxxon $
+# $Id: Makefile.am 617 2006-08-28 16:24:02Z eraxxon $
 
 #############################################################################
 #
@@ -114,6 +114,7 @@ am__DEPENDENCIES_1 =
 libHPCbinutils_la_DEPENDENCIES = $(am__DEPENDENCIES_1)
 am__objects_1 = libHPCbinutils_la-LM.lo libHPCbinutils_la-Seg.lo \
 	libHPCbinutils_la-Proc.lo libHPCbinutils_la-Insn.lo \
+	libHPCbinutils_la-dbg_LM.lo libHPCbinutils_la-dbg_Proc.lo \
 	libHPCbinutils_la-BinUtils.lo libHPCbinutils_la-VMAInterval.lo \
 	libHPCbinutils_la-PCToSrcLineMap.lo
 am_libHPCbinutils_la_OBJECTS = $(am__objects_1)
@@ -328,6 +329,9 @@ MYSOURCES = \
 	Proc.hpp Proc.cpp \
 	Insn.hpp Insn.cpp \
 	\
+	dbg_LM.hpp dbg_LM.cpp \
+	dbg_Proc.hpp dbg_Proc.cpp \
+	\
 	BinUtils.hpp BinUtils.cpp \
 	VMAInterval.hpp VMAInterval.cpp \
 	\
@@ -414,6 +418,8 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCbinutils_la-Proc.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCbinutils_la-Seg.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCbinutils_la-VMAInterval.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCbinutils_la-dbg_LM.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCbinutils_la-dbg_Proc.Plo@am__quote@
 
 .cpp.o:
 @am__fastdepCXX_TRUE@	if $(CXXCOMPILE) -MT $@ -MD -MP -MF "$(DEPDIR)/$*.Tpo" -c -o $@ $<; \
@@ -463,6 +469,20 @@ libHPCbinutils_la-Insn.lo: Insn.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='Insn.cpp' object='libHPCbinutils_la-Insn.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(LIBTOOL) --tag=CXX --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCbinutils_la_CXXFLAGS) $(CXXFLAGS) -c -o libHPCbinutils_la-Insn.lo `test -f 'Insn.cpp' || echo '$(srcdir)/'`Insn.cpp
+
+libHPCbinutils_la-dbg_LM.lo: dbg_LM.cpp
+@am__fastdepCXX_TRUE@	if $(LIBTOOL) --tag=CXX --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCbinutils_la_CXXFLAGS) $(CXXFLAGS) -MT libHPCbinutils_la-dbg_LM.lo -MD -MP -MF "$(DEPDIR)/libHPCbinutils_la-dbg_LM.Tpo" -c -o libHPCbinutils_la-dbg_LM.lo `test -f 'dbg_LM.cpp' || echo '$(srcdir)/'`dbg_LM.cpp; \
+@am__fastdepCXX_TRUE@	then mv -f "$(DEPDIR)/libHPCbinutils_la-dbg_LM.Tpo" "$(DEPDIR)/libHPCbinutils_la-dbg_LM.Plo"; else rm -f "$(DEPDIR)/libHPCbinutils_la-dbg_LM.Tpo"; exit 1; fi
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='dbg_LM.cpp' object='libHPCbinutils_la-dbg_LM.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(LIBTOOL) --tag=CXX --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCbinutils_la_CXXFLAGS) $(CXXFLAGS) -c -o libHPCbinutils_la-dbg_LM.lo `test -f 'dbg_LM.cpp' || echo '$(srcdir)/'`dbg_LM.cpp
+
+libHPCbinutils_la-dbg_Proc.lo: dbg_Proc.cpp
+@am__fastdepCXX_TRUE@	if $(LIBTOOL) --tag=CXX --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCbinutils_la_CXXFLAGS) $(CXXFLAGS) -MT libHPCbinutils_la-dbg_Proc.lo -MD -MP -MF "$(DEPDIR)/libHPCbinutils_la-dbg_Proc.Tpo" -c -o libHPCbinutils_la-dbg_Proc.lo `test -f 'dbg_Proc.cpp' || echo '$(srcdir)/'`dbg_Proc.cpp; \
+@am__fastdepCXX_TRUE@	then mv -f "$(DEPDIR)/libHPCbinutils_la-dbg_Proc.Tpo" "$(DEPDIR)/libHPCbinutils_la-dbg_Proc.Plo"; else rm -f "$(DEPDIR)/libHPCbinutils_la-dbg_Proc.Tpo"; exit 1; fi
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='dbg_Proc.cpp' object='libHPCbinutils_la-dbg_Proc.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(LIBTOOL) --tag=CXX --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCbinutils_la_CXXFLAGS) $(CXXFLAGS) -c -o libHPCbinutils_la-dbg_Proc.lo `test -f 'dbg_Proc.cpp' || echo '$(srcdir)/'`dbg_Proc.cpp
 
 libHPCbinutils_la-BinUtils.lo: BinUtils.cpp
 @am__fastdepCXX_TRUE@	if $(LIBTOOL) --tag=CXX --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCbinutils_la_CXXFLAGS) $(CXXFLAGS) -MT libHPCbinutils_la-BinUtils.lo -MD -MP -MF "$(DEPDIR)/libHPCbinutils_la-BinUtils.Tpo" -c -o libHPCbinutils_la-BinUtils.lo `test -f 'BinUtils.cpp' || echo '$(srcdir)/'`BinUtils.cpp; \

@@ -121,8 +121,10 @@ am__DEPENDENCIES_1 =  \
 	$(top_builddir)/src/lib/prof-juicy/libHPCprof-juicy.la
 am__DEPENDENCIES_2 =  \
 	$(top_builddir)/src/lib/prof-lean/libHPCprof-lean.la
-am__DEPENDENCIES_3 = $(am__DEPENDENCIES_1) $(am__DEPENDENCIES_2)
-hpcprof_DEPENDENCIES = $(am__DEPENDENCIES_3)
+am__DEPENDENCIES_3 = $(top_builddir)/src/lib/support/libHPCsupport.la
+am__DEPENDENCIES_4 = $(am__DEPENDENCIES_1) $(am__DEPENDENCIES_2) \
+	$(am__DEPENDENCIES_3)
+hpcprof_DEPENDENCIES = $(am__DEPENDENCIES_4)
 DEFAULT_INCLUDES = -I. -I$(srcdir)
 depcomp = $(SHELL) $(top_srcdir)/config/depcomp
 am__depfiles_maybe = depfiles
@@ -338,7 +340,7 @@ MYLDFLAGS = \
 	@HOST_CXXFLAGS@
 
 MYLDADD = \
-	$(HPC_LIBPROFJUICY) $(HPC_LIBPROFLEAN) \
+	$(HPC_LIBPROFJUICY) $(HPC_LIBPROFLEAN) $(HPC_LIBSUPPORT) \
 	@HOST_LIBTREPOSITORY@ \
 	@GNUBINUTILS_LDFLAGS@
 
