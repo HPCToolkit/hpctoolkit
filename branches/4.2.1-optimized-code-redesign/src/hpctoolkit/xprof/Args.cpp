@@ -122,19 +122,6 @@ static const char* usage_details =
 "  -V, --version  Print version information.\n"
 "  -h, --help     Print this help.\n";
 
-#if 0  // FIXME '[-m <bloop-pcmap>]'
-"If no <bloop-pcmap> -- a map extended with analysis information\n"
-"from 'bloop' -- is provided, the program attempts to construct\n"
-"the PROFILE by querying the <binary>'s debugging information.\n"
-"Because of the better analysis ability of 'bloop', a <bloop-pcmap>\n"
-"usually improves the accuracy of the PROFILE.  Moreover, because\n"
-"no loop recovery is performed, providing <bloop-pcmap> enables\n"
-"the PROFILE to represent loop nesting information.\n"
-"[*Not fully implemented.*]\n"
-"\n"
-"  -m: specify <bloop-pcmap>\n"
-#endif     
-
 
 #define CLP CmdLineParser
 
@@ -270,9 +257,6 @@ Args::Parse(int argc, const char* const argv[])
     if (parser.IsOpt("raw-metrics")) { 
       outputRawMetrics = true;
     } 
-    if (parser.IsOpt("pcmap")) { 
-      pcMapFile = parser.GetOptArg("pcmap");
-    }
 
     // Sanity check: -M,-X and -R should not be used at the same time
     if ( (!metricList.empty() || !excludeMList.empty()) && outputRawMetrics) {
@@ -327,7 +311,6 @@ void
 Args::Dump(std::ostream& os) const
 {
   os << "Args.cmd= " << GetCmd() << endl; 
-  os << "Args.pcMapFile= " << pcMapFile << endl;
   os << "Args.progFile= " << progFile << endl;
   os << "Args.profFile= " << profFile << endl;
   os << "::trace " << ::trace << endl; 

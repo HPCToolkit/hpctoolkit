@@ -1,5 +1,6 @@
+// -*-Mode: C++;-*-
 // $Id$
-// -*-C++-*-
+
 // * BeginRiceCopyright *****************************************************
 // 
 // Copyright ((c)) 2002, Rice University 
@@ -37,13 +38,13 @@
 //***************************************************************************
 //
 // File:
-//    $Source$
+//   $Source$
 //
 // Purpose:
-//    [The purpose of this file]
+//   [The purpose of this file]
 //
 // Description:
-//    [The set of functions, macros, etc. defined in the file]
+//   [The set of functions, macros, etc. defined in the file]
 //
 //***************************************************************************
 
@@ -63,7 +64,6 @@
 #include <lib/isa/ISATypes.hpp>
 
 #include <lib/binutils/LM.hpp>
-#include <lib/binutils/LoadModuleInfo.hpp>
 
 #include <lib/support/NonUniformDegreeTree.hpp>
 #include <lib/support/Unique.hpp>
@@ -92,19 +92,19 @@ public:
     void SetMapaddr(VMA  m) {mapaddr=m; }  
     void SetUsedFlag(bool b) {used=b;}
     
-    bool LdMdInfoIsEmpty() {return (ldminfo==NULL); } 
-    void SetLdMdInfo(LoadModuleInfo* lm) {ldminfo=lm;}
-    LoadModuleInfo* GetLdMdInfo() {return ldminfo;}
+    bool LMIsEmpty() {return (lm == NULL); } 
+    void SetLM(binutils::LM* x) {lm = x;}
+    binutils::LM* GetLM() {return lm;}
 
     void Dump(std::ostream& o= std::cerr);
     void DDump();
 
 private: 
-  LoadModuleInfo* ldminfo;
-  String name ;
-  VMA vaddr  ;
+  binutils::LM* lm;
+  String name;
+  VMA vaddr;
   VMA mapaddr;  
-  bool used   ;
+  bool used;
 
 } ;
 

@@ -67,8 +67,6 @@ MYSOURCES = \
 	Proc.hpp Proc.cpp \
 	Insn.hpp Insn.cpp \
 	\
-	LoadModuleInfo.hpp LoadModuleInfo.cpp \
-	\
 	BinUtils.hpp BinUtils.cpp \
 	VMAInterval.hpp VMAInterval.cpp \
 	\

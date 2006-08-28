@@ -1,4 +1,4 @@
-// -*-C++-*-
+// -*-Mode: C++;-*-
 // $Id$
 
 // * BeginRiceCopyright *****************************************************
@@ -38,13 +38,13 @@
 //***************************************************************************
 //
 // File:
-//    CSProfileUtils.H
+//   $Source$
 //
 // Purpose:
-//    [The purpose of this file]
+//   [The purpose of this file]
 //
 // Description:
-//    [The set of functions, macros, etc. defined in the file]
+//   [The set of functions, macros, etc. defined in the file]
 //
 //***************************************************************************
 
@@ -64,7 +64,7 @@
 
 #include "CSProfile.hpp"
 
-#include <lib/binutils/LoadModuleInfo.hpp>
+#include <lib/binutils/LM.hpp>
 
 //*************************** Forward Declarations ***************************
 
@@ -79,10 +79,10 @@ void WriteCSProfileInDatabase(CSProfile* prof,
 void WriteCSProfile(CSProfile* prof, std::ostream& os,
 		    bool prettyPrint = true);
 
-bool AddSourceFileInfoToCSProfile(CSProfile* prof, LoadModuleInfo* lm,VMA startaddr, 
+bool AddSourceFileInfoToCSProfile(CSProfile* prof, binutils::LM* lm,VMA startaddr, 
                                   VMA endaddr, bool lastone);
 bool AddSourceFileInfoToCSTreeNode(CSProfCallSiteNode* node, 
-                                   LoadModuleInfo*     lm  ,
+                                   binutils::LM*     lm  ,
                                    bool                istext);
 
 void copySourceFiles (CSProfile *prof, 
@@ -94,7 +94,7 @@ void LdmdSetUsedFlag(CSProfile* prof);
 //****************************************************************************
 
 bool NormalizeCSProfile(CSProfile* prof);
-bool NormalizeInternalCallSites(CSProfile* prof, LoadModuleInfo* lmi,
+bool NormalizeInternalCallSites(CSProfile* prof, binutils::LM* lm,
                                 VMA startaddr, VMA endaddr, bool lastone);
 
 //****************************************************************************

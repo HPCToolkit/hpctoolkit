@@ -1,4 +1,4 @@
-// -*-C++-*-
+// -*-Mode: C++;-*-
 // $Id$
 
 // * BeginRiceCopyright *****************************************************
@@ -38,13 +38,13 @@
 //***************************************************************************
 //
 // File:
-//    main.C
+//   $Source$
 //
 // Purpose:
-//    [The purpose of this file]
+//   [The purpose of this file]
 //
 // Description:
-//    [The set of functions, macros, etc. defined in the file]
+//   [The set of functions, macros, etc. defined in the file]
 //
 //***************************************************************************
 
@@ -67,8 +67,6 @@ using std::string;
 #include "CSProfileUtils.hpp"
 
 #include <lib/binutils/LM.hpp>
-#include <lib/binutils/PCToSrcLineMap.hpp>
-#include <lib/binutils/LoadModuleInfo.hpp>
 
 //*************************** Forward Declarations ***************************
 
@@ -135,16 +133,6 @@ main(int argc, char* argv[])
   args.createDatabaseDirectory();
 
   // ------------------------------------------------------------
-  // Read 'PCToSrcLineXMap', if available
-  // ------------------------------------------------------------ 
-  PCToSrcLineXMap* map = NULL;
-  
-  // cf. xprof, main.C: During program structure recovery it is
-  // possible to output source line info supplemented with, e.g., loop
-  // nesting info.  While this is not yet fully supported, we may want
-  // to use something similar in the future.
-  
-  // ------------------------------------------------------------
   // Add source file info and dump
   // ------------------------------------------------------------
   try { 
@@ -164,7 +152,6 @@ main(int argc, char* argv[])
     int numberofldmd =profData->GetEpoch()->GetNumLdModule() ;      
     binutils::LM*      ldmd   = NULL; 
     CSProfLDmodule * csploadmd= NULL; 
-    LoadModuleInfo * modInfo;   
     VMA             startaddr;
     VMA             endaddr = 0; 
     bool             lastone ;
@@ -216,9 +203,7 @@ main(int argc, char* argv[])
            ldmd->Relocate(startaddr);   
        }     
 
-       modInfo = new LoadModuleInfo(ldmd, map);  
-
-       AddSourceFileInfoToCSProfile(profData, modInfo,startaddr,endaddr,lastone);   
+       AddSourceFileInfoToCSProfile(profData, ldmd,startaddr,endaddr,lastone);   
     
       // create an extended profile representation
       // normalize call sites 
@@ -231,13 +216,12 @@ main(int argc, char* argv[])
       //                                foo:1   foo:2 
       //  
 
-      NormalizeInternalCallSites(profData, modInfo,startaddr, endaddr,lastone);    
+      NormalizeInternalCallSites(profData, ldmd,startaddr, endaddr,lastone);    
 
       endaddr = startaddr-1;
      
       // close current load module and free memory space 
-      delete(modInfo->GetLM()); 
-      modInfo = NULL;
+      delete ldmd;
 
     } /* for each load module */ 
 
@@ -273,10 +257,6 @@ main(int argc, char* argv[])
     exit(2);
   } 
 
-#if 0  /* already deleted */
-  delete exe; 
-  delete map;
-#endif 
   delete profData;
   return (0);
 }

@@ -1,4 +1,4 @@
-// -*-C++-*-
+// -*-Mode: C++;-*-
 // $Id$
 
 // * BeginRiceCopyright *****************************************************
@@ -38,13 +38,13 @@
 //***************************************************************************
 //
 // File:
-//    ProfileWriter.C
+//   $Source$
 //
 // Purpose:
-//    [The purpose of this file]
+//   [The purpose of this file]
 //
 // Description:
-//    [The set of functions, macros, etc. defined in the file]
+//   [The set of functions, macros, etc. defined in the file]
 //
 //***************************************************************************
 
@@ -78,7 +78,7 @@ using namespace std; // For compatibility with non-std C headers
 #include "PCProfile.hpp"
 #include "DerivedProfile.hpp"
 
-#include <lib/binutils/LoadModuleInfo.hpp>
+#include <lib/binutils/LM.hpp>
 #include <lib/binutils/PCToSrcLineMap.hpp>
 #include <lib/binutils/BinUtils.hpp>
 
@@ -123,7 +123,7 @@ ClearFuncLineMap(LineToPCProfileVecMap& map);
 
 void
 ProfileWriter::WriteProfile(std::ostream& os, DerivedProfile* profData,
-			    LoadModuleInfo* modInfo)
+			    binutils::LM* lm)
 {  
   // Sanity check
   if (profData->GetNumMetrics() == 0) {
@@ -186,11 +186,12 @@ ProfileWriter::WriteProfile(std::ostream& os, DerivedProfile* profData,
     // 1. Attempt to find symbolic information
     // --------------------------------------------------
     string func, file;
-    SrcLineX srcLn; 
-    modInfo->GetSymbolicInfo(pc, opIndex, func, file, srcLn);
+    suint line; 
+    lm->GetSourceFileInfo(pc, opIndex, func, file, line);
+    func = GetBestFuncName(func);
     
     // Bad line info: cannot fix and cannot report; advance iteration
-    if ( !IsValidLine(srcLn.GetSrcLine()) ) {
+    if ( !IsValidLine(line) ) {
       continue;
     }    
     
@@ -217,6 +218,7 @@ ProfileWriter::WriteProfile(std::ostream& os, DerivedProfile* profData,
     // --------------------------------------------------
     // 3. Update 'funcLineMap' for each derived metric
     // --------------------------------------------------
+    SrcLineX srcLn(line, 0);
     PCProfileVec* vec = NULL;
     LineToPCProfileVecMapIt it1 = funcLineMap.find(&srcLn);
     if (it1 == funcLineMap.end()) {

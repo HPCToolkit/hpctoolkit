@@ -1,5 +1,6 @@
+// -*-Mode: C++;-*-
 // $Id$
-// -*-C++-*-
+
 // * BeginRiceCopyright *****************************************************
 // 
 // Copyright ((c)) 2002, Rice University 
@@ -37,13 +38,13 @@
 //***************************************************************************
 //
 // File:
-//    $Source$
+//   $Source$
 //
 // Purpose:
-//    [The purpose of this file]
+//   [The purpose of this file]
 //
 // Description:
-//    [The set of functions, macros, etc. defined in the file]
+//   [The set of functions, macros, etc. defined in the file]
 //
 //***************************************************************************
 
@@ -62,13 +63,12 @@ using namespace xml;
 
 CSProfLDmodule::CSProfLDmodule()
 {
-    ldminfo = NULL;
+  lm = NULL;
 }
 
 CSProfLDmodule::~CSProfLDmodule()
 {
-   if (ldminfo)
-       delete ldminfo;
+  delete lm;
 }
 
 
@@ -76,7 +76,7 @@ CSProfEpoch::CSProfEpoch(const suint i)
   : loadmoduleVec(i)
 {
   numberofldmodule = i;
- } 
+} 
 
 
 CSProfEpoch::~CSProfEpoch()

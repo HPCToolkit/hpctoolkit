@@ -1,4 +1,4 @@
-// -*-C++-*-
+// -*-Mode: C++;-*-
 // $Id$
 
 // * BeginRiceCopyright *****************************************************
@@ -38,13 +38,13 @@
 //***************************************************************************
 //
 // File:
-//    CSProfileUtils.C
+//   $Source$
 //
 // Purpose:
-//    [The purpose of this file]
+//   [The purpose of this file]
 //
 // Description:
-//    [The set of functions, macros, etc. defined in the file]
+//   [The set of functions, macros, etc. defined in the file]
 //
 //***************************************************************************
 
@@ -74,8 +74,6 @@ using namespace std; // For compatibility with non-std C headers
 #include <lib/prof-lean/hpcfile_csproflib.h>
 
 #include <lib/binutils/LM.hpp>
-#include <lib/binutils/PCToSrcLineMap.hpp>
-#include <lib/binutils/LoadModuleInfo.hpp>
 
 #include <lib/xml/xml.hpp>
 
@@ -160,7 +158,7 @@ WriteCSProfile(CSProfile* prof, std::ostream& os, bool prettyPrint)
 }
 
 bool 
-AddSourceFileInfoToCSProfile(CSProfile* prof, LoadModuleInfo* lm,
+AddSourceFileInfoToCSProfile(CSProfile* prof, binutils::LM* lm,
                               VMA startaddr, VMA endaddr, bool lastone)
 {
   bool noError            = true;
@@ -198,7 +196,7 @@ AddSourceFileInfoToCSProfile(CSProfile* prof, LoadModuleInfo* lm,
 
 bool 
 AddSourceFileInfoToCSTreeNode(CSProfCallSiteNode* node, 
-                              LoadModuleInfo* lm,
+                              binutils::LM* lm,
                               bool istext)
 {
   bool noError = true;
@@ -206,27 +204,27 @@ AddSourceFileInfoToCSTreeNode(CSProfCallSiteNode* node,
 
   if (n) {
     string func, file;
-    SrcLineX srcLn;   
-    lm->GetSymbolicInfo(n->GetIP(), n->GetOpIndex(), func, file, srcLn);   
+    suint srcLn;
+    lm->GetSourceFileInfo(n->GetIP(), n->GetOpIndex(), func, file, srcLn);
+    func = GetBestFuncName(func);
 
-    n->SetFile(file); 
+    n->SetFile(file);
     n->SetProc(func);
-    n->SetLine(srcLn.GetSrcLine()); 
+    n->SetLine(srcLn);
 
     n->SetFileIsText(istext);
 
     suint procFrameLine;
-    lm->GetProcedureFirstLineInfo( n->GetIP(), n->GetOpIndex(), procFrameLine);
+    lm->GetProcFirstLineInfo( n->GetIP(), n->GetOpIndex(), procFrameLine);
     xDEBUG(DEB_PROC_FIRST_LINE,
 	   fprintf(stderr, "after AddSourceFileInfoToCSTreeNode: %s starts at %d, file=%s and p=%s=\n", n->GetProc().c_str(), procFrameLine, file.c_str(), func.c_str()););
 
     // if file name is missing then using load module name. 
     if (file.empty() || func.empty()) {
-        n->SetFile(lm->GetLM()->GetName());  
+        n->SetFile(lm->GetName());
         n->SetLine(0); //don't need to have line number for loadmodule
         n->SetFileIsText(false);
-      }  
-
+      }
    }  
 
   return noError;
@@ -521,17 +519,17 @@ typedef std::map<string, CSProfProcedureFrameNode*>::iterator
 typedef std::map<string, CSProfProcedureFrameNode*>::value_type
   StringToProcedureFramesMapVal;
 
-bool NormalizeSameProcedureChildren(CSProfile* prof, LoadModuleInfo *lmi,
+bool NormalizeSameProcedureChildren(CSProfile* prof, binutils::LM *lm,
 				    VMA startaddr, VMA endaddr, bool lastone);
 
 bool 
-NormalizeInternalCallSites(CSProfile* prof, LoadModuleInfo *lmi, 
+NormalizeInternalCallSites(CSProfile* prof, binutils::LM *lm, 
                            VMA startaddr, VMA endaddr, bool lastone)
 {
   // Remove duplicate/inplied file and procedure information from tree
   bool pass1 = true;
 
-  bool pass2 = NormalizeSameProcedureChildren(prof, lmi,startaddr, endaddr, lastone);
+  bool pass2 = NormalizeSameProcedureChildren(prof, lm,startaddr, endaddr, lastone);
   
   return (pass1 && pass2);
 }
@@ -540,11 +538,11 @@ NormalizeInternalCallSites(CSProfile* prof, LoadModuleInfo *lmi,
 // FIXME
 // If pc values from the leaves map to the same source file info,
 // coalese these leaves into one.
-bool NormalizeSameProcedureChildren(CSProfile* prof, CSProfNode* node, LoadModuleInfo* lmi,
+bool NormalizeSameProcedureChildren(CSProfile* prof, CSProfNode* node, binutils::LM* lm,
                                     VMA startaddr, VMA endaddr, bool lastone);
 
 bool 
-NormalizeSameProcedureChildren(CSProfile* prof, LoadModuleInfo *lmi,
+NormalizeSameProcedureChildren(CSProfile* prof, binutils::LM *lm,
                                VMA startaddr, VMA endaddr, bool lastone)
 {
   CSProfTree* csproftree = prof->GetTree();
@@ -554,12 +552,12 @@ NormalizeSameProcedureChildren(CSProfile* prof, LoadModuleInfo *lmi,
 	 fprintf(stderr, "start normalizing same procedure children\n");
 	 );
 
-  return NormalizeSameProcedureChildren(prof,csproftree->GetRoot(),lmi,startaddr,endaddr,lastone);
+  return NormalizeSameProcedureChildren(prof,csproftree->GetRoot(),lm,startaddr,endaddr,lastone);
 }
 
 
 bool 
-NormalizeSameProcedureChildren(CSProfile* prof, CSProfNode* node, LoadModuleInfo *lmi,
+NormalizeSameProcedureChildren(CSProfile* prof, CSProfNode* node, binutils::LM *lm,
                                VMA startaddr, VMA endaddr, bool lastone)
 {
   bool noError = true;
@@ -579,7 +577,7 @@ NormalizeSameProcedureChildren(CSProfile* prof, CSProfNode* node, LoadModuleInfo
 
     // recur 
     if (! child->IsLeaf()) {
-      noError = noError && NormalizeSameProcedureChildren(prof, child, lmi,startaddr, endaddr, lastone);
+      noError = noError && NormalizeSameProcedureChildren(prof, child, lm,startaddr, endaddr, lastone);
     }
 
     bool inspect = (child->GetType() == CSProfNode::CALLSITE);
@@ -640,9 +638,7 @@ NormalizeSameProcedureChildren(CSProfile* prof, CSProfNode* node, LoadModuleInfo
 	  //  determine the appropriate module info for the current 
 	  //  procedure frame
 
-	  lmi->GetProcedureFirstLineInfo( c->GetIP(), c->GetOpIndex(), 
-					  procFrameLine);
-	  
+	  lm->GetProcFirstLineInfo(c->GetIP(), c->GetOpIndex(), procFrameLine);
 	  procFrameNode->SetLine(procFrameLine);
 	}
 

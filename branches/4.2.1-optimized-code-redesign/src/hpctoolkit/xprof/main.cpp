@@ -1,5 +1,6 @@
+// -*-Mode: C++;-*-
 // $Id$
-// -*-C++-*-
+
 // * BeginRiceCopyright *****************************************************
 // 
 // Copyright ((c)) 2002, Rice University 
@@ -37,13 +38,13 @@
 //***************************************************************************
 //
 // File:
-//    main.C
+//   $Source$
 //
 // Purpose:
-//    [The purpose of this file]
+//   [The purpose of this file]
 //
 // Description:
-//    [The set of functions, macros, etc. defined in the file]
+//   [The set of functions, macros, etc. defined in the file]
 //
 //***************************************************************************
 
@@ -70,8 +71,6 @@ using std::string;
 #include "DCPIProfile.hpp"
 
 #include <lib/binutils/LM.hpp>
-#include <lib/binutils/PCToSrcLineMap.hpp>
-#include <lib/binutils/LoadModuleInfo.hpp>
 
 #include <lib/support/diagnostics.h>
 
@@ -146,48 +145,34 @@ real_main(int argc, char* argv[])
   // ------------------------------------------------------------
   // Read executable
   // ------------------------------------------------------------
-  binutils::LM* exe = NULL;
+  binutils::LM* lm = NULL;
   try {
-    string exeNm = args.progFile;
+    string lmNm = args.progFile;
 
-    // Try to find exe from profile info if not given
-    if (exeNm.empty()) {
-      exeNm = pcprof->GetProfiledFile();
+    // Try to find lm from profile info if not given
+    if (lmNm.empty()) {
+      lmNm = pcprof->GetProfiledFile();
       
-      std::ifstream ifile(exeNm.c_str(), std::ios::in);
+      std::ifstream ifile(lmNm.c_str(), std::ios::in);
       if ( !ifile.is_open() || ifile.fail() ) {
-	cerr << "Error: Could not find associated binary '" << exeNm
+	cerr << "Error: Could not find associated binary '" << lmNm
 	     << "'; please specify explicitly.\n";
 	exit(1);
       }
     }
     
-    exe = new binutils::LM();
-    if (!exe->Open(exeNm.c_str())) { exit(1); } // Error already printed 
-    if (!exe->Read()) { exit(1); }              // Error already printed 
+    lm = new binutils::LM();
+    if (!lm->Open(lmNm.c_str())) { exit(1); } // Error already printed 
+    if (!lm->Read()) { exit(1); }              // Error already printed 
   }
   catch (std::bad_alloc& x) {
     cerr << "Error: Memory alloc failed while reading binary!\n";
     exit(1);
   }
   
-  exe->Relocate(pcprof->GetTxtStart());
+  lm->Relocate(pcprof->GetTxtStart());
+
   
-  // ------------------------------------------------------------
-  // Read 'PCToSrcLineXMap', if available
-  // ------------------------------------------------------------
-  PCToSrcLineXMap* map = NULL;
-  if (!args.pcMapFile.empty()) {
-    map = ReadPCToSrcLineMap(args.pcMapFile.c_str());
-    if (!map) {
-      cerr << "Error reading file `" << args.pcMapFile << "'\n";
-      exit(1); 
-    }
-  }
-  // N.B. No relocation for map at the moment
-  
-  LoadModuleInfo modInfo(exe, map);
-    
   // ------------------------------------------------------------
   // Construct some metrics, derived in some way from the raw
   // profiling data, that we are interested in.
@@ -197,7 +182,7 @@ real_main(int argc, char* argv[])
   PCProfileFilterList* filtList = NULL;
   if (!args.outputRawMetrics) {
     DCPIProfile* dcpiprof = dynamic_cast<DCPIProfile*>(pcprof);
-    filtList = GetDCPIFilters(dcpiprof, modInfo.GetLM(), 
+    filtList = GetDCPIFilters(dcpiprof, lm, 
 			      args.metricList.c_str(), 
 			      args.excludeMList.c_str());
     if (!filtList) {
@@ -219,10 +204,9 @@ real_main(int argc, char* argv[])
   // Translate the derived metrics to a PROFILE file
   // ------------------------------------------------------------
   // * Assume DCPI mode *
-  ProfileWriter::WriteProfile(cout, drvdprof, &modInfo);
+  ProfileWriter::WriteProfile(cout, drvdprof, lm);
   
-  delete exe;
-  delete map;
+  delete lm;
   delete pcprof;
   delete drvdprof;
   return (0);
