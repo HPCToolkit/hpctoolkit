@@ -63,9 +63,9 @@ using std::string;
 
 #include <include/gnu_bfd.h>
 
-#include "Section.hpp"
-#include "Procedure.hpp"
-#include "Instruction.hpp"
+#include "Seg.hpp"
+#include "Proc.hpp"
+#include "Insn.hpp"
 
 #include <lib/isa/ISA.hpp>
 

@@ -70,10 +70,10 @@ using std::string;
 
 #include "Args.hpp"
 
-#include <lib/binutils/LoadModule.hpp>
-#include <lib/binutils/Section.hpp>
-#include <lib/binutils/Procedure.hpp>
-#include <lib/binutils/Instruction.hpp>
+#include <lib/binutils/LM.hpp>
+#include <lib/binutils/Seg.hpp>
+#include <lib/binutils/Proc.hpp>
+#include <lib/binutils/Insn.hpp>
 #include <lib/binutils/BinUtils.hpp>
 
 #include <lib/support/diagnostics.h>

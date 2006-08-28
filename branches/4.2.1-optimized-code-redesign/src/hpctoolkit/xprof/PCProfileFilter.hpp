@@ -61,7 +61,7 @@
 
 #include <lib/isa/ISA.hpp>
 
-#include <lib/binutils/LoadModule.hpp>
+#include <lib/binutils/LM.hpp>
 
 #include <lib/support/String.hpp>
 

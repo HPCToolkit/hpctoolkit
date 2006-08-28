@@ -64,10 +64,10 @@ using std::dec;
 
 #include <include/gnu_bfd.h>
 
-#include "LoadModule.hpp"
-#include "Section.hpp"
-#include "Instruction.hpp"
-#include "Procedure.hpp"
+#include "LM.hpp"
+#include "Seg.hpp"
+#include "Insn.hpp"
+#include "Proc.hpp"
 
 #include <lib/support/diagnostics.h>
 #include <lib/support/QuickSort.hpp>

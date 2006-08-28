@@ -60,7 +60,7 @@
 
 #include <include/general.h>
 
-#include "LoadModule.hpp"
+#include "LM.hpp"
 #include "PCToSrcLineMap.hpp"
 
 //*************************** Forward Declarations ***************************

@@ -69,7 +69,7 @@ using std::string;
 
 #include "DCPIProfile.hpp"
 
-#include <lib/binutils/LoadModule.hpp>
+#include <lib/binutils/LM.hpp>
 #include <lib/binutils/PCToSrcLineMap.hpp>
 #include <lib/binutils/LoadModuleInfo.hpp>
 

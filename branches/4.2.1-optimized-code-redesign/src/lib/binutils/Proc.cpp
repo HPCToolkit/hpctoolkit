@@ -59,8 +59,8 @@ using std::string;
 
 //*************************** User Include Files ****************************
 
-#include "Procedure.hpp"
-#include "Instruction.hpp"
+#include "Proc.hpp"
+#include "Insn.hpp"
 
 #include <lib/support/diagnostics.h>
 

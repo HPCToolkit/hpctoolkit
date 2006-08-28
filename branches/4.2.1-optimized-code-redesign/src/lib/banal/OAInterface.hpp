@@ -67,8 +67,8 @@
  
 #include <lib/isa/ISA.hpp>
 
-#include <lib/binutils/Procedure.hpp>
-#include <lib/binutils/Instruction.hpp>
+#include <lib/binutils/Proc.hpp>
+#include <lib/binutils/Insn.hpp>
 
 #include <lib/support/diagnostics.h>
 

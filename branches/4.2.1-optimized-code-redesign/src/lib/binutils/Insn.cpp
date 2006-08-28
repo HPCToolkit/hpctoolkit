@@ -59,7 +59,7 @@ using std::string;
 
 //*************************** User Include Files ****************************
 
-#include "Instruction.hpp"
+#include "Insn.hpp"
 
 //*************************** Forward Declarations ***************************
 

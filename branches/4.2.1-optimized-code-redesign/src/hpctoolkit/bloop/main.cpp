@@ -63,7 +63,7 @@ using std::endl;
 
 #include <lib/banal/bloop.hpp>
 
-#include <lib/binutils/LoadModule.hpp>
+#include <lib/binutils/LM.hpp>
 
 #include <lib/support/diagnostics.h>
 

@@ -60,8 +60,8 @@
 
 #include <include/general.h>
 
-#include "LoadModule.hpp"
-#include "Section.hpp"
+#include "LM.hpp"
+#include "Seg.hpp"
 
 #include <lib/isa/ISATypes.hpp>
 

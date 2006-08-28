@@ -55,7 +55,7 @@
 
 #include "PCProfileFilter.hpp"
 
-#include <lib/binutils/Instruction.hpp>
+#include <lib/binutils/Insn.hpp>
 
 //*************************** Forward Declarations ***************************
 

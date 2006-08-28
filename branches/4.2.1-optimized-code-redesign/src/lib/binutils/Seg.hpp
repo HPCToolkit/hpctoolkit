@@ -62,7 +62,7 @@
 #include <include/general.h>
 #include <include/gnu_bfd.h>
 
-#include "LoadModule.hpp"
+#include "LM.hpp"
 
 #include <lib/isa/ISATypes.hpp> 
 

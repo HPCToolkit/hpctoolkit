@@ -77,7 +77,7 @@ using namespace std; // For compatibility with non-std C headers
 #include "LoadModuleInfo.hpp"
 #include <lib/support/Assertion.h>
 
-#include <lib/binutils/LoadModule.hpp>
+#include <lib/binutils/LM.hpp>
 #include <lib/binutils/PCToSrcLineMap.hpp>
 
 //************************ Forward Declarations ******************************

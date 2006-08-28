@@ -64,7 +64,7 @@ using std::vector;
 #include <lib/prof-juicy/PgmScopeTree.hpp>
 #include <lib/prof-juicy/FlatProfileReader.hpp>
 
-#include <lib/binutils/LoadModule.hpp>
+#include <lib/binutils/LM.hpp>
 
 #include <lib/support/diagnostics.h>
 #include <lib/support/Assertion.h>

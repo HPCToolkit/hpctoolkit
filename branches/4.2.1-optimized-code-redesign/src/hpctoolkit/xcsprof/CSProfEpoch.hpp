@@ -62,7 +62,7 @@
 
 #include <lib/isa/ISATypes.hpp>
 
-#include <lib/binutils/LoadModule.hpp>
+#include <lib/binutils/LM.hpp>
 #include <lib/binutils/LoadModuleInfo.hpp>
 
 #include <lib/support/NonUniformDegreeTree.hpp>

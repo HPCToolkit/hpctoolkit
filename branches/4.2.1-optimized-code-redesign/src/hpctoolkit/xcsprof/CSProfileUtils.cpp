@@ -73,7 +73,7 @@ using namespace std; // For compatibility with non-std C headers
 
 #include <lib/prof-lean/hpcfile_csproflib.h>
 
-#include <lib/binutils/LoadModule.hpp>
+#include <lib/binutils/LM.hpp>
 #include <lib/binutils/PCToSrcLineMap.hpp>
 #include <lib/binutils/LoadModuleInfo.hpp>
 
