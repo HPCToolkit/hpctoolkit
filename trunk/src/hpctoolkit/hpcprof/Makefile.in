@@ -118,8 +118,9 @@ am__objects_1 = hpcprof-hpcprof.$(OBJEXT) hpcprof-summary.$(OBJEXT) \
 am_hpcprof_OBJECTS = $(am__objects_1)
 hpcprof_OBJECTS = $(am_hpcprof_OBJECTS)
 am__DEPENDENCIES_1 = $(top_builddir)/src/lib/hpcfile/libHPCfile.la
-am__DEPENDENCIES_2 = $(am__DEPENDENCIES_1)
-hpcprof_DEPENDENCIES = $(am__DEPENDENCIES_2)
+am__DEPENDENCIES_2 = $(top_builddir)/src/lib/support/libHPCsupport.la
+am__DEPENDENCIES_3 = $(am__DEPENDENCIES_1) $(am__DEPENDENCIES_2)
+hpcprof_DEPENDENCIES = $(am__DEPENDENCIES_3)
 DEFAULT_INCLUDES = -I. -I$(srcdir)
 depcomp = $(SHELL) $(top_srcdir)/config/depcomp
 am__depfiles_maybe = depfiles
@@ -332,7 +333,7 @@ MYLDFLAGS = \
 	@HOST_CXXFLAGS@
 
 MYLDADD = \
-	$(HPC_LIBHPCFILE) \
+	$(HPC_LIBHPCFILE) $(HPC_LIBSUPPORT) \
 	@HOST_LIBTREPOSITORY@ \
 	@GNUBINUTILS_LDFLAGS@
 
