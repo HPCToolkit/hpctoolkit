@@ -99,18 +99,21 @@ class LMImpl;
 
 class LM {
 public:
-  class DbgFuncSummary;
-
-public:
   enum Type {Executable, SharedLibrary, Unknown};
 
+public:
   // -------------------------------------------------------  
-  //
+  // Constructor/Destructor
   // -------------------------------------------------------
 
   // Constructor allocates an empty data structure
   LM();
   virtual ~LM();
+
+
+  // -------------------------------------------------------  
+  // open/read (cf. istreams)
+  // -------------------------------------------------------
 
   // Open: If 'moduleName' is not already open, attempt to do so;
   // return true on success and false otherwise.  If a file is already
@@ -256,109 +259,6 @@ protected:
   LM(const LM& lm) { }
   LM& operator=(const LM& lm) { return *this; }
 
-public:
-
-  // -------------------------------------------------------
-  // Classes used to represent function summary information obtained
-  // from the LM's debugging sections.  This will typically be
-  // used in constructing Procs.
-  // -------------------------------------------------------
-
-  class DbgFuncSummary {
-  public:
-    class Info {
-    public:
-      Info() 
-	: parent(NULL), parentVMA(0),
-	  begVMA(0), endVMA(0), name(""), filenm(""), begLine(0)
-        { }
-      ~Info() { }
-      
-      Info* parent;
-      VMA  parentVMA;
-
-      VMA begVMA; // begin VMA
-      VMA endVMA; // end VMA (at the end of the last insn)
-      std::string name, filenm;
-      suint begLine;
-
-      std::ostream& dump(std::ostream& os) const;
-    };
-
-    typedef VMA                                               key_type;
-    typedef Info*                                             mapped_type;
-  
-    typedef std::map<key_type, mapped_type>                   My_t;
-    typedef std::pair<const key_type, mapped_type>            value_type;
-    typedef My_t::key_compare                                 key_compare;
-    typedef My_t::allocator_type                              allocator_type;
-    typedef My_t::reference                                   reference;
-    typedef My_t::const_reference                             const_reference;
-    typedef My_t::iterator                                    iterator;
-    typedef My_t::const_iterator                              const_iterator;
-    typedef My_t::size_type                                   size_type;
-
-  public:
-    DbgFuncSummary();
-    ~DbgFuncSummary();
-
-    void setParentPointers();
-    
-    // -------------------------------------------------------
-    // iterator, find/insert, etc 
-    // -------------------------------------------------------
-    
-    // iterators:
-    iterator begin() 
-      { return mMap.begin(); }
-    const_iterator begin() const 
-      { return mMap.begin(); }
-    iterator end() 
-      { return mMap.end(); }
-    const_iterator end() const 
-      { return mMap.end(); }
-    
-    // capacity:
-    size_type size() const
-      { return mMap.size(); }
-    
-    // element access:
-    mapped_type& operator[](const key_type& x)
-      { return mMap[x]; }
-    
-    // modifiers:
-    std::pair<iterator, bool> insert(const value_type& x)
-      { return mMap.insert(x); }
-    iterator insert(iterator position, const value_type& x)
-      { return mMap.insert(position, x); }
-    
-    void erase(iterator position) 
-      { mMap.erase(position); }
-    size_type erase(const key_type& x) 
-      { return mMap.erase(x); }
-    void erase(iterator first, iterator last) 
-      { return mMap.erase(first, last); }
-    
-    void clear();
-    
-    // mMap operations:
-    iterator find(const key_type& x)
-      { return mMap.find(x); }
-    const_iterator find(const key_type& x) const
-      { return mMap.find(x); }
-    size_type count(const key_type& x) const
-      { return mMap.count(x); }
-    
-    // -------------------------------------------------------
-    // debugging
-    // -------------------------------------------------------
-    std::ostream& dump(std::ostream& os) const;
-
-  private:
-    My_t mMap;
-  };
-
-  
 private: 
   // Constructing routines: return true on success; false on error
   bool ReadSymbolTables();
@@ -374,9 +274,6 @@ private:
   
   // Comparison routines for QuickSort.
   static int SymCmpByVMAFunc(const void* s1, const void* s2);
-
-  // Callback for bfd_elf_forall_dbg_funcinfo
-  static int bfd_DbgFuncinfoCallback(void* callback_obj, void* parent, void* funcinfo);
 
   // Dump helper routines
   void DumpModuleInfo(std::ostream& o = std::cerr, const char* pre = "") const;
@@ -417,6 +314,7 @@ private:
 
 } // namespace binutils
 
+
 //***************************************************************************
 // Executable
 //***************************************************************************
@@ -452,6 +350,7 @@ private:
 };
 
 } // namespace binutils
+
 
 //***************************************************************************
 // LMSegIterator

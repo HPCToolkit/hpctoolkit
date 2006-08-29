@@ -529,7 +529,7 @@ binutils::LM::DumpSelf(std::ostream& o, const char* pre) const
 }
 
 
-//***************************   private members    ***************************
+//***************************************************************************
 
 int
 binutils::LM::SymCmpByVMAFunc(const void* s1, const void* s2)
