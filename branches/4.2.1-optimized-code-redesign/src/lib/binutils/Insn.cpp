@@ -70,7 +70,7 @@ using std::string;
 //****************************************************************************
 
 void
-binutils::Insn::Dump(std::ostream& o, const char* pre) const
+binutils::Insn::dump(std::ostream& o, const char* pre) const
 {
   string p(pre);
   VMA target = GetTargetVMA(vma);
@@ -84,20 +84,20 @@ binutils::Insn::Dump(std::ostream& o, const char* pre) const
     o << " "; 
   }
 
-  DumpSelf(o, p.c_str());
+  dumpme(o, p.c_str());
   o << "\n";
 }
 
 
 void
-binutils::Insn::DDump() const
+binutils::Insn::ddump() const
 {
-  Dump(std::cerr);
+  dump(std::cerr);
 }
 
 
 void
-binutils::Insn::DumpSelf(std::ostream& o, const char* pre) const
+binutils::Insn::dumpme(std::ostream& o, const char* pre) const
 {
 }
 
@@ -107,21 +107,21 @@ binutils::Insn::DumpSelf(std::ostream& o, const char* pre) const
 //***************************************************************************
 
 void
-binutils::CISCInsn::Dump(std::ostream& o, const char* pre) const
+binutils::CISCInsn::dump(std::ostream& o, const char* pre) const
 {
-  Insn::Dump(o, pre);
+  Insn::dump(o, pre);
 }
 
 
 void
-binutils::CISCInsn::DDump() const
+binutils::CISCInsn::ddump() const
 {
-  Dump(std::cerr);
+  dump(std::cerr);
 }
 
 
 void
-binutils::CISCInsn::DumpSelf(std::ostream& o, const char* pre) const
+binutils::CISCInsn::dumpme(std::ostream& o, const char* pre) const
 {
   o << "(CISC sz:" << GetSize() << ")";
 }
@@ -132,21 +132,21 @@ binutils::CISCInsn::DumpSelf(std::ostream& o, const char* pre) const
 //***************************************************************************
 
 void
-binutils::RISCInsn::Dump(std::ostream& o, const char* pre) const
+binutils::RISCInsn::dump(std::ostream& o, const char* pre) const
 {
-  Insn::Dump(o, pre);
+  Insn::dump(o, pre);
 }
 
 
 void
-binutils::RISCInsn::DDump() const
+binutils::RISCInsn::ddump() const
 {
-  Dump(std::cerr);
+  dump(std::cerr);
 }
 
 
 void
-binutils::RISCInsn::DumpSelf(std::ostream& o, const char* pre) const
+binutils::RISCInsn::dumpme(std::ostream& o, const char* pre) const
 {
   o << "(RISC)";
 }
@@ -157,21 +157,21 @@ binutils::RISCInsn::DumpSelf(std::ostream& o, const char* pre) const
 //***************************************************************************
 
 void
-binutils::VLIWInsn::Dump(std::ostream& o, const char* pre) const
+binutils::VLIWInsn::dump(std::ostream& o, const char* pre) const
 {
-  Insn::Dump(o, pre);
+  Insn::dump(o, pre);
 }
 
 
 void
-binutils::VLIWInsn::DDump() const
+binutils::VLIWInsn::ddump() const
 {
-  Dump(std::cerr);
+  dump(std::cerr);
 }
 
 
 void
-binutils::VLIWInsn::DumpSelf(std::ostream& o, const char* pre) const
+binutils::VLIWInsn::dumpme(std::ostream& o, const char* pre) const
 {
   o << "(VLIW opIdx:" << GetOpIndex() << ")";
 }

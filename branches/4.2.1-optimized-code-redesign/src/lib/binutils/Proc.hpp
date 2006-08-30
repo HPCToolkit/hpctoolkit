@@ -83,9 +83,18 @@ class Proc {
 public:
   enum Type { Local, Weak, Global, Unknown };
   
+public:
+  // -------------------------------------------------------  
+  // Constructor/Destructor
+  // -------------------------------------------------------
   Proc(TextSeg* _sec, std::string& _name, std::string& _linkname, 
-	    Type t, VMA _begVMA, VMA _endVMA, suint _size);
+       Type t, VMA _begVMA, VMA _endVMA, suint _size);
   virtual ~Proc();
+
+
+  // -------------------------------------------------------
+  // 
+  // -------------------------------------------------------
 
   TextSeg* GetTextSeg() const { return sec; }
   LM*  GetLM()  const { return sec->GetLM(); }
@@ -100,7 +109,7 @@ public:
   const std::string& GetLinkName() const { return linkname; }
 
   // Return type of procedure
-  Type  GetType()      const { return type; }
+  Type  GetType() const { return type; }
 
   // Return the begin and end virtual memory address of a procedure:
   // [beg, end].  Note that the end address points to the beginning of
@@ -108,15 +117,15 @@ public:
   // for 'Seg'.
   VMA  GetBegVMA() const { return begVMA; }
   VMA  GetEndVMA() const { return endVMA; }
-  void  SetEndVMA(VMA _endVMA) { endVMA = _endVMA; }
+  void SetEndVMA(VMA _endVMA) { endVMA = _endVMA; }
 
   // Return size, which is (endVMA - startVMA) + sizeof(last instruction)
   suint GetSize()      const { return size; }
   void SetSize(suint _size)  { size = _size; }
   
   // Symbolic information: may or may not be available
-  const std::string&  GetFilename() const { return filenm; }
-  std::string& GetFilename()              { return filenm; }
+  const std::string& GetFilename() const { return filenm; }
+  std::string&       GetFilename()       { return filenm; }
 
   suint   GetBegLine()      const { return begLine; }
   suint&  GetBegLine()            { return begLine; }
@@ -128,39 +137,42 @@ public:
   // Return the unique number assigned to this procedure
   suint GetId()        const { return id; }
 
-  // Return the number of instructions in the procedure: FIXME
+  // Return the number of instructions in the procedure (FIXME: never computed)
   suint GetNumInsns()  const { return numInsns; }
 
   // Return the first and last instruction in the procedure
-  Insn* GetFirstInsn() const { return GetInsn(begVMA, 0); }
+  Insn* GetFirstInsn() const { return findInsn(begVMA, 0); }
   Insn* GetLastInsn() const;
   
   // Convenient wrappers for the 'LM' versions of the same.
-  MachInsn*    GetMachInsn(VMA vma, ushort &sz) const {
-    return sec->GetLM()->GetMachInsn(vma, sz);
+  MachInsn* findMachInsn(VMA vma, ushort &sz) const {
+    return sec->GetLM()->findMachInsn(vma, sz);
   }
-  Insn* GetInsn(VMA vma, ushort opIndex) const {
-    return sec->GetLM()->GetInsn(vma, opIndex);
+  Insn* findInsn(VMA vma, ushort opIndex) const {
+    return sec->GetLM()->findInsn(vma, opIndex);
   }
   bool GetSourceFileInfo(VMA vma, ushort opIndex,
 			 std::string& func, std::string& file, 
 			 suint& line) const {
     return sec->GetLM()->GetSourceFileInfo(vma, opIndex,
-						   func, file, line);
+					   func, file, line);
   }
   bool GetSourceFileInfo(VMA begVMA, ushort bOpIndex,
 			 VMA endVMA, ushort eOpIndex,
 			 std::string& func, std::string& file,
 			 suint& begLine, suint& endLine) const {
     return sec->GetLM()->GetSourceFileInfo(begVMA, bOpIndex,
-						   endVMA, eOpIndex, 
-						   func, file, 
-						   begLine, endLine);
+					   endVMA, eOpIndex, 
+					   func, file, 
+					   begLine, endLine);
   }
   
-  // Dump contents for inspection
-  virtual void Dump(std::ostream& o = std::cerr, const char* pre = "") const;
-  virtual void DDump() const;
+  // -------------------------------------------------------
+  // debugging
+  // -------------------------------------------------------
+
+  virtual void dump(std::ostream& o = std::cerr, const char* pre = "") const;
+  virtual void ddump() const;
 
   friend class ProcInsnIterator;
 

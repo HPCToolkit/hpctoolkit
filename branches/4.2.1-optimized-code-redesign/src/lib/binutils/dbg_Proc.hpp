@@ -97,6 +97,11 @@ public:
   std::string name, filenm;
   suint begLine;
   
+  // -------------------------------------------------------
+  // debugging
+  // -------------------------------------------------------
+  std::string toString() const;
+
   std::ostream& dump(std::ostream& os) const;
 
 private:

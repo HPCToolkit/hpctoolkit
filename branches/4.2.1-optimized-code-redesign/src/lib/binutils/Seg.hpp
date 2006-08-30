@@ -111,11 +111,11 @@ public:
   bool IsIn(VMA vma) const { return (beg <= vma && vma < end); }
 
   // Convenient wrappers for the 'LM' versions of the same.
-  MachInsn*    GetMachInsn(VMA vma, ushort &sz) const {
-    return lm->GetMachInsn(vma, sz);
+  MachInsn* findMachInsn(VMA vma, ushort &sz) const {
+    return lm->findMachInsn(vma, sz);
   }
-  Insn* GetInsn(VMA vma, ushort opIndex) const {
-    return lm->GetInsn(vma, opIndex);
+  Insn* findInsn(VMA vma, ushort opIndex) const {
+    return lm->findInsn(vma, opIndex);
   }
   bool GetSourceFileInfo(VMA vma, ushort opIndex,
 			 std::string& func, std::string& file, 
@@ -131,9 +131,9 @@ public:
 				 func, file, begLine, endLine);
   }
 
-  // Dump contents for inspection
-  virtual void Dump(std::ostream& o = std::cerr, const char* pre = "") const;
-  virtual void DDump() const;
+  // dump contents for inspection
+  virtual void dump(std::ostream& o = std::cerr, const char* pre = "") const;
+  virtual void ddump() const;
   
 protected:
   // Should not be used
@@ -178,9 +178,9 @@ public:
 
   suint GetNumProcs() const { return procedures.size(); }
 
-  // Dump contents for inspection
-  virtual void Dump(std::ostream& o = std::cerr, const char* pre = "") const;
-  virtual void DDump() const;
+  // dump contents for inspection
+  virtual void dump(std::ostream& o = std::cerr, const char* pre = "") const;
+  virtual void ddump() const;
   
   friend class TextSegProcIterator;
 

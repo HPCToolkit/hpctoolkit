@@ -97,7 +97,7 @@ binutils::Seg::~Seg()
 
 
 void
-binutils::Seg::Dump(std::ostream& o, const char* pre) const
+binutils::Seg::dump(std::ostream& o, const char* pre) const
 {
   string p(pre);
   o << p << "------------------- Section Dump ------------------\n";
@@ -116,9 +116,9 @@ binutils::Seg::Dump(std::ostream& o, const char* pre) const
 
 
 void
-binutils::Seg::DDump() const
+binutils::Seg::ddump() const
 {
-  Dump(std::cerr);
+  dump(std::cerr);
 }
 
 //***************************************************************************
@@ -141,8 +141,8 @@ public:
 
 
 binutils::TextSeg::TextSeg(binutils::LM* _lm, string& _name, 
-			   VMA _beg, VMA _end,
-			   suint _size, asymbol **syms, int numSyms, bfd *abfd)
+			   VMA _beg, VMA _end, suint _size, 
+			   asymbol **syms, int numSyms, bfd *abfd)
   : Seg(_lm, _name, Seg::Text, _beg, _end, _size), impl(NULL),
     procedures(0)
 {
@@ -208,28 +208,29 @@ binutils::TextSeg::~TextSeg()
 
 
 void
-binutils::TextSeg::Dump(std::ostream& o, const char* pre) const
+binutils::TextSeg::dump(std::ostream& o, const char* pre) const
 {
   string p(pre);
   string p1 = p + "  ";
 
-  Seg::Dump(o, pre);
+  Seg::dump(o, pre);
   o << p << "  Procedures (" << GetNumProcs() << ")\n";
   for (TextSegProcIterator it(*this); it.IsValid(); ++it) {
     Proc* p = it.Current();
-    p->Dump(o, p1.c_str());
+    p->dump(o, p1.c_str());
   }
 }
 
 
 void
-binutils::TextSeg::DDump() const
+binutils::TextSeg::ddump() const
 {
-  Dump(std::cerr);
+  dump(std::cerr);
 }
 
 
-//***************************   private members    ***************************
+//***************************************************************************
+
 
 void
 binutils::TextSeg::Create_InitializeProcs()
@@ -250,14 +251,18 @@ binutils::TextSeg::Create_InitializeProcs()
         && !bfd_is_und_section(sym->section)) {
       Proc::Type procType;
 
-      if (sym->flags & BSF_LOCAL)
+      if (sym->flags & BSF_LOCAL) {
         procType = Proc::Local;
-      else if (sym->flags & BSF_WEAK)
+      }
+      else if (sym->flags & BSF_WEAK) {
         procType = Proc::Weak;
-      else if (sym->flags & BSF_GLOBAL)
+      }
+      else if (sym->flags & BSF_GLOBAL) {
         procType = Proc::Global;
-      else
+      }
+      else {
         procType = Proc::Unknown;
+      }
 
       // Create a procedure based on best information we have.  We
       // always prefer explicit debug information over that inferred
@@ -287,15 +292,16 @@ binutils::TextSeg::Create_InitializeProcs()
       }
       
       // We now have a valid procedure
-      Proc *proc = new Proc(this, procNm, symNm, procType,
-				      begVMA, endVMA, size);
+      Proc *proc = new Proc(this, procNm, symNm, procType, 
+			    begVMA, endVMA, size);
       procedures.push_back(proc);
+      lm->insertProc(VMAInterval(begVMA, endVMA), proc);
 
       // Add symbolic info
       if (dbg) {
 	proc->GetFilename() = dbg->filenm;
 	proc->GetBegLine() = dbg->begLine;
-	//dbg->parent;
+	//dbg->parent; // FIXME
       }
     } 
   }
@@ -342,7 +348,7 @@ binutils::TextSeg::Create_DisassembleProcs()
       lastInsnVMA = vma;
       for (ushort opIndex = 0; opIndex < num_ops; opIndex++) {
         Insn *newInsn = MakeInsn(abfd, mi, vma, opIndex, insnSz);
-        lm->AddInsn(vma, opIndex, newInsn); 
+        lm->insertInsn(vma, opIndex, newInsn); 
       }
       vma += insnSz; 
     }

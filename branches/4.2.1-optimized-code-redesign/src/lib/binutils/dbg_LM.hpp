@@ -87,8 +87,9 @@ class Proc;
 
 class LM {
 public:
+  // We could use a VMAInterval -> dbg::Proc map if necessary.
   typedef VMA                                               key_type;
-  typedef Proc*                                             mapped_type;
+  typedef dbg::Proc*                                        mapped_type;
   
   typedef std::map<key_type, mapped_type>                   My_t;
   typedef std::pair<const key_type, mapped_type>            value_type;
@@ -154,12 +155,14 @@ public:
   // -------------------------------------------------------
   // debugging
   // -------------------------------------------------------
+  std::string toString() const;
+
   std::ostream& dump(std::ostream& os) const;
 
 private:
 
   // -------------------------------------------------------
-  // debugging
+  // 
   // -------------------------------------------------------
 
   // Callback for bfd_elf_forall_dbg_funcinfo

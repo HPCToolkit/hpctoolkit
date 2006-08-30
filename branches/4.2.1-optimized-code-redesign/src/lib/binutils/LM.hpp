@@ -72,12 +72,6 @@
 
 class ISA;
 
-// A map between pairs of addresses in the same procedure and the
-// first line of the procedure. This map is built upon reading the
-// module. 
-// [FIXME: this should be hidden within LoadModule and should be a general addr => procedure map.]
-typedef std::map<VMAInterval, suint> VMAToProcMap;
-
 //***************************************************************************
 // LM (LoadModule)
 //***************************************************************************
@@ -99,8 +93,19 @@ class LMImpl;
 
 class LM {
 public:
-  enum Type {Executable, SharedLibrary, Unknown};
+  enum Type { Executable, SharedLibrary, Unknown };
 
+  // VMAInterval to Proc map.
+  typedef VMAIntervalMap<Proc*> VMAToProcMap;
+  
+  // Virtual memory address to Insn* map.
+  typedef std::map<VMA, Insn*> VMAToInsnMap;
+  
+  // Seg sequence: 'deque' supports random access iterators (and
+  // is thus sortable with std::sort) and constant time insertion/deletion at
+  // beginning/end.
+  typedef std::deque<Seg*> SegSeq;
+  
 public:
   // -------------------------------------------------------  
   // Constructor/Destructor
@@ -168,6 +173,13 @@ public:
 
 
   // -------------------------------------------------------
+  // Procedures: All procedures found in text sections may be
+  // accessed here.
+  // -------------------------------------------------------
+  Proc* findProc(VMA vma) const;
+  void  insertProc(VMAInterval vmaint, Proc* proc);  
+  
+  // -------------------------------------------------------
   // Instructions: All instructions found in text sections may be
   // accessed here, or through other classes (such as a 'Proc').
   //
@@ -177,19 +189,19 @@ public:
   // 'Insn' that may be accessed by the combination of its vma and
   // operation index.  
   //
-  // GetMachInsn: Return a pointer to beginning of the instrution
+  // findMachInsn: Return a pointer to beginning of the instrution
   // bits at virtual memory address 'vma'; NULL if invalid instruction
   // or invalid 'vma'.  Sets 'size' to the size (bytes) of the
   // instruction.
   //
-  // GetInsn: Similar to the above except returns an 'Insn',
+  // findInsn: Similar to the above except returns an 'Insn',
   // not the bits.
   //
-  // AddInsn: Add an instruction to the map
+  // insertInsn: Add an instruction to the map
   // -------------------------------------------------------
-  MachInsn* GetMachInsn(VMA vma, ushort &size) const;
-  Insn*     GetInsn(VMA vma, ushort opIndex) const;
-  void      AddInsn(VMA vma, ushort opIndex, Insn *insn);
+  MachInsn* findMachInsn(VMA vma, ushort &size) const;
+  Insn*     findInsn(VMA vma, ushort opIndex) const;
+  void      insertInsn(VMA vma, ushort opIndex, Insn* insn);
 
   
   // -------------------------------------------------------
@@ -227,17 +239,17 @@ public:
 			 std::string& func, std::string& file,
 			 suint &begLine, suint &endLine) const;
 
-  bool GetProcFirstLineInfo(VMA vma, ushort opIndex, suint &line);
+  bool GetProcFirstLineInfo(VMA vma, ushort opIndex, suint &line) const;
 
   binutils::dbg::LM* GetDebugInfo() { return &dbgInfo; }
 
-
+  
   // -------------------------------------------------------
-  // Dump contents for inspection
+  // debugging
   // -------------------------------------------------------
-  virtual void Dump(std::ostream& o = std::cerr, const char* pre = "") const;
-  virtual void DDump() const;
-  virtual void DumpSelf(std::ostream& o = std::cerr, const char* pre = "") const;
+  virtual void dump(std::ostream& o = std::cerr, const char* pre = "") const;
+  virtual void ddump() const;
+  virtual void dumpme(std::ostream& o = std::cerr, const char* pre = "") const;
 
   // -------------------------------------------------------
   // It is a little unfortunate to have to make 'isa' global across
@@ -264,10 +276,6 @@ private:
   bool ReadSymbolTables();
   bool ReadSegs();
   
-  // Builds the map from <proc beg addr, proc end addr> pairs to 
-  // procedure first line.
-  bool buildVMAToProcMap();
-
   // UnRelocateVMA: Given a relocated VMA, returns a non-relocated version.
   VMA UnRelocateVMA(VMA relocatedVMA) const 
     { return (relocatedVMA + unRelocDelta); }
@@ -278,19 +286,7 @@ private:
   // Dump helper routines
   void DumpModuleInfo(std::ostream& o = std::cerr, const char* pre = "") const;
   void DumpSymTab(std::ostream& o = std::cerr, const char* pre = "") const;
-  
-  // Virtual memory address to Insn* map: Note that 'VMA' is
-  // not necessarily the true vma value; rather, it is the address of
-  // the individual operation (ISA::ConvertVMAToOpVMA).
-  typedef std::map<VMA, Insn*, lt_VMA> VMAToInsnMap;
-  
-  // Seg sequence: 'deque' supports random access iterators (and
-  // is thus sortable with std::sort) and constant time insertion/deletion at
-  // beginning/end.
-  typedef std::deque<Seg*> SegSeq;
-  typedef std::deque<Seg*>::iterator SegSeqIt;
-  typedef std::deque<Seg*>::const_iterator SegSeqItC;
-  
+    
 protected:
   LMImpl* impl; 
 
@@ -304,9 +300,16 @@ private:
     
   SegSeq sections; // A list of sections
 
-  // A map of virtual memory addresses to Insn*
+  // A map of VMAs to Proc* and Insn*.  
+  //   1. 'vmaToProcMap' is indexed by an interval [a b) where a is
+  // the begin VMA of this procedure and b is the begin VMA of the
+  // following procedure (or the end of the section if there is no
+  // following procedure).
+  //   2. For 'vmaToInsnMap', note that 'VMA' is not necessarily the
+  // true vma value; rather, it is the address of the individual
+  // operation (ISA::ConvertVMAToOpVMA).
+  VMAToProcMap vmaToProcMap;
   VMAToInsnMap vmaToInsnMap; // owns all Insn*
-  VMAToProcMap vmaToProcMap; // CC
 
   // symbolic info used in building procedures
   binutils::dbg::LM dbgInfo;
@@ -327,17 +330,27 @@ namespace binutils {
 
 class Exe : public LM {
 public:
+  // -------------------------------------------------------  
+  // Constructor/Destructor
+  // -------------------------------------------------------
   Exe(); // set type to executable
   virtual ~Exe();
+
+  // -------------------------------------------------------
+  // 
+  // -------------------------------------------------------
 
   // See LM::Open comments
   virtual bool Open(const char* moduleName);
   
   VMA GetStartVMA() const { return startVMA; }
-  
-  virtual void Dump(std::ostream& o = std::cerr, const char* pre = "") const;
-  virtual void DDump() const; 
-  virtual void DumpSelf(std::ostream& o = std::cerr, const char* pre = "") const;
+
+  // -------------------------------------------------------
+  // debugging
+  // -------------------------------------------------------
+  virtual void dump(std::ostream& o = std::cerr, const char* pre = "") const;
+  virtual void ddump() const; 
+  virtual void dumpme(std::ostream& o = std::cerr, const char* pre = "") const;
 
 private:
   // Should not be used
@@ -394,7 +407,7 @@ private:
 protected:
 private:
   const LM& lm;
-  LM::SegSeqItC it;
+  LM::SegSeq::const_iterator it;
 };
 
 } // namespace binutils

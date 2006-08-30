@@ -163,7 +163,7 @@ realmain(int argc, char* const argv[])
       DumpSymbolicInfoOld(std::cout, lm);
     }
     else {
-      lm->Dump(std::cout);
+      lm->dump(std::cout);
     }
   } 
   catch (...) {

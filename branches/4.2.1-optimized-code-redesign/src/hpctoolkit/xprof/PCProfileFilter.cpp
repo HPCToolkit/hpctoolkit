@@ -114,7 +114,7 @@ InsnFilter::~InsnFilter()
 bool 
 InsnFilter::operator()(VMA pc, ushort opIndex)
 {
-  binutils::Insn* insn = lm->GetInsn(pc, opIndex);
+  binutils::Insn* insn = lm->findInsn(pc, opIndex);
   if (!insn) {
     return false;
   }

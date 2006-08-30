@@ -1018,60 +1018,40 @@ LoadModScope::findByVMA(VMA vma)
     buildMap(stmtMap, ScopeInfo::STMT_RANGE);
   }
   
+  // Attempt to find StatementRange and then Proc
   CodeInfo* found = NULL;
   VMAInterval toFind(vma, vma+1); // [vma, vma+1)
   
-  // Attempt to find StatementRange and then Proc
-  found = findInMap(stmtMap, toFind);
-  if (!found) {
-    found = findInMap(procMap, toFind);
+  VMAIntervalMap<StmtRangeScope*>::iterator it1 = stmtMap->find(toFind);
+  if (it1 != stmtMap->end()) {
+    found = it1->second;
+  }
+  else {
+    VMAIntervalMap<ProcScope*>::iterator it2 = procMap->find(toFind);
+    if (it2 != procMap->end()) {
+      found = it2->second;
+    }
   }
   return found;
 }
 
 
 template<typename T>
-T*
-LoadModScope::findInMap(const map<VMAInterval, T*>* m, 
-			VMAInterval& toFind) const
-{
-  // find [lb, ub) where lb is the first element !< toFind 
-  typename map<VMAInterval, T*>::const_reverse_iterator lb(m->lower_bound(toFind));
-  
-  // Reverse-search for match
-  if (lb.base() == m->end() && !m->empty()) {
-    lb = m->rbegin();
-  }
-  for ( ; lb != m->rend(); --lb) {
-    const VMAInterval& vmaint = lb->first;
-    if (vmaint.contains(toFind)) {
-      return lb->second;
-    }
-    else if (vmaint < toFind) {
-      break; // (toFind > vmaint) AND !vmaint.contains(toFind)
-    }
-  }
-  
-  return NULL;
-}
-
-
-template<typename T>
 void 
-LoadModScope::buildMap(map<VMAInterval, T*>*& m, ScopeInfo::ScopeType ty)
+LoadModScope::buildMap(VMAIntervalMap<T>*& m, ScopeInfo::ScopeType ty)
 {
   if (!m) {
-    m = new map<VMAInterval, T*>;
+    m = new VMAIntervalMap<T>;
   }
   
   ScopeInfoIterator it(this, &ScopeTypeFilter[ty]);
   for (; it.Current(); ++it) {
-    T* x = dynamic_cast<T*>(it.Current());
+    T x = dynamic_cast<T>(it.Current());
     
     const VMAIntervalSet& vmaset = x->vmaSet();
     for (VMAIntervalSet::const_iterator it = vmaset.begin();
 	 it != vmaset.end(); ++it) {
-      (*m)[*it] = x;
+      m->insert(make_pair(*it, x));
     }
   }
 }

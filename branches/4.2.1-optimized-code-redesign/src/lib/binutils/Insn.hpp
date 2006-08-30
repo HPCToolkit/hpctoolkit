@@ -137,10 +137,10 @@ public:
 					mi2->GetSize());
   }
   
-  // Dump contents for inspection
-  virtual void Dump(std::ostream& o = std::cerr, const char* pre = "") const;
-  virtual void DDump() const;
-  virtual void DumpSelf(std::ostream& o = std::cerr, const char* pre = "") const;
+  // dump contents for inspection
+  virtual void dump(std::ostream& o = std::cerr, const char* pre = "") const;
+  virtual void ddump() const;
+  virtual void dumpme(std::ostream& o = std::cerr, const char* pre = "") const;
   
 private:
   // Should not be used
@@ -183,10 +183,10 @@ public:
     return LM::isa->GetInsnNumDelaySlots(minsn, size);
   }
 
-  // Dump contents for inspection
-  virtual void Dump(std::ostream& o = std::cerr, const char* pre = "") const;
-  virtual void DDump() const;
-  virtual void DumpSelf(std::ostream& o = std::cerr, const char* pre = "") const;
+  // dump contents for inspection
+  virtual void dump(std::ostream& o = std::cerr, const char* pre = "") const;
+  virtual void ddump() const;
+  virtual void dumpme(std::ostream& o = std::cerr, const char* pre = "") const;
   
 private:
   // Should not be used
@@ -220,10 +220,10 @@ public:
 
   virtual ushort GetNumOps() const  { return 1; }
 
-  // Dump contents for inspection
-  virtual void Dump(std::ostream& o = std::cerr, const char* pre = "") const;
-  virtual void DDump() const;
-  virtual void DumpSelf(std::ostream& o = std::cerr, const char* pre = "") const;
+  // dump contents for inspection
+  virtual void dump(std::ostream& o = std::cerr, const char* pre = "") const;
+  virtual void ddump() const;
+  virtual void dumpme(std::ostream& o = std::cerr, const char* pre = "") const;
   
 private:
   // Should not be used
@@ -260,10 +260,10 @@ public:
   virtual ushort GetNumOps() const  
     { return LM::isa->GetInsnNumOps(minsn); }
 
-  // Dump contents for inspection
-  virtual void Dump(std::ostream& o = std::cerr, const char* pre = "") const;
-  virtual void DDump() const;
-  virtual void DumpSelf(std::ostream& o = std::cerr, const char* pre = "") const;
+  // dump contents for inspection
+  virtual void dump(std::ostream& o = std::cerr, const char* pre = "") const;
+  virtual void ddump() const;
+  virtual void dumpme(std::ostream& o = std::cerr, const char* pre = "") const;
   
 private:
   // Should not be used

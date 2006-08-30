@@ -138,7 +138,7 @@ binutils::LM::~LM()
   }
   vmaToInsnMap.clear();
 
-  // reset isa  
+  // reset isa
   delete isa;
   isa = NULL;
 }
@@ -259,7 +259,6 @@ binutils::LM::Read()
       && sections.size() == 0 && vmaToInsnMap.size() == 0) {
     STATUS &= ReadSymbolTables();
     STATUS &= ReadSegs();
-    buildVMAToProcMap();
   } 
   
   return STATUS;
@@ -291,12 +290,34 @@ binutils::LM::IsRelocated() const
 }
 
 
+binutils::Proc*
+binutils::LM::findProc(VMA vma) const
+{
+  VMA unrelocVMA = UnRelocateVMA(vma);
+  VMAInterval unrelocInt(unrelocVMA, unrelocVMA + 1); // size must be > 0
+  VMAToProcMap::const_iterator it = vmaToProcMap.find(unrelocInt);
+  Proc* proc = (it != vmaToProcMap.end()) ? it->second : NULL;
+  return proc;
+}
+
+
+void
+binutils::LM::insertProc(VMAInterval vmaint, binutils::Proc* proc)
+{
+  VMAInterval unrelocInt(UnRelocateVMA(vmaint.beg()), 
+			 UnRelocateVMA(vmaint.end()));
+  
+  // FIXME: It wouldn't hurt to verify this isn't a duplicate
+  vmaToProcMap.insert(VMAToProcMap::value_type(unrelocInt, proc));
+}
+
+
 MachInsn*
-binutils::LM::GetMachInsn(VMA vma, ushort &size) const
+binutils::LM::findMachInsn(VMA vma, ushort &size) const
 {
   MachInsn* minsn = NULL;
   size = 0;
-  Insn* insn = GetInsn(vma, 0);
+  Insn* insn = findInsn(vma, 0);
   if (insn) {
     size  = insn->GetSize();
     minsn = insn->GetBits();
@@ -306,22 +327,19 @@ binutils::LM::GetMachInsn(VMA vma, ushort &size) const
 
 
 binutils::Insn*
-binutils::LM::GetInsn(VMA vma, ushort opIndex) const
+binutils::LM::findInsn(VMA vma, ushort opIndex) const
 {
   VMA unrelocVMA = UnRelocateVMA(vma);
   VMA mapVMA = isa->ConvertVMAToOpVMA(unrelocVMA, opIndex);
   
-  Insn* insn = NULL;
   VMAToInsnMap::const_iterator it = vmaToInsnMap.find(mapVMA);
-  if (it != vmaToInsnMap.end()) {
-    insn = (*it).second;
-  }
+  Insn* insn = (it != vmaToInsnMap.end()) ? it->second : NULL;
   return insn;
 }
 
 
 void
-binutils::LM::AddInsn(VMA vma, ushort opIndex, binutils::Insn *insn)
+binutils::LM::insertInsn(VMA vma, ushort opIndex, binutils::Insn* insn)
 {
   VMA unrelocVMA = UnRelocateVMA(vma);
   VMA mapVMA = isa->ConvertVMAToOpVMA(unrelocVMA, opIndex);
@@ -482,7 +500,7 @@ binutils::LM::GetTextBegEndVMA(VMA* begVMA, VMA* endVMA)
 
 
 void
-binutils::LM::Dump(std::ostream& o, const char* pre) const
+binutils::LM::dump(std::ostream& o, const char* pre) const
 {
   string p(pre);
   string p1 = p + "  ";
@@ -501,7 +519,7 @@ binutils::LM::Dump(std::ostream& o, const char* pre) const
   DumpModuleInfo(o, p2.c_str());
 
   o << p1 << "Load Module Contents:\n";
-  DumpSelf(o, p2.c_str());
+  dumpme(o, p2.c_str());
 
   DIAG_DevIf(1) {
     o << p2 << "Symbol Table (" << impl->numSyms << "):\n";
@@ -511,20 +529,20 @@ binutils::LM::Dump(std::ostream& o, const char* pre) const
   o << p2 << "Sections (" << GetNumSegs() << "):\n";
   for (LMSegIterator it(*this); it.IsValid(); ++it) {
     Seg* sec = it.Current();
-    sec->Dump(o, p2.c_str());
+    sec->dump(o, p2.c_str());
   }
 }
 
 
 void
-binutils::LM::DDump() const
+binutils::LM::ddump() const
 {
-  Dump(std::cerr);
+  dump(std::cerr);
 }
 
 
 void
-binutils::LM::DumpSelf(std::ostream& o, const char* pre) const
+binutils::LM::dumpme(std::ostream& o, const char* pre) const
 {
 }
 
@@ -654,73 +672,26 @@ binutils::LM::ReadSegs()
 }
 
 
-// Builds the map from <proc beg addr, proc end addr> pairs to 
-// procedure first line.
 bool 
-binutils::LM::buildVMAToProcMap() 
+binutils::LM::GetProcFirstLineInfo(VMA vma, ushort opIndex, suint &line) const
 {
   bool STATUS = false;
-  for (LMSegIterator it(*this); it.IsValid(); ++it) {
-    Seg* sec = it.Current();
-    if (sec->GetType() != Seg::Text) {
-      continue;
-    }
-    
-    // We have a TextSeg.  Iterate over procedures.
-    // Obtain the bfd section corresponding to our Seg.
-    asection *bfdSeg = 
-      bfd_get_section_by_name(impl->abfd, sec->GetName().c_str());
-    VMA base = bfd_section_vma(impl->abfd, bfdSeg);
-    
-    TextSeg* tsec = dynamic_cast<TextSeg*>(sec);
-    for (TextSegProcIterator it1(*tsec); it1.IsValid(); ++it1) {
-      Proc* p = it1.Current();
-      VMA begVMA = p->GetBegVMA();
-      VMA endVMA = begVMA + p->GetSize();
-      suint begLine = p->GetBegLine();
-      
-      if (!IsValidLine(begLine)) {
-	string func, file;
-	GetSourceFileInfo(begVMA, 0, func, file, begLine);
-      }
-      
-      VMAInterval vmaint(begVMA, endVMA);
-      vmaToProcMap.insert(VMAToProcMap::value_type(vmaint , begLine));
-      DIAG_MsgIf(DBG_BLD_PROC_MAP, "adding procedure " << p->GetName() << ":" 
-		 << begLine << " " << vmaint.toString());
-    }
-  } 
-  return STATUS;
-}
-
-
-bool 
-binutils::LM::GetProcFirstLineInfo(VMA vma, ushort opIndex, suint &line) 
-{
-  bool STATUS = false;
+  line = 0;
 
   VMA unrelocVMA = UnRelocateVMA(vma);
   VMA opVMA = isa->ConvertVMAToOpVMA(unrelocVMA, opIndex);
 
-  DIAG_MsgIf(DBG_BLD_PROC_MAP, "LM::GetProcFirstLineInfo " << hex 
-	     << this << " (" << vma << "," << opIndex 
-	     << ") unrelocVMA=" << unrelocVMA << " opVMA=" << opVMA << dec);
+  VMAInterval vmaint(opVMA, opVMA + 1); // [opVMA, opVMA + 1)
 
-  VMAToProcMap::iterator it = vmaToProcMap.lower_bound(VMAInterval(opVMA,opVMA));
+  VMAToProcMap::const_iterator it = vmaToProcMap.find(vmaint);
   if (it != vmaToProcMap.end()) {
-    it--; // move to predecessor
-    line = it->second;
-    DIAG_MsgIf(DBG_BLD_PROC_MAP, "LM::GetProcFirstLineInfo (found) " << hex 
-	       << this << " (" << vma << "," << opIndex 
-	       << ") unrelocVMA=" << unrelocVMA << " opVMA=" << opVMA << dec);
+    Proc* proc = it->second;
+    line = proc->GetBegLine();
     STATUS = true;
-  } 
-  else {
-    line = 0;
-    DIAG_MsgIf(DBG_BLD_PROC_MAP, "LM::GetProcFirstLineInfo (*not* found) " 
-	       << hex << this << " (" << vma << "," << opIndex 
-	       << ") unrelocVMA=" << unrelocVMA << " opVMA=" << opVMA << dec);
   }
+  DIAG_MsgIf(DBG_BLD_PROC_MAP, "LM::GetProcFirstLineInfo " 
+	     << vmaint.toString() << " = " << line);
+
   return STATUS;
 }
 
@@ -876,21 +847,21 @@ binutils::Exe::Open(const char* moduleName)
 
 
 void
-binutils::Exe::Dump(std::ostream& o, const char* pre) const
+binutils::Exe::dump(std::ostream& o, const char* pre) const
 {
-  LM::Dump(o);  
+  LM::dump(o);  
 }
 
 
 void
-binutils::Exe::DDump() const
+binutils::Exe::ddump() const
 {
-  Dump(std::cerr);
+  dump(std::cerr);
 }
 
 
 void
-binutils::Exe::DumpSelf(std::ostream& o, const char* pre) const
+binutils::Exe::dumpme(std::ostream& o, const char* pre) const
 {
   o << pre << "Program start address: 0x" << hex << GetStartVMA()
     << dec << endl;

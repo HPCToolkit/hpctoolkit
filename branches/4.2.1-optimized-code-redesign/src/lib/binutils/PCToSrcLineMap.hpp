@@ -187,9 +187,9 @@ private:
   ProcPCToSrcLineXMap();
   
   // Virtual memory address to 'SrcLineX*' map 
-  typedef std::map<VMA, SrcLineX*, lt_VMA>           VMAToSrcLineXMap;
-  typedef std::map<VMA, SrcLineX*, lt_VMA>::iterator VMAToSrcLineXMapIt;
-  typedef std::map<VMA, SrcLineX*, lt_VMA>::const_iterator
+  typedef std::map<VMA, SrcLineX*>           VMAToSrcLineXMap;
+  typedef std::map<VMA, SrcLineX*>::iterator VMAToSrcLineXMapIt;
+  typedef std::map<VMA, SrcLineX*>::const_iterator
     VMAToSrcLineXMapItC;  
   typedef std::map<VMA, SrcLineX*>::value_type        VMAToSrcLineXMapVal;
   

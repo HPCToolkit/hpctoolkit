@@ -60,6 +60,8 @@ using std::endl;
 using std::hex;
 using std::dec;
 
+#include <sstream>
+
 //*************************** User Include Files ****************************
 
 #include <include/gnu_bfd.h>
@@ -75,6 +77,16 @@ using std::dec;
 //***************************************************************************
 // Proc
 //***************************************************************************
+
+std::string
+binutils::dbg::Proc::toString() const
+{
+  std::ostringstream os;
+  dump(os);
+  os << std::ends;
+  return os.str();
+}
+
 
 std::ostream&
 binutils::dbg::Proc::dump(std::ostream& os) const

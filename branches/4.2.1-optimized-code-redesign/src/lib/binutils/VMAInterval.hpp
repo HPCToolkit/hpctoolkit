@@ -56,6 +56,7 @@
 #include <set>
 #include <map>
 #include <iostream>
+#include <sstream>
 
 //*************************** User Include Files ****************************
 
@@ -188,13 +189,12 @@ operator!=(const VMAInterval& x, const VMAInterval& y)
 // VMAIntervalSet: A set of *non-overlapping* VMAIntervals
 // --------------------------------------------------------------------------
 class VMAIntervalSet
-  : public std::set<VMAInterval, lt_VMAInterval>
+  : public std::set<VMAInterval>
 {
 public:
   typedef VMAInterval                                       key_type;
-  typedef lt_VMAInterval                                    cmp_type;
   
-  typedef std::set<key_type, cmp_type>                      My_t;
+  typedef std::set<key_type>                                My_t;
   typedef key_type                                          value_type;
   typedef My_t::key_compare                                 key_compare;
   typedef My_t::allocator_type                              allocator_type;
@@ -234,6 +234,8 @@ public:
     { return erase(value_type(beg, end)); }
   size_type erase(const key_type& x);
 
+  // find: []
+
   // merge: Merge 'x' with this set
   void merge(const VMAIntervalSet& x);
 
@@ -268,19 +270,39 @@ private:
 //***************************************************************************
 
 // --------------------------------------------------------------------------
-// VMAIntervalMap: 
+// VMAIntervalMap: maps *non-overlapping* intervals to some type T.
+// Provides an interface for finding entries based contained intervals.
 // --------------------------------------------------------------------------
 
 template <typename T>
 class VMAIntervalMap
-  : public std::map<VMAInterval, T, lt_VMAInterval>
+  : public std::map<VMAInterval, T>
 {
+public:
+  typedef VMAInterval                                       key_type;
+  typedef T                                                 mapped_type;
+  
+  typedef std::map<key_type, T>                             My_t;
+  typedef std::pair<const key_type, T>                      value_type;
+  typedef typename My_t::key_compare                        key_compare;
+  typedef typename My_t::allocator_type                     allocator_type;
+  typedef typename My_t::reference                          reference;
+  typedef typename My_t::const_reference                    const_reference;
+  typedef typename My_t::iterator                           iterator;
+  typedef typename My_t::const_iterator                     const_iterator;
+  typedef typename My_t::reverse_iterator                   reverse_iterator;
+  typedef typename My_t::const_reverse_iterator             const_reverse_iterator;
+  typedef typename My_t::size_type                          size_type;
+
 public:
   // -------------------------------------------------------
   // constructor/destructor
   // -------------------------------------------------------
-  VMAIntervalMap();
-  ~VMAIntervalMap();
+  VMAIntervalMap()
+    { }
+
+  ~VMAIntervalMap()
+    { }
 
   // -------------------------------------------------------
   // cloning (proscribe by hiding copy constructor and operator=)
@@ -289,13 +311,63 @@ public:
   // -------------------------------------------------------
   // iterator, find/insert, etc
   // -------------------------------------------------------
+  
+  // element access:
+  //mapped_type& operator[](const key_type& x);
+
+  // mMap operations:
+  //  find: Given a VMAInterval x, find the element mapped to the
+  //    interval that equals or contains x.
+  iterator find(const key_type& toFind)
+  {
+    // find [lb, ub) where lb is the first element !< toFind 
+    reverse_iterator lb(this->lower_bound(toFind));
+    
+    // Reverse-search for match
+    if (lb.base() == this->end() && !this->empty()) {
+      lb = this->rbegin();
+    }
+    for ( ; lb != this->rend(); --lb) {
+      const VMAInterval& vmaint = lb->first;
+      if (vmaint.contains(toFind)) {
+	return lb.base();
+      }
+      else if (vmaint < toFind) {
+	break; // (toFind > vmaint) AND !vmaint.contains(toFind)
+      }
+    }
+    
+    return this->end();
+  }
+  
+  const_iterator find(const key_type& x) const
+    { return find(x); }
+  
   // use inherited std::map routines
   
   // -------------------------------------------------------
   // debugging
   // -------------------------------------------------------
-  std::ostream& ddump() const;
-  std::ostream& dump(std::ostream& os) const;
+  virtual std::string toString() const
+  {
+    std::ostringstream os;
+    dump(os);
+    os << std::ends;
+    return os.str();
+  }
+  
+  virtual std::ostream& dump(std::ostream& os) const
+  {
+    for (const_iterator it = this->begin(); it != this->end(); ++it) {
+      //it->first.dump(os);
+      //os << " --> " << hex << "Ox" << it->second << dec << endl;
+    }
+  }
+  
+  std::ostream& ddump() const
+  {
+    dump(std::cerr);
+  }
 
 private:
   VMAIntervalMap(const VMAIntervalMap& x);

@@ -628,17 +628,14 @@ public:
   void dumpmaps() const;
   
 public:
-  typedef std::map<VMAInterval, ProcScope*> VMAToProcMap;
-  typedef std::map<VMAInterval, StmtRangeScope*> VMAToStmtRangeMap;
+  typedef VMAIntervalMap<ProcScope*>      VMAToProcMap;
+  typedef VMAIntervalMap<StmtRangeScope*> VMAToStmtRangeMap;
 
 protected: 
   void Ctor(const char* nm, ScopeInfo* mom);
 
-  template<typename T>
-  T* findInMap(const std::map<VMAInterval, T*>* m, VMAInterval& toFind) const;
-  
   template<typename T> 
-  void buildMap(std::map<VMAInterval, T*>*& m, ScopeInfo::ScopeType ty);
+  void buildMap(VMAIntervalMap<T>*& m, ScopeInfo::ScopeType ty);
 
 private: 
   std::string name; // the load module name

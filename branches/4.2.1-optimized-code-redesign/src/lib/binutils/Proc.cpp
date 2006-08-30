@@ -81,7 +81,7 @@ binutils::Proc::Proc(binutils::TextSeg* _sec, string& _name, string& _linkname,
     endVMA(_endVMA), size(_size), filenm(""), begLine(0), parent(NULL)
 {
   id = nextId++;
-  numInsns = 0; // FIXME: this is never computed
+  numInsns = 0; 
 }
 
 
@@ -94,11 +94,11 @@ binutils::Proc::~Proc()
 binutils::Insn* 
 binutils::Proc::GetLastInsn() const
 {
-  Insn* insn = GetInsn(endVMA, 0);
+  Insn* insn = findInsn(endVMA, 0);
   if (insn) {
     ushort numOps = insn->GetNumOps();
     if (numOps != 0) {
-      insn = GetInsn(endVMA, numOps - 1); // opIndex is 0-based
+      insn = findInsn(endVMA, numOps - 1); // opIndex is 0-based
     }
   }
   return insn;
@@ -106,7 +106,7 @@ binutils::Proc::GetLastInsn() const
 
 
 void
-binutils::Proc::Dump(std::ostream& o, const char* pre) const
+binutils::Proc::dump(std::ostream& o, const char* pre) const
 {
   string p(pre);
   string p1 = p + "  ";
@@ -149,15 +149,15 @@ binutils::Proc::Dump(std::ostream& o, const char* pre) const
   o << p1 << "----- Instruction Dump -----\n";
   for (ProcInsnIterator it(*this); it.IsValid(); ++it) {
     Insn* insn = it.Current();
-    insn->Dump(o, p2.c_str());
+    insn->dump(o, p2.c_str());
   }
 }
 
 
 void
-binutils::Proc::DDump() const
+binutils::Proc::ddump() const
 {
-  Dump(std::cerr);
+  dump(std::cerr);
 }
 
 

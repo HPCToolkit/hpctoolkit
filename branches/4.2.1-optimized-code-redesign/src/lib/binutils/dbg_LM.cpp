@@ -61,6 +61,8 @@ using std::endl;
 using std::hex;
 using std::dec;
 
+#include <sstream>
+
 //*************************** User Include Files ****************************
 
 #include <include/gnu_bfd.h>
@@ -117,6 +119,16 @@ binutils::dbg::LM::clear()
 }
 
 
+std::string
+binutils::dbg::LM::toString() const
+{
+  std::ostringstream os;
+  dump(os);
+  os << std::ends;
+  return os.str();
+}
+
+
 std::ostream&
 binutils::dbg::LM::dump(std::ostream& os) const
 {
@@ -138,7 +150,7 @@ int
 binutils::dbg::LM::bfd_dbgInfoCallback(void* callback_obj, 
 				       void* parent, void* funcinfo)
 {
-  LM* lm = (LM*)callback_obj;
+  dbg::LM* lminfo = (dbg::LM*)callback_obj;
   
   dbg::Proc* pinfo = new dbg::Proc;
 
@@ -173,7 +185,7 @@ binutils::dbg::LM::bfd_dbgInfoCallback(void* callback_obj,
   }
   
   std::pair<iterator, bool> res = 
-    lm->insert(std::make_pair(pinfo->begVMA, pinfo));
+    lminfo->insert(std::make_pair(pinfo->begVMA, pinfo));
   if (!res.second) {
     // There are two descriptors for the same function.  I don't think
     // this should happen in practice...
