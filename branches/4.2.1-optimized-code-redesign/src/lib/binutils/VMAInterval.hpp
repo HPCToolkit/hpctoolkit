@@ -320,20 +320,23 @@ public:
   //    interval that equals or contains x.
   iterator find(const key_type& toFind)
   {
-    // find [lb, ub) where lb is the first element !< toFind 
-    reverse_iterator lb(this->lower_bound(toFind));
+    // find lb where lb is the first element !< x;
+    reverse_iterator lb_r(this->lower_bound(toFind));
+    if (lb_r.base() == this->end() && !this->empty()) {
+      lb_r = this->rbegin();
+    }
+    else if (!this->empty()) {
+      lb_r--; // adjust for reverse iterators
+    }
     
     // Reverse-search for match
-    if (lb.base() == this->end() && !this->empty()) {
-      lb = this->rbegin();
-    }
-    for ( ; lb != this->rend(); --lb) {
-      const VMAInterval& vmaint = lb->first;
+    for ( ; lb_r != this->rend(); ++lb_r) {
+      const VMAInterval& vmaint = lb_r->first;
       if (vmaint.contains(toFind)) {
-	return lb.base();
+	return --(lb_r.base()); // adjust for reverse iterators
       }
       else if (vmaint < toFind) {
-	break; // (toFind > vmaint) AND !vmaint.contains(toFind)
+      	break; // !vmaint.contains(toFind) AND (toFind > vmaint)
       }
     }
     
@@ -341,7 +344,8 @@ public:
   }
   
   const_iterator find(const key_type& x) const
-    { return find(x); }
+    { return const_cast<VMAIntervalMap*>(this)->find(x); }
+
   
   // use inherited std::map routines
   
@@ -359,8 +363,7 @@ public:
   virtual std::ostream& dump(std::ostream& os) const
   {
     for (const_iterator it = this->begin(); it != this->end(); ++it) {
-      //it->first.dump(os);
-      //os << " --> " << hex << "Ox" << it->second << dec << endl;
+      os << it->first.toString() << " --> " << it->second << std::endl;
     }
   }
   

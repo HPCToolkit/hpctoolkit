@@ -159,6 +159,8 @@ public:
 
   std::ostream& dump(std::ostream& os) const;
 
+  void ddump() const;
+
 private:
 
   // -------------------------------------------------------

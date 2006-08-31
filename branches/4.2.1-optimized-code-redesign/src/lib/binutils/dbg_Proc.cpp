@@ -100,4 +100,12 @@ binutils::dbg::Proc::dump(std::ostream& os) const
   return os;
 }
 
+
+void
+binutils::dbg::Proc::ddump() const
+{
+  dump(std::cerr);
+}
+
+
 //***************************************************************************

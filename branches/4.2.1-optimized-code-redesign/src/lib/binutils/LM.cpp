@@ -547,6 +547,27 @@ binutils::LM::dumpme(std::ostream& o, const char* pre) const
 }
 
 
+void
+binutils::LM::dumpProcMap(std::ostream& os, unsigned flag, 
+			  const char* pre) const
+{
+  for (VMAToProcMap::const_iterator it = vmaToProcMap.begin(); 
+       it != vmaToProcMap.end(); ++it) {
+    os << it->first.toString() << " --> " << hex << "Ox" << it->second 
+       << dec << endl;
+    if (flag != 0) {
+      os << it->second->toString();
+    }
+  }
+}
+
+
+void
+binutils::LM::ddumpProcMap(unsigned flag) const
+{
+  dumpProcMap(std::cerr, flag);
+}
+
 //***************************************************************************
 
 int
@@ -642,7 +663,7 @@ binutils::LM::ReadSegs()
   if (!impl->bfdSymbolTable) { return false; }
   bfd *abfd = impl->abfd;
 
-  dbgInfo.read(abfd, impl->bfdSymbolTable);
+  mDbgInfo.read(abfd, impl->bfdSymbolTable);
 
   // Process each section in the object file.
   for (asection *sec = abfd->sections; sec; sec = sec->next) {
@@ -666,7 +687,7 @@ binutils::LM::ReadSegs()
     }
   }
 
-  dbgInfo.clear();
+  mDbgInfo.clear();
   
   return STATUS;
 }
@@ -850,13 +871,6 @@ void
 binutils::Exe::dump(std::ostream& o, const char* pre) const
 {
   LM::dump(o);  
-}
-
-
-void
-binutils::Exe::ddump() const
-{
-  dump(std::cerr);
 }
 
 

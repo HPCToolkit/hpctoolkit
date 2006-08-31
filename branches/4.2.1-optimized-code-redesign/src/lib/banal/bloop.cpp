@@ -372,10 +372,13 @@ banal::Normalize(PgmScopeTree* pgmScopeTree,
 //
 // A ProcScope can be associated with multiple binutils::Procs
 static ProcScopeToProcMap*
-BuildStructure(LoadModScope *lmScope, binutils::LM* lm)
+BuildStructure(LoadModScope* lmScope, binutils::LM* lm)
 {
   ProcScopeToProcMap* mp = new ProcScopeToProcMap;
   
+  // -------------------------------------------------------o
+  // 1. Create structure for each procedure
+  // -------------------------------------------------------
   for (binutils::LMSegIterator it(*lm); it.IsValid(); ++it) {
     binutils::Seg* seg = it.Current();
     if (seg->GetType() != binutils::Seg::Text) {

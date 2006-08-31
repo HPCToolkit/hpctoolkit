@@ -241,15 +241,17 @@ public:
 
   bool GetProcFirstLineInfo(VMA vma, ushort opIndex, suint &line) const;
 
-  binutils::dbg::LM* GetDebugInfo() { return &dbgInfo; }
-
   
   // -------------------------------------------------------
   // debugging
   // -------------------------------------------------------
   virtual void dump(std::ostream& o = std::cerr, const char* pre = "") const;
-  virtual void ddump() const;
+  void ddump() const;
+  
+  // dump helpers
   virtual void dumpme(std::ostream& o = std::cerr, const char* pre = "") const;
+  virtual void dumpProcMap(std::ostream& o = std::cerr, unsigned flag = 0, const char* pre = "") const;
+  void ddumpProcMap(unsigned flag) const;
 
   // -------------------------------------------------------
   // It is a little unfortunate to have to make 'isa' global across
@@ -286,6 +288,9 @@ private:
   // Dump helper routines
   void DumpModuleInfo(std::ostream& o = std::cerr, const char* pre = "") const;
   void DumpSymTab(std::ostream& o = std::cerr, const char* pre = "") const;
+
+  friend class TextSeg; // for TextSeg::Create_InitializeProcs();
+  binutils::dbg::LM* GetDebugInfo() { return &mDbgInfo; }
     
 protected:
   LMImpl* impl; 
@@ -312,7 +317,7 @@ private:
   VMAToInsnMap vmaToInsnMap; // owns all Insn*
 
   // symbolic info used in building procedures
-  binutils::dbg::LM dbgInfo;
+  binutils::dbg::LM mDbgInfo;
 };
 
 } // namespace binutils
@@ -349,7 +354,7 @@ public:
   // debugging
   // -------------------------------------------------------
   virtual void dump(std::ostream& o = std::cerr, const char* pre = "") const;
-  virtual void ddump() const; 
+
   virtual void dumpme(std::ostream& o = std::cerr, const char* pre = "") const;
 
 private:

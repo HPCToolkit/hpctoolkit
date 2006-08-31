@@ -57,6 +57,8 @@ using std::dec;
 #include <string>
 using std::string;
 
+#include <sstream>
+
 //*************************** User Include Files ****************************
 
 #include "Proc.hpp"
@@ -78,7 +80,7 @@ binutils::Proc::Proc(binutils::TextSeg* _sec, string& _name, string& _linkname,
                      binutils::Proc::Type t, VMA _begVMA, VMA _endVMA, 
 		     suint _size)
   : sec(_sec), name(_name), linkname(_linkname), type(t), begVMA(_begVMA),
-    endVMA(_endVMA), size(_size), filenm(""), begLine(0), parent(NULL)
+    endVMA(_endVMA), size(_size), filenm(""), begLine(0), mParent(NULL)
 {
   id = nextId++;
   numInsns = 0; 
@@ -105,8 +107,18 @@ binutils::Proc::GetLastInsn() const
 }
 
 
+string 
+binutils::Proc::toString(unsigned flags) const
+{
+  std::ostringstream os;
+  dump(os, flags);
+  os << std::ends;
+  return os.str();
+}
+
+
 void
-binutils::Proc::dump(std::ostream& o, const char* pre) const
+binutils::Proc::dump(std::ostream& o, unsigned flags, const char* pre) const
 {
   string p(pre);
   string p1 = p + "  ";
@@ -146,10 +158,12 @@ binutils::Proc::dump(std::ostream& o, const char* pre) const
     << GetEndVMA() << dec << "]\n";
   o << p << "  Size(b): " << GetSize() << "\n";
 
-  o << p1 << "----- Instruction Dump -----\n";
-  for (ProcInsnIterator it(*this); it.IsValid(); ++it) {
-    Insn* insn = it.Current();
-    insn->dump(o, p2.c_str());
+  if (flags != 0) {
+    o << p1 << "----- Instruction Dump -----\n";
+    for (ProcInsnIterator it(*this); it.IsValid(); ++it) {
+      Insn* insn = it.Current();
+      insn->dump(o, p2.c_str());
+    }
   }
 }
 

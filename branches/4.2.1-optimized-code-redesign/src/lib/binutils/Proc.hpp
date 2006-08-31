@@ -93,7 +93,7 @@ public:
 
 
   // -------------------------------------------------------
-  // 
+  // Basic data
   // -------------------------------------------------------
 
   TextSeg* GetTextSeg() const { return sec; }
@@ -123,12 +123,24 @@ public:
   suint GetSize()      const { return size; }
   void SetSize(suint _size)  { size = _size; }
   
-  // Symbolic information: may or may not be available
+  // -------------------------------------------------------
+  // Symbolic information: availability depends upon debugging information
+  // -------------------------------------------------------
+
+  bool hasSymbolic() { return begLine != 0; }
+
   const std::string& GetFilename() const { return filenm; }
   std::string&       GetFilename()       { return filenm; }
 
   suint   GetBegLine()      const { return begLine; }
   suint&  GetBegLine()            { return begLine; }
+
+  Proc*  parent() const { return mParent; }
+  Proc*& parent()       { return mParent; }
+
+  // -------------------------------------------------------
+  //
+  // -------------------------------------------------------
 
   // Return true if virtual memory address 'vma' is within the procedure
   // WARNING: vma must be unrelocated
@@ -144,7 +156,10 @@ public:
   Insn* GetFirstInsn() const { return findInsn(begVMA, 0); }
   Insn* GetLastInsn() const;
   
+  // -------------------------------------------------------
   // Convenient wrappers for the 'LM' versions of the same.
+  // -------------------------------------------------------
+
   MachInsn* findMachInsn(VMA vma, ushort &sz) const {
     return sec->GetLM()->findMachInsn(vma, sz);
   }
@@ -170,8 +185,14 @@ public:
   // -------------------------------------------------------
   // debugging
   // -------------------------------------------------------
+  // Current meaning of 'flags'
+  //   0 : short dump (without instructions)
+  //   1 : full dump
+  
+  virtual std::string toString(unsigned flags = 0) const;
 
-  virtual void dump(std::ostream& o = std::cerr, const char* pre = "") const;
+  virtual void dump(std::ostream& o = std::cerr, unsigned flags = 0, 
+		    const char* pre = "") const;
   virtual void ddump() const;
 
   friend class ProcInsnIterator;
@@ -184,22 +205,22 @@ private:
 
 protected:
 private:
-  TextSeg* sec; // we do not own
+  TextSeg*    sec; // we do not own
   std::string name;
   std::string linkname;
-  Type   type;
+  Type        type;
   
-  VMA   begVMA; // points to the beginning of the first instruction
-  VMA   endVMA; // points to the beginning of the last instruction
-  VMA   size;
+  VMA begVMA; // points to the beginning of the first instruction
+  VMA endVMA; // points to the beginning of the last instruction
+  VMA size;
 
   // symbolic information: may or may not be known
-  std::string filenm; // filename and 
-  suint  begLine;     //   begin line of definition, if known
-  Proc* parent;  // parent routine, if lexically nested
+  std::string filenm;  // filename and 
+  suint       begLine; //   begin line of definition, if known
+  Proc*       mParent; // parent routine, if lexically nested
 
-  suint  id;    // a unique identifier
-  suint  numInsns;
+  suint id;    // a unique identifier
+  suint numInsns;
   
   static suint nextId;
 };

@@ -143,6 +143,13 @@ binutils::dbg::LM::dump(std::ostream& os) const
 }
 
 
+void
+binutils::dbg::LM::ddump() const
+{
+  dump(std::cerr);
+}
+
+
 //***************************************************************************
 
 // Should have function type of 'bfd_forall_dbg_funcinfo_fn_t'
@@ -204,7 +211,10 @@ binutils::dbg::LM::setParentPointers()
   for (const_iterator it = this->begin(); it != this->end(); ++it) {
     dbg::Proc* x = it->second;
     if (x->parentVMA != 0) {
-      x->parent = (*this)[x->parentVMA];
+      dbg::Proc* parent = (*this)[x->parentVMA];
+      if (x != parent) {
+	x->parent = parent; // sanity check
+      }
     }
   }
 }

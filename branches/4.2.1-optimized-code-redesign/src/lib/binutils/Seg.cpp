@@ -59,6 +59,9 @@ using std::dec;
 #include <string>
 using std::string;
 
+#include <map>
+using std::map;
+
 //*************************** User Include Files ****************************
 
 #include <include/gnu_bfd.h>
@@ -142,7 +145,7 @@ public:
 
 binutils::TextSeg::TextSeg(binutils::LM* _lm, string& _name, 
 			   VMA _beg, VMA _end, suint _size, 
-			   asymbol **syms, int numSyms, bfd *abfd)
+			   asymbol** syms, int numSyms, bfd* abfd)
   : Seg(_lm, _name, Seg::Text, _beg, _end, _size), impl(NULL),
     procedures(0)
 {
@@ -217,7 +220,7 @@ binutils::TextSeg::dump(std::ostream& o, const char* pre) const
   o << p << "  Procedures (" << GetNumProcs() << ")\n";
   for (TextSegProcIterator it(*this); it.IsValid(); ++it) {
     Proc* p = it.Current();
-    p->dump(o, p1.c_str());
+    p->dump(o, 1, p1.c_str());
   }
 }
 
@@ -237,6 +240,9 @@ binutils::TextSeg::Create_InitializeProcs()
 {
   LM* lm = GetLM();
   dbg::LM* dbgInfo = lm->GetDebugInfo();
+
+  // Any procedure with a parent has a <Proc*, parentVMA> entry
+  map<Proc*, VMA> parentMap;
 
   // ------------------------------------------------------------
   // Each text section finds and creates its own routines.
@@ -301,11 +307,27 @@ binutils::TextSeg::Create_InitializeProcs()
       if (dbg) {
 	proc->GetFilename() = dbg->filenm;
 	proc->GetBegLine() = dbg->begLine;
-	//dbg->parent; // FIXME
+	if (dbg->parent) {
+	  parentMap.insert(std::make_pair(proc, dbg->parent->begVMA));
+	}
       }
-    } 
+    }
   }
 
+  // ------------------------------------------------------------
+  // Embed parent information
+  // ------------------------------------------------------------
+  for (map<Proc*, VMA>::iterator it = parentMap.begin(); 
+       it != parentMap.end(); ++it) {
+    Proc* child = it->first;
+    VMA parentVMA = it->second;
+    Proc* parent = lm->findProc(parentVMA);
+    DIAG_Assert(parent, "Could not find parent within this section:\n" 
+		<< child->toString());
+    DIAG_Assert(parent != child, "Procedure has itself as parent!\n" 
+		<< child->toString());
+    child->parent() = parent;
+  }
 }
 
 

@@ -282,8 +282,8 @@ OkToDelete(ScopeInfo *si)
 
 ScopeInfo::~ScopeInfo() 
 {
-  DIAG_Assert(OkToDelete(this), "");
-  DIAG_DevMsg(3, "~ScopeInfo " << this << " " << ToString());
+  DIAG_Assert(OkToDelete(this), "ScopeInfo '" << this << " " << ToString() 
+	      << "' is not ready for deletion!");
 }
 
 

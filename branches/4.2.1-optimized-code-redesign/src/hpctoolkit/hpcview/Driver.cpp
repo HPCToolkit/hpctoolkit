@@ -281,6 +281,8 @@ Driver::ScopeTreeInsertProfileData(PgmScopeTree& scopes,
 			<< hex << ur_vma << dec);
 	    scope = lmScope;
 	  }
+	  DIAG_DevMsg(6, "Metric associate: 0x" << hex << ur_vma << dec 
+		      << " --> " << scope->toXML());
 	  
 	  double perfdata = events;
 	  if (scope->HasPerfData(m->Index())) {

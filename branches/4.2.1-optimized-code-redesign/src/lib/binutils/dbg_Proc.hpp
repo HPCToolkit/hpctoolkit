@@ -90,7 +90,7 @@ public:
   
   // private:
   Proc* parent;
-  VMA  parentVMA;
+  VMA   parentVMA;
   
   VMA begVMA; // begin VMA
   VMA endVMA; // end VMA (at the end of the last insn)
@@ -103,6 +103,8 @@ public:
   std::string toString() const;
 
   std::ostream& dump(std::ostream& os) const;
+
+  void ddump() const;
 
 private:
 

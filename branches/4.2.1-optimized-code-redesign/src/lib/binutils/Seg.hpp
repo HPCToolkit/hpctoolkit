@@ -209,7 +209,7 @@ private:
 protected:
 private:
   TextSegImpl* impl;
-  ProcSeq procedures;
+  ProcSeq procedures; // FIXME: we could make this a slice of the procs in LM
 };
 
 } // namespace binutils
