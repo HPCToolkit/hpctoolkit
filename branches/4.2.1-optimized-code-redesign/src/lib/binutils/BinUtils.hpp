@@ -1,5 +1,6 @@
+// -*-Mode: C++;-*-
 // $Id$
-// -*-C++-*-
+
 // * BeginRiceCopyright *****************************************************
 // 
 // Copyright ((c)) 2002, Rice University 
@@ -37,18 +38,18 @@
 //***************************************************************************
 //
 // File:
-//    BinUtils.H
+//   $Source$
 //
 // Purpose:
-//    [The purpose of this file]
+//   [The purpose of this file]
 //
 // Description:
-//    [The set of functions, macros, etc. defined in the file]
+//   [The set of functions, macros, etc. defined in the file]
 //
 //***************************************************************************
 
-#ifndef BinUtils_H 
-#define BinUtils_H
+#ifndef binutils_BinUtils_hpp 
+#define binutils_BinUtils_hpp
 
 //************************* System Include Files ****************************
 
@@ -94,4 +95,4 @@ GetDemangledFuncName(const std::string& name)
 
 //****************************************************************************
 
-#endif 
+#endif // binutils_BinUtils_hpp

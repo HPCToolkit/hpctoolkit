@@ -127,7 +127,7 @@ public:
   // Symbolic information: availability depends upon debugging information
   // -------------------------------------------------------
 
-  bool hasSymbolic() { return begLine != 0; }
+  bool hasSymbolic() { return IsValidLine(begLine); }
 
   const std::string& GetFilename() const { return filenm; }
   std::string&       GetFilename()       { return filenm; }

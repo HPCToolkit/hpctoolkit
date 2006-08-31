@@ -376,7 +376,7 @@ BuildStructure(LoadModScope* lmScope, binutils::LM* lm)
 {
   ProcScopeToProcMap* mp = new ProcScopeToProcMap;
   
-  // -------------------------------------------------------o
+  // -------------------------------------------------------
   // 1. Create structure for each procedure
   // -------------------------------------------------------
   for (binutils::LMSegIterator it(*lm); it.IsValid(); ++it) {
@@ -394,28 +394,46 @@ BuildStructure(LoadModScope* lmScope, binutils::LM* lm)
       mp->insert(make_pair(procScope, p));
     }
   }
+
+  // -------------------------------------------------------
+  // 2. Establish nesting information:
+  //      if we don't have parent information
+  //        nest using source line bounds (FIXME)
+  //      otherwise, nest using parent information
+  // -------------------------------------------------------
+  for (ProcScopeToProcMap::iterator it = mp->begin(); it != mp->end(); ++it) {
+    ProcScope* pScope = it->first;
+    binutils::Proc* p = it->second;
+    binutils::Proc* parent = p->parent();
+    if (parent) {
+      ProcScope* parentScope = lmScope->findProc(parent->GetBegVMA());
+      pScope->Unlink();
+      pScope->Link(parentScope);
+    }
+  }
+  
+  // 3. Establish procedure bounds: nesting + first line ... FIXME
   
   return mp;
 }
 
 
-// BuildProcStructure: Build skeletal ProcScope
+// BuildProcStructure: Build skeletal ProcScope.  We can assume that
+// the parent is always a FileScope.
 static ProcScope*
 BuildProcStructure(FileScope* fileScope, binutils::Proc* p)
 {
-  // FIXME: FileScope --> CodeInfo* (procs could be scope)
-  
   // Find VMA boundaries: [beg, end)
   VMA endVMA = p->GetBegVMA() + p->GetSize();
   VMAInterval bounds(p->GetBegVMA(), endVMA);
-  DIAG_Assert(!bounds.empty(), "Attempting to add empty procedure " << bounds.toString());
+  DIAG_Assert(!bounds.empty(), "Attempting to add empty procedure " 
+	      << bounds.toString());
   
   // Find procedure name
   string funcNm   = GetBestFuncName(p->GetName()); 
   string funcLnNm = GetBestFuncName(p->GetLinkName());
   
   // Find preliminary source line bounds
-  // FIXME: this is in GetProcFirstLineInfo
   string func, file;
   suint begLn1, endLn1;
   binutils::Insn* eInsn = p->GetLastInsn();
@@ -424,7 +442,7 @@ BuildProcStructure(FileScope* fileScope, binutils::Proc* p)
 		       func, file, begLn1, endLn1);
 
   suint begLn, endLn;
-  if (IsValidLine(p->GetBegLine())) {
+  if (p->hasSymbolic()) {
     begLn = p->GetBegLine();
     endLn = (endLn1 >= begLn) ? endLn1 : begLn;
   }
@@ -433,9 +451,9 @@ BuildProcStructure(FileScope* fileScope, binutils::Proc* p)
     endLn = endLn1;
   }
   
-  // Create or find the scope
+  // Create or find the scope.  Fuse procedures if we names match.
   ProcScope* pScope = fileScope->FindProc(funcNm, funcLnNm);
-
+  
   if (!pScope) {
     pScope = new ProcScope(funcNm, fileScope, funcLnNm, begLn, endLn);
   }
@@ -781,14 +799,13 @@ FindOrCreateFileNode(LoadModScope* lmScope, binutils::Proc* p)
   string file = p->GetFilename();
   if (file.empty()) {
     string func;
-    suint begLn, endLn;
-    p->GetSourceFileInfo(p->GetBegVMA(), 0, p->GetEndVMA(), 0, func, file,
-			 begLn, endLn); // FIXME: use only begVMA
+    suint line;
+    p->GetSourceFileInfo(p->GetBegVMA(), 0, func, file, line);
   }
   if (file.empty()) { 
     file = OrphanedProcedureFile; 
- }
-
+  }
+  
   // Obtain corresponding FileScope
   FileScope* fileScope = lmScope->Pgm()->FindFile(file);
   if (fileScope == NULL) {

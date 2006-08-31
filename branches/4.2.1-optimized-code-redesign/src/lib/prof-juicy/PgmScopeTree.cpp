@@ -1019,18 +1019,9 @@ LoadModScope::findByVMA(VMA vma)
   }
   
   // Attempt to find StatementRange and then Proc
-  CodeInfo* found = NULL;
-  VMAInterval toFind(vma, vma+1); // [vma, vma+1)
-  
-  VMAIntervalMap<StmtRangeScope*>::iterator it1 = stmtMap->find(toFind);
-  if (it1 != stmtMap->end()) {
-    found = it1->second;
-  }
-  else {
-    VMAIntervalMap<ProcScope*>::iterator it2 = procMap->find(toFind);
-    if (it2 != procMap->end()) {
-      found = it2->second;
-    }
+  CodeInfo* found = findStmtRange(vma);
+  if (!found) {
+    found = findProc(vma);
   }
   return found;
 }

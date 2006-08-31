@@ -1,5 +1,6 @@
+// -*-Mode: C++;-*-
 // $Id$
-// -*-C++-*-
+
 // * BeginRiceCopyright *****************************************************
 // 
 // Copyright ((c)) 2002, Rice University 
@@ -37,13 +38,13 @@
 //***************************************************************************
 //
 // File:
-//    BinUtils.C
+//   $Source$
 //
 // Purpose:
-//    [The purpose of this file]
+//   [The purpose of this file]
 //
 // Description:
-//    [The set of functions, macros, etc. defined in the file]
+//   [The set of functions, macros, etc. defined in the file]
 //
 //***************************************************************************
 
@@ -77,11 +78,13 @@ IsValidLine(suint begLine, suint endLine)
   return ((begLine != 0) && (endLine != 0)); 
 }
 
+
 bool
 IsValidLine(suint line)
 {
   return (line != 0); 
 }
+
 
 bool
 FileIsReadable(const char *fileName)
@@ -94,6 +97,7 @@ FileIsReadable(const char *fileName)
   }
   return result;
 }
+
 
 //***************************************************************************
 // System Dependent Helpers
@@ -110,7 +114,8 @@ GetBestFuncName(const char* name)
   const char* demangledName = GetDemangledFuncName(name);
   if (demangledName && (strlen(demangledName) > 0)) {
     return demangledName;  
-  } else {
+  } 
+  else {
     return name;
   }
 }
@@ -130,7 +135,7 @@ GetBestFuncName(const char* name)
   // the system demangle is GNU's demangle
   const int DEMANGLE_BUF_SZ = 32768; // see MAXDBUF in SGI's dem.h
 #else
-# error "BinUtils.C does not recognize your platform."
+# error "binutils::BinUtils does not recognize your platform."
 #endif
 
 const int MANGLE_BUF_SZ = 4096;

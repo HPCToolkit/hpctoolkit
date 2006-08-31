@@ -611,6 +611,20 @@ public:
 
   // find scope by *unrelocated* VMA
   CodeInfo* findByVMA(VMA vma);
+  
+  ProcScope* findProc(VMA vma) 
+  {
+    VMAInterval toFind(vma, vma+1); // [vma, vma+1)
+    VMAIntervalMap<ProcScope*>::iterator it = procMap->find(toFind);
+    return (it != procMap->end()) ? it->second : NULL;
+  }
+
+  StmtRangeScope* findStmtRange(VMA vma)
+  {
+    VMAInterval toFind(vma, vma+1); // [vma, vma+1)
+    VMAIntervalMap<StmtRangeScope*>::iterator it = stmtMap->find(toFind);
+    return (it != stmtMap->end()) ? it->second : NULL;
+  }
 
   virtual std::string toXML(int dmpFlag = 0) const;
 
