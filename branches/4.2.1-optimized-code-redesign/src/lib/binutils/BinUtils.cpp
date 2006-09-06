@@ -110,10 +110,11 @@ const char*
 GetBestFuncName(const char* name)
 {
   if (!name) { return NULL; }
+  if (name[0] == '\0') { return name; }
 
   const char* demangledName = GetDemangledFuncName(name);
   if (demangledName && (strlen(demangledName) > 0)) {
-    return demangledName;  
+    return demangledName;
   } 
   else {
     return name;

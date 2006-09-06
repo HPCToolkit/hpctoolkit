@@ -35,52 +35,27 @@
 // 
 // ******************************************************* EndRiceCopyright *
 
-//***************************************************************************
+//****************************************************************************
 //
 // File:
-//    $Source$
+//   $Source$
 //
 // Purpose:
-//    [The purpose of this file]
+//   [The purpose of this file]
 //
 // Description:
-//    [The set of functions, macros, etc. defined in the file]
+//   [The set of functions, macros, etc. defined in the file]
+// 
+// Author:
+//   Nathan Tallent
 //
-//***************************************************************************
+//****************************************************************************
 
-#ifndef banal_bloop_hpp
-#define banal_bloop_hpp
+//************************** System Include Files ****************************
 
-//************************* System Include Files ****************************
+//*************************** User Include Files *****************************
 
-//*************************** User Include Files ****************************
-
-#include <include/general.h> 
-
-#include <lib/prof-juicy/PgmScopeTree.hpp>
-#include <lib/binutils/LM.hpp>
-
-//*************************** Forward Declarations ***************************
-
-namespace banal {
-  
-  PgmScopeTree* 
-  BuildLMStructure(binutils::LM* lm, 
-		   const char* canonicalPathList = "",
-		   bool normalizeScopeTree = true,
-		   bool unsafeNormalizations = true,
-		   bool irreducibleIntervalIsLoop = false);
-  
-  bool 
-  Normalize(PgmScopeTree* pgmScopeTree, 
-	    bool unsafeNormalizations = true);
-
-
-  void
-  WriteScopeTree(std::ostream& os, PgmScopeTree* pgmScopeTree,
-		 bool prettyPrint = true);
-}
+//************************** Forward Declarations ****************************
 
 //****************************************************************************
 
-#endif // banal_bloop_hpp

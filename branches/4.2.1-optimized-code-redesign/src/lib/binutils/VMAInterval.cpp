@@ -152,7 +152,12 @@ VMAInterval::ddump() const
 //
 // We first find lb and ub such that: (lb <= x < ub) and lb != x.
 //
-//   1) x is mutually exclusive:
+//   0) lb interval already contains x
+//        {lb <> }
+//        {lb <> } ...
+//        ... {lb <> }
+//        ... {lb <> } ...
+//   1) x is a mutually exclusive interval:
 //      a. <>
 //      b. <> {ub} ...
 //      c. ... {lb} <>
@@ -165,7 +170,7 @@ VMAInterval::ddump() const
 //      b.  ... {lb} < {} ... { > ub} ...
 //   4) x overlaps both lb and ub interval
 //        ... {lb < } ... { > ub} ...
-//   5) x subsumes all intervals, includineg
+//   5) x subsumes all intervals
 //        < {} ... {} >
 
 
@@ -179,7 +184,7 @@ VMAIntervalSet::insert(const VMAIntervalSet::value_type& x)
   
   std::pair<VMAIntervalSet::iterator, bool> ret(end(), false);
 
-  if (x.empty()) { 
+  if (x.empty()) {
     return ret;
   }
 
@@ -206,63 +211,66 @@ VMAIntervalSet::insert(const VMAIntervalSet::value_type& x)
     }
   }
   
-  // Detect the appropriate case
-  if (lb == end() && ub == end()) { // size >= 1
+  // Detect the appropriate case.  Note that case 0 is a NOP.
+  if (lb != end() && lb->contains(x)) {
+    // Case 0: do nothing
+  }
+  else if (lb == end() && ub == end()) { // size >= 1
     if (empty()) {
       // Case 1a: insert x
-      My_t::insert(x);
+      ret = My_t::insert(x);
     }
     else {
       // Case 5: erase everything and insert x
       My_t::clear();
-      My_t::insert(x);
+      ret = My_t::insert(x);
     }
   }
   else if (lb == end()) {
     if (x.end() < ub->beg()) {
       // Case 1b: insert x
-      My_t::insert(x);
+      ret = My_t::insert(x);
     }
     else {
       // Case 3a: erase [begin(), ub + 1); insert [x.beg(), ub->end())
       VMAIntervalSet::iterator end = ub;
       My_t::erase(begin(), ++end);
-      My_t::insert( VMAInterval(x.beg(), ub->end()) );
+      ret = My_t::insert( VMAInterval(x.beg(), ub->end()) );
     }
   }
   else if (ub == end()) {
     if (lb->end() < x.beg()) {
       // Case 1c: insert x
-      My_t::insert(x);
+      ret = My_t::insert(x);
     }
     else {
       // Case 2a: erase [lb, end()); insert [lb->beg(), x.end())
       My_t::erase(lb, end());
-      My_t::insert( VMAInterval(lb->beg(), x.end()) );
+      ret = My_t::insert( VMAInterval(lb->beg(), x.end()) );
     }
   }
   else {
     if (lb->end() < x.beg() && x.end() < ub->beg()) {
       // Case 1d: insert x
-      My_t::insert(x);
+      ret = My_t::insert(x);
     }
-    else if (x.beg() < lb->end() && x.end() < ub->beg()) {
+    else if (x.beg() <= lb->end() && x.end() < ub->beg()) {
       // Case 2b: erase [lb, ub); insert [lb->beg(), x.end())
       My_t::erase(lb, ub);
-      My_t::insert( VMAInterval(lb->beg(), x.end()) );
+      ret = My_t::insert( VMAInterval(lb->beg(), x.end()) );
     }
-    else if (lb->end() < x.beg() && ub->beg() < x.end()) {
+    else if (lb->end() < x.beg() && ub->beg() <= x.end()) {
       // Case 3b: erase [lb + 1, ub + 1): insert [x.beg(), ub->end())
       VMAIntervalSet::iterator beg = lb;
       VMAIntervalSet::iterator end = ub;
       My_t::erase(++beg, ++end);
-      My_t::insert( VMAInterval(x.beg(), ub->end()) );
+      ret = My_t::insert( VMAInterval(x.beg(), ub->end()) );
     }
     else {
       // Case 4: erase [lb, ub + 1); insert [lb->beg(), ub->end()).
       VMAIntervalSet::iterator end = ub;
       My_t::erase(lb, ++end);
-      My_t::insert( VMAInterval(lb->beg(), ub->end()) );
+      ret = My_t::insert( VMAInterval(lb->beg(), ub->end()) );
     }
   }
 
@@ -274,13 +282,11 @@ VMAIntervalSet::insert(const VMAIntervalSet::value_type& x)
 
 
 // erase: See above for cases
-VMAIntervalSet::size_type
+void
 VMAIntervalSet::erase(const VMAIntervalSet::key_type& x)
 {
-  size_type ret = 0;
-
   if (x.empty()) {
-    return ret;
+    return;
   }
   
   // find [lb, ub) where lb is the first element !< x and ub is the
@@ -308,6 +314,17 @@ VMAIntervalSet::erase(const VMAIntervalSet::key_type& x)
   
   // Detect the appropriate case.  Note that we do not have to
   // explicitly consider Case 1 since it amounts to a NOP.
+  // Case 0: do nothing
+  if (lb != end() && lb->contains(x)) {
+    // Case 0: split interval
+    My_t::erase(lb, ub);
+    if (lb->beg() < x.beg()) {
+      My_t::insert( VMAInterval(lb->beg(), x.beg()) );
+    }
+    if (lb->end() > x.end()) {
+      My_t::insert( VMAInterval(x.end(), lb->end()) );
+    }
+  }
   if (lb == end() && ub == end()) { // size >= 1
     if (!empty()) {
       // Case 5: erase everything
@@ -334,14 +351,14 @@ VMAIntervalSet::erase(const VMAIntervalSet::key_type& x)
     }
   }
   else {
-    if (x.beg() < lb->end() && x.end() < ub->beg()) {
+    if (x.beg() <= lb->end() && x.end() < ub->beg()) {
       // Case 2b: erase [lb, ub); insert [lb->beg(), x.beg())
       My_t::erase(lb, ub);
       if (lb->beg() < x.beg()) {
 	My_t::insert( VMAInterval(lb->beg(), x.beg()) );
       }
     }
-    else if (lb->end() < x.beg() && ub->beg() < x.end()) {
+    else if (lb->end() < x.beg() && ub->beg() <= x.end()) {
       // Case 3b: erase [lb + 1, ub + 1): insert [x.end(), ub->end())
       VMAIntervalSet::iterator beg = lb;
       VMAIntervalSet::iterator end = ub;
@@ -359,8 +376,6 @@ VMAIntervalSet::erase(const VMAIntervalSet::key_type& x)
       My_t::insert( VMAInterval(x.end(), ub->end()) );
     }
   }
-  
-  return 0;
 }
 
 

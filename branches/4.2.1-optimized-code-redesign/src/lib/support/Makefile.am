@@ -82,6 +82,8 @@ MYSOURCES = \
 	pathfind.h pathfind.cpp \
 	realpath.h realpath.c \
 	\
+	Logic.hpp Logic.cpp \
+	\
 	HashTable.hpp HashTable.cpp \
 	HashTableSortedIterator.hpp HashTableSortedIterator.cpp \
 	IntVector.hpp IntVector.cpp \

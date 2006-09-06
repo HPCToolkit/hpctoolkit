@@ -80,6 +80,7 @@ using namespace std; // For compatibility with non-std C headers
 
 #include <lib/support/diagnostics.h>
 #include <lib/support/StrUtil.hpp>
+#include <lib/support/Logic.hpp>
 #include <lib/support/VectorTmpl.hpp>
 #include <lib/support/SrcFile.hpp>
 #include <lib/support/PtrSetIterator.hpp>
@@ -125,10 +126,12 @@ PgmScopeTree::PgmScopeTree(const char* name, PgmScope* _root)
 {
 }
 
+
 PgmScopeTree::~PgmScopeTree()
 {
   delete root;
 }
+
 
 void 
 PgmScopeTree::CollectCrossReferences() 
@@ -138,6 +141,7 @@ PgmScopeTree::CollectCrossReferences()
   root->CollectCrossReferences();
 }
 
+
 void 
 PgmScopeTree::xml_dump(ostream& os, int dmpFlags) const
 {
@@ -146,11 +150,13 @@ PgmScopeTree::xml_dump(ostream& os, int dmpFlags) const
   }
 }
 
+
 void 
 PgmScopeTree::dump(ostream& os, int dmpFlags) const
 {
   xml_dump(os, dmpFlags);
 }
+
 
 void 
 PgmScopeTree::ddump() const
@@ -163,8 +169,9 @@ PgmScopeTree::ddump() const
 /*****************************************************************************/
 
 const string ScopeInfo::ScopeNames[ScopeInfo::NUMBER_OF_SCOPES] = {
-  "PGM", "GRP", "LM", "FIL", "PRC", "LP", "LN" /*SR*/, "REF", "ANY"
+  "PGM", "GRP", "LM", "FIL", "PRC", "LP", "SR", "REF", "ANY"
 };
+
 
 const string&
 ScopeInfo::ScopeTypeToName(ScopeType tp) 
@@ -172,12 +179,14 @@ ScopeInfo::ScopeTypeToName(ScopeType tp)
   return ScopeNames[tp];
 }
 
+
 ScopeInfo::ScopeType 
 ScopeInfo::IntToScopeType(long i)
 {
   DIAG_Assert((i >= 0) && (i < NUMBER_OF_SCOPES), "");
   return (ScopeType) i;
 }
+
 
 //***************************************************************************
 // ScopeInfo, etc: constructors/destructors
@@ -194,6 +203,7 @@ ScopeInfo::ScopeInfo(ScopeType t, ScopeInfo* mom)
   perfData = new DoubleVector();
 }
 
+
 ScopeInfo& 
 ScopeInfo::operator=(const ScopeInfo& x) 
 {
@@ -209,6 +219,7 @@ ScopeInfo::operator=(const ScopeInfo& x)
   }
   return *this;
 }
+
 
 void 
 ScopeInfo::CollectCrossReferences() 
@@ -243,7 +254,9 @@ ScopeInfo::CollectCrossReferences()
   }
 }
 
-int ScopeInfo::NoteHeight() 
+
+int 
+ScopeInfo::NoteHeight() 
 {
   if (IsLeaf()) {
     height = 0;
@@ -257,7 +270,9 @@ int ScopeInfo::NoteHeight()
   return height;
 }
 
-void ScopeInfo::NoteDepth() 
+
+void 
+ScopeInfo::NoteDepth() 
 {
   ScopeInfo* p = Parent();
   if (p) {
@@ -270,6 +285,7 @@ void ScopeInfo::NoteDepth()
   } 
 }
 
+
 static bool
 OkToDelete(ScopeInfo *si) 
 {
@@ -280,8 +296,11 @@ OkToDelete(ScopeInfo *si)
   return ((pgm == NULL) || !(pgm->IsFrozen()));
 } 
 
+
 ScopeInfo::~ScopeInfo() 
 {
+  DIAG_DevMsg(3, "~ScopeInfo::ScopeInfo: " << toString_id()
+	      << " " << hex << this << dec);
   DIAG_Assert(OkToDelete(this), "ScopeInfo '" << this << " " << ToString() 
 	      << "' is not ready for deletion!");
 }
@@ -297,6 +316,7 @@ CodeInfo::CodeInfo(ScopeType t, ScopeInfo* mom, suint begLn, suint endLn,
   }
 }
 
+
 CodeInfo& 
 CodeInfo::operator=(const CodeInfo& x) 
 {
@@ -308,6 +328,7 @@ CodeInfo::operator=(const CodeInfo& x)
   }
   return *this;
 }
+
 
 CodeInfo::~CodeInfo() 
 {
@@ -562,12 +583,18 @@ StmtRangeScope::StmtRangeScope(CodeInfo *mom, suint begLn, suint endLn,
   ScopeType t = (mom) ? mom->Type() : ANY;
   DIAG_Assert((mom == NULL) || (t == GROUP) || (t == FILE) || (t == PROC)
 	      || (t == LOOP), "");
-  if (Proc()) { Proc()->AddToStmtMap(*this); }
+  if (Proc()) { 
+    Proc()->AddToStmtMap(*this); 
+    //DIAG_DevIf(0) { LoadMod()->verifyStmtMap(); }
+  }
+  //DIAG_DevMsg(3, "StmtRangeScope::StmtRangeScope: " << toString_me());
 }
+
 
 StmtRangeScope::~StmtRangeScope()
 {
 }
+
 
 RefScope::RefScope(CodeInfo *mom, int _begPos, int _endPos, 
 		   const char* refName) 
@@ -596,11 +623,13 @@ RefScope::RefScope(CodeInfo *mom, int _begPos, int _endPos,
       } \
     }
 
+
 CodeInfo *
 ScopeInfo::CodeInfoParent() const
 {
   dyn_cast_return(ScopeInfo, CodeInfo, Parent());
 }
+
 
 ScopeInfo *
 ScopeInfo::Ancestor(ScopeType tp) const
@@ -612,8 +641,8 @@ ScopeInfo::Ancestor(ScopeType tp) const
   return (ScopeInfo*) s;
 } 
 
-#if 0
 
+#if 0
 int IsAncestorOf(ScopeInfo *parent, ScopeInfo *son, int difference)
 {
   ScopeInfo *iter = son;
@@ -625,8 +654,8 @@ int IsAncestorOf(ScopeInfo *parent, ScopeInfo *son, int difference)
      return 1;
   return 0;
 }
-
 #endif
+
 
 ScopeInfo* 
 ScopeInfo::LeastCommonAncestor(ScopeInfo* n1, ScopeInfo* n2)
@@ -652,6 +681,7 @@ ScopeInfo::LeastCommonAncestor(ScopeInfo* n1, ScopeInfo* n2)
   return lca;
 }
 
+
 PgmScope*
 ScopeInfo::Pgm() const 
 {
@@ -669,11 +699,13 @@ ScopeInfo::Pgm() const
   }
 }
 
+
 GroupScope*
 ScopeInfo::Group() const 
 {
   dyn_cast_return(ScopeInfo, GroupScope, Ancestor(GROUP));
 }
+
 
 LoadModScope*
 ScopeInfo::LoadMod() const 
@@ -681,11 +713,13 @@ ScopeInfo::LoadMod() const
   dyn_cast_return(ScopeInfo, LoadModScope, Ancestor(LM));
 }
 
+
 FileScope*
 ScopeInfo::File() const 
 {
   dyn_cast_return(ScopeInfo, FileScope, Ancestor(FILE));
 }
+
 
 ProcScope*
 ScopeInfo::Proc() const 
@@ -693,11 +727,13 @@ ScopeInfo::Proc() const
   dyn_cast_return(ScopeInfo, ProcScope, Ancestor(PROC));
 }
 
+
 LoopScope*
 ScopeInfo::Loop() const 
 {
   dyn_cast_return(ScopeInfo, LoopScope, Ancestor(LOOP));
 }
+
 
 StmtRangeScope*
 ScopeInfo::StmtRange() const 
@@ -716,11 +752,13 @@ ScopeInfo::FirstEnclScope() const
   dyn_cast_return(NonUniformDegreeTreeNode, CodeInfo, FirstChild());
 }
 
+
 CodeInfo*
 ScopeInfo::LastEnclScope() const
 {
   dyn_cast_return(NonUniformDegreeTreeNode, CodeInfo, LastChild());
 }
+
 
 // ----------------------------------------------------------------------
 // siblings are linked in a circular list
@@ -744,6 +782,7 @@ ScopeInfo::NextScope() const
   return NULL;  
 }
 
+
 CodeInfo*
 ScopeInfo::PrevScope() const
 {
@@ -758,6 +797,7 @@ ScopeInfo::PrevScope() const
   }
   return NULL;
 }
+
 
 //***************************************************************************
 // ScopeInfo: Paths and Merging
@@ -777,6 +817,7 @@ ScopeInfo::Distance(ScopeInfo* anc, ScopeInfo* desc)
   // If we arrive here, there was no path between 'anc' and 'desc'
   return -1;
 }
+
 
 bool 
 ScopeInfo::ArePathsOverlapping(ScopeInfo* lca, ScopeInfo* desc1, 
@@ -803,6 +844,7 @@ ScopeInfo::ArePathsOverlapping(ScopeInfo* lca, ScopeInfo* desc1,
   // If we arrive here, we did not encounter d2.  Divergent.
   return false;
 }
+
 
 bool
 ScopeInfo::MergePaths(ScopeInfo* lca, ScopeInfo* toDesc, ScopeInfo* fromDesc)
@@ -850,6 +892,7 @@ ScopeInfo::MergePaths(ScopeInfo* lca, ScopeInfo* toDesc, ScopeInfo* fromDesc)
   return merged;
 }
 
+
 bool 
 ScopeInfo::Merge(ScopeInfo* toNode, ScopeInfo* fromNode)
 {
@@ -870,10 +913,12 @@ ScopeInfo::Merge(ScopeInfo* toNode, ScopeInfo* fromNode)
   // 2. If merging CodeInfos, update line ranges
   CodeInfo* toCI = dynamic_cast<CodeInfo*>(toNode);
   CodeInfo* fromCI = dynamic_cast<CodeInfo*>(fromNode);
+  DIAG_Assert(logic::equiv(toCI, fromCI), "Invariant broken!");
   if (toCI && fromCI) {
     suint begLn = MIN(toCI->begLine(), fromCI->begLine());
     suint endLn = MAX(toCI->endLine(), fromCI->endLine());
     toCI->SetLineRange(begLn, endLn);
+    toCI->vmaSet().merge(fromCI->vmaSet()); // merge VMAs
   }
   
   // 3. Unlink 'fromNode' from the tree and delete it
@@ -882,6 +927,7 @@ ScopeInfo::Merge(ScopeInfo* toNode, ScopeInfo* fromNode)
   
   return true;
 }
+
 
 bool 
 ScopeInfo::IsMergable(ScopeInfo* toNode, ScopeInfo* fromNode)
@@ -908,6 +954,7 @@ ScopeInfo::SetPerfData(int i, double d)
   }
 }
 
+
 bool 
 ScopeInfo::HasPerfData(int i) const
 {
@@ -915,6 +962,7 @@ ScopeInfo::HasPerfData(int i) const
   ScopeInfo *si = (ScopeInfo*) this;
   return ! IsNaN((*si->perfData)[i]);
 }
+
 
 double 
 ScopeInfo::PerfData(int i) const
@@ -1029,7 +1077,7 @@ LoadModScope::findByVMA(VMA vma)
 
 template<typename T>
 void 
-LoadModScope::buildMap(VMAIntervalMap<T>*& m, ScopeInfo::ScopeType ty)
+LoadModScope::buildMap(VMAIntervalMap<T>*& m, ScopeInfo::ScopeType ty) const
 {
   if (!m) {
     m = new VMAIntervalMap<T>;
@@ -1044,6 +1092,42 @@ LoadModScope::buildMap(VMAIntervalMap<T>*& m, ScopeInfo::ScopeType ty)
 	 it != vmaset.end(); ++it) {
       m->insert(make_pair(*it, x));
     }
+  }
+}
+
+
+template<typename T>
+bool 
+LoadModScope::verifyMap(VMAIntervalMap<T>* m, const char* map_nm)
+{
+  if (!m) { return true; }
+
+  for (typename VMAIntervalMap<T>::const_iterator it = m->begin(); 
+       it != m->end(); ) {
+    const VMAInterval& x = it->first;
+    ++it;
+    if (it != m->end()) {
+      const VMAInterval& y = it->first;
+      DIAG_Assert(!x.overlaps(y), "LoadModScope::verifyMap: found overlapping elements within " << map_nm << ": " << x.toString() << " and " << y.toString());
+    }
+  }
+  
+  return true;
+}
+
+
+bool 
+LoadModScope::verifyStmtMap() const
+{ 
+  if (!stmtMap) {
+    VMAToStmtRangeMap* mp;
+    buildMap(mp, ScopeInfo::STMT_RANGE);
+    verifyMap(mp, "stmtMap"); 
+    delete mp;
+    return true; 
+ }
+  else {
+    return verifyMap(stmtMap, "stmtMap"); 
   }
 }
 
@@ -1217,6 +1301,25 @@ ScopeInfo::toString(int dmpFlag, const char* pre) const
 }
 
 
+string
+ScopeInfo::toString_id(int dmpFlag) const
+{ 
+  string str = "<" + ScopeTypeToName(Type()) + " uid=" 
+    + StrUtil::toStr(UniqueId()) + ">";
+  return str;
+}
+
+
+string
+ScopeInfo::toString_me(int dmpFlag, const char* prefix) const
+{ 
+  std::ostringstream os;
+  dumpme(os, dmpFlag, prefix);
+  os << ends;
+  return os.str();
+}
+
+
 std::ostream&
 ScopeInfo::dump(ostream& os, int dmpFlag, const char* pre) const 
 {
@@ -1253,17 +1356,7 @@ ScopeInfo::ddump() const
 ostream&
 ScopeInfo::dumpme(ostream& os, int dmpFlag, const char* prefix) const
 { 
-  os << prefix;
-  dumpid(os, dmpFlag, prefix) << endl;
-  return os;
-}
-
-
-ostream& 
-ScopeInfo::dumpid(ostream& os, int dmpFlag, const char* prefix) const
-{ 
-  ScopeTypeToName(Type());
-  os << " uid=" + UniqueId();
+  os << prefix << toString_id(dmpFlag) << endl;
   return os;
 }
 
@@ -1271,8 +1364,8 @@ ScopeInfo::dumpid(ostream& os, int dmpFlag, const char* prefix) const
 ostream&
 CodeInfo::dumpme(ostream& os, int dmpFlag, const char* prefix) const
 { 
-  dumpid(os, dmpFlag, prefix) << " " << LineRange() << " " 
-			      << mvmaSet.toString();
+  os << prefix << toString_id(dmpFlag) << " " 
+     << LineRange() << " " << mvmaSet.toString();
   return os;
 }
 
@@ -1280,7 +1373,7 @@ CodeInfo::dumpme(ostream& os, int dmpFlag, const char* prefix) const
 ostream&
 PgmScope::dumpme(ostream& os, int dmpFlag, const char* prefix) const
 { 
-  dumpid(os, dmpFlag, prefix) << " n=" << name;
+  os << prefix << toString_id(dmpFlag) << " n=" << name;
   return os;
 }
 
@@ -1288,7 +1381,7 @@ PgmScope::dumpme(ostream& os, int dmpFlag, const char* prefix) const
 ostream& 
 GroupScope::dumpme(ostream& os, int dmpFlag, const char* prefix) const
 {
-  dumpid(os, dmpFlag, prefix) << " n=" << name;
+  os << prefix << toString_id(dmpFlag) << " n=" << name;
   return os;
 }
 
@@ -1296,7 +1389,7 @@ GroupScope::dumpme(ostream& os, int dmpFlag, const char* prefix) const
 ostream& 
 LoadModScope::dumpme(ostream& os, int dmpFlag, const char* prefix) const
 {
-  dumpid(os, dmpFlag, prefix) << " n=" << name;
+  os << prefix << toString_id(dmpFlag) << " n=" << name;
   return os;
 }
 
@@ -1820,6 +1913,7 @@ PgmScope::TSV_TreeDump(ostream& os) const
   ScopeInfo::TSV_dump(*this, os);
 }
 
+
 //***************************************************************************
 // CodeInfo specific methods 
 //***************************************************************************
@@ -1862,6 +1956,7 @@ CodeInfo::SetLineRange(suint begLn, suint endLn)
   }
 }
 
+
 void
 CodeInfo::Relocate() 
 {
@@ -1879,22 +1974,26 @@ CodeInfo::Relocate()
   else if (mbegLine == UNDEF_LINE) {
     // insert as first child
     LinkBefore(mom->FirstChild());
-  } else {
+  } 
+  else {
     // insert after sibling with sibling->mendLine < mbegLine 
     // or iff that does not exist insert as first in sibling list
     CodeInfo* sibling = NULL;
     for (sibling = mom->LastEnclScope(); sibling;
 	 sibling = sibling->PrevScope()) {
-      if (sibling->mendLine < mbegLine)  
+      if (sibling->mendLine < mbegLine) {
 	break;
+      }
     } 
     if (sibling != NULL) {
       LinkAfter(sibling);
-    } else {
+    } 
+    else {
       LinkBefore(mom->FirstChild());
     } 
   }
 }
+
 
 bool
 CodeInfo::ContainsLine(suint ln) const
@@ -1905,6 +2004,7 @@ CodeInfo::ContainsLine(suint ln) const
    } 
    return ((mbegLine >= 1) && (mbegLine <= ln) && (ln <= mendLine));
 } 
+
 
 CodeInfo* 
 CodeInfo::CodeInfoWithLine(suint ln) const
@@ -1932,6 +2032,7 @@ CodeInfo::CodeInfoWithLine(suint ln) const
    if (ci->Type() == PROC) return (CodeInfo*) this;
    else return 0;
 }
+
 
 int 
 CodeInfoLineComp(CodeInfo* x, CodeInfo* y)
@@ -1964,6 +2065,7 @@ CodeInfoLineComp(CodeInfo* x, CodeInfo* y)
   }
 }
 
+
 // - if x < y; 0 if x == y; + otherwise
 int 
 SimpleLineCmp(suint x, suint y)
@@ -1978,6 +2080,7 @@ SimpleLineCmp(suint x, suint y)
   else             { return 1; }
 }
 
+
 // Returns a flag indicating whether XML escape characters should be used
 // not modify 'str'
 int 
@@ -1990,6 +2093,7 @@ AddXMLEscapeChars(int dmpFlag)
     return xml::ESC_TRUE;
   }
 }
+
 
 //***************************************************************************
 // RefScope specific methods 

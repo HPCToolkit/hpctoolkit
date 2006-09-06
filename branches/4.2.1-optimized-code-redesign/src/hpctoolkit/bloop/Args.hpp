@@ -91,7 +91,6 @@ public:
   const std::string& GetCmd() const { return parser.GetCmd(); }
 
   // Parsed Data: optional arguments
-  bool verboseMode;               // default: false
   bool normalizeScopeTree;        // default: true
   bool unsafeNormalizations;      // default: true
   bool irreducibleIntervalIsLoop; // default: false

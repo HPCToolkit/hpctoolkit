@@ -35,52 +35,65 @@
 // 
 // ******************************************************* EndRiceCopyright *
 
-//***************************************************************************
+//****************************************************************************
 //
 // File:
-//    $Source$
+//   $Source$
 //
 // Purpose:
-//    [The purpose of this file]
+//   [The purpose of this file]
 //
 // Description:
-//    [The set of functions, macros, etc. defined in the file]
+//   [The set of functions, macros, etc. defined in the file]
+// 
+// Author:
+//   Nathan Tallent
 //
-//***************************************************************************
-
-#ifndef banal_bloop_hpp
-#define banal_bloop_hpp
-
-//************************* System Include Files ****************************
-
-//*************************** User Include Files ****************************
-
-#include <include/general.h> 
-
-#include <lib/prof-juicy/PgmScopeTree.hpp>
-#include <lib/binutils/LM.hpp>
-
-//*************************** Forward Declarations ***************************
-
-namespace banal {
-  
-  PgmScopeTree* 
-  BuildLMStructure(binutils::LM* lm, 
-		   const char* canonicalPathList = "",
-		   bool normalizeScopeTree = true,
-		   bool unsafeNormalizations = true,
-		   bool irreducibleIntervalIsLoop = false);
-  
-  bool 
-  Normalize(PgmScopeTree* pgmScopeTree, 
-	    bool unsafeNormalizations = true);
-
-
-  void
-  WriteScopeTree(std::ostream& os, PgmScopeTree* pgmScopeTree,
-		 bool prettyPrint = true);
-}
-
 //****************************************************************************
 
-#endif // banal_bloop_hpp
+#ifndef support_Logic_hpp 
+#define support_Logic_hpp
+
+//************************** System Include Files ****************************
+
+#include <iostream>
+#include <fstream>
+#include <string>
+
+#include <inttypes.h> /* commonly available, unlike <stdint.h> */
+
+//*************************** User Include Files *****************************
+
+#include <include/general.h>
+
+//************************** Forward Declarations ****************************
+
+//****************************************************************************
+// logic
+//****************************************************************************
+
+namespace logic {
+
+// --------------------------------------------------------------------------
+// 
+// --------------------------------------------------------------------------
+
+// equiv: returns (p <-> q)
+inline bool 
+equiv(bool p, bool q) 
+{
+  return ((p && q) || (!p && !q));
+}
+
+template <typename T>
+bool
+equiv(T p, T q) 
+{
+  return ((p && q) || (!p && !q));
+}
+
+
+} // end of logic namespace
+
+
+#endif // support_Logic_hpp

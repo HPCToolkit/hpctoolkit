@@ -174,7 +174,7 @@ class RefScope;
 class ScopeInfo: public NonUniformDegreeTreeNode {
 public:
   enum ScopeType {
-    PGM,
+    PGM = 0,
     GROUP,
     LM,
     FILE,
@@ -357,7 +357,10 @@ public:
 
   virtual std::string Types() const; // instance's base and derived types 
 
-  std::string toString(int dmpFlag = 0, const char* pre = "") const;  
+  std::string toString(int dmpFlag = 0, const char* pre = "") const;
+
+  std::string toString_id(int dmpFlag = 0) const;
+  std::string toString_me(int dmpFlag = 0, const char* pre = "") const;
 
   // dump
   std::ostream& dump(std::ostream& os = std::cerr, 
@@ -365,13 +368,9 @@ public:
   
   void ddump() const;
 
-  // dump helpers
   virtual std::ostream& dumpme(std::ostream& os = std::cerr, 
 			       int dmpFlag = 0,
 			       const char* pre = "") const;
-
-  std::ostream& dumpid(std::ostream& os = std::cerr, 
-		       int dmpFlag = 0, const char* prefix = "") const;
 
 protected:
   ScopeType type;
@@ -495,6 +494,7 @@ public:
   LoadModScope* FindLoadMod(const std::string& nm) const 
     { return FindLoadMod(nm.c_str()); }
 
+  // FIXME: probably better moved to LoadModule
   FileScope*    FindFile(const char* nm) const;    // find by 'realpath'
   FileScope*    FindFile(const std::string& nm) const
     { return FindFile(nm.c_str()); }
@@ -640,7 +640,9 @@ public:
 			       int dmpFlag = 0,
 			       const char* pre = "") const;
   void dumpmaps() const;
-  
+
+  bool verifyStmtMap() const;
+
 public:
   typedef VMAIntervalMap<ProcScope*>      VMAToProcMap;
   typedef VMAIntervalMap<StmtRangeScope*> VMAToStmtRangeMap;
@@ -649,7 +651,11 @@ protected:
   void Ctor(const char* nm, ScopeInfo* mom);
 
   template<typename T> 
-  void buildMap(VMAIntervalMap<T>*& m, ScopeInfo::ScopeType ty);
+  void buildMap(VMAIntervalMap<T>*& m, ScopeInfo::ScopeType ty) const;
+
+  template<typename T>
+  static bool 
+  verifyMap(VMAIntervalMap<T>* m, const char* map_nm);
 
 private: 
   std::string name; // the load module name
@@ -687,7 +693,11 @@ public:
   // 'lnm' is provided, require that link names match.
   ProcScope* FindProc(const char* nm, const char* lnm = NULL) const;
   ProcScope* FindProc(const std::string& nm, const std::string& lnm = "") const
-    { return FindProc(nm.c_str(), lnm.c_str()); }
+    { 
+      const char* x = lnm.c_str();
+      return FindProc(nm.c_str(), (x[0] == '\0') ? NULL : x);
+    }
+  
                                         
   void SetName(const char* fname) { name = fname; }
   void SetName(const std::string& fname) { name = fname; }
@@ -756,7 +766,6 @@ public:
 
   virtual ScopeInfo* Clone() { return new ProcScope(*this); }
 
-  // Find StmtRangeScope *or* return a new one if none is found
   StmtRangeScope* FindStmtRange(suint line);  
 
   virtual std::string toXML(int dmpFlag = 0) const;
@@ -782,6 +791,7 @@ private:
   void Ctor(const char* n, CodeInfo *mom, const char* ln);
 
   void AddToStmtMap(StmtRangeScope& stmt);
+
   friend class StmtRangeScope;
 
 private:

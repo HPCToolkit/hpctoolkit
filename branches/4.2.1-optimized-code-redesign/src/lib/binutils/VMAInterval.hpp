@@ -111,8 +111,17 @@ public:
   // interval comparison
   // -------------------------------------------------------
   
-  // overlaps: does this interval overlap x
-  bool overlaps(VMAInterval x) const;
+  // overlaps: does this interval overlap x:
+  //       {interval}             
+  //  a.     <x> 
+  //  b.           <x>
+  //  c.  <x>
+  bool overlaps(VMAInterval x) const
+    { 
+      return (contains(x) 
+	      || (x.beg() <= beg() && beg() <  x.end())
+	      || (x.beg() <  end() && end() <= x.end()));
+    }
   
   // contains: does this interval contain x
   bool contains(VMAInterval x) const
@@ -230,9 +239,9 @@ public:
 
   // erase: Erase a VMA or VMAInterval and maintain the
   // non-overlapping interval invariant
-  size_type erase(const VMA beg, const VMA end)
+  void erase(const VMA beg, const VMA end)
     { return erase(value_type(beg, end)); }
-  size_type erase(const key_type& x);
+  void erase(const key_type& x);
 
   // find: []
 

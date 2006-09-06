@@ -80,7 +80,8 @@ static const char* usage_details =
 "data; see caveats below for common problems.\n"
 "\n"
 "Options:\n"
-"  -v, --verbose        Verbose: generate progress messages to stderr\n"
+"  -v, --verbose [<n>]  Verbose: generate progress messages to stderr at\n"
+"                       verbosity level <n>.  [1]\n"
 "  -n, --normalize-off  Turn off scope tree normalization\n"
 "  -u, --unsafe-normalize-off\n"
 "                       Turn off potentially unsafe normalization\n"
@@ -112,7 +113,7 @@ static const char* usage_details =
 CmdLineParser::OptArgDesc Args::optArgs[] = {
 
   // Options
-  { 'v', "verbose",         CLP::ARG_NONE, CLP::DUPOPT_CLOB, NULL },
+  { 'v', "verbose",         CLP::ARG_OPT,  CLP::DUPOPT_CLOB, NULL },
   { 'n', "normalize-off",   CLP::ARG_NONE, CLP::DUPOPT_CLOB, NULL },
   { 'u', "unsafe-normalize-off", 
                             CLP::ARG_NONE, CLP::DUPOPT_CLOB, NULL },
@@ -148,7 +149,6 @@ Args::Args(int argc, const char* const argv[])
 void
 Args::Ctor()
 {
-  verboseMode = false;
   normalizeScopeTree = true;
   unsafeNormalizations = true;
   irreducibleIntervalIsLoop = false;
@@ -222,8 +222,13 @@ Args::Parse(int argc, const char* const argv[])
     }
     
     // Check for other options
-    if (parser.IsOpt("verbose")) { 
-      verboseMode = true;
+    if (parser.IsOpt("verbose")) {
+      int verb = 1;
+      if (parser.IsOptArg("verbose")) {
+	const string& arg = parser.GetOptArg("verbose");
+	verb = (int)CmdLineParser::ToLong(arg);
+      }
+      Diagnostics_SetDiagnosticFilterLevel(verb);
     } 
     if (parser.IsOpt("normalize-off")) { 
       normalizeScopeTree = false;

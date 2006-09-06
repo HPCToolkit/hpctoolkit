@@ -121,7 +121,7 @@ am__objects_1 = libHPCsupport_la-CmdLineParser.lo \
 	libHPCsupport_la-IOUtil.lo libHPCsupport_la-Files.lo \
 	libHPCsupport_la-SrcFile.lo libHPCsupport_la-findinstall.lo \
 	libHPCsupport_la-pathfind.lo libHPCsupport_la-realpath.lo \
-	libHPCsupport_la-HashTable.lo \
+	libHPCsupport_la-Logic.lo libHPCsupport_la-HashTable.lo \
 	libHPCsupport_la-HashTableSortedIterator.lo \
 	libHPCsupport_la-IntVector.lo \
 	libHPCsupport_la-IteratorStack.lo \
@@ -362,6 +362,8 @@ MYSOURCES = \
 	pathfind.h pathfind.cpp \
 	realpath.h realpath.c \
 	\
+	Logic.hpp Logic.cpp \
+	\
 	HashTable.hpp HashTable.cpp \
 	HashTableSortedIterator.hpp HashTableSortedIterator.cpp \
 	IntVector.hpp IntVector.cpp \
@@ -467,6 +469,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCsupport_la-IOUtil.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCsupport_la-IntVector.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCsupport_la-IteratorStack.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCsupport_la-Logic.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCsupport_la-Nan.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCsupport_la-NonUniformDegreeTree.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCsupport_la-OffsetLengthList.Plo@am__quote@
@@ -644,6 +647,13 @@ libHPCsupport_la-pathfind.lo: pathfind.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='pathfind.cpp' object='libHPCsupport_la-pathfind.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(LIBTOOL) --tag=CXX --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCsupport_la_CXXFLAGS) $(CXXFLAGS) -c -o libHPCsupport_la-pathfind.lo `test -f 'pathfind.cpp' || echo '$(srcdir)/'`pathfind.cpp
+
+libHPCsupport_la-Logic.lo: Logic.cpp
+@am__fastdepCXX_TRUE@	if $(LIBTOOL) --tag=CXX --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCsupport_la_CXXFLAGS) $(CXXFLAGS) -MT libHPCsupport_la-Logic.lo -MD -MP -MF "$(DEPDIR)/libHPCsupport_la-Logic.Tpo" -c -o libHPCsupport_la-Logic.lo `test -f 'Logic.cpp' || echo '$(srcdir)/'`Logic.cpp; \
+@am__fastdepCXX_TRUE@	then mv -f "$(DEPDIR)/libHPCsupport_la-Logic.Tpo" "$(DEPDIR)/libHPCsupport_la-Logic.Plo"; else rm -f "$(DEPDIR)/libHPCsupport_la-Logic.Tpo"; exit 1; fi
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='Logic.cpp' object='libHPCsupport_la-Logic.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(LIBTOOL) --tag=CXX --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCsupport_la_CXXFLAGS) $(CXXFLAGS) -c -o libHPCsupport_la-Logic.lo `test -f 'Logic.cpp' || echo '$(srcdir)/'`Logic.cpp
 
 libHPCsupport_la-HashTable.lo: HashTable.cpp
 @am__fastdepCXX_TRUE@	if $(LIBTOOL) --tag=CXX --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCsupport_la_CXXFLAGS) $(CXXFLAGS) -MT libHPCsupport_la-HashTable.lo -MD -MP -MF "$(DEPDIR)/libHPCsupport_la-HashTable.Tpo" -c -o libHPCsupport_la-HashTable.lo `test -f 'HashTable.cpp' || echo '$(srcdir)/'`HashTable.cpp; \
