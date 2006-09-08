@@ -707,16 +707,6 @@ BuildProcSkeletonTarj(CodeInfo* enclosingScope, binutils::Proc* p,
       int num = BuildProcSkeletonTarj(lScope, p, tarj, cfg, kid, mp,
 				      1, irrIntIsLoop);
       localLoops += (num + 1);
-
-#if 1 // FIXME: we do not want to do this
-      // Remove the loop nest if we could not find valid line numbers
-      if (!IsValidLine(lScope->begLine(), lScope->endLine())) {
-	mp->erase(lScope);
-	lScope->Unlink();
-	delete lScope;
-	localLoops -= (num + 1); // N.B.: 'num' should always be 0
-      }
-#endif
     }
     
     // -----------------------------------------------------
