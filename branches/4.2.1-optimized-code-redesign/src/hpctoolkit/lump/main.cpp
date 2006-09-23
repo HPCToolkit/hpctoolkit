@@ -241,7 +241,7 @@ DumpSymbolicInfo(std::ostream& os, binutils::LM* lm)
 	func = GetBestFuncName(func);
 	
 	os << pre << "0x" << hex << opVMA << dec 
-	   << " <" << file << ">:" << line << ":[" << func << "]\n";
+	   << " {" << file << "}:" << line << ":[" << func << "]\n";
       }
       os << std::endl;
     }
