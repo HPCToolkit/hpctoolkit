@@ -79,6 +79,7 @@ namespace logic {
 // --------------------------------------------------------------------------
 
 // equiv: returns (p <-> q)
+//   p <-> q == (p && q) || (!p && !q)
 inline bool 
 equiv(bool p, bool q) 
 {
@@ -91,6 +92,32 @@ equiv(T p, T q)
 {
   return ((p && q) || (!p && !q));
 }
+
+
+// implies: returns (p -> q) 
+//   p -> q == !p || q
+inline bool 
+implies(bool p, bool q)
+{
+  return (!p || q);
+}
+
+template <typename T>
+bool
+implies(T p, T q) 
+{
+  return (!p || q);
+}
+
+#if 0
+// Would it be better to have a specialization of the template, like so?
+template <>
+inline bool
+implies<bool>(bool p, bool q)
+{
+  return (!p || q);
+}
+#endif
 
 
 } // end of logic namespace

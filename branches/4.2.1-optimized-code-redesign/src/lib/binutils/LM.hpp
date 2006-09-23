@@ -227,6 +227,9 @@ public:
   //   - It is an error for either the file or function to be
   //     different accross the individual calls.  In this case
   //     information from 'begVMA' is used.
+  // 
+  // If 'flags' is set to 1, then beg/end line swapping is performed.
+  // 
   // The second version only returns true when all information is
   // found and no error is detected.
   // -------------------------------------------------------
@@ -237,7 +240,8 @@ public:
   bool GetSourceFileInfo(VMA begVMA, ushort bOpIndex,
 			 VMA endVMA, ushort eOpIndex,
 			 std::string& func, std::string& file,
-			 suint &begLine, suint &endLine) const;
+			 suint &begLine, suint &endLine,
+			 unsigned flags = 1) const;
 
   bool GetProcFirstLineInfo(VMA vma, ushort opIndex, suint &line) const;
 

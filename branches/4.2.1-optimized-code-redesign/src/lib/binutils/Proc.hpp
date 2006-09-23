@@ -175,11 +175,12 @@ public:
   bool GetSourceFileInfo(VMA begVMA, ushort bOpIndex,
 			 VMA endVMA, ushort eOpIndex,
 			 std::string& func, std::string& file,
-			 suint& begLine, suint& endLine) const {
+			 suint& begLine, suint& endLine,
+			 unsigned flags = 1) const {
     return sec->GetLM()->GetSourceFileInfo(begVMA, bOpIndex,
 					   endVMA, eOpIndex, 
 					   func, file, 
-					   begLine, endLine);
+					   begLine, endLine, flags);
   }
   
   // -------------------------------------------------------

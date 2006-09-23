@@ -83,7 +83,6 @@ binutils::dbg::Proc::toString() const
 {
   std::ostringstream os;
   dump(os);
-  os << std::ends;
   return os.str();
 }
 
@@ -91,10 +90,12 @@ binutils::dbg::Proc::toString() const
 std::ostream&
 binutils::dbg::Proc::dump(std::ostream& os) const
 {
-  os << "{ dbg::Proc: \n";
-  os << "  " << name << " [" << hex << begVMA << "-" << endVMA << dec << "]"
-     << " parentVMA: " << hex << parentVMA << " --> " << parent << dec << "\n";
-  os << "  " << filenm << ":" << begLine << "\n";
+  os << "{dbg::Proc: \n";
+  os << "  " << name 
+     << " [0x" << hex << begVMA << "-0x" << endVMA << dec << "]" 
+     << " --> parentVMA: 0x" 
+     << hex << parentVMA << " [" << parent << dec << "]\n";
+  os << "  {" << filenm << "}:" << begLine << "\n";
   os << "}\n";
   os.flush();
   return os;

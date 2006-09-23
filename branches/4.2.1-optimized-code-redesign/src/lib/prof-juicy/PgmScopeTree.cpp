@@ -1924,10 +1924,12 @@ CodeInfo::SetLineRange(suint begLn, suint endLn)
   // Sanity Checking:
   //   begLn <= endLn
   //   (begLn == UNDEF_LINE) <==> (endLn == UNDEF_LINE)
-  DIAG_Assert(begLn <= endLn, "");
+  DIAG_Assert(begLn <= endLn, "CodeInfo::SetLineRange: b=" << begLn 
+	      << " e=" << endLn);
 
   if (begLn == UNDEF_LINE) {
-    DIAG_Assert(endLn == UNDEF_LINE, "");
+    DIAG_Assert(endLn == UNDEF_LINE, "CodeInfo::SetLineRange: b=" << begLn 
+		<< " e=" << endLn);
     // simply relocate at beginning of sibling list 
     // no range update in parents is necessary
     DIAG_Assert((mbegLine == UNDEF_LINE) && (mendLine == UNDEF_LINE), "");

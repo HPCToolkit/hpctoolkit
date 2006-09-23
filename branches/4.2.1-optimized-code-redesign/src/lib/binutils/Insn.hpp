@@ -102,6 +102,14 @@ public:
   // WARNING: this is unrelocated
   VMA GetVMA() const { return vma; }
   void SetVMA(VMA _vma) { vma = _vma; }
+
+  // Returns the end vma, i.e. the vma immediately following this instruction
+  VMA GetEndVMA() const 
+    { return GetVMA() + GetSize(); }
+
+  // Returns the operation VMA for the beginning of this instruction
+  VMA GetOpVMA() const 
+    { return LM::isa->ConvertVMAToOpVMA(GetVMA(), GetOpIndex()); }
   
   // Viewing each object code instruction as an instruction packet,
   // and recalling that all packets are "unpacked" in a 'LM',

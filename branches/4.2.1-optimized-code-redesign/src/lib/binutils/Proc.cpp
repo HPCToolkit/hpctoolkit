@@ -124,8 +124,8 @@ binutils::Proc::dump(std::ostream& o, unsigned flags, const char* pre) const
   string p1 = p + "  ";
   string p2 = p + "    ";  
   
-  string func, file, func1, file1, func2, file2;
-  suint begLn, endLn, begLn1, endLn2;
+  string func, file, b_func, b_file, e_func, e_file;
+  suint begLn, endLn, b_begLn, e_endLn2;
   Insn* eInsn = GetLastInsn();
   ushort endOp = (eInsn) ? eInsn->GetOpIndex() : 0;
 
@@ -134,17 +134,18 @@ binutils::Proc::dump(std::ostream& o, unsigned flags, const char* pre) const
 			 func, file, begLn, endLn);
 
   // These calls perform no consistency checking
-  sec->GetSourceFileInfo(GetBegVMA(), 0, func1, file1, begLn1);
-  sec->GetSourceFileInfo(GetEndVMA(), endOp, func2, file2, endLn2);
+  sec->GetSourceFileInfo(GetBegVMA(), 0, b_func, b_file, b_begLn);
+  sec->GetSourceFileInfo(GetEndVMA(), endOp, e_func, e_file, e_endLn2);
   
   o << p << "---------- Procedure Dump ----------\n";
   o << p << "  Name:     `" << GetBestFuncName(GetName()) << "'\n";
   o << p << "  LinkName: `" << GetBestFuncName(GetLinkName()) << "'\n";
-  o << p << "  DbgNm(s): `" << GetBestFuncName(func1) << "'\n";
-  o << p << "  DbgNm(e): `" << GetBestFuncName(func2) << "'\n";
-  o << p << "  File:    `" << file << "':" << begLn << "-" << endLn << "\n";
-  o << p << "  DbgF(s): `" << file1 << "':" << begLn1 << "\n";
-  o << p << "  DbgF(e): `" << file2 << "':" << endLn2 << "\n";
+  o << p << "  Sym:      {" << GetFilename() << "}:" << GetBegLine() << "\n";
+  o << p << "  LnMap:    {" << file << "}:" << begLn << "-" << endLn << "\n";
+  o << p << "  LnMap(b): {" << b_file << "}[" 
+    << GetBestFuncName(b_func) << "]:" << b_begLn << "\n";
+  o << p << "  LnMap(e): {" << e_file << "}[" 
+    << GetBestFuncName(e_func) << "]:" << e_endLn2 << "\n";
 
   o << p << "  ID, Type: " << GetId() << ", `";
   switch (GetType()) {

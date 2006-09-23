@@ -88,6 +88,7 @@ binutils::dbg::LM::LM()
 binutils::dbg::LM::~LM()
 {
   clear();
+  clear1();
 }
 
 
@@ -119,12 +120,21 @@ binutils::dbg::LM::clear()
 }
 
 
+void
+binutils::dbg::LM::clear1()
+{
+  for (const_iterator1 it = this->begin1(); it != this->end1(); ++it) {
+    delete it->second;
+  }
+  mMap1.clear();
+}
+
+
 std::string
 binutils::dbg::LM::toString() const
 {
   std::ostringstream os;
   dump(os);
-  os << std::ends;
   return os.str();
 }
 
@@ -134,7 +144,11 @@ binutils::dbg::LM::dump(std::ostream& os) const
 {
   os << "{ dbg::LM: \n";
   for (const_iterator it = this->begin(); it != this->end(); ++it) {
-    //os << "(" << it->first << " --> " << it->second << ")\n";
+    os << "(" << hex << it->first << dec << " --> " << it->second << ") ";
+    it->second->dump(os);
+  }
+  for (const_iterator1 it = this->begin1(); it != this->end1(); ++it) {
+    os << "(" << it->first << " --> " << it->second << ") ";
     it->second->dump(os);
   }
   os << "}\n";
@@ -184,22 +198,35 @@ binutils::dbg::LM::bfd_dbgInfoCallback(void* callback_obj,
   }
   pinfo->parentVMA = begVMA;
 
-  // For now, we assume that if we don't know an address for
-  // 'funcinfo', then we can't use it
-  if (pinfo->begVMA == 0) {
-    delete pinfo;
-    return 0;
+  DIAG_DevMsg(10, "binutils::dbg::LM::bfd_dbgInfoCallback:\n"
+	      << pinfo->toString());
+
+  // store this 'pinfo' if it is of use
+  if (pinfo->begVMA == 0 
+      && !(pinfo->begLine == 0 && pinfo->filenm.empty())) {
+    std::pair<iterator1, bool> res = 
+      lminfo->insert1(std::make_pair(pinfo->name, pinfo));
+    if (!res.second) {
+      DIAG_Msg(5, "Found two descriptors for the same procedure: "
+	       << pinfo->toString());
+      delete pinfo;
+      // FIXME: we could delete all entries of line numbers and
+      // files don't match
+    }
+  }
+  else if ( !(pinfo->begLine == 0 && pinfo->filenm.empty()) ) {
+    std::pair<iterator, bool> res = 
+      lminfo->insert(std::make_pair(pinfo->begVMA, pinfo));
+    if (!res.second) {
+      DIAG_EMsg("Found two descriptors for the same procedure: "
+		<< pinfo->toString());
+      delete pinfo;
+    }
+  }
+  else {
+    delete pinfo; // the 'pinfo' is useless
   }
   
-  std::pair<iterator, bool> res = 
-    lminfo->insert(std::make_pair(pinfo->begVMA, pinfo));
-  if (!res.second) {
-    // There are two descriptors for the same function.  I don't think
-    // this should happen in practice...
-    // pinfo->dump(std::cout);
-    delete pinfo;    
-  }
-
   return 0;
 }
 

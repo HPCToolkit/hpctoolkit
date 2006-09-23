@@ -744,6 +744,9 @@ private:
 // --------------------------------------------------------------------------
 // ProcScopes are children of GroupScope's or FileScope's
 // children: GroupScope's, LoopScope's, StmtRangeScope's
+// 
+//   (begLn == 0) <==> (endLn == 0)
+//   (begLn != 0) <==> (endLn != 0)
 // --------------------------------------------------------------------------
 class ProcScope: public CodeInfo {
 protected:

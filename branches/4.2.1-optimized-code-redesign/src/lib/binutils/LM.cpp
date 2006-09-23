@@ -399,7 +399,8 @@ bool
 binutils::LM::GetSourceFileInfo(VMA begVMA, ushort bOpIndex,
 				VMA endVMA, ushort eOpIndex,
 				string& func, string& file,
-				suint &begLine, suint &endLine) const
+				suint &begLine, suint &endLine,
+				unsigned flags) const
 {
   bool STATUS = false;
   func = file = "";
@@ -459,9 +460,10 @@ binutils::LM::GetSourceFileInfo(VMA begVMA, ushort bOpIndex,
   else if (IsValidLine(endLine) && !IsValidLine(begLine)) {
     begLine = endLine;
   } 
-  else if (begLine > endLine) { // perhaps due to insn. reordering...
-    suint tmp = begLine;          // but unlikely given the way this is
-    begLine = endLine;            // typically called
+  else if (flags 
+	   && begLine > endLine) { // perhaps due to insn. reordering...
+    suint tmp = begLine;           // but unlikely given the way this is
+    begLine = endLine;             // typically called
     endLine = tmp;
   }
 

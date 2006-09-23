@@ -62,6 +62,7 @@
 //************************ OpenAnalysis Include Files ***********************
 
 #include <OpenAnalysis/IRInterface/CFGIRInterfaceDefault.hpp>
+#include <OpenAnalysis/CFG/Interface.hpp>
 
 //*************************** User Include Files ****************************
  
@@ -94,6 +95,41 @@
 // different size".
 #define TY_TO_IRHNDL(x, totype) (totype((OA::irhandle_t)(psuint)(x)))
 #define IRHNDL_TO_TY(x, totype) ((totype)(psuint)(x.hval()))
+
+//***************************************************************************
+// 
+//***************************************************************************
+
+namespace banal {
+
+inline binutils::Insn*
+OA_CFG_getBegInsn(OA::OA_ptr<OA::CFG::Interface::Node> bb) 
+{
+  OA::OA_ptr<OA::CFG::Interface::NodeStatementsIterator> stmtIt =
+    bb->getNodeStatementsIterator();
+  
+  binutils::Insn* stmt = NULL;
+  if (stmtIt->isValid()) {
+    stmt = IRHNDL_TO_TY(stmtIt->current(), binutils::Insn*);
+  }
+  return stmt;
+}
+
+
+inline binutils::Insn*
+OA_CFG_getEndInsn(OA::OA_ptr<OA::CFG::Interface::Node> bb) 
+{
+  OA::OA_ptr<OA::CFG::Interface::NodeStatementsRevIterator> stmtIt =
+    bb->getNodeStatementsRevIterator();
+  binutils::Insn* stmt = NULL;
+  if (stmtIt->isValid()) {
+    stmt = IRHNDL_TO_TY(stmtIt->current(), binutils::Insn*);
+  }
+  return stmt;
+}
+
+} // end namespace banal
+
 
 //***************************************************************************
 // Iterators

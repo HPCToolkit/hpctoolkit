@@ -87,7 +87,7 @@ class Proc;
 
 class LM {
 public:
-  // We could use a VMAInterval -> dbg::Proc map if necessary.
+  // A VMA -> dbg::Proc map (could use VMAInterval -> dbg::Proc)
   typedef VMA                                               key_type;
   typedef dbg::Proc*                                        mapped_type;
   
@@ -100,7 +100,20 @@ public:
   typedef My_t::iterator                                    iterator;
   typedef My_t::const_iterator                              const_iterator;
   typedef My_t::size_type                                   size_type;
-  
+
+  // A string -> dbg::Proc map (could use VMAInterval -> dbg::Proc)
+  typedef std::string                                       key_type1;
+
+  typedef std::map<key_type1, mapped_type>                  My1_t;
+  typedef std::pair<const key_type1, mapped_type>           value_type1;
+  typedef My1_t::key_compare                                key_compare1;
+  typedef My1_t::allocator_type                             allocator_type1;
+  typedef My1_t::reference                                  reference1;
+  typedef My1_t::const_reference                            const_reference1;
+  typedef My1_t::iterator                                   iterator1;
+  typedef My1_t::const_iterator                             const_iterator1;
+  typedef My1_t::size_type                                  size_type1;
+
 public:
   LM();
   ~LM();
@@ -108,7 +121,7 @@ public:
   void read(bfd* abfd, asymbol** bfdSymTab);
   
   // -------------------------------------------------------
-  // iterator, find/insert, etc 
+  // iterator, find/insert, etc [My_t]
   // -------------------------------------------------------
   
   // iterators:
@@ -151,6 +164,53 @@ public:
     { return mMap.find(x); }
   size_type count(const key_type& x) const
     { return mMap.count(x); }
+
+
+  // -------------------------------------------------------
+  // iterator, find/insert, etc [My1_t]
+  // -------------------------------------------------------
+  
+  // iterators:
+  iterator1 begin1() 
+    { return mMap1.begin(); }
+  const_iterator1 begin1() const 
+    { return mMap1.begin(); }
+  iterator1 end1() 
+    { return mMap1.end(); }
+  const_iterator1 end1() const 
+    { return mMap1.end(); }
+    
+  // capacity:
+  size_type size1() const
+    { return mMap1.size(); }
+    
+  // element access:
+  mapped_type& operator[](const key_type1& x)
+    { return mMap1[x]; }
+    
+  // modifiers:
+  std::pair<iterator1, bool> insert1(const value_type1& x)
+    { return mMap1.insert(x); }
+  iterator1 insert1(iterator1 position, const value_type1& x)
+    { return mMap1.insert(position, x); }
+    
+  void erase1(iterator1 position) 
+    { mMap1.erase(position); }
+  size_type erase1(const key_type1& x) 
+    { return mMap1.erase(x); }
+  void erase1(iterator1 first, iterator1 last) 
+    { return mMap1.erase(first, last); }
+    
+  void clear1();
+  
+  // mMap operations:
+  iterator1 find1(const key_type1& x)
+    { return mMap1.find(x); }
+  const_iterator1 find1(const key_type1& x) const
+    { return mMap1.find(x); }
+  size_type count1(const key_type1& x) const
+    { return mMap1.count(x); }
+
     
   // -------------------------------------------------------
   // debugging
@@ -175,6 +235,7 @@ private:
   
 private:
   My_t mMap;
+  My1_t mMap1;
 };
   
 

@@ -74,6 +74,8 @@ using std::map;
 #include "dbg_LM.hpp"
 #include "dbg_Proc.hpp"
 
+#include "BinUtils.hpp"
+
 #include <lib/isa/ISA.hpp>
 
 #include <lib/support/diagnostics.h>
@@ -281,16 +283,24 @@ binutils::TextSeg::Create_InitializeProcs()
       string symNm = bfd_asymbol_name(sym);
 
       dbg::Proc* dbg = (*dbgInfo)[begVMA];
+      if (!dbg) {
+	procNm = FindProcName(impl->abfd, sym);
+	string pnm = GetBestFuncName(procNm);
+	dbg = (*dbgInfo)[pnm];
+      }
+      if (!dbg) {
+	dbg = (*dbgInfo)[symNm];
+      }
+      
       if (dbg) {
 	endVMA = dbg->endVMA; // end of last insn
-	procNm = dbg->name;
+	if (!dbg->name.empty()) {
+	  procNm = dbg->name;
+	}
       }
       if (!dbg || endVMA == 0) {
 	endVMA = FindProcEnd(i);
       }
-      if (!dbg || procNm.empty()) {
-	procNm = FindProcName(impl->abfd, sym);
-      }      
       suint size = endVMA - begVMA; // see note above
 
       if (size == 0) {
