@@ -253,7 +253,7 @@ Summary::Summary(int d)
   cleanup();
 }
 
-Summary::Summary(const LoadModule *exec, const vector<ProfFile> &profs, int d)
+Summary::Summary(const LoadModule *exec, const vector<ProfFile*>& profs, int d)
   : debug_(d)
 {
   abort();  // FIXME: do we want a LoadModule?
@@ -292,26 +292,33 @@ Summary::init(const string& pgm, const vector<string>& prof_fnames)
   }
 
   // Read all profiling data
-  vector<ProfFile> profs(prof_fnames.size());
+  vector<ProfFile*> profs(prof_fnames.size());
   for (unsigned int i = 0; i < prof_fnames.size(); ++i) {
-      int ret = profs[i].read(prof_fnames[i]);
+      profs[i] = new ProfFile();
+      int ret = profs[i]->read(prof_fnames[i]);
       if (ret != 0) {
 	  cerr << "Cannot read profile file " << prof_fnames[i] << endl;
 	  return false;
         }
       if (debug_) {
-	  profs[i].dump(cout);
+	  profs[i]->dump(cout);
       }
     }
   
   init(pgm, profs);
+  
+  for (vector<ProfFile*>::iterator it = profs.begin(); 
+       it != profs.end(); ++it) {
+    delete (*it);
+  }
+
   return true;
 }
 
 
 // 'profs' contains at least one ProfFile
 bool
-Summary::init(const string& pgm, const vector<ProfFile>& profs)
+Summary::init(const string& pgm, const vector<ProfFile*>& profs)
 { 
   // FIXME: For what we want to do, the order in which vprof creates a
   // summary is annoying.  For now, to avoid a rewrite, I have hacked
@@ -321,12 +328,12 @@ Summary::init(const string& pgm, const vector<ProfFile>& profs)
   
   // 1a. Sanity check file modification times
   for (unsigned int i = 0; i < profs.size(); ++i) {
-      const ProfFile& prof = profs[i];
+      const ProfFile* prof = profs[i];
 
       if (i == 0) { 
-	prof_mtime_ = prof.mtime();
-      } else if (prof.mtime() < prof_mtime_) {
-	prof_mtime_ = prof.mtime();
+	prof_mtime_ = prof->mtime();
+      } else if (prof->mtime() < prof_mtime_) {
+	prof_mtime_ = prof->mtime();
       }
     }
 
@@ -340,12 +347,12 @@ Summary::init(const string& pgm, const vector<ProfFile>& profs)
   unsigned int ev_i = 0; // nth event
 
   for (unsigned int i = 0; i < profs.size(); ++i) {
-      const ProfFile& prof = profs[i];
+      const ProfFile* prof = profs[i];
       
       // We inspect only the first load module of each prof file because
       // while one prof file contains multiple load modules, each load
       // module contains the same events.  
-      const ProfFileLM& proflm = prof.load_module(0);
+      const ProfFileLM& proflm = prof->load_module(0);
       n_event_ += proflm.num_events();
       for (unsigned int k = 0; k < proflm.num_events(); ++k, ++ev_i) {
 	  const ProfFileEvent& profevent = proflm.event(k);
@@ -391,10 +398,10 @@ Summary::init(const string& pgm, const vector<ProfFile>& profs)
   //    them more than once.
   ev_i = 0;
   for (unsigned int i = 0; i < profs.size(); ++i) {
-      const ProfFile& prof = profs[i];
-      const ProfFileLM& proflm1 = prof.load_module(0);
-      for (unsigned int j = 0; j < prof.num_load_modules(); ++j) {
-  	  const ProfFileLM& proflm = prof.load_module(j);
+      const ProfFile* prof = profs[i];
+      const ProfFileLM& proflm1 = prof->load_module(0);
+      for (unsigned int j = 0; j < prof->num_load_modules(); ++j) {
+  	  const ProfFileLM& proflm = prof->load_module(j);
 	  process_lm(proflm, ev_i);
         }
       ev_i += proflm1.num_events();
