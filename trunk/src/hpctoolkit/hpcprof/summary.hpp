@@ -24,10 +24,6 @@
 #ifndef _summary_h
 #define _summary_h
 
-#ifdef __GNUG__
-#pragma interface
-#endif
-
 //************************* System Include Files ****************************
 
 #include <iostream>
@@ -326,7 +322,7 @@ class Summary {
         @param v A vector of vmon data files.
         @param debug The debugging level.
      */
-    Summary(const LoadModule *e, const std::vector<ProfFile> &v,
+    Summary(const LoadModule *e, const std::vector<ProfFile*>& v,
 	    int debug = 0);
     /** Construct a Summary object.
         @param p Name of the main program binary
@@ -347,7 +343,7 @@ class Summary {
         @param p Name of the main program binary
         @param v A vector of ProfFiles.
      */
-    bool init(const std::string&, const std::vector<ProfFile>&);
+    bool init(const std::string&, const std::vector<ProfFile*>&);
 
     bool process_lm(const ProfFileLM&, int);
 
