@@ -560,6 +560,9 @@ FindOrCreateProcNode(FileScope* fScope, binutils::Proc* p)
 }
 
 
+// FindOrCreateProcNode1: (At the moment, I don't have a good naming
+// scheme for this.  Cf. FindOrCreateProcNode and
+// FindOrCreateStmtNode.)
 static ProcScope*
 FindOrCreateProcNode1(FileScope* fScope, const string& procnm, suint line)
 {
@@ -703,13 +706,13 @@ BuildProcSkeleton(ProcScope* pScope, binutils::Proc* p,
 // (Tarjan interval) analysis and returns the number of loops created.
 // Note that these loops are UNNORMALIZED.
 static int 
-BuildProcSkeletonTarj(CodeInfo* enclosingScope, binutils::Proc* p,
+BuildProcSkeletonTarj(CodeInfo* enclosingScope, ProcScope* enclosingProc,
+		      binutils::Proc* p, 
 		      OA::OA_ptr<OA::NestedSCR> tarj,
-		      OA::OA_ptr<OA::CFG::Interface> cfg,
-		      OA::RIFG::NodeId fgNode,
-		      CodeInfoToOACFGNodeMap* mp,
-		      int addStmts, 
-		      bool irreducibleIntervalIsLoop);
+		      OA::OA_ptr<OA::CFG::Interface> cfg, 
+		      OA::RIFG::NodeId fgNode, 
+		      CodeInfoToOACFGNodeMap* mp, int addStmts, 
+		      ProcScope* orig_enclosingProc, bool irrIntIsLoop);
 
 static int
 BuildProcSkeletonTarj(ProcScope* pScope, binutils::Proc* p, 
@@ -719,32 +722,44 @@ BuildProcSkeletonTarj(ProcScope* pScope, binutils::Proc* p,
 		      CodeInfoToOACFGNodeMap* mp,
 		      bool irreducibleIntervalIsLoop)
 {
-  int num = BuildProcSkeletonTarj(pScope, p, tarj, cfg, fgNode, mp,
-				  0, irreducibleIntervalIsLoop);
+  int num = BuildProcSkeletonTarj(pScope, pScope, p, tarj, cfg, fgNode, mp,
+				  0, NULL, irreducibleIntervalIsLoop);
   return num;
 }
 
 
 static int 
-BuildProcSkeletonTarj(CodeInfo* enclosingScope, binutils::Proc* p,
+BuildProcSkeletonTarj(CodeInfo* enclosingScope, ProcScope* enclosingProc,
+		      binutils::Proc* p, 
 		      OA::OA_ptr<OA::NestedSCR> tarj,
 		      OA::OA_ptr<OA::CFG::Interface> cfg, 
 		      OA::RIFG::NodeId fgNode, 
-		      CodeInfoToOACFGNodeMap* mp,
-		      int addStmts, bool irrIntIsLoop)
+		      CodeInfoToOACFGNodeMap* mp, int addStmts, 
+		      ProcScope* orig_enclosingProc, bool irrIntIsLoop)
 {
   int localLoops = 0;
   OA::OA_ptr<OA::RIFG> rifg = tarj->getRIFG();
   OA::OA_ptr<OA::CFG::Interface::Node> bb =
     rifg->getNode(fgNode).convert<OA::CFG::Interface::Node>();
 
+  // -------------------------------------------------------
+  // Handle base case of recursion
+  // -------------------------------------------------------
+  if (orig_enclosingProc) {
+    // This loop was relocated from orig_enclosingProc to enclosingProc
+    VMA begVMA = banal::OA_CFG_getBegInsn(bb)->GetOpVMA();
+    VMA endVMA = banal::OA_CFG_getEndInsn(bb)->GetEndVMA();
+    
+    orig_enclosingProc->vmaSet().erase(begVMA, endVMA);
+    enclosingProc->vmaSet().insert(begVMA, endVMA);
+  }
   if (addStmts) {
     DIAG_DevMsg(50, "BuildProcSkeletonTarj: " << enclosingScope->toString_id() << hex << " " << enclosingScope << dec << " --> " << bb);
     mp->insert(make_pair(enclosingScope, bb));
   }
   
   // -------------------------------------------------------
-  // Traverse the Nested SCR (Tarjan tree), building loop nests
+  // Recursively traverse the Nested SCR (Tarjan tree), building loop nests
   // -------------------------------------------------------
   for (int kid = tarj->getInners(fgNode); kid != OA::RIFG::NIL; 
        kid = tarj->getNext(kid) ) {
@@ -770,35 +785,32 @@ BuildProcSkeletonTarj(CodeInfo* enclosingScope, binutils::Proc* p,
 
       // Build the loop nest, relocating to an appropriate enclosing
       // scope if necessary.
-
-      // FIXME -- not truely the end of the loop!!!
       VMA begVMA = banal::OA_CFG_getBegInsn(bb1)->GetOpVMA();
-      VMA endVMA = banal::OA_CFG_getEndInsn(bb1)->GetEndVMA();
-      
+
       string fnm, pnm;
       suint line;
       FindLoopBegLineInfo(p, bb1, fnm, pnm, line);
       pnm = GetBestFuncName(pnm);
       
-      ProcScope* pScope = enclosingScope->Proc();
-      FileScope* fScope = pScope->File();
-      Location_ty loc = ChooseFileAndProc(fScope, pScope, fnm, pnm, line);
+      FileScope* fScope = enclosingProc->File();
+      Location_ty loc = 
+	ChooseFileAndProc(fScope, enclosingProc, fnm, pnm, line);
       if (loc & Location_EXILE_MASK) {
-	pScope->vmaSet().erase(begVMA, endVMA);
-
+	orig_enclosingProc = enclosingProc;
+	
+	// Find or create an enclosing FileScope, ProcScope
+	// N.B.: rely on recursive call to adjust VMA set
 	LoadModScope* lmScope = fScope->LoadMod();
 	fScope = FindOrCreateFileNode1(lmScope, fnm);
-
-	pScope = FindOrCreateProcNode1(fScope, pnm, line);
-	pScope->vmaSet().insert(begVMA, endVMA);
-
-	enclosingScope = pScope;
+	enclosingProc = FindOrCreateProcNode1(fScope, pnm, line);
+	enclosingScope = enclosingProc;
       }
       
       LoopScope* lScope = new LoopScope(enclosingScope, line, line);
       lScope->vmaSet().insert(begVMA, begVMA + 1); // a loop id
-      int num = BuildProcSkeletonTarj(lScope, p, tarj, cfg, kid, mp,
-				      1, irrIntIsLoop);
+      int num = BuildProcSkeletonTarj(lScope, enclosingProc, p,
+				      tarj, cfg, kid, mp,
+				      1, orig_enclosingProc, irrIntIsLoop);
       localLoops += (num + 1);
     }
     
@@ -806,8 +818,9 @@ BuildProcSkeletonTarj(CodeInfo* enclosingScope, binutils::Proc* p,
     // 3. IRREDUCIBLE as no loop: May contain loops
     // -----------------------------------------------------
     if (!irrIntIsLoop && ity == OA::NestedSCR::NODE_IRREDUCIBLE) {
-      int num = BuildProcSkeletonTarj(enclosingScope, p, tarj, cfg, kid, mp,
-				      addStmts, irrIntIsLoop);
+      int num = BuildProcSkeletonTarj(enclosingScope, enclosingProc, p, 
+				      tarj, cfg, kid, mp,
+				      addStmts, NULL, irrIntIsLoop);
       localLoops += num;
     }
     
@@ -988,7 +1001,7 @@ ChooseFileAndProc(const FileScope* proposedFile, const ProcScope* proposedProc,
     
     // FIXME: try the above; this is good enough for now
     // If only the file is bogus, assume the enclosing scope filename.
-    filenm = proposedFileNm; 
+    filenm = proposedFileNm;
   }
   else if (!filenm.empty() && procnm.empty()) {
     // If only the procedure is bogus, use the enclosing scope proc
