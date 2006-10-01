@@ -200,33 +200,6 @@ FilterFilesFromScopeTree(PgmScopeTree* pgmScopeTree,
 //*************************** Forward Declarations ***************************
 
 // ------------------------------------------------------------
-// Helpers for traversing the Nested SCR (Tarjan Tree)
-// ------------------------------------------------------------
-
-// CFGNode -> <begVMA, endVMA>
-// FIXME: we don't need this junk
-class CFGNodeToVMAMap 
-  : public std::map<OA::OA_ptr<OA::CFG::Interface::Node>, 
-		    std::pair<VMA, VMA>* > 
-{
-public:
-  typedef std::map<OA::OA_ptr<OA::CFG::Interface::Node>, 
-		   std::pair<VMA, VMA>* > My_t;
-
-public:
-  CFGNodeToVMAMap() { }
-  CFGNodeToVMAMap(OA::OA_ptr<OA::CFG::Interface> cfg, binutils::Proc* p) 
-    { build(cfg, cfg->getEntry(), p, 0); }
-  virtual ~CFGNodeToVMAMap() { clear(); }
-  virtual void clear();
-
-  void build(OA::OA_ptr<OA::CFG::Interface> cfg, 
-	     OA::OA_ptr<OA::CFG::Interface::Node> n, 
-	     binutils::Proc* p, VMA _end);
-};
-
-
-// ------------------------------------------------------------
 // Helpers for normalizing the scope tree
 // ------------------------------------------------------------
 class StmtData;
@@ -440,23 +413,28 @@ BuildLMSkeleton(LoadModScope* lmScope, binutils::LM* lm)
 
   // -------------------------------------------------------
   // 2. Establish nesting information:
-  //      if we don't have parent information
-  //        nest using source line bounds (FIXME)
-  //      otherwise, nest using parent information
   // -------------------------------------------------------
   for (ProcScopeToProcMap::iterator it = mp->begin(); it != mp->end(); ++it) {
     ProcScope* pScope = it->first;
     binutils::Proc* p = it->second;
     binutils::Proc* parent = p->parent();
+
     if (parent) {
       ProcScope* parentScope = lmScope->findProc(parent->GetBegVMA());
       pScope->Unlink();
       pScope->Link(parentScope);
     }
   }
+
+  // FIXME (minor): The following order is appropriate when we have
+  // symbolic information. I.e. we, 1) establish nesting information
+  // and then attempt to refine procedure bounds using nesting
+  // information.  If such nesting information is not available,
+  // assume correct bounds and attempt to establish nesting.
   
-  // 3. Establish procedure bounds: nesting + first line ... FIXME
-  // 4. Establish procedure groups:
+  // 3. Establish procedure bounds: nesting + first line ... [FIXME]
+
+  // 4. Establish procedure groups: [FIXME: more stuff from DWARF]
   //      template instantiations, class member functions
   return mp;
 }
@@ -1623,59 +1601,6 @@ FilterFilesFromScopeTree(PgmScopeTree* pgmScopeTree,
   return changed;
 }
 
-
-//****************************************************************************
-// Helpers for traversing the Nested SCR (Tarjan Tree)
-//****************************************************************************
-
-void
-CFGNodeToVMAMap::build(OA::OA_ptr<OA::CFG::Interface> cfg, 
-		      OA::OA_ptr<OA::CFG::Interface::Node> n, 
-		      binutils::Proc* p, VMA _end)
-{
-  // NEWS FLASH: We could use OA's getReversePostDFSIterator to do this
-  // pre-order traversal of the CFG.
-
-  VMA curBeg = 0, curEnd = 0;
-
-  // If n is not in the map, it hasn't been visited yet.
-  if (this->find(n) == this->end()) {
-    if (n->size() == 0) {
-      // Empty blocks won't have any instructions to get VMAs from.
-      if (n == cfg->getEntry()) {
-        // Set the entry node VMAs from the procedure's begin address.
-        curBeg = curEnd = p->GetBegVMA();
-      }
-      else {
-        // Otherwise, use the end VMA propagated from ancestors.
-        curBeg = curEnd = _end;
-      }
-    } 
-    else {
-      // Non-empty blocks will have some instructions to get VMAs from.
-      curBeg = banal::OA_CFG_getBegInsn(n)->GetOpVMA();
-      curEnd = banal::OA_CFG_getEndInsn(n)->GetEndVMA();
-    }
-    (*this)[n] = new std::pair<VMA, VMA>(curBeg, curEnd);
-
-    // Visit descendents.
-    OA::OA_ptr<OA::CFG::Interface::SinkNodesIterator> it = 
-      n->getSinkNodesIterator();
-    for ( ; it->isValid(); ++(*it)) {
-      OA::OA_ptr<OA::CFG::Interface::Node> child = it->current();
-      this->build(cfg, child, p, curEnd);
-    }
-  }
-}
-
-void
-CFGNodeToVMAMap::clear()
-{
-  for (iterator it = this->begin(); it != this->end(); ++it) {
-    delete (*it).second; // std::pair<VMA, VMA>*
-  }
-  My_t::clear();
-}
 
 //****************************************************************************
 // Helpers for traversing the Nested SCR (Tarjan Tree)
