@@ -112,8 +112,6 @@ Standard arguments:
                       A space-separated list of profile files.
 
 Other options:
-  -z                  Instruct hpcview to produce an html database
-  -x                  Instruct hpcview to produce hpcviewer output [Default]
   -n                  No hpcview output.  Convert profiles and create an 
                       hpcview config file, but do not generate an hpcview
                       output database; record all commands in log file.
@@ -128,8 +126,6 @@ Other options:
 # Note: All option flags should be known by isArgument().
 my $helpOpt         = '-h';
 my $verOpt          = '-V';
-my $htmlOutOpt      = '-z';
-my $xmlOutOpt       = '-x';
 my $noOutOpt        = '-n';
 my $incOpt          = '-I';
 my $structOpt       = '-S';
@@ -187,9 +183,7 @@ my $hpcrunIdSuffix = '[hpcrun]';
 my $pxmlExt        = '.pxml';
 my $xmlAttrRE      = '\s*=\s*\"([^\"]+)\"'; # grabs everything between ""
 
-my $default_hpcviewout = "-x hpcquick.hpcviewer";
-
-#############################################################################
+############################################################################
 ## main/driver
 #############################################################################
 
@@ -212,8 +206,7 @@ my $opt_structFiles = [];
 my $opt_groupFiles = [];
 my $opt_profileFiles = [ ];
 my $opt_suppressOutput = 0;
-my $opt_outputDB   = "hpcquick.db";
-my $opt_hpcviewout = $default_hpcviewout;
+my $opt_outputDB   = "experiment.db";
 
 my $configFile = "hpcquick.xml";
 my $logFile = "hpcquick.log";
@@ -307,13 +300,7 @@ sub parseOptions
     }
 
     # option: output style
-    elsif ($ARGV[$i] eq $htmlOutOpt) {
-      $opt_hpcviewout = "-z";
-    }
-    elsif ($ARGV[$i] eq $xmlOutOpt) {
-      $opt_hpcviewout = $default_hpcviewout;
-    }
-    elsif ($ARGV[$i] eq $noOutOpt) {
+    if ($ARGV[$i] eq $noOutOpt) {
       $opt_suppressOutput = 1;
     }
 
@@ -362,11 +349,6 @@ sub parseOptions
   # ----------------------------------------------------------
   # semantic checks
   # ----------------------------------------------------------
-  
-  if (!defined($opt_hpcviewout)) {
-    UsageError("No output option specified: try -z or -x.\n");
-  }
-  
   if (!defined($configFile)) {
     Error("Internal Error: Missing config file name\n");
   }   
@@ -385,7 +367,7 @@ sub isArgument
     return 0;
   }
   if ($arg eq $helpOpt || $arg eq $verOpt
-      || $arg eq $htmlOutOpt || $arg eq $xmlOutOpt || $arg eq $noOutOpt 
+      || $arg eq $noOutOpt 
       || $arg eq $incOpt || $arg eq $structOpt || $arg eq $groupOpt 
       || $arg eq $profOpt) {
     return 2;
@@ -827,14 +809,14 @@ sub genHPCViewDB
   my ($cfgData, $cfgFnm, $logFhndl) = @_;
 
   # Create a database name
-  my $hpcquickdb = $opt_outputDB;
-  if (-d $hpcquickdb || -e $hpcquickdb) {
-    print STDOUT "  Warning: database directory '$hpcquickdb' exists; creating unique name.\n";
-    $hpcquickdb .= "-" . $$; # append pid (if this exists, too bad)
+  my $outputdb = $opt_outputDB;
+  if (-d $outputdb || -e $outputdb) {
+    print STDOUT "  Warning: database directory '$outputdb' exists; creating unique name.\n";
+    $outputdb .= "-" . $$; # append pid (if this exists, too bad)
   }
   
   # run hpcview
-  my $cmd = "hpcview -h $hpcquickdb $opt_hpcviewout $cfgFnm";
+  my $cmd = "hpcview -o $outputdb $cfgFnm";
   print STDOUT "  $cmd\n";
   print {$logFhndl} "$cmd\n";
   
@@ -846,7 +828,7 @@ sub genHPCViewDB
     print STDOUT "---------------------------------------------------------\n";
   }
   
-  return $hpcquickdb;  
+  return $outputdb;  
 }
     
 

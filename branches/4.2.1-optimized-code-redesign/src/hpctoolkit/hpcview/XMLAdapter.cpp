@@ -304,12 +304,22 @@ operator<<(std::ostream& target, const DOMString& s)
     return target;
 }
 
+
 // so a DOM_Node can easily be output from a debugger
-void 
-WriteDomNode(DOM_Node &node)
+std::ostream&
+dumpDomNode(DOM_Node& node, std::ostream& os)
 {
-  cerr << node;
+  os << node;
+  return os;
 }
+
+
+void
+ddumpDomNode(DOM_Node& node)
+{
+  dumpDomNode(node, std::cerr);
+}
+
 
 // ---------------------------------------------------------------------------
 //

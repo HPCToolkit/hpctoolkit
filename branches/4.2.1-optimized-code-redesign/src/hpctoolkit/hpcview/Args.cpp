@@ -69,6 +69,11 @@ using std::string;
 
 //*************************** Forward Declarations **************************
 
+#define EXPERIMENTDB  "experiment.db"
+#define EXPERIMENTXML "experiment.xml"
+#define EXPERIMENTCSV "experiment.csv"
+#define EXPERIMENTTSV "experiment.tsv"
+
 //***************************************************************************
 
 int fileTrace = 0;
@@ -114,7 +119,7 @@ static const char* usage_details =
 "Output options:\n"
 "  -o <db-path>, --db <db-path>, --output <db-path>\n"
 "                       Specify Experiment database name <db-path>.\n"
-"                       [./hpcview.output]\n"
+"                       [./"EXPERIMENTDB"]\n"
 "  --src [yes|no], --source [yes|no]\n"
 "                       Whether to copy source code files into Experiment\n"
 "                       database. By default, [hpcprof] copies source files\n"
@@ -130,12 +135,12 @@ static const char* usage_details =
 "is sparse in the sense that it ignores program areas without profiling\n"
 "information. (Set <fname> to '-' to write to stdout.)\n"
 "  -x [<fname>], --experiment [<fname>]\n"
-"                       ExperimentXML format. [Default; experiment.xml]"
+"                       ExperimentXML format. [Default; "EXPERIMENTXML"]"
 "                       NOTE: To disable this output, set <fname> to 'no'.\n"
-"  --csv [<fname>]      Comma-separated-value format. [experiment.csv] \n"
+"  --csv [<fname>]      Comma-separated-value format. ["EXPERIMENTCSV"] \n"
 "                       (Flat scope tree; Loop level.)\n"
 "                       (Useful for downstream external tools.)\n"
-"  --tsv [<fname>]      Tab-separated-value format. [experiment.tsv]\n"
+"  --tsv [<fname>]      Tab-separated-value format. ["EXPERIMENTTSV"]\n"
 "                       (Flat scope tree; line level.)\n"
 "                       (Useful for downstream external tools.)\n";
 
@@ -189,8 +194,8 @@ Args::Ctor()
 {
   setHPCHome(); 
 
-  dbDir                = "experiment.db";
-  OutFilename_XML      = "experiment.xml";
+  dbDir                = EXPERIMENTDB;
+  OutFilename_XML      = EXPERIMENTXML;
   OutFilename_CSV      = "";
   OutFilename_TSV      = "";
 
@@ -308,20 +313,20 @@ Args::Parse(int argc, const char* const argv[])
 
     // Check for other options: Output formats
     if (parser.IsOpt("experiment")) {
-      OutFilename_XML = "experiment.xml";
+      OutFilename_XML = EXPERIMENTXML;
       if (parser.IsOptArg("experiment")) {
 	OutFilename_XML = parser.GetOptArg("experiment");
       }
     }
     if (parser.IsOpt("csv")) {
-      OutFilename_CSV = "experiment.csv";
+      OutFilename_CSV = EXPERIMENTCSV;
       if (parser.IsOptArg("csv")) {
 	OutFilename_CSV = parser.GetOptArg("csv");
       }
       CopySrcFiles = false; // FIXME:
     }
     if (parser.IsOpt("tsv")) { 
-      OutFilename_TSV = "experiment.tsv";
+      OutFilename_TSV = EXPERIMENTTSV;
       if (parser.IsOptArg("tsv")) {
 	OutFilename_TSV = parser.GetOptArg("tsv");
       }
