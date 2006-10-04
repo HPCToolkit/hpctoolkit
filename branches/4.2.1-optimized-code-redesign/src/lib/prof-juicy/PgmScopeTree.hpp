@@ -566,7 +566,7 @@ public:
   virtual ~GroupScope();
   
   const std::string& Name() const { return name; } // same as grpName
-  
+
   virtual std::string CodeName() const;
 
   virtual ScopeInfo* Clone() { return new GroupScope(*this); }
@@ -603,6 +603,7 @@ public:
   virtual ~LoadModScope();
 
   virtual std::string BaseName() const  { return BaseFileName(name); }
+
   const std::string& Name() const { return name; }
 
   virtual std::string CodeName() const;
@@ -688,7 +689,6 @@ public:
  // fileNameWithPath from constructor 
   const std::string& Name() const { return name; }
 
-
   // FindProc: Attempt to find the procedure within the multimap.  If
   // 'lnm' is provided, require that link names match.
   ProcScope* FindProc(const char* nm, const char* lnm = NULL) const;
@@ -765,6 +765,7 @@ public:
   
   virtual const std::string& Name() const     { return name; }
   virtual const std::string& LinkName() const { return linkname; }
+
   virtual       std::string CodeName() const;
 
   virtual ScopeInfo* Clone() { return new ProcScope(*this); }
@@ -869,7 +870,8 @@ public:
   unsigned int BegPos() const { return begPos; };
   unsigned int EndPos() const   { return endPos; };
   
-  virtual const std::string& Name() const   { return name; }
+  virtual const std::string& Name() const { return name; }
+
   virtual std::string CodeName() const;
 
   virtual ScopeInfo* Clone() { return new RefScope(*this); }

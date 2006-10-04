@@ -139,6 +139,7 @@ Diagnostics_TheMostVisitedBreakpointInHistory(const char* filenm,
 #include "Exception.hpp"
 
 #define DIAG_CERR std::cerr
+#define DIAG_ENDL std::endl /*<< std::flush*/
 
 // All of these macros have a parameter named 'streamArgs' for one or
 // more ostream arguments. These macros use these arguments to create
@@ -147,23 +148,23 @@ Diagnostics_TheMostVisitedBreakpointInHistory(const char* filenm,
 
 #define DIAG_MsgIf(ifexpr, streamArgs)                              \
   if (ifexpr) {                                                     \
-    DIAG_CERR << "msg: " << streamArgs << std::endl; }
+    DIAG_CERR << "msg: " << streamArgs << DIAG_ENDL; }
 
 #define DIAG_Msg(level, streamArgs)                                 \
   DIAG_MsgIf((level <= DIAG_DBG_LVL_PUB), streamArgs)
 
 #define DIAG_DevMsgIf(ifexpr, streamArgs)                           \
   if (ifexpr) {                                                     \
-    DIAG_CERR << "msg*: " << streamArgs << std::endl; }
+    DIAG_CERR << "msg*: " << streamArgs << DIAG_ENDL; }
 
 #define DIAG_DevMsg(level, streamArgs)                              \
   if (level <= DIAG_DBG_LVL) {                                      \
-    DIAG_CERR << "msg* [" << level << "]: " << streamArgs << std::endl; }
+    DIAG_CERR << "msg* [" << level << "]: " << streamArgs << DIAG_ENDL; }
 
 #define DIAG_EMsg(streamArgs)                                       \
-  { DIAG_CERR << "error: " << streamArgs << std::endl;              \
+  { DIAG_CERR << "error: " << streamArgs << DIAG_ENDL;              \
     if (DIAG_DBG_LVL_PUB) {                                         \
-      DIAG_CERR << "\t[" << __FILE__ << ":" << __LINE__ << "]" << std::endl; } \
+      DIAG_CERR << "\t[" << __FILE__ << ":" << __LINE__ << "]" << DIAG_ENDL; } \
   }
 
 #define DIAG_Assert(expr, streamArgs)                               \

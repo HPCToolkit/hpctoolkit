@@ -141,7 +141,8 @@ binutils::Proc::dump(std::ostream& o, unsigned flags, const char* pre) const
   o << p << "  Name:     `" << GetBestFuncName(GetName()) << "'\n";
   o << p << "  LinkName: `" << GetBestFuncName(GetLinkName()) << "'\n";
   o << p << "  Sym:      {" << GetFilename() << "}:" << GetBegLine() << "\n";
-  o << p << "  LnMap:    {" << file << "}:" << begLn << "-" << endLn << "\n";
+  o << p << "  LnMap:    {" << file << "}[" 
+    << GetBestFuncName(func) <<"]:" << begLn << "-" << endLn << "\n";
   o << p << "  LnMap(b): {" << b_file << "}[" 
     << GetBestFuncName(b_func) << "]:" << b_begLn << "\n";
   o << p << "  LnMap(e): {" << e_file << "}[" 
