@@ -364,7 +364,7 @@ void PGMDocHandler:: startElement(const XMLCh* const uri,
     else {
       if (docty == Doc_STRUCT) {
 	// If a proc with the same name already exists, print a warning.
-	DIAG_Msg(0, "Warning: Found procedure '" << name << "' multiple times within file '" << curFile->Name() << "'; information for this procedure will be aggregated. If you do not want this, edit the STRUCTURE file and adjust the names by hand.");
+	DIAG_Msg(0, "Warning: Found procedure '" << name << "' multiple times within file '" << curFile->name() << "'; information for this procedure will be aggregated. If you do not want this, edit the STRUCTURE file and adjust the names by hand.");
       }
     }
     

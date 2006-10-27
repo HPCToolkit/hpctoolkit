@@ -93,6 +93,7 @@ class FileScopeMap;
 class ProcScopeMap;
 class StmtRangeScopeMap;
 
+
 //***************************************************************************
 // PgmScopeTree
 //***************************************************************************
@@ -164,6 +165,7 @@ class GroupScope;
 class LoadModScope;
 class FileScope;
 class ProcScope;
+class AlienScope;
 class LoopScope;
 class StmtRangeScope;
 class RefScope;
@@ -179,6 +181,7 @@ public:
     LM,
     FILE,
     PROC,
+    ALIEN,
     LOOP,
     STMT_RANGE,
     REF,
@@ -207,8 +210,8 @@ public:
   ScopeType     Type() const         { return type; }
   unsigned int  UniqueId() const     { return uid; }
 
-  // Name() is overridden by some scopes
-  virtual const std::string& Name() const { return ScopeTypeToName(Type()); }
+  // name() is overridden by some scopes
+  virtual const std::string& name() const { return ScopeTypeToName(Type()); }
 
   void CollectCrossReferences();
   int NoteHeight();
@@ -227,19 +230,21 @@ public:
   ScopeInfo *Parent() const 
   { return (ScopeInfo*) NonUniformDegreeTreeNode::Parent(); }
   
-  CodeInfo *CodeInfoParent() const;  // return dyn_cast<CodeInfo*>(Parent())
+  CodeInfo* CodeInfoParent() const;  // return dyn_cast<CodeInfo*>(Parent())
   
   // --------------------------------------------------------
   // Ancestor: find first ScopeInfo in path from this to root with given type
   // (Note: We assume that a node cannot be an ancestor of itself.)
   // --------------------------------------------------------
   ScopeInfo* Ancestor(ScopeType type) const;
+  ScopeInfo* Ancestor(ScopeType tp1, ScopeType tp2) const;
   
   PgmScope*       Pgm() const;           // return Ancestor(PGM)
   GroupScope*     Group() const;         // return Ancestor(GROUP)
   LoadModScope*   LoadMod() const;       // return Ancestor(LM)
   FileScope*      File() const;          // return Ancestor(FILE)
   ProcScope*      Proc() const;          // return Ancestor(PROC)
+  AlienScope*     Alien() const;         // return Ancestor(ALIEN)
   LoopScope*      Loop() const;          // return Ancestor(LOOP)
   StmtRangeScope* StmtRange() const;     // return Ancestor(STMT_RANGE)
 
@@ -395,6 +400,8 @@ protected:
 public: 
   virtual ~CodeInfo();
 
+  void LinkAndSetLineRange(CodeInfo* parent);
+
   suint begLine() const { return mbegLine; } // in source code
   suint endLine() const { return mendLine; } // in source code
 
@@ -406,7 +413,7 @@ public:
   CodeInfo* CodeInfoWithLine(suint ln) const;
 
   // returns a string of the form: 
-  //   File()->Name() + ":" + <Line-Range> 
+  //   File()->name() + ":" + <Line-Range> 
   //
   // where Line-Range is either: 
   //                     BegLine() + "-" + EndLine()      or simply 
@@ -420,8 +427,8 @@ public:
 
   void SetLineRange(suint begLn, suint endLn); // be careful when using!
 
-  CodeInfo *GetFirst() const { return first; } 
-  CodeInfo *GetLast() const { return last; } 
+  CodeInfo* GetFirst() const { return first; } 
+  CodeInfo* GetLast() const { return last; } 
 
   // --------------------------------------------------------
   // XML output
@@ -456,8 +463,8 @@ protected:
   suint mendLine;
   VMAIntervalSet mvmaSet;
 
-  CodeInfo *first; // FIXME: this seems to duplicate NonUniformDegreeTree...
-  CodeInfo *last;
+  CodeInfo* first; // FIXME: this seems to duplicate NonUniformDegreeTree...
+  CodeInfo* last;
   friend void ScopeInfo::CollectCrossReferences();
 };
 
@@ -486,9 +493,9 @@ public:
 
   virtual ~PgmScope();
 
-  const std::string& Name() const { return name; }
-  void               SetName(const char* n) { name = n; }
-  void               SetName(const std::string& n) { name = n; }
+  const std::string& name() const { return m_name; }
+  void               SetName(const char* n) { m_name = n; }
+  void               SetName(const std::string& n) { m_name = n; }
 
   LoadModScope* FindLoadMod(const char* nm) const; // find by 'realpath'
   LoadModScope* FindLoadMod(const std::string& nm) const 
@@ -542,12 +549,13 @@ private:
 
 private:
   bool frozen;
-  std::string name; // the program name
+  std::string m_name; // the program name
 
   GroupScopeMap*     groupMap;
   LoadModScopeMap*   lmMap;     // mapped by 'realpath'
   FileScopeMap*      fileMap;   // mapped by 'realpath'
 };
+
 
 // --------------------------------------------------------------------------
 // GroupScopes are children of PgmScope's, GroupScope's, LoadModScopes's, 
@@ -565,7 +573,7 @@ public:
 	     int begLn = UNDEF_LINE, int endLn = UNDEF_LINE);
   virtual ~GroupScope();
   
-  const std::string& Name() const { return name; } // same as grpName
+  const std::string& name() const { return m_name; } // same as grpName
 
   virtual std::string CodeName() const;
 
@@ -585,8 +593,9 @@ private:
   void Ctor(const char* nm, ScopeInfo* mom);
 
 private: 
-  std::string name;
+  std::string m_name;
 };
+
 
 // --------------------------------------------------------------------------
 // LoadModScopes are children of PgmScope's or GroupScope's
@@ -602,9 +611,9 @@ public:
   LoadModScope(const std::string& nm, ScopeInfo* mom);
   virtual ~LoadModScope();
 
-  virtual std::string BaseName() const  { return BaseFileName(name); }
+  virtual std::string BaseName() const  { return BaseFileName(m_name); }
 
-  const std::string& Name() const { return name; }
+  const std::string& name() const { return m_name; }
 
   virtual std::string CodeName() const;
 
@@ -659,11 +668,12 @@ protected:
   verifyMap(VMAIntervalMap<T>* m, const char* map_nm);
 
 private: 
-  std::string name; // the load module name
+  std::string m_name; // the load module name
   
   VMAToProcMap*      procMap;
   VMAToStmtRangeMap* stmtMap;
 };
+
 
 // --------------------------------------------------------------------------
 // FileScopes are children of PgmScope's, GroupScope's and LoadModScope's.
@@ -686,8 +696,13 @@ public:
 	    suint begLn = UNDEF_LINE, suint endLn = UNDEF_LINE);
   virtual ~FileScope();
 
+
+  static FileScope* 
+  findOrCreate(LoadModScope* lmScope, const std::string& filenm);
+
+
  // fileNameWithPath from constructor 
-  const std::string& Name() const { return name; }
+  const std::string& name() const { return m_name; }
 
   // FindProc: Attempt to find the procedure within the multimap.  If
   // 'lnm' is provided, require that link names match.
@@ -699,10 +714,10 @@ public:
     }
   
                                         
-  void SetName(const char* fname) { name = fname; }
-  void SetName(const std::string& fname) { name = fname; }
+  void SetName(const char* fname) { m_name = fname; }
+  void SetName(const std::string& fname) { m_name = fname; }
     
-  virtual std::string BaseName() const  { return BaseFileName(name); }
+  virtual std::string BaseName() const  { return BaseFileName(m_name); }
   virtual std::string CodeName() const;
 
   bool HasSourceFile() const { return srcIsReadable; } // srcIsReadable
@@ -737,9 +752,10 @@ private:
 
 private:
   bool srcIsReadable;
-  std::string name; // the file name including the path 
+  std::string m_name; // the file name including the path 
   ProcScopeMap* procMap;
 };
+
 
 // --------------------------------------------------------------------------
 // ProcScopes are children of GroupScope's or FileScope's
@@ -754,17 +770,22 @@ protected:
   ProcScope& operator=(const ProcScope& x);
 
 public: 
-  ProcScope(const char* name, CodeInfo *mom, 
+  ProcScope(const char* name, CodeInfo* mom, 
 	    const char* linkname,
 	    suint begLn = UNDEF_LINE, suint endLn = UNDEF_LINE);
-  ProcScope(const std::string& name, CodeInfo *mom, 
+  ProcScope(const std::string& name, CodeInfo* mom, 
 	    const std::string& linkname,
 	    suint begLn = UNDEF_LINE, suint endLn = UNDEF_LINE);
 
   virtual ~ProcScope();
   
-  virtual const std::string& Name() const     { return name; }
-  virtual const std::string& LinkName() const { return linkname; }
+  
+  static ProcScope*
+  findOrCreate(FileScope* fScope, const std::string& procnm, suint line);
+  
+  
+  virtual const std::string& name() const     { return m_name; }
+  virtual const std::string& LinkName() const { return m_linkname; }
 
   virtual       std::string CodeName() const;
 
@@ -792,17 +813,76 @@ public:
 			       const char* pre = "") const;
 
 private:
-  void Ctor(const char* n, CodeInfo *mom, const char* ln);
+  void Ctor(const char* n, CodeInfo* mom, const char* ln);
 
   void AddToStmtMap(StmtRangeScope& stmt);
 
   friend class StmtRangeScope;
 
 private:
-  std::string name;
-  std::string linkname;
+  std::string m_name;
+  std::string m_linkname;
   StmtRangeScopeMap* stmtMap;
 };
+
+
+// --------------------------------------------------------------------------
+// AlienScope: represents an alien context (e.g. inlined procedure, macro).
+//
+// AlienScopes are children of GroupScope's, AlienScope's, ProcScope's
+//   or LoopScope's
+// children: GroupScope's, AlienScope's, LoopScope's, StmtRangeScope's
+// 
+//   (begLn == 0) <==> (endLn == 0)
+//   (begLn != 0) <==> (endLn != 0)
+// --------------------------------------------------------------------------
+class AlienScope: public CodeInfo {
+protected:
+  AlienScope(const AlienScope& x) : CodeInfo(x.type) { *this = x; }
+  AlienScope& operator=(const AlienScope& x);
+
+public: 
+  AlienScope(CodeInfo* mom, const char* filenm, const char* procnm,
+	     suint begLn = UNDEF_LINE, suint endLn = UNDEF_LINE);
+  AlienScope(CodeInfo* mom, 
+	     const std::string& filenm, const std::string& procnm,
+	     suint begLn = UNDEF_LINE, suint endLn = UNDEF_LINE);
+  virtual ~AlienScope();
+  
+  const std::string& fileName() const { return m_filenm; }
+  virtual const std::string& name() const { return m_name; }
+  
+  virtual       std::string CodeName() const;
+
+  virtual ScopeInfo* Clone() { return new AlienScope(*this); }
+
+  virtual std::string toXML(int dmpFlag = 0) const;
+
+  virtual void CSV_dump(const PgmScope &root, std::ostream& os = std::cout, 
+			const char* file_name = NULL, 
+			const char* proc_name = NULL,
+			int lLevel = 0) const;
+  virtual void TSV_dump(const PgmScope &root, std::ostream& os = std::cout, 
+			const char* file_name = NULL, 
+			const char* proc_name = NULL,
+			int lLevel = 0) const;
+
+  // --------------------------------------------------------
+  // debugging
+  // --------------------------------------------------------
+  
+  virtual std::ostream& dumpme(std::ostream& os = std::cerr, 
+			       int dmpFlag = 0,
+			       const char* pre = "") const;
+
+private:
+  void Ctor(CodeInfo* mom, const char* filenm, const char* procnm);
+
+private:
+  std::string m_filenm;
+  std::string m_name;
+};
+
 
 // --------------------------------------------------------------------------
 // LoopScopes are children of GroupScope's, FileScope's, ProcScope's,
@@ -811,7 +891,7 @@ private:
 // --------------------------------------------------------------------------
 class LoopScope: public CodeInfo {
 public: 
-  LoopScope(CodeInfo *mom, 
+  LoopScope(CodeInfo* mom, 
 	    suint begLn = UNDEF_LINE, suint endLn = UNDEF_LINE);
   virtual ~LoopScope();
   
@@ -831,6 +911,7 @@ public:
 
 };
 
+
 // --------------------------------------------------------------------------
 // StmtRangeScopes are children of GroupScope's, FileScope's,
 //   ProcScope's, or LoopScope's.
@@ -838,7 +919,7 @@ public:
 // --------------------------------------------------------------------------
 class StmtRangeScope: public CodeInfo {
 public: 
-  StmtRangeScope(CodeInfo *mom, suint begLn, suint endLn,
+  StmtRangeScope(CodeInfo* mom, suint begLn, suint endLn,
 		 VMA begVMA = 0, VMA endVMA = 0);
   virtual ~StmtRangeScope();
   
@@ -864,13 +945,13 @@ public:
 // ----------------------------------------------------------------------
 class RefScope: public CodeInfo {
 public: 
-  RefScope(CodeInfo *mom, int _begPos, int _endPos, const char* refName);
+  RefScope(CodeInfo* mom, int _begPos, int _endPos, const char* refName);
   // mom->Type() == STMT_RANGE_SCOPE 
   
   unsigned int BegPos() const { return begPos; };
   unsigned int EndPos() const   { return endPos; };
   
-  virtual const std::string& Name() const { return name; }
+  virtual const std::string& name() const { return m_name; }
 
   virtual std::string CodeName() const;
 
@@ -890,7 +971,7 @@ private:
   void RelocateRef();
   unsigned int begPos;
   unsigned int endPos;
-  std::string name;
+  std::string m_name;
 };
 
 /************************************************************************/

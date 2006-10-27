@@ -39,3 +39,11 @@
 	b CDATA #REQUIRED
 	e CDATA #IMPLIED
 	vma CDATA #IMPLIED>
+  <!-- Alien: f: filename; n: name -->
+  <!ELEMENT A (G|A|L|S)*>
+  <!ATTLIST A
+	f   CDATA #IMPLIED
+	n   CDATA #IMPLIED
+	b   CDATA #IMPLIED
+	e   CDATA #IMPLIED
+	vma CDATA #IMPLIED>

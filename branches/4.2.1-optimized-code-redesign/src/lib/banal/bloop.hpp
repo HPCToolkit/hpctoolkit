@@ -63,6 +63,8 @@
 //*************************** Forward Declarations ***************************
 
 namespace banal {
+
+namespace bloop {
   
   PgmScopeTree* 
   BuildLMStructure(binutils::LM* lm, 
@@ -79,7 +81,10 @@ namespace banal {
   void
   WriteScopeTree(std::ostream& os, PgmScopeTree* pgmScopeTree,
 		 bool prettyPrint = true);
-}
+
+} // namespace bloop
+
+} // namespace banal
 
 //****************************************************************************
 

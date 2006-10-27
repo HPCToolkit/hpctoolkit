@@ -123,16 +123,19 @@ real_main(int argc, char* argv[])
   // ------------------------------------------------------------
   // Build and print the ScopeTree
   // ------------------------------------------------------------
-  PgmScopeTree* pgmScopeTree =
-    banal::BuildLMStructure(lm, args.canonicalPathList.c_str(),
-			    args.normalizeScopeTree, 
-			    args.unsafeNormalizations,
-			    args.irreducibleIntervalIsLoop);
-  
-  banal::WriteScopeTree(std::cout, pgmScopeTree, args.prettyPrintOutput);
+  { 
+    using namespace banal::bloop;
+    PgmScopeTree* pgmScopeTree =
+      BuildLMStructure(lm, args.canonicalPathList.c_str(),
+		       args.normalizeScopeTree, 
+		       args.unsafeNormalizations,
+		       args.irreducibleIntervalIsLoop);
+    
+    WriteScopeTree(std::cout, pgmScopeTree, args.prettyPrintOutput);
+    delete pgmScopeTree;
+  }
   
   // Cleanup
-  delete pgmScopeTree;
   delete lm;
   
   return (0);

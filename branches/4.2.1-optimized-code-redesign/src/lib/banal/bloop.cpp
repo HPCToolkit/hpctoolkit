@@ -68,7 +68,8 @@ using namespace std; // For compatibility with non-std C headers
 #include <string>
 using std::string;
 
-#include <map> // STL
+#include <map>  // STL
+#include <list> // STL
 
 //************************ OpenAnalysis Include Files ***********************
 
@@ -80,6 +81,7 @@ using std::string;
 //*************************** User Include Files ****************************
 
 #include "bloop.hpp"
+#include "bloop_LocationMgr.hpp"
 #include "OAInterface.hpp"
 
 #include <lib/binutils/LM.hpp>
@@ -88,15 +90,16 @@ using std::string;
 #include <lib/binutils/BinUtils.hpp>
 
 #include <lib/support/diagnostics.h>
-#include <lib/support/Files.hpp>
 #include <lib/support/pathfind.h>
 #include <lib/support/Logic.hpp>
 
 //*************************** Forward Declarations ***************************
 
-typedef std::multimap<ProcScope*, binutils::Proc*> ProcScopeToProcMap;
-typedef std::multimap<CodeInfo*, OA::OA_ptr<OA::CFG::Interface::Node> > CodeInfoToOACFGNodeMap;
+namespace banal {
 
+namespace bloop {
+
+typedef std::multimap<ProcScope*, binutils::Proc*> ProcScopeToProcMap;
 
 // Helpers for building a scope tree
 
@@ -106,14 +109,34 @@ BuildLMSkeleton(LoadModScope *lmScope, binutils::LM* lm);
 static FileScope*
 FindOrCreateFileNode(LoadModScope* lmScope, binutils::Proc* p);
 
-static FileScope* 
-FindOrCreateFileNode1(LoadModScope* lmScope, const string& filenm);
-
 static ProcScope*
 FindOrCreateProcNode(FileScope* fScope, binutils::Proc* p);
 
+
 static ProcScope*
-FindOrCreateProcNode1(FileScope* fScope, const string& procnm, suint line);
+BuildProcStructure(ProcScope* pScope, binutils::Proc* p, 
+		   bool irreducibleIntervalIsLoop); 
+
+static int
+BuildProcLoopNests(ProcScope* pScope, binutils::Proc* p,
+		   bool irreducibleIntervalIsLoop);
+
+static int
+BuildStmts(bloop::LocationMgr& locMgr,
+	   CodeInfo* enclosingScope, binutils::Proc* p,
+	   OA::OA_ptr<OA::CFG::Interface::Node> bb);
+
+
+static bool
+IsInCurrentCtxt(LocationMgr& mgr,
+		OA::OA_ptr<OA::NestedSCR> tarj,
+		OA::OA_ptr<OA::CFG::Interface> cfg, 
+		OA::RIFG::NodeId fgNode);
+
+static void
+FindLoopBegLineInfo(binutils::Proc* p, 
+		    OA::OA_ptr<OA::CFG::Interface::Node> headBB,
+		    string& begFilenm, string& begProcnm, suint& begLn);
 
 static StmtRangeScope*
 FindOrCreateStmtNode(std::map<suint, StmtRangeScope*>& stmtMap,
@@ -121,65 +144,36 @@ FindOrCreateStmtNode(std::map<suint, StmtRangeScope*>& stmtMap,
 		     VMAInterval& vmaint);
 
 
-static ProcScope*
-BuildProcStructure(ProcScope* pScope, binutils::Proc* p, 
-		   bool irreducibleIntervalIsLoop); 
-
-static CodeInfoToOACFGNodeMap*
-BuildProcSkeleton(ProcScope* pScope, binutils::Proc* p,
-		  bool irreducibleIntervalIsLoop);
-
-static int
-BuildLoopStructure(CodeInfo* enclosingScope, binutils::Proc* p, 
-		   OA::OA_ptr<OA::CFG::Interface::Node> bb);
-
-
-enum Location_ty { 
-  Location_NULL                = 0x00000000,
-
-  Location_AMNESTY             = 0x00000008,
-
-  Location_EXILE_MASK          = 0x00000080,
-  Location_EXILE_TO_FILE_PROC  = 0x00000090,
-  Location_EXILE_TO_PROC       = 0x000000a0,
+// Cannot make this a local class because it is used as a a template
+// argument! Sigh.
+class QNode {
+public:
+  QNode(OA::RIFG::NodeId x = OA::RIFG::NIL, 
+	CodeInfo* y = NULL, CodeInfo* z = NULL)
+    : fgNode(x), enclosingScope(y), childScope(z) { }
+  
+  bool isProcessed() const { return (childScope != NULL); }
+  
+  OA::RIFG::NodeId fgNode;
+  CodeInfo* enclosingScope;
+  CodeInfo* childScope;
 };
 
-Location_ty
-ChooseFileAndProc(CodeInfo* proposedEnclosingScope,
-		  string& filenm, string& procnm, suint line);
+  
+} // namespace bloop
 
-Location_ty
-ChooseFileAndProc(const FileScope* proposedFile, const ProcScope* proposedProc,
-		  string& filenm, string& procnm, suint line);
+} // namespace banal
 
-static StmtRangeScope*
-LocateStmt(binutils::Insn* insn, VMAInterval& vmaint, 
-	   LoadModScope* lmScope,
-	   string& file, string& func, suint line);
-
-static void
-FindLoopBegLineInfo(binutils::Proc* p, 
-		    OA::OA_ptr<OA::CFG::Interface::Node> headBB,
-		    string& begFilenm, string& begProcnm, suint& begLn);
-
-
-static const string RELOCATED = "[relocated]";
-
-inline bool 
-RELOCATEDcmp(const char* x)
-{
-  return (strncmp(x, RELOCATED.c_str(), RELOCATED.length()) == 0);
-}
-
-inline bool 
-RELOCATEDcmp(const string& x)
-{
-  return RELOCATEDcmp(x.c_str());
-}
 
 //*************************** Forward Declarations ***************************
 
-// Helpers for normalizing a scope tree
+namespace banal {
+
+namespace bloop {
+
+// ------------------------------------------------------------
+// Helpers for normalizing the scope tree
+// ------------------------------------------------------------
 
 static bool 
 RemoveOrphanedProcedureRepository(PgmScopeTree* pgmScopeTree);
@@ -196,8 +190,6 @@ RemoveEmptyScopes(PgmScopeTree* pgmScopeTree);
 static bool 
 FilterFilesFromScopeTree(PgmScopeTree* pgmScopeTree, 
 			 const char* canonicalPathList);
-
-//*************************** Forward Declarations ***************************
 
 // ------------------------------------------------------------
 // Helpers for normalizing the scope tree
@@ -249,6 +241,10 @@ private:
   CodeInfo* node;
 };
 
+} // namespace bloop
+
+} // namespace banal
+
 //*************************** Forward Declarations ***************************
 
 #define DBG_PROC 0 /* debug BuildProcStructure */
@@ -267,10 +263,10 @@ static const char *PGMdtd =
 // Set of routines to write a scope tree
 //****************************************************************************
 
-// FIXME: move to prof-juicy library for experiment writer
+// FIXME (minor): move to prof-juicy library for experiment writer
 void
-banal::WriteScopeTree(std::ostream& os, PgmScopeTree* pgmScopeTree, 
-		      bool prettyPrint)
+banal::bloop::WriteScopeTree(std::ostream& os, PgmScopeTree* pgmScopeTree, 
+			     bool prettyPrint)
 {
   os << "<?xml version=\"1.0\"?>" << std::endl;
   os << "<!DOCTYPE PGM [\n" << PGMdtd << "]>" << std::endl;
@@ -299,18 +295,18 @@ banal::WriteScopeTree(std::ostream& os, PgmScopeTree* pgmScopeTree,
 //   normalizer employs heuristics to reverse certain compiler
 //   optimizations such as loop unrolling.
 PgmScopeTree*
-banal::BuildLMStructure(binutils::LM* lm, 
-			const char* canonicalPathList, 
-			bool normalizeScopeTree,
-			bool unsafeNormalizations,
-			bool irreducibleIntervalIsLoop)
+banal::bloop::BuildLMStructure(binutils::LM* lm, 
+			       const char* canonicalPathList, 
+			       bool normalizeScopeTree,
+			       bool unsafeNormalizations,
+			       bool irreducibleIntervalIsLoop)
 {
   DIAG_Assert(lm, DIAG_UnexpectedInput);
 
   PgmScopeTree* pgmScopeTree = NULL;
   PgmScope* pgmScope = NULL;
 
-  // FIXME: relocate
+  // FIXME (minor): relocate
   OrphanedProcedureFile = "~~~" + lm->GetName() + ":<unknown-file>~~~";
 
   // Assume lm->Read() has been performed
@@ -354,8 +350,7 @@ banal::BuildLMStructure(binutils::LM* lm,
 // almost all unnormalized scope tree contain duplicate statement
 // instances.  See each normalizing routine for more information.
 bool 
-banal::Normalize(PgmScopeTree* pgmScopeTree, 
-			    bool unsafeNormalizations)
+banal::bloop::Normalize(PgmScopeTree* pgmScopeTree, bool unsafeNormalizations)
 {
   bool changed = false;
   // changed |= RemoveOrphanedProcedureRepository(pgmScopeTree);
@@ -381,8 +376,12 @@ banal::Normalize(PgmScopeTree* pgmScopeTree,
 // Helpers for building a scope tree
 //****************************************************************************
 
+namespace banal {
+
+namespace bloop {
+
 // BuildLMSkeleton: Build skeletal file-procedure structure.  This
-// will be useful later when relocating alien lines.  Also, the
+// will be useful later when detecting alien lines.  Also, the
 // nesting structure allows inference of accurate boundaries on
 // procedure end lines.
 //
@@ -456,20 +455,8 @@ FindOrCreateFileNode(LoadModScope* lmScope, binutils::Proc* p)
   }
   
   // Obtain corresponding FileScope
-  return FindOrCreateFileNode1(lmScope, filenm);
+  return FileScope::findOrCreate(lmScope, filenm);
 } 
-
-
-static FileScope* 
-FindOrCreateFileNode1(LoadModScope* lmScope, const string& filenm)
-{
-  FileScope* fScope = lmScope->Pgm()->FindFile(filenm);
-  if (fScope == NULL) {
-    bool fileIsReadable = FileIsReadable(filenm.c_str());
-    fScope = new FileScope(filenm, fileIsReadable, lmScope);
-  }
-  return fScope; // guaranteed to be a valid pointer
-}
 
 
 // FindOrCreateProcNode: Build skeletal ProcScope.  We can assume that
@@ -537,53 +524,37 @@ FindOrCreateProcNode(FileScope* fScope, binutils::Proc* p)
   return pScope;
 }
 
+} // namespace bloop
 
-// FindOrCreateProcNode1: (At the moment, I don't have a good naming
-// scheme for this.  Cf. FindOrCreateProcNode and
-// FindOrCreateStmtNode.)
-static ProcScope*
-FindOrCreateProcNode1(FileScope* fScope, const string& procnm, suint line)
-{
-  ProcScope* pScope = fScope->FindProc(procnm);
-  if (!pScope) {
-    pScope = new ProcScope(procnm, fScope, procnm, line, line);
-  }
-  return pScope;
-}
+} // namespace banal
 
 
-// FindOrCreateStmtNode: Build a StmtRangeScope.  Unlike LocateStmt,
-// assumes that procedure boundaries do not need to be expanded.
-static StmtRangeScope*
-FindOrCreateStmtNode(std::map<suint, StmtRangeScope*>& stmtMap,
-		     CodeInfo* enclosingScope, suint line, VMAInterval& vmaint)
-{
-  StmtRangeScope* stmt = stmtMap[line];
-  if (!stmt) {
-    stmt = new StmtRangeScope(enclosingScope, line, line, 
-			      vmaint.beg(), vmaint.end());
-    stmtMap.insert(make_pair(line, stmt));
-  }
-  else {
-    stmt->vmaSet().insert(vmaint); // expand VMA range
-  }
-  return stmt;
-}
-
-
+//****************************************************************************
+// 
 //****************************************************************************
 
 #if (DBG_PROC)
 static bool DBG_PROC_print_now = false;
 #endif
 
-static int
-BuildProcSkeletonTarj(ProcScope* pScope, binutils::Proc* p, 
-		      OA::OA_ptr<OA::NestedSCR> tarj,
-		      OA::OA_ptr<OA::CFG::Interface> cfg, 
-		      OA::RIFG::NodeId fgNode,
-		      CodeInfoToOACFGNodeMap* mp,
-		      bool irreducibleIntervalIsLoop);
+namespace banal {
+
+namespace bloop {
+
+
+static int 
+BuildProcLoopNests(ProcScope* enclosingProc, binutils::Proc* p,
+		   OA::OA_ptr<OA::NestedSCR> tarj,
+		   OA::OA_ptr<OA::CFG::Interface> cfg, 
+		   OA::RIFG::NodeId fgRoot, 
+		   bool irrIntIsLoop);
+
+static CodeInfo*
+BuildLoopAndStmts(bloop::LocationMgr& locMgr, 
+		  CodeInfo* enclosingScope, binutils::Proc* p,
+		  OA::OA_ptr<OA::NestedSCR> tarj,
+		  OA::OA_ptr<OA::CFG::Interface> cfg, 
+		  OA::RIFG::NodeId fgNode, bool irrIntIsLoop);
 
 
 // BuildProcStructure: Complete the representation for 'pScope' given the
@@ -598,42 +569,25 @@ BuildProcStructure(ProcScope* pScope, binutils::Proc* p,
   DBG_PROC_print_now = false;
   suint dbgId = p->GetId();
 
-  const char* dbgNm = "main";
-  if (strncmp(p->GetName(), dbgNm, strlen(dbgNm)) == 0) {
+  const char* dbgNm = "xxx";
+  if (strncmp(p->GetName().c_str(), dbgNm, strlen(dbgNm)) == 0) {
     DBG_PROC_print_now = true; 
   }
-  //if (dbgId == 537) { DBG_PROC_print_now = true; }
+  if (dbgId == 10) { DBG_PROC_print_now = true; }
 #endif
-
-  // -------------------------------------------------------
-  // 1. Build skeletal loop structure 
-  // -------------------------------------------------------
-  CodeInfoToOACFGNodeMap* mp = 
-    BuildProcSkeleton(pScope, p, irreducibleIntervalIsLoop);
   
-  // FIXME: Look at my parent or my sibling for a bound on line
-  // (perhaps after doing this we can in BuildLoopStructure relocate
-  // lines larger than the end line of the procedure
+  BuildProcLoopNests(pScope, p, irreducibleIntervalIsLoop);
   
-  // -------------------------------------------------------
-  // 2. Fill in procedure structure (loops)
-  // -------------------------------------------------------
-  for (CodeInfoToOACFGNodeMap::iterator it = mp->begin(); it != mp->end(); ++it) {
-    CodeInfo* potentialEnclosingScope = it->first;
-    OA::OA_ptr<OA::CFG::Interface::Node> bb = it->second;
-    DIAG_DevMsg(50, "Building Loop Structure: " << potentialEnclosingScope->toString_id() << hex << " " << potentialEnclosingScope << dec << " --> " << bb);
-    BuildLoopStructure(potentialEnclosingScope, p, bb);
-  }
-
-  delete mp;
+  return pScope;
 }
 
 
-// BuildProcSkeleton: Build loop nest structure by traversing the
-// Nested SCR (Tarjan tree) to create loop nests
-static CodeInfoToOACFGNodeMap*
-BuildProcSkeleton(ProcScope* pScope, binutils::Proc* p,
-		  bool irreducibleIntervalIsLoop)
+// BuildProcLoopNests: Build procedure structure by traversing
+// the Nested SCR (Tarjan tree) to create loop nests and statement
+// scopes.
+static int
+BuildProcLoopNests(ProcScope* pScope, binutils::Proc* p,
+		   bool irreducibleIntervalIsLoop)
 {
   try {
     using banal::OAInterface;
@@ -667,10 +621,9 @@ BuildProcSkeleton(ProcScope* pScope, binutils::Proc* p,
     }
 #endif
 
-    CodeInfoToOACFGNodeMap* mp = new CodeInfoToOACFGNodeMap;
-    BuildProcSkeletonTarj(pScope, p, tarj, cfg, fgRoot, mp, 
-			  irreducibleIntervalIsLoop);
-    return mp;
+    int r = BuildProcLoopNests(pScope, p, tarj, cfg, fgRoot,
+			       irreducibleIntervalIsLoop);
+    return r;
   }
   catch (const OA::Exception& x) {
     std::ostringstream os;
@@ -680,60 +633,255 @@ BuildProcSkeleton(ProcScope* pScope, binutils::Proc* p,
 }
 
 
-// BuildProcSkeletonTarj: Recursively build loops using Nested SCR
-// (Tarjan interval) analysis and returns the number of loops created.
+// BuildProcLoopNests: 
+//
+// FIXME (minor, comments)
+//
+//   Visit the nested interval tree in a hybrid BFS+DFS order and construct the loop nest... [relocate while visiting]  The algorithm is designed to visit loops from one routine in DFS order.  When there is no inlining, this collapses to a pure BFS.  In the presence of inlining, ... ***  Behavior is dependent on 'IsInCurrentCtxt'. ***
+//
+//  Within a procedure, we visit in BFS order so that we can relocate and check loop boundaries before visiting inner scopes (which 
+// 
+//   (Tarjan interval) analysis and returns the number of loops created.
+// 
+// We visit the interval tree in DFS order which is equivalent to
+// visiting each basic block in VMA order.
+//
 // Note that these loops are UNNORMALIZED.
 static int 
-BuildProcSkeletonTarj(CodeInfo* enclosingScope, ProcScope* enclosingProc,
-		      binutils::Proc* p, 
-		      OA::OA_ptr<OA::NestedSCR> tarj,
-		      OA::OA_ptr<OA::CFG::Interface> cfg, 
-		      OA::RIFG::NodeId fgNode, 
-		      CodeInfoToOACFGNodeMap* mp, int addStmts, 
-		      ProcScope* orig_enclosingProc, bool irrIntIsLoop);
-
-static int
-BuildProcSkeletonTarj(ProcScope* pScope, binutils::Proc* p, 
-		      OA::OA_ptr<OA::NestedSCR> tarj,
-		      OA::OA_ptr<OA::CFG::Interface> cfg, 
-		      OA::RIFG::NodeId fgNode, 
-		      CodeInfoToOACFGNodeMap* mp,
-		      bool irreducibleIntervalIsLoop)
+BuildProcLoopNests(ProcScope* enclosingProc, binutils::Proc* p,
+		   OA::OA_ptr<OA::NestedSCR> tarj,
+		   OA::OA_ptr<OA::CFG::Interface> cfg, 
+		   OA::RIFG::NodeId fgRoot, 
+		   bool irrIntIsLoop)
 {
-  int num = BuildProcSkeletonTarj(pScope, pScope, p, tarj, cfg, fgNode, mp,
-				  0, NULL, irreducibleIntervalIsLoop);
-  return num;
+  typedef std::list<QNode> MyQueue;
+
+  int nLoops = 0;
+  
+  bloop::LocationMgr locMgr(enclosingProc->LoadMod());
+#if DBG_PROC
+  if (DBG_PROC_print_now) {
+    locMgr.debug(1);
+  }
+#endif
+  locMgr.begSeq(enclosingProc);
+  
+  // -------------------------------------------------------
+  // BFS+DFS on the Nested SCR (Tarjan tree)
+  // -------------------------------------------------------
+  // Queue INVARIANTs.  The queue has two sections to support the
+  // hybrid BFS+DFS search:
+  //
+  //             BFS sec.      TODO sec.
+  //   queue: [ e_i ... e_j | e_k ... e_l ]
+  //            ^             ^
+  //            begin()       q_todo
+  // 
+  //  1.  Nodes in BFS section have already been processed.
+  //  1a. Processed nodes have non-NULL child-scopes
+  //  2.  Nodes in TODO section have *not* been processed.
+  //  2a. Non-processed nodes have NULL child-scopes
+  //  3.  No node's children has been processed
+  MyQueue theQueue;
+  theQueue.push_back(QNode(fgRoot, enclosingProc, NULL));
+  MyQueue::iterator q_todo = theQueue.begin();
+
+  while (!theQueue.empty()) {
+    // -------------------------------------------------------
+    // 1. pop the front element, adjusting q_todo if necessary
+    // -------------------------------------------------------
+    bool isTODO = (q_todo == theQueue.begin());
+    if (isTODO) {
+      q_todo++;
+    }
+    QNode qnode = theQueue.front();
+    theQueue.pop_front();
+
+    // -------------------------------------------------------
+    // 2. process the element, if necessary
+    // -------------------------------------------------------
+    if (isTODO) {
+      // Note that if this call closes an alien context, invariants
+      // below ensure that this context has been fully explored.
+      CodeInfo* childScope;
+      childScope = BuildLoopAndStmts(locMgr, qnode.enclosingScope, p,
+				     tarj, cfg, qnode.fgNode, irrIntIsLoop);
+      qnode.childScope = childScope;
+      if (childScope->Type() == ScopeInfo::LOOP) {
+	nLoops++;
+      }
+    }
+    
+    // -------------------------------------------------------
+    // 3. process children within this context in BFS fashion
+    // -------------------------------------------------------
+    OA::RIFG::NodeId kid = tarj->getInners(qnode.fgNode);
+    if (kid == OA::RIFG::NIL) {
+      continue;
+    }
+    
+    do {
+      CodeInfo* childScope;
+      childScope = BuildLoopAndStmts(locMgr, qnode.childScope, p,
+				     tarj, cfg, kid, irrIntIsLoop);
+      if (childScope->Type() == ScopeInfo::LOOP) {
+	nLoops++;
+      }
+      
+      // Insert to BFS section (inserts before)
+      theQueue.insert(q_todo, QNode(kid, qnode.childScope, childScope));
+      kid = tarj->getNext(kid);
+    }
+    while (kid != OA::RIFG::NIL && IsInCurrentCtxt(locMgr, tarj, cfg, kid));
+    
+    // FIXME: adjust bounds using loop nesting invariants.
+
+    // -------------------------------------------------------
+    // 4. place rest of children in queue's TODO section
+    // -------------------------------------------------------
+    for ( ; kid != OA::RIFG::NIL; kid = tarj->getNext(kid)) {
+      theQueue.push_back(QNode(kid, qnode.childScope, NULL));
+
+      // ensure 'q_todo' to points to the beginning of TODO section
+      if (q_todo == theQueue.end()) {
+	q_todo--;
+      }
+    }
+    
+  }
+  
+  locMgr.endSeq();
+
+  return nLoops;
 }
 
 
+// BuildLoopAndStmts: Returns the expected (or 'original') enclosing
+// scope of children (loop or proc)
+static CodeInfo*
+BuildLoopAndStmts(bloop::LocationMgr& locMgr, 
+		  CodeInfo* enclosingScope, binutils::Proc* p,
+		  OA::OA_ptr<OA::NestedSCR> tarj,
+		  OA::OA_ptr<OA::CFG::Interface> cfg, 
+		  OA::RIFG::NodeId fgNode, bool irrIntIsLoop)
+{
+  OA::OA_ptr<OA::RIFG> rifg = tarj->getRIFG();
+  OA::OA_ptr<OA::CFG::Interface::Node> bb = 
+    rifg->getNode(fgNode).convert<OA::CFG::Interface::Node>();
+  binutils::Insn* insn = banal::OA_CFG_getBegInsn(bb);
+  VMA begVMA = (insn) ? insn->GetOpVMA() : 0;
+  
+  DIAG_DevMsg(50, "BuildLoopAndStmts: " << bb << hex << begVMA << " --> " << enclosingScope << dec << " " << enclosingScope->toString_id());
+
+  CodeInfo* childScope = enclosingScope;
+
+  OA::NestedSCR::Node_t ity = tarj->getNodeType(fgNode);
+  if (ity == OA::NestedSCR::NODE_ACYCLIC) {
+    // -----------------------------------------------------
+    // ACYCLIC: No loops
+    // -----------------------------------------------------
+  }
+  else if (ity == OA::NestedSCR::NODE_INTERVAL || 
+	   (irrIntIsLoop && ity == OA::NestedSCR::NODE_IRREDUCIBLE)) {
+    // -----------------------------------------------------
+    // INTERVAL or IRREDUCIBLE as a loop: Loop head
+    // -----------------------------------------------------
+    string fnm, pnm;
+    suint line;
+    FindLoopBegLineInfo(p, bb, fnm, pnm, line);
+    pnm = GetBestFuncName(pnm);
+    
+    LoopScope* loop = new LoopScope(NULL, line, line);
+    loop->vmaSet().insert(begVMA, begVMA + 1); // a loop id
+    locMgr.locate(loop, enclosingScope, fnm, pnm, line);
+    childScope = loop;
+  }
+  else if (!irrIntIsLoop && ity == OA::NestedSCR::NODE_IRREDUCIBLE) {
+    // -----------------------------------------------------
+    // IRREDUCIBLE as no loop: May contain loops
+    // -----------------------------------------------------
+  }
+  else {
+    DIAG_Die("Should never reach!");
+  }
+
+  // -----------------------------------------------------
+  // Process instructions within BB
+  // -----------------------------------------------------
+  BuildStmts(locMgr, childScope, p, bb);
+
+  return childScope;
+}
+
+
+// BuildStmts: Form loop structure by setting bounds and adding
+// statements from the current basic block to 'enclosingScope'.  Does
+// not add duplicates.
 static int 
-BuildProcSkeletonTarj(CodeInfo* enclosingScope, ProcScope* enclosingProc,
-		      binutils::Proc* p, 
-		      OA::OA_ptr<OA::NestedSCR> tarj,
-		      OA::OA_ptr<OA::CFG::Interface> cfg, 
-		      OA::RIFG::NodeId fgNode, 
-		      CodeInfoToOACFGNodeMap* mp, int addStmts, 
-		      ProcScope* orig_enclosingProc, bool irrIntIsLoop)
+BuildStmts(bloop::LocationMgr& locMgr,
+	   CodeInfo* enclosingScope, binutils::Proc* p,
+	   OA::OA_ptr<OA::CFG::Interface::Node> bb)
+{
+  OA::OA_ptr<OA::CFG::Interface::NodeStatementsIterator> it =
+    bb->getNodeStatementsIterator();
+  for ( ; it->isValid(); ) {
+    binutils::Insn* insn = IRHNDL_TO_TY(it->current(), binutils::Insn*);
+    VMA vma = insn->GetVMA();
+    ushort opIdx = insn->GetOpIndex();
+    VMA opvma = insn->GetOpVMA();
+    
+    // advance iterator [needed when creating VMA interval]
+    ++(*it);
+
+    // 1. gather source code info
+    string filenm, procnm;
+    suint line;
+    p->GetSourceFileInfo(vma, opIdx, procnm, filenm, line); 
+    procnm = GetBestFuncName(procnm);
+
+    // 2. create a VMA interval
+    // the next (or hypothetically next) insn begins no earlier than:
+    binutils::Insn* n_insn = (it->isValid()) ? 
+      IRHNDL_TO_TY(it->current(), binutils::Insn*) : NULL;
+    VMA n_opvma = (n_insn) ? n_insn->GetOpVMA() : insn->GetEndVMA();
+    DIAG_Assert(opvma < n_opvma, "Invalid VMAInterval: [" << opvma << ", "
+		<< n_opvma << ")");
+
+    VMAInterval vmaint(opvma, n_opvma);
+
+    // 3. locate stmt
+    StmtRangeScope* stmt = 
+      new StmtRangeScope(NULL, line, line, vmaint.beg(), vmaint.end());
+    locMgr.locate(stmt, enclosingScope, filenm, procnm, line);
+  }
+  return 0;
+} 
+
+
+#if 0 // FIXME: Deprecated
+// BuildProcLoopNests: Recursively build loops using Nested SCR
+// (Tarjan interval) analysis and returns the number of loops created.
+// 
+// We visit the interval tree in DFS order which is equivalent to
+// visiting each basic block in VMA order.
+//
+// Note that these loops are UNNORMALIZED.
+static int 
+BuildProcLoopNests(CodeInfo* enclosingScope, binutils::Proc* p, 
+		   OA::OA_ptr<OA::NestedSCR> tarj,
+		   OA::OA_ptr<OA::CFG::Interface> cfg, 
+		   OA::RIFG::NodeId fgNode, 
+		   int addStmts, bool irrIntIsLoop)
 {
   int localLoops = 0;
   OA::OA_ptr<OA::RIFG> rifg = tarj->getRIFG();
   OA::OA_ptr<OA::CFG::Interface::Node> bb =
     rifg->getNode(fgNode).convert<OA::CFG::Interface::Node>();
+  
+  DIAG_DevMsg(50, "BuildProcLoopNests: " << bb <<  " --> "  << hex << enclosingScope << dec << " " << enclosingScope->toString_id());
 
-  // -------------------------------------------------------
-  // Handle base case of recursion
-  // -------------------------------------------------------
-  if (orig_enclosingProc) {
-    // This loop was relocated from orig_enclosingProc to enclosingProc
-    VMA begVMA = banal::OA_CFG_getBegInsn(bb)->GetOpVMA();
-    VMA endVMA = banal::OA_CFG_getEndInsn(bb)->GetEndVMA();
-    
-    orig_enclosingProc->vmaSet().erase(begVMA, endVMA);
-    enclosingProc->vmaSet().insert(begVMA, endVMA);
-  }
   if (addStmts) {
-    DIAG_DevMsg(50, "BuildProcSkeletonTarj: " << enclosingScope->toString_id() << hex << " " << enclosingScope << dec << " --> " << bb);
-    mp->insert(make_pair(enclosingScope, bb));
+    // mp->push_back(make_pair(bb, enclosingScope));
   }
   
   // -------------------------------------------------------
@@ -745,318 +893,62 @@ BuildProcSkeletonTarj(CodeInfo* enclosingScope, ProcScope* enclosingProc,
       rifg->getNode(kid).convert<OA::CFG::Interface::Node>();
     OA::NestedSCR::Node_t ity = tarj->getNodeType(kid);
     
-    // -----------------------------------------------------
-    // 1. ACYCLIC: No loops
-    // -----------------------------------------------------
     if (ity == OA::NestedSCR::NODE_ACYCLIC) { 
+      // -----------------------------------------------------
+      // ACYCLIC: No loops
+      // -----------------------------------------------------
       if (addStmts) {
-	DIAG_DevMsg(50, "BuildProcSkeletonTarj: " << enclosingScope->toString_id() << hex << " " << enclosingScope << dec << " --> " << bb);
-	mp->insert(make_pair(enclosingScope, bb1));
+	//mp->push_back(make_pair(bb1, enclosingScope));
       }
     }
-    
-    // -----------------------------------------------------
-    // 2. INTERVAL or IRREDUCIBLE as a loop: Loop head
-    // -----------------------------------------------------
-    if (ity == OA::NestedSCR::NODE_INTERVAL || 
-	(irrIntIsLoop && ity == OA::NestedSCR::NODE_IRREDUCIBLE)) { 
+    else if (ity == OA::NestedSCR::NODE_INTERVAL || 
+	     (irrIntIsLoop && ity == OA::NestedSCR::NODE_IRREDUCIBLE)) {
+      // -----------------------------------------------------
+      // INTERVAL or IRREDUCIBLE as a loop: Loop head
+      // -----------------------------------------------------
 
-      // Build the loop nest, relocating to an appropriate enclosing
-      // scope if necessary.
-      VMA begVMA = banal::OA_CFG_getBegInsn(bb1)->GetOpVMA();
-
-      string fnm, pnm;
-      suint line;
-      FindLoopBegLineInfo(p, bb1, fnm, pnm, line);
-      pnm = GetBestFuncName(pnm);
-      
-      FileScope* fScope = enclosingProc->File();
-      Location_ty loc = 
-	ChooseFileAndProc(fScope, enclosingProc, fnm, pnm, line);
-      if (loc & Location_EXILE_MASK) {
-	orig_enclosingProc = enclosingProc;
-	
-	// Find or create an enclosing FileScope, ProcScope
-	// N.B.: rely on recursive call to adjust VMA set
-	LoadModScope* lmScope = fScope->LoadMod();
-	fScope = FindOrCreateFileNode1(lmScope, fnm);
-	enclosingProc = FindOrCreateProcNode1(fScope, pnm, line);
-	enclosingScope = enclosingProc;
-      }
-      
+      // add alien context if necessary....
       LoopScope* lScope = new LoopScope(enclosingScope, line, line);
-      lScope->vmaSet().insert(begVMA, begVMA + 1); // a loop id
-      int num = BuildProcSkeletonTarj(lScope, enclosingProc, p,
-				      tarj, cfg, kid, mp,
-				      1, orig_enclosingProc, irrIntIsLoop);
+      int num = BuildProcLoopNests(lScope, p, tarj, cfg, kid, mp,
+				   1, irrIntIsLoop);
       localLoops += (num + 1);
     }
-    
-    // -----------------------------------------------------
-    // 3. IRREDUCIBLE as no loop: May contain loops
-    // -----------------------------------------------------
-    if (!irrIntIsLoop && ity == OA::NestedSCR::NODE_IRREDUCIBLE) {
-      int num = BuildProcSkeletonTarj(enclosingScope, enclosingProc, p, 
-				      tarj, cfg, kid, mp,
-				      addStmts, NULL, irrIntIsLoop);
+    else if (!irrIntIsLoop && ity == OA::NestedSCR::NODE_IRREDUCIBLE) {
+      // -----------------------------------------------------
+      // IRREDUCIBLE as no loop: May contain loops
+      // -----------------------------------------------------
+      int num = BuildProcLoopNests(enclosingScope, p, tarj, cfg, kid, mp,
+				   addStmts, irrIntIsLoop);
       localLoops += num;
     }
-    
+    else {
+      DIAG_Die("Should never reach!");
+    }
   }
   
   return localLoops;
 }
-
-
-// BuildLoopStructure: Form loop structure by setting bounds and
-// adding statements from the current basic block to 'enclosingScope'.
-// Does not add duplicates.
-static int 
-BuildLoopStructure(CodeInfo* enclosingScope, binutils::Proc* p, 
-		   OA::OA_ptr<OA::CFG::Interface::Node> bb)
-{
-  ProcScope* pScope = enclosingScope->Proc();
-  FileScope* fScope = pScope->File();
-
-  // FIXME: if enclosingScope is a loop, set preliminary bounds using
-  // loop nesting invariants.
-
-  // Use this map so we do not add multiple StmtRangeScopes for the
-  // same line from this basic-block.  We could allow the
-  // normalization phase to remove the redundancy, but this is an easy
-  // optimization.
-  std::map<suint, StmtRangeScope*> stmtMap;
-
-  OA::OA_ptr<OA::CFG::Interface::NodeStatementsIterator> it =
-    bb->getNodeStatementsIterator();
-  for ( ; it->isValid(); ) {
-    binutils::Insn* insn = IRHNDL_TO_TY(it->current(), binutils::Insn*);
-    VMA vma = insn->GetVMA();
-    ushort opIdx = insn->GetOpIndex();
-    VMA opvma = insn->GetOpVMA();
-
-    // advance iterator [needed when creating VMA interval]
-    ++(*it);
-
-    // -----------------------------------------------------
-    // 1. gather source line info and create 
-    // -----------------------------------------------------
-    string procnm, filenm;
-    suint line;
-    p->GetSourceFileInfo(vma, opIdx, procnm, filenm, line); 
-    procnm = GetBestFuncName(procnm);
-    
-    // -----------------------------------------------------
-    // 2. Create a VMA interval for this line
-    // -----------------------------------------------------
-    // the next (or hypothetically next) insn begins no earlier than:
-    binutils::Insn* n_insn = (it->isValid()) ? 
-      IRHNDL_TO_TY(it->current(), binutils::Insn*) : NULL;
-    VMA n_opvma = (n_insn) ? n_insn->GetOpVMA() : insn->GetEndVMA();
-    DIAG_Assert(opvma < n_opvma, "Invalid VMAInterval: [" << opvma << ", "
-		<< n_opvma << ")");
-
-    VMAInterval vmaint(opvma, n_opvma);
-    
-    // -----------------------------------------------------
-    // 3. Determine where this line should go
-    // 
-    // NOTE: Since we have already relocated loops, we assume that any
-    // relocated lines are not part of a loop.
-    // -----------------------------------------------------
-    Location_ty loc = ChooseFileAndProc(fScope, pScope, filenm, procnm, line);
-    if (loc & Location_EXILE_MASK) {
-      LocateStmt(insn, vmaint, pScope->LoadMod(), filenm, procnm, line);
-      pScope->vmaSet().erase(vmaint);  // erase this vmaint from pScope!
-      continue;
-    }
-
-    // Invariant 1: filenm and procnm match fScope and pScope
-    DIAG_Assert(loc == Location_AMNESTY, "Unexpected Location_ty: " << loc);
-
-    if (!IsValidLine(line)) {
-      FindOrCreateStmtNode(stmtMap, enclosingScope, line, vmaint);
-      continue;
-    }
-
-    // Invariant 2: Additionally, line is within pScope if pScope is
-    // not relocatd
-    DIAG_Assert(logic::implies(!RELOCATEDcmp(pScope->Name()),
-			       pScope->ContainsLine(line)), 
-		"line " << line << "@" << vmaint.toString() 
-		<< " is alien to " << pScope->toXML());
-    
-    // Attempt to find a non-procedure enclosing scope, which means
-    // LoopScope.  Note: We do not yet know loop end lines.  However,
-    // we can use the procedure end line as a boundary because the
-    // only source code objects suceeding this scope that can be
-    // multiply instantiated into this scope are procedures. In
-    // contrast, Fortran statement functions or C macros must preceed
-    // this scope.
-    bool done = false;
-    for (CodeInfo* x = enclosingScope;
-	 x->Type() == ScopeInfo::LOOP; x = x->CodeInfoParent()) {
-      if (x->begLine() <= line && line <= pScope->endLine()) {
-	// We found a home for the line!
-	FindOrCreateStmtNode(stmtMap, x, line, vmaint);
-	done = true;
-	break;
-      }
-    }
-    
-    // Last ditch: Could not find a containing loop; use enclosing procedure
-    if (!done) {
-      FindOrCreateStmtNode(stmtMap, pScope, line, vmaint);
-    }
-  }
-  return 0;
-} 
+#endif
 
 
 //****************************************************************************
+// 
+//****************************************************************************
 
-
-// ChooseFileAndProc: Given a proposed enclosing file and proc along
-// with file and proc name for some child entity, compute a file and
-// proc name for the child entity and determine whether the child
-// entity should be relocated.
-//
-// Note 
-//   - We need to be careful when the proposed enclosing procedure has
-//     already been relocated itself and given a special name.
-//   - There is no need to invent relocated names for files since we
-//     assume the filename information is always accurate.
-
-Location_ty
-ChooseFileAndProc(CodeInfo* proposedEnclosingScope,
-		  string& filenm, string& procnm, suint line)
+// IsInCurrentCtxt: Given a LocationMgr and a node in a NestedSCR
+// (Tarjan interval tree), determine whether the node is within the
+// current context.
+static bool
+IsInCurrentCtxt(LocationMgr& mgr,
+		OA::OA_ptr<OA::NestedSCR> tarj,
+		OA::OA_ptr<OA::CFG::Interface> cfg,
+		OA::RIFG::NodeId fgNode)
 {
-  ProcScope* p = proposedEnclosingScope->Proc();
-  FileScope* f = p->File();
-  return ChooseFileAndProc(f, p, filenm, procnm, line);
-}
-
-
-Location_ty
-ChooseFileAndProc(const FileScope* proposedFile, const ProcScope* proposedProc,
-		  string& filenm, string& procnm, suint line)
-{ 
-  const string& proposedFileNm = proposedFile->Name();
-  const string& proposedProcNm = proposedProc->Name();
-
-  // find the base proposed procedure name by stripping off RELOCATED tags
-  bool isProposedProcReloc = false;
-  const char* proposedProcBaseNm = proposedProcNm.c_str();
-  while (RELOCATEDcmp(proposedProcBaseNm)) {
-    isProposedProcReloc = true;
-    proposedProcBaseNm += RELOCATED.length();
-  }
-
-  // -----------------------------------------------------
-  // Fix file and procedure name information, relative to the
-  // enclosing scope
-  // -----------------------------------------------------
-  if (filenm.empty() && procnm.empty()) {
-    // If both the file and proc names are bogus, 1) use the enclosing
-    // scope filename and 2) use the enclosing scope proc name if the
-    // line is within procedure bounds or the enclosing procedure
-    // itself has been relocated.
-    filenm = proposedFileNm;
-    if (!IsValidLine(line) || isProposedProcReloc 
-	|| proposedProc->ContainsLine(line)) {
-      procnm = proposedProcNm;
-    }
-  }
-  else if (filenm.empty() && !procnm.empty()) {
-    if (IsValidLine(line)) {
-      // Use enclosing scope file name if procedure:line can be found within
-      // ensclosing file scope.
-    }
-    else {
-      // Use enclosing scope file name if procedure matches the enclosing
-      // scope procedure and line is invalid
-    }
-    
-    // FIXME: try the above; this is good enough for now
-    // If only the file is bogus, assume the enclosing scope filename.
-    filenm = proposedFileNm;
-  }
-  else if (!filenm.empty() && procnm.empty()) {
-    // If only the procedure is bogus, use the enclosing scope proc
-    // name if the line is within procedure bounds or the enclosing
-    // procedure itself has been relocated.
-    if (!IsValidLine(line) || isProposedProcReloc 
-	|| proposedProc->ContainsLine(line)) {
-      procnm = proposedProcNm;
-    }
-  }
-  else if (isProposedProcReloc && procnm.compare(proposedProcBaseNm) == 0) {
-    // the current procedure name is actually the relocated one
-    procnm = proposedProcNm;
-  }
-
-  // Invariant: neither filenm nor procnm are empty
-  
-  // -----------------------------------------------------
-  // Compute a location, relative to the enclosing scope
-  // -----------------------------------------------------
-  
-  if (filenm != proposedFileNm) {
-    // 1. An alien entity that belongs in a different file/proc
-    procnm = RELOCATED + procnm;
-    return Location_EXILE_TO_FILE_PROC;
-  }
-  else if (procnm != proposedProcNm) {
-    // 2. An alien entity that belongs in a different procedure
-    procnm = RELOCATED + procnm;
-    return Location_EXILE_TO_PROC;
-  }
-  else if (!isProposedProcReloc 
-	   && IsValidLine(line) && !proposedProc->ContainsLine(line)) {
-    // 3. An alien enity that belongs in a different procedure
-    // FIXME: for now assume begin lines to be very accurate
-    if (line < proposedProc->begLine()) {
-      procnm = RELOCATED + procnm;
-    }
-    return Location_EXILE_TO_PROC;
-  }
-  else {
-    // Grant the entity amnesty.  File and procedure names match.  If
-    // the line is valid it falls within the proposed procedure's
-    // bounds.
-    return Location_AMNESTY;
-  }
-}
-
-
-// LocateStmt: Locate the instruction 'insn' within a procedure given
-// only basic symbolic information.  Assumes that the
-// StatementRangeScope does not live a loop.
-static StmtRangeScope*
-LocateStmt(binutils::Insn* insn, VMAInterval& vmaint, 
-	   LoadModScope* lmScope,
-	   string& filenm, string& procnm, suint line)
-{
-  // 1. Find containing file
-  string fnm = (filenm.empty()) ? OrphanedProcedureFile : filenm;
-  FileScope* fScope = FindOrCreateFileNode1(lmScope, fnm);
-  
-  // 2. Find containing procedure 
-  // FIXME: we would like to potentially infer multiple procs
-  string pnm = (procnm.empty()) ? InferredProcedure : procnm;
-  ProcScope* pScope = FindOrCreateProcNode1(fScope, pnm, line);
-  pScope->vmaSet().insert(vmaint); // expand VMA range
-  
-  // 3. Locate StmtRangeScope within the procedure
-  StmtRangeScope* stmt = pScope->FindStmtRange(line);
-  if (!stmt) {
-    stmt = new StmtRangeScope(pScope, line, line, vmaint.beg(), vmaint.end());
-  }
-  else {
-    stmt->vmaSet().insert(vmaint); // expand VMA rangep
-  }
-  
-  return stmt;
+  // FIXME
+  // *** if we process this block, we process all of it -- we want to quickly ensure the context does't change anywhere in here... ***
+  // if we have to, just look at everything...
+  // look at last insn?
+  return false; // Turn into a DFS!
 }
 
 
@@ -1123,9 +1015,37 @@ FindLoopBegLineInfo(binutils::Proc* p,
 }
 
 
+
+// FindOrCreateStmtNode: Build a StmtRangeScope.  Unlike LocateStmt,
+// assumes that procedure boundaries do not need to be expanded.
+static StmtRangeScope*
+FindOrCreateStmtNode(std::map<suint, StmtRangeScope*>& stmtMap,
+		     CodeInfo* enclosingScope, suint line, VMAInterval& vmaint)
+{
+  StmtRangeScope* stmt = stmtMap[line];
+  if (!stmt) {
+    stmt = new StmtRangeScope(enclosingScope, line, line, 
+			      vmaint.beg(), vmaint.end());
+    stmtMap.insert(make_pair(line, stmt));
+  }
+  else {
+    stmt->vmaSet().insert(vmaint); // expand VMA range
+  }
+  return stmt;
+}
+
+} // namespace bloop
+
+} // namespace banal
+
+
 //****************************************************************************
 // Helpers for normalizing a scope tree
 //****************************************************************************
+
+namespace banal {
+
+namespace bloop {
 
 // RemoveOrphanedProcedureRepository: Remove the OrphanedProcedureFile
 // from the tree.
@@ -1147,7 +1067,7 @@ RemoveOrphanedProcedureRepository(PgmScopeTree* pgmScopeTree)
       FileScope* file = dynamic_cast<FileScope*>(it.Current()); // always true
       it++; // advance iterator -- it is pointing at 'file'
       
-      if (file->Name() == OrphanedProcedureFile) {
+      if (file->name() == OrphanedProcedureFile) {
         file->Unlink(); // unlink 'file' from tree
         delete file;
         changed = true;
@@ -1178,10 +1098,8 @@ RemoveOrphanedProcedureRepository(PgmScopeTree* pgmScopeTree)
 // Case 1b:
 // If the same statement exists within the same loop, discard all but one.
 // Rationale: Multiple statements exist at the same level because of
-//   multiple basic blocks containing the same statement,
-//   cf. BuildLoopStructure().  Also, the merging in case 2 may result
-//   in duplicate statements.
-
+//   multiple basic blocks containing the same statement, cf. BuildStmts(). [FIXME -- LocationMgr]
+//   Also, the merging in case 2 may result in duplicate statements.
 // E.g.: lca --- s1
 //          \--- s2
 //
@@ -1589,7 +1507,7 @@ FilterFilesFromScopeTree(PgmScopeTree* pgmScopeTree,
     it++; // advance iterator -- it is pointing at 'file'
 
     // Verify this file in the current list of acceptible paths
-    string baseFileName = BaseFileName(file->Name());
+    string baseFileName = BaseFileName(file->name());
     DIAG_Assert(!baseFileName.empty(), "Invalid path!");
     if (!pathfind(canonicalPathList, baseFileName.c_str(), "r")) {
       file->Unlink(); // unlink 'file' from tree
@@ -1630,3 +1548,9 @@ DeleteContents(ScopeInfoSet* s)
   }
   s->clear();
 }
+
+
+} // namespace bloop
+
+} // namespace banal
+

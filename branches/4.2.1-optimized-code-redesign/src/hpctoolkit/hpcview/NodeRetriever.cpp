@@ -156,7 +156,7 @@ NodeRetriever::MoveToFile(const char* name)
 
   if (strcmp(name, unknownFileName) == 0) {
     if (!currentLM) {
-      currentLM = MoveToLoadMod(root->Name());
+      currentLM = MoveToLoadMod(root->name());
     } 
     knownByName = "Unknown file in " + currentLM->BaseName();
     unknownFileIndex++;
@@ -187,7 +187,7 @@ NodeRetriever::MoveToFile(const char* name)
   if (f == NULL) {
 
     if (!currentLM) {
-      currentLM = MoveToLoadMod(root->Name());
+      currentLM = MoveToLoadMod(root->name());
     } 
     f = new FileScope(filePath, srcIsReadable, currentLM); 
 

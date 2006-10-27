@@ -112,7 +112,9 @@ CONFIG_CLEAN_FILES =
 LTLIBRARIES = $(noinst_LTLIBRARIES)
 am__DEPENDENCIES_1 =
 libHPCbanal_la_DEPENDENCIES = $(am__DEPENDENCIES_1)
-am__objects_1 = libHPCbanal_la-bloop.lo libHPCbanal_la-OAInterface.lo
+am__objects_1 = libHPCbanal_la-bloop.lo \
+	libHPCbanal_la-bloop_LocationMgr.lo \
+	libHPCbanal_la-OAInterface.lo
 am_libHPCbanal_la_OBJECTS = $(am__objects_1)
 libHPCbanal_la_OBJECTS = $(am_libHPCbanal_la_OBJECTS)
 DEFAULT_INCLUDES = -I. -I$(srcdir)
@@ -321,6 +323,8 @@ HPC_LIBSUPPORT = $(top_builddir)/src/lib/support/libHPCsupport.la
 #############################################################################
 MYSOURCES = \
 	bloop.hpp bloop.cpp \
+	bloop_LocationMgr.hpp bloop_LocationMgr.cpp \
+	\
 	OAInterface.hpp OAInterface.cpp
 
 MYCFLAGS = @HOST_CFLAGS@   $(HPC_IFLAGS) @GNUBINUTILS_IFLAGS@
@@ -399,6 +403,7 @@ distclean-compile:
 
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCbanal_la-OAInterface.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCbanal_la-bloop.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCbanal_la-bloop_LocationMgr.Plo@am__quote@
 
 .cpp.o:
 @am__fastdepCXX_TRUE@	if $(CXXCOMPILE) -MT $@ -MD -MP -MF "$(DEPDIR)/$*.Tpo" -c -o $@ $<; \
@@ -427,6 +432,13 @@ libHPCbanal_la-bloop.lo: bloop.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='bloop.cpp' object='libHPCbanal_la-bloop.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(LIBTOOL) --tag=CXX --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCbanal_la_CXXFLAGS) $(CXXFLAGS) -c -o libHPCbanal_la-bloop.lo `test -f 'bloop.cpp' || echo '$(srcdir)/'`bloop.cpp
+
+libHPCbanal_la-bloop_LocationMgr.lo: bloop_LocationMgr.cpp
+@am__fastdepCXX_TRUE@	if $(LIBTOOL) --tag=CXX --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCbanal_la_CXXFLAGS) $(CXXFLAGS) -MT libHPCbanal_la-bloop_LocationMgr.lo -MD -MP -MF "$(DEPDIR)/libHPCbanal_la-bloop_LocationMgr.Tpo" -c -o libHPCbanal_la-bloop_LocationMgr.lo `test -f 'bloop_LocationMgr.cpp' || echo '$(srcdir)/'`bloop_LocationMgr.cpp; \
+@am__fastdepCXX_TRUE@	then mv -f "$(DEPDIR)/libHPCbanal_la-bloop_LocationMgr.Tpo" "$(DEPDIR)/libHPCbanal_la-bloop_LocationMgr.Plo"; else rm -f "$(DEPDIR)/libHPCbanal_la-bloop_LocationMgr.Tpo"; exit 1; fi
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='bloop_LocationMgr.cpp' object='libHPCbanal_la-bloop_LocationMgr.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(LIBTOOL) --tag=CXX --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCbanal_la_CXXFLAGS) $(CXXFLAGS) -c -o libHPCbanal_la-bloop_LocationMgr.lo `test -f 'bloop_LocationMgr.cpp' || echo '$(srcdir)/'`bloop_LocationMgr.cpp
 
 libHPCbanal_la-OAInterface.lo: OAInterface.cpp
 @am__fastdepCXX_TRUE@	if $(LIBTOOL) --tag=CXX --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCbanal_la_CXXFLAGS) $(CXXFLAGS) -MT libHPCbanal_la-OAInterface.lo -MD -MP -MF "$(DEPDIR)/libHPCbanal_la-OAInterface.Tpo" -c -o libHPCbanal_la-OAInterface.lo `test -f 'OAInterface.cpp' || echo '$(srcdir)/'`OAInterface.cpp; \

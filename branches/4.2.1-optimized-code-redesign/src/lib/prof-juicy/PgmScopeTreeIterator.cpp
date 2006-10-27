@@ -98,6 +98,9 @@ const ScopeInfoFilter ScopeTypeFilter[ScopeInfo::NUMBER_OF_SCOPES] = {
 		  ScopeInfo::ScopeTypeToName(ScopeInfo::PROC).c_str(),
 		  ScopeInfo::PROC),
   ScopeInfoFilter(HasScopeType,
+		  ScopeInfo::ScopeTypeToName(ScopeInfo::ALIEN).c_str(),
+		  ScopeInfo::ALIEN),
+  ScopeInfoFilter(HasScopeType,
 		  ScopeInfo::ScopeTypeToName(ScopeInfo::LOOP).c_str(),
 		  ScopeInfo::LOOP),
   ScopeInfoFilter(HasScopeType,
@@ -448,7 +451,7 @@ ScopeInfoNameSortedChildIterator::CompareByName(const void* a, const void *b)
   ScopeInfo* y = (*(ScopeInfo**)b);
   BriefAssertion (x != NULL);
   BriefAssertion (y != NULL);
-  return x->Name().compare(y->Name());
+  return x->name().compare(y->name());
 }
 
 //***************************************************************************

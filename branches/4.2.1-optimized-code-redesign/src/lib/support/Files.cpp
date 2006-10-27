@@ -83,6 +83,7 @@ cpy(int srcFd, int dstFd)
   } 
 } 
 
+
 const char* 
 CopyFile(const char* destFile, ...) 
 {
@@ -105,7 +106,8 @@ CopyFile(const char* destFile, ...)
     int srcFd = open(srcFile, O_RDONLY); 
     if ((srcFd < 0) || (dstFd < 0)) {
       error = string("Could not open ") + srcFile + ": " + strerror(errno); 
-    } else { 
+    } 
+    else { 
       IFTRACE << " " << srcFile; 
       cpy(srcFd, dstFd); 
       close(srcFd); 
@@ -115,7 +117,8 @@ CopyFile(const char* destFile, ...)
   close(dstFd); 
   if (error.length() > 0) {
     return error.c_str(); 
-  } else {
+  } 
+  else {
     return NULL; 
   } 
 } 
@@ -148,6 +151,7 @@ CountChar(const char* file, char c)
   return count; 
 } 
 
+
 const char* 
 TmpFileName()   
 {
@@ -179,11 +183,26 @@ TmpFileName()
 #endif
 }
 
+
 int
 DeleteFile(const char* file) 
 { 
   return unlink(file); 
 }
+
+
+bool
+FileIsReadable(const char *fileName)
+{
+  bool result = false;
+  struct stat sbuf;
+  if (stat(fileName, &sbuf) == 0) {
+    // the file is readable if the return code is OK
+    result = true;
+  }
+  return result;
+}
+
 
 string 
 BaseFileName(const char* fName) 
@@ -194,12 +213,14 @@ BaseFileName(const char* fName)
   if (lastSlash) {
     // valid: "/foo" || ".../foo" AND invalid: "/" || ".../" 
     baseFileName = lastSlash + 1; 
-  } else {
+  } 
+  else {
     // filename contains no slashes, already in short form 
     baseFileName = fName; 
   } 
   return baseFileName; 
 } 
+
 
 string 
 PathComponent(const char* fName) 
@@ -212,4 +233,3 @@ PathComponent(const char* fName)
   }
   return pathComponent; 
 }
-

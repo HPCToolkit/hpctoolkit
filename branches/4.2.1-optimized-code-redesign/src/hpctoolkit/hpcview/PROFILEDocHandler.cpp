@@ -251,7 +251,7 @@ void PROFILEDocHandler::startElement(const XMLCh* const uri, const XMLCh* const 
     IFTRACE << "PGM: name= " << pgmName << endl;
 
     PgmScope* root = nodeRetriever->GetRoot(); 
-    if (root->Name().empty()) { root->SetName(pgmName); }
+    if (root->name().empty()) { root->SetName(pgmName); }
   }
 
   // G(roup)

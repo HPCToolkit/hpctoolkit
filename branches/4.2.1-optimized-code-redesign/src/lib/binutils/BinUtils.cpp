@@ -86,19 +86,6 @@ IsValidLine(suint line)
 }
 
 
-bool
-FileIsReadable(const char *fileName)
-{
-  bool result = false;
-  struct stat sbuf;
-  if (stat(fileName, &sbuf) == 0) {
-    // the file is readable if the return code is OK
-    result = true;
-  }
-  return result;
-}
-
-
 //***************************************************************************
 // System Dependent Helpers
 //***************************************************************************

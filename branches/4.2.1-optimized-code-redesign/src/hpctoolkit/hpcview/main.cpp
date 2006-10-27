@@ -395,7 +395,7 @@ CopySourceFiles(PgmScope* pgmScopeTree, const PathTupleVec& pathVec,
     
     // Note: 'fileOrig' will be not be absolute if it is not possible to find
     // the file on the current filesystem. (cf. NodeRetriever::MoveToFile)
-    string fileOrig = file->Name();
+    string fileOrig = file->name();
     if (fileOrig[0] == '/') {
       int indx = MatchFileWithPath(fileOrig, pathVec);
       if (indx >= 0) {
