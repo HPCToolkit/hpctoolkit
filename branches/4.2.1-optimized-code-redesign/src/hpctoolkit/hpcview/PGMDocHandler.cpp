@@ -378,7 +378,12 @@ void PGMDocHandler:: startElement(const XMLCh* const uri,
     // by now the file and function names should have been found
     CodeInfo* enclScope = 
       dynamic_cast<CodeInfo*>(GetCurrentScope()); // enclosing scope
-    CodeInfo* loopNode = new LoopScope(enclScope, lnB, lnE);
+
+    // FIXME: temp hack so that alien components will not destroy boundaries
+    //CodeInfo* loopNode = new LoopScope(enclScope, lnB, lnE);
+    CodeInfo* loopNode = new LoopScope(NULL, lnB, lnE);
+    loopNode->Link(enclScope);
+
     currentScope = loopNode;
   }
   
@@ -411,7 +416,12 @@ void PGMDocHandler:: startElement(const XMLCh* const uri,
     CodeInfo* enclScope = 
       dynamic_cast<CodeInfo*>(GetCurrentScope()); // enclosing scope
     DIAG_Assert(currentFuncScope != NULL, "");
-    StmtRangeScope* stmtNode = new StmtRangeScope(enclScope, lnB, lnE);
+
+    // FIXME: temp hack so that alien components will not destroy boundaries
+    //StmtRangeScope* stmtNode = new StmtRangeScope(enclScope, lnB, lnE);
+    StmtRangeScope* stmtNode = new StmtRangeScope(NULL, lnB, lnE);
+    stmtNode->Link(enclScope);
+
     if (!vma.empty()) {
       stmtNode->vmaSet().fromString(vma.c_str());
     }
@@ -436,6 +446,7 @@ void PGMDocHandler:: startElement(const XMLCh* const uri,
     string nm = getAttr(attributes, attrName); // must exist
     DIAG_Assert(!nm.empty(), "");
     IFTRACE << "A(lien): name= " << nm << endl;
+    return; // FIXME: short circuit scope pushing for now!
   }
 
   
@@ -507,7 +518,7 @@ void PGMDocHandler::endElement(const XMLCh* const uri,
 
   // A(lien)
   else if (XMLString::equals(name, elemAlien)) {
-    
+    return; // FIXME: short circuit scope popping for now!
   }
 
   PopCurrentScope();

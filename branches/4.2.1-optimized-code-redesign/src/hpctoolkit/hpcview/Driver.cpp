@@ -281,19 +281,23 @@ Driver::ScopeTreeInsertProfileData(PgmScopeTree& scopes,
 			<< hex << ur_vma << dec);
 	    scope = lmScope;
 	  }
-	  DIAG_DevMsg(6, "Metric associate: 0x" << hex << ur_vma << dec 
-		      << " --> " << scope->toXML());
 	  
 	  double perfdata = events;
-	  if (scope->HasPerfData(m->Index())) {
-	    perfdata += scope->PerfData(m->Index());
-	  }
-	  scope->SetPerfData(m->Index(), perfdata);
+	  scope->SetPerfData(m->Index(), perfdata); // implicit add!
+	  DIAG_DevMsg(6, "Metric associate: 0x" << hex << ur_vma << dec 
+		      << " --> +" << perfdata << "=" 
+		      << scope->PerfData(m->Index()) << " :: " 
+		      << scope->toXML());
 	}
       }
     }
   }
 
+  DIAG_If(4) {
+    DIAG_Msg(4, "Initial scope tree, before aggregation:");
+    XML_Dump(pgm, 0, std::cerr);
+  }
+  
   //-------------------------------------------------------
   // Accumulate metrics
   //-------------------------------------------------------
