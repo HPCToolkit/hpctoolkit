@@ -191,13 +191,13 @@ private:
 
   // element names
   const XMLCh *const elemPgm;
-  const XMLCh *const elemGroup; 
   const XMLCh *const elemLM; 
   const XMLCh *const elemFile; 
   const XMLCh *const elemProc; 
   const XMLCh *const elemLoop; 
   const XMLCh *const elemStmt;
-    
+  const XMLCh *const elemGroup; 
+  const XMLCh *const elemAlien; 
 
   // attribute names
   const XMLCh *const attrVer; 

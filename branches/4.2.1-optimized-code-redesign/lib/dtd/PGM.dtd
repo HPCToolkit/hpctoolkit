@@ -20,7 +20,7 @@
 	n CDATA #REQUIRED>
   <!-- Procedures contain source line info -->
   <!-- n: processed name; ln: link name    -->
-  <!ELEMENT P (G|L|S)*>
+  <!ELEMENT P (G|A|L|S)*>
   <!ATTLIST P
 	n  CDATA #REQUIRED
 	ln CDATA #IMPLIED
@@ -28,7 +28,7 @@
 	e CDATA #IMPLIED
 	vma CDATA #IMPLIED>
   <!-- Loops -->
-  <!ELEMENT L (G|L|S)*>
+  <!ELEMENT L (G|A|L|S)*>
   <!ATTLIST L
 	b CDATA #IMPLIED
 	e CDATA #IMPLIED

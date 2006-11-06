@@ -196,13 +196,14 @@ PGMDocHandler::PGMDocHandler(Doc_t ty,
 			     Driver *_driver) 
   : // element names
     elemPgm(XMLString::transcode("PGM")), 
-    elemGroup(XMLString::transcode("G")),
     elemLM(XMLString::transcode("LM")),
     elemFile(XMLString::transcode("F")),
     elemProc(XMLString::transcode("P")),
     elemLoop(XMLString::transcode("L")),
     elemStmt(XMLString::transcode("S")),
-    
+    elemGroup(XMLString::transcode("G")),
+    elemAlien(XMLString::transcode("A")),
+
     // attribute names
     attrVer(XMLString::transcode("version")),
     attrName(XMLString::transcode("n")),
@@ -277,19 +278,6 @@ void PGMDocHandler:: startElement(const XMLCh* const uri,
     PgmScope* root = nodeRetriever->GetRoot();
     currentScope = root;
   }
-  
-  // G(roup)
-  else if (XMLString::equals(name, elemGroup)) {
-    string grpnm = getAttr(attributes, attrName); // must exist
-    DIAG_Assert(!grpnm.empty(), "");
-    IFTRACE << "G(roup): name= " << grpnm << endl;
-
-    ScopeInfo* enclScope = GetCurrentScope(); // enclosing scope
-    GroupScope* grpscope = nodeRetriever->MoveToGroup(enclScope, grpnm);
-    DIAG_Assert(grpscope != NULL, "");
-    groupNestingLvl++;
-    currentScope = grpscope;
-  }    
   
   // LM (load module)
   else if (XMLString::equals(name, elemLM)) {
@@ -429,8 +417,32 @@ void PGMDocHandler:: startElement(const XMLCh* const uri,
     }
     currentScope = stmtNode;
   }
+  
+  // G(roup)
+  else if (XMLString::equals(name, elemGroup)) {
+    string grpnm = getAttr(attributes, attrName); // must exist
+    DIAG_Assert(!grpnm.empty(), "");
+    IFTRACE << "G(roup): name= " << grpnm << endl;
+
+    ScopeInfo* enclScope = GetCurrentScope(); // enclosing scope
+    GroupScope* grpscope = nodeRetriever->MoveToGroup(enclScope, grpnm);
+    DIAG_Assert(grpscope != NULL, "");
+    groupNestingLvl++;
+    currentScope = grpscope;
+  }
+
+  // A(lien)
+  else if (XMLString::equals(name, elemAlien)) {
+    string nm = getAttr(attributes, attrName); // must exist
+    DIAG_Assert(!nm.empty(), "");
+    IFTRACE << "A(lien): name= " << nm << endl;
+  }
 
   
+  // -----------------------------------------------------------------
+  // 
+  // -----------------------------------------------------------------
+
   // The current top of the stack must be a non-leaf.  Since we are
   // using SAX parsing, we don't know this until now.
   StackEntry_t* entry = GetStackEntry(0);
@@ -449,14 +461,6 @@ void PGMDocHandler::endElement(const XMLCh* const uri,
 
   // PGM
   if (XMLString::equals(name, elemPgm)) {
-  }
-
-  // G(roup)
-  else if (XMLString::equals(name, elemGroup)) {
-    DIAG_Assert(scopeStack.Depth() >= 1, "");
-    DIAG_Assert(groupNestingLvl >= 1, "");
-    if (docty == Doc_GROUP) { ProcessGroupDocEndTag(); }
-    groupNestingLvl--;
   }
 
   // LM (load module)
@@ -492,7 +496,20 @@ void PGMDocHandler::endElement(const XMLCh* const uri,
   else if (XMLString::equals(name, elemStmt)) {
     if (docty == Doc_GROUP) { ProcessGroupDocEndTag(); }
   }
-  
+
+  // G(roup)
+  else if (XMLString::equals(name, elemGroup)) {
+    DIAG_Assert(scopeStack.Depth() >= 1, "");
+    DIAG_Assert(groupNestingLvl >= 1, "");
+    if (docty == Doc_GROUP) { ProcessGroupDocEndTag(); }
+    groupNestingLvl--;
+  }
+
+  // A(lien)
+  else if (XMLString::equals(name, elemAlien)) {
+    
+  }
+
   PopCurrentScope();
 }
 
