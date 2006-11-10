@@ -211,6 +211,7 @@ CSProfCallSiteNode::CSProfCallSiteNode(CSProfNode* _parent)
   CSProfCallSiteNode_Check(this, _parent);
 }
 
+
 CSProfCallSiteNode::CSProfCallSiteNode(CSProfNode* _parent, Addr _ip, 
 			      ushort _opIndex, vector<suint> _metrics)
   : CSProfCodeNode(CALLSITE, _parent, UNDEF_LINE, UNDEF_LINE), 
@@ -223,19 +224,37 @@ CSProfCallSiteNode::~CSProfCallSiteNode()
 {
 }
 
+
 CSProfStatementNode::CSProfStatementNode(CSProfNode* _parent)
   :  CSProfCodeNode(STATEMENT, _parent, UNDEF_LINE, UNDEF_LINE)
 {
-  xDEBUG(DEB_UNIFY_PROCEDURE_FRAME,
-	 fprintf(stderr, " CSProfCodeNode wrong copying callsite into statement node\n"));
 }
 
 CSProfStatementNode::~CSProfStatementNode()
 {
 }
 
+
 void 
-CSProfStatementNode::copyCallSiteNode(CSProfCallSiteNode* _node) {
+CSProfStatementNode::operator=(const CSProfStatementNode& x)
+{
+  file = x.GetFile();
+  proc = x.GetProc();
+  SetLine(x.GetLine());
+  SetIP(x.GetIP(), x.GetOpIndex());
+
+  metrics.resize(x.GetMetricCount());
+  addMetrics(&x);
+
+  xDEBUG(DEB_UNIFY_PROCEDURE_FRAME,
+	 fprintf(stderr, " copied metrics\n"));
+  fileistext = x.FileIsText();
+}
+
+
+void 
+CSProfStatementNode::copyCallSiteNode(CSProfCallSiteNode* _node) 
+{
   xDEBUG(DEB_UNIFY_PROCEDURE_FRAME,
 	 fprintf(stderr, " explicit copying callsite into statement node\n"));
   file = _node->GetFile();
@@ -250,9 +269,12 @@ CSProfStatementNode::copyCallSiteNode(CSProfCallSiteNode* _node) {
   xDEBUG(DEB_UNIFY_PROCEDURE_FRAME,
 	 fprintf(stderr, " copied metrics\n"));
   fileistext = _node->FileIsText();
+  donewithsrcinfproc = _node->GotSrcInfo();
 }
 
-CSProfProcedureFrameNode::CSProfProcedureFrameNode(CSProfNode* _parent): CSProfCodeNode(PROCEDURE_FRAME, _parent, UNDEF_LINE, UNDEF_LINE) {
+
+CSProfProcedureFrameNode::CSProfProcedureFrameNode(CSProfNode* _parent): CSProfCodeNode(PROCEDURE_FRAME, _parent, UNDEF_LINE, UNDEF_LINE) 
+{
   CSProfCallSiteNode_Check(NULL, _parent);
 }
 
@@ -582,6 +604,22 @@ CSProfStatementNode::ToDumpMetricsString(int dmpFlag) const {
   }
   return metricsString;
 }
+
+
+/** Add metrics from call site node c to current node.
+ * @param c call site node to be "added" to this node
+ */
+void 
+CSProfStatementNode::addMetrics(const CSProfStatementNode* c) 
+{
+  BriefAssertion(metrics.size() == c->metrics.size());
+  int numMetrics = metrics.size();
+  int i;
+  for (i=0; i<numMetrics; i++) {
+    metrics[i] += c->metrics[i];
+  }
+}
+
 
 String
 CSProfProcedureFrameNode::ToDumpString(int dmpFlag) const

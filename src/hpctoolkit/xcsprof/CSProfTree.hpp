@@ -251,6 +251,27 @@ public:
 
   void SetLineRange(suint begLn, suint endLn); // be careful when using!
   
+  // eraxxon: I made this stuff virtual in order to handle both
+  // CSProfCallSiteNode or CSProfStatementNode in the same way.
+  // FIXME: The abstractions need to be fixed! Classes have been
+  // duplicated with impunity.
+  virtual const char* GetFile() const { return NULL; }
+  virtual void SetFile(const char* fnm) { }
+
+  virtual const char* GetProc() const { return NULL; }
+  virtual void SetProc(const char* pnm) { }
+
+  virtual void SetLine(suint ln) { } 
+
+  virtual Addr GetIP() const { return 0; }
+  virtual ushort GetOpIndex() const { return 0; }
+
+  virtual void SetIP(Addr _ip, ushort _opIndex) { }
+
+  virtual void SetFileIsText(bool bi) { }
+  virtual bool GotSrcInfo() { } 
+  virtual void SetSrcInfoDone(bool bi) { }
+
   // Dump contents for inspection
   virtual String ToDumpString(int dmpFlag = CSProfTree::XML_TRUE) const;
     
@@ -380,7 +401,8 @@ class CSProfStatementNode: public CSProfCodeNode {
   CSProfStatementNode(CSProfNode* _parent);
   virtual ~CSProfStatementNode();
 
-  void copyCallSiteNode(CSProfCallSiteNode* _node);
+  void operator=(const CSProfStatementNode& x);
+  void copyCallSiteNode(CSProfCallSiteNode* _node);   // FIXME: remove
 
   // Node data
   Addr GetIP() const { return ip; }
@@ -396,13 +418,19 @@ class CSProfStatementNode: public CSProfCodeNode {
   void SetProc(const char* pnm) { proc = pnm; }
   void SetLine(suint ln) { begLine = endLine = ln; /* SetLineRange(ln, ln); */ } 
   void SetFileIsText(bool bi) {fileistext = bi;}
-  bool FileIsText() {return fileistext;}
+  bool FileIsText() const {return fileistext;}
+  bool GotSrcInfo() {return donewithsrcinfproc;} 
+  void SetSrcInfoDone(bool bi) {donewithsrcinfproc=bi;}
 
-  suint GetMetric(int metricIndex) {return metrics[metricIndex];}
+  suint GetMetric(int metricIndex) const {return metrics[metricIndex];}
+  suint GetMetricCount() const {return metrics.size();}
   
   // Dump contents for inspection
   virtual String ToDumpString(int dmpFlag = CSProfTree::XML_TRUE) const;
   virtual String ToDumpMetricsString(int dmpFlag = CSProfTree::XML_TRUE) const;
+
+  /// add metrics from call site node c to current node.
+  void addMetrics(const CSProfStatementNode* c);
  
 protected: 
   Addr ip;        // instruction pointer for this node
@@ -413,6 +441,7 @@ protected:
   // source file info
   String file; 
   bool   fileistext; //separated from load module
+  bool   donewithsrcinfproc;
   String proc;
 };
 
