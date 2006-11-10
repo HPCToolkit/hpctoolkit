@@ -78,7 +78,7 @@ void WriteCSProfile(CSProfile* prof, std::ostream& os,
 
 bool AddSourceFileInfoToCSProfile(CSProfile* prof, LoadModuleInfo* lm,Addr startaddr, 
                                   Addr endaddr, bool lastone);
-bool AddSourceFileInfoToCSTreeNode(CSProfCallSiteNode* node, 
+bool AddSourceFileInfoToCSTreeNode(CSProfCodeNode* node, 
                                    LoadModuleInfo*     lm  ,
                                    bool                istext);
 

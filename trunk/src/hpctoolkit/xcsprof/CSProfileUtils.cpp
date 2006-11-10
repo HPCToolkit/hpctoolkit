@@ -99,6 +99,10 @@ bool AddPGMToCSProfTree(CSProfTree* tree, const char* progName);
 
 void ConvertOpIPToIP(Addr opIP, Addr& ip, ushort& opIdx);
 
+static bool 
+FixLeaves(CSProfNode* node);
+
+
 //****************************************************************************
 // Dump a CSProfTree and collect source file information
 //****************************************************************************
@@ -176,32 +180,35 @@ AddSourceFileInfoToCSProfile(CSProfile* prof, LoadModuleInfo* lm,
 
   for (CSProfNodeIterator it(root); it.CurNode(); ++it) { 
        CSProfNode* n = it.CurNode();
-       CSProfCallSiteNode* nn = dynamic_cast<CSProfCallSiteNode*>(n);
-       if (nn && !(nn->GotSrcInfo()))  {
+       CSProfCodeNode* nn = dynamic_cast<CSProfCodeNode*>(n);
+
+       if (nn && (nn->GetType() == CSProfNode::STATEMENT 
+		  || nn->GetType() == CSProfNode::CALLSITE)
+	   && !(nn->GotSrcInfo()))  {
          curr_ip = nn->GetIP();  //FMZ
          if ((curr_ip >= startaddr ) &&
              (lastone || curr_ip <=endaddr )) { 
               // in the current load module   
-              AddSourceFileInfoToCSTreeNode(nn,lm,true);   
-              nn->SetSrcInfoDone(true);
-          } 
+	   AddSourceFileInfoToCSTreeNode(nn,lm,true);
+	   nn->SetSrcInfoDone(true);
+	 } 
        }    
-     }
+  }
   return noError;
  }
 
+// Takes either CSProfCallSiteNode or CSProfStatementNode
 bool 
-AddSourceFileInfoToCSTreeNode(CSProfCallSiteNode* node, 
+AddSourceFileInfoToCSTreeNode(CSProfCodeNode* n, 
                               LoadModuleInfo* lm,
                               bool istext)
 {
   bool noError = true;
-  CSProfCallSiteNode* n = node;  
 
   if (n) {
     String func, file;
     SrcLineX srcLn;   
-    lm->GetSymbolicInfo(n->GetIP(), n->GetOpIndex(), func, file, srcLn);   
+    lm->GetSymbolicInfo(n->GetIP(), n->GetOpIndex(), func, file, srcLn);
 
     n->SetFile(file); 
     n->SetProc(func);
@@ -325,6 +332,11 @@ ReadCSProfileFile_HCSPROFILE(const char* fnm,const char *execnm)
   // Add PGM node to tree
   AddPGMToCSProfTree(prof->GetTree(), prof->GetTarget());
   
+  // Convert leaves (CSProfCallSiteNode) to CSProfStatementNodes
+  // FIXME: There should be a better way of doing this.  We could
+  // merge it with a normalization step...
+  FixLeaves(prof->GetTree()->GetRoot());
+  
   return prof;
 }
 
@@ -407,6 +419,40 @@ AddPGMToCSProfTree(CSProfTree* tree, const char* progName)
 }
 
 
+static bool 
+FixLeaves(CSProfNode* node)
+{
+  bool noError = true;
+  
+  if (!node) { return noError; }
+
+  // For each immediate child of this node...
+  for (CSProfNodeChildIterator it(node); it.Current(); /* */) {
+    CSProfCodeNode* child = dynamic_cast<CSProfCodeNode*>(it.CurNode());
+    BriefAssertion(child); // always true (FIXME)
+    it++; // advance iterator -- it is pointing at 'child'
+    
+    if (child->IsLeaf() && child->GetType() == CSProfNode::CALLSITE) {
+      // This child is a leaf. Convert.
+      CSProfCallSiteNode* c = dynamic_cast<CSProfCallSiteNode*>(child);
+      
+      CSProfStatementNode* newc = new CSProfStatementNode(NULL);
+      newc->copyCallSiteNode(c); 
+      
+      newc->LinkBefore(node->FirstChild()); // do not break iteration!
+      c->Unlink();
+      delete c;
+    } 
+    else if (!child->IsLeaf()) {
+      // Recur:
+      noError = noError && FixLeaves(child);
+    }
+  }
+  
+  return noError;
+}
+
+
 //***************************************************************************
 // Routines for normalizing the ScopeTree
 //***************************************************************************
@@ -441,10 +487,10 @@ CoalesceCallsiteLeaves(CSProfile* prof)
 
 
 // FIXME
-typedef std::map<String, CSProfCallSiteNode*, StringLt> StringToCallSiteMap;
-typedef std::map<String, CSProfCallSiteNode*, StringLt>::iterator 
+typedef std::map<String, CSProfStatementNode*, StringLt> StringToCallSiteMap;
+typedef std::map<String, CSProfStatementNode*, StringLt>::iterator 
   StringToCallSiteMapIt;
-typedef std::map<String, CSProfCallSiteNode*, StringLt>::value_type
+typedef std::map<String, CSProfStatementNode*, StringLt>::value_type
   StringToCallSiteMapVal;
 
 bool 
@@ -464,19 +510,19 @@ CoalesceCallsiteLeaves(CSProfNode* node)
     it++; // advance iterator -- it is pointing at 'child'
     
     bool inspect = (child->IsLeaf() 
-		    && (child->GetType() == CSProfNode::CALLSITE));
+		    && (child->GetType() == CSProfNode::STATEMENT));
     
     if (inspect) {
 
       // This child is a leaf. Test for duplicate source line info.
-      CSProfCallSiteNode* c = dynamic_cast<CSProfCallSiteNode*>(child);
+      CSProfStatementNode* c = dynamic_cast<CSProfStatementNode*>(child);
       String myid = String(c->GetFile()) + String(c->GetProc()) 
 	+ String(c->GetLine());
       
       StringToCallSiteMapIt it = sourceInfoMap.find(myid);
       if (it != sourceInfoMap.end()) { 
 	// found -- we have a duplicate
-	CSProfCallSiteNode* c1 = (*it).second;
+	CSProfStatementNode* c1 = (*it).second;
 	c1->addMetrics(c);
 	/*
 	  suint newWeight = c->GetWeight() + c1->GetWeight();
@@ -576,10 +622,11 @@ NormalizeSameProcedureChildren(CSProfile* prof, CSProfNode* node, LoadModuleInfo
       noError = noError && NormalizeSameProcedureChildren(prof, child, lmi,startaddr, endaddr, lastone);
     }
 
-    bool inspect = (child->GetType() == CSProfNode::CALLSITE);
+    bool inspect = (child->GetType() == CSProfNode::STATEMENT);
+
     
     if (inspect) {
-      CSProfCallSiteNode* c = dynamic_cast<CSProfCallSiteNode*>(child); 
+      CSProfStatementNode* c = dynamic_cast<CSProfStatementNode*>(child); 
       Addr curr_ip = c->GetIP(); //FMZ
       if ((curr_ip>= startaddr) && 
          ( lastone || curr_ip<= endaddr))  {  
@@ -650,11 +697,13 @@ NormalizeSameProcedureChildren(CSProfile* prof, CSProfNode* node, LoadModuleInfo
 	       fprintf(stderr, "converting node %s %lx into stmt node begin\n", 
 		       c->GetProc(), c->GetIP()););
 	CSProfStatementNode *stmtNode = new CSProfStatementNode(NULL);
-	stmtNode->copyCallSiteNode(c);
+	*stmtNode = *c;
+	//stmtNode->copyCallSiteNode(c); FIXME: cleanup
+
 	xDEBUG(DEB_UNIFY_PROCEDURE_FRAME,
 	       fprintf(stderr, "converting node %s %lx into stmt node end\n", 
 		       c->GetProc(), c->GetIP()););
-	stmtNode -> Link(procFrameNode);
+	stmtNode->Link(procFrameNode);
 	child->Unlink();
 	delete child;
       } else {
