@@ -49,7 +49,7 @@
 #
 #############################################################################
 
-include(config/hpc-cxxutils.m4)
+m4_include(config/hpc-cxxutils.m4)
 
 #----------------------------------------------------------------------------
 # Initialization: 
@@ -67,13 +67,13 @@ include(config/hpc-cxxutils.m4)
 #    correctly
 #----------------------------------------------------------------------------
 
-AC_INIT([HPCToolkit], [TRUNK-4.2.2=633], [hpc@cs.rice.edu], [HPCToolkit])
+AC_INIT([HPCToolkit], [TRUNK-4.2.2=642], [hpc@cs.rice.edu], [HPCToolkit])
 AC_CONFIG_SRCDIR([src/include/HPCToolkitVersionInfo.h])
 AC_CONFIG_AUX_DIR([config])
 
-AC_PREREQ(2.59)
-AM_INIT_AUTOMAKE(1.9.5)
-# Require libtool 1.5.20
+AC_PREREQ(2.60)
+AM_INIT_AUTOMAKE(1.9.6)
+# Require libtool 1.5.22
 
 AC_CANONICAL_HOST
 
