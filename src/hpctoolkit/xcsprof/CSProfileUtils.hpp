@@ -1,5 +1,6 @@
+// -*-Mode: C++;-*-
 // $Id$
-// -*-C++-*-
+
 // * BeginRiceCopyright *****************************************************
 // 
 // Copyright ((c)) 2002, Rice University 
@@ -37,18 +38,18 @@
 //***************************************************************************
 //
 // File:
-//    CSProfileUtils.H
+//   $Source$
 //
 // Purpose:
-//    [The purpose of this file]
+//   [The purpose of this file]
 //
 // Description:
-//    [The set of functions, macros, etc. defined in the file]
+//   [The set of functions, macros, etc. defined in the file]
 //
 //***************************************************************************
 
-#ifndef CSProfUtils_H 
-#define CSProfUtils_H
+#ifndef CSProfileUtils_hpp 
+#define CSProfileUtils_hpp
 
 //************************* System Include Files ****************************
 
@@ -68,7 +69,7 @@
 
 //*************************** Forward Declarations ***************************
 
-CSProfile* ReadCSProfileFile_HCSPROFILE(const char* fnm,const char *execnm);
+CSProfile* ReadCSProfileFile_HCSPROFILE(const char* fnm, const char *execnm);
 
 //****************************************************************************
 
@@ -76,11 +77,10 @@ void WriteCSProfileInDatabase(CSProfile* prof, String dbDirectory);
 void WriteCSProfile(CSProfile* prof, std::ostream& os,
 		    bool prettyPrint = true);
 
-bool AddSourceFileInfoToCSProfile(CSProfile* prof, LoadModuleInfo* lm,Addr startaddr, 
-                                  Addr endaddr, bool lastone);
+bool AddSourceFileInfoToCSProfile(CSProfile* prof, LoadModuleInfo* lm,
+				  Addr startaddr, Addr endaddr, bool lastone);
 bool AddSourceFileInfoToCSTreeNode(CSProfCodeNode* node, 
-                                   LoadModuleInfo*     lm  ,
-                                   bool                istext);
+                                   LoadModuleInfo* lm, bool istext);
 
 void copySourceFiles (CSProfile *prof, 
 		      std::vector<String>& searchPaths,

@@ -1,5 +1,6 @@
+// -*-Mode: C++;-*-
 // $Id$
-// -*-C++-*-
+
 // * BeginRiceCopyright *****************************************************
 // 
 // Copyright ((c)) 2002, Rice University 
@@ -273,7 +274,8 @@ CSProfStatementNode::copyCallSiteNode(CSProfCallSiteNode* _node)
 }
 
 
-CSProfProcedureFrameNode::CSProfProcedureFrameNode(CSProfNode* _parent): CSProfCodeNode(PROCEDURE_FRAME, _parent, UNDEF_LINE, UNDEF_LINE) 
+CSProfProcedureFrameNode::CSProfProcedureFrameNode(CSProfNode* _parent)
+  : CSProfCodeNode(PROCEDURE_FRAME, _parent, UNDEF_LINE, UNDEF_LINE)
 {
   CSProfCallSiteNode_Check(NULL, _parent);
 }
@@ -417,17 +419,17 @@ CSProfNode::AncestorStmtRange() const
 String
 CSProfLoopNode::CodeName() const
 {
-  String result = NodeTypeToName(GetType());
-  result += " " + CSProfCodeNode::ToDumpString();
-  return result;
+  String self = NodeTypeToName(GetType());
+  self += " " + CSProfCodeNode::ToDumpString();
+  return self;
 }
 
 String
 CSProfStmtRangeNode::CodeName() const
 {
-  String result = NodeTypeToName(GetType());
-  result += " " + CSProfCodeNode::ToDumpString();
-  return result;
+  String self = NodeTypeToName(GetType());
+  self += " " + CSProfCodeNode::ToDumpString();
+  return self;
 }
 
 //**********************************************************************
@@ -494,10 +496,11 @@ CSProfCallSiteNode::ToDumpString(int dmpFlag) const
 
   if (!proc.Empty()) {
     self = self + " p" + MakeAttrStr(proc, AddXMLEscapeChars(dmpFlag));
-   } else {
-       self = self + " ip" + MakeAttrNum((unsigned long)ip,true) ; 
-     }
-    
+  } 
+  else {
+    self = self + " ip" + MakeAttrNum((unsigned long)ip,true) ; 
+  }
+  
 
   if (GetBegLine() != UNDEF_LINE) {
     self = self + " l" + MakeAttrNum(GetBegLine());
@@ -508,7 +511,8 @@ CSProfCallSiteNode::ToDumpString(int dmpFlag) const
 
 
 String 
-CSProfCallSiteNode::ToDumpMetricsString(int dmpFlag) const {
+CSProfCallSiteNode::ToDumpMetricsString(int dmpFlag) const 
+{
   int i;
   String metricsString;
 
@@ -566,10 +570,11 @@ CSProfStatementNode::ToDumpString(int dmpFlag) const
 
   if (!proc.Empty()) {
     self = self + " p" + MakeAttrStr(proc, AddXMLEscapeChars(dmpFlag));
-   } else {
-       self = self + " ip" + MakeAttrNum((unsigned long)ip,true) ; 
-     }
-    
+  }
+  else {
+    self = self + " ip" + MakeAttrNum((unsigned long)ip,true) ; 
+  }
+  
 
   if (GetBegLine() != UNDEF_LINE) {
     self = self + " l" + MakeAttrNum(GetBegLine());
@@ -597,9 +602,9 @@ CSProfStatementNode::ToDumpMetricsString(int dmpFlag) const {
   for (i=0; i<metrics.size(); i++) {
     suint crtMetric = metrics[i];
     if (crtMetric!= 0) {
-      metricsString  +=  " <M ";
-      metricsString  +=  "n"+MakeAttrNum(i)+" v" + MakeAttrNum(crtMetric);
-      metricsString  +=  " />";
+      metricsString += " <M ";
+      metricsString += "n" + MakeAttrNum(i) + " v" + MakeAttrNum(crtMetric);
+      metricsString += " />";
     }
   }
   return metricsString;

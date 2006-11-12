@@ -1,5 +1,6 @@
+// -*-Mode: C++;-*-
 // $Id$
-// -*-C++-*-
+
 // * BeginRiceCopyright *****************************************************
 // 
 // Copyright ((c)) 2002, Rice University 
@@ -37,18 +38,18 @@
 //***************************************************************************
 //
 // File:
-//    CSProfTree.H
+//   $Source$
 //
 // Purpose:
-//    [The purpose of this file]
+//   [The purpose of this file]
 //
 // Description:
-//    [The set of functions, macros, etc. defined in the file]
+//   [The set of functions, macros, etc. defined in the file]
 //
 //***************************************************************************
 
-#ifndef CSProfTree_H 
-#define CSProfTree_H
+#ifndef CSProfTree_hpp 
+#define CSProfTree_hpp
 
 //************************* System Include Files ****************************
 
@@ -59,11 +60,11 @@
 
 #include <include/general.h>
 
+#include <lib/ISA/ISATypes.hpp>
+
 #include <lib/support/NonUniformDegreeTree.hpp>
 #include <lib/support/Unique.hpp>
 #include <lib/support/String.hpp>
-
-#include <lib/ISA/ISATypes.hpp>
 
 //*************************** Forward Declarations ***************************
 
@@ -402,7 +403,7 @@ class CSProfStatementNode: public CSProfCodeNode {
   virtual ~CSProfStatementNode();
 
   void operator=(const CSProfStatementNode& x);
-  void copyCallSiteNode(CSProfCallSiteNode* _node);   // FIXME: remove
+  void copyCallSiteNode(CSProfCallSiteNode* _node); // FIXME: remove
 
   // Node data
   Addr GetIP() const { return ip; }
