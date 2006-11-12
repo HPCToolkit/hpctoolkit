@@ -37,13 +37,13 @@
 //***************************************************************************
 //
 // File:
-//    CSProfileUtils.C
+//   $Source$
 //
 // Purpose:
-//    [The purpose of this file]
+//   [The purpose of this file]
 //
 // Description:
-//    [The set of functions, macros, etc. defined in the file]
+//   [The set of functions, macros, etc. defined in the file]
 //
 //***************************************************************************
 
@@ -111,7 +111,8 @@ const char *CSPROFILEdtd =
 #include <lib/xml/CSPROFILE.dtd.h>
 
 
-void WriteCSProfileInDatabase(CSProfile* prof, String dbDirectory) {
+void WriteCSProfileInDatabase(CSProfile* prof, String dbDirectory) 
+{
   String csxmlFileName = dbDirectory+"/profile.xml";
   filebuf fb;
   fb.open (csxmlFileName, ios::out);
@@ -179,25 +180,25 @@ AddSourceFileInfoToCSProfile(CSProfile* prof, LoadModuleInfo* lm,
 #endif
 
   for (CSProfNodeIterator it(root); it.CurNode(); ++it) { 
-       CSProfNode* n = it.CurNode();
-       CSProfCodeNode* nn = dynamic_cast<CSProfCodeNode*>(n);
-
-       if (nn && (nn->GetType() == CSProfNode::STATEMENT 
-		  || nn->GetType() == CSProfNode::CALLSITE)
-	   && !(nn->GotSrcInfo()))  {
-         curr_ip = nn->GetIP();  //FMZ
-         if ((curr_ip >= startaddr ) &&
-             (lastone || curr_ip <=endaddr )) { 
-              // in the current load module   
-	   AddSourceFileInfoToCSTreeNode(nn,lm,true);
-	   nn->SetSrcInfoDone(true);
-	 } 
-       }    
+    CSProfNode* n = it.CurNode();
+    CSProfCodeNode* nn = dynamic_cast<CSProfCodeNode*>(n);
+    
+    if (nn && (nn->GetType() == CSProfNode::STATEMENT 
+	       || nn->GetType() == CSProfNode::CALLSITE)
+	&& !(nn->GotSrcInfo()))  {
+      curr_ip = nn->GetIP();  //FMZ
+      if ((curr_ip >= startaddr ) &&
+	  (lastone || curr_ip <=endaddr )) { 
+	// in the current load module   
+	AddSourceFileInfoToCSTreeNode(nn,lm,true);
+	nn->SetSrcInfoDone(true);
+      } 
+    }    
   }
   return noError;
  }
 
-// Takes either CSProfCallSiteNode or CSProfStatementNode
+// FIXME: Takes either CSProfCallSiteNode or CSProfStatementNode
 bool 
 AddSourceFileInfoToCSTreeNode(CSProfCodeNode* n, 
                               LoadModuleInfo* lm,
@@ -207,12 +208,12 @@ AddSourceFileInfoToCSTreeNode(CSProfCodeNode* n,
 
   if (n) {
     String func, file;
-    SrcLineX srcLn;   
+    SrcLineX srcLn;
     lm->GetSymbolicInfo(n->GetIP(), n->GetOpIndex(), func, file, srcLn);
 
-    n->SetFile(file); 
+    n->SetFile(file);
     n->SetProc(func);
-    n->SetLine(srcLn.GetSrcLine()); 
+    n->SetLine(srcLn.GetSrcLine());
 
     n->SetFileIsText(istext);
 
@@ -223,13 +224,12 @@ AddSourceFileInfoToCSTreeNode(CSProfCodeNode* n,
 
     // if file name is missing then using load module name. 
     if (file.Empty() || func.Empty()) {
-        n->SetFile(lm->GetLM()->GetName());  
-        n->SetLine(0); //don't need to have line number for loadmodule
-        n->SetFileIsText(false);
-      }  
-
-   }  
-
+      n->SetFile(lm->GetLM()->GetName());  
+      n->SetLine(0); //don't need to have line number for loadmodule
+      n->SetFileIsText(false);
+    }
+  }
+  
   return noError;
 }
 
@@ -571,7 +571,8 @@ NormalizeInternalCallSites(CSProfile* prof, LoadModuleInfo *lmi,
   // Remove duplicate/inplied file and procedure information from tree
   bool pass1 = true;
 
-  bool pass2 = NormalizeSameProcedureChildren(prof, lmi,startaddr, endaddr, lastone);
+  bool pass2 = NormalizeSameProcedureChildren(prof, lmi, 
+					      startaddr, endaddr, lastone);
   
   return (pass1 && pass2);
 }
@@ -580,7 +581,8 @@ NormalizeInternalCallSites(CSProfile* prof, LoadModuleInfo *lmi,
 // FIXME
 // If pc values from the leaves map to the same source file info,
 // coalese these leaves into one.
-bool NormalizeSameProcedureChildren(CSProfile* prof, CSProfNode* node, LoadModuleInfo* lmi,
+bool NormalizeSameProcedureChildren(CSProfile* prof, CSProfNode* node, 
+				    LoadModuleInfo* lmi,
                                     Addr startaddr, Addr endaddr, bool lastone);
 
 bool 
@@ -599,7 +601,8 @@ NormalizeSameProcedureChildren(CSProfile* prof, LoadModuleInfo *lmi,
 
 
 bool 
-NormalizeSameProcedureChildren(CSProfile* prof, CSProfNode* node, LoadModuleInfo *lmi,
+NormalizeSameProcedureChildren(CSProfile* prof, CSProfNode* node, 
+			       LoadModuleInfo *lmi,
                                Addr startaddr, Addr endaddr, bool lastone)
 {
   bool noError = true;
@@ -623,7 +626,6 @@ NormalizeSameProcedureChildren(CSProfile* prof, CSProfNode* node, LoadModuleInfo
     }
 
     bool inspect = (child->GetType() == CSProfNode::STATEMENT);
-
     
     if (inspect) {
       CSProfStatementNode* c = dynamic_cast<CSProfStatementNode*>(child); 
@@ -681,8 +683,8 @@ NormalizeSameProcedureChildren(CSProfile* prof, CSProfNode* node, LoadModuleInfo
 	  //  determine the appropriate module info for the current 
 	  //  procedure frame
 
-	  lmi->GetProcedureFirstLineInfo( c->GetIP(), c->GetOpIndex(), 
-					  procFrameLine);
+	  lmi->GetProcedureFirstLineInfo(c->GetIP(), c->GetOpIndex(), 
+					 procFrameLine);
 	  
 	  procFrameNode->SetLine(procFrameLine);
 	}
@@ -694,11 +696,10 @@ NormalizeSameProcedureChildren(CSProfile* prof, CSProfNode* node, LoadModuleInfo
       
       if ( child->IsLeaf() ) {
 	xDEBUG(DEB_UNIFY_PROCEDURE_FRAME,
-	       fprintf(stderr, "converting node %s %lx into stmt node begin\n", 
+	       fprintf(stderr, "converting node %s %lx into stmt node begin\n",
 		       c->GetProc(), c->GetIP()););
 	CSProfStatementNode *stmtNode = new CSProfStatementNode(NULL);
 	*stmtNode = *c;
-	//stmtNode->copyCallSiteNode(c); FIXME: cleanup
 
 	xDEBUG(DEB_UNIFY_PROCEDURE_FRAME,
 	       fprintf(stderr, "converting node %s %lx into stmt node end\n", 
@@ -758,9 +759,9 @@ bool copySourceFiles(CSProfNode* node,
   // For each immediate child of this node...
   for (CSProfNodeChildIterator it(node); it.CurNode(); it++) {
     // recur 
-    noError = noError && copySourceFiles( it.CurNode(), 
-					  searchPaths,
-					  dbSourceDirectory);
+    noError = noError && copySourceFiles(it.CurNode(), 
+					 searchPaths,
+					 dbSourceDirectory);
   }
  
   noError = noError && 
@@ -906,7 +907,8 @@ String normalizeFilePath(String filePath,
   return resultPath;
 }
 
-String normalizeFilePath(String filePath) {
+String normalizeFilePath(String filePath)
+{
   std::stack<String> pathSegmentsStack;
   String resultPath = normalizeFilePath(filePath, pathSegmentsStack);
   return resultPath;
@@ -914,7 +916,8 @@ String normalizeFilePath(String filePath) {
 
 /** Decompose a normalized path into path segments.*/
 void breakPathIntoSegments(String normFilePath, 
-			   std::stack<String>& pathSegmentsStack) {
+			   std::stack<String>& pathSegmentsStack)
+{
   String resultPath = normalizeFilePath(normFilePath,
 					pathSegmentsStack);
 }
@@ -923,7 +926,8 @@ void breakPathIntoSegments(String normFilePath,
 
 bool innerCopySourceFiles (CSProfNode* node, 
 			   std::vector<String>& searchPaths,
-			   String& dbSourceDirectory) {
+			   String& dbSourceDirectory)
+{
   bool inspect; 
   String nodeSourceFile;
   String relativeSourceFile;
@@ -1130,21 +1134,22 @@ bool innerCopySourceFiles (CSProfNode* node,
 void
 LdmdSetUsedFlag(CSProfile* prof)
 { 
-   Addr curr_ip;  
-
-   CSProfTree* tree = prof->GetTree();
-   CSProfNode* root = tree->GetRoot();
-
-   for (CSProfNodeIterator it(root); it.CurNode(); ++it) {
+  Addr curr_ip;  
+  
+  CSProfTree* tree = prof->GetTree();
+  CSProfNode* root = tree->GetRoot();
+  
+  for (CSProfNodeIterator it(root); it.CurNode(); ++it) {
     CSProfNode* n = it.CurNode();
     CSProfCallSiteNode* nn = dynamic_cast<CSProfCallSiteNode*>(n);
-
+    
     if (nn)  {
       curr_ip = nn->GetIP();
       CSProfLDmodule * csploadmd = prof->GetEpoch()->FindLDmodule(curr_ip);
-      if (!(csploadmd->GetUsedFlag()))
-          csploadmd->SetUsedFlag(true);
+      if (!(csploadmd->GetUsedFlag())) {
+	csploadmd->SetUsedFlag(true);
+      }
     }
-   }  
-} 
+  }
+}
 
