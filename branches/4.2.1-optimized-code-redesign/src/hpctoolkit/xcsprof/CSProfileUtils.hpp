@@ -48,8 +48,8 @@
 //
 //***************************************************************************
 
-#ifndef CSProfUtils_H 
-#define CSProfUtils_H
+#ifndef CSProfileUtils_hpp 
+#define CSProfileUtils_hpp
 
 //************************* System Include Files ****************************
 
@@ -79,11 +79,10 @@ void WriteCSProfileInDatabase(CSProfile* prof,
 void WriteCSProfile(CSProfile* prof, std::ostream& os,
 		    bool prettyPrint = true);
 
-bool AddSourceFileInfoToCSProfile(CSProfile* prof, binutils::LM* lm,VMA startaddr, 
-                                  VMA endaddr, bool lastone);
-bool AddSourceFileInfoToCSTreeNode(CSProfCallSiteNode* node, 
-                                   binutils::LM*     lm  ,
-                                   bool                istext);
+bool AddSourceFileInfoToCSProfile(CSProfile* prof, binutils::LM* lm,
+				  VMA startaddr, VMA endaddr, bool lastone);
+bool AddSourceFileInfoToCSTreeNode(CSProfCodeNode* node, 
+                                   binutils::LM* lm, bool istext);
 
 void copySourceFiles (CSProfile *prof, 
 		      std::vector<std::string>& searchPaths,

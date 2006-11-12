@@ -77,7 +77,7 @@ using namespace std; // For compatibility with non-std C headers
 
 #include <lib/xml/xml.hpp>
 
-#include <lib/support/Assertion.h>
+#include <lib/support/diagnostics.h>
 
 #if 0
 #define XCSPROF_DEBUG 1   
@@ -103,6 +103,10 @@ bool AddPGMToCSProfTree(CSProfTree* tree, const char* progName);
 
 void ConvertOpIPToIP(VMA opIP, VMA& ip, ushort& opIdx);
 
+static bool 
+FixLeaves(CSProfNode* node);
+
+
 //****************************************************************************
 // Dump a CSProfTree and collect source file information
 //****************************************************************************
@@ -111,7 +115,8 @@ const char *CSPROFILEdtd =
 #include <lib/xml/CSPROFILE.dtd.h>
 
 
-void WriteCSProfileInDatabase(CSProfile* prof, const string& dbDirectory) {
+void WriteCSProfileInDatabase(CSProfile* prof, const string& dbDirectory) 
+{
   string csxmlFileName = dbDirectory+"/profile.xml";
   filebuf fb;
   fb.open(csxmlFileName.c_str(), ios::out);
@@ -159,7 +164,7 @@ WriteCSProfile(CSProfile* prof, std::ostream& os, bool prettyPrint)
 
 bool 
 AddSourceFileInfoToCSProfile(CSProfile* prof, binutils::LM* lm,
-                              VMA startaddr, VMA endaddr, bool lastone)
+			     VMA startaddr, VMA endaddr, bool lastone)
 {
   bool noError            = true;
   VMA curr_ip; 
@@ -179,28 +184,31 @@ AddSourceFileInfoToCSProfile(CSProfile* prof, binutils::LM* lm,
 #endif
 
   for (CSProfNodeIterator it(root); it.CurNode(); ++it) { 
-       CSProfNode* n = it.CurNode();
-       CSProfCallSiteNode* nn = dynamic_cast<CSProfCallSiteNode*>(n);
-       if (nn && !(nn->GotSrcInfo()))  {
-         curr_ip = nn->GetIP();  //FMZ
-         if ((curr_ip >= startaddr ) &&
-             (lastone || curr_ip <=endaddr )) { 
-              // in the current load module   
-              AddSourceFileInfoToCSTreeNode(nn,lm,true);   
-              nn->SetSrcInfoDone(true);
-          } 
-       }    
-     }
+    CSProfNode* n = it.CurNode();
+    CSProfCodeNode* nn = dynamic_cast<CSProfCodeNode*>(n);
+    
+    if (nn && (nn->GetType() == CSProfNode::STATEMENT 
+	       || nn->GetType() == CSProfNode::CALLSITE)
+	&& !(nn->GotSrcInfo()))  {
+      curr_ip = nn->GetIP();  //FMZ
+      if ((curr_ip >= startaddr ) &&
+	  (lastone || curr_ip <=endaddr )) { 
+	// in the current load module   
+	AddSourceFileInfoToCSTreeNode(nn,lm,true);
+	nn->SetSrcInfoDone(true);
+      } 
+    }    
+  }
   return noError;
  }
 
+// FIXME: Takes either CSProfCallSiteNode or CSProfStatementNode
 bool 
-AddSourceFileInfoToCSTreeNode(CSProfCallSiteNode* node, 
+AddSourceFileInfoToCSTreeNode(CSProfCodeNode* n, 
                               binutils::LM* lm,
                               bool istext)
 {
   bool noError = true;
-  CSProfCallSiteNode* n = node;  
 
   if (n) {
     string func, file;
@@ -208,25 +216,25 @@ AddSourceFileInfoToCSTreeNode(CSProfCallSiteNode* node,
     lm->GetSourceFileInfo(n->GetIP(), n->GetOpIndex(), func, file, srcLn);
     func = GetBestFuncName(func);
 
-    n->SetFile(file);
-    n->SetProc(func);
+    n->SetFile(file.c_str());
+    n->SetProc(func.c_str());
     n->SetLine(srcLn);
 
     n->SetFileIsText(istext);
 
     suint procFrameLine;
-    lm->GetProcFirstLineInfo( n->GetIP(), n->GetOpIndex(), procFrameLine);
+    lm->GetProcFirstLineInfo(n->GetIP(), n->GetOpIndex(), procFrameLine);
     xDEBUG(DEB_PROC_FIRST_LINE,
 	   fprintf(stderr, "after AddSourceFileInfoToCSTreeNode: %s starts at %d, file=%s and p=%s=\n", n->GetProc().c_str(), procFrameLine, file.c_str(), func.c_str()););
 
     // if file name is missing then using load module name. 
     if (file.empty() || func.empty()) {
-        n->SetFile(lm->GetName());
-        n->SetLine(0); //don't need to have line number for loadmodule
-        n->SetFileIsText(false);
-      }
-   }  
-
+      n->SetFile(lm->GetName().c_str());
+      n->SetLine(0); //don't need to have line number for loadmodule
+      n->SetFileIsText(false);
+    }
+  }
+  
   return noError;
 }
 
@@ -329,6 +337,11 @@ ReadCSProfileFile_HCSPROFILE(const char* fnm,const char *execnm)
   // Add PGM node to tree
   AddPGMToCSProfTree(prof->GetTree(), prof->GetTarget());
   
+  // Convert leaves (CSProfCallSiteNode) to CSProfStatementNodes
+  // FIXME: There should be a better way of doing this.  We could
+  // merge it with a normalization step...
+  FixLeaves(prof->GetTree()->GetRoot());
+  
   return prof;
 }
 
@@ -411,6 +424,40 @@ AddPGMToCSProfTree(CSProfTree* tree, const char* progName)
 }
 
 
+static bool 
+FixLeaves(CSProfNode* node)
+{
+  bool noError = true;
+  
+  if (!node) { return noError; }
+
+  // For each immediate child of this node...
+  for (CSProfNodeChildIterator it(node); it.Current(); /* */) {
+    CSProfCodeNode* child = dynamic_cast<CSProfCodeNode*>(it.CurNode());
+    DIAG_Assert(child, ""); // always true (FIXME)
+    it++; // advance iterator -- it is pointing at 'child'
+    
+    if (child->IsLeaf() && child->GetType() == CSProfNode::CALLSITE) {
+      // This child is a leaf. Convert.
+      CSProfCallSiteNode* c = dynamic_cast<CSProfCallSiteNode*>(child);
+      
+      CSProfStatementNode* newc = new CSProfStatementNode(NULL);
+      newc->copyCallSiteNode(c); 
+      
+      newc->LinkBefore(node->FirstChild()); // do not break iteration!
+      c->Unlink();
+      delete c;
+    } 
+    else if (!child->IsLeaf()) {
+      // Recur:
+      noError = noError && FixLeaves(child);
+    }
+  }
+  
+  return noError;
+}
+
+
 //***************************************************************************
 // Routines for normalizing the ScopeTree
 //***************************************************************************
@@ -445,10 +492,10 @@ CoalesceCallsiteLeaves(CSProfile* prof)
 
 
 // FIXME
-typedef std::map<string, CSProfCallSiteNode*> StringToCallSiteMap;
-typedef std::map<string, CSProfCallSiteNode*>::iterator 
+typedef std::map<string, CSProfStatementNode*> StringToCallSiteMap;
+typedef std::map<string, CSProfStatementNode*>::iterator 
   StringToCallSiteMapIt;
-typedef std::map<string, CSProfCallSiteNode*>::value_type
+typedef std::map<string, CSProfStatementNode*>::value_type
   StringToCallSiteMapVal;
 
 bool 
@@ -464,23 +511,23 @@ CoalesceCallsiteLeaves(CSProfNode* node)
   // For each immediate child of this node...
   for (CSProfNodeChildIterator it(node); it.Current(); /* */) {
     CSProfCodeNode* child = dynamic_cast<CSProfCodeNode*>(it.CurNode());
-    BriefAssertion(child); // always true (FIXME)
+    DIAG_Assert(child, ""); // always true (FIXME)
     it++; // advance iterator -- it is pointing at 'child'
     
     bool inspect = (child->IsLeaf() 
-		    && (child->GetType() == CSProfNode::CALLSITE));
+		    && (child->GetType() == CSProfNode::STATEMENT));
     
     if (inspect) {
 
       // This child is a leaf. Test for duplicate source line info.
-      CSProfCallSiteNode* c = dynamic_cast<CSProfCallSiteNode*>(child);
+      CSProfStatementNode* c = dynamic_cast<CSProfStatementNode*>(child);
       string myid = string(c->GetFile()) + string(c->GetProc()) 
 	+ StrUtil::toStr(c->GetLine());
       
       StringToCallSiteMapIt it = sourceInfoMap.find(myid);
       if (it != sourceInfoMap.end()) { 
 	// found -- we have a duplicate
-	CSProfCallSiteNode* c1 = (*it).second;
+	CSProfStatementNode* c1 = (*it).second;
 	c1->addMetrics(c);
 	/*
 	  suint newWeight = c->GetWeight() + c1->GetWeight();
@@ -529,7 +576,8 @@ NormalizeInternalCallSites(CSProfile* prof, binutils::LM *lm,
   // Remove duplicate/inplied file and procedure information from tree
   bool pass1 = true;
 
-  bool pass2 = NormalizeSameProcedureChildren(prof, lm,startaddr, endaddr, lastone);
+  bool pass2 = NormalizeSameProcedureChildren(prof, lm, 
+					      startaddr, endaddr, lastone);
   
   return (pass1 && pass2);
 }
@@ -538,7 +586,8 @@ NormalizeInternalCallSites(CSProfile* prof, binutils::LM *lm,
 // FIXME
 // If pc values from the leaves map to the same source file info,
 // coalese these leaves into one.
-bool NormalizeSameProcedureChildren(CSProfile* prof, CSProfNode* node, binutils::LM* lm,
+bool NormalizeSameProcedureChildren(CSProfile* prof, CSProfNode* node, 
+				    binutils::LM* lm,
                                     VMA startaddr, VMA endaddr, bool lastone);
 
 bool 
@@ -557,7 +606,8 @@ NormalizeSameProcedureChildren(CSProfile* prof, binutils::LM *lm,
 
 
 bool 
-NormalizeSameProcedureChildren(CSProfile* prof, CSProfNode* node, binutils::LM *lm,
+NormalizeSameProcedureChildren(CSProfile* prof, CSProfNode* node, 
+			       binutils::LM *lm,
                                VMA startaddr, VMA endaddr, bool lastone)
 {
   bool noError = true;
@@ -571,7 +621,7 @@ NormalizeSameProcedureChildren(CSProfile* prof, CSProfNode* node, binutils::LM *
   for (CSProfNodeChildIterator it(node); it.Current(); /* */) {   
 
     CSProfCodeNode* child = dynamic_cast<CSProfCodeNode*>(it.CurNode());  
-    BriefAssertion(child); // always true (FIXME)
+    DIAG_Assert(child, ""); // always true (FIXME)
 
     it++; // advance iterator -- it is pointing at 'child' 
 
@@ -580,10 +630,10 @@ NormalizeSameProcedureChildren(CSProfile* prof, CSProfNode* node, binutils::LM *
       noError = noError && NormalizeSameProcedureChildren(prof, child, lm,startaddr, endaddr, lastone);
     }
 
-    bool inspect = (child->GetType() == CSProfNode::CALLSITE);
+    bool inspect = (child->GetType() == CSProfNode::STATEMENT);
     
     if (inspect) {
-      CSProfCallSiteNode* c = dynamic_cast<CSProfCallSiteNode*>(child); 
+      CSProfStatementNode* c = dynamic_cast<CSProfStatementNode*>(child); 
       VMA curr_ip = c->GetIP(); //FMZ
       if ((curr_ip>= startaddr) && 
          ( lastone || curr_ip<= endaddr))  {  
@@ -649,14 +699,15 @@ NormalizeSameProcedureChildren(CSProfile* prof, CSProfNode* node, binutils::LM *
       
       if ( child->IsLeaf() ) {
 	xDEBUG(DEB_UNIFY_PROCEDURE_FRAME,
-	       fprintf(stderr, "converting node %s %lx into stmt node begin\n", 
+	       fprintf(stderr, "converting node %s %lx into stmt node begin\n",
 		       c->GetProc().c_str(), c->GetIP()););
 	CSProfStatementNode *stmtNode = new CSProfStatementNode(NULL);
-	stmtNode->copyCallSiteNode(c);
+	*stmtNode = *c;
+
 	xDEBUG(DEB_UNIFY_PROCEDURE_FRAME,
 	       fprintf(stderr, "converting node %s %lx into stmt node end\n", 
 		       c->GetProc().c_str(), c->GetIP()););
-	stmtNode -> Link(procFrameNode);
+	stmtNode->Link(procFrameNode);
 	child->Unlink();
 	delete child;
       } else {
@@ -859,7 +910,8 @@ string normalizeFilePath(const string& filePath,
   return resultPath;
 }
 
-string normalizeFilePath(const string& filePath) {
+string normalizeFilePath(const string& filePath)
+{
   std::stack<string> pathSegmentsStack;
   string resultPath = normalizeFilePath(filePath, pathSegmentsStack);
   return resultPath;
@@ -867,7 +919,8 @@ string normalizeFilePath(const string& filePath) {
 
 /** Decompose a normalized path into path segments.*/
 void breakPathIntoSegments(const string& normFilePath, 
-			   std::stack<string>& pathSegmentsStack) {
+			   std::stack<string>& pathSegmentsStack)
+{
   string resultPath = normalizeFilePath(normFilePath,
 					pathSegmentsStack);
 }
@@ -876,7 +929,8 @@ void breakPathIntoSegments(const string& normFilePath,
 
 bool innerCopySourceFiles (CSProfNode* node, 
 			   std::vector<string>& searchPaths,
-			   const string& dbSourceDirectory) {
+			   const string& dbSourceDirectory)
+{
   bool inspect; 
   string nodeSourceFile;
   string relativeSourceFile;
@@ -1083,21 +1137,22 @@ bool innerCopySourceFiles (CSProfNode* node,
 void
 LdmdSetUsedFlag(CSProfile* prof)
 { 
-   VMA curr_ip;  
-
-   CSProfTree* tree = prof->GetTree();
-   CSProfNode* root = tree->GetRoot();
-
-   for (CSProfNodeIterator it(root); it.CurNode(); ++it) {
+  VMA curr_ip;  
+  
+  CSProfTree* tree = prof->GetTree();
+  CSProfNode* root = tree->GetRoot();
+  
+  for (CSProfNodeIterator it(root); it.CurNode(); ++it) {
     CSProfNode* n = it.CurNode();
     CSProfCallSiteNode* nn = dynamic_cast<CSProfCallSiteNode*>(n);
-
+    
     if (nn)  {
       curr_ip = nn->GetIP();
       CSProfLDmodule * csploadmd = prof->GetEpoch()->FindLDmodule(curr_ip);
-      if (!(csploadmd->GetUsedFlag()))
-          csploadmd->SetUsedFlag(true);
+      if (!(csploadmd->GetUsedFlag())) {
+	csploadmd->SetUsedFlag(true);
+      }
     }
-   }  
-} 
+  }
+}
 

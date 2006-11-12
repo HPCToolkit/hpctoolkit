@@ -1,4 +1,4 @@
-// -*-C++-*-
+// -*-Mode: C++;-*-
 // $Id$
 
 // * BeginRiceCopyright *****************************************************
@@ -38,18 +38,18 @@
 //***************************************************************************
 //
 // File:
-//    CSProfTree.H
+//   $Source$
 //
 // Purpose:
-//    [The purpose of this file]
+//   [The purpose of this file]
 //
 // Description:
-//    [The set of functions, macros, etc. defined in the file]
+//   [The set of functions, macros, etc. defined in the file]
 //
 //***************************************************************************
 
-#ifndef CSProfTree_H 
-#define CSProfTree_H
+#ifndef CSProfTree_hpp 
+#define CSProfTree_hpp
 
 //************************* System Include Files ****************************
 
@@ -63,6 +63,7 @@
 
 #include <lib/isa/ISATypes.hpp>
 
+#include <lib/support/diagnostics.h>
 #include <lib/support/NonUniformDegreeTree.hpp>
 #include <lib/support/Unique.hpp>
 
@@ -251,6 +252,38 @@ public:
   CSProfCodeNode* CSProfCodeNodeWithLine(suint ln) const; 
 
   void SetLineRange(suint begLn, suint endLn); // be careful when using!
+
+  // eraxxon: I made this stuff virtual in order to handle both
+  // CSProfCallSiteNode or CSProfStatementNode in the same way.
+  // FIXME: The abstractions need to be fixed! Classes have been
+  // duplicated with impunity.
+  virtual const std::string& GetFile() const
+    { DIAG_Die(DIAG_Unimplemented); return BOGUS; }
+  virtual void SetFile(const char* fnm) 
+    { DIAG_Die(DIAG_Unimplemented); }
+
+  virtual const std::string& GetProc() const 
+    { DIAG_Die(DIAG_Unimplemented); return BOGUS; }
+  virtual void SetProc(const char* pnm) 
+    { DIAG_Die(DIAG_Unimplemented); }
+
+  virtual void SetLine(suint ln) 
+    { DIAG_Die(DIAG_Unimplemented); } 
+ 
+  virtual VMA GetIP() const 
+    { DIAG_Die(DIAG_Unimplemented); return 0; }
+  virtual ushort GetOpIndex() const 
+    { DIAG_Die(DIAG_Unimplemented); return 0; }
+
+  virtual void SetIP(VMA _ip, ushort _opIndex) 
+    { DIAG_Die(DIAG_Unimplemented); }
+
+  virtual void SetFileIsText(bool bi) 
+    { DIAG_Die(DIAG_Unimplemented); }
+  virtual bool GotSrcInfo() 
+    { DIAG_Die(DIAG_Unimplemented); } 
+  virtual void SetSrcInfoDone(bool bi) 
+    { DIAG_Die(DIAG_Unimplemented); }
   
   // Dump contents for inspection
   virtual std::string ToDumpString(int dmpFlag = CSProfTree::XML_TRUE) const;
@@ -259,6 +292,7 @@ protected:
   void Relocate();
   suint begLine;
   suint endLine;
+  static string BOGUS;
 }; 
 
 // - if x < y; 0 if x == y; + otherwise
@@ -385,7 +419,8 @@ class CSProfStatementNode: public CSProfCodeNode {
   CSProfStatementNode(CSProfNode* _parent);
   virtual ~CSProfStatementNode();
 
-  void copyCallSiteNode(CSProfCallSiteNode* _node);
+  void operator=(const CSProfStatementNode& x);
+  void copyCallSiteNode(CSProfCallSiteNode* _node); // FIXME: remove
 
   // Node data
   VMA GetIP() const { return ip; }
@@ -405,13 +440,19 @@ class CSProfStatementNode: public CSProfCodeNode {
 
   void SetLine(suint ln) { begLine = endLine = ln; /* SetLineRange(ln, ln); */ } 
   void SetFileIsText(bool bi) {fileistext = bi;}
-  bool FileIsText() {return fileistext;}
+  bool FileIsText() const {return fileistext;}
+  bool GotSrcInfo() {return donewithsrcinfproc;} 
+  void SetSrcInfoDone(bool bi) {donewithsrcinfproc=bi;}
 
-  suint GetMetric(int metricIndex) {return metrics[metricIndex];}
+  suint GetMetric(int metricIndex) const {return metrics[metricIndex];}
+  suint GetMetricCount() const {return metrics.size();}
   
   // Dump contents for inspection
   virtual std::string ToDumpString(int dmpFlag = CSProfTree::XML_TRUE) const;
   virtual std::string ToDumpMetricsString(int dmpFlag = CSProfTree::XML_TRUE) const;
+
+  /// add metrics from call site node c to current node.
+  void addMetrics(const CSProfStatementNode* c);
  
 protected: 
   VMA ip;        // instruction pointer for this node
@@ -422,6 +463,7 @@ protected:
   // source file info
   std::string file; 
   bool   fileistext; //separated from load module
+  bool   donewithsrcinfproc;
   std::string proc;
 };
 
