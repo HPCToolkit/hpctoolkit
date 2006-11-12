@@ -254,9 +254,9 @@ public:
   void SetLineRange(suint begLn, suint endLn); // be careful when using!
 
   // eraxxon: I made this stuff virtual in order to handle both
-  // CSProfCallSiteNode or CSProfStatementNode in the same way.
-  // FIXME: The abstractions need to be fixed! Classes have been
-  // duplicated with impunity.
+  // CSProfCallSiteNode/CSProfProcedureFrameNode or
+  // CSProfStatementNode in the same way.  FIXME: The abstractions
+  // need to be fixed! Classes have been duplicated with impunity.
   virtual const std::string& GetFile() const
     { DIAG_Die(DIAG_Unimplemented); return BOGUS; }
   virtual void SetFile(const char* fnm) 
@@ -278,9 +278,11 @@ public:
   virtual void SetIP(VMA _ip, ushort _opIndex) 
     { DIAG_Die(DIAG_Unimplemented); }
 
+  virtual bool FileIsText() const
+    { DIAG_Die(DIAG_Unimplemented); return false; }
   virtual void SetFileIsText(bool bi) 
     { DIAG_Die(DIAG_Unimplemented); }
-  virtual bool GotSrcInfo() 
+  virtual bool GotSrcInfo() const
     { DIAG_Die(DIAG_Unimplemented); } 
   virtual void SetSrcInfoDone(bool bi) 
     { DIAG_Die(DIAG_Unimplemented); }
@@ -381,9 +383,9 @@ public:
   void SetProc(const std::string& pnm) { proc = pnm; }
 
   void SetLine(suint ln) { begLine = endLine = ln; /* SetLineRange(ln, ln); */ } 
+  bool FileIsText() const {return fileistext;} 
   void SetFileIsText(bool bi) {fileistext = bi;}
-  bool FileIsText() {return fileistext;} 
-  bool GotSrcInfo() {return donewithsrcinfproc;} 
+  bool GotSrcInfo() const {return donewithsrcinfproc;} 
   void SetSrcInfoDone(bool bi) {donewithsrcinfproc=bi;}
 
   suint GetMetric(int metricIndex) {return metrics[metricIndex];}
@@ -439,9 +441,9 @@ class CSProfStatementNode: public CSProfCodeNode {
   void SetProc(const std::string& pnm) { proc = pnm; }
 
   void SetLine(suint ln) { begLine = endLine = ln; /* SetLineRange(ln, ln); */ } 
-  void SetFileIsText(bool bi) {fileistext = bi;}
   bool FileIsText() const {return fileistext;}
-  bool GotSrcInfo() {return donewithsrcinfproc;} 
+  void SetFileIsText(bool bi) {fileistext = bi;}
+  bool GotSrcInfo() const {return donewithsrcinfproc;} 
   void SetSrcInfoDone(bool bi) {donewithsrcinfproc=bi;}
 
   suint GetMetric(int metricIndex) const {return metrics[metricIndex];}
@@ -481,18 +483,17 @@ public:
   
   // Node data
   const std::string& GetFile() const { return file; }
-  const std::string& GetProc() const { return proc; }
-  suint              GetLine() const { return begLine; }
-
   void SetFile(const char* fnm) { file = fnm; }
   void SetFile(const std::string& fnm) { file = fnm; }
 
+  const std::string& GetProc() const { return proc; }
   void SetProc(const char* pnm) { proc = pnm; }
   void SetProc(const std::string& pnm) { proc = pnm; }
 
+  suint GetLine() const { return begLine; }
   void SetLine(suint ln) { begLine = endLine = ln; /* SetLineRange(ln, ln); */ } 
+  bool FileIsText() const {return fileistext;}
   void SetFileIsText(bool bi) {fileistext = bi;}
-  bool FileIsText() {return fileistext;}
 
   // Dump contents for inspection
   virtual std::string ToDumpString(int dmpFlag = CSProfTree::XML_TRUE) const;

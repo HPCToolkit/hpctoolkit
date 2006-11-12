@@ -442,7 +442,7 @@ FixLeaves(CSProfNode* node)
       CSProfCallSiteNode* c = dynamic_cast<CSProfCallSiteNode*>(child);
       
       CSProfStatementNode* newc = new CSProfStatementNode(NULL);
-      newc->copyCallSiteNode(c); 
+      newc->copyCallSiteNode(c);
       
       newc->LinkBefore(node->FirstChild()); // do not break iteration!
       c->Unlink();
@@ -615,109 +615,98 @@ NormalizeSameProcedureChildren(CSProfile* prof, CSProfNode* node,
   if (!node) { return noError; }
 
   // FIXME: Use this set to determine if we have a duplicate source line
-  StringToProcedureFramesMap proceduresMap; 
+  StringToProcedureFramesMap proceduresMap;
 
   // For each immediate child of this node...
-  for (CSProfNodeChildIterator it(node); it.Current(); /* */) {   
-
+  for (CSProfNodeChildIterator it(node); it.Current(); /* */) {
+    
     CSProfCodeNode* child = dynamic_cast<CSProfCodeNode*>(it.CurNode());  
     DIAG_Assert(child, ""); // always true (FIXME)
-
+    
     it++; // advance iterator -- it is pointing at 'child' 
 
     // recur 
     if (! child->IsLeaf()) {
       noError = noError && NormalizeSameProcedureChildren(prof, child, lm,startaddr, endaddr, lastone);
     }
-
-    bool inspect = (child->GetType() == CSProfNode::STATEMENT);
+    
+    bool inspect = (child->GetType() == CSProfNode::CALLSITE 
+		    || child->GetType() == CSProfNode::STATEMENT);
     
     if (inspect) {
-      CSProfStatementNode* c = dynamic_cast<CSProfStatementNode*>(child); 
+      CSProfCodeNode* c = child; // must be CALLSITE or STATEMENT!
+
       VMA curr_ip = c->GetIP(); //FMZ
-      if ((curr_ip>= startaddr) && 
-         ( lastone || curr_ip<= endaddr))  {  
-       //only handle functions in the current load module
+      if ((curr_ip >= startaddr) && (lastone || curr_ip <= endaddr)) {
+	//only handle functions in the current load module
         xDEBUG(DEB_UNIFY_PROCEDURE_FRAME,
-	   fprintf(stderr, "analyzing node %s %lx\n", 
-		   c->GetProc().c_str(), c->GetIP()););
-
-      string myid = c->GetFile() + c->GetProc();
-      StringToProcedureFramesMapIt it = proceduresMap.find(myid);
-      CSProfProcedureFrameNode* procFrameNode;
-      if (it != proceduresMap.end()) { 
-	// found 
-	procFrameNode = (*it).second;
-      } else { 
-	// no entry found -- add
-	procFrameNode= new CSProfProcedureFrameNode(NULL); 
-	procFrameNode->SetFile(c->GetFile());
+	       fprintf(stderr, "analyzing node %s %lx\n", 
+		       c->GetProc().c_str(), c->GetIP()););
 	
-	string procFrameName = c->GetProc();
+	string myid = c->GetFile() + c->GetProc();
 
-	xDEBUG(DEB_UNIFY_PROCEDURE_FRAME,
-	       std::cerr << "c->GetProc:" << procFrameName << std::endl;
-	       );
-
-	if ( !procFrameName.empty() ) {
+	StringToProcedureFramesMapIt it = proceduresMap.find(myid);
+	CSProfProcedureFrameNode* procFrameNode;
+	if (it != proceduresMap.end()) { 
+	  // found 
+	  procFrameNode = (*it).second;
+	} 
+	else { 
+	  // no entry found -- add
+	  procFrameNode= new CSProfProcedureFrameNode(NULL); 
+	  procFrameNode->SetFile(c->GetFile());
+	  
+	  string procFrameName = c->GetProc();
+	  
 	  xDEBUG(DEB_UNIFY_PROCEDURE_FRAME,
-		 std::cerr << "non empty procedure" << std::endl;
+		 std::cerr << "c->GetProc:" << procFrameName << std::endl;
 		 );
-	} else {
-	  procFrameName = string("unknown ") + StrUtil::toStr(c->GetIP(), 16);
-	  xDEBUG(DEB_UNIFY_PROCEDURE_FRAME,
-		 std::cerr << "empty procedure; use procedure name" << procFrameName << std::endl;
-		 );
+	  
+	  if ( !procFrameName.empty() ) {
+	    xDEBUG(DEB_UNIFY_PROCEDURE_FRAME,
+		   std::cerr << "non empty procedure" << std::endl;
+		   );
+	  } 
+	  else {
+	    procFrameName = string("unknown ") + StrUtil::toStr(c->GetIP(), 16);
+	    xDEBUG(DEB_UNIFY_PROCEDURE_FRAME,
+		   std::cerr << "empty procedure; use procedure name" 
+		   << procFrameName << std::endl;);
+	  }
+	  procFrameNode->SetProc(procFrameName);
+	  
+	  // if the procedure name could not be found, use 
+	  // unknown 0Xipaddr
+	  
+	  procFrameNode->SetFileIsText(c->FileIsText());
+	  
+	  if (!procFrameNode->FileIsText()) {
+	    // if child is not text: set f line to 0 and is text to false
+	    procFrameNode->SetLine(0);
+	  } 
+	  else {
+	    // determine the first line of the enclosing procedure
+	    suint procFrameLine;
+	    xDEBUG(DEB_PROC_FIRST_LINE,
+		   fprintf(stderr, "looking up the first line for %s\n",
+			   c->GetProc().c_str()););
+	    //  determine the appropriate module info for the current 
+	    //  procedure frame
+	    
+	    lm->GetProcFirstLineInfo(c->GetIP(), c->GetOpIndex(), procFrameLine);
+	    procFrameNode->SetLine(procFrameLine);
+	  }
+	  
+	  procFrameNode->Link(node);
+	  proceduresMap.insert(StringToProcedureFramesMapVal(myid, 
+							     procFrameNode));
 	}
-	procFrameNode->SetProc(procFrameName);
-
-	// if the procedure name could not be found, use 
-        // unknown 0Xipaddr
-
-	procFrameNode ->SetFileIsText(c->FileIsText());
-
-	if (!procFrameNode->FileIsText()) {
-	  // if child is not text: set f line to 0 and is text to false
-	  procFrameNode->SetLine(0);
-	} else {
-	  // determine the first line of the enclosing procedure
-	  suint procFrameLine;
-	  xDEBUG(DEB_PROC_FIRST_LINE,
-		 fprintf(stderr, "looking up the first line for %s\n",
-			 c->GetProc().c_str()););
-	  //  determine the appropriate module info for the current 
-	  //  procedure frame
-
-	  lm->GetProcFirstLineInfo(c->GetIP(), c->GetOpIndex(), procFrameLine);
-	  procFrameNode->SetLine(procFrameLine);
-	}
-
-	procFrameNode->Link(node);
-	proceduresMap.insert(StringToProcedureFramesMapVal(myid, 
-							   procFrameNode));
-      }
-      
-      if ( child->IsLeaf() ) {
-	xDEBUG(DEB_UNIFY_PROCEDURE_FRAME,
-	       fprintf(stderr, "converting node %s %lx into stmt node begin\n",
-		       c->GetProc().c_str(), c->GetIP()););
-	CSProfStatementNode *stmtNode = new CSProfStatementNode(NULL);
-	*stmtNode = *c;
-
-	xDEBUG(DEB_UNIFY_PROCEDURE_FRAME,
-	       fprintf(stderr, "converting node %s %lx into stmt node end\n", 
-		       c->GetProc().c_str(), c->GetIP()););
-	stmtNode->Link(procFrameNode);
-	child->Unlink();
-	delete child;
-      } else {
+	
 	child->Unlink();
 	c->Link(procFrameNode);
       }
-  
     } 
-  } 
- }
+  }
   return noError;
 }
 
