@@ -69,14 +69,17 @@ ifdef PAPI
   CONFIG_OPTS += --with-papi=$(PAPI)
 endif
 
-ifdef UNWIND
-  CONFIG_OPTS += --with-libunwind=$(UNWIND)
+ifdef CSPROF_ASYNC
+  CONFIG_OPTS += --enable-csprof-async
 endif
 
-ifdef CSPROF
+ifdef CSPROF_SYNC
   CONFIG_OPTS += --enable-csprof-sync
 endif
 
+ifdef UNWIND
+  CONFIG_OPTS += --with-libunwind=$(UNWIND)
+endif
 
 # used by configure (from GNU Autoconf)
 export CC
@@ -94,15 +97,16 @@ echo "  build     - Build"
 echo "  install   - Install"
 echo ""
 echo "Options to 'all' and 'configure':"
-echo "  CC=<C-compiler>         - Set the C compiler"
-echo "  CXX=<C++-compiler>      - Set the C++ compiler"
+echo "  CC=<name>   - Set the C compiler to 'name'"
+echo "  CXX=<name>  - Set the C++ compiler to 'name"
 echo ""
-echo "  PAPI=<PAPI-install-dir> - Set PAPI installation (absolute path)"
+echo "  PAPI=<dir>  - Build hpcrun; use PAPI installation dir (absolute path)"
 echo ""
-echo "  UNWIND=<libunwind-install-dir> - Set libuwind installation (absolute path)"
-echo "  CSPROF=1                - Build mem-csprof"
+echo "  CSPROF_ASYNC=1 - Build csprof"
+echo "  CSPROF_SYNC=1  - Build mem-csprof"
+echo "  UNWIND=<dir>   - libuwind installation dir (absolute path)"
 echo ""
-echo "  DEVELOP=1               - develop mode (debug + dev tools)"
+echo "  DEVELOP=1      - develop mode (debug + dev tools)"
 echo ""
 echo "By default, makefiles are created in:"
 echo "  $(BUILDDIR)"
