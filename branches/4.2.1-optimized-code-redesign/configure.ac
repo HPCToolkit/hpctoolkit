@@ -46,15 +46,15 @@
 #
 # Modification history:
 #   2004/03/03 - Nathan Tallent
+#   ...
 #
 #############################################################################
 
-include(config/hpc-cxxutils.m4)
+m4_include(config/hpc-cxxutils.m4)
 
 #----------------------------------------------------------------------------
 # Initialization: 
 # Careful: 
-#   - Automake 1.9.6 would include defs of hpc-cxxutils macros.
 #   - Libtool 1.5.18 has a bug interacting with Tru64's ksh.
 # Require libtool 1.5.10 and automake 1.9.3 to 1) correctly link
 #   templates with MIPSPro compiler on IRIX64, 2) link on alpha-Tru64
@@ -71,11 +71,11 @@ AC_INIT([HPCToolkit], [BRANCH-4.2.1], [hpc@cs.rice.edu], [HPCToolkit])
 AC_CONFIG_SRCDIR([src/include/HPCToolkitVersionInfo.h])
 AC_CONFIG_AUX_DIR([config])
 
-AC_PREREQ(2.59)
-AM_INIT_AUTOMAKE(1.9.5)
-# Require libtool 1.5.20
+AC_PREREQ(2.60)
+AM_INIT_AUTOMAKE(1.9.6)
+# Require libtool 1.5.22
 
-AC_CANONICAL_HOST
+AC_CANONICAL_HOST()
 
 AC_MSG_NOTICE([INFO: On entry: CXX=${CXX} CXXFLAGS=${CXXFLAGS}])
 AC_MSG_NOTICE([INFO: On entry: CC=${CC} CFLAGS=${CFLAGS}])
@@ -96,16 +96,16 @@ AC_SUBST([HPCTOOLKIT_PLATFORM])
 
 # AC_PROG_CXX will set CXXFLAGS to something like -g -O2 if not
 # already defined.  We do not want this!
-HPC_ENSURE_DEFINED_CXXFLAGS
-HPC_ENSURE_DEFINED_CFLAGS
+HPC_ENSURE_DEFINED_CXXFLAGS()
+HPC_ENSURE_DEFINED_CFLAGS()
 
 # Check for programs.
 # Note: libtool makes PROG_RANLIB obsolete
-AC_PROG_LIBTOOL
+AC_PROG_LIBTOOL()
 AC_PROG_CXX(HPC_CXX_LIST)
 AC_PROG_CC(HPC_CC_LIST)
-AC_PROG_CXXCPP
-AC_PROG_INSTALL
+AC_PROG_CXXCPP()
+AC_PROG_INSTALL()
 
 AC_MSG_NOTICE([INFO: After check: CXX=${CXX} CXXFLAGS=${CXXFLAGS}])
 AC_MSG_NOTICE([INFO: After check: CC=${CC} CFLAGS=${CFLAGS}])
@@ -114,13 +114,13 @@ AC_MSG_NOTICE([INFO: After check: CC=${CC} CFLAGS=${CFLAGS}])
 AC_LANG(C++)
 
 # Check for header files
-AC_HEADER_STDC
+AC_HEADER_STDC()
 AC_CHECK_HEADERS(unistd.h)
 AC_CHECK_HEADERS(inttypes.h)
-HPC_CHECK_CXX_STDC_HEADERS
+HPC_CHECK_CXX_STDC_HEADERS()
 
 # Check pthread.h
-HPC_CHECK_COMPILE_PTHREAD_H
+HPC_CHECK_COMPILE_PTHREAD_H()
 
 # Check for typedefs, structures, and compiler characteristics.
 # -none thus far-
@@ -206,7 +206,7 @@ AC_MSG_CHECKING([whether DEVELOP mode is enabled])
 OPT_ENABLE_DEVELOP=no
 
 AC_ARG_ENABLE([develop],
-  AC_HELP_STRING([--enable-develop],
+  AS_HELP_STRING([--enable-develop],
                  [Build development version (enable debugging)]),
   [case "${enableval}" in
      yes) OPT_ENABLE_DEVELOP="yes" ;;
@@ -233,7 +233,7 @@ OPT_PAPI_LIBSO=
 OPT_PAPI_LIBA=
 
 AC_ARG_WITH([papi],
-  AC_HELP_STRING([--with-papi=<papi_install_path>],
+  AS_HELP_STRING([--with-papi=<papi_install_path>],
                  [use given PAPI installation (absolute path) with hpcrun (default is NO)]),
   [if test $withval != no; then
      OPT_HAVE_PAPI=yes
@@ -307,7 +307,7 @@ OPT_LIBUNWIND_LIBSO=
 OPT_LIBUNWIND_LIBA=
 
 AC_ARG_WITH([libunwind],
-  AC_HELP_STRING([--with-libunwind=<libunwind_install_path>],
+  AS_HELP_STRING([--with-libunwind=<libunwind_install_path>],
                  [use given LIBUNWIND installation (absolute path) with csprof (default is NO)]),
   [if test $withval != no; then
      OPT_HAVE_LIBUNWIND=yes
@@ -362,7 +362,7 @@ AC_MSG_CHECKING([whether to build csprof (synchronous)])
 OPT_ENABLE_CSPROF_SYNC=no
 
 AC_ARG_ENABLE([csprof-sync],
-  AC_HELP_STRING([--enable-csprof-sync],
+  AS_HELP_STRING([--enable-csprof-sync],
                  [Build csprof (synchronous)]),
   [case "${enableval}" in
      yes) OPT_ENABLE_CSPROF_SYNC="yes" ;;
@@ -380,7 +380,7 @@ AC_MSG_CHECKING([whether to build csprof (asynchronous)])
 OPT_ENABLE_CSPROF_ASYNC=no
 
 AC_ARG_ENABLE([csprof-async],
-  AC_HELP_STRING([--enable-csprof-async],
+  AS_HELP_STRING([--enable-csprof-async],
                  [Build csprof (synchronous)]),
   [case "${enableval}" in
      yes) OPT_ENABLE_CSPROF_ASYNC="yes" ;;
@@ -412,7 +412,7 @@ AC_MSG_CHECKING([whether to build developer tools (devtools)])
 OPT_ENABLE_DEVTOOLS="no"
 
 AC_ARG_ENABLE([devtools],
-  AC_HELP_STRING([--enable-devtools],
+  AS_HELP_STRING([--enable-devtools],
                  [Build development tools (enable debugging)]),
   [case "${enableval}" in
      yes) OPT_ENABLE_DEVTOOLS="yes" ;;
@@ -603,7 +603,7 @@ AC_SUBST([HOST_HPCPROF_LDFLAGS])
 # Makefiles to create
 #----------------------------------------------------------------------------
 
-AC_OUTPUT([ \
+AC_CONFIG_FILES([ \
   Makefile \
   src/Makefile \
   src/hpctoolkit/Makefile \
@@ -631,3 +631,6 @@ AC_OUTPUT([ \
   src/lib/perl/HPCToolkitVersionInfo.pm \
 ])
 
+AC_CONFIG_COMMANDS()
+
+AC_OUTPUT()
