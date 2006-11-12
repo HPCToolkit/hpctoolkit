@@ -62,6 +62,7 @@
 
 #include <lib/ISA/ISATypes.hpp>
 
+#include <lib/support/Assertion.h>
 #include <lib/support/NonUniformDegreeTree.hpp>
 #include <lib/support/Unique.hpp>
 #include <lib/support/String.hpp>
@@ -251,28 +252,41 @@ public:
   CSProfCodeNode* CSProfCodeNodeWithLine(suint ln) const; 
 
   void SetLineRange(suint begLn, suint endLn); // be careful when using!
-  
+
   // eraxxon: I made this stuff virtual in order to handle both
   // CSProfCallSiteNode or CSProfStatementNode in the same way.
   // FIXME: The abstractions need to be fixed! Classes have been
   // duplicated with impunity.
-  virtual const char* GetFile() const { return NULL; }
-  virtual void SetFile(const char* fnm) { }
+  virtual const char* GetFile() const 
+    { BriefAssertion(false); return NULL; }
+  virtual void SetFile(const char* fnm) 
+    { BriefAssertion(false);  }
 
-  virtual const char* GetProc() const { return NULL; }
-  virtual void SetProc(const char* pnm) { }
+  virtual const char* GetProc() const 
+    { BriefAssertion(false); return NULL; }
+  virtual void SetProc(const char* pnm) 
+    { BriefAssertion(false); }
 
-  virtual void SetLine(suint ln) { } 
+  virtual void SetLine(suint ln) 
+    { BriefAssertion(false); } 
 
-  virtual Addr GetIP() const { return 0; }
-  virtual ushort GetOpIndex() const { return 0; }
+  virtual Addr GetIP() const 
+    { BriefAssertion(false); return 0; }
+  virtual ushort GetOpIndex() const 
+    { BriefAssertion(false); return 0; }
 
-  virtual void SetIP(Addr _ip, ushort _opIndex) { }
+  virtual void SetIP(Addr _ip, ushort _opIndex) 
+    { BriefAssertion(false); }
 
-  virtual void SetFileIsText(bool bi) { }
-  virtual bool GotSrcInfo() { } 
-  virtual void SetSrcInfoDone(bool bi) { }
-
+  virtual bool FileIsText() const
+    { BriefAssertion(false); return false; } 
+  virtual void SetFileIsText(bool bi) 
+    { BriefAssertion(false); }
+  virtual bool GotSrcInfo() const
+    { BriefAssertion(false); return false; } 
+  virtual void SetSrcInfoDone(bool bi) 
+    { BriefAssertion(false); }
+  
   // Dump contents for inspection
   virtual String ToDumpString(int dmpFlag = CSProfTree::XML_TRUE) const;
     
@@ -364,9 +378,9 @@ public:
   void SetFile(const char* fnm) { file = fnm; }
   void SetProc(const char* pnm) { proc = pnm; }
   void SetLine(suint ln) { begLine = endLine = ln; /* SetLineRange(ln, ln); */ } 
+  bool FileIsText() const {return fileistext;} 
   void SetFileIsText(bool bi) {fileistext = bi;}
-  bool FileIsText() {return fileistext;} 
-  bool GotSrcInfo() {return donewithsrcinfproc;} 
+  bool GotSrcInfo() const {return donewithsrcinfproc;} 
   void SetSrcInfoDone(bool bi) {donewithsrcinfproc=bi;}
 
   suint GetMetric(int metricIndex) {return metrics[metricIndex];}
@@ -418,9 +432,9 @@ class CSProfStatementNode: public CSProfCodeNode {
   void SetFile(const char* fnm) { file = fnm; }
   void SetProc(const char* pnm) { proc = pnm; }
   void SetLine(suint ln) { begLine = endLine = ln; /* SetLineRange(ln, ln); */ } 
-  void SetFileIsText(bool bi) {fileistext = bi;}
   bool FileIsText() const {return fileistext;}
-  bool GotSrcInfo() {return donewithsrcinfproc;} 
+  void SetFileIsText(bool bi) {fileistext = bi;}
+  bool GotSrcInfo() const {return donewithsrcinfproc;} 
   void SetSrcInfoDone(bool bi) {donewithsrcinfproc=bi;}
 
   suint GetMetric(int metricIndex) const {return metrics[metricIndex];}
@@ -466,8 +480,8 @@ public:
   void SetFile(const char* fnm) { file = fnm; }
   void SetProc(const char* pnm) { proc = pnm; }
   void SetLine(suint ln) { begLine = endLine = ln; /* SetLineRange(ln, ln); */ } 
+  bool FileIsText() const {return fileistext;}
   void SetFileIsText(bool bi) {fileistext = bi;}
-  bool FileIsText() {return fileistext;}
 
   // Dump contents for inspection
   virtual String ToDumpString(int dmpFlag = CSProfTree::XML_TRUE) const;
