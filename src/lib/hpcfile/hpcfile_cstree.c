@@ -280,10 +280,22 @@ hpcfile_cstree_read_hdr(FILE* fs, hpcfile_cstree_hdr_t* hdr)
 	      HPCFILE_CSTREE_MAGIC_STR_LEN) != 0) { 
     return HPCFILE_ERR; 
   }
+
+  /* Removing check for version number. It causes problems when
+   * xcsprof and csprof have (sigh) different versions of hpcfile with
+   * different compile-time flags. The version number isn't currently
+   * being used for anything, so removing the check should be
+   * harmless.
+   * FIXME: reinsert check when csprof and xcsprof use the same
+   * hpcfile.
+   * -- garvin
+   */
+#if 0
   if (strncmp(hdr->fid.version, HPCFILE_CSTREE_VERSION, 
 	      HPCFILE_CSTREE_VERSION_LEN) != 0) { 
     return HPCFILE_ERR; 
   }
+#endif
   if (hdr->fid.endian != HPCFILE_CSTREE_ENDIAN) { return HPCFILE_ERR; }
   
   // Sanity check header
