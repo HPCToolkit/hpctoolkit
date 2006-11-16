@@ -7,9 +7,6 @@ ARCH := ia64
 LIB_PFM :=
 INC_PFM :=
 
-# a.k.a. '--prefix' to ./configure
-LIBUNWIND_HOME := /users/froydnj
-
 LIB_UNWIND := -L$(LIBUNWIND_HOME)/lib -lunwind-ia64 -lunwind -Wl,--rpath -Wl,$(LIBUNWIND_HOME)/lib -ldl
 INC_UNWIND := -I$(LIBUNWIND_HOME)/include
 
@@ -24,7 +21,7 @@ INC_UNWIND += -I$(ARMCI_HOME)/src
 DEFINES += -DCSPROF_ARMCI_PROFILING=1
 endif
 
-CSPROF_TRAMPOLINE := -DCSPROF_TRAMPOLINE_BACKEND=1
+# CSPROF_TRAMPOLINE := -DCSPROF_TRAMPOLINE_BACKEND=1
 
 # this must be gcc, since we use inline assembly (patches to remove
 # this limitation welcome)

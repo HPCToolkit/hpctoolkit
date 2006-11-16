@@ -99,9 +99,10 @@ typedef struct csprof_cct_node_s {
     /* singly/doubly linked list of siblings */
     struct csprof_cct_node_s *next_sibling;
 
-#ifdef CSPROF_TRAMPOLINE_BACKEND
     void *sp;
-#endif
+    /* sp is only used if we are using trampolines (i.e.,
+       CSPROF_TRAMPOLINE_BACKEND is defined); otherwise its value is
+       set to NULL  */
 
     /* variable-sized array for recording metrics */
     size_t metrics[1];

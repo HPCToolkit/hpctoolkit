@@ -5,8 +5,6 @@
 
 all: lib
 
-PLATFORM ?= alpha
-
 include mkinclude.$(PLATFORM)
 
 LIBRARY = libcsfile.a

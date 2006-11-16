@@ -42,22 +42,38 @@ csprof_record_metric_with_unwind(int metric_id, size_t value, int unwinds)
 }
 
 #define USE_LIBUNWIND_TO_START 1
-/* KLUDGE: this parameter should be set to 4; if you do the actual
-   tracking of how we get to csprof_sample_callstack, that's the number
-   of frames in the way, as it were.  But it appears that with MPI
-   applications (CAF?) on the IA-64 and this parameter set to 4, the
-   top of every call stack is #xa000000000000000.  We don't know why
-   this happens.  So to get around this (and in the process invalidating
-   profiles taken for other applications), we set this parameter to 5.
 
-   KLUDGE: why is it different for threaded vs. non-threaded builds?
+/* CSPROF_SAMPLE_CALLSTACK_DEPTH: this parameter should be set to 4;
+   if you do the actual tracking of how we get to
+   csprof_sample_callstack, that's the number of frames in the way, as
+   it were.  But it appears that with MPI applications (CAF?) on the
+   IA-64 and this parameter set to 4, the top of every call stack is
+   #xa000000000000000.  We don't know why this happens.  So to get
+   around this, we increment the number of frames if MPI is
+   defined. Threading likewise adds another stack frame.
 
-   FIXME: this should be made a runtime option. */
+   FIXME: this should be made a runtime option.
+
+   FIXME: In fact, we should really expose and explain the weirdness
+   added by threading/MPI/etc. in the unwinding step, not hide it.
+ */
+
+#define BASE_CALLSTACK_DEPTH 4
+
 #ifdef CSPROF_THREADS
-#define CSPROF_SAMPLE_CALLSTACK_DEPTH 6
+#define THREAD_STACK_BUMP 1
 #else
-#define CSPROF_SAMPLE_CALLSTACK_DEPTH 5
+#define THREAD_STACK_BUMP 0
 #endif
+
+/* FIXME: Is there a way to automatically detect if a program is using MPI? */
+#ifdef MPI
+#define MPI_STACK_BUMP 1
+#else
+#define MPI_STACK_BUMP 0
+#endif
+
+#define CSPROF_SAMPLE_CALLSTACK_DEPTH (BASE_CALLSTACK_DEPTH + THREAD_STACK_BUMP + MPI_STACK_BUMP)
 
 static int
 backtrace_done(unw_cursor_t *frame, unw_word_t *pcp, unw_word_t *spp)
