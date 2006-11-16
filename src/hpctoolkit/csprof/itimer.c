@@ -144,9 +144,11 @@ extern void csprof_trampoline2_end();
 static void
 csprof_undo_swizzled_data(csprof_state_t *state, void *ctx)
 {
+#ifdef CSPROF_TRAMPOLINE_BACKEND
     if(csprof_swizzle_patch_is_valid(state)) {
         csprof_remove_trampoline(state, ctx);
     }
+#endif
 }
 
 void

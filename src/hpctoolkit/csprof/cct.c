@@ -30,6 +30,7 @@
 
 #include "cct.h"
 #include "general.h"
+#include "csproflib_private.h"
 #include "mem.h"
 #include "list.h"
 #include "metrics.h"
@@ -312,7 +313,11 @@ csprof_cct_node__init(csprof_cct_node_t* x, csprof_cct_node_t* parent,
     memset(x, 0, sizeof(*x));
 
     x->ip = ip;
+#ifdef CSPROF_TRAMPOLINE_BACKEND
     x->sp = sp;
+#else
+    x->sp = NULL;
+#endif
 
     /* initial circular list of siblings includes only self */
     x->next_sibling = NULL;
@@ -332,7 +337,11 @@ csprof_cct_node__create(void *ip, void *sp)
     memset(node, 0, node_size);
 
     node->ip = ip;
+#ifdef CSPROF_TRAMPOLINE_BACKEND
     node->sp = sp;
+#else
+    node->sp = NULL;
+#endif
     node->next_sibling = NULL;
 
     return node;
@@ -469,8 +478,13 @@ csprof_cct_insert_backtrace(csprof_cct_t *x, void *treenode, int metric_id,
                    start->ip, start->sp);
         start--;
 
+#ifdef CSPROF_TRAMPOLINE_BACKEND
         DBGMSG_PUB(CSPROF_DBG_CCT_INSERTION, "root ip %#lx | sp %#lx",
                    tn->ip, tn->sp);
+#else
+        DBGMSG_PUB(CSPROF_DBG_CCT_INSERTION, "root ip %#lx",
+                   tn->ip);
+#endif
         DBGMSG_PUB(CSPROF_DBG_CCT_INSERTION, "start ip %#lx | sp %#lx",
                    start->ip, start->sp);
     }
@@ -478,14 +492,26 @@ csprof_cct_insert_backtrace(csprof_cct_t *x, void *treenode, int metric_id,
     if(tn == NULL) {
         tn = x->tree_root;
 
+#ifdef CSPROF_TRAMPOLINE_BACKEND
         DBGMSG_PUB(CSPROF_DBG_CCT_INSERTION, "(NULL) root ip %#lx | sp %#lx",
                    tn->ip, tn->sp);
+#else
+        DBGMSG_PUB(CSPROF_DBG_CCT_INSERTION, "(NULL) root ip %#lx",
+                   tn->ip);
+#endif
         DBGMSG_PUB(CSPROF_DBG_CCT_INSERTION, "start ip %#lx | sp %#lx",
                    start->ip, start->sp);
+
         /* we don't want the tree root calling itself */
+#ifdef CSPROF_TRAMPOLINE_BACKEND
         if(start->ip == tn->ip && start->sp == tn->sp) {
             start--;
         }
+#else
+	if(start->ip == tn->ip) {
+	  start--;
+	}
+#endif
         DBGMSG_PUB(CSPROF_DBG_CCT_INSERTION, "start ip %#lx | sp %#lx",
                    start->ip, start->sp);
     }
@@ -497,8 +523,13 @@ csprof_cct_insert_backtrace(csprof_cct_t *x, void *treenode, int metric_id,
         }
         else {
             /* find child */
+#ifdef CSPROF_TRAMPOLINE_BACKEND
             csprof_cct_node_t *c =
                 csprof_cct_node__find_child(tn, start->ip, start->sp);
+#else
+	    csprof_cct_node_t *c =
+                csprof_cct_node__find_child(tn, start->ip);
+#endif
 
             if(c) {
                 /* child exists; recur */
@@ -556,7 +587,11 @@ csprof_cct__get_data_CB(csprof_cct_t* x, csprof_cct_node_t* node,
 			hpcfile_cstree_nodedata_t* d)
 {
     d->ip = (hpcfile_vma_t)node->ip;
+#ifdef CSPROF_TRAMPOLINE_BACKEND
     d->sp = (hpcfile_uint_t)node->sp;
+#else
+    d->sp = NULL;
+#endif
     memcpy(d->metrics, node->metrics, d->num_metrics * sizeof(size_t));
 }
 
