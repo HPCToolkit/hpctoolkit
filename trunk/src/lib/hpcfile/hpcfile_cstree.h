@@ -55,7 +55,9 @@ extern "C" {
 /* the format of the nodes contained in the file will be different
    depending on whether or not we've using the trampoline in this
    build.  make it so that the library doesn't get confused */
-#define CSPROF_TRAMPOLINE_BACKEND 1
+/* #define CSPROF_TRAMPOLINE_BACKEND 1 */
+/* Why was this hard-coded?  --garvin */
+
 #ifdef CSPROF_TRAMPOLINE_BACKEND
 # define HPCFILE_CSTREE_VERSION     "01.0T" /* 'T' is for trampoline */
 # define HPCFILE_CSTREE_VERSION_LEN 5 /* exclude '\0' */

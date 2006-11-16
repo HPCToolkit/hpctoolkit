@@ -77,6 +77,10 @@ ifdef CSPROF_SYNC
   CONFIG_OPTS += --enable-csprof-sync
 endif
 
+ifdef CSPROF_ASYNC
+  CONFIG_OPTS += --enable-csprof-async
+endif
+
 ifdef UNWIND
   CONFIG_OPTS += --with-libunwind=$(UNWIND)
 endif
