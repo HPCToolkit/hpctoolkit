@@ -43,8 +43,8 @@ csprof_epoch_get_loaded_modules(csprof_epoch_t *epoch,
                 newmod->vaddr = NULL;
 		newmod->size = thesize;
 
-		DBGMSG_PUB(16, "Load module %s loaded at %p",
-			   name, (void *) offset);
+		MSG(CSPROF_MSG_EPOCH, "Load module %s loaded at %p",
+		    name, (void *) offset);
                 newmod->next = epoch->loaded_modules;
                 epoch->loaded_modules = newmod;
                 epoch->num_modules++;

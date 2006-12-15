@@ -28,15 +28,31 @@ csprof_record_metric_with_unwind(int metric_id, size_t value, int unwinds)
     unw_cursor_t frame;
     int i;
 
+    DBGMSG_PUB(CSPROF_DBG_UNWINDING, "recording with %d unwinds", unwinds);
+
     /* force insertion from the root */
     state->treenode = NULL;
     state->bufstk = state->bufend;
     state = csprof_check_for_new_epoch(state);
 
     /* FIXME: error checking */
-    unw_getcontext(&ctx);
-    unw_init_local(&frame, &ctx);
+    if(unw_getcontext(&ctx) < 0) {
+      ERRMSG("unw_getcontext failed", __FILE__, __LINE__);
+      return;
+    }
+    if(unw_init_local(&frame, &ctx) < 0) {
+      ERRMSG("unw_init_local failed", __FILE__, __LINE__);
+      return;
+    }
     for(i = 0; i < unwinds; ++i) {
+      unw_word_t ip;
+      unw_word_t sp;
+
+      unw_get_reg(&frame, UNW_TDEP_IP, &ip);
+      unw_get_reg(&frame, UNW_TDEP_SP, &sp);
+
+      DBGMSG_PUB(CSPROF_DBG_UNWINDING, "stepping from IP %lx and SP %lx",
+		 ip, sp);
       unw_step(&frame);		/* step out into our caller(s) */
     }
 
