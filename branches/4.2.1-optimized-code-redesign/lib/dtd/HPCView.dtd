@@ -25,7 +25,7 @@
 <!ATTLIST FILE
             name CDATA #REQUIRED
 	    select CDATA #IMPLIED
-	    type (prof) "prof">
+	    type (HPCRUN|PROFILE) "PROFILE">
 
 <!ELEMENT COMPUTE (math)>
 <!ATTLIST COMPUTE

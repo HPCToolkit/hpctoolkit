@@ -159,7 +159,7 @@ realmain(int argc, char* const* argv)
   PgmScopeTree scopes("", new PgmScope("")); // FIXME: better location
   
   //-------------------------------------------------------
-  // Read configuration file [First pass]
+  // 1. Read configuration file
   //-------------------------------------------------------
   const string& cfgFile = args.configurationFile;
   DIAG_Msg(3, "Initializing Driver from " << cfgFile); 
@@ -177,22 +177,7 @@ realmain(int argc, char* const* argv)
   try {
     HPCViewXMLErrHandler errHndlr(cfgFile, tmpFile, NUM_PREFIX_LINES, true);
     HPCViewDocParser parser(tmpFile, errHndlr);
-    parser.pass1(driver);
-    
-    //-------------------------------------------------------
-    // Initialize scope tree
-    //-------------------------------------------------------
-    DIAG_Msg(3, "Initializing scope tree...");
-    driver.ScopeTreeInitialize(scopes); 
-
-    //-------------------------------------------------------
-    // Correlate program source with metrics (I)
-    //-------------------------------------------------------
-    // Read hpcrun data [by def. these are all 'FILE' metrics] (FIXME)
-    driver.ScopeTreeInsertProfileData(scopes, args.profileFiles);
-    
-    // Reread config file and process metrics.  This way computed
-    //   metrics can reference hpcrun metrics. (FIXME)
+    parser.pass1(driver); // FIXME: merge into one pass
     parser.pass2(driver);
   }
   catch (const HPCViewDocException& x) {
@@ -206,27 +191,33 @@ realmain(int argc, char* const* argv)
     throw;
   };
 
-  unlink(tmpFile.c_str()); 
+  unlink(tmpFile.c_str());
   DIAG_Msg(3, "Driver is now: " << driver.ToString());
-
+  
+  
+  //-------------------------------------------------------
+  // 2. Initialize scope tree
+  //-------------------------------------------------------
+  DIAG_Msg(3, "Initializing scope tree...");
+  driver.ScopeTreeInitialize(scopes); 
 
   //-------------------------------------------------------
-  // Correlate program source with metrics (II)
+  // 3. Correlate program source with metrics
   //-------------------------------------------------------
-  DIAG_Msg(3, "Creating traditional metrics: ...");
-  driver.ScopeTreeInsertPROFILEData(scopes);
+  DIAG_Msg(3, "Creating and correlating metrics with program structure: ...");
+  driver.ScopeTreeComputeMetrics(scopes);
 
   DIAG_If(4) {
     DIAG_Msg(4, "Initial scope tree:");
     int flg = (args.XML_DumpAllMetrics) ? 0 : PgmScopeTree::DUMP_LEAF_METRICS;
     driver.XML_Dump(scopes.GetRoot(), flg, std::cerr);
   }
-
-
+  
   //-------------------------------------------------------
-  // Prune the scope tree (remove scopes without metrics)
+  // 4. Finalize scope tree
   //-------------------------------------------------------
   if (args.OutFilename_CSV.empty() && args.OutFilename_TSV.empty()) {
+    // Prune the scope tree (remove scopes without metrics)
     PruneScopeTreeMetrics(scopes.GetRoot(), driver.NumberOfMetrics());
   }
   
@@ -241,9 +232,8 @@ realmain(int argc, char* const* argv)
     driver.XML_Dump(scopes.GetRoot(), flg, std::cerr);
   }
 
-
   //-------------------------------------------------------
-  // Generate Experiment database
+  // 5. Generate Experiment database
   //-------------------------------------------------------
   if (args.CopySrcFiles) {
     DIAG_Msg(1, "Copying source files reached by REPLACE/PATH statements to " << args.dbDir);

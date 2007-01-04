@@ -35,8 +35,8 @@
 // 
 // ******************************************************* EndRiceCopyright *
 
-#ifndef DerivedPerfMetrics_h 
-#define DerivedPerfMetrics_h 
+#ifndef DerivedPerfMetrics_hpp 
+#define DerivedPerfMetrics_hpp 
 
 //************************ System Include Files ******************************
 
@@ -45,8 +45,6 @@
 //************************* User Include Files *******************************
 
 #include <include/general.h> 
-
-#include "Driver.hpp"
 
 #include <lib/prof-juicy/PerfMetric.hpp>
 
@@ -57,6 +55,7 @@ using XERCES_CPP_NAMESPACE::DOMNode;
 
 //************************ Forward Declarations ******************************
 
+class Driver;
 class MathMLExpr;
 
 //****************************************************************************
@@ -64,6 +63,8 @@ class MathMLExpr;
 // FIXME: relocate
 class ScopeInfo;
 void AccumulateMetricsFromChildren(ScopeInfo* si, int perfInfoIndex);
+
+bool IsHPCRUNFilePerfMetric(PerfMetric* m);
 
 
 class FilePerfMetric : public PerfMetric {
@@ -79,14 +80,17 @@ public:
 
   virtual ~FilePerfMetric(); 
   
-  const std::string& FileName() const   { return file; }; 
-  const std::string& FileType() const;  // not yet implemented, is for later 
+  const std::string& FileName() const { return file; }
+  const std::string& FileType() const { return type; } // HPCRUN, PROFILE
   
-  virtual void Make(NodeRetriever &ret); // read the file
+  virtual void Make(NodeRetriever &ret);
   
   virtual std::string ToString() const; 
 
 private: 
+  void MakeHPCRUN(NodeRetriever &ret); // read the file
+  void MakePROFILE(NodeRetriever &ret); // read the file
+
   std::string file;
   std::string type; // for later use
   Driver* driver;
@@ -113,4 +117,5 @@ private:
 private: 
   MathMLExpr *mathExpr; 
 };
+
 #endif 

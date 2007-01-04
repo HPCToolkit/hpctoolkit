@@ -422,7 +422,7 @@ ProcessFILE(DOMNode* fileNode, Driver& driver,
     driver.Add(new FilePerfMetric(metricName, nativeName, metricDisplayName, 
 				  metricDoDisplay, metricDoPercent, 
 				  metricDoSortBy, metricFile, metricFileType, 
-				  &driver)); 
+				  &driver));
   } 
   else {
     string error = "METRIC '" + metricName + "' FILE name empty.";

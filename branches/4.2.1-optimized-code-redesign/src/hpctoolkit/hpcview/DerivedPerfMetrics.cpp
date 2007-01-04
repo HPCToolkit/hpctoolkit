@@ -184,6 +184,30 @@ void
 FilePerfMetric::Make(NodeRetriever &ret)
 {
   IFTRACE << "FilePerfMetric::Make " << endl << " " << ToString() << endl;
+  if (type == "HPCRUN") {
+    // FIXME: handled elsewhere [currently within Driver.cpp]
+  }
+  else if (type == "PROFILE") {
+    MakePROFILE(ret);
+  }
+  else {
+    DIAG_Die(DIAG_Unimplemented);
+  }
+}
+
+
+void 
+FilePerfMetric::MakeHPCRUN(NodeRetriever &ret)
+{
+  
+  
+}
+
+
+void 
+FilePerfMetric::MakePROFILE(NodeRetriever &ret)
+{
+  IFTRACE << "FilePerfMetric::MakePROFILE " << endl << " " << ToString() << endl;
   
   SAX2XMLReader* parser = XMLReaderFactory::createXMLReader();
 
@@ -206,8 +230,9 @@ FilePerfMetric::Make(NodeRetriever &ret)
     parser->parse(filePath);
   }
   catch (const PROFILEException& toCatch) {
-    string msg = toCatch.message();
-    throw MetricException(msg); 
+    string msg = "Error creating " + Name() + " from '" + FileName() + "':" 
+      + toCatch.message();
+    throw MetricException(msg);
   }
   delete parser;
   
@@ -259,3 +284,13 @@ ComputedPerfMetric::ToString() const
          "MathMLExpr=\"" + StrUtil::toStr((void*)mathExpr);
 } 
 
+// **************************************************************************
+// ToString methods 
+// **************************************************************************
+
+bool 
+IsHPCRUNFilePerfMetric(PerfMetric* m)
+{
+  FilePerfMetric* filemetric = dynamic_cast<FilePerfMetric*>(m);
+  return (filemetric && filemetric->FileType() == "HPCRUN");
+}

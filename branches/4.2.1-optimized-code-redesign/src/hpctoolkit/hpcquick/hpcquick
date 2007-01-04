@@ -63,6 +63,7 @@ use strict;
 use warnings;
 
 use IO::File;
+use IO::Pipe;
 use FindBin qw($Script $RealBin);
 
 use lib "$RealBin/../lib/perl";
@@ -153,7 +154,7 @@ my %metricInfo_t =
      type         => undef, # index into hpcviewConfigData{metricTypes}
      dispNm       => undef, # index into hpcviewConfigData{metricDispNms}
      profinfo     => undef, # a 'profileInfo_t'
-     PROFILEmid   => undef, # id of the metric within the PROFILE file
+     canonMId   => undef, # id of the metric within the canonical file
      );
 
 # profileInfo_t: a 'struct' of PROFILE data and its corresponding raw
@@ -165,7 +166,8 @@ my %metricInfo_t =
 #   metric per raw profile file. ***
 my %profileInfo_t = 
     (
-     PROFILEfile  => undef, # PROFILE file (canonical profile info)
+     canonFile => undef, # canonical profile file
+     canonType => undef, # hpcrun or PROFILE (less info)
      rawProfFiles => undef, # list of any corresponding raw profile files
      rawProfType  => undef, # type of raw data (if applicable)
      );
@@ -566,11 +568,13 @@ sub Config_addMetric
 {
   my ($cfgData, $aprofInfo) = @_;
 
-  my $fnm = $aprofInfo->{PROFILEfile};  
+  my $fnm = $aprofInfo->{canonFile};  
+  my $ty  = $aprofInfo->{canonType};  
 
-  # Find metrics within this PROFILE file.  Note that the returned
+  # Find a list of metrics within the profile.  Note that the returned
   # list is not in the proper format.
-  my $metricsRef = findMetricsForPROFILE($fnm);
+  my $metricsRef = ($ty == $hpcrunType) ? 
+		    findMetricsForHPCRUN($fnm) : findMetricsForPROFILE($fnm);
   my $numMetrics = scalar(@{$metricsRef});
   if ($numMetrics == 0) {
     print STDOUT "Warning: Could not find any metrics in '$fnm'\n";
@@ -587,9 +591,9 @@ sub Config_addMetric
     # sets aMetric->type, dispNm (as indices!)
     Config_addMetricNames($cfgData, $aMetric, $mType, $mDispNm);
     
-    # set aMetric->profinfo, PROFILEmid
+    # set aMetric->profinfo, canonMId
     $aMetric->{profinfo} = $aprofInfo;
-    $aMetric->{PROFILEmid} = $metricsRef->[$i]->{PROFILEmid};
+    $aMetric->{canonMId} = $metricsRef->[$i]->{canonMId};
 
     # Add this metric to the list
     push(@{$cfgData->{metrics}}, $aMetric);
@@ -649,7 +653,7 @@ sub Config_addTitle
 
   # If no title exists, extract the title from the first PROFILE file
   if (!defined($cfgData->{title})) {
-    my $fnm = $cfgData->{metrics}[0]->{profinfo}->{PROFILEfile};
+    my $fnm = $cfgData->{metrics}[0]->{profinfo}->{canonFile};
     $cfgData->{title} = Config_makeTitle($fnm);
   }
 }
@@ -774,7 +778,8 @@ sub genHPCViewConfigFile
     my $metric = $cfgData->{metrics}[$i];
     
     my $nm = $metric->{dispNm};
-    my $fnm = $metric->{profinfo}->{PROFILEfile};
+    my $fnm = $metric->{profinfo}->{canonFile};
+    my $fty = $metric->{profinfo}->{canonType};
     
     print STDOUT "  Adding metric '$nm' from '$fnm'\n";
     
@@ -786,8 +791,10 @@ sub genHPCViewConfigFile
     print {$cfgFhndl} ">\n";
     
     # FILE subelement
+    my $FILEty = ($fty == $hpcrunType) ? 'HPCRUN' : 'PROFILE';
     print {$cfgFhndl} "  <FILE name=\"", xmlEsc($fnm), "\" ",
-	  "select=\"", xmlEsc($metric->{PROFILEmid}), "\"/>\n";
+	  "select=\"", xmlEsc($metric->{canonMId}), "\" ",
+          "type=\"${FILEty}\"/>\n";
   
     # METRIC end tag
     print {$cfgFhndl} "</METRIC>\n\n";
@@ -933,14 +940,16 @@ sub isRecursivePath
 
 # canonicalizeProfileData
 #   Given a list of profile data files and a file handle to a log
-#   file, creates a canonical list of data, ensuring we have PROFILE
-#   info for all binary profiles. (hpcrun, ssrun, umon.out, etc.)
-#   Saves canonicalizing commands to the log file.
-#    - Convert each binary profile into PROFILE data (stored
-#      in a temporary filename since we don't know how to extract
-#      metric names). (Eventually we may support converting a group of 
-#      binary data into one PROFILE data file.)
-#    - Associates raw profile files with PROFILE file (for later use).
+#   file, creates a canonical data file for all raw profile files
+#   (ssrun, umon.out, etc.)  Saves canonicalizing commands to the log
+#   file.
+#    - hpcrun files are canonical
+#    - For non-hpcrun files:
+#      - Convert binary profiles into PROFILE data (stored in a
+#        temporary filename since we don't know how to extract metric
+#        names). (Eventually we may support converting a group of binary
+#        data into one PROFILE data file.)
+#      - Associates raw profile files with PROFILE file (for later use).
 #    - Returns a list of 'profileInfo_t'
 sub canonicalizeProfileData
 {
@@ -960,29 +969,26 @@ sub canonicalizeProfileData
       UsageError("Zero-sized profile file: '$x'\n");
     }
     
-    # if we do not have a PROFILE file, canonicalize
-    my $PROFILEFile = undef;
-    my $rawFile = undef;
-    my $ty = getProfileType($x);
-    if ($ty == $PROFILEType) {
-      $PROFILEFile = $x;
+    # if we do not have a PROFILE or hpcrun file, canonicalize
+    my ($canonFile, $canonType) = (undef, undef);
+    my $rawFile = $x;
+    my $rawTy = getProfileType($rawFile);
+    
+    if ($rawTy == $hpcrunType || $rawTy == $PROFILEType) {
+      $canonFile = $rawFile;
+      $canonType = $rawTy;
     }
-    # FIXME: We now let hpcrun files pass through
-    #elsif ($ty == $hpcrunType) {
-    #  $PROFILEFile = $x + $hpcrunIdSuffix;
-    #}
     else {
-      $rawFile = $x;
-      $PROFILEFile = canonicalizeProfile($rawFile, $ty, $logFhndl);
+      $canonFile = canonicalizeProfileToPROFILE($rawFile, $rawTy, $logFhndl);
+      $canonType = $PROFILEType;
     }
     
     my $aProfInfo = { %profileInfo_t, };
-    $aProfInfo->{PROFILEfile} = $PROFILEFile;
+    $aProfInfo->{canonFile} = $canonFile;
+    $aProfInfo->{canonType} = $canonType;
     $aProfInfo->{rawProfFiles} = [ ];
-    if ($rawFile) {
-      push(@{$aProfInfo->{rawProfFiles}}, $rawFile);
-    }
-    $aProfInfo->{rawProfType} = ($ty == $PROFILEType) ? undef : $ty;
+    push(@{$aProfInfo->{rawProfFiles}}, $rawFile);
+    $aProfInfo->{rawProfType} = $rawTy;
     
     push(@{$profileData}, $aProfInfo);
   }
@@ -991,14 +997,14 @@ sub canonicalizeProfileData
 }
 
 
-# canonicalizeProfile
+# canonicalizeProfileToPROFILE
 #   Given a raw profile file and its type, canonicalize into a PROFILE
 #   file and return the new file name.
 {
   my ($sgiProfCmd, $alphaProfCmd, $ptranCmd);
   my $hpcprofCmd;
 
-  sub canonicalizeProfile
+  sub canonicalizeProfileToPROFILE
   {
     my ($rawFile, $profTy, $logFhndl) = @_;
 
@@ -1072,7 +1078,7 @@ sub findMetricsForPROFILE
       
       $aMetric->{type} = $nm;
       $aMetric->{dispNm} = $nm;
-      $aMetric->{PROFILEmid} = $id;
+      $aMetric->{canonMId} = $id;
       $metrics->[$i] = $aMetric;
       $i++;
     }
@@ -1082,6 +1088,51 @@ sub findMetricsForPROFILE
   }
   $profileHandle->close();
   
+  return $metrics;
+}
+
+
+# findMetricsForHPCRUN
+#   Given a HPCRUN file, return an array ref of 'metricInfo_t' for the
+#   file. Assume the file exists.
+#   
+#   Note: The 'type' and 'dispNm' fields of 'metricInfo_t' contain
+#   *strings* not indices (IOW, it is doing double-duty.)
+sub findMetricsForHPCRUN 
+{
+  my ($proffile) = @_;
+  
+  my $hpcprofEventRE = '(\w+):\d+ - .*';
+  my $hpcprofCmd = "hpcprof foo $proffile";
+
+  my $metrics = [ ];
+  
+
+  my $pipe = new IO::Pipe;
+  $pipe->reader($hpcprofCmd)
+      or Error("Can't open '$proffile'\n");
+
+  my $i = 0;
+  while (<$pipe>) {
+    my $line = $_;
+    
+    if ($line =~ /^Columns correspond to the following events/) {
+      next; # first line
+    }
+    else {
+      my $aMetric = { %metricInfo_t, };
+      
+      my ($nm) = ($line =~ /$hpcprofEventRE/);
+      my ($id) = $i;
+      
+      $aMetric->{type} = $nm;
+      $aMetric->{dispNm} = $nm;
+      $aMetric->{canonMId} = $id;
+      $metrics->[$i] = $aMetric;
+      $i++;
+    }
+  }
+
   return $metrics;
 }
 

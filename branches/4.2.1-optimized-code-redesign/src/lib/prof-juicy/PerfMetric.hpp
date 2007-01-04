@@ -47,6 +47,7 @@
 #include <include/general.h>
 
 #include <lib/support/VectorTmpl.hpp>
+#include <lib/support/diagnostics.h>
 
 //************************ Forward Declarations ******************************
 
@@ -167,10 +168,17 @@ protected:
   unsigned int perfInfoIndex; 
 };
 
-class MetricException {
-public: 
-  MetricException(const char* str) { error = str; } 
-  MetricException(const std::string& str) { error = str; } 
+
+class MetricException : public Diagnostics::Exception {
+public:
+  MetricException(const std::string x,
+		  const char* filenm = NULL, unsigned int lineno = 0)
+    : Diagnostics::Exception(x, filenm, lineno)
+  { }
+
+  virtual std::string message() const {
+    return "Error constructing METRIC (from CONFIGURATION file) [MetricException]: " + what();
+  }
 
 public:
   std::string error; 

@@ -35,14 +35,15 @@
 // 
 // ******************************************************* EndRiceCopyright *
 
-#ifndef Driver_h
-#define Driver_h 
+#ifndef Driver_hpp
+#define Driver_hpp 
 
 //************************ System Include Files ******************************
 
 #include <iostream>
 #include <ostream>
-#include <vector> // STL
+#include <list>    // STL
+#include <vector>  // STL
 #include <utility> // STL
 #include <string>
 
@@ -51,6 +52,7 @@
 #include <include/general.h>
 
 #include "PGMDocHandler.hpp"
+#include "DerivedPerfMetrics.hpp" // for FilePerfMetric
 
 #include <lib/prof-juicy/PgmScopeTree.hpp>
 #include <lib/support/Unique.hpp>
@@ -111,10 +113,8 @@ public:
   const PerfMetric& PerfDataSrc(int i) const { return *dataSrc[i]; }
   void Add(PerfMetric* metric); 
   
-  void ScopeTreeInitialize(PgmScopeTree& scopesInfo);
-  void ScopeTreeInsertProfileData(PgmScopeTree& scopesInfo,
-				  const std::list<std::string>& profileFiles);
-  void ScopeTreeInsertPROFILEData(PgmScopeTree& scopesInfo);
+  void ScopeTreeInitialize(PgmScopeTree& scopes);
+  void ScopeTreeComputeMetrics(PgmScopeTree& scopes);
 
   std::string ToString() const; 
   void Dump() const { std::cerr << ToString() << std::endl; }
@@ -127,17 +127,25 @@ public:
   void CSV_Dump(PgmScope* pgm, std::ostream &os = std::cout) const;
   void TSV_Dump(PgmScope* pgm, std::ostream &os = std::cout) const;
 
-private: 
+private:
+  typedef std::list<FilePerfMetric*> MetricList_t;
   
   void ProcessPGMFile(NodeRetriever* nretriever, 
 		      PGMDocHandler::Doc_t docty, 
 		      std::vector<std::string*>* files);
 
+  void ScopeTreeComputeHPCRUNMetrics(PgmScopeTree& scopes);
+  void ScopeTreeComputeOtherMetrics(PgmScopeTree& scopes);
+  void ScopeTreeInsertHPCRUNData(PgmScopeTree& scopes,
+				 const string& profFilenm,
+				 const MetricList_t& metricList);
+  
+private:
   std::string title;
   int deleteTrailingUnderscores;
   bool cpySrcFiles;
 
-  std::string path;             // a string-list of paths (includes '.') 
+  std::string path;        // a string-list of paths (includes '.') 
   PathTupleVec pathVec;    // a list of {path, viewname} 
 
   std::vector<std::string> replaceInPath; 
