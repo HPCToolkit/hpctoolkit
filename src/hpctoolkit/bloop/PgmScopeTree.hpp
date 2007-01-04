@@ -285,7 +285,7 @@ public:
   void Dump          (std::ostream &os = std::cerr, 
 		      int dmpFlag = PgmScopeTree::XML_TRUE,
 		      const char* pre = "") const;
-  void DumpLineSorted(std::ostream &os = std::cerr, 
+  virtual void DumpLineSorted(std::ostream &os = std::cerr, 
 		      int dmpFlag = PgmScopeTree::XML_TRUE,
 		      const char* pre = "") const;
 
@@ -361,7 +361,7 @@ public:
   void Freeze() { frozen = true;} // disallow additions to/deletions from tree
   bool IsFrozen() const { return frozen; } 
 
-  void DumpLineSorted(std::ostream &os = std::cerr, 
+  virtual void DumpLineSorted(std::ostream &os = std::cerr, 
 		      int dmpFlag = PgmScopeTree::XML_TRUE,
 		      const char *pre = "") const;
   
@@ -414,7 +414,7 @@ public:
   virtual String CodeName() const;
   virtual String ToDumpString(int dmpFlag = PgmScopeTree::XML_TRUE) const;
   
-  void DumpLineSorted(std::ostream &os = std::cerr, 
+  virtual void DumpLineSorted(std::ostream &os = std::cerr, 
 		      int dmpFlag = PgmScopeTree::XML_TRUE,
 		      const char *pre = "") const;
   
