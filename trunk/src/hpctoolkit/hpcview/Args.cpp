@@ -1,5 +1,6 @@
 // -*-Mode: C++;-*-
 // $Id$
+
 // * BeginRiceCopyright *****************************************************
 // 
 // Copyright ((c)) 2002, Rice University 
@@ -47,99 +48,130 @@
 //
 //***************************************************************************
 
-//************************ System Include Files ******************************
+//************************* System Include Files ****************************
 
 #include <iostream>
-
-#ifdef NO_STD_CHEADERS
-# include <limits.h>
-#else
-# include <climits>
-using namespace std; // For compatibility with non-std C headers
-#endif
-
-#include <unistd.h> /* for getopt(); cf. stdlib.h */
-#include <dirent.h> 
-#include <sys/types.h> 
-
-//************************* User Include Files *******************************
-
-#include "Args.hpp"
-#include <lib/support/Trace.hpp>
-
-//************************ Forward Declarations ******************************
-
 using std::cerr;
 using std::endl;
 
-//****************************************************************************
+#include <string>
+using std::string;
+
+#include <dirent.h> 
+#include <sys/types.h> 
+
+//*************************** User Include Files ****************************
+
+#include "Args.hpp"
+
+#include <lib/support/diagnostics.h>
+#include <lib/support/Trace.hpp>
+
+//*************************** Forward Declarations **************************
+
+#define EXPERIMENTDB  "experiment.db"
+#define EXPERIMENTXML "experiment.xml"
+#define EXPERIMENTCSV "experiment.csv"
+#define EXPERIMENTTSV "experiment.tsv"
+
+//***************************************************************************
 
 int fileTrace = 0;
 
-const String Args::HPCTOOLKIT = "HPCTOOLKIT"; 
+const string Args::HPCTOOLKIT = "HPCTOOLKIT"; 
 
 static const char* version_info =
 #include <include/HPCToolkitVersionInfo.h>
 
 static const char* usage_summary =
-"[-V] [-h dir] [-r] [-u] [-w n] [-x file [-c] [-l]] [-y file] [-t file] [-z [-o] [-f n] [-m n] [-s n.m]] configFile\n";
+"[options] <config-file> [<profile-files>]\n";
 
 static const char* usage_details =
-"[ GENERAL OPTIONS ]\n"
-"  -V          print version information\n"
-"  -h dir      Specify the destination directory all output files. The\n"
-"              default is ./hpcview.output\n"
-"  -r          Enable execution tracing. Use this option to debug path\n"
-"              replacement if metric and program structure information is\n"
-"              not being fused properly matched.\n"
-"  -u          Leave trailing underscores on routine names alone. HPCView\n"
-"              normally deletes any trailing underscore from routine names\n"
-"              to avoid problems caused when Fortran compilers provide\n"
-"              inconsistent information about routine names.\n"
-"  -w n        Specify warning level. Default warning level is 0; 1 produces\n"
-"              messages about creating procedure synopses\n"
+"[hpcview] generates high level metrics from raw profiling data and\n"
+"correlates them with logical source code abstractions.  By default, it\n"
+"generates an Experiment database (ExperimentXML format) for use with\n"
+"hpcviewer.\n"
 "\n"
-"[ OPTIONS TO GENERATE HPCVIEWER INPUT ]\n"
-"  -x file     Write XML scope tree, with metrics, to 'file'. The scope tree\n"
-"              can be used with HPCViewer.\n"
-"  -c          Do *not* copy source code files into dataset. By default,\n"
-"              hpcview -x makes copies of source files that have performance\n"
-"              metrics and that can be reached by PATH/REPLACE statements\n"
-"              in 'configFile'. The source files are copied to appropriate\n"
-"              'viewname' directories within the (-h) output-directory. This\n"
-"              results in a self-contained dataset that does not rely on an\n"
-"              external source code repository.  If copying is suppressed,\n"
-"              the resulting output is useful only on the original system.\n"
+"(<profile-files> is a list of hpcrun files.)\n"
+"\n"
+"General options:\n"
+"  -v, --verbose [<n>]  Verbose: generate progress messages to stderr at\n"
+"                       verbosity level <n>.  [1]  (Use n=2 to debug path\n"
+"                       replacement if metric and program structure is not\n"
+"                       properly matched.)\n"
+"  -V, --version        Print version information.\n"
+"  -h, --help           Print this help.\n"
+#if 0
+"\n"
+"Correlation options:\n"
+"  -u                   Do not remove trailing underscores on routine names.\n"
+"                       [hpcprof] normally deletes any trailing underscore\n"
+"                       from routine names to avoid problems caused when\n"
+"                       Fortran compilers provide inconsistent information\n"
+"                       about routine names.\n"
 "  -l          By default, the generated scope tree contains aggregated\n"
 "              metrics at all internal nodes of the scope tree.  This option\n"
 "              saves space by outputting metrics only at the leaves. A\n"
 "              FUTURE version of HPCViewer will be able to use the option,\n"
 "              but no current software can.\n"
+#endif
 "\n"
-"[ OPTIONS TO GENERATE CSV DATA FOR SPREADSHEET VIEWING]\n"
-"  -y file     Write scope tree, with metrics, to 'file' in a comma \n"
-"              separated value format, good for loading in a spreadsheet\n"
-"              program, or for parsing with a shell script.\n"
-"              Data is presented at loop level granularity.\n"
+"Output options:\n"
+"  -o <db-path>, --db <db-path>, --output <db-path>\n"
+"                       Specify Experiment database name <db-path>.\n"
+"                       [./"EXPERIMENTDB"]\n"
+"  --src [yes|no], --source [yes|no]\n"
+"                       Whether to copy source code files into Experiment\n"
+"                       database. By default, [hpcprof] copies source files\n"
+"                       with performance metrics and that can be reached by\n"
+"                       PATH/REPLACE statements, resulting in a\n"
+"                       self-contained dataset that does not rely on an\n"
+"                       external source code repository.  Note that if\n"
+"                       copying is suppressed, the database is no longer\n"
+"                       self-contained.\n"
 "\n"
-"[ OPTIONS TO GENERATE TSV DATA FOR FLATFILE OUTPUT]\n"
-"  -t file     Write scope tree, with metrics, to 'file' in a tab \n"
-"              separated value format, good for loading in a gene-shaving\n"
-"              program, or for parsing with a shell script.\n"
-"              Data is presented at line level granularity.\n"
-"\n"
-"[ OPTIONS TO GENERATE STATIC HTML FOR WEB BROWSER VIEWING ]\n"
-"  -z          Generate static HTML.\n"
-"  -o          Generate old style HTML. Each flatten view is in a separate\n"
-"              file. Good if the application is very big and the new style\n"
-"              HTML files become too large.\n"
-"  -f n        Compute static flattenings only for the top 'n' levels of the\n"
-"              scope tree.\n" 
-"  -m n        Limit the number of children reported in any scope to 'n'\n"
-"              with the highest value according to the currently selected\n"
-"              performance metric\n"
-"  -s n.m      Suppress reporting for scopes contributing less than 'n.m'\n"
-"              percent of the total cost.\n";
+"Output formats: Select different output formats and optionally specify the\n"
+"output filename <fname> (located within the Experiment databse). The output\n"
+"is sparse in the sense that it ignores program areas without profiling\n"
+"information. (Set <fname> to '-' to write to stdout.)\n"
+"  -x [<fname>], --experiment [<fname>]\n"
+"                       ExperimentXML format. [Default. "EXPERIMENTXML"].\n"
+"                       NOTE: To disable, set <fname> to 'no'.\n"
+"  --csv [<fname>]      Comma-separated-value format. ["EXPERIMENTCSV"]\n"
+"                       (Flat scope tree; Loop level.)\n"
+"                       (Useful for downstream external tools.)\n"
+"  --tsv [<fname>]      Tab-separated-value format. ["EXPERIMENTTSV"]\n"
+"                       (Flat scope tree; line level.)\n"
+"                       (Useful for downstream external tools.)\n";
+
+
+#define CLP CmdLineParser
+
+// Note: Changing the option name requires changing the name in Parse()
+CmdLineParser::OptArgDesc Args::optArgs[] = {
+  // Output options
+  { 'o', "output",          CLP::ARG_REQ , CLP::DUPOPT_CLOB, NULL },
+  {  0 , "db",              CLP::ARG_REQ , CLP::DUPOPT_CLOB, NULL },
+
+  {  0 , "src",             CLP::ARG_OPT,  CLP::DUPOPT_CLOB, NULL },
+  {  0 , "source",          CLP::ARG_OPT,  CLP::DUPOPT_CLOB, NULL },
+
+  // Output formats
+  { 'x', "experiment",      CLP::ARG_OPT,  CLP::DUPOPT_CLOB, NULL },
+  {  0 , "csv",             CLP::ARG_OPT,  CLP::DUPOPT_CLOB, NULL },
+  {  0 , "tsv",             CLP::ARG_OPT,  CLP::DUPOPT_CLOB, NULL },
+
+  { 'u', NULL,              CLP::ARG_NONE, CLP::DUPOPT_CLOB, NULL },
+
+  // General
+  { 'v', "verbose",         CLP::ARG_OPT,  CLP::DUPOPT_CLOB, NULL },
+  { 'V', "version",         CLP::ARG_NONE, CLP::DUPOPT_CLOB, NULL },
+  { 'h', "help",            CLP::ARG_NONE, CLP::DUPOPT_CLOB, NULL },
+  {  0 , "debug",           CLP::ARG_OPT,  CLP::DUPOPT_CLOB, NULL }, // hidden
+  CmdLineParser_OptArgDesc_NULL_MACRO // SGI's compiler requires this version
+};
+
+#undef CLP
 
 
 //***************************************************************************
@@ -161,26 +193,17 @@ void
 Args::Ctor()
 {
   setHPCHome(); 
-  fileHome = String(hpcHome) + "/lib/html"; 
 
-  htmlDir                = "hpcview.output"; 
-  OutputInitialScopeTree = false; // used for debugging at this point
-  OutputFinalScopeTree   = false;
-  CopySrcFiles           = true;
-  SkipHTMLfiles          = true;  // do not generate static HTML
-  FlatCSVOutput          = false;
-  FlatTSVOutput		 = false;
-  OldStyleHTML           = false;
-  XML_ToStdout           = false;
-  XML_DumpAllMetrics     = true;  // dump metrics on interior nodes
-  XML_Dump_File          = "scopeTree_XML.out";
+  dbDir                = EXPERIMENTDB;
+  OutFilename_XML      = EXPERIMENTXML;
+  OutFilename_CSV      = "";
+  OutFilename_TSV      = "";
 
-  depthToFlatten = INT_MAX;
-  maxLinesPerPerfPane = INT_MAX;
+  CopySrcFiles         = true;
+  XML_DumpAllMetrics   = true;  // dump metrics on interior nodes
   deleteUnderscores = 1;
-  warningLevel = 0;
 
-  scopeThresholdPercent = THRESHOLDING_DISABLED;
+  Diagnostics_SetDiagnosticFilterLevel(1);
 }
 
 
@@ -192,180 +215,162 @@ Args::~Args()
 void 
 Args::PrintVersion(std::ostream& os) const
 {
-  cerr << cmd << ": " << version_info << endl;
+  os << GetCmd() << ": " << version_info << endl;
 }
 
 
 void 
 Args::PrintUsage(std::ostream& os) const
 {
-  cerr << "Usage: " << cmd << " " << usage_summary << endl
-       << usage_details << endl;
+  os << "Usage: " << GetCmd() << " " << usage_summary << endl
+     << usage_details << endl;
 } 
 
 
 void 
 Args::PrintError(std::ostream& os, const char* msg) const
 {
-  // FIXME: waiting until we plug the new option parser in
-  os << cmd << ": " << msg << endl
-     << "Try `" << cmd << " --help' for more information." << endl;
+  os << GetCmd() << ": " << msg << endl
+     << "Try `" << GetCmd() << " --help' for more information." << endl;
+}
+
+void 
+Args::PrintError(std::ostream& os, const std::string& msg) const
+{
+  PrintError(os, msg.c_str());
+}
+
+
+const std::string& 
+Args::GetCmd() const
+{ 
+  // avoid error messages with: /.../HPCToolkit-x86_64-Linux/bin/hpcview-bin
+  static string cmd = "hpcview";
+  return cmd; // parser.GetCmd(); 
 }
 
 
 void
 Args::Parse(int argc, const char* const argv[])
 {
-  // FIXME: eraxxon: drop my new argument parser in here
-  cmd = argv[0]; 
-
-  bool printVersion = false;  
-  
-  // -------------------------------------------------------
-  // Parse the command line
-  // -------------------------------------------------------
-  // Note: option list follows usage message
-  extern char *optarg;
-  extern int optind;
-  bool error = false; 
-  int c;
-  while ((c = getopt(argc, (char**)argv, "Vh:ruw:x:cly:t:zof:m:s:d")) != EOF) {
-    switch (c) {
+  try {
+    // -------------------------------------------------------
+    // Parse the command line
+    // -------------------------------------------------------
+    parser.Parse(optArgs, argc, argv);
     
-    // General Options
-    case 'V': { 
-      printVersion = true;
-      break; 
-    }
-    case 'h': {
-      htmlDir = optarg;
-      break; 
-    }
-    case 'r': { 
-      fileTrace++; 
-      break; 
-    }
-    case 'u': { 
-      deleteUnderscores--; 
-      break; 
-    }
-    case 'w': {  
-      warningLevel = abs(atoi(optarg));
-      break; 
-    }
+    // -------------------------------------------------------
+    // Sift through results, checking for semantic errors
+    // -------------------------------------------------------
     
-    // XML output (for HPCViewer) options
-    case 'x': { 
-      if (! FlatCSVOutput) {
-        XML_Dump_File = optarg;
-        OutputFinalScopeTree = true;
-        if ( XML_Dump_File == "-" ) XML_ToStdout = true;
+    // Special options that should be checked first
+    if (parser.IsOpt("debug")) { 
+      int dbg = 1;
+      if (parser.IsOptArg("debug")) {
+	const string& arg = parser.GetOptArg("debug");
+	dbg = (int)CmdLineParser::ToLong(arg);
       }
-      break; 
+      Diagnostics_SetDiagnosticFilterLevel(dbg);
+      trace = dbg;
     }
-    case 'c': { // copy raw source files when generating XML 
-      CopySrcFiles = false;
-      break; 
+    if (parser.IsOpt("help")) { 
+      PrintUsage(std::cerr); 
+      exit(1);
     }
-    case 'l': { // leaves only
-      XML_DumpAllMetrics = false;
-      break; 
-    }
-
-    // CSV output (for Spreadsheet) options
-    case 'y': { 
-      FlatCSVOutput = true;
-      XML_Dump_File = optarg;
-      OutputFinalScopeTree = true;
-      if ( XML_Dump_File == "-" ) XML_ToStdout = true;
-      break; 
+    if (parser.IsOpt("version")) { 
+      PrintVersion(std::cerr);
+      exit(1);
     }
 
-    // TSV output options
-    case 't': { 
-      FlatTSVOutput = true;
-      XML_Dump_File = optarg;
-      OutputFinalScopeTree = true;
-      if ( XML_Dump_File == "-" ) XML_ToStdout = true;
-      break; 
+    // Check for other options:
+    if (parser.IsOpt("verbose")) { 
+      int verb = 1;
+      if (parser.IsOptArg("verbose")) {
+	const string& arg = parser.GetOptArg("verbose");
+	verb = (int)CmdLineParser::ToLong(arg);
+      }
+      Diagnostics_SetDiagnosticFilterLevel(verb);
+    }
+    
+    // Check for other options: Output options
+    if (parser.IsOpt("output")) {
+      dbDir = parser.GetOptArg("output");
+    }
+    if (parser.IsOpt("db")) {
+      dbDir = parser.GetOptArg("db");
     }
 
-    // Generate static HTML options
-    case 'z': {  // generate static HTML
-      SkipHTMLfiles = false;
-      break; 
+    string cpysrc;
+    if (parser.IsOpt("src")) {
+      if (parser.IsOptArg("src")) { cpysrc = parser.GetOptArg("src"); }
     }
-    case 'o': {  // generate old style HTML
-      OldStyleHTML = true;
-      break; 
+    if (parser.IsOpt("source")) {
+      if (parser.IsOptArg("source")) { cpysrc = parser.GetOptArg("source"); }
     }
-    case 'f': { 
-      depthToFlatten = atoi(optarg);
-      break; 
-    }
-    case 'm': {
-      maxLinesPerPerfPane = atoi(optarg);
-      break; 
-    }
-    case 's': {
-      scopeThresholdPercent = atof(optarg);
-      break; 
+    if (!cpysrc.empty()) {
+      CopySrcFiles = (cpysrc != "no");
     }
 
-    // Debug and Error
-    case 'd': { // debug 
-      trace++; 
-      break; 
+    // Check for other options: Output formats
+    if (parser.IsOpt("experiment")) {
+      OutFilename_XML = EXPERIMENTXML;
+      if (parser.IsOptArg("experiment")) {
+	OutFilename_XML = parser.GetOptArg("experiment");
+      }
     }
-    case ':':
-    case '?': {
-      error = true; 
-      break; 
+    if (parser.IsOpt("csv")) {
+      OutFilename_CSV = EXPERIMENTCSV;
+      if (parser.IsOptArg("csv")) {
+	OutFilename_CSV = parser.GetOptArg("csv");
+      }
+      CopySrcFiles = false; // FIXME:
     }
+    if (parser.IsOpt("tsv")) { 
+      OutFilename_TSV = EXPERIMENTTSV;
+      if (parser.IsOptArg("tsv")) {
+	OutFilename_TSV = parser.GetOptArg("tsv");
+      }
+      CopySrcFiles = false; // FIXME:
     }
+    
+    // Check for other options:
+    if (parser.IsOpt("u")) {
+      deleteUnderscores--; 
+    }
+    
+    // Check for required arguments
+    if (parser.GetNumArgs() < 1) {
+      PrintError(std::cerr, "Incorrect number of arguments!");
+      exit(1);
+    }
+    configurationFile = parser.GetArg(0);
+
+    for (unsigned i = 1; i < parser.GetNumArgs(); ++i) {
+      profileFiles.push_back(parser.GetArg(i));
+    }
+
   }
-
-  // -------------------------------------------------------
-  // Sift through results, checking for semantic errors
-  // -------------------------------------------------------
-  
-  // Special options that should be checked first
-  if (printVersion) {
-    PrintVersion(cerr);
+  catch (const CmdLineParser::ParseError& x) {
+    PrintError(std::cerr, x.what());
     exit(1);
   }
-
-  error = error || (optind != argc-1); 
-  if (!error) {
-    configurationFile = argv[optind];
-  } 
-
-  // CopySrcFiles makes sense only if -x arg is used.
-  if (false == OutputFinalScopeTree || FlatCSVOutput == true 
-		  || FlatTSVOutput == true)  
-    CopySrcFiles = false;
-
-  if (error) {
-    PrintUsage(cerr);
-    exit(1); 
-  } 
+  catch (const CmdLineParser::Exception& x) {
+    DIAG_EMsg(x.message());
+    exit(1);
+  }
 }
 
 
 void 
 Args::Dump(std::ostream& os) const
 {
-  os << "Args.cmd= " << cmd << endl; 
+  os << "Args.cmd= " << GetCmd() << endl; 
   os << "Args.hpcHome= " << hpcHome << endl; 
-  os << "Args.fileHome= " << fileHome << endl; 
-  os << "Args.htmlDir= " << htmlDir << endl; 
-  os << "Args.OutputFinalScopeTree= " << OutputFinalScopeTree << endl; 
-  os << "Args.OutputInitialScopeTree= " << OutputInitialScopeTree << endl; 
-  os << "Args.XML_Dump_File= " << XML_Dump_File << endl; 
-  os << "Args.SkipHTMLfiles= " << SkipHTMLfiles << endl; 
-  os << "Args.OldStyleHTML= "  << OldStyleHTML << endl; 
+  os << "Args.dbDir= " << dbDir << endl; 
+  os << "Args.OutFilename_XML= " << OutFilename_XML << endl; 
+  os << "Args.OutFilename_CSV= " << OutFilename_CSV << endl; 
+  os << "Args.OutFilename_TSV= " << OutFilename_TSV << endl; 
   os << "Args.configurationFile= " << configurationFile << endl; 
-  os << "Args.maxLinesPerPerfPane= " << maxLinesPerPerfPane << endl; 
   os << "::trace " << ::trace << endl; 
 }
 
@@ -376,11 +381,12 @@ Args::DDump() const
 }
 
 
+//***************************************************************************
 
 void 
 Args::setHPCHome() 
 {
-  char * home = getenv(HPCTOOLKIT); 
+  char * home = getenv(HPCTOOLKIT.c_str()); 
   if (home == NULL) {
     cerr << "Error: Please set your " << HPCTOOLKIT << " environment variable."
 	 << endl; 
@@ -397,6 +403,6 @@ Args::setHPCHome()
     exit(1); 
   } 
   closedir(fp); 
-  hpcHome = String(home); 
+  hpcHome = home; 
 } 
 

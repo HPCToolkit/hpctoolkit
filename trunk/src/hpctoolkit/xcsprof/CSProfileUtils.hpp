@@ -56,6 +56,7 @@
 #include <iostream>
 #include <vector>
 #include <stack>
+#include <string>
 
 //*************************** User Include Files ****************************
 
@@ -63,7 +64,7 @@
 
 #include "CSProfile.hpp"
 
-#include <lib/binutils/LoadModuleInfo.hpp>
+#include <lib/binutils/LM.hpp>
 
 //*************************** Forward Declarations ***************************
 
@@ -73,36 +74,37 @@ CSProfile* ReadCSProfileFile_HCSPROFILE(const char* fnm, const char *execnm);
 
 //****************************************************************************
 
-void WriteCSProfileInDatabase(CSProfile* prof, String dbDirectory);
+void WriteCSProfileInDatabase(CSProfile* prof, 
+			      const std::string& dbDirectory);
 void WriteCSProfile(CSProfile* prof, std::ostream& os,
 		    bool prettyPrint = true);
 
-bool AddSourceFileInfoToCSProfile(CSProfile* prof, LoadModuleInfo* lm,
-				  Addr startaddr, Addr endaddr, bool lastone);
+bool AddSourceFileInfoToCSProfile(CSProfile* prof, binutils::LM* lm,
+				  VMA startaddr, VMA endaddr, bool lastone);
 bool AddSourceFileInfoToCSTreeNode(CSProfCodeNode* node, 
-                                   LoadModuleInfo* lm, bool istext);
+                                   binutils::LM* lm, bool istext);
 
 void copySourceFiles (CSProfile *prof, 
-		      std::vector<String>& searchPaths,
-		      String dbSourceDirectory);  
+		      std::vector<std::string>& searchPaths,
+		      const std::string& dbSourceDirectory);  
 
 void LdmdSetUsedFlag(CSProfile* prof); 
 
 //****************************************************************************
 
 bool NormalizeCSProfile(CSProfile* prof);
-bool NormalizeInternalCallSites(CSProfile* prof, LoadModuleInfo* lmi,
-                                Addr startaddr, Addr endaddr, bool lastone);
+bool NormalizeInternalCallSites(CSProfile* prof, binutils::LM* lm,
+                                VMA startaddr, VMA endaddr, bool lastone);
 
 //****************************************************************************
 
 #define MAX_PATH_SIZE 2048 
 /** Normalizes a file path.*/
-String normalizeFilePath(String filePath);
-String normalizeFilePath(String filePath, 
-			 std::stack<String>& pathSegmentsStack);
-void breakPathIntoSegments(String normFilePath, 
-			   std::stack<String>& pathSegmentsStack);
+std::string normalizeFilePath(const std::string& filePath);
+std::string normalizeFilePath(const std::string& filePath, 
+			      std::stack<std::string>& pathSegmentsStack);
+void breakPathIntoSegments(const std::string& normFilePath, 
+			   std::stack<std::string>& pathSegmentsStack);
 
 #define DEB_READ_MMETRICS 0
 #define DEB_LOAD_MODULE 0

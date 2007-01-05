@@ -36,6 +36,14 @@
 
 //************************ System Include Files ******************************
 
+#include <iostream> 
+using std::cout;
+using std::cerr;
+using std::endl;
+
+#include <string>
+using std::string;
+
 #include <time.h> 
 #include <sys/time.h>
 #include <sys/types.h> 
@@ -47,23 +55,22 @@
 #include "Driver.hpp"
 #include "HTMLDriver.hpp"
 #include "StaticFiles.hpp"
-#include "ScopesInfo.hpp"
 #include "HTMLFile.hpp"
 #include "HTMLTable.hpp"
 #include "HTMLScopes.hpp"
 #include "HTMLSrcFiles.hpp"
 
-#include <lib/support/String.hpp>
+#include <lib/prof-juicy/PgmScopeTree.hpp>
+
 #include <lib/support/IntVector.hpp>
+#include <lib/support/StrUtil.hpp>
+#include <lib/support/String.hpp> // FIXME
+#include <lib/support/Files.hpp>
 #include <lib/support/Nan.h>
 #include <lib/support/Assertion.h>
 #include <lib/support/Trace.hpp>
 
 //************************ Forward Declarations ******************************
-
-using std::cout;
-using std::cerr;
-using std::endl;
 
 //****************************************************************************
 
@@ -90,18 +97,11 @@ const DataDisplayInfo
 HTMLDriver::NameDisplayInfo = DataDisplayInfo("Location", "black", 25, false); 
 
 
-static int makeDir(const char* dir) 
-{
-  /* int ret = */ // should check for success 
-  mkdir(dir, 00755); 
-  return 0; 
-} 
-
 static String
 UniqueNameFilePrefix(const FileScope *f) 
 {
   String nm; 
-  nm = "F" + String((unsigned long) f->UniqueId()); 
+  nm = String("F") + StrUtil::toStr(f->UniqueId()).c_str(); 
   return nm; 
 }
  
@@ -109,8 +109,8 @@ String
 HTMLDriver::UniqueNameForSelf(const ScopeInfo *s) 
 {
   String nm; 
-  nm = String(ScopeInfo::ScopeTypeToName(s->Type())[0]); 
-  nm += String((unsigned long) s->UniqueId()); 
+  nm = ScopeInfo::ScopeTypeToName(s->Type()).c_str()[0]; 
+  nm += StrUtil::toStr(s->UniqueId()).c_str(); 
   return nm; 
 }
 
@@ -136,29 +136,26 @@ HTMLDriver::UniqueName(const ScopeInfo *c, int pIndex, int flattenDepth)
     }
   }
   if (pIndex != NO_PERF_INDEX) {
-    nm += "." + IndexToPerfDataInfo(pIndex).Name();
+    nm += String(".") + IndexToPerfDataInfo(pIndex).Name().c_str();
   }
 
   if (flattenDepth != NO_FLATTEN_DEPTH) {
-    nm += "." +  String((long)flattenDepth);
+    nm += String(".") + StrUtil::toStr(flattenDepth).c_str();
   }
   return nm; 
 }
 
-HTMLDriver::HTMLDriver(const ScopesInfo &scps, 
+HTMLDriver::HTMLDriver(const PgmScopeTree& scps, 
 		       const char* fHm, 
 		       const char* htmlDr,
 		       const Args& pgmArgs)
   : Unique("HTMLDriver"), scopes(scps), fileHome(fHm), 
     htmlDir(htmlDr), args(pgmArgs)
 {
-  String scpsDir = String(htmlDir) + "/" + ScopesDir; 
-  if (makeDir(htmlDir) != 0) { exit(1); }
-  if (!pgmArgs.SkipHTMLfiles) {
-    if (makeDir(scpsDir) != 0 ||
-	StaticFiles(fileHome, htmlDir).CopyAllFiles(args.OldStyleHTML) != 0) {
-      exit(1);
-    }
+  string scpsDir = string(htmlDir) + "/" + ScopesDir; 
+  if (MakeDir(scpsDir.c_str()) != 0 ||
+      StaticFiles(fileHome, htmlDir).CopyAllFiles(args.OldStyleHTML) != 0) {
+    exit(1);
   }
   IFTRACE << "HTMLDriver::" << ToString() << endl; 
 }
@@ -168,13 +165,13 @@ HTMLDriver::~HTMLDriver()
   IFTRACE << "~HTMLDriver::" << ToString() << endl; 
 }
 
-String
+string
 HTMLDriver::ToString() const 
 {
-  return String("HTMLDriver: ")  + 
-    String("fileHome=") + fileHome +   " "  + 
-    String("htmlDir=") + htmlDir +   " "  + 
-    String("&scopes=") + String((unsigned long) &scopes, true /*hex*/); 
+  return string("HTMLDriver: ")  + 
+    string("fileHome=") + fileHome +   " "  + 
+    string("htmlDir=") + htmlDir +   " "  + 
+    string("&scopes=") + StrUtil::toStr((void*)&scopes); 
 }
 
 bool
@@ -231,7 +228,7 @@ HTMLDriver::Write(const Driver& driver)  const
   // miscellaneous files
   WriteFiles("files"); 
   WriteHeader(HEADER, driver.Title()); 
-  WriteIndexFile(scopes.Root(), table, firstSorted, scopeTables, 
+  WriteIndexFile(scopes.GetRoot(), table, firstSorted, scopeTables, 
 		 driver.Title(), HEADER);
   return true; 
 } 
@@ -241,7 +238,7 @@ WriteIndexFile(const char* htmlDir,
 	       PgmScope* pgmScope, 
 	       HTMLTable &table, int perfIndex, 
 	       HTMLScopes &scopes, 
-	       const String& title, 
+	       const string& title, 
 	       const char* header, 
 	       bool debug, bool oldStyleHtml)
 {
@@ -251,9 +248,9 @@ WriteIndexFile(const char* htmlDir,
   gettimeofday(&t,0); 
   char date[50]; 
   strftime(date, 50, "%x %X", localtime(&t.tv_sec)); 
-  String tit = title + " &nbsp; (" + date + ")"; 
+  string tit = title + " &nbsp; (" + date + ")"; 
   
-  String fname = "index"; 
+  string fname = "index"; 
   if (debug) {
     fname += ".debug"; 
   } 
@@ -261,7 +258,7 @@ WriteIndexFile(const char* htmlDir,
   if (oldStyleHtml)
     flattening = 0;
   
-  HTMLFile hf(htmlDir, fname, tit, /*frameset*/ true); 
+  HTMLFile hf(htmlDir, fname.c_str(), tit.c_str(), /*frameset*/ true); 
   hf.PrintNoBodyOrFrameset(); 
   hf.JSFileInclude(DETECTBS); 
   hf.JSFileInclude(GLOBAL); 
@@ -349,17 +346,17 @@ void
 HTMLDriver::WriteIndexFile(PgmScope *pgmScope, 
 			   HTMLTable &table, int perfIndex, 
 			   HTMLScopes &htmlScopes, 
-			   const String& title, const char* header) const
+			   const string& title, const char* header) const
 {
   ::WriteIndexFile(htmlDir, pgmScope, table, perfIndex, 
-           htmlScopes, title, header, true, args.OldStyleHTML); 
+		   htmlScopes, title, header, true, args.OldStyleHTML); 
   ::WriteIndexFile(htmlDir, pgmScope, table, perfIndex, 
-           htmlScopes, title, header, false, args.OldStyleHTML); 
+		   htmlScopes, title, header, false, args.OldStyleHTML); 
 }
 
 static void
 WriteHeader(const char* htmlDir, const char* headerFileName, 
-	    const String& title, bool debug)  
+	    const string& title, bool debug)  
 {
   HTMLFile hf(htmlDir, headerFileName, "HPCView header"); 
   hf.JSFileInclude(DETECTBS); 
@@ -408,10 +405,11 @@ WriteHeader(const char* htmlDir, const char* headerFileName,
 
 void
 HTMLDriver::WriteHeader(const char* headerFileName, 
-			 const String& title) const
+			const string& title) const
 {
-  ::WriteHeader(htmlDir, headerFileName, title, false); 
-  ::WriteHeader(htmlDir, String(headerFileName) + ".debug", title, true); 
+  ::WriteHeader(htmlDir, headerFileName, title.c_str(), false); 
+  string fnm = string(headerFileName) + ".debug";
+  ::WriteHeader(htmlDir, fnm.c_str(), title.c_str(), true); 
 }
 
 void
@@ -439,21 +437,21 @@ WriteFileList(HTMLFile &hf, const char* header,
     hf << "<h4> "  << header << ": </h4>" << endl; 
     it.Reset(); 
     hf << "<pre>"; 
-    String lastPath; 
+    string lastPath; 
     for (; it.CurScope(); it++) {
       FileScope *f = dynamic_cast<FileScope*>(it.CurScope()); 
       BriefAssertion(f != NULL); 
       if (f->HasSourceFile() == hasSource) 
       {
 	if (hasSource) {
-	  String curPath = PathComponent(it.CurScope()->Name());
+	  string curPath = PathComponent(it.CurScope()->Name());
 	  if (curPath != lastPath) {
 	    hf << curPath << ":" << endl; 
 	    lastPath = curPath; 
 	  } 
 	} 
 	hf << "  "; 
-	hf.GotoSrcHref(f->BaseName(), 
+	hf.GotoSrcHref(f->BaseName().c_str(), 
 		       HTMLDriver::UniqueName(f,NO_PERF_INDEX,
 					      NO_FLATTEN_DEPTH)); 
 	hf << endl; 
@@ -472,12 +470,12 @@ HTMLDriver::WriteFiles(const char* filesFileName) const
   hf << "<br>" << endl;
 
   // Iterate over load modules and print source files for each 
-  ScopeInfoIterator it1(scopes.Root(), &ScopeTypeFilter[ScopeInfo::LM]);
+  ScopeInfoIterator it1(scopes.GetRoot(), &ScopeTypeFilter[ScopeInfo::LM]);
   //NameSortedChildIterator it1(scopes.Root());
   for (; it1.Current(); it1++) {
     LoadModScope* lm = dynamic_cast<LoadModScope*>(it1.Current());
     BriefAssertion(lm != NULL);
-    hf << "<h3> "  << HTMLEscapeStr(lm->Name()) << "</h3>" << endl;
+    hf << "<h3> "  << HTMLEscapeStr(lm->Name().c_str()) << "</h3>" << endl;
 
     hf << "<div class='indent'>" << endl;
     ScopeInfoIterator it2(lm, &ScopeTypeFilter[ScopeInfo::FILE]); 

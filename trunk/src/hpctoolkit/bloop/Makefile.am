@@ -1,5 +1,5 @@
 # -*-Mode: makefile;-*-
-# $Header$
+# $Id$
 
 ## * BeginRiceCopyright *****************************************************
 ## 
@@ -63,20 +63,16 @@ include $(top_srcdir)/src/Makeinclude.config
 
 MYSOURCES = \
 	main.cpp \
-	Args.hpp Args.cpp \
-	BloopIRInterface.hpp BloopIRInterface.cpp \
-	PgmScopeTreeBuilder.hpp PgmScopeTreeBuilder.cpp \
-	PgmScopeTree.hpp PgmScopeTree.cpp \
-	PgmScopeTreeIterator.hpp PgmScopeTreeIterator.cpp
+	Args.hpp Args.cpp
 
-MYCFLAGS   = @HOST_CFLAGS@   $(HPC_IFLAGS) @GNUBINUTILS_IFLAGS@
-MYCXXFLAGS = @HOST_CXXFLAGS@ $(HPC_IFLAGS) @GNUBINUTILS_IFLAGS@ @OA_IFLAGS@
+MYCFLAGS   = @HOST_CFLAGS@   $(HPC_IFLAGS)
+MYCXXFLAGS = @HOST_CXXFLAGS@ $(HPC_IFLAGS) @OA_IFLAGS@
 
 MYLDFLAGS = @HOST_CXXFLAGS@
 
 MYLDADD = \
 	@HOST_LIBTREPOSITORY@ \
-	$(HPC_LIBBINUTILS) $(HPC_LIBISA) $(HPC_LIBXML) $(HPC_LIBSUPPORT) \
+	$(HPC_LIBBANAL) $(HPC_LIBPROFJUICY) $(HPC_LIBBINUTILS) $(HPC_LIBISA) $(HPC_LIBXML) $(HPC_LIBSUPPORT) \
 	@OA_LDFLAGS@ @GNUBINUTILS_LDFLAGS@ \
 	@HOST_BLOOP_LDFLAGS@ \
 	-lm

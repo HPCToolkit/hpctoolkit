@@ -1,5 +1,6 @@
-// $Id$
 // -*-C++-*-
+// $Id$
+
 // * BeginRiceCopyright *****************************************************
 // 
 // Copyright ((c)) 2002, Rice University 
@@ -55,6 +56,8 @@
 #include <map>
 #include <set>
 
+#include <string>
+
 #ifdef NO_STD_CHEADERS
 # include <limits.h>
 #else
@@ -67,8 +70,7 @@
 
 #include "PCProfileFilter.hpp"
 
-#include <lib/ISA/ISA.hpp>
-#include <lib/support/String.hpp>
+#include <lib/isa/ISA.hpp>
 
 //*************************** Forward Declarations ***************************
 
@@ -76,7 +78,7 @@
 typedef ulong PCProfileDatum; 
 #define PCProfileDatum_NIL 0 /* no data is present */
 
-typedef std::set<Addr>        PCSet;
+typedef std::set<VMA>        PCSet;
 typedef PCSet::iterator       PCSetIt;
 typedef PCSet::const_iterator PCSetCIt;
 
@@ -93,12 +95,12 @@ typedef PCSet::const_iterator PCSetCIt;
 // an offset identifying the operation within the VLIW packet.  The
 // 'operation PC' should follow ISA class conventions.  Because of
 // this, a metric contains a pointer to an appropriate ISA.  (Creaters
-// of a 'PCProfileMetric' should therefore use ISA::ConvertPCToOpPC to
-// generate the 'operation PCs'.)  see: 'PCProfileMetric_MapIterator'
+// of a 'PCProfileMetric' should therefore use ISA::ConvertVMAToOpVMA to
+// generate the 'operation VMAs'.)  see: 'PCProfileMetric_MapIterator'
 class PCProfileMetric
 {
 private:
-  typedef std::map<Addr, PCProfileDatum>        PCToPCProfileDatumMap;
+  typedef std::map<VMA, PCProfileDatum>        PCToPCProfileDatumMap;
   typedef PCToPCProfileDatumMap::value_type     PCToPCProfileDatumMapVal;
   typedef PCToPCProfileDatumMap::iterator       PCToPCProfileDatumMapIt;
   typedef PCToPCProfileDatumMap::const_iterator PCToPCProfileDatumMapCIt;
@@ -112,19 +114,24 @@ public:
   // TotalCount: The sum of all raw data for this metric
   // Period: The sampling period (whether event or instruction based)
   // TxtStart, TxtSz: Beginning of the text segment and the text segment size
-  const char*    GetName()        const { return name; }
-  const char*    GetDescription() const { return description; }
+  const std::string& GetName()        const { return name; }
+  const std::string& GetDescription() const { return description; }
+
   PCProfileDatum GetTotalCount()  const { return total; }
   ulong          GetPeriod()      const { return period; }
-  Addr           GetTxtStart()    const { return txtStart; }
-  Addr           GetTxtSz()       const { return txtSz; }
+  VMA            GetTxtStart()    const { return txtStart; }
+  VMA            GetTxtSz()       const { return txtSz; }
   
   void SetName(const char* s)          { name = s; }
-  void SetDescription(const char* s)   { description = s; }
+  void SetName(const std::string& s)   { name = s; }
+
+  void SetDescription(const char* s)        { description = s; }
+  void SetDescription(const std::string& s) { description = s; }
+
   void SetTotalCount(PCProfileDatum d) { total = d; }
   void SetPeriod(ulong p)              { period = p; }
-  void SetTxtStart(Addr a)             { txtStart = a; }
-  void SetTxtSz(Addr a)                { txtSz = a; }
+  void SetTxtStart(VMA a)             { txtStart = a; }
+  void SetTxtSz(VMA a)                { txtSz = a; }
 
   // 'GetSz': The number of entries (note: this is not necessarily the
   // number of instructions or PC values in the text segment).
@@ -140,14 +147,14 @@ public:
   // resulting from the insertion of <pc, 0> and a dataset in which no
   // insertion was performed for the same pc.  However, this should
   // not be a problem.)
-  PCProfileDatum Find(Addr pc, ushort opIndex) const {
-    Addr oppc = isa->ConvertPCToOpPC(pc, opIndex);
+  PCProfileDatum Find(VMA pc, ushort opIndex) const {
+    VMA oppc = isa->ConvertVMAToOpVMA(pc, opIndex);
     PCToPCProfileDatumMapCIt it = map.find(oppc);
     if (it == map.end()) { return PCProfileDatum_NIL; } 
     else { return ((*it).second); }
   }
-  void Insert(Addr pc, ushort opIndex, PCProfileDatum& d) {
-    Addr oppc = isa->ConvertPCToOpPC(pc, opIndex);
+  void Insert(VMA pc, ushort opIndex, PCProfileDatum& d) {
+    VMA oppc = isa->ConvertVMAToOpVMA(pc, opIndex);
     if (d != PCProfileDatum_NIL) {
       map.insert(PCToPCProfileDatumMapVal(oppc, d)); // do not add duplicates!
     }
@@ -170,13 +177,13 @@ private:
   
 protected:
 private:  
-  String name;
-  String description;
+  std::string name;
+  std::string description;
   
   PCProfileDatum total;    // sum across all pc values recorded for this event
   ulong          period;   // sampling period
-  Addr           txtStart; // beginning of text segment 
-  Addr           txtSz;    // size of text segment
+  VMA           txtStart; // beginning of text segment 
+  VMA           txtSz;    // size of text segment
 
   ISA* isa;                // we do not own; points to containing set  
   PCToPCProfileDatumMap map; // map of sampling data
@@ -196,7 +203,7 @@ public:
 
   // Note: This is the 'operation PC' and may not actually be the true
   // PC!  cf. ISA::ConvertOpPCToPC(...).
-  Addr           CurrentSrc()    { return (*it).first; }
+  VMA            CurrentSrc()    { return (*it).first; }
   PCProfileDatum CurrentTarget() { return (*it).second; }
 
   void operator++()    { it++; } // prefix

@@ -1,5 +1,6 @@
 // -*-Mode: C++;-*-
 // $Id$
+
 // * BeginRiceCopyright *****************************************************
 // 
 // Copyright ((c)) 2002, Rice University 
@@ -50,14 +51,11 @@
 //************************ System Include Files ******************************
 
 #include <iostream> 
+using std::cerr;
+using std::endl;
 
-#ifdef NO_STD_CHEADERS
-# include <stdlib.h>
-#else
-# include <cstdlib>
-using std::atof; // For compatibility with non-std C headers
-using std::atoi;
-#endif
+#include <string>
+using std::string;
 
 //************************ Xerces Include Files ******************************
 
@@ -71,15 +69,16 @@ using XERCES_CPP_NAMESPACE::XMLString;
 
 #include "PGMDocHandler.hpp"
 #include "Driver.hpp"
-#include "ScopesInfo.hpp"
+#include "NodeRetriever.hpp"
 #include "HPCViewXMLErrHandler.hpp"
-#include <lib/support/Assertion.h>
+
+#include <lib/prof-juicy/PgmScopeTree.hpp>
+
+#include <lib/support/diagnostics.h>
 #include <lib/support/Trace.hpp>
+#include <lib/support/StrUtil.hpp>
 
 //************************ Forward Declarations ******************************
-
-using std::cerr;
-using std::endl;
 
 //****************************************************************************
 
@@ -197,20 +196,21 @@ PGMDocHandler::PGMDocHandler(Doc_t ty,
 			     Driver *_driver) 
   : // element names
     elemPgm(XMLString::transcode("PGM")), 
-    elemGroup(XMLString::transcode("G")),
     elemLM(XMLString::transcode("LM")),
     elemFile(XMLString::transcode("F")),
     elemProc(XMLString::transcode("P")),
     elemLoop(XMLString::transcode("L")),
     elemStmt(XMLString::transcode("S")),
-    
+    elemGroup(XMLString::transcode("G")),
+    elemAlien(XMLString::transcode("A")),
+
     // attribute names
     attrVer(XMLString::transcode("version")),
     attrName(XMLString::transcode("n")),
     attrLnName(XMLString::transcode("ln")),
     attrBegin(XMLString::transcode("b")),
     attrEnd(XMLString::transcode("e")),
-    attrId(XMLString::transcode("id"))
+    attrVMA(XMLString::transcode("vma"))
 {
   // trace = 1;
   docty = ty;
@@ -235,7 +235,7 @@ PGMDocHandler::PGMDocHandler(Doc_t ty,
 
 PGMDocHandler::~PGMDocHandler() 
 {
-  BriefAssertion(scopeStack.Depth() == 0);
+  DIAG_Assert(scopeStack.Depth() == 0, "Invalid state reading PGM.");
 }
 
 
@@ -263,14 +263,14 @@ void PGMDocHandler:: startElement(const XMLCh* const uri,
   // PGM
   // -----------------------------------------------------------------
   if (XMLString::equals(name, elemPgm)) {
-    String verStr = getAttr(attributes, attrVer);
-    
-    double ver = atof(verStr);
+    string verStr = getAttr(attributes, attrVer);
+    double ver = StrUtil::toDbl(verStr);
 
     pgmVersion = ver;
-    if (pgmVersion < 4.0) {
-      String error = "This file format version is outdated; please regenerate the file."; 
-      throw PGMException(error); 
+    if (pgmVersion < 4.5) {
+      string error = "Found file format version " + StrUtil::toStr(pgmVersion)
+	+ ": This format is outdated; please regenerate the file."; 
+      throw PGMException(error);
     }
     
     IFTRACE << "PGM: ver=" << ver << endl;
@@ -279,91 +279,80 @@ void PGMDocHandler:: startElement(const XMLCh* const uri,
     currentScope = root;
   }
   
-  // G(roup)
-  else if (XMLString::equals(name, elemGroup)) {
-    String grpnm = getAttr(attributes, attrName); // must exist
-    BriefAssertion(!grpnm.Empty());
-    IFTRACE << "G(roup): name= " << grpnm << endl;
-
-    ScopeInfo* enclScope = GetCurrentScope(); // enclosing scope
-    GroupScope* grpscope = nodeRetriever->MoveToGroup(enclScope, grpnm);
-    BriefAssertion(grpscope != NULL);
-    groupNestingLvl++;
-    currentScope = grpscope;
-  }    
-  
   // LM (load module)
   else if (XMLString::equals(name, elemLM)) {
-    String lm = getAttr(attributes, attrName); // must exist
+    string lm = getAttr(attributes, attrName); // must exist
     lm = driver->ReplacePath(lm);
-    BriefAssertion(currentLmName.Empty());
+    DIAG_Assert(currentLmName.empty(), "Parse or internal error!");
     currentLmName = lm;
     IFTRACE << "LM (load module): name= " << currentLmName << endl;
     
     LoadModScope* lmscope = nodeRetriever->MoveToLoadMod(currentLmName);
-    BriefAssertion(lmscope != NULL);
+    DIAG_Assert(lmscope != NULL, "");
     currentScope = lmscope;
   }
   
   // F(ile)
   else if (XMLString::equals(name, elemFile)) {
-    String srcFile = getAttr(attributes, attrName);
+    string srcFile = getAttr(attributes, attrName);
     srcFile = driver->ReplacePath(srcFile);
     IFTRACE << "F(ile): name=" << srcFile << endl;
     
     // if the source file name is the same as the previous one, error.
     // otherwise find another one; it should not be the same as the
     // previous one
-    BriefAssertion(srcFile != currentFileName);
+    DIAG_Assert(srcFile != currentFileName, "");
     
     currentFileName = srcFile;
     FileScope* fileScope = nodeRetriever->MoveToFile(currentFileName);
-    BriefAssertion(fileScope != NULL);
+    DIAG_Assert(fileScope != NULL, "");
     currentScope = fileScope;
   }
 
   // P(roc)
   else if (XMLString::equals(name, elemProc)) {
-    BriefAssertion(scopeStack.Depth() >= 2); // at least has File, LM
+    DIAG_Assert(scopeStack.Depth() >= 2, ""); // at least has File, LM
     
-    String name  = getAttr(attributes, attrName);   // must exist
-    String lname = getAttr(attributes, attrLnName); // optional
+    string name  = getAttr(attributes, attrName);   // must exist
+    string lname = getAttr(attributes, attrLnName); // optional
     if (driver->MustDeleteUnderscore()) {
-      if (!name.Empty() && (name[name.Length()-1] == '_')) {
-	name[name.Length()-1] = '\0';
+      if (!name.empty() && (name[name.length()-1] == '_')) {
+	name[name.length()-1] = '\0';
       }
-      if (!lname.Empty() && (lname[lname.Length()-1] == '_')) {
-	lname[lname.Length()-1] = '\0';
+      if (!lname.empty() && (lname[lname.length()-1] == '_')) {
+	lname[lname.length()-1] = '\0';
       }
     }
     IFTRACE << "P(roc): name="  << name << " lname=" << lname << endl;
     
     int lnB = UNDEF_LINE, lnE = UNDEF_LINE;
-    String lineB = getAttr(attributes, attrBegin);
-    String lineE = getAttr(attributes, attrEnd);
-    if (!lineB.Empty()) { lnB = atoi(lineB); }
-    if (!lineE.Empty()) { lnE = atoi(lineE); }
+    string lineB = getAttr(attributes, attrBegin);
+    string lineE = getAttr(attributes, attrEnd);
+    if (!lineB.empty()) { lnB = (int)StrUtil::toLong(lineB); }
+    if (!lineE.empty()) { lnE = (int)StrUtil::toLong(lineE); }
     IFTRACE << " b="  << lnB << " e=" << lnE << endl;
     
+    string vma = getAttr(attributes, attrVMA);
+
     // Find enclosing File scope
     FileScope* curFile = FindCurrentFileScope();
     if (!curFile) {
-      String error = "No F(ile) scope for P(roc) scope '" + name + "'";
+      string error = "No F(ile) scope for P(roc) scope '" + name + "'";
       throw PGMException(error);
     }
 
     // Find/Create the procedure.
     currentFuncScope = curFile->FindProc(name);
     if (!currentFuncScope) {
-      currentFuncScope = new ProcScope(name, curFile, lnB, lnE);
+      currentFuncScope = new ProcScope(name, curFile, lname, lnB, lnE);
+      if (!vma.empty()) {
+	currentFuncScope->vmaSet().fromString(vma.c_str());
+      }
     }
     else {
       if (docty == Doc_STRUCT) {
 	// If a proc with the same name already exists, print a warning.
-	cerr << "WARNING: Procedure " << name << " was found multiple times"
-	     << " in the file " << curFile->Name() << "; information for this"
-	     << " procedure will be aggregated. If you do not want this,"
-	     << " edit the STRUCTURE file and adjust the names by hand.\n";
+	DIAG_Msg(0, "Warning: Found procedure '" << name << "' multiple times within file '" << curFile->name() << "'; information for this procedure will be aggregated. If you do not want this, edit the STRUCTURE file and adjust the names by hand.");
       }
     }
     
@@ -372,24 +361,29 @@ void PGMDocHandler:: startElement(const XMLCh* const uri,
 
   // L(oop)
   else if (XMLString::equals(name, elemLoop)) {
-    BriefAssertion(scopeStack.Depth() >= 3); // at least has Proc, File, LM
-    
+    DIAG_Assert(scopeStack.Depth() >= 3, ""); // at least has Proc, File, LM
+
     // both 'begin' and 'end' are implied (and can be in any order)
     int numAttr = attributes.getLength();
-    BriefAssertion(numAttr >= 0 && numAttr <= 2);
+    DIAG_Assert(0 <= numAttr && numAttr <= 3, "");
 
     int lnB = UNDEF_LINE, lnE = UNDEF_LINE;
-    String lineB = getAttr(attributes, attrBegin);
-    String lineE = getAttr(attributes, attrEnd);
-    if (!lineB.Empty()) { lnB = atoi(lineB); }
-    if (!lineE.Empty()) { lnE = atoi(lineE); }
+    string lineB = getAttr(attributes, attrBegin);
+    string lineE = getAttr(attributes, attrEnd);
+    if (!lineB.empty()) { lnB = (int)StrUtil::toLong(lineB); }
+    if (!lineE.empty()) { lnE = (int)StrUtil::toLong(lineE); }
 
     IFTRACE << "L(oop): numberB=" << lineB << " numberE=" << lineE << endl;
     
     // by now the file and function names should have been found
     CodeInfo* enclScope = 
       dynamic_cast<CodeInfo*>(GetCurrentScope()); // enclosing scope
-    CodeInfo* loopNode = new LoopScope(enclScope, lnB, lnE);
+
+    // FIXME: temp hack so that alien components will not destroy boundaries
+    //CodeInfo* loopNode = new LoopScope(enclScope, lnB, lnE);
+    CodeInfo* loopNode = new LoopScope(NULL, lnB, lnE);
+    loopNode->Link(enclScope);
+
     currentScope = loopNode;
   }
   
@@ -398,36 +392,68 @@ void PGMDocHandler:: startElement(const XMLCh* const uri,
     int numAttr = attributes.getLength();
     
     // 'begin' is required but 'end' is implied (and can be in any order)
-    BriefAssertion(numAttr == 1 || numAttr == 2);
+    DIAG_Assert(1 <= numAttr && numAttr <= 3, DIAG_UnexpectedInput);
     
     int lnB = UNDEF_LINE, lnE = UNDEF_LINE;
-    String lineB = getAttr(attributes, attrBegin);
-    String lineE = getAttr(attributes, attrEnd);
-    if (!lineB.Empty()) { lnB = atoi(lineB); }
-    if (!lineE.Empty()) { lnE = atoi(lineE); }
-    BriefAssertion(lnB != UNDEF_LINE);
+    string lineB = getAttr(attributes, attrBegin);
+    string lineE = getAttr(attributes, attrEnd);
+    if (!lineB.empty()) { lnB = (int)StrUtil::toLong(lineB); }
+    if (!lineE.empty()) { lnE = (int)StrUtil::toLong(lineE); }
+    //DIAG_Assert(lnB != UNDEF_LINE, "S beg line is " << UNDEF_LINE);
 
-    // IF lineE is undefined, set it to lineB
+    // Check that lnB and lnE are valid line numbers:
+    //   if lineE is undefined, set it to lineB
     if (lnE == UNDEF_LINE) { lnE = lnB; }
-
-    // Check that lnB and lnE are valid line numbers: FIXME
-
     IFTRACE << "S(tmt): numberB=" << lineB << " numberE=" << lineE << endl;
+
+    // for now insist that lnB and lnE are equal
+    DIAG_Assert(lnB == lnE, "S beg/end lines not equal: b=" << lnB 
+		<< " e=" << lnE);
     
-    // for now assume that lnB and lnE are equals, exit otherwise
-    BriefAssertion(lnB == lnE);
+    string vma = getAttr(attributes, attrVMA);
 
     // by now the file and function names should have been found
     CodeInfo* enclScope = 
       dynamic_cast<CodeInfo*>(GetCurrentScope()); // enclosing scope
-    BriefAssertion(currentFuncScope != NULL);
-    LineScope* lineNode = currentFuncScope->CreateLineScope(enclScope, lnB);
-    // FIXME: we should be using stmt ranges not line scopes
-    // CodeInfo* lineNode = new StmtRangeScope(enclScope, lnB, lnE);
-    currentScope = lineNode;
+    DIAG_Assert(currentFuncScope != NULL, "");
+
+    // FIXME: temp hack so that alien components will not destroy boundaries
+    //StmtRangeScope* stmtNode = new StmtRangeScope(enclScope, lnB, lnE);
+    StmtRangeScope* stmtNode = new StmtRangeScope(NULL, lnB, lnE);
+    stmtNode->Link(enclScope);
+
+    if (!vma.empty()) {
+      stmtNode->vmaSet().fromString(vma.c_str());
+    }
+    currentScope = stmtNode;
+  }
+  
+  // G(roup)
+  else if (XMLString::equals(name, elemGroup)) {
+    string grpnm = getAttr(attributes, attrName); // must exist
+    DIAG_Assert(!grpnm.empty(), "");
+    IFTRACE << "G(roup): name= " << grpnm << endl;
+
+    ScopeInfo* enclScope = GetCurrentScope(); // enclosing scope
+    GroupScope* grpscope = nodeRetriever->MoveToGroup(enclScope, grpnm);
+    DIAG_Assert(grpscope != NULL, "");
+    groupNestingLvl++;
+    currentScope = grpscope;
+  }
+
+  // A(lien)
+  else if (XMLString::equals(name, elemAlien)) {
+    string nm = getAttr(attributes, attrName); // must exist
+    DIAG_Assert(!nm.empty(), "");
+    IFTRACE << "A(lien): name= " << nm << endl;
+    return; // FIXME: short circuit scope pushing for now!
   }
 
   
+  // -----------------------------------------------------------------
+  // 
+  // -----------------------------------------------------------------
+
   // The current top of the stack must be a non-leaf.  Since we are
   // using SAX parsing, we don't know this until now.
   StackEntry_t* entry = GetStackEntry(0);
@@ -448,31 +474,23 @@ void PGMDocHandler::endElement(const XMLCh* const uri,
   if (XMLString::equals(name, elemPgm)) {
   }
 
-  // G(roup)
-  else if (XMLString::equals(name, elemGroup)) {
-    BriefAssertion(scopeStack.Depth() >= 1);
-    BriefAssertion(groupNestingLvl >= 1);
-    if (docty == Doc_GROUP) { ProcessGroupDocEndTag(); }
-    groupNestingLvl--;
-  }
-
   // LM (load module)
   else if (XMLString::equals(name, elemLM)) {
-    BriefAssertion(scopeStack.Depth() >= 1);
+    DIAG_Assert(scopeStack.Depth() >= 1, "");
     if (docty == Doc_GROUP) { ProcessGroupDocEndTag(); }
     currentLmName = "";
   }
 
   // F(ile)
   else if (XMLString::equals(name, elemFile)) {
-    BriefAssertion(scopeStack.Depth() >= 2); // at least has LM
+    DIAG_Assert(scopeStack.Depth() >= 2, ""); // at least has LM
     if (docty == Doc_GROUP) { ProcessGroupDocEndTag(); }
     currentFileName = "";
   }
 
   // P(roc)
   else if (XMLString::equals(name, elemProc)) {
-    BriefAssertion(scopeStack.Depth() >= 3); // at least has File, LM
+    DIAG_Assert(scopeStack.Depth() >= 3, ""); // at least has File, LM
     if (docty == Doc_GROUP) { ProcessGroupDocEndTag(); }
     currentFuncName = "";
     currentFuncScope = NULL;
@@ -481,7 +499,7 @@ void PGMDocHandler::endElement(const XMLCh* const uri,
   // L(oop)
   else if (XMLString::equals(name, elemLoop)) {
     // stack depth should be at least 4
-    BriefAssertion(scopeStack.Depth() >= 4);
+    DIAG_Assert(scopeStack.Depth() >= 4, "");
     if (docty == Doc_GROUP) { ProcessGroupDocEndTag(); }
   }
   
@@ -489,7 +507,20 @@ void PGMDocHandler::endElement(const XMLCh* const uri,
   else if (XMLString::equals(name, elemStmt)) {
     if (docty == Doc_GROUP) { ProcessGroupDocEndTag(); }
   }
-  
+
+  // G(roup)
+  else if (XMLString::equals(name, elemGroup)) {
+    DIAG_Assert(scopeStack.Depth() >= 1, "");
+    DIAG_Assert(groupNestingLvl >= 1, "");
+    if (docty == Doc_GROUP) { ProcessGroupDocEndTag(); }
+    groupNestingLvl--;
+  }
+
+  // A(lien)
+  else if (XMLString::equals(name, elemAlien)) {
+    return; // FIXME: short circuit scope popping for now!
+  }
+
   PopCurrentScope();
 }
 
@@ -505,7 +536,7 @@ PGMDocHandler::ToString(Doc_t docty)
     case Doc_NULL:   return "Document:NULL";
     case Doc_STRUCT: return "Document:STRUCTURE";
     case Doc_GROUP:  return "Document:GROUP";
-    default:  BriefAssertion(false);
+    default: DIAG_Die("Invalid Doc_t!");
   }
 }
 
@@ -578,7 +609,7 @@ PGMDocHandler::ProcessGroupDocEndTag()
     
     // 1. Find enclosing GROUP node g (excluding the top of the stack)
     unsigned int enclGrpDepth = FindEnclosingGroupScopeDepth();
-    BriefAssertion(enclGrpDepth >= 2); // must be found && not at top
+    DIAG_Assert(enclGrpDepth >= 2, ""); // must be found && not at top
     unsigned int enclGrpIdx = enclGrpDepth - 1;
     
     // 2. For each node between g (excluding g) to the node before

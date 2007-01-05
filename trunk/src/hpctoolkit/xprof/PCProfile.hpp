@@ -1,5 +1,6 @@
+// -*-Mode: C++;-*-
 // $Id$
-// -*-C++-*-
+
 // * BeginRiceCopyright *****************************************************
 // 
 // Copyright ((c)) 2002, Rice University 
@@ -52,6 +53,7 @@
 
 //************************* System Include Files ****************************
 
+#include <string>
 #include <vector>
 #include <list>
 
@@ -62,8 +64,7 @@
 #include "PCProfileMetric.hpp"
 #include "PCProfileFilter.hpp"
 
-#include <lib/ISA/ISA.hpp>
-#include <lib/support/String.hpp>
+#include <lib/isa/ISA.hpp>
 
 //*************************** Forward Declarations ***************************
 
@@ -76,7 +77,7 @@ typedef std::vector<PCProfileMetric*>      PCProfileMetricVec;
 typedef PCProfileMetricVec::iterator       PCProfileMetricVecIt;
 typedef PCProfileMetricVec::const_iterator PCProfileMetricVecCIt;
 
-typedef std::vector<Addr>     PCVec;
+typedef std::vector<VMA>      PCVec;
 typedef PCVec::iterator       PCVecIt;
 typedef PCVec::const_iterator PCVecCIt;
 
@@ -129,7 +130,7 @@ public:
   // operation designated by 'pc' and 'opIndex'?  If yes, returns the
   // index of the first metric with non-nil data (forward iteration
   // from 0 to size); otherwise, returns negative.  
-  sint DataExists(Addr pc, ushort opIndex) const;
+  sint DataExists(VMA pc, ushort opIndex) const;
 
   // Filter(): Returns a new, non-null but possibly empty, set of
   // metrics that pass the filter (i.e., every metric metric 'm' for
@@ -219,17 +220,20 @@ public:
   
   // ProfiledFile: the name of the profiled program image
   // HdrInfo: a copy of the unparsed header info. 
-  const char* GetProfiledFile() const { return profiledFile; }
-  const char* GetHdrInfo()      const { return fHdrInfo; }
+  const std::string& GetProfiledFile() const { return profiledFile; }
+  const std::string& GetHdrInfo()      const { return fHdrInfo; }
   
-  void SetProfiledFile(const char* s)  { profiledFile = s; }
-  void SetHdrInfo(const char* s)       { fHdrInfo = s; }
+  void SetProfiledFile(const char* s)        { profiledFile = s; }
+  void SetProfiledFile(const std::string& s) { profiledFile = s; }
+
+  void SetHdrInfo(const char* s)        { fHdrInfo = s; }
+  void SetHdrInfo(const std::string& s) { fHdrInfo = s; }
   
   // Text start and size (redundant).  Note: all metrics for one
   // profile should have identical values for
   // PCProfileMetric::GetTxtStart() and PCProfileMetric::GetTxtSz()
-  Addr GetTxtStart() const { return (GetSz()) ? Index(0)->GetTxtStart() : 0; }
-  Addr GetTxtSz()    const { return (GetSz()) ? Index(0)->GetTxtSz() : 0; }
+  VMA GetTxtStart() const { return (GetSz()) ? Index(0)->GetTxtStart() : 0; }
+  VMA GetTxtSz()    const { return (GetSz()) ? Index(0)->GetTxtSz() : 0; }
   
   // Access to metrics (redundant)
   const PCProfileMetric* GetMetric(suint i) const { return Index(i); }
@@ -240,7 +244,7 @@ public:
 
   // Access to PCs containing non-zero profiling info
   suint GetNumPCs() { return pcVec.size(); }
-  void AddPC(Addr pc, ushort opIndex); // be careful: should be no duplicates
+  void AddPC(VMA pc, ushort opIndex); // be careful: should be no duplicates
 
   void Dump(std::ostream& o = std::cerr);
   void DDump(); 
@@ -254,8 +258,8 @@ private:
 
 protected:
 private:
-  String profiledFile; // name of profiled file
-  String fHdrInfo;     // unparsed file header info
+  std::string profiledFile; // name of profiled file
+  std::string fHdrInfo;     // unparsed file header info
 
   PCVec pcVec; // PCs for which some metric has non-zero data
 };
@@ -272,7 +276,7 @@ public:
 
   // Note: This is the 'operation PC' and may not actually be the true
   // PC!  cf. ISA::ConvertOpPCToPC(...).
-  Addr Current() const { return (*it); }
+  VMA Current() const { return (*it); }
 
   void operator++()    { it++; } // prefix
   void operator++(int) { ++it; } // postfix

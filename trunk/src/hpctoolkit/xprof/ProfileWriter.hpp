@@ -1,5 +1,6 @@
+// -*-Mode: C++;-*-
 // $Id$
-// -*-C++-*-
+
 // * BeginRiceCopyright *****************************************************
 // 
 // Copyright ((c)) 2002, Rice University 
@@ -37,13 +38,13 @@
 //***************************************************************************
 //
 // File:
-//    ProfileWriter.h
+//   $Source$
 //
 // Purpose:
-//    [The purpose of this file]
+//   [The purpose of this file]
 //
 // Description:
-//    [The set of functions, macros, etc. defined in the file]
+//   [The set of functions, macros, etc. defined in the file]
 //
 //***************************************************************************
 
@@ -58,13 +59,11 @@
 
 #include <include/general.h>
 
-#include <lib/binutils/PCToSrcLineMap.hpp>
-#include <lib/binutils/LoadModuleInfo.hpp>
+#include <lib/binutils/LM.hpp>
 
 //*************************** Forward Declarations ***************************
 
 class DerivedProfile;
-class Executable;
 
 //****************************************************************************
 
@@ -72,7 +71,7 @@ class ProfileWriter
 {
 public:
   static void WriteProfile(std::ostream& os, DerivedProfile* profData,
-			   LoadModuleInfo* modInfo);
+			   binutils::LM* lm);
   
 private:
   static void DumpProfileHeader(std::ostream& os);

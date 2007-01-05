@@ -21,10 +21,6 @@
 //
 //***************************************************************************
 
-#ifdef __GNUC__
-#pragma implementation
-#endif
-
 //************************* System Include Files ****************************
 
 #include <iostream>
@@ -370,7 +366,7 @@ BFDLoadModule::name() const
   return name_;
 }
 
-pprof_off_t
+VMA
 BFDLoadModule::textstart() const
 {
   return 0;
@@ -392,7 +388,7 @@ BFDLoadModule::demangle(const string &name) const
 }
 
 void
-BFDLoadModule::find_bfd(pprof_off_t pc, const char **filename,
+BFDLoadModule::find_bfd(VMA pc, const char **filename,
                         unsigned int *lineno, const char **funcname) const
 {
   pc_ = pc;
@@ -410,12 +406,12 @@ BFDLoadModule::find_bfd(pprof_off_t pc, const char **filename,
 }
 
 int
-BFDLoadModule::find(pprof_off_t pc, const char **filename,
+BFDLoadModule::find(VMA pc, const char **filename,
                     unsigned int *lineno, const char **funcname) const
 {
   if (!bfd_) return 0;
 
-  std::map<pprof_off_t,FuncInfo>::iterator ilocmap = locmap_.find(pc);
+  std::map<VMA,FuncInfo>::iterator ilocmap = locmap_.find(pc);
   if (ilocmap != locmap_.end()) {
       FuncInfo &funcinfo = (*ilocmap).second;
       if (funcinfo.file().size() > 0) *filename = funcinfo.c_file();

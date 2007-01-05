@@ -41,8 +41,10 @@
 
 //************************* User Include Files *******************************
 
-#include "ScopesInfo.hpp"
 #include "PerfIndex.hpp"
+
+#include <lib/prof-juicy/PgmScopeTree.hpp>
+
 #include <lib/support/String.hpp>
 
 //************************ Forward Declarations ******************************
@@ -56,7 +58,7 @@ class HTMLFile;
 class HTMLTable { 
 public: 
   HTMLTable(const char* name, 
-	    const ScopesInfo &scopes, 
+	    const PgmScopeTree &scopes, 
             const ScopeInfoFilter &entryFilter, 
             bool leavesOnly, 
 	    IntVector *perfIndicesForColumns,
@@ -72,16 +74,16 @@ public:
   String TableFileName(int perfIndex) const; 
   String HeadFileName(int perfIndex) const; 
 
-  static void    WriteMetricHeader(HTMLFile& hf, const IntVector *perfIndex);
+  static void WriteMetricHeader(HTMLFile& hf, const IntVector *perfIndex);
   static bool WriteMetricValues(HTMLFile& hf, const IntVector *perfIndex, 
-				   const ScopeInfo *scope, 
-				   const PgmScope &root);
+				const ScopeInfo *scope, 
+				const PgmScope &root);
 
   static bool MetricMeetsThreshold(const IntVector *perfIndex, 
-				       const int whichIndex, 
-				       const float threshold,
-				       const ScopeInfo *scope, 
-				       const PgmScope &root);
+				   const int whichIndex, 
+				   const float threshold,
+				   const ScopeInfo *scope, 
+				   const PgmScope &root);
 
 
   static String CodeName(const ScopeInfo &si); 
@@ -113,7 +115,7 @@ private:
   const bool leavesOnly;          // if true only include leaves, 
                                   // otherwise include internal nodes as well
   
-  const ScopesInfo &scopes;       // contains all refs/lines/loops/procs to
+  const PgmScopeTree &scopes;     // contains all refs/lines/loops/procs to
                                   // be considered
   
   IntVector *perfIndex;           // the perfIndeces for perfData we should 

@@ -1,5 +1,6 @@
-// $Id$
 // -*-C++-*-
+// $Id$
+
 // * BeginRiceCopyright *****************************************************
 // 
 // Copyright ((c)) 2002, Rice University 
@@ -50,16 +51,15 @@
 //************************* System Include Files ****************************
 
 #include <iostream>
+using std::endl;
+using std::hex;
+using std::dec;
 
 //*************************** User Include Files ****************************
 
 #include "DCPIProfileMetric.hpp"
 
 //*************************** Forward Declarations ***************************
-
-using std::endl;
-using std::hex;
-using std::dec;
 
 //****************************************************************************
 // DCPIProfileMetric

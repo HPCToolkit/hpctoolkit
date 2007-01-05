@@ -1,5 +1,6 @@
 // -*-Mode: C++;-*-
 // $Id$
+
 // * BeginRiceCopyright *****************************************************
 // 
 // Copyright ((c)) 2002, Rice University 
@@ -37,28 +38,32 @@
 //***************************************************************************
 //
 // File:
-//    Args.C
+//   $Source$
 //
 // Purpose:
-//    [The purpose of this file]
+//   [The purpose of this file]
 //
 // Description:
-//    [The set of functions, macros, etc. defined in the file]
+//   [The set of functions, macros, etc. defined in the file]
 //
 //***************************************************************************
 
 //************************* System Include Files ****************************
 
+#include <iostream>
+using std::cerr;
+using std::endl;
+
+#include <string>
+using std::string;
+
 //*************************** User Include Files ****************************
 
 #include "Args.hpp"
-#include <lib/support/Trace.hpp>
+
+#include <lib/support/diagnostics.h>
 
 //*************************** Forward Declarations **************************
-
-using std::cerr;
-using std::endl;
-using std::string;
 
 //***************************************************************************
 
@@ -75,7 +80,8 @@ static const char* usage_details =
 "data; see caveats below for common problems.\n"
 "\n"
 "Options:\n"
-"  -v, --verbose        Verbose: generate progress messages to stderr\n"
+"  -v, --verbose [<n>]  Verbose: generate progress messages to stderr at\n"
+"                       verbosity level <n>.  [1]\n"
 "  -n, --normalize-off  Turn off scope tree normalization\n"
 "  -u, --unsafe-normalize-off\n"
 "                       Turn off potentially unsafe normalization\n"
@@ -89,7 +95,6 @@ static const char* usage_details =
 "                       times.\n"
 "  -V, --version        Print version information.\n"
 "  -h, --help           Print this help.\n"
-"  -D, --dump-binary    Dump binary information and suppress loop recovery\n"
 "\n"
 "Caveats:\n"
 "* <binary> should be compiled with as much debugging info as possible (e.g.\n"
@@ -101,13 +106,6 @@ static const char* usage_details =
 "  GNU's demangler, but if <binary> was produced with a proprietary compiler\n"
 "  demangling will likely be unsuccessful. (Also, cross-platform usage.)\n";
 
-#if 0 // FIXME: '[-m <pcmap>]'
-"  -m: Create and write a [PC -> source-line] map to <pcmap>.\n"
-"      The map is extended with loop analysis information and  \n"
-"      can be used to improve the output of 'xProf'.\n"
-"      [*Not fully implemented.*]\n"
-#endif     
-
 
 #define CLP CmdLineParser
 
@@ -115,7 +113,7 @@ static const char* usage_details =
 CmdLineParser::OptArgDesc Args::optArgs[] = {
 
   // Options
-  { 'v', "verbose",         CLP::ARG_NONE, CLP::DUPOPT_CLOB, NULL },
+  { 'v', "verbose",         CLP::ARG_OPT,  CLP::DUPOPT_CLOB, NULL },
   { 'n', "normalize-off",   CLP::ARG_NONE, CLP::DUPOPT_CLOB, NULL },
   { 'u', "unsafe-normalize-off", 
                             CLP::ARG_NONE, CLP::DUPOPT_CLOB, NULL },
@@ -123,11 +121,9 @@ CmdLineParser::OptArgDesc Args::optArgs[] = {
                             CLP::ARG_NONE, CLP::DUPOPT_CLOB, NULL },
   { 'c', "compact",         CLP::ARG_NONE, CLP::DUPOPT_CLOB, NULL },
   { 'p', "canonical-paths", CLP::ARG_REQ , CLP::DUPOPT_CAT,  ":" },
-  {  0 , "pcmap",           CLP::ARG_REQ , CLP::DUPOPT_ERR,  NULL }, // hidden
   
   { 'V', "version",     CLP::ARG_NONE, CLP::DUPOPT_CLOB, NULL },
   { 'h', "help",        CLP::ARG_NONE, CLP::DUPOPT_CLOB, NULL },
-  { 'D', "dump-binary", CLP::ARG_NONE, CLP::DUPOPT_CLOB, NULL },
   {  0 , "debug",       CLP::ARG_OPT,  CLP::DUPOPT_CLOB, NULL }, // hidden
   CmdLineParser_OptArgDesc_NULL_MACRO // SGI's compiler requires this version
 };
@@ -153,12 +149,10 @@ Args::Args(int argc, const char* const argv[])
 void
 Args::Ctor()
 {
-  verboseMode = false;
   normalizeScopeTree = true;
   unsafeNormalizations = true;
   irreducibleIntervalIsLoop = false;
   prettyPrintOutput = true;
-  dumpBinary = false;
 }
 
 
@@ -200,7 +194,6 @@ void
 Args::Parse(int argc, const char* const argv[])
 {
   try {
-
     // -------------------------------------------------------
     // Parse the command line
     // -------------------------------------------------------
@@ -211,14 +204,13 @@ Args::Parse(int argc, const char* const argv[])
     // -------------------------------------------------------
     
     // Special options that should be checked first
-    trace = 0;
-    
     if (parser.IsOpt("debug")) { 
-      trace = 1; 
+      int dbg = 1;
       if (parser.IsOptArg("debug")) {
 	const string& arg = parser.GetOptArg("debug");
-	trace = (int)CmdLineParser::ToLong(arg);
+	dbg = (int)CmdLineParser::ToLong(arg);
       }
+      Diagnostics_SetDiagnosticFilterLevel(dbg);
     }
     if (parser.IsOpt("help")) { 
       PrintUsage(std::cerr); 
@@ -230,8 +222,13 @@ Args::Parse(int argc, const char* const argv[])
     }
     
     // Check for other options
-    if (parser.IsOpt("verbose")) { 
-      verboseMode = true;
+    if (parser.IsOpt("verbose")) {
+      int verb = 1;
+      if (parser.IsOptArg("verbose")) {
+	const string& arg = parser.GetOptArg("verbose");
+	verb = (int)CmdLineParser::ToLong(arg);
+      }
+      Diagnostics_SetDiagnosticFilterLevel(verb);
     } 
     if (parser.IsOpt("normalize-off")) { 
       normalizeScopeTree = false;
@@ -248,12 +245,6 @@ Args::Parse(int argc, const char* const argv[])
     if (parser.IsOpt("canonical-paths")) { 
       canonicalPathList = parser.GetOptArg("canonical-paths");
     }
-    if (parser.IsOpt("pcmap")) { 
-      pcMapFile = parser.GetOptArg("pcmap");
-    }
-    if (parser.IsOpt("dump-binary")) { 
-      dumpBinary = true;
-    } 
     
     // Check for required arguments
     if (parser.GetNumArgs() != 1) {
@@ -262,12 +253,12 @@ Args::Parse(int argc, const char* const argv[])
     }
     inputFile = parser.GetArg(0);
   }
-  catch (CmdLineParser::ParseError& e) {
-    PrintError(std::cerr, e.GetMessage());
+  catch (const CmdLineParser::ParseError& x) {
+    PrintError(std::cerr, x.what());
     exit(1);
   }
-  catch (CmdLineParser::Exception& e) {
-    e.Report(std::cerr);
+  catch (const CmdLineParser::Exception& x) {
+    DIAG_EMsg(x.message());
     exit(1);
   }
 }
@@ -277,13 +268,10 @@ void
 Args::Dump(std::ostream& os) const
 {
   os << "Args.cmd= " << GetCmd() << endl; 
-  os << "Args.dumpBinary= " << dumpBinary << endl;
-  os << "Args.pcMapFile= " << pcMapFile << endl;
   os << "Args.prettyPrintOutput= " << prettyPrintOutput << endl;
   os << "Args.normalizeScopeTree= " << normalizeScopeTree << endl;
   os << "Args.canonicalPathList= " << canonicalPathList << endl;
   os << "Args.inputFile= " << inputFile << endl;
-  os << "::trace " << ::trace << endl; 
 }
 
 void 
@@ -296,12 +284,12 @@ Args::DDump() const
 //***************************************************************************
 
 #if 0
-#include <dirent.h>
-void Args::setBloopHome() 
+void 
+Args::setHPCHome() 
 {
-  char * home = getenv(HPCTOOLS); 
+  char * home = getenv(HPCTOOLKIT.c_str()); 
   if (home == NULL) {
-    cerr << "Error: Please set your " << HPCTOOLS << " environment variable."
+    cerr << "Error: Please set your " << HPCTOOLKIT << " environment variable."
 	 << endl; 
     exit(1); 
   } 
@@ -316,7 +304,7 @@ void Args::setBloopHome()
     exit(1); 
   } 
   closedir(fp); 
-  bloopHome = String(home);
+  hpcHome = home; 
 } 
 #endif  
 

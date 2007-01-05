@@ -1,5 +1,6 @@
+// -*-Mode: C++;-*-
 // $Id$
-// -*-C++-*-
+
 // * BeginRiceCopyright *****************************************************
 // 
 // Copyright ((c)) 2002, Rice University 
@@ -44,6 +45,12 @@
 //************************ System Include Files ******************************
 
 #include <iostream> 
+using std::cout;
+using std::endl;
+
+#include <sstream>
+
+#include <string>
 
 #ifdef NO_STD_CHEADERS
 # include <math.h>
@@ -57,40 +64,71 @@ using namespace std; // For compatibility with non-std C headers
 #include <include/general.h>
 
 #include "EvalNode.hpp"
+
 #include <lib/support/Nan.h>
 #include <lib/support/Trace.hpp>
 
 //************************ Forward Declarations ******************************
 
-using std::cout;
-using std::endl;
-
 //****************************************************************************
+
+// ----------------------------------------------------------------------
+// class EvalNode
+// ----------------------------------------------------------------------
+
+std::string
+EvalNode::toString() const
+{
+  std::ostringstream os;
+  dump(os);
+  os << std::ends;
+  return os.str();
+}
 
 // ----------------------------------------------------------------------
 // class Const
 // ----------------------------------------------------------------------
 
-Const::Const(double c) : val(c) { }
+Const::Const(double c) 
+  : val(c) 
+{ 
+}
 
-Const::~Const() { }
+Const::~Const()
+{ 
+}
 
-double Const::eval(const ScopeInfo *si) {
+double 
+Const::eval(const ScopeInfo *si) 
+{
   IFTRACE << "constant=" << val << endl; 
   return val;
 }
 
-void Const::print() { cout << "(" << val << ")"; }
+std::ostream& 
+Const::dump(std::ostream& os) const
+{ 
+  os << "(" << val << ")"; 
+  return os;
+}
 
 // ----------------------------------------------------------------------
 // class Neg
 // ----------------------------------------------------------------------
 
-Neg::Neg(EvalNode* aNode) { node = aNode; }
+Neg::Neg(EvalNode* aNode) 
+{ 
+  node = aNode; 
+}
 
-Neg::~Neg() { delete node; }
+Neg::~Neg() 
+{ 
+  delete node; 
+}
 
-double Neg::eval(const ScopeInfo *si) {
+double 
+Neg::eval(const ScopeInfo *si) 
+{
   double tmp;
   if (node == NULL || IsNaNorInfinity(tmp = node->eval(si)))
     return NaNVal;
@@ -98,31 +136,56 @@ double Neg::eval(const ScopeInfo *si) {
   return -tmp;
 }
 
-void Neg::print() { cout << "(-"; node->print(); cout << ")"; }
+std::ostream& 
+Neg::dump(std::ostream& os) const
+{ 
+  os << "(-"; node->dump(); os << ")"; 
+  return os;
+}
 
 // ----------------------------------------------------------------------
 // class Var
 // ----------------------------------------------------------------------
 
-Var::Var(String n, int i) : name(n), index(i) { }
+Var::Var(String n, int i) 
+  : name(n), index(i) 
+{ 
+}
 
-Var::~Var() { }
+Var::~Var() 
+{ 
+}
 
-double Var::eval(const ScopeInfo *si) {
+double 
+Var::eval(const ScopeInfo *si) 
+{
   return si->PerfData(index);
 }
 
-void Var::print() { cout << name; }
+std::ostream& 
+Var::dump(std::ostream& os) const
+{ 
+  os << name; 
+  return os;
+}
 
 // ----------------------------------------------------------------------
 // class Power
 // ----------------------------------------------------------------------
 
-Power::Power(EvalNode* b, EvalNode* e) : base(b), exponent(e) { }
+Power::Power(EvalNode* b, EvalNode* e) 
+  : base(b), exponent(e) 
+{ 
+}
 
-Power::~Power() { delete base; delete exponent; }
+Power::~Power() 
+{ 
+  delete base; delete exponent; 
+}
 
-double Power::eval(const ScopeInfo *si) {
+double 
+Power::eval(const ScopeInfo *si) 
+{
   if (base == NULL || exponent == NULL)
     return NaNVal;
   double b = base->eval(si);
@@ -143,8 +206,11 @@ double Power::eval(const ScopeInfo *si) {
   return pow(b, e);
 }
 
-void Power::print() {
-  cout << "("; base->print(); cout << "**"; exponent->print(); cout << ")";
+std::ostream& 
+Power::dump(std::ostream& os) const
+{
+  os << "("; base->dump(); os << "**"; exponent->dump(); os << ")";
+  return os;
 }
 
 // ----------------------------------------------------------------------
@@ -152,11 +218,18 @@ void Power::print() {
 // ----------------------------------------------------------------------
 
 Divide::Divide(EvalNode* num, EvalNode* denom)
-    : numerator(num), denominator(denom) { }
+    : numerator(num), denominator(denom) 
+{ 
+}
 
-Divide::~Divide() { delete numerator; delete denominator; }
+Divide::~Divide() 
+{ 
+  delete numerator; delete denominator; 
+}
 
-double Divide::eval(const ScopeInfo *si) {
+double 
+Divide::eval(const ScopeInfo *si) 
+{
   if (numerator == NULL || denominator == NULL)
     return NaNVal;
   double n = numerator->eval(si);
@@ -169,20 +242,31 @@ double Divide::eval(const ScopeInfo *si) {
   return n / d;
 }
 
-void Divide::print() {
-  cout << "("; numerator->print(); cout << "/"; 
-  denominator->print(); cout << ")";
+std::ostream& 
+Divide::dump(std::ostream& os) const
+{
+  os << "("; numerator->dump(); os << "/"; 
+  denominator->dump(); os << ")";
+  return os;
 }
 
 // ----------------------------------------------------------------------
 // class Minus
 // ----------------------------------------------------------------------
 
-Minus::Minus(EvalNode* m, EvalNode* s) : minuend(m), subtrahend(s) { }
+Minus::Minus(EvalNode* m, EvalNode* s) 
+  : minuend(m), subtrahend(s) 
+{ 
+}
 
-Minus::~Minus() { delete minuend; delete subtrahend; }
+Minus::~Minus() 
+{ 
+  delete minuend; delete subtrahend; 
+}
 
-double Minus::eval(const ScopeInfo *si) {
+double 
+Minus::eval(const ScopeInfo *si) 
+{
   if (minuend == NULL || subtrahend == NULL)
     return NaNVal;
   double m = minuend->eval(si);
@@ -197,23 +281,32 @@ double Minus::eval(const ScopeInfo *si) {
   return (m - s);
 }
 
-void Minus::print() {
-  cout << "("; minuend->print(); cout << "-"; subtrahend->print(); cout << ")";
+std::ostream& 
+Minus::dump(std::ostream& os) const
+{
+  os << "("; minuend->dump(); os << "-"; subtrahend->dump(); os << ")";
+  return os;
 }
 
 // ----------------------------------------------------------------------
 // class Plus
 // ----------------------------------------------------------------------
 
-Plus::Plus(EvalNode** oprnds, int numOprnds) : nodes(oprnds), n(numOprnds) { }
+Plus::Plus(EvalNode** oprnds, int numOprnds) 
+: nodes(oprnds), n(numOprnds) 
+{ 
+}
 
-Plus::~Plus() {
+Plus::~Plus() 
+{
   for (int i = 0; i < n; i++)
     delete nodes[i];
   delete[] nodes;
 }
 
-double Plus::eval(const ScopeInfo *si) {
+double 
+Plus::eval(const ScopeInfo *si) 
+{
   double result = NaNVal;
   int i;
   for (i = 0; i < n; i++) {
@@ -235,29 +328,37 @@ double Plus::eval(const ScopeInfo *si) {
   return result;
 }
 
-void Plus::print() {
-  cout << "(";
+std::ostream& 
+Plus::dump(std::ostream& os) const
+{
+  os << "(";
   for (int i = 0; i < n; i++) {
-      nodes[i]->print();
-      if (i < n-1) cout << "+";
+      nodes[i]->dump();
+      if (i < n-1) os << "+";
   }
-  cout << ")";
+  os << ")";
+  return os;
 }
 
 // ----------------------------------------------------------------------
 // class Times
 // ----------------------------------------------------------------------
 
-Times::Times(EvalNode** oprnds, int numOprnds) :
-  nodes(oprnds), n(numOprnds) { }
+Times::Times(EvalNode** oprnds, int numOprnds) 
+  : nodes(oprnds), n(numOprnds) 
+{ 
+}
 
-Times::~Times() {
+Times::~Times() 
+{
   for (int i = 0; i < n; i++)
     delete nodes[i];
   delete[] nodes;
 }
 
-double Times::eval(const ScopeInfo *si) {
+double 
+Times::eval(const ScopeInfo *si) 
+{
   double product = 1.0;
   for (int i = 0; i < n; i++) {
     double tmp = nodes[i]->eval(si);
@@ -269,13 +370,16 @@ double Times::eval(const ScopeInfo *si) {
   return product;
 }
 
-void Times::print() {
-  cout << "(";
+std::ostream& 
+Times::dump(std::ostream& os) const
+{
+  os << "(";
   for (int i = 0; i < n; i++) {
-      nodes[i]->print();
-      if (i < n-1) cout << "*";
+      nodes[i]->dump();
+      if (i < n-1) os << "*";
   }
-  cout << ")";
+  os << ")";
+  return os;
 }
 
 
@@ -283,16 +387,21 @@ void Times::print() {
 // class Min
 // ----------------------------------------------------------------------
 
-Min::Min(EvalNode** oprnds, int numOprnds) :
-  nodes(oprnds), n(numOprnds) { }
+Min::Min(EvalNode** oprnds, int numOprnds) 
+  : nodes(oprnds), n(numOprnds) 
+{ 
+}
 
-Min::~Min() {
+Min::~Min() 
+{
   for (int i = 0; i < n; i++)
     delete nodes[i];
   delete[] nodes;
 }
 
-double Min::eval(const ScopeInfo *si) {
+double 
+Min::eval(const ScopeInfo *si) 
+{
   double result = NaNVal;
   int i;
   for (i = 0; i < n; i++) {
@@ -315,29 +424,37 @@ double Min::eval(const ScopeInfo *si) {
   return result;
 }
 
-void Min::print() {
-  cout << "min(";
+std::ostream& 
+Min::dump(std::ostream& os) const
+{
+  os << "min(";
   for (int i = 0; i < n; i++) {
-      nodes[i]->print();
-      if (i < n-1) cout << ",";
+      nodes[i]->dump();
+      if (i < n-1) os << ",";
   }
-  cout << ")";
+  os << ")";
+  return os;
 }
 
 // ----------------------------------------------------------------------
 // class Max
 // ----------------------------------------------------------------------
 
-Max::Max(EvalNode** oprnds, int numOprnds) :
-  nodes(oprnds), n(numOprnds) { }
+Max::Max(EvalNode** oprnds, int numOprnds) 
+  : nodes(oprnds), n(numOprnds) 
+{ 
+}
 
-Max::~Max() {
+Max::~Max() 
+{
   for (int i = 0; i < n; i++)
     delete nodes[i];
   delete[] nodes;
 }
 
-double Max::eval(const ScopeInfo *si) {
+double 
+Max::eval(const ScopeInfo *si) 
+{
   double result = NaNVal;
   int i;
   for (i = 0; i < n; i++) {
@@ -361,12 +478,15 @@ double Max::eval(const ScopeInfo *si) {
   return result;
 }
 
-void Max::print() {
-  cout << "max(";
+std::ostream& 
+Max::dump(std::ostream& os) const
+{
+  os << "max(";
 
   for (int i = 0; i < n; i++) {
-      nodes[i]->print();
-      if (i < n-1) cout << ",";
+      nodes[i]->dump();
+      if (i < n-1) os << ",";
   }
-  cout << ")";
+  os << ")";
+  return os;
 }

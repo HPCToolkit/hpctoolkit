@@ -77,7 +77,13 @@
 
 //****************************************************************************
 
-void WriteDomNode(DOM_Node &node);
+std::string toString(DOM_Node& node);
+
+std::ostream&
+dumpDomNode(DOM_Node& node, std::ostream& os = std::cerr);
+
+void 
+ddumpDomNode(DOM_Node& node);
  
 extern char* XMLStrToStr(const XMLCh* xmlStr);
 extern String XMLStrToString(const  XMLCh* xmlStr); 

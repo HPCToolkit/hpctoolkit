@@ -1,5 +1,6 @@
 // -*-Mode: C++;-*-
 // $Id$
+
 // * BeginRiceCopyright *****************************************************
 // 
 // Copyright ((c)) 2002, Rice University 
@@ -94,7 +95,6 @@ public:
   std::string metricList;
   std::string excludeMList;
   bool outputRawMetrics;     // default: false
-  std::string pcMapFile;
 
   // Parsed Data: arguments
   std::string progFile; // binary that was profiled

@@ -1,5 +1,6 @@
 // -*-Mode: C++;-*-
 // $Id$
+
 // * BeginRiceCopyright *****************************************************
 // 
 // Copyright ((c)) 2002, Rice University 
@@ -36,7 +37,12 @@
 
 //************************ System Include Files ******************************
 
-#include <iostream> 
+#include <iostream>
+using std::cerr;
+using std::endl;
+
+#include <string>
+using std::string;
 
 #ifdef NO_STD_CHEADERS
 # include <stdlib.h>
@@ -45,7 +51,7 @@
 using std::exit; // For compatibility with non-std C headers
 #endif
 
-//************************* Xerces Include Files *******************************
+//*********************** Xerces Include Files *******************************
 
 #include <xercesc/util/XMLString.hpp> 
 using XERCES_CPP_NAMESPACE::XMLString;
@@ -64,16 +70,14 @@ using XERCES_CPP_NAMESPACE::DOMNamedNodeMap;
 #include "Driver.hpp"
 #include "MathMLExpr.hpp"
 #include "DerivedPerfMetrics.hpp"
-#include "PerfMetric.hpp"
-#include "ScopesInfo.hpp"
+
+#include <lib/prof-juicy/PgmScopeTree.hpp>
+#include <lib/prof-juicy/PerfMetric.hpp>
 
 #include <lib/support/Trace.hpp>
 
 
 //************************ Forward Declarations ******************************
-
-using std::cerr;
-using std::endl;
 
 //****************************************************************************
 
@@ -82,22 +86,20 @@ using std::endl;
 // declare forward references 
 // -------------------------------------------------------------------------
 
-static void ProcessDOCUMENT(DOMNode *node, Driver &driver);
-static void ProcessHPCVIEW(DOMNode *node, Driver &driver);
-static void ProcessELEMENT(DOMNode *node, Driver &driver);
+static void ProcessDOCUMENT(DOMNode *node, Driver &driver, bool onlyMetrics);
+static void ProcessHPCVIEW(DOMNode *node, Driver &driver, bool onlyMetrics);
+static void ProcessELEMENT(DOMNode *node, Driver &driver, bool onlyMetrics);
 static void ProcessMETRIC(DOMNode *node, Driver &driver);
 static void ProcessFILE(DOMNode *fileNode, Driver &driver, 
-			String &metricName, bool metricDoDisplay, 
+			const string& metricName, bool metricDoDisplay, 
 			bool metricDoPercent, bool metricDoSortBy, 
-			String &metricDisplayName);
+			const string& metricDisplayName);
 
-static String getAttr(DOMNode *node, const XMLCh *attrName);
+static string getAttr(DOMNode *node, const XMLCh *attrName);
 
-// -------------------------------------------------------------------------
-// external operations
-// -------------------------------------------------------------------------
 
-void PrintName(DOMNode *node)
+void 
+PrintName(DOMNode *node)
 {
   const XMLCh *nodeName = node->getNodeName();
   const XMLCh *nodeValue = node->getNodeValue();
@@ -105,48 +107,70 @@ void PrintName(DOMNode *node)
        << " value=" << XMLString::transcode(nodeValue) << endl;
 }
 
-void HPCViewDocParser(Driver &driver, String &inputFile, 
-		      HPCViewXMLErrHandler  &errReporter)
+// -------------------------------------------------------------------------
+// external operations
+// -------------------------------------------------------------------------
+
+HPCViewDocParser::HPCViewDocParser(const string& inputFile, 
+				   HPCViewXMLErrHandler& errHndlr)
 {
-  XercesDOMParser *parser = new XercesDOMParser;
-
-  parser->setValidationScheme(XercesDOMParser::Val_Auto);
-
-  parser->setErrorHandler(&errReporter);
-
   IFTRACE << "Parsing configuration file: " << inputFile << endl; 
-  
-  parser->parse(inputFile); 
-  if (parser->getErrorCount() > 0) {
-    String error =  "terminating because of previously reported CONFIGURATION file parse errors.";
+
+  mParser = new XercesDOMParser;
+  mParser->setValidationScheme(XercesDOMParser::Val_Auto);
+  mParser->setErrorHandler(&errHndlr);
+  mParser->parse(inputFile.c_str());
+  if (mParser->getErrorCount() > 0) {
+    string error = "terminating because of previously reported CONFIGURATION file parse errors.";
     throw HPCViewDocException(error); 
   }
   
-  DOMNode *doc = parser->getDocument();
-  IFTRACE << "document: " << doc << endl;
-  
-  ProcessDOCUMENT(doc, driver);
-
-  delete parser;
+  mDoc = mParser->getDocument();
+  IFTRACE << "document: " << mDoc << endl;
 }
+
+
+HPCViewDocParser::~HPCViewDocParser()
+{
+  delete mParser;
+}
+
+
+void
+HPCViewDocParser::pass1(Driver& driver)
+{
+  ProcessDOCUMENT(mDoc, driver, false /*onlyMetrics*/);
+}
+
+
+void
+HPCViewDocParser::pass2(Driver& driver)
+{
+  // FIXME: should not really need driver
+  ProcessDOCUMENT(mDoc, driver, true /*onlyMetrics*/);
+}
+
 
 // -------------------------------------------------------------------------
 // internal operations
 // -------------------------------------------------------------------------
 
-static void ProcessDOCUMENT(DOMNode *node, Driver &driver)
+static void 
+ProcessDOCUMENT(DOMNode *node, Driver &driver, bool onlyMetrics)
 {
   DOMNode *child = node->getFirstChild();
-  ProcessHPCVIEW(child,driver);
+  ProcessHPCVIEW(child, driver, onlyMetrics);
 }
 
-static void ProcessHPCVIEW(DOMNode *node, Driver &driver)
+
+static void 
+ProcessHPCVIEW(DOMNode *node, Driver &driver, bool onlyMetrics)
 {
   IFTRACE << "HPCVIEW:" << endl << node << endl; 
 
   if ((node == NULL) ||
 	  (node->getNodeType() != DOMNode::DOCUMENT_TYPE_NODE) ){ 
-    String error = "CONFIGURATION file does not begin with <HPCVIEW>"; 
+    string error = "CONFIGURATION file does not begin with <HPCVIEW>"; 
     throw HPCViewDocException(error); 
   };
   
@@ -155,19 +179,20 @@ static void ProcessHPCVIEW(DOMNode *node, Driver &driver)
 
   if ( (node == NULL)
        || (node->getNodeType() != DOMNode::ELEMENT_NODE)) {
-    String error = "No DOCUMENT_NODE found in CONFIGURATION file."; 
+    string error = "No DOCUMENT_NODE found in CONFIGURATION file."; 
     throw HPCViewDocException(error); 
   };
 
   // process each child 
   DOMNode *child = node->getFirstChild();
   for (; child != NULL; child = child->getNextSibling()) {
-    ProcessELEMENT(child, driver);
+    ProcessELEMENT(child, driver, onlyMetrics);
   }
 } 
 
 
-static void ProcessELEMENT(DOMNode *node, Driver &driver)
+static void 
+ProcessELEMENT(DOMNode *node, Driver &driver, bool onlyMetrics)
 {
   static XMLCh* METRIC       = XMLString::transcode("METRIC");
   static XMLCh* PATH         = XMLString::transcode("PATH");
@@ -190,90 +215,100 @@ static void ProcessELEMENT(DOMNode *node, Driver &driver)
     return;
   }
   else if (node->getNodeType() != DOMNode::ELEMENT_NODE) {
-    String error = "Unexpected XML object found: '" +
-      String(XMLString::transcode(nodeName)) + "'";
+    string error = "Unexpected XML object found: '" +
+      string(XMLString::transcode(nodeName)) + "'";
     throw HPCViewDocException(error); 
   }
 
   // Parse ELEMENT nodes
   if (XMLString::equals(nodeName,PATH)) {  
-    String path = getAttr(node, NAMEATTR);
-    String viewname = getAttr(node, VIEWNAMEATTR);
-    IFTRACE << "PATH: " << path << ", v=" << viewname << endl; 
-    
-    if (path.Length() == 0) {
-      String error = "PATH name attribute cannot be empty.";
-      throw HPCViewDocException(error); 
+    if (!onlyMetrics) {
+      string path = getAttr(node, NAMEATTR);
+      string viewname = getAttr(node, VIEWNAMEATTR);
+      IFTRACE << "PATH: " << path << ", v=" << viewname << endl; 
+      
+      if (path.empty()) {
+	string error = "PATH name attribute cannot be empty.";
+	throw HPCViewDocException(error); 
+      }
+      else if (driver.CopySrcFiles() && viewname.empty()) {
+	string error = "PATH '" + path + "': viewname attribute cannot be empty when source files are to be copied.";
+	throw HPCViewDocException(error); 
+      } // there could be many other nefarious values of these attributes
+      
+      driver.AddPath(path, viewname);
     }
-    else if (driver.CopySrcFiles() && viewname.Length() == 0) {
-      String error = "PATH '" + path + "': viewname attribute cannot be empty when source files are to be copied.";
-      throw HPCViewDocException(error); 
-    } // there could be many other nefarious values of these attributes
-    
-    driver.AddPath(path, viewname);
-    
   }
   else if (XMLString::equals(nodeName,REPLACE)) {  
-    String inPath = getAttr(node, INATTR); 
-    String outPath = getAttr(node, OUTATTR); 
-    IFTRACE << "REPLACE: " << inPath << " -to- " << outPath << endl;
-
-    bool addPath = true;
-    if (strcmp(inPath, outPath) == 0) {
-      cerr << "WARNING: REPLACE: Identical 'in' and 'out' paths: '"
-	   << inPath << "'!  No action will be performed." << endl;
-      addPath = false;
+    if (!onlyMetrics) {
+      string inPath = getAttr(node, INATTR); 
+      string outPath = getAttr(node, OUTATTR); 
+      IFTRACE << "REPLACE: " << inPath << " -to- " << outPath << endl;
+      
+      bool addPath = true;
+      if (inPath == outPath) {
+	cerr << "WARNING: REPLACE: Identical 'in' and 'out' paths: '"
+	     << inPath << "'!  No action will be performed." << endl;
+	addPath = false;
+      }
+      else if (inPath.empty() && !outPath.empty()) {
+	cerr << "WARNING: REPLACE: 'in' path is empty; 'out' path '" << outPath
+	     << "' will be prepended to every file path!" << endl;
+      }
+      
+      if (addPath) { driver.AddReplacePath(inPath, outPath); }
     }
-    else if (inPath.Length() == 0 && outPath.Length() != 0) {
-      cerr << "WARNING: REPLACE: 'in' path is empty; 'out' path '" << outPath
-	   << "' will be prepended to every file path!" << endl;
-    }
-
-    if (addPath) { driver.AddReplacePath(inPath, outPath); }
-    
   }
   else if (XMLString::equals(nodeName,METRIC)) {
-    ProcessMETRIC(node, driver);
-
+    if (onlyMetrics) {
+      ProcessMETRIC(node, driver);
+    }
   }
   else if (XMLString::equals(nodeName,TITLE)) {
-    String title = getAttr(node, NAMEATTR); 
-    IFTRACE << "TITLE: " << title << endl; 
-    driver.SetTitle(title);
-
+    if (!onlyMetrics) {
+      string title = getAttr(node, NAMEATTR); 
+      IFTRACE << "TITLE: " << title << endl; 
+      driver.SetTitle(title);
+    }
   }
   else if (XMLString::equals(nodeName,STRUCTURE)) {
-    String fnm = getAttr(node, NAMEATTR); // file name
-    IFTRACE << "STRUCTURE file: " << fnm << endl; 
-
-    if (fnm.Empty()) {
-      String error = "STRUCTURE file name is empty.";
-      throw HPCViewDocException(error); 
-    } 
-    else {
-      driver.AddStructureFile(fnm);
+    if (!onlyMetrics) {
+      string fnm = getAttr(node, NAMEATTR); // file name
+      IFTRACE << "STRUCTURE file: " << fnm << endl; 
+      
+      if (fnm.empty()) {
+	string error = "STRUCTURE file name is empty.";
+	throw HPCViewDocException(error); 
+      } 
+      else {
+	driver.AddStructureFile(fnm);
+      }
     }
   } 
   else if (XMLString::equals(nodeName,GROUP)) {
-    String fnm = getAttr(node, NAMEATTR); // file name
-    IFTRACE << "GROUP file: " << fnm << endl; 
-
-    if (fnm.Empty()) {
-      String error = "GROUP file name is empty.";
-      throw HPCViewDocException(error); 
-    } 
-    else {
-      driver.AddGroupFile(fnm);
+    if (!onlyMetrics) {
+      string fnm = getAttr(node, NAMEATTR); // file name
+      IFTRACE << "GROUP file: " << fnm << endl; 
+      
+      if (fnm.empty()) {
+	string error = "GROUP file name is empty.";
+	throw HPCViewDocException(error); 
+      } 
+      else {
+	driver.AddGroupFile(fnm);
+      }
     }
   } 
   else {
-    String error = "Unexpected ELEMENT type encountered: '" +
-      String(XMLString::transcode(nodeName)) + "'";
+    string error = "Unexpected ELEMENT type encountered: '" +
+      string(XMLString::transcode(nodeName)) + "'";
     throw HPCViewDocException(error);
   }
 }
 
-static void ProcessMETRIC(DOMNode *node, Driver &driver)
+
+static void 
+ProcessMETRIC(DOMNode *node, Driver &driver)
 {
   static XMLCh* FILE = XMLString::transcode("FILE");
   static XMLCh* COMPUTE = XMLString::transcode("COMPUTE");
@@ -285,24 +320,24 @@ static void ProcessMETRIC(DOMNode *node, Driver &driver)
   static XMLCh* SORTBYATTR = XMLString::transcode("sortBy");
 
   // get metric attributes
-  String metricName = getAttr(node, NAMEATTR); 
-  String metricDisplayName = getAttr(node, DISPLAYNAMEATTR); 
+  string metricName = getAttr(node, NAMEATTR); 
+  string metricDisplayName = getAttr(node, DISPLAYNAMEATTR); 
   bool metricDoDisplay = (getAttr(node, DISPLAYATTR) == "true"); 
   bool metricDoPercent = (getAttr(node,PERCENTATTR) == "true"); 
   bool metricDoSortBy = (getAttr(node,SORTBYATTR) == "true"); 
 
-  if (metricName.Length() == 0) {
-    String error = "METRIC: Invalid name: '" + metricName + "'.";
+  if (metricName.empty()) {
+    string error = "METRIC: Invalid name: '" + metricName + "'.";
     throw HPCViewDocException(error); 
   }
   else if (NameToPerfDataIndex(metricName) != UNDEF_METRIC_INDEX) {
-    String error = String("METRIC: Metric name '") + metricName +
+    string error = "METRIC: Metric name '" + metricName +
       "' was previously defined.";
     throw HPCViewDocException(error); 
   }
 
-  if (metricDisplayName.Length() == 0) {
-    String error = "METRIC: Invalid displayName: '" + metricDisplayName + "'.";
+  if (metricDisplayName.empty()) {
+    string error = "METRIC: Invalid displayName: '" + metricDisplayName + "'.";
     throw HPCViewDocException(error); 
   }
     
@@ -348,63 +383,71 @@ static void ProcessMETRIC(DOMNode *node, Driver &driver)
 	}
 	
 	driver.Add(new ComputedPerfMetric(metricName, metricDisplayName, 
-					  metricDoDisplay, metricDoPercent, metricDoSortBy,
+					  metricDoDisplay, metricDoPercent, 
+					  metricDoSortBy,
 					  propagateComputed, child)); 
       }
-    
-    } else {
-      String error = String("Unexpected METRIC type '") + 
+    } 
+    else {
+      string error = string("Unexpected METRIC type '") + 
 	XMLString::transcode(metricType) + "'.";
       throw HPCViewDocException(error);
     }
   }
 }
 
-static void ProcessFILE(DOMNode *fileNode, Driver &driver, 
-			String &metricName, bool metricDoDisplay, 
-			bool metricDoPercent, bool metricDoSortBy, 
-			String &metricDisplayName)
+
+static void 
+ProcessFILE(DOMNode* fileNode, Driver& driver, 
+	    const string& metricName, bool metricDoDisplay, 
+	    bool metricDoPercent, bool metricDoSortBy, 
+	    const string& metricDisplayName)
 {
   static XMLCh* TYPEATTR = XMLString::transcode("type");
   static XMLCh* NAMEATTR = XMLString::transcode("name");
   static XMLCh* SELECTATTR = XMLString::transcode("select");
 
-  String metricFile     = getAttr(fileNode, NAMEATTR); 
-  String metricFileType = getAttr(fileNode, TYPEATTR);
-  String nativeName     = getAttr(fileNode, SELECTATTR);
+  string metricFile     = getAttr(fileNode, NAMEATTR); 
+  string metricFileType = getAttr(fileNode, TYPEATTR);
+  string nativeName     = getAttr(fileNode, SELECTATTR);
   
-  if (nativeName.Length() == 0) {
-    //    String error = "FILE: Invalid select attribute '" + nativeName + "'";
+  if (nativeName.empty()) {
+    //    string error = "FILE: Invalid select attribute '" + nativeName + "'";
     //    throw DocException(error);
     //  Default is to select "0"
     nativeName = "0";
   }
 
-  if (metricFile.Length() > 0) { 
+  if (!metricFile.empty()) { 
     driver.Add(new FilePerfMetric(metricName, nativeName, metricDisplayName, 
-				  metricDoDisplay, metricDoPercent, metricDoSortBy, 
-				  metricFile, metricFileType, &driver)); 
-  } else {
-    String error = "METRIC '" + metricName + "' FILE name empty.";
+				  metricDoDisplay, metricDoPercent, 
+				  metricDoSortBy, metricFile, metricFileType, 
+				  &driver));
+  } 
+  else {
+    string error = "METRIC '" + metricName + "' FILE name empty.";
     throw HPCViewDocException(error);
   }
 
 }
 
+
 // -------------------------------------------------------------------------
 
 // Returns the attribute value or an empty string if the attribute
 // does not exist.
-static String getAttr(DOMNode *node, const XMLCh *attrName)
+static string 
+getAttr(DOMNode *node, const XMLCh *attrName)
 {
   DOMNamedNodeMap  *attributes = node->getAttributes();
   DOMNode *attrNode = attributes->getNamedItem(attrName);
   IFTRACE << "getAttr(): attrNode" << attrNode << endl;
   if (attrNode == NULL) {
-    return String("");
-  } else {
+    return "";
+  } 
+  else {
     const XMLCh *attrNodeValue = attrNode->getNodeValue();
-    return String(XMLString::transcode(attrNodeValue));
+    return XMLString::transcode(attrNodeValue);
   }
 }
 

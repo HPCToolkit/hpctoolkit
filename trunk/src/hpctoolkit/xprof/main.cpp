@@ -1,5 +1,6 @@
+// -*-Mode: C++;-*-
 // $Id$
-// -*-C++-*-
+
 // * BeginRiceCopyright *****************************************************
 // 
 // Copyright ((c)) 2002, Rice University 
@@ -37,13 +38,13 @@
 //***************************************************************************
 //
 // File:
-//    main.C
+//   $Source$
 //
 // Purpose:
-//    [The purpose of this file]
+//   [The purpose of this file]
 //
 // Description:
-//    [The set of functions, macros, etc. defined in the file]
+//   [The set of functions, macros, etc. defined in the file]
 //
 //***************************************************************************
 
@@ -69,9 +70,9 @@ using std::string;
 
 #include "DCPIProfile.hpp"
 
-#include <lib/binutils/LoadModule.hpp>
-#include <lib/binutils/PCToSrcLineMap.hpp>
-#include <lib/binutils/LoadModuleInfo.hpp>
+#include <lib/binutils/LM.hpp>
+
+#include <lib/support/diagnostics.h>
 
 //*************************** Forward Declarations ***************************
 
@@ -86,7 +87,7 @@ void
 ListAvailPredefDCPIFilters(DCPIProfile* prof, bool longlist = false);
 
 PCProfileFilterList*
-GetDCPIFilters(DCPIProfile* prof, LoadModule* lm, 
+GetDCPIFilters(DCPIProfile* prof, binutils::LM* lm, 
 	       const char* metricList, const char* excludeMList);
 
 //****************************************************************************
@@ -97,16 +98,20 @@ main(int argc, char* argv[])
   try {
     return real_main(argc, argv);
   }
-  catch (CmdLineParser::Exception& e) {
-    e.Report(cerr); // fatal error
+  catch (const Diagnostics::Exception& x) {
+    DIAG_EMsg(x.message());
     exit(1);
-  }
-  catch (std::bad_alloc& x) {
-    cerr << "Error: Memory alloc failed!\n";
+  } 
+  catch (const std::bad_alloc& x) {
+    DIAG_EMsg("[std::bad_alloc] " << x.what());
     exit(1);
-  }
+  } 
+  catch (const std::exception& x) {
+    DIAG_EMsg("[std::exception] " << x.what());
+    exit(1);
+  } 
   catch (...) {
-    cerr << "Unknown exception caught\n";
+    DIAG_EMsg("Unknown exception encountered!");
     exit(2);
   }
 }
@@ -140,48 +145,34 @@ real_main(int argc, char* argv[])
   // ------------------------------------------------------------
   // Read executable
   // ------------------------------------------------------------
-  LoadModule* exe = NULL; // Executable*: use LoadModule for now (Alpha)
+  binutils::LM* lm = NULL;
   try {
-    string exeNm = args.progFile;
+    string lmNm = args.progFile;
 
-    // Try to find exe from profile info if not given
-    if (exeNm.empty()) {
-      exeNm = pcprof->GetProfiledFile();
+    // Try to find lm from profile info if not given
+    if (lmNm.empty()) {
+      lmNm = pcprof->GetProfiledFile();
       
-      std::ifstream ifile(exeNm.c_str(), std::ios::in);
+      std::ifstream ifile(lmNm.c_str(), std::ios::in);
       if ( !ifile.is_open() || ifile.fail() ) {
-	cerr << "Error: Could not find associated binary '" << exeNm
+	cerr << "Error: Could not find associated binary '" << lmNm
 	     << "'; please specify explicitly.\n";
 	exit(1);
       }
     }
     
-    exe = new LoadModule(); // Executable(): use LoadModule for now (Alpha)
-    if (!exe->Open(exeNm.c_str())) { exit(1); } // Error already printed 
-    if (!exe->Read()) { exit(1); }              // Error already printed 
+    lm = new binutils::LM();
+    if (!lm->Open(lmNm.c_str())) { exit(1); } // Error already printed 
+    if (!lm->Read()) { exit(1); }              // Error already printed 
   }
   catch (std::bad_alloc& x) {
     cerr << "Error: Memory alloc failed while reading binary!\n";
     exit(1);
   }
   
-  exe->Relocate(pcprof->GetTxtStart());
+  lm->Relocate(pcprof->GetTxtStart());
+
   
-  // ------------------------------------------------------------
-  // Read 'PCToSrcLineXMap', if available
-  // ------------------------------------------------------------
-  PCToSrcLineXMap* map = NULL;
-  if (!args.pcMapFile.empty()) {
-    map = ReadPCToSrcLineMap(args.pcMapFile.c_str());
-    if (!map) {
-      cerr << "Error reading file `" << args.pcMapFile << "'\n";
-      exit(1); 
-    }
-  }
-  // N.B. No relocation for map at the moment
-  
-  LoadModuleInfo modInfo(exe, map);
-    
   // ------------------------------------------------------------
   // Construct some metrics, derived in some way from the raw
   // profiling data, that we are interested in.
@@ -191,7 +182,7 @@ real_main(int argc, char* argv[])
   PCProfileFilterList* filtList = NULL;
   if (!args.outputRawMetrics) {
     DCPIProfile* dcpiprof = dynamic_cast<DCPIProfile*>(pcprof);
-    filtList = GetDCPIFilters(dcpiprof, modInfo.GetLM(), 
+    filtList = GetDCPIFilters(dcpiprof, lm, 
 			      args.metricList.c_str(), 
 			      args.excludeMList.c_str());
     if (!filtList) {
@@ -213,10 +204,9 @@ real_main(int argc, char* argv[])
   // Translate the derived metrics to a PROFILE file
   // ------------------------------------------------------------
   // * Assume DCPI mode *
-  ProfileWriter::WriteProfile(cout, drvdprof, &modInfo);
+  ProfileWriter::WriteProfile(cout, drvdprof, lm);
   
-  delete exe;
-  delete map;
+  delete lm;
   delete pcprof;
   delete drvdprof;
   return (0);
@@ -225,10 +215,10 @@ real_main(int argc, char* argv[])
 //****************************************************************************
 
 PCProfileFilterList*
-GetDCPIFilters(StringList* mlist, LoadModule* lm);
+GetDCPIFilters(StringList* mlist, binutils::LM* lm);
 
 StringList*
-GetAvailPredefDCPIFilterNms(DCPIProfile* prof, LoadModule* lm);
+GetAvailPredefDCPIFilterNms(DCPIProfile* prof, binutils::LM* lm);
 
 bool
 IsPredefDCPIFilterAvail(DCPIProfile* prof, StringList* flist, 
@@ -291,7 +281,7 @@ ListAvailPredefDCPIFilters(DCPIProfile* prof, bool longlist)
 // printed and NULL will be returned.  User is responsible for memory
 // deallocation.
 PCProfileFilterList*
-GetDCPIFilters(DCPIProfile* prof, LoadModule* lm, 
+GetDCPIFilters(DCPIProfile* prof, binutils::LM* lm, 
 	       const char* metricList, const char* excludeMList)
 {
   bool noError = true;
@@ -332,7 +322,7 @@ GetDCPIFilters(DCPIProfile* prof, LoadModule* lm,
 // User is responsible for memory deallocation of list and its contents. 
 // Note: assumes that every filter name in 'mlist' is available.
 PCProfileFilterList*
-GetDCPIFilters(StringList* mlist, LoadModule* lm) 
+GetDCPIFilters(StringList* mlist, binutils::LM* lm) 
 {
   PCProfileFilterList* flist = new PCProfileFilterList;
   for (StringListIt it = mlist->begin(); it != mlist->end(); ++it) {
@@ -346,7 +336,7 @@ GetDCPIFilters(StringList* mlist, LoadModule* lm)
 // within the DCPI predefined metric table that are available for this
 // profile.
 StringList*
-GetAvailPredefDCPIFilterNms(DCPIProfile* prof, LoadModule* lm)
+GetAvailPredefDCPIFilterNms(DCPIProfile* prof, binutils::LM* lm)
 {
   StringList* flist = new StringList;
   for (suint i = 0; i < PredefinedDCPIMetricTable::GetSize(); ++i) {
@@ -396,7 +386,7 @@ IsPredefDCPIFilterAvail(DCPIProfile* prof, PredefinedDCPIMetricTable::Entry* e)
     // mode or not): must check each metric
     for (PCProfileMetricSetIterator it(*prof); it.IsValid(); ++it) {
       PCProfileMetric* m = it.Current();
-      if (strcmp(e->availStr, m->GetName()) == 0) {
+      if (strcmp(e->availStr, m->GetName().c_str()) == 0) {
 	return true;
       }
     }

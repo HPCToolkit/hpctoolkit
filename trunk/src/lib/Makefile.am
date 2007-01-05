@@ -1,5 +1,5 @@
 # -*-Mode: makefile;-*-
-# $Header$
+# $Id$
 
 ## * BeginRiceCopyright *****************************************************
 ## 
@@ -56,10 +56,12 @@ AUTOMAKE_OPTIONS = foreign
 #############################################################################
 
 SUBDIRS = \
+	banal \
 	binutils \
-	hpcfile \
-	ISA \
+	isa \
 	perl \
+	prof-juicy \
+	prof-lean \
 	support \
 	xml
 

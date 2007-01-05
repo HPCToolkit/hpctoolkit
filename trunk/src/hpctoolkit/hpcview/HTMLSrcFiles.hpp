@@ -41,7 +41,8 @@
 
 //************************* User Include Files *******************************
 
-#include "ScopesInfo.hpp"
+#include <lib/prof-juicy/PgmScopeTree.hpp>
+
 #include <lib/support/String.hpp>
 
 //************************ Forward Declarations ******************************
@@ -54,7 +55,7 @@ class HTMLFile;
 
 class HTMLSrcFiles { 
 public: 
-  HTMLSrcFiles(const ScopesInfo &scopes, const Args &pgmArgs, 
+  HTMLSrcFiles(const PgmScopeTree& scopes, const Args &pgmArgs, 
 	       const ScopeInfoFilter &entryFilter, 
 	       bool leavesOnly);
   
@@ -78,7 +79,7 @@ private:
   const bool leavesOnly;       // if true only include leaves, 
                                   // otherwise include internal nodes as well
   
-  const ScopesInfo &scopes;       // contains all refs/lines/loops/procs to
+  const PgmScopeTree& scopes;     // contains all refs/lines/loops/procs to
                                   // be considered
   const Args &programArgs;       
 }; 

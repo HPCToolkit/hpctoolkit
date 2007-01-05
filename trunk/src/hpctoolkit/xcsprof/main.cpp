@@ -1,5 +1,6 @@
+// -*-Mode: C++;-*-
 // $Id$
-// -*-C++-*-
+
 // * BeginRiceCopyright *****************************************************
 // 
 // Copyright ((c)) 2002, Rice University 
@@ -37,13 +38,13 @@
 //***************************************************************************
 //
 // File:
-//    main.C
+//   $Source$
 //
 // Purpose:
-//    [The purpose of this file]
+//   [The purpose of this file]
 //
 // Description:
-//    [The set of functions, macros, etc. defined in the file]
+//   [The set of functions, macros, etc. defined in the file]
 //
 //***************************************************************************
 
@@ -52,6 +53,10 @@
 #include <iostream>
 #include <fstream>
 #include <new>
+
+#include <string>
+using std::string;
+
 #include <sys/stat.h>
 #include <sys/types.h>
 
@@ -60,9 +65,8 @@
 #include "Args.hpp"
 //#include "ProfileReader.h" FIXME
 #include "CSProfileUtils.hpp"
-#include <lib/binutils/LoadModule.hpp>
-#include <lib/binutils/PCToSrcLineMap.hpp>
-#include <lib/binutils/LoadModuleInfo.hpp>
+
+#include <lib/binutils/LM.hpp>
 
 //*************************** Forward Declarations ***************************
 
@@ -113,7 +117,8 @@ main(int argc, char* argv[])
   try {
     //profData = TheProfileReader.ReadProfileFile(args.profFile /*filetype*/); 
     // we need to know the name of the executable 
-    profData = ReadCSProfileFile_HCSPROFILE(args.profFile,args.progFile);
+    profData = ReadCSProfileFile_HCSPROFILE(args.profFile.c_str(), 
+					    args.progFile.c_str());
     if (!profData) { exit(1); } 
 
   } catch (std::bad_alloc& x) {
@@ -127,16 +132,6 @@ main(int argc, char* argv[])
   // After checking we have samples in the profile, create the database directory
   args.createDatabaseDirectory();
 
-  // ------------------------------------------------------------
-  // Read 'PCToSrcLineXMap', if available
-  // ------------------------------------------------------------ 
-  PCToSrcLineXMap* map = NULL;
-  
-  // cf. xprof, main.C: During program structure recovery it is
-  // possible to output source line info supplemented with, e.g., loop
-  // nesting info.  While this is not yet fully supported, we may want
-  // to use something similar in the future.
-  
   // ------------------------------------------------------------
   // Add source file info and dump
   // ------------------------------------------------------------
@@ -155,11 +150,10 @@ main(int argc, char* argv[])
     LdmdSetUsedFlag(profData); 
 
     int numberofldmd =profData->GetEpoch()->GetNumLdModule() ;      
-    LoadModule*      ldmd   = NULL; 
+    binutils::LM*      ldmd   = NULL; 
     CSProfLDmodule * csploadmd= NULL; 
-    LoadModuleInfo * modInfo;   
-    Addr             startaddr;
-    Addr             endaddr = 0; 
+    VMA             startaddr;
+    VMA             endaddr = 0; 
     bool             lastone ;
 
     for (int i=numberofldmd-1; i>=0; i--) {   
@@ -178,7 +172,7 @@ main(int argc, char* argv[])
         }
 
        try {
-         ldmd = new LoadModule();  
+         ldmd = new binutils::LM();  
          if (!ldmd ->Open(csploadmd->GetName()))   //Error message already printed
             continue; 
          if (!ldmd->Read())   //Error message already printed
@@ -194,24 +188,22 @@ main(int argc, char* argv[])
        // get the start and end PC from the text sections 
        cout << "*****Current load module is : " << csploadmd->GetName()<<"*****"<< endl; 
 #if 0
-       Addr tmp1,tmp2;
+       VMA tmp1,tmp2;
        ldmd->GetTextStartEndPC(&tmp1,&tmp2);    
        ldmd->SetTextStart(tmp1);
        ldmd->SetTextEnd(tmp2);     
-       cout<< "\t LoadModule text started from address : "<< hex <<"0x" << tmp1 << endl;
-       cout<< "\t LoadModule text end at the   address : "<< hex <<"0x" << tmp2 << endl; 
-       cout<< "\t LoadModule entry point is: "<< hex << "0x" <<  ldmd->GetTextStart() << endl;
+       cout<< "\t LM text started from address : "<< hex <<"0x" << tmp1 << endl;
+       cout<< "\t LM text end at the   address : "<< hex <<"0x" << tmp2 << endl; 
+       cout<< "\t LM entry point is: "<< hex << "0x" <<  ldmd->GetTextStart() << endl;
        cout<< "\t data file mapaddress  from   address : "<< hex <<"0x" << startaddr << endl;
        cout<< "\t data file mapaddress  supposed end   : "<< hex <<"0x" << endaddr   <<dec<< endl; 
        // if ldmd is not an excutable, do relocate  
 #endif   
-       if ( !(ldmd->GetType() == LoadModule::Executable) ) {
+       if ( !(ldmd->GetType() == binutils::LM::Executable) ) {
            ldmd->Relocate(startaddr);   
        }     
 
-       modInfo = new LoadModuleInfo(ldmd, map);  
-
-       AddSourceFileInfoToCSProfile(profData, modInfo,startaddr,endaddr,lastone);   
+       AddSourceFileInfoToCSProfile(profData, ldmd,startaddr,endaddr,lastone);   
     
       // create an extended profile representation
       // normalize call sites 
@@ -224,13 +216,12 @@ main(int argc, char* argv[])
       //                                foo:1   foo:2 
       //  
 
-      NormalizeInternalCallSites(profData, modInfo,startaddr, endaddr,lastone);    
+      NormalizeInternalCallSites(profData, ldmd,startaddr, endaddr,lastone);    
 
       endaddr = startaddr-1;
      
       // close current load module and free memory space 
-      delete(modInfo->GetLM()); 
-      modInfo = NULL;
+      delete ldmd;
 
     } /* for each load module */ 
 
@@ -247,8 +238,8 @@ main(int argc, char* argv[])
       }
     */
 
-    String dbSourceDirectory = args.databaseDirectory+"/src";
-    if (mkdir(dbSourceDirectory,
+    string dbSourceDirectory = args.databaseDirectory + "/src";
+    if (mkdir(dbSourceDirectory.c_str(),
 	      S_IRWXU | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH) == -1) {
       cerr << "could not create database source code directory " << 
 	dbSourceDirectory << endl;
@@ -266,10 +257,6 @@ main(int argc, char* argv[])
     exit(2);
   } 
 
-#if 0  /* already deleted */
-  delete exe; 
-  delete map;
-#endif 
   delete profData;
   return (0);
 }

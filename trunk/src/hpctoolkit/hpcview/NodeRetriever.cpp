@@ -1,5 +1,6 @@
+// -*-Mode: C++;-*-
 // $Id$
-// -*-C++-*-
+
 // * BeginRiceCopyright *****************************************************
 // 
 // Copyright ((c)) 2002, Rice University 
@@ -37,37 +38,39 @@
 //***************************************************************************
 //
 // File:
-//    NodeRetriever.C
+//   $Source$
 //
 // Purpose:
-//    Class NodeRetriever provides an interface between the scope info
-//    tree (ScopeInfo) and performance information parsing logic.
+//   Class NodeRetriever provides an interface between the scope info
+//   tree (ScopeInfo) and performance information parsing logic.
 //
 // Description:
-//    [The set of functions, macros, etc. defined in the file]
+//   [The set of functions, macros, etc. defined in the file]
 //
 //***************************************************************************
 
 //************************ System Include Files ******************************
 
 #include <iostream>
+using std::endl;
+using std::cerr;
+
+#include <string>
+using std::string;
 
 //************************* User Include Files *******************************
 
 #include "Args.hpp"
 #include "NodeRetriever.hpp"
-#include "ScopeInfo.hpp"
-#include <lib/support/String.hpp>
+
+#include <lib/prof-juicy/PgmScopeTree.hpp>
+
+#include <lib/support/diagnostics.h>
 #include <lib/support/Assertion.h>
 #include <lib/support/pathfind.h>
 #include <lib/support/realpath.h>
-#include <lib/support/Trace.hpp>
 
 //************************ Forward Declarations ******************************
-
-using std::endl;
-using std::cerr;
-
 
 //************************ Local Declarations ******************************
 
@@ -75,36 +78,36 @@ const char *unknownFileName = "<unknown>";
 
 //****************************************************************************
 
-static String 
-RemoveTrailingBlanks(const char* name)
+static string 
+RemoveTrailingBlanks(const string& name)
 {
   int i;
-  String noBlanks = name; 
-  for (i = strlen(name) - 1; i >= 0; i--) { 
+  string noBlanks = name; 
+  for (i = name.length() - 1; i >= 0; i--) { 
     if (noBlanks[(unsigned int)i] != ' ') 
       break;
   }
   i++; 
-  if ((unsigned int)i < strlen(name) ) { 
+  if ((unsigned int)i < name.length() ) { 
     noBlanks[(unsigned int)i] = '\0'; 
   }
   return noBlanks; 
 }
 
-static String 
-GetFormattedSourceFileName(const char* nm)
+static string 
+GetFormattedSourceFileName(const string& nm)
 { 
-  String name = RemoveTrailingBlanks(nm); 
+  string name = RemoveTrailingBlanks(nm); 
   return name; 
 }
 
 //****************************************************************************
 
-NodeRetriever::NodeRetriever(PgmScope* _root, const String& p) 
+NodeRetriever::NodeRetriever(PgmScope* _root, const string& p) 
   : root(_root), currentLM(NULL), currentFile(NULL), currentProc(NULL), path(p)
 {
   BriefAssertion(root != NULL);
-  BriefAssertion(p.Length() > 0);
+  BriefAssertion(!p.empty());
 }
 
 NodeRetriever::~NodeRetriever()
@@ -119,8 +122,7 @@ NodeRetriever::MoveToGroup(ScopeInfo* parent, const char* name)
   GroupScope* grp = root->FindGroup(name);
   if (grp == NULL) {
     grp = new GroupScope(name, parent);
-    IFTRACE << "NodeRetriever::MoveToGroup new GroupScope: " << name
-	    << endl;
+    DIAG_DevMsg(3, "NodeRetriever::MoveToGroup new GroupScope: " << name);
   } 
   return grp;
 }
@@ -133,8 +135,7 @@ NodeRetriever::MoveToLoadMod(const char* name)
   LoadModScope* lm = root->FindLoadMod(name);
   if (lm == NULL) {
     lm = new LoadModScope(name, root);
-    IFTRACE << "NodeRetriever::MoveToLoadMod new LoadModScope: " << name
-	    << endl;
+    DIAG_DevMsg(3, "NodeRetriever::MoveToLoadMod new LoadModScope: " << name);
   } 
   currentLM = lm; 
 
@@ -149,32 +150,35 @@ FileScope *
 NodeRetriever::MoveToFile(const char* name) 
 {
   static long unknownFileIndex = 0;
-  String knownByName;
+  string knownByName;
   
   BriefAssertion(name);
 
   if (strcmp(name, unknownFileName) == 0) {
     if (!currentLM) {
-      currentLM = MoveToLoadMod(root->Name());
+      currentLM = MoveToLoadMod(root->name());
     } 
     knownByName = "Unknown file in " + currentLM->BaseName();
     unknownFileIndex++;
     
-  } else {
+  } 
+  else {
     knownByName = name;
   }
  
   // Obtain a 'canonical' file name
-  String fileName = GetFormattedSourceFileName(knownByName);  
+  string fileName = GetFormattedSourceFileName(knownByName);
   
   bool srcIsReadable = true; 
 
-  String filePath = String(pathfind_r(path, fileName, "r")); 
-  if (filePath.Length() == 0) {
-    srcIsReadable = false; 
+  string filePath;
+  const char* pf = pathfind_r(path.c_str(), fileName.c_str(), "r");
+  if (!pf) {
+    srcIsReadable = false;
     filePath = fileName; 
-  } else {
-    filePath = RealPath(filePath); 
+  } 
+  else {
+    filePath = RealPath(pf);
   }
 
   // Search for the file
@@ -183,13 +187,13 @@ NodeRetriever::MoveToFile(const char* name)
   if (f == NULL) {
 
     if (!currentLM) {
-      currentLM = MoveToLoadMod(root->Name());
+      currentLM = MoveToLoadMod(root->name());
     } 
-    f = new FileScope(filePath, srcIsReadable, "", currentLM); 
+    f = new FileScope(filePath, srcIsReadable, currentLM); 
 
     msg = "File Scope Created for ";
-    IFTRACE << "NodeRetriever::MoveToFile makes new FileScope:" << endl
-	    << "  name=" << name << "  fname=" << filePath  << endl;
+    DIAG_DevMsg(3, "NodeRetriever::MoveToFile makes new FileScope:" << endl
+		<< "  name=" << name << "  fname=" << filePath);
   } else {
     currentLM = f->LoadMod();
     BriefAssertion(currentLM);
@@ -197,11 +201,9 @@ NodeRetriever::MoveToFile(const char* name)
   currentFile = f;
 
   // Invalidate any previous proc
-  currentProc = NULL; 
+  currentProc = NULL;
 
-  if (fileTrace) {
-    cerr << msg << filePath << endl;
-  }
+  DIAG_Msg(2, msg << filePath); // debug path replacement
   return f;
 }
 
@@ -214,7 +216,7 @@ NodeRetriever::MoveToProc(const char* name)
 
   ProcScope *p = currentFile->FindProc(name);
   if (p == NULL) {
-    p = new ProcScope(name, currentFile, UNDEF_LINE, UNDEF_LINE);
+    p = new ProcScope(name, currentFile, "");
   }
   currentProc = p;
 

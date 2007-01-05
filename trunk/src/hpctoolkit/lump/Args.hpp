@@ -1,5 +1,6 @@
 // -*-Mode: C++;-*-
 // $Id$
+
 // * BeginRiceCopyright *****************************************************
 // 
 // Copyright ((c)) 2002, Rice University 
@@ -60,7 +61,7 @@
 #include <include/general.h>
 #include <lib/support/CmdLineParser.hpp>
 
-#include <lib/ISA/ISATypes.hpp>
+#include <lib/isa/ISATypes.hpp>
 
 //*************************** Forward Declarations **************************
 
@@ -94,7 +95,7 @@ public:
   // Parsed Data: optional arguments
   bool symbolicDump;
   bool symbolicDumpOld;
-  Addr loadAddr;
+  VMA  loadVMA;
   int debugLevel;
 
   // Parsed Data: arguments

@@ -1,5 +1,6 @@
+// -*-Mode: C++;-*-
 // $Id$
-// -*-C++-*-
+
 // * BeginRiceCopyright *****************************************************
 // 
 // Copyright ((c)) 2002, Rice University 
@@ -37,13 +38,13 @@
 //***************************************************************************
 //
 // File:
-//    BinUtils.C
+//   $Source$
 //
 // Purpose:
-//    [The purpose of this file]
+//   [The purpose of this file]
 //
 // Description:
-//    [The set of functions, macros, etc. defined in the file]
+//   [The set of functions, macros, etc. defined in the file]
 //
 //***************************************************************************
 
@@ -72,10 +73,11 @@ using namespace std; // For compatibility with non-std C headers
 //****************************************************************************
 
 bool
-IsValidLine(suint startLine, suint endLine)
+IsValidLine(suint begLine, suint endLine)
 {
-  return ((startLine != 0) && (endLine != 0)); 
+  return ((begLine != 0) && (endLine != 0)); 
 }
+
 
 bool
 IsValidLine(suint line)
@@ -83,17 +85,6 @@ IsValidLine(suint line)
   return (line != 0); 
 }
 
-bool
-FileIsReadable(const char *fileName)
-{
-  bool result = false;
-  struct stat sbuf;
-  if (stat(fileName, &sbuf) == 0) {
-    // the file is readable if the return code is OK
-    result = true;
-  }
-  return result;
-}
 
 //***************************************************************************
 // System Dependent Helpers
@@ -106,11 +97,13 @@ const char*
 GetBestFuncName(const char* name)
 {
   if (!name) { return NULL; }
+  if (name[0] == '\0') { return name; }
 
   const char* demangledName = GetDemangledFuncName(name);
   if (demangledName && (strlen(demangledName) > 0)) {
-    return demangledName;  
-  } else {
+    return demangledName;
+  } 
+  else {
     return name;
   }
 }
@@ -130,7 +123,7 @@ GetBestFuncName(const char* name)
   // the system demangle is GNU's demangle
   const int DEMANGLE_BUF_SZ = 32768; // see MAXDBUF in SGI's dem.h
 #else
-# error "BinUtils.C does not recognize your platform."
+# error "binutils::BinUtils does not recognize your platform."
 #endif
 
 const int MANGLE_BUF_SZ = 4096;

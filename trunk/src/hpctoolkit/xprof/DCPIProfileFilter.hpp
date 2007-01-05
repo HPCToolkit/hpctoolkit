@@ -1,5 +1,6 @@
-// $Id$
 // -*-C++-*-
+// $Id$
+
 // * BeginRiceCopyright *****************************************************
 // 
 // Copyright ((c)) 2002, Rice University 
@@ -59,8 +60,9 @@
 #include "PCProfileFilter.hpp"
 #include "DCPIMetricDesc.hpp"
 
-#include <lib/ISA/ISATypes.hpp>
-#include <lib/binutils/LoadModule.hpp>
+#include <lib/isa/ISATypes.hpp>
+
+#include <lib/binutils/LM.hpp>
 
 //*************************** Forward Declarations ***************************
 
@@ -72,7 +74,7 @@ class DCPIMetricFilter;
 // if available, or NULL.  The user is responsible for unallocating
 // the returned object.
 PCProfileFilter* 
-GetPredefinedDCPIFilter(const char* metric, LoadModule* lm);
+GetPredefinedDCPIFilter(const char* metric, binutils::LM* lm);
 
 //****************************************************************************
 // DCPIMetricExpr

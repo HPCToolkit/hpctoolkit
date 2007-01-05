@@ -1,5 +1,6 @@
-// $Id$
 // -*-C++-*-
+// $Id$
+
 // * BeginRiceCopyright *****************************************************
 // 
 // Copyright ((c)) 2002, Rice University 
@@ -54,6 +55,7 @@
 
 #include <vector>
 #include <list>
+#include <string>
 
 //*************************** User Include Files ****************************
 
@@ -61,8 +63,8 @@
 
 #include "PCProfile.hpp"
 
-#include <lib/ISA/ISA.hpp>
-#include <lib/support/String.hpp>
+#include <lib/isa/ISA.hpp>
+
 #include <lib/support/Assertion.h>
 
 //*************************** Forward Declarations ***************************
@@ -202,15 +204,21 @@ public:
   // Name, Description: The metric name (high level name) and a description
   // NativeName: A name that is a combination of the raw metrics
   // Period: The sampling period (whether event or instruction based)
-  const char* GetName()        const { return name; }
-  const char* GetNativeName()  const { return nativeName; }
-  const char* GetDescription() const { return description; }
-  ulong       GetPeriod()      const { return period; }
+  const std::string& GetName()        const { return name; }
+  const std::string& GetNativeName()  const { return nativeName; }
+  const std::string& GetDescription() const { return description; }
+  ulong              GetPeriod()      const { return period; }
 
   void SetName(const char* s)        { name = s; }
-  void SetNativeName(const char* s)  { nativeName = s; }
-  void SetDescription(const char* s) { description = s; }
-  void SetPeriod(ulong p)            { period = p; }
+  void SetName(const std::string& s) { name = s; }
+
+  void SetNativeName(const char* s)        { nativeName = s; }
+  void SetNativeName(const std::string& s) { nativeName = s; }
+
+  void SetDescription(const char* s)        { description = s; }
+  void SetDescription(const std::string& s) { description = s; }
+
+  void SetPeriod(ulong p) { period = p; }
 
   // MetricSet: The set of 'PCProfileMetric's
   const PCProfileMetricSet* GetMetricSet() const { return mset; }
@@ -223,18 +231,18 @@ public:
   // A special function for saving some memory; use with caution
   void MakeDerivedPCSetCoterminousWithPCSet() { delete pcset; pcset = NULL; }
 
-  bool FindPC(Addr pc, ushort opIndex) { 
+  bool FindPC(VMA pc, ushort opIndex) { 
     if (pcset) {
-      Addr oppc = mset->GetISA()->ConvertPCToOpPC(pc, opIndex);
+      VMA oppc = mset->GetISA()->ConvertVMAToOpVMA(pc, opIndex);
       PCSetIt it = pcset->find(oppc);
       return (it != pcset->end());
     } else {
       return (mset->DataExists(pc, opIndex) >= 0);
     }
   }
-  void InsertPC(Addr pc, ushort opIndex) {
+  void InsertPC(VMA pc, ushort opIndex) {
     BriefAssertion(pcset);
-    Addr oppc = mset->GetISA()->ConvertPCToOpPC(pc, opIndex);
+    VMA oppc = mset->GetISA()->ConvertVMAToOpVMA(pc, opIndex);
     pcset->insert(oppc); // do not add duplicates!
   }
 
@@ -251,9 +259,9 @@ private:
   
 protected:
 private:
-  String name;
-  String nativeName;
-  String description;
+  std::string name;
+  std::string nativeName;
+  std::string description;
   ulong period; // sampling period
 
   PCProfileMetricSet* mset; // we own the set container, but not the contents!

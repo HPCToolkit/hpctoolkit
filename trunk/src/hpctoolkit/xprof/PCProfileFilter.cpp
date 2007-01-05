@@ -55,7 +55,7 @@
 
 #include "PCProfileFilter.hpp"
 
-#include <lib/binutils/Instruction.hpp>
+#include <lib/binutils/Insn.hpp>
 
 //*************************** Forward Declarations ***************************
 
@@ -90,7 +90,7 @@ PCProfileFilter::DDump()
 //****************************************************************************
 
 InsnClassExpr::bitvec_t 
-ConvertToInsnClass(ISA::InstDesc d)
+ConvertToInsnClass(ISA::InsnDesc d)
 {
   if (d.IsFP()) { return INSN_CLASS_FLOP; }
   else if (d.IsMemOp()) { return INSN_CLASS_MEMOP; }
@@ -102,7 +102,7 @@ ConvertToInsnClass(ISA::InstDesc d)
 // InsnFilter
 //****************************************************************************
 
-InsnFilter::InsnFilter(InsnClassExpr expr_, LoadModule* lm_)
+InsnFilter::InsnFilter(InsnClassExpr expr_, binutils::LM* lm_)
   : expr(expr_), lm(lm_)
 {
 }
@@ -112,14 +112,14 @@ InsnFilter::~InsnFilter()
 }
 
 bool 
-InsnFilter::operator()(Addr pc, ushort opIndex)
+InsnFilter::operator()(VMA pc, ushort opIndex)
 {
-  Instruction* inst = lm->GetInst(pc, opIndex);
-  if (!inst) {
+  binutils::Insn* insn = lm->findInsn(pc, opIndex);
+  if (!insn) {
     return false;
   }
 
-  return (expr.IsSatisfied(ConvertToInsnClass(inst->GetDesc())));
+  return (expr.IsSatisfied(ConvertToInsnClass(insn->GetDesc())));
 }
 
 //****************************************************************************
