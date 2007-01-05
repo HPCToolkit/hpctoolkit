@@ -59,8 +59,9 @@
 
 #include <include/general.h>
 
-#include <lib/ISA/ISA.hpp>
-#include <lib/binutils/LoadModule.hpp>
+#include <lib/isa/ISA.hpp>
+
+#include <lib/binutils/LM.hpp>
 
 #include <lib/support/String.hpp>
 
@@ -165,7 +166,7 @@ public:
   
   // Returns true if the operation at 'pc' and 'opIndex' is within the
   // 'in' set; false otherwise.
-  virtual bool operator()(Addr pc, ushort opIndex) = 0;
+  virtual bool operator()(VMA pc, ushort opIndex) = 0;
 
 private:
 };
@@ -255,9 +256,9 @@ private:
 };
 
 
-// ConvertInstDesc: Converts an InstDesc to one of the above classes
+// ConvertInsnDesc: Converts an InsnDesc to one of the above classes
 InsnClassExpr::bitvec_t 
-ConvertToInsnClass(ISA::InstDesc d);
+ConvertToInsnClass(ISA::InsnDesc d);
 
 
 //****************************************************************************
@@ -267,16 +268,16 @@ ConvertToInsnClass(ISA::InstDesc d);
 // InsnFilter: Divides PCs into two sets by Alpha instruction class.
 class InsnFilter : public PCFilter {
 public:
-  InsnFilter(InsnClassExpr expr_, LoadModule* lm_);
+  InsnFilter(InsnClassExpr expr_, binutils::LM* lm_);
   virtual ~InsnFilter();
   
   // Returns true if the operation at 'pc' and 'opIndex' satisfies
   // 'expr'; false otherwise.
-  virtual bool operator()(Addr pc, ushort opIndex);
+  virtual bool operator()(VMA pc, ushort opIndex);
   
 private:
   InsnClassExpr expr;
-  LoadModule* lm; // we do not own
+  binutils::LM* lm; // we do not own
 };
 
 

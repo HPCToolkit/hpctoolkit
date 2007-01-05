@@ -1,5 +1,6 @@
+// -*-Mode: C++;-*-
 // $Id$
-// -*-C++-*-
+
 // * BeginRiceCopyright *****************************************************
 // 
 // Copyright ((c)) 2002, Rice University 
@@ -37,6 +38,12 @@
 //************************ System Include Files ******************************
 
 #include <iostream> 
+using std::cerr;
+using std::endl;
+
+#include <sstream>
+
+#include <string> 
 
 #ifdef NO_STD_CHEADERS
 # include <stdlib.h>
@@ -50,7 +57,9 @@ using std::atoi;
 
 // #include "XMLAdapter.h"
 #include "MathMLExpr.hpp"
-#include "PerfMetric.hpp"
+
+#include <lib/prof-juicy/PerfMetric.hpp>
+
 #include <lib/support/String.hpp>
 #include <lib/support/Nan.h>
 #include <lib/support/Trace.hpp>
@@ -62,9 +71,6 @@ using XERCES_CPP_NAMESPACE::XMLString;
 
 
 //************************ Forward Declarations ******************************
-
-using std::cerr;
-using std::endl;
 
 //****************************************************************************
 
@@ -118,7 +124,8 @@ MathMLExpr::MathMLExpr(DOMNode *math)
     if (child->getNodeType() == DOMNode::TEXT_NODE) {
       // DTD ensures this can't contain anything but white space
       continue;
-    } else if (child->getNodeType() == DOMNode::COMMENT_NODE) {
+    } 
+    else if (child->getNodeType() == DOMNode::COMMENT_NODE) {
       continue;
     }
     
@@ -139,9 +146,10 @@ MathMLExpr::~MathMLExpr()
   delete topNode;
 }
 
-double MathMLExpr::eval(const ScopeInfo *si) 
+double 
+MathMLExpr::eval(const ScopeInfo *si) 
 {
-  IFDOTRACE { si->DumpSelf(cerr); }
+  IFDOTRACE { si->dumpme(cerr); }
   if (topNode != NULL)
     return topNode->eval(si);
   return NaNVal;
@@ -155,8 +163,9 @@ double MathMLExpr::eval(const ScopeInfo *si)
 //   node:       a DOMNode
 // ----------------------------------------------------------------------
 
-static bool isOperatorNode(DOMNode *node) {
-  
+static bool 
+isOperatorNode(DOMNode *node) 
+{  
   static const XMLCh* DIVISION = XMLString::transcode("divide");
   static const XMLCh* SUBTRACTION = XMLString::transcode("minus");
   static const XMLCh* ADDITION = XMLString::transcode("plus");
@@ -173,8 +182,9 @@ static bool isOperatorNode(DOMNode *node) {
 		XMLString::equals(nodeName,MINML));
 }
 
-static bool isOperandNode(DOMNode *node) {
-
+static bool 
+isOperandNode(DOMNode *node) 
+{
   static const XMLCh* APPLY = XMLString::transcode("apply");
   static const XMLCh* NUMBER = XMLString::transcode("cn");
   static const XMLCh* IDENTIFIER = XMLString::transcode("ci");
@@ -195,8 +205,9 @@ static bool isOperandNode(DOMNode *node) {
 //   An exception of type MathMLExprException could be thrown.  If the 
 // ----------------------------------------------------------------------
 
-EvalNode* MathMLExpr::buildEvalTree(DOMNode *node) {
-
+EvalNode* 
+MathMLExpr::buildEvalTree(DOMNode *node) 
+{
   static const XMLCh* APPLY = XMLString::transcode("apply");
   static const XMLCh* DIVISION = XMLString::transcode("divide");
   static const XMLCh* SUBTRACTION = XMLString::transcode("minus");
@@ -381,4 +392,21 @@ EvalNode* MathMLExpr::buildEvalTree(DOMNode *node) {
   return NULL; // should not reach
 }
 
-void MathMLExpr::print() { topNode->print(); }
+
+std::string
+
+MathMLExpr::toString() const
+{
+  std::ostringstream os;
+  dump(os);
+  os << std::ends;
+  return os.str();
+}
+
+
+std::ostream&
+MathMLExpr::dump(std::ostream& os) const
+{ 
+  topNode->dump(os); 
+  return os;
+}

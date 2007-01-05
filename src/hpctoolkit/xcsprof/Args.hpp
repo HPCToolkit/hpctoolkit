@@ -1,5 +1,6 @@
-// $Id$
 // -*-C++-*-
+// $Id$
+
 // * BeginRiceCopyright *****************************************************
 // 
 // Copyright ((c)) 2002, Rice University 
@@ -46,8 +47,6 @@
 
 //*************************** User Include Files ****************************
 
-#include <lib/support/String.hpp>
-
 //*************************** Forward Declarations **************************
 
 #define THRESHHOLDING_DISABLED -1
@@ -63,18 +62,19 @@ public:
   void createDatabaseDirectory();
 
 public:  
-  String cmd; 
+  std::string cmd; 
 
   // arguments - options
-  String pcMapFile; 
+  std::string pcMapFile; 
   
   // arguments
-  String progFile; // binary that was profiled
-  String profFile; // profiling output for 'progFile'
-  std::vector<String> searchPaths; // list of serch paths
-  String databaseDirectory; 
+  std::string progFile; // binary that was profiled
+  std::string profFile; // profiling output for 'progFile'
+  std::vector<std::string> searchPaths; // list of serch paths
+  std::string databaseDirectory; 
 }; 
 
+// FIXME
 #ifndef xDEBUG
 #define xDEBUG(flag, code) {if (flag) {code; fflush(stdout); fflush(stderr);}} 
 #endif

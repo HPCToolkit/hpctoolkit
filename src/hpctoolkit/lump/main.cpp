@@ -1,5 +1,6 @@
+// -*-Mode: C++;-*-
 // $Id$
-// -*-C++-*-
+
 // * BeginRiceCopyright *****************************************************
 // 
 // Copyright ((c)) 2002, Rice University 
@@ -37,19 +38,24 @@
 //***************************************************************************
 //
 // File:
-//    main.C
+//   $Source$
 //
 // Purpose:
-//    [The purpose of this file]
+//   [The purpose of this file]
 //
 // Description:
-//    [The set of functions, macros, etc. defined in the file]
+//   [The set of functions, macros, etc. defined in the file]
 //
 //***************************************************************************
 
 //************************* System Include Files ****************************
 
 #include <iostream>
+using std::cerr;
+using std::endl;
+using std::hex;
+using std::dec;
+
 #include <fstream>
 #include <typeinfo>
 #include <new>
@@ -57,73 +63,99 @@
 #include <map>
 #include <list>
 
+#include <string>
+using std::string;
+
 //*************************** User Include Files ****************************
 
 #include "Args.hpp"
 
-#include <lib/binutils/LoadModule.hpp>
-#include <lib/binutils/Section.hpp>
-#include <lib/binutils/Procedure.hpp>
-#include <lib/binutils/Instruction.hpp>
+#include <lib/binutils/LM.hpp>
+#include <lib/binutils/Seg.hpp>
+#include <lib/binutils/Proc.hpp>
+#include <lib/binutils/Insn.hpp>
 #include <lib/binutils/BinUtils.hpp>
-#include <lib/support/String.hpp> 
-#include <lib/support/Assertion.h>
+
+#include <lib/support/diagnostics.h>
 
 //*************************** Forward Declarations ***************************
 
-using std::cerr;
-using std::endl;
-using std::hex;
-using std::dec;
-
 // A list of addresses (VMAs)
-typedef std::list<Addr> AddrList;
-typedef std::list<Addr>::iterator AddrListIt;
-typedef std::list<Addr>::const_iterator AddrListItC;
+typedef std::list<VMA> VMAList;
+typedef std::list<VMA>::iterator VMAListIt;
+typedef std::list<VMA>::const_iterator VMAListItC;
 
-// A map of a line number to an AddrList
-typedef std::map<suint, AddrList*> LineToAddrListMap;
-typedef std::map<suint, AddrList*>::iterator LineToAddrListMapIt;
-typedef std::map<suint, AddrList*>::value_type LineToAddrListMapItVal;
+// A map of a line number to an VMAList
+typedef std::map<suint, VMAList*> LineToVMAListMap;
+typedef std::map<suint, VMAList*>::iterator LineToVMAListMapIt;
+typedef std::map<suint, VMAList*>::value_type LineToVMAListMapItVal;
 
-void ClearLineToAddrListMap(LineToAddrListMap* map);
+void ClearLineToVMAListMap(LineToVMAListMap* map);
 
 // Dump Helpers
-void DumpSymbolicInfo(std::ostream& os, LoadModule* lm);
-void DumpSymbolicInfoOld(std::ostream& os, LoadModule* lm);
+void DumpSymbolicInfo(std::ostream& os, binutils::LM* lm);
+void DumpSymbolicInfoOld(std::ostream& os, binutils::LM* lm);
 
 //****************************************************************************
 
+int realmain(int argc, char* const* argv);
+
+int 
+main(int argc, char* const* argv) 
+{
+  int ret;
+
+  try {
+    ret = realmain(argc, argv);
+  }
+  catch (const Diagnostics::Exception& x) {
+    DIAG_EMsg(x.message());
+    exit(1);
+  } 
+  catch (const std::bad_alloc& x) {
+    DIAG_EMsg("[std::bad_alloc] " << x.what());
+    exit(1);
+  } 
+  catch (const std::exception& x) {
+    DIAG_EMsg("[std::exception] " << x.what());
+    exit(1);
+  } 
+  catch (...) {
+    DIAG_EMsg("Unknown exception encountered!");
+    exit(2);
+  }
+
+  return ret;
+}
+
+
 int
-main(int argc, char* argv[])
+realmain(int argc, char* const argv[])
 {
   Args args(argc, argv);
 
   // ------------------------------------------------------------
   // Read load module
   // ------------------------------------------------------------
-  LoadModule* lm = NULL;
+  binutils::LM* lm = NULL;
   try {
-    lm = new LoadModule();
+    lm = new binutils::LM();
     if (!lm->Open(args.inputFile.c_str())) { 
       exit(1); // Error already printed 
     }
     if (!lm->Read()) { 
       exit(1); // Error already printed 
     }
-  } catch (std::bad_alloc& x) {
-    cerr << "Error: Memory alloc failed while reading load module!\n";
-    exit(1);
-  } catch (...) {
-    cerr << "Error: Exception encountered while reading load module!\n";
-    exit(2);
+  } 
+  catch (...) {
+    DIAG_EMsg("Exception encountered while reading " << args.inputFile);
+    throw;
   }
 
   // ------------------------------------------------------------
   // Dump load module
   // ------------------------------------------------------------
   try {
-
     if (args.symbolicDump) {
       DumpSymbolicInfo(std::cout, lm);
     } 
@@ -131,12 +163,12 @@ main(int argc, char* argv[])
       DumpSymbolicInfoOld(std::cout, lm);
     }
     else {
-      lm->Dump(std::cout);
+      lm->dump(std::cout);
     }
-    
-  } catch (...) {
-    cerr << "Error: Exception encountered while dumping load module!\n";
-    exit(2);
+  } 
+  catch (...) {
+    DIAG_EMsg("Exception encountered while dumping " << args.inputFile);
+    throw;
   }
 
   delete lm;
@@ -147,72 +179,69 @@ main(int argc, char* argv[])
 //****************************************************************************
 
 void 
-DumpHeaderInfo(std::ostream& os, LoadModule* lm, const char* pre = "")
+DumpHeaderInfo(std::ostream& os, binutils::LM* lm, const char* pre = "")
 {
   os << "Begin LoadModule Stmt Dump\n";
   os << pre << "Name: `" << lm->GetName() << "'\n";
   os << pre << "Type: `";
   switch (lm->GetType()) {
-    case LoadModule::Executable:
+    case binutils::LM::Executable:
       os << "Executable (fully linked except for possible DSOs)'\n";
       break;
-    case LoadModule::SharedLibrary:
+    case binutils::LM::SharedLibrary:
       os << "Dynamically Shared Library'\n";
       break;
     default:
-      os << "-unknown-'\n";
-      BriefAssertion(false); 
+      DIAG_Die("Unknown LM type!"); 
   }
-  os << pre << "ISA: `" << typeid(*isa).name() << "'\n"; // std::type_info
+  os << pre << "ISA: `" << typeid(*binutils::LM::isa).name() << "'\n"; // std::type_info
 }
-
-
 
 
 //****************************************************************************
 
 void 
-DumpSymbolicInfo(std::ostream& os, LoadModule* lm)
+DumpSymbolicInfo(std::ostream& os, binutils::LM* lm)
 {
-  String pre = "  ";
-  String pre1 = pre + "  ";
+  string pre = "  ";
+  string pre1 = pre + "  ";
 
-  DumpHeaderInfo(os, lm, pre);  
+  DumpHeaderInfo(os, lm, pre.c_str());
 
   // ------------------------------------------------------------------------
-  // Iterate through the PC values of the text section, and dump the 
-  //   symbolic information associated with each PC
+  // Iterate through the VMA values of the text section, and dump the 
+  //   symbolic information associated with each VMA
   // ------------------------------------------------------------------------  
 
   os << pre << "Dump:\n";
-  for (LoadModuleSectionIterator it(*lm); it.IsValid(); ++it) {
-    Section* sec = it.Current();
-    if (sec->GetType() != Section::Text) { continue; }
+  for (binutils::LMSegIterator it(*lm); it.IsValid(); ++it) {
+    binutils::Seg* sec = it.Current();
+    if (sec->GetType() != binutils::Seg::Text) { continue; }
     
-    // We have a 'TextSection'.  Iterate over procedures.
-    TextSection* tsec = dynamic_cast<TextSection*>(sec);
-    for (TextSectionProcedureIterator it(*tsec); it.IsValid(); ++it) {
-      Procedure* p = it.Current();
-      String pName = GetBestFuncName(p->GetName());
+    // We have a 'TextSeg'.  Iterate over procedures.
+    binutils::TextSeg* tsec = dynamic_cast<binutils::TextSeg*>(sec);
+    for (binutils::TextSegProcIterator it(*tsec); it.IsValid(); ++it) {
+      binutils::Proc* p = it.Current();
+      string pName = GetBestFuncName(p->GetName());
 
       os << "* " << pName << hex
-	 << " [" << "0x" << p->GetStartAddr() << ", 0x" << p->GetEndAddr()
+	 << " [" << "0x" << p->GetBegVMA() << ", 0x" << p->GetEndVMA()
 	 << "]\n" << dec;
 
-      // We have a 'Procedure'.  Iterate over PC values     
-      for (ProcedureInstructionIterator it(*p); it.IsValid(); ++it) {
-	Instruction* inst = it.Current();
-	Addr pc = inst->GetPC();
-	Addr opPC = isa->ConvertPCToOpPC(pc, inst->GetOpIndex());
+      // We have a 'Procedure'.  Iterate over VMA values     
+      for (binutils::ProcInsnIterator it(*p); it.IsValid(); ++it) {
+	binutils::Insn* inst = it.Current();
+	VMA vma = inst->GetVMA();
+	VMA opVMA = binutils::LM::isa->ConvertVMAToOpVMA(vma, inst->GetOpIndex());
 	
 	// Find and dump symbolic info attched to VMA
-	String func, file;
+	string func, file;
 	suint line;
-	p->GetSourceFileInfo(pc, inst->GetOpIndex(), func, file, line);
+	p->GetSourceFileInfo(vma, inst->GetOpIndex(), func, file, line);
 	func = GetBestFuncName(func);
 	
-	os << pre << "0x" << hex << opPC << dec 
-	   << " " << file << ":" << line << ":" << func << "\n";
+	os << pre << "0x" << hex << opVMA << dec 
+	   << " {" << file << "}:" << line << ":[" << func << "]\n";
       }
       os << std::endl;
     }
@@ -223,47 +252,47 @@ DumpSymbolicInfo(std::ostream& os, LoadModule* lm)
 //****************************************************************************
 
 void DumpSymbolicInfoForFunc(std::ostream& os, const char* pre, 
-			     const char* func, LineToAddrListMap* map, 
+			     const char* func, LineToVMAListMap* map, 
 			     const char* file);
 
 void 
-DumpSymbolicInfoOld(std::ostream& os, LoadModule* lm)
+DumpSymbolicInfoOld(std::ostream& os, binutils::LM* lm)
 {
-  String pre = "  ";
-  String pre1 = pre + "  ";
+  string pre = "  ";
+  string pre1 = pre + "  ";
 
-  DumpHeaderInfo(os, lm, pre);
+  DumpHeaderInfo(os, lm, pre.c_str());
 
   // ------------------------------------------------------------------------
-  // Iterate through the PC values of the text section, collect
+  // Iterate through the VMA values of the text section, collect
   //   symbolic information on a source line basis, and output the results
   // ------------------------------------------------------------------------  
 
   os << pre << "Dump:\n";
-  for (LoadModuleSectionIterator it(*lm); it.IsValid(); ++it) {
-    Section* sec = it.Current();
-    if (sec->GetType() != Section::Text) { continue; }
+  for (binutils::LMSegIterator it(*lm); it.IsValid(); ++it) {
+    binutils::Seg* sec = it.Current();
+    if (sec->GetType() != binutils::Seg::Text) { continue; }
     
-    // We have a 'TextSection'.  Iterate over procedures.
-    TextSection* tsec = dynamic_cast<TextSection*>(sec);
-    for (TextSectionProcedureIterator it(*tsec); it.IsValid(); ++it) {
-      Procedure* p = it.Current();
-      String pName = GetBestFuncName(p->GetName());
+    // We have a 'TextSeg'.  Iterate over procedures.
+    binutils::TextSeg* tsec = dynamic_cast<binutils::TextSeg*>(sec);
+    for (binutils::TextSegProcIterator it(*tsec); it.IsValid(); ++it) {
+      binutils::Proc* p = it.Current();
+      string pName = GetBestFuncName(p->GetName());
 
       
-      // We have a 'Procedure'.  Iterate over PC values     
-      String theFunc = pName, theFile;
-      LineToAddrListMap map;
+      // We have a 'Procedure'.  Iterate over VMA values     
+      string theFunc = pName, theFile;
+      LineToVMAListMap map;
 
-      for (ProcedureInstructionIterator it(*p); it.IsValid(); ++it) {
-	Instruction* inst = it.Current();
-	Addr pc = inst->GetPC();
-	Addr opPC = isa->ConvertPCToOpPC(pc, inst->GetOpIndex());
+      for (binutils::ProcInsnIterator it(*p); it.IsValid(); ++it) {
+	binutils::Insn* inst = it.Current();
+	VMA vma = inst->GetVMA();
+	VMA opVMA = binutils::LM::isa->ConvertVMAToOpVMA(vma, inst->GetOpIndex());
 	
 	// 1. Attempt to find symbolic information
-	String func, file;
+	string func, file;
 	suint line;
-	p->GetSourceFileInfo(pc, inst->GetOpIndex(), func, file, line);
+	p->GetSourceFileInfo(vma, inst->GetOpIndex(), func, file, line);
 	func = GetBestFuncName(func);
 	
 	// Bad line number: cannot fix; advance iteration
@@ -272,32 +301,33 @@ DumpSymbolicInfoOld(std::ostream& os, LoadModule* lm)
 	}
 
 	// Bad/Different func name: ignore for now and use 'theFunc' (FIXME)
-	if (func.Empty()) { func = theFunc; }
+	if (func.empty()) { func = theFunc; }
 	
 	// Bad/Different file name: ignore and try 'theFile' (FIXME)
-	if (file.Empty() && !theFile.Empty() // possible replacement...
+	if (file.empty() && !theFile.empty() // possible replacement...
 	    && func == theFunc) { // ...the replacement is valid
 	  file = theFile; 
 	}
 
 	// 2. We have decent symbolic info.  Squirrel this away.
-	if (theFunc.Empty()) { theFunc = func; }
-	if (theFile.Empty()) { theFile = file; }
+	if (theFunc.empty()) { theFunc = func; }
+	if (theFile.empty()) { theFile = file; }
 	
-	LineToAddrListMapIt it1 = map.find(line);
-	AddrList* list;
+	LineToVMAListMapIt it1 = map.find(line);
+	VMAList* list;
 	if (it1 != map.end()) { 
 	  list = (*it1).second; // modify existing list
-	  list->push_back(opPC);	  
+	  list->push_back(opVMA);	  
 	} else { 
-	  list = new AddrList; // create a new list and insert pair
-	  list->push_back(opPC);
-	  map.insert(LineToAddrListMapItVal(line, list));
+	  list = new VMAList; // create a new list and insert pair
+	  list->push_back(opVMA);
+	  map.insert(LineToVMAListMapItVal(line, list));
 	}
       }
       
-      DumpSymbolicInfoForFunc(os, pre1, theFunc, &map, theFile);
-      ClearLineToAddrListMap(&map);
+      DumpSymbolicInfoForFunc(os, pre1.c_str(), 
+			      theFunc.c_str(), &map, theFile.c_str());
+      ClearLineToVMAListMap(&map);
       
     }
   }
@@ -307,28 +337,28 @@ DumpSymbolicInfoOld(std::ostream& os, LoadModule* lm)
 
 void 
 DumpSymbolicInfoForFunc(std::ostream& os, const char* pre, 
-			const char* func, LineToAddrListMap* map, 
+			const char* func, LineToVMAListMap* map, 
 			const char* file)
 {
-  String p = pre;
-  String p1 = p + "  ";
+  string p = pre;
+  string p1 = p + "  ";
 
   unsigned int mapSz = map->size();
   
   os << p << "* " << func << "\n"
      << p << "  [" << file << "]\n";
 
-  LineToAddrListMapIt it;
+  LineToVMAListMapIt it;
   for (it = map->begin(); it != map->end(); ++it) {
     suint line = (*it).first;
-    AddrList* list = (*it).second;
+    VMAList* list = (*it).second;
     
     os << p1 << "  " << line << ": {" << hex;
 
-    AddrListIt it1;
+    VMAListIt it1;
     for (it1 = list->begin(); it1 != list->end(); ++it1) {
-      Addr pc = *it1;
-      os << " 0x" << pc;
+      VMA vma = *it1;
+      os << " 0x" << vma;
     }
     os << " }" << dec << endl;
   }
@@ -336,9 +366,9 @@ DumpSymbolicInfoForFunc(std::ostream& os, const char* pre,
 
 
 void 
-ClearLineToAddrListMap(LineToAddrListMap* map)
+ClearLineToVMAListMap(LineToVMAListMap* map)
 {
-  LineToAddrListMapIt it;
+  LineToVMAListMapIt it;
   for (it = map->begin(); it != map->end(); ++it) {
     delete (*it).second;
   }

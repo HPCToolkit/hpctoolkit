@@ -1,5 +1,6 @@
-// $Id$
 // -*-C++-*-
+// $Id$
+
 // * BeginRiceCopyright *****************************************************
 // 
 // Copyright ((c)) 2002, Rice University 
@@ -63,8 +64,7 @@
 #include "DCPIProfileMetric.hpp"
 #include "DCPIProfileFilter.hpp"
 
-#include <lib/ISA/ISATypes.hpp>
-#include <lib/support/String.hpp>
+#include <lib/isa/ISATypes.hpp>
 
 //*************************** Forward Declarations ***************************
 

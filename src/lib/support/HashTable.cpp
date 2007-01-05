@@ -1,5 +1,6 @@
+// -*-Mode: C++;-*-
 // $Id$
-// -*-C++-*-
+
 // * BeginRiceCopyright *****************************************************
 // 
 // Copyright ((c)) 2002, Rice University 
@@ -52,11 +53,9 @@
 #include <iostream>
 
 #ifdef NO_STD_CHEADERS
-# include <assert.h>
 # include <stdlib.h>
 # include <string.h>
 #else
-# include <cassert>
 # include <cstdlib>
 # include <cstring>
 using namespace std; // For compatibility with non-std C headers
@@ -65,6 +64,8 @@ using namespace std; // For compatibility with non-std C headers
 //*************************** User Include Files ****************************
 
 #include "HashTable.hpp"
+
+#include <lib/support/diagnostics.h>
 
 /******************************* local defines *******************************/
 
@@ -222,7 +223,7 @@ void HashTable::Destroy ()
 // Explicitly defined to prevent usage. 
 HashTable &HashTable::operator=(const HashTable & rhs)
 {
-  assert(0 && "Should not call HashTable::operator=()!");
+  DIAG_Die("Should not call HashTable::operator=()!");
   return *this;
 }
 
@@ -243,7 +244,7 @@ void HashTable::AddEntry (void* entry, AddEntryFunctPtr const AddEntryCallback, 
        int   index = QueryIndexSet (entry, true);
        char* cEntries = (char*)entries;
   
-       assert (index != INVALID_INDEX);
+       DIAG_Assert(index != INVALID_INDEX, "");
 
 #      ifdef DEBUG
          cerr << "HashTable::AddEntry: using index " << index 
@@ -721,7 +722,7 @@ void HashTable::OverflowIndexSet()
 #           endif
 
             finalIndex = RehashFunct (finalIndex, indexSetSize);
-            assert (finalIndex != initialIndex); // shouldn't wrap table w/o allocating an index
+            DIAG_Assert(finalIndex != initialIndex, "shouldn't wrap table w/o allocating an index");
          }
 
        indexSet[finalIndex] = i;
@@ -766,14 +767,14 @@ void HashTable::OverflowEntries ()
 //
 void HashTable::FailureToCreateError () const
 {
-  assert(0 && "Failure to call Create() before using the HashTable");
+  DIAG_Die("Failure to call Create() before using the HashTable");
 }
 
 //
 //
 void HashTable::FailureToDestroyError () const
 {
-  assert(0 && "Failure to call Destroy() before deleting the HashTable");
+  DIAG_Die("Failure to call Destroy() before deleting the HashTable");
 }
 
 /************************ HashTable extern functions *************************/
@@ -842,7 +843,7 @@ int StringEntryCompare (const void* entry1, const void* entry2)
 //
 static uint DefaultHashFunct (const void* entry, const uint size)
 {
-  assert(0 && "Failure to specify HashFunct function.");
+  DIAG_Die("Failure to specify HashFunct function.");
   return 0;
 }
 
@@ -868,7 +869,7 @@ static uint DefaultRehashFunct (const uint oldHashValue, const uint size)
 //
 static int  DefaultEntryCompare (const void* entry1, const void* entry2)
 {
-  assert(0 && "Failure to specify EntryCompare function.");
+  DIAG_Die("Failure to specify EntryCompare function.");
   return 0;
 }
 

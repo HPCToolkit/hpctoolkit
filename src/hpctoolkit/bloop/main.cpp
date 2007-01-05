@@ -1,5 +1,6 @@
 // -*-Mode: C++;-*-
 // $Id$
+
 // * BeginRiceCopyright *****************************************************
 // 
 // Copyright ((c)) 2002, Rice University 
@@ -37,13 +38,13 @@
 //***************************************************************************
 //
 // File:
-//    main.C
+//   $Source$
 //
 // Purpose:
-//    [The purpose of this file]
+//   [The purpose of this file]
 //
 // Description:
-//    [The set of functions, macros, etc. defined in the file]
+//   [The set of functions, macros, etc. defined in the file]
 //
 //***************************************************************************
 
@@ -51,30 +52,25 @@
 
 #include <iostream>
 using std::cerr;
+using std::endl;
+
 #include <fstream>
 #include <new>
-
-//************************ OpenAnalysis Include Files ***********************
-
-#include <OpenAnalysis/Utils/Exception.hpp>
 
 //*************************** User Include Files ****************************
 
 #include "Args.hpp"
-#include "PgmScopeTree.hpp"
-#include "PgmScopeTreeBuilder.hpp"
-using namespace ScopeTreeBuilder;
 
-#include <lib/binutils/LoadModule.hpp>
-#include <lib/binutils/PCToSrcLineMap.hpp>
+#include <lib/banal/bloop.hpp>
+
+#include <lib/binutils/LM.hpp>
+
+#include <lib/support/diagnostics.h>
 
 //*************************** Forward Declarations ***************************
 
 int
 real_main(int argc, char* argv[]);
-
-bool 
-WriteMapFile(PCToSrcLineXMap* map, std::string& fname);
 
 //****************************************************************************
 
@@ -84,20 +80,20 @@ main(int argc, char* argv[])
   try {
     return real_main(argc, argv);
   }
-  catch (CmdLineParser::Exception& e) {
-    e.Report(cerr); // fatal error
+  catch (const Diagnostics::Exception& x) {
+    DIAG_EMsg(x.message());
     exit(1);
-  }
-  catch (OA::Exception& e) {
-    e.report(cerr);
+  } 
+  catch (const std::bad_alloc& x) {
+    DIAG_EMsg("[std::bad_alloc] " << x.what());
     exit(1);
-  }
-  catch (std::bad_alloc& x) {
-    cerr << "Error: Memory alloc failed!\n";
+  } 
+  catch (const std::exception& x) {
+    DIAG_EMsg("[std::exception] " << x.what());
     exit(1);
-  }
+  } 
   catch (...) {
-    cerr << "Unknown exception caught\n";
+    DIAG_EMsg("Unknown exception encountered!");
     exit(2);
   }
 }
@@ -111,85 +107,39 @@ real_main(int argc, char* argv[])
   // ------------------------------------------------------------
   // Read executable
   // ------------------------------------------------------------
-  LoadModule* exe = NULL;
+  binutils::LM* lm = NULL;
   try {
-    exe = new LoadModule(); // Executable(): use LoadModule for now
-    if (!exe->Open(args.inputFile.c_str())) { 
+    lm = new binutils::LM();
+    if (!lm->Open(args.inputFile.c_str())) { 
       exit(1); // Error already printed 
     } 
-    if (!exe->Read()) { exit(1); } // Error already printed 
+    if (!lm->Read()) { exit(1); } // Error already printed 
   } 
-  catch (std::bad_alloc& x) {
-    cerr << "Error: Memory alloc failed while reading binary!\n";
+  catch (const std::bad_alloc& x) {
+    DIAG_EMsg("Memory alloc failed while reading binary! " << x.what());
     exit(1);
   }
   
-  if (args.dumpBinary) {
-    // ------------------------------------------------------------
-    // Dump executable without a scope tree
-    // ------------------------------------------------------------
-    exe->Dump(std::cout);
-    
-  } else {
-    // ------------------------------------------------------------
-    // Build and print the ScopeTree
-    // ------------------------------------------------------------
-    PCToSrcLineXMap* map = NULL;
-    if (!args.pcMapFile.empty()) {
-      map = (PCToSrcLineXMap*)1; // FIXME:indicate that map should be created
-    }
-    
-    // Build scope tree
+  // ------------------------------------------------------------
+  // Build and print the ScopeTree
+  // ------------------------------------------------------------
+  { 
+    using namespace banal::bloop;
     PgmScopeTree* pgmScopeTree =
-      BuildFromExe(exe, map, args.canonicalPathList.c_str(),
-		   args.normalizeScopeTree, 
-		   args.unsafeNormalizations,
-		   args.irreducibleIntervalIsLoop,
-		   args.verboseMode);
+      BuildLMStructure(lm, args.canonicalPathList.c_str(),
+		       args.normalizeScopeTree, 
+		       args.unsafeNormalizations,
+		       args.irreducibleIntervalIsLoop);
     
-    // Write map (map should now be a valid pointer) & scope tree
-    if (map) { WriteMapFile(map, args.pcMapFile); }
     WriteScopeTree(std::cout, pgmScopeTree, args.prettyPrintOutput);
-    
-    // Cleanup
     delete pgmScopeTree;
-    delete map;
   }
   
-  delete exe;
+  // Cleanup
+  delete lm;
+  
   return (0);
 }
 
 //****************************************************************************
 
-bool 
-WriteMapFile(PCToSrcLineXMap* map, std::string& fname)
-{
-  std::ofstream ofile(fname.c_str());
-  if ( !ofile.is_open() || ofile.fail() ) {
-    cerr << "Error opening file `" << fname << "'\n";
-    return false;
-  }
-  
-  bool status = map->Write(ofile);
-  ofile.close();
-  
-  if (!status) {
-    cerr << "Error writing file `" << fname << "'\n";
-    return false;
-  }
-  
-#if 0
-  std::ifstream file1(fname);
-  std::ofstream file2((fname+".tmp"));
-  
-  // Try reading the map and writing it to a second file for comparison
-  PCToSrcLineXMap* map1 = new PCToSrcLineXMap();
-  map1->Read(file1);
-  map1->Write(file2);
-  delete map1;
-  file1.close();
-  file2.close();
-#endif
-  return true;
-}

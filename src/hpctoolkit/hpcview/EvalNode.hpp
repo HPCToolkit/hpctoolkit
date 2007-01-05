@@ -1,5 +1,6 @@
+// -*-Mode: C++;-*-
 // $Id$
-// -*-C++-*-
+
 // * BeginRiceCopyright *****************************************************
 // 
 // Copyright ((c)) 2002, Rice University 
@@ -65,9 +66,13 @@
 
 //************************ System Include Files ******************************
 
+#include <iostream> 
+#include <string>
+
 //************************* User Include Files *******************************
 
-#include "ScopeInfo.hpp"
+#include <lib/prof-juicy/PgmScopeTree.hpp>
+
 #include <lib/support/String.hpp>
 
 //************************ Forward Declarations ******************************
@@ -81,12 +86,13 @@
 
 class EvalNode
 {
-
 public:
+  EvalNode() { }
   virtual ~EvalNode() { }
   virtual double eval(const ScopeInfo *si) = 0;
-  virtual void print() = 0;
-
+  virtual std::ostream& dump(std::ostream& os = std::cout) const = 0;
+  
+  virtual std::string toString() const;
 };
 
 // ----------------------------------------------------------------------
@@ -96,16 +102,14 @@ public:
 
 class Const : public EvalNode
 {
-
 public:
   Const(double c);
   ~Const();
   double eval(const ScopeInfo *si);
-  void print();
+  std::ostream& dump(std::ostream& os = std::cout) const;
   
 private:
   double val;
-
 };
 
 // ----------------------------------------------------------------------
@@ -114,17 +118,15 @@ private:
 // ----------------------------------------------------------------------
 
 class Neg : public EvalNode
-{
-  
+{  
 public:
   Neg(EvalNode* node);
   ~Neg();
   double eval(const ScopeInfo *si);
-  void print();
+  std::ostream& dump(std::ostream& os = std::cout) const;
   
 private:
   EvalNode* node;
-
 };
 
 // ----------------------------------------------------------------------
@@ -135,17 +137,15 @@ private:
 
 class Var : public EvalNode
 {
-
 public:
   Var(String n, int i);
   ~Var();
   double eval(const ScopeInfo *si);
-  void print();
+  std::ostream& dump(std::ostream& os = std::cout) const;
   
 private:
   String name;
   int index;
-
 };
 
 // ----------------------------------------------------------------------
@@ -155,17 +155,15 @@ private:
 
 class Power : public EvalNode
 {
-
 public:
   Power(EvalNode* b, EvalNode* e);
   ~Power();
   double eval(const ScopeInfo *si);
-  void print();
+  std::ostream& dump(std::ostream& os = std::cout) const;
 
 private:
   EvalNode* base;
   EvalNode* exponent;
-
 };
 
 // ----------------------------------------------------------------------
@@ -175,17 +173,15 @@ private:
 
 class Divide : public EvalNode
 {
-
 public:
   Divide(EvalNode* num, EvalNode* denom);
   ~Divide();
   double eval(const ScopeInfo *si);
-  void print();
+  std::ostream& dump(std::ostream& os = std::cout) const;
 
 private:
   EvalNode* numerator;
   EvalNode* denominator;
-
 };
 
 // ----------------------------------------------------------------------
@@ -195,17 +191,15 @@ private:
 
 class Minus : public EvalNode
 {
-
 public:
   Minus(EvalNode* m, EvalNode* s);
   ~Minus();
   double eval(const ScopeInfo *si);
-  void print();
+  std::ostream& dump(std::ostream& os = std::cout) const;
 
 private:
   EvalNode* minuend;
   EvalNode* subtrahend;
-
 };
 
 // ----------------------------------------------------------------------
@@ -215,17 +209,15 @@ private:
 
 class Plus : public EvalNode
 {
-
 public:
   Plus(EvalNode** oprnds, int numOprnds);
   ~Plus();
   double eval(const ScopeInfo *si);
-  void print();
+  std::ostream& dump(std::ostream& os = std::cout) const;
 
 private:
   EvalNode** nodes;
   int n;
-
 };
 
 // ----------------------------------------------------------------------
@@ -235,48 +227,42 @@ private:
 
 class Times : public EvalNode
 {
-
 public:
   Times(EvalNode** oprnds, int numOprnds);
   ~Times();
   double eval(const ScopeInfo *si);
-  void print();
+  std::ostream& dump(std::ostream& os = std::cout) const;
 
 private:
   EvalNode** nodes;
   int n;
-
 };
 
 
 class Max : public EvalNode
 {
-
 public:
   Max(EvalNode** oprnds, int numOprnds);
   ~Max();
   double eval(const ScopeInfo *si);
-  void print();
+  std::ostream& dump(std::ostream& os = std::cout) const;
 
 private:
   EvalNode** nodes;
   int n;
-
 };
 
 class Min : public EvalNode
 {
-
 public:
   Min(EvalNode** oprnds, int numOprnds);
   ~Min();
   double eval(const ScopeInfo *si);
-  void print();
+  std::ostream& dump(std::ostream& os = std::cout) const;
 
 private:
   EvalNode** nodes;
   int n;
-
 };
 
 #endif  // EVALNODE_H

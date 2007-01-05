@@ -1,5 +1,6 @@
+// -*-Mode: C++;-*-
 // $Id$
-// -*-C++-*-
+
 // * BeginRiceCopyright *****************************************************
 // 
 // Copyright ((c)) 2002, Rice University 
@@ -37,21 +38,30 @@
 //***************************************************************************
 //
 // File:
-//    ProfileWriter.C
+//   $Source$
 //
 // Purpose:
-//    [The purpose of this file]
+//   [The purpose of this file]
 //
 // Description:
-//    [The set of functions, macros, etc. defined in the file]
+//   [The set of functions, macros, etc. defined in the file]
 //
 //***************************************************************************
 
 //************************* System Include Files ****************************
 
 #include <iostream>
+using std::ostream;
+using std::cerr;
+using std::endl;
+using std::hex;
+using std::dec;
+
 #include <fstream>
 #include <map>
+
+#include <string>
+using std::string;
 
 #ifdef NO_STD_CHEADERS
 # include <string.h>
@@ -68,21 +78,14 @@ using namespace std; // For compatibility with non-std C headers
 #include "PCProfile.hpp"
 #include "DerivedProfile.hpp"
 
-#include <lib/binutils/LoadModuleInfo.hpp>
+#include <lib/binutils/LM.hpp>
 #include <lib/binutils/PCToSrcLineMap.hpp>
 #include <lib/binutils/BinUtils.hpp>
-#include <lib/support/String.hpp>
+
 #include <lib/xml/xml.hpp>
-
-//*************************** Forward Declarations ***************************
-
 using namespace xml;
 
-using std::ostream;
-using std::cerr;
-using std::endl;
-using std::hex;
-using std::dec;
+//*************************** Forward Declarations ***************************
 
 const char* UNKNOWN = "<unknown>";
 
@@ -109,7 +112,8 @@ typedef LineToPCProfileVecMap::value_type LineToPCProfileVecMapVal;
 
 void 
 DumpFuncLineMap(ostream& os, LineToPCProfileVecMap& map, 
-		DerivedProfile* profData, const char* func, const char* file);
+		DerivedProfile* profData, 
+		const string& func, const string& file);
 void 
 ClearFuncLineMap(LineToPCProfileVecMap& map);
 
@@ -119,7 +123,7 @@ ClearFuncLineMap(LineToPCProfileVecMap& map);
 
 void
 ProfileWriter::WriteProfile(std::ostream& os, DerivedProfile* profData,
-			    LoadModuleInfo* modInfo)
+			    binutils::LM* lm)
 {  
   // Sanity check
   if (profData->GetNumMetrics() == 0) {
@@ -135,7 +139,7 @@ ProfileWriter::WriteProfile(std::ostream& os, DerivedProfile* profData,
   // ------------------------------------------------------------------------  
   ProfileWriter::DumpProfileHeader(os);
 
-  const char* profiledFile = rawprofData->GetProfiledFile();
+  const string& profiledFile = rawprofData->GetProfiledFile();
 
   os << "<PROFILE version=\"3.0\">\n";
   os << "<PROFILEHDR>\n" << rawprofData->GetHdrInfo() << "</PROFILEHDR>\n";
@@ -168,34 +172,35 @@ ProfileWriter::WriteProfile(std::ostream& os, DerivedProfile* profData,
 
   // 'funcLineMap' maps a line number to a 'PCProfileVec'.  It should
   //   contain information only for the current function, 'theFunc'.
-  String theFunc, theFile; 
+  string theFunc, theFile; 
   LineToPCProfileVecMap funcLineMap;
 
   // Iterate over PC values in the profile
   for (PCProfile_PCIterator it(*rawprofData); it.IsValid(); ++it) {
     
-    Addr oppc = it.Current(); // an 'operation pc'
+    VMA oppc = it.Current(); // an 'operation pc'
     ushort opIndex;
-    Addr pc = isa->ConvertOpPCToPC(oppc, opIndex);
+    VMA pc = isa->ConvertOpVMAToVMA(oppc, opIndex);
     
     // --------------------------------------------------
     // 1. Attempt to find symbolic information
     // --------------------------------------------------
-    String func, file;
-    SrcLineX srcLn; 
-    modInfo->GetSymbolicInfo(pc, opIndex, func, file, srcLn);
+    string func, file;
+    suint line; 
+    lm->GetSourceFileInfo(pc, opIndex, func, file, line);
+    func = GetBestFuncName(func);
     
     // Bad line info: cannot fix and cannot report; advance iteration
-    if ( !IsValidLine(srcLn.GetSrcLine()) ) {
+    if ( !IsValidLine(line) ) {
       continue;
     }    
     
     // Bad function name: cannot fix
-    if (func.Empty()) { func = UNKNOWN; }
+    if (func.empty()) { func = UNKNOWN; }
     
     // Bad file name: try to fix
-    if (file.Empty()) {
-      if (!theFile.Empty() && func == theFunc && func != UNKNOWN) { 
+    if (file.empty()) {
+      if (!theFile.empty() && func == theFunc && func != UNKNOWN) { 
 	file = theFile;	// valid replacement
       } else {
 	file = UNKNOWN;
@@ -213,6 +218,7 @@ ProfileWriter::WriteProfile(std::ostream& os, DerivedProfile* profData,
     // --------------------------------------------------
     // 3. Update 'funcLineMap' for each derived metric
     // --------------------------------------------------
+    SrcLineX srcLn(line, 0);
     PCProfileVec* vec = NULL;
     LineToPCProfileVecMapIt it1 = funcLineMap.find(&srcLn);
     if (it1 == funcLineMap.end()) {
@@ -285,7 +291,8 @@ ProfileWriter::DumpProfileFooter(ostream& os)
 // Output should be in increasing order by line number.
 void 
 DumpFuncLineMap(ostream& os, LineToPCProfileVecMap& map, 
-		DerivedProfile* profData, const char* func, const char* file)
+		DerivedProfile* profData, 
+		const string& func, const string& file)
 {
   static const char* I[] = { "", // Indent levels (0 - 5)
 			     "  ",

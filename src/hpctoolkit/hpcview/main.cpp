@@ -1,5 +1,6 @@
+// -*-Mode: C++;-*-
 // $Id$
-// -*-C++-*-
+
 // * BeginRiceCopyright *****************************************************
 // 
 // Copyright ((c)) 2002, Rice University 
@@ -36,8 +37,15 @@
 
 //************************ System Include Files ******************************
 
-#include <iostream> 
-#include <fstream> 
+#include <iostream>
+using std::endl;
+
+#include <fstream>
+
+#include <string>
+using std::string;
+
+#include <exception>
 
 #ifdef NO_STD_CHEADERS
 # include <string.h>
@@ -46,11 +54,7 @@
 using namespace std; // For compatibility with non-std C headers
 #endif
 
-#include <unistd.h>
-#include <dirent.h>
-#include <sys/types.h>
-
-//************************* Xerces Include Files *******************************
+//*********************** Xerces Include Files *******************************
 
 #include <xercesc/util/XMLString.hpp>        
 using XERCES_CPP_NAMESPACE::XMLString;
@@ -64,32 +68,22 @@ using XERCES_CPP_NAMESPACE::XMLException;
 
 //************************* User Include Files *******************************
 
-// XML related includes 
+#include "Args.hpp"
+#include "Driver.hpp"
 #include "PROFILEDocHandler.hpp"
 #include "HPCViewDocParser.hpp"
 #include "HPCViewXMLErrHandler.hpp"
 
-// Argument Handling
-#include "Args.hpp"
+#include <lib/prof-juicy/PgmScopeTree.hpp>
 
-// ScopeInfo tree related includes 
-#include "Driver.hpp"
-#include "ScopesInfo.hpp"
-#include "HTMLDriver.hpp"
-
-#include <lib/support/String.hpp>
-#include <lib/support/Assertion.h>
+#include <lib/support/diagnostics.h>
 #include <lib/support/Nan.h>
 #include <lib/support/Files.hpp>
-#include <lib/support/Trace.hpp>
+#include <lib/support/IOUtil.hpp>
 #include <lib/support/pathfind.h>
 #include <lib/support/realpath.h>
 
 //************************ Forward Declarations ******************************
-
-using std::cout;
-using std::cerr;
-using std::endl;
 
 static void InitXML();
 static void FiniXML();
@@ -97,23 +91,23 @@ static void FiniXML();
 class FileException
 {
 public:
-  FileException(String s) {
+  FileException(const string& s) {
     error = s;
   }
-  String GetError() const { return error; };
+  const string& GetError() const { return error; };
 private:
-  String error;
+  string error;
 };
 
 #define NUM_PREFIX_LINES 2
 
 static void AppendContents(std::ofstream &dest, const char *srcFile);
 
-static String BuildConfFile(const char* hpcHome, const char* confFile);
+static string BuildConfFile(const string& hpcHome, const string& confFile);
 
 static bool CopySourceFiles(PgmScope* pgmScopeTree, 
 			    const PathTupleVec& pathVec, 
-			    const char* dstDir);
+			    const string& dstDir);
 
 //****************************************************************************
 
@@ -126,16 +120,27 @@ main(int argc, char* const* argv)
 
   try {
     ret = realmain(argc, argv);
-  } catch (std::bad_alloc& x) {
-    cerr << "hpcview fatal error: Memory alloc failed!\n";
+  }
+  catch (const Diagnostics::Exception& x) {
+    DIAG_EMsg(x.message());
     exit(1);
-  } catch (...) {
-    cerr << "hpcview fatal error: Unknown exception encountered!\n";
+  } 
+  catch (const std::bad_alloc& x) {
+    DIAG_EMsg("[std::bad_alloc] " << x.what());
+    exit(1);
+  } 
+  catch (const std::exception& x) {
+    DIAG_EMsg("[std::exception] " << x.what());
+    exit(1);
+  } 
+  catch (...) {
+    DIAG_EMsg("Unknown exception encountered!");
     exit(2);
   }
 
   return ret;
 }
+
 
 int 
 realmain(int argc, char* const* argv) 
@@ -143,222 +148,174 @@ realmain(int argc, char* const* argv)
   InitNaN();
   Args args(argc,argv);  // exits if error on command line
   InitXML();             // exits iff failure 
-  
-  IFTRACE << "Initializing HTMLDriver: ..." << endl; 
-  ScopesInfo scopes(""); // name will be set as the scope tree is built
-  HTMLDriver htmlDriver(scopes, args.fileHome, args.htmlDir, args); 
-             // constructor exits if it can't write to htmlDir 
-             // or read files in fileHome
-  IFTRACE << endl; 
-  
-  IFTRACE << "Initializing Driver from " << args.configurationFile 
-	  << ": ..." << endl; 
 
-  //-------------------------------------------------------
-  // Read configuration file
-  //-------------------------------------------------------
-  String tmpFile;
-  try {
-    tmpFile = BuildConfFile(args.hpcHome, args.configurationFile); 
-    // exits iff it fails 
-  }
-  catch (const FileException &e) {
-    cerr << e.GetError() << endl;
+  // FIXME: pulled out of HTMLDriver
+  if (MakeDir(args.dbDir.c_str()) != 0) {
     exit(1);
   }
 
   Driver driver(args.deleteUnderscores, args.CopySrcFiles); 
 
-  String userFile(args.configurationFile);
-  HPCViewXMLErrHandler errReporter(userFile, tmpFile, NUM_PREFIX_LINES, true);
+  PgmScopeTree scopes("", new PgmScope("")); // FIXME: better location
+  
+  //-------------------------------------------------------
+  // 1. Read configuration file
+  //-------------------------------------------------------
+  const string& cfgFile = args.configurationFile;
+  DIAG_Msg(3, "Initializing Driver from " << cfgFile); 
+  
+  string tmpFile;
   try {
-    HPCViewDocParser(driver, tmpFile, errReporter);
+    tmpFile = BuildConfFile(args.hpcHome, cfgFile); 
+    // exits iff it fails 
   }
-  catch (const HPCViewDocException &d){
-    unlink(tmpFile); 
-    cerr << "hpcview fatal error: CONFIGURATION file processing error." << endl
-    << "\t" << d.getMessage() << endl;
+  catch (const FileException& x) {
+    DIAG_EMsg(x.GetError());
+    exit(1);
+  }
+  
+  try {
+    HPCViewXMLErrHandler errHndlr(cfgFile, tmpFile, NUM_PREFIX_LINES, true);
+    HPCViewDocParser parser(tmpFile, errHndlr);
+    parser.pass1(driver); // FIXME: merge into one pass
+    parser.pass2(driver);
+  }
+  catch (const HPCViewDocException& x) {
+    unlink(tmpFile.c_str());
+    DIAG_EMsg(x.message());
     exit(1);
   }
   catch (...) {
-    unlink(tmpFile); 
-    cerr << "hpcview fatal error: terminating because of previously reported CONFIGURATION file errors." << endl;
-    exit(1);
+    unlink(tmpFile.c_str());
+    DIAG_EMsg("While processing '" << cfgFile << "'...");
+    throw;
   };
 
-  unlink(tmpFile); 
-
-  //-------------------------------------------------------
-  // Create metrics
-  //-------------------------------------------------------
-  IFTRACE << "The Driver is now: " << driver.ToString() << endl; 
-  IFTRACE << "Reading the metrics: ..." << endl; 
-  driver.MakePerfData(scopes); 
-  IFTRACE << endl; 
-
-  if ( args.OutputInitialScopeTree && args.OutputFinalScopeTree ) {
-    cerr << "Only final scope tree (in XML) will be output" << endl;
-    args.OutputInitialScopeTree = false;
-  }
-
-  if ( args.OutputInitialScopeTree ) {
-    if ( args.XML_ToStdout ) { 
-      cerr << "The initial scope tree (in XML) will appear on stdout" << endl; 
-      driver.XML_Dump(scopes.Root());
-    } else {
-      String dmpFile = args.htmlDir + "/" + args.XML_Dump_File;
-      cerr << "The initial scope tree (in XML) will be written to " 
-	   << dmpFile << endl;
-      std::ofstream XML_outFile(dmpFile);
-      if ( !XML_outFile ) {
-	cerr << "Output file open failed; skipping write of initial scope tree"
-             << endl;
-      }
-      driver.XML_Dump(scopes.Root(), XML_outFile);
-    }
-  }
-
-  //-------------------------------------------------------
-  // Traverse the tree and removes all the nodes that don't have profile
-  // data associated with them.
-  //-------------------------------------------------------
-  // do not remove the scopes with no profile data if the output is flat CSV
-  if (! (args.FlatCSVOutput || args.FlatTSVOutput) )
-    UpdateScopeTree( scopes.Root(), driver.NumberOfMetrics() );
+  unlink(tmpFile.c_str());
+  DIAG_Msg(3, "Driver is now: " << driver.ToString());
   
-  scopes.Root()->Freeze(); // disallow further additions to tree 
+  
+  //-------------------------------------------------------
+  // 2. Initialize scope tree
+  //-------------------------------------------------------
+  DIAG_Msg(3, "Initializing scope tree...");
+  driver.ScopeTreeInitialize(scopes); 
 
+  //-------------------------------------------------------
+  // 3. Correlate program source with metrics
+  //-------------------------------------------------------
+  DIAG_Msg(3, "Creating and correlating metrics with program structure: ...");
+  driver.ScopeTreeComputeMetrics(scopes);
+
+  DIAG_If(4) {
+    DIAG_Msg(4, "Initial scope tree:");
+    int flg = (args.XML_DumpAllMetrics) ? 0 : PgmScopeTree::DUMP_LEAF_METRICS;
+    driver.XML_Dump(scopes.GetRoot(), flg, std::cerr);
+  }
+  
+  //-------------------------------------------------------
+  // 4. Finalize scope tree
+  //-------------------------------------------------------
+  if (args.OutFilename_CSV.empty() && args.OutFilename_TSV.empty()) {
+    // Prune the scope tree (remove scopes without metrics)
+    PruneScopeTreeMetrics(scopes.GetRoot(), driver.NumberOfMetrics());
+  }
+  
+  scopes.GetRoot()->Freeze();      // disallow further additions to tree 
   scopes.CollectCrossReferences(); // collect cross referencing information
 
-  if (trace > 1) { 
-    cerr << "The final scope tree, before HTML generation:" << endl; 
-    scopes.Root()->Dump(); 
-  }
-  // FiniXML(); eraxxon: causes a seg fault.
+  FiniXML();
 
-  //-------------------------------------------------------
-  // browseable database generation
-  //-------------------------------------------------------
-  if ( !args.SkipHTMLfiles ) {
-    IFTRACE << "Writing html output to " << args.htmlDir << ". ";
-    if ( args.OldStyleHTML ) {
-      IFTRACE << "Generate old style HTML (flatten views in separate files): ..." 
-              << endl; 
-    }
-    else {
-      IFTRACE << "Generate new style HTML (default: flatten views of a scope are in the same files): ..." 
-              << endl; 
-    }
-    if (htmlDriver.Write(driver) == false) {
-      cerr << "ERROR: Could not generate html output." << endl; 
-    }; 
-    IFTRACE << endl; 
-  } else {
-    cerr << "HTML file generation being suppressed." << endl;
+  DIAG_If(4) {
+    DIAG_Msg(4, "Final scope tree:");
+    int flg = (args.XML_DumpAllMetrics) ? 0 : PgmScopeTree::DUMP_LEAF_METRICS;
+    driver.XML_Dump(scopes.GetRoot(), flg, std::cerr);
   }
 
-  if ( args.CopySrcFiles ) {
-    cerr << "Copying all source files reached by REPLACE/PATH statements to "
-	 << args.htmlDir << endl;
-
+  //-------------------------------------------------------
+  // 5. Generate Experiment database
+  //-------------------------------------------------------
+  if (args.CopySrcFiles) {
+    DIAG_Msg(1, "Copying source files reached by REPLACE/PATH statements to " << args.dbDir);
+    
     // Note that this may modify file names in the ScopeTree
-    CopySourceFiles(scopes.Root(), driver.PathVec(), args.htmlDir);
+    CopySourceFiles(scopes.GetRoot(), driver.PathVec(), args.dbDir);
   }
 
-  if ( args.FlatCSVOutput ) {
-    if ( args.XML_ToStdout ) {
-      cerr << "The final scope tree (in CSV) will appear on stdout" << endl; 
-      driver.CSV_Dump(scopes.Root());
-    } else {
-      String dmpFile = args.htmlDir + "/" + args.XML_Dump_File;
-      
-      cerr << "The final scope tree (in CSV) will be written to "
-	   << dmpFile << endl;
-      std::ofstream XML_outFile(dmpFile);
-      if ( !XML_outFile ) {
-	cerr << "Output file open failed; skipping write of final scope tree."
-             << endl;
-      }
-      driver.CSV_Dump(scopes.Root(), XML_outFile);
-    }
-  } else
-  if ( args.FlatTSVOutput ) {
-    if ( args.XML_ToStdout ) {
-      cerr << "The final scope tree (in TSV) will appear on stdout" << endl; 
-      driver.TSV_Dump(scopes.Root());
-    } else {
-      String dmpFile = args.htmlDir + "/" + args.XML_Dump_File;
-      
-      cerr << "The final scope tree (in TSV) will be written to "
-	   << dmpFile << endl;
-      std::ofstream XML_outFile(dmpFile);
-      if ( !XML_outFile ) {
-	cerr << "Output file open failed; skipping write of final scope tree."
-             << endl;
-      }
-      driver.TSV_Dump(scopes.Root(), XML_outFile);
-    }
-  } else
-  if ( args.OutputFinalScopeTree ) {
-    int dumpFlags = (args.XML_DumpAllMetrics) ?
-      0 : ScopeInfo::DUMP_LEAF_METRICS;
+  if (!args.OutFilename_CSV.empty()) {
+    const string& fnm = args.OutFilename_CSV;
+    DIAG_Msg(1, "Writing final scope tree (in CSV) to " << fnm);
+    string fpath = args.dbDir + "/" + fnm;
+    const char* osnm = (fnm == "-") ? NULL : fpath.c_str();
+    std::ostream* os = IOUtil::OpenOStream(osnm);
+    driver.CSV_Dump(scopes.GetRoot(), *os);
+    IOUtil::CloseStream(os);
+  } 
 
-    if ( args.XML_ToStdout ) {
-      cerr << "The final scope tree (in XML) will appear on stdout" << endl; 
-      driver.XML_Dump(scopes.Root(), dumpFlags);
-    } else {
-      String dmpFile = args.htmlDir + "/" + args.XML_Dump_File;
-      
-      cerr << "The final scope tree (in XML) will be written to "
-	   << dmpFile << endl;
-      std::ofstream XML_outFile(dmpFile);
-      if ( !XML_outFile ) {
-	cerr << "Output file open failed; skipping write of final scope tree."
-             << endl;
-      }
-      driver.XML_Dump(scopes.Root(), dumpFlags, XML_outFile);
-    }
+  if (!args.OutFilename_TSV.empty()) {
+    const string& fnm = args.OutFilename_TSV;
+    DIAG_Msg(1, "Writing final scope tree (in TSV) to " << fnm);
+    string fpath = args.dbDir + "/" + fnm;
+    const char* osnm = (fnm == "-") ? NULL : fpath.c_str();
+    std::ostream* os = IOUtil::OpenOStream(osnm);
+    driver.TSV_Dump(scopes.GetRoot(), *os);
+    IOUtil::CloseStream(os);
   }
   
+  if (args.OutFilename_XML != "no") {
+    int flg = (args.XML_DumpAllMetrics) ? 0 : PgmScopeTree::DUMP_LEAF_METRICS;
+
+    const string& fnm = args.OutFilename_XML;
+    DIAG_Msg(1, "Writing final scope tree (in XML) to " << fnm);
+    string fpath = args.dbDir + "/" + fnm;
+    const char* osnm = (fnm == "-") ? NULL : fpath.c_str();
+    std::ostream* os = IOUtil::OpenOStream(osnm);
+    driver.XML_Dump(scopes.GetRoot(), flg, *os);
+    IOUtil::CloseStream(os);
+  }
+
+  //-------------------------------------------------------
+  // Cleanup
+  //-------------------------------------------------------
   ClearPerfDataSrcTable(); 
-  FiniXML();
   
   return 0; 
 } 
+
 
 //****************************************************************************
 
 static void 
 InitXML() 
 {
-  IFTRACE << "Initializing XML: ..." << endl; 
+  DIAG_Msg(3, "Initializing XML: ...");
   try {
     XMLPlatformUtils::Initialize();
   } 
-  catch (const XMLException& toCatch) {
-    cerr << "hpcview fatal error: unable to initialize XML processor." << endl 
-	 << "\t" << XMLString::transcode(toCatch.getMessage()) << endl;
+  catch (const XMLException& x) {
+    DIAG_EMsg("Unable to initialize XML processor: " 
+	      << XMLString::transcode(x.getMessage()));
     exit(1); 
   }
-  IFTRACE << endl; 
 }
+
 
 static void
 FiniXML()
 {
-  IFTRACE << "Finalizing XML: ..." << endl; 
+  DIAG_Msg(3, "Finalizing XML: ...");
   XMLPlatformUtils::Terminate();
-  IFTRACE << endl; 
 }
 
-#define MAX_IO_SIZE (64 * 1024)
 
 static void 
 AppendContents(std::ofstream &dest, const char *srcFile)
 {
+#define MAX_IO_SIZE (64 * 1024)
+
   std::ifstream src(srcFile);
   if (src.fail()) {
-    String error = String("Unable to open ") + srcFile + " for reading.";
+    string error = string("Unable to open ") + srcFile + " for reading.";
     throw FileException(error);
   }
 
@@ -374,18 +331,19 @@ AppendContents(std::ofstream &dest, const char *srcFile)
   src.close();
 }
 
-static String
-BuildConfFile(const char* hpcHome, const char* confFile) 
+
+static string
+BuildConfFile(const string& hpcHome, const string& confFile) 
 {
-  String tmpFile = TmpFileName(); 
-  String hpcloc = String(hpcHome);
-  if (hpcloc[hpcloc.Length()-1] != '/') {
+  string tmpFile = TmpFileName(); 
+  string hpcloc = hpcHome;
+  if (hpcloc[hpcloc.length()-1] != '/') {
     hpcloc += "/";
   }
-  std::ofstream tmp(tmpFile, std::ios_base::out);
+  std::ofstream tmp(tmpFile.c_str(), std::ios_base::out);
 
   if (tmp.fail()) {
-    String error = String("Unable to open temporary file ") + tmpFile + 
+    string error = "Unable to open temporary file " + tmpFile + 
       " for writing.";
     throw FileException(error);
   }
@@ -398,7 +356,7 @@ BuildConfFile(const char* hpcHome, const char* confFile)
   //std::cout << "TMP DTD file: '" << tmpFile << "'" << std::endl;
   //std::cout << "  " << hpcloc << std::endl;
 
-  AppendContents(tmp,confFile);
+  AppendContents(tmp, confFile.c_str());
   tmp.close();
   return tmpFile; 
 }
@@ -406,14 +364,15 @@ BuildConfFile(const char* hpcHome, const char* confFile)
 //****************************************************************************
 
 static int
-MatchFileWithPath(const char* filenm, const PathTupleVec& pathVec);
+MatchFileWithPath(const string& filenm, const PathTupleVec& pathVec);
+
 
 // 'CopySourceFiles': For every file F in 'pgmScopeTree' that can be
 // reached with paths in 'pathVec', copy F to its appropriate
 // viewname path and update F's path to be relative to this location.
 static bool
 CopySourceFiles(PgmScope* pgmScopeTree, const PathTupleVec& pathVec,
-		const char* dstDir)
+		const string& dstDir)
 {
   bool noError = true;
 
@@ -421,52 +380,53 @@ CopySourceFiles(PgmScope* pgmScopeTree, const PathTupleVec& pathVec,
   ScopeInfoIterator it(pgmScopeTree, &ScopeTypeFilter[ScopeInfo::FILE]); 
   for (; it.Current(); /* */) {
     FileScope* file = dynamic_cast<FileScope*>(it.Current());
-    BriefAssertion(file != NULL);
+    DIAG_Assert(file != NULL, "");
     it++; // advance iterator -- it is pointing at 'file'
     
     // Note: 'fileOrig' will be not be absolute if it is not possible to find
     // the file on the current filesystem. (cf. NodeRetriever::MoveToFile)
-    String fileOrig(file->Name());
-    if (fileOrig[(unsigned int)0] == '/') { 
+    string fileOrig = file->name();
+    if (fileOrig[0] == '/') {
       int indx = MatchFileWithPath(fileOrig, pathVec);
       if (indx >= 0) {
-	const String& path     = pathVec[indx].first;
-	const String& viewname = pathVec[indx].second;
+	const string& path     = pathVec[indx].first;
+	const string& viewname = pathVec[indx].second;
 	
 	// find the absolute form of 'path'
-	String realpath(path);
-	if (is_recursive_path(realpath)) {
-	  realpath[realpath.Length()-RECURSIVE_PATH_SUFFIX_LN] = '\0';
+	string realpath(path);
+	if (is_recursive_path(realpath.c_str())) {
+	  realpath[realpath.length()-RECURSIVE_PATH_SUFFIX_LN] = '\0';
 	}
-	realpath = RealPath(realpath); 
+	realpath = RealPath(realpath.c_str()); 
 	
 	// 'realpath' must be a prefix of 'fileOrig'; find left-over portion
-	char* pathSuffx = const_cast<char*>((const char*)fileOrig);
-	pathSuffx = &pathSuffx[strlen(realpath)];
+	char* pathSuffx = const_cast<char*>(fileOrig.c_str());
+	pathSuffx = &pathSuffx[realpath.length()];
 	while (pathSuffx[0] != '/') { --pathSuffx; } // should start with '/'
 	
 	// Create new file name and copy commands
-	String newSIFileNm = "./" + viewname + pathSuffx;
-	String toFile ;
+	string newSIFileNm = "./" + viewname + pathSuffx;
+	string toFile;
 	if (dstDir[0]  != '/') {
-	  toFile = String("./");
+	  toFile = "./";
 	}
 	toFile = toFile + dstDir + "/" + viewname + pathSuffx;
-	String toDir(toFile); // need to strip off ending filename to 
+	string toDir(toFile); // need to strip off ending filename to 
 	unsigned int end;     // get full path for 'toFile'
-	for (end = toDir.Length() - 1; toDir[end] != '/'; end--) { }
+	for (end = toDir.length() - 1; toDir[end] != '/'; end--) { }
 	toDir[end] = '\0'; // should not end with '/'
 	
-	String cmdMkdir = "mkdir -p " + toDir;
-	String cmdCp    = "cp -f " + fileOrig + " " + toFile;
+	string cmdMkdir = "mkdir -p " + toDir;
+	string cmdCp    = "cp -f " + fileOrig + " " + toFile;
 	//cerr << cmdCp << endl;
 	
 	// could use CopyFile; see StaticFiles::Copy
-	if (system(cmdMkdir) == 0 && system(cmdCp) == 0) {
-	  cerr << "  " << toFile << endl;
+	if (system(cmdMkdir.c_str()) == 0 && system(cmdCp.c_str()) == 0) {
+	  DIAG_Msg(1, "  " << toFile);
 	  file->SetName(newSIFileNm);
-	} else {
-	  cerr << "ERROR copying: '" << toFile << "'\n";
+	} 
+	else {
+	  DIAG_EMsg("copying: '" << toFile);
 	}
       }
     } 
@@ -475,11 +435,12 @@ CopySourceFiles(PgmScope* pgmScopeTree, const PathTupleVec& pathVec,
   return noError;
 }
 
+
 // 'MatchFileWithPath': use 'pathfind_r' to determine which path in
 // 'pathVec', if any, reaches 'filenm'.  If a match is found, returns
 // an index in pathVec; otherwise returns a negative.
 static int
-MatchFileWithPath(const char* filenm, const PathTupleVec& pathVec)
+MatchFileWithPath(const string& filenm, const PathTupleVec& pathVec)
 {
   // Find the index to the path that reaches 'filenm'.
   // It is possible that more than one path could reach the same
@@ -491,28 +452,29 @@ MatchFileWithPath(const char* filenm, const PathTupleVec& pathVec)
   int foundPathLn = 0; // length of the path represented by 'foundIndex'
   for (unsigned int i = 0; i < pathVec.size(); i++) {
     // find the absolute form of 'curPath'
-    const char* curPath = pathVec[i].first;
-    String realPath(curPath);
-    if (is_recursive_path(curPath)) {
-      realPath[realPath.Length()-RECURSIVE_PATH_SUFFIX_LN] = '\0';
+    const string& curPath = pathVec[i].first;
+    string realPath(curPath);
+    if (is_recursive_path(curPath.c_str())) {
+      realPath[realPath.length()-RECURSIVE_PATH_SUFFIX_LN] = '\0';
     }
-    realPath = RealPath(realPath);
-    int realPathLn = realPath.Length();
+    realPath = RealPath(realPath.c_str());
+    int realPathLn = realPath.length();
        
     // 'filenm' should be relative as input for pathfind_r.  If 'filenm'
     // is absolute and 'realPath' is a prefix, make it relative. 
-    String tmpFile(filenm);
-    char* curFile = const_cast<char*>((const char*)tmpFile);
+    string tmpFile(filenm);
+    char* curFile = const_cast<char*>(tmpFile.c_str());
     if (filenm[0] == '/') { // is 'filenm' absolute?
-      if (strncmp(curFile, realPath, realPathLn) == 0) {
+      if (strncmp(curFile, realPath.c_str(), realPathLn) == 0) {
 	curFile = &curFile[realPathLn];
 	while (curFile[0] == '/') { ++curFile; } // should not start with '/'
-      } else {
+      } 
+      else {
 	continue; // pathfind_r can't posibly find anything
       }
     }
     
-    char* result = pathfind_r(curPath, curFile, "r");
+    const char* result = pathfind_r(curPath.c_str(), curFile, "r");
     if (result) {
       bool update = false;
       if (foundIndex < 0) {

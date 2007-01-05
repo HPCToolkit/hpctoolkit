@@ -50,7 +50,9 @@ using namespace std; // For compatibility with non-std C headers
 #include "HTMLSrcFiles.hpp"
 #include "HTMLDriver.hpp"
 #include "HTMLFile.hpp"
-#include "ScopesInfo.hpp"
+
+#include <lib/prof-juicy/PgmScopeTree.hpp>
+
 #include <lib/support/String.hpp>
 #include <lib/support/Assertion.h>
 #include <lib/support/Trace.hpp>
@@ -88,8 +90,8 @@ static void ReformatSrc(HTMLFile &hf, const char* lineBuf,
 			CodeInfoList* list); 
 static String BuildContLineHead();
 
-HTMLSrcFiles::HTMLSrcFiles(const ScopesInfo &scpes, const Args &pgmArgs, 
-			   const ScopeInfoFilter &entryFilter, 
+HTMLSrcFiles::HTMLSrcFiles(const PgmScopeTree& scpes, const Args& pgmArgs, 
+			   const ScopeInfoFilter& entryFilter, 
 			   bool lOnly) 
   : filter(entryFilter), leavesOnly(lOnly), scopes(scpes), programArgs(pgmArgs)
 {
@@ -111,7 +113,7 @@ HTMLSrcFiles::WriteSourceLabel(const char* dir,
   String pgmName = "";  
   String name = "";  
   if (file) {
-    pgmName = file->Name(); 
+    pgmName = file->Name().c_str(); 
     name = HTMLDriver::UniqueName(file, NO_PERF_INDEX, NO_FLATTEN_DEPTH); 
   }
   
@@ -119,7 +121,7 @@ HTMLSrcFiles::WriteSourceLabel(const char* dir,
   hf.SetFgColor(fgColor); 
   hf.SetBgColor(bgColor);
   hf.StartBodyOrFrameset(); 
-  if (file && (file->Name().Length() > 0)) { 
+  if (file && (file->Name().length() > 0)) { 
     hf << "<pre> SOURCE FILE: " << pgmName << "</pre>" << endl; 
   } else {
     hf << "<pre> FILE SYNOPSIS: " << pgmName << "</pre>" << endl; 
@@ -133,7 +135,7 @@ HTMLSrcFiles::WriteLabels(const char* dir,
   WriteSourceLabel(dir, NULL, fgColor, bgColor); 
 
   // for each FILE write a label file 
-  ScopeInfoIterator it(scopes.Root(), &ScopeTypeFilter[ScopeInfo::FILE]); 
+  ScopeInfoIterator it(scopes.GetRoot(), &ScopeTypeFilter[ScopeInfo::FILE]);
   for (; it.Current(); it++) {
      const FileScope *fi = dynamic_cast<FileScope*>(it.Current()); 
      BriefAssertion(fi != NULL); 
@@ -145,7 +147,7 @@ void
 HTMLSrcFiles::WriteSrcFiles(const char* dir) const 
 {
    // for each FILE write a label file 
-  ScopeInfoIterator it(scopes.Root(), &ScopeTypeFilter[ScopeInfo::FILE]); 
+  ScopeInfoIterator it(scopes.GetRoot(), &ScopeTypeFilter[ScopeInfo::FILE]);
   for (; it.Current(); it++) {
      WriteSrcFile(dir, *dynamic_cast<FileScope*>(it.Current())); 
   } 
@@ -196,12 +198,12 @@ static ScopeInfoFilter UseForSrcCode(UseForSrc, "SrcCodeEntryFilter", 0);
 void
 HTMLSrcFiles::WriteSrc(HTMLFile &hf, FileScope &file) const
 {
-  FILE *srcFile = fopen(file.Name(), "r");
+  FILE *srcFile = fopen(file.Name().c_str(), "r");
   BriefAssertion(srcFile); 
   IFTRACE << "WRITESRC: file name=" << file.Name() << endl;
 
   // go through leaves in LineOrder and generate source lines 
-  LineSortedIteratorForLargeScopes it(&file, 
+  ScopeInfoLineSortedIteratorForLargeScopes it(&file, 
 				  &(UseForSrcCode), 0); // leaves,loops,procs
   CodeInfoLine *cil = it.Current(); 
   unsigned int curLine = 1; 
@@ -250,7 +252,8 @@ HTMLSrcFiles::GenerateSrc(HTMLFile &hf, FileScope &file) const
 
   // go through leaves in LineOrder and generate source lines 
   unsigned int lastLine = 0; 
-  LineSortedChildIterator it(&file, &ScopeTypeFilter[ScopeInfo::PROC]);
+  ScopeInfoLineSortedChildIterator it(&file, 
+				      &ScopeTypeFilter[ScopeInfo::PROC]);
   for (; it.Current(); it++) {
     GenSrc(hf, *it.CurCode(), 0, lastLine); 
   }
@@ -264,8 +267,8 @@ HTMLSrcFiles::GenSrc(HTMLFile &hf, CodeInfo &ci, unsigned int level,
   ReformatSrc(hf, "\n", UNDEF_LINE, NULL); 
   
   String line = String((char)' ', (unsigned int)(level * 3)); 
-  line += ci.Name() + "(...) "; 
-  if (ci.BegLine() == ci.EndLine()) {
+  line += ci.Name().c_str() + String("(...) "); 
+  if (ci.begLine() == ci.endLine()) {
     line += "{ ... }\n"; 
   } else {
     line += "{\n"; 
@@ -275,16 +278,16 @@ HTMLSrcFiles::GenSrc(HTMLFile &hf, CodeInfo &ci, unsigned int level,
   CodeInfoList lst; 
   lst[0] = &cil; 
   lst[1] = NULL; 
-  ReformatSrc(hf, line, ci.BegLine(), &lst); 
+  ReformatSrc(hf, line, ci.begLine(), &lst); 
 
-  if (ci.BegLine() != ci.EndLine()) {
+  if (ci.begLine() != ci.endLine()) {
   
     line = String((char)' ', (unsigned int)(level * 3)) + "..." + "\n"; 
     ReformatSrc(hf, line, UNDEF_LINE, NULL); 
   
     line = String((char)' ', (unsigned int)(level * 3)) + "} /* end " 
-      + ci.Name() + " */\n"; 
-    ReformatSrc(hf, line, ci.EndLine(), NULL); 
+      + String(ci.Name().c_str()) + " */\n"; 
+    ReformatSrc(hf, line, ci.endLine(), NULL); 
   }
   line = String((char)' ', (unsigned int)(level * 3)) + "\n"; 
   ReformatSrc(hf, line, UNDEF_LINE, NULL); 
@@ -346,7 +349,7 @@ WriteLineNumber(HTMLFile &hf, suint curLine, CodeInfoList *list)
 		|| aci->Type() == ScopeInfo::PROC) 
             { 
                if (list->Element(i)->IsEndLine()) {
-                  if (aci->GetLast()->EndLine() == aci->EndLine())
+                  if (aci->GetLast()->endLine() == aci->endLine())
                     anchor = HTMLDriver::UniqueName( aci->GetLast(),
                              NO_PERF_INDEX, NO_FLATTEN_DEPTH) + "X" +
                              HTMLDriver::UniqueNameForSelf(aci);
@@ -355,7 +358,7 @@ WriteLineNumber(HTMLFile &hf, suint curLine, CodeInfoList *list)
                              NO_PERF_INDEX, NO_FLATTEN_DEPTH);
                   anchor += "e";
                } else {
-                  if (aci->GetFirst()->BegLine() == aci->BegLine())
+                  if (aci->GetFirst()->begLine() == aci->begLine())
                     anchor = HTMLDriver::UniqueName( aci->GetFirst(),
                              NO_PERF_INDEX, NO_FLATTEN_DEPTH) + "X" +
                              HTMLDriver::UniqueNameForSelf(aci);
@@ -365,7 +368,7 @@ WriteLineNumber(HTMLFile &hf, suint curLine, CodeInfoList *list)
                   anchor += "s";
                }
             }
-            if (aci->Type() == ScopeInfo::LINE) 
+            if (aci->Type() == ScopeInfo::STMT_RANGE) 
             { 
                anchor = HTMLDriver::UniqueName( aci,
                              NO_PERF_INDEX, NO_FLATTEN_DEPTH);

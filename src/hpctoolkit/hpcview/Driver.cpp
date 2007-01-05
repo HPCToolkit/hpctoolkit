@@ -1,5 +1,6 @@
 // -*-Mode: C++;-*-
 // $Id$
+
 // * BeginRiceCopyright *****************************************************
 // 
 // Copyright ((c)) 2002, Rice University 
@@ -37,24 +38,40 @@
 //************************ System Include Files ******************************
 
 #include <iostream>
+using std::hex;
+using std::dec;
+using std::endl;
+
+#include <string>
+using std::string;
+
+#include <map>
+using std::map;
+
+#include <vector>
+using std::vector;
 
 //************************* User Include Files *******************************
-
 
 #include "Driver.hpp" 
 #include "HPCViewSAX2.hpp"
 #include "HPCViewXMLErrHandler.hpp"
-#include "ScopesInfo.hpp"
+#include "NodeRetriever.hpp"
+#include "NodeRetriever.hpp"
 
+#include <lib/prof-juicy/PgmScopeTree.hpp>
+#include <lib/prof-juicy/FlatProfileReader.hpp>
+
+#include <lib/binutils/LM.hpp>
+
+#include <lib/support/diagnostics.h>
 #include <lib/support/Assertion.h>
-#include <lib/support/pathfind.h>
 #include <lib/support/Trace.hpp>
+#include <lib/support/StrUtil.hpp>
+#include <lib/support/pathfind.h>
 
 //************************ Forward Declarations ******************************
 
-using std::cout;
-using std::cerr;
-using std::endl;
 
 //****************************************************************************
 
@@ -66,16 +83,17 @@ Driver::Driver(int deleteUnderscores, bool _cpySrcFiles)
   cpySrcFiles = _cpySrcFiles;
 } 
 
-Driver::~Driver() 
+
+Driver::~Driver()
 {
-  IFTRACE << "~Driver " << endl; // << ToString() << endl; 
 } 
+
 
 void
 Driver::AddPath(const char* _path, const char* _viewname)
 {
-  path += String(":") + _path;
-  pathVec.push_back( PathTuple(String(_path), String(_viewname)) );
+  path += string(":") + _path;
+  pathVec.push_back( PathTuple(string(_path), string(_viewname)) );
 }
 
 
@@ -92,37 +110,39 @@ Driver::AddReplacePath(const char* inPath, const char* outPath)
   // path, too because when is time to replace we don't know if we
   // added one or not to the IN path.
   if (strlen(inPath)>0 && inPath[strlen(inPath)-1] != '/') {
-    replaceInPath.push_back(String(inPath) + String('/') );
-    replaceOutPath.push_back(String(outPath) + String('/') );
+    replaceInPath.push_back(string(inPath) + '/');
+    replaceOutPath.push_back(string(outPath) + '/');
   }
   else {
-    replaceInPath.push_back(String(inPath));
-    replaceOutPath.push_back(String(outPath)); 
+    replaceInPath.push_back(string(inPath));
+    replaceOutPath.push_back(string(outPath)); 
   }
-  IFTRACE << "AddReplacePath: " << inPath << " -to- " << outPath << endl; 
+  DIAG_Msg(3, "AddReplacePath: " << inPath << " -to- " << outPath);
 }
+
 
 /* Test the specified path against each of the paths in the database. 
  * Replace with the pair of the first matching path.
  */
-String 
+string 
 Driver::ReplacePath(const char* oldpath)
 {
   BriefAssertion( replaceInPath.size() == replaceOutPath.size() );
   for( unsigned int i=0 ; i<replaceInPath.size() ; i++ ) {
-    unsigned int length = replaceInPath[i].Length();
+    unsigned int length = replaceInPath[i].length();
     // it makes sense to test for matching only if 'oldpath' is strictly longer
     // than this replacement inPath.
     if (strlen(oldpath) > length &&  
-	strncmp(oldpath, replaceInPath[i], length) == 0 ) { // it's a match
-      String s = replaceOutPath[i] + &oldpath[length];
-      IFTRACE << "ReplacePath: Found a match! New path: " << s << endl;
+	strncmp(oldpath, replaceInPath[i].c_str(), length) == 0 ) { 
+      // it's a match
+      string s = replaceOutPath[i] + &oldpath[length];
+      DIAG_Msg(3, "ReplacePath: Found a match! New path: " << s);
       return s;
     }
   }
   // If nothing matched, return the original path
-  IFTRACE << "ReplacePath: Nothing matched! Init path: " << oldpath << endl;
-  return String(oldpath);
+  DIAG_Msg(3, "ReplacePath: Nothing matched! Init path: " << oldpath);
+  return string(oldpath);
 }
 
 
@@ -132,17 +152,18 @@ Driver::MustDeleteUnderscore()
   return (deleteTrailingUnderscores > 0);
 }
 
+
 void
 Driver::Add(PerfMetric *m) 
 {
   dataSrc.push_back(m); 
-  IFTRACE << "Add:: dataSrc[" << dataSrc.size()-1 << "]=" 
-	  << m->ToString() << endl; 
+  DIAG_Msg(3, "Add:: dataSrc[" << dataSrc.size()-1 << "]=" << m->ToString());
 } 
 
-String
+
+string
 Driver::ToString() const {
-  String s =  String("Driver: " ) + "title=" + title + " " + 
+  string s =  string("Driver: " ) + "title=" + title + " " + 
     "path=" + path; 
   s += "\ndataSrc::\n"; 
   for (unsigned int i =0; i < dataSrc.size(); i++) {
@@ -151,10 +172,11 @@ Driver::ToString() const {
   return s; 
 } 
 
+
 void
-Driver::MakePerfData(ScopesInfo &scopes) 
+Driver::ScopeTreeInitialize(PgmScopeTree& scopes) 
 {
-  NodeRetriever ret(scopes.Root(), path);
+  NodeRetriever ret(scopes.GetRoot(), path);
   
   //-------------------------------------------------------
   // if a PGM/Structure document has been provided, use it to 
@@ -171,70 +193,213 @@ Driver::MakePerfData(ScopesInfo &scopes)
   if (NumberOfGroupFiles() > 0) {
     ProcessPGMFile(&ret, PGMDocHandler::Doc_GROUP, &groupFiles);
   }
+}
+
+
+void
+Driver::ScopeTreeComputeMetrics(PgmScopeTree& scopes) 
+{
+  // -------------------------------------------------------
+  // Create metrics, file and computed metrics. 
+  //
+  // (File metrics are read from PROFILE/HPCRUN files and will update
+  // the scope tree with any new information; computed metrics are
+  // expressions of file metrics).
+  // -------------------------------------------------------
+  try {
+    ScopeTreeComputeHPCRUNMetrics(scopes);
+    ScopeTreeComputeOtherMetrics(scopes);
+  } 
+  catch (const MetricException &x) {
+    DIAG_EMsg(x.message());
+    throw;
+  }
+  catch (...) {
+    throw;
+  }
+}
+
+
+void
+Driver::ScopeTreeComputeHPCRUNMetrics(PgmScopeTree& scopes) 
+{
+  typedef std::map<string, MetricList_t> StringToMetricListMap_t;
+  StringToMetricListMap_t fileToMetricMap;
+  
+  // create HPCRUN file metrics.  Process all metrics associated with
+  // a certain file.
+  
+  NodeRetriever ret(scopes.GetRoot(), path);
+  for (unsigned int i = 0; i < dataSrc.size(); i++) {
+    PerfMetric* m = dataSrc[i];
+    if (IsHPCRUNFilePerfMetric(m)) {
+      FilePerfMetric* fm = dynamic_cast<FilePerfMetric*>(m);
+      fileToMetricMap[fm->FileName()].push_back(fm);
+    }
+  }
+  
+  for (StringToMetricListMap_t::iterator it = fileToMetricMap.begin();
+       it != fileToMetricMap.end(); ++it) {
+    const string& fnm = it->first;
+    const MetricList_t& metrics = it->second;
+    ScopeTreeInsertHPCRUNData(scopes, fnm, metrics);
+  }
+}
+
+
+void
+Driver::ScopeTreeComputeOtherMetrics(PgmScopeTree& scopes) 
+{
+  // create PROFILE file and computed metrics
+  NodeRetriever ret(scopes.GetRoot(), path);
+  
+  for (unsigned int i = 0; i < dataSrc.size(); i++) {
+    PerfMetric* m = dataSrc[i];
+    if (!IsHPCRUNFilePerfMetric(m)) {
+      m->Make(ret);
+    }
+  } 
+}
+
+
+void
+Driver::ScopeTreeInsertHPCRUNData(PgmScopeTree& scopes,
+			  const string& profFilenm,
+			  const MetricList_t& metricList)
+{
+  PgmScope* pgm = scopes.GetRoot();
+  NodeRetriever nodeRet(pgm, path);
+  
+  vector<PerfMetric*> eventToPerfMetricMap;
+
+  //-------------------------------------------------------
+  // Read the profile and insert the data
+  //-------------------------------------------------------
+  ProfFile prof;
+  int ret = prof.read(profFilenm);
+  DIAG_Assert(ret == 0, "While reading profile '" << profFilenm << "'");
+  
+  for (unsigned int i = 0; i < prof.num_load_modules(); ++i) {
+    const ProfFileLM& proflm = prof.load_module(i);
+    const std::string& lmname = proflm.name();
+    LoadModScope* lmScope = nodeRet.MoveToLoadMod(lmname);
+    
+    binutils::LM lm;
+    if (!lm.Open(lmname.c_str())) {
+      exit(1); // Error already printed
+    }
+    
+    //-------------------------------------------------------
+    // For each metric, insert performance data into scope tree
+    //-------------------------------------------------------
+    for (MetricList_t::const_iterator it = metricList.begin(); 
+	 it != metricList.end(); ++it) {
+      FilePerfMetric* m = *it;
+      unsigned mIdx = (unsigned)StrUtil::toUInt64(m->NativeName());
+      
+      const ProfFileEvent& profevent = proflm.event(mIdx);
+      uint64_t period = profevent.period();
+      
+      for (unsigned int k = 0; k < profevent.num_data(); ++k) {
+	const ProfFileEventDatum& dat = profevent.datum(k);
+	VMA vma = dat.first; // relocated VMA
+	uint32_t samples = dat.second;
+	double events = samples * period; // samples * (events/sample)
+	
+	// 1. Unrelocate vma.
+	VMA ur_vma = vma;
+	if (lm.GetType() == binutils::LM::SharedLibrary 
+	    && vma > proflm.load_addr()) {
+	  ur_vma = vma - proflm.load_addr();
+	}
+	
+	// 2. Find associated scope and insert into scope tree
+	ScopeInfo* scope = lmScope->findByVMA(ur_vma);
+	if (!scope) {
+	  DIAG_DevMsg(3, "Can't find non-LM scope for " << lmname << ":0x" 
+		      << hex << ur_vma << dec);
+	  scope = lmScope;
+	}
+	
+	double perfdata = events;
+	scope->SetPerfData(m->Index(), perfdata); // implicit add!
+	DIAG_DevMsg(6, "Metric associate: 0x" << hex << ur_vma << dec 
+		    << " --> +" << perfdata << "=" 
+		    << scope->PerfData(m->Index()) << " :: " 
+		    << scope->toXML());
+      }
+    }
+  }
+  
+
+  DIAG_If(4) {
+    DIAG_Msg(4, "Initial scope tree, before aggregation:");
+    XML_Dump(pgm, 0, std::cerr);
+  }
   
   //-------------------------------------------------------
-  // Create metrics, file and computed. (File metrics are read from
-  // PROFILE files and will update the scope tree with any new
-  // information; computed metrics are expressions of file metrics).
+  // Accumulate metrics
   //-------------------------------------------------------
-  for (unsigned int i = 0; i < dataSrc.size(); i++) {
-    try {
-      dataSrc[i]->Make(ret);
-    } 
-    catch (const MetricException &mex) {
-      cerr << "hpcview fatal error: Could not construct METRIC '" 
-	   << dataSrc[i]->Name() << "'." << endl
-	   << "\t" << mex.error << endl;
-      exit(1);
-    } 
-  } 
+  for (MetricList_t::const_iterator it = metricList.begin(); 
+       it != metricList.end(); ++it) {
+    FilePerfMetric* m = *it;
+    AccumulateMetricsFromChildren(pgm, m->Index());
+  }
 }
 
 
 void
 Driver::ProcessPGMFile(NodeRetriever* nretriever, 
 		       PGMDocHandler::Doc_t docty, 
-		       std::vector<String*>* files)
+		       std::vector<string*>* files)
 {
   if (!files) {
     return;
   }
   
   for (unsigned int i = 0; i < files->size(); i++) {
-    String& pgmFileName = *((*files)[i]);
-    if (!pgmFileName.Empty()) {
-      String filePath = String(pathfind(".", pgmFileName, "r")); 
-      if (!filePath.Empty()) {
-	SAX2XMLReader* parser = XMLReaderFactory::createXMLReader();
-	
-	parser->setFeature(XMLUni::fgSAX2CoreValidation, true);
-	parser->setFeature(XMLUni::fgXercesDynamic, true);
-	parser->setFeature(XMLUni::fgXercesValidationErrorAsFatal, true);
-	
-	PGMDocHandler handler(docty, nretriever, this);
-	parser->setContentHandler(&handler);
-	parser->setErrorHandler(&handler);
-	
+    const string& fnm = *((*files)[i]);
+    if (!fnm.empty()) {
+      const char* pf = pathfind(".", fnm.c_str(), "r");
+      string fpath = (pf) ? pf : "";
+      if (!fpath.empty()) {
 	try {
-	  parser->parse(filePath);
+	  SAX2XMLReader* parser = XMLReaderFactory::createXMLReader();
+	
+	  parser->setFeature(XMLUni::fgSAX2CoreValidation, true);
+	  parser->setFeature(XMLUni::fgXercesDynamic, true);
+	  parser->setFeature(XMLUni::fgXercesValidationErrorAsFatal, true);
+	  
+	  PGMDocHandler* handler = new PGMDocHandler(docty, nretriever, this);
+	  parser->setContentHandler(handler);
+	  parser->setErrorHandler(handler);
+	  
+	  parser->parse(fpath.c_str());
+
 	  if (parser->getErrorCount() > 0) {
-	    cerr << "hpcview fatal error: terminating because of previously reported " << PGMDocHandler::ToString(docty) << " file parse errors." << endl;
+	    DIAG_EMsg("terminating because of previously reported " << PGMDocHandler::ToString(docty) << " file parse errors.");
 	    exit(1);
 	  }
+	  delete handler;
+	  delete parser;
 	}
-	catch (const SAXException& toCatch) {
-	  cerr << "hpcview fatal error: terminating because of previously reported " << PGMDocHandler::ToString(docty) << " file parse errors." << endl;
+	catch (const SAXException& x) {
+	  DIAG_EMsg("parsing '" << fpath << "'");
 	  exit(1);
 	}
-	catch (const PGMException& toCatch) {
-	  cerr << "ERROR: '" << filePath << "': " << toCatch.message() << endl;
+	catch (const PGMException& x) {
+	  DIAG_EMsg("reading '" << fpath << "'");
+	  x.report(std::cerr);
 	  exit(1);
 	}
+	catch (...) {
+	  DIAG_EMsg("While processing '" << fpath << "'...");
+	  throw;
+	};
       } 
       else {
-	cerr << "hpcview fatal error: could not open " 
-	     << PGMDocHandler::ToString(docty) << " file '" 
-	     << pgmFileName << "'." << endl;
+	DIAG_EMsg("Could not open " << PGMDocHandler::ToString(docty) 
+		  << " file '" << fnm << "'.");
 	exit(1);
       }
     }
@@ -249,12 +414,13 @@ Driver::XML_Dump(PgmScope* pgm, std::ostream &os, const char *pre) const
   XML_Dump(pgm, dumpFlags, os, pre);
 }
 
+
 void
 Driver::XML_Dump(PgmScope* pgm, int dumpFlags, std::ostream &os,
 		 const char *pre) const
 {
-  String pre1 = String(pre) + "  ";
-  String pre2 = String(pre1) + "  ";
+  string pre1 = string(pre) + "  ";
+  string pre2 = string(pre1) + "  ";
   
   os << pre << "<HPCVIEWER>" << endl;
 
@@ -265,7 +431,7 @@ Driver::XML_Dump(PgmScope* pgm, int dumpFlags, std::ostream &os,
 
   const PathTupleVec& pVec = PathVec();
   for (unsigned int i = 0; i < pVec.size(); i++) {
-    const char* pathStr = pVec[i].first;
+    const string& pathStr = pVec[i].first;
     os << pre1 << "<PATH name=\042" << pathStr << "\042/>" << endl;
   }
   
@@ -287,11 +453,12 @@ Driver::XML_Dump(PgmScope* pgm, int dumpFlags, std::ostream &os,
   
   // Dump SCOPETREE
   os << pre << "<SCOPETREE>" << endl;
-  pgm->XML_Dump(os, dumpFlags, pre);
+  pgm->XML_DumpLineSorted(os, dumpFlags, pre);
   os << pre << "</SCOPETREE>" << endl;
 
   os << pre << "</HPCVIEWER>" << endl;
 }
+
 
 void
 Driver::CSV_Dump(PgmScope* pgm, std::ostream &os) const
@@ -308,6 +475,7 @@ Driver::CSV_Dump(PgmScope* pgm, std::ostream &os) const
   // Dump SCOPETREE
   pgm->CSV_TreeDump(os);
 }
+
 
 void
 Driver::TSV_Dump(PgmScope* pgm, std::ostream &os) const

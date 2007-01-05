@@ -1,5 +1,6 @@
-// $Id$
 // -*-C++-*-
+// $Id$
+
 // * BeginRiceCopyright *****************************************************
 // 
 // Copyright ((c)) 2002, Rice University 
@@ -51,6 +52,9 @@
 
 #include <fstream>
 
+#include <string>
+using std::string;
+
 //*************************** User Include Files ****************************
 
 #include "xml.hpp"
@@ -60,42 +64,46 @@
 
 using namespace xml;
 
-const String xml::SPC   = " ";   // space
-const String xml::eleB  = "<";   // element begin, initial
-const String xml::eleBf = "</";  // element begin, final
-const String xml::eleE  = ">";   // element end, normal
-const String xml::eleEc = "/>";  // element end, compact: <.../>
-const String xml::attB  = "=\""; // attribute value begin
-const String xml::attE  = "\"";  // attribute value end
+const string xml::SPC   = " ";   // space
+const string xml::eleB  = "<";   // element begin, initial
+const string xml::eleBf = "</";  // element begin, final
+const string xml::eleE  = ">";   // element end, normal
+const string xml::eleEc = "/>";  // element end, compact: <.../>
+const string xml::attB  = "=\""; // attribute value begin
+const string xml::attE  = "\"";  // attribute value end
 
 //****************************************************************************
 // Read
 //****************************************************************************
 
 // Reads from 'attB' to and including 'attE'. 
-bool xml::ReadAttrStr(std::istream& is, String& s, int flags)
+bool 
+xml::ReadAttrStr(std::istream& is, string& s, int flags)
 {
   bool STATE = true; // false indicates an error
   is >> std::ws;
-  STATE &= Skip(is, "=");  is >> std::ws;
-  STATE &= Skip(is, "\""); is >> std::ws;
-  s = Get(is, '"');
+  STATE &= IOUtil::Skip(is, "=");  is >> std::ws;
+  STATE &= IOUtil::Skip(is, "\""); is >> std::ws;
+  s = IOUtil::Get(is, '"');
   if (flags & UNESC_TRUE) { s = UnEscapeStr(s); }
-  STATE &= Skip(is, "\""); is >> std::ws;
+  STATE &= IOUtil::Skip(is, "\""); is >> std::ws;
   return STATE;
 }
+
 
 //****************************************************************************
 // Write
 //****************************************************************************
 
 // Writes attribute value, beginning with 'attB' and ending with 'attE'.
-bool xml::WriteAttrStr(std::ostream& os, const char* s, int flags)
+bool 
+xml::WriteAttrStr(std::ostream& os, const char* s, int flags)
 {
-  String str = ((flags & ESC_TRUE) ? EscapeStr(s) : String(s));
+  string str = ((flags & ESC_TRUE) ? EscapeStr(s) : s);
   os << attB << str << attE;
   return (!os.fail());
 }       
+
 
 //****************************************************************************
 // 
@@ -105,30 +113,36 @@ bool xml::WriteAttrStr(std::ostream& os, const char* s, int flags)
 // necessary characters (un)escaped; will not modify 'str'
 
 namespace xml {
-  String Substitute(const char* str, const String* fromStrs,
-		    const String* toStrs); 
+  string Substitute(const char* str, const string* fromStrs,
+		    const string* toStrs); 
 
   static const int numSubs = 4; // number of substitutes
-  static const String RegStrs[]  = {"<",    ">",    "&",     "\""}; 
-  static const String EscStrs[]  = {"&lt;", "&gt;", "&amp;", "&quot;"};
+  static const string RegStrs[]  = {"<",    ">",    "&",     "\""}; 
+  static const string EscStrs[]  = {"&lt;", "&gt;", "&amp;", "&quot;"};
 }
 
-String xml::EscapeStr(const char* str)
+
+string 
+xml::EscapeStr(const char* str)
 {
   return Substitute(str, RegStrs, EscStrs);
 }
+
 		      
-String xml::UnEscapeStr(const char* str)
+string 
+xml::UnEscapeStr(const char* str)
 {
   return Substitute(str, EscStrs, RegStrs);
 }
 
-String xml::Substitute(const char* str, const String* fromStrs,
-		       const String* toStrs)
-{
-  static String newStr = String("", 512);
 
-  String retStr = str;
+string 
+xml::Substitute(const char* str, const string* fromStrs,
+		       const string* toStrs)
+{
+  static string newStr = string("", 512);
+
+  string retStr = str;
   if (!str) { return retStr; }
 
   // Iterate over 'str' and substitute patterns
@@ -139,9 +153,9 @@ String xml::Substitute(const char* str, const String* fromStrs,
     // Attempt to find a pattern for substitution at this position
     int curSub = 0, curSubLn = 0;
     for (/*curSub = 0*/; curSub < numSubs; curSub++) {
-      curSubLn = fromStrs[curSub].Length();
+      curSubLn = fromStrs[curSub].length();
       if ((strLn-i >= curSubLn) &&
-	  (strncmp(str+i, fromStrs[curSub], curSubLn) == 0)) {
+	  (strncmp(str+i, fromStrs[curSub].c_str(), curSubLn) == 0)) {
 	break; // only one substitution possible per position
       }
     }
@@ -162,36 +176,3 @@ String xml::Substitute(const char* str, const String* fromStrs,
 //****************************************************************************
 // 
 //****************************************************************************
-
-String Get(std::istream& is, char end)
-{
-  static const int bufSz = 256;
-  static char buf[bufSz];
-  String str = "";
-  
-  while ( (!is.eof() && !is.fail()) && is.peek() != end) {
-    is.get(buf, bufSz, end);
-    str += buf;
-  }  
-
-  return str;
-}
-
-String GetLine(std::istream& is, char end)
-{
-  String str = Get(is, end);
-  char c; is.get(c);  // eat up 'end'
-  return str;
-}
-
-bool Skip(std::istream& is, const char* s)
-{
-  BriefAssertion(s);
-  char c;
-  for (int i = 0; s[i] != '\0'; i++) {
-    is.get(c);
-    if (c != s[i]) { return false; }
-  }
-  return true;
-}
-

@@ -55,17 +55,17 @@
 
 #include <iostream>
 #include <vector>
+#include <string>
 
 //*************************** User Include Files ****************************
 
 #include <include/general.h>
 
-#include <lib/ISA/ISATypes.hpp>
+#include <lib/isa/ISATypes.hpp>
 
-#include <lib/support/Assertion.h>
+#include <lib/support/diagnostics.h>
 #include <lib/support/NonUniformDegreeTree.hpp>
 #include <lib/support/Unique.hpp>
-#include <lib/support/String.hpp>
 
 //*************************** Forward Declarations ***************************
 
@@ -151,11 +151,11 @@ public:
     NUMBER_OF_TYPES
   };
   
-  static const char* NodeTypeToName(NodeType tp); 
+  static const string& NodeTypeToName(NodeType tp);
   static NodeType    IntToNodeType(long i);
 
 private:
-  static const char* NodeNames[NUMBER_OF_TYPES];
+  static const string NodeNames[NUMBER_OF_TYPES];
   
 public:
   CSProfNode(NodeType t, CSProfNode* _parent);
@@ -168,7 +168,7 @@ public:
   unsigned int GetUniqueId() const { return uid; }
 
   // 'GetName()' is overridden by some derived classes
-  virtual String GetName() const { return NodeTypeToName(GetType()); }
+  virtual const std::string& GetName() const { return NodeTypeToName(GetType()); }
   
   // --------------------------------------------------------
   // Tree navigation 
@@ -205,10 +205,10 @@ public:
   // --------------------------------------------------------
   // Dump contents for inspection
   // --------------------------------------------------------
-  virtual String ToDumpString(int dmpFlag = CSProfTree::XML_TRUE) const; 
-  virtual String ToDumpMetricsString(int dmpFlag) const; 
+  virtual std::string ToDumpString(int dmpFlag = CSProfTree::XML_TRUE) const; 
+  virtual std::string ToDumpMetricsString(int dmpFlag) const; 
 
-  virtual String Types(); // lists this instance's base and derived types 
+  virtual std::string Types(); // lists this instance's base and derived types 
   
   void DumpSelfBefore(std::ostream& os = std::cerr, 
 		      int dmpFlag = CSProfTree::XML_TRUE,
@@ -254,46 +254,47 @@ public:
   void SetLineRange(suint begLn, suint endLn); // be careful when using!
 
   // eraxxon: I made this stuff virtual in order to handle both
-  // CSProfCallSiteNode or CSProfStatementNode in the same way.
-  // FIXME: The abstractions need to be fixed! Classes have been
-  // duplicated with impunity.
-  virtual const char* GetFile() const 
-    { BriefAssertion(false); return NULL; }
+  // CSProfCallSiteNode/CSProfProcedureFrameNode or
+  // CSProfStatementNode in the same way.  FIXME: The abstractions
+  // need to be fixed! Classes have been duplicated with impunity.
+  virtual const std::string& GetFile() const
+    { DIAG_Die(DIAG_Unimplemented); return BOGUS; }
   virtual void SetFile(const char* fnm) 
-    { BriefAssertion(false);  }
+    { DIAG_Die(DIAG_Unimplemented); }
 
-  virtual const char* GetProc() const 
-    { BriefAssertion(false); return NULL; }
+  virtual const std::string& GetProc() const 
+    { DIAG_Die(DIAG_Unimplemented); return BOGUS; }
   virtual void SetProc(const char* pnm) 
-    { BriefAssertion(false); }
+    { DIAG_Die(DIAG_Unimplemented); }
 
   virtual void SetLine(suint ln) 
-    { BriefAssertion(false); } 
-
-  virtual Addr GetIP() const 
-    { BriefAssertion(false); return 0; }
+    { DIAG_Die(DIAG_Unimplemented); } 
+ 
+  virtual VMA GetIP() const 
+    { DIAG_Die(DIAG_Unimplemented); return 0; }
   virtual ushort GetOpIndex() const 
-    { BriefAssertion(false); return 0; }
+    { DIAG_Die(DIAG_Unimplemented); return 0; }
 
-  virtual void SetIP(Addr _ip, ushort _opIndex) 
-    { BriefAssertion(false); }
+  virtual void SetIP(VMA _ip, ushort _opIndex) 
+    { DIAG_Die(DIAG_Unimplemented); }
 
   virtual bool FileIsText() const
-    { BriefAssertion(false); return false; } 
+    { DIAG_Die(DIAG_Unimplemented); return false; }
   virtual void SetFileIsText(bool bi) 
-    { BriefAssertion(false); }
+    { DIAG_Die(DIAG_Unimplemented); }
   virtual bool GotSrcInfo() const
-    { BriefAssertion(false); return false; } 
+    { DIAG_Die(DIAG_Unimplemented); } 
   virtual void SetSrcInfoDone(bool bi) 
-    { BriefAssertion(false); }
+    { DIAG_Die(DIAG_Unimplemented); }
   
   // Dump contents for inspection
-  virtual String ToDumpString(int dmpFlag = CSProfTree::XML_TRUE) const;
+  virtual std::string ToDumpString(int dmpFlag = CSProfTree::XML_TRUE) const;
     
 protected: 
   void Relocate();
   suint begLine;
   suint endLine;
+  static string BOGUS;
 }; 
 
 // - if x < y; 0 if x == y; + otherwise
@@ -313,18 +314,18 @@ public:
   CSProfPgmNode(const char* nm);
   virtual ~CSProfPgmNode();
 
-  String GetName() const { return name; }
+  const std::string& GetName() const { return name; }
                                         
   void Freeze() { frozen = true;} // disallow additions to/deletions from tree
   bool IsFrozen() const { return frozen; }
   
   // Dump contents for inspection
-  virtual String ToDumpString(int dmpFlag = CSProfTree::XML_TRUE) const;
+  virtual std::string ToDumpString(int dmpFlag = CSProfTree::XML_TRUE) const;
   
 protected: 
 private: 
   bool frozen;
-  String name; // the program name
+  std::string name; // the program name
 }; 
 
 // ---------------------------------------------------------
@@ -341,13 +342,13 @@ public:
   CSProfGroupNode(CSProfNode* _parent, const char* nm);
   ~CSProfGroupNode();
   
-  String GetName() const { return name; }
+  const std::string& GetName() const { return name; }
   
   // Dump contents for inspection
-  virtual String ToDumpString(int dmpFlag = CSProfTree::XML_TRUE) const;
+  virtual std::string ToDumpString(int dmpFlag = CSProfTree::XML_TRUE) const;
 
 private: 
-  String name; 
+  std::string name; 
 };
 
 // ---------------------------------------------------------
@@ -362,21 +363,25 @@ public:
   // Constructor/Destructor
   CSProfCallSiteNode(CSProfNode* _parent);
   CSProfCallSiteNode(CSProfNode* _parent, 
-		     Addr _ip, ushort _opIndex, vector<suint> _metrics);
+		     VMA _ip, ushort _opIndex, vector<suint> _metrics);
   virtual ~CSProfCallSiteNode();
   
   // Node data
-  Addr GetIP() const { return ip-1; }
+  VMA GetIP() const { return ip-1; }
   ushort GetOpIndex() const { return opIndex; }
   
-  const char* GetFile() const { return file; }
-  const char* GetProc() const { return proc; }
-  suint       GetLine() const { return begLine; }
+  const std::string& GetFile() const { return file; }
+  const std::string& GetProc() const { return proc; }
+  suint              GetLine() const { return begLine; }
 
-  void SetIP(Addr _ip, ushort _opIndex) { ip = _ip; opIndex = _opIndex; }
+  void SetIP(VMA _ip, ushort _opIndex) { ip = _ip; opIndex = _opIndex; }
 
   void SetFile(const char* fnm) { file = fnm; }
+  void SetFile(const std::string& fnm) { file = fnm; }
+
   void SetProc(const char* pnm) { proc = pnm; }
+  void SetProc(const std::string& pnm) { proc = pnm; }
+
   void SetLine(suint ln) { begLine = endLine = ln; /* SetLineRange(ln, ln); */ } 
   bool FileIsText() const {return fileistext;} 
   void SetFileIsText(bool bi) {fileistext = bi;}
@@ -387,22 +392,22 @@ public:
   vector<suint>& GetMetrics() {return metrics;}
   
   // Dump contents for inspection
-  virtual String ToDumpString(int dmpFlag = CSProfTree::XML_TRUE) const;
-  virtual String ToDumpMetricsString(int dmpFlag = CSProfTree::XML_TRUE) const;
+  virtual std::string ToDumpString(int dmpFlag = CSProfTree::XML_TRUE) const;
+  virtual std::string ToDumpMetricsString(int dmpFlag = CSProfTree::XML_TRUE) const;
  
   /// add metrics from call site node c to current node.
   void addMetrics(CSProfCallSiteNode* c);
 protected: 
-  Addr ip;        // instruction pointer for this node
+  VMA ip;        // instruction pointer for this node
   ushort opIndex; // index in the instruction 
 
   vector<suint> metrics;  
 
   // source file info
-  String file; 
+  std::string file; 
   bool   fileistext; //separated from load module 
   bool   donewithsrcinfproc ;
-  String proc;
+  std::string proc;
 };
 
 // ---------------------------------------------------------
@@ -420,17 +425,21 @@ class CSProfStatementNode: public CSProfCodeNode {
   void copyCallSiteNode(CSProfCallSiteNode* _node); // FIXME: remove
 
   // Node data
-  Addr GetIP() const { return ip; }
+  VMA GetIP() const { return ip; }
   ushort GetOpIndex() const { return opIndex; }
   
-  const char* GetFile() const { return file; }
-  const char* GetProc() const { return proc; }
-  suint       GetLine() const { return begLine; }
+  const std::string& GetFile() const { return file; }
+  const std::string& GetProc() const { return proc; }
+  suint              GetLine() const { return begLine; }
 
-  void SetIP(Addr _ip, ushort _opIndex) { ip = _ip; opIndex = _opIndex; }
+  void SetIP(VMA _ip, ushort _opIndex) { ip = _ip; opIndex = _opIndex; }
 
   void SetFile(const char* fnm) { file = fnm; }
+  void SetFile(const std::string& fnm) { file = fnm; }
+
   void SetProc(const char* pnm) { proc = pnm; }
+  void SetProc(const std::string& pnm) { proc = pnm; }
+
   void SetLine(suint ln) { begLine = endLine = ln; /* SetLineRange(ln, ln); */ } 
   bool FileIsText() const {return fileistext;}
   void SetFileIsText(bool bi) {fileistext = bi;}
@@ -441,23 +450,23 @@ class CSProfStatementNode: public CSProfCodeNode {
   suint GetMetricCount() const {return metrics.size();}
   
   // Dump contents for inspection
-  virtual String ToDumpString(int dmpFlag = CSProfTree::XML_TRUE) const;
-  virtual String ToDumpMetricsString(int dmpFlag = CSProfTree::XML_TRUE) const;
+  virtual std::string ToDumpString(int dmpFlag = CSProfTree::XML_TRUE) const;
+  virtual std::string ToDumpMetricsString(int dmpFlag = CSProfTree::XML_TRUE) const;
 
   /// add metrics from call site node c to current node.
   void addMetrics(const CSProfStatementNode* c);
  
 protected: 
-  Addr ip;        // instruction pointer for this node
+  VMA ip;        // instruction pointer for this node
   ushort opIndex; // index in the instruction 
 
   vector<suint> metrics;  
 
   // source file info
-  String file; 
+  std::string file; 
   bool   fileistext; //separated from load module
   bool   donewithsrcinfproc;
-  String proc;
+  std::string proc;
 };
 
 // ---------------------------------------------------------
@@ -473,24 +482,27 @@ public:
   virtual ~CSProfProcedureFrameNode();
   
   // Node data
-  const char* GetFile() const { return file; }
-  const char* GetProc() const { return proc; }
-  suint       GetLine() const { return begLine; }
-
+  const std::string& GetFile() const { return file; }
   void SetFile(const char* fnm) { file = fnm; }
+  void SetFile(const std::string& fnm) { file = fnm; }
+
+  const std::string& GetProc() const { return proc; }
   void SetProc(const char* pnm) { proc = pnm; }
+  void SetProc(const std::string& pnm) { proc = pnm; }
+
+  suint GetLine() const { return begLine; }
   void SetLine(suint ln) { begLine = endLine = ln; /* SetLineRange(ln, ln); */ } 
   bool FileIsText() const {return fileistext;}
   void SetFileIsText(bool bi) {fileistext = bi;}
 
   // Dump contents for inspection
-  virtual String ToDumpString(int dmpFlag = CSProfTree::XML_TRUE) const;
+  virtual std::string ToDumpString(int dmpFlag = CSProfTree::XML_TRUE) const;
  
 private: 
   // source file info
-  String file; 
+  std::string file; 
   bool   fileistext; //separated from load module
-  String proc;
+  std::string proc;
 };
 
 // ---------------------------------------------------------
@@ -506,8 +518,8 @@ public:
   ~CSProfLoopNode();
   
   // Dump contents for inspection
-  virtual String CodeName() const;
-  virtual String ToDumpString(int dmpFlag = CSProfTree::XML_TRUE) const; 
+  virtual std::string CodeName() const;
+  virtual std::string ToDumpString(int dmpFlag = CSProfTree::XML_TRUE) const; 
   
 private:
   int id;
@@ -526,8 +538,8 @@ public:
   ~CSProfStmtRangeNode();
   
   // Dump contents for inspection
-  virtual String CodeName() const;
-  virtual String ToDumpString(int dmpFlag = CSProfTree::XML_TRUE) const;
+  virtual std::string CodeName() const;
+  virtual std::string ToDumpString(int dmpFlag = CSProfTree::XML_TRUE) const;
   
 private:
   int id;

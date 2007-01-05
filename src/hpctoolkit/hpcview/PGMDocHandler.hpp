@@ -1,5 +1,6 @@
 // -*-Mode: C++;-*-
 // $Id$
+
 // * BeginRiceCopyright *****************************************************
 // 
 // Copyright ((c)) 2002, Rice University 
@@ -52,16 +53,16 @@
 
 //************************ System Include Files ******************************
 
-//************************* User Include Files *******************************
-
-// #include "XMLAdapter.h"
-
-#include "HPCViewSAX2.hpp"
-#include "ScopeInfo.hpp"
-
+#include <string>
 #include <map>
 
-#include <lib/support/String.hpp>
+//************************* User Include Files *******************************
+
+#include "HPCViewSAX2.hpp"
+
+#include <lib/prof-juicy/PgmScopeTree.hpp>
+
+#include <lib/support/diagnostics.h>
 #include <lib/support/PointerStack.hpp>
 
 //************************ Forward Declarations ******************************
@@ -174,9 +175,9 @@ private:
   double pgmVersion;     // initialized to a negative
 
   // variables for transient values during file processing
-  String currentLmName;    // only one LM on the stack at a time
-  String currentFileName;  // only one File on the stack at a time
-  String currentFuncName;
+  std::string currentLmName;    // only one LM on the stack at a time
+  std::string currentFileName;  // only one File on the stack at a time
+  std::string currentFuncName;
   ProcScope* currentFuncScope;
   unsigned groupNestingLvl;
 
@@ -190,13 +191,13 @@ private:
 
   // element names
   const XMLCh *const elemPgm;
-  const XMLCh *const elemGroup; 
   const XMLCh *const elemLM; 
   const XMLCh *const elemFile; 
   const XMLCh *const elemProc; 
   const XMLCh *const elemLoop; 
   const XMLCh *const elemStmt;
-    
+  const XMLCh *const elemGroup; 
+  const XMLCh *const elemAlien; 
 
   // attribute names
   const XMLCh *const attrVer; 
@@ -204,19 +205,23 @@ private:
   const XMLCh *const attrLnName; 
   const XMLCh *const attrBegin; 
   const XMLCh *const attrEnd; 
-  const XMLCh *const attrId;
+  const XMLCh *const attrVMA;
 };
 
-class PGMException {
+//****************************************************************************
+
+class PGMException : public Diagnostics::Exception {
 public:
-  PGMException (String msg) {
-    msgtext = msg;
+  PGMException(const std::string x,
+	       const char* filenm = NULL, unsigned int lineno = 0) 
+    : Diagnostics::Exception(x, filenm, lineno)
+  { }
+
+  virtual std::string message() const { 
+    return "PGM file error [PGMException]: " + what();
   }
-  String message() const { 
-    return msgtext; 
-  }
+
 private:
-  String msgtext;
 };
 
 #endif  // PGMDocHandler_H

@@ -39,22 +39,22 @@
 
 //************************ System Include Files ******************************
 
+#include <string>
+
 //************************* User Include Files *******************************
 
 #include <include/general.h>
 
 #include "Args.hpp"
-#include "PerfMetric.hpp"
 #include "PerfIndex.hpp"
 
-#include <lib/support/String.hpp>
+#include <lib/prof-juicy/PgmScopeTree.hpp>
+
 #include <lib/support/Unique.hpp>
+#include <lib/support/String.hpp> // FIXME
 
 //************************ Forward Declarations ******************************
 
-class ScopesInfo; 
-class ScopeInfo; 
-class FileScope; 
 class HTMLTable; 
 class HTMLScopes; 
 class Driver; 
@@ -70,7 +70,7 @@ extern const char* ScopesDir;
 
 class HTMLDriver : public Unique { // at most one instance 
 public: 
-  HTMLDriver(const ScopesInfo &scps, 
+  HTMLDriver(const PgmScopeTree &scps, 
 	         const char* fileHome,  // home of static files 
 	         const char* htmlDir,
 	         const Args &pgmArgs);  // output dir for html and js files 
@@ -80,24 +80,24 @@ public:
   bool Write(const Driver& driver) const; // terminate with -1
   
   static String UniqueName(const ScopeInfo *s, 
-			   int pIndex, int flattenDepth); // s non-NULL 
+				int pIndex, int flattenDepth); // s non-NULL 
 
   static String UniqueNameForSelf(const ScopeInfo *s);
 
   static const DataDisplayInfo NameDisplayInfo; 
  
-  String ToString() const; 
+  std::string ToString() const; 
 
 private:
   void WriteFiles(const char* name) const; 
-  void WriteHeader(const char* name, const String& tit) const; 
+  void WriteHeader(const char* name, const std::string& tit) const; 
   void WriteIndexFile(PgmScope *pgmScope, 
 		      HTMLTable &table, int perfIndex, 
 		      HTMLScopes& scopes, 
-		      const String & title, 
+		      const std::string& title, 
 		      const char* headerFile) const; 
 
-  const ScopesInfo &scopes; 
+  const PgmScopeTree &scopes; 
   const char* fileHome; 
   const char* htmlDir; 
 

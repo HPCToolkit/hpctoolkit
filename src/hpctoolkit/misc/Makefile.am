@@ -1,5 +1,5 @@
 # -*-Mode: makefile;-*-
-# $Header$
+# $Id$
 
 ## * BeginRiceCopyright *****************************************************
 ## 

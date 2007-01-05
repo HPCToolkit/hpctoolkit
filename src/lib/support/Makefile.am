@@ -1,5 +1,5 @@
 # -*-Mode: makefile;-*-
-# $Header$
+# $Id$
 
 ## * BeginRiceCopyright *****************************************************
 ## 
@@ -62,15 +62,32 @@ include $(top_srcdir)/src/Makeinclude.config
 #############################################################################
 
 MYSOURCES = \
-	Assertion.h Assertion.cpp \
 	CmdLineParser.hpp CmdLineParser.cpp \
+	Assertion.h Assertion.cpp \
+	diagnostics.h diagnostics.cpp \
 	DumpMsgHandler.hpp DumpMsgHandler.cpp \
+	Exception.hpp Exception.cpp \
+	Trace.hpp Trace.cpp \
+	\
+	bstring.h \
+	Nan.h Nan.cpp \
+	CStrUtil.h CStrUtil.cpp \
+	StrUtil.hpp StrUtil.cpp \
+	String.hpp String.cpp \
+	\
+	IOUtil.hpp IOUtil.cpp \
 	Files.hpp Files.cpp \
+	SrcFile.hpp SrcFile.cpp \
+	findinstall.h findinstall.c \
+	pathfind.h pathfind.cpp \
+	realpath.h realpath.c \
+	\
+	Logic.hpp Logic.cpp \
+	\
 	HashTable.hpp HashTable.cpp \
 	HashTableSortedIterator.hpp HashTableSortedIterator.cpp \
 	IntVector.hpp IntVector.cpp \
 	IteratorStack.hpp IteratorStack.cpp \
-	Nan.h Nan.cpp \
 	NonUniformDegreeTree.hpp NonUniformDegreeTree.cpp \
 	OffsetLengthList.hpp OffsetLengthList.cpp \
 	PointerMap.hpp PointerMap.cpp \
@@ -80,21 +97,12 @@ MYSOURCES = \
 	PtrStack.hpp \
 	QuickSort.hpp QuickSort.cpp \
 	Set.hpp Set.cpp \
-	SrcFile.hpp SrcFile.cpp \
 	StackableIterator.hpp StackableIterator.cpp \
-	String.hpp String.cpp \
 	StringHashTable.hpp StringHashTable.cpp \
-	StringLt.hpp \
-	StringUtilities.hpp StringUtilities.cpp \
-	Trace.hpp Trace.cpp \
 	Unique.hpp Unique.cpp \
 	VectorSupport.hpp VectorSupport.cpp \
 	VectorTmpl.hpp VectorTmpl.cpp \
-	WordSet.hpp WordSet.cpp \
-	bstring.h \
-	findinstall.h findinstall.c \
-	pathfind.h pathfind.cpp \
-	realpath.h realpath.c
+	WordSet.hpp WordSet.cpp
 
 MYCFLAGS   = @HOST_CFLAGS@   $(HPC_IFLAGS) 
 MYCXXFLAGS = @HOST_CXXFLAGS@ $(HPC_IFLAGS) 

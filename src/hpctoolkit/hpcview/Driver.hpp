@@ -1,5 +1,6 @@
 // -*-Mode: C++;-*-
 // $Id$
+
 // * BeginRiceCopyright *****************************************************
 // 
 // Copyright ((c)) 2002, Rice University 
@@ -34,24 +35,27 @@
 // 
 // ******************************************************* EndRiceCopyright *
 
-#ifndef Driver_h
-#define Driver_h 
+#ifndef Driver_hpp
+#define Driver_hpp 
 
 //************************ System Include Files ******************************
 
 #include <iostream>
 #include <ostream>
-#include <vector> // STL
+#include <list>    // STL
+#include <vector>  // STL
 #include <utility> // STL
+#include <string>
 
 //************************* User Include Files *******************************
 
 #include <include/general.h>
 
 #include "PGMDocHandler.hpp"
+#include "DerivedPerfMetrics.hpp" // for FilePerfMetric
 
+#include <lib/prof-juicy/PgmScopeTree.hpp>
 #include <lib/support/Unique.hpp>
-#include <lib/support/String.hpp>
 
 //************************ Forward Declarations ******************************
 
@@ -60,12 +64,8 @@
 // PathTuple: a {path, viewname} pair.
 //   PathTuple.first = path; PathTuple.second = viewname
 // PathTupleVec: the vector of all 'PathTuple'
-typedef std::pair<String, String> PathTuple;
+typedef std::pair<std::string, std::string> PathTuple;
 typedef std::vector<PathTuple> PathTupleVec;
-
-class PerfMetric; 
-class ScopesInfo;
-class PgmScope;
 
 class Driver : public Unique { // at most one instance 
 public: 
@@ -73,22 +73,38 @@ public:
   ~Driver(); 
   
   void SetTitle(const char* tit)        { title = tit; }
-  const String& Title() const           { return title; }
+  void SetTitle(const std::string& tit) { title = tit; }
+  const std::string& Title() const      { return title; }
 
-  void AddStructureFile(const char* pf) { structureFiles.push_back(new String(pf)); }
-  const String& GetStructureFile(int i) const { return *structureFiles[i]; }
+  void AddStructureFile(const char* pf) 
+    { structureFiles.push_back(new std::string(pf)); }
+  void AddStructureFile(const std::string& pf) 
+    { AddStructureFile(pf.c_str()); }
+  const std::string& GetStructureFile(int i) const 
+    { return *structureFiles[i]; }
   int NumberOfStructureFiles() { return structureFiles.size(); }
 
-  void AddGroupFile(const char* pf) { groupFiles.push_back(new String(pf)); }
-  const String& GetGroupFile(int i) const { return *groupFiles[i]; }
+  void AddGroupFile(const char* pf) 
+    { groupFiles.push_back(new std::string(pf)); }
+  void AddGroupFile(const std::string& pf) 
+    { AddGroupFile(pf.c_str()); }
+  const std::string& GetGroupFile(int i) const { return *groupFiles[i]; }
   int NumberOfGroupFiles() { return groupFiles.size(); }
 
   void AddPath(const char* _path, const char* _viewname);
-  const String& Path() const { return path; }
+  void AddPath(const std::string& _path, const std::string& _viewname)
+    { AddPath(_path.c_str(), _viewname.c_str()); }
+
+  const std::string& Path() const { return path; }
   const PathTupleVec& PathVec() const { return pathVec; }
 
   void AddReplacePath(const char* inPath, const char* outPath); 
-  String ReplacePath(const char* path);
+  void AddReplacePath(const std::string& inPath, const std::string& outPath)
+    { AddReplacePath(inPath.c_str(), outPath.c_str()); }
+
+  std::string ReplacePath(const char* path);
+  std::string ReplacePath(const std::string& path)
+    { return ReplacePath(path.c_str()); }
   
   bool MustDeleteUnderscore( void );
   bool CopySrcFiles() { return cpySrcFiles; }
@@ -97,9 +113,10 @@ public:
   const PerfMetric& PerfDataSrc(int i) const { return *dataSrc[i]; }
   void Add(PerfMetric* metric); 
   
-  void MakePerfData(ScopesInfo& scopesInfo);
+  void ScopeTreeInitialize(PgmScopeTree& scopes);
+  void ScopeTreeComputeMetrics(PgmScopeTree& scopes);
 
-  String ToString() const; 
+  std::string ToString() const; 
   void Dump() const { std::cerr << ToString() << std::endl; }
 
   // see 'ScopeInfo' class for dump flags
@@ -110,25 +127,33 @@ public:
   void CSV_Dump(PgmScope* pgm, std::ostream &os = std::cout) const;
   void TSV_Dump(PgmScope* pgm, std::ostream &os = std::cout) const;
 
-private: 
+private:
+  typedef std::list<FilePerfMetric*> MetricList_t;
   
   void ProcessPGMFile(NodeRetriever* nretriever, 
 		      PGMDocHandler::Doc_t docty, 
-		      std::vector<String*>* files);
+		      std::vector<std::string*>* files);
 
-  String title;
+  void ScopeTreeComputeHPCRUNMetrics(PgmScopeTree& scopes);
+  void ScopeTreeComputeOtherMetrics(PgmScopeTree& scopes);
+  void ScopeTreeInsertHPCRUNData(PgmScopeTree& scopes,
+				 const string& profFilenm,
+				 const MetricList_t& metricList);
+  
+private:
+  std::string title;
   int deleteTrailingUnderscores;
   bool cpySrcFiles;
 
-  String path;             // a string-list of paths (includes '.') 
+  std::string path;        // a string-list of paths (includes '.') 
   PathTupleVec pathVec;    // a list of {path, viewname} 
 
-  std::vector<String> replaceInPath; 
-  std::vector<String> replaceOutPath; 
+  std::vector<std::string> replaceInPath; 
+  std::vector<std::string> replaceOutPath; 
 
   std::vector<PerfMetric*> dataSrc;
-  std::vector<String*> structureFiles;
-  std::vector<String*> groupFiles;
+  std::vector<std::string*> structureFiles;
+  std::vector<std::string*> groupFiles;
 };
 
 #endif 

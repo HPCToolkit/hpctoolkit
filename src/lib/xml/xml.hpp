@@ -1,5 +1,6 @@
-// $Id$
 // -*-C++-*-
+// $Id$
+
 // * BeginRiceCopyright *****************************************************
 // 
 // Copyright ((c)) 2002, Rice University 
@@ -55,35 +56,30 @@
 //************************* System Include Files ****************************
 
 #include <iostream>
+#include <string>
+
+#include <inttypes.h> /* commonly available, unlike <stdint.h> */
 
 //*************************** User Include Files ****************************
 
 #include <include/general.h>
 
-#include <lib/support/String.hpp>
+#include <lib/support/StrUtil.hpp>
+#include <lib/support/IOUtil.hpp>
 
 //*************************** Forward Declarations ***************************
-
-// just like std::get and std::getline, except is not limited by a
-// fixed input buffer size
-String Get(std::istream& is, char end = '\n');
-String GetLine(std::istream& is, char end = '\n');
-
-// skips the specified string; returns false if there is a
-// deviation between 's' and what is read; true otherwise
-bool Skip(std::istream& is, const char* s);
 
 //****************************************************************************
 
 namespace xml {
   
-  extern const String SPC;   // space
-  extern const String eleB;  // element begin, initial
-  extern const String eleBf; // element begin, final
-  extern const String eleE;  // element end, normal
-  extern const String eleEc; // element end, compact: <.../>
-  extern const String attB;  // attribute value begin
-  extern const String attE;  // attribute value end
+  extern const std::string SPC;   // space
+  extern const std::string eleB;  // element begin, initial
+  extern const std::string eleBf; // element begin, final
+  extern const std::string eleE;  // element end, normal
+  extern const std::string eleEc; // element end, compact: <.../>
+  extern const std::string attB;  // attribute value begin
+  extern const std::string attE;  // attribute value end
   
   enum XMLElementI {
     TOKEN = 0,
@@ -109,34 +105,57 @@ namespace xml {
 
   // Returns the string with all necessary characters (un)escaped; will
   // not modify 'str'
-  String EscapeStr(const char* str);
-  String UnEscapeStr(const char* str);  
+  std::string EscapeStr(const char* str);
+
+  inline std::string 
+  EscapeStr(const std::string& str)
+  {
+    return EscapeStr(str.c_str());
+  }
+
+  std::string UnEscapeStr(const char* str);
+
+  inline std::string 
+  UnEscapeStr(const std::string& str)
+  {
+    return UnEscapeStr(str.c_str());
+  }
 
   // -------------------------------------------------------  
   // Reads from 'attB' to and including 'attE'.  Eats up whitespace
   // before and after the attibute.  
   // -------------------------------------------------------
-  bool ReadAttrStr(std::istream& is, String& s, int flags = UNESC_TRUE);
+  bool ReadAttrStr(std::istream& is, std::string& s, int flags = UNESC_TRUE);
 
   // Read a number into a C/C++ numerical type
-  template <class T> bool ReadAttrNum(std::istream& is, T& n)
+  template <class T> bool 
+  ReadAttrNum(std::istream& is, T& n)
   {
     bool STATE = true; // false indicates an error
     is >> std::ws;
-    STATE &= Skip(is, "=");  is >> std::ws;
-    STATE &= Skip(is, "\""); is >> std::ws;
+    STATE &= IOUtil::Skip(is, "=");  is >> std::ws;
+    STATE &= IOUtil::Skip(is, "\""); is >> std::ws;
     is >> n;
-    STATE &= Skip(is, "\""); is >> std::ws;
+    STATE &= IOUtil::Skip(is, "\""); is >> std::ws;
     return STATE;
   }
   
   // -------------------------------------------------------  
   // Writes attribute value, beginning with 'attB' and ending with 'attE'
   // -------------------------------------------------------  
-  bool WriteAttrStr(std::ostream& os, const char* s, int flags = ESC_TRUE);
+  bool 
+  WriteAttrStr(std::ostream& os, const char* s, int flags = ESC_TRUE);
+
+  inline bool 
+  WriteAttrStr(std::ostream& os, const std::string& s, int flags = ESC_TRUE)
+  {
+    return WriteAttrStr(os, s.c_str(), flags);
+  }
+
 
   // Write a C/C++ numerical type
-  template <class T> bool WriteAttrNum(std::ostream& os, T n)
+  template <class T> bool 
+  WriteAttrNum(std::ostream& os, T n)
   {
     os << attB << n << attE;
     return (!os.fail());  
@@ -146,32 +165,33 @@ namespace xml {
   // Creates an attribute string, beginning with 'attB' and ending with 'attE'
   // -------------------------------------------------------  
 
-  inline String MakeAttrStr(const char* s, int flags = ESC_TRUE) {
-    String str = ((flags & ESC_TRUE) ? EscapeStr(s) : String(s));
-    return (String(attB + str + attE));
+  inline std::string 
+  MakeAttrStr(const char* x, int flags = ESC_TRUE) {
+    std::string str = ((flags & ESC_TRUE) ? EscapeStr(x) : x);
+    return (attB + str + attE);
   }
 
-  inline String MakeAttrNum(int n) {
-    return (String(attB + String((long)n) + attE));
+  inline std::string 
+  MakeAttrStr(const std::string& x, int flags = ESC_TRUE) {
+    return MakeAttrStr(x.c_str(), flags);
   }
-  inline String MakeAttrNum(unsigned int n, bool hex = false) {
-    return (String(attB + String((unsigned long)n, hex) + attE));
+
+  inline std::string 
+  MakeAttrNum(int x) {
+    return (attB + StrUtil::toStr(x) + attE);
   }
-  inline String MakeAttrNum(long n) {
-    return (String(attB + String(n) + attE));
+  inline std::string 
+  MakeAttrNum(unsigned int x, int base = 10) {
+    return (attB + StrUtil::toStr(x, base) + attE);
   }
-  inline String MakeAttrNum(unsigned long n, bool hex = false) {
-    return (String(attB + String(n, hex) + attE));
+  inline std::string 
+  MakeAttrNum(int64_t x) {
+    return (attB + StrUtil::toStr(x) + attE);
   }
- 
-#ifdef ARCH_USE_LONG_LONG // FIXME
-  inline String MakeAttrNum(long long n) {
-    return (String(attB + String(n) + attE));
+  inline std::string 
+  MakeAttrNum(uint64_t x, int base = 10) {
+    return (attB + StrUtil::toStr(x, base) + attE);
   }
-  inline String MakeAttrNum(unsigned long long n, bool hex = false) {
-    return (String(attB + String(n, hex) + attE));
-  }
-#endif  
 }
 
 #endif

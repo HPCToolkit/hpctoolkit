@@ -53,6 +53,7 @@
 //************************* System Include Files ****************************
 
 #include <iostream>
+#include <string>
 #include <list>
 #include <vector>
 #include <map>
@@ -61,8 +62,7 @@
 
 #include <include/general.h>
 
-#include <lib/ISA/ISATypes.hpp>
-#include <lib/support/String.hpp>
+#include <lib/isa/ISATypes.hpp>
 
 //*************************** Forward Declarations ***************************
 
@@ -84,14 +84,14 @@ public:
   PCToSrcLineXMap(); 
   ~PCToSrcLineXMap();
 
-  // 'startAddr' <= 'pc' <= 'endAddr'. 
-  SrcLineX*            Find(Addr pc) const;
-  ProcPCToSrcLineXMap* FindProc(Addr pc) const;
+  // 'startVMA' <= 'pc' <= 'endVMA'. 
+  SrcLineX*            Find(VMA pc) const;
+  ProcPCToSrcLineXMap* FindProc(VMA pc) const;
   ProcPCToSrcLineXMap* FindProc(const char* s) const;
 
   // starting and ending address of the first and last instruction in the map
-  Addr                 GetStartAddr() const { return startAddr; }
-  Addr                 GetEndAddr()   const { return endAddr; }
+  VMA                 GetStartVMA() const { return startVMA; }
+  VMA                 GetEndVMA()   const { return endVMA; }
 
   // FIXME: Probably best to restrict access... 
   // Constructing: Insert one or more 'ProcPCToSrcLineXMap' using 
@@ -112,7 +112,7 @@ private:
   PCToSrcLineXMap(const PCToSrcLineXMap& e) { }
   PCToSrcLineXMap& operator=(const PCToSrcLineXMap& e) { return *this; }
 
-  ProcPCToSrcLineXMap* Find_BinarySearch(Addr pc, suint lb, suint ub) const;
+  ProcPCToSrcLineXMap* Find_BinarySearch(VMA pc, suint lb, suint ub) const;
 
   typedef std::vector<ProcPCToSrcLineXMap*> ProcPCToSrcLineXMapVec;
 
@@ -121,8 +121,8 @@ private:
   
 protected:
 private:
-  Addr startAddr; // the address of the *start* of the first instruction
-  Addr endAddr;   // the address of the *end* of the last instruction
+  VMA startVMA; // the address of the *start* of the first instruction
+  VMA endVMA;   // the address of the *end* of the last instruction
 
   // 'ProcPCToSrcLineXMap' vector, sorted by starting address
   // 'list' is used for easy creation; later on, 'vector' makes 'Find'
@@ -137,31 +137,39 @@ private:
 class ProcPCToSrcLineXMap
 {
 public:
-  ProcPCToSrcLineXMap(Addr start, Addr end, const char* proc = NULL,
+  ProcPCToSrcLineXMap(VMA start, VMA end, const char* proc = NULL,
 		      const char* file = NULL);
+  ProcPCToSrcLineXMap(VMA start, VMA end, const std::string& proc,
+		      const std::string& file)
+    { ProcPCToSrcLineXMap(start, end, proc.c_str(), file.c_str()); }
+
   ~ProcPCToSrcLineXMap();
 
-  // 'startAddr' <= 'pc' <= 'endAddr'.  'Insert' inserts only if no
+  // 'startVMA' <= 'pc' <= 'endVMA'.  'Insert' inserts only if no
   // object is already associated with 'pc'; assumes ownership of 's'.
-  SrcLineX* Find(Addr pc) const {
-    AddrToSrcLineXMapItC it = map.find(pc);
+  SrcLineX* Find(VMA pc) const {
+    VMAToSrcLineXMapItC it = map.find(pc);
     if (it == map.end()) { return NULL; }
     else { return (*it).second; }
   }
-  void Insert(Addr pc, SrcLineX* s) {
-    map.insert(AddrToSrcLineXMapVal(pc, s));
+  void Insert(VMA pc, SrcLineX* s) {
+    map.insert(VMAToSrcLineXMapVal(pc, s));
   }
   
-  const char* GetProcName()   const { return procName; }
-  const char* GetFileName()   const { return fileName; }
-  Addr        GetStartAddr()  const { return startAddr; }
-  Addr        GetEndAddr()    const { return endAddr; }
-  suint       GetNumEntries() const { return map.size(); }
+  const std::string& GetProcName() const { return procName; }
+  const std::string& GetFileName() const { return fileName; }
+  VMA   GetStartVMA()  const { return startVMA; }
+  VMA   GetEndVMA()    const { return endVMA; }
+  suint GetNumEntries() const { return map.size(); }
   
   void SetProcName(const char* s) { procName = s; }
+  void SetProcName(const std::string& s) { procName = s; }
+
   void SetFileName(const char* s) { fileName = s; }
-  void SetStartAddr(Addr a)   { startAddr = a; } 
-  void SetEndAddr(Addr a)     { endAddr = a; }  
+  void SetFileName(const std::string& s) { fileName = s; }
+
+  void SetStartVMA(VMA a)   { startVMA = a; } 
+  void SetEndVMA(VMA a)     { endVMA = a; }  
   
   bool Read(std::istream& is);
   bool Write(std::ostream& os) const;
@@ -179,20 +187,20 @@ private:
   ProcPCToSrcLineXMap();
   
   // Virtual memory address to 'SrcLineX*' map 
-  typedef std::map<Addr, SrcLineX*, lt_Addr>           AddrToSrcLineXMap;
-  typedef std::map<Addr, SrcLineX*, lt_Addr>::iterator AddrToSrcLineXMapIt;
-  typedef std::map<Addr, SrcLineX*, lt_Addr>::const_iterator
-    AddrToSrcLineXMapItC;  
-  typedef std::map<Addr, SrcLineX*>::value_type        AddrToSrcLineXMapVal;
+  typedef std::map<VMA, SrcLineX*>           VMAToSrcLineXMap;
+  typedef std::map<VMA, SrcLineX*>::iterator VMAToSrcLineXMapIt;
+  typedef std::map<VMA, SrcLineX*>::const_iterator
+    VMAToSrcLineXMapItC;  
+  typedef std::map<VMA, SrcLineX*>::value_type        VMAToSrcLineXMapVal;
   
 protected:
 private:
-  String procName;
-  String fileName;
-  Addr startAddr; // the address of the *start* of the first instruction
-  Addr endAddr;   // the address of the *end* of the last instruction
+  std::string procName;
+  std::string fileName;
+  VMA startVMA; // the address of the *start* of the first instruction
+  VMA endVMA;   // the address of the *end* of the last instruction
   
-  AddrToSrcLineXMap map; // PC to src line map.
+  VMAToSrcLineXMap map; // PC to src line map.
 };
 
 //****************************************************************************

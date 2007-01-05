@@ -1,5 +1,6 @@
-// $Id$
 // -*-C++-*-
+// $Id$
+
 // * BeginRiceCopyright *****************************************************
 // 
 // Copyright ((c)) 2002, Rice University 
@@ -39,6 +40,8 @@
 
 //************************ System Include Files ******************************
 
+#include <string>
+
 //************************* Xerces Include Files *****************************
 
 #include <xercesc/sax2/SAX2XMLReader.hpp>
@@ -62,11 +65,9 @@ using XERCES_CPP_NAMESPACE::ErrorHandler;
 
 //************************* User Include Files *******************************
 
-# include <lib/support/String.hpp>
-
 //************************ Forward Declarations ******************************
 
-extern String getAttr(const Attributes& attributes, int iU); 
-extern String getAttr(const Attributes& attributes, const XMLCh* const attr); 
+extern std::string getAttr(const Attributes& attributes, int iU); 
+extern std::string getAttr(const Attributes& attributes, const XMLCh* const attr); 
 
 #endif

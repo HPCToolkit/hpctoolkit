@@ -1,5 +1,6 @@
-// $Id$
 // -*-C++-*-
+// $Id$
+
 // * BeginRiceCopyright *****************************************************
 // 
 // Copyright ((c)) 2002, Rice University 
@@ -50,6 +51,12 @@
 //************************* System Include Files ****************************
 
 #include <iostream>
+using std::endl;
+using std::hex;
+using std::dec;
+
+#include <string>
+using std::string;
 
 //*************************** User Include Files ****************************
 
@@ -57,15 +64,13 @@
 
 //*************************** Forward Declarations ***************************
 
-using std::endl;
-using std::hex;
-using std::dec;
-
 static bool 
 VerifyPeriod(const PCProfileMetricSet* s);
+
 static ulong 
 GetPeriod(const PCProfileMetricSet* s);
-String
+
+string
 GetNativeName(const PCProfileMetricSet* s);
 
 //****************************************************************************
@@ -145,12 +150,12 @@ DerivedProfile::Create(const PCProfile* pcprof_,
     // FIXME: Save memory by using MakeDerivedPCSetCoterminousWithPCSet() 
     // when the insn filter is the identity filter.
     
-    // Iterate over PC values in the profile
+    // Iterate over VMA values in the profile
     for (PCProfile_PCIterator it(*pcprof); it.IsValid(); ++it) {
       
-      Addr oppc = it.Current(); // an 'operation pc'
+      VMA opvma = it.Current(); // an 'operation vma'
       ushort opIndex;
-      Addr pc = isa->ConvertOpPCToPC(oppc, opIndex);
+      VMA vma = binutils::LM::isa->ConvertOpVMAToVMA(opvma, opIndex);
       
       // For each derived metric and its insn filter
       PCProfileFilterList::const_iterator fIt = filtlist->begin();
@@ -162,9 +167,9 @@ DerivedProfile::Create(const PCProfile* pcprof_,
 	  = const_cast<DerivedProfileMetric*>(GetMetric(i));
 	const PCProfileMetricSet* rawMSet = dm->GetMetricSet();
 	
-	// if pc has data && insn filter is satisfied for pc, record pc
-	if (rawMSet->DataExists(pc, opIndex) >= 0 && (*pcfilt)(pc, opIndex)) {
-	  dm->InsertPC(pc, opIndex);
+	// if vma has data && insn filter is satisfied for vma, record vma
+	if (rawMSet->DataExists(vma, opIndex) >= 0 && (*pcfilt)(vma, opIndex)) {
+	  dm->InsertPC(vma, opIndex);
 	}
       }  
     }
@@ -273,17 +278,17 @@ GetPeriod(const PCProfileMetricSet* s)
   }
 }
 
-String
+string
 GetNativeName(const PCProfileMetricSet* s)
 {
-  String nm;
+  string nm;
   PCProfileMetricSetIterator it(*s);
   for (suint i = 0; it.IsValid(); ++it, ++i) {
     PCProfileMetric* m = it.Current();
     if (i != 0) { nm += "+"; }
-    nm += String("[") + m->GetName() + "]";
+    nm += "[" + m->GetName() + "]";
   }
   
-  if (nm.Empty()) { nm = "[no-matching-metrics]"; }
+  if (nm.empty()) { nm = "[no-matching-metrics]"; }
   return nm;
 }

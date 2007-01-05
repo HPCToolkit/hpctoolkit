@@ -1,5 +1,6 @@
+// -*-Mode: C++;-*-
 // $Id$
-// -*-C++-*-
+
 // * BeginRiceCopyright *****************************************************
 // 
 // Copyright ((c)) 2002, Rice University 
@@ -37,13 +38,13 @@
 //***************************************************************************
 //
 // File:
-//    $Source$
+//   $Source$
 //
 // Purpose:
-//    [The purpose of this file]
+//   [The purpose of this file]
 //
 // Description:
-//    [The set of functions, macros, etc. defined in the file]
+//   [The set of functions, macros, etc. defined in the file]
 //
 //***************************************************************************
 
@@ -60,13 +61,13 @@
 
 #include <include/general.h>
 
+#include <lib/isa/ISATypes.hpp>
+
+#include <lib/binutils/LM.hpp>
+
 #include <lib/support/NonUniformDegreeTree.hpp>
 #include <lib/support/Unique.hpp>
 #include <lib/support/String.hpp>
-#include <lib/ISA/ISATypes.hpp>
-#include <lib/binutils/LoadModule.hpp>
-#include <lib/binutils/LoadModuleInfo.hpp>
-
 
 //*************************** Forward Declarations ***************************
 
@@ -81,29 +82,29 @@ public:
 
     String  GetName() const{return name;}
 
-    Addr GetVaddr() const {return vaddr; }
+    VMA GetVaddr() const {return vaddr; }
 
-    Addr GetMapaddr() const {return mapaddr;} 
+    VMA GetMapaddr() const {return mapaddr;} 
     bool GetUsedFlag() const {return used;}
 
     void SetName(const char* s) {name = s; }
-    void SetVaddr(Addr  v) {vaddr=v;}
-    void SetMapaddr(Addr  m) {mapaddr=m; }  
+    void SetVaddr(VMA  v) {vaddr=v;}
+    void SetMapaddr(VMA  m) {mapaddr=m; }  
     void SetUsedFlag(bool b) {used=b;}
     
-    bool LdMdInfoIsEmpty() {return (ldminfo==NULL); } 
-    void SetLdMdInfo(LoadModuleInfo* lm) {ldminfo=lm;}
-    LoadModuleInfo* GetLdMdInfo() {return ldminfo;}
+    bool LMIsEmpty() {return (lm == NULL); } 
+    void SetLM(binutils::LM* x) {lm = x;}
+    binutils::LM* GetLM() {return lm;}
 
     void Dump(std::ostream& o= std::cerr);
     void DDump();
 
 private: 
-  LoadModuleInfo* ldminfo;
-  String name ;
-  Addr vaddr  ;
-  Addr mapaddr;  
-  bool used   ;
+  binutils::LM* lm;
+  String name;
+  VMA vaddr;
+  VMA mapaddr;  
+  bool used;
 
 } ;
 
@@ -136,7 +137,7 @@ public:
 	     loadmoduleVec[i] = const_cast<CSProfLDmodule*>(ldm);
      }
 
-    void SortLoadmoduleByAddr(){
+    void SortLoadmoduleByVMA(){
       std::sort(loadmoduleVec.begin(), loadmoduleVec.end(), 
                      compare_ldmodule_by_mapaddr());
      } 
@@ -149,7 +150,7 @@ public:
     void Dump(std::ostream& o = std::cerr);
     void DDump();
 
-    CSProfLDmodule* FindLDmodule(Addr i);
+    CSProfLDmodule* FindLDmodule(VMA i);
 
     friend class CSProfEpoch_LdModuleIterator ;
 

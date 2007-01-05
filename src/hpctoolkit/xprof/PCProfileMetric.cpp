@@ -1,5 +1,6 @@
-// $Id$
 // -*-C++-*-
+// $Id$
+
 // * BeginRiceCopyright *****************************************************
 // 
 // Copyright ((c)) 2002, Rice University 
@@ -50,16 +51,18 @@
 //************************* System Include Files ****************************
 
 #include <iostream>
+using std::endl;
+using std::hex;
+using std::dec;
+
+#include <string>
+using std::string;
 
 //*************************** User Include Files ****************************
 
 #include "PCProfileMetric.hpp"
 
 //*************************** Forward Declarations ***************************
-
-using std::endl;
-using std::hex;
-using std::dec;
 
 //****************************************************************************
 // PCProfileMetric
@@ -86,7 +89,7 @@ PCProfileMetric::Dump(std::ostream& o)
   o << "  textSize: " << txtSz << "\n";
   o << "  map size (number of entries): " << map.size() << "\n";
   o << "  map entries (PC is reported in hex as an offset from textStart) = [";
-  Addr pc = 0;
+  VMA pc = 0;
   PCProfileDatum d = 0;
   suint printed = 0;
   for (PCToPCProfileDatumMapIt it = map.begin(); it != map.end(); ++it) {

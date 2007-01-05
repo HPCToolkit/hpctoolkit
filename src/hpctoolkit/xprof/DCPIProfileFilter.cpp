@@ -1,5 +1,6 @@
+// -*-Mode: C++;-*-
 // $Id$
-// -*-C++-*-
+
 // * BeginRiceCopyright *****************************************************
 // 
 // Copyright ((c)) 2002, Rice University 
@@ -57,7 +58,7 @@
 #include "DCPIProfileFilter.hpp"
 #include "DCPIProfileMetric.hpp"
 
-#include <lib/support/Assertion.h>
+#include <lib/support/diagnostics.h>
 
 //*************************** Forward Declarations ***************************
 
@@ -288,7 +289,7 @@ PredefinedDCPIMetricTable::Index(suint i)
 //****************************************************************************
 
 PCProfileFilter* 
-GetPredefinedDCPIFilter(const char* metric, LoadModule* lm)
+GetPredefinedDCPIFilter(const char* metric, binutils::LM* lm)
 {
   PredefinedDCPIMetricTable::Entry* e =
     PredefinedDCPIMetricTable::FindEntry(metric);
@@ -310,7 +311,7 @@ bool
 DCPIMetricFilter::operator()(const PCProfileMetric* m)
 {
   const DCPIProfileMetric* dm = dynamic_cast<const DCPIProfileMetric*>(m);
-  BriefAssertion(dm && "Internal Error: invalid cast!");
+  DIAG_Assert(dm, "Internal Error: invalid cast!");
   
   const DCPIMetricDesc& mdesc = dm->GetDCPIDesc();
   return expr.IsSatisfied(mdesc);

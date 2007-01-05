@@ -1,5 +1,6 @@
-// $Id$
 // -*-C++-*-
+// $Id$
+
 // * BeginRiceCopyright *****************************************************
 // 
 // Copyright ((c)) 2002, Rice University 
@@ -58,8 +59,6 @@
 //*************************** User Include Files ****************************
 
 #include <include/general.h>
-
-#include <lib/support/String.hpp>
 
 //*************************** Forward Declarations ***************************
 

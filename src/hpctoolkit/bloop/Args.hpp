@@ -1,5 +1,6 @@
 // -*-Mode: C++;-*-
 // $Id$
+
 // * BeginRiceCopyright *****************************************************
 // 
 // Copyright ((c)) 2002, Rice University 
@@ -37,18 +38,18 @@
 //***************************************************************************
 //
 // File:
-//    Args.h
+//   $Source$
 //
 // Purpose:
-//    [The purpose of this file]
+//   [The purpose of this file]
 //
 // Description:
-//    [The set of functions, macros, etc. defined in the file]
+//   [The set of functions, macros, etc. defined in the file]
 //
 //***************************************************************************
 
-#ifndef Args_h
-#define Args_h
+#ifndef Args_hpp
+#define Args_hpp
 
 //************************* System Include Files ****************************
 
@@ -90,14 +91,11 @@ public:
   const std::string& GetCmd() const { return parser.GetCmd(); }
 
   // Parsed Data: optional arguments
-  bool verboseMode;          // default: false
-  bool normalizeScopeTree;   // default: true
-  bool unsafeNormalizations; // default: true
+  bool normalizeScopeTree;        // default: true
+  bool unsafeNormalizations;      // default: true
   bool irreducibleIntervalIsLoop; // default: false
-  bool prettyPrintOutput;    // default: true
+  bool prettyPrintOutput;         // default: true
   std::string canonicalPathList;
-  std::string pcMapFile; 
-  bool dumpBinary;           // defaults: false
 
   // Parsed Data: arguments
   std::string inputFile;
@@ -110,4 +108,4 @@ private:
   CmdLineParser parser;
 }; 
 
-#endif
+#endif // Args_hpp

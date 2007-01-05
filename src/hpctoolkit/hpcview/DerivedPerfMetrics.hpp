@@ -1,5 +1,6 @@
+// -*-Mode: C++;-*-
 // $Id$
-// -*-C++-*-
+
 // * BeginRiceCopyright *****************************************************
 // 
 // Copyright ((c)) 2002, Rice University 
@@ -34,19 +35,18 @@
 // 
 // ******************************************************* EndRiceCopyright *
 
-#ifndef DerivedPerfMetrics_h 
-#define DerivedPerfMetrics_h 
+#ifndef DerivedPerfMetrics_hpp 
+#define DerivedPerfMetrics_hpp 
 
 //************************ System Include Files ******************************
+
+#include <string>
 
 //************************* User Include Files *******************************
 
 #include <include/general.h> 
 
-#include "PerfMetric.hpp"
-#include "Driver.hpp"
-
-#include <lib/support/String.hpp>
+#include <lib/prof-juicy/PerfMetric.hpp>
 
 //************************* Xerces Declarations ******************************
 
@@ -55,26 +55,44 @@ using XERCES_CPP_NAMESPACE::DOMNode;
 
 //************************ Forward Declarations ******************************
 
+class Driver;
 class MathMLExpr;
 
 //****************************************************************************
+
+// FIXME: relocate
+class ScopeInfo;
+void AccumulateMetricsFromChildren(ScopeInfo* si, int perfInfoIndex);
+
+bool IsHPCRUNFilePerfMetric(PerfMetric* m);
+
 
 class FilePerfMetric : public PerfMetric {
 public: 
   FilePerfMetric(const char* nm, const char* nativeNm, const char* displayNm,
 		 bool display, bool percent, bool sortBy, 
 		 const char* fname, const char* ftype, Driver* _driver); 
+  FilePerfMetric(const std::string& nm, const std::string& nativeNm, 
+		 const std::string& displayNm,
+		 bool display, bool percent, bool sortBy, 
+		 const std::string& fname, const std::string& ftype, 
+		 Driver* _driver); 
+
   virtual ~FilePerfMetric(); 
   
-  const String& FileName() const        { return file; }; 
-  const String& FileType() const;       // not yet implemented, is for later 
+  const std::string& FileName() const { return file; }
+  const std::string& FileType() const { return type; } // HPCRUN, PROFILE
   
-  virtual void Make(NodeRetriever &ret); // read the file
+  virtual void Make(NodeRetriever &ret);
   
-  virtual String ToString() const; 
+  virtual std::string ToString() const; 
+
 private: 
-  String file;
-  String type; // for later use
+  void MakeHPCRUN(NodeRetriever &ret); // read the file
+  void MakePROFILE(NodeRetriever &ret); // read the file
+
+  std::string file;
+  std::string type; // for later use
   Driver* driver;
 };
 
@@ -83,12 +101,21 @@ public:
   ComputedPerfMetric(const char* nm, const char* displayNm,
 		     bool display, bool percent, bool sortBy, 
 		     bool propagateComputed, DOMNode *expr);
+  ComputedPerfMetric(const std::string& nm, const std::string& displayNm,
+		     bool display, bool percent, bool sortBy, 
+		     bool propagateComputed, DOMNode *expr);
+
   virtual ~ComputedPerfMetric(); 
 
   virtual void Make(NodeRetriever &ret); // compute node by node
   
-  virtual String ToString() const; 
+  virtual std::string ToString() const; 
+
+private:
+  void Ctor(const char* nm, DOMNode *expr);
+
 private: 
   MathMLExpr *mathExpr; 
 };
+
 #endif 

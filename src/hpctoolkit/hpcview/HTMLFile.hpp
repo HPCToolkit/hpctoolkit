@@ -51,7 +51,8 @@
 #include <include/general.h>
 
 #include "StaticFiles.hpp"
-#include "ScopeInfo.hpp"
+
+#include <lib/prof-juicy/PgmScopeTree.hpp>
 
 #include <lib/support/String.hpp>
 

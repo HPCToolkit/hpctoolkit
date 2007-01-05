@@ -1,5 +1,6 @@
+// -*-Mode: C++;-*-
 // $Id$
-// -*-C++-*-
+
 // * BeginRiceCopyright *****************************************************
 // 
 // Copyright ((c)) 2002, Rice University 
@@ -58,10 +59,12 @@ using namespace std; // For compatibility with non-std C headers
 #include <unistd.h>
 #include <fcntl.h>
 
+#include <string>
+using std::string;
+
 //*************************** User Include Files ****************************
 
 #include "Files.hpp"
-#include "String.hpp"
 #include "Trace.hpp"
 
 //*************************** Forward Declarations **************************
@@ -80,10 +83,11 @@ cpy(int srcFd, int dstFd)
   } 
 } 
 
+
 const char* 
 CopyFile(const char* destFile, ...) 
 {
-  static String error; 
+  static string error; 
   error = ""; 
   va_list srcFiles;
   va_start(srcFiles, destFile);
@@ -92,17 +96,18 @@ CopyFile(const char* destFile, ...)
   int dstFd = open(destFile, O_WRONLY | O_CREAT | O_TRUNC, 
 		    S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH); 
   if (dstFd < 0) {
-    error = String("Could not open ") + destFile + ": " + strerror(errno); 
+    error = string("Could not open ") + destFile + ": " + strerror(errno); 
     IFTRACE << " Error: " << error << endl; 
-    return error; 
+    return error.c_str(); 
   } 
   
   char* srcFile; 
   while ( (srcFile = va_arg(srcFiles, char*)) ) {
     int srcFd = open(srcFile, O_RDONLY); 
     if ((srcFd < 0) || (dstFd < 0)) {
-      error = String("Could not open ") + srcFile + ": " + strerror(errno); 
-    } else { 
+      error = string("Could not open ") + srcFile + ": " + strerror(errno); 
+    } 
+    else { 
       IFTRACE << " " << srcFile; 
       cpy(srcFd, dstFd); 
       close(srcFd); 
@@ -110,12 +115,23 @@ CopyFile(const char* destFile, ...)
   } 
   IFTRACE << endl;
   close(dstFd); 
-  if (error.Length() > 0) {
-    return error; 
-  } else {
+  if (error.length() > 0) {
+    return error.c_str(); 
+  } 
+  else {
     return NULL; 
   } 
 } 
+
+
+int 
+MakeDir(const char* dir)
+{
+  /* int ret = */ // should check for success 
+  mkdir(dir, 00755); 
+  return 0; 
+} 
+
 
 int 
 CountChar(const char* file, char c) 
@@ -134,6 +150,7 @@ CountChar(const char* file, char c)
   }
   return count; 
 } 
+
 
 const char* 
 TmpFileName()   
@@ -166,37 +183,53 @@ TmpFileName()
 #endif
 }
 
+
 int
 DeleteFile(const char* file) 
 { 
   return unlink(file); 
 }
 
-String 
+
+bool
+FileIsReadable(const char *fileName)
+{
+  bool result = false;
+  struct stat sbuf;
+  if (stat(fileName, &sbuf) == 0) {
+    // the file is readable if the return code is OK
+    result = true;
+  }
+  return result;
+}
+
+
+string 
 BaseFileName(const char* fName) 
 {
   const char* lastSlash = strrchr(fName, '/'); 
-  String baseFileName;
+  string baseFileName;
   
   if (lastSlash) {
     // valid: "/foo" || ".../foo" AND invalid: "/" || ".../" 
     baseFileName = lastSlash + 1; 
-  } else {
+  } 
+  else {
     // filename contains no slashes, already in short form 
     baseFileName = fName; 
   } 
   return baseFileName; 
 } 
 
-String 
+
+string 
 PathComponent(const char* fName) 
 {
   const char* lastSlash = strrchr(fName, '/'); 
-  String pathComponent = "."; 
+  string pathComponent = "."; 
   if (lastSlash) {
     pathComponent = fName; 
-    pathComponent.Resize(lastSlash - fName); 
+    pathComponent.resize(lastSlash - fName);
   }
   return pathComponent; 
 }
-
