@@ -31,6 +31,7 @@ csprof_atomic_exchange_pointer(volatile void **addr, void *ptr)
 
 #if defined(__i386__) && defined(__linux__)
 
+/* FIXME: these are *probably* broken; they've never been tested.  */
 static inline long
 csprof_atomic_increment(volatile void *addr)
 {
@@ -99,17 +100,13 @@ csprof_atomic_exchange_pointer(volatile void **addr, volatile void *ptr)
 static inline long
 cmpxchg(volatile void *ptr, long old, long new)
 {
-#if 0
-  char result;
-  __asm__ __volatile__("lock; cmpxchgq %3, %0; setz %1"
-                       : "=m"(*ptr), "=q"(result)
-                       : "m"(*ptr), "r" (new), "a"(old) : "memory");
-  return *((long*)ptr);
-#else
-  /* hack */
-  *((long *) ptr) = new;
-  return old;
-#endif
+  long prev;
+
+  __asm__ __volatile__("\n"
+		       "\tlock; cmpxchgq %3, (%1)\n\t"
+		       : "=a" (prev) : "r" (ptr), "a" (old), "r" (new) : "memory");
+
+  return prev;
 }
 
 #elif defined(__ia64__)
@@ -128,7 +125,9 @@ cmpxchg(volatile void *ptr, long old, long new)
 }
 
 #endif
-                 
+
+/* FIXME: atomic_increment and atomic_decrement could be implemented more
+   efficiently on x86-64 and x86.  */
 static inline long
 csprof_atomic_increment(volatile void *addr)
 {

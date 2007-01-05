@@ -15,7 +15,17 @@ bfdsect_callback(bfd *thebfd, asection *sect, void *obj)
 {
   if(strcmp(sect->name, ".plt") == 0) {
     plt_begin_address = sect->vma;
-    plt_end_address = sect->vma + sect->size;
+    /* KLUDGE: somewhere along the line, binutils changed the name
+       of the 'size/_cooked_size' structure field and didn't bother
+       to provide any way to differentiate between the two versions.
+       No abstract interface, nothing.  So if you're having compilation
+       problems with this file, you might change '_cooked_size' to
+       'size'.
+
+       The reason it's '_cooked_size' is because that's what recent
+       versions of binutils use and therefore it's more likely to work
+       out of the box for people.  */
+    plt_end_address = sect->vma + sect->_cooked_size;
   }
 }
 
@@ -50,17 +60,13 @@ static bfd_vma memcpy_end_address;
 static int
 go_find_memcpy(csprof_epoch_module_t *m)
 {
-  while(m) {
-    if(strstr(m->module_name, "libc-2.3.6.so")) {
-      unsigned long base = (unsigned long)m->mapaddr;
-      memcpy_begin_address = base + 0x71850;
-      memcpy_end_address = base + 0x72160;
-      return 1;
-    }
-    m = m->next;
-  }
+  /* KLUDGE: Recent versions of libc include a highly optimized memcpy
+     that doesn't contain any unwind information.  We need to work
+     around that.  */
+  memcpy_begin_address = (bfd_vma) &memcpy;
+  memcpy_end_address = memcpy_begin_address + 0x900;
 
-  return 0;
+  return 1;
 }
 
 static bfd_vma csproflib_begin_address;

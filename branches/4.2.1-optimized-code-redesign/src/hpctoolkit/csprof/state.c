@@ -8,6 +8,7 @@
 #include "xpthread.h"
 #include "state.h"
 #include "general.h"
+#include "csproflib_private.h"
 #include "mem.h"
 #include "epoch.h"
 
@@ -117,8 +118,14 @@ csprof_state_alloc(csprof_state_t *x)
   x->treenode = NULL;
 #endif
 #else
-  x->bt_len_max = CSPROF_BACKTRACE_CACHE_INIT_SZ;
-  x->bt = csprof_malloc(sizeof(void *) * x->bt_len_max);
+#if defined(CSPROF_LIST_BACKTRACE_CACHE)
+  x->backtrace = csprof_list_new(x->pool);
+#else
+  x->btbuf = csprof_malloc(sizeof(csprof_frame_t) * CSPROF_BACKTRACE_CACHE_INIT_SZ);
+  x->bufend = x->btbuf + CSPROF_BACKTRACE_CACHE_INIT_SZ;
+  x->bufstk = x->bufend;
+  x->treenode = NULL;
+#endif
 #endif
 
   return CSPROF_OK;

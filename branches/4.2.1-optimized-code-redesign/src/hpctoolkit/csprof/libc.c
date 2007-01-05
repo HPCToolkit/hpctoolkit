@@ -148,6 +148,9 @@ csprof_libc_init()
 
 /* libc override handling */
 
+/* Only override these libc functions if we are using the trampoline */
+#ifdef CSPROF_TRAMPOLINE_BACKEND
+
 /* we need to know about this to unwind the backtrace properly.  we'd
    get extra bonus points if we could move the trampoline to underneath
    the function to which we're longjmp'ing. */
@@ -174,6 +177,8 @@ _longjmp(jmp_buf env, int value)
 
     libcall2(csprof__longjmp, env, value);
 }
+
+#endif /* CSPROF_TRAMPOLINE_BACKEND defined */
 
 /* somehow we need to expose this to the main library */
 static old_sig_handler_func_t oldprof_func;
