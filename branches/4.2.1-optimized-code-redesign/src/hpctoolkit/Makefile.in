@@ -15,7 +15,7 @@
 @SET_MAKE@
 
 # -*-Mode: makefile;-*-
-# $Id: Makefile.am 604 2006-08-23 14:26:07Z eraxxon $
+# $Id: Makefile.am 662 2007-01-05 20:48:30Z eraxxon $
 
 #############################################################################
 #
@@ -52,6 +52,9 @@ POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
 @OPT_ENABLE_HPCRUN_TRUE@am__append_1 = hpcrun
+
+# added by garvin 11/3/2006. Should this include synchronous too?
+@OPT_ENABLE_CSPROF_ASYNC_TRUE@am__append_2 = csprof 
 subdir = src/hpctoolkit
 DIST_COMMON = $(srcdir)/Makefile.am $(srcdir)/Makefile.in
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
@@ -72,7 +75,7 @@ RECURSIVE_TARGETS = all-recursive check-recursive dvi-recursive \
 ETAGS = etags
 CTAGS = ctags
 DIST_SUBDIRS = bloop filters hpcquick hpcprof hpcview lump misc ptran \
-	xcsprof xprof hpcrun
+	xcsprof xprof hpcrun csprof
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
 ACLOCAL = @ACLOCAL@
 AMDEP_FALSE = @AMDEP_FALSE@
@@ -232,7 +235,7 @@ AUTOMAKE_OPTIONS = foreign
 # Automake rules
 #############################################################################
 SUBDIRS = bloop filters hpcquick hpcprof hpcview lump misc ptran \
-	xcsprof xprof $(am__append_1)
+	xcsprof xprof $(am__append_1) $(am__append_2)
 all: all-recursive
 
 .SUFFIXES:
