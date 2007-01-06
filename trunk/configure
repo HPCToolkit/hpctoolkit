@@ -22190,6 +22190,7 @@ fi
 # will have a different location.
 #   <papi-install-path>/ include/papi.h
 #                        lib/libpapi.so
+#                        lib64/libpapi.so
 #   <papi-build-path>/ papi.h
 #                      libpapi.so
 # Note: same test is in HPCToolkitRoot's Makefile.quick
@@ -22199,7 +22200,9 @@ if test "$OPT_HAVE_PAPI" = "yes" ; then
   else
     OPT_PAPI_IFLAGS="-I${OPT_PAPI}"
   fi
-  if test -d "${OPT_PAPI}/lib"; then
+  if test -r "${OPT_PAPI}/lib64/libpapi.so"; then
+    OPT_PAPI_LIBPATH="${OPT_PAPI}/lib64"
+  elif test -r "${OPT_PAPI}/lib/libpapi.so"; then
     OPT_PAPI_LIBPATH="${OPT_PAPI}/lib"
   else
     OPT_PAPI_LIBPATH="${OPT_PAPI}"
