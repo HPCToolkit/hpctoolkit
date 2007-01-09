@@ -99,9 +99,12 @@ namespace banal {
 
 namespace bloop {
 
+// ------------------------------------------------------------
+// Helpers for building a scope tree
+// ------------------------------------------------------------
+
 typedef std::multimap<ProcScope*, binutils::Proc*> ProcScopeToProcMap;
 
-// Helpers for building a scope tree
 
 static ProcScopeToProcMap*
 BuildLMSkeleton(LoadModScope *lmScope, binutils::LM* lm);
@@ -144,7 +147,7 @@ FindOrCreateStmtNode(std::map<suint, StmtRangeScope*>& stmtMap,
 		     VMAInterval& vmaint);
 
 
-// Cannot make this a local class because it is used as a a template
+// Cannot make this a local class because it is used as a template
 // argument! Sigh.
 class QNode {
 public:
@@ -570,8 +573,8 @@ BuildProcStructure(ProcScope* pScope, binutils::Proc* p,
   suint dbgId = p->GetId();
 
   const char* dbgNm = "xxx";
-  if (strncmp(p->GetName().c_str(), dbgNm, strlen(dbgNm)) == 0) {
-    DBG_PROC_print_now = true; 
+  if (p->GetName().find(dbgNm) != string::npos) {
+    DBG_PROC_print_now = true;
   }
   if (dbgId == 10) { DBG_PROC_print_now = true; }
 #endif
@@ -714,6 +717,8 @@ BuildProcLoopNests(ProcScope* enclosingProc, binutils::Proc* p,
     
     // -------------------------------------------------------
     // 3. process children within this context in BFS fashion
+    //    (Note that if IsInCurrentCtxt() always returns false, the
+    //    search devolves into a DFS.)
     // -------------------------------------------------------
     OA::RIFG::NodeId kid = tarj->getInners(qnode.fgNode);
     if (kid == OA::RIFG::NIL) {

@@ -135,13 +135,15 @@ public:
   // 
   // -------------------------------------------------------
   
-  static bool containsLineGivenFile(CodeInfo* x, suint line);
+  static bool containsLineGivenFile(CodeInfo* x, suint line, 
+				    bool loopIsAlien = false);
 
   // -------------------------------------------------------
   // debugging
   // -------------------------------------------------------
   std::string toString(int flags = 0) const;
 
+  // flags = -1: compressed dump / 0: normal dump / 1: extra info
   std::ostream& dump(std::ostream& os, int flags = 0) const;
 
   void ddump(int flags = 0) const;
@@ -197,6 +199,8 @@ private:
 
     // debugging
     std::string toString(int flags = 0, const char* pre = "") const;
+
+    // flags: -1: tight dump / 0: normal dump
     std::ostream& dump(std::ostream& os, 
 		       int flags = 0, const char* pre = "") const;
     void ddump() const;

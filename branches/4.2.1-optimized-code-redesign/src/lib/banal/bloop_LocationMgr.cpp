@@ -142,8 +142,8 @@ LocationMgr::locate(LoopScope* loop, CodeInfo* proposed_scope,
 		    string& filenm, string& procnm, suint line)
 {
   DIAG_DevMsgIf(DBG, "LocationMgr::locate: " << loop->toXML() << "\n"
-		<< "  " << proposed_scope->toXML() << "\n"
-		<< "  {" << filenm << "}[" << procnm << "]:" << line);
+		<< "  proposed: " << proposed_scope->toXML() << "\n"
+		<< "  guess: {" << filenm << "}[" << procnm << "]:" << line);
   determineContext(proposed_scope, filenm, procnm, line);
   Ctxt& encl_ctxt = m_ctxtStack.front();
   loop->LinkAndSetLineRange(encl_ctxt.scope());
@@ -155,8 +155,8 @@ LocationMgr::locate(StmtRangeScope* stmt, CodeInfo* proposed_scope,
 		    string& filenm, string& procnm, suint line)
 {
   DIAG_DevMsgIf(DBG, "LocationMgr::locate: " << stmt->toXML() << "\n"
-		<< "  " << proposed_scope->toXML() << "\n"
-		<< "  {" << filenm << "}[" << procnm << "]:" << line);
+		<< "  proposed: " << proposed_scope->toXML() << "\n"
+		<< "  guess: {" << filenm << "}[" << procnm << "]:" << line);
   determineContext(proposed_scope, filenm, procnm, line);
   Ctxt& encl_ctxt = m_ctxtStack.front();
   // FIXME (minor): manage stmt cache! if stmt already exists, don't add
@@ -173,7 +173,7 @@ LocationMgr::endSeq()
 
 
 bool
-LocationMgr::containsLineGivenFile(CodeInfo* x, suint line)
+LocationMgr::containsLineGivenFile(CodeInfo* x, suint line, bool loopIsAlien)
 {  
   // FIXME: move to contains-line-fuzzy in CodeInfo
   if (x->ContainsLine(line)) {
@@ -185,8 +185,9 @@ LocationMgr::containsLineGivenFile(CodeInfo* x, suint line)
     switch (x->Type()) {
       case ScopeInfo::PROC:  beg_epsilon = 5;  end_epsilon = 30;      break;
       case ScopeInfo::ALIEN: beg_epsilon = 10; end_epsilon = INT_MAX; break;
-      case ScopeInfo::LOOP:  beg_epsilon = 2;  end_epsilon = 20;      break;
-      default:               return false;
+      case ScopeInfo::LOOP:  beg_epsilon = 2;  end_epsilon = INT_MAX;
+	                     if (loopIsAlien) { end_epsilon = 20; }   break;
+      default: return false;
     }
     
     // INVARIANT: 'line' is strictly outside the range of the context
@@ -217,7 +218,7 @@ LocationMgr::dump(std::ostream& os, int flags) const
        it != m_ctxtStack.end(); ++it) {
     it->dump(os, 0, "  ");
   }
-  if (flags) {
+  if (flags >= 1) {
     os << " --------------------------------------\n";
     for (AlienScopeMap::const_iterator it = m_alienMap.begin();
 	 (it != m_alienMap.end()); ++it) {
@@ -287,7 +288,10 @@ LocationMgr::Ctxt::dump(std::ostream& os, int flags, const char* pre) const
      << ": " << ctxt()->toXML() << "\n";
   os << pre << "  loop: " << hex << loop() << dec;
   if (loop()) { os << ": " << loop()->toXML(); }
-  os << " }\n";
+  os << " }";
+  if (flags >= 0) {
+    os << "\n";
+  }
   os.flush();
   return os;
 }
@@ -332,6 +336,8 @@ LocationMgr::CtxtChange_t
 LocationMgr::determineContext(CodeInfo* proposed_scope,
 			      string& filenm, string& procnm, suint line)
 {
+  DIAG_DevMsgIf(DBG, "LocationMgr::determineContext");
+
   CtxtChange_t change = CtxtChange_NULL;
   
   // -----------------------------------------------------
@@ -436,6 +442,9 @@ LocationMgr::determineContext(CodeInfo* proposed_scope,
     }
   }
 
+  DIAG_DevMsgIf(DBG, "  first ctxt:\n" 
+		<< ((use_ctxt) ? use_ctxt->toString(-1, "  ") : ""));
+
   // -----------------------------------------------------
   // Setup what will be the current context
   // -----------------------------------------------------
@@ -459,25 +468,33 @@ LocationMgr::determineContext(CodeInfo* proposed_scope,
     }
     
     // If our enclosing scope is a loop, then consult the loop bounds,
-    // which we assume are approximately correct.  This is important
-    // for two reasons.  First, within an alien context, we can't
-    // assume much about the context bounds and the loop bounds enable
-    // us to detect inlining and forward substitution.  Second, within
-    // a non-alien context we detect inlining using the procedure
-    // bounds but can use the loop bounds to detect forward
-    // substitution (which, e.g., may occur when initializing the
-    // induction variable).  We only want to do this above a certain
-    // threshold, because in many cases the loop bounds can be
-    // perfected by including the instructions that perform the
-    // induction variable initialization and which usually have a
-    // source line number slightly before the "head VMA".
+    // which we assume are approximately correct, though we place more
+    // confidence in the begin line than the end line estimate.
+    //
+    // We consult the loop bounds for two reasons.  First, within an
+    // alien context, we can't assume much about the context bounds
+    // and the loop bounds enable us to detect inlining and forward
+    // substitution.  Second, within a non-alien context we detect
+    // inlining using the procedure bounds but can use the loop bounds
+    // to detect forward substitution (which, e.g., may occur when
+    // initializing the induction variable).  
+    //
+    // However, given the loop bound limitations, we only want to
+    // relocate if the mismatch is significant because in many cases
+    // the loop bounds can be improved by including what currently
+    // appear to be 'nearby' statements but which are actually part of
+    // the source loop.  For begin boundaries we can be fairly strict,
+    // but want to allow loop initializations that usually have a
+    // source line number slightly before the "head VMA".  For end
+    // boundaries we have to be more lenient.  
+
     if (use_ctxt->loop()) {
       // INVARIANT: We must be in the proposed context.
       // INVARIANT: File names must match (or use_ctxt would be NULL)
       DIAG_Assert(use_ctxt == proposed_ctxt, "");
-      // FIXME: relax this matching??
       if (IsValidLine(line) 
-	  && !containsLineGivenFile(use_ctxt->loop(), line)) {
+	  && !containsLineGivenFile(use_ctxt->loop(), line, 
+				    use_ctxt->isAlien())) {
 	use_ctxt = NULL; // force a relocation
       }
     }
@@ -495,8 +512,8 @@ LocationMgr::determineContext(CodeInfo* proposed_scope,
     use_ctxt = &(m_ctxtStack.front());
   }
 
-  DIAG_DevMsgIf(DBG, "LocationMgr::determineContext: " << toString(change) 
-		<< ":\n" << use_ctxt->toString(0, "  "));
+  DIAG_DevMsgIf(DBG, "  final ctxt [" << toString(change) << "]\n" 
+		<< use_ctxt->toString(0, "  "));
   return change;
 }
 
