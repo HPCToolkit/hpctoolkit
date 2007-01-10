@@ -89,8 +89,8 @@ using namespace std; // For compatibility with non-std C headers
 
 //*************************** Forward Declarations **************************
 
-int SimpleLineCmp(suint x, suint y);
-int AddXMLEscapeChars(int dmpFlag);
+static int SimpleLineCmp(suint x, suint y);
+static int AddXMLEscapeChars(int dmpFlag);
 
 using namespace xml;
 
@@ -2196,39 +2196,55 @@ CodeInfo::CodeInfoWithLine(suint ln) const
 
 
 int 
-CodeInfoLineComp(CodeInfo* x, CodeInfo* y)
+CodeInfoLineComp(const CodeInfo* x, const CodeInfo* y)
 {
   if (x->begLine() == y->begLine()) {
-    // Given two CodeInfo's with identical endpoints consider two
-    // special cases:
     bool endLinesEqual = (x->endLine() == y->endLine());
-    
-    // 1. If a ProcScope, use a lexiocraphic compare
-    if (endLinesEqual
-	&& (x->Type() == ScopeInfo::PROC && y->Type() == ScopeInfo::PROC)) {
-      ProcScope *px = ((ProcScope*)x), *py = ((ProcScope*)y);
-      int ret1 = px->name().compare(py->name());
-      if (ret1 != 0) { return ret1; }
-      int ret2 = px->LinkName().compare(py->LinkName());
-      if (ret2 != 0) { return ret2; }
-    }
+    if (endLinesEqual) {
+      // We have two CodeInfo's with identical line intervals...
+      
+      // Use lexicographic comparison for procedures
+      if (x->Type() == ScopeInfo::PROC && y->Type() == ScopeInfo::PROC) {
+	ProcScope *px = (ProcScope*)x, *py = (ProcScope*)y;
+	int cmp1 = px->name().compare(py->name());
+	if (cmp1 != 0) { return cmp1; }
+	int cmp2 = px->LinkName().compare(py->LinkName());
+	if (cmp2 != 0) { return cmp2; }
+      }
+      
+      // Use VMAInterval sets otherwise.
+      bool x_lt_y = (x->vmaSet() < y->vmaSet());
+      bool y_lt_x = (y->vmaSet() < x->vmaSet());
+      bool vmaSetsEqual = (!x_lt_y && !y_lt_x);
 
-    // 2. Otherwise: rank a leaf node before a non-leaf node
-    if (endLinesEqual && !(x->IsLeaf() && y->IsLeaf())) {
-      if      (x->IsLeaf()) { return -1; } // x < y 
-      else if (y->IsLeaf()) { return 1; }  // x > y  
+      if (vmaSetsEqual) {
+	// Try ranking a leaf node before a non-leaf node
+	if ( !(x->IsLeaf() && y->IsLeaf())) {
+	  if      (x->IsLeaf()) { return -1; } // x < y
+	  else if (y->IsLeaf()) { return  1; } // x > y
+	}
+	
+	// Give up!
+	return 0;
+      }
+      else if (x_lt_y) { return -1; }
+      else if (y_lt_x) { return  1; }
+      else {
+	DIAG_Die(DIAG_Unimplemented);
+      }
     }
-    
-    // 3. General case
-    return SimpleLineCmp(x->endLine(), y->endLine());
-  } else {
+    else {
+      return SimpleLineCmp(x->endLine(), y->endLine());
+    }
+  }
+  else {
     return SimpleLineCmp(x->begLine(), y->begLine());
   }
 }
 
 
 // - if x < y; 0 if x == y; + otherwise
-int 
+static int 
 SimpleLineCmp(suint x, suint y)
 {
   // We would typically wish to use the following for this simple
@@ -2244,7 +2260,7 @@ SimpleLineCmp(suint x, suint y)
 
 // Returns a flag indicating whether XML escape characters should be used
 // not modify 'str'
-int 
+static int 
 AddXMLEscapeChars(int dmpFlag)
 {
   if (dmpFlag & PgmScopeTree::XML_NO_ESC_CHARS) {
