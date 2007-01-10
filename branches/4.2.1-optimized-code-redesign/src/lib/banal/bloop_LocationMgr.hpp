@@ -130,6 +130,10 @@ public:
   CodeInfo* curScope() const {
     return (m_ctxtStack.empty()) ? NULL : m_ctxtStack.front().scope();
   }
+  
+  bool isParentScope(CodeInfo* scope) const {
+    return (findCtxt(scope) != NULL);
+  }
 
   // -------------------------------------------------------
   // 

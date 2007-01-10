@@ -131,10 +131,7 @@ BuildStmts(bloop::LocationMgr& locMgr,
 
 
 static bool
-IsInCurrentCtxt(LocationMgr& mgr,
-		OA::OA_ptr<OA::NestedSCR> tarj,
-		OA::OA_ptr<OA::CFG::Interface> cfg, 
-		OA::RIFG::NodeId fgNode);
+WasCtxtClosed(CodeInfo* scope, LocationMgr& mgr);
 
 static void
 FindLoopBegLineInfo(binutils::Proc* p, 
@@ -153,13 +150,13 @@ class QNode {
 public:
   QNode(OA::RIFG::NodeId x = OA::RIFG::NIL, 
 	CodeInfo* y = NULL, CodeInfo* z = NULL)
-    : fgNode(x), enclosingScope(y), childScope(z) { }
+    : fgNode(x), enclosingScope(y), scope(z) { }
   
-  bool isProcessed() const { return (childScope != NULL); }
+  bool isProcessed() const { return (scope != NULL); }
   
-  OA::RIFG::NodeId fgNode;
-  CodeInfo* enclosingScope;
-  CodeInfo* childScope;
+  OA::RIFG::NodeId fgNode;  // flow graph node
+  CodeInfo* enclosingScope; // enclosing scope of 'fgNode'
+  CodeInfo* scope;          // scope for children of 'fgNode' (fgNode scope)
 };
 
   
@@ -706,19 +703,19 @@ BuildProcLoopNests(ProcScope* enclosingProc, binutils::Proc* p,
     if (isTODO) {
       // Note that if this call closes an alien context, invariants
       // below ensure that this context has been fully explored.
-      CodeInfo* childScope;
-      childScope = BuildLoopAndStmts(locMgr, qnode.enclosingScope, p,
-				     tarj, cfg, qnode.fgNode, irrIntIsLoop);
-      qnode.childScope = childScope;
-      if (childScope->Type() == ScopeInfo::LOOP) {
+      CodeInfo* myScope;
+      myScope = BuildLoopAndStmts(locMgr, qnode.enclosingScope, p,
+				  tarj, cfg, qnode.fgNode, irrIntIsLoop);
+      qnode.scope = myScope;
+      if (myScope->Type() == ScopeInfo::LOOP) {
 	nLoops++;
       }
     }
     
     // -------------------------------------------------------
     // 3. process children within this context in BFS fashion
-    //    (Note that if IsInCurrentCtxt() always returns false, the
-    //    search devolves into a DFS.)
+    //    (Note: WasCtxtClosed() always true  -> DFS
+    //           WasCtxtClosed() always false -> BFS
     // -------------------------------------------------------
     OA::RIFG::NodeId kid = tarj->getInners(qnode.fgNode);
     if (kid == OA::RIFG::NIL) {
@@ -726,18 +723,18 @@ BuildProcLoopNests(ProcScope* enclosingProc, binutils::Proc* p,
     }
     
     do {
-      CodeInfo* childScope;
-      childScope = BuildLoopAndStmts(locMgr, qnode.childScope, p,
-				     tarj, cfg, kid, irrIntIsLoop);
-      if (childScope->Type() == ScopeInfo::LOOP) {
+      CodeInfo* myScope;
+      myScope = BuildLoopAndStmts(locMgr, qnode.scope, p, 
+				  tarj, cfg, kid, irrIntIsLoop);
+      if (myScope->Type() == ScopeInfo::LOOP) {
 	nLoops++;
       }
       
       // Insert to BFS section (inserts before)
-      theQueue.insert(q_todo, QNode(kid, qnode.childScope, childScope));
+      theQueue.insert(q_todo, QNode(kid, qnode.scope, myScope));
       kid = tarj->getNext(kid);
     }
-    while (kid != OA::RIFG::NIL && IsInCurrentCtxt(locMgr, tarj, cfg, kid));
+    while (kid != OA::RIFG::NIL && !WasCtxtClosed(qnode.scope, locMgr));
     
     // FIXME: adjust bounds using loop nesting invariants.
 
@@ -745,14 +742,13 @@ BuildProcLoopNests(ProcScope* enclosingProc, binutils::Proc* p,
     // 4. place rest of children in queue's TODO section
     // -------------------------------------------------------
     for ( ; kid != OA::RIFG::NIL; kid = tarj->getNext(kid)) {
-      theQueue.push_back(QNode(kid, qnode.childScope, NULL));
+      theQueue.push_back(QNode(kid, qnode.scope, NULL));
 
       // ensure 'q_todo' to points to the beginning of TODO section
       if (q_todo == theQueue.end()) {
 	q_todo--;
       }
     }
-    
   }
   
   locMgr.endSeq();
@@ -762,7 +758,7 @@ BuildProcLoopNests(ProcScope* enclosingProc, binutils::Proc* p,
 
 
 // BuildLoopAndStmts: Returns the expected (or 'original') enclosing
-// scope of children (loop or proc)
+// scope for children of 'fgNode', e.g. loop or proc. 
 static CodeInfo*
 BuildLoopAndStmts(bloop::LocationMgr& locMgr, 
 		  CodeInfo* enclosingScope, binutils::Proc* p,
@@ -940,20 +936,23 @@ BuildProcLoopNests(CodeInfo* enclosingScope, binutils::Proc* p,
 // 
 //****************************************************************************
 
-// IsInCurrentCtxt: Given a LocationMgr and a node in a NestedSCR
-// (Tarjan interval tree), determine whether the node is within the
-// current context.
+// WasCtxtClosed: Given a context 'scope' and a LocationMgr, returns true if
+// LocationMgr has closed 'scope'.
 static bool
-IsInCurrentCtxt(LocationMgr& mgr,
-		OA::OA_ptr<OA::NestedSCR> tarj,
-		OA::OA_ptr<OA::CFG::Interface> cfg,
-		OA::RIFG::NodeId fgNode)
+WasCtxtClosed(CodeInfo* scope, LocationMgr& mgr)
 {
-  // FIXME
-  // *** if we process this block, we process all of it -- we want to quickly ensure the context does't change anywhere in here... ***
-  // if we have to, just look at everything...
-  // look at last insn?
-  return false; // Turn into a DFS!
+#if 0
+  return true; // FIXME: old DFS behavior
+#else
+  // Only alien context can be closed.  See...
+  if (scope->Type() == ScopeInfo::ALIEN) {
+    // context was closed if it is not on the scope stack
+    return (!mgr.isParentScope(scope));
+  }
+  else {
+    return false;
+  }
+#endif
 }
 
 
