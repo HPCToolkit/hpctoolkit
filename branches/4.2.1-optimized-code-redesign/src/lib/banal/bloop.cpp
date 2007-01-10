@@ -353,18 +353,11 @@ bool
 banal::bloop::Normalize(PgmScopeTree* pgmScopeTree, bool unsafeNormalizations)
 {
   bool changed = false;
+  
   // changed |= RemoveOrphanedProcedureRepository(pgmScopeTree);
-  
-#if 0 /* not necessary */
-  // Apply following routines until a fixed point is reached.
-  do {
-#endif
-    changed = false;
-    changed |= CoalesceDuplicateStmts(pgmScopeTree, unsafeNormalizations);
-#if 0
-  } while (changed);
-#endif
-  
+
+  // Cleanup procedure/alien scopes
+  changed |= CoalesceDuplicateStmts(pgmScopeTree, unsafeNormalizations);
   changed |= MergePerfectlyNestedLoops(pgmScopeTree);
   changed |= RemoveEmptyScopes(pgmScopeTree);
   
@@ -1057,26 +1050,20 @@ static bool
 RemoveOrphanedProcedureRepository(PgmScopeTree* pgmScopeTree)
 {
   bool changed = false;
-
+  
   PgmScope* pgmScope = pgmScopeTree->GetRoot();
   if (!pgmScope) { return changed; }
-
-  for (ScopeInfoChildIterator lmit(pgmScope); lmit.Current(); lmit++) {
-    DIAG_Assert(((ScopeInfo*)lmit.Current())->Type() == ScopeInfo::LM, "");
-    LoadModScope* lm = dynamic_cast<LoadModScope*>(lmit.Current()); // always true
-
-    // For each immediate child of this node...
-    for (ScopeInfoChildIterator it(lm); it.Current(); /* */) {
-      DIAG_Assert(((ScopeInfo*)it.Current())->Type() == ScopeInfo::FILE, "");
-      FileScope* file = dynamic_cast<FileScope*>(it.Current()); // always true
-      it++; // advance iterator -- it is pointing at 'file'
-      
-      if (file->name() == OrphanedProcedureFile) {
-        file->Unlink(); // unlink 'file' from tree
-        delete file;
-        changed = true;
-      }
-    } 
+  
+  for (ScopeInfoIterator it(pgmScope, &ScopeTypeFilter[ScopeInfo::FILE]); 
+       it.Current(); /* */) {
+    FileScope* file = dynamic_cast<FileScope*>(it.Current());
+    it++; // advance iterator -- it is pointing at 'file'
+    
+    if (file->name() == OrphanedProcedureFile) {
+      file->Unlink(); // unlink 'file' from tree
+      delete file;
+      changed = true;
+    }
   } 
   
   return changed;
@@ -1506,12 +1493,11 @@ FilterFilesFromScopeTree(PgmScopeTree* pgmScopeTree,
   PgmScope* pgmScope = pgmScopeTree->GetRoot();
   if (!pgmScope) { return changed; }
   
-  // For each immediate child of this node...
-  for (ScopeInfoChildIterator it(pgmScope); it.Current(); /* */) {
-    DIAG_Assert(((ScopeInfo*)it.Current())->Type() == ScopeInfo::FILE, "");
-    FileScope* file = dynamic_cast<FileScope*>(it.Current()); // always true
+  for (ScopeInfoIterator it(pgmScope, &ScopeTypeFilter[ScopeInfo::FILE]); 
+       it.Current(); /* */) {
+    FileScope* file = dynamic_cast<FileScope*>(it.Current());
     it++; // advance iterator -- it is pointing at 'file'
-
+    
     // Verify this file in the current list of acceptible paths
     string baseFileName = BaseFileName(file->name());
     DIAG_Assert(!baseFileName.empty(), "Invalid path!");
