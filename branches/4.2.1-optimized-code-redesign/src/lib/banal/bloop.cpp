@@ -1394,19 +1394,10 @@ MergePerfectlyNestedLoops(ScopeInfo* node)
     if (perfNested && IsValidLine(child->begLine(), child->endLine()) &&
 	child->begLine() == n_CI->begLine() &&
 	child->endLine() == n_CI->endLine()) { 
-      
+
       // Move all children of 'child' so that they are children of 'node'
-      for (ScopeInfoChildIterator it1(child); it1.Current(); /* */) {
-	CodeInfo* i = dynamic_cast<CodeInfo*>(it1.Current()); // always true
-	DIAG_Assert(i, "");
-	it1++; // advance iterator -- it is pointing at 'i'
-	
-	i->Unlink();   // no longer a child of 'child'
-	i->Link(node); // now a child of 'node'
-      }
-      child->Unlink(); // unlink 'child' from tree
-      delete child;
-      changed = true;
+      changed = ScopeInfo::Merge(node, child);
+      DIAG_Assert(changed, "MergePerfectlyNestedLoops: merge failed.");
     }
   } 
   

@@ -409,7 +409,9 @@ public:
   VMAIntervalSet&       vmaSet()       { return mvmaSet; }
   const VMAIntervalSet& vmaSet() const { return mvmaSet; }
   
-  bool      ContainsLine(suint ln) const;
+  bool ContainsLine(suint ln) const;
+  bool ContainsInterval(suint begLn, suint endLn) const
+    { return (ContainsLine(begLn) && ContainsLine(endLn)); }
   CodeInfo* CodeInfoWithLine(suint ln) const;
 
   // returns a string of the form: 
