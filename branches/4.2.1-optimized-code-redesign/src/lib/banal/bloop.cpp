@@ -1134,6 +1134,12 @@ static bool
 CDS_InspectStmt(StmtRangeScope* stmt1, LineToStmtMap* stmtMap, 
 		ScopeInfoSet* toDelete, int level);
 
+static bool 
+CDS_ScopeFilter(const ScopeInfo& x, long type)
+{
+  return (x.Type() == ScopeInfo::PROC || x.Type() == ScopeInfo::ALIEN);
+}
+
 static bool
 CoalesceDuplicateStmts(PgmScopeTree* pgmScopeTree, bool unsafeNormalizations)
 {
@@ -1144,21 +1150,20 @@ CoalesceDuplicateStmts(PgmScopeTree* pgmScopeTree, bool unsafeNormalizations)
   ScopeInfoSet visitedScopes; // all children of a scope have been visited
   ScopeInfoSet toDelete;      // nodes to delete
 
-  for (ScopeInfoChildIterator lmit(pgmScope); lmit.Current(); lmit++) {
-    DIAG_Assert(((ScopeInfo*)lmit.Current())->Type() == ScopeInfo::LM, "");
-    LoadModScope* lm = dynamic_cast<LoadModScope*>(lmit.Current()); // always true
-    
-    // We apply the normalization routine to each FileScope so that 1)
-    // we are guaranteed to only process CodeInfos and 2) we can assume
-    // that all line numbers encountered are within the same file
-    // (keeping the LineToStmtMap simple and fast).
-    for (ScopeInfoChildIterator it(lm); it.Current(); ++it) {
-      DIAG_Assert(((ScopeInfo*)it.Current())->Type() == ScopeInfo::FILE, "");
-      FileScope* file = dynamic_cast<FileScope*>(it.Current()); // always true
-      
-      changed |= CoalesceDuplicateStmts(file, &stmtMap, &visitedScopes, 
-					&toDelete, 1);
-    } 
+  // Apply the normalization routine to each ProcScope and AlienScope
+  // so that 1) we are guaranteed to only process CodeInfos and 2) we
+  // can assume that all line numbers encountered are within the same
+  // file (keeping the LineToStmtMap simple and fast).  (Children
+  // AlienScope's are skipped.)
+
+  ScopeInfoFilter filter(CDS_ScopeFilter, "CDS_ScopeFilter", 0);
+  for (ScopeInfoIterator it(pgmScope, &filter); it.Current(); ++it) {
+    CodeInfo* scope = dynamic_cast<CodeInfo*>(it.Current());
+    changed |= CoalesceDuplicateStmts(scope, &stmtMap, &visitedScopes,
+				      &toDelete, 1);
+    stmtMap.clear();           // Clear statement table
+    visitedScopes.clear();     // Clear visited set
+    DeleteContents(&toDelete); // Clear 'toDelete'
   }
 
   return changed;
@@ -1267,8 +1272,10 @@ CDS_Main(CodeInfo* scope, LineToStmtMap* stmtMap, ScopeInfoSet* visited,
     
     if (toDelete->find(child) != toDelete->end()) { continue; }
     
-    DIAG_DevMsgIf(DBG_CDS, "CDS: " << child);
+    if (child->Type() == ScopeInfo::ALIEN) { continue; }
     
+    DIAG_DevMsgIf(DBG_CDS, "CDS: " << child);
+
     // 1. Recursively perform re-nesting on 'child'.
     changed |= CoalesceDuplicateStmts(child, stmtMap, visited, toDelete,
 				      level + 1);
@@ -1279,11 +1286,6 @@ CDS_Main(CodeInfo* scope, LineToStmtMap* stmtMap, ScopeInfoSet* visited,
       StmtRangeScope* stmt = dynamic_cast<StmtRangeScope*>(child);
       changed |= CDS_InspectStmt(stmt, stmtMap, toDelete, level);
     } 
-    else if (child->Type() == ScopeInfo::PROC) {
-      stmtMap->clear();         // Clear statement table
-      visited->clear();         // Clear visited set
-      DeleteContents(toDelete); // Clear 'toDelete'
-    }
   }
   
   visited->insert(scope);
