@@ -719,7 +719,7 @@ ScopeInfo::CodeInfoParent() const
 }
 
 
-ScopeInfo *
+ScopeInfo*
 ScopeInfo::Ancestor(ScopeType tp) const
 {
   const ScopeInfo* s = this;
@@ -2159,39 +2159,39 @@ CodeInfo::Relocate()
 bool
 CodeInfo::ContainsLine(suint ln) const
 {
-   DIAG_Assert(ln != UNDEF_LINE, "");
-   if (Type() == FILE) {
-     return true;
-   } 
-   return ((mbegLine >= 1) && (mbegLine <= ln) && (ln <= mendLine));
-} 
+  // FIXME: why is there a special case for FILE?
+  if (Type() == FILE) {
+    return true;
+  }
+  return (mbegLine != UNDEF_LINE && (mbegLine <= ln && ln <= mendLine));
+}
 
 
 CodeInfo* 
 CodeInfo::CodeInfoWithLine(suint ln) const
 {
-   DIAG_Assert(ln != UNDEF_LINE, "");
-   CodeInfo* ci;
-   // ln > mendLine means there is no child that contains ln
-   if (ln <= mendLine) {
-     for (ScopeInfoChildIterator it(this); it.Current(); it++) {
-       ci = dynamic_cast<CodeInfo*>(it.Current());
-       DIAG_Assert(ci, "");
-       if  (ci->ContainsLine(ln)) {
-         if (ci->Type() == STMT_RANGE) {  
-	   return ci; // never look inside LINE_SCOPEs 
-         } 
-
-	 // desired line might be in inner scope; however, it might be
-	 // elsewhere because optimization left procedure with 
-	 // non-contiguous line ranges in scopes at various levels.
-	 CodeInfo* inner = ci->CodeInfoWithLine(ln);
-	 if (inner) return inner;
-       } 
-     }
-   }
-   if (ci->Type() == PROC) return (CodeInfo*) this;
-   else return 0;
+  DIAG_Assert(ln != UNDEF_LINE, "CodeInfo::CodeInfoWithLine: invalid line");
+  CodeInfo* ci;
+  // ln > mendLine means there is no child that contains ln
+  if (ln <= mendLine) {
+    for (ScopeInfoChildIterator it(this); it.Current(); it++) {
+      ci = dynamic_cast<CodeInfo*>(it.Current());
+      DIAG_Assert(ci, "");
+      if  (ci->ContainsLine(ln)) {
+	if (ci->Type() == STMT_RANGE) {  
+	  return ci; // never look inside LINE_SCOPEs 
+	} 
+	
+	// desired line might be in inner scope; however, it might be
+	// elsewhere because optimization left procedure with 
+	// non-contiguous line ranges in scopes at various levels.
+	CodeInfo* inner = ci->CodeInfoWithLine(ln);
+	if (inner) return inner;
+      } 
+    }
+  }
+  if (ci->Type() == PROC) return (CodeInfo*) this;
+  else return 0;
 }
 
 
