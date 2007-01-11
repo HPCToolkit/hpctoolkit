@@ -58,6 +58,8 @@
 #include <map>
 #include <iostream>
 
+#include <cctype>
+
 //*************************** User Include Files ****************************
 
 #include <include/general.h>
@@ -297,8 +299,17 @@ private:
     ~FindCtxt_MatchFPLOp() { }
     
     virtual bool operator()(const Ctxt& ctxt) const {
-      return (ctxt.containsLine(m_filenm, m_line) 
-	      && ctxt.ctxt()->name() == m_procnm);
+      if (ctxt.containsLine(m_filenm, m_line)) {
+	// perform a 'fuzzy' match: e.g., 'm_procnm' name can be 'GetLB' 
+	// even though the full context name is Array2D<double>::GetLB(int).
+	const string& ctxtnm = ctxt.ctxt()->name();
+	int pos = ctxtnm.find(m_procnm);
+	return (pos != string::npos &&
+		(pos == 0 || std::ispunct(ctxtnm[pos-1])));
+      }
+      else {
+	return false;
+      }
     }
   private:
     const string& m_filenm, m_procnm;
