@@ -287,7 +287,7 @@ banal::bloop::WriteScopeTree(std::ostream& os, PgmScopeTree* pgmScopeTree,
 
 // BuildLMStructure: Builds a scope tree -- with a focus on loop nest
 //   recovery -- representing program source code from the load module
-// '  lm'.
+//   'lm'.
 // A load module represents binary code, which is essentially
 //   a collection of procedures along with some extra information like
 //   symbol and debugging tables.  This routine relies on the debugging
