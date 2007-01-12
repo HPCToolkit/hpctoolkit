@@ -183,9 +183,13 @@ LocationMgr::containsLineGivenFile(CodeInfo* x, suint line, bool loopIsAlien)
     int beg_epsilon = 0, end_epsilon = 0;
     
     switch (x->Type()) {
+      // procedure begin lines are very accurate (with debug info)
+      // procedure end lines are not very accurate
+      // loop begin lines are somewhat accurate
+      // loop end line are nots very accurate
       case ScopeInfo::PROC:  beg_epsilon = 5;  end_epsilon = 30;      break;
       case ScopeInfo::ALIEN: beg_epsilon = 10; end_epsilon = INT_MAX; break;
-      case ScopeInfo::LOOP:  beg_epsilon = 2;  end_epsilon = INT_MAX;
+      case ScopeInfo::LOOP:  beg_epsilon = 5;  end_epsilon = INT_MAX;
 	                     if (loopIsAlien) { end_epsilon = 20; }   break;
       default: return false;
     }
