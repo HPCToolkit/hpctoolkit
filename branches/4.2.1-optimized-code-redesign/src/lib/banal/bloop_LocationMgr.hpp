@@ -68,6 +68,22 @@
 
 //*************************** Forward Declarations **************************
 
+namespace banal {
+namespace bloop {
+
+  inline bool 
+  ctxtNameEqFuzzy(const string& ctxtnm, const string& x) 
+  {
+    // perform a 'fuzzy' match: e.g., 'm_procnm' name can be 'GetLB' 
+    // even though the full context name is Array2D<double>::GetLB(int).
+    int pos = ctxtnm.find(x);
+    return (pos != string::npos && (pos == 0 || std::ispunct(ctxtnm[pos-1])));
+  }
+
+} // namespace bloop
+} // namespace banal
+
+
 //***************************************************************************
 // LocationMgr
 //***************************************************************************
@@ -299,17 +315,8 @@ private:
     ~FindCtxt_MatchFPLOp() { }
     
     virtual bool operator()(const Ctxt& ctxt) const {
-      if (ctxt.containsLine(m_filenm, m_line)) {
-	// perform a 'fuzzy' match: e.g., 'm_procnm' name can be 'GetLB' 
-	// even though the full context name is Array2D<double>::GetLB(int).
-	const string& ctxtnm = ctxt.ctxt()->name();
-	int pos = ctxtnm.find(m_procnm);
-	return (pos != string::npos &&
-		(pos == 0 || std::ispunct(ctxtnm[pos-1])));
-      }
-      else {
-	return false;
-      }
+      return (ctxt.containsLine(m_filenm, m_line)
+	      && ctxtNameEqFuzzy(ctxt.ctxt()->name(), m_procnm));
     }
   private:
     const string& m_filenm, m_procnm;
