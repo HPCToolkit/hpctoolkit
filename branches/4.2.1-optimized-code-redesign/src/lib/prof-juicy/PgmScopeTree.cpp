@@ -1002,9 +1002,10 @@ ScopeInfo::MergePaths(ScopeInfo* lca, ScopeInfo* toDesc, ScopeInfo* fromDesc)
 bool 
 ScopeInfo::Merge(ScopeInfo* toNode, ScopeInfo* fromNode)
 {
-  if (!IsMergable(toNode, fromNode)) {
-    return false;
-  }
+  // Do we really want this?
+  //if (!IsMergable(toNode, fromNode)) {
+  //  return false;
+  //}
   
   // Perform the merge
   // 1. Move all children of 'fromNode' into 'toNode'

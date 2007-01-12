@@ -178,6 +178,9 @@ namespace bloop {
 static bool 
 RemoveOrphanedProcedureRepository(PgmScopeTree* pgmScopeTree);
 
+static bool 
+MergeBogusAlienScopes(PgmScopeTree* pgmScopeTree);
+
 static bool
 CoalesceDuplicateStmts(PgmScopeTree* pgmScopeTree, bool unsafeNormalizations);
 
@@ -355,6 +358,9 @@ banal::bloop::Normalize(PgmScopeTree* pgmScopeTree, bool unsafeNormalizations)
   bool changed = false;
   
   // changed |= RemoveOrphanedProcedureRepository(pgmScopeTree);
+
+  // Remove unnecessary alien scopes
+  changed |= MergeBogusAlienScopes(pgmScopeTree);
 
   // Cleanup procedure/alien scopes
   changed |= CoalesceDuplicateStmts(pgmScopeTree, unsafeNormalizations);
@@ -1067,6 +1073,67 @@ RemoveOrphanedProcedureRepository(PgmScopeTree* pgmScopeTree)
   } 
   
   return changed;
+}
+
+
+//****************************************************************************
+
+static bool 
+MergeBogusAlienScopes(CodeInfo* node, FileScope* file);
+
+
+static bool 
+MergeBogusAlienScopes(PgmScopeTree* pgmScopeTree)
+{
+  bool changed = false;
+  
+  PgmScope* pgmScope = pgmScopeTree->GetRoot();
+  if (!pgmScope) { return changed; }
+  
+  for (ScopeInfoIterator it(pgmScope, &ScopeTypeFilter[ScopeInfo::PROC]);
+       it.Current(); ++it) {
+    ProcScope* proc = dynamic_cast<ProcScope*>(it.Current());
+    FileScope* file = proc->File();
+    changed |= MergeBogusAlienScopes(proc, file);
+  }
+  
+  return changed;
+}
+
+
+static bool 
+MergeBogusAlienScopes(CodeInfo* node, FileScope* file)
+{
+  bool changed = false;
+  
+  if (!node) { return changed; }
+
+  for (CodeInfoChildIterator it(node); it.Current(); /* */) {
+    CodeInfo* child = it.CurCodeInfo();
+    it++; // advance iterator -- it is pointing at 'child'
+    
+    // 1. Recursively do any merging for this tree's children
+    changed |= MergeBogusAlienScopes(child, file);
+    
+    // 2. Merge an alien node if it is redundant with its calling context
+    if (child->Type() == ScopeInfo::ALIEN) {
+      AlienScope* alien = dynamic_cast<AlienScope*>(child);
+      CodeInfo* parent = alien->CodeInfoParent();
+      
+      CodeInfo* callCtxt = dynamic_cast<CodeInfo*>(
+        parent->Ancestor(ScopeInfo::PROC, ScopeInfo::ALIEN));
+      const string& callCtxtFnm = (callCtxt->Type() == ScopeInfo::ALIEN) ?
+	dynamic_cast<AlienScope*>(callCtxt)->fileName() : file->name();
+      
+      if (alien->fileName() == callCtxtFnm
+	  && ctxtNameEqFuzzy(callCtxt->name(), alien->name())
+	  && parent->ContainsInterval(alien->begLine(), alien->endLine())) {
+	// Move all children of 'alien' into 'parent'
+	changed = ScopeInfo::Merge(parent, alien);
+	DIAG_Assert(changed, "MergeBogusAlienScopes: merge failed.");
+      }
+    }
+  }
 }
 
 
