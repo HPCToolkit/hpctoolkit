@@ -79,6 +79,9 @@ MYSOURCES_LIBHPCRUN_STATIC = \
 	rtmap.h rtmap.c 
 
 
+MYIFLAGS_MONITOR = \
+	-DHPC_MONITOR_LIBSO=\"@MONITOR_LIBSO@\"
+
 MYIFLAGS_PAPI = \
 	-DHPC_PAPI_LIBSO=\"@OPT_PAPI_LIBSO@\"   \
 	-DHPC_PAPI_LIBPATH=\"@OPT_PAPI_LIBPATH@\"
@@ -86,8 +89,8 @@ MYIFLAGS_PAPI = \
 MYCFLAGS   = @HOST_CFLAGS@   $(HPC_IFLAGS) @OPT_PAPI_IFLAGS@
 MYCXXFLAGS = @HOST_CXXFLAGS@ $(HPC_IFLAGS) @OPT_PAPI_IFLAGS@
 
-MYCFLAGS_HPCRUN   = $(MYCFLAGS)   $(MYIFLAGS_PAPI)
-MYCXXFLAGS_HPCRUN = $(MYCXXFLAGS) $(MYIFLAGS_PAPI)
+MYCFLAGS_HPCRUN   = $(MYCFLAGS)   $(MYIFLAGS_MONITOR) $(MYIFLAGS_PAPI)
+MYCXXFLAGS_HPCRUN = $(MYCXXFLAGS) $(MYIFLAGS_MONITOR) $(MYIFLAGS_PAPI)
 
 
 MYLDFLAGS_HPCRUN    = \
@@ -134,7 +137,7 @@ libhpcrun_la_CFLAGS     = $(MYCFLAGS)
 libhpcrun_la_LDFLAGS    = $(MYLDFLAGS_LIBHPCRUN_PRELOAD)
 libhpcrun_la_LIBADD     = $(MYLDADD_LIBHPCRUN_PRELOAD)
 
-# N.B.: We use the PROGRAMS primary to get free linking.  An
+# N.B.: We use the PROGRAMS macro primarily to get free linking.  An
 # install-hook below moves this from bin to lib in the installation.
 bin_PROGRAMS               += libhpcrun-static.o
 libhpcrun_static_o_SOURCES  = $(MYSOURCES_LIBHPCRUN_STATIC)
