@@ -121,8 +121,7 @@ HPCViewDocParser::HPCViewDocParser(const string& inputFile,
   mParser->setErrorHandler(&errHndlr);
   mParser->parse(inputFile.c_str());
   if (mParser->getErrorCount() > 0) {
-    string error = "terminating because of previously reported CONFIGURATION file parse errors.";
-    throw HPCViewDocException(error); 
+    HPCViewDoc_Throw("terminating because of previously reported CONFIGURATION file parse errors.");
   }
   
   mDoc = mParser->getDocument();
@@ -169,9 +168,8 @@ ProcessHPCVIEW(DOMNode *node, Driver &driver, bool onlyMetrics)
   IFTRACE << "HPCVIEW:" << endl << node << endl; 
 
   if ((node == NULL) ||
-	  (node->getNodeType() != DOMNode::DOCUMENT_TYPE_NODE) ){ 
-    string error = "CONFIGURATION file does not begin with <HPCVIEW>"; 
-    throw HPCViewDocException(error); 
+      (node->getNodeType() != DOMNode::DOCUMENT_TYPE_NODE) ){ 
+    HPCViewDoc_Throw("CONFIGURATION file does not begin with <HPCVIEW>");
   };
   
   node = node->getNextSibling();
@@ -179,8 +177,7 @@ ProcessHPCVIEW(DOMNode *node, Driver &driver, bool onlyMetrics)
 
   if ( (node == NULL)
        || (node->getNodeType() != DOMNode::ELEMENT_NODE)) {
-    string error = "No DOCUMENT_NODE found in CONFIGURATION file."; 
-    throw HPCViewDocException(error); 
+    HPCViewDoc_Throw("No DOCUMENT_NODE found in CONFIGURATION file.");
   };
 
   // process each child 

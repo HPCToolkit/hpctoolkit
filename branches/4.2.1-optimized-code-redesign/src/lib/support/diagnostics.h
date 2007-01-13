@@ -183,6 +183,11 @@ Diagnostics_TheMostVisitedBreakpointInHistory(const char* filenm,
     WeIrDnAmE << streamArgs /*<< std::ends*/;                       \
     throw Diagnostics::FatalException(WeIrDnAmE.str(), __FILE__, __LINE__); }
 
+#define DIAG_ThrowX(ExceptionClass, streamArgs)                     \
+  { std::ostringstream WeIrDnAmE;                                   \
+    WeIrDnAmE << streamArgs /*<< std::ends*/;                       \
+    throw ExceptionClass(WeIrDnAmE.str(), __FILE__, __LINE__); }
+
 #endif
 
 

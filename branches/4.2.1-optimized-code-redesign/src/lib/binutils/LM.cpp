@@ -161,9 +161,7 @@ binutils::LM::Open(const char* moduleName)
   bfd_init();
   bfd *abfd = bfd_openr(moduleName, "default");
   if (!abfd) {
-    cerr << "Error: `" << moduleName << "': " << bfd_errmsg(bfd_get_error())
-	 << endl; 
-    return false;
+    BINUTILS_Throw("'" << moduleName << "': " << bfd_errmsg(bfd_get_error()));
   }
   
   // bfd_object: The BFD may contain data, symbols, relocations and
@@ -171,8 +169,7 @@ binutils::LM::Open(const char* moduleName)
   // bfd_archive: The BFD contains other BFDs and an optional index.
   // bfd_core: The BFD contains the result of an executable core dump.
   if (!bfd_check_format(abfd, bfd_object)) {
-    cerr << "Error: `" << moduleName << "': not an object or executable\n";
-    return false;
+    BINUTILS_Throw("'" << moduleName << "': not an object or executable");
   }
   
   name = moduleName;
@@ -859,8 +856,7 @@ binutils::Exe::Open(const char* moduleName)
   bool STATUS = LM::Open(moduleName);
   if (STATUS) {
     if (GetType() != LM::Executable) {
-      cerr << "Error: `" << moduleName << "' is not an executable.\n";
-      return false;
+      BINUTILS_Throw("'" << moduleName << "' is not an executable.");
     }
 
     startVMA = bfd_get_start_address(impl->abfd);

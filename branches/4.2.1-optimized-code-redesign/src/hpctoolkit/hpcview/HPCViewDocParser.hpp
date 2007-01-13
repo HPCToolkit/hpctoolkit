@@ -78,6 +78,11 @@ private:
 };
 
 
+//***************************************************************************
+// 
+//***************************************************************************
+
+#define HPCViewDoc_Throw(streamArgs) DIAG_ThrowX(HPCViewDocException, streamArgs)
 
 class HPCViewDocException : public Diagnostics::Exception {
 public:
