@@ -145,8 +145,10 @@ LIBTOOL = @LIBTOOL@
 LN_S = @LN_S@
 LTLIBOBJS = @LTLIBOBJS@
 MAKEINFO = @MAKEINFO@
+MONITOR = @MONITOR@
 MONITOR_LIBPATH = @MONITOR_LIBPATH@
 MONITOR_LIBSO = @MONITOR_LIBSO@
+MONITOR_LIBSO_INSTALLED = @MONITOR_LIBSO_INSTALLED@
 OA_IFLAGS = @OA_IFLAGS@
 OA_LDFLAGS = @OA_LDFLAGS@
 OBJEXT = @OBJEXT@
@@ -267,6 +269,8 @@ MYDIRS = \
 MYINSTALLDIR = $(DESTDIR)$(prefix)
 MYXERCESLIB = @XERCES@/lib
 MYXERCESINSTALLDIR = $(MYINSTALLDIR)/xercesc
+MYMONITORLIB = @MONITOR_LIBPATH@
+MYMONITORINSTALLDIR = $(MYINSTALLDIR)/monitor
 
 #############################################################################
 # Automake rules
@@ -716,7 +720,7 @@ uninstall-info: uninstall-info-recursive
 
 # *-hook runs after install has completed
 install-data-local: myinstall-files myinstall-scripts \
-	myinstall-dirs myinstall-xerces
+	myinstall-dirs myinstall-xerces myinstall-monitor
 
 myinstall-files:
 	for pair in $(MYFILEPAIRS); do \
@@ -757,9 +761,13 @@ myinstall-xerces:
 	@$(mkinstalldirs) $(MYXERCESINSTALLDIR)
 	@cp -R $(MYXERCESLIB) $(MYXERCESINSTALLDIR)/.
 
+myinstall-monitor:
+	@$(mkinstalldirs) $(MYMONITORINSTALLDIR)
+	@cp -R $(MYMONITORLIB) $(MYMONITORINSTALLDIR)/.
+
 .PHONY : install-data-local install-data-hook \
 	myinstall-files myinstall-scripts \
-	myinstall-dirs myinstall-xerces
+	myinstall-dirs myinstall-xerces myinstall-monitor
 
 hpc_webdocs: 
 #	Exclude CVS or .svn metadata

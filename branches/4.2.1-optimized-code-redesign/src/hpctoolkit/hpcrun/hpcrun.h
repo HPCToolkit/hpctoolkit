@@ -42,7 +42,6 @@
  */
 
 #define HPCRUN_LIB  "libhpcrun.so"
-#define MONITOR_LIB "libmonitor.so"
 
 typedef enum enum_hpc_threadprof_t {
   HPCRUN_THREADPROF_NO   = 0, /* do not initialize thread support */

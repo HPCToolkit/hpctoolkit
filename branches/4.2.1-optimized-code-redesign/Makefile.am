@@ -80,6 +80,9 @@ MYINSTALLDIR = $(DESTDIR)$(prefix)
 MYXERCESLIB = @XERCES@/lib
 MYXERCESINSTALLDIR = $(MYINSTALLDIR)/xercesc
 
+MYMONITORLIB = @MONITOR_LIBPATH@
+MYMONITORINSTALLDIR = $(MYINSTALLDIR)/monitor
+
 #############################################################################
 # Automake rules
 #############################################################################
@@ -97,7 +100,7 @@ SUBDIRS = \
 
 # *-hook runs after install has completed
 install-data-local: myinstall-files myinstall-scripts \
-	myinstall-dirs myinstall-xerces
+	myinstall-dirs myinstall-xerces myinstall-monitor
 
 myinstall-files:
 	for pair in $(MYFILEPAIRS); do \
@@ -138,9 +141,13 @@ myinstall-xerces:
 	@$(mkinstalldirs) $(MYXERCESINSTALLDIR)
 	@cp -R $(MYXERCESLIB) $(MYXERCESINSTALLDIR)/.
 
+myinstall-monitor:
+	@$(mkinstalldirs) $(MYMONITORINSTALLDIR)
+	@cp -R $(MYMONITORLIB) $(MYMONITORINSTALLDIR)/.
+
 .PHONY : install-data-local install-data-hook \
 	myinstall-files myinstall-scripts \
-	myinstall-dirs myinstall-xerces
+	myinstall-dirs myinstall-xerces myinstall-monitor
 
 
 ############################################################

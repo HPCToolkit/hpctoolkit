@@ -453,8 +453,9 @@ check_and_prepare_env_for_profiling(const char* installpath)
   /* LD_PRELOAD */
   snprintf(newval, PATH_MAX, "%s/lib/" HPCRUN_LIB, installpath);
 #ifdef HAVE_MONITOR
-  int maxLen = PATH_MAX - 5 - strlen(HPCRUN_LIB) - strlen(installpath);
-  strncat(newval, " " HPC_MONITOR_LIBSO, maxLen);
+  int ofst = strlen(installpath) + 5 + strlen(HPCRUN_LIB);
+  snprintf(newval + ofst, PATH_MAX - ofst, " %s/" HPC_MONITOR_LIBSO_INSTALLED,
+	   installpath);
 #endif
   oldval = getenv(LD_PRELOAD);
   if (oldval) {
@@ -463,7 +464,7 @@ check_and_prepare_env_for_profiling(const char* installpath)
   }
   newval[PATH_MAX-1] = '\0';
   setenv(LD_PRELOAD, newval, 1);
-
+  
   //fprintf(stderr, "%s\n", getenv(LD_LIBRARY_PATH));
   //fprintf(stderr, "%s\n", getenv(LD_PRELOAD));
   

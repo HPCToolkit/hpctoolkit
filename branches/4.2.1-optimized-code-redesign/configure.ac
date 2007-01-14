@@ -154,14 +154,17 @@ AC_SUBST([XERCES_LDFLAGS])
 
 AC_MSG_CHECKING([for monitor])
 
+MONITOR_LIBNM="lib"
+if test "${HPCTOOLKIT_PLATFORM}" = "x86_64-Linux" ; then
+  MONITOR_LIBNM="lib64"
+fi
+
 MONITOR="${hpctoolkit_top}/../monitor/${HPCTOOLKIT_PLATFORM}"
 MONITOR_IFLAGS="-I${MONITOR}/include"
-MONITOR_LIBPATH="${MONITOR}/lib"
-if test "${HPCTOOLKIT_PLATFORM}" = "x86_64-Linux" ; then
-  MONITOR_LIBPATH="${MONITOR}/lib64"
-fi
+MONITOR_LIBPATH="${MONITOR}/${MONITOR_LIBNM}"
 MONITOR_LDFLAGS="-L${MONITOR_LIBPATH}"
 MONITOR_LIBSO="${MONITOR_LIBPATH}/libmonitor.so"
+MONITOR_LIBSO_INSTALLED="monitor/${MONITOR_LIBNM}/libmonitor.so"
 
 if ( echo "${HPCTOOLKIT_PLATFORM}" | grep "Linux\$" >/dev/null 2>&1 ); then
   AC_DEFINE([HAVE_MONITOR], [], [Monitor library])
@@ -170,9 +173,10 @@ else
   AC_MSG_RESULT([no (not needed)])
 fi
 
-AC_MSG_RESULT([yes (${MONITOR})])
+AC_SUBST([MONITOR])
 AC_SUBST([MONITOR_LIBPATH])
 AC_SUBST([MONITOR_LIBSO])
+AC_SUBST([MONITOR_LIBSO_INSTALLED])
 
 #-------------------------------------------------
 # Check for Open Analysis (CFG builder, etc.)
