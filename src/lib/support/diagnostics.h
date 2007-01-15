@@ -180,8 +180,13 @@ Diagnostics_TheMostVisitedBreakpointInHistory(const char* filenm,
 // (Equivalent to DIAG_Die.) Based on Jean Utke's code in xaifBooster.
 #define DIAG_Throw(streamArgs)                                      \
   { std::ostringstream WeIrDnAmE;                                   \
-    WeIrDnAmE << streamArgs << std::ends;                           \
+    WeIrDnAmE << streamArgs /*<< std::ends*/;                       \
     throw Diagnostics::FatalException(WeIrDnAmE.str(), __FILE__, __LINE__); }
+
+#define DIAG_ThrowX(ExceptionClass, streamArgs)                     \
+  { std::ostringstream WeIrDnAmE;                                   \
+    WeIrDnAmE << streamArgs /*<< std::ends*/;                       \
+    throw ExceptionClass(WeIrDnAmE.str(), __FILE__, __LINE__); }
 
 #endif
 

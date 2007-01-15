@@ -89,8 +89,8 @@ using namespace std; // For compatibility with non-std C headers
 
 //*************************** Forward Declarations **************************
 
-int SimpleLineCmp(suint x, suint y);
-int AddXMLEscapeChars(int dmpFlag);
+static int SimpleLineCmp(suint x, suint y);
+static int AddXMLEscapeChars(int dmpFlag);
 
 using namespace xml;
 
@@ -719,7 +719,7 @@ ScopeInfo::CodeInfoParent() const
 }
 
 
-ScopeInfo *
+ScopeInfo*
 ScopeInfo::Ancestor(ScopeType tp) const
 {
   const ScopeInfo* s = this;
@@ -1483,7 +1483,7 @@ ostream&
 CodeInfo::dumpme(ostream& os, int dmpFlag, const char* prefix) const
 { 
   os << prefix << toString_id(dmpFlag) << " " 
-     << LineRange(); // << " " << mvmaSet.toString();
+     << LineRange() << " " << mvmaSet.toString();
   return os;
 }
 
@@ -2159,76 +2159,92 @@ CodeInfo::Relocate()
 bool
 CodeInfo::ContainsLine(suint ln) const
 {
-   DIAG_Assert(ln != UNDEF_LINE, "");
-   if (Type() == FILE) {
-     return true;
-   } 
-   return ((mbegLine >= 1) && (mbegLine <= ln) && (ln <= mendLine));
-} 
+  // FIXME: why is there a special case for FILE?
+  if (Type() == FILE) {
+    return true;
+  }
+  return (mbegLine != UNDEF_LINE && (mbegLine <= ln && ln <= mendLine));
+}
 
 
 CodeInfo* 
 CodeInfo::CodeInfoWithLine(suint ln) const
 {
-   DIAG_Assert(ln != UNDEF_LINE, "");
-   CodeInfo* ci;
-   // ln > mendLine means there is no child that contains ln
-   if (ln <= mendLine) {
-     for (ScopeInfoChildIterator it(this); it.Current(); it++) {
-       ci = dynamic_cast<CodeInfo*>(it.Current());
-       DIAG_Assert(ci, "");
-       if  (ci->ContainsLine(ln)) {
-         if (ci->Type() == STMT_RANGE) {  
-	   return ci; // never look inside LINE_SCOPEs 
-         } 
-
-	 // desired line might be in inner scope; however, it might be
-	 // elsewhere because optimization left procedure with 
-	 // non-contiguous line ranges in scopes at various levels.
-	 CodeInfo* inner = ci->CodeInfoWithLine(ln);
-	 if (inner) return inner;
-       } 
-     }
-   }
-   if (ci->Type() == PROC) return (CodeInfo*) this;
-   else return 0;
+  DIAG_Assert(ln != UNDEF_LINE, "CodeInfo::CodeInfoWithLine: invalid line");
+  CodeInfo* ci;
+  // ln > mendLine means there is no child that contains ln
+  if (ln <= mendLine) {
+    for (ScopeInfoChildIterator it(this); it.Current(); it++) {
+      ci = dynamic_cast<CodeInfo*>(it.Current());
+      DIAG_Assert(ci, "");
+      if  (ci->ContainsLine(ln)) {
+	if (ci->Type() == STMT_RANGE) {  
+	  return ci; // never look inside LINE_SCOPEs 
+	} 
+	
+	// desired line might be in inner scope; however, it might be
+	// elsewhere because optimization left procedure with 
+	// non-contiguous line ranges in scopes at various levels.
+	CodeInfo* inner = ci->CodeInfoWithLine(ln);
+	if (inner) return inner;
+      } 
+    }
+  }
+  if (ci->Type() == PROC) return (CodeInfo*) this;
+  else return 0;
 }
 
 
 int 
-CodeInfoLineComp(CodeInfo* x, CodeInfo* y)
+CodeInfoLineComp(const CodeInfo* x, const CodeInfo* y)
 {
   if (x->begLine() == y->begLine()) {
-    // Given two CodeInfo's with identical endpoints consider two
-    // special cases:
     bool endLinesEqual = (x->endLine() == y->endLine());
-    
-    // 1. If a ProcScope, use a lexiocraphic compare
-    if (endLinesEqual
-	&& (x->Type() == ScopeInfo::PROC && y->Type() == ScopeInfo::PROC)) {
-      ProcScope *px = ((ProcScope*)x), *py = ((ProcScope*)y);
-      int ret1 = px->name().compare(py->name());
-      if (ret1 != 0) { return ret1; }
-      int ret2 = px->LinkName().compare(py->LinkName());
-      if (ret2 != 0) { return ret2; }
-    }
+    if (endLinesEqual) {
+      // We have two CodeInfo's with identical line intervals...
+      
+      // Use lexicographic comparison for procedures
+      if (x->Type() == ScopeInfo::PROC && y->Type() == ScopeInfo::PROC) {
+	ProcScope *px = (ProcScope*)x, *py = (ProcScope*)y;
+	int cmp1 = px->name().compare(py->name());
+	if (cmp1 != 0) { return cmp1; }
+	int cmp2 = px->LinkName().compare(py->LinkName());
+	if (cmp2 != 0) { return cmp2; }
+      }
+      
+      // Use VMAInterval sets otherwise.
+      bool x_lt_y = (x->vmaSet() < y->vmaSet());
+      bool y_lt_x = (y->vmaSet() < x->vmaSet());
+      bool vmaSetsEqual = (!x_lt_y && !y_lt_x);
 
-    // 2. Otherwise: rank a leaf node before a non-leaf node
-    if (endLinesEqual && !(x->IsLeaf() && y->IsLeaf())) {
-      if      (x->IsLeaf()) { return -1; } // x < y 
-      else if (y->IsLeaf()) { return 1; }  // x > y  
+      if (vmaSetsEqual) {
+	// Try ranking a leaf node before a non-leaf node
+	if ( !(x->IsLeaf() && y->IsLeaf())) {
+	  if      (x->IsLeaf()) { return -1; } // x < y
+	  else if (y->IsLeaf()) { return  1; } // x > y
+	}
+	
+	// Give up!
+	return 0;
+      }
+      else if (x_lt_y) { return -1; }
+      else if (y_lt_x) { return  1; }
+      else {
+	DIAG_Die(DIAG_Unimplemented);
+      }
     }
-    
-    // 3. General case
-    return SimpleLineCmp(x->endLine(), y->endLine());
-  } else {
+    else {
+      return SimpleLineCmp(x->endLine(), y->endLine());
+    }
+  }
+  else {
     return SimpleLineCmp(x->begLine(), y->begLine());
   }
 }
 
 
 // - if x < y; 0 if x == y; + otherwise
-int 
+static int 
 SimpleLineCmp(suint x, suint y)
 {
   // We would typically wish to use the following for this simple
@@ -2244,7 +2260,7 @@ SimpleLineCmp(suint x, suint y)
 
 // Returns a flag indicating whether XML escape characters should be used
 // not modify 'str'
-int 
+static int 
 AddXMLEscapeChars(int dmpFlag)
 {
   if (dmpFlag & PgmScopeTree::XML_NO_ESC_CHARS) {

@@ -470,8 +470,9 @@ protected:
 
 
 // - if x < y; 0 if x == y; + otherwise
-// N.B.: in the case that x == y and x and y are ProcScopes, sort by name.
-int CodeInfoLineComp(CodeInfo* x, CodeInfo* y);
+// N.B.: in the case that x == y, break ties using VMAIntervalSet and
+// then by name attributes.
+int CodeInfoLineComp(const CodeInfo* x, const CodeInfo* y);
 
 
 //***************************************************************************
