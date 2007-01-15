@@ -274,6 +274,44 @@ private:
 };
 
 
+// --------------------------------------------------------------------------
+// operator <, lt_VMAIntervalSet: for ordering VMAIntervalSets based
+// on first entry.  For example:
+//   
+//   {}       < {}      --> false
+//   {}       < {[1,2]} --> true
+//   {[1,1]}  < {}      --> false
+//   {[1,1]}  < {[1,2]} --> true
+//   {[1,1]}  < {[1,1]} --> false
+//   {[1,10]} < {[4,6]} --> true
+// --------------------------------------------------------------------------
+
+inline bool 
+operator<(const VMAIntervalSet& x, const VMAIntervalSet& y)
+{
+  if (x.size() == 0 && y.size() >= 1) {  // x < y
+    return true;
+  }
+  else if (x.size() >= 1 && y.size() >= 1) {
+    const VMAInterval& xfirst = *(x.begin());
+    const VMAInterval& yfirst = *(y.begin());
+    return (xfirst < yfirst);
+  }
+  else {
+    // (x.size() == 0 && y.size() == 0) || (x.size() >= 1 && y.size() == 0)
+    return false;
+  }
+}
+
+class lt_VMAIntervalSet {
+public:
+  bool operator() (const VMAIntervalSet& x, const VMAIntervalSet& y) const {
+    return (x < y);
+  }
+};
+
+
+
 //***************************************************************************
 // VMAIntervalMap
 //***************************************************************************

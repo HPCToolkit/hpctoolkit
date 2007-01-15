@@ -68,6 +68,8 @@
 
 #include <lib/isa/ISATypes.hpp>
 
+#include <lib/support/Exception.hpp>
+
 //*************************** Forward Declarations **************************
 
 class ISA;
@@ -420,6 +422,32 @@ private:
 };
 
 } // namespace binutils
+
+
+//***************************************************************************
+// Exception
+//***************************************************************************
+
+#define BINUTILS_Throw(streamArgs) DIAG_ThrowX(binutils::Exception, streamArgs)
+
+namespace binutils {
+
+class Exception : public Diagnostics::Exception {
+public:
+  Exception(const std::string x,
+	    const char* filenm = NULL, unsigned int lineno = 0)
+    : Diagnostics::Exception(x, filenm, lineno)
+  { }
+  
+  virtual std::string message() const { 
+    return "[binutils]: " + what();
+  }
+
+private:
+};
+
+} // namespace binutils
+
 
 //***************************************************************************
 
