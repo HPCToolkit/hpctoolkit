@@ -1127,7 +1127,8 @@ MergeBogusAlienScopes(CodeInfo* node, FileScope* file)
       
       if (alien->fileName() == callCtxtFnm
 	  && ctxtNameEqFuzzy(callCtxt->name(), alien->name())
-	  && parent->ContainsInterval(alien->begLine(), alien->endLine())) {
+	  && LocationMgr::containsIntervalFzy(parent, alien->begLine(), 
+					      alien->endLine()))  {
 	// Move all children of 'alien' into 'parent'
 	changed = ScopeInfo::Merge(parent, alien);
 	DIAG_Assert(changed, "MergeBogusAlienScopes: merge failed.");
