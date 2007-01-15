@@ -409,9 +409,26 @@ public:
   VMAIntervalSet&       vmaSet()       { return mvmaSet; }
   const VMAIntervalSet& vmaSet() const { return mvmaSet; }
   
-  bool ContainsLine(suint ln) const;
-  bool ContainsInterval(suint begLn, suint endLn) const
-    { return (ContainsLine(begLn) && ContainsLine(endLn)); }
+  // containsLine: returns true if this scope contains line number
+  //   'ln'.  A non-zero beg_epsilon and end_epsilon allows fuzzy
+  //   matches by expanding the interval of the scope.
+  //
+  // containsInterval: returns true if this scope fully contains the
+  //   interval specified by [begLn...endLn].  A non-zero beg_epsilon
+  //   and end_epsilon allows fuzzy matches by expanding the interval of
+  //   the scope.
+  //
+  // Note: We assume that it makes no sense to compare against UNDEF_LINE.
+  bool containsLine(suint ln) const
+    { return (mbegLine != UNDEF_LINE && (mbegLine <= ln && ln <= mendLine)); }
+  bool containsLine(suint ln, int beg_epsilon, int end_epsilon) const;
+  bool containsInterval(suint begLn, suint endLn) const
+    { return (containsLine(begLn) && containsLine(endLn)); }
+  bool containsInterval(suint begLn, suint endLn,
+			int beg_epsilon, int end_epsilon) const
+    { return (containsLine(begLn, beg_epsilon, end_epsilon) 
+	      && containsLine(endLn, beg_epsilon, end_epsilon)); }
+
   CodeInfo* CodeInfoWithLine(suint ln) const;
 
   // returns a string of the form: 

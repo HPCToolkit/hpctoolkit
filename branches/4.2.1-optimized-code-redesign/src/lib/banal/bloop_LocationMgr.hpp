@@ -156,9 +156,12 @@ public:
   // -------------------------------------------------------
   // 
   // -------------------------------------------------------
-  
-  static bool containsLineGivenFile(CodeInfo* x, suint line, 
-				    bool loopIsAlien = false);
+
+  // Assume we know that file names match
+  static bool containsLineFzy(CodeInfo* x, suint line, 
+			      bool loopIsAlien = false);
+
+  static bool containsIntervalFzy(CodeInfo* x, suint begLn, suint endLn);
 
   // -------------------------------------------------------
   // debugging
@@ -212,7 +215,7 @@ private:
     // line matching is more lenient.
     bool containsLine(const string& filenm, suint line) const {
       return (fileName() == filenm 
-	      && LocationMgr::containsLineGivenFile(ctxt(), line));
+	      && LocationMgr::containsLineFzy(ctxt(), line));
     }
 
     bool containsLine(suint line) const;

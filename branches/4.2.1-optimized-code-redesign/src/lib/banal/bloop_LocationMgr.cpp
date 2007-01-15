@@ -173,35 +173,40 @@ LocationMgr::endSeq()
 
 
 bool
-LocationMgr::containsLineGivenFile(CodeInfo* x, suint line, bool loopIsAlien)
-{  
-  // FIXME: move to contains-line-fuzzy in CodeInfo
-  if (x->ContainsLine(line)) {
-    return true;
+LocationMgr::containsLineFzy(CodeInfo* x, suint line, bool loopIsAlien)
+{
+  int beg_epsilon = 0, end_epsilon = 0;
+  
+  switch (x->Type()) {
+    // procedure begin lines are very accurate (with debug info)
+    // procedure end lines are not very accurate
+    // loop begin lines are somewhat accurate
+    // loop end line are not very accurate
+    case ScopeInfo::PROC:  beg_epsilon = 5;  end_epsilon = 30;      break;
+    case ScopeInfo::ALIEN: beg_epsilon = 10; end_epsilon = INT_MAX; break;
+    case ScopeInfo::LOOP:  beg_epsilon = 5;  end_epsilon = INT_MAX;
+                           if (loopIsAlien) { end_epsilon = 20; }   break;
+    default: break;
   }
-  else {
-    int beg_epsilon = 0, end_epsilon = 0;
-    
-    switch (x->Type()) {
-      // procedure begin lines are very accurate (with debug info)
-      // procedure end lines are not very accurate
-      // loop begin lines are somewhat accurate
-      // loop end line are nots very accurate
-      case ScopeInfo::PROC:  beg_epsilon = 5;  end_epsilon = 30;      break;
-      case ScopeInfo::ALIEN: beg_epsilon = 10; end_epsilon = INT_MAX; break;
-      case ScopeInfo::LOOP:  beg_epsilon = 5;  end_epsilon = INT_MAX;
-	                     if (loopIsAlien) { end_epsilon = 20; }   break;
-      default: return false;
-    }
-    
-    // INVARIANT: 'line' is strictly outside the range of the context
-    suint beg = x->begLine();
-    suint end = x->endLine();
-    int beg_delta = beg - line; // > 0 if line is before beg
-    int end_delta = line - end; // > 0 if end is before line
-    return ((beg_delta > 0 && beg_delta <= beg_epsilon)
-	    || (end_delta > 0 && end_delta <= end_epsilon));
+  
+  return x->containsLine(line, beg_epsilon, end_epsilon);
+}  
+
+
+bool
+LocationMgr::containsIntervalFzy(CodeInfo* x, suint begLn, suint endLn)
+{
+  int beg_epsilon = 0, end_epsilon = 0;
+  
+  switch (x->Type()) {
+    // see assumptions above.
+    case ScopeInfo::PROC:  beg_epsilon = 5;  end_epsilon = 10; break;
+    case ScopeInfo::ALIEN: beg_epsilon = 10; end_epsilon = 10; break;
+    case ScopeInfo::LOOP:  beg_epsilon = 5;  end_epsilon = 5;
+    default: break;
   }
+  
+  return x->containsInterval(begLn, endLn, beg_epsilon, end_epsilon);
 }  
 
 
@@ -270,7 +275,7 @@ LocationMgr::Ctxt::containsLine(suint line) const
     return (ctxt()->begLine() <= line); // FIXME (we don't know about file...)
   }
   else {
-    return (ctxt()->ContainsLine(line));
+    return (ctxt()->containsLine(line));
   }
 }
 
@@ -497,8 +502,7 @@ LocationMgr::determineContext(CodeInfo* proposed_scope,
       // INVARIANT: File names must match (or use_ctxt would be NULL)
       DIAG_Assert(use_ctxt == proposed_ctxt, "");
       if (IsValidLine(line) 
-	  && !containsLineGivenFile(use_ctxt->loop(), line, 
-				    use_ctxt->isAlien())) {
+	  && !containsLineFzy(use_ctxt->loop(), line, use_ctxt->isAlien())) {
 	use_ctxt = NULL; // force a relocation
       }
     }
@@ -609,7 +613,7 @@ LocationMgr::findOrCreateAlienScope(CodeInfo* parent_scope,
     // we know that filenm and procnm match
     AlienScope* a = it->second;
     
-    if ( (IsValidLine(line) && containsLineGivenFile(a, line))
+    if ( (IsValidLine(line) && containsLineFzy(a, line))
 	 || (!IsValidLine(a->begLine())) ) {
       alien = a;  // FIXME: potentially more than one...
       break;

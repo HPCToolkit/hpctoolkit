@@ -2158,13 +2158,22 @@ CodeInfo::Relocate()
 
 
 bool
-CodeInfo::ContainsLine(suint ln) const
+CodeInfo::containsLine(suint ln, int beg_epsilon, int end_epsilon) const
 {
-  // FIXME: why is there a special case for FILE?
-  if (Type() == FILE) {
-    return true;
+  // We assume it makes no sense to compare against UNDEF_LINE
+  if (mbegLine != UNDEF_LINE) {
+    if (containsLine(ln)) {
+      return true;
+    }
+    else if (beg_epsilon != 0 || end_epsilon != 0) {
+      // INVARIANT: 'ln' is strictly outside the range of this context
+      int beg_delta = begLine() - ln; // > 0 if line is before beg
+      int end_delta = ln - endLine(); // > 0 if end is before line
+      return ((beg_delta > 0 && beg_delta <= beg_epsilon)
+	      || (end_delta > 0 && end_delta <= end_epsilon));
+    }
   }
-  return (mbegLine != UNDEF_LINE && (mbegLine <= ln && ln <= mendLine));
+  return false;
 }
 
 
@@ -2178,7 +2187,7 @@ CodeInfo::CodeInfoWithLine(suint ln) const
     for (ScopeInfoChildIterator it(this); it.Current(); it++) {
       ci = dynamic_cast<CodeInfo*>(it.Current());
       DIAG_Assert(ci, "");
-      if  (ci->ContainsLine(ln)) {
+      if  (ci->containsLine(ln)) {
 	if (ci->Type() == STMT_RANGE) {  
 	  return ci; // never look inside LINE_SCOPEs 
 	} 
