@@ -54,6 +54,8 @@
 using std::hex;
 using std::dec;
 
+#include <sstream>
+
 #include <string>
 using std::string;
 
@@ -70,7 +72,7 @@ using std::string;
 //****************************************************************************
 
 void
-binutils::Insn::dump(std::ostream& o, const char* pre) const
+binutils::Insn::dump(std::ostream& o, int flags, const char* pre) const
 {
   string p(pre);
   VMA target = GetTargetVMA(vma);
@@ -86,6 +88,16 @@ binutils::Insn::dump(std::ostream& o, const char* pre) const
 
   dumpme(o, p.c_str());
   o << "\n";
+}
+
+
+string
+binutils::Insn::toString(int flags, const char* pre) const
+{
+  std::ostringstream os;
+  dump(os, flags, pre);
+  os << std::ends;
+  return os.str();
 }
 
 
@@ -107,16 +119,9 @@ binutils::Insn::dumpme(std::ostream& o, const char* pre) const
 //***************************************************************************
 
 void
-binutils::CISCInsn::dump(std::ostream& o, const char* pre) const
+binutils::CISCInsn::dump(std::ostream& o, int flags, const char* pre) const
 {
-  Insn::dump(o, pre);
-}
-
-
-void
-binutils::CISCInsn::ddump() const
-{
-  dump(std::cerr);
+  Insn::dump(o, flags, pre);
 }
 
 
@@ -132,16 +137,9 @@ binutils::CISCInsn::dumpme(std::ostream& o, const char* pre) const
 //***************************************************************************
 
 void
-binutils::RISCInsn::dump(std::ostream& o, const char* pre) const
+binutils::RISCInsn::dump(std::ostream& o, int flags, const char* pre) const
 {
-  Insn::dump(o, pre);
-}
-
-
-void
-binutils::RISCInsn::ddump() const
-{
-  dump(std::cerr);
+  Insn::dump(o, flags, pre);
 }
 
 
@@ -157,16 +155,9 @@ binutils::RISCInsn::dumpme(std::ostream& o, const char* pre) const
 //***************************************************************************
 
 void
-binutils::VLIWInsn::dump(std::ostream& o, const char* pre) const
+binutils::VLIWInsn::dump(std::ostream& o, int flags, const char* pre) const
 {
-  Insn::dump(o, pre);
-}
-
-
-void
-binutils::VLIWInsn::ddump() const
-{
-  dump(std::cerr);
+  Insn::dump(o, flags, pre);
 }
 
 

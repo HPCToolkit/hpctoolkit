@@ -145,9 +145,20 @@ public:
 					mi2->GetSize());
   }
   
-  // dump contents for inspection
-  virtual void dump(std::ostream& o = std::cerr, const char* pre = "") const;
-  virtual void ddump() const;
+  // -------------------------------------------------------
+  // debugging
+  // -------------------------------------------------------
+  // Current meaning of 'flags'
+  //   0 : short dump (without instructions)
+  //   1 : full dump
+
+  std::string toString(int flags = LM::DUMP_Brief, const char* pre = "") const;
+
+  virtual void dump(std::ostream& o = std::cerr, 
+		    int flags = LM::DUMP_Brief, const char* pre = "") const;
+  
+  void ddump() const;
+  
   virtual void dumpme(std::ostream& o = std::cerr, const char* pre = "") const;
   
 private:
@@ -191,9 +202,11 @@ public:
     return LM::isa->GetInsnNumDelaySlots(minsn, size);
   }
 
-  // dump contents for inspection
-  virtual void dump(std::ostream& o = std::cerr, const char* pre = "") const;
-  virtual void ddump() const;
+  // -------------------------------------------------------
+  // debugging
+  // -------------------------------------------------------
+  virtual void dump(std::ostream& o = std::cerr, 
+		    int flags = LM::DUMP_Brief, const char* pre = "") const;
   virtual void dumpme(std::ostream& o = std::cerr, const char* pre = "") const;
   
 private:
@@ -228,9 +241,11 @@ public:
 
   virtual ushort GetNumOps() const  { return 1; }
 
-  // dump contents for inspection
-  virtual void dump(std::ostream& o = std::cerr, const char* pre = "") const;
-  virtual void ddump() const;
+  // -------------------------------------------------------
+  // debugging
+  // -------------------------------------------------------
+  virtual void dump(std::ostream& o = std::cerr, 
+		    int flags = LM::DUMP_Brief, const char* pre = "") const;
   virtual void dumpme(std::ostream& o = std::cerr, const char* pre = "") const;
   
 private:
@@ -268,9 +283,11 @@ public:
   virtual ushort GetNumOps() const  
     { return LM::isa->GetInsnNumOps(minsn); }
 
-  // dump contents for inspection
-  virtual void dump(std::ostream& o = std::cerr, const char* pre = "") const;
-  virtual void ddump() const;
+  // -------------------------------------------------------
+  // debugging
+  // -------------------------------------------------------
+  virtual void dump(std::ostream& o = std::cerr, 
+		    int flags = LM::DUMP_Brief, const char* pre = "") const;
   virtual void dumpme(std::ostream& o = std::cerr, const char* pre = "") const;
   
 private:

@@ -76,31 +76,31 @@ using std::string;
 
 suint binutils::Proc::nextId = 0;
 
-binutils::Proc::Proc(binutils::TextSeg* _sec, string& _name, string& _linkname,
-                     binutils::Proc::Type t, VMA _begVMA, VMA _endVMA, 
-		     suint _size)
-  : sec(_sec), name(_name), linkname(_linkname), type(t), begVMA(_begVMA),
-    endVMA(_endVMA), size(_size), filenm(""), begLine(0), mParent(NULL)
+binutils::Proc::Proc(binutils::TextSeg* seg, string& name, string& linkname,
+                     binutils::Proc::Type t, VMA begVMA, VMA endVMA, 
+		     suint size)
+  : m_seg(seg), m_name(name), m_linkname(linkname), m_type(t), m_begVMA(begVMA),
+    m_endVMA(endVMA), m_size(size), m_filenm(""), m_begLine(0), m_parent(NULL)
 {
-  id = nextId++;
-  numInsns = 0; 
+  m_id = nextId++;
+  m_numInsns = 0; 
 }
 
 
 binutils::Proc::~Proc()
 {
-  sec = NULL;
+  m_seg = NULL;
 }
 
 
 binutils::Insn* 
 binutils::Proc::GetLastInsn() const
 {
-  Insn* insn = findInsn(endVMA, 0);
+  Insn* insn = findInsn(m_endVMA, 0);
   if (insn) {
     ushort numOps = insn->GetNumOps();
     if (numOps != 0) {
-      insn = findInsn(endVMA, numOps - 1); // opIndex is 0-based
+      insn = findInsn(m_endVMA, numOps - 1); // opIndex is 0-based
     }
   }
   return insn;
@@ -108,7 +108,7 @@ binutils::Proc::GetLastInsn() const
 
 
 string 
-binutils::Proc::toString(unsigned flags) const
+binutils::Proc::toString(int flags) const
 {
   std::ostringstream os;
   dump(os, flags);
@@ -118,7 +118,7 @@ binutils::Proc::toString(unsigned flags) const
 
 
 void
-binutils::Proc::dump(std::ostream& o, unsigned flags, const char* pre) const
+binutils::Proc::dump(std::ostream& os, int flags, const char* pre) const
 {
   string p(pre);
   string p1 = p + "  ";
@@ -130,41 +130,68 @@ binutils::Proc::dump(std::ostream& o, unsigned flags, const char* pre) const
   ushort endOp = (eInsn) ? eInsn->GetOpIndex() : 0;
 
   // This call performs some consistency checking
-  sec->GetSourceFileInfo(GetBegVMA(), 0, GetEndVMA(), endOp,
-			 func, file, begLn, endLn);
+  m_seg->GetSourceFileInfo(GetBegVMA(), 0, GetEndVMA(), endOp,
+			   func, file, begLn, endLn);
 
   // These calls perform no consistency checking
-  sec->GetSourceFileInfo(GetBegVMA(), 0, b_func, b_file, b_begLn);
-  sec->GetSourceFileInfo(GetEndVMA(), endOp, e_func, e_file, e_endLn2);
+  m_seg->GetSourceFileInfo(GetBegVMA(), 0, b_func, b_file, b_begLn);
+  m_seg->GetSourceFileInfo(GetEndVMA(), endOp, e_func, e_file, e_endLn2);
+
+  string nm = GetBestFuncName(GetName());
+  string ln_nm = GetBestFuncName(GetLinkName());
   
-  o << p << "---------- Procedure Dump ----------\n";
-  o << p << "  Name:     `" << GetBestFuncName(GetName()) << "'\n";
-  o << p << "  LinkName: `" << GetBestFuncName(GetLinkName()) << "'\n";
-  o << p << "  Sym:      {" << GetFilename() << "}:" << GetBegLine() << "\n";
-  o << p << "  LnMap:    {" << file << "}[" 
-    << GetBestFuncName(func) <<"]:" << begLn << "-" << endLn << "\n";
-  o << p << "  LnMap(b): {" << b_file << "}[" 
-    << GetBestFuncName(b_func) << "]:" << b_begLn << "\n";
-  o << p << "  LnMap(e): {" << e_file << "}[" 
-    << GetBestFuncName(e_func) << "]:" << e_endLn2 << "\n";
-
-  o << p << "  ID, Type: " << GetId() << ", `";
-  switch (GetType()) {
-    case Local:   o << "Local'\n";  break;
-    case Weak:    o << "Weak'\n";   break;
-    case Global:  o << "Global'\n"; break;
-    default:      o << "-unknown-'\n"; 
-      DIAG_Die("Unknown Procedure type: " << GetType());
+  os << p << "---------- Procedure Dump ----------\n";
+  os << p << "  Name:     `" << nm << "'\n";
+  os << p << "  LinkName: `" << ln_nm << "'\n";
+  os << p << "  Sym:      {" << GetFilename() << "}:" << GetBegLine() << "\n";
+  os << p << "  LnMap:    {" << file << "}[" 
+     << GetBestFuncName(func) <<"]:" << begLn << "-" << endLn << "\n";
+  os << p << "  LnMap(b): {" << b_file << "}[" 
+     << GetBestFuncName(b_func) << "]:" << b_begLn << "\n";
+  os << p << "  LnMap(e): {" << e_file << "}[" 
+     << GetBestFuncName(e_func) << "]:" << e_endLn2 << "\n";
+  
+  os << p << "  ID, Type: " << GetId() << ", `";
+  switch (type()) {
+    case Local:   os << "Local'\n";  break;
+    case Weak:    os << "Weak'\n";   break;
+    case Global:  os << "Global'\n"; break;
+    default:      os << "-unknown-'\n"; 
+      DIAG_Die("Unknown Procedure type: " << type());
   }
-  o << p << "  VMA: [0x" << hex << GetBegVMA() << ", 0x"
-    << GetEndVMA() << dec << "]\n";
-  o << p << "  Size(b): " << GetSize() << "\n";
-
-  if (flags != 0) {
-    o << p1 << "----- Instruction Dump -----\n";
+  os << p << "  VMA: [0x" << hex << GetBegVMA() << ", 0x"
+     << GetEndVMA() << dec << "]\n";
+  os << p << "  Size(b): " << GetSize() << "\n";
+  
+  if (flags & LM::DUMP_Insn) {
+    os << p1 << "----- Instruction Dump -----\n";
     for (ProcInsnIterator it(*this); it.IsValid(); ++it) {
       Insn* insn = it.Current();
-      insn->dump(o, p2.c_str());
+      insn->dump(os, flags, p2.c_str());
+
+      if (flags & LM::DUMP_Sym) {
+	string func, file;
+	suint line;
+	m_seg->GetSourceFileInfo(insn->GetVMA(), insn->GetOpIndex(), 
+				 func, file, line);
+	func = GetBestFuncName(func);
+	
+	os << p2;
+	if (file == GetFilename()) { 
+	  os << "-"; 
+	}
+	else {
+	  os << "!{" << file << "}";
+	}
+	os << ":" << line << ":";
+	if (func == nm || func == ln_nm) {
+	  os << "-";
+	}
+	else {
+	  os << "![" << func << "]";
+	}
+	os << "\n";
+      }
     }
   }
 }
@@ -196,8 +223,8 @@ binutils::ProcInsnIterator::~ProcInsnIterator()
 void
 binutils::ProcInsnIterator::Reset()
 {
-  it    = lm.vmaToInsnMap.find(p.begVMA);
-  endIt = lm.vmaToInsnMap.find(p.endVMA); 
+  it    = lm.vmaToInsnMap.find(p.m_begVMA);
+  endIt = lm.vmaToInsnMap.find(p.m_endVMA); 
   
   if (it != lm.vmaToInsnMap.end()) {
     // We have at least one instruction: p.endVMA should have been found
@@ -210,12 +237,12 @@ binutils::ProcInsnIterator::Reset()
     // should remain one past the last valid instruction
     for (; // ((*endIt).second) returns Insn*
 	 (endIt != lm.vmaToInsnMap.end() 
-	  && endIt->second->GetVMA() == p.endVMA);
+	  && endIt->second->GetVMA() == p.m_endVMA);
 	 endIt++)
       { }
   }
   else {
     // 'it' == end ==> p.begVMA == p.endVMA (but not the reverse)
-    DIAG_Assert(p.begVMA == p.endVMA, "Internal error!");
+    DIAG_Assert(p.m_begVMA == p.m_endVMA, "Internal error!");
   }
 }

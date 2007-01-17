@@ -251,7 +251,15 @@ public:
   // -------------------------------------------------------
   // debugging
   // -------------------------------------------------------
-  virtual void dump(std::ostream& o = std::cerr, const char* pre = "") const;
+  enum DumpTy { DUMP_Brief = 0x00000000,
+		DUMP_Insn  = 0x00000001,
+		DUMP_Sym   = 0x00000011 };
+
+  std::string toString(int flags = DUMP_Brief, const char* pre = "") const;
+
+  virtual void dump(std::ostream& o = std::cerr, 
+		    int flags = DUMP_Brief, const char* pre = "") const;
+
   void ddump() const;
   
   // dump helpers
@@ -359,7 +367,8 @@ public:
   // -------------------------------------------------------
   // debugging
   // -------------------------------------------------------
-  virtual void dump(std::ostream& o = std::cerr, const char* pre = "") const;
+  virtual void dump(std::ostream& o = std::cerr, 
+		    int flags = DUMP_Brief, const char* pre = "") const;
 
   virtual void dumpme(std::ostream& o = std::cerr, const char* pre = "") const;
 
