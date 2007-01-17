@@ -202,28 +202,26 @@ binutils::dbg::LM::bfd_dbgInfoCallback(void* callback_obj,
 	      << pinfo->toString());
 
   // store this 'pinfo' if it is of use
-  if ( !(pinfo->begLine == 0 && pinfo->filenm.empty()) ) {
-    if (pinfo->begVMA != 0) {
-      std::pair<iterator, bool> res = 
-	lminfo->insert(std::make_pair(pinfo->begVMA, pinfo));
-      if (!res.second) {
-	// Often, an inlined procedure has a DWARF entry in each DWARF
-	// compilation unit.
-	DIAG_Msg(5, "Found multiple descriptors for the same procedure: "
-		 << pinfo->toString());
-	delete pinfo;
-      }
+  if (pinfo->begVMA != 0) {
+    std::pair<iterator, bool> xxx = 
+      lminfo->insert(std::make_pair(pinfo->begVMA, pinfo));
+    if (!xxx.second) {
+      // Often, an inlined procedure has a DWARF entry in each DWARF
+      // compilation unit.
+      DIAG_Msg(5, "Found multiple descriptors for the same procedure: "
+	       << pinfo->toString());
+      delete pinfo;
     }
-    else {
-      std::pair<iterator1, bool> res = 
-	lminfo->insert1(std::make_pair(pinfo->name, pinfo));
-      if (!res.second) {
-	DIAG_Msg(5, "Found multiple descriptors for the same procedure: "
-		 << pinfo->toString());
-	delete pinfo;
-	// FIXME: we could delete all entries of line numbers and
-	// files don't match
-      }
+  }
+  else if (!pinfo->filenm.empty()) {
+    std::pair<iterator1, bool> xxx = 
+      lminfo->insert1(std::make_pair(pinfo->name, pinfo));
+    if (!xxx.second) {
+      DIAG_Msg(5, "Found multiple descriptors for the same procedure: "
+	       << pinfo->toString());
+      delete pinfo;
+      // FIXME: Would it be a good idea to delete *all* entries if
+      // line numbers and files names don't match?
     }
   }
   else {
