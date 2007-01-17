@@ -495,7 +495,7 @@ FindOrCreateProcNode(FileScope* fScope, binutils::Proc* p)
     endLn = MAX(begLn1, endLn1);
   }
   
-  // Create or find the scope.  Fuse procedures if we names match.
+  // Create or find the scope.  Fuse procedures if names match.
   ProcScope* pScope = fScope->FindProc(procNm, procLnNm);
   if (!pScope) {
     pScope = new ProcScope(procNm, fScope, procLnNm, begLn, endLn);

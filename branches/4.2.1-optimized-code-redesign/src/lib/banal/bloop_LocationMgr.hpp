@@ -222,10 +222,10 @@ private:
     
     bool isAlien() const { return (m_ctxt->Type() == ScopeInfo::ALIEN); }
 
-    // debugging
+    // debugging:
+    //   flags: -1: tight dump / 0: normal dump
     std::string toString(int flags = 0, const char* pre = "") const;
 
-    // flags: -1: tight dump / 0: normal dump
     std::ostream& dump(std::ostream& os, 
 		       int flags = 0, const char* pre = "") const;
     void ddump() const;
