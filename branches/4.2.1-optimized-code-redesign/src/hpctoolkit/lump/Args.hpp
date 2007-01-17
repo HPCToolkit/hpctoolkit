@@ -93,8 +93,9 @@ public:
   const std::string& GetCmd() const { return parser.GetCmd(); }
 
   // Parsed Data: optional arguments
-  bool symbolicDump;
-  bool symbolicDumpOld;
+  bool dumpShort;
+  bool dumpLong;
+  bool dumpOld;
   VMA  loadVMA;
   int debugLevel;
 

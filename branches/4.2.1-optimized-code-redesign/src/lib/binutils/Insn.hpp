@@ -152,10 +152,10 @@ public:
   //   0 : short dump (without instructions)
   //   1 : full dump
 
-  std::string toString(int flags = LM::DUMP_Brief, const char* pre = "") const;
+  std::string toString(int flags = LM::DUMP_Short, const char* pre = "") const;
 
   virtual void dump(std::ostream& o = std::cerr, 
-		    int flags = LM::DUMP_Brief, const char* pre = "") const;
+		    int flags = LM::DUMP_Short, const char* pre = "") const;
   
   void ddump() const;
   
@@ -206,7 +206,7 @@ public:
   // debugging
   // -------------------------------------------------------
   virtual void dump(std::ostream& o = std::cerr, 
-		    int flags = LM::DUMP_Brief, const char* pre = "") const;
+		    int flags = LM::DUMP_Short, const char* pre = "") const;
   virtual void dumpme(std::ostream& o = std::cerr, const char* pre = "") const;
   
 private:
@@ -245,7 +245,7 @@ public:
   // debugging
   // -------------------------------------------------------
   virtual void dump(std::ostream& o = std::cerr, 
-		    int flags = LM::DUMP_Brief, const char* pre = "") const;
+		    int flags = LM::DUMP_Short, const char* pre = "") const;
   virtual void dumpme(std::ostream& o = std::cerr, const char* pre = "") const;
   
 private:
@@ -287,7 +287,7 @@ public:
   // debugging
   // -------------------------------------------------------
   virtual void dump(std::ostream& o = std::cerr, 
-		    int flags = LM::DUMP_Brief, const char* pre = "") const;
+		    int flags = LM::DUMP_Short, const char* pre = "") const;
   virtual void dumpme(std::ostream& o = std::cerr, const char* pre = "") const;
   
 private:

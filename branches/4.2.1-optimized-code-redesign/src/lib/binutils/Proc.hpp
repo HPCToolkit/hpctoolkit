@@ -190,10 +190,10 @@ public:
   //   0 : short dump (without instructions)
   //   1 : full dump
   
-  std::string toString(int flags = LM::DUMP_Brief) const;
+  std::string toString(int flags = LM::DUMP_Short) const;
 
   virtual void dump(std::ostream& o = std::cerr, 
-		    int flags = LM::DUMP_Brief, const char* pre = "") const;
+		    int flags = LM::DUMP_Short, const char* pre = "") const;
   void ddump() const;
 
   friend class ProcInsnIterator;

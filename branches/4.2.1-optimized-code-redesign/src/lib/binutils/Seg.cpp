@@ -285,6 +285,7 @@ binutils::TextSeg::Create_InitializeProcs()
       
       Proc* proc = lm->findProc(begVMA);
       if (proc) {
+	DIAG_Assert(proc->GetBegVMA() == begVMA, "TextSeg::Create_InitializeProcs: Procedure beginning at 0x" << hex << begVMA << " overlaps with:\n" << proc->toString());
 	if (procType == Proc::Global) {
 	  // 'global' types take precedence
 	  proc->type() = procType;
@@ -310,14 +311,18 @@ binutils::TextSeg::Create_InitializeProcs()
 	dbg = (*dbgInfo)[symNm];
       }
       
+      // Finding the end VMA (end of last insn).  The computation is
+      // as follows because sometimes the debug information is
+      // *wrong*. (Intel 9 has generated significant over-estimates).
+      VMA endVMA_approx = FindProcEnd(i);
       if (dbg) {
-	endVMA = dbg->endVMA; // end of last insn
+	endVMA = MIN(dbg->endVMA, endVMA_approx);
 	if (!dbg->name.empty()) {
 	  procNm = dbg->name;
 	}
       }
       if (!dbg || endVMA == 0) {
-	endVMA = FindProcEnd(i);
+	endVMA = endVMA_approx;
       }
       suint size = endVMA - begVMA; // see note above
 
@@ -446,7 +451,8 @@ binutils::TextSeg::FindProcName(bfd *abfd, asymbol *procSym) const
 // Approximate the end VMA of the function given by funcSymIndex.
 // This is normally the address of the next function symbol in this
 // section.  However, if this is the last function in the section,
-// then it is the address of the end of the section.
+// then it is the address of the end of the section.  One can safely
+// assume this returns an over-estimate of the end VMA.
 VMA
 binutils::TextSeg::FindProcEnd(int funcSymIndex) const
 {

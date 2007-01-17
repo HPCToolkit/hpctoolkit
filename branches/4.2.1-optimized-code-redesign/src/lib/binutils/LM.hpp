@@ -251,14 +251,19 @@ public:
   // -------------------------------------------------------
   // debugging
   // -------------------------------------------------------
-  enum DumpTy { DUMP_Brief = 0x00000000,
-		DUMP_Insn  = 0x00000001,
-		DUMP_Sym   = 0x00000011 };
+  enum DumpTy { DUMP_Short = 0x00000000,
+		DUMP_Mid   = 0x00000110,
+		DUMP_Long  = 0x11111111,
 
-  std::string toString(int flags = DUMP_Brief, const char* pre = "") const;
+		DUMP_Flg_SymTab = 0x00000001,
+		DUMP_Flg_Insn   = 0x00000010,
+		DUMP_Flg_Sym    = 0x00000100
+  };
+
+  std::string toString(int flags = DUMP_Short, const char* pre = "") const;
 
   virtual void dump(std::ostream& o = std::cerr, 
-		    int flags = DUMP_Brief, const char* pre = "") const;
+		    int flags = DUMP_Short, const char* pre = "") const;
 
   void ddump() const;
   
@@ -368,7 +373,7 @@ public:
   // debugging
   // -------------------------------------------------------
   virtual void dump(std::ostream& o = std::cerr, 
-		    int flags = DUMP_Brief, const char* pre = "") const;
+		    int flags = DUMP_Short, const char* pre = "") const;
 
   virtual void dumpme(std::ostream& o = std::cerr, const char* pre = "") const;
 

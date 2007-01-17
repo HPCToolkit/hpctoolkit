@@ -155,14 +155,17 @@ realmain(int argc, char* const argv[])
   // Dump load module
   // ------------------------------------------------------------
   try {
-    if (args.symbolicDumpOld) {
+    if (args.dumpOld) {
       DumpSymbolicInfoOld(std::cout, lm);
     }
-    else if (args.symbolicDump) {
-      lm->dump(std::cout, binutils::LM::DUMP_Sym);
+    else if (args.dumpShort) {
+      lm->dump(std::cout, binutils::LM::DUMP_Short);
     } 
+    else if (args.dumpLong) {
+      lm->dump(std::cout, binutils::LM::DUMP_Long);
+    }
     else {
-      lm->dump(std::cout, binutils::LM::DUMP_Insn);
+      lm->dump(std::cout, binutils::LM::DUMP_Mid);
     }
   } 
   catch (...) {

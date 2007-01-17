@@ -515,7 +515,7 @@ void
 binutils::LM::dump(std::ostream& o, int flags, const char* pre) const
 {
   string p(pre);
-  string p1 = p + "  ";
+  string p1 = p;
   string p2 = p1 + "  ";
 
   o << p << "==================== Load Module Dump ====================\n";
@@ -526,14 +526,14 @@ binutils::LM::dump(std::ostream& o, int flags, const char* pre) const
 #else
   o << "-unknown-" << endl;
 #endif
-
+  
   o << p1 << "Load Module Information:\n";
   DumpModuleInfo(o, p2.c_str());
 
   o << p1 << "Load Module Contents:\n";
   dumpme(o, p2.c_str());
 
-  DIAG_DevIf(1) {
+  if (flags & DUMP_Flg_SymTab) {
     o << p2 << "Symbol Table (" << impl->numSyms << "):\n";
     DumpSymTab(o, p2.c_str());
   }

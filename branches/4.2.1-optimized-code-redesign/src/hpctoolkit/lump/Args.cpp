@@ -90,10 +90,9 @@ static const char* usage_details =
 "By default, section, procedure and instruction lists are dumped.\n"
 "\n"
 "Options:\n"
-"  -s, --symbolic-info  Instead of the default, dump symbolic info\n"
-"                       (file, func, line) associated with each PC/VMA.\n"
-"  -t, --symbolic-info-old\n"
-"                       Instead of the default, dump symbolic info (old).\n"
+"  --short              Short dump (no instructions).\n"
+"  --all, --long        Long dump.\n"
+"  --old                Old symbolic dump.\n"
 "  -l <addr>, load-addr <addr>\n"
 "                       By default, DSOs will be 'loaded' at 0x0.  Use this\n"
 "                       option to specify a different load address.\n"
@@ -109,8 +108,10 @@ static const char* usage_details =
 CmdLineParser::OptArgDesc Args::optArgs[] = {
 
   // Options
-  { 's', "symbolic-info",     CLP::ARG_NONE, CLP::DUPOPT_CLOB, NULL },
-  { 't', "symbolic-info-old", CLP::ARG_NONE, CLP::DUPOPT_CLOB, NULL },
+  {  0 , "short",   CLP::ARG_NONE, CLP::DUPOPT_CLOB, NULL },
+  {  0 , "long",    CLP::ARG_NONE, CLP::DUPOPT_CLOB, NULL },
+  {  0 , "all",     CLP::ARG_NONE, CLP::DUPOPT_CLOB, NULL },
+  {  0 , "old",     CLP::ARG_NONE, CLP::DUPOPT_CLOB, NULL },
 
   { 'l', "load-addr",     CLP::ARG_REQ , CLP::DUPOPT_CLOB, NULL },
   
@@ -141,8 +142,9 @@ Args::Args(int argc, const char* const argv[])
 void
 Args::Ctor()
 {
-  symbolicDump = false;
-  symbolicDumpOld = false;
+  dumpShort = false;
+  dumpLong  = false;
+  dumpOld   = false;
   loadVMA = 0x0;
   debugLevel = 0;
 }
@@ -216,11 +218,14 @@ Args::Parse(int argc, const char* const argv[])
     }
     
     // Check for other options
-    if (parser.IsOpt("symbolic-info")) { 
-      symbolicDump = true;
+    if (parser.IsOpt("short")) { 
+      dumpShort = true;
     } 
-    if (parser.IsOpt("symbolic-info-old")) { 
-      symbolicDumpOld = true;
+    if (parser.IsOpt("long") || parser.IsOpt("all")) {
+      dumpLong = true;
+    } 
+    if (parser.IsOpt("old")) { 
+      dumpOld = true;
     } 
     if (parser.IsOpt("load-addr")) { 
       const string& arg = parser.GetOptArg("load-addr");
@@ -259,7 +264,6 @@ void
 Args::Dump(std::ostream& os) const
 {
   os << "Args.cmd= " << GetCmd() << endl; 
-  os << "Args.symbolicDump= " << symbolicDump << endl;
   os << "Args.debugLevel= " << debugLevel << endl;
   os << "Args.inputFile= " << inputFile << endl;
   os << "::trace " << ::trace << endl; 

@@ -163,20 +163,20 @@ binutils::Proc::dump(std::ostream& os, int flags, const char* pre) const
      << GetEndVMA() << dec << "]\n";
   os << p << "  Size(b): " << GetSize() << "\n";
   
-  if (flags & LM::DUMP_Insn) {
+  if (flags & LM::DUMP_Flg_Insn) {
     os << p1 << "----- Instruction Dump -----\n";
     for (ProcInsnIterator it(*this); it.IsValid(); ++it) {
       Insn* insn = it.Current();
       insn->dump(os, flags, p2.c_str());
 
-      if (flags & LM::DUMP_Sym) {
+      if (flags & LM::DUMP_Flg_Sym) {
 	string func, file;
 	suint line;
 	m_seg->GetSourceFileInfo(insn->GetVMA(), insn->GetOpIndex(), 
 				 func, file, line);
 	func = GetBestFuncName(func);
 	
-	os << p2;
+	os << p2 << "  ";
 	if (file == GetFilename()) { 
 	  os << "-"; 
 	}
