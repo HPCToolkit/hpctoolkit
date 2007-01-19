@@ -56,11 +56,12 @@ using std::endl;
 using std::hex;
 using std::dec;
 
+#include <sstream>
+
 #include <string>
 using std::string;
 
 #include <map>
-using std::map;
 
 //*************************** User Include Files ****************************
 
@@ -101,8 +102,18 @@ binutils::Seg::~Seg()
 }
 
 
+string
+binutils::Seg::toString(int flags, const char* pre) const
+{
+  std::ostringstream os;
+  dump(os, flags, pre);
+  os << std::ends;
+  return os.str();
+}
+
+
 void
-binutils::Seg::dump(std::ostream& o, const char* pre) const
+binutils::Seg::dump(std::ostream& o, int flags, const char* pre) const
 {
   string p(pre);
   o << p << "------------------- Section Dump ------------------\n";
@@ -213,24 +224,17 @@ binutils::TextSeg::~TextSeg()
 
 
 void
-binutils::TextSeg::dump(std::ostream& o, const char* pre) const
+binutils::TextSeg::dump(std::ostream& o, int flags, const char* pre) const
 {
   string p(pre);
   string p1 = p + "  ";
 
-  Seg::dump(o, pre);
+  Seg::dump(o, flags, pre);
   o << p << "  Procedures (" << GetNumProcs() << ")\n";
   for (TextSegProcIterator it(*this); it.IsValid(); ++it) {
     Proc* p = it.Current();
-    p->dump(o, 1, p1.c_str());
+    p->dump(o, flags, p1.c_str());
   }
-}
-
-
-void
-binutils::TextSeg::ddump() const
-{
-  dump(std::cerr);
 }
 
 
@@ -244,21 +248,28 @@ binutils::TextSeg::Create_InitializeProcs()
   dbg::LM* dbgInfo = lm->GetDebugInfo();
 
   // Any procedure with a parent has a <Proc*, parentVMA> entry
-  map<Proc*, VMA> parentMap;
-
+  std::map<Proc*, VMA> parentMap;
+  
   // ------------------------------------------------------------
   // Each text section finds and creates its own routines.
   // Traverse the symbol table (which is sorted by VMA) searching
   // for function symbols in our section.  Create a Proc for
   // each one found.
+  //
+  // Note that symbols can appear multiple times (e.g. a weak symbol
+  // 'sbrk' along with a gloabl symbol '__sbrk'), but we should not
+  // have multiple procedures.
   // ------------------------------------------------------------
   for (int i = 0; i < impl->numSyms; i++) {
     // FIXME: exploit the fact that the symbol table is sorted by vma
-    asymbol *sym = impl->symTable[i]; 
+    asymbol* sym = impl->symTable[i]; 
     if (IsIn(bfd_asymbol_value(sym)) && (sym->flags & BSF_FUNCTION)
         && !bfd_is_und_section(sym->section)) {
+      
+      VMA begVMA = bfd_asymbol_value(sym);
+      VMA endVMA = 0; // see note above
+      
       Proc::Type procType;
-
       if (sym->flags & BSF_LOCAL) {
         procType = Proc::Local;
       }
@@ -271,14 +282,22 @@ binutils::TextSeg::Create_InitializeProcs()
       else {
         procType = Proc::Unknown;
       }
-
+      
+      Proc* proc = lm->findProc(begVMA);
+      if (proc) {
+	DIAG_Assert(proc->GetBegVMA() == begVMA, "TextSeg::Create_InitializeProcs: Procedure beginning at 0x" << hex << begVMA << " overlaps with:\n" << proc->toString());
+	if (procType == Proc::Global) {
+	  // 'global' types take precedence
+	  proc->type() = procType;
+	}
+	continue;
+      }
+      
       // Create a procedure based on best information we have.  We
       // always prefer explicit debug information over that inferred
       // from the symbol table.
       // NOTE: Initially, the end addr is the *end* of the last insn.
       // This is changed after decoding below.
-      VMA begVMA = bfd_asymbol_value(sym);
-      VMA endVMA = 0; // see note above
       string procNm;
       string symNm = bfd_asymbol_name(sym);
 
@@ -292,14 +311,18 @@ binutils::TextSeg::Create_InitializeProcs()
 	dbg = (*dbgInfo)[symNm];
       }
       
+      // Finding the end VMA (end of last insn).  The computation is
+      // as follows because sometimes the debug information is
+      // *wrong*. (Intel 9 has generated significant over-estimates).
+      VMA endVMA_approx = FindProcEnd(i);
       if (dbg) {
-	endVMA = dbg->endVMA; // end of last insn
+	endVMA = MIN(dbg->endVMA, endVMA_approx);
 	if (!dbg->name.empty()) {
 	  procNm = dbg->name;
 	}
       }
       if (!dbg || endVMA == 0) {
-	endVMA = FindProcEnd(i);
+	endVMA = endVMA_approx;
       }
       suint size = endVMA - begVMA; // see note above
 
@@ -308,8 +331,7 @@ binutils::TextSeg::Create_InitializeProcs()
       }
       
       // We now have a valid procedure
-      Proc *proc = new Proc(this, procNm, symNm, procType, 
-			    begVMA, endVMA, size);
+      proc = new Proc(this, procNm, symNm, procType, begVMA, endVMA, size);
       procedures.push_back(proc);
       lm->insertProc(VMAInterval(begVMA, endVMA), proc);
 
@@ -327,7 +349,7 @@ binutils::TextSeg::Create_InitializeProcs()
   // ------------------------------------------------------------
   // Embed parent information
   // ------------------------------------------------------------
-  for (map<Proc*, VMA>::iterator it = parentMap.begin(); 
+  for (std::map<Proc*, VMA>::iterator it = parentMap.begin(); 
        it != parentMap.end(); ++it) {
     Proc* child = it->first;
     VMA parentVMA = it->second;
@@ -417,7 +439,8 @@ binutils::TextSeg::FindProcName(bfd *abfd, asymbol *procSym) const
 
   if (func && (strlen(func) > 0)) {
     procName = func;
-  } else {
+  } 
+  else {
     procName = bfd_asymbol_name(procSym); 
   }
   
@@ -428,7 +451,8 @@ binutils::TextSeg::FindProcName(bfd *abfd, asymbol *procSym) const
 // Approximate the end VMA of the function given by funcSymIndex.
 // This is normally the address of the next function symbol in this
 // section.  However, if this is the last function in the section,
-// then it is the address of the end of the section.
+// then it is the address of the end of the section.  One can safely
+// assume this returns an over-estimate of the end VMA.
 VMA
 binutils::TextSeg::FindProcEnd(int funcSymIndex) const
 {

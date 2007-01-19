@@ -93,7 +93,6 @@ typedef std::map<suint, VMAList*>::value_type LineToVMAListMapItVal;
 void ClearLineToVMAListMap(LineToVMAListMap* map);
 
 // Dump Helpers
-void DumpSymbolicInfo(std::ostream& os, binutils::LM* lm);
 void DumpSymbolicInfoOld(std::ostream& os, binutils::LM* lm);
 
 //****************************************************************************
@@ -156,14 +155,17 @@ realmain(int argc, char* const argv[])
   // Dump load module
   // ------------------------------------------------------------
   try {
-    if (args.symbolicDump) {
-      DumpSymbolicInfo(std::cout, lm);
-    } 
-    else if (args.symbolicDumpOld) {
+    if (args.dumpOld) {
       DumpSymbolicInfoOld(std::cout, lm);
     }
+    else if (args.dumpShort) {
+      lm->dump(std::cout, binutils::LM::DUMP_Short);
+    } 
+    else if (args.dumpLong) {
+      lm->dump(std::cout, binutils::LM::DUMP_Long);
+    }
     else {
-      lm->dump(std::cout);
+      lm->dump(std::cout, binutils::LM::DUMP_Mid);
     }
   } 
   catch (...) {
@@ -195,58 +197,6 @@ DumpHeaderInfo(std::ostream& os, binutils::LM* lm, const char* pre = "")
       DIAG_Die("Unknown LM type!"); 
   }
   os << pre << "ISA: `" << typeid(*binutils::LM::isa).name() << "'\n"; // std::type_info
-}
-
-
-//****************************************************************************
-
-void 
-DumpSymbolicInfo(std::ostream& os, binutils::LM* lm)
-{
-  string pre = "  ";
-  string pre1 = pre + "  ";
-
-  DumpHeaderInfo(os, lm, pre.c_str());
-
-  // ------------------------------------------------------------------------
-  // Iterate through the VMA values of the text section, and dump the 
-  //   symbolic information associated with each VMA
-  // ------------------------------------------------------------------------  
-
-  os << pre << "Dump:\n";
-  for (binutils::LMSegIterator it(*lm); it.IsValid(); ++it) {
-    binutils::Seg* sec = it.Current();
-    if (sec->GetType() != binutils::Seg::Text) { continue; }
-    
-    // We have a 'TextSeg'.  Iterate over procedures.
-    binutils::TextSeg* tsec = dynamic_cast<binutils::TextSeg*>(sec);
-    for (binutils::TextSegProcIterator it(*tsec); it.IsValid(); ++it) {
-      binutils::Proc* p = it.Current();
-      string pName = GetBestFuncName(p->GetName());
-
-      os << "* " << pName << hex
-	 << " [" << "0x" << p->GetBegVMA() << ", 0x" << p->GetEndVMA()
-	 << "]\n" << dec;
-
-      // We have a 'Procedure'.  Iterate over VMA values     
-      for (binutils::ProcInsnIterator it(*p); it.IsValid(); ++it) {
-	binutils::Insn* inst = it.Current();
-	VMA vma = inst->GetVMA();
-	VMA opVMA = binutils::LM::isa->ConvertVMAToOpVMA(vma, inst->GetOpIndex());
-	
-	// Find and dump symbolic info attched to VMA
-	string func, file;
-	suint line;
-	p->GetSourceFileInfo(vma, inst->GetOpIndex(), func, file, line);
-	func = GetBestFuncName(func);
-	
-	os << pre << "0x" << hex << opVMA << dec 
-	   << " {" << file << "}:" << line << ":[" << func << "]\n";
-      }
-      os << std::endl;
-    }
-  }
-  os << "\n" << "End LoadModule Stmt Dump\n";
 }
 
 //****************************************************************************

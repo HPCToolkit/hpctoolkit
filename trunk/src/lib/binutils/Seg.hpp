@@ -132,9 +132,18 @@ public:
 				 func, file, begLine, endLine, flags);
   }
 
-  // dump contents for inspection
-  virtual void dump(std::ostream& o = std::cerr, const char* pre = "") const;
-  virtual void ddump() const;
+  // -------------------------------------------------------
+  // debugging
+  // -------------------------------------------------------
+  // Current meaning of 'flags'
+  //   0 : short dump (without instructions)
+  //   1 : full dump
+
+  std::string toString(int flags = LM::DUMP_Short, const char* pre = "") const;
+
+  virtual void dump(std::ostream& o = std::cerr, 
+		    int flags = LM::DUMP_Short, const char* pre = "") const;
+  void ddump() const;
   
 protected:
   // Should not be used
@@ -179,9 +188,11 @@ public:
 
   suint GetNumProcs() const { return procedures.size(); }
 
-  // dump contents for inspection
-  virtual void dump(std::ostream& o = std::cerr, const char* pre = "") const;
-  virtual void ddump() const;
+  // -------------------------------------------------------
+  // debugging
+  // -------------------------------------------------------
+  virtual void dump(std::ostream& o = std::cerr, 
+		    int flags = LM::DUMP_Short, const char* pre = "") const;
   
   friend class TextSegProcIterator;
 
