@@ -333,7 +333,7 @@ void PGMDocHandler:: startElement(const XMLCh* const uri,
     IFTRACE << " b="  << lnB << " e=" << lnE << endl;
     
     string vma = getAttr(attributes, attrVMA);
-
+    
     // Find enclosing File scope
     FileScope* curFile = FindCurrentFileScope();
     if (!curFile) {
@@ -341,8 +341,19 @@ void PGMDocHandler:: startElement(const XMLCh* const uri,
       throw PGMException(error);
     }
 
+    // -----------------------------------------------------
     // Find/Create the procedure.
+    // -----------------------------------------------------
     currentFuncScope = curFile->FindProc(name);
+    if (currentFuncScope) {
+      // STRUCTURE files usually have qualifying VMA information.
+      // Assume that VMA information fully qualifies procedures.
+      if (docty == Doc_STRUCT && !currentFuncScope->vmaSet().empty() 
+	  && !vma.empty()) {
+	currentFuncScope = NULL;
+      }
+    }
+
     if (!currentFuncScope) {
       currentFuncScope = new ProcScope(name, curFile, lname, lnB, lnE);
       if (!vma.empty()) {

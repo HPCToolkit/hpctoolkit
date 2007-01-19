@@ -87,8 +87,8 @@ public:
   // -------------------------------------------------------  
   // Constructor/Destructor
   // -------------------------------------------------------
-  Proc(TextSeg* _sec, std::string& _name, std::string& _linkname, 
-       Type t, VMA _begVMA, VMA _endVMA, suint _size);
+  Proc(TextSeg* seg, std::string& name, std::string& linkname, 
+       Type t, VMA begVMA, VMA endVMA, suint size);
   virtual ~Proc();
 
 
@@ -96,47 +96,48 @@ public:
   // Basic data
   // -------------------------------------------------------
 
-  TextSeg* GetTextSeg() const { return sec; }
-  LM*  GetLM()  const { return sec->GetLM(); }
+  TextSeg* GetTextSeg() const { return m_seg; }
+  LM*  GetLM()  const { return m_seg->GetLM(); }
 
   // Returns the name as determined by debugging information; if this
   // is unavailable returns the name found in the symbol table.  (Note
   // that no demangling is performed.)
-  const std::string& GetName()     const { return name; }
-  std::string&       GetName()           { return name; }
+  const std::string& GetName()     const { return m_name; }
+  std::string&       GetName()           { return m_name; }
 
   // Returns the name as found in the symbol table
-  const std::string& GetLinkName() const { return linkname; }
+  const std::string& GetLinkName() const { return m_linkname; }
 
   // Return type of procedure
-  Type  GetType() const { return type; }
+  const Type type() const { return m_type; }
+  Type&      type()       { return m_type; }
 
   // Return the begin and end virtual memory address of a procedure:
   // [beg, end].  Note that the end address points to the beginning of
   // the last instruction which is different than the convention used
   // for 'Seg'.
-  VMA  GetBegVMA() const { return begVMA; }
-  VMA  GetEndVMA() const { return endVMA; }
-  void SetEndVMA(VMA _endVMA) { endVMA = _endVMA; }
+  VMA  GetBegVMA() const { return m_begVMA; }
+  VMA  GetEndVMA() const { return m_endVMA; }
+  void SetEndVMA(VMA endVMA) { m_endVMA = endVMA; }
 
   // Return size, which is (endVMA - startVMA) + sizeof(last instruction)
-  suint GetSize()      const { return size; }
-  void SetSize(suint _size)  { size = _size; }
+  suint GetSize()      const { return m_size; }
+  void SetSize(suint size)  { m_size = size; }
   
   // -------------------------------------------------------
   // Symbolic information: availability depends upon debugging information
   // -------------------------------------------------------
 
-  bool hasSymbolic() { return IsValidLine(begLine); }
+  bool hasSymbolic() { return IsValidLine(m_begLine); }
 
-  const std::string& GetFilename() const { return filenm; }
-  std::string&       GetFilename()       { return filenm; }
+  const std::string& GetFilename() const { return m_filenm; }
+  std::string&       GetFilename()       { return m_filenm; }
 
-  suint   GetBegLine()      const { return begLine; }
-  suint&  GetBegLine()            { return begLine; }
+  suint   GetBegLine()      const { return m_begLine; }
+  suint&  GetBegLine()            { return m_begLine; }
 
-  Proc*  parent() const { return mParent; }
-  Proc*& parent()       { return mParent; }
+  Proc*  parent() const { return m_parent; }
+  Proc*& parent()       { return m_parent; }
 
   // -------------------------------------------------------
   //
@@ -144,16 +145,16 @@ public:
 
   // Return true if virtual memory address 'vma' is within the procedure
   // WARNING: vma must be unrelocated
-  bool  IsIn(VMA vma)  const { return (begVMA <= vma && vma <= endVMA); }
+  bool  IsIn(VMA vma)  const { return (m_begVMA <= vma && vma <= m_endVMA); }
 
   // Return the unique number assigned to this procedure
-  suint GetId()        const { return id; }
+  suint GetId()        const { return m_id; }
 
   // Return the number of instructions in the procedure (FIXME: never computed)
-  suint GetNumInsns()  const { return numInsns; }
+  suint GetNumInsns()  const { return m_numInsns; }
 
   // Return the first and last instruction in the procedure
-  Insn* GetFirstInsn() const { return findInsn(begVMA, 0); }
+  Insn* GetFirstInsn() const { return findInsn(m_begVMA, 0); }
   Insn* GetLastInsn() const;
   
   // -------------------------------------------------------
@@ -161,26 +162,25 @@ public:
   // -------------------------------------------------------
 
   MachInsn* findMachInsn(VMA vma, ushort &sz) const {
-    return sec->GetLM()->findMachInsn(vma, sz);
+    return m_seg->GetLM()->findMachInsn(vma, sz);
   }
   Insn* findInsn(VMA vma, ushort opIndex) const {
-    return sec->GetLM()->findInsn(vma, opIndex);
+    return m_seg->GetLM()->findInsn(vma, opIndex);
   }
   bool GetSourceFileInfo(VMA vma, ushort opIndex,
 			 std::string& func, std::string& file, 
 			 suint& line) const {
-    return sec->GetLM()->GetSourceFileInfo(vma, opIndex,
-					   func, file, line);
+    return m_seg->GetLM()->GetSourceFileInfo(vma, opIndex, func, file, line);
   }
   bool GetSourceFileInfo(VMA begVMA, ushort bOpIndex,
 			 VMA endVMA, ushort eOpIndex,
 			 std::string& func, std::string& file,
 			 suint& begLine, suint& endLine,
 			 unsigned flags = 1) const {
-    return sec->GetLM()->GetSourceFileInfo(begVMA, bOpIndex,
-					   endVMA, eOpIndex, 
-					   func, file, 
-					   begLine, endLine, flags);
+    return m_seg->GetLM()->GetSourceFileInfo(begVMA, bOpIndex,
+					     endVMA, eOpIndex, 
+					     func, file, 
+					     begLine, endLine, flags);
   }
   
   // -------------------------------------------------------
@@ -190,11 +190,11 @@ public:
   //   0 : short dump (without instructions)
   //   1 : full dump
   
-  virtual std::string toString(unsigned flags = 0) const;
+  std::string toString(int flags = LM::DUMP_Short) const;
 
-  virtual void dump(std::ostream& o = std::cerr, unsigned flags = 0, 
-		    const char* pre = "") const;
-  virtual void ddump() const;
+  virtual void dump(std::ostream& o = std::cerr, 
+		    int flags = LM::DUMP_Short, const char* pre = "") const;
+  void ddump() const;
 
   friend class ProcInsnIterator;
 
@@ -206,22 +206,22 @@ private:
 
 protected:
 private:
-  TextSeg*    sec; // we do not own
-  std::string name;
-  std::string linkname;
-  Type        type;
+  TextSeg*    m_seg; // we do not own
+  std::string m_name;
+  std::string m_linkname;
+  Type        m_type;
   
-  VMA begVMA; // points to the beginning of the first instruction
-  VMA endVMA; // points to the beginning of the last instruction
-  VMA size;
+  VMA m_begVMA; // points to the beginning of the first instruction
+  VMA m_endVMA; // points to the beginning of the last instruction
+  VMA m_size;
 
   // symbolic information: may or may not be known
-  std::string filenm;  // filename and 
-  suint       begLine; //   begin line of definition, if known
-  Proc*       mParent; // parent routine, if lexically nested
+  std::string m_filenm;  // filename and 
+  suint       m_begLine; //   begin line of definition, if known
+  Proc*       m_parent; // parent routine, if lexically nested
 
-  suint id;    // a unique identifier
-  suint numInsns;
+  suint m_id;    // a unique identifier
+  suint m_numInsns;
   
   static suint nextId;
 };

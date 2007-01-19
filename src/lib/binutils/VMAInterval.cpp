@@ -415,7 +415,7 @@ VMAIntervalSet::fromString(const char* formattedstr)
 {
   const char* s = formattedstr;
   const char* p = formattedstr;
-  if (!p) { return; }
+  if (!p || p[0] == '\0') { return; }
   
   // skip '{'
   DIAG_Assert(*p == '{', DIAG_UnexpectedInput << "'" << s << "'");

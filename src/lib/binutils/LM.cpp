@@ -55,6 +55,8 @@
 #include <string>
 using std::string;
 
+#include <sstream>
+
 #include <iostream>
 using std::cerr;
 using std::endl;
@@ -236,6 +238,7 @@ binutils::LM::Open(const char* moduleName)
   }
   else {
     delete newisa;
+    // typeid(*isa).name()
     DIAG_Assert(typeid(*newisa) == typeid(*isa),
 		"Cannot simultaneously open LMs with different ISAs!");
   }
@@ -498,11 +501,21 @@ binutils::LM::GetTextBegEndVMA(VMA* begVMA, VMA* endVMA)
 }
 
 
+string
+binutils::LM::toString(int flags, const char* pre) const
+{
+  std::ostringstream os;
+  dump(os, flags, pre);
+  os << std::ends;
+  return os.str();
+}
+
+
 void
-binutils::LM::dump(std::ostream& o, const char* pre) const
+binutils::LM::dump(std::ostream& o, int flags, const char* pre) const
 {
   string p(pre);
-  string p1 = p + "  ";
+  string p1 = p;
   string p2 = p1 + "  ";
 
   o << p << "==================== Load Module Dump ====================\n";
@@ -513,14 +526,14 @@ binutils::LM::dump(std::ostream& o, const char* pre) const
 #else
   o << "-unknown-" << endl;
 #endif
-
+  
   o << p1 << "Load Module Information:\n";
   DumpModuleInfo(o, p2.c_str());
 
   o << p1 << "Load Module Contents:\n";
   dumpme(o, p2.c_str());
 
-  DIAG_DevIf(1) {
+  if (flags & DUMP_Flg_SymTab) {
     o << p2 << "Symbol Table (" << impl->numSyms << "):\n";
     DumpSymTab(o, p2.c_str());
   }
@@ -528,7 +541,7 @@ binutils::LM::dump(std::ostream& o, const char* pre) const
   o << p2 << "Sections (" << GetNumSegs() << "):\n";
   for (LMSegIterator it(*this); it.IsValid(); ++it) {
     Seg* sec = it.Current();
-    sec->dump(o, p2.c_str());
+    sec->dump(o, flags, p2.c_str());
   }
 }
 
@@ -866,9 +879,9 @@ binutils::Exe::Open(const char* moduleName)
 
 
 void
-binutils::Exe::dump(std::ostream& o, const char* pre) const
+binutils::Exe::dump(std::ostream& o, int flags, const char* pre) const
 {
-  LM::dump(o);  
+  LM::dump(o, flags, pre);
 }
 
 
