@@ -133,7 +133,7 @@ LocationMgr::begSeq(ProcScope* enclosingProc)
 {
   DIAG_Assert(m_ctxtStack.empty() && m_alienMap.empty(), 
 	      "LocationMgr contains leftover crud!");
-  m_ctxtStack.push_front(Ctxt(enclosingProc));
+  pushCtxt(Ctxt(enclosingProc));
 }
 
 
@@ -157,9 +157,9 @@ LocationMgr::locate(StmtRangeScope* stmt, CodeInfo* proposed_scope,
   DIAG_DevMsgIf(DBG, "LocationMgr::locate: " << stmt->toXML() << "\n"
 		<< "  proposed: " << proposed_scope->toXML() << "\n"
 		<< "  guess: {" << filenm << "}[" << procnm << "]:" << line);
+  // FIXME (minor): manage stmt cache! if stmt already exists, only add vma
   determineContext(proposed_scope, filenm, procnm, line);
   Ctxt& encl_ctxt = m_ctxtStack.front();
-  // FIXME (minor): manage stmt cache! if stmt already exists, don't add
   stmt->LinkAndSetLineRange(encl_ctxt.scope());
 }
 
@@ -358,8 +358,8 @@ LocationMgr::determineContext(CodeInfo* proposed_scope,
   Ctxt* proposed_ctxt = findCtxt(proposed_ctxt_scope);
   if (!proposed_ctxt) {
     // Restore context
-    m_ctxtStack.push_front(Ctxt(proposed_ctxt_scope, NULL));
-    proposed_ctxt = &(m_ctxtStack.front());
+    pushCtxt(Ctxt(proposed_ctxt_scope, NULL));
+    proposed_ctxt = topCtxt();
     CtxtChange_setFlag(change, CtxtChange_FLAG_RESTORE);
   }
   const string& proposed_procnm = proposed_ctxt->ctxt()->name();
@@ -377,7 +377,7 @@ LocationMgr::determineContext(CodeInfo* proposed_scope,
   
   
   // top context file and procedure name (alien if != to proposed_ctxt)
-  const Ctxt* top_ctxt = &(m_ctxtStack.front());
+  const Ctxt* top_ctxt = topCtxt();
   const string& top_filenm = top_ctxt->fileName();
   const string& top_procnm = top_ctxt->ctxt()->name();
 
@@ -385,75 +385,25 @@ LocationMgr::determineContext(CodeInfo* proposed_scope,
 	      "Inconsistent context stack!");
   
   // -----------------------------------------------------
-  // Attempt to find an existing context
+  // Attempt to find an existing context.  We first attempt to either
+  // use the current top-of-stack or revert to an enclosing context.
   //
-  // We first attempt to either use the current top-of-stack or revert
-  // to an enclosing context.  
-  //
-  // Notes: 
+  // Notes:
   // - We cannot restore contexts beyond 'proposed_ctxt'.
-  // - In general, assume that best-guess filename and line number are
-  //   more reliable that procedure name.  In the common case,
-  //   'top_procnm' is equal to 'procnm' (since inlined procedures
-  //   usually assume the name of their context); therefore we assign
-  //   more weight to file and line.
   // - Assuming proposed_loop is non-NULL, the only time it is the
   //   immediate parent context is when 'proposed_ctxt' is at the
   //   top-of-the-stack.  Otherwise the stack has alien scopes (but no
   //   loop scopes) at the top.
-  // - Try to find the context using the 'best' information first;
-  //   then use second best (instead searching in lockstep with best and
-  //   second-best)
   // -----------------------------------------------------
-  const Ctxt* use_ctxt = NULL;
+  const Ctxt* use_ctxt = switch_findCtxt(filenm, procnm, line, proposed_ctxt);
 
-  if ( (filenm.empty() && procnm.empty()) || 
-       (filenm.empty() && !procnm.empty()) ) {
-    // If both filenm and procnm are NULL:
-    //   1) 
-    //   2) 
-    if (IsValidLine(line)) {
-      use_ctxt = findCtxt(line, proposed_ctxt);
-      if (!use_ctxt) {
-        use_ctxt = top_ctxt; // FIXME: relocate if line is out side??
-      }
-    }
-    else {
-      use_ctxt = top_ctxt;
-    }
-  }
-#if 0
-  else if (filenm.empty() && !procnm.empty()) {
-    // If only filenm is NULL:
-    //   1) use proposed procedure file name if procnm matches it
-    // FIXME: good enough for now: use proposed procedure file name
-    use_ctxt = top_ctxt;
-  }
-#endif
-  else if (!filenm.empty() && procnm.empty()) {
-    if (IsValidLine(line)) {
-      use_ctxt = findCtxt(filenm, line, proposed_ctxt);
-    }
-    else {
-      use_ctxt = findCtxt(filenm, proposed_ctxt);
-    }
-  }
-  else {
-    // INVARIANT: neither filenm nor procnm are NULL (empty)
-    if (IsValidLine(line)) {
-      use_ctxt = findCtxt(filenm, procnm, line, proposed_ctxt);
-      if (!use_ctxt && procnm == proposed_procnm) {
-	use_ctxt = findCtxt(filenm, line, proposed_ctxt); // FIXME do we need this?
-      }
-    }
-    else {
-      use_ctxt = findCtxt(filenm, proposed_ctxt);
-    }
-  }
+  // INVARIANT: ('use_ctxt' != NULL) ==> 'use_ctxt' is within the
+  //   range ['top_ctxt', 'proposed_ctxt']
 
   DIAG_DevMsgIf(DBG, "  first ctxt:\n" 
 		<< ((use_ctxt) ? use_ctxt->toString(-1, "  ") : ""));
-
+  
+  
   // -----------------------------------------------------
   // Setup what will be the current context
   // -----------------------------------------------------
@@ -461,19 +411,16 @@ LocationMgr::determineContext(CodeInfo* proposed_scope,
   
   if (use_ctxt) {
     // Revert the stack to 'use_ctxt'
-    //
-    // INVARIANT: 'use_ctxt' is within the range ['top_ctxt', 'proposed_ctxt']
-    
     if (use_ctxt != top_ctxt) {
       // pop contexts until we get to 'use_ctxt'
       while (top_ctxt != use_ctxt) {
 	m_ctxtStack.pop_front();
-	top_ctxt = &(m_ctxtStack.front());
+	top_ctxt = topCtxt();
       }
       CtxtChange_set(change, CtxtChange_POP);
 
       // Possibly update use_context (if we had to short-circuit)
-      use_ctxt = &(m_ctxtStack.front());
+      use_ctxt = topCtxt();
     }
     
     // If our enclosing scope is a loop, then consult the loop bounds,
@@ -516,13 +463,79 @@ LocationMgr::determineContext(CodeInfo* proposed_scope,
     // Find or create the alien scope
     AlienScope* alien = 
       findOrCreateAlienScope(proposed_scope, filenm, procnm, line);
-    m_ctxtStack.push_front(Ctxt(alien, NULL));
-    use_ctxt = &(m_ctxtStack.front());
+    pushCtxt(Ctxt(alien, NULL));
+    use_ctxt = topCtxt();
   }
 
   DIAG_DevMsgIf(DBG, "  final ctxt [" << toString(change) << "]\n" 
 		<< use_ctxt->toString(0, "  "));
   return change;
+}
+
+
+LocationMgr::Ctxt* 
+LocationMgr::switch_findCtxt(const string& filenm, const string& procnm, 
+			     suint line, 
+			     const LocationMgr::Ctxt* base_ctxt) const
+{
+  // -----------------------------------------------------
+  // Notes: 
+  // - In general, assume that best-guess filename and line number are
+  //   more reliable that procedure name.  In the common case,
+  //   'top_procnm' is equal to 'procnm' (since inlined procedures
+  //   usually assume the name of their context); therefore we assign
+  //   more weight to file and line.
+  // - Try to find the context using the 'best' information first;
+  //   then use second best (instead searching in lockstep with best and
+  //   second-best)
+  // -----------------------------------------------------
+  Ctxt* the_ctxt = NULL;
+
+  if ( (filenm.empty() && procnm.empty()) || 
+       (filenm.empty() && !procnm.empty()) ) {
+    // If both filenm and procnm are NULL:
+    //   1) 
+    //   2) 
+    if (IsValidLine(line)) {
+      the_ctxt = findCtxt(line, base_ctxt);
+      if (!the_ctxt) {
+        the_ctxt = topCtxt(); // FIXME: relocate if line is out side??
+      }
+    }
+    else {
+      the_ctxt = topCtxt();
+    }
+  }
+#if 0
+  else if (filenm.empty() && !procnm.empty()) {
+    // If only filenm is NULL:
+    //   1) use proposed procedure file name if procnm matches it
+    // FIXME: good enough for now: use proposed procedure file name
+    the_ctxt = top_ctxt;
+  }
+#endif
+  else if (!filenm.empty() && procnm.empty()) {
+    if (IsValidLine(line)) {
+      the_ctxt = findCtxt(filenm, line, base_ctxt);
+    }
+    else {
+      the_ctxt = findCtxt(filenm, base_ctxt);
+    }
+  }
+  else {
+    // INVARIANT: neither filenm nor procnm are NULL (empty)
+    if (IsValidLine(line)) {
+      the_ctxt = findCtxt(filenm, procnm, line, base_ctxt);
+      //if (!the_ctxt && procnm == proposed_procnm) {
+      //the_ctxt = findCtxt(filenm, line, base_ctxt); // FIXME do we need this?
+      //}
+    }
+    else {
+      the_ctxt = findCtxt(filenm, base_ctxt);
+    }
+  }
+
+  return the_ctxt;
 }
 
 
@@ -541,7 +554,8 @@ LocationMgr::findCtxt(CodeInfo* ctxt_scope) const
 
 
 LocationMgr::Ctxt*
-LocationMgr::findCtxt(FindCtxt_MatchOp& op, LocationMgr::Ctxt* base) const
+LocationMgr::findCtxt(FindCtxt_MatchOp& op, 
+		      const LocationMgr::Ctxt* base) const
 {
   const LocationMgr::Ctxt* foundAlien = NULL;
   

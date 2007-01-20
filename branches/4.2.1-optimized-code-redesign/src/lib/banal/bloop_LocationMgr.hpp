@@ -183,7 +183,7 @@ private:
   class Ctxt {
   public:
     Ctxt(CodeInfo* ctxt = NULL, LoopScope* loop = NULL)
-      : m_ctxt(ctxt), m_loop(loop),
+      : m_ctxt(ctxt), m_loop(loop), 
 	m_filenm( (isAlien()) ? dynamic_cast<AlienScope*>(ctxt)->fileName()
 		  : dynamic_cast<ProcScope*>(ctxt)->File()->name() )
     { }
@@ -221,6 +221,9 @@ private:
     bool containsLine(suint line) const;
     
     bool isAlien() const { return (m_ctxt->Type() == ScopeInfo::ALIEN); }
+    
+    const int level() const { return m_level; }
+    int&      level()       { return m_level; }
 
     // debugging:
     //   flags: -1: tight dump / 0: normal dump
@@ -234,6 +237,7 @@ private:
     CodeInfo*  m_ctxt;
     LoopScope* m_loop;
     const std::string& m_filenm;
+    int m_level;
   };
   
   typedef std::list<Ctxt> MyStack;
@@ -297,8 +301,33 @@ private:
 
   
   // -------------------------------------------------------
-  //
+  // 
   // -------------------------------------------------------
+
+  Ctxt* topCtxt() const 
+    { return (m_ctxtStack.empty()) ? 
+	        NULL : const_cast<Ctxt*>(&(m_ctxtStack.front())); }
+
+  Ctxt& topCtxtRef() const 
+    { return const_cast<Ctxt&>(m_ctxtStack.front()); }
+
+  void pushCtxt(const Ctxt& ctxt)
+    { int nxt_lvl = (m_ctxtStack.empty()) ? 1 : topCtxtRef().level();
+      m_ctxtStack.push_front(ctxt);
+      topCtxtRef().level() = nxt_lvl; }
+
+  int revertStack(Ctxt* ctxt);
+  
+  // -------------------------------------------------------
+  // findCtxt
+  // -------------------------------------------------------
+
+  // switch_findCtxt: calls the appriate version of 'findCtxt'
+  // based on what information is available, i.e. it is a findCtxt
+  // "switch" statement.
+  Ctxt* switch_findCtxt(const string& filenm, const string& procnm,
+			suint line, const Ctxt* base_ctxt = NULL) const;
+  
 
   // findCtxt: find the the "first" instance of ctxt in the stack
   // matching against ctxt() (not scope()) and not going past 'base'.
@@ -381,27 +410,27 @@ private:
 
 
   Ctxt* findCtxt(CodeInfo* ctxt) const;
-  Ctxt* findCtxt(FindCtxt_MatchOp& op, Ctxt* base = NULL) const;
+  Ctxt* findCtxt(FindCtxt_MatchOp& op, 
+		 const Ctxt* base = NULL) const;
   
   Ctxt* findCtxt(const string& filenm, const string& procnm, suint line,
-		 Ctxt* base = NULL) const
+		 const Ctxt* base = NULL) const
     { FindCtxt_MatchFPLOp op(filenm, procnm, line); return findCtxt(op, base); }
 
   Ctxt* findCtxt(const string& filenm, const string& procnm, 
-		 Ctxt* base = NULL) const
+		 const Ctxt* base = NULL) const
     { FindCtxt_MatchFPOp op(filenm, procnm); return findCtxt(op, base); }
 
   Ctxt* findCtxt(const std::string& filenm, suint line, 
-		 Ctxt* base = NULL) const
+		 const Ctxt* base = NULL) const
     { FindCtxt_MatchFLOp op(filenm, line); return findCtxt(op, base); }
 
-  Ctxt* findCtxt(const std::string& filenm, Ctxt* base = NULL) const
+  Ctxt* findCtxt(const std::string& filenm, 
+		 const Ctxt* base = NULL) const
     { FindCtxt_MatchFOp op(filenm); return findCtxt(op, base); }
 
-  Ctxt* findCtxt(suint line, Ctxt* base = NULL) const
+  Ctxt* findCtxt(suint line, const Ctxt* base = NULL) const
     { FindCtxt_MatchLOp op(line); return findCtxt(op, base); }
-  
-  int revertStack(Ctxt* ctxt);
 
   // -------------------------------------------------------
   //
@@ -449,7 +478,7 @@ private:
 				     suint line);
   
 private: 
-  MyStack       m_ctxtStack; // begin()/front() is the top
+  MyStack       m_ctxtStack; // cf. topCtxt() [begin()/front() is the top]
   LoadModScope* m_loadMod;
   int           mDBG;
 
