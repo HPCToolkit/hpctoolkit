@@ -234,7 +234,7 @@ public:
   
   // --------------------------------------------------------
   // Ancestor: find first ScopeInfo in path from this to root with given type
-  // (Note: We assume that a node cannot be an ancestor of itself.)
+  // (Note: We assume that a node *can* be an ancestor of itself.)
   // --------------------------------------------------------
   ScopeInfo* Ancestor(ScopeType type) const;
   ScopeInfo* Ancestor(ScopeType tp1, ScopeType tp2) const;
@@ -400,10 +400,17 @@ protected:
 public: 
   virtual ~CodeInfo();
 
+  // Line range in source code
+  const suint begLine() const { return mbegLine; }
+  suint&      begLine()       { return mbegLine; }
+
+  const suint endLine() const { return mendLine; }
+  suint&      endLine()       { return mendLine; }
+
+  void SetLineRange(suint begLn, suint endLn, int propagate = 1);
+
   void LinkAndSetLineRange(CodeInfo* parent);
 
-  suint begLine() const { return mbegLine; } // in source code
-  suint endLine() const { return mendLine; } // in source code
 
   // A set of *unrelocated* VMAs associated with this scope
   VMAIntervalSet&       vmaSet()       { return mvmaSet; }
@@ -435,16 +442,14 @@ public:
   //   File()->name() + ":" + <Line-Range> 
   //
   // where Line-Range is either: 
-  //                     BegLine() + "-" + EndLine()      or simply 
-  //                     BegLine() 
+  //                     begLine() + "-" + endLine()      or simply 
+  //                     begLine() 
   virtual std::string CodeName() const;
   virtual std::string LineRange() const;
 
   static std::string CodeLineName(suint line);
 
   virtual ScopeInfo* Clone() { return new CodeInfo(*this); }
-
-  void SetLineRange(suint begLn, suint endLn); // be careful when using!
 
   CodeInfo* GetFirst() const { return first; } 
   CodeInfo* GetLast() const { return last; } 

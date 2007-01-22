@@ -2075,7 +2075,7 @@ PgmScope::TSV_TreeDump(ostream& os) const
 //***************************************************************************
 
 void 
-CodeInfo::SetLineRange(suint begLn, suint endLn) 
+CodeInfo::SetLineRange(suint begLn, suint endLn, int propagate) 
 {
   // Sanity Checking:
   //   begLn <= endLn
@@ -2089,7 +2089,9 @@ CodeInfo::SetLineRange(suint begLn, suint endLn)
     // simply relocate at beginning of sibling list 
     // no range update in parents is necessary
     DIAG_Assert((mbegLine == UNDEF_LINE) && (mendLine == UNDEF_LINE), "");
-    if (Parent() != NULL) Relocate();
+    if (Parent() != NULL) { 
+      Relocate(); 
+    }
   } 
   else {
     bool changed = false;
@@ -2111,7 +2113,7 @@ CodeInfo::SetLineRange(suint begLn, suint endLn)
       Relocate();
       
       // never propagate changes outside an AlienScope
-      if (Type() != ScopeInfo::ALIEN) {
+      if (propagate && Type() != ScopeInfo::ALIEN) {
 	mom->SetLineRange(mbegLine, mendLine);
       }
     }
