@@ -99,6 +99,11 @@ RELOCATEDcmp(const string& x)
 
 //*************************** Forward Declarations **************************
 
+// When Alien contexts are nested, there may be many at the top of the
+// stack at one time; in the opposite case, only one is on the top of
+// the stack at any time.
+#define BLOOP_NEST_ALIEN_CONTEXTS 1
+
 //***************************************************************************
 
 //***************************************************************************
@@ -145,7 +150,7 @@ LocationMgr::locate(LoopScope* loop, CodeInfo* proposed_scope,
 		<< "  proposed: " << proposed_scope->toXML() << "\n"
 		<< "  guess: {" << filenm << "}[" << procnm << "]:" << line);
   determineContext(proposed_scope, filenm, procnm, line);
-  Ctxt& encl_ctxt = m_ctxtStack.front();
+  Ctxt& encl_ctxt = topCtxtRef();
   loop->LinkAndSetLineRange(encl_ctxt.scope());
 }
 
@@ -159,7 +164,7 @@ LocationMgr::locate(StmtRangeScope* stmt, CodeInfo* proposed_scope,
 		<< "  guess: {" << filenm << "}[" << procnm << "]:" << line);
   // FIXME (minor): manage stmt cache! if stmt already exists, only add vma
   determineContext(proposed_scope, filenm, procnm, line);
-  Ctxt& encl_ctxt = m_ctxtStack.front();
+  Ctxt& encl_ctxt = topCtxtRef();
   stmt->LinkAndSetLineRange(encl_ctxt.scope());
 }
 
@@ -350,7 +355,7 @@ LocationMgr::determineContext(CodeInfo* proposed_scope,
   CtxtChange_t change = CtxtChange_NULL;
   
   // -----------------------------------------------------
-  // Initialize context information
+  // 1. Initialize context information
   // -----------------------------------------------------
   
   // proposed context file and procedure
@@ -370,26 +375,26 @@ LocationMgr::determineContext(CodeInfo* proposed_scope,
   proposed_ctxt->loop() = proposed_loop;
   
   // proposed_loop should be the most deeply nested loop on the stack
-  int cnt = revertStack(proposed_ctxt);
+  int cnt = revertToLoop(proposed_ctxt);
   if (cnt) {
     CtxtChange_setFlag(change, CtxtChange_FLAG_REVERT);
   }
   
   
-  // top context file and procedure name (alien if != to proposed_ctxt)
+  // top context file and procedure name (top context is alien if !=
+  // to proposed_ctxt)
   const Ctxt* top_ctxt = topCtxt();
   const string& top_filenm = top_ctxt->fileName();
   const string& top_procnm = top_ctxt->ctxt()->name();
-
   DIAG_Assert(logic::implies(proposed_ctxt != top_ctxt, top_ctxt->isAlien()),
 	      "Inconsistent context stack!");
   
   // -----------------------------------------------------
-  // Attempt to find an existing context.  We first attempt to either
-  // use the current top-of-stack or revert to an enclosing context.
+  // 2. Attempt to find an appropriate existing enclosing context for
+  // the given source information.
   //
   // Notes:
-  // - We cannot restore contexts beyond 'proposed_ctxt'.
+  // - TODELETE: We cannot restore contexts beyond 'proposed_ctxt'.
   // - Assuming proposed_loop is non-NULL, the only time it is the
   //   immediate parent context is when 'proposed_ctxt' is at the
   //   top-of-the-stack.  Otherwise the stack has alien scopes (but no
@@ -397,15 +402,28 @@ LocationMgr::determineContext(CodeInfo* proposed_scope,
   // -----------------------------------------------------
   const Ctxt* use_ctxt = switch_findCtxt(filenm, procnm, line, proposed_ctxt);
 
+  // TODELETE:
   // INVARIANT: ('use_ctxt' != NULL) ==> 'use_ctxt' is within the
   //   range ['top_ctxt', 'proposed_ctxt']
 
   DIAG_DevMsgIf(DBG, "  first ctxt:\n" 
 		<< ((use_ctxt) ? use_ctxt->toString(-1, "  ") : ""));
-  
+
+  // -----------------------------------------------------
+  // 3. Setup the current context (either by reversion to a prior
+  // context or creation of a new one).
+  // -----------------------------------------------------
+
+#if 0  
+  if (use_ctxt && use_ctxt->level() < proposed_ctxt->level()) {
+    revertToContext(top_ctxt->scope(), true_ctxt, line, line);
+    // pop until use_ctxt is on top 
+    // set loop if proposed_loop is non-NULL
+  } 
+#endif
   
   // -----------------------------------------------------
-  // Setup what will be the current context
+  // ...
   // -----------------------------------------------------
   CtxtChange_set(change, CtxtChange_SAME);
   
@@ -418,9 +436,6 @@ LocationMgr::determineContext(CodeInfo* proposed_scope,
 	top_ctxt = topCtxt();
       }
       CtxtChange_set(change, CtxtChange_POP);
-
-      // Possibly update use_context (if we had to short-circuit)
-      use_ctxt = topCtxt();
     }
     
     // If our enclosing scope is a loop, then consult the loop bounds,
@@ -445,9 +460,9 @@ LocationMgr::determineContext(CodeInfo* proposed_scope,
     // boundaries we have to be more lenient.  
 
     if (use_ctxt->loop()) {
-      // INVARIANT: We must be in the proposed context.
+      // TODELETE: INVARIANT: We must be in the proposed context.
       // INVARIANT: File names must match (or use_ctxt would be NULL)
-      DIAG_Assert(use_ctxt == proposed_ctxt, "");
+      DIAG_Assert(use_ctxt == proposed_ctxt, ""); // TODELETE: 
       if (IsValidLine(line) 
 	  && !containsLineFzy(use_ctxt->loop(), line, use_ctxt->isAlien())) {
 	use_ctxt = NULL; // force a relocation
@@ -461,15 +476,147 @@ LocationMgr::determineContext(CodeInfo* proposed_scope,
     CtxtChange_set(change, CtxtChange_PUSH);
     
     // Find or create the alien scope
-    AlienScope* alien = 
-      findOrCreateAlienScope(proposed_scope, filenm, procnm, line);
+#if (BLOOP_NEST_ALIEN_CONTEXTS)
+    AlienScope* alien =
+      findOrCreateAlienScope(proposed_scope, filenm, procnm, line, true);
+#else
+    AlienScope* alien =
+      findOrCreateAlienScope(proposed_scope, filenm, procnm, line, false);
+    if (topCtxtRef().isAlien()) {
+      m_ctxtStack.pop_front();
+    }
+#endif
     pushCtxt(Ctxt(alien, NULL));
+
     use_ctxt = topCtxt();
   }
 
   DIAG_DevMsgIf(DBG, "  final ctxt [" << toString(change) << "]\n" 
 		<< use_ctxt->toString(0, "  "));
   return change;
+}
+
+
+// Given a valid scope 'cur_scope', determine a new 'cur_scope' and
+// 'cur_ctxt' (by only considering ancestors) such that 'cur_scope' is
+// a (direct) child of 'cur_ctxt'.  
+//
+// Note that this implies that if 'cur_scope' is a context (PROC or
+// ALIEN), cur_ctxt will be the *next* context up the ancestor chain.
+static void
+revertToContext_init(CodeInfo*& cur_ctxt, CodeInfo*& cur_scope)
+{
+  while (true) {
+    CodeInfo* xxx = cur_scope->CodeInfoParent();
+    if (xxx->Type() == ScopeInfo::PROC || xxx->Type() == ScopeInfo::ALIEN) {
+      cur_ctxt = xxx;
+      break;
+    }
+    cur_scope = xxx;
+  }
+}
+
+
+void
+LocationMgr::revertToContext(CodeInfo* from_scope, CodeInfo* true_ctxt, 
+			     suint begLn, suint endLn)
+{
+  // INVARIANT: 'true_ctxt' is a ProcScope or AlienScope and an
+  // ancestor of 'from_scope'
+  
+  // nodes can be ancestors of themselves
+  if (true_ctxt == from_scope) {
+    return;
+  }
+
+  CodeInfo *cur1_scope = from_scope, *cur2_scope = from_scope;
+  CodeInfo* cur_ctxt = NULL;
+  revertToContext_init(cur_ctxt, cur2_scope);  
+  while (cur_ctxt != true_ctxt || cur1_scope != true_ctxt) {
+    
+    // We have the following situation:
+    //   true_ctxt                  true_ctxt
+    //     ..                         ..
+    //       cur_ctxt (A)      ==>      cur_ctxt (A)
+    //         cur2_scope               cur2_scope [bounds]
+    //           ..                       ..
+    //             cur1_scope               cur1_scope [bounds]
+    DIAG_Assert(logic::implies(cur_ctxt != true_ctxt, 
+			       cur_ctxt->Type() == ScopeInfo::ALIEN), "");
+    
+    // 1. cur2_scope becomes a sibling of cur_ctxt
+    cur2_scope->Unlink();
+    cur2_scope->Link(cur_ctxt->Parent());
+
+    if (cur_ctxt->Type() == ScopeInfo::ALIEN) {
+      // for [cur1_scope ... cur2_scope] (which we know is non-empty)
+      //   adjust bounds of scope
+      //   replicate cur_ctxt where necessary
+      for (CodeInfo *x = cur1_scope, *x_old = NULL;
+	   x != cur2_scope->CodeInfoParent(); 
+	   x_old = x, x = x->CodeInfoParent()) {
+	x->SetLineRange(begLn, endLn, 0 /*propagate*/);
+	
+	if ((x_old && x->ChildCount() >= 2) 
+	    || (!x_old && x->ChildCount() >= 1)) {
+	  alienate(x, dynamic_cast<AlienScope*>(cur_ctxt), x_old);
+	}
+      }
+    }
+    
+    cur1_scope = cur2_scope = cur2_scope->CodeInfoParent();
+    revertToContext_init(cur_ctxt, cur2_scope);
+    // cur1_scope may now equal true_ctxt ==> done
+  }
+}
+
+
+void
+LocationMgr::alienate(CodeInfo* scope, AlienScope* alien, CodeInfo* exclude)
+{
+  // create new alien context based on 'alien'
+  CodeInfo* clone = 
+    findOrCreateAlienScope(scope, alien->fileName(), alien->name(), 
+			   alien->begLine(), /*tosOnCreate*/ false);
+  clone->SetLineRange(alien->begLine(), alien->endLine(), 0 /*propagate*/);
+  
+  // move non-alien children of 'scope' into 'clone'
+  for (CodeInfoChildIterator it(scope); it.Current(); /* */) {
+    CodeInfo* child = it.CurCodeInfo();
+    it++; // advance iterator -- it is pointing at 'child'
+
+    if (child->Type() != ScopeInfo::ALIEN && child != exclude) {
+      child->Unlink();
+      child->Link(clone);
+    }
+  }
+}
+
+
+int
+LocationMgr::revertToLoop(LocationMgr::Ctxt* ctxt)
+{
+  // Find the range [beg, end) between the top of the stack and ctxt
+  // that should be popped. 
+  // 
+  // INVARIANT: We are guaranteed that the stack is never empty
+  MyStack::iterator beg = m_ctxtStack.begin();
+  MyStack::iterator end = m_ctxtStack.begin();
+  for (MyStack::iterator it = m_ctxtStack.begin(); &(*it) != ctxt; ++it) {
+    Ctxt& x = *it; 
+    if (x.loop() && x.loop() != ctxt->loop()) {
+      end = it; end++;
+    }
+  }
+  
+  int count = 0;
+  if (beg != end) {
+    m_ctxtStack.erase(beg, end);
+    count = 1;
+  }
+
+  return count;
+
 }
 
 
@@ -578,39 +725,11 @@ LocationMgr::findCtxt(FindCtxt_MatchOp& op,
 }
 
 
-int
-LocationMgr::revertStack(LocationMgr::Ctxt* ctxt)
-{
-  // Find the range [beg, end) between the top of the stack and ctxt
-  // that should be popped in order to ensure that 'ctxt' has the
-  // deepest loop on the stack.  (If ctxt has no loop, then there
-  // should still be no deeper loop.) We chop off any loops deeper
-  // than ctxt.
-  //
-  // We are guaranteed that the stack is never empty
-  MyStack::iterator beg = m_ctxtStack.begin();
-  MyStack::iterator end = m_ctxtStack.begin();
-  for (MyStack::iterator it = m_ctxtStack.begin(); &(*it) != ctxt; ++it) {
-    Ctxt& x = *it; 
-    if (x.loop() && x.loop() != ctxt->loop()) {
-      end = it; end++;
-    }
-  }
-  
-  int count = 0;
-  if (beg != end) {
-    m_ctxtStack.erase(beg, end);
-    count = 1;
-  }
-
-  return count;
-}
-
-
 AlienScope* 
 LocationMgr::findOrCreateAlienScope(CodeInfo* parent_scope,
 				    const std::string& filenm,
-				    const std::string& procnm, suint line)
+				    const std::string& procnm, suint line,
+				    bool tosOnCreate)
 {
   // INVARIANT: 'parent_scope' should either be the top of the stack
   // or the first first enclosing LOOP or PROC of the top of the
@@ -635,47 +754,13 @@ LocationMgr::findOrCreateAlienScope(CodeInfo* parent_scope,
   }
   
   if (!alien) {
-    Ctxt& top_ctxt = m_ctxtStack.front();
-    alien = new AlienScope(top_ctxt.scope(), filenm, procnm, line, line);
+    CodeInfo* p = (tosOnCreate) ? topCtxtRef().scope() : parent_scope;
+    alien = new AlienScope(p, filenm, procnm, line, line);
     m_alienMap.insert(std::make_pair(key, alien));
   }
 
   return alien;
 }
-
-
-#if 0
-// LocateStmt: Locate the instruction 'insn' within a procedure given
-// only basic symbolic information.  Assumes that the
-// StatementRangeScope does not live a loop.
-static StmtRangeScope*
-LocateStmt(binutils::Insn* insn, VMAInterval& vmaint, 
-	   LoadModScope* lmScope,
-	   string& filenm, string& procnm, suint line)
-{
-  // 1. Find containing file
-  string fnm = (filenm.empty()) ? OrphanedProcedureFile : filenm;
-  FileScope* fScope = FindOrCreateFileNode1(lmScope, fnm);
-  
-  // 2. Find containing procedure 
-  // FIXME: we would like to potentially infer multiple procs
-  string pnm = (procnm.empty()) ? InferredProcedure : procnm;
-  ProcScope* pScope = FindOrCreateProcNode1(fScope, pnm, line);
-  pScope->vmaSet().insert(vmaint); // expand VMA range
-  
-  // 3. Locate StmtRangeScope within the procedure
-  StmtRangeScope* stmt = pScope->FindStmtRange(line);
-  if (!stmt) {
-    stmt = new StmtRangeScope(pScope, line, line, vmaint.beg(), vmaint.end());
-  }
-  else {
-    stmt->vmaSet().insert(vmaint); // expand VMA range
-  }
-  
-  return stmt;
-}
-#endif
-
 
 } // namespace bloop
 

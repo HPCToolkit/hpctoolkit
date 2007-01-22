@@ -298,7 +298,25 @@ private:
   CtxtChange_t 
   determineContext(CodeInfo* proposed_scope,
 		   std::string& filenm, std::string& procnm, suint line);
+  
+  // revertToContext: Given a scope 'from_scope' that should be
+  // located within the calling context 'true_ctxt' but specifically
+  // within lines 'begLn' and 'endLn', perform the transformations.
+  void 
+  revertToContext(CodeInfo* from_scope, CodeInfo* true_ctxt, 
+		  suint begLn, suint endLn);
 
+  // place all non-Alien children of 'scope' into an Alien context based on
+  // 'alien' except for 'exclude'
+  void
+  alienate(CodeInfo* scope, AlienScope* alien, CodeInfo* exclude);
+
+  
+  // revertToLoop: Pop contexts between top and 'ctxt' until
+  // 'ctxt->loop()' is the deepest loop on the stack.  (If
+  // ctxt->loop() is NULL then there should be no deeper loop.) We
+  // chop off any loops deeper than ctxt.
+  int revertToLoop(Ctxt* ctxt);
   
   // -------------------------------------------------------
   // 
@@ -316,8 +334,6 @@ private:
       m_ctxtStack.push_front(ctxt);
       topCtxtRef().level() = nxt_lvl; }
 
-  int revertStack(Ctxt* ctxt);
-  
   // -------------------------------------------------------
   // findCtxt
   // -------------------------------------------------------
@@ -475,7 +491,8 @@ private:
   AlienScope* findOrCreateAlienScope(CodeInfo* parent_scope,
 				     const std::string& filenm,
 				     const std::string& procnm, 
-				     suint line);
+				     suint line,
+				     bool tosOnCreate = true);
   
 private: 
   MyStack       m_ctxtStack; // cf. topCtxt() [begin()/front() is the top]
