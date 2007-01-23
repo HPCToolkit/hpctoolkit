@@ -1415,7 +1415,6 @@ ScopeInfo::toString(int dmpFlag, const char* pre) const
 { 
   std::ostringstream os;
   dump(os, dmpFlag, pre);
-  os << ends;
   return os.str();
 }
 
@@ -1434,7 +1433,6 @@ ScopeInfo::toString_me(int dmpFlag, const char* prefix) const
 { 
   std::ostringstream os;
   dumpme(os, dmpFlag, prefix);
-  os << ends;
   return os.str();
 }
 
@@ -1605,7 +1603,6 @@ ScopeInfo::toStringXML(int dmpFlag, const char* pre) const
 { 
   std::ostringstream os;
   XML_DumpLineSorted(os, dmpFlag, pre);
-  os << ends;
   return os.str();
 }
 
