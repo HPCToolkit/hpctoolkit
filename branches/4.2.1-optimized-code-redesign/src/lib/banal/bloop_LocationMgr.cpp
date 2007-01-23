@@ -302,6 +302,8 @@ LocationMgr::Ctxt::dump(std::ostream& os, int flags, const char* pre) const
      << ": " << ctxt()->toXML() << "\n";
   os << pre << "  loop: " << hex << loop() << dec;
   if (loop()) { os << ": " << loop()->toXML(); }
+  os << "\n";
+  os << pre << "  level: " << m_level;
   os << " }";
   if (flags >= 0) {
     os << "\n";
@@ -328,9 +330,9 @@ LocationMgr::toString(CtxtChange_t x)
   }
   else {
     switch (CtxtChange_MASK & x) {
-      case CtxtChange_SAME:              str = "CtxtChange_SAME"; break;
-      case CtxtChange_POP  /*REVERT*/:   str = "CtxtChange_POP"; break;
-      case CtxtChange_PUSH /*RELOCATE*/: str = "CtxtChange_PUSH"; break;
+      case CtxtChange_SAME: str = "CtxtChange_SAME"; break;
+      case CtxtChange_POP:  str = "CtxtChange_POP"; break;
+      case CtxtChange_PUSH: str = "CtxtChange_PUSH"; break;
       default: DIAG_Die(DIAG_Unimplemented);
     }
   }
@@ -340,6 +342,9 @@ LocationMgr::toString(CtxtChange_t x)
   }
   if (CtxtChange_isFlag(x, CtxtChange_FLAG_REVERT)) {
     str += "/REVERT";
+  }
+  if (CtxtChange_isFlag(x, CtxtChange_FLAG_FIX_SCOPES)) {
+    str += "/FIX_SCOPES";
   }
   
   return str;
@@ -357,7 +362,7 @@ LocationMgr::determineContext(CodeInfo* proposed_scope,
   // -----------------------------------------------------
   // 1. Initialize context information
   // -----------------------------------------------------
-  
+
   // proposed context file and procedure
   CodeInfo* proposed_ctxt_scope = dynamic_cast<CodeInfo*>(proposed_scope->Ancestor(ScopeInfo::PROC, ScopeInfo::ALIEN));
   Ctxt* proposed_ctxt = findCtxt(proposed_ctxt_scope);
@@ -392,43 +397,34 @@ LocationMgr::determineContext(CodeInfo* proposed_scope,
   // -----------------------------------------------------
   // 2. Attempt to find an appropriate existing enclosing context for
   // the given source information.
-  //
-  // Notes:
-  // - TODELETE: We cannot restore contexts beyond 'proposed_ctxt'.
-  // - Assuming proposed_loop is non-NULL, the only time it is the
-  //   immediate parent context is when 'proposed_ctxt' is at the
-  //   top-of-the-stack.  Otherwise the stack has alien scopes (but no
-  //   loop scopes) at the top.
   // -----------------------------------------------------
   const Ctxt* use_ctxt = switch_findCtxt(filenm, procnm, line, proposed_ctxt);
-
-  // TODELETE:
-  // INVARIANT: ('use_ctxt' != NULL) ==> 'use_ctxt' is within the
-  //   range ['top_ctxt', 'proposed_ctxt']
-
-  DIAG_DevMsgIf(DBG, "  first ctxt:\n" 
+  
+  DIAG_DevMsgIf(DBG, "  first ctxt:\n"
 		<< ((use_ctxt) ? use_ctxt->toString(-1, "  ") : ""));
-
+  
   // -----------------------------------------------------
   // 3. Setup the current context (either by reversion to a prior
   // context or creation of a new one).
   // -----------------------------------------------------
-
-#if 0  
-  if (use_ctxt && use_ctxt->level() < proposed_ctxt->level()) {
-    revertToContext(top_ctxt->scope(), true_ctxt, line, line);
-    // pop until use_ctxt is on top 
-    // set loop if proposed_loop is non-NULL
-  } 
-#endif
-  
-  // -----------------------------------------------------
-  // ...
-  // -----------------------------------------------------
   CtxtChange_set(change, CtxtChange_SAME);
   
   if (use_ctxt) {
-    // Revert the stack to 'use_ctxt'
+    // Revert scope tree to a prior context, if necessary
+    if (use_ctxt->level() < proposed_ctxt->level()) {
+      DIAG_DevMsgIf(DBG, "  fixScopeTree: before\n" << toString() 
+		    << use_ctxt->ctxt()->toStringXML());
+      fixScopeTree(top_ctxt->scope(), use_ctxt->ctxt(), line, line);
+      DIAG_DevMsgIf(DBG, "  fixScopeTree: after\n" 
+		    << use_ctxt->ctxt()->toStringXML());
+      
+      // reset proposed_ctxt
+      proposed_ctxt = const_cast<Ctxt*>(use_ctxt);
+      proposed_ctxt->loop() = proposed_loop;
+      CtxtChange_setFlag(change, CtxtChange_FLAG_FIX_SCOPES);
+    } 
+
+    // Revert context stack to a prior context, if necessary
     if (use_ctxt != top_ctxt) {
       // pop contexts until we get to 'use_ctxt'
       while (top_ctxt != use_ctxt) {
@@ -438,6 +434,11 @@ LocationMgr::determineContext(CodeInfo* proposed_scope,
       CtxtChange_set(change, CtxtChange_POP);
     }
     
+    // INVARIANT: If proposed_loop is non-NULL, the only time it is
+    // the immediate parent context is when 'proposed_ctxt' is at the
+    // top-of-the-stack.  Otherwise the stack has alien scopes (but no
+    // loop scopes) at the top.
+  
     // If our enclosing scope is a loop, then consult the loop bounds,
     // which we assume are approximately correct, though we place more
     // confidence in the begin line than the end line estimate.
@@ -458,11 +459,13 @@ LocationMgr::determineContext(CodeInfo* proposed_scope,
     // but want to allow loop initializations that usually have a
     // source line number slightly before the "head VMA".  For end
     // boundaries we have to be more lenient.  
-
+    
     if (use_ctxt->loop()) {
-      // TODELETE: INVARIANT: We must be in the proposed context.
+      // FIXME:: this is redundant if fixScopeTree() was called.
+      // INVARIANT: We must be in the proposed context.
       // INVARIANT: File names must match (or use_ctxt would be NULL)
-      DIAG_Assert(use_ctxt == proposed_ctxt, ""); // TODELETE: 
+      DIAG_Assert(use_ctxt == proposed_ctxt, "Different contexts: " 
+		  << use_ctxt->toString() << proposed_ctxt->toString());
       if (IsValidLine(line) 
 	  && !containsLineFzy(use_ctxt->loop(), line, use_ctxt->isAlien())) {
 	use_ctxt = NULL; // force a relocation
@@ -476,11 +479,10 @@ LocationMgr::determineContext(CodeInfo* proposed_scope,
     CtxtChange_set(change, CtxtChange_PUSH);
     
     // Find or create the alien scope
-#if (BLOOP_NEST_ALIEN_CONTEXTS)
     AlienScope* alien =
+#if (BLOOP_NEST_ALIEN_CONTEXTS)
       findOrCreateAlienScope(proposed_scope, filenm, procnm, line, true);
 #else
-    AlienScope* alien =
       findOrCreateAlienScope(proposed_scope, filenm, procnm, line, false);
     if (topCtxtRef().isAlien()) {
       m_ctxtStack.pop_front();
@@ -504,7 +506,7 @@ LocationMgr::determineContext(CodeInfo* proposed_scope,
 // Note that this implies that if 'cur_scope' is a context (PROC or
 // ALIEN), cur_ctxt will be the *next* context up the ancestor chain.
 static void
-revertToContext_init(CodeInfo*& cur_ctxt, CodeInfo*& cur_scope)
+fixScopeTree_init(CodeInfo*& cur_ctxt, CodeInfo*& cur_scope)
 {
   while (true) {
     CodeInfo* xxx = cur_scope->CodeInfoParent();
@@ -518,8 +520,8 @@ revertToContext_init(CodeInfo*& cur_ctxt, CodeInfo*& cur_scope)
 
 
 void
-LocationMgr::revertToContext(CodeInfo* from_scope, CodeInfo* true_ctxt, 
-			     suint begLn, suint endLn)
+LocationMgr::fixScopeTree(CodeInfo* from_scope, CodeInfo* true_ctxt, 
+			  suint begLn, suint endLn)
 {
   // INVARIANT: 'true_ctxt' is a ProcScope or AlienScope and an
   // ancestor of 'from_scope'
@@ -531,7 +533,7 @@ LocationMgr::revertToContext(CodeInfo* from_scope, CodeInfo* true_ctxt,
 
   CodeInfo *cur1_scope = from_scope, *cur2_scope = from_scope;
   CodeInfo* cur_ctxt = NULL;
-  revertToContext_init(cur_ctxt, cur2_scope);  
+  fixScopeTree_init(cur_ctxt, cur2_scope);  
   while (cur_ctxt != true_ctxt || cur1_scope != true_ctxt) {
     
     // We have the following situation:
@@ -555,24 +557,25 @@ LocationMgr::revertToContext(CodeInfo* from_scope, CodeInfo* true_ctxt,
       for (CodeInfo *x = cur1_scope, *x_old = NULL;
 	   x != cur2_scope->CodeInfoParent(); 
 	   x_old = x, x = x->CodeInfoParent()) {
-	x->SetLineRange(begLn, endLn, 0 /*propagate*/);
+	x->SetLineRange(begLn, endLn, 0 /*propagate*/); // FIXME
 	
 	if ((x_old && x->ChildCount() >= 2) 
 	    || (!x_old && x->ChildCount() >= 1)) {
-	  alienate(x, dynamic_cast<AlienScope*>(cur_ctxt), x_old);
+	  alienateScopeTree(x, dynamic_cast<AlienScope*>(cur_ctxt), x_old);
 	}
       }
     }
     
     cur1_scope = cur2_scope = cur2_scope->CodeInfoParent();
-    revertToContext_init(cur_ctxt, cur2_scope);
+    fixScopeTree_init(cur_ctxt, cur2_scope);
     // cur1_scope may now equal true_ctxt ==> done
   }
 }
 
 
 void
-LocationMgr::alienate(CodeInfo* scope, AlienScope* alien, CodeInfo* exclude)
+LocationMgr::alienateScopeTree(CodeInfo* scope, AlienScope* alien, 
+			       CodeInfo* exclude)
 {
   // create new alien context based on 'alien'
   CodeInfo* clone = 
@@ -585,7 +588,8 @@ LocationMgr::alienate(CodeInfo* scope, AlienScope* alien, CodeInfo* exclude)
     CodeInfo* child = it.CurCodeInfo();
     it++; // advance iterator -- it is pointing at 'child'
 
-    if (child->Type() != ScopeInfo::ALIEN && child != exclude) {
+    if (child->Type() != ScopeInfo::ALIEN && child != exclude
+	&& !scope->containsInterval(child->begLine(), child->endLine())) {
       child->Unlink();
       child->Link(clone);
     }

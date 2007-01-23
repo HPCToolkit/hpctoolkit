@@ -253,11 +253,7 @@ private:
     CtxtChange_NULL                = 0x00000000,
     
     CtxtChange_SAME                = 0x00000010,
-    
-    CtxtChange_REVERT              = 0x00000020,
     CtxtChange_POP                 = 0x00000020,
-    
-    CtxtChange_RELOCATE            = 0x00000040,
     CtxtChange_PUSH                = 0x00000040,
 
     // flags
@@ -265,6 +261,7 @@ private:
     CtxtChange_FLAG_NULL           = 0x00000000,
     CtxtChange_FLAG_RESTORE        = 0x10000000,
     CtxtChange_FLAG_REVERT         = 0x20000000,
+    CtxtChange_FLAG_FIX_SCOPES     = 0x40000000,
   };
 
   static bool CtxtChange_eq(CtxtChange_t x, CtxtChange_t y) {
@@ -299,17 +296,17 @@ private:
   determineContext(CodeInfo* proposed_scope,
 		   std::string& filenm, std::string& procnm, suint line);
   
-  // revertToContext: Given a scope 'from_scope' that should be
+  // fixScopeTree: Given a scope 'from_scope' that should be
   // located within the calling context 'true_ctxt' but specifically
   // within lines 'begLn' and 'endLn', perform the transformations.
-  void 
-  revertToContext(CodeInfo* from_scope, CodeInfo* true_ctxt, 
-		  suint begLn, suint endLn);
-
-  // place all non-Alien children of 'scope' into an Alien context based on
-  // 'alien' except for 'exclude'
   void
-  alienate(CodeInfo* scope, AlienScope* alien, CodeInfo* exclude);
+  fixScopeTree(CodeInfo* from_scope, CodeInfo* true_ctxt, 
+	       suint begLn, suint endLn);
+
+  // alienateScopeTree: place all non-Alien children of 'scope' into an Alien
+  // context based on 'alien' except for 'exclude'
+  void
+  alienateScopeTree(CodeInfo* scope, AlienScope* alien, CodeInfo* exclude);
 
   
   // revertToLoop: Pop contexts between top and 'ctxt' until
@@ -330,7 +327,7 @@ private:
     { return const_cast<Ctxt&>(m_ctxtStack.front()); }
 
   void pushCtxt(const Ctxt& ctxt)
-    { int nxt_lvl = (m_ctxtStack.empty()) ? 1 : topCtxtRef().level();
+    { int nxt_lvl = (m_ctxtStack.empty()) ? 1 : topCtxtRef().level() + 1;
       m_ctxtStack.push_front(ctxt);
       topCtxtRef().level() = nxt_lvl; }
 
