@@ -187,11 +187,24 @@ LocationMgr::containsLineFzy(CodeInfo* x, suint line, bool loopIsAlien)
     // procedure end lines are not very accurate
     // loop begin lines are somewhat accurate
     // loop end line are not very accurate
-    case ScopeInfo::PROC:  beg_epsilon = 2;  end_epsilon = 30;      break;
-    case ScopeInfo::ALIEN: beg_epsilon = 10; end_epsilon = INT_MAX; break;
-    case ScopeInfo::LOOP:  beg_epsilon = 5;  end_epsilon = INT_MAX;
-                           if (loopIsAlien) { end_epsilon = 20; }   break;
-    default: break;
+    case ScopeInfo::PROC: 
+      { 
+	beg_epsilon = 2;  end_epsilon = 30;
+	CodeInfo* next = x->nextScopeNonOverlapping(); // sorted
+	if (next) {
+	  end_epsilon = (int)(next->begLine() - 1 - x->endLine());
+	}
+      }
+      break;
+    case ScopeInfo::ALIEN: 
+      beg_epsilon = 10; end_epsilon = INT_MAX; 
+      break;
+    case ScopeInfo::LOOP:  
+      beg_epsilon = 5;  end_epsilon = INT_MAX;
+      if (loopIsAlien) { end_epsilon = 20; }   
+      break;
+    default:
+      break;
   }
   
   return x->containsLine(line, beg_epsilon, end_epsilon);
@@ -205,10 +218,23 @@ LocationMgr::containsIntervalFzy(CodeInfo* x, suint begLn, suint endLn)
   
   switch (x->Type()) {
     // see assumptions above.
-    case ScopeInfo::PROC:  beg_epsilon = 2;  end_epsilon = 10; break;
-    case ScopeInfo::ALIEN: beg_epsilon = 10; end_epsilon = 10; break;
-    case ScopeInfo::LOOP:  beg_epsilon = 5;  end_epsilon = 5;
-    default: break;
+    case ScopeInfo::PROC: 
+      {
+	beg_epsilon = 2;  end_epsilon = 10;
+	CodeInfo* next = x->nextScopeNonOverlapping(); // sorted
+	if (next) {
+	  end_epsilon = (int)(next->begLine() - 1 - x->endLine());
+	}
+      }
+      break;
+    case ScopeInfo::ALIEN: 
+      beg_epsilon = 10; end_epsilon = 10; 
+      break;
+    case ScopeInfo::LOOP:  
+      beg_epsilon = 5;  end_epsilon = 5; 
+      break;
+    default: 
+      break;
   }
   
   return x->containsInterval(begLn, endLn, beg_epsilon, end_epsilon);
