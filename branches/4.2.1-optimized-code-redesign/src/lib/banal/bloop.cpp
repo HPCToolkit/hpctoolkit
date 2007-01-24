@@ -385,6 +385,8 @@ namespace bloop {
 // procedure end lines.
 //
 // A ProcScope can be associated with multiple binutils::Procs
+//
+// ProcScopes will be sorted by begLn (cf. CodeInfo::Reorder)
 static ProcScopeToProcMap*
 BuildLMSkeleton(LoadModScope* lmScope, binutils::LM* lm)
 {
@@ -483,7 +485,6 @@ FindOrCreateProcNode(FileScope* fScope, binutils::Proc* p)
   
   // Compute source line bounds to uphold invariant:
   //   (begLn == 0) <==> (endLn == 0)
-  //   (begLn != 0) <==> (endLn != 0)
   suint begLn, endLn;
   if (p->hasSymbolic()) {
     begLn = p->GetBegLine();
@@ -505,18 +506,7 @@ FindOrCreateProcNode(FileScope* fScope, binutils::Proc* p)
     DIAG_DevMsg(3, "Merging multiple instances of procedure [" 
 		<< pScope->toStringXML() << "] with " << procNm << " " 
 		<< procLnNm << " " << bounds.toString());
-    
-    if (IsValidLine(begLn) && IsValidLine(pScope->begLine())) {
-      begLn = MIN(begLn, pScope->begLine());
-      endLn = MAX(endLn, pScope->endLine());
-      pScope->SetLineRange(begLn, endLn);
-    }
-    else if (IsValidLine(begLn)) {
-      pScope->SetLineRange(begLn, endLn);
-    }
-    // IsValidLine(pScope->begLine): no need to do anything
-    // neither is valid: no need to do anything
-
+    pScope->ExpandLineRange(begLn, endLn);
   }
   pScope->vmaSet().insert(bounds);
   
@@ -572,7 +562,9 @@ BuildProcStructure(ProcScope* pScope, binutils::Proc* p,
   if (p->GetName().find(dbgNm) != string::npos) {
     DBG_PROC_print_now = true;
   }
-  if (dbgId == 10) { DBG_PROC_print_now = true; }
+  if (dbgId == 10) {
+    DBG_PROC_print_now = true; 
+  }
 #endif
   
   BuildProcLoopNests(pScope, p, irreducibleIntervalIsLoop);
