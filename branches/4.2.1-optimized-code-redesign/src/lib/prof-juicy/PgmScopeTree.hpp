@@ -68,6 +68,8 @@
 
 #include <lib/binutils/VMAInterval.hpp>
 
+#include <lib/support/diagnostics.h>
+#include <lib/support/Logic.hpp>
 #include <lib/support/Unique.hpp>
 #include <lib/support/NonUniformDegreeTree.hpp>
 #include <lib/support/Files.hpp>
@@ -248,6 +250,9 @@ public:
   LoopScope*      Loop() const;          // return Ancestor(LOOP)
   StmtRangeScope* StmtRange() const;     // return Ancestor(STMT_RANGE)
 
+  CodeInfo*       CallingCtxt() const;   // return Ancestor(ALIEN|PROC)
+
+
   // LeastCommonAncestor: Given two ScopeInfo nodes, return the least
   // common ancestor (deepest nested common ancestor) or NULL.
   static ScopeInfo* LeastCommonAncestor(ScopeInfo* n1, ScopeInfo* n2);
@@ -407,11 +412,23 @@ public:
   const suint endLine() const { return mendLine; }
   suint&      endLine()       { return mendLine; }
 
+  // SetLineRange: 
   void SetLineRange(suint begLn, suint endLn, int propagate = 1);
+  
+  void ExpandLineRange(suint begLn, suint endLn, int propagate = 1);
 
   void LinkAndSetLineRange(CodeInfo* parent);
 
-
+  inline void checkLineRange(suint begLn, suint endLn)
+  {
+    DIAG_Assert(logic::equiv(begLn == UNDEF_LINE, endLn == UNDEF_LINE),
+		"CodeInfo::checkLineRange: b=" << begLn << " e=" << endLn);
+    DIAG_Assert(begLn <= endLn, 
+		"CodeInfo::checkLineRange: b=" << begLn << " e=" << endLn);
+    DIAG_Assert(logic::equiv(mbegLine == UNDEF_LINE, mendLine == UNDEF_LINE),
+		"CodeInfo::checkLineRange: b=" << mbegLine << " e=" << mendLine);
+  }
+  
   // A set of *unrelocated* VMAs associated with this scope
   VMAIntervalSet&       vmaSet()       { return mvmaSet; }
   const VMAIntervalSet& vmaSet() const { return mvmaSet; }

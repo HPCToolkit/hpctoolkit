@@ -848,6 +848,14 @@ ScopeInfo::StmtRange() const
 }
 
 
+CodeInfo*
+ScopeInfo::CallingCtxt() const 
+{
+  return dynamic_cast<CodeInfo*>(Ancestor(ScopeInfo::PROC, ScopeInfo::ALIEN));
+}
+
+
+
 //***************************************************************************
 // ScopeInfo: Tree Navigation
 //***************************************************************************
@@ -2074,44 +2082,61 @@ PgmScope::TSV_TreeDump(ostream& os) const
 void 
 CodeInfo::SetLineRange(suint begLn, suint endLn, int propagate) 
 {
-  // Sanity Checking:
-  //   begLn <= endLn
-  //   (begLn == UNDEF_LINE) <==> (endLn == UNDEF_LINE)
-  DIAG_Assert(begLn <= endLn, "CodeInfo::SetLineRange: b=" << begLn 
-	      << " e=" << endLn);
+  checkLineRange(begLn, endLn);
 
   if (begLn == UNDEF_LINE) {
-    DIAG_Assert(endLn == UNDEF_LINE, "CodeInfo::SetLineRange: b=" << begLn 
-		<< " e=" << endLn);
+    DIAG_Assert(mbegLine == UNDEF_LINE, "");
     // simply relocate at beginning of sibling list 
-    // no range update in parents is necessary
-    DIAG_Assert((mbegLine == UNDEF_LINE) && (mendLine == UNDEF_LINE), "");
-    if (Parent() != NULL) { 
-      Relocate(); 
+    //if (Parent() != NULL) { 
+    //  Relocate(); 
+    //}
+  } 
+  else {
+    mbegLine = begLn;
+    mendLine = endLn;
+    
+    CodeInfo* parent = CodeInfoParent();
+    if (parent) {
+      //Relocate();
+      // never propagate changes outside an AlienScope
+      if (propagate && Type() != ScopeInfo::ALIEN) {
+	parent->ExpandLineRange(mbegLine, mendLine);
+      }
     }
+  }
+}
+
+
+void 
+CodeInfo::ExpandLineRange(suint begLn, suint endLn, int propagate)
+{
+  checkLineRange(begLn, endLn);
+
+  if (begLn == UNDEF_LINE) {
+    DIAG_Assert(mbegLine == UNDEF_LINE, "");
+    // simply relocate at beginning of sibling list 
+    //if (Parent() != NULL) { 
+    //  Relocate(); 
+    //}
   } 
   else {
     bool changed = false;
     if (mbegLine == UNDEF_LINE) {
-      DIAG_Assert(mendLine == UNDEF_LINE, "");
-      // initialize range
       mbegLine = begLn;
       mendLine = endLn;
       changed = true;
     } 
     else {
-      DIAG_Assert((mbegLine != UNDEF_LINE) && (mendLine != UNDEF_LINE), "");
-      // expand range ?
       if (begLn < mbegLine) { mbegLine = begLn; changed = true; }
       if (endLn > mendLine) { mendLine = endLn; changed = true; }
     }
-    CodeInfo* mom = CodeInfoParent();
-    if (changed && (mom != NULL)) {
-      Relocate();
-      
+
+    CodeInfo* parent = CodeInfoParent();
+    if (changed && (parent != NULL)) {
+      //Relocate();
       // never propagate changes outside an AlienScope
       if (propagate && Type() != ScopeInfo::ALIEN) {
-	mom->SetLineRange(mbegLine, mendLine);
+        parent->ExpandLineRange(mbegLine, mendLine);
       }
     }
   }
