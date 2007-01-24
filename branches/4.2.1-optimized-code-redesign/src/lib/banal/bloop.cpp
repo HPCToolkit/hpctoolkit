@@ -1120,8 +1120,7 @@ MergeBogusAlienScopes(CodeInfo* node, FileScope* file)
       AlienScope* alien = dynamic_cast<AlienScope*>(child);
       CodeInfo* parent = alien->CodeInfoParent();
       
-      CodeInfo* callCtxt = dynamic_cast<CodeInfo*>(
-        parent->Ancestor(ScopeInfo::PROC, ScopeInfo::ALIEN));
+      CodeInfo* callCtxt = parent->CallingCtxt();
       const string& callCtxtFnm = (callCtxt->Type() == ScopeInfo::ALIEN) ?
 	dynamic_cast<AlienScope*>(callCtxt)->fileName() : file->name();
       
@@ -1528,7 +1527,8 @@ RemoveEmptyScopes(ScopeInfo* node)
 static bool 
 RemoveEmptyScopes_isEmpty(const ScopeInfo* node)
 {
-  if (node->Type() == ScopeInfo::FILE && node->ChildCount() == 0) {
+  if ((node->Type() == ScopeInfo::FILE || node->Type() == ScopeInfo::ALIEN)
+      && node->ChildCount() == 0) {
     return true;
   }
   if ((node->Type() == ScopeInfo::PROC || node->Type() == ScopeInfo::LOOP)
