@@ -187,7 +187,7 @@ LocationMgr::containsLineFzy(CodeInfo* x, suint line, bool loopIsAlien)
     // procedure end lines are not very accurate
     // loop begin lines are somewhat accurate
     // loop end line are not very accurate
-    case ScopeInfo::PROC:  beg_epsilon = 5;  end_epsilon = 30;      break;
+    case ScopeInfo::PROC:  beg_epsilon = 2;  end_epsilon = 30;      break;
     case ScopeInfo::ALIEN: beg_epsilon = 10; end_epsilon = INT_MAX; break;
     case ScopeInfo::LOOP:  beg_epsilon = 5;  end_epsilon = INT_MAX;
                            if (loopIsAlien) { end_epsilon = 20; }   break;
@@ -205,7 +205,7 @@ LocationMgr::containsIntervalFzy(CodeInfo* x, suint begLn, suint endLn)
   
   switch (x->Type()) {
     // see assumptions above.
-    case ScopeInfo::PROC:  beg_epsilon = 5;  end_epsilon = 10; break;
+    case ScopeInfo::PROC:  beg_epsilon = 2;  end_epsilon = 10; break;
     case ScopeInfo::ALIEN: beg_epsilon = 10; end_epsilon = 10; break;
     case ScopeInfo::LOOP:  beg_epsilon = 5;  end_epsilon = 5;
     default: break;
@@ -362,9 +362,13 @@ LocationMgr::determineContext(CodeInfo* proposed_scope,
   // -----------------------------------------------------
   // 1. Initialize context information
   // -----------------------------------------------------
-
+  
   // proposed context file and procedure
-  CodeInfo* proposed_ctxt_scope = dynamic_cast<CodeInfo*>(proposed_scope->Ancestor(ScopeInfo::PROC, ScopeInfo::ALIEN));
+#if 1
+  fixContextStack(proposed_scope);
+  Ctxt* proposed_ctxt = topCtxt();
+#else
+  CodeInfo* proposed_ctxt_scope = proposed_scope->CallingCtxt();
   Ctxt* proposed_ctxt = findCtxt(proposed_ctxt_scope);
   if (!proposed_ctxt) {
     // Restore context
@@ -372,6 +376,8 @@ LocationMgr::determineContext(CodeInfo* proposed_scope,
     proposed_ctxt = topCtxt();
     CtxtChange_setFlag(change, CtxtChange_FLAG_RESTORE);
   }
+#endif
+  
   const string& proposed_procnm = proposed_ctxt->ctxt()->name();
   const string& proposed_filenm = proposed_ctxt->fileName();
   LoopScope* proposed_loop = dynamic_cast<LoopScope*>(proposed_scope);
@@ -379,12 +385,13 @@ LocationMgr::determineContext(CodeInfo* proposed_scope,
   // proposed loop lives within proposed context 
   proposed_ctxt->loop() = proposed_loop;
   
+#if 0
   // proposed_loop should be the most deeply nested loop on the stack
   int cnt = revertToLoop(proposed_ctxt);
   if (cnt) {
     CtxtChange_setFlag(change, CtxtChange_FLAG_REVERT);
   }
-  
+#endif
   
   // top context file and procedure name (top context is alien if !=
   // to proposed_ctxt)
@@ -398,7 +405,7 @@ LocationMgr::determineContext(CodeInfo* proposed_scope,
   // 2. Attempt to find an appropriate existing enclosing context for
   // the given source information.
   // -----------------------------------------------------
-  const Ctxt* use_ctxt = switch_findCtxt(filenm, procnm, line, proposed_ctxt);
+  const Ctxt* use_ctxt = switch_findCtxt(filenm, procnm, line);
   
   DIAG_DevMsgIf(DBG, "  first ctxt:\n"
 		<< ((use_ctxt) ? use_ctxt->toString(-1, "  ") : ""));
@@ -499,6 +506,31 @@ LocationMgr::determineContext(CodeInfo* proposed_scope,
 }
 
 
+void
+LocationMgr::fixContextStack(const CodeInfo* proposed_scope)
+{
+  // FIXME: a big hack!
+  m_ctxtStack.clear();
+
+  CodeInfo* x = proposed_scope->CallingCtxt();
+  for ( ; x->Type() != ScopeInfo::PROC; x = x->Parent()->CallingCtxt()) {
+    m_ctxtStack.push_back(Ctxt(x));
+  }
+  m_ctxtStack.push_back(Ctxt(x)); // add the PROC
+
+  // FIXME: we don't really need this if proposed scope is always on
+  // the top since we can just do a pointer comparison in
+  // determineContext().
+  int lvl = 1;
+  for (MyStack::reverse_iterator it = m_ctxtStack.rbegin(); 
+       it != m_ctxtStack.rend(); ++it) {
+    Ctxt& x = *it; 
+    x.level() = lvl++;
+  }
+}
+
+
+
 // Given a valid scope 'cur_scope', determine a new 'cur_scope' and
 // 'cur_ctxt' (by only considering ancestors) such that 'cur_scope' is
 // a (direct) child of 'cur_ctxt'.  
@@ -508,6 +540,7 @@ LocationMgr::determineContext(CodeInfo* proposed_scope,
 static void
 fixScopeTree_init(CodeInfo*& cur_ctxt, CodeInfo*& cur_scope)
 {
+  DIAG_Assert(cur_scope->Type() != ScopeInfo::PROC, DIAG_UnexpectedInput << "will return the wrong answer!");
   while (true) {
     CodeInfo* xxx = cur_scope->CodeInfoParent();
     if (xxx->Type() == ScopeInfo::PROC || xxx->Type() == ScopeInfo::ALIEN) {
@@ -534,7 +567,7 @@ LocationMgr::fixScopeTree(CodeInfo* from_scope, CodeInfo* true_ctxt,
   CodeInfo *cur1_scope = from_scope, *cur2_scope = from_scope;
   CodeInfo* cur_ctxt = NULL;
   fixScopeTree_init(cur_ctxt, cur2_scope);  
-  while (cur_ctxt != true_ctxt || cur1_scope != true_ctxt) {
+  while (cur_ctxt != true_ctxt) {
     
     // We have the following situation:
     //   true_ctxt                  true_ctxt
@@ -567,8 +600,10 @@ LocationMgr::fixScopeTree(CodeInfo* from_scope, CodeInfo* true_ctxt,
     }
     
     cur1_scope = cur2_scope = cur2_scope->CodeInfoParent();
+    if (cur1_scope == true_ctxt) {
+      break;
+    }
     fixScopeTree_init(cur_ctxt, cur2_scope);
-    // cur1_scope may now equal true_ctxt ==> done
   }
 }
 

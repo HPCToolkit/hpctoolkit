@@ -296,6 +296,10 @@ private:
   determineContext(CodeInfo* proposed_scope,
 		   std::string& filenm, std::string& procnm, suint line);
   
+  // fixCtxtStack: Yuck.
+  void
+  fixContextStack(const CodeInfo* proposed_scope);
+
   // fixScopeTree: Given a scope 'from_scope' that should be
   // located within the calling context 'true_ctxt' but specifically
   // within lines 'begLn' and 'endLn', perform the transformations.
