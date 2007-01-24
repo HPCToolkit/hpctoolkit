@@ -193,8 +193,8 @@ ScopeInfo::IntToScopeType(long i)
 // ScopeInfo, etc: constructors/destructors
 //***************************************************************************
 
-ScopeInfo::ScopeInfo(ScopeType t, ScopeInfo* mom) 
-  : NonUniformDegreeTreeNode(mom), type(t)
+ScopeInfo::ScopeInfo(ScopeType t, ScopeInfo* parent) 
+  : NonUniformDegreeTreeNode(parent), type(t)
 { 
   DIAG_Assert((type == PGM) || (Pgm() == NULL) || !Pgm()->IsFrozen(), "");
   static unsigned int uniqueId = 0;
@@ -307,9 +307,9 @@ ScopeInfo::~ScopeInfo()
 }
 
 
-CodeInfo::CodeInfo(ScopeType t, ScopeInfo* mom, suint begLn, suint endLn,
+CodeInfo::CodeInfo(ScopeType t, ScopeInfo* parent, suint begLn, suint endLn,
 		   VMA begVMA, VMA endVMA) 
-  : ScopeInfo(t, mom), mbegLine(UNDEF_LINE), mendLine(UNDEF_LINE)
+  : ScopeInfo(t, parent), mbegLine(UNDEF_LINE), mendLine(UNDEF_LINE)
 { 
   SetLineRange(begLn, endLn);
   if (begVMA != 0 && endVMA != 0) {
@@ -398,28 +398,28 @@ PgmScope::~PgmScope()
 }
 
 
-GroupScope::GroupScope(const char* nm, ScopeInfo* mom, 
+GroupScope::GroupScope(const char* nm, ScopeInfo* parent, 
 		       int begLn, int endLn) 
-  : CodeInfo(GROUP, mom, begLn, endLn, 0, 0)
+  : CodeInfo(GROUP, parent, begLn, endLn, 0, 0)
 {
-  Ctor(nm, mom);
+  Ctor(nm, parent);
 }
 
 
-GroupScope::GroupScope(const string& nm, ScopeInfo* mom, 
+GroupScope::GroupScope(const string& nm, ScopeInfo* parent, 
 		       int begLn, int endLn) 
-  : CodeInfo(GROUP, mom, begLn, endLn, 0, 0)
+  : CodeInfo(GROUP, parent, begLn, endLn, 0, 0)
 {
-  Ctor(nm.c_str(), mom);
+  Ctor(nm.c_str(), parent);
 }
 
 
 void
-GroupScope::Ctor(const char* nm, ScopeInfo* mom)
+GroupScope::Ctor(const char* nm, ScopeInfo* parent)
 {
   DIAG_Assert(nm, "");
-  ScopeType t = (mom) ? mom->Type() : ANY;
-  DIAG_Assert((mom == NULL) || (t == PGM) || (t == GROUP) || (t == LM) 
+  ScopeType t = (parent) ? parent->Type() : ANY;
+  DIAG_Assert((parent == NULL) || (t == PGM) || (t == GROUP) || (t == LM) 
 	      || (t == FILE) || (t == PROC) || (t == LOOP), "");
   m_name = nm;
   Pgm()->AddToGroupMap(*this);
@@ -431,26 +431,26 @@ GroupScope::~GroupScope()
 }
 
 
-LoadModScope::LoadModScope(const char* nm, ScopeInfo* mom)
-  : CodeInfo(LM, mom, UNDEF_LINE, UNDEF_LINE, 0, 0)
+LoadModScope::LoadModScope(const char* nm, ScopeInfo* parent)
+  : CodeInfo(LM, parent, UNDEF_LINE, UNDEF_LINE, 0, 0)
 { 
-  Ctor(nm, mom);
+  Ctor(nm, parent);
 }
 
 
-LoadModScope::LoadModScope(const std::string& nm, ScopeInfo* mom)
-  : CodeInfo(LM, mom, UNDEF_LINE, UNDEF_LINE, 0, 0)
+LoadModScope::LoadModScope(const std::string& nm, ScopeInfo* parent)
+  : CodeInfo(LM, parent, UNDEF_LINE, UNDEF_LINE, 0, 0)
 {
-  Ctor(nm.c_str(), mom);
+  Ctor(nm.c_str(), parent);
 }
 
 
 void
-LoadModScope::Ctor(const char* nm, ScopeInfo* mom)
+LoadModScope::Ctor(const char* nm, ScopeInfo* parent)
 {
   DIAG_Assert(nm, "");
-  ScopeType t = (mom) ? mom->Type() : ANY;
-  DIAG_Assert((mom == NULL) || (t == PGM) || (t == GROUP), "");
+  ScopeType t = (parent) ? parent->Type() : ANY;
+  DIAG_Assert((parent == NULL) || (t == PGM) || (t == GROUP), "");
 
   m_name = nm;
   procMap = NULL;
@@ -481,30 +481,30 @@ LoadModScope::~LoadModScope()
 
 
 FileScope::FileScope(const char* srcFileWithPath, bool srcIsReadble_, 
-		     ScopeInfo *mom,
+		     ScopeInfo *parent,
 		     suint begLn, suint endLn)
-  : CodeInfo(FILE, mom, begLn, endLn, 0, 0)
+  : CodeInfo(FILE, parent, begLn, endLn, 0, 0)
 {
-  Ctor(srcFileWithPath, srcIsReadble_, mom);
+  Ctor(srcFileWithPath, srcIsReadble_, parent);
 }
 
 
 FileScope::FileScope(const string& srcFileWithPath, bool srcIsReadble_, 
-		     ScopeInfo *mom,
+		     ScopeInfo *parent,
 		     suint begLn, suint endLn)
-  : CodeInfo(FILE, mom, begLn, endLn, 0, 0)
+  : CodeInfo(FILE, parent, begLn, endLn, 0, 0)
 {
-  Ctor(srcFileWithPath.c_str(), srcIsReadble_, mom);
+  Ctor(srcFileWithPath.c_str(), srcIsReadble_, parent);
 }
 
 
 void
 FileScope::Ctor(const char* srcFileWithPath, bool srcIsReadble_, 
-		ScopeInfo* mom)
+		ScopeInfo* parent)
 {
   DIAG_Assert(srcFileWithPath, "");
-  ScopeType t = (mom) ? mom->Type() : ANY;
-  DIAG_Assert((mom == NULL) || (t == PGM) || (t == GROUP) || (t == LM), "");
+  ScopeType t = (parent) ? parent->Type() : ANY;
+  DIAG_Assert((parent == NULL) || (t == PGM) || (t == GROUP) || (t == LM), "");
 
   srcIsReadable = srcIsReadble_;
   m_name = srcFileWithPath;
@@ -543,32 +543,35 @@ FileScope::findOrCreate(LoadModScope* lmScope, const string& filenm)
 }
 
 
-ProcScope::ProcScope(const char* n, CodeInfo* mom, const char* ln, 
+ProcScope::ProcScope(const char* n, CodeInfo* parent, const char* ln, 
 		     suint begLn, suint endLn) 
-  : CodeInfo(PROC, mom, begLn, endLn, 0, 0)
+  : CodeInfo(PROC, parent, begLn, endLn, 0, 0)
 {
-  Ctor(n, mom, ln);
+  Ctor(n, parent, ln);
 }
 
 
-ProcScope::ProcScope(const string& n, CodeInfo* mom, const string& ln, 
+ProcScope::ProcScope(const string& n, CodeInfo* parent, const string& ln, 
 		     suint begLn, suint endLn) 
-  : CodeInfo(PROC, mom, begLn, endLn, 0, 0)
+  : CodeInfo(PROC, parent, begLn, endLn, 0, 0)
 {
-  Ctor(n.c_str(), mom, ln.c_str());
+  Ctor(n.c_str(), parent, ln.c_str());
 }
 
 
 void
-ProcScope::Ctor(const char* n, CodeInfo* mom, const char* ln)
+ProcScope::Ctor(const char* n, CodeInfo* parent, const char* ln)
 {
   DIAG_Assert(n, "");
-  ScopeType t = (mom) ? mom->Type() : ANY;
-  DIAG_Assert((mom == NULL) || (t == GROUP) || (t == FILE), "");
+  ScopeType t = (parent) ? parent->Type() : ANY;
+  DIAG_Assert((parent == NULL) || (t == GROUP) || (t == FILE), "");
 
   m_name = (n) ? n : "";
   m_linkname = (ln) ? ln : "";
   stmtMap = new StmtRangeScopeMap();
+  if (parent) {
+    Relocate();
+  }
   if (File()) { File()->AddToProcMap(*this); }
 }
 
@@ -602,28 +605,28 @@ ProcScope::findOrCreate(FileScope* fScope, const string& procnm, suint line)
 }
 
 
-AlienScope::AlienScope(CodeInfo* mom, const char* filenm, const char* nm,
+AlienScope::AlienScope(CodeInfo* parent, const char* filenm, const char* nm,
 		       suint begLn, suint endLn) 
-  : CodeInfo(ALIEN, mom, begLn, endLn, 0, 0)
+  : CodeInfo(ALIEN, parent, begLn, endLn, 0, 0)
 {
-  Ctor(mom, filenm, nm);
+  Ctor(parent, filenm, nm);
 }
 
 
-AlienScope::AlienScope(CodeInfo* mom, 
+AlienScope::AlienScope(CodeInfo* parent, 
 		       const std::string& filenm, const std::string& nm,
 		       suint begLn, suint endLn) 
-  : CodeInfo(ALIEN, mom, begLn, endLn, 0, 0)
+  : CodeInfo(ALIEN, parent, begLn, endLn, 0, 0)
 {
-  Ctor(mom, filenm.c_str(), nm.c_str());
+  Ctor(parent, filenm.c_str(), nm.c_str());
 }
 
 
 void
-AlienScope::Ctor(CodeInfo* mom, const char* filenm, const char* nm)
+AlienScope::Ctor(CodeInfo* parent, const char* filenm, const char* nm)
 {
-  ScopeType t = (mom) ? mom->Type() : ANY;
-  DIAG_Assert((mom == NULL) || (t == GROUP) || (t == ALIEN) 
+  ScopeType t = (parent) ? parent->Type() : ANY;
+  DIAG_Assert((parent == NULL) || (t == GROUP) || (t == ALIEN) 
 	      || (t == PROC) || (t == LOOP), "");
 
   m_filenm = (filenm) ? filenm : "";
@@ -648,11 +651,11 @@ AlienScope::~AlienScope()
 }
 
 
-LoopScope::LoopScope(CodeInfo* mom, suint begLn, suint endLn) 
-  : CodeInfo(LOOP, mom, begLn, endLn, 0, 0)
+LoopScope::LoopScope(CodeInfo* parent, suint begLn, suint endLn) 
+  : CodeInfo(LOOP, parent, begLn, endLn, 0, 0)
 {
-  ScopeType t = (mom) ? mom->Type() : ANY;
-  DIAG_Assert((mom == NULL) || (t == GROUP) || (t == FILE) || (t == PROC) 
+  ScopeType t = (parent) ? parent->Type() : ANY;
+  DIAG_Assert((parent == NULL) || (t == GROUP) || (t == FILE) || (t == PROC) 
 	      || (t == LOOP), "");
 }
 
@@ -662,12 +665,12 @@ LoopScope::~LoopScope()
 }
 
 
-StmtRangeScope::StmtRangeScope(CodeInfo* mom, suint begLn, suint endLn,
+StmtRangeScope::StmtRangeScope(CodeInfo* parent, suint begLn, suint endLn,
 			       VMA begVMA, VMA endVMA)
-  : CodeInfo(STMT_RANGE, mom, begLn, endLn, begVMA, endVMA)
+  : CodeInfo(STMT_RANGE, parent, begLn, endLn, begVMA, endVMA)
 {
-  ScopeType t = (mom) ? mom->Type() : ANY;
-  DIAG_Assert((mom == NULL) || (t == GROUP) || (t == FILE) || (t == PROC)
+  ScopeType t = (parent) ? parent->Type() : ANY;
+  DIAG_Assert((parent == NULL) || (t == GROUP) || (t == FILE) || (t == PROC)
 	      || (t == LOOP), "");
   ProcScope* p = Proc();
   if (p) { 
@@ -683,11 +686,11 @@ StmtRangeScope::~StmtRangeScope()
 }
 
 
-RefScope::RefScope(CodeInfo* mom, int _begPos, int _endPos, 
+RefScope::RefScope(CodeInfo* parent, int _begPos, int _endPos, 
 		   const char* refName) 
-  : CodeInfo(REF, mom, mom->begLine(), mom->begLine(), 0, 0)
+  : CodeInfo(REF, parent, parent->begLine(), parent->begLine(), 0, 0)
 {
-  DIAG_Assert(mom->Type() == STMT_RANGE, "");
+  DIAG_Assert(parent->Type() == STMT_RANGE, "");
   begPos = _begPos;
   endPos = _endPos;
   m_name = refName;
@@ -910,6 +913,18 @@ ScopeInfo::PrevScope() const
     return ci;
   }
   return NULL;
+}
+
+
+CodeInfo*
+ScopeInfo::nextScopeNonOverlapping() const
+{
+  const CodeInfo* x = dynamic_cast<const CodeInfo*>(this);
+  if (!x) { return NULL; }
+  
+  CodeInfo* z = NextScope();
+  for (; z && x->containsLine(z->begLine()); z = z->NextScope()) { }
+  return z;
 }
 
 
@@ -2083,25 +2098,20 @@ void
 CodeInfo::SetLineRange(suint begLn, suint endLn, int propagate) 
 {
   checkLineRange(begLn, endLn);
-
+  
   if (begLn == UNDEF_LINE) {
     DIAG_Assert(mbegLine == UNDEF_LINE, "");
     // simply relocate at beginning of sibling list 
-    //if (Parent() != NULL) { 
-    //  Relocate(); 
-    //}
+    RelocateIf();
   } 
   else {
     mbegLine = begLn;
     mendLine = endLn;
-    
-    CodeInfo* parent = CodeInfoParent();
-    if (parent) {
-      //Relocate();
-      // never propagate changes outside an AlienScope
-      if (propagate && Type() != ScopeInfo::ALIEN) {
-	parent->ExpandLineRange(mbegLine, mendLine);
-      }
+
+    // never propagate changes outside an AlienScope
+    RelocateIf();
+    if (propagate && CodeInfoParent() && Type() != ScopeInfo::ALIEN) {
+      CodeInfoParent()->ExpandLineRange(mbegLine, mendLine);
     }
   }
 }
@@ -2115,9 +2125,7 @@ CodeInfo::ExpandLineRange(suint begLn, suint endLn, int propagate)
   if (begLn == UNDEF_LINE) {
     DIAG_Assert(mbegLine == UNDEF_LINE, "");
     // simply relocate at beginning of sibling list 
-    //if (Parent() != NULL) { 
-    //  Relocate(); 
-    //}
+    RelocateIf();
   } 
   else {
     bool changed = false;
@@ -2131,12 +2139,11 @@ CodeInfo::ExpandLineRange(suint begLn, suint endLn, int propagate)
       if (endLn > mendLine) { mendLine = endLn; changed = true; }
     }
 
-    CodeInfo* parent = CodeInfoParent();
-    if (changed && (parent != NULL)) {
-      //Relocate();
+    if (changed) {
       // never propagate changes outside an AlienScope
-      if (propagate && Type() != ScopeInfo::ALIEN) {
-        parent->ExpandLineRange(mbegLine, mendLine);
+      RelocateIf();
+      if (propagate && CodeInfoParent() && Type() != ScopeInfo::ALIEN) {
+        CodeInfoParent()->ExpandLineRange(mbegLine, mendLine);
       }
     }
   }
@@ -2148,26 +2155,33 @@ CodeInfo::Relocate()
 {
   CodeInfo* prev = PrevScope();
   CodeInfo* next = NextScope();
-  if (((!prev) || (prev->mendLine <= mbegLine)) && 
-      ((!next) || (next->mbegLine >= mendLine))) {
-     return;
+
+  // NOTE: Technically should check for UNDEF_LINE
+  if ((!prev || (prev->begLine() <= mbegLine)) 
+      && (!next || (mbegLine <= next->begLine()))) {
+    return;
   } 
-  ScopeInfo *mom = Parent();
+  
+  // INVARIANT: The parent scope contains at least two children
+  DIAG_Assert(parent->ChildCount() >= 2, "");
+
+  ScopeInfo* parent = Parent();
   Unlink();
-  if (mom->FirstChild() == NULL) {
-    Link(mom);
-  }
-  else if (mbegLine == UNDEF_LINE) {
+
+  //if (parent->FirstChild() == NULL) {
+  //  Link(parent);
+  //}
+  if (mbegLine == UNDEF_LINE) {
     // insert as first child
-    LinkBefore(mom->FirstChild());
+    LinkBefore(parent->FirstChild());
   } 
   else {
-    // insert after sibling with sibling->mendLine < mbegLine 
+    // insert after sibling with sibling->begLine() <= begLine() 
     // or iff that does not exist insert as first in sibling list
     CodeInfo* sibling = NULL;
-    for (sibling = mom->LastEnclScope(); sibling;
+    for (sibling = parent->LastEnclScope(); sibling;
 	 sibling = sibling->PrevScope()) {
-      if (sibling->mendLine < mbegLine) {
+      if (sibling->begLine() <= mbegLine) {
 	break;
       }
     } 
@@ -2175,7 +2189,7 @@ CodeInfo::Relocate()
       LinkAfter(sibling);
     } 
     else {
-      LinkBefore(mom->FirstChild());
+      LinkBefore(parent->FirstChild());
     } 
   }
 }
@@ -2313,22 +2327,23 @@ AddXMLEscapeChars(int dmpFlag)
 void
 RefScope::RelocateRef() 
 {
-  RefScope *prev = dynamic_cast<RefScope*>(PrevScope());
-  RefScope *next = dynamic_cast<RefScope*>(NextScope());
+  RefScope* prev = dynamic_cast<RefScope*>(PrevScope());
+  RefScope* next = dynamic_cast<RefScope*>(NextScope());
   DIAG_Assert((PrevScope() == prev) && (NextScope() == next), "");
   if (((!prev) || (prev->endPos <= begPos)) && 
       ((!next) || (next->begPos >= endPos))) {
     return;
   } 
-  ScopeInfo *mom = Parent();
+  ScopeInfo* parent = Parent();
   Unlink();
-  if (mom->FirstChild() == NULL) {
-    Link(mom);
-  } else {
+  if (parent->FirstChild() == NULL) {
+    Link(parent);
+  } 
+  else {
     // insert after sibling with sibling->endPos < begPos 
     // or iff that does not exist insert as first in sibling list
     CodeInfo* sibling;
-    for (sibling = mom->LastEnclScope();
+    for (sibling = parent->LastEnclScope();
 	 sibling;
 	 sibling = sibling->PrevScope()) {
       RefScope *ref = dynamic_cast<RefScope*>(sibling);
@@ -2340,8 +2355,9 @@ RefScope::RelocateRef()
       RefScope *nxt = dynamic_cast<RefScope*>(sibling->NextScope());
       DIAG_Assert((nxt == NULL) || (nxt->begPos > endPos), "");
       LinkAfter(sibling);
-    } else {
-      LinkBefore(mom->FirstChild());
+    } 
+    else {
+      LinkBefore(parent->FirstChild());
     } 
   }
 }

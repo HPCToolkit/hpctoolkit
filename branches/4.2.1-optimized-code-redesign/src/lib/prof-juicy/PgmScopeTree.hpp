@@ -270,6 +270,8 @@ public:
   CodeInfo* PrevScope()      const;      // return  NULL or PrevSibling()
   bool      IsLeaf()         const       { return  FirstEnclScope() == NULL; }
 
+  CodeInfo* nextScopeNonOverlapping() const;
+
   // --------------------------------------------------------
   // Paths and Merging
   // --------------------------------------------------------
@@ -419,7 +421,7 @@ public:
 
   void LinkAndSetLineRange(CodeInfo* parent);
 
-  inline void checkLineRange(suint begLn, suint endLn)
+  void checkLineRange(suint begLn, suint endLn)
   {
     DIAG_Assert(logic::equiv(begLn == UNDEF_LINE, endLn == UNDEF_LINE),
 		"CodeInfo::checkLineRange: b=" << begLn << " e=" << endLn);
@@ -497,8 +499,15 @@ public:
 			       const char* pre = "") const;
 
 protected: 
+  // NOTE: currently designed for PROCs
   void Relocate();
-
+  
+  void RelocateIf() {
+    if (Parent() && Type() == ScopeInfo::PROC) {
+      Relocate();
+    }
+  }
+  
 protected:
   suint mbegLine;
   suint mendLine;
