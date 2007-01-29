@@ -189,7 +189,7 @@ LocationMgr::containsLineFzy(CodeInfo* x, suint line, bool loopIsAlien)
     // loop end line are not very accurate
     case ScopeInfo::PROC: 
       { 
-	beg_epsilon = 2;  end_epsilon = 30;
+	beg_epsilon = 2;  end_epsilon = 100;
 	CodeInfo* next = x->nextScopeNonOverlapping(); // sorted
 	if (next) {
 	  end_epsilon = (int)(next->begLine() - 1 - x->endLine());
@@ -220,7 +220,7 @@ LocationMgr::containsIntervalFzy(CodeInfo* x, suint begLn, suint endLn)
     // see assumptions above.
     case ScopeInfo::PROC: 
       {
-	beg_epsilon = 2;  end_epsilon = 10;
+	beg_epsilon = 2;  end_epsilon = 100;
 	CodeInfo* next = x->nextScopeNonOverlapping(); // sorted
 	if (next) {
 	  end_epsilon = (int)(next->begLine() - 1 - x->endLine());
