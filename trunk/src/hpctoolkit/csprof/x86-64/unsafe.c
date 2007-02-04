@@ -15,17 +15,12 @@ bfdsect_callback(bfd *thebfd, asection *sect, void *obj)
 {
   if(strcmp(sect->name, ".plt") == 0) {
     plt_begin_address = sect->vma;
-    /* KLUDGE: somewhere along the line, binutils changed the name
-       of the 'size/_cooked_size' structure field and didn't bother
-       to provide any way to differentiate between the two versions.
-       No abstract interface, nothing.  So if you're having compilation
-       problems with this file, you might change '_cooked_size' to
-       'size'.
-
-       The reason it's '_cooked_size' is because that's what recent
-       versions of binutils use and therefore it's more likely to work
-       out of the box for people.  */
-    plt_end_address = sect->vma + sect->_cooked_size;
+    /* KLUDGE: In 2004, binutils renamed the '_cooked_size' structure
+       field to ''size' and didn't bother to provide any way to
+       differentiate between the two versions (aside from version).
+       So if you're having compilation problems with this file, you
+       might change '_cooked_size' to 'size'. (ChangeLog-2004).  */
+    plt_end_address = sect->vma + sect->size;
   }
 }
 
