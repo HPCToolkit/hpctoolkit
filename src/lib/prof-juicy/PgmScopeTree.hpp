@@ -68,6 +68,8 @@
 
 #include <lib/binutils/VMAInterval.hpp>
 
+#include <lib/support/diagnostics.h>
+#include <lib/support/Logic.hpp>
 #include <lib/support/Unique.hpp>
 #include <lib/support/NonUniformDegreeTree.hpp>
 #include <lib/support/Files.hpp>
@@ -234,7 +236,7 @@ public:
   
   // --------------------------------------------------------
   // Ancestor: find first ScopeInfo in path from this to root with given type
-  // (Note: We assume that a node cannot be an ancestor of itself.)
+  // (Note: We assume that a node *can* be an ancestor of itself.)
   // --------------------------------------------------------
   ScopeInfo* Ancestor(ScopeType type) const;
   ScopeInfo* Ancestor(ScopeType tp1, ScopeType tp2) const;
@@ -247,6 +249,9 @@ public:
   AlienScope*     Alien() const;         // return Ancestor(ALIEN)
   LoopScope*      Loop() const;          // return Ancestor(LOOP)
   StmtRangeScope* StmtRange() const;     // return Ancestor(STMT_RANGE)
+
+  CodeInfo*       CallingCtxt() const;   // return Ancestor(ALIEN|PROC)
+
 
   // LeastCommonAncestor: Given two ScopeInfo nodes, return the least
   // common ancestor (deepest nested common ancestor) or NULL.
@@ -264,6 +269,8 @@ public:
   CodeInfo* NextScope()      const;      // return  NULL or NextSibling()
   CodeInfo* PrevScope()      const;      // return  NULL or PrevSibling()
   bool      IsLeaf()         const       { return  FirstEnclScope() == NULL; }
+
+  CodeInfo* nextScopeNonOverlapping() const;
 
   // --------------------------------------------------------
   // Paths and Merging
@@ -400,32 +407,68 @@ protected:
 public: 
   virtual ~CodeInfo();
 
+  // Line range in source code
+  const suint begLine() const { return mbegLine; }
+  suint&      begLine()       { return mbegLine; }
+
+  const suint endLine() const { return mendLine; }
+  suint&      endLine()       { return mendLine; }
+
+  // SetLineRange: 
+  void SetLineRange(suint begLn, suint endLn, int propagate = 1);
+  
+  void ExpandLineRange(suint begLn, suint endLn, int propagate = 1);
+
   void LinkAndSetLineRange(CodeInfo* parent);
 
-  suint begLine() const { return mbegLine; } // in source code
-  suint endLine() const { return mendLine; } // in source code
-
+  void checkLineRange(suint begLn, suint endLn)
+  {
+    DIAG_Assert(logic::equiv(begLn == UNDEF_LINE, endLn == UNDEF_LINE),
+		"CodeInfo::checkLineRange: b=" << begLn << " e=" << endLn);
+    DIAG_Assert(begLn <= endLn, 
+		"CodeInfo::checkLineRange: b=" << begLn << " e=" << endLn);
+    DIAG_Assert(logic::equiv(mbegLine == UNDEF_LINE, mendLine == UNDEF_LINE),
+		"CodeInfo::checkLineRange: b=" << mbegLine << " e=" << mendLine);
+  }
+  
   // A set of *unrelocated* VMAs associated with this scope
   VMAIntervalSet&       vmaSet()       { return mvmaSet; }
   const VMAIntervalSet& vmaSet() const { return mvmaSet; }
   
-  bool      ContainsLine(suint ln) const;
+  // containsLine: returns true if this scope contains line number
+  //   'ln'.  A non-zero beg_epsilon and end_epsilon allows fuzzy
+  //   matches by expanding the interval of the scope.
+  //
+  // containsInterval: returns true if this scope fully contains the
+  //   interval specified by [begLn...endLn].  A non-zero beg_epsilon
+  //   and end_epsilon allows fuzzy matches by expanding the interval of
+  //   the scope.
+  //
+  // Note: We assume that it makes no sense to compare against UNDEF_LINE.
+  bool containsLine(suint ln) const
+    { return (mbegLine != UNDEF_LINE && (mbegLine <= ln && ln <= mendLine)); }
+  bool containsLine(suint ln, int beg_epsilon, int end_epsilon) const;
+  bool containsInterval(suint begLn, suint endLn) const
+    { return (containsLine(begLn) && containsLine(endLn)); }
+  bool containsInterval(suint begLn, suint endLn,
+			int beg_epsilon, int end_epsilon) const
+    { return (containsLine(begLn, beg_epsilon, end_epsilon) 
+	      && containsLine(endLn, beg_epsilon, end_epsilon)); }
+
   CodeInfo* CodeInfoWithLine(suint ln) const;
 
   // returns a string of the form: 
   //   File()->name() + ":" + <Line-Range> 
   //
   // where Line-Range is either: 
-  //                     BegLine() + "-" + EndLine()      or simply 
-  //                     BegLine() 
+  //                     begLine() + "-" + endLine()      or simply 
+  //                     begLine() 
   virtual std::string CodeName() const;
   virtual std::string LineRange() const;
 
   static std::string CodeLineName(suint line);
 
   virtual ScopeInfo* Clone() { return new CodeInfo(*this); }
-
-  void SetLineRange(suint begLn, suint endLn); // be careful when using!
 
   CodeInfo* GetFirst() const { return first; } 
   CodeInfo* GetLast() const { return last; } 
@@ -456,8 +499,15 @@ public:
 			       const char* pre = "") const;
 
 protected: 
+  // NOTE: currently designed for PROCs
   void Relocate();
-
+  
+  void RelocateIf() {
+    //if (Parent() && Type() == ScopeInfo::PROC) {
+      Relocate();
+    //}
+  }
+  
 protected:
   suint mbegLine;
   suint mendLine;

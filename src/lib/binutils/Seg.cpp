@@ -354,8 +354,8 @@ binutils::TextSeg::Create_InitializeProcs()
     Proc* child = it->first;
     VMA parentVMA = it->second;
     Proc* parent = lm->findProc(parentVMA);
-    DIAG_Assert(parent, "Could not find parent within this section:\n" 
-		<< child->toString());
+    DIAG_AssertWarn(parent, "Could not find parent within this section:\n" 
+		    << child->toString());
     DIAG_Assert(parent != child, "Procedure has itself as parent!\n" 
 		<< child->toString());
     child->parent() = parent;
