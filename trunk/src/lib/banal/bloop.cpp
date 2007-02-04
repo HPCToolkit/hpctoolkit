@@ -456,7 +456,7 @@ BuildProcStructure(FileScope* fileScope, binutils::Proc* p)
     DIAG_DevMsg(3, "Merging multiple instances of procedure [" << pScope->toStringXML() << "] with " << funcNm << " " << funcLnNm << " " << bounds.toString());
     begLn = MIN(begLn, pScope->begLine());
     endLn = MAX(endLn, pScope->endLine());
-    pScope->SetLineRange(begLn, endLn);
+    pScope->ExpandLineRange(begLn, endLn);
   }
   
   return pScope;
@@ -671,7 +671,7 @@ BuildFromTarjInterval(CodeInfo* enclosingScope, binutils::Proc* p,
     endLn = loopsEndLn;
   }
   if (IsValidLine(begLn, endLn)) {
-    enclosingScope->SetLineRange(begLn, endLn); // conditional
+    enclosingScope->ExpandLineRange(begLn, endLn); // conditional
   }
 #endif
   

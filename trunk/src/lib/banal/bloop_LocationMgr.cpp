@@ -176,7 +176,7 @@ bool
 LocationMgr::containsLineGivenFile(CodeInfo* x, suint line)
 {  
   // FIXME: move to contains-line-fuzzy in CodeInfo
-  if (x->ContainsLine(line)) {
+  if (x->containsLine(line)) {
     return true;
   }
   else {
@@ -265,7 +265,7 @@ LocationMgr::Ctxt::containsLine(suint line) const
     return (ctxt()->begLine() <= line); // FIXME (we don't know about file...)
   }
   else {
-    return (ctxt()->ContainsLine(line));
+    return (ctxt()->containsLine(line));
   }
 }
 
