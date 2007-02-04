@@ -44,6 +44,8 @@
 #include "monitor.h"
 #include "hpcrun.h"
 
+
+#ifndef HAVE_MONITOR
 /**************************** Forward Declarations **************************/
 
 static void hpcrun_handle_any_dlerror();
@@ -573,5 +575,75 @@ hpcrun_handle_any_dlerror()
     DIE("fatal error: %s\n", error);
   }
 }
+
+#else /* HAVE_MONITOR */
+
+void monitor_init_library(void)
+{
+  init_library();
+  /* process initialized with interception of libc_start_main */
+}
+
+void monitor_fini_library(void)
+{
+  /* process finalized with libc_start_main */
+  fini_library();
+}
+
+void monitor_init_process(const char *name, const unsigned pid)
+{
+  hpcrun_cmd = name;  /* command is also in /proc/pid/cmdline */
+  if (opt_debug >= 1)
+    fprintf(stderr, "Init process callback from monitor received\n");
+  init_process();
+}
+
+void monitor_fini_process(void)
+{
+  if (opt_debug >= 1)
+    fprintf(stderr, "Fini process callback from monitor received\n");
+  fini_process();
+}
+void monitor_init_thread_support(void)
+{
+  int rval;
+  if (opt_thread == HPCRUN_THREADPROF_NO) {
+    /* This is a threaded application, so we might as well handle it! */
+    opt_thread = HPCRUN_THREADPROF_EACH;
+  }
+  if ((rval = PAPI_thread_init(pthread_self)) != PAPI_OK) {
+    DIE("fatal error: PAPI error (%d): %s.", rval, PAPI_strerror(rval));
+  }
+}
+
+void *monitor_init_thread(const unsigned tid)
+{
+  if (opt_thread != HPCRUN_THREADPROF_NO) {
+    if (opt_debug >= 1)
+      fprintf(stderr, "init_thread(TID=0x%lx) callback from monitor received\n", tid);
+    return((void *)init_thread(1));
+  }
+  else
+    return NULL; /* no per-thread monitoring */
+}
+
+void monitor_fini_thread(void *data)
+{
+  if (opt_thread != HPCRUN_THREADPROF_NO) {
+    if (opt_debug >= 1)
+      fprintf(stderr, "fini_thread(TID=0x%lx) callback from monitor received\n", (long)pthread_self());
+    fini_thread((hpcrun_profiles_desc_t **)(&data), 1 /*is_thread*/);
+  }
+}
+
+void monitor_dlopen(char* lib)
+{
+  if (opt_debug >= 1)
+    fprintf(stderr, "dlopen(%s) callback from monitor received\n", lib);
+  /* update profile tables */
+  handle_dlopen();
+}
+
+#endif /* HAVE_MONITOR */
 
 /****************************************************************************/

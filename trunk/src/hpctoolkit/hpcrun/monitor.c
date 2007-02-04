@@ -106,8 +106,10 @@ init_library()
   if (opt_debug >= 1) { MSG(stderr, "*** init_library ***"); }
   
   init_options();
-  
+
+#ifndef HAVE_MONITOR  
   init_library_SPECIALIZED();
+#endif
 }
 
 
@@ -906,7 +908,7 @@ init_profdesc_ofile(hpcrun_profiles_desc_t* profdesc, int sharedprofdesc)
   hostnm[hostnmLen-1] = '\0'; /* ensure NULL termination */
 
   /* Create file name */
-  snprintf(outfilenm, outfilenmLen, "%s/%s.%s%s.%s.%d.%ld", 
+  snprintf(outfilenm, outfilenmLen, "%s/%s.%s%s.%s.%d.0x%lx", 
 	   opt_outpath, cmd, event, evetc, hostnm, getpid(), hpcrun_gettid());
   
   profdesc->ofile.fs = NULL;
@@ -1044,8 +1046,9 @@ init_papi_for_process()
   }
   
   /* PAPI_set_domain(PAPI_DOM_ALL); */
-  
+#ifndef HAVE_MONITOR  
   init_papi_for_process_SPECIALIZED();
+#endif
 }
 
 
@@ -1596,7 +1599,11 @@ write_string(FILE *fs, char *str)
 extern long
 hpcrun_gettid()
 {
+#ifdef HAVE_MONITOR
+  return (long)(monitor_gettid());
+#else
   return hpcrun_gettid_SPECIALIZED();
+#endif
 }
 
 extern void 

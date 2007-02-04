@@ -41,7 +41,7 @@
    HPCRUN_DEBUG          positive integer
  */
 
-#define HPCRUN_LIB "libhpcrun.so"
+#define HPCRUN_LIB  "libhpcrun.so"
 
 typedef enum enum_hpc_threadprof_t {
   HPCRUN_THREADPROF_NO   = 0, /* do not initialize thread support */
