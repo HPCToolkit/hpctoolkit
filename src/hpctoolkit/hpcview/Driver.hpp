@@ -51,10 +51,13 @@
 
 #include <include/general.h>
 
-#include "PGMDocHandler.hpp"
 #include "DerivedPerfMetrics.hpp" // for FilePerfMetric
 
+#include <lib/prof-juicy-x/PGMDocHandler.hpp>
+#include <lib/prof-juicy-x/DocHandlerArgs.hpp>
+
 #include <lib/prof-juicy/PgmScopeTree.hpp>
+
 #include <lib/support/Unique.hpp>
 
 //************************ Forward Declarations ******************************
@@ -154,6 +157,27 @@ private:
   std::vector<PerfMetric*> dataSrc;
   std::vector<std::string*> structureFiles;
   std::vector<std::string*> groupFiles;
+};
+
+//****************************************************************************
+
+class DriverDocHandlerArgs : public DocHandlerArgs {
+public:
+  DriverDocHandlerArgs(Driver* driver) 
+    : m_driver(driver) { }
+  
+  ~DriverDocHandlerArgs() { }
+  
+  virtual string ReplacePath(const char* oldpath) const { 
+    return m_driver->ReplacePath(oldpath);
+  };
+  
+  virtual bool MustDeleteUnderscore() const { 
+    return m_driver->MustDeleteUnderscore();
+  }
+
+private:
+  Driver* m_driver;
 };
 
 #endif 

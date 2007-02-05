@@ -208,7 +208,7 @@ my $opt_structFiles = [];
 my $opt_groupFiles = [];
 my $opt_profileFiles = [ ];
 my $opt_suppressOutput = 0;
-my $opt_outputDB   = "experiment.db";
+my $opt_outputDB   = "experiment-db";
 
 my $configFile = "hpcquick.xml";
 my $logFile = "hpcquick.log";

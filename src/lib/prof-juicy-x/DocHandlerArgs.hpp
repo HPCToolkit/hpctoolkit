@@ -1,5 +1,6 @@
+// -*-Mode: C++;-*-
 // $Id$
-// -*-C++-*-
+
 // * BeginRiceCopyright *****************************************************
 // 
 // Copyright ((c)) 2002, Rice University 
@@ -34,54 +35,50 @@
 // 
 // ******************************************************* EndRiceCopyright *
 
-#ifndef HTMLSrcFiles_h 
-#define HTMLSrcFiles_h 
+//***************************************************************************
+//
+// File:
+//   $Source$
+//
+// Purpose:
+//   []
+//
+// Description:
+//   [The set of functions, macros, etc. defined in the file]
+//
+//***************************************************************************
+
+#ifndef prof_juicy_x_DocHandlerArgs
+#define prof_juicy_x_DocHandlerArgs
 
 //************************ System Include Files ******************************
 
+#include <string>
+
 //************************* User Include Files *******************************
 
-#include <lib/prof-juicy/PgmScopeTree.hpp>
-
-#include <lib/support/String.hpp>
+#include "XercesSAX2.hpp"
 
 //************************ Forward Declarations ******************************
 
-class Args;
-class FileScope; 
-class HTMLFile;
+//****************************************************************************
+
+class DocHandlerArgs {
+public:
+  DocHandlerArgs() { }
+  
+  ~DocHandlerArgs() { }
+  
+  virtual string ReplacePath(const char* oldpath) const { return oldpath; };
+  
+  std::string ReplacePath(const std::string& oldpath) const
+    { return ReplacePath(oldpath.c_str()); }
+  
+  virtual bool MustDeleteUnderscore() const { return false; }
+
+private:
+};
 
 //****************************************************************************
 
-class HTMLSrcFiles { 
-public: 
-  HTMLSrcFiles(const PgmScopeTree& scopes, const Args &pgmArgs, 
-	       const ScopeInfoFilter &entryFilter, 
-	       bool leavesOnly);
-  
-  void WriteLabels(const char* dir, 
-		   const char* fgColor, 
-		   const char* bgColor) const; 
-  void WriteSrcFiles(const char* dir) const;   
-
-  static String LabelFileName(const char* name); 
-
-private:
-  void WriteSourceLabel(const char* dir, const FileScope *file, 
-			const char *fgColor, const char* bgColor) const;
-  void WriteSrcFile(const char* dir, FileScope &file) const;   
-  void WriteSrc(HTMLFile &hf, FileScope &file) const;
-  void GenerateSrc(HTMLFile &hf, FileScope &file) const;
-  void GenSrc(HTMLFile &hf, CodeInfo &ci, unsigned int level, 
-	      unsigned int &lastLine) const; 
-
-  const ScopeInfoFilter filter;   // only include when filter.fct(entry)==true
-  const bool leavesOnly;       // if true only include leaves, 
-                                  // otherwise include internal nodes as well
-  
-  const PgmScopeTree& scopes;     // contains all refs/lines/loops/procs to
-                                  // be considered
-  const Args &programArgs;       
-}; 
-
-#endif 
+#endif  // prof_juicy_x_DocHandlerArgs

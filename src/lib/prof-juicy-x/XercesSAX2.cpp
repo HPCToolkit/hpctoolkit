@@ -51,7 +51,7 @@ using XERCES_CPP_NAMESPACE::XMLString;
 
 //************************* User Include Files *******************************
 
-#include "HPCViewSAX2.hpp"
+#include "XercesSAX2.hpp"
 
 //****************************************************************************
 

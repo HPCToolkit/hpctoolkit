@@ -137,7 +137,6 @@ main(int argc, char* argv[])
   // ------------------------------------------------------------
   try { 
 
-
     // for each "used" load module, go through the call stack tree 
     // to find the source line infornmation 
 

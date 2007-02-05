@@ -52,7 +52,7 @@ using XERCES_CPP_NAMESPACE::DOMNode;
 
 //************************* User Include Files *******************************
 
-#include "HPCViewXMLErrHandler.hpp"
+#include <lib/prof-juicy-x/XercesErrorHandler.hpp>
 
 #include <lib/support/diagnostics.h>
 

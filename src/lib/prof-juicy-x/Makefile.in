@@ -15,7 +15,7 @@
 @SET_MAKE@
 
 # -*-Mode: makefile;-*-
-# $Id: Makefile.am 660 2007-01-05 04:46:06Z eraxxon $
+# $Id: Makefile.am 713 2007-02-05 17:36:58Z eraxxon $
 
 #############################################################################
 #
@@ -99,8 +99,7 @@ host_triplet = @host@
 DIST_COMMON = $(srcdir)/Makefile.am $(srcdir)/Makefile.in \
 	$(top_srcdir)/src/Makeinclude.config \
 	$(top_srcdir)/src/Makeinclude.rules
-bin_PROGRAMS = bloop$(EXEEXT)
-subdir = src/hpctoolkit/bloop
+subdir = src/lib/prof-juicy-x
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/config/hpc-cxxutils.m4 \
 	$(top_srcdir)/configure.ac
@@ -108,24 +107,15 @@ am__configure_deps = $(am__aclocal_m4_deps) $(CONFIGURE_DEPENDENCIES) \
 	$(ACLOCAL_M4)
 mkinstalldirs = $(SHELL) $(top_srcdir)/config/mkinstalldirs
 CONFIG_CLEAN_FILES =
-am__installdirs = "$(DESTDIR)$(bindir)"
-binPROGRAMS_INSTALL = $(INSTALL_PROGRAM)
-PROGRAMS = $(bin_PROGRAMS)
-am__objects_1 = bloop-main.$(OBJEXT) bloop-Args.$(OBJEXT)
-am_bloop_OBJECTS = $(am__objects_1)
-bloop_OBJECTS = $(am_bloop_OBJECTS)
-am__DEPENDENCIES_1 = $(top_builddir)/src/lib/banal/libHPCbanal.la
-am__DEPENDENCIES_2 =  \
-	$(top_builddir)/src/lib/prof-juicy/libHPCprof-juicy.la
-am__DEPENDENCIES_3 =  \
-	$(top_builddir)/src/lib/binutils/libHPCbinutils.la
-am__DEPENDENCIES_4 = $(top_builddir)/src/lib/isa/libHPCisa.la
-am__DEPENDENCIES_5 = $(top_builddir)/src/lib/xml/libHPCxml.la
-am__DEPENDENCIES_6 = $(top_builddir)/src/lib/support/libHPCsupport.la
-am__DEPENDENCIES_7 = $(am__DEPENDENCIES_1) $(am__DEPENDENCIES_2) \
-	$(am__DEPENDENCIES_3) $(am__DEPENDENCIES_4) \
-	$(am__DEPENDENCIES_5) $(am__DEPENDENCIES_6)
-bloop_DEPENDENCIES = $(am__DEPENDENCIES_7)
+LTLIBRARIES = $(noinst_LTLIBRARIES)
+am__DEPENDENCIES_1 =
+libHPCprof_juicy_x_la_DEPENDENCIES = $(am__DEPENDENCIES_1)
+am__objects_1 = libHPCprof_juicy_x_la-XercesSAX2.lo \
+	libHPCprof_juicy_x_la-XercesErrorHandler.lo \
+	libHPCprof_juicy_x_la-PGMDocHandler.lo \
+	libHPCprof_juicy_x_la-PROFILEDocHandler.lo
+am_libHPCprof_juicy_x_la_OBJECTS = $(am__objects_1)
+libHPCprof_juicy_x_la_OBJECTS = $(am_libHPCprof_juicy_x_la_OBJECTS)
 DEFAULT_INCLUDES = -I. -I$(srcdir)
 depcomp = $(SHELL) $(top_srcdir)/config/depcomp
 am__depfiles_maybe = depfiles
@@ -145,8 +135,8 @@ LTCOMPILE = $(LIBTOOL) --tag=CC --mode=compile $(CC) $(DEFS) \
 CCLD = $(CC)
 LINK = $(LIBTOOL) --tag=CC --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
 	$(AM_LDFLAGS) $(LDFLAGS) -o $@
-SOURCES = $(bloop_SOURCES)
-DIST_SOURCES = $(bloop_SOURCES)
+SOURCES = $(libHPCprof_juicy_x_la_SOURCES)
+DIST_SOURCES = $(libHPCprof_juicy_x_la_SOURCES)
 ETAGS = etags
 CTAGS = ctags
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
@@ -342,25 +332,29 @@ HPC_LIBSUPPORT = $(top_builddir)/src/lib/support/libHPCsupport.la
 # Local settings
 #############################################################################
 MYSOURCES = \
-	main.cpp \
-	Args.hpp Args.cpp
+	XercesSAX2.hpp XercesSAX2.cpp \
+	XercesErrorHandler.hpp XercesErrorHandler.cpp \
+	\
+	DocHandlerArgs.hpp \
+	PGMDocHandler.hpp PGMDocHandler.cpp \
+	PROFILEDocHandler.hpp PROFILEDocHandler.cpp
 
 MYCFLAGS = @HOST_CFLAGS@   $(HPC_IFLAGS)
-MYCXXFLAGS = @HOST_CXXFLAGS@ $(HPC_IFLAGS) @OA_IFLAGS@
-MYLDFLAGS = @HOST_CXXFLAGS@
-MYLDADD = \
-	@HOST_LIBTREPOSITORY@ \
-	$(HPC_LIBBANAL) $(HPC_LIBPROFJUICY) $(HPC_LIBBINUTILS) $(HPC_LIBISA) $(HPC_LIBXML) $(HPC_LIBSUPPORT) \
-	@OA_LDFLAGS@ @GNUBINUTILS_LDFLAGS@ \
-	@HOST_BLOOP_LDFLAGS@ \
-	-lm
-
+MYCXXFLAGS = @HOST_CXXFLAGS@ $(HPC_IFLAGS) @XERCES_IFLAGS@
+@IS_HOST_AR_FALSE@MYAR = $(AR) cru
+@IS_HOST_AR_TRUE@MYAR = @HOST_AR@
+MYLIBADD = @HOST_LIBTREPOSITORY@
 MYCLEAN = @HOST_LIBTREPOSITORY@
-bloop_SOURCES = $(MYSOURCES)
-bloop_CFLAGS = $(MYCFLAGS)
-bloop_CXXFLAGS = $(MYCXXFLAGS)
-bloop_LDFLAGS = $(MYLDFLAGS)
-bloop_LDADD = $(MYLDADD)
+
+#############################################################################
+# Automake rules
+#############################################################################
+noinst_LTLIBRARIES = libHPCprof-juicy-x.la
+libHPCprof_juicy_x_la_SOURCES = $(MYSOURCES)
+libHPCprof_juicy_x_la_CFLAGS = $(MYCFLAGS)
+libHPCprof_juicy_x_la_CXXFLAGS = $(MYCXXFLAGS)
+libHPCprof_juicy_x_la_AR = $(MYAR)
+libHPCprof_juicy_x_la_LIBADD = $(MYLIBADD)
 MOSTLYCLEANFILES = $(MYCLEAN)
 MYCPPFLAGS_CXX = $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) \
 	$(MYCXXFLAGS)
@@ -381,9 +375,9 @@ $(srcdir)/Makefile.in:  $(srcdir)/Makefile.am $(top_srcdir)/src/Makeinclude.conf
 	      exit 1;; \
 	  esac; \
 	done; \
-	echo ' cd $(top_srcdir) && $(AUTOMAKE) --foreign  src/hpctoolkit/bloop/Makefile'; \
+	echo ' cd $(top_srcdir) && $(AUTOMAKE) --foreign  src/lib/prof-juicy-x/Makefile'; \
 	cd $(top_srcdir) && \
-	  $(AUTOMAKE) --foreign  src/hpctoolkit/bloop/Makefile
+	  $(AUTOMAKE) --foreign  src/lib/prof-juicy-x/Makefile
 .PRECIOUS: Makefile
 Makefile: $(srcdir)/Makefile.in $(top_builddir)/config.status
 	@case '$?' in \
@@ -401,37 +395,17 @@ $(top_srcdir)/configure:  $(am__configure_deps)
 	cd $(top_builddir) && $(MAKE) $(AM_MAKEFLAGS) am--refresh
 $(ACLOCAL_M4):  $(am__aclocal_m4_deps)
 	cd $(top_builddir) && $(MAKE) $(AM_MAKEFLAGS) am--refresh
-install-binPROGRAMS: $(bin_PROGRAMS)
-	@$(NORMAL_INSTALL)
-	test -z "$(bindir)" || $(mkdir_p) "$(DESTDIR)$(bindir)"
-	@list='$(bin_PROGRAMS)'; for p in $$list; do \
-	  p1=`echo $$p|sed 's/$(EXEEXT)$$//'`; \
-	  if test -f $$p \
-	     || test -f $$p1 \
-	  ; then \
-	    f=`echo "$$p1" | sed 's,^.*/,,;$(transform);s/$$/$(EXEEXT)/'`; \
-	   echo " $(INSTALL_PROGRAM_ENV) $(LIBTOOL) --mode=install $(binPROGRAMS_INSTALL) '$$p' '$(DESTDIR)$(bindir)/$$f'"; \
-	   $(INSTALL_PROGRAM_ENV) $(LIBTOOL) --mode=install $(binPROGRAMS_INSTALL) "$$p" "$(DESTDIR)$(bindir)/$$f" || exit 1; \
-	  else :; fi; \
-	done
 
-uninstall-binPROGRAMS:
-	@$(NORMAL_UNINSTALL)
-	@list='$(bin_PROGRAMS)'; for p in $$list; do \
-	  f=`echo "$$p" | sed 's,^.*/,,;s/$(EXEEXT)$$//;$(transform);s/$$/$(EXEEXT)/'`; \
-	  echo " rm -f '$(DESTDIR)$(bindir)/$$f'"; \
-	  rm -f "$(DESTDIR)$(bindir)/$$f"; \
+clean-noinstLTLIBRARIES:
+	-test -z "$(noinst_LTLIBRARIES)" || rm -f $(noinst_LTLIBRARIES)
+	@list='$(noinst_LTLIBRARIES)'; for p in $$list; do \
+	  dir="`echo $$p | sed -e 's|/[^/]*$$||'`"; \
+	  test "$$dir" != "$$p" || dir=.; \
+	  echo "rm -f \"$${dir}/so_locations\""; \
+	  rm -f "$${dir}/so_locations"; \
 	done
-
-clean-binPROGRAMS:
-	@list='$(bin_PROGRAMS)'; for p in $$list; do \
-	  f=`echo $$p|sed 's/$(EXEEXT)$$//'`; \
-	  echo " rm -f $$p $$f"; \
-	  rm -f $$p $$f ; \
-	done
-bloop$(EXEEXT): $(bloop_OBJECTS) $(bloop_DEPENDENCIES) 
-	@rm -f bloop$(EXEEXT)
-	$(CXXLINK) $(bloop_LDFLAGS) $(bloop_OBJECTS) $(bloop_LDADD) $(LIBS)
+libHPCprof-juicy-x.la: $(libHPCprof_juicy_x_la_OBJECTS) $(libHPCprof_juicy_x_la_DEPENDENCIES) 
+	$(CXXLINK)  $(libHPCprof_juicy_x_la_LDFLAGS) $(libHPCprof_juicy_x_la_OBJECTS) $(libHPCprof_juicy_x_la_LIBADD) $(LIBS)
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
@@ -439,8 +413,10 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/bloop-Args.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/bloop-main.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCprof_juicy_x_la-PGMDocHandler.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCprof_juicy_x_la-PROFILEDocHandler.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCprof_juicy_x_la-XercesErrorHandler.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCprof_juicy_x_la-XercesSAX2.Plo@am__quote@
 
 .cpp.o:
 @am__fastdepCXX_TRUE@	if $(CXXCOMPILE) -MT $@ -MD -MP -MF "$(DEPDIR)/$*.Tpo" -c -o $@ $<; \
@@ -463,33 +439,33 @@ distclean-compile:
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(LTCXXCOMPILE) -c -o $@ $<
 
-bloop-main.o: main.cpp
-@am__fastdepCXX_TRUE@	if $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(bloop_CXXFLAGS) $(CXXFLAGS) -MT bloop-main.o -MD -MP -MF "$(DEPDIR)/bloop-main.Tpo" -c -o bloop-main.o `test -f 'main.cpp' || echo '$(srcdir)/'`main.cpp; \
-@am__fastdepCXX_TRUE@	then mv -f "$(DEPDIR)/bloop-main.Tpo" "$(DEPDIR)/bloop-main.Po"; else rm -f "$(DEPDIR)/bloop-main.Tpo"; exit 1; fi
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='main.cpp' object='bloop-main.o' libtool=no @AMDEPBACKSLASH@
+libHPCprof_juicy_x_la-XercesSAX2.lo: XercesSAX2.cpp
+@am__fastdepCXX_TRUE@	if $(LIBTOOL) --tag=CXX --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprof_juicy_x_la_CXXFLAGS) $(CXXFLAGS) -MT libHPCprof_juicy_x_la-XercesSAX2.lo -MD -MP -MF "$(DEPDIR)/libHPCprof_juicy_x_la-XercesSAX2.Tpo" -c -o libHPCprof_juicy_x_la-XercesSAX2.lo `test -f 'XercesSAX2.cpp' || echo '$(srcdir)/'`XercesSAX2.cpp; \
+@am__fastdepCXX_TRUE@	then mv -f "$(DEPDIR)/libHPCprof_juicy_x_la-XercesSAX2.Tpo" "$(DEPDIR)/libHPCprof_juicy_x_la-XercesSAX2.Plo"; else rm -f "$(DEPDIR)/libHPCprof_juicy_x_la-XercesSAX2.Tpo"; exit 1; fi
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='XercesSAX2.cpp' object='libHPCprof_juicy_x_la-XercesSAX2.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(bloop_CXXFLAGS) $(CXXFLAGS) -c -o bloop-main.o `test -f 'main.cpp' || echo '$(srcdir)/'`main.cpp
+@am__fastdepCXX_FALSE@	$(LIBTOOL) --tag=CXX --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprof_juicy_x_la_CXXFLAGS) $(CXXFLAGS) -c -o libHPCprof_juicy_x_la-XercesSAX2.lo `test -f 'XercesSAX2.cpp' || echo '$(srcdir)/'`XercesSAX2.cpp
 
-bloop-main.obj: main.cpp
-@am__fastdepCXX_TRUE@	if $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(bloop_CXXFLAGS) $(CXXFLAGS) -MT bloop-main.obj -MD -MP -MF "$(DEPDIR)/bloop-main.Tpo" -c -o bloop-main.obj `if test -f 'main.cpp'; then $(CYGPATH_W) 'main.cpp'; else $(CYGPATH_W) '$(srcdir)/main.cpp'; fi`; \
-@am__fastdepCXX_TRUE@	then mv -f "$(DEPDIR)/bloop-main.Tpo" "$(DEPDIR)/bloop-main.Po"; else rm -f "$(DEPDIR)/bloop-main.Tpo"; exit 1; fi
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='main.cpp' object='bloop-main.obj' libtool=no @AMDEPBACKSLASH@
+libHPCprof_juicy_x_la-XercesErrorHandler.lo: XercesErrorHandler.cpp
+@am__fastdepCXX_TRUE@	if $(LIBTOOL) --tag=CXX --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprof_juicy_x_la_CXXFLAGS) $(CXXFLAGS) -MT libHPCprof_juicy_x_la-XercesErrorHandler.lo -MD -MP -MF "$(DEPDIR)/libHPCprof_juicy_x_la-XercesErrorHandler.Tpo" -c -o libHPCprof_juicy_x_la-XercesErrorHandler.lo `test -f 'XercesErrorHandler.cpp' || echo '$(srcdir)/'`XercesErrorHandler.cpp; \
+@am__fastdepCXX_TRUE@	then mv -f "$(DEPDIR)/libHPCprof_juicy_x_la-XercesErrorHandler.Tpo" "$(DEPDIR)/libHPCprof_juicy_x_la-XercesErrorHandler.Plo"; else rm -f "$(DEPDIR)/libHPCprof_juicy_x_la-XercesErrorHandler.Tpo"; exit 1; fi
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='XercesErrorHandler.cpp' object='libHPCprof_juicy_x_la-XercesErrorHandler.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(bloop_CXXFLAGS) $(CXXFLAGS) -c -o bloop-main.obj `if test -f 'main.cpp'; then $(CYGPATH_W) 'main.cpp'; else $(CYGPATH_W) '$(srcdir)/main.cpp'; fi`
+@am__fastdepCXX_FALSE@	$(LIBTOOL) --tag=CXX --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprof_juicy_x_la_CXXFLAGS) $(CXXFLAGS) -c -o libHPCprof_juicy_x_la-XercesErrorHandler.lo `test -f 'XercesErrorHandler.cpp' || echo '$(srcdir)/'`XercesErrorHandler.cpp
 
-bloop-Args.o: Args.cpp
-@am__fastdepCXX_TRUE@	if $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(bloop_CXXFLAGS) $(CXXFLAGS) -MT bloop-Args.o -MD -MP -MF "$(DEPDIR)/bloop-Args.Tpo" -c -o bloop-Args.o `test -f 'Args.cpp' || echo '$(srcdir)/'`Args.cpp; \
-@am__fastdepCXX_TRUE@	then mv -f "$(DEPDIR)/bloop-Args.Tpo" "$(DEPDIR)/bloop-Args.Po"; else rm -f "$(DEPDIR)/bloop-Args.Tpo"; exit 1; fi
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='Args.cpp' object='bloop-Args.o' libtool=no @AMDEPBACKSLASH@
+libHPCprof_juicy_x_la-PGMDocHandler.lo: PGMDocHandler.cpp
+@am__fastdepCXX_TRUE@	if $(LIBTOOL) --tag=CXX --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprof_juicy_x_la_CXXFLAGS) $(CXXFLAGS) -MT libHPCprof_juicy_x_la-PGMDocHandler.lo -MD -MP -MF "$(DEPDIR)/libHPCprof_juicy_x_la-PGMDocHandler.Tpo" -c -o libHPCprof_juicy_x_la-PGMDocHandler.lo `test -f 'PGMDocHandler.cpp' || echo '$(srcdir)/'`PGMDocHandler.cpp; \
+@am__fastdepCXX_TRUE@	then mv -f "$(DEPDIR)/libHPCprof_juicy_x_la-PGMDocHandler.Tpo" "$(DEPDIR)/libHPCprof_juicy_x_la-PGMDocHandler.Plo"; else rm -f "$(DEPDIR)/libHPCprof_juicy_x_la-PGMDocHandler.Tpo"; exit 1; fi
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='PGMDocHandler.cpp' object='libHPCprof_juicy_x_la-PGMDocHandler.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(bloop_CXXFLAGS) $(CXXFLAGS) -c -o bloop-Args.o `test -f 'Args.cpp' || echo '$(srcdir)/'`Args.cpp
+@am__fastdepCXX_FALSE@	$(LIBTOOL) --tag=CXX --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprof_juicy_x_la_CXXFLAGS) $(CXXFLAGS) -c -o libHPCprof_juicy_x_la-PGMDocHandler.lo `test -f 'PGMDocHandler.cpp' || echo '$(srcdir)/'`PGMDocHandler.cpp
 
-bloop-Args.obj: Args.cpp
-@am__fastdepCXX_TRUE@	if $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(bloop_CXXFLAGS) $(CXXFLAGS) -MT bloop-Args.obj -MD -MP -MF "$(DEPDIR)/bloop-Args.Tpo" -c -o bloop-Args.obj `if test -f 'Args.cpp'; then $(CYGPATH_W) 'Args.cpp'; else $(CYGPATH_W) '$(srcdir)/Args.cpp'; fi`; \
-@am__fastdepCXX_TRUE@	then mv -f "$(DEPDIR)/bloop-Args.Tpo" "$(DEPDIR)/bloop-Args.Po"; else rm -f "$(DEPDIR)/bloop-Args.Tpo"; exit 1; fi
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='Args.cpp' object='bloop-Args.obj' libtool=no @AMDEPBACKSLASH@
+libHPCprof_juicy_x_la-PROFILEDocHandler.lo: PROFILEDocHandler.cpp
+@am__fastdepCXX_TRUE@	if $(LIBTOOL) --tag=CXX --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprof_juicy_x_la_CXXFLAGS) $(CXXFLAGS) -MT libHPCprof_juicy_x_la-PROFILEDocHandler.lo -MD -MP -MF "$(DEPDIR)/libHPCprof_juicy_x_la-PROFILEDocHandler.Tpo" -c -o libHPCprof_juicy_x_la-PROFILEDocHandler.lo `test -f 'PROFILEDocHandler.cpp' || echo '$(srcdir)/'`PROFILEDocHandler.cpp; \
+@am__fastdepCXX_TRUE@	then mv -f "$(DEPDIR)/libHPCprof_juicy_x_la-PROFILEDocHandler.Tpo" "$(DEPDIR)/libHPCprof_juicy_x_la-PROFILEDocHandler.Plo"; else rm -f "$(DEPDIR)/libHPCprof_juicy_x_la-PROFILEDocHandler.Tpo"; exit 1; fi
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='PROFILEDocHandler.cpp' object='libHPCprof_juicy_x_la-PROFILEDocHandler.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(bloop_CXXFLAGS) $(CXXFLAGS) -c -o bloop-Args.obj `if test -f 'Args.cpp'; then $(CYGPATH_W) 'Args.cpp'; else $(CYGPATH_W) '$(srcdir)/Args.cpp'; fi`
+@am__fastdepCXX_FALSE@	$(LIBTOOL) --tag=CXX --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprof_juicy_x_la_CXXFLAGS) $(CXXFLAGS) -c -o libHPCprof_juicy_x_la-PROFILEDocHandler.lo `test -f 'PROFILEDocHandler.cpp' || echo '$(srcdir)/'`PROFILEDocHandler.cpp
 
 mostlyclean-libtool:
 	-rm -f *.lo
@@ -579,11 +555,8 @@ distdir: $(DISTFILES)
 	done
 check-am: all-am
 check: check-am
-all-am: Makefile $(PROGRAMS)
+all-am: Makefile $(LTLIBRARIES)
 installdirs:
-	for dir in "$(DESTDIR)$(bindir)"; do \
-	  test -z "$$dir" || $(mkdir_p) "$$dir"; \
-	done
 install: install-am
 install-exec: install-exec-am
 install-data: install-data-am
@@ -611,7 +584,8 @@ maintainer-clean-generic:
 	@echo "it deletes files that may require special tools to rebuild."
 clean: clean-am
 
-clean-am: clean-binPROGRAMS clean-generic clean-libtool mostlyclean-am
+clean-am: clean-generic clean-libtool clean-noinstLTLIBRARIES \
+	mostlyclean-am
 
 distclean: distclean-am
 	-rm -rf ./$(DEPDIR)
@@ -631,7 +605,7 @@ info-am:
 
 install-data-am:
 
-install-exec-am: install-binPROGRAMS
+install-exec-am:
 
 install-info: install-info-am
 
@@ -657,19 +631,19 @@ ps: ps-am
 
 ps-am:
 
-uninstall-am: uninstall-binPROGRAMS uninstall-info-am
+uninstall-am: uninstall-info-am
 
-.PHONY: CTAGS GTAGS all all-am check check-am clean clean-binPROGRAMS \
-	clean-generic clean-libtool ctags distclean distclean-compile \
-	distclean-generic distclean-libtool distclean-tags distdir dvi \
-	dvi-am html html-am info info-am install install-am \
-	install-binPROGRAMS install-data install-data-am install-exec \
+.PHONY: CTAGS GTAGS all all-am check check-am clean clean-generic \
+	clean-libtool clean-noinstLTLIBRARIES ctags distclean \
+	distclean-compile distclean-generic distclean-libtool \
+	distclean-tags distdir dvi dvi-am html html-am info info-am \
+	install install-am install-data install-data-am install-exec \
 	install-exec-am install-info install-info-am install-man \
 	install-strip installcheck installcheck-am installdirs \
 	maintainer-clean maintainer-clean-generic mostlyclean \
 	mostlyclean-compile mostlyclean-generic mostlyclean-libtool \
 	pdf pdf-am ps ps-am tags uninstall uninstall-am \
-	uninstall-binPROGRAMS uninstall-info-am
+	uninstall-info-am
 
 
 #############################################################################
