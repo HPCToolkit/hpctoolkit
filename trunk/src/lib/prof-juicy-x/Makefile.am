@@ -42,7 +42,7 @@
 #
 # Description:
 #   *Process with automake to produce Makefile.in*
-#
+#   
 #   Note: All local variables are prefixed with MY to prevent name
 #   clashes with automatic automake variables.
 #
@@ -52,20 +52,53 @@
 AUTOMAKE_OPTIONS = foreign
 
 #############################################################################
+# Common settings
+#############################################################################
+
+include $(top_srcdir)/src/Makeinclude.config
+
+#############################################################################
+# Local settings
+#############################################################################
+
+MYSOURCES = \
+	XercesSAX2.hpp XercesSAX2.cpp \
+	XercesErrorHandler.hpp XercesErrorHandler.cpp \
+	\
+	DocHandlerArgs.hpp \
+	PGMDocHandler.hpp PGMDocHandler.cpp \
+	PROFILEDocHandler.hpp PROFILEDocHandler.cpp
+
+MYCFLAGS   = @HOST_CFLAGS@   $(HPC_IFLAGS)
+MYCXXFLAGS = @HOST_CXXFLAGS@ $(HPC_IFLAGS) @XERCES_IFLAGS@
+
+if IS_HOST_AR
+  MYAR = @HOST_AR@
+else
+  MYAR = $(AR) cru
+endif
+
+MYLIBADD = @HOST_LIBTREPOSITORY@
+
+MYCLEAN = @HOST_LIBTREPOSITORY@
+
+#############################################################################
 # Automake rules
 #############################################################################
 
-SUBDIRS = \
-	banal \
-	binutils \
-	isa \
-	perl \
-	prof-juicy \
-	prof-juicy-x \
-	prof-lean \
-	support \
-	xml
+noinst_LTLIBRARIES = libHPCprof-juicy-x.la
+
+libHPCprof_juicy_x_la_SOURCES  = $(MYSOURCES)
+libHPCprof_juicy_x_la_CFLAGS   = $(MYCFLAGS)
+libHPCprof_juicy_x_la_CXXFLAGS = $(MYCXXFLAGS)
+libHPCprof_juicy_x_la_AR       = $(MYAR)
+libHPCprof_juicy_x_la_LIBADD   = $(MYLIBADD)
+
+MOSTLYCLEANFILES = $(MYCLEAN)
 
 #############################################################################
-# Other rules
+# Common rules
 #############################################################################
+
+include $(top_srcdir)/src/Makeinclude.rules
+

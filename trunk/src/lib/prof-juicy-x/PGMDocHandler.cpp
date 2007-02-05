@@ -38,13 +38,13 @@
 //***************************************************************************
 //
 // File:
-//    PGMDocHandler.C
+//   $Source$
 //
 // Purpose:
-//    XML adaptor for the program structure file (PGM)
+//   XML adaptor for the program structure file (PGM)
 //
 // Description:
-//    [The set of functions, macros, etc. defined in the file]
+//   [The set of functions, macros, etc. defined in the file]
 //
 //***************************************************************************
 
@@ -68,10 +68,10 @@ using XERCES_CPP_NAMESPACE::XMLString;
 //************************* User Include Files *******************************
 
 #include "PGMDocHandler.hpp"
-#include "Driver.hpp"
-#include "NodeRetriever.hpp"
-#include "HPCViewXMLErrHandler.hpp"
+#include "XercesSAX2.hpp"
+#include "XercesErrorHandler.hpp"
 
+#include <lib/prof-juicy/PgmScopeTreeInterface.hpp>
 #include <lib/prof-juicy/PgmScopeTree.hpp>
 
 #include <lib/support/diagnostics.h>
@@ -193,8 +193,12 @@ using XERCES_CPP_NAMESPACE::XMLString;
 
 PGMDocHandler::PGMDocHandler(Doc_t ty,
 			     NodeRetriever* const retriever,
-			     Driver *_driver) 
-  : // element names
+			     DocHandlerArgs& args) 
+  : m_docty(ty),
+    m_nodeRetriever(retriever),
+    m_args(args),
+  
+    // element names
     elemPgm(XMLString::transcode("PGM")), 
     elemLM(XMLString::transcode("LM")),
     elemFile(XMLString::transcode("F")),
@@ -213,9 +217,6 @@ PGMDocHandler::PGMDocHandler(Doc_t ty,
     attrVMA(XMLString::transcode("vma"))
 {
   // trace = 1;
-  docty = ty;
-  nodeRetriever = retriever;
-  driver = _driver;
   pgmVersion = -1;
     
   currentLmName= "";
@@ -275,19 +276,19 @@ void PGMDocHandler:: startElement(const XMLCh* const uri,
     
     IFTRACE << "PGM: ver=" << ver << endl;
 
-    PgmScope* root = nodeRetriever->GetRoot();
+    PgmScope* root = m_nodeRetriever->GetRoot();
     currentScope = root;
   }
   
   // LM (load module)
   else if (XMLString::equals(name, elemLM)) {
     string lm = getAttr(attributes, attrName); // must exist
-    lm = driver->ReplacePath(lm);
+    lm = m_args.ReplacePath(lm);
     DIAG_Assert(currentLmName.empty(), "Parse or internal error!");
     currentLmName = lm;
     IFTRACE << "LM (load module): name= " << currentLmName << endl;
     
-    LoadModScope* lmscope = nodeRetriever->MoveToLoadMod(currentLmName);
+    LoadModScope* lmscope = m_nodeRetriever->MoveToLoadMod(currentLmName);
     DIAG_Assert(lmscope != NULL, "");
     currentScope = lmscope;
   }
@@ -295,7 +296,7 @@ void PGMDocHandler:: startElement(const XMLCh* const uri,
   // F(ile)
   else if (XMLString::equals(name, elemFile)) {
     string srcFile = getAttr(attributes, attrName);
-    srcFile = driver->ReplacePath(srcFile);
+    srcFile = m_args.ReplacePath(srcFile);
     IFTRACE << "F(ile): name=" << srcFile << endl;
     
     // if the source file name is the same as the previous one, error.
@@ -304,7 +305,7 @@ void PGMDocHandler:: startElement(const XMLCh* const uri,
     DIAG_Assert(srcFile != currentFileName, "");
     
     currentFileName = srcFile;
-    FileScope* fileScope = nodeRetriever->MoveToFile(currentFileName);
+    FileScope* fileScope = m_nodeRetriever->MoveToFile(currentFileName);
     DIAG_Assert(fileScope != NULL, "");
     currentScope = fileScope;
   }
@@ -315,7 +316,7 @@ void PGMDocHandler:: startElement(const XMLCh* const uri,
     
     string name  = getAttr(attributes, attrName);   // must exist
     string lname = getAttr(attributes, attrLnName); // optional
-    if (driver->MustDeleteUnderscore()) {
+    if (m_args.MustDeleteUnderscore()) {
       if (!name.empty() && (name[name.length()-1] == '_')) {
 	name[name.length()-1] = '\0';
       }
@@ -348,7 +349,7 @@ void PGMDocHandler:: startElement(const XMLCh* const uri,
     if (currentFuncScope) {
       // STRUCTURE files usually have qualifying VMA information.
       // Assume that VMA information fully qualifies procedures.
-      if (docty == Doc_STRUCT && !currentFuncScope->vmaSet().empty() 
+      if (m_docty == Doc_STRUCT && !currentFuncScope->vmaSet().empty() 
 	  && !vma.empty()) {
 	currentFuncScope = NULL;
       }
@@ -361,7 +362,7 @@ void PGMDocHandler:: startElement(const XMLCh* const uri,
       }
     }
     else {
-      if (docty == Doc_STRUCT) {
+      if (m_docty == Doc_STRUCT) {
 	// If a proc with the same name already exists, print a warning.
 	DIAG_Msg(0, "Warning: Found procedure '" << name << "' multiple times within file '" << curFile->name() << "'; information for this procedure will be aggregated. If you do not want this, edit the STRUCTURE file and adjust the names by hand.");
       }
@@ -446,7 +447,7 @@ void PGMDocHandler:: startElement(const XMLCh* const uri,
     IFTRACE << "G(roup): name= " << grpnm << endl;
 
     ScopeInfo* enclScope = GetCurrentScope(); // enclosing scope
-    GroupScope* grpscope = nodeRetriever->MoveToGroup(enclScope, grpnm);
+    GroupScope* grpscope = m_nodeRetriever->MoveToGroup(enclScope, grpnm);
     DIAG_Assert(grpscope != NULL, "");
     groupNestingLvl++;
     currentScope = grpscope;
@@ -488,21 +489,21 @@ void PGMDocHandler::endElement(const XMLCh* const uri,
   // LM (load module)
   else if (XMLString::equals(name, elemLM)) {
     DIAG_Assert(scopeStack.Depth() >= 1, "");
-    if (docty == Doc_GROUP) { ProcessGroupDocEndTag(); }
+    if (m_docty == Doc_GROUP) { ProcessGroupDocEndTag(); }
     currentLmName = "";
   }
 
   // F(ile)
   else if (XMLString::equals(name, elemFile)) {
     DIAG_Assert(scopeStack.Depth() >= 2, ""); // at least has LM
-    if (docty == Doc_GROUP) { ProcessGroupDocEndTag(); }
+    if (m_docty == Doc_GROUP) { ProcessGroupDocEndTag(); }
     currentFileName = "";
   }
 
   // P(roc)
   else if (XMLString::equals(name, elemProc)) {
     DIAG_Assert(scopeStack.Depth() >= 3, ""); // at least has File, LM
-    if (docty == Doc_GROUP) { ProcessGroupDocEndTag(); }
+    if (m_docty == Doc_GROUP) { ProcessGroupDocEndTag(); }
     currentFuncName = "";
     currentFuncScope = NULL;
   }
@@ -511,19 +512,19 @@ void PGMDocHandler::endElement(const XMLCh* const uri,
   else if (XMLString::equals(name, elemLoop)) {
     // stack depth should be at least 4
     DIAG_Assert(scopeStack.Depth() >= 4, "");
-    if (docty == Doc_GROUP) { ProcessGroupDocEndTag(); }
+    if (m_docty == Doc_GROUP) { ProcessGroupDocEndTag(); }
   }
   
   // S(tmt)
   else if (XMLString::equals(name, elemStmt)) {
-    if (docty == Doc_GROUP) { ProcessGroupDocEndTag(); }
+    if (m_docty == Doc_GROUP) { ProcessGroupDocEndTag(); }
   }
 
   // G(roup)
   else if (XMLString::equals(name, elemGroup)) {
     DIAG_Assert(scopeStack.Depth() >= 1, "");
     DIAG_Assert(groupNestingLvl >= 1, "");
-    if (docty == Doc_GROUP) { ProcessGroupDocEndTag(); }
+    if (m_docty == Doc_GROUP) { ProcessGroupDocEndTag(); }
     groupNestingLvl--;
   }
 
@@ -541,9 +542,9 @@ void PGMDocHandler::endElement(const XMLCh* const uri,
 // ---------------------------------------------------------------------------
 
 const char* 
-PGMDocHandler::ToString(Doc_t docty)
+PGMDocHandler::ToString(Doc_t m_docty)
 {
-  switch (docty) {
+  switch (m_docty) {
     case Doc_NULL:   return "Document:NULL";
     case Doc_STRUCT: return "Document:STRUCTURE";
     case Doc_GROUP:  return "Document:GROUP";
@@ -560,14 +561,14 @@ void
 PGMDocHandler::error(const SAXParseException& e)
 {
   HPCViewXMLErrHandler::report(cerr, "hpcview non-fatal error", 
-			       ToString(docty), e);
+			       ToString(m_docty), e);
 }
 
 void 
 PGMDocHandler::fatalError(const SAXParseException& e)
 {
   HPCViewXMLErrHandler::report(cerr, "hpcview fatal error", 
-			       ToString(docty), e);
+			       ToString(m_docty), e);
   exit(1);
 }
 
@@ -575,7 +576,7 @@ void
 PGMDocHandler::warning(const SAXParseException& e)
 {
   HPCViewXMLErrHandler::report(cerr, "hpcview warning", 
-			       ToString(docty), e);
+			       ToString(m_docty), e);
 }
 
 

@@ -47,12 +47,14 @@ using std::string;
 
 //************************* User Include Files *******************************
 
-#include "HPCViewSAX2.hpp"
 #include "DerivedPerfMetrics.hpp"
-#include "NodeRetriever.hpp"
-#include "PROFILEDocHandler.hpp"
+#include "Driver.hpp"
 #include "MathMLExpr.hpp"
 
+#include <lib/prof-juicy-x/XercesSAX2.hpp>
+#include <lib/prof-juicy-x/PROFILEDocHandler.hpp>
+
+#include <lib/prof-juicy/PgmScopeTreeInterface.hpp>
 #include <lib/prof-juicy/PgmScopeTree.hpp>
 
 #include <lib/support/diagnostics.h>
@@ -72,10 +74,10 @@ FilePerfMetric::FilePerfMetric(const char* nm,
 			       const char* nativeNm,
 			       const char* displayNm, 
 			       bool doDisp, bool doPerc, bool doSort, 
-			       const char* fName,
-			       const char* tp, Driver* _driver) 
+			       const char* file,
+			       const char* type, Driver* driver) 
   : PerfMetric(nm, nativeNm, displayNm, doDisp, doPerc, false, doSort),
-    file(fName), type(tp), driver(_driver)
+    m_file(file), m_type(type), m_driver(driver)
 { 
   // trace = 1;
 }
@@ -85,11 +87,11 @@ FilePerfMetric::FilePerfMetric(const std::string& nm,
 			       const std::string& nativeNm, 
 			       const std::string& displayNm,
 			       bool doDisp, bool doPerc, bool doSort, 
-			       const std::string& fName, 
-			       const std::string& tp, 
-			       Driver* _driver)
+			       const std::string& file, 
+			       const std::string& type, 
+			       Driver* driver)
   : PerfMetric(nm, nativeNm, displayNm, doDisp, doPerc, false, doSort),
-    file(fName), type(tp), driver(_driver)
+    m_file(file), m_type(type), m_driver(driver)
 { 
   // trace = 1;
 }
@@ -184,10 +186,10 @@ void
 FilePerfMetric::Make(NodeRetriever &ret)
 {
   IFTRACE << "FilePerfMetric::Make " << endl << " " << ToString() << endl;
-  if (type == "HPCRUN") {
+  if (m_type == "HPCRUN") {
     // FIXME: handled elsewhere [currently within Driver.cpp]
   }
-  else if (type == "PROFILE") {
+  else if (m_type == "PROFILE") {
     MakePROFILE(ret);
   }
   else {
@@ -214,14 +216,15 @@ FilePerfMetric::MakePROFILE(NodeRetriever &ret)
   parser->setFeature(XMLUni::fgSAX2CoreValidation, true);
   // parser->setFeature(XMLUni::fgXercesDynamic, true);
 
-  PROFILEDocHandler handler(&ret, driver);
+  DriverDocHandlerArgs args(m_driver);
+  PROFILEDocHandler handler(&ret, args);
   parser->setContentHandler(&handler);
   parser->setErrorHandler(&handler); 
 
-  const char* filePath = pathfind(".", file.c_str(), "r");
+  const char* filePath = pathfind(".", m_file.c_str(), "r");
   if (!filePath) {
     cerr << "hpcview fatal error: could not open PROFILE file '" 
-	 << file << "'." << endl;
+	 << m_file << "'." << endl;
     exit(1);
   }
   
@@ -239,7 +242,7 @@ FilePerfMetric::MakePROFILE(NodeRetriever &ret)
   AccumulateMetricsFromChildren(ret.GetRoot(), Index());
   
   if (!ret.GetRoot()->HasPerfData(Index())) {
-    DIAG_Msg(1, "Warning: File '" << file << "' does not contain any information for metric '" << Name() << "'");
+    DIAG_Msg(1, "Warning: File '" << m_file << "' does not contain any information for metric '" << Name() << "'");
   }
   IFTRACE << "FilePerfMetric::Make yields: " << ToString() << endl;
 }
@@ -273,8 +276,8 @@ string
 FilePerfMetric::ToString() const 
 {
   return PerfMetric::ToString() + " " +  string("FilePerfMetric: " ) + 
-         "file=\"" + file + "\" " + 
-         "type=\"" + type + "\""; 
+         "file=\"" + m_file + "\" " + 
+         "type=\"" + m_type + "\""; 
 } 
 
 string

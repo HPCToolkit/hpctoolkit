@@ -53,19 +53,18 @@ using std::vector;
 
 //************************* User Include Files *******************************
 
-#include "Driver.hpp" 
-#include "HPCViewSAX2.hpp"
-#include "HPCViewXMLErrHandler.hpp"
-#include "NodeRetriever.hpp"
-#include "NodeRetriever.hpp"
+#include "Driver.hpp"
 
+#include <lib/prof-juicy-x/XercesSAX2.hpp>
+#include <lib/prof-juicy-x/XercesErrorHandler.hpp>
+
+#include <lib/prof-juicy/PgmScopeTreeInterface.hpp>
 #include <lib/prof-juicy/PgmScopeTree.hpp>
 #include <lib/prof-juicy/FlatProfileReader.hpp>
 
 #include <lib/binutils/LM.hpp>
 
 #include <lib/support/diagnostics.h>
-#include <lib/support/Assertion.h>
 #include <lib/support/Trace.hpp>
 #include <lib/support/StrUtil.hpp>
 #include <lib/support/pathfind.h>
@@ -127,7 +126,7 @@ Driver::AddReplacePath(const char* inPath, const char* outPath)
 string 
 Driver::ReplacePath(const char* oldpath)
 {
-  BriefAssertion( replaceInPath.size() == replaceOutPath.size() );
+  DIAG_Assert(replaceInPath.size() == replaceOutPath.size(), "");
   for( unsigned int i=0 ; i<replaceInPath.size() ; i++ ) {
     unsigned int length = replaceInPath[i].length();
     // it makes sense to test for matching only if 'oldpath' is strictly longer
@@ -370,7 +369,8 @@ Driver::ProcessPGMFile(NodeRetriever* nretriever,
 	  parser->setFeature(XMLUni::fgXercesDynamic, true);
 	  parser->setFeature(XMLUni::fgXercesValidationErrorAsFatal, true);
 	  
-	  PGMDocHandler* handler = new PGMDocHandler(docty, nretriever, this);
+	  DriverDocHandlerArgs args(this);
+	  PGMDocHandler* handler = new PGMDocHandler(docty, nretriever, args);
 	  parser->setContentHandler(handler);
 	  parser->setErrorHandler(handler);
 	  

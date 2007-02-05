@@ -65,28 +65,12 @@ MYSOURCES = \
 	main.cpp \
 	Args.hpp Args.cpp \
 	Driver.hpp Driver.cpp \
+	HPCViewDocParser.hpp HPCViewDocParser.cpp \
 	\
 	PerfIndex.hpp \
 	DerivedPerfMetrics.hpp DerivedPerfMetrics.cpp \
-	EvalNode.hpp EvalNode.cpp \
-	NodeRetriever.hpp NodeRetriever.cpp \
-	\
-	HPCViewSAX2.hpp HPCViewSAX2.cpp \
-	HPCViewXMLErrHandler.hpp HPCViewXMLErrHandler.cpp \
-	HPCViewDocParser.hpp HPCViewDocParser.cpp \
 	MathMLExpr.hpp MathMLExpr.cpp \
-	PGMDocHandler.hpp PGMDocHandler.cpp \
-	PROFILEDocHandler.hpp PROFILEDocHandler.cpp
-
-# Deprecated: XMLAdapter.hpp XMLAdapter.cpp
-# Deprecated:
-#	HTMLDriver.hpp HTMLDriver.cpp
-#	HTMLFile.hpp HTMLFile.cpp
-#	HTMLScopes.hpp HTMLScopes.cpp
-#	HTMLSrcFiles.hpp HTMLSrcFiles.cpp
-#	HTMLTable.hpp HTMLTable.cpp
-#	StaticFiles.hpp StaticFiles.cpp
-
+	EvalNode.hpp EvalNode.cpp
 
 MYCFLAGS   = @HOST_CFLAGS@   $(HPC_IFLAGS)
 MYCXXFLAGS = @HOST_CXXFLAGS@ $(HPC_IFLAGS) @XERCES_IFLAGS@
@@ -95,7 +79,7 @@ MYLDFLAGS = @HOST_CXXFLAGS@
 
 MYLDADD = \
 	@HOST_LIBTREPOSITORY@ \
-	$(HPC_LIBPROFJUICY) $(HPC_LIBPROFLEAN) $(HPC_LIBBINUTILS) $(HPC_LIBISA) $(HPC_LIBXML) $(HPC_LIBSUPPORT) \
+	$(HPC_LIBPROFJUICYX) $(HPC_LIBPROFJUICY) $(HPC_LIBPROFLEAN) $(HPC_LIBBINUTILS) $(HPC_LIBISA) $(HPC_LIBXML) $(HPC_LIBSUPPORT) \
 	@XERCES_LDFLAGS@ @GNUBINUTILS_LDFLAGS@ \
 	@HOST_HPCVIEW_LDFLAGS@ \
 	-lm

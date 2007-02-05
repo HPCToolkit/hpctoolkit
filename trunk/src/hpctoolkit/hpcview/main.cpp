@@ -70,9 +70,10 @@ using XERCES_CPP_NAMESPACE::XMLException;
 
 #include "Args.hpp"
 #include "Driver.hpp"
-#include "PROFILEDocHandler.hpp"
+
 #include "HPCViewDocParser.hpp"
-#include "HPCViewXMLErrHandler.hpp"
+
+#include <lib/prof-juicy-x/XercesErrorHandler.hpp>
 
 #include <lib/prof-juicy/PgmScopeTree.hpp>
 

@@ -1,5 +1,6 @@
-// $Id$
 // -*-C++-*-
+// $Id$
+
 // * BeginRiceCopyright *****************************************************
 // 
 // Copyright ((c)) 2002, Rice University 
@@ -37,87 +38,63 @@
 //************************ System Include Files ******************************
 
 #include <iostream> 
-
-//************************* User Include Files *******************************
-
-#include "StaticFiles.hpp"
-#include <lib/support/Files.hpp>
-
-//************************ Forward Declarations ******************************
-
 using std::cout;
 using std::cerr;
 using std::endl;
 
+#include <string>
+using std::string;
+
+//*********************** Xerces Include Files *******************************
+
+#include <xercesc/util/XMLString.hpp> 
+using XERCES_CPP_NAMESPACE::XMLString;
+
+// #include <xercesc/sax/SAXParseException.hpp>
+// using XERCES_CPP_NAMESPACE::SAXParseException;
+
+//************************* User Include Files *******************************
+
+#include "XercesErrorHandler.hpp"
+
+const char *CONFIG = "CONFIGURATION";
+
+
 //****************************************************************************
-
-const char* StaticFileName[] = {
-  "detect_bs.js",     // JavaScript
-  "global.js",
-  "utilsForHere.js",
-  "utilsForAll.js",
-  "utilsForAll_old.js",
-
-  "styleForAll.css",  // HPCView StyleSheets
-  "styleHere.css",
-
-  "manual.html",      // Manual (also uses flatten.gif and unflatten.gif)
-  "man.html",
-  "manContents.html",
-  "manTitle.html",
-  "styleForMan.css",
-  "uparrow.gif",
-  "downarrow.gif",
-  
-  "scopes/styleHere.css",  // HPCView scope files
-  "scopes/utilsForHere.js",
-  "scopes/uparrow.gif",
-  "scopes/downarrow.gif",
-  "scopes/noarrow.gif",
-
-  "flatten.gif",       // HPCView files
-  "unflatten.gif",
-  "scopes.self.hdr.html",
-  "scopes.kids.hdr.html",
-  "clr_highlights.jpg",
-  NULL
-}; 
-
-extern bool IsJSFile(StaticFileId id) 
+ 
+void 
+HPCViewXMLErrHandler::report(std::ostream& cerr, 
+			     const char* prefix, 
+			     const char* fileType, 
+			     const SAXParseException& e, 
+			     const char* alternateFile, 
+			     int prefixLines)
 {
-  // scopes/utilsForHere.js is a javascript file but should never be included 
-  // via HTMLFile::JSFileInclude, which is the user of IsJSFile
-  return (id < MANUAL);   
-} 
+  const char* file = 
+    (alternateFile) ? alternateFile : XMLString::transcode(e.getSystemId());
 
-int 
-StaticFiles::CopyAllFiles(bool oldStyleHtml)  const
-{
-  int ret = 0; 
-  if (oldStyleHtml)
-    ret = ret || Copy(StaticFileName[(int)UTILSALLOLD], 
-                StaticFileName[(int)UTILSALL]); 
-  else
-    ret = ret || Copy(StaticFileName[(int)UTILSALL], 
-                StaticFileName[(int)UTILSALL]); 
-     
-  for (int i = 0; StaticFileName[i]; i++) {
-    if ((StaticFileId)i != UTILSALLOLD && (StaticFileId)i != UTILSALL)
-      ret = ret || Copy(StaticFileName[i], StaticFileName[i]); 
-  }
-  return ret; 
+  cerr << prefix << ": processing " << fileType << " file \'" << file << "\'"
+       << " at line " << e.getLineNumber() - prefixLines
+       << ", character " << e.getColumnNumber() << ":" << endl << "\t"  
+       << "XML parser: " 
+       << XMLString::transcode(e.getMessage()) << "." << endl; 
 }
 
-int 
-StaticFiles::Copy(const char* fnameSrc, const char* fnameDst)  const
+
+void HPCViewXMLErrHandler::error(const SAXParseException& e)
 {
-   String srcFname = fileHome + "/" + fnameSrc; 
-   String dstFname = htmlDir + "/" + fnameDst; 
-   const char* error = CopyFile(dstFname, (const char*) srcFname, NULL); 
-   if (error) {
-     cerr << "ERROR: " << error << endl; 
-     return 1; 
-   } 
-   return 0; 
+  report(cerr, "hpcview non-fatal error", CONFIG, e, userFile.c_str(), numPrefixLines); 
+}
+
+void 
+HPCViewXMLErrHandler::fatalError(const SAXParseException& e)
+{
+  report(cerr, "hpcview fatal error", CONFIG, e, userFile.c_str(), numPrefixLines); 
+  throw e; 
+}
+
+void HPCViewXMLErrHandler::warning(const SAXParseException& e)
+{
+  report(cerr, "hpcview warning", CONFIG, e, userFile.c_str(), numPrefixLines); 
 }
 
