@@ -52,9 +52,6 @@ POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
 @OPT_ENABLE_HPCRUN_TRUE@am__append_1 = hpcrun
-
-# added by garvin 11/3/2006. Should this include synchronous too?
-@OPT_ENABLE_CSPROF_ASYNC_TRUE@am__append_2 = csprof 
 subdir = src/hpctoolkit
 DIST_COMMON = $(srcdir)/Makefile.am $(srcdir)/Makefile.in
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
@@ -75,7 +72,7 @@ RECURSIVE_TARGETS = all-recursive check-recursive dvi-recursive \
 ETAGS = etags
 CTAGS = ctags
 DIST_SUBDIRS = bloop filters hpcquick hpcprof hpcview lump misc ptran \
-	xcsprof xprof hpcrun csprof
+	xcsprof xprof hpcrun
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
 ACLOCAL = @ACLOCAL@
 AMDEP_FALSE = @AMDEP_FALSE@
@@ -239,7 +236,7 @@ AUTOMAKE_OPTIONS = foreign
 # Automake rules
 #############################################################################
 SUBDIRS = bloop filters hpcquick hpcprof hpcview lump misc ptran \
-	xcsprof xprof $(am__append_1) $(am__append_2)
+	xcsprof xprof $(am__append_1)
 all: all-recursive
 
 .SUFFIXES:
@@ -548,6 +545,10 @@ uninstall-info: uninstall-info-recursive
 	mostlyclean-recursive pdf pdf-am ps ps-am tags tags-recursive \
 	uninstall uninstall-am uninstall-info-am
 
+
+#if OPT_ENABLE_CSPROF_ASYNC
+#  SUBDIRS += csprof 
+#endif
 
 #if OPT_ENABLE_DEVTOOLS
 #  SUBDIRS += lump
