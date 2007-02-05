@@ -61,6 +61,7 @@ SUBDIRS = \
 	isa \
 	perl \
 	prof-juicy \
+	prof-juicy-x \
 	prof-lean \
 	support \
 	xml

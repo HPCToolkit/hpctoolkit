@@ -1,9 +1,9 @@
-// -*-Mode: C++;-*-
+// -*-C++-*-
 // $Id$
 
 // * BeginRiceCopyright *****************************************************
 // 
-// Copyright ((c)) 2002, Rice University 
+// Copyright ((c)) 2003, Rice University 
 // All rights reserved.
 // 
 // Redistribution and use in source and binary forms, with or without
@@ -35,68 +35,45 @@
 // 
 // ******************************************************* EndRiceCopyright *
 
-#ifndef HPCViewDocParser_h
-#define HPCViewDocParser_h
-
 //************************ System Include Files ******************************
 
+#include <iostream>
+using std::cerr;
+using std::endl;
+
 #include <string>
+using std::string;
 
-//*********************** Xerces Include Files *******************************
+//************************ Xerces Include Files ******************************
 
-#include <xercesc/parsers/XercesDOMParser.hpp>
-using XERCES_CPP_NAMESPACE::XercesDOMParser;
-
-#include <xercesc/dom/DOMNode.hpp> 
-using XERCES_CPP_NAMESPACE::DOMNode;
+#include <xercesc/util/XMLString.hpp>        
+using XERCES_CPP_NAMESPACE::XMLString;
 
 //************************* User Include Files *******************************
 
-#include <lib/prof-juicy-x/XercesErrorHandler.hpp>
-
-#include <lib/support/diagnostics.h>
-
-//************************ Forward Declarations ******************************
-
-class Driver;
+#include "XercesSAX2.hpp"
 
 //****************************************************************************
 
-class HPCViewDocParser {
-public:
-  HPCViewDocParser(const std::string& inputFile, 
-		   HPCViewXMLErrHandler &errHndlr);
-  
-  ~HPCViewDocParser();
-
-  void pass1(Driver& driver);
-  void pass2(Driver& driver);
-
-private:
-  XercesDOMParser* mParser;
-  DOMNode* mDoc;
-};
-
-
-//***************************************************************************
-// 
-//***************************************************************************
-
-#define HPCViewDoc_Throw(streamArgs) DIAG_ThrowX(HPCViewDocException, streamArgs)
-
-class HPCViewDocException : public Diagnostics::Exception {
-public:
-  HPCViewDocException(const std::string x,
-		      const char* filenm = NULL, unsigned int lineno = 0)
-    : Diagnostics::Exception(x, filenm, lineno)
-    { }
-  
-  virtual std::string message() const { 
-    return "CONFIGURATION file error [HPCViewDocException]: " + what();
+string 
+getAttr(const Attributes& attributes, int i) 
+{
+  const XMLCh* const xmlStr = attributes.getValue((unsigned int) i);
+  string s = "";
+  if (xmlStr) {
+    s = XMLString::transcode(xmlStr); 
   }
+  return s; 
+}
 
-private:
-};
+string 
+getAttr(const Attributes& attributes, const XMLCh* const name)
+{
+  const XMLCh* const xmlStr = attributes.getValue(name); 
+  string s = "";
+  if (xmlStr) {
+    s = XMLString::transcode(xmlStr);
+  }
+  return s;
+}
 
-
-#endif

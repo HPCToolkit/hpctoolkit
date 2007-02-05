@@ -38,13 +38,13 @@
 //***************************************************************************
 //
 // File:
-//    PROFILEDocHandler.C
+//   $Source$
 //
 // Purpose:
-//    XML adaptor for the profile data file (PROFILE)
+//   XML adaptor for the profile data file (PROFILE)
 //
 // Description:
-//    [The set of functions, macros, etc. defined in the file]
+//   [The set of functions, macros, etc. defined in the file]
 //
 //***************************************************************************
 
@@ -59,23 +59,20 @@ using std::string;
 
 //************************* Xerces Include Files *****************************
 
-#include "HPCViewSAX2.hpp"
-#include "HPCViewXMLErrHandler.hpp"
-
 #include <xercesc/util/XMLString.hpp>         
 using XERCES_CPP_NAMESPACE::XMLString;
 
 //************************* User Include Files *******************************
 
 #include "PROFILEDocHandler.hpp"
-#include "Driver.hpp"
-#include "NodeRetriever.hpp"
+#include "XercesSAX2.hpp"
+#include "XercesErrorHandler.hpp"
 
+#include <lib/prof-juicy/PgmScopeTreeInterface.hpp>
 #include <lib/prof-juicy/PgmScopeTree.hpp>
 
-#include <lib/support/Assertion.h>
-#include <lib/support/Trace.hpp>
 #include <lib/support/diagnostics.h>
+#include <lib/support/Trace.hpp>
 #include <lib/support/StrUtil.hpp>
 
 //************************ Forward Declarations ******************************
@@ -91,8 +88,12 @@ using XERCES_CPP_NAMESPACE::XMLString;
 // ----------------------------------------------------------------------
 
 PROFILEDocHandler::PROFILEDocHandler(NodeRetriever* const retriever, 
-				     Driver* _driver)  
-  : elemProfile(XMLString::transcode("PROFILE")),
+				     DocHandlerArgs& args)  
+  : m_nodeRetriever(retriever),
+    m_args(args),
+
+    // element names
+    elemProfile(XMLString::transcode("PROFILE")),
     elemProfileHdr(XMLString::transcode("PROFILEHDR")),
     elemProfileParams(XMLString::transcode("PROFILEPARAMS")),
     elemTarget(XMLString::transcode("TARGET")),
@@ -125,8 +126,6 @@ PROFILEDocHandler::PROFILEDocHandler(NodeRetriever* const retriever,
     attrId(XMLString::transcode("id")),
     attrVal(XMLString::transcode("v"))
 {
-  nodeRetriever = retriever;
-  driver = _driver;
   metricPerfDataTblIndx = -1;
   profVersion = -1;
   procScope = NULL;
@@ -147,7 +146,7 @@ PROFILEDocHandler::~PROFILEDocHandler() {
 void
 PROFILEDocHandler::Initialize(int metricIndx, const char* profileFileName) 
 {
-  BriefAssertion(IsPerfDataIndex(metricIndx)); 
+  DIAG_Assert(IsPerfDataIndex(metricIndx), ""); 
   IFTRACE << "PROFILEDocHandler::InitMetricHandler: " << metricIndx << endl; 
   metricPerfDataTblIndx = metricIndx;
   profileFile = profileFileName; 
@@ -247,10 +246,10 @@ void PROFILEDocHandler::startElement(const XMLCh* const uri, const XMLCh* const 
   // PGM [See PGMDocHandler.C]
   if (XMLString::equals(name, elemPgm)) {
     string pgmName = getAttr(attributes, attrName);
-    pgmName = driver->ReplacePath(pgmName);
+    pgmName = m_args.ReplacePath(pgmName);
     IFTRACE << "PGM: name= " << pgmName << endl;
 
-    PgmScope* root = nodeRetriever->GetRoot(); 
+    PgmScope* root = m_nodeRetriever->GetRoot(); 
     if (root->name().empty()) { root->SetName(pgmName); }
   }
 
@@ -263,11 +262,11 @@ void PROFILEDocHandler::startElement(const XMLCh* const uri, const XMLCh* const 
   // LM (load module)
   if (XMLString::equals(name, elemLM)) {
     string lm = getAttr(attributes, attrName); // must exist
-    lm = driver->ReplacePath(lm);
+    lm = m_args.ReplacePath(lm);
 
-    BriefAssertion(lmName.empty());
+    DIAG_Assert(lmName.empty(), "");
     lmName = lm;
-    lmScope = nodeRetriever->MoveToLoadMod(lmName);
+    lmScope = m_nodeRetriever->MoveToLoadMod(lmName);
     
     IFTRACE << "LM (load module): name= " << lmName << endl;
   }
@@ -275,11 +274,11 @@ void PROFILEDocHandler::startElement(const XMLCh* const uri, const XMLCh* const 
   // F(ile)
   if (XMLString::equals(name, elemFile)) {
     string srcFile = getAttr(attributes, attrName); // must exist
-    srcFile = driver->ReplacePath(srcFile);
+    srcFile = m_args.ReplacePath(srcFile);
 
-    BriefAssertion(srcFileName.empty());
+    DIAG_Assert(srcFileName.empty(), "");
     srcFileName = srcFile;
-    fileScope = nodeRetriever->MoveToFile(srcFileName); 
+    fileScope = m_nodeRetriever->MoveToFile(srcFileName); 
 
     IFTRACE << "F(ile): name= " << srcFile << endl;       
   }
@@ -287,7 +286,7 @@ void PROFILEDocHandler::startElement(const XMLCh* const uri, const XMLCh* const 
   // P(roc)
   if (XMLString::equals(name, elemProc)) {
     string name = getAttr(attributes, attrName); // must exist
-    if (driver->MustDeleteUnderscore()) {
+    if (m_args.MustDeleteUnderscore()) {
       if (!name.empty() && (name[name.length()-1] == '_')) {
 	name[name.length()-1] = '\0';
       }
@@ -297,9 +296,9 @@ void PROFILEDocHandler::startElement(const XMLCh* const uri, const XMLCh* const 
     // For now, 'attrLnName,' 'attrBegin,' and 'attrEnd' are
     // meaningless in a PROFILE.  See PGMDocHandler.C
     
-    BriefAssertion(funcName.empty());
+    DIAG_Assert(funcName.empty(), "");
     funcName = name;
-    procScope = nodeRetriever->MoveToProc(funcName);
+    procScope = m_nodeRetriever->MoveToProc(funcName);
     // FIXME: should take linkname into account
     
     IFTRACE << "P(roc): name= " << name << endl;       
@@ -314,7 +313,7 @@ void PROFILEDocHandler::startElement(const XMLCh* const uri, const XMLCh* const 
   // S(tmt)
   if (XMLString::equals(name, elemStmt)) {
     int numAttr = attributes.getLength();
-    BriefAssertion(numAttr >= 1 && numAttr <= 3);
+    DIAG_Assert(numAttr >= 1 && numAttr <= 3, "");
     
     // For now, we are not interested in 'attrEnd' or 'attrId'
     int lnB = UNDEF_LINE, lnE = UNDEF_LINE, lnId = UNDEF_LINE;
@@ -332,7 +331,7 @@ void PROFILEDocHandler::startElement(const XMLCh* const uri, const XMLCh* const 
 
     IFTRACE << "S(tmt): b= " << lnB << " e= " << lnE << " i= " << lnId << endl;
 
-    BriefAssertion(line == -1);
+    DIAG_Assert(line == -1, "");
     line = lnB; 
   }
 

@@ -1,9 +1,9 @@
-// -*-C++-*-
+// -*-Mode: C++;-*-
 // $Id$
 
 // * BeginRiceCopyright *****************************************************
 // 
-// Copyright ((c)) 2003, Rice University 
+// Copyright ((c)) 2002, Rice University 
 // All rights reserved.
 // 
 // Redistribution and use in source and binary forms, with or without
@@ -35,45 +35,50 @@
 // 
 // ******************************************************* EndRiceCopyright *
 
+//***************************************************************************
+//
+// File:
+//   $Source$
+//
+// Purpose:
+//   []
+//
+// Description:
+//   [The set of functions, macros, etc. defined in the file]
+//
+//***************************************************************************
+
+#ifndef prof_juicy_x_DocHandlerArgs
+#define prof_juicy_x_DocHandlerArgs
+
 //************************ System Include Files ******************************
 
-#include <iostream>
-using std::cerr;
-using std::endl;
-
 #include <string>
-using std::string;
-
-//************************ Xerces Include Files ******************************
-
-#include <xercesc/util/XMLString.hpp>        
-using XERCES_CPP_NAMESPACE::XMLString;
 
 //************************* User Include Files *******************************
 
-#include "HPCViewSAX2.hpp"
+#include "XercesSAX2.hpp"
+
+//************************ Forward Declarations ******************************
 
 //****************************************************************************
 
-string 
-getAttr(const Attributes& attributes, int i) 
-{
-  const XMLCh* const xmlStr = attributes.getValue((unsigned int) i);
-  string s = "";
-  if (xmlStr) {
-    s = XMLString::transcode(xmlStr); 
-  }
-  return s; 
-}
+class DocHandlerArgs {
+public:
+  DocHandlerArgs() { }
+  
+  ~DocHandlerArgs() { }
+  
+  virtual string ReplacePath(const char* oldpath) const { return oldpath; };
+  
+  std::string ReplacePath(const std::string& oldpath) const
+    { return ReplacePath(oldpath.c_str()); }
+  
+  virtual bool MustDeleteUnderscore() const { return false; }
 
-string 
-getAttr(const Attributes& attributes, const XMLCh* const name)
-{
-  const XMLCh* const xmlStr = attributes.getValue(name); 
-  string s = "";
-  if (xmlStr) {
-    s = XMLString::transcode(xmlStr);
-  }
-  return s;
-}
+private:
+};
 
+//****************************************************************************
+
+#endif  // prof_juicy_x_DocHandlerArgs

@@ -60,13 +60,10 @@ using std::string;
 
 //************************* User Include Files *******************************
 
-#include "Args.hpp"
-#include "NodeRetriever.hpp"
-
-#include <lib/prof-juicy/PgmScopeTree.hpp>
+#include "PgmScopeTreeInterface.hpp"
+#include "PgmScopeTree.hpp"
 
 #include <lib/support/diagnostics.h>
-#include <lib/support/Assertion.h>
 #include <lib/support/pathfind.h>
 #include <lib/support/realpath.h>
 
@@ -106,8 +103,8 @@ GetFormattedSourceFileName(const string& nm)
 NodeRetriever::NodeRetriever(PgmScope* _root, const string& p) 
   : root(_root), currentLM(NULL), currentFile(NULL), currentProc(NULL), path(p)
 {
-  BriefAssertion(root != NULL);
-  BriefAssertion(!p.empty());
+  DIAG_Assert(root != NULL, "");
+  DIAG_Assert(!p.empty(), "");
 }
 
 NodeRetriever::~NodeRetriever()
@@ -117,7 +114,7 @@ NodeRetriever::~NodeRetriever()
 GroupScope*
 NodeRetriever::MoveToGroup(ScopeInfo* parent, const char* name)
 {
-  BriefAssertion(parent && name);
+  DIAG_Assert(parent && name, "");
   
   GroupScope* grp = root->FindGroup(name);
   if (grp == NULL) {
@@ -130,7 +127,7 @@ NodeRetriever::MoveToGroup(ScopeInfo* parent, const char* name)
 LoadModScope*
 NodeRetriever::MoveToLoadMod(const char* name) 
 {
-  BriefAssertion(name);
+  DIAG_Assert(name, "");
 
   LoadModScope* lm = root->FindLoadMod(name);
   if (lm == NULL) {
@@ -152,7 +149,7 @@ NodeRetriever::MoveToFile(const char* name)
   static long unknownFileIndex = 0;
   string knownByName;
   
-  BriefAssertion(name);
+  DIAG_Assert(name, "");
 
   if (strcmp(name, unknownFileName) == 0) {
     if (!currentLM) {
@@ -196,7 +193,7 @@ NodeRetriever::MoveToFile(const char* name)
 		<< "  name=" << name << "  fname=" << filePath);
   } else {
     currentLM = f->LoadMod();
-    BriefAssertion(currentLM);
+    DIAG_Assert(currentLM, "");
   }
   currentFile = f;
 
@@ -210,9 +207,9 @@ NodeRetriever::MoveToFile(const char* name)
 ProcScope* 
 NodeRetriever::MoveToProc(const char* name) 
 {
-  BriefAssertion(name);
-  BriefAssertion(currentLM);
-  BriefAssertion(currentFile);
+  DIAG_Assert(name, "");
+  DIAG_Assert(currentLM, "");
+  DIAG_Assert(currentFile, "");
 
   ProcScope *p = currentFile->FindProc(name);
   if (p == NULL) {

@@ -308,15 +308,17 @@ HPC_IFLAGS = -I$(HPCTOOLKIT)/src
 ############################################################
 
 # Linking dependencies:
-#   HPC_LIBBANAL     : HPC_LIBPROFJUICY HPC_LIBBINUTILS
-#   HPC_LIBPROFJUICY : HPC_LIBBINUTILS HPC_LIBSUPPORT
-#   HPC_LIBPROFLEAN  :
-#   HPC_LIBBINUTILS  : HPC_LIBISA HPC_LIBSUPPORT
-#   HPC_LIBISA       : HPC_LIBSUPPORT
-#   HPC_LIBXML       : HPC_LIBSUPPORT
-#   HPC_LIBSUPPORT   :
+#   HPC_LIBBANAL      : HPC_LIBPROFJUICY HPC_LIBBINUTILS
+#   HPC_LIBPROFJUICY  : HPC_LIBBINUTILS HPC_LIBSUPPORT
+#   HPC_LIBPROFJUICYX : HPC_LIBPROFJUICY HPC_LIBBINUTILS HPC_LIBSUPPORT
+#   HPC_LIBPROFLEAN   :
+#   HPC_LIBBINUTILS   : HPC_LIBISA HPC_LIBSUPPORT
+#   HPC_LIBISA        : HPC_LIBSUPPORT
+#   HPC_LIBXML        : HPC_LIBSUPPORT
+#   HPC_LIBSUPPORT    :
 HPC_LIBBANAL = $(top_builddir)/src/lib/banal/libHPCbanal.la
 HPC_LIBPROFJUICY = $(top_builddir)/src/lib/prof-juicy/libHPCprof-juicy.la
+HPC_LIBPROFJUICYX = $(top_builddir)/src/lib/prof-juicy-x/libHPCprof-juicy-x.la
 HPC_LIBPROFLEAN = $(top_builddir)/src/lib/prof-lean/libHPCprof-lean.la
 HPC_LIBBINUTILS = $(top_builddir)/src/lib/binutils/libHPCbinutils.la
 HPC_LIBISA = $(top_builddir)/src/lib/isa/libHPCisa.la

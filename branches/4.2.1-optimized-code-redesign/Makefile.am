@@ -142,8 +142,10 @@ myinstall-xerces:
 	@cp -R $(MYXERCESLIB) $(MYXERCESINSTALLDIR)/.
 
 myinstall-monitor:
-	@$(mkinstalldirs) $(MYMONITORINSTALLDIR)
-	@cp -R $(MYMONITORLIB) $(MYMONITORINSTALLDIR)/.
+	@if test -d "$(MYMONITORLIB)"; then \
+	  $(mkinstalldirs) $(MYMONITORINSTALLDIR) ; \
+	  cp -R $(MYMONITORLIB) $(MYMONITORINSTALLDIR)/. ; \
+	fi
 
 .PHONY : install-data-local install-data-hook \
 	myinstall-files myinstall-scripts \

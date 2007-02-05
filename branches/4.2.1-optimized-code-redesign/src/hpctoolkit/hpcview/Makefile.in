@@ -114,30 +114,28 @@ binPROGRAMS_INSTALL = $(INSTALL_PROGRAM)
 PROGRAMS = $(bin_PROGRAMS)
 am__objects_1 = hpcview_bin-main.$(OBJEXT) hpcview_bin-Args.$(OBJEXT) \
 	hpcview_bin-Driver.$(OBJEXT) \
-	hpcview_bin-DerivedPerfMetrics.$(OBJEXT) \
-	hpcview_bin-EvalNode.$(OBJEXT) \
-	hpcview_bin-NodeRetriever.$(OBJEXT) \
-	hpcview_bin-HPCViewSAX2.$(OBJEXT) \
-	hpcview_bin-HPCViewXMLErrHandler.$(OBJEXT) \
 	hpcview_bin-HPCViewDocParser.$(OBJEXT) \
+	hpcview_bin-DerivedPerfMetrics.$(OBJEXT) \
 	hpcview_bin-MathMLExpr.$(OBJEXT) \
-	hpcview_bin-PGMDocHandler.$(OBJEXT) \
-	hpcview_bin-PROFILEDocHandler.$(OBJEXT)
+	hpcview_bin-EvalNode.$(OBJEXT)
 am_hpcview_bin_OBJECTS = $(am__objects_1)
 hpcview_bin_OBJECTS = $(am_hpcview_bin_OBJECTS)
 am__DEPENDENCIES_1 =  \
-	$(top_builddir)/src/lib/prof-juicy/libHPCprof-juicy.la
+	$(top_builddir)/src/lib/prof-juicy-x/libHPCprof-juicy-x.la
 am__DEPENDENCIES_2 =  \
-	$(top_builddir)/src/lib/prof-lean/libHPCprof-lean.la
+	$(top_builddir)/src/lib/prof-juicy/libHPCprof-juicy.la
 am__DEPENDENCIES_3 =  \
+	$(top_builddir)/src/lib/prof-lean/libHPCprof-lean.la
+am__DEPENDENCIES_4 =  \
 	$(top_builddir)/src/lib/binutils/libHPCbinutils.la
-am__DEPENDENCIES_4 = $(top_builddir)/src/lib/isa/libHPCisa.la
-am__DEPENDENCIES_5 = $(top_builddir)/src/lib/xml/libHPCxml.la
-am__DEPENDENCIES_6 = $(top_builddir)/src/lib/support/libHPCsupport.la
-am__DEPENDENCIES_7 = $(am__DEPENDENCIES_1) $(am__DEPENDENCIES_2) \
+am__DEPENDENCIES_5 = $(top_builddir)/src/lib/isa/libHPCisa.la
+am__DEPENDENCIES_6 = $(top_builddir)/src/lib/xml/libHPCxml.la
+am__DEPENDENCIES_7 = $(top_builddir)/src/lib/support/libHPCsupport.la
+am__DEPENDENCIES_8 = $(am__DEPENDENCIES_1) $(am__DEPENDENCIES_2) \
 	$(am__DEPENDENCIES_3) $(am__DEPENDENCIES_4) \
-	$(am__DEPENDENCIES_5) $(am__DEPENDENCIES_6)
-hpcview_bin_DEPENDENCIES = $(am__DEPENDENCIES_7)
+	$(am__DEPENDENCIES_5) $(am__DEPENDENCIES_6) \
+	$(am__DEPENDENCIES_7)
+hpcview_bin_DEPENDENCIES = $(am__DEPENDENCIES_8)
 binSCRIPT_INSTALL = $(INSTALL_SCRIPT)
 SCRIPTS = $(bin_SCRIPTS)
 DEFAULT_INCLUDES = -I. -I$(srcdir)
@@ -331,15 +329,17 @@ HPC_IFLAGS = -I$(HPCTOOLKIT)/src
 ############################################################
 
 # Linking dependencies:
-#   HPC_LIBBANAL     : HPC_LIBPROFJUICY HPC_LIBBINUTILS
-#   HPC_LIBPROFJUICY : HPC_LIBBINUTILS HPC_LIBSUPPORT
-#   HPC_LIBPROFLEAN  :
-#   HPC_LIBBINUTILS  : HPC_LIBISA HPC_LIBSUPPORT
-#   HPC_LIBISA       : HPC_LIBSUPPORT
-#   HPC_LIBXML       : HPC_LIBSUPPORT
-#   HPC_LIBSUPPORT   :
+#   HPC_LIBBANAL      : HPC_LIBPROFJUICY HPC_LIBBINUTILS
+#   HPC_LIBPROFJUICY  : HPC_LIBBINUTILS HPC_LIBSUPPORT
+#   HPC_LIBPROFJUICYX : HPC_LIBPROFJUICY HPC_LIBBINUTILS HPC_LIBSUPPORT
+#   HPC_LIBPROFLEAN   :
+#   HPC_LIBBINUTILS   : HPC_LIBISA HPC_LIBSUPPORT
+#   HPC_LIBISA        : HPC_LIBSUPPORT
+#   HPC_LIBXML        : HPC_LIBSUPPORT
+#   HPC_LIBSUPPORT    :
 HPC_LIBBANAL = $(top_builddir)/src/lib/banal/libHPCbanal.la
 HPC_LIBPROFJUICY = $(top_builddir)/src/lib/prof-juicy/libHPCprof-juicy.la
+HPC_LIBPROFJUICYX = $(top_builddir)/src/lib/prof-juicy-x/libHPCprof-juicy-x.la
 HPC_LIBPROFLEAN = $(top_builddir)/src/lib/prof-lean/libHPCprof-lean.la
 HPC_LIBBINUTILS = $(top_builddir)/src/lib/binutils/libHPCbinutils.la
 HPC_LIBISA = $(top_builddir)/src/lib/isa/libHPCisa.la
@@ -357,18 +357,12 @@ MYSOURCES = \
 	main.cpp \
 	Args.hpp Args.cpp \
 	Driver.hpp Driver.cpp \
+	HPCViewDocParser.hpp HPCViewDocParser.cpp \
 	\
 	PerfIndex.hpp \
 	DerivedPerfMetrics.hpp DerivedPerfMetrics.cpp \
-	EvalNode.hpp EvalNode.cpp \
-	NodeRetriever.hpp NodeRetriever.cpp \
-	\
-	HPCViewSAX2.hpp HPCViewSAX2.cpp \
-	HPCViewXMLErrHandler.hpp HPCViewXMLErrHandler.cpp \
-	HPCViewDocParser.hpp HPCViewDocParser.cpp \
 	MathMLExpr.hpp MathMLExpr.cpp \
-	PGMDocHandler.hpp PGMDocHandler.cpp \
-	PROFILEDocHandler.hpp PROFILEDocHandler.cpp
+	EvalNode.hpp EvalNode.cpp
 
 
 # Deprecated: XMLAdapter.hpp XMLAdapter.cpp
@@ -384,7 +378,7 @@ MYCXXFLAGS = @HOST_CXXFLAGS@ $(HPC_IFLAGS) @XERCES_IFLAGS@
 MYLDFLAGS = @HOST_CXXFLAGS@
 MYLDADD = \
 	@HOST_LIBTREPOSITORY@ \
-	$(HPC_LIBPROFJUICY) $(HPC_LIBPROFLEAN) $(HPC_LIBBINUTILS) $(HPC_LIBISA) $(HPC_LIBXML) $(HPC_LIBSUPPORT) \
+	$(HPC_LIBPROFJUICYX) $(HPC_LIBPROFJUICY) $(HPC_LIBPROFLEAN) $(HPC_LIBBINUTILS) $(HPC_LIBISA) $(HPC_LIBXML) $(HPC_LIBSUPPORT) \
 	@XERCES_LDFLAGS@ @GNUBINUTILS_LDFLAGS@ \
 	@HOST_HPCVIEW_LDFLAGS@ \
 	-lm
@@ -502,12 +496,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/hpcview_bin-Driver.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/hpcview_bin-EvalNode.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/hpcview_bin-HPCViewDocParser.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/hpcview_bin-HPCViewSAX2.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/hpcview_bin-HPCViewXMLErrHandler.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/hpcview_bin-MathMLExpr.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/hpcview_bin-NodeRetriever.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/hpcview_bin-PGMDocHandler.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/hpcview_bin-PROFILEDocHandler.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/hpcview_bin-main.Po@am__quote@
 
 .cpp.o:
@@ -573,76 +562,6 @@ hpcview_bin-Driver.obj: Driver.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(hpcview_bin_CXXFLAGS) $(CXXFLAGS) -c -o hpcview_bin-Driver.obj `if test -f 'Driver.cpp'; then $(CYGPATH_W) 'Driver.cpp'; else $(CYGPATH_W) '$(srcdir)/Driver.cpp'; fi`
 
-hpcview_bin-DerivedPerfMetrics.o: DerivedPerfMetrics.cpp
-@am__fastdepCXX_TRUE@	if $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(hpcview_bin_CXXFLAGS) $(CXXFLAGS) -MT hpcview_bin-DerivedPerfMetrics.o -MD -MP -MF "$(DEPDIR)/hpcview_bin-DerivedPerfMetrics.Tpo" -c -o hpcview_bin-DerivedPerfMetrics.o `test -f 'DerivedPerfMetrics.cpp' || echo '$(srcdir)/'`DerivedPerfMetrics.cpp; \
-@am__fastdepCXX_TRUE@	then mv -f "$(DEPDIR)/hpcview_bin-DerivedPerfMetrics.Tpo" "$(DEPDIR)/hpcview_bin-DerivedPerfMetrics.Po"; else rm -f "$(DEPDIR)/hpcview_bin-DerivedPerfMetrics.Tpo"; exit 1; fi
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='DerivedPerfMetrics.cpp' object='hpcview_bin-DerivedPerfMetrics.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(hpcview_bin_CXXFLAGS) $(CXXFLAGS) -c -o hpcview_bin-DerivedPerfMetrics.o `test -f 'DerivedPerfMetrics.cpp' || echo '$(srcdir)/'`DerivedPerfMetrics.cpp
-
-hpcview_bin-DerivedPerfMetrics.obj: DerivedPerfMetrics.cpp
-@am__fastdepCXX_TRUE@	if $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(hpcview_bin_CXXFLAGS) $(CXXFLAGS) -MT hpcview_bin-DerivedPerfMetrics.obj -MD -MP -MF "$(DEPDIR)/hpcview_bin-DerivedPerfMetrics.Tpo" -c -o hpcview_bin-DerivedPerfMetrics.obj `if test -f 'DerivedPerfMetrics.cpp'; then $(CYGPATH_W) 'DerivedPerfMetrics.cpp'; else $(CYGPATH_W) '$(srcdir)/DerivedPerfMetrics.cpp'; fi`; \
-@am__fastdepCXX_TRUE@	then mv -f "$(DEPDIR)/hpcview_bin-DerivedPerfMetrics.Tpo" "$(DEPDIR)/hpcview_bin-DerivedPerfMetrics.Po"; else rm -f "$(DEPDIR)/hpcview_bin-DerivedPerfMetrics.Tpo"; exit 1; fi
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='DerivedPerfMetrics.cpp' object='hpcview_bin-DerivedPerfMetrics.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(hpcview_bin_CXXFLAGS) $(CXXFLAGS) -c -o hpcview_bin-DerivedPerfMetrics.obj `if test -f 'DerivedPerfMetrics.cpp'; then $(CYGPATH_W) 'DerivedPerfMetrics.cpp'; else $(CYGPATH_W) '$(srcdir)/DerivedPerfMetrics.cpp'; fi`
-
-hpcview_bin-EvalNode.o: EvalNode.cpp
-@am__fastdepCXX_TRUE@	if $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(hpcview_bin_CXXFLAGS) $(CXXFLAGS) -MT hpcview_bin-EvalNode.o -MD -MP -MF "$(DEPDIR)/hpcview_bin-EvalNode.Tpo" -c -o hpcview_bin-EvalNode.o `test -f 'EvalNode.cpp' || echo '$(srcdir)/'`EvalNode.cpp; \
-@am__fastdepCXX_TRUE@	then mv -f "$(DEPDIR)/hpcview_bin-EvalNode.Tpo" "$(DEPDIR)/hpcview_bin-EvalNode.Po"; else rm -f "$(DEPDIR)/hpcview_bin-EvalNode.Tpo"; exit 1; fi
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='EvalNode.cpp' object='hpcview_bin-EvalNode.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(hpcview_bin_CXXFLAGS) $(CXXFLAGS) -c -o hpcview_bin-EvalNode.o `test -f 'EvalNode.cpp' || echo '$(srcdir)/'`EvalNode.cpp
-
-hpcview_bin-EvalNode.obj: EvalNode.cpp
-@am__fastdepCXX_TRUE@	if $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(hpcview_bin_CXXFLAGS) $(CXXFLAGS) -MT hpcview_bin-EvalNode.obj -MD -MP -MF "$(DEPDIR)/hpcview_bin-EvalNode.Tpo" -c -o hpcview_bin-EvalNode.obj `if test -f 'EvalNode.cpp'; then $(CYGPATH_W) 'EvalNode.cpp'; else $(CYGPATH_W) '$(srcdir)/EvalNode.cpp'; fi`; \
-@am__fastdepCXX_TRUE@	then mv -f "$(DEPDIR)/hpcview_bin-EvalNode.Tpo" "$(DEPDIR)/hpcview_bin-EvalNode.Po"; else rm -f "$(DEPDIR)/hpcview_bin-EvalNode.Tpo"; exit 1; fi
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='EvalNode.cpp' object='hpcview_bin-EvalNode.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(hpcview_bin_CXXFLAGS) $(CXXFLAGS) -c -o hpcview_bin-EvalNode.obj `if test -f 'EvalNode.cpp'; then $(CYGPATH_W) 'EvalNode.cpp'; else $(CYGPATH_W) '$(srcdir)/EvalNode.cpp'; fi`
-
-hpcview_bin-NodeRetriever.o: NodeRetriever.cpp
-@am__fastdepCXX_TRUE@	if $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(hpcview_bin_CXXFLAGS) $(CXXFLAGS) -MT hpcview_bin-NodeRetriever.o -MD -MP -MF "$(DEPDIR)/hpcview_bin-NodeRetriever.Tpo" -c -o hpcview_bin-NodeRetriever.o `test -f 'NodeRetriever.cpp' || echo '$(srcdir)/'`NodeRetriever.cpp; \
-@am__fastdepCXX_TRUE@	then mv -f "$(DEPDIR)/hpcview_bin-NodeRetriever.Tpo" "$(DEPDIR)/hpcview_bin-NodeRetriever.Po"; else rm -f "$(DEPDIR)/hpcview_bin-NodeRetriever.Tpo"; exit 1; fi
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='NodeRetriever.cpp' object='hpcview_bin-NodeRetriever.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(hpcview_bin_CXXFLAGS) $(CXXFLAGS) -c -o hpcview_bin-NodeRetriever.o `test -f 'NodeRetriever.cpp' || echo '$(srcdir)/'`NodeRetriever.cpp
-
-hpcview_bin-NodeRetriever.obj: NodeRetriever.cpp
-@am__fastdepCXX_TRUE@	if $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(hpcview_bin_CXXFLAGS) $(CXXFLAGS) -MT hpcview_bin-NodeRetriever.obj -MD -MP -MF "$(DEPDIR)/hpcview_bin-NodeRetriever.Tpo" -c -o hpcview_bin-NodeRetriever.obj `if test -f 'NodeRetriever.cpp'; then $(CYGPATH_W) 'NodeRetriever.cpp'; else $(CYGPATH_W) '$(srcdir)/NodeRetriever.cpp'; fi`; \
-@am__fastdepCXX_TRUE@	then mv -f "$(DEPDIR)/hpcview_bin-NodeRetriever.Tpo" "$(DEPDIR)/hpcview_bin-NodeRetriever.Po"; else rm -f "$(DEPDIR)/hpcview_bin-NodeRetriever.Tpo"; exit 1; fi
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='NodeRetriever.cpp' object='hpcview_bin-NodeRetriever.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(hpcview_bin_CXXFLAGS) $(CXXFLAGS) -c -o hpcview_bin-NodeRetriever.obj `if test -f 'NodeRetriever.cpp'; then $(CYGPATH_W) 'NodeRetriever.cpp'; else $(CYGPATH_W) '$(srcdir)/NodeRetriever.cpp'; fi`
-
-hpcview_bin-HPCViewSAX2.o: HPCViewSAX2.cpp
-@am__fastdepCXX_TRUE@	if $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(hpcview_bin_CXXFLAGS) $(CXXFLAGS) -MT hpcview_bin-HPCViewSAX2.o -MD -MP -MF "$(DEPDIR)/hpcview_bin-HPCViewSAX2.Tpo" -c -o hpcview_bin-HPCViewSAX2.o `test -f 'HPCViewSAX2.cpp' || echo '$(srcdir)/'`HPCViewSAX2.cpp; \
-@am__fastdepCXX_TRUE@	then mv -f "$(DEPDIR)/hpcview_bin-HPCViewSAX2.Tpo" "$(DEPDIR)/hpcview_bin-HPCViewSAX2.Po"; else rm -f "$(DEPDIR)/hpcview_bin-HPCViewSAX2.Tpo"; exit 1; fi
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='HPCViewSAX2.cpp' object='hpcview_bin-HPCViewSAX2.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(hpcview_bin_CXXFLAGS) $(CXXFLAGS) -c -o hpcview_bin-HPCViewSAX2.o `test -f 'HPCViewSAX2.cpp' || echo '$(srcdir)/'`HPCViewSAX2.cpp
-
-hpcview_bin-HPCViewSAX2.obj: HPCViewSAX2.cpp
-@am__fastdepCXX_TRUE@	if $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(hpcview_bin_CXXFLAGS) $(CXXFLAGS) -MT hpcview_bin-HPCViewSAX2.obj -MD -MP -MF "$(DEPDIR)/hpcview_bin-HPCViewSAX2.Tpo" -c -o hpcview_bin-HPCViewSAX2.obj `if test -f 'HPCViewSAX2.cpp'; then $(CYGPATH_W) 'HPCViewSAX2.cpp'; else $(CYGPATH_W) '$(srcdir)/HPCViewSAX2.cpp'; fi`; \
-@am__fastdepCXX_TRUE@	then mv -f "$(DEPDIR)/hpcview_bin-HPCViewSAX2.Tpo" "$(DEPDIR)/hpcview_bin-HPCViewSAX2.Po"; else rm -f "$(DEPDIR)/hpcview_bin-HPCViewSAX2.Tpo"; exit 1; fi
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='HPCViewSAX2.cpp' object='hpcview_bin-HPCViewSAX2.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(hpcview_bin_CXXFLAGS) $(CXXFLAGS) -c -o hpcview_bin-HPCViewSAX2.obj `if test -f 'HPCViewSAX2.cpp'; then $(CYGPATH_W) 'HPCViewSAX2.cpp'; else $(CYGPATH_W) '$(srcdir)/HPCViewSAX2.cpp'; fi`
-
-hpcview_bin-HPCViewXMLErrHandler.o: HPCViewXMLErrHandler.cpp
-@am__fastdepCXX_TRUE@	if $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(hpcview_bin_CXXFLAGS) $(CXXFLAGS) -MT hpcview_bin-HPCViewXMLErrHandler.o -MD -MP -MF "$(DEPDIR)/hpcview_bin-HPCViewXMLErrHandler.Tpo" -c -o hpcview_bin-HPCViewXMLErrHandler.o `test -f 'HPCViewXMLErrHandler.cpp' || echo '$(srcdir)/'`HPCViewXMLErrHandler.cpp; \
-@am__fastdepCXX_TRUE@	then mv -f "$(DEPDIR)/hpcview_bin-HPCViewXMLErrHandler.Tpo" "$(DEPDIR)/hpcview_bin-HPCViewXMLErrHandler.Po"; else rm -f "$(DEPDIR)/hpcview_bin-HPCViewXMLErrHandler.Tpo"; exit 1; fi
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='HPCViewXMLErrHandler.cpp' object='hpcview_bin-HPCViewXMLErrHandler.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(hpcview_bin_CXXFLAGS) $(CXXFLAGS) -c -o hpcview_bin-HPCViewXMLErrHandler.o `test -f 'HPCViewXMLErrHandler.cpp' || echo '$(srcdir)/'`HPCViewXMLErrHandler.cpp
-
-hpcview_bin-HPCViewXMLErrHandler.obj: HPCViewXMLErrHandler.cpp
-@am__fastdepCXX_TRUE@	if $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(hpcview_bin_CXXFLAGS) $(CXXFLAGS) -MT hpcview_bin-HPCViewXMLErrHandler.obj -MD -MP -MF "$(DEPDIR)/hpcview_bin-HPCViewXMLErrHandler.Tpo" -c -o hpcview_bin-HPCViewXMLErrHandler.obj `if test -f 'HPCViewXMLErrHandler.cpp'; then $(CYGPATH_W) 'HPCViewXMLErrHandler.cpp'; else $(CYGPATH_W) '$(srcdir)/HPCViewXMLErrHandler.cpp'; fi`; \
-@am__fastdepCXX_TRUE@	then mv -f "$(DEPDIR)/hpcview_bin-HPCViewXMLErrHandler.Tpo" "$(DEPDIR)/hpcview_bin-HPCViewXMLErrHandler.Po"; else rm -f "$(DEPDIR)/hpcview_bin-HPCViewXMLErrHandler.Tpo"; exit 1; fi
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='HPCViewXMLErrHandler.cpp' object='hpcview_bin-HPCViewXMLErrHandler.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(hpcview_bin_CXXFLAGS) $(CXXFLAGS) -c -o hpcview_bin-HPCViewXMLErrHandler.obj `if test -f 'HPCViewXMLErrHandler.cpp'; then $(CYGPATH_W) 'HPCViewXMLErrHandler.cpp'; else $(CYGPATH_W) '$(srcdir)/HPCViewXMLErrHandler.cpp'; fi`
-
 hpcview_bin-HPCViewDocParser.o: HPCViewDocParser.cpp
 @am__fastdepCXX_TRUE@	if $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(hpcview_bin_CXXFLAGS) $(CXXFLAGS) -MT hpcview_bin-HPCViewDocParser.o -MD -MP -MF "$(DEPDIR)/hpcview_bin-HPCViewDocParser.Tpo" -c -o hpcview_bin-HPCViewDocParser.o `test -f 'HPCViewDocParser.cpp' || echo '$(srcdir)/'`HPCViewDocParser.cpp; \
 @am__fastdepCXX_TRUE@	then mv -f "$(DEPDIR)/hpcview_bin-HPCViewDocParser.Tpo" "$(DEPDIR)/hpcview_bin-HPCViewDocParser.Po"; else rm -f "$(DEPDIR)/hpcview_bin-HPCViewDocParser.Tpo"; exit 1; fi
@@ -656,6 +575,20 @@ hpcview_bin-HPCViewDocParser.obj: HPCViewDocParser.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='HPCViewDocParser.cpp' object='hpcview_bin-HPCViewDocParser.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(hpcview_bin_CXXFLAGS) $(CXXFLAGS) -c -o hpcview_bin-HPCViewDocParser.obj `if test -f 'HPCViewDocParser.cpp'; then $(CYGPATH_W) 'HPCViewDocParser.cpp'; else $(CYGPATH_W) '$(srcdir)/HPCViewDocParser.cpp'; fi`
+
+hpcview_bin-DerivedPerfMetrics.o: DerivedPerfMetrics.cpp
+@am__fastdepCXX_TRUE@	if $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(hpcview_bin_CXXFLAGS) $(CXXFLAGS) -MT hpcview_bin-DerivedPerfMetrics.o -MD -MP -MF "$(DEPDIR)/hpcview_bin-DerivedPerfMetrics.Tpo" -c -o hpcview_bin-DerivedPerfMetrics.o `test -f 'DerivedPerfMetrics.cpp' || echo '$(srcdir)/'`DerivedPerfMetrics.cpp; \
+@am__fastdepCXX_TRUE@	then mv -f "$(DEPDIR)/hpcview_bin-DerivedPerfMetrics.Tpo" "$(DEPDIR)/hpcview_bin-DerivedPerfMetrics.Po"; else rm -f "$(DEPDIR)/hpcview_bin-DerivedPerfMetrics.Tpo"; exit 1; fi
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='DerivedPerfMetrics.cpp' object='hpcview_bin-DerivedPerfMetrics.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(hpcview_bin_CXXFLAGS) $(CXXFLAGS) -c -o hpcview_bin-DerivedPerfMetrics.o `test -f 'DerivedPerfMetrics.cpp' || echo '$(srcdir)/'`DerivedPerfMetrics.cpp
+
+hpcview_bin-DerivedPerfMetrics.obj: DerivedPerfMetrics.cpp
+@am__fastdepCXX_TRUE@	if $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(hpcview_bin_CXXFLAGS) $(CXXFLAGS) -MT hpcview_bin-DerivedPerfMetrics.obj -MD -MP -MF "$(DEPDIR)/hpcview_bin-DerivedPerfMetrics.Tpo" -c -o hpcview_bin-DerivedPerfMetrics.obj `if test -f 'DerivedPerfMetrics.cpp'; then $(CYGPATH_W) 'DerivedPerfMetrics.cpp'; else $(CYGPATH_W) '$(srcdir)/DerivedPerfMetrics.cpp'; fi`; \
+@am__fastdepCXX_TRUE@	then mv -f "$(DEPDIR)/hpcview_bin-DerivedPerfMetrics.Tpo" "$(DEPDIR)/hpcview_bin-DerivedPerfMetrics.Po"; else rm -f "$(DEPDIR)/hpcview_bin-DerivedPerfMetrics.Tpo"; exit 1; fi
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='DerivedPerfMetrics.cpp' object='hpcview_bin-DerivedPerfMetrics.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(hpcview_bin_CXXFLAGS) $(CXXFLAGS) -c -o hpcview_bin-DerivedPerfMetrics.obj `if test -f 'DerivedPerfMetrics.cpp'; then $(CYGPATH_W) 'DerivedPerfMetrics.cpp'; else $(CYGPATH_W) '$(srcdir)/DerivedPerfMetrics.cpp'; fi`
 
 hpcview_bin-MathMLExpr.o: MathMLExpr.cpp
 @am__fastdepCXX_TRUE@	if $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(hpcview_bin_CXXFLAGS) $(CXXFLAGS) -MT hpcview_bin-MathMLExpr.o -MD -MP -MF "$(DEPDIR)/hpcview_bin-MathMLExpr.Tpo" -c -o hpcview_bin-MathMLExpr.o `test -f 'MathMLExpr.cpp' || echo '$(srcdir)/'`MathMLExpr.cpp; \
@@ -671,33 +604,19 @@ hpcview_bin-MathMLExpr.obj: MathMLExpr.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(hpcview_bin_CXXFLAGS) $(CXXFLAGS) -c -o hpcview_bin-MathMLExpr.obj `if test -f 'MathMLExpr.cpp'; then $(CYGPATH_W) 'MathMLExpr.cpp'; else $(CYGPATH_W) '$(srcdir)/MathMLExpr.cpp'; fi`
 
-hpcview_bin-PGMDocHandler.o: PGMDocHandler.cpp
-@am__fastdepCXX_TRUE@	if $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(hpcview_bin_CXXFLAGS) $(CXXFLAGS) -MT hpcview_bin-PGMDocHandler.o -MD -MP -MF "$(DEPDIR)/hpcview_bin-PGMDocHandler.Tpo" -c -o hpcview_bin-PGMDocHandler.o `test -f 'PGMDocHandler.cpp' || echo '$(srcdir)/'`PGMDocHandler.cpp; \
-@am__fastdepCXX_TRUE@	then mv -f "$(DEPDIR)/hpcview_bin-PGMDocHandler.Tpo" "$(DEPDIR)/hpcview_bin-PGMDocHandler.Po"; else rm -f "$(DEPDIR)/hpcview_bin-PGMDocHandler.Tpo"; exit 1; fi
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='PGMDocHandler.cpp' object='hpcview_bin-PGMDocHandler.o' libtool=no @AMDEPBACKSLASH@
+hpcview_bin-EvalNode.o: EvalNode.cpp
+@am__fastdepCXX_TRUE@	if $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(hpcview_bin_CXXFLAGS) $(CXXFLAGS) -MT hpcview_bin-EvalNode.o -MD -MP -MF "$(DEPDIR)/hpcview_bin-EvalNode.Tpo" -c -o hpcview_bin-EvalNode.o `test -f 'EvalNode.cpp' || echo '$(srcdir)/'`EvalNode.cpp; \
+@am__fastdepCXX_TRUE@	then mv -f "$(DEPDIR)/hpcview_bin-EvalNode.Tpo" "$(DEPDIR)/hpcview_bin-EvalNode.Po"; else rm -f "$(DEPDIR)/hpcview_bin-EvalNode.Tpo"; exit 1; fi
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='EvalNode.cpp' object='hpcview_bin-EvalNode.o' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(hpcview_bin_CXXFLAGS) $(CXXFLAGS) -c -o hpcview_bin-PGMDocHandler.o `test -f 'PGMDocHandler.cpp' || echo '$(srcdir)/'`PGMDocHandler.cpp
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(hpcview_bin_CXXFLAGS) $(CXXFLAGS) -c -o hpcview_bin-EvalNode.o `test -f 'EvalNode.cpp' || echo '$(srcdir)/'`EvalNode.cpp
 
-hpcview_bin-PGMDocHandler.obj: PGMDocHandler.cpp
-@am__fastdepCXX_TRUE@	if $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(hpcview_bin_CXXFLAGS) $(CXXFLAGS) -MT hpcview_bin-PGMDocHandler.obj -MD -MP -MF "$(DEPDIR)/hpcview_bin-PGMDocHandler.Tpo" -c -o hpcview_bin-PGMDocHandler.obj `if test -f 'PGMDocHandler.cpp'; then $(CYGPATH_W) 'PGMDocHandler.cpp'; else $(CYGPATH_W) '$(srcdir)/PGMDocHandler.cpp'; fi`; \
-@am__fastdepCXX_TRUE@	then mv -f "$(DEPDIR)/hpcview_bin-PGMDocHandler.Tpo" "$(DEPDIR)/hpcview_bin-PGMDocHandler.Po"; else rm -f "$(DEPDIR)/hpcview_bin-PGMDocHandler.Tpo"; exit 1; fi
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='PGMDocHandler.cpp' object='hpcview_bin-PGMDocHandler.obj' libtool=no @AMDEPBACKSLASH@
+hpcview_bin-EvalNode.obj: EvalNode.cpp
+@am__fastdepCXX_TRUE@	if $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(hpcview_bin_CXXFLAGS) $(CXXFLAGS) -MT hpcview_bin-EvalNode.obj -MD -MP -MF "$(DEPDIR)/hpcview_bin-EvalNode.Tpo" -c -o hpcview_bin-EvalNode.obj `if test -f 'EvalNode.cpp'; then $(CYGPATH_W) 'EvalNode.cpp'; else $(CYGPATH_W) '$(srcdir)/EvalNode.cpp'; fi`; \
+@am__fastdepCXX_TRUE@	then mv -f "$(DEPDIR)/hpcview_bin-EvalNode.Tpo" "$(DEPDIR)/hpcview_bin-EvalNode.Po"; else rm -f "$(DEPDIR)/hpcview_bin-EvalNode.Tpo"; exit 1; fi
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='EvalNode.cpp' object='hpcview_bin-EvalNode.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(hpcview_bin_CXXFLAGS) $(CXXFLAGS) -c -o hpcview_bin-PGMDocHandler.obj `if test -f 'PGMDocHandler.cpp'; then $(CYGPATH_W) 'PGMDocHandler.cpp'; else $(CYGPATH_W) '$(srcdir)/PGMDocHandler.cpp'; fi`
-
-hpcview_bin-PROFILEDocHandler.o: PROFILEDocHandler.cpp
-@am__fastdepCXX_TRUE@	if $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(hpcview_bin_CXXFLAGS) $(CXXFLAGS) -MT hpcview_bin-PROFILEDocHandler.o -MD -MP -MF "$(DEPDIR)/hpcview_bin-PROFILEDocHandler.Tpo" -c -o hpcview_bin-PROFILEDocHandler.o `test -f 'PROFILEDocHandler.cpp' || echo '$(srcdir)/'`PROFILEDocHandler.cpp; \
-@am__fastdepCXX_TRUE@	then mv -f "$(DEPDIR)/hpcview_bin-PROFILEDocHandler.Tpo" "$(DEPDIR)/hpcview_bin-PROFILEDocHandler.Po"; else rm -f "$(DEPDIR)/hpcview_bin-PROFILEDocHandler.Tpo"; exit 1; fi
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='PROFILEDocHandler.cpp' object='hpcview_bin-PROFILEDocHandler.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(hpcview_bin_CXXFLAGS) $(CXXFLAGS) -c -o hpcview_bin-PROFILEDocHandler.o `test -f 'PROFILEDocHandler.cpp' || echo '$(srcdir)/'`PROFILEDocHandler.cpp
-
-hpcview_bin-PROFILEDocHandler.obj: PROFILEDocHandler.cpp
-@am__fastdepCXX_TRUE@	if $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(hpcview_bin_CXXFLAGS) $(CXXFLAGS) -MT hpcview_bin-PROFILEDocHandler.obj -MD -MP -MF "$(DEPDIR)/hpcview_bin-PROFILEDocHandler.Tpo" -c -o hpcview_bin-PROFILEDocHandler.obj `if test -f 'PROFILEDocHandler.cpp'; then $(CYGPATH_W) 'PROFILEDocHandler.cpp'; else $(CYGPATH_W) '$(srcdir)/PROFILEDocHandler.cpp'; fi`; \
-@am__fastdepCXX_TRUE@	then mv -f "$(DEPDIR)/hpcview_bin-PROFILEDocHandler.Tpo" "$(DEPDIR)/hpcview_bin-PROFILEDocHandler.Po"; else rm -f "$(DEPDIR)/hpcview_bin-PROFILEDocHandler.Tpo"; exit 1; fi
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='PROFILEDocHandler.cpp' object='hpcview_bin-PROFILEDocHandler.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(hpcview_bin_CXXFLAGS) $(CXXFLAGS) -c -o hpcview_bin-PROFILEDocHandler.obj `if test -f 'PROFILEDocHandler.cpp'; then $(CYGPATH_W) 'PROFILEDocHandler.cpp'; else $(CYGPATH_W) '$(srcdir)/PROFILEDocHandler.cpp'; fi`
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(hpcview_bin_CXXFLAGS) $(CXXFLAGS) -c -o hpcview_bin-EvalNode.obj `if test -f 'EvalNode.cpp'; then $(CYGPATH_W) 'EvalNode.cpp'; else $(CYGPATH_W) '$(srcdir)/EvalNode.cpp'; fi`
 
 mostlyclean-libtool:
 	-rm -f *.lo

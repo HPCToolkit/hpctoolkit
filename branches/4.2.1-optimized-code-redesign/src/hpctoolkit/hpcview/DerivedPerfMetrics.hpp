@@ -71,17 +71,17 @@ class FilePerfMetric : public PerfMetric {
 public: 
   FilePerfMetric(const char* nm, const char* nativeNm, const char* displayNm,
 		 bool display, bool percent, bool sortBy, 
-		 const char* fname, const char* ftype, Driver* _driver); 
+		 const char* fname, const char* ftype, Driver* driver); 
   FilePerfMetric(const std::string& nm, const std::string& nativeNm, 
 		 const std::string& displayNm,
 		 bool display, bool percent, bool sortBy, 
 		 const std::string& fname, const std::string& ftype, 
-		 Driver* _driver); 
+		 Driver* driver); 
 
   virtual ~FilePerfMetric(); 
   
-  const std::string& FileName() const { return file; }
-  const std::string& FileType() const { return type; } // HPCRUN, PROFILE
+  const std::string& FileName() const { return m_file; }
+  const std::string& FileType() const { return m_type; } // HPCRUN, PROFILE
   
   virtual void Make(NodeRetriever &ret);
   
@@ -91,9 +91,9 @@ private:
   void MakeHPCRUN(NodeRetriever &ret); // read the file
   void MakePROFILE(NodeRetriever &ret); // read the file
 
-  std::string file;
-  std::string type; // for later use
-  Driver* driver;
+  std::string m_file;
+  std::string m_type; // for later use
+  Driver* m_driver;
 };
 
 class ComputedPerfMetric : public PerfMetric {

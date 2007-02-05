@@ -38,18 +38,18 @@
 //***************************************************************************
 //
 // File:
-//    PROFILEDocHandler.h
+//   $Source$
 //
 // Purpose:
-//    XML adaptor for the profile data file (PROFILE)
+//   XML adaptor for the profile data file (PROFILE)
 //
 // Description:
-//    [The set of functions, macros, etc. defined in the file]
+//   [The set of functions, macros, etc. defined in the file]
 //
 //***************************************************************************
 
-#ifndef PROFILEDocHandler_h
-#define PROFILEDocHandler_h
+#ifndef prof_juicy_x_PROFILEDocHandler
+#define prof_juicy_x_PROFILEDocHandler
 
 //************************ System Include Files ******************************
 
@@ -59,22 +59,21 @@
 
 //************************* Xerces Declarations ******************************
 
-#include "HPCViewSAX2.hpp"
+#include "XercesSAX2.hpp"
+#include "DocHandlerArgs.hpp"
+
+#include <lib/prof-juicy/PgmScopeTreeInterface.hpp>
+#include <lib/prof-juicy/PgmScopeTree.hpp>
 
 //************************ Forward Declarations ******************************
-
-class NodeRetriever; 
-class ProcScope; 
-class FileScope; 
-class LoadModScope; 
-class Driver; 
 
 //****************************************************************************
 
 class PROFILEDocHandler : public DefaultHandler {
 public:
 
-  PROFILEDocHandler(NodeRetriever* const retriever, Driver* _driver);
+  PROFILEDocHandler(NodeRetriever* const retriever, 
+		    DocHandlerArgs& args);
   ~PROFILEDocHandler();
 
   // Must be called before parsing starts.  Notifies the handler
@@ -95,8 +94,8 @@ public:
   void warning(const SAXParseException& e);
 
 private:
-  NodeRetriever* nodeRetriever;
-  Driver* driver;
+  NodeRetriever* m_nodeRetriever;
+  DocHandlerArgs& m_args;
 
   // variables for constant values during file processing
   std::string profileFile;
@@ -163,4 +162,4 @@ private:
   std::string msgtext;
 };
 
-#endif  // PROFILEDocHandler_h
+#endif  // prof_juicy_x_PROFILEDocHandler

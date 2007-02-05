@@ -38,18 +38,18 @@
 //***************************************************************************
 //
 // File:
-//    PGMDocHandler.h
+//   $Source$
 //
 // Purpose:
-//    XML adaptor for the program structure file (PGM)
+//   XML adaptor for the program structure file (PGM)
 //
 // Description:
-//    [The set of functions, macros, etc. defined in the file]
+//   [The set of functions, macros, etc. defined in the file]
 //
 //***************************************************************************
 
-#ifndef PGMDocHandler_H
-#define PGMDocHandler_H
+#ifndef prof_juicy_x_PGMDocHandler
+#define prof_juicy_x_PGMDocHandler
 
 //************************ System Include Files ******************************
 
@@ -58,18 +58,15 @@
 
 //************************* User Include Files *******************************
 
-#include "HPCViewSAX2.hpp"
+#include "XercesSAX2.hpp"
+#include "DocHandlerArgs.hpp"
 
+#include <lib/prof-juicy/PgmScopeTreeInterface.hpp>
 #include <lib/prof-juicy/PgmScopeTree.hpp>
 
-#include <lib/support/diagnostics.h>
 #include <lib/support/PointerStack.hpp>
 
 //************************ Forward Declarations ******************************
-
-class Driver;
-
-class NodeRetriever; 
 
 //****************************************************************************
 
@@ -80,7 +77,8 @@ public:
 
 public:
 
-  PGMDocHandler(Doc_t ty, NodeRetriever* const retriever, Driver* _driver);
+  PGMDocHandler(Doc_t ty, NodeRetriever* const retriever, 
+		DocHandlerArgs& args);
   ~PGMDocHandler();
 
   void startElement(const XMLCh* const uri, const XMLCh* const name, const XMLCh* const qname, const Attributes& attributes);
@@ -167,9 +165,9 @@ private:
   void ProcessGroupDocEndTag();
   
 private:
-  Doc_t docty;
-  NodeRetriever* nodeRetriever;
-  Driver* driver;
+  Doc_t m_docty;
+  NodeRetriever* m_nodeRetriever;
+  DocHandlerArgs& m_args;
   
   // variables for constant values during file processing
   double pgmVersion;     // initialized to a negative
@@ -224,4 +222,4 @@ public:
 private:
 };
 
-#endif  // PGMDocHandler_H
+#endif  // prof_juicy_x_PGMDocHandler

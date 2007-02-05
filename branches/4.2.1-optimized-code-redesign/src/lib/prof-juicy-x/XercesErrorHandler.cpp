@@ -55,7 +55,7 @@ using XERCES_CPP_NAMESPACE::XMLString;
 
 //************************* User Include Files *******************************
 
-#include "HPCViewXMLErrHandler.hpp"
+#include "XercesErrorHandler.hpp"
 
 const char *CONFIG = "CONFIGURATION";
 

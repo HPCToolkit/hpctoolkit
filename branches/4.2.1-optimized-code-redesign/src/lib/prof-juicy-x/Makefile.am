@@ -62,37 +62,23 @@ include $(top_srcdir)/src/Makeinclude.config
 #############################################################################
 
 MYSOURCES = \
-	main.cpp \
-	Args.hpp Args.cpp \
-	Driver.hpp Driver.cpp \
-	HPCViewDocParser.hpp HPCViewDocParser.cpp \
+	XercesSAX2.hpp XercesSAX2.cpp \
+	XercesErrorHandler.hpp XercesErrorHandler.cpp \
 	\
-	PerfIndex.hpp \
-	DerivedPerfMetrics.hpp DerivedPerfMetrics.cpp \
-	MathMLExpr.hpp MathMLExpr.cpp \
-	EvalNode.hpp EvalNode.cpp
-
-# Deprecated: XMLAdapter.hpp XMLAdapter.cpp
-# Deprecated:
-#	HTMLDriver.hpp HTMLDriver.cpp
-#	HTMLFile.hpp HTMLFile.cpp
-#	HTMLScopes.hpp HTMLScopes.cpp
-#	HTMLSrcFiles.hpp HTMLSrcFiles.cpp
-#	HTMLTable.hpp HTMLTable.cpp
-#	StaticFiles.hpp StaticFiles.cpp
-
+	DocHandlerArgs.hpp \
+	PGMDocHandler.hpp PGMDocHandler.cpp \
+	PROFILEDocHandler.hpp PROFILEDocHandler.cpp
 
 MYCFLAGS   = @HOST_CFLAGS@   $(HPC_IFLAGS)
 MYCXXFLAGS = @HOST_CXXFLAGS@ $(HPC_IFLAGS) @XERCES_IFLAGS@
 
-MYLDFLAGS = @HOST_CXXFLAGS@
+if IS_HOST_AR
+  MYAR = @HOST_AR@
+else
+  MYAR = $(AR) cru
+endif
 
-MYLDADD = \
-	@HOST_LIBTREPOSITORY@ \
-	$(HPC_LIBPROFJUICYX) $(HPC_LIBPROFJUICY) $(HPC_LIBPROFLEAN) $(HPC_LIBBINUTILS) $(HPC_LIBISA) $(HPC_LIBXML) $(HPC_LIBSUPPORT) \
-	@XERCES_LDFLAGS@ @GNUBINUTILS_LDFLAGS@ \
-	@HOST_HPCVIEW_LDFLAGS@ \
-	-lm
+MYLIBADD = @HOST_LIBTREPOSITORY@
 
 MYCLEAN = @HOST_LIBTREPOSITORY@
 
@@ -100,15 +86,13 @@ MYCLEAN = @HOST_LIBTREPOSITORY@
 # Automake rules
 #############################################################################
 
-bin_SCRIPTS = hpcview
+noinst_LTLIBRARIES = libHPCprof-juicy-x.la
 
-bin_PROGRAMS = hpcview-bin
-
-hpcview_bin_SOURCES  = $(MYSOURCES)
-hpcview_bin_CFLAGS   = $(MYCFLAGS)
-hpcview_bin_CXXFLAGS = $(MYCXXFLAGS)
-hpcview_bin_LDFLAGS  = $(MYLDFLAGS)
-hpcview_bin_LDADD    = $(MYLDADD)
+libHPCprof_juicy_x_la_SOURCES  = $(MYSOURCES)
+libHPCprof_juicy_x_la_CFLAGS   = $(MYCFLAGS)
+libHPCprof_juicy_x_la_CXXFLAGS = $(MYCXXFLAGS)
+libHPCprof_juicy_x_la_AR       = $(MYAR)
+libHPCprof_juicy_x_la_LIBADD   = $(MYLIBADD)
 
 MOSTLYCLEANFILES = $(MYCLEAN)
 

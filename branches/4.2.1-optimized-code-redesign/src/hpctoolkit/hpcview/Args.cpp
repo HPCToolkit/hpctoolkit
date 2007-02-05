@@ -69,7 +69,7 @@ using std::string;
 
 //*************************** Forward Declarations **************************
 
-#define EXPERIMENTDB  "experiment.db"
+#define EXPERIMENTDB  "experiment-db"
 #define EXPERIMENTXML "experiment.xml"
 #define EXPERIMENTCSV "experiment.csv"
 #define EXPERIMENTTSV "experiment.tsv"
