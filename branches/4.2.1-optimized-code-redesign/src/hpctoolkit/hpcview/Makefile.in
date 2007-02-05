@@ -15,7 +15,7 @@
 @SET_MAKE@
 
 # -*-Mode: makefile;-*-
-# $Id: Makefile.am 601 2006-08-21 21:55:36Z eraxxon $
+# $Id: Makefile.am 713 2007-02-05 17:36:58Z eraxxon $
 
 #############################################################################
 #
@@ -31,7 +31,7 @@
 #############################################################################
 
 # -*-Mode: makefile;-*-
-# $Id: Makeinclude.config 604 2006-08-23 14:26:07Z eraxxon $
+# $Id: Makeinclude.config 713 2007-02-05 17:36:58Z eraxxon $
 
 #############################################################################
 #
@@ -364,15 +364,6 @@ MYSOURCES = \
 	MathMLExpr.hpp MathMLExpr.cpp \
 	EvalNode.hpp EvalNode.cpp
 
-
-# Deprecated: XMLAdapter.hpp XMLAdapter.cpp
-# Deprecated:
-#	HTMLDriver.hpp HTMLDriver.cpp
-#	HTMLFile.hpp HTMLFile.cpp
-#	HTMLScopes.hpp HTMLScopes.cpp
-#	HTMLSrcFiles.hpp HTMLSrcFiles.cpp
-#	HTMLTable.hpp HTMLTable.cpp
-#	StaticFiles.hpp StaticFiles.cpp
 MYCFLAGS = @HOST_CFLAGS@   $(HPC_IFLAGS)
 MYCXXFLAGS = @HOST_CXXFLAGS@ $(HPC_IFLAGS) @XERCES_IFLAGS@
 MYLDFLAGS = @HOST_CXXFLAGS@

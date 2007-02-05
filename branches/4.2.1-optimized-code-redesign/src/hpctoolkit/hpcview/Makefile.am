@@ -72,16 +72,6 @@ MYSOURCES = \
 	MathMLExpr.hpp MathMLExpr.cpp \
 	EvalNode.hpp EvalNode.cpp
 
-# Deprecated: XMLAdapter.hpp XMLAdapter.cpp
-# Deprecated:
-#	HTMLDriver.hpp HTMLDriver.cpp
-#	HTMLFile.hpp HTMLFile.cpp
-#	HTMLScopes.hpp HTMLScopes.cpp
-#	HTMLSrcFiles.hpp HTMLSrcFiles.cpp
-#	HTMLTable.hpp HTMLTable.cpp
-#	StaticFiles.hpp StaticFiles.cpp
-
-
 MYCFLAGS   = @HOST_CFLAGS@   $(HPC_IFLAGS)
 MYCXXFLAGS = @HOST_CXXFLAGS@ $(HPC_IFLAGS) @XERCES_IFLAGS@
 
