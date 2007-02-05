@@ -91,9 +91,9 @@ static const char* usage_summary =
 "[options] <binary> <profile>\n";
 
 static const char* usage_details =
-"Converts one csprof output file into a CSPROFILE database.\n"
-"The results are created in the experiment database.\n"
-"The available source files are copied in the directory database/src.\n"
+"Correlates a CSPROF profile metrics with corresponding source code in order\n"
+"to create an Experiment database (ExperimentXML format) for use with\n"
+"hpcviewer.\n"
 "\n"
 "General options:\n"
 "  -v, --verbose [<n>]  Verbose: generate progress messages to stderr at\n"
@@ -108,7 +108,8 @@ static const char* usage_details =
 "Output options:\n"
 "  -o <db-path>, --db <db-path>, --output <db-path>\n"
 "                       Specify Experiment database name <db-path>.\n"
-"                       [./"EXPERIMENTDB"]\n";
+"                       [./"EXPERIMENTDB"]\n"
+"                       Experiment format ["EXPERIMENTXML"]\n";
 
 
 #define CLP CmdLineParser
@@ -153,7 +154,8 @@ void
 Args::Ctor()
 {
   // arguments
-  dbDir = EXPERIMENTDB;
+  dbDir           = EXPERIMENTDB;
+  OutFilename_XML = EXPERIMENTXML;
 
   Diagnostics_SetDiagnosticFilterLevel(1);
 }
@@ -294,6 +296,7 @@ Args::Parse(int argc, const char* const argv[])
       x = norm_x; // replace x with norm_x
     }
     else {
+      DIAG_Msg(1, "Discarding search path: " << x);
       searchPaths.erase(x_it);
     }
     chdir(cwd);

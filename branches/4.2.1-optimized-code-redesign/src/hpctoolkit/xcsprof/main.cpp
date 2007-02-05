@@ -210,12 +210,12 @@ realmain(int argc, char* const* argv)
       }  
       
       // get the start and end PC from the text sections 
-      cout << "*****Current load module is : " << csploadmd->GetName()<<"*****"<< endl; 
+      DIAG_Msg(1, "Load Module: " << csploadmd->GetName());
 #if 0
       VMA tmp1,tmp2;
-      ldmd->GetTextStartEndPC(&tmp1,&tmp2);    
+      ldmd->GetTextStartEndPC(&tmp1,&tmp2);
       ldmd->SetTextStart(tmp1);
-      ldmd->SetTextEnd(tmp2);     
+      ldmd->SetTextEnd(tmp2);
       cout<< "\t LM text started from address : "<< hex <<"0x" << tmp1 << endl;
       cout<< "\t LM text end at the   address : "<< hex <<"0x" << tmp2 << endl; 
       cout<< "\t LM entry point is: "<< hex << "0x" <<  ldmd->GetTextStart() << endl;
@@ -263,7 +263,8 @@ realmain(int argc, char* const* argv)
     
     copySourceFiles (profData, args.searchPaths, dbSourceDirectory);
     
-    WriteCSProfileInDatabase (profData, args.dbDir);
+    string experiment_fnm = args.dbDir + "/" + args.OutFilename_XML;
+    WriteCSProfileInDatabase(profData, experiment_fnm);
     //WriteCSProfile(profData, std::cout, /* prettyPrint */ true);
   }
   catch (...) {

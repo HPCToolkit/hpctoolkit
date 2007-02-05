@@ -115,11 +115,10 @@ const char *CSPROFILEdtd =
 #include <lib/xml/CSPROFILE.dtd.h>
 
 
-void WriteCSProfileInDatabase(CSProfile* prof, const string& dbDirectory) 
+void WriteCSProfileInDatabase(CSProfile* prof, const string& fnm) 
 {
-  string csxmlFileName = dbDirectory+"/profile.xml";
   filebuf fb;
-  fb.open(csxmlFileName.c_str(), ios::out);
+  fb.open(fnm.c_str(), ios::out);
   std::ostream os(&fb);
   WriteCSProfile(prof, os, true);
   fb.close();

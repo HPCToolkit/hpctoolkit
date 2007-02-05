@@ -97,6 +97,7 @@ public:
 
   // Parsed Data: optional arguments
   std::string dbDir;
+  std::string OutFilename_XML;
   std::vector<std::string> searchPaths; // list of serch paths
   std::string pcMapFile; 
   
