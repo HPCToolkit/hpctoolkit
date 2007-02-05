@@ -1,4 +1,4 @@
-// -*-C++-*-
+// -*-Mode: C++;-*-
 // $Id$
 
 // * BeginRiceCopyright *****************************************************
@@ -36,6 +36,17 @@
 // ******************************************************* EndRiceCopyright *
 
 //***************************************************************************
+//
+// File:
+//   $Source$
+//
+// Purpose:
+//   [The purpose of this file]
+//
+// Description:
+//   [The set of functions, macros, etc. defined in the file]
+//
+//***************************************************************************
 
 //************************* System Include Files ****************************
 
@@ -44,196 +55,304 @@ using std::cerr;
 using std::endl;
 
 #include <string>
+using std::string;
 
-#include <unistd.h> // for 'getopt'
-#include <sys/stat.h>
+#include <sys/stat.h> // for mkdir
 #include <sys/types.h>
 #include <sys/errno.h>
 
 //*************************** User Include Files ****************************
 
 #include "Args.hpp"
-#include <lib/support/StrUtil.hpp>
-#include <lib/support/Trace.hpp>
 #include "CSProfileUtils.hpp"
+
+#include <lib/support/diagnostics.h>
+#include <lib/support/Trace.hpp>
+#include <lib/support/StrUtil.hpp>
 
 //*************************** Forward Declarations **************************
 
+#define EXPERIMENTDB  "experiment-db"
+#define EXPERIMENTXML "experiment.xml"
+
+// FIXME
+#ifndef xDEBUG
+#define xDEBUG(flag, code) {if (flag) {code; fflush(stdout); fflush(stderr);}} 
+#endif
+
+#define DEB_PROCESS_ARGUMENTS 0
+
 //***************************************************************************
 
-const char* hpctoolsVerInfo=
+static const char* version_info =
 #include <include/HPCToolkitVersionInfo.h>
 
-void Args::Version()
+static const char* usage_summary =
+"[options] <binary> <profile>\n";
+
+static const char* usage_details =
+"Converts one csprof output file into a CSPROFILE database.\n"
+"The results are created in the experiment database.\n"
+"The available source files are copied in the directory database/src.\n"
+"\n"
+"General options:\n"
+"  -v, --verbose [<n>]  Verbose: generate progress messages to stderr at\n"
+"                       verbosity level <n>.  [1]\n"
+"  -V, --version        Print version information.\n"
+"  -h, --help           Print this help.\n"
+"\n"
+"Correlation options:\n"
+"  -I <path>            Use <path> when searching for source files. May pass\n"
+"                       multiple times.\n"
+"\n"
+"Output options:\n"
+"  -o <db-path>, --db <db-path>, --output <db-path>\n"
+"                       Specify Experiment database name <db-path>.\n"
+"                       [./"EXPERIMENTDB"]\n";
+
+
+#define CLP CmdLineParser
+
+// Note: Changing the option name requires changing the name in Parse()
+CmdLineParser::OptArgDesc Args::optArgs[] = {
+  // Output options
+  { 'o', "output",          CLP::ARG_REQ , CLP::DUPOPT_CLOB, NULL },
+  {  0 , "db",              CLP::ARG_REQ , CLP::DUPOPT_CLOB, NULL },
+
+  { 'I', NULL,              CLP::ARG_OPT,  CLP::DUPOPT_CAT,  ":" },
+
+  // General
+  { 'v', "verbose",         CLP::ARG_OPT,  CLP::DUPOPT_CLOB, NULL },
+  { 'V', "version",         CLP::ARG_NONE, CLP::DUPOPT_CLOB, NULL },
+  { 'h', "help",            CLP::ARG_NONE, CLP::DUPOPT_CLOB, NULL },
+  {  0 , "debug",           CLP::ARG_OPT,  CLP::DUPOPT_CLOB, NULL }, // hidden
+  CmdLineParser_OptArgDesc_NULL_MACRO // SGI's compiler requires this version
+};
+
+#undef CLP
+
+
+//***************************************************************************
+// Args
+//***************************************************************************
+
+Args::Args()
 {
-  cerr << cmd << ": " << hpctoolsVerInfo << endl;
+  Ctor();
 }
 
-void Args::Usage()
+
+Args::Args(int argc, const char* const argv[])
 {
-  cerr
-    << "Usage: " << endl
-    << "  " << cmd << " [-h|-H|-help|--help] [-V|--V|-version|--version] <binary> <profile> [-I src1 ... srcn] -db database \n"
-    << endl;
-  cerr
-    << "Converts one csprof output file into a CSPROFILE database.\n"
-    << "The results are created in the XML file database/xcsprof.xml.\n"
-    << "The available source files are copied in the directory database/src.\n"
-    << "Options:\n"
-    << " -h|-H|-help|--help          : print this help\n"    
-    << " -V|--V|-version|--version   : print version information\n"    
-    << " -I src1 ... srcn : search paths for source files\n"    
-    << endl;
-} 
+  Ctor();
+  Parse(argc, argv);
+}
 
-Args::Args(int argc, char* const* argv)
+
+void
+Args::Ctor()
 {
-  cmd = argv[0]; 
-  xDEBUG (DEB_PROCESS_ARGUMENTS, 
-	  cerr << "start processing arguments\n";);
+  // arguments
+  dbDir = EXPERIMENTDB;
 
-  bool printVersion = false;
-  bool printHelp = false;
-  //other options: prettyPrintOutput = false;
+  Diagnostics_SetDiagnosticFilterLevel(1);
+}
 
-  if (argc == 1) {
-    Usage();
-    exit(1);
-  }
 
-  int argIndex=1;
-  
-  if ( !strcmp( argv[argIndex], "-h") || !strcmp( argv[argIndex], "-help") ||
-       !strcmp( argv[argIndex], "-H") || !strcmp( argv[argIndex], "--help")) {
-    Usage();
-    exit(1);
-  }
-
-  if ( !strcmp( argv[argIndex], "-V") || !strcmp( argv[argIndex], "--V") ||
-       !strcmp( argv[argIndex], "-version") || !strcmp( argv[argIndex], "--version")) {
-    Version();
-    exit(1);
-  }
-
-  xDEBUG (DEB_PROCESS_ARGUMENTS, 
-	  cerr << "argc=" << argc << endl;);
-
-  if (argc < 3) {
-    Usage ();
-    exit(1);
-  } 
-
-  progFile = argv[argIndex]; 
-  profFile = argv[argIndex+1]; 
-  argIndex = 3;
-
-  char cwdName[MAX_PATH_SIZE +1];
-  getcwd(cwdName, MAX_PATH_SIZE);
-  string crtDir = cwdName; 
-  if ( (argc>argIndex) && !strcmp(argv[argIndex], "-I")) {
-    xDEBUG (DEB_PROCESS_ARGUMENTS, 
-	    cerr << "adding search paths" << endl;);
-    argIndex ++;
-    while ( (argIndex < argc) &&  strcmp(argv[argIndex], "-db")) {
-      xDEBUG (DEB_PROCESS_ARGUMENTS, 
-	      cerr << "adding search path  " << 
-	      argv[argIndex] << endl;);
-      string searchPath = argv[argIndex];
-      if (chdir (argv[argIndex]) == 0) {
-	char searchPathChr[MAX_PATH_SIZE +1];
-	getcwd(searchPathChr, MAX_PATH_SIZE);
-	string normSearchPath = searchPathChr; 
-	//string normSearchPath = normalizeFilePath(searchPath);
-	searchPaths.push_back(normSearchPath);
-      }
-      chdir (cwdName);
-      argIndex++;
-    }
-  }
-
-  xDEBUG (DEB_PROCESS_ARGUMENTS, 
-	  cerr << "argc=" << argc << 
-	  " argIndex=" << argIndex << endl;);
-  if ( (argc != (argIndex+2)) ||
-       (strcmp(argv[argIndex], "-db"))) {
-    databaseDirectory = crtDir+"/xcsprof-db";
-  } else {
-    databaseDirectory = argv[argIndex+1];
-    databaseDirectory = normalizeFilePath (databaseDirectory);
-  }
-
-  /*
-
-  bool uniqueDatabaseDirectoryCreated ;
-
-  if (mkdir(databaseDirectory, 
-	    S_IRWXU | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH) == -1) {
-    if (errno == EEXIST) {
-      cerr << databaseDirectory << " already exists\n";
-      // attempt to create databaseDirectory+pid;
-      char myPidChr[20];
-      pid_t myPid = getpid();
-      itoa (myPid, myPidChr);
-      String databaseDirectoryPid = databaseDirectory + myPidChr;
-      cerr << "attempting to create alternate database directory "
-	   << databaseDirectoryPid << std::endl;
-      if (mkdir(databaseDirectoryPid, 
-		S_IRWXU | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH) == -1) {
-	cerr << "could not create alternate database directory " << 
-	  databaseDirectoryPid << std::endl;
-	exit(1);
-      } else {
-	cerr << "created unique database directory " << databaseDirectoryPid << std::endl;
-	databaseDirectory = databaseDirectoryPid;
-      }
-
-    } else {
-      cerr << "could not create database directory " << 
-	databaseDirectory << endl;
-      exit (1);
-    }
-  }
-  */
-
-  cerr << "executable: " << progFile << " csprof trace: " << profFile << std::endl;
-  if (searchPaths.size() > 0) {
-    cerr << "search paths: " << std::endl; 
-    for (int i=0; i<searchPaths.size(); i++ ) {
-	cerr << searchPaths[i] << std::endl;
-      }
-  }
-  cerr << "Database directory: " << databaseDirectory << std::endl;
+Args::~Args()
+{
 }
 
 
 void 
-Args::createDatabaseDirectory() {
-  bool uniqueDatabaseDirectoryCreated ;
+Args::PrintVersion(std::ostream& os) const
+{
+  os << GetCmd() << ": " << version_info << endl;
+}
 
-  if (mkdir(databaseDirectory.c_str(), 
+
+void 
+Args::PrintUsage(std::ostream& os) const
+{
+  os << "Usage: " << GetCmd() << " " << usage_summary << endl
+     << usage_details << endl;
+} 
+
+
+void 
+Args::PrintError(std::ostream& os, const char* msg) const
+{
+  os << GetCmd() << ": " << msg << endl
+     << "Try `" << GetCmd() << " --help' for more information." << endl;
+}
+
+void 
+Args::PrintError(std::ostream& os, const std::string& msg) const
+{
+  PrintError(os, msg.c_str());
+}
+
+
+const std::string& 
+Args::GetCmd() const
+{ 
+  return parser.GetCmd();
+}
+
+
+void
+Args::Parse(int argc, const char* const argv[])
+{
+  try {
+    // -------------------------------------------------------
+    // Parse the command line
+    // -------------------------------------------------------
+    parser.Parse(optArgs, argc, argv);
+    
+    // -------------------------------------------------------
+    // Sift through results, checking for semantic errors
+    // -------------------------------------------------------
+    
+    // Special options that should be checked first
+    if (parser.IsOpt("debug")) { 
+      int dbg = 1;
+      if (parser.IsOptArg("debug")) {
+	const string& arg = parser.GetOptArg("debug");
+	dbg = (int)CmdLineParser::ToLong(arg);
+      }
+      Diagnostics_SetDiagnosticFilterLevel(dbg);
+      trace = dbg;
+    }
+    if (parser.IsOpt("help")) { 
+      PrintUsage(std::cerr); 
+      exit(1);
+    }
+    if (parser.IsOpt("version")) { 
+      PrintVersion(std::cerr);
+      exit(1);
+    }
+
+    // Check for other options:
+    if (parser.IsOpt("verbose")) { 
+      int verb = 1;
+      if (parser.IsOptArg("verbose")) {
+	const string& arg = parser.GetOptArg("verbose");
+	verb = (int)CmdLineParser::ToLong(arg);
+      }
+      Diagnostics_SetDiagnosticFilterLevel(verb);
+    }
+
+    // Check for other options: Correlation options
+    if (parser.IsOpt('I')) {
+      string str = parser.GetOptArg('I');
+      StrUtil::tokenize(str, ":", searchPaths);
+    }
+
+    // Check for other options: Output options
+    if (parser.IsOpt("output")) {
+      dbDir = parser.GetOptArg("output");
+    }
+    if (parser.IsOpt("db")) {
+      dbDir = parser.GetOptArg("db");
+    }
+    dbDir = normalizeFilePath(dbDir);
+
+    // Check for required arguments
+    if (parser.GetNumArgs() != 2) {
+      PrintError(std::cerr, "Incorrect number of arguments!");
+      exit(1);
+    }
+    progFile = parser.GetArg(0);
+    profileFile = parser.GetArg(1);
+  }
+  catch (const CmdLineParser::ParseError& x) {
+    PrintError(std::cerr, x.what());
+    exit(1);
+  }
+  catch (const CmdLineParser::Exception& x) {
+    DIAG_EMsg(x.message());
+    exit(1);
+  }
+
+  // -------------------------------------------------------
+  // Postprocess
+  // -------------------------------------------------------
+
+  char cwd[MAX_PATH_SIZE+1];
+  getcwd(cwd, MAX_PATH_SIZE);
+
+  for (std::vector<string>::iterator it = searchPaths.begin(); 
+       it != searchPaths.end(); /* */) {
+    string& x = *it; // current path
+    std::vector<string>::iterator x_it = it;
+    
+    ++it; // advance iterator 
+    
+    if (chdir(x.c_str()) == 0) {
+      char norm_x[MAX_PATH_SIZE+1];
+      getcwd(norm_x, MAX_PATH_SIZE);
+      x = norm_x; // replace x with norm_x
+    }
+    else {
+      searchPaths.erase(x_it);
+    }
+    chdir(cwd);
+  }
+  
+  
+  DIAG_Msg(2, "load module: " << progFile << "\n"
+	   << "profile: " << profileFile << "\n"
+	   << "output: " << dbDir);
+  if (searchPaths.size() > 0) {
+    DIAG_Msg(2, "search paths:");
+    for (int i = 0; i < searchPaths.size(); ++i) {
+      DIAG_Msg(2, "  " << searchPaths[i]);
+    }
+  }
+}
+
+
+void 
+Args::Dump(std::ostream& os) const
+{
+  os << "Args.cmd= " << GetCmd() << endl; 
+  os << "Args.dbDir= " << dbDir << endl; 
+}
+
+void 
+Args::DDump() const
+{
+  Dump(std::cerr);
+}
+
+
+//***************************************************************************
+
+void 
+Args::createDatabaseDirectory() 
+{
+  bool uniqueDatabaseDirectoryCreated;
+
+  if (mkdir(dbDir.c_str(), 
 	    S_IRWXU | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH) == -1) {
     if (errno == EEXIST) {
-      cerr << databaseDirectory << " already exists\n";
-      // attempt to create databaseDirectory+pid;
+      // attempt to create dbDir+pid;
       pid_t myPid = getpid();
       string myPidStr = StrUtil::toStr(myPid);
-      string databaseDirectoryPid = databaseDirectory + myPidStr;
-      cerr << "attempting to create alternate database directory "
-	   << databaseDirectoryPid << std::endl;
-      if (mkdir(databaseDirectoryPid.c_str(), 
+      string dbDirPid = dbDir + "-" + myPidStr;
+      DIAG_Msg(1, "Databse dir '" << dbDir << "' already exists.  Trying " 
+	       << dbDirPid);
+      if (mkdir(dbDirPid.c_str(), 
 		S_IRWXU | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH) == -1) {
-	cerr << "could not create alternate database directory " << 
-	  databaseDirectoryPid << std::endl;
-	exit(1);
-      } else {
-	cerr << "created unique database directory " << databaseDirectoryPid << std::endl;
-	databaseDirectory = databaseDirectoryPid;
+	DIAG_Die("Could not create alternate database directory " << dbDirPid);
+      } 
+      else {
+	DIAG_Msg(1, "Created database directory: " << dbDirPid);
+	dbDir = dbDirPid;
       }
-
-    } else {
-      cerr << "could not create database directory " << 
-	databaseDirectory << endl;
-      exit (1);
+    } 
+    else {
+      DIAG_Die("Could not create database directory " << dbDir);
     }
   }
 }

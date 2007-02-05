@@ -1,4 +1,4 @@
-// -*-C++-*-
+// -*-Mode: C++;-*-
 // $Id$
 
 // * BeginRiceCopyright *****************************************************
@@ -36,49 +36,80 @@
 // ******************************************************* EndRiceCopyright *
 
 //***************************************************************************
+//
+// File:
+//   $Source$
+//
+// Purpose:
+//   [The purpose of this file]
+//
+// Description:
+//   [The set of functions, macros, etc. defined in the file]
+//
+//***************************************************************************
 
 #ifndef Args_h
 #define Args_h
 
 //************************* System Include Files ****************************
 
-#include <vector>
+#include <iostream>
 #include <string>
+#include <vector>
 
 //*************************** User Include Files ****************************
 
-//*************************** Forward Declarations **************************
+#include <include/general.h>
+#include <lib/support/CmdLineParser.hpp>
 
-#define THRESHHOLDING_DISABLED -1
+//*************************** Forward Declarations **************************
 
 //***************************************************************************
 
 class Args {
 public: 
-  Args(int argc, char* const* argv); 
+  Args(); 
+  Args(int argc, const char* const argv[]);
+  ~Args(); 
+
+  // Parse the command line
+  void Parse(int argc, const char* const argv[]);
+
+  // Version and Usage information
+  void PrintVersion(std::ostream& os) const;
+  void PrintUsage(std::ostream& os) const;
   
-  void Version();
-  void Usage();
+  // Error
+  void PrintError(std::ostream& os, const char* msg) const;
+  void PrintError(std::ostream& os, const std::string& msg) const;
+
+  // Dump
+  void Dump(std::ostream& os = std::cerr) const;
+  void DDump() const;
+
+public:
   void createDatabaseDirectory();
 
 public:  
-  std::string cmd; 
 
-  // arguments - options
+  // Parsed Data: Command
+  const std::string& GetCmd() const;
+
+  // Parsed Data: optional arguments
+  std::string dbDir;
+  std::vector<std::string> searchPaths; // list of serch paths
   std::string pcMapFile; 
   
-  // arguments
+  // Parsed Data: arguments
   std::string progFile; // binary that was profiled
-  std::string profFile; // profiling output for 'progFile'
-  std::vector<std::string> searchPaths; // list of serch paths
-  std::string databaseDirectory; 
+  std::string profileFile; // profiling output for 'progFile'
+
+private:
+  void Ctor();
+
+private:
+  static CmdLineParser::OptArgDesc optArgs[];
+  CmdLineParser parser;
 }; 
-
-// FIXME
-#ifndef xDEBUG
-#define xDEBUG(flag, code) {if (flag) {code; fflush(stdout); fflush(stderr);}} 
-#endif
-
-#define DEB_PROCESS_ARGUMENTS 0
 
 #endif

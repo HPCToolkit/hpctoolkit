@@ -162,6 +162,7 @@ WriteCSProfile(CSProfile* prof, std::ostream& os, bool prettyPrint)
   os.flush();
 }
 
+
 bool 
 AddSourceFileInfoToCSProfile(CSProfile* prof, binutils::LM* lm,
 			     VMA startaddr, VMA endaddr, bool lastone)
@@ -202,6 +203,7 @@ AddSourceFileInfoToCSProfile(CSProfile* prof, binutils::LM* lm,
   return noError;
  }
 
+
 // FIXME: Takes either CSProfCallSiteNode or CSProfStatementNode
 bool 
 AddSourceFileInfoToCSTreeNode(CSProfCodeNode* n, 
@@ -238,45 +240,41 @@ AddSourceFileInfoToCSTreeNode(CSProfCodeNode* n,
   return noError;
 }
 
+
 //****************************************************************************
 // Set of routines to build a scope tree while reading data file
 //****************************************************************************
 
 CSProfile* 
-ReadCSProfileFile_HCSPROFILE(const char* fnm,const char *execnm) 
+ReadCSProfileFile_HCSPROFILE(const char* fnm, const char *execnm) 
 {
   hpcfile_csprof_data_t data; 
   epoch_table_t epochtbl;
   int ret1, ret2;
-
   
   // Read profile
   FILE* fs = hpcfile_open_for_read(fnm);
   ret1 = hpcfile_csprof_read(fs, &data, &epochtbl, hpcfile_alloc_CB, hpcfile_free_CB);  
 
-  if ( ret1 != HPCFILE_OK) { 
-      std::cerr<< "There are errors in reading data file !"  << std::endl;
-       return NULL;
-   }
+  if (ret1 != HPCFILE_OK) {
+    DIAG_Throw("Error reading header (HPC_CSPROF)");
+    return NULL;
+  }
+  
+  suint num_metrics = data.num_metrics;
+  
+  DIAG_Msg(2, "Metrics found: " << num_metrics);
 
-  suint num_of_metrics = data.num_metrics;
-
-  fprintf(stderr, "Number of metrics:%d\n", num_of_metrics);
-  fflush(stderr);
-
-  CSProfile* prof = new CSProfile(num_of_metrics);
+  CSProfile* prof = new CSProfile(num_metrics);
 
   ret2 = hpcfile_cstree_read(fs, prof->GetTree(), 
 			     cstree_create_node_CB, cstree_link_parent_CB,
-			     hpcfile_alloc_CB, hpcfile_free_CB, num_of_metrics); 
-
-  if ( ret2 != HPCFILE_OK) { 
-      std::cerr<< "There is no performance database generated, the reasons could be :\n" 
-               << "\t there is no tree nodes in the data file, i.e no sample collected.\n"
-               << "\t there are errors in cstree_read. "  << std::endl; 
-      delete prof;
-      return NULL;
-   }
+			     hpcfile_alloc_CB, hpcfile_free_CB, num_metrics); 
+  if (ret2 != HPCFILE_OK) { 
+    DIAG_Throw(fnm << ": Error reading HPC_CSTREE. (Or no samples were taken.) [FIXME: should not have been lumped together!]");
+    delete prof;
+    return NULL;
+  }
   
   suint num_of_ldmodules = epochtbl.epoch_modlist->num_loadmodule;
 
@@ -315,7 +313,7 @@ ReadCSProfileFile_HCSPROFILE(const char* fnm,const char *execnm)
   
   // Extract metrics
   
-  for (int i=0; i<num_of_metrics ; i++) {
+  for (int i=0; i<num_metrics ; i++) {
       CSProfileMetric* metric = prof->GetMetric(i);
       metric->SetName(data.metrics[i].metric_name);
       metric->SetFlags(data.metrics[i].flags);
@@ -344,7 +342,7 @@ ReadCSProfileFile_HCSPROFILE(const char* fnm,const char *execnm)
   
   return prof;
 }
-
+\
 static void* 
 cstree_create_node_CB(void* tree, 
 		      hpcfile_cstree_nodedata_t* data,
@@ -382,17 +380,20 @@ cstree_link_parent_CB(void* tree, void* node, void* parent)
   n->Link(p);
 }
 
+
 static void* 
 hpcfile_alloc_CB(size_t sz)
 {
   return (new char[sz]);
 }
 
+
 static void  
 hpcfile_free_CB(void* mem)
 {
   delete[] (char*)mem;
 }
+
 
 // ConvertOpIPToIP: Find the instruction pointer 'ip' and operation
 // index 'opIdx' from the operation pointer 'opIP'.  The operation
@@ -404,6 +405,7 @@ ConvertOpIPToIP(VMA opIP, VMA& ip, ushort& opIdx)
   opIdx = (ushort)(opIP & 0x3); // the mask ...00011 covers 0, 1 and 2
   ip = opIP - opIdx;
 }
+
 
 bool
 AddPGMToCSProfTree(CSProfTree* tree, const char* progName)
@@ -899,12 +901,14 @@ string normalizeFilePath(const string& filePath,
   return resultPath;
 }
 
+
 string normalizeFilePath(const string& filePath)
 {
   std::stack<string> pathSegmentsStack;
   string resultPath = normalizeFilePath(filePath, pathSegmentsStack);
   return resultPath;
 }
+
 
 /** Decompose a normalized path into path segments.*/
 void breakPathIntoSegments(const string& normFilePath, 
@@ -1122,6 +1126,7 @@ bool innerCopySourceFiles (CSProfNode* node,
 
   return true;
 }
+
 
 void
 LdmdSetUsedFlag(CSProfile* prof)
