@@ -102,8 +102,13 @@ static const char* usage_details =
 "  -h, --help           Print this help.\n"
 "\n"
 "Correlation options:\n"
-"  -I <path>            Use <path> when searching for source files. May pass\n"
+"  -I <path>, --include <path>\n"
+"                       Use <path> when searching for source files. May pass\n"
 "                       multiple times.\n"
+#if 0
+"  -S <file>, --structure <file>\n"
+"                       Use the bloop structure file <file> for correlation.\n"
+#endif
 "\n"
 "Output options:\n"
 "  -o <db-path>, --db <db-path>, --output <db-path>\n"
@@ -120,7 +125,8 @@ CmdLineParser::OptArgDesc Args::optArgs[] = {
   { 'o', "output",          CLP::ARG_REQ , CLP::DUPOPT_CLOB, NULL },
   {  0 , "db",              CLP::ARG_REQ , CLP::DUPOPT_CLOB, NULL },
 
-  { 'I', NULL,              CLP::ARG_OPT,  CLP::DUPOPT_CAT,  ":" },
+  { 'I', "include",         CLP::ARG_OPT,  CLP::DUPOPT_CAT,  ":"  },
+  //{ 'S', "structure",       CLP::ARG_OPT,  CLP::DUPOPT_CLOB, NULL },
 
   // General
   { 'v', "verbose",         CLP::ARG_OPT,  CLP::DUPOPT_CLOB, NULL },
@@ -245,8 +251,8 @@ Args::Parse(int argc, const char* const argv[])
     }
 
     // Check for other options: Correlation options
-    if (parser.IsOpt('I')) {
-      string str = parser.GetOptArg('I');
+    if (parser.IsOpt("include")) {
+      string str = parser.GetOptArg("include");
       StrUtil::tokenize(str, ":", searchPaths);
     }
 
