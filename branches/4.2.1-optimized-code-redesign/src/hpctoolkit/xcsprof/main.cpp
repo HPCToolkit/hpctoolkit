@@ -175,59 +175,53 @@ realmain(int argc, char* const* argv)
 
     LdmdSetUsedFlag(profData); 
 
-    int numberofldmd =profData->GetEpoch()->GetNumLdModule() ;      
-    binutils::LM*      ldmd   = NULL; 
-    CSProfLDmodule * csploadmd= NULL; 
-    VMA             startaddr;
-    VMA             endaddr = 0; 
-    bool             lastone ;
+    int num_lm = profData->GetEpoch()->GetNumLdModule() ;      
+    binutils::LM*   lm     = NULL;
+    CSProfLDmodule* csp_lm = NULL;
+    VMA  begVMA;
+    VMA  endVMA = 0; 
+    bool lastone;
     
-    for (int i=numberofldmd-1; i>=0; i--) {   
-      if (i==numberofldmd-1)
-	lastone = true;
-      else 
-	lastone = false; 
+    for (int i = num_lm-1; i >= 0; i--) {
+      lastone = (i == num_lm-1);
       
-      csploadmd = profData->GetEpoch()->GetLdModule(i); 
+      csp_lm = profData->GetEpoch()->GetLdModule(i); 
+      begVMA = csp_lm->GetMapaddr(); // for next csploadmodule  
       
-      startaddr = csploadmd->GetMapaddr(); // for next csploadmodule  
-      
-      if (!(csploadmd->GetUsedFlag())){     //ignore unused loadmodule 
-	endaddr = startaddr-1;
+      if (!(csp_lm->GetUsedFlag())) { // ignore unused loadmodule 
+	endVMA = begVMA-1;
 	continue; 
       }
       
       try {
-	ldmd = new binutils::LM();
-	if (!ldmd->Open(csploadmd->GetName())) //Error message already printed
-	  continue;
-	if (!ldmd->Read())   //Error message already printed
-	  continue;
+	lm = new binutils::LM();
+	lm->Open(csp_lm->GetName());
+	lm->Read();
       }
       catch (...) {
-	DIAG_EMsg("While reading load module '" << csploadmd->GetName() << "'...");
+	DIAG_EMsg("While reading '" << csp_lm->GetName() << "'...");
 	throw;
       }  
       
       // get the start and end PC from the text sections 
-      DIAG_Msg(1, "Load Module: " << csploadmd->GetName());
+      DIAG_Msg(1, "Load Module: " << csp_lm->GetName());
 #if 0
       VMA tmp1,tmp2;
-      ldmd->GetTextStartEndPC(&tmp1,&tmp2);
-      ldmd->SetTextStart(tmp1);
-      ldmd->SetTextEnd(tmp2);
+      lm->GetTextStartEndPC(&tmp1,&tmp2);
+      lm->SetTextStart(tmp1);
+      lm->SetTextEnd(tmp2);
       cout<< "\t LM text started from address : "<< hex <<"0x" << tmp1 << endl;
       cout<< "\t LM text end at the   address : "<< hex <<"0x" << tmp2 << endl; 
-      cout<< "\t LM entry point is: "<< hex << "0x" <<  ldmd->GetTextStart() << endl;
-      cout<< "\t data file mapaddress  from   address : "<< hex <<"0x" << startaddr << endl;
-      cout<< "\t data file mapaddress  supposed end   : "<< hex <<"0x" << endaddr   <<dec<< endl; 
-      // if ldmd is not an excutable, do relocate  
+      cout<< "\t LM entry point is: "<< hex << "0x" <<  lm->GetTextStart() << endl;
+      cout<< "\t data file mapaddress  from   address : "<< hex <<"0x" << begVMA << endl;
+      cout<< "\t data file mapaddress  supposed end   : "<< hex <<"0x" << endVMA   <<dec<< endl; 
+      // if lm is not an excutable, do relocate  
 #endif   
-      if ( !(ldmd->GetType() == binutils::LM::Executable) ) {
-	ldmd->Relocate(startaddr);   
-      }     
+      if ( !(lm->GetType() == binutils::LM::Executable) ) {
+	lm->Relocate(begVMA);   
+      }
       
-      AddSourceFileInfoToCSProfile(profData, ldmd,startaddr,endaddr,lastone);
+      AddSourceFileInfoToCSProfile(profData, lm, begVMA, endVMA, lastone);
       
       // create an extended profile representation
       // normalize call sites 
@@ -240,12 +234,12 @@ realmain(int argc, char* const* argv)
       //                                foo:1   foo:2 
       //  
 	
-      NormalizeInternalCallSites(profData, ldmd,startaddr, endaddr,lastone);
+      NormalizeInternalCallSites(profData, lm, begVMA, endVMA, lastone);
 	
-      endaddr = startaddr-1;
+      endVMA = begVMA-1;
      
       // close current load module and free memory space 
-      delete ldmd;
+      delete lm;
       
     } /* for each load module */ 
 
@@ -261,7 +255,7 @@ realmain(int argc, char* const* argv)
       exit (1);
     }
     
-    copySourceFiles (profData, args.searchPaths, dbSourceDirectory);
+    copySourceFiles(profData, args.searchPaths, dbSourceDirectory);
     
     string experiment_fnm = args.dbDir + "/" + args.OutFilename_XML;
     WriteCSProfileInDatabase(profData, experiment_fnm);

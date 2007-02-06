@@ -98,17 +98,18 @@ extern "C" {
   static void  hpcfile_free_CB(void* mem);
 }
 
+static void 
+ConvertOpIPToIP(VMA opIP, VMA& ip, ushort& opIdx);
 
-bool AddPGMToCSProfTree(CSProfTree* tree, const char* progName);
-
-void ConvertOpIPToIP(VMA opIP, VMA& ip, ushort& opIdx);
+static bool
+AddPGMToCSProfTree(CSProfTree* tree, const char* progName);
 
 static bool 
 FixLeaves(CSProfNode* node);
 
 
 //****************************************************************************
-// Dump a CSProfTree and collect source file information
+// Dump a CSProfTree 
 //****************************************************************************
 
 const char *CSPROFILEdtd =
@@ -140,14 +141,13 @@ WriteCSProfile(CSProfile* prof, std::ostream& os, bool prettyPrint)
   // write out metrics
   suint numberofmetrics = prof->GetNumberOfMetrics();
   for (int i=0; i<numberofmetrics; i++) {
-      CSProfileMetric * metric = prof->GetMetric(i);
-      os << "<METRIC shortName"; WriteAttrNum(os, i);
-      os << " nativeName";       WriteAttrNum(os, metric->GetName());
-      os << " period";           WriteAttrNum(os, metric->GetPeriod());
-      os << " flags";            WriteAttrNum(os, metric->GetFlags());
-      os << "/>\n";
-   }
-
+    CSProfileMetric * metric = prof->GetMetric(i);
+    os << "<METRIC shortName"; WriteAttrNum(os, i);
+    os << " nativeName";       WriteAttrNum(os, metric->GetName());
+    os << " period";           WriteAttrNum(os, metric->GetPeriod());
+    os << " flags";            WriteAttrNum(os, metric->GetFlags());
+    os << "/>\n";
+  }
   os << "</CSPROFILEPARAMS>\n";
 
   os.flush();
@@ -159,84 +159,6 @@ WriteCSProfile(CSProfile* prof, std::ostream& os, bool prettyPrint)
 
   os << "</CSPROFILE>\n";
   os.flush();
-}
-
-
-bool 
-AddSourceFileInfoToCSProfile(CSProfile* prof, binutils::LM* lm,
-			     VMA startaddr, VMA endaddr, bool lastone)
-{
-  bool noError            = true;
-  VMA curr_ip; 
-
-  /* point to the first load module in the Epoch table */
-  CSProfTree* tree = prof->GetTree();
-  CSProfNode* root = tree->GetRoot(); 
-
-#if 0
-  startaddr = lm->GetLM()->GetTextStart();
-  endaddr   = lm->GetLM()->GetTextEnd();     
-
-// FMZ debug
-// callsite IP need to adjusted to the new text start
-  cout << "startadd" << hex <<"0x"<< startaddr <<endl;
-  cout << "endadd"   << hex <<"0x"<< endaddr   <<endl;   
-#endif
-
-  for (CSProfNodeIterator it(root); it.CurNode(); ++it) { 
-    CSProfNode* n = it.CurNode();
-    CSProfCodeNode* nn = dynamic_cast<CSProfCodeNode*>(n);
-    
-    if (nn && (nn->GetType() == CSProfNode::STATEMENT 
-	       || nn->GetType() == CSProfNode::CALLSITE)
-	&& !(nn->GotSrcInfo()))  {
-      curr_ip = nn->GetIP();  //FMZ
-      if ((curr_ip >= startaddr ) &&
-	  (lastone || curr_ip <=endaddr )) { 
-	// in the current load module   
-	AddSourceFileInfoToCSTreeNode(nn,lm,true);
-	nn->SetSrcInfoDone(true);
-      } 
-    }    
-  }
-  return noError;
- }
-
-
-// FIXME: Takes either CSProfCallSiteNode or CSProfStatementNode
-bool 
-AddSourceFileInfoToCSTreeNode(CSProfCodeNode* n, 
-                              binutils::LM* lm,
-                              bool istext)
-{
-  bool noError = true;
-
-  if (n) {
-    string func, file;
-    suint srcLn;
-    lm->GetSourceFileInfo(n->GetIP(), n->GetOpIndex(), func, file, srcLn);
-    func = GetBestFuncName(func);
-
-    n->SetFile(file.c_str());
-    n->SetProc(func.c_str());
-    n->SetLine(srcLn);
-
-    n->SetFileIsText(istext);
-
-    suint procFrameLine;
-    lm->GetProcFirstLineInfo(n->GetIP(), n->GetOpIndex(), procFrameLine);
-    xDEBUG(DEB_PROC_FIRST_LINE,
-	   fprintf(stderr, "after AddSourceFileInfoToCSTreeNode: %s starts at %d, file=%s and p=%s=\n", n->GetProc().c_str(), procFrameLine, file.c_str(), func.c_str()););
-
-    // if file name is missing then using load module name. 
-    if (file.empty() || func.empty()) {
-      n->SetFile(lm->GetName().c_str());
-      n->SetLine(0); //don't need to have line number for loadmodule
-      n->SetFileIsText(false);
-    }
-  }
-  
-  return noError;
 }
 
 
@@ -341,12 +263,13 @@ ReadCSProfileFile_HCSPROFILE(const char* fnm, const char *execnm)
   
   return prof;
 }
-\
+
+
 static void* 
 cstree_create_node_CB(void* tree, 
 		      hpcfile_cstree_nodedata_t* data,
 		      int num_metrics)
- {
+{
   CSProfTree* t = (CSProfTree*)tree; 
   
   VMA ip;
@@ -370,6 +293,7 @@ cstree_create_node_CB(void* tree,
   
   return n;
 }
+
 
 static void  
 cstree_link_parent_CB(void* tree, void* node, void* parent)
@@ -459,6 +383,240 @@ FixLeaves(CSProfNode* node)
 }
 
 
+//****************************************************************************
+// Collect source file information
+//****************************************************************************
+
+bool 
+AddSourceFileInfoToCSProfile(CSProfile* prof, binutils::LM* lm,
+			     VMA begVMA, VMA endVMA, bool lastone)
+{
+  bool noError            = true;
+  VMA curr_ip; 
+
+  /* point to the first load module in the Epoch table */
+  CSProfTree* tree = prof->GetTree();
+  CSProfNode* root = tree->GetRoot(); 
+
+#if 0
+  begVMA = lm->GetLM()->GetTextStart();
+  endVMA   = lm->GetLM()->GetTextEnd();     
+
+// FMZ debug
+// callsite IP need to adjusted to the new text start
+  cout << "startadd" << hex <<"0x"<< begVMA <<endl;
+  cout << "endadd"   << hex <<"0x"<< endVMA   <<endl;   
+#endif
+
+  for (CSProfNodeIterator it(root); it.CurNode(); ++it) { 
+    CSProfNode* n = it.CurNode();
+    CSProfCodeNode* nn = dynamic_cast<CSProfCodeNode*>(n);
+    
+    if (nn && (nn->GetType() == CSProfNode::STATEMENT 
+	       || nn->GetType() == CSProfNode::CALLSITE)
+	&& !(nn->GotSrcInfo()))  {
+      curr_ip = nn->GetIP();  //FMZ
+      if ((curr_ip >= begVMA ) &&
+	  (lastone || curr_ip <=endVMA )) { 
+	// in the current load module   
+	AddSourceFileInfoToCSTreeNode(nn,lm,true);
+	nn->SetSrcInfoDone(true);
+      } 
+    }    
+  }
+  return noError;
+ }
+
+
+// FIXME: Takes either CSProfCallSiteNode or CSProfStatementNode
+bool 
+AddSourceFileInfoToCSTreeNode(CSProfCodeNode* n, 
+                              binutils::LM* lm,
+                              bool istext)
+{
+  bool noError = true;
+
+  if (n) {
+    string func, file;
+    suint srcLn;
+    lm->GetSourceFileInfo(n->GetIP(), n->GetOpIndex(), func, file, srcLn);
+    func = GetBestFuncName(func);
+
+    n->SetFile(file.c_str());
+    n->SetProc(func.c_str());
+    n->SetLine(srcLn);
+
+    n->SetFileIsText(istext);
+
+    suint procFrameLine;
+    lm->GetProcFirstLineInfo(n->GetIP(), n->GetOpIndex(), procFrameLine);
+    xDEBUG(DEB_PROC_FIRST_LINE,
+	   fprintf(stderr, "after AddSourceFileInfoToCSTreeNode: %s starts at %d, file=%s and p=%s=\n", n->GetProc().c_str(), procFrameLine, file.c_str(), func.c_str()););
+
+    // if file name is missing then using load module name. 
+    if (file.empty() || func.empty()) {
+      n->SetFile(lm->GetName().c_str());
+      n->SetLine(0); //don't need to have line number for loadmodule
+      n->SetFileIsText(false);
+    }
+  }
+  
+  return noError;
+}
+
+
+//***************************************************************************
+// Routines for normalizing sibling call sites withing the same procedure
+//***************************************************************************
+
+typedef std::map<string, CSProfProcedureFrameNode*> StringToProcedureFramesMap;
+typedef std::map<string, CSProfProcedureFrameNode*>::iterator 
+  StringToProcedureFramesMapIt;
+typedef std::map<string, CSProfProcedureFrameNode*>::value_type
+  StringToProcedureFramesMapVal;
+
+bool NormalizeSameProcedureChildren(CSProfile* prof, binutils::LM *lm,
+				    VMA begVMA, VMA endVMA, bool lastone);
+
+bool 
+NormalizeInternalCallSites(CSProfile* prof, binutils::LM *lm, 
+                           VMA begVMA, VMA endVMA, bool lastone)
+{
+  // Remove duplicate/inplied file and procedure information from tree
+  bool pass1 = NormalizeSameProcedureChildren(prof, lm, 
+					      begVMA, endVMA, lastone);
+  return (pass1);
+}
+
+
+// FIXME
+// If pc values from the leaves map to the same source file info,
+// coalese these leaves into one.
+bool NormalizeSameProcedureChildren(CSProfile* prof, CSProfNode* node, 
+				    binutils::LM* lm,
+                                    VMA begVMA, VMA endVMA, bool lastone);
+
+bool 
+NormalizeSameProcedureChildren(CSProfile* prof, binutils::LM *lm,
+                               VMA begVMA, VMA endVMA, bool lastone)
+{
+  CSProfTree* csproftree = prof->GetTree();
+  if (!csproftree) { return true; }
+  
+  xDEBUG(DEB_UNIFY_PROCEDURE_FRAME,
+	 fprintf(stderr, "start normalizing same procedure children\n");
+	 );
+
+  return NormalizeSameProcedureChildren(prof,csproftree->GetRoot(),lm,begVMA,endVMA,lastone);
+}
+
+
+bool 
+NormalizeSameProcedureChildren(CSProfile* prof, CSProfNode* node, 
+			       binutils::LM *lm,
+                               VMA begVMA, VMA endVMA, bool lastone)
+{
+  bool noError = true;
+  
+  if (!node) { return noError; }
+
+  // FIXME: Use this set to determine if we have a duplicate source line
+  StringToProcedureFramesMap proceduresMap;
+
+  // For each immediate child of this node...
+  for (CSProfNodeChildIterator it(node); it.Current(); /* */) {
+    
+    CSProfCodeNode* child = dynamic_cast<CSProfCodeNode*>(it.CurNode());  
+    DIAG_Assert(child, ""); // always true (FIXME)
+    
+    it++; // advance iterator -- it is pointing at 'child' 
+
+    // recur 
+    if (! child->IsLeaf()) {
+      noError = noError && NormalizeSameProcedureChildren(prof, child, lm, begVMA, endVMA, lastone);
+    }
+    
+    bool inspect = (child->GetType() == CSProfNode::CALLSITE 
+		    || child->GetType() == CSProfNode::STATEMENT);
+    
+    if (inspect) {
+      CSProfCodeNode* c = child; // must be CALLSITE or STATEMENT!
+
+      VMA curr_ip = c->GetIP(); //FMZ
+      if ((curr_ip >= begVMA) && (lastone || curr_ip <= endVMA)) {
+	//only handle functions in the current load module
+        xDEBUG(DEB_UNIFY_PROCEDURE_FRAME,
+	       fprintf(stderr, "analyzing node %s %lx\n", 
+		       c->GetProc().c_str(), c->GetIP()););
+	
+	string myid = c->GetFile() + c->GetProc();
+
+	StringToProcedureFramesMapIt it = proceduresMap.find(myid);
+	CSProfProcedureFrameNode* procFrameNode;
+	if (it != proceduresMap.end()) { 
+	  // found 
+	  procFrameNode = (*it).second;
+	} 
+	else { 
+	  // no entry found -- add
+	  procFrameNode= new CSProfProcedureFrameNode(NULL); 
+	  procFrameNode->SetFile(c->GetFile());
+	  
+	  string procFrameName = c->GetProc();
+	  
+	  xDEBUG(DEB_UNIFY_PROCEDURE_FRAME,
+		 std::cerr << "c->GetProc:" << procFrameName << std::endl;
+		 );
+	  
+	  if ( !procFrameName.empty() ) {
+	    xDEBUG(DEB_UNIFY_PROCEDURE_FRAME,
+		   std::cerr << "non empty procedure" << std::endl;
+		   );
+	  } 
+	  else {
+	    procFrameName = string("unknown ") + StrUtil::toStr(c->GetIP(), 16);
+	    xDEBUG(DEB_UNIFY_PROCEDURE_FRAME,
+		   std::cerr << "empty procedure; use procedure name" 
+		   << procFrameName << std::endl;);
+	  }
+	  procFrameNode->SetProc(procFrameName);
+	  
+	  // if the procedure name could not be found, use 
+	  // unknown 0Xipaddr
+	  
+	  procFrameNode->SetFileIsText(c->FileIsText());
+	  
+	  if (!procFrameNode->FileIsText()) {
+	    // if child is not text: set f line to 0 and is text to false
+	    procFrameNode->SetLine(0);
+	  } 
+	  else {
+	    // determine the first line of the enclosing procedure
+	    suint procFrameLine;
+	    xDEBUG(DEB_PROC_FIRST_LINE,
+		   fprintf(stderr, "looking up the first line for %s\n",
+			   c->GetProc().c_str()););
+	    //  determine the appropriate module info for the current 
+	    //  procedure frame
+	    
+	    lm->GetProcFirstLineInfo(c->GetIP(), c->GetOpIndex(), procFrameLine);
+	    procFrameNode->SetLine(procFrameLine);
+	  }
+	  
+	  procFrameNode->Link(node);
+	  proceduresMap.insert(StringToProcedureFramesMapVal(myid, 
+							     procFrameNode));
+	}
+	
+	child->Unlink();
+	c->Link(procFrameNode);
+      }
+    } 
+  }
+  return noError;
+}
+
+
 //***************************************************************************
 // Routines for normalizing the ScopeTree
 //***************************************************************************
@@ -470,7 +628,6 @@ NormalizeCSProfile(CSProfile* prof)
 {
   // Remove duplicate/inplied file and procedure information from tree
   bool pass1 = true;
-
   bool pass2 = CoalesceCallsiteLeaves(prof);
   
   return (pass1 && pass2);
@@ -558,158 +715,10 @@ CoalesceCallsiteLeaves(CSProfNode* node)
   return noError;
 }
 
+
 //***************************************************************************
-// Routines for normalizing sibling call sites withing the same procedure
+// 
 //***************************************************************************
-typedef std::map<string, CSProfProcedureFrameNode*> StringToProcedureFramesMap;
-typedef std::map<string, CSProfProcedureFrameNode*>::iterator 
-  StringToProcedureFramesMapIt;
-typedef std::map<string, CSProfProcedureFrameNode*>::value_type
-  StringToProcedureFramesMapVal;
-
-bool NormalizeSameProcedureChildren(CSProfile* prof, binutils::LM *lm,
-				    VMA startaddr, VMA endaddr, bool lastone);
-
-bool 
-NormalizeInternalCallSites(CSProfile* prof, binutils::LM *lm, 
-                           VMA startaddr, VMA endaddr, bool lastone)
-{
-  // Remove duplicate/inplied file and procedure information from tree
-  bool pass1 = true;
-
-  bool pass2 = NormalizeSameProcedureChildren(prof, lm, 
-					      startaddr, endaddr, lastone);
-  
-  return (pass1 && pass2);
-}
-
-
-// FIXME
-// If pc values from the leaves map to the same source file info,
-// coalese these leaves into one.
-bool NormalizeSameProcedureChildren(CSProfile* prof, CSProfNode* node, 
-				    binutils::LM* lm,
-                                    VMA startaddr, VMA endaddr, bool lastone);
-
-bool 
-NormalizeSameProcedureChildren(CSProfile* prof, binutils::LM *lm,
-                               VMA startaddr, VMA endaddr, bool lastone)
-{
-  CSProfTree* csproftree = prof->GetTree();
-  if (!csproftree) { return true; }
-  
-  xDEBUG(DEB_UNIFY_PROCEDURE_FRAME,
-	 fprintf(stderr, "start normalizing same procedure children\n");
-	 );
-
-  return NormalizeSameProcedureChildren(prof,csproftree->GetRoot(),lm,startaddr,endaddr,lastone);
-}
-
-
-bool 
-NormalizeSameProcedureChildren(CSProfile* prof, CSProfNode* node, 
-			       binutils::LM *lm,
-                               VMA startaddr, VMA endaddr, bool lastone)
-{
-  bool noError = true;
-  
-  if (!node) { return noError; }
-
-  // FIXME: Use this set to determine if we have a duplicate source line
-  StringToProcedureFramesMap proceduresMap;
-
-  // For each immediate child of this node...
-  for (CSProfNodeChildIterator it(node); it.Current(); /* */) {
-    
-    CSProfCodeNode* child = dynamic_cast<CSProfCodeNode*>(it.CurNode());  
-    DIAG_Assert(child, ""); // always true (FIXME)
-    
-    it++; // advance iterator -- it is pointing at 'child' 
-
-    // recur 
-    if (! child->IsLeaf()) {
-      noError = noError && NormalizeSameProcedureChildren(prof, child, lm,startaddr, endaddr, lastone);
-    }
-    
-    bool inspect = (child->GetType() == CSProfNode::CALLSITE 
-		    || child->GetType() == CSProfNode::STATEMENT);
-    
-    if (inspect) {
-      CSProfCodeNode* c = child; // must be CALLSITE or STATEMENT!
-
-      VMA curr_ip = c->GetIP(); //FMZ
-      if ((curr_ip >= startaddr) && (lastone || curr_ip <= endaddr)) {
-	//only handle functions in the current load module
-        xDEBUG(DEB_UNIFY_PROCEDURE_FRAME,
-	       fprintf(stderr, "analyzing node %s %lx\n", 
-		       c->GetProc().c_str(), c->GetIP()););
-	
-	string myid = c->GetFile() + c->GetProc();
-
-	StringToProcedureFramesMapIt it = proceduresMap.find(myid);
-	CSProfProcedureFrameNode* procFrameNode;
-	if (it != proceduresMap.end()) { 
-	  // found 
-	  procFrameNode = (*it).second;
-	} 
-	else { 
-	  // no entry found -- add
-	  procFrameNode= new CSProfProcedureFrameNode(NULL); 
-	  procFrameNode->SetFile(c->GetFile());
-	  
-	  string procFrameName = c->GetProc();
-	  
-	  xDEBUG(DEB_UNIFY_PROCEDURE_FRAME,
-		 std::cerr << "c->GetProc:" << procFrameName << std::endl;
-		 );
-	  
-	  if ( !procFrameName.empty() ) {
-	    xDEBUG(DEB_UNIFY_PROCEDURE_FRAME,
-		   std::cerr << "non empty procedure" << std::endl;
-		   );
-	  } 
-	  else {
-	    procFrameName = string("unknown ") + StrUtil::toStr(c->GetIP(), 16);
-	    xDEBUG(DEB_UNIFY_PROCEDURE_FRAME,
-		   std::cerr << "empty procedure; use procedure name" 
-		   << procFrameName << std::endl;);
-	  }
-	  procFrameNode->SetProc(procFrameName);
-	  
-	  // if the procedure name could not be found, use 
-	  // unknown 0Xipaddr
-	  
-	  procFrameNode->SetFileIsText(c->FileIsText());
-	  
-	  if (!procFrameNode->FileIsText()) {
-	    // if child is not text: set f line to 0 and is text to false
-	    procFrameNode->SetLine(0);
-	  } 
-	  else {
-	    // determine the first line of the enclosing procedure
-	    suint procFrameLine;
-	    xDEBUG(DEB_PROC_FIRST_LINE,
-		   fprintf(stderr, "looking up the first line for %s\n",
-			   c->GetProc().c_str()););
-	    //  determine the appropriate module info for the current 
-	    //  procedure frame
-	    
-	    lm->GetProcFirstLineInfo(c->GetIP(), c->GetOpIndex(), procFrameLine);
-	    procFrameNode->SetLine(procFrameLine);
-	  }
-	  
-	  procFrameNode->Link(node);
-	  proceduresMap.insert(StringToProcedureFramesMapVal(myid, 
-							     procFrameNode));
-	}
-	
-	child->Unlink();
-	c->Link(procFrameNode);
-      }
-    } 
-  }
-  return noError;
-}
 
 
 /** Perform DFS traversal of the tree nodes and copy
@@ -721,9 +730,11 @@ bool copySourceFiles(CSProfNode* node,
 
 /** Copies the source files for the executable into the database 
     directory. */
-void copySourceFiles(CSProfile *prof, 
-		     std::vector<string>& searchPaths,
-		     const string& dbSourceDirectory) {
+void 
+copySourceFiles(CSProfile *prof, 
+		std::vector<string>& searchPaths,
+		const string& dbSourceDirectory) 
+{
   CSProfTree* csproftree = prof->GetTree();
   if (!csproftree) { return ; }
 
@@ -740,9 +751,11 @@ bool innerCopySourceFiles(CSProfNode* node,
 /** Perform DFS traversal of the tree nodes and copy
     the source files for the executable into the database
     directory. */
-bool copySourceFiles(CSProfNode* node, 
+bool 
+copySourceFiles(CSProfNode* node, 
 		     std::vector<string>& searchPaths,
-		     const string& dbSourceDirectory) {
+		     const string& dbSourceDirectory) 
+{
   xDEBUG(DEB_MKDIR_SRC_DIR, 
 	 cerr << "descend into node" << std::endl;);
   bool noError = true;
@@ -769,8 +782,10 @@ bool copySourceFiles(CSProfNode* node,
  .../dir1/./.... 
  ............./
 */
-string normalizeFilePath(const string& filePath, 
-			 std::stack<string>& pathSegmentsStack) {
+string 
+normalizeFilePath(const string& filePath, 
+			 std::stack<string>& pathSegmentsStack) 
+{
 
   char cwdName[MAX_PATH_SIZE +1];
   getcwd(cwdName, MAX_PATH_SIZE);
@@ -901,7 +916,8 @@ string normalizeFilePath(const string& filePath,
 }
 
 
-string normalizeFilePath(const string& filePath)
+string 
+normalizeFilePath(const string& filePath)
 {
   std::stack<string> pathSegmentsStack;
   string resultPath = normalizeFilePath(filePath, pathSegmentsStack);
@@ -910,7 +926,8 @@ string normalizeFilePath(const string& filePath)
 
 
 /** Decompose a normalized path into path segments.*/
-void breakPathIntoSegments(const string& normFilePath, 
+void 
+breakPathIntoSegments(const string& normFilePath, 
 			   std::stack<string>& pathSegmentsStack)
 {
   string resultPath = normalizeFilePath(normFilePath,
@@ -919,9 +936,10 @@ void breakPathIntoSegments(const string& normFilePath,
 
 
 
-bool innerCopySourceFiles (CSProfNode* node, 
-			   std::vector<string>& searchPaths,
-			   const string& dbSourceDirectory)
+bool 
+innerCopySourceFiles(CSProfNode* node, 
+		     std::vector<string>& searchPaths,
+		     const string& dbSourceDirectory)
 {
   bool inspect; 
   string nodeSourceFile;
