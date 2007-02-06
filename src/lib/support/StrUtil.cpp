@@ -88,6 +88,31 @@ namespace StrUtil {
 //
 // --------------------------------------------------------------------------
 
+void 
+tokenize(const std::string tokenstr, const char* delim,
+	 std::vector<std::string>& tokenvec)
+{
+  const int sz = tokenstr.size();
+  for (size_t begpos = 0, endpos = 0; begpos < sz; begpos = endpos+1) {
+    begpos = tokenstr.find_first_not_of(delim, begpos);
+    if (begpos == string::npos) {
+      break;
+    }
+    
+    endpos = tokenstr.find_first_of(delim, begpos);
+    if (endpos == string::npos) {
+      endpos = sz - 1;
+    }
+    string x = tokenstr.substr(begpos, endpos - begpos);
+    tokenvec.push_back(x);
+  }
+}
+
+
+// --------------------------------------------------------------------------
+//
+// --------------------------------------------------------------------------
+
 long
 toLong(const char* str, unsigned* endidx)
 {

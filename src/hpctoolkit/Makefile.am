@@ -75,10 +75,9 @@ if OPT_ENABLE_HPCRUN
   SUBDIRS += hpcrun
 endif
 
-# added by garvin 11/3/2006. Should this include synchronous too?
-if OPT_ENABLE_CSPROF_ASYNC
-  SUBDIRS += csprof 
-endif
+#if OPT_ENABLE_CSPROF_ASYNC
+#  SUBDIRS += csprof 
+#endif
 
 #if OPT_ENABLE_DEVTOOLS
 #  SUBDIRS += lump

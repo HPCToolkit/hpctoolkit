@@ -59,6 +59,7 @@
 #include <iostream>
 #include <fstream>
 #include <string>
+#include <vector>
 
 #include <inttypes.h> /* commonly available, unlike <stdint.h> */
 
@@ -73,6 +74,18 @@
 //****************************************************************************
 
 namespace StrUtil {
+
+// --------------------------------------------------------------------------
+// tokenize
+//
+// Given a string of tokens 'tokenstr' delimited by 'delim', extract
+// and place each token string in 'tokenvec'.
+//
+// --------------------------------------------------------------------------
+
+void 
+tokenize(const std::string tokenstr, const char* delim,
+	 std::vector<std::string>& tokenvec);
 
 // --------------------------------------------------------------------------
 // string -> numerical types

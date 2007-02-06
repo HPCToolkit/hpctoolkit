@@ -631,16 +631,13 @@ binutils::LM::ReadSymbolTables()
     // don't want this warning emitted for every single mips binary.)
 
     if (bfd_get_arch(impl->abfd) != bfd_arch_mips) {
-      cerr << "Warning: `" << GetName() << "': No regular symbols found;"
-	   << " will look for dynamic symbols.\n";
-      cerr.flush();
+      DIAG_Msg(1, "'" << GetName() << "': No regular symbols found; consulting dynamic symbols.");
     }
 
     bytesNeeded = bfd_get_dynamic_symtab_upper_bound(impl->abfd);
     if (bytesNeeded <= 0) {
       // We can't find any symbols. 
-      cerr << "Warning: `" << GetName() << "': No dynamic symbols found.\n";
-      cerr.flush();      
+      DIAG_Msg(1, "Warning: '" << GetName() << "': No dynamic symbols found.");
       return false;
     }
     
