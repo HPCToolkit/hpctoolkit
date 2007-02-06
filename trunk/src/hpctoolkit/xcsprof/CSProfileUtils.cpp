@@ -79,10 +79,9 @@ using namespace std; // For compatibility with non-std C headers
 
 #include <lib/support/diagnostics.h>
 
-#if 0
-#define XCSPROF_DEBUG 1   
-#define DEB_ON_LINUX 0
-#endif
+//*************************** Forward Declarations ***************************
+
+#define DBG_NORM_PROC_FRAME 0
 
 //*************************** Forward Declarations ***************************
 
@@ -167,18 +166,21 @@ WriteCSProfile(CSProfile* prof, std::ostream& os, bool prettyPrint)
 //****************************************************************************
 
 CSProfile* 
-ReadCSProfileFile_HCSPROFILE(const char* fnm, const char *execnm) 
+ReadProfile_CSPROF(const char* fnm, const char *execnm) 
 {
   hpcfile_csprof_data_t data; 
   epoch_table_t epochtbl;
   int ret1, ret2;
   
+  // ------------------------------------------------------------
   // Read profile
-  FILE* fs = hpcfile_open_for_read(fnm);
-  ret1 = hpcfile_csprof_read(fs, &data, &epochtbl, hpcfile_alloc_CB, hpcfile_free_CB);  
+  // ------------------------------------------------------------
 
+  FILE* fs = hpcfile_open_for_read(fnm);
+  ret1 = hpcfile_csprof_read(fs, &data, &epochtbl, hpcfile_alloc_CB, 
+			     hpcfile_free_CB);
   if (ret1 != HPCFILE_OK) {
-    DIAG_Throw("Error reading header (HPC_CSPROF)");
+    DIAG_Throw(fnm << ": error reading header (HPC_CSPROF)");
     return NULL;
   }
   
@@ -187,66 +189,52 @@ ReadCSProfileFile_HCSPROFILE(const char* fnm, const char *execnm)
   DIAG_Msg(2, "Metrics found: " << num_metrics);
 
   CSProfile* prof = new CSProfile(num_metrics);
-
   ret2 = hpcfile_cstree_read(fs, prof->GetTree(), 
 			     cstree_create_node_CB, cstree_link_parent_CB,
 			     hpcfile_alloc_CB, hpcfile_free_CB, num_metrics); 
   if (ret2 != HPCFILE_OK) { 
-    DIAG_Throw(fnm << ": Error reading HPC_CSTREE. (Or no samples were taken.) [FIXME: should not have been lumped together!]");
+    DIAG_Throw(fnm << ": error reading data (HPC_CSPROF)."
+	       << " (Or no samples were taken.) [FIXME: should not have been lumped together!]");
     delete prof;
     return NULL;
   }
-  
-  suint num_of_ldmodules = epochtbl.epoch_modlist->num_loadmodule;
-
-  CSProfEpoch* epochmdlist = new CSProfEpoch(num_of_ldmodules);
-
-  for (int iv=0; iv< num_of_ldmodules; iv++)
-    { 
-        //get all the  load module
-        CSProfLDmodule* mli = new CSProfLDmodule();
-
-         mli->SetName(epochtbl.epoch_modlist[0].loadmodule[iv].name);
-         mli->SetVaddr(epochtbl.epoch_modlist[0].loadmodule[iv].vaddr);
-         mli->SetMapaddr(epochtbl.epoch_modlist[0].loadmodule[iv].mapaddr);  
-         mli->SetUsedFlag(false);
-         epochmdlist->SetLoadmodule(iv,mli);
-
-    }
-  
-  epochmdlist->SortLoadmoduleByVMA(); 
-
-#ifdef XCSPROF_DEBUG 
-  std::cerr<<"after sorting" << std::endl;
-  epochmdlist->Dump(); 
-#endif 
 
   hpcfile_close(fs);
-#if 0
-  if ( !(ret1 == HPCFILE_OK && ret2 == HPCFILE_OK) ) { 
-    delete prof;
-    return NULL; 
-   }  
-#endif
+
+
+  // ------------------------------------------------------------
+  // 
+  // ------------------------------------------------------------
+  
+  suint num_lm = epochtbl.epoch_modlist->num_loadmodule;
+
+  CSProfEpoch* epochmdlist = new CSProfEpoch(num_lm);
+
+  for (int i = 0; i < num_lm; i++) { 
+    CSProfLDmodule* mli = new CSProfLDmodule();
+    
+    mli->SetName(epochtbl.epoch_modlist[0].loadmodule[i].name);
+    mli->SetVaddr(epochtbl.epoch_modlist[0].loadmodule[i].vaddr);
+    mli->SetMapaddr(epochtbl.epoch_modlist[0].loadmodule[i].mapaddr);  
+    mli->SetUsedFlag(false);
+    epochmdlist->SetLoadmodule(i,mli);
+  }
+  
+  epochmdlist->SortLoadmoduleByVMA(); 
 
   // Extract profiling info
   prof->SetTarget(execnm); 
   
   // Extract metrics
-  
-  for (int i=0; i<num_metrics ; i++) {
-      CSProfileMetric* metric = prof->GetMetric(i);
-      metric->SetName(data.metrics[i].metric_name);
-      metric->SetFlags(data.metrics[i].flags);
-      metric->SetPeriod(data.metrics[i].sample_period);
-   }
+  for (int i = 0; i < num_metrics; i++) {
+    CSProfileMetric* metric = prof->GetMetric(i);
+    metric->SetName(data.metrics[i].metric_name);
+    metric->SetFlags(data.metrics[i].flags);
+    metric->SetPeriod(data.metrics[i].sample_period);
+  }
 
   prof->SetEpoch(epochmdlist);
 
-#if 0
-  std::cerr<<"***** In Prof ***** " << std::endl;
-  prof->ProfileDumpEpoch();
-#endif
 
   // We must deallocate pointer-data
   hpcfile_free_CB(data.target);
@@ -396,19 +384,19 @@ AddSourceFileInfoToCSProfile(CSProfile* prof, binutils::LM* lm,
 
   /* point to the first load module in the Epoch table */
   CSProfTree* tree = prof->GetTree();
-  CSProfNode* root = tree->GetRoot(); 
+  CSProfNode* root = tree->GetRoot();
 
 #if 0
   begVMA = lm->GetLM()->GetTextStart();
-  endVMA   = lm->GetLM()->GetTextEnd();     
+  endVMA = lm->GetLM()->GetTextEnd();
 
 // FMZ debug
 // callsite IP need to adjusted to the new text start
   cout << "startadd" << hex <<"0x"<< begVMA <<endl;
-  cout << "endadd"   << hex <<"0x"<< endVMA   <<endl;   
+  cout << "endadd"   << hex <<"0x"<< endVMA   <<endl;
 #endif
 
-  for (CSProfNodeIterator it(root); it.CurNode(); ++it) { 
+  for (CSProfNodeIterator it(root); it.CurNode(); ++it) {
     CSProfNode* n = it.CurNode();
     CSProfCodeNode* nn = dynamic_cast<CSProfCodeNode*>(n);
     
@@ -425,7 +413,7 @@ AddSourceFileInfoToCSProfile(CSProfile* prof, binutils::LM* lm,
     }    
   }
   return noError;
- }
+}
 
 
 // FIXME: Takes either CSProfCallSiteNode or CSProfStatementNode
@@ -435,7 +423,7 @@ AddSourceFileInfoToCSTreeNode(CSProfCodeNode* n,
                               bool istext)
 {
   bool noError = true;
-
+  
   if (n) {
     string func, file;
     suint srcLn;
@@ -469,15 +457,22 @@ AddSourceFileInfoToCSTreeNode(CSProfCodeNode* n,
 // Routines for normalizing sibling call sites withing the same procedure
 //***************************************************************************
 
-typedef std::map<string, CSProfProcedureFrameNode*> StringToProcedureFramesMap;
-typedef std::map<string, CSProfProcedureFrameNode*>::iterator 
-  StringToProcedureFramesMapIt;
-typedef std::map<string, CSProfProcedureFrameNode*>::value_type
-  StringToProcedureFramesMapVal;
+
+typedef std::map<string, CSProfProcedureFrameNode*> StringToProcFrameMap;
 
 bool NormalizeSameProcedureChildren(CSProfile* prof, binutils::LM *lm,
 				    VMA begVMA, VMA endVMA, bool lastone);
 
+// create an extended profile representation
+// normalize call sites 
+//   
+//          main                     main
+//         /    \        =====>        |  
+//        /      \                   foo:<start line foo>
+//       foo:1  foo:2                 /   \
+//                                   /     \
+//                                foo:1   foo:2 
+//  
 bool 
 NormalizeInternalCallSites(CSProfile* prof, binutils::LM *lm, 
                            VMA begVMA, VMA endVMA, bool lastone)
@@ -503,11 +498,10 @@ NormalizeSameProcedureChildren(CSProfile* prof, binutils::LM *lm,
   CSProfTree* csproftree = prof->GetTree();
   if (!csproftree) { return true; }
   
-  xDEBUG(DEB_UNIFY_PROCEDURE_FRAME,
-	 fprintf(stderr, "start normalizing same procedure children\n");
-	 );
-
-  return NormalizeSameProcedureChildren(prof,csproftree->GetRoot(),lm,begVMA,endVMA,lastone);
+  DIAG_MsgIf(DBG_NORM_PROC_FRAME, "start normalizing same procedure children");
+  
+  return NormalizeSameProcedureChildren(prof, csproftree->GetRoot(), lm, 
+					begVMA, endVMA, lastone);
 }
 
 
@@ -521,7 +515,7 @@ NormalizeSameProcedureChildren(CSProfile* prof, CSProfNode* node,
   if (!node) { return noError; }
 
   // FIXME: Use this set to determine if we have a duplicate source line
-  StringToProcedureFramesMap proceduresMap;
+  StringToProcFrameMap proceduresMap;
 
   // For each immediate child of this node...
   for (CSProfNodeChildIterator it(node); it.Current(); /* */) {
@@ -532,7 +526,7 @@ NormalizeSameProcedureChildren(CSProfile* prof, CSProfNode* node,
     it++; // advance iterator -- it is pointing at 'child' 
 
     // recur 
-    if (! child->IsLeaf()) {
+    if (!child->IsLeaf()) {
       noError = noError && NormalizeSameProcedureChildren(prof, child, lm, begVMA, endVMA, lastone);
     }
     
@@ -544,68 +538,53 @@ NormalizeSameProcedureChildren(CSProfile* prof, CSProfNode* node,
 
       VMA curr_ip = c->GetIP(); //FMZ
       if ((curr_ip >= begVMA) && (lastone || curr_ip <= endVMA)) {
-	//only handle functions in the current load module
-        xDEBUG(DEB_UNIFY_PROCEDURE_FRAME,
-	       fprintf(stderr, "analyzing node %s %lx\n", 
-		       c->GetProc().c_str(), c->GetIP()););
+	// only handle functions in the current load module
+	DIAG_MsgIf(DBG_NORM_PROC_FRAME, "analyzing node " << c->GetProc()
+		   << hex << " " << c->GetIP())
 	
 	string myid = c->GetFile() + c->GetProc();
 
-	StringToProcedureFramesMapIt it = proceduresMap.find(myid);
+	StringToProcFrameMap::iterator it = proceduresMap.find(myid);
 	CSProfProcedureFrameNode* procFrameNode;
 	if (it != proceduresMap.end()) { 
 	  // found 
 	  procFrameNode = (*it).second;
 	} 
-	else { 
+	else {
 	  // no entry found -- add
 	  procFrameNode= new CSProfProcedureFrameNode(NULL); 
 	  procFrameNode->SetFile(c->GetFile());
 	  
 	  string procFrameName = c->GetProc();
-	  
-	  xDEBUG(DEB_UNIFY_PROCEDURE_FRAME,
-		 std::cerr << "c->GetProc:" << procFrameName << std::endl;
-		 );
+
+	  DIAG_MsgIf(DBG_NORM_PROC_FRAME, "c->GetProc:" << procFrameName);
 	  
 	  if ( !procFrameName.empty() ) {
-	    xDEBUG(DEB_UNIFY_PROCEDURE_FRAME,
-		   std::cerr << "non empty procedure" << std::endl;
-		   );
+	    DIAG_MsgIf(DBG_NORM_PROC_FRAME, "non empty procedure");
 	  } 
 	  else {
-	    procFrameName = string("unknown ") + StrUtil::toStr(c->GetIP(), 16);
-	    xDEBUG(DEB_UNIFY_PROCEDURE_FRAME,
-		   std::cerr << "empty procedure; use procedure name" 
-		   << procFrameName << std::endl;);
+	    // if the procedure name could not be found, use 
+	    // unknown 0xipaddr
+	    procFrameName = string("unknown ") + StrUtil::toStr(c->GetIP(),16);
+	    DIAG_MsgIf(DBG_NORM_PROC_FRAME, "empty procedure; using " 
+		       << procFrameName);
 	  }
+	  
 	  procFrameNode->SetProc(procFrameName);
-	  
-	  // if the procedure name could not be found, use 
-	  // unknown 0Xipaddr
-	  
 	  procFrameNode->SetFileIsText(c->FileIsText());
-	  
 	  if (!procFrameNode->FileIsText()) {
 	    // if child is not text: set f line to 0 and is text to false
 	    procFrameNode->SetLine(0);
 	  } 
 	  else {
 	    // determine the first line of the enclosing procedure
-	    suint procFrameLine;
-	    xDEBUG(DEB_PROC_FIRST_LINE,
-		   fprintf(stderr, "looking up the first line for %s\n",
-			   c->GetProc().c_str()););
-	    //  determine the appropriate module info for the current 
-	    //  procedure frame
-	    
-	    lm->GetProcFirstLineInfo(c->GetIP(), c->GetOpIndex(), procFrameLine);
-	    procFrameNode->SetLine(procFrameLine);
+	    suint begLn;
+	    lm->GetProcFirstLineInfo(c->GetIP(), c->GetOpIndex(), begLn);
+	    procFrameNode->SetLine(begLn);
 	  }
 	  
 	  procFrameNode->Link(node);
-	  proceduresMap.insert(StringToProcedureFramesMapVal(myid, 
-							     procFrameNode));
+	  proceduresMap.insert(std::make_pair(myid, procFrameNode));
 	}
 	
 	child->Unlink();
@@ -651,10 +630,6 @@ CoalesceCallsiteLeaves(CSProfile* prof)
 
 // FIXME
 typedef std::map<string, CSProfStatementNode*> StringToCallSiteMap;
-typedef std::map<string, CSProfStatementNode*>::iterator 
-  StringToCallSiteMapIt;
-typedef std::map<string, CSProfStatementNode*>::value_type
-  StringToCallSiteMapVal;
 
 bool 
 CoalesceCallsiteLeaves(CSProfNode* node)
@@ -676,40 +651,30 @@ CoalesceCallsiteLeaves(CSProfNode* node)
 		    && (child->GetType() == CSProfNode::STATEMENT));
     
     if (inspect) {
-
       // This child is a leaf. Test for duplicate source line info.
       CSProfStatementNode* c = dynamic_cast<CSProfStatementNode*>(child);
       string myid = string(c->GetFile()) + string(c->GetProc()) 
 	+ StrUtil::toStr(c->GetLine());
       
-      StringToCallSiteMapIt it = sourceInfoMap.find(myid);
+      StringToCallSiteMap::iterator it = sourceInfoMap.find(myid);
       if (it != sourceInfoMap.end()) { 
 	// found -- we have a duplicate
 	CSProfStatementNode* c1 = (*it).second;
 	c1->addMetrics(c);
-	/*
-	  suint newWeight = c->GetWeight() + c1->GetWeight();
-	  suint newCalls = c->GetCalls() + c1->GetCalls();
-	  suint newDeath = c->GetDeath() + c1->GetDeath();
-	  c1->SetWeight(newWeight);
-	  c1->SetCalls(newCalls);
-	  c1->SetDeath(newDeath);
-	*/
 	
 	// remove 'child' from tree
 	child->Unlink();
 	delete child;
-      } else { 
+      } 
+      else { 
 	// no entry found -- add
-	sourceInfoMap.insert(StringToCallSiteMapVal(myid, c));
+	sourceInfoMap.insert(std::make_pair(myid, c));
       }
-
-      
-    } else if (!child->IsLeaf()) {
+    } 
+    else if (!child->IsLeaf()) {
       // Recur:
       noError = noError && CoalesceCallsiteLeaves(child);
     }
-    
   } 
   
   return noError;
@@ -874,15 +839,18 @@ normalizeFilePath(const string& filePath,
 	     cerr << "parsed segment " << crtSegment << std::endl;);
       if ( !strcmp(crtSegment,".")) {
 	//  .../dir1/./.... 
-      } else if (!strcmp(crtSegment,"..")) {
+      } 
+      else if (!strcmp(crtSegment,"..")) {
 	// .../dir1/../...
 	if (pathSegmentsStack.empty()) {
 	  cerr << "Invalid path" << filePath << std::endl ;
 	  return "";
-	} else {
+	} 
+	else {
 	  pathSegmentsStack.pop();
 	}
-      }  else {
+      } 
+      else {
 	if (crtSegmentPos>0) {
 	  pathSegmentsStack.push(string(crtSegment));
 	  xDEBUG(DEB_NORM_SEARCH_PATH, 
@@ -891,7 +859,8 @@ normalizeFilePath(const string& filePath,
       }
       crtSegment[0]='\0';
       crtSegmentPos=0;
-    } else {
+    } 
+    else {
       crtSegment[crtSegmentPos] = filePathChr[crtPos];
       crtSegmentPos++;
     }
@@ -994,6 +963,7 @@ innerCopySourceFiles(CSProfNode* node,
     inspect = false;
     break;
   } 
+  
   if (inspect) {
     // copy source file for current node
     xDEBUG(DEB_MKDIR_SRC_DIR,
@@ -1112,6 +1082,7 @@ innerCopySourceFiles(CSProfNode* node,
       }
     }
   }
+  
   if (inspect && sourceFileWasCopied) {
     switch( node->GetType()) {
     case CSProfNode::CALLSITE:
