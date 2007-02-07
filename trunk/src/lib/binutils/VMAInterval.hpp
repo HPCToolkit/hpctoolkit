@@ -413,6 +413,7 @@ public:
     for (const_iterator it = this->begin(); it != this->end(); ++it) {
       os << it->first.toString() << " --> " << it->second << std::endl;
     }
+    return os;
   }
   
   std::ostream& ddump() const
