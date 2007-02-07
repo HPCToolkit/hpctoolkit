@@ -408,11 +408,11 @@ public:
   virtual ~CodeInfo();
 
   // Line range in source code
-  const suint begLine() const { return mbegLine; }
-  suint&      begLine()       { return mbegLine; }
+  suint  begLine() const { return mbegLine; }
+  suint& begLine()       { return mbegLine; }
 
-  const suint endLine() const { return mendLine; }
-  suint&      endLine()       { return mendLine; }
+  suint  endLine() const { return mendLine; }
+  suint& endLine()       { return mendLine; }
 
   // SetLineRange: 
   void SetLineRange(suint begLn, suint endLn, int propagate = 1);

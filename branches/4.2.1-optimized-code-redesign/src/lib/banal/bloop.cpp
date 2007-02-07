@@ -1126,6 +1126,8 @@ MergeBogusAlienScopes(CodeInfo* node, FileScope* file)
       }
     }
   }
+  
+  return changed;
 }
 
 

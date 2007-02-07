@@ -222,8 +222,8 @@ private:
     
     bool isAlien() const { return (m_ctxt->Type() == ScopeInfo::ALIEN); }
     
-    const int level() const { return m_level; }
-    int&      level()       { return m_level; }
+    int  level() const { return m_level; }
+    int& level()       { return m_level; }
 
     // debugging:
     //   flags: -1: tight dump / 0: normal dump
