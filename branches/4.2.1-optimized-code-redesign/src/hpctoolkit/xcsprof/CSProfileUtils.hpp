@@ -74,27 +74,23 @@ CSProfile* ReadProfile_CSPROF(const char* fnm, const char *execnm);
 
 //****************************************************************************
 
+void InferCallFrames(CSProfile* prof, VMA begVMA, VMA endVMA,
+		     binutils::LM* lm);
+
+bool NormalizeCSProfile(CSProfile* prof);
+
+//****************************************************************************
+
 void WriteCSProfileInDatabase(CSProfile* prof, 
 			      const std::string& dbDirectory);
 void WriteCSProfile(CSProfile* prof, std::ostream& os,
 		    bool prettyPrint = true);
-
-bool AddSourceFileInfoToCSProfile(CSProfile* prof, binutils::LM* lm,
-				  VMA startaddr, VMA endaddr, bool lastone);
-bool AddSourceFileInfoToCSTreeNode(CSProfCodeNode* node, 
-                                   binutils::LM* lm, bool istext);
 
 void copySourceFiles (CSProfile *prof, 
 		      std::vector<std::string>& searchPaths,
 		      const std::string& dbSourceDirectory);  
 
 void LdmdSetUsedFlag(CSProfile* prof); 
-
-//****************************************************************************
-
-bool NormalizeCSProfile(CSProfile* prof);
-bool NormalizeInternalCallSites(CSProfile* prof, binutils::LM* lm,
-                                VMA startaddr, VMA endaddr, bool lastone);
 
 //****************************************************************************
 

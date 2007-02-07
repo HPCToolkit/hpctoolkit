@@ -372,85 +372,20 @@ FixLeaves(CSProfNode* node)
 
 
 //****************************************************************************
-// Collect source file information
+// Routines for Inferring Call Frames (based on STRUCTURE information)
 //****************************************************************************
 
-bool 
-AddSourceFileInfoToCSProfile(CSProfile* prof, binutils::LM* lm,
-			     VMA begVMA, VMA endVMA, bool lastone)
-{
-  bool noError = true;
-  VMA curr_ip; 
-
-  /* point to the first load module in the Epoch table */
-  CSProfTree* tree = prof->GetTree();
-  CSProfNode* root = tree->GetRoot();
-
-#if 0
-  begVMA = lm->GetLM()->GetTextStart();
-  endVMA = lm->GetLM()->GetTextEnd();
-#endif
-
-  for (CSProfNodeIterator it(root); it.CurNode(); ++it) {
-    CSProfNode* n = it.CurNode();
-    CSProfCodeNode* nn = dynamic_cast<CSProfCodeNode*>(n);
-    
-    if (nn && (nn->GetType() == CSProfNode::STATEMENT 
-	       || nn->GetType() == CSProfNode::CALLSITE)
-	&& !nn->GotSrcInfo()) {
-      curr_ip = nn->GetIP();
-      if ((begVMA <= curr_ip) && (curr_ip <= endVMA || lastone)) { 
-	// in the current load module
-	AddSourceFileInfoToCSTreeNode(nn,lm,true);
-	nn->SetSrcInfoDone(true);
-      }
-    }  
-  }
-  return noError;
-}
-
-
-// FIXME: Takes either CSProfCallSiteNode or CSProfStatementNode
-bool 
-AddSourceFileInfoToCSTreeNode(CSProfCodeNode* n, 
-                              binutils::LM* lm,
-                              bool istext)
-{
-  bool noError = true;
-  if (!n) {
-    return noError;
-  }
-
-  string func, file;
-  suint srcLn;
-  lm->GetSourceFileInfo(n->GetIP(), n->GetOpIndex(), func, file, srcLn);
-  func = GetBestFuncName(func);
-  
-  n->SetFile(file.c_str());
-  n->SetProc(func.c_str());
-  n->SetLine(srcLn);
-  n->SetFileIsText(istext);
-  
-  // if file name is missing then using load module name. 
-  if (file.empty() || func.empty()) {
-    n->SetFile(lm->GetName().c_str());
-    n->SetLine(0); //don't need to have line number for loadmodule
-    n->SetFileIsText(false);
-  }
-  
-  return noError;
-}
-
 
 //***************************************************************************
-// Routines for normalizing sibling call sites withing the same procedure
+// Routines for Inferring Call Frames (based on LM)
 //***************************************************************************
-
 
 typedef std::map<string, CSProfProcedureFrameNode*> StringToProcFrameMap;
 
-bool NormalizeSameProcedureChildren(CSProfile* prof, binutils::LM *lm,
-				    VMA begVMA, VMA endVMA, bool lastone);
+void AddSymbolicInfo(CSProfCodeNode* node, binutils::LM* lm, bool istext);
+
+void InferCallFrames(CSProfile* prof, CSProfNode* node, 
+		     VMA begVMA, VMA endVMA, binutils::LM* lm);
 
 // create an extended profile representation
 // normalize call sites 
@@ -462,46 +397,28 @@ bool NormalizeSameProcedureChildren(CSProfile* prof, binutils::LM *lm,
 //                                   /     \
 //                                foo:1   foo:2 
 //  
-bool 
-NormalizeInternalCallSites(CSProfile* prof, binutils::LM *lm, 
-                           VMA begVMA, VMA endVMA, bool lastone)
-{
-  // Remove duplicate/inplied file and procedure information from tree
-  bool pass1 = NormalizeSameProcedureChildren(prof, lm, 
-					      begVMA, endVMA, lastone);
-  return (pass1);
-}
-
-
 // FIXME
 // If pc values from the leaves map to the same source file info,
 // coalese these leaves into one.
-bool NormalizeSameProcedureChildren(CSProfile* prof, CSProfNode* node, 
-				    binutils::LM* lm,
-                                    VMA begVMA, VMA endVMA, bool lastone);
 
-bool 
-NormalizeSameProcedureChildren(CSProfile* prof, binutils::LM *lm,
-                               VMA begVMA, VMA endVMA, bool lastone)
+void 
+InferCallFrames(CSProfile* prof, VMA begVMA, VMA endVMA, binutils::LM *lm)
 {
   CSProfTree* csproftree = prof->GetTree();
-  if (!csproftree) { return true; }
+  if (!csproftree) { return; }
   
   DIAG_MsgIf(DBG_NORM_PROC_FRAME, "start normalizing same procedure children");
-  
-  return NormalizeSameProcedureChildren(prof, csproftree->GetRoot(), lm, 
-					begVMA, endVMA, lastone);
+  InferCallFrames(prof, csproftree->GetRoot(), begVMA, endVMA, lm);
 }
 
 
-bool 
-NormalizeSameProcedureChildren(CSProfile* prof, CSProfNode* node, 
-			       binutils::LM *lm,
-                               VMA begVMA, VMA endVMA, bool lastone)
+void 
+InferCallFrames(CSProfile* prof, CSProfNode* node, 
+		VMA begVMA, VMA endVMA, binutils::LM* lm)
 {
-  bool noError = true;
-  
-  if (!node) { return noError; }
+  if (!node) { 
+    return; 
+  }
 
   // FIXME: Use this set to determine if we have a duplicate source line
   StringToProcFrameMap proceduresMap;
@@ -509,31 +426,37 @@ NormalizeSameProcedureChildren(CSProfile* prof, CSProfNode* node,
   // For each immediate child of this node...
   for (CSProfNodeChildIterator it(node); it.Current(); /* */) {
     
-    CSProfCodeNode* child = dynamic_cast<CSProfCodeNode*>(it.CurNode());  
+    CSProfCodeNode* child = dynamic_cast<CSProfCodeNode*>(it.CurNode());
     DIAG_Assert(child, ""); // always true (FIXME)
     
     it++; // advance iterator -- it is pointing at 'child' 
 
+    // ------------------------------------------------------------
     // recur 
+    // ------------------------------------------------------------
     if (!child->IsLeaf()) {
-      noError = noError && NormalizeSameProcedureChildren(prof, child, lm, begVMA, endVMA, lastone);
+      InferCallFrames(prof, child, begVMA, endVMA, lm);
     }
-    
+
+    // ------------------------------------------------------------
+    // process this node
+    // ------------------------------------------------------------
     bool inspect = (child->GetType() == CSProfNode::CALLSITE 
 		    || child->GetType() == CSProfNode::STATEMENT);
     
     if (inspect) {
       CSProfCodeNode* c = child; // must be CALLSITE or STATEMENT!
-
       VMA curr_ip = c->GetIP(); //FMZ
-      if ((begVMA <= curr_ip) && (curr_ip <= endVMA || lastone)) {
-	
-	// only handle functions in the current load module
+      
+      // only handle functions in the current load module
+      if (begVMA <= curr_ip && curr_ip <= endVMA) {
 	DIAG_MsgIf(DBG_NORM_PROC_FRAME, "analyzing node " << c->GetProc()
-		   << hex << " " << c->GetIP())
+		   << hex << " " << c->GetIP());
+	
+	AddSymbolicInfo(c, lm, true);
 	
 	string myid = c->GetFile() + c->GetProc();
-
+	
 	StringToProcFrameMap::iterator it = proceduresMap.find(myid);
 	CSProfProcedureFrameNode* procFrameNode;
 	if (it != proceduresMap.end()) { 
@@ -577,12 +500,72 @@ NormalizeSameProcedureChildren(CSProfile* prof, CSProfNode* node,
 	  proceduresMap.insert(std::make_pair(myid, procFrameNode));
 	}
 	
-	child->Unlink();
+	c->Unlink();
 	c->Link(procFrameNode);
       }
     } 
   }
+}
+
+
+//***************************************************************************
+
+#if 0
+bool 
+AddSymbolicInfo(CSProfile* prof, VMA begVMA, VMA endVMA, binutils::LM* lm)
+{
+  bool noError = true;
+  VMA curr_ip; 
+
+  /* point to the first load module in the Epoch table */
+  CSProfTree* tree = prof->GetTree();
+  CSProfNode* root = tree->GetRoot();
+  
+  for (CSProfNodeIterator it(root); it.CurNode(); ++it) {
+    CSProfNode* n = it.CurNode();
+    CSProfCodeNode* nn = dynamic_cast<CSProfCodeNode*>(n);
+    
+    if (nn && (nn->GetType() == CSProfNode::STATEMENT 
+	       || nn->GetType() == CSProfNode::CALLSITE)
+	&& !nn->GotSrcInfo()) {
+      curr_ip = nn->GetIP();
+      if (begVMA <= curr_ip && curr_ip <= endVMA) { 
+	// in the current load module
+	AddSymbolicInfo(nn,lm,true);
+	nn->SetSrcInfoDone(true);
+      }
+    }  
+  }
   return noError;
+}
+#endif
+
+
+// FIXME: Takes either CSProfCallSiteNode or CSProfStatementNode
+void 
+AddSymbolicInfo(CSProfCodeNode* n, binutils::LM* lm, bool istext)
+{
+  bool noError = true;
+  if (!n) {
+    return;
+  }
+
+  string func, file;
+  suint srcLn;
+  lm->GetSourceFileInfo(n->GetIP(), n->GetOpIndex(), func, file, srcLn);
+  func = GetBestFuncName(func);
+  
+  n->SetFile(file.c_str());
+  n->SetProc(func.c_str());
+  n->SetLine(srcLn);
+  n->SetFileIsText(istext);
+  
+  // if file name is missing then using load module name. 
+  if (file.empty() || func.empty()) {
+    n->SetFile(lm->GetName().c_str());
+    n->SetLine(0); //don't need to have line number for loadmodule
+    n->SetFileIsText(false);
+  }
 }
 
 

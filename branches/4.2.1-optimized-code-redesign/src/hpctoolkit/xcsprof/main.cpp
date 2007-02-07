@@ -149,21 +149,22 @@ realmain(int argc, char* const* argv)
 
     // Note that this assumes iteration in reverse sorted order
     int num_lm = profData->GetEpoch()->GetNumLdModule();
-    VMA endVMA = 0; 
+    VMA endVMA = VMA_MAX;
     
     for (int i = num_lm - 1; i >= 0; i--) {
       CSProfLDmodule* csp_lm = profData->GetEpoch()->GetLdModule(i); 
+      const std::string& lm_fnm = csp_lm->GetName();
       VMA begVMA = csp_lm->GetMapaddr(); // for next csploadmodule
       
       if (csp_lm->GetUsedFlag()) {
 	binutils::LM* lm = NULL;
 	try {
 	  lm = new binutils::LM();
-	  lm->Open(csp_lm->GetName());
+	  lm->Open(lm_fnm.c_str());
 	  lm->Read();
 	}
 	catch (...) {
-	  DIAG_EMsg("While reading '" << csp_lm->GetName() << "'...");
+	  DIAG_EMsg("While reading '" << lm_fnm << "'...");
 	  throw;
 	}
 	
@@ -172,11 +173,8 @@ realmain(int argc, char* const* argv)
 	if (lm->GetType() != binutils::LM::Executable) {
 	  lm->Relocate(begVMA);   
 	}
-
-	// FIXME: remove 'last' by initializing endVMA to the max value
-	bool last = (i == (num_lm - 1));
-	AddSourceFileInfoToCSProfile(profData, lm, begVMA, endVMA, last);
-	NormalizeInternalCallSites(profData, lm, begVMA, endVMA, last);
+	
+	InferCallFrames(profData, begVMA, endVMA, lm);
 	
 	delete lm;
       }

@@ -53,6 +53,7 @@
 
 //************************* System Include Files ****************************
 
+#include <string>
 #include <vector>
 #include <algorithm>
 #include <iostream>
@@ -67,27 +68,24 @@
 
 #include <lib/support/NonUniformDegreeTree.hpp>
 #include <lib/support/Unique.hpp>
-#include <lib/support/String.hpp>
 
 //*************************** Forward Declarations ***************************
 
-
-
-class CSProfLDmodule:public Unique {
+class CSProfLDmodule : public Unique {
 public:
    // Constructor/Destructor
     CSProfLDmodule();
 
     virtual ~CSProfLDmodule();
 
-    String  GetName() const{return name;}
+    const std::string& GetName() const{return name;}
 
     VMA GetVaddr() const {return vaddr; }
 
     VMA GetMapaddr() const {return mapaddr;} 
     bool GetUsedFlag() const {return used;}
 
-    void SetName(const char* s) {name = s; }
+  void SetName(const char* s) { name = (s) ? s: ""; }
     void SetVaddr(VMA  v) {vaddr=v;}
     void SetMapaddr(VMA  m) {mapaddr=m; }  
     void SetUsedFlag(bool b) {used=b;}
@@ -101,7 +99,7 @@ public:
 
 private: 
   binutils::LM* lm;
-  String name;
+  std::string name;
   VMA vaddr;
   VMA mapaddr;  
   bool used;
