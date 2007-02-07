@@ -62,9 +62,11 @@ include $(top_srcdir)/src/Makeinclude.config
 #############################################################################
 
 MYSOURCES = \
+	XercesUtil.hpp XercesUtil.cpp \
 	XercesSAX2.hpp XercesSAX2.cpp \
 	XercesErrorHandler.hpp XercesErrorHandler.cpp \
 	\
+	PGMReader.hpp PGMReader.cpp \
 	DocHandlerArgs.hpp \
 	PGMDocHandler.hpp PGMDocHandler.cpp \
 	PROFILEDocHandler.hpp PROFILEDocHandler.cpp

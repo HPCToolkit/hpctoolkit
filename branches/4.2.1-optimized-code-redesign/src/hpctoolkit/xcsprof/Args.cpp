@@ -105,10 +105,8 @@ static const char* usage_details =
 "  -I <path>, --include <path>\n"
 "                       Use <path> when searching for source files. May pass\n"
 "                       multiple times.\n"
-#if 0
 "  -S <file>, --structure <file>\n"
 "                       Use the bloop structure file <file> for correlation.\n"
-#endif
 "\n"
 "Output options:\n"
 "  -o <db-path>, --db <db-path>, --output <db-path>\n"
@@ -126,7 +124,7 @@ CmdLineParser::OptArgDesc Args::optArgs[] = {
   {  0 , "db",              CLP::ARG_REQ , CLP::DUPOPT_CLOB, NULL },
 
   { 'I', "include",         CLP::ARG_OPT,  CLP::DUPOPT_CAT,  ":"  },
-  //{ 'S', "structure",       CLP::ARG_OPT,  CLP::DUPOPT_CLOB, NULL },
+  { 'S', "structure",       CLP::ARG_OPT,  CLP::DUPOPT_CLOB, NULL },
 
   // General
   { 'v', "verbose",         CLP::ARG_OPT,  CLP::DUPOPT_CLOB, NULL },
@@ -204,7 +202,9 @@ Args::PrintError(std::ostream& os, const std::string& msg) const
 const std::string& 
 Args::GetCmd() const
 { 
-  return parser.GetCmd();
+  // avoid error messages with: /.../HPCToolkit-x86_64-Linux/bin/xcsprof-bin
+  static string cmd = "xcsprof";
+  return cmd; // parser.GetCmd(); 
 }
 
 
@@ -255,7 +255,10 @@ Args::Parse(int argc, const char* const argv[])
       string str = parser.GetOptArg("include");
       StrUtil::tokenize(str, ":", searchPaths);
     }
-
+    if (parser.IsOpt("structure")) {
+      structureFile = parser.GetOptArg("structure");
+    }
+    
     // Check for other options: Output options
     if (parser.IsOpt("output")) {
       dbDir = parser.GetOptArg("output");

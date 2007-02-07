@@ -110,8 +110,10 @@ CONFIG_CLEAN_FILES =
 LTLIBRARIES = $(noinst_LTLIBRARIES)
 am__DEPENDENCIES_1 =
 libHPCprof_juicy_x_la_DEPENDENCIES = $(am__DEPENDENCIES_1)
-am__objects_1 = libHPCprof_juicy_x_la-XercesSAX2.lo \
+am__objects_1 = libHPCprof_juicy_x_la-XercesUtil.lo \
+	libHPCprof_juicy_x_la-XercesSAX2.lo \
 	libHPCprof_juicy_x_la-XercesErrorHandler.lo \
+	libHPCprof_juicy_x_la-PGMReader.lo \
 	libHPCprof_juicy_x_la-PGMDocHandler.lo \
 	libHPCprof_juicy_x_la-PROFILEDocHandler.lo
 am_libHPCprof_juicy_x_la_OBJECTS = $(am__objects_1)
@@ -332,9 +334,11 @@ HPC_LIBSUPPORT = $(top_builddir)/src/lib/support/libHPCsupport.la
 # Local settings
 #############################################################################
 MYSOURCES = \
+	XercesUtil.hpp XercesUtil.cpp \
 	XercesSAX2.hpp XercesSAX2.cpp \
 	XercesErrorHandler.hpp XercesErrorHandler.cpp \
 	\
+	PGMReader.hpp PGMReader.cpp \
 	DocHandlerArgs.hpp \
 	PGMDocHandler.hpp PGMDocHandler.cpp \
 	PROFILEDocHandler.hpp PROFILEDocHandler.cpp
@@ -414,9 +418,11 @@ distclean-compile:
 	-rm -f *.tab.c
 
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCprof_juicy_x_la-PGMDocHandler.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCprof_juicy_x_la-PGMReader.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCprof_juicy_x_la-PROFILEDocHandler.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCprof_juicy_x_la-XercesErrorHandler.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCprof_juicy_x_la-XercesSAX2.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCprof_juicy_x_la-XercesUtil.Plo@am__quote@
 
 .cpp.o:
 @am__fastdepCXX_TRUE@	if $(CXXCOMPILE) -MT $@ -MD -MP -MF "$(DEPDIR)/$*.Tpo" -c -o $@ $<; \
@@ -439,6 +445,13 @@ distclean-compile:
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(LTCXXCOMPILE) -c -o $@ $<
 
+libHPCprof_juicy_x_la-XercesUtil.lo: XercesUtil.cpp
+@am__fastdepCXX_TRUE@	if $(LIBTOOL) --tag=CXX --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprof_juicy_x_la_CXXFLAGS) $(CXXFLAGS) -MT libHPCprof_juicy_x_la-XercesUtil.lo -MD -MP -MF "$(DEPDIR)/libHPCprof_juicy_x_la-XercesUtil.Tpo" -c -o libHPCprof_juicy_x_la-XercesUtil.lo `test -f 'XercesUtil.cpp' || echo '$(srcdir)/'`XercesUtil.cpp; \
+@am__fastdepCXX_TRUE@	then mv -f "$(DEPDIR)/libHPCprof_juicy_x_la-XercesUtil.Tpo" "$(DEPDIR)/libHPCprof_juicy_x_la-XercesUtil.Plo"; else rm -f "$(DEPDIR)/libHPCprof_juicy_x_la-XercesUtil.Tpo"; exit 1; fi
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='XercesUtil.cpp' object='libHPCprof_juicy_x_la-XercesUtil.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(LIBTOOL) --tag=CXX --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprof_juicy_x_la_CXXFLAGS) $(CXXFLAGS) -c -o libHPCprof_juicy_x_la-XercesUtil.lo `test -f 'XercesUtil.cpp' || echo '$(srcdir)/'`XercesUtil.cpp
+
 libHPCprof_juicy_x_la-XercesSAX2.lo: XercesSAX2.cpp
 @am__fastdepCXX_TRUE@	if $(LIBTOOL) --tag=CXX --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprof_juicy_x_la_CXXFLAGS) $(CXXFLAGS) -MT libHPCprof_juicy_x_la-XercesSAX2.lo -MD -MP -MF "$(DEPDIR)/libHPCprof_juicy_x_la-XercesSAX2.Tpo" -c -o libHPCprof_juicy_x_la-XercesSAX2.lo `test -f 'XercesSAX2.cpp' || echo '$(srcdir)/'`XercesSAX2.cpp; \
 @am__fastdepCXX_TRUE@	then mv -f "$(DEPDIR)/libHPCprof_juicy_x_la-XercesSAX2.Tpo" "$(DEPDIR)/libHPCprof_juicy_x_la-XercesSAX2.Plo"; else rm -f "$(DEPDIR)/libHPCprof_juicy_x_la-XercesSAX2.Tpo"; exit 1; fi
@@ -452,6 +465,13 @@ libHPCprof_juicy_x_la-XercesErrorHandler.lo: XercesErrorHandler.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='XercesErrorHandler.cpp' object='libHPCprof_juicy_x_la-XercesErrorHandler.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(LIBTOOL) --tag=CXX --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprof_juicy_x_la_CXXFLAGS) $(CXXFLAGS) -c -o libHPCprof_juicy_x_la-XercesErrorHandler.lo `test -f 'XercesErrorHandler.cpp' || echo '$(srcdir)/'`XercesErrorHandler.cpp
+
+libHPCprof_juicy_x_la-PGMReader.lo: PGMReader.cpp
+@am__fastdepCXX_TRUE@	if $(LIBTOOL) --tag=CXX --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprof_juicy_x_la_CXXFLAGS) $(CXXFLAGS) -MT libHPCprof_juicy_x_la-PGMReader.lo -MD -MP -MF "$(DEPDIR)/libHPCprof_juicy_x_la-PGMReader.Tpo" -c -o libHPCprof_juicy_x_la-PGMReader.lo `test -f 'PGMReader.cpp' || echo '$(srcdir)/'`PGMReader.cpp; \
+@am__fastdepCXX_TRUE@	then mv -f "$(DEPDIR)/libHPCprof_juicy_x_la-PGMReader.Tpo" "$(DEPDIR)/libHPCprof_juicy_x_la-PGMReader.Plo"; else rm -f "$(DEPDIR)/libHPCprof_juicy_x_la-PGMReader.Tpo"; exit 1; fi
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='PGMReader.cpp' object='libHPCprof_juicy_x_la-PGMReader.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(LIBTOOL) --tag=CXX --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprof_juicy_x_la_CXXFLAGS) $(CXXFLAGS) -c -o libHPCprof_juicy_x_la-PGMReader.lo `test -f 'PGMReader.cpp' || echo '$(srcdir)/'`PGMReader.cpp
 
 libHPCprof_juicy_x_la-PGMDocHandler.lo: PGMDocHandler.cpp
 @am__fastdepCXX_TRUE@	if $(LIBTOOL) --tag=CXX --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprof_juicy_x_la_CXXFLAGS) $(CXXFLAGS) -MT libHPCprof_juicy_x_la-PGMDocHandler.lo -MD -MP -MF "$(DEPDIR)/libHPCprof_juicy_x_la-PGMDocHandler.Tpo" -c -o libHPCprof_juicy_x_la-PGMDocHandler.lo `test -f 'PGMDocHandler.cpp' || echo '$(srcdir)/'`PGMDocHandler.cpp; \

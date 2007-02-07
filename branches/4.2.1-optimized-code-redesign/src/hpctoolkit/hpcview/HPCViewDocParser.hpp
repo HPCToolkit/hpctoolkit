@@ -65,7 +65,7 @@ class Driver;
 class HPCViewDocParser {
 public:
   HPCViewDocParser(const std::string& inputFile, 
-		   HPCViewXMLErrHandler &errHndlr);
+		   XercesErrorHandler &errHndlr);
   
   ~HPCViewDocParser();
 

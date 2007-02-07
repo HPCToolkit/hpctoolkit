@@ -66,6 +66,7 @@ using XERCES_CPP_NAMESPACE::XMLString;
 
 #include "PROFILEDocHandler.hpp"
 #include "XercesSAX2.hpp"
+#include "XercesUtil.hpp"
 #include "XercesErrorHandler.hpp"
 
 #include <lib/prof-juicy/PgmScopeTreeInterface.hpp>
@@ -165,7 +166,7 @@ PROFILEDocHandler::Initialize(int metricIndx, const char* profileFileName)
 
 
 void PROFILEDocHandler::startElement(const XMLCh* const uri, const XMLCh* const name, 
-				     const XMLCh* const qname, const Attributes& attributes)
+				     const XMLCh* const qname, const XERCES_CPP_NAMESPACE::Attributes& attributes)
 {
   // -----------------------------------------------------------------
   // PROFILE
@@ -427,17 +428,17 @@ const char *PROFILE = "PROFILE";
 // ---------------------------------------------------------------------------
 void PROFILEDocHandler::error(const SAXParseException& e)
 {
-  HPCViewXMLErrHandler::report(cerr, "hpcview non-fatal error", PROFILE, e);
+  XercesErrorHandler::report(cerr, "PROFILE non-fatal error", PROFILE, e);
 }
 
 void PROFILEDocHandler::fatalError(const SAXParseException& e)
 {
-  HPCViewXMLErrHandler::report(cerr, "hpcview fatal error", PROFILE, e);
+  XercesErrorHandler::report(cerr, "PROFILE fatal error", PROFILE, e);
   exit(1);
 }
 
 void PROFILEDocHandler::warning(const SAXParseException& e)
 {
-  HPCViewXMLErrHandler::report(cerr, "hpcview warning", PROFILE, e);
+  XercesErrorHandler::report(cerr, "PROFILE warning", PROFILE, e);
 }
 

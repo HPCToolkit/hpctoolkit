@@ -61,6 +61,9 @@
 
 #include <include/general.h>
 
+// FIXME: CSProfTree should be merged or at least relocated a la PgmScopeTree
+#include <lib/prof-juicy/PgmScopeTree.hpp>
+
 #include <lib/isa/ISATypes.hpp>
 
 #include <lib/support/diagnostics.h>
@@ -71,8 +74,6 @@
 
 using namespace std;
 int AddXMLEscapeChars(int dmpFlag);
-
-const suint UNDEF_LINE = 0;
 
 //***************************************************************************
 // CSProfTree

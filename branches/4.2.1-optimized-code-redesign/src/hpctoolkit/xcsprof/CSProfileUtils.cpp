@@ -379,7 +379,7 @@ bool
 AddSourceFileInfoToCSProfile(CSProfile* prof, binutils::LM* lm,
 			     VMA begVMA, VMA endVMA, bool lastone)
 {
-  bool noError            = true;
+  bool noError = true;
   VMA curr_ip; 
 
   /* point to the first load module in the Epoch table */
@@ -389,11 +389,6 @@ AddSourceFileInfoToCSProfile(CSProfile* prof, binutils::LM* lm,
 #if 0
   begVMA = lm->GetLM()->GetTextStart();
   endVMA = lm->GetLM()->GetTextEnd();
-
-// FMZ debug
-// callsite IP need to adjusted to the new text start
-  cout << "startadd" << hex <<"0x"<< begVMA <<endl;
-  cout << "endadd"   << hex <<"0x"<< endVMA   <<endl;
 #endif
 
   for (CSProfNodeIterator it(root); it.CurNode(); ++it) {
@@ -402,15 +397,14 @@ AddSourceFileInfoToCSProfile(CSProfile* prof, binutils::LM* lm,
     
     if (nn && (nn->GetType() == CSProfNode::STATEMENT 
 	       || nn->GetType() == CSProfNode::CALLSITE)
-	&& !(nn->GotSrcInfo()))  {
-      curr_ip = nn->GetIP();  //FMZ
-      if ((curr_ip >= begVMA ) &&
-	  (lastone || curr_ip <=endVMA )) { 
-	// in the current load module   
+	&& !nn->GotSrcInfo()) {
+      curr_ip = nn->GetIP();
+      if ((begVMA <= curr_ip) && (curr_ip <= endVMA || lastone)) { 
+	// in the current load module
 	AddSourceFileInfoToCSTreeNode(nn,lm,true);
 	nn->SetSrcInfoDone(true);
-      } 
-    }    
+      }
+    }  
   }
   return noError;
 }
@@ -423,30 +417,25 @@ AddSourceFileInfoToCSTreeNode(CSProfCodeNode* n,
                               bool istext)
 {
   bool noError = true;
+  if (!n) {
+    return noError;
+  }
+
+  string func, file;
+  suint srcLn;
+  lm->GetSourceFileInfo(n->GetIP(), n->GetOpIndex(), func, file, srcLn);
+  func = GetBestFuncName(func);
   
-  if (n) {
-    string func, file;
-    suint srcLn;
-    lm->GetSourceFileInfo(n->GetIP(), n->GetOpIndex(), func, file, srcLn);
-    func = GetBestFuncName(func);
-
-    n->SetFile(file.c_str());
-    n->SetProc(func.c_str());
-    n->SetLine(srcLn);
-
-    n->SetFileIsText(istext);
-
-    suint procFrameLine;
-    lm->GetProcFirstLineInfo(n->GetIP(), n->GetOpIndex(), procFrameLine);
-    xDEBUG(DEB_PROC_FIRST_LINE,
-	   fprintf(stderr, "after AddSourceFileInfoToCSTreeNode: %s starts at %d, file=%s and p=%s=\n", n->GetProc().c_str(), procFrameLine, file.c_str(), func.c_str()););
-
-    // if file name is missing then using load module name. 
-    if (file.empty() || func.empty()) {
-      n->SetFile(lm->GetName().c_str());
-      n->SetLine(0); //don't need to have line number for loadmodule
-      n->SetFileIsText(false);
-    }
+  n->SetFile(file.c_str());
+  n->SetProc(func.c_str());
+  n->SetLine(srcLn);
+  n->SetFileIsText(istext);
+  
+  // if file name is missing then using load module name. 
+  if (file.empty() || func.empty()) {
+    n->SetFile(lm->GetName().c_str());
+    n->SetLine(0); //don't need to have line number for loadmodule
+    n->SetFileIsText(false);
   }
   
   return noError;
@@ -537,7 +526,8 @@ NormalizeSameProcedureChildren(CSProfile* prof, CSProfNode* node,
       CSProfCodeNode* c = child; // must be CALLSITE or STATEMENT!
 
       VMA curr_ip = c->GetIP(); //FMZ
-      if ((curr_ip >= begVMA) && (lastone || curr_ip <= endVMA)) {
+      if ((begVMA <= curr_ip) && (curr_ip <= endVMA || lastone)) {
+	
 	// only handle functions in the current load module
 	DIAG_MsgIf(DBG_NORM_PROC_FRAME, "analyzing node " << c->GetProc()
 		   << hex << " " << c->GetIP())
@@ -749,9 +739,8 @@ copySourceFiles(CSProfNode* node,
 */
 string 
 normalizeFilePath(const string& filePath, 
-			 std::stack<string>& pathSegmentsStack) 
+		  std::stack<string>& pathSegmentsStack)
 {
-
   char cwdName[MAX_PATH_SIZE +1];
   getcwd(cwdName, MAX_PATH_SIZE);
   string crtDir=cwdName; 
@@ -843,7 +832,7 @@ normalizeFilePath(const string& filePath,
       else if (!strcmp(crtSegment,"..")) {
 	// .../dir1/../...
 	if (pathSegmentsStack.empty()) {
-	  cerr << "Invalid path" << filePath << std::endl ;
+	  DIAG_EMsg("Invalid path: " << filePath);
 	  return "";
 	} 
 	else {
@@ -867,7 +856,7 @@ normalizeFilePath(const string& filePath,
   }
 
   if (pathSegmentsStack.empty()) {
-    cerr << "Invalid path" << filePath << std::endl ;
+    DIAG_EMsg("Invalid path: " << filePath);
     return "";
   }
 

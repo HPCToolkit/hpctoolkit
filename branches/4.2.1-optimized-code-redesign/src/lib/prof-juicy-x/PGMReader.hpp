@@ -35,34 +35,39 @@
 // 
 // ******************************************************* EndRiceCopyright *
 
-#ifndef _prof_juicy_x_XercesSAX2_
-#define _prof_juicy_x_XercesSAX2_
+//***************************************************************************
+//
+// File:
+//   $Source$
+//
+// Purpose:
+//   []
+//
+// Description:
+//   [The set of functions, macros, etc. defined in the file]
+//
+//***************************************************************************
+
+#ifndef _prof_juicy_x_PGMReader_
+#define _prof_juicy_x_PGMReader_
 
 //************************ System Include Files ******************************
 
-#include <string>
-
-//************************* Xerces Include Files *****************************
-
-#include <xercesc/sax2/SAX2XMLReader.hpp>
-#include <xercesc/sax2/XMLReaderFactory.hpp>
-using XERCES_CPP_NAMESPACE::SAX2XMLReader;
-using XERCES_CPP_NAMESPACE::SAX2XMLReader;
-using XERCES_CPP_NAMESPACE::SAX2XMLReader;
-using XERCES_CPP_NAMESPACE::XMLReaderFactory;
-using XERCES_CPP_NAMESPACE::XMLUni;
-using XERCES_CPP_NAMESPACE::SAXException;
-
-#include <xercesc/sax2/DefaultHandler.hpp>
-#include <xercesc/sax2/Attributes.hpp>
-
-#include <xercesc/sax/SAXParseException.hpp>
-using XERCES_CPP_NAMESPACE::SAXParseException;
-
-#include <xercesc/sax/ErrorHandler.hpp>
-
 //************************* User Include Files *******************************
+
+#include "PGMDocHandler.hpp"
+#include "DocHandlerArgs.hpp"
+
+#include <lib/prof-juicy/PgmScopeTreeInterface.hpp>
 
 //************************ Forward Declarations ******************************
 
-#endif
+void
+read_PGM(NodeRetriever* pgmTreeInterface,
+	 const char* filenm,
+	 PGMDocHandler::Doc_t docty,
+	 DocHandlerArgs& docHandlerArgs);
+
+//****************************************************************************
+
+#endif  // _prof_juicy_x_PGMReader_
