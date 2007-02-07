@@ -62,7 +62,8 @@ using std::string;
 #include <include/general.h>
 
 #include "CSProfTree.hpp"
-#include <lib/support/Assertion.h>
+
+#include <lib/support/diagnostics.h>
 #include <lib/support/Trace.hpp>
 
 #include <lib/xml/xml.hpp> 
@@ -121,7 +122,7 @@ CSProfNode::NodeTypeToName(NodeType tp)
 CSProfNode::NodeType
 CSProfNode::IntToNodeType(long i) 
 {
-  BriefAssertion((i >= 0) && (i < NUMBER_OF_TYPES));
+  DIAG_Assert((i >= 0) && (i < NUMBER_OF_TYPES), "");
   return (NodeType)i;
 }
 
@@ -129,11 +130,13 @@ CSProfNode::IntToNodeType(long i)
 // CSProfNode, etc: constructors/destructors
 //***************************************************************************
 
+string CSProfCodeNode::BOGUS;
+
 CSProfNode::CSProfNode(NodeType t, CSProfNode* _parent) 
   : NonUniformDegreeTreeNode(_parent), type(t)
 { 
-  BriefAssertion((type == PGM) || (AncestorPgm() == NULL) || 
-		 !AncestorPgm()->IsFrozen());
+  DIAG_Assert((type == PGM) || (AncestorPgm() == NULL) || 
+	      !AncestorPgm()->IsFrozen(), "");
   static unsigned int uniqueId = 0; 
   uid = uniqueId++; 
   xDEBUG(DEB_UNIFY_PROCEDURE_FRAME,
@@ -152,7 +155,7 @@ OkToDelete(CSProfNode* x)
 
 CSProfNode::~CSProfNode() 
 {
-  BriefAssertion(OkToDelete(this)); 
+  DIAG_Assert(OkToDelete(this), ""); 
   IFTRACE << "~CSProfNode " << this << " " << ToString() << endl; 
 }
 
@@ -174,7 +177,7 @@ CSProfCodeNode::~CSProfCodeNode()
 CSProfPgmNode::CSProfPgmNode(const char* nm) 
   : CSProfNode(PGM, NULL) 
 { 
-  BriefAssertion(nm);
+  DIAG_Assert(nm, "");
   frozen = false;
   name = nm; 
 }
@@ -187,11 +190,11 @@ CSProfPgmNode::~CSProfPgmNode()
 CSProfGroupNode::CSProfGroupNode(CSProfNode* _parent, const char* nm) 
   : CSProfNode(GROUP, _parent)
 {
-  BriefAssertion(nm);
-  BriefAssertion((_parent == NULL) || (_parent->GetType() == PGM)
-		 || (_parent->GetType() == GROUP) 
-		 || (_parent->GetType() == CALLSITE) 
-		 || (_parent->GetType() == LOOP));
+  DIAG_Assert(nm, "");
+  DIAG_Assert((_parent == NULL) || (_parent->GetType() == PGM)
+	      || (_parent->GetType() == GROUP) 
+	      || (_parent->GetType() == CALLSITE) 
+	      || (_parent->GetType() == LOOP), "");
   name = nm;
 }
 
@@ -202,11 +205,11 @@ CSProfGroupNode::~CSProfGroupNode()
 static void
 CSProfCallSiteNode_Check(CSProfCallSiteNode* n, CSProfNode* _parent) 
 {
-  BriefAssertion((_parent == NULL) 
-		 || (_parent->GetType() == CSProfNode::PGM)
-		 || (_parent->GetType() == CSProfNode::GROUP) 
-		 || (_parent->GetType() == CSProfNode::PROCEDURE_FRAME) 
-		 || (_parent->GetType() == CSProfNode::CALLSITE));
+  DIAG_Assert((_parent == NULL) 
+	      || (_parent->GetType() == CSProfNode::PGM)
+	      || (_parent->GetType() == CSProfNode::GROUP) 
+	      || (_parent->GetType() == CSProfNode::PROCEDURE_FRAME) 
+	      || (_parent->GetType() == CSProfNode::CALLSITE), "");
 }
 
 CSProfCallSiteNode::CSProfCallSiteNode(CSProfNode* _parent)
@@ -292,9 +295,9 @@ CSProfLoopNode::CSProfLoopNode(CSProfNode* _parent,
 			       suint begLn, suint endLn, int _id)
   : CSProfCodeNode(LOOP, _parent, begLn, endLn), id(_id)
 {
-  BriefAssertion((_parent == NULL) || (_parent->GetType() == GROUP) 
-		 || (_parent->GetType() == CALLSITE) 
-		 || (_parent->GetType() == LOOP));
+  DIAG_Assert((_parent == NULL) || (_parent->GetType() == GROUP) 
+	      || (_parent->GetType() == CALLSITE) 
+	      || (_parent->GetType() == LOOP), "");
 }
 
 CSProfLoopNode::~CSProfLoopNode()
@@ -305,9 +308,9 @@ CSProfStmtRangeNode::CSProfStmtRangeNode(CSProfNode* _parent,
 					 suint begLn, suint endLn, int _id)
   : CSProfCodeNode(STMT_RANGE, _parent, begLn, endLn), id(_id)
 {
-  BriefAssertion((_parent == NULL) || (_parent->GetType() == GROUP)
-		 || (_parent->GetType() == CALLSITE)
-		 || (_parent->GetType() == LOOP));
+  DIAG_Assert((_parent == NULL) || (_parent->GetType() == GROUP)
+	      || (_parent->GetType() == CALLSITE)
+	      || (_parent->GetType() == LOOP), "");
 }
 
 CSProfStmtRangeNode::~CSProfStmtRangeNode()
@@ -546,7 +549,7 @@ CSProfCallSiteNode::ToDumpMetricsString(int dmpFlag) const
 void 
 CSProfCallSiteNode::addMetrics(CSProfCallSiteNode* c) 
 {
-  BriefAssertion(metrics.size() == c->metrics.size());
+  DIAG_Assert(metrics.size() == c->metrics.size(), "");
   int numMetrics = metrics.size();
   int i;
   for (i=0; i<numMetrics; i++) {
@@ -620,7 +623,7 @@ CSProfStatementNode::ToDumpMetricsString(int dmpFlag) const {
 void 
 CSProfStatementNode::addMetrics(const CSProfStatementNode* c) 
 {
-  BriefAssertion(metrics.size() == c->metrics.size());
+  DIAG_Assert(metrics.size() == c->metrics.size(), "");
   int numMetrics = metrics.size();
   int i;
   for (i=0; i<numMetrics; i++) {
@@ -782,24 +785,24 @@ void
 CSProfCodeNode::SetLineRange(suint start, suint end) 
 {
   // Sanity Checking
-  BriefAssertion(start <= end);   // start <= end
+  DIAG_Assert(start <= end, "");   // start <= end
 
   if (start == UNDEF_LINE) {
-    BriefAssertion(end == UNDEF_LINE);
+    DIAG_Assert(end == UNDEF_LINE, "");
     // simply relocate at beginning of sibling list 
     // no range update in parents is necessary
-    BriefAssertion((begLine == UNDEF_LINE) && (endLine == UNDEF_LINE)); 
+    DIAG_Assert((begLine == UNDEF_LINE) && (endLine == UNDEF_LINE), ""); 
     if (Parent() != NULL) Relocate(); 
   } else {
     bool changed = false; 
     if (begLine == UNDEF_LINE) {
-      BriefAssertion(endLine == UNDEF_LINE); 
+      DIAG_Assert(endLine == UNDEF_LINE, ""); 
       // initialize range
       begLine = start; 
       endLine = end; 
       changed = true;
     } else {
-      BriefAssertion((begLine != UNDEF_LINE) && (endLine != UNDEF_LINE));
+      DIAG_Assert((begLine != UNDEF_LINE) && (endLine != UNDEF_LINE), "");
       // expand range ?
       if (start < begLine) { begLine = start; changed = true; }
       if (end   > endLine)   { endLine = end; changed = true; }
@@ -850,20 +853,20 @@ CSProfCodeNode::Relocate()
 bool
 CSProfCodeNode::ContainsLine(suint ln) const
 {
-  BriefAssertion(ln != UNDEF_LINE); 
+  DIAG_Assert(ln != UNDEF_LINE, ""); 
   return ((begLine >= 1) && (begLine <= ln) && (ln <= endLine)); 
 } 
 
 CSProfCodeNode* 
 CSProfCodeNode::CSProfCodeNodeWithLine(suint ln) const
 {
-  BriefAssertion(ln != UNDEF_LINE); 
+  DIAG_Assert(ln != UNDEF_LINE, ""); 
   CSProfCodeNode *ci; 
   // ln > endLine means there is no child that contains ln
   if (ln <= endLine) {
     for (CSProfNodeChildIterator it(this); it.Current(); it++) {
       ci = dynamic_cast<CSProfCodeNode*>(it.Current()); 
-      BriefAssertion(ci); 
+      DIAG_Assert(ci, ""); 
       if  (ci->ContainsLine(ln)) {
 	return ci->CSProfCodeNodeWithLine(ln); 
       } 

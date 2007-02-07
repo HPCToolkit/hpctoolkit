@@ -109,8 +109,8 @@ public:
   const std::string& GetLinkName() const { return m_linkname; }
 
   // Return type of procedure
-  const Type type() const { return m_type; }
-  Type&      type()       { return m_type; }
+  Type  type() const { return m_type; }
+  Type& type()       { return m_type; }
 
   // Return the begin and end virtual memory address of a procedure:
   // [beg, end].  Note that the end address points to the beginning of
