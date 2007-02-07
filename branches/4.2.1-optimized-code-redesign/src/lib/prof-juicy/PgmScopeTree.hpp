@@ -48,8 +48,8 @@
 //
 //***************************************************************************
 
-#ifndef PgmScopeTree_H 
-#define PgmScopeTree_H
+#ifndef _prof_juicy_PgmScopeTree_ 
+#define _prof_juicy_PgmScopeTree_
 
 //************************* System Include Files ****************************
 
