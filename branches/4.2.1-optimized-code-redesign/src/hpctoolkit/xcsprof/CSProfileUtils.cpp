@@ -78,6 +78,7 @@ using namespace std; // For compatibility with non-std C headers
 #include <lib/xml/xml.hpp>
 
 #include <lib/support/diagnostics.h>
+#include <lib/support/Logic.hpp>
 
 //*************************** Forward Declarations ***************************
 
@@ -375,6 +376,124 @@ FixLeaves(CSProfNode* node)
 // Routines for Inferring Call Frames (based on STRUCTURE information)
 //****************************************************************************
 
+typedef std::map<CodeInfo*, CSProfProcedureFrameNode*> CodeInfoToProcFrameMap;
+
+void
+AddSymbolicInfo(CSProfCodeNode* n, LoadModScope* lmScope,
+		CodeInfo* callingCtxt, CodeInfo* scope);
+
+void 
+InferCallFrames(CSProfile* prof, CSProfNode* node, 
+		VMA begVMA, VMA endVMA, LoadModScope* lmScope);
+
+
+void
+InferCallFrames(CSProfile* prof, VMA begVMA, VMA endVMA, LoadModScope* lmScope)
+{
+  CSProfTree* csproftree = prof->GetTree();
+  if (!csproftree) { return; }
+  
+  InferCallFrames(prof, csproftree->GetRoot(), begVMA, endVMA, lmScope);
+}
+
+
+void 
+InferCallFrames(CSProfile* prof, CSProfNode* node, 
+		VMA begVMA, VMA endVMA, LoadModScope* lmScope)
+{
+  if (!node) { return; }
+
+  CodeInfoToProcFrameMap procFrameMap;
+
+  // For each immediate child of this node...
+  for (CSProfNodeChildIterator it(node); it.Current(); /* */) {
+    CSProfCodeNode* n = dynamic_cast<CSProfCodeNode*>(it.CurNode());
+    DIAG_Assert(n, "Unexpected node type");
+    
+    it++; // advance iterator -- it is pointing at 'n' 
+
+    // recur 
+    if (!n->IsLeaf()) {
+      InferCallFrames(prof, n, begVMA, endVMA, lmScope);
+    }
+    
+    // process this node
+    bool isTy = (n->GetType() == CSProfNode::CALLSITE 
+		 || n->GetType() == CSProfNode::STATEMENT);
+
+    if (isTy && (begVMA <= n->GetIP() && n->GetIP() <= endVMA)) {
+      VMA curr_ip = n->GetIP();
+      
+      CodeInfo* scope = lmScope->findByVMA(curr_ip);
+      CodeInfo* ctxt = (scope) ? scope->CallingCtxt() : NULL;
+      
+      AddSymbolicInfo(n, lmScope, ctxt, scope);
+
+      // Seach for the frame associated with this context
+      CSProfProcedureFrameNode* frameNode = NULL;
+      CodeInfo* toFind = (scope) ? scope : lmScope;
+      
+      CodeInfoToProcFrameMap::iterator it = procFrameMap.find(toFind);
+      if (it != procFrameMap.end()) {
+	frameNode = (*it).second;
+      }
+      else {
+	frameNode = new CSProfProcedureFrameNode(NULL);
+	frameNode->SetFile(n->GetFile());
+	
+	if (ctxt) {
+	  frameNode->SetProc(n->GetProc());
+	  frameNode->SetLine(ctxt->begLine());
+	}
+	else {
+	  string nm = string("unknown@") + StrUtil::toStr(curr_ip, 16);
+	  frameNode->SetProc(nm);
+	}
+	
+	if (ctxt && ctxt->Type() == ScopeInfo::ALIEN) {
+	  frameNode->isAlien() = true;
+	}
+
+	frameNode->Link(node);
+	procFrameMap.insert(std::make_pair(toFind, frameNode));
+      }
+      
+      n->Unlink();
+      n->Link(frameNode);
+    } 
+  }
+}
+
+//***************************************************************************
+
+// FIXME: Takes either CSProfCallSiteNode or CSProfStatementNode
+void 
+AddSymbolicInfo(CSProfCodeNode* n, LoadModScope* lmScope,
+		CodeInfo* callingCtxt, CodeInfo* scope)
+{
+  if (!n) {
+    return;
+  }
+
+  //Diag_Assert(logic::equiv(callingCtxt == NULL, scope == NULL));
+  if (scope) {
+    bool isAlien = (callingCtxt->Type() == ScopeInfo::ALIEN);
+    const std::string& fnm = (isAlien) ? 
+      dynamic_cast<AlienScope*>(callingCtxt)->fileName() :
+      callingCtxt->File()->name();
+
+    n->SetFile(fnm.c_str());
+    n->SetProc(callingCtxt->name().c_str());
+    n->SetLine(scope->begLine());
+    n->SetFileIsText(true);
+  }
+  else {
+    n->SetFile(lmScope->name().c_str());
+    n->SetLine(0);
+    n->SetFileIsText(false);
+  }
+}
+
 
 //***************************************************************************
 // Routines for Inferring Call Frames (based on LM)
@@ -382,7 +501,7 @@ FixLeaves(CSProfNode* node)
 
 typedef std::map<string, CSProfProcedureFrameNode*> StringToProcFrameMap;
 
-void AddSymbolicInfo(CSProfCodeNode* node, binutils::LM* lm, bool istext);
+void AddSymbolicInfo(CSProfCodeNode* node, binutils::LM* lm);
 
 void InferCallFrames(CSProfile* prof, CSProfNode* node, 
 		     VMA begVMA, VMA endVMA, binutils::LM* lm);
@@ -416,94 +535,80 @@ void
 InferCallFrames(CSProfile* prof, CSProfNode* node, 
 		VMA begVMA, VMA endVMA, binutils::LM* lm)
 {
-  if (!node) { 
-    return; 
-  }
+  if (!node) { return; }
 
-  // FIXME: Use this set to determine if we have a duplicate source line
-  StringToProcFrameMap proceduresMap;
+  // Use this set to determine if we have a duplicate source line
+  StringToProcFrameMap procFrameMap;
 
   // For each immediate child of this node...
   for (CSProfNodeChildIterator it(node); it.Current(); /* */) {
+    CSProfCodeNode* n = dynamic_cast<CSProfCodeNode*>(it.CurNode());
+    DIAG_Assert(n, "Unexpected node type");
     
-    CSProfCodeNode* child = dynamic_cast<CSProfCodeNode*>(it.CurNode());
-    DIAG_Assert(child, ""); // always true (FIXME)
-    
-    it++; // advance iterator -- it is pointing at 'child' 
+    it++; // advance iterator -- it is pointing at 'n' 
 
     // ------------------------------------------------------------
     // recur 
     // ------------------------------------------------------------
-    if (!child->IsLeaf()) {
-      InferCallFrames(prof, child, begVMA, endVMA, lm);
+    if (!n->IsLeaf()) {
+      InferCallFrames(prof, n, begVMA, endVMA, lm);
     }
 
     // ------------------------------------------------------------
-    // process this node
+    // process this node if within the current load module
+    //   (and of the correct type: CALLSITE or STATEMENT!)
     // ------------------------------------------------------------
-    bool inspect = (child->GetType() == CSProfNode::CALLSITE 
-		    || child->GetType() == CSProfNode::STATEMENT);
-    
-    if (inspect) {
-      CSProfCodeNode* c = child; // must be CALLSITE or STATEMENT!
-      VMA curr_ip = c->GetIP(); //FMZ
+    bool isTy = (n->GetType() == CSProfNode::CALLSITE 
+		 || n->GetType() == CSProfNode::STATEMENT);
+
+    if (isTy && (begVMA <= n->GetIP() && n->GetIP() <= endVMA)) {
+      VMA curr_ip = n->GetIP();
+      DIAG_MsgIf(DBG_NORM_PROC_FRAME, "analyzing node " << n->GetProc()
+		 << hex << " " << curr_ip);
       
-      // only handle functions in the current load module
-      if (begVMA <= curr_ip && curr_ip <= endVMA) {
-	DIAG_MsgIf(DBG_NORM_PROC_FRAME, "analyzing node " << c->GetProc()
-		   << hex << " " << c->GetIP());
+      AddSymbolicInfo(n, lm);
+      
+      string myid = n->GetFile() + n->GetProc();
+      
+      StringToProcFrameMap::iterator it = procFrameMap.find(myid);
+      CSProfProcedureFrameNode* frameNode;
+      if (it != procFrameMap.end()) { 
+	// found 
+	frameNode = (*it).second;
+      } 
+      else {
+	// no entry found -- add
+	frameNode = new CSProfProcedureFrameNode(NULL);
+	frameNode->SetFile(n->GetFile());
 	
-	AddSymbolicInfo(c, lm, true);
+	string frameNm = n->GetProc();
+	if (frameNm.empty()) {
+	  frameNm = string("unknown@") + StrUtil::toStr(curr_ip, 16);
+	} 
+	DIAG_MsgIf(DBG_NORM_PROC_FRAME, "frame name: " << n->GetProc() 
+		   << " --> " << frameNm);
 	
-	string myid = c->GetFile() + c->GetProc();
 	
-	StringToProcFrameMap::iterator it = proceduresMap.find(myid);
-	CSProfProcedureFrameNode* procFrameNode;
-	if (it != proceduresMap.end()) { 
-	  // found 
-	  procFrameNode = (*it).second;
+	frameNode->SetProc(frameNm);
+	frameNode->SetFileIsText(n->FileIsText());
+	if (!frameNode->FileIsText()) {
+	  // if child is not text: set f line to 0 and is text to false
+	  frameNode->SetLine(0);
 	} 
 	else {
-	  // no entry found -- add
-	  procFrameNode= new CSProfProcedureFrameNode(NULL); 
-	  procFrameNode->SetFile(c->GetFile());
-	  
-	  string procFrameName = c->GetProc();
-
-	  DIAG_MsgIf(DBG_NORM_PROC_FRAME, "c->GetProc:" << procFrameName);
-	  
-	  if ( !procFrameName.empty() ) {
-	    DIAG_MsgIf(DBG_NORM_PROC_FRAME, "non empty procedure");
-	  } 
-	  else {
-	    // if the procedure name could not be found, use 
-	    // unknown 0xipaddr
-	    procFrameName = string("unknown ") + StrUtil::toStr(c->GetIP(),16);
-	    DIAG_MsgIf(DBG_NORM_PROC_FRAME, "empty procedure; using " 
-		       << procFrameName);
-	  }
-	  
-	  procFrameNode->SetProc(procFrameName);
-	  procFrameNode->SetFileIsText(c->FileIsText());
-	  if (!procFrameNode->FileIsText()) {
-	    // if child is not text: set f line to 0 and is text to false
-	    procFrameNode->SetLine(0);
-	  } 
-	  else {
-	    // determine the first line of the enclosing procedure
-	    suint begLn;
-	    lm->GetProcFirstLineInfo(c->GetIP(), c->GetOpIndex(), begLn);
-	    procFrameNode->SetLine(begLn);
-	  }
-	  
-	  procFrameNode->Link(node);
-	  proceduresMap.insert(std::make_pair(myid, procFrameNode));
+	  // determine the first line of the enclosing procedure
+	  suint begLn;
+	  lm->GetProcFirstLineInfo(curr_ip, n->GetOpIndex(), begLn);
+	  frameNode->SetLine(begLn);
 	}
 	
-	c->Unlink();
-	c->Link(procFrameNode);
+	frameNode->Link(node);
+	procFrameMap.insert(std::make_pair(myid, frameNode));
       }
-    } 
+      
+      n->Unlink();
+      n->Link(frameNode);
+    }
   }
 }
 
@@ -511,10 +616,9 @@ InferCallFrames(CSProfile* prof, CSProfNode* node,
 //***************************************************************************
 
 #if 0
-bool 
+void
 AddSymbolicInfo(CSProfile* prof, VMA begVMA, VMA endVMA, binutils::LM* lm)
 {
-  bool noError = true;
   VMA curr_ip; 
 
   /* point to the first load module in the Epoch table */
@@ -536,16 +640,14 @@ AddSymbolicInfo(CSProfile* prof, VMA begVMA, VMA endVMA, binutils::LM* lm)
       }
     }  
   }
-  return noError;
 }
 #endif
 
 
 // FIXME: Takes either CSProfCallSiteNode or CSProfStatementNode
 void 
-AddSymbolicInfo(CSProfCodeNode* n, binutils::LM* lm, bool istext)
+AddSymbolicInfo(CSProfCodeNode* n, binutils::LM* lm)
 {
-  bool noError = true;
   if (!n) {
     return;
   }
@@ -558,7 +660,7 @@ AddSymbolicInfo(CSProfCodeNode* n, binutils::LM* lm, bool istext)
   n->SetFile(file.c_str());
   n->SetProc(func.c_str());
   n->SetLine(srcLn);
-  n->SetFileIsText(istext);
+  n->SetFileIsText(true);
   
   // if file name is missing then using load module name. 
   if (file.empty() || func.empty()) {
@@ -809,10 +911,10 @@ normalizeFilePath(const string& filePath,
       crtSegment[crtSegmentPos]='\0';
       xDEBUG(DEB_NORM_SEARCH_PATH, 
 	     cerr << "parsed segment " << crtSegment << std::endl;);
-      if ( !strcmp(crtSegment,".")) {
+      if (strcmp(crtSegment,".") == 0) {
 	//  .../dir1/./.... 
       } 
-      else if (!strcmp(crtSegment,"..")) {
+      else if (strcmp(crtSegment,"..") == 0) {
 	// .../dir1/../...
 	if (pathSegmentsStack.empty()) {
 	  DIAG_EMsg("Invalid path: " << filePath);

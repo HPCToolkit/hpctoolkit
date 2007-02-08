@@ -75,6 +75,15 @@ using std::string;
 PgmScopeTree*
 readStructureData(const char* filenm);
 
+static void
+processCallingCtxtTree(CSProfile* profData, VMA begVMA, VMA endVMA, 
+		       LoadModScope* lmScope);
+
+static void
+processCallingCtxtTree(CSProfile* profData, VMA begVMA, VMA endVMA, 
+		       const std::string& lm_fnm);
+
+
 //****************************************************************************
 
 int realmain(int argc, char* const* argv);
@@ -133,13 +142,15 @@ realmain(int argc, char* const* argv)
   // ------------------------------------------------------------
 
   PgmScopeTree* scopeTree = NULL;
+  PgmScope* pgmScope = NULL;
   if (!args.structureFile.empty()) {
     scopeTree = readStructureData(args.structureFile.c_str());
+    pgmScope = scopeTree->GetRoot();
   }
   
   try { 
-    // for each "used" load module, go through the call stack tree 
-    // to find the source line infornmation 
+    // for each (used) load module, add information to the calling
+    // context tree.
     
     // for efficiency, we add a flag in CSProfLDmodule "used"
     // add one more pass search the callstack tree, to set 
@@ -153,30 +164,17 @@ realmain(int argc, char* const* argv)
     
     for (int i = num_lm - 1; i >= 0; i--) {
       CSProfLDmodule* csp_lm = profData->GetEpoch()->GetLdModule(i); 
-      const std::string& lm_fnm = csp_lm->GetName();
       VMA begVMA = csp_lm->GetMapaddr(); // for next csploadmodule
-      
+
       if (csp_lm->GetUsedFlag()) {
-	binutils::LM* lm = NULL;
-	try {
-	  lm = new binutils::LM();
-	  lm->Open(lm_fnm.c_str());
-	  lm->Read();
+	const std::string& lm_fnm = csp_lm->GetName();
+	if (pgmScope && pgmScope->FindLoadMod(lm_fnm)) {
+	  //processCallingCtxtTree(profData, begVMA, endVMA, lmScope);
+	  processCallingCtxtTree(profData, begVMA, endVMA, lm_fnm);
 	}
-	catch (...) {
-	  DIAG_EMsg("While reading '" << lm_fnm << "'...");
-	  throw;
+	else {
+	  processCallingCtxtTree(profData, begVMA, endVMA, lm_fnm);
 	}
-	
-	// get the start and end PC from the text sections 
-	DIAG_Msg(1, "Load Module: " << csp_lm->GetName());
-	if (lm->GetType() != binutils::LM::Executable) {
-	  lm->Relocate(begVMA);   
-	}
-	
-	InferCallFrames(profData, begVMA, endVMA, lm);
-	
-	delete lm;
       }
 
       endVMA = begVMA - 1;
@@ -245,3 +243,40 @@ readStructureData(const char* filenm)
   
   return scopeTree;
 }
+
+//****************************************************************************
+
+static void
+processCallingCtxtTree(CSProfile* profData, VMA begVMA, VMA endVMA, 
+		       LoadModScope* lmScope)
+{
+  InferCallFrames(profData, begVMA, endVMA, lmScope);
+}
+
+
+static void
+processCallingCtxtTree(CSProfile* profData, VMA begVMA, VMA endVMA, 
+		       const std::string& lm_fnm)
+{
+  binutils::LM* lm = NULL;
+  try {
+    lm = new binutils::LM();
+    lm->Open(lm_fnm.c_str());
+    lm->Read();
+  }
+  catch (...) {
+    DIAG_EMsg("While reading '" << lm_fnm << "'...");
+    throw;
+  }
+  
+  // get the start and end PC from the text sections 
+  DIAG_Msg(1, "Load Module: " << lm_fnm);
+  if (lm->GetType() != binutils::LM::Executable) {
+    lm->Relocate(begVMA);
+  }
+  
+  InferCallFrames(profData, begVMA, endVMA, lm);
+  
+  delete lm;
+}
+
