@@ -55,6 +55,7 @@ using std::vector;
 
 #include "Driver.hpp"
 
+#include <lib/prof-juicy-x/PGMReader.hpp>
 #include <lib/prof-juicy-x/XercesSAX2.hpp>
 #include <lib/prof-juicy-x/XercesErrorHandler.hpp>
 
@@ -358,51 +359,8 @@ Driver::ProcessPGMFile(NodeRetriever* nretriever,
   
   for (unsigned int i = 0; i < files->size(); i++) {
     const string& fnm = *((*files)[i]);
-    if (!fnm.empty()) {
-      const char* pf = pathfind(".", fnm.c_str(), "r");
-      string fpath = (pf) ? pf : "";
-      if (!fpath.empty()) {
-	try {
-	  SAX2XMLReader* parser = XMLReaderFactory::createXMLReader();
-	
-	  parser->setFeature(XMLUni::fgSAX2CoreValidation, true);
-	  parser->setFeature(XMLUni::fgXercesDynamic, true);
-	  parser->setFeature(XMLUni::fgXercesValidationErrorAsFatal, true);
-	  
-	  DriverDocHandlerArgs args(this);
-	  PGMDocHandler* handler = new PGMDocHandler(docty, nretriever, args);
-	  parser->setContentHandler(handler);
-	  parser->setErrorHandler(handler);
-	  
-	  parser->parse(fpath.c_str());
-
-	  if (parser->getErrorCount() > 0) {
-	    DIAG_EMsg("terminating because of previously reported " << PGMDocHandler::ToString(docty) << " file parse errors.");
-	    exit(1);
-	  }
-	  delete handler;
-	  delete parser;
-	}
-	catch (const SAXException& x) {
-	  DIAG_EMsg("parsing '" << fpath << "'");
-	  exit(1);
-	}
-	catch (const PGMException& x) {
-	  DIAG_EMsg("reading '" << fpath << "'");
-	  x.report(std::cerr);
-	  exit(1);
-	}
-	catch (...) {
-	  DIAG_EMsg("While processing '" << fpath << "'...");
-	  throw;
-	};
-      } 
-      else {
-	DIAG_EMsg("Could not open " << PGMDocHandler::ToString(docty) 
-		  << " file '" << fnm << "'.");
-	exit(1);
-      }
-    }
+    DriverDocHandlerArgs args(this);
+    read_PGM(nretriever, fnm.c_str(), docty, args);
   }
 }
 

@@ -112,7 +112,7 @@ PrintName(DOMNode *node)
 // -------------------------------------------------------------------------
 
 HPCViewDocParser::HPCViewDocParser(const string& inputFile, 
-				   HPCViewXMLErrHandler& errHndlr)
+				   XercesErrorHandler& errHndlr)
 {
   IFTRACE << "Parsing configuration file: " << inputFile << endl; 
 

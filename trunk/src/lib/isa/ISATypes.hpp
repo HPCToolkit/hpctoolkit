@@ -69,6 +69,8 @@
 typedef bfd_vma VMA;
 typedef bfd_signed_vma VMASigned; // useful for offsets
 
+#define VMA_MAX ( ~((bfd_vma)(0)) )
+
 // MachInsn* can point to (non-)variable length instructions (or
 // instruction words) and should not be dereferenced.  To examine the
 // individual bytes of a MachInsn*, use a 'MachInsnByte'.

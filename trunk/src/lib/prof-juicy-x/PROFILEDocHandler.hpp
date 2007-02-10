@@ -69,7 +69,7 @@
 
 //****************************************************************************
 
-class PROFILEDocHandler : public DefaultHandler {
+class PROFILEDocHandler : public XERCES_CPP_NAMESPACE::DefaultHandler {
 public:
 
   PROFILEDocHandler(NodeRetriever* const retriever, 
@@ -83,7 +83,7 @@ public:
     { Initialize(metricIndx, profileFileName.c_str()); }
 
   // overridden functions
-  void startElement(const XMLCh* const uri, const XMLCh* const name, const XMLCh* const qname, const Attributes& attributes);
+  void startElement(const XMLCh* const uri, const XMLCh* const name, const XMLCh* const qname, const XERCES_CPP_NAMESPACE::Attributes& attributes);
   void endElement(const XMLCh* const uri, const XMLCh* const name, const XMLCh* const qname);
 
   //--------------------------------------

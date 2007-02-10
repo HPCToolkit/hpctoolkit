@@ -1,0 +1,94 @@
+#!/bin/sh
+# Testing: set -x: line by line (set -n: syntax)
+# set -x
+
+# $Id$
+
+## **************************************************************************
+##
+## Launching script
+##
+## John Mellor-Crummey and Nathan Tallent
+##
+## **************************************************************************
+
+#############################################################################
+# Find where we were called from
+#############################################################################
+
+# Note: HPCTOOLKIT must be absolute.  We could have autoconf/automake
+# insert the installation dir and the platform
+
+BINDIR=`dirname $0`
+
+if [ ${BINDIR} = '.' ]; then 
+    ROOTDIR_REL='..';
+else
+    ROOTDIR_REL=`dirname ${BINDIR}`;
+fi
+
+ROOTDIR=`cd ${ROOTDIR_REL} && pwd`
+
+HPCTOOLKIT=${ROOTDIR}
+BINARY="$0-bin" # ${HPCTOOLKIT}/bin/ `basename $0` bin
+
+unset BINDIR
+unset ROOTDIR
+unset ROOTDIR_REL
+
+#echo "--> $0"
+#echo "--> ${HPCTOOLKIT}"
+#echo "--> ${BINARY}"
+
+#############################################################################
+# Set environment for process
+#############################################################################
+
+HPCTOOLKIT_PLATFORM=`cd ${HPCTOOLKIT}/config && ./hpcplatform`
+export HPCTOOLKIT
+export HPCTOOLKIT_PLATFORM
+
+XERCESCROOT="${HPCTOOLKIT}/xercesc"
+export XERCESCROOT
+
+XERCESPLATFORM="${XERCESCROOT}/lib"
+
+if test ${HPCTOOLKIT_PLATFORM} = 'mips-IRIX64' ; then
+  # set library path for IRIX systems
+  if test -z LD_LIBRARYN32_PATH ; then
+    LD_LIBRARYN32_PATH=${XERCESPLATFORM}
+  else
+    LD_LIBRARYN32_PATH=${XERCESPLATFORM}:${LD_LIBRARYN32_PATH}
+  fi
+  if test -z LD_LIBRARY64_PATH ; then
+    LD_LIBRARY64_PATH=${XERCESPLATFORM}
+  else
+    LD_LIBRARY64_PATH=${XERCESPLATFORM}:${LD_LIBRARY64_PATH}
+  fi
+  export LD_LIBRARYN32_PATH
+  export LD_LIBRARY64_PATH
+else
+  if test -z LD_LIBRARY_PATH ; then
+    LD_LIBRARY_PATH=${XERCESPLATFORM}
+  else
+    LD_LIBRARY_PATH=${XERCESPLATFORM}:${LD_LIBRARY_PATH}
+  fi
+  export LD_LIBRARY_PATH
+fi
+
+unset XERCESPLATFORM
+
+#############################################################################
+# exec binary image
+#############################################################################
+
+if [ -r ${BINARY} -a -x ${BINARY} ]; then
+    if [ $# -eq 0 ]; then
+	exec ${BINARY}
+    else
+	exec ${BINARY} "$@"
+    fi
+else
+    echo "$0 fatal error: cannot exec '${BINARY}'"
+    exit 1;
+fi

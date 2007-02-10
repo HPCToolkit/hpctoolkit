@@ -652,7 +652,10 @@ CSProfProcedureFrameNode::ToDumpString(int dmpFlag) const
 
   if (GetBegLine() != UNDEF_LINE) {
     self = self + " l" + MakeAttrNum(GetBegLine());
-  }  
+  }
+  
+  const char* alien = isAlien() ? "true" : "false";
+  self = self + " alien" + MakeAttrStr(alien, AddXMLEscapeChars(dmpFlag)); 
 
   return self; 
 } 

@@ -70,7 +70,7 @@
 
 //****************************************************************************
 
-class PGMDocHandler : public DefaultHandler {
+class PGMDocHandler : public XERCES_CPP_NAMESPACE::DefaultHandler {
 public:
   enum Doc_t { Doc_NULL, Doc_STRUCT, Doc_GROUP };
   static const char* ToString(Doc_t docty);
@@ -81,7 +81,7 @@ public:
 		DocHandlerArgs& args);
   ~PGMDocHandler();
 
-  void startElement(const XMLCh* const uri, const XMLCh* const name, const XMLCh* const qname, const Attributes& attributes);
+  void startElement(const XMLCh* const uri, const XMLCh* const name, const XMLCh* const qname, const XERCES_CPP_NAMESPACE::Attributes& attributes);
   void endElement(const XMLCh* const uri, const XMLCh* const name, const XMLCh* const qname);
 
   //--------------------------------------
@@ -208,6 +208,8 @@ private:
 
 //****************************************************************************
 
+#define PGM_Throw(streamArgs) DIAG_ThrowX(PGMException, streamArgs)
+
 class PGMException : public Diagnostics::Exception {
 public:
   PGMException(const std::string x,
@@ -223,3 +225,5 @@ private:
 };
 
 #endif  // prof_juicy_x_PGMDocHandler
+
+//  LocalWords:  PGMDocHandler

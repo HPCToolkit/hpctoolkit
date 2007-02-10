@@ -41,74 +41,84 @@
 //   $Source$
 //
 // Purpose:
-//   [The purpose of this file]
+//   XML adaptor for the program structure file (PGM)
 //
 // Description:
 //   [The set of functions, macros, etc. defined in the file]
 //
 //***************************************************************************
 
-#ifndef CSProfileUtils_hpp 
-#define CSProfileUtils_hpp
+//************************ System Include Files ******************************
 
-//************************* System Include Files ****************************
+#include <iostream> 
+using std::cerr;
+using std::endl;
 
-#include <iostream>
-#include <vector>
-#include <stack>
 #include <string>
+using std::string;
 
-//*************************** User Include Files ****************************
+//************************* User Include Files *******************************
 
-#include <include/general.h> 
+#include "PGMReader.hpp"
 
-#include "CSProfile.hpp"
+#include <lib/support/pathfind.h>
 
-#include <lib/binutils/LM.hpp>
+//*********************** Xerces Include Files *******************************
 
-//*************************** Forward Declarations ***************************
+#include <xercesc/util/XMLString.hpp>        
+using XERCES_CPP_NAMESPACE::XMLString;
 
-//*************************** Forward Declarations ***************************
-
-CSProfile* ReadProfile_CSPROF(const char* fnm, const char *execnm);
-
-//****************************************************************************
-
-void InferCallFrames(CSProfile* prof, VMA begVMA, VMA endVMA,
-		     LoadModScope* lmScope, VMA relocVMA);
-
-void InferCallFrames(CSProfile* prof, VMA begVMA, VMA endVMA,
-		     binutils::LM* lm);
-
-bool NormalizeCSProfile(CSProfile* prof);
+//************************ Forward Declarations ******************************
 
 //****************************************************************************
 
-void WriteCSProfileInDatabase(CSProfile* prof, 
-			      const std::string& dbDirectory);
-void WriteCSProfile(CSProfile* prof, std::ostream& os,
-		    bool prettyPrint = true);
+void
+read_PGM(NodeRetriever* pgmTreeInterface,
+	 const char* filenm,
+	 PGMDocHandler::Doc_t docty,
+	 DocHandlerArgs& docHandlerArgs)
+{
+  if (!filenm || filenm[0] == '\0') {
+    return;
+  }
+  
+  const char* pf = pathfind(".", filenm, "r");
+  string fpath = (pf) ? pf : "";
+  if (!fpath.empty()) {
+    try {
+      SAX2XMLReader* parser = XMLReaderFactory::createXMLReader();
+      
+      parser->setFeature(XMLUni::fgSAX2CoreValidation, true);
+      parser->setFeature(XMLUni::fgXercesDynamic, true);
+      parser->setFeature(XMLUni::fgXercesValidationErrorAsFatal, true);
+      
+      PGMDocHandler* handler = new PGMDocHandler(docty, pgmTreeInterface, 
+						 docHandlerArgs);
+      parser->setContentHandler(handler);
+      parser->setErrorHandler(handler);
+	  
+      parser->parse(fpath.c_str());
 
-void copySourceFiles (CSProfile *prof, 
-		      std::vector<std::string>& searchPaths,
-		      const std::string& dbSourceDirectory);  
-
-void LdmdSetUsedFlag(CSProfile* prof); 
-
-//****************************************************************************
-
-#define MAX_PATH_SIZE 2048 
-/** Normalizes a file path.*/
-std::string normalizeFilePath(const std::string& filePath);
-std::string normalizeFilePath(const std::string& filePath, 
-			      std::stack<std::string>& pathSegmentsStack);
-void breakPathIntoSegments(const std::string& normFilePath, 
-			   std::stack<std::string>& pathSegmentsStack);
-
-#define DEB_READ_MMETRICS 0
-#define DEB_LOAD_MODULE 0
-#define DEB_PROC_FIRST_LINE 0
-#define DEB_NORM_SEARCH_PATH  0
-#define DEB_MKDIR_SRC_DIR 0
-
-#endif
+      if (parser->getErrorCount() > 0) {
+	DIAG_Throw("ignoring " << fpath << " because of previously reported parse errors.");
+      }
+      delete handler;
+      delete parser;
+    }
+    catch (const SAXException& x) {
+      DIAG_Throw("parsing '" << fpath << "'" << 
+		 XMLString::transcode(x.getMessage()));
+    }
+    catch (const PGMException& x) {
+      DIAG_Throw("reading '" << fpath << "'" << x.message());
+    }
+    catch (...) {
+      DIAG_EMsg("While processing '" << fpath << "'...");
+      throw;
+    };
+  } 
+  else {
+    DIAG_Throw("Could not open " << PGMDocHandler::ToString(docty) 
+	       << " file '" << filenm << "'.");
+  }
+}

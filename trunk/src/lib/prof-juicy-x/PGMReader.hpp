@@ -41,99 +41,33 @@
 //   $Source$
 //
 // Purpose:
-//   [The purpose of this file]
+//   []
 //
 // Description:
 //   [The set of functions, macros, etc. defined in the file]
 //
 //***************************************************************************
 
-//************************* System Include Files ****************************
+#ifndef _prof_juicy_x_PGMReader_
+#define _prof_juicy_x_PGMReader_
 
-//*************************** User Include Files ****************************
+//************************ System Include Files ******************************
 
-#include "CSProfEpoch.hpp"
+//************************* User Include Files *******************************
 
-#include <lib/xml/xml.hpp>
-using namespace xml;
+#include "PGMDocHandler.hpp"
+#include "DocHandlerArgs.hpp"
 
-//*************************** Forward Declarations ***************************
+#include <lib/prof-juicy/PgmScopeTreeInterface.hpp>
+
+//************************ Forward Declarations ******************************
+
+void
+read_PGM(NodeRetriever* pgmTreeInterface,
+	 const char* filenm,
+	 PGMDocHandler::Doc_t docty,
+	 DocHandlerArgs& docHandlerArgs);
 
 //****************************************************************************
 
-CSProfLDmodule::CSProfLDmodule()
-{
-  lm = NULL;
-}
-
-CSProfLDmodule::~CSProfLDmodule()
-{
-  delete lm;
-}
-
-
-CSProfEpoch::CSProfEpoch(const suint i)
-  : loadmoduleVec(i)
-{
-  numberofldmodule = i;
-} 
-
-
-CSProfEpoch::~CSProfEpoch()
-{
-  for (CSProfEpoch_LdModuleIterator it(*this); it.IsValid(); ++it) {
-    CSProfLDmodule* lm = it.Current(); 
-    delete lm; 
-  }
-  
-  loadmoduleVec.clear();
-}
-
-CSProfLDmodule* 
-CSProfEpoch::FindLDmodule(VMA ip)
-{
-  CSProfLDmodule* pre=loadmoduleVec[0];
-  for (int i=0; i< numberofldmodule; i++) { 
-    CSProfLDmodule* curr =loadmoduleVec[i];
-    if (ip >= (pre->GetMapaddr()) &&
-	ip < curr->GetMapaddr())
-      return pre;
-    else 
-      pre = curr;
-  }
-  
-  return pre;
-}
-
-void CSProfLDmodule::Dump(std::ostream& o)
-{ 
-  using std::hex;
-  using std::dec;
-  using std::endl; 
-  
-  o<<"the load module name is " << name;
-  o<<" vaddr is 0x" << hex  << vaddr;
-  o<<" mapaddr is 0x" << hex <<  mapaddr;
-  o<< dec << endl; 
-}
-
-void CSProfLDmodule::DDump()
-{
-  Dump(std::cerr);
-}
-
-void CSProfEpoch::Dump(std::ostream& o)
-{
-  for (int i=0; i<numberofldmodule; i++) {
-    CSProfLDmodule* lm = loadmoduleVec[i];
-    lm->Dump(o);
-  }
-}
-
-
-void CSProfEpoch::DDump()
-{
-  Dump(std::cerr);
-}
-
-
+#endif  // _prof_juicy_x_PGMReader_

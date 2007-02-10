@@ -59,16 +59,16 @@ using std::string;
 
 //************************ Xerces Include Files ******************************
 
-#include <xercesc/util/XMLString.hpp>         
-using XERCES_CPP_NAMESPACE::XMLString;
+#include <xercesc/sax/ErrorHandler.hpp>
 
-#include <xercesc/sax/ErrorHandler.hpp>         
+#include <xercesc/util/XMLString.hpp>         
 using XERCES_CPP_NAMESPACE::XMLString;
 
 //************************* User Include Files *******************************
 
 #include "PGMDocHandler.hpp"
 #include "XercesSAX2.hpp"
+#include "XercesUtil.hpp"
 #include "XercesErrorHandler.hpp"
 
 #include <lib/prof-juicy/PgmScopeTreeInterface.hpp>
@@ -256,7 +256,7 @@ PGMDocHandler::~PGMDocHandler()
 void PGMDocHandler:: startElement(const XMLCh* const uri, 
 				  const XMLCh* const name, 
 				  const XMLCh* const qname, 
-				  const Attributes& attributes)
+				  const XERCES_CPP_NAMESPACE::Attributes& attributes)
 { 
   ScopeInfo* currentScope = NULL;
   
@@ -560,23 +560,23 @@ PGMDocHandler::ToString(Doc_t m_docty)
 void 
 PGMDocHandler::error(const SAXParseException& e)
 {
-  HPCViewXMLErrHandler::report(cerr, "hpcview non-fatal error", 
-			       ToString(m_docty), e);
+  XercesErrorHandler::report(cerr, "PGM non-fatal error", 
+			     ToString(m_docty), e);
 }
 
 void 
 PGMDocHandler::fatalError(const SAXParseException& e)
 {
-  HPCViewXMLErrHandler::report(cerr, "hpcview fatal error", 
-			       ToString(m_docty), e);
+  XercesErrorHandler::report(cerr, "PGM fatal error", 
+			     ToString(m_docty), e);
   exit(1);
 }
 
 void 
 PGMDocHandler::warning(const SAXParseException& e)
 {
-  HPCViewXMLErrHandler::report(cerr, "hpcview warning", 
-			       ToString(m_docty), e);
+  XercesErrorHandler::report(cerr, "PGM warning", 
+			     ToString(m_docty), e);
 }
 
 
