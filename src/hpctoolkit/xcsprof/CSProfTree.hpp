@@ -61,6 +61,9 @@
 
 #include <include/general.h>
 
+// FIXME: CSProfTree should be merged or at least relocated a la PgmScopeTree
+#include <lib/prof-juicy/PgmScopeTree.hpp>
+
 #include <lib/isa/ISATypes.hpp>
 
 #include <lib/support/diagnostics.h>
@@ -71,8 +74,6 @@
 
 using namespace std;
 int AddXMLEscapeChars(int dmpFlag);
-
-const suint UNDEF_LINE = 0;
 
 //***************************************************************************
 // CSProfTree
@@ -495,6 +496,10 @@ public:
   bool FileIsText() const {return fileistext;}
   void SetFileIsText(bool bi) {fileistext = bi;}
 
+  // Alien
+  bool  isAlien() const { return m_alien; }
+  bool& isAlien()       { return m_alien; } 
+
   // Dump contents for inspection
   virtual std::string ToDumpString(int dmpFlag = CSProfTree::XML_TRUE) const;
  
@@ -503,6 +508,7 @@ private:
   std::string file; 
   bool   fileistext; //separated from load module
   std::string proc;
+  bool m_alien;
 };
 
 // ---------------------------------------------------------

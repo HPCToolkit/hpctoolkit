@@ -56,16 +56,6 @@ using namespace std; // For compatibility with non-std C headers
 
 //*********************** Xerces Include Files *******************************
 
-#include <xercesc/util/XMLString.hpp>        
-using XERCES_CPP_NAMESPACE::XMLString;
-
-#include <xercesc/util/PlatformUtils.hpp>        
-using XERCES_CPP_NAMESPACE::XMLPlatformUtils;
-
-#include <xercesc/util/XMLException.hpp>
-using XERCES_CPP_NAMESPACE::XMLException;
-
-
 //************************* User Include Files *******************************
 
 #include "Args.hpp"
@@ -73,6 +63,7 @@ using XERCES_CPP_NAMESPACE::XMLException;
 
 #include "HPCViewDocParser.hpp"
 
+#include <lib/prof-juicy-x/XercesUtil.hpp>
 #include <lib/prof-juicy-x/XercesErrorHandler.hpp>
 
 #include <lib/prof-juicy/PgmScopeTree.hpp>
@@ -85,9 +76,6 @@ using XERCES_CPP_NAMESPACE::XMLException;
 #include <lib/support/realpath.h>
 
 //************************ Forward Declarations ******************************
-
-static void InitXML();
-static void FiniXML();
 
 class FileException
 {
@@ -148,7 +136,7 @@ realmain(int argc, char* const* argv)
 {
   InitNaN();
   Args args(argc,argv);  // exits if error on command line
-  InitXML();             // exits iff failure 
+  InitXerces();          // exits iff failure 
 
   // FIXME: pulled out of HTMLDriver
   if (MakeDir(args.dbDir.c_str()) != 0) {
@@ -157,7 +145,7 @@ realmain(int argc, char* const* argv)
 
   Driver driver(args.deleteUnderscores, args.CopySrcFiles); 
 
-  PgmScopeTree scopes("", new PgmScope("")); // FIXME: better location
+  PgmScopeTree scopeTree("", new PgmScope("")); // FIXME: better location
   
   //-------------------------------------------------------
   // 1. Read configuration file
@@ -176,7 +164,7 @@ realmain(int argc, char* const* argv)
   }
   
   try {
-    HPCViewXMLErrHandler errHndlr(cfgFile, tmpFile, NUM_PREFIX_LINES, true);
+    XercesErrorHandler errHndlr(cfgFile, tmpFile, NUM_PREFIX_LINES, true);
     HPCViewDocParser parser(tmpFile, errHndlr);
     parser.pass1(driver); // FIXME: merge into one pass
     parser.pass2(driver);
@@ -200,37 +188,37 @@ realmain(int argc, char* const* argv)
   // 2. Initialize scope tree
   //-------------------------------------------------------
   DIAG_Msg(3, "Initializing scope tree...");
-  driver.ScopeTreeInitialize(scopes); 
+  driver.ScopeTreeInitialize(scopeTree); 
 
   //-------------------------------------------------------
   // 3. Correlate program source with metrics
   //-------------------------------------------------------
   DIAG_Msg(3, "Creating and correlating metrics with program structure: ...");
-  driver.ScopeTreeComputeMetrics(scopes);
+  driver.ScopeTreeComputeMetrics(scopeTree);
 
   DIAG_If(4) {
     DIAG_Msg(4, "Initial scope tree:");
     int flg = (args.XML_DumpAllMetrics) ? 0 : PgmScopeTree::DUMP_LEAF_METRICS;
-    driver.XML_Dump(scopes.GetRoot(), flg, std::cerr);
+    driver.XML_Dump(scopeTree.GetRoot(), flg, std::cerr);
   }
   
   //-------------------------------------------------------
   // 4. Finalize scope tree
   //-------------------------------------------------------
   if (args.OutFilename_CSV.empty() && args.OutFilename_TSV.empty()) {
-    // Prune the scope tree (remove scopes without metrics)
-    PruneScopeTreeMetrics(scopes.GetRoot(), driver.NumberOfMetrics());
+    // Prune the scope tree (remove scopeTree without metrics)
+    PruneScopeTreeMetrics(scopeTree.GetRoot(), driver.NumberOfMetrics());
   }
   
-  scopes.GetRoot()->Freeze();      // disallow further additions to tree 
-  scopes.CollectCrossReferences(); // collect cross referencing information
+  scopeTree.GetRoot()->Freeze();      // disallow further additions to tree 
+  scopeTree.CollectCrossReferences(); // collect cross referencing information
 
-  FiniXML();
+  FiniXerces();
 
   DIAG_If(4) {
     DIAG_Msg(4, "Final scope tree:");
     int flg = (args.XML_DumpAllMetrics) ? 0 : PgmScopeTree::DUMP_LEAF_METRICS;
-    driver.XML_Dump(scopes.GetRoot(), flg, std::cerr);
+    driver.XML_Dump(scopeTree.GetRoot(), flg, std::cerr);
   }
 
   //-------------------------------------------------------
@@ -240,7 +228,7 @@ realmain(int argc, char* const* argv)
     DIAG_Msg(1, "Copying source files reached by REPLACE/PATH statements to " << args.dbDir);
     
     // Note that this may modify file names in the ScopeTree
-    CopySourceFiles(scopes.GetRoot(), driver.PathVec(), args.dbDir);
+    CopySourceFiles(scopeTree.GetRoot(), driver.PathVec(), args.dbDir);
   }
 
   if (!args.OutFilename_CSV.empty()) {
@@ -249,7 +237,7 @@ realmain(int argc, char* const* argv)
     string fpath = args.dbDir + "/" + fnm;
     const char* osnm = (fnm == "-") ? NULL : fpath.c_str();
     std::ostream* os = IOUtil::OpenOStream(osnm);
-    driver.CSV_Dump(scopes.GetRoot(), *os);
+    driver.CSV_Dump(scopeTree.GetRoot(), *os);
     IOUtil::CloseStream(os);
   } 
 
@@ -259,7 +247,7 @@ realmain(int argc, char* const* argv)
     string fpath = args.dbDir + "/" + fnm;
     const char* osnm = (fnm == "-") ? NULL : fpath.c_str();
     std::ostream* os = IOUtil::OpenOStream(osnm);
-    driver.TSV_Dump(scopes.GetRoot(), *os);
+    driver.TSV_Dump(scopeTree.GetRoot(), *os);
     IOUtil::CloseStream(os);
   }
   
@@ -271,7 +259,7 @@ realmain(int argc, char* const* argv)
     string fpath = args.dbDir + "/" + fnm;
     const char* osnm = (fnm == "-") ? NULL : fpath.c_str();
     std::ostream* os = IOUtil::OpenOStream(osnm);
-    driver.XML_Dump(scopes.GetRoot(), flg, *os);
+    driver.XML_Dump(scopeTree.GetRoot(), flg, *os);
     IOUtil::CloseStream(os);
   }
 
@@ -285,28 +273,6 @@ realmain(int argc, char* const* argv)
 
 
 //****************************************************************************
-
-static void 
-InitXML() 
-{
-  DIAG_Msg(3, "Initializing XML: ...");
-  try {
-    XMLPlatformUtils::Initialize();
-  } 
-  catch (const XMLException& x) {
-    DIAG_EMsg("Unable to initialize XML processor: " 
-	      << XMLString::transcode(x.getMessage()));
-    exit(1); 
-  }
-}
-
-
-static void
-FiniXML()
-{
-  DIAG_Msg(3, "Finalizing XML: ...");
-  XMLPlatformUtils::Terminate();
-}
 
 
 static void 

@@ -1,4 +1,4 @@
-// -*-C++-*-
+// -*-Mode: C++;-*-
 // $Id$
 
 // * BeginRiceCopyright *****************************************************
@@ -46,34 +46,9 @@ using std::string;
 
 //************************ Xerces Include Files ******************************
 
-#include <xercesc/util/XMLString.hpp>        
-using XERCES_CPP_NAMESPACE::XMLString;
-
 //************************* User Include Files *******************************
 
 #include "XercesSAX2.hpp"
 
 //****************************************************************************
-
-string 
-getAttr(const Attributes& attributes, int i) 
-{
-  const XMLCh* const xmlStr = attributes.getValue((unsigned int) i);
-  string s = "";
-  if (xmlStr) {
-    s = XMLString::transcode(xmlStr); 
-  }
-  return s; 
-}
-
-string 
-getAttr(const Attributes& attributes, const XMLCh* const name)
-{
-  const XMLCh* const xmlStr = attributes.getValue(name); 
-  string s = "";
-  if (xmlStr) {
-    s = XMLString::transcode(xmlStr);
-  }
-  return s;
-}
 

@@ -53,17 +53,17 @@ using XERCES_CPP_NAMESPACE::SAXParseException;
 
 //****************************************************************************
 
-#ifndef HPCViewXMLErrHandler_h
-#define HPCViewXMLErrHandler_h
+#ifndef _prof_juicy_x_XercesErrorHandler_h_
+#define _prof_juicy_x_XercesErrorHandler_h_
 
-class HPCViewXMLErrHandler : public ErrorHandler {
+class XercesErrorHandler : public ErrorHandler {
 public:
-  HPCViewXMLErrHandler(const std::string &_userFile, 
-		       const std::string &_tmpFile, 
-		       int _numPrefixLines, bool _verbose) : 
+  XercesErrorHandler(const std::string &_userFile, 
+		     const std::string &_tmpFile, 
+		     int _numPrefixLines, bool _verbose) : 
     userFile(_userFile), tmpFile(_tmpFile), 
     numPrefixLines(_numPrefixLines), verbose(_verbose) {}; 
-
+  
   // error handler interface
   void error(const SAXParseException& e);
   void fatalError(const SAXParseException& e);

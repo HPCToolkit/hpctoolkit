@@ -3,7 +3,7 @@
 
 // * BeginRiceCopyright *****************************************************
 // 
-// Copyright ((c)) 2002, Rice University 
+// Copyright ((c)) 2003, Rice University 
 // All rights reserved.
 // 
 // Redistribution and use in source and binary forms, with or without
@@ -35,34 +35,80 @@
 // 
 // ******************************************************* EndRiceCopyright *
 
-#ifndef _prof_juicy_x_XercesSAX2_
-#define _prof_juicy_x_XercesSAX2_
-
 //************************ System Include Files ******************************
 
 #include <string>
+using std::string;
 
-//************************* Xerces Include Files *****************************
-
-#include <xercesc/sax2/SAX2XMLReader.hpp>
-#include <xercesc/sax2/XMLReaderFactory.hpp>
-using XERCES_CPP_NAMESPACE::SAX2XMLReader;
-using XERCES_CPP_NAMESPACE::SAX2XMLReader;
-using XERCES_CPP_NAMESPACE::SAX2XMLReader;
-using XERCES_CPP_NAMESPACE::XMLReaderFactory;
-using XERCES_CPP_NAMESPACE::XMLUni;
-using XERCES_CPP_NAMESPACE::SAXException;
+//************************ Xerces Include Files ******************************
 
 #include <xercesc/sax2/DefaultHandler.hpp>
+using XERCES_CPP_NAMESPACE::DefaultHandler;
+
 #include <xercesc/sax2/Attributes.hpp>
+using XERCES_CPP_NAMESPACE::Attributes;
 
-#include <xercesc/sax/SAXParseException.hpp>
-using XERCES_CPP_NAMESPACE::SAXParseException;
+#include <xercesc/util/PlatformUtils.hpp>        
+using XERCES_CPP_NAMESPACE::XMLPlatformUtils;
 
-#include <xercesc/sax/ErrorHandler.hpp>
+#include <xercesc/util/XMLException.hpp>
+using XERCES_CPP_NAMESPACE::XMLException;
+
+#include <xercesc/util/XMLString.hpp>        
+using XERCES_CPP_NAMESPACE::XMLString;
 
 //************************* User Include Files *******************************
 
-//************************ Forward Declarations ******************************
+#include "XercesUtil.hpp"
 
-#endif
+#include <lib/support/diagnostics.h>
+
+//****************************************************************************
+
+void 
+InitXerces()
+{
+  DIAG_Msg(3, "Initializing XML: ...");
+  try {
+    XMLPlatformUtils::Initialize();
+  } 
+  catch (const XMLException& x) {
+    DIAG_Throw("Unable to initialize XML processor: " 
+	       << XMLString::transcode(x.getMessage()));
+  }
+}
+
+
+void
+FiniXerces()
+{
+  DIAG_Msg(3, "Finalizing XML: ...");
+  XMLPlatformUtils::Terminate();
+}
+
+
+//****************************************************************************
+
+string 
+getAttr(const Attributes& attributes, int i) 
+{
+  const XMLCh* const xmlStr = attributes.getValue((unsigned int) i);
+  string s = "";
+  if (xmlStr) {
+    s = XMLString::transcode(xmlStr); 
+  }
+  return s;
+}
+
+
+string 
+getAttr(const Attributes& attributes, const XMLCh* const name)
+{
+  const XMLCh* const xmlStr = attributes.getValue(name); 
+  string s = "";
+  if (xmlStr) {
+    s = XMLString::transcode(xmlStr);
+  }
+  return s;
+}
+

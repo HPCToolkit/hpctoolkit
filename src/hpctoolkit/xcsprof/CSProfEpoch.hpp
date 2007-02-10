@@ -53,6 +53,7 @@
 
 //************************* System Include Files ****************************
 
+#include <string>
 #include <vector>
 #include <algorithm>
 #include <iostream>
@@ -67,57 +68,54 @@
 
 #include <lib/support/NonUniformDegreeTree.hpp>
 #include <lib/support/Unique.hpp>
-#include <lib/support/String.hpp>
 
 //*************************** Forward Declarations ***************************
 
-
-
-class CSProfLDmodule:public Unique {
+class CSProfLDmodule : public Unique {
 public:
-   // Constructor/Destructor
-    CSProfLDmodule();
-
-    virtual ~CSProfLDmodule();
-
-    String  GetName() const{return name;}
-
-    VMA GetVaddr() const {return vaddr; }
-
-    VMA GetMapaddr() const {return mapaddr;} 
-    bool GetUsedFlag() const {return used;}
-
-    void SetName(const char* s) {name = s; }
-    void SetVaddr(VMA  v) {vaddr=v;}
-    void SetMapaddr(VMA  m) {mapaddr=m; }  
-    void SetUsedFlag(bool b) {used=b;}
-    
-    bool LMIsEmpty() {return (lm == NULL); } 
-    void SetLM(binutils::LM* x) {lm = x;}
-    binutils::LM* GetLM() {return lm;}
-
-    void Dump(std::ostream& o= std::cerr);
-    void DDump();
-
+  // Constructor/Destructor
+  CSProfLDmodule();
+  
+  virtual ~CSProfLDmodule();
+  
+  const std::string& GetName() const{return name;}
+  
+  VMA GetVaddr() const {return vaddr; }
+  
+  VMA GetMapaddr() const {return mapaddr;} 
+  bool GetUsedFlag() const {return used;}
+  
+  void SetName(const char* s) { name = (s) ? s: ""; }
+  void SetVaddr(VMA  v) {vaddr=v;}
+  void SetMapaddr(VMA  m) {mapaddr=m; }  
+  void SetUsedFlag(bool b) {used=b;}
+  
+  bool LMIsEmpty() {return (lm == NULL); } 
+  void SetLM(binutils::LM* x) {lm = x;}
+  binutils::LM* GetLM() {return lm;}
+  
+  void Dump(std::ostream& o= std::cerr);
+  void DDump();
+  
 private: 
   binutils::LM* lm;
-  String name;
+  std::string name;
   VMA vaddr;
   VMA mapaddr;  
   bool used;
 
-} ;
+};
 
 typedef std::vector<CSProfLDmodule *> CSProfLDmoduleVec;
 typedef CSProfLDmoduleVec::iterator   CSProfLDmoduleVecIt;
 typedef CSProfLDmoduleVec::const_iterator CSProfLDmoduleVecCIt;
 
 struct compare_ldmodule_by_mapaddr
- {
-   bool operator()(const CSProfLDmodule* a, 
-                       const CSProfLDmodule* b) const
-    { return (a->GetMapaddr() < b->GetMapaddr());}
- };
+{
+  bool operator()(const CSProfLDmodule* a, 
+		  const CSProfLDmodule* b) const
+  { return (a->GetMapaddr() < b->GetMapaddr());}
+};
 
 
 //****************************************************************************
@@ -126,41 +124,41 @@ struct compare_ldmodule_by_mapaddr
 
 class CSProfEpoch : public Unique {
 public: 
-   // Constructor/Destructor
-   CSProfEpoch(const suint i);
-   virtual ~CSProfEpoch();
-
-   // Data
-    void  AddLoadModule(CSProfLDmodule* ldm) {loadmoduleVec.push_back(ldm);}
-
-    void SetLoadmodule(suint i, const CSProfLDmodule* ldm) {
-	     loadmoduleVec[i] = const_cast<CSProfLDmodule*>(ldm);
-     }
-
-    void SortLoadmoduleByVMA(){
-      std::sort(loadmoduleVec.begin(), loadmoduleVec.end(), 
-                     compare_ldmodule_by_mapaddr());
-     } 
-    
-   suint GetNumLdModule() {return numberofldmodule;} 
-
-   CSProfLDmodule* GetLdModule(suint i)  {return loadmoduleVec[i];}
-    
-    // Debug
-    void Dump(std::ostream& o = std::cerr);
-    void DDump();
-
-    CSProfLDmodule* FindLDmodule(VMA i);
-
-    friend class CSProfEpoch_LdModuleIterator ;
-
+  // Constructor/Destructor
+  CSProfEpoch(const suint i);
+  virtual ~CSProfEpoch();
+  
+  // Data
+  void  AddLoadModule(CSProfLDmodule* ldm) {loadmoduleVec.push_back(ldm);}
+  
+  void SetLoadmodule(suint i, const CSProfLDmodule* ldm) {
+    loadmoduleVec[i] = const_cast<CSProfLDmodule*>(ldm);
+  }
+  
+  void SortLoadmoduleByVMA(){
+    std::sort(loadmoduleVec.begin(), loadmoduleVec.end(), 
+	      compare_ldmodule_by_mapaddr());
+  } 
+  
+  suint GetNumLdModule() {return numberofldmodule;} 
+  
+  CSProfLDmodule* GetLdModule(suint i)  {return loadmoduleVec[i];}
+  
+  // Debug
+  void Dump(std::ostream& o = std::cerr);
+  void DDump();
+  
+  CSProfLDmodule* FindLDmodule(VMA i);
+  
+  friend class CSProfEpoch_LdModuleIterator ;
+  
 protected:
 private:
-    suint            numberofldmodule;   
-    // vector of load module with this epoch 
-    // the size of the vector is numberofldmodule
-    CSProfLDmoduleVec  loadmoduleVec;
-
+  suint            numberofldmodule;   
+  // vector of load module with this epoch 
+  // the size of the vector is numberofldmodule
+  CSProfLDmoduleVec  loadmoduleVec;
+  
 };
 
 
@@ -172,26 +170,26 @@ public :
   CSProfEpoch_LdModuleIterator(const CSProfEpoch& x):p (x) {
     Reset();
   }
- virtual ~CSProfEpoch_LdModuleIterator(){}
-
- CSProfLDmodule* Current() const { return (*it);}
-
- void operator++()    {it++;} //prefix
- void operator++(int) {++it;} //postfix
-
- bool IsValid() const { return it != p.loadmoduleVec.end(); }
- bool IsEmpty() const { return it == p.loadmoduleVec.end(); }
-
- // Reset and prepare for iteration again 
- void Reset() { it = p.loadmoduleVec.begin(); }
-
+  virtual ~CSProfEpoch_LdModuleIterator(){}
+  
+  CSProfLDmodule* Current() const { return (*it);}
+  
+  void operator++()    {it++;} //prefix
+  void operator++(int) {++it;} //postfix
+  
+  bool IsValid() const { return it != p.loadmoduleVec.end(); }
+  bool IsEmpty() const { return it == p.loadmoduleVec.end(); }
+  
+  // Reset and prepare for iteration again 
+  void Reset() { it = p.loadmoduleVec.begin(); }
+  
 private:
   // Should not be used 
-   CSProfEpoch_LdModuleIterator();
-   CSProfEpoch_LdModuleIterator(const CSProfEpoch_LdModuleIterator& x);
-   CSProfEpoch_LdModuleIterator& operator=(const CSProfEpoch_LdModuleIterator& x)
-        {return *this;}
-
+  CSProfEpoch_LdModuleIterator();
+  CSProfEpoch_LdModuleIterator(const CSProfEpoch_LdModuleIterator& x);
+  CSProfEpoch_LdModuleIterator& operator=(const CSProfEpoch_LdModuleIterator& x)
+  {return *this;}
+  
 protected:
 private:
   const  CSProfEpoch& p;

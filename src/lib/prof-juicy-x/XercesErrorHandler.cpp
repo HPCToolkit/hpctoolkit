@@ -1,4 +1,4 @@
-// -*-C++-*-
+// -*-Mode: C++;-*-
 // $Id$
 
 // * BeginRiceCopyright *****************************************************
@@ -50,9 +50,6 @@ using std::string;
 #include <xercesc/util/XMLString.hpp> 
 using XERCES_CPP_NAMESPACE::XMLString;
 
-// #include <xercesc/sax/SAXParseException.hpp>
-// using XERCES_CPP_NAMESPACE::SAXParseException;
-
 //************************* User Include Files *******************************
 
 #include "XercesErrorHandler.hpp"
@@ -63,7 +60,7 @@ const char *CONFIG = "CONFIGURATION";
 //****************************************************************************
  
 void 
-HPCViewXMLErrHandler::report(std::ostream& cerr, 
+XercesErrorHandler::report(std::ostream& cerr, 
 			     const char* prefix, 
 			     const char* fileType, 
 			     const SAXParseException& e, 
@@ -81,20 +78,24 @@ HPCViewXMLErrHandler::report(std::ostream& cerr,
 }
 
 
-void HPCViewXMLErrHandler::error(const SAXParseException& e)
+void 
+XercesErrorHandler::error(const SAXParseException& e)
 {
-  report(cerr, "hpcview non-fatal error", CONFIG, e, userFile.c_str(), numPrefixLines); 
+  report(cerr, "Xerces non-fatal error", CONFIG, e, userFile.c_str(), numPrefixLines); 
 }
 
+
 void 
-HPCViewXMLErrHandler::fatalError(const SAXParseException& e)
+XercesErrorHandler::fatalError(const SAXParseException& e)
 {
-  report(cerr, "hpcview fatal error", CONFIG, e, userFile.c_str(), numPrefixLines); 
+  report(cerr, "Xerces fatal error", CONFIG, e, userFile.c_str(), numPrefixLines); 
   throw e; 
 }
 
-void HPCViewXMLErrHandler::warning(const SAXParseException& e)
+
+void 
+XercesErrorHandler::warning(const SAXParseException& e)
 {
-  report(cerr, "hpcview warning", CONFIG, e, userFile.c_str(), numPrefixLines); 
+  report(cerr, "Xerces warning", CONFIG, e, userFile.c_str(), numPrefixLines); 
 }
 

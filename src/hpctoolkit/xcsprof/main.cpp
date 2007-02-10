@@ -63,20 +63,28 @@ using std::string;
 //*************************** User Include Files ****************************
 
 #include "Args.hpp"
-//#include "ProfileReader.h" FIXME
 #include "CSProfileUtils.hpp"
+
+#include <lib/prof-juicy-x/XercesUtil.hpp>
+#include <lib/prof-juicy-x/PGMReader.hpp>
 
 #include <lib/binutils/LM.hpp>
 
 //*************************** Forward Declarations ***************************
 
-using std::cerr;
+PgmScopeTree*
+readStructureData(const char* filenm);
+
+static void
+processCallingCtxtTree(CSProfile* profData, VMA begVMA, VMA endVMA, 
+		       const std::string& lm_fnm, LoadModScope* lmScope);
+
+static void
+processCallingCtxtTree(CSProfile* profData, VMA begVMA, VMA endVMA, 
+		       const std::string& lm_fnm);
+
 
 //****************************************************************************
-
-#if 0
-#define DEB_ON_LINUX 1  
-#endif
 
 int realmain(int argc, char* const* argv);
 
@@ -132,51 +140,48 @@ realmain(int argc, char* const* argv)
   // ------------------------------------------------------------
   // Add source file info
   // ------------------------------------------------------------
+
+  PgmScopeTree* scopeTree = NULL;
+  PgmScope* pgmScope = NULL;
+  if (!args.structureFile.empty()) {
+    scopeTree = readStructureData(args.structureFile.c_str());
+    pgmScope = scopeTree->GetRoot();
+  }
+  
   try { 
-    // for each "used" load module, go through the call stack tree 
-    // to find the source line infornmation 
+    // for each (used) load module, add information to the calling
+    // context tree.
     
     // for efficiency, we add a flag in CSProfLDmodule "used"
     // add one more pass search the callstack tree, to set 
     // the flag -"alpha"- only, since we get info from binary 
     // profile file not from bfd  
     LdmdSetUsedFlag(profData); 
-    
+
+    // Note that this assumes iteration in reverse sorted order
     int num_lm = profData->GetEpoch()->GetNumLdModule();
-    VMA endVMA = 0;
+    VMA endVMA = VMA_MAX;
     
     for (int i = num_lm - 1; i >= 0; i--) {
-      bool lastone = (i == num_lm-1);
-      
       CSProfLDmodule* csp_lm = profData->GetEpoch()->GetLdModule(i); 
-      VMA begVMA = csp_lm->GetMapaddr(); // for next csploadmodule  
-      
-      if (!csp_lm->GetUsedFlag()) { // ignore unused loadmodule 
-	endVMA = begVMA - 1;
-	continue; 
-      }
+      VMA begVMA = csp_lm->GetMapaddr(); // for next csploadmodule
 
-      binutils::LM* lm = NULL;
-      try {
-	lm = new binutils::LM();
-	lm->Open(csp_lm->GetName());
-	lm->Read();
+      if (csp_lm->GetUsedFlag()) {
+	const std::string& lm_fnm = csp_lm->GetName();
+	LoadModScope* lmScope = NULL;
+	if (pgmScope) {
+	  lmScope = pgmScope->FindLoadMod(lm_fnm);
+	}
+	
+	if (lmScope) {
+	  DIAG_Msg(1, "Using STRUCTURE for: " << lm_fnm);
+	  processCallingCtxtTree(profData, begVMA, endVMA, lm_fnm, lmScope);
+	}
+	else {
+	  DIAG_Msg(1, "Using debug info for: " << lm_fnm);
+	  processCallingCtxtTree(profData, begVMA, endVMA, lm_fnm);
+	}
       }
-      catch (...) {
-	DIAG_EMsg("While reading '" << csp_lm->GetName() << "'...");
-	throw;
-      }
-      
-      // get the start and end PC from the text sections 
-      DIAG_Msg(1, "Load Module: " << csp_lm->GetName());
-      if (lm->GetType() != binutils::LM::Executable) {
-	lm->Relocate(begVMA);   
-      }
-      
-      AddSourceFileInfoToCSProfile(profData, lm, begVMA, endVMA, lastone);
-      NormalizeInternalCallSites(profData, lm, begVMA, endVMA, lastone);
-      
-      delete lm;
 
       endVMA = begVMA - 1;
     } /* for each load module */ 
@@ -187,6 +192,8 @@ realmain(int argc, char* const* argv)
     DIAG_EMsg("While preparing CSPROFILE...");
     throw;
   }
+  
+  delete scopeTree;
 
   // ------------------------------------------------------------
   // Dump
@@ -213,3 +220,83 @@ realmain(int argc, char* const* argv)
 }
 
 //****************************************************************************
+
+  
+class MyDocHandlerArgs : public DocHandlerArgs {
+public:
+  MyDocHandlerArgs()  { }
+  ~MyDocHandlerArgs() { }
+  
+  virtual string ReplacePath(const char* oldpath) const { return oldpath; }
+  virtual bool MustDeleteUnderscore() const { return false; }
+};
+
+
+PgmScopeTree*
+readStructureData(const char* filenm)
+{
+  InitXerces();
+
+  string path = ".";
+  PgmScope* pgm = new PgmScope("");
+  PgmScopeTree* scopeTree = new PgmScopeTree("", pgm);
+  NodeRetriever scopeTreeInterface(pgm, path);
+  MyDocHandlerArgs args;
+  
+  read_PGM(&scopeTreeInterface, filenm, PGMDocHandler::Doc_STRUCT, args);
+
+  FiniXerces();
+  
+  return scopeTree;
+}
+
+//****************************************************************************
+
+static void
+processCallingCtxtTree(CSProfile* profData, VMA begVMA, VMA endVMA, 
+		       const std::string& lm_fnm, LoadModScope* lmScope)
+{
+  VMA relocVMA = 0;
+
+  try {
+    binutils::LM* lm = new binutils::LM();
+    lm->Open(lm_fnm.c_str());
+    if (lm->GetType() != binutils::LM::Executable) {
+      relocVMA = begVMA;
+    }
+    delete lm;
+  }
+  catch (...) {
+    DIAG_EMsg("While reading '" << lm_fnm << "'...");
+    throw;
+  }
+  
+  InferCallFrames(profData, begVMA, endVMA, lmScope, relocVMA);
+}
+
+
+static void
+processCallingCtxtTree(CSProfile* profData, VMA begVMA, VMA endVMA, 
+		       const std::string& lm_fnm)
+{
+  binutils::LM* lm = NULL;
+  try {
+    lm = new binutils::LM();
+    lm->Open(lm_fnm.c_str());
+    lm->Read();
+  }
+  catch (...) {
+    DIAG_EMsg("While reading '" << lm_fnm << "'...");
+    throw;
+  }
+  
+  // get the start and end PC from the text sections 
+  if (lm->GetType() != binutils::LM::Executable) {
+    lm->Relocate(begVMA);
+  }
+  
+  InferCallFrames(profData, begVMA, endVMA, lm);
+  
+  delete lm;
+}
+
