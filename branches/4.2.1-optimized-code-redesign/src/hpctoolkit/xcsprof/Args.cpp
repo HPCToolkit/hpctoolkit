@@ -352,7 +352,7 @@ Args::createDatabaseDirectory()
       pid_t myPid = getpid();
       string myPidStr = StrUtil::toStr(myPid);
       string dbDirPid = dbDir + "-" + myPidStr;
-      DIAG_Msg(1, "Databse '" << dbDir << "' already exists.  Trying " 
+      DIAG_Msg(1, "Database '" << dbDir << "' already exists.  Trying " 
 	       << dbDirPid);
       if (mkdir(dbDirPid.c_str(), 
 		S_IRWXU | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH) == -1) {

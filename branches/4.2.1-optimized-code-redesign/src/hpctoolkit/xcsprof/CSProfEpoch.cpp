@@ -81,43 +81,40 @@ CSProfEpoch::CSProfEpoch(const suint i)
 
 CSProfEpoch::~CSProfEpoch()
 {
-   for (CSProfEpoch_LdModuleIterator it(*this); it.IsValid(); ++it) {
+  for (CSProfEpoch_LdModuleIterator it(*this); it.IsValid(); ++it) {
     CSProfLDmodule* lm = it.Current(); 
-       delete lm; 
+    delete lm; 
   }
-
+  
   loadmoduleVec.clear();
-
 }
 
 CSProfLDmodule* 
 CSProfEpoch::FindLDmodule(VMA ip)
 {
- CSProfLDmodule* pre=loadmoduleVec[0];
- for (int i=0; i< numberofldmodule; i++)
-   { 
-     CSProfLDmodule* curr =loadmoduleVec[i];
-     if (ip >= (pre->GetMapaddr()) &&
-            ip < curr->GetMapaddr())
-          return pre;
-     else 
-          pre = curr;
-   }
-
+  CSProfLDmodule* pre=loadmoduleVec[0];
+  for (int i=0; i< numberofldmodule; i++) { 
+    CSProfLDmodule* curr =loadmoduleVec[i];
+    if (ip >= (pre->GetMapaddr()) &&
+	ip < curr->GetMapaddr())
+      return pre;
+    else 
+      pre = curr;
+  }
+  
   return pre;
-
 }
 
 void CSProfLDmodule::Dump(std::ostream& o)
 { 
-   using std::hex;
-   using std::dec;
-   using std::endl; 
-
-   o<<"the load module name is " << name;
-   o<<" vaddr is 0x" << hex  << vaddr;
-   o<<" mapaddr is 0x" << hex <<  mapaddr;
-   o<< dec << endl; 
+  using std::hex;
+  using std::dec;
+  using std::endl; 
+  
+  o<<"the load module name is " << name;
+  o<<" vaddr is 0x" << hex  << vaddr;
+  o<<" mapaddr is 0x" << hex <<  mapaddr;
+  o<< dec << endl; 
 }
 
 void CSProfLDmodule::DDump()
@@ -128,15 +125,15 @@ void CSProfLDmodule::DDump()
 void CSProfEpoch::Dump(std::ostream& o)
 {
   for (int i=0; i<numberofldmodule; i++) {
-       CSProfLDmodule* lm = loadmoduleVec[i];
-       lm->Dump(o);
-    }
+    CSProfLDmodule* lm = loadmoduleVec[i];
+    lm->Dump(o);
+  }
 }
 
 
 void CSProfEpoch::DDump()
 {
-     Dump(std::cerr);
+  Dump(std::cerr);
 }
 
 

@@ -384,22 +384,24 @@ AddSymbolicInfo(CSProfCodeNode* n, LoadModScope* lmScope,
 
 void 
 InferCallFrames(CSProfile* prof, CSProfNode* node, 
-		VMA begVMA, VMA endVMA, LoadModScope* lmScope);
+		VMA begVMA, VMA endVMA, LoadModScope* lmScope, VMA relocVMA);
 
 
 void
-InferCallFrames(CSProfile* prof, VMA begVMA, VMA endVMA, LoadModScope* lmScope)
+InferCallFrames(CSProfile* prof, VMA begVMA, VMA endVMA, 
+		LoadModScope* lmScope, VMA relocVMA)
 {
   CSProfTree* csproftree = prof->GetTree();
   if (!csproftree) { return; }
   
-  InferCallFrames(prof, csproftree->GetRoot(), begVMA, endVMA, lmScope);
+  InferCallFrames(prof, csproftree->GetRoot(), begVMA, endVMA, 
+		  lmScope, relocVMA);
 }
 
 
 void 
 InferCallFrames(CSProfile* prof, CSProfNode* node, 
-		VMA begVMA, VMA endVMA, LoadModScope* lmScope)
+		VMA begVMA, VMA endVMA, LoadModScope* lmScope, VMA relocVMA)
 {
   if (!node) { return; }
 
@@ -414,7 +416,7 @@ InferCallFrames(CSProfile* prof, CSProfNode* node,
 
     // recur 
     if (!n->IsLeaf()) {
-      InferCallFrames(prof, n, begVMA, endVMA, lmScope);
+      InferCallFrames(prof, n, begVMA, endVMA, lmScope, relocVMA);
     }
     
     // process this node
@@ -422,7 +424,7 @@ InferCallFrames(CSProfile* prof, CSProfNode* node,
 		 || n->GetType() == CSProfNode::STATEMENT);
 
     if (isTy && (begVMA <= n->GetIP() && n->GetIP() <= endVMA)) {
-      VMA curr_ip = n->GetIP();
+      VMA curr_ip = n->GetIP() - relocVMA;
       
       CodeInfo* scope = lmScope->findByVMA(curr_ip);
       CodeInfo* ctxt = (scope) ? scope->CallingCtxt() : NULL;
@@ -431,15 +433,17 @@ InferCallFrames(CSProfile* prof, CSProfNode* node,
 
       // Seach for the frame associated with this context
       CSProfProcedureFrameNode* frameNode = NULL;
-      CodeInfo* toFind = (scope) ? scope : lmScope;
+      CodeInfo* toFind = (ctxt) ? ctxt : lmScope;
       
       CodeInfoToProcFrameMap::iterator it = procFrameMap.find(toFind);
       if (it != procFrameMap.end()) {
 	frameNode = (*it).second;
       }
       else {
+	// INVARIANT: 'n' has symbolic information
 	frameNode = new CSProfProcedureFrameNode(NULL);
 	frameNode->SetFile(n->GetFile());
+	frameNode->SetFileIsText(n->FileIsText());
 	
 	if (ctxt) {
 	  frameNode->SetProc(n->GetProc());
@@ -452,8 +456,9 @@ InferCallFrames(CSProfile* prof, CSProfNode* node,
 	
 	if (ctxt && ctxt->Type() == ScopeInfo::ALIEN) {
 	  frameNode->isAlien() = true;
+	  frameNode->SetProc("(*) " + string(frameNode->GetProc()));
 	}
-
+	
 	frameNode->Link(node);
 	procFrameMap.insert(std::make_pair(toFind, frameNode));
       }
@@ -592,7 +597,6 @@ InferCallFrames(CSProfile* prof, CSProfNode* node,
 	frameNode->SetProc(frameNm);
 	frameNode->SetFileIsText(n->FileIsText());
 	if (!frameNode->FileIsText()) {
-	  // if child is not text: set f line to 0 and is text to false
 	  frameNode->SetLine(0);
 	} 
 	else {
@@ -809,7 +813,7 @@ copySourceFiles(CSProfNode* node,
 					 searchPaths,
 					 dbSourceDirectory);
   }
- 
+
   noError = noError && 
     innerCopySourceFiles(node, searchPaths, dbSourceDirectory);
   return noError;

@@ -75,7 +75,7 @@ CSProfile* ReadProfile_CSPROF(const char* fnm, const char *execnm);
 //****************************************************************************
 
 void InferCallFrames(CSProfile* prof, VMA begVMA, VMA endVMA,
-		     LoadModScope* lmScope);
+		     LoadModScope* lmScope, VMA relocVMA);
 
 void InferCallFrames(CSProfile* prof, VMA begVMA, VMA endVMA,
 		     binutils::LM* lm);
