@@ -72,6 +72,9 @@ ProfFile::read(const string &filename)
   mtime_ = statbuf.st_mtime;
 
   fp = fopen(filename.c_str(), "r");
+  if (!fp) {
+    return 1;
+  }
 
   // <header>
   char magic_str[HPCRUNFILE_MAGIC_STR_LEN];
