@@ -1117,7 +1117,7 @@ MergeBogusAlienScopes(CodeInfo* node, FileScope* file)
 	dynamic_cast<AlienScope*>(callCtxt)->fileName() : file->name();
       
       if (alien->fileName() == callCtxtFnm
-	  && ctxtNameEqFuzzy(callCtxt->name(), alien->name())
+	  && ctxtNameEqFuzzy(callCtxt, alien->name())
 	  && LocationMgr::containsIntervalFzy(parent, alien->begLine(), 
 					      alien->endLine()))  {
 	// Move all children of 'alien' into 'parent'

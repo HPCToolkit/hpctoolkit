@@ -80,6 +80,19 @@ namespace bloop {
     return (pos != string::npos && (pos == 0 || std::ispunct(ctxtnm[pos-1])));
   }
 
+  inline bool 
+  ctxtNameEqFuzzy(const CodeInfo* callCtxt, const string& x) 
+  {
+    bool t1 = ctxtNameEqFuzzy(callCtxt->name(), x);
+    bool t2 = false;
+    if (callCtxt->Type() == ScopeInfo::PROC) {
+      const ProcScope* pScope = dynamic_cast<const ProcScope*>(callCtxt);
+      t2 = ctxtNameEqFuzzy(pScope->LinkName(), x);
+    }
+    return (t1 || t2);    
+  }
+
+
 } // namespace bloop
 } // namespace banal
 
@@ -365,7 +378,7 @@ private:
     
     virtual bool operator()(const Ctxt& ctxt) const {
       return (ctxt.containsLine(m_filenm, m_line)
-	      && ctxtNameEqFuzzy(ctxt.ctxt()->name(), m_procnm));
+	      && ctxtNameEqFuzzy(ctxt.ctxt(), m_procnm));
     }
   private:
     const string& m_filenm, m_procnm;
