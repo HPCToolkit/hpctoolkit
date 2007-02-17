@@ -368,6 +368,26 @@ AC_SUBST(OPT_LIBUNWIND_LIBA)
 
 
 #-------------------------------------------------
+# with-objcopy
+#-------------------------------------------------
+
+AC_MSG_CHECKING([whether configured with objcopy])
+
+OPT_OBJCOPY=objcopy
+
+AC_ARG_WITH([objcopy],
+  AS_HELP_STRING([--with-objcopy=<obcopy_path>],
+                 [use given objcopy when hiding hpcrun library symbols]),
+  [if test $withval != no; then
+     OPT_OBJCOPY=${withval}
+   fi],
+  [])
+
+AC_MSG_RESULT([yes (${OPT_OBJCOPY})])
+
+AC_SUBST(OPT_OBJCOPY)
+
+#-------------------------------------------------
 # enable-hpcrun: Only build hpcrun if on Linux and PAPI is present
 #-------------------------------------------------
 

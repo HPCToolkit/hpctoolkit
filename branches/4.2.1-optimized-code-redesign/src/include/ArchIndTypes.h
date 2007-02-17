@@ -80,16 +80,19 @@
 # define ARCH_ALPHA64
 # define ARCH_64
 # define OS_OSF1
+
 #elif (defined(__i386) && defined(__linux))
 # define PLATFORM_I686_LINUX
 # define ARCH_IA32
 # define ARCH_32
 # define OS_LINUX
+
 #elif (defined(__ia64) && defined(__linux))
 # define PLATFORM_IA64_LINUX
 # define ARCH_IA64
 # define ARCH_64
 # define OS_LINUX
+
 #elif (defined(__mips) && defined(__sgi) && defined(__unix))
 # define PLATFORM_MIPS_IRIX64
 # define OS_IRIX64
@@ -100,18 +103,29 @@
 #  define ARCH_MIPS64
 #  define ARCH_64
 # else
-#  error "ArchIndTypes.h: Unknown MIPS platform."
+#  error "ArchIndTypes.h: Unknown MIPS/IRIX platform."
 # endif
+
+#elif (defined(__mips64) && defined(__linux))
+# define PLATFORM_MIPS64_LINUX
+# define ARCH_MIPS64
+# define ARCH_64
+/*# define ARCH_MIPS32 * -n32 */
+/*# define ARCH_32     * -n32 */
+# define OS_LINUX
+
 #elif (defined(__x86_64) || defined(__x86_64__))
 # define PLATFORM_X86_64_LINUX
 # define ARCH_X86_64
 # define ARCH_64
 # define OS_LINUX
+
 #elif (defined(__ppc__) && defined(__MACH__))
 # define PLATFORM_POWERPC_DARWIN
 # define ARCH_POWERPC32
 # define ARCH_32
 # define OS_MACHDARWIN
+
 #elif (defined(__sparc) && defined(__sun) && defined(__unix))
 # define PLATFORM_SPARC_SUNOS
 # define OS_SUNOS
@@ -123,6 +137,7 @@
 #  define ARCH_SPARC32
 #  define ARCH_32
 # endif
+
 #else
 # error "ArchIndTypes.h does not know of your platform!"
 #endif
