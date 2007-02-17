@@ -15,7 +15,7 @@
 @SET_MAKE@
 
 # -*-Mode: makefile;-*-
-# $Id: Makefile.am 681 2007-01-14 01:34:10Z eraxxon $
+# $Id: Makefile.am 748 2007-02-17 18:26:44Z eraxxon $
 
 #############################################################################
 #
@@ -252,6 +252,7 @@ OPT_LIBUNWIND_LDFLAGS = @OPT_LIBUNWIND_LDFLAGS@
 OPT_LIBUNWIND_LIBA = @OPT_LIBUNWIND_LIBA@
 OPT_LIBUNWIND_LIBPATH = @OPT_LIBUNWIND_LIBPATH@
 OPT_LIBUNWIND_LIBSO = @OPT_LIBUNWIND_LIBSO@
+OPT_OBJCOPY = @OPT_OBJCOPY@
 OPT_PAPI_IFLAGS = @OPT_PAPI_IFLAGS@
 OPT_PAPI_LDFLAGS = @OPT_PAPI_LDFLAGS@
 OPT_PAPI_LIBA = @OPT_PAPI_LIBA@
@@ -945,7 +946,7 @@ myinstall-exec: myinstall-libhpcrunso myinstall-libhpcrun-static
 
 myinstall-libhpcrunso:
 	rm -f $(MYINSTALLDIR)/lib/libhpcrun.a
-	objcopy -S $(MYKEEPSYMS) $(MYINSTALLDIR)/lib/libhpcrun.so
+	@OPT_OBJCOPY@ -S $(MYKEEPSYMS) $(MYINSTALLDIR)/lib/libhpcrun.so
 
 myinstall-libhpcrun-static: 
 	mv $(MYINSTALLDIR)/bin/libhpcrun-static.o $(MYINSTALLDIR)/lib/.

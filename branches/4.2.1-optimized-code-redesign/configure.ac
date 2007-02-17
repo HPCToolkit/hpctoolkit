@@ -67,7 +67,7 @@ m4_include(config/hpc-cxxutils.m4)
 #    correctly
 #----------------------------------------------------------------------------
 
-AC_INIT([HPCToolkit], [BRANCH-4.2.2=740], [hpc@cs.rice.edu], [HPCToolkit])
+AC_INIT([HPCToolkit], [BRANCH-4.2.2=750], [hpc@cs.rice.edu], [HPCToolkit])
 AC_CONFIG_SRCDIR([src/include/HPCToolkitVersionInfo.h])
 AC_CONFIG_AUX_DIR([config])
 
@@ -137,9 +137,18 @@ HPC_CHECK_COMPILE_PTHREAD_H()
 # installations to optionally be given on configure line or in the
 # environment.
 
-AC_MSG_CHECKING([for Xerces-C])
+AC_MSG_CHECKING([for XercesC])
 
 XERCES="${hpctoolkit_top}/../xercesc/${HPCTOOLKIT_PLATFORM}"
+
+AC_ARG_WITH([xerces],
+  AS_HELP_STRING([--with-xerces=<XercesC path>],
+                 [use given XercesC installation]),
+  [if test $withval != no; then
+     XERCES=${withval}
+   fi],
+  [])
+
 XERCES_IFLAGS="-I${XERCES}/include"
 XERCES_LDFLAGS="-L${XERCES}/lib -lxerces-c"
 
@@ -154,12 +163,20 @@ AC_SUBST([XERCES_LDFLAGS])
 
 AC_MSG_CHECKING([for monitor])
 
+MONITOR="${hpctoolkit_top}/../monitor/${HPCTOOLKIT_PLATFORM}"
+
+AC_ARG_WITH([monitor],
+  AS_HELP_STRING([--with-monitor=<libmonitor path>],
+                 [use given libmonitor installation]),
+  [if test $withval != no; then
+     MONITOR=${withval}
+   fi],
+  [])
+
 MONITOR_LIBNM="lib"
 if test "${HPCTOOLKIT_PLATFORM}" = "x86_64-Linux" ; then
   MONITOR_LIBNM="lib64"
 fi
-
-MONITOR="${hpctoolkit_top}/../monitor/${HPCTOOLKIT_PLATFORM}"
 MONITOR_IFLAGS="-I${MONITOR}/include"
 MONITOR_LIBPATH="${MONITOR}/${MONITOR_LIBNM}"
 MONITOR_LDFLAGS="-L${MONITOR_LIBPATH}"
@@ -178,6 +195,7 @@ AC_SUBST([MONITOR_LIBPATH])
 AC_SUBST([MONITOR_LIBSO])
 AC_SUBST([MONITOR_LIBSO_INSTALLED])
 
+
 #-------------------------------------------------
 # Check for Open Analysis (CFG builder, etc.)
 #-------------------------------------------------
@@ -185,6 +203,15 @@ AC_SUBST([MONITOR_LIBSO_INSTALLED])
 AC_MSG_CHECKING([for OpenAnalysis])
 
 OA="${hpctoolkit_top}/../OpenAnalysis/${HPCTOOLKIT_PLATFORM}"
+
+AC_ARG_WITH([oa],
+  AS_HELP_STRING([--with-oa=<OpenAnalysis path>],
+                 [use given OpenAnalysis installation]),
+  [if test $withval != no; then
+     OA=${withval}
+   fi],
+  [])
+
 OA_IFLAGS="-DOA_IRHANDLETYPE_SZ64 -I${OA}/include"
 OA_LDFLAGS="-L${OA}/lib -lOAsz64"
 
@@ -192,19 +219,30 @@ AC_MSG_RESULT([${OA}])
 AC_SUBST([OA_IFLAGS])
 AC_SUBST([OA_LDFLAGS])
 
+
 #-------------------------------------------------
 # Check for GNU's binutils (binary interface)
 #-------------------------------------------------
+# cf. enable-hpc-binutils
 
 AC_MSG_CHECKING([for GNU binutils])
+
+GNUBINUTILS="${hpctoolkit_top}/../binutils/${HPCTOOLKIT_PLATFORM}"
+
+AC_ARG_WITH([binutils],
+  AS_HELP_STRING([--with-binutils=<GNU binutils path>],
+                 [use given GNU binutils installation]),
+  [if test $withval != no; then
+     GNUBINUTILS=${withval}
+   fi],
+  [])
+
 
 # The binutils installer (2.16.1, 2.17) creates libbfd.la and
 # libopcodes.la but only libiberty.a.  Apparently, not having
 # libiberty.la can cause libtool (1.5.20, 1.5.22) to prefer a system
 # library (without a .la!) -- thus ignoring the -L directive.  So we
 # provide an absolute reference.
-
-GNUBINUTILS="${hpctoolkit_top}/../binutils/${HPCTOOLKIT_PLATFORM}"
 GNUBINUTILS_IFLAGS="-I${GNUBINUTILS}/include"
 GNUBINUTILS_LDFLAGS="-L${GNUBINUTILS}/lib -lbfd -lopcodes ${GNUBINUTILS}/lib/libiberty.a"
 
@@ -247,6 +285,7 @@ AC_ARG_ENABLE([develop],
 
 AC_MSG_RESULT([${OPT_ENABLE_DEVELOP}])
 AM_CONDITIONAL(OPT_ENABLE_DEVELOP, test "${OPT_ENABLE_DEVELOP}" = "yes")
+
 
 #-------------------------------------------------
 # with-papi
@@ -325,6 +364,7 @@ AC_SUBST(OPT_PAPI_LDFLAGS)
 AC_SUBST(OPT_PAPI_LIBSO)
 AC_SUBST(OPT_PAPI_LIBA)
 
+
 #-------------------------------------------------
 # with-libunwind
 #-------------------------------------------------
@@ -366,26 +406,6 @@ AC_SUBST(OPT_LIBUNWIND_LDFLAGS)
 AC_SUBST(OPT_LIBUNWIND_LIBSO)
 AC_SUBST(OPT_LIBUNWIND_LIBA)
 
-
-#-------------------------------------------------
-# with-objcopy
-#-------------------------------------------------
-
-AC_MSG_CHECKING([whether configured with objcopy])
-
-OPT_OBJCOPY=objcopy
-
-AC_ARG_WITH([objcopy],
-  AS_HELP_STRING([--with-objcopy=<obcopy_path>],
-                 [use given objcopy when hiding hpcrun library symbols]),
-  [if test $withval != no; then
-     OPT_OBJCOPY=${withval}
-   fi],
-  [])
-
-AC_MSG_RESULT([yes (${OPT_OBJCOPY})])
-
-AC_SUBST(OPT_OBJCOPY)
 
 #-------------------------------------------------
 # enable-hpcrun: Only build hpcrun if on Linux and PAPI is present
@@ -476,6 +496,52 @@ AC_ARG_ENABLE([devtools],
 
 AC_MSG_RESULT([${OPT_ENABLE_DEVTOOLS}])
 AM_CONDITIONAL(OPT_ENABLE_DEVTOOLS, test "${OPT_ENABLE_DEVTOOLS}" = "yes")
+
+
+#-------------------------------------------------
+# enable-hpc-binutils: Enable use of HPCToolkit's binutils 
+#-------------------------------------------------
+
+AC_MSG_CHECKING([whether to enable HPCToolkit GNU binutils functionality])
+
+OPT_ENABLE_HPC_GNUBINUTILS="yes"
+
+AC_ARG_ENABLE([hpc-binutils],
+  AS_HELP_STRING([--enable-hpc-binutils],
+                 [Enable extra HPCToolkit GNU binutils functionality]),
+  [case "${enableval}" in
+     yes) OPT_ENABLE_HPC_GNUBINUTILS="yes" ;;
+     no)  OPT_ENABLE_HPC_GNUBINUTILS="no" ;;
+     *) AC_MSG_ERROR([bad value ${enableval} for --enable-hpc-binutils]) ;;
+   esac],
+  [OPT_ENABLE_HPC_GNUBINUTILS=yes])
+
+AC_MSG_RESULT([${OPT_ENABLE_HPC_GNUBINUTILS}])
+
+if test "${OPT_ENABLE_HPC_GNUBINUTILS}" = "yes" ; then
+  AC_DEFINE([HAVE_HPC_BINUTILS], [], [HPCToolkit binutils])
+fi
+
+
+#-------------------------------------------------
+# with-objcopy
+#-------------------------------------------------
+
+AC_MSG_CHECKING([whether configured with objcopy])
+
+OPT_OBJCOPY=objcopy
+
+AC_ARG_WITH([objcopy],
+  AS_HELP_STRING([--with-objcopy=<obcopy_path>],
+                 [use given objcopy when hiding hpcrun library symbols]),
+  [if test $withval != no; then
+     OPT_OBJCOPY=${withval}
+   fi],
+  [])
+
+AC_MSG_RESULT([yes (${OPT_OBJCOPY})])
+
+AC_SUBST(OPT_OBJCOPY)
 
 
 #----------------------------------------------------------------------------
