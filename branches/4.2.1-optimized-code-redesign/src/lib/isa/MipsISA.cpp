@@ -54,11 +54,19 @@
 
 #include "MipsISA.hpp"
 
-#include <include/gnu_bfd.h>  // for bfd_getb32
+#include <include/gnu_bfd.h>  // for bfd_getb32, bfd_getl32
 
 #include "instructionSets/mips.h"
 
 //*************************** Forward Declarations ***************************
+
+#if defined(PLATFORM_MIPS_IRIX64)
+# define BFD_GETX32 bfd_getb32
+#elif defined(PLATFORM_MIPS64_LINUX)
+# define BFD_GETX32 bfd_getl32
+#else
+# error "Check ArchIndTypes.h."
+#endif
 
 //****************************************************************************
 
@@ -73,7 +81,7 @@ MipsISA::GetInsnDesc(MachInsn* mi, ushort opIndex, ushort sz)
 {
   // We know that instruction sizes are guaranteed to be 4 bytes, but
   // the host may have a different byte order than the executable.
-  uint32_t insn = (uint32_t)bfd_getb32((const unsigned char*)mi);
+  uint32_t insn = (uint32_t)BFD_GETX32((const unsigned char*)mi);
   
   switch (insn & OP_MASK)
     {
@@ -219,7 +227,7 @@ MipsISA::GetInsnTargetVMA(MachInsn* mi, VMA pc, ushort opIndex, ushort sz)
 {
   // We know that instruction sizes are guaranteed to be 4 bytes, but
   // the host may have a different byte order than the executable.
-  uint32_t insn = (uint32_t)bfd_getb32((const unsigned char*)mi);
+  uint32_t insn = (uint32_t)BFD_GETX32((const unsigned char*)mi);
 
   psint offset;
   switch (insn & OP_MASK)

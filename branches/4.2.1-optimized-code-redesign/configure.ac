@@ -519,7 +519,7 @@ AC_ARG_ENABLE([hpc-binutils],
 AC_MSG_RESULT([${OPT_ENABLE_HPC_GNUBINUTILS}])
 
 if test "${OPT_ENABLE_HPC_GNUBINUTILS}" = "yes" ; then
-  AC_DEFINE([HAVE_HPC_BINUTILS], [], [HPCToolkit binutils])
+  AC_DEFINE([HAVE_HPC_GNUBINUTILS], [], [HPCToolkit binutils])
 fi
 
 

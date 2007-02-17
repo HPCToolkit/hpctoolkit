@@ -22573,7 +22573,7 @@ echo "${ECHO_T}${OPT_ENABLE_HPC_GNUBINUTILS}" >&6; }
 if test "${OPT_ENABLE_HPC_GNUBINUTILS}" = "yes" ; then
 
 cat >>confdefs.h <<\_ACEOF
-#define HAVE_HPC_BINUTILS
+#define HAVE_HPC_GNUBINUTILS
 _ACEOF
 
 fi
