@@ -750,8 +750,11 @@ binutils::LM::DumpModuleInfo(std::ostream& o, const char* pre) const
     case SharedLibrary: 
       o << "Dynamically Shared Library'\n";
       break;
+    case Unknown:
+      o << "Unknown load module type'\n";
+      break;
     default:
-      DIAG_Die("Unknown load module type: " << GetType());
+      DIAG_Die("Invalid load module type: " << GetType());
   }
   
   o << p << "Load VMA: " << hex << "0x" << firstaddr << dec << "\n";
