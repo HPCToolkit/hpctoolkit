@@ -2099,20 +2099,15 @@ CodeInfo::SetLineRange(suint begLn, suint endLn, int propagate)
 {
   checkLineRange(begLn, endLn);
   
-  if (begLn == UNDEF_LINE) {
-    DIAG_Assert(mbegLine == UNDEF_LINE, "");
-    // simply relocate at beginning of sibling list 
-    RelocateIf();
-  } 
-  else {
-    mbegLine = begLn;
-    mendLine = endLn;
+  mbegLine = begLn;
+  mendLine = endLn;
+  
+  RelocateIf();
 
-    // never propagate changes outside an AlienScope
-    RelocateIf();
-    if (propagate && CodeInfoParent() && Type() != ScopeInfo::ALIEN) {
-      CodeInfoParent()->ExpandLineRange(mbegLine, mendLine);
-    }
+  // never propagate changes outside an AlienScope
+  if (propagate && begLn != UNDEF_LINE 
+      && CodeInfoParent() && Type() != ScopeInfo::ALIEN) {
+    CodeInfoParent()->ExpandLineRange(mbegLine, mendLine);
   }
 }
 
