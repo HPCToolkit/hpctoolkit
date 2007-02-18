@@ -60,12 +60,10 @@
 
 //*************************** Forward Declarations ***************************
 
-#if defined(PLATFORM_MIPS_IRIX64)
-# define BFD_GETX32 bfd_getb32
-#elif defined(PLATFORM_MIPS64_LINUX)
+#if defined(PLATFORM_MIPS64_LINUX)
 # define BFD_GETX32 bfd_getl32
-#else
-# error "Check ArchIndTypes.h."
+#else /* PLATFORM_MIPS_IRIX64 */
+# define BFD_GETX32 bfd_getb32
 #endif
 
 //****************************************************************************
