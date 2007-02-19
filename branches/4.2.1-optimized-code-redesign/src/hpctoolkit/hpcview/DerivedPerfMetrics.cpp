@@ -38,8 +38,6 @@
 //************************ System Include Files ******************************
 
 #include <iostream>
-using std::cout;
-using std::cerr;
 using std::endl;
 
 #include <string>
@@ -131,17 +129,12 @@ ComputedPerfMetric::Ctor(const char* nm, DOMNode *expr)
     mathExpr = new MathMLExpr(expr); 
   }
   catch (const MathMLExprException &e) {
-    cerr << "hpcview fatal error: Could not construct METRIC '" << nm << "'." << endl 
-	 << "\tXML exception encountered when processing MathML expression: " 
-	 << e.getMessage() << "." << endl;
-    exit(1);
+    DIAG_Throw("Could not construct METRIC '" << nm << "'.  XML exception encountered when processing MathML expression: " << e.getMessage() << ".");
   }
   catch (...) {
-     cerr << "hpcview fatal error: Could not construct metric " << endl 
-	  << "\tUnknown exception encountered handling MathML expression." << endl; 
-     exit(1);
-   }
-  if (mathExpr != NULL) { // catch exception really 
+    DIAG_Throw("Could not construct METRIC '" << nm << "'.");
+  }
+  if (mathExpr != NULL) {
     DIAG_Msg(1, "Computed METRIC " << nm << ": " << nm << " = " 
 	     << mathExpr->toString());
   } 
@@ -223,9 +216,7 @@ FilePerfMetric::MakePROFILE(NodeRetriever &ret)
 
   const char* filePath = pathfind(".", m_file.c_str(), "r");
   if (!filePath) {
-    cerr << "hpcview fatal error: could not open PROFILE file '" 
-	 << m_file << "'." << endl;
-    exit(1);
+    DIAG_Throw("Could not open PROFILE file '" << m_file << "'.");
   }
   
   try {

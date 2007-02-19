@@ -394,7 +394,6 @@ MathMLExpr::buildEvalTree(DOMNode *node)
 
 
 std::string
-
 MathMLExpr::toString() const
 {
   std::ostringstream os;
