@@ -163,27 +163,39 @@ AC_SUBST([XERCES_LDFLAGS])
 
 AC_MSG_CHECKING([for monitor])
 
-MONITOR="${hpctoolkit_top}/../monitor/${HPCTOOLKIT_PLATFORM}"
+OPT_WITH_MONITOR=no
+MONITOR=
+
+# Use monitor by default
+case ${host} in
+  *-*-linux*) 
+    OPT_WITH_MONITOR=yes
+    MONITOR="${hpctoolkit_top}/../monitor/${HPCTOOLKIT_PLATFORM}"
+    ;;
+esac
 
 AC_ARG_WITH([monitor],
   AS_HELP_STRING([--with-monitor=<libmonitor path>],
                  [use given libmonitor installation]),
   [if test $withval != no; then
+     OPT_WITH_MONITOR=yes
      MONITOR=${withval}
+   else
+     OPT_WITH_MONITOR=no
    fi],
   [])
 
 MONITOR_LIBNM="lib"
-if test "${HPCTOOLKIT_PLATFORM}" = "x86_64-Linux" ; then
-  MONITOR_LIBNM="lib64"
-fi
+case ${host} in
+  x86_64*-*-linux*) MONITOR_LIBNM="lib64" ;;
+esac
 MONITOR_IFLAGS="-I${MONITOR}/include"
 MONITOR_LIBPATH="${MONITOR}/${MONITOR_LIBNM}"
 MONITOR_LDFLAGS="-L${MONITOR_LIBPATH}"
 MONITOR_LIBSO="${MONITOR_LIBPATH}/libmonitor.so"
 MONITOR_LIBSO_INSTALLED="monitor/${MONITOR_LIBNM}/libmonitor.so"
 
-if ( echo "${HPCTOOLKIT_PLATFORM}" | grep "Linux\$" >/dev/null 2>&1 ); then
+if test "${OPT_WITH_MONITOR}" = "yes" ; then
   AC_DEFINE([HAVE_MONITOR], [], [Monitor library])
   AC_MSG_RESULT([yes (${MONITOR_LIBSO})])
 else
