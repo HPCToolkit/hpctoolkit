@@ -170,10 +170,12 @@ binutils::Proc::dump(std::ostream& os, int flags, const char* pre) const
       insn->dump(os, flags, p2.c_str());
 
       if (flags & LM::DUMP_Flg_Sym) {
+	VMA vma = insn->GetVMA();
+	ushort opIdx = insn->GetOpIndex();
+
 	string func, file;
 	suint line;
-	m_seg->GetSourceFileInfo(insn->GetVMA(), insn->GetOpIndex(), 
-				 func, file, line);
+    	m_seg->GetSourceFileInfo(vma, opIdx, func, file, line);
 	func = GetBestFuncName(func);
 	
 	os << p2 << "  ";

@@ -195,6 +195,7 @@ binutils::LM::Open(const char* moduleName)
   }
   
   // FIXME: only do for alpha at the moment 
+#if defined(HAVE_HPC_GNUBINUTILS)
   if (bfd_get_arch(impl->abfd) == bfd_arch_alpha) {
     textBeg   = bfd_ecoff_get_text_start(impl->abfd);
     textEnd   = bfd_ecoff_get_text_end(impl->abfd);
@@ -204,6 +205,10 @@ binutils::LM::Open(const char* moduleName)
     textBeg   = bfd_get_start_address(impl->abfd); //this is the entry point
     firstaddr = bfd_get_first_addr(impl->abfd);     
   }
+#else
+  textBeg   = bfd_get_start_address(impl->abfd); //this is the entry point
+  firstaddr = textBeg;
+#endif /* HAVE_HPC_GNUBINUTILS */
   
   // -------------------------------------------------------
   // 3. Configure ISA.  
@@ -745,8 +750,11 @@ binutils::LM::DumpModuleInfo(std::ostream& o, const char* pre) const
     case SharedLibrary: 
       o << "Dynamically Shared Library'\n";
       break;
+    case Unknown:
+      o << "Unknown load module type'\n";
+      break;
     default:
-      DIAG_Die("Unknown load module type: " << GetType());
+      DIAG_Die("Invalid load module type: " << GetType());
   }
   
   o << p << "Load VMA: " << hex << "0x" << firstaddr << dec << "\n";

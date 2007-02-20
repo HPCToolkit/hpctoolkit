@@ -185,7 +185,7 @@ MYKEEPSYMS = $(addprefix -K , $(MY_INTERCEPTED_SYMS_LIBHPCRUNSO))
 
 myinstall-libhpcrunso:
 	rm -f $(MYINSTALLDIR)/lib/libhpcrun.a
-	objcopy -S $(MYKEEPSYMS) $(MYINSTALLDIR)/lib/libhpcrun.so
+	@OPT_OBJCOPY@ -S $(MYKEEPSYMS) $(MYINSTALLDIR)/lib/libhpcrun.so
 
 myinstall-libhpcrun-static: 
 	mv $(MYINSTALLDIR)/bin/libhpcrun-static.o $(MYINSTALLDIR)/lib/.
