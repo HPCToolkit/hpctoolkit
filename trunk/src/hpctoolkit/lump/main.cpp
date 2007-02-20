@@ -139,12 +139,8 @@ realmain(int argc, char* const argv[])
   binutils::LM* lm = NULL;
   try {
     lm = new binutils::LM();
-    if (!lm->Open(args.inputFile.c_str())) { 
-      exit(1); // Error already printed 
-    }
-    if (!lm->Read()) { 
-      exit(1); // Error already printed 
-    }
+    lm->Open(args.inputFile.c_str());
+    lm->Read();
   } 
   catch (...) {
     DIAG_EMsg("Exception encountered while reading " << args.inputFile);

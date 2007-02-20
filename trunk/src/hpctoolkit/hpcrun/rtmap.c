@@ -42,8 +42,8 @@ static int iscodeline(char *line);
 static char* get_line_slot(void);
 
 static char* get_name(char *line);
-static char* get_offset(char *line);
-static char* get_length(char *line);
+static char* get_beg_addr(char *line);
+static char* get_end_addr(char *line);
 
 static unsigned long hex2ul(char *s);
 static uint64_t      hex2u64(char *s);
@@ -188,8 +188,8 @@ get_line_slot(void)
 static int 
 iscodeline(char *line)
 {
-  char *blank = index(line, (int) ' ');
-  char *slash = index(line, (int) '/');
+  char *blank = strchr(line, (int) ' ');
+  char *slash = strchr(line, (int) '/');
   return (blank && *(blank + 3) == 'x' && slash);
 }
 
@@ -213,9 +213,10 @@ finalizelines(void)
     (rtloadmod_desc_t *) malloc(sizeof(rtloadmod_desc_t) * slots_in_use);
   
   for(i = 0; i < slots_in_use; i++) {
-    rtloadmap.module[i].name = strdup(get_name(mappings[i]));
-    rtloadmap.module[i].offset = hex2u64(get_offset(mappings[i]));
-    rtloadmap.module[i].length = hex2ul(get_length(mappings[i])) -
+    const char* line = mappings[i];
+    rtloadmap.module[i].name = strdup(get_name(line));
+    rtloadmap.module[i].offset = hex2u64(get_beg_addr(line));
+    rtloadmap.module[i].length = hex2ul(get_end_addr(line)) -
       rtloadmap.module[i].offset;
   }
   rtloadmap.count = slots_in_use;
@@ -230,22 +231,22 @@ finalizelines(void)
 static char*
 get_name(char *line)
 {
-  char *name = index(line, (int) '/');
-  char *newline = index(line, (int) '\n');
+  char *name = strchr(line, (int) '/');
+  char *newline = strchr(line, (int) '\n');
   if (newline) *newline = 0;
   return name;
 }
 
 static char*
-get_offset(char *line)
+get_beg_addr(char *line)
 {
   return line;
 }
 
 static char*
-get_length(char *line)
+get_end_addr(char *line)
 {
-  char *minus = index(line, (int) '-');
+  char *minus = strchr(line, (int) '-');
   return minus + 1;
 }
 

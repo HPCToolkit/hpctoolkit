@@ -95,6 +95,7 @@ binutils::dbg::LM::~LM()
 void
 binutils::dbg::LM::read(bfd* abfd, asymbol** bfdSymTab)
 {
+#if defined(HAVE_HPC_GNUBINUTILS)
   if (!bfdSymTab) { return; }
   
   // Construct: Currently we only know about ELF/DWARF2
@@ -107,6 +108,7 @@ binutils::dbg::LM::read(bfd* abfd, asymbol** bfdSymTab)
   // Post-process and set parent pointers
   setParentPointers();
   //dump(std::cout);
+#endif /* HAVE_HPC_GNUBINUTILS */
 }
 
 
@@ -171,6 +173,7 @@ int
 binutils::dbg::LM::bfd_dbgInfoCallback(void* callback_obj, 
 				       void* parent, void* funcinfo)
 {
+#if defined(HAVE_HPC_GNUBINUTILS)
   dbg::LM* lminfo = (dbg::LM*)callback_obj;
   
   dbg::Proc* pinfo = new dbg::Proc;
@@ -227,6 +230,7 @@ binutils::dbg::LM::bfd_dbgInfoCallback(void* callback_obj,
   else {
     delete pinfo; // the 'pinfo' is useless
   }
+#endif /* HAVE_HPC_GNUBINUTILS */
   
   return 0;
 }

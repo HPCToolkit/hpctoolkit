@@ -45,7 +45,6 @@
 //************************ System Include Files ******************************
 
 #include <iostream> 
-using std::cout;
 using std::endl;
 
 #include <sstream>
@@ -139,7 +138,7 @@ Neg::eval(const ScopeInfo *si)
 std::ostream& 
 Neg::dump(std::ostream& os) const
 { 
-  os << "(-"; node->dump(); os << ")"; 
+  os << "(-"; node->dump(os); os << ")"; 
   return os;
 }
 
@@ -209,7 +208,7 @@ Power::eval(const ScopeInfo *si)
 std::ostream& 
 Power::dump(std::ostream& os) const
 {
-  os << "("; base->dump(); os << "**"; exponent->dump(); os << ")";
+  os << "("; base->dump(os); os << "**"; exponent->dump(os); os << ")";
   return os;
 }
 
@@ -245,8 +244,11 @@ Divide::eval(const ScopeInfo *si)
 std::ostream& 
 Divide::dump(std::ostream& os) const
 {
-  os << "("; numerator->dump(); os << "/"; 
-  denominator->dump(); os << ")";
+  os << "("; 
+  numerator->dump(os); 
+  os << "/"; 
+  denominator->dump(os); 
+  os << ")";
   return os;
 }
 
@@ -284,7 +286,7 @@ Minus::eval(const ScopeInfo *si)
 std::ostream& 
 Minus::dump(std::ostream& os) const
 {
-  os << "("; minuend->dump(); os << "-"; subtrahend->dump(); os << ")";
+  os << "("; minuend->dump(os); os << "-"; subtrahend->dump(os); os << ")";
   return os;
 }
 
@@ -333,7 +335,7 @@ Plus::dump(std::ostream& os) const
 {
   os << "(";
   for (int i = 0; i < n; i++) {
-      nodes[i]->dump();
+      nodes[i]->dump(os);
       if (i < n-1) os << "+";
   }
   os << ")";
@@ -375,8 +377,8 @@ Times::dump(std::ostream& os) const
 {
   os << "(";
   for (int i = 0; i < n; i++) {
-      nodes[i]->dump();
-      if (i < n-1) os << "*";
+    nodes[i]->dump(os);
+    if (i < n-1) os << "*";
   }
   os << ")";
   return os;
@@ -429,8 +431,8 @@ Min::dump(std::ostream& os) const
 {
   os << "min(";
   for (int i = 0; i < n; i++) {
-      nodes[i]->dump();
-      if (i < n-1) os << ",";
+    nodes[i]->dump(os);
+    if (i < n-1) os << ",";
   }
   os << ")";
   return os;
@@ -484,7 +486,7 @@ Max::dump(std::ostream& os) const
   os << "max(";
 
   for (int i = 0; i < n; i++) {
-      nodes[i]->dump();
+      nodes[i]->dump(os);
       if (i < n-1) os << ",";
   }
   os << ")";

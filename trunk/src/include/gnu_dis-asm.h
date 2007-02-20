@@ -57,6 +57,10 @@
 
 #include <dis-asm.h>
 
+#if !defined(HAVE_HPC_GNUBINUTILS)
+# define dis_return 0xdeadbeef
+#endif /* HAVE_HPC_GNUBINUTILS */
+
 /* Undo possibly mischevious macros in binutils/include/ansidecl.h */
 #undef inline
 

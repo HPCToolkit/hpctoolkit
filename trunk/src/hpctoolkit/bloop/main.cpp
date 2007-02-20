@@ -110,14 +110,12 @@ real_main(int argc, char* argv[])
   binutils::LM* lm = NULL;
   try {
     lm = new binutils::LM();
-    if (!lm->Open(args.inputFile.c_str())) { 
-      exit(1); // Error already printed 
-    } 
-    if (!lm->Read()) { exit(1); } // Error already printed 
+    lm->Open(args.inputFile.c_str());
+    lm->Read();
   } 
-  catch (const std::bad_alloc& x) {
-    DIAG_EMsg("Memory alloc failed while reading binary! " << x.what());
-    exit(1);
+  catch (...) {
+    DIAG_EMsg("Exception encountered while reading " << args.inputFile);
+    throw;
   }
   
   // ------------------------------------------------------------
