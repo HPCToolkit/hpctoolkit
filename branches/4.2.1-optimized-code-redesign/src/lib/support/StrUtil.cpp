@@ -89,7 +89,7 @@ namespace StrUtil {
 // --------------------------------------------------------------------------
 
 void 
-tokenize(const std::string tokenstr, const char* delim,
+tokenize(const std::string& tokenstr, const char* delim,
 	 std::vector<std::string>& tokenvec)
 {
   const int sz = tokenstr.size();
@@ -101,9 +101,9 @@ tokenize(const std::string tokenstr, const char* delim,
     
     endpos = tokenstr.find_first_of(delim, begpos);
     if (endpos == string::npos) {
-      endpos = sz - 1;
+      endpos = sz;
     }
-    string x = tokenstr.substr(begpos, endpos - begpos);
+    string x = tokenstr.substr(begpos, endpos - begpos); // [begin, end)
     tokenvec.push_back(x);
   }
 }
