@@ -62,6 +62,9 @@ static int debug = 0;
 
 //***************************************************************************
 
+static const char* version_info =
+#include <include/HPCToolkitVersionInfo.h>
+
 static void
 usage(const string &argv0)
 {
@@ -167,7 +170,7 @@ main(int argc, char *argv[])
             }
         }
       else if (arg == "-v" || arg == "--version") {
-          cout << "cprof version " << VPROF_VERSION << endl;
+	cout << argv[0] << ": " << version_info << endl;
           return 0;
         }
       else if (arg == "-p" || arg == "--profile") {
