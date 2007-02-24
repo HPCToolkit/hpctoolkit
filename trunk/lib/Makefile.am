@@ -42,7 +42,7 @@
 #
 # Description:
 #   *Process with automake to produce Makefile.in*
-#   
+#
 #   Note: All local variables are prefixed with MY to prevent name
 #   clashes with automatic automake variables.
 #
@@ -52,23 +52,46 @@
 AUTOMAKE_OPTIONS = foreign
 
 #############################################################################
-# Common settings
-#############################################################################
-
-include $(top_srcdir)/src/Makeinclude.config
-
-#############################################################################
 # Local settings
 #############################################################################
 
-MYSCRIPTS = 
-#	f90modfilt
+MYDTD = \
+	dtd/CSPROFILE.dtd \
+	dtd/Experiment.dtd \
+	dtd/HPCView.dtd \
+	dtd/PGM.dtd \
+	dtd/PROFILE.dtd \
+	\
+	dtd/mathml/xhtml1-transitional-mathml.dtd \
+	dtd/mathml/mathml.dtd \
+	dtd/mathml/isoamsa.ent \
+	dtd/mathml/isoamsb.ent \
+	dtd/mathml/isoamsc.ent \
+	dtd/mathml/isoamsn.ent \
+	dtd/mathml/isoamso.ent \
+	dtd/mathml/isoamsr.ent \
+	dtd/mathml/isobox.ent \
+	dtd/mathml/isocyr1.ent \
+	dtd/mathml/isocyr2.ent \
+	dtd/mathml/isodia.ent \
+	dtd/mathml/isogrk3.ent \
+	dtd/mathml/isolat1.ent \
+	dtd/mathml/isolat2.ent \
+	dtd/mathml/isomfrk.ent \
+	dtd/mathml/isomopf.ent \
+	dtd/mathml/isomscr.ent \
+	dtd/mathml/isonum.ent \
+	dtd/mathml/isopub.ent \
+	dtd/mathml/isotech.ent \
+	dtd/mathml/mmlalias.ent \
+	dtd/mathml/mmlextra.ent
+
 
 #############################################################################
 # Automake rules
 #############################################################################
 
-bin_SCRIPTS = $(MYSCRIPTS)
+nobase_pkgdata_DATA = $(MYDTD)
 
 #############################################################################
 # Other rules

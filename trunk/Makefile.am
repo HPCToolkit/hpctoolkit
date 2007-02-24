@@ -55,40 +55,35 @@ AUTOMAKE_OPTIONS = foreign
 # Local settings
 #############################################################################
 
-# A list of {file ! installation directory} pairs.
-MYFILEPAIRS = \
-	README! \
-	README.Contact! \
-	README.Index! \
-	README.License! \
-	README.ReleaseNotes! \
-	Sourceme-csh! \
-	Sourceme-sh! 
+MYDATA = \
+	README \
+	README.Contact \
+	README.Index \
+	README.License
+	README.ReleaseNotes
 
-MYSCRIPTPAIRS = \
-	config/hpcguess!config \
-	config/hpcplatform!config \
-	config/config.guess!config 
-
-MYDIRS = \
-	doc \
-	examples \
-	lib
-
-MYINSTALLDIR = $(DESTDIR)$(prefix)
-
-MYXERCESLIB = @XERCES@/lib
-MYXERCESINSTALLDIR = $(MYINSTALLDIR)/xercesc
-
-MYMONITORLIB = @MONITOR_LIBPATH@
-MYMONITORINSTALLDIR = $(MYINSTALLDIR)/monitor
+MYSCRIPTS = \
+	Sourceme-csh \
+	Sourceme-sh \
+	config/hpcguess \
+	config/hpcplatform \
+	config/config.guess
 
 #############################################################################
 # Automake rules
 #############################################################################
 
 SUBDIRS = \
-	src
+	src \
+	\
+	doc \
+	lib
+
+pkglibexecdir = $(libexecdir)/$(PACKAGE)
+pkglibexec_SCRIPTS = $(MYSCRIPTS)
+
+dist_doc_DATA = $(MYDATA)
+
 
 #############################################################################
 # Other rules
@@ -98,58 +93,42 @@ SUBDIRS = \
 # Install
 ############################################################
 
-# *-hook runs after install has completed
-install-data-local: myinstall-files myinstall-scripts \
-	myinstall-dirs myinstall-xerces myinstall-monitor
+# Note: *-local and *-hook are special automake versions of the
+# regular target. *-hook runs *after* install has completed
 
-myinstall-files:
-	for pair in $(MYFILEPAIRS); do \
-	  src=`echo $${pair} | awk -F'!' '{print $$1}'` ; \
-	  dir=`echo $${pair} | awk -F'!' '{print $$2}'` ; \
-	  destdir=$(MYINSTALLDIR)/$${dir} ; \
-	  $(mkinstalldirs) $${destdir} ; \
-	  $(INSTALL_DATA) $(srcdir)/$${src} $${destdir} ; \
-	done
+install-data-local: myinstall-xerces myinstall-monitor
 
-myinstall-scripts:
-	for pair in $(MYSCRIPTPAIRS); do \
-	  src=`echo $${pair} | awk -F'!' '{print $$1}'` ; \
-	  dir=`echo $${pair} | awk -F'!' '{print $$2}'` ; \
-	  destdir=$(MYINSTALLDIR)/$${dir} ; \
-	  $(mkinstalldirs) $${destdir} ; \
-	  $(INSTALL_SCRIPT) $(srcdir)/$${src} $${destdir} ; \
-	done
-
-myinstall-dirs:
-#	Exclude CVS or .svn metadata!
-	for x in $(MYDIRS); do \
-	  for src in `find $(srcdir)/$${x} -name "*"  ! -type d`; do \
-	    if ! ( echo "$${src}" | grep "/.svn/" >/dev/null 2>&1 ); then \
-	      dst=`echo $${src} | sed s@^$(srcdir)/@@` ; \
-	      destdir=$(MYINSTALLDIR)/`dirname $${dst}` ; \
-	      $(mkinstalldirs) $${destdir} ; \
-	      $(INSTALL_DATA) $${src} $(MYINSTALLDIR)/$${dst} ; \
-	    fi \
-	  done \
-	done
-
-#	@for x in $(MYDIRS); do \
-#	  cp -R $(srcdir)/$$x $(MYINSTALLDIR)/. ; \
-#	done
-
-myinstall-xerces: 
-	@$(mkinstalldirs) $(MYXERCESINSTALLDIR)
-	@cp -R $(MYXERCESLIB) $(MYXERCESINSTALLDIR)/.
-
-myinstall-monitor:
-	@if test -d "$(MYMONITORLIB)"; then \
-	  $(mkinstalldirs) $(MYMONITORINSTALLDIR) ; \
-	  cp -R $(MYMONITORLIB) $(MYMONITORINSTALLDIR)/. ; \
+myinstall-xerces: myinstall-mkdir
+	if test 1; then \
+	  rm -rf $(pkglibdir)/xercesc ; \
+	  cp -R @XERCES@/lib $(pkglibdir)/xercesc ; \
 	fi
 
-.PHONY : install-data-local install-data-hook \
-	myinstall-files myinstall-scripts \
-	myinstall-dirs myinstall-xerces myinstall-monitor
+myinstall-monitor: myinstall-mkdir
+	if test "@OPT_INSTALL_MONITOR@" = "yes"; then \
+	  rm -rf $(pkglibdir)/monitor ; \
+	  cp -R @MONITOR_LIBPATH@ $(pkglibdir)/monitor ; \
+	fi
+
+myinstall-mkdir:
+	$(mkinstalldirs) $(pkglibdir)
+
+# A list of {file ! installation directory} pairs.
+#MYSCRIPTPAIRS = \
+#	config/hpcguess!config \
+#	config/hpcplatform!config \
+#	config/config.guess!config 
+#
+#myinstall-scripts:
+#	for pair in $(MYSCRIPTPAIRS); do \
+#	  src=`echo $${pair} | awk -F'!' '{print $$1}'` ; \
+#	  dir=`echo $${pair} | awk -F'!' '{print $$2}'` ; \
+#	  destdir=$(MYINSTALLDIR)/$${dir} ; \
+#	  $(mkinstalldirs) $${destdir} ; \
+#	  $(INSTALL_SCRIPT) $(srcdir)/$${src} $${destdir} ; \
+#	done
+
+.PHONY : myinstall-xerces myinstall-monitor myinstall-mkdir
 
 
 ############################################################
@@ -172,7 +151,6 @@ hpc_webdocs:
 	${MYTAR} cvf $(MYTARFILE) --exclude=CVS --exclude=".svn" \
 	 HPCToolkit/README* HPCToolkit/Sourceme* \
 	 HPCToolkit/doc \
-	 HPCToolkit/lib/html \
 	 HPCToolkit/lib/dtd/*.dtd
 
 .PHONY: hpc_webdocs
