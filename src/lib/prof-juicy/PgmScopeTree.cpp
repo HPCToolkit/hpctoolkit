@@ -420,7 +420,8 @@ GroupScope::Ctor(const char* nm, ScopeInfo* parent)
   DIAG_Assert(nm, "");
   ScopeType t = (parent) ? parent->Type() : ANY;
   DIAG_Assert((parent == NULL) || (t == PGM) || (t == GROUP) || (t == LM) 
-	      || (t == FILE) || (t == PROC) || (t == LOOP), "");
+	      || (t == FILE) || (t == PROC) || (t == ALIEN) 
+	      || (t == LOOP), "");
   m_name = nm;
   Pgm()->AddToGroupMap(*this);
 }
@@ -656,7 +657,7 @@ LoopScope::LoopScope(CodeInfo* parent, suint begLn, suint endLn)
 {
   ScopeType t = (parent) ? parent->Type() : ANY;
   DIAG_Assert((parent == NULL) || (t == GROUP) || (t == FILE) || (t == PROC) 
-	      || (t == LOOP), "");
+	      || (t == ALIEN) || (t == LOOP), "");
 }
 
 
@@ -671,7 +672,7 @@ StmtRangeScope::StmtRangeScope(CodeInfo* parent, suint begLn, suint endLn,
 {
   ScopeType t = (parent) ? parent->Type() : ANY;
   DIAG_Assert((parent == NULL) || (t == GROUP) || (t == FILE) || (t == PROC)
-	      || (t == LOOP), "");
+	      || (t == ALIEN) || (t == LOOP), "");
   ProcScope* p = Proc();
   if (p) { 
     p->AddToStmtMap(*this); 

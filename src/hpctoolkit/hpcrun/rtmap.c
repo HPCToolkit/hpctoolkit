@@ -213,7 +213,7 @@ finalizelines(void)
     (rtloadmod_desc_t *) malloc(sizeof(rtloadmod_desc_t) * slots_in_use);
   
   for(i = 0; i < slots_in_use; i++) {
-    const char* line = mappings[i];
+    char* line = mappings[i];
     rtloadmap.module[i].name = strdup(get_name(line));
     rtloadmap.module[i].offset = hex2u64(get_beg_addr(line));
     rtloadmap.module[i].length = hex2ul(get_end_addr(line)) -
