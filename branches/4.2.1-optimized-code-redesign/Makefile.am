@@ -105,7 +105,7 @@ myinstall-xerces: myinstall-mkdir
 	fi
 
 myinstall-monitor: myinstall-mkdir
-	if test 1; then \
+	if test "@OPT_INSTALL_MONITOR@" = "yes"; then \
 	  rm -rf $(pkglibdir)/monitor ; \
 	  cp -R @MONITOR_LIBPATH@ $(pkglibdir)/monitor ; \
 	fi

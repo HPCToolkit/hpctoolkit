@@ -257,6 +257,7 @@ AM_CONDITIONAL(OPT_ENABLE_DEVELOP, test "${OPT_ENABLE_DEVELOP}" = "yes")
 AC_MSG_CHECKING([for monitor])
 
 OPT_WITH_MONITOR=no
+OPT_INSTALL_MONITOR=no
 MONITOR=
 
 # Use monitor by default
@@ -289,12 +290,14 @@ MONITOR_LIBSO="${MONITOR_LIBPATH}/libmonitor.so"
 MONITOR_LIBSO_INSTALLED="lib/HPCToolkit/monitor/libmonitor.so"
 
 if test "${OPT_WITH_MONITOR}" = "yes" ; then
+  OPT_INSTALL_MONITOR=yes
   AC_DEFINE([HAVE_MONITOR], [], [Monitor library])
   AC_MSG_RESULT([yes (${MONITOR_LIBSO})])
 else
   AC_MSG_RESULT([no (not needed)])
 fi
 
+AC_SUBST([OPT_INSTALL_MONITOR])
 AC_SUBST([MONITOR])
 AC_SUBST([MONITOR_LIBPATH])
 AC_SUBST([MONITOR_LIBSO])
