@@ -194,7 +194,6 @@ binutils::LM::Open(const char* moduleName)
     type = Unknown;
   }
   
-  // FIXME: only do for alpha at the moment 
 #if defined(HAVE_HPC_GNUBINUTILS)
   if (bfd_get_arch(impl->abfd) == bfd_arch_alpha) {
     textBeg   = bfd_ecoff_get_text_start(impl->abfd);
@@ -202,11 +201,12 @@ binutils::LM::Open(const char* moduleName)
     firstaddr = textBeg;
   } 
   else {
-    textBeg   = bfd_get_start_address(impl->abfd); //this is the entry point
+    // Currently, this is ELF specific
+    textBeg   = bfd_get_start_address(impl->abfd); // entry point
     firstaddr = bfd_get_first_addr(impl->abfd);     
   }
 #else
-  textBeg   = bfd_get_start_address(impl->abfd); //this is the entry point
+  textBeg   = bfd_get_start_address(impl->abfd); // entry point
   firstaddr = textBeg;
 #endif /* HAVE_HPC_GNUBINUTILS */
   

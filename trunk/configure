@@ -22098,7 +22098,7 @@ MONITOR=
 case ${host} in
   *-*-linux*)
     #OPT_WITH_MONITOR=yes
-    MONITOR="${hpctoolkit_top}/../monitor/${HPCTOOLKIT_PLATFORM}"
+    #MONITOR="${hpctoolkit_top}/../monitor/${HPCTOOLKIT_PLATFORM}"
     ;;
 esac
 

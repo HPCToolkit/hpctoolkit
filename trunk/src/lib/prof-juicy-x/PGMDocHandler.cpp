@@ -203,14 +203,15 @@ PGMDocHandler::PGMDocHandler(Doc_t ty,
     elemLM(XMLString::transcode("LM")),
     elemFile(XMLString::transcode("F")),
     elemProc(XMLString::transcode("P")),
+    elemAlien(XMLString::transcode("A")),
     elemLoop(XMLString::transcode("L")),
     elemStmt(XMLString::transcode("S")),
     elemGroup(XMLString::transcode("G")),
-    elemAlien(XMLString::transcode("A")),
 
     // attribute names
     attrVer(XMLString::transcode("version")),
     attrName(XMLString::transcode("n")),
+    attrAlienFile(XMLString::transcode("f")),
     attrLnName(XMLString::transcode("ln")),
     attrBegin(XMLString::transcode("b")),
     attrEnd(XMLString::transcode("e")),
@@ -326,11 +327,11 @@ void PGMDocHandler:: startElement(const XMLCh* const uri,
     }
     IFTRACE << "P(roc): name="  << name << " lname=" << lname << endl;
     
-    int lnB = UNDEF_LINE, lnE = UNDEF_LINE;
+    suint lnB = UNDEF_LINE, lnE = UNDEF_LINE;
     string lineB = getAttr(attributes, attrBegin);
     string lineE = getAttr(attributes, attrEnd);
-    if (!lineB.empty()) { lnB = (int)StrUtil::toLong(lineB); }
-    if (!lineE.empty()) { lnE = (int)StrUtil::toLong(lineE); }
+    if (!lineB.empty()) { lnB = (suint)StrUtil::toLong(lineB); }
+    if (!lineE.empty()) { lnE = (suint)StrUtil::toLong(lineE); }
     IFTRACE << " b="  << lnB << " e=" << lnE << endl;
     
     string vma = getAttr(attributes, attrVMA);
@@ -370,6 +371,29 @@ void PGMDocHandler:: startElement(const XMLCh* const uri,
     
     currentScope = currentFuncScope;
   }
+  
+  // A(lien)
+  else if (XMLString::equals(name, elemAlien)) {
+    int numAttr = attributes.getLength();
+    DIAG_Assert(0 <= numAttr && numAttr <= 5, "");
+    
+    string nm = getAttr(attributes, attrName); 
+    string fnm = getAttr(attributes, attrAlienFile);
+
+    suint begLn = UNDEF_LINE, endLn = UNDEF_LINE;
+    string lineB = getAttr(attributes, attrBegin);
+    string lineE = getAttr(attributes, attrEnd);
+    if (!lineB.empty()) { begLn = (suint)StrUtil::toLong(lineB); }
+    if (!lineE.empty()) { endLn = (suint)StrUtil::toLong(lineE); }
+
+    IFTRACE << "A(lien): name= " << nm << endl;
+
+    CodeInfo* enclScope = 
+      dynamic_cast<CodeInfo*>(GetCurrentScope()); // enclosing scope
+
+    CodeInfo* alien = new AlienScope(enclScope, fnm, nm, begLn, endLn);
+    currentScope = alien;
+  }
 
   // L(oop)
   else if (XMLString::equals(name, elemLoop)) {
@@ -378,12 +402,12 @@ void PGMDocHandler:: startElement(const XMLCh* const uri,
     // both 'begin' and 'end' are implied (and can be in any order)
     int numAttr = attributes.getLength();
     DIAG_Assert(0 <= numAttr && numAttr <= 3, "");
-
-    int lnB = UNDEF_LINE, lnE = UNDEF_LINE;
+    
+    suint lnB = UNDEF_LINE, lnE = UNDEF_LINE;
     string lineB = getAttr(attributes, attrBegin);
     string lineE = getAttr(attributes, attrEnd);
-    if (!lineB.empty()) { lnB = (int)StrUtil::toLong(lineB); }
-    if (!lineE.empty()) { lnE = (int)StrUtil::toLong(lineE); }
+    if (!lineB.empty()) { lnB = (suint)StrUtil::toLong(lineB); }
+    if (!lineE.empty()) { lnE = (suint)StrUtil::toLong(lineE); }
 
     IFTRACE << "L(oop): numberB=" << lineB << " numberE=" << lineE << endl;
     
@@ -391,11 +415,7 @@ void PGMDocHandler:: startElement(const XMLCh* const uri,
     CodeInfo* enclScope = 
       dynamic_cast<CodeInfo*>(GetCurrentScope()); // enclosing scope
 
-    // FIXME: temp hack so that alien components will not destroy boundaries
-    //CodeInfo* loopNode = new LoopScope(enclScope, lnB, lnE);
-    CodeInfo* loopNode = new LoopScope(NULL, lnB, lnE);
-    loopNode->Link(enclScope);
-
+    CodeInfo* loopNode = new LoopScope(enclScope, lnB, lnE);
     currentScope = loopNode;
   }
   
@@ -406,11 +426,11 @@ void PGMDocHandler:: startElement(const XMLCh* const uri,
     // 'begin' is required but 'end' is implied (and can be in any order)
     DIAG_Assert(1 <= numAttr && numAttr <= 3, DIAG_UnexpectedInput);
     
-    int lnB = UNDEF_LINE, lnE = UNDEF_LINE;
+    suint lnB = UNDEF_LINE, lnE = UNDEF_LINE;
     string lineB = getAttr(attributes, attrBegin);
     string lineE = getAttr(attributes, attrEnd);
-    if (!lineB.empty()) { lnB = (int)StrUtil::toLong(lineB); }
-    if (!lineE.empty()) { lnE = (int)StrUtil::toLong(lineE); }
+    if (!lineB.empty()) { lnB = (suint)StrUtil::toLong(lineB); }
+    if (!lineE.empty()) { lnE = (suint)StrUtil::toLong(lineE); }
     //DIAG_Assert(lnB != UNDEF_LINE, "S beg line is " << UNDEF_LINE);
 
     // Check that lnB and lnE are valid line numbers:
@@ -429,10 +449,7 @@ void PGMDocHandler:: startElement(const XMLCh* const uri,
       dynamic_cast<CodeInfo*>(GetCurrentScope()); // enclosing scope
     DIAG_Assert(currentFuncScope != NULL, "");
 
-    // FIXME: temp hack so that alien components will not destroy boundaries
-    //StmtRangeScope* stmtNode = new StmtRangeScope(enclScope, lnB, lnE);
-    StmtRangeScope* stmtNode = new StmtRangeScope(NULL, lnB, lnE);
-    stmtNode->Link(enclScope);
+    StmtRangeScope* stmtNode = new StmtRangeScope(enclScope, lnB, lnE);
 
     if (!vma.empty()) {
       stmtNode->vmaSet().fromString(vma.c_str());
@@ -451,14 +468,6 @@ void PGMDocHandler:: startElement(const XMLCh* const uri,
     DIAG_Assert(grpscope != NULL, "");
     groupNestingLvl++;
     currentScope = grpscope;
-  }
-
-  // A(lien)
-  else if (XMLString::equals(name, elemAlien)) {
-    string nm = getAttr(attributes, attrName); // must exist
-    DIAG_Assert(!nm.empty(), "");
-    IFTRACE << "A(lien): name= " << nm << endl;
-    return; // FIXME: short circuit scope pushing for now!
   }
 
   
@@ -507,6 +516,13 @@ void PGMDocHandler::endElement(const XMLCh* const uri,
     currentFuncName = "";
     currentFuncScope = NULL;
   }
+
+  // A(lien)
+  else if (XMLString::equals(name, elemAlien)) {
+    // stack depth should be at least 4
+    DIAG_Assert(scopeStack.Depth() >= 4, "");
+    if (m_docty == Doc_GROUP) { ProcessGroupDocEndTag(); }
+  }
   
   // L(oop)
   else if (XMLString::equals(name, elemLoop)) {
@@ -526,11 +542,6 @@ void PGMDocHandler::endElement(const XMLCh* const uri,
     DIAG_Assert(groupNestingLvl >= 1, "");
     if (m_docty == Doc_GROUP) { ProcessGroupDocEndTag(); }
     groupNestingLvl--;
-  }
-
-  // A(lien)
-  else if (XMLString::equals(name, elemAlien)) {
-    return; // FIXME: short circuit scope popping for now!
   }
 
   PopCurrentScope();

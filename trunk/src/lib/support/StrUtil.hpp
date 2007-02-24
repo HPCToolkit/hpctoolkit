@@ -84,7 +84,7 @@ namespace StrUtil {
 // --------------------------------------------------------------------------
 
 void 
-tokenize(const std::string tokenstr, const char* delim,
+tokenize(const std::string& tokenstr, const char* delim,
 	 std::vector<std::string>& tokenvec);
 
 // --------------------------------------------------------------------------

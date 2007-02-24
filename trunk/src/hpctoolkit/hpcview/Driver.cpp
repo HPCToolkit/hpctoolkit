@@ -283,10 +283,15 @@ Driver::ScopeTreeInsertHPCRUNData(PgmScopeTree& scopes,
     const ProfFileLM& proflm = prof.load_module(i);
     const std::string& lmname = proflm.name();
     LoadModScope* lmScope = nodeRet.MoveToLoadMod(lmname);
-    
-    binutils::LM lm;
-    if (!lm.Open(lmname.c_str())) {
-      exit(1); // Error already printed
+
+    binutils::LM* lm = NULL;
+    try {
+      lm = new binutils::LM();
+      lm->Open(lmname.c_str());
+    }
+    catch (...) {
+      DIAG_EMsg("Exception encountered while opening " << lmname.c_str());
+      throw;
     }
     
     //-------------------------------------------------------
@@ -308,7 +313,7 @@ Driver::ScopeTreeInsertHPCRUNData(PgmScopeTree& scopes,
 	
 	// 1. Unrelocate vma.
 	VMA ur_vma = vma;
-	if (lm.GetType() == binutils::LM::SharedLibrary 
+	if (lm->GetType() == binutils::LM::SharedLibrary 
 	    && vma > proflm.load_addr()) {
 	  ur_vma = vma - proflm.load_addr();
 	}
@@ -329,6 +334,8 @@ Driver::ScopeTreeInsertHPCRUNData(PgmScopeTree& scopes,
 		    << scope->toXML());
       }
     }
+
+    delete lm;
   }
   
 
