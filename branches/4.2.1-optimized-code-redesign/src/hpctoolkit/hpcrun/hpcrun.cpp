@@ -439,6 +439,7 @@ launch_and_profile(const char* installpath, char* argv[])
 static int
 check_and_prepare_env_for_profiling(const char* installpath)
 {  
+#define HPCRUN_PATH "/lib/HPCToolkit/"
   char newval[PATH_MAX] = "";
   char *oldval;
   int sz;
@@ -451,9 +452,9 @@ check_and_prepare_env_for_profiling(const char* installpath)
   prepare_ld_lib_path_for_papi();
 
   /* LD_PRELOAD */
-  snprintf(newval, PATH_MAX, "%s/lib/" HPCRUN_LIB, installpath);
+  snprintf(newval, PATH_MAX, "%s" HPCRUN_PATH HPCRUN_LIB, installpath);
 #ifdef HAVE_MONITOR
-  int ofst = strlen(installpath) + 5 + strlen(HPCRUN_LIB);
+  int ofst = strlen(installpath) + strlen(HPCRUN_PATH HPCRUN_LIB);
   snprintf(newval + ofst, PATH_MAX - ofst, " %s/" HPC_MONITOR_LIBSO_INSTALLED,
 	   installpath);
 #endif

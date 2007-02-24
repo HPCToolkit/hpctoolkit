@@ -15,7 +15,7 @@
 @SET_MAKE@
 
 # -*-Mode: makefile;-*-
-# $Id: Makefile.am 576 2006-07-25 03:19:04Z eraxxon $
+# $Id: Makefile.am 713 2007-02-05 17:36:58Z eraxxon $
 
 #############################################################################
 #
@@ -24,29 +24,10 @@
 #
 # Description:
 #   *Process with automake to produce Makefile.in*
-#   
+#
 #   Note: All local variables are prefixed with MY to prevent name
 #   clashes with automatic automake variables.
 #
-#############################################################################
-
-# -*-Mode: makefile;-*-
-# $Id: Makeinclude.config 713 2007-02-05 17:36:58Z eraxxon $
-
-#############################################################################
-#
-# File:
-#   $Source$
-#
-# Description:
-#   Include file for package Makefile.in
-# 
-#   *Assumes presence of Automake variables!*
-#
-#############################################################################
-
-#############################################################################
-# HPCTOOLKIT Components and Settings
 #############################################################################
 
 srcdir = @srcdir@
@@ -55,7 +36,7 @@ VPATH = @srcdir@
 pkgdatadir = $(datadir)/@PACKAGE@
 pkglibdir = $(libdir)/@PACKAGE@
 pkgincludedir = $(includedir)/@PACKAGE@
-top_builddir = ../../..
+top_builddir = ..
 am__cd = CDPATH="$${ZSH_VERSION+.}$(PATH_SEPARATOR)" && cd
 INSTALL = @INSTALL@
 install_sh_DATA = $(install_sh) -c -m 644
@@ -71,9 +52,8 @@ PRE_UNINSTALL = :
 POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
-DIST_COMMON = $(srcdir)/Makefile.am $(srcdir)/Makefile.in \
-	$(top_srcdir)/src/Makeinclude.config
-subdir = src/hpctoolkit/filters
+subdir = lib
+DIST_COMMON = README $(srcdir)/Makefile.am $(srcdir)/Makefile.in
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/config/hpc-cxxutils.m4 \
 	$(top_srcdir)/configure.ac
@@ -81,11 +61,17 @@ am__configure_deps = $(am__aclocal_m4_deps) $(CONFIGURE_DEPENDENCIES) \
 	$(ACLOCAL_M4)
 mkinstalldirs = $(SHELL) $(top_srcdir)/config/mkinstalldirs
 CONFIG_CLEAN_FILES =
-am__installdirs = "$(DESTDIR)$(bindir)"
-binSCRIPT_INSTALL = $(INSTALL_SCRIPT)
-SCRIPTS = $(bin_SCRIPTS)
 SOURCES =
 DIST_SOURCES =
+am__vpath_adj_setup = srcdirstrip=`echo "$(srcdir)" | sed 's|.|.|g'`;
+am__vpath_adj = case $$p in \
+    $(srcdir)/*) f=`echo "$$p" | sed "s|^$$srcdirstrip/||"`;; \
+    *) f=$$p;; \
+  esac;
+am__strip_dir = `echo $$p | sed -e 's|^.*/||'`;
+am__installdirs = "$(DESTDIR)$(pkgdatadir)"
+nobase_pkgdataDATA_INSTALL = $(install_sh_DATA)
+DATA = $(nobase_pkgdata_DATA)
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
 ACLOCAL = @ACLOCAL@
 AMDEP_FALSE = @AMDEP_FALSE@
@@ -242,54 +228,49 @@ target_alias = @target_alias@
 # We do not want the standard GNU files (NEWS README AUTHORS ChangeLog...)
 AUTOMAKE_OPTIONS = foreign
 
-# $(top_srcdir) is fine, but $(abs_top_srcdir) must be used with @@
-HPCTOOLKIT = @abs_top_srcdir@
-
-############################################################
-# Local includes
-############################################################
-HPC_IFLAGS = -I$(HPCTOOLKIT)/src
-
-############################################################
-# Local libraries
-############################################################
-
-# Linking dependencies:
-#   HPC_LIBBANAL      : HPC_LIBPROFJUICY HPC_LIBBINUTILS
-#   HPC_LIBPROFJUICY  : HPC_LIBBINUTILS HPC_LIBSUPPORT
-#   HPC_LIBPROFJUICYX : HPC_LIBPROFJUICY HPC_LIBBINUTILS HPC_LIBSUPPORT
-#   HPC_LIBPROFLEAN   :
-#   HPC_LIBBINUTILS   : HPC_LIBISA HPC_LIBSUPPORT
-#   HPC_LIBISA        : HPC_LIBSUPPORT
-#   HPC_LIBXML        : HPC_LIBSUPPORT
-#   HPC_LIBSUPPORT    :
-HPC_LIBBANAL = $(top_builddir)/src/lib/banal/libHPCbanal.la
-HPC_LIBPROFJUICY = $(top_builddir)/src/lib/prof-juicy/libHPCprof-juicy.la
-HPC_LIBPROFJUICYX = $(top_builddir)/src/lib/prof-juicy-x/libHPCprof-juicy-x.la
-HPC_LIBPROFLEAN = $(top_builddir)/src/lib/prof-lean/libHPCprof-lean.la
-HPC_LIBBINUTILS = $(top_builddir)/src/lib/binutils/libHPCbinutils.la
-HPC_LIBISA = $(top_builddir)/src/lib/isa/libHPCisa.la
-HPC_LIBXML = $(top_builddir)/src/lib/xml/libHPCxml.la
-HPC_LIBSUPPORT = $(top_builddir)/src/lib/support/libHPCsupport.la
-
-#############################################################################
-# Common settings
-#############################################################################
-
 #############################################################################
 # Local settings
 #############################################################################
-MYSCRIPTS = 
-#	f90modfilt
+MYDTD = \
+	dtd/CSPROFILE.dtd \
+	dtd/Experiment.dtd \
+	dtd/HPCView.dtd \
+	dtd/PGM.dtd \
+	dtd/PROFILE.dtd \
+	\
+	dtd/mathml/xhtml1-transitional-mathml.dtd \
+	dtd/mathml/mathml.dtd \
+	dtd/mathml/isoamsa.ent \
+	dtd/mathml/isoamsb.ent \
+	dtd/mathml/isoamsc.ent \
+	dtd/mathml/isoamsn.ent \
+	dtd/mathml/isoamso.ent \
+	dtd/mathml/isoamsr.ent \
+	dtd/mathml/isobox.ent \
+	dtd/mathml/isocyr1.ent \
+	dtd/mathml/isocyr2.ent \
+	dtd/mathml/isodia.ent \
+	dtd/mathml/isogrk3.ent \
+	dtd/mathml/isolat1.ent \
+	dtd/mathml/isolat2.ent \
+	dtd/mathml/isomfrk.ent \
+	dtd/mathml/isomopf.ent \
+	dtd/mathml/isomscr.ent \
+	dtd/mathml/isonum.ent \
+	dtd/mathml/isopub.ent \
+	dtd/mathml/isotech.ent \
+	dtd/mathml/mmlalias.ent \
+	dtd/mathml/mmlextra.ent
+
 
 #############################################################################
 # Automake rules
 #############################################################################
-bin_SCRIPTS = $(MYSCRIPTS)
+nobase_pkgdata_DATA = $(MYDTD)
 all: all-am
 
 .SUFFIXES:
-$(srcdir)/Makefile.in:  $(srcdir)/Makefile.am $(top_srcdir)/src/Makeinclude.config $(am__configure_deps)
+$(srcdir)/Makefile.in:  $(srcdir)/Makefile.am  $(am__configure_deps)
 	@for dep in $?; do \
 	  case '$(am__configure_deps)' in \
 	    *$$dep*) \
@@ -298,9 +279,9 @@ $(srcdir)/Makefile.in:  $(srcdir)/Makefile.am $(top_srcdir)/src/Makeinclude.conf
 	      exit 1;; \
 	  esac; \
 	done; \
-	echo ' cd $(top_srcdir) && $(AUTOMAKE) --foreign  src/hpctoolkit/filters/Makefile'; \
+	echo ' cd $(top_srcdir) && $(AUTOMAKE) --foreign  lib/Makefile'; \
 	cd $(top_srcdir) && \
-	  $(AUTOMAKE) --foreign  src/hpctoolkit/filters/Makefile
+	  $(AUTOMAKE) --foreign  lib/Makefile
 .PRECIOUS: Makefile
 Makefile: $(srcdir)/Makefile.in $(top_builddir)/config.status
 	@case '$?' in \
@@ -318,25 +299,6 @@ $(top_srcdir)/configure:  $(am__configure_deps)
 	cd $(top_builddir) && $(MAKE) $(AM_MAKEFLAGS) am--refresh
 $(ACLOCAL_M4):  $(am__aclocal_m4_deps)
 	cd $(top_builddir) && $(MAKE) $(AM_MAKEFLAGS) am--refresh
-install-binSCRIPTS: $(bin_SCRIPTS)
-	@$(NORMAL_INSTALL)
-	test -z "$(bindir)" || $(mkdir_p) "$(DESTDIR)$(bindir)"
-	@list='$(bin_SCRIPTS)'; for p in $$list; do \
-	  if test -f "$$p"; then d=; else d="$(srcdir)/"; fi; \
-	  if test -f $$d$$p; then \
-	    f=`echo "$$p" | sed 's|^.*/||;$(transform)'`; \
-	    echo " $(binSCRIPT_INSTALL) '$$d$$p' '$(DESTDIR)$(bindir)/$$f'"; \
-	    $(binSCRIPT_INSTALL) "$$d$$p" "$(DESTDIR)$(bindir)/$$f"; \
-	  else :; fi; \
-	done
-
-uninstall-binSCRIPTS:
-	@$(NORMAL_UNINSTALL)
-	@list='$(bin_SCRIPTS)'; for p in $$list; do \
-	  f=`echo "$$p" | sed 's|^.*/||;$(transform)'`; \
-	  echo " rm -f '$(DESTDIR)$(bindir)/$$f'"; \
-	  rm -f "$(DESTDIR)$(bindir)/$$f"; \
-	done
 
 mostlyclean-libtool:
 	-rm -f *.lo
@@ -347,6 +309,25 @@ clean-libtool:
 distclean-libtool:
 	-rm -f libtool
 uninstall-info-am:
+install-nobase_pkgdataDATA: $(nobase_pkgdata_DATA)
+	@$(NORMAL_INSTALL)
+	test -z "$(pkgdatadir)" || $(mkdir_p) "$(DESTDIR)$(pkgdatadir)"
+	@$(am__vpath_adj_setup) \
+	list='$(nobase_pkgdata_DATA)'; for p in $$list; do \
+	  if test -f "$$p"; then d=; else d="$(srcdir)/"; fi; \
+	  $(am__vpath_adj) \
+	  echo " $(nobase_pkgdataDATA_INSTALL) '$$d$$p' '$(DESTDIR)$(pkgdatadir)/$$f'"; \
+	  $(nobase_pkgdataDATA_INSTALL) "$$d$$p" "$(DESTDIR)$(pkgdatadir)/$$f"; \
+	done
+
+uninstall-nobase_pkgdataDATA:
+	@$(NORMAL_UNINSTALL)
+	@$(am__vpath_adj_setup) \
+	list='$(nobase_pkgdata_DATA)'; for p in $$list; do \
+	  $(am__vpath_adj) \
+	  echo " rm -f '$(DESTDIR)$(pkgdatadir)/$$f'"; \
+	  rm -f "$(DESTDIR)$(pkgdatadir)/$$f"; \
+	done
 tags: TAGS
 TAGS:
 
@@ -355,7 +336,6 @@ CTAGS:
 
 
 distdir: $(DISTFILES)
-	$(mkdir_p) $(distdir)/../../../src
 	@srcdirstrip=`echo "$(srcdir)" | sed 's|.|.|g'`; \
 	topsrcdirstrip=`echo "$(top_srcdir)" | sed 's|.|.|g'`; \
 	list='$(DISTFILES)'; for file in $$list; do \
@@ -384,9 +364,9 @@ distdir: $(DISTFILES)
 	done
 check-am: all-am
 check: check-am
-all-am: Makefile $(SCRIPTS)
+all-am: Makefile $(DATA)
 installdirs:
-	for dir in "$(DESTDIR)$(bindir)"; do \
+	for dir in "$(DESTDIR)$(pkgdatadir)"; do \
 	  test -z "$$dir" || $(mkdir_p) "$$dir"; \
 	done
 install: install-am
@@ -431,9 +411,9 @@ info: info-am
 
 info-am:
 
-install-data-am:
+install-data-am: install-nobase_pkgdataDATA
 
-install-exec-am: install-binSCRIPTS
+install-exec-am:
 
 install-info: install-info-am
 
@@ -457,20 +437,19 @@ ps: ps-am
 
 ps-am:
 
-uninstall-am: uninstall-binSCRIPTS uninstall-info-am
+uninstall-am: uninstall-info-am uninstall-nobase_pkgdataDATA
 
 .PHONY: all all-am check check-am clean clean-generic clean-libtool \
 	distclean distclean-generic distclean-libtool distdir dvi \
 	dvi-am html html-am info info-am install install-am \
-	install-binSCRIPTS install-data install-data-am install-exec \
-	install-exec-am install-info install-info-am install-man \
-	install-strip installcheck installcheck-am installdirs \
-	maintainer-clean maintainer-clean-generic mostlyclean \
-	mostlyclean-generic mostlyclean-libtool pdf pdf-am ps ps-am \
-	uninstall uninstall-am uninstall-binSCRIPTS uninstall-info-am
+	install-data install-data-am install-exec install-exec-am \
+	install-info install-info-am install-man \
+	install-nobase_pkgdataDATA install-strip installcheck \
+	installcheck-am installdirs maintainer-clean \
+	maintainer-clean-generic mostlyclean mostlyclean-generic \
+	mostlyclean-libtool pdf pdf-am ps ps-am uninstall uninstall-am \
+	uninstall-info-am uninstall-nobase_pkgdataDATA
 
-
-#############################################################################
 
 #############################################################################
 # Other rules

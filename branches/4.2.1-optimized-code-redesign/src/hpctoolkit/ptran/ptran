@@ -107,7 +107,7 @@ use Getopt::Std;
 use vars qw($opt_m $opt_e);
 use FindBin qw($Script $RealBin);
 
-use lib "$RealBin/../lib/perl";
+use lib "$RealBin/../lib/HPCToolkit";
 use HPCToolkitVersionInfo;
 use ptranSgi;
 use ptranDec;

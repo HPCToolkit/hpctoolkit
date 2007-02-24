@@ -61,8 +61,8 @@ include $(top_srcdir)/src/Makeinclude.config
 # Local settings
 #############################################################################
 
-MYSCRIPTS = \
-	f90modfilt
+MYSCRIPTS = 
+#	f90modfilt
 
 #############################################################################
 # Automake rules

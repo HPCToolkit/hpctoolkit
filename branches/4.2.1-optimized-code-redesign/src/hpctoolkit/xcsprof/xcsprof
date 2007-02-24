@@ -44,14 +44,14 @@ unset ROOTDIR_REL
 # Set environment for process
 #############################################################################
 
-HPCTOOLKIT_PLATFORM=`cd ${HPCTOOLKIT}/config && ./hpcplatform`
+HPCTOOLKIT_PLATFORM=`cd ${HPCTOOLKIT}/libexec/HPCToolkit && ./hpcplatform`
 export HPCTOOLKIT
 export HPCTOOLKIT_PLATFORM
 
-XERCESCROOT="${HPCTOOLKIT}/xercesc"
+XERCESCROOT="${HPCTOOLKIT}/lib/HPCToolkit/xercesc"
 export XERCESCROOT
 
-XERCESPLATFORM="${XERCESCROOT}/lib"
+XERCESPLATFORM="${XERCESCROOT}"
 
 if test ${HPCTOOLKIT_PLATFORM} = 'mips-IRIX64' ; then
   # set library path for IRIX systems

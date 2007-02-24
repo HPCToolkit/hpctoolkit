@@ -55,102 +55,37 @@ AUTOMAKE_OPTIONS = foreign
 # Local settings
 #############################################################################
 
-MYDATA = \
-	README \
-	README.Contact \
-	README.Index \
-	README.License
-	README.ReleaseNotes
+MYSOURCES = \
+	building-old.html \
+	building.html \
+	dtd_hpcview.html \
+	dtd_pgm.html \
+	dtd_profile.html \
+	footer_hpctoolkit.js \
+	header_hpctoolkit.js \
+	hpc_bloop.html \
+	hpc_ptran.html \
+	hpc_xprof.html \
+	hpcprof.html \
+	hpcquick.html \
+	hpcrun.html \
+	hpcview.html \
+	hpcviewer.html \
+	hwctools.html \
+	index.html \
+	styleForAll.css \
+	testing.html \
+	images/header.gif \
+	images/index.html
 
-MYSCRIPTS = \
-	Sourceme-csh \
-	Sourceme-sh \
-	config/hpcguess \
-	config/hpcplatform \
-	config/config.guess
 
 #############################################################################
 # Automake rules
 #############################################################################
 
-SUBDIRS = \
-	src \
-	\
-	doc \
-	lib
-
-pkglibexecdir = $(libexecdir)/$(PACKAGE)
-pkglibexec_SCRIPTS = $(MYSCRIPTS)
-
-dist_doc_DATA = $(MYDATA)
-
+nobase_dist_doc_DATA = $(MYSOURCES)
 
 #############################################################################
 # Other rules
 #############################################################################
 
-############################################################
-# Install
-############################################################
-
-# Note: *-local and *-hook are special automake versions of the
-# regular target. *-hook runs *after* install has completed
-
-install-data-local: myinstall-xerces myinstall-monitor
-
-myinstall-xerces: myinstall-mkdir
-	if test 1; then \
-	  rm -rf $(pkglibdir)/xercesc ; \
-	  cp -R @XERCES@/lib $(pkglibdir)/xercesc ; \
-	fi
-
-myinstall-monitor: myinstall-mkdir
-	if test 1; then \
-	  rm -rf $(pkglibdir)/monitor ; \
-	  cp -R @MONITOR_LIBPATH@ $(pkglibdir)/monitor ; \
-	fi
-
-myinstall-mkdir:
-	$(mkinstalldirs) $(pkglibdir)
-
-# A list of {file ! installation directory} pairs.
-#MYSCRIPTPAIRS = \
-#	config/hpcguess!config \
-#	config/hpcplatform!config \
-#	config/config.guess!config 
-#
-#myinstall-scripts:
-#	for pair in $(MYSCRIPTPAIRS); do \
-#	  src=`echo $${pair} | awk -F'!' '{print $$1}'` ; \
-#	  dir=`echo $${pair} | awk -F'!' '{print $$2}'` ; \
-#	  destdir=$(MYINSTALLDIR)/$${dir} ; \
-#	  $(mkinstalldirs) $${destdir} ; \
-#	  $(INSTALL_SCRIPT) $(srcdir)/$${src} $${destdir} ; \
-#	done
-
-.PHONY : myinstall-xerces myinstall-monitor myinstall-mkdir
-
-
-############################################################
-# WebDocs
-#   The following extracts the various files that will appear on
-#   the Web site as documentation for the current version.
-#   The tarfile should be extracted in the "documentation" sub-directory
-#   of the Web site.
-#   Eventually, this could perhaps be done with 'make dist'...
-############################################################
-
-# GNUtar
-MYTAR = tar
-MYTARFILE = @abs_top_builddir@/@PACKAGE_NAME@-@PACKAGE_VERSION@-webdocs.tar
-MYSRC = @abs_top_srcdir@
-
-hpc_webdocs: 
-#	Exclude CVS or .svn metadata
-	cd $(srcdir)/.. ; \
-	${MYTAR} cvf $(MYTARFILE) --exclude=CVS --exclude=".svn" \
-	 HPCToolkit/README* HPCToolkit/Sourceme* \
-	 HPCToolkit/doc \
-	 HPCToolkit/lib/dtd/*.dtd
-
-.PHONY: hpc_webdocs

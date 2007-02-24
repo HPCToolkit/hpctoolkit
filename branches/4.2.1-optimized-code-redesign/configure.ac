@@ -67,7 +67,7 @@ m4_include(config/hpc-cxxutils.m4)
 #    correctly
 #----------------------------------------------------------------------------
 
-AC_INIT([HPCToolkit], [BRANCH-4.2.2=750], [hpc@cs.rice.edu], [HPCToolkit])
+AC_INIT([HPCToolkit], [BRANCH-4.2.2=765], [hpc@cs.rice.edu], [HPCToolkit])
 AC_CONFIG_SRCDIR([src/include/HPCToolkitVersionInfo.h])
 AC_CONFIG_AUX_DIR([config])
 
@@ -89,6 +89,7 @@ hpctoolkit_top=`cd ${srcdir} && pwd`
 hpctoolkit_build=`pwd`
 HPCTOOLKIT_PLATFORM=`cd ${hpctoolkit_top}/config && ./hpcplatform`
 AC_SUBST([HPCTOOLKIT_PLATFORM])
+
 
 #----------------------------------------------------------------------------
 # Prerequisites: programs, libraries
@@ -156,56 +157,6 @@ AC_MSG_RESULT([${XERCES}])
 AC_SUBST([XERCES])
 AC_SUBST([XERCES_IFLAGS])
 AC_SUBST([XERCES_LDFLAGS])
-
-#-------------------------------------------------
-# Check for monitor
-#-------------------------------------------------
-
-AC_MSG_CHECKING([for monitor])
-
-OPT_WITH_MONITOR=no
-MONITOR=
-
-# Use monitor by default
-case ${host} in
-  *-*-linux*) 
-    OPT_WITH_MONITOR=yes
-    MONITOR="${hpctoolkit_top}/../monitor/${HPCTOOLKIT_PLATFORM}"
-    ;;
-esac
-
-AC_ARG_WITH([monitor],
-  AS_HELP_STRING([--with-monitor=<libmonitor path>],
-                 [use given libmonitor installation]),
-  [if test $withval != no; then
-     OPT_WITH_MONITOR=yes
-     MONITOR=${withval}
-   else
-     OPT_WITH_MONITOR=no
-   fi],
-  [])
-
-MONITOR_LIBNM="lib"
-case ${host} in
-  x86_64*-*-linux*) MONITOR_LIBNM="lib64" ;;
-esac
-MONITOR_IFLAGS="-I${MONITOR}/include"
-MONITOR_LIBPATH="${MONITOR}/${MONITOR_LIBNM}"
-MONITOR_LDFLAGS="-L${MONITOR_LIBPATH}"
-MONITOR_LIBSO="${MONITOR_LIBPATH}/libmonitor.so"
-MONITOR_LIBSO_INSTALLED="monitor/${MONITOR_LIBNM}/libmonitor.so"
-
-if test "${OPT_WITH_MONITOR}" = "yes" ; then
-  AC_DEFINE([HAVE_MONITOR], [], [Monitor library])
-  AC_MSG_RESULT([yes (${MONITOR_LIBSO})])
-else
-  AC_MSG_RESULT([no (not needed)])
-fi
-
-AC_SUBST([MONITOR])
-AC_SUBST([MONITOR_LIBPATH])
-AC_SUBST([MONITOR_LIBSO])
-AC_SUBST([MONITOR_LIBSO_INSTALLED])
 
 
 #-------------------------------------------------
@@ -297,6 +248,57 @@ AC_ARG_ENABLE([develop],
 
 AC_MSG_RESULT([${OPT_ENABLE_DEVELOP}])
 AM_CONDITIONAL(OPT_ENABLE_DEVELOP, test "${OPT_ENABLE_DEVELOP}" = "yes")
+
+
+#-------------------------------------------------
+# with-monitor
+#-------------------------------------------------
+
+AC_MSG_CHECKING([for monitor])
+
+OPT_WITH_MONITOR=no
+MONITOR=
+
+# Use monitor by default
+case ${host} in
+  *-*-linux*) 
+    OPT_WITH_MONITOR=yes
+    MONITOR="${hpctoolkit_top}/../monitor/${HPCTOOLKIT_PLATFORM}"
+    ;;
+esac
+
+AC_ARG_WITH([monitor],
+  AS_HELP_STRING([--with-monitor=<libmonitor path>],
+                 [use given libmonitor installation]),
+  [if test $withval != no; then
+     OPT_WITH_MONITOR=yes
+     MONITOR=${withval}
+   else
+     OPT_WITH_MONITOR=no
+   fi],
+  [])
+
+MONITOR_LIBNM="lib"
+case ${host} in
+  x86_64*-*-linux*) MONITOR_LIBNM="lib64" ;;
+esac
+MONITOR_IFLAGS="-I${MONITOR}/include"
+MONITOR_LIBPATH="${MONITOR}/${MONITOR_LIBNM}"
+MONITOR_LDFLAGS="-L${MONITOR_LIBPATH}"
+MONITOR_LIBSO="${MONITOR_LIBPATH}/libmonitor.so"
+MONITOR_LIBSO_INSTALLED="lib/HPCToolkit/monitor/libmonitor.so"
+
+if test "${OPT_WITH_MONITOR}" = "yes" ; then
+  AC_DEFINE([HAVE_MONITOR], [], [Monitor library])
+  AC_MSG_RESULT([yes (${MONITOR_LIBSO})])
+else
+  AC_MSG_RESULT([no (not needed)])
+fi
+
+AC_SUBST([MONITOR])
+AC_SUBST([MONITOR_LIBPATH])
+AC_SUBST([MONITOR_LIBSO])
+AC_SUBST([MONITOR_LIBSO_INSTALLED])
 
 
 #-------------------------------------------------
@@ -736,6 +738,11 @@ AC_SUBST([HOST_HPCPROF_LDFLAGS])
 
 AC_CONFIG_FILES([ \
   Makefile \
+  \
+  doc/Makefile \
+  \
+  lib/Makefile \
+  \
   src/Makefile \
   src/hpctoolkit/Makefile \
   src/hpctoolkit/bloop/Makefile \
@@ -754,13 +761,12 @@ AC_CONFIG_FILES([ \
   src/lib/binutils/Makefile \
   src/lib/isa/Makefile \
   src/lib/perl/Makefile \
+  src/lib/perl/HPCToolkitVersionInfo.pm \
   src/lib/prof-juicy/Makefile \
   src/lib/prof-juicy-x/Makefile \
   src/lib/prof-lean/Makefile \
   src/lib/support/Makefile \
   src/lib/xml/Makefile \
-  \
-  src/lib/perl/HPCToolkitVersionInfo.pm \
 ])
 
 AC_CONFIG_COMMANDS()

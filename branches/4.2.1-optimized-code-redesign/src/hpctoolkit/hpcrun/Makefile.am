@@ -115,8 +115,6 @@ MYLDADD_LIBHPCRUN_STATIC = \
 
 MYCLEAN = @HOST_LIBTREPOSITORY@
 
-MYINSTALLDIR = $(DESTDIR)$(prefix)
-
 #############################################################################
 # Automake rules
 #############################################################################
@@ -131,14 +129,16 @@ hpcrun_LDADD            = $(MYLDADD_HPCRUN)
 # N.B.: We only care about the dynamically linked version of this
 # library.  An install-hook below ensures only intercepted symbols
 # will be visible.
-lib_LTLIBRARIES         = libhpcrun.la
+pkglib_LTLIBRARIES      = libhpcrun.la
 libhpcrun_la_SOURCES    = $(MYSOURCES_LIBHPCRUN_PRELOAD)
 libhpcrun_la_CFLAGS     = $(MYCFLAGS)
 libhpcrun_la_LDFLAGS    = $(MYLDFLAGS_LIBHPCRUN_PRELOAD)
 libhpcrun_la_LIBADD     = $(MYLDADD_LIBHPCRUN_PRELOAD)
 
-# N.B.: We use the PROGRAMS macro primarily to get free linking.  An
-# install-hook below moves this from bin to lib in the installation.
+# N.B.: We use the PROGRAMS macro primarily to get free linking, since
+# using lib_LTLIBRARIES doesn't work.  An install-hook below moves
+# this from bin to lib in the installation.
+#lib_LTLIBRARIES             += libhpcrun-static.o
 bin_PROGRAMS               += libhpcrun-static.o
 libhpcrun_static_o_SOURCES  = $(MYSOURCES_LIBHPCRUN_STATIC)
 libhpcrun_static_o_CFLAGS   = $(MYCFLAGS)
@@ -146,19 +146,15 @@ libhpcrun_static_o_CXXFLAGS = $(MYCXXFLAGS)
 libhpcrun_static_o_LDFLAGS  = $(MYLDFLAGS_LIBHPCRUN_STATIC)
 libhpcrun_static_o_LDADD    = $(MYLDADD_LIBHPCRUN_STATIC)
 
-# Can We use libtool to get free linking?  It complains.
-#lib_LTLIBRARIES             += libhpcrun-static.o
-#libhpcrun_static_o_SOURCES  = $(MYSOURCES_LIBHPCRUN_STATIC)
-#libhpcrun_static_o_CFLAGS   = $(MYCFLAGS)
-#libhpcrun_static_o_CXXFLAGS = $(MYCXXFLAGS)
-#libhpcrun_static_o_LDFLAGS  = $(MYLDFLAGS_LIBHPCRUN_STATIC)
-#libhpcrun_static_o_LIBADD   = $(MYLDADD_LIBHPCRUN_STATIC)
-
 MOSTLYCLEANFILES        = $(MYCLEAN)
 
 #############################################################################
 # Other rules
 #############################################################################
+
+############################################################
+# Install
+############################################################
 
 MY_INTERCEPTED_SYMS_COMMON = \
 	__libc_start_main  __BP___libc_start_main \
@@ -174,9 +170,10 @@ MY_INTERCEPTED_SYMS_LIBHPCRUNSO = \
 MY_INTERCEPTED_SYMS_LIBHPCRUNST = \
 	$(MY_INTERCEPTED_SYMS_COMMON)
 
+# Note: *-local and *-hook are special automake versions of the
+# regular target. *-hook runs *after* install has completed
 
-# *-hook runs after install has completed
-install-exec-local: myinstall-exec
+install-exec-hook: myinstall-exec
 
 myinstall-exec: myinstall-libhpcrunso myinstall-libhpcrun-static
 
@@ -184,11 +181,11 @@ myinstall-exec: myinstall-libhpcrunso myinstall-libhpcrun-static
 MYKEEPSYMS = $(addprefix -K , $(MY_INTERCEPTED_SYMS_LIBHPCRUNSO))
 
 myinstall-libhpcrunso:
-	rm -f $(MYINSTALLDIR)/lib/libhpcrun.a
-	@OPT_OBJCOPY@ -S $(MYKEEPSYMS) $(MYINSTALLDIR)/lib/libhpcrun.so
+	rm -f $(pkglibdir)/libhpcrun.a
+	@OPT_OBJCOPY@ -S $(MYKEEPSYMS) $(pkglibdir)/libhpcrun.so
 
 myinstall-libhpcrun-static: 
-	mv $(MYINSTALLDIR)/bin/libhpcrun-static.o $(MYINSTALLDIR)/lib/.
+	mv $(bindir)/libhpcrun-static.o $(libdir)/.
 
 .PHONY: myinstall-exec myinstall-libhpcrunso myinstall-libhpcrun-static
 
