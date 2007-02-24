@@ -1148,48 +1148,41 @@ sub findMetricsForHPCRUN
   sub getProfileType 
   {
     my ($profile) = @_;
+
+    # Open and examine header
+    my $header = "";
+    my $profileHandle = new IO::File();
+    $profileHandle->open("< $profile")
+	or Error("Can't open '$profile'\n");
     
-    # FIXME: we should detect uprofile better
+    # 1. Test for a magic string at the beginning of the file
+    seek($profileHandle, 0, 0); # rewind to beginning
+    my $sz = 16;
+    my $ret = read($profileHandle, $header, $sz);
+    if ($ret == $sz) {
+      if ($header =~ /^HPCRUN/s) {
+	return $hpcrunType;
+      }
+    }
     
-    if ($profile =~ /$PROFILEFileRE/) {
-      return $PROFILEType;
-    } 
-    elsif ($profile =~ /$ssrunFileRE/) {
+    # 2. Read a chunk of the file and examine the header information
+    seek($profileHandle, 0, 0); # rewind to beginning
+    $sz = 256; 
+    $ret = read($profileHandle, $header, $sz);
+    if ($ret == $sz) {
+      if ($header =~ /<!DOCTYPE PROFILE /s) {
+	return $PROFILEType;
+      }
+    }
+
+    $profileHandle->close();
+
+    # 3. Guess, based on file name
+    if ($profile =~ /$ssrunFileRE/) {
       return $ssrunType;
     } 
     else {
-      # We have to do some heavy lifting: Open and examine contents.
-      my $header = "";
-      my $profileHandle = new IO::File();
-      $profileHandle->open("< $profile")
-	  or Error("Can't open '$profile'\n");
-      
-      my $type = $uprofileType;
-      
-      # 1. Test for a magic string at the beginning of the file
-      seek($profileHandle, 0, 0); # rewind to beginning
-      my $sz = 16;
-      my $ret = read($profileHandle, $header, $sz);
-      if ($ret == $sz) {
-	if ($header =~ /^HPCRUN/s) {
-	  $type = $hpcrunType;
-	}
-      }
-      
-      # 2. Read a chunk of the file and examine the purported header
-      # information
-      seek($profileHandle, 0, 0); # rewind to beginning
-      $sz = 256; 
-      $ret = read($profileHandle, $header, $sz);
-      if ($ret == $sz) {
-	if ($header =~ /<!DOCTYPE PROFILE /s) {
-	  $type = $PROFILEType;
-	}
-      }
-      
-      $profileHandle->close();
-      
-      return $type;
+      return $uprofileType;
     }
   }
 

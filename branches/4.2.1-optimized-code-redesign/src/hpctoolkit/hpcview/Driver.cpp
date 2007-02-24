@@ -289,9 +289,15 @@ Driver::ScopeTreeInsertHPCRUNData(PgmScopeTree& scopes,
       lm = new binutils::LM();
       lm->Open(lmname.c_str());
     }
+    catch (const Diagnostics::Exception& x) {
+      DIAG_EMsg("Exception encountered while opening " << lmname.c_str() 
+		<< std::endl << x.message());
+      continue;
+    }
     catch (...) {
-      DIAG_EMsg("Exception encountered while opening " << lmname.c_str());
-      throw;
+      DIAG_EMsg("Unknown exception encountered while opening " 
+		<< lmname.c_str());
+      continue;
     }
     
     //-------------------------------------------------------
