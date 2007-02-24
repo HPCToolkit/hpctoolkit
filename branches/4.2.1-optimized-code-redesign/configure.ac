@@ -67,7 +67,7 @@ m4_include(config/hpc-cxxutils.m4)
 #    correctly
 #----------------------------------------------------------------------------
 
-AC_INIT([HPCToolkit], [BRANCH-4.2.2=765], [hpc@cs.rice.edu], [HPCToolkit])
+AC_INIT([HPCToolkit], [BRANCH-4.2.2=770], [hpc@cs.rice.edu], [HPCToolkit])
 AC_CONFIG_SRCDIR([src/include/HPCToolkitVersionInfo.h])
 AC_CONFIG_AUX_DIR([config])
 
@@ -257,13 +257,14 @@ AM_CONDITIONAL(OPT_ENABLE_DEVELOP, test "${OPT_ENABLE_DEVELOP}" = "yes")
 AC_MSG_CHECKING([for monitor])
 
 OPT_WITH_MONITOR=no
-OPT_INSTALL_MONITOR=no
 MONITOR=
+OPT_INSTALL_MONITOR=no
 
 # Use monitor by default
 case ${host} in
   *-*-linux*) 
     OPT_WITH_MONITOR=yes
+    OPT_INSTALL_MONITOR=yes
     MONITOR="${hpctoolkit_top}/../monitor/${HPCTOOLKIT_PLATFORM}"
     ;;
 esac
@@ -273,6 +274,7 @@ AC_ARG_WITH([monitor],
                  [use given libmonitor installation]),
   [if test $withval != no; then
      OPT_WITH_MONITOR=yes
+     OPT_INSTALL_MONITOR=no
      MONITOR=${withval}
    else
      OPT_WITH_MONITOR=no
@@ -290,18 +292,17 @@ MONITOR_LIBSO="${MONITOR_LIBPATH}/libmonitor.so"
 MONITOR_LIBSO_INSTALLED="lib/HPCToolkit/monitor/libmonitor.so"
 
 if test "${OPT_WITH_MONITOR}" = "yes" ; then
-  OPT_INSTALL_MONITOR=yes
   AC_DEFINE([HAVE_MONITOR], [], [Monitor library])
   AC_MSG_RESULT([yes (${MONITOR_LIBSO})])
 else
   AC_MSG_RESULT([no (not needed)])
 fi
 
-AC_SUBST([OPT_INSTALL_MONITOR])
 AC_SUBST([MONITOR])
 AC_SUBST([MONITOR_LIBPATH])
 AC_SUBST([MONITOR_LIBSO])
 AC_SUBST([MONITOR_LIBSO_INSTALLED])
+AC_SUBST([OPT_INSTALL_MONITOR])
 
 
 #-------------------------------------------------
