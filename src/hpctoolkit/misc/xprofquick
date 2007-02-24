@@ -56,7 +56,7 @@ use File::Spec;
 use IO::File;
 use FindBin qw($Script $RealBin);
 
-use lib "$RealBin/../lib/perl";
+use lib "$RealBin/../lib/HPCToolkit";
 use HPCToolkitVersionInfo;
 
 STDOUT->autoflush(1); 

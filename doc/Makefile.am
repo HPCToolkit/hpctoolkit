@@ -42,7 +42,7 @@
 #
 # Description:
 #   *Process with automake to produce Makefile.in*
-#   
+#
 #   Note: All local variables are prefixed with MY to prevent name
 #   clashes with automatic automake variables.
 #
@@ -52,23 +52,38 @@
 AUTOMAKE_OPTIONS = foreign
 
 #############################################################################
-# Common settings
-#############################################################################
-
-include $(top_srcdir)/src/Makeinclude.config
-
-#############################################################################
 # Local settings
 #############################################################################
 
-MYSCRIPTS = 
-#	f90modfilt
+MYSOURCES = \
+	building-old.html \
+	building.html \
+	dtd_hpcview.html \
+	dtd_pgm.html \
+	dtd_profile.html \
+	footer_hpctoolkit.js \
+	header_hpctoolkit.js \
+	hpc_bloop.html \
+	hpc_ptran.html \
+	hpc_xprof.html \
+	hpcprof.html \
+	hpcquick.html \
+	hpcrun.html \
+	hpcview.html \
+	hpcviewer.html \
+	hwctools.html \
+	index.html \
+	styleForAll.css \
+	testing.html \
+	images/header.gif \
+	images/index.html
+
 
 #############################################################################
 # Automake rules
 #############################################################################
 
-bin_SCRIPTS = $(MYSCRIPTS)
+nobase_dist_doc_DATA = $(MYSOURCES)
 
 #############################################################################
 # Other rules
