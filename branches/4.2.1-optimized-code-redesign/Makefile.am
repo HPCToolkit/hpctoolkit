@@ -69,6 +69,10 @@ MYSCRIPTS = \
 	config/hpcplatform \
 	config/config.guess
 
+MYXERCESCDIR = $(pkglibdir)/xercesc
+
+MYMONITORDIR = $(pkglibdir)/monitor
+
 #############################################################################
 # Automake rules
 #############################################################################
@@ -98,20 +102,17 @@ dist_doc_DATA = $(MYDATA)
 
 install-data-local: myinstall-xerces myinstall-monitor
 
-myinstall-xerces: myinstall-mkdir
+myinstall-xerces:
 	if test 1; then \
-	  rm -rf $(pkglibdir)/xercesc ; \
-	  cp -R @XERCES@/lib $(pkglibdir)/xercesc ; \
+	  $(mkinstalldirs) $(MYXERCESCDIR) ; \
+	  cp -R @XERCES@/lib/* $(MYXERCESCDIR)/ ; \
 	fi
 
-myinstall-monitor: myinstall-mkdir
+myinstall-monitor:
 	if test "@OPT_INSTALL_MONITOR@" = "yes"; then \
-	  rm -rf $(pkglibdir)/monitor ; \
-	  cp -R @MONITOR_LIBPATH@ $(pkglibdir)/monitor ; \
+	  $(mkinstalldirs) $(MYMONITORDIR) ; \
+	  cp -R @MONITOR_LIBPATH@/* $(MYMONITORDIR)/ ; \
 	fi
-
-myinstall-mkdir:
-	$(mkinstalldirs) $(pkglibdir)
 
 # A list of {file ! installation directory} pairs.
 #MYSCRIPTPAIRS = \
@@ -128,7 +129,7 @@ myinstall-mkdir:
 #	  $(INSTALL_SCRIPT) $(srcdir)/$${src} $${destdir} ; \
 #	done
 
-.PHONY : myinstall-xerces myinstall-monitor myinstall-mkdir
+.PHONY : myinstall-xerces myinstall-monitor
 
 
 ############################################################
