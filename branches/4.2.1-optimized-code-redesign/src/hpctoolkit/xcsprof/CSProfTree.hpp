@@ -250,7 +250,7 @@ public:
   suint GetEndLine() const { return endLine; }; // in source code
   
   bool            ContainsLine(suint ln) const; 
-  CSProfCodeNode* CSProfCodeNodeWithLine(suint ln) const; 
+  CSProfCodeNode* CSProfCodeNodeWithLine(suint ln) const;
 
   void SetLineRange(suint begLn, suint endLn); // be careful when using!
 
@@ -262,10 +262,14 @@ public:
     { DIAG_Die(DIAG_Unimplemented); return BOGUS; }
   virtual void SetFile(const char* fnm) 
     { DIAG_Die(DIAG_Unimplemented); }
+  virtual void SetFile(const std::string& fnm)
+    { DIAG_Die(DIAG_Unimplemented); }
 
   virtual const std::string& GetProc() const 
     { DIAG_Die(DIAG_Unimplemented); return BOGUS; }
   virtual void SetProc(const char* pnm) 
+    { DIAG_Die(DIAG_Unimplemented); }
+  virtual void SetProc(const std::string& pnm)
     { DIAG_Die(DIAG_Unimplemented); }
 
   virtual void SetLine(suint ln) 
@@ -505,7 +509,7 @@ public:
  
 private: 
   // source file info
-  std::string file; 
+  std::string file;
   bool   fileistext; //separated from load module
   std::string proc;
   bool m_alien;

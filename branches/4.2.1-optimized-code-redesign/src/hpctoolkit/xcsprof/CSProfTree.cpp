@@ -297,6 +297,7 @@ CSProfLoopNode::CSProfLoopNode(CSProfNode* _parent,
 {
   DIAG_Assert((_parent == NULL) || (_parent->GetType() == GROUP) 
 	      || (_parent->GetType() == CALLSITE) 
+	      || (_parent->GetType() == PROCEDURE_FRAME) 
 	      || (_parent->GetType() == LOOP), "");
 }
 
@@ -664,14 +665,14 @@ CSProfProcedureFrameNode::ToDumpString(int dmpFlag) const
 string 
 CSProfLoopNode::ToDumpString(int dmpFlag) const
 {
-  string self = CSProfCodeNode::ToDumpString(dmpFlag); // + " i" + MakeAttr(id);
+  string self = CSProfCodeNode::ToDumpString(dmpFlag); //+ " i" + MakeAttr(id);
   return self;
 }
 
 string
 CSProfStmtRangeNode::ToDumpString(int dmpFlag) const
 {
-  string self = CSProfCodeNode::ToDumpString(dmpFlag); // + " i" + MakeAttr(id);
+  string self = CSProfCodeNode::ToDumpString(dmpFlag); //+ " i" + MakeAttr(id);
   return self;
 }
 
@@ -795,8 +796,9 @@ CSProfCodeNode::SetLineRange(suint start, suint end)
     // simply relocate at beginning of sibling list 
     // no range update in parents is necessary
     DIAG_Assert((begLine == UNDEF_LINE) && (endLine == UNDEF_LINE), ""); 
-    if (Parent() != NULL) Relocate(); 
-  } else {
+    //if (Parent() != NULL) Relocate(); 
+  } 
+  else {
     bool changed = false; 
     if (begLine == UNDEF_LINE) {
       DIAG_Assert(endLine == UNDEF_LINE, ""); 
@@ -804,16 +806,17 @@ CSProfCodeNode::SetLineRange(suint start, suint end)
       begLine = start; 
       endLine = end; 
       changed = true;
-    } else {
+    } 
+    else {
       DIAG_Assert((begLine != UNDEF_LINE) && (endLine != UNDEF_LINE), "");
       // expand range ?
       if (start < begLine) { begLine = start; changed = true; }
-      if (end   > endLine)   { endLine = end; changed = true; }
+      if (end   > endLine) { endLine = end; changed = true; }
     }
     CSProfCodeNode* _parent = dynamic_cast<CSProfCodeNode*>(Parent()); 
     if (changed && (_parent != NULL)) {
-      Relocate(); 
-      _parent->SetLineRange(begLine, endLine); 
+      //Relocate(); 
+      //_parent->SetLineRange(begLine, endLine); 
     }
   }
 }
