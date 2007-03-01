@@ -53,9 +53,11 @@ ProfFile::ProfFile()
   mtime_ = 0;
 }
 
+
 ProfFile::~ProfFile()
 {
 }
+
 
 int
 ProfFile::read(const string &filename)
@@ -118,6 +120,7 @@ ProfFile::read(const string &filename)
   return 0;
 }
 
+
 void
 ProfFile::dump(std::ostream& o, const char* pre) const
 {
@@ -135,17 +138,18 @@ ProfFile::dump(std::ostream& o, const char* pre) const
   o << p << "--- End ProfFile Dump ---" << endl;
 }
 
+
 //***************************************************************************
 
 ProfFileLM::ProfFileLM()
 {
 }
 
+
 ProfFileLM::~ProfFileLM()
 {
 }
 
-#undef  DEBUG
 
 int
 ProfFileLM::read(FILE *fp)
@@ -154,15 +158,12 @@ ProfFileLM::read(FILE *fp)
   
   // <loadmodule_name>, <loadmodule_loadoffset>
   if (read_string(fp, name_) != 0) { return 1; }
-#ifdef DEBUG
-  cerr << name_ << " "; 
-#endif
   
   sz = hpc_fread_le8(&load_addr_, fp);
   if (sz != sizeof(load_addr_)) { return 1; }
-#ifdef DEBUG
-  cerr << "load address=" << load_addr_ << endl; 
-#endif
+
+  DIAG_Msg(2, "Reading: " << name_ << " loaded at 0x" 
+	   << hex << load_addr_ << dec);
   
   // <loadmodule_eventcount>
   unsigned int count = 1;
@@ -177,6 +178,7 @@ ProfFileLM::read(FILE *fp)
   
   return 0;
 }
+
 
 void
 ProfFileLM::dump(std::ostream& o, const char* pre) const
@@ -193,15 +195,19 @@ ProfFileLM::dump(std::ostream& o, const char* pre) const
   }
 }
 
+
 //***************************************************************************
+
 
 ProfFileEvent::ProfFileEvent()
 {
 }
 
+
 ProfFileEvent::~ProfFileEvent()
 {
 }
+
 
 int
 ProfFileEvent::read(FILE *fp, uint64_t load_addr)
@@ -224,10 +230,9 @@ ProfFileEvent::read(FILE *fp, uint64_t load_addr)
   uint64_t ndat;    // number of profile entries
   sz = hpc_fread_le8(&ndat, fp);
   if (sz != sizeof(ndat)) { return 1; }
-#ifdef DEBUG
-  cerr << "ndat =" << ndat << endl; 
-#endif
   dat_.resize(ndat);
+
+  DIAG_Msg(3, "  Event: " << name_ << ": " << ndat << " entries (cnt,offset)");
 
   // <histogram_non_zero_bucket_x_value> 
   // <histogram_non_zero_bucket_x_offset>
@@ -239,9 +244,7 @@ ProfFileEvent::read(FILE *fp, uint64_t load_addr)
 
     sz = hpc_fread_le8(&offset, fp);       // offset
     if (sz != sizeof(offset)) { return 1; }
-#ifdef DEBUG
-  cerr << "  (cnt,offset)=(" << count << "," << offset << ")" << endl; 
-#endif
+    DIAG_Msg(4, "    " << i << ": (" << count << ", " << offset << ")");
     
     VMA pc = load_addr + offset;
     dat_[i] = make_pair(pc, count);
@@ -249,6 +252,7 @@ ProfFileEvent::read(FILE *fp, uint64_t load_addr)
 
   return 0;
 }
+
 
 void
 ProfFileEvent::dump(std::ostream& o, const char* pre) const
@@ -266,6 +270,7 @@ ProfFileEvent::dump(std::ostream& o, const char* pre) const
       << dat.second << " }" << endl;
   }
 }
+
 
 //***************************************************************************
 
