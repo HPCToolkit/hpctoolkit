@@ -81,7 +81,7 @@ usage(const string &argv0)
     << "  -D, --recursive-directory <dir>\n"
     << "                      Search <dir> recursively for source files.\n"
     << "  --force             Show data that is not accurate.\n"
-    << "  -v, --version       Display the version number.\n"
+    << "  -V, --version       Display the version number.\n"
     << endl
     << "Options: Text and HTML mode [Default]\n"
     << "  -e, --everything    Show all information.\n"
@@ -173,7 +173,7 @@ main(int argc, char *argv[])
               annotate.push_back(qual_name_val("", argv[i])); // FIXME
             }
         }
-      else if (arg == "-v" || arg == "--version") {
+      else if (arg == "-V" || arg == "--version") {
 	cout << argv[0] << ": " << version_info << endl;
           return 0;
         }
