@@ -112,10 +112,10 @@
 #elif (defined(__mips64) && defined(__linux))
 # define PLATFORM_MIPS64_LINUX
 # define OS_LINUX
-# if (defined(_ABIN32))
+# if (_MIPS_SIM == _ABIN32)
 #  define ARCH_MIPS32
 #  define ARCH_32
-# elif (defined(_ABI64))
+# elif (_MIPS_SIM == _ABI64)
 #  define ARCH_MIPS64
 #  define ARCH_64
 # else
