@@ -240,7 +240,8 @@ public:
 class CSProfCodeNode : public CSProfNode {
 protected: 
   CSProfCodeNode(NodeType t, CSProfNode* _parent, 
-		 suint begLn = UNDEF_LINE, suint endLn = UNDEF_LINE);
+		 suint begLn = UNDEF_LINE, suint endLn = UNDEF_LINE,
+		 unsigned int sId = 0);
   
 public: 
   virtual ~CSProfCodeNode();
@@ -291,6 +292,9 @@ public:
     { DIAG_Die(DIAG_Unimplemented); } 
   virtual void SetSrcInfoDone(bool bi) 
     { DIAG_Die(DIAG_Unimplemented); }
+
+  unsigned int   structureId() const { return m_sId; }
+  unsigned int&  structureId()       { return m_sId; }
   
   // Dump contents for inspection
   virtual std::string ToDumpString(int dmpFlag = CSProfTree::XML_TRUE) const;
@@ -299,6 +303,7 @@ protected:
   void Relocate();
   suint begLine;
   suint endLine;
+  unsigned int m_sId;  // static structure id
   static string BOGUS;
 }; 
 
@@ -524,7 +529,7 @@ class CSProfLoopNode: public CSProfCodeNode {
 public: 
   // Constructor/Destructor
   CSProfLoopNode(CSProfNode* _parent, suint begLn, suint endLn,
-		 int _id = -1);
+		 unsigned int sId = 0);
   ~CSProfLoopNode();
   
   // Dump contents for inspection
@@ -532,7 +537,6 @@ public:
   virtual std::string ToDumpString(int dmpFlag = CSProfTree::XML_TRUE) const; 
   
 private:
-  int id;
 };
 
 // ---------------------------------------------------------
@@ -544,15 +548,12 @@ class CSProfStmtRangeNode: public CSProfCodeNode {
 public: 
   // Constructor/Destructor
   CSProfStmtRangeNode(CSProfNode* _parent, suint begLn, suint endLn, 
-		      int _id = -1);
+		      unsigned int sId = 0);
   ~CSProfStmtRangeNode();
   
   // Dump contents for inspection
   virtual std::string CodeName() const;
   virtual std::string ToDumpString(int dmpFlag = CSProfTree::XML_TRUE) const;
-  
-private:
-  int id;
 };
 
 #ifndef xDEBUG

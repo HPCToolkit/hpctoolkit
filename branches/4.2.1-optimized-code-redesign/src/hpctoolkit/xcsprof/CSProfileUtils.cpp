@@ -607,10 +607,14 @@ loopifyFrame(CSProfCodeNode* mirrorNode, CodeInfo* node,
   for (CodeInfoChildIterator it(node); it.Current(); ++it) {
     CodeInfo* n = it.CurCodeInfo();
 
-    // Done: if we reach the natural base case or enter a new context
-    if (n->IsLeaf()) {
+    // Done: if we reach the natural base case or embedded proceedure
+    if (n->IsLeaf() || n->Type() == ScopeInfo::PROC) {
       continue;
     }
+
+    // - Flatten nested alien frames descending from a loop
+    // - Presume that alien frames derive from callsites in the parent
+    // frame, but flatten any nesting.
 
     CSProfCodeNode* mirrorRoot = mirrorNode;
     CSProfProcedureFrameNode* nxt_frame = frame;
@@ -619,31 +623,29 @@ loopifyFrame(CSProfCodeNode* mirrorNode, CodeInfo* node,
     if (n->Type() == ScopeInfo::LOOP) {
       // loops are always children of the current root (loop or frame)
       CSProfLoopNode* lp = 
-	new CSProfLoopNode(mirrorNode, n->begLine(), n->endLine());
+	new CSProfLoopNode(mirrorNode, n->begLine(), n->endLine(), 
+			   n->UniqueId());
       loopMap.insert(std::make_pair(ProcFrameAndLoop(frame, n), lp));
       DIAG_DevMsgIf(0, hex << "(" << frame << " " << n << ") -> ("
 		    << lp << ")" << dec);
       mirrorRoot = lp;
       nxt_enclLoop = lp;
     }
-    else if (n->Type() == ScopeInfo::PROC || n->Type() == ScopeInfo::ALIEN) {
+    else if (n->Type() == ScopeInfo::ALIEN) {
       CSProfProcedureFrameNode* fr = new CSProfProcedureFrameNode(NULL);
       addSymbolicInfo(fr, NULL, n, n);
       frameMap.insert(std::make_pair(n, fr));
       DIAG_DevMsgIf(0, hex << "[" << n << " -> " << fr << "]" << dec);
       
-      if (n->Type() == ScopeInfo::ALIEN) {
-	fr->isAlien() = true;
-	fr->SetProc("(*) " + string(fr->GetProc()));
-      }
+      // FIXME: soon this can be removed
+      fr->isAlien() = true;
+      fr->SetProc("(*) " + string(fr->GetProc()));
 
       if (enclLoop) {
-	// All frames descending from a loop are direct children of that loop
 	fr->Link(enclLoop);
       }
       else {
-	// All frames not descending from a loop are siblings of the frame
-	fr->Link(frame->Parent());
+	fr->Link(frame);
       }
 
       mirrorRoot = fr;
@@ -677,11 +679,13 @@ addSymbolicInfo(CSProfCodeNode* n,
     n->SetProc(callingCtxt->name() C_STR);
     n->SetLine(scope->begLine());
     n->SetFileIsText(true);
+    n->structureId() = scope->UniqueId();
   }
   else {
     n->SetFile(lmScope->name() C_STR);
     n->SetLine(0);
     n->SetFileIsText(false);
+    n->structureId() = lmScope->UniqueId();
   }
 }
 

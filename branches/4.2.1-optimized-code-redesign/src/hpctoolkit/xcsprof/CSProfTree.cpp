@@ -160,8 +160,10 @@ CSProfNode::~CSProfNode()
 }
 
 CSProfCodeNode::CSProfCodeNode(NodeType t, CSProfNode* _parent, 
-			       suint begLn, suint endLn) 
-  : CSProfNode(t, _parent), begLine(UNDEF_LINE), endLine(UNDEF_LINE)
+			       suint begLn, suint endLn,
+			       unsigned int sId) 
+  : CSProfNode(t, _parent), begLine(UNDEF_LINE), endLine(UNDEF_LINE),
+    m_sId(sId)
 { 
   SetLineRange(begLn, endLn); 
   xDEBUG(DEB_UNIFY_PROCEDURE_FRAME,
@@ -293,8 +295,8 @@ CSProfProcedureFrameNode::~CSProfProcedureFrameNode()
 
 
 CSProfLoopNode::CSProfLoopNode(CSProfNode* _parent, 
-			       suint begLn, suint endLn, int _id)
-  : CSProfCodeNode(LOOP, _parent, begLn, endLn), id(_id)
+			       suint begLn, suint endLn, unsigned int sId)
+  : CSProfCodeNode(LOOP, _parent, begLn, endLn, sId)
 {
   DIAG_Assert((_parent == NULL) || (_parent->GetType() == GROUP) 
 	      || (_parent->GetType() == CALLSITE) 
@@ -307,8 +309,9 @@ CSProfLoopNode::~CSProfLoopNode()
 }
 
 CSProfStmtRangeNode::CSProfStmtRangeNode(CSProfNode* _parent, 
-					 suint begLn, suint endLn, int _id)
-  : CSProfCodeNode(STMT_RANGE, _parent, begLn, endLn), id(_id)
+					 suint begLn, suint endLn, 
+					 unsigned int sId)
+  : CSProfCodeNode(STMT_RANGE, _parent, begLn, endLn, sId)
 {
   DIAG_Assert((_parent == NULL) || (_parent->GetType() == GROUP)
 	      || (_parent->GetType() == CALLSITE)
@@ -464,8 +467,9 @@ CSProfNode::ToDumpMetricsString(int dmpFlag) const {
 string
 CSProfCodeNode::ToDumpString(int dmpFlag) const
 { 
-  string self = CSProfNode::ToDumpString(dmpFlag) + 
-    " b" + MakeAttrNum(begLine) + " e" + MakeAttrNum(endLine);
+  string self = CSProfNode::ToDumpString(dmpFlag)
+    //+ " sid" + MakeAttrNum(m_sId)
+    + " b" + MakeAttrNum(begLine) + " e" + MakeAttrNum(endLine);
   return self;
 }
 
