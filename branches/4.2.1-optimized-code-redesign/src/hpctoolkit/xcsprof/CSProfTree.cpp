@@ -208,6 +208,7 @@ CSProfCallSiteNode_Check(CSProfCallSiteNode* n, CSProfNode* _parent)
   DIAG_Assert((_parent == NULL) 
 	      || (_parent->GetType() == CSProfNode::PGM)
 	      || (_parent->GetType() == CSProfNode::GROUP) 
+	      || (_parent->GetType() == CSProfNode::LOOP) 
 	      || (_parent->GetType() == CSProfNode::PROCEDURE_FRAME) 
 	      || (_parent->GetType() == CSProfNode::CALLSITE), "");
 }

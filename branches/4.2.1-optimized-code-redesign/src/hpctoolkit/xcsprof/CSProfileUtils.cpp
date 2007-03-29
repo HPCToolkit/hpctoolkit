@@ -85,7 +85,7 @@ using namespace std; // For compatibility with non-std C headers
 #define DBG_NORM_PROC_FRAME 0
 
 // FIXME: why is the output different without c_str()?
-#define C_STR .c_str()
+#define C_STR .c_str() 
 //#define C_STR 
 
 //*************************** Forward Declarations ***************************
@@ -391,7 +391,7 @@ operator<(const ProcFrameAndLoop& x, const ProcFrameAndLoop& y)
 	  ((x.first == y.first) && (x.second < y.second)));
 }
 
-typedef std::map<ProcFrameAndLoop, CSProfLoopNode*> ProcFrameAndLoopToCSLoop;
+typedef std::map<ProcFrameAndLoop, CSProfLoopNode*> ProcFrameAndLoopToCSLoopMap;
 
 
 
@@ -403,13 +403,20 @@ addSymbolicInfo(CSProfCodeNode* n, LoadModScope* lmScope,
 CSProfProcedureFrameNode*
 findOrCreateProcFrame(CSProfCodeNode* node, 
 		      LoadModScope* lmScope, CodeInfo* callingCtxt,
+		      LoopScope* loop,
 		      VMA curr_ip,
 		      CodeInfoToProcFrameMap& frameMap,
-		      ProcFrameAndLoopToCSLoop& loopMap);
+		      ProcFrameAndLoopToCSLoopMap& loopMap);
+
+void
+createFramesForProc(ProcScope* proc, CSProfNode* csnode,
+		    CodeInfoToProcFrameMap& frameMap,
+		    ProcFrameAndLoopToCSLoopMap& loopMap);
 
 void
 loopifyFrame(CSProfProcedureFrameNode* frame, CodeInfo* ctxtScope,
-	     ProcFrameAndLoopToCSLoop& loopMap);
+	     CodeInfoToProcFrameMap& frameMap,
+	     ProcFrameAndLoopToCSLoopMap& loopMap);
 
 
 void 
@@ -419,6 +426,7 @@ inferCallFrames(CSProfile* prof, CSProfNode* node,
 
 // inferCallFrames: Effectively create equivalence classes of frames
 // for all the return addresses found under.
+//
 void
 inferCallFrames(CSProfile* prof, VMA begVMA, VMA endVMA, 
 		LoadModScope* lmScope, VMA relocVMA)
@@ -435,10 +443,13 @@ void
 inferCallFrames(CSProfile* prof, CSProfNode* node, 
 		VMA begVMA, VMA endVMA, LoadModScope* lmScope, VMA relocVMA)
 {
+  // INVARIANT: The parent of 'node' has been fully processed and
+  // lives within a correctly located procedure frame.
+  
   if (!node) { return; }
 
   CodeInfoToProcFrameMap frameMap;
-  ProcFrameAndLoopToCSLoop loopMap;
+  ProcFrameAndLoopToCSLoopMap loopMap;
 
   // For each immediate child of this node...
   for (CSProfNodeChildIterator it(node); it.Current(); /* */) {
@@ -446,11 +457,6 @@ inferCallFrames(CSProfile* prof, CSProfNode* node,
     DIAG_Assert(n, "Unexpected node type");
     
     it++; // advance iterator -- it is pointing at 'n' 
-
-    // recur 
-    if (!n->IsLeaf()) {
-      inferCallFrames(prof, n, begVMA, endVMA, lmScope, relocVMA);
-    }
     
     // process this node
     bool isTy = (n->GetType() == CSProfNode::CALLSITE 
@@ -460,31 +466,42 @@ inferCallFrames(CSProfile* prof, CSProfNode* node,
       VMA curr_ip = n->GetIP() - relocVMA;
       
       CodeInfo* scope = lmScope->findByVMA(curr_ip);
-      CodeInfo* ctxt = (scope) ? scope->CallingCtxt() : NULL;
-
-      ScopeInfo* tryloop = scope->Ancestor(ScopeInfo::LOOP, ScopeInfo::ALIEN);
-      LoopScope* loop = dynamic_cast<LoopScope*>(tryloop);
+      CodeInfo* ctxt = NULL;
+      LoopScope* loop = NULL;
+      if (scope) {
+	ctxt = scope->CallingCtxt();
+	// FIXME: should include PROC (for nested procs)
+	ScopeInfo* x = scope->Ancestor(ScopeInfo::LOOP, ScopeInfo::ALIEN);
+	loop = dynamic_cast<LoopScope*>(x);
+      }
 
       // Add symbolic information to 'n'
       addSymbolicInfo(n, lmScope, ctxt, scope);
 
-      // Create a procedure frame for 'n'
+      // Find (or create) a procedure frame for 'n'.
       CSProfProcedureFrameNode* frame = 
-	findOrCreateProcFrame(n, lmScope, ctxt, curr_ip, frameMap, loopMap);
+	findOrCreateProcFrame(n, lmScope, ctxt, loop, curr_ip, 
+			      frameMap, loopMap);
       
-      // Find appropriate (new) parent context for 'n'
+      // Find appropriate (new) parent context for 'node': the frame
+      // or a loop within the frame
       CSProfCodeNode* newParent = frame;
       if (loop) {
 	ProcFrameAndLoop toFind(frame, loop);
-	ProcFrameAndLoopToCSLoop::iterator it = loopMap.find(toFind);
+	ProcFrameAndLoopToCSLoopMap::iterator it = loopMap.find(toFind);
 	DIAG_Assert(it != loopMap.end(), "Cannot find corresponding loop scope:\n" << loop->toStringXML());
 	newParent = (*it).second;
       }
-
-      // Link 'n' to it's new parent
+      
+      // Link 'n' to its frame
       n->Unlink();
       n->Link(newParent);
-    } 
+    }
+    
+    // recur 
+    if (!n->IsLeaf()) {
+      inferCallFrames(prof, n, begVMA, endVMA, lmScope, relocVMA);
+    }
   }
 }
 
@@ -498,9 +515,10 @@ inferCallFrames(CSProfile* prof, CSProfNode* node,
 CSProfProcedureFrameNode*
 findOrCreateProcFrame(CSProfCodeNode* node, 
 		      LoadModScope* lmScope, CodeInfo* callingCtxt,
+		      LoopScope* loop,
 		      VMA curr_ip,
 		      CodeInfoToProcFrameMap& frameMap,
-		      ProcFrameAndLoopToCSLoop& loopMap)
+		      ProcFrameAndLoopToCSLoopMap& loopMap)
 {
   CSProfProcedureFrameNode* frame = NULL;
 
@@ -513,37 +531,26 @@ findOrCreateProcFrame(CSProfCodeNode* node,
   else {
     // INVARIANT: 'node' has symbolic information
 
-    // ------------------------------------------------------------
-    // 1. Find and create the frame
-    // ------------------------------------------------------------
-    frame = new CSProfProcedureFrameNode(NULL);
-    frame->SetFile(node->GetFile() C_STR);
-    frame->SetFileIsText(node->FileIsText());
-    
+    // Find and create the frame.
     if (callingCtxt) {
-      frame->SetProc(node->GetProc() C_STR);
-      frame->SetLine(callingCtxt->begLine());
+      ProcScope* proc = callingCtxt->Proc();
+      createFramesForProc(proc, node, frameMap, loopMap);
 
-      if (callingCtxt->Type() == ScopeInfo::ALIEN) {
-	frame->isAlien() = true;
-	frame->SetProc("(*) " + string(frame->GetProc()));
-      }
+      // frame should now be in map
+      CodeInfoToProcFrameMap::iterator it = frameMap.find(toFind);
+      DIAG_Assert(it != frameMap.end(), "");
+      frame = (*it).second;
     }
     else {
-      string nm = string("unknown@") + StrUtil::toStr(curr_ip, 16);
-      //string nm = "unknown@" + StrUtil::toStr(curr_ip, 16);
-      frame->SetProc(nm C_STR);
-    }
-    
-    // insert frame in 
-    frame->Link(node->Parent());
-    frameMap.insert(std::make_pair(toFind, frame));
+      frame = new CSProfProcedureFrameNode(NULL);
+      addSymbolicInfo(frame, lmScope, NULL, NULL);
+      frame->Link(node->Parent());
 
-    // ------------------------------------------------------------
-    // 2. Create structure information for frame
-    // ------------------------------------------------------------
-    if (callingCtxt) {
-      loopifyFrame(frame, callingCtxt, loopMap);
+      string nm = string("unknown@") + StrUtil::toStr(curr_ip, 16); // FIXME
+      //string nm = "unknown@" + StrUtil::toStr(ip, 16);
+      frame->SetProc(nm C_STR);
+      
+      frameMap.insert(std::make_pair(toFind, frame));
     }
   }
   
@@ -551,51 +558,99 @@ findOrCreateProcFrame(CSProfCodeNode* node,
 }
 
 
-
-void
-loopifyFrame(CSProfCodeNode* mirrorNode, CodeInfo* node,
-	     CSProfProcedureFrameNode* frame,
-	     ProcFrameAndLoopToCSLoop& loopMap);
-
-
-// Given a procedure frame 'frame' and its associated context scope
-// 'ctxtScope' (ProcScope or AlienScope), mirror ctxtScope's loop
-// structure and add entries to the 'loopMap.'  There is no need to
-// mirror loops that are outside of the scope of ctxtScope.  E.g. give
-// a procedure ctxtScope, there is no need to descend into contained
-// AlienScopes.
-void
-loopifyFrame(CSProfProcedureFrameNode* frame, CodeInfo* ctxtScope,
-	     ProcFrameAndLoopToCSLoop& loopMap)
+void 
+createFramesForProc(ProcScope* proc, CSProfNode* csnode,
+		    CodeInfoToProcFrameMap& frameMap,
+		    ProcFrameAndLoopToCSLoopMap& loopMap)
 {
-  loopifyFrame(frame, ctxtScope, frame, loopMap);
+  CSProfProcedureFrameNode* frame;
+  
+  frame = new CSProfProcedureFrameNode(NULL);
+  addSymbolicInfo(frame, NULL, proc, proc);
+  frame->Link(csnode->Parent());
+  frameMap.insert(std::make_pair(proc, frame));
+
+  loopifyFrame(frame, proc, frameMap, loopMap);
 }
 
 
+
 void
 loopifyFrame(CSProfCodeNode* mirrorNode, CodeInfo* node,
 	     CSProfProcedureFrameNode* frame,
-	     ProcFrameAndLoopToCSLoop& loopMap)
+	     CSProfLoopNode* enclLoop,
+	     CodeInfoToProcFrameMap& frameMap,
+	     ProcFrameAndLoopToCSLoopMap& loopMap);
+
+
+// Given a procedure frame 'frame' and its associated context scope
+// 'ctxtScope' (ProcScope or AlienScope), mirror ctxtScope's loop and
+// context structure and add entries to 'frameMap' and 'loopMap.'
+void
+loopifyFrame(CSProfProcedureFrameNode* frame, CodeInfo* ctxtScope,
+	     CodeInfoToProcFrameMap& frameMap,
+	     ProcFrameAndLoopToCSLoopMap& loopMap)
+{
+  loopifyFrame(frame, ctxtScope, frame, NULL, frameMap, loopMap);
+}
+
+
+// 'frame' is the enclosing frame
+// 'loop' is the enclosing loop
+void
+loopifyFrame(CSProfCodeNode* mirrorNode, CodeInfo* node,
+	     CSProfProcedureFrameNode* frame,
+	     CSProfLoopNode* enclLoop,
+	     CodeInfoToProcFrameMap& frameMap,
+	     ProcFrameAndLoopToCSLoopMap& loopMap)
 {
   for (CodeInfoChildIterator it(node); it.Current(); ++it) {
     CodeInfo* n = it.CurCodeInfo();
 
     // Done: if we reach the natural base case or enter a new context
-    if (n->IsLeaf()
-	|| n->Type() == ScopeInfo::PROC || n->Type() == ScopeInfo::ALIEN) {
+    if (n->IsLeaf()) {
       continue;
     }
-    
+
     CSProfCodeNode* mirrorRoot = mirrorNode;
-    
+    CSProfProcedureFrameNode* nxt_frame = frame;
+    CSProfLoopNode* nxt_enclLoop = enclLoop;
+
     if (n->Type() == ScopeInfo::LOOP) {
-      CSProfLoopNode* mirLoop = 
-	new CSProfLoopNode(mirrorRoot, n->begLine(), n->endLine());
-      loopMap.insert(std::make_pair(ProcFrameAndLoop(frame, n), mirLoop));
-      mirrorRoot = mirLoop;
+      // loops are always children of the current root (loop or frame)
+      CSProfLoopNode* lp = 
+	new CSProfLoopNode(mirrorNode, n->begLine(), n->endLine());
+      loopMap.insert(std::make_pair(ProcFrameAndLoop(frame, n), lp));
+      DIAG_DevMsgIf(0, hex << "(" << frame << " " << n << ") -> ("
+		    << lp << ")" << dec);
+      mirrorRoot = lp;
+      nxt_enclLoop = lp;
+    }
+    else if (n->Type() == ScopeInfo::PROC || n->Type() == ScopeInfo::ALIEN) {
+      CSProfProcedureFrameNode* fr = new CSProfProcedureFrameNode(NULL);
+      addSymbolicInfo(fr, NULL, n, n);
+      frameMap.insert(std::make_pair(n, fr));
+      DIAG_DevMsgIf(0, hex << "[" << n << " -> " << fr << "]" << dec);
+      
+      if (n->Type() == ScopeInfo::ALIEN) {
+	fr->isAlien() = true;
+	fr->SetProc("(*) " + string(fr->GetProc()));
+      }
+
+      if (enclLoop) {
+	// All frames descending from a loop are direct children of that loop
+	fr->Link(enclLoop);
+      }
+      else {
+	// All frames not descending from a loop are siblings of the frame
+	fr->Link(frame->Parent());
+      }
+
+      mirrorRoot = fr;
+      nxt_frame = fr;
     }
     
-    loopifyFrame(mirrorRoot, n, frame, loopMap);
+    loopifyFrame(mirrorRoot, n, nxt_frame, nxt_enclLoop, frameMap, loopMap);
   }
 }
   
@@ -811,15 +866,16 @@ addSymbolicInfo(CSProfCodeNode* n, binutils::LM* lm)
 //***************************************************************************
 
 bool coalesceCallsiteLeaves(CSProfile* prof);
+void removeEmptyScopes(CSProfile* prof);
 
 bool 
 normalizeCSProfile(CSProfile* prof)
 {
   // Remove duplicate/inplied file and procedure information from tree
-  bool pass1 = true;
-  bool pass2 = coalesceCallsiteLeaves(prof);
+  coalesceCallsiteLeaves(prof);
+  removeEmptyScopes(prof);
   
-  return (pass1 && pass2);
+  return (true);
 }
 
 
@@ -888,6 +944,43 @@ coalesceCallsiteLeaves(CSProfNode* node)
   } 
   
   return noError;
+}
+
+
+
+void 
+removeEmptyScopes(CSProfNode* node);
+
+void 
+removeEmptyScopes(CSProfile* prof)
+{
+  CSProfTree* csproftree = prof->GetTree();
+  if (!csproftree) { return; }
+  
+  removeEmptyScopes(csproftree->GetRoot());
+}
+
+
+void 
+removeEmptyScopes(CSProfNode* node)
+{
+  if (!node) { return; }
+
+  for (CSProfNodeChildIterator it(node); it.Current(); /* */) {
+    CSProfNode* child = it.CurNode();
+    it++; // advance iterator -- it is pointing at 'child'
+    
+    // 1. Recursively do any trimming for this tree's children
+    removeEmptyScopes(child);
+
+    // 2. Trim this node if necessary
+    bool remove = (child->IsLeaf() 
+		   && child->GetType() == CSProfNode::PROCEDURE_FRAME);
+    if (remove) {
+      child->Unlink(); // unlink 'child' from tree
+      delete child;
+    }
+  }
 }
 
 
