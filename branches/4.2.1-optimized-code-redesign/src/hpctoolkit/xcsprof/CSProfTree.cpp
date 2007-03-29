@@ -468,7 +468,7 @@ string
 CSProfCodeNode::ToDumpString(int dmpFlag) const
 { 
   string self = CSProfNode::ToDumpString(dmpFlag)
-    //+ " sid" + MakeAttrNum(m_sId)
+    + " sid" + MakeAttrNum(m_sId)
     + " b" + MakeAttrNum(begLine) + " e" + MakeAttrNum(endLine);
   return self;
 }
@@ -641,7 +641,7 @@ CSProfStatementNode::addMetrics(const CSProfStatementNode* c)
 string
 CSProfProcedureFrameNode::ToDumpString(int dmpFlag) const
 {
-  string self = CSProfNode::ToDumpString(dmpFlag);
+  string self = CSProfCodeNode::ToDumpString(dmpFlag);
   
   if (!file.empty()) { 
      if (fileistext)
