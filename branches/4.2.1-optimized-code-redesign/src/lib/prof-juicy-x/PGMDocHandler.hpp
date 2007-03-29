@@ -199,6 +199,7 @@ private:
 
   // attribute names
   const XMLCh *const attrVer; 
+  const XMLCh *const attrId; 
   const XMLCh *const attrName; 
   const XMLCh *const attrAlienFile; 
   const XMLCh *const attrLnName; 

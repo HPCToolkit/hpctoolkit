@@ -210,6 +210,7 @@ PGMDocHandler::PGMDocHandler(Doc_t ty,
 
     // attribute names
     attrVer(XMLString::transcode("version")),
+    attrId(XMLString::transcode("id")),
     attrName(XMLString::transcode("n")),
     attrAlienFile(XMLString::transcode("f")),
     attrLnName(XMLString::transcode("ln")),
