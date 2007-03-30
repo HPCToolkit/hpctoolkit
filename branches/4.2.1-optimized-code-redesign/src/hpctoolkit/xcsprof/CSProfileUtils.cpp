@@ -184,6 +184,8 @@ ReadProfile_CSPROF(const char* fnm, const char *execnm)
   FILE* fs = hpcfile_open_for_read(fnm);
   ret1 = hpcfile_csprof_read(fs, &data, &epochtbl, hpcfile_alloc_CB, 
 			     hpcfile_free_CB);
+  //hpcfile_csprof_convert_to_txt(fs, stdout);
+
   if (ret1 != HPCFILE_OK) {
     DIAG_Throw(fnm << ": error reading header (HPC_CSPROF)");
     return NULL;
@@ -197,6 +199,7 @@ ReadProfile_CSPROF(const char* fnm, const char *execnm)
   ret2 = hpcfile_cstree_read(fs, prof->GetTree(), 
 			     cstree_create_node_CB, cstree_link_parent_CB,
 			     hpcfile_alloc_CB, hpcfile_free_CB, num_metrics); 
+  //hpcfile_cstree_convert_to_txt();
   if (ret2 != HPCFILE_OK) { 
     DIAG_Throw(fnm << ": error reading data (HPC_CSPROF)."
 	       << " (Or no samples were taken.) [FIXME: should not have been lumped together!]");
@@ -275,6 +278,7 @@ cstree_create_node_CB(void* tree,
     metricsVector.push_back((suint) data->metrics[i]);
   }
 
+  DIAG_DevMsgIf(0, "cstree_create_node_CB: " << hex << data->ip << dec);
   CSProfCallSiteNode* n = new CSProfCallSiteNode(NULL, ip, 
 						 opIdx, metricsVector); 
   n->SetSrcInfoDone(false);
@@ -354,7 +358,8 @@ fixLeaves(CSProfNode* node)
     CSProfCodeNode* child = dynamic_cast<CSProfCodeNode*>(it.CurNode());
     DIAG_Assert(child, ""); // always true (FIXME)
     it++; // advance iterator -- it is pointing at 'child'
-    
+
+    DIAG_DevMsgIf(0, "fixLeaves: " << hex << child->GetIP() << dec);
     if (child->IsLeaf() && child->GetType() == CSProfNode::CALLSITE) {
       // This child is a leaf. Convert.
       CSProfCallSiteNode* c = dynamic_cast<CSProfCallSiteNode*>(child);
@@ -464,6 +469,11 @@ inferCallFrames(CSProfile* prof, CSProfNode* node,
 
     if (isTy && (begVMA <= n->GetIP() && n->GetIP() <= endVMA)) {
       VMA curr_ip = n->GetIP() - relocVMA;
+      
+      DIAG_DevIf(50) {
+	CSProfCallSiteNode* p = node->AncestorCallSite();
+	DIAG_DevMsg(0, "inferCallFrames: " << hex << ((p) ? p->GetIP() : 0) << " --> " << n->GetIP() << dec);
+      }
       
       CodeInfo* scope = lmScope->findByVMA(curr_ip);
       CodeInfo* ctxt = NULL;
@@ -626,8 +636,8 @@ loopifyFrame(CSProfCodeNode* mirrorNode, CodeInfo* node,
 	new CSProfLoopNode(mirrorNode, n->begLine(), n->endLine(), 
 			   n->UniqueId());
       loopMap.insert(std::make_pair(ProcFrameAndLoop(frame, n), lp));
-      DIAG_DevMsgIf(0, hex << "(" << frame << " " << n << ") -> ("
-		    << lp << ")" << dec);
+      DIAG_DevMsgIf(0, hex << "(" << frame << " " << n << ") -> (" << lp << ")" << dec);
+
       mirrorRoot = lp;
       nxt_enclLoop = lp;
     }
@@ -635,11 +645,10 @@ loopifyFrame(CSProfCodeNode* mirrorNode, CodeInfo* node,
       CSProfProcedureFrameNode* fr = new CSProfProcedureFrameNode(NULL);
       addSymbolicInfo(fr, NULL, n, n);
       frameMap.insert(std::make_pair(n, fr));
-      DIAG_DevMsgIf(0, hex << "[" << n << " -> " << fr << "]" << dec);
+      DIAG_DevMsgIf(0, hex << fr->GetProc() << " [" << n << " -> " << fr << "]" << dec);
       
-      // FIXME: soon this can be removed
       fr->isAlien() = true;
-      fr->SetProc("(*) " + string(fr->GetProc()));
+      fr->SetProc("(*) " + string(fr->GetProc())); // FIXME: soon this can be removed
 
       if (enclLoop) {
 	fr->Link(enclLoop);

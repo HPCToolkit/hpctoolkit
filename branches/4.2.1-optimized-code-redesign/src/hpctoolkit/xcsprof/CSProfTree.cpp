@@ -270,7 +270,7 @@ CSProfStatementNode::copyCallSiteNode(CSProfCallSiteNode* _node)
   file = _node->GetFile();
   proc = _node->GetProc();
   SetLine(_node->GetLine());
-  SetIP(_node->GetIP(), _node->GetOpIndex());
+  SetIP(_node->GetRA(), _node->GetOpIndex());
   xDEBUG(DEB_UNIFY_PROCEDURE_FRAME,
 	 fprintf(stderr, " copied file, proc, line, ip, opindex\n"));
   int i;
@@ -284,7 +284,8 @@ CSProfStatementNode::copyCallSiteNode(CSProfCallSiteNode* _node)
 
 
 CSProfProcedureFrameNode::CSProfProcedureFrameNode(CSProfNode* _parent)
-  : CSProfCodeNode(PROCEDURE_FRAME, _parent, UNDEF_LINE, UNDEF_LINE)
+  : CSProfCodeNode(PROCEDURE_FRAME, _parent, UNDEF_LINE, UNDEF_LINE),
+    fileistext(false), m_alien(false)
 {
   CSProfCallSiteNode_Check(NULL, _parent);
 }

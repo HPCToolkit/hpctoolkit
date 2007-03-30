@@ -193,6 +193,7 @@ public:
   // --------------------------------------------------------
   // Ancestor: find first node in path from this to root with given type
   // --------------------------------------------------------
+  // a node may be an ancestor of itself
   CSProfNode*          Ancestor(NodeType tp) const;
   
   CSProfPgmNode*       AncestorPgm() const;
@@ -379,6 +380,7 @@ public:
   // Node data
   VMA GetIP() const { return ip-1; }
   ushort GetOpIndex() const { return opIndex; }
+  VMA GetRA() const { return ip; }
   
   const std::string& GetFile() const { return file; }
   const std::string& GetProc() const { return proc; }
