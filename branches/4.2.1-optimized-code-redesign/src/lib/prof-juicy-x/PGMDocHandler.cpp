@@ -376,7 +376,7 @@ void PGMDocHandler:: startElement(const XMLCh* const uri,
   // A(lien)
   else if (XMLString::equals(name, elemAlien)) {
     int numAttr = attributes.getLength();
-    DIAG_Assert(0 <= numAttr && numAttr <= 5, "");
+    DIAG_Assert(0 <= numAttr && numAttr <= 6, DIAG_UnexpectedInput);
     
     string nm = getAttr(attributes, attrName); 
     string fnm = getAttr(attributes, attrAlienFile);
@@ -402,7 +402,7 @@ void PGMDocHandler:: startElement(const XMLCh* const uri,
 
     // both 'begin' and 'end' are implied (and can be in any order)
     int numAttr = attributes.getLength();
-    DIAG_Assert(0 <= numAttr && numAttr <= 3, "");
+    DIAG_Assert(0 <= numAttr && numAttr <= 4, DIAG_UnexpectedInput);
     
     suint lnB = UNDEF_LINE, lnE = UNDEF_LINE;
     string lineB = getAttr(attributes, attrBegin);
@@ -425,7 +425,7 @@ void PGMDocHandler:: startElement(const XMLCh* const uri,
     int numAttr = attributes.getLength();
     
     // 'begin' is required but 'end' is implied (and can be in any order)
-    DIAG_Assert(1 <= numAttr && numAttr <= 3, DIAG_UnexpectedInput);
+    DIAG_Assert(1 <= numAttr && numAttr <= 4, DIAG_UnexpectedInput);
     
     suint lnB = UNDEF_LINE, lnE = UNDEF_LINE;
     string lineB = getAttr(attributes, attrBegin);
