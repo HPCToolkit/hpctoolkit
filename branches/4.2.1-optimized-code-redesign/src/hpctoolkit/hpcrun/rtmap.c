@@ -273,9 +273,11 @@ static void
 dumprtloadmap(void)
 {
   int i;
-  fprintf(stderr, "Dumping currently mapped load modules:\n");
+  fprintf(stderr, "Dumping currently mapped load modules (%d):\n", 
+	  rtloadmap.count);
   for (i = 0; i < rtloadmap.count; i++) {
-    fprintf(stderr, "  offset=%#0*"PRIx64" ", bhl, rtloadmap.module[i].offset);
+    fprintf(stderr, "  [%d] offset=%#0*"PRIx64" ", 
+	    i, bhl, rtloadmap.module[i].offset);
     fprintf(stderr, "length=%#0*lx ",    bhl, rtloadmap.module[i].length);
     fprintf(stderr, "name=%s\n", rtloadmap.module[i].name);
   }

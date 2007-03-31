@@ -82,6 +82,9 @@ static rtloadmap_t* rtloadmap = NULL;    /* run time load map */
 static unsigned     numSysEvents  = 0;   /* estimate */
 static unsigned     numPAPIEvents = 0;   /* estimate */
 
+static volatile unsigned numInitializedThreads = 0;
+static volatile unsigned numFinalizedThreads = 0;
+
 /* Profiling information for the first thread of execution in a
    process. N.B. The _shared_ profiling buffers live here when
    combining thread profiles. */
@@ -266,8 +269,8 @@ init_papiprofdesc_buffer(hpcpapi_profile_desc_vec_t* profdesc,
 			 hpcpapi_profile_desc_vec_t* sharedprofdesc);
 static void 
 append_papiprofdesc_buffer(hpcpapi_profile_desc_vec_t* profdesc, 
-			 unsigned numEv, rtloadmap_t* rtmap,
-			 hpcpapi_profile_desc_vec_t* sharedprofdesc);
+			   unsigned numEv, rtloadmap_t* rtmap,
+			   hpcpapi_profile_desc_vec_t* sharedprofdesc);
 
 static void init_profdesc_ofile(hpcrun_profiles_desc_t* profdesc, 
 				int sharedprofdesc);
@@ -334,7 +337,7 @@ handle_dlopen()
   hpcrun_profiles_desc_t* sharedprofdesc = NULL;
   if (opt_thread == HPCRUN_THREADPROF_ALL)
     sharedprofdesc = hpc_profdesc;
-	
+  
   /* For each sys profdescs entry, append sprofil()-specific info */
   if (HPC_GET_SYSPROFS(hpc_profdesc)) {
     hpcsys_profile_desc_vec_t* sh = 
@@ -390,7 +393,14 @@ init_thread(int is_thread)
     start_sysprof(HPC_GET_SYSPROFS(profdesc));
   }
   if (HPC_GET_PAPIPROFS(profdesc)) {
+    if (opt_debug >= 3) {
+      dump_hpcpapi_profile_desc_vec(HPC_GET_PAPIPROFS(profdesc));
+    }
     start_papi_for_thread(HPC_GET_PAPIPROFS(profdesc));
+  }
+  
+  if (is_thread) {
+    numInitializedThreads++; /* FIXME: should be atomic */
   }
 
   return profdesc;
@@ -858,7 +868,9 @@ append_papiprofdesc_buffer(hpcpapi_profile_desc_vec_t* profdesc,
 	}
       }
     }
-  }  
+  }
+  
+  //dump_hpcpapi_profile_desc_vec(HPC_GET_PAPIPROFS(profdesc));
 }
 
 
@@ -1245,13 +1257,38 @@ fini_process()
 {
   static int is_finalized = 0;
 
+  static double timeout = 200; /* seconds */
+  struct timeval time_beg, time_end;
+  int64_t wait_count = 0;
+
   if (is_finalized) {
     if (opt_debug >= 1) { MSG(stderr, "*** fini_process (skip) ***"); }
     return;
   }
+  
+  /* protect against finishing process before threads finish */
+  if (gettimeofday(&time_beg, (struct timezone*)0) != 0) {
+    goto done_waiting; /* soft error */
+  }
 
+  while (numInitializedThreads > numFinalizedThreads) { 
+    if (opt_debug >= 1) { MSG(stderr, "fini_process: wait (%d of %d done)...",
+			      numFinalizedThreads, numInitializedThreads); }
+    wait_count++;
+    if ((wait_count % 100) == 0) {
+      if (gettimeofday(&time_end, (struct timezone*)0) != 0) {
+	goto done_waiting; /* soft error */
+      }
+      if ((time_end.tv_sec - time_beg.tv_sec) >= timeout) {
+	goto done_waiting;
+      }
+    }
+  }
+  
+ done_waiting:
   is_finalized = 1;
-  if (opt_debug >= 1) { MSG(stderr, "*** fini_process ***"); }
+  if (opt_debug >= 1) { MSG(stderr, "*** fini_process (%d of %d) ***", 
+			    numFinalizedThreads, numInitializedThreads); }
 
   fini_thread(&hpc_profdesc, 0 /*is_thread*/);
 
@@ -1275,6 +1312,9 @@ fini_thread(hpcrun_profiles_desc_t** profdesc, int is_thread)
   /* Stop profiling */
   if (HPC_GET_PAPIPROFS(*profdesc)) {
     stop_papi_for_thread(HPC_GET_PAPIPROFS(*profdesc));
+    if (opt_debug >= 3) {
+      dump_hpcpapi_profile_desc_vec(HPC_GET_PAPIPROFS(*profdesc));
+    }
   }
   if (HPC_GET_SYSPROFS(*profdesc)) {
     stop_sysprof(HPC_GET_SYSPROFS(*profdesc));
@@ -1292,6 +1332,11 @@ fini_thread(hpcrun_profiles_desc_t** profdesc, int is_thread)
     sharedprofdesc = 1; /* histogram buffers are shared */
   }
   fini_profdesc(profdesc, sharedprofdesc);
+
+  if (is_thread) {
+    numFinalizedThreads++; /* FIXME: should be atomic */
+    MSG(stderr, "fini_thread (%d)", numFinalizedThreads);
+  }
 }
 
 
@@ -1443,6 +1488,8 @@ write_all_profiles(hpcrun_profiles_desc_t* profdesc, rtloadmap_t* rtmap)
   int i;
   FILE* fs;
   
+  if (opt_debug >= 1) { MSG(stderr, "*** write_all_profiles: begin ***"); }
+
   if (!profdesc->ofile.fname) {
     return;
   }
@@ -1457,6 +1504,8 @@ write_all_profiles(hpcrun_profiles_desc_t* profdesc, rtloadmap_t* rtmap)
   fwrite(HPCRUNFILE_VERSION, 1, HPCRUNFILE_VERSION_LEN, fs);
   fputc(HPCRUNFILE_ENDIAN, fs);
 
+  if (opt_debug >= 1) { MSG(stderr, "rtmap count: %d", rtmap->count); }
+
   /* <loadmodule_list> */
   hpc_fwrite_le4(&(rtmap->count), fs);
   for (i = 0; i < rtmap->count; ++i) {
@@ -1464,6 +1513,8 @@ write_all_profiles(hpcrun_profiles_desc_t* profdesc, rtloadmap_t* rtmap)
   }
   
   fclose(fs);
+
+  if (opt_debug >= 1) { MSG(stderr, "*** write_all_profiles: end ***"); }
 }
 
 
@@ -1476,8 +1527,8 @@ write_module_profile(FILE* fs, rtloadmod_desc_t* mod,
   unsigned numSysEv = 0, numPapiEv = 0;
   
   if (opt_debug >= 2) { 
-    MSG(stderr, "writing module %s (pid %d at offset %#"PRIx64")", 
-	mod->name, getpid(), mod->offset); 
+    MSG(stderr, "writing module %s (at offset %#"PRIx64")", 
+	mod->name, mod->offset); 
   }
 
   /* <loadmodule_name>, <loadmodule_loadoffset> */
@@ -1494,7 +1545,7 @@ write_module_profile(FILE* fs, rtloadmod_desc_t* mod,
     numEv += numPapiEv; 
   }
   hpc_fwrite_le4(&numEv, fs);
-  
+
   /* Event data */
   /*   <event_x_name> <event_x_description> <event_x_period> */
   /*   <event_x_data> */
@@ -1542,8 +1593,14 @@ write_papievent_data(FILE *fs, hpcpapi_profile_desc_t* prof, int sprofidx)
   hpc_hist_bucket* histo = (hpc_hist_bucket*)sprof->pr_base;
   uint64_t ncounters = (sprof->pr_size / prof->bytesPerCntr);
 
+  if (opt_debug >= 4) { 
+    MSG(stderr, "  writing %p[%d] = %p for %s with buf (%p):", 
+	prof, sprofidx, sprof, ename, histo); 
+  }
+
   write_event_data(fs, ename, histo, ncounters, prof->bytesPerCodeBlk);
 }
+
 
 
 static void 
@@ -1559,11 +1616,12 @@ write_event_data(FILE *fs, char* ename, hpc_hist_bucket* histo,
   }
   hpc_fwrite_le8(&count, fs);
   
+
   if (opt_debug >= 3) {
-    MSG(stderr, "  profile for %s has %"PRIu64" of %"PRIu64" non-zero counters (last non-zero counter: %"PRIu64")", 
-	ename, count, ncounters, inz);
+    MSG(stderr, "  buffer (%p) for %s has %"PRIu64" of %"PRIu64" non-zero counters (last non-zero counter: %"PRIu64")", 
+	histo, ename, count, ncounters, inz);
   }
-  
+
   /* <histogram_non_zero_bucket_x_value> 
      <histogram_non_zero_bucket_x_offset> */
   for (i = 0; i < ncounters; ++i) {

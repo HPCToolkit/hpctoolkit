@@ -943,7 +943,7 @@ myinstall-exec: myinstall-libhpcrunso myinstall-libhpcrun-static
 
 myinstall-libhpcrunso:
 	rm -f $(pkglibdir)/libhpcrun.a
-	@OPT_OBJCOPY@ -S $(MYKEEPSYMS) $(pkglibdir)/libhpcrun.so
+#	@OPT_OBJCOPY@ -S $(MYKEEPSYMS) $(pkglibdir)/libhpcrun.so
 
 myinstall-libhpcrun-static: 
 	mv $(bindir)/libhpcrun-static.o $(libdir)/.
