@@ -644,12 +644,10 @@ loopifyFrame(CSProfCodeNode* mirrorNode, CodeInfo* node,
     else if (n->Type() == ScopeInfo::ALIEN) {
       CSProfProcedureFrameNode* fr = new CSProfProcedureFrameNode(NULL);
       addSymbolicInfo(fr, NULL, n, n);
+      fr->isAlien() = true;
       frameMap.insert(std::make_pair(n, fr));
       DIAG_DevMsgIf(0, hex << fr->GetProc() << " [" << n << " -> " << fr << "]" << dec);
       
-      fr->isAlien() = true;
-      fr->SetProc("(*) " + string(fr->GetProc())); // FIXME: soon this can be removed
-
       if (enclLoop) {
 	fr->Link(enclLoop);
       }
