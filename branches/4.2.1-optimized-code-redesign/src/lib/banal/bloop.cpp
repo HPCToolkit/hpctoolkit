@@ -991,7 +991,7 @@ FindLoopBegLineInfo(binutils::Proc* p,
 
     // If we have a backward edge, find the source line of the
     // backward branch.  Note: back edges are not always labeled as such!
-    if (e->getType() == Interface::BACK_EDGE || vma == headVMA) {
+    if (e->getType() == Interface::BACK_EDGE || vma >= headVMA) {
       suint line;
       string filenm, procnm;
       p->GetSourceFileInfo(vma, opIdx, procnm, filenm, line); 
