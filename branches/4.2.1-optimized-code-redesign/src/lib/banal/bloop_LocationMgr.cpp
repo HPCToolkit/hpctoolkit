@@ -197,7 +197,7 @@ LocationMgr::containsLineFzy(CodeInfo* x, suint line, bool loopIsAlien)
       }
       break;
     case ScopeInfo::ALIEN: 
-      beg_epsilon = 10; end_epsilon = INT_MAX; 
+      beg_epsilon = 25; end_epsilon = INT_MAX; 
       break;
     case ScopeInfo::LOOP:  
       beg_epsilon = 5;  end_epsilon = INT_MAX;
