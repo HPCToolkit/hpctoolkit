@@ -1116,6 +1116,7 @@ MergeBogusAlienScopes(CodeInfo* node, FileScope* file)
       const string& callCtxtFnm = (callCtxt->Type() == ScopeInfo::ALIEN) ?
 	dynamic_cast<AlienScope*>(callCtxt)->fileName() : file->name();
       
+      // FIXME: Looking at this again, don't we know that 'callCtxtFnm' is alien?
       if (alien->fileName() == callCtxtFnm
 	  && ctxtNameEqFuzzy(callCtxt, alien->name())
 	  && LocationMgr::containsIntervalFzy(parent, alien->begLine(), 
