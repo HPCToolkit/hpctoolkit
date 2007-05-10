@@ -1643,8 +1643,8 @@ string
 CodeInfo::toXML(int dmpFlag) const
 { 
   string self = ScopeInfo::toXML(dmpFlag) 
-    + " " + XMLLineRange(dmpFlag);
-    //+ " " + XMLVMAIntervals(dmpFlag);
+    + " " + XMLLineRange(dmpFlag)
+    + " " + XMLVMAIntervals(dmpFlag);
   return self;
 }
 
@@ -1688,8 +1688,8 @@ string
 LoadModScope::toXML(int dmpFlag) const
 {
   string self = ScopeInfo::toXML(dmpFlag) 
-    + " n" + MakeAttrStr(m_name, AddXMLEscapeChars(dmpFlag));
-    //+ " " + XMLVMAIntervals(dmpFlag);
+    + " n" + MakeAttrStr(m_name, AddXMLEscapeChars(dmpFlag))
+    + " " + XMLVMAIntervals(dmpFlag);
   return self;
 }
 
@@ -1711,7 +1711,7 @@ ProcScope::toXML(int dmpFlag) const
   if (m_name != m_linkname) { // if different, print both
     self = self + " ln" + MakeAttrStr(m_linkname, AddXMLEscapeChars(dmpFlag));
   }
-  self = self + " " + XMLLineRange(dmpFlag); //+ " " + XMLVMAIntervals(dmpFlag);
+  self = self + " " + XMLLineRange(dmpFlag) + " " + XMLVMAIntervals(dmpFlag);
   return self;
 }
 
@@ -1722,7 +1722,7 @@ AlienScope::toXML(int dmpFlag) const
   string self = ScopeInfo::toXML(dmpFlag) 
     + " f" + MakeAttrStr(m_filenm, AddXMLEscapeChars(dmpFlag))
     + " n" + MakeAttrStr(m_name, AddXMLEscapeChars(dmpFlag));
-  self = self + " " + XMLLineRange(dmpFlag); //+ " " + XMLVMAIntervals(dmpFlag);
+  self = self + " " + XMLLineRange(dmpFlag) + " " + XMLVMAIntervals(dmpFlag);
   return self;
 }
 

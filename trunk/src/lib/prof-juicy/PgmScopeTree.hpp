@@ -503,9 +503,9 @@ protected:
   void Relocate();
   
   void RelocateIf() {
-    //if (Parent() && Type() == ScopeInfo::PROC) {
+    if (Parent() && Type() == ScopeInfo::PROC) {
       Relocate();
-    //}
+    }
   }
   
 protected:

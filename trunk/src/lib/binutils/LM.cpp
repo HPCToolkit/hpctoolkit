@@ -677,7 +677,7 @@ binutils::LM::ReadSegs()
   if (!impl->bfdSymbolTable) { return false; }
   bfd *abfd = impl->abfd;
 
-  //mDbgInfo.read(abfd, impl->bfdSymbolTable);
+  mDbgInfo.read(abfd, impl->bfdSymbolTable);
 
   // Process each section in the object file.
   for (asection *sec = abfd->sections; sec; sec = sec->next) {
