@@ -1634,7 +1634,8 @@ ScopeInfo::toStringXML(int dmpFlag, const char* pre) const
 string 
 ScopeInfo::toXML(int dmpFlag) const
 {
-  string self = ScopeTypeToXMLelement(Type());
+  string self = ScopeTypeToXMLelement(Type())
+    + " id" + MakeAttrNum(UniqueId());
   return self;
 }
 

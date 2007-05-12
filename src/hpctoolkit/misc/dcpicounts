@@ -59,7 +59,7 @@ use FindBin qw($Script $RealBin);
 #use Math::BigInt; # Math::BigFloat also exists
 #Math::BigInt->accuracy(20);
 
-use lib "$RealBin/../lib/HPCToolkit";
+use lib "$RealBin/../lib/hpctoolkit";
 use HPCToolkitVersionInfo;
 
 STDOUT->autoflush(1); 

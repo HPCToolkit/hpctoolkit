@@ -58,6 +58,8 @@
 #include <map>
 #include <iostream>
 
+#include <cctype>
+
 //*************************** User Include Files ****************************
 
 #include <include/general.h>
@@ -65,6 +67,35 @@
 #include <lib/prof-juicy/PgmScopeTree.hpp>
 
 //*************************** Forward Declarations **************************
+
+namespace banal {
+namespace bloop {
+
+  inline bool 
+  ctxtNameEqFuzzy(const string& ctxtnm, const string& x) 
+  {
+    // perform a 'fuzzy' match: e.g., 'm_procnm' name can be 'GetLB' 
+    // even though the full context name is Array2D<double>::GetLB(int).
+    int pos = ctxtnm.find(x);
+    return (pos != string::npos && (pos == 0 || std::ispunct(ctxtnm[pos-1])));
+  }
+
+  inline bool 
+  ctxtNameEqFuzzy(const CodeInfo* callCtxt, const string& x) 
+  {
+    bool t1 = ctxtNameEqFuzzy(callCtxt->name(), x);
+    bool t2 = false;
+    if (callCtxt->Type() == ScopeInfo::PROC) {
+      const ProcScope* pScope = dynamic_cast<const ProcScope*>(callCtxt);
+      t2 = ctxtNameEqFuzzy(pScope->LinkName(), x);
+    }
+    return (t1 || t2);    
+  }
+
+
+} // namespace bloop
+} // namespace banal
+
 
 //***************************************************************************
 // LocationMgr
@@ -130,18 +161,27 @@ public:
   CodeInfo* curScope() const {
     return (m_ctxtStack.empty()) ? NULL : m_ctxtStack.front().scope();
   }
+  
+  bool isParentScope(CodeInfo* scope) const {
+    return (findCtxt(scope) != NULL);
+  }
 
   // -------------------------------------------------------
   // 
   // -------------------------------------------------------
-  
-  static bool containsLineGivenFile(CodeInfo* x, suint line);
+
+  // Assume we know that file names match
+  static bool containsLineFzy(CodeInfo* x, suint line, 
+			      bool loopIsAlien = false);
+
+  static bool containsIntervalFzy(CodeInfo* x, suint begLn, suint endLn);
 
   // -------------------------------------------------------
   // debugging
   // -------------------------------------------------------
   std::string toString(int flags = 0) const;
 
+  // flags = -1: compressed dump / 0: normal dump / 1: extra info
   std::ostream& dump(std::ostream& os, int flags = 0) const;
 
   void ddump(int flags = 0) const;
@@ -156,7 +196,7 @@ private:
   class Ctxt {
   public:
     Ctxt(CodeInfo* ctxt = NULL, LoopScope* loop = NULL)
-      : m_ctxt(ctxt), m_loop(loop),
+      : m_ctxt(ctxt), m_loop(loop), 
 	m_filenm( (isAlien()) ? dynamic_cast<AlienScope*>(ctxt)->fileName()
 		  : dynamic_cast<ProcScope*>(ctxt)->File()->name() )
     { }
@@ -188,15 +228,20 @@ private:
     // line matching is more lenient.
     bool containsLine(const string& filenm, suint line) const {
       return (fileName() == filenm 
-	      && LocationMgr::containsLineGivenFile(ctxt(), line));
+	      && LocationMgr::containsLineFzy(ctxt(), line));
     }
 
     bool containsLine(suint line) const;
     
     bool isAlien() const { return (m_ctxt->Type() == ScopeInfo::ALIEN); }
+    
+    const int level() const { return m_level; }
+    int&      level()       { return m_level; }
 
-    // debugging
+    // debugging:
+    //   flags: -1: tight dump / 0: normal dump
     std::string toString(int flags = 0, const char* pre = "") const;
+
     std::ostream& dump(std::ostream& os, 
 		       int flags = 0, const char* pre = "") const;
     void ddump() const;
@@ -205,6 +250,7 @@ private:
     CodeInfo*  m_ctxt;
     LoopScope* m_loop;
     const std::string& m_filenm;
+    int m_level;
   };
   
   typedef std::list<Ctxt> MyStack;
@@ -220,11 +266,7 @@ private:
     CtxtChange_NULL                = 0x00000000,
     
     CtxtChange_SAME                = 0x00000010,
-    
-    CtxtChange_REVERT              = 0x00000020,
     CtxtChange_POP                 = 0x00000020,
-    
-    CtxtChange_RELOCATE            = 0x00000040,
     CtxtChange_PUSH                = 0x00000040,
 
     // flags
@@ -232,6 +274,7 @@ private:
     CtxtChange_FLAG_NULL           = 0x00000000,
     CtxtChange_FLAG_RESTORE        = 0x10000000,
     CtxtChange_FLAG_REVERT         = 0x20000000,
+    CtxtChange_FLAG_FIX_SCOPES     = 0x40000000,
   };
 
   static bool CtxtChange_eq(CtxtChange_t x, CtxtChange_t y) {
@@ -265,11 +308,56 @@ private:
   CtxtChange_t 
   determineContext(CodeInfo* proposed_scope,
 		   std::string& filenm, std::string& procnm, suint line);
+  
+  // fixCtxtStack: Yuck.
+  void
+  fixContextStack(const CodeInfo* proposed_scope);
+
+  // fixScopeTree: Given a scope 'from_scope' that should be
+  // located within the calling context 'true_ctxt' but specifically
+  // within lines 'begLn' and 'endLn', perform the transformations.
+  void
+  fixScopeTree(CodeInfo* from_scope, CodeInfo* true_ctxt, 
+	       suint begLn, suint endLn);
+
+  // alienateScopeTree: place all non-Alien children of 'scope' into an Alien
+  // context based on 'alien' except for 'exclude'
+  void
+  alienateScopeTree(CodeInfo* scope, AlienScope* alien, CodeInfo* exclude);
 
   
+  // revertToLoop: Pop contexts between top and 'ctxt' until
+  // 'ctxt->loop()' is the deepest loop on the stack.  (If
+  // ctxt->loop() is NULL then there should be no deeper loop.) We
+  // chop off any loops deeper than ctxt.
+  int revertToLoop(Ctxt* ctxt);
+  
   // -------------------------------------------------------
-  //
+  // 
   // -------------------------------------------------------
+
+  Ctxt* topCtxt() const 
+    { return (m_ctxtStack.empty()) ? 
+	        NULL : const_cast<Ctxt*>(&(m_ctxtStack.front())); }
+
+  Ctxt& topCtxtRef() const 
+    { return const_cast<Ctxt&>(m_ctxtStack.front()); }
+
+  void pushCtxt(const Ctxt& ctxt)
+    { int nxt_lvl = (m_ctxtStack.empty()) ? 1 : topCtxtRef().level() + 1;
+      m_ctxtStack.push_front(ctxt);
+      topCtxtRef().level() = nxt_lvl; }
+
+  // -------------------------------------------------------
+  // findCtxt
+  // -------------------------------------------------------
+
+  // switch_findCtxt: calls the appriate version of 'findCtxt'
+  // based on what information is available, i.e. it is a findCtxt
+  // "switch" statement.
+  Ctxt* switch_findCtxt(const string& filenm, const string& procnm,
+			suint line, const Ctxt* base_ctxt = NULL) const;
+  
 
   // findCtxt: find the the "first" instance of ctxt in the stack
   // matching against ctxt() (not scope()) and not going past 'base'.
@@ -289,8 +377,8 @@ private:
     ~FindCtxt_MatchFPLOp() { }
     
     virtual bool operator()(const Ctxt& ctxt) const {
-      return (ctxt.containsLine(m_filenm, m_line) 
-	      && ctxt.ctxt()->name() == m_procnm);
+      return (ctxt.containsLine(m_filenm, m_line)
+	      && ctxtNameEqFuzzy(ctxt.ctxt(), m_procnm));
     }
   private:
     const string& m_filenm, m_procnm;
@@ -352,27 +440,27 @@ private:
 
 
   Ctxt* findCtxt(CodeInfo* ctxt) const;
-  Ctxt* findCtxt(FindCtxt_MatchOp& op, Ctxt* base = NULL) const;
+  Ctxt* findCtxt(FindCtxt_MatchOp& op, 
+		 const Ctxt* base = NULL) const;
   
   Ctxt* findCtxt(const string& filenm, const string& procnm, suint line,
-		 Ctxt* base = NULL) const
+		 const Ctxt* base = NULL) const
     { FindCtxt_MatchFPLOp op(filenm, procnm, line); return findCtxt(op, base); }
 
   Ctxt* findCtxt(const string& filenm, const string& procnm, 
-		 Ctxt* base = NULL) const
+		 const Ctxt* base = NULL) const
     { FindCtxt_MatchFPOp op(filenm, procnm); return findCtxt(op, base); }
 
   Ctxt* findCtxt(const std::string& filenm, suint line, 
-		 Ctxt* base = NULL) const
+		 const Ctxt* base = NULL) const
     { FindCtxt_MatchFLOp op(filenm, line); return findCtxt(op, base); }
 
-  Ctxt* findCtxt(const std::string& filenm, Ctxt* base = NULL) const
+  Ctxt* findCtxt(const std::string& filenm, 
+		 const Ctxt* base = NULL) const
     { FindCtxt_MatchFOp op(filenm); return findCtxt(op, base); }
 
-  Ctxt* findCtxt(suint line, Ctxt* base = NULL) const
+  Ctxt* findCtxt(suint line, const Ctxt* base = NULL) const
     { FindCtxt_MatchLOp op(line); return findCtxt(op, base); }
-  
-  int revertStack(Ctxt* ctxt);
 
   // -------------------------------------------------------
   //
@@ -417,10 +505,11 @@ private:
   AlienScope* findOrCreateAlienScope(CodeInfo* parent_scope,
 				     const std::string& filenm,
 				     const std::string& procnm, 
-				     suint line);
+				     suint line,
+				     bool tosOnCreate = true);
   
 private: 
-  MyStack       m_ctxtStack; // begin()/front() is the top
+  MyStack       m_ctxtStack; // cf. topCtxt() [begin()/front() is the top]
   LoadModScope* m_loadMod;
   int           mDBG;
 

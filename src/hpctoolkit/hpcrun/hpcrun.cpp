@@ -439,7 +439,7 @@ launch_and_profile(const char* installpath, char* argv[])
 static int
 check_and_prepare_env_for_profiling(const char* installpath)
 {  
-#define HPCRUN_PATH "/lib/HPCToolkit/"
+#define HPCRUN_PATH "/lib/hpctoolkit/"
   char newval[PATH_MAX] = "";
   char *oldval;
   int sz;

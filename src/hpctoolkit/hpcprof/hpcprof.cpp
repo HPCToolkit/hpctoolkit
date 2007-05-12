@@ -75,12 +75,13 @@ usage(const string &argv0)
     << endl
     << "Options: General\n"
     << "  -h, --help          Print this message.\n"
-    << "  --debug             Print debugging info.\n"
-    << "  -d, --directory dir Search dir for source files.\n"
-    << "  -D, --recursive-directory dir\n"
-    << "                      Search dir recursively for source files.\n"
+    << "  --debug <lvl>       Print debugging info at level <lvl>.\n"
+    << "  -d, --directory <dir>\n"
+    << "                      Search <dir> for source files.\n"
+    << "  -D, --recursive-directory <dir>\n"
+    << "                      Search <dir> recursively for source files.\n"
     << "  --force             Show data that is not accurate.\n"
-    << "  -v, --version       Display the version number.\n"
+    << "  -V, --version       Display the version number.\n"
     << endl
     << "Options: Text and HTML mode [Default]\n"
     << "  -e, --everything    Show all information.\n"
@@ -138,8 +139,11 @@ main(int argc, char *argv[])
             }
         }
       else if (arg == "--debug") {
-          debug = 1;
-          cout << "Debugging turned on" << endl;
+          if (i<argc-1) {
+              i++;
+              debug = atoi(argv[i]);
+            }
+	  Diagnostics_SetDiagnosticFilterLevel(debug);
         }
       else if (arg == "-d" || arg == "--directory") {
           if (i<argc-1) {
@@ -169,7 +173,7 @@ main(int argc, char *argv[])
               annotate.push_back(qual_name_val("", argv[i])); // FIXME
             }
         }
-      else if (arg == "-v" || arg == "--version") {
+      else if (arg == "-V" || arg == "--version") {
 	cout << argv[0] << ": " << version_info << endl;
           return 0;
         }

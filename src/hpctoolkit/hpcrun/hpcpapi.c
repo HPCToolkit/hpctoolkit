@@ -83,3 +83,49 @@ hpcpapi_flag_by_name(const char *name)
 }
 
 /****************************************************************************/
+
+
+void
+dump_hpcpapi_profile_desc_vec(hpcpapi_profile_desc_vec_t* descvec)
+{
+  int i;
+
+  fprintf(stderr, "{ hpcpapi_profile_desc_vec_t: %d\n", descvec->size);
+  for (i = 0; i < descvec->size; ++i) {
+    dump_hpcpapi_profile_desc(&descvec->vec[i], "  ");
+  }
+  fprintf(stderr, "}\n");
+}
+
+
+void
+dump_hpcpapi_profile_desc(hpcpapi_profile_desc_t* desc, const char* prefix)
+{
+  int i;
+  const char* pre = (prefix) ? prefix : "  ";
+  
+  fprintf(stderr, "%s{ %s (%s) : %"PRIu64" : %d entries\n", pre,
+	  desc->einfo.symbol, desc->einfo.long_descr, desc->period, 
+	  desc->numsprofs);
+  
+  for (i = 0; i < desc->numsprofs; ++i) {
+    dump_hpcpapi_profile_desc_buf(desc, i, "    ");
+  }
+
+  fprintf(stderr, "%s}\n", pre);
+}
+
+
+void
+dump_hpcpapi_profile_desc_buf(hpcpapi_profile_desc_t* desc, int idx,
+			      const char* prefix)
+{
+  PAPI_sprofil_t* sprof = &(desc->sprofs[idx]);
+  uint64_t ncounters = (sprof->pr_size / desc->bytesPerCntr);
+  const char* pre = (prefix) ? prefix : "  ";
+  fprintf(stderr, "%s[%d](%p): buf %p of size %"PRIu64" for module at %p\n", 
+	  pre, idx, sprof, sprof->pr_base, ncounters, sprof->pr_off);
+}
+
+
+/****************************************************************************/

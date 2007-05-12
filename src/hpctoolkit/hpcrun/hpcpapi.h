@@ -96,6 +96,14 @@ typedef struct {
   unsigned int      numsprofs;   //   run time load module
 } hpcpapi_profile_desc_t;
 
+void
+dump_hpcpapi_profile_desc(hpcpapi_profile_desc_t* desc, const char* prefix);
+
+void
+dump_hpcpapi_profile_desc_buf(hpcpapi_profile_desc_t* desc, int idx, 
+			      const char* prefix);
+
+
 // hpcpapi_profile_desc_vec_t: A vector of hpcpapi_profile_desc_t.
 typedef struct {
   int eset; // the event set
@@ -103,6 +111,11 @@ typedef struct {
   unsigned int            size; // vector size
   hpcpapi_profile_desc_t* vec;  // one for each event
 } hpcpapi_profile_desc_vec_t;
+
+
+void
+dump_hpcpapi_profile_desc_vec(hpcpapi_profile_desc_vec_t* descvec);
+
 
 /****************************************************************************/
 
