@@ -7,7 +7,11 @@ ARCH := ia64
 LIB_PFM :=
 INC_PFM :=
 
-LIB_UNWIND := -L$(LIBUNWIND_HOME)/lib -lunwind-ia64 -lunwind -Wl,--rpath -Wl,$(LIBUNWIND_HOME)/lib -ldl
+# tallent: Use the archive version of libunwind to prevent runtime
+# linking conflicts with executables that eventually link with
+# libunwind.
+#LIB_UNWIND := -L$(LIBUNWIND_HOME)/lib -lunwind-ia64 -lunwind -Wl,--rpath -Wl,$(LIBUNWIND_HOME)/lib -ldl
+LIB_UNWIND := $(LIBUNWIND_HOME)/lib/libunwind-ia64.a $(LIBUNWIND_HOME)/lib/libunwind.a -ldl
 INC_UNWIND := -I$(LIBUNWIND_HOME)/include
 
 DEFINES := -D_GNU_SOURCE -D__USE_GNU=1

@@ -44,11 +44,11 @@ unset ROOTDIR_REL
 # Set environment for process
 #############################################################################
 
-HPCTOOLKIT_PLATFORM=`cd ${HPCTOOLKIT}/libexec/HPCToolkit && ./hpcplatform`
+HPCTOOLKIT_PLATFORM=`cd ${HPCTOOLKIT}/libexec/hpctoolkit && ./hpcplatform`
 export HPCTOOLKIT
 export HPCTOOLKIT_PLATFORM
 
-XERCESCROOT="${HPCTOOLKIT}/lib/HPCToolkit/xercesc"
+XERCESCROOT="${HPCTOOLKIT}/lib/hpctoolkit/xercesc"
 export XERCESCROOT
 
 XERCESPLATFORM="${XERCESCROOT}"

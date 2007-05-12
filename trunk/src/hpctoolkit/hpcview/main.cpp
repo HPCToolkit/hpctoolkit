@@ -318,7 +318,7 @@ BuildConfFile(const string& hpcHome, const string& confFile)
   // the number of lines added below must equal NUM_PREFIX_LINES
   tmp << "<?xml version=\"1.0\"?>" << endl 
       << "<!DOCTYPE HPCVIEW SYSTEM \"" << hpcloc // has trailing '/'
-      << "share/HPCToolkit/dtd/HPCView.dtd\">" << endl;
+      << "share/hpctoolkit/dtd/HPCView.dtd\">" << endl;
 
   //std::cout << "TMP DTD file: '" << tmpFile << "'" << std::endl;
   //std::cout << "  " << hpcloc << std::endl;

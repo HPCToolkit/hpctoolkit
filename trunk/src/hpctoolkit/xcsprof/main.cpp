@@ -156,7 +156,7 @@ realmain(int argc, char* const* argv)
     // add one more pass search the callstack tree, to set 
     // the flag -"alpha"- only, since we get info from binary 
     // profile file not from bfd  
-    LdmdSetUsedFlag(profData); 
+    ldmdSetUsedFlag(profData); 
 
     // Note that this assumes iteration in reverse sorted order
     int num_lm = profData->GetEpoch()->GetNumLdModule();
@@ -186,7 +186,7 @@ realmain(int argc, char* const* argv)
       endVMA = begVMA - 1;
     } /* for each load module */ 
     
-    NormalizeCSProfile(profData);
+    normalizeCSProfile(profData);
   }
   catch (...) {
     DIAG_EMsg("While preparing CSPROFILE...");
@@ -211,8 +211,8 @@ realmain(int argc, char* const* argv)
   copySourceFiles(profData, args.searchPaths, dbSrcDir);
   
   string experiment_fnm = args.dbDir + "/" + args.OutFilename_XML;
-  WriteCSProfileInDatabase(profData, experiment_fnm);
-  //WriteCSProfile(profData, std::cout, /* prettyPrint */ true);
+  writeCSProfileInDatabase(profData, experiment_fnm);
+  //writeCSProfile(profData, std::cout, /* prettyPrint */ true);
   
 
   delete profData;
@@ -271,7 +271,7 @@ processCallingCtxtTree(CSProfile* profData, VMA begVMA, VMA endVMA,
     throw;
   }
   
-  InferCallFrames(profData, begVMA, endVMA, lmScope, relocVMA);
+  inferCallFrames(profData, begVMA, endVMA, lmScope, relocVMA);
 }
 
 
@@ -295,7 +295,7 @@ processCallingCtxtTree(CSProfile* profData, VMA begVMA, VMA endVMA,
     lm->Relocate(begVMA);
   }
   
-  InferCallFrames(profData, begVMA, endVMA, lm);
+  inferCallFrames(profData, begVMA, endVMA, lm);
   
   delete lm;
 }

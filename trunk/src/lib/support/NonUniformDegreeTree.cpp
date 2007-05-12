@@ -65,7 +65,7 @@
 //*************************** User Include Files ****************************
 
 #include "NonUniformDegreeTree.hpp"
-#include "Assertion.h"
+#include "diagnostics.h"
 
 //*************************** Forward Declarations **************************
 
@@ -108,7 +108,7 @@ NonUniformDegreeTreeNode::operator=(const NonUniformDegreeTreeNode& other)
 //-----------------------------------------------
 void NonUniformDegreeTreeNode::Link(NonUniformDegreeTreeNode *newParent)
 {
-  BriefAssertion(this->parent == 0); // can only have one parent
+  DIAG_Assert(this->parent == 0, ""); // can only have one parent
   if (newParent != 0) {
     // children maintained as a doubly linked ring. 
     // a new node is linked at the end of the ring (as a predecessor 
@@ -128,8 +128,8 @@ void NonUniformDegreeTreeNode::Link(NonUniformDegreeTreeNode *newParent)
 //-----------------------------------------------
 void NonUniformDegreeTreeNode::LinkAfter(NonUniformDegreeTreeNode *sibling)
 {
-  BriefAssertion(sibling != NULL);
-  BriefAssertion(this->parent == NULL); // can only have one parent
+  DIAG_Assert(sibling != NULL, "");
+  DIAG_Assert(this->parent == NULL, ""); // can only have one parent
   
   this->parent = sibling->parent;
   if (parent) parent->child_count++;
@@ -149,7 +149,7 @@ void NonUniformDegreeTreeNode::LinkAfter(NonUniformDegreeTreeNode *sibling)
 //-----------------------------------------------
 void NonUniformDegreeTreeNode::LinkBefore(NonUniformDegreeTreeNode *sibling)
 {
-  BriefAssertion(sibling != NULL);
+  DIAG_Assert(sibling != NULL, "");
   LinkAfter(sibling->prev_sibling);
   if (parent && sibling == parent->children) {
     parent->children = this;

@@ -84,6 +84,10 @@ using namespace std; // For compatibility with non-std C headers
 
 #define DBG_NORM_PROC_FRAME 0
 
+// FIXME: why is the output different without c_str()?
+#define C_STR .c_str() 
+//#define C_STR 
+
 //*************************** Forward Declarations ***************************
 
 using namespace xml;
@@ -99,13 +103,13 @@ extern "C" {
 }
 
 static void 
-ConvertOpIPToIP(VMA opIP, VMA& ip, ushort& opIdx);
+convertOpIPToIP(VMA opIP, VMA& ip, ushort& opIdx);
 
 static bool
-AddPGMToCSProfTree(CSProfTree* tree, const char* progName);
+addPGMToCSProfTree(CSProfTree* tree, const char* progName);
 
 static bool 
-FixLeaves(CSProfNode* node);
+fixLeaves(CSProfNode* node);
 
 
 //****************************************************************************
@@ -116,19 +120,19 @@ const char *CSPROFILEdtd =
 #include <lib/xml/CSPROFILE.dtd.h>
 
 
-void WriteCSProfileInDatabase(CSProfile* prof, const string& fnm) 
+void writeCSProfileInDatabase(CSProfile* prof, const string& fnm) 
 {
   filebuf fb;
   fb.open(fnm.c_str(), ios::out);
   std::ostream os(&fb);
-  WriteCSProfile(prof, os, true);
+  writeCSProfile(prof, os, true);
   fb.close();
 }
 
 
 /* version=1.0.2 for alpha memory profile---FMZ */
 void
-WriteCSProfile(CSProfile* prof, std::ostream& os, bool prettyPrint)
+writeCSProfile(CSProfile* prof, std::ostream& os, bool prettyPrint)
 {
   os << "<?xml version=\"1.0\"?>" << std::endl;
   os << "<!DOCTYPE CSPROFILE [\n" << CSPROFILEdtd << "]>" << std::endl;
@@ -180,6 +184,8 @@ ReadProfile_CSPROF(const char* fnm, const char *execnm)
   FILE* fs = hpcfile_open_for_read(fnm);
   ret1 = hpcfile_csprof_read(fs, &data, &epochtbl, hpcfile_alloc_CB, 
 			     hpcfile_free_CB);
+  //hpcfile_csprof_convert_to_txt(fs, stdout);
+
   if (ret1 != HPCFILE_OK) {
     DIAG_Throw(fnm << ": error reading header (HPC_CSPROF)");
     return NULL;
@@ -193,6 +199,7 @@ ReadProfile_CSPROF(const char* fnm, const char *execnm)
   ret2 = hpcfile_cstree_read(fs, prof->GetTree(), 
 			     cstree_create_node_CB, cstree_link_parent_CB,
 			     hpcfile_alloc_CB, hpcfile_free_CB, num_metrics); 
+  //hpcfile_cstree_convert_to_txt();
   if (ret2 != HPCFILE_OK) { 
     DIAG_Throw(fnm << ": error reading data (HPC_CSPROF)."
 	       << " (Or no samples were taken.) [FIXME: should not have been lumped together!]");
@@ -243,12 +250,12 @@ ReadProfile_CSPROF(const char* fnm, const char *execnm)
   // hpcfile_free_CB(data.event);
 
   // Add PGM node to tree
-  AddPGMToCSProfTree(prof->GetTree(), prof->GetTarget());
+  addPGMToCSProfTree(prof->GetTree(), prof->GetTarget());
   
   // Convert leaves (CSProfCallSiteNode) to CSProfStatementNodes
   // FIXME: There should be a better way of doing this.  We could
   // merge it with a normalization step...
-  FixLeaves(prof->GetTree()->GetRoot());
+  fixLeaves(prof->GetTree()->GetRoot());
   
   return prof;
 }
@@ -263,7 +270,7 @@ cstree_create_node_CB(void* tree,
   
   VMA ip;
   ushort opIdx;
-  ConvertOpIPToIP((VMA)data->ip, ip, opIdx);
+  convertOpIPToIP((VMA)data->ip, ip, opIdx);
   vector<suint> metricsVector;
   metricsVector.clear();
   int i;
@@ -271,6 +278,7 @@ cstree_create_node_CB(void* tree,
     metricsVector.push_back((suint) data->metrics[i]);
   }
 
+  DIAG_DevMsgIf(0, "cstree_create_node_CB: " << hex << data->ip << dec);
   CSProfCallSiteNode* n = new CSProfCallSiteNode(NULL, ip, 
 						 opIdx, metricsVector); 
   n->SetSrcInfoDone(false);
@@ -307,12 +315,12 @@ hpcfile_free_CB(void* mem)
 }
 
 
-// ConvertOpIPToIP: Find the instruction pointer 'ip' and operation
+// convertOpIPToIP: Find the instruction pointer 'ip' and operation
 // index 'opIdx' from the operation pointer 'opIP'.  The operation
 // pointer is represented by adding 0, 1, or 2 to the instruction
 // pointer for the first, second and third operation, respectively.
 void 
-ConvertOpIPToIP(VMA opIP, VMA& ip, ushort& opIdx)
+convertOpIPToIP(VMA opIP, VMA& ip, ushort& opIdx)
 {
   opIdx = (ushort)(opIP & 0x3); // the mask ...00011 covers 0, 1 and 2
   ip = opIP - opIdx;
@@ -320,7 +328,7 @@ ConvertOpIPToIP(VMA opIP, VMA& ip, ushort& opIdx)
 
 
 bool
-AddPGMToCSProfTree(CSProfTree* tree, const char* progName)
+addPGMToCSProfTree(CSProfTree* tree, const char* progName)
 {
   bool noError = true;
 
@@ -339,7 +347,7 @@ AddPGMToCSProfTree(CSProfTree* tree, const char* progName)
 
 
 static bool 
-FixLeaves(CSProfNode* node)
+fixLeaves(CSProfNode* node)
 {
   bool noError = true;
   
@@ -350,7 +358,8 @@ FixLeaves(CSProfNode* node)
     CSProfCodeNode* child = dynamic_cast<CSProfCodeNode*>(it.CurNode());
     DIAG_Assert(child, ""); // always true (FIXME)
     it++; // advance iterator -- it is pointing at 'child'
-    
+
+    DIAG_DevMsgIf(0, "fixLeaves: " << hex << child->GetIP() << dec);
     if (child->IsLeaf() && child->GetType() == CSProfNode::CALLSITE) {
       // This child is a leaf. Convert.
       CSProfCallSiteNode* c = dynamic_cast<CSProfCallSiteNode*>(child);
@@ -364,7 +373,7 @@ FixLeaves(CSProfNode* node)
     } 
     else if (!child->IsLeaf()) {
       // Recur:
-      noError = noError && FixLeaves(child);
+      noError = noError && fixLeaves(child);
     }
   }
   
@@ -378,34 +387,74 @@ FixLeaves(CSProfNode* node)
 
 typedef std::map<CodeInfo*, CSProfProcedureFrameNode*> CodeInfoToProcFrameMap;
 
+
+typedef std::pair<CSProfProcedureFrameNode*, CodeInfo*> ProcFrameAndLoop;
+inline bool 
+operator<(const ProcFrameAndLoop& x, const ProcFrameAndLoop& y) 
+{
+  return ((x.first < y.first) || 
+	  ((x.first == y.first) && (x.second < y.second)));
+}
+
+typedef std::map<ProcFrameAndLoop, CSProfLoopNode*> ProcFrameAndLoopToCSLoopMap;
+
+
+
+
 void
-AddSymbolicInfo(CSProfCodeNode* n, LoadModScope* lmScope,
+addSymbolicInfo(CSProfCodeNode* n, LoadModScope* lmScope,
 		CodeInfo* callingCtxt, CodeInfo* scope);
 
+CSProfProcedureFrameNode*
+findOrCreateProcFrame(CSProfCodeNode* node, 
+		      LoadModScope* lmScope, CodeInfo* callingCtxt,
+		      LoopScope* loop,
+		      VMA curr_ip,
+		      CodeInfoToProcFrameMap& frameMap,
+		      ProcFrameAndLoopToCSLoopMap& loopMap);
+
+void
+createFramesForProc(ProcScope* proc, CSProfNode* csnode,
+		    CodeInfoToProcFrameMap& frameMap,
+		    ProcFrameAndLoopToCSLoopMap& loopMap);
+
+void
+loopifyFrame(CSProfProcedureFrameNode* frame, CodeInfo* ctxtScope,
+	     CodeInfoToProcFrameMap& frameMap,
+	     ProcFrameAndLoopToCSLoopMap& loopMap);
+
+
 void 
-InferCallFrames(CSProfile* prof, CSProfNode* node, 
+inferCallFrames(CSProfile* prof, CSProfNode* node, 
 		VMA begVMA, VMA endVMA, LoadModScope* lmScope, VMA relocVMA);
 
 
+// inferCallFrames: Effectively create equivalence classes of frames
+// for all the return addresses found under.
+//
 void
-InferCallFrames(CSProfile* prof, VMA begVMA, VMA endVMA, 
+inferCallFrames(CSProfile* prof, VMA begVMA, VMA endVMA, 
 		LoadModScope* lmScope, VMA relocVMA)
 {
   CSProfTree* csproftree = prof->GetTree();
   if (!csproftree) { return; }
   
-  InferCallFrames(prof, csproftree->GetRoot(), begVMA, endVMA, 
+  inferCallFrames(prof, csproftree->GetRoot(), begVMA, endVMA, 
 		  lmScope, relocVMA);
 }
 
 
 void 
-InferCallFrames(CSProfile* prof, CSProfNode* node, 
+inferCallFrames(CSProfile* prof, CSProfNode* node, 
 		VMA begVMA, VMA endVMA, LoadModScope* lmScope, VMA relocVMA)
 {
+  // INVARIANT: The parent of 'node' has been fully processed and
+  // lives within a correctly located procedure frame.
+  
   if (!node) { return; }
 
-  CodeInfoToProcFrameMap procFrameMap;
+  CodeInfoToProcFrameMap frameMap;
+  ProcFrameAndLoopToCSLoopMap loopMap;
 
   // For each immediate child of this node...
   for (CSProfNodeChildIterator it(node); it.Current(); /* */) {
@@ -413,11 +462,6 @@ InferCallFrames(CSProfile* prof, CSProfNode* node,
     DIAG_Assert(n, "Unexpected node type");
     
     it++; // advance iterator -- it is pointing at 'n' 
-
-    // recur 
-    if (!n->IsLeaf()) {
-      InferCallFrames(prof, n, begVMA, endVMA, lmScope, relocVMA);
-    }
     
     // process this node
     bool isTy = (n->GetType() == CSProfNode::CALLSITE 
@@ -426,55 +470,206 @@ InferCallFrames(CSProfile* prof, CSProfNode* node,
     if (isTy && (begVMA <= n->GetIP() && n->GetIP() <= endVMA)) {
       VMA curr_ip = n->GetIP() - relocVMA;
       
+      DIAG_DevIf(50) {
+	CSProfCallSiteNode* p = node->AncestorCallSite();
+	DIAG_DevMsg(0, "inferCallFrames: " << hex << ((p) ? p->GetIP() : 0) << " --> " << n->GetIP() << dec);
+      }
+      
       CodeInfo* scope = lmScope->findByVMA(curr_ip);
-      CodeInfo* ctxt = (scope) ? scope->CallingCtxt() : NULL;
-      
-      AddSymbolicInfo(n, lmScope, ctxt, scope);
+      CodeInfo* ctxt = NULL;
+      LoopScope* loop = NULL;
+      if (scope) {
+	ctxt = scope->CallingCtxt();
+	// FIXME: should include PROC (for nested procs)
+	ScopeInfo* x = scope->Ancestor(ScopeInfo::LOOP, ScopeInfo::ALIEN);
+	loop = dynamic_cast<LoopScope*>(x);
+      }
 
-      // Seach for the frame associated with this context
-      CSProfProcedureFrameNode* frameNode = NULL;
-      CodeInfo* toFind = (ctxt) ? ctxt : lmScope;
+      // Add symbolic information to 'n'
+      addSymbolicInfo(n, lmScope, ctxt, scope);
+
+      // Find (or create) a procedure frame for 'n'.
+      CSProfProcedureFrameNode* frame = 
+	findOrCreateProcFrame(n, lmScope, ctxt, loop, curr_ip, 
+			      frameMap, loopMap);
       
-      CodeInfoToProcFrameMap::iterator it = procFrameMap.find(toFind);
-      if (it != procFrameMap.end()) {
-	frameNode = (*it).second;
-      }
-      else {
-	// INVARIANT: 'n' has symbolic information
-	frameNode = new CSProfProcedureFrameNode(NULL);
-	frameNode->SetFile(n->GetFile());
-	frameNode->SetFileIsText(n->FileIsText());
-	
-	if (ctxt) {
-	  frameNode->SetProc(n->GetProc());
-	  frameNode->SetLine(ctxt->begLine());
-	}
-	else {
-	  string nm = string("unknown@") + StrUtil::toStr(curr_ip, 16);
-	  frameNode->SetProc(nm);
-	}
-	
-	if (ctxt && ctxt->Type() == ScopeInfo::ALIEN) {
-	  frameNode->isAlien() = true;
-	  frameNode->SetProc("(*) " + string(frameNode->GetProc()));
-	}
-	
-	frameNode->Link(node);
-	procFrameMap.insert(std::make_pair(toFind, frameNode));
+      // Find appropriate (new) parent context for 'node': the frame
+      // or a loop within the frame
+      CSProfCodeNode* newParent = frame;
+      if (loop) {
+	ProcFrameAndLoop toFind(frame, loop);
+	ProcFrameAndLoopToCSLoopMap::iterator it = loopMap.find(toFind);
+	DIAG_Assert(it != loopMap.end(), "Cannot find corresponding loop scope:\n" << loop->toStringXML());
+	newParent = (*it).second;
       }
       
+      // Link 'n' to its frame
       n->Unlink();
-      n->Link(frameNode);
-    } 
+      n->Link(newParent);
+    }
+    
+    // recur 
+    if (!n->IsLeaf()) {
+      inferCallFrames(prof, n, begVMA, endVMA, lmScope, relocVMA);
+    }
   }
 }
+
+
+// findOrCreateProcFrame: Find or create a procedure frame for 'node'
+// given it's corresponding load module scope (lmScope), calling
+// context scope (callingCtxt, a ProcScope or AlienScope) and
+// statement-type scope.
+// 
+// Assumes that symbolic information has been added to node.
+CSProfProcedureFrameNode*
+findOrCreateProcFrame(CSProfCodeNode* node, 
+		      LoadModScope* lmScope, CodeInfo* callingCtxt,
+		      LoopScope* loop,
+		      VMA curr_ip,
+		      CodeInfoToProcFrameMap& frameMap,
+		      ProcFrameAndLoopToCSLoopMap& loopMap)
+{
+  CSProfProcedureFrameNode* frame = NULL;
+
+  CodeInfo* toFind = (callingCtxt) ? callingCtxt : lmScope;
+  
+  CodeInfoToProcFrameMap::iterator it = frameMap.find(toFind);
+  if (it != frameMap.end()) {
+    frame = (*it).second;
+  }
+  else {
+    // INVARIANT: 'node' has symbolic information
+
+    // Find and create the frame.
+    if (callingCtxt) {
+      ProcScope* proc = callingCtxt->Proc();
+      createFramesForProc(proc, node, frameMap, loopMap);
+
+      // frame should now be in map
+      CodeInfoToProcFrameMap::iterator it = frameMap.find(toFind);
+      DIAG_Assert(it != frameMap.end(), "");
+      frame = (*it).second;
+    }
+    else {
+      frame = new CSProfProcedureFrameNode(NULL);
+      addSymbolicInfo(frame, lmScope, NULL, NULL);
+      frame->Link(node->Parent());
+
+      string nm = string("unknown@") + StrUtil::toStr(curr_ip, 16); // FIXME
+      //string nm = "unknown@" + StrUtil::toStr(ip, 16);
+      frame->SetProc(nm C_STR);
+      
+      frameMap.insert(std::make_pair(toFind, frame));
+    }
+  }
+  
+  return frame;
+}
+
+
+void 
+createFramesForProc(ProcScope* proc, CSProfNode* csnode,
+		    CodeInfoToProcFrameMap& frameMap,
+		    ProcFrameAndLoopToCSLoopMap& loopMap)
+{
+  CSProfProcedureFrameNode* frame;
+  
+  frame = new CSProfProcedureFrameNode(NULL);
+  addSymbolicInfo(frame, NULL, proc, proc);
+  frame->Link(csnode->Parent());
+  frameMap.insert(std::make_pair(proc, frame));
+
+  loopifyFrame(frame, proc, frameMap, loopMap);
+}
+
+
+
+void
+loopifyFrame(CSProfCodeNode* mirrorNode, CodeInfo* node,
+	     CSProfProcedureFrameNode* frame,
+	     CSProfLoopNode* enclLoop,
+	     CodeInfoToProcFrameMap& frameMap,
+	     ProcFrameAndLoopToCSLoopMap& loopMap);
+
+
+// Given a procedure frame 'frame' and its associated context scope
+// 'ctxtScope' (ProcScope or AlienScope), mirror ctxtScope's loop and
+// context structure and add entries to 'frameMap' and 'loopMap.'
+void
+loopifyFrame(CSProfProcedureFrameNode* frame, CodeInfo* ctxtScope,
+	     CodeInfoToProcFrameMap& frameMap,
+	     ProcFrameAndLoopToCSLoopMap& loopMap)
+{
+  loopifyFrame(frame, ctxtScope, frame, NULL, frameMap, loopMap);
+}
+
+
+// 'frame' is the enclosing frame
+// 'loop' is the enclosing loop
+void
+loopifyFrame(CSProfCodeNode* mirrorNode, CodeInfo* node,
+	     CSProfProcedureFrameNode* frame,
+	     CSProfLoopNode* enclLoop,
+	     CodeInfoToProcFrameMap& frameMap,
+	     ProcFrameAndLoopToCSLoopMap& loopMap)
+{
+  for (CodeInfoChildIterator it(node); it.Current(); ++it) {
+    CodeInfo* n = it.CurCodeInfo();
+
+    // Done: if we reach the natural base case or embedded proceedure
+    if (n->IsLeaf() || n->Type() == ScopeInfo::PROC) {
+      continue;
+    }
+
+    // - Flatten nested alien frames descending from a loop
+    // - Presume that alien frames derive from callsites in the parent
+    // frame, but flatten any nesting.
+
+    CSProfCodeNode* mirrorRoot = mirrorNode;
+    CSProfProcedureFrameNode* nxt_frame = frame;
+    CSProfLoopNode* nxt_enclLoop = enclLoop;
+
+    if (n->Type() == ScopeInfo::LOOP) {
+      // loops are always children of the current root (loop or frame)
+      CSProfLoopNode* lp = 
+	new CSProfLoopNode(mirrorNode, n->begLine(), n->endLine(), 
+			   n->UniqueId());
+      loopMap.insert(std::make_pair(ProcFrameAndLoop(frame, n), lp));
+      DIAG_DevMsgIf(0, hex << "(" << frame << " " << n << ") -> (" << lp << ")" << dec);
+
+      mirrorRoot = lp;
+      nxt_enclLoop = lp;
+    }
+    else if (n->Type() == ScopeInfo::ALIEN) {
+      CSProfProcedureFrameNode* fr = new CSProfProcedureFrameNode(NULL);
+      addSymbolicInfo(fr, NULL, n, n);
+      fr->isAlien() = true;
+      frameMap.insert(std::make_pair(n, fr));
+      DIAG_DevMsgIf(0, hex << fr->GetProc() << " [" << n << " -> " << fr << "]" << dec);
+      
+      if (enclLoop) {
+	fr->Link(enclLoop);
+      }
+      else {
+	fr->Link(frame);
+      }
+
+      mirrorRoot = fr;
+      nxt_frame = fr;
+    }
+    
+    loopifyFrame(mirrorRoot, n, nxt_frame, nxt_enclLoop, frameMap, loopMap);
+  }
+}
+  
 
 //***************************************************************************
 
 // FIXME: Takes either CSProfCallSiteNode or CSProfStatementNode
 void 
-AddSymbolicInfo(CSProfCodeNode* n, LoadModScope* lmScope,
-		CodeInfo* callingCtxt, CodeInfo* scope)
+addSymbolicInfo(CSProfCodeNode* n, 
+		LoadModScope* lmScope, CodeInfo* callingCtxt, CodeInfo* scope)
 {
   if (!n) {
     return;
@@ -487,15 +682,17 @@ AddSymbolicInfo(CSProfCodeNode* n, LoadModScope* lmScope,
       dynamic_cast<AlienScope*>(callingCtxt)->fileName() :
       callingCtxt->File()->name();
 
-    n->SetFile(fnm.c_str());
-    n->SetProc(callingCtxt->name().c_str());
+    n->SetFile(fnm C_STR);
+    n->SetProc(callingCtxt->name() C_STR);
     n->SetLine(scope->begLine());
     n->SetFileIsText(true);
+    n->structureId() = scope->UniqueId();
   }
   else {
-    n->SetFile(lmScope->name().c_str());
+    n->SetFile(lmScope->name() C_STR);
     n->SetLine(0);
     n->SetFileIsText(false);
+    n->structureId() = lmScope->UniqueId();
   }
 }
 
@@ -506,9 +703,9 @@ AddSymbolicInfo(CSProfCodeNode* n, LoadModScope* lmScope,
 
 typedef std::map<string, CSProfProcedureFrameNode*> StringToProcFrameMap;
 
-void AddSymbolicInfo(CSProfCodeNode* node, binutils::LM* lm);
+void addSymbolicInfo(CSProfCodeNode* node, binutils::LM* lm);
 
-void InferCallFrames(CSProfile* prof, CSProfNode* node, 
+void inferCallFrames(CSProfile* prof, CSProfNode* node, 
 		     VMA begVMA, VMA endVMA, binutils::LM* lm);
 
 // create an extended profile representation
@@ -526,24 +723,24 @@ void InferCallFrames(CSProfile* prof, CSProfNode* node,
 // coalese these leaves into one.
 
 void 
-InferCallFrames(CSProfile* prof, VMA begVMA, VMA endVMA, binutils::LM *lm)
+inferCallFrames(CSProfile* prof, VMA begVMA, VMA endVMA, binutils::LM *lm)
 {
   CSProfTree* csproftree = prof->GetTree();
   if (!csproftree) { return; }
   
   DIAG_MsgIf(DBG_NORM_PROC_FRAME, "start normalizing same procedure children");
-  InferCallFrames(prof, csproftree->GetRoot(), begVMA, endVMA, lm);
+  inferCallFrames(prof, csproftree->GetRoot(), begVMA, endVMA, lm);
 }
 
 
 void 
-InferCallFrames(CSProfile* prof, CSProfNode* node, 
+inferCallFrames(CSProfile* prof, CSProfNode* node, 
 		VMA begVMA, VMA endVMA, binutils::LM* lm)
 {
   if (!node) { return; }
 
   // Use this set to determine if we have a duplicate source line
-  StringToProcFrameMap procFrameMap;
+  StringToProcFrameMap frameMap;
 
   // For each immediate child of this node...
   for (CSProfNodeChildIterator it(node); it.Current(); /* */) {
@@ -556,7 +753,7 @@ InferCallFrames(CSProfile* prof, CSProfNode* node,
     // recur 
     // ------------------------------------------------------------
     if (!n->IsLeaf()) {
-      InferCallFrames(prof, n, begVMA, endVMA, lm);
+      inferCallFrames(prof, n, begVMA, endVMA, lm);
     }
 
     // ------------------------------------------------------------
@@ -571,20 +768,20 @@ InferCallFrames(CSProfile* prof, CSProfNode* node,
       DIAG_MsgIf(DBG_NORM_PROC_FRAME, "analyzing node " << n->GetProc()
 		 << hex << " " << curr_ip);
       
-      AddSymbolicInfo(n, lm);
+      addSymbolicInfo(n, lm);
       
       string myid = n->GetFile() + n->GetProc();
       
-      StringToProcFrameMap::iterator it = procFrameMap.find(myid);
-      CSProfProcedureFrameNode* frameNode;
-      if (it != procFrameMap.end()) { 
+      StringToProcFrameMap::iterator it = frameMap.find(myid);
+      CSProfProcedureFrameNode* frame;
+      if (it != frameMap.end()) { 
 	// found 
-	frameNode = (*it).second;
+	frame = (*it).second;
       } 
       else {
 	// no entry found -- add
-	frameNode = new CSProfProcedureFrameNode(NULL);
-	frameNode->SetFile(n->GetFile());
+	frame = new CSProfProcedureFrameNode(NULL);
+	frame->SetFile(n->GetFile() C_STR);
 	
 	string frameNm = n->GetProc();
 	if (frameNm.empty()) {
@@ -594,24 +791,24 @@ InferCallFrames(CSProfile* prof, CSProfNode* node,
 		   << " --> " << frameNm);
 	
 	
-	frameNode->SetProc(frameNm);
-	frameNode->SetFileIsText(n->FileIsText());
-	if (!frameNode->FileIsText()) {
-	  frameNode->SetLine(0);
+	frame->SetProc(frameNm C_STR);
+	frame->SetFileIsText(n->FileIsText());
+	if (!frame->FileIsText()) {
+	  frame->SetLine(0);
 	} 
 	else {
 	  // determine the first line of the enclosing procedure
 	  suint begLn;
 	  lm->GetProcFirstLineInfo(curr_ip, n->GetOpIndex(), begLn);
-	  frameNode->SetLine(begLn);
+	  frame->SetLine(begLn);
 	}
 	
-	frameNode->Link(node);
-	procFrameMap.insert(std::make_pair(myid, frameNode));
+	frame->Link(node);
+	frameMap.insert(std::make_pair(myid, frame));
       }
       
       n->Unlink();
-      n->Link(frameNode);
+      n->Link(frame);
     }
   }
 }
@@ -621,7 +818,7 @@ InferCallFrames(CSProfile* prof, CSProfNode* node,
 
 #if 0
 void
-AddSymbolicInfo(CSProfile* prof, VMA begVMA, VMA endVMA, binutils::LM* lm)
+addSymbolicInfo(CSProfile* prof, VMA begVMA, VMA endVMA, binutils::LM* lm)
 {
   VMA curr_ip; 
 
@@ -639,7 +836,7 @@ AddSymbolicInfo(CSProfile* prof, VMA begVMA, VMA endVMA, binutils::LM* lm)
       curr_ip = nn->GetIP();
       if (begVMA <= curr_ip && curr_ip <= endVMA) { 
 	// in the current load module
-	AddSymbolicInfo(nn,lm,true);
+	addSymbolicInfo(nn,lm,true);
 	nn->SetSrcInfoDone(true);
       }
     }  
@@ -650,7 +847,7 @@ AddSymbolicInfo(CSProfile* prof, VMA begVMA, VMA endVMA, binutils::LM* lm)
 
 // FIXME: Takes either CSProfCallSiteNode or CSProfStatementNode
 void 
-AddSymbolicInfo(CSProfCodeNode* n, binutils::LM* lm)
+addSymbolicInfo(CSProfCodeNode* n, binutils::LM* lm)
 {
   if (!n) {
     return;
@@ -661,14 +858,14 @@ AddSymbolicInfo(CSProfCodeNode* n, binutils::LM* lm)
   lm->GetSourceFileInfo(n->GetIP(), n->GetOpIndex(), func, file, srcLn);
   func = GetBestFuncName(func);
   
-  n->SetFile(file.c_str());
-  n->SetProc(func.c_str());
+  n->SetFile(file C_STR);
+  n->SetProc(func C_STR);
   n->SetLine(srcLn);
   n->SetFileIsText(true);
   
   // if file name is missing then using load module name. 
   if (file.empty() || func.empty()) {
-    n->SetFile(lm->GetName().c_str());
+    n->SetFile(lm->GetName() C_STR);
     n->SetLine(0); //don't need to have line number for loadmodule
     n->SetFileIsText(false);
   }
@@ -679,31 +876,32 @@ AddSymbolicInfo(CSProfCodeNode* n, binutils::LM* lm)
 // Routines for normalizing the ScopeTree
 //***************************************************************************
 
-bool CoalesceCallsiteLeaves(CSProfile* prof);
+bool coalesceCallsiteLeaves(CSProfile* prof);
+void removeEmptyScopes(CSProfile* prof);
 
 bool 
-NormalizeCSProfile(CSProfile* prof)
+normalizeCSProfile(CSProfile* prof)
 {
   // Remove duplicate/inplied file and procedure information from tree
-  bool pass1 = true;
-  bool pass2 = CoalesceCallsiteLeaves(prof);
+  coalesceCallsiteLeaves(prof);
+  removeEmptyScopes(prof);
   
-  return (pass1 && pass2);
+  return (true);
 }
 
 
 // FIXME
 // If pc values from the leaves map to the same source file info,
 // coalese these leaves into one.
-bool CoalesceCallsiteLeaves(CSProfNode* node);
+bool coalesceCallsiteLeaves(CSProfNode* node);
 
 bool 
-CoalesceCallsiteLeaves(CSProfile* prof)
+coalesceCallsiteLeaves(CSProfile* prof)
 {
   CSProfTree* csproftree = prof->GetTree();
   if (!csproftree) { return true; }
   
-  return CoalesceCallsiteLeaves(csproftree->GetRoot());
+  return coalesceCallsiteLeaves(csproftree->GetRoot());
 }
 
 
@@ -711,7 +909,7 @@ CoalesceCallsiteLeaves(CSProfile* prof)
 typedef std::map<string, CSProfStatementNode*> StringToCallSiteMap;
 
 bool 
-CoalesceCallsiteLeaves(CSProfNode* node)
+coalesceCallsiteLeaves(CSProfNode* node)
 {
   bool noError = true;
   
@@ -752,7 +950,7 @@ CoalesceCallsiteLeaves(CSProfNode* node)
     } 
     else if (!child->IsLeaf()) {
       // Recur:
-      noError = noError && CoalesceCallsiteLeaves(child);
+      noError = noError && coalesceCallsiteLeaves(child);
     }
   } 
   
@@ -760,17 +958,55 @@ CoalesceCallsiteLeaves(CSProfNode* node)
 }
 
 
+
+void 
+removeEmptyScopes(CSProfNode* node);
+
+void 
+removeEmptyScopes(CSProfile* prof)
+{
+  CSProfTree* csproftree = prof->GetTree();
+  if (!csproftree) { return; }
+  
+  removeEmptyScopes(csproftree->GetRoot());
+}
+
+
+void 
+removeEmptyScopes(CSProfNode* node)
+{
+  if (!node) { return; }
+
+  for (CSProfNodeChildIterator it(node); it.Current(); /* */) {
+    CSProfNode* child = it.CurNode();
+    it++; // advance iterator -- it is pointing at 'child'
+    
+    // 1. Recursively do any trimming for this tree's children
+    removeEmptyScopes(child);
+
+    // 2. Trim this node if necessary
+    bool remove = (child->IsLeaf() 
+		   && child->GetType() == CSProfNode::PROCEDURE_FRAME);
+    if (remove) {
+      child->Unlink(); // unlink 'child' from tree
+      delete child;
+    }
+  }
+}
+
+
 //***************************************************************************
 // 
 //***************************************************************************
 
-
-/** Perform DFS traversal of the tree nodes and copy
-    the source files for the executable into the database
-    directory. */
-bool copySourceFiles(CSProfNode* node, 
+void copySourceFiles(CSProfNode* node, 
 		     std::vector<string>& searchPaths,
 		     const string& dbSourceDirectory);
+
+void innerCopySourceFiles(CSProfNode* node, 
+			  std::vector<string>& searchPaths,
+			  const string& dbSourceDirectory);
+
 
 /** Copies the source files for the executable into the database 
     directory. */
@@ -788,36 +1024,246 @@ copySourceFiles(CSProfile *prof,
 }
 
 
-bool innerCopySourceFiles(CSProfNode* node, 
-			  std::vector<string>& searchPaths,
-			  const string& dbSourceDirectory);
-
 /** Perform DFS traversal of the tree nodes and copy
     the source files for the executable into the database
     directory. */
-bool 
+void 
 copySourceFiles(CSProfNode* node, 
-		     std::vector<string>& searchPaths,
-		     const string& dbSourceDirectory) 
+		std::vector<string>& searchPaths,
+		const string& dbSourceDirectory) 
 {
   xDEBUG(DEB_MKDIR_SRC_DIR, 
 	 cerr << "descend into node" << std::endl;);
-  bool noError = true;
+
   if (!node) {
-    return noError;
+    return;
   }
+
   // For each immediate child of this node...
   for (CSProfNodeChildIterator it(node); it.CurNode(); it++) {
     // recur 
-    noError = noError && copySourceFiles(it.CurNode(), 
-					 searchPaths,
-					 dbSourceDirectory);
+    copySourceFiles(it.CurNode(), searchPaths, dbSourceDirectory);
   }
 
-  noError = noError && 
-    innerCopySourceFiles(node, searchPaths, dbSourceDirectory);
-  return noError;
+  innerCopySourceFiles(node, searchPaths, dbSourceDirectory);
 }
+
+
+void 
+innerCopySourceFiles(CSProfNode* node, 
+		     std::vector<string>& searchPaths,
+		     const string& dbSourceDirectory)
+{
+  bool inspect; 
+  string nodeSourceFile;
+  string relativeSourceFile;
+  string procedureFrame;
+  bool sourceFileWasCopied = false;
+  bool fileIsText = false; 
+
+  switch(node->GetType()) {
+  case CSProfNode::CALLSITE:
+    {
+      CSProfCallSiteNode* c = dynamic_cast<CSProfCallSiteNode*>(node);
+      nodeSourceFile = c->GetFile();
+      fileIsText = c->FileIsText();
+      inspect = true;
+      procedureFrame = c->GetProc();
+      xDEBUG(DEB_MKDIR_SRC_DIR,
+	     cerr << "will analyze CALLSITE for proc" << procedureFrame
+	     << nodeSourceFile << 
+	     "textFile " << fileIsText << std::endl;);
+    }
+    break;
+
+  case CSProfNode::STATEMENT:
+    {
+      CSProfStatementNode* st = 
+	dynamic_cast<CSProfStatementNode*>(node);
+      nodeSourceFile = st->GetFile();
+      fileIsText = st->FileIsText();
+      inspect = true;
+      procedureFrame = st->GetProc();
+      xDEBUG(DEB_MKDIR_SRC_DIR,
+	     cerr << "will analyze STATEMENT for proc" << procedureFrame
+	     << nodeSourceFile << 
+	     "textFile " << fileIsText << std::endl;);
+    }
+    break;
+
+  case CSProfNode::PROCEDURE_FRAME:
+    {
+      CSProfProcedureFrameNode* pf = 
+	dynamic_cast<CSProfProcedureFrameNode*>(node);
+      nodeSourceFile = pf->GetFile();
+      fileIsText = pf->FileIsText();
+      inspect = true;
+      procedureFrame = pf->GetProc();
+      xDEBUG(DEB_MKDIR_SRC_DIR,
+	     cerr << "will analyze PROCEDURE_FRAME for proc" << 
+	     procedureFrame << nodeSourceFile << 
+	     "textFile " << fileIsText << std::endl;);
+    }
+    break;
+
+  default:
+    inspect = false;
+    break;
+  } 
+  
+  if (inspect) {
+    // copy source file for current node
+    xDEBUG(DEB_MKDIR_SRC_DIR,
+	   cerr << "attempt to copy " << nodeSourceFile << std::endl;);
+// FMZ     if (! nodeSourceFile.empty()) {
+     if (fileIsText && !nodeSourceFile.empty()) {
+      xDEBUG(DEB_MKDIR_SRC_DIR,
+	     cerr << "attempt to copy text, nonnull " << nodeSourceFile << std::endl;);
+      
+      // foreach  search paths
+      //    normalize  searchPath + file
+      //    if (file can be opened) 
+      //    break into components 
+      //    duplicate directory structure (mkdir segment by segment)
+      //    copy the file (use system syscall)
+      int ii;
+      bool searchDone = false;
+      for (ii=0; !searchDone && ii<searchPaths.size(); ii++) {
+	string testPath;
+	if ( nodeSourceFile[0] == '/') {
+	  testPath = nodeSourceFile;
+	  searchDone = true;
+	}  else {
+	  testPath = searchPaths[ii]+"/"+nodeSourceFile;
+	}
+	xDEBUG(DEB_MKDIR_SRC_DIR,
+	       cerr << "search test path " << testPath << std::endl;);
+	string normTestPath = normalizeFilePath(testPath);
+	xDEBUG(DEB_MKDIR_SRC_DIR,
+	       cerr << "normalized test path " << normTestPath << std::endl;);
+	if (normTestPath == "") {
+	  xDEBUG(DEB_MKDIR_SRC_DIR,
+		 cerr << "null test path " << std::endl;);
+	} else {
+	  xDEBUG(DEB_MKDIR_SRC_DIR,
+		 cerr << "attempt to text open" << normTestPath << std::endl;);
+	  FILE *sourceFileHandle = fopen(normTestPath.c_str(), "rt");
+	  if (sourceFileHandle != NULL) {
+	    searchDone = true;
+	    char normTestPathChr[MAX_PATH_SIZE+1];
+	    strcpy(normTestPathChr, normTestPath.c_str());
+	    relativeSourceFile = normTestPathChr+1;
+	    sourceFileWasCopied = true;
+	    xDEBUG(DEB_MKDIR_SRC_DIR,
+		   cerr << "text open succeeded; path changed to " <<
+		   relativeSourceFile << std::endl;);
+	    fclose (sourceFileHandle);
+
+	    // check if the file already exists (we've copied it for a previous sample)
+	    string testFilePath = dbSourceDirectory + normTestPath;
+	    FILE *testFileHandle = fopen(testFilePath.c_str(), "rt");
+	    if (testFileHandle != NULL) {
+	      fclose(testFileHandle);
+	    } else {
+	      // we've found the source file and we need to copy it into the database
+	      std::stack<string> pathSegmentsStack;
+	      breakPathIntoSegments (normTestPath,
+				     pathSegmentsStack);
+	      std::vector<string> pathSegmentsVector;
+	      for (; !pathSegmentsStack.empty();) {
+		string crtSegment = pathSegmentsStack.top();
+		pathSegmentsStack.pop(); 
+		pathSegmentsVector.insert(pathSegmentsVector.begin(),
+					  crtSegment);
+		xDEBUG(DEB_MKDIR_SRC_DIR,
+		       cerr << "inserted path segment " << 
+		       pathSegmentsVector[0] << std::endl;);
+	      }
+
+	      xDEBUG(DEB_MKDIR_SRC_DIR,
+		     cerr << "converted stack to vector" << std::endl;);
+
+	      char filePathChr[MAX_PATH_SIZE +1];
+	      strcpy(filePathChr, dbSourceDirectory.c_str());
+	      chdir(filePathChr);
+
+	      xDEBUG(DEB_MKDIR_SRC_DIR,
+		     cerr << "after chdir " << std::endl;);
+
+	      string subPath = dbSourceDirectory;
+	      int pathSegmentIndex;
+	      for (pathSegmentIndex=0; 
+		   pathSegmentIndex<pathSegmentsVector.size()-1;
+		   pathSegmentIndex++) {
+		subPath = subPath+"/"+pathSegmentsVector[pathSegmentIndex];
+		xDEBUG(DEB_MKDIR_SRC_DIR,
+		       cerr << "about to mkdir " 
+		       << subPath << std::endl;);
+		int mkdirResult =  
+		  mkdir (subPath.c_str(), 
+			 S_IRWXU | S_IRGRP | S_IXGRP 
+			 | S_IROTH | S_IXOTH); 
+		if (mkdirResult == -1) {
+		  switch (errno) {
+		  case EEXIST:  
+		    xDEBUG(DEB_MKDIR_SRC_DIR,
+			   cerr << "EEXIST " << std::endl;); 
+		    // we created the same directory 
+		    // for a different source file
+		    break;
+		  default:
+		    cerr << "mkdir failed for " << subPath << std::endl;
+		    perror("mkdir failed:");
+		    exit (1);
+		  }
+		}
+	      }
+	      strcpy(filePathChr, subPath.c_str());
+	      chdir(filePathChr);
+	      string cpCommand = "cp -f "+normTestPath+" .";
+	      system (cpCommand.c_str());
+	      // fix the file name  so it points to the one in the source directory
+	    }
+	  }
+	}
+      }
+    }
+  }
+  
+  if (inspect && sourceFileWasCopied) {
+    switch( node->GetType()) {
+    case CSProfNode::CALLSITE:
+      {
+	CSProfCallSiteNode* c = dynamic_cast<CSProfCallSiteNode*>(node);
+	c->SetFile(relativeSourceFile);
+      }
+      break;
+    case CSProfNode::STATEMENT:
+      {
+	CSProfStatementNode* st = 
+	  dynamic_cast<CSProfStatementNode*>(node);
+	st->SetFile(relativeSourceFile);
+      }
+      break;
+    case CSProfNode::PROCEDURE_FRAME:
+      {
+	CSProfProcedureFrameNode* pf = 
+	  dynamic_cast<CSProfProcedureFrameNode*>(node);
+	pf->SetFile(relativeSourceFile);
+      }
+      break;
+    default:
+      cerr << "Invalid node type" << std::endl;
+      exit(0);
+      break;
+    }
+  }
+}
+
+
+//***************************************************************************
+// 
+//***************************************************************************
 
 /** Normalizes a file path. Handle construncts such as :
  ~/...
@@ -982,220 +1428,12 @@ breakPathIntoSegments(const string& normFilePath,
 }
 
 
-
-bool 
-innerCopySourceFiles(CSProfNode* node, 
-		     std::vector<string>& searchPaths,
-		     const string& dbSourceDirectory)
-{
-  bool inspect; 
-  string nodeSourceFile;
-  string relativeSourceFile;
-  string procedureFrame;
-  bool sourceFileWasCopied = false;
-  bool fileIsText = false; 
-
-  switch( node->GetType()) {
-  case CSProfNode::CALLSITE:
-    {
-      CSProfCallSiteNode* c = dynamic_cast<CSProfCallSiteNode*>(node);
-      nodeSourceFile = c->GetFile();
-      fileIsText = c->FileIsText();
-      inspect = true;
-      procedureFrame = c->GetProc();
-      xDEBUG(DEB_MKDIR_SRC_DIR,
-	     cerr << "will analyze CALLSITE for proc" << procedureFrame
-	     << nodeSourceFile << 
-	     "textFile " << fileIsText << std::endl;);
-    }
-    break;
-  case CSProfNode::STATEMENT:
-    {
-      CSProfStatementNode* st = 
-	dynamic_cast<CSProfStatementNode*>(node);
-      nodeSourceFile = st->GetFile();
-      fileIsText = st->FileIsText();
-      inspect = true;
-      procedureFrame = st->GetProc();
-      xDEBUG(DEB_MKDIR_SRC_DIR,
-	     cerr << "will analyze STATEMENT for proc" << procedureFrame
-	     << nodeSourceFile << 
-	     "textFile " << fileIsText << std::endl;);
-    }
-    break;
-  case CSProfNode::PROCEDURE_FRAME:
-    {
-      CSProfProcedureFrameNode* pf = 
-	dynamic_cast<CSProfProcedureFrameNode*>(node);
-      nodeSourceFile = pf->GetFile();
-      fileIsText = pf->FileIsText();
-      inspect = true;
-      procedureFrame = pf->GetProc();
-      xDEBUG(DEB_MKDIR_SRC_DIR,
-	     cerr << "will analyze PROCEDURE_FRAME for proc" << 
-	     procedureFrame << nodeSourceFile << 
-	     "textFile " << fileIsText << std::endl;);
-    }
-    break;
-  default:
-    inspect = false;
-    break;
-  } 
-  
-  if (inspect) {
-    // copy source file for current node
-    xDEBUG(DEB_MKDIR_SRC_DIR,
-	   cerr << "attempt to copy " << nodeSourceFile << std::endl;);
-// FMZ     if (! nodeSourceFile.empty()) {
-     if (fileIsText && !nodeSourceFile.empty()) {
-      xDEBUG(DEB_MKDIR_SRC_DIR,
-	     cerr << "attempt to copy text, nonnull " << nodeSourceFile << std::endl;);
-      
-      // foreach  search paths
-      //    normalize  searchPath + file
-      //    if (file can be opened) 
-      //    break into components 
-      //    duplicate directory structure (mkdir segment by segment)
-      //    copy the file (use system syscall)
-      int ii;
-      bool searchDone = false;
-      for (ii=0; !searchDone && ii<searchPaths.size(); ii++) {
-	string testPath;
-	if ( nodeSourceFile[0] == '/') {
-	  testPath = nodeSourceFile;
-	  searchDone = true;
-	}  else {
-	  testPath = searchPaths[ii]+"/"+nodeSourceFile;
-	}
-	xDEBUG(DEB_MKDIR_SRC_DIR,
-	       cerr << "search test path " << testPath << std::endl;);
-	string normTestPath = normalizeFilePath(testPath);
-	xDEBUG(DEB_MKDIR_SRC_DIR,
-	       cerr << "normalized test path " << normTestPath << std::endl;);
-	if (normTestPath == "") {
-	  xDEBUG(DEB_MKDIR_SRC_DIR,
-		 cerr << "null test path " << std::endl;);
-	} else {
-	  xDEBUG(DEB_MKDIR_SRC_DIR,
-		 cerr << "attempt to text open" << normTestPath << std::endl;);
-	  FILE *sourceFileHandle = fopen(normTestPath.c_str(), "rt");
-	  if (sourceFileHandle != NULL) {
-	    searchDone = true;
-	    char normTestPathChr[MAX_PATH_SIZE+1];
-	    strcpy(normTestPathChr, normTestPath.c_str());
-	    relativeSourceFile = normTestPathChr+1;
-	    sourceFileWasCopied = true;
-	    xDEBUG(DEB_MKDIR_SRC_DIR,
-		   cerr << "text open succeeded; path changed to " <<
-		   relativeSourceFile << std::endl;);
-	    fclose (sourceFileHandle);
-
-	    // check if the file already exists (we've copied it for a previous sample)
-	    string testFilePath = dbSourceDirectory + normTestPath;
-	    FILE *testFileHandle = fopen(testFilePath.c_str(), "rt");
-	    if (testFileHandle != NULL) {
-	      fclose(testFileHandle);
-	    } else {
-	      // we've found the source file and we need to copy it into the database
-	      std::stack<string> pathSegmentsStack;
-	      breakPathIntoSegments (normTestPath,
-				     pathSegmentsStack);
-	      std::vector<string> pathSegmentsVector;
-	      for (; !pathSegmentsStack.empty();) {
-		string crtSegment = pathSegmentsStack.top();
-		pathSegmentsStack.pop(); 
-		pathSegmentsVector.insert(pathSegmentsVector.begin(),
-					  crtSegment);
-		xDEBUG(DEB_MKDIR_SRC_DIR,
-		       cerr << "inserted path segment " << 
-		       pathSegmentsVector[0] << std::endl;);
-	      }
-
-	      xDEBUG(DEB_MKDIR_SRC_DIR,
-		     cerr << "converted stack to vector" << std::endl;);
-
-	      char filePathChr[MAX_PATH_SIZE +1];
-	      strcpy(filePathChr, dbSourceDirectory.c_str());
-	      chdir(filePathChr);
-
-	      xDEBUG(DEB_MKDIR_SRC_DIR,
-		     cerr << "after chdir " << std::endl;);
-
-	      string subPath = dbSourceDirectory;
-	      int pathSegmentIndex;
-	      for (pathSegmentIndex=0; 
-		   pathSegmentIndex<pathSegmentsVector.size()-1;
-		   pathSegmentIndex++) {
-		subPath = subPath+"/"+pathSegmentsVector[pathSegmentIndex];
-		xDEBUG(DEB_MKDIR_SRC_DIR,
-		       cerr << "about to mkdir " 
-		       << subPath << std::endl;);
-		int mkdirResult =  
-		  mkdir (subPath.c_str(), 
-			 S_IRWXU | S_IRGRP | S_IXGRP 
-			 | S_IROTH | S_IXOTH); 
-		if (mkdirResult == -1) {
-		  switch (errno) {
-		  case EEXIST:  
-		    xDEBUG(DEB_MKDIR_SRC_DIR,
-			   cerr << "EEXIST " << std::endl;); 
-		    // we created the same directory 
-		    // for a different source file
-		    break;
-		  default:
-		    cerr << "mkdir failed for " << subPath << std::endl;
-		    perror("mkdir failed:");
-		    exit (1);
-		  }
-		}
-	      }
-	      strcpy(filePathChr, subPath.c_str());
-	      chdir(filePathChr);
-	      string cpCommand = "cp -f "+normTestPath+" .";
-	      system (cpCommand.c_str());
-	      // fix the file name  so it points to the one in the source directory
-	    }
-	  }
-	}
-      }
-    }
-  }
-  
-  if (inspect && sourceFileWasCopied) {
-    switch( node->GetType()) {
-    case CSProfNode::CALLSITE:
-      {
-	CSProfCallSiteNode* c = dynamic_cast<CSProfCallSiteNode*>(node);
-	c->SetFile(relativeSourceFile);
-      }
-      break;
-    case CSProfNode::STATEMENT:
-      {
-	CSProfStatementNode* st = 
-	  dynamic_cast<CSProfStatementNode*>(node);
-	st->SetFile(relativeSourceFile);
-      }
-      break;
-    case CSProfNode::PROCEDURE_FRAME:
-      {
-	CSProfProcedureFrameNode* pf = 
-	  dynamic_cast<CSProfProcedureFrameNode*>(node);
-	pf->SetFile(relativeSourceFile);
-      }
-      break;
-    default:
-      cerr << "Invalid node type" << std::endl;
-      exit(0);
-      break;
-    }
-  }
-
-  return true;
-}
-
+//***************************************************************************
+// 
+//***************************************************************************
 
 void
-LdmdSetUsedFlag(CSProfile* prof)
+ldmdSetUsedFlag(CSProfile* prof)
 { 
   VMA curr_ip;  
   

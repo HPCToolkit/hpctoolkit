@@ -67,7 +67,7 @@ m4_include(config/hpc-cxxutils.m4)
 #    correctly
 #----------------------------------------------------------------------------
 
-AC_INIT([HPCToolkit], [TRUNK-4.2.2=767], [hpc@cs.rice.edu], [HPCToolkit])
+AC_INIT([HPCToolkit], [TRUNK-4.9.0=800], [hpc@cs.rice.edu], [hpctoolkit])
 AC_CONFIG_SRCDIR([src/include/HPCToolkitVersionInfo.h])
 AC_CONFIG_AUX_DIR([config])
 
@@ -289,7 +289,7 @@ MONITOR_IFLAGS="-I${MONITOR}/include"
 MONITOR_LIBPATH="${MONITOR}/${MONITOR_LIBNM}"
 MONITOR_LDFLAGS="-L${MONITOR_LIBPATH}"
 MONITOR_LIBSO="${MONITOR_LIBPATH}/libmonitor.so"
-MONITOR_LIBSO_INSTALLED="lib/HPCToolkit/monitor/libmonitor.so"
+MONITOR_LIBSO_INSTALLED="lib/hpctoolkit/monitor/libmonitor.so"
 
 if test "${OPT_WITH_MONITOR}" = "yes" ; then
   AC_DEFINE([HAVE_MONITOR], [], [Monitor library])

@@ -47,8 +47,8 @@
 //
 //***************************************************************************
 
-#ifndef ArchIndTypes_H
-#define ArchIndTypes_H
+#ifndef _include_ArchIndTypes_
+#define _include_ArchIndTypes_
 
 //************************* System Include Files ****************************
 
@@ -74,6 +74,9 @@
 // Verify that we are using a known platform and define platform and
 // architecture macros.
 // (Note: These are in alphabetical order by platform name)
+
+// To see what macros gcc-like compilers define:
+//   gcc -dM -E - < /dev/null | sort
 
 #if ((defined(__alpha) || defined(__digital__)) && defined(__unix__))
 # define PLATFORM_ALPHA_OSF1
@@ -108,11 +111,16 @@
 
 #elif (defined(__mips64) && defined(__linux))
 # define PLATFORM_MIPS64_LINUX
-# define ARCH_MIPS64
-# define ARCH_64
-/*# define ARCH_MIPS32 * -n32 */
-/*# define ARCH_32     * -n32 */
 # define OS_LINUX
+# if (_MIPS_SIM == _ABIN32)
+#  define ARCH_MIPS32
+#  define ARCH_32
+# elif (_MIPS_SIM == _ABI64)
+#  define ARCH_MIPS64
+#  define ARCH_64
+# else
+#  error "ArchIndTypes.h: Unknown MIPS/Linux platform."
+# endif
 
 #elif (defined(__x86_64) || defined(__x86_64__))
 # define PLATFORM_X86_64_LINUX
@@ -266,4 +274,4 @@ typedef psuint suint;  // standard sized unsigned int
 
 //****************************************************************************
 
-#endif 
+#endif /* _include_ArchIndTypes_ */

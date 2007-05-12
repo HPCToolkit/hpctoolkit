@@ -74,26 +74,26 @@ CSProfile* ReadProfile_CSPROF(const char* fnm, const char *execnm);
 
 //****************************************************************************
 
-void InferCallFrames(CSProfile* prof, VMA begVMA, VMA endVMA,
+void inferCallFrames(CSProfile* prof, VMA begVMA, VMA endVMA,
 		     LoadModScope* lmScope, VMA relocVMA);
 
-void InferCallFrames(CSProfile* prof, VMA begVMA, VMA endVMA,
+void inferCallFrames(CSProfile* prof, VMA begVMA, VMA endVMA,
 		     binutils::LM* lm);
 
-bool NormalizeCSProfile(CSProfile* prof);
+bool normalizeCSProfile(CSProfile* prof);
 
 //****************************************************************************
 
-void WriteCSProfileInDatabase(CSProfile* prof, 
+void writeCSProfileInDatabase(CSProfile* prof, 
 			      const std::string& dbDirectory);
-void WriteCSProfile(CSProfile* prof, std::ostream& os,
+void writeCSProfile(CSProfile* prof, std::ostream& os,
 		    bool prettyPrint = true);
 
 void copySourceFiles (CSProfile *prof, 
 		      std::vector<std::string>& searchPaths,
 		      const std::string& dbSourceDirectory);  
 
-void LdmdSetUsedFlag(CSProfile* prof); 
+void ldmdSetUsedFlag(CSProfile* prof); 
 
 //****************************************************************************
 
