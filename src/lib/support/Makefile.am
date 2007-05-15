@@ -63,7 +63,6 @@ include $(top_srcdir)/src/Makeinclude.config
 
 MYSOURCES = \
 	CmdLineParser.hpp CmdLineParser.cpp \
-	Assertion.h Assertion.cpp \
 	diagnostics.h diagnostics.cpp \
 	DumpMsgHandler.hpp DumpMsgHandler.cpp \
 	Exception.hpp Exception.cpp \

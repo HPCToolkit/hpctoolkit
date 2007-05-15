@@ -52,7 +52,7 @@
 //*************************** User Include Files ****************************
 
 #include "PointerMap.hpp"
-#include "Assertion.h"
+#include "diagnostics.h"
 
 //*************************** Forward Declarations ***************************
 
@@ -100,9 +100,8 @@ void PointerMap::InsertMapping(void* oldPtr, void* newPtr,
   if (abortOnCollision) {
     bool collision = false;
     AddEntry(&e, AddPtrEntryCallback, &collision);
-    Assertion(!collision,
-	      "PointerMap::InsertMapping: trying to insert a ptr twice",
-	      ASSERT_NOTIFY); 
+    DIAG_AssertWarn(!collision,
+		    "PointerMap::InsertMapping: trying to insert a ptr twice");
   }
   else {
     AddEntry(&e);

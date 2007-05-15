@@ -1,4 +1,4 @@
-// -*-C++-*-
+// -*-Mode: C++;-*-
 // $Id$
 
 // * BeginRiceCopyright *****************************************************
@@ -62,6 +62,8 @@ using std::string;
 
 #include "DerivedProfile.hpp"
 
+#include <lib/support/diagnostics.h>
+
 //*************************** Forward Declarations ***************************
 
 static bool 
@@ -124,7 +126,7 @@ DerivedProfile::Create(const PCProfile* pcprof_,
       PCProfileFilter* filt = *it;
       MetricFilter* mfilt = filt->GetMetricFilter();
       const PCProfileMetricSet* s = pcprof->Filter(mfilt);
-      BriefAssertion(VerifyPeriod(s)); // we should all have the same period
+      DIAG_Assert(VerifyPeriod(s), ""); // we should all have the same period
       
       DerivedProfileMetric* dm = new DerivedProfileMetric(s);
       dm->SetName(filt->GetName());

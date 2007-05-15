@@ -62,7 +62,7 @@ using std::string;
 
 #include "DCPIMetricDesc.hpp"
 
-#include <lib/support/Assertion.h>
+#include <lib/support/diagnostics.h>
 
 //*************************** Forward Declarations ***************************
 

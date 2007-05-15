@@ -62,7 +62,8 @@ using std::endl;
 #include "PgmScopeTree.hpp"
 #include "PgmScopeTreeIterator.hpp"
 #include "PerfMetric.hpp"
-#include <lib/support/Assertion.h>
+
+#include <lib/support/diagnostics.h>
 
 //*************************** Forward Declarations **************************
 
@@ -218,7 +219,7 @@ ScopeInfoIterator::Current()  const
   ScopeInfo *si;
   while ( (s = NonUniformDegreeTreeIterator::Current()) ) {
     si = dynamic_cast<ScopeInfo*>(s);
-    BriefAssertion(si != NULL);
+    DIAG_Assert(si != NULL, "");
     if ((filter == NULL) || filter->Apply(*si)) { 
       break; 	
     }
@@ -257,7 +258,7 @@ ScopeInfoLineSortedIterator::Current() const
   CodeInfo *cur = NULL;
   if (ptrSetIt->Current()) {
     cur = (CodeInfo*) (*ptrSetIt->Current());
-    BriefAssertion(cur != NULL);
+    DIAG_Assert(cur != NULL, "");
   }
   return cur;
 } 
@@ -284,8 +285,8 @@ CompareByLine(const void* a, const void *b)
 {
   CodeInfo* x = (*(CodeInfo**)a);
   CodeInfo* y = (*(CodeInfo**)b);
-  BriefAssertion (x != NULL);
-  BriefAssertion (y != NULL);
+  DIAG_Assert (x != NULL, "");
+  DIAG_Assert (y != NULL, "");
   return CodeInfoLineComp(x, y);
 }
 
@@ -317,7 +318,7 @@ ScopeInfoLineSortedChildIterator::Current() const
   CodeInfo *cur = NULL;
   if (ptrSetIt->Current()) {
     cur = (CodeInfo*) (*ptrSetIt->Current());
-    BriefAssertion(cur != NULL);
+    DIAG_Assert(cur != NULL, "");
   }
   return cur;
 }
@@ -383,7 +384,7 @@ ScopeInfoLineSortedIteratorForLargeScopes::Current() const
   CodeInfoLine *cur = NULL;
   if (ptrSetIt->Current()) {
     cur = (CodeInfoLine*) (*ptrSetIt->Current());
-    BriefAssertion(cur != NULL);
+    DIAG_Assert(cur != NULL, "");
   }
   return cur;
 } 
@@ -433,7 +434,7 @@ ScopeInfoNameSortedChildIterator::Current() const
   CodeInfo *cur = NULL;
   if (ptrSetIt->Current()) {
     cur = (CodeInfo*) (*ptrSetIt->Current());
-    BriefAssertion(cur != NULL);
+    DIAG_Assert(cur != NULL, "");
   }
   return cur;
 }
@@ -449,8 +450,8 @@ ScopeInfoNameSortedChildIterator::CompareByName(const void* a, const void *b)
 {
   ScopeInfo* x = (*(ScopeInfo**)a);
   ScopeInfo* y = (*(ScopeInfo**)b);
-  BriefAssertion (x != NULL);
-  BriefAssertion (y != NULL);
+  DIAG_Assert (x != NULL, "");
+  DIAG_Assert (y != NULL, "");
   return x->name().compare(y->name());
 }
 
@@ -462,7 +463,7 @@ SortedCodeInfoIterator::SortedCodeInfoIterator(const PgmScope *pgm,
 					       int perfInfoIndex,
 					     const ScopeInfoFilter *filterFunc)
 {
-  BriefAssertion(pgm != NULL);
+  DIAG_Assert(pgm != NULL, "");
   compareByPerfInfo = perfInfoIndex;
   
   ScopeInfoIterator it(pgm, filterFunc, false);
@@ -486,7 +487,7 @@ SortedCodeInfoIterator::Current() const
   CodeInfo *cur = NULL;
   if (ptrSetIt->Current()) {
     cur = (CodeInfo*) (*ptrSetIt->Current());
-    BriefAssertion(cur != NULL);
+    DIAG_Assert(cur != NULL, "");
   }
   return cur;
 }
@@ -523,7 +524,7 @@ SortedCodeInfoChildIterator::Current() const
   CodeInfo *cur = NULL;
   if (ptrSetIt->Current()) {
     cur = (CodeInfo*) (*ptrSetIt->Current());
-    BriefAssertion(cur != NULL);
+    DIAG_Assert(cur != NULL, "");
   }
   return cur;
 }
@@ -537,7 +538,7 @@ SortedCodeInfoChildIterator::Reset()
 void SortedCodeInfoChildIterator::AddChildren
 (const ScopeInfo *scope, int curDepth, const ScopeInfoFilter *filterFunc)
 {
-  BriefAssertion(scope != NULL);
+  DIAG_Assert(scope != NULL, "");
   
   ScopeInfoChildIterator it(scope, filterFunc);
   ScopeInfo *cur;
@@ -561,8 +562,8 @@ int CompareByPerfInfo(const void* a, const void *b)
 {
   ScopeInfo* x = *(ScopeInfo**) a;
   ScopeInfo* y = *(ScopeInfo**) b;
-  BriefAssertion(x != NULL);
-  BriefAssertion(y != NULL);
+  DIAG_Assert(x != NULL, "");
+  DIAG_Assert(y != NULL, "");
   double vx = 0.0;
   if (x->HasPerfData(CompareByPerfInfo_MetricIndex)) {
     vx = x->PerfData(CompareByPerfInfo_MetricIndex);
