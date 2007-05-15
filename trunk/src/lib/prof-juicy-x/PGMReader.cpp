@@ -65,7 +65,7 @@ using std::string;
 
 //*********************** Xerces Include Files *******************************
 
-#include <xercesc/util/XMLString.hpp>        
+#include <xercesc/util/XMLString.hpp>
 using XERCES_CPP_NAMESPACE::XMLString;
 
 //************************ Forward Declarations ******************************

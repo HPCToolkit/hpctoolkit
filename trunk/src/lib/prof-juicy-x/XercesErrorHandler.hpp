@@ -35,17 +35,17 @@
 // 
 // ******************************************************* EndRiceCopyright *
 
+#ifndef prof_juicy_x_XercesErrorHandler_h
+#define prof_juicy_x_XercesErrorHandler_h
+
 //************************ System Include Files ******************************
 
 #include <string>
 
 //*********************** Xerces Include Files *******************************
 
-#include <xercesc/sax/ErrorHandler.hpp> 
-using XERCES_CPP_NAMESPACE::ErrorHandler;
-
+#include <xercesc/sax/ErrorHandler.hpp>
 #include <xercesc/sax/SAXParseException.hpp>
-using XERCES_CPP_NAMESPACE::SAXParseException;
 
 //************************* User Include Files *******************************
 
@@ -53,25 +53,26 @@ using XERCES_CPP_NAMESPACE::SAXParseException;
 
 //****************************************************************************
 
-#ifndef _prof_juicy_x_XercesErrorHandler_h_
-#define _prof_juicy_x_XercesErrorHandler_h_
-
-class XercesErrorHandler : public ErrorHandler {
+class XercesErrorHandler : public XERCES_CPP_NAMESPACE::ErrorHandler {
 public:
   XercesErrorHandler(const std::string &_userFile, 
 		     const std::string &_tmpFile, 
-		     int _numPrefixLines, bool _verbose) : 
+		     int _numPrefixLines, 
+		     bool _verbose) : 
     userFile(_userFile), tmpFile(_tmpFile), 
     numPrefixLines(_numPrefixLines), verbose(_verbose) {}; 
   
   // error handler interface
-  void error(const SAXParseException& e);
-  void fatalError(const SAXParseException& e);
-  void warning(const SAXParseException& e);
+  void error(const XERCES_CPP_NAMESPACE::SAXParseException& e);
+  void fatalError(const XERCES_CPP_NAMESPACE::SAXParseException& e);
+  void warning(const XERCES_CPP_NAMESPACE::SAXParseException& e);
   void resetErrors(){ };
-  static void report(std::ostream& estream, const char* prefix, 
-		     const char* fileType, const SAXParseException& e, 
-		     const char* alternateFile = 0, int numPrefixLines = 0);
+  static void report(std::ostream& estream, 
+		     const char* prefix, 
+		     const char* fileType, 
+		     const XERCES_CPP_NAMESPACE::SAXParseException& e, 
+		     const char* alternateFile = 0, 
+		     int numPrefixLines = 0);
 
 private:
   std::string userFile;
@@ -80,4 +81,4 @@ private:
   bool verbose;
 };
 
-#endif
+#endif /* prof_juicy_x_XercesErrorHandler_h */
