@@ -60,7 +60,6 @@ using std::atoi;
 
 #include <lib/prof-juicy/PerfMetric.hpp>
 
-#include <lib/support/String.hpp>
 #include <lib/support/Nan.h>
 #include <lib/support/Trace.hpp>
 
@@ -236,13 +235,12 @@ MathMLExpr::buildEvalTree(DOMNode *node)
 	delete[] str;
       }
       else {           // is a variable
-	String str = XMLString::transcode(nodeValue);
+	std::string str = XMLString::transcode(nodeValue);
 	IFTRACE << "str --" << str << "--" << endl; 
 	int perfDataIndex = NameToPerfDataIndex(str);
 	IFTRACE << "index --" << perfDataIndex << "--" << endl; 
 	if (!IsPerfDataIndex(perfDataIndex)) {
-	  String error = String("Undefined metric '") + str + "' encountered";
-	  throw MathMLExprException(error);
+	  MathML_Throw("Undefined metric '" + str + "' encountered");
 	}
 	evalNode = new Var(str, perfDataIndex);
       }

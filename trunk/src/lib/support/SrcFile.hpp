@@ -35,8 +35,8 @@
 // 
 // ******************************************************* EndRiceCopyright *
 
-#ifndef SrcFile_h
-#define SrcFile_h 
+#ifndef support_SrcFile_hpp
+#define support_SrcFile_hpp 
 
 //************************** System Include Files ***************************
 
@@ -44,7 +44,6 @@
 
 //*************************** User Include Files ****************************
 
-#include "String.hpp"
 #include "VectorTmpl.hpp"
 
 //*************************** Forward Declarations **************************
@@ -65,9 +64,9 @@ public:
 		 
   void Dump(std::ostream &out = std::cerr) const; 
 private: 
-  VectorTmpl<String> line; 
+  VectorTmpl<std::string> line; 
   bool known; 
-  String fName; 
+  std::string fName; 
 }; 
 
-#endif 
+#endif /* support_SrcFile_hpp */

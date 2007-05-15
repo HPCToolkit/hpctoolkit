@@ -1,5 +1,6 @@
 // -*-Mode: C++;-*-
 // $Id$
+
 // * BeginRiceCopyright *****************************************************
 // 
 // Copyright ((c)) 2002, Rice University 
@@ -63,17 +64,17 @@
 //
 //***************************************************************************
 
-#ifndef NonUniformDegreeTree_h
-#define NonUniformDegreeTree_h
+#ifndef support_NonUniformDegreeTree_hpp
+#define support_NonUniformDegreeTree_hpp
 
 //************************* System Include Files ****************************
 
 #include <iostream>
+#include <string>
 
 //*************************** User Include Files ****************************
 
 #include "IteratorStack.hpp"
-#include "String.hpp"
 
 //*************************** Forward Declarations **************************
 
@@ -106,7 +107,7 @@ public:
   // functions for inspecting links to other nodes
   unsigned int ChildCount() const { return child_count; };
 
-  virtual String ToString() const; 
+  virtual std::string ToString() const; 
 public:
   NonUniformDegreeTreeNode *Parent() const { return parent; };
   NonUniformDegreeTreeNode *NextSibling() const { return next_sibling; };
@@ -206,4 +207,4 @@ private:
   StackableIterator *IteratorToPushIfAny(void *current); 
 };
 
-#endif 
+#endif /* NonUniformDegreeTree_hpp */

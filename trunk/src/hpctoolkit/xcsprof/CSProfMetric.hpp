@@ -39,13 +39,13 @@ public:
 
   // Name, Description: The metric name and a description
   // Period: The sampling period (whether event or instruction based)
-  const char*  GetName()        const { return name; }
-  const char*  GetDescription() const { return description; }
+  const std::string& GetName()        const { return name; }
+  const std::string& GetDescription() const { return description; }
   unsigned int GetFlags()      const { return flags; }
   unsigned int GetPeriod()      const { return period; }
   
-  void SetName(const char* s)        { name = s; }
-  void SetDescription(const char* s) { description = s; }
+  void SetName(const char* s)        { name = (s) ? s : ""; }
+  void SetDescription(const char* s) { description = (s) ? s : ""; }
   void SetFlags(unsigned int p)      { flags = p; }
   void SetPeriod(unsigned int p)     { period = p; }
 
@@ -59,8 +59,8 @@ private:
 
 protected:
 private:  
-  String name;
-  String description;
+  std::string name;
+  std::string description;
   unsigned int flags;  // flags of the metric
   unsigned int period; // sampling period
 };

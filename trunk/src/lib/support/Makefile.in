@@ -115,11 +115,11 @@ am__objects_1 = libHPCsupport_la-CmdLineParser.lo \
 	libHPCsupport_la-DumpMsgHandler.lo \
 	libHPCsupport_la-Exception.lo libHPCsupport_la-Trace.lo \
 	libHPCsupport_la-Nan.lo libHPCsupport_la-CStrUtil.lo \
-	libHPCsupport_la-StrUtil.lo libHPCsupport_la-String.lo \
-	libHPCsupport_la-IOUtil.lo libHPCsupport_la-Files.lo \
-	libHPCsupport_la-SrcFile.lo libHPCsupport_la-findinstall.lo \
-	libHPCsupport_la-pathfind.lo libHPCsupport_la-realpath.lo \
-	libHPCsupport_la-Logic.lo libHPCsupport_la-HashTable.lo \
+	libHPCsupport_la-StrUtil.lo libHPCsupport_la-IOUtil.lo \
+	libHPCsupport_la-Files.lo libHPCsupport_la-SrcFile.lo \
+	libHPCsupport_la-findinstall.lo libHPCsupport_la-pathfind.lo \
+	libHPCsupport_la-realpath.lo libHPCsupport_la-Logic.lo \
+	libHPCsupport_la-HashTable.lo \
 	libHPCsupport_la-HashTableSortedIterator.lo \
 	libHPCsupport_la-IntVector.lo \
 	libHPCsupport_la-IteratorStack.lo \
@@ -130,8 +130,7 @@ am__objects_1 = libHPCsupport_la-CmdLineParser.lo \
 	libHPCsupport_la-PtrSetIterator.lo \
 	libHPCsupport_la-QuickSort.lo libHPCsupport_la-Set.lo \
 	libHPCsupport_la-StackableIterator.lo \
-	libHPCsupport_la-StringHashTable.lo libHPCsupport_la-Unique.lo \
-	libHPCsupport_la-VectorSupport.lo \
+	libHPCsupport_la-Unique.lo libHPCsupport_la-VectorSupport.lo \
 	libHPCsupport_la-VectorTmpl.lo libHPCsupport_la-WordSet.lo
 am_libHPCsupport_la_OBJECTS = $(am__objects_1)
 libHPCsupport_la_OBJECTS = $(am_libHPCsupport_la_OBJECTS)
@@ -364,7 +363,6 @@ MYSOURCES = \
 	Nan.h Nan.cpp \
 	CStrUtil.h CStrUtil.cpp \
 	StrUtil.hpp StrUtil.cpp \
-	String.hpp String.cpp \
 	\
 	IOUtil.hpp IOUtil.cpp \
 	Files.hpp Files.cpp \
@@ -389,12 +387,13 @@ MYSOURCES = \
 	QuickSort.hpp QuickSort.cpp \
 	Set.hpp Set.cpp \
 	StackableIterator.hpp StackableIterator.cpp \
-	StringHashTable.hpp StringHashTable.cpp \
 	Unique.hpp Unique.cpp \
 	VectorSupport.hpp VectorSupport.cpp \
 	VectorTmpl.hpp VectorTmpl.cpp \
 	WordSet.hpp WordSet.cpp
 
+
+# Deprecated: StringHashTable.*
 MYCFLAGS = @HOST_CFLAGS@   $(HPC_IFLAGS) 
 MYCXXFLAGS = @HOST_CXXFLAGS@ $(HPC_IFLAGS) 
 @IS_HOST_AR_FALSE@MYAR = $(AR) cru
@@ -493,8 +492,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCsupport_la-SrcFile.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCsupport_la-StackableIterator.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCsupport_la-StrUtil.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCsupport_la-String.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCsupport_la-StringHashTable.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCsupport_la-Trace.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCsupport_la-Unique.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCsupport_la-VectorSupport.Plo@am__quote@
@@ -624,13 +621,6 @@ libHPCsupport_la-StrUtil.lo: StrUtil.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(LIBTOOL) --tag=CXX --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCsupport_la_CXXFLAGS) $(CXXFLAGS) -c -o libHPCsupport_la-StrUtil.lo `test -f 'StrUtil.cpp' || echo '$(srcdir)/'`StrUtil.cpp
 
-libHPCsupport_la-String.lo: String.cpp
-@am__fastdepCXX_TRUE@	if $(LIBTOOL) --tag=CXX --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCsupport_la_CXXFLAGS) $(CXXFLAGS) -MT libHPCsupport_la-String.lo -MD -MP -MF "$(DEPDIR)/libHPCsupport_la-String.Tpo" -c -o libHPCsupport_la-String.lo `test -f 'String.cpp' || echo '$(srcdir)/'`String.cpp; \
-@am__fastdepCXX_TRUE@	then mv -f "$(DEPDIR)/libHPCsupport_la-String.Tpo" "$(DEPDIR)/libHPCsupport_la-String.Plo"; else rm -f "$(DEPDIR)/libHPCsupport_la-String.Tpo"; exit 1; fi
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='String.cpp' object='libHPCsupport_la-String.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(LIBTOOL) --tag=CXX --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCsupport_la_CXXFLAGS) $(CXXFLAGS) -c -o libHPCsupport_la-String.lo `test -f 'String.cpp' || echo '$(srcdir)/'`String.cpp
-
 libHPCsupport_la-IOUtil.lo: IOUtil.cpp
 @am__fastdepCXX_TRUE@	if $(LIBTOOL) --tag=CXX --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCsupport_la_CXXFLAGS) $(CXXFLAGS) -MT libHPCsupport_la-IOUtil.lo -MD -MP -MF "$(DEPDIR)/libHPCsupport_la-IOUtil.Tpo" -c -o libHPCsupport_la-IOUtil.lo `test -f 'IOUtil.cpp' || echo '$(srcdir)/'`IOUtil.cpp; \
 @am__fastdepCXX_TRUE@	then mv -f "$(DEPDIR)/libHPCsupport_la-IOUtil.Tpo" "$(DEPDIR)/libHPCsupport_la-IOUtil.Plo"; else rm -f "$(DEPDIR)/libHPCsupport_la-IOUtil.Tpo"; exit 1; fi
@@ -756,13 +746,6 @@ libHPCsupport_la-StackableIterator.lo: StackableIterator.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='StackableIterator.cpp' object='libHPCsupport_la-StackableIterator.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(LIBTOOL) --tag=CXX --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCsupport_la_CXXFLAGS) $(CXXFLAGS) -c -o libHPCsupport_la-StackableIterator.lo `test -f 'StackableIterator.cpp' || echo '$(srcdir)/'`StackableIterator.cpp
-
-libHPCsupport_la-StringHashTable.lo: StringHashTable.cpp
-@am__fastdepCXX_TRUE@	if $(LIBTOOL) --tag=CXX --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCsupport_la_CXXFLAGS) $(CXXFLAGS) -MT libHPCsupport_la-StringHashTable.lo -MD -MP -MF "$(DEPDIR)/libHPCsupport_la-StringHashTable.Tpo" -c -o libHPCsupport_la-StringHashTable.lo `test -f 'StringHashTable.cpp' || echo '$(srcdir)/'`StringHashTable.cpp; \
-@am__fastdepCXX_TRUE@	then mv -f "$(DEPDIR)/libHPCsupport_la-StringHashTable.Tpo" "$(DEPDIR)/libHPCsupport_la-StringHashTable.Plo"; else rm -f "$(DEPDIR)/libHPCsupport_la-StringHashTable.Tpo"; exit 1; fi
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='StringHashTable.cpp' object='libHPCsupport_la-StringHashTable.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(LIBTOOL) --tag=CXX --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCsupport_la_CXXFLAGS) $(CXXFLAGS) -c -o libHPCsupport_la-StringHashTable.lo `test -f 'StringHashTable.cpp' || echo '$(srcdir)/'`StringHashTable.cpp
 
 libHPCsupport_la-Unique.lo: Unique.cpp
 @am__fastdepCXX_TRUE@	if $(LIBTOOL) --tag=CXX --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCsupport_la_CXXFLAGS) $(CXXFLAGS) -MT libHPCsupport_la-Unique.lo -MD -MP -MF "$(DEPDIR)/libHPCsupport_la-Unique.Tpo" -c -o libHPCsupport_la-Unique.lo `test -f 'Unique.cpp' || echo '$(srcdir)/'`Unique.cpp; \

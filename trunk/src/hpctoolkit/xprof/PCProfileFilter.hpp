@@ -54,6 +54,7 @@
 
 #include <vector>
 #include <list>
+#include <string>
 
 //*************************** User Include Files ****************************
 
@@ -62,8 +63,6 @@
 #include <lib/isa/ISA.hpp>
 
 #include <lib/binutils/LM.hpp>
-
-#include <lib/support/String.hpp>
 
 //*************************** Forward Declarations ***************************
 
@@ -104,11 +103,11 @@ public:
 
   // Name, Description: The name and a description of what this filter
   // computes.
-  const char* GetName()        const { return name; }
-  const char* GetDescription() const { return description; }
+  const std::string& GetName()        const { return name; }
+  const std::string& GetDescription() const { return description; }
 
-  void SetName(const char* s)          { name = s; }
-  void SetDescription(const char* s)   { description = s; }
+  void SetName(const char* s)          { name = (s) ? s : ""; }
+  void SetDescription(const char* s)   { description = (s) ? s : ""; }
 
   // Access to the various sub-filters.  (These intentionally return
   // non-const pointers!)
@@ -125,8 +124,8 @@ private:
   
 protected:
 private:
-  String name;
-  String description;
+  std::string name;
+  std::string description;
 
   MetricFilter* mfilt;
   PCFilter* pcfilt;

@@ -121,7 +121,7 @@ main(int argc, char* const* argv)
   catch (const std::exception& x) {
     DIAG_EMsg("[std::exception] " << x.what());
     exit(1);
-  } 
+  }
   catch (...) {
     DIAG_EMsg("Unknown exception encountered!");
     exit(2);
@@ -168,6 +168,11 @@ realmain(int argc, char* const* argv)
     HPCViewDocParser parser(tmpFile, errHndlr);
     parser.pass1(driver); // FIXME: merge into one pass
     parser.pass2(driver);
+  }
+  catch (const SAXParseException& x) {
+    unlink(tmpFile.c_str());
+    //DIAG_EMsg(XMLString::transcode(x.getMessage()));
+    exit(1);
   }
   catch (const HPCViewDocException& x) {
     unlink(tmpFile.c_str());

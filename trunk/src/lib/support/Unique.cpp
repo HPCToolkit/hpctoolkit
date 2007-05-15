@@ -1,5 +1,6 @@
+// -*-Mode: C++;-*-
 // $Id$
-// -*-C++-*-
+
 // * BeginRiceCopyright *****************************************************
 // 
 // Copyright ((c)) 2002, Rice University 
@@ -55,11 +56,11 @@
 // *************************** User Include Files ****************************
 
 #include "Unique.hpp"
-#include "Assertion.h"
+#include "diagnostics.h"
 
 // ************************** Variable Definitions ***************************
 
-std::set<String, StringLt> Unique::classNameSet;  // Set of saved class names.
+std::set<std::string> Unique::classNameSet;  // Set of saved class names.
 
 
 // ***************************************************************************
@@ -91,11 +92,11 @@ Unique::Unique(): className()
 //
 // ***************************************************************************
 
-Unique::Unique(const char* theClassName): className(String(theClassName))
+Unique::Unique(const char* theClassName)
+  : className((theClassName) ? theClassName : "")
 {
   if (classNameSet.count(className) != 0) { 
-    String msg = String("Trying to create another ") + className + " instance"; 
-    Assertion(false, msg, ASSERT_ABORT); 
+    DIAG_Die("Trying to create another " + className + " instance");
   }
   else {
     classNameSet.insert(className); 
@@ -121,7 +122,7 @@ Unique::Unique(const char* theClassName): className(String(theClassName))
 
 Unique::~Unique()
 {
-    if (className.Length() > 0)
+    if (className.length() > 0)
     {// remove the className from the master set
         classNameSet.erase(className);
     }

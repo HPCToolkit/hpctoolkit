@@ -1,5 +1,6 @@
 // -*-Mode: C++;-*-
 // $Id$
+
 // * BeginRiceCopyright *****************************************************
 // 
 // Copyright ((c)) 2002, Rice University 
@@ -65,6 +66,7 @@
 //*************************** User Include Files ****************************
 
 #include "NonUniformDegreeTree.hpp"
+#include "StrUtil.hpp"
 #include "diagnostics.h"
 
 //*************************** Forward Declarations **************************
@@ -217,10 +219,10 @@ NonUniformDegreeTreeNode::AncestorCount() const
   return ancestorCount;
 }
 
-String 
+std::string
 NonUniformDegreeTreeNode::ToString() const
 {
-   return String("NonUniformDegreeTreeNode: ") + String((unsigned long) this); 
+  return "NonUniformDegreeTreeNode: " + StrUtil::toStr((void*)this);
 }
 
 //****************************************************************************

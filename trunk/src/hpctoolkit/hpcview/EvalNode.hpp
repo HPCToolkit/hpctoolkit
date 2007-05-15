@@ -61,8 +61,8 @@
 //
 // ----------------------------------------------------------------------
 
-#ifndef EVALNODE_H
-#define EVALNODE_H
+#ifndef EvalNode_hpp
+#define EvalNode_hpp
 
 //************************ System Include Files ******************************
 
@@ -72,8 +72,6 @@
 //************************* User Include Files *******************************
 
 #include <lib/prof-juicy/PgmScopeTree.hpp>
-
-#include <lib/support/String.hpp>
 
 //************************ Forward Declarations ******************************
 
@@ -138,13 +136,13 @@ private:
 class Var : public EvalNode
 {
 public:
-  Var(String n, int i);
+  Var(std::string n, int i);
   ~Var();
   double eval(const ScopeInfo *si);
   std::ostream& dump(std::ostream& os = std::cout) const;
   
 private:
-  String name;
+  std::string name;
   int index;
 };
 
@@ -265,4 +263,4 @@ private:
   int n;
 };
 
-#endif  // EVALNODE_H
+#endif  // EvalNode_hpp

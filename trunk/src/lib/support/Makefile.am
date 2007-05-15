@@ -73,7 +73,6 @@ MYSOURCES = \
 	Nan.h Nan.cpp \
 	CStrUtil.h CStrUtil.cpp \
 	StrUtil.hpp StrUtil.cpp \
-	String.hpp String.cpp \
 	\
 	IOUtil.hpp IOUtil.cpp \
 	Files.hpp Files.cpp \
@@ -98,11 +97,12 @@ MYSOURCES = \
 	QuickSort.hpp QuickSort.cpp \
 	Set.hpp Set.cpp \
 	StackableIterator.hpp StackableIterator.cpp \
-	StringHashTable.hpp StringHashTable.cpp \
 	Unique.hpp Unique.cpp \
 	VectorSupport.hpp VectorSupport.cpp \
 	VectorTmpl.hpp VectorTmpl.cpp \
 	WordSet.hpp WordSet.cpp
+
+# Deprecated: StringHashTable.*
 
 MYCFLAGS   = @HOST_CFLAGS@   $(HPC_IFLAGS) 
 MYCXXFLAGS = @HOST_CXXFLAGS@ $(HPC_IFLAGS) 

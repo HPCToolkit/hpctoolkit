@@ -1,5 +1,6 @@
+// -*-Mode: C++;-*-
 // $Id$
-// -*-C++-*-
+
 // * BeginRiceCopyright *****************************************************
 // 
 // Copyright ((c)) 2002, Rice University 
@@ -48,17 +49,18 @@ using namespace std; // For compatibility with non-std C headers
 #include <sys/stat.h>
 #include <dirent.h>
 
+#include <string> // for 'subdirs_to_pathlist'
+
 //*************************** User Include Files ****************************
 
 #include "pathfind.h"
-#include "String.hpp" // for 'subdirs_to_pathlist'
 #include "CStrUtil.h" // for 'ssave' and 'sfree'
 
 //*************************** Forward Declarations ***************************
 
 //***************************************************************************
 
-String
+std::string
 subdirs_to_pathlist(const char* path, int recursive);
 
 
@@ -200,9 +202,9 @@ pathfind_r(const char* pathList,
     
     /* 2b. If no match, open the directory and do a pathfind_r */
     /*     on every sub-directory */
-    String dirPathList = subdirs_to_pathlist(aPath, 1 /*recursive*/);
-    if (dirPathList[(unsigned int)0] != '\0') {
-      result = pathfind_r(dirPathList, name, mode);
+    std::string dirPathList = subdirs_to_pathlist(aPath, 1 /*recursive*/);
+    if (!dirPathList.empty()) {
+      result = pathfind_r(dirPathList.c_str(), name, mode);
       if (result) { goto pathfind_r_fini; }
     }
 
@@ -222,10 +224,10 @@ pathfind_r(const char* pathList,
 /*  converts all subdirectories of 'path' to a valid pathlist.  If
  *  'recursive' is 1, then all paths are made recursive
  */
-String
+std::string
 subdirs_to_pathlist(const char* path, int recursive)
 {
-  String resultPath("");
+  std::string resultPath;
   
   struct dirent* dire;
   DIR*           dir;
@@ -242,8 +244,8 @@ subdirs_to_pathlist(const char* path, int recursive)
     /* if (dire->d_name[0] == '.') { continue; } hidden files/directories */
    
     /* add directories */
-    String file = String(path) + "/" + dire->d_name;
-    stat(file, &statbuf);
+    std::string file = std::string(path) + "/" + dire->d_name;
+    stat(file.c_str(), &statbuf);
     if ( S_ISDIR(statbuf.st_mode) ) { 
       if (first == 0) { resultPath += ":"; }
       if (recursive > 0) { file += "/*"; }

@@ -63,8 +63,6 @@ using XERCES_CPP_NAMESPACE::DOMNode;
 
 #include <lib/prof-juicy/PgmScopeTree.hpp>
 
-#include <lib/support/String.hpp>
-
 //************************ Forward Declarations ******************************
 
 //****************************************************************************
@@ -75,19 +73,20 @@ using XERCES_CPP_NAMESPACE::DOMNode;
 //   evaluation of MathMLExpr
 // ----------------------------------------------------------------------
 
-class MathMLExprException
-{
+#define MathML_Throw(streamArgs) DIAG_ThrowX(MathMLExprException, streamArgs)
 
+class MathMLExprException : public Diagnostics::Exception {
 public:
-  MathMLExprException(String aName) {
-    name = aName;
+  MathMLExprException(const std::string x,
+		      const char* filenm = NULL, unsigned int lineno = 0)
+    : Diagnostics::Exception(x, filenm, lineno)
+    { }
+
+  virtual std::string message() const { 
+    return "Math ML Exception: " + what();
   }
-  MathMLExprException() : name("") { }
-  ~MathMLExprException() { }
-  String getMessage() const { return name; };
   
 private:
-  String name;
 };
 
 
