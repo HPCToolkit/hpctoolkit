@@ -48,7 +48,7 @@ using std::string;
 #include "PerfMetric.hpp"
 #include "PgmScopeTree.hpp"
 
-#include <lib/support/Assertion.h>
+#include <lib/support/diagnostics.h>
 #include <lib/support/Trace.hpp>
 #include <lib/support/StrUtil.hpp>
 
@@ -83,12 +83,12 @@ void
 PerfMetric::Ctor(const char *nm, const char* displayNm)
 {
   // trace = 1; 
-  BriefAssertion(!IsPerfDataIndex(NameToPerfDataIndex(nm)));
+  DIAG_Assert(!IsPerfDataIndex(NameToPerfDataIndex(nm)), "");
   int i = PerfMetricTable.GetNumElements();
   PerfMetricTable[i] = this;
   perfInfoIndex = i;
 
-  BriefAssertion( (displayNm != NULL) && (strlen(displayNm) > 0) ); 
+  DIAG_Assert((displayNm != NULL) && (strlen(displayNm) > 0), ""); 
   dispInfo = new DataDisplayInfo(displayNm, NULL, 9, false); 
 
   IFTRACE << "PerfMetric: " << ToString() << endl; 
@@ -105,7 +105,7 @@ PerfMetric::~PerfMetric()
 unsigned int
 PerfMetric::EventsPerCount()  const 
 {
-  BriefAssertion(eventsPerCount > 0); 
+  DIAG_Assert(eventsPerCount > 0, ""); 
   return eventsPerCount; 
 }
 
@@ -115,7 +115,7 @@ PerfMetric::SetEventsPerCount(int events)
 {
   if (events <= 0)  events =1;
   eventsPerCount = events; 
-  // BriefAssertion(eventsPerCount > 0); 
+  // DIAG_Assert(eventsPerCount > 0); 
 }
 
 
@@ -145,20 +145,20 @@ NumberOfPerfDataInfos()
 PerfMetric&    
 IndexToPerfDataInfo(int i)
 {
-   BriefAssertion(IsPerfDataIndex(i)); 
-   PerfMetric* pds = PerfMetric::PerfMetricTable[i];
-   BriefAssertion(pds); 
-   return *pds; 
+  DIAG_Assert(IsPerfDataIndex(i), ""); 
+  PerfMetric* pds = PerfMetric::PerfMetricTable[i];
+  DIAG_Assert(pds, ""); 
+  return *pds; 
 }
 
 
 int       
 NameToPerfDataIndex(const char* name)
 {
-  for (unsigned int i =0; 
+  for (unsigned int i = 0; 
        i < PerfMetric::PerfMetricTable.GetNumElements(); i++) {
     PerfMetric* pds = PerfMetric::PerfMetricTable[i];
-    BriefAssertion(pds); 
+    DIAG_Assert(pds, ""); 
     if (pds->Name() == name) 
       return i;
   } 

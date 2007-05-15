@@ -53,7 +53,8 @@
 //*************************** User Include Files ****************************
 
 #include "CSProfTreeIterator.hpp"
-#include <lib/support/Assertion.h>
+
+#include <lib/support/diagnostics.h>
 
 //*************************** Forward Declarations ***************************
 
@@ -150,7 +151,7 @@ CSProfNodeIterator::Current() const
   CSProfNode *si; 
   while ( (s = NonUniformDegreeTreeIterator::Current()) ) {
     si = dynamic_cast<CSProfNode*>(s); 
-    BriefAssertion(si != NULL); 
+    DIAG_Assert(si != NULL, ""); 
     if ((filter == NULL) || filter->Apply(*si)) { 
       break; 	
     }
@@ -188,7 +189,7 @@ CSProfNodeLineSortedIterator::Current() const
   CSProfCodeNode *cur = NULL; 
   if (ptrSetIt->Current()) {
     cur = (CSProfCodeNode*) (*ptrSetIt->Current()); 
-    BriefAssertion(cur != NULL); 
+    DIAG_Assert(cur != NULL, ""); 
   }
   return cur; 
 } 
@@ -215,8 +216,8 @@ CompareByLine(const void* a, const void* b)
 {
   CSProfCodeNode* x = (*(CSProfCodeNode**)a); 
   CSProfCodeNode* y = (*(CSProfCodeNode**)b); 
-  BriefAssertion (x != NULL); 
-  BriefAssertion (y != NULL);
+  DIAG_Assert(x != NULL, "");
+  DIAG_Assert(y != NULL, "");
   return CSProfCodeNodeLineComp(x, y);
 }
 
@@ -248,7 +249,7 @@ CSProfNodeLineSortedChildIterator::Current() const
   CSProfCodeNode *cur = NULL; 
   if (ptrSetIt->Current()) {
     cur = (CSProfCodeNode*) (*ptrSetIt->Current()); 
-    BriefAssertion(cur != NULL); 
+    DIAG_Assert(cur != NULL, "");
   }
   return cur; 
 }
@@ -298,7 +299,7 @@ CSProfNodeNameSortedChildIterator::Current() const
   CSProfCodeNode *cur = NULL; 
   if (ptrSetIt->Current()) {
     cur = (CSProfCodeNode*) (*ptrSetIt->Current()); 
-    BriefAssertion(cur != NULL); 
+    DIAG_Assert(cur != NULL, "");
   }
   return cur; 
 }
@@ -314,8 +315,8 @@ CSProfNodeNameSortedChildIterator::CompareByName(const void* a, const void* b)
 {
   CSProfNode* x = (*(CSProfNode**)a); 
   CSProfNode* y = (*(CSProfNode**)b); 
-  BriefAssertion (x != NULL); 
-  BriefAssertion (y != NULL); 
+  DIAG_Assert (x != NULL, "");
+  DIAG_Assert (y != NULL, "");
   return strcmp(x->GetName().c_str(), y->GetName().c_str()); 
 }
 

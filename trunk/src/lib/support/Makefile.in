@@ -15,7 +15,7 @@
 @SET_MAKE@
 
 # -*-Mode: makefile;-*-
-# $Id: Makefile.am 660 2007-01-05 04:46:06Z eraxxon $
+# $Id: Makefile.am 797 2007-05-15 16:13:23Z eraxxon $
 
 #############################################################################
 #
@@ -111,7 +111,7 @@ LTLIBRARIES = $(noinst_LTLIBRARIES)
 am__DEPENDENCIES_1 =
 libHPCsupport_la_DEPENDENCIES = $(am__DEPENDENCIES_1)
 am__objects_1 = libHPCsupport_la-CmdLineParser.lo \
-	libHPCsupport_la-Assertion.lo libHPCsupport_la-diagnostics.lo \
+	libHPCsupport_la-diagnostics.lo \
 	libHPCsupport_la-DumpMsgHandler.lo \
 	libHPCsupport_la-Exception.lo libHPCsupport_la-Trace.lo \
 	libHPCsupport_la-Nan.lo libHPCsupport_la-CStrUtil.lo \
@@ -353,7 +353,6 @@ HPC_LIBSUPPORT = $(top_builddir)/src/lib/support/libHPCsupport.la
 #############################################################################
 MYSOURCES = \
 	CmdLineParser.hpp CmdLineParser.cpp \
-	Assertion.h Assertion.cpp \
 	diagnostics.h diagnostics.cpp \
 	DumpMsgHandler.hpp DumpMsgHandler.cpp \
 	Exception.hpp Exception.cpp \
@@ -468,7 +467,6 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCsupport_la-Assertion.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCsupport_la-CStrUtil.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCsupport_la-CmdLineParser.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCsupport_la-DumpMsgHandler.Plo@am__quote@
@@ -564,13 +562,6 @@ libHPCsupport_la-CmdLineParser.lo: CmdLineParser.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='CmdLineParser.cpp' object='libHPCsupport_la-CmdLineParser.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(LIBTOOL) --tag=CXX --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCsupport_la_CXXFLAGS) $(CXXFLAGS) -c -o libHPCsupport_la-CmdLineParser.lo `test -f 'CmdLineParser.cpp' || echo '$(srcdir)/'`CmdLineParser.cpp
-
-libHPCsupport_la-Assertion.lo: Assertion.cpp
-@am__fastdepCXX_TRUE@	if $(LIBTOOL) --tag=CXX --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCsupport_la_CXXFLAGS) $(CXXFLAGS) -MT libHPCsupport_la-Assertion.lo -MD -MP -MF "$(DEPDIR)/libHPCsupport_la-Assertion.Tpo" -c -o libHPCsupport_la-Assertion.lo `test -f 'Assertion.cpp' || echo '$(srcdir)/'`Assertion.cpp; \
-@am__fastdepCXX_TRUE@	then mv -f "$(DEPDIR)/libHPCsupport_la-Assertion.Tpo" "$(DEPDIR)/libHPCsupport_la-Assertion.Plo"; else rm -f "$(DEPDIR)/libHPCsupport_la-Assertion.Tpo"; exit 1; fi
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='Assertion.cpp' object='libHPCsupport_la-Assertion.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(LIBTOOL) --tag=CXX --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCsupport_la_CXXFLAGS) $(CXXFLAGS) -c -o libHPCsupport_la-Assertion.lo `test -f 'Assertion.cpp' || echo '$(srcdir)/'`Assertion.cpp
 
 libHPCsupport_la-diagnostics.lo: diagnostics.cpp
 @am__fastdepCXX_TRUE@	if $(LIBTOOL) --tag=CXX --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCsupport_la_CXXFLAGS) $(CXXFLAGS) -MT libHPCsupport_la-diagnostics.lo -MD -MP -MF "$(DEPDIR)/libHPCsupport_la-diagnostics.Tpo" -c -o libHPCsupport_la-diagnostics.lo `test -f 'diagnostics.cpp' || echo '$(srcdir)/'`diagnostics.cpp; \

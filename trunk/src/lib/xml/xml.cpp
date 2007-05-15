@@ -1,4 +1,4 @@
-// -*-C++-*-
+// -*-Mode: C++;-*-
 // $Id$
 
 // * BeginRiceCopyright *****************************************************
@@ -58,7 +58,8 @@ using std::string;
 //*************************** User Include Files ****************************
 
 #include "xml.hpp"
-#include <lib/support/Assertion.h>
+
+#include <lib/support/diagnostics.h>
 
 //*************************** Forward Declarations ***************************
 

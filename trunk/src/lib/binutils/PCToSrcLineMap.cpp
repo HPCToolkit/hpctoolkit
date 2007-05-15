@@ -60,7 +60,7 @@ using std::dec;
 
 #include "PCToSrcLineMap.hpp"
 
-#include <lib/support/Assertion.h>
+#include <lib/support/diagnostics.h>
 #include <lib/support/IOUtil.hpp>
 
 #include <lib/xml/xml.hpp>
@@ -108,7 +108,7 @@ PCToSrcLineXMap::PCToSrcLineXMap()
 
 PCToSrcLineXMap::~PCToSrcLineXMap()
 {
-  BriefAssertion(IsFinalized());
+  DIAG_Assert(IsFinalized(), "");
   for (suint i = 0; i < procVec->size(); i++) {
     delete (*procVec)[i];
   }
@@ -117,7 +117,7 @@ PCToSrcLineXMap::~PCToSrcLineXMap()
 
 SrcLineX* PCToSrcLineXMap::Find(VMA pc) const
 {
-  BriefAssertion(IsFinalized());
+  DIAG_Assert(IsFinalized(), "");
   ProcPCToSrcLineXMap* map = FindProc(pc);
   if (map) { return map->Find(pc); }
   else { return NULL; }
@@ -125,7 +125,7 @@ SrcLineX* PCToSrcLineXMap::Find(VMA pc) const
 
 ProcPCToSrcLineXMap* PCToSrcLineXMap::FindProc(VMA pc) const
 {
-  BriefAssertion(IsFinalized());
+  DIAG_Assert(IsFinalized(), "");
   // FIXME: warning: can be overlapping entries (see below)
 
   if (procVec->size() == 0) { return NULL; }
@@ -145,7 +145,7 @@ ProcPCToSrcLineXMap* PCToSrcLineXMap::Find_BinarySearch(VMA pc, suint lb,
 {
   // General case: vec[n].GetStartVMA() <= pc < vec[n+1].GetStartVMA()
   // Because of this, 'lb' should never equal 'ub'. 
-  BriefAssertion( (ub - lb) >= 1 ); 
+  DIAG_Assert((ub - lb) >= 1, ""); 
 
   // rounds down; 'lb' may equal 'mid' but [('ub' - 'mid') >= 1]
   suint mid = (lb + ub)/2;
@@ -167,7 +167,7 @@ ProcPCToSrcLineXMap* PCToSrcLineXMap::FindProc(const char* s) const
 
   // FIXME: Sometimes there are duplicate procs, leading to duplicate
   // names!  See below.
-  BriefAssertion(IsFinalized());
+  DIAG_Assert(IsFinalized(), "");
   for (suint i = 0; i < procVec->size(); i++) {
     ProcPCToSrcLineXMap* map = (*procVec)[i];
     if (map->GetProcName() == s) {
@@ -186,7 +186,7 @@ void PCToSrcLineXMap::InsertProcInList(ProcPCToSrcLineXMap* m)
   // procedure exists for each procedure -- and they share the same
   // start address.  To handle this, for now we compare using
   // less-than-or-equal.
-  BriefAssertion(!IsFinalized());
+  DIAG_Assert(!IsFinalized(), "");
   ProcPCToSrcLineXMapIt it = tmpVec->begin();
   VMA sVMA = m->GetStartVMA();
 
@@ -214,7 +214,7 @@ void PCToSrcLineXMap::InsertProcInList(ProcPCToSrcLineXMap* m)
 
 void PCToSrcLineXMap::Finalize()
 {
-  BriefAssertion(!IsFinalized());
+  DIAG_Assert(!IsFinalized(), "");
   procVec = new ProcPCToSrcLineXMapVec(tmpVec->size());
 
   for (int i = 0; !tmpVec->empty(); i++) {
@@ -236,7 +236,7 @@ void PCToSrcLineXMap::Finalize()
 
 bool PCToSrcLineXMap::Read(std::istream& is)
 {
-  BriefAssertion(!IsFinalized());
+  DIAG_Assert(!IsFinalized(), "");
 
   bool STATE = true; // false indicates an error
   suint numProc;     

@@ -65,7 +65,7 @@
 
 #include <lib/isa/ISA.hpp>
 
-#include <lib/support/Assertion.h>
+#include <lib/support/diagnostics.h>
 
 //*************************** Forward Declarations ***************************
 
@@ -241,7 +241,7 @@ public:
     }
   }
   void InsertPC(VMA pc, ushort opIndex) {
-    BriefAssertion(pcset);
+    DIAG_Assert(pcset, "");
     VMA oppc = mset->GetISA()->ConvertVMAToOpVMA(pc, opIndex);
     pcset->insert(oppc); // do not add duplicates!
   }

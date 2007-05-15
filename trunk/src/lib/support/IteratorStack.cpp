@@ -56,7 +56,7 @@
 #include "IteratorStack.hpp"
 #include "PointerStack.hpp"
 #include "DumpMsgHandler.hpp"
-#include "Assertion.h"
+#include "diagnostics.h"
 
 //*************************** Forward Declarations **************************
 
@@ -203,7 +203,7 @@ TraversalVisitType IteratorStack::VisitType() const
     StackableIterator* top = dynamic_cast<StackableIterator*>(Top());
     SingletonIterator* stop = dynamic_cast<SingletonIterator*>(top);
     if (top == 0) {
-      BriefAssertion(0);
+      DIAG_Die("");
     } else if (stop != 0) {
       return stop->VisitType();
     } else {
@@ -211,7 +211,7 @@ TraversalVisitType IteratorStack::VisitType() const
     }
   }
   default:
-    BriefAssertion(0);
+    DIAG_Die("");
   }
   return PostVisit;  // bogus return--not reached
 }
@@ -233,7 +233,7 @@ bool IteratorStack::IterationIsForward() const
 //case ReversePreAndPostOrder:
     return false;
   default:
-    BriefAssertion(0);
+    DIAG_Die("");
   }
   return false;  // bogus return--not reached
 }
@@ -277,8 +277,8 @@ void IteratorStack::InitTraversal(TraversalOrder torder,
 //else if (torder == ReversePreAndPostOrder)
 //  traversalOrder = PreAndPostOrder;  // reversed by IteratorToPushIfAny
   else {
-    BriefAssertion((torder == PreOrder) || (torder == PostOrder) || 
-		   (torder == PreAndPostOrder));
+    DIAG_Assert((torder == PreOrder) || (torder == PostOrder) || 
+		(torder == PreAndPostOrder), "");
     traversalOrder = torder;
   }
 }
