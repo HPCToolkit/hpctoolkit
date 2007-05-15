@@ -128,8 +128,8 @@ ComputedPerfMetric::Ctor(const char* nm, DOMNode *expr)
   try {
     mathExpr = new MathMLExpr(expr); 
   }
-  catch (const MathMLExprException &e) {
-    DIAG_Throw("Could not construct METRIC '" << nm << "'.  XML exception encountered when processing MathML expression: " << e.getMessage() << ".");
+  catch (const MathMLExprException& e) {
+    DIAG_Throw("Could not construct METRIC '" << nm << "'.  XML exception encountered when processing MathML expression: " << e.what() << ".");
   }
   catch (...) {
     DIAG_Throw("Could not construct METRIC '" << nm << "'.");

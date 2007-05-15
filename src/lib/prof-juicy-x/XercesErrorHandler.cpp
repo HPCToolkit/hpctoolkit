@@ -47,8 +47,12 @@ using std::string;
 
 //*********************** Xerces Include Files *******************************
 
+#include <xercesc/sax/SAXParseException.hpp>
+using XERCES_CPP_NAMESPACE::SAXParseException;
+
 #include <xercesc/util/XMLString.hpp> 
 using XERCES_CPP_NAMESPACE::XMLString;
+
 
 //************************* User Include Files *******************************
 
@@ -61,11 +65,11 @@ const char *CONFIG = "CONFIGURATION";
  
 void 
 XercesErrorHandler::report(std::ostream& cerr, 
-			     const char* prefix, 
-			     const char* fileType, 
-			     const SAXParseException& e, 
-			     const char* alternateFile, 
-			     int prefixLines)
+			   const char* prefix, 
+			   const char* fileType, 
+			   const SAXParseException& e, 
+			   const char* alternateFile, 
+			   int prefixLines)
 {
   const char* file = 
     (alternateFile) ? alternateFile : XMLString::transcode(e.getSystemId());
@@ -81,6 +85,7 @@ XercesErrorHandler::report(std::ostream& cerr,
 void 
 XercesErrorHandler::error(const SAXParseException& e)
 {
+  // TODO: HPCViewDoc_Throw(...)
   report(cerr, "Xerces non-fatal error", CONFIG, e, userFile.c_str(), numPrefixLines); 
 }
 
@@ -88,6 +93,7 @@ XercesErrorHandler::error(const SAXParseException& e)
 void 
 XercesErrorHandler::fatalError(const SAXParseException& e)
 {
+  // TODO: HPCViewDoc_Throw(...)
   report(cerr, "Xerces fatal error", CONFIG, e, userFile.c_str(), numPrefixLines); 
   throw e; 
 }
@@ -96,6 +102,7 @@ XercesErrorHandler::fatalError(const SAXParseException& e)
 void 
 XercesErrorHandler::warning(const SAXParseException& e)
 {
+  // TODO: HPCViewDoc_Throw(...)
   report(cerr, "Xerces warning", CONFIG, e, userFile.c_str(), numPrefixLines); 
 }
 

@@ -212,9 +212,7 @@ ProcessELEMENT(DOMNode *node, Driver &driver, bool onlyMetrics)
     return;
   }
   else if (node->getNodeType() != DOMNode::ELEMENT_NODE) {
-    string error = "Unexpected XML object found: '" +
-      string(XMLString::transcode(nodeName)) + "'";
-    throw HPCViewDocException(error); 
+    HPCViewDoc_Throw("Unexpected XML object found: '" << XMLString::transcode(nodeName) << "'");
   }
 
   // Parse ELEMENT nodes
@@ -225,12 +223,10 @@ ProcessELEMENT(DOMNode *node, Driver &driver, bool onlyMetrics)
       IFTRACE << "PATH: " << path << ", v=" << viewname << endl; 
       
       if (path.empty()) {
-	string error = "PATH name attribute cannot be empty.";
-	throw HPCViewDocException(error); 
+	HPCViewDoc_Throw("PATH name attribute cannot be empty.");
       }
       else if (driver.CopySrcFiles() && viewname.empty()) {
-	string error = "PATH '" + path + "': viewname attribute cannot be empty when source files are to be copied.";
-	throw HPCViewDocException(error); 
+	HPCViewDoc_Throw("PATH '" << path << "': viewname attribute cannot be empty when source files are to be copied.");
       } // there could be many other nefarious values of these attributes
       
       driver.AddPath(path, viewname);
@@ -274,8 +270,7 @@ ProcessELEMENT(DOMNode *node, Driver &driver, bool onlyMetrics)
       IFTRACE << "STRUCTURE file: " << fnm << endl; 
       
       if (fnm.empty()) {
-	string error = "STRUCTURE file name is empty.";
-	throw HPCViewDocException(error); 
+	HPCViewDoc_Throw("STRUCTURE file name is empty.");
       } 
       else {
 	driver.AddStructureFile(fnm);
@@ -288,8 +283,7 @@ ProcessELEMENT(DOMNode *node, Driver &driver, bool onlyMetrics)
       IFTRACE << "GROUP file: " << fnm << endl; 
       
       if (fnm.empty()) {
-	string error = "GROUP file name is empty.";
-	throw HPCViewDocException(error); 
+	HPCViewDoc_Throw("GROUP file name is empty.");
       } 
       else {
 	driver.AddGroupFile(fnm);
@@ -297,9 +291,7 @@ ProcessELEMENT(DOMNode *node, Driver &driver, bool onlyMetrics)
     }
   } 
   else {
-    string error = "Unexpected ELEMENT type encountered: '" +
-      string(XMLString::transcode(nodeName)) + "'";
-    throw HPCViewDocException(error);
+    HPCViewDoc_Throw("Unexpected ELEMENT type encountered: '" << XMLString::transcode(nodeName) << "'");
   }
 }
 
@@ -324,18 +316,14 @@ ProcessMETRIC(DOMNode *node, Driver &driver)
   bool metricDoSortBy = (getAttr(node,SORTBYATTR) == "true"); 
 
   if (metricName.empty()) {
-    string error = "METRIC: Invalid name: '" + metricName + "'.";
-    throw HPCViewDocException(error); 
+    HPCViewDoc_Throw("METRIC: Invalid name: '" << metricName << "'.");
   }
   else if (NameToPerfDataIndex(metricName) != UNDEF_METRIC_INDEX) {
-    string error = "METRIC: Metric name '" + metricName +
-      "' was previously defined.";
-    throw HPCViewDocException(error); 
+    HPCViewDoc_Throw("METRIC: Metric name '" << metricName << "' was previously defined.");
   }
 
   if (metricDisplayName.empty()) {
-    string error = "METRIC: Invalid displayName: '" + metricDisplayName + "'.";
-    throw HPCViewDocException(error); 
+    HPCViewDoc_Throw("METRIC: Invalid displayName: '" << metricDisplayName << "'.");
   }
     
   IFTRACE << "METRIC: name=" << metricName << " " 
@@ -386,9 +374,7 @@ ProcessMETRIC(DOMNode *node, Driver &driver)
       }
     } 
     else {
-      string error = string("Unexpected METRIC type '") + 
-	XMLString::transcode(metricType) + "'.";
-      throw HPCViewDocException(error);
+      HPCViewDoc_Throw("Unexpected METRIC type '" << XMLString::transcode(metricType) << "'.");
     }
   }
 }
@@ -422,8 +408,7 @@ ProcessFILE(DOMNode* fileNode, Driver& driver,
 				  &driver));
   } 
   else {
-    string error = "METRIC '" + metricName + "' FILE name empty.";
-    throw HPCViewDocException(error);
+    HPCViewDoc_Throw("METRIC '" << metricName << "' FILE name empty.");
   }
 
 }
