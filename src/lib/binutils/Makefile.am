@@ -71,9 +71,7 @@ MYSOURCES = \
 	dbg_Proc.hpp dbg_Proc.cpp \
 	\
 	BinUtils.hpp BinUtils.cpp \
-	VMAInterval.hpp VMAInterval.cpp \
-	\
-	PCToSrcLineMap.hpp PCToSrcLineMap.cpp
+	VMAInterval.hpp VMAInterval.cpp
 
 MYCFLAGS   = @HOST_CFLAGS@   $(HPC_IFLAGS) @GNUBINUTILS_IFLAGS@
 MYCXXFLAGS = @HOST_CXXFLAGS@ $(HPC_IFLAGS) @GNUBINUTILS_IFLAGS@

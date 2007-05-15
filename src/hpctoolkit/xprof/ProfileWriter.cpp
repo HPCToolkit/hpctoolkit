@@ -79,7 +79,6 @@ using namespace std; // For compatibility with non-std C headers
 #include "DerivedProfile.hpp"
 
 #include <lib/binutils/LM.hpp>
-#include <lib/binutils/PCToSrcLineMap.hpp>
 #include <lib/binutils/BinUtils.hpp>
 
 #include <lib/xml/xml.hpp>
@@ -92,21 +91,8 @@ const char* UNKNOWN = "<unknown>";
 //*************************** Forward Declarations ***************************
 
 // LineToPCProfileVecMap
-
-struct lt_SrcLineX
-{
-  // return true if s1 < s2; false otherwise
-  bool operator()(const SrcLineX* s1, const SrcLineX* s2) const
-  {
-    if (s1->GetSrcLine() == s2->GetSrcLine()) {
-      return (s1->GetSrcLineX() < s2->GetSrcLineX());
-    } else {
-      return (s1->GetSrcLine() < s2->GetSrcLine());
-    }
-  }
-};
-
-typedef std::map<SrcLineX*, PCProfileVec*, lt_SrcLineX> LineToPCProfileVecMap;
+typedef suint line_t;
+typedef std::map<line_t, PCProfileVec*>   LineToPCProfileVecMap;
 typedef LineToPCProfileVecMap::iterator   LineToPCProfileVecMapIt;
 typedef LineToPCProfileVecMap::value_type LineToPCProfileVecMapVal;
 
@@ -218,13 +204,13 @@ ProfileWriter::WriteProfile(std::ostream& os, DerivedProfile* profData,
     // --------------------------------------------------
     // 3. Update 'funcLineMap' for each derived metric
     // --------------------------------------------------
-    SrcLineX srcLn(line, 0);
+    line_t srcLn = (line_t)line;
     PCProfileVec* vec = NULL;
-    LineToPCProfileVecMapIt it1 = funcLineMap.find(&srcLn);
+    LineToPCProfileVecMapIt it1 = funcLineMap.find(srcLn);
     if (it1 == funcLineMap.end()) {
       // Initialize the vector and insert into the map
       vec = new PCProfileVec(profData->GetNumMetrics());
-      funcLineMap.insert(LineToPCProfileVecMapVal(new SrcLineX(srcLn), vec));
+      funcLineMap.insert(LineToPCProfileVecMapVal(srcLn, vec));
     } else {
       vec = (*it1).second;
     }
@@ -308,11 +294,11 @@ DumpFuncLineMap(ostream& os, LineToPCProfileVecMap& map,
     
   LineToPCProfileVecMapIt it;
   for (it = map.begin(); it != map.end(); ++it) {
-    SrcLineX* srcLn = (*it).first;
+    line_t srcLn = (*it).first;
     PCProfileVec* vec = (*it).second;
     
-    os << I[3] << "<S b"; WriteAttrNum(os, srcLn->GetSrcLine());
-    os << " id";          WriteAttrNum(os, srcLn->GetSrcLineX());
+    os << I[3] << "<S b"; WriteAttrNum(os, srcLn);
+    os << " id";          WriteAttrNum(os, 0);
     os << ">\n";
     for (suint i = 0; i < vec->GetSz(); ++i) {
       if ( (*vec)[i] != 0 ) {
@@ -335,7 +321,6 @@ void ClearFuncLineMap(LineToPCProfileVecMap& map)
 {
   LineToPCProfileVecMapIt it;
   for (it = map.begin(); it != map.end(); ++it) {
-    delete (*it).first;
     delete (*it).second;
   }
   map.clear();
