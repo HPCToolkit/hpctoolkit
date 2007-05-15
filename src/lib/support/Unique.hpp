@@ -1,5 +1,6 @@
+// -*-Mode: C++;-*-
 // $Id$
-// -*-C++-*-
+
 // * BeginRiceCopyright *****************************************************
 // 
 // Copyright ((c)) 2002, Rice University 
@@ -58,19 +59,18 @@
 //
 // **************************************************************************
 
-#ifndef Unique_h
-#define Unique_h
+#ifndef support_Unique_h
+#define support_Unique_h
 
 
 // ************************* System Include Files ***************************
 
 #include <set> // STL
+#include <string>
 
 // ************************** User Include Files ****************************
 
 #include <include/general.h>
-
-#include "String.hpp"
 
 // ************************* Variable Definitions ***************************
 
@@ -110,7 +110,7 @@ class Unique
 
   private:
 
-      static std::set<String, StringLt> classNameSet;
+      static std::set<std::string> classNameSet;
         // Where the set of class names are stored.
 
       Unique(const Unique& mo);
@@ -121,7 +121,7 @@ class Unique
         // Assignment operator (explicitly not allowed).
         // has not implemetationm, ...
 
-      String className;
+      std::string className;
         // Saved class name or ""
 
 };
@@ -142,4 +142,4 @@ inline bool operator!=(const Unique& u1, const Unique& u2)
 }
 
 
-#endif /* Unique_h */
+#endif /* support_Unique_h */

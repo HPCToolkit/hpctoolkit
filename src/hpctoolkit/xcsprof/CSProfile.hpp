@@ -48,8 +48,8 @@
 //
 //***************************************************************************
 
-#ifndef CSProfile_H 
-#define CSProfile_H
+#ifndef CSProfile_hpp 
+#define CSProfile_hpp
 
 //************************* System Include Files ****************************
 
@@ -93,7 +93,7 @@ public:
   
   // Data
 
-  const char*      GetTarget()              const { return target; }
+  const std::string& GetTarget()              const { return target; }
   suint            GetNumberOfMetrics()     const { return numberofmetrics; }
   CSProfileMetric* GetMetric(const suint i) const { return &metrics[i]; }
   CSProfTree*      GetTree()                const { return tree; }
@@ -101,14 +101,14 @@ public:
   CSProfEpoch*     GetEpoch()               const { return epoch; }
   void             ProfileDumpEpoch() {epoch->Dump(); }
 
-  void SetTarget(const char* s) { target = s; }
+  void SetTarget(const char* s) { target = (s) ? s : ""; }
 
   // Dump contents for inspection
   virtual void Dump(std::ostream& os = std::cerr) const;
   virtual void DDump() const;
  
 private:
-  String target; 
+  std::string target; 
   suint  numberofmetrics;
   CSProfileMetric* metrics;
   CSProfTree* tree;

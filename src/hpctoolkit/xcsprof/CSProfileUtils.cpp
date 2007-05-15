@@ -250,7 +250,7 @@ ReadProfile_CSPROF(const char* fnm, const char *execnm)
   // hpcfile_free_CB(data.event);
 
   // Add PGM node to tree
-  addPGMToCSProfTree(prof->GetTree(), prof->GetTarget());
+  addPGMToCSProfTree(prof->GetTree(), prof->GetTarget().c_str());
   
   // Convert leaves (CSProfCallSiteNode) to CSProfStatementNodes
   // FIXME: There should be a better way of doing this.  We could

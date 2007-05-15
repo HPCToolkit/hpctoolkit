@@ -146,7 +146,7 @@ Neg::dump(std::ostream& os) const
 // class Var
 // ----------------------------------------------------------------------
 
-Var::Var(String n, int i) 
+Var::Var(std::string n, int i) 
   : name(n), index(i) 
 { 
 }

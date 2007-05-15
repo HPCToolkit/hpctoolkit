@@ -1,5 +1,6 @@
+// -*-Mode: C++;-*-
 // $Id$
-// -*-C++-*-
+
 // * BeginRiceCopyright *****************************************************
 // 
 // Copyright ((c)) 2002, Rice University 
@@ -56,7 +57,8 @@ using std::endl;
 
 //***************************************************************************
 
-SrcFile::SrcFile(const char* fN) : fName(fN)
+SrcFile::SrcFile(const char* fN) 
+  : fName((fN) ? fN : "")
 {
    FILE *srcFile = fopen(fN, "r");
    known = (srcFile != NULL); 
@@ -75,15 +77,15 @@ SrcFile::SrcFile(const char* fN) : fName(fN)
 
 bool 
 SrcFile::GetLine(unsigned int i, 
-		  char* lineBuf, unsigned int bufSize) const 
+		 char* lineBuf, unsigned int bufSize) const 
 {
   bool ok = false; 
   if (known && (i < line.GetNumElements())) {
-    const char* linei = ((SrcFile*) this)->line[i]; 
-    unsigned int len = strlen(linei); 
+    std::string& linei = ((SrcFile*) this)->line[i];
+    unsigned int len = linei.length();
     if (bufSize > len) { 
-      strncpy(lineBuf, linei, len); 
-      lineBuf[len] = '\0'; 
+      strncpy(lineBuf, linei.c_str(), len);
+      lineBuf[len] = '\0';
       ok = true; 
     }
   } 
