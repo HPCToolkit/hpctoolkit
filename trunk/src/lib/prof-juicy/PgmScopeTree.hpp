@@ -48,8 +48,8 @@
 //
 //***************************************************************************
 
-#ifndef _prof_juicy_PgmScopeTree_ 
-#define _prof_juicy_PgmScopeTree_
+#ifndef prof_juicy_PgmScopeTree 
+#define prof_juicy_PgmScopeTree
 
 //************************* System Include Files ****************************
 
@@ -69,11 +69,13 @@
 #include <lib/binutils/VMAInterval.hpp>
 
 #include <lib/support/diagnostics.h>
-#include <lib/support/Logic.hpp>
-#include <lib/support/Unique.hpp>
-#include <lib/support/NonUniformDegreeTree.hpp>
 #include <lib/support/Files.hpp>
+#include <lib/support/Logic.hpp>
 #include <lib/support/Nan.h>
+#include <lib/support/NonUniformDegreeTree.hpp>
+#include <lib/support/SrcFile.hpp>
+using SrcFile::ln_NULL;
+#include <lib/support/Unique.hpp>
 
 //*************************** Forward Declarations **************************
 
@@ -84,8 +86,6 @@ typedef std::list<ScopeInfo*> ScopeInfoList;
 typedef std::set<ScopeInfo*> ScopeInfoSet;
 
 //*************************** Forward Declarations **************************
-
-const suint UNDEF_LINE = 0;
 
 class DoubleVector;
 
@@ -399,7 +399,8 @@ protected:
 class CodeInfo : public ScopeInfo {
 protected: 
   CodeInfo(ScopeType t, ScopeInfo* mom = NULL, 
-	   suint begLn = UNDEF_LINE, suint endLn = UNDEF_LINE,
+	   SrcFile::ln begLn = ln_NULL,
+	   SrcFile::ln endLn = ln_NULL,
 	   VMA begVMA = 0, VMA endVMA = 0);
   CodeInfo(const CodeInfo& x) : ScopeInfo(x.type) { *this = x; }
   CodeInfo& operator=(const CodeInfo& x);
@@ -408,26 +409,26 @@ public:
   virtual ~CodeInfo();
 
   // Line range in source code
-  suint  begLine() const { return mbegLine; }
-  suint& begLine()       { return mbegLine; }
+  SrcFile::ln  begLine() const { return mbegLine; }
+  SrcFile::ln& begLine()       { return mbegLine; }
 
-  suint  endLine() const { return mendLine; }
-  suint& endLine()       { return mendLine; }
-
-  // SetLineRange: 
-  void SetLineRange(suint begLn, suint endLn, int propagate = 1);
+  SrcFile::ln  endLine() const { return mendLine; }
+  SrcFile::ln& endLine()       { return mendLine; }
   
-  void ExpandLineRange(suint begLn, suint endLn, int propagate = 1);
+  // SetLineRange: 
+  void SetLineRange(SrcFile::ln begLn, SrcFile::ln endLn, int propagate = 1);
+  
+  void ExpandLineRange(SrcFile::ln begLn, SrcFile::ln endLn, int propagate = 1);
 
   void LinkAndSetLineRange(CodeInfo* parent);
 
-  void checkLineRange(suint begLn, suint endLn)
+  void checkLineRange(SrcFile::ln begLn, SrcFile::ln endLn)
   {
-    DIAG_Assert(logic::equiv(begLn == UNDEF_LINE, endLn == UNDEF_LINE),
+    DIAG_Assert(logic::equiv(begLn == ln_NULL, endLn == ln_NULL),
 		"CodeInfo::checkLineRange: b=" << begLn << " e=" << endLn);
     DIAG_Assert(begLn <= endLn, 
 		"CodeInfo::checkLineRange: b=" << begLn << " e=" << endLn);
-    DIAG_Assert(logic::equiv(mbegLine == UNDEF_LINE, mendLine == UNDEF_LINE),
+    DIAG_Assert(logic::equiv(mbegLine == ln_NULL, mendLine == ln_NULL),
 		"CodeInfo::checkLineRange: b=" << mbegLine << " e=" << mendLine);
   }
   
@@ -444,18 +445,18 @@ public:
   //   and end_epsilon allows fuzzy matches by expanding the interval of
   //   the scope.
   //
-  // Note: We assume that it makes no sense to compare against UNDEF_LINE.
-  bool containsLine(suint ln) const
-    { return (mbegLine != UNDEF_LINE && (mbegLine <= ln && ln <= mendLine)); }
-  bool containsLine(suint ln, int beg_epsilon, int end_epsilon) const;
-  bool containsInterval(suint begLn, suint endLn) const
+  // Note: We assume that it makes no sense to compare against ln_NULL.
+  bool containsLine(SrcFile::ln ln) const
+    { return (mbegLine != ln_NULL && (mbegLine <= ln && ln <= mendLine)); }
+  bool containsLine(SrcFile::ln ln, int beg_epsilon, int end_epsilon) const;
+  bool containsInterval(SrcFile::ln begLn, SrcFile::ln endLn) const
     { return (containsLine(begLn) && containsLine(endLn)); }
-  bool containsInterval(suint begLn, suint endLn,
+  bool containsInterval(SrcFile::ln begLn, SrcFile::ln endLn,
 			int beg_epsilon, int end_epsilon) const
     { return (containsLine(begLn, beg_epsilon, end_epsilon) 
 	      && containsLine(endLn, beg_epsilon, end_epsilon)); }
 
-  CodeInfo* CodeInfoWithLine(suint ln) const;
+  CodeInfo* CodeInfoWithLine(SrcFile::ln ln) const;
 
   // returns a string of the form: 
   //   File()->name() + ":" + <Line-Range> 
@@ -466,7 +467,7 @@ public:
   virtual std::string CodeName() const;
   virtual std::string LineRange() const;
 
-  static std::string CodeLineName(suint line);
+  static std::string CodeLineName(SrcFile::ln line);
 
   virtual ScopeInfo* Clone() { return new CodeInfo(*this); }
 
@@ -509,8 +510,8 @@ protected:
   }
   
 protected:
-  suint mbegLine;
-  suint mendLine;
+  SrcFile::ln mbegLine;
+  SrcFile::ln mendLine;
   VMAIntervalSet mvmaSet;
 
   CodeInfo* first; // FIXME: this seems to duplicate NonUniformDegreeTree...
@@ -619,9 +620,9 @@ private:
 class GroupScope: public CodeInfo {
 public: 
   GroupScope(const char* nm, ScopeInfo* mom,
-	     int begLn = UNDEF_LINE, int endLn = UNDEF_LINE);
+	     int begLn = ln_NULL, int endLn = ln_NULL);
   GroupScope(const std::string& nm, ScopeInfo* mom,
-	     int begLn = UNDEF_LINE, int endLn = UNDEF_LINE);
+	     int begLn = ln_NULL, int endLn = ln_NULL);
   virtual ~GroupScope();
   
   const std::string& name() const { return m_name; } // same as grpName
@@ -741,10 +742,10 @@ public:
   // srcIsReadable == fopen(fileNameWithPath, "r") works 
   FileScope(const char* fileNameWithPath, bool srcIsReadable_, 
 	    ScopeInfo *mom, 
-	    suint begLn = UNDEF_LINE, suint endLn = UNDEF_LINE);
+	    SrcFile::ln begLn = ln_NULL, SrcFile::ln endLn = ln_NULL);
   FileScope(const std::string& fileNameWithPath, bool srcIsReadable_, 
 	    ScopeInfo *mom, 
-	    suint begLn = UNDEF_LINE, suint endLn = UNDEF_LINE);
+	    SrcFile::ln begLn = ln_NULL, SrcFile::ln endLn = ln_NULL);
   virtual ~FileScope();
 
 
@@ -823,16 +824,16 @@ protected:
 public: 
   ProcScope(const char* name, CodeInfo* mom, 
 	    const char* linkname,
-	    suint begLn = UNDEF_LINE, suint endLn = UNDEF_LINE);
+	    SrcFile::ln begLn = ln_NULL, SrcFile::ln endLn = ln_NULL);
   ProcScope(const std::string& name, CodeInfo* mom, 
 	    const std::string& linkname,
-	    suint begLn = UNDEF_LINE, suint endLn = UNDEF_LINE);
+	    SrcFile::ln begLn = ln_NULL, SrcFile::ln endLn = ln_NULL);
 
   virtual ~ProcScope();
   
   
   static ProcScope*
-  findOrCreate(FileScope* fScope, const std::string& procnm, suint line);
+  findOrCreate(FileScope* fScope, const std::string& procnm, SrcFile::ln line);
   
   
   virtual const std::string& name() const     { return m_name; }
@@ -842,7 +843,7 @@ public:
 
   virtual ScopeInfo* Clone() { return new ProcScope(*this); }
 
-  StmtRangeScope* FindStmtRange(suint line);  
+  StmtRangeScope* FindStmtRange(SrcFile::ln line);  
 
   virtual std::string toXML(int dmpFlag = 0) const;
 
@@ -894,10 +895,10 @@ protected:
 
 public: 
   AlienScope(CodeInfo* mom, const char* filenm, const char* procnm,
-	     suint begLn = UNDEF_LINE, suint endLn = UNDEF_LINE);
+	     SrcFile::ln begLn = ln_NULL, SrcFile::ln endLn = ln_NULL);
   AlienScope(CodeInfo* mom, 
 	     const std::string& filenm, const std::string& procnm,
-	     suint begLn = UNDEF_LINE, suint endLn = UNDEF_LINE);
+	     SrcFile::ln begLn = ln_NULL, SrcFile::ln endLn = ln_NULL);
   virtual ~AlienScope();
   
   const std::string& fileName() const { return m_filenm; }
@@ -943,7 +944,7 @@ private:
 class LoopScope: public CodeInfo {
 public: 
   LoopScope(CodeInfo* mom, 
-	    suint begLn = UNDEF_LINE, suint endLn = UNDEF_LINE);
+	    SrcFile::ln begLn = ln_NULL, SrcFile::ln endLn = ln_NULL);
   virtual ~LoopScope();
   
   virtual std::string CodeName() const;
@@ -970,7 +971,7 @@ public:
 // --------------------------------------------------------------------------
 class StmtRangeScope: public CodeInfo {
 public: 
-  StmtRangeScope(CodeInfo* mom, suint begLn, suint endLn,
+  StmtRangeScope(CodeInfo* mom, SrcFile::ln begLn, SrcFile::ln endLn,
 		 VMA begVMA = 0, VMA endVMA = 0);
   virtual ~StmtRangeScope();
   
@@ -1036,4 +1037,4 @@ private:
 /************************************************************************/
 extern void ScopeInfoTester(int argc, const char** argv);
 
-#endif 
+#endif /* prof_juicy_PgmScopeTree */

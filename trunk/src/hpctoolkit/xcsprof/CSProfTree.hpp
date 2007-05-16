@@ -68,6 +68,8 @@
 
 #include <lib/support/diagnostics.h>
 #include <lib/support/NonUniformDegreeTree.hpp>
+#include <lib/support/SrcFile.hpp>
+using SrcFile::ln_NULL;
 #include <lib/support/Unique.hpp>
 
 //*************************** Forward Declarations ***************************
@@ -241,20 +243,20 @@ public:
 class CSProfCodeNode : public CSProfNode {
 protected: 
   CSProfCodeNode(NodeType t, CSProfNode* _parent, 
-		 suint begLn = UNDEF_LINE, suint endLn = UNDEF_LINE,
+		 SrcFile::ln begLn = ln_NULL, SrcFile::ln endLn = ln_NULL,
 		 unsigned int sId = 0);
   
 public: 
   virtual ~CSProfCodeNode();
   
   // Node data
-  suint GetBegLine() const { return begLine; }; // in source code
-  suint GetEndLine() const { return endLine; }; // in source code
+  SrcFile::ln GetBegLine() const { return begLine; } // in source code
+  SrcFile::ln GetEndLine() const { return endLine; } // in source code
   
-  bool            ContainsLine(suint ln) const; 
-  CSProfCodeNode* CSProfCodeNodeWithLine(suint ln) const;
+  bool            ContainsLine(SrcFile::ln ln) const; 
+  CSProfCodeNode* CSProfCodeNodeWithLine(SrcFile::ln ln) const;
 
-  void SetLineRange(suint begLn, suint endLn); // be careful when using!
+  void SetLineRange(SrcFile::ln begLn, SrcFile::ln endLn); // use carefully!
 
   // eraxxon: I made this stuff virtual in order to handle both
   // CSProfCallSiteNode/CSProfProcedureFrameNode or
@@ -274,7 +276,7 @@ public:
   virtual void SetProc(const std::string& pnm)
     { DIAG_Die(DIAG_Unimplemented); }
 
-  virtual void SetLine(suint ln) 
+  virtual void SetLine(SrcFile::ln ln) 
     { DIAG_Die(DIAG_Unimplemented); } 
  
   virtual VMA GetIP() const 
@@ -302,8 +304,8 @@ public:
     
 protected: 
   void Relocate();
-  suint begLine;
-  suint endLine;
+  SrcFile::ln begLine;
+  SrcFile::ln endLine;
   unsigned int m_sId;  // static structure id
   static string BOGUS;
 }; 
@@ -384,7 +386,7 @@ public:
   
   const std::string& GetFile() const { return file; }
   const std::string& GetProc() const { return proc; }
-  suint              GetLine() const { return begLine; }
+  SrcFile::ln        GetLine() const { return begLine; }
 
   void SetIP(VMA _ip, ushort _opIndex) { ip = _ip; opIndex = _opIndex; }
 
@@ -394,7 +396,7 @@ public:
   void SetProc(const char* pnm) { proc = pnm; }
   void SetProc(const std::string& pnm) { proc = pnm; }
 
-  void SetLine(suint ln) { begLine = endLine = ln; /* SetLineRange(ln, ln); */ } 
+  void SetLine(SrcFile::ln ln) { begLine = endLine = ln; /* SetLineRange(ln, ln); */ } 
   bool FileIsText() const {return fileistext;} 
   void SetFileIsText(bool bi) {fileistext = bi;}
   bool GotSrcInfo() const {return donewithsrcinfproc;} 
@@ -442,7 +444,7 @@ class CSProfStatementNode: public CSProfCodeNode {
   
   const std::string& GetFile() const { return file; }
   const std::string& GetProc() const { return proc; }
-  suint              GetLine() const { return begLine; }
+  SrcFile::ln        GetLine() const { return begLine; }
 
   void SetIP(VMA _ip, ushort _opIndex) { ip = _ip; opIndex = _opIndex; }
 
@@ -452,14 +454,14 @@ class CSProfStatementNode: public CSProfCodeNode {
   void SetProc(const char* pnm) { proc = pnm; }
   void SetProc(const std::string& pnm) { proc = pnm; }
 
-  void SetLine(suint ln) { begLine = endLine = ln; /* SetLineRange(ln, ln); */ } 
-  bool FileIsText() const {return fileistext;}
-  void SetFileIsText(bool bi) {fileistext = bi;}
-  bool GotSrcInfo() const {return donewithsrcinfproc;} 
-  void SetSrcInfoDone(bool bi) {donewithsrcinfproc=bi;}
+  void SetLine(SrcFile::ln ln) { begLine = endLine = ln; /* SetLineRange(ln, ln); */ } 
+  bool FileIsText() const { return fileistext; }
+  void SetFileIsText(bool bi) { fileistext = bi; }
+  bool GotSrcInfo() const { return donewithsrcinfproc; }
+  void SetSrcInfoDone(bool bi) { donewithsrcinfproc = bi; }
 
-  suint GetMetric(int metricIndex) const {return metrics[metricIndex];}
-  suint GetMetricCount() const {return metrics.size();}
+  SrcFile::ln GetMetric(int metricIndex) const { return metrics[metricIndex]; }
+  SrcFile::ln GetMetricCount() const { return metrics.size(); }
   
   // Dump contents for inspection
   virtual std::string ToDumpString(int dmpFlag = CSProfTree::XML_TRUE) const;
@@ -502,8 +504,8 @@ public:
   void SetProc(const char* pnm) { proc = pnm; }
   void SetProc(const std::string& pnm) { proc = pnm; }
 
-  suint GetLine() const { return begLine; }
-  void SetLine(suint ln) { begLine = endLine = ln; /* SetLineRange(ln, ln); */ } 
+  SrcFile::ln GetLine() const { return begLine; }
+  void SetLine(SrcFile::ln ln) { begLine = endLine = ln; /* SetLineRange(ln, ln); */ } 
   bool FileIsText() const {return fileistext;}
   void SetFileIsText(bool bi) {fileistext = bi;}
 
@@ -530,7 +532,7 @@ private:
 class CSProfLoopNode: public CSProfCodeNode {
 public: 
   // Constructor/Destructor
-  CSProfLoopNode(CSProfNode* _parent, suint begLn, suint endLn,
+  CSProfLoopNode(CSProfNode* _parent, SrcFile::ln begLn, SrcFile::ln endLn,
 		 unsigned int sId = 0);
   ~CSProfLoopNode();
   
@@ -549,7 +551,8 @@ private:
 class CSProfStmtRangeNode: public CSProfCodeNode {
 public: 
   // Constructor/Destructor
-  CSProfStmtRangeNode(CSProfNode* _parent, suint begLn, suint endLn, 
+  CSProfStmtRangeNode(CSProfNode* _parent, 
+		      SrcFile::ln begLn, SrcFile::ln endLn, 
 		      unsigned int sId = 0);
   ~CSProfStmtRangeNode();
   

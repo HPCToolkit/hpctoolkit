@@ -356,7 +356,8 @@ binutils::LM::insertInsn(VMA vma, ushort opIndex, binutils::Insn* insn)
 
 bool
 binutils::LM::GetSourceFileInfo(VMA vma, ushort opIndex,
-				string& func, string& file, suint& line) const
+				string& func, 
+				string& file, SrcFile::ln& line) const
 {
   bool STATUS = false;
   func = file = "";
@@ -364,8 +365,6 @@ binutils::LM::GetSourceFileInfo(VMA vma, ushort opIndex,
 
   if (!impl->bfdSymbolTable) { return STATUS; }
   
-  // This function assumes that the interface type 'suint' can hold
-  // the bfd_find_nearest_line line number type.  
   unsigned int bfd_line = 0;
   //DIAG_Assert(sizeof(suint) >= sizeof(bfd_line));
 
@@ -390,10 +389,10 @@ binutils::LM::GetSourceFileInfo(VMA vma, ushort opIndex,
   if (bfdSeg
       && bfd_find_nearest_line(impl->abfd, bfdSeg, impl->bfdSymbolTable,
 			       opVMA - base, &_file, &_func, &bfd_line)) {
-    STATUS = (_file && _func && IsValidLine(bfd_line));
+    STATUS = (_file && _func && SrcFile::isValid(bfd_line));
     if (_func) { func = _func; }
     if (_file) { file = _file; }
-    line = bfd_line;
+    line = (SrcFile::ln)bfd_line;
   }
 
   return STATUS;
@@ -404,7 +403,7 @@ bool
 binutils::LM::GetSourceFileInfo(VMA begVMA, ushort bOpIndex,
 				VMA endVMA, ushort eOpIndex,
 				string& func, string& file,
-				suint &begLine, suint &endLine,
+				SrcFile::ln& begLine, SrcFile::ln& endLine,
 				unsigned flags) const
 {
   bool STATUS = false;
@@ -459,10 +458,10 @@ binutils::LM::GetSourceFileInfo(VMA begVMA, ushort bOpIndex,
   } // else (file1.empty && file2.empty()): use default values
 
   // Error checking and processing: 'begLine' and 'endLine'
-  if (IsValidLine(begLine) && !IsValidLine(endLine)) { 
+  if (SrcFile::isValid(begLine) && !SrcFile::isValid(endLine)) { 
     endLine = begLine; 
   } 
-  else if (IsValidLine(endLine) && !IsValidLine(begLine)) {
+  else if (SrcFile::isValid(endLine) && !SrcFile::isValid(begLine)) {
     begLine = endLine;
   } 
   else if (flags 
@@ -708,7 +707,8 @@ binutils::LM::ReadSegs()
 
 
 bool 
-binutils::LM::GetProcFirstLineInfo(VMA vma, ushort opIndex, suint &line) const
+binutils::LM::GetProcFirstLineInfo(VMA vma, ushort opIndex, 
+				   SrcFile::ln &line) const
 {
   bool STATUS = false;
   line = 0;

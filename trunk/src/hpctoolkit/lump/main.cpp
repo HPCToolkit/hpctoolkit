@@ -77,6 +77,7 @@ using std::string;
 #include <lib/binutils/BinUtils.hpp>
 
 #include <lib/support/diagnostics.h>
+#include <lib/support/SrcFile.hpp>
 
 //*************************** Forward Declarations ***************************
 
@@ -237,12 +238,12 @@ DumpSymbolicInfoOld(std::ostream& os, binutils::LM* lm)
 	
 	// 1. Attempt to find symbolic information
 	string func, file;
-	suint line;
+	SrcFile::ln line;
 	p->GetSourceFileInfo(vma, inst->GetOpIndex(), func, file, line);
 	func = GetBestFuncName(func);
 	
 	// Bad line number: cannot fix; advance iteration
-	if ( !IsValidLine(line) ) {
+	if ( !SrcFile::isValid(line) ) {
 	  continue; // cannot continue without valid symbolic info
 	}
 

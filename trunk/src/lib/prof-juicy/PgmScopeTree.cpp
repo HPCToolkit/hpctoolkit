@@ -79,17 +79,16 @@ using namespace std; // For compatibility with non-std C headers
 #include <lib/xml/xml.hpp>
 
 #include <lib/support/diagnostics.h>
-#include <lib/support/StrUtil.hpp>
 #include <lib/support/Logic.hpp>
-#include <lib/support/VectorTmpl.hpp>
-#include <lib/support/Files.hpp>
 #include <lib/support/SrcFile.hpp>
-#include <lib/support/PtrSetIterator.hpp>
+using SrcFile::ln_NULL;
+#include <lib/support/StrUtil.hpp>
+#include <lib/support/VectorTmpl.hpp>
 #include <lib/support/realpath.h>
 
 //*************************** Forward Declarations **************************
 
-static int SimpleLineCmp(suint x, suint y);
+static int SimpleLineCmp(SrcFile::ln x, SrcFile::ln y);
 static int AddXMLEscapeChars(int dmpFlag);
 
 using namespace xml;
@@ -116,7 +115,7 @@ class ProcScopeMap      : public multimap<string, ProcScope*> { };
 
 class FileScopeMap      : public map<string, FileScope*> { };
 
-class StmtRangeScopeMap : public map<suint, StmtRangeScope*> { };
+class StmtRangeScopeMap : public map<SrcFile::ln, StmtRangeScope*> { };
 
 //***************************************************************************
 // PgmScopeTree
@@ -307,9 +306,10 @@ ScopeInfo::~ScopeInfo()
 }
 
 
-CodeInfo::CodeInfo(ScopeType t, ScopeInfo* parent, suint begLn, suint endLn,
+CodeInfo::CodeInfo(ScopeType t, ScopeInfo* parent, 
+		   SrcFile::ln begLn, SrcFile::ln endLn,
 		   VMA begVMA, VMA endVMA) 
-  : ScopeInfo(t, parent), mbegLine(UNDEF_LINE), mendLine(UNDEF_LINE)
+  : ScopeInfo(t, parent), mbegLine(ln_NULL), mendLine(ln_NULL)
 { 
   SetLineRange(begLn, endLn);
   if (begVMA != 0 && endVMA != 0) {
@@ -340,9 +340,9 @@ void
 CodeInfo::LinkAndSetLineRange(CodeInfo* parent)
 {
   this->Link(parent);
-  if (begLine() != UNDEF_LINE) {
-    suint bLn = MIN(parent->begLine(), begLine());
-    suint eLn = MAX(parent->endLine(), endLine());
+  if (begLine() != ln_NULL) {
+    SrcFile::ln bLn = MIN(parent->begLine(), begLine());
+    SrcFile::ln eLn = MAX(parent->endLine(), endLine());
     parent->SetLineRange(bLn, eLn);
   }
 }
@@ -433,14 +433,14 @@ GroupScope::~GroupScope()
 
 
 LoadModScope::LoadModScope(const char* nm, ScopeInfo* parent)
-  : CodeInfo(LM, parent, UNDEF_LINE, UNDEF_LINE, 0, 0)
+  : CodeInfo(LM, parent, ln_NULL, ln_NULL, 0, 0)
 { 
   Ctor(nm, parent);
 }
 
 
 LoadModScope::LoadModScope(const std::string& nm, ScopeInfo* parent)
-  : CodeInfo(LM, parent, UNDEF_LINE, UNDEF_LINE, 0, 0)
+  : CodeInfo(LM, parent, ln_NULL, ln_NULL, 0, 0)
 {
   Ctor(nm.c_str(), parent);
 }
@@ -483,7 +483,7 @@ LoadModScope::~LoadModScope()
 
 FileScope::FileScope(const char* srcFileWithPath, bool srcIsReadble_, 
 		     ScopeInfo *parent,
-		     suint begLn, suint endLn)
+		     SrcFile::ln begLn, SrcFile::ln endLn)
   : CodeInfo(FILE, parent, begLn, endLn, 0, 0)
 {
   Ctor(srcFileWithPath, srcIsReadble_, parent);
@@ -492,7 +492,7 @@ FileScope::FileScope(const char* srcFileWithPath, bool srcIsReadble_,
 
 FileScope::FileScope(const string& srcFileWithPath, bool srcIsReadble_, 
 		     ScopeInfo *parent,
-		     suint begLn, suint endLn)
+		     SrcFile::ln begLn, SrcFile::ln endLn)
   : CodeInfo(FILE, parent, begLn, endLn, 0, 0)
 {
   Ctor(srcFileWithPath.c_str(), srcIsReadble_, parent);
@@ -545,7 +545,7 @@ FileScope::findOrCreate(LoadModScope* lmScope, const string& filenm)
 
 
 ProcScope::ProcScope(const char* n, CodeInfo* parent, const char* ln, 
-		     suint begLn, suint endLn) 
+		     SrcFile::ln begLn, SrcFile::ln endLn) 
   : CodeInfo(PROC, parent, begLn, endLn, 0, 0)
 {
   Ctor(n, parent, ln);
@@ -553,7 +553,7 @@ ProcScope::ProcScope(const char* n, CodeInfo* parent, const char* ln,
 
 
 ProcScope::ProcScope(const string& n, CodeInfo* parent, const string& ln, 
-		     suint begLn, suint endLn) 
+		     SrcFile::ln begLn, SrcFile::ln endLn) 
   : CodeInfo(PROC, parent, begLn, endLn, 0, 0)
 {
   Ctor(n.c_str(), parent, ln.c_str());
@@ -596,7 +596,8 @@ ProcScope::~ProcScope()
 
 
 ProcScope*
-ProcScope::findOrCreate(FileScope* fScope, const string& procnm, suint line)
+ProcScope::findOrCreate(FileScope* fScope, const string& procnm, 
+			SrcFile::ln line)
 {
   ProcScope* pScope = fScope->FindProc(procnm);
   if (!pScope) {
@@ -607,7 +608,7 @@ ProcScope::findOrCreate(FileScope* fScope, const string& procnm, suint line)
 
 
 AlienScope::AlienScope(CodeInfo* parent, const char* filenm, const char* nm,
-		       suint begLn, suint endLn) 
+		       SrcFile::ln begLn, SrcFile::ln endLn) 
   : CodeInfo(ALIEN, parent, begLn, endLn, 0, 0)
 {
   Ctor(parent, filenm, nm);
@@ -616,7 +617,7 @@ AlienScope::AlienScope(CodeInfo* parent, const char* filenm, const char* nm,
 
 AlienScope::AlienScope(CodeInfo* parent, 
 		       const std::string& filenm, const std::string& nm,
-		       suint begLn, suint endLn) 
+		       SrcFile::ln begLn, SrcFile::ln endLn) 
   : CodeInfo(ALIEN, parent, begLn, endLn, 0, 0)
 {
   Ctor(parent, filenm.c_str(), nm.c_str());
@@ -652,7 +653,7 @@ AlienScope::~AlienScope()
 }
 
 
-LoopScope::LoopScope(CodeInfo* parent, suint begLn, suint endLn) 
+LoopScope::LoopScope(CodeInfo* parent, SrcFile::ln begLn, SrcFile::ln endLn) 
   : CodeInfo(LOOP, parent, begLn, endLn, 0, 0)
 {
   ScopeType t = (parent) ? parent->Type() : ANY;
@@ -666,7 +667,8 @@ LoopScope::~LoopScope()
 }
 
 
-StmtRangeScope::StmtRangeScope(CodeInfo* parent, suint begLn, suint endLn,
+StmtRangeScope::StmtRangeScope(CodeInfo* parent, 
+			       SrcFile::ln begLn, SrcFile::ln endLn,
 			       VMA begVMA, VMA endVMA)
   : CodeInfo(STMT_RANGE, parent, begLn, endLn, begVMA, endVMA)
 {
@@ -1046,8 +1048,8 @@ ScopeInfo::Merge(ScopeInfo* toNode, ScopeInfo* fromNode)
   CodeInfo* fromCI = dynamic_cast<CodeInfo*>(fromNode);
   DIAG_Assert(logic::equiv(toCI, fromCI), "Invariant broken!");
   if (toCI && fromCI) {
-    suint begLn = MIN(toCI->begLine(), fromCI->begLine());
-    suint endLn = MAX(toCI->endLine(), fromCI->endLine());
+    SrcFile::ln begLn = MIN(toCI->begLine(), fromCI->begLine());
+    SrcFile::ln endLn = MAX(toCI->endLine(), fromCI->endLine());
     toCI->SetLineRange(begLn, endLn);
     toCI->vmaSet().merge(fromCI->vmaSet()); // merge VMAs
   }
@@ -1286,7 +1288,7 @@ FileScope::FindProc(const char* nm, const char* lnm) const
 
 
 StmtRangeScope*
-ProcScope::FindStmtRange(suint begLn)
+ProcScope::FindStmtRange(SrcFile::ln begLn)
 {
   return (*stmtMap)[begLn];
 }
@@ -2097,7 +2099,7 @@ PgmScope::TSV_TreeDump(ostream& os) const
 //***************************************************************************
 
 void 
-CodeInfo::SetLineRange(suint begLn, suint endLn, int propagate) 
+CodeInfo::SetLineRange(SrcFile::ln begLn, SrcFile::ln endLn, int propagate) 
 {
   checkLineRange(begLn, endLn);
   
@@ -2107,7 +2109,7 @@ CodeInfo::SetLineRange(suint begLn, suint endLn, int propagate)
   RelocateIf();
 
   // never propagate changes outside an AlienScope
-  if (propagate && begLn != UNDEF_LINE 
+  if (propagate && begLn != ln_NULL 
       && CodeInfoParent() && Type() != ScopeInfo::ALIEN) {
     CodeInfoParent()->ExpandLineRange(mbegLine, mendLine);
   }
@@ -2115,18 +2117,18 @@ CodeInfo::SetLineRange(suint begLn, suint endLn, int propagate)
 
 
 void 
-CodeInfo::ExpandLineRange(suint begLn, suint endLn, int propagate)
+CodeInfo::ExpandLineRange(SrcFile::ln begLn, SrcFile::ln endLn, int propagate)
 {
   checkLineRange(begLn, endLn);
 
-  if (begLn == UNDEF_LINE) {
-    DIAG_Assert(mbegLine == UNDEF_LINE, "");
+  if (begLn == ln_NULL) {
+    DIAG_Assert(mbegLine == ln_NULL, "");
     // simply relocate at beginning of sibling list 
     RelocateIf();
   } 
   else {
     bool changed = false;
-    if (mbegLine == UNDEF_LINE) {
+    if (mbegLine == ln_NULL) {
       mbegLine = begLn;
       mendLine = endLn;
       changed = true;
@@ -2153,7 +2155,7 @@ CodeInfo::Relocate()
   CodeInfo* prev = PrevScope();
   CodeInfo* next = NextScope();
 
-  // NOTE: Technically should check for UNDEF_LINE
+  // NOTE: Technically should check for ln_NULL
   if ((!prev || (prev->begLine() <= mbegLine)) 
       && (!next || (mbegLine <= next->begLine()))) {
     return;
@@ -2168,7 +2170,7 @@ CodeInfo::Relocate()
   //if (parent->FirstChild() == NULL) {
   //  Link(parent);
   //}
-  if (mbegLine == UNDEF_LINE) {
+  if (mbegLine == ln_NULL) {
     // insert as first child
     LinkBefore(parent->FirstChild());
   } 
@@ -2193,10 +2195,10 @@ CodeInfo::Relocate()
 
 
 bool
-CodeInfo::containsLine(suint ln, int beg_epsilon, int end_epsilon) const
+CodeInfo::containsLine(SrcFile::ln ln, int beg_epsilon, int end_epsilon) const
 {
-  // We assume it makes no sense to compare against UNDEF_LINE
-  if (mbegLine != UNDEF_LINE) {
+  // We assume it makes no sense to compare against ln_NULL
+  if (mbegLine != ln_NULL) {
     if (containsLine(ln)) {
       return true;
     }
@@ -2213,9 +2215,9 @@ CodeInfo::containsLine(suint ln, int beg_epsilon, int end_epsilon) const
 
 
 CodeInfo* 
-CodeInfo::CodeInfoWithLine(suint ln) const
+CodeInfo::CodeInfoWithLine(SrcFile::ln ln) const
 {
-  DIAG_Assert(ln != UNDEF_LINE, "CodeInfo::CodeInfoWithLine: invalid line");
+  DIAG_Assert(ln != ln_NULL, "CodeInfo::CodeInfoWithLine: invalid line");
   CodeInfo* ci;
   // ln > mendLine means there is no child that contains ln
   if (ln <= mendLine) {
@@ -2290,7 +2292,7 @@ CodeInfoLineComp(const CodeInfo* x, const CodeInfo* y)
 
 // - if x < y; 0 if x == y; + otherwise
 static int 
-SimpleLineCmp(suint x, suint y)
+SimpleLineCmp(SrcFile::ln x, SrcFile::ln y)
 {
   // We would typically wish to use the following for this simple
   // comparison, but it fails if the the differences are greater than

@@ -499,7 +499,7 @@ LocationMgr::determineContext(CodeInfo* proposed_scope,
       // INVARIANT: File names must match (or use_ctxt would be NULL)
       DIAG_Assert(use_ctxt == proposed_ctxt, "Different contexts: " 
 		  << use_ctxt->toString() << proposed_ctxt->toString());
-      if (IsValidLine(line) 
+      if (SrcFile::isValid(line) 
 	  && !containsLineFzy(use_ctxt->loop(), line, use_ctxt->isAlien())) {
 	use_ctxt = NULL; // force a relocation
       }
@@ -708,7 +708,7 @@ LocationMgr::switch_findCtxt(const string& filenm, const string& procnm,
     // If both filenm and procnm are NULL:
     //   1) 
     //   2) 
-    if (IsValidLine(line)) {
+    if (SrcFile::isValid(line)) {
       the_ctxt = findCtxt(line, base_ctxt);
       if (!the_ctxt) {
         the_ctxt = topCtxt(); // FIXME: relocate if line is out side??
@@ -727,7 +727,7 @@ LocationMgr::switch_findCtxt(const string& filenm, const string& procnm,
   }
 #endif
   else if (!filenm.empty() && procnm.empty()) {
-    if (IsValidLine(line)) {
+    if (SrcFile::isValid(line)) {
       the_ctxt = findCtxt(filenm, line, base_ctxt);
     }
     else {
@@ -736,7 +736,7 @@ LocationMgr::switch_findCtxt(const string& filenm, const string& procnm,
   }
   else {
     // INVARIANT: neither filenm nor procnm are NULL (empty)
-    if (IsValidLine(line)) {
+    if (SrcFile::isValid(line)) {
       the_ctxt = findCtxt(filenm, procnm, line, base_ctxt);
       //if (!the_ctxt && procnm == proposed_procnm) {
       //the_ctxt = findCtxt(filenm, line, base_ctxt); // FIXME do we need this?
@@ -811,8 +811,8 @@ LocationMgr::findOrCreateAlienScope(CodeInfo* parent_scope,
     // we know that filenm and procnm match
     AlienScope* a = it->second;
     
-    if ( (IsValidLine(line) && containsLineFzy(a, line))
-	 || (!IsValidLine(a->begLine())) ) {
+    if ( (SrcFile::isValid(line) && containsLineFzy(a, line))
+	 || (!SrcFile::isValid(a->begLine())) ) {
       alien = a;  // FIXME: potentially more than one...
       break;
     }

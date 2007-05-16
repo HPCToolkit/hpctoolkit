@@ -84,6 +84,8 @@ using namespace std; // For compatibility with non-std C headers
 #include <lib/xml/xml.hpp>
 using namespace xml;
 
+#include <lib/support/SrcFile.hpp>
+
 //*************************** Forward Declarations ***************************
 
 const char* UNKNOWN = "<unknown>";
@@ -91,8 +93,7 @@ const char* UNKNOWN = "<unknown>";
 //*************************** Forward Declarations ***************************
 
 // LineToPCProfileVecMap
-typedef suint line_t;
-typedef std::map<line_t, PCProfileVec*>   LineToPCProfileVecMap;
+typedef std::map<SrcFile::ln, PCProfileVec*>   LineToPCProfileVecMap;
 typedef LineToPCProfileVecMap::iterator   LineToPCProfileVecMapIt;
 typedef LineToPCProfileVecMap::value_type LineToPCProfileVecMapVal;
 
@@ -172,12 +173,12 @@ ProfileWriter::WriteProfile(std::ostream& os, DerivedProfile* profData,
     // 1. Attempt to find symbolic information
     // --------------------------------------------------
     string func, file;
-    suint line; 
+    SrcFile::ln line;
     lm->GetSourceFileInfo(pc, opIndex, func, file, line);
     func = GetBestFuncName(func);
     
     // Bad line info: cannot fix and cannot report; advance iteration
-    if ( !IsValidLine(line) ) {
+    if (!SrcFile::isValid(line)) {
       continue;
     }    
     
@@ -204,13 +205,12 @@ ProfileWriter::WriteProfile(std::ostream& os, DerivedProfile* profData,
     // --------------------------------------------------
     // 3. Update 'funcLineMap' for each derived metric
     // --------------------------------------------------
-    line_t srcLn = (line_t)line;
     PCProfileVec* vec = NULL;
-    LineToPCProfileVecMapIt it1 = funcLineMap.find(srcLn);
+    LineToPCProfileVecMapIt it1 = funcLineMap.find(line);
     if (it1 == funcLineMap.end()) {
       // Initialize the vector and insert into the map
       vec = new PCProfileVec(profData->GetNumMetrics());
-      funcLineMap.insert(LineToPCProfileVecMapVal(srcLn, vec));
+      funcLineMap.insert(LineToPCProfileVecMapVal(line, vec));
     } else {
       vec = (*it1).second;
     }
@@ -294,11 +294,11 @@ DumpFuncLineMap(ostream& os, LineToPCProfileVecMap& map,
     
   LineToPCProfileVecMapIt it;
   for (it = map.begin(); it != map.end(); ++it) {
-    line_t srcLn = (*it).first;
+    SrcFile::ln srcLn = (*it).first;
     PCProfileVec* vec = (*it).second;
     
     os << I[3] << "<S b"; WriteAttrNum(os, srcLn);
-    os << " id";          WriteAttrNum(os, 0);
+    os << " id";          WriteAttrNum(os, 0); // was: SrcLineX.id
     os << ">\n";
     for (suint i = 0; i < vec->GetSz(); ++i) {
       if ( (*vec)[i] != 0 ) {

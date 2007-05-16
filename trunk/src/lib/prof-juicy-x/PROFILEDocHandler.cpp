@@ -73,8 +73,10 @@ using XERCES_CPP_NAMESPACE::XMLString;
 #include <lib/prof-juicy/PgmScopeTree.hpp>
 
 #include <lib/support/diagnostics.h>
-#include <lib/support/Trace.hpp>
+#include <lib/support/SrcFile.hpp>
+using SrcFile::ln_NULL;
 #include <lib/support/StrUtil.hpp>
+#include <lib/support/Trace.hpp>
 
 //************************ Forward Declarations ******************************
 
@@ -317,7 +319,7 @@ void PROFILEDocHandler::startElement(const XMLCh* const uri, const XMLCh* const 
     DIAG_Assert(numAttr >= 1 && numAttr <= 3, "");
     
     // For now, we are not interested in 'attrEnd' or 'attrId'
-    int lnB = UNDEF_LINE, lnE = UNDEF_LINE, lnId = UNDEF_LINE;
+    int lnB = ln_NULL, lnE = ln_NULL, lnId = ln_NULL;
     string lineB  = getAttr(attributes, attrBegin);
     string lineE  = getAttr(attributes, attrEnd);
     string lineId = getAttr(attributes, attrId);
@@ -326,7 +328,7 @@ void PROFILEDocHandler::startElement(const XMLCh* const uri, const XMLCh* const 
     if (!lineId.empty()) { lnId = (int)StrUtil::toLong(lineE); }
 
     // IF lineE is undefined, set it to lineB
-    if (lnE == UNDEF_LINE) { lnE = lnB; }
+    if (lnE == ln_NULL) { lnE = lnB; }
     
     // Check that lnB and lnE are valid line numbers: FIXME
 

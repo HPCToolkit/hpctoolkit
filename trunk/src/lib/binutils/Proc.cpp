@@ -74,7 +74,7 @@ using std::string;
 // Proc
 //***************************************************************************
 
-suint binutils::Proc::nextId = 0;
+unsigned int binutils::Proc::nextId = 0;
 
 binutils::Proc::Proc(binutils::TextSeg* seg, string& name, string& linkname,
                      binutils::Proc::Type t, VMA begVMA, VMA endVMA, 
@@ -125,7 +125,7 @@ binutils::Proc::dump(std::ostream& os, int flags, const char* pre) const
   string p2 = p + "    ";  
   
   string func, file, b_func, b_file, e_func, e_file;
-  suint begLn, endLn, b_begLn, e_endLn2;
+  SrcFile::ln begLn, endLn, b_begLn, e_endLn2;
   Insn* eInsn = GetLastInsn();
   ushort endOp = (eInsn) ? eInsn->GetOpIndex() : 0;
 
@@ -174,7 +174,7 @@ binutils::Proc::dump(std::ostream& os, int flags, const char* pre) const
 	ushort opIdx = insn->GetOpIndex();
 
 	string func, file;
-	suint line;
+	SrcFile::ln line;
     	m_seg->GetSourceFileInfo(vma, opIdx, func, file, line);
 	func = GetBestFuncName(func);
 	

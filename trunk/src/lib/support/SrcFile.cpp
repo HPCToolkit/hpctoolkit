@@ -57,6 +57,9 @@ using std::endl;
 
 //***************************************************************************
 
+namespace SrcFile {
+
+
 SrcFile::SrcFile(const char* fN) 
   : fName((fN) ? fN : "")
 {
@@ -75,6 +78,7 @@ SrcFile::SrcFile(const char* fN)
    } 
 }
 
+
 bool 
 SrcFile::GetLine(unsigned int i, 
 		 char* lineBuf, unsigned int bufSize) const 
@@ -92,8 +96,9 @@ SrcFile::GetLine(unsigned int i,
   return ok; 
 } 
 
+
 void 
-SrcFile::Dump(ostream &out) const 
+SrcFile::dump(ostream &out) const 
 {
   out << "-----------------------------------" << endl; 
   out << "SrcFile:: fName=" << fName << " known=" 
@@ -107,4 +112,5 @@ SrcFile::Dump(ostream &out) const
   out << "-----------------------------------" << endl << endl; 
 } 
 
-	      
+
+} // namespace SrcFile

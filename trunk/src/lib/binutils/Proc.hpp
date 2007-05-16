@@ -128,13 +128,13 @@ public:
   // Symbolic information: availability depends upon debugging information
   // -------------------------------------------------------
 
-  bool hasSymbolic() { return IsValidLine(m_begLine); }
+  bool hasSymbolic() { return SrcFile::isValid(m_begLine); }
 
   const std::string& GetFilename() const { return m_filenm; }
   std::string&       GetFilename()       { return m_filenm; }
 
-  suint   GetBegLine()      const { return m_begLine; }
-  suint&  GetBegLine()            { return m_begLine; }
+  SrcFile::ln  GetBegLine()      const { return m_begLine; }
+  SrcFile::ln& GetBegLine()            { return m_begLine; }
 
   Proc*  parent() const { return m_parent; }
   Proc*& parent()       { return m_parent; }
@@ -148,10 +148,10 @@ public:
   bool  IsIn(VMA vma)  const { return (m_begVMA <= vma && vma <= m_endVMA); }
 
   // Return the unique number assigned to this procedure
-  suint GetId()        const { return m_id; }
+  unsigned int GetId() const { return m_id; }
 
   // Return the number of instructions in the procedure (FIXME: never computed)
-  suint GetNumInsns()  const { return m_numInsns; }
+  unsigned int GetNumInsns()  const { return m_numInsns; }
 
   // Return the first and last instruction in the procedure
   Insn* GetFirstInsn() const { return findInsn(m_begVMA, 0); }
@@ -169,13 +169,13 @@ public:
   }
   bool GetSourceFileInfo(VMA vma, ushort opIndex,
 			 std::string& func, std::string& file, 
-			 suint& line) const {
+			 SrcFile::ln& line) const {
     return m_seg->GetLM()->GetSourceFileInfo(vma, opIndex, func, file, line);
   }
   bool GetSourceFileInfo(VMA begVMA, ushort bOpIndex,
 			 VMA endVMA, ushort eOpIndex,
 			 std::string& func, std::string& file,
-			 suint& begLine, suint& endLine,
+			 SrcFile::ln& begLine, SrcFile::ln& endLine,
 			 unsigned flags = 1) const {
     return m_seg->GetLM()->GetSourceFileInfo(begVMA, bOpIndex,
 					     endVMA, eOpIndex, 
@@ -217,13 +217,13 @@ private:
 
   // symbolic information: may or may not be known
   std::string m_filenm;  // filename and 
-  suint       m_begLine; //   begin line of definition, if known
+  SrcFile::ln m_begLine; //   begin line of definition, if known
   Proc*       m_parent; // parent routine, if lexically nested
 
-  suint m_id;    // a unique identifier
-  suint m_numInsns;
+  unsigned int m_id;    // a unique identifier
+  unsigned int m_numInsns;
   
-  static suint nextId;
+  static unsigned int nextId;
 };
 
 } // namespace binutils

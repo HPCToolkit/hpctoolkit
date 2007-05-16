@@ -86,8 +86,7 @@ class Seg {
 public: 
   enum Type { BSS, Text, Data, Unknown };
   
-  Seg(LM* _lm, std::string& _name, Type t, VMA _beg,
-          VMA _end, VMA _sz);
+  Seg(LM* _lm, std::string& _name, Type t, VMA _beg, VMA _end, VMA _sz);
   virtual ~Seg();
 
   LM* GetLM() const { return lm; }
@@ -119,14 +118,14 @@ public:
   }
   bool GetSourceFileInfo(VMA vma, ushort opIndex,
 			 std::string& func, std::string& file, 
-			 suint& line) const {
+			 SrcFile::ln& line) const {
     return lm->GetSourceFileInfo(vma, opIndex, func, file, line);
   }
 
   bool GetSourceFileInfo(VMA begVMA, ushort bOpIndex,
 			 VMA endVMA, ushort eOpIndex,
 			 std::string& func, std::string& file,
-			 suint& begLine, suint& endLine,
+			 SrcFile::ln& begLine, SrcFile::ln& endLine,
 			 unsigned flags = 1) const {
     return lm->GetSourceFileInfo(begVMA, bOpIndex, endVMA, eOpIndex,
 				 func, file, begLine, endLine, flags);
@@ -157,10 +156,10 @@ private:
   LM* lm; // we are not owners
 
   std::string name;
-  Type   type;
-  VMA   beg;  // beginning of section 
-  VMA   end;  // end of section [equal to the beginning of next section]
-  VMA   size; // size in bytes
+  Type type;
+  VMA  beg;  // beginning of section 
+  VMA  end;  // end of section [equal to the beginning of next section]
+  VMA  size; // size in bytes
 };
 
 } // namespace binutils
@@ -183,10 +182,10 @@ class TextSegImpl;
 class TextSeg : public Seg { 
 public:
   TextSeg(LM* _lm, std::string& _name, VMA _beg, VMA _end,
-	      suint _size, asymbol **syms, int numSyms, bfd *abfd);
+	  suint _size, asymbol **syms, int numSyms, bfd *abfd);
   virtual ~TextSeg();
 
-  suint GetNumProcs() const { return procedures.size(); }
+  unsigned int GetNumProcs() const { return procedures.size(); }
 
   // -------------------------------------------------------
   // debugging

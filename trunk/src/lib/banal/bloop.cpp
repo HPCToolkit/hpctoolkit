@@ -136,11 +136,11 @@ WasCtxtClosed(CodeInfo* scope, LocationMgr& mgr);
 static void
 FindLoopBegLineInfo(binutils::Proc* p, 
 		    OA::OA_ptr<OA::CFG::Interface::Node> headBB,
-		    string& begFilenm, string& begProcnm, suint& begLn);
+		    string& begFilenm, string& begProcnm, SrcFile::ln& begLn);
 
 static StmtRangeScope*
-FindOrCreateStmtNode(std::map<suint, StmtRangeScope*>& stmtMap,
-		     CodeInfo* enclosingScope, suint line, 
+FindOrCreateStmtNode(std::map<SrcFile::ln, StmtRangeScope*>& stmtMap,
+		     CodeInfo* enclosingScope, SrcFile::ln line, 
 		     VMAInterval& vmaint);
 
 
@@ -199,9 +199,9 @@ FilterFilesFromScopeTree(PgmScopeTree* pgmScopeTree,
 // ------------------------------------------------------------
 class StmtData;
 
-class LineToStmtMap : public std::map<suint, StmtData*> {
+class LineToStmtMap : public std::map<SrcFile::ln, StmtData*> {
 public:
-  typedef std::map<suint, StmtData*> My_t;
+  typedef std::map<SrcFile::ln, StmtData*> My_t;
 
 public:
   LineToStmtMap() { }
@@ -448,7 +448,7 @@ FindOrCreateFileNode(LoadModScope* lmScope, binutils::Proc* p)
   string filenm = p->GetFilename();
   if (filenm.empty()) {
     string procnm;
-    suint line;
+    SrcFile::ln line;
     p->GetSourceFileInfo(p->GetBegVMA(), 0, procnm, filenm, line);
   }
   if (filenm.empty()) { 
@@ -477,7 +477,7 @@ FindOrCreateProcNode(FileScope* fScope, binutils::Proc* p)
   
   // Find preliminary source line bounds
   string file, proc;
-  suint begLn1, endLn1;
+  SrcFile::ln begLn1, endLn1;
   binutils::Insn* eInsn = p->GetLastInsn();
   ushort endOp = (eInsn) ? eInsn->GetOpIndex() : 0;
   p->GetSourceFileInfo(p->GetBegVMA(), 0, p->GetEndVMA(), endOp, 
@@ -485,7 +485,7 @@ FindOrCreateProcNode(FileScope* fScope, binutils::Proc* p)
   
   // Compute source line bounds to uphold invariant:
   //   (begLn == 0) <==> (endLn == 0)
-  suint begLn, endLn;
+  SrcFile::ln begLn, endLn;
   if (p->hasSymbolic()) {
     begLn = p->GetBegLine();
     endLn = MAX(begLn, endLn1);
@@ -556,8 +556,7 @@ BuildProcStructure(ProcScope* pScope, binutils::Proc* p,
   
 #if (DBG_PROC)
   DBG_PROC_print_now = false;
-  suint dbgId = p->GetId();
-
+  unsigned int dbgId = p->GetId();
   const char* dbgNm = "xxx";
   if (p->GetName().find(dbgNm) != string::npos) {
     DBG_PROC_print_now = true;
@@ -779,7 +778,7 @@ BuildLoopAndStmts(bloop::LocationMgr& locMgr,
     // INTERVAL or IRREDUCIBLE as a loop: Loop head
     // -----------------------------------------------------
     string fnm, pnm;
-    suint line;
+    SrcFile::ln line;
     FindLoopBegLineInfo(p, bb, fnm, pnm, line);
     pnm = GetBestFuncName(pnm);
     
@@ -827,7 +826,7 @@ BuildStmts(bloop::LocationMgr& locMgr,
 
     // 1. gather source code info
     string filenm, procnm;
-    suint line;
+    SrcFile::ln line;
     p->GetSourceFileInfo(vma, opIdx, procnm, filenm, line); 
     procnm = GetBestFuncName(procnm);
 
@@ -960,11 +959,11 @@ WasCtxtClosed(CodeInfo* scope, LocationMgr& mgr)
 static void
 FindLoopBegLineInfo(binutils::Proc* p, 
 		    OA::OA_ptr<OA::CFG::Interface::Node> headBB,
-		    string& begFilenm, string& begProcnm, suint& begLn)
+		    string& begFilenm, string& begProcnm, SrcFile::ln& begLn)
 {
   using namespace OA::CFG;
 
-  begLn = UNDEF_LINE;
+  begLn = SrcFile::ln_NULL;
 
   // Find the head vma
   binutils::Insn* head = banal::OA_CFG_getBegInsn(headBB);
@@ -992,10 +991,11 @@ FindLoopBegLineInfo(binutils::Proc* p,
     // If we have a backward edge, find the source line of the
     // backward branch.  Note: back edges are not always labeled as such!
     if (e->getType() == Interface::BACK_EDGE || vma >= headVMA) {
-      suint line;
+      SrcFile::ln line;
       string filenm, procnm;
       p->GetSourceFileInfo(vma, opIdx, procnm, filenm, line); 
-      if (IsValidLine(line) && (!IsValidLine(begLn) || line < begLn)) {
+      if (SrcFile::isValid(line) 
+	  && (!SrcFile::isValid(begLn) || line < begLn)) {
 	begLn = line;
 	begFilenm = filenm;
 	begProcnm = procnm;
@@ -1003,7 +1003,7 @@ FindLoopBegLineInfo(binutils::Proc* p,
     }
   }
   
-  if (!IsValidLine(begLn)) {
+  if (!SrcFile::isValid(begLn)) {
     VMA headOpIdx = head->GetOpIndex();
     p->GetSourceFileInfo(headVMA, headOpIdx, begProcnm, begFilenm, begLn);
   }
@@ -1014,8 +1014,8 @@ FindLoopBegLineInfo(binutils::Proc* p,
 // FindOrCreateStmtNode: Build a StmtRangeScope.  Unlike LocateStmt,
 // assumes that procedure boundaries do not need to be expanded.
 static StmtRangeScope*
-FindOrCreateStmtNode(std::map<suint, StmtRangeScope*>& stmtMap,
-		     CodeInfo* enclosingScope, suint line, VMAInterval& vmaint)
+FindOrCreateStmtNode(std::map<SrcFile::ln, StmtRangeScope*>& stmtMap,
+		     CodeInfo* enclosingScope, SrcFile::ln line, VMAInterval& vmaint)
 {
   StmtRangeScope* stmt = stmtMap[line];
   if (!stmt) {
@@ -1348,7 +1348,7 @@ CDS_InspectStmt(StmtRangeScope* stmt1, LineToStmtMap* stmtMap,
 {
   bool changed = false;
   
-  suint line = stmt1->begLine();
+  SrcFile::ln line = stmt1->begLine();
   StmtData* stmtdata = (*stmtMap)[line];
   if (stmtdata) {
     
@@ -1453,7 +1453,7 @@ MergePerfectlyNestedLoops(ScopeInfo* node)
     bool perfNested = (child->Type() == ScopeInfo::LOOP &&
 		       node->Type() == ScopeInfo::LOOP &&
 		       node->ChildCount() == 1);
-    if (perfNested && IsValidLine(child->begLine(), child->endLine()) &&
+    if (perfNested && SrcFile::isValid(child->begLine(), child->endLine()) &&
 	child->begLine() == n_CI->begLine() &&
 	child->endLine() == n_CI->endLine()) { 
 
