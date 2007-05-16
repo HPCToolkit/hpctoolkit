@@ -1,7 +1,7 @@
 /* contains overrides for some critical functions in libc that we need
    to know about so that we can take appropriate action. */
 /*
-  Copyright ((c)) 2002, Rice University 
+  Copyright ((c)) 2002-2007, Rice University 
   All rights reserved.
 
   Redistribution and use in source and binary forms, with or without
