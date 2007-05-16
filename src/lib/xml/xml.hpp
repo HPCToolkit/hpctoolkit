@@ -1,9 +1,9 @@
-// -*-C++-*-
+// -*-Mode: C++;-*-
 // $Id$
 
 // * BeginRiceCopyright *****************************************************
 // 
-// Copyright ((c)) 2002, Rice University 
+// Copyright ((c)) 2002-2007, Rice University 
 // All rights reserved.
 // 
 // Redistribution and use in source and binary forms, with or without
