@@ -657,8 +657,7 @@ binutils::LM::ReadSymbolTables()
 
   // Sort scratch symbol table by VMA.
   QuickSort QSort;
-  QSort.Create((void **)(impl->sortedSymbolTable),
-               &(LM::SymCmpByVMAFunc));
+  QSort.Create((void **)(impl->sortedSymbolTable), LM::SymCmpByVMAFunc);
   QSort.Sort(0, numSyms - 1);
   return STATUS;
 }

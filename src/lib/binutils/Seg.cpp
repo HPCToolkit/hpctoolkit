@@ -63,6 +63,8 @@ using std::string;
 
 #include <map>
 
+#include <algorithm>
+
 //*************************** User Include Files ****************************
 
 #include <include/gnu_bfd.h>
@@ -316,7 +318,7 @@ binutils::TextSeg::Create_InitializeProcs()
       // *wrong*. (Intel 9 has generated significant over-estimates).
       VMA endVMA_approx = FindProcEnd(i);
       if (dbg) {
-	endVMA = MIN(dbg->endVMA, endVMA_approx);
+	endVMA = std::min(dbg->endVMA, endVMA_approx);
 	if (!dbg->name.empty()) {
 	  procNm = dbg->name;
 	}

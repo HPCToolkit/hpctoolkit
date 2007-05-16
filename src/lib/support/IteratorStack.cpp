@@ -217,7 +217,7 @@ TraversalVisitType IteratorStack::VisitType() const
   return PostVisit;  // bogus return--not reached
 }
 
-TraversalOrder IteratorStack::GetTraversalOrder() const
+IteratorStack::TraversalOrder IteratorStack::GetTraversalOrder() const
 {  
   return clientTraversalOrder;
 }

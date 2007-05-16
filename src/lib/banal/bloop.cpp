@@ -71,6 +71,8 @@ using std::string;
 #include <map>  // STL
 #include <list> // STL
 
+#include <algorithm> // STL
+
 //************************ OpenAnalysis Include Files ***********************
 
 #include <OpenAnalysis/CFG/ManagerCFGStandard.hpp>
@@ -488,12 +490,12 @@ FindOrCreateProcNode(FileScope* fScope, binutils::Proc* p)
   SrcFile::ln begLn, endLn;
   if (p->hasSymbolic()) {
     begLn = p->GetBegLine();
-    endLn = MAX(begLn, endLn1);
+    endLn = std::max(begLn, endLn1);
   }
   else {
     // for now, always assume begLn to be more accurate
     begLn = begLn1;
-    endLn = MAX(begLn1, endLn1);
+    endLn = std::max(begLn1, endLn1);
   }
   
   // Create or find the scope.  Fuse procedures if names match.
