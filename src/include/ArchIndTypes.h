@@ -155,22 +155,10 @@
 
 //****************************************************************************
 
-// Special types for convenience 
-//   - Analagous to historical ushort, ulong
-
-#if defined(__cplusplus) 
-  // This can still cause duplicate definition conflicts (with system
-  // headers) in some C code.  Eventually we will be able to rely on
-  // C99 conformance.
-  typedef    unsigned short int    ushort;
-  typedef    unsigned       int    uint;
-  typedef    unsigned long  int    ulong;
-#endif
-
-//****************************************************************************
-
+// --------------------------------------------------------------------------
 // Macros for integer literal expressions
 // (Analagous to INTx_C() on Solaris/Linux, provided by inttypes.h)
+// --------------------------------------------------------------------------
 
 #ifndef INT8_C
 # define INT8_C(x)   x
@@ -203,10 +191,13 @@
 # error "ArchIndTypes.h: Internal error defining int literal macros."
 #endif
 
+
 //****************************************************************************
 
+// --------------------------------------------------------------------------
 // printf format strings for constant sized types
 // (Analagous to PRIab() on Solaris/Linux, provided by inttypes.h)
+// --------------------------------------------------------------------------
 
 #if defined(ARCH_32)
 # ifndef PRId64 /* use as a synecdoche for PRIa64 */

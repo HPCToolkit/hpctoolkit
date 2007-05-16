@@ -44,6 +44,8 @@
 
 //****************************************************************************
 
+// TODO: push detection to configure.ac
+
 #if (defined(OS_LINUX) || defined(OS_MACHDARWIN))
 # include <math.h> /* must include bits/nan.h through math.h */
 #elif (defined(OS_OSF1) || defined(OS_IRIX64) || defined(OS_SUNOS))
