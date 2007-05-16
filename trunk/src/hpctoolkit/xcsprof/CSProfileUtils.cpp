@@ -143,8 +143,8 @@ writeCSProfile(CSProfile* prof, std::ostream& os, bool prettyPrint)
   os << "<TARGET name"; WriteAttrStr(os, prof->GetTarget()); os << "/>\n";
 
   // write out metrics
-  suint numberofmetrics = prof->GetNumberOfMetrics();
-  for (int i=0; i<numberofmetrics; i++) {
+  unsigned int numberofmetrics = prof->GetNumberOfMetrics();
+  for (unsigned int i = 0; i < numberofmetrics; i++) {
     CSProfileMetric * metric = prof->GetMetric(i);
     os << "<METRIC shortName"; WriteAttrNum(os, i);
     os << " nativeName";       WriteAttrNum(os, metric->GetName());
@@ -191,7 +191,7 @@ ReadProfile_CSPROF(const char* fnm, const char *execnm)
     return NULL;
   }
   
-  suint num_metrics = data.num_metrics;
+  unsigned int num_metrics = data.num_metrics;
   
   DIAG_Msg(2, "Metrics found: " << num_metrics);
 
@@ -214,7 +214,7 @@ ReadProfile_CSPROF(const char* fnm, const char *execnm)
   // 
   // ------------------------------------------------------------
   
-  suint num_lm = epochtbl.epoch_modlist->num_loadmodule;
+  unsigned int num_lm = epochtbl.epoch_modlist->num_loadmodule;
 
   CSProfEpoch* epochmdlist = new CSProfEpoch(num_lm);
 
@@ -271,11 +271,10 @@ cstree_create_node_CB(void* tree,
   VMA ip;
   ushort opIdx;
   convertOpIPToIP((VMA)data->ip, ip, opIdx);
-  vector<suint> metricsVector;
+  vector<unsigned int> metricsVector;
   metricsVector.clear();
-  int i;
-  for (i=0; i<num_metrics; i++) {
-    metricsVector.push_back((suint) data->metrics[i]);
+  for (unsigned int i = 0; i < num_metrics; i++) {
+    metricsVector.push_back((unsigned int)data->metrics[i]);
   }
 
   DIAG_DevMsgIf(0, "cstree_create_node_CB: " << hex << data->ip << dec);

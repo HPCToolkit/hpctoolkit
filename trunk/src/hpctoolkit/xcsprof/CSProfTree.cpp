@@ -232,7 +232,7 @@ CSProfCallSiteNode::CSProfCallSiteNode(CSProfNode* _parent)
 
 
 CSProfCallSiteNode::CSProfCallSiteNode(CSProfNode* _parent, VMA _ip, 
-			      ushort _opIndex, vector<suint> _metrics)
+			      ushort _opIndex, vector<unsigned int> _metrics)
   : CSProfCodeNode(CALLSITE, _parent, ln_NULL, ln_NULL), 
     ip(_ip), opIndex(_opIndex), metrics(_metrics) 
 {
@@ -549,7 +549,7 @@ CSProfCallSiteNode::ToDumpMetricsString(int dmpFlag) const
 
   metricsString ="";
   for (i=0; i<metrics.size(); i++) {
-    suint crtMetric = metrics[i];
+    unsigned int crtMetric = metrics[i];
     if (crtMetric!= 0) {
       metricsString  +=  " <M ";
       metricsString  +=  "n"+MakeAttrNum(i)+" v" + MakeAttrNum(crtMetric);
@@ -622,7 +622,7 @@ CSProfStatementNode::ToDumpMetricsString(int dmpFlag) const {
 
   metricsString ="";
   for (i=0; i<metrics.size(); i++) {
-    suint crtMetric = metrics[i];
+    unsigned int crtMetric = metrics[i];
     if (crtMetric!= 0) {
       metricsString += " <M ";
       metricsString += "n" + MakeAttrNum(i) + " v" + MakeAttrNum(crtMetric);

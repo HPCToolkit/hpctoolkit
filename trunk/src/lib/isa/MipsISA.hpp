@@ -48,8 +48,8 @@
 //
 //***************************************************************************
 
-#ifndef MipsISA_H 
-#define MipsISA_H
+#ifndef isa_MipsISA_hpp 
+#define isa_MipsISA_hpp
 
 //************************* System Include Files ****************************
 

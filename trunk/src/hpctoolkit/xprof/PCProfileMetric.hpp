@@ -1,4 +1,4 @@
-// -*-C++-*-
+// -*-Mode: C++;-*-
 // $Id$
 
 // * BeginRiceCopyright *****************************************************
@@ -135,7 +135,7 @@ public:
 
   // 'GetSz': The number of entries (note: this is not necessarily the
   // number of instructions or PC values in the text segment).
-  suint GetSz() const { return map.size(); }
+  unsigned int GetSz() const { return map.size(); }
   
   // 'GetISA': Note: A user must call ISA::Attach() if this is more
   // than a momentary reference!
@@ -165,8 +165,8 @@ public:
   // becomes responsible for freeing memory.
   PCSet* Filter(PCFilter* filter) const;
 
-  void Dump(std::ostream& o = std::cerr);
-  void DDump(); 
+  void dump(std::ostream& o = std::cerr);
+  void ddump(); 
 
 private:
   // Should not be used  

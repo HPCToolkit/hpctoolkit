@@ -157,7 +157,7 @@ public:
 
 
 binutils::TextSeg::TextSeg(binutils::LM* _lm, string& _name, 
-			   VMA _beg, VMA _end, suint _size, 
+			   VMA _beg, VMA _end, uint64_t _size, 
 			   asymbol** syms, int numSyms, bfd* abfd)
   : Seg(_lm, _name, Seg::Text, _beg, _end, _size), impl(NULL),
     procedures(0)
@@ -188,7 +188,7 @@ binutils::TextSeg::TextSeg(binutils::LM* _lm, string& _name,
   impl->contentsRaw = new char[_size+16+16];
   memset(impl->contentsRaw, 0, 16+16);        // zero the padding
   char* contentsTmp = impl->contentsRaw + 16; // add the padding
-  impl->contents = (char *)( ((psuint)contentsTmp + 15) & ~15 ); // align
+  impl->contents = (char *)( ((uintptr_t)contentsTmp + 15) & ~15 ); // align
 
   const char *nameStr = _name.c_str();
   int result = bfd_get_section_contents(abfd,
@@ -324,7 +324,7 @@ binutils::TextSeg::Create_InitializeProcs()
       if (!dbg || endVMA == 0) {
 	endVMA = endVMA_approx;
       }
-      suint size = endVMA - begVMA; // see note above
+      unsigned int size = endVMA - begVMA; // see note above
 
       if (size == 0) {
 	continue;

@@ -1,4 +1,4 @@
-// -*-C++-*-
+// -*-Mode: C++;-*-
 // $Id$
 
 // * BeginRiceCopyright *****************************************************
@@ -66,16 +66,16 @@ using std::dec;
 //****************************************************************************
 
 void 
-DCPIProfileMetric::Dump(std::ostream& o)
+DCPIProfileMetric::dump(std::ostream& o)
 {
   o << "'DCPIProfileMetric' --\n";
-  PCProfileMetric::Dump(o);
+  PCProfileMetric::dump(o);
 }
 
 void
-DCPIProfileMetric::DDump()
+DCPIProfileMetric::ddump()
 {
-  Dump(std::cerr);
+  dump(std::cerr);
 }
 
 //****************************************************************************

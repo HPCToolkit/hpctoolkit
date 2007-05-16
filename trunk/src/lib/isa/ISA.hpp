@@ -394,7 +394,7 @@ protected:
 
 private:
   DecodingCache *_cache;
-  suint refcount;
+  unsigned int refcount;
 };
 
 //****************************************************************************

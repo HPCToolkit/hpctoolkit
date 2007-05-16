@@ -78,7 +78,7 @@ unsigned int binutils::Proc::nextId = 0;
 
 binutils::Proc::Proc(binutils::TextSeg* seg, string& name, string& linkname,
                      binutils::Proc::Type t, VMA begVMA, VMA endVMA, 
-		     suint size)
+		     unsigned int size)
   : m_seg(seg), m_name(name), m_linkname(linkname), m_type(t), m_begVMA(begVMA),
     m_endVMA(endVMA), m_size(size), m_filenm(""), m_begLine(0), m_parent(NULL)
 {

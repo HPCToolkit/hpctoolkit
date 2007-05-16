@@ -66,7 +66,7 @@ using std::dec;
 // PCProfileMetricSet
 //****************************************************************************
 
-PCProfileMetricSet::PCProfileMetricSet(ISA* isa_, suint sz)
+PCProfileMetricSet::PCProfileMetricSet(ISA* isa_, unsigned sz)
   : isa(isa_)
 {
   metricVec.reserve(16);
@@ -75,20 +75,20 @@ PCProfileMetricSet::PCProfileMetricSet(ISA* isa_, suint sz)
 
 PCProfileMetricSet::~PCProfileMetricSet()
 {
-  for (suint i = 0; i < GetSz(); i++) {
+  for (unsigned int i = 0; i < GetSz(); i++) {
     delete metricVec[i];
   }
   metricVec.clear();
   isa->Detach();
 }
 
-sint
+int
 PCProfileMetricSet::DataExists(VMA pc, ushort opIndex) const
 {
-  for (suint i = 0; i < GetSz(); i++) {
+  for (unsigned int i = 0; i < GetSz(); i++) {
     const PCProfileMetric* m = Index(i);
     if (m->Find(pc, opIndex) != PCProfileDatum_NIL) {
-      return (sint)i; // this cast should never be a problem
+      return (int)i; // this cast should never be a problem
     }
   }
   return -1;
@@ -99,7 +99,7 @@ PCProfileMetricSet::Filter(MetricFilter* filter) const
 {
   PCProfileMetricSet* s = new PCProfileMetricSet(isa);
   
-  for (suint i = 0; i < GetSz(); i++) {
+  for (unsigned int i = 0; i < GetSz(); i++) {
     PCProfileMetric* m = metricVec[i];
     if ( (*filter)(m) ) {
       s->Add(m);
@@ -109,19 +109,19 @@ PCProfileMetricSet::Filter(MetricFilter* filter) const
 }
 
 void 
-PCProfileMetricSet::Dump(std::ostream& o)
+PCProfileMetricSet::dump(std::ostream& o)
 {
   o << "'PCProfileMetricSet' --\n";
   o << "  vec size: " << GetSz() << "\n";
-  for (suint i = 0; i < GetSz(); i++) {
-    metricVec[i]->Dump(o);
+  for (unsigned int i = 0; i < GetSz(); i++) {
+    metricVec[i]->dump(o);
   }
 }
 
 void 
-PCProfileMetricSet::DDump()
+PCProfileMetricSet::ddump()
 {
-  Dump(std::cerr);
+  dump(std::cerr);
 }
 
 
@@ -129,7 +129,7 @@ PCProfileMetricSet::DDump()
 // PCProfile
 //****************************************************************************
 
-PCProfile::PCProfile(ISA* isa_, suint sz)
+PCProfile::PCProfile(ISA* isa_, unsigned int sz)
   : PCProfileMetricSet(isa_, sz)
 {
   pcVec.reserve(1024);
@@ -151,25 +151,25 @@ PCProfile::AddPC(VMA pc, ushort opIndex)
 }
 
 void 
-PCProfile::Dump(std::ostream& o)
+PCProfile::dump(std::ostream& o)
 {
   o << "'PCProfile' --\n";
   o << "  file: " << profiledFile << "\n";
   o << "  header info:\n" << fHdrInfo;
-  PCProfileMetricSet::Dump(o);  
+  PCProfileMetricSet::dump(o);  
 }
 
 void 
-PCProfile::DDump()
+PCProfile::ddump()
 {
-  Dump(std::cerr);
+  dump(std::cerr);
 }
 
 //****************************************************************************
 // PCProfileVec
 //****************************************************************************
 
-PCProfileVec::PCProfileVec(suint sz)
+PCProfileVec::PCProfileVec(unsigned int sz)
   : datum(0), vec(sz, PCProfileDatum_NIL)
 {
 }
@@ -184,12 +184,12 @@ PCProfileVec::IsZeroed()
 }
 
 void 
-PCProfileVec::Dump(std::ostream& o)
+PCProfileVec::dump(std::ostream& o)
 {
   o << "'PCProfileVec' --\n";
   o << "  datum=" << datum << endl;
   o << "  vec=[";
-  for (suint i = 0; i < vec.size(); i++) {
+  for (unsigned int i = 0; i < vec.size(); i++) {
     if (i != 0) { o << ", "; }
     o << vec[i];
   }
@@ -197,7 +197,7 @@ PCProfileVec::Dump(std::ostream& o)
 }
 
 void 
-PCProfileVec::DDump()
+PCProfileVec::ddump()
 {
-  Dump(std::cerr);
+  dump(std::cerr);
 }

@@ -1,5 +1,6 @@
+// -*-Mode: C++;-*-
 // $Id$
-// -*-C++-*-
+
 // * BeginRiceCopyright *****************************************************
 // 
 // Copyright ((c)) 2002, Rice University 
@@ -70,6 +71,8 @@
 //*************************** Forward Declarations ***************************
 
 //****************************************************************************
+
+// TODO: Push these tests to configure.ac
 
 // Verify that we are using a known platform and define platform and
 // architecture macros.
@@ -152,48 +155,6 @@
 
 //****************************************************************************
 
-// Special types (along with appropriate limits):
-// - pointer-sized integer: psint, psuint
-// - standard-sized integer: sint, suint
-//   Both are always guaranteed to have the same number of bits as a
-//   pointer; the latter are designed for use as a type that is better
-//   thought of as an integer (without the implementation/pointer
-//   baggage, but where a few pointer casts are permissable).
-
-#if (defined(ARCH_IA32) || defined(ARCH_MIPS32) || defined(ARCH_POWERPC32) \
-     || defined(ARCH_SPARC32))
-
-  // int/long/pointer: 32 bits
-  typedef int           psint;  // pointer-sized int (32-bit)
-  typedef unsigned int  psuint; // pointer-sized unsigned int
-# define PSINT_MIN  (INT_MIN)
-# define PSINT_MAX  (INT_MAX)
-# define PSUINT_MAX (UINT_MAX)
-
-#elif (defined(ARCH_ALPHA64) || defined(ARCH_IA64) || defined(ARCH_MIPS64) \
-       || defined(ARCH_SPARC64)|| defined(ARCH_X86_64))
-
-  // long/pointer: 64 bits; int: 32 bits
-  typedef long          psint;  // pointer-sized int (64-bit)
-  typedef unsigned long psuint; // pointer-sized unsigned int
-# define PSINT_MIN  (LONG_MIN)
-# define PSINT_MAX  (LONG_MAX)
-# define PSUINT_MAX (ULONG_MAX)
-
-# define ARCH_INT_DIFFERS_FROM_SINT 1
-
-#else
-# error "ArchIndTypes.h: Internal error defining special types."
-#endif 
-
-
-typedef psint  sint;   // standard sized int
-typedef psuint suint;  // standard sized unsigned int
-#define SINT_MIN  (PSINT_MIN)
-#define SINT_MAX  (PSINT_MAX)
-#define SUINT_MAX (PSUINT_MAX)
-
-
 // Special types for convenience 
 //   - Analagous to historical ushort, ulong
 
@@ -201,8 +162,9 @@ typedef psuint suint;  // standard sized unsigned int
   // This can still cause duplicate definition conflicts (with system
   // headers) in some C code.  Eventually we will be able to rely on
   // C99 conformance.
-  typedef unsigned short int ushort;
-  typedef unsigned long  int ulong;
+  typedef    unsigned short int    ushort;
+  typedef    unsigned       int    uint;
+  typedef    unsigned long  int    ulong;
 #endif
 
 //****************************************************************************

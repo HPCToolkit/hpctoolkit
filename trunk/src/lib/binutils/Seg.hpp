@@ -86,7 +86,7 @@ class Seg {
 public: 
   enum Type { BSS, Text, Data, Unknown };
   
-  Seg(LM* _lm, std::string& _name, Type t, VMA _beg, VMA _end, VMA _sz);
+  Seg(LM* _lm, std::string& _name, Type t, VMA _beg, VMA _end, uint64_t _sz);
   virtual ~Seg();
 
   LM* GetLM() const { return lm; }
@@ -103,7 +103,7 @@ public:
   VMA GetEnd() const { return end; }
 
   // Return size of section
-  VMA GetSize() const { return size; }
+  uint64_t GetSize() const { return size; }
 
   // Return true if virtual memory address 'vma' is within the section
   // WARNING: vma must be unrelocated
@@ -159,7 +159,7 @@ private:
   Type type;
   VMA  beg;  // beginning of section 
   VMA  end;  // end of section [equal to the beginning of next section]
-  VMA  size; // size in bytes
+  uint64_t size; // size in bytes
 };
 
 } // namespace binutils
@@ -182,7 +182,7 @@ class TextSegImpl;
 class TextSeg : public Seg { 
 public:
   TextSeg(LM* _lm, std::string& _name, VMA _beg, VMA _end,
-	  suint _size, asymbol **syms, int numSyms, bfd *abfd);
+	  uint64_t _size, asymbol **syms, int numSyms, bfd *abfd);
   virtual ~TextSeg();
 
   unsigned int GetNumProcs() const { return procedures.size(); }

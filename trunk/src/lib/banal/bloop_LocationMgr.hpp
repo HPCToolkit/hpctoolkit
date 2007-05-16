@@ -139,7 +139,7 @@ public:
   //      may need to be relocated to a more appropriate scope.
   //   2) 'proposed_scope' itself has already been relocated, if necessary.
   void locate(LoopScope* loop, CodeInfo* proposed_scope,
-	      std::string& filenm, std::string& procnm, suint line);
+	      std::string& filenm, std::string& procnm, SrcFile::ln line);
 
   // locate: Given a parentless StmtRangeScope 'stmt', the original
   //   enclosing scope 'proposed_scope' and best-guess source-line
@@ -149,7 +149,7 @@ public:
   //  
   // The above assumptions apply.
   void locate(StmtRangeScope* stmt, CodeInfo* proposed_scope,
-	      std::string& filenm, std::string& procnm, suint line);
+	      std::string& filenm, std::string& procnm, SrcFile::ln line);
 
   // endSeq: 
   void endSeq();
@@ -171,10 +171,11 @@ public:
   // -------------------------------------------------------
 
   // Assume we know that file names match
-  static bool containsLineFzy(CodeInfo* x, suint line, 
+  static bool containsLineFzy(CodeInfo* x, SrcFile::ln line, 
 			      bool loopIsAlien = false);
 
-  static bool containsIntervalFzy(CodeInfo* x, suint begLn, suint endLn);
+  static bool containsIntervalFzy(CodeInfo* x, 
+				  SrcFile::ln begLn, SrcFile::ln endLn);
 
   // -------------------------------------------------------
   // debugging
@@ -226,12 +227,12 @@ private:
     // whether the current context contains the line.  In the case
     // where a file name is available *and* matches the context, the
     // line matching is more lenient.
-    bool containsLine(const string& filenm, suint line) const {
+    bool containsLine(const string& filenm, SrcFile::ln line) const {
       return (fileName() == filenm 
 	      && LocationMgr::containsLineFzy(ctxt(), line));
     }
 
-    bool containsLine(suint line) const;
+    bool containsLine(SrcFile::ln line) const;
     
     bool isAlien() const { return (m_ctxt->Type() == ScopeInfo::ALIEN); }
     
@@ -307,7 +308,7 @@ private:
   // may already live within an alien context)
   CtxtChange_t 
   determineContext(CodeInfo* proposed_scope,
-		   std::string& filenm, std::string& procnm, suint line);
+		   std::string& filenm, std::string& procnm, SrcFile::ln line);
   
   // fixCtxtStack: Yuck.
   void
@@ -318,7 +319,7 @@ private:
   // within lines 'begLn' and 'endLn', perform the transformations.
   void
   fixScopeTree(CodeInfo* from_scope, CodeInfo* true_ctxt, 
-	       suint begLn, suint endLn);
+	       SrcFile::ln begLn, SrcFile::ln endLn);
 
   // alienateScopeTree: place all non-Alien children of 'scope' into an Alien
   // context based on 'alien' except for 'exclude'
@@ -356,7 +357,7 @@ private:
   // based on what information is available, i.e. it is a findCtxt
   // "switch" statement.
   Ctxt* switch_findCtxt(const string& filenm, const string& procnm,
-			suint line, const Ctxt* base_ctxt = NULL) const;
+			SrcFile::ln line, const Ctxt* base_ctxt = NULL) const;
   
 
   // findCtxt: find the the "first" instance of ctxt in the stack
@@ -372,7 +373,7 @@ private:
 
   class FindCtxt_MatchFPLOp : public FindCtxt_MatchOp {
   public:
-    FindCtxt_MatchFPLOp(const string& filenm, const string& procnm, suint line)
+    FindCtxt_MatchFPLOp(const string& filenm, const string& procnm, SrcFile::ln line)
       : m_filenm(filenm), m_procnm(procnm), m_line(line) { }
     ~FindCtxt_MatchFPLOp() { }
     
@@ -382,7 +383,7 @@ private:
     }
   private:
     const string& m_filenm, m_procnm;
-    suint m_line;
+    SrcFile::ln m_line;
   };
 
   class FindCtxt_MatchFPOp : public FindCtxt_MatchOp {
@@ -400,7 +401,7 @@ private:
 
   class FindCtxt_MatchFLOp : public FindCtxt_MatchOp {
   public:
-    FindCtxt_MatchFLOp(const string& filenm, suint line)
+    FindCtxt_MatchFLOp(const string& filenm, SrcFile::ln line)
       : m_filenm(filenm), m_line(line) { }
     ~FindCtxt_MatchFLOp() { }
     
@@ -409,7 +410,7 @@ private:
     }
   private:
     const string& m_filenm;
-    suint m_line;
+    SrcFile::ln m_line;
   };
 
   class FindCtxt_MatchFOp : public FindCtxt_MatchOp {
@@ -427,7 +428,7 @@ private:
 
   class FindCtxt_MatchLOp : public FindCtxt_MatchOp {
   public:
-    FindCtxt_MatchLOp(suint line)
+    FindCtxt_MatchLOp(SrcFile::ln line)
       : m_line(line) { }
     ~FindCtxt_MatchLOp() { }
     
@@ -435,7 +436,7 @@ private:
       return (ctxt.containsLine(m_line));
     }
   private:
-    suint m_line;
+    SrcFile::ln m_line;
   };
 
 
@@ -443,7 +444,7 @@ private:
   Ctxt* findCtxt(FindCtxt_MatchOp& op, 
 		 const Ctxt* base = NULL) const;
   
-  Ctxt* findCtxt(const string& filenm, const string& procnm, suint line,
+  Ctxt* findCtxt(const string& filenm, const string& procnm, SrcFile::ln line,
 		 const Ctxt* base = NULL) const
     { FindCtxt_MatchFPLOp op(filenm, procnm, line); return findCtxt(op, base); }
 
@@ -451,7 +452,7 @@ private:
 		 const Ctxt* base = NULL) const
     { FindCtxt_MatchFPOp op(filenm, procnm); return findCtxt(op, base); }
 
-  Ctxt* findCtxt(const std::string& filenm, suint line, 
+  Ctxt* findCtxt(const std::string& filenm, SrcFile::ln line, 
 		 const Ctxt* base = NULL) const
     { FindCtxt_MatchFLOp op(filenm, line); return findCtxt(op, base); }
 
@@ -459,7 +460,7 @@ private:
 		 const Ctxt* base = NULL) const
     { FindCtxt_MatchFOp op(filenm); return findCtxt(op, base); }
 
-  Ctxt* findCtxt(suint line, const Ctxt* base = NULL) const
+  Ctxt* findCtxt(SrcFile::ln line, const Ctxt* base = NULL) const
     { FindCtxt_MatchLOp op(line); return findCtxt(op, base); }
 
   // -------------------------------------------------------
@@ -505,7 +506,7 @@ private:
   AlienScope* findOrCreateAlienScope(CodeInfo* parent_scope,
 				     const std::string& filenm,
 				     const std::string& procnm, 
-				     suint line,
+				     SrcFile::ln line,
 				     bool tosOnCreate = true);
   
 private: 

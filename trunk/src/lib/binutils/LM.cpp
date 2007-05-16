@@ -366,7 +366,6 @@ binutils::LM::GetSourceFileInfo(VMA vma, ushort opIndex,
   if (!impl->bfdSymbolTable) { return STATUS; }
   
   unsigned int bfd_line = 0;
-  //DIAG_Assert(sizeof(suint) >= sizeof(bfd_line));
 
   VMA unrelocVMA = UnRelocateVMA(vma);
   VMA opVMA = isa->ConvertVMAToOpVMA(unrelocVMA, opIndex);
@@ -466,7 +465,7 @@ binutils::LM::GetSourceFileInfo(VMA begVMA, ushort bOpIndex,
   } 
   else if (flags 
 	   && begLine > endLine) { // perhaps due to insn. reordering...
-    suint tmp = begLine;           // but unlikely given the way this is
+    SrcFile::ln tmp = begLine;     // but unlikely given the way this is
     begLine = endLine;             // typically called
     endLine = tmp;
   }
@@ -684,7 +683,7 @@ binutils::LM::ReadSegs()
     // 1. Determine initial section attributes
     string secName(bfd_section_name(abfd, sec));
     bfd_vma secBeg = bfd_section_vma(abfd, sec);
-    suint secSize = bfd_section_size(abfd, sec) / bfd_octets_per_byte(abfd);
+    uint64_t secSize = bfd_section_size(abfd, sec) / bfd_octets_per_byte(abfd);
     bfd_vma secEnd = secBeg + secSize;
     
     // 2. Create section

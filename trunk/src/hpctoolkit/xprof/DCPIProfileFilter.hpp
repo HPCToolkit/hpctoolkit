@@ -1,4 +1,4 @@
-// -*-C++-*-
+// -*-Mode: C++;-*-
 // $Id$
 
 // * BeginRiceCopyright *****************************************************
@@ -202,8 +202,8 @@ public:
   ~PredefinedDCPIMetricTable() { }
 
   static Entry* FindEntry(const char* token);
-  static Entry* Index(suint i);
-  static suint GetSize() { return size; }
+  static Entry* Index(unsigned int i);
+  static unsigned int GetSize() { return size; }
 
 private:
   // Should not be used 
@@ -212,7 +212,7 @@ private:
   
 private:
   static Entry table[];
-  static suint size;
+  static unsigned int size;
   static bool sorted;
 };
 

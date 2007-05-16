@@ -245,7 +245,7 @@ ListAvailPredefDCPIFilters(DCPIProfile* prof, bool longlist)
   // When longlist is true, a long listing is print (name and description)
 
   string out;
-  for (suint i = 0; i < PredefinedDCPIMetricTable::GetSize(); ++i) {
+  for (unsigned int i = 0; i < PredefinedDCPIMetricTable::GetSize(); ++i) {
     PredefinedDCPIMetricTable::Entry* e = PredefinedDCPIMetricTable::Index(i);
     if (IsPredefDCPIFilterAvail(prof, e)) {
       
@@ -339,7 +339,7 @@ StringList*
 GetAvailPredefDCPIFilterNms(DCPIProfile* prof, binutils::LM* lm)
 {
   StringList* flist = new StringList;
-  for (suint i = 0; i < PredefinedDCPIMetricTable::GetSize(); ++i) {
+  for (unsigned int i = 0; i < PredefinedDCPIMetricTable::GetSize(); ++i) {
     PredefinedDCPIMetricTable::Entry* e = PredefinedDCPIMetricTable::Index(i);
     if (IsPredefDCPIFilterAvail(prof, e)) {
       flist->push_back(string(e->name));

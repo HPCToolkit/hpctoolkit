@@ -97,27 +97,27 @@ private:
   
 public:
   // Constructor: reserves at least 'sz' slots; 'isa_' is *reference counted*
-  PCProfileMetricSet(ISA* isa_, suint sz = 16); 
+  PCProfileMetricSet(ISA* isa_, unsigned int sz = 16); 
   virtual ~PCProfileMetricSet(); 
   
   // Access to metrics (0-based).  When a set is created, space for
   // slots is only reserved.  To add slots, one must use 'Add' or
   // 'SetSz'.  Once slots exist, they can be randomly accessed via
   // 'Assign' and 'operator[]'.
-  const PCProfileMetric* Index(suint i) const { return metricVec[i]; }
-  const PCProfileMetric* operator[](suint i) const { return metricVec[i]; }
+  const PCProfileMetric* Index(unsigned int i) const { return metricVec[i]; }
+  const PCProfileMetric* operator[](unsigned int i) const { return metricVec[i]; }
 
-  void Assign(suint i, const PCProfileMetric* m) { 
+  void Assign(unsigned int i, const PCProfileMetric* m) { 
     metricVec[i] = const_cast<PCProfileMetric*>(m); // assume ownership of m
   }
-  PCProfileMetric*& operator[](suint i) { return metricVec[i]; }
+  PCProfileMetric*& operator[](unsigned int i) { return metricVec[i]; }
 
   void Add(const PCProfileMetric* m) {
     metricVec.push_back(const_cast<PCProfileMetric*>(m));
   }
 
-  suint GetSz() const { return metricVec.size(); }
-  void SetSz(suint sz) { metricVec.resize(sz); }  
+  unsigned int GetSz() const { return metricVec.size(); }
+  void SetSz(unsigned int sz) { metricVec.resize(sz); }  
 
   void Clear() { metricVec.clear(); }
 
@@ -130,7 +130,7 @@ public:
   // operation designated by 'pc' and 'opIndex'?  If yes, returns the
   // index of the first metric with non-nil data (forward iteration
   // from 0 to size); otherwise, returns negative.  
-  sint DataExists(VMA pc, ushort opIndex) const;
+  int DataExists(VMA pc, ushort opIndex) const;
 
   // Filter(): Returns a new, non-null but possibly empty, set of
   // metrics that pass the filter (i.e., every metric metric 'm' for
@@ -138,8 +138,8 @@ public:
   // freeing memory.
   PCProfileMetricSet* Filter(MetricFilter* filter) const;
   
-  void Dump(std::ostream& o = std::cerr);
-  void DDump(); 
+  void dump(std::ostream& o = std::cerr);
+  void ddump(); 
   
 private:
   // Should not be used 
@@ -215,7 +215,7 @@ private:
 class PCProfile : public PCProfileMetricSet
 {
 public:
-  PCProfile(ISA* isa_, suint sz = 16);
+  PCProfile(ISA* isa_, unsigned int sz = 16);
   virtual ~PCProfile();
   
   // ProfiledFile: the name of the profiled program image
@@ -236,18 +236,18 @@ public:
   VMA GetTxtSz()    const { return (GetSz()) ? Index(0)->GetTxtSz() : 0; }
   
   // Access to metrics (redundant)
-  const PCProfileMetric* GetMetric(suint i) const { return Index(i); }
-  void SetMetric(suint i, const PCProfileMetric* m) { Assign(i, m); }
+  const PCProfileMetric* GetMetric(unsigned int i) const { return Index(i); }
+  void SetMetric(unsigned int i, const PCProfileMetric* m) { Assign(i, m); }
   void AddMetric(const PCProfileMetric* m) { Add(m); }
-  suint GetNumMetrics() const { return GetSz(); }
-  void SetNumMetrics(suint sz) { SetSz(sz); }
+  unsigned int GetNumMetrics() const { return GetSz(); }
+  void SetNumMetrics(unsigned int sz) { SetSz(sz); }
 
   // Access to PCs containing non-zero profiling info
-  suint GetNumPCs() { return pcVec.size(); }
+  unsigned int GetNumPCs() { return pcVec.size(); }
   void AddPC(VMA pc, ushort opIndex); // be careful: should be no duplicates
 
-  void Dump(std::ostream& o = std::cerr);
-  void DDump(); 
+  void dump(std::ostream& o = std::cerr);
+  void ddump(); 
   
 private:
   // Should not be used 
@@ -313,20 +313,20 @@ private:
 class PCProfileVec
 {
 public:
-  PCProfileVec(suint sz);
+  PCProfileVec(unsigned int sz);
   virtual ~PCProfileVec() { }
 
-  suint GetDatum() const { return datum; }
-  suint GetSz()    const { return vec.size(); }
+  uint64_t GetDatum() const { return datum; }
+  unsigned int GetSz()    const { return vec.size(); }
 
-  void SetDatum(suint d) { datum = d; }
+  void SetDatum(uint64_t d) { datum = d; }
 
   bool IsZeroed(); 
   
-  PCProfileDatum& operator[](suint i) { return vec[i]; }
+  PCProfileDatum& operator[](unsigned int i) { return vec[i]; }
 
-  void Dump(std::ostream& o = std::cerr);
-  void DDump(); 
+  void dump(std::ostream& o = std::cerr);
+  void ddump(); 
   
 private:
   // Should not be used  
@@ -336,7 +336,7 @@ private:
   
 protected:
 private:  
-  suint datum; // datum to associate with vec (e.g. pc value, line no, ptr)
+  uint64_t datum; // datum to associate with vec (e.g. pc value, line no, ptr)
   std::vector<PCProfileDatum> vec;
 };
 

@@ -66,6 +66,8 @@
 
 #include <lib/isa/ISATypes.hpp>
 
+#include <lib/support/SrcFile.hpp>
+
 //*************************** Forward Declarations **************************
 
 //***************************************************************************
@@ -95,7 +97,7 @@ public:
   VMA begVMA; // begin VMA
   VMA endVMA; // end VMA (at the end of the last insn)
   std::string name, filenm;
-  suint begLine;
+  SrcFile::ln begLine;
   
   // -------------------------------------------------------
   // debugging

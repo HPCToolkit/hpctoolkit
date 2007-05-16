@@ -71,6 +71,7 @@ using std::dec;
 #include "dbg_Proc.hpp"
 
 #include <lib/support/diagnostics.h>
+#include <lib/support/SrcFile.hpp>
 
 //*************************** Forward Declarations **************************
 
@@ -191,7 +192,7 @@ binutils::dbg::LM::bfd_dbgInfoCallback(void* callback_obj,
   pinfo->endVMA = endVMA;
   pinfo->name = name;
   pinfo->filenm = filenm;
-  pinfo->begLine = (suint)begLine;
+  pinfo->begLine = (SrcFile::ln)begLine;
 
   // We are not guaranteed to see parent routines before children.
   // Save begVMA for future processing.

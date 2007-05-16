@@ -125,13 +125,13 @@ struct compare_ldmodule_by_mapaddr
 class CSProfEpoch : public Unique {
 public: 
   // Constructor/Destructor
-  CSProfEpoch(const suint i);
+  CSProfEpoch(const unsigned int i);
   virtual ~CSProfEpoch();
   
   // Data
   void  AddLoadModule(CSProfLDmodule* ldm) {loadmoduleVec.push_back(ldm);}
   
-  void SetLoadmodule(suint i, const CSProfLDmodule* ldm) {
+  void SetLoadmodule(unsigned int i, const CSProfLDmodule* ldm) {
     loadmoduleVec[i] = const_cast<CSProfLDmodule*>(ldm);
   }
   
@@ -140,9 +140,9 @@ public:
 	      compare_ldmodule_by_mapaddr());
   } 
   
-  suint GetNumLdModule() {return numberofldmodule;} 
+  unsigned int GetNumLdModule() {return numberofldmodule;} 
   
-  CSProfLDmodule* GetLdModule(suint i)  {return loadmoduleVec[i];}
+  CSProfLDmodule* GetLdModule(unsigned int i)  {return loadmoduleVec[i];}
   
   // Debug
   void Dump(std::ostream& o = std::cerr);
@@ -154,7 +154,7 @@ public:
   
 protected:
 private:
-  suint            numberofldmodule;   
+  unsigned int       numberofldmodule;   
   // vector of load module with this epoch 
   // the size of the vector is numberofldmodule
   CSProfLDmoduleVec  loadmoduleVec;
