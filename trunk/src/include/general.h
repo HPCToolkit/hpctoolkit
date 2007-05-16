@@ -58,6 +58,20 @@
 /****************************************************************************/
 
 /* --------------------------------------------------------------------------
+ * Convenient types (Possibly push detection to configure.ac)
+ * ------------------------------------------------------------------------*/
+
+#if defined(__cplusplus) 
+  // This can still cause duplicate definition conflicts (with system
+  // headers) in some C code.  Eventually we will be able to rely on
+  // C99 conformance.
+  typedef    unsigned short int    ushort;
+  typedef    unsigned       int    uint;
+  typedef    unsigned long  int    ulong;
+#endif
+
+
+/* --------------------------------------------------------------------------
  * NULL
  * ------------------------------------------------------------------------*/
 

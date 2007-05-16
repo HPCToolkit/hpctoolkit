@@ -1,5 +1,6 @@
+/* -*-Mode: C-*- */
 /* $Id$ */
-/* -*-C-*- */
+
 /* * BeginRiceCopyright *****************************************************
  * 
  * Copyright ((c)) 2002-2007, Rice University 
