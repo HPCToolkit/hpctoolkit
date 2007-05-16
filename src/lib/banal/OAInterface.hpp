@@ -93,8 +93,8 @@
 // 32-bit pointers at times.  Use this macro to eliminate potential
 // compiler warnings about "casting a 32-bit pointer to an integer of
 // different size".
-#define TY_TO_IRHNDL(x, totype) (totype((OA::irhandle_t)(psuint)(x)))
-#define IRHNDL_TO_TY(x, totype) ((totype)(psuint)(x.hval()))
+#define TY_TO_IRHNDL(x, totype) (totype((OA::irhandle_t)(uintptr_t)(x)))
+#define IRHNDL_TO_TY(x, totype) ((totype)(uintptr_t)(x.hval()))
 
 //***************************************************************************
 // 

@@ -376,7 +376,7 @@ public:
   // Constructor/Destructor
   CSProfCallSiteNode(CSProfNode* _parent);
   CSProfCallSiteNode(CSProfNode* _parent, 
-		     VMA _ip, ushort _opIndex, vector<suint> _metrics);
+		     VMA _ip, ushort _opIndex, vector<unsigned int> _metrics);
   virtual ~CSProfCallSiteNode();
   
   // Node data
@@ -402,8 +402,8 @@ public:
   bool GotSrcInfo() const {return donewithsrcinfproc;} 
   void SetSrcInfoDone(bool bi) {donewithsrcinfproc=bi;}
 
-  suint GetMetric(int metricIndex) {return metrics[metricIndex];}
-  vector<suint>& GetMetrics() {return metrics;}
+  unsigned int GetMetric(int metricIndex) {return metrics[metricIndex];}
+  vector<unsigned int>& GetMetrics() {return metrics;}
   
   // Dump contents for inspection
   virtual std::string ToDumpString(int dmpFlag = CSProfTree::XML_TRUE) const;
@@ -415,7 +415,7 @@ protected:
   VMA ip;        // instruction pointer for this node
   ushort opIndex; // index in the instruction 
 
-  vector<suint> metrics;  
+  vector<unsigned int> metrics;  
 
   // source file info
   std::string file; 
@@ -474,7 +474,7 @@ protected:
   VMA ip;        // instruction pointer for this node
   ushort opIndex; // index in the instruction 
 
-  vector<suint> metrics;  
+  vector<unsigned int> metrics;  
 
   // source file info
   std::string file; 

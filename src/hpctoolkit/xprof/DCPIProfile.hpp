@@ -1,4 +1,4 @@
-// -*-C++-*-
+// -*-Mode: C++;-*-
 // $Id$
 
 // * BeginRiceCopyright *****************************************************
@@ -86,20 +86,20 @@ public:
   };
 
 public:
-  DCPIProfile(ISA* isa_, suint sz = 256);
+  DCPIProfile(ISA* isa_, unsigned int sz = 256);
   virtual ~DCPIProfile();
  
   // Access to 'DCPIProfileMetric' (includes casts)
-  const DCPIProfileMetric* DCPIGetMetric(suint i) const { 
+  const DCPIProfileMetric* DCPIGetMetric(unsigned int i) const { 
     return dynamic_cast<const DCPIProfileMetric*>(Index(i)); 
   }
-  void SetDCPIMetric(suint i, DCPIProfileMetric* m) { Assign(i, m); }
+  void SetDCPIMetric(unsigned int i, DCPIProfileMetric* m) { Assign(i, m); }
  
   PMMode GetPMMode() const { return pmmode; }
   void SetPMMode(PMMode x) { pmmode = x; }
 
-  void Dump(std::ostream& o = std::cerr);
-  void DDump(); 
+  void dump(std::ostream& o = std::cerr);
+  void ddump(); 
   
 private:
   // Should not be used 

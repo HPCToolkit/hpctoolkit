@@ -1,5 +1,6 @@
+// -*-Mode: C++;-*-
 // $Id$
-// -*-C++-*-
+
 // * BeginRiceCopyright *****************************************************
 // 
 // Copyright ((c)) 2002, Rice University 
@@ -48,6 +49,8 @@
 //***************************************************************************
 
 //************************* System Include Files ****************************
+
+#include <inttypes.h>
 
 //*************************** User Include Files ****************************
 
@@ -760,7 +763,7 @@ AlphaISA::GetInsnTargetVMA(MachInsn* mi, VMA pc, ushort opIndex, ushort sz)
   // the host may have a different byte order than the executable.
   uint32_t insn = (uint32_t)bfd_getl32((const unsigned char*)mi);
   
-  psint offset;
+  intptr_t offset;
   switch (insn & OP_MASK)
     {
       // Integer/FP control Instructions (SS 4.3 and 4.9; Tables 4-3

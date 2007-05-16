@@ -1,4 +1,4 @@
-// -*-C++-*-
+// -*-Mode: C++;-*-
 // $Id$
 
 // * BeginRiceCopyright *****************************************************
@@ -66,7 +66,7 @@ using std::dec;
 // DCPIProfile
 //****************************************************************************
 
-DCPIProfile::DCPIProfile(ISA* isa_, suint sz)
+DCPIProfile::DCPIProfile(ISA* isa_, unsigned int sz)
   : PCProfile(isa_, sz), pmmode(DCPIProfile::PM_NONE)
 {
 }
@@ -76,16 +76,16 @@ DCPIProfile::~DCPIProfile()
 }
 
 void 
-DCPIProfile::Dump(std::ostream& o)
+DCPIProfile::dump(std::ostream& o)
 {
   o << "'DCPIProfile' --\n";
-  PCProfile::Dump(o);
+  PCProfile::dump(o);
 }
 
 void 
-DCPIProfile::DDump()
+DCPIProfile::ddump()
 {
-  Dump(std::cerr);
+  dump(std::cerr);
 }
 
 //****************************************************************************

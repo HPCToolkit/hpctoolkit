@@ -1,4 +1,4 @@
-// -*-C++-*-
+// -*-Mode: C++;-*-
 // $Id$
 
 // * BeginRiceCopyright *****************************************************
@@ -81,7 +81,7 @@ PCProfileMetric::~PCProfileMetric()
 }
 
 void 
-PCProfileMetric::Dump(std::ostream& o)
+PCProfileMetric::dump(std::ostream& o)
 {
   o << "'PCProfileMetric' --\n";
   o << "  name: " << name << "\n";
@@ -91,7 +91,7 @@ PCProfileMetric::Dump(std::ostream& o)
   o << "  map entries (PC is reported in hex as an offset from textStart) = [";
   VMA pc = 0;
   PCProfileDatum d = 0;
-  suint printed = 0;
+  unsigned int printed = 0;
   for (PCToPCProfileDatumMapIt it = map.begin(); it != map.end(); ++it) {
     if (printed != 0) { o << ", "; }
     pc = (*it).first - txtStart; // actually, the offset
@@ -103,8 +103,8 @@ PCProfileMetric::Dump(std::ostream& o)
 }
 
 void
-PCProfileMetric::DDump()
+PCProfileMetric::ddump()
 {
-  Dump(std::cerr);
+  dump(std::cerr);
 }
 

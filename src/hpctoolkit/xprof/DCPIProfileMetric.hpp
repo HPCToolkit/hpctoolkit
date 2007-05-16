@@ -1,4 +1,4 @@
-// -*-C++-*-
+// -*-Mode: C++;-*-
 // $Id$
 
 // * BeginRiceCopyright *****************************************************
@@ -95,8 +95,8 @@ public:
     desc = x; 
   }
   
-  void Dump(std::ostream& o = std::cerr);
-  void DDump();
+  void dump(std::ostream& o = std::cerr);
+  void ddump();
   
 private:
   // Should not be used  

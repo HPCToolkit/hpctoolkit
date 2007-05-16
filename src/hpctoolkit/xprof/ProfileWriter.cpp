@@ -300,7 +300,7 @@ DumpFuncLineMap(ostream& os, LineToPCProfileVecMap& map,
     os << I[3] << "<S b"; WriteAttrNum(os, srcLn);
     os << " id";          WriteAttrNum(os, 0); // was: SrcLineX.id
     os << ">\n";
-    for (suint i = 0; i < vec->GetSz(); ++i) {
+    for (unsigned int i = 0; i < vec->GetSz(); ++i) {
       if ( (*vec)[i] != 0 ) {
 	const DerivedProfileMetric* dm = profData->GetMetric(i);
 	double v = (double)(*vec)[i] * (double)dm->GetPeriod();

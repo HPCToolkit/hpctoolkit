@@ -1,5 +1,6 @@
+// -*-Mode: C++;-*-
 // $Id$
-// -*-C++-*-
+
 // * BeginRiceCopyright *****************************************************
 // 
 // Copyright ((c)) 2002, Rice University 
@@ -47,8 +48,8 @@
 //
 //***************************************************************************
 
-#ifndef ISATypes_H 
-#define ISATypes_H
+#ifndef isa_ISATypes_hpp 
+#define isa_ISATypes_hpp
 
 //************************* System Include Files ****************************
 
@@ -81,8 +82,8 @@ typedef unsigned char MachInsnByte;
 // be 64-bits on a 32-bit machine.  Use these casting macros to
 // eliminate compiler warnings about, e.g., "casting a 32-bit pointer
 // to an integer of different size".
-#define PTR_TO_BFDVMA(x)         ((bfd_vma)(psuint)(x))
-#define BFDVMA_TO_PTR(x, totype) ((totype)(psuint)(x))
+#define PTR_TO_BFDVMA(x)         ((bfd_vma)(uintptr_t)(x))
+#define BFDVMA_TO_PTR(x, totype) ((totype)(uintptr_t)(x))
 
 #define PTR_TO_VMA(x)          PTR_TO_BFDVMA(x)
 #define VMA_TO_PTR(x, totype)  BFDVMA_TO_PTR(x, totype)
@@ -97,4 +98,4 @@ struct lt_VMA {
 };
 #endif
 
-#endif 
+#endif /* isa_ISATypes_hpp */

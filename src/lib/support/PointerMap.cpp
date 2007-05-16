@@ -1,5 +1,6 @@
+// -*-Mode: C++;-*-
 // $Id$
-// -*-C++-*-
+
 // * BeginRiceCopyright *****************************************************
 // 
 // Copyright ((c)) 2002, Rice University 
@@ -48,6 +49,8 @@
 //************************* System Include Files ****************************
 
 #include <iostream>
+using std::cerr;
+using std::endl;
 
 //*************************** User Include Files ****************************
 
@@ -55,9 +58,6 @@
 #include "diagnostics.h"
 
 //*************************** Forward Declarations ***************************
-
-using std::cerr;
-using std::endl;
 
 //****************************************************************************
 
@@ -147,7 +147,7 @@ void PointerMap::Dump() const
 /******************* PointerMap Member Functions - Protected *****************/
 uint PointerMap::PMHashFunct(const void* entry, const uint size)
 {
-  return (uint) (((psint) (entry)) % size);
+  return (uint) (((intptr_t) (entry)) % size);
 }
 
 int PointerMap::PMEntryCompare(const void* entry1, const void* entry2)

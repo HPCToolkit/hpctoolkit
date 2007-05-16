@@ -1,4 +1,4 @@
-// -*-C++-*-
+// -*-Mode: C++;-*-
 // $Id$
 
 // * BeginRiceCopyright *****************************************************
@@ -380,7 +380,7 @@ MetricNamesAreUnique(PCProfileMetricSet& mset)
     PCProfileMetricVec mvec(mset.GetSz());
 
     PCProfileMetricSetIterator setIt(mset);
-    for (suint i = 0; setIt.IsValid(); ++setIt, ++i) { 
+    for (unsigned int i = 0; setIt.IsValid(); ++setIt, ++i) { 
       mvec[i] = setIt.Current();
     }
     

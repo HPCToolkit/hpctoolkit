@@ -31,7 +31,7 @@
 #define VPROF_VERSION "0.12"
 
 /* pprof_off_t is an unsigned type with the same size as void*  */
-/* typedef psuint pprof_off_t; */
+/* typedef uintptr_t pprof_off_t; */
 
 /* vmon_off64_t is an unsigned type with the size of 8. */
 typedef uint64_t vmon_off64_t;

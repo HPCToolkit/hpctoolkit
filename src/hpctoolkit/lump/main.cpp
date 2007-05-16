@@ -87,9 +87,9 @@ typedef std::list<VMA>::iterator VMAListIt;
 typedef std::list<VMA>::const_iterator VMAListItC;
 
 // A map of a line number to an VMAList
-typedef std::map<suint, VMAList*> LineToVMAListMap;
-typedef std::map<suint, VMAList*>::iterator LineToVMAListMapIt;
-typedef std::map<suint, VMAList*>::value_type LineToVMAListMapItVal;
+typedef std::map<SrcFile::ln, VMAList*> LineToVMAListMap;
+typedef std::map<SrcFile::ln, VMAList*>::iterator LineToVMAListMapIt;
+typedef std::map<SrcFile::ln, VMAList*>::value_type LineToVMAListMapItVal;
 
 void ClearLineToVMAListMap(LineToVMAListMap* map);
 
@@ -297,7 +297,7 @@ DumpSymbolicInfoForFunc(std::ostream& os, const char* pre,
 
   LineToVMAListMapIt it;
   for (it = map->begin(); it != map->end(); ++it) {
-    suint line = (*it).first;
+    SrcFile::ln line = (*it).first;
     VMAList* list = (*it).second;
     
     os << p1 << "  " << line << ": {" << hex;

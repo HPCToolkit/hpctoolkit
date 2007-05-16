@@ -72,7 +72,7 @@ CSProfLDmodule::~CSProfLDmodule()
 }
 
 
-CSProfEpoch::CSProfEpoch(const suint i)
+CSProfEpoch::CSProfEpoch(const unsigned int i)
   : loadmoduleVec(i)
 {
   numberofldmodule = i;

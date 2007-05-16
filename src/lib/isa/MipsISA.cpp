@@ -50,13 +50,14 @@
 
 //************************* System Include Files ****************************
 
+#include <inttypes.h>
+
 //*************************** User Include Files ****************************
 
 #include "MipsISA.hpp"
+#include "instructionSets/mips.h"
 
 #include <include/gnu_bfd.h>  // for bfd_getb32, bfd_getl32
-
-#include "instructionSets/mips.h"
 
 //*************************** Forward Declarations ***************************
 
@@ -227,7 +228,7 @@ MipsISA::GetInsnTargetVMA(MachInsn* mi, VMA pc, ushort opIndex, ushort sz)
   // the host may have a different byte order than the executable.
   uint32_t insn = (uint32_t)BFD_GETX32((const unsigned char*)mi);
 
-  psint offset;
+  intptr_t offset;
   switch (insn & OP_MASK)
     {
     case OPSpecial:

@@ -1,5 +1,6 @@
+// -*-Mode: C++;-*-
 // $Id$
-// -*-C++-*-
+
 // * BeginRiceCopyright *****************************************************
 // 
 // Copyright ((c)) 2002, Rice University 
@@ -34,8 +35,8 @@
 // 
 // ******************************************************* EndRiceCopyright *
 
-#ifndef PointerMap_h
-#define PointerMap_h
+#ifndef support_PointerMap_hpp
+#define support_PointerMap_hpp
 
 //***********************************************************************//
 //    PointerMap.h:                                                      //
@@ -118,4 +119,4 @@ class PointerMapIterator : private HashTableIterator
     void	 Reset		();	// Restart from beginning.
 };
 
-#endif /* PointerMap_h */
+#endif /* support_PointerMap_hpp */

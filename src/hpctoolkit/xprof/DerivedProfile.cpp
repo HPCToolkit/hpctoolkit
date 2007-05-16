@@ -113,7 +113,7 @@ DerivedProfile::Create(const PCProfile* pcprof_,
   // -------------------------------------------------------
   if (filtlist == NULL) {
     SetNumMetrics(pcprof->GetNumMetrics());
-    for (suint i = 0; i < pcprof->GetNumMetrics(); ++i) {
+    for (unsigned int i = 0; i < pcprof->GetNumMetrics(); ++i) {
       const PCProfileMetric* m = pcprof->GetMetric(i);
       DerivedProfileMetric* dm = new DerivedProfileMetric(m);
       SetMetric(i, dm);
@@ -122,7 +122,7 @@ DerivedProfile::Create(const PCProfile* pcprof_,
     // For each metric filter, create a derived metric
     SetNumMetrics(filtlist->size());
     PCProfileFilterList::const_iterator it = filtlist->begin();
-    for (suint i = 0; it != filtlist->end(); ++it, ++i) {
+    for (unsigned int i = 0; it != filtlist->end(); ++it, ++i) {
       PCProfileFilter* filt = *it;
       MetricFilter* mfilt = filt->GetMetricFilter();
       const PCProfileMetricSet* s = pcprof->Filter(mfilt);
@@ -161,7 +161,7 @@ DerivedProfile::Create(const PCProfile* pcprof_,
       
       // For each derived metric and its insn filter
       PCProfileFilterList::const_iterator fIt = filtlist->begin();
-      for (suint i = 0; fIt != filtlist->end(); ++fIt, ++i) {
+      for (unsigned int i = 0; fIt != filtlist->end(); ++fIt, ++i) {
 	PCProfileFilter* filt = *fIt;
 	PCFilter* pcfilt = filt->GetPCFilter();
 	
@@ -184,7 +184,7 @@ DerivedProfile::Dump(std::ostream& o)
 {
   o << "'DerivedProfile' --\n";
   if (pcprof) {
-    const_cast<PCProfile*>(pcprof)->Dump(o);
+    const_cast<PCProfile*>(pcprof)->dump(o);
   }
   
   o << "'Metrics' --\n";
@@ -285,7 +285,7 @@ GetNativeName(const PCProfileMetricSet* s)
 {
   string nm;
   PCProfileMetricSetIterator it(*s);
-  for (suint i = 0; it.IsValid(); ++it, ++i) {
+  for (unsigned int i = 0; it.IsValid(); ++it, ++i) {
     PCProfileMetric* m = it.Current();
     if (i != 0) { nm += "+"; }
     nm += "[" + m->GetName() + "]";

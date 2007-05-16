@@ -48,8 +48,8 @@
 //
 //***************************************************************************
 
-#ifndef PgmScopeTreeIterator_h
-#define PgmScopeTreeIterator_h
+#ifndef prof_juicy_PgmScopeTreeIterator_hpp
+#define prof_juicy_PgmScopeTreeIterator_hpp
 
 //************************* System Include Files ****************************
 
@@ -60,8 +60,10 @@
 #include <include/general.h>
 
 #include "PgmScopeTree.hpp"
+
 #include <lib/support/NonUniformDegreeTree.hpp>
 #include <lib/support/PtrSetIterator.hpp>
+#include <lib/support/SrcFile.hpp>
 
 //*************************** Forward Declarations **************************
 
@@ -233,26 +235,26 @@ private:
 class CodeInfoLine
 {
 public:
-   CodeInfoLine( CodeInfo* ci, int forEndLine ) 
-     : _ci(ci), _forEndLine(forEndLine), _type(ci->Type())
-   {
-   }
-   
-   int IsEndLine()    { return _forEndLine; }
-   
-   CodeInfo* GetCodeInfo()  { return _ci; }
-   
-   suint GetLine()
-   { 
+  CodeInfoLine( CodeInfo* ci, int forEndLine ) 
+    : _ci(ci), _forEndLine(forEndLine), _type(ci->Type())
+  {
+  }
+  
+  int IsEndLine()    { return _forEndLine; }
+  
+  CodeInfo* GetCodeInfo()  { return _ci; }
+  
+  SrcFile::ln GetLine()
+  { 
       return (_forEndLine ? _ci->endLine() : _ci->begLine());
-   }
-   
-   ScopeInfo::ScopeType Type()   { return _type; }
-   
+  }
+  
+  ScopeInfo::ScopeType Type()   { return _type; }
+  
 private:
-   CodeInfo* _ci;
-   int _forEndLine;
-   ScopeInfo::ScopeType _type;
+  CodeInfo* _ci;
+  int _forEndLine;
+  ScopeInfo::ScopeType _type;
 };
 
 //***************************************************************************
@@ -399,4 +401,4 @@ private:
 int CompareByPerfInfo(const void* a, const void *b);
 extern int CompareByPerfInfo_MetricIndex;
 
-#endif 
+#endif /* prof_juicy_PgmScopeTreeIterator_hpp */

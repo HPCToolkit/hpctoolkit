@@ -88,15 +88,15 @@
 class CSProfile: public Unique {
 public:
   // Constructor/Destructor
-  CSProfile(suint i);
+  CSProfile(unsigned int i);
   virtual ~CSProfile();
   
   // Data
 
-  const std::string& GetTarget()              const { return target; }
-  suint            GetNumberOfMetrics()     const { return numberofmetrics; }
-  CSProfileMetric* GetMetric(const suint i) const { return &metrics[i]; }
-  CSProfTree*      GetTree()                const { return tree; }
+  const std::string& GetTarget()             const { return target; }
+  unsigned int     GetNumberOfMetrics()      const { return numberofmetrics; }
+  CSProfileMetric* GetMetric(unsigned int i) const { return &metrics[i]; }
+  CSProfTree*      GetTree()                 const { return tree; }
   void             SetEpoch(CSProfEpoch *ep)  {epoch=ep;}
   CSProfEpoch*     GetEpoch()               const { return epoch; }
   void             ProfileDumpEpoch() {epoch->Dump(); }
@@ -109,7 +109,7 @@ public:
  
 private:
   std::string target; 
-  suint  numberofmetrics;
+  unsigned int  numberofmetrics;
   CSProfileMetric* metrics;
   CSProfTree* tree;
   CSProfEpoch* epoch;

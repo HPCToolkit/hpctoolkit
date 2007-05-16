@@ -88,7 +88,7 @@ public:
   // Constructor/Destructor
   // -------------------------------------------------------
   Proc(TextSeg* seg, std::string& name, std::string& linkname, 
-       Type t, VMA begVMA, VMA endVMA, suint size);
+       Type t, VMA begVMA, VMA endVMA, unsigned int size);
   virtual ~Proc();
 
 
@@ -121,8 +121,8 @@ public:
   void SetEndVMA(VMA endVMA) { m_endVMA = endVMA; }
 
   // Return size, which is (endVMA - startVMA) + sizeof(last instruction)
-  suint GetSize()      const { return m_size; }
-  void SetSize(suint size)  { m_size = size; }
+  unsigned int GetSize()   const { return m_size; }
+  void SetSize(unsigned int size)  { m_size = size; }
   
   // -------------------------------------------------------
   // Symbolic information: availability depends upon debugging information
@@ -213,7 +213,7 @@ private:
   
   VMA m_begVMA; // points to the beginning of the first instruction
   VMA m_endVMA; // points to the beginning of the last instruction
-  VMA m_size;
+  unsigned int m_size;
 
   // symbolic information: may or may not be known
   std::string m_filenm;  // filename and 

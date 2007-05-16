@@ -144,7 +144,7 @@ LocationMgr::begSeq(ProcScope* enclosingProc)
 
 void
 LocationMgr::locate(LoopScope* loop, CodeInfo* proposed_scope,
-		    string& filenm, string& procnm, suint line)
+		    string& filenm, string& procnm, SrcFile::ln line)
 {
   DIAG_DevMsgIf(DBG, "LocationMgr::locate: " << loop->toXML() << "\n"
 		<< "  proposed: " << proposed_scope->toXML() << "\n"
@@ -157,7 +157,7 @@ LocationMgr::locate(LoopScope* loop, CodeInfo* proposed_scope,
 
 void
 LocationMgr::locate(StmtRangeScope* stmt, CodeInfo* proposed_scope,
-		    string& filenm, string& procnm, suint line)
+		    string& filenm, string& procnm, SrcFile::ln line)
 {
   DIAG_DevMsgIf(DBG, "LocationMgr::locate: " << stmt->toXML() << "\n"
 		<< "  proposed: " << proposed_scope->toXML() << "\n"
@@ -178,7 +178,7 @@ LocationMgr::endSeq()
 
 
 bool
-LocationMgr::containsLineFzy(CodeInfo* x, suint line, bool loopIsAlien)
+LocationMgr::containsLineFzy(CodeInfo* x, SrcFile::ln line, bool loopIsAlien)
 {
   int beg_epsilon = 0, end_epsilon = 0;
   
@@ -212,7 +212,8 @@ LocationMgr::containsLineFzy(CodeInfo* x, suint line, bool loopIsAlien)
 
 
 bool
-LocationMgr::containsIntervalFzy(CodeInfo* x, suint begLn, suint endLn)
+LocationMgr::containsIntervalFzy(CodeInfo* x, 
+				 SrcFile::ln begLn, SrcFile::ln endLn)
 {
   int beg_epsilon = 0, end_epsilon = 0;
   
@@ -300,7 +301,7 @@ namespace banal {
 namespace bloop {
 
 bool 
-LocationMgr::Ctxt::containsLine(suint line) const 
+LocationMgr::Ctxt::containsLine(SrcFile::ln line) const 
 {
   if (isAlien()) {
     return (ctxt()->begLine() <= line); // FIXME (we don't know about file...)
@@ -379,7 +380,7 @@ LocationMgr::toString(CtxtChange_t x)
 
 LocationMgr::CtxtChange_t
 LocationMgr::determineContext(CodeInfo* proposed_scope,
-			      string& filenm, string& procnm, suint line)
+			      string& filenm, string& procnm, SrcFile::ln line)
 {
   DIAG_DevMsgIf(DBG, "LocationMgr::determineContext");
 
@@ -580,7 +581,7 @@ fixScopeTree_init(CodeInfo*& cur_ctxt, CodeInfo*& cur_scope)
 
 void
 LocationMgr::fixScopeTree(CodeInfo* from_scope, CodeInfo* true_ctxt, 
-			  suint begLn, suint endLn)
+			  SrcFile::ln begLn, SrcFile::ln endLn)
 {
   // INVARIANT: 'true_ctxt' is a ProcScope or AlienScope and an
   // ancestor of 'from_scope'
@@ -687,7 +688,7 @@ LocationMgr::revertToLoop(LocationMgr::Ctxt* ctxt)
 
 LocationMgr::Ctxt* 
 LocationMgr::switch_findCtxt(const string& filenm, const string& procnm, 
-			     suint line, 
+			     SrcFile::ln line, 
 			     const LocationMgr::Ctxt* base_ctxt) const
 {
   // -----------------------------------------------------
@@ -793,7 +794,7 @@ LocationMgr::findCtxt(FindCtxt_MatchOp& op,
 AlienScope* 
 LocationMgr::findOrCreateAlienScope(CodeInfo* parent_scope,
 				    const std::string& filenm,
-				    const std::string& procnm, suint line,
+				    const std::string& procnm, SrcFile::ln line,
 				    bool tosOnCreate)
 {
   // INVARIANT: 'parent_scope' should either be the top of the stack

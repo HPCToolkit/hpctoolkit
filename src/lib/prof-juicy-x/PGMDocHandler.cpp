@@ -330,11 +330,11 @@ void PGMDocHandler:: startElement(const XMLCh* const uri,
     }
     IFTRACE << "P(roc): name="  << name << " lname=" << lname << endl;
     
-    suint lnB = ln_NULL, lnE = ln_NULL;
+    SrcFile::ln lnB = ln_NULL, lnE = ln_NULL;
     string lineB = getAttr(attributes, attrBegin);
     string lineE = getAttr(attributes, attrEnd);
-    if (!lineB.empty()) { lnB = (suint)StrUtil::toLong(lineB); }
-    if (!lineE.empty()) { lnE = (suint)StrUtil::toLong(lineE); }
+    if (!lineB.empty()) { lnB = (SrcFile::ln)StrUtil::toLong(lineB); }
+    if (!lineE.empty()) { lnE = (SrcFile::ln)StrUtil::toLong(lineE); }
     IFTRACE << " b="  << lnB << " e=" << lnE << endl;
     
     string vma = getAttr(attributes, attrVMA);
@@ -383,11 +383,11 @@ void PGMDocHandler:: startElement(const XMLCh* const uri,
     string nm = getAttr(attributes, attrName); 
     string fnm = getAttr(attributes, attrAlienFile);
 
-    suint begLn = ln_NULL, endLn = ln_NULL;
+    SrcFile::ln begLn = ln_NULL, endLn = ln_NULL;
     string lineB = getAttr(attributes, attrBegin);
     string lineE = getAttr(attributes, attrEnd);
-    if (!lineB.empty()) { begLn = (suint)StrUtil::toLong(lineB); }
-    if (!lineE.empty()) { endLn = (suint)StrUtil::toLong(lineE); }
+    if (!lineB.empty()) { begLn = (SrcFile::ln)StrUtil::toLong(lineB); }
+    if (!lineE.empty()) { endLn = (SrcFile::ln)StrUtil::toLong(lineE); }
 
     IFTRACE << "A(lien): name= " << nm << endl;
 
@@ -406,11 +406,11 @@ void PGMDocHandler:: startElement(const XMLCh* const uri,
     int numAttr = attributes.getLength();
     DIAG_Assert(0 <= numAttr && numAttr <= 4, DIAG_UnexpectedInput);
     
-    suint lnB = ln_NULL, lnE = ln_NULL;
+    SrcFile::ln lnB = ln_NULL, lnE = ln_NULL;
     string lineB = getAttr(attributes, attrBegin);
     string lineE = getAttr(attributes, attrEnd);
-    if (!lineB.empty()) { lnB = (suint)StrUtil::toLong(lineB); }
-    if (!lineE.empty()) { lnE = (suint)StrUtil::toLong(lineE); }
+    if (!lineB.empty()) { lnB = (SrcFile::ln)StrUtil::toLong(lineB); }
+    if (!lineE.empty()) { lnE = (SrcFile::ln)StrUtil::toLong(lineE); }
 
     IFTRACE << "L(oop): numberB=" << lineB << " numberE=" << lineE << endl;
     
@@ -429,11 +429,11 @@ void PGMDocHandler:: startElement(const XMLCh* const uri,
     // 'begin' is required but 'end' is implied (and can be in any order)
     DIAG_Assert(1 <= numAttr && numAttr <= 4, DIAG_UnexpectedInput);
     
-    suint lnB = ln_NULL, lnE = ln_NULL;
+    SrcFile::ln lnB = ln_NULL, lnE = ln_NULL;
     string lineB = getAttr(attributes, attrBegin);
     string lineE = getAttr(attributes, attrEnd);
-    if (!lineB.empty()) { lnB = (suint)StrUtil::toLong(lineB); }
-    if (!lineE.empty()) { lnE = (suint)StrUtil::toLong(lineE); }
+    if (!lineB.empty()) { lnB = (SrcFile::ln)StrUtil::toLong(lineB); }
+    if (!lineE.empty()) { lnE = (SrcFile::ln)StrUtil::toLong(lineE); }
     //DIAG_Assert(lnB != ln_NULL, "S beg line is " << ln_NULL);
 
     // Check that lnB and lnE are valid line numbers:

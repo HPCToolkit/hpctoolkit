@@ -1,4 +1,4 @@
-// -*-C++-*-
+// -*-Mode: C++;-*-
 // $Id$
 
 // * BeginRiceCopyright *****************************************************
@@ -113,15 +113,17 @@ public:
   // for slots is only reserved.  To add slots, one must use
   // 'AddMetric' or 'SetNumMetrics'.  Once slots exist, they can be
   // randomly accessed via 'SetMetric', etc.
-  const DerivedProfileMetric* GetMetric(suint i) const { return metricVec[i]; }
-  void SetMetric(suint i, const DerivedProfileMetric* m) { 
+  const DerivedProfileMetric* GetMetric(unsigned int i) const { 
+    return metricVec[i]; 
+  }
+  void SetMetric(unsigned int i, const DerivedProfileMetric* m) { 
     metricVec[i] = const_cast<DerivedProfileMetric*>(m); // assume ownership
   }
   void AddMetric(const DerivedProfileMetric* m) { 
     metricVec.push_back(const_cast<DerivedProfileMetric*>(m)); 
   }
-  suint GetNumMetrics() const { return metricVec.size(); }
-  void SetNumMetrics(suint sz) { metricVec.resize(sz); }
+  unsigned int GetNumMetrics() const { return metricVec.size(); }
+  void SetNumMetrics(unsigned int sz) { metricVec.resize(sz); }
 
   void Dump(std::ostream& o = std::cerr);
   void DDump(); 

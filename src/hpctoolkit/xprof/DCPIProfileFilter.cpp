@@ -254,7 +254,7 @@ PredefinedDCPIMetricTable::Entry PredefinedDCPIMetricTable::table[] = {
 
 };
 
-suint PredefinedDCPIMetricTable::size = TABLE_SZ;
+unsigned int PredefinedDCPIMetricTable::size = TABLE_SZ;
 
 bool PredefinedDCPIMetricTable::sorted = false;
 
@@ -268,7 +268,7 @@ PredefinedDCPIMetricTable::FindEntry(const char* metric)
   // FIXME: we should search a quick-sorted table with binary search.
   // check 'sorted'
   Entry* found = NULL;
-  for (suint i = 0; i < GetSize(); ++i) {
+  for (unsigned int i = 0; i < GetSize(); ++i) {
     if (strcmp(metric, table[i].name) == 0) {
       found = &table[i];
     }
@@ -277,7 +277,7 @@ PredefinedDCPIMetricTable::FindEntry(const char* metric)
 }
 
 PredefinedDCPIMetricTable::Entry*
-PredefinedDCPIMetricTable::Index(suint i)
+PredefinedDCPIMetricTable::Index(unsigned int i)
 {
   if (i >= GetSize()) { return NULL; }
   return &table[i];

@@ -1,4 +1,4 @@
-// -*-C++-*-
+// -*-Mode: C++;-*-
 // $Id$
 
 // * BeginRiceCopyright *****************************************************
@@ -86,7 +86,7 @@ public:
   ~DCPITranslationTable() { }
 
   static Entry* FindEntry(const char* token);
-  static suint GetSize() { return size; }
+  static unsigned int GetSize() { return size; }
 
 private:
   // Should not be used 
@@ -95,7 +95,7 @@ private:
   
 private:
   static Entry table[];
-  static suint size;
+  static unsigned int size;
   static bool sorted;
 };
 
@@ -175,7 +175,7 @@ DCPITranslationTable::Entry DCPITranslationTable::table[] = {
 
 };
 
-suint DCPITranslationTable::size = TABLE_SZ;
+unsigned int DCPITranslationTable::size = TABLE_SZ;
 
 bool DCPITranslationTable::sorted = false;
 
@@ -194,7 +194,7 @@ DCPITranslationTable::FindEntry(const char* token)
   // FIXME: we should search a quick-sorted table with binary search.
   // check 'sorted'
   Entry* found = NULL;
-  for (suint i = 0; i < GetSize(); ++i) {
+  for (unsigned int i = 0; i < GetSize(); ++i) {
     if (strcmp(token, table[i].tok) == 0) {
       found = &table[i];
     }
