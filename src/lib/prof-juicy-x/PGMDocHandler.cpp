@@ -75,8 +75,10 @@ using XERCES_CPP_NAMESPACE::XMLString;
 #include <lib/prof-juicy/PgmScopeTree.hpp>
 
 #include <lib/support/diagnostics.h>
-#include <lib/support/Trace.hpp>
+#include <lib/support/SrcFile.hpp>
+using SrcFile::ln_NULL;
 #include <lib/support/StrUtil.hpp>
+#include <lib/support/Trace.hpp>
 
 //************************ Forward Declarations ******************************
 
@@ -328,7 +330,7 @@ void PGMDocHandler:: startElement(const XMLCh* const uri,
     }
     IFTRACE << "P(roc): name="  << name << " lname=" << lname << endl;
     
-    suint lnB = UNDEF_LINE, lnE = UNDEF_LINE;
+    suint lnB = ln_NULL, lnE = ln_NULL;
     string lineB = getAttr(attributes, attrBegin);
     string lineE = getAttr(attributes, attrEnd);
     if (!lineB.empty()) { lnB = (suint)StrUtil::toLong(lineB); }
@@ -381,7 +383,7 @@ void PGMDocHandler:: startElement(const XMLCh* const uri,
     string nm = getAttr(attributes, attrName); 
     string fnm = getAttr(attributes, attrAlienFile);
 
-    suint begLn = UNDEF_LINE, endLn = UNDEF_LINE;
+    suint begLn = ln_NULL, endLn = ln_NULL;
     string lineB = getAttr(attributes, attrBegin);
     string lineE = getAttr(attributes, attrEnd);
     if (!lineB.empty()) { begLn = (suint)StrUtil::toLong(lineB); }
@@ -404,7 +406,7 @@ void PGMDocHandler:: startElement(const XMLCh* const uri,
     int numAttr = attributes.getLength();
     DIAG_Assert(0 <= numAttr && numAttr <= 4, DIAG_UnexpectedInput);
     
-    suint lnB = UNDEF_LINE, lnE = UNDEF_LINE;
+    suint lnB = ln_NULL, lnE = ln_NULL;
     string lineB = getAttr(attributes, attrBegin);
     string lineE = getAttr(attributes, attrEnd);
     if (!lineB.empty()) { lnB = (suint)StrUtil::toLong(lineB); }
@@ -427,16 +429,16 @@ void PGMDocHandler:: startElement(const XMLCh* const uri,
     // 'begin' is required but 'end' is implied (and can be in any order)
     DIAG_Assert(1 <= numAttr && numAttr <= 4, DIAG_UnexpectedInput);
     
-    suint lnB = UNDEF_LINE, lnE = UNDEF_LINE;
+    suint lnB = ln_NULL, lnE = ln_NULL;
     string lineB = getAttr(attributes, attrBegin);
     string lineE = getAttr(attributes, attrEnd);
     if (!lineB.empty()) { lnB = (suint)StrUtil::toLong(lineB); }
     if (!lineE.empty()) { lnE = (suint)StrUtil::toLong(lineE); }
-    //DIAG_Assert(lnB != UNDEF_LINE, "S beg line is " << UNDEF_LINE);
+    //DIAG_Assert(lnB != ln_NULL, "S beg line is " << ln_NULL);
 
     // Check that lnB and lnE are valid line numbers:
     //   if lineE is undefined, set it to lineB
-    if (lnE == UNDEF_LINE) { lnE = lnB; }
+    if (lnE == ln_NULL) { lnE = lnB; }
     IFTRACE << "S(tmt): numberB=" << lineB << " numberE=" << lineE << endl;
 
     // for now insist that lnB and lnE are equal

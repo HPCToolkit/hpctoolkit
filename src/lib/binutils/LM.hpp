@@ -69,6 +69,7 @@
 #include <lib/isa/ISATypes.hpp>
 
 #include <lib/support/Exception.hpp>
+#include <lib/support/SrcFile.hpp>
 
 //*************************** Forward Declarations **************************
 
@@ -168,10 +169,10 @@ public:
   bool IsRelocated() const;
 
   // GetNumSegs: Return number of segments/sections
-  suint GetNumSegs() const { return sections.size(); }
+  unsigned int GetNumSegs() const { return sections.size(); }
 
   // AddSeg: Add a segment/section
-  void AddSeg(Seg *section) { sections.push_back(section); }
+  void AddSeg(Seg* section) { sections.push_back(section); }
 
 
   // -------------------------------------------------------
@@ -236,16 +237,16 @@ public:
   // found and no error is detected.
   // -------------------------------------------------------
   bool GetSourceFileInfo(VMA vma, ushort opIndex,
-			 std::string& func, std::string& file, 
-			 suint &line) const;
+			 std::string& func, 
+			 std::string& file, SrcFile::ln& line) const;
 
   bool GetSourceFileInfo(VMA begVMA, ushort bOpIndex,
 			 VMA endVMA, ushort eOpIndex,
 			 std::string& func, std::string& file,
-			 suint &begLine, suint &endLine,
+			 SrcFile::ln& begLine, SrcFile::ln& endLine,
 			 unsigned flags = 1) const;
 
-  bool GetProcFirstLineInfo(VMA vma, ushort opIndex, suint &line) const;
+  bool GetProcFirstLineInfo(VMA vma, ushort opIndex, SrcFile::ln& line) const;
 
   
   // -------------------------------------------------------

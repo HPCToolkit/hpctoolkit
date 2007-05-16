@@ -798,7 +798,7 @@ inferCallFrames(CSProfile* prof, CSProfNode* node,
 	} 
 	else {
 	  // determine the first line of the enclosing procedure
-	  suint begLn;
+	  SrcFile::ln begLn;
 	  lm->GetProcFirstLineInfo(curr_ip, n->GetOpIndex(), begLn);
 	  frame->SetLine(begLn);
 	}
@@ -854,7 +854,7 @@ addSymbolicInfo(CSProfCodeNode* n, binutils::LM* lm)
   }
 
   string func, file;
-  suint srcLn;
+  SrcFile::ln srcLn;
   lm->GetSourceFileInfo(n->GetIP(), n->GetOpIndex(), func, file, srcLn);
   func = GetBestFuncName(func);
   

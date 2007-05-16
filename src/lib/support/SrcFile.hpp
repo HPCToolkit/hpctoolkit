@@ -48,9 +48,66 @@
 
 //*************************** Forward Declarations **************************
 
-#define MAXLINESIZE 2048
+//***************************************************************************
+// ln: type of a source line number
+//***************************************************************************
+
+namespace SrcFile {
+
+  // Use same trick as in OpenAnalysis if there is ambiguity with typedefs
+  //   make isValid a member function.
+  typedef unsigned int ln;
+  const ln ln_NULL = 0;
+
+  inline bool
+  isValid(SrcFile::ln line)
+  { return (line > ln_NULL); }
+
+  inline bool
+  isValid(SrcFile::ln begLine, SrcFile::ln endLine)
+  { return (isValid(begLine) && isValid(endLine)); }
+  
+
+  // - if x < y; 0 if x == y; + otherwise
+  inline int 
+  compare(SrcFile::ln x, SrcFile::ln y)
+  {
+    // We would typically wish to use the following for this simple
+    // comparison, but it fails if the the differences are greater than
+    // an 'int'
+    // return (x - y)
+
+    if (x < y)       { return -1; }
+    else if (x == y) { return 0; }
+    else             { return 1; }
+  }
+
+
+} // namespace SrcFile
+
 
 //***************************************************************************
+// 
+//***************************************************************************
+
+namespace SrcFile {
+
+  // -------------------------------------------------------
+  // pos: type of a source position
+  // -------------------------------------------------------
+  
+  //typedef pair<> pos; // line, col
+  
+
+} // namespace SrcFile
+
+
+//***************************************************************************
+// 
+//***************************************************************************
+
+namespace SrcFile {
+
 
 class SrcFile {
 public: 
@@ -62,11 +119,14 @@ public:
 		  char* lineBuf, unsigned int bufSize) const; 
                  // returns true upon success
 		 
-  void Dump(std::ostream &out = std::cerr) const; 
+  void dump(std::ostream &out = std::cerr) const; 
 private: 
   VectorTmpl<std::string> line; 
   bool known; 
   std::string fName; 
 }; 
+
+} // namespace SrcFile
+
 
 #endif /* support_SrcFile_hpp */

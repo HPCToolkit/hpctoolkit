@@ -72,19 +72,6 @@ using namespace std; // For compatibility with non-std C headers
 
 //****************************************************************************
 
-bool
-IsValidLine(suint begLine, suint endLine)
-{
-  return ((begLine != 0) && (endLine != 0)); 
-}
-
-
-bool
-IsValidLine(suint line)
-{
-  return (line != 0); 
-}
-
 
 //***************************************************************************
 // System Dependent Helpers
