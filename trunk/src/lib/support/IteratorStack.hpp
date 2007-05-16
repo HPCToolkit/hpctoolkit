@@ -70,12 +70,11 @@
 // enumeration type declarations
 //***************************************************************************/
 
-enum TraversalVisitType {PreVisit, PostVisit};
-
+enum TraversalVisitType { PreVisit, PostVisit };
 
 enum IterStackEnumType {
   ITER_STACK_ENUM_LEAVES_ONLY, ITER_STACK_ENUM_ALL_NODES
-  };
+};
 
 
 
@@ -85,6 +84,12 @@ enum IterStackEnumType {
 
 class IteratorStack: public StackableIterator {
 public:
+  enum TraversalOrder { Unordered, PreOrder, PostOrder,
+			ReversePreOrder, ReversePostOrder, 
+			PreAndPostOrder };
+  
+public:
+
   IteratorStack(TraversalOrder torder, 
 		IterStackEnumType enumType = ITER_STACK_ENUM_ALL_NODES);
   ~IteratorStack();

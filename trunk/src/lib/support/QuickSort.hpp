@@ -95,7 +95,7 @@
 
 /************************ QuickSort function prototypes **********************/
 
-typedef FUNCTION_POINTER (int, EntryCompareFunctPtr, (const void*, const void*));
+typedef int (*EntryCompareFunctPtr)(const void*, const void*);
 
 /************************** QuickSort class definition ***********************/
 

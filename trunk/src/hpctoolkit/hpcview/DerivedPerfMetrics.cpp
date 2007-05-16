@@ -243,7 +243,8 @@ void
 ComputedPerfMetric::Make(NodeRetriever &ret)
 {
   ScopeInfoIterator it(ret.GetRoot(), 
-		       /*filter*/ NULL, /*leavesOnly*/ false, PostOrder); 
+		       /*filter*/ NULL, /*leavesOnly*/ false, 
+		       IteratorStack::PostOrder);
 
   for (; it.Current(); it++) {
     if (it.CurScope()->IsLeaf() 

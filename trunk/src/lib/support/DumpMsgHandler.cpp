@@ -48,8 +48,10 @@
 
 #ifdef NO_STD_CHEADERS
 # include <stdio.h>
+# include <stdlib.h>
 #else
 # include <cstdio>
+# include <cstdlib>
 using namespace std; // For compatibility with non-std C headers
 #endif
 

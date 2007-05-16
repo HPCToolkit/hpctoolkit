@@ -50,6 +50,15 @@
 
 //************************* System Include Files ****************************
 
+#ifdef NO_STD_CHEADERS
+# include <stdio.h>
+# include <limits.h>
+#else
+# include <cstdio> // for 'fopen'
+# include <climits>
+using namespace std; // For compatibility with non-std C headers
+#endif
+
 #include <iostream>
 using std::ostream;
 using std::endl;
@@ -60,14 +69,7 @@ using std::string;
 #include <map> // STL
 using std::map;
 
-#ifdef NO_STD_CHEADERS
-# include <stdio.h>
-# include <limits.h>
-#else
-# include <cstdio> // for 'fopen'
-# include <climits>
-using namespace std; // For compatibility with non-std C headers
-#endif
+#include <algorithm>
 
 //*************************** User Include Files ****************************
 
@@ -264,7 +266,7 @@ ScopeInfo::NoteHeight()
     height = 0;
     for (ScopeInfoChildIterator it(this); it.Current(); it++) {
       int childHeight = it.CurScope()->NoteHeight();
-      height = MAX(height, childHeight + 1);
+      height = std::max(height, childHeight + 1);
     } 
   }
   return height;
@@ -341,8 +343,8 @@ CodeInfo::LinkAndSetLineRange(CodeInfo* parent)
 {
   this->Link(parent);
   if (begLine() != ln_NULL) {
-    SrcFile::ln bLn = MIN(parent->begLine(), begLine());
-    SrcFile::ln eLn = MAX(parent->endLine(), endLine());
+    SrcFile::ln bLn = std::min(parent->begLine(), begLine());
+    SrcFile::ln eLn = std::max(parent->endLine(), endLine());
     parent->SetLineRange(bLn, eLn);
   }
 }
@@ -1048,8 +1050,8 @@ ScopeInfo::Merge(ScopeInfo* toNode, ScopeInfo* fromNode)
   CodeInfo* fromCI = dynamic_cast<CodeInfo*>(fromNode);
   DIAG_Assert(logic::equiv(toCI, fromCI), "Invariant broken!");
   if (toCI && fromCI) {
-    SrcFile::ln begLn = MIN(toCI->begLine(), fromCI->begLine());
-    SrcFile::ln endLn = MAX(toCI->endLine(), fromCI->endLine());
+    SrcFile::ln begLn = std::min(toCI->begLine(), fromCI->begLine());
+    SrcFile::ln endLn = std::max(toCI->endLine(), fromCI->endLine());
     toCI->SetLineRange(begLn, endLn);
     toCI->vmaSet().merge(fromCI->vmaSet()); // merge VMAs
   }

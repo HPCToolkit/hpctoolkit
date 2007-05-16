@@ -276,22 +276,22 @@ extern int StringEntryCompare  (const void* entry1, const void* entry2);
 
 /*********************** HashTable function prototypes ***********************/
 
-typedef FUNCTION_POINTER (void, AddEntryFunctPtr, (void*, void*, va_list));
+typedef void (*AddEntryFunctPtr)(void*, void*, va_list);
            /* void* entryCur, void* entryNew, va_list argList */
 
-typedef FUNCTION_POINTER (void, DeleteEntryFunctPtr, (void*, va_list));
+typedef void (*DeleteEntryFunctPtr)(void*, va_list);
            /* void* entry, va_list argList */
 
-typedef FUNCTION_POINTER (uint, HashFunctFunctPtr, (const void*, const uint));
+typedef uint (*HashFunctFunctPtr)(const void*, const uint);
            /* void* entry, uint size */
 
-typedef FUNCTION_POINTER (uint, RehashFunctFunctPtr, (const uint, const uint));
+typedef uint (*RehashFunctFunctPtr)(const uint, const uint);
            /* uint oldHashValue, uint newSize */
 
-typedef FUNCTION_POINTER (int, EntryCompareFunctPtr, (const void*, const void*));
+typedef int (*EntryCompareFunctPtr)(const void*, const void*);
            /* void* entry1, void* entry2 */
 
-typedef FUNCTION_POINTER (void, EntryCleanupFunctPtr, (void*));
+typedef void (*EntryCleanupFunctPtr)(void*);
            /* void* entry */
 
 
@@ -305,10 +305,10 @@ class HashTable
 
        // Must be called after creating object
     void Create (const uint entrySize, uint initialSize,
-                         HashFunctFunctPtr    const HashFunctCallback,
-                         RehashFunctFunctPtr  const RehashFunctCallback,
-                         EntryCompareFunctPtr const EntryCompareCallback,
-                         EntryCleanupFunctPtr const EntryCleanupCallback);
+		 HashFunctFunctPtr    const HashFunctCallback,
+		 RehashFunctFunctPtr  const RehashFunctCallback,
+		 EntryCompareFunctPtr const EntryCompareCallback,
+		 EntryCleanupFunctPtr const EntryCleanupCallback);
 
        // Must be called before deleting object
     void Destroy ();

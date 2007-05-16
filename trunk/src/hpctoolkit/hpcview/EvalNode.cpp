@@ -51,6 +51,8 @@ using std::endl;
 
 #include <string>
 
+#include <algorithm>
+
 #ifdef NO_STD_CHEADERS
 # include <math.h>
 #else
@@ -411,7 +413,7 @@ Min::eval(const ScopeInfo *si)
       double tmp = nodes[i]->eval(si);
       if (IsNaNorInfinity(tmp)) continue; 
       // if i > 0, there is an empty value that we will treat as 0.0
-      result = (i == 0) ? tmp : MIN(tmp, 0.0);
+      result = (i == 0) ? tmp : std::min(tmp, 0.0);
       break;
     }
   }
@@ -419,7 +421,7 @@ Min::eval(const ScopeInfo *si)
     if (nodes[i] != NULL) {
       double tmp = nodes[i]->eval(si);
       if (IsNaNorInfinity(tmp)) tmp = 0.0; 
-      result = MIN(result, tmp);
+      result = std::min(result, tmp);
     }
   }
   IFTRACE << "min=" << result << endl; 
@@ -464,7 +466,7 @@ Max::eval(const ScopeInfo *si)
       double tmp = nodes[i]->eval(si);
       if (IsNaNorInfinity(tmp)) continue; 
       // if i > 0, there is an empty value that we will treat as 0.0
-      result = (i == 0) ? tmp : MAX(tmp, 0.0);
+      result = (i == 0) ? tmp : std::max(tmp, 0.0);
       result = tmp;
       break;
     }
@@ -473,7 +475,7 @@ Max::eval(const ScopeInfo *si)
     if (nodes[i] != NULL) {
       double tmp = nodes[i]->eval(si);
       if (IsNaNorInfinity(tmp)) tmp = 0.0; 
-      result = MAX(result, tmp);
+      result = std::max(result, tmp);
     }
   }
   IFTRACE << "max=" << result << endl; 
