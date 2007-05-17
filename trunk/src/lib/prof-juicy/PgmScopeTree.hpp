@@ -71,7 +71,6 @@
 #include <lib/support/diagnostics.h>
 #include <lib/support/Files.hpp>
 #include <lib/support/Logic.hpp>
-#include <lib/support/Nan.h>
 #include <lib/support/NonUniformDegreeTree.hpp>
 #include <lib/support/SrcFile.hpp>
 using SrcFile::ln_NULL;
@@ -223,7 +222,7 @@ public:
   int ScopeDepth() const { return depth; }
 
   bool   HasPerfData(int i) const;     // checks whether PerfData(i) is set
-  double PerfData(int i) const;        // returns NaN iff !HasPerfData(i) 
+  double PerfData(int i) const;        // returns FP_NAN iff !HasPerfData(i) 
   void   SetPerfData(int i, double d); // asserts out iff HasPerfData(i) 
   
   // --------------------------------------------------------

@@ -60,7 +60,7 @@ using std::atoi;
 
 #include <lib/prof-juicy/PerfMetric.hpp>
 
-#include <lib/support/Nan.h>
+#include <lib/support/NaN.h>
 #include <lib/support/Trace.hpp>
 
 //************************ Xerces Include Files ******************************
@@ -113,8 +113,6 @@ using XERCES_CPP_NAMESPACE::XMLString;
 static bool isOperatorNode(DOMNode *node);
 static bool isOperandNode(DOMNode *node);
 
-extern double NaNVal;
-
 MathMLExpr::MathMLExpr(DOMNode *math) 
 {
   int exprs = 0;
@@ -151,7 +149,7 @@ MathMLExpr::eval(const ScopeInfo *si)
   IFDOTRACE { si->dumpme(cerr); }
   if (topNode != NULL)
     return topNode->eval(si);
-  return NaNVal;
+  return c_FP_NAN_d;
 }
 
 // ----------------------------------------------------------------------

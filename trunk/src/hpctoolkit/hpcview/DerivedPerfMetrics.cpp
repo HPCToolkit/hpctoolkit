@@ -56,9 +56,10 @@ using std::string;
 #include <lib/prof-juicy/PgmScopeTree.hpp>
 
 #include <lib/support/diagnostics.h>
-#include <lib/support/Trace.hpp>
 #include <lib/support/pathfind.h>
+#include <lib/support/NaN.h>
 #include <lib/support/StrUtil.hpp>
+#include <lib/support/Trace.hpp>
 
 //************************ Forward Declarations ******************************
 
@@ -250,7 +251,7 @@ ComputedPerfMetric::Make(NodeRetriever &ret)
     if (it.CurScope()->IsLeaf() 
 	|| !IndexToPerfDataInfo(Index()).PropComputed()) {
       double val = mathExpr->eval(it.CurScope()); 
-      if (! IsNaN(val)) {
+      if (! c_isnan_d(val)) {
 	it.CurScope()->SetPerfData(Index(), val); 
       } 
     }

@@ -69,9 +69,9 @@ using namespace std; // For compatibility with non-std C headers
 #include <lib/prof-juicy/PgmScopeTree.hpp>
 
 #include <lib/support/diagnostics.h>
-#include <lib/support/Nan.h>
 #include <lib/support/Files.hpp>
 #include <lib/support/IOUtil.hpp>
+#include <lib/support/NaN.h>
 #include <lib/support/pathfind.h>
 #include <lib/support/realpath.h>
 
@@ -134,7 +134,7 @@ main(int argc, char* const* argv)
 int 
 realmain(int argc, char* const* argv) 
 {
-  InitNaN();
+  NaN_init();
   Args args(argc,argv);  // exits if error on command line
   InitXerces();          // exits iff failure 
 

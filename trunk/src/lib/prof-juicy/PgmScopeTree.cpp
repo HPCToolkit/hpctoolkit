@@ -82,6 +82,7 @@ using std::map;
 
 #include <lib/support/diagnostics.h>
 #include <lib/support/Logic.hpp>
+#include <lib/support/NaN.h>
 #include <lib/support/SrcFile.hpp>
 using SrcFile::ln_NULL;
 #include <lib/support/StrUtil.hpp>
@@ -103,7 +104,7 @@ using namespace xml;
 
 class DoubleVector : public VectorTmpl<double> {
 public: 
-  DoubleVector() : VectorTmpl<double>(NaNVal, true) { }
+  DoubleVector() : VectorTmpl<double>(c_FP_NAN_d, true) { }
 };
 
 class GroupScopeMap     : public map<string, GroupScope*> { };
@@ -1082,9 +1083,10 @@ void
 ScopeInfo::SetPerfData(int i, double d) 
 {
   DIAG_Assert(IsPerfDataIndex(i), "");
-  if (IsNaN((*perfData)[i])) {
+  if (c_isnan_d((*perfData)[i])) {
     (*perfData)[i] = d;
-  } else {
+  }
+  else {
     (*perfData)[i] += d;
   }
 }
@@ -1095,7 +1097,8 @@ ScopeInfo::HasPerfData(int i) const
 {
   DIAG_Assert(IsPerfDataIndex(i), "");
   ScopeInfo *si = (ScopeInfo*) this;
-  return ! IsNaN((*si->perfData)[i]);
+  double x = (*si->perfData)[i];
+  return (x != 0.0 && !c_isnan_d(x));
 }
 
 

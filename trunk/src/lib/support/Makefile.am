@@ -69,7 +69,7 @@ MYSOURCES = \
 	Trace.hpp Trace.cpp \
 	\
 	bstring.h \
-	Nan.h Nan.cpp \
+	NaN.h NaN.c \
 	CStrUtil.h CStrUtil.cpp \
 	StrUtil.hpp StrUtil.cpp \
 	\
