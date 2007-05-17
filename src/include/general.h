@@ -53,23 +53,11 @@
 
 /****************************************************************************/
 
-#include "ArchIndTypes.h"
-
-/****************************************************************************/
-
-/* --------------------------------------------------------------------------
- * Convenient types (Possibly push detection to configure.ac)
- * ------------------------------------------------------------------------*/
-
-#if defined(__cplusplus) 
-  // This can still cause duplicate definition conflicts (with system
-  // headers) in some C code.  Eventually we will be able to rely on
-  // C99 conformance.
-  typedef    unsigned short int    ushort;
-  typedef    unsigned       int    uint;
-  typedef    unsigned long  int    ulong;
+#if !defined(SIZEOF_INTP)
+# error "configure.ac should have defined SIZEOF_INTP using AC_CHECK_SIZEOF."
 #endif
 
+/****************************************************************************/
 
 /* --------------------------------------------------------------------------
  * NULL
@@ -84,6 +72,92 @@
 #else
 #  include <stddef.h>
 #endif
+
+
+/* --------------------------------------------------------------------------
+ * Convenient types (Possibly push detection to configure.ac)
+ * ------------------------------------------------------------------------*/
+
+#include <inttypes.h> /* commonly available, unlike <stdint.h> */
+
+#if defined(__cplusplus) 
+  // This can still cause duplicate definition conflicts (with system
+  // headers) in some C code.  Eventually we will be able to rely on
+  // C99 conformance.
+  typedef    unsigned short int    ushort;
+  typedef    unsigned       int    uint;
+  typedef    unsigned long  int    ulong;
+#endif
+
+
+/* --------------------------------------------------------------------------
+ * Macros for integer literal expressions
+ * (Analagous to INTx_C() on Solaris/Linux, provided by inttypes.h)
+ * ------------------------------------------------------------------------*/
+
+#ifndef INT8_C
+# define INT8_C(x)   x
+#endif
+#ifndef UINT8_C
+# define UINT8_C(x)  x ## U
+#endif
+#ifndef INT16_C
+# define INT16_C(x)  x
+#endif
+#ifndef UINT16_C
+# define UINT16_C(x) x ## U
+#endif
+
+#if (SIZEOF_INTP == 4)
+# ifndef INT32_C /* use as a synecdoche for INT32_C and INT64_C */
+#  define INT32_C(x)  x ## L
+#  define UINT32_C(x) x ## UL
+#  define INT64_C(x)  x ## LL
+#  define UINT64_C(x) x ## ULL
+# endif
+#elif (SIZEOF_INTP == 8)
+# ifndef INT32_C /* use as a synecdoche for xINT32_C and xINT64_C */
+#  define INT32_C(x)  x
+#  define UINT32_C(x) x
+#  define INT64_C(x)  x ## L
+#  define UINT64_C(x) x ## UL
+# endif
+#else
+# error "Bad value for SIZEOF_INTP!"
+#endif
+
+
+/* --------------------------------------------------------------------------
+ * printf format strings for constant sized types
+ * (Analagous to PRIab() on Solaris/Linux, provided by inttypes.h)
+ * ------------------------------------------------------------------------*/
+
+#if (SIZEOF_INTP == 4)
+# ifndef PRId64 /* use as a synecdoche for PRIa64 */
+#  define PRId64    "lld"
+#  define PRIu64    "llu"
+#  define PRIx64    "llx"
+# endif
+# ifndef SCNd64 /* use as a synecdoche for SCNa64 */
+#  define SCNd64    "lld"
+#  define SCNu64    "llu"
+#  define SCNx64    "llx"
+# endif
+#elif (SIZEOF_INTP == 8)
+# ifndef PRId64 /* use as a synecdoche for PRIa64 */
+#  define PRId64    "ld"
+#  define PRIu64    "lu"
+#  define PRIx64    "lx"
+# endif
+# ifndef SCNd64 /* use as a synecdoche for SCNa64 */
+#  define SCNd64    "ld"
+#  define SCNu64    "lu"
+#  define SCNx64    "lx"
+# endif
+#else
+# error "Bad value for SIZEOF_INTP!"
+#endif
+
 
 /* --------------------------------------------------------------------------
  * MIN/MAX for C (use std::min/max for C++)

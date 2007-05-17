@@ -21668,6 +21668,413 @@ _ACEOF
 
    fi
 
+# Check for types
+{ echo "$as_me:$LINENO: checking for int*" >&5
+echo $ECHO_N "checking for int*... $ECHO_C" >&6; }
+if test "${ac_cv_type_intp+set}" = set; then
+  echo $ECHO_N "(cached) $ECHO_C" >&6
+else
+  cat >conftest.$ac_ext <<_ACEOF
+/* confdefs.h.  */
+_ACEOF
+cat confdefs.h >>conftest.$ac_ext
+cat >>conftest.$ac_ext <<_ACEOF
+/* end confdefs.h.  */
+$ac_includes_default
+typedef int* ac__type_new_;
+int
+main ()
+{
+if ((ac__type_new_ *) 0)
+  return 0;
+if (sizeof (ac__type_new_))
+  return 0;
+  ;
+  return 0;
+}
+_ACEOF
+rm -f conftest.$ac_objext
+if { (ac_try="$ac_compile"
+case "(($ac_try" in
+  *\"* | *\`* | *\\*) ac_try_echo=\$ac_try;;
+  *) ac_try_echo=$ac_try;;
+esac
+eval "echo \"\$as_me:$LINENO: $ac_try_echo\"") >&5
+  (eval "$ac_compile") 2>conftest.er1
+  ac_status=$?
+  grep -v '^ *+' conftest.er1 >conftest.err
+  rm -f conftest.er1
+  cat conftest.err >&5
+  echo "$as_me:$LINENO: \$? = $ac_status" >&5
+  (exit $ac_status); } && {
+	 test -z "$ac_cxx_werror_flag" ||
+	 test ! -s conftest.err
+       } && test -s conftest.$ac_objext; then
+  ac_cv_type_intp=yes
+else
+  echo "$as_me: failed program was:" >&5
+sed 's/^/| /' conftest.$ac_ext >&5
+
+	ac_cv_type_intp=no
+fi
+
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+fi
+{ echo "$as_me:$LINENO: result: $ac_cv_type_intp" >&5
+echo "${ECHO_T}$ac_cv_type_intp" >&6; }
+
+# The cast to long int works around a bug in the HP C Compiler
+# version HP92453-01 B.11.11.23709.GP, which incorrectly rejects
+# declarations like `int a3[[(sizeof (unsigned char)) >= 0]];'.
+# This bug is HP SR number 8606223364.
+{ echo "$as_me:$LINENO: checking size of int*" >&5
+echo $ECHO_N "checking size of int*... $ECHO_C" >&6; }
+if test "${ac_cv_sizeof_intp+set}" = set; then
+  echo $ECHO_N "(cached) $ECHO_C" >&6
+else
+  if test "$cross_compiling" = yes; then
+  # Depending upon the size, compute the lo and hi bounds.
+cat >conftest.$ac_ext <<_ACEOF
+/* confdefs.h.  */
+_ACEOF
+cat confdefs.h >>conftest.$ac_ext
+cat >>conftest.$ac_ext <<_ACEOF
+/* end confdefs.h.  */
+$ac_includes_default
+   typedef int* ac__type_sizeof_;
+int
+main ()
+{
+static int test_array [1 - 2 * !(((long int) (sizeof (ac__type_sizeof_))) >= 0)];
+test_array [0] = 0
+
+  ;
+  return 0;
+}
+_ACEOF
+rm -f conftest.$ac_objext
+if { (ac_try="$ac_compile"
+case "(($ac_try" in
+  *\"* | *\`* | *\\*) ac_try_echo=\$ac_try;;
+  *) ac_try_echo=$ac_try;;
+esac
+eval "echo \"\$as_me:$LINENO: $ac_try_echo\"") >&5
+  (eval "$ac_compile") 2>conftest.er1
+  ac_status=$?
+  grep -v '^ *+' conftest.er1 >conftest.err
+  rm -f conftest.er1
+  cat conftest.err >&5
+  echo "$as_me:$LINENO: \$? = $ac_status" >&5
+  (exit $ac_status); } && {
+	 test -z "$ac_cxx_werror_flag" ||
+	 test ! -s conftest.err
+       } && test -s conftest.$ac_objext; then
+  ac_lo=0 ac_mid=0
+  while :; do
+    cat >conftest.$ac_ext <<_ACEOF
+/* confdefs.h.  */
+_ACEOF
+cat confdefs.h >>conftest.$ac_ext
+cat >>conftest.$ac_ext <<_ACEOF
+/* end confdefs.h.  */
+$ac_includes_default
+   typedef int* ac__type_sizeof_;
+int
+main ()
+{
+static int test_array [1 - 2 * !(((long int) (sizeof (ac__type_sizeof_))) <= $ac_mid)];
+test_array [0] = 0
+
+  ;
+  return 0;
+}
+_ACEOF
+rm -f conftest.$ac_objext
+if { (ac_try="$ac_compile"
+case "(($ac_try" in
+  *\"* | *\`* | *\\*) ac_try_echo=\$ac_try;;
+  *) ac_try_echo=$ac_try;;
+esac
+eval "echo \"\$as_me:$LINENO: $ac_try_echo\"") >&5
+  (eval "$ac_compile") 2>conftest.er1
+  ac_status=$?
+  grep -v '^ *+' conftest.er1 >conftest.err
+  rm -f conftest.er1
+  cat conftest.err >&5
+  echo "$as_me:$LINENO: \$? = $ac_status" >&5
+  (exit $ac_status); } && {
+	 test -z "$ac_cxx_werror_flag" ||
+	 test ! -s conftest.err
+       } && test -s conftest.$ac_objext; then
+  ac_hi=$ac_mid; break
+else
+  echo "$as_me: failed program was:" >&5
+sed 's/^/| /' conftest.$ac_ext >&5
+
+	ac_lo=`expr $ac_mid + 1`
+			if test $ac_lo -le $ac_mid; then
+			  ac_lo= ac_hi=
+			  break
+			fi
+			ac_mid=`expr 2 '*' $ac_mid + 1`
+fi
+
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+  done
+else
+  echo "$as_me: failed program was:" >&5
+sed 's/^/| /' conftest.$ac_ext >&5
+
+	cat >conftest.$ac_ext <<_ACEOF
+/* confdefs.h.  */
+_ACEOF
+cat confdefs.h >>conftest.$ac_ext
+cat >>conftest.$ac_ext <<_ACEOF
+/* end confdefs.h.  */
+$ac_includes_default
+   typedef int* ac__type_sizeof_;
+int
+main ()
+{
+static int test_array [1 - 2 * !(((long int) (sizeof (ac__type_sizeof_))) < 0)];
+test_array [0] = 0
+
+  ;
+  return 0;
+}
+_ACEOF
+rm -f conftest.$ac_objext
+if { (ac_try="$ac_compile"
+case "(($ac_try" in
+  *\"* | *\`* | *\\*) ac_try_echo=\$ac_try;;
+  *) ac_try_echo=$ac_try;;
+esac
+eval "echo \"\$as_me:$LINENO: $ac_try_echo\"") >&5
+  (eval "$ac_compile") 2>conftest.er1
+  ac_status=$?
+  grep -v '^ *+' conftest.er1 >conftest.err
+  rm -f conftest.er1
+  cat conftest.err >&5
+  echo "$as_me:$LINENO: \$? = $ac_status" >&5
+  (exit $ac_status); } && {
+	 test -z "$ac_cxx_werror_flag" ||
+	 test ! -s conftest.err
+       } && test -s conftest.$ac_objext; then
+  ac_hi=-1 ac_mid=-1
+  while :; do
+    cat >conftest.$ac_ext <<_ACEOF
+/* confdefs.h.  */
+_ACEOF
+cat confdefs.h >>conftest.$ac_ext
+cat >>conftest.$ac_ext <<_ACEOF
+/* end confdefs.h.  */
+$ac_includes_default
+   typedef int* ac__type_sizeof_;
+int
+main ()
+{
+static int test_array [1 - 2 * !(((long int) (sizeof (ac__type_sizeof_))) >= $ac_mid)];
+test_array [0] = 0
+
+  ;
+  return 0;
+}
+_ACEOF
+rm -f conftest.$ac_objext
+if { (ac_try="$ac_compile"
+case "(($ac_try" in
+  *\"* | *\`* | *\\*) ac_try_echo=\$ac_try;;
+  *) ac_try_echo=$ac_try;;
+esac
+eval "echo \"\$as_me:$LINENO: $ac_try_echo\"") >&5
+  (eval "$ac_compile") 2>conftest.er1
+  ac_status=$?
+  grep -v '^ *+' conftest.er1 >conftest.err
+  rm -f conftest.er1
+  cat conftest.err >&5
+  echo "$as_me:$LINENO: \$? = $ac_status" >&5
+  (exit $ac_status); } && {
+	 test -z "$ac_cxx_werror_flag" ||
+	 test ! -s conftest.err
+       } && test -s conftest.$ac_objext; then
+  ac_lo=$ac_mid; break
+else
+  echo "$as_me: failed program was:" >&5
+sed 's/^/| /' conftest.$ac_ext >&5
+
+	ac_hi=`expr '(' $ac_mid ')' - 1`
+			if test $ac_mid -le $ac_hi; then
+			  ac_lo= ac_hi=
+			  break
+			fi
+			ac_mid=`expr 2 '*' $ac_mid`
+fi
+
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+  done
+else
+  echo "$as_me: failed program was:" >&5
+sed 's/^/| /' conftest.$ac_ext >&5
+
+	ac_lo= ac_hi=
+fi
+
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+fi
+
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+# Binary search between lo and hi bounds.
+while test "x$ac_lo" != "x$ac_hi"; do
+  ac_mid=`expr '(' $ac_hi - $ac_lo ')' / 2 + $ac_lo`
+  cat >conftest.$ac_ext <<_ACEOF
+/* confdefs.h.  */
+_ACEOF
+cat confdefs.h >>conftest.$ac_ext
+cat >>conftest.$ac_ext <<_ACEOF
+/* end confdefs.h.  */
+$ac_includes_default
+   typedef int* ac__type_sizeof_;
+int
+main ()
+{
+static int test_array [1 - 2 * !(((long int) (sizeof (ac__type_sizeof_))) <= $ac_mid)];
+test_array [0] = 0
+
+  ;
+  return 0;
+}
+_ACEOF
+rm -f conftest.$ac_objext
+if { (ac_try="$ac_compile"
+case "(($ac_try" in
+  *\"* | *\`* | *\\*) ac_try_echo=\$ac_try;;
+  *) ac_try_echo=$ac_try;;
+esac
+eval "echo \"\$as_me:$LINENO: $ac_try_echo\"") >&5
+  (eval "$ac_compile") 2>conftest.er1
+  ac_status=$?
+  grep -v '^ *+' conftest.er1 >conftest.err
+  rm -f conftest.er1
+  cat conftest.err >&5
+  echo "$as_me:$LINENO: \$? = $ac_status" >&5
+  (exit $ac_status); } && {
+	 test -z "$ac_cxx_werror_flag" ||
+	 test ! -s conftest.err
+       } && test -s conftest.$ac_objext; then
+  ac_hi=$ac_mid
+else
+  echo "$as_me: failed program was:" >&5
+sed 's/^/| /' conftest.$ac_ext >&5
+
+	ac_lo=`expr '(' $ac_mid ')' + 1`
+fi
+
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+done
+case $ac_lo in
+?*) ac_cv_sizeof_intp=$ac_lo;;
+'') if test "$ac_cv_type_intp" = yes; then
+     { { echo "$as_me:$LINENO: error: cannot compute sizeof (int*)
+See \`config.log' for more details." >&5
+echo "$as_me: error: cannot compute sizeof (int*)
+See \`config.log' for more details." >&2;}
+   { (exit 77); exit 77; }; }
+   else
+     ac_cv_sizeof_intp=0
+   fi ;;
+esac
+else
+  cat >conftest.$ac_ext <<_ACEOF
+/* confdefs.h.  */
+_ACEOF
+cat confdefs.h >>conftest.$ac_ext
+cat >>conftest.$ac_ext <<_ACEOF
+/* end confdefs.h.  */
+$ac_includes_default
+   typedef int* ac__type_sizeof_;
+static long int longval () { return (long int) (sizeof (ac__type_sizeof_)); }
+static unsigned long int ulongval () { return (long int) (sizeof (ac__type_sizeof_)); }
+#include <stdio.h>
+#include <stdlib.h>
+int
+main ()
+{
+
+  FILE *f = fopen ("conftest.val", "w");
+  if (! f)
+    return 1;
+  if (((long int) (sizeof (ac__type_sizeof_))) < 0)
+    {
+      long int i = longval ();
+      if (i != ((long int) (sizeof (ac__type_sizeof_))))
+	return 1;
+      fprintf (f, "%ld\n", i);
+    }
+  else
+    {
+      unsigned long int i = ulongval ();
+      if (i != ((long int) (sizeof (ac__type_sizeof_))))
+	return 1;
+      fprintf (f, "%lu\n", i);
+    }
+  return ferror (f) || fclose (f) != 0;
+
+  ;
+  return 0;
+}
+_ACEOF
+rm -f conftest$ac_exeext
+if { (ac_try="$ac_link"
+case "(($ac_try" in
+  *\"* | *\`* | *\\*) ac_try_echo=\$ac_try;;
+  *) ac_try_echo=$ac_try;;
+esac
+eval "echo \"\$as_me:$LINENO: $ac_try_echo\"") >&5
+  (eval "$ac_link") 2>&5
+  ac_status=$?
+  echo "$as_me:$LINENO: \$? = $ac_status" >&5
+  (exit $ac_status); } && { ac_try='./conftest$ac_exeext'
+  { (case "(($ac_try" in
+  *\"* | *\`* | *\\*) ac_try_echo=\$ac_try;;
+  *) ac_try_echo=$ac_try;;
+esac
+eval "echo \"\$as_me:$LINENO: $ac_try_echo\"") >&5
+  (eval "$ac_try") 2>&5
+  ac_status=$?
+  echo "$as_me:$LINENO: \$? = $ac_status" >&5
+  (exit $ac_status); }; }; then
+  ac_cv_sizeof_intp=`cat conftest.val`
+else
+  echo "$as_me: program exited with status $ac_status" >&5
+echo "$as_me: failed program was:" >&5
+sed 's/^/| /' conftest.$ac_ext >&5
+
+( exit $ac_status )
+if test "$ac_cv_type_intp" = yes; then
+     { { echo "$as_me:$LINENO: error: cannot compute sizeof (int*)
+See \`config.log' for more details." >&5
+echo "$as_me: error: cannot compute sizeof (int*)
+See \`config.log' for more details." >&2;}
+   { (exit 77); exit 77; }; }
+   else
+     ac_cv_sizeof_intp=0
+   fi
+fi
+rm -f core *.core core.conftest.* gmon.out bb.out conftest$ac_exeext conftest.$ac_objext conftest.$ac_ext
+fi
+rm -f conftest.val
+fi
+{ echo "$as_me:$LINENO: result: $ac_cv_sizeof_intp" >&5
+echo "${ECHO_T}$ac_cv_sizeof_intp" >&6; }
+
+
+
+cat >>confdefs.h <<_ACEOF
+#define SIZEOF_INTP $ac_cv_sizeof_intp
+_ACEOF
+
+
+
 # Check pthread.h
 { echo "$as_me:$LINENO: checking whether ${CXX-CC} compiles pthread.h (__thread vs. __threadp)" >&5
 echo $ECHO_N "checking whether ${CXX-CC} compiles pthread.h (__thread vs. __threadp)... $ECHO_C" >&6; }
@@ -22313,7 +22720,81 @@ MYcxxcmp()
    }
 
 #-------------------------------------------------
-# Host-specific settings for HPCToolkit
+# Host-specific defines for HPCToolkit
+#-------------------------------------------------
+
+# NOTE: To see what macros gcc-like compilers define:
+#   gcc -dM -E - < /dev/null | sort
+
+case ${host} in
+  # Linux
+  i386*-*-linux* | i686*-*-linux* | x86_64*-*-linux* | ia64*-*-linux*)
+    # __i386 / __x86_64 / __ia64 && __linux
+    cat >>confdefs.h <<\_ACEOF
+#define HOST_OS_LINUX
+_ACEOF
+
+    ;;
+
+  mips64*-*-linux*)
+    # __mips64 && __linux / _MIPS_SIM == _ABIN32 / _MIPS_SIM == _ABI64
+    cat >>confdefs.h <<\_ACEOF
+#define HOST_PLATFORM_MIPS64LE_LINUX
+_ACEOF
+
+    cat >>confdefs.h <<\_ACEOF
+#define HOST_OS_LINUX
+_ACEOF
+
+    ;;
+
+  # MacOS
+  #powerpc*-*-darwin*)
+    # __ppc__ / __MACH__
+    #;;
+
+  #i386*-*-darwin* | i686*-*-darwin*)
+    #;;
+
+  # IRIX
+  mips*-*-irix*)
+    # __mips && __sgi && __unix
+    # _MIPS_ISA == _MIPS_ISA_MIPS1 | _MIPS_ISA == _MIPS_ISA_MIPS2
+    # _MIPS_ISA == _MIPS_ISA_MIPS3 | _MIPS_ISA == _MIPS_ISA_MIPS4
+    cat >>confdefs.h <<\_ACEOF
+#define HOST_OS_IRIX
+_ACEOF
+
+    ;;
+
+  # Solaris
+  sparc*-*-solaris*)
+    # __sparc && __sun && __unix
+    cat >>confdefs.h <<\_ACEOF
+#define HOST_OS_SOLARIS
+_ACEOF
+
+    ;;
+
+  # Tru64/OSF
+  alpha*-*-osf*)
+    # __alpha / __digital__ && __unix__
+    cat >>confdefs.h <<\_ACEOF
+#define HOST_OS_TRU64
+_ACEOF
+
+    ;;
+
+  *)
+    { { echo "$as_me:$LINENO: error: HPCToolkit is not configurd for HOST=${host}!" >&5
+echo "$as_me: error: HPCToolkit is not configurd for HOST=${host}!" >&2;}
+   { (exit 1); exit 1; }; }
+    ;;
+esac
+
+
+#-------------------------------------------------
+# Host-specific compiler settings for HPCToolkit
 #-------------------------------------------------
 
 # FIXME: Now that we use libtool to build all HPCToolkit libraries, we
@@ -22347,7 +22828,90 @@ fi
 
 
 case ${host} in
-  alpha*-*-linux* | alpha*-*-osf*)
+
+  # Linux
+  i386*-*-linux* | i686*-*-linux* | x86_64*-*-linux* | ia64*-*-linux* | mips64*-*-linux*)
+    # Intel compiler
+    if MYcxxcmp $CXX icpc ecpc ; then
+      :
+    fi
+    if MYcxxcmp $CC icc ecc ; then
+      :
+    fi
+
+    # Pathscale compiler
+    if MYcxxcmp $CXX pathCC ; then
+      :
+    fi
+    if MYcxxcmp $CC pathcc ; then
+      :
+    fi
+
+    # PGI compiler
+    if MYcxxcmp $CXX pgCC ; then
+      if test "$OPT_ENABLE_DEVELOP" = "yes" ; then
+        my_opt_cxxflags="-g -O0"
+      else
+        my_opt_cxxflags="-gopt -O2"
+      fi
+    fi
+    if MYcxxcmp $CC pgcc ; then
+      if test "$OPT_ENABLE_DEVELOP" = "yes" ; then
+        my_opt_cflags="-g -O0 -c9x"
+      else
+        my_opt_cflags="-gopt -O2 -c9x"
+      fi
+    fi
+    ;;
+
+  # IRIX
+  mips*-*-irix*)
+    # SGI MIPSpro
+    if MYcxxcmp $CXX CC ; then
+      HOST_CXXFLAGS="-64 -LANG:std"
+      HOST_AR="$CXX $CXXFLAGS ${HOST_CXXFLAGS} -ar -o"
+    fi
+    if MYcxxcmp $CC cc ; then
+      HOST_CFLAGS="-64"
+    fi
+
+    # GCC
+    if MYcxxcmp $CXX g++ c++ ; then
+      HOST_CXXFLAGS="-mabi=64"
+    fi
+    if MYcxxcmp $CC gcc ; then
+      HOST_CFLAGS="-mabi=64"
+    fi
+
+    # SGI demangle
+    my_demangle_ldflags="-lmangle"
+    ;;
+
+  # Solaris
+  sparc*-*-solaris*)
+    # Sun Forte/ONE
+    if MYcxxcmp $CXX CC; then
+      if test "$OPT_ENABLE_DEVELOP" = "yes" ; then
+        my_opt_cxxflags="-g"
+      else
+        my_opt_cxxflags="-fast -g"
+      fi
+      HOST_AR="$CXX $CXXFLAGS -xar -o"
+    fi
+    if MYcxxcmp $CC cc; then
+      if test "$OPT_ENABLE_DEVELOP" = "yes" ; then
+        my_opt_cflags="-g"
+      else
+        my_opt_cflags="-fast -g"
+      fi
+    fi
+
+    # Sun demangle
+    my_demangle_ldflags="-ldemangle"
+    ;;
+
+  # Tru64/OSF
+  alpha*-*-osf*)
     # Compaq compiler
     if MYcxxcmp $CXX cxx; then
       # Before using libtool, we had used local
@@ -22373,76 +22937,6 @@ case ${host} in
 
     # DEC demangle
     my_demangle_ldflags="-lmld"
-    ;;
-
-  i386*-*-linux* | i686*-*-linux* | x86_64*-*-linux* | ia64*-*-linux*)
-    # Intel compiler
-    if MYcxxcmp $CXX icpc ecpc ; then
-      :
-    fi
-    if MYcxxcmp $CC icc ecc ; then
-      :
-    fi
-
-    # PGI compiler
-    if MYcxxcmp $CXX pgCC ; then
-      if test "$OPT_ENABLE_DEVELOP" = "yes" ; then
-        my_opt_cxxflags="-g -O0"
-      else
-        my_opt_cxxflags="-gopt -O2"
-      fi
-    fi
-    if MYcxxcmp $CC pgcc ; then
-      if test "$OPT_ENABLE_DEVELOP" = "yes" ; then
-        my_opt_cflags="-g -O0 -c9x"
-      else
-        my_opt_cflags="-gopt -O2 -c9x"
-      fi
-    fi
-    ;;
-
-  mips*-*-irix*)
-    # SGI MIPSpro
-    if MYcxxcmp $CXX CC ; then
-      HOST_CXXFLAGS="-64 -LANG:std"
-      HOST_AR="$CXX $CXXFLAGS ${HOST_CXXFLAGS} -ar -o"
-    fi
-    if MYcxxcmp $CC cc ; then
-      HOST_CFLAGS="-64"
-    fi
-
-    # GCC
-    if MYcxxcmp $CXX g++ c++ ; then
-      HOST_CXXFLAGS="-mabi=64"
-    fi
-    if MYcxxcmp $CC gcc ; then
-      HOST_CFLAGS="-mabi=64"
-    fi
-
-    # SGI demangle
-    my_demangle_ldflags="-lmangle"
-    ;;
-
-  sparc*-*-solaris*)
-    # Sun Forte/ONE
-    if MYcxxcmp $CXX CC; then
-      if test "$OPT_ENABLE_DEVELOP" = "yes" ; then
-        my_opt_cxxflags="-g"
-      else
-        my_opt_cxxflags="-fast -g"
-      fi
-      HOST_AR="$CXX $CXXFLAGS -xar -o"
-    fi
-    if MYcxxcmp $CC cc; then
-      if test "$OPT_ENABLE_DEVELOP" = "yes" ; then
-        my_opt_cflags="-g"
-      else
-        my_opt_cflags="-fast -g"
-      fi
-    fi
-
-    # Sun demangle
-    my_demangle_ldflags="-ldemangle"
     ;;
 
   *)
