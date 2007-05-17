@@ -122,7 +122,7 @@ AC_CHECK_HEADERS(inttypes.h)
 HPC_CHECK_CXX_STDC_HEADERS()
 
 # Check for types
-AC_CHECK_SIZEOF([int*])
+AC_CHECK_SIZEOF([void*])
 
 # Check pthread.h
 HPC_CHECK_COMPILE_PTHREAD_H()

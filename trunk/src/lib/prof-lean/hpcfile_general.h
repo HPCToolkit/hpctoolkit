@@ -32,7 +32,7 @@
 
 //*************************** User Include Files ****************************
 
-#include <include/ArchIndTypes.h> /* special printf format strings */
+#include <include/general.h> /* special printf format strings */
 #include "io.h"
 
 //*************************** Forward Declarations **************************
