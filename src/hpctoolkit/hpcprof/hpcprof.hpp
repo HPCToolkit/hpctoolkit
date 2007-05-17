@@ -22,7 +22,7 @@
 #ifndef _hpcprof_h
 #define _hpcprof_h
 
-#include <include/ArchIndTypes.h> /* special printf format strings */
+#include <include/general.h> /* special printf format strings */
 
 //****************************************************************************
 /* FIXME: This needs to be rewritten */

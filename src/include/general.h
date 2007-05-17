@@ -53,8 +53,8 @@
 
 /****************************************************************************/
 
-#if !defined(SIZEOF_INTP)
-# error "configure.ac should have defined SIZEOF_INTP using AC_CHECK_SIZEOF."
+#if !defined(SIZEOF_VOIDP)
+# error "configure.ac should have defined SIZEOF_VOIDP using AC_CHECK_SIZEOF."
 #endif
 
 /****************************************************************************/
@@ -108,14 +108,14 @@
 # define UINT16_C(x) x ## U
 #endif
 
-#if (SIZEOF_INTP == 4)
+#if (SIZEOF_VOIDP == 4)
 # ifndef INT32_C /* use as a synecdoche for INT32_C and INT64_C */
 #  define INT32_C(x)  x ## L
 #  define UINT32_C(x) x ## UL
 #  define INT64_C(x)  x ## LL
 #  define UINT64_C(x) x ## ULL
 # endif
-#elif (SIZEOF_INTP == 8)
+#elif (SIZEOF_VOIDP == 8)
 # ifndef INT32_C /* use as a synecdoche for xINT32_C and xINT64_C */
 #  define INT32_C(x)  x
 #  define UINT32_C(x) x
@@ -123,7 +123,7 @@
 #  define UINT64_C(x) x ## UL
 # endif
 #else
-# error "Bad value for SIZEOF_INTP!"
+# error "Bad value for SIZEOF_VOIDP!"
 #endif
 
 
@@ -132,7 +132,7 @@
  * (Analagous to PRIab() on Solaris/Linux, provided by inttypes.h)
  * ------------------------------------------------------------------------*/
 
-#if (SIZEOF_INTP == 4)
+#if (SIZEOF_VOIDP == 4)
 # ifndef PRId64 /* use as a synecdoche for PRIa64 */
 #  define PRId64    "lld"
 #  define PRIu64    "llu"
@@ -143,7 +143,7 @@
 #  define SCNu64    "llu"
 #  define SCNx64    "llx"
 # endif
-#elif (SIZEOF_INTP == 8)
+#elif (SIZEOF_VOIDP == 8)
 # ifndef PRId64 /* use as a synecdoche for PRIa64 */
 #  define PRId64    "ld"
 #  define PRIu64    "lu"
@@ -155,7 +155,7 @@
 #  define SCNx64    "lx"
 # endif
 #else
-# error "Bad value for SIZEOF_INTP!"
+# error "Bad value for SIZEOF_VOIDP!"
 #endif
 
 
