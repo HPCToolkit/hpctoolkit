@@ -61,7 +61,7 @@
 
 //*************************** Forward Declarations ***************************
 
-#if defined(PLATFORM_MIPS64_LINUX)
+#if defined(HOST_PLATFORM_MIPS64LE_LINUX)
 # define BFD_GETX32 bfd_getl32
 #else /* PLATFORM_MIPS_IRIX64 */
 # define BFD_GETX32 bfd_getb32

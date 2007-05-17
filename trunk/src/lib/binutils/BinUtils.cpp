@@ -97,16 +97,16 @@ GetBestFuncName(const char* name)
 
 
 // Include the system demangle
-#if defined(OS_IRIX64)
+#if defined(HOST_OS_IRIX)
 # include <dem.h>      // demangle
   const int DEMANGLE_BUF_SZ = MAXDBUF;
-#elif defined(OS_OSF1)
+#elif defined(HOST_OS_TRU64)
 # include <../../usr/include/demangle.h> // demangle (don't confuse with GNU)
   const int DEMANGLE_BUF_SZ = 32768; // see MAXDBUF in SGI's dem.h
-#elif defined(OS_SUNOS)
+#elif defined(HOST_OS_SOLARIS)
 # include <../../usr/include/demangle.h> // demangle (don't confuse with GNU)
   const int DEMANGLE_BUF_SZ = 32768; // see MAXDBUF in SGI's dem.h
-#elif defined(OS_LINUX)
+#elif defined(HOST_OS_LINUX)
   // the system demangle is GNU's demangle
   const int DEMANGLE_BUF_SZ = 32768; // see MAXDBUF in SGI's dem.h
 #else
@@ -134,20 +134,20 @@ GetDemangledFuncName(const char* name)
   // -------------------------------------------------------
   strcpy(outbuf, ""); // clear outbuf
   bool demSuccess = false;
-#if defined(OS_IRIX64)
+#if defined(HOST_OS_IRIX)
   if (demangle(inbuf, outbuf) == 0) {
     demSuccess = true;
   } // else: demangling failed
-#elif defined(OS_OSF1)
+#elif defined(HOST_OS_TRU64)
   if (MLD_demangle_string(inbuf, outbuf,
 			  DEMANGLE_BUF_SZ, MLD_SHOW_DEMANGLED_NAME) == 1) {
     demSuccess = true; 
   } // else: error or useless
-#elif defined(OS_SUNOS)
+#elif defined(HOST_OS_SOLARIS)
   if (cplus_demangle(inbuf, outbuf, DEMANGLE_BUF_SZ) == 0) {
     demSuccess = true;
   } // else: invalid mangled name or output buffer too small
-#elif defined(OS_LINUX)
+#elif defined(HOST_OS_LINUX)
   // System demangler is same as GNU's
 #endif
 

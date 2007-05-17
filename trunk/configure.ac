@@ -67,7 +67,7 @@ m4_include(config/hpc-cxxutils.m4)
 #    correctly
 #----------------------------------------------------------------------------
 
-AC_INIT([HPCToolkit], [TRUNK-4.9.0=800], [hpc@cs.rice.edu], [hpctoolkit])
+AC_INIT([HPCToolkit], [TRUNK-4.9.0=810], [hpc@cs.rice.edu], [hpctoolkit])
 AC_CONFIG_SRCDIR([src/include/HPCToolkitVersionInfo.h])
 AC_CONFIG_AUX_DIR([config])
 
@@ -120,6 +120,9 @@ AC_HEADER_STDC()
 AC_CHECK_HEADERS(unistd.h)
 AC_CHECK_HEADERS(inttypes.h)
 HPC_CHECK_CXX_STDC_HEADERS()
+
+# Check for types
+AC_CHECK_SIZEOF([int*])
 
 # Check pthread.h
 HPC_CHECK_COMPILE_PTHREAD_H()
@@ -575,7 +578,61 @@ AC_SUBST(OPT_OBJCOPY)
 HPC_DEF_CXXCMP
 
 #-------------------------------------------------
-# Host-specific settings for HPCToolkit
+# Host-specific defines for HPCToolkit
+#-------------------------------------------------
+
+# NOTE: To see what macros gcc-like compilers define:
+#   gcc -dM -E - < /dev/null | sort
+
+case ${host} in
+  # Linux
+  i386*-*-linux* | i686*-*-linux* | x86_64*-*-linux* | ia64*-*-linux*)
+    # __i386 / __x86_64 / __ia64 && __linux
+    AC_DEFINE([HOST_OS_LINUX], [], [])
+    ;;
+
+  mips64*-*-linux*)
+    # __mips64 && __linux / _MIPS_SIM == _ABIN32 / _MIPS_SIM == _ABI64
+    AC_DEFINE([HOST_PLATFORM_MIPS64LE_LINUX], [], [])
+    AC_DEFINE([HOST_OS_LINUX], [], [])
+    ;;
+
+  # MacOS
+  #powerpc*-*-darwin*)
+    # __ppc__ / __MACH__
+    #;;
+
+  #i386*-*-darwin* | i686*-*-darwin*)
+    #;;
+
+  # IRIX
+  mips*-*-irix*)
+    # __mips && __sgi && __unix
+    # _MIPS_ISA == _MIPS_ISA_MIPS1 | _MIPS_ISA == _MIPS_ISA_MIPS2
+    # _MIPS_ISA == _MIPS_ISA_MIPS3 | _MIPS_ISA == _MIPS_ISA_MIPS4
+    AC_DEFINE([HOST_OS_IRIX], [], [])
+    ;;
+
+  # Solaris
+  sparc*-*-solaris*)
+    # __sparc && __sun && __unix
+    AC_DEFINE([HOST_OS_SOLARIS], [], [])
+    ;;
+
+  # Tru64/OSF
+  alpha*-*-osf*)
+    # __alpha / __digital__ && __unix__
+    AC_DEFINE([HOST_OS_TRU64], [], [])
+    ;;
+
+  *)
+    AC_MSG_ERROR([HPCToolkit is not configurd for HOST=${host}!])
+    ;;
+esac
+
+
+#-------------------------------------------------
+# Host-specific compiler settings for HPCToolkit
 #-------------------------------------------------
 
 # FIXME: Now that we use libtool to build all HPCToolkit libraries, we
@@ -609,7 +666,90 @@ fi
 
 
 case ${host} in
-  alpha*-*-linux* | alpha*-*-osf*)
+
+  # Linux
+  i386*-*-linux* | i686*-*-linux* | x86_64*-*-linux* | ia64*-*-linux* | mips64*-*-linux*)
+    # Intel compiler
+    if HPCcxxcmp([icpc ecpc]) ; then
+      :
+    fi
+    if HPCcccmp([icc ecc]) ; then
+      :
+    fi
+
+    # Pathscale compiler
+    if HPCcxxcmp([pathCC]) ; then
+      :
+    fi
+    if HPCcccmp([pathcc]) ; then
+      :
+    fi
+
+    # PGI compiler
+    if HPCcxxcmp([pgCC]) ; then
+      if test "$OPT_ENABLE_DEVELOP" = "yes" ; then
+        my_opt_cxxflags="-g -O0"
+      else
+        my_opt_cxxflags="-gopt -O2"
+      fi
+    fi
+    if HPCcccmp([pgcc]) ; then
+      if test "$OPT_ENABLE_DEVELOP" = "yes" ; then
+        my_opt_cflags="-g -O0 -c9x"
+      else
+        my_opt_cflags="-gopt -O2 -c9x"
+      fi
+    fi
+    ;;
+
+  # IRIX
+  mips*-*-irix*)
+    # SGI MIPSpro
+    if HPCcxxcmp([CC]) ; then
+      HOST_CXXFLAGS="-64 -LANG:std"
+      HOST_AR="$CXX $CXXFLAGS ${HOST_CXXFLAGS} -ar -o"
+    fi
+    if HPCcccmp([cc]) ; then
+      HOST_CFLAGS="-64"
+    fi
+    
+    # GCC
+    if HPCcxxcmp([g++ c++]) ; then
+      HOST_CXXFLAGS="-mabi=64"
+    fi
+    if HPCcccmp([gcc]) ; then
+      HOST_CFLAGS="-mabi=64"
+    fi
+   
+    # SGI demangle
+    my_demangle_ldflags="-lmangle"
+    ;;
+
+  # Solaris
+  sparc*-*-solaris*)
+    # Sun Forte/ONE
+    if HPCcxxcmp([CC]); then
+      if test "$OPT_ENABLE_DEVELOP" = "yes" ; then
+        my_opt_cxxflags="-g"
+      else 
+        my_opt_cxxflags="-fast -g"
+      fi
+      HOST_AR="$CXX $CXXFLAGS -xar -o"
+    fi
+    if HPCcccmp([cc]); then
+      if test "$OPT_ENABLE_DEVELOP" = "yes" ; then
+        my_opt_cflags="-g"
+      else 
+        my_opt_cflags="-fast -g"
+      fi
+    fi
+    
+    # Sun demangle
+    my_demangle_ldflags="-ldemangle"
+    ;;
+
+  # Tru64/OSF
+  alpha*-*-osf*)
     # Compaq compiler
     if HPCcxxcmp([cxx]); then
       # Before using libtool, we had used local
@@ -635,76 +775,6 @@ case ${host} in
 
     # DEC demangle
     my_demangle_ldflags="-lmld"
-    ;;
-
-  i386*-*-linux* | i686*-*-linux* | x86_64*-*-linux* | ia64*-*-linux*)
-    # Intel compiler
-    if HPCcxxcmp([icpc ecpc]) ; then
-      :
-    fi
-    if HPCcccmp([icc ecc]) ; then
-      :
-    fi
-
-    # PGI compiler
-    if HPCcxxcmp([pgCC]) ; then
-      if test "$OPT_ENABLE_DEVELOP" = "yes" ; then
-        my_opt_cxxflags="-g -O0"
-      else
-        my_opt_cxxflags="-gopt -O2"
-      fi
-    fi
-    if HPCcccmp([pgcc]) ; then
-      if test "$OPT_ENABLE_DEVELOP" = "yes" ; then
-        my_opt_cflags="-g -O0 -c9x"
-      else
-        my_opt_cflags="-gopt -O2 -c9x"
-      fi
-    fi
-    ;;
-
-  mips*-*-irix*)
-    # SGI MIPSpro
-    if HPCcxxcmp([CC]) ; then
-      HOST_CXXFLAGS="-64 -LANG:std"
-      HOST_AR="$CXX $CXXFLAGS ${HOST_CXXFLAGS} -ar -o"
-    fi
-    if HPCcccmp([cc]) ; then
-      HOST_CFLAGS="-64"
-    fi
-    
-    # GCC
-    if HPCcxxcmp([g++ c++]) ; then
-      HOST_CXXFLAGS="-mabi=64"
-    fi
-    if HPCcccmp([gcc]) ; then
-      HOST_CFLAGS="-mabi=64"
-    fi
-   
-    # SGI demangle
-    my_demangle_ldflags="-lmangle"
-    ;;
-
-  sparc*-*-solaris*)
-    # Sun Forte/ONE
-    if HPCcxxcmp([CC]); then
-      if test "$OPT_ENABLE_DEVELOP" = "yes" ; then
-        my_opt_cxxflags="-g"
-      else 
-        my_opt_cxxflags="-fast -g"
-      fi
-      HOST_AR="$CXX $CXXFLAGS -xar -o"
-    fi
-    if HPCcccmp([cc]); then
-      if test "$OPT_ENABLE_DEVELOP" = "yes" ; then
-        my_opt_cflags="-g"
-      else 
-        my_opt_cflags="-fast -g"
-      fi
-    fi
-    
-    # Sun demangle
-    my_demangle_ldflags="-ldemangle"
     ;;
 
   *)
