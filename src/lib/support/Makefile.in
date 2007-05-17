@@ -110,7 +110,7 @@ am__objects_1 = libHPCsupport_la-CmdLineParser.lo \
 	libHPCsupport_la-diagnostics.lo \
 	libHPCsupport_la-DumpMsgHandler.lo \
 	libHPCsupport_la-Exception.lo libHPCsupport_la-Trace.lo \
-	libHPCsupport_la-Nan.lo libHPCsupport_la-CStrUtil.lo \
+	libHPCsupport_la-NaN.lo libHPCsupport_la-CStrUtil.lo \
 	libHPCsupport_la-StrUtil.lo libHPCsupport_la-IOUtil.lo \
 	libHPCsupport_la-Files.lo libHPCsupport_la-SrcFile.lo \
 	libHPCsupport_la-findinstall.lo libHPCsupport_la-pathfind.lo \
@@ -350,7 +350,7 @@ MYSOURCES = \
 	Trace.hpp Trace.cpp \
 	\
 	bstring.h \
-	Nan.h Nan.cpp \
+	NaN.h NaN.c \
 	CStrUtil.h CStrUtil.cpp \
 	StrUtil.hpp StrUtil.cpp \
 	\
@@ -469,7 +469,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCsupport_la-IntVector.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCsupport_la-IteratorStack.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCsupport_la-Logic.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCsupport_la-Nan.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCsupport_la-NaN.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCsupport_la-NonUniformDegreeTree.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCsupport_la-OffsetLengthList.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCsupport_la-PointerMap.Plo@am__quote@
@@ -511,6 +511,13 @@ distclean-compile:
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$<' object='$@' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(LTCOMPILE) -c -o $@ $<
+
+libHPCsupport_la-NaN.lo: NaN.c
+@am__fastdepCC_TRUE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCsupport_la_CFLAGS) $(CFLAGS) -MT libHPCsupport_la-NaN.lo -MD -MP -MF $(DEPDIR)/libHPCsupport_la-NaN.Tpo -c -o libHPCsupport_la-NaN.lo `test -f 'NaN.c' || echo '$(srcdir)/'`NaN.c
+@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/libHPCsupport_la-NaN.Tpo $(DEPDIR)/libHPCsupport_la-NaN.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='NaN.c' object='libHPCsupport_la-NaN.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCsupport_la_CFLAGS) $(CFLAGS) -c -o libHPCsupport_la-NaN.lo `test -f 'NaN.c' || echo '$(srcdir)/'`NaN.c
 
 libHPCsupport_la-findinstall.lo: findinstall.c
 @am__fastdepCC_TRUE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCsupport_la_CFLAGS) $(CFLAGS) -MT libHPCsupport_la-findinstall.lo -MD -MP -MF $(DEPDIR)/libHPCsupport_la-findinstall.Tpo -c -o libHPCsupport_la-findinstall.lo `test -f 'findinstall.c' || echo '$(srcdir)/'`findinstall.c
@@ -581,13 +588,6 @@ libHPCsupport_la-Trace.lo: Trace.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='Trace.cpp' object='libHPCsupport_la-Trace.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCsupport_la_CXXFLAGS) $(CXXFLAGS) -c -o libHPCsupport_la-Trace.lo `test -f 'Trace.cpp' || echo '$(srcdir)/'`Trace.cpp
-
-libHPCsupport_la-Nan.lo: Nan.cpp
-@am__fastdepCXX_TRUE@	$(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCsupport_la_CXXFLAGS) $(CXXFLAGS) -MT libHPCsupport_la-Nan.lo -MD -MP -MF $(DEPDIR)/libHPCsupport_la-Nan.Tpo -c -o libHPCsupport_la-Nan.lo `test -f 'Nan.cpp' || echo '$(srcdir)/'`Nan.cpp
-@am__fastdepCXX_TRUE@	mv -f $(DEPDIR)/libHPCsupport_la-Nan.Tpo $(DEPDIR)/libHPCsupport_la-Nan.Plo
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='Nan.cpp' object='libHPCsupport_la-Nan.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCsupport_la_CXXFLAGS) $(CXXFLAGS) -c -o libHPCsupport_la-Nan.lo `test -f 'Nan.cpp' || echo '$(srcdir)/'`Nan.cpp
 
 libHPCsupport_la-CStrUtil.lo: CStrUtil.cpp
 @am__fastdepCXX_TRUE@	$(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCsupport_la_CXXFLAGS) $(CXXFLAGS) -MT libHPCsupport_la-CStrUtil.lo -MD -MP -MF $(DEPDIR)/libHPCsupport_la-CStrUtil.Tpo -c -o libHPCsupport_la-CStrUtil.lo `test -f 'CStrUtil.cpp' || echo '$(srcdir)/'`CStrUtil.cpp

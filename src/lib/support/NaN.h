@@ -1,4 +1,4 @@
-// -*-Mode: C++;-*-
+// -*-Mode: C;-*-
 // $Id$
 
 // * BeginRiceCopyright *****************************************************
@@ -35,64 +35,32 @@
 // 
 // ******************************************************* EndRiceCopyright *
 
-//  nan := 0.0/0.0
-// +inf := 1.0/0.0
-// -inf := -1.0/0.0
-
-// ANSI/IEEE Standard 754-1985 (64-bit double precision)
-//
-//   S (1 bit)   E (11 bits)   F (52 bits)
-//
-//   * If E=2047 and F is nonzero, then V=NaN ("Not a number")
-//   * If E=2047 and F is zero and S is 1, then V=-Infinity
-//   * If E=2047 and F is zero and S is 0, then V=Infinity
-
-// ANSI/IEEE Standard 754-1985 (128-bit quadruple precision)
-//
-//   S (1 bit)   E (15 bits)   F (112 bits)
+#ifndef support_NaN_h
+#define support_NaN_h
 
 //*************************** User Include Files ****************************
 
-#include "Nan.h"
-
-//*************************** Forward Declarations ***************************
-
-double NaNVal;
+#if !defined(__cplusplus)
+#include <stdbool.h>
+#endif
 
 //****************************************************************************
 
-void 
-InitNaN() {
-#if (defined(NAN))
-  NaNVal = NAN;
-#elif (defined(OS_LINUX))
-  NaNVal = 0.0/0.0; // This is intentional (NAN)
-#else
-  // 64 bit double precision
-  ((dnan *)&NaNVal)->nan_parts.exponent = 0x7ff;
-#endif
-}
+extern double c_FP_NAN_d;
 
-bool
-IsNaNorInfinity(double d)
-{
-#if (defined(isnan) && defined(isinf))
-  return isnan(d) || isinf(d); 
-#elif (defined(OS_LINUX))
-  return isnan(d) || isinf(d);
-#else
-  return IsNANorINF(d);
+#if defined(__cplusplus)
+extern "C" {
 #endif
-}
 
-bool
-IsNaN(double d)
-{
-#if (defined(isnan))
-  return isnan(d); 
-#elif (defined(OS_LINUX))
-  return isnan(d); 
-#else
-  return NaN(d);
-#endif
+void NaN_init();
+
+bool c_isnan_d(double x);
+
+bool c_isinf_d(double x);
+
+#if defined(__cplusplus)
 }
+#endif
+
+
+#endif /* support_NaN_h */

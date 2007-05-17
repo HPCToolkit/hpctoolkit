@@ -66,8 +66,9 @@ using namespace std; // For compatibility with non-std C headers
 
 #include "EvalNode.hpp"
 
-#include <lib/support/Nan.h>
 #include <lib/support/Trace.hpp>
+
+#include <lib/support/NaN.h>
 
 //************************ Forward Declarations ******************************
 
@@ -130,9 +131,15 @@ Neg::~Neg()
 double 
 Neg::eval(const ScopeInfo *si) 
 {
-  double tmp;
-  if (node == NULL || IsNaNorInfinity(tmp = node->eval(si)))
-    return NaNVal;
+  if (!node) {
+    return c_FP_NAN_d;
+  }
+  
+  double tmp = node->eval(si);
+  if (c_isnan_d(tmp) || c_isinf_d(tmp)) {
+    return c_FP_NAN_d;
+  }
+
   IFTRACE << "neg=" << -tmp << endl; 
   return -tmp;
 }
@@ -188,21 +195,27 @@ double
 Power::eval(const ScopeInfo *si) 
 {
   if (base == NULL || exponent == NULL)
-    return NaNVal;
+    return c_FP_NAN_d;
   double b = base->eval(si);
   double e = exponent->eval(si);
-  if (IsNaNorInfinity(e) && IsNaNorInfinity(b))  // do not create a value if
-                                                 // both are missing
-    return (NaNVal);
-  if (IsNaNorInfinity(e) || e==0)  // exp is missing, assume it is zero
-    return (1);
-  else
-    if (IsNaNorInfinity(b) || b==0)
-      return (0);
+  if ((c_isnan_d(e) || c_isinf_d(e)) && (c_isnan_d(b) || c_isinf_d(b))) {
+    // do not create a value if both are missing
+    return c_FP_NAN_d;
+  }
+  if (c_isnan_d(e) || c_isinf_d(e) || e == 0) {
+    // exp is missing, assume it is zero
+    return 1;
+  }
+  else {
+    if (c_isnan_d(b) || c_isinf_d(b) || b == 0) {
+      return 0;
+    }
+  }
   // if b < 0, pow works only if e is integer
-  // I will simplify. If b<0, return NaNVal;
-  if (b < 0)
-    return NaNVal;
+  // I will simplify. If b<0, return c_FP_NAN_d;
+  if (b < 0) {
+    return c_FP_NAN_d;
+  }
   IFTRACE << "pow=" << pow(b, e) << endl; 
   return pow(b, e);
 }
@@ -231,14 +244,17 @@ Divide::~Divide()
 double 
 Divide::eval(const ScopeInfo *si) 
 {
-  if (numerator == NULL || denominator == NULL)
-    return NaNVal;
+  if (numerator == NULL || denominator == NULL) {
+    return c_FP_NAN_d;
+  }
   double n = numerator->eval(si);
   double d = denominator->eval(si);
-  if (IsNaNorInfinity(d) || d == 0.0)
-    return NaNVal;
-  if (IsNaNorInfinity(n))
-    return (0);
+  if (c_isnan_d(d) || c_isinf_d(d) || d == 0.0) {
+    return c_FP_NAN_d;
+  }
+  if (c_isnan_d(n) || c_isinf_d(n)) {
+    return 0;
+  }
   IFTRACE << "divident=" << n/d << endl; 
   return n / d;
 }
@@ -272,15 +288,18 @@ double
 Minus::eval(const ScopeInfo *si) 
 {
   if (minuend == NULL || subtrahend == NULL)
-    return NaNVal;
+    return c_FP_NAN_d;
   double m = minuend->eval(si);
   double s = subtrahend->eval(si);
-  if (IsNaNorInfinity(m) && IsNaNorInfinity(s))
-    return NaNVal;
-  if (IsNaNorInfinity(m))
+  if ((c_isnan_d(m) || c_isinf_d(m)) && (c_isnan_d(s) || c_isinf_d(s))) {
+    return c_FP_NAN_d;
+  }
+  if (c_isnan_d(m) || c_isinf_d(m)) {
     m = 0.0;
-  if (IsNaNorInfinity(s))
+  }
+  if (c_isnan_d(s) || c_isinf_d(s)) {
     s = 0.0;
+  }
   IFTRACE << "diff=" << m-s << endl; 
   return (m - s);
 }
@@ -311,20 +330,24 @@ Plus::~Plus()
 double 
 Plus::eval(const ScopeInfo *si) 
 {
-  double result = NaNVal;
+  double result = c_FP_NAN_d;
   int i;
   for (i = 0; i < n; i++) {
     if (nodes[i] != NULL) {
       double tmp = nodes[i]->eval(si);
-      if (IsNaNorInfinity(tmp)) continue; 
-       result = tmp;
-       break;
+      if (c_isnan_d(tmp) || c_isinf_d(tmp)) {
+	continue; 
+      }
+      result = tmp;
+      break;
     }
   }
   for (i++; i < n; i++) {
     if (nodes[i] != NULL) {
       double tmp = nodes[i]->eval(si);
-      if (IsNaNorInfinity(tmp)) continue; 
+      if (c_isnan_d(tmp) || c_isinf_d(tmp)) {
+	continue; 
+      }
       result += tmp;
     }
   }
@@ -366,8 +389,9 @@ Times::eval(const ScopeInfo *si)
   double product = 1.0;
   for (int i = 0; i < n; i++) {
     double tmp = nodes[i]->eval(si);
-    if (IsNaNorInfinity(tmp))
-      return NaNVal;
+    if (c_isnan_d(tmp) || c_isinf_d(tmp)) {
+      return c_FP_NAN_d;
+    }
     product *= tmp;
   }
   IFTRACE << "product=" << product << endl; 
@@ -406,12 +430,14 @@ Min::~Min()
 double 
 Min::eval(const ScopeInfo *si) 
 {
-  double result = NaNVal;
+  double result = c_FP_NAN_d;
   int i;
   for (i = 0; i < n; i++) {
     if (nodes[i] != NULL) {
       double tmp = nodes[i]->eval(si);
-      if (IsNaNorInfinity(tmp)) continue; 
+      if (c_isnan_d(tmp) || c_isinf_d(tmp)) {
+	continue; 
+      }
       // if i > 0, there is an empty value that we will treat as 0.0
       result = (i == 0) ? tmp : std::min(tmp, 0.0);
       break;
@@ -420,7 +446,9 @@ Min::eval(const ScopeInfo *si)
   for (i++; i < n; i++) {
     if (nodes[i] != NULL) {
       double tmp = nodes[i]->eval(si);
-      if (IsNaNorInfinity(tmp)) tmp = 0.0; 
+      if (c_isnan_d(tmp) || c_isinf_d(tmp)) {
+	tmp = 0.0; 
+      }
       result = std::min(result, tmp);
     }
   }
@@ -459,12 +487,14 @@ Max::~Max()
 double 
 Max::eval(const ScopeInfo *si) 
 {
-  double result = NaNVal;
+  double result = c_FP_NAN_d;
   int i;
   for (i = 0; i < n; i++) {
     if (nodes[i] != NULL) {
       double tmp = nodes[i]->eval(si);
-      if (IsNaNorInfinity(tmp)) continue; 
+      if (c_isnan_d(tmp) || c_isinf_d(tmp)) {
+	continue; 
+      }
       // if i > 0, there is an empty value that we will treat as 0.0
       result = (i == 0) ? tmp : std::max(tmp, 0.0);
       result = tmp;
@@ -474,7 +504,9 @@ Max::eval(const ScopeInfo *si)
   for (i++; i < n; i++) {
     if (nodes[i] != NULL) {
       double tmp = nodes[i]->eval(si);
-      if (IsNaNorInfinity(tmp)) tmp = 0.0; 
+      if (c_isnan_d(tmp) || c_isinf_d(tmp)) {
+	tmp = 0.0; 
+      }
       result = std::max(result, tmp);
     }
   }

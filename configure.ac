@@ -3,7 +3,7 @@
 
 ## * BeginRiceCopyright *****************************************************
 ## 
-## Copyright ((c)) 2002, Rice University 
+## Copyright ((c)) 2002-2007, Rice University 
 ## All rights reserved.
 ## 
 ## Redistribution and use in source and binary forms, with or without
@@ -71,9 +71,9 @@ AC_INIT([HPCToolkit], [TRUNK-4.9.0=800], [hpc@cs.rice.edu], [hpctoolkit])
 AC_CONFIG_SRCDIR([src/include/HPCToolkitVersionInfo.h])
 AC_CONFIG_AUX_DIR([config])
 
-AC_PREREQ(2.60)
-AM_INIT_AUTOMAKE(1.9.6)
-# Require libtool 1.5.22
+AC_PREREQ(2.61)
+AM_INIT_AUTOMAKE(1.10)
+# Require libtool 1.5.23b
 
 AC_CANONICAL_HOST()
 
@@ -105,6 +105,7 @@ HPC_ENSURE_DEFINED_CFLAGS()
 AC_PROG_LIBTOOL()
 AC_PROG_CXX(HPC_CXX_LIST)
 AC_PROG_CC(HPC_CC_LIST)
+AC_PROG_CC_STDC()
 AC_PROG_CXXCPP()
 AC_PROG_INSTALL()
 
@@ -129,6 +130,10 @@ HPC_CHECK_COMPILE_PTHREAD_H()
 # Check for library functions.
 # -none thus far-
 
+
+#----------------------------------------------------------------------------
+# Prerequisites: external libraries
+#----------------------------------------------------------------------------
 
 #-------------------------------------------------
 # Check for Xerces-C (XML parser)
