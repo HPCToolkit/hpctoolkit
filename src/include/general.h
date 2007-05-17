@@ -80,13 +80,20 @@
 
 #include <inttypes.h> /* commonly available, unlike <stdint.h> */
 
-#if defined(__cplusplus) 
-  // This can still cause duplicate definition conflicts (with system
-  // headers) in some C code.  Eventually we will be able to rely on
-  // C99 conformance.
+#if defined(__cplusplus)
+
+# if !defined(HAVE_USHORT)
   typedef    unsigned short int    ushort;
-  typedef    unsigned       int    uint;
-  typedef    unsigned long  int    ulong;
+# endif
+
+# if !defined(HAVE_UINT)
+  typedef    unsigned int          uint;
+# endif
+
+# if !defined(HAVE_ULONG)
+  typedef    unsigned long in t    ulong;
+# endif
+
 #endif
 
 

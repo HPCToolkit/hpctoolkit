@@ -123,6 +123,8 @@ HPC_CHECK_CXX_STDC_HEADERS()
 
 # Check for types
 AC_CHECK_SIZEOF([void*])
+AC_CHECK_TYPES([ushort, uint, ulong])
+
 
 # Check pthread.h
 HPC_CHECK_COMPILE_PTHREAD_H()
