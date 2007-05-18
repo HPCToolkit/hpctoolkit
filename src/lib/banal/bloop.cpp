@@ -558,7 +558,7 @@ BuildProcStructure(ProcScope* pScope, binutils::Proc* p,
   
 #if (DBG_PROC)
   DBG_PROC_print_now = false;
-  unsigned int dbgId = p->GetId();
+  uint dbgId = p->GetId();
   const char* dbgNm = "xxx";
   if (p->GetName().find(dbgNm) != string::npos) {
     DBG_PROC_print_now = true;

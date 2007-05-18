@@ -49,8 +49,8 @@
 //
 //***************************************************************************
 
-#ifndef NodeRetriever_h
-#define NodeRetriever_h
+#ifndef prof_juicy_PgmScopeTreeInterface_hpp
+#define prof_juicy_PgmScopeTreeInterface_hpp
 
 //************************ System Include Files ******************************
 
@@ -71,7 +71,7 @@ class ProcScope;
 
 //****************************************************************************
 
-class NodeRetriever{
+class NodeRetriever {
 public: 
   // root must not be NULL
   // path = non empty list of directories 
@@ -116,4 +116,4 @@ private:
   std::string path; 
 };
 
-#endif
+#endif /* prof_juicy_PgmScopeTreeInterface_hpp */

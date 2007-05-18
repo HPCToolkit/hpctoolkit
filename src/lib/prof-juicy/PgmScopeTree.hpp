@@ -107,11 +107,11 @@ public:
     // User-level bit flags
     XML_FALSE =	(0 << 0),	/* No XML format */
     XML_TRUE  =	(1 << 0),	/* XML format */
-
+    
     COMPRESSED_OUTPUT = (1 << 1),  /* Use compressed output format */
 
     DUMP_LEAF_METRICS = (1 << 2),  /* Dump only leaf metrics */
-
+    
     // Not-generally-user-level bit flags
     XML_NO_ESC_CHARS = (1 << 10), /* don't substitute XML escape characters */
 
@@ -208,14 +208,14 @@ public:
   // --------------------------------------------------------
   // General Interface to fields 
   // --------------------------------------------------------
-  ScopeType     Type() const         { return type; }
-  unsigned int  UniqueId() const     { return uid; }
+  ScopeType Type() const         { return type; }
+  uint      UniqueId() const     { return uid; }
 
   // name() is overridden by some scopes
   virtual const std::string& name() const { return ScopeTypeToName(Type()); }
 
   void CollectCrossReferences();
-  int NoteHeight();
+  int  NoteHeight();
   void NoteDepth();
 
   int ScopeHeight() const { return height; }
@@ -385,7 +385,7 @@ public:
 
 protected:
   ScopeType type;
-  unsigned int uid;
+  uint uid;
   int height; // cross reference information
   int depth;
   DoubleVector* perfData;
@@ -999,8 +999,8 @@ public:
   RefScope(CodeInfo* mom, int _begPos, int _endPos, const char* refName);
   // mom->Type() == STMT_RANGE_SCOPE 
   
-  unsigned int BegPos() const { return begPos; };
-  unsigned int EndPos() const   { return endPos; };
+  uint BegPos() const { return begPos; };
+  uint EndPos() const   { return endPos; };
   
   virtual const std::string& name() const { return m_name; }
 
@@ -1020,8 +1020,8 @@ public:
 
 private: 
   void RelocateRef();
-  unsigned int begPos;
-  unsigned int endPos;
+  uint begPos;
+  uint endPos;
   std::string m_name;
 };
 
