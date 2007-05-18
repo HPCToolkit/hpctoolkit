@@ -199,7 +199,7 @@ ScopeInfo::ScopeInfo(ScopeType t, ScopeInfo* parent)
   : NonUniformDegreeTreeNode(parent), type(t)
 { 
   DIAG_Assert((type == PGM) || (Pgm() == NULL) || !Pgm()->IsFrozen(), "");
-  static unsigned int uniqueId = 0;
+  static uint uniqueId = 0;
   uid = uniqueId++;
   height = 0;
   depth = 0;
@@ -1475,7 +1475,7 @@ ScopeInfo::dump(ostream& os, int dmpFlag, const char* pre) const
 
   dumpme(os, dmpFlag, pre);
   
-  for (unsigned int i = 0; i < NumberOfPerfDataInfos(); i++) {
+  for (uint i = 0; i < NumberOfPerfDataInfos(); i++) {
     os << IndexToPerfDataInfo(i).Name() << "=" ;
     if (HasPerfData(i)) {
       os << PerfData(i);
@@ -1771,7 +1771,7 @@ ScopeInfo::XML_DumpSelfBefore(ostream& os, int dmpFlag,
   
   bool dumpMetrics = false;
   if (attemptToDumpMetrics) {
-    for (unsigned int i=0; i < NumberOfPerfDataInfos(); i++) {
+    for (uint i = 0; i < NumberOfPerfDataInfos(); i++) {
       if (HasPerfData(i)) {
 	dumpMetrics = true;
 	break;
@@ -1783,7 +1783,7 @@ ScopeInfo::XML_DumpSelfBefore(ostream& os, int dmpFlag,
   if (dumpMetrics) {
     // by definition this element is not empty
     os << ">";
-    for (unsigned int i=0; i < NumberOfPerfDataInfos(); i++) {
+    for (uint i = 0; i < NumberOfPerfDataInfos(); i++) {
       if (HasPerfData(i)) {
 	if (!(dmpFlag & PgmScopeTree::COMPRESSED_OUTPUT)) { os << endl; }
 	os << prefix << "  <M n=\"" << i << "\" v=\"" << PerfData(i) << "\"/>";
@@ -1905,7 +1905,7 @@ void
 ScopeInfo::CSV_DumpSelf(const PgmScope &root, ostream& os) const
 { 
   char temp[32];
-  for (unsigned int i=0; i < NumberOfPerfDataInfos(); i++) {
+  for (uint i = 0; i < NumberOfPerfDataInfos(); i++) {
     double val = (HasPerfData(i) ? PerfData(i) : 0);
     os << "," << val;
     const PerfMetric& metric = IndexToPerfDataInfo(i);
@@ -2008,7 +2008,7 @@ void
 ScopeInfo::TSV_DumpSelf(const PgmScope &root, ostream& os) const
 { 
   char temp[32];
-  for (unsigned int i=0; i < NumberOfPerfDataInfos(); i++) {
+  for (uint i = 0; i < NumberOfPerfDataInfos(); i++) {
     double val = (HasPerfData(i) ? PerfData(i) : 0);
     os << "\t" << val;
     /*const PerfMetric& metric = IndexToPerfDataInfo(i);
