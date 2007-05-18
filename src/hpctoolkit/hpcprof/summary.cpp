@@ -294,16 +294,19 @@ Summary::init(const string& pgm, const vector<string>& prof_fnames)
   // Read all profiling data
   vector<ProfFile*> profs(prof_fnames.size());
   for (unsigned int i = 0; i < prof_fnames.size(); ++i) {
+    try {
       profs[i] = new ProfFile();
-      int ret = profs[i]->read(prof_fnames[i]);
-      if (ret != 0) {
-	  cerr << "Cannot read profile file " << prof_fnames[i] << endl;
-	  return false;
-        }
-      if (debug_) {
-	  profs[i]->dump(cout);
-      }
+      profs[i]->read(prof_fnames[i]);
     }
+    catch (...) {
+      DIAG_EMsg("While reading '" << prof_fnames[i] << "'");
+      throw;
+    }
+
+    if (debug_) {
+      profs[i]->dump(cout);
+    }
+  }
   
   init(pgm, profs);
   

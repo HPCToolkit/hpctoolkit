@@ -100,11 +100,40 @@ usage(const string &argv0)
 
 //***************************************************************************
 
+int
+real_main(int argc, char* argv[]);
+
 int dump_html_or_text(Summary& sum);
 int dump_PROFILE(Summary& sum);
 
+
 int
-main(int argc, char *argv[])
+main(int argc, char* argv[])
+{
+  try {
+    return real_main(argc, argv);
+  }
+  catch (const Diagnostics::Exception& x) {
+    DIAG_EMsg(x.message());
+    exit(1);
+  } 
+  catch (const std::bad_alloc& x) {
+    DIAG_EMsg("[std::bad_alloc] " << x.what());
+    exit(1);
+  } 
+  catch (const std::exception& x) {
+    DIAG_EMsg("[std::exception] " << x.what());
+    exit(1);
+  } 
+  catch (...) {
+    DIAG_EMsg("Unknown exception encountered!");
+    exit(2);
+  }
+}
+
+
+int
+real_main(int argc, char *argv[])
 {
   Summary sum;
     

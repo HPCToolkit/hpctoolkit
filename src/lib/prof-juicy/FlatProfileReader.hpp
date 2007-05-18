@@ -20,8 +20,8 @@
 //
 //***************************************************************************
 
-#ifndef _FlatProfileReader_
-#define _FlatProfileReader_
+#ifndef prof_juicy_FlatProfileReader
+#define prof_juicy_FlatProfileReader
 
 //************************* System Include Files ****************************
 
@@ -69,19 +69,19 @@ public:
   ProfFileEvent();
   ~ProfFileEvent();
   
-  // read: Return 0 on success; non-zero (1) on error.
-  int read(FILE*, uint64_t load_addr);
+  // read: Throws an exception on an error!
+  void read(FILE*, uint64_t load_addr);
   
   const char* name() const { return name_.c_str(); }
   const char* description() const { return desc_.c_str(); }
   uint64_t period() const { return period_; }
   
-  unsigned int outofrange() const { return outofrange_; }
-  unsigned int overflow() const { return overflow_; }
+  uint outofrange() const { return outofrange_; }
+  uint overflow() const { return overflow_; }
   
   // 0 based indexing
-  unsigned int num_data() const { return dat_.size(); }
-  const ProfFileEventDatum& datum(unsigned int i) const { return dat_[i]; }
+  uint num_data() const { return dat_.size(); }
+  const ProfFileEventDatum& datum(uint i) const { return dat_[i]; }
   
   void dump(std::ostream& o = std::cerr, const char* pre = "") const;
   
@@ -89,8 +89,8 @@ private:
   std::string  name_;
   std::string  desc_;
   uint64_t     period_;
-  unsigned int outofrange_;
-  unsigned int overflow_;
+  uint outofrange_;
+  uint overflow_;
   std::vector<ProfFileEventDatum> dat_;
 };
 
@@ -102,15 +102,15 @@ public:
   ProfFileLM();
   ~ProfFileLM();
   
-  // read: Return 0 on success; non-zero (1) on error.
-  int read(FILE*);
+  // read: Throws an exception on an error!
+  void read(FILE*);
   
   const std::string& name() const { return name_; }
   uint64_t load_addr() const { return load_addr_; }
   
   // 0 based indexing
-  unsigned int num_events() const { return eventvec_.size(); }
-  const ProfFileEvent& event(unsigned int i) const { return eventvec_[i]; }
+  uint num_events() const { return eventvec_.size(); }
+  const ProfFileEvent& event(uint i) const { return eventvec_[i]; }
   
   void dump(std::ostream& o = std::cerr, const char* pre = "") const;
   
@@ -130,15 +130,15 @@ public:
   
   ProfFile(const ProfFile& f) { DIAG_Die(DIAG_Unimplemented); }
   
-  // read: Return 0 on success; non-zero (1) on error.
-  int read(const std::string &filename);
+  // read: Throws an exception on an error!
+  void read(const std::string &filename);
   
   const std::string& name() const { return name_; }
   time_t mtime() const { return mtime_; }
   
   // 0 based indexing
-  unsigned int num_load_modules() const { return lmvec_.size(); }
-  const ProfFileLM& load_module(unsigned int i) const { return lmvec_[i]; }
+  uint num_load_modules() const { return lmvec_.size(); }
+  const ProfFileLM& load_module(uint i) const { return lmvec_[i]; }
   
   void dump(std::ostream& o = std::cerr, const char* pre = "") const;
 
@@ -162,5 +162,29 @@ private:
 
 
 //***************************************************************************
+// Exception
+//***************************************************************************
 
-#endif
+#define FLATPROF_Throw(streamArgs) DIAG_ThrowX(FlatProfile::Exception, streamArgs)
+
+namespace FlatProfile {
+
+class Exception : public Diagnostics::Exception {
+public:
+  Exception(const std::string x, const char* filenm = NULL, uint lineno = 0)
+    : Diagnostics::Exception(x, filenm, lineno)
+  { }
+  
+  virtual std::string message() const { 
+    return "[FlatProfile]: " + what();
+  }
+
+private:
+};
+
+} // namespace FlatProfile
+
+
+//***************************************************************************
+
+#endif /* prof_juicy_FlatProfileReader */

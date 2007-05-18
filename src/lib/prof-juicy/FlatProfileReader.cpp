@@ -43,7 +43,8 @@
 
 using namespace std;
 
-static int read_string(FILE *fp, std::string& str);
+static int
+read_string(FILE *fp, std::string& str);
 
 
 //***************************************************************************
@@ -59,7 +60,7 @@ ProfFile::~ProfFile()
 }
 
 
-int
+void
 ProfFile::read(const string &filename)
 {
   FILE *fp;
@@ -68,14 +69,14 @@ ProfFile::read(const string &filename)
 
   struct stat statbuf;
   if (stat(filename.c_str(), &statbuf)) {
-    return 1;
+    FLATPROF_Throw("Cannot stat file.");
   }
   name_ = filename;
   mtime_ = statbuf.st_mtime;
 
   fp = fopen(filename.c_str(), "r");
   if (!fp) {
-    return 1;
+    FLATPROF_Throw("Cannot open file.");
   }
 
   // <header>
@@ -86,38 +87,47 @@ ProfFile::read(const string &filename)
   size_t sz;
 
   sz = fread((char*)magic_str, 1, HPCRUNFILE_MAGIC_STR_LEN, fp);
-  if (sz != HPCRUNFILE_MAGIC_STR_LEN) { return 1; }
+  if (sz != HPCRUNFILE_MAGIC_STR_LEN) { 
+    FLATPROF_Throw("Error reading <header>.");
+  }
   
   sz = fread((char*)version, 1, HPCRUNFILE_VERSION_LEN, fp);
-  if (sz != HPCRUNFILE_VERSION_LEN) { return 1; }
+  if (sz != HPCRUNFILE_VERSION_LEN) { 
+    FLATPROF_Throw("Error reading <header>.");
+  }
   
-  if ((c = fgetc(fp)) == EOF) { return 1; }
+  if ((c = fgetc(fp)) == EOF) { 
+    FLATPROF_Throw("Error reading <header>.");
+  }
   endian = (char)c;
   
   // sanity check header
   if (strncmp(magic_str, HPCRUNFILE_MAGIC_STR, 
 	      HPCRUNFILE_MAGIC_STR_LEN) != 0) { 
-    return 1; 
+    FLATPROF_Throw("Error reading <header>: bad magic string.");
   }
   if (strncmp(version, HPCRUNFILE_VERSION, HPCRUNFILE_VERSION_LEN) != 0) { 
-    return 1; 
+    FLATPROF_Throw("Error reading <header>: bad version.");
   }
-  if (endian != HPCRUNFILE_ENDIAN) { return 1; }
+  if (endian != HPCRUNFILE_ENDIAN) { 
+    FLATPROF_Throw("Error reading <header>: bad endianness.");
+  }
 
 
   // <loadmodule_list>
   uint32_t count;
 
   sz = hpc_fread_le4(&count, fp);
-  if (sz != sizeof(count)) { return 1; }
+  if (sz != sizeof(count)) { 
+    FLATPROF_Throw("Error reading <loadmodule_list>.");
+  }
   
   lmvec_.resize(count);
-  for (unsigned int i = 0; i < count; ++i) {
-    if (lmvec_[i].read(fp) != 0) { return 1; }
+  for (uint i = 0; i < count; ++i) {
+    lmvec_[i].read(fp);
   }
 
   fclose(fp);
-  return 0;
 }
 
 
@@ -131,7 +141,7 @@ ProfFile::dump(std::ostream& o, const char* pre) const
   o << p << "{ ProfFile: " << name_ << ", modtime: " << mtime_ << " }" 
     << endl;
 
-  for (unsigned int i = 0; i < num_load_modules(); ++i) {
+  for (uint i = 0; i < num_load_modules(); ++i) {
     const ProfFileLM& proflm = load_module(i);
     proflm.dump(o, p1.c_str());
   }
@@ -151,32 +161,36 @@ ProfFileLM::~ProfFileLM()
 }
 
 
-int
+void
 ProfFileLM::read(FILE *fp)
 {
   size_t sz;
   
   // <loadmodule_name>, <loadmodule_loadoffset>
-  if (read_string(fp, name_) != 0) { return 1; }
+  if (read_string(fp, name_) != 0) { 
+    FLATPROF_Throw("Error reading <loadmodule_name>.");
+  }
   
   sz = hpc_fread_le8(&load_addr_, fp);
-  if (sz != sizeof(load_addr_)) { return 1; }
+  if (sz != sizeof(load_addr_)) { 
+    FLATPROF_Throw("Error reading <loadmodule_loadoffset>.");
+  }
 
   DIAG_Msg(2, "Reading: " << name_ << " loaded at 0x" 
 	   << hex << load_addr_ << dec);
   
   // <loadmodule_eventcount>
-  unsigned int count = 1;
+  uint count = 1;
   sz = hpc_fread_le4(&count, fp);
-  if (sz != sizeof(count)) { return 1; }
+  if (sz != sizeof(count)) { 
+    FLATPROF_Throw("Error reading <loadmodule_eventcount>.");
+  }
   eventvec_.resize(count);
   
   // Event data
-  for (unsigned int i = 0; i < count; ++i) {
-    if (eventvec_[i].read(fp, load_addr_) != 0) { return 1; }
+  for (uint i = 0; i < count; ++i) {
+    eventvec_[i].read(fp, load_addr_);
   }
-  
-  return 0;
 }
 
 
@@ -189,7 +203,7 @@ ProfFileLM::dump(std::ostream& o, const char* pre) const
   o << p << "{ ProfFileLM: " << name_ << ", loadAddr: 0x" << hex 
     << load_addr_ << dec << " }" << endl;
   
-  for (unsigned int i = 0; i < num_events(); ++i) {
+  for (uint i = 0; i < num_events(); ++i) {
     const ProfFileEvent& profevent = event(i);
     profevent.dump(o, p1.c_str());
   }
@@ -209,17 +223,23 @@ ProfFileEvent::~ProfFileEvent()
 }
 
 
-int
+void
 ProfFileEvent::read(FILE *fp, uint64_t load_addr)
 {
   size_t sz;
   
   // <event_x_name> <event_x_description> <event_x_period>
-  if (read_string(fp, name_) != 0) { return 1; }
-  if (read_string(fp, desc_) != 0) { return 1; }
+  if (read_string(fp, name_) != 0) { 
+    FLATPROF_Throw("Error reading <event_x_name>.");
+  }
+  if (read_string(fp, desc_) != 0) { 
+    FLATPROF_Throw("Error reading <event_x_description>.");
+  }
   
   sz = hpc_fread_le8(&period_, fp);
-  if (sz != sizeof(period_)) { return 1; }
+  if (sz != sizeof(period_)) { 
+    FLATPROF_Throw("Error reading <event_x_period>.");
+  }
   
   // <event_x_data>
   dat_.clear();
@@ -229,7 +249,9 @@ ProfFileEvent::read(FILE *fp, uint64_t load_addr)
   // <histogram_non_zero_bucket_count>
   uint64_t ndat;    // number of profile entries
   sz = hpc_fread_le8(&ndat, fp);
-  if (sz != sizeof(ndat)) { return 1; }
+  if (sz != sizeof(ndat)) { 
+    FLATPROF_Throw("Error reading <histogram_non_zero_bucket_count>.");
+  }
   dat_.resize(ndat);
 
   DIAG_Msg(3, "  Event: " << name_ << ": " << ndat << " entries (cnt,offset)");
@@ -238,19 +260,21 @@ ProfFileEvent::read(FILE *fp, uint64_t load_addr)
   // <histogram_non_zero_bucket_x_offset>
   uint32_t count;   // profile count
   uint64_t offset;  // offset from load address
-  for (unsigned int i = 0; i < ndat; ++i) {
+  for (uint i = 0; i < ndat; ++i) {
     sz = hpc_fread_le4(&count, fp);        // count
-    if (sz != sizeof(count)) { return 1; }
+    if (sz != sizeof(count)) { 
+      FLATPROF_Throw("Error reading <histogram_non_zero_bucket_x_value>.");
+    }
 
     sz = hpc_fread_le8(&offset, fp);       // offset
-    if (sz != sizeof(offset)) { return 1; }
+    if (sz != sizeof(offset)) { 
+      FLATPROF_Throw("Error reading <histogram_non_zero_bucket_x_offset>.");
+    }
     DIAG_Msg(4, "    " << i << ": (" << count << ", " << offset << ")");
     
     VMA pc = load_addr + offset;
     dat_[i] = make_pair(pc, count);
   }
-
-  return 0;
 }
 
 
@@ -264,7 +288,7 @@ ProfFileEvent::dump(std::ostream& o, const char* pre) const
     << ", outofrange: " << outofrange() << ", overflow: " << overflow()
     << " }" << endl;
   
-  for (unsigned int i = 0; i < num_data(); ++i) {
+  for (uint i = 0; i < num_data(); ++i) {
     const ProfFileEventDatum& dat = datum(i);
     o << p1 << "{ 0x" << hex << dat.first << ": " << dec
       << dat.second << " }" << endl;
@@ -283,13 +307,18 @@ read_string(FILE *fp, std::string& str)
 
   // <string_length> <string_without_terminator>
   sz = hpc_fread_le4(&len, fp);
-  if (sz != sizeof(len)) { return 1; }
+  if (sz != sizeof(len)) { 
+    return 1;
+  }
   
   str.resize(len);
-  for (unsigned int n = 0; n < len; ++n) { 
-    if ((c = fgetc(fp)) == EOF) { return 1; }
+  for (uint n = 0; n < len; ++n) { 
+    if ((c = fgetc(fp)) == EOF) { 
+      return 1;
+    }
     str[n] = (char)c;
   } 
+
   return 0;
 }
 
@@ -306,7 +335,8 @@ int main(int argc, char **argv)
 
   if (ret == 0) {
     cerr << "successfully read file!";
-  } else {
+  } 
+  else {
     cerr << "error reading file!";
   }
 

@@ -146,28 +146,28 @@ real_main(int argc, char* argv[])
   // Read executable
   // ------------------------------------------------------------
   binutils::LM* lm = NULL;
-  try {
-    string lmNm = args.progFile;
+  string lmNm = args.progFile;
 
-    // Try to find lm from profile info if not given
-    if (lmNm.empty()) {
-      lmNm = pcprof->GetProfiledFile();
-      
-      std::ifstream ifile(lmNm.c_str(), std::ios::in);
-      if ( !ifile.is_open() || ifile.fail() ) {
-	cerr << "Error: Could not find associated binary '" << lmNm
-	     << "'; please specify explicitly.\n";
-	exit(1);
-      }
-    }
+  // Try to find lm from profile info if not given
+  if (lmNm.empty()) {
+    lmNm = pcprof->GetProfiledFile();
     
-    lm = new binutils::LM();
-    if (!lm->Open(lmNm.c_str())) { exit(1); } // Error already printed 
-    if (!lm->Read()) { exit(1); }              // Error already printed 
+    std::ifstream ifile(lmNm.c_str(), std::ios::in);
+    if ( !ifile.is_open() || ifile.fail() ) {
+      cerr << "Error: Could not find associated binary '" << lmNm
+	   << "'; please specify explicitly.\n";
+      exit(1);
+    }
   }
-  catch (std::bad_alloc& x) {
-    cerr << "Error: Memory alloc failed while reading binary!\n";
-    exit(1);
+  
+  try {
+    lm = new binutils::LM();
+    lm->Open(lmNm.c_str());
+    lm->Read();
+  } 
+  catch (...) {
+    DIAG_EMsg("Exception encountered while reading " << lmNm);
+    throw;
   }
   
   lm->Relocate(pcprof->GetTxtStart());

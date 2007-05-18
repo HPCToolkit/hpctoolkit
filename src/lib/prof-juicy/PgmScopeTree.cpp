@@ -552,7 +552,7 @@ ProcScope::ProcScope(const char* n, CodeInfo* parent, const char* ln,
 		     SrcFile::ln begLn, SrcFile::ln endLn) 
   : CodeInfo(PROC, parent, begLn, endLn, 0, 0)
 {
-  Ctor(n, parent, ln);
+  Ctor(n, parent, ln, hasSym);
 }
 
 
@@ -561,12 +561,12 @@ ProcScope::ProcScope(const string& n, CodeInfo* parent, const string& ln,
 		     SrcFile::ln begLn, SrcFile::ln endLn) 
   : CodeInfo(PROC, parent, begLn, endLn, 0, 0)
 {
-  Ctor(n.c_str(), parent, ln.c_str());
+  Ctor(n.c_str(), parent, ln.c_str(), hasSym);
 }
 
 
 void
-ProcScope::Ctor(const char* n, CodeInfo* parent, const char* ln)
+ProcScope::Ctor(const char* n, CodeInfo* parent, const char* ln, bool hasSym)
 {
   DIAG_Assert(n, "");
   ScopeType t = (parent) ? parent->Type() : ANY;
@@ -574,6 +574,7 @@ ProcScope::Ctor(const char* n, CodeInfo* parent, const char* ln)
 
   m_name = (n) ? n : "";
   m_linkname = (ln) ? ln : "";
+  m_hasSym = hasSym;
   stmtMap = new StmtRangeScopeMap();
   if (parent) {
     Relocate();
@@ -587,7 +588,9 @@ ProcScope::operator=(const ProcScope& x)
 {
   // shallow copy
   if (&x != this) {
-    m_name    = x.m_name;
+    m_name     = x.m_name;
+    m_linkname = x.m_linkname;
+    m_hasSym   = x.m_hasSym;
     stmtMap = new StmtRangeScopeMap();
   }
   return *this;
@@ -604,9 +607,10 @@ ProcScope*
 ProcScope::findOrCreate(FileScope* fScope, const string& procnm, 
 			SrcFile::ln line)
 {
+  DIAG_Die("The ProcScope is always created as non-symbolic...");
   ProcScope* pScope = fScope->FindProc(procnm);
   if (!pScope) {
-    pScope = new ProcScope(procnm, fScope, procnm, line, line);
+    pScope = new ProcScope(procnm, fScope, procnm, false, line, line);
   }
   return pScope;
 }

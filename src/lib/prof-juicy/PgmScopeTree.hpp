@@ -866,7 +866,7 @@ public:
 			       const char* pre = "") const;
 
 private:
-  void Ctor(const char* n, CodeInfo* mom, const char* ln);
+  void Ctor(const char* n, CodeInfo* mom, const char* ln, bool hasSym);
 
   void AddToStmtMap(StmtRangeScope& stmt);
 
