@@ -187,12 +187,16 @@ LocationMgr::containsLineFzy(CodeInfo* x, SrcFile::ln line, bool loopIsAlien)
     // procedure end lines are not very accurate
     // loop begin lines are somewhat accurate
     // loop end line are not very accurate
-    case ScopeInfo::PROC: 
+    case ScopeInfo::PROC:
       { 
 	beg_epsilon = 2;  end_epsilon = 100;
 	CodeInfo* next = x->nextScopeNonOverlapping(); // sorted
 	if (next) {
 	  end_epsilon = (int)(next->begLine() - 1 - x->endLine());
+	}
+	else if (dynamic_cast<ProcScope*>(x)->hasSymbolic()) {
+	  // the last procedure in a file
+	  end_epsilon = INT_MAX;
 	}
       }
       break;

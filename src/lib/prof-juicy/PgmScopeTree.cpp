@@ -548,6 +548,7 @@ FileScope::findOrCreate(LoadModScope* lmScope, const string& filenm)
 
 
 ProcScope::ProcScope(const char* n, CodeInfo* parent, const char* ln, 
+		     bool hasSym,
 		     SrcFile::ln begLn, SrcFile::ln endLn) 
   : CodeInfo(PROC, parent, begLn, endLn, 0, 0)
 {
@@ -556,6 +557,7 @@ ProcScope::ProcScope(const char* n, CodeInfo* parent, const char* ln,
 
 
 ProcScope::ProcScope(const string& n, CodeInfo* parent, const string& ln, 
+		     bool hasSym,
 		     SrcFile::ln begLn, SrcFile::ln endLn) 
   : CodeInfo(PROC, parent, begLn, endLn, 0, 0)
 {
