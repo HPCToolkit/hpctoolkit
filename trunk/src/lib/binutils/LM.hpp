@@ -124,15 +124,14 @@ public:
   // -------------------------------------------------------
 
   // Open: If 'moduleName' is not already open, attempt to do so;
-  // return true on success and false otherwise.  If a file is already
-  // open return true. (Segs, Procs and Insns are not
-  // constructed yet.)
-  virtual bool Open(const char* moduleName);
+  // throw an exception on error.  If a file is already, do nothing.
+  // (Segs, Procs and Insns are not constructed yet.)
+  virtual void Open(const char* moduleName);
 
   // Read: If module has not already been read, attempt to do so;
-  // return true on success and false otherwise.  If a file has
-  // already been read, return true.
-  virtual bool Read();
+  // return an exception on error.  If a file has already been read do
+  // nothing.
+  virtual void Read();
 
 
   // -------------------------------------------------------
@@ -169,7 +168,7 @@ public:
   bool IsRelocated() const;
 
   // GetNumSegs: Return number of segments/sections
-  unsigned int GetNumSegs() const { return sections.size(); }
+  uint GetNumSegs() const { return sections.size(); }
 
   // AddSeg: Add a segment/section
   void AddSeg(Seg* section) { sections.push_back(section); }
@@ -366,7 +365,7 @@ public:
   // -------------------------------------------------------
 
   // See LM::Open comments
-  virtual bool Open(const char* moduleName);
+  virtual void Open(const char* moduleName);
   
   VMA GetStartVMA() const { return startVMA; }
 
@@ -449,8 +448,7 @@ namespace binutils {
 
 class Exception : public Diagnostics::Exception {
 public:
-  Exception(const std::string x,
-	    const char* filenm = NULL, unsigned int lineno = 0)
+  Exception(const std::string x, const char* filenm = NULL, uint lineno = 0)
     : Diagnostics::Exception(x, filenm, lineno)
   { }
   

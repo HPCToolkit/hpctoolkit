@@ -276,8 +276,13 @@ Driver::ScopeTreeInsertHPCRUNData(PgmScopeTree& scopes,
   // Read the profile and insert the data
   //-------------------------------------------------------
   ProfFile prof;
-  int ret = prof.read(profFilenm);
-  DIAG_Assert(ret == 0, "While reading profile '" << profFilenm << "'");
+  try {
+    prof.read(profFilenm);
+  }
+  catch (...) {
+    DIAG_EMsg("While reading '" << profFilenm << "'");
+    throw;
+  }
   
   for (unsigned int i = 0; i < prof.num_load_modules(); ++i) {
     const ProfFileLM& proflm = prof.load_module(i);

@@ -146,13 +146,12 @@ binutils::LM::~LM()
 }
 
 
-bool
+void
 binutils::LM::Open(const char* moduleName)
 {
   if (!name.empty()) {
     // 'moduleName' should be equal to what already exists
     DIAG_Assert(name == moduleName, "Cannot open a different file!");
-    return true;
   }
 
   // -------------------------------------------------------
@@ -247,26 +246,21 @@ binutils::LM::Open(const char* moduleName)
     DIAG_Assert(typeid(*newisa) == typeid(*isa),
 		"Cannot simultaneously open LMs with different ISAs!");
   }
-  
-  return true;
 }
 
 
-bool
+void
 binutils::LM::Read()
 {
-  bool STATUS = true;
   // If the file has not been opened...
   DIAG_Assert(!name.empty(), "Must call LM::Open first");
 
   // Read if we have not already done so
   if (impl->bfdSymbolTable == NULL
       && sections.size() == 0 && vmaToInsnMap.size() == 0) {
-    STATUS &= ReadSymbolTables();
-    STATUS &= ReadSegs();
+    ReadSymbolTables();
+    ReadSegs();
   } 
-  
-  return STATUS;
 }
 
 
@@ -866,18 +860,15 @@ binutils::Exe::~Exe()
 }
 
 
-bool
+void
 binutils::Exe::Open(const char* moduleName)
 {
-  bool STATUS = LM::Open(moduleName);
-  if (STATUS) {
-    if (GetType() != LM::Executable) {
-      BINUTILS_Throw("'" << moduleName << "' is not an executable.");
-    }
-
-    startVMA = bfd_get_start_address(impl->abfd);
+  LM::Open(moduleName);
+  if (GetType() != LM::Executable) {
+    BINUTILS_Throw("'" << moduleName << "' is not an executable.");
   }
-  return STATUS;
+
+  startVMA = bfd_get_start_address(impl->abfd);
 }
 
 

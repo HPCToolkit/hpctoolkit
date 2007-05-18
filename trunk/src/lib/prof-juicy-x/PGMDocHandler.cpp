@@ -360,7 +360,7 @@ void PGMDocHandler:: startElement(const XMLCh* const uri,
     }
 
     if (!currentFuncScope) {
-      currentFuncScope = new ProcScope(name, curFile, lname, lnB, lnE);
+      currentFuncScope = new ProcScope(name, curFile, lname, false, lnB, lnE);
       if (!vma.empty()) {
 	currentFuncScope->vmaSet().fromString(vma.c_str());
       }
