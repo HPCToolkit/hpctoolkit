@@ -211,9 +211,9 @@ NodeRetriever::MoveToProc(const char* name)
   DIAG_Assert(currentLM, "");
   DIAG_Assert(currentFile, "");
 
-  ProcScope *p = currentFile->FindProc(name);
+  ProcScope* p = currentFile->FindProc(name);
   if (p == NULL) {
-    p = new ProcScope(name, currentFile, "");
+    p = new ProcScope(name, currentFile, false, "");
   }
   currentProc = p;
 

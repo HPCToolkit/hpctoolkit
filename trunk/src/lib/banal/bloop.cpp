@@ -501,7 +501,8 @@ FindOrCreateProcNode(FileScope* fScope, binutils::Proc* p)
   // Create or find the scope.  Fuse procedures if names match.
   ProcScope* pScope = fScope->FindProc(procNm, procLnNm);
   if (!pScope) {
-    pScope = new ProcScope(procNm, fScope, procLnNm, begLn, endLn);
+    pScope = new ProcScope(procNm, fScope, procLnNm, p->hasSymbolic(),
+			   begLn, endLn);
   }
   else {
     // Assume the procedure was split.  Fuse it together.

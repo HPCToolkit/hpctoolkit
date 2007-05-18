@@ -822,14 +822,16 @@ protected:
 
 public: 
   ProcScope(const char* name, CodeInfo* mom, 
-	    const char* linkname,
+	    const char* linkname, bool hasSym,
 	    SrcFile::ln begLn = ln_NULL, SrcFile::ln endLn = ln_NULL);
-  ProcScope(const std::string& name, CodeInfo* mom, 
-	    const std::string& linkname,
+  
+  ProcScope(const std::string& name, CodeInfo* mom,
+	    const std::string& linkname, bool hasSym,
 	    SrcFile::ln begLn = ln_NULL, SrcFile::ln endLn = ln_NULL);
 
   virtual ~ProcScope();
-  
+
+  bool hasSymbolic() const { return m_hasSym; }
   
   static ProcScope*
   findOrCreate(FileScope* fScope, const std::string& procnm, SrcFile::ln line);
@@ -873,6 +875,7 @@ private:
 private:
   std::string m_name;
   std::string m_linkname;
+  bool        m_hasSym;
   StmtRangeScopeMap* stmtMap;
 };
 
