@@ -299,7 +299,10 @@ MONITOR_IFLAGS="-I${MONITOR}/include"
 MONITOR_LIBPATH="${MONITOR}/${MONITOR_LIBNM}"
 MONITOR_LDFLAGS="-L${MONITOR_LIBPATH}"
 MONITOR_LIBSO="${MONITOR_LIBPATH}/libmonitor.so"
-MONITOR_LIBSO_INSTALLED="lib/hpctoolkit/monitor/libmonitor.so"
+MONITOR_LIBSO_INSTALLED="${MONITOR_LIBSO}"
+if test "${OPT_INSTALL_MONITOR}" = "yes" ; then 
+  MONITOR_LIBSO_INSTALLED="lib/hpctoolkit/monitor/libmonitor.so"
+fi
 
 if test "${OPT_WITH_MONITOR}" = "yes" ; then
   AC_DEFINE([HAVE_MONITOR], [], [Monitor library])
