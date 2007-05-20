@@ -454,9 +454,15 @@ check_and_prepare_env_for_profiling(const char* installpath)
   /* LD_PRELOAD */
   snprintf(newval, PATH_MAX, "%s" HPCRUN_PATH HPCRUN_LIB, installpath);
 #ifdef HAVE_MONITOR
+  const char* INSTALLED_MONITOR = HPC_MONITOR_LIBSO_INSTALLED;
   int ofst = strlen(installpath) + strlen(HPCRUN_PATH HPCRUN_LIB);
-  snprintf(newval + ofst, PATH_MAX - ofst, " %s/" HPC_MONITOR_LIBSO_INSTALLED,
-	   installpath);
+  if (INSTALLED_MONITOR[0] == '/') {
+    snprintf(newval + ofst, PATH_MAX - ofst, " " HPC_MONITOR_LIBSO_INSTALLED);
+  }
+  else {
+    snprintf(newval + ofst, PATH_MAX - ofst, " %s/" HPC_MONITOR_LIBSO_INSTALLED,
+	     installpath);
+  }
 #endif
   oldval = getenv(LD_PRELOAD);
   if (oldval) {
