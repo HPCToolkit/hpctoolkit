@@ -14,6 +14,34 @@ static char *xname(char *);
 static unsigned long htoll(char *);
 static unsigned long segment_size(char *);
 
+/* MWF added utility f dumping w.o. modifying epoch stuff */
+void
+csprof_dump_loaded_modules(void){
+    char filename[PATH_MAX];
+    char mapline[PATH_MAX+80];
+    char *p;
+    FILE *fs;
+    pid_t pid = getpid();
+
+    sprintf(filename, "/proc/%d/maps", pid);
+    fs = fopen(filename, "r");
+
+    do {
+        p = fgets(mapline, PATH_MAX+80, fs);
+
+        if(p) {
+            if(segment_is_executable(mapline)) {
+                char *name = strdup(xname(mapline));
+                unsigned long offset = htoll(mapline);
+		unsigned long thesize = segment_size(mapline);
+
+		MSG(CSPROF_MSG_EPOCH, "Load module %s loaded at %p",
+		    name, (void *) offset);
+            }
+        }
+    } while(p);
+}
+
 void
 csprof_epoch_get_loaded_modules(csprof_epoch_t *epoch,
                                 csprof_epoch_t *previous_epoch)
@@ -34,6 +62,7 @@ csprof_epoch_get_loaded_modules(csprof_epoch_t *epoch,
             if(segment_is_executable(mapline)) {
                 char *name = strdup(xname(mapline));
                 unsigned long offset = htoll(mapline);
+                /** HACK: /proc is different, no size, but end address **/
 		unsigned long thesize = segment_size(mapline);
                 csprof_epoch_module_t *newmod;
 
@@ -68,9 +97,11 @@ segment_is_executable(char *line)
 static unsigned long
 segment_size(char *line)
 {
+  unsigned long long start = htoll(line);
   char *dash = index(line, (int) '-');
+  unsigned long long end = htoll(dash+1);
 
-  return htoll(dash+1);
+  return end - start;
 }
 
 static char *

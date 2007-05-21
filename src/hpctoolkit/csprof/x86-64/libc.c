@@ -8,6 +8,18 @@ arch_libc_init()
     /* nothing to do ATM; exception handling stuff goes here */
 }
 
+/* !!!! GIANT HACK  !!!!!! 
+   Don't know what rtn address and sp are for this arch, so
+   better not call setjmp or longjmp in user code.
+   Set to arbitrary value now
+*/
+#define JB_PC  0
+#define JB_RSP 1
+
+/* !!!! END GIANT HACK !!!!! */
+
+#ifdef CSPROF_TRAMPOLINE_BACKEND
+
 void
 csprof_nlx_to_context(csprof_state_t *state, jmp_buf env)
 {
@@ -50,3 +62,5 @@ csprof_nlx_to_context(csprof_state_t *state, jmp_buf env)
         }
     }
 }
+
+#endif

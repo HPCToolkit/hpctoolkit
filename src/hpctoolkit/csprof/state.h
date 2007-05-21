@@ -3,6 +3,7 @@
 #define CSPROF_STATE_H
 
 #include "structs.h"
+#include "general.h"
 
 /* getting and setting states independent of threading support */
 csprof_state_t *csprof_get_state();
@@ -73,11 +74,15 @@ int csprof_state_free(csprof_state_t *);
 #define CSPROF_SIGNALED_DURING_TRAMPOLINE (1 << 6)
 /* true if this malloc has realloc in its call chain */
 #define CSPROF_MALLOCING_DURING_REALLOC (1 << 7)
+
 static inline int
 csprof_state_flag_isset(csprof_state_t *state, unsigned int flag)
 {
+    extern int s1;
     unsigned int state_flags = state->flags;
 
+    s1 = s1 + 1;
+    MSG(1,"state flag isset: %lx",state_flags & flag);
     return state_flags & flag;
 }
 

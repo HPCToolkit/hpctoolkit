@@ -15,12 +15,21 @@ bfdsect_callback(bfd *thebfd, asection *sect, void *obj)
 {
   if(strcmp(sect->name, ".plt") == 0) {
     plt_begin_address = sect->vma;
-    /* KLUDGE: In 2004, binutils renamed the '_cooked_size' structure
-       field to ''size' and didn't bother to provide any way to
-       differentiate between the two versions (aside from version).
-       So if you're having compilation problems with this file, you
-       might change '_cooked_size' to 'size'. (ChangeLog-2004).  */
+    /* KLUDGE: somewhere along the line, binutils changed the name
+       of the 'size/_cooked_size' structure field and didn't bother
+       to provide any way to differentiate between the two versions.
+       No abstract interface, nothing.  So if you're having compilation
+       problems with this file, you might change '_cooked_size' to
+       'size'.
+
+       The reason it's '_cooked_size' is because that's what recent
+       versions of binutils use and therefore it's more likely to work
+       out of the box for people.  */
+    /* MWF hack -- change cooked_size as per suggestion */
+    plt_end_address = sect->vma + sect->_cooked_size;
+#ifdef NO
     plt_end_address = sect->vma + sect->size;
+#endif
   }
 }
 
@@ -93,6 +102,7 @@ csprof_context_is_unsafe(void *context)
   struct ucontext *ctx = (struct ucontext *) context;
   greg_t ip = ctx->uc_mcontext.gregs[REG_RIP];
 
+  MSG(1,"In x86 unsafe!");
   if(!plt_found) {
     discover_plt_addresses();
     plt_found = 1;
@@ -101,6 +111,7 @@ csprof_context_is_unsafe(void *context)
     csprof_epoch_t *e = csprof_get_epoch();
 
     if(e == NULL) {
+      MSG(1,"csprof_get_epoch fails");
       return 1;
     }
     else {
@@ -109,6 +120,7 @@ csprof_context_is_unsafe(void *context)
       memcpy_found = go_find_memcpy(m);
 
       if(!memcpy_found) {
+        MSG(1,"go_find_memcpy fails");
 	return 1;
       }
     }
@@ -117,6 +129,7 @@ csprof_context_is_unsafe(void *context)
     csprof_epoch_t *e = csprof_get_epoch();
 
     if(e == NULL) {
+      MSG(1,"csprof_get_epoch #2 fails");
       return 1;
     }
     else {
@@ -125,6 +138,7 @@ csprof_context_is_unsafe(void *context)
       csproflib_found = go_find_csproflib(m);
 
       if(!csproflib_found) {
+        MSG(1,"go_find_csproflib fails");
 	return 1;
       }
     }
@@ -136,6 +150,19 @@ csprof_context_is_unsafe(void *context)
       || ((memcpy_begin_address <= ip) && (ip < memcpy_end_address))
       || ((plt_begin_address <= ip) && (ip < plt_end_address));
 
+    MSG(1,"ip = %lx\n"
+          "csproflib_b = %lx, csproflib_e = %lx\n"
+          "memcpy_b = %lx, memcpy_e = %lx\n"
+          "plt_b = %lx, plt_e = %lx",
+                       ip,
+                       csproflib_begin_address,
+                       csproflib_end_address,
+                       memcpy_begin_address,
+                       memcpy_end_address,
+                       plt_begin_address,
+                       plt_end_address
+        );
+    MSG(1,"verdict = %d",verdict);
     return verdict;
   }
 }

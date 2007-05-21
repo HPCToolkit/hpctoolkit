@@ -100,7 +100,12 @@ csprof_set_metric_info(int metric_id, char *name, int flags)
 void
 csprof_record_metric(int metric_id, size_t value)
 {
+
+#ifdef NO
   /* step out of c_r_m_w_u and c_r_m */
   csprof_record_metric_with_unwind(metric_id, value, 2);
+#endif
+  /** Try it with 1 **/
+  csprof_record_metric_with_unwind(metric_id, value, 1);
 }
 

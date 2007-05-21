@@ -5,6 +5,7 @@
 #include <dlfcn.h>
 #include <assert.h>
 #include <signal.h>
+#include <setjmp.h>
 
 #include "atomic.h"
 #include "mem.h"
@@ -51,6 +52,15 @@ struct tramp_data {
 pthread_key_t thread_node_key;
 pthread_key_t prof_data_key;
 pthread_key_t mem_store_key;
+
+pthread_key_t k;
+
+static pthread_once_t iflg = PTHREAD_ONCE_INIT;
+
+#include "thread_data.h"
+
+pthread_mutex_t mylock;
+
 struct csprof_thread_queue all_threads;
 
 /* ugh, FIXME */
@@ -86,12 +96,19 @@ csprof_pthread_init_funcptrs()
     MAYBE_INIT_STUBS();
 }
 
+static void n_init(void){
+  int e;
+  e = pthread_key_create(&k,free);
+}
+
 void
 csprof_pthread_init_data()
 {
     pthread_key_create(&prof_data_key, NULL);
     pthread_key_create(&thread_node_key, NULL);
     pthread_key_create(&mem_store_key, NULL);
+
+    pthread_mutex_init(&mylock,NULL);
 
     all_threads.head = all_threads.tail = NULL;
 }
@@ -195,10 +212,11 @@ csprof_pthread_state_fini2(csprof_state_t *state, csprof_list_node_t *node)
 
     /* FIXME: need to figure out how to unpatch for register swizzles */
     /* FIXME: need to avoid code duplication */
+#ifdef CSPROF_TRAMPOLINE_BACKEND
     if(csprof_swizzle_patch_is_address(state)) {
         *(state->swizzle_patch) = state->swizzle_return;
     }
-
+#endif
     /* instead of attempting to delete the thread's node from the
        "queue", we simply mark it as "deleted" and then ignore it
        in all subsequent scans over the list.  this has potential
@@ -247,11 +265,50 @@ csprof_pthread_tramp(void *tramp_arg)
     return result;
 }
 
+typedef struct _xptfnt {
+  void *(*fn)(void *);
+  void *arg_f;
+} xpthread_fn_t;
+
+
+void *doit (void *arg){
+  void *rv;
+  void *(*ff)(void *);
+  void *argf;
+  xpthread_fn_t *aa;
+  thread_data_t *loc;
+
+  MSG(1,"*** Pre fn called !!! ***");
+  pthread_once(&iflg,n_init);
+
+  aa = (xpthread_fn_t *)arg;
+
+  ff   = aa->fn;
+  argf = aa->arg_f;
+
+  loc = malloc(sizeof(thread_data_t));
+  loc->id = (int)argf;
+
+  pthread_setspecific(k,(void *)loc);
+
+  csprof_set_timer();
+  rv   = (*ff)(argf);
+
+  free(arg);
+
+  return rv;
+}
+
 int
 PTHREAD_CREATE_FN(pthread_t *thrid, const pthread_attr_t *attr,
 		  pthread_func *func, void *funcarg)
 {
+
+  static first = 1;
+#ifdef NO
     struct tramp_data *ts = malloc(sizeof(struct tramp_data));
+#endif
+    xpthread_fn_t *the_arg;
     int status;
 
 #ifdef TRACE_INTERFACE
@@ -260,13 +317,37 @@ PTHREAD_CREATE_FN(pthread_t *thrid, const pthread_attr_t *attr,
 
     MAYBE_INIT_STUBS();
 
+#ifdef NO
     printf("Creating thread func %lx with data %lx\n", func, ts);
     ts->func = func;
     ts->arg = funcarg;
+#endif
 
+    MSG(1,"creating thread function w data %lx",funcarg);
+    the_arg = malloc(sizeof(xpthread_fn_t));
+    the_arg->fn    = func;
+    the_arg->arg_f = funcarg;
+
+#ifdef NO
     status = libcall4(csprof_pthread_create, thrid, attr,
                       csprof_pthread_tramp, (void *)ts);
+#endif
+    status = libcall4(csprof_pthread_create, thrid, attr,
+                      doit, (void *)the_arg);
 
+    if (first) {
+         thread_data_t *loc;
+
+         pthread_once(&iflg,n_init);
+         MSG(1,"*** INIT Thread 0!!! ***");
+         loc = malloc(sizeof(thread_data_t));
+         loc->id = -1;
+
+         pthread_setspecific(k,(void *)loc);
+         csprof_set_timer();
+         first = 0;
+         MSG(1,"print self is %lx",pthread_self());
+    }
     return status;
 }
 

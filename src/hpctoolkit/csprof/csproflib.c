@@ -2,7 +2,7 @@
 // -*-C-*-
 // * BeginRiceCopyright *****************************************************
 /*
-  Copyright ((c)) 2002-2007, Rice University 
+  Copyright ((c)) 2002, Rice University 
   All rights reserved.
 
   Redistribution and use in source and binary forms, with or without
@@ -88,6 +88,7 @@
 #include "driver.h"
 #include "epoch.h"
 #include "metrics.h"
+#include "dump_backtraces.h"
 
 #include "hpcfile_csproflib.h"
 
@@ -111,6 +112,7 @@ void csprof_init_internal() __attribute__((constructor));
 void csprof_fini_internal() __attribute__((destructor));
 #endif
 
+int wait_for_gdb = 1;
 #ifndef __GNUC__
 /* Implicit interface */
 void
@@ -171,7 +173,11 @@ csprof_fini()
 static void
 csprof_init_internal()
 {
+    if (getenv("CSPROF_WAIT")){
+      while(wait_for_gdb);
+    }
     csprof_libc_init();
+    MSG(CSPROF_MSG_SHUTDOWN, "***> csprof init internal ***");
 
     csprof_options__init(&opts);
     csprof_options__getopts(&opts);
@@ -190,8 +196,9 @@ csprof_init_internal()
 #endif
 
     if (status == CSPROF_STATUS_INIT) { 
-        MSG(CSPROF_MSG_SHUTDOWN, "***> csprof init ***");
+        MSG(CSPROF_MSG_SHUTDOWN, "***> csprof init (redo) ***");
     } else {
+        MSG(CSPROF_MSG_SHUTDOWN, "***> csprof init 1 ***");
         /* profiling state needs the memory manager init'd */
 #if CSPROF_THREADS
 
@@ -214,13 +221,16 @@ csprof_init_internal()
         csprof_epoch_new();
         csprof_epoch_unlock();
     
-        MSG(CSPROF_MSG_SHUTDOWN, "***> csprof init *** (redo)");
+        MSG(CSPROF_MSG_SHUTDOWN, "***> csprof init 2 ***");
     }
 
 #if !defined(CSPROF_SYNCHRONOUS_PROFILING)
+    MSG(1,"sigemptyset(prof_sigset)");
     sigemptyset(&prof_sigset);
 #endif
+    MSG(CSPROF_MSG_SHUTDOWN, "***> csprof init 3 ***");
     csprof_driver_init(csprof_get_state(), &opts);
+    MSG(CSPROF_MSG_SHUTDOWN, "***> csprof init 4 ***");
 
     /* FIXME: is this the right way to do things? */
 #ifdef CSPROF_THREADS
@@ -235,6 +245,7 @@ csprof_init_internal()
 static void
 csprof_fini_internal()
 {
+    extern int segv_count;
     csprof_state_t *state;
 
     /* Prevent multiple finalizations [Case 2] */
@@ -255,6 +266,7 @@ csprof_fini_internal()
     MSG(CSPROF_MSG_SHUTDOWN, "writing profile data");
     state = csprof_get_state();
     csprof_write_profile_data(state);
+    printf("segv count = %d\n",segv_count);
 }
 
 
@@ -317,13 +329,20 @@ csprof_trampoline2(void **stackptr)
 #if !defined(CSPROF_PERF)
       csprof_frame_t *x = state->bufstk - 1;
 
+#if 0
       for( ; x != state->bufend; ++x) {
 	printf("ip %#lx | sp %#lx\n", x->ip, x->sp);
       }
+#else
+      dump_backtraces(state, 0);
+#endif
 
 
         ERRMSG("Thought we were returning to %#lx, but %#lx",
                __FILE__, __LINE__, return_ip, csprof_bt_top_ip(state));
+        ERRMSG("csprof_trampoline2 %#lx",
+               __FILE__, __LINE__, csprof_trampoline2);
+	csprof_dump_loaded_modules();
 #endif
         DIE("Returning to an unexpected location.",
             __FILE__, __LINE__);
@@ -653,6 +672,7 @@ csprof_options__getopts(csprof_options_t* x)
         i = atoi(s);
         if ((0 <= i) && (i <= 65536)) {
             CSPROF_MSG_LVL = i;
+	    fprintf(stderr, "setting message level to %d\n",i);
         } else {
             DIE("value of option `%s' [%s] not integer between 0-9", __FILE__, __LINE__,
                 CSPROF_OPT_VERBOSITY, s);

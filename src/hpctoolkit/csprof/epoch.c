@@ -1,5 +1,5 @@
 /*
-  Copyright ((c)) 2002-2007, Rice University 
+  Copyright ((c)) 2002, Rice University 
   All rights reserved.
 
   Redistribution and use in source and binary forms, with or without
@@ -64,6 +64,9 @@ csprof_epoch_unlock()
 int
 csprof_epoch_is_locked()
 {
+    extern int s2;
+    s2 += 1;
+    MSG(1,"epoch lock val = %lx",epoch_lock);
     return epoch_lock;
 }
 
