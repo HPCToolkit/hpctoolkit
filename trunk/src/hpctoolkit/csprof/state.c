@@ -149,6 +149,7 @@ csprof_state_insert_backtrace(csprof_state_t *state, int metric_id,
 {
     void *tn = csprof_csdata_insert_backtrace(&state->csdata, state->treenode,
 					      metric_id, start, end, count);
+
     DBGMSG_PUB(CSPROF_DBG_CCT_INSERTION, "Treenode is %p", tn);
 
     state->treenode = tn;

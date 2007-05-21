@@ -6,6 +6,9 @@
 #include <sys/signal.h>         /* sigaction() */
 #include <ucontext.h>           /* struct ucontext */
 
+#include <stdio.h>
+#include <setjmp.h>
+
 #include "general.h"
 #include "driver.h"
 #include "structs.h"
@@ -17,6 +20,10 @@
 
 #define CSPROF_PROFILE_SIGNAL SIGPROF
 #define CSPROF_PROFILE_TIMER ITIMER_PROF
+
+extern int s1 = 0;
+extern int s2 = 0;
+extern int s3 = 0;
 
 extern csprof_state_t *
 csprof_check_for_new_epoch(csprof_state_t *state);
@@ -31,39 +38,61 @@ static void csprof_take_profile_sample(csprof_state_t *, struct ucontext *);
 
 sigset_t prof_sigset;
 
+void _zflags(void)
+{
+  s1 = 0;
+  s2 = 0;
+  s3 = 0;
+}
+
 static void
 csprof_init_sigset(sigset_t *ss)
 {
     sigemptyset(ss);
+    MSG(1,"sigaddset csprof signal");
     sigaddset(ss, CSPROF_PROFILE_SIGNAL);
 }
+
+unsigned long sample_period = 0L;
+unsigned long seconds = 0L;
+unsigned long microseconds = 0L;
 
 static void
 csprof_init_timer(csprof_options_t *options)
 {
+#ifdef NO
     unsigned long sample_period = options->sample_period;
     unsigned long seconds = sample_period / 1000000;
     unsigned long microseconds = sample_period % 1000000;
+#endif
+    sample_period = options->sample_period;
+    seconds = sample_period / 1000000;
+    microseconds = sample_period % 1000000;
 
+    MSG(1,"init timer w sample_period = %ld, seconds = %ld, usec = %ld",
+        sample_period, seconds, microseconds);
     /* begin timing after the given delay */
     itimer.it_value.tv_sec = seconds;
     itimer.it_value.tv_usec = microseconds;
 
 #if defined(CSPROF_THREADS) && defined(CSPROF_ROUND_ROBIN_SIGNAL)
     /* continually signal after that */
+    MSG(1,"Threads style signal\n");
     itimer.it_interval.tv_sec = seconds;
     itimer.it_interval.tv_usec = microseconds;
 #else
     /* we do our own reset */
+    MSG(1,"own rest style");
     itimer.it_interval.tv_sec = 0;
     itimer.it_interval.tv_usec = 0;
 #endif
 }
 
-static void
-csprof_set_timer()
+void
+csprof_set_timer(void)
 {
     int success = libcall3(csprof_setitimer, CSPROF_PROFILE_TIMER, &itimer, NULL);
+    MSG(1,"called csprof_set_timer");
 
     if(success != 0) {
         perror("setitimer");
@@ -113,6 +142,7 @@ csprof_driver_distribute_samples(csprof_state_t *state,
 {
   pthread_t me = pthread_self();
 
+  MSG(,"in distribute samples\n");
   if(state == NULL) {
     DBGMSG_PUB(CSPROF_DBG_PTHREAD, "NULL state, signaling threads");
     csprof_signal_all_threads(me);
@@ -154,6 +184,7 @@ csprof_undo_swizzled_data(csprof_state_t *state, void *ctx)
 void
 csprof_swizzle_with_context(csprof_state_t *state, void *ctx)
 {
+#ifdef CSPROF_TRAMPOLINE_BACKEND
     struct lox l;
     int proceed = csprof_find_return_address_for_context(state, &l, ctx);
 
@@ -169,6 +200,13 @@ csprof_swizzle_with_context(csprof_state_t *state, void *ctx)
 
         csprof_insert_trampoline(state, &l, ctx);
     }
+#endif
+}
+
+static int
+dc(void)
+{
+    return 0;
 }
 
 static void
@@ -177,14 +215,17 @@ csprof_take_profile_sample(csprof_state_t *state, struct ucontext *ctx)
     mcontext_t *context = &ctx->uc_mcontext;
     void *pc = csprof_get_pc(context);
 
+    MSG(1,"csprof take profile sample");
     if(/* trampoline isn't exactly active during exception handling */
-       csprof_state_flag_isset(state, CSPROF_EXC_HANDLING) ||
+       csprof_state_flag_isset(state, CSPROF_EXC_HANDLING)
        /* dynamical libraries are in flux; don't bother */
-       csprof_epoch_is_locked() ||
+       || csprof_epoch_is_locked()
        /* general checking for addresses in libraries */
-       csprof_context_is_unsafe(ctx)) {
+       || csprof_context_is_unsafe(ctx)) {
+      MSG(1,"No trampoline, s1 = %x, s2 = %x, s3 = %x",s1,s2,s3);
         /* ugh, don't even bother */
         state->trampoline_samples++;
+        _zflags();
 
         return;
     }
@@ -194,24 +235,61 @@ csprof_take_profile_sample(csprof_state_t *state, struct ucontext *ctx)
     /* check to see if shared library state has changed out from under us */
     state = csprof_check_for_new_epoch(state);
 
+    MSG(1,"undo swizzled data\n");
     csprof_undo_swizzled_data(state, context);
 
-#if defined(__ia64__) && defined(__linux__)
+#if defined(__ia64__) && defined(__linux__) 
     /* force insertion from the root */
     state->treenode = NULL;
     state->bufstk = state->bufend;
 #endif
     if(csprof_sample_callstack(state, WEIGHT_METRIC, 1, context) == CSPROF_OK) {
+      MSG(1,"about to swizzle w context\n");
       csprof_swizzle_with_context(state, (void *)context);
     }
 
     csprof_state_flag_clear(state, CSPROF_TAIL_CALL | CSPROF_EPILOGUE_RA_RELOADED | CSPROF_EPILOGUE_SP_RESET);
 }
 
+jmp_buf bad_unwind;
+
+#ifdef CSPROF_THREADS
+extern pthread_key_t k;
+#include "thread_data.h"
+#endif
+
 static void
 csprof_itimer_signal_handler(int sig, siginfo_t *siginfo, void *context)
 {
-    CSPROF_SIGNAL_HANDLER_GUTS(context);
+#ifdef CSPROF_THREADS
+    thread_data_t *td = (thread_data_t *)pthread_getspecific(k);
+    MSG(1,"got itimer signal f thread %d",td->id);
+    if (!sigsetjmp(td->bad_unwind,1)){
+      CSPROF_SIGNAL_HANDLER_GUTS(context);
+    }
+    else {
+      MSG(1,"got bad unwind");
+    }
+    csprof_set_timer();
+#else
+    MSG(1,"got itimer signal");
+    if (!sigsetjmp(bad_unwind,1)){
+      CSPROF_SIGNAL_HANDLER_GUTS(context);
+    }
+    else {
+      MSG(1,"got bad unwind");
+    }
+    csprof_set_timer();
+#endif
+#ifdef NO
+    if (!setjmp(bad_unwind)){
+      CSPROF_SIGNAL_HANDLER_GUTS(context);
+    }
+    else {
+      MSG(1,"got bad unwind");
+      csprof_set_timer();
+    }
+#endif
 }
 
 static void
@@ -219,6 +297,8 @@ csprof_init_signal_handler()
 {
     struct sigaction sa;
     int ret;
+
+    MSG(1,"Got to init signal handler\n");
 
     /* set up handler for profiling purposes */
     sa.sa_sigaction = csprof_itimer_signal_handler;
@@ -233,10 +313,13 @@ csprof_init_signal_handler()
     ret = sigaction(SIGPROF, &sa, 0);
 }
 
+void setup_segv(void);
+
 void
 csprof_driver_init(csprof_state_t *state, csprof_options_t *opts)
 {
     csprof_init_signal_handler();
+    setup_segv();
     csprof_init_timer(opts);
     csprof_init_sigset(&prof_sigset);
 

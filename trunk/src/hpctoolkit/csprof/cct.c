@@ -391,6 +391,7 @@ csprof_cct_node__link(csprof_cct_node_t* x, csprof_cct_node_t* parent)
 
    we have different versions because the trampoline-based backends
    need to worry about stack pointers and such.  this should be FIXME. */
+
 #ifdef CSPROF_TRAMPOLINE_BACKEND
 static csprof_cct_node_t*
 csprof_cct_node__find_child(csprof_cct_node_t* x, void* ip, void* sp)
@@ -468,13 +469,15 @@ csprof_cct_insert_backtrace(csprof_cct_t *x, void *treenode, int metric_id,
 {
     csprof_cct_node_t *tn = (csprof_cct_node_t *)treenode;
 
+    MSG(1,"Insert backtrace w x=%lp,tn=%lp,strt=%lp,end=%lp",x,treenode,start,end);
     if(csprof_cct__isempty(x)) {
+      MSG(1,"x is empty");
         x->tree_root = csprof_cct_node__create(start->ip, start->sp);
 
         tn = x->tree_root;
         x->num_nodes = 1;
 
-        DBGMSG_PUB(CSPROF_DBG_CCT_INSERTION, "start ip %#lx | sp %#lx",
+        DBGMSG_PUB(CSPROF_DBG_CCT_INSERTION, "--start ip %#lx | sp %#lx",
                    start->ip, start->sp);
         start--;
 
@@ -485,7 +488,7 @@ csprof_cct_insert_backtrace(csprof_cct_t *x, void *treenode, int metric_id,
         DBGMSG_PUB(CSPROF_DBG_CCT_INSERTION, "root ip %#lx",
                    tn->ip);
 #endif
-        DBGMSG_PUB(CSPROF_DBG_CCT_INSERTION, "start ip %#lx | sp %#lx",
+        DBGMSG_PUB(CSPROF_DBG_CCT_INSERTION, "nxt start ip %#lx | sp %#lx",
                    start->ip, start->sp);
     }
 
@@ -509,6 +512,7 @@ csprof_cct_insert_backtrace(csprof_cct_t *x, void *treenode, int metric_id,
         }
 #else
 	if(start->ip == tn->ip) {
+          MSG(1,"start ip == tn ip = %lx",tn->ip);
 	  start--;
 	}
 #endif
@@ -527,18 +531,22 @@ csprof_cct_insert_backtrace(csprof_cct_t *x, void *treenode, int metric_id,
             csprof_cct_node_t *c =
                 csprof_cct_node__find_child(tn, start->ip, start->sp);
 #else
+            MSG(1,"finding child in tree w ip = %lx",start->ip);
 	    csprof_cct_node_t *c =
                 csprof_cct_node__find_child(tn, start->ip);
 #endif
 
             if(c) {
                 /* child exists; recur */
+              MSG(1,"found child");
                 tn = c;
                 start--;
             }
             else {
                 /* no such child; insert new tail */
+              MSG(1,"No child found, inserting new tail");
                 while(start >= end) {
+                  MSG(1,"create node w ip = %lx",start->ip);
                     c = csprof_cct_node__create(start->ip, start->sp);
                     csprof_cct_node__parent_insert(c, tn);
                     x->num_nodes++;

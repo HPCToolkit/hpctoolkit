@@ -2,7 +2,7 @@
 // -*-C-*-
 // * BeginRiceCopyright *****************************************************
 /*
-  Copyright ((c)) 2002-2007, Rice University 
+  Copyright ((c)) 2002, Rice University 
   All rights reserved.
 
   Redistribution and use in source and binary forms, with or without
@@ -99,11 +99,19 @@ extern int CSPROF_MSG_LVL; // default 0
 #define CSPROF_OK      1
 #define CSPROF_ERR    -1
 
+#ifdef CSPROF_THREADS
+extern pthread_mutex_t mylock;
+#endif
+
 #define PRINT(buf) fwrite_unlocked(buf,1,n,stderr);
 #define PSTR(str) do { \
 size_t i = strlen(str); \
 fwrite_unlocked(str, 1, i, stderr); \
 } while(0)
+
+static inline void NOMSG(int level, char *format, ...)
+{
+}
 
 /* pervasive use of a character buffer because the direct
    printf-to-a-stream functions seem to have problems */
@@ -117,8 +125,15 @@ static inline void MSG(int level, char *format, ...)
     va_list args;
     char buf[512];
     va_start(args, format);
+#if 0
     if (level & CSPROF_MSG_LVL) {
+#else
+    {
+#endif
         int n;
+#ifdef CSPROF_THREADS
+        pthread_mutex_lock(&mylock);
+#endif
         flockfile(stderr);
 #ifdef CSPROF_THREADS
 	n = sprintf(buf, "csprof msg [%d][%lx]: ", level, pthread_self());
@@ -131,10 +146,40 @@ static inline void MSG(int level, char *format, ...)
         PSTR("\n");
         fflush_unlocked(stderr);
         funlockfile(stderr);
+#ifdef CSPROF_THREADS
+        pthread_mutex_unlock(&mylock);
+#endif
     }
     va_end(args);
 }
 #endif
+
+static inline void EMSG(char *format, ...){
+  va_list args;
+  char buf[512];
+  int n;
+  va_start(args, format);
+
+#ifdef CSPROF_THREADS
+  pthread_mutex_lock(&mylock);
+#endif
+  flockfile(stderr);
+#ifdef CSPROF_THREADS
+  n = sprintf(buf, "EMSG[%lx]: ", pthread_self());
+#else
+  n = sprintf(buf, "EMSG: ");
+#endif
+  PRINT(buf);
+  n = vsprintf(buf, format, args);
+  PRINT(buf);
+  PSTR("\n");
+  fflush_unlocked(stderr);
+  funlockfile(stderr);
+#ifdef CSPROF_THREADS
+  pthread_mutex_unlock(&mylock);
+#endif
+  va_end(args);
+}
 
 static inline void DBGMSG_PUB(int level, char *format, ...)
 #if defined(CSPROF_PERF)
@@ -145,8 +190,15 @@ static inline void DBGMSG_PUB(int level, char *format, ...)
     va_list args;
     char buf[512];
     va_start(args, format);
+#if 0
     if (level & CSPROF_DBG_LVL_PUB) {
+#else
+    {
+#endif
         int n;
+#ifdef CSPROF_THREADS
+        pthread_mutex_lock(&mylock);
+#endif
         flockfile(stderr);
 #ifdef CSPROF_THREADS
         n = sprintf(buf, "[%d][%lx]: ", level, pthread_self());
@@ -159,6 +211,9 @@ static inline void DBGMSG_PUB(int level, char *format, ...)
         PSTR("\n");
         fflush_unlocked(stderr);
         funlockfile(stderr);
+#ifdef CSPROF_THREADS
+        pthread_mutex_unlock(&mylock);
+#endif
     }
     va_end(args);
 }
@@ -168,6 +223,9 @@ static inline void ERRMSGa(char *format, char *file, int line, va_list args)
 { 
     char buf[512];
     int n;
+#ifdef CSPROF_THREADS
+        pthread_mutex_lock(&mylock);
+#endif
     flockfile(stderr);
     n = sprintf(buf, "csprof error [%s:%d]:", file, line);
     PRINT(buf);
@@ -176,6 +234,9 @@ static inline void ERRMSGa(char *format, char *file, int line, va_list args)
     PSTR("\n");
     fflush_unlocked(stderr);
     funlockfile(stderr);
+#ifdef CSPROF_THREADS
+        pthread_mutex_unlock(&mylock);
+#endif
 }
 
 static inline void ERRMSG(char *format, char *file, int line, ...) 

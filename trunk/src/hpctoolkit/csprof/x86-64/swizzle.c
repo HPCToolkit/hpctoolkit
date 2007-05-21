@@ -2,6 +2,7 @@
 
 #include "interface.h"
 #include "general.h"
+#include "dump_backtraces.h"
 
 extern void *__libc_start_main;
 
@@ -13,11 +14,14 @@ csprof_get_pc(void *context)
     return (void *)ctx->gregs[REG_RIP];
 }
 
+#ifdef CSPROF_TRAMPOLINE_BACKEND
+
 int
 csprof_find_return_address_for_context(csprof_state_t *state,
                                        struct lox *l, mcontext_t *ctx)
 {
-#if 1
+  /**** MWF: temp hack to see if works better on x86 ****/
+#if 0
     /* the unwinding process has figured out the base pointer for us */
     void **rbp = (void **)state->extra_state;
 
@@ -83,7 +87,7 @@ csprof_remove_trampoline(csprof_state_t *state, mcontext_t *context)
     else {
         void **addr = state->swizzle_patch;
 
-	DBGMSG_PUB(1, "Removing trampoline at %p", addr);
+	DBGMSG_PUB(1, "Removing trampoline at *(%p), restoring return address %p", addr, state->swizzle_return);
         *addr = state->swizzle_return;
     }
 }
@@ -97,10 +101,11 @@ csprof_insert_trampoline(csprof_state_t *state, struct lox *l, mcontext_t *conte
     else {
         void **addr = l->current.location.address;
 
-	DBGMSG_PUB(1, "Inserting trampoline at %p = %p",
-		   addr, *addr);
+	DBGMSG_PUB(1, "Inserting trampoline at *(%p), intercepting return to %p", addr, *addr);
+	dump_backtraces(state, 0);
 
         state->swizzle_return = *addr;
         *addr = CSPROF_TRAMPOLINE_ADDRESS;
     }
 }
+#endif

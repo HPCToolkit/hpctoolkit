@@ -12,6 +12,33 @@
 #include "backtrace.h"
 #include "libstubs.h"
 
+static char *_rnames[] = 
+{
+  "REG_R8",
+  "REG_R9",
+  "REG_R10",
+  "REG_R11",
+  "REG_R12",
+  "REG_R13",
+  "REG_R14",
+  "REG_R15",
+  "REG_RDI",
+  "REG_RSI",
+  "REG_RBP",
+  "REG_RBX",
+  "REG_RDX",
+  "REG_RAX",
+  "REG_RCX",
+  "REG_RSP",
+  "REG_RIP",
+  "REG_EFL",
+  "REG_CSGSFS",
+  "REG_ERR",
+  "REG_TRAPNO",
+  "REG_OLDMASK",
+  "REG_CR2"
+};
+
 #if 0
 #define TRACE_INTERFACE 1
 #endif
@@ -35,19 +62,94 @@ void *(*csprof_xmalloc)(size_t);
 static void *(*csprof_xrealloc)(void *, size_t);
 static void (*csprof_xfree)(void *);
 
-/* catch SIGSEGVs */
+/* catch SIGSEGVs politely (use other segv handler) */
 static void
 csprof_sigsegv_signal_handler(int sig, siginfo_t *siginfo, void *context)
 {
     struct ucontext *ctx = (struct ucontext *)context;
     csprof_state_t *state = csprof_get_state();
+    int i;
 
     /* make sure we don't take samples during any of this */
     take_malloc_samples = 0;
 
     if(!catching_sigsegv) {
         ERRMSG("Received SIGSEGV", __FILE__, __LINE__);
+	/* !!!! MWF GIANT HACK !!!!!
+           sc_pc is unknown, so put something in that will compile
+           !!!!!!
 	printf("SIGSEGV address %lx\n",ctx->uc_mcontext.sc_pc);
+	*/
+	MSG(1,"SIGSEGV address %lx\n",ctx->uc_mcontext.gregs[REG_RIP]);
+	for (i=REG_R8;i<=REG_CR2;i++) {
+	  MSG(1,"reg[%s] = %lx",
+	      _rnames[i],
+	      ctx->uc_mcontext.gregs[i]);
+	}
+	csprof_dump_loaded_modules();
+
+        /* make sure we don't hose ourselves by doing re-entrant backtracing */
+        catching_sigsegv = 1;
+
+        /* force insertion from the root */
+        state->treenode = NULL;
+        state->bufstk = state->bufend;
+        csprof_sample_callstack(state, 0, 0, &(ctx->uc_mcontext));
+
+        /* note that this is the 'death' path */
+        {
+            csprof_cct_node_t *node = (csprof_cct_node_t *)state->treenode;
+            if(node != NULL) {
+                node->metrics[2] = 1;
+            }
+        }
+
+        csprof_write_profile_data(state);
+    }
+
+    /* let the previous handler do its job */
+    if(previous_sigsegv_handler.sa_flags & SA_SIGINFO) {
+        /* new-style handler */
+        (*previous_sigsegv_handler.sa_sigaction)(sig, siginfo, context);
+    }
+    else {
+        /* old-style handler; must check for SIG_DFL or SIG_IGN */
+        if(previous_sigsegv_handler.sa_handler == SIG_DFL) {
+            abort();
+        }
+        else if(previous_sigsegv_handler.sa_handler == SIG_IGN) {
+        }
+        else {
+            (*previous_sigsegv_handler.sa_handler)(sig);
+        }
+    }
+}
+
+/* catch SIGSEGVs */
+static void
+csprof_sigsegv_signal_handler(int sig, siginfo_t *siginfo, void *context)
+{
+    struct ucontext *ctx = (struct ucontext *)context;
+    csprof_state_t *state = csprof_get_state();
+    int i;
+
+    /* make sure we don't take samples during any of this */
+    take_malloc_samples = 0;
+
+    if(!catching_sigsegv) {
+        ERRMSG("Received SIGSEGV", __FILE__, __LINE__);
+	/* !!!! MWF GIANT HACK !!!!!
+           sc_pc is unknown, so put something in that will compile
+           !!!!!!
+	printf("SIGSEGV address %lx\n",ctx->uc_mcontext.sc_pc);
+	*/
+	MSG(1,"SIGSEGV address %lx\n",ctx->uc_mcontext.gregs[REG_RIP]);
+	for (i=REG_R8;i<=REG_CR2;i++) {
+	  MSG(1,"reg[%s] = %lx",
+	      _rnames[i],
+	      ctx->uc_mcontext.gregs[i]);
+	}
+	csprof_dump_loaded_modules();
 
         /* make sure we don't hose ourselves by doing re-entrant backtracing */
         catching_sigsegv = 1;
@@ -241,7 +343,11 @@ malloc(size_t n_bytes)
       state->bufstk = state->bufend;
       state = csprof_check_for_new_epoch(state);
 
+#ifdef NO
       csprof_record_metric_with_unwind(0, samples, 2);
+#endif
+      /*** MWF try this with 1 unwind ***/
+      csprof_record_metric_with_unwind(0, samples, 1);
     }
     else {
       state = NULL;

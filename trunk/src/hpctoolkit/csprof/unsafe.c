@@ -146,6 +146,13 @@ static inline int
 csprof_addr_is_unsafe_in_table(void *addr, void **table_start,
                                void **table_end, size_t n_entries)
 {
+    
+  /*** MWF GIANT HACK:
+   *** Assume this is ok for the moment
+   ***/
+
+    return 0;
+
     if(table_start == NULL || table_end == NULL) {
         /* can't tell */
         return 0;
@@ -169,14 +176,21 @@ csprof_addr_is_unsafe_in_table(void *addr, void **table_start,
 static inline int
 csprof_is_unsafe_library(void *addr)
 {
+    MSG(1,"calling is unsafe lib");
+  /***  MWF GIANT HACK for NOW  ***/
+    return 0;
+  /***  END HACK ***/
+#ifdef NO
     return csprof_addr_is_unsafe_in_table(addr, invalid_static_procedures_start,
                                           invalid_static_procedures_end,
                                           sizeof(invalid_static_procedures_start)/sizeof(invalid_static_procedures_start[0]));
+#endif
 }
 
 static int
 csprof_addr_is_unsafe(void *addr)
 {
+    MSG(1,"checking addr is unsafe: %lx",addr);
     return csprof_is_unsafe_library(addr);
 #if 0
         || csprof_addr_is_unsafe_in_table(addr, invalid_loaded_procedures_start,
@@ -187,6 +201,7 @@ csprof_addr_is_unsafe(void *addr)
 int
 csprof_context_is_unsafe(void *context)
 {
+    extern int s3;
     struct ucontext *ctx = (struct ucontext *)context;
     void *pc = ctx->uc_mcontext.sc_pc;
     /* with the old scheme (hardcode everything into the signal handler),
@@ -195,6 +210,11 @@ csprof_context_is_unsafe(void *context)
        the return address for everything */
     void *ra = ctx->uc_mcontext.sc_regs[26];
 
+    s3 += 1;
+    MSG(1,"csprof context is unsafe called: pc = %lx, ra = %lx",pc,ra);
+    return 0;
+
+#ifdef NO    
     return
 #if defined(CSPROF_FIXED_LIBCALLS)
        /* ugh, we were *trying* to get away from this sort of thing */
@@ -206,6 +226,7 @@ csprof_context_is_unsafe(void *context)
 #endif
 #endif
         csprof_addr_is_unsafe(pc) || csprof_is_unsafe_library(ra);
+#endif
 }
 
 void
