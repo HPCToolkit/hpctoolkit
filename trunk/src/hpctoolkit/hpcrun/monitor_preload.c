@@ -581,7 +581,7 @@ hpcrun_handle_any_dlerror()
 #else /* HAVE_MONITOR */
 
 void 
-monitor_init_library(void)
+monitor_init_library()
 {
   init_library();
   /* process initialized with interception of libc_start_main */
@@ -589,7 +589,7 @@ monitor_init_library(void)
 
 
 void 
-monitor_fini_library(void)
+monitor_fini_library()
 {
   /* process finalized with libc_start_main */
   fini_library();
@@ -597,17 +597,19 @@ monitor_fini_library(void)
 
 
 void 
-monitor_init_process(const char *name, const unsigned pid)
+monitor_init_process(const char* name, int* argc, char** argv, 
+		     const unsigned pid)
 {
   hpcrun_cmd = name;  /* command is also in /proc/pid/cmdline */
-  if (opt_debug >= 1)
+  if (opt_debug >= 1) {
     fprintf(stderr, "Init process callback from monitor received\n");
+  }
   init_process();
 }
 
 
 void
-monitor_fini_process(void)
+monitor_fini_process()
 {
   if (opt_debug >= 1) {
     fprintf(stderr, "Fini process callback from monitor received\n");
@@ -646,7 +648,7 @@ monitor_init_thread(const unsigned tid)
 
 
 void 
-monitor_fini_thread(void *data)
+monitor_fini_thread(void* data)
 {
   if (opt_thread != HPCRUN_THREADPROF_NO) {
     if (opt_debug >= 1) {

@@ -196,7 +196,7 @@ static const char* args_usage_details =
 "        all:  Create one combined profile of all threads.\n"
 "      NOTE 1: The WALLCLK event cannot be used in a multithreaded process.\n"
 "      NOTE 2: Only POSIX threads are supported.\n"
-"  -e <event>[:<period>]                                {PAPI_TOT_CYC:32767}\n"
+"  -e <event>[:<period>]                               {PAPI_TOT_CYC:999999}\n"
 "      An event to profile and its corresponding sample period.  <event>\n"
 "      may be either a PAPI or native processor event\n"
 "      NOTE 1: It is recommended that you always specify the sampling period\n"
@@ -488,7 +488,8 @@ check_and_prepare_env_for_profiling(const char* installpath)
     setenv("HPCRUN_EVENT_LIST", opt_eventlist, 1);
   }
   if (opt_out_path) {
-    setenv("HPCRUN_OUTPUT_PATH", opt_out_path, 1);
+    setenv("HPCRUN_OUTPUT", opt_out_path, 1);
+    setenv("HPCRUN_OPTIONS", "DIR", 1); // hpcex extensions
   }
   if (opt_flag) {
     setenv("HPCRUN_EVENT_FLAG", opt_flag, 1);
