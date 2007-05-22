@@ -40,6 +40,8 @@
 #include <errno.h>
 #include <dlfcn.h>
 #include <pthread.h>
+#include <sys/stat.h>
+#include <sys/types.h>
 
 /**************************** User Include Files ****************************/
 
@@ -54,7 +56,7 @@
 
 typedef uint32_t hpc_hist_bucket; /* a 4 byte histogram bucket */
 
-static const uint64_t default_period = (1 << 15) - 1; /* (2^15 - 1) */
+static const uint64_t default_period = 999999; /* not (2^15 - 1) */
 
 /**************************** Forward Declarations **************************/
 
@@ -72,6 +74,8 @@ int   opt_recursive = 0;
 hpc_threadprof_t opt_thread = HPCRUN_THREADPROF_NO;
 char* opt_eventlist = NULL;
 char  opt_outpath[PATH_MAX] = "";
+char  opt_prefix[PATH_MAX] = "";
+char  opt_file[PATH_MAX] = "";
 int   opt_flagscode = 0;
 
 /* monitored command: set when library or process is initialized  */
@@ -90,6 +94,8 @@ static volatile unsigned numFinalizedThreads = 0;
    combining thread profiles. */
 static hpcrun_profiles_desc_t* hpc_profdesc = NULL;
 
+/* PAPI-specific variables */
+static int domain = 0;
 
 /****************************************************************************
  * Library initialization and finalization
@@ -147,6 +153,32 @@ static void
 init_options()
 {
   char *env_recursive, *env_thread, *env_eventlist, *env_outpath, *env_flags;
+  int is_opt_file, is_opt_prefix, is_opt_dir;
+  is_opt_file = is_opt_prefix = is_opt_dir = 0; /* off be default */
+
+  /* Handle HPCRUN_OPTIONS */
+  char *opts = getenv("HPCRUN_OPTIONS");
+  if (opts && (strlen(opts)>0)) {
+    char* tmp = strtok(opts,", ");
+    if (tmp) {
+      do {
+        if (strcmp(tmp,"USER") == 0)
+	  domain |= PAPI_DOM_USER;
+        else if (strcmp(tmp,"KERNEL") == 0)
+          domain |= PAPI_DOM_KERNEL;
+        else if (strcmp(tmp,"OTHER") == 0)
+          domain |= PAPI_DOM_OTHER;
+        else if (strcmp(tmp,"SUPERVISOR") == 0)
+          domain |= PAPI_DOM_SUPERVISOR;
+	else if (strcmp(tmp, "FILE") == 0)
+	  is_opt_file = 1;
+	else if (strcmp(tmp, "PREFIX") == 0)
+	  is_opt_prefix = 1;
+	else if (strcmp(tmp, "DIR") == 0)
+	  is_opt_dir = 1;
+      } while ((tmp = strtok(NULL,",")) != NULL);
+    } 
+  }
   
   if (opt_debug >= 1) { 
     MSG(stderr, "  LD_PRELOAD: %s", getenv("LD_PRELOAD")); 
@@ -170,8 +202,8 @@ init_options()
   opt_thread = (env_thread ? 
 		(hpc_threadprof_t)atoi(env_thread) : HPCRUN_THREADPROF_NO);
   
-  /* Profiling event list: default PAPI_TOT_CYC:32767 (default_period) */
-  opt_eventlist = "PAPI_TOT_CYC:32767"; 
+  /* Profiling event list: default PAPI_TOT_CYC:999999 (default_period) */
+  opt_eventlist = "PAPI_TOT_CYC:999999"; 
   env_eventlist = getenv("HPCRUN_EVENT_LIST");
   if (env_eventlist) {
     opt_eventlist = env_eventlist;
@@ -180,11 +212,24 @@ init_options()
   if (opt_debug >= 1) { MSG(stderr, "  event list: %s", opt_eventlist); }
   
   /* Output path: default . */
-  strncpy(opt_outpath, ".", PATH_MAX);
-  env_outpath = getenv("HPCRUN_OUTPUT_PATH");
-  if (env_outpath) {
+  env_outpath = getenv("HPCRUN_OUTPUT");
+  if (is_opt_dir && env_outpath) {
     strncpy(opt_outpath, env_outpath, PATH_MAX);
+    if(mkdir(opt_outpath, 0755))
+      if (errno != EEXIST) {
+        DIE("fatal error: mkdir(%s) failed. %s\n", opt_outpath, strerror(errno));
+      }
   }
+  else
+    strcpy(opt_outpath, ".");
+
+  /* user-supplied prefix */
+  if (is_opt_prefix && env_outpath)
+    strncpy(opt_prefix, env_outpath, PATH_MAX);
+
+  /* user-supplied file name */
+  if (is_opt_file && env_outpath)
+    strncpy(opt_file, env_outpath, PATH_MAX);
   
   /* Profiling flags: default PAPI_PROFIL_POSIX */
   {
@@ -874,6 +919,25 @@ append_papiprofdesc_buffer(hpcpapi_profile_desc_vec_t* profdesc,
 }
 
 
+// This function checks the existence of path,
+// if it doesn't exist, 0 is returned, else, the
+// next available generation is returned
+static int get_next_gen(const char *path) {
+  struct stat buf;
+  char tmp_path[PATH_MAX];
+  strcpy(tmp_path, path);
+  int rc = stat(tmp_path, &buf);
+  if ((rc<0) && (errno==ENOENT)) return 0;
+  int inst = 0;
+  do {
+    inst++;
+    strcpy(tmp_path, path);
+    sprintf(tmp_path, "%s.%d", path, inst);
+    rc = stat(tmp_path, &buf);
+  } while (!((rc<0) && (errno==ENOENT))); 
+  return inst;
+}
+
 static void 
 init_profdesc_ofile(hpcrun_profiles_desc_t* profdesc, int sharedprofdesc)
 {
@@ -920,8 +984,20 @@ init_profdesc_ofile(hpcrun_profiles_desc_t* profdesc, int sharedprofdesc)
   hostnm[hostnmLen-1] = '\0'; /* ensure NULL termination */
 
   /* Create file name */
-  snprintf(outfilenm, outfilenmLen, "%s/%s.%s%s.%s.%d.0x%lx", 
-	   opt_outpath, cmd, event, evetc, hostnm, getpid(), hpcrun_gettid());
+  snprintf(outfilenm, outfilenmLen, "%s/%s%s.%s%s.%s.%d.0x%lx", 
+	   opt_outpath, opt_prefix, cmd, event, evetc, hostnm, getpid(), 
+	   hpcrun_gettid());
+
+  /* If user has supplied an output filename use that overrides the setting above */
+  /* Use a generation suffix if file exists */
+  if (strlen(opt_file)) {
+    int inst = get_next_gen(opt_file);
+    if (inst) 
+      snprintf(outfilenm, outfilenmLen, "%s.%d", opt_file, inst);
+    else
+     strncpy(outfilenm, opt_file, outfilenmLen);
+  }
+  fprintf(stderr, "\nhpcrun output (TID=0x%lx) will be in %s\n\n", hpcrun_gettid(), outfilenm);
   
   profdesc->ofile.fs = NULL;
   profdesc->ofile.fname = (char*)malloc(strlen(outfilenm)+1);
@@ -1058,6 +1134,18 @@ init_papi_for_process()
   }
   
   /* PAPI_set_domain(PAPI_DOM_ALL); */
+  if (domain == 0) {
+    domain = PAPI_DOM_USER;
+  }
+  if (opt_debug >= 1) {
+    MSG(stderr, "Setting PAPI domain to: %d", domain);
+  }
+  int retval = PAPI_set_domain(domain);
+  if (retval != PAPI_OK) {
+    DIE("fatal error: PAPI error (%d): %s.", retval, PAPI_strerror(retval));
+  }
+
+
 #ifndef HAVE_MONITOR  
   init_papi_for_process_SPECIALIZED();
 #endif
@@ -1545,7 +1633,7 @@ write_module_profile(FILE* fs, rtloadmod_desc_t* mod,
     numEv += numPapiEv; 
   }
   hpc_fwrite_le4(&numEv, fs);
-
+  
   /* Event data */
   /*   <event_x_name> <event_x_description> <event_x_period> */
   /*   <event_x_data> */
@@ -1602,7 +1690,6 @@ write_papievent_data(FILE *fs, hpcpapi_profile_desc_t* prof, int sprofidx)
 }
 
 
-
 static void 
 write_event_data(FILE *fs, char* ename, hpc_hist_bucket* histo, 
 		 uint64_t ncounters, unsigned int bytesPerCodeBlk)
@@ -1616,12 +1703,11 @@ write_event_data(FILE *fs, char* ename, hpc_hist_bucket* histo,
   }
   hpc_fwrite_le8(&count, fs);
   
-
   if (opt_debug >= 3) {
     MSG(stderr, "  buffer (%p) for %s has %"PRIu64" of %"PRIu64" non-zero counters (last non-zero counter: %"PRIu64")", 
 	histo, ename, count, ncounters, inz);
   }
-
+  
   /* <histogram_non_zero_bucket_x_value> 
      <histogram_non_zero_bucket_x_offset> */
   for (i = 0; i < ncounters; ++i) {

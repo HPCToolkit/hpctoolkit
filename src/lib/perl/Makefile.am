@@ -71,29 +71,14 @@ MYSCRIPTS = \
 MYSCRIPTS_IN = \
 	HPCToolkitVersionInfo.pm
 
-#MYINSTALLDIR = $(DESTDIR)$(libdir)/perl
-
 #############################################################################
 # Automake rules
 #############################################################################
 
-pkglib_SCRIPTS = $(MYSCRIPTS) $(MYSCRIPTS_IN)
+# Using SCRIPTS primary add executable bit
+dist_pkgdata_DATA = $(MYSCRIPTS) $(MYSCRIPTS_IN)
 
 #############################################################################
 # Other rules
 #############################################################################
-
-# *-hook runs after install has completed
-#install-data-local: myinstall-scripts 
-
-#myinstall-scripts:
-#	@$(mkinstalldirs) $(MYINSTALLDIR)
-#	@for x in $(MYSCRIPTS); do \
-#	  $(INSTALL_SCRIPT) $(srcdir)/$$x $(MYINSTALLDIR)/. ; \
-#	done
-#	@for x in $(MYSCRIPTS_IN); do \
-#	  $(INSTALL_SCRIPT) $$x $(MYINSTALLDIR)/. ; \
-#	done
-#
-#.PHONY : myinstall-scripts
 
