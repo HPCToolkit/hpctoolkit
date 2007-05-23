@@ -111,8 +111,9 @@ myinstall-xerces:
 myinstall-monitor:
 	if test "@OPT_INSTALL_MONITOR@" = "yes"; then \
 	  $(mkinstalldirs) $(MYMONITORDIR) ; \
-	  cp -R @MONITOR_LIBPATH@/* $(MYMONITORDIR)/ ; \
+	  cp -R @MONITOR@/lib*/* $(MYMONITORDIR)/ ; \
 	fi
+
 
 # A list of {file ! installation directory} pairs.
 #MYSCRIPTPAIRS = \

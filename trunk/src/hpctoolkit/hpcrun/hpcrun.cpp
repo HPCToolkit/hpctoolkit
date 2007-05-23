@@ -74,18 +74,19 @@ static void
 init_papi();
 
 static int
-prepare_ld_lib_path_for_papi();
-
-
-static int
 launch_and_profile(const char* installpath, char* argv[]);
 
 static int
 list_available_events(char* argv[], event_list_t listType);
 
+static int
+prepare_ld_lib_path_for_papi();
 
 static int
 prepend_to_ld_lib_path(const char* str);
+
+static int
+prepend_to_ld_preload(const char* str);
 
 //***************************************************************************
 //
@@ -126,14 +127,6 @@ init_papi()
   if (hpc_init_papi(dl_PAPI_is_initialized, dl_PAPI_library_init) != 0) {
     exit(-1); /* message already printed */
   }
-}
-
-
-static int
-prepare_ld_lib_path_for_papi()
-{
-  /* LD_LIBRARY_PATH */
-  return prepend_to_ld_lib_path(HPC_PAPI_LIBPATH);
 }
 
 
@@ -180,7 +173,7 @@ static const char* args_usage_details =
 "  -l           List events available on this architecture \n"
 "               (system, PAPI, native)\n"
 "  -L           Similar to above but with more information.\n"
-"  -P           Print the PAPI installation path.\n"
+"  -P           Print the PAPI and MONITOR installation path.\n"
 "  -V           Print version information.\n"
 "  -h           Print this help.\n"
 "\n"
@@ -392,8 +385,11 @@ args_print_error(FILE* fs, const char* msg)
 static void 
 args_print_papi(FILE* fs)
 {
-  fprintf(fs, "%s: Using PAPI installed at '"HPC_PAPI_LIBSO"'\n",
-	  args_command);
+  fprintf(fs, "%s: Using PAPI installed at '"HPC_PAPI"'\n", args_command);
+  const char* MON = HPC_MONITOR;
+  if (MON[0] == '/') {
+    fprintf(fs, "%s: Using MONITOR installed at '"HPC_MONITOR"'\n", args_command);
+  }
 }
 
 //***************************************************************************
@@ -410,12 +406,12 @@ launch_and_profile(const char* installpath, char* argv[])
   pid_t pid;
   int status;
   
-  if (check_and_prepare_env_for_profiling(installpath) != 0) {
-    return 1;
-  }
-
   if (myopt_debug >= 1) {
     fprintf(stderr, "hpcrun (pid %d) ==> %s\n", getpid(), opt_command_argv[0]);
+  }
+
+  if (check_and_prepare_env_for_profiling(installpath) != 0) {
+    return 1;
   }
   
   // Fork and exec the command to profile
@@ -439,41 +435,64 @@ launch_and_profile(const char* installpath, char* argv[])
 static int
 check_and_prepare_env_for_profiling(const char* installpath)
 {  
-#define HPCRUN_PATH "/lib/hpctoolkit/"
   char newval[PATH_MAX] = "";
   char *oldval;
   int sz;
 
   // -------------------------------------------------------
-  // Prepare environment
+  // Prepare LD_LIBRARY_PATH
   // -------------------------------------------------------
+
+  // To support multi-lib we pack LIB_LIBRARY_PATH with all versions
   
-  /* LD_LIBRARY_PATH */
+  // LD_LIBRARY_PATH for libpapi
   prepare_ld_lib_path_for_papi();
 
-  /* LD_PRELOAD */
-  snprintf(newval, PATH_MAX, "%s" HPCRUN_PATH HPCRUN_LIB, installpath);
+  // LD_LIBRARY_PATH for hpcrun (dynamically determined)
+#if defined(HAVE_OS_MULTILIB)
+  snprintf(newval, PATH_MAX, "%s/lib64/hpctoolkit", installpath);
+  prepend_to_ld_lib_path(newval);
+  snprintf(newval, PATH_MAX, "%s/lib32/hpctoolkit", installpath);
+  prepend_to_ld_lib_path(newval);
+#endif
+  snprintf(newval, PATH_MAX, "%s/lib/hpctoolkit", installpath);
+  prepend_to_ld_lib_path(newval);
+
+  // LD_LIBRARY_PATH for libmonitor (statically or dynamically determined)
 #ifdef HAVE_MONITOR
-  const char* INSTALLED_MONITOR = HPC_MONITOR_LIBSO_INSTALLED;
-  int ofst = strlen(installpath) + strlen(HPCRUN_PATH HPCRUN_LIB);
-  if (INSTALLED_MONITOR[0] == '/') {
-    snprintf(newval + ofst, PATH_MAX - ofst, " " HPC_MONITOR_LIBSO_INSTALLED);
+  const char* MON = HPC_MONITOR;
+  if (MON[0] == '/') { 
+    // statically determined
+#if defined(HAVE_OS_MULTILIB)
+    prepend_to_ld_lib_path(HPC_MONITOR "/lib32/:" HPC_MONITOR "/lib64/");
+#endif
+    prepend_to_ld_lib_path(HPC_MONITOR "/lib/");
   }
   else {
-    snprintf(newval + ofst, PATH_MAX - ofst, " %s/" HPC_MONITOR_LIBSO_INSTALLED,
-	     installpath);
-  }
+    // dynamically determined
+#if defined(HAVE_OS_MULTILIB)
+    snprintf(newval, PATH_MAX, "%s/lib64/" HPC_MONITOR, installpath);
+    prepend_to_ld_lib_path(newval);
+    snprintf(newval, PATH_MAX, "%s/lib32/" HPC_MONITOR, installpath);
+    prepend_to_ld_lib_path(newval);
 #endif
-  oldval = getenv(LD_PRELOAD);
-  if (oldval) {
-    sz = PATH_MAX - (strlen(newval) + 1); /* 'path ' */
-    snprintf(newval + strlen(newval), sz, " %s", oldval);
+    snprintf(newval, PATH_MAX, "%s/lib/" HPC_MONITOR, installpath);
+    prepend_to_ld_lib_path(newval);
   }
-  newval[PATH_MAX-1] = '\0';
-  setenv(LD_PRELOAD, newval, 1);
+#endif /* HAVE_MONITOR */
+
   
-  //fprintf(stderr, "%s\n", getenv(LD_LIBRARY_PATH));
-  //fprintf(stderr, "%s\n", getenv(LD_PRELOAD));
+  // -------------------------------------------------------
+  // Prepare LD_PRELOAD
+  // -------------------------------------------------------
+
+  prepend_to_ld_preload(HPCRUN_LIB " " HPC_LIBMONITOR_SO);
+
+  if (myopt_debug >= 1) {
+    fprintf(stderr, "hpcrun (pid %d): LD_LIBRARY_PATH=%s\n", getpid(), getenv(LD_LIBRARY_PATH));
+    fprintf(stderr, "hpcrun (pid %d): LD_PRELOAD=%s\n", getpid(), getenv(LD_PRELOAD));
+  }
+
   
   // -------------------------------------------------------
   // Prepare environment: Profiler options
@@ -736,25 +755,51 @@ check_and_prepare_env_for_eventlisting()
 }
 
 
+static int
+prepare_ld_lib_path_for_papi()
+{
+#if defined(HAVE_OS_MULTILIB)
+  prepend_to_ld_lib_path(HPC_PAPI "/lib32:" HPC_PAPI "/lib64");
+#endif
+  prepend_to_ld_lib_path(HPC_PAPI "/lib");
+}
+
+
 //***************************************************************************
 // Misc
 //***************************************************************************
 
 static int
+prepend_to_env_var(const char* env_var, const char* str, char sep);
+
+static int
 prepend_to_ld_lib_path(const char* str)
+{
+  return prepend_to_env_var(LD_LIBRARY_PATH, str, ':');
+}
+
+
+static int
+prepend_to_ld_preload(const char* str)
+{
+  return prepend_to_env_var(LD_PRELOAD, str, ' ');
+}
+
+
+static int
+prepend_to_env_var(const char* env_var, const char* str, char sep)
 {
   char newval[PATH_MAX] = "";
   char *oldval;
   int sz;
   
-  /* LD_LIBRARY_PATH */
   strncpy(newval, str, PATH_MAX);
-  oldval = getenv(LD_LIBRARY_PATH);
+  oldval = getenv(env_var);
   if (oldval) {
     sz = PATH_MAX - (strlen(newval) + 1); /* 'path:' */
-    snprintf(newval + strlen(newval), sz, ":%s", oldval);
+    snprintf(newval + strlen(newval), sz, "%c%s", sep, oldval);
   }
   newval[PATH_MAX-1] = '\0';
-  setenv(LD_LIBRARY_PATH, newval, 1);
+  setenv(env_var, newval, 1);
   return 0;
 }
