@@ -67,7 +67,7 @@ m4_include(config/hpc-cxxutils.m4)
 #    correctly
 #----------------------------------------------------------------------------
 
-AC_INIT([HPCToolkit], [TRUNK-4.9.0=815], [hpc@cs.rice.edu], [hpctoolkit])
+AC_INIT([HPCToolkit], [TRUNK-4.9.0=817], [hpc@cs.rice.edu], [hpctoolkit])
 AC_CONFIG_SRCDIR([src/include/HPCToolkitVersionInfo.h])
 AC_CONFIG_AUX_DIR([config])
 
@@ -125,9 +125,23 @@ HPC_CHECK_CXX_STDC_HEADERS()
 AC_CHECK_SIZEOF([void*])
 AC_CHECK_TYPES([ushort, uint, ulong])
 
-
 # Check pthread.h
 HPC_CHECK_COMPILE_PTHREAD_H()
+
+# Check for multilib
+# NOTE: can this be made more elegant?  This value should be used to
+# automatically add/exclude lib32/lib64 paths below.
+HAVE_OS_MULTILIB="no"
+AC_MSG_CHECKING([for multilib platform])
+case ${host} in
+  x86_64*-*-linux* | mips64*-*-linux*)
+    HAVE_OS_MULTILIB="yes"
+    ;;
+esac
+if test "${HAVE_OS_MULTILIB}" = "yes" ; then
+  AC_DEFINE([HAVE_OS_MULTILIB], [], [])
+fi
+AC_MSG_RESULT([${HAVE_OS_MULTILIB}])
 
 # Check for typedefs, structures, and compiler characteristics.
 # -none thus far-
@@ -267,8 +281,11 @@ AM_CONDITIONAL(OPT_ENABLE_DEVELOP, test "${OPT_ENABLE_DEVELOP}" = "yes")
 AC_MSG_CHECKING([for monitor])
 
 OPT_WITH_MONITOR=no
-MONITOR=
 OPT_INSTALL_MONITOR=no
+MONITOR=
+MONITOR_LIBS=
+HPC_MONITOR=
+
 
 # Use monitor by default
 case ${host} in
@@ -291,30 +308,37 @@ AC_ARG_WITH([monitor],
    fi],
   [])
 
-MONITOR_LIBNM="lib"
-case ${host} in
-  x86_64*-*-linux*) MONITOR_LIBNM="lib64" ;;
-esac
-MONITOR_IFLAGS="-I${MONITOR}/include"
-MONITOR_LIBPATH="${MONITOR}/${MONITOR_LIBNM}"
-MONITOR_LDFLAGS="-L${MONITOR_LIBPATH}"
-MONITOR_LIBSO="${MONITOR_LIBPATH}/libmonitor.so"
-MONITOR_LIBSO_INSTALLED="${MONITOR_LIBSO}"
-if test "${OPT_INSTALL_MONITOR}" = "yes" ; then 
-  MONITOR_LIBSO_INSTALLED="lib/hpctoolkit/monitor/libmonitor.so"
+
+# NOTE: push into a macro 
+if test -r "${MONITOR}/lib64/libmonitor.so"; then
+  MONITOR_LIBS="${MONITOR_LIBS} ${MONITOR}/lib64/libmonitor.so"
 fi
+if test -r "${OPT_PAPI}/lib32/libmonitor.so"; then
+  MONITOR_LIBS="${MONITOR_LIBS} ${MONITOR}/lib32/libmonitor.so"
+fi
+if test -r "${MONITOR}/lib/libmonitor.so"; then
+  MONITOR_LIBS="${MONITOR_LIBS} ${MONITOR}/lib/libmonitor.so"
+fi
+MONITOR_LIBS=`echo ${MONITOR_LIBS}`
+
+MONITOR_IFLAGS="-I${MONITOR}/include"
+MONITOR_LDFLAGS="-L${MONITOR}/lib -L${MONITOR}/lib32 -L${MONITOR}/lib64 -lmonitor"
+if test "${OPT_INSTALL_MONITOR}" = "yes" ; then
+  HPC_MONITOR="hpctoolkit/monitor"  # lib/...
+else 
+  HPC_MONITOR="${MONITOR}"
+fi
+
 
 if test "${OPT_WITH_MONITOR}" = "yes" ; then
   AC_DEFINE([HAVE_MONITOR], [], [Monitor library])
-  AC_MSG_RESULT([yes (${MONITOR_LIBSO})])
+  AC_MSG_RESULT([yes (${MONITOR_LIBS})])
 else
   AC_MSG_RESULT([no (not needed)])
 fi
 
 AC_SUBST([MONITOR])
-AC_SUBST([MONITOR_LIBPATH])
-AC_SUBST([MONITOR_LIBSO])
-AC_SUBST([MONITOR_LIBSO_INSTALLED])
+AC_SUBST([HPC_MONITOR])
 AC_SUBST([OPT_INSTALL_MONITOR])
 
 
@@ -327,10 +351,8 @@ AC_MSG_CHECKING([whether configured with PAPI])
 OPT_HAVE_PAPI=no
 OPT_PAPI=
 OPT_PAPI_IFLAGS=
-OPT_PAPI_LIBPATH=
 OPT_PAPI_LDFLAGS=
-OPT_PAPI_LIBSO=
-OPT_PAPI_LIBA=
+OPT_PAPI_LIBS=
 
 AC_ARG_WITH([papi],
   AS_HELP_STRING([--with-papi=<papi_install_path>],
@@ -365,35 +387,38 @@ if test "$OPT_HAVE_PAPI" = "yes" ; then
   else
     OPT_PAPI_IFLAGS="-I${OPT_PAPI}"
   fi
+  
+  # NOTE: push into a macro 
   if test -r "${OPT_PAPI}/lib64/libpapi.so"; then
-    OPT_PAPI_LIBPATH="${OPT_PAPI}/lib64"
-  elif test -r "${OPT_PAPI}/lib/libpapi.so"; then
-    OPT_PAPI_LIBPATH="${OPT_PAPI}/lib"
-  else
-    OPT_PAPI_LIBPATH="${OPT_PAPI}"
+    OPT_PAPI_LIBS="${OPT_PAPI_LIBS} ${OPT_PAPI}/lib64/libpapi.so"
   fi
+  if test -r "${OPT_PAPI}/lib32/libpapi.so"; then
+    OPT_PAPI_LIBS="${OPT_PAPI_LIBS} ${OPT_PAPI}/lib32/libpapi.so"
+  fi
+  if test -r "${OPT_PAPI}/lib/libpapi.so"; then
+    OPT_PAPI_LIBS="${OPT_PAPI_LIBS} ${OPT_PAPI}/lib/libpapi.so"
+  fi
+  OPT_PAPI_LIBS=`echo ${OPT_PAPI_LIBS}`
 fi
 
-if test -n "${OPT_PAPI_LIBPATH}" ; then
-  OPT_PAPI_LDFLAGS="-L${OPT_PAPI_LIBPATH} -lpapi"
-  OPT_PAPI_LIBSO="${OPT_PAPI_LIBPATH}/libpapi.so"
-  OPT_PAPI_LIBA="${OPT_PAPI_LIBPATH}/libpapi.a"
+if test -z "${OPT_PAPI_LIBS}" ; then
+  OPT_HAVE_PAPI="no"
 fi
+
+OPT_PAPI_LDFLAGS="-L${OPT_PAPI}/lib -L${OPT_PAPI}/lib32 -L${OPT_PAPI}/lib64 -lpapi"
 
 # Check for PAPI > 3.0 [skip for now]
 
 if test "${OPT_HAVE_PAPI}" = "yes"; then 
-  AC_MSG_RESULT([yes (${OPT_PAPI_LIBSO})])
+  AC_MSG_RESULT([yes (${OPT_PAPI_LIBS})])
 else
   AC_MSG_RESULT([no])
 fi
 
 AM_CONDITIONAL(OPT_HAVE_PAPI, test "${OPT_HAVE_PAPI}" = "yes")
+AC_SUBST(OPT_PAPI)
 AC_SUBST(OPT_PAPI_IFLAGS)
-AC_SUBST(OPT_PAPI_LIBPATH)
 AC_SUBST(OPT_PAPI_LDFLAGS)
-AC_SUBST(OPT_PAPI_LIBSO)
-AC_SUBST(OPT_PAPI_LIBA)
 
 
 #-------------------------------------------------

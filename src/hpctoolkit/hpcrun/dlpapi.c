@@ -55,7 +55,7 @@ int
 dlopen_papi()
 {
   /* Open PAPI lib */
-  libpapi = dlopen(HPC_PAPI_LIBSO, RTLD_LAZY);
+  libpapi = dlopen(HPC_LIBPAPI_SO, RTLD_LAZY);
   handle_any_dlerror();
   
   /* Initialize entry points */
