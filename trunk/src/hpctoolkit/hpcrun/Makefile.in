@@ -15,7 +15,7 @@
 @SET_MAKE@
 
 # -*-Mode: makefile;-*-
-# $Id: Makefile.am 767 2007-02-24 02:00:27Z eraxxon $
+# $Id: Makefile.am 817 2007-05-23 17:43:57Z eraxxon $
 
 #############################################################################
 #
@@ -126,8 +126,8 @@ libhpcrun_la_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
 	$(CFLAGS) $(libhpcrun_la_LDFLAGS) $(LDFLAGS) -o $@
 binPROGRAMS_INSTALL = $(INSTALL_PROGRAM)
 PROGRAMS = $(bin_PROGRAMS)
-am__objects_2 = hpcrun-hpcrun.$(OBJEXT) hpcrun-hpcpapi.$(OBJEXT) \
-	hpcrun-dlpapi.$(OBJEXT)
+am__objects_2 = hpcrun-hpcrun.$(OBJEXT) hpcrun-Args.$(OBJEXT) \
+	hpcrun-hpcpapi.$(OBJEXT) hpcrun-dlpapi.$(OBJEXT)
 am_hpcrun_OBJECTS = $(am__objects_2)
 hpcrun_OBJECTS = $(am_hpcrun_OBJECTS)
 am__DEPENDENCIES_2 = $(HPC_LIBSUPPORT)
@@ -354,6 +354,7 @@ HPC_LIBSUPPORT = $(top_builddir)/src/lib/support/libHPCsupport.la
 #############################################################################
 MYSOURCES_HPCRUN = \
 	hpcrun.h hpcrun.cpp \
+	Args.hpp Args.cpp \
 	hpcpapi.h hpcpapi.c \
 	dlpapi.h dlpapi.c 
 
@@ -556,6 +557,7 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/hpcrun-Args.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/hpcrun-dlpapi.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/hpcrun-hpcpapi.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/hpcrun-hpcrun.Po@am__quote@
@@ -721,6 +723,20 @@ hpcrun-hpcrun.obj: hpcrun.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='hpcrun.cpp' object='hpcrun-hpcrun.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(hpcrun_CXXFLAGS) $(CXXFLAGS) -c -o hpcrun-hpcrun.obj `if test -f 'hpcrun.cpp'; then $(CYGPATH_W) 'hpcrun.cpp'; else $(CYGPATH_W) '$(srcdir)/hpcrun.cpp'; fi`
+
+hpcrun-Args.o: Args.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(hpcrun_CXXFLAGS) $(CXXFLAGS) -MT hpcrun-Args.o -MD -MP -MF $(DEPDIR)/hpcrun-Args.Tpo -c -o hpcrun-Args.o `test -f 'Args.cpp' || echo '$(srcdir)/'`Args.cpp
+@am__fastdepCXX_TRUE@	mv -f $(DEPDIR)/hpcrun-Args.Tpo $(DEPDIR)/hpcrun-Args.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='Args.cpp' object='hpcrun-Args.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(hpcrun_CXXFLAGS) $(CXXFLAGS) -c -o hpcrun-Args.o `test -f 'Args.cpp' || echo '$(srcdir)/'`Args.cpp
+
+hpcrun-Args.obj: Args.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(hpcrun_CXXFLAGS) $(CXXFLAGS) -MT hpcrun-Args.obj -MD -MP -MF $(DEPDIR)/hpcrun-Args.Tpo -c -o hpcrun-Args.obj `if test -f 'Args.cpp'; then $(CYGPATH_W) 'Args.cpp'; else $(CYGPATH_W) '$(srcdir)/Args.cpp'; fi`
+@am__fastdepCXX_TRUE@	mv -f $(DEPDIR)/hpcrun-Args.Tpo $(DEPDIR)/hpcrun-Args.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='Args.cpp' object='hpcrun-Args.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(hpcrun_CXXFLAGS) $(CXXFLAGS) -c -o hpcrun-Args.obj `if test -f 'Args.cpp'; then $(CYGPATH_W) 'Args.cpp'; else $(CYGPATH_W) '$(srcdir)/Args.cpp'; fi`
 
 libhpcrun_static_o-monitor_static.o: monitor_static.cpp
 @am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_static_o_CXXFLAGS) $(CXXFLAGS) -MT libhpcrun_static_o-monitor_static.o -MD -MP -MF $(DEPDIR)/libhpcrun_static_o-monitor_static.Tpo -c -o libhpcrun_static_o-monitor_static.o `test -f 'monitor_static.cpp' || echo '$(srcdir)/'`monitor_static.cpp

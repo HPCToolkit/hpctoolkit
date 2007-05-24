@@ -63,6 +63,7 @@ include $(top_srcdir)/src/Makeinclude.config
 
 MYSOURCES_HPCRUN = \
 	hpcrun.h hpcrun.cpp \
+	Args.hpp Args.cpp \
 	hpcpapi.h hpcpapi.c \
 	dlpapi.h dlpapi.c 
 

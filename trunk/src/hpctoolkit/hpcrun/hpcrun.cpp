@@ -23,61 +23,44 @@
 //************************* System Include Files ****************************
 
 #include <stdlib.h>
-#include <unistd.h> /* for getopt(); cf. stdlib.h */
 #include <stdio.h>
 #include <string.h>
 #include <errno.h>
-#include <inttypes.h>
 
 #include <sys/types.h> /* for wait() */
 #include <sys/wait.h>  /* for wait() */
 
+#include <string>
+using std::string;
+
 //*************************** User Include Files ****************************
 
+#include "Args.hpp"
 #include "hpcpapi.h" /* <papi.h>, etc. */
 #include "dlpapi.h"
 #include "hpcrun.h"
+
+#include <include/general.h>
+
+#include <lib/support/diagnostics.h>
 #include <lib/support/findinstall.h>
-
-//*************************** Forward Declarations **************************
-
-enum event_list_t {
-  LIST_NONE  = 0, /* none */
-  LIST_SHORT,     /* 'short' */
-  LIST_LONG       /* 'long' */
-};
-
-#define eventlistBufSZ PATH_MAX
-
-/* Options that will be passed to profiling library */
-static const char* opt_recursive = "1";
-static const char* opt_thread = "0";
-static char        opt_eventlist[eventlistBufSZ] = "";
-static const char* opt_out_path = NULL;
-static const char* opt_flag = NULL;
-static const char* opt_debug = NULL;
-static char**      opt_command_argv = NULL; /* command to profile */
-
-/* Options that will be consumed here */
-static event_list_t myopt_list_events = LIST_NONE;
-static int myopt_debug = 0;
-
-static void
-args_parse(int argc, char* argv[]);
+#include <lib/support/StrUtil.hpp>
 
 //*************************** Forward Declarations **************************
 
 #define LD_LIBRARY_PATH "LD_LIBRARY_PATH"
 #define LD_PRELOAD      "LD_PRELOAD"
 
-static void
-init_papi();
+//*************************** Forward Declarations **************************
 
 static int
-launch_and_profile(const char* installpath, char* argv[]);
+list_available_events(char* argv[], Args::EventList_t listType);
+
+static void 
+print_external_lib_paths();
 
 static int
-list_available_events(char* argv[], event_list_t listType);
+launch_with_profiling(const char* installpath, const Args& args);
 
 static int
 prepare_ld_lib_path_for_papi();
@@ -92,336 +75,91 @@ prepend_to_ld_preload(const char* str);
 //
 //***************************************************************************
 
+static int
+real_main(int argc, char* argv[]);
+
+
 int
 main(int argc, char* argv[])
 {
-  int retval; 
-  char* installpath;
+  try {
+    return real_main(argc, argv);
+  }
+  catch (const Diagnostics::Exception& x) {
+    DIAG_EMsg(x.message());
+    exit(1);
+  } 
+  catch (const std::bad_alloc& x) {
+    DIAG_EMsg("[std::bad_alloc] " << x.what());
+    exit(1);
+  } 
+  catch (const std::exception& x) {
+    DIAG_EMsg("[std::exception] " << x.what());
+    exit(1);
+  } 
+  catch (...) {
+    DIAG_EMsg("Unknown exception encountered!");
+    exit(2);
+  }
+}
+
+
+static int
+real_main(int argc, char* argv[])
+{
+  int ret = 0;
+  Args args(argc, argv);
   
-  args_parse(argc, argv);
-  
-  // Check for special options that short circuit profiling
-  if (myopt_list_events) {
-    // List events
-    return list_available_events(argv, myopt_list_events);
+  if (args.listEvents != Args::LIST_NONE) {
+    ret = list_available_events(argv, args.listEvents);
+  }
+  else if (args.printPaths) {
+    print_external_lib_paths();
   }
   else {
     // Launch and profile
-    if ((installpath = findinstall(argv[0], "hpcrun")) == NULL) {
-      fprintf(stderr, "%s: Cannot locate installation path\n", argv[0]);
-    }
-    if ((retval = launch_and_profile(installpath, opt_command_argv)) != 0) {
-      return retval; // error already printed
-    }
-  }
-  
-  // never reached except on error: No need to free memory in opt_command_argv
-  return 0;
-}
-
-
-static void
-init_papi() 
-{
-  /* Initialize PAPI library */
-  if (hpc_init_papi(dl_PAPI_is_initialized, dl_PAPI_library_init) != 0) {
-    exit(-1); /* message already printed */
-  }
-}
-
-
-//***************************************************************************
-// Parse options
-//***************************************************************************
-
-static const char* args_command;
-
-static const char* args_version_info =
-#include <include/HPCToolkitVersionInfo.h>
-
-static const char* args_usage_summary1 =
-"[profiling-options] -- <command> [arguments]\n";
-
-static const char* args_usage_summary2 =
-"[-l | -L] [-P] [-V] [-h]\n";
-
-static const char* args_usage_details =
-"hpcrun profiles the execution of an arbitrary command using statistical\n"
-"sampling. During execution of <command>, the specified events will be\n"
-"monitored.  Events may be specified using either PAPI platform independent\n"
-"names or the native event names for the processor.  hpcrun can sample.\n"
-"multiple events during a single execution.\n"
-"\n"
-"For each event 'e' and its period 'p', for every 'p' instances of 'e' a\n"
-"counter associated with the instruction at the current program counter\n"
-"location will be incremented.  When <command> terminates normally, a\n"
-"profile -- a histogram of counts for instructions in each load module --\n"
-"will be written to a file with the name\n"
-"<command>.<event1>.<hostname>.<pid>.<tid>. If multiple events are\n"
-"specified, data for all events will be recorded in this single file even\n"
-"though the file naming convention only uses <event1> in the name of the\n"
-"output file.\n"
-"\n"
-"The special option '--' can be used to stop hpcrun option parsing.  This is\n"
-"especially useful when <command> takes arguments of its own.\n"
-"\n"
-"hpcrun allows the user to abort a process *and* write the partial profiling\n"
-"data to disk by sending the Interrupt signal (INT or Ctrl-C).  This can be\n"
-"extremely useful on long-running or misbehaving applications.\n"
-"\n"
-"General Options:\n"
-"  -l           List events available on this architecture \n"
-"               (system, PAPI, native)\n"
-"  -L           Similar to above but with more information.\n"
-"  -P           Print the PAPI and MONITOR installation path.\n"
-"  -V           Print version information.\n"
-"  -h           Print this help.\n"
-"\n"
-"Profiling Options: Defaults are shown in curly brackets {}.\n"
-"  -r  By default all processes spawned by <command> will be profiled, each\n"
-"      receiving its own output file. Use this option to turn off recursive\n"
-"      profiling; only <command> will be profiled.\n"
-
-"  -t [<mode>]                                                        {each}\n"
-"      Profile threads. (Without this flag, profiling of a multithreaded\n"
-"      process will silently die.) There are two modes:\n"
-"        each: Create separate profiles for each thread.\n"
-"        all:  Create one combined profile of all threads.\n"
-"      NOTE 1: The WALLCLK event cannot be used in a multithreaded process.\n"
-"      NOTE 2: Only POSIX threads are supported.\n"
-"  -e <event>[:<period>]                               {PAPI_TOT_CYC:999999}\n"
-"      An event to profile and its corresponding sample period.  <event>\n"
-"      may be either a PAPI or native processor event\n"
-"      NOTE 1: It is recommended that you always specify the sampling period\n"
-"              for each profiling event.\n"
-"      NOTE 2: You may use the special event WALLCLK to profile with wall\n"
-"              clock time.  It may be used only *once* and cannot be used\n"
-"              with another event.  It is an error to specify a period.\n"
-"      NOTE 3: Multiple events may be selected for profiling during an\n" 
-"              execution by using  multiple '-e' arguments. \n"
-"      NOTE 4: The maximum number of events that can be monitored during a\n"
-"              single execution depends on the processor. Not all combinations\n"
-"              of events may be monitored in the same execution; allowable\n"
-"              combinations depend on the processor. check your \n"
-"              processor documentation for the details of both issues.\n"
-"  -o <outpath>                                                          {.}\n"
-"      Directory for output data\n"
-"  -f <flag>                                             {PAPI_POSIX_PROFIL}\n"
-"      Profile style flag\n"
-"\n"
-"NOTES:\n"
-"* Because hpcrun uses LD_PRELOAD to initiate profiling, it cannot be used\n"
-"  to profile setuid commands.\n"
-"* For the same reason, it cannot profile statically linked applications.\n"
-"* Bug: For non-recursive profiling, LD_PRELOAD is currently unsetenv'd.\n"
-"  Child processes that otherwise depend LD_PRELOAD will likely die.\n"
-"\n";
-
-static void 
-args_print_version(FILE* fs);
-
-static void 
-args_print_usage(FILE* fs);
-
-static void 
-args_print_error(FILE* fs, const char* msg);
-
-static void 
-args_print_papi(FILE* fs);
-
-
-static void
-args_parse(int argc, char* argv[])
-{
-  int cmdExists = 0;
-  int c;
-
-  args_command = argv[0];
-  
-  // -------------------------------------------------------
-  // Parse the command line
-  // -------------------------------------------------------
-  // Note: option list follows usage message
-
-  // extern char *optarg; -- provided by unistd.h
-  // extern int optind; 
-
-  // NOTE: This getopt string uses some GNU extensions (::).  
-  // FIXME: CONVERT to use HPCToolkit's option parser.
-  while ((c = getopt(argc, (char**)argv, "hVd:Prt::e:o:f:lL")) != EOF) {
-    switch (c) {
-      
-    // Special options that are immediately evaluated
-    case 'h': {
-      args_print_usage(stderr);
-      exit(0); 
-      break; 
-    }
-    case 'V': { 
-      args_print_version(stderr);
-      exit(0);
-      break; 
-    }
-    case 'd': { // debug
-      opt_debug = optarg;
-      myopt_debug = atoi(optarg);
-      break; 
-    }
-    case 'P': { 
-      args_print_papi(stderr);
-      exit(0);
-      break; 
-    }
+    char* installpath = findinstall(argv[0], "hpcrun");
+    DIAG_Assert(installpath, "Cannot locate installation path for 'hpcrun'");
     
-    // Other options
-    case 'r': {
-      opt_recursive = "0";
-      break; 
-    }
-    case 't': {
-      if (optarg) {
-	if (strcmp(optarg, "each") == 0) {
-	  opt_thread = HPCRUN_THREADPROF_EACH_STR;
-	}
-	else if (strcmp(optarg, "all") == 0) {
-	  opt_thread = HPCRUN_THREADPROF_ALL_STR;
-	}
-	else {
-	  args_print_error(stderr, "Invalid option to -t!");
-	  exit(1);
-	}
-      }
-      else {
-	opt_thread = HPCRUN_THREADPROF_EACH_STR;
-      }
-      break; 
-    }
-    case 'e': {
-      if ( (strlen(opt_eventlist) + strlen(optarg) + 1) >= eventlistBufSZ-1) {
-	args_print_error(stderr, "Internal error: event list too long!");
-	exit(1);
-      }
-      strcat(opt_eventlist, optarg);
-      strcat(opt_eventlist, ";");
-      break; 
-    }
-    case 'o': {
-      opt_out_path = optarg;
-      break; 
-    }
-    case 'f': {
-      opt_flag = optarg;
-      break; 
-    }
-    case 'l': {
-      myopt_list_events = LIST_SHORT;
-      break; 
-    }
-    case 'L': { 
-      myopt_list_events = LIST_LONG;
-      break; 
-    }
-    
-    // Error
-    case ':':
-    case '?': {
-      args_print_error(stderr, "Error parsing arguments.");
-      exit(1);
-      break; 
-    }
-    }
+    ret = launch_with_profiling(installpath, args);
+    // only returns on error
   }
   
-  // -------------------------------------------------------
-  // Sift through results, checking for semantic errors
-  // -------------------------------------------------------
-  
-  // Find command if it exists
-  cmdExists = (argv[optind] != NULL);
-  
-  // If command does not exist, one of the list options must be present
-  if (!cmdExists && !myopt_list_events) {
-    args_print_error(stderr, "Missing <command> to profile.");
-    exit(1);
-  }
-  
-  if (cmdExists) {
-    int i;
-    int sz = argc - optind + 1;
-    opt_command_argv = (char**)malloc(sz * sizeof(char *));
-    for (i = optind; i < argc; ++i) {
-      opt_command_argv[i - optind] = strdup(argv[i]);
-    }
-    opt_command_argv[i - optind] = NULL;
-  }
+  return ret;
 }
 
-
-static void 
-args_print_version(FILE* fs)
-{
-  fprintf(fs, "%s: %s\n", args_command, args_version_info);
-}
-
-
-static void 
-args_print_usage(FILE* fs)
-{
-  fprintf(fs, "Usage:\n  %s %s  %s %s\n%s", 
-	  args_command, args_usage_summary1,
-	  args_command, args_usage_summary2,
-	  args_usage_details);
-} 
-
-
-static void 
-args_print_error(FILE* fs, const char* msg)
-{
-  fprintf(fs, "%s: %s\n", args_command, msg);
-  fprintf(fs, "Try `%s -h' for more information.\n", args_command);
-}
-
-
-static void 
-args_print_papi(FILE* fs)
-{
-  fprintf(fs, "%s: Using PAPI installed at '"HPC_PAPI"'\n", args_command);
-  const char* MON = HPC_MONITOR;
-  if (MON[0] == '/') {
-    fprintf(fs, "%s: Using MONITOR installed at '"HPC_MONITOR"'\n", args_command);
-  }
-}
 
 //***************************************************************************
 // Profile
 //***************************************************************************
 
 static int
-check_and_prepare_env_for_profiling(const char* installpath);
+prepare_env_for_profiling(const char* installpath, const Args& args);
 
 
 static int
-launch_and_profile(const char* installpath, char* argv[])
+launch_with_profiling(const char* installpath, const Args& args)
 {
   pid_t pid;
   int status;
-  
-  if (myopt_debug >= 1) {
-    fprintf(stderr, "hpcrun (pid %d) ==> %s\n", getpid(), opt_command_argv[0]);
-  }
 
-  if (check_and_prepare_env_for_profiling(installpath) != 0) {
-    return 1;
+  // Gather <command> into a NULL-terminated argv list
+  char** profArgV = new char*[args.profArgV.size() + 1];
+  for (uint i; i < args.profArgV.size(); ++i) {
+    profArgV[i] = (char*)args.profArgV[i].c_str();
   }
+  profArgV[args.profArgV.size()] = NULL;
+  
+  DIAG_Msg(1, "hpcrun (pid " << getpid() << ") ==> " << profArgV[0]);
+  
+  prepare_env_for_profiling(installpath, args);
   
   // Fork and exec the command to profile
   if ((pid = fork()) == 0) {
     // Child process
-    const char* cmd = opt_command_argv[0];
-    if (execvp(cmd, opt_command_argv) == -1) {
-      fprintf(stderr, "%s: Error exec'ing '%s': %s\n", 
-	      args_command, cmd, strerror(errno));
-      return 1;
+    const char* cmd = profArgV[0];
+    if (execvp(cmd, profArgV) == -1) {
+      DIAG_Throw("Error exec'ing '" << cmd << "': " << strerror(errno));
     }
     // never reached
   }
@@ -433,10 +171,9 @@ launch_and_profile(const char* installpath, char* argv[])
 
 
 static int
-check_and_prepare_env_for_profiling(const char* installpath)
+prepare_env_for_profiling(const char* installpath, const Args& args)
 {  
-  char newval[PATH_MAX] = "";
-  char *oldval;
+  char buf[PATH_MAX] = "";
   int sz;
 
   // -------------------------------------------------------
@@ -450,13 +187,13 @@ check_and_prepare_env_for_profiling(const char* installpath)
 
   // LD_LIBRARY_PATH for hpcrun (dynamically determined)
 #if defined(HAVE_OS_MULTILIB)
-  snprintf(newval, PATH_MAX, "%s/lib64/hpctoolkit", installpath);
-  prepend_to_ld_lib_path(newval);
-  snprintf(newval, PATH_MAX, "%s/lib32/hpctoolkit", installpath);
-  prepend_to_ld_lib_path(newval);
+  snprintf(buf, PATH_MAX, "%s/lib64/hpctoolkit", installpath);
+  prepend_to_ld_lib_path(buf);
+  snprintf(buf, PATH_MAX, "%s/lib32/hpctoolkit", installpath);
+  prepend_to_ld_lib_path(buf);
 #endif
-  snprintf(newval, PATH_MAX, "%s/lib/hpctoolkit", installpath);
-  prepend_to_ld_lib_path(newval);
+  snprintf(buf, PATH_MAX, "%s/lib/hpctoolkit", installpath);
+  prepend_to_ld_lib_path(buf);
 
   // LD_LIBRARY_PATH for libmonitor (statically or dynamically determined)
 #ifdef HAVE_MONITOR
@@ -471,13 +208,13 @@ check_and_prepare_env_for_profiling(const char* installpath)
   else {
     // dynamically determined
 #if defined(HAVE_OS_MULTILIB)
-    snprintf(newval, PATH_MAX, "%s/lib64/" HPC_MONITOR, installpath);
-    prepend_to_ld_lib_path(newval);
-    snprintf(newval, PATH_MAX, "%s/lib32/" HPC_MONITOR, installpath);
-    prepend_to_ld_lib_path(newval);
+    snprintf(buf, PATH_MAX, "%s/lib64/" HPC_MONITOR, installpath);
+    prepend_to_ld_lib_path(buf);
+    snprintf(buf, PATH_MAX, "%s/lib32/" HPC_MONITOR, installpath);
+    prepend_to_ld_lib_path(buf);
 #endif
-    snprintf(newval, PATH_MAX, "%s/lib/" HPC_MONITOR, installpath);
-    prepend_to_ld_lib_path(newval);
+    snprintf(buf, PATH_MAX, "%s/lib/" HPC_MONITOR, installpath);
+    prepend_to_ld_lib_path(buf);
   }
 #endif /* HAVE_MONITOR */
 
@@ -487,34 +224,39 @@ check_and_prepare_env_for_profiling(const char* installpath)
   // -------------------------------------------------------
 
   prepend_to_ld_preload(HPCRUN_LIB " " HPC_LIBMONITOR_SO);
-
-  if (myopt_debug >= 1) {
-    fprintf(stderr, "hpcrun (pid %d): LD_LIBRARY_PATH=%s\n", getpid(), getenv(LD_LIBRARY_PATH));
-    fprintf(stderr, "hpcrun (pid %d): LD_PRELOAD=%s\n", getpid(), getenv(LD_PRELOAD));
-  }
+  
+  DIAG_Msg(1, "hpcrun (pid " << getpid() << "): LD_LIBRARY_PATH=" << getenv(LD_LIBRARY_PATH));
+  DIAG_Msg(1, "hpcrun (pid " << getpid() << "): LD_PRELOAD=" << getenv(LD_PRELOAD));
 
   
   // -------------------------------------------------------
   // Prepare environment: Profiler options
   // -------------------------------------------------------
-  if (opt_recursive) {
-    setenv("HPCRUN_RECURSIVE", opt_recursive, 1);
+  if (!args.profRecursive.empty()) {
+    const char* val = (args.profRecursive == "yes") ? "1" : "0";
+    setenv("HPCRUN_RECURSIVE", val, 1);
   }
-  if (opt_thread) {
-    setenv("HPCRUN_THREAD", opt_thread, 1);
+  if (!args.profThread.empty()) {
+    const char* val = HPCRUN_THREADPROF_EACH_STR;
+    if (args.profThread == "all") {
+      val = HPCRUN_THREADPROF_ALL_STR;
+    }
+    setenv("HPCRUN_THREAD", val, 1);
   }
-  if (opt_eventlist[0] != '\0') {
-    setenv("HPCRUN_EVENT_LIST", opt_eventlist, 1);
+  if (!args.profEvents.empty()) {
+    setenv("HPCRUN_EVENT_LIST", args.profEvents.c_str(), 1);
   }
-  if (opt_out_path) {
-    setenv("HPCRUN_OUTPUT", opt_out_path, 1);
+  if (!args.profOutput.empty()) {
+    setenv("HPCRUN_OUTPUT", args.profOutput.c_str(), 1);
     setenv("HPCRUN_OPTIONS", "DIR", 1); // hpcex extensions
   }
-  if (opt_flag) {
-    setenv("HPCRUN_EVENT_FLAG", opt_flag, 1);
+  if (!args.profPAPIFlag.empty()) {
+    setenv("HPCRUN_EVENT_FLAG", args.profPAPIFlag.c_str(), 1);
   }
-  if (opt_debug) {
-    setenv("HPCRUN_DEBUG", opt_debug, 1);
+  DIAG_If(1) {
+    string val = StrUtil::toStr(Diagnostics_GetDiagnosticFilterLevel());
+    setenv("HPCRUN_DEBUG",  val.c_str(), 1);
+    setenv("MONITOR_DEBUG", val.c_str(), 1);
   }
   
   return 0;
@@ -527,17 +269,20 @@ check_and_prepare_env_for_profiling(const char* installpath)
 //***************************************************************************
 
 static void
-list_available_events_helper(event_list_t listType);
+list_available_events_helper(Args::EventList_t listType);
 
 static int
 check_and_prepare_env_for_eventlisting();
+
+static void
+init_papi(); 
 
 
 /*
  *  List available events.
  */
 static int
-list_available_events(char* argv[], event_list_t listType)
+list_available_events(char* argv[], Args::EventList_t listType)
 {
   static const char* HPCRUN_TAG = "HPCRUN_SUPER_SECRET_TAG";
   char* envtag = NULL;
@@ -554,19 +299,15 @@ list_available_events(char* argv[], event_list_t listType)
     status |= check_and_prepare_env_for_eventlisting();
     status |= setenv(HPCRUN_TAG, "1", 1);
     if (status != 0) { 
-      fprintf(stderr, "%s: Error preparing environment\n", args_command);
-      return status; 
+      DIAG_Throw("Error preparing environment.");
     }
-    //fprintf(stderr, "%s\n", getenv(LD_LIBRARY_PATH));
     
     // Fork and exec
     if ((pid = fork()) == 0) {
       // Child process
       const char* cmd = argv[0];
       if (execvp(cmd, argv) == -1) {
-	fprintf(stderr, "%s: Error exec'ing myself!: %s\n", 
-		args_command, strerror(errno));
-	return 1;
+	DIAG_Throw("Error exec'ing myself: " << strerror(errno));
       }
       // never reached
     }
@@ -590,7 +331,7 @@ list_available_events(char* argv[], event_list_t listType)
  *  PAPI's src/ctests/avail.c)
  */
 static void 
-list_available_events_helper(event_list_t listType)
+list_available_events_helper(Args::EventList_t listType)
 {
   int i, count;
   int isIntel, isP4;
@@ -612,7 +353,7 @@ list_available_events_helper(event_list_t listType)
   static const char* FmtNtvGrp    = "* %-29s %s\n";
   static const char* FmtNtvGrpMbr = "  %-29s %s\n";
   
-  if (listType == LIST_NONE) {
+  if (listType == Args::LIST_NONE) {
     return;
   }
   
@@ -625,8 +366,7 @@ list_available_events_helper(event_list_t listType)
   // Hardware information
   // -------------------------------------------------------
   if ((hwinfo = dl_PAPI_get_hardware_info()) == NULL) {
-    fprintf(stderr,"papirun: failed to set debug level. Aborting.\n");
-    exit(-1);
+    DIAG_Throw("PAPI_get_hardware_info failed");
   }
   printf("*** Hardware information ***\n");
   printf(separator_minor);
@@ -657,10 +397,10 @@ list_available_events_helper(event_list_t listType)
   // -------------------------------------------------------
   printf("*** Available PAPI preset events ***\n");
   printf(separator_minor);
-  if (listType == LIST_SHORT) {
+  if (listType == Args::LIST_SHORT) {
     printf(HdrPAPIShort);
   }
-  else if (listType == LIST_LONG) {
+  else if (listType == Args::LIST_LONG) {
     printf(HdrPAPILong);
   }
   printf(separator_minor);
@@ -668,10 +408,10 @@ list_available_events_helper(event_list_t listType)
   count = 0;
   do {
     if (dl_PAPI_get_event_info(i, &info) == PAPI_OK) {
-      if (listType == LIST_SHORT) {
+      if (listType == Args::LIST_SHORT) {
 	printf(FmtPAPIShort, info.symbol, info.long_descr);
       } 
-      else if (listType == LIST_LONG) {
+      else if (listType == Args::LIST_LONG) {
 	/* NOTE: Although clumsy, this test has official sanction. */
 	int profilable = 1;
 	if ((info.count > 1) && strcmp(info.derived, "DERIVED_CMPD") != 0) {
@@ -701,10 +441,10 @@ list_available_events_helper(event_list_t listType)
   printf("*** Available native events ***\n");
   if (isP4) { printf("Note: Pentium 4 listing is by event groups; group names (*) are not events.\n"); }
   printf(separator_minor);
-  if (listType == LIST_SHORT) { 
+  if (listType == Args::LIST_SHORT) { 
     printf(HdrNtvShort); 
   }
-  else if (listType == LIST_LONG) { 
+  else if (listType == Args::LIST_LONG) { 
     printf(HdrNtvLong); 
   }
   printf(separator_minor);
@@ -731,7 +471,7 @@ list_available_events_helper(event_list_t listType)
   else {
     do {
       if (dl_PAPI_get_event_info(i, &info) == PAPI_OK) {
-	if (listType == LIST_SHORT || listType == LIST_LONG) {
+	if (listType == Args::LIST_SHORT || listType == Args::LIST_LONG) {
 	  const char* desc = info.long_descr;
 	  if (strncmp(info.symbol, desc, strlen(info.symbol)) == 0) {
 	    desc += strlen(info.symbol);
@@ -755,6 +495,20 @@ check_and_prepare_env_for_eventlisting()
 }
 
 
+static void
+init_papi() 
+{
+  /* Initialize PAPI library */
+  if (hpc_init_papi(dl_PAPI_is_initialized, dl_PAPI_library_init) != 0) {
+    exit(-1); /* message already printed */
+  }
+}
+
+
+//***************************************************************************
+// Misc
+//***************************************************************************
+
 static int
 prepare_ld_lib_path_for_papi()
 {
@@ -765,9 +519,16 @@ prepare_ld_lib_path_for_papi()
 }
 
 
-//***************************************************************************
-// Misc
-//***************************************************************************
+static void 
+print_external_lib_paths()
+{
+  DIAG_Msg(0, "Using PAPI installed at '"HPC_PAPI"'");
+  const char* MON = HPC_MONITOR;
+  if (MON[0] == '/') {
+    DIAG_Msg(0, " Using MONITOR installed at '"HPC_MONITOR"'\n");
+  }
+}
+
 
 static int
 prepend_to_env_var(const char* env_var, const char* str, char sep);
@@ -803,3 +564,4 @@ prepend_to_env_var(const char* env_var, const char* str, char sep)
   setenv(env_var, newval, 1);
   return 0;
 }
+

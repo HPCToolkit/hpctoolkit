@@ -71,7 +71,7 @@ static void hpcrun_sighandler(int sig);
 /* hpcrun options: set when the library is initialized */
 int   opt_debug = 0;
 int   opt_recursive = 0;
-hpc_threadprof_t opt_thread = HPCRUN_THREADPROF_NO;
+hpc_threadprof_t opt_thread = HPCRUN_THREADPROF_EACH;
 char* opt_eventlist = NULL;
 char  opt_outpath[PATH_MAX] = "";
 char  opt_prefix[PATH_MAX] = "";
@@ -199,8 +199,9 @@ init_options()
   
   /* Threaded profiling: default is off */
   env_thread = getenv("HPCRUN_THREAD");
-  opt_thread = (env_thread ? 
-		(hpc_threadprof_t)atoi(env_thread) : HPCRUN_THREADPROF_NO);
+  if (env_thread) {
+    opt_thread = (hpc_threadprof_t)atoi(env_thread);
+  }
   
   /* Profiling event list: default PAPI_TOT_CYC:999999 (default_period) */
   opt_eventlist = "PAPI_TOT_CYC:999999"; 

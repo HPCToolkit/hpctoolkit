@@ -622,10 +622,6 @@ void
 monitor_init_thread_support(void)
 {
   int rval;
-  if (opt_thread == HPCRUN_THREADPROF_NO) {
-    /* This is a threaded application, so we might as well handle it! */
-    opt_thread = HPCRUN_THREADPROF_EACH;
-  }
   if ((rval = PAPI_thread_init(pthread_self)) != PAPI_OK) {
     DIE("fatal error: PAPI error (%d): %s.", rval, PAPI_strerror(rval));
   }
@@ -635,27 +631,20 @@ monitor_init_thread_support(void)
 void* 
 monitor_init_thread(const unsigned tid)
 {
-  if (opt_thread != HPCRUN_THREADPROF_NO) {
-    if (opt_debug >= 1) {
-      fprintf(stderr, "init_thread(TID=0x%lx) callback from monitor received\n", tid);
-    }
-    return((void *)init_thread(1));
+  if (opt_debug >= 1) {
+    fprintf(stderr, "init_thread(TID=0x%lx) callback from monitor received\n", tid);
   }
-  else {
-    return NULL; /* no per-thread monitoring */
-  }
+  return((void *)init_thread(1));
 }
 
 
 void 
 monitor_fini_thread(void* data)
 {
-  if (opt_thread != HPCRUN_THREADPROF_NO) {
-    if (opt_debug >= 1) {
-      fprintf(stderr, "fini_thread(TID=0x%lx) callback from monitor received\n", (long)pthread_self());
-    }
-    fini_thread((hpcrun_profiles_desc_t **)(&data), 1 /*is_thread*/);
+  if (opt_debug >= 1) {
+    fprintf(stderr, "fini_thread(TID=0x%lx) callback from monitor received\n", (long)pthread_self());
   }
+  fini_thread((hpcrun_profiles_desc_t **)(&data), 1 /*is_thread*/);
 }
 
 
