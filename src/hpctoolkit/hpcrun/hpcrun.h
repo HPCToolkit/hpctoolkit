@@ -44,14 +44,11 @@
 #define HPCRUN_LIB  "libhpcrun.so"
 
 typedef enum enum_hpc_threadprof_t {
-  HPCRUN_THREADPROF_NO   = 0, /* do not initialize thread support */
-#define HPCRUN_THREADPROF_NO_STR   "0"
+  HPCRUN_THREADPROF_EACH = 0, /* separate profile for each thread */
+#define HPCRUN_THREADPROF_EACH_STR "0"
   
-  HPCRUN_THREADPROF_EACH = 1, /* separate profile for each thread */
-#define HPCRUN_THREADPROF_EACH_STR "1"
-  
-  HPCRUN_THREADPROF_ALL  = 2  /* combined profile for all thread */
-#define HPCRUN_THREADPROF_ALL_STR  "2"
+  HPCRUN_THREADPROF_ALL  = 1  /* combined profile for all thread */
+#define HPCRUN_THREADPROF_ALL_STR  "1"
 } hpc_threadprof_t;
 
 
