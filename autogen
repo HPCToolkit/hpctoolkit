@@ -13,12 +13,6 @@
 ##    
 ## **************************************************************************
 
-#OPT="-Wall"
-OPT=""
-
-aclocal
-libtoolize -f -c
-automake -a -f -c ${OPT}
-aclocal && autoconf ${OPT} && automake ${OPT}
+autoreconf --force --install --verbose
 
 #############################################################################
