@@ -78,48 +78,42 @@ STDOUT->autoflush(1);
 my $the_program = $Script;
 my $the_usage = 
 "Usage: 
-  ${the_program} [other-options] [-I <dir1>...<dirN>] [-S <struct1> ...<structJ>] [-G <group1> ...<groupK>] -P <prof1>...<profM>
+  ${the_program} [other-options] [-I <dir>] [-S <struct-file>] [-G <group-file>] -P <profile-file>...
 
-Given a list of paths to directories containing interesting program
-source code files, an optional list of program structure files created
-by the 'bloop' tool, an optional list of group files, and a list of
-profile files, creates an 'hpcview' configuration file and a browsable
-database in the current directory; by default hpcquick generates an
-hpcviewer database.  All shell commands are captured into a log file.
+hpcquick is a front-end for hpcview.  It creates an hpcview configuration file (./hpcquick.xml) and runs hpcview to create an Experiment database.
+All shell commands used to create the Experiment database are recorded in a log file (./hpcquick.log).
 
-Following is a list of the various profile files accepted.  If needed, they
-will automatically be converted into the PROFILE format before hpcview is run.
-  o binary output from hpcrun
-  o binary output from SGI's ssrun
-  o XML PROFILE files (e.g., from xprof, hpcprof and ptran)
+hpcquick expects a list of profile files (typically from hpcrun). For best results, two other options should be used: -I to provide paths for source code directories and -S to provide source code structure from bloop.
 
-Standard arguments:
-  -I <dir1>...<dirN>  A space-separated list of directories -- relative or 
-                      absolute -- containing source code to which performance 
-                      data should be correlated.  In order to search a
-                      directory *and* recursively search all of its
+Typical options and arguments:
+  -I <dir>            A directory (relative or absolute) containing source code
+                      to which performance data should be correlated.  In order
+                      to search a directory *and* recursively search all of its
                       descendents, append an escaped '*' after the last slash,
                       e.g., /mypath/\\* (escaping is for the shell).
-  -S <struct1>...<structJ>
-                      An optional space-separated set of structure files from
-		      bloop. These structure files can be for the main program
+                      May be passed multiple times.
+  -S <struct-file>    A structure file (from bloop) for the main program
 		      and/or any or all of the shared libraries used by the
-                      program.
-  -G <group1>...<groupK>
-                      An optional space-separated set of group files. These
-                      group files can be for the main program and/or any or all
-                      of the shared libraries used by the program.
-  -P <prof1>...<profM>
-                      A space-separated list of profile files.
+                      program.  May be passed multiple times.
+  -P <profile-file>...  
+                      A space-separated list of profile files, which may be of
+                      the following types:
+                        o binary output from hpcrun
+                        o binary output from SGI's ssrun
+                        o XML PROFILE files (e.g., from hpcprof and xprof)
 
-Other options:
+Options: General
   -n                  No hpcview output.  Convert profiles and create an 
                       hpcview config file, but do not generate an hpcview
-                      output database; record all commands in log file.
+                      output database.
   -V                  Print version information.
   -h                  Print this help.
-
 ";
+
+# Group file stuff is probably deprecated...
+#  -G <group-file>     A group file for the main program and/or any or all
+#                      of the shared libraries used by the program. 
+#                      May be passed multiple times.
 
 # Does not currently support
 #   o [binary output from Alpha-Tru64's uprofile] 
