@@ -1,0 +1,157 @@
+%% $Id$
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\documentclass[english]{article}
+\usepackage[latin1]{inputenc}
+\usepackage{babel}
+\usepackage{verbatim}
+
+%% do we have the `hyperref package?
+\IfFileExists{hyperref.sty}{
+   \usepackage[bookmarksopen,bookmarksnumbered]{hyperref}
+}{}
+
+%% do we have the `fancyhdr' or `fancyheadings' package?
+\IfFileExists{fancyhdr.sty}{
+\usepackage[fancyhdr]{latex2man}
+}{
+\IfFileExists{fancyheadings.sty}{
+\usepackage[fancy]{latex2man}
+}{
+\usepackage[nofancy]{latex2man}
+\message{no fancyhdr or fancyheadings package present, discard it}
+}}
+
+%% do we have the `rcsinfo' package?
+\IfFileExists{rcsinfo.sty}{
+\usepackage[nofancy]{rcsinfo}
+\rcsInfo $Id$
+\setDate{\rcsInfoLongDate}
+}{
+\setDate{ 2007/05/25}
+\message{package rcsinfo not present, discard it}
+}
+
+%\include{HPCToolkitVersionInfo}
+\setVersionWord{Version:}  %%% that's the default, no need to set it.
+\setVersion{@PACKAGE_VERSION@}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{document}
+
+\begin{Name}{1}{hpcview}{The HPCToolkit Performance Tools}{The HPCToolkit Performance Tools}{hpcview:\\ Correlation of Flat Profiles with Static Program Structure}
+
+\Prog{hpcview} correlates dynamic (`flat') profiles with static source code structure.  See \Cmd{hpctoolkit}{1} for an overview of \textbf{HPCToolkit}.
+
+\end{Name}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Synopsis}
+
+\Prog{hpcview} \oOpt{options} \Arg{config-file} \oOpt{profile-file...}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Description}
+
+\Prog{hpcview} correlates dynamic profiling metrics with static source code structure and (by default) generates an Experiment database for use with \Cmd{hpcviewer}{1}.
+\Prog{hpcview} is driven by the configuration file \Arg{config-file}, which amongh other things, may contain user defined derived metrics.
+\Arg{profile-files} is a list of \Cmd{hpcrun}{1} profiles.
+
+
+FIXME [config file]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Arguments}
+
+\begin{Description}
+\item[\Arg{config-file...}] The \Prog{hpcview} configuration file.
+\item[\Arg{profile-file...}] \Cmd{hpcrun}{1} profile files.
+\end{Description}
+
+Default values for an option's optional arguments are shown in \{\}.
+
+\subsection{Options: General}
+
+\begin{Description}
+\item[\OptoArg{-v}{n}, \OptoArg{--verbose}{n}] Verbose: generate progress messages to stderr at verbosity level \Arg{n}.  \{1\}  (Use n=2 to debug path replacement if metric and program structure is not properly matched.)
+\item[\Opt{-V}, \Opt{--version}] Print version information.
+\item[\Opt{-h}, \Opt{--help}] Print help.
+\item[\OptoArg{--debug}{n}]   Debug: use debug level \Arg{n}. \{1\}
+\end{Description}
+
+
+\subsection{Options: Output}
+
+\begin{Description}
+  \item[\OptArg{-o}{db-path}, \OptArg{--db}{db-path}, \OptArg{--output}{db-path}] Specify Experiment database name \Arg{db-path}.  \{\File{./experiment-db}\}
+  \item[\OptoArg{--src}{yes \Bar no}, \OptoArg{--source}{yes \Bar no}] Whether to copy source code files into Experiment database. \{yes\} By default, \Prog{hpcview} copies source files with performance metrics and that can be reached by PATH/REPLACE statements, resulting in a self-contained dataset that does not rely on an external source code repository.  Note that if copying is suppressed, the database is no longer self-contained.
+\end{Description}
+
+\subsection{Output Formats}
+
+Select different output formats and optionally specify the output filename \Arg{fname} (located within the Experiment database). The output is sparse in the sense that it ignores program areas without profiling information. (Set \Arg{fname} to '-' to write to stdout.)
+
+\begin{Description}
+  \item[\OptoArg{-x}{fname}, \OptoArg{--experiment}{fname}] Default.  ExperimentXML format. \{\File{experiment.xml}\}.  NOTE: To disable, set \Arg{fname} to \verb+no+.
+  \item[\OptoArg{--csv}{fname}] Comma-separated-value format. \{\File{experiment.csv}\}. Includes flat scope tree and loops.  Useful for downstream external tools.
+  \item[\OptoArg{--tsv}{fname}] Tab-separated-value format. \{\File{experiment.tsv}\}. Includes flat scope tree and lines.  Useful for downstream external tools.
+\end{Description}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Examples}
+
+%\begin{enumerate}
+%\item 
+[FIXME]
+
+%\end{enumerate}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%\section{Notes}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{See Also}
+
+\Cmd{hpctoolkit}{1}.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Version}
+
+Version: \Version\ of \Date.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{License and Copyright}
+
+\begin{description}
+\item[Copyright] \copyright\ 2002-2007, Rice University.
+\item[License] See \File{README.License}.
+\end{description}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Authors}
+
+\noindent
+John Mellor-Crummey \\
+Nathan Tallent \\
+Rob Fowler \\
+Email: \Email{hpc@cs.rice.edu} \\
+WWW: \URL{http://hipersoft.cs.rice.edu/hpctoolkit}.
+
+\LatexManEnd
+
+\end{document}
+
+%% Local Variables:
+%% eval: (add-hook 'write-file-hooks 'time-stamp)
+%% time-stamp-start: "setDate{ "
+%% time-stamp-format: "%:y/%02m/%02d"
+%% time-stamp-end: "}\n"
+%% time-stamp-line-limit: 50
+%% End:
+

@@ -1,0 +1,178 @@
+%% $Id$
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\documentclass[english]{article}
+\usepackage[latin1]{inputenc}
+\usepackage{babel}
+\usepackage{verbatim}
+
+%% do we have the `hyperref package?
+\IfFileExists{hyperref.sty}{
+   \usepackage[bookmarksopen,bookmarksnumbered]{hyperref}
+}{}
+
+%% do we have the `fancyhdr' or `fancyheadings' package?
+\IfFileExists{fancyhdr.sty}{
+\usepackage[fancyhdr]{latex2man}
+}{
+\IfFileExists{fancyheadings.sty}{
+\usepackage[fancy]{latex2man}
+}{
+\usepackage[nofancy]{latex2man}
+\message{no fancyhdr or fancyheadings package present, discard it}
+}}
+
+%% do we have the `rcsinfo' package?
+\IfFileExists{rcsinfo.sty}{
+\usepackage[nofancy]{rcsinfo}
+\rcsInfo $Id$
+\setDate{\rcsInfoLongDate}
+}{
+\setDate{ 2007/05/25}
+\message{package rcsinfo not present, discard it}
+}
+
+%\include{HPCToolkitVersionInfo}
+\setVersionWord{Version:}  %%% that's the default, no need to set it.
+\setVersion{@PACKAGE_VERSION@}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{document}
+
+\begin{Name}{1}{hpcviewer}{The HPCToolkit Performance Tools}{The HPCToolkit Performance Tools}{hpcviewer:\\ Performance Visualization}
+
+The Java-based \Prog{hpcviewer} enables top-down visualizion of Experiment databases.
+
+\end{Name}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Synopsis}
+
+\Prog{hpcviewer} \oOpt{experiment-file}
+
+Typical usage 1:\\
+\Prog{hpcviewer} \File{experiment-db/experiment.xml}
+
+Typical usage 2:\\
+Click on \File{hpcviewer.jar} and open \File{experiment-db/experiment.xml}.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Description}
+
+The Java-based \Prog{hpcviewer} enables top-down visualizion of Experiment databases.
+Since Experiment databases are self-contained, they may be relocated from a cluster for visulization on a laptop or workstation.
+
+\subsection{Views}
+
+\Prog{hpcviewer} supports three principal views of an application's performance data.  Both inclusive (costs of a procedure including all its callees) and exclusive costs (costs excluding callees) are reported.
+
+\begin{itemize}
+  \item \textbf{Calling context view.}
+A top-down view that represents the dynamic calling contexts (call paths) in which costs were incurred.
+Using this view, one can explore performance measurements of an application in a top-down fashion to understand the costs incurred by calls to a procedure in a particular calling context.
+
+  \item \textbf{Callers view.}
+This bottom up view enables one to look upward along call paths.
+This view is particularly useful for understanding the performance of software components or procedures that are used in more than one context.
+
+  \item \textbf{Flat view.}
+This view organizes performance measurement data according to the static structure of an application.
+All costs incurred in \emph{any} calling context by a procedure are aggregated together in the flat view.
+\end{itemize}
+
+
+\subsection{Panes.}
+
+The browser window is divided into three panes:
+
+\begin{itemize}
+  \item \textbf{Source pane.} The source code associated with the current entity selected in the navigation pane.
+Selecting any entity in the navigation pane will cause the source pane to load the corresponding file, scroll to and highlight the line corresponding to the selection.
+
+\item \textbf{Navigation pane.}
+The navigation pane presents a hierarchical tree-based structure that is used to organize the presentation of an application's performance data.
+Entities that occur in the navigation pane's tree include load modules, files, procedures, procedure activations, inlined code, loops, and source lines.
+Entities can be selected; and children can be revealed or concealed.
+
+The nature of the entities in the navigation pane's tree structure depends upon whether one is exploring the calling context view, the callers view, or the flat view of the performance data. 
+
+\begin{itemize}
+\item In the calling context view, entities in the navigation tree represent procedure activations, inlined code, loops, and source lines. 
+While most entities link to a single location in source code, procedure activations link to two: the call site from which a procedure was called and the procedure itself.
+\item In the callers view, entities in the navigation tree are procedure activations. Unlike procedure activations in the calling context tree view in which call sites are paired with the called procedure, in the caller's view, call sites are paired with the calling procedure to facilitate attribution of costs for a called procedure to multiple different call sites and callers.
+\item In the flat view, entities in the navigation tree correspond to source files, procedure call sites (which are rendered the same way as procedure activations), loops, and source lines.
+\end{itemize}
+
+
+The header above the navigation pane contains flatten and zoom control.
+\begin{itemize}
+\item \textbf{Up arrow.} Zooms to show only information for the selected line and its descendants.
+\item \textbf{Down arrow.} Zooms out (reversing a prior zoom operation).
+\item \textbf{Flatten.} Flattinging (the icon that shows a tree node with a slash through it) replaces each top-level scope shown with its children. If a scope has no children (i.e., it is a leaf), the node will remain in the view. This flattening operation is useful for relaxing the strict hierarchical view so that peers at the same level in the tree can be viewed and ranked together. For instance, this can be used to hide procedures in the flat view so that outermost loops can be ranked and compared to one another.
+\item \textbf{Unflatten.} The inverse of the flatten operation, making an elided node visible again.
+
+\end{itemize}
+
+\item  \textbf{Metric pane.}
+The metric pane displays one or more performance metrics associated with entities to the left in the navigation pane.
+Entities in the tree view of the navigation pane are sorted at each level of the hierarchy by the metric in the selected column.
+
+\end{itemize}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%\section{Arguments}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%\section{Examples}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%\section{Notes}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{See Also}
+
+\Cmd{hpctoolkit}{1}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Version}
+
+Version: \Version\ of \Date.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{License and Copyright}
+
+\begin{description}
+\item[Copyright] \copyright\ 2002-2007, Rice University.
+\item[License] See \File{README.License}.
+\end{description}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Authors}
+
+\noindent
+John Mellor-Crummey \\
+Scott Warren \\
+Adam Bordelon \\
+Cristian Coarfa \\
+Fengmei Zhao \\
+Nathan Tallent
+Email: \Email{hpc@cs.rice.edu} \\
+WWW: \URL{http://hipersoft.cs.rice.edu/hpctoolkit}.
+
+\LatexManEnd
+
+\end{document}
+
+%% Local Variables:
+%% eval: (add-hook 'write-file-hooks 'time-stamp)
+%% time-stamp-start: "setDate{ "
+%% time-stamp-format: "%:y/%02m/%02d"
+%% time-stamp-end: "}\n"
+%% time-stamp-line-limit: 50
+%% End:
+
