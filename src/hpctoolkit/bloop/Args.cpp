@@ -74,37 +74,34 @@ static const char* usage_summary =
 "[options] <binary>\n";
 
 static const char* usage_details =
-"bloop analyzes the binary or DSO <binary>, recovers information about\n"
-"its source-line loop-nesting structure, and generates an XML scope tree (of\n"
-"type PGM) to stdout.  It uses debugging information to gather source-line\n"
-"data; see caveats below for common problems.\n"
+"Given an application binary or DSO <binary>, bloop recovers the program\n"
+"structure of its object code and writes to standard output a program\n"
+"structure to object code mapping. bloop is designed primarily for highly\n"
+"optimized binaries created from C, C++ and Fortran source code. Because\n"
+"bloop's algorithms exploit a binary's debugging information, for best\n"
+"results, binary should be compiled with standard debugging information.\n"
+"bloop's output is typically passed to an HPCToolkit's correlation tool.\n"
+"See the documentation for more information."
 "\n"
-"Options:\n"
+"Options: General\n"
 "  -v, --verbose [<n>]  Verbose: generate progress messages to stderr at\n"
-"                       verbosity level <n>.  [1]\n"
-"  -n, --normalize-off  Turn off scope tree normalization\n"
-"  -u, --unsafe-normalize-off\n"
-"                       Turn off potentially unsafe normalization\n"
+"                       verbosity level <n>. {1}\n"
+"  -V, --version        Print version information.\n"
+"  -h, --help           Print this help.\n"
+"  --debug [<n>]        Debug: use debug level <n>. {1}\n"
+"\n"
+"Options: Recovery and Output\n"
 "  -i, --irreducible-interval-as-loop\n"
 "                       Treat irreducible intervals as loops\n"
-"  -c, --compact        Generate compact output, eliminating extra white\n"
-"                       space\n"
 "  -p <list>, --canonical-paths <list>\n"
 "                       Ensure that scope tree only contains files found in\n"
 "                       the colon-separated <list>. May be passed multiple\n"
 "                       times.\n"
-"  -V, --version        Print version information.\n"
-"  -h, --help           Print this help.\n"
-"\n"
-"Caveats:\n"
-"* <binary> should be compiled with as much debugging info as possible (e.g.\n"
-"  -g3 for some compilers). When using the Sun compiler, place debugging\n"
-"  info _in_ the binary (-xs).\n"
-"* Optimizing compilers may generate inaccurate debugging information.\n"
-"  bloop cannot fix this.\n"
-"* C++ mangling is compiler specific. bloop tries both the platform's and\n"
-"  GNU's demangler, but if <binary> was produced with a proprietary compiler\n"
-"  demangling will likely be unsuccessful. (Also, cross-platform usage.)\n";
+"  -n, --normalize-off  Turn off scope tree normalization\n"
+"  -u, --unsafe-normalize-off\n"
+"                       Turn off potentially unsafe normalization\n"
+"  -c, --compact        Generate compact output, eliminating extra white\n"
+"                       space\n";
 
 
 #define CLP CmdLineParser
@@ -113,15 +110,17 @@ static const char* usage_details =
 CmdLineParser::OptArgDesc Args::optArgs[] = {
 
   // Options
-  { 'v', "verbose",         CLP::ARG_OPT,  CLP::DUPOPT_CLOB, NULL },
+  { 'i', "irreducible-interval-as-loop",
+                            CLP::ARG_NONE, CLP::DUPOPT_CLOB, NULL },
+  { 'p', "canonical-paths", CLP::ARG_REQ , CLP::DUPOPT_CAT,  ":" },
+
   { 'n', "normalize-off",   CLP::ARG_NONE, CLP::DUPOPT_CLOB, NULL },
   { 'u', "unsafe-normalize-off", 
                             CLP::ARG_NONE, CLP::DUPOPT_CLOB, NULL },
-  { 'i', "irreducible-interval-as-loop",
-                            CLP::ARG_NONE, CLP::DUPOPT_CLOB, NULL },
   { 'c', "compact",         CLP::ARG_NONE, CLP::DUPOPT_CLOB, NULL },
-  { 'p', "canonical-paths", CLP::ARG_REQ , CLP::DUPOPT_CAT,  ":" },
   
+  // Options
+  { 'v', "verbose",     CLP::ARG_OPT,  CLP::DUPOPT_CLOB, NULL },
   { 'V', "version",     CLP::ARG_NONE, CLP::DUPOPT_CLOB, NULL },
   { 'h', "help",        CLP::ARG_NONE, CLP::DUPOPT_CLOB, NULL },
   {  0 , "debug",       CLP::ARG_OPT,  CLP::DUPOPT_CLOB, NULL }, // hidden
@@ -220,8 +219,6 @@ Args::Parse(int argc, const char* const argv[])
       PrintVersion(std::cerr);
       exit(1);
     }
-    
-    // Check for other options
     if (parser.IsOpt("verbose")) {
       int verb = 1;
       if (parser.IsOptArg("verbose")) {
@@ -230,21 +227,23 @@ Args::Parse(int argc, const char* const argv[])
       }
       Diagnostics_SetDiagnosticFilterLevel(verb);
     } 
+    
+    // Check for other options
+    if (parser.IsOpt("irreducible-interval-as-loop")) { 
+      irreducibleIntervalIsLoop = true;
+    } 
+    if (parser.IsOpt("canonical-paths")) { 
+      canonicalPathList = parser.GetOptArg("canonical-paths");
+    }
     if (parser.IsOpt("normalize-off")) { 
       normalizeScopeTree = false;
     } 
     if (parser.IsOpt("unsafe-normalize-off")) { 
       unsafeNormalizations = false;
     } 
-    if (parser.IsOpt("irreducible-interval-as-loop")) { 
-      irreducibleIntervalIsLoop = true;
-    } 
     if (parser.IsOpt("compact")) { 
       prettyPrintOutput = false;
     } 
-    if (parser.IsOpt("canonical-paths")) { 
-      canonicalPathList = parser.GetOptArg("canonical-paths");
-    }
     
     // Check for required arguments
     if (parser.GetNumArgs() != 1) {
