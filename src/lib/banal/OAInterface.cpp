@@ -127,6 +127,14 @@ banal::OAInterface::toString(const OA::ProcHandle h)
   return oss.str();
 }
 
+string
+banal::OAInterface::toString(const OA::CallHandle h)
+{
+  std::ostringstream oss;
+  oss << h.hval();
+  return oss.str();
+}
+
 
 string 
 banal::OAInterface::toString(const OA::StmtHandle h)

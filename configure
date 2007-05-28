@@ -23198,7 +23198,7 @@ fi
 # Makefiles to create
 #----------------------------------------------------------------------------
 
-ac_config_files="$ac_config_files Makefile doc/Makefile lib/Makefile src/Makefile src/hpctoolkit/Makefile src/hpctoolkit/bloop/Makefile src/hpctoolkit/filters/Makefile src/hpctoolkit/hpcquick/Makefile src/hpctoolkit/hpcprof/Makefile src/hpctoolkit/hpcrun/Makefile src/hpctoolkit/hpcview/Makefile src/hpctoolkit/lump/Makefile src/hpctoolkit/misc/Makefile src/hpctoolkit/ptran/Makefile src/hpctoolkit/xcsprof/Makefile src/hpctoolkit/xprof/Makefile src/lib/Makefile src/lib/banal/Makefile src/lib/binutils/Makefile src/lib/isa/Makefile src/lib/perl/Makefile src/lib/perl/HPCToolkitVersionInfo.pm src/lib/prof-juicy/Makefile src/lib/prof-juicy-x/Makefile src/lib/prof-lean/Makefile src/lib/support/Makefile src/lib/xml/Makefile"
+ac_config_files="$ac_config_files Makefile doc/Makefile doc/man/Makefile doc/man/HPCToolkitVersionInfo.tex lib/Makefile src/Makefile src/hpctoolkit/Makefile src/hpctoolkit/bloop/Makefile src/hpctoolkit/filters/Makefile src/hpctoolkit/hpcquick/Makefile src/hpctoolkit/hpcprof/Makefile src/hpctoolkit/hpcrun/Makefile src/hpctoolkit/hpcview/Makefile src/hpctoolkit/lump/Makefile src/hpctoolkit/misc/Makefile src/hpctoolkit/ptran/Makefile src/hpctoolkit/xcsprof/Makefile src/hpctoolkit/xprof/Makefile src/lib/Makefile src/lib/banal/Makefile src/lib/binutils/Makefile src/lib/isa/Makefile src/lib/perl/Makefile src/lib/perl/HPCToolkitVersionInfo.pm src/lib/prof-juicy/Makefile src/lib/prof-juicy-x/Makefile src/lib/prof-lean/Makefile src/lib/support/Makefile src/lib/xml/Makefile"
 
 
 ac_config_commands="$ac_config_commands "
@@ -23876,6 +23876,8 @@ do
     "depfiles") CONFIG_COMMANDS="$CONFIG_COMMANDS depfiles" ;;
     "Makefile") CONFIG_FILES="$CONFIG_FILES Makefile" ;;
     "doc/Makefile") CONFIG_FILES="$CONFIG_FILES doc/Makefile" ;;
+    "doc/man/Makefile") CONFIG_FILES="$CONFIG_FILES doc/man/Makefile" ;;
+    "doc/man/HPCToolkitVersionInfo.tex") CONFIG_FILES="$CONFIG_FILES doc/man/HPCToolkitVersionInfo.tex" ;;
     "lib/Makefile") CONFIG_FILES="$CONFIG_FILES lib/Makefile" ;;
     "src/Makefile") CONFIG_FILES="$CONFIG_FILES src/Makefile" ;;
     "src/hpctoolkit/Makefile") CONFIG_FILES="$CONFIG_FILES src/hpctoolkit/Makefile" ;;

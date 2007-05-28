@@ -104,7 +104,7 @@ MOSTLYCLEANFILES = $(MYCLEAN)
 #############################################################################
 
 # Regenerate DTD headers if DTDs have changed.
-$(srcdir)/%.dtd.h : $(HPCTOOLKIT)/lib/dtd/%.dtd
+$(srcdir)/%.dtd.h : @abs_top_srcdir@/lib/dtd/%.dtd
 	$(srcdir)/makedtdstring $<  > $@
 
 #############################################################################

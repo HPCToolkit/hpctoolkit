@@ -49,6 +49,10 @@
 # HPCTOOLKIT Components and Settings
 #############################################################################
 
+############################################################
+# Local includes
+############################################################
+
 # -*-Mode: makefile;-*-
 # $Id$
 
@@ -283,14 +287,7 @@ top_srcdir = @top_srcdir@
 
 # We do not want the standard GNU files (NEWS README AUTHORS ChangeLog...)
 AUTOMAKE_OPTIONS = foreign
-
-# $(top_srcdir) is fine, but $(abs_top_srcdir) must be used with @@
-HPCTOOLKIT = @abs_top_srcdir@
-
-############################################################
-# Local includes
-############################################################
-HPC_IFLAGS = -I$(HPCTOOLKIT)/src
+HPC_IFLAGS = -I@abs_top_srcdir@/src
 
 ############################################################
 # Local libraries
