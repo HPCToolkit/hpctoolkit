@@ -849,6 +849,8 @@ AC_CONFIG_FILES([ \
   Makefile \
   \
   doc/Makefile \
+  doc/man/Makefile \
+  doc/man/HPCToolkitVersionInfo.tex \
   \
   lib/Makefile \
   \

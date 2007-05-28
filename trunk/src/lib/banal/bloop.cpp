@@ -75,7 +75,7 @@ using std::string;
 
 //************************ OpenAnalysis Include Files ***********************
 
-#include <OpenAnalysis/CFG/ManagerCFGStandard.hpp>
+#include <OpenAnalysis/CFG/ManagerCFG.hpp>
 #include <OpenAnalysis/Utils/RIFG.hpp>
 #include <OpenAnalysis/Utils/NestedSCR.hpp>
 #include <OpenAnalysis/Utils/Exception.hpp>
@@ -129,7 +129,7 @@ BuildProcLoopNests(ProcScope* pScope, binutils::Proc* p,
 static int
 BuildStmts(bloop::LocationMgr& locMgr,
 	   CodeInfo* enclosingScope, binutils::Proc* p,
-	   OA::OA_ptr<OA::CFG::Interface::Node> bb);
+	   OA::OA_ptr<OA::CFG::NodeInterface> bb);
 
 
 static bool
@@ -137,7 +137,7 @@ WasCtxtClosed(CodeInfo* scope, LocationMgr& mgr);
 
 static void
 FindLoopBegLineInfo(binutils::Proc* p, 
-		    OA::OA_ptr<OA::CFG::Interface::Node> headBB,
+		    OA::OA_ptr<OA::CFG::NodeInterface> headBB,
 		    string& begFilenm, string& begProcnm, SrcFile::ln& begLn);
 
 static StmtRangeScope*
@@ -537,7 +537,7 @@ namespace bloop {
 static int 
 BuildProcLoopNests(ProcScope* enclosingProc, binutils::Proc* p,
 		   OA::OA_ptr<OA::NestedSCR> tarj,
-		   OA::OA_ptr<OA::CFG::Interface> cfg, 
+		   OA::OA_ptr<OA::CFG::CFGInterface> cfg, 
 		   OA::RIFG::NodeId fgRoot, 
 		   bool irrIntIsLoop);
 
@@ -545,7 +545,7 @@ static CodeInfo*
 BuildLoopAndStmts(bloop::LocationMgr& locMgr, 
 		  CodeInfo* enclosingScope, binutils::Proc* p,
 		  OA::OA_ptr<OA::NestedSCR> tarj,
-		  OA::OA_ptr<OA::CFG::Interface> cfg, 
+		  OA::OA_ptr<OA::CFG::CFGInterface> cfg, 
 		  OA::RIFG::NodeId fgNode, bool irrIntIsLoop);
 
 
@@ -587,9 +587,9 @@ BuildProcLoopNests(ProcScope* pScope, binutils::Proc* p,
     
     OA::OA_ptr<OAInterface> irIF; irIF = new OAInterface(p);
     
-    OA::OA_ptr<OA::CFG::ManagerStandard> cfgmanstd;
-    cfgmanstd = new OA::CFG::ManagerStandard(irIF);
-    OA::OA_ptr<OA::CFG::CFGStandard> cfg = 
+    OA::OA_ptr<OA::CFG::ManagerCFGStandard> cfgmanstd;
+    cfgmanstd = new OA::CFG::ManagerCFGStandard(irIF);
+    OA::OA_ptr<OA::CFG::CFG> cfg = 
       cfgmanstd->performAnalysis(TY_TO_IRHNDL(p, OA::ProcHandle));
     
     OA::OA_ptr<OA::RIFG> rifg; 
@@ -643,7 +643,7 @@ BuildProcLoopNests(ProcScope* pScope, binutils::Proc* p,
 static int 
 BuildProcLoopNests(ProcScope* enclosingProc, binutils::Proc* p,
 		   OA::OA_ptr<OA::NestedSCR> tarj,
-		   OA::OA_ptr<OA::CFG::Interface> cfg, 
+		   OA::OA_ptr<OA::CFG::CFGInterface> cfg, 
 		   OA::RIFG::NodeId fgRoot, 
 		   bool irrIntIsLoop)
 {
@@ -756,12 +756,12 @@ static CodeInfo*
 BuildLoopAndStmts(bloop::LocationMgr& locMgr, 
 		  CodeInfo* enclosingScope, binutils::Proc* p,
 		  OA::OA_ptr<OA::NestedSCR> tarj,
-		  OA::OA_ptr<OA::CFG::Interface> cfg, 
+		  OA::OA_ptr<OA::CFG::CFGInterface> cfg, 
 		  OA::RIFG::NodeId fgNode, bool irrIntIsLoop)
 {
   OA::OA_ptr<OA::RIFG> rifg = tarj->getRIFG();
-  OA::OA_ptr<OA::CFG::Interface::Node> bb = 
-    rifg->getNode(fgNode).convert<OA::CFG::Interface::Node>();
+  OA::OA_ptr<OA::CFG::NodeInterface> bb = 
+    rifg->getNode(fgNode).convert<OA::CFG::NodeInterface>();
   binutils::Insn* insn = banal::OA_CFG_getBegInsn(bb);
   VMA begVMA = (insn) ? insn->GetOpVMA() : 0;
   
@@ -814,9 +814,9 @@ BuildLoopAndStmts(bloop::LocationMgr& locMgr,
 static int 
 BuildStmts(bloop::LocationMgr& locMgr,
 	   CodeInfo* enclosingScope, binutils::Proc* p,
-	   OA::OA_ptr<OA::CFG::Interface::Node> bb)
+	   OA::OA_ptr<OA::CFG::NodeInterface> bb)
 {
-  OA::OA_ptr<OA::CFG::Interface::NodeStatementsIterator> it =
+  OA::OA_ptr<OA::CFG::NodeStatementsIteratorInterface> it =
     bb->getNodeStatementsIterator();
   for ( ; it->isValid(); ) {
     binutils::Insn* insn = IRHNDL_TO_TY(it->current(), binutils::Insn*);
@@ -961,7 +961,7 @@ WasCtxtClosed(CodeInfo* scope, LocationMgr& mgr)
 // latter we use headVMA.
 static void
 FindLoopBegLineInfo(binutils::Proc* p, 
-		    OA::OA_ptr<OA::CFG::Interface::Node> headBB,
+		    OA::OA_ptr<OA::CFG::NodeInterface> headBB,
 		    string& begFilenm, string& begProcnm, SrcFile::ln& begLn)
 {
   using namespace OA::CFG;
@@ -976,12 +976,12 @@ FindLoopBegLineInfo(binutils::Proc* p,
 	      << " has op-index of: " << headOpIdx);
   
   // Now find the backward branch
-  OA::OA_ptr<Interface::IncomingEdgesIterator> it 
-    = headBB->getIncomingEdgesIterator();
+  OA::OA_ptr<EdgesIteratorInterface> it 
+    = headBB->getCFGIncomingEdgesIterator();
   for ( ; it->isValid(); ++(*it)) {
-    OA::OA_ptr<Interface::Edge> e = it->current();
+    OA::OA_ptr<EdgeInterface> e = it->currentCFGEdge();
     
-    OA::OA_ptr<Interface::Node> bb = e->source();
+    OA::OA_ptr<NodeInterface> bb = e->getCFGSource();
 
     binutils::Insn* backBR = banal::OA_CFG_getEndInsn(bb);
     if (!backBR) {
@@ -993,7 +993,7 @@ FindLoopBegLineInfo(binutils::Proc* p,
 
     // If we have a backward edge, find the source line of the
     // backward branch.  Note: back edges are not always labeled as such!
-    if (e->getType() == Interface::BACK_EDGE || vma >= headVMA) {
+    if (e->getType() == BACK_EDGE || vma >= headVMA) {
       SrcFile::ln line;
       string filenm, procnm;
       p->GetSourceFileInfo(vma, opIdx, procnm, filenm, line); 

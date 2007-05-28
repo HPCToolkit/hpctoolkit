@@ -15,7 +15,7 @@
 @SET_MAKE@
 
 # -*-Mode: makefile;-*-
-# $Id: Makefile.am 660 2007-01-05 04:46:06Z eraxxon $
+# $Id$
 
 #############################################################################
 #
@@ -24,34 +24,11 @@
 #
 # Description:
 #   *Process with automake to produce Makefile.in*
-#   
+#
 #   Note: All local variables are prefixed with MY to prevent name
 #   clashes with automatic automake variables.
 #
 #############################################################################
-
-# -*-Mode: makefile;-*-
-# $Id: Makeinclude.config 715 2007-02-05 18:08:38Z eraxxon $
-
-#############################################################################
-#
-# File:
-#   $Source$
-#
-# Description:
-#   Include file for package Makefile.in
-# 
-#   *Assumes presence of Automake variables!*
-#
-#############################################################################
-
-#############################################################################
-# HPCTOOLKIT Components and Settings
-#############################################################################
-
-############################################################
-# Local includes
-############################################################
 
 VPATH = @srcdir@
 pkgdatadir = $(datadir)/@PACKAGE@
@@ -71,21 +48,28 @@ PRE_UNINSTALL = :
 POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
-DIST_COMMON = $(srcdir)/Makefile.am $(srcdir)/Makefile.in \
-	$(top_srcdir)/src/Makeinclude.config
-subdir = src/hpctoolkit/misc
+subdir = doc/man
+DIST_COMMON = $(dist_man_MANS) $(nobase_dist_doc_DATA) \
+	$(srcdir)/HPCToolkitVersionInfo.tex.in $(srcdir)/Makefile.am \
+	$(srcdir)/Makefile.in
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/config/hpc-cxxutils.m4 \
 	$(top_srcdir)/configure.ac
 am__configure_deps = $(am__aclocal_m4_deps) $(CONFIGURE_DEPENDENCIES) \
 	$(ACLOCAL_M4)
 mkinstalldirs = $(SHELL) $(top_srcdir)/config/mkinstalldirs
-CONFIG_CLEAN_FILES =
-am__installdirs = "$(DESTDIR)$(bindir)"
-binSCRIPT_INSTALL = $(INSTALL_SCRIPT)
-SCRIPTS = $(bin_SCRIPTS)
+CONFIG_CLEAN_FILES = HPCToolkitVersionInfo.tex
 SOURCES =
 DIST_SOURCES =
+am__vpath_adj_setup = srcdirstrip=`echo "$(srcdir)" | sed 's|.|.|g'`;
+am__vpath_adj = case $$p in \
+    $(srcdir)/*) f=`echo "$$p" | sed "s|^$$srcdirstrip/||"`;; \
+    *) f=$$p;; \
+  esac;
+am__strip_dir = `echo $$p | sed -e 's|^.*/||'`;
+am__installdirs = "$(DESTDIR)$(docdir)"
+nobase_dist_docDATA_INSTALL = $(install_sh_DATA)
+DATA = $(nobase_dist_doc_DATA)
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
 ACLOCAL = @ACLOCAL@
 AMTAR = @AMTAR@
@@ -227,52 +211,35 @@ top_srcdir = @top_srcdir@
 
 # We do not want the standard GNU files (NEWS README AUTHORS ChangeLog...)
 AUTOMAKE_OPTIONS = foreign
-HPC_IFLAGS = -I@abs_top_srcdir@/src
-
-############################################################
-# Local libraries
-############################################################
-
-# Linking dependencies:
-#   HPC_LIBBANAL      : HPC_LIBPROFJUICY HPC_LIBBINUTILS
-#   HPC_LIBPROFJUICY  : HPC_LIBBINUTILS HPC_LIBSUPPORT
-#   HPC_LIBPROFJUICYX : HPC_LIBPROFJUICY HPC_LIBBINUTILS HPC_LIBSUPPORT
-#   HPC_LIBPROFLEAN   :
-#   HPC_LIBBINUTILS   : HPC_LIBISA HPC_LIBSUPPORT
-#   HPC_LIBISA        : HPC_LIBSUPPORT
-#   HPC_LIBXML        : HPC_LIBSUPPORT
-#   HPC_LIBSUPPORT    :
-HPC_LIBBANAL = $(top_builddir)/src/lib/banal/libHPCbanal.la
-HPC_LIBPROFJUICY = $(top_builddir)/src/lib/prof-juicy/libHPCprof-juicy.la
-HPC_LIBPROFJUICYX = $(top_builddir)/src/lib/prof-juicy-x/libHPCprof-juicy-x.la
-HPC_LIBPROFLEAN = $(top_builddir)/src/lib/prof-lean/libHPCprof-lean.la
-HPC_LIBBINUTILS = $(top_builddir)/src/lib/binutils/libHPCbinutils.la
-HPC_LIBISA = $(top_builddir)/src/lib/isa/libHPCisa.la
-HPC_LIBXML = $(top_builddir)/src/lib/xml/libHPCxml.la
-HPC_LIBSUPPORT = $(top_builddir)/src/lib/support/libHPCsupport.la
-
-#############################################################################
-# Common settings
-#############################################################################
 
 #############################################################################
 # Local settings
 #############################################################################
-MYSCRIPTS = \
-	hpcmissing \
-	dcpicounts \
-	pxmlcat \
-	xprofquick
+MYSOURCES = \
+	hpctoolkit.tex \
+	\
+	bloop.tex \
+	\
+	hpcquick.tex \
+	hpcview.tex \
+	hpcprof.tex \
+	\
+	hpcviewer.tex
 
+MYLATEX2MAN = @abs_top_srcdir@/tools/latex2man/latex2man
+MYLATEX2MANTRANS = @srcdir@/hpctoolkit-latex2man.trans
+MYMAN = $(patsubst %.tex,%.1,$(MYSOURCES))
+MYMANHTML = $(patsubst %.tex,%.html,$(MYSOURCES))
 
 #############################################################################
 # Automake rules
 #############################################################################
-bin_SCRIPTS = $(MYSCRIPTS)
+dist_man_MANS = $(MYMAN)
+nobase_dist_doc_DATA = $(MYMANHTML)
 all: all-am
 
 .SUFFIXES:
-$(srcdir)/Makefile.in:  $(srcdir)/Makefile.am $(top_srcdir)/src/Makeinclude.config $(am__configure_deps)
+$(srcdir)/Makefile.in:  $(srcdir)/Makefile.am  $(am__configure_deps)
 	@for dep in $?; do \
 	  case '$(am__configure_deps)' in \
 	    *$$dep*) \
@@ -281,9 +248,9 @@ $(srcdir)/Makefile.in:  $(srcdir)/Makefile.am $(top_srcdir)/src/Makeinclude.conf
 	      exit 1;; \
 	  esac; \
 	done; \
-	echo ' cd $(top_srcdir) && $(AUTOMAKE) --foreign  src/hpctoolkit/misc/Makefile'; \
+	echo ' cd $(top_srcdir) && $(AUTOMAKE) --foreign  doc/man/Makefile'; \
 	cd $(top_srcdir) && \
-	  $(AUTOMAKE) --foreign  src/hpctoolkit/misc/Makefile
+	  $(AUTOMAKE) --foreign  doc/man/Makefile
 .PRECIOUS: Makefile
 Makefile: $(srcdir)/Makefile.in $(top_builddir)/config.status
 	@case '$?' in \
@@ -301,31 +268,33 @@ $(top_srcdir)/configure:  $(am__configure_deps)
 	cd $(top_builddir) && $(MAKE) $(AM_MAKEFLAGS) am--refresh
 $(ACLOCAL_M4):  $(am__aclocal_m4_deps)
 	cd $(top_builddir) && $(MAKE) $(AM_MAKEFLAGS) am--refresh
-install-binSCRIPTS: $(bin_SCRIPTS)
-	@$(NORMAL_INSTALL)
-	test -z "$(bindir)" || $(MKDIR_P) "$(DESTDIR)$(bindir)"
-	@list='$(bin_SCRIPTS)'; for p in $$list; do \
-	  if test -f "$$p"; then d=; else d="$(srcdir)/"; fi; \
-	  if test -f $$d$$p; then \
-	    f=`echo "$$p" | sed 's|^.*/||;$(transform)'`; \
-	    echo " $(binSCRIPT_INSTALL) '$$d$$p' '$(DESTDIR)$(bindir)/$$f'"; \
-	    $(binSCRIPT_INSTALL) "$$d$$p" "$(DESTDIR)$(bindir)/$$f"; \
-	  else :; fi; \
-	done
-
-uninstall-binSCRIPTS:
-	@$(NORMAL_UNINSTALL)
-	@list='$(bin_SCRIPTS)'; for p in $$list; do \
-	  f=`echo "$$p" | sed 's|^.*/||;$(transform)'`; \
-	  echo " rm -f '$(DESTDIR)$(bindir)/$$f'"; \
-	  rm -f "$(DESTDIR)$(bindir)/$$f"; \
-	done
+HPCToolkitVersionInfo.tex: $(top_builddir)/config.status $(srcdir)/HPCToolkitVersionInfo.tex.in
+	cd $(top_builddir) && $(SHELL) ./config.status $(subdir)/$@
 
 mostlyclean-libtool:
 	-rm -f *.lo
 
 clean-libtool:
 	-rm -rf .libs _libs
+install-nobase_dist_docDATA: $(nobase_dist_doc_DATA)
+	@$(NORMAL_INSTALL)
+	test -z "$(docdir)" || $(MKDIR_P) "$(DESTDIR)$(docdir)"
+	@$(am__vpath_adj_setup) \
+	list='$(nobase_dist_doc_DATA)'; for p in $$list; do \
+	  if test -f "$$p"; then d=; else d="$(srcdir)/"; fi; \
+	  $(am__vpath_adj) \
+	  echo " $(nobase_dist_docDATA_INSTALL) '$$d$$p' '$(DESTDIR)$(docdir)/$$f'"; \
+	  $(nobase_dist_docDATA_INSTALL) "$$d$$p" "$(DESTDIR)$(docdir)/$$f"; \
+	done
+
+uninstall-nobase_dist_docDATA:
+	@$(NORMAL_UNINSTALL)
+	@$(am__vpath_adj_setup) \
+	list='$(nobase_dist_doc_DATA)'; for p in $$list; do \
+	  $(am__vpath_adj) \
+	  echo " rm -f '$(DESTDIR)$(docdir)/$$f'"; \
+	  rm -f "$(DESTDIR)$(docdir)/$$f"; \
+	done
 tags: TAGS
 TAGS:
 
@@ -361,9 +330,9 @@ distdir: $(DISTFILES)
 	done
 check-am: all-am
 check: check-am
-all-am: Makefile $(SCRIPTS)
+all-am: Makefile $(DATA)
 installdirs:
-	for dir in "$(DESTDIR)$(bindir)"; do \
+	for dir in "$(DESTDIR)$(docdir)"; do \
 	  test -z "$$dir" || $(MKDIR_P) "$$dir"; \
 	done
 install: install-am
@@ -408,11 +377,11 @@ info: info-am
 
 info-am:
 
-install-data-am:
+install-data-am: install-nobase_dist_docDATA
 
 install-dvi: install-dvi-am
 
-install-exec-am: install-binSCRIPTS
+install-exec-am:
 
 install-html: install-html-am
 
@@ -442,28 +411,37 @@ ps: ps-am
 
 ps-am:
 
-uninstall-am: uninstall-binSCRIPTS
+uninstall-am: uninstall-nobase_dist_docDATA
 
 .MAKE: install-am install-strip
 
 .PHONY: all all-am check check-am clean clean-generic clean-libtool \
 	distclean distclean-generic distclean-libtool distdir dvi \
 	dvi-am html html-am info info-am install install-am \
-	install-binSCRIPTS install-data install-data-am install-dvi \
-	install-dvi-am install-exec install-exec-am install-html \
-	install-html-am install-info install-info-am install-man \
-	install-pdf install-pdf-am install-ps install-ps-am \
-	install-strip installcheck installcheck-am installdirs \
-	maintainer-clean maintainer-clean-generic mostlyclean \
-	mostlyclean-generic mostlyclean-libtool pdf pdf-am ps ps-am \
-	uninstall uninstall-am uninstall-binSCRIPTS
+	install-data install-data-am install-dvi install-dvi-am \
+	install-exec install-exec-am install-html install-html-am \
+	install-info install-info-am install-man \
+	install-nobase_dist_docDATA install-pdf install-pdf-am \
+	install-ps install-ps-am install-strip installcheck \
+	installcheck-am installdirs maintainer-clean \
+	maintainer-clean-generic mostlyclean mostlyclean-generic \
+	mostlyclean-libtool pdf pdf-am ps ps-am uninstall uninstall-am \
+	uninstall-nobase_dist_docDATA
 
-
-#############################################################################
 
 #############################################################################
 # Other rules
 #############################################################################
+
+%.tex.pp: %.tex
+	sed -e 's/=PACKAGE_VERSION=/@PACKAGE_VERSION@/g' $< > $@
+#	$(MYCPP) -P -I@builddir@ $< $@
+
+%.1hpctoolkit: %.tex.pp
+	$(MYLATEX2MAN) -t $(MYLATEX2MANTRANS) $< $@
+
+%.html: %.tex.pp
+	$(MYLATEX2MAN) -H -t $(MYLATEX2MANTRANS) $< $@
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.
 .NOEXPORT:

@@ -3,7 +3,7 @@
 # Descr:	Latex -->  MAN-page (groff -man), and HTML; example of user macro
 #               translations
 # Author:	Dr. Jürgen Vollmer, Juergen.Vollmer@acm.org
-# $Id: latex2man.trans,v 1.2 1998/01/03 17:06:52 vollmer Exp $
+# $Id$
 #################################################################################
 
 #################################################################################

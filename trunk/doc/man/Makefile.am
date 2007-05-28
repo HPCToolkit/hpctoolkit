@@ -56,39 +56,40 @@ AUTOMAKE_OPTIONS = foreign
 #############################################################################
 
 MYSOURCES = \
-	building-old.html \
-	building.html \
-	dtd_hpcview.html \
-	dtd_pgm.html \
-	dtd_profile.html \
-	footer_hpctoolkit.js \
-	header_hpctoolkit.js \
-	hpc_bloop.html \
-	hpc_ptran.html \
-	hpc_xprof.html \
-	hpcprof.html \
-	hpcquick.html \
-	hpcrun.html \
-	hpcview.html \
-	hpcviewer.html \
-	hwctools.html \
-	index.html \
-	styleForAll.css \
-	testing.html \
-	images/header.gif \
-	images/index.html
+	hpctoolkit.tex \
+	\
+	bloop.tex \
+	\
+	hpcquick.tex \
+	hpcview.tex \
+	hpcprof.tex \
+	\
+	hpcviewer.tex
 
+MYLATEX2MAN = @abs_top_srcdir@/tools/latex2man/latex2man
+MYLATEX2MANTRANS = @srcdir@/hpctoolkit-latex2man.trans
+
+MYMAN = $(patsubst %.tex,%.1,$(MYSOURCES))
+MYMANHTML = $(patsubst %.tex,%.html,$(MYSOURCES))
 
 #############################################################################
 # Automake rules
 #############################################################################
 
-SUBDIRS = \
-	man
+dist_man_MANS = $(MYMAN)
 
-nobase_dist_doc_DATA = $(MYSOURCES)
+nobase_dist_doc_DATA = $(MYMANHTML)
 
 #############################################################################
 # Other rules
 #############################################################################
 
+%.tex.pp: %.tex
+	sed -e 's/=PACKAGE_VERSION=/@PACKAGE_VERSION@/g' $< > $@
+#	$(MYCPP) -P -I@builddir@ $< $@
+
+%.1hpctoolkit: %.tex.pp
+	$(MYLATEX2MAN) -t $(MYLATEX2MANTRANS) $< $@
+
+%.html: %.tex.pp
+	$(MYLATEX2MAN) -H -t $(MYLATEX2MANTRANS) $< $@

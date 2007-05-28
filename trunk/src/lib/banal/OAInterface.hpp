@@ -62,7 +62,7 @@
 //************************ OpenAnalysis Include Files ***********************
 
 #include <OpenAnalysis/IRInterface/CFGIRInterfaceDefault.hpp>
-#include <OpenAnalysis/CFG/Interface.hpp>
+#include <OpenAnalysis/CFG/CFGInterface.hpp>
 
 //*************************** User Include Files ****************************
  
@@ -103,9 +103,9 @@
 namespace banal {
 
 inline binutils::Insn*
-OA_CFG_getBegInsn(OA::OA_ptr<OA::CFG::Interface::Node> bb) 
+OA_CFG_getBegInsn(OA::OA_ptr<OA::CFG::NodeInterface> bb) 
 {
-  OA::OA_ptr<OA::CFG::Interface::NodeStatementsIterator> stmtIt =
+  OA::OA_ptr<OA::CFG::NodeStatementsIteratorInterface> stmtIt =
     bb->getNodeStatementsIterator();
   
   binutils::Insn* stmt = NULL;
@@ -117,9 +117,9 @@ OA_CFG_getBegInsn(OA::OA_ptr<OA::CFG::Interface::Node> bb)
 
 
 inline binutils::Insn*
-OA_CFG_getEndInsn(OA::OA_ptr<OA::CFG::Interface::Node> bb) 
+OA_CFG_getEndInsn(OA::OA_ptr<OA::CFG::NodeInterface> bb) 
 {
-  OA::OA_ptr<OA::CFG::Interface::NodeStatementsRevIterator> stmtIt =
+  OA::OA_ptr<OA::CFG::NodeStatementsRevIteratorInterface> stmtIt =
     bb->getNodeStatementsRevIterator();
   binutils::Insn* stmt = NULL;
   if (stmtIt->isValid()) {
@@ -181,6 +181,7 @@ public:
   // create a string for the given handle, should be succinct
   // and there should be no newlines
   std::string toString(const OA::ProcHandle h);
+  std::string toString(const OA::CallHandle h);
   std::string toString(const OA::StmtHandle h);
   std::string toString(const OA::ExprHandle h);
   std::string toString(const OA::OpHandle h);
