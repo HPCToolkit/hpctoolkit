@@ -872,6 +872,19 @@ F77
 FFLAGS
 ac_ct_F77
 LIBTOOL
+HOST_CFLAGS
+HOST_CXXFLAGS
+HOST_AR
+HOST_LIBTREPOSITORY
+HOST_LINK_NO_START_FILES
+IS_HOST_AR_TRUE
+IS_HOST_AR_FALSE
+HOST_BLOOP_LDFLAGS
+HOST_HPCVIEW_LDFLAGS
+HOST_XPROF_LDFLAGS
+HOST_XCSPROF_LDFLAGS
+HOST_HPCRUN_LDFLAGS
+HOST_HPCPROF_LDFLAGS
 XERCES
 XERCES_IFLAGS
 XERCES_LDFLAGS
@@ -905,19 +918,6 @@ OPT_ENABLE_CSPROF_ASYNC_FALSE
 OPT_ENABLE_DEVTOOLS_TRUE
 OPT_ENABLE_DEVTOOLS_FALSE
 OPT_OBJCOPY
-HOST_CFLAGS
-HOST_CXXFLAGS
-HOST_AR
-HOST_LIBTREPOSITORY
-HOST_LINK_NO_START_FILES
-IS_HOST_AR_TRUE
-IS_HOST_AR_FALSE
-HOST_BLOOP_LDFLAGS
-HOST_HPCVIEW_LDFLAGS
-HOST_XPROF_LDFLAGS
-HOST_XCSPROF_LDFLAGS
-HOST_HPCRUN_LDFLAGS
-HOST_HPCPROF_LDFLAGS
 LIBOBJS
 LTLIBOBJS'
 ac_subst_files=''
@@ -2587,7 +2587,7 @@ HPCTOOLKIT_PLATFORM=`cd ${hpctoolkit_top}/config && ./hpcplatform`
 
 
 #----------------------------------------------------------------------------
-# Prerequisites: programs, libraries
+# Prerequisites: compilers, tools, system libraries
 #----------------------------------------------------------------------------
 
 # AC_PROG_CXX will set CXXFLAGS to something like -g -O2 if not
@@ -22344,6 +22344,295 @@ echo "${ECHO_T}${HAVE_OS_MULTILIB}" >&6; }
 
 
 #----------------------------------------------------------------------------
+# Host-dependent configuration
+# $host: $host_cpu-$host_vendor-$host_os
+#----------------------------------------------------------------------------
+
+MYcxxcmp()
+   {
+     mycxx=$1
+     shift
+
+     while test $# -ge 1 ; do
+       if ( echo "$mycxx" | grep "$1\$" >/dev/null 2>&1 ); then
+         return 0
+       fi
+       shift
+     done
+     return 1
+   }
+
+#-------------------------------------------------
+# Host-specific defines for HPCToolkit
+#-------------------------------------------------
+
+# NOTE: To see what macros gcc-like compilers define:
+#   gcc -dM -E - < /dev/null | sort
+HOST_OS=""
+
+case ${host} in
+  # Linux
+  i386*-*-linux* | i686*-*-linux* | x86_64*-*-linux* | ia64*-*-linux*)
+    # __i386 / __x86_64 / __ia64 && __linux
+    HOST_OS="Linux"
+    cat >>confdefs.h <<\_ACEOF
+#define HOST_OS_LINUX
+_ACEOF
+
+    ;;
+
+  mips64*-*-linux*)
+    # __mips64 && __linux / _MIPS_SIM == _ABIN32 / _MIPS_SIM == _ABI64
+    HOST_OS="Linux"
+    cat >>confdefs.h <<\_ACEOF
+#define HOST_PLATFORM_MIPS64LE_LINUX
+_ACEOF
+
+    cat >>confdefs.h <<\_ACEOF
+#define HOST_OS_LINUX
+_ACEOF
+
+    ;;
+
+  # MacOS
+  #powerpc*-*-darwin*)
+    #HOST_OS="MacOS"
+    # __ppc__ / __MACH__
+    #;;
+
+  #i386*-*-darwin* | i686*-*-darwin*)
+    #HOST_OS="MacOS"
+    #;;
+
+  # IRIX
+  mips*-*-irix*)
+    # __mips && __sgi && __unix
+    # _MIPS_ISA == _MIPS_ISA_MIPS1 | _MIPS_ISA == _MIPS_ISA_MIPS2
+    # _MIPS_ISA == _MIPS_ISA_MIPS3 | _MIPS_ISA == _MIPS_ISA_MIPS4
+    HOST_OS="IRIX"
+    cat >>confdefs.h <<\_ACEOF
+#define HOST_OS_IRIX
+_ACEOF
+
+    ;;
+
+  # Solaris
+  sparc*-*-solaris*)
+    # __sparc && __sun && __unix
+    HOST_OS="Solaris"
+    cat >>confdefs.h <<\_ACEOF
+#define HOST_OS_SOLARIS
+_ACEOF
+
+    ;;
+
+  # Tru64/OSF
+  alpha*-*-osf*)
+    # __alpha / __digital__ && __unix__
+    HOST_OS="Tru64"
+    cat >>confdefs.h <<\_ACEOF
+#define HOST_OS_TRU64
+_ACEOF
+
+    ;;
+
+  *)
+    { { echo "$as_me:$LINENO: error: HPCToolkit is not configured for HOST=${host}!" >&5
+echo "$as_me: error: HPCToolkit is not configured for HOST=${host}!" >&2;}
+   { (exit 1); exit 1; }; }
+    ;;
+esac
+
+
+#-------------------------------------------------
+# Host-specific compiler settings for HPCToolkit
+#-------------------------------------------------
+
+# FIXME: Now that we use libtool to build all HPCToolkit libraries, we
+# may not need this HOST_AR stuff.  (Remove from here and makefiles.)
+
+# General settings for internal libraries
+HOST_CFLAGS=""
+HOST_CXXFLAGS=""
+HOST_AR=""
+HOST_LIBTREPOSITORY=""
+HOST_LINK_NO_START_FILES="-nostartfiles"
+
+# Specific settings for programs
+HOST_HPCVIEW_LDFLAGS=""
+HOST_BLOOP_LDFLAGS=""
+HOST_XPROF_LDFLAGS=""
+HOST_XCSPROF_LDFLAGS=""
+HOST_HPCRUN_LDFLAGS=""
+HOST_HPCPROF_LDFLAGS=""
+my_demangle_ldflags=""
+
+# Options: Default for GCC
+if test "$OPT_ENABLE_DEVELOP" = "yes" ; then
+  my_opt_cflags="-g -O0"
+  my_opt_cxxflags="-g -O0"
+else
+  # On some compilers, -g implies -O0.  Make sure -O2 takes precedence!
+  my_opt_cflags="-g -O2"
+  my_opt_cxxflags="-g -O2"
+fi
+
+
+case ${host} in
+
+  # Linux
+  i386*-*-linux* | i686*-*-linux* | x86_64*-*-linux* | ia64*-*-linux* | mips64*-*-linux*)
+    # Intel compiler
+    if MYcxxcmp $CXX icpc ecpc ; then
+      :
+    fi
+    if MYcxxcmp $CC icc ecc ; then
+      :
+    fi
+
+    # Pathscale compiler
+    if MYcxxcmp $CXX pathCC ; then
+      :
+    fi
+    if MYcxxcmp $CC pathcc ; then
+      :
+    fi
+
+    # PGI compiler
+    if MYcxxcmp $CXX pgCC ; then
+      if test "$OPT_ENABLE_DEVELOP" = "yes" ; then
+        my_opt_cxxflags="-g -O0"
+      else
+        my_opt_cxxflags="-gopt -O2"
+      fi
+    fi
+    if MYcxxcmp $CC pgcc ; then
+      if test "$OPT_ENABLE_DEVELOP" = "yes" ; then
+        my_opt_cflags="-g -O0 -c9x"
+      else
+        my_opt_cflags="-gopt -O2 -c9x"
+      fi
+    fi
+    ;;
+
+  # IRIX
+  mips*-*-irix*)
+    # SGI MIPSpro
+    if MYcxxcmp $CXX CC ; then
+      HOST_CXXFLAGS="-64 -LANG:std"
+      HOST_AR="$CXX $CXXFLAGS ${HOST_CXXFLAGS} -ar -o"
+    fi
+    if MYcxxcmp $CC cc ; then
+      HOST_CFLAGS="-64"
+    fi
+
+    # GCC
+    if MYcxxcmp $CXX g++ c++ ; then
+      HOST_CXXFLAGS="-mabi=64"
+    fi
+    if MYcxxcmp $CC gcc ; then
+      HOST_CFLAGS="-mabi=64"
+    fi
+
+    # SGI demangle
+    my_demangle_ldflags="-lmangle"
+    ;;
+
+  # Solaris
+  sparc*-*-solaris*)
+    # Sun Forte/ONE
+    if MYcxxcmp $CXX CC; then
+      if test "$OPT_ENABLE_DEVELOP" = "yes" ; then
+        my_opt_cxxflags="-g"
+      else
+        my_opt_cxxflags="-fast -g"
+      fi
+      HOST_AR="$CXX $CXXFLAGS -xar -o"
+    fi
+    if MYcxxcmp $CC cc; then
+      if test "$OPT_ENABLE_DEVELOP" = "yes" ; then
+        my_opt_cflags="-g"
+      else
+        my_opt_cflags="-fast -g"
+      fi
+    fi
+
+    # Sun demangle
+    my_demangle_ldflags="-ldemangle"
+    ;;
+
+  # Tru64/OSF
+  alpha*-*-osf*)
+    # Compaq compiler
+    if MYcxxcmp $CXX cxx; then
+      # Before using libtool, we had used local
+      # repositories and included template definitions in respective
+      # archives.  However, libtool doesn't take kindly to including
+      # .o's and .lo's in the same archive.  Thus, we now use a global
+      # repository, even though it means archives are not self-contained.
+      HOST_CXXFLAGS="-std strict_ansi -rtti -pt -ptr ${hpctoolkit_build}/cxx_trepository"
+      #old: HOST_LIBTREPOSITORY="./cxx_trepository/*.o"
+      if test "$OPT_ENABLE_DEVELOP" = "yes" ; then
+        my_opt_cxxflags="-gall"
+      else
+        my_opt_cxxflags="-g3 -O2"
+      fi
+    fi
+    if MYcxxcmp $CC cc; then
+      if test "$OPT_ENABLE_DEVELOP" = "yes" ; then
+        my_opt_cflags="-g"
+      else
+        my_opt_cflags="-g3 -O2"
+      fi
+    fi
+
+    # DEC demangle
+    my_demangle_ldflags="-lmld"
+    ;;
+
+  *)
+    ;;
+esac
+
+# Grab optimization flags
+HOST_CFLAGS="${HOST_CFLAGS} ${my_opt_cflags}"
+HOST_CXXFLAGS="${HOST_CXXFLAGS} ${my_opt_cxxflags}"
+
+# Ensure IEEE support for Nan.h/C (Only essential on Tru64 and IRIX)
+HOST_CFLAGS="${HOST_CFLAGS} -D_IEEE"
+HOST_CXXFLAGS="${HOST_CXXFLAGS} -D_IEEE"
+
+# Several programs need system's demangle option
+HOST_BLOOP_LDFLAGS="${HOST_BLOOP_LDFLAGS} ${my_demangle_ldflags}"
+HOST_XPROF_LDFLAGS="${HOST_XPROF_LDFLAGS} ${my_demangle_ldflags}"
+HOST_XCSPROF_LDFLAGS="${HOST_XCSPROF_LDFLAGS} ${my_demangle_ldflags}"
+
+#-------------------------------------------------
+# Distribute these settings into makefiles
+#-------------------------------------------------
+
+
+
+
+
+ if test "${HOST_AR}" != ""; then
+  IS_HOST_AR_TRUE=
+  IS_HOST_AR_FALSE='#'
+else
+  IS_HOST_AR_TRUE='#'
+  IS_HOST_AR_FALSE=
+fi
+
+
+
+
+
+
+
+
+
+
+#----------------------------------------------------------------------------
 # Prerequisites: external libraries
 #----------------------------------------------------------------------------
 
@@ -22435,14 +22724,9 @@ GNUBINUTILS_IFLAGS="-I${GNUBINUTILS}/include"
 GNUBINUTILS_LDFLAGS="-L${GNUBINUTILS}/lib -lbfd -lopcodes ${GNUBINUTILS}/lib/libiberty.a"
 
 # on non-Linux systems we build libintl
-case ${host} in
-   *-*-linux*)
-   ;;
-
-   *)
+if test "${HOST_OS}" != "Linux"; then
    GNUBINUTILS_LDFLAGS="${GNUBINUTILS_LDFLAGS} ${GNUBINUTILS}/lib/libintl.a"
-   ;;
-esac
+fi
 
 { echo "$as_me:$LINENO: result: ${GNUBINUTILS}" >&5
 echo "${ECHO_T}${GNUBINUTILS}" >&6; }
@@ -22504,13 +22788,11 @@ HPC_MONITOR=
 
 
 # Use monitor by default
-case ${host} in
-  *-*-linux*)
-    OPT_WITH_MONITOR=yes
-    OPT_INSTALL_MONITOR=yes
-    MONITOR="${hpctoolkit_top}/../monitor/${HPCTOOLKIT_PLATFORM}"
-    ;;
-esac
+if test "${HOST_OS}" = "Linux"; then
+  OPT_WITH_MONITOR=yes
+  OPT_INSTALL_MONITOR=yes
+  MONITOR="${hpctoolkit_top}/../monitor/${HPCTOOLKIT_PLATFORM}"
+fi
 
 
 # Check whether --with-monitor was given.
@@ -22722,8 +23004,7 @@ fi
 echo $ECHO_N "checking whether to build hpcrun... $ECHO_C" >&6; }
 
 OPT_ENABLE_HPCRUN="no"
-if test "${OPT_HAVE_PAPI}" = "yes" &&
-   ( echo "${HPCTOOLKIT_PLATFORM}" | grep "Linux\$" >/dev/null 2>&1 ); then
+if test "${OPT_HAVE_PAPI}" = "yes" && test "${HOST_OS}" = "Linux"; then
   OPT_ENABLE_HPCRUN="yes"
 fi
 
@@ -22811,8 +23092,7 @@ fi
 # On Linux, verify we have libunwind!!!
 if test "${OPT_ENABLE_CSPROF_SYNC}" = "yes" ||
    test "${OPT_ENABLE_CSPROF_ASYNC}" = "yes" ; then
-  if test "${OPT_HAVE_LIBUNWIND}" = "no" &&
-     ( echo "${HPCTOOLKIT_PLATFORM}" | grep "Linux\$" >/dev/null 2>&1 ); then
+  if test "${OPT_HAVE_LIBUNWIND}" = "no" && test "${HOST_OS}" = "Linux"; then
     { { echo "$as_me:$LINENO: error: libunwind is needed to build csprof on Linux" >&5
 echo "$as_me: error: libunwind is needed to build csprof on Linux" >&2;}
    { (exit 1); exit 1; }; }
@@ -22910,286 +23190,6 @@ fi
 
 { echo "$as_me:$LINENO: result: yes (${OPT_OBJCOPY})" >&5
 echo "${ECHO_T}yes (${OPT_OBJCOPY})" >&6; }
-
-
-
-
-#----------------------------------------------------------------------------
-# Host-dependent configuration
-# $host: $host_cpu-$host_vendor-$host_os
-#----------------------------------------------------------------------------
-
-MYcxxcmp()
-   {
-     mycxx=$1
-     shift
-
-     while test $# -ge 1 ; do
-       if ( echo "$mycxx" | grep "$1\$" >/dev/null 2>&1 ); then
-         return 0
-       fi
-       shift
-     done
-     return 1
-   }
-
-#-------------------------------------------------
-# Host-specific defines for HPCToolkit
-#-------------------------------------------------
-
-# NOTE: To see what macros gcc-like compilers define:
-#   gcc -dM -E - < /dev/null | sort
-
-case ${host} in
-  # Linux
-  i386*-*-linux* | i686*-*-linux* | x86_64*-*-linux* | ia64*-*-linux*)
-    # __i386 / __x86_64 / __ia64 && __linux
-    cat >>confdefs.h <<\_ACEOF
-#define HOST_OS_LINUX
-_ACEOF
-
-    ;;
-
-  mips64*-*-linux*)
-    # __mips64 && __linux / _MIPS_SIM == _ABIN32 / _MIPS_SIM == _ABI64
-    cat >>confdefs.h <<\_ACEOF
-#define HOST_PLATFORM_MIPS64LE_LINUX
-_ACEOF
-
-    cat >>confdefs.h <<\_ACEOF
-#define HOST_OS_LINUX
-_ACEOF
-
-    ;;
-
-  # MacOS
-  #powerpc*-*-darwin*)
-    # __ppc__ / __MACH__
-    #;;
-
-  #i386*-*-darwin* | i686*-*-darwin*)
-    #;;
-
-  # IRIX
-  mips*-*-irix*)
-    # __mips && __sgi && __unix
-    # _MIPS_ISA == _MIPS_ISA_MIPS1 | _MIPS_ISA == _MIPS_ISA_MIPS2
-    # _MIPS_ISA == _MIPS_ISA_MIPS3 | _MIPS_ISA == _MIPS_ISA_MIPS4
-    cat >>confdefs.h <<\_ACEOF
-#define HOST_OS_IRIX
-_ACEOF
-
-    ;;
-
-  # Solaris
-  sparc*-*-solaris*)
-    # __sparc && __sun && __unix
-    cat >>confdefs.h <<\_ACEOF
-#define HOST_OS_SOLARIS
-_ACEOF
-
-    ;;
-
-  # Tru64/OSF
-  alpha*-*-osf*)
-    # __alpha / __digital__ && __unix__
-    cat >>confdefs.h <<\_ACEOF
-#define HOST_OS_TRU64
-_ACEOF
-
-    ;;
-
-  *)
-    { { echo "$as_me:$LINENO: error: HPCToolkit is not configurd for HOST=${host}!" >&5
-echo "$as_me: error: HPCToolkit is not configurd for HOST=${host}!" >&2;}
-   { (exit 1); exit 1; }; }
-    ;;
-esac
-
-
-#-------------------------------------------------
-# Host-specific compiler settings for HPCToolkit
-#-------------------------------------------------
-
-# FIXME: Now that we use libtool to build all HPCToolkit libraries, we
-# may not need this HOST_AR stuff.  (Remove from here and makefiles.)
-
-# General settings for internal libraries
-HOST_CFLAGS=""
-HOST_CXXFLAGS=""
-HOST_AR=""
-HOST_LIBTREPOSITORY=""
-HOST_LINK_NO_START_FILES="-nostartfiles"
-
-# Specific settings for programs
-HOST_HPCVIEW_LDFLAGS=""
-HOST_BLOOP_LDFLAGS=""
-HOST_XPROF_LDFLAGS=""
-HOST_XCSPROF_LDFLAGS=""
-HOST_HPCRUN_LDFLAGS=""
-HOST_HPCPROF_LDFLAGS=""
-my_demangle_ldflags=""
-
-# Options: Default for GCC
-if test "$OPT_ENABLE_DEVELOP" = "yes" ; then
-  my_opt_cflags="-g -O0"
-  my_opt_cxxflags="-g -O0"
-else
-  # On some compilers, -g implies -O0.  Make sure -O2 takes precedence!
-  my_opt_cflags="-g -O2"
-  my_opt_cxxflags="-g -O2"
-fi
-
-
-case ${host} in
-
-  # Linux
-  i386*-*-linux* | i686*-*-linux* | x86_64*-*-linux* | ia64*-*-linux* | mips64*-*-linux*)
-    # Intel compiler
-    if MYcxxcmp $CXX icpc ecpc ; then
-      :
-    fi
-    if MYcxxcmp $CC icc ecc ; then
-      :
-    fi
-
-    # Pathscale compiler
-    if MYcxxcmp $CXX pathCC ; then
-      :
-    fi
-    if MYcxxcmp $CC pathcc ; then
-      :
-    fi
-
-    # PGI compiler
-    if MYcxxcmp $CXX pgCC ; then
-      if test "$OPT_ENABLE_DEVELOP" = "yes" ; then
-        my_opt_cxxflags="-g -O0"
-      else
-        my_opt_cxxflags="-gopt -O2"
-      fi
-    fi
-    if MYcxxcmp $CC pgcc ; then
-      if test "$OPT_ENABLE_DEVELOP" = "yes" ; then
-        my_opt_cflags="-g -O0 -c9x"
-      else
-        my_opt_cflags="-gopt -O2 -c9x"
-      fi
-    fi
-    ;;
-
-  # IRIX
-  mips*-*-irix*)
-    # SGI MIPSpro
-    if MYcxxcmp $CXX CC ; then
-      HOST_CXXFLAGS="-64 -LANG:std"
-      HOST_AR="$CXX $CXXFLAGS ${HOST_CXXFLAGS} -ar -o"
-    fi
-    if MYcxxcmp $CC cc ; then
-      HOST_CFLAGS="-64"
-    fi
-
-    # GCC
-    if MYcxxcmp $CXX g++ c++ ; then
-      HOST_CXXFLAGS="-mabi=64"
-    fi
-    if MYcxxcmp $CC gcc ; then
-      HOST_CFLAGS="-mabi=64"
-    fi
-
-    # SGI demangle
-    my_demangle_ldflags="-lmangle"
-    ;;
-
-  # Solaris
-  sparc*-*-solaris*)
-    # Sun Forte/ONE
-    if MYcxxcmp $CXX CC; then
-      if test "$OPT_ENABLE_DEVELOP" = "yes" ; then
-        my_opt_cxxflags="-g"
-      else
-        my_opt_cxxflags="-fast -g"
-      fi
-      HOST_AR="$CXX $CXXFLAGS -xar -o"
-    fi
-    if MYcxxcmp $CC cc; then
-      if test "$OPT_ENABLE_DEVELOP" = "yes" ; then
-        my_opt_cflags="-g"
-      else
-        my_opt_cflags="-fast -g"
-      fi
-    fi
-
-    # Sun demangle
-    my_demangle_ldflags="-ldemangle"
-    ;;
-
-  # Tru64/OSF
-  alpha*-*-osf*)
-    # Compaq compiler
-    if MYcxxcmp $CXX cxx; then
-      # Before using libtool, we had used local
-      # repositories and included template definitions in respective
-      # archives.  However, libtool doesn't take kindly to including
-      # .o's and .lo's in the same archive.  Thus, we now use a global
-      # repository, even though it means archives are not self-contained.
-      HOST_CXXFLAGS="-std strict_ansi -rtti -pt -ptr ${hpctoolkit_build}/cxx_trepository"
-      #old: HOST_LIBTREPOSITORY="./cxx_trepository/*.o"
-      if test "$OPT_ENABLE_DEVELOP" = "yes" ; then
-        my_opt_cxxflags="-gall"
-      else
-        my_opt_cxxflags="-g3 -O2"
-      fi
-    fi
-    if MYcxxcmp $CC cc; then
-      if test "$OPT_ENABLE_DEVELOP" = "yes" ; then
-        my_opt_cflags="-g"
-      else
-        my_opt_cflags="-g3 -O2"
-      fi
-    fi
-
-    # DEC demangle
-    my_demangle_ldflags="-lmld"
-    ;;
-
-  *)
-    ;;
-esac
-
-# Grab optimization flags
-HOST_CFLAGS="${HOST_CFLAGS} ${my_opt_cflags}"
-HOST_CXXFLAGS="${HOST_CXXFLAGS} ${my_opt_cxxflags}"
-
-# Ensure IEEE support for Nan.h/C (Only essential on Tru64 and IRIX)
-HOST_CFLAGS="${HOST_CFLAGS} -D_IEEE"
-HOST_CXXFLAGS="${HOST_CXXFLAGS} -D_IEEE"
-
-# Several programs need system's demangle option
-HOST_BLOOP_LDFLAGS="${HOST_BLOOP_LDFLAGS} ${my_demangle_ldflags}"
-HOST_XPROF_LDFLAGS="${HOST_XPROF_LDFLAGS} ${my_demangle_ldflags}"
-HOST_XCSPROF_LDFLAGS="${HOST_XCSPROF_LDFLAGS} ${my_demangle_ldflags}"
-
-#-------------------------------------------------
-# Distribute these settings into makefiles
-#-------------------------------------------------
-
-
-
-
-
- if test "${HOST_AR}" != ""; then
-  IS_HOST_AR_TRUE=
-  IS_HOST_AR_FALSE='#'
-else
-  IS_HOST_AR_TRUE='#'
-  IS_HOST_AR_FALSE=
-fi
-
-
-
-
-
 
 
 
@@ -23365,6 +23365,13 @@ echo "$as_me: error: conditional \"am__fastdepCC\" was never defined.
 Usually this means the macro was only invoked conditionally." >&2;}
    { (exit 1); exit 1; }; }
 fi
+if test -z "${IS_HOST_AR_TRUE}" && test -z "${IS_HOST_AR_FALSE}"; then
+  { { echo "$as_me:$LINENO: error: conditional \"IS_HOST_AR\" was never defined.
+Usually this means the macro was only invoked conditionally." >&5
+echo "$as_me: error: conditional \"IS_HOST_AR\" was never defined.
+Usually this means the macro was only invoked conditionally." >&2;}
+   { (exit 1); exit 1; }; }
+fi
 if test -z "${OPT_ENABLE_DEVELOP_TRUE}" && test -z "${OPT_ENABLE_DEVELOP_FALSE}"; then
   { { echo "$as_me:$LINENO: error: conditional \"OPT_ENABLE_DEVELOP\" was never defined.
 Usually this means the macro was only invoked conditionally." >&5
@@ -23411,13 +23418,6 @@ if test -z "${OPT_ENABLE_DEVTOOLS_TRUE}" && test -z "${OPT_ENABLE_DEVTOOLS_FALSE
   { { echo "$as_me:$LINENO: error: conditional \"OPT_ENABLE_DEVTOOLS\" was never defined.
 Usually this means the macro was only invoked conditionally." >&5
 echo "$as_me: error: conditional \"OPT_ENABLE_DEVTOOLS\" was never defined.
-Usually this means the macro was only invoked conditionally." >&2;}
-   { (exit 1); exit 1; }; }
-fi
-if test -z "${IS_HOST_AR_TRUE}" && test -z "${IS_HOST_AR_FALSE}"; then
-  { { echo "$as_me:$LINENO: error: conditional \"IS_HOST_AR\" was never defined.
-Usually this means the macro was only invoked conditionally." >&5
-echo "$as_me: error: conditional \"IS_HOST_AR\" was never defined.
 Usually this means the macro was only invoked conditionally." >&2;}
    { (exit 1); exit 1; }; }
 fi
@@ -24108,6 +24108,19 @@ F77!$F77$ac_delim
 FFLAGS!$FFLAGS$ac_delim
 ac_ct_F77!$ac_ct_F77$ac_delim
 LIBTOOL!$LIBTOOL$ac_delim
+HOST_CFLAGS!$HOST_CFLAGS$ac_delim
+HOST_CXXFLAGS!$HOST_CXXFLAGS$ac_delim
+HOST_AR!$HOST_AR$ac_delim
+HOST_LIBTREPOSITORY!$HOST_LIBTREPOSITORY$ac_delim
+HOST_LINK_NO_START_FILES!$HOST_LINK_NO_START_FILES$ac_delim
+IS_HOST_AR_TRUE!$IS_HOST_AR_TRUE$ac_delim
+IS_HOST_AR_FALSE!$IS_HOST_AR_FALSE$ac_delim
+HOST_BLOOP_LDFLAGS!$HOST_BLOOP_LDFLAGS$ac_delim
+HOST_HPCVIEW_LDFLAGS!$HOST_HPCVIEW_LDFLAGS$ac_delim
+HOST_XPROF_LDFLAGS!$HOST_XPROF_LDFLAGS$ac_delim
+HOST_XCSPROF_LDFLAGS!$HOST_XCSPROF_LDFLAGS$ac_delim
+HOST_HPCRUN_LDFLAGS!$HOST_HPCRUN_LDFLAGS$ac_delim
+HOST_HPCPROF_LDFLAGS!$HOST_HPCPROF_LDFLAGS$ac_delim
 XERCES!$XERCES$ac_delim
 XERCES_IFLAGS!$XERCES_IFLAGS$ac_delim
 XERCES_LDFLAGS!$XERCES_LDFLAGS$ac_delim
@@ -24141,19 +24154,6 @@ OPT_ENABLE_CSPROF_ASYNC_FALSE!$OPT_ENABLE_CSPROF_ASYNC_FALSE$ac_delim
 OPT_ENABLE_DEVTOOLS_TRUE!$OPT_ENABLE_DEVTOOLS_TRUE$ac_delim
 OPT_ENABLE_DEVTOOLS_FALSE!$OPT_ENABLE_DEVTOOLS_FALSE$ac_delim
 OPT_OBJCOPY!$OPT_OBJCOPY$ac_delim
-HOST_CFLAGS!$HOST_CFLAGS$ac_delim
-HOST_CXXFLAGS!$HOST_CXXFLAGS$ac_delim
-HOST_AR!$HOST_AR$ac_delim
-HOST_LIBTREPOSITORY!$HOST_LIBTREPOSITORY$ac_delim
-HOST_LINK_NO_START_FILES!$HOST_LINK_NO_START_FILES$ac_delim
-IS_HOST_AR_TRUE!$IS_HOST_AR_TRUE$ac_delim
-IS_HOST_AR_FALSE!$IS_HOST_AR_FALSE$ac_delim
-HOST_BLOOP_LDFLAGS!$HOST_BLOOP_LDFLAGS$ac_delim
-HOST_HPCVIEW_LDFLAGS!$HOST_HPCVIEW_LDFLAGS$ac_delim
-HOST_XPROF_LDFLAGS!$HOST_XPROF_LDFLAGS$ac_delim
-HOST_XCSPROF_LDFLAGS!$HOST_XCSPROF_LDFLAGS$ac_delim
-HOST_HPCRUN_LDFLAGS!$HOST_HPCRUN_LDFLAGS$ac_delim
-HOST_HPCPROF_LDFLAGS!$HOST_HPCPROF_LDFLAGS$ac_delim
 LIBOBJS!$LIBOBJS$ac_delim
 LTLIBOBJS!$LTLIBOBJS$ac_delim
 _ACEOF
