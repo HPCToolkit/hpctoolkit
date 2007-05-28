@@ -69,27 +69,39 @@ MYSOURCES = \
 MYLATEX2MAN = @abs_top_srcdir@/tools/latex2man/latex2man
 MYLATEX2MANTRANS = @srcdir@/hpctoolkit-latex2man.trans
 
-MYMAN = $(patsubst %.tex,%.1,$(MYSOURCES))
+MYMANEXT = 1hpctoolkit
+
+MYMAN     = $(patsubst %.tex,%.$(MYMANEXT),$(MYSOURCES))
 MYMANHTML = $(patsubst %.tex,%.html,$(MYSOURCES))
 
 #############################################################################
 # Automake rules
 #############################################################################
 
-dist_man_MANS = $(MYMAN)
+# BUG! Won't work with $(MYMAN) variable!
+#man_MANS = $(MYMAN)
+man_MANS = \
+	hpctoolkit.1hpctoolkit \
+	bloop.1hpctoolkit \
+	hpcquick.1hpctoolkit \
+	hpcview.1hpctoolkit \
+	hpcprof.1hpctoolkit \
+	hpcviewer.1hpctoolkit
 
 nobase_dist_doc_DATA = $(MYMANHTML)
+
+CLEANFILES = $(MYMAN) $(MYMANHTML)
 
 #############################################################################
 # Other rules
 #############################################################################
 
-%.tex.pp: %.tex
+%.tex.pp : %.tex
 	sed -e 's/=PACKAGE_VERSION=/@PACKAGE_VERSION@/g' $< > $@
 #	$(MYCPP) -P -I@builddir@ $< $@
 
-%.1hpctoolkit: %.tex.pp
+%.$(MYMANEXT) : %.tex.pp
 	$(MYLATEX2MAN) -t $(MYLATEX2MANTRANS) $< $@
 
-%.html: %.tex.pp
+%.html : %.tex.pp
 	$(MYLATEX2MAN) -H -t $(MYLATEX2MANTRANS) $< $@

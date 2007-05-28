@@ -49,7 +49,7 @@ POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
 subdir = doc/man
-DIST_COMMON = $(dist_man_MANS) $(nobase_dist_doc_DATA) \
+DIST_COMMON = $(nobase_dist_doc_DATA) \
 	$(srcdir)/HPCToolkitVersionInfo.tex.in $(srcdir)/Makefile.am \
 	$(srcdir)/Makefile.in
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
@@ -228,14 +228,20 @@ MYSOURCES = \
 
 MYLATEX2MAN = @abs_top_srcdir@/tools/latex2man/latex2man
 MYLATEX2MANTRANS = @srcdir@/hpctoolkit-latex2man.trans
-MYMAN = $(patsubst %.tex,%.1,$(MYSOURCES))
+MYMANEXT = 1hpctoolkit
+MYMAN = $(patsubst %.tex,%.$(MYMANEXT),$(MYSOURCES))
 MYMANHTML = $(patsubst %.tex,%.html,$(MYSOURCES))
 
-#############################################################################
-# Automake rules
-#############################################################################
-dist_man_MANS = $(MYMAN)
+# BUG! Won't work with $(MYMAN) variable!
+man_MANS = $(MYMAN)
+#	hpctoolkit.1hpctoolkit \
+#	bloop.1hpctoolkit \
+#	hpcquick.1hpctoolkit \
+#	hpcview.1hpctoolkit \
+#	hpcprof.1hpctoolkit \
+#	hpcviewer.1hpctoolkit
 nobase_dist_doc_DATA = $(MYMANHTML)
+CLEANFILES = $(MYMAN) $(MYMANHTML)
 all: all-am
 
 .SUFFIXES:
@@ -330,7 +336,7 @@ distdir: $(DISTFILES)
 	done
 check-am: all-am
 check: check-am
-all-am: Makefile $(DATA)
+all-am: Makefile $(DATA) all-local
 installdirs:
 	for dir in "$(DESTDIR)$(docdir)"; do \
 	  test -z "$$dir" || $(MKDIR_P) "$$dir"; \
@@ -352,6 +358,7 @@ install-strip:
 mostlyclean-generic:
 
 clean-generic:
+	-test -z "$(CLEANFILES)" || rm -f $(CLEANFILES)
 
 distclean-generic:
 	-test -z "$(CONFIG_CLEAN_FILES)" || rm -f $(CONFIG_CLEAN_FILES)
@@ -415,12 +422,12 @@ uninstall-am: uninstall-nobase_dist_docDATA
 
 .MAKE: install-am install-strip
 
-.PHONY: all all-am check check-am clean clean-generic clean-libtool \
-	distclean distclean-generic distclean-libtool distdir dvi \
-	dvi-am html html-am info info-am install install-am \
-	install-data install-data-am install-dvi install-dvi-am \
-	install-exec install-exec-am install-html install-html-am \
-	install-info install-info-am install-man \
+.PHONY: all all-am all-local check check-am clean clean-generic \
+	clean-libtool distclean distclean-generic distclean-libtool \
+	distdir dvi dvi-am html html-am info info-am install \
+	install-am install-data install-data-am install-dvi \
+	install-dvi-am install-exec install-exec-am install-html \
+	install-html-am install-info install-info-am install-man \
 	install-nobase_dist_docDATA install-pdf install-pdf-am \
 	install-ps install-ps-am install-strip installcheck \
 	installcheck-am installdirs maintainer-clean \
@@ -430,17 +437,24 @@ uninstall-am: uninstall-nobase_dist_docDATA
 
 
 #############################################################################
+# Automake rules
+#############################################################################
+
+all-local: 
+	echo "====> $(MYMAN)"
+
+#############################################################################
 # Other rules
 #############################################################################
 
-%.tex.pp: %.tex
+%.tex.pp : %.tex
 	sed -e 's/=PACKAGE_VERSION=/@PACKAGE_VERSION@/g' $< > $@
 #	$(MYCPP) -P -I@builddir@ $< $@
 
-%.1hpctoolkit: %.tex.pp
+%.$(MYMANEXT) : %.tex.pp
 	$(MYLATEX2MAN) -t $(MYLATEX2MANTRANS) $< $@
 
-%.html: %.tex.pp
+%.html : %.tex.pp
 	$(MYLATEX2MAN) -H -t $(MYLATEX2MANTRANS) $< $@
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.
