@@ -91,7 +91,7 @@
 # endif
 
 # if !defined(HAVE_ULONG)
-  typedef    unsigned long in t    ulong;
+  typedef    unsigned long int    ulong;
 # endif
 
 #endif

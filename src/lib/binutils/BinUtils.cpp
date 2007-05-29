@@ -106,7 +106,7 @@ GetBestFuncName(const char* name)
 #elif defined(HOST_OS_SOLARIS)
 # include <../../usr/include/demangle.h> // demangle (don't confuse with GNU)
   const int DEMANGLE_BUF_SZ = 32768; // see MAXDBUF in SGI's dem.h
-#elif defined(HOST_OS_LINUX)
+#elif defined(HOST_OS_LINUX) || defined(HOST_OS_MACOS)
   // the system demangle is GNU's demangle
   const int DEMANGLE_BUF_SZ = 32768; // see MAXDBUF in SGI's dem.h
 #else

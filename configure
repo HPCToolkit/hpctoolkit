@@ -22395,14 +22395,22 @@ _ACEOF
     ;;
 
   # MacOS
-  #powerpc*-*-darwin*)
-    #HOST_OS="MacOS"
+  powerpc*-*-darwin*)
     # __ppc__ / __MACH__
-    #;;
+    HOST_OS="MacOS"
+    cat >>confdefs.h <<\_ACEOF
+#define HOST_OS_MACOS
+_ACEOF
 
-  #i386*-*-darwin* | i686*-*-darwin*)
-    #HOST_OS="MacOS"
-    #;;
+    ;;
+
+  i386*-*-darwin* | i686*-*-darwin*)
+    HOST_OS="MacOS"
+    cat >>confdefs.h <<\_ACEOF
+#define HOST_OS_MACOS
+_ACEOF
+
+    ;;
 
   # IRIX
   mips*-*-irix*)
