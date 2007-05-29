@@ -30,7 +30,7 @@
 \rcsInfo $Id$
 \setDate{\rcsInfoLongDate}
 }{
-\setDate{ 2007/05/28}
+\setDate{ 2007/05/29}
 \message{package rcsinfo not present, discard it}
 }
 
@@ -65,26 +65,23 @@ It creates an \Cmd{hpcview}{1} configuration file and optionally runs \Prog{hpcv
 It creates an \Cmd{hpcview}{1} configuration file (\File{./hpcquick.xml}) and runs \Prog{hpcview} to create an Experiment database.
 All shell commands used to create the Experiment database are recorded in a log file (\File{./hpcquick.log}).
 
-\Prog{hpcquick} expects a list of profile files (typically from \Cmd{hpcrun}{1}).
-For best results, two other options should be used: \textbf{-I} to provide paths for source code directories and \textbf{-S} to provide source code structure from \Cmd{bloop}{1}.
-
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\section{Arguments}
-
-\subsection{Typical options and arguments}
-
-\begin{Description}
-\item[\OptArg{-I}{dir}] A directory (relative or absolute) containing source code to which performance data should be correlated.  In order to search a directory \emph{and} recursively search all of its descendents, append an escaped `*' after the last slash, e.g., \verb+/mypath/\*+ (escaping is for the shell). May be passed multiple times.
-\item[\OptArg{-S}{struct-file}] A structure file (from \Cmd{bloop}{1}) for the main program and/or any or all of the shared libraries used by the program.  May be passed multiple times.
-%\item[\OptArg{-G}{group-file}] A group file for the main program and/or any or all of the shared libraries used by the program. May be passed multiple times.
-\item[\OptArg{-P}{profile-file}] A space-separated list of profile files, which may be of the following types:
+\Prog{hpcquick} expects a (space-separated) list of profile files, which may be of the following types:
 \begin{itemize}
   \item binary output from \Cmd{hpcrun}{1} (or \Cmd{hpcex}{1})
   \item binary output from SGI's ssrun and 
   \item XML PROFILE files (e.g., from \Cmd{hpcprof}{1} and \Prog{xprof})
 \end{itemize}
+For best results, two other options should be used: \textbf{-I} to provide paths for source code directories and \textbf{-S} to provide source code structure from \Cmd{bloop}{1}.
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Arguments}
+
+\subsection{Options: Correlation}
+
+\begin{Description}
+\item[\OptArg{-I}{path}] A path (relative or absolute) containing source code to which performance data should be correlated.  In order to search a directory \emph{and} recursively search all of its descendents, append an escaped `*' after the last slash, e.g., \verb+/mypath/\*+ (escaping is for the shell). May be passed multiple times.
+\item[\OptArg{-S}{struct-file}] A structure file (from \Cmd{bloop}{1}) for the main program and/or any or all of the shared libraries used by the program.  May be passed multiple times.
+%\item[\OptArg{-G}{group-file}] A group file for the main program and/or any or all of the shared libraries used by the program. May be passed multiple times.
 \end{Description}
 
 \subsection{Options: General}

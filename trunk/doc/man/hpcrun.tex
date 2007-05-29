@@ -1,0 +1,200 @@
+%% $Id$
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\documentclass[english]{article}
+\usepackage[latin1]{inputenc}
+\usepackage{babel}
+\usepackage{verbatim}
+
+%% do we have the `hyperref package?
+\IfFileExists{hyperref.sty}{
+   \usepackage[bookmarksopen,bookmarksnumbered]{hyperref}
+}{}
+
+%% do we have the `fancyhdr' or `fancyheadings' package?
+\IfFileExists{fancyhdr.sty}{
+\usepackage[fancyhdr]{latex2man}
+}{
+\IfFileExists{fancyheadings.sty}{
+\usepackage[fancy]{latex2man}
+}{
+\usepackage[nofancy]{latex2man}
+\message{no fancyhdr or fancyheadings package present, discard it}
+}}
+
+%% do we have the `rcsinfo' package?
+\IfFileExists{rcsinfo.sty}{
+\usepackage[nofancy]{rcsinfo}
+\rcsInfo $Id$
+\setDate{\rcsInfoLongDate}
+}{
+\setDate{ 2007/05/29}
+\message{package rcsinfo not present, discard it}
+}
+
+\setVersionWord{Version:}  %%% that's the default, no need to set it.
+\setVersion{=PACKAGE_VERSION=}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{document}
+
+\begin{Name}{1}{hpcrun}{The HPCToolkit Performance Tools}{The HPCToolkit Performance Tools}{hpcrun:\\ Statistical Profiling}
+
+\Prog{hpcrun} profiles the execution of an arbitrary command using statistical
+sampling.
+In general, multiple events may be sampled and for each sampled event, \Prog{hpcrun} creates creates an IP (instruction pointer) histogram.
+See \Cmd{hpctoolkit}{1} for an overview of \textbf{HPCToolkit}.
+
+\end{Name}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Synopsis}
+
+\Prog{hpcrun} \oOpt{profiling-options} [\texttt{--}] \Arg{command} \oOpt{command-arguments}
+
+\Prog{hpcrun} \oOpt{info-options}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Description}
+
+\Prog{hpcrun} profiles the execution of an arbitrary command \Arg{command} using statistical sampling.
+In general, multiple events may be sampled and for each sampled event, \Prog{hpcrun} creates creates an IP (instruction pointer) histogram.
+Events may be specified using either PAPI platform independent names or the native event names for the processor.
+The special option `\texttt{--}' can be used to stop \Prog{hpcrun} option parsing; this is especially useful when \Arg{command} takes arguments of its own.
+
+For an event \emph{e} and period \emph{p}, after every \emph{p} instances of \emph{e} a counter associated with the instruction of the current IP is incremented.
+When \Arg{command} terminates normally, a profile --- a histogram of counts for instructions in each load module --- will be written to a file with the name\\
+\SP\SP\SP \Arg{command}.\Arg{event1}.\Arg{hostname}.\Arg{pid}.\Arg{tid}\\
+If multiple events are specified, \texttt{-etc} is appended to \Arg{event1} to indicate the presence of additional data.
+
+\Prog{hpcrun} allows the user to abort a process \emph{and} write the partial profiling data to disk by sending the Interrupt signal (INT or Ctrl-C).  This can be extremely useful on long-running or misbehaving applications.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Arguments}
+
+\begin{Description}
+\item[\Arg{command}] The command to profile.
+\item[\Arg{command-arguments}] Arguments to the command to profile.
+\end{Description}
+
+Default values for an option's optional arguments are shown in \{\}.
+
+\subsection{Options: Informational}
+
+\begin{Description}
+\item[\Opt{-l}, \Opt{--events-short}] List available events (NOTE: some may not be profilable).
+\item[\Opt{-L}, \Opt{--events-long}] Similar to above but with more information.
+\item[\Opt{--paths}] Print paths for external PAPI and MONITOR.
+\item[\Opt{-V}, \Opt{--version}] Print version information.
+\item[\Opt{-h}, \Opt{--help}] Print help.
+\item[\OptoArg{--debug}{n}]   Debug: use debug level \Arg{n}. \{1\}
+\end{Description}
+
+\subsection{Options: Profiling}
+
+\begin{Description}
+  \item[\OptoArg{-r}{yes \Bar no}, \OptoArg{--recursive}{yes \Bar no}] By default all processes spawned by \Arg{command} will be profiled, each receiving its own output file.  Use this option to turn off recursive profiling; only \Arg{command} will be profiled. \{no\}.
+  \item[\OptArg{-t}{mode}, \OptArg{--threads}{mode}] Select thread profiling mode \{each\}:
+  \begin{itemize}
+    \item \textbf{each} Create separate profiles for each thread.
+    \item \textbf{all} Create one combined profile of all threads.
+  \end{itemize}
+  Note that only POSIX threads are supported.
+  Also note that the WALLCLK event cannot be used in a multithreaded process.
+  \item[\OptArg{-e}{event\Lbr:period\Rbr}, \OptArg{--event}{event\Lbr:period\Rbr}]  An event to profile and its corresponding sample period. \Arg{event} may be either a PAPI or native processor event. \{\verb+PAPI_TOT_CYC:999999+\} Notes:
+  \begin{itemize}
+    \item It is recommended to always specify the sampling period for each profiling event.
+    \item The special event WALLCLK may be used to profile the `wall clock.'  It may be used only \emph{once} and cannot be used with another event. It is an error to specify a period.
+    \item Multiple events may be selected for profiling during an execution by using multiple \textbf{-e} arguments.
+    \item The maximum number of events that can be monitored during a single execution depends on the processor. Not all combinations of events may be monitored in the same execution; allowable combinations depend on the processor. Check your processor documentation.
+  \end{itemize}
+  \item[\OptoArg{-o}{outpath}, \OptoArg{--output}{outpath}] Directory for output data.  \{\texttt{.}\}
+  \item[\OptArg{--papi-flag}{flag}] Profile style flag.  \{\verb+PAPI_POSIX_PROFIL+\}
+\end{Description}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Examples}
+
+Assume we wish to profile the application \texttt{zoo}.
+The following examples lists some useful events for different processor architectures.
+In each case, the special option \texttt{--} is used to clearly demarcate the end of \Prog{hpcrun} options.
+
+\begin{enumerate}
+\item \verb+hpcrun -e WALLCLK -- zoo+
+\item Opteron, (Rev B-F)
+  \begin{enumerate}
+    \item \verb+hpcrun -e DC_L2_REFILL:1300013 -e PAPI_L2_DCM:510011 -e PAPI_STL_ICY:5300013 -e PAPI_TOT_CYC:13000019 -- zoo+ (\verb+DC_L2_REFILL+ is an approximation of L1 D-cache misses).
+    \item \verb+hpcrun -e PAPI_L2_DCM:510011 -e PAPI_TLB_DM:510013 -e PAPI_STL_ICY:5300013 -e PAPI_TOT_CYC:13000019 -- zoo+
+  \end{enumerate}
+
+\item Pentium IV 
+  \begin{enumerate}
+    \item \verb+hpcrun -e PAPI_TOT_CYC:30000001 -e PAPI_TOT_INS:3000001 -e PAPI_FP_INS:1000001 -e PAPI_LD_INS:1000001 -e PAPI_TLB_TL:32767  -e PAPI_L2_TCM:32767  -e PAPI_RES_STL:1000001 -e BSQ_cache_reference_RD_3rdL_MISS -- zoo+
+    \item \verb+hpcrun -e PAPI_SR_INS:1000001 -e PAPI_L1_DCM:32767 -e resource_stall_SBFULL:32767 -- zoo+
+    \item \verb+hpcrun -e PAPI_FP_OPS:32767 -e PAPI_BR_MSP:32767 -- zoo+
+  \end{enumerate}
+
+\item Itanium 2
+  \begin{enumerate}
+    \item \verb+hpcrun -e BE_EXE_BUBBLE_ALL:344221 -e BE_L1D_FPU_BUBBLE_ALL:344221 -e FE_BUBBLE_ALL:144221 -e PAPI_TOT_CYC:344221 -- zoo+
+    \item \verb+hpcrun -e PAPI_L1_DCM:144221 -e PAPI_FP_OPS:344221 -e PAPI_TOT_CYC:1044221 -- zoo+
+    \item Cycle accounting events: \verb+BACK_END_BUBBLE_ALL+, \verb+BE_EXE_BUBBLE_ALL+, \verb+BE_L1D_FPU_BUBBLE_ALL+, \verb+BE_FLUSH_BUBBLE_ALL+, \verb+BE_RSE_BUBBLE_ALL+, \verb+FE_BUBBLE_ALL+
+  \end{enumerate}
+
+\end{enumerate}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Notes}
+
+\begin{itemize}
+  \item Because hpcrun uses \verb+LD_PRELOAD+ to initiate profiling, it cannot be used to profile setuid commands.
+  \item For the same reason, it cannot profile statically linked applications.
+  \item Bug: For non-recursive profiling, \verb+LD_PRELOAD+ is currently unsetenv'd.  Child processes that otherwise depend \verb+LD_PRELOAD+ will likely die.
+\end{itemize}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{See Also}
+
+\Cmd{hpctoolkit}{1}.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Version}
+
+Version: \Version\ of \Date.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{License and Copyright}
+
+\begin{description}
+\item[Copyright] \copyright\ 2002-2007, Rice University.
+\item[License] See \File{README.License}.
+\end{description}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Authors}
+
+\noindent
+Nathan Tallent \\
+John Mellor-Crummey \\
+Rob Fowler \\
+Email: \Email{hpc@cs.rice.edu} \\
+WWW: \URL{http://hipersoft.cs.rice.edu/hpctoolkit}.
+
+\LatexManEnd
+
+\end{document}
+
+%% Local Variables:
+%% eval: (add-hook 'write-file-hooks 'time-stamp)
+%% time-stamp-start: "setDate{ "
+%% time-stamp-format: "%:y/%02m/%02d"
+%% time-stamp-end: "}\n"
+%% time-stamp-line-limit: 50
+%% End:
+
