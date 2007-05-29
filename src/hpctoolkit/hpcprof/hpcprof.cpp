@@ -70,8 +70,8 @@ usage(const string &argv0)
 {
   cout 
     << "Usage:\n"
-    << "  " << argv0 << "    [options] <binary> <hpcrun_file>...\n"
-    << "  " << argv0 << " -p [options] <binary> <hpcrun_file>...\n"
+    << "  " << argv0 << "    [options] <binary> <hpcrun-file>...\n"
+    << "  " << argv0 << " -p [options] <binary> <hpcrun-file>...\n"
     << endl
     << "Options: General\n"
     << "  -d, --directory <dir>\n"

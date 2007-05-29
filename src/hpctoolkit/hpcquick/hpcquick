@@ -80,27 +80,28 @@ my $the_usage =
 "Usage: 
   ${the_program} [other-options] [-I <dir>] [-S <struct-file>] [-G <group-file>] -P <profile-file>...
 
-hpcquick is a front-end for hpcview.  It creates an hpcview configuration file (./hpcquick.xml) and runs hpcview to create an Experiment database.
-All shell commands used to create the Experiment database are recorded in a log file (./hpcquick.log).
+hpcquick is a front-end for hpcview.  It creates an hpcview configuration file
+(./hpcquick.xml) and runs hpcview to create an Experiment database.  All shell
+commands used to create the Experiment database are recorded in a log file
+(./hpcquick.log).
 
-hpcquick expects a list of profile files (typically from hpcrun). For best results, two other options should be used: -I to provide paths for source code directories and -S to provide source code structure from bloop.
+hpcquick expects a (space-separated) list of profile files, which may be of the following types:
+  o binary output from hpcrun
+  o binary output from SGI's ssrun
+  o XML PROFILE files (e.g., from hpcprof and xprof)
+For best results, two other options should be used: -I to provide paths for
+source code directories and -S to provide source code structure from bloop.
 
-Typical options and arguments:
-  -I <dir>            A directory (relative or absolute) containing source code
-                      to which performance data should be correlated.  In order
-                      to search a directory *and* recursively search all of its
+Options: Correlation
+  -I <path>           A path (relative or absolute) containing source code to
+                      which performance data should be correlated.  In order to
+                      search a directory *and* recursively search all of its
                       descendents, append an escaped '*' after the last slash,
                       e.g., /mypath/\\* (escaping is for the shell).
                       May be passed multiple times.
   -S <struct-file>    A structure file (from bloop) for the main program
 		      and/or any or all of the shared libraries used by the
                       program.  May be passed multiple times.
-  -P <profile-file>...  
-                      A space-separated list of profile files, which may be of
-                      the following types:
-                        o binary output from hpcrun
-                        o binary output from SGI's ssrun
-                        o XML PROFILE files (e.g., from hpcprof and xprof)
 
 Options: General
   -n                  No hpcview output.  Convert profiles and create an 

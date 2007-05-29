@@ -88,31 +88,32 @@ static const char* version_info =
 #include <include/HPCToolkitVersionInfo.h>
 
 static const char* usage_summary =
-"[options] <binary> <profile>\n";
+"[options] <binary> <profile-file>\n";
 
 static const char* usage_details =
-"Correlates a CSPROF profile metrics with corresponding source code in order\n"
-"to create an Experiment database (ExperimentXML format) for use with\n"
-"hpcviewer.\n"
+"xcsprof correlates dynamic call-path profiling metrics with static source\n"
+"code structure and generates an Experiment database for use with hpcviewer.\n"
+"xcsprof consumes one call path profile, <profile-file>.\n"
 "\n"
-"General options:\n"
+"Options: General\n"
 "  -v, --verbose [<n>]  Verbose: generate progress messages to stderr at\n"
-"                       verbosity level <n>.  [1]\n"
+"                       verbosity level <n>. {1}\n"
 "  -V, --version        Print version information.\n"
 "  -h, --help           Print this help.\n"
+"  --debug [<n>]        Debug: use debug level <n>. {1}\n"
 "\n"
-"Correlation options:\n"
+"Options: Correlation\n"
 "  -I <path>, --include <path>\n"
 "                       Use <path> when searching for source files. May pass\n"
 "                       multiple times.\n"
 "  -S <file>, --structure <file>\n"
 "                       Use the bloop structure file <file> for correlation.\n"
 "\n"
-"Output options:\n"
+"Options: Output\n"
 "  -o <db-path>, --db <db-path>, --output <db-path>\n"
 "                       Specify Experiment database name <db-path>.\n"
-"                       [./"EXPERIMENTDB"]\n"
-"                       Experiment format ["EXPERIMENTXML"]\n";
+"                       {./"EXPERIMENTDB"}\n"
+"                       Experiment format {"EXPERIMENTXML"}\n";
 
 
 #define CLP CmdLineParser
