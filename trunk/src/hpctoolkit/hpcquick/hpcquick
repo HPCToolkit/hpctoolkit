@@ -78,7 +78,7 @@ STDOUT->autoflush(1);
 my $the_program = $Script;
 my $the_usage = 
 "Usage: 
-  ${the_program} [other-options] [-I <dir>] [-S <struct-file>] [-G <group-file>] -P <profile-file>...
+  ${the_program} [other-options] [-I <path>] [-S <struct-file>] [-G <group-file>] -P <profile-file>...
 
 hpcquick is a front-end for hpcview.  It creates an hpcview configuration file
 (./hpcquick.xml) and runs hpcview to create an Experiment database.  All shell
@@ -953,7 +953,6 @@ sub canonicalizeProfileData
   my $profileData = [ ];
 
   for my $x (@{$profFiles}) {
-    
     # test whether the file exists
     if ( !(-e $x && -r $x) ) {
       UsageError("Invalid or non-existent profile file: '$x'\n");
@@ -968,9 +967,11 @@ sub canonicalizeProfileData
     my ($canonFile, $canonType) = (undef, undef);
     my $rawFile = $x;
     my $rawTy = getProfileType($rawFile);
+
+    print STDOUT "  ${x} of type ${rawTy}\n";
     
-    if ($rawTy == $PROFILEType) {
-    #if ($rawTy == $hpcrunType || $rawTy == $PROFILEType) {
+    if ($rawTy == $hpcrunType || $rawTy == $PROFILEType) {
+    #if ($rawTy == $PROFILEType) {
       $canonFile = $rawFile;
       $canonType = $rawTy;
     }
