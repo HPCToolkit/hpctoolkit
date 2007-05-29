@@ -58,6 +58,8 @@ AUTOMAKE_OPTIONS = foreign
 MYSOURCES = \
 	hpctoolkit.tex \
 	\
+	hpcrun.tex \
+	\
 	bloop.tex \
 	\
 	hpcquick.tex \
@@ -82,6 +84,7 @@ MYMANHTML = $(patsubst %.tex,%.html,$(MYSOURCES))
 #man_MANS = $(MYMAN)
 man_MANS = \
 	hpctoolkit.1hpctoolkit \
+	hpcrun.1hpctoolkit \
 	bloop.1hpctoolkit \
 	hpcquick.1hpctoolkit \
 	hpcview.1hpctoolkit \

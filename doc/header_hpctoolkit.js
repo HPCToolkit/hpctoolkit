@@ -15,13 +15,13 @@ document.write('[ <a href="http://www.hipersoft.rice.edu/hpctoolkit/">HPCToolkit
 document.write('</td>');
 document.write('<td align="right">');
 document.write('[ <a href="index.html">DocRoot</a> |');
-document.write('  <a href="hpc_bloop.html">bloop</a> |');
+document.write('  <a href="bloop.html">bloop</a> |');
 document.write('  <a href="hpcquick.html">hpcquick</a> |');
 document.write('  <a href="hpcprof.html">hpcprof</a> |');
 document.write('  <a href="hpcrun.html">hpcrun</a> |');
 document.write('  <a href="hpcview.html">hpcview</a> |');
-document.write('  <a href="hpcviewer.html">hpcviewer</a> |');
-document.write('  <a href="hpc_xprof.html">xprof</a> ]');
+document.write('  <a href="hpcviewer.html">hpcviewer</a> ]');
+//document.write('  <a href="xprof.html">xprof</a> ]');
 document.write('</td>');
 document.write('</tr>');
 document.write('</table>');

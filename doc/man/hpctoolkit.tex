@@ -70,7 +70,7 @@ A typical node-based performance analysis session consists of:
 \begin{enumerate}
 \item \textbf{Measurement.}  
 Collect low-overhead, high-accuracy profiles using statistical sampling.
-\Cmd{hpcrun}{1} collects `flat' profiles (PC-histograms) while \Cmd{csprof}{1} collects call path profiles.
+\Cmd{hpcrun}{1} collects `flat' profiles (IP histograms, where IP is instruction pointer) while \Cmd{csprof}{1} collects call path profiles.
 
 \item \textbf{Recovering static source code structure.} 
 \Cmd{bloop}{1} recovers static program structure such as procedures and loop nests.

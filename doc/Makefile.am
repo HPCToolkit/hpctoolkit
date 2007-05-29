@@ -56,21 +56,14 @@ AUTOMAKE_OPTIONS = foreign
 #############################################################################
 
 MYSOURCES = \
-	building-old.html \
 	building.html \
 	dtd_hpcview.html \
 	dtd_pgm.html \
 	dtd_profile.html \
 	footer_hpctoolkit.js \
 	header_hpctoolkit.js \
-	hpc_bloop.html \
 	hpc_ptran.html \
 	hpc_xprof.html \
-	hpcprof.html \
-	hpcquick.html \
-	hpcrun.html \
-	hpcview.html \
-	hpcviewer.html \
 	hwctools.html \
 	index.html \
 	styleForAll.css \
@@ -78,6 +71,13 @@ MYSOURCES = \
 	images/header.gif \
 	images/index.html
 
+#	building-old.html
+#	hpc_bloop.html
+#	hpcrun.html
+#	hpcprof.html
+#	hpcquick.html
+#	hpcview.html
+#	hpcviewer.html
 
 #############################################################################
 # Automake rules
