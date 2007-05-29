@@ -65,6 +65,7 @@ See \Cmd{hpctoolkit}{1} for an overview of \textbf{HPCToolkit}.
 In general, multiple events may be sampled and for each sampled event, \Prog{hpcrun} creates creates an IP (instruction pointer) histogram.
 Events may be specified using either PAPI platform independent names or the native event names for the processor.
 The special option `\texttt{--}' can be used to stop \Prog{hpcrun} option parsing; this is especially useful when \Arg{command} takes arguments of its own.
+\Prog{hpcrun} can be used in combination with other launchers such as MPICH's \texttt{mpiexec} and SLURM's \texttt{srun}.
 
 For an event \emph{e} and period \emph{p}, after every \emph{p} instances of \emph{e} a counter associated with the instruction of the current IP is incremented.
 When \Arg{command} terminates normally, a profile --- a histogram of counts for instructions in each load module --- will be written to a file with the name\\
