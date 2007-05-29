@@ -95,7 +95,7 @@ static const char* usage_details =
 "\n"
 "Options: General:\n"
 "  -v, --verbose [<n>]  Verbose: generate progress messages to stderr at\n"
-"                       verbosity level <n>.  {1}  (Use n=2 to debug path\n"
+"                       verbosity level <n>. {1}  (Use n=2 to debug path\n"
 "                       replacement if metric and program structure is not\n"
 "                       properly matched.)\n"
 "  -V, --version        Print version information.\n"
