@@ -97,7 +97,11 @@ For best results, two other options should be used: \textbf{-I} to provide paths
 
 %\begin{enumerate}
 %\item 
-[FIXME]
+
+Assume we have collected \Cmd{hpcrun}{1} data for a run of \texttt{poissonSolve3d}.  Further assume we have used \Cmd{bloop}{1} to compute program structure and stored the result in \texttt{poissonSolve3d.psxml}.  Source code for the application is located under the relative paths \verb+../lib+ and \verb+../example+.  \Prog{hpcquick} can be used to generate an Experiment database:
+\begin{verbatim}
+   hpcquick -I ../lib/\* -I ../example/\* -S poissonSolve3d.psxml -P poissonSolve3d.Linux.icpc.ifort.ex.PAPI_L2_DCM-etc.andre1.2150.0x866
+\end{verbatim}
 
 %\end{enumerate}
 
