@@ -181,14 +181,16 @@ case ${host} in
     ;;
 
   # MacOS
-  #powerpc*-*-darwin*)
-    #HOST_OS="MacOS"
+  powerpc*-*-darwin*)
     # __ppc__ / __MACH__
-    #;;
+    HOST_OS="MacOS"
+    AC_DEFINE([HOST_OS_MACOS], [], [])
+    ;;
 
-  #i386*-*-darwin* | i686*-*-darwin*)
-    #HOST_OS="MacOS"
-    #;;
+  i386*-*-darwin* | i686*-*-darwin*)
+    HOST_OS="MacOS"
+    AC_DEFINE([HOST_OS_MACOS], [], [])
+    ;;
 
   # IRIX
   mips*-*-irix*)
