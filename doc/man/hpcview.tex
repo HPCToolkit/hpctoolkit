@@ -51,14 +51,13 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Synopsis}
 
-\Prog{hpcview} \oOpt{options} \Arg{config-file} \oOpt{profile-file...}
+\Prog{hpcview} \oOpt{options} \Arg{config-file}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Description}
 
 \Prog{hpcview} correlates dynamic profiling metrics with static source code structure and (by default) generates an Experiment database for use with \Cmd{hpcviewer}{1}.
 \Prog{hpcview} is driven by the configuration file \Arg{config-file}, which amongh other things, may contain user defined derived metrics.
-\Arg{profile-files} is a list of \Cmd{hpcrun}{1} profiles.
 
 The easiest way to create a configuration file is to use the \Cmd{hpcquick}{1}, a front end to \Prog{hpcview}.
 See the section \emph{Configuration File} below for more details about its syntax.
@@ -68,7 +67,6 @@ See the section \emph{Configuration File} below for more details about its synta
 
 \begin{Description}
 \item[\Arg{config-file...}] The \Prog{hpcview} configuration file.
-\item[\Arg{profile-file...}] \Cmd{hpcrun}{1} profile files.
 \end{Description}
 
 Default values for an option's optional arguments are shown in \{\}.
@@ -89,6 +87,7 @@ Default values for an option's optional arguments are shown in \{\}.
   \item[\OptArg{-o}{db-path}, \OptArg{--db}{db-path}, \OptArg{--output}{db-path}] Specify Experiment database name \Arg{db-path}.  \{\File{./experiment-db}\}
   \item[\OptoArg{--src}{yes \Bar\ no}, \OptoArg{--source}{yes \Bar\ no}] Whether to copy source code files into Experiment database. \{yes\} By default, \Prog{hpcview} copies source files with performance metrics and that can be reached by PATH/REPLACE statements, resulting in a self-contained dataset that does not rely on an external source code repository.  Note that if copying is suppressed, the database is no longer self-contained.
 \end{Description}
+
 
 \subsection{Output Formats}
 
@@ -170,13 +169,17 @@ which has several attributes.
 
 The metric types are
   \begin{itemize}
-  \item \textbf{Native or FILE metrics}.  This metric is read from a file which can be of type HPCRUN (from \Cmd{hpcrun}{1}) or PROFILE (from \Cmd{hpcprof}{1}). Since a file may contain multiple metrics, the \texttt{FILE} element has an optional `select' attribute to identify a particular metric from the file.  Metrics are identified by their `shortName' values which are typically zero-based indices.  The default `select' value is 0, which corresponds to the first metric.
+  \item \textbf{Native or FILE metrics}.  This metric is read from a file which can be of type HPCRUN (from \Cmd{hpcrun}{1}) or PROFILE (from \Cmd{hpcprof}{1}).
 
   \texttt{$<$METRIC name="m1" ...$>$}\\
   \texttt{$<$FILE name="}\Arg{file1}\texttt{"}
     \texttt{select="}\Arg{short-name-in-file1}\texttt{"}
     \texttt{type="}\texttt{HPCRUN\Bar PROFILE}\texttt{"/>}\\
   \texttt{$<$/METRIC$>$}\\
+
+   Since a file may contain multiple metrics, the \texttt{FILE} element has an optional `select' attribute to identify a particular metric from the file.  Metrics are identified by their `shortName' values which are typically zero-based indices.  The default `select' value is 0, which corresponds to the first metric.
+
+There is one important difference in how each type is handled.  HPCRUN files are correlated to source code using the object code addresses annotations of STRUCTURE files; thus, they require valid STRUCTURE information.  In contrast, PROFILE files are correlated by source line level information.
 
   \item \textbf{Derived or COMPUTE metrics.} Derived metrics are specified by a \texttt{COMPUTE} element containing a MathML equation in terms of metrics defined earlier in the HPCVIEW document.  \Prog{hpcview} supports the following operands
   \begin{itemize}

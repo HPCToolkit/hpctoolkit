@@ -74,24 +74,26 @@ usage(const string &argv0)
     << "  " << argv0 << " -p [options] <binary> <hpcrun-file>...\n"
     << endl
     << "Options: General\n"
-    << "  -d, --directory <dir>\n"
+    << "  -d <dir>, --directory <dir>\n"
     << "                      Search <dir> for source files.\n"
-    << "  -D, --recursive-directory <dir>\n"
+    << "  -D <dir>, --recursive-directory <dir>\n"
     << "                      Search <dir> recursively for source files.\n"
     << "  --force             Show data that is not accurate.\n"
     << "  -V, --version       Display the version number.\n"
     << "  -h, --help          Print this message.\n"
     << "  --debug <n>         Debug: use debug level <n>.\n"
     << endl
-    << "Options: Text and HTML mode [Default]\n"
+    << "Options: Text and HTML mode {Default}\n"
     << "  -e, --everything    Show all information.\n"
     << "  -f, --files         Show all files.\n"
     << "  -r, --funcs         Show all functions.\n"
     << "  -l, --lines         Show all lines.\n"
     << "  -n, --number        Show number of samples (not percentages).\n"
-    << "  -s, --show <n>      Set threshold <n> for showing aggregate data.\n"
-    << "  -H, --html dir      Output HTML into directory dir.\n"
-    << "  -a, --annotate <file> Annotate source file <file>.\n"
+    << "  -s <n>, --show <n>  Set threshold <n> for showing aggregate data.\n"
+    << "  -H <dir>, --html <dir>\n"
+    << "                      Output HTML into directory dir.\n"
+    << "  -a <file>, --annotate <file> \n"
+    << "                      Annotate source file <file>.\n"
     << endl
     << "Options: PROFILE mode\n"
     << "  -p, --profile       Dump PROFILE output (for use with HPCToolkit's hpcview).\n"
@@ -141,93 +143,93 @@ real_main(int argc, char *argv[])
   // Process arguments
   // -------------------------------------------------------
   for (int i = 1; i < argc; ++i) {
-      string arg(argv[i]);
-      if (arg == "-h" || arg == "--help") {
-          usage(argv[0]);
-          return 1;
-        }
-      else if (arg == "-n" || arg == "--number") {
-          show_as_percent = false;
-        }
-      else if (arg == "-e" || arg == "--everything") {
-          show_everything = true;
-        }
-      else if (arg == "--force") {
-          show_of_force = true;
-        }
-      else if (arg == "-f" || arg == "--files") {
-          show_files = true;
-        }
-      else if (arg == "-r" || arg == "--funcs") {
-          show_funcs = true;
-        }
-      else if (arg == "-s" || arg == "--show") {
-          if (i<argc-1) {
-              i++;
-              show_thresh = atoi(argv[i]);
-            }
-        }
-      else if (arg == "--debug") {
-          if (i<argc-1) {
-              i++;
-              debug = atoi(argv[i]);
-            }
-	  Diagnostics_SetDiagnosticFilterLevel(debug);
-        }
-      else if (arg == "-d" || arg == "--directory") {
-          if (i<argc-1) {
-              i++;
-              sum.add_filesearch(FileSearch(argv[i], false));
-            }
-        }
-      else if (arg == "-D" || arg == "--recursive-directory") {
-          if (i<argc-1) {
-              i++;
-              sum.add_filesearch(FileSearch(argv[i], true));
-            }
-        }
-      else if (arg == "-l" || arg == "--lines") {
-          show_lines = true;
-        }
-      else if (arg == "-H" || arg == "--html") {
-          show_as_html = true;
-          if (i<argc-1) {
-              i++;
-              htmldir = argv[i];
-            }
-        }
-      else if (arg == "-a" || arg == "--annotate") {
-          if (i<argc-1) {
-              i++;
-              annotate.push_back(qual_name_val("", argv[i])); // FIXME
-            }
-        }
-      else if (arg == "-V" || arg == "--version") {
-	cout << argv[0] << ": " << version_info << endl;
-          return 0;
-        }
-      else if (arg == "-p" || arg == "--profile") {
-	  dump_profile = true;
-        }      
-      else if (arg.length() > 0 && arg.substr(0,1) == "-") {
-          usage(argv[0]);
-          return 1;
-        }
-      else if (command.size() == 0) {
-          command = arg;
-        }
-      else {
-          proffiles.push_back(arg);
-        }
+    string arg(argv[i]);
+    if (arg == "-h" || arg == "--help") {
+      usage(argv[0]);
+      return 1;
     }
+    else if (arg == "-n" || arg == "--number") {
+      show_as_percent = false;
+    }
+    else if (arg == "-e" || arg == "--everything") {
+      show_everything = true;
+    }
+    else if (arg == "--force") {
+      show_of_force = true;
+    }
+    else if (arg == "-f" || arg == "--files") {
+      show_files = true;
+    }
+    else if (arg == "-r" || arg == "--funcs") {
+      show_funcs = true;
+    }
+    else if (arg == "-s" || arg == "--show") {
+      if (i<argc-1) {
+	i++;
+	show_thresh = atoi(argv[i]);
+      }
+    }
+    else if (arg == "--debug") {
+      if (i<argc-1) {
+	i++;
+	debug = atoi(argv[i]);
+      }
+      Diagnostics_SetDiagnosticFilterLevel(debug);
+    }
+    else if (arg == "-d" || arg == "--directory") {
+      if (i<argc-1) {
+	i++;
+	sum.add_filesearch(FileSearch(argv[i], false));
+      }
+    }
+    else if (arg == "-D" || arg == "--recursive-directory") {
+      if (i<argc-1) {
+	i++;
+	sum.add_filesearch(FileSearch(argv[i], true));
+      }
+    }
+    else if (arg == "-l" || arg == "--lines") {
+      show_lines = true;
+    }
+    else if (arg == "-H" || arg == "--html") {
+      show_as_html = true;
+      if (i<argc-1) {
+	i++;
+	htmldir = argv[i];
+      }
+    }
+    else if (arg == "-a" || arg == "--annotate") {
+      if (i<argc-1) {
+	i++;
+	annotate.push_back(qual_name_val("", argv[i])); // FIXME
+      }
+    }
+    else if (arg == "-V" || arg == "--version") {
+      cout << argv[0] << ": " << version_info << endl;
+      return 0;
+    }
+    else if (arg == "-p" || arg == "--profile") {
+      dump_profile = true;
+    }      
+    else if (arg.length() > 0 && arg.substr(0,1) == "-") {
+      usage(argv[0]);
+      return 1;
+    }
+    else if (command.size() == 0) {
+      command = arg;
+    }
+    else {
+      proffiles.push_back(arg);
+    }
+  }
   if (command.size() == 0) {
-      usage(argv[0]);
-      return 1;
-    }
+    usage(argv[0]);
+    return 1;
+  }
   if (proffiles.size() == 0) {
-      usage(argv[0]);
-      return 1;
-    }
+    usage(argv[0]);
+    return 1;
+  }
   
 
   // -------------------------------------------------------
@@ -236,15 +238,15 @@ real_main(int argc, char *argv[])
 
   sum.set_debug(debug);
   if (!sum.init(command, proffiles)) {
-      return 1;
-    }
+    return 1;
+  }
 
   if (dump_profile) {
-      dump_PROFILE(sum);
-    } 
+    dump_PROFILE(sum);
+  } 
   else {
-      dump_html_or_text(sum);
-    }
+    dump_html_or_text(sum);
+  }
   
   return 0;
 }

@@ -229,7 +229,12 @@ $logFHndl->open("> $logFile")
 
 # Canonicalize profile data into PROFILE data
 print STDOUT "* Canonicalizing performance data...\n";
-my $profileData = canonicalizeProfileData($opt_profileFiles, $logFHndl);
+my $isHpcrunCanonical = (scalar(@{$opt_structFiles}) > 0);
+if (!$isHpcrunCanonical) {
+  print STDOUT "  WARNING: No STRUCTURE files found! HPCRUN profile files will be converted for line-level correlation only (rather than by address)!\n";
+}
+my $profileData = canonicalizeProfileData($opt_profileFiles, $logFHndl,
+                                          $isHpcrunCanonical);
 
 # Initialize metrics using PROFILE files
 print STDOUT "* Collecting metrics from performance data...\n";
@@ -948,7 +953,7 @@ sub isRecursivePath
 #    - Returns a list of 'profileInfo_t'
 sub canonicalizeProfileData
 {
-  my ($profFiles, $logFhndl) = @_;
+  my ($profFiles, $logFhndl, $isHpcrunCanonical) = @_;
     
   my $profileData = [ ];
 
@@ -969,9 +974,9 @@ sub canonicalizeProfileData
     my $rawTy = getProfileType($rawFile);
 
     print STDOUT "  ${x} of type ${rawTy}\n";
-    
-    if ($rawTy == $hpcrunType || $rawTy == $PROFILEType) {
-    #if ($rawTy == $PROFILEType) {
+
+    if (($rawTy == $hpcrunType && $isHpcrunCanonical) 
+	|| $rawTy == $PROFILEType) {
       $canonFile = $rawFile;
       $canonType = $rawTy;
     }

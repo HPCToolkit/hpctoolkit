@@ -109,7 +109,7 @@ public:
 
   // Parsed Data: arguments
   std::string configurationFile;
-  std::list<std::string> profileFiles;
+  //TODO std::list<std::string> profileFiles;
 
 private:
   void Ctor();

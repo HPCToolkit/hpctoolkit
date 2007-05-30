@@ -84,14 +84,13 @@ static const char* version_info =
 #include <include/HPCToolkitVersionInfo.h>
 
 static const char* usage_summary =
-"[options] <config-file> [<profile-files>]\n";
+"[options] <config-file>\n";
 
 static const char* usage_details =
 "hpcview correlates dynamic profiling metrics with static source code\n"
 "structure and (by default) generates an Experiment database for use with\n"
 "hpcviewer. hpcview is driven by the configuration file <config-file>, which\n"
 "among other things, may contain user defined derived metrics.\n"
-"<profile-files> is a list of hpcrun profiles.\n"
 "\n"
 "Options: General:\n"
 "  -v, --verbose [<n>]  Verbose: generate progress messages to stderr at\n"
@@ -101,9 +100,11 @@ static const char* usage_details =
 "  -V, --version        Print version information.\n"
 "  -h, --help           Print this help.\n"
 "  --debug [<n>]        Debug: use debug level <n>. {1}\n"
-#if 0
 "\n"
-"Options: Correlation:\n"
+#if 0
+"Options: Correlation\n"
+"  <profile-files>      A list of hpcrun profiles. Requires bloop STRUCTURE\n"
+"                       information for correlation.\n"
 "  -u                   Do not remove trailing underscores on routine names.\n"
 "                       [hpcprof] normally deletes any trailing underscore\n"
 "                       from routine names to avoid problems caused when\n"
@@ -341,16 +342,16 @@ Args::Parse(int argc, const char* const argv[])
     }
     
     // Check for required arguments
-    if (parser.GetNumArgs() < 1) {
+    if (parser.GetNumArgs() != 1) {
       PrintError(std::cerr, "Incorrect number of arguments!");
       exit(1);
     }
     configurationFile = parser.GetArg(0);
 
-    for (unsigned i = 1; i < parser.GetNumArgs(); ++i) {
-      profileFiles.push_back(parser.GetArg(i));
-    }
-
+    // TODO
+    //for (uint i = 1; i < parser.GetNumArgs(); ++i) {
+    //  profileFiles.push_back(parser.GetArg(i));
+    //}
   }
   catch (const CmdLineParser::ParseError& x) {
     PrintError(std::cerr, x.what());

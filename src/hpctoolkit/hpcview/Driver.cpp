@@ -128,8 +128,8 @@ string
 Driver::ReplacePath(const char* oldpath)
 {
   DIAG_Assert(replaceInPath.size() == replaceOutPath.size(), "");
-  for( unsigned int i=0 ; i<replaceInPath.size() ; i++ ) {
-    unsigned int length = replaceInPath[i].length();
+  for (uint i = 0 ; i<replaceInPath.size() ; i++ ) {
+    uint length = replaceInPath[i].length();
     // it makes sense to test for matching only if 'oldpath' is strictly longer
     // than this replacement inPath.
     if (strlen(oldpath) > length &&  
@@ -166,7 +166,7 @@ Driver::ToString() const {
   string s =  string("Driver: " ) + "title=" + title + " " + 
     "path=" + path; 
   s += "\ndataSrc::\n"; 
-  for (unsigned int i =0; i < dataSrc.size(); i++) {
+  for (uint i =0; i < dataSrc.size(); i++) {
     s += dataSrc[i]->ToString() + "\n"; 
   }
   return s; 
@@ -225,14 +225,17 @@ Driver::ScopeTreeComputeHPCRUNMetrics(PgmScopeTree& scopes)
 {
   typedef std::map<string, MetricList_t> StringToMetricListMap_t;
   StringToMetricListMap_t fileToMetricMap;
-  
+
   // create HPCRUN file metrics.  Process all metrics associated with
   // a certain file.
-  
-  NodeRetriever ret(scopes.GetRoot(), path);
-  for (unsigned int i = 0; i < dataSrc.size(); i++) {
+
+  PgmScope* pgmScope = scopes.GetRoot();
+  NodeRetriever ret(pgmScope, path);
+  for (uint i = 0; i < dataSrc.size(); i++) {
     PerfMetric* m = dataSrc[i];
     if (IsHPCRUNFilePerfMetric(m)) {
+      DIAG_Assert(pgmScope && pgmScope->ChildCount() > 0, "Attempting to correlate HPCRUN type profile-files without STRUCTURE information.");
+      
       FilePerfMetric* fm = dynamic_cast<FilePerfMetric*>(m);
       fileToMetricMap[fm->FileName()].push_back(fm);
     }
@@ -253,7 +256,7 @@ Driver::ScopeTreeComputeOtherMetrics(PgmScopeTree& scopes)
   // create PROFILE file and computed metrics
   NodeRetriever ret(scopes.GetRoot(), path);
   
-  for (unsigned int i = 0; i < dataSrc.size(); i++) {
+  for (uint i = 0; i < dataSrc.size(); i++) {
     PerfMetric* m = dataSrc[i];
     if (!IsHPCRUNFilePerfMetric(m)) {
       m->Make(ret);
@@ -264,8 +267,8 @@ Driver::ScopeTreeComputeOtherMetrics(PgmScopeTree& scopes)
 
 void
 Driver::ScopeTreeInsertHPCRUNData(PgmScopeTree& scopes,
-			  const string& profFilenm,
-			  const MetricList_t& metricList)
+				  const string& profFilenm,
+				  const MetricList_t& metricList)
 {
   PgmScope* pgm = scopes.GetRoot();
   NodeRetriever nodeRet(pgm, path);
@@ -284,7 +287,7 @@ Driver::ScopeTreeInsertHPCRUNData(PgmScopeTree& scopes,
     throw;
   }
   
-  for (unsigned int i = 0; i < prof.num_load_modules(); ++i) {
+  for (uint i = 0; i < prof.num_load_modules(); ++i) {
     const ProfFileLM& proflm = prof.load_module(i);
     const std::string& lmname = proflm.name();
     LoadModScope* lmScope = nodeRet.MoveToLoadMod(lmname);
@@ -309,12 +312,12 @@ Driver::ScopeTreeInsertHPCRUNData(PgmScopeTree& scopes,
     for (MetricList_t::const_iterator it = metricList.begin(); 
 	 it != metricList.end(); ++it) {
       FilePerfMetric* m = *it;
-      unsigned mIdx = (unsigned)StrUtil::toUInt64(m->NativeName());
+      uint mIdx = (uint)StrUtil::toUInt64(m->NativeName());
       
       const ProfFileEvent& profevent = proflm.event(mIdx);
       uint64_t period = profevent.period();
       
-      for (unsigned int k = 0; k < profevent.num_data(); ++k) {
+      for (uint k = 0; k < profevent.num_data(); ++k) {
 	const ProfFileEventDatum& dat = profevent.datum(k);
 	VMA vma = dat.first; // relocated VMA
 	uint32_t samples = dat.second;
@@ -373,7 +376,7 @@ Driver::ProcessPGMFile(NodeRetriever* nretriever,
     return;
   }
   
-  for (unsigned int i = 0; i < files->size(); i++) {
+  for (uint i = 0; i < files->size(); i++) {
     const string& fnm = *((*files)[i]);
     DriverDocHandlerArgs args(this);
     read_PGM(nretriever, fnm.c_str(), docty, args);
@@ -404,13 +407,13 @@ Driver::XML_Dump(PgmScope* pgm, int dumpFlags, std::ostream &os,
   os << pre1 << "<TITLE name=\042" << Title() << "\042/>" << endl;
 
   const PathTupleVec& pVec = PathVec();
-  for (unsigned int i = 0; i < pVec.size(); i++) {
+  for (uint i = 0; i < pVec.size(); i++) {
     const string& pathStr = pVec[i].first;
     os << pre1 << "<PATH name=\042" << pathStr << "\042/>" << endl;
   }
   
   os << pre1 << "<METRICS>" << endl;
-  for (unsigned int i=0; i < NumberOfPerfDataInfos(); i++) {
+  for (uint i = 0; i < NumberOfPerfDataInfos(); i++) {
     const PerfMetric& metric = IndexToPerfDataInfo(i); 
     os << pre2 << "<METRIC shortName=\042" << i
        << "\042 nativeName=\042"  << metric.NativeName()
@@ -438,7 +441,7 @@ void
 Driver::CSV_Dump(PgmScope* pgm, std::ostream &os) const
 {
   os << "File name,Routine name,Start line,End line,Loop level";
-  for (unsigned int i=0; i < NumberOfPerfDataInfos(); i++) {
+  for (uint i = 0; i < NumberOfPerfDataInfos(); i++) {
     const PerfMetric& metric = IndexToPerfDataInfo(i); 
     os << "," << metric.DisplayInfo().Name();
     if (metric.Percent())
@@ -455,7 +458,7 @@ void
 Driver::TSV_Dump(PgmScope* pgm, std::ostream &os) const
 {
   os << "LineID";
-  for (unsigned int i=0; i < NumberOfPerfDataInfos(); i++) {
+  for (uint i = 0; i < NumberOfPerfDataInfos(); i++) {
     const PerfMetric& metric = IndexToPerfDataInfo(i); 
     os << "\t" << metric.DisplayInfo().Name();
     /*

@@ -99,7 +99,9 @@ static const char* usage_details =
 "                       Addresses may be in base 10, 8 (prefix '0') or 16\n"
 "                       (prefix '0x').  [NOT FULLY IMPLEMENTED]\n"
 "  -V, --version        Print version information.\n"
-"  -h, --help           Print this help.\n";
+"  -h, --help           Print this help.\n"
+"  --debug [<n>]        Debug: use debug level <n>. {1}\n";
+
 
 
 #define CLP CmdLineParser
