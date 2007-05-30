@@ -140,13 +140,13 @@ libhpcrun_la_LIBADD     = $(MYLDADD_LIBHPCRUN_PRELOAD)
 # N.B.: We use the PROGRAMS macro primarily to get free linking, since
 # using lib_LTLIBRARIES doesn't work.  An install-hook below moves
 # this from bin to lib in the installation.
-#lib_LTLIBRARIES             += libhpcrun-static.o
-bin_PROGRAMS               += libhpcrun-static.o
-libhpcrun_static_o_SOURCES  = $(MYSOURCES_LIBHPCRUN_STATIC)
-libhpcrun_static_o_CFLAGS   = $(MYCFLAGS)
-libhpcrun_static_o_CXXFLAGS = $(MYCXXFLAGS)
-libhpcrun_static_o_LDFLAGS  = $(MYLDFLAGS_LIBHPCRUN_STATIC)
-libhpcrun_static_o_LDADD    = $(MYLDADD_LIBHPCRUN_STATIC)
+##lib_LTLIBRARIES             += libhpcrun-static.o
+#bin_PROGRAMS               += libhpcrun-static.o
+#libhpcrun_static_o_SOURCES  = $(MYSOURCES_LIBHPCRUN_STATIC)
+#libhpcrun_static_o_CFLAGS   = $(MYCFLAGS)
+#libhpcrun_static_o_CXXFLAGS = $(MYCXXFLAGS)
+#libhpcrun_static_o_LDFLAGS  = $(MYLDFLAGS_LIBHPCRUN_STATIC)
+#libhpcrun_static_o_LDADD    = $(MYLDADD_LIBHPCRUN_STATIC)
 
 MOSTLYCLEANFILES        = $(MYCLEAN)
 
@@ -187,7 +187,7 @@ myinstall-libhpcrunso:
 	@OPT_OBJCOPY@ -S $(MYKEEPSYMS) $(pkglibdir)/libhpcrun.so
 
 myinstall-libhpcrun-static: 
-	mv $(bindir)/libhpcrun-static.o $(libdir)/.
+#	mv $(bindir)/libhpcrun-static.o $(libdir)/.
 
 .PHONY: myinstall-exec myinstall-libhpcrunso myinstall-libhpcrun-static
 

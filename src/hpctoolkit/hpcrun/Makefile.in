@@ -100,7 +100,7 @@ host_triplet = @host@
 DIST_COMMON = README $(srcdir)/Makefile.am $(srcdir)/Makefile.in \
 	$(top_srcdir)/src/Makeinclude.config \
 	$(top_srcdir)/src/Makeinclude.rules
-bin_PROGRAMS = hpcrun$(EXEEXT) libhpcrun-static.o$(EXEEXT)
+bin_PROGRAMS = hpcrun$(EXEEXT)
 subdir = src/hpctoolkit/hpcrun
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/config/hpc-cxxutils.m4 \
@@ -139,17 +139,6 @@ hpcrun_DEPENDENCIES = $(am__DEPENDENCIES_2)
 hpcrun_LINK = $(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
 	--mode=link $(CXXLD) $(hpcrun_CXXFLAGS) $(CXXFLAGS) \
 	$(hpcrun_LDFLAGS) $(LDFLAGS) -o $@
-am__objects_3 = libhpcrun_static_o-monitor_static.$(OBJEXT) \
-	libhpcrun_static_o-monitor.$(OBJEXT) \
-	libhpcrun_static_o-hpcpapi.$(OBJEXT) \
-	libhpcrun_static_o-rtmap.$(OBJEXT)
-am_libhpcrun_static_o_OBJECTS = $(am__objects_3)
-libhpcrun_static_o_OBJECTS = $(am_libhpcrun_static_o_OBJECTS)
-libhpcrun_static_o_DEPENDENCIES = $(am__DEPENDENCIES_1)
-libhpcrun_static_o_LINK = $(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) \
-	$(LIBTOOLFLAGS) --mode=link $(CXXLD) \
-	$(libhpcrun_static_o_CXXFLAGS) $(CXXFLAGS) \
-	$(libhpcrun_static_o_LDFLAGS) $(LDFLAGS) -o $@
 DEFAULT_INCLUDES = -I.@am__isrc@
 depcomp = $(SHELL) $(top_srcdir)/config/depcomp
 am__depfiles_maybe = depfiles
@@ -171,10 +160,8 @@ CXXLD = $(CXX)
 CXXLINK = $(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
 	--mode=link $(CXXLD) $(AM_CXXFLAGS) $(CXXFLAGS) $(AM_LDFLAGS) \
 	$(LDFLAGS) -o $@
-SOURCES = $(libhpcrun_la_SOURCES) $(hpcrun_SOURCES) \
-	$(libhpcrun_static_o_SOURCES)
-DIST_SOURCES = $(libhpcrun_la_SOURCES) $(hpcrun_SOURCES) \
-	$(libhpcrun_static_o_SOURCES)
+SOURCES = $(libhpcrun_la_SOURCES) $(hpcrun_SOURCES)
+DIST_SOURCES = $(libhpcrun_la_SOURCES) $(hpcrun_SOURCES)
 ETAGS = etags
 CTAGS = ctags
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
@@ -416,11 +403,16 @@ libhpcrun_la_SOURCES = $(MYSOURCES_LIBHPCRUN_PRELOAD)
 libhpcrun_la_CFLAGS = $(MYCFLAGS)
 libhpcrun_la_LDFLAGS = $(MYLDFLAGS_LIBHPCRUN_PRELOAD)
 libhpcrun_la_LIBADD = $(MYLDADD_LIBHPCRUN_PRELOAD)
-libhpcrun_static_o_SOURCES = $(MYSOURCES_LIBHPCRUN_STATIC)
-libhpcrun_static_o_CFLAGS = $(MYCFLAGS)
-libhpcrun_static_o_CXXFLAGS = $(MYCXXFLAGS)
-libhpcrun_static_o_LDFLAGS = $(MYLDFLAGS_LIBHPCRUN_STATIC)
-libhpcrun_static_o_LDADD = $(MYLDADD_LIBHPCRUN_STATIC)
+
+# N.B.: We use the PROGRAMS macro primarily to get free linking, since
+# using lib_LTLIBRARIES doesn't work.  An install-hook below moves
+# this from bin to lib in the installation.
+#bin_PROGRAMS               += libhpcrun-static.o
+#libhpcrun_static_o_SOURCES  = $(MYSOURCES_LIBHPCRUN_STATIC)
+#libhpcrun_static_o_CFLAGS   = $(MYCFLAGS)
+#libhpcrun_static_o_CXXFLAGS = $(MYCXXFLAGS)
+#libhpcrun_static_o_LDFLAGS  = $(MYLDFLAGS_LIBHPCRUN_STATIC)
+#libhpcrun_static_o_LDADD    = $(MYLDADD_LIBHPCRUN_STATIC)
 MOSTLYCLEANFILES = $(MYCLEAN)
 
 #############################################################################
@@ -544,9 +536,6 @@ clean-binPROGRAMS:
 hpcrun$(EXEEXT): $(hpcrun_OBJECTS) $(hpcrun_DEPENDENCIES) 
 	@rm -f hpcrun$(EXEEXT)
 	$(hpcrun_LINK) $(hpcrun_OBJECTS) $(hpcrun_LDADD) $(LIBS)
-libhpcrun-static.o$(EXEEXT): $(libhpcrun_static_o_OBJECTS) $(libhpcrun_static_o_DEPENDENCIES) 
-	@rm -f libhpcrun-static.o$(EXEEXT)
-	$(libhpcrun_static_o_LINK) $(libhpcrun_static_o_OBJECTS) $(libhpcrun_static_o_LDADD) $(LIBS)
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
@@ -562,10 +551,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-monitor.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-monitor_preload.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-rtmap.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_static_o-hpcpapi.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_static_o-monitor.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_static_o-monitor_static.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_static_o-rtmap.Po@am__quote@
 
 .c.o:
 @am__fastdepCC_TRUE@	$(COMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
@@ -644,48 +629,6 @@ hpcrun-dlpapi.obj: dlpapi.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(hpcrun_CFLAGS) $(CFLAGS) -c -o hpcrun-dlpapi.obj `if test -f 'dlpapi.c'; then $(CYGPATH_W) 'dlpapi.c'; else $(CYGPATH_W) '$(srcdir)/dlpapi.c'; fi`
 
-libhpcrun_static_o-monitor.o: monitor.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_static_o_CFLAGS) $(CFLAGS) -MT libhpcrun_static_o-monitor.o -MD -MP -MF $(DEPDIR)/libhpcrun_static_o-monitor.Tpo -c -o libhpcrun_static_o-monitor.o `test -f 'monitor.c' || echo '$(srcdir)/'`monitor.c
-@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/libhpcrun_static_o-monitor.Tpo $(DEPDIR)/libhpcrun_static_o-monitor.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='monitor.c' object='libhpcrun_static_o-monitor.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_static_o_CFLAGS) $(CFLAGS) -c -o libhpcrun_static_o-monitor.o `test -f 'monitor.c' || echo '$(srcdir)/'`monitor.c
-
-libhpcrun_static_o-monitor.obj: monitor.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_static_o_CFLAGS) $(CFLAGS) -MT libhpcrun_static_o-monitor.obj -MD -MP -MF $(DEPDIR)/libhpcrun_static_o-monitor.Tpo -c -o libhpcrun_static_o-monitor.obj `if test -f 'monitor.c'; then $(CYGPATH_W) 'monitor.c'; else $(CYGPATH_W) '$(srcdir)/monitor.c'; fi`
-@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/libhpcrun_static_o-monitor.Tpo $(DEPDIR)/libhpcrun_static_o-monitor.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='monitor.c' object='libhpcrun_static_o-monitor.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_static_o_CFLAGS) $(CFLAGS) -c -o libhpcrun_static_o-monitor.obj `if test -f 'monitor.c'; then $(CYGPATH_W) 'monitor.c'; else $(CYGPATH_W) '$(srcdir)/monitor.c'; fi`
-
-libhpcrun_static_o-hpcpapi.o: hpcpapi.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_static_o_CFLAGS) $(CFLAGS) -MT libhpcrun_static_o-hpcpapi.o -MD -MP -MF $(DEPDIR)/libhpcrun_static_o-hpcpapi.Tpo -c -o libhpcrun_static_o-hpcpapi.o `test -f 'hpcpapi.c' || echo '$(srcdir)/'`hpcpapi.c
-@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/libhpcrun_static_o-hpcpapi.Tpo $(DEPDIR)/libhpcrun_static_o-hpcpapi.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='hpcpapi.c' object='libhpcrun_static_o-hpcpapi.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_static_o_CFLAGS) $(CFLAGS) -c -o libhpcrun_static_o-hpcpapi.o `test -f 'hpcpapi.c' || echo '$(srcdir)/'`hpcpapi.c
-
-libhpcrun_static_o-hpcpapi.obj: hpcpapi.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_static_o_CFLAGS) $(CFLAGS) -MT libhpcrun_static_o-hpcpapi.obj -MD -MP -MF $(DEPDIR)/libhpcrun_static_o-hpcpapi.Tpo -c -o libhpcrun_static_o-hpcpapi.obj `if test -f 'hpcpapi.c'; then $(CYGPATH_W) 'hpcpapi.c'; else $(CYGPATH_W) '$(srcdir)/hpcpapi.c'; fi`
-@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/libhpcrun_static_o-hpcpapi.Tpo $(DEPDIR)/libhpcrun_static_o-hpcpapi.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='hpcpapi.c' object='libhpcrun_static_o-hpcpapi.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_static_o_CFLAGS) $(CFLAGS) -c -o libhpcrun_static_o-hpcpapi.obj `if test -f 'hpcpapi.c'; then $(CYGPATH_W) 'hpcpapi.c'; else $(CYGPATH_W) '$(srcdir)/hpcpapi.c'; fi`
-
-libhpcrun_static_o-rtmap.o: rtmap.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_static_o_CFLAGS) $(CFLAGS) -MT libhpcrun_static_o-rtmap.o -MD -MP -MF $(DEPDIR)/libhpcrun_static_o-rtmap.Tpo -c -o libhpcrun_static_o-rtmap.o `test -f 'rtmap.c' || echo '$(srcdir)/'`rtmap.c
-@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/libhpcrun_static_o-rtmap.Tpo $(DEPDIR)/libhpcrun_static_o-rtmap.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='rtmap.c' object='libhpcrun_static_o-rtmap.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_static_o_CFLAGS) $(CFLAGS) -c -o libhpcrun_static_o-rtmap.o `test -f 'rtmap.c' || echo '$(srcdir)/'`rtmap.c
-
-libhpcrun_static_o-rtmap.obj: rtmap.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_static_o_CFLAGS) $(CFLAGS) -MT libhpcrun_static_o-rtmap.obj -MD -MP -MF $(DEPDIR)/libhpcrun_static_o-rtmap.Tpo -c -o libhpcrun_static_o-rtmap.obj `if test -f 'rtmap.c'; then $(CYGPATH_W) 'rtmap.c'; else $(CYGPATH_W) '$(srcdir)/rtmap.c'; fi`
-@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/libhpcrun_static_o-rtmap.Tpo $(DEPDIR)/libhpcrun_static_o-rtmap.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='rtmap.c' object='libhpcrun_static_o-rtmap.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_static_o_CFLAGS) $(CFLAGS) -c -o libhpcrun_static_o-rtmap.obj `if test -f 'rtmap.c'; then $(CYGPATH_W) 'rtmap.c'; else $(CYGPATH_W) '$(srcdir)/rtmap.c'; fi`
-
 .cpp.o:
 @am__fastdepCXX_TRUE@	$(CXXCOMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
 @am__fastdepCXX_TRUE@	mv -f $(DEPDIR)/$*.Tpo $(DEPDIR)/$*.Po
@@ -734,20 +677,6 @@ hpcrun-Args.obj: Args.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='Args.cpp' object='hpcrun-Args.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(hpcrun_CXXFLAGS) $(CXXFLAGS) -c -o hpcrun-Args.obj `if test -f 'Args.cpp'; then $(CYGPATH_W) 'Args.cpp'; else $(CYGPATH_W) '$(srcdir)/Args.cpp'; fi`
-
-libhpcrun_static_o-monitor_static.o: monitor_static.cpp
-@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_static_o_CXXFLAGS) $(CXXFLAGS) -MT libhpcrun_static_o-monitor_static.o -MD -MP -MF $(DEPDIR)/libhpcrun_static_o-monitor_static.Tpo -c -o libhpcrun_static_o-monitor_static.o `test -f 'monitor_static.cpp' || echo '$(srcdir)/'`monitor_static.cpp
-@am__fastdepCXX_TRUE@	mv -f $(DEPDIR)/libhpcrun_static_o-monitor_static.Tpo $(DEPDIR)/libhpcrun_static_o-monitor_static.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='monitor_static.cpp' object='libhpcrun_static_o-monitor_static.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_static_o_CXXFLAGS) $(CXXFLAGS) -c -o libhpcrun_static_o-monitor_static.o `test -f 'monitor_static.cpp' || echo '$(srcdir)/'`monitor_static.cpp
-
-libhpcrun_static_o-monitor_static.obj: monitor_static.cpp
-@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_static_o_CXXFLAGS) $(CXXFLAGS) -MT libhpcrun_static_o-monitor_static.obj -MD -MP -MF $(DEPDIR)/libhpcrun_static_o-monitor_static.Tpo -c -o libhpcrun_static_o-monitor_static.obj `if test -f 'monitor_static.cpp'; then $(CYGPATH_W) 'monitor_static.cpp'; else $(CYGPATH_W) '$(srcdir)/monitor_static.cpp'; fi`
-@am__fastdepCXX_TRUE@	mv -f $(DEPDIR)/libhpcrun_static_o-monitor_static.Tpo $(DEPDIR)/libhpcrun_static_o-monitor_static.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='monitor_static.cpp' object='libhpcrun_static_o-monitor_static.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_static_o_CXXFLAGS) $(CXXFLAGS) -c -o libhpcrun_static_o-monitor_static.obj `if test -f 'monitor_static.cpp'; then $(CYGPATH_W) 'monitor_static.cpp'; else $(CYGPATH_W) '$(srcdir)/monitor_static.cpp'; fi`
 
 mostlyclean-libtool:
 	-rm -f *.lo
@@ -955,7 +884,7 @@ myinstall-libhpcrunso:
 	@OPT_OBJCOPY@ -S $(MYKEEPSYMS) $(pkglibdir)/libhpcrun.so
 
 myinstall-libhpcrun-static: 
-	mv $(bindir)/libhpcrun-static.o $(libdir)/.
+#	mv $(bindir)/libhpcrun-static.o $(libdir)/.
 
 .PHONY: myinstall-exec myinstall-libhpcrunso myinstall-libhpcrun-static
 

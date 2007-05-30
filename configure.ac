@@ -67,7 +67,7 @@ m4_include(config/hpc-cxxutils.m4)
 #    correctly
 #----------------------------------------------------------------------------
 
-AC_INIT([HPCToolkit], [TRUNK-4.9.0=821], [hpc@cs.rice.edu], [hpctoolkit])
+AC_INIT([HPCToolkit], [TRUNK-4.9.0=835], [hpc@cs.rice.edu], [hpctoolkit])
 AC_CONFIG_SRCDIR([src/include/HPCToolkitVersionInfo.h])
 AC_CONFIG_AUX_DIR([config])
 
@@ -374,10 +374,6 @@ esac
 # Grab optimization flags
 HOST_CFLAGS="${HOST_CFLAGS} ${my_opt_cflags}"
 HOST_CXXFLAGS="${HOST_CXXFLAGS} ${my_opt_cxxflags}"
-
-# Ensure IEEE support for Nan.h/C (Only essential on Tru64 and IRIX)
-HOST_CFLAGS="${HOST_CFLAGS} -D_IEEE"
-HOST_CXXFLAGS="${HOST_CXXFLAGS} -D_IEEE"
 
 # Several programs need system's demangle option
 HOST_BLOOP_LDFLAGS="${HOST_BLOOP_LDFLAGS} ${my_demangle_ldflags}"
