@@ -86,64 +86,65 @@ static const char* version_info =
 static const char* usage_summary =
 "[options] <config-file>\n";
 
-static const char* usage_details =
-"hpcview correlates dynamic profiling metrics with static source code\n"
-"structure and (by default) generates an Experiment database for use with\n"
-"hpcviewer. hpcview is driven by the configuration file <config-file>, which\n"
-"among other things, may contain user defined derived metrics.\n"
-"\n"
-"Options: General:\n"
-"  -v, --verbose [<n>]  Verbose: generate progress messages to stderr at\n"
-"                       verbosity level <n>. {1}  (Use n=2 to debug path\n"
-"                       replacement if metric and program structure is not\n"
-"                       properly matched.)\n"
-"  -V, --version        Print version information.\n"
-"  -h, --help           Print this help.\n"
-"  --debug [<n>]        Debug: use debug level <n>. {1}\n"
-"\n"
+static const char* usage_details = "\
+hpcview correlates dynamic profiling metrics with static source code\n\
+structure and (by default) generates an Experiment database for use with\n\
+hpcviewer. hpcview is driven by the configuration file <config-file>, which\n\
+among other things, may contain user defined derived metrics.\n\
+\n\
+Options: General:\n\
+  -v, --verbose [<n>]  Verbose: generate progress messages to stderr at\n\
+                       verbosity level <n>. {1}  (Use n=2 to debug path\n\
+                       replacement if metric and program structure is not\n\
+                       properly matched.)\n\
+  -V, --version        Print version information.\n\
+  -h, --help           Print this help.\n\
+  --debug [<n>]        Debug: use debug level <n>. {1}\n\
+\n\
+Options: Output:\n\
+  -o <db-path>, --db <db-path>, --output <db-path>\n\
+                       Specify Experiment database name <db-path>.\n\
+                       {./"EXPERIMENTDB"}\n\
+  --src [yes|no], --source [yes|no]\n\
+                       Whether to copy source code files into Experiment\n\
+                       database. {yes} By default, [hpcprof] copies source\n\
+                       files with performance metrics and that can be\n\
+                       reached by PATH/REPLACE statements, resulting in a\n\
+                       self-contained dataset that does not rely on an\n\
+                       external source code repository.  Note that if\n\
+                       copying is suppressed, the database is no longer\n\
+                       self-contained.\n\
+\n\
+Output formats: Select different output formats and optionally specify the\n\
+output filename <fname> (located within the Experiment database). The output\n\
+is sparse in the sense that it ignores program areas without profiling\n\
+information. (Set <fname> to '-' to write to stdout.)\n\
+  -x [<fname>], --experiment [<fname>]\n\
+                       Default. ExperimentXML format. {"EXPERIMENTXML"}.\n\
+                       NOTE: To disable, set <fname> to 'no'.\n\
+  --csv [<fname>]      Comma-separated-value format. {"EXPERIMENTCSV"}\n\
+                       Includes flat scope tree and loops. Useful for\n\
+                       downstream external tools.\n\
+  --tsv [<fname>]      Tab-separated-value format. {"EXPERIMENTTSV"}\n\
+                       Includes flat scope tree and lines. Useful for\n\
+                       downstream external tools.\n";
+
 #if 0
-"Options: Correlation\n"
-"  <profile-files>      A list of hpcrun profiles. Requires bloop STRUCTURE\n"
-"                       information for correlation.\n"
-"  -u                   Do not remove trailing underscores on routine names.\n"
-"                       [hpcprof] normally deletes any trailing underscore\n"
-"                       from routine names to avoid problems caused when\n"
-"                       Fortran compilers provide inconsistent information\n"
-"                       about routine names.\n"
-"  -l          By default, the generated scope tree contains aggregated\n"
-"              metrics at all internal nodes of the scope tree.  This option\n"
-"              saves space by outputting metrics only at the leaves. A\n"
-"              FUTURE version of HPCViewer will be able to use the option,\n"
-"              but no current software can.\n"
+"Options: Correlation\n\
+  <profile-files>      A list of hpcrun profiles. Requires bloop STRUCTURE\n\
+                       information for correlation.\n\
+  -u                   Do not remove trailing underscores on routine names.\n\
+                       [hpcprof] normally deletes any trailing underscore\n\
+                       from routine names to avoid problems caused when\n\
+                       Fortran compilers provide inconsistent information\n\
+                       about routine names.\n\
+  -l          By default, the generated scope tree contains aggregated\n\
+              metrics at all internal nodes of the scope tree.  This option\n\
+              saves space by outputting metrics only at the leaves. A\n\
+              FUTURE version of HPCViewer will be able to use the option,\n\
+              but no current software can.\n\
+\n"
 #endif
-"\n"
-"Options: Output:\n"
-"  -o <db-path>, --db <db-path>, --output <db-path>\n"
-"                       Specify Experiment database name <db-path>.\n"
-"                       {./"EXPERIMENTDB"}\n"
-"  --src [yes|no], --source [yes|no]\n"
-"                       Whether to copy source code files into Experiment\n"
-"                       database. {yes} By default, [hpcprof] copies source\n"
-"                       files with performance metrics and that can be\n"
-"                       reached by PATH/REPLACE statements, resulting in a\n"
-"                       self-contained dataset that does not rely on an\n"
-"                       external source code repository.  Note that if\n"
-"                       copying is suppressed, the database is no longer\n"
-"                       self-contained.\n"
-"\n"
-"Output formats: Select different output formats and optionally specify the\n"
-"output filename <fname> (located within the Experiment database). The output\n"
-"is sparse in the sense that it ignores program areas without profiling\n"
-"information. (Set <fname> to '-' to write to stdout.)\n"
-"  -x [<fname>], --experiment [<fname>]\n"
-"                       Default. ExperimentXML format. {"EXPERIMENTXML"}.\n"
-"                       NOTE: To disable, set <fname> to 'no'.\n"
-"  --csv [<fname>]      Comma-separated-value format. {"EXPERIMENTCSV"}\n"
-"                       Includes flat scope tree and loops. Useful for\n"
-"                       downstream external tools.\n"
-"  --tsv [<fname>]      Tab-separated-value format. {"EXPERIMENTTSV"}\n"
-"                       Includes flat scope tree and lines. Useful for\n"
-"                       downstream external tools.\n";
 
 
 #define CLP CmdLineParser
