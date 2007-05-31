@@ -151,6 +151,32 @@ AC_MSG_RESULT([${HAVE_OS_MULTILIB}])
 
 
 #----------------------------------------------------------------------------
+# Special Options that should be tested first
+#----------------------------------------------------------------------------
+
+#-------------------------------------------------
+# enable-develop
+#-------------------------------------------------
+
+AC_MSG_CHECKING([whether DEVELOP mode is enabled])
+
+OPT_ENABLE_DEVELOP=no
+
+AC_ARG_ENABLE([develop],
+  AS_HELP_STRING([--enable-develop],
+                 [Build development version (enable debugging)]),
+  [case "${enableval}" in
+     yes) OPT_ENABLE_DEVELOP="yes" ;;
+     no)  OPT_ENABLE_DEVELOP="no" ;;
+     *) AC_MSG_ERROR([bad value ${enableval} for --enable-develop]) ;;
+   esac],
+  [OPT_ENABLE_DEVELOP=no])
+
+AC_MSG_RESULT([${OPT_ENABLE_DEVELOP}])
+AM_CONDITIONAL(OPT_ENABLE_DEVELOP, test "${OPT_ENABLE_DEVELOP}" = "yes")
+
+
+#----------------------------------------------------------------------------
 # Host-dependent configuration
 # $host: $host_cpu-$host_vendor-$host_os
 #----------------------------------------------------------------------------
@@ -494,28 +520,6 @@ AC_SUBST([GNUBINUTILS_LDFLAGS])
 #----------------------------------------------------------------------------
 # Options
 #----------------------------------------------------------------------------
-
-#-------------------------------------------------
-# enable-develop
-#-------------------------------------------------
-
-AC_MSG_CHECKING([whether DEVELOP mode is enabled])
-
-OPT_ENABLE_DEVELOP=no
-
-AC_ARG_ENABLE([develop],
-  AS_HELP_STRING([--enable-develop],
-                 [Build development version (enable debugging)]),
-  [case "${enableval}" in
-     yes) OPT_ENABLE_DEVELOP="yes" ;;
-     no)  OPT_ENABLE_DEVELOP="no" ;;
-     *) AC_MSG_ERROR([bad value ${enableval} for --enable-develop]) ;;
-   esac],
-  [OPT_ENABLE_DEVELOP=no])
-
-AC_MSG_RESULT([${OPT_ENABLE_DEVELOP}])
-AM_CONDITIONAL(OPT_ENABLE_DEVELOP, test "${OPT_ENABLE_DEVELOP}" = "yes")
-
 
 #-------------------------------------------------
 # with-monitor
