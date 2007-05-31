@@ -80,26 +80,28 @@ public:
   // Instructions:
   // --------------------------------------------------------  
   
-  virtual ushort GetInsnSize(MachInsn* mi) { return MINSN_SIZE; } 
+  virtual ushort 
+  GetInsnSize(MachInsn* mi) { return MINSN_SIZE; } 
   
-  virtual ushort GetInsnNumOps(MachInsn* mi) { return 1; }
+  virtual ushort 
+  GetInsnNumOps(MachInsn* mi) { return 1; }
 
-  virtual InsnDesc GetInsnDesc(MachInsn* mi, ushort opIndex, ushort sz = 0);
+  virtual InsnDesc 
+  GetInsnDesc(MachInsn* mi, ushort opIndex, ushort sz = 0);
 
-  virtual VMA GetInsnTargetVMA(MachInsn* mi, VMA pc, ushort opIndex,
-			       ushort sz = 0);
+  virtual VMA 
+  GetInsnTargetVMA(MachInsn* mi, VMA pc, ushort opIndex, ushort sz = 0);
 
-  virtual ushort GetInsnNumDelaySlots(MachInsn* mi, ushort opIndex,
-				      ushort sz = 0);
+  virtual ushort 
+  GetInsnNumDelaySlots(MachInsn* mi, ushort opIndex, ushort sz = 0);
 
-  virtual bool IsParallelWithSuccessor(MachInsn* mi1, ushort opIndex1,
-				       ushort sz1,
-				       MachInsn* mi2, ushort opIndex2,
-				       ushort sz2) const
+  virtual bool 
+  IsParallelWithSuccessor(MachInsn* mi1, ushort opIndex1, ushort sz1,
+			  MachInsn* mi2, ushort opIndex2, ushort sz2) const
   { return false; }
   
   virtual void 
-  decode(MachInsn* mi, std::ostream& os);
+  decode(std::ostream& os, MachInsn* mi, VMA vma, ushort opIndex);
 
 private: 
   // Should not be used
@@ -109,9 +111,10 @@ private:
 protected:
 private:
   static const ushort MINSN_SIZE = 4; // machine instruction size in bytes
-  struct disassemble_info *di;
+  struct disassemble_info* m_di;
+  struct disassemble_info* m_di_dis;
 };
 
 //****************************************************************************
 
-#endif 
+#endif /* isa_MipsISA_hpp */

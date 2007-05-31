@@ -166,7 +166,7 @@ public:
   // decode: 
   virtual void 
   decode(std::ostream& os) {
-    return LM::isa->decode(minsn, os);
+    return LM::isa->decode(os, minsn, GetVMA(), GetOpIndex());
   }
   
   // -------------------------------------------------------

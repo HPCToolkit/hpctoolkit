@@ -77,23 +77,31 @@ using namespace std; // For compatibility with non-std C headers
 //****************************************************************************
 
 SparcISA::SparcISA()
+ : m_di(NULL), m_di_dis(NULL)
 {
   // See 'dis-asm.h'
-  di = new disassemble_info;
-  init_disassemble_info(di, stdout, fake_fprintf_func);
-  //  fprintf_func: (int (*)(void *, const char *, ...))fprintf;
+  m_di = new disassemble_info;
+  init_disassemble_info(m_di, stdout, GNUbu_fprintf_stub);
+  m_di->arch = bfd_arch_sparc;    // bfd_get_arch (abfd);
+  m_di->mach = bfd_mach_sparc_v9; // bfd_get_mach(abfd)
+  m_di->endian = BFD_ENDIAN_BIG;
+  m_di->read_memory_func = GNUbu_read_memory; // vs. 'buffer_read_memory'
+  m_di->print_address_func = GNUbu_print_addr_stub; // vs. 'generic_print_addr'
 
-  di->arch = bfd_arch_sparc;               // bfd_get_arch (abfd);
-  di->mach = bfd_mach_sparc_v9; // bfd_get_mach(abfd); needed in print_insn()
-  di->endian = BFD_ENDIAN_BIG;
-  di->read_memory_func = read_memory_func; // vs. 'buffer_read_memory'
-  di->print_address_func = print_addr;     // vs. 'generic_print_address'
+  m_di_dis = new disassemble_info;
+  init_disassemble_info(m_di_dis, stdout, GNUbu_fprintf);
+  m_di_dis->arch = m_di->arch;
+  m_di_dis->mach = m_di->mach;
+  m_di_dis->endian = m_di->endian;
+  m_di_dis->read_memory_func = GNUbu_read_memory;
+  m_di_dis->print_address_func = GNUbu_print_addr;
 }
 
 
 SparcISA::~SparcISA()
 {
-  delete di;
+  delete m_di;
+  delete m_di_dis;
 }
 
 
@@ -103,7 +111,7 @@ SparcISA::GetInsnDesc(MachInsn* mi, ushort opIndex, ushort sz)
   ISA::InsnDesc d;
 
   if (CacheLookup(mi) == NULL) {
-    ushort size = print_insn_sparc(PTR_TO_BFDVMA(mi), di);
+    ushort size = print_insn_sparc(PTR_TO_BFDVMA(mi), m_di);
     CacheSet(mi, size);
   }
 
@@ -115,14 +123,14 @@ SparcISA::GetInsnDesc(MachInsn* mi, ushort opIndex, ushort sz)
   // in the case of a register indirect jump.  We need some way to
   // distinguish because of the way GNU calculates PC-relative
   // targets.
-  bool isPCRel = (di->target2 == 0); // FIXME: binutils needs fixing
+  bool isPCRel = (m_di->target2 == 0); // FIXME: binutils needs fixing
 
-  switch (di->insn_type) {
+  switch (m_di->insn_type) {
     case dis_noninsn:
       d.Set(InsnDesc::INVALID);
       break;
     case dis_branch:
-      if (di->target != 0 && isPCRel) {
+      if (m_di->target != 0 && isPCRel) {
 	d.Set(InsnDesc::BR_UN_COND_REL);
       }
       else {
@@ -130,7 +138,7 @@ SparcISA::GetInsnDesc(MachInsn* mi, ushort opIndex, ushort sz)
       }
       break;
     case dis_condbranch:
-      if (di->target != 0 && isPCRel) {
+      if (m_di->target != 0 && isPCRel) {
 	d.Set(InsnDesc::INT_BR_COND_REL); // arbitrarily choose int
       }
       else {
@@ -138,7 +146,7 @@ SparcISA::GetInsnDesc(MachInsn* mi, ushort opIndex, ushort sz)
       }
       break;
     case dis_jsr:
-      if (di->target != 0 && isPCRel) {
+      if (m_di->target != 0 && isPCRel) {
 	d.Set(InsnDesc::SUBR_REL);
       }
       else {
@@ -164,22 +172,22 @@ SparcISA::GetInsnDesc(MachInsn* mi, ushort opIndex, ushort sz)
 
 
 VMA
-SparcISA::GetInsnTargetVMA(MachInsn* mi, VMA pc, ushort opIndex, ushort sz)
+SparcISA::GetInsnTargetVMA(MachInsn* mi, VMA vma, ushort opIndex, ushort sz)
 {
   // N.B.: The GNU decoders assume that the address of 'mi' is
-  // actually the PC/vma in order to calculate PC-relative targets.
+  // actually the VMA in order to calculate VMA-relative targets.
 
   if (CacheLookup(mi) == NULL) {
-    ushort size = print_insn_sparc(PTR_TO_BFDVMA(mi), di);
+    ushort size = print_insn_sparc(PTR_TO_BFDVMA(mi), m_di);
     CacheSet(mi, size);
   }
   
   ISA::InsnDesc d = GetInsnDesc(mi, opIndex, sz);
   if (d.IsBrRel() || d.IsSubrRel()) {
-    return (di->target - PTR_TO_BFDVMA(mi)) + (bfd_vma)pc;
+    return (m_di->target - PTR_TO_BFDVMA(mi)) + (bfd_vma)vma;
   }
   else {
-    // return di->target; // return the results of sethi instruction chains
+    // return m_di->target; // return the results of sethi instruction chains
     return 0;
   }
 }
@@ -212,11 +220,10 @@ SparcISA::GetInsnNumDelaySlots(MachInsn* mi, ushort opIndex, ushort sz)
 
 
 void
-SparcISA::decode(MachInsn* mi, ostream& os)
+SparcISA::decode(ostream& os, MachInsn* mi, VMA vma, ushort opIndex)
 {
-  di->fprintf_func = dis_fprintf_func;
-  di->stream = (void*)&os;
-  print_insn_sparc(PTR_TO_BFDVMA(mi), di);
+  m_di_dis->stream = (void*)&os;
+  print_insn_sparc(PTR_TO_BFDVMA(mi), m_di_dis);
 }
 
 

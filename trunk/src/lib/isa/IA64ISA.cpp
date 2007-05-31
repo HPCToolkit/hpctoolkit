@@ -90,16 +90,29 @@ ConvertMIToOpMI(MachInsn* mi, ushort opIndex)
 //****************************************************************************
 
 IA64ISA::IA64ISA()
+  : m_di(NULL), m_di_dis(NULL)
 {
   // See 'dis-asm.h'
-  di = new disassemble_info;
-  init_disassemble_info(di, stdout, fake_fprintf_func);
-  //  fprintf_func = (int (*)(void *, const char *, ...))fprintf;
+  m_di = new disassemble_info;
+  init_disassemble_info(m_di, stdout, GNUbu_fprintf_stub);
+  m_di->arch = bfd_arch_ia64;                //  bfd_get_arch (abfd);
+  m_di->endian = BFD_ENDIAN_LITTLE;
+  m_di->read_memory_func = GNUbu_read_memory; // vs. 'buffer_read_memory'
+  m_di->print_address_func = GNUbu_print_addr_stub; // vs. 'generic_print_addr'
 
-  di->arch = bfd_arch_ia64;                //  bfd_get_arch (abfd);
-  di->endian = BFD_ENDIAN_LITTLE;
-  di->read_memory_func = read_memory_func; // vs. 'buffer_read_memory'
-  di->print_address_func = print_addr;     // vs. 'generic_print_address'
+  m_di_dis = new disassemble_info;
+  init_disassemble_info(m_di_dis, stdout, GNUbu_fprintf);
+  m_di_dis->arch = m_di->arch;
+  m_di_dis->endian = m_di->endian;
+  m_di_dis->read_memory_func = GNUbu_read_memory;
+  m_di_dis->print_address_func = GNUbu_print_addr;
+}
+
+
+IA64ISA::~IA64ISA()
+{
+  delete m_di;
+  delete m_di_dis;
 }
 
 
@@ -110,16 +123,16 @@ IA64ISA::GetInsnDesc(MachInsn* mi, ushort opIndex, ushort sz)
   InsnDesc d;
 
   if (CacheLookup(gnuMI) == NULL) {
-    int size = print_insn_ia64(PTR_TO_BFDVMA(gnuMI), di);
+    int size = print_insn_ia64(PTR_TO_BFDVMA(gnuMI), m_di);
     CacheSet(gnuMI, size);
   }
 
-  switch(di->insn_type) {
+  switch(m_di->insn_type) {
     case dis_noninsn:
       d.Set(InsnDesc::INVALID);
       break;
     case dis_branch:
-      if (di->target != 0) {
+      if (m_di->target != 0) {
         d.Set(InsnDesc::BR_UN_COND_REL);
       }
       else {
@@ -129,7 +142,7 @@ IA64ISA::GetInsnDesc(MachInsn* mi, ushort opIndex, ushort sz)
     case dis_condbranch:
       // N.B.: On the Itanium it is possible to have a one-bundle loop
       // (where the third slot branches to the first slot)!
-      if (di->target != 0 || opIndex != 0) {
+      if (m_di->target != 0 || opIndex != 0) {
         d.Set(InsnDesc::INT_BR_COND_REL); // arbitrarily choose int
       }
       else {
@@ -137,7 +150,7 @@ IA64ISA::GetInsnDesc(MachInsn* mi, ushort opIndex, ushort sz)
       }
       break;
     case dis_jsr:
-      if (di->target != 0) {
+      if (m_di->target != 0) {
         d.Set(InsnDesc::SUBR_REL);
       }
       else {
@@ -163,20 +176,20 @@ IA64ISA::GetInsnDesc(MachInsn* mi, ushort opIndex, ushort sz)
 
 
 VMA
-IA64ISA::GetInsnTargetVMA(MachInsn* mi, VMA pc, ushort opIndex, ushort sz)
+IA64ISA::GetInsnTargetVMA(MachInsn* mi, VMA vma, ushort opIndex, ushort sz)
 {
   MachInsn* gnuMI = ConvertMIToOpMI(mi, opIndex);
 
   if (CacheLookup(gnuMI) == NULL) {
-    int size = print_insn_ia64(PTR_TO_BFDVMA(gnuMI), di);
+    int size = print_insn_ia64(PTR_TO_BFDVMA(gnuMI), m_di);
     CacheSet(gnuMI, size);
   }
   
   // The target field is only set on instructions with targets.
   // N.B.: On the Itanium it is possible to have a one-bundle loop
   // (where the third slot branches to the first slot)!
-  if (di->target != 0 || opIndex != 0)  {
-    return (bfd_vma)di->target + (bfd_vma)pc;
+  if (m_di->target != 0 || opIndex != 0)  {
+    return (bfd_vma)m_di->target + (bfd_vma)vma;
   }
   else {
     return 0;
@@ -189,18 +202,17 @@ IA64ISA::GetInsnNumOps(MachInsn* mi)
 {
   // Because of the MLX template and data, we can't just return 3 here.
   if (CacheLookup(mi) == NULL) {
-    int size = print_insn_ia64(PTR_TO_BFDVMA(mi), di);
+    int size = print_insn_ia64(PTR_TO_BFDVMA(mi), m_di);
     CacheSet(mi, size);
   }
 
-  return (ushort)(di->target2);
+  return (ushort)(m_di->target2);
 }
 
 
 void
-IA64ISA::decode(MachInsn* mi, ostream& os)
+IA64ISA::decode(ostream& os, MachInsn* mi, VMA vma, ushort opIndex)
 {
-  di->fprintf_func = dis_fprintf_func;
-  di->stream = (void*)&os;
-  print_insn_ia64(PTR_TO_BFDVMA(mi), di);
+  m_di_dis->stream = (void*)&os;
+  print_insn_ia64(PTR_TO_BFDVMA(mi), m_di_dis);
 }

@@ -355,7 +355,7 @@ public:
 
   // decode: 
   virtual void 
-  decode(MachInsn* mi, std::ostream& os) = 0;
+  decode(std::ostream& os, MachInsn* mi, VMA vma, ushort opIndex) = 0;
   
   // ConvertVMAToOpVMA: Given a vma at the beginning of an instruction
   // and an opIndex, returns one value -- an 'operation vma' --
@@ -406,20 +406,29 @@ private:
 // binutils helpers
 //***************************************************************************
 
+class GNUbu_disdata {
+public:
+  MachInsn* memaddr; // memory address of insn
+  VMA       vma; // vma of insn
+};
+
+
 extern "C" { 
 
   int
-  fake_fprintf_func(void* stream, const char *format, ...);
-  
+  GNUbu_fprintf(void* stream, const char* format, ...);
   int
-  dis_fprintf_func(void* stream, const char *format, ...);
+  GNUbu_fprintf_stub(void* stream, const char* format, ...);
+  
+  void 
+  GNUbu_print_addr(bfd_vma di_vma, struct disassemble_info* di);
   
   void
-  print_addr(bfd_vma vma, struct disassemble_info *info);
+  GNUbu_print_addr_stub(bfd_vma di_vma, struct disassemble_info* di);
   
   int 
-  read_memory_func(bfd_vma vma, bfd_byte *myaddr, unsigned int len,
-		   struct disassemble_info *info);
+  GNUbu_read_memory(bfd_vma vma, bfd_byte* myaddr, unsigned int len,
+		    struct disassemble_info* di);
 
 } // extern "C"
 

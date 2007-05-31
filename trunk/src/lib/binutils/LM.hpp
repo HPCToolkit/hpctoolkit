@@ -291,8 +291,8 @@ public:
     
     // Shorthand meanings
     DUMP_Flg_SymTab      = 0x00000001, // print sym-tab
-    DUMP_Flg_Insn        = 0x00000010, // print insns
-    DUMP_Flg_Insn_decode = 0x00000020, // print insns (decoded)
+    DUMP_Flg_Insn_ty     = 0x00000010, // print insn (type)
+    DUMP_Flg_Insn_decode = 0x00000020, // print insn (decoded)
     DUMP_Flg_Sym         = 0x00000100  // print symbolic info
   };
 

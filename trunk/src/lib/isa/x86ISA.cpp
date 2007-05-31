@@ -77,29 +77,37 @@ using namespace std; // For compatibility with non-std C headers
 //****************************************************************************
 
 x86ISA::x86ISA(bool is_x86_64)
-  : mIs_x86_64(is_x86_64), di(NULL)
+  : m_is_x86_64(is_x86_64), m_di(NULL), m_di_dis(NULL)
 {
   // See 'dis-asm.h'
-  di = new disassemble_info;
-  init_disassemble_info(di, stdout, fake_fprintf_func);
-  //  fprintf_func: (int (*)(void *, const char *, ...))fprintf;
-
-  di->arch = bfd_arch_i386;      // bfd_get_arch(abfd);
-  if (mIs_x86_64) {              // bfd_get_mach(abfd); needed in print_insn()
-    di->mach = bfd_mach_x86_64;
+  m_di = new disassemble_info;
+  init_disassemble_info(m_di, stdout, GNUbu_fprintf_stub);
+  m_di->arch = bfd_arch_i386;     // bfd_get_arch(abfd);
+  if (m_is_x86_64) {              // bfd_get_mach(abfd); needed in print_insn()
+    m_di->mach = bfd_mach_x86_64;
   }
   else {
-    di->mach = bfd_mach_i386_i386;
+    m_di->mach = bfd_mach_i386_i386;
   }
-  di->endian = BFD_ENDIAN_LITTLE;
-  di->read_memory_func = read_memory_func; // vs. 'buffer_read_memory'
-  di->print_address_func = print_addr;     // vs. 'generic_print_address'
+  m_di->endian = BFD_ENDIAN_LITTLE;
+  m_di->read_memory_func = GNUbu_read_memory; // vs. 'buffer_read_memory'
+  m_di->print_address_func = GNUbu_print_addr_stub; // vs. 'generic_print_addr'
+
+  m_di_dis = new disassemble_info;
+  init_disassemble_info(m_di_dis, stdout, GNUbu_fprintf);
+  m_di_dis->application_data = (void*)&m_dis_data;
+  m_di_dis->arch = m_di->arch;
+  m_di_dis->mach = m_di->mach;
+  m_di_dis->endian = m_di->endian;
+  m_di_dis->read_memory_func = GNUbu_read_memory;
+  m_di_dis->print_address_func = GNUbu_print_addr;
 }
 
 
 x86ISA::~x86ISA()
 {
-  delete di;
+  delete m_di;
+  delete m_di_dis;
 }
 
 
@@ -110,7 +118,7 @@ x86ISA::GetInsnSize(MachInsn* mi)
   DecodingCache *cache;
 
   if ((cache = CacheLookup(mi)) == NULL) {
-    size = print_insn_i386(PTR_TO_BFDVMA(mi), di);
+    size = print_insn_i386(PTR_TO_BFDVMA(mi), m_di);
     CacheSet(mi, size);
   }
   else {
@@ -126,16 +134,16 @@ x86ISA::GetInsnDesc(MachInsn* mi, ushort opIndex, ushort s)
   ISA::InsnDesc d;
 
   if (CacheLookup(mi) == NULL) {
-    ushort size = print_insn_i386(PTR_TO_BFDVMA(mi), di);
+    ushort size = print_insn_i386(PTR_TO_BFDVMA(mi), m_di);
     CacheSet(mi, size);
   }
 
-  switch(di->insn_type) {
+  switch(m_di->insn_type) {
     case dis_noninsn:
       d.Set(InsnDesc::INVALID);
       break;
     case dis_branch:
-      if (di->target != 0) {
+      if (m_di->target != 0) {
 	d.Set(InsnDesc::BR_UN_COND_REL);
       }
       else {
@@ -143,7 +151,7 @@ x86ISA::GetInsnDesc(MachInsn* mi, ushort opIndex, ushort s)
       }
       break;
     case dis_condbranch:
-      if (di->target != 0) {
+      if (m_di->target != 0) {
 	d.Set(InsnDesc::INT_BR_COND_REL); // arbitrarily choose int
       }
       else {
@@ -151,7 +159,7 @@ x86ISA::GetInsnDesc(MachInsn* mi, ushort opIndex, ushort s)
       }
       break;
     case dis_jsr:
-      if (di->target != 0) {
+      if (m_di->target != 0) {
 	d.Set(InsnDesc::SUBR_REL);
       }
       else {
@@ -177,25 +185,25 @@ x86ISA::GetInsnDesc(MachInsn* mi, ushort opIndex, ushort s)
 
 
 VMA
-x86ISA::GetInsnTargetVMA(MachInsn* mi, VMA pc, ushort opIndex, ushort sz)
+x86ISA::GetInsnTargetVMA(MachInsn* mi, VMA vma, ushort opIndex, ushort sz)
 {
   static const bfd_vma M32 = 0xffffffff;
   
   if (CacheLookup(mi) == NULL) {
-    ushort size = print_insn_i386(PTR_TO_BFDVMA(mi), di);
+    ushort size = print_insn_i386(PTR_TO_BFDVMA(mi), m_di);
     CacheSet(mi, size);
   }
 
   // N.B.: The GNU decoders expect that the address of the 'mi' is
-  // actually the PC/vma.  Furthermore for 32-bit x86 decoding, only
+  // actually the VMA.  Furthermore for 32-bit x86 decoding, only
   // the lower 32 bits of 'mi' are valid.
   
   // The target field is only set on instructions with targets.
-  if (di->target != 0) {
-    //VMA t = (mIs_x86_64) ?
-    //  ((di->target & M32) - (PTR_TO_BFDVMA(mi) & M32)) + (bfd_vma)pc :
-    //  ((di->target)       - (PTR_TO_BFDVMA(mi) & M32)) + (bfd_vma)pc;
-    VMA t = ((di->target & M32) - (PTR_TO_BFDVMA(mi) & M32)) + (bfd_vma)pc;
+  if (m_di->target != 0) {
+    //VMA t = (m_is_x86_64) ?
+    //  ((m_di->target & M32) - (PTR_TO_BFDVMA(mi) & M32)) + (bfd_vma)vma :
+    //  ((m_di->target)       - (PTR_TO_BFDVMA(mi) & M32)) + (bfd_vma)vma;
+    VMA t = ((m_di->target & M32) - (PTR_TO_BFDVMA(mi) & M32)) + (bfd_vma)vma;
     return t;
   } 
   else {
@@ -205,11 +213,13 @@ x86ISA::GetInsnTargetVMA(MachInsn* mi, VMA pc, ushort opIndex, ushort sz)
 
 
 void
-x86ISA::decode(MachInsn* mi, ostream& os)
+x86ISA::decode(ostream& os, MachInsn* mi, VMA vma, ushort opIndex)
 {
-  di->fprintf_func = dis_fprintf_func;
-  di->stream = (void*)&os;
-  print_insn_i386(PTR_TO_BFDVMA(mi), di);
+  m_dis_data.memaddr = mi;
+  m_dis_data.vma = vma;
+  
+  m_di_dis->stream = (void*)&os;
+  print_insn_i386(PTR_TO_BFDVMA(mi), m_di_dis);
 }
 
 

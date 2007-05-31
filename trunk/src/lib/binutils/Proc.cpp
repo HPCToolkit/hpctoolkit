@@ -164,17 +164,18 @@ binutils::Proc::dump(std::ostream& os, int flags, const char* pre) const
      << GetEndVMA() << dec << "]\n";
   os << p << "  Size(b): " << GetSize() << "\n";
   
-  if (flags & LM::DUMP_Flg_Insn) {
+  if ((flags & LM::DUMP_Flg_Insn_ty) 
+      || (flags & LM::DUMP_Flg_Insn_decode)) {
     os << p1 << "----- Instruction Dump -----\n";
     for (ProcInsnIterator it(*this); it.IsValid(); ++it) {
       Insn* insn = it.Current();
-      
+
       if (flags & LM::DUMP_Flg_Insn_decode) {
-	os << p2.c_str();
+	os << p2 << hex << "0x" << insn->GetVMA() << dec << ": ";
 	insn->decode(os);
 	os << endl;
       }
-      else {
+      if (flags & LM::DUMP_Flg_Insn_ty) {
 	insn->dump(os, flags, p2.c_str());
       }
       

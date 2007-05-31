@@ -83,28 +83,35 @@ using std::ostream;
 // See 'ISA.h' for comments on the interface
 
 MipsISA::MipsISA()
-  : di(NULL)
+  : m_di(NULL), m_di_dis(NULL)
 {
   // See 'dis-asm.h'
-  di = new disassemble_info;
-  init_disassemble_info(di, stdout, fake_fprintf_func);
-  //  fprintf_func: (int (*)(void *, const char *, ...))fprintf;
-
-  di->arch = bfd_arch_mips;        // bfd_get_arch(abfd);
-  di->mach = bfd_mach_mipsisa64r2; // bfd_get_mach(abfd); needed in print_insn()
+  m_di = new disassemble_info;
+  init_disassemble_info(m_di, stdout, GNUbu_fprintf_stub);
+  m_di->arch = bfd_arch_mips;        // bfd_get_arch(abfd)
+  m_di->mach = bfd_mach_mipsisa64r2; // bfd_get_mach(abfd)
 #if defined(HOST_PLATFORM_MIPS64LE_LINUX)
-  di->endian = BFD_ENDIAN_LITTLE;
+  m_di->endian = BFD_ENDIAN_LITTLE;
 #else
-  di->endian = BFD_ENDIAN_BIG;
+  m_di->endian = BFD_ENDIAN_BIG;
 #endif
-  di->read_memory_func = read_memory_func; // vs. 'buffer_read_memory'
-  di->print_address_func = print_addr;     // vs. 'generic_print_address'
+  m_di->read_memory_func = GNUbu_read_memory; // vs. 'buffer_read_memory'
+  m_di->print_address_func = GNUbu_print_addr_stub; // vs. 'generic_print_addr'
+
+  m_di_dis = new disassemble_info;
+  init_disassemble_info(m_di_dis, stdout, GNUbu_fprintf);
+  m_di_dis->arch = m_di->arch;
+  m_di_dis->mach = m_di->mach;
+  m_di_dis->endian = m_di->endian;
+  m_di_dis->read_memory_func = GNUbu_read_memory;
+  m_di_dis->print_address_func = GNUbu_print_addr;
 }
 
 
 MipsISA::~MipsISA()
 {
-  delete di;
+  delete m_di;
+  delete m_di_dis;
 }
 
 
@@ -339,11 +346,10 @@ MipsISA::GetInsnNumDelaySlots(MachInsn* mi, ushort opIndex, ushort sz)
 
 
 void
-MipsISA::decode(MachInsn* mi, ostream& os)
+MipsISA::decode(ostream& os, MachInsn* mi, VMA vma, ushort opIndex)
 {
-  di->fprintf_func = dis_fprintf_func;
-  di->stream = (void*)&os;
-  BFD_PRINT_INSN_MIPS(PTR_TO_BFDVMA(mi), di);
+  m_di_dis->stream = (void*)&os;
+  BFD_PRINT_INSN_MIPS(PTR_TO_BFDVMA(mi), m_di_dis);
 }
 
 

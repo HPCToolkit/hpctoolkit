@@ -55,10 +55,9 @@ using std::ostream;
 
 //*************************** User Include Files ****************************
 
-#include "AlphaISA.hpp"
-
 #include <include/gnu_bfd.h>  // for bfd_getl32
 
+#include "AlphaISA.hpp"
 #include "instructionSets/alpha.h"
 
 #include <lib/support/diagnostics.h>
@@ -805,7 +804,7 @@ AlphaISA::GetInsnTargetVMA(MachInsn* mi, VMA pc, ushort opIndex, ushort sz)
 
 
 void
-AlphaISA::decode(MachInsn* mi, ostream& os)
+AlphaISA::decode(ostream& os, MachInsn* mi, VMA vma, ushort opIndex)
 {
   DIAG_Die(DIAG_Unimplemented);
 }
