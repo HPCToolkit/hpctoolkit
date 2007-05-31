@@ -50,7 +50,8 @@
 
 //************************* System Include Files ****************************
 
-#include <inttypes.h>
+#include <iostream>
+using std::ostream;
 
 //*************************** User Include Files ****************************
 
@@ -59,6 +60,8 @@
 #include <include/gnu_bfd.h>  // for bfd_getl32
 
 #include "instructionSets/alpha.h"
+
+#include <lib/support/diagnostics.h>
 
 //*************************** Forward Declarations ***************************
 
@@ -756,6 +759,7 @@ AlphaISA::GetInsnDesc(MachInsn* mi, ushort opIndex, ushort sz)
   return InsnDesc(InsnDesc::INVALID);
 }
 
+
 VMA
 AlphaISA::GetInsnTargetVMA(MachInsn* mi, VMA pc, ushort opIndex, ushort sz)
 {
@@ -797,4 +801,11 @@ AlphaISA::GetInsnTargetVMA(MachInsn* mi, VMA pc, ushort opIndex, ushort sz)
     }
   
   return (0);
+}
+
+
+void
+AlphaISA::decode(MachInsn* mi, ostream& os)
+{
+  DIAG_Die(DIAG_Unimplemented);
 }

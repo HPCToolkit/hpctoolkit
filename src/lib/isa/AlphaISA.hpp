@@ -96,6 +96,9 @@ public:
 				       ushort sz2) const
   { return false; }
 
+  virtual void 
+  decode(MachInsn* mi, std::ostream& os);
+
 private: 
   // Should not be used
   AlphaISA(const AlphaISA& i) { }

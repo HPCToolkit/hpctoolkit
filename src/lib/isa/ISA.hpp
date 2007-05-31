@@ -58,6 +58,7 @@
 //*************************** User Include Files ****************************
 
 #include <include/general.h>
+#include <include/gnu_dis-asm.h>
 
 #include "ISATypes.hpp"
 
@@ -81,7 +82,6 @@ public:
 };
 
 //*************************** Forward Declarations ***************************
-
 
 
 //***************************************************************************
@@ -352,6 +352,10 @@ public:
 				       ushort sz1,
 				       MachInsn* mi2, ushort opIndex2,
 				       ushort sz2) const = 0;
+
+  // decode: 
+  virtual void 
+  decode(MachInsn* mi, std::ostream& os) = 0;
   
   // ConvertVMAToOpVMA: Given a vma at the beginning of an instruction
   // and an opIndex, returns one value -- an 'operation vma' --
@@ -397,6 +401,31 @@ private:
   unsigned int refcount;
 };
 
+
+//***************************************************************************
+// binutils helpers
+//***************************************************************************
+
+extern "C" { 
+
+  int
+  fake_fprintf_func(void* stream, const char *format, ...);
+  
+  int
+  dis_fprintf_func(void* stream, const char *format, ...);
+  
+  void
+  print_addr(bfd_vma vma, struct disassemble_info *info);
+  
+  int 
+  read_memory_func(bfd_vma vma, bfd_byte *myaddr, unsigned int len,
+		   struct disassemble_info *info);
+
+} // extern "C"
+
+
 //****************************************************************************
+
+
 
 #endif 

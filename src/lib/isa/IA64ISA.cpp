@@ -50,6 +50,9 @@
 
 //************************* System Include Files ****************************
 
+#include <iostream>
+using std::ostream;
+
 #ifdef NO_STD_CHEADERS
 # include <stdarg.h>
 # include <string.h>
@@ -61,6 +64,8 @@ using namespace std; // For compatibility with non-std C headers
 
 //*************************** User Include Files ****************************
 
+#include <include/gnu_dis-asm.h>
+
 #include "IA64ISA.hpp"
 
 #include <lib/support/diagnostics.h>
@@ -69,30 +74,8 @@ using namespace std; // For compatibility with non-std C headers
 
 //****************************************************************************
 
-extern "C" {
-
-static int fake_fprintf_func(PTR, const char *fmt, ...)
-{
-  //va_list ap;
-  //va_start(ap, fmt);
-  return 0;
-}
-
-static void print_addr (bfd_vma vma, struct disassemble_info *info)
-{
-  info->fprintf_func (info->stream, "0x%08x", vma);
-}
-
-static int read_memory_func (bfd_vma vma, bfd_byte *myaddr, unsigned int len,
-			     struct disassemble_info *info)
-{
-  memcpy(myaddr, BFDVMA_TO_PTR(vma, const char*), len);
-  return 0; /* success */
-}
-
-} // extern "C"
-
-static MachInsn* ConvertMIToOpMI(MachInsn* mi, ushort opIndex)
+static MachInsn* 
+ConvertMIToOpMI(MachInsn* mi, ushort opIndex)
 {
   // Do not change; the GNU decoders depend upon these particular
   // offsets.  Note that the offsets do not actually match the IA64
@@ -100,6 +83,7 @@ static MachInsn* ConvertMIToOpMI(MachInsn* mi, ushort opIndex)
   DIAG_Assert(opIndex <= 2, "Programming Error");
   return (MachInsn*)((MachInsnByte*)mi + (6 * opIndex)); // 0, 6, 12
 }
+
 
 //****************************************************************************
 // IA64ISA
@@ -109,7 +93,7 @@ IA64ISA::IA64ISA()
 {
   // See 'dis-asm.h'
   di = new disassemble_info;
-  INIT_DISASSEMBLE_INFO(*di, stdout, fake_fprintf_func);
+  init_disassemble_info(di, stdout, fake_fprintf_func);
   //  fprintf_func = (int (*)(void *, const char *, ...))fprintf;
 
   di->arch = bfd_arch_ia64;                //  bfd_get_arch (abfd);
@@ -137,7 +121,8 @@ IA64ISA::GetInsnDesc(MachInsn* mi, ushort opIndex, ushort sz)
     case dis_branch:
       if (di->target != 0) {
         d.Set(InsnDesc::BR_UN_COND_REL);
-      } else {
+      }
+      else {
         d.Set(InsnDesc::BR_UN_COND_IND);
       }
       break;
@@ -146,14 +131,16 @@ IA64ISA::GetInsnDesc(MachInsn* mi, ushort opIndex, ushort sz)
       // (where the third slot branches to the first slot)!
       if (di->target != 0 || opIndex != 0) {
         d.Set(InsnDesc::INT_BR_COND_REL); // arbitrarily choose int
-      } else {
+      }
+      else {
         d.Set(InsnDesc::INT_BR_COND_IND); // arbitrarily choose int
       }
       break;
     case dis_jsr:
       if (di->target != 0) {
         d.Set(InsnDesc::SUBR_REL);
-      } else {
+      }
+      else {
         d.Set(InsnDesc::SUBR_IND);
       }
       break;
@@ -174,6 +161,7 @@ IA64ISA::GetInsnDesc(MachInsn* mi, ushort opIndex, ushort sz)
   return d;
 }
 
+
 VMA
 IA64ISA::GetInsnTargetVMA(MachInsn* mi, VMA pc, ushort opIndex, ushort sz)
 {
@@ -189,10 +177,12 @@ IA64ISA::GetInsnTargetVMA(MachInsn* mi, VMA pc, ushort opIndex, ushort sz)
   // (where the third slot branches to the first slot)!
   if (di->target != 0 || opIndex != 0)  {
     return (bfd_vma)di->target + (bfd_vma)pc;
-  } else {
+  }
+  else {
     return 0;
   }
 }
+
 
 ushort
 IA64ISA::GetInsnNumOps(MachInsn* mi)
@@ -204,4 +194,13 @@ IA64ISA::GetInsnNumOps(MachInsn* mi)
   }
 
   return (ushort)(di->target2);
+}
+
+
+void
+IA64ISA::decode(MachInsn* mi, ostream& os)
+{
+  di->fprintf_func = dis_fprintf_func;
+  di->stream = (void*)&os;
+  print_insn_ia64(PTR_TO_BFDVMA(mi), di);
 }

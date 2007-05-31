@@ -50,21 +50,28 @@
 
 //************************* System Include Files ****************************
 
-#include <inttypes.h>
+#include <iostream>
+using std::ostream;
 
 //*************************** User Include Files ****************************
+
+#include <include/general.h>
+#include <include/gnu_bfd.h>  // for bfd_getb32, bfd_getl32
+#include <include/gnu_dis-asm.h>
 
 #include "MipsISA.hpp"
 #include "instructionSets/mips.h"
 
-#include <include/gnu_bfd.h>  // for bfd_getb32, bfd_getl32
+#include <lib/support/diagnostics.h>
 
 //*************************** Forward Declarations ***************************
 
 #if defined(HOST_PLATFORM_MIPS64LE_LINUX)
 # define BFD_GETX32 bfd_getl32
+# define BFD_PRINT_INSN_MIPS print_insn_little_mips
 #else /* PLATFORM_MIPS_IRIX64 */
 # define BFD_GETX32 bfd_getb32
+# define BFD_PRINT_INSN_MIPS print_insn_big_mips
 #endif
 
 //****************************************************************************
@@ -74,6 +81,32 @@
 //****************************************************************************
 
 // See 'ISA.h' for comments on the interface
+
+MipsISA::MipsISA()
+  : di(NULL)
+{
+  // See 'dis-asm.h'
+  di = new disassemble_info;
+  init_disassemble_info(di, stdout, fake_fprintf_func);
+  //  fprintf_func: (int (*)(void *, const char *, ...))fprintf;
+
+  di->arch = bfd_arch_mips;        // bfd_get_arch(abfd);
+  di->mach = bfd_mach_mipsisa64r2; // bfd_get_mach(abfd); needed in print_insn()
+#if defined(HOST_PLATFORM_MIPS64LE_LINUX)
+  di->endian = BFD_ENDIAN_LITTLE;
+#else
+  di->endian = BFD_ENDIAN_BIG;
+#endif
+  di->read_memory_func = read_memory_func; // vs. 'buffer_read_memory'
+  di->print_address_func = print_addr;     // vs. 'generic_print_address'
+}
+
+
+MipsISA::~MipsISA()
+{
+  delete di;
+}
+
 
 ISA::InsnDesc
 MipsISA::GetInsnDesc(MachInsn* mi, ushort opIndex, ushort sz)
@@ -91,7 +124,8 @@ MipsISA::GetInsnDesc(MachInsn* mi, ushort opIndex, ushort sz)
 	  // JR $31 returns from a JAL call instruction.
 	  if (REG_S(insn) == REG_RA) {
 	    return InsnDesc(InsnDesc::SUBR_RET);
-	  } else {
+	  }
+	  else {
 	    return InsnDesc(InsnDesc::BR_UN_COND_IND);
 	  }
 	case JALR:
@@ -285,6 +319,7 @@ MipsISA::GetInsnTargetVMA(MachInsn* mi, VMA pc, ushort opIndex, ushort sz)
   return (0);
 }
 
+
 ushort
 MipsISA::GetInsnNumDelaySlots(MachInsn* mi, ushort opIndex, ushort sz)
 { 
@@ -296,24 +331,20 @@ MipsISA::GetInsnNumDelaySlots(MachInsn* mi, ushort opIndex, ushort sz)
   InsnDesc d = GetInsnDesc(mi, opIndex, sz);
   if (d.IsBr() || d.IsSubr() || d.IsSubrRet()) {
     return 1;
-  } else {
+  }
+  else {
     return 0;
   }
 }
 
-//****************************************************************************
 
-#if 0
-
-#if (__sgi)
-# include <disassembler.h>
-#endif
-
-// dis(1)
-
-void VerifyInstructionDecoding(/**/)
+void
+MipsISA::decode(MachInsn* mi, ostream& os)
 {
-
+  di->fprintf_func = dis_fprintf_func;
+  di->stream = (void*)&os;
+  BFD_PRINT_INSN_MIPS(PTR_TO_BFDVMA(mi), di);
 }
 
-#endif
+
+//****************************************************************************

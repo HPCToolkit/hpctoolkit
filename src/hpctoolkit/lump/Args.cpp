@@ -75,6 +75,13 @@ using std::strtol; // For compatibility with non-std C headers
 
 //*************************** Forward Declarations **************************
 
+// Cf. DIAG_Die.
+#define ARG_ERROR(streamArgs)                                        \
+  { std::ostringstream WeIrDnAmE;                                    \
+    WeIrDnAmE << streamArgs /*<< std::ends*/;                        \
+    printError(std::cerr, WeIrDnAmE.str());                          \
+    exit(1); }
+
 //***************************************************************************
 
 static const char* version_info =
@@ -83,24 +90,24 @@ static const char* version_info =
 static const char* usage_summary =
 "[options] <loadmodule>\n";
 
-static const char* usage_details =
-"Load module dump.  Dumps selected contents of <loadmodule> to stdout.\n"
-"<loadmodule> may be either an executable or DSO.\n"
-"\n"
-"By default, section, procedure and instruction lists are dumped.\n"
-"\n"
-"Options:\n"
-"  --short              Short dump (no instructions).\n"
-"  --all, --long        Long dump.\n"
-"  --old                Old symbolic dump.\n"
-"  -l <addr>, load-addr <addr>\n"
-"                       By default, DSOs will be 'loaded' at 0x0.  Use this\n"
-"                       option to specify a different load address.\n"
-"                       Addresses may be in base 10, 8 (prefix '0') or 16\n"
-"                       (prefix '0x').  [NOT FULLY IMPLEMENTED]\n"
-"  -V, --version        Print version information.\n"
-"  -h, --help           Print this help.\n"
-"  --debug [<n>]        Debug: use debug level <n>. {1}\n";
+static const char* usage_details = "\
+Load module dump.  Dumps selected contents of <loadmodule> to stdout.\n\
+<loadmodule> may be either an executable or DSO.\n\
+\n\
+By default instruction types are emitted.\
+\n\
+Options:\n\
+  --long               Long dump: include symbol table.\n\
+  --short              Short dump: no instructions.\n\
+  --decode             Decode instructions.\n\
+  --old                Old symbolic dump.\n\
+  -l <addr>, load-addr <addr>\n\
+                       'Load' DSOs at address <addr> rather than 0x0.\n\
+                       Addresses may be in base 10, 8 (prefix '0') or 16\n\
+                       (prefix '0x').  [NOT FULLY IMPLEMENTED]\n\
+  -V, --version        Print version information.\n\
+  -h, --help           Print this help.\n\
+  --debug [<n>]        Debug: use debug level <n>. {1}\n";
 
 
 
@@ -110,9 +117,9 @@ static const char* usage_details =
 CmdLineParser::OptArgDesc Args::optArgs[] = {
 
   // Options
-  {  0 , "short",   CLP::ARG_NONE, CLP::DUPOPT_CLOB, NULL },
   {  0 , "long",    CLP::ARG_NONE, CLP::DUPOPT_CLOB, NULL },
-  {  0 , "all",     CLP::ARG_NONE, CLP::DUPOPT_CLOB, NULL },
+  {  0 , "short",   CLP::ARG_NONE, CLP::DUPOPT_CLOB, NULL },
+  {  0 , "decode",  CLP::ARG_NONE, CLP::DUPOPT_CLOB, NULL },
   {  0 , "old",     CLP::ARG_NONE, CLP::DUPOPT_CLOB, NULL },
 
   { 'l', "load-addr",     CLP::ARG_REQ , CLP::DUPOPT_CLOB, NULL },
@@ -138,14 +145,15 @@ Args::Args()
 Args::Args(int argc, const char* const argv[])
 {
   Ctor();
-  Parse(argc, argv);
+  parse(argc, argv);
 }
 
 void
 Args::Ctor()
 {
-  dumpShort = false;
   dumpLong  = false;
+  dumpShort = false;
+  dumpDecode = false;
   dumpOld   = false;
   loadVMA = 0x0;
   debugLevel = 0;
@@ -158,36 +166,36 @@ Args::~Args()
 
 
 void 
-Args::PrintVersion(std::ostream& os) const
+Args::printVersion(std::ostream& os) const
 {
-  os << GetCmd() << ": " << version_info << endl;
+  os << getCmd() << ": " << version_info << endl;
 }
 
 
 void 
-Args::PrintUsage(std::ostream& os) const
+Args::printUsage(std::ostream& os) const
 {
-  os << "Usage: " << GetCmd() << " " << usage_summary << endl
+  os << "Usage: " << getCmd() << " " << usage_summary << endl
      << usage_details << endl;
 } 
 
 
 void 
-Args::PrintError(std::ostream& os, const char* msg) const
+Args::printError(std::ostream& os, const char* msg) const
 {
-  os << GetCmd() << ": " << msg << endl
-     << "Try `" << GetCmd() << " --help' for more information." << endl;
+  os << getCmd() << ": " << msg << endl
+     << "Try `" << getCmd() << " --help' for more information." << endl;
 }
 
 void 
-Args::PrintError(std::ostream& os, const std::string& msg) const
+Args::printError(std::ostream& os, const std::string& msg) const
 {
-  PrintError(os, msg.c_str());
+  printError(os, msg.c_str());
 }
 
 
 void
-Args::Parse(int argc, const char* const argv[])
+Args::parse(int argc, const char* const argv[])
 {
   try {
 
@@ -211,24 +219,38 @@ Args::Parse(int argc, const char* const argv[])
       }
     }
     if (parser.IsOpt("help")) { 
-      PrintUsage(std::cerr); 
+      printUsage(std::cerr); 
       exit(1);
     }
     if (parser.IsOpt("version")) { 
-      PrintVersion(std::cerr);
+      printVersion(std::cerr);
       exit(1);
     }
     
     // Check for other options
+    int numDumpOptions = 0;
+    if (parser.IsOpt("long")) {
+      dumpLong = true;
+      numDumpOptions++;
+    } 
     if (parser.IsOpt("short")) { 
       dumpShort = true;
+      numDumpOptions++;
     } 
-    if (parser.IsOpt("long") || parser.IsOpt("all")) {
-      dumpLong = true;
+    if (parser.IsOpt("decode")) {
+      dumpDecode = true;
+      if (dumpShort) {
+	ARG_ERROR("--decode not valid with --short!");
+      }
     } 
     if (parser.IsOpt("old")) { 
       dumpOld = true;
+      numDumpOptions++;
     } 
+    if (numDumpOptions > 1) {
+      ARG_ERROR("At most one dump option may be given!");
+    }
+
     if (parser.IsOpt("load-addr")) { 
       const string& arg = parser.GetOptArg("load-addr");
       loadVMA = CmdLineParser::ToLong(arg);
@@ -237,7 +259,7 @@ Args::Parse(int argc, const char* const argv[])
       errno = 0;
       long l = strtol(str.c_str(), NULL, 0 /* base: dec, hex, or oct */);
       if (l <= 0 || errno != 0) {
-	PrintError(std::cerr, "Invalid address given to -r\n");
+	ARG_ERROR("Invalid address given to -r\n");
 	exit(1);
       }
       loadVMA = (VMA)l;
@@ -246,14 +268,12 @@ Args::Parse(int argc, const char* const argv[])
     
     // Check for required arguments
     if (parser.GetNumArgs() != 1) {
-      PrintError(std::cerr, "Incorrect number of arguments!");
-      exit(1);
+      ARG_ERROR("Incorrect number of arguments!");
     }
     inputFile = parser.GetArg(0);
   }
   catch (const CmdLineParser::ParseError& x) {
-    PrintError(std::cerr, x.what());
-    exit(1);
+    ARG_ERROR(x.what());
   }
   catch (const CmdLineParser::Exception& x) {
     DIAG_EMsg(x.message());
@@ -263,16 +283,16 @@ Args::Parse(int argc, const char* const argv[])
 
 
 void 
-Args::Dump(std::ostream& os) const
+Args::dump(std::ostream& os) const
 {
-  os << "Args.cmd= " << GetCmd() << endl; 
+  os << "Args.cmd= " << getCmd() << endl; 
   os << "Args.debugLevel= " << debugLevel << endl;
   os << "Args.inputFile= " << inputFile << endl;
   os << "::trace " << ::trace << endl; 
 }
 
 void 
-Args::DDump() const
+Args::ddump() const
 {
-  Dump(std::cerr);
+  dump(std::cerr);
 }

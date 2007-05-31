@@ -82,12 +82,17 @@ namespace binutils {
 
 class Insn {
 public:
-  Insn(MachInsn* _minsn) : minsn(_minsn), vma(0) { } 
-  Insn(MachInsn* _minsn, VMA _vma) : minsn(_minsn), vma(_vma) { } 
+  Insn(MachInsn* _minsn) 
+    : minsn(_minsn), vma(0) { } 
+
+  Insn(MachInsn* _minsn, VMA _vma) 
+    : minsn(_minsn), vma(_vma) { } 
+
   virtual ~Insn() { }
   
   // Returns a classification of the instruction
-  ISA::InsnDesc GetDesc() const {
+  ISA::InsnDesc 
+  GetDesc() const {
     return LM::isa->GetInsnDesc(minsn, GetOpIndex(), GetSize());
   }
   
@@ -95,16 +100,23 @@ public:
   // 'GetSize' returns the size of the machine instruction.
   // In the case of VLIW instructions, returns the {bits, size} not of
   // the individual operation but the whole "packet".
-  virtual MachInsn* GetBits() const { return minsn; }
-  virtual ushort    GetSize() const = 0;
+  virtual MachInsn* 
+  GetBits() const { return minsn; }
+
+  virtual ushort    
+  GetSize() const = 0;
 
   // Returns the VMA for the beginning of this instruction.
   // WARNING: this is unrelocated
-  VMA GetVMA() const { return vma; }
-  void SetVMA(VMA _vma) { vma = _vma; }
+  VMA 
+  GetVMA() const { return vma; }
+  
+  void 
+  SetVMA(VMA _vma) { vma = _vma; }
 
   // Returns the end vma, i.e. the vma immediately following this instruction
-  VMA GetEndVMA() const 
+  VMA 
+  GetEndVMA() const 
     { return GetVMA() + GetSize(); }
 
   // Returns the operation VMA for the beginning of this instruction
@@ -117,21 +129,26 @@ public:
   // the original packet.  'GetNumOps' returns the number of
   // operations in this packet.  For RISC and CISC machines these
   // values will be 0 and 1, respectively.
-  virtual ushort GetOpIndex() const = 0;
-  virtual ushort GetNumOps() const = 0; 
+  virtual ushort 
+  GetOpIndex() const = 0;
+
+  virtual ushort 
+  GetNumOps() const = 0; 
 
   // Returns the target address of a jump or branch instruction. If a
   // target cannot be computed, return 0.  Note that a target is not
   // computed when it depends on values in registers (e.g. indirect
   // jumps).  'vma' is used only to calculate PC-relative targets.
-  virtual VMA GetTargetVMA(VMA _vma) const {
+  virtual VMA 
+  GetTargetVMA(VMA _vma) const {
     return LM::isa->GetInsnTargetVMA(minsn, _vma, GetOpIndex(), GetSize());
   }
   
   // Returns the number of delay slots that must be observed by
   // schedulers before the effect of instruction 'mi' can be
   // assumed to be fully obtained (e.g., RISC braches).
-  virtual ushort GetNumDelaySlots() const {
+  virtual ushort 
+  GetNumDelaySlots() const {
     return LM::isa->GetInsnNumDelaySlots(minsn, GetOpIndex(), GetSize());
   }
 
@@ -139,10 +156,17 @@ public:
   // parallel with its successor 'mi2' (successor in the sequential
   // sense).  IOW, this has special reference to "explicitly parallel"
   // architecture, not superscalar design.
-  virtual bool IsParallelWithSuccessor(Insn* mi2) const {
+  virtual bool 
+  IsParallelWithSuccessor(Insn* mi2) const {
     return LM::isa->IsParallelWithSuccessor(minsn, GetOpIndex(), GetSize(),
-					mi2->GetBits(), mi2->GetOpIndex(),
-					mi2->GetSize());
+					    mi2->GetBits(), mi2->GetOpIndex(),
+					    mi2->GetSize());
+  }
+
+  // decode: 
+  virtual void 
+  decode(std::ostream& os) {
+    return LM::isa->decode(minsn, os);
   }
   
   // -------------------------------------------------------
@@ -168,7 +192,8 @@ private:
   Insn& operator=(const Insn& i) { return *this; }
   
 protected:
-  MachInsn*  minsn; // pointer to machine instruction [lives in Section]
+  MachInsn* minsn; // pointer to machine instruction [lives in Section]
+
 private:
   VMA vma;         // vma of the beginning of this instruction packet
 };

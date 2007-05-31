@@ -53,9 +53,12 @@
 
 //************************* System Include Files ****************************
 
+#include <iostream>
+
 //*************************** User Include Files ****************************
 
 #include <include/general.h>
+#include <include/gnu_bfd.h>
 
 #include "ISA.hpp"
 
@@ -70,8 +73,8 @@
 
 class MipsISA : public ISA {
 public:
-  MipsISA() { }
-  virtual ~MipsISA() { }
+  MipsISA();
+  virtual ~MipsISA();
 
   // --------------------------------------------------------
   // Instructions:
@@ -95,6 +98,9 @@ public:
 				       ushort sz2) const
   { return false; }
   
+  virtual void 
+  decode(MachInsn* mi, std::ostream& os);
+
 private: 
   // Should not be used
   MipsISA(const MipsISA& i) { }
@@ -103,6 +109,7 @@ private:
 protected:
 private:
   static const ushort MINSN_SIZE = 4; // machine instruction size in bytes
+  struct disassemble_info *di;
 };
 
 //****************************************************************************
