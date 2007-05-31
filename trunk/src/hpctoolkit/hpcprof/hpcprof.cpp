@@ -65,45 +65,47 @@ static int debug = 0;
 static const char* version_info =
 #include <include/HPCToolkitVersionInfo.h>
 
-static void
-usage(const string &argv0)
+  static void
+  usage(const string &argv0)
 {
   cout 
-    << "Usage:\n"
-    << "  " << argv0 << "    [options] <binary> <hpcrun-file>...\n"
-    << "  " << argv0 << " -p [options] <binary> <hpcrun-file>...\n"
-    << endl
-    << "Options: General\n"
-    << "  -d <dir>, --directory <dir>\n"
-    << "                      Search <dir> for source files.\n"
-    << "  -D <dir>, --recursive-directory <dir>\n"
-    << "                      Search <dir> recursively for source files.\n"
-    << "  --force             Show data that is not accurate.\n"
-    << "  -V, --version       Display the version number.\n"
-    << "  -h, --help          Print this message.\n"
-    << "  --debug <n>         Debug: use debug level <n>.\n"
-    << endl
-    << "Options: Text and HTML mode {Default}\n"
-    << "  -e, --everything    Show all information.\n"
-    << "  -f, --files         Show all files.\n"
-    << "  -r, --funcs         Show all functions.\n"
-    << "  -l, --lines         Show all lines.\n"
-    << "  -n, --number        Show number of samples (not percentages).\n"
-    << "  -s <n>, --show <n>  Set threshold <n> for showing aggregate data.\n"
-    << "  -H <dir>, --html <dir>\n"
-    << "                      Output HTML into directory dir.\n"
-    << "  -a <file>, --annotate <file> \n"
-    << "                      Annotate source file <file>.\n"
-    << endl
-    << "Options: PROFILE mode\n"
-    << "  -p, --profile       Dump PROFILE output (for use with HPCToolkit's hpcview).\n"
-    << endl;
+  << "Usage:\n"
+  << "  " << argv0 << "    [options] <binary> <hpcrun-file>...\n"
+  << "  " << argv0 << " -p [options] <binary> <hpcrun-file>...\n"
+  << endl
+  << "Options: General\n"
+  << "  -d <dir>, --directory <dir>\n"
+  << "                      Search <dir> for source files.\n"
+  << "  -D <dir>, --recursive-directory <dir>\n"
+  << "                      Search <dir> recursively for source files.\n"
+  << "  --force             Show data that is not accurate.\n"
+  << "  -V, --version       Display the version number.\n"
+  << "  -h, --help          Print this message.\n"
+  << "  --debug <n>         Debug: use debug level <n>.\n"
+  << endl
+  << "Options: Text and HTML mode {Default}\n"
+  << "  -e, --everything    Show all information.\n"
+  << "  -f, --files         Show all files.\n"
+  << "  -r, --funcs         Show all functions.\n"
+  << "  -l, --lines         Show all lines.\n"
+  // << "  --disassembly       Show disassembly.\n"
+  << "\n"
+  << "  -n, --number        Show number of samples (not percentages).\n"
+  << "  -s <n>, --show <n>  Set threshold <n> for showing aggregate data.\n"
+  << "  -H <dir>, --html <dir>\n"
+  << "                      Output HTML into directory dir.\n"
+  << "  -a <file>, --annotate <file> \n"
+  << "                      Annotate source file <file>.\n"
+  << endl
+  << "Options: PROFILE mode\n"
+  << "  -p, --profile       Dump PROFILE output (for use with HPCToolkit's hpcview).\n"
+  << endl;
 }
 
 //***************************************************************************
 
-int
-real_main(int argc, char* argv[]);
+  int
+  real_main(int argc, char* argv[]);
 
 int dump_html_or_text(Summary& sum);
 int dump_PROFILE(Summary& sum);
@@ -251,20 +253,23 @@ real_main(int argc, char *argv[])
   return 0;
 }
 
+
+//***************************************************************************
+//
 //***************************************************************************
 
-#define XMLAttr(attr) \
- "=\"" << (attr) << "\""
+#define XMLAttr(attr)				\
+  "=\"" << (attr) << "\""
 
 const char *PROFILEdtd =
 #include "lib/xml/PROFILE.dtd.h"
 
-const char* I[] = { "", // Indent levels (0 - 5)
-		    "  ",
-		    "    ",
-		    "      ",
-		    "        ",
-		    "          " };
+		     const char* I[] = { "", // Indent levels (0 - 5)
+    "  ",
+    "    ",
+    "      ",
+    "        ",
+    "          " };
 
 static void dump_PROFILE_header(ostream& os);
 
@@ -439,6 +444,8 @@ dump_PROFILE_metric(ostream& os,
 
 
 //***************************************************************************
+// 
+//***************************************************************************
 
 void init_html(ostream &outs, const string &desc, const string &exec);
 void done_html(ostream &outs);
@@ -454,242 +461,242 @@ dump_html_or_text(Summary& sum)
   sum.set_display_percent(show_as_percent);
 
   if (show_as_html) {
-      if (mkdir(htmldir.c_str(), 0755)) {
-          cout << "ERROR: couldn't open HTML directory \""
-               << htmldir.c_str() << "\": "
-               << strerror(errno)
-               << endl;
-          return 1;
-        }
-      sum.set_html(true);
+    if (mkdir(htmldir.c_str(), 0755)) {
+      cout << "ERROR: couldn't open HTML directory \""
+	   << htmldir.c_str() << "\": "
+	   << strerror(errno)
+	   << endl;
+      return 1;
     }
+    sum.set_html(true);
+  }
 
   streambuf *obuf = cout.rdbuf();
   ostream outs(obuf);
 
   ofstream htmlindex;
   if (show_as_html) {
-      string filename = htmldir + "/index.html";
-      htmlindex.open(filename.c_str());
-      init_html(htmlindex, "Performance Analysis", command);
-      htmlindex << "<ul>" << endl;
-    }
+    string filename = htmldir + "/index.html";
+    htmlindex.open(filename.c_str());
+    init_html(htmlindex, "Performance Analysis", command);
+    htmlindex << "<ul>" << endl;
+  }
   
   if (sum.ncounter() > 0) {
-      ofstream outfilestream;
-      streambuf *buf;
-      if (show_as_html) {
-          string subname = "counterdescription.html";
-          string filename = htmldir + "/" + subname;
-          add_to_index(htmlindex,"Counter Descriptions", subname);
-          outfilestream.open(filename.c_str());
-          buf = outs.rdbuf(outfilestream.rdbuf());
-          init_html(outs,"Counter Description", command);
-          outs << "<pre>" << endl;
-        }
-      if (!show_as_html && need_newline) { 
-	  outs << endl; need_newline = false; 
-        }
-      outs << "Columns correspond to the following events"
-	   << " [event:period (events/sample)]" << endl;
-      for (int i = 0; i < sum.ncounter(); ++i) {
-	  const Event& e = sum.event(i);
-	  outs << "  " << e.name() << ":" << e.period()
-               << " - " << sum.event(i).description()
-               << " (" << sum.n_sample(i) << " samples";
-
-          if (sum.overflow(i) != 0)
-              outs << " + " << sum.overflow(i) << " overflows";
-          if (sum.outofrange(i) != 0)
-              outs << " + " << sum.outofrange(i) << " out of range";
-	  outs << ")";
-          if (!sum.visible(i)) outs << " [not shown]";
-          outs << endl;
-        }
-      need_newline = true;
-      if (show_as_html) {
-          outs << "</pre>" << endl;
-          done_html(outs);
-          outs.rdbuf(buf);
-        }
+    ofstream outfilestream;
+    streambuf *buf;
+    if (show_as_html) {
+      string subname = "counterdescription.html";
+      string filename = htmldir + "/" + subname;
+      add_to_index(htmlindex,"Counter Descriptions", subname);
+      outfilestream.open(filename.c_str());
+      buf = outs.rdbuf(outfilestream.rdbuf());
+      init_html(outs,"Counter Description", command);
+      outs << "<pre>" << endl;
     }
+    if (!show_as_html && need_newline) { 
+      outs << endl; need_newline = false; 
+    }
+    outs << "Columns correspond to the following events"
+	 << " [event:period (events/sample)]" << endl;
+    for (int i = 0; i < sum.ncounter(); ++i) {
+      const Event& e = sum.event(i);
+      outs << "  " << e.name() << ":" << e.period()
+	   << " - " << sum.event(i).description()
+	   << " (" << sum.n_sample(i) << " samples";
+
+      if (sum.overflow(i) != 0)
+	outs << " + " << sum.overflow(i) << " overflows";
+      if (sum.outofrange(i) != 0)
+	outs << " + " << sum.outofrange(i) << " out of range";
+      outs << ")";
+      if (!sum.visible(i)) outs << " [not shown]";
+      outs << endl;
+    }
+    need_newline = true;
+    if (show_as_html) {
+      outs << "</pre>" << endl;
+      done_html(outs);
+      outs.rdbuf(buf);
+    }
+  }
 
 
   if (show_everything || show_loadmodules) {
-      if (!show_as_html && need_newline) { 
-	  outs << endl; need_newline = false; 
-        }
+    if (!show_as_html && need_newline) { 
+      outs << endl; need_newline = false; 
+    }
 
+    ofstream outfilestream;
+    streambuf *buf;
+    if (show_as_html) {
+      string subname = "loadmodulesummary.html";
+      string filename = htmldir + "/" + subname;
+      add_to_index(htmlindex, "Load Module Summary", subname);
+      outfilestream.open(filename.c_str());
+      buf = outs.rdbuf(outfilestream.rdbuf());
+      init_html(outs, "Load Module Summary", command/*FIXME*/);
+    }
+    else outs << "Load Module Summary:" << endl;
+    sum.summarize_loadmodules(outs);
+    if (show_as_html) {
+      done_html(outs);
+      outs.rdbuf(buf);
+    }
+    need_newline = true;
+  }
+
+  if (show_everything || show_files) {
+    if (!show_as_html && need_newline) { 
+      outs << endl; need_newline = false; 
+    }
+    if (show_of_force || sum.file_info()) {
       ofstream outfilestream;
       streambuf *buf;
       if (show_as_html) {
-	  string subname = "loadmodulesummary.html";
-	  string filename = htmldir + "/" + subname;
-	  add_to_index(htmlindex, "Load Module Summary", subname);
-	  outfilestream.open(filename.c_str());
-	  buf = outs.rdbuf(outfilestream.rdbuf());
-	  init_html(outs, "Load Module Summary", command/*FIXME*/);
-        }
-      else outs << "Load Module Summary:" << endl;
-      sum.summarize_loadmodules(outs);
+	string subname = "filesummary.html";
+	string filename = htmldir + "/" + subname;
+	add_to_index(htmlindex, "File Summary", subname);
+	outfilestream.open(filename.c_str());
+	buf = outs.rdbuf(outfilestream.rdbuf());
+	init_html(outs, "File Summary", command);
+      }
+      else outs << "File Summary:" << endl;
+      sum.summarize_files(outs);
       if (show_as_html) {
-	  done_html(outs);
-	  outs.rdbuf(buf);
-        }
-      need_newline = true;
+	done_html(outs);
+	outs.rdbuf(buf);
+      }
     }
-
-  if (show_everything || show_files) {
-      if (!show_as_html && need_newline) { 
-	  outs << endl; need_newline = false; 
-        }
-      if (show_of_force || sum.file_info()) {
-          ofstream outfilestream;
-          streambuf *buf;
-          if (show_as_html) {
-              string subname = "filesummary.html";
-              string filename = htmldir + "/" + subname;
-              add_to_index(htmlindex, "File Summary", subname);
-              outfilestream.open(filename.c_str());
-              buf = outs.rdbuf(outfilestream.rdbuf());
-              init_html(outs, "File Summary", command);
-            }
-          else outs << "File Summary:" << endl;
-          sum.summarize_files(outs);
-          if (show_as_html) {
-              done_html(outs);
-              outs.rdbuf(buf);
-            }
-        }
-      else {
-          outs << "File Summary skipped because it is not accurate."
-               << endl;
-        }
-      need_newline = true;
+    else {
+      outs << "File Summary skipped because it is not accurate."
+	   << endl;
     }
+    need_newline = true;
+  }
 
   if (show_everything || show_funcs) {
-      if (!show_as_html && need_newline) {
-	  outs << endl; need_newline = false; 
-        }
-      if (show_of_force || sum.func_info()) {
-          ofstream outfilestream;
-          streambuf *buf;
-          if (show_as_html) {
-              string subname = "funcsummary.html";
-              string filename = htmldir + "/" + subname;
-              add_to_index(htmlindex,"Function Summary",subname);
-              outfilestream.open(filename.c_str());
-              buf = outs.rdbuf(outfilestream.rdbuf());
-              init_html(outs,"Function Summary", command);
-            }
-          else outs << "Function Summary:" << endl;
-          sum.summarize_funcs(outs);
-          if (show_as_html) {
-              done_html(outs);
-              outs.rdbuf(buf);
-            }
-        }
-      else {
-          outs << "Function Summary skipped because it is not accurate."
-               << endl;
-        }
-      need_newline = true;
+    if (!show_as_html && need_newline) {
+      outs << endl; need_newline = false; 
     }
+    if (show_of_force || sum.func_info()) {
+      ofstream outfilestream;
+      streambuf *buf;
+      if (show_as_html) {
+	string subname = "funcsummary.html";
+	string filename = htmldir + "/" + subname;
+	add_to_index(htmlindex,"Function Summary",subname);
+	outfilestream.open(filename.c_str());
+	buf = outs.rdbuf(outfilestream.rdbuf());
+	init_html(outs,"Function Summary", command);
+      }
+      else outs << "Function Summary:" << endl;
+      sum.summarize_funcs(outs);
+      if (show_as_html) {
+	done_html(outs);
+	outs.rdbuf(buf);
+      }
+    }
+    else {
+      outs << "Function Summary skipped because it is not accurate."
+	   << endl;
+    }
+    need_newline = true;
+  }
 
   if (show_everything || show_lines) {
-      if (!show_as_html && need_newline) { 
-	  outs << endl; need_newline = false; 
-        }
-      if (show_of_force || sum.line_info()) {
-          ofstream outfilestream;
-          streambuf *buf;
-          if (show_as_html) {
-              string subname = "linesummary.html";
-              string filename = htmldir + "/" + subname;
-              add_to_index(htmlindex,"Line Summary",subname);
-              outfilestream.open(filename.c_str());
-              buf = outs.rdbuf(outfilestream.rdbuf());
-              init_html(outs,"Line Summary", command);
-            }
-          else outs << "Line Summary:" << endl;
-          sum.summarize_lines(outs);
-          if (show_as_html) {
-              done_html(outs);
-              outs.rdbuf(buf);
-            }
-        }
-      else {
-          outs << "Line Summary skipped because it is not accurate."
-               << endl;
-        }
-      need_newline = true;
+    if (!show_as_html && need_newline) { 
+      outs << endl; need_newline = false; 
     }
+    if (show_of_force || sum.line_info()) {
+      ofstream outfilestream;
+      streambuf *buf;
+      if (show_as_html) {
+	string subname = "linesummary.html";
+	string filename = htmldir + "/" + subname;
+	add_to_index(htmlindex,"Line Summary",subname);
+	outfilestream.open(filename.c_str());
+	buf = outs.rdbuf(outfilestream.rdbuf());
+	init_html(outs,"Line Summary", command);
+      }
+      else outs << "Line Summary:" << endl;
+      sum.summarize_lines(outs);
+      if (show_as_html) {
+	done_html(outs);
+	outs.rdbuf(buf);
+      }
+    }
+    else {
+      outs << "Line Summary skipped because it is not accurate."
+	   << endl;
+    }
+    need_newline = true;
+  }
 
   if (show_everything) {
-      // put all the files in the annotate list
-      annotate.clear();
-      namemap n;
-      sum.construct_file_namemap(n);
-      for (namemap::iterator i = n.begin(); i != n.end(); ++i) {
-	  annotate.push_back((*i).first);
-        }
+    // put all the files in the annotate list
+    annotate.clear();
+    namemap n;
+    sum.construct_file_namemap(n);
+    for (namemap::iterator i = n.begin(); i != n.end(); ++i) {
+      annotate.push_back((*i).first);
     }
+  }
 
   if (show_as_html) {
-      htmlindex << "</ul>" << endl;
-    }
+    htmlindex << "</ul>" << endl;
+  }
 
   if (annotate.size()) {
-      if (show_of_force || sum.line_info()) {
-          if (show_as_html) {
-              htmlindex << "<h3>Annotated Source Files</h3>" << endl
-                        << "<ul>" << endl;
-            }
-          for (vector<qual_name>::iterator i = annotate.begin();
-               i != annotate.end(); ++i) {
-	      const string& filenm = (*i).second;
-	      if (!sum.file_found(filenm)) { continue; }
-              ofstream outfilestream;
-              streambuf *buf;
-              if (show_as_html) {
-                  string hfilenm = htmldir + "/" + sum.html_filename(filenm);
-                  outfilestream.open(hfilenm.c_str());
-                  buf = outs.rdbuf(outfilestream.rdbuf());
-                  init_html(outs, ("Annotation of " + filenm), command); 
-		  // FIXME (lm)
+    if (show_of_force || sum.line_info()) {
+      if (show_as_html) {
+	htmlindex << "<h3>Annotated Source Files</h3>" << endl
+		  << "<ul>" << endl;
+      }
+      for (vector<qual_name>::iterator i = annotate.begin();
+	   i != annotate.end(); ++i) {
+	const string& filenm = (*i).second;
+	if (!sum.file_found(filenm)) { continue; }
+	ofstream outfilestream;
+	streambuf *buf;
+	if (show_as_html) {
+	  string hfilenm = htmldir + "/" + sum.html_filename(filenm);
+	  outfilestream.open(hfilenm.c_str());
+	  buf = outs.rdbuf(outfilestream.rdbuf());
+	  init_html(outs, ("Annotation of " + filenm), command); 
+	  // FIXME (lm)
 
-                  add_to_index(htmlindex, filenm, sum.html_filename(filenm));
-                }
-              if (!show_as_html && need_newline) { 
-		  outs << endl; need_newline = false; 
-	        }
-              sum.annotate_file(*i, outs);
-              need_newline = true;
-              if (show_as_html) {
-                  done_html(outs);
-                  outs.rdbuf(buf);
-                }
-            }
-          if (show_as_html) {
-              htmlindex << "</ul>" << endl;
-            }
-        }
-      else {
-          if (!show_as_html && need_newline) { 
-	      outs << endl; need_newline = false; 
-	    }
-          outs << "File Annotations skipped because they are not accurate."
-               << endl;
-          need_newline = true;
-        }
+	  add_to_index(htmlindex, filenm, sum.html_filename(filenm));
+	}
+	if (!show_as_html && need_newline) { 
+	  outs << endl; need_newline = false; 
+	}
+	sum.annotate_file(*i, outs);
+	need_newline = true;
+	if (show_as_html) {
+	  done_html(outs);
+	  outs.rdbuf(buf);
+	}
+      }
+      if (show_as_html) {
+	htmlindex << "</ul>" << endl;
+      }
     }
+    else {
+      if (!show_as_html && need_newline) { 
+	outs << endl; need_newline = false; 
+      }
+      outs << "File Annotations skipped because they are not accurate."
+	   << endl;
+      need_newline = true;
+    }
+  }
   outs.rdbuf(0);
-
+  
   if (show_as_html) {
-      done_html(htmlindex);
-    }
-
+    done_html(htmlindex);
+  }
+  
   return 0;
 }
 
@@ -722,4 +729,6 @@ add_to_index(ostream &htmlindex, const string &linkname,
             << linkname << "</a>" << endl;
 }
 
+//***************************************************************************
+// 
 //***************************************************************************
