@@ -48,8 +48,8 @@
 //
 //***************************************************************************
 
-#ifndef x86ISA_H 
-#define x86ISA_H
+#ifndef isa_x86ISA_hpp 
+#define isa_x86ISA_hpp
 
 //************************* System Include Files ****************************
 
@@ -81,27 +81,29 @@ public:
   // Instructions:
   // --------------------------------------------------------  
   
-  virtual ushort GetInsnSize(MachInsn* mi);
+  virtual ushort 
+  GetInsnSize(MachInsn* mi);
   
-  virtual ushort GetInsnNumOps(MachInsn* mi) { return 1; }
+  virtual ushort 
+  GetInsnNumOps(MachInsn* mi) { return 1; }
 
-  virtual InsnDesc GetInsnDesc(MachInsn* mi, ushort opIndex, ushort sz = 0);
+  virtual InsnDesc 
+  GetInsnDesc(MachInsn* mi, ushort opIndex, ushort sz = 0);
 
-  virtual VMA GetInsnTargetVMA(MachInsn* mi, VMA pc, ushort opIndex,
-			       ushort sz = 0);
+  virtual VMA 
+  GetInsnTargetVMA(MachInsn* mi, VMA vma, ushort opIndex, ushort sz = 0);
   
-  virtual ushort GetInsnNumDelaySlots(MachInsn* mi, ushort opIndex,
-				      ushort sz = 0)
+  virtual ushort 
+  GetInsnNumDelaySlots(MachInsn* mi, ushort opIndex, ushort sz = 0)
   { return 0; }
 
-  virtual bool IsParallelWithSuccessor(MachInsn* mi1, ushort opIndex1,
-				       ushort sz1,
-				       MachInsn* mi2, ushort opIndex2,
-				       ushort sz2) const
+  virtual bool 
+  IsParallelWithSuccessor(MachInsn* mi1, ushort opIndex1, ushort sz1,
+			  MachInsn* mi2, ushort opIndex2, ushort sz2) const
   { return false; }
 
   virtual void 
-  decode(MachInsn* mi, std::ostream& os);
+  decode(std::ostream& os, MachInsn* mi, VMA vma, ushort opIndex);
 
 private: 
   // Should not be used
@@ -110,10 +112,12 @@ private:
 
 protected:
 private:
-  bool mIs_x86_64;
-  struct disassemble_info *di;
+  bool m_is_x86_64;
+  struct disassemble_info* m_di;
+  struct disassemble_info* m_di_dis;
+  GNUbu_disdata m_dis_data;
 };
 
 //****************************************************************************
 
-#endif 
+#endif /* isa_x86ISA_hpp */

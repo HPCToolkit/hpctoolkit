@@ -157,14 +157,7 @@ ISA::InsnDesc::DDump()
 extern "C" { 
 
 int 
-fake_fprintf_func(void* stream, const char *format, ...)
-{
-  return 0;
-}
-
-
-int 
-dis_fprintf_func(void* stream, const char *format, ...)
+GNUbu_fprintf(void* stream, const char* format, ...)
 {
 #define BUF_SZ 512
   static char BUF[BUF_SZ];
@@ -181,16 +174,36 @@ dis_fprintf_func(void* stream, const char *format, ...)
 }
 
 
-void 
-print_addr(bfd_vma vma, struct disassemble_info *info)
+int 
+GNUbu_fprintf_stub(void* stream, const char* format, ...)
 {
-  info->fprintf_func(info->stream, "0x%08x", vma);
+  return 0;
+}
+
+
+void 
+GNUbu_print_addr(bfd_vma di_vma, struct disassemble_info* di)
+{
+  // FIXME: only for x86 at the moment!
+  GNUbu_disdata* data = (GNUbu_disdata*)di->application_data;
+ 
+  static const bfd_vma M32 = 0xffffffff;
+  VMA t = ((di_vma & M32) - (PTR_TO_BFDVMA(data->memaddr) & M32)) + (bfd_vma)data->vma;
+
+  ostream* os = (ostream*)di->stream;
+  *os << std::hex << "0x" << t << std::dec;
+}
+
+
+void 
+GNUbu_print_addr_stub(bfd_vma di_vma, struct disassemble_info* di)
+{
 }
 
 
 int 
-read_memory_func(bfd_vma vma, bfd_byte *myaddr, unsigned int len,
-		 struct disassemble_info *info)
+GNUbu_read_memory(bfd_vma vma, bfd_byte* myaddr, unsigned int len,
+		  struct disassemble_info* di)
 {
   memcpy(myaddr, BFDVMA_TO_PTR(vma, const char*), len);
   return 0; /* success */
