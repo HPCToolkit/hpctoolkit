@@ -73,31 +73,32 @@ public:
   Args(int argc, const char* const argv[]);
   ~Args(); 
 
-  // Parse the command line
-  void Parse(int argc, const char* const argv[]);
+  // parse the command line
+  void parse(int argc, const char* const argv[]);
 
   // Version and Usage information
-  void PrintVersion(std::ostream& os) const;
-  void PrintUsage(std::ostream& os) const;
+  void printVersion(std::ostream& os) const;
+  void printUsage(std::ostream& os) const;
   
   // Error
-  void PrintError(std::ostream& os, const char* msg) const;
-  void PrintError(std::ostream& os, const std::string& msg) const;
+  void printError(std::ostream& os, const char* msg) const;
+  void printError(std::ostream& os, const std::string& msg) const;
 
   // Dump
-  void Dump(std::ostream& os = std::cerr) const;
-  void DDump() const;
+  void dump(std::ostream& os = std::cerr) const;
+  void ddump() const;
 
 public:  
   // Parsed Data: Command
-  const std::string& GetCmd() const { return parser.GetCmd(); }
+  const std::string& getCmd() const { return parser.GetCmd(); }
 
   // Parsed Data: optional arguments
-  bool dumpShort;
   bool dumpLong;
+  bool dumpShort;
+  bool dumpDecode;
   bool dumpOld;
   VMA  loadVMA;
-  int debugLevel;
+  int  debugLevel;
 
   // Parsed Data: arguments
   std::string inputFile;

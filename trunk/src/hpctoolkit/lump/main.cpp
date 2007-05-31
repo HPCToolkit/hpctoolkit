@@ -155,15 +155,21 @@ realmain(int argc, char* const argv[])
     if (args.dumpOld) {
       DumpSymbolicInfoOld(std::cout, lm);
     }
-    else if (args.dumpShort) {
-      lm->dump(std::cout, binutils::LM::DUMP_Short);
+    
+    // Assume parser sanity checked arguments
+    binutils::LM::DumpTy ty = binutils::LM::DUMP_Mid;
+    if (args.dumpShort) {
+      ty = binutils::LM::DUMP_Short;
     } 
-    else if (args.dumpLong) {
-      lm->dump(std::cout, binutils::LM::DUMP_Long);
+    if (args.dumpLong) {
+      ty = binutils::LM::DUMP_Long;
     }
-    else {
-      lm->dump(std::cout, binutils::LM::DUMP_Mid);
+    if (args.dumpDecode) {
+      ty = (binutils::LM::DumpTy)(ty | binutils::LM::DUMP_Flg_Insn_decode);
     }
+    
+    lm->dump(std::cout, ty);
+
   } 
   catch (...) {
     DIAG_EMsg("Exception encountered while dumping " << args.inputFile);

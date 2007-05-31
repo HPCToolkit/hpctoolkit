@@ -53,6 +53,7 @@
 #include <iostream>
 using std::hex;
 using std::dec;
+using std::endl;
 
 #include <string>
 using std::string;
@@ -167,8 +168,16 @@ binutils::Proc::dump(std::ostream& os, int flags, const char* pre) const
     os << p1 << "----- Instruction Dump -----\n";
     for (ProcInsnIterator it(*this); it.IsValid(); ++it) {
       Insn* insn = it.Current();
-      insn->dump(os, flags, p2.c_str());
-
+      
+      if (flags & LM::DUMP_Flg_Insn_decode) {
+	os << p2.c_str();
+	insn->decode(os);
+	os << endl;
+      }
+      else {
+	insn->dump(os, flags, p2.c_str());
+      }
+      
       if (flags & LM::DUMP_Flg_Sym) {
 	VMA vma = insn->GetVMA();
 	ushort opIdx = insn->GetOpIndex();

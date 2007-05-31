@@ -50,6 +50,9 @@
 
 //************************* System Include Files ****************************
 
+#include <iostream>
+using std::ostream;
+
 #ifdef NO_STD_CHEADERS
 # include <stdarg.h>
 # include <string.h>
@@ -61,35 +64,13 @@ using namespace std; // For compatibility with non-std C headers
 
 //*************************** User Include Files ****************************
 
-#include "SparcISA.hpp"
 #include <include/gnu_dis-asm.h>
 
+#include "SparcISA.hpp"
+
+#include <lib/support/diagnostics.h>
+
 //*************************** Forward Declarations ***************************
-
-//****************************************************************************
-
-extern "C" { 
-
-static int fake_fprintf_func(PTR, const char *fmt, ...)
-{
-  //va_list ap;
-  //va_start(ap, fmt);
-  return 0;
-}
-
-static void print_addr (bfd_vma vma, struct disassemble_info *info)
-{
-  info->fprintf_func (info->stream, "0x%08x", vma);
-}
-
-static int read_memory_func (bfd_vma vma, bfd_byte *myaddr, unsigned int len,
-                       struct disassemble_info *info)
-{
-  memcpy(myaddr, BFDVMA_TO_PTR(vma, const char*), len);
-  return 0; /* success */
-}
-
-} // extern "C"
 
 //****************************************************************************
 // SparcISA
@@ -99,7 +80,7 @@ SparcISA::SparcISA()
 {
   // See 'dis-asm.h'
   di = new disassemble_info;
-  INIT_DISASSEMBLE_INFO(*di, stdout, fake_fprintf_func);
+  init_disassemble_info(di, stdout, fake_fprintf_func);
   //  fprintf_func: (int (*)(void *, const char *, ...))fprintf;
 
   di->arch = bfd_arch_sparc;               // bfd_get_arch (abfd);
@@ -109,10 +90,12 @@ SparcISA::SparcISA()
   di->print_address_func = print_addr;     // vs. 'generic_print_address'
 }
 
+
 SparcISA::~SparcISA()
 {
   delete di;
 }
+
 
 ISA::InsnDesc
 SparcISA::GetInsnDesc(MachInsn* mi, ushort opIndex, ushort sz)
@@ -141,21 +124,24 @@ SparcISA::GetInsnDesc(MachInsn* mi, ushort opIndex, ushort sz)
     case dis_branch:
       if (di->target != 0 && isPCRel) {
 	d.Set(InsnDesc::BR_UN_COND_REL);
-      } else {
+      }
+      else {
 	d.Set(InsnDesc::BR_UN_COND_IND);
       }
       break;
     case dis_condbranch:
       if (di->target != 0 && isPCRel) {
 	d.Set(InsnDesc::INT_BR_COND_REL); // arbitrarily choose int
-      } else {
+      }
+      else {
 	d.Set(InsnDesc::INT_BR_COND_IND); // arbitrarily choose int
       }
       break;
     case dis_jsr:
       if (di->target != 0 && isPCRel) {
 	d.Set(InsnDesc::SUBR_REL);
-      } else {
+      }
+      else {
 	d.Set(InsnDesc::SUBR_IND);
       }
       break;
@@ -191,11 +177,13 @@ SparcISA::GetInsnTargetVMA(MachInsn* mi, VMA pc, ushort opIndex, ushort sz)
   ISA::InsnDesc d = GetInsnDesc(mi, opIndex, sz);
   if (d.IsBrRel() || d.IsSubrRel()) {
     return (di->target - PTR_TO_BFDVMA(mi)) + (bfd_vma)pc;
-  } else {
+  }
+  else {
     // return di->target; // return the results of sethi instruction chains
     return 0;
   }
 }
+
 
 ushort
 SparcISA::GetInsnNumDelaySlots(MachInsn* mi, ushort opIndex, ushort sz)
@@ -216,7 +204,20 @@ SparcISA::GetInsnNumDelaySlots(MachInsn* mi, ushort opIndex, ushort sz)
   ISA::InsnDesc d = GetInsnDesc(mi, opIndex, sz);
   if (d.IsBr() || d.IsSubr() || d.IsSubrRet()) {
     return 1;
-  } else {
+  }
+  else {
     return 0;
   }
 }
+
+
+void
+SparcISA::decode(MachInsn* mi, ostream& os)
+{
+  di->fprintf_func = dis_fprintf_func;
+  di->stream = (void*)&os;
+  print_insn_sparc(PTR_TO_BFDVMA(mi), di);
+}
+
+
+//****************************************************************************

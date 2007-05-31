@@ -50,6 +50,9 @@
 
 //************************* System Include Files ****************************
 
+#include <iostream>
+using std::ostream;
+
 #ifdef NO_STD_CHEADERS
 # include <stdarg.h>
 # include <string.h>
@@ -61,35 +64,13 @@ using namespace std; // For compatibility with non-std C headers
 
 //*************************** User Include Files ****************************
 
-#include "x86ISA.hpp"
 #include <include/gnu_dis-asm.h>
 
+#include "x86ISA.hpp"
+
+#include <lib/support/diagnostics.h>
+
 //*************************** Forward Declarations ***************************
-
-//****************************************************************************
-
-extern "C" { 
-
-static int fake_fprintf_func(PTR, const char *fmt, ...)
-{
-  //va_list ap;
-  //va_start(ap, fmt);
-  return 0;
-}
-
-static void print_addr (bfd_vma vma, struct disassemble_info *info)
-{
-  info->fprintf_func (info->stream, "0x%08x", vma);
-}
-
-static int read_memory_func (bfd_vma vma, bfd_byte *myaddr, unsigned int len,
-			     struct disassemble_info *info)
-{
-  memcpy(myaddr, BFDVMA_TO_PTR(vma, const char*), len);
-  return 0; /* success */
-}
-
-} // extern "C"
 
 //****************************************************************************
 // x86ISA
@@ -100,7 +81,7 @@ x86ISA::x86ISA(bool is_x86_64)
 {
   // See 'dis-asm.h'
   di = new disassemble_info;
-  INIT_DISASSEMBLE_INFO(*di, stdout, fake_fprintf_func);
+  init_disassemble_info(di, stdout, fake_fprintf_func);
   //  fprintf_func: (int (*)(void *, const char *, ...))fprintf;
 
   di->arch = bfd_arch_i386;      // bfd_get_arch(abfd);
@@ -115,10 +96,12 @@ x86ISA::x86ISA(bool is_x86_64)
   di->print_address_func = print_addr;     // vs. 'generic_print_address'
 }
 
+
 x86ISA::~x86ISA()
 {
   delete di;
 }
+
 
 ushort
 x86ISA::GetInsnSize(MachInsn* mi)
@@ -129,11 +112,13 @@ x86ISA::GetInsnSize(MachInsn* mi)
   if ((cache = CacheLookup(mi)) == NULL) {
     size = print_insn_i386(PTR_TO_BFDVMA(mi), di);
     CacheSet(mi, size);
-  } else {
+  }
+  else {
     size = cache->insnSize;
   }
   return size;
 }
+
 
 ISA::InsnDesc
 x86ISA::GetInsnDesc(MachInsn* mi, ushort opIndex, ushort s)
@@ -152,21 +137,24 @@ x86ISA::GetInsnDesc(MachInsn* mi, ushort opIndex, ushort s)
     case dis_branch:
       if (di->target != 0) {
 	d.Set(InsnDesc::BR_UN_COND_REL);
-      } else {
+      }
+      else {
 	d.Set(InsnDesc::BR_UN_COND_IND);
       }
       break;
     case dis_condbranch:
       if (di->target != 0) {
 	d.Set(InsnDesc::INT_BR_COND_REL); // arbitrarily choose int
-      } else {
+      }
+      else {
 	d.Set(InsnDesc::INT_BR_COND_IND); // arbitrarily choose int
       }
       break;
     case dis_jsr:
       if (di->target != 0) {
 	d.Set(InsnDesc::SUBR_REL);
-      } else {
+      }
+      else {
 	d.Set(InsnDesc::SUBR_IND);
       }
       break;
@@ -186,6 +174,7 @@ x86ISA::GetInsnDesc(MachInsn* mi, ushort opIndex, ushort s)
   }
   return d;
 }
+
 
 VMA
 x86ISA::GetInsnTargetVMA(MachInsn* mi, VMA pc, ushort opIndex, ushort sz)
@@ -215,3 +204,13 @@ x86ISA::GetInsnTargetVMA(MachInsn* mi, VMA pc, ushort opIndex, ushort sz)
 }
 
 
+void
+x86ISA::decode(MachInsn* mi, ostream& os)
+{
+  di->fprintf_func = dis_fprintf_func;
+  di->stream = (void*)&os;
+  print_insn_i386(PTR_TO_BFDVMA(mi), di);
+}
+
+
+//****************************************************************************

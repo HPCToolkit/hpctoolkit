@@ -114,6 +114,9 @@ public:
     return (opvma - offset);
   }
 
+  virtual void 
+  decode(MachInsn* mi, std::ostream& os);
+
 private: 
   // Should not be used
   IA64ISA(const IA64ISA& i) { }

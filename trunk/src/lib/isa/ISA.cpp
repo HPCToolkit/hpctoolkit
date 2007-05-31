@@ -50,6 +50,11 @@
 
 //************************* System Include Files ****************************
 
+#include <iostream>
+using std::ostream;
+
+#include <cstdarg>
+
 //*************************** User Include Files ****************************
 
 #include "ISA.hpp"
@@ -70,10 +75,12 @@ ISA::ISA()
   _cache = new DecodingCache();
 }
 
+
 ISA::~ISA()
 {
   delete _cache;
 }
+
 
 //****************************************************************************
 // ISA::InstDesc
@@ -127,11 +134,13 @@ ISA::InsnDesc::ToString() const
   return NULL;
 }
 
+
 void 
 ISA::InsnDesc::Dump(std::ostream& o)
 {
   o << ToString();
 }
+
 
 void 
 ISA::InsnDesc::DDump()
@@ -140,5 +149,53 @@ ISA::InsnDesc::DDump()
 }
 
 
-//****************************************************************************
+//***************************************************************************
+// binutils helpers
+//***************************************************************************
 
+
+extern "C" { 
+
+int 
+fake_fprintf_func(void* stream, const char *format, ...)
+{
+  return 0;
+}
+
+
+int 
+dis_fprintf_func(void* stream, const char *format, ...)
+{
+#define BUF_SZ 512
+  static char BUF[BUF_SZ];
+
+  va_list args;
+  va_start(args, format);
+  int n = vsnprintf(BUF, BUF_SZ, format, args);
+  va_end(args);
+
+  ostream* os = (ostream*)stream;
+  *os << BUF;
+  
+  return n;
+}
+
+
+void 
+print_addr(bfd_vma vma, struct disassemble_info *info)
+{
+  info->fprintf_func(info->stream, "0x%08x", vma);
+}
+
+
+int 
+read_memory_func(bfd_vma vma, bfd_byte *myaddr, unsigned int len,
+		 struct disassemble_info *info)
+{
+  memcpy(myaddr, BFDVMA_TO_PTR(vma, const char*), len);
+  return 0; /* success */
+}
+
+} // extern "C"
+
+//***************************************************************************
