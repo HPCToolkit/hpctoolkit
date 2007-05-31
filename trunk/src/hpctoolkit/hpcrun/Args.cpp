@@ -65,7 +65,7 @@ using std::string;
 
 //*************************** Forward Declarations **************************
 
-// (Equivalent to DIAG_Die.) Based on Jean Utke's code in xaifBooster.
+// Cf. DIAG_Die.
 #define ARG_ERROR(streamArgs)                                        \
   { std::ostringstream WeIrDnAmE;                                    \
     WeIrDnAmE << streamArgs /*<< std::ends*/;                        \
