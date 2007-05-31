@@ -872,6 +872,8 @@ F77
 FFLAGS
 ac_ct_F77
 LIBTOOL
+OPT_ENABLE_DEVELOP_TRUE
+OPT_ENABLE_DEVELOP_FALSE
 HOST_CFLAGS
 HOST_CXXFLAGS
 HOST_AR
@@ -892,8 +894,6 @@ OA_IFLAGS
 OA_LDFLAGS
 GNUBINUTILS_IFLAGS
 GNUBINUTILS_LDFLAGS
-OPT_ENABLE_DEVELOP_TRUE
-OPT_ENABLE_DEVELOP_FALSE
 MONITOR
 HPC_MONITOR
 OPT_INSTALL_MONITOR
@@ -22344,6 +22344,45 @@ echo "${ECHO_T}${HAVE_OS_MULTILIB}" >&6; }
 
 
 #----------------------------------------------------------------------------
+# Special Options that should be tested first
+#----------------------------------------------------------------------------
+
+#-------------------------------------------------
+# enable-develop
+#-------------------------------------------------
+
+{ echo "$as_me:$LINENO: checking whether DEVELOP mode is enabled" >&5
+echo $ECHO_N "checking whether DEVELOP mode is enabled... $ECHO_C" >&6; }
+
+OPT_ENABLE_DEVELOP=no
+
+# Check whether --enable-develop was given.
+if test "${enable_develop+set}" = set; then
+  enableval=$enable_develop; case "${enableval}" in
+     yes) OPT_ENABLE_DEVELOP="yes" ;;
+     no)  OPT_ENABLE_DEVELOP="no" ;;
+     *) { { echo "$as_me:$LINENO: error: bad value ${enableval} for --enable-develop" >&5
+echo "$as_me: error: bad value ${enableval} for --enable-develop" >&2;}
+   { (exit 1); exit 1; }; } ;;
+   esac
+else
+  OPT_ENABLE_DEVELOP=no
+fi
+
+
+{ echo "$as_me:$LINENO: result: ${OPT_ENABLE_DEVELOP}" >&5
+echo "${ECHO_T}${OPT_ENABLE_DEVELOP}" >&6; }
+ if test "${OPT_ENABLE_DEVELOP}" = "yes"; then
+  OPT_ENABLE_DEVELOP_TRUE=
+  OPT_ENABLE_DEVELOP_FALSE='#'
+else
+  OPT_ENABLE_DEVELOP_TRUE='#'
+  OPT_ENABLE_DEVELOP_FALSE=
+fi
+
+
+
+#----------------------------------------------------------------------------
 # Host-dependent configuration
 # $host: $host_cpu-$host_vendor-$host_os
 #----------------------------------------------------------------------------
@@ -22741,41 +22780,6 @@ echo "${ECHO_T}${GNUBINUTILS}" >&6; }
 #----------------------------------------------------------------------------
 # Options
 #----------------------------------------------------------------------------
-
-#-------------------------------------------------
-# enable-develop
-#-------------------------------------------------
-
-{ echo "$as_me:$LINENO: checking whether DEVELOP mode is enabled" >&5
-echo $ECHO_N "checking whether DEVELOP mode is enabled... $ECHO_C" >&6; }
-
-OPT_ENABLE_DEVELOP=no
-
-# Check whether --enable-develop was given.
-if test "${enable_develop+set}" = set; then
-  enableval=$enable_develop; case "${enableval}" in
-     yes) OPT_ENABLE_DEVELOP="yes" ;;
-     no)  OPT_ENABLE_DEVELOP="no" ;;
-     *) { { echo "$as_me:$LINENO: error: bad value ${enableval} for --enable-develop" >&5
-echo "$as_me: error: bad value ${enableval} for --enable-develop" >&2;}
-   { (exit 1); exit 1; }; } ;;
-   esac
-else
-  OPT_ENABLE_DEVELOP=no
-fi
-
-
-{ echo "$as_me:$LINENO: result: ${OPT_ENABLE_DEVELOP}" >&5
-echo "${ECHO_T}${OPT_ENABLE_DEVELOP}" >&6; }
- if test "${OPT_ENABLE_DEVELOP}" = "yes"; then
-  OPT_ENABLE_DEVELOP_TRUE=
-  OPT_ENABLE_DEVELOP_FALSE='#'
-else
-  OPT_ENABLE_DEVELOP_TRUE='#'
-  OPT_ENABLE_DEVELOP_FALSE=
-fi
-
-
 
 #-------------------------------------------------
 # with-monitor
@@ -23369,17 +23373,17 @@ echo "$as_me: error: conditional \"am__fastdepCC\" was never defined.
 Usually this means the macro was only invoked conditionally." >&2;}
    { (exit 1); exit 1; }; }
 fi
-if test -z "${IS_HOST_AR_TRUE}" && test -z "${IS_HOST_AR_FALSE}"; then
-  { { echo "$as_me:$LINENO: error: conditional \"IS_HOST_AR\" was never defined.
-Usually this means the macro was only invoked conditionally." >&5
-echo "$as_me: error: conditional \"IS_HOST_AR\" was never defined.
-Usually this means the macro was only invoked conditionally." >&2;}
-   { (exit 1); exit 1; }; }
-fi
 if test -z "${OPT_ENABLE_DEVELOP_TRUE}" && test -z "${OPT_ENABLE_DEVELOP_FALSE}"; then
   { { echo "$as_me:$LINENO: error: conditional \"OPT_ENABLE_DEVELOP\" was never defined.
 Usually this means the macro was only invoked conditionally." >&5
 echo "$as_me: error: conditional \"OPT_ENABLE_DEVELOP\" was never defined.
+Usually this means the macro was only invoked conditionally." >&2;}
+   { (exit 1); exit 1; }; }
+fi
+if test -z "${IS_HOST_AR_TRUE}" && test -z "${IS_HOST_AR_FALSE}"; then
+  { { echo "$as_me:$LINENO: error: conditional \"IS_HOST_AR\" was never defined.
+Usually this means the macro was only invoked conditionally." >&5
+echo "$as_me: error: conditional \"IS_HOST_AR\" was never defined.
 Usually this means the macro was only invoked conditionally." >&2;}
    { (exit 1); exit 1; }; }
 fi
@@ -24112,6 +24116,8 @@ F77!$F77$ac_delim
 FFLAGS!$FFLAGS$ac_delim
 ac_ct_F77!$ac_ct_F77$ac_delim
 LIBTOOL!$LIBTOOL$ac_delim
+OPT_ENABLE_DEVELOP_TRUE!$OPT_ENABLE_DEVELOP_TRUE$ac_delim
+OPT_ENABLE_DEVELOP_FALSE!$OPT_ENABLE_DEVELOP_FALSE$ac_delim
 HOST_CFLAGS!$HOST_CFLAGS$ac_delim
 HOST_CXXFLAGS!$HOST_CXXFLAGS$ac_delim
 HOST_AR!$HOST_AR$ac_delim
@@ -24132,8 +24138,6 @@ OA_IFLAGS!$OA_IFLAGS$ac_delim
 OA_LDFLAGS!$OA_LDFLAGS$ac_delim
 GNUBINUTILS_IFLAGS!$GNUBINUTILS_IFLAGS$ac_delim
 GNUBINUTILS_LDFLAGS!$GNUBINUTILS_LDFLAGS$ac_delim
-OPT_ENABLE_DEVELOP_TRUE!$OPT_ENABLE_DEVELOP_TRUE$ac_delim
-OPT_ENABLE_DEVELOP_FALSE!$OPT_ENABLE_DEVELOP_FALSE$ac_delim
 MONITOR!$MONITOR$ac_delim
 HPC_MONITOR!$HPC_MONITOR$ac_delim
 OPT_INSTALL_MONITOR!$OPT_INSTALL_MONITOR$ac_delim
