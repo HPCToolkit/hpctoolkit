@@ -75,20 +75,20 @@ public:
   void Parse(int argc, const char* const argv[]);
 
   // Version and Usage information
-  void PrintVersion(std::ostream& os) const;
-  void PrintUsage(std::ostream& os) const;
+  void printVersion(std::ostream& os) const;
+  void printUsage(std::ostream& os) const;
   
   // Error
-  void PrintError(std::ostream& os, const char* msg) const;
-  void PrintError(std::ostream& os, const std::string& msg) const;
+  void printError(std::ostream& os, const char* msg) const;
+  void printError(std::ostream& os, const std::string& msg) const;
 
   // Dump
-  void Dump(std::ostream& os = std::cerr) const;
-  void DDump() const;
+  void dump(std::ostream& os = std::cerr) const;
+  void ddump() const;
 
 public:  
   // Parsed Data: Command
-  const std::string& GetCmd() const { return parser.GetCmd(); }
+  const std::string& getCmd() const { return parser.GetCmd(); }
 
   // Parsed Data: optional arguments
   bool normalizeScopeTree;        // default: true

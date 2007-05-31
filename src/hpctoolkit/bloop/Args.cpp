@@ -65,6 +65,13 @@ using std::string;
 
 //*************************** Forward Declarations **************************
 
+// Cf. DIAG_Die.
+#define ARG_ERROR(streamArgs)                                        \
+  { std::ostringstream WeIrDnAmE;                                    \
+    WeIrDnAmE << streamArgs /*<< std::ends*/;                        \
+    printError(std::cerr, WeIrDnAmE.str());                          \
+    exit(1); }
+
 //***************************************************************************
 
 static const char* version_info =
@@ -73,35 +80,35 @@ static const char* version_info =
 static const char* usage_summary =
 "[options] <binary>\n";
 
-static const char* usage_details =
-"Given an application binary or DSO <binary>, bloop recovers the program\n"
-"structure of its object code and writes to standard output a program\n"
-"structure to object code mapping. bloop is designed primarily for highly\n"
-"optimized binaries created from C, C++ and Fortran source code. Because\n"
-"bloop's algorithms exploit a binary's debugging information, for best\n"
-"results, binary should be compiled with standard debugging information.\n"
-"bloop's output is typically passed to an HPCToolkit's correlation tool.\n"
-"See the documentation for more information."
-"\n"
-"Options: General\n"
-"  -v, --verbose [<n>]  Verbose: generate progress messages to stderr at\n"
-"                       verbosity level <n>. {1}\n"
-"  -V, --version        Print version information.\n"
-"  -h, --help           Print this help.\n"
-"  --debug [<n>]        Debug: use debug level <n>. {1}\n"
-"\n"
-"Options: Recovery and Output\n"
-"  -i, --irreducible-interval-as-loop\n"
-"                       Treat irreducible intervals as loops\n"
-"  -p <list>, --canonical-paths <list>\n"
-"                       Ensure that scope tree only contains files found in\n"
-"                       the colon-separated <list>. May be passed multiple\n"
-"                       times.\n"
-"  -n, --normalize-off  Turn off scope tree normalization\n"
-"  -u, --unsafe-normalize-off\n"
-"                       Turn off potentially unsafe normalization\n"
-"  -c, --compact        Generate compact output, eliminating extra white\n"
-"                       space\n";
+static const char* usage_details = "\
+Given an application binary or DSO <binary>, bloop recovers the program\n\
+structure of its object code and writes to standard output a program\n\
+structure to object code mapping. bloop is designed primarily for highly\n\
+optimized binaries created from C, C++ and Fortran source code. Because\n\
+bloop's algorithms exploit a binary's debugging information, for best\n\
+results, binary should be compiled with standard debugging information.\n\
+bloop's output is typically passed to an HPCToolkit's correlation tool.\n\
+See the documentation for more information.\
+\n\
+Options: General\n\
+  -v, --verbose [<n>]  Verbose: generate progress messages to stderr at\n\
+                       verbosity level <n>. {1}\n\
+  -V, --version        Print version information.\n\
+  -h, --help           Print this help.\n\
+  --debug [<n>]        Debug: use debug level <n>. {1}\n\
+\n\
+Options: Recovery and Output\n\
+  -i, --irreducible-interval-as-loop\n\
+                       Treat irreducible intervals as loops\n\
+  -p <list>, --canonical-paths <list>\n\
+                       Ensure that scope tree only contains files found in\n\
+                       the colon-separated <list>. May be passed multiple\n\
+                       times.\n\
+  -n, --normalize-off  Turn off scope tree normalization\n\
+  -u, --unsafe-normalize-off\n\
+                       Turn off potentially unsafe normalization\n\
+  -c, --compact        Generate compact output, eliminating extra white\n\
+                       space\n";
 
 
 #define CLP CmdLineParser
@@ -161,31 +168,31 @@ Args::~Args()
 
 
 void 
-Args::PrintVersion(std::ostream& os) const
+Args::printVersion(std::ostream& os) const
 {
-  os << GetCmd() << ": " << version_info << endl;
+  os << getCmd() << ": " << version_info << endl;
 }
 
 
 void 
-Args::PrintUsage(std::ostream& os) const
+Args::printUsage(std::ostream& os) const
 {
-  os << "Usage: " << GetCmd() << " " << usage_summary << endl
+  os << "Usage: " << getCmd() << " " << usage_summary << endl
      << usage_details << endl;
 } 
 
 
 void 
-Args::PrintError(std::ostream& os, const char* msg) const
+Args::printError(std::ostream& os, const char* msg) const
 {
-  os << GetCmd() << ": " << msg << endl
-     << "Try `" << GetCmd() << " --help' for more information." << endl;
+  os << getCmd() << ": " << msg << endl
+     << "Try `" << getCmd() << " --help' for more information." << endl;
 }
 
 void 
-Args::PrintError(std::ostream& os, const std::string& msg) const
+Args::printError(std::ostream& os, const std::string& msg) const
 {
-  PrintError(os, msg.c_str());
+  printError(os, msg.c_str());
 }
 
 
@@ -212,11 +219,11 @@ Args::Parse(int argc, const char* const argv[])
       Diagnostics_SetDiagnosticFilterLevel(dbg);
     }
     if (parser.IsOpt("help")) { 
-      PrintUsage(std::cerr); 
+      printUsage(std::cerr); 
       exit(1);
     }
     if (parser.IsOpt("version")) { 
-      PrintVersion(std::cerr);
+      printVersion(std::cerr);
       exit(1);
     }
     if (parser.IsOpt("verbose")) {
@@ -247,14 +254,12 @@ Args::Parse(int argc, const char* const argv[])
     
     // Check for required arguments
     if (parser.GetNumArgs() != 1) {
-      PrintError(std::cerr, "Incorrect number of arguments!");
-      exit(1);
+      ARG_ERROR("Incorrect number of arguments!");
     }
     inputFile = parser.GetArg(0);
   }
   catch (const CmdLineParser::ParseError& x) {
-    PrintError(std::cerr, x.what());
-    exit(1);
+    ARG_ERROR(x.what());
   }
   catch (const CmdLineParser::Exception& x) {
     DIAG_EMsg(x.message());
@@ -264,9 +269,9 @@ Args::Parse(int argc, const char* const argv[])
 
 
 void 
-Args::Dump(std::ostream& os) const
+Args::dump(std::ostream& os) const
 {
-  os << "Args.cmd= " << GetCmd() << endl; 
+  os << "Args.cmd= " << getCmd() << endl; 
   os << "Args.prettyPrintOutput= " << prettyPrintOutput << endl;
   os << "Args.normalizeScopeTree= " << normalizeScopeTree << endl;
   os << "Args.canonicalPathList= " << canonicalPathList << endl;
@@ -274,9 +279,9 @@ Args::Dump(std::ostream& os) const
 }
 
 void 
-Args::DDump() const
+Args::ddump() const
 {
-  Dump(std::cerr);
+  dump(std::cerr);
 }
 
 
