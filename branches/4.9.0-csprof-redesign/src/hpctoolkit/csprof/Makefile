@@ -11,6 +11,8 @@ export PLATFORM
 export CC
 #export CHGROOT
 DO_THREADS := 1
+export PERF
+#PERF := -DCSPROF_PERF=1
 
 CSPROFLIB := libcsprof.so.1
 CSPROFLIB_STATIC := libcsprof.a
@@ -31,7 +33,9 @@ include mkinclude.$(PLATFORM)
 LIB_CSFILE := libcsfile.a
 INC_CSFILE := -I./hpcfile
 
-INCS := -I. $(INC_CSFILE) $(INC_PFM) $(INC_UNWIND) $(INC_THREAD)
+INC_MON := -I./monitor/src
+
+INCS := -I. $(INC_CSFILE) $(INC_PFM) $(INC_UNWIND) $(INC_THREAD) $(INC_MON)
 
 # FIXME: PAPI?
 ifneq "$(DRIVER)" "itimer"
@@ -53,6 +57,7 @@ CFLAGS += $(DEFINES) $(CSPROF_THREADS) $(CSPROF_TRAMPOLINE) -I./$(ARCH)
 # to be in those places to force the linker to stitch together the
 # library in the proper order and for correct functioning of the profiler
 OBJS := first_func.o
+OBJS += mon_ovr.o
 OBJS += csproflib.o metrics.o mem.o cct.o
 OBJS += list.o libc.o epoch.o
 
@@ -100,7 +105,7 @@ $(CSPROFLIB): $(LIB_CSFILE) $(OBJS)
 	@echo "*** $(CSPROFLIB) is up to date. ***"
 
 %.o: %.c
-	$(CC) $(INCS) $(CFLAGS) -c -o $@ $<
+	$(CC) $(INCS) $(CFLAGS) -c $< -o $@
 
 %.E: %.c
 	$(CC) $(INCS) $(CFLAGS) -E $< > $@

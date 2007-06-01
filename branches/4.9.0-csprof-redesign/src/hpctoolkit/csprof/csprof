@@ -127,13 +127,13 @@ f_checkenv()
     exit 1
   fi 
 
-  RLD_LIB="${CSPROF_HOME}/libcsprof.so.1"
+  RLD_LIB="${CSPROF_HOME}/libcsprof.so.1:${CSPROF_HOME}/monitor/x86_64-Linux/libmonitor.so"
 
 
-  if [ ! -r "${RLD_LIB}" ]; then 
-    printf "${cmd}: launch library ${RLD_LIB} not found!\n"
-    exit 1
-  fi 
+#  if [ ! -r "${RLD_LIB}" ]; then 
+#    printf "${cmd}: launch library ${RLD_LIB} not found!\n"
+#    exit 1
+#  fi 
   # preload our library first before loading all of those specified in
   # the application binary (signified by DEFAULT).
   # this turns our sampling on at the beginning of the application

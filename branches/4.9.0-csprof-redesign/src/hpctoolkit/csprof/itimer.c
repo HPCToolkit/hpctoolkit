@@ -357,6 +357,7 @@ csprof_driver_thread_init(csprof_state_t *state)
 void
 csprof_driver_thread_fini(csprof_state_t *state)
 {
+  MSG(1,"itimer driver thread fini");
     /* no support required */
 }
 

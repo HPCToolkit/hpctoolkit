@@ -287,6 +287,7 @@ csprof_driver_thread_fini(csprof_state_t *state)
     int ret;
     int the_event_set = csprof_get_papi_event_set();
 
+    MSG(1,"PAPI csprof driver thread fini");
     ret = PAPI_stop(the_event_set, NULL);
 
     if(ret != PAPI_OK) {

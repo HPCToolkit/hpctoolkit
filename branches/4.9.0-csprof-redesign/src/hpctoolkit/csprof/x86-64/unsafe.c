@@ -33,7 +33,7 @@ bfdsect_callback(bfd *thebfd, asection *sect, void *obj)
   }
 }
 
-static void
+void
 discover_plt_addresses()
 {
     char exe_file[PATH_MAX+1];
@@ -104,6 +104,7 @@ csprof_context_is_unsafe(void *context)
 
   MSG(1,"In x86 unsafe!");
   if(!plt_found) {
+    MSG(1,"  ->doing discover plt addresses");
     discover_plt_addresses();
     plt_found = 1;
   }
@@ -163,6 +164,9 @@ csprof_context_is_unsafe(void *context)
                        plt_end_address
         );
     MSG(1,"verdict = %d",verdict);
+    return 0;
+#ifdef NO
     return verdict;
+#endif
   }
 }

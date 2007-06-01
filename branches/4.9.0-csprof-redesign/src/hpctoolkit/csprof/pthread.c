@@ -28,21 +28,7 @@
 
 #endif
 
-/* FIXME: ugly platform-dependent stuff */
-#ifdef CSPROF_FIXED_LIBCALLS
-int (*csprof_pthread_create)(pthread_t *, const pthread_attr_t *,
-                             pthread_func *, void *)
-    = 0x3ff805877d0;
-void (*csprof_pthread_exit)(void *)
-    = 0x3ff80587c70;
-int (*csprof_pthread_sigmask)(int, const sigset_t *, sigset_t *)
-    = 0x3ff80576560;
-#else
-int (*csprof_pthread_create)(pthread_t *, const pthread_attr_t *,
-                             pthread_func *, void *);
-void (*csprof_pthread_exit)(void *);
 int (*csprof_pthread_sigmask)(int, const sigset_t *, sigset_t *);
-#endif
 
 struct tramp_data {
     pthread_func *func;
@@ -53,7 +39,7 @@ pthread_key_t thread_node_key;
 pthread_key_t prof_data_key;
 pthread_key_t mem_store_key;
 
-pthread_key_t k;
+static pthread_key_t k;
 
 static pthread_once_t iflg = PTHREAD_ONCE_INIT;
 
@@ -63,18 +49,19 @@ pthread_mutex_t mylock;
 
 struct csprof_thread_queue all_threads;
 
-/* ugh, FIXME */
 extern int csprof_write_profile_data(csprof_state_t *);
 
 /* there are some generalized interfaces (thread vs. non-thread) which
    we don't use in this file, since we already *know* we're using the
    threaded variants. */
+
 static int library_stubs_initialized = 0;
 
 static void
 init_library_stubs()
 {
 #ifndef CSPROF_FIXED_LIBCALLS
+#ifdef NOMON
 #ifdef __osf__
     /* Tru64 does some funky things to certain pthread functions */
     CSPROF_GRAB_FUNCPTR(pthread_create, __pthread_create);
@@ -84,7 +71,7 @@ init_library_stubs()
     CSPROF_GRAB_FUNCPTR(pthread_create, pthread_create);
     CSPROF_GRAB_FUNCPTR(pthread_exit, pthread_exit);
 #endif
-
+#endif
     CSPROF_GRAB_FUNCPTR(pthread_sigmask, pthread_sigmask);
 #endif
     library_stubs_initialized = 1;
@@ -203,7 +190,7 @@ void csprof_pthread_state_init()
     return;
 }
 
-static void
+void
 csprof_pthread_state_fini2(csprof_state_t *state, csprof_list_node_t *node)
 {
     sigset_t oldset;
@@ -222,19 +209,23 @@ csprof_pthread_state_fini2(csprof_state_t *state, csprof_list_node_t *node)
        in all subsequent scans over the list.  this has potential
        to cause problems if threads can be re-used, so we may want
        to look at this issue at a later point FIXME */
+    MSG(1,"would set CSPROF THREAD DEAD f %lx",node->sp);
+#ifdef NO
     node->sp = CSPROF_PTHREAD_DEAD;
-
+#endif
+    MSG(1,"fini2 driver thread fini");
     csprof_driver_thread_fini(state);
 
     libcall3(csprof_pthread_sigmask, SIG_SETMASK, &oldset, NULL);
 }
 
-static void
+void
 csprof_pthread_state_fini()
 {
     csprof_state_t *state;
     csprof_list_node_t *node;
 
+    MSG(1,"pthread state fini");
     state = pthread_getspecific(prof_data_key);
     node = pthread_getspecific(thread_node_key);
 
@@ -271,6 +262,7 @@ typedef struct _xptfnt {
 } xpthread_fn_t;
 
 
+#ifdef NOMON
 void *doit (void *arg){
   void *rv;
   void *(*ff)(void *);
@@ -298,7 +290,17 @@ void *doit (void *arg){
 
   return rv;
 }
+#endif
 
+void thread_write_data(void){
+    csprof_state_t *state;
+    
+    state = pthread_getspecific(prof_data_key);
+    csprof_write_profile_data(state);
+}
+
+
+#ifdef NOMON
 int
 PTHREAD_CREATE_FN(pthread_t *thrid, const pthread_attr_t *attr,
 		  pthread_func *func, void *funcarg)
@@ -364,9 +366,8 @@ PTHREAD_EXIT_FN(void *result)
     MSG(1, "xpthread exiting: %#lx", pthread_self());
 
     csprof_pthread_state_fini();
-    libcall1(csprof_pthread_exit, result);
 }
-
+#endif
 int
 pthread_sigmask(int mode, const sigset_t *inset, sigset_t *outset)
 {

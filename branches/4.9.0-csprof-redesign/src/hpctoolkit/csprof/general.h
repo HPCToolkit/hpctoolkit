@@ -59,6 +59,7 @@
 #include <stdarg.h>
 #include <string.h>
 #include <unistd.h>
+#include <linux/unistd.h>
 #include <assert.h>
 
 #if defined(__cplusplus)
@@ -116,68 +117,127 @@ static inline void NOMSG(int level, char *format, ...)
 /* pervasive use of a character buffer because the direct
    printf-to-a-stream functions seem to have problems */
 
+
+#ifdef CSPROF_THREADS
+#define WRITE(desc,buf,n) do { \
+  pthread_mutex_lock(&mylock); \
+  write(desc,buf,n); \
+  pthread_mutex_unlock(&mylock); \
+} while(0)
+#else
+#define WRITE(desc,buf,n) write(desc,buf,n)
+#endif
+
+#ifdef CSPROF_THREADS
+#define M1 "csprof msg [%d][%lx]: "
+#define MA(l) l, pthread_self()
+#else
+#define M1 "csprof msg [%d]: "
+#define MA(l) l
+#endif
+
+#if defined(CSPROF_PERF)
+#define MSG(l,fmt,...)
+#else
+#define MSG(l,fmt,...) do {\
+ char buf[256]; \
+ int n; \
+ n = sprintf(buf, M1 fmt "\n", MA(l), ##__VA_ARGS__); \
+ WRITE(2,buf,n); \
+} while(0)
+#endif
+
+#ifdef CSPROF_THREADS
+#define EMSG(fmt,...) do {\
+ char buf[256]; \
+ int n; \
+ n = sprintf(buf, "EMSG[%lx]: " fmt "\n",pthread_self(), ##__VA_ARGS__); \
+ WRITE(2,buf,n); \
+} while(0)
+#else
+#define EMSG(fmt,...) do {\
+ char buf[256]; \
+ int n; \
+ n = sprintf(buf,"EMSG: " fmt "\n", ##__VA_ARGS__); \
+ WRITE(2,buf,n); \
+} while(0)
+#endif
+
+#ifdef CSPROF_THREADS
+#define D1 "[%d][%lx]: "
+#define DA(l) l, pthread_self()
+#else
+#define D1 "[%d]: "
+#define DA(l) l
+#endif
+
+#if defined(CSPROF_PERF)
+#define DBGMSG_PUB(l,fmt,...)
+#else
+#define DBGMSG_PUB(l,fmt,...) do {\
+ char buf[256]; \
+ int n; \
+ n = sprintf(buf,D1 fmt "\n", DA(l), ##__VA_ARGS__); \
+ WRITE(2,buf,n); \
+} while(0)
+#endif
+
+#define ERRMSGa(fmt,f,l,...) do {\
+ char buf[256]; \
+ int n; \
+ n = sprintf(buf,"csprof error [%s:%d]:" fmt "\n", f, l, ##__VA_ARGS__); \
+ WRITE(2,buf,n); \
+} while(0)
+
+#define ERRMSG(fmt,f,l,...) ERRMSGa(fmt,f,l, ##__VA_ARGS__)
+
+#define DIE(fmt,f,l,...) do {\
+  ERRMSG(fmt,f,l, ##__VA_ARGS__); \
+  abort(); \
+} while(0)
+
+#ifdef INLINE_FN
 static inline void MSG(int level, char *format, ...)
 #if defined(CSPROF_PERF)
 {
 }
 #else
 {
-    va_list args;
-    char buf[512];
-    va_start(args, format);
-#if 0
-    if (level & CSPROF_MSG_LVL) {
+  va_list args;
+  char fstr[256];
+  char buf[512];
+  va_start(args, format);
+  int n;
+
+#ifdef CSPROF_THREADS
+  sprintf(fstr,"csprof msg [%d][%lx]: ",level, pthread_self());
 #else
-    {
+  sprintf(fstr,"csprof msg [%d]: ",level);
 #endif
-        int n;
-#ifdef CSPROF_THREADS
-        pthread_mutex_lock(&mylock);
-#endif
-        flockfile(stderr);
-#ifdef CSPROF_THREADS
-	n = sprintf(buf, "csprof msg [%d][%lx]: ", level, pthread_self());
-#else
-        n = sprintf(buf, "csprof msg [%d]: ", level);
-#endif
-        PRINT(buf);
-        n = vsprintf(buf, format, args);
-        PRINT(buf);
-        PSTR("\n");
-        fflush_unlocked(stderr);
-        funlockfile(stderr);
-#ifdef CSPROF_THREADS
-        pthread_mutex_unlock(&mylock);
-#endif
-    }
-    va_end(args);
+  strcat(fstr,format);
+  strcat(fstr,"\n");
+  n = vsprintf(buf,fstr,args);
+  WRITE(2,buf,n);
+  va_end(args);
 }
 #endif
 
 static inline void EMSG(char *format, ...){
   va_list args;
+  char fstr[256];
   char buf[512];
-  int n;
   va_start(args, format);
+  int n;
 
 #ifdef CSPROF_THREADS
-  pthread_mutex_lock(&mylock);
-#endif
-  flockfile(stderr);
-#ifdef CSPROF_THREADS
-  n = sprintf(buf, "EMSG[%lx]: ", pthread_self());
+  n = sprintf(fstr, "EMSG[%lx]: ", pthread_self());
 #else
-  n = sprintf(buf, "EMSG: ");
+  n = sprintf(fstr, "EMSG: ");
 #endif
-  PRINT(buf);
-  n = vsprintf(buf, format, args);
-  PRINT(buf);
-  PSTR("\n");
-  fflush_unlocked(stderr);
-  funlockfile(stderr);
-#ifdef CSPROF_THREADS
-  pthread_mutex_unlock(&mylock);
-#endif
+  strcat(fstr,format);
+  strcat(fstr,"\n");
+  n = vsprintf(buf,fstr,args);
+  WRITE(2,buf,n);
   va_end(args);
 }
 
@@ -187,57 +247,44 @@ static inline void DBGMSG_PUB(int level, char *format, ...)
 }
 #else
 {
-    va_list args;
-    char buf[512];
-    va_start(args, format);
-#if 0
-    if (level & CSPROF_DBG_LVL_PUB) {
+  va_list args;
+  char fstr[256];
+  char buf[512];
+  va_start(args, format);
+  int n;
+
+#ifdef CSPROF_THREADS
+  sprintf(fstr,"[%d][%lx]: ",level, pthread_self());
 #else
-    {
+  sprintf(fstr,"[%d]: ",level);
 #endif
-        int n;
-#ifdef CSPROF_THREADS
-        pthread_mutex_lock(&mylock);
-#endif
-        flockfile(stderr);
-#ifdef CSPROF_THREADS
-        n = sprintf(buf, "[%d][%lx]: ", level, pthread_self());
-#else
-        n = sprintf(buf, "[%d]: ", level);
-#endif
-        PRINT(buf);
-        n = vsprintf(buf, format, args);
-        PRINT(buf);
-        PSTR("\n");
-        fflush_unlocked(stderr);
-        funlockfile(stderr);
-#ifdef CSPROF_THREADS
-        pthread_mutex_unlock(&mylock);
-#endif
-    }
-    va_end(args);
+  strcat(fstr,format);
+  strcat(fstr,"\n");
+  n = vsprintf(buf,fstr,args);
+  WRITE(2,buf,n);
+  va_end(args);
 }
 #endif
 
 static inline void ERRMSGa(char *format, char *file, int line, va_list args) 
-{ 
-    char buf[512];
-    int n;
-#ifdef CSPROF_THREADS
-        pthread_mutex_lock(&mylock);
-#endif
-    flockfile(stderr);
-    n = sprintf(buf, "csprof error [%s:%d]:", file, line);
-    PRINT(buf);
-    n = vsprintf(buf, format, args);
-    PRINT(buf);
-    PSTR("\n");
-    fflush_unlocked(stderr);
-    funlockfile(stderr);
-#ifdef CSPROF_THREADS
-        pthread_mutex_unlock(&mylock);
-#endif
+#if defined(CSPROF_PERF)
+{
 }
+#else
+{
+  char fstr[256];
+  char buf[512];
+  int n;
+
+  sprintf(fstr,"csprof error [%s:%d]:", file, line);
+
+  strcat(fstr,format);
+  strcat(fstr,"\n");
+  n = vsprintf(buf,fstr,args);
+  WRITE(2,buf,n);
+  va_end(args);
+}
+#endif
 
 static inline void ERRMSG(char *format, char *file, int line, ...) 
 #if 0
@@ -260,6 +307,7 @@ static inline void DIE(char *format, char *file, int line, ...)
     va_end(args);
     abort();
 }
+#endif
 
 #define IFMSG(level) if (level & CSPROF_MSG_LVL)
 

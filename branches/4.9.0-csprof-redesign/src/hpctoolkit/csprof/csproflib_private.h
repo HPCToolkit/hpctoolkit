@@ -139,8 +139,8 @@ static int csprof_pfmon_info__fini(csprof_pfmon_info_t* pfm);
 
 /* FIXME: make the explicit interface return a value */
 
-static void csprof_init_internal();
-static void csprof_fini_internal();
+void csprof_init_internal(void);
+void csprof_fini_internal(void);
 
 #ifdef CSPROF_TRAMPOLINE_BACKEND
 // capturing function call returns

@@ -107,12 +107,12 @@ sigset_t prof_sigset;
 
 /* initialization and finalization of the library */
 
+#ifdef NOMON
 #ifdef __GNUC__
 void csprof_init_internal() __attribute__((constructor));
 void csprof_fini_internal() __attribute__((destructor));
 #endif
 
-int wait_for_gdb = 1;
 #ifndef __GNUC__
 /* Implicit interface */
 void
@@ -127,7 +127,7 @@ _fini()
   csprof_fini_internal();
 }
 #endif
-
+#endif /* NOMON */
 /* Explicit interface */
 void
 csprof_init()
@@ -170,7 +170,9 @@ csprof_fini()
 //   multiple calls to the initializer and finalizer where state is
 //   preserved.
 
-static void
+int wait_for_gdb = 1;
+
+void
 csprof_init_internal()
 {
     if (getenv("CSPROF_WAIT")){
@@ -242,7 +244,7 @@ csprof_init_internal()
 
 // csprof_fini_internal: 
 // errors: handles all errors
-static void
+void
 csprof_fini_internal()
 {
     extern int segv_count;
@@ -530,7 +532,7 @@ csprof_write_profile_data(csprof_state_t *state)
             state->pstate.hostid, state->pstate.pid, CSPROF_OUT_FNM_SFX);
 #endif
   
-    MSG(CSPROF_MSG_DATAFILE, "Writing %s", fnm);
+    MSG(CSPROF_MSG_DATAFILE, "CSPROF write_profile_data: Writing %s", fnm);
 
     /* Open file for writing; fail if the file already exists. */
     fs = hpcfile_open_for_write(fnm, /* overwrite */ 0);
@@ -618,13 +620,14 @@ csprof_atexit_handler()
 {
     csprof_list_node_t *runner;
 
-    MSG(CSPROF_MSG_DATAFILE, "Dumping thread states");
+    MSG(CSPROF_MSG_DATAFILE, "ATEXIT: Dumping thread states");
 
     for(runner = all_threads.head; runner; runner = runner->next) {
+      MSG(1,"checking thread runner = %lx",runner);
         if(runner->sp == CSPROF_PTHREAD_LIVE) {
             csprof_state_t *state = (csprof_state_t *)runner->node;
 
-            MSG(CSPROF_MSG_DATAFILE, "Dumping state %#lx", state);
+            MSG(CSPROF_MSG_DATAFILE, "Exit Dumping state %#lx", state);
 
             csprof_write_profile_data(state);
 
