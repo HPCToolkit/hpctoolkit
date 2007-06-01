@@ -72,6 +72,27 @@ using namespace std; // For compatibility with non-std C headers
 
 //*************************** Forward Declarations ***************************
 
+static VMA 
+GNUvma2vma(bfd_vma di_vma, MachInsn* insn_addr, VMA insn_vma)
+{ 
+  // N.B.: The GNU decoders assume that the address of 'mi' is
+  // actually the VMA in order to calculate VMA-relative targets.
+  VMA x = (di_vma - PTR_TO_BFDVMA(insn_addr)) + insn_vma;
+  return x;
+}
+
+
+static void 
+GNUbu_print_addr(bfd_vma di_vma, struct disassemble_info* di)
+{
+  GNUbu_disdata* data = (GNUbu_disdata*)di->application_data;
+
+  VMA x = GNUvma2vma(di_vma, data->insn_addr, data->insn_vma);
+  ostream* os = (ostream*)di->stream;
+  *os << std::hex << "0x" << x << std::dec;
+}
+
+
 //****************************************************************************
 // SparcISA
 //****************************************************************************
@@ -90,6 +111,7 @@ SparcISA::SparcISA()
 
   m_di_dis = new disassemble_info;
   init_disassemble_info(m_di_dis, stdout, GNUbu_fprintf);
+  m_di_dis->application_data = (void*)&m_dis_data;
   m_di_dis->arch = m_di->arch;
   m_di_dis->mach = m_di->mach;
   m_di_dis->endian = m_di->endian;
@@ -184,7 +206,7 @@ SparcISA::GetInsnTargetVMA(MachInsn* mi, VMA vma, ushort opIndex, ushort sz)
   
   ISA::InsnDesc d = GetInsnDesc(mi, opIndex, sz);
   if (d.IsBrRel() || d.IsSubrRel()) {
-    return (m_di->target - PTR_TO_BFDVMA(mi)) + (bfd_vma)vma;
+    return GNUvma2vma(m_di->target, mi, vma);
   }
   else {
     // return m_di->target; // return the results of sethi instruction chains
@@ -222,6 +244,9 @@ SparcISA::GetInsnNumDelaySlots(MachInsn* mi, ushort opIndex, ushort sz)
 void
 SparcISA::decode(ostream& os, MachInsn* mi, VMA vma, ushort opIndex)
 {
+  m_dis_data.insn_addr = mi;
+  m_dis_data.insn_vma = vma;
+
   m_di_dis->stream = (void*)&os;
   print_insn_sparc(PTR_TO_BFDVMA(mi), m_di_dis);
 }

@@ -72,6 +72,33 @@ using namespace std; // For compatibility with non-std C headers
 
 //*************************** Forward Declarations ***************************
 
+static VMA 
+GNUvma2vma(bfd_vma di_vma, MachInsn* insn_addr, VMA insn_vma)
+{ 
+  // N.B.: The GNU decoders expect that the address of the 'mi' is
+  // actually the VMA.  Furthermore for 32-bit x86 decoding, only
+  // the lower 32 bits of 'mi' are valid.
+
+  static const bfd_vma M32 = 0xffffffff;
+  //VMA t = (m_is_x86_64) ?
+  //  ((m_di->target & M32) - (PTR_TO_BFDVMA(mi) & M32)) + (bfd_vma)vma :
+  //  ((m_di->target)       - (PTR_TO_BFDVMA(mi) & M32)) + (bfd_vma)vma;
+  VMA x = ((di_vma & M32) - (PTR_TO_BFDVMA(insn_addr) & M32)) + (bfd_vma)insn_vma;
+  return x;
+}
+
+
+static void 
+GNUbu_print_addr(bfd_vma di_vma, struct disassemble_info* di)
+{
+  GNUbu_disdata* data = (GNUbu_disdata*)di->application_data;
+
+  VMA x = GNUvma2vma(di_vma, data->insn_addr, data->insn_vma);
+  ostream* os = (ostream*)di->stream;
+  *os << std::hex << "0x" << x << std::dec;
+}
+
+
 //****************************************************************************
 // x86ISA
 //****************************************************************************
@@ -194,17 +221,9 @@ x86ISA::GetInsnTargetVMA(MachInsn* mi, VMA vma, ushort opIndex, ushort sz)
     CacheSet(mi, size);
   }
 
-  // N.B.: The GNU decoders expect that the address of the 'mi' is
-  // actually the VMA.  Furthermore for 32-bit x86 decoding, only
-  // the lower 32 bits of 'mi' are valid.
-  
   // The target field is only set on instructions with targets.
   if (m_di->target != 0) {
-    //VMA t = (m_is_x86_64) ?
-    //  ((m_di->target & M32) - (PTR_TO_BFDVMA(mi) & M32)) + (bfd_vma)vma :
-    //  ((m_di->target)       - (PTR_TO_BFDVMA(mi) & M32)) + (bfd_vma)vma;
-    VMA t = ((m_di->target & M32) - (PTR_TO_BFDVMA(mi) & M32)) + (bfd_vma)vma;
-    return t;
+    return GNUvma2vma(m_di->target, mi, vma);
   } 
   else {
     return 0;
@@ -215,8 +234,8 @@ x86ISA::GetInsnTargetVMA(MachInsn* mi, VMA vma, ushort opIndex, ushort sz)
 void
 x86ISA::decode(ostream& os, MachInsn* mi, VMA vma, ushort opIndex)
 {
-  m_dis_data.memaddr = mi;
-  m_dis_data.vma = vma;
+  m_dis_data.insn_addr = mi;
+  m_dis_data.insn_vma = vma;
   
   m_di_dis->stream = (void*)&os;
   print_insn_i386(PTR_TO_BFDVMA(mi), m_di_dis);

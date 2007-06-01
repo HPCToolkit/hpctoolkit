@@ -130,6 +130,7 @@ protected:
 private:
   struct disassemble_info* m_di;
   struct disassemble_info* m_di_dis;
+  GNUbu_disdata m_dis_data;
 };
 
 //****************************************************************************
