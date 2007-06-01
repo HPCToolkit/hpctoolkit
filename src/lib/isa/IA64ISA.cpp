@@ -85,6 +85,25 @@ ConvertMIToOpMI(MachInsn* mi, ushort opIndex)
 }
 
 
+static VMA 
+GNUvma2vma(bfd_vma di_vma, MachInsn* insn_addr, VMA insn_vma)
+{ 
+  VMA x = (VMA)di_vma + insn_vma;
+  return x;
+}
+
+
+static void 
+GNUbu_print_addr(bfd_vma di_vma, struct disassemble_info* di)
+{
+  GNUbu_disdata* data = (GNUbu_disdata*)di->application_data;
+
+  VMA x = GNUvma2vma(di_vma, data->insn_addr, data->insn_vma);
+  ostream* os = (ostream*)di->stream;
+  *os << std::hex << "0x" << x << std::dec;
+}
+
+
 //****************************************************************************
 // IA64ISA
 //****************************************************************************
@@ -102,6 +121,7 @@ IA64ISA::IA64ISA()
 
   m_di_dis = new disassemble_info;
   init_disassemble_info(m_di_dis, stdout, GNUbu_fprintf);
+  m_di_dis->application_data = (void*)&m_dis_data;
   m_di_dis->arch = m_di->arch;
   m_di_dis->endian = m_di->endian;
   m_di_dis->read_memory_func = GNUbu_read_memory;
@@ -189,7 +209,7 @@ IA64ISA::GetInsnTargetVMA(MachInsn* mi, VMA vma, ushort opIndex, ushort sz)
   // N.B.: On the Itanium it is possible to have a one-bundle loop
   // (where the third slot branches to the first slot)!
   if (m_di->target != 0 || opIndex != 0)  {
-    return (bfd_vma)m_di->target + (bfd_vma)vma;
+    return GNUvma2vma(m_di->target, mi, vma);
   }
   else {
     return 0;
@@ -213,6 +233,9 @@ IA64ISA::GetInsnNumOps(MachInsn* mi)
 void
 IA64ISA::decode(ostream& os, MachInsn* mi, VMA vma, ushort opIndex)
 {
+  m_dis_data.insn_addr = mi;
+  m_dis_data.insn_vma = vma;
+
   m_di_dis->stream = (void*)&os;
   print_insn_ia64(PTR_TO_BFDVMA(mi), m_di_dis);
 }

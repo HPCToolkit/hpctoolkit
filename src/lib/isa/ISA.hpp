@@ -408,8 +408,8 @@ private:
 
 class GNUbu_disdata {
 public:
-  MachInsn* memaddr; // memory address of insn
-  VMA       vma; // vma of insn
+  MachInsn* insn_addr; // memory address of insn
+  VMA       insn_vma;  // vma of insn
 };
 
 
@@ -419,9 +419,6 @@ extern "C" {
   GNUbu_fprintf(void* stream, const char* format, ...);
   int
   GNUbu_fprintf_stub(void* stream, const char* format, ...);
-  
-  void 
-  GNUbu_print_addr(bfd_vma di_vma, struct disassemble_info* di);
   
   void
   GNUbu_print_addr_stub(bfd_vma di_vma, struct disassemble_info* di);

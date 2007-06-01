@@ -113,6 +113,7 @@ private:
   static const ushort MINSN_SIZE = 4; // machine instruction size in bytes
   struct disassemble_info* m_di;
   struct disassemble_info* m_di_dis;
+  GNUbu_disdata m_dis_data;
 };
 
 //****************************************************************************

@@ -76,6 +76,24 @@ using std::ostream;
 
 //****************************************************************************
 
+static VMA 
+GNUvma2vma(bfd_vma di_vma, MachInsn* insn_addr, VMA insn_vma)
+{ 
+  VMA x = (di_vma - PTR_TO_BFDVMA(insn_addr)) + insn_vma;
+  return x;
+}
+
+
+static void 
+GNUbu_print_addr(bfd_vma di_vma, struct disassemble_info* di)
+{
+  GNUbu_disdata* data = (GNUbu_disdata*)di->application_data;
+
+  VMA x = GNUvma2vma(di_vma, data->insn_addr, data->insn_vma);
+  ostream* os = (ostream*)di->stream;
+  *os << std::hex << "0x" << x << std::dec;
+}
+
 //****************************************************************************
 // MipsISA
 //****************************************************************************
@@ -100,6 +118,7 @@ MipsISA::MipsISA()
 
   m_di_dis = new disassemble_info;
   init_disassemble_info(m_di_dis, stdout, GNUbu_fprintf);
+  m_di_dis->application_data = (void*)&m_dis_data;
   m_di_dis->arch = m_di->arch;
   m_di_dis->mach = m_di->mach;
   m_di_dis->endian = m_di->endian;
@@ -348,6 +367,9 @@ MipsISA::GetInsnNumDelaySlots(MachInsn* mi, ushort opIndex, ushort sz)
 void
 MipsISA::decode(ostream& os, MachInsn* mi, VMA vma, ushort opIndex)
 {
+  m_dis_data.insn_addr = mi;
+  m_dis_data.insn_vma = vma;
+
   m_di_dis->stream = (void*)&os;
   BFD_PRINT_INSN_MIPS(PTR_TO_BFDVMA(mi), m_di_dis);
 }
