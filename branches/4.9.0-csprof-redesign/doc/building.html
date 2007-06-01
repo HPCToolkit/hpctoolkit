@@ -1,0 +1,293 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+
+<!--
+  HPCToolkit Documentation: Editing within Netscape/Mozilla Composer
+  is possible, but it generates strange stuff in-line.  
+  Please use an ordinary text editor.
+-->
+
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+
+  <title>HPCToolkit: Downloading, Building and Installing</title>
+
+  <link rel='stylesheet' type='text/css' href='styleForAll.css'>
+</head>
+
+<body>
+
+<!-- ********************************************************************** -->
+
+<script language="JavaScript" src="header_hpctoolkit.js"></script>
+
+<!-- ********************************************************************** -->
+
+<div id="main">
+
+<!-- automatically updated by Emacs hook below; nicer than CVS Date -->
+<p class="lastupdated">Last Updated: 2006-06-19</p>
+
+<a name="toc"></a>
+<h1>Downloading, Building and Installing HPCToolkit</h1>
+
+<h2>Contents</h2>
+<ul>
+  <li><a href="#prerequisites">System Prerequisites</a>
+
+  <li><a href="#sources">Downloading the Sources</a>
+
+  <li><a href="#building_installing">Building and Installing</a>
+
+  <li><a href="#using">Using</a>  
+</ul>
+
+
+<!-- ********************************************************************** -->
+<!-- ********************************************************************** -->
+
+<a name="prerequisites"></a>
+
+<h2>System Prerequisites</h2>
+<p><i>[<a href="#toc">Contents</a>]</i>
+
+<ol class="noindent">
+
+<li>
+
+<p>To reduce the effort needed to distribute HPCToolkit, we have opted
+to distribute it in source form only.
+
+<li>
+<p>HPCToolkit requires an ANSI/ISO C/C++ compliant compiler.
+Generally speaking any relatively recent vendor compiler or GCC 3.x
+and 4.x should be fine.  The toolkit uses GNU binutils which requires
+a C compiler that also supports a few GNU extensions; obviously, GCC
+may be used.
+    
+  <ul class="noindent">
+
+    <li>IRIX64-mips:
+      <ul class="noindent">
+        <li>SGI MIPSpro C++/C 7.3.x, 7.4
+        <li>GCC C++/C 3.x
+      </ul>
+
+    <li>Linux-x86
+      <ul class="noindent">
+        <li>Intel C++/C 8.x, 9.x
+        <li>GCC C++/C 3.x, 4.x
+      </ul>
+
+    <li>Linux-ia64:
+      <ul class="noindent">
+        <li>Intel C++/C 8.x, 9.x
+        <li>GCC C++/C 3.x, 4.x
+      </ul>
+
+    <li>Linux-x86_64:
+      <ul class="noindent">
+        <li>Intel C++/C 9.x
+        <li>GCC C++/C 3.x, 4.x
+        <li>Compiler bug: PGI 6.0.2, 6.1.2 (internal compiler error)
+      </ul>
+
+    <li>SunOS-sparc:
+      <ul class="noindent">
+        <li>Sun Forte C++/C 5.3 (WorkShop 6 update 2 with patch 111685-01
+            or greater (bug id 4466915))
+        <li>Sun Forte C++/C 5.1 (WorkShop 6)
+        <li>GCC C++/C 3.x
+      </ul>
+
+    <li>Tru64-alpha:
+      <ul class="noindent">
+        <li>Compaq C++/C 6.2, 6.3, 6.5
+        <li>GCC C++/C 3.x
+      </ul>
+  </ul>
+
+
+<li>
+<p><a href="hpcrun.html" class="hpctool">hpcrun</a>, a tool for
+collecting performance data on Linux, requires an installation
+of <a href="http://icl.cs.utk.edu/projects/papi/">PAPI</a> 3.0 or greater.
+To learn more about installing PAPI on your system consult our 
+<a href="hwctools.html#papi">PAPI notes</a>.
+
+<li>
+<p><a href="hpcviewer.html" class="hpctool">hpcviewer</a> is a Java
+application that can be used on a variety of platforms.  It only needs
+a recent Java runtime environment (JRE).  We have successfully used:
+
+  <ul class="noindent">
+    <li>Mac OS X: JRE 1.4.2
+    <li>Windows: JRE 1.4.2
+    <li>Cygwin: JRE 1.4.2
+  </ul>
+  <br>
+  <ul class="noindent">
+    <li>Linux (x86, ia64, x86_64): JRE 1.4.2
+    <li>Solaris-sparc: JRE 1.4.0
+    <li>Tru64-alpha: JRE 1.4.2
+  </ul>
+
+<li>
+<p>HPCToolkit requires a basic version of GNU make, not a vendor
+supplied make.  We have successfully used versions 3.70, 3.76, 3.77, 
+3.78, 3.79 3.80.
+
+<li>
+<p>HPCToolkit contains some Perl-based tools which require that some
+variant of Perl 5 installed and that it is in your path.  We have
+succssfully used versions 5.6.x, 5.8.x.
+
+</ol>
+
+
+<!-- ********************************************************************** -->
+<!-- ********************************************************************** -->
+
+<a name="sources"></a>
+
+<h2>Downloading the Sources</h2>
+<p><i>[<a href="#toc">Contents</a>]</i>
+
+<ol class="noindent">
+
+<li>
+<p><a href="http://www.hipersoft.rice.edu/hpctoolkit/downloads.html">Download</a> a HPCToolkit OneStopShopping tarball and untar it:
+<div class="indent">
+  <code>gunzip HPCToolkit-OneStopShopping-x.y.z.tar.gz</code><br>
+  <code>tar xvf HPCToolkit-OneStopShopping-x.y.z.tar</code><br>
+</div>
+
+</ol>
+
+
+<p>(Note: The OneStopShopping tarball contains three external
+libraries -- OpenAnalysis, Xerces-C++ and GNU binutils. In some cases
+it may be possible to use versions of these libraries that are already
+installed on your system.  However, we do not support such
+configurations.)</p>
+
+
+<!-- ********************************************************************** -->
+<!-- ********************************************************************** -->
+
+<a name="building_installing"></a>
+
+<h2>Building and Installing</h2>
+<p><i>[<a href="#toc">Contents</a>]</i>
+
+<p>The easiest way to build HPCToolkit is to use
+<code>Makefile.quick</code>.  If you want to build HPCToolkit's
+<a href="hpcrun.html" class="hpctool">hpcrun</a>, you will need to use
+the <code>PAPI</code> option.  For a brief description, list of
+supported options and the default installation path, execute the
+following.
+
+<div class="indent">
+  <code>make -f Makefile.quick help</code><br>
+</div>
+
+<p>As a special exception, 
+<a href="hpcviewer.html" class="hpctool">hpcviewer</a> may be used 
+<i>without performing the steps below</i>.  This is useful in a
+non-Un*x environment (e.g. Windows without Cygwin).
+
+<ol class="noindent">
+
+<li>
+<p>Change to the top-level HPCToolkit-OneStopShopping-x.y.z directory.
+
+<li>
+<p>Configure, build and install. Since this will produce a lot of
+output, you may want to redirect it to a file.  Make sure to use the
+<code>CXX</code> and <code>CC</code> options if you do not wish to use
+the GNU compiler:
+
+<div class="indent">
+  <code>make -f Makefile.quick&nbsp;[PAPI=&lt;install_path&gt;]&nbsp;[CXX=&lt;C++&nbsp;compiler&gt;]&nbsp;[CC=&lt;C&nbsp;compiler&gt;]&nbsp;all</code><br>
+</div>
+
+<p>For example:
+   <ul class="noindent">
+     <li>Linux-*: <i>(using the GNU compiler and Intel compiler,
+                  respectively)</i>
+       <ul class="noindent">
+         <li><code>make&nbsp;-f&nbsp;Makefile.quick&nbsp;PAPI=&lt;papi&gt;&nbsp;CXX=g++&nbsp;CC=gcc&nbsp;all</code>
+         <li><code>make&nbsp;-f&nbsp;Makefile.quick&nbsp;PAPI=&lt;papi&gt;&nbsp;CXX=icc&nbsp;CC=icc&nbsp;all</code>
+       </ul>
+     <li>IRIX64-mips: <i>(using the SGI MIPSpro compiler)</i>
+       <ul class="noindent">
+         <li><code>make&nbsp;-f&nbsp;Makefile.quick&nbsp;CXX=CC&nbsp;CC=cc&nbsp;all</code>
+       </ul>
+    <li>SunOS-sparc: <i>(using the Sun compiler)</i>
+       <ul class="noindent">
+         <li><code>make&nbsp;-f&nbsp;Makefile.quick&nbsp;CXX=CC&nbsp;CC=cc&nbsp;all</code>
+       </ul>
+     <li>Tru64-alpha: <i>(using the Compaq comiler)</i>
+       <ul class="noindent">
+         <li><code>make&nbsp;-f&nbsp;Makefile.quick&nbsp;CXX=cxx&nbsp;CC=cc&nbsp;all</code>
+       </ul>
+   </ul>
+
+</ol>
+
+<p>This will build and install HPCToolkit in the paths given above.
+Because the installation is compact and self-contained, you may rename
+or move it to another location.  All source code may be removed.
+
+<!-- end: Building -->
+
+<!-- ********************************************************************** -->
+<!-- ********************************************************************** -->
+
+<a name="using"></a>
+
+<h2>Using</h2>
+<p><i>[<a href="#toc">Contents</a>]</i>
+
+<p>You may use the resulting installation as-is. However, you may wish
+to add the <code>bin</code> subdirectory to your <code>PATH</code>.
+One way to do this is to set the <code>HPCTOOLKIT</code> environment
+variable to the root of your installation and then use our 'Sourceme'
+script.  For example:
+<div class="indent">
+  <i>(csh variants)</i><br>
+  <code>setenv HPCTOOLKIT "/my_path/HPCToolkit"</code><br>
+  <code>source $HPCTOOLKIT/Sourceme-csh</code>
+<br><br>
+  <i>(sh variants)</i><br>
+  <code>export HPCTOOLKIT="/my_path/HPCToolkit"</code><br>
+  <code>source $HPCTOOLKIT/Sourceme-sh</code>
+</div>
+
+<p>As a special exception for non-Un*x environments, 
+<a href="hpcviewer.html" class="hpctool">hpcviewer</a> may be lauched via 
+the GUI.  See the <a href="hpcviewer.html">man page</a> for more information.
+
+<!-- end: Using -->
+
+<!-- ********************************************************************** -->
+<!-- ********************************************************************** -->
+
+<script language="JavaScript" src="footer_hpctoolkit.js"></script>
+
+<!-- ********************************************************************** -->
+
+</div> <!-- id=main -->
+
+</body>
+</html>
+
+
+<!-- Local Variables: -->
+<!-- eval: (add-hook 'write-file-hooks 'time-stamp) -->
+<!-- time-stamp-start: ">Last Updated: " -->
+<!-- time-stamp-format: "%:y-%02m-%02d" -->
+<!-- time-stamp-end: "<" -->
+<!-- time-stamp-line-limit: 35 -->
+<!-- End: -->
+

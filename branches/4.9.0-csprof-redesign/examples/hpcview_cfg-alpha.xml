@@ -1,0 +1,67 @@
+<HPCVIEW>
+
+<!--  
+
+  $Id$
+  
+  This is an HPCView configuration file that displays lots of
+  statistics that were measured using using uprofile, including
+  measurements of ProfileMe events.
+
+  The script collecting the data is 'profile-alpha_uprofile'.
+
+  The use of the 'select' attribute in FILE elements is optional here
+  since the default is to select the metric with shortName == "0".
+
+  To use: 
+    - Replace HPCAPPL with the name of your program.  
+    - Set the path to your application source in the PATH directive.
+    - (Optional) Set the path to bloop output in the STRUCTURE directive.
+    - Run hpcview: 'hpcview -z hpcview_cfg-alpha.xml'
+    - Point a web browser at 'hpcview.output/index.html'
+
+-->
+
+<TITLE name="HPCAPPL" />
+
+<!-- The path to program sources.  Append a '*' to recursively descend into subdirectories. E.g.: ./* -->
+<PATH name="." viewname="sources" />
+
+<!-- The output from bloop -->
+<STRUCTURE name="HPCAPPL.psxml" />
+
+<!-- A number of metrics collected directly from profiles -->
+<METRIC name="CYCLES" displayName="CYCLES">
+<FILE name="cycles.pxml" select="0"/>
+</METRIC>
+
+<METRIC name="inflt_ret" displayName="ifl_ret">
+<FILE name="inflt_retires.pxml" select="0"/>
+</METRIC>
+
+<METRIC name="replay" displayName="replay">
+<FILE name="replay.pxml" select="0"/>
+</METRIC>
+
+<METRIC name="inflt_replay" displayName="ifl_replay">
+<FILE name="inflt_replays.pxml" select="0"/>
+</METRIC>
+
+<METRIC name="bcache" displayName="bcache">
+<FILE name="bcachemisses.pxml" select="0"/>
+</METRIC>
+
+<METRIC name="inflt_l2" displayName="ifl_bcache">
+<FILE name="inflt_bcache.pxml" select="0"/>
+</METRIC>
+
+<METRIC name="delay" displayName="delay">
+<FILE name="delay.pxml" select="0"/>
+</METRIC>
+
+<METRIC name="cycles_per_ret" displayName="cycles_per_ret" percent="false">
+<FILE name="cycles_per_ret.pxml" select="0"/>
+</METRIC>
+
+
+</HPCVIEW>

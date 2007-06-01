@@ -1,0 +1,271 @@
+$Id$
+
+=============================================================================
+==
+== README.develop
+==
+== Location: ${HPCTOOLKIT}/src
+==
+=============================================================================
+
+
+=============================================================================
+General Stuff
+=============================================================================
+
+Locations:
+--------------------
+
+Installed world:
+  /DSystem/HPCTools
+
+Web page:   
+  /DSystem/public_html/hpctools
+
+Some machines with dsystem accounts and with /DSystem mounted
+--------------------
+  alpha: limerick
+  i686:  blunux
+  mips:  mapy
+  sparc: basuri
+
+Installed and Private Worlds:
+--------------------
+
+The RCS tree rooted at /DSystem/HPCTools/RCS mirrors the tree under
+/DSystem/HPCTools.  Every descendent of /DSystem/HPCTools contains
+soft links into the RCS tree.  The links are relative in the hopes
+that this will likely require less maintenance.  E.g.:
+
+  /DSystem/HPCTools/src/RCS --> ../RCS/src
+
+A developer should have an entire copy source tree checked out in a
+private world.  RCS links can point to those in /DSystem/HPCTools.
+(One could write a script to mirror the installed RCS tree and to grab
+unchecked-out source files from the installed world, but this really
+hasn't been needed so far.)
+
+Including libraries:
+--------------------
+
+Now that we have a number of libraries under src/lib, includes should
+be in the form
+  #include <lib/libname/file.h>
+
+The make system:
+--------------------
+
+Depends on gnumake.  However, the version can be ancient since I
+intentionally avoided many new constructs.
+
+Typically, builds are done in ${HPCTOOLKIT}/src.  Depending on your
+$HPCTOOLKIT_PLATFORM environment variable, the appropriate platform
+specific definitions will be included. 
+
+A couple variables allow different types of compilations to be done.
+Passing 'RELEASE=1' to the make command will compile binaries for
+release (no debugging info and with basic optimization).  Passing
+'PURE=1' to the make command will create purified executables.
+(However, as of this writing, the version of Purify on basuri.cs is so
+ancient that it is beginning to have problems.)
+
+The build will be done in ${HPCTOOLKIT}/obj/${HPCTOOLKIT_PLATFORM}.  After
+everything is successfully done, 'make install' will be run
+automatically copying over the binaries into
+${HPCTOOLKIT}/bin/${HPCTOOLKIT_PLATFORM}.  'make install' will also
+execute 'install_perl', which installs the perl scripts into
+${HPCTOOLKIT}/bin.  As a FYI, there are corresponding 'uninstall' and
+'uninstall_perl' targets.
+
+Note that there is a difference between the 'clean' and 'veryclean'
+targets.  'clean' deletes object files and archives, whereas
+'veryclean' deletes everything, including template databases, etc.
+
+As I never really needed it, I never did setup the Makedepend stuff.
+The skeleton support should be there, but it is unused.
+
+In order to allow some simple flexibility as to where the build was
+done, there are typically two makefiles per source directory, a
+'Makefile' and 'Makefile.real'.  When 'Makefile' is used, it assume
+the build should be done in ${HPCTOOLKIT}/obj/${HPCTOOLKIT_PLATFORM}, sets
+some variables and calls 'Makefile.real'.  'Makefile.real' contains
+the full array of targets and rules.
+
+If you want to recompile individual files or to run a file through the
+preprocessor you will need to use 'Makefile.real' directly, specifying
+an alternate build location if the default '.' is not acceptible.
+(See the corresponding 'Makefile' for how to do this.)  For example,
+to run the preprocessor on foo.C and send the result to foo.cpp in the
+current directory you can type
+  make -f Makefile.real foo.cpp
+
+Documentation:
+--------------------
+
+Testing:
+--------------------
+
+Debugging:
+--------------------
+
+Some classes have a ToString method, inspired by java's toString.
+Others have Dump methods, defined along the line of :
+
+  Dump() { cerr << ToString() << endl; } 
+
+Many .C files include "Trace.h" which defines the IFTRACE and similar
+macros and a global trace variable.
+          IFTRACE exapands to    "if (trace) cerr  "
+so that   IFTRACE << "trace info " << endl; 
+
+Note: This trace variable used to be local to every including file,
+but changed it so that it could be switched on and off using the
+command line.  (Formerly, trace was only useful while using a debugger
+since the debugger would allow you to set the trace on and off for
+each object file.)
+
+=============================================================================
+Libraries
+=============================================================================
+
+Note: When HPCView/Tools was merged, I removed most of the unused
+files (a fairly high number).  However, I believe the following stil
+remain, though I haven't tested for certain.  This not a huge problem
+at the moment since they should be pruned after the final link...
+
+  OffsetLengthList.C
+  OffsetLengthList.h
+  Set.C
+  Set.h
+  bstring.h
+
+
+=============================================================================
+External Libraries: GNU Binutils
+=============================================================================
+
+The version included is 2.13.  As of this writing the current version
+is 2.13.2.1; it has almost all of the patches Nathan has submitted.  Very
+soon a release should contain all submitted thus far.
+
+The home page for binutils is:
+  http://www.gnu.org/software/binutils/binutils.html
+  http://sources.redhat.com/binutils/
+
+Downloads: 
+  ftp://sources.redhat.com/pub/binutils/releases/
+
+Here is a list of files with unsubmitted changes.  Some of Jason's
+would be ready for submission with a little cleanup, etc.  My last
+remaining patch is more of a hack (but it is documented -- for our
+purposes, binutils has some interface limitations) and may require a
+bribe before the code sentinal would allow submission.
+
+  ./include/opcode/ia64.h (Jason)
+  ./opcodes/ia64-asmtab.c (Jason)
+  ./opcodes/ia64-opc-b.c  (Jason)
+  ./opcodes/ia64-dis.c    (Jason)
+  ./opcodes/ia64-opc.h    (Jason)
+  ./opcodes/ia64-opc-x.c  (Jason)
+  ./opcodes/i386-dis.c    (Jason)
+
+  ./opcodes/sparc-dis.c   (Nathan)
+
+To do a patch, set up a binutils CVS repository using commands like
+the following:
+  cvs -z 9 -d :pserver:anoncvs@sources.redhat.com:/cvs/src login
+    {enter "anoncvs" as the password}
+  cvs -z 9 -d :pserver:anoncvs@sources.redhat.com:/cvs/src co binutils
+
+Add the changes against the latest CVS version of the file in
+question.  Make a patch using 'cvs diff -c3p'
+
+Send patches to <binutils@sources.redhat.com>.  Interface changes
+(files in include/* should be sent to gdb-patches@sources.redhat.com).
+
+Put "[Patch]" in the subject line and include 
+  - a description of the patch
+  - overview of testing and testcases you have done
+  - a ChangeLog entry (use emacs change-log-mode)
+
+=============================================================================
+HPCView
+=============================================================================
+
+Debugging HTML interface: 
+--------------------
+
+HPCView generates index.debug.html which refers header.debug.html
+
+When using index.debug.html you'll see "Globals", "ShowTrace",
+"ClearTrace", "ActivateTrace", and "Deactivate Trace" links in the
+title area. When clicked:
+
+  Globals:   shows the global variables from global.js
+
+  ShowTrace: shows execution trace (global traceStr variable), which
+  is appended to by calls to trace(...) from javascript routines, After
+  showing the traceStr it is cleared.
+
+  ClearTrace: clears the global traceStr
+
+  ActivateTrace: activates tracing by assigning to the global debug
+  variable (which initially contains the undefined value); after that
+  trace calls append strings to the globae traceStr variable;  
+  
+  DeactivateTrace: deactivates tracing 
+  
+If you need to know what happens in the initial load, make sure that
+debug in global.js is to something greater 0.  "var debug = 1" will
+do.
+
+HPCView: Debugging
+--------------------
+
+Use the secret -d option for tracing.  For every -d, the trace
+variable (from src/lib/support/Trace.h) is increased by one.  At one
+time there were three levels: no tracing; tracing of basic steps;
+tracing of basic steps plus dumping of the final ScopeInfo-tree, with
+performance data.
+
+HPCView: 
+--------------------
+
+HPCView's Overall Contol Flow: See main.C.
+
+1) Read Configuration file to find the metrics, structure file, etc.
+
+2) If a STRUCTURE PGM file is present, initialize the scope tree with
+   this information.
+
+3) Read all file and computed metrics in the order that they were
+   defined in teh configuration files.  As file metrics are read from
+   PROFILE files, the scope tree is updated if new information is
+   present.
+
+4) Generate browseable database (HTML or hpcviewer).
+
+Data Structures: 
+--------------------
+
+ScopeInfo is the central data structure.  It is basically a scope tree:
+
+  PgmInfo:  One instance at the root.
+  FileScope: files
+  ProcScope: procedures or functions
+  LoopScope: loops
+  StmtScope: statements
+
+The ScopeInfo tree is built using both profiling and program structure
+information.
+
+=============================================================================
+bloop
+=============================================================================
+
+bloop: Debugging
+--------------------
+
+Use the secret -d option for tracing.  For every -d, the trace
+variable (from src/lib/support/Trace.h) is increased by one.
+

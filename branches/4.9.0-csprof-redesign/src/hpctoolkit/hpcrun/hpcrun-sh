@@ -1,0 +1,212 @@
+#!/bin/sh
+# Testing: set -x: line by line (set -n: syntax)
+# set -x
+
+# $Id$
+
+## **************************************************************************
+##
+## File: 
+##    papirun: Launch the PAPI profiler by setting up a preloaded
+##    library that will intercept an application's execution and start
+##    the profiler.  This script processes arguments and passes them
+##    to the profiling library through environment variables.
+##
+## Author:
+##    Written by John Mellor-Crummey and Nathan Tallent, Rice University.
+##    
+## **************************************************************************
+
+#############################################################################
+
+HPCRUN_VERSION="2.0"
+
+# One can set personal defaults here, instead of changing source code.
+# These values will be overriden by commandline options.
+opt_eventlist=""
+opt_out_path=""
+opt_flag=""
+opt_debug=""
+
+#####################
+
+# These option variables cannot be modified with personal defaults.
+opt_recursive="1"
+
+cmd_to_profile=""
+
+#############################################################################
+
+# Note: All function names are prefixed with 'f_' in order to make
+# function calls very clear.
+
+cmd="$0"
+
+f_usage()
+{
+  p="printf"
+  $p "\n"
+  $p "Usage:\n"
+  $p "  ${cmd} [options] <command> [args_to_command...]\n"
+  $p "\n"
+  $p "  An alternative launcher, available for experimental, testing and\n"
+  $p "  sentimental reasons.  If you don't know what this, use 'hpcrun'.\n"
+  $p "\n"
+  $p "  Options Available to the script: \n"
+  $p "    -r                   Turn off recursive profiling\n"
+  $p "    -e <event>:<period>  PAPI event and period for sampling\n"
+  $p "    -o <outpath>         Directory for output data\n"
+  $p "    -f <flag>            Profile style flag\n"
+  $p "\n"
+}
+
+f_checkenv()
+{
+  if [ -z "${HPCRUN_HOME}" ]; then 
+    printf "${cmd}: Please set HPCRUN_HOME before using!\n"
+    exit 1
+  fi 
+
+#  if [ -z "${HPCRUN_PAPILIB_PATH}" ]; then
+#    printf "${cmd}: Please set HPCRUN_PAPILIB_PATH before using!\n"
+#    exit 1
+#  fi
+
+  LD_PRELOAD="${HPCRUN_HOME}/libhpcrun.so"
+  
+  if [ ! -r "${LD_PRELOAD}" ]; then 
+    printf "${cmd}: launch library ${LD_PRELOAD} not found!\n"
+    exit 1
+  fi 
+
+#  LD_LIBRARY_PATH="${LD_LIBRARY_PATH}:${HPCRUN_PAPILIB_PATH}"
+}
+
+# args: ($1, $2): (string_to_check, string_for_error_msg[optional])
+f_error_on_nil()
+{
+  if [ -z "$1" ]; then
+    if [ -n "$2" ]; then printf "$2"; fi
+    f_usage
+    exit 1
+  fi
+}
+
+# args: ($1, $2): (option, option_value)
+f_opt_check()
+{
+  # 'option_value' should be non-nil
+  f_error_on_nil "$2" "** no value for option $1\n"
+    
+  # 'option_value' should not start with '-'
+  if ( echo "$2" | grep '^-.*' >/dev/null 2>&1 ); then
+    printf "** invalid value for option $1: $2\n"
+    f_usage
+    exit 1
+  fi
+}
+
+# args: ($1..$n): all arguments given to this script
+f_getoptions()
+{
+  # We can't easily use 'getopt' or 'getopts' because we have to
+  # protect options given to the command to profile.
+
+  # NOTE: This should actually *not* be a function because once either
+  # $@ or $* is pased to it, a quoted argument like 'a b c' that
+  # should be *one* argument, will be white-space split into three.
+
+  if [ -z "$1" ]; then
+    f_usage
+    exit 0
+  fi
+
+  # parse argument list
+  while [ $# -ge 1 ]; do
+    case $1 in
+      -r)   opt_recursive="0";
+            ;;
+      -e)   shift; opt_eventlist="${opt_eventlist}$1;";
+            f_opt_check "-e" "$1";
+            ;;
+      -o)   shift; opt_out_path="$1";
+            f_opt_check "-o" "${opt_out_path}";
+            ;;
+      -f)   shift; opt_flag="$1";
+            f_opt_check "-f" "${opt_flag}";
+            ;;
+#      -l)   opt_dump_events="1";
+#            ;;
+      -d)   shift; opt_debug="$1";
+            f_opt_check "-d" "${opt_debug}";
+            ;;
+      -*)  printf "** Invalid option '$1'\n";
+           f_usage; exit 1;
+           ;;
+
+      *)   break ;;
+    esac
+    shift
+  done
+
+  # The command ($*: all arguments from $1 to $n)
+  cmd_to_profile="$*"
+  
+  f_error_on_nil "${cmd_to_profile}" "** no command to profile\n";
+}
+
+# assumes: all variables have been set
+f_prepareenv()
+{
+  # export the profiler library
+  export LD_PRELOAD
+#  export LD_LIBRARY_PATH
+
+  # export profiler options
+  if [ -n "${opt_recursive}" ] ; then
+    HPCRUN_RECURSIVE="${opt_recursive}"
+    export HPCRUN_RECURSIVE
+  fi
+
+  if [ -n "${opt_eventlist}" ]; then
+    HPCRUN_EVENT_LIST="${opt_eventlist}"
+    export HPCRUN_EVENT_LIST
+  fi
+
+  if [ -n "${opt_out_path}" ]; then
+    HPCRUN_OUTPUT_PATH="${opt_out_path}"
+    export HPCRUN_OUTPUT_PATH
+  fi
+
+  if [ -n "${opt_flag}" ]; then
+    HPCRUN_EVENT_FLAG="${opt_flag}"
+    export HPCRUN_EVENT_FLAG
+  fi
+
+  if [ -n "${opt_debug}" ]; then
+    HPCRUN_DEBUG="${opt_debug}"
+    export HPCRUN_DEBUG
+  fi
+
+  # Make sure that `.' is in the PATH so that we can find the command
+  # to profile if in the current directory. [We can get around this,
+  # but for now it is the quickest thing.] 
+  PATH=".:${PATH}"
+}
+
+#############################################################################
+# Main
+#############################################################################
+# $n: argument n, with $0 being the command name
+# $*: all arguments from $1 to $n
+# $@: all arguments form $1 to $n in double quotes
+# $#: number of arguments
+
+f_checkenv 
+
+f_getoptions $*
+
+f_prepareenv
+
+#echo ${cmd_to_profile}
+exec ${cmd_to_profile}

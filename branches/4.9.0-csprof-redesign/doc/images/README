@@ -1,0 +1,6 @@
+This directory contains images that are inserted into the HTML
+documentation pages for HPCToolkit.  This set (${HPCTOOLKIT}/doc/images)
+exists to ensure that the pictures are available wherever the HTML is.
+
+Note that copies of these images are also kept in the root directory
+of the HPCToolkit web page.

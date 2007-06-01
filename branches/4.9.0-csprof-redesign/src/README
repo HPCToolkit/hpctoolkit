@@ -1,0 +1,67 @@
+$Id$
+
+=============================================================================
+==
+== README
+==
+== Location: ${HPCTOOLKIT}/src
+==
+=============================================================================
+
+This is is top level directory for the tree that contains all of the
+HPCToolkit source code.
+
+=============================================================================
+
+Overview of source code:
+--------------------
+
+hpctoolkit/    - Contains the code for individual tools in the HPCToolkit 
+                 toolset.
+
+	      
+  bloop/       - Driver and analysis files specific to the 'bloop'
+                 tool.
+
+  hpcquick/    - Perl code for 'hpcquick'
+  
+  hpcview/     - Driver and analysis files specific to the 'hpcview' tool.
+
+  ptran/       - Perl code for 'ptran'
+
+  xprof/       - Driver and support files specific to the 'xprof'
+                 tool.
+
+include/     - Contains general include files available for any 
+               HPCToolkit src files (but not external libraries).  There 
+               should be no associated object files or library for these
+               includes.
+               
+lib/         - Contains libraries for use by HPCToolkit
+               (but not external tools).
+
+  binutils    - A library that reads load modules and executables
+                and processes them by section, procedure and
+		instruction.  It is built upon GNU's binutils and
+		uses the ISA library to for queries that require
+		instruction decoding.  (Uses 'support' and 'ISA'.)
+		
+  ISA         - ISA implements an instruction set architecture,
+                most significantly by decoding and providing
+		information about machine instructions.  It
+		knows nothing about a load module ('binutils').
+		(Uses 'support'.)
+
+  perl        - Perl modules for use with the perl scripts in 
+                src/hpctools.
+
+  support     - A support library that defines several generic data
+                structures, file operations and support routines.
+		This library is not dependent upon any other library.
+		
+  xml         - This simple library provides routines for reading
+                and writing XML files in lieu of using Xerces.
+                (These routines were created when 'bloop' and 'xprof'
+                were separate from 'hpcview' but the library still may
+                have a justified existence.)  (Uses 'support'.)
+

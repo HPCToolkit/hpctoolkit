@@ -1,0 +1,53 @@
+<!-- Call stack profile: correlates call stack profiling info with
+     program structure. -->
+<!ELEMENT CSPROFILE (CSPROFILEHDR, CSPROFILEPARAMS, CSPROFILETREE)>
+<!ATTLIST CSPROFILE
+       version CDATA #REQUIRED>
+  <!ELEMENT CSPROFILEHDR (#PCDATA)>
+  <!ELEMENT CSPROFILEPARAMS (TARGET, METRIC)>
+    <!ELEMENT TARGET EMPTY>
+    <!ATTLIST TARGET
+         name CDATA #REQUIRED>
+    <!ELEMENT METRIC EMPTY>
+    <!ATTLIST METRIC
+         shortName   CDATA #REQUIRED
+         nativeName  CDATA #REQUIRED
+         period      CDATA #REQUIRED
+         units       CDATA #IMPLIED
+         displayName CDATA #IMPLIED
+         display     (true|false) #IMPLIED>
+  <!ELEMENT CSPROFILETREE (PGM)*>
+    <!-- The program. (cf. PGM dtd) -->
+    <!ELEMENT PGM (G|CALLSITE)+>
+    <!ATTLIST PGM
+	    n CDATA #REQUIRED>
+    <!-- Groups create arbitrary sets of other elements except PGM. -->
+    <!ELEMENT G (G|CALLSITE|L|S)*>
+    <!ATTLIST G
+	    n CDATA #IMPLIED>
+    <!-- Callsite identifies a location in source code (file,
+         procedure, line) that corresponds to a frame in a call stack
+         sample (but multiple PCs can map to one source file line).  A
+         parent CALLSITE is the caller of any children CALLSITEs.  A
+         tree of CALLSITEs represents call stack samples with the tree
+         root representing a common stack bottom and leafs
+         representing the top of stack samples.  Leaves contain counts
+         indicating how many times that call stack was
+         sampled. [FIXME: add load modules] -->
+    <!ELEMENT CALLSITE (G|CALLSITE|L|S)*>
+    <!ATTLIST CALLSITE
+	    f CDATA #IMPLIED
+	    p CDATA #IMPLIED
+	    l CDATA #IMPLIED
+	    c CDATA #IMPLIED>
+    <!-- Loops -->
+    <!ELEMENT L (G|L|S)*>
+    <!ATTLIST L
+	    b CDATA #IMPLIED
+	    e CDATA #IMPLIED>
+    <!-- Statement/Statement range  -->
+    <!ELEMENT S EMPTY>
+    <!ATTLIST S
+	    b CDATA #REQUIRED
+	    e CDATA #IMPLIED
+	    id CDATA #IMPLIED>

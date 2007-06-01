@@ -1,0 +1,8 @@
+
+# $Id$
+# For sh: -*-sh-*-
+
+CSPROF_HOME="/home/froydnj/papi-csprof"
+export CSPROF_HOME
+
+export PATH="${PATH}:${CSPROF_HOME}"

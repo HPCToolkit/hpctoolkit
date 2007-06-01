@@ -1,0 +1,16 @@
+# -*-Mode: sh;-*-
+# $Id$
+
+#############################################################################
+
+# Note: can we have this set by autoconf/automake?
+
+if test -z "${HPCTOOLKIT}" ; then
+  echo "You must set your HPCTOOLKIT environment variable before sourcing"
+  echo "this file."
+  return 1
+fi
+
+#############################################################################
+
+export PATH="${HPCTOOLKIT}/bin:${PATH}"

@@ -1,0 +1,200 @@
+#!/bin/sh
+# Testing: set -x: line by line (set -n: syntax)
+# set -x
+
+# $Id$
+# -*-sh-*-
+## * BeginRiceCopyright *****************************************************
+## 
+## Copyright ((c)) 2002, Rice University 
+## All rights reserved.
+## 
+## Redistribution and use in source and binary forms, with or without
+## modification, are permitted provided that the following conditions are
+## met:
+## 
+## * Redistributions of source code must retain the above copyright
+##   notice, this list of conditions and the following disclaimer.
+## 
+## * Redistributions in binary form must reproduce the above copyright
+##   notice, this list of conditions and the following disclaimer in the
+##   documentation and/or other materials provided with the distribution.
+## 
+## * Neither the name of Rice University (RICE) nor the names of its
+##   contributors may be used to endorse or promote products derived from
+##   this software without specific prior written permission.
+## 
+## This software is provided by RICE and contributors "as is" and any
+## express or implied warranties, including, but not limited to, the
+## implied warranties of merchantability and fitness for a particular
+## purpose are disclaimed. In no event shall RICE or contributors be
+## liable for any direct, indirect, incidental, special, exemplary, or
+## consequential damages (including, but not limited to, procurement of
+## substitute goods or services; loss of use, data, or profits; or
+## business interruption) however caused and on any theory of liability,
+## whether in contract, strict liability, or tort (including negligence
+## or otherwise) arising in any way out of the use of this software, even
+## if advised of the possibility of such damage. 
+## 
+## ******************************************************* EndRiceCopyright *
+
+## **************************************************************************
+##
+## File: 
+##    f90modfilt: see usage below
+##    
+## **************************************************************************
+
+#############################################################################
+
+
+# One can set personal defaults here, instead of changing source code.
+# These values will be overriden by commandline options.
+opt_machine=""
+
+#####################
+
+# Globals
+our_arch=`uname -p`
+if [ "$our_arch" = "unknown" ]; then
+  our_arch=`uname -m`
+fi
+
+our_os=`uname -s`
+
+our_platform="${our_arch}-${our_os}"
+
+
+#############################################################################
+
+# Note: All function names are prefixed with 'f_' in order to make
+# function calls very clear.
+
+cmd="$0"
+
+f_usage()
+{
+  p="printf"
+  $p "\n"
+  $p "Usage:\n"
+  $p "  ${cmd} [-m machine] < infile > outfile\n"
+  $p "\n"
+  $p "  Sometimes bloop generates long names for F90 code, for example\n"
+  $p "  'foo.in.bar' for function 'foo' in module 'bar'. These long function\n"
+  $p "  names may be different from profiler output thus preventing hpcview\n"
+  $p "  from correctly correlating program structure and profile\n"
+  $p "  information.\n"
+  $p "\n"
+  $p "  This simple sed script strips off the '.in.bar' that comes out of\n"
+  $p "  bloop to make the names match.  It should be used as a filter from\n"
+  $p "  stdin to stdout.\n"
+  $p "\n"
+  $p "  The sript supports SGI's and Compaq's F90 compilers.  The script\n"
+  $p "  tries to determine which compiler is being used by machine type.\n"
+  $p "\n"
+  $p "  Options:\n"
+  $p "    -m machine\n"
+  $p "         Specify a machine if it is not inferred correctly.\n"
+  $p "         Currently supported: sgi | compaq.\n"
+  $p "    -h : prints help\n"
+}
+
+# args: ($1, $2): (string_to_check, string_for_error_msg[optional])
+f_error_on_nil()
+{
+  if [ -z "$1" ]; then
+    if [ -n "$2" ]; then printf "$2"; fi
+    f_usage
+    exit 1
+  fi
+}
+
+# args: ($1, $2): (option, option_value)
+f_opt_check()
+{
+  # 'option_value' should be non-nil
+  f_error_on_nil "$2" "** no value for option $1\n"
+    
+  # 'option_value' should not start with '-'
+  if ( echo "$2" | grep '^-.*' >/dev/null 2>&1 ); then
+    printf "** invalid value for option $1: $2\n"
+    f_usage
+    exit 1
+  fi
+}
+
+
+# args: ($1): (machine) 
+f_get_machine()
+{
+  if [ -z "$1" ]; then
+    
+    # No machine has been requested so we figure out a default one
+    case "$our_platform" in
+      alpha-OSF1)  opt_machine="compaq" ;;
+      mips-IRIX64) opt_machine="sgi" ;;
+      *) printf "** Unknown machine type '${our_platform}'; Please specify with -m. ** \n";
+         exit 1;
+         ;;
+    esac
+
+  else
+
+    # The machine has been requested so we make sure it is valid
+    case "$1" in
+      compaq | sgi) 
+         opt_machine="$1"; 
+         ;;
+      *) printf "** Invalid machine type '$1' with -m.\n";
+         exit 1;
+         ;;
+    esac
+
+  fi
+}
+
+
+# args: ($1..$n): all arguments given to this script
+f_getoptions()
+{
+  # parse argument list
+  while [ $# -ge 1 ]; do
+    case "$1" in
+      -m)  shift; opt_machine="$1";
+           f_opt_check "-m" "${opt_machine}";
+	   ;;
+      -h)  f_usage; exit 0;
+           ;;
+      -*)  printf "** Invalid option '$1'\n";
+           f_usage; exit 1;
+           ;;
+
+      *)   break ;;
+    esac
+    shift
+  done
+
+  f_get_machine "$opt_machine"
+
+}
+
+
+
+#############################################################################
+# Main
+#############################################################################
+# $n: argument n, with $0 being the command name
+# $*: all arguments from $1 to $n
+
+f_getoptions $*
+
+# Note: These regexs will only match names enclosed in double quotes
+# -- "foo.in.bar" -- such as will be found in PGM output.
+sedRE=''
+case "$opt_machine" in
+  compaq) sedRE='/\$.*\$/s/\$.*\$\(.*\)_\"/\1\"/' ;;
+  sgi)    sedRE='/\.in\./s/\.in\.[^\"]*\"/\"/'  ;;
+  *)      printf "** Internal error **"; exit 1 ;;
+esac
+
+sed -e ${sedRE}

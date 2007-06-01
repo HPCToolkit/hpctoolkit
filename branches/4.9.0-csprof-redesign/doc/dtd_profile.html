@@ -1,0 +1,187 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+
+<!--
+  HPCToolkit Documentation: Editing within Netscape/Mozilla Composer
+  is possible, but it generates strange stuff in-line.  
+  Please use an ordinary text editor.
+-->
+
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+
+  <title>HPCToolkit: PROFILE file man page</title>
+
+  <link rel='stylesheet' type='text/css' href='styleForAll.css'>
+</head>
+
+<body>
+
+<!-- ********************************************************************** -->
+
+<script language="JavaScript" src="header_hpctoolkit.js"></script>
+
+<!-- ********************************************************************** -->
+
+<!-- automatically updated by Emacs hook below; nicer than CVS Date -->
+<p class="lastupdated">Last Updated: 2004-10-30</p>
+
+<h2>File Format: PROFILE</h2>
+
+<!-- ********************************************************************** -->
+
+<h3>SYNOPSIS</h3>
+
+<div class="indent">
+
+<p>XML DTD (Document Type Definition): 
+<a href="../lib/dtd/PROFILE.dtd"><code>${HPCTOOLKIT}/lib/dtd/PROFILE.dtd</code></a>.
+
+<p>Suggested file extension: `.pxml'
+
+<p><span class="hpctool">PROFILE</span> files are platform-independent
+XML documents that describe a profile histogram by associating
+profiling metrics with program source code. A number of tools produce
+output of this format, including 
+<a href="hpc_ptran.html" class="hpctool">ptran</a> and 
+<a href="hpc_xprof.html" class="hpctool">xprof</a>.
+
+</div> <!-- class=indent -->
+
+<!-- ********************************************************************** -->
+
+<h3>DESCRIPTION</h3>
+
+<div class="indent">
+
+<p>The format of a <span class="hpctool">PROFILE</span> file should be
+fairly self-explanatory.  
+
+Metric counts (M) are embedded within a program scope tree
+(essentially identical to the file format 
+<a href="dtd_pgm.html" class="hpctool">PGM</a>).  
+The program scope tree consists of a program (PGM), load modules (LM),
+files (F), procedures (P), loops (L) and statement ranges (S).
+Multiple metrics are supported in each 
+<span class="hpctool">PROFILE</span>, and thus each 
+metric in the scope tree is identified by a short name (`shortName') 
+previously assigned in the header information.  (The METRIC elements
+of <a href="dtd_hpcview.html" class="hpctool">HPCVIEW</a> files may
+also use this short name in the `select' attribute of FILE to identify
+one of the many metrics.)  Metric values are reported as number
+of events (not samples):
+
+<blockquote>
+  (samples) * (events/sample)
+</blockquote>
+
+</div> <!-- class=indent -->
+
+<!-- ********************************************************************** -->
+
+<h3>EXAMPLES</h3>
+
+<div class="indent">
+
+<p>The examples below are snippets of 
+<a href="hpc_xprof.html" class="hpctool">xprof</a> output.
+Note that `n' attributes give names (such as file names, procedure
+names, label names), and `b' and `e' give an item's begin and end source
+code line numbers, respectively.
+
+<div class="indent">
+
+<pre>
+
+...
+&lt;PROFILE version="3.0"&gt;
+&lt;PROFILEHDR&gt;
+name                 hydro.alpha-OSF1.f77
+image                2002080915562145afda
+path                 hydro.alpha-OSF1.f77
+epoch                200209231725
+platform             limerick
+text_start           0x000120000000
+text_size            0x000000010000
+&lt;/PROFILEHDR&gt;
+&lt;PROFILEPARAMS&gt;
+&lt;TARGET name="hydro.alpha-OSF1.f77"/&gt;
+&lt;METRICS&gt;
+&lt;METRIC shortName="0" nativeName="cycles" period="126976"/&gt;
+&lt;METRIC shortName="1" nativeName="bmiss" period="8192"/&gt;
+&lt;/METRICS&gt;
+&lt;/PROFILEPARAMS&gt;
+&lt;PROFILESCOPETREE&gt;
+&lt;PGM n="hydro.alpha-OSF1.f77"&gt;
+...
+  &lt;F n="pencilvelp1.f"&gt;
+    &lt;P n="pencilbig1_"&gt;
+      &lt;S b="122" id="0"&gt;
+        &lt;M n="0" v="380928"/&gt;
+      &lt;/S&gt;
+      &lt;S b="124" id="0"&gt;
+        &lt;M n="0" v="3.80928e+06"/&gt;
+        &lt;M n="1" v="16384"/&gt;
+      &lt;/S&gt;
+      &lt;S b="126" id="0"&gt;
+        &lt;M n="0" v="9.39622e+06"/&gt;
+        &lt;M n="1" v="90112"/&gt;
+      &lt;/S&gt;
+      &lt;S b="127" id="0"&gt;
+        &lt;M n="0" v="6.98368e+06"/&gt;
+        &lt;M n="1" v="24576"/&gt;
+      &lt;/S&gt;
+      &lt;S b="128" id="0"&gt;
+        &lt;M n="0" v="8.12646e+06"/&gt;
+        &lt;M n="1" v="49152"/&gt;
+      &lt;/S&gt;
+      &lt;S b="132" id="0"&gt;
+        &lt;M n="0" v="9.39622e+06"/&gt;
+        &lt;M n="1" v="90112"/&gt;
+      &lt;/S&gt;
+      &lt;S b="133" id="0"&gt;
+        &lt;M n="0" v="5.07904e+06"/&gt;
+        &lt;M n="1" v="81920"/&gt;
+      &lt;/S&gt;
+      &lt;S b="134" id="0"&gt;
+        &lt;M n="0" v="1.00311e+07"/&gt;
+        &lt;M n="1" v="90112"/&gt;
+      &lt;/S&gt;
+      ...
+      &lt;S b="165" id="0"&gt;
+        &lt;M n="0" v="1.01581e+06"/&gt;
+      &lt;/S&gt;
+      &lt;S b="177" id="0"&gt;
+        &lt;M n="1" v="8192"/&gt;
+      &lt;/S&gt;
+      ...
+    &lt;/P&gt;
+  &lt;/F&gt;
+  ...
+&lt;/PGM&gt;
+&lt;/PROFILESCOPETREE&gt;
+&lt;/PROFILE&gt;
+
+</pre>
+
+</div> <!-- class=indent -->
+
+</div> <!-- class=indent -->
+
+<!-- ********************************************************************** -->
+
+<script language="JavaScript" src="footer_hpctoolkit.js"></script>
+
+<!-- ********************************************************************** -->
+
+</body>
+</html>
+
+
+<!-- Local Variables: -->
+<!-- eval: (add-hook 'write-file-hooks 'time-stamp) -->
+<!-- time-stamp-start: ">Last Updated: " -->
+<!-- time-stamp-format: "%:y-%02m-%02d" -->
+<!-- time-stamp-end: "<" -->
+<!-- time-stamp-line-limit: 35 -->
+<!-- End: -->

@@ -1,0 +1,306 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+
+<!--
+  HPCToolkit Documentation: Editing within Netscape/Mozilla Composer
+  is possible, but it generates strange stuff in-line.  
+  Please use an ordinary text editor.
+-->
+
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+
+  <title>HPCToolkit hpcview man page</title>
+
+  <link rel='stylesheet' type='text/css' href='styleForAll.css'>
+</head>
+
+<body>
+
+<!-- ********************************************************************** -->
+
+<script language="JavaScript" src="header_hpctoolkit.js"></script>
+
+<!-- ********************************************************************** -->
+
+<div id="main">
+
+<!-- automatically updated by Emacs hook below; nicer than CVS Date -->
+<p class="lastupdated">Last Updated: 2004-10-26</p>
+
+<h2>User Commands: hpcview(1)</h2>
+
+<!-- ********************************************************************** -->
+
+<h3>SYNOPSIS</h3>
+
+<div class="indent">
+
+<p><span class="hpctool">hpcview</span>
+   [-V] [-h <i>dir</i>] [-r] [-u] [-w n] 
+   {-x <i>file</i> [-c] [-l]}
+   {-z [-o] [-f n] [-m n] [-s n.m]}
+   <i>configFile</i>
+
+<p>Location: <code>${HPCTOOLKIT}/bin</code>
+
+</div> <!-- class=indent -->
+
+<!-- ********************************************************************** -->
+
+<h3>DESCRIPTION</h3>
+
+<div class="indent">
+
+<p><span class="hpctool">hpcview</span>, the tool at the core of the
+HPCToolkit toolkit, takes performance profiles gathered from multiple
+sources and combines them into an efficient top-down analysis. It
+takes as input a set of profiles (in the XML 
+<a href="dtd_profile.html" class="hpctool">PROFILE</a> format),
+(optionally) a file describing the hierarchical structure of the
+program (in the XML <a href="dtd_pgm.html" class="hpctool">PGM</a>
+format), and a configuration file (of type 
+<a href="dtd_hpcview.html" class="hpctool">HPCVIEW</a>).  It generates 
+an output dataset that is a browsable representation of a hierarchy of
+performance data tables and the program source code.</p>
+
+<p>The 'classic' output is a directory full of HTML and Javascript
+that provide the look and feel of an integrated performance tool under
+commodity browsers (see Notes below).  Optionally, 
+<span class="hpctool">hpcview</span> will generate equivalent, but much
+more compact, output in the form of an XML-encoding of its internal
+representation (a cross between the 
+<a href="dtd_pgm.html" class="hpctool">PGM</a> and
+<a href="dtd_profile.html" class="hpctool">PROFILE</a> formats) of the data.
+This data can be used by downstream analysis tools. In particular,
+we have developed an early version of 
+<a href="hpcviewer.html" class="hpctool">hpcviewer</a>, a stand alone
+performance data browser written in Java.</p>
+
+<p>The environment variables HPCTOOLKIT and LD_LIBRARY_PATH need to be
+set correctly.  See the notes at the bottom of this page.</p>
+
+</div> <!-- class=indent -->
+
+<!-- ********************************************************************** -->
+
+<h3>ARGUMENTS</h3>
+
+<div class="indent">
+
+<h4>GENERAL OPTIONS</h4>
+
+<dl>
+
+<dt>-h <i>dir</i>
+<dd>Specify the destination directory for all output files. The
+default is <code>./hpcview.output</code>
+
+<dt>-r
+<dd>Enable execution tracing. Use this option to debug path
+replacement if metric and program structure information is not being
+fused properly matched.
+
+<dt>-u
+<dd>Leave trailing underscores on routine names alone. 
+<span class="hpctool">hpcview</span> normally deletes any trailing
+underscore from routine names to avoid problems caused when Fortran
+compilers provide inconsistent information about routine names.
+
+<dt>-w <i>n</i>
+<dd>Specify warning level. Default warning level is 0.  1 emits
+messages when procedure synopses are created.
+
+<dt><i>configuration_file</i>
+<dd>Specify the path to a 
+<a href="dtd_hpcview.html" class="hpctool">HPCVIEW</a> configuration 
+file that specifies what performance data to read, what derived
+performance metrics to compute, and how to display them.
+Simple <a href="dtd_hpcview.html" class="hpctool">HPCVIEW</a> 
+configuration files can be constructed to display a set of
+performance metrics using the 
+<a href="hpcquick.html" class="hpctool">hpcquick</a>
+script. These can be modified by hand to provide custom functionality.
+Sample configuration files and scripts for gathering data are in the
+directory <code>${HPCTOOLKIT}/examples</code>.
+
+</dl>
+
+<h4>OPTIONS TO GENERATE HPCVIEWER INPUT</h4>
+
+<dl>
+
+<dt>-x <i>file</i>
+<dd>Write XML scope tree, with metrics, to 'file'.  The scope tree can
+be used with <a href="hpcviewer.html" class="hpctool">hpcviewer</a>.
+
+<dt>-c
+<dd>Use source files in original locations.  By default, 
+<span class="hpctool">hpcview -x</span> makes copies 
+in the output directory (<code>-h</code>) of the source files that
+have performance metrics and that can be reached by PATH and REPLACE
+statements in <i>configuration_file</i>.  The files are copied to
+appropriate `viewname' directories within the output directory.
+This produces a self-contained dataset that can viewed in contexts
+(e.g., after copying to a new system) that do not have access to the
+source in its current position in the file system.  Setting
+<code>-c</code> suppresses copying.  Please note if copying is
+suppressed, the resulting output is useful only on the original
+system.
+
+<dt>-l
+<dd>By default, the scope tree generated above contains aggregated
+metrics at all internal nodes of the scope tree. The <code>-l</code>
+option saves space by outputting metrics only at the leaves.  A
+<i>future</i> version of 
+<a href="hpcviewer.html" class="hpctool">hpcviewer</a> 
+will be able to use option, but no current software can.
+
+</dl>
+
+<h4>OPTIONS TO GENERATE STATIC HTML FOR WEB BROWSER VIEWING</h4>
+
+<dl>
+
+<dt>-z
+<dd>Generate static HTML.
+
+<dt>-o
+<dd>By default, <span class="hpctool">hpcview</span> generates all the 
+flattened views of a scope into a single file. This option instructs 
+<span class="hpctool">hpcview</span> to generate each flatten view in its
+own HTML file, which is the only HTML style supported in the older versions 
+of the tool. While the new format is more efficient because it generates 
+a much smaller number of files, we still allow the old HTML style in case 
+the generated files are too large.
+
+<dt>-f <i>n</i>
+<dd>Compute static flattenings only for the top <i>n</i> levels of the
+scope tree.
+
+<dt>-m <i>n</i>
+<dd>Limit the number of children reported in any scope to the <i>n</i>
+with the highest value according to the currently selected performance
+metric
+
+<dt>-s <i>n.m</i>
+<dd>Suppress reporting for scopes contributing less than <i>n.m</i>
+percent of the total cost.
+
+</dl>
+
+</div> <!-- class=indent -->
+
+<!-- ********************************************************************** -->
+
+<h3>EXAMPLES</h3>
+
+<div class="indent">
+
+<ol class="noindent">
+
+<li><p>To generate an HTML database in the directory
+<code>hpcview-db</code> using the configuration file
+<code>hpccfg.xml</code>, execute the command:
+
+<div class="indent">
+  <code>hpcview -h hpcview-db -z hpccfg.xml</code>
+</div>
+
+<p>The HTML index will be in <code>hpcview-db/index.html</code>.
+
+</ol>
+
+</div> <!-- class=indent -->
+
+<!-- ********************************************************************** -->
+
+<h3>NOTES</h3>
+
+<div class="indent">
+
+<p><span class="hpctool">hpcview</span> runs on the following
+platforms; the profiling and analysis architectures need not match:
+
+<ul>
+  <li>alpha-OSF1
+  <li>i686-Linux
+  <li>ia64-Linux
+  <li>mips-IRIX64
+  <li>sparc-SunOS
+</ul>
+
+<p><span class="hpctool">hpcview</span> generates databases that
+should be browsable by Internet Explorer 5.0+, Netscape 6.2+, or
+Mozilla 1.0+ compatible browsers.  (Netscape 4.x can be used, but
+because of the browser's limitations, we suggest constructing
+performance databases for only modest number of metrics (e.g. 4 or
+less) at the same time.)  With one minor exception (in order to support
+Netscape 4.x) <span class="hpctool">hpcview</span> generates valid
+HTML 4.0 Transitional/Frameset and CSS1/2 style sheets.</p>
+
+<p><span class="hpctool">hpcview</span> uses the HPCTOOLKIT
+environment variable, which should be set to the root directory of the
+HPCToolkit directory tree.  Also, LD_LIBRARY_PATH needs to
+include a path to the Xerces XML parser library.  Once 
+HPCTOOLKIT is set, you can set all other variables used 
+by HPCToolkit by sourcing either 
+<a href="../Sourceme-csh"><code>Sourceme-csh</code></a> 
+(for <code>csh</code>) or 
+<a href="../Sourceme-sh"><code>Sourceme-sh</code></a> 
+(for <code>sh</code> variants).</p>
+
+</div> <!-- class=indent -->
+
+<!-- ********************************************************************** -->
+
+<h3>FUTURE DIRECTIONS</h3>
+
+<div class="indent">
+
+<p>We plan to extend <span class="hpctool">hpcview</span>'s analysis
+capabilities to support call stack profiles.</p>
+
+</div> <!-- class=indent -->
+
+
+<!-- ********************************************************************** -->
+
+<h3>RELATED</h3>
+
+<div class="indent">
+
+<p>For some example configuration files see the directory
+<code>${HPCTOOLKIT}/examples</code>.</p>
+
+<p>The <span class="hpctool">hpcview</span> user interface provides a
+<span class="hrefPs">Help</span> link that opens a new window displaying
+an on-line <a href="../lib/html/manual.html">manual</a> that 
+describes the functionality of the user interface.</p>
+
+<p>See the file 
+<a href="../README.ReleaseNotes"><code>${HPCTOOLKIT}/README.ReleaseNotes</code></a>
+for some platform specific notes.</p>
+
+</div> <!-- class=indent -->
+
+
+<!-- ********************************************************************** -->
+
+<script language="JavaScript" src="footer_hpctoolkit.js"></script>
+
+<!-- ********************************************************************** -->
+
+</div> <!-- id=main -->
+
+</body>
+</html>
+
+
+<!-- Local Variables: -->
+<!-- eval: (add-hook 'write-file-hooks 'time-stamp) -->
+<!-- time-stamp-start: ">Last Updated: " -->
+<!-- time-stamp-format: "%:y-%02m-%02d" -->
+<!-- time-stamp-end: "<" -->
+<!-- time-stamp-line-limit: 35 -->
+<!-- End: -->
