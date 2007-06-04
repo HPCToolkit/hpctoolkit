@@ -54,6 +54,7 @@
 
 /**************************** Forward Declarations **************************/
 
+/* FIXME: this should be part of the data file */
 typedef uint32_t hpc_hist_bucket; /* a 4 byte histogram bucket */
 
 static const uint64_t default_period = 999999; /* not (2^15 - 1) */

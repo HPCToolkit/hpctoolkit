@@ -74,13 +74,16 @@ public:
   
   const char* name() const { return name_.c_str(); }
   const char* description() const { return desc_.c_str(); }
-  uint64_t period() const { return period_; }
+  uint64_t    period() const { return period_; }
+  int         bucket_size() const { return sizeof(uint32_t); }
   
   uint outofrange() const { return outofrange_; }
   uint overflow() const { return overflow_; }
   
   // 0 based indexing
   uint num_data() const { return dat_.size(); }
+
+  // <VMA, count> where VMA is a *relocated* VMA
   const ProfFileEventDatum& datum(uint i) const { return dat_[i]; }
   
   void dump(std::ostream& o = std::cerr, const char* pre = "") const;
