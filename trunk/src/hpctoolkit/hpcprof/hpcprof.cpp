@@ -23,16 +23,34 @@
 //************************* System Include Files ****************************
 
 #include <fstream>
+#include <iomanip>
 #include <string>
+using std::string;
+
+#include <algorithm>
+
+#include <vector>
+using std::vector;
 
 #include <errno.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 
+#include <cmath> // pow
+
 //*************************** User Include Files ****************************
+
+#include <include/general.h>
 
 #include "hpcprof.hpp"
 #include "summary.hpp"
+
+#include <lib/binutils/LM.hpp>
+#include <lib/binutils/Seg.hpp>
+#include <lib/binutils/Proc.hpp>
+#include <lib/binutils/Insn.hpp>
+
+#include <lib/support/diagnostics.h>
 
 //*************************** Forward Declarations **************************
 
@@ -40,8 +58,8 @@ using namespace std;
 
 //******************************** Variables ********************************
 
-static string command;
-static vector<string> proffiles;
+static string the_binary;
+static vector<string> the_proffilenms;
 static vector<qual_name> annotate; // <load module name, file name>
 
 static bool show_as_html = false;
@@ -54,6 +72,9 @@ static bool show_lines = false;
 static bool show_everything = false;
 static bool show_of_force = false;
 
+static bool show_object = false;
+
+
 static int show_thresh = 4;
 static bool show_as_percent = true;
 static string htmldir;
@@ -65,48 +86,58 @@ static int debug = 0;
 static const char* version_info =
 #include <include/HPCToolkitVersionInfo.h>
 
-  static void
-  usage(const string &argv0)
+static const char* usage_details = "\
+hpcprof correlates 'flat' execution profiles of <binary> with source code\n\
+files, procedures, lines or with object code.  It is typically used to\n\
+generate plain-text or HTML output.  <hpcrun-file> is a collection of\n\
+event-based program counter histograms obtained using hpcrun (or hpcex).\n\
+See the man page for a more detailed description of the correlation.\n\
+\n\
+Options: General\n\
+  -d <dir>, --directory <dir>\n\
+                      Search <dir> for source files.\n\
+  -D <dir>, --recursive-directory <dir>\n\
+                      Search <dir> recursively for source files.\n\
+  --force             Show data that is not accurate.\n\
+  -V, --version       Display the version number.\n\
+  -h, --help          Print this message.\n\
+  --debug <n>         Debug: use debug level <n>.\n\
+\n\
+Options: Plain-text and HTML Output\n\
+  -e, --everything    Show load-module, file, function and line correlation.\n\
+  -f, --files         Show file correlation.\n\
+  -r, --funcs         Show function correlation.\n\
+  -l, --lines         Show line correlation.\n\
+\n\
+  -o, --object        Show object code correlation (plain-text only).\n\
+                      Use the -l, --lines option to intermingle source line\n\
+                      information with object code.\n\
+\n\
+  -n, --number        Show number of samples (not percentages).\n\
+  -s <n>, --show <n>  Set threshold <n> for showing aggregate data.\n\
+  -H <dir>, --html <dir>\n\
+                      Output HTML into directory dir.\n\
+  -a <file>, --annotate <file> \n\
+                      Annotate source file <file>.\n\
+\n\
+Options: PROFILE Output\n\
+  -p, --profile       Generate PROFILE output to stdout.\n";
+
+static void
+usage(const string &argv0)
 {
-  cout 
-  << "Usage:\n"
-  << "  " << argv0 << "    [options] <binary> <hpcrun-file>...\n"
-  << "  " << argv0 << " -p [options] <binary> <hpcrun-file>...\n"
-  << endl
-  << "Options: General\n"
-  << "  -d <dir>, --directory <dir>\n"
-  << "                      Search <dir> for source files.\n"
-  << "  -D <dir>, --recursive-directory <dir>\n"
-  << "                      Search <dir> recursively for source files.\n"
-  << "  --force             Show data that is not accurate.\n"
-  << "  -V, --version       Display the version number.\n"
-  << "  -h, --help          Print this message.\n"
-  << "  --debug <n>         Debug: use debug level <n>.\n"
-  << endl
-  << "Options: Text and HTML mode {Default}\n"
-  << "  -e, --everything    Show all information.\n"
-  << "  -f, --files         Show all files.\n"
-  << "  -r, --funcs         Show all functions.\n"
-  << "  -l, --lines         Show all lines.\n"
-  // << "  --disassembly       Show disassembly.\n"
-  << "\n"
-  << "  -n, --number        Show number of samples (not percentages).\n"
-  << "  -s <n>, --show <n>  Set threshold <n> for showing aggregate data.\n"
-  << "  -H <dir>, --html <dir>\n"
-  << "                      Output HTML into directory dir.\n"
-  << "  -a <file>, --annotate <file> \n"
-  << "                      Annotate source file <file>.\n"
-  << endl
-  << "Options: PROFILE mode\n"
-  << "  -p, --profile       Dump PROFILE output (for use with HPCToolkit's hpcview).\n"
-  << endl;
+  cout << "Usage:\n"
+       << "  " << argv0 << " [options] <binary> <hpcrun-file>...\n"
+       << endl 
+       << usage_details;
 }
 
 //***************************************************************************
 
-  int
-  real_main(int argc, char* argv[]);
+int
+real_main(int argc, char* argv[]);
 
+int dump_object(ostream& os, const string& pgm, const vector<ProfFile*>& profs);
 int dump_html_or_text(Summary& sum);
 int dump_PROFILE(Summary& sum);
 
@@ -146,30 +177,14 @@ real_main(int argc, char *argv[])
   // -------------------------------------------------------
   for (int i = 1; i < argc; ++i) {
     string arg(argv[i]);
+
     if (arg == "-h" || arg == "--help") {
       usage(argv[0]);
       return 1;
     }
-    else if (arg == "-n" || arg == "--number") {
-      show_as_percent = false;
-    }
-    else if (arg == "-e" || arg == "--everything") {
-      show_everything = true;
-    }
-    else if (arg == "--force") {
-      show_of_force = true;
-    }
-    else if (arg == "-f" || arg == "--files") {
-      show_files = true;
-    }
-    else if (arg == "-r" || arg == "--funcs") {
-      show_funcs = true;
-    }
-    else if (arg == "-s" || arg == "--show") {
-      if (i<argc-1) {
-	i++;
-	show_thresh = atoi(argv[i]);
-      }
+    else if (arg == "-V" || arg == "--version") {
+      cout << argv[0] << ": " << version_info << endl;
+      return 0;
     }
     else if (arg == "--debug") {
       if (i<argc-1) {
@@ -178,6 +193,8 @@ real_main(int argc, char *argv[])
       }
       Diagnostics_SetDiagnosticFilterLevel(debug);
     }
+
+    // 
     else if (arg == "-d" || arg == "--directory") {
       if (i<argc-1) {
 	i++;
@@ -190,8 +207,36 @@ real_main(int argc, char *argv[])
 	sum.add_filesearch(FileSearch(argv[i], true));
       }
     }
+
+    //
+    else if (arg == "-e" || arg == "--everything") {
+      show_everything = true;
+    }
+    else if (arg == "--force") {
+      show_of_force = true;
+    }
+    else if (arg == "-f" || arg == "--files") {
+      show_files = true;
+    }
+    else if (arg == "-r" || arg == "--funcs") {
+      show_funcs = true;
+    }
     else if (arg == "-l" || arg == "--lines") {
       show_lines = true;
+    }
+    else if (arg == "-o" || arg == "--object") {
+      show_object = true;
+      //show_as_percent = false;
+    }
+
+    else if (arg == "-n" || arg == "--number") {
+      show_as_percent = false;
+    }
+    else if (arg == "-s" || arg == "--show") {
+      if (i<argc-1) {
+	i++;
+	show_thresh = atoi(argv[i]);
+      }
     }
     else if (arg == "-H" || arg == "--html") {
       show_as_html = true;
@@ -206,29 +251,29 @@ real_main(int argc, char *argv[])
 	annotate.push_back(qual_name_val("", argv[i])); // FIXME
       }
     }
-    else if (arg == "-V" || arg == "--version") {
-      cout << argv[0] << ": " << version_info << endl;
-      return 0;
-    }
+
+    //
     else if (arg == "-p" || arg == "--profile") {
       dump_profile = true;
-    }      
+    }
+
+    // 
     else if (arg.length() > 0 && arg.substr(0,1) == "-") {
       usage(argv[0]);
       return 1;
     }
-    else if (command.size() == 0) {
-      command = arg;
+    else if (the_binary.size() == 0) {
+      the_binary = arg;
     }
     else {
-      proffiles.push_back(arg);
+      the_proffilenms.push_back(arg);
     }
   }
-  if (command.size() == 0) {
+  if (the_binary.size() == 0) {
     usage(argv[0]);
     return 1;
   }
-  if (proffiles.size() == 0) {
+  if (the_proffilenms.size() == 0) {
     usage(argv[0]);
     return 1;
   }
@@ -238,16 +283,49 @@ real_main(int argc, char *argv[])
   // Process and dump profiling information
   // -------------------------------------------------------
 
-  sum.set_debug(debug);
-  if (!sum.init(command, proffiles)) {
+  // 1. Read all profiling data
+  if (the_proffilenms.size() == 0) {
     return 1;
   }
+  
+  vector<ProfFile*> the_profiles(the_proffilenms.size());
+  for (unsigned int i = 0; i < the_proffilenms.size(); ++i) {
+    try {
+      the_profiles[i] = new ProfFile();
+      the_profiles[i]->read(the_proffilenms[i]);
+    }
+    catch (...) {
+      DIAG_EMsg("While reading '" << the_proffilenms[i] << "'");
+      throw;
+    }
+    
+    if (debug) {
+      the_profiles[i]->dump(cout);
+    }
+  }
 
-  if (dump_profile) {
-    dump_PROFILE(sum);
-  } 
+  // 2. Dump requested info
+  if (show_object) {
+    dump_object(std::cout, the_binary, the_profiles);
+  }
   else {
-    dump_html_or_text(sum);
+    sum.set_debug(debug);
+    if (!sum.init(the_binary, the_profiles)) {
+      return 1;
+    }
+
+    if (dump_profile) {
+      dump_PROFILE(sum);
+    } 
+    else {
+      dump_html_or_text(sum);
+    }
+  }
+  
+  // 3. Cleanup profiling data
+  for (vector<ProfFile*>::iterator it = the_profiles.begin(); 
+       it != the_profiles.end(); ++it) {
+    delete (*it);
   }
   
   return 0;
@@ -258,7 +336,7 @@ real_main(int argc, char *argv[])
 //
 //***************************************************************************
 
-#define XMLAttr(attr)				\
+#define XMLAttr(attr)		\
   "=\"" << (attr) << "\""
 
 const char *PROFILEdtd =
@@ -306,7 +384,7 @@ dump_PROFILE(Summary& sum)
   os << "<PROFILEHDR></PROFILEHDR>\n";
   os << "<PROFILEPARAMS>\n";
   {
-    os << I[1] << "<TARGET name" << XMLAttr(command) << "/>\n";
+    os << I[1] << "<TARGET name" << XMLAttr(the_binary) << "/>\n";
     os << I[1] << "<METRICS>\n";
 
     for (int i = 0; i < sum.ncounter(); ++i) {
@@ -334,7 +412,7 @@ dump_PROFILE(Summary& sum)
   // --------------------------------------------------------
   
   os << "<PROFILESCOPETREE>\n";
-  os << "<PGM n" << XMLAttr(command) << ">\n";
+  os << "<PGM n" << XMLAttr(the_binary) << ">\n";
       
   const lmmap_t& lmmap = sum.lmmap();
   lmmap_t::const_iterator h;
@@ -478,7 +556,7 @@ dump_html_or_text(Summary& sum)
   if (show_as_html) {
     string filename = htmldir + "/index.html";
     htmlindex.open(filename.c_str());
-    init_html(htmlindex, "Performance Analysis", command);
+    init_html(htmlindex, "Performance Analysis", the_binary);
     htmlindex << "<ul>" << endl;
   }
   
@@ -491,7 +569,7 @@ dump_html_or_text(Summary& sum)
       add_to_index(htmlindex,"Counter Descriptions", subname);
       outfilestream.open(filename.c_str());
       buf = outs.rdbuf(outfilestream.rdbuf());
-      init_html(outs,"Counter Description", command);
+      init_html(outs,"Counter Description", the_binary);
       outs << "<pre>" << endl;
     }
     if (!show_as_html && need_newline) { 
@@ -535,7 +613,7 @@ dump_html_or_text(Summary& sum)
       add_to_index(htmlindex, "Load Module Summary", subname);
       outfilestream.open(filename.c_str());
       buf = outs.rdbuf(outfilestream.rdbuf());
-      init_html(outs, "Load Module Summary", command/*FIXME*/);
+      init_html(outs, "Load Module Summary", the_binary/*FIXME*/);
     }
     else outs << "Load Module Summary:" << endl;
     sum.summarize_loadmodules(outs);
@@ -559,7 +637,7 @@ dump_html_or_text(Summary& sum)
 	add_to_index(htmlindex, "File Summary", subname);
 	outfilestream.open(filename.c_str());
 	buf = outs.rdbuf(outfilestream.rdbuf());
-	init_html(outs, "File Summary", command);
+	init_html(outs, "File Summary", the_binary);
       }
       else outs << "File Summary:" << endl;
       sum.summarize_files(outs);
@@ -588,7 +666,7 @@ dump_html_or_text(Summary& sum)
 	add_to_index(htmlindex,"Function Summary",subname);
 	outfilestream.open(filename.c_str());
 	buf = outs.rdbuf(outfilestream.rdbuf());
-	init_html(outs,"Function Summary", command);
+	init_html(outs,"Function Summary", the_binary);
       }
       else outs << "Function Summary:" << endl;
       sum.summarize_funcs(outs);
@@ -617,7 +695,7 @@ dump_html_or_text(Summary& sum)
 	add_to_index(htmlindex,"Line Summary",subname);
 	outfilestream.open(filename.c_str());
 	buf = outs.rdbuf(outfilestream.rdbuf());
-	init_html(outs,"Line Summary", command);
+	init_html(outs,"Line Summary", the_binary);
       }
       else outs << "Line Summary:" << endl;
       sum.summarize_lines(outs);
@@ -663,7 +741,7 @@ dump_html_or_text(Summary& sum)
 	  string hfilenm = htmldir + "/" + sum.html_filename(filenm);
 	  outfilestream.open(hfilenm.c_str());
 	  buf = outs.rdbuf(outfilestream.rdbuf());
-	  init_html(outs, ("Annotation of " + filenm), command); 
+	  init_html(outs, ("Annotation of " + filenm), the_binary); 
 	  // FIXME (lm)
 
 	  add_to_index(htmlindex, filenm, sum.html_filename(filenm));
@@ -732,3 +810,336 @@ add_to_index(ostream &htmlindex, const string &linkname,
 //***************************************************************************
 // 
 //***************************************************************************
+
+class EventCursor {
+public:
+  EventCursor(const ProfFileLM& proflm, const binutils::LM& lm);
+  ~EventCursor();
+  
+  const vector<const ProfFileEvent*>& eventDescs() const { return m_eventDescs; }
+  const vector<uint64_t>& eventTots() const { return m_eventTots; }
+
+  // Assumptions:
+  //   - [beg_vma, end_vma)
+  //   - vma's are unrelocated
+  //   - over successsive calls, VMA ranges are ascending
+  // Result is stored is eventCntAtVMA()
+  const vector<uint64_t>& computeEventsCountsForVMA(VMA vma);
+  const vector<uint64_t>& eventCntAtVMA() const { return m_eventCntAtVMA; }
+  bool hasNonZeroEventCntAtVMA() const;
+
+private:
+  VMA relocate(VMA vma) const {
+    VMA ur_vma = vma;
+    if (m_doRelocate && vma > m_loadAddr) {
+      ur_vma = vma - m_loadAddr;
+    }
+    return ur_vma;
+  }
+
+
+private:
+  bool m_doRelocate;
+  VMA m_loadAddr;
+
+  vector<const ProfFileEvent*> m_eventDescs;
+  vector<uint64_t> m_eventTots;
+
+  vector<int> m_curEventIdx;
+  vector<uint64_t> m_eventCntAtVMA;
+};
+
+
+void
+dump_object_lm(ostream& os, const ProfFileLM& proflm, const binutils::LM& lm);
+
+
+int
+dump_object(ostream& os, 
+	    const string& binary, const vector<ProfFile*>& profiles)
+{
+
+  // 1. read all profiles
+  //   verify that load map is the same for each profile
+  //   verify that event list is the same for each load module
+
+  
+
+  // --------------------------------------------------------
+  // 2. For each load module, dump events and object instructions
+  // --------------------------------------------------------
+  DIAG_Assert(profiles.size() > 0, DIAG_UnexpectedInput);
+  
+  const ProfFile* prof = profiles[0];
+  for (uint i = 0; i < prof->num_load_modules(); ++i) {
+    const ProfFileLM& proflm = prof->load_module(i);
+    
+    // 1. Open and read the load module
+    binutils::LM* lm = NULL;
+    try {
+      lm = new binutils::LM();
+      lm->Open(proflm.name().c_str());
+      lm->Read();
+    } 
+    catch (...) {
+      DIAG_EMsg("Exception encountered while reading " << proflm.name());
+      throw;
+    }
+    
+    dump_object_lm(os, proflm, *lm);
+
+    delete lm;
+  }
+  return 0;
+}
+
+
+void
+dump_object_lm(ostream& os, const ProfFileLM& proflm, const binutils::LM& lm)
+{
+  EventCursor eventCursor(proflm, lm);
+
+  // --------------------------------------------------------
+  // 0. Print event list
+  // --------------------------------------------------------
+
+  os << "Load module: " << proflm.name() << endl;
+
+  const vector<const ProfFileEvent*>& eventDescs = eventCursor.eventDescs();
+  const vector<uint64_t>& eventTots = eventCursor.eventTots();
+  
+  os << endl 
+     << "Columns correspond to the following events [event:period (events/sample)]\n";
+
+  for (uint i = 0; i < eventDescs.size(); ++i) {
+    const ProfFileEvent& profevent = *(eventDescs[i]);
+    os << "  " << profevent.name() << ":" << profevent.period() 
+       << " - " << profevent.description() << endl;
+  }
+
+
+  // --------------------------------------------------------
+  // 1. Compute annotation width
+  // --------------------------------------------------------
+  int num_events = eventCursor.eventDescs().size();
+  int num_decimals = 2;
+  int eventAnnotationWidth = 0;
+  int eventAnnotationWidthTot = 0;
+  double scientificFormatThreshold = 0;
+
+  // reset flags
+  os.setf(ios_base::fmtflags(0), ios_base::floatfield);
+  os << std::right << std::noshowpos;
+
+  // Compute annotation width
+  if (show_as_percent) {
+    if (num_decimals >= 1) {
+      // xxx.(yy)% or x.xE-yy% (for small numbers)
+      eventAnnotationWidth = std::max(8, 5 + num_decimals);
+      scientificFormatThreshold = std::pow((double)10, -(double)num_decimals);
+    }
+    else {
+      // xxx%
+      eventAnnotationWidth = 4;
+    }
+    os << std::showpoint << std::scientific;
+  }
+  else {
+    // x.xE+yy (for large numbers)
+    eventAnnotationWidth = 7;
+
+    // for floating point numbers over the scientificFormatThreshold
+    // printed in scientific format.
+    scientificFormatThreshold = std::pow((double)10, (double)eventAnnotationWidth);
+    os << std::setprecision(eventAnnotationWidth - 6);
+    os << std::scientific;
+  }
+  os << showbase;
+
+  eventAnnotationWidthTot = (num_events * eventAnnotationWidth) + num_events;
+
+  // --------------------------------------------------------
+  // 2. Print annotated load module
+  // --------------------------------------------------------
+  
+  for (binutils::LMSegIterator it(lm); it.IsValid(); ++it) {
+    binutils::Seg* seg = it.Current();
+    if (seg->GetType() != binutils::Seg::Text) { continue; }
+    
+    // We have a 'TextSeg'.  Iterate over procedures.
+    os << endl 
+       << "Section: " << seg->GetName();
+
+    binutils::TextSeg* tseg = dynamic_cast<binutils::TextSeg*>(seg);
+    for (binutils::TextSegProcIterator it(*tseg); it.IsValid(); ++it) {
+      binutils::Proc* p = it.Current();
+      string bestName = GetBestFuncName(p->GetName());
+      
+      // We have a 'Procedure'.  Iterate over instructions      
+      os << endl 
+	 << p->GetName() << " (" << bestName << ")\n";
+
+      string the_file;
+      SrcFile::ln the_line = SrcFile::ln_NULL;
+
+      for (binutils::ProcInsnIterator it(*p); it.IsValid(); ++it) {
+	binutils::Insn* insn = it.Current();
+	VMA vma = insn->GetVMA();
+	VMA opVMA = binutils::LM::isa->ConvertVMAToOpVMA(vma, insn->GetOpIndex());
+
+	// 1. Collect metric annotations
+	const vector<uint64_t>& eventCntAtVMA = 
+	  eventCursor.computeEventsCountsForVMA(opVMA);
+
+	// 2. Print line information (if necessary)
+	if (show_lines) {
+	  string func, file;
+	  SrcFile::ln line;
+	  p->GetSourceFileInfo(vma, insn->GetOpIndex(), func, file, line);
+	
+	  if (file != the_file || line != the_line) {
+	    the_file = file;
+	    the_line = line;
+	    os << the_file << ":" << the_line << endl;
+	  }
+	}
+	
+	// 3. Print annotated instruction
+	os << hex << opVMA << dec << ": ";
+	
+	if (eventCursor.hasNonZeroEventCntAtVMA()) {
+	  for (uint i = 0; i < eventCntAtVMA.size(); ++i) {
+	    uint64_t eventCnt = eventCntAtVMA[i];
+	    
+	    if (show_as_percent) {
+	      double val = 0.0;
+	      if (eventTots[i] != 0) {
+		val = (double)eventCnt / (double)eventTots[i];
+	      }
+
+	      os << std::setw(eventAnnotationWidth - 1);
+	      if (val != 0.0 && val < scientificFormatThreshold) {
+		os << std::scientific 
+		   << std::setprecision(eventAnnotationWidth - 7);
+	      }
+	      else {
+		//os.unsetf(ios_base::scientific);
+		os << std::fixed
+		   << std::setprecision(num_decimals);
+	      }
+	      os << std::setfill(' ') << val << "%";
+	    }
+	    else {
+	      os << std::setw(eventAnnotationWidth);
+	      if ((double)eventCnt >= scientificFormatThreshold) {
+		os << (double)eventCnt;
+	      }
+	      else {
+		os << std::setfill(' ') << eventCnt;
+	      }
+	    }
+	    os << " ";
+	  }
+	}
+	else {
+	  os << setw(eventAnnotationWidthTot) << setfill(' ') << " ";
+	}
+
+	insn->decode(os);
+	os << endl;
+      }
+    }
+  }
+}
+
+
+EventCursor::EventCursor(const ProfFileLM& proflm, const binutils::LM& lm)
+{
+  m_doRelocate = (lm.GetType() == binutils::LM::SharedLibrary);
+  m_loadAddr = (VMA)proflm.load_addr();
+  
+  // --------------------------------------------------------
+  // Find all events for load module and compute totals for each event
+  // --------------------------------------------------------
+  for (uint i = 0; i < proflm.num_events(); ++i) {
+    const ProfFileEvent& profevent = proflm.event(i);
+    m_eventDescs.push_back(&profevent);
+  }
+
+  m_eventTots.resize(m_eventDescs.size());
+  for (uint i = 0; i < m_eventDescs.size(); ++i) {
+    const ProfFileEvent& profevent = *(m_eventDescs[i]);
+    uint64_t& eventTotal = m_eventTots[i];
+    eventTotal = 0;
+
+    for (uint j = 0; j < profevent.num_data(); ++j) {
+      const ProfFileEventDatum& evdat = profevent.datum(j);
+      uint32_t count = evdat.second;
+      eventTotal += count;
+    }
+  }
+
+  m_curEventIdx.resize(m_eventDescs.size());
+  for (uint i = 0; i < m_curEventIdx.size(); ++i) {
+    m_curEventIdx[i] = 0;
+  }
+
+  m_eventCntAtVMA.resize(m_eventDescs.size());
+}
+
+
+EventCursor::~EventCursor()
+{
+}
+
+
+const vector<uint64_t>&
+EventCursor::computeEventsCountsForVMA(VMA vma)
+{
+  // NOTE: An instruction may overlap multiple buckets.  However,
+  // because only the bucket corresponding to the beginning of the
+  // instruction is charged, we only have to consult one bucket.
+  // However, it may be the case that a bucket contains results for
+  // more than one instruction.
+
+  for (uint i = 0; i < m_eventCntAtVMA.size(); ++i) {
+    m_eventCntAtVMA[i] = 0;
+  }
+
+  // For each event, determine if a count exists at vma
+  for (uint i = 0; i < m_eventDescs.size(); ++i) {
+    const ProfFileEvent& profevent = *(m_eventDescs[i]);
+    
+    // advance curEventIdx[i] until
+    //   (bucket overlaps vma) || (bucket is beyond vma)
+    for (int& j = m_curEventIdx[i]; j < profevent.num_data(); ++j) {
+      const ProfFileEventDatum& evdat = profevent.datum(j);
+      VMA ev_vma = evdat.first;
+      VMA ev_ur_vma = relocate(ev_vma);
+      VMA ev_ur_vma_ub = ev_ur_vma + profevent.bucket_size();
+      
+      if (ev_ur_vma <= vma && vma < ev_ur_vma_ub) {
+	uint32_t count = evdat.second;
+	m_eventCntAtVMA[i] = count;
+	break;
+      }
+      else if (ev_ur_vma > vma) {
+	break;
+      }
+    }
+  }
+
+  return m_eventCntAtVMA;
+}
+
+
+bool 
+EventCursor::hasNonZeroEventCntAtVMA() const
+{
+  for (uint i = 0; i < m_eventCntAtVMA.size(); ++i) {
+    if (m_eventCntAtVMA[i] != 0) {
+      return true;
+    }
+  }
+  return false;
+}
