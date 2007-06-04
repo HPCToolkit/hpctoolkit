@@ -167,7 +167,7 @@ which has several attributes.
 %  \item \textbf{sortBy}. Sorting the data by a metric can be controlled by setting this optional attribute to `true' or `false'. The size of the database and the time needed to create the database are directly proportional to the number of sorting metrics. Very often one might want to display multiple metrics to view the performance data in parallel, but does not need to sort the database by every displayed metric. If all metrics are marked as non-sortable, the first displayed metric is used by default to sort the database.
   \end{itemize}
 
-The metric types are
+The two metric types are
   \begin{itemize}
   \item \textbf{Native or FILE metrics}.  This metric is read from a file which can be of type HPCRUN (from \Cmd{hpcrun}{1}) or PROFILE (from \Cmd{hpcprof}{1}).
 
@@ -183,19 +183,19 @@ There is one important difference in how each type is handled.  HPCRUN files are
 
   \item \textbf{Derived or COMPUTE metrics.} Derived metrics are specified by a \texttt{COMPUTE} element containing a MathML equation in terms of metrics defined earlier in the HPCVIEW document.  \Prog{hpcview} supports the following operands
   \begin{itemize}
-    \item \textbf{constants}. \verb+<cn>2</cn>+
-    \item \textbf{variables} (other metrics). \verb+<ci>m1</ci>+
+    \item \textbf{constants}: \verb+<cn>2</cn>+
+    \item \textbf{variables}: \verb+<ci>m1</ci>+ (used to refer to other metrics)
   \end{itemize}
 and the following MathML operators (used within \verb+<apply>+):
   \begin{itemize}
-    \item \textbf{negation}. \verb+<minus/>+ (1-ary)
-    \item \textbf{subtraction}. \verb+<minus/>+ (2-ary)
-    \item \textbf{addition}. \verb+<plus/>+ (n-ary)
-    \item \textbf{multiplication}. \verb+<times/>+ (n-ary)
-    \item \textbf{division}. \verb+<divide/>+ (2-ary)
-    \item \textbf{exponentiation}. \verb+<power/>+ (2-ary)
-    \item \textbf{min}. \verb+<min/>+ (n-ary)
-    \item \textbf{max}. \verb+<max/>+ (n-ary)
+    \item \textbf{negation}: \verb+<minus/>+ (1-ary)
+    \item \textbf{subtraction}: \verb+<minus/>+ (2-ary)
+    \item \textbf{addition}: \verb+<plus/>+ (n-ary)
+    \item \textbf{multiplication}: \verb+<times/>+ (n-ary)
+    \item \textbf{division}: \verb+<divide/>+ (2-ary)
+    \item \textbf{exponentiation}: \verb+<power/>+ (2-ary)
+    \item \textbf{min}: \verb+<min/>+ (n-ary)
+    \item \textbf{max}: \verb+<max/>+ (n-ary)
   \end{itemize}
 
   Assuming we have a document with two metrics \verb+PAPI_TOT_CYC+ (cycles) and \verb+PAPI_FP_INS+ (floating point operations) we could compute cycles/FLOP:

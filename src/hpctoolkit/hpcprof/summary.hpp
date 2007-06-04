@@ -63,6 +63,7 @@ class Event {
     std::string name_;
     std::string description_;
     uint64_t period_;
+
   public:
     /// Construct a Event using a papi_event_t structure.
     Event(const char* name, const char* desc, uint64_t period);
@@ -75,6 +76,8 @@ class Event {
     virtual const char *description() const;
     /// Returns the profiling sampling period
     uint64_t period() const;
+  
+    
 };
 
 /** This is a specialization of Event that represents aggregate
@@ -114,7 +117,7 @@ class CollectiveEvent: public Event {
 typedef std::map<std::string, std::vector<uint64_t> > funcmap_t;
 
 /** The linemap type maps the line number to a funcmap. */
-typedef std::map<unsigned int, funcmap_t> linemap_t;
+typedef std::map<uint, funcmap_t> linemap_t;
 
 /** The filemap type maps file names to linemaps. */
 typedef std::map<std::string, linemap_t> filemap_t;
@@ -150,7 +153,7 @@ struct lt_qual_name
 
 
 /** The location type pairs a filename with a line number. */
-typedef std::pair<std::string, unsigned int> location;
+typedef std::pair<std::string, uint> location;
 
 /** The loccount type pairs a set of locations with the a counter value
     vector.  It is used to represent aggregate counts from several
@@ -330,15 +333,7 @@ class Summary {
         @param v A vector of vmon data file names.
         @param debug The debugging level.
      */
-    Summary(const std::string& e, const std::vector<std::string>& v,
-	    int debug = 0);
     ~Summary();
-
-    /** Initialize this Summary object.
-        @param p Name of the main program binary
-        @param v A vector of prof data file names.
-     */
-    bool init(const std::string&, const std::vector<std::string>&);
 
     /** Initialize this Summary object.
         @param p Name of the main program binary

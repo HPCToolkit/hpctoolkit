@@ -240,7 +240,7 @@ get_namemap_entry(const qual_name& name, namemap &l, int ncounter)
 static void
 sum_vectors(vector<uint64_t>& v1, const vector<uint64_t>& v2)
 {
-  for (unsigned int i = 0; i < v1.size() && i < v2.size(); ++i) {
+  for (uint i = 0; i < v1.size() && i < v2.size(); ++i) {
     v1[i] += v2[i];
   }
 }
@@ -253,6 +253,7 @@ Summary::Summary(int d)
   cleanup();
 }
 
+
 Summary::Summary(const LoadModule *exec, const vector<ProfFile*>& profs, int d)
   : debug_(d)
 {
@@ -263,13 +264,6 @@ Summary::Summary(const LoadModule *exec, const vector<ProfFile*>& profs, int d)
   //FIXME init(exec, profs);
 }
 
-Summary::Summary(const string& exec, const vector<string>& prof_fnames, int d)
-  : pgm_name_(exec), debug_(d)
-{
-  ctor_init();
-  cleanup();
-  init(exec, prof_fnames);
-}
 
 void
 Summary::ctor_init()
@@ -277,45 +271,12 @@ Summary::ctor_init()
   display_percent_ = true;
 }
 
+
 Summary::~Summary()
 {
   for (vector<Event*>::iterator i = event_.begin(); i != event_.end(); ++i) {
     delete *i;
   }
-}
-
-bool
-Summary::init(const string& pgm, const vector<string>& prof_fnames)
-{
-  if (prof_fnames.size() == 0) {
-    return false;
-  }
-
-  // Read all profiling data
-  vector<ProfFile*> profs(prof_fnames.size());
-  for (unsigned int i = 0; i < prof_fnames.size(); ++i) {
-    try {
-      profs[i] = new ProfFile();
-      profs[i]->read(prof_fnames[i]);
-    }
-    catch (...) {
-      DIAG_EMsg("While reading '" << prof_fnames[i] << "'");
-      throw;
-    }
-
-    if (debug_) {
-      profs[i]->dump(cout);
-    }
-  }
-  
-  init(pgm, profs);
-  
-  for (vector<ProfFile*>::iterator it = profs.begin(); 
-       it != profs.end(); ++it) {
-    delete (*it);
-  }
-
-  return true;
 }
 
 
@@ -330,7 +291,7 @@ Summary::init(const string& pgm, const vector<ProfFile*>& profs)
   pgm_name_ = pgm; // FIXME: make sure we can find the main program (?)
   
   // 1a. Sanity check file modification times
-  for (unsigned int i = 0; i < profs.size(); ++i) {
+  for (uint i = 0; i < profs.size(); ++i) {
     const ProfFile* prof = profs[i];
 
     if (i == 0) { 
@@ -347,9 +308,9 @@ Summary::init(const string& pgm, const vector<ProfFile*>& profs)
   // collective counters as a side effect.  Note that there is one
   // counter for each event.
   n_event_ = n_collective_ = 0;  
-  unsigned int ev_i = 0; // nth event
+  uint ev_i = 0; // nth event
 
-  for (unsigned int i = 0; i < profs.size(); ++i) {
+  for (uint i = 0; i < profs.size(); ++i) {
     const ProfFile* prof = profs[i];
       
     // We inspect only the first load module of each prof file because
@@ -357,7 +318,7 @@ Summary::init(const string& pgm, const vector<ProfFile*>& profs)
     // module contains the same events.  
     const ProfFileLM& proflm = prof->load_module(0);
     n_event_ += proflm.num_events();
-    for (unsigned int k = 0; k < proflm.num_events(); ++k, ++ev_i) {
+    for (uint k = 0; k < proflm.num_events(); ++k, ++ev_i) {
       const ProfFileEvent& profevent = proflm.event(k);
       string name = stringcat(profevent.name(), profevent.period());
       event2locs_map_[name].set_offset(ev_i, profevent.name(),
@@ -400,10 +361,10 @@ Summary::init(const string& pgm, const vector<ProfFile*>& profs)
   //    load modules may be the same.  it would be nice not to open
   //    them more than once.
   ev_i = 0;
-  for (unsigned int i = 0; i < profs.size(); ++i) {
+  for (uint i = 0; i < profs.size(); ++i) {
     const ProfFile* prof = profs[i];
     const ProfFileLM& proflm1 = prof->load_module(0);
-    for (unsigned int j = 0; j < prof->num_load_modules(); ++j) {
+    for (uint j = 0; j < prof->num_load_modules(); ++j) {
       const ProfFileLM& proflm = prof->load_module(j);
       process_lm(proflm, ev_i);
     }
@@ -516,9 +477,9 @@ Summary::process_lm(const ProfFileLM& proflm, int ev_i_start)
 #endif
 
   // 2. Create event and process profile data and find symbolic information
-  unsigned int ev_i = ev_i_start; // the nth event
+  uint ev_i = ev_i_start; // the nth event
 
-  for (unsigned int l = 0; l < proflm.num_events(); ++l, ++ev_i) {
+  for (uint l = 0; l < proflm.num_events(); ++l, ++ev_i) {
 
     // Create event
     const ProfFileEvent& profevent = proflm.event(l);
@@ -530,7 +491,7 @@ Summary::process_lm(const ProfFileLM& proflm, int ev_i_start)
     overflow_[ev_i] += profevent.overflow();
 	  
     // Inspect the event data and try to find symbolic info
-    for (unsigned int m = 0; m < profevent.num_data(); ++m) {
+    for (uint m = 0; m < profevent.num_data(); ++m) {
       const ProfFileEventDatum& dat = profevent.datum(m);
       VMA pc = dat.first;
       uint32_t count = dat.second;
@@ -544,7 +505,7 @@ Summary::process_lm(const ProfFileLM& proflm, int ev_i_start)
 	  
       // Try to find symbolic info
       const char *c_funcname, *c_filename;
-      unsigned int lineno;
+      uint lineno;
 	  
       VMA pc1 = pc;
       if (lm->type() == LoadModule::DSO && pc > proflm.load_addr()) {
@@ -739,7 +700,7 @@ Summary::construct_line_namemap(namemap &l)
       linemap_t &linemap = (*i).second;
       linemap_t::iterator j;
       for (j = linemap.begin(); j != linemap.end(); ++j) {
-	unsigned int lineno = (*j).first;
+	uint lineno = (*j).first;
 	string fileline = stringcat(filename + ":", lineno);
 	qual_name qname = qual_name_val(lmname, fileline);
 
@@ -770,7 +731,7 @@ Summary::construct_func_namemap(namemap &l)
       linemap_t &linemap = (*i).second;
       linemap_t::iterator j;
       for (j = linemap.begin(); j != linemap.end(); ++j) {
-	unsigned int lineno = (*j).first;
+	uint lineno = (*j).first;
 	funcmap_t &funcmap = (*j).second;
 	funcmap_t::iterator k;
 	for (k = funcmap.begin(); k != funcmap.end(); ++k) {
@@ -788,7 +749,7 @@ Summary::construct_func_namemap(namemap &l)
 	    loci.second.insert(make_pair(filename, lineno));
 	  }
 	  else {
-	    unsigned int oldlineno;
+	    uint oldlineno;
 	    if ((*loci.second.begin()).first == filename
 		&& ((oldlineno = (*loci.second.begin()).second) 
 		    > lineno)) {
@@ -957,14 +918,14 @@ Summary::print(ostream& o) const
       const linemap_t &linemap = (*i).second;
       linemap_t::const_iterator j;
       for (j = linemap.begin(); j != linemap.end(); ++j) {
-	unsigned int lineno = (*j).first;
+	uint lineno = (*j).first;
 	const funcmap_t &funcmap = (*j).second;
 	funcmap_t::const_iterator k;
 	for (k = funcmap.begin(); k != funcmap.end(); ++k) {
 	  const string &funcname = (*k).first;
 	  const vector<uint64_t> &counts = (*k).second;
 	  o << "    " << lineno << " " << funcname << " [";
-	  for (unsigned int l = 0; l < counts.size(); ++l) {
+	  for (uint l = 0; l < counts.size(); ++l) {
 	    if (l) o << " ";
 	    o << counts[l];
 	  }
@@ -1009,8 +970,8 @@ Summary::summarize_funcs(ostream &o)
   summarize_generic(&Summary::construct_func_namemap, o);
 }
 
-typedef std::set<std::pair<unsigned int, const qual_name*>,
-                 greater<std::pair<unsigned int, const qual_name*> > > setpair;
+typedef std::set<std::pair<uint, const qual_name*>,
+                 greater<std::pair<uint, const qual_name*> > > setpair;
 
 void
 Summary::summarize_generic(void (Summary::*construct)(namemap&),
@@ -1022,8 +983,8 @@ Summary::summarize_generic(void (Summary::*construct)(namemap&),
   (this->*construct)(names);
 
   // Determine the width needed to annotate margin with counts.
-  unsigned int j;
-  unsigned int maxcount = 0;
+  uint j;
+  uint maxcount = 0;
   for (namemap::iterator i = names.begin(); i != names.end(); ++i) {
     vector<uint64_t> &counts = (*i).second.first;
     for (j = 0; j < counts.size(); ++j) {
@@ -1042,13 +1003,13 @@ Summary::summarize_generic(void (Summary::*construct)(namemap&),
   // If there are multiple event annotations, the summary can be
   // sorted according to one of them.  Collect all names into a set
   // that will sort them according to the chosen event.
-  unsigned int sorting_index = ncounter();
+  uint sorting_index = ncounter();
   setpair sortingset;
   for (namemap::iterator i = names.begin(); i != names.end(); ++i) {
     const qual_name& qname = (*i).first;
       
     vector<uint64_t> &counts = (*i).second.first;
-    unsigned int count = 0;
+    uint count = 0;
     if (sorting_index && sorting_index-1 < counts.size()) {
       count = counts[sorting_index-1];
     }
@@ -1136,7 +1097,7 @@ Summary::simple_resolve(const std::string &file) const
 {
   string resolved_file;
 
-  for (unsigned int i = 0; i < filesearches_.size(); ++i) {
+  for (uint i = 0; i < filesearches_.size(); ++i) {
     resolved_file = filesearches_[i].resolve(file);
     if (resolved_file.size()) return resolved_file;
   }
@@ -1157,7 +1118,7 @@ Summary::resolve(const std::string &file) const
   if (file_exists(file)) return file;
 
   // check if file is a mangled file name produced by KCC
-  unsigned int suffix_length = 11+1+3+1+1;
+  uint suffix_length = 11+1+3+1+1;
   if (file.size() > suffix_length) {
     if (file.substr(file.size()-6,5) == ".int.") {
       string demangled_file = file.substr(0,file.size()-suffix_length);
@@ -1194,17 +1155,17 @@ Summary::html_linkline(const std::string &text,
   // size by only listing the references to the lowest
   // number line within each file location
 
-  map<string,unsigned int> foundfiles;
+  map<string,uint> foundfiles;
   for (set<location>::const_iterator iloc = loc.begin();
        iloc != loc.end();
        ++iloc) {
     string filename, unix_filename;
-    unsigned int lineno;
+    uint lineno;
     unix_filename = (*iloc).first;
     filename = html_filename(unix_filename);
     lineno = (*iloc).second;
     if (file_found(unix_filename)) {
-      map<string,unsigned int>::iterator loc = foundfiles.find(filename);
+      map<string,uint>::iterator loc = foundfiles.find(filename);
       if (loc != foundfiles.end()) {
 	if (lineno > 0 && (*loc).second > lineno) {
 	  (*loc).second = lineno;
@@ -1235,7 +1196,7 @@ Summary::html_linkline(const std::string &text,
 
   int i=1;
   o << text << "[";
-  for (map<string, unsigned int>::iterator iloc = foundfiles.begin();
+  for (map<string, uint>::iterator iloc = foundfiles.begin();
        iloc != foundfiles.end();
        ++i) {
     o << "<a href=\""

@@ -30,7 +30,7 @@
 \rcsInfo $Id$
 \setDate{\rcsInfoLongDate}
 }{
-\setDate{ 2007/05/28}
+\setDate{ 2007/06/04}
 \message{package rcsinfo not present, discard it}
 }
 
@@ -57,16 +57,18 @@ It is based on Curtis Janssen's VProf.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Description}
 
-\Prog{hpcprof} correlates `flat' execution profiles of \Arg{binary} with source code procedures and lines and generates plain-text or HTML output.
+\Prog{hpcprof} correlates `flat' execution profiles of \Arg{binary} with source code files, procedures, lines or with object code.
+It is typically used to generate plain-text or HTML output.
 \Arg{hpcrun-file} is a collection of event-based program counter histograms obtained using \Cmd{hpcrun}{1} (or \Cmd{hpcex}{1}).
 
-\Prog{hpcprof} can generate the following information.  The term \emph{native} event refers to an event for which there is a program counter histogram.
+\Prog{hpcprof} can generate the following information.  Note that the term \emph{native} event refers to an event for which there is a program counter histogram.  
 \begin{Description}
   \item[totals] Total sample counts for each native event.  If the same native event name appears more than once, min/max/sum \emph{derived} events are computed.
-  \item[load-module-summary] For each \emph{native} event (in order), show the exclusive percentage (or number) of samples attributed to each load module in \Arg{binary}
-  \item[file-summary] For each \emph{native} event (in order), show the exclusive percentage (or number) of samples attributed to each $<$load module$>$$<$source file$>$ pair.
-  \item[function-summary] For each \emph{native} event (in order), show the exclusive percentage (or number) of samples attributed $<$load module$>$$<$function$>$ pair.
-  \item[line-summary] For each \emph{native} event (in order), show the exclusive percentage (or number) of samples attributed $<$load module$>$$<$file$>$$<$line$>$ triple.
+  \item[load-module correlation] For each \emph{native} event (in order), show the exclusive percentage (or number) of samples attributed to each load module in the \Arg{hpcrun-file}s.
+  \item[file correlation] For each \emph{native} event (in order), show the exclusive percentage (or number) of samples attributed to each $<$load module$>$$<$source file$>$ pair.
+  \item[function correlation] For each \emph{native} event (in order), show the exclusive percentage (or number) of samples attributed to each $<$load module$>$$<$function$>$ pair.
+  \item[line correlation] For each \emph{native} event (in order), show the exclusive percentage (or number) of samples attributed to each $<$load module$>$$<$file$>$$<$line$>$ triple.
+  \item[object code correlation] For each \emph{native} event (in order), show the exclusive percentage (or \emph{number}) of samples attributed to each (text segment) object code instruction from each load module.  NOTE: On ISA's with variable sized instructions, histogram buckets (4 bytes in size) may contain information for more than one instruction.  In this case multiple instructions will report counts for the \emph{same} bucket.
 \end{Description}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -92,10 +94,12 @@ Default values for an option's optional arguments are shown in \{\}.
 
 \subsection{Options: Plain-text and HTML Output}
 \begin{Description}
-  \item[\Opt{-e}, \Opt{--everything}] Show all information listed above.
-  \item[\Opt{-f}, \Opt{--files}] Show file-summary described above.
-  \item[\Opt{-r}, \Opt{--funcs}] Show function-summary described above.
-  \item[\Opt{-l}, \Opt{--lines}] Show line-summary described above.
+  \item[\Opt{-e}, \Opt{--everything}] load-module, file, function and line correlations.
+  \item[\Opt{-f}, \Opt{--files}] Show file correlation described above.
+  \item[\Opt{-r}, \Opt{--funcs}] Show function correlation described above.
+  \item[\Opt{-l}, \Opt{--lines}] Show line correlation described above.
+
+  \item[\Opt{-o}, \Opt{--object}] Show object code correlation (plain-text only).  Use the \Opt{-l}, \Opt{--lines} option to intermingle source line information with object code.
 
   \item[\Opt{-n}, \Opt{--number}] Show number of samples instead of percentage
   \item[\OptArg{-s}{n}, \OptArg{--show}{n}] Use threshold \Arg{n} for showing aggregate data
