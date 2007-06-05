@@ -95,7 +95,7 @@ GNUbu_print_addr(bfd_vma di_vma, struct disassemble_info* di)
 
   VMA x = GNUvma2vma(di_vma, data->insn_addr, data->insn_vma);
   ostream* os = (ostream*)di->stream;
-  *os << std::hex << "0x" << x << std::dec;
+  *os << std::showbase << std::hex << x << std::dec;
 }
 
 

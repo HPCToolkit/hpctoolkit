@@ -53,6 +53,7 @@
 #include <iostream>
 using std::hex;
 using std::dec;
+using std::showbase;
 
 #include <sstream>
 
@@ -77,10 +78,11 @@ binutils::Insn::dump(std::ostream& o, int flags, const char* pre) const
   string p(pre);
   VMA target = GetTargetVMA(vma);
 
-  o << p << hex << "0x" << vma << dec << ": " << GetDesc().ToString();
+  o << showbase 
+    << p << hex << vma << dec << ": " << GetDesc().ToString();
 
   if (target != 0 || GetOpIndex() != 0) { 
-    o << " <0x" << hex << target << dec << "> "; 
+    o << " <" << hex << target << dec << "> "; 
   }
   else { 
     o << " "; 

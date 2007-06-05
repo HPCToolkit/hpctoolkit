@@ -953,7 +953,7 @@ dump_object_lm(ostream& os, const ProfFileLM& proflm, const binutils::LM& lm)
     os << std::setprecision(eventAnnotationWidth - 6);
     os << std::scientific;
   }
-  os << showbase;
+  os << std::showbase;
 
   eventAnnotationWidthTot = (num_events * eventAnnotationWidth) + num_events;
 
