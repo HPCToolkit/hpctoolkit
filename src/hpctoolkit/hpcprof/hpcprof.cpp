@@ -858,12 +858,9 @@ int
 dump_object(ostream& os, 
 	    const string& binary, const vector<ProfFile*>& profiles)
 {
-
-  // 1. read all profiles
+  // FIXME
   //   verify that load map is the same for each profile
   //   verify that event list is the same for each load module
-
-  
 
   // --------------------------------------------------------
   // 2. For each load module, dump events and object instructions
@@ -903,6 +900,7 @@ dump_object_lm(ostream& os, const ProfFileLM& proflm, const binutils::LM& lm)
   // 0. Print event list
   // --------------------------------------------------------
 
+  os << std::setfill('=') << std::setw(77) << "=" << endl;
   os << "Load module: " << proflm.name() << endl;
 
   const vector<const ProfFileEvent*>& eventDescs = eventCursor.eventDescs();
@@ -914,7 +912,8 @@ dump_object_lm(ostream& os, const ProfFileLM& proflm, const binutils::LM& lm)
   for (uint i = 0; i < eventDescs.size(); ++i) {
     const ProfFileEvent& profevent = *(eventDescs[i]);
     os << "  " << profevent.name() << ":" << profevent.period() 
-       << " - " << profevent.description() << endl;
+       << " - " << profevent.description() 
+       << " (" << eventTots[i] << " samples)" << endl;
   }
 
 
@@ -1050,6 +1049,8 @@ dump_object_lm(ostream& os, const ProfFileLM& proflm, const binutils::LM& lm)
       }
     }
   }
+
+  os << endl << endl;
 }
 
 
