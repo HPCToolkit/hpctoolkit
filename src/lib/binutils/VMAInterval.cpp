@@ -129,7 +129,8 @@ VMAInterval::fromString(const char* formattedstr)
 std::ostream&
 VMAInterval::dump(std::ostream& os) const
 {
-  os << std::hex << "[0x" << mBeg << "-0x" << mEnd << ")" << std::dec;
+  os << std::showbase;
+  os << std::hex << "[" << mBeg << "-" << mEnd << ")" << std::dec;
   return os;
 }
 

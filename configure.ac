@@ -632,34 +632,33 @@ if test "$OPT_HAVE_PAPI" = "yes" ; then
     OPT_PAPI_IFLAGS="-I${OPT_PAPI}"
   fi
   
-  # Disable for now: 1) we dlopen papi; and 2) HPC_check_cxx_papi_link problem
-  #for lib in ${LIB_SEARCH_PATH} ; do
-  #  if test -r "${OPT_PAPI}/${lib}/libpapi.so"; then
-  #    if HPC_check_cxx_papi_link ${OPT_PAPI_IFLAGS} ${OPT_PAPI}/${lib} ; then
-  #      OPT_PAPI_LIB="${OPT_PAPI}/${lib}/libpapi.so"
-  #      OPT_PAPI_LDFLAGS="${OPT_PAPI}/${lib} -lpapi"
-  #      break;
-  #    fi
-  #  fi
-  #done
-
   for lib in ${LIB_SEARCH_PATH} ; do
     if test -r "${OPT_PAPI}/${lib}/libpapi.so"; then
-      OPT_PAPI_LIB="${OPT_PAPI_LIB} ${OPT_PAPI}/${lib}/libpapi.so"
+      if HPC_check_cxx_papi_link ${OPT_PAPI_IFLAGS} ${OPT_PAPI}/${lib} ; then
+        OPT_PAPI_LIB="${OPT_PAPI}/${lib}/libpapi.so"
+        OPT_PAPI_LDFLAGS="-L${OPT_PAPI}/${lib} -lpapi"
+        break;
+      fi
     fi
   done
-  OPT_PAPI_LIB=`echo ${OPT_PAPI_LIB}`
 
-fi
+  #for lib in ${LIB_SEARCH_PATH} ; do
+  #  if test -r "${OPT_PAPI}/${lib}/libpapi.so"; then
+  #    OPT_PAPI_LIB="${OPT_PAPI_LIB} ${OPT_PAPI}/${lib}/libpapi.so"
+  #  fi
+  #done
+  #OPT_PAPI_LIB=`echo ${OPT_PAPI_LIB}`
 
-if test -z "${OPT_PAPI_LIB}" ; then
-  OPT_HAVE_PAPI="no"
 fi
 
 # Check for PAPI > 3.0 [skip for now]
 
 if test "${OPT_HAVE_PAPI}" = "yes"; then 
-  AC_MSG_RESULT([yes (${OPT_PAPI_LIB})])
+  if test -n "${OPT_PAPI_LIB}" ; then
+    AC_MSG_RESULT([yes (${OPT_PAPI_LIB})])
+  else
+    AC_MSG_ERROR([cannot find usable PAPI in '${LIB_SEARCH_PATH}'])
+  fi
 else
   AC_MSG_RESULT([no])
 fi
@@ -667,7 +666,7 @@ fi
 AM_CONDITIONAL(OPT_HAVE_PAPI, test "${OPT_HAVE_PAPI}" = "yes")
 AC_SUBST(OPT_PAPI)
 AC_SUBST(OPT_PAPI_IFLAGS)
-#AC_SUBST(OPT_PAPI_LDFLAGS)
+AC_SUBST(OPT_PAPI_LDFLAGS)
 
 
 #-------------------------------------------------
