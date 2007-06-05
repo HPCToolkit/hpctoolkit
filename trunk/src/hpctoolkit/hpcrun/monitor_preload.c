@@ -629,7 +629,7 @@ monitor_init_thread_support(void)
 
 
 void* 
-monitor_init_thread(const unsigned tid)
+monitor_init_thread(unsigned tid)
 {
   if (opt_debug >= 1) {
     fprintf(stderr, "init_thread(TID=0x%lx) callback from monitor received\n", tid);
