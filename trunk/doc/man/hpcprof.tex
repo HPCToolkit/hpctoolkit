@@ -44,8 +44,9 @@
 
 \begin{Name}{1}{hpcprof}{The HPCToolkit Performance Tools}{The HPCToolkit Performance Tools}{hpcprof:\\ Simple correlation of flat profiles with source code}
 
-\Prog{hpcprof} correlates `flat' execution profiles with source code procedures and lines and generates plain-text or HTML output.
-It is based on Curtis Janssen's VProf.
+\Prog{hpcprof} correlates `flat' execution profiles with source code files, procedures, lines or with object code.
+It is typically used to generate plain-text or HTML output.
+The code is derived from Curtis Janssen's VProf.
 
 \end{Name}
 
@@ -68,7 +69,7 @@ It is typically used to generate plain-text or HTML output.
   \item[file correlation] For each \emph{native} event (in order), show the exclusive percentage (or number) of samples attributed to each $<$load module$>$$<$source file$>$ pair.
   \item[function correlation] For each \emph{native} event (in order), show the exclusive percentage (or number) of samples attributed to each $<$load module$>$$<$function$>$ pair.
   \item[line correlation] For each \emph{native} event (in order), show the exclusive percentage (or number) of samples attributed to each $<$load module$>$$<$file$>$$<$line$>$ triple.
-  \item[object code correlation] For each \emph{native} event (in order), show the exclusive percentage (or \emph{number}) of samples attributed to each (text segment) object code instruction from each load module.  NOTE: On ISA's with variable sized instructions, histogram buckets (4 bytes in size) may contain information for more than one instruction.  In this case multiple instructions will report counts for the \emph{same} bucket.
+  \item[object code correlation] For each \emph{native} event (in order), show the exclusive percentage (or number) of samples attributed to each (text segment) object code instruction from each load module.  NOTE: On ISA's with variable sized instructions, histogram buckets (4 bytes in size) may contain information for more than one instruction.  In this case, multiple instructions will report counts for the \emph{same} bucket.
 \end{Description}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -118,19 +119,22 @@ Default values for an option's optional arguments are shown in \{\}.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Examples}
 
-Assume we have collected flat profiling information using \Cmd{hpcrun}{1} \Cmd{hpcex}{1}).  Let the profile be named \File{}
+\begin{itemize}
 
-%\begin{enumerate}
-%\item 
-
- and that we wish to correlate the profile with source lines.
-We wish to recover program structure in the file \File{sweep3dsingle.psxml} for use with \Cmd{hpcquick}{1}/\Cmd{hpcview}{1}.
+\item Assume we have collected flat profiling information using \Cmd{hpcrun}{1} \Cmd{hpcex}{1}).
+Let the binary and profile be named \File{poissonSolve} and \File{poissonSolve.PAPI_L2_DCM-etc...}, respectively.
+Assume further that we wish to correlate the profile with source lines.
 To do this, execute:
 \begin{verbatim}
-    bloop sweep3dsingle > sweep3dsingle.psxml
+    hpcprof -l poissonSolve sweep3dsingle poissonSolve.PAPI_L2_DCM-etc...
 \end{verbatim}
 
-%\end{enumerate}
+\item Using the same example as above, assume we wish to correlate the profile with object code.  Execute the following command:
+\begin{verbatim}
+    hpcprof -o poissonSolve sweep3dsingle poissonSolve.PAPI_L2_DCM-etc...
+\end{verbatim}
+
+\end{itemize}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %\section{Notes}
