@@ -118,6 +118,7 @@ void
 binutils::Seg::dump(std::ostream& o, int flags, const char* pre) const
 {
   string p(pre);
+  o << std::showbase;
   o << p << "------------------- Section Dump ------------------\n";
   o << p << "  Name: `" << GetName() << "'\n";
   o << p << "  Type: `";
@@ -127,8 +128,7 @@ binutils::Seg::dump(std::ostream& o, int flags, const char* pre) const
     case Data: o << "Data'\n"; break;
     default:   DIAG_Die("Unknown segment type");
   }
-  o << p << "  VMA: [0x" << hex << GetBeg() << ", 0x"
-    << GetEnd() << dec << ")\n";
+  o << p << "  VMA: [" << hex << GetBeg() << ", " << GetEnd() << dec << ")\n";
   o << p << "  Size(b): " << GetSize() << "\n";
 }
 

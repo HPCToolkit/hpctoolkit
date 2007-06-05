@@ -752,8 +752,8 @@ binutils::LM::DumpModuleInfo(std::ostream& o, const char* pre) const
   
   o << p << "Load VMA: " << hex << firstaddr << dec << "\n";
 
-  o << p << "Text(beg,end): " << hex << GetTextBeg() << ", "
-    << GetTextEnd() << dec << "\n";
+  o << p << "Text(beg,end): " 
+    << hex << GetTextBeg() << ", " << GetTextEnd() << dec << "\n";
   
   o << p << "Endianness: `"
     << ( (bfd_big_endian(abfd)) ? "Big'\n" : "Little'\n" );
