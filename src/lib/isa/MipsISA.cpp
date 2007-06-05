@@ -79,6 +79,8 @@ using std::ostream;
 static VMA 
 GNUvma2vma(bfd_vma di_vma, MachInsn* insn_addr, VMA insn_vma)
 { 
+  // N.B.: The GNU decoders assume that the address of 'insn_addr' is
+  // the actual the VMA in order to calculate VMA-relative targets.
   VMA x = (di_vma - PTR_TO_BFDVMA(insn_addr)) + insn_vma;
   return x;
 }
