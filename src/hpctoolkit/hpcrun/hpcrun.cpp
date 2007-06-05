@@ -522,10 +522,10 @@ prepare_ld_lib_path_for_papi()
 static void 
 print_external_lib_paths()
 {
-  DIAG_Msg(0, "Using PAPI installed at '"HPC_PAPI"'");
+  DIAG_Msg(0, "Using PAPI installation: '"HPC_PAPI"'");
   const char* MON = HPC_MONITOR;
   if (MON[0] == '/') {
-    DIAG_Msg(0, " Using MONITOR installed at '"HPC_MONITOR"'\n");
+    DIAG_Msg(0, "Using MONITOR installation: '"HPC_MONITOR"'\n");
   }
 }
 
