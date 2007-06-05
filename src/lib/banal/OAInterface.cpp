@@ -58,6 +58,7 @@ using std::cout;
 using std::endl;
 using std::hex;
 using std::dec;
+using std::showbase;
 
 #include <string>
 using std::string;
@@ -217,17 +218,17 @@ banal::OAInterface::dump(OA::StmtHandle stmt, std::ostream& os)
   ISA::InsnDesc d = insn->GetDesc();
 
   // Output pc and descriptor
-  cout << hex << "0x" << pc << dec << ": " << d.ToString();
+  os << showbase << hex << pc << dec << ": " << d.ToString();
   
   // Output other qualifiers
   if (branchTargetSet.find(pc) != branchTargetSet.end()) {
-    cout << " [branch target]";
+    os << " [branch target]";
   }
   if (d.IsBrRel()) {
     VMA targ = insn->GetTargetVMA(pc);
-    os << " <" << hex << "0x" << targ << dec << ">";
+    os << " <" << hex << targ << dec << ">";
     if (proc->IsIn(targ) == false) {
-      cout << " [out of procedure -- treated as SIMPLE]";
+      os << " [out of procedure -- treated as SIMPLE]";
     }
   } 
   else if (d.IsBrInd()) {

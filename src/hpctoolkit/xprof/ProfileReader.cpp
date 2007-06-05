@@ -199,7 +199,9 @@ ProfileReader::ReadProfileFile_DCPICat(std::istream& is)
   // ------------------------------------------------------------
   // Read header
   // ------------------------------------------------------------  
-  
+
+  hdr << std::showbase;  
+
   // 'name' - name of profiled binary
   str = IOUtil::GetLine(is); hdr << str << "\n";
   profiledFile = GetSecondSubstring(str);  // value of 'name'
@@ -232,13 +234,13 @@ ProfileReader::ReadProfileFile_DCPICat(std::istream& is)
   str = IOUtil::Get(is, '0'); hdr << str;  // read until 0x
   IOUtil::Skip(is, "0x");                  // eat up '0x' prefix
   is >> hex >> txtStart >> dec >> std::ws; // value of 'text_start'
-  hdr << "0x" << hex << txtStart << dec << "\n";
+  hdr << hex << txtStart << dec << "\n";
   
   // 'text_size' - byte-size of the text section (hex) 
   str = IOUtil::Get(is, '0'); hdr << str; // read until 0x
   IOUtil::Skip(is, "0x");                 // eat up '0x' prefix
   is >> hex >> txtSz >> dec >> std::ws;   // value of 'text_size'
-  hdr << "0x" << hex << txtSz << dec << "\n";
+  hdr << hex << txtSz << dec << "\n";
   
   if (is.eof() || is.fail()) { return NULL; /* error */ }
   

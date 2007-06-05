@@ -53,6 +53,7 @@
 #include <iostream>
 using std::hex;
 using std::dec;
+using std::showbase;
 using std::endl;
 
 #include <string>
@@ -160,7 +161,8 @@ binutils::Proc::dump(std::ostream& os, int flags, const char* pre) const
     default:      os << "-unknown-'\n"; 
       DIAG_Die("Unknown Procedure type: " << type());
   }
-  os << p << "  VMA: [0x" << hex << GetBegVMA() << ", 0x"
+  os << showbase
+     << p << "  VMA: [" << hex << GetBegVMA() << ", " 
      << GetEndVMA() << dec << "]\n";
   os << p << "  Size(b): " << GetSize() << "\n";
   
@@ -171,7 +173,7 @@ binutils::Proc::dump(std::ostream& os, int flags, const char* pre) const
       Insn* insn = it.Current();
 
       if (flags & LM::DUMP_Flg_Insn_decode) {
-	os << p2 << hex << "0x" << insn->GetVMA() << dec << ": ";
+	os << p2 << hex << insn->GetVMA() << dec << ": ";
 	insn->decode(os);
 	os << endl;
       }

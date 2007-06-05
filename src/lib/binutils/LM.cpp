@@ -524,6 +524,7 @@ binutils::LM::dump(std::ostream& o, int flags, const char* pre) const
   o << "-unknown-" << endl;
 #endif
   
+  o << std::showbase;
   o << p1 << "Load Module Information:\n";
   DumpModuleInfo(o, p2.c_str());
 
@@ -749,9 +750,9 @@ binutils::LM::DumpModuleInfo(std::ostream& o, const char* pre) const
       DIAG_Die("Invalid load module type: " << GetType());
   }
   
-  o << p << "Load VMA: " << hex << "0x" << firstaddr << dec << "\n";
+  o << p << "Load VMA: " << hex << firstaddr << dec << "\n";
 
-  o << p << "Text(beg,end): 0x" << hex << GetTextBeg() << ", 0x"
+  o << p << "Text(beg,end): " << hex << GetTextBeg() << ", "
     << GetTextEnd() << dec << "\n";
   
   o << p << "Endianness: `"
@@ -837,7 +838,7 @@ binutils::LM::DumpSymTab(std::ostream& o, const char* pre) const
   // itself.  I haven't noticed this on any other platform.
   for (int i = 0; i < impl->numSyms; i++) {
     asymbol *sym = impl->sortedSymbolTable[i]; // impl->bfdSymbolTable[i];
-    o << p1 << hex << "0x" << (bfd_vma)bfd_asymbol_value(sym) << ": " << dec
+    o << p1 << hex << (bfd_vma)bfd_asymbol_value(sym) << ": " << dec
       << "[" << sym->section->name << "] "
       << ((sym->flags & BSF_FUNCTION) ? " * " : "   ")
       << bfd_asymbol_name(sym) << endl;
@@ -882,7 +883,7 @@ binutils::Exe::dump(std::ostream& o, int flags, const char* pre) const
 void
 binutils::Exe::dumpme(std::ostream& o, const char* pre) const
 {
-  o << pre << "Program start address: 0x" << hex << GetStartVMA()
+  o << pre << "Program start address: " << hex << GetStartVMA()
     << dec << endl;
 }
 
