@@ -148,7 +148,7 @@ csprof_context_is_unsafe(void *context)
   /* memcpy plays games with the stack and doesn't tell anybody */
   {
     int verdict = ((csproflib_begin_address <= ip) && (ip < csproflib_end_address))
-      || ((memcpy_begin_address <= ip) && (ip < memcpy_end_address))
+      /*      || ((memcpy_begin_address <= ip) && (ip < memcpy_end_address)) */
       || ((plt_begin_address <= ip) && (ip < plt_end_address));
 
     MSG(1,"ip = %lx\n"
