@@ -45,6 +45,8 @@ using std::string;
 
 //************************* User Include Files *******************************
 
+#include <include/general.h>
+
 #include "PerfMetric.hpp"
 #include "PgmScopeTree.hpp"
 
@@ -53,6 +55,8 @@ using std::string;
 #include <lib/support/StrUtil.hpp>
 
 //************************ Forward Declarations ******************************
+
+#define DBG_ME 0
 
 //****************************************************************************
 
@@ -90,19 +94,19 @@ PerfMetric::Ctor(const char *nm, const char* displayNm)
 
   DIAG_Assert((displayNm != NULL) && (strlen(displayNm) > 0), ""); 
   dispInfo = new DataDisplayInfo(displayNm, NULL, 9, false); 
-
-  IFTRACE << "PerfMetric: " << ToString() << endl; 
+  
+  DIAG_DevMsgIf(DBG_ME, "PerfMetric: Ctor" << ToString());
 }
 
 
 PerfMetric::~PerfMetric() 
 {
-  IFTRACE << "~PerfMetric: " << ToString() << endl; 
+  DIAG_DevMsgIf(DBG_ME, "PerfMetric: ~PerfMetric: " << ToString());
   delete dispInfo; 
 }
 
 
-unsigned int
+uint
 PerfMetric::EventsPerCount()  const 
 {
   DIAG_Assert(eventsPerCount > 0, ""); 
@@ -132,10 +136,10 @@ bool
 IsPerfDataIndex(int i) 
 {
   return ((i >= 0) &&
-	  ((unsigned int)i < PerfMetric::PerfMetricTable.GetNumElements())); 
+	  ((uint)i < PerfMetric::PerfMetricTable.GetNumElements())); 
 }
 
-unsigned int      
+uint      
 NumberOfPerfDataInfos()
 {
    return PerfMetric::PerfMetricTable.GetNumElements(); 
@@ -155,7 +159,7 @@ IndexToPerfDataInfo(int i)
 int       
 NameToPerfDataIndex(const char* name)
 {
-  for (unsigned int i = 0; 
+  for (uint i = 0; 
        i < PerfMetric::PerfMetricTable.GetNumElements(); i++) {
     PerfMetric* pds = PerfMetric::PerfMetricTable[i];
     DIAG_Assert(pds, ""); 
@@ -169,13 +173,11 @@ NameToPerfDataIndex(const char* name)
 void 
 ClearPerfDataSrcTable() 
 {
-  IFTRACE << "ClearPerfDataSrcTable" << endl; 
-  for (unsigned int i =0; 
-       i < PerfMetric::PerfMetricTable.GetNumElements(); i++) {
+  DIAG_DevMsgIf(DBG_ME, "PerfMetric: ClearPerfDataSrcTable");
+  for (uint i = 0; i < PerfMetric::PerfMetricTable.GetNumElements(); i++) {
     delete PerfMetric::PerfMetricTable[i]; 
   }
   PerfMetric::PerfMetricTable.SetNumElements(0); 
-  IFTRACE << "ClearPerfDataSrcTable done" << endl; 
 }
 
 
@@ -185,7 +187,7 @@ ClearPerfDataSrcTable()
 
 DataDisplayInfo::~DataDisplayInfo() 
 {
-   IFTRACE << "~DataDisplayInfo " << ToString() << endl; 
+  DIAG_DevMsgIf(DBG_ME, "PerfMetric: ~DataDisplayInfo " << ToString());
 }
 
 // ************************************************************************** //

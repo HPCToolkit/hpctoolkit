@@ -333,8 +333,8 @@ Driver::ScopeTreeInsertHPCRUNData(PgmScopeTree& scopes,
 	// 2. Find associated scope and insert into scope tree
 	ScopeInfo* scope = lmScope->findByVMA(ur_vma);
 	if (!scope) {
-	  DIAG_DevMsg(3, "Can't find non-LM scope for " << lmname << ":0x" 
-		      << hex << ur_vma << dec);
+	  DIAG_Msg(3, "Can't find non-LM scope for " << lmname << ":0x" 
+		   << hex << ur_vma << dec);
 	  scope = lmScope;
 	}
 	
@@ -351,8 +351,8 @@ Driver::ScopeTreeInsertHPCRUNData(PgmScopeTree& scopes,
   }
   
 
-  DIAG_If(4) {
-    DIAG_Msg(4, "Initial scope tree, before aggregation:");
+  DIAG_If(3) {
+    DIAG_Msg(3, "Initial scope tree, before aggregation:");
     XML_Dump(pgm, 0, std::cerr);
   }
   

@@ -79,6 +79,8 @@ using XERCES_CPP_NAMESPACE::DOMNamedNodeMap;
 
 //************************ Forward Declarations ******************************
 
+#define DBG_ME 0
+
 //****************************************************************************
 
 
@@ -114,7 +116,7 @@ PrintName(DOMNode *node)
 HPCViewDocParser::HPCViewDocParser(const string& inputFile, 
 				   XercesErrorHandler& errHndlr)
 {
-  IFTRACE << "Parsing configuration file: " << inputFile << endl; 
+  DIAG_DevMsgIf(DBG_ME, "HPCVIEW: " << inputFile);
 
   mParser = new XercesDOMParser;
   mParser->setValidationScheme(XercesDOMParser::Val_Auto);
@@ -125,7 +127,7 @@ HPCViewDocParser::HPCViewDocParser(const string& inputFile,
   }
   
   mDoc = mParser->getDocument();
-  IFTRACE << "document: " << mDoc << endl;
+  DIAG_DevMsgIf(DBG_ME, "HPCVIEW: "<< "document: " << mDoc);
 }
 
 
@@ -165,7 +167,7 @@ ProcessDOCUMENT(DOMNode *node, Driver &driver, bool onlyMetrics)
 static void 
 ProcessHPCVIEW(DOMNode *node, Driver &driver, bool onlyMetrics)
 {
-  IFTRACE << "HPCVIEW:" << endl << node << endl; 
+  DIAG_DevMsgIf(DBG_ME, "HPCVIEW: " << node);
 
   if ((node == NULL) ||
       (node->getNodeType() != DOMNode::DOCUMENT_TYPE_NODE) ){ 
@@ -173,7 +175,7 @@ ProcessHPCVIEW(DOMNode *node, Driver &driver, bool onlyMetrics)
   };
   
   node = node->getNextSibling();
-  IFTRACE << "HPCVIEW:" << endl << node << endl; 
+  DIAG_DevMsgIf(DBG_ME, "HPCVIEW: " << node);
 
   if ( (node == NULL)
        || (node->getNodeType() != DOMNode::ELEMENT_NODE)) {
@@ -220,7 +222,7 @@ ProcessELEMENT(DOMNode *node, Driver &driver, bool onlyMetrics)
     if (!onlyMetrics) {
       string path = getAttr(node, NAMEATTR);
       string viewname = getAttr(node, VIEWNAMEATTR);
-      IFTRACE << "PATH: " << path << ", v=" << viewname << endl; 
+      DIAG_DevMsgIf(DBG_ME, "HPCVIEW: " << "PATH: " << path << ", v=" << viewname);
       
       if (path.empty()) {
 	HPCViewDoc_Throw("PATH name attribute cannot be empty.");
@@ -236,7 +238,7 @@ ProcessELEMENT(DOMNode *node, Driver &driver, bool onlyMetrics)
     if (!onlyMetrics) {
       string inPath = getAttr(node, INATTR); 
       string outPath = getAttr(node, OUTATTR); 
-      IFTRACE << "REPLACE: " << inPath << " -to- " << outPath << endl;
+      DIAG_DevMsgIf(DBG_ME, "HPCVIEW: " << "REPLACE: " << inPath << " -to- " << outPath);
       
       bool addPath = true;
       if (inPath == outPath) {
@@ -260,14 +262,14 @@ ProcessELEMENT(DOMNode *node, Driver &driver, bool onlyMetrics)
   else if (XMLString::equals(nodeName,TITLE)) {
     if (!onlyMetrics) {
       string title = getAttr(node, NAMEATTR); 
-      IFTRACE << "TITLE: " << title << endl; 
+      DIAG_DevMsgIf(DBG_ME, "HPCVIEW: " << "TITLE: " << title);
       driver.SetTitle(title);
     }
   }
   else if (XMLString::equals(nodeName,STRUCTURE)) {
     if (!onlyMetrics) {
       string fnm = getAttr(node, NAMEATTR); // file name
-      IFTRACE << "STRUCTURE file: " << fnm << endl; 
+      DIAG_DevMsgIf(DBG_ME, "HPCVIEW: " << "STRUCTURE file: " << fnm);
       
       if (fnm.empty()) {
 	HPCViewDoc_Throw("STRUCTURE file name is empty.");
@@ -280,7 +282,7 @@ ProcessELEMENT(DOMNode *node, Driver &driver, bool onlyMetrics)
   else if (XMLString::equals(nodeName,GROUP)) {
     if (!onlyMetrics) {
       string fnm = getAttr(node, NAMEATTR); // file name
-      IFTRACE << "GROUP file: " << fnm << endl; 
+      DIAG_DevMsgIf(DBG_ME, "HPCVIEW: " << "GROUP file: " << fnm);
       
       if (fnm.empty()) {
 	HPCViewDoc_Throw("GROUP file name is empty.");
@@ -326,13 +328,12 @@ ProcessMETRIC(DOMNode *node, Driver &driver)
     HPCViewDoc_Throw("METRIC: Invalid displayName: '" << metricDisplayName << "'.");
   }
     
-  IFTRACE << "METRIC: name=" << metricName << " " 
-	  << "display=" <<  ((metricDoDisplay) ? "true" : "false") << " " 
-	  << "doPercent=" <<  ((metricDoPercent) ? "true" : "false") << " " 
-	  << "sortBy=" <<  ((metricDoSortBy) ? "true" : "false") << " " 
-	  << "metricDisplayName=" << metricDisplayName << " " 
-	  << endl;
-  
+  DIAG_DevMsgIf(DBG_ME, "HPCVIEW: " << "METRIC: name=" << metricName
+		<< " display=" <<  ((metricDoDisplay) ? "true" : "false")
+		<< " doPercent=" <<  ((metricDoPercent) ? "true" : "false")
+		<< " sortBy=" <<  ((metricDoSortBy) ? "true" : "false")
+		<< " metricDisplayName=" << metricDisplayName);
+		
   // should have exactly one child
   DOMNode *metricImpl = node->getFirstChild();
 
@@ -423,7 +424,7 @@ getAttr(DOMNode *node, const XMLCh *attrName)
 {
   DOMNamedNodeMap  *attributes = node->getAttributes();
   DOMNode *attrNode = attributes->getNamedItem(attrName);
-  IFTRACE << "getAttr(): attrNode" << attrNode << endl;
+  DIAG_DevMsgIf(DBG_ME, "HPCVIEW: " << "getAttr(): attrNode" << attrNode);
   if (attrNode == NULL) {
     return "";
   } 

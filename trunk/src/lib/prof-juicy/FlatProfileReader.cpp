@@ -176,7 +176,7 @@ ProfFileLM::read(FILE *fp)
     FLATPROF_Throw("Error reading <loadmodule_loadoffset>.");
   }
 
-  DIAG_Msg(2, "Reading: " << name_ << " loaded at 0x" 
+  DIAG_Msg(5, "Reading: " << name_ << " loaded at 0x" 
 	   << hex << load_addr_ << dec);
   
   // <loadmodule_eventcount>
@@ -254,7 +254,7 @@ ProfFileEvent::read(FILE *fp, uint64_t load_addr)
   }
   dat_.resize(ndat);
 
-  DIAG_Msg(3, "  Event: " << name_ << ": " << ndat << " entries (cnt,offset)");
+  DIAG_Msg(6, "  Event: " << name_ << ": " << ndat << " entries (cnt,offset)");
 
   // <histogram_non_zero_bucket_x_value> 
   // <histogram_non_zero_bucket_x_offset>
@@ -270,7 +270,7 @@ ProfFileEvent::read(FILE *fp, uint64_t load_addr)
     if (sz != sizeof(offset)) { 
       FLATPROF_Throw("Error reading <histogram_non_zero_bucket_x_offset>.");
     }
-    DIAG_Msg(4, "    " << i << ": (" << count << ", " << offset << ")");
+    DIAG_Msg(7, "    " << i << ": (" << count << ", " << offset << ")");
     
     VMA pc = load_addr + offset;
     dat_[i] = make_pair(pc, count);

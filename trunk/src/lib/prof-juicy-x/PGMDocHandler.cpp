@@ -82,6 +82,8 @@ using SrcFile::ln_NULL;
 
 //************************ Forward Declarations ******************************
 
+#define DBG_ME 0
+
 //****************************************************************************
 
 // General parsing notes:
@@ -277,10 +279,10 @@ void PGMDocHandler:: startElement(const XMLCh* const uri,
 	+ ": This format is outdated; please regenerate the file."; 
       throw PGMException(error);
     }
-    
-    IFTRACE << "PGM: ver=" << ver << endl;
 
     PgmScope* root = m_nodeRetriever->GetRoot();
+    DIAG_DevMsgIf(DBG_ME, "PGM Handler: " << root->toString_me());
+
     currentScope = root;
   }
   
@@ -290,10 +292,11 @@ void PGMDocHandler:: startElement(const XMLCh* const uri,
     lm = m_args.ReplacePath(lm);
     DIAG_Assert(currentLmName.empty(), "Parse or internal error!");
     currentLmName = lm;
-    IFTRACE << "LM (load module): name= " << currentLmName << endl;
     
     LoadModScope* lmscope = m_nodeRetriever->MoveToLoadMod(currentLmName);
     DIAG_Assert(lmscope != NULL, "");
+    DIAG_DevMsgIf(DBG_ME, "PGM Handler: " << lmscope->toString_me());
+    
     currentScope = lmscope;
   }
   
@@ -301,8 +304,7 @@ void PGMDocHandler:: startElement(const XMLCh* const uri,
   else if (XMLString::equals(name, elemFile)) {
     string srcFile = getAttr(attributes, attrName);
     srcFile = m_args.ReplacePath(srcFile);
-    IFTRACE << "F(ile): name=" << srcFile << endl;
-    
+
     // if the source file name is the same as the previous one, error.
     // otherwise find another one; it should not be the same as the
     // previous one
@@ -311,6 +313,8 @@ void PGMDocHandler:: startElement(const XMLCh* const uri,
     currentFileName = srcFile;
     FileScope* fileScope = m_nodeRetriever->MoveToFile(currentFileName);
     DIAG_Assert(fileScope != NULL, "");
+    DIAG_DevMsgIf(DBG_ME, "PGM Handler: " << fileScope->toString_me());
+    
     currentScope = fileScope;
   }
 
@@ -328,14 +332,12 @@ void PGMDocHandler:: startElement(const XMLCh* const uri,
 	lname[lname.length()-1] = '\0';
       }
     }
-    IFTRACE << "P(roc): name="  << name << " lname=" << lname << endl;
     
     SrcFile::ln lnB = ln_NULL, lnE = ln_NULL;
     string lineB = getAttr(attributes, attrBegin);
     string lineE = getAttr(attributes, attrEnd);
     if (!lineB.empty()) { lnB = (SrcFile::ln)StrUtil::toLong(lineB); }
     if (!lineE.empty()) { lnE = (SrcFile::ln)StrUtil::toLong(lineE); }
-    IFTRACE << " b="  << lnB << " e=" << lnE << endl;
     
     string vma = getAttr(attributes, attrVMA);
     
@@ -371,6 +373,7 @@ void PGMDocHandler:: startElement(const XMLCh* const uri,
 	DIAG_Msg(0, "Warning: Found procedure '" << name << "' multiple times within file '" << curFile->name() << "'; information for this procedure will be aggregated. If you do not want this, edit the STRUCTURE file and adjust the names by hand.");
       }
     }
+    DIAG_DevMsgIf(DBG_ME, "PGM Handler: " << currentFuncScope->toString_me());
     
     currentScope = currentFuncScope;
   }
@@ -389,12 +392,12 @@ void PGMDocHandler:: startElement(const XMLCh* const uri,
     if (!lineB.empty()) { begLn = (SrcFile::ln)StrUtil::toLong(lineB); }
     if (!lineE.empty()) { endLn = (SrcFile::ln)StrUtil::toLong(lineE); }
 
-    IFTRACE << "A(lien): name= " << nm << endl;
-
     CodeInfo* enclScope = 
       dynamic_cast<CodeInfo*>(GetCurrentScope()); // enclosing scope
 
     CodeInfo* alien = new AlienScope(enclScope, fnm, nm, begLn, endLn);
+    DIAG_DevMsgIf(DBG_ME, "PGM Handler: " << alien->toString_me());
+
     currentScope = alien;
   }
 
@@ -412,13 +415,13 @@ void PGMDocHandler:: startElement(const XMLCh* const uri,
     if (!lineB.empty()) { lnB = (SrcFile::ln)StrUtil::toLong(lineB); }
     if (!lineE.empty()) { lnE = (SrcFile::ln)StrUtil::toLong(lineE); }
 
-    IFTRACE << "L(oop): numberB=" << lineB << " numberE=" << lineE << endl;
-    
     // by now the file and function names should have been found
     CodeInfo* enclScope = 
       dynamic_cast<CodeInfo*>(GetCurrentScope()); // enclosing scope
 
     CodeInfo* loopNode = new LoopScope(enclScope, lnB, lnE);
+    DIAG_DevMsgIf(DBG_ME, "PGM Handler: " << loopNode->toString_me());
+
     currentScope = loopNode;
   }
   
@@ -439,11 +442,9 @@ void PGMDocHandler:: startElement(const XMLCh* const uri,
     // Check that lnB and lnE are valid line numbers:
     //   if lineE is undefined, set it to lineB
     if (lnE == ln_NULL) { lnE = lnB; }
-    IFTRACE << "S(tmt): numberB=" << lineB << " numberE=" << lineE << endl;
 
     // for now insist that lnB and lnE are equal
-    DIAG_Assert(lnB == lnE, "S beg/end lines not equal: b=" << lnB 
-		<< " e=" << lnE);
+    DIAG_Assert(lnB == lnE, "S beg/end lines not equal: b=" << lnB << " e=" << lnE);
     
     string vma = getAttr(attributes, attrVMA);
 
@@ -453,10 +454,11 @@ void PGMDocHandler:: startElement(const XMLCh* const uri,
     DIAG_Assert(currentFuncScope != NULL, "");
 
     StmtRangeScope* stmtNode = new StmtRangeScope(enclScope, lnB, lnE);
-
     if (!vma.empty()) {
       stmtNode->vmaSet().fromString(vma.c_str());
     }
+    DIAG_DevMsgIf(DBG_ME, "PGM Handler: " << stmtNode->toString_me());
+
     currentScope = stmtNode;
   }
   
@@ -464,11 +466,12 @@ void PGMDocHandler:: startElement(const XMLCh* const uri,
   else if (XMLString::equals(name, elemGroup)) {
     string grpnm = getAttr(attributes, attrName); // must exist
     DIAG_Assert(!grpnm.empty(), "");
-    IFTRACE << "G(roup): name= " << grpnm << endl;
 
     ScopeInfo* enclScope = GetCurrentScope(); // enclosing scope
     GroupScope* grpscope = m_nodeRetriever->MoveToGroup(enclScope, grpnm);
     DIAG_Assert(grpscope != NULL, "");
+    DIAG_DevMsgIf(DBG_ME, "PGM Handler: " << grpscope->toString_me());
+
     groupNestingLvl++;
     currentScope = grpscope;
   }

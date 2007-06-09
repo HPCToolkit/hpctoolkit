@@ -151,7 +151,7 @@ realmain(int argc, char* const* argv)
   // 1. Read configuration file
   //-------------------------------------------------------
   const string& cfgFile = args.configurationFile;
-  DIAG_Msg(3, "Initializing Driver from " << cfgFile); 
+  DIAG_Msg(2, "Initializing Driver from " << cfgFile); 
   
   string tmpFile;
   try {
@@ -186,23 +186,23 @@ realmain(int argc, char* const* argv)
   };
 
   unlink(tmpFile.c_str());
-  DIAG_Msg(3, "Driver is now: " << driver.ToString());
+  DIAG_Msg(2, "Driver is now: " << driver.ToString());
   
   
   //-------------------------------------------------------
   // 2. Initialize scope tree
   //-------------------------------------------------------
-  DIAG_Msg(3, "Initializing scope tree...");
+  DIAG_Msg(2, "Initializing scope tree...");
   driver.ScopeTreeInitialize(scopeTree); 
 
   //-------------------------------------------------------
   // 3. Correlate program source with metrics
   //-------------------------------------------------------
-  DIAG_Msg(3, "Creating and correlating metrics with program structure: ...");
+  DIAG_Msg(2, "Creating and correlating metrics with program structure: ...");
   driver.ScopeTreeComputeMetrics(scopeTree);
 
-  DIAG_If(4) {
-    DIAG_Msg(4, "Initial scope tree:");
+  DIAG_If(3) {
+    DIAG_Msg(3, "Initial scope tree:");
     int flg = (args.XML_DumpAllMetrics) ? 0 : PgmScopeTree::DUMP_LEAF_METRICS;
     driver.XML_Dump(scopeTree.GetRoot(), flg, std::cerr);
   }
@@ -220,8 +220,8 @@ realmain(int argc, char* const* argv)
 
   FiniXerces();
 
-  DIAG_If(4) {
-    DIAG_Msg(4, "Final scope tree:");
+  DIAG_If(3) {
+    DIAG_Msg(3, "Final scope tree:");
     int flg = (args.XML_DumpAllMetrics) ? 0 : PgmScopeTree::DUMP_LEAF_METRICS;
     driver.XML_Dump(scopeTree.GetRoot(), flg, std::cerr);
   }
