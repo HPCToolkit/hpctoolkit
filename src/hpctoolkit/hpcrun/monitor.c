@@ -1435,6 +1435,10 @@ fini_papi_for_thread(hpcpapi_profile_desc_vec_t* profdescs)
   PAPI_cleanup_eventset(profdescs->eset);
   PAPI_destroy_eventset(&profdescs->eset);
   profdescs->eset = PAPI_NULL;
+
+  /* Call PAPI_stop, PAPI_cleanup_eventset and PAPI_destroy_eventset
+     before PAPI_unregister_thread */
+  PAPI_unregister_thread();
 }
 
 
