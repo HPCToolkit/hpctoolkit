@@ -177,12 +177,13 @@ prepare_env_for_profiling(const char* installpath, const Args& args)
   int sz;
 
   // -------------------------------------------------------
-  // Prepare LD_LIBRARY_PATH
+  // Prepare LD_LIBRARY_PATH (in reverse order)
   // -------------------------------------------------------
 
   // To support multi-lib we pack LIB_LIBRARY_PATH with all versions
   
-  // LD_LIBRARY_PATH for libpapi
+  // LD_LIBRARY_PATH for libpapi (even though we link with libpapi,
+  // this may be needed to resolve papi dependencies)
   prepare_ld_lib_path_for_papi();
 
   // LD_LIBRARY_PATH for hpcrun (dynamically determined)
@@ -258,7 +259,10 @@ prepare_env_for_profiling(const char* installpath, const Args& args)
     setenv("HPCRUN_DEBUG",  val.c_str(), 1);
     setenv("MONITOR_DEBUG", val.c_str(), 1);
   }
-  
+  DIAG_If(1) {
+    // PAPI_DEBUG=PROFILE | SUBSTRATE | THREADS | OVERFLOW
+    //setenv("PAPI_DEBUG",  "PROFILE, OVERFLOW, SUBSTRATE", 1);
+  }
   return 0;
 }
 
