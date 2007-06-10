@@ -30,7 +30,7 @@
 \rcsInfo $Id$
 \setDate{\rcsInfoLongDate}
 }{
-\setDate{ 2007/06/04}
+\setDate{ 2007/06/09}
 \message{package rcsinfo not present, discard it}
 }
 
@@ -69,7 +69,9 @@ It is typically used to generate plain-text or HTML output.
   \item[file correlation] For each \emph{native} event (in order), show the exclusive percentage (or number) of samples attributed to each $<$load module$>$$<$source file$>$ pair.
   \item[function correlation] For each \emph{native} event (in order), show the exclusive percentage (or number) of samples attributed to each $<$load module$>$$<$function$>$ pair.
   \item[line correlation] For each \emph{native} event (in order), show the exclusive percentage (or number) of samples attributed to each $<$load module$>$$<$file$>$$<$line$>$ triple.
-  \item[object code correlation] For each \emph{native} event (in order), show the exclusive percentage (or number) of samples attributed to each (text segment) object code instruction from each load module.  NOTE: On ISA's with variable sized instructions, histogram buckets (4 bytes in size) may contain information for more than one instruction.  In this case, multiple instructions will report counts for the \emph{same} bucket.
+  \item[object code correlation] For each \emph{native} event (in order), show the exclusive percentage (or number) of samples attributed to each (text segment) object code instruction from each load module.
+By default, only procedures where some event has a count greater than 0 are shown.
+NOTE: On ISA's with variable sized instructions, histogram buckets (4 bytes in size) may contain information for more than one instruction.  In this case, multiple instructions will report counts for the \emph{same} bucket.
 \end{Description}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -101,6 +103,8 @@ Default values for an option's optional arguments are shown in \{\}.
   \item[\Opt{-l}, \Opt{--lines}] Show line correlation described above.
 
   \item[\Opt{-o}, \Opt{--object}] Show object code correlation (plain-text only).  Use the \Opt{-l}, \Opt{--lines} option to intermingle source line information with object code.
+  \item[\Opt{--othreshold}] Show only object procedures with an event count greater than or equal to \Arg{n}.  \{1\}\  (Use 0 to see all procedures).
+Show object code correlation (plain-text only).  Use the \Opt{-l}, \Opt{--lines} option to intermingle source line information with object code.
 
   \item[\Opt{-n}, \Opt{--number}] Show number of samples instead of percentage
   \item[\OptArg{-s}{n}, \OptArg{--show}{n}] Use threshold \Arg{n} for showing aggregate data
