@@ -145,7 +145,7 @@ launch_with_profiling(const char* installpath, const Args& args)
 
   // Gather <command> into a NULL-terminated argv list
   char** profArgV = new char*[args.profArgV.size() + 1];
-  for (uint i; i < args.profArgV.size(); ++i) {
+  for (uint i = 0; i < args.profArgV.size(); ++i) {
     profArgV[i] = (char*)args.profArgV[i].c_str();
   }
   profArgV[args.profArgV.size()] = NULL;
@@ -519,7 +519,7 @@ prepare_ld_lib_path_for_papi()
 #if defined(HAVE_OS_MULTILIB)
   prepend_to_ld_lib_path(HPC_PAPI "/lib32:" HPC_PAPI "/lib64");
 #endif
-  prepend_to_ld_lib_path(HPC_PAPI "/lib");
+  return prepend_to_ld_lib_path(HPC_PAPI "/lib");
 }
 
 
