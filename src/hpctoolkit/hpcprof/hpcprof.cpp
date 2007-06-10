@@ -49,8 +49,10 @@ using std::vector;
 #include <lib/binutils/Seg.hpp>
 #include <lib/binutils/Proc.hpp>
 #include <lib/binutils/Insn.hpp>
+#include <lib/binutils/VMAInterval.hpp>
 
 #include <lib/support/diagnostics.h>
+#include <lib/support/StrUtil.hpp>
 
 //*************************** Forward Declarations **************************
 
@@ -73,10 +75,10 @@ static bool show_everything = false;
 static bool show_of_force = false;
 
 static bool show_object = false;
+static uint64_t show_object_procthresh = 1;
 
-
-static int show_thresh = 4;
 static bool show_as_percent = true;
+static int show_collective_thresh = 4;
 static string htmldir;
 
 static int debug = 0;
@@ -112,6 +114,8 @@ Options: Plain-text and HTML Output\n\
   -o, --object        Show object code correlation (plain-text only).\n\
                       Use the -l, --lines option to intermingle source line\n\
                       information with object code.\n\
+  --othreshold <n>    Show only object procedures with an event count >= <n>\n\
+                      {1}  (Use 0 to see all procedures.)\n\
 \n\
   -n, --number        Show number of samples (not percentages).\n\
   -s <n>, --show <n>  Set threshold <n> for showing aggregate data.\n\
@@ -189,7 +193,7 @@ real_main(int argc, char *argv[])
     else if (arg == "--debug") {
       if (i<argc-1) {
 	i++;
-	debug = atoi(argv[i]);
+	debug = (int)StrUtil::toLong(argv[i]);
       }
       Diagnostics_SetDiagnosticFilterLevel(debug);
     }
@@ -226,7 +230,12 @@ real_main(int argc, char *argv[])
     }
     else if (arg == "-o" || arg == "--object") {
       show_object = true;
-      //show_as_percent = false;
+    }
+    else if (arg == "--othreshold") {
+      if (i<argc-1) {
+	i++;
+	show_object_procthresh = StrUtil::toUInt64(argv[i]);
+      }
     }
 
     else if (arg == "-n" || arg == "--number") {
@@ -235,7 +244,7 @@ real_main(int argc, char *argv[])
     else if (arg == "-s" || arg == "--show") {
       if (i<argc-1) {
 	i++;
-	show_thresh = atoi(argv[i]);
+	show_collective_thresh = (int)StrUtil::toLong(argv[i]);
       }
     }
     else if (arg == "-H" || arg == "--html") {
@@ -535,7 +544,7 @@ dump_html_or_text(Summary& sum)
 {
   bool need_newline = false;
 
-  sum.show_only_collective(show_thresh);
+  sum.show_only_collective(show_collective_thresh);
   sum.set_display_percent(show_as_percent);
 
   if (show_as_html) {
@@ -820,13 +829,26 @@ public:
   const vector<uint64_t>& eventTots() const { return m_eventTots; }
 
   // Assumptions:
-  //   - [beg_vma, end_vma)
   //   - vma's are unrelocated
   //   - over successsive calls, VMA ranges are ascending
   // Result is stored is eventCntAtVMA()
-  const vector<uint64_t>& computeEventsCountsForVMA(VMA vma);
+  const vector<uint64_t>& computeEventCountsForVMA(VMA vma) {
+    return computeEventCounts(VMAInterval(vma, vma + 1), true);
+  }
+
+  // Assumptions:
+  //   - same as above
+  //   - vmaint: [beg_vma, end_vma), where vmaint is a region
+  const vector<uint64_t>& computeEventCounts(const VMAInterval vmaint,
+					      bool advanceIndices);
+
   const vector<uint64_t>& eventCntAtVMA() const { return m_eventCntAtVMA; }
-  bool hasNonZeroEventCntAtVMA() const;
+
+  static bool hasNonZeroEventCnt(const vector<uint64_t>& eventCnt) {
+    return hasEventCntGE(eventCnt, 1);
+  }
+
+  static bool hasEventCntGE(const vector<uint64_t>& eventCnt, uint64_t val);
 
 private:
   VMA relocate(VMA vma) const {
@@ -974,10 +996,19 @@ dump_object_lm(ostream& os, const ProfFileLM& proflm, const binutils::LM& lm)
       binutils::Proc* p = it.Current();
       string bestName = GetBestFuncName(p->GetName());
       
-      // We have a 'Procedure'.  Iterate over instructions      
+      binutils::Insn* endInsn = p->GetLastInsn();
+      VMAInterval procint(p->GetBegVMA(), p->GetEndVMA() + endInsn->GetSize());
+      
+      const vector<uint64_t>& eventCntProc = 
+	eventCursor.computeEventCounts(procint, false);
+      if (!eventCursor.hasEventCntGE(eventCntProc, show_object_procthresh)) {
+	continue;
+      }
+
+      // We have a 'Procedure'.  Iterate over instructionsn
       os << endl 
 	 << p->GetName() << " (" << bestName << ")\n";
-
+      
       string the_file;
       SrcFile::ln the_line = SrcFile::ln_NULL;
 
@@ -987,8 +1018,8 @@ dump_object_lm(ostream& os, const ProfFileLM& proflm, const binutils::LM& lm)
 	VMA opVMA = binutils::LM::isa->ConvertVMAToOpVMA(vma, insn->GetOpIndex());
 
 	// 1. Collect metric annotations
-	const vector<uint64_t>& eventCntAtVMA = 
-	  eventCursor.computeEventsCountsForVMA(opVMA);
+	const vector<uint64_t>& eventCntVMA = 
+	  eventCursor.computeEventCountsForVMA(opVMA);
 
 	// 2. Print line information (if necessary)
 	if (show_lines) {
@@ -1006,9 +1037,9 @@ dump_object_lm(ostream& os, const ProfFileLM& proflm, const binutils::LM& lm)
 	// 3. Print annotated instruction
 	os << hex << opVMA << dec << ": ";
 	
-	if (eventCursor.hasNonZeroEventCntAtVMA()) {
-	  for (uint i = 0; i < eventCntAtVMA.size(); ++i) {
-	    uint64_t eventCnt = eventCntAtVMA[i];
+	if (eventCursor.hasNonZeroEventCnt(eventCntVMA)) {
+	  for (uint i = 0; i < eventCntVMA.size(); ++i) {
+	    uint64_t eventCnt = eventCntVMA[i];
 	    
 	    if (show_as_percent) {
 	      double val = 0.0;
@@ -1095,7 +1126,8 @@ EventCursor::~EventCursor()
 
 
 const vector<uint64_t>&
-EventCursor::computeEventsCountsForVMA(VMA vma)
+EventCursor::computeEventCounts(const VMAInterval vmaint,
+				bool advanceCounters)
 {
   // NOTE: An instruction may overlap multiple buckets.  However,
   // because only the bucket corresponding to the beginning of the
@@ -1107,25 +1139,46 @@ EventCursor::computeEventsCountsForVMA(VMA vma)
     m_eventCntAtVMA[i] = 0;
   }
 
-  // For each event, determine if a count exists at vma
+  // For each event, determine if a count exists at vma_beg
   for (uint i = 0; i < m_eventDescs.size(); ++i) {
     const ProfFileEvent& profevent = *(m_eventDescs[i]);
     
-    // advance curEventIdx[i] until
-    //   (bucket overlaps vma) || (bucket is beyond vma)
+    // advance ith bucket until it arrives at vmaint region:
+    //   (bucket overlaps beg_vma) || (bucket is beyond beg_vma)
     for (int& j = m_curEventIdx[i]; j < profevent.num_data(); ++j) {
       const ProfFileEventDatum& evdat = profevent.datum(j);
       VMA ev_vma = evdat.first;
       VMA ev_ur_vma = relocate(ev_vma);
       VMA ev_ur_vma_ub = ev_ur_vma + profevent.bucket_size();
       
-      if (ev_ur_vma <= vma && vma < ev_ur_vma_ub) {
-	uint32_t count = evdat.second;
-	m_eventCntAtVMA[i] = count;
+      if ((ev_ur_vma <= vmaint.beg() && vmaint.beg() < ev_ur_vma_ub) 
+	  || (ev_ur_vma > vmaint.beg())) {
 	break;
       }
-      else if (ev_ur_vma > vma) {
+    }
+    
+    // count until bucket moves beyond vmaint region
+    // INVARIANT: upon entry, bucket overlaps or is beyond region
+    for (int j = m_curEventIdx[i]; j < profevent.num_data(); ++j) {
+      const ProfFileEventDatum& evdat = profevent.datum(j);
+      VMA ev_vma = evdat.first;
+      VMA ev_ur_vma = relocate(ev_vma);
+      VMA ev_ur_vma_ub = ev_ur_vma + profevent.bucket_size();
+
+      if (ev_ur_vma >= vmaint.end()) {
+	// bucket is now beyond region
 	break;
+      }
+      else {
+	// bucket overlaps region (by INVARIANT)
+	uint32_t count = evdat.second;
+	m_eventCntAtVMA[i] += count;
+	
+	// if the vmaint region extends beyond the current bucket,
+	// advance bucket
+	if (advanceCounters && (vmaint.end() > ev_ur_vma_ub)) {
+	  m_curEventIdx[i]++;
+	}
       }
     }
   }
@@ -1135,10 +1188,10 @@ EventCursor::computeEventsCountsForVMA(VMA vma)
 
 
 bool 
-EventCursor::hasNonZeroEventCntAtVMA() const
+EventCursor::hasEventCntGE(const vector<uint64_t>& eventCnt, uint64_t val)
 {
-  for (uint i = 0; i < m_eventCntAtVMA.size(); ++i) {
-    if (m_eventCntAtVMA[i] != 0) {
+  for (uint i = 0; i < eventCnt.size(); ++i) {
+    if (eventCnt[i] >= val) {
       return true;
     }
   }
