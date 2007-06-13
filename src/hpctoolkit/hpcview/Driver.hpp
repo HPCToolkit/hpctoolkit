@@ -85,14 +85,14 @@ public:
     { AddStructureFile(pf.c_str()); }
   const std::string& GetStructureFile(int i) const 
     { return *structureFiles[i]; }
-  int NumberOfStructureFiles() { return structureFiles.size(); }
+  int NumberOfStructureFiles() const { return structureFiles.size(); }
 
   void AddGroupFile(const char* pf) 
     { groupFiles.push_back(new std::string(pf)); }
   void AddGroupFile(const std::string& pf) 
     { AddGroupFile(pf.c_str()); }
   const std::string& GetGroupFile(int i) const { return *groupFiles[i]; }
-  int NumberOfGroupFiles() { return groupFiles.size(); }
+  int NumberOfGroupFiles() const { return groupFiles.size(); }
 
   void AddPath(const char* _path, const char* _viewname);
   void AddPath(const std::string& _path, const std::string& _viewname)

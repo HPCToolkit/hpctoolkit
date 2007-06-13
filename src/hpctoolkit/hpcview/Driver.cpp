@@ -286,11 +286,17 @@ Driver::ScopeTreeInsertHPCRUNData(PgmScopeTree& scopes,
     DIAG_EMsg("While reading '" << profFilenm << "'");
     throw;
   }
+
+  uint num_samples = 0;
   
   for (uint i = 0; i < prof.num_load_modules(); ++i) {
     const ProfFileLM& proflm = prof.load_module(i);
     const std::string& lmname = proflm.name();
     LoadModScope* lmScope = nodeRet.MoveToLoadMod(lmname);
+    if (lmScope->ChildCount() == 0) {
+      DIAG_WMsg(1, "No STRUCTURE for " << lmname << ".");
+    }
+
 
     binutils::LM* lm = NULL;
     try {
@@ -333,8 +339,9 @@ Driver::ScopeTreeInsertHPCRUNData(PgmScopeTree& scopes,
 	// 2. Find associated scope and insert into scope tree
 	ScopeInfo* scope = lmScope->findByVMA(ur_vma);
 	if (!scope) {
-	  DIAG_Msg(3, "Can't find non-LM scope for " << lmname << ":0x" 
-		   << hex << ur_vma << dec);
+	  if (NumberOfStructureFiles() > 0 && lmScope->ChildCount() > 0) {
+	    DIAG_WMsg(1, "Cannot find STRUCTURE for " << lmname << ":0x" << hex << ur_vma << dec << "; many such warnings indicate useless STRUCTURE information. (Stale STRUCTURE file? Did STRUCTURE binary have debugging info?)");
+	  }
 	  scope = lmScope;
 	}
 	
@@ -345,11 +352,16 @@ Driver::ScopeTreeInsertHPCRUNData(PgmScopeTree& scopes,
 		    << scope->PerfData(m->Index()) << " :: " 
 		    << scope->toXML());
       }
+
+      num_samples += profevent.num_data();
     }
 
     delete lm;
   }
-  
+
+  if (num_samples == 0) {
+    DIAG_WMsg(1, profFilenm << " contains no samples!");
+  }
 
   DIAG_If(3) {
     DIAG_Msg(3, "Initial scope tree, before aggregation:");
