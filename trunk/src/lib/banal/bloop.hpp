@@ -71,7 +71,8 @@ namespace bloop {
 		   const char* canonicalPathList = "",
 		   bool normalizeScopeTree = true,
 		   bool unsafeNormalizations = true,
-		   bool irreducibleIntervalIsLoop = false);
+		   bool irreducibleIntervalIsLoop = false,
+		   bool forwardSubstitutionOff = false);
   
   bool 
   Normalize(PgmScopeTree* pgmScopeTree, 

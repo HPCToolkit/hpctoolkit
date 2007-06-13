@@ -91,9 +91,10 @@ public:
   const std::string& getCmd() const { return parser.GetCmd(); }
 
   // Parsed Data: optional arguments
+  bool irreducibleIntervalIsLoop; // default: false
+  bool forwardSubstitutionOff;    // default: false
   bool normalizeScopeTree;        // default: true
   bool unsafeNormalizations;      // default: true
-  bool irreducibleIntervalIsLoop; // default: false
   bool prettyPrintOutput;         // default: true
   std::string canonicalPathList;
 

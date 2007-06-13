@@ -120,11 +120,11 @@ FindOrCreateProcNode(FileScope* fScope, binutils::Proc* p);
 
 static ProcScope*
 BuildProcStructure(ProcScope* pScope, binutils::Proc* p, 
-		   bool irreducibleIntervalIsLoop); 
+		   bool irrIvalIsLoop, bool fwrdSubstOff); 
 
 static int
 BuildProcLoopNests(ProcScope* pScope, binutils::Proc* p,
-		   bool irreducibleIntervalIsLoop);
+		   bool irrIvalIsLoop, bool fwrdSubstOff);
 
 static int
 BuildStmts(bloop::LocationMgr& locMgr,
@@ -304,7 +304,8 @@ banal::bloop::BuildLMStructure(binutils::LM* lm,
 			       const char* canonicalPathList, 
 			       bool normalizeScopeTree,
 			       bool unsafeNormalizations,
-			       bool irreducibleIntervalIsLoop)
+			       bool irreducibleIntervalIsLoop,
+			       bool forwardSubstitutionOff)
 {
   DIAG_Assert(lm, DIAG_UnexpectedInput);
 
@@ -323,6 +324,7 @@ banal::bloop::BuildLMStructure(binutils::LM* lm,
   // 1. Build FileScope/ProcScope skeletal structure
   ProcScopeToProcMap* mp = BuildLMSkeleton(lmScope, lm);
   
+
   // 2. For each [ProcScope, binutils::Proc] pair, complete the build.
   // Note that a ProcScope may be associated with more than one
   // binutils::Proc.
@@ -331,7 +333,8 @@ banal::bloop::BuildLMStructure(binutils::LM* lm,
     binutils::Proc* p = it->second;
 
     DIAG_Msg(2, "Building scope tree for [" << p->GetName()  << "] ... ");
-    BuildProcStructure(pScope, p, irreducibleIntervalIsLoop);
+    BuildProcStructure(pScope, p, 
+		       irreducibleIntervalIsLoop, forwardSubstitutionOff);
   }
   delete mp;
 
@@ -539,21 +542,21 @@ BuildProcLoopNests(ProcScope* enclosingProc, binutils::Proc* p,
 		   OA::OA_ptr<OA::NestedSCR> tarj,
 		   OA::OA_ptr<OA::CFG::CFGInterface> cfg, 
 		   OA::RIFG::NodeId fgRoot, 
-		   bool irrIntIsLoop);
+		   bool irrIvalIsLoop, bool fwrdSubstOff);
 
 static CodeInfo*
 BuildLoopAndStmts(bloop::LocationMgr& locMgr, 
 		  CodeInfo* enclosingScope, binutils::Proc* p,
 		  OA::OA_ptr<OA::NestedSCR> tarj,
 		  OA::OA_ptr<OA::CFG::CFGInterface> cfg, 
-		  OA::RIFG::NodeId fgNode, bool irrIntIsLoop);
+		  OA::RIFG::NodeId fgNode, bool irrIvalIsLoop);
 
 
 // BuildProcStructure: Complete the representation for 'pScope' given the
 // binutils::Proc 'p'.  Note that pScopes parent may itself be a ProcScope.
 static ProcScope* 
 BuildProcStructure(ProcScope* pScope, binutils::Proc* p,
-		   bool irreducibleIntervalIsLoop)
+		   bool irrIvalIsLoop, bool fwrdSubstOff)
 {
   DIAG_Msg(3, "==> Proc `" << p->GetName() << "' (" << p->GetId() << ") <==");
   
@@ -569,7 +572,8 @@ BuildProcStructure(ProcScope* pScope, binutils::Proc* p,
   }
 #endif
   
-  BuildProcLoopNests(pScope, p, irreducibleIntervalIsLoop);
+  BuildProcLoopNests(pScope, p, 
+		     irrIvalIsLoop, fwrdSubstOff);
   
   return pScope;
 }
@@ -580,7 +584,7 @@ BuildProcStructure(ProcScope* pScope, binutils::Proc* p,
 // scopes.
 static int
 BuildProcLoopNests(ProcScope* pScope, binutils::Proc* p,
-		   bool irreducibleIntervalIsLoop)
+		   bool irrIvalIsLoop, bool fwrdSubstOff)
 {
   try {
     using banal::OAInterface;
@@ -615,7 +619,7 @@ BuildProcLoopNests(ProcScope* pScope, binutils::Proc* p,
 #endif
 
     int r = BuildProcLoopNests(pScope, p, tarj, cfg, fgRoot,
-			       irreducibleIntervalIsLoop);
+			       irrIvalIsLoop, fwrdSubstOff);
     return r;
   }
   catch (const OA::Exception& x) {
@@ -645,7 +649,7 @@ BuildProcLoopNests(ProcScope* enclosingProc, binutils::Proc* p,
 		   OA::OA_ptr<OA::NestedSCR> tarj,
 		   OA::OA_ptr<OA::CFG::CFGInterface> cfg, 
 		   OA::RIFG::NodeId fgRoot, 
-		   bool irrIntIsLoop)
+		   bool irrIvalIsLoop, bool fwrdSubstOff)
 {
   typedef std::list<QNode> MyQueue;
 
@@ -657,7 +661,7 @@ BuildProcLoopNests(ProcScope* enclosingProc, binutils::Proc* p,
     locMgr.debug(1);
   }
 #endif
-  locMgr.begSeq(enclosingProc);
+  locMgr.begSeq(enclosingProc, fwrdSubstOff);
   
   // -------------------------------------------------------
   // BFS+DFS on the Nested SCR (Tarjan tree)
@@ -698,7 +702,7 @@ BuildProcLoopNests(ProcScope* enclosingProc, binutils::Proc* p,
       // below ensure that this context has been fully explored.
       CodeInfo* myScope;
       myScope = BuildLoopAndStmts(locMgr, qnode.enclosingScope, p,
-				  tarj, cfg, qnode.fgNode, irrIntIsLoop);
+				  tarj, cfg, qnode.fgNode, irrIvalIsLoop);
       qnode.scope = myScope;
       if (myScope->Type() == ScopeInfo::LOOP) {
 	nLoops++;
@@ -718,7 +722,7 @@ BuildProcLoopNests(ProcScope* enclosingProc, binutils::Proc* p,
     do {
       CodeInfo* myScope;
       myScope = BuildLoopAndStmts(locMgr, qnode.scope, p, 
-				  tarj, cfg, kid, irrIntIsLoop);
+				  tarj, cfg, kid, irrIvalIsLoop);
       if (myScope->Type() == ScopeInfo::LOOP) {
 	nLoops++;
       }
@@ -757,7 +761,7 @@ BuildLoopAndStmts(bloop::LocationMgr& locMgr,
 		  CodeInfo* enclosingScope, binutils::Proc* p,
 		  OA::OA_ptr<OA::NestedSCR> tarj,
 		  OA::OA_ptr<OA::CFG::CFGInterface> cfg, 
-		  OA::RIFG::NodeId fgNode, bool irrIntIsLoop)
+		  OA::RIFG::NodeId fgNode, bool irrIvalIsLoop)
 {
   OA::OA_ptr<OA::RIFG> rifg = tarj->getRIFG();
   OA::OA_ptr<OA::CFG::NodeInterface> bb = 
@@ -776,7 +780,7 @@ BuildLoopAndStmts(bloop::LocationMgr& locMgr,
     // -----------------------------------------------------
   }
   else if (ity == OA::NestedSCR::NODE_INTERVAL || 
-	   (irrIntIsLoop && ity == OA::NestedSCR::NODE_IRREDUCIBLE)) {
+	   (irrIvalIsLoop && ity == OA::NestedSCR::NODE_IRREDUCIBLE)) {
     // -----------------------------------------------------
     // INTERVAL or IRREDUCIBLE as a loop: Loop head
     // -----------------------------------------------------
@@ -790,7 +794,7 @@ BuildLoopAndStmts(bloop::LocationMgr& locMgr,
     locMgr.locate(loop, enclosingScope, fnm, pnm, line);
     childScope = loop;
   }
-  else if (!irrIntIsLoop && ity == OA::NestedSCR::NODE_IRREDUCIBLE) {
+  else if (!irrIvalIsLoop && ity == OA::NestedSCR::NODE_IRREDUCIBLE) {
     // -----------------------------------------------------
     // IRREDUCIBLE as no loop: May contain loops
     // -----------------------------------------------------
@@ -865,7 +869,7 @@ BuildProcLoopNests(CodeInfo* enclosingScope, binutils::Proc* p,
 		   OA::OA_ptr<OA::NestedSCR> tarj,
 		   OA::OA_ptr<OA::CFG::Interface> cfg, 
 		   OA::RIFG::NodeId fgNode, 
-		   int addStmts, bool irrIntIsLoop)
+		   int addStmts, bool irrIvalIsLoop)
 {
   int localLoops = 0;
   OA::OA_ptr<OA::RIFG> rifg = tarj->getRIFG();
@@ -896,7 +900,7 @@ BuildProcLoopNests(CodeInfo* enclosingScope, binutils::Proc* p,
       }
     }
     else if (ity == OA::NestedSCR::NODE_INTERVAL || 
-	     (irrIntIsLoop && ity == OA::NestedSCR::NODE_IRREDUCIBLE)) {
+	     (irrIvalIsLoop && ity == OA::NestedSCR::NODE_IRREDUCIBLE)) {
       // -----------------------------------------------------
       // INTERVAL or IRREDUCIBLE as a loop: Loop head
       // -----------------------------------------------------
@@ -904,15 +908,15 @@ BuildProcLoopNests(CodeInfo* enclosingScope, binutils::Proc* p,
       // add alien context if necessary....
       LoopScope* lScope = new LoopScope(enclosingScope, line, line);
       int num = BuildProcLoopNests(lScope, p, tarj, cfg, kid, mp,
-				   1, irrIntIsLoop);
+				   1, irrIvalIsLoop);
       localLoops += (num + 1);
     }
-    else if (!irrIntIsLoop && ity == OA::NestedSCR::NODE_IRREDUCIBLE) {
+    else if (!irrIvalIsLoop && ity == OA::NestedSCR::NODE_IRREDUCIBLE) {
       // -----------------------------------------------------
       // IRREDUCIBLE as no loop: May contain loops
       // -----------------------------------------------------
       int num = BuildProcLoopNests(enclosingScope, p, tarj, cfg, kid, mp,
-				   addStmts, irrIntIsLoop);
+				   addStmts, irrIvalIsLoop);
       localLoops += num;
     }
     else {

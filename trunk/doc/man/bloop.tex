@@ -30,7 +30,7 @@
 \rcsInfo $Id$
 \setDate{\rcsInfoLongDate}
 }{
-\setDate{ 2007/05/28}
+\setDate{ 2007/06/13}
 \message{package rcsinfo not present, discard it}
 }
 
@@ -89,6 +89,8 @@ Default values for an option's optional arguments are shown in \{\}.
 
 \begin{Description}
   \item[\Opt{-i}, \Opt{--irreducible-interval-as-loop}] Treat irreducible intervals as loops.
+  \item[\Opt{-f}, \Opt{--forward-substitution-off}] Assume that forward substitution does not occur.  (Useful for handling erroneous PGI debugging info.)
+
   \item[\OptArg{-p}{path-list}, \OptArg{--canonical-paths}{path-list}] Ensure that scope tree only contains files found in the colon-separated path list \Arg{path-list}. May be passed multiple times.
 
 \item[\Opt{-n}, \Opt{--normalize-off}] Turn off scope tree normalization.

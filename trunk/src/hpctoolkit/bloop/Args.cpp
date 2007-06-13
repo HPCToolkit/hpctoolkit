@@ -100,6 +100,9 @@ Options: General\n\
 Options: Recovery and Output\n\
   -i, --irreducible-interval-as-loop\n\
                        Treat irreducible intervals as loops\n\
+  -f, --forward-substitution-off\n\
+                       Assume that forward substitution does not occur.\n\
+                       (Useful for handling erroneous PGI debugging info.)\n\
   -p <list>, --canonical-paths <list>\n\
                        Ensure that scope tree only contains files found in\n\
                        the colon-separated <list>. May be passed multiple\n\
@@ -107,8 +110,8 @@ Options: Recovery and Output\n\
   -n, --normalize-off  Turn off scope tree normalization\n\
   -u, --unsafe-normalize-off\n\
                        Turn off potentially unsafe normalization\n\
-  -c, --compact        Generate compact output, eliminating extra white\n\
-                       space\n";
+  -c, --compact        Generate compact output, eliminating extra white space\n\
+";
 
 
 #define CLP CmdLineParser
@@ -118,6 +121,8 @@ CmdLineParser::OptArgDesc Args::optArgs[] = {
 
   // Options
   { 'i', "irreducible-interval-as-loop",
+                            CLP::ARG_NONE, CLP::DUPOPT_CLOB, NULL },
+  { 'f', "forward-substitution-off",
                             CLP::ARG_NONE, CLP::DUPOPT_CLOB, NULL },
   { 'p', "canonical-paths", CLP::ARG_REQ , CLP::DUPOPT_CAT,  ":" },
 
@@ -155,9 +160,10 @@ Args::Args(int argc, const char* const argv[])
 void
 Args::Ctor()
 {
+  irreducibleIntervalIsLoop = false;
+  forwardSubstitutionOff = false;
   normalizeScopeTree = true;
   unsafeNormalizations = true;
-  irreducibleIntervalIsLoop = false;
   prettyPrintOutput = true;
 }
 
@@ -238,6 +244,9 @@ Args::Parse(int argc, const char* const argv[])
     // Check for other options
     if (parser.IsOpt("irreducible-interval-as-loop")) { 
       irreducibleIntervalIsLoop = true;
+    } 
+    if (parser.IsOpt("forward-substitution-off")) { 
+      forwardSubstitutionOff = true;
     } 
     if (parser.IsOpt("canonical-paths")) { 
       canonicalPathList = parser.GetOptArg("canonical-paths");
