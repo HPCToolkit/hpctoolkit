@@ -161,6 +161,13 @@ Diagnostics_TheMostVisitedBreakpointInHistory(const char* filenm,
   if (level <= DIAG_DBG_LVL) {                                      \
     DIAG_CERR << "msg* [" << level << "]: " << streamArgs << DIAG_ENDL; }
 
+#define DIAG_WMsgIf(ifexpr, streamArgs)                              \
+  if (ifexpr) {                                                     \
+    DIAG_CERR << "warning: " << streamArgs << DIAG_ENDL; }
+
+#define DIAG_WMsg(level, streamArgs)                                 \
+  DIAG_WMsgIf((level <= DIAG_DBG_LVL_PUB), streamArgs)
+
 #define DIAG_EMsg(streamArgs)                                       \
   { DIAG_CERR << "error: " << streamArgs << DIAG_ENDL;              \
     if (DIAG_DBG_LVL_PUB) {                                         \
