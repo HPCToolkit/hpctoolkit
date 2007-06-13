@@ -127,7 +127,8 @@ real_main(int argc, char* argv[])
       BuildLMStructure(lm, args.canonicalPathList.c_str(),
 		       args.normalizeScopeTree, 
 		       args.unsafeNormalizations,
-		       args.irreducibleIntervalIsLoop);
+		       args.irreducibleIntervalIsLoop,
+		       args.forwardSubstitutionOff);
     
     WriteScopeTree(std::cout, pgmScopeTree, args.prettyPrintOutput);
     delete pgmScopeTree;

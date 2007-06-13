@@ -130,15 +130,17 @@ LocationMgr::init(LoadModScope* lm)
 {
   m_loadMod = lm;
   mDBG = 0;
+  m_fwrdSubstOff = false;
 }
 
 
 void
-LocationMgr::begSeq(ProcScope* enclosingProc)
+LocationMgr::begSeq(ProcScope* enclosingProc, bool fwrdSubstOff)
 {
   DIAG_Assert(m_ctxtStack.empty() && m_alienMap.empty(), 
 	      "LocationMgr contains leftover crud!");
   pushCtxt(Ctxt(enclosingProc));
+  m_fwrdSubstOff = fwrdSubstOff;
 }
 
 
@@ -499,12 +501,12 @@ LocationMgr::determineContext(CodeInfo* proposed_scope,
     // boundaries we have to be more lenient.  
     
     if (use_ctxt->loop()) {
-      // FIXME:: this is redundant if fixScopeTree() was called.
+      // FIXME: this assertion is redundant if fixScopeTree() was called.
       // INVARIANT: We must be in the proposed context.
       // INVARIANT: File names must match (or use_ctxt would be NULL)
       DIAG_Assert(use_ctxt == proposed_ctxt, "Different contexts: " 
 		  << use_ctxt->toString() << proposed_ctxt->toString());
-      if (SrcFile::isValid(line) 
+      if (!m_fwrdSubstOff && SrcFile::isValid(line) 
 	  && !containsLineFzy(use_ctxt->loop(), line, use_ctxt->isAlien())) {
 	use_ctxt = NULL; // force a relocation
       }
