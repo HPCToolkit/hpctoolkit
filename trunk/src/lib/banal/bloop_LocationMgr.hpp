@@ -126,7 +126,7 @@ public:
   // begSeq: Given a ProcScope 'enclosingProc', prepare for a sequence
   //   of method invocations from the following list.  (The internal
   //   context stack should be empty.)
-  void begSeq(ProcScope* enclosingProc, bool fwrdSubstOff = false);
+  void begSeq(ProcScope* enclosingProc, bool fwdSubstOff = false);
 
   // locate: Given a parentless LoopScope 'loop', the original
   //   enclosing scope 'proposed_scope' and best-guess source-line
@@ -513,7 +513,7 @@ private:
   MyStack       m_ctxtStack; // cf. topCtxt() [begin()/front() is the top]
   LoadModScope* m_loadMod;
   int           mDBG;
-  bool          m_fwrdSubstOff;
+  bool          m_fwdSubstOff;
 
   AlienScopeMap m_alienMap;
 };
