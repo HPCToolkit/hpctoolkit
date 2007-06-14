@@ -235,7 +235,8 @@ ScopeInfo::CollectCrossReferences()
   if (self) {
     if (IsLeaf()) {
       self->first = self->last = self;
-    } else {
+    } 
+    else {
       self->first = self->last = 0;
 
       int minline = INT_MAX;
@@ -312,11 +313,11 @@ ScopeInfo::~ScopeInfo()
 CodeInfo::CodeInfo(ScopeType t, ScopeInfo* parent, 
 		   SrcFile::ln begLn, SrcFile::ln endLn,
 		   VMA begVMA, VMA endVMA) 
-  : ScopeInfo(t, parent), mbegLine(ln_NULL), mendLine(ln_NULL)
+  : ScopeInfo(t, parent), m_begLn(ln_NULL), m_endLn(ln_NULL)
 { 
   SetLineRange(begLn, endLn);
   if (begVMA != 0 && endVMA != 0) {
-    mvmaSet.insert(begVMA, endVMA);
+    m_vmaSet.insert(begVMA, endVMA);
   }
 }
 
@@ -326,8 +327,8 @@ CodeInfo::operator=(const CodeInfo& x)
 {
   // shallow copy
   if (&x != this) {
-    mbegLine = x.mbegLine;
-    mendLine = x.mendLine;
+    m_begLn = x.m_begLn;
+    m_endLn = x.m_endLn;
     first = last = NULL;
   }
   return *this;
@@ -679,7 +680,8 @@ LoopScope::~LoopScope()
 StmtRangeScope::StmtRangeScope(CodeInfo* parent, 
 			       SrcFile::ln begLn, SrcFile::ln endLn,
 			       VMA begVMA, VMA endVMA)
-  : CodeInfo(STMT_RANGE, parent, begLn, endLn, begVMA, endVMA)
+  : CodeInfo(STMT_RANGE, parent, begLn, endLn, begVMA, endVMA),
+    m_sortId((int)begLn)
 {
   ScopeType t = (parent) ? parent->Type() : ANY;
   DIAG_Assert((parent == NULL) || (t == GROUP) || (t == FILE) || (t == PROC)
@@ -1317,9 +1319,9 @@ CodeInfo::CodeName() const
   if (f != NULL) { 
     nm = File()->BaseName() + ": ";
   } 
-  nm += StrUtil::toStr(mbegLine);
-  if (mbegLine != mendLine) {
-    nm += "-" +  StrUtil::toStr(mendLine);
+  nm += StrUtil::toStr(m_begLn);
+  if (m_begLn != m_endLn) {
+    nm += "-" +  StrUtil::toStr(m_endLn);
   }
   return nm;
 } 
@@ -1328,8 +1330,8 @@ CodeInfo::CodeName() const
 string
 CodeInfo::LineRange() const
 {
-  string self = "b=" + StrUtil::toStr(mbegLine) 
-    + " e=" + StrUtil::toStr(mendLine);
+  string self = "b=" + StrUtil::toStr(m_begLn) 
+    + " e=" + StrUtil::toStr(m_endLn);
   return self;
 }
 
@@ -1365,7 +1367,7 @@ ProcScope::CodeName() const
   if (f != NULL) { 
     nm += f->BaseName() + ":";
   } 
-  nm += StrUtil::toStr(mbegLine) + ")";
+  nm += StrUtil::toStr(m_begLn) + ")";
   return nm;
 } 
 
@@ -1374,7 +1376,7 @@ string
 AlienScope::CodeName() const 
 {
   string nm = "<" + m_filenm + ">[" + m_name + "]:";
-  nm += StrUtil::toStr(mbegLine);
+  nm += StrUtil::toStr(m_begLn);
   return nm;
 } 
 
@@ -1519,7 +1521,7 @@ ostream&
 CodeInfo::dumpme(ostream& os, int dmpFlag, const char* prefix) const
 { 
   os << prefix << toString_id(dmpFlag) << " " 
-     << LineRange() << " " << mvmaSet.toString();
+     << LineRange() << " " << m_vmaSet.toString();
   return os;
 }
 
@@ -1666,7 +1668,7 @@ CodeInfo::toXML(int dmpFlag) const
 string
 CodeInfo::XMLLineRange(int dmpFlag) const
 {
-  string self = "b" + MakeAttrNum(mbegLine) + " e" + MakeAttrNum(mendLine);
+  string self = "b" + MakeAttrNum(m_begLn) + " e" + MakeAttrNum(m_endLn);
   return self;
 }
 
@@ -1674,7 +1676,7 @@ CodeInfo::XMLLineRange(int dmpFlag) const
 string
 CodeInfo::XMLVMAIntervals(int dmpFlag) const
 {
-  string self = "vma" + MakeAttrStr(mvmaSet.toString(), xml::ESC_FALSE);
+  string self = "vma" + MakeAttrStr(m_vmaSet.toString(), xml::ESC_FALSE);
   return self;
 }
 
@@ -1945,7 +1947,7 @@ FileScope::CSV_dump(const PgmScope &root, ostream& os,
 		    int lLevel) const 
 {
   // print file name, routine name, start and end line, loop level
-  os << BaseName() << ",," << mbegLine << "," << mendLine << ",";
+  os << BaseName() << ",," << m_begLn << "," << m_endLn << ",";
   CSV_DumpSelf(root, os);
   for (ScopeInfoNameSortedChildIterator it(this); it.Current(); it++) {
     it.Current()->CSV_dump(root, os, BaseName().c_str());
@@ -1959,7 +1961,7 @@ ProcScope::CSV_dump(const PgmScope &root, ostream& os,
 		    int lLevel) const 
 {
   // print file name, routine name, start and end line, loop level
-  os << file_name << "," << name() << "," << mbegLine << "," << mendLine 
+  os << file_name << "," << name() << "," << m_begLn << "," << m_endLn 
      << ",0";
   CSV_DumpSelf(root, os);
   for (ScopeInfoLineSortedChildIterator it(this); it.Current(); it++) {
@@ -1989,7 +1991,7 @@ CodeInfo::CSV_dump(const PgmScope &root, ostream& os,
   // print file name, routine name, start and end line, loop level
   os << (file_name ? file_name : name().c_str()) << "," 
      << (proc_name ? proc_name : "") << "," 
-     << mbegLine << "," << mendLine << ",";
+     << m_begLn << "," << m_endLn << ",";
   if (lLevel)
     os << lLevel;
   CSV_DumpSelf(root, os);
@@ -2060,7 +2062,7 @@ ProcScope::TSV_dump(const PgmScope &root, ostream& os,
 		    int lLevel) const 
 {
   // print file name, routine name, start and end line, loop level
-  // os << file_name << "," << name() << "," << mbegLine << "," << mendLine << ",0";
+  // os << file_name << "," << name() << "," << m_begLn << "," << m_endLn << ",0";
   for (ScopeInfoLineSortedChildIterator it(this); it.Current(); it++) {
     it.CurScope()->TSV_dump(root, os, file_name, name().c_str(), 1);
   } 
@@ -2087,7 +2089,7 @@ CodeInfo::TSV_dump(const PgmScope &root, ostream& os,
 	  // print file name, routine name, start and end line, loop level
 	  os << (file_name ? file_name : name().c_str()) << "," 
 	     << (proc_name ? proc_name : "") << ":" 
-	     << mbegLine;
+	     << m_begLn;
 	  TSV_DumpSelf(root, os);
 	  return;
   }
@@ -2114,15 +2116,15 @@ CodeInfo::SetLineRange(SrcFile::ln begLn, SrcFile::ln endLn, int propagate)
 {
   checkLineRange(begLn, endLn);
   
-  mbegLine = begLn;
-  mendLine = endLn;
+  m_begLn = begLn;
+  m_endLn = endLn;
   
   RelocateIf();
 
   // never propagate changes outside an AlienScope
   if (propagate && begLn != ln_NULL 
       && CodeInfoParent() && Type() != ScopeInfo::ALIEN) {
-    CodeInfoParent()->ExpandLineRange(mbegLine, mendLine);
+    CodeInfoParent()->ExpandLineRange(m_begLn, m_endLn);
   }
 }
 
@@ -2133,27 +2135,27 @@ CodeInfo::ExpandLineRange(SrcFile::ln begLn, SrcFile::ln endLn, int propagate)
   checkLineRange(begLn, endLn);
 
   if (begLn == ln_NULL) {
-    DIAG_Assert(mbegLine == ln_NULL, "");
+    DIAG_Assert(m_begLn == ln_NULL, "");
     // simply relocate at beginning of sibling list 
     RelocateIf();
   } 
   else {
     bool changed = false;
-    if (mbegLine == ln_NULL) {
-      mbegLine = begLn;
-      mendLine = endLn;
+    if (m_begLn == ln_NULL) {
+      m_begLn = begLn;
+      m_endLn = endLn;
       changed = true;
     } 
     else {
-      if (begLn < mbegLine) { mbegLine = begLn; changed = true; }
-      if (endLn > mendLine) { mendLine = endLn; changed = true; }
+      if (begLn < m_begLn) { m_begLn = begLn; changed = true; }
+      if (endLn > m_endLn) { m_endLn = endLn; changed = true; }
     }
 
     if (changed) {
       // never propagate changes outside an AlienScope
       RelocateIf();
       if (propagate && CodeInfoParent() && Type() != ScopeInfo::ALIEN) {
-        CodeInfoParent()->ExpandLineRange(mbegLine, mendLine);
+        CodeInfoParent()->ExpandLineRange(m_begLn, m_endLn);
       }
     }
   }
@@ -2167,8 +2169,8 @@ CodeInfo::Relocate()
   CodeInfo* next = NextScope();
 
   // NOTE: Technically should check for ln_NULL
-  if ((!prev || (prev->begLine() <= mbegLine)) 
-      && (!next || (mbegLine <= next->begLine()))) {
+  if ((!prev || (prev->begLine() <= m_begLn)) 
+      && (!next || (m_begLn <= next->begLine()))) {
     return;
   } 
   
@@ -2181,7 +2183,7 @@ CodeInfo::Relocate()
   //if (parent->FirstChild() == NULL) {
   //  Link(parent);
   //}
-  if (mbegLine == ln_NULL) {
+  if (m_begLn == ln_NULL) {
     // insert as first child
     LinkBefore(parent->FirstChild());
   } 
@@ -2191,7 +2193,7 @@ CodeInfo::Relocate()
     CodeInfo* sibling = NULL;
     for (sibling = parent->LastEnclScope(); sibling;
 	 sibling = sibling->PrevScope()) {
-      if (sibling->begLine() <= mbegLine) {
+      if (sibling->begLine() <= m_begLn) {
 	break;
       }
     } 
@@ -2209,7 +2211,7 @@ bool
 CodeInfo::containsLine(SrcFile::ln ln, int beg_epsilon, int end_epsilon) const
 {
   // We assume it makes no sense to compare against ln_NULL
-  if (mbegLine != ln_NULL) {
+  if (m_begLn != ln_NULL) {
     if (containsLine(ln)) {
       return true;
     }
@@ -2230,8 +2232,8 @@ CodeInfo::CodeInfoWithLine(SrcFile::ln ln) const
 {
   DIAG_Assert(ln != ln_NULL, "CodeInfo::CodeInfoWithLine: invalid line");
   CodeInfo* ci;
-  // ln > mendLine means there is no child that contains ln
-  if (ln <= mendLine) {
+  // ln > m_endLn means there is no child that contains ln
+  if (ln <= m_endLn) {
     for (ScopeInfoChildIterator it(this); it.Current(); it++) {
       ci = dynamic_cast<CodeInfo*>(it.Current());
       DIAG_Assert(ci, "");

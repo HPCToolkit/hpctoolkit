@@ -408,11 +408,11 @@ public:
   virtual ~CodeInfo();
 
   // Line range in source code
-  SrcFile::ln  begLine() const { return mbegLine; }
-  SrcFile::ln& begLine()       { return mbegLine; }
+  SrcFile::ln  begLine() const { return m_begLn; }
+  SrcFile::ln& begLine()       { return m_begLn; }
 
-  SrcFile::ln  endLine() const { return mendLine; }
-  SrcFile::ln& endLine()       { return mendLine; }
+  SrcFile::ln  endLine() const { return m_endLn; }
+  SrcFile::ln& endLine()       { return m_endLn; }
   
   // SetLineRange: 
   void SetLineRange(SrcFile::ln begLn, SrcFile::ln endLn, int propagate = 1);
@@ -427,13 +427,13 @@ public:
 		"CodeInfo::checkLineRange: b=" << begLn << " e=" << endLn);
     DIAG_Assert(begLn <= endLn, 
 		"CodeInfo::checkLineRange: b=" << begLn << " e=" << endLn);
-    DIAG_Assert(logic::equiv(mbegLine == ln_NULL, mendLine == ln_NULL),
-		"CodeInfo::checkLineRange: b=" << mbegLine << " e=" << mendLine);
+    DIAG_Assert(logic::equiv(m_begLn == ln_NULL, m_endLn == ln_NULL),
+		"CodeInfo::checkLineRange: b=" << m_begLn << " e=" << m_endLn);
   }
   
   // A set of *unrelocated* VMAs associated with this scope
-  VMAIntervalSet&       vmaSet()       { return mvmaSet; }
-  const VMAIntervalSet& vmaSet() const { return mvmaSet; }
+  VMAIntervalSet&       vmaSet()       { return m_vmaSet; }
+  const VMAIntervalSet& vmaSet() const { return m_vmaSet; }
   
   // containsLine: returns true if this scope contains line number
   //   'ln'.  A non-zero beg_epsilon and end_epsilon allows fuzzy
@@ -446,7 +446,7 @@ public:
   //
   // Note: We assume that it makes no sense to compare against ln_NULL.
   bool containsLine(SrcFile::ln ln) const
-    { return (mbegLine != ln_NULL && (mbegLine <= ln && ln <= mendLine)); }
+    { return (m_begLn != ln_NULL && (m_begLn <= ln && ln <= m_endLn)); }
   bool containsLine(SrcFile::ln ln, int beg_epsilon, int end_epsilon) const;
   bool containsInterval(SrcFile::ln begLn, SrcFile::ln endLn) const
     { return (containsLine(begLn) && containsLine(endLn)); }
@@ -470,8 +470,9 @@ public:
 
   virtual ScopeInfo* Clone() { return new CodeInfo(*this); }
 
-  CodeInfo* GetFirst() const { return first; } 
-  CodeInfo* GetLast() const { return last; } 
+  // FIXME: not needed?
+  //CodeInfo* GetFirst() const { return first; } 
+  //CodeInfo* GetLast() const { return last; } 
 
   // --------------------------------------------------------
   // XML output
@@ -494,7 +495,7 @@ public:
   // debugging
   // --------------------------------------------------------
   
-  virtual std::ostream& dumpme(std::ostream& os = std::cerr, 
+  virtual std::ostream& dumpme(std::ostream& os = std::cerr,
 			       int dmpFlag = 0,
 			       const char* pre = "") const;
 
@@ -509,12 +510,12 @@ protected:
   }
   
 protected:
-  SrcFile::ln mbegLine;
-  SrcFile::ln mendLine;
-  VMAIntervalSet mvmaSet;
+  SrcFile::ln m_begLn;
+  SrcFile::ln m_endLn;
+  VMAIntervalSet m_vmaSet;
 
-  CodeInfo* first; // FIXME: this seems to duplicate NonUniformDegreeTree...
-  CodeInfo* last;
+  CodeInfo* first; // FIXME: only used in ScopeInfo::CollectCrossReferences...
+  CodeInfo* last;  //   what about NonUniformDegreeTree...
   friend void ScopeInfo::CollectCrossReferences();
 };
 
@@ -981,6 +982,10 @@ public:
 
   virtual ScopeInfo* Clone() { return new StmtRangeScope(*this); }
 
+  // a handle for sorting within the enclosing procedure context
+  int  sortId() { return m_sortId; }
+  void sortId(int x) { m_sortId = x; }
+
   virtual std::string toXML(int dmpFlag = 0) const;  
 
   // --------------------------------------------------------
@@ -990,6 +995,9 @@ public:
   virtual std::ostream& dumpme(std::ostream& os = std::cerr, 
 			       int dmpFlag = 0,
 			       const char* pre = "") const;
+
+private:
+  int m_sortId;
 };
 
 // ----------------------------------------------------------------------
