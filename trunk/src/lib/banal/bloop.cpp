@@ -120,11 +120,11 @@ FindOrCreateProcNode(FileScope* fScope, binutils::Proc* p);
 
 static ProcScope*
 BuildProcStructure(ProcScope* pScope, binutils::Proc* p, 
-		   bool irrIvalIsLoop, bool fwrdSubstOff); 
+		   bool irrIvalIsLoop, bool fwdSubstOff); 
 
 static int
 BuildProcLoopNests(ProcScope* pScope, binutils::Proc* p,
-		   bool irrIvalIsLoop, bool fwrdSubstOff);
+		   bool irrIvalIsLoop, bool fwdSubstOff);
 
 static int
 BuildStmts(bloop::LocationMgr& locMgr,
@@ -132,19 +132,17 @@ BuildStmts(bloop::LocationMgr& locMgr,
 	   OA::OA_ptr<OA::CFG::NodeInterface> bb);
 
 
-static bool
-WasCtxtClosed(CodeInfo* scope, LocationMgr& mgr);
-
 static void
 FindLoopBegLineInfo(binutils::Proc* p, 
 		    OA::OA_ptr<OA::CFG::NodeInterface> headBB,
 		    string& begFilenm, string& begProcnm, SrcFile::ln& begLn);
 
+#if 0
 static StmtRangeScope*
 FindOrCreateStmtNode(std::map<SrcFile::ln, StmtRangeScope*>& stmtMap,
 		     CodeInfo* enclosingScope, SrcFile::ln line, 
 		     VMAInterval& vmaint);
-
+#endif
 
 // Cannot make this a local class because it is used as a template
 // argument! Sigh.
@@ -201,13 +199,13 @@ FilterFilesFromScopeTree(PgmScopeTree* pgmScopeTree,
 // ------------------------------------------------------------
 class StmtData;
 
-class LineToStmtMap : public std::map<SrcFile::ln, StmtData*> {
+class SortIdToStmtMap : public std::map<int, StmtData*> {
 public:
-  typedef std::map<SrcFile::ln, StmtData*> My_t;
+  typedef std::map<int, StmtData*> My_t;
 
 public:
-  LineToStmtMap() { }
-  virtual ~LineToStmtMap() { clear(); }
+  SortIdToStmtMap() { }
+  virtual ~SortIdToStmtMap() { clear(); }
   virtual void clear();
 };
 
@@ -542,7 +540,7 @@ BuildProcLoopNests(ProcScope* enclosingProc, binutils::Proc* p,
 		   OA::OA_ptr<OA::NestedSCR> tarj,
 		   OA::OA_ptr<OA::CFG::CFGInterface> cfg, 
 		   OA::RIFG::NodeId fgRoot, 
-		   bool irrIvalIsLoop, bool fwrdSubstOff);
+		   bool irrIvalIsLoop, bool fwdSubstOff);
 
 static CodeInfo*
 BuildLoopAndStmts(bloop::LocationMgr& locMgr, 
@@ -556,7 +554,7 @@ BuildLoopAndStmts(bloop::LocationMgr& locMgr,
 // binutils::Proc 'p'.  Note that pScopes parent may itself be a ProcScope.
 static ProcScope* 
 BuildProcStructure(ProcScope* pScope, binutils::Proc* p,
-		   bool irrIvalIsLoop, bool fwrdSubstOff)
+		   bool irrIvalIsLoop, bool fwdSubstOff)
 {
   DIAG_Msg(3, "==> Proc `" << p->GetName() << "' (" << p->GetId() << ") <==");
   
@@ -572,8 +570,7 @@ BuildProcStructure(ProcScope* pScope, binutils::Proc* p,
   }
 #endif
   
-  BuildProcLoopNests(pScope, p, 
-		     irrIvalIsLoop, fwrdSubstOff);
+  BuildProcLoopNests(pScope, p, irrIvalIsLoop, fwdSubstOff);
   
   return pScope;
 }
@@ -584,7 +581,7 @@ BuildProcStructure(ProcScope* pScope, binutils::Proc* p,
 // scopes.
 static int
 BuildProcLoopNests(ProcScope* pScope, binutils::Proc* p,
-		   bool irrIvalIsLoop, bool fwrdSubstOff)
+		   bool irrIvalIsLoop, bool fwdSubstOff)
 {
   try {
     using banal::OAInterface;
@@ -619,7 +616,7 @@ BuildProcLoopNests(ProcScope* pScope, binutils::Proc* p,
 #endif
 
     int r = BuildProcLoopNests(pScope, p, tarj, cfg, fgRoot,
-			       irrIvalIsLoop, fwrdSubstOff);
+			       irrIvalIsLoop, fwdSubstOff);
     return r;
   }
   catch (const OA::Exception& x) {
@@ -630,26 +627,17 @@ BuildProcLoopNests(ProcScope* pScope, binutils::Proc* p,
 }
 
 
-// BuildProcLoopNests: 
-//
-// FIXME (minor, comments)
-//
-//   Visit the nested interval tree in a hybrid BFS+DFS order and construct the loop nest... [relocate while visiting]  The algorithm is designed to visit loops from one routine in DFS order.  When there is no inlining, this collapses to a pure BFS.  In the presence of inlining, ... ***  Behavior is dependent on 'IsInCurrentCtxt'. ***
-//
-//  Within a procedure, we visit in BFS order so that we can relocate and check loop boundaries before visiting inner scopes (which 
-// 
-//   (Tarjan interval) analysis and returns the number of loops created.
-// 
-// We visit the interval tree in DFS order which is equivalent to
-// visiting each basic block in VMA order.
-//
-// Note that these loops are UNNORMALIZED.
+// BuildProcLoopNests: Visit the object code loops in pre-order and
+// create source code representations.  Technically we choose to visit
+// in BFS order, which in a better would would allow us to check
+// sibling loop boundaries.  Note that the resulting source coded
+// loops are UNNORMALIZED.
 static int 
 BuildProcLoopNests(ProcScope* enclosingProc, binutils::Proc* p,
 		   OA::OA_ptr<OA::NestedSCR> tarj,
 		   OA::OA_ptr<OA::CFG::CFGInterface> cfg, 
 		   OA::RIFG::NodeId fgRoot, 
-		   bool irrIvalIsLoop, bool fwrdSubstOff)
+		   bool irrIvalIsLoop, bool fwdSubstOff)
 {
   typedef std::list<QNode> MyQueue;
 
@@ -661,13 +649,17 @@ BuildProcLoopNests(ProcScope* enclosingProc, binutils::Proc* p,
     locMgr.debug(1);
   }
 #endif
-  locMgr.begSeq(enclosingProc, fwrdSubstOff);
+  locMgr.begSeq(enclosingProc, fwdSubstOff);
   
   // -------------------------------------------------------
-  // BFS+DFS on the Nested SCR (Tarjan tree)
+  // Preorder on the Nested SCR (Tarjan tree)
   // -------------------------------------------------------
-  // Queue INVARIANTs.  The queue has two sections to support the
-  // hybrid BFS+DFS search:
+
+  // NOTE: The reason for this generality is that we experimented with
+  // a "split" BFS search in a futile attempt to recover the inlining
+  // tree.
+
+  // Queue INVARIANTs.  The queue has two sections to support general searches:
   //
   //             BFS sec.      TODO sec.
   //   queue: [ e_i ... e_j | e_k ... e_l ]
@@ -711,8 +703,7 @@ BuildProcLoopNests(ProcScope* enclosingProc, binutils::Proc* p,
     
     // -------------------------------------------------------
     // 3. process children within this context in BFS fashion
-    //    (Note: WasCtxtClosed() always true  -> DFS
-    //           WasCtxtClosed() always false -> BFS
+    //    (Note: WasCtxtClosed() always false -> BFS)
     // -------------------------------------------------------
     OA::RIFG::NodeId kid = tarj->getInners(qnode.fgNode);
     if (kid == OA::RIFG::NIL) {
@@ -731,9 +722,12 @@ BuildProcLoopNests(ProcScope* enclosingProc, binutils::Proc* p,
       theQueue.insert(q_todo, QNode(kid, qnode.scope, myScope));
       kid = tarj->getNext(kid);
     }
-    while (kid != OA::RIFG::NIL && !WasCtxtClosed(qnode.scope, locMgr));
-    
-    // FIXME: adjust bounds using loop nesting invariants.
+    while (kid != OA::RIFG::NIL /* && !WasCtxtClosed(qnode.scope, locMgr) */);
+
+    // NOTE: *If* we knew the loop was correctly parented in a
+    // procedure context, we could check sibling boundaries.  However,
+    // there are cases where an initial loop nesting must be
+    // corrected.
 
     // -------------------------------------------------------
     // 4. place rest of children in queue's TODO section
@@ -741,7 +735,7 @@ BuildProcLoopNests(ProcScope* enclosingProc, binutils::Proc* p,
     for ( ; kid != OA::RIFG::NIL; kid = tarj->getNext(kid)) {
       theQueue.push_back(QNode(kid, qnode.scope, NULL));
 
-      // ensure 'q_todo' to points to the beginning of TODO section
+      // ensure 'q_todo' points to the beginning of TODO section
       if (q_todo == theQueue.end()) {
 	q_todo--;
       }
@@ -820,6 +814,8 @@ BuildStmts(bloop::LocationMgr& locMgr,
 	   CodeInfo* enclosingScope, binutils::Proc* p,
 	   OA::OA_ptr<OA::CFG::NodeInterface> bb)
 {
+  static int call_sortId = 0;
+
   OA::OA_ptr<OA::CFG::NodeStatementsIteratorInterface> it =
     bb->getNodeStatementsIterator();
   for ( ; it->isValid(); ) {
@@ -847,9 +843,18 @@ BuildStmts(bloop::LocationMgr& locMgr,
 
     VMAInterval vmaint(opvma, n_opvma);
 
-    // 3. locate stmt
+    // 3. Get statement type.  Use a special sort key for calls as a
+    // way to protect against bad debugging information which would
+    // later cause a call to treated as loop-invariant-code motion and
+    // hoisted into a different loop.
+    ISA::InsnDesc idesc = insn->GetDesc();
+    
+    // 4. locate stmt
     StmtRangeScope* stmt = 
       new StmtRangeScope(NULL, line, line, vmaint.beg(), vmaint.end());
+    if (idesc.IsSubr()) {
+      //FIXME: stmt->sortId(--call_sortId);
+    }
     locMgr.locate(stmt, enclosingScope, filenm, procnm, line);
   }
   return 0;
@@ -933,26 +938,6 @@ BuildProcLoopNests(CodeInfo* enclosingScope, binutils::Proc* p,
 // 
 //****************************************************************************
 
-// WasCtxtClosed: Given a context 'scope' and a LocationMgr, returns true if
-// LocationMgr has closed 'scope'.
-static bool
-WasCtxtClosed(CodeInfo* scope, LocationMgr& mgr)
-{
-#if 0
-  return true; // FIXME: old DFS behavior
-#else
-  // Only alien context can be closed.  See...
-  if (scope->Type() == ScopeInfo::ALIEN) {
-    // context was closed if it is not on the scope stack
-    return (!mgr.isParentScope(scope));
-  }
-  else {
-    return false;
-  }
-#endif
-}
-
-
 // FindLoopBegLineInfo: Given the head basic block node of the loop,
 // find loop begin source line information.  
 //
@@ -1018,6 +1003,7 @@ FindLoopBegLineInfo(binutils::Proc* p,
 
 
 
+#if 0
 // FindOrCreateStmtNode: Build a StmtRangeScope.  Unlike LocateStmt,
 // assumes that procedure boundaries do not need to be expanded.
 static StmtRangeScope*
@@ -1035,6 +1021,7 @@ FindOrCreateStmtNode(std::map<SrcFile::ln, StmtRangeScope*>& stmtMap,
   }
   return stmt;
 }
+#endif
 
 } // namespace bloop
 
@@ -1177,16 +1164,16 @@ MergeBogusAlienScopes(CodeInfo* node, FileScope* file)
 static bool CDS_unsafeNormalizations = true;
 
 static bool
-CoalesceDuplicateStmts(CodeInfo* scope, LineToStmtMap* stmtMap, 
+CoalesceDuplicateStmts(CodeInfo* scope, SortIdToStmtMap* stmtMap, 
 		       ScopeInfoSet* visited, ScopeInfoSet* toDelete,
 		       int level);
 
 static bool
-CDS_Main(CodeInfo* scope, LineToStmtMap* stmtMap, 
+CDS_Main(CodeInfo* scope, SortIdToStmtMap* stmtMap, 
 	 ScopeInfoSet* visited, ScopeInfoSet* toDelete, int level);
 
 static bool
-CDS_InspectStmt(StmtRangeScope* stmt1, LineToStmtMap* stmtMap, 
+CDS_InspectStmt(StmtRangeScope* stmt1, SortIdToStmtMap* stmtMap, 
 		ScopeInfoSet* toDelete, int level);
 
 static bool 
@@ -1201,14 +1188,14 @@ CoalesceDuplicateStmts(PgmScopeTree* pgmScopeTree, bool unsafeNormalizations)
   bool changed = false;
   CDS_unsafeNormalizations = unsafeNormalizations;
   PgmScope* pgmScope = pgmScopeTree->GetRoot();
-  LineToStmtMap stmtMap;      // line to statement data map
+  SortIdToStmtMap stmtMap;    // line to statement data map
   ScopeInfoSet visitedScopes; // all children of a scope have been visited
   ScopeInfoSet toDelete;      // nodes to delete
 
   // Apply the normalization routine to each ProcScope and AlienScope
   // so that 1) we are guaranteed to only process CodeInfos and 2) we
   // can assume that all line numbers encountered are within the same
-  // file (keeping the LineToStmtMap simple and fast).  (Children
+  // file (keeping the SortIdToStmtMap simple and fast).  (Children
   // AlienScope's are skipped.)
 
   ScopeInfoFilter filter(CDS_ScopeFilter, "CDS_ScopeFilter", 0);
@@ -1286,7 +1273,7 @@ CoalesceDuplicateStmts(PgmScopeTree* pgmScopeTree, bool unsafeNormalizations)
 //   fast local resorts).  Phase 2 iterates over the map, applying
 //   case 1 and 2 until all duplicate entries are removed.
 static bool
-CoalesceDuplicateStmts(CodeInfo* scope, LineToStmtMap* stmtMap, 
+CoalesceDuplicateStmts(CodeInfo* scope, SortIdToStmtMap* stmtMap, 
 		       ScopeInfoSet* visited, ScopeInfoSet* toDelete, 
 		       int level)
 {
@@ -1311,7 +1298,7 @@ CoalesceDuplicateStmts(CodeInfo* scope, LineToStmtMap* stmtMap,
 // 'scope' to support support node deletion (case 1 above).  When we
 // have visited all children of 'scope' we place it in 'visited'.
 static bool
-CDS_Main(CodeInfo* scope, LineToStmtMap* stmtMap, ScopeInfoSet* visited, 
+CDS_Main(CodeInfo* scope, SortIdToStmtMap* stmtMap, ScopeInfoSet* visited, 
 	 ScopeInfoSet* toDelete, int level)
 {
   bool changed = false;
@@ -1350,19 +1337,19 @@ CDS_Main(CodeInfo* scope, LineToStmtMap* stmtMap, ScopeInfoSet* visited,
   
 // CDS_InspectStmt: applies case 1 or 2, as described above
 static bool
-CDS_InspectStmt(StmtRangeScope* stmt1, LineToStmtMap* stmtMap, 
+CDS_InspectStmt(StmtRangeScope* stmt1, SortIdToStmtMap* stmtMap, 
 		ScopeInfoSet* toDelete, int level)
 {
   bool changed = false;
   
-  SrcFile::ln line = stmt1->begLine();
-  StmtData* stmtdata = (*stmtMap)[line];
+  int sortid = stmt1->sortId();
+  StmtData* stmtdata = (*stmtMap)[sortid];
   if (stmtdata) {
     
     StmtRangeScope* stmt2 = stmtdata->GetStmt();
     DIAG_DevMsgIf(DBG_CDS, " Find: " << stmt1 << " " << stmt2);
     
-    // Ensure we have two different instances of the same line
+    // Ensure we have two different instances of the same sortid (line)
     if (stmt1 == stmt2) { return false; }
     
     // Find the least common ancestor.  At most it should be a
@@ -1410,7 +1397,7 @@ CDS_InspectStmt(StmtRangeScope* stmt1, LineToStmtMap* stmtMap,
   else {
     // Add the statement instance to the map
     stmtdata = new StmtData(stmt1, level);
-    (*stmtMap)[line] = stmtdata;
+    (*stmtMap)[sortid] = stmtdata;
     DIAG_DevMsgIf(DBG_CDS, " Map: " << stmt1);
   }
   
@@ -1578,7 +1565,7 @@ FilterFilesFromScopeTree(PgmScopeTree* pgmScopeTree,
 //****************************************************************************
 
 void
-LineToStmtMap::clear()
+SortIdToStmtMap::clear()
 {
   for (iterator it = begin(); it != end(); ++it) {
     delete (*it).second;
