@@ -595,6 +595,7 @@ OPT_HAVE_PAPI=no
 OPT_PAPI=
 OPT_PAPI_IFLAGS=
 OPT_PAPI_LDFLAGS=
+OPT_PAPI_LIBPATH=
 OPT_PAPI_LIB=
 
 AC_ARG_WITH([papi],
@@ -635,8 +636,9 @@ if test "$OPT_HAVE_PAPI" = "yes" ; then
   for lib in ${LIB_SEARCH_PATH} ; do
     if test -r "${OPT_PAPI}/${lib}/libpapi.so"; then
       if HPC_check_cxx_papi_link ${OPT_PAPI_IFLAGS} ${OPT_PAPI}/${lib} ; then
-        OPT_PAPI_LIB="${OPT_PAPI}/${lib}/libpapi.so"
-        OPT_PAPI_LDFLAGS="-L${OPT_PAPI}/${lib} -lpapi"
+        OPT_PAPI_LIBPATH="${OPT_PAPI}/${lib}"
+        OPT_PAPI_LIB="${OPT_PAPI_LIBPATH}/libpapi.so"
+        OPT_PAPI_LDFLAGS="-L${OPT_PAPI_LIBPATH} -lpapi"
         break;
       fi
     fi
@@ -667,6 +669,8 @@ AM_CONDITIONAL(OPT_HAVE_PAPI, test "${OPT_HAVE_PAPI}" = "yes")
 AC_SUBST(OPT_PAPI)
 AC_SUBST(OPT_PAPI_IFLAGS)
 AC_SUBST(OPT_PAPI_LDFLAGS)
+AC_SUBST(OPT_PAPI_LIBPATH)
+AC_SUBST(OPT_PAPI_LIB)
 
 
 #-------------------------------------------------
