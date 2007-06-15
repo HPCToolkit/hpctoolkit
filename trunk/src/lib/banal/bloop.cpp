@@ -853,7 +853,7 @@ BuildStmts(bloop::LocationMgr& locMgr,
     StmtRangeScope* stmt = 
       new StmtRangeScope(NULL, line, line, vmaint.beg(), vmaint.end());
     if (idesc.IsSubr()) {
-      //FIXME: stmt->sortId(--call_sortId);
+      stmt->sortId(--call_sortId);
     }
     locMgr.locate(stmt, enclosingScope, filenm, procnm, line);
   }
