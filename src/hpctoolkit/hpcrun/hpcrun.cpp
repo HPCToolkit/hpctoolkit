@@ -22,16 +22,20 @@
 
 //************************* System Include Files ****************************
 
+#include <iostream>
+using std::ostream;
+
+#include <iomanip>
+
+#include <string>
+using std::string;
+
 #include <stdlib.h>
-#include <stdio.h>
 #include <string.h>
 #include <errno.h>
 
 #include <sys/types.h> /* for wait() */
 #include <sys/wait.h>  /* for wait() */
-
-#include <string>
-using std::string;
 
 //*************************** User Include Files ****************************
 
@@ -183,7 +187,7 @@ prepare_env_for_profiling(const char* installpath, const Args& args)
   // To support multi-lib we pack LIB_LIBRARY_PATH with all versions
   
   // LD_LIBRARY_PATH for libpapi (even though we link with libpapi,
-  // this may be needed to resolve papi dependencies)
+  // this may be needed to resolve PAPI dependencies such as libpfm)
   prepare_ld_lib_path_for_papi();
 
   // LD_LIBRARY_PATH for hpcrun (dynamically determined)
@@ -322,6 +326,7 @@ list_available_events(char* argv[], Args::EventList_t listType)
   }
   else {
     // 2. List the events
+    DIAG_Msg(1, "LD_LIBRARY_PATH=" << getenv(LD_LIBRARY_PATH));
     dlopen_papi();
     list_available_events_helper(listType);    
     dlclose_papi();
@@ -337,26 +342,14 @@ list_available_events(char* argv[], Args::EventList_t listType)
 static void 
 list_available_events_helper(Args::EventList_t listType)
 {
-  int i, count;
-  int isIntel, isP4;
-  PAPI_event_info_t info;
-  const PAPI_hw_info_t* hwinfo = NULL;
-  static const char* separator_major = "\n=========================================================================\n\n";
-  static const char* separator_minor = "-------------------------------------------------------------------------\n";
+  using std::setfill;
+  using std::setw;
 
-  static const char* HdrPAPIShort = "Name\t\tDescription\n";
-  static const char* FmtPAPIShort = "%s\t%s\n";
-  static const char* HdrPAPILong = 
-    "Name\t     Profilable\tDescription (Implementation Note)\n";
-  static const char* FmtPAPILong = "%s\t%s\t%s (%s)\n";
+#define SEPARATOR_MAJOR setfill('=') << setw(77) << "" << "\n\n"
+#define SEPARATOR_MINOR setfill('-') << setw(77) << "" << "\n"
 
-  static const char* HdrNtvShort = "Name\t\t\t\tDescription\n";
-  static const char* FmtNtvShort = "%-31s %s\n";
-  static const char* HdrNtvLong =  "Name\t\t\t\tDescription\n";
-  //static const char* FmtNtvLong =  "%-31s %s\n";
-  static const char* FmtNtvGrp    = "* %-29s %s\n";
-  static const char* FmtNtvGrpMbr = "  %-29s %s\n";
-  
+  ostream& os = std::cout;
+
   if (listType == Args::LIST_NONE) {
     return;
   }
@@ -369,104 +362,120 @@ list_available_events_helper(Args::EventList_t listType)
   // -------------------------------------------------------
   // Hardware information
   // -------------------------------------------------------
+  const PAPI_hw_info_t* hwinfo = NULL;
   if ((hwinfo = dl_PAPI_get_hardware_info()) == NULL) {
     DIAG_Throw("PAPI_get_hardware_info failed");
   }
-  printf("*** Hardware information ***\n");
-  printf(separator_minor);
-  printf("Vendor string and code  : %s (%d)\n", hwinfo->vendor_string,
-	 hwinfo->vendor);
-  printf("Model string and code   : %s (%d)\n", 
-	 hwinfo->model_string, hwinfo->model);
-  printf("CPU Revision            : %f\n", hwinfo->revision);
-  printf("CPU Megahertz           : %f\n", hwinfo->mhz);
-  printf("CPU's in this Node      : %d\n", hwinfo->ncpu);
-  printf("Nodes in this System    : %d\n", hwinfo->nnodes);
-  printf("Total CPU's             : %d\n", hwinfo->totalcpus);
-  printf("Number Hardware Counters: %d\n", 
-	 dl_PAPI_get_opt(PAPI_MAX_HWCTRS, NULL));
-  printf("Max Multiplex Counters  : %d\n", PAPI_MPX_DEF_DEG);
-  printf(separator_major);
+  os << "*** Hardware information ***\n";
+  os << SEPARATOR_MINOR;
+  os << "Vendor string and code  : " 
+     << hwinfo->vendor_string << " (" << hwinfo->vendor <<")\n";
+  os << "Model string and code   : " 
+     << hwinfo->model_string << " (" << hwinfo->model << ")\n";
+  os << "CPU Revision            : " << hwinfo->revision << "\n";
+  os << "CPU Megahertz           : " << hwinfo->mhz << "\n";
+  os << "CPU's in this Node      : " << hwinfo->ncpu << "\n";
+  os << "Nodes in this System    : " << hwinfo->nnodes << "\n";
+  os << "Total CPU's             : " << hwinfo->totalcpus << "\n";
+  os << "Number Hardware Counters: " << dl_PAPI_get_opt(PAPI_MAX_HWCTRS, NULL) << "\n";
+  os << "Max Multiplex Counters  : " << PAPI_MPX_DEF_DEG << "\n";
+  os << SEPARATOR_MAJOR;
 
   // -------------------------------------------------------
   // Wall clock time
   // -------------------------------------------------------
-  printf("*** Wall clock time ***\n");
-  printf(HPCRUN_EVENT_WALLCLK_STR"     wall clock time (1 millisecond period)\n");
-  // printf(HPCRUN_EVENT_FWALLCLK_STR"    fast wall clock time (1 millisecond period)\n");
-  printf(separator_major);
+  os << "*** Wall clock time ***\n";
+  os << HPCRUN_EVENT_WALLCLK_STR << "     wall clock time (1 millisecond period)\n";
+  // os << HPCRUN_EVENT_FWALLCLK_STR << "    fast wall clock time (1 millisecond period)\n";
+  os << SEPARATOR_MAJOR;
 
   // -------------------------------------------------------
   // PAPI events
   // -------------------------------------------------------
-  printf("*** Available PAPI preset events ***\n");
-  printf(separator_minor);
+  os << "*** Available PAPI preset events ***\n";
+  os << SEPARATOR_MINOR;
   if (listType == Args::LIST_SHORT) {
-    printf(HdrPAPIShort);
+    os << "Name\t\tDescription\n";
   }
   else if (listType == Args::LIST_LONG) {
-    printf(HdrPAPILong);
+    os << "Name\t     Profilable\tDescription (Implementation Note)\n";
   }
-  printf(separator_minor);
-  i = 0 | PAPI_PRESET_MASK;
-  count = 0;
+  else {
+    DIAG_Die(DIAG_Unimplemented);
+  }
+  os << SEPARATOR_MINOR;
+
+  int i = PAPI_PRESET_MASK;
+  int count = 0;
   do {
+    PAPI_event_info_t info;
     if (dl_PAPI_get_event_info(i, &info) == PAPI_OK) {
+      /* NOTE: Although clumsy, this test has official sanction. */
+      const char* profilable = "Yes";
+      if ((info.count > 1) && strcmp(info.derived, "DERIVED_CMPD") != 0) {
+	profilable = "No";
+      }
+      
       if (listType == Args::LIST_SHORT) {
-	printf(FmtPAPIShort, info.symbol, info.long_descr);
+	os << info.symbol << "\t" << info.long_descr << "\n";
       } 
       else if (listType == Args::LIST_LONG) {
-	/* NOTE: Although clumsy, this test has official sanction. */
-	int profilable = 1;
-	if ((info.count > 1) && strcmp(info.derived, "DERIVED_CMPD") != 0) {
-	  profilable = 0;
-	}
-	printf(FmtPAPILong, 
-	       info.symbol, ((profilable) ? "Yes" : "No"),
-	       info.long_descr, (info.note ? info.note : ""));
+	os << info.symbol << "\t" << profilable << "\t" << info.long_descr
+	   << " (" << info.note << ")\n";
+      }
+      else {
+	DIAG_Die(DIAG_Unimplemented);
       }
       count++;
     }
   } while (dl_PAPI_enum_event(&i, PAPI_PRESET_ENUM_AVAIL) == PAPI_OK);
-  printf("Total PAPI events reported: %d\n", count);
-  printf(separator_major);  
+  os << "Total PAPI events reported: " << count << "\n";
+  os << SEPARATOR_MAJOR;
 
   // -------------------------------------------------------
   // Native events
   // -------------------------------------------------------
 
   /* PAPI does not always correctly return a vendor id */
-  isIntel = (hwinfo->vendor == PAPI_VENDOR_INTEL || 
-	     (hwinfo->vendor_string && 
-	      strcmp(hwinfo->vendor_string, "GenuineIntel") == 0));
-  isP4 = isIntel && (hwinfo->model == 11 || hwinfo->model == 12
-		     || hwinfo->model == 16);
-  
-  printf("*** Available native events ***\n");
-  if (isP4) { printf("Note: Pentium 4 listing is by event groups; group names (*) are not events.\n"); }
-  printf(separator_minor);
+  bool isIntel = (hwinfo->vendor == PAPI_VENDOR_INTEL || 
+		  (hwinfo->vendor_string && 
+		   strcmp(hwinfo->vendor_string, "GenuineIntel") == 0));
+  bool isP4 = isIntel && (hwinfo->model == 11 || hwinfo->model == 12
+			  || hwinfo->model == 16);
+
+  os << "*** Available native events ***\n";
+  if (isP4) { 
+    os << "Note: Pentium 4 listing is by event groups; group names (*) are not events.\n"; 
+  }
+  os << SEPARATOR_MINOR;
   if (listType == Args::LIST_SHORT) { 
-    printf(HdrNtvShort); 
+    os << "Name\t\t\t\tDescription\n";
   }
   else if (listType == Args::LIST_LONG) { 
-    printf(HdrNtvLong); 
+    os << "Name\t\t\t\tDescription\n";
   }
-  printf(separator_minor);
-  i = 0 | PAPI_NATIVE_MASK;
+  else {
+    DIAG_Die(DIAG_Unimplemented);
+  }
+  os << SEPARATOR_MINOR;
+  os << std::left << setfill(' ');
+
+  i = PAPI_NATIVE_MASK;
   count = 0;
-  
   if (isP4) {
     /* Pentium IV special case */
     do {
       int j = i;
       unsigned l = 0;
+      PAPI_event_info_t info;
       if (dl_PAPI_get_event_info(i, &info) == PAPI_OK) {
-	printf(FmtNtvGrp, info.symbol, info.long_descr);
+	os << "* " << setw(29) << info.symbol << " " << info.long_descr << "\n";
 	l = strlen(info.long_descr);
       }
       while (dl_PAPI_enum_event(&j, PAPI_PENT4_ENUM_BITS) == PAPI_OK) {
 	if (dl_PAPI_get_event_info(j, &info) == PAPI_OK) {
-	  printf(FmtNtvGrpMbr, info.symbol, info.long_descr + l + 1);
+	  os << setw(31) << info.symbol << " " << info.long_descr + l + 1 << "\n";
+
 	  count++;
 	}
       }
@@ -474,21 +483,26 @@ list_available_events_helper(Args::EventList_t listType)
   }
   else {
     do {
+      PAPI_event_info_t info;
       if (dl_PAPI_get_event_info(i, &info) == PAPI_OK) {
+	const char* desc = (info.long_descr) ? info.long_descr : "";
+	
 	if (listType == Args::LIST_SHORT || listType == Args::LIST_LONG) {
-	  const char* desc = info.long_descr;
 	  if (strncmp(info.symbol, desc, strlen(info.symbol)) == 0) {
 	    desc += strlen(info.symbol);
 	  }
-	  printf(FmtNtvShort, info.symbol, desc);
-	} 
+	  os << setw(31) << info.symbol << " " << desc << "\n";
+	}
+	else {
+	  DIAG_Die(DIAG_Unimplemented);
+	}
 	count++;
       }
     } while (dl_PAPI_enum_event(&i, PAPI_ENUM_ALL) == PAPI_OK);
   }
   
-  printf("Total native events reported: %d\n", count);
-  printf(separator_major);
+  os << "Total native events reported: " << count << "\n";
+  os << SEPARATOR_MAJOR;
 }
 
 
