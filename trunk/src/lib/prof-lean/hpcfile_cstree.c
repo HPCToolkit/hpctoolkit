@@ -189,9 +189,8 @@ hpcfile_cstree_read(FILE* fs, void* tree,
   // Allocate space for 'node_vec'
   if (fhdr.num_nodes != 0) {
     node_vec = alloc_fn(sizeof(void*) * fhdr.num_nodes);
+    node_vec[0] = 0;
   }
-
-   node_vec[0] = 0; //FMZ
   
   // Read each node, creating it and linking it to its parent 
   for (i = 0; i < fhdr.num_nodes; ++i) {
