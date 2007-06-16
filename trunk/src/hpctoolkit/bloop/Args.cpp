@@ -98,8 +98,8 @@ Options: General\n\
   --debug [<n>]        Debug: use debug level <n>. {1}\n\
 \n\
 Options: Recovery and Output\n\
-  -i, --irreducible-interval-as-loop\n\
-                       Treat irreducible intervals as loops\n\
+  -i, --irreducible-interval-as-loop-off\n\
+                       Do not treat irreducible intervals as loops\n\
   -f, --forward-substitution-off\n\
                        Assume that forward substitution does not occur.\n\
                        (Useful for handling erroneous PGI debugging info.)\n\
@@ -120,7 +120,7 @@ Options: Recovery and Output\n\
 CmdLineParser::OptArgDesc Args::optArgs[] = {
 
   // Options
-  { 'i', "irreducible-interval-as-loop",
+  { 'i', "irreducible-interval-as-loop-off",
                             CLP::ARG_NONE, CLP::DUPOPT_CLOB, NULL },
   { 'f', "forward-substitution-off",
                             CLP::ARG_NONE, CLP::DUPOPT_CLOB, NULL },
@@ -160,7 +160,7 @@ Args::Args(int argc, const char* const argv[])
 void
 Args::Ctor()
 {
-  irreducibleIntervalIsLoop = false;
+  irreducibleIntervalIsLoop = true;
   forwardSubstitutionOff = false;
   normalizeScopeTree = true;
   unsafeNormalizations = true;
@@ -242,8 +242,8 @@ Args::Parse(int argc, const char* const argv[])
     } 
     
     // Check for other options
-    if (parser.IsOpt("irreducible-interval-as-loop")) { 
-      irreducibleIntervalIsLoop = true;
+    if (parser.IsOpt("irreducible-interval-as-loop-off")) { 
+      irreducibleIntervalIsLoop = false;
     } 
     if (parser.IsOpt("forward-substitution-off")) { 
       forwardSubstitutionOff = true;
