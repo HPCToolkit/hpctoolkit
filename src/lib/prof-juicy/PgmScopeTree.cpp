@@ -303,8 +303,8 @@ OkToDelete(ScopeInfo *si)
 
 ScopeInfo::~ScopeInfo() 
 {
-  DIAG_DevMsg(3, "~ScopeInfo::ScopeInfo: " << toString_id()
-	      << " " << hex << this << dec);
+  DIAG_DevMsgIf(false, "~ScopeInfo::ScopeInfo: " << toString_id()
+		<< " " << hex << this << dec);
   DIAG_Assert(OkToDelete(this), "ScopeInfo '" << this << " " << ToString() 
 	      << "' is not ready for deletion!");
 }
