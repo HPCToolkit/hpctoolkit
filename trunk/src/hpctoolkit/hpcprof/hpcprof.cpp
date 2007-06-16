@@ -1007,7 +1007,7 @@ dump_object_lm(ostream& os, const ProfFileLM& proflm, const binutils::LM& lm)
 
       // We have a 'Procedure'.  Iterate over instructionsn
       os << endl 
-	 << p->GetName() << " (" << bestName << ")\n";
+	 << "Procedure: " << p->GetName() << " (" << bestName << ")\n";
       
       string the_file;
       SrcFile::ln the_line = SrcFile::ln_NULL;
