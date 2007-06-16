@@ -48,6 +48,14 @@
 #   2004/03/03 - Nathan Tallent
 #   ...
 #
+# Organization:
+# 1. Autoconf dependencies (autoconf version/automake version)
+# 2. Special options that need to be checked before compiler tests
+# 3. Basic prerequisites (compiler tests, tools, system, etc.)
+# 4. Host-specific settings and tests 
+# 5. Process and test --with/--enable options (which may need the host-specific settings)
+# 6. Generate output
+#
 #############################################################################
 
 m4_include(config/hpc-cxxutils.m4)
@@ -89,6 +97,32 @@ hpctoolkit_top=`cd ${srcdir} && pwd`
 hpctoolkit_build=`pwd`
 HPCTOOLKIT_PLATFORM=`cd ${hpctoolkit_top}/config && ./hpcplatform`
 AC_SUBST([HPCTOOLKIT_PLATFORM])
+
+
+#----------------------------------------------------------------------------
+# Special Options that should be tested first
+#----------------------------------------------------------------------------
+
+#-------------------------------------------------
+# enable-develop
+#-------------------------------------------------
+
+AC_MSG_CHECKING([whether DEVELOP mode is enabled])
+
+OPT_ENABLE_DEVELOP=no
+
+AC_ARG_ENABLE([develop],
+  AS_HELP_STRING([--enable-develop],
+                 [Build development version (enable debugging)]),
+  [case "${enableval}" in
+     yes) OPT_ENABLE_DEVELOP="yes" ;;
+     no)  OPT_ENABLE_DEVELOP="no" ;;
+     *) AC_MSG_ERROR([bad value ${enableval} for --enable-develop]) ;;
+   esac],
+  [OPT_ENABLE_DEVELOP=no])
+
+AC_MSG_RESULT([${OPT_ENABLE_DEVELOP}])
+AM_CONDITIONAL(OPT_ENABLE_DEVELOP, test "${OPT_ENABLE_DEVELOP}" = "yes")
 
 
 #----------------------------------------------------------------------------
@@ -152,41 +186,16 @@ AC_MSG_RESULT([${HAVE_OS_MULTILIB} (searching: ${LIB_SEARCH_PATH})])
 # -none thus far-
 
 
-#----------------------------------------------------------------------------
-# Special Options that should be tested first
-#----------------------------------------------------------------------------
-
-#-------------------------------------------------
-# enable-develop
-#-------------------------------------------------
-
-AC_MSG_CHECKING([whether DEVELOP mode is enabled])
-
-OPT_ENABLE_DEVELOP=no
-
-AC_ARG_ENABLE([develop],
-  AS_HELP_STRING([--enable-develop],
-                 [Build development version (enable debugging)]),
-  [case "${enableval}" in
-     yes) OPT_ENABLE_DEVELOP="yes" ;;
-     no)  OPT_ENABLE_DEVELOP="no" ;;
-     *) AC_MSG_ERROR([bad value ${enableval} for --enable-develop]) ;;
-   esac],
-  [OPT_ENABLE_DEVELOP=no])
-
-AC_MSG_RESULT([${OPT_ENABLE_DEVELOP}])
-AM_CONDITIONAL(OPT_ENABLE_DEVELOP, test "${OPT_ENABLE_DEVELOP}" = "yes")
-
 
 #----------------------------------------------------------------------------
 # Host-dependent configuration
 # $host: $host_cpu-$host_vendor-$host_os
 #----------------------------------------------------------------------------
 
-HPC_DEF_CXXCMP
+HPC_DEF_CXXCMP()
 
 #-------------------------------------------------
-# Host-specific defines for HPCToolkit
+# Host-specific defines
 #-------------------------------------------------
 
 # NOTE: To see what macros gcc-like compilers define:
@@ -250,7 +259,7 @@ esac
 
 
 #-------------------------------------------------
-# Host-specific compiler settings for HPCToolkit
+# Host-specific compiler settings
 #-------------------------------------------------
 
 # FIXME: Now that we use libtool to build all HPCToolkit libraries, we
