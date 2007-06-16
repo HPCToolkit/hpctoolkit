@@ -604,9 +604,17 @@ BuildProcLoopNests(ProcScope* pScope, binutils::Proc* p,
       cout << "*** CFG for `" << p->GetName() << "' ***" << endl;
       cout << "  total blocks: " << cfg->getNumNodes() << endl
 	   << "  total edges:  " << cfg->getNumEdges() << endl;
-      cfg->dump(cout, irIF);
-      cfg->dumpdot(cout, irIF);
-      
+
+      OA::OA_ptr<OA::OutputBuilder> ob1, ob2;
+      ob1 = new OA::OutputBuilderText();
+      ob2 = new OA::OutputBuilderDOT();
+
+      cfg->configOutput(ob1);
+      cfg->output(*irIF);
+
+      cfg->configOutput(ob2);
+      cfg->output(*irIF);
+
       cout << "*** Nested SCR (Tarjan Interval) Tree for `" << 
 	p->GetName() << "' ***" << endl;
       tarj->dump(cout);
@@ -763,7 +771,7 @@ BuildLoopAndStmts(bloop::LocationMgr& locMgr,
   binutils::Insn* insn = banal::OA_CFG_getBegInsn(bb);
   VMA begVMA = (insn) ? insn->GetOpVMA() : 0;
   
-  DIAG_DevMsg(50, "BuildLoopAndStmts: " << bb << hex << begVMA << " --> " << enclosingScope << dec << " " << enclosingScope->toString_id());
+  DIAG_DevMsg(10, "BuildLoopAndStmts: " << bb << " [id: " << bb->getId() << "] " << hex << begVMA << " --> " << enclosingScope << dec << " " << enclosingScope->toString_id());
 
   CodeInfo* childScope = enclosingScope;
 

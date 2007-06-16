@@ -64,6 +64,9 @@
 #include <OpenAnalysis/IRInterface/CFGIRInterfaceDefault.hpp>
 #include <OpenAnalysis/CFG/CFGInterface.hpp>
 
+#include "OpenAnalysis/Utils/OutputBuilderText.hpp"
+#include "OpenAnalysis/Utils/OutputBuilderDOT.hpp"
+
 //*************************** User Include Files ****************************
  
 #include <lib/isa/ISA.hpp>
