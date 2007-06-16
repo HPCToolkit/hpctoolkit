@@ -136,6 +136,18 @@ tries both platform's and GNU's demangler.
 \end{enumerate}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Bugs}
+
+\begin{enumerate}
+
+\item \Prog{bloop} may incorrectly infer the structure of loops contained within switch statements.
+When reconstructing the control flow graph (CFG) of the object code, \Prog{bloop} currently ignores indirect jumps and does not add edges from the jump to possible target basic blocks.
+The result is an incomplete CFG and a misleading loop nesting tree.
+The workaround is to use an if/elseif/else statement.
+
+\end{enumerate}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{See Also}
 
 \Cmd{hpctoolkit}{1}.
