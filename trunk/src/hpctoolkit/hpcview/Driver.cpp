@@ -322,7 +322,8 @@ Driver::ScopeTreeInsertHPCRUNData(PgmScopeTree& scopes,
       
       const ProfFileEvent& profevent = proflm.event(mIdx);
       uint64_t period = profevent.period();
-      
+      double mval_nostruct = 0.0;
+
       for (uint k = 0; k < profevent.num_data(); ++k) {
 	const ProfFileEventDatum& dat = profevent.datum(k);
 	VMA vma = dat.first; // relocated VMA
@@ -340,20 +341,24 @@ Driver::ScopeTreeInsertHPCRUNData(PgmScopeTree& scopes,
 	ScopeInfo* scope = lmScope->findByVMA(ur_vma);
 	if (!scope) {
 	  if (NumberOfStructureFiles() > 0 && lmScope->ChildCount() > 0) {
-	    DIAG_WMsg(1, "Cannot find STRUCTURE for " << lmname << ":0x" << hex << ur_vma << dec << "; many such warnings indicate useless STRUCTURE information. (Stale STRUCTURE file? Did STRUCTURE binary have debugging info?)");
+	    DIAG_WMsg(3, "Cannot find STRUCTURE for " << lmname << ":0x" << hex << ur_vma << dec << "[" << m->Name() << ", " << events << "]");
 	  }
 	  scope = lmScope;
+	  mval_nostruct += events;
 	}
 	
-	double perfdata = events;
-	scope->SetPerfData(m->Index(), perfdata); // implicit add!
-	DIAG_DevMsg(6, "Metric associate: 0x" << hex << ur_vma << dec 
-		    << " --> +" << perfdata << "=" 
+	scope->SetPerfData(m->Index(), events); // implicit add!
+	DIAG_DevMsg(6, "Metric associate: " 
+		    << m->Name() << ":0x" << hex << ur_vma << dec 
+		    << " --> +" << events << "=" 
 		    << scope->PerfData(m->Index()) << " :: " 
 		    << scope->toXML());
       }
 
       num_samples += profevent.num_data();
+      if (mval_nostruct > 0.0) {
+	DIAG_WMsg(1, "Cannot find STRUCTURE for " << m->Name() << ":" << mval_nostruct << " in " << lmname << ". (Large values indicate useless STRUCTURE information. Stale STRUCTURE file? Did STRUCTURE binary have debugging info?)");
+      }
     }
 
     delete lm;
