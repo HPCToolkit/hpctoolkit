@@ -156,12 +156,14 @@ csprof_malloc_init(offset_t sz, offset_t sz_tmp)
     if(sz == 1) { sz = CSPROF_MEM_INIT_SZ; }
     if(sz_tmp == 1) { sz_tmp = CSPROF_MEM_INIT_SZ_TMP; }
   
+    MSG(1,"csprof malloc init calls csprof_mem__init");
     status = csprof_mem__init(memstore, sz, sz_tmp);
 
     if(status == CSPROF_ERR) {
         return NULL;
     }
 
+    MSG(1,"malloc_init returns %p",memstore);
     return memstore;
 }
 
@@ -181,6 +183,7 @@ csprof_malloc(size_t size)
 {
     csprof_mem_t *memstore = csprof_get_memstore();
 
+    MSG(1,"csprof malloc memstore = %p",memstore);
     return csprof_malloc_threaded(memstore, size);
 }
 
@@ -192,10 +195,10 @@ csprof_malloc_threaded(csprof_mem_t *memstore, size_t size)
 
 #if 1
     // Sanity check
-    if(csprof_mem__get_status(memstore) != CSPROF_MEM_STATUS_INIT) { return NULL; }
-    if(!csprof_mem__is_enabled(memstore, CSPROF_MEM_STORE)) { return NULL; }
+    if(csprof_mem__get_status(memstore) != CSPROF_MEM_STATUS_INIT) { MSG(1,"NO MEM STATUS");return NULL; }
+    if(!csprof_mem__is_enabled(memstore, CSPROF_MEM_STORE)) { MSG(1,"NO MEM ENBL");return NULL; }
 #endif
-    if(size <= 0) { return NULL; } // check to prevent an infinite loop!
+    if(size <= 0) { MSG(1,"size <=0");return NULL; } // check to prevent an infinite loop!
 
     size = csprof_align_malloc_request(size);
 
@@ -275,15 +278,19 @@ csprof_mem__init(csprof_mem_t *x, offset_t sz, offset_t sz_tmp)
     x->sz_next     = sz;
     x->sz_next_tmp = sz_tmp;
   
+    MSG(1,"csprof mem init about to call grow");
     if(sz != 0
        && csprof_mem__grow(x, sz, CSPROF_MEM_STORE) != CSPROF_OK) {
+      MSG(1,"** MEM GROW for main store failed");
         return CSPROF_ERR;
     }
     if(sz_tmp != 0 
        && csprof_mem__grow(x, sz_tmp, CSPROF_MEM_STORETMP) != CSPROF_OK) {
+      MSG(1,"** MEM GROW for tmp store failed");
         return CSPROF_ERR;
     }
   
+    MSG(1,"mem init setting status to INIT");
     x->status = CSPROF_MEM_STATUS_INIT;
     return CSPROF_OK;
 }
@@ -383,6 +390,8 @@ csprof_mem__alloc(csprof_mem_t *x, size_t sz, csprof_mem_store_t st)
   void* m, *new_mem;
   csprof_mmap_alloc_info_t *allocinf = NULL;
 
+  MSG(1,"csprof mem alloc: sz = %ld",sz);
+
   // Setup pointers
   switch (st) {
     case CSPROF_MEM_STORE:    allocinf = &(x->allocinf); break;
@@ -476,6 +485,14 @@ csprof_mem__grow(csprof_mem_t *x, size_t sz, csprof_mem_store_t st)
   MSG(CSPROF_MSG_MEMORY, "creating new %s memory store of %lu bytes", 
       csprof_mem_store__str(st), mmsz_base);
 
+#ifdef NO_MMAP
+  MSG(1,"mem grow about to call malloc");
+  mmbeg = malloc(mmsz);
+  if (!mmbeg){
+    MSG(1,"mem grow malloc failed!");
+    return CSPROF_ERR;
+  }
+#else
   // Open a new memory map for storage: Create a mmap using swap space
   // as the shared object.
   // FIXME: Linux had MAP_NORESERVE here; no equivalent on Alpha
@@ -487,9 +504,10 @@ csprof_mem__grow(csprof_mem_t *x, size_t sz, csprof_mem_store_t st)
     mmflags |= MAP_FILE;
   }
   if((mmbeg = mmap(NULL, mmsz, mmprot, mmflags, fd, 0)) == MAP_FAILED) {
+    MSG(1,"mem grow mmap failed");
     return CSPROF_ERR;
   }
-  
+#endif  
   // Allocate some space at the beginning of the map to store
   // 'mminfo', add to mmap list and reset allocation information.
   mminfo = (csprof_mmap_info_t*)mmbeg;

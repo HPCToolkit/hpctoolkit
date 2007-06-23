@@ -172,6 +172,14 @@ csprof_fini()
 
 int wait_for_gdb = 1;
 
+extern void _start(void);
+extern int __stop___libc_freeres_ptrs;
+
+void *static_epoch_offset;
+char *static_epoch_xname;
+void *static_epoch_end;
+long static_epoch_size;
+
 void
 csprof_init_internal()
 {
@@ -183,6 +191,11 @@ csprof_init_internal()
 
     csprof_options__init(&opts);
     csprof_options__getopts(&opts);
+#ifdef STATIC_ONLY
+    static_epoch_offset = (void *)&_start;
+    static_epoch_end    = (void *)&__stop___libc_freeres_ptrs;
+    static_epoch_size   = (long) (static_epoch_end - static_epoch_offset);
+#endif     
 
 #ifdef CSPROF_THREADS
     /* our malloc needs to be thread-safe */
@@ -190,10 +203,10 @@ csprof_init_internal()
     csprof_pthread_init_data();
 #endif
 
-
     /* private memory store for the initial thread is done below */
 #ifndef CSPROF_THREADS
     /* (Re)Initialize private memory for call-stack data. [Case 1 & 2] */
+    MSG(1,"calling malloc init");
     csprof_malloc_init(opts.mem_sz, 0);
 #endif
 

@@ -1,6 +1,6 @@
 #include <pthread.h>
+#include <stdlib.h>
 
-#include "general.h"
 #include "monitor.h"
 
 #include <linux/unistd.h>
@@ -10,7 +10,6 @@ static int (*the_main)(int, char **, char **);
 
 static int faux_main(int n, char **argv, char **env){
   M("calling regular main f faux main");
-  csprof_init_internal();
   return (*the_main)(n,argv,env);
 }
 
@@ -20,20 +19,17 @@ void monitor_init_process(struct monitor_start_main_args *m){
 }
 
 void monitor_fini_process(void){
-  M("monitor calling csprof_fini_internal");
-  csprof_fini_internal();
+  M("fini process");
 }
 
 void monitor_init_library(void){
-  extern void csprof_init_internal(void);
-  M("monitor init lib (NOT) calling csprof_init_internal");
+  M("monitor init lib happening");
 }
 
 void monitor_fini_library(void){
-  extern void csprof_fini_internal(void);
+  M("monitor fini lib happening");
 }
 
-#ifdef CSPROF_THREADS */
 #include "thread_data.h"
 pthread_key_t k;
 
@@ -42,16 +38,12 @@ static pthread_once_t iflg = PTHREAD_ONCE_INIT;
 
 pthread_mutex_t mylock;
 int csprof_using_threads = 0;
-#endif
 
-#ifdef CSPROF_THREADS
 static void n_init(void){
   int e;
   e = pthread_key_create(&k,free);
 }
-#endif
 
-#ifdef CSPROF_THREADS
 void monitor_init_thread_support(void){
   thread_data_t *loc;
 
@@ -62,11 +54,8 @@ void monitor_init_thread_support(void){
   loc->id = -1;
 
   pthread_setspecific(k,(void *)loc);
-  csprof_set_timer();
 }
-#endif
 
-#ifdef CSPROF_THREADS
 void *monitor_init_thread(unsigned tid ){
   thread_data_t *loc;
 
@@ -78,16 +67,10 @@ void *monitor_init_thread(unsigned tid ){
 
   pthread_setspecific(k,(void *)loc);
 
-  csprof_set_timer();
   return (void *) loc;
 }
 
 void monitor_fini_thread(void *init_thread_data ){
-  extern void csprof_pthread_state_fini(void);
-  extern void thread_write_data(void);
 
-  M("monitor calling pthread_state_fini");
-  /* thread_write_data(); */
-  csprof_pthread_state_fini();
+  M("monitor calling fini thread");
 }
-#endif

@@ -102,7 +102,7 @@ csprof_context_is_unsafe(void *context)
   struct ucontext *ctx = (struct ucontext *) context;
   greg_t ip = ctx->uc_mcontext.gregs[REG_RIP];
 
-  MSG(1,"In x86 unsafe!");
+  MSG(1,"In x86 unsafe checker!");
   if(!plt_found) {
     MSG(1,"  ->doing discover plt addresses");
     discover_plt_addresses();
@@ -126,6 +126,7 @@ csprof_context_is_unsafe(void *context)
       }
     }
   }
+#ifdef NO
   if(!csproflib_found) {
     csprof_epoch_t *e = csprof_get_epoch();
 
@@ -144,7 +145,7 @@ csprof_context_is_unsafe(void *context)
       }
     }
   }
-
+#endif
   /* memcpy plays games with the stack and doesn't tell anybody */
   {
     int verdict = ((csproflib_begin_address <= ip) && (ip < csproflib_end_address))

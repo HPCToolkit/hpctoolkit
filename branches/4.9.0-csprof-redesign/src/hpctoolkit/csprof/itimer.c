@@ -18,8 +18,14 @@
 #include "metrics.h"
 #include "interface.h"
 
+#ifndef STATIC_ONLY
 #define CSPROF_PROFILE_SIGNAL SIGPROF
 #define CSPROF_PROFILE_TIMER ITIMER_PROF
+#else
+#define CSPROF_PROFILE_SIGNAL SIGALRM
+#define CSPROF_PROFILE_TIMER ITIMER_REAL
+#endif
+
 
 extern int s1 = 0;
 extern int s2 = 0;
@@ -310,7 +316,7 @@ csprof_init_signal_handler()
        CSPROF_PROFILE_SIGNAL. */
     sa.sa_flags = SA_SIGINFO | SA_RESTART;
 
-    ret = sigaction(SIGPROF, &sa, 0);
+    ret = sigaction(CSPROF_PROFILE_SIGNAL, &sa, 0);
 }
 
 void setup_segv(void);

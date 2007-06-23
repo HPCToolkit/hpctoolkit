@@ -7,10 +7,13 @@ PLATFORM := x86-64
 CC := gcc
 #CHGROOT := 1 # undef for std root version
 
+STATIC_ONLY := 1
+NO_MMAP := 1
+
 export PLATFORM
 export CC
 #export CHGROOT
-DO_THREADS := 1
+#DO_THREADS := 1
 export PERF
 #PERF := -DCSPROF_PERF=1
 
@@ -50,6 +53,14 @@ ifdef DO_THREADS
   LIB_THREAD := -lpthread
 endif
 
+ifdef NO_MMAP
+   DEFINES += -DNO_MMAP=1
+endif
+
+ifdef STATIC_ONLY
+DEFINES += -DSTATIC_ONLY=1
+endif
+
 # includes might have set up their own special CFLAGS, so we add
 CFLAGS += $(DEFINES) $(CSPROF_THREADS) $(CSPROF_TRAMPOLINE) -I./$(ARCH)
 
@@ -57,7 +68,9 @@ CFLAGS += $(DEFINES) $(CSPROF_THREADS) $(CSPROF_TRAMPOLINE) -I./$(ARCH)
 # to be in those places to force the linker to stitch together the
 # library in the proper order and for correct functioning of the profiler
 OBJS := first_func.o
-OBJS += mon_ovr.o
+ifndef STATIC_ONLY
+   OBJS += mon_ovr.o
+endif
 OBJS += csproflib.o metrics.o mem.o cct.o
 OBJS += list.o libc.o epoch.o
 
@@ -96,7 +109,7 @@ tarball:
 	@tar -cf csprof.tar $(filter-out %.o %.csp %.log t1 t2 t3,$(wildcard *))
 	@gzip --best csprof.tar
 
-.PHONY : all libcsfile clean tarball
+.PHONY : all libcsfile clean tarball static
 
 $(CSPROFLIB): $(LIB_CSFILE) $(OBJS)
 	$(CC) $(LINK_FLAGS) -o $(CSPROFLIB) $(OBJS) $(LIBS)

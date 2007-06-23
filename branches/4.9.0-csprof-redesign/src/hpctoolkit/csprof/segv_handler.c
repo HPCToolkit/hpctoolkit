@@ -16,7 +16,7 @@
 #include "libstubs.h"
 #endif
 
-extern int (*real_sigaction)(int sig, const struct sigaction *act,
+extern int (*csprof_sigaction)(int sig, const struct sigaction *act,
                              struct sigaction *oact);
 
 void (*oth_segv_handler)(int);
@@ -224,14 +224,16 @@ setup_segv(void){
   struct sigaction sa;
   int ret;
 
+#ifdef STATIC_ONLY
   csprof_set_up_alternate_signal_stack();
+#endif
 
   /* set up handler for catching sigsegv */
   sa.sa_sigaction = csprof_sigsegv_signal_handler;
   sigemptyset(&sa.sa_mask);
   sa.sa_flags = SA_SIGINFO | SA_RESTART | SA_ONSTACK;
 
-  ret = (*real_sigaction)(SIGSEGV, &sa, &previous_sigsegv_handler);
+  ret = (*csprof_sigaction)(SIGSEGV, &sa, &previous_sigsegv_handler);
 
   if(ret != 0) {
     ERRMSG("Unable to install SIGSEGV handler", __FILE__, __LINE__);

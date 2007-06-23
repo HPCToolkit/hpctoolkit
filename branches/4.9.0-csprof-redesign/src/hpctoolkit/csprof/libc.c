@@ -48,9 +48,9 @@
 #include "unsafe.h"
 #include "libstubs.h"
 
-int (*real_sigaction)(int sig, struct sigaction *act,
+int (*csprof_sigaction)(int sig, struct sigaction *act,
                       struct sigaction *oact);
-sig_t (*real_signal)(int sig, sig_t func);
+sig_t (*csprof_signal)(int sig, sig_t func);
 
 #include <setjmp.h>
 
@@ -65,7 +65,7 @@ typedef void (*old_sig_handler_func_t)(int);
 /* static */ void (*csprof__longjmp)(jmp_buf, int);
 
 static void (*csprof_siglongjmp)(jmp_buf, int);
-static old_sig_handler_func_t (*csprof_signal)(int, old_sig_handler_func_t);
+/* static old_sig_handler_func_t (*csprof_signal)(int, old_sig_handler_func_t); */
 static void *(*csprof_dlopen)(const char *, int);
 #if defined(__osf__)
 int (*csprof_setitimer)(int, const struct itimerval *, struct itimerval *);
@@ -94,7 +94,6 @@ init_library_stubs()
     CSPROF_GRAB_FUNCPTR(siglongjmp, siglongjmp);
     CSPROF_GRAB_FUNCPTR(longjmp, longjmp);
     CSPROF_GRAB_FUNCPTR(_longjmp, _longjmp);
-    CSPROF_GRAB_FUNCPTR(signal, signal);
     /* #ifdef NOMON */
     CSPROF_GRAB_FUNCPTR(dlopen, dlopen);
     /* #endif */
@@ -105,8 +104,11 @@ init_library_stubs()
     CSPROF_GRAB_FUNCPTR(_exit, _exit);
 #endif
 
-    real_sigaction = dlsym(RTLD_NEXT,"sigaction");
+    CSPROF_GRAB_FUNCPTR(sigaction, sigaction);
+    CSPROF_GRAB_FUNCPTR(signal, signal);
+    /*    real_sigaction = dlsym(RTLD_NEXT,"sigaction");
     real_signal = dlsym(RTLD_NEXT,"signal");
+    */
 
     library_stubs_initialized = 1;
 }
@@ -167,12 +169,13 @@ _longjmp(jmp_buf env, int value)
 
 #endif /* CSPROF_TRAMPOLINE_BACKEND defined */
 
+#ifndef STATIC_ONLY
 sig_t signal(int sig, sig_t func) {
   EMSG("Override signal called");
 
   if (sig != SIGSEGV){
     EMSG("Override signal NON SEGV");
-    return (*real_signal)(sig,func);
+    return (*csprof_signal)(sig,func);
   }
   EMSG("ignored signal used to override SEGV");
 
@@ -190,7 +193,7 @@ int sigaction(int sig, const struct sigaction *act,
   EMSG("Override sigaction called");
   if (sig != SIGSEGV){
     EMSG("Override NONsegv sigaction signal = %d called",sig);
-    return (*real_sigaction)(sig,act,oact);
+    return (*csprof_sigaction)(sig,act,oact);
   }
 
   EMSG("Override SIGSEGV");
@@ -198,14 +201,16 @@ int sigaction(int sig, const struct sigaction *act,
   oth_segv_handler = act->sa_handler;
   polite_act.sa_sigaction = &polite_segv_handler;
 
-  return (*real_sigaction)(sig,&polite_act,oact);
+  return (*csprof_sigaction)(sig,&polite_act,oact);
 };
+#endif
 
 /* override setitimer() so that we're the only party setting the profiling
    signal.  this shouldn't cause any harm to the application.
 
    we have to use an old-school declaration (no `const') because of some
    preprocessor magic we unset, above (on Tru64, anyway); FIXME! */
+#if 0
 int
 #if defined(__osf__)
 setitimer(int which, const struct itimerval *value, struct itimerval *ovalue)
@@ -224,7 +229,7 @@ setitimer(__itimer_which_t which, const struct itimerval *value, struct itimerva
         return libcall3(csprof_setitimer, which, value, ovalue);
     }
 }
-
+#endif
 /* #ifdef NOMON */
 /* going to have to rearrange load maps and things */
 void *

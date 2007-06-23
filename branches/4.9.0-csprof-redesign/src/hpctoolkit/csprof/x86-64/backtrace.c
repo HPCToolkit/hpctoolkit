@@ -117,11 +117,20 @@ backtrace_done(unw_cursor_t *frame, unw_word_t *pcp, unw_word_t *spp)
     }
 }
 
+// ***FIXME: mmap interaction
+
 #define ensure_state_buffer_slot_available(state,unwind) \
     if (unwind == state->bufend) { \
         unwind = csprof_state_expand_buffer(state, unwind);\
         state->bufstk = state->bufend; \
 }
+
+extern void *monitor_unwind_fence1,*monitor_unwind_fence2;
+
+int csprof_check_fence(void *ip){
+  return (ip >= &monitor_unwind_fence1) && (ip <= &monitor_unwind_fence2);
+}
+
 int
 csprof_sample_callstack_from_frame(csprof_state_t *state, int metric_id,
 				   size_t sample_count, unw_cursor_t *cursor)
@@ -148,7 +157,7 @@ csprof_sample_callstack_from_frame(csprof_state_t *state, int metric_id,
       unwind->ip = (void *) ip;
       unwind->sp = (void *) 0;
       unwind++;
-      if (unw_step (cursor) <= 0){
+      if ((unw_step (cursor) <= 0) || csprof_check_fence(ip)){
         MSG(1,"Hit unw_step break");
         break;
       }

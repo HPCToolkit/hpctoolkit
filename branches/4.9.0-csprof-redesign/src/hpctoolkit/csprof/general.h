@@ -100,9 +100,10 @@ extern int CSPROF_MSG_LVL; // default 0
 #define CSPROF_OK      1
 #define CSPROF_ERR    -1
 
-#ifdef CSPROF_THREADS
+  /* #ifdef CSPROF_THREADS */
 extern pthread_mutex_t mylock;
-#endif
+extern int csprof_using_threads;
+  /* #endif */
 
 #define PRINT(buf) fwrite_unlocked(buf,1,n,stderr);
 #define PSTR(str) do { \
@@ -329,3 +330,4 @@ static inline void DIE(char *format, char *file, int line, ...)
 #endif
 
 #endif
+
