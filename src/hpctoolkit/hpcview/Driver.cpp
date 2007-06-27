@@ -322,6 +322,7 @@ Driver::ScopeTreeInsertHPCRUNData(PgmScopeTree& scopes,
       
       const ProfFileEvent& profevent = proflm.event(mIdx);
       uint64_t period = profevent.period();
+      double mval = 0.0;
       double mval_nostruct = 0.0;
 
       for (uint k = 0; k < profevent.num_data(); ++k) {
@@ -346,7 +347,8 @@ Driver::ScopeTreeInsertHPCRUNData(PgmScopeTree& scopes,
 	  scope = lmScope;
 	  mval_nostruct += events;
 	}
-	
+
+	mval += events;
 	scope->SetPerfData(m->Index(), events); // implicit add!
 	DIAG_DevMsg(6, "Metric associate: " 
 		    << m->Name() << ":0x" << hex << ur_vma << dec 
@@ -357,7 +359,9 @@ Driver::ScopeTreeInsertHPCRUNData(PgmScopeTree& scopes,
 
       num_samples += profevent.num_data();
       if (mval_nostruct > 0.0) {
-	DIAG_WMsg(1, "Cannot find STRUCTURE for " << m->Name() << ":" << mval_nostruct << " in " << lmname << ". (Large values indicate useless STRUCTURE information. Stale STRUCTURE file? Did STRUCTURE binary have debugging info?)");
+	// INVARIANT: division by 0 is impossible since mval >= mval_nostruct
+	double percent = (mval_nostruct / mval) * 100;
+	DIAG_WMsg(1, "Cannot find STRUCTURE for " << m->Name() << ":" << mval_nostruct << " (" << percent << "%) in " << lmname << ". (Large percentages indicate useless STRUCTURE information. Stale STRUCTURE file? Did STRUCTURE binary have debugging info?)");
       }
     }
 
