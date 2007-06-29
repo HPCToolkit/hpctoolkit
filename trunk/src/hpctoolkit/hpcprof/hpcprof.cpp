@@ -872,9 +872,75 @@ private:
 };
 
 
+class ColumnFormatter {
+public:
+  ColumnFormatter(ostream& os, int num_events, int num_decimals)
+    : m_os(os),
+      m_num_events(num_events), m_num_decimals(num_decimals),
+      m_eventAnnotationWidth(0), 
+      m_eventAnnotationWidthTot(0),
+      m_scientificFormatThreshold(0) 
+  {
+    os.setf(ios_base::fmtflags(0), ios_base::floatfield);
+    os << std::right << std::noshowpos;
+
+    // Compute annotation width
+    if (show_as_percent) {
+      if (m_num_decimals >= 1) {
+	// xxx.(yy)% or x.xE-yy% (for small numbers)
+	m_eventAnnotationWidth = std::max(8, 5 + m_num_decimals);
+	m_scientificFormatThreshold = 
+	  std::pow((double)10, -(double)m_num_decimals);
+      }
+      else {
+	// xxx%
+	m_eventAnnotationWidth = 4;
+      }
+      os << std::showpoint << std::scientific;
+    }
+    else {
+      // x.xE+yy (for large numbers)
+      m_eventAnnotationWidth = 7;
+      
+      // for floating point numbers over the scientificFormatThreshold
+      // printed in scientific format.
+      m_scientificFormatThreshold = 
+	std::pow((double)10, (double)m_eventAnnotationWidth);
+      os << std::setprecision(m_eventAnnotationWidth - 6);
+      os << std::scientific;
+    }
+    os << std::showbase;
+    
+    m_eventAnnotationWidthTot = ((m_num_events * m_eventAnnotationWidth) 
+				 + m_num_events);
+  }
+
+  ~ColumnFormatter() { }
+
+  void event_col(uint64_t eventCnt, uint64_t eventTot);
+
+  void fill_cols() {
+    m_os << setw(m_eventAnnotationWidthTot) << setfill(' ') << " ";
+  }
+
+private:
+  ostream& m_os;
+  int m_num_events;
+  int m_num_decimals;
+  int m_eventAnnotationWidth;
+  int m_eventAnnotationWidthTot;
+  double m_scientificFormatThreshold;
+};
+
+
 void
 dump_object_lm(ostream& os, const ProfFileLM& proflm, const binutils::LM& lm);
 
+void
+dump_event_summary(ostream& os, 
+		   const vector<const ProfFileEvent*>& eventDescs,
+		   const vector<uint64_t>& eventCnt,
+		   const vector<uint64_t>* eventTot);
 
 int
 dump_object(ostream& os, 
@@ -917,6 +983,7 @@ void
 dump_object_lm(ostream& os, const ProfFileLM& proflm, const binutils::LM& lm)
 {
   EventCursor eventCursor(proflm, lm);
+  ColumnFormatter colFmt(os, eventCursor.eventDescs().size(), 2);
 
   // --------------------------------------------------------
   // 0. Print event list
@@ -928,59 +995,10 @@ dump_object_lm(ostream& os, const ProfFileLM& proflm, const binutils::LM& lm)
   const vector<const ProfFileEvent*>& eventDescs = eventCursor.eventDescs();
   const vector<uint64_t>& eventTots = eventCursor.eventTots();
   
-  os << endl 
-     << "Columns correspond to the following events [event:period (events/sample)]\n";
-
-  for (uint i = 0; i < eventDescs.size(); ++i) {
-    const ProfFileEvent& profevent = *(eventDescs[i]);
-    os << "  " << profevent.name() << ":" << profevent.period() 
-       << " - " << profevent.description() 
-       << " (" << eventTots[i] << " samples)" << endl;
-  }
-
+  dump_event_summary(os, eventDescs, eventTots, NULL);
 
   // --------------------------------------------------------
-  // 1. Compute annotation width
-  // --------------------------------------------------------
-  int num_events = eventCursor.eventDescs().size();
-  int num_decimals = 2;
-  int eventAnnotationWidth = 0;
-  int eventAnnotationWidthTot = 0;
-  double scientificFormatThreshold = 0;
-
-  // reset flags
-  os.setf(ios_base::fmtflags(0), ios_base::floatfield);
-  os << std::right << std::noshowpos;
-
-  // Compute annotation width
-  if (show_as_percent) {
-    if (num_decimals >= 1) {
-      // xxx.(yy)% or x.xE-yy% (for small numbers)
-      eventAnnotationWidth = std::max(8, 5 + num_decimals);
-      scientificFormatThreshold = std::pow((double)10, -(double)num_decimals);
-    }
-    else {
-      // xxx%
-      eventAnnotationWidth = 4;
-    }
-    os << std::showpoint << std::scientific;
-  }
-  else {
-    // x.xE+yy (for large numbers)
-    eventAnnotationWidth = 7;
-
-    // for floating point numbers over the scientificFormatThreshold
-    // printed in scientific format.
-    scientificFormatThreshold = std::pow((double)10, (double)eventAnnotationWidth);
-    os << std::setprecision(eventAnnotationWidth - 6);
-    os << std::scientific;
-  }
-  os << std::showbase;
-
-  eventAnnotationWidthTot = (num_events * eventAnnotationWidth) + num_events;
-
-  // --------------------------------------------------------
-  // 2. Print annotated load module
+  // 1. Print annotated load module
   // --------------------------------------------------------
   
   for (binutils::LMSegIterator it(lm); it.IsValid(); ++it) {
@@ -999,15 +1017,18 @@ dump_object_lm(ostream& os, const ProfFileLM& proflm, const binutils::LM& lm)
       binutils::Insn* endInsn = p->GetLastInsn();
       VMAInterval procint(p->GetBegVMA(), p->GetEndVMA() + endInsn->GetSize());
       
-      const vector<uint64_t>& eventCntProc = 
+      const vector<uint64_t> eventTotsProc = 
 	eventCursor.computeEventCounts(procint, false);
-      if (!eventCursor.hasEventCntGE(eventCntProc, show_object_procthresh)) {
+      if (!eventCursor.hasEventCntGE(eventTotsProc, show_object_procthresh)) {
 	continue;
       }
 
       // We have a 'Procedure'.  Iterate over instructionsn
-      os << endl 
+      os << endl << endl
 	 << "Procedure: " << p->GetName() << " (" << bestName << ")\n";
+
+      dump_event_summary(os, eventDescs, eventTotsProc, &eventTots);
+      os << endl << endl;
       
       string the_file;
       SrcFile::ln the_line = SrcFile::ln_NULL;
@@ -1040,49 +1061,84 @@ dump_object_lm(ostream& os, const ProfFileLM& proflm, const binutils::LM& lm)
 	if (eventCursor.hasNonZeroEventCnt(eventCntVMA)) {
 	  for (uint i = 0; i < eventCntVMA.size(); ++i) {
 	    uint64_t eventCnt = eventCntVMA[i];
-	    
-	    if (show_as_percent) {
-	      double val = 0.0;
-	      if (eventTots[i] != 0) {
-		val = (double)eventCnt / (double)eventTots[i];
-	      }
-
-	      os << std::setw(eventAnnotationWidth - 1);
-	      if (val != 0.0 && val < scientificFormatThreshold) {
-		os << std::scientific 
-		   << std::setprecision(eventAnnotationWidth - 7);
-	      }
-	      else {
-		//os.unsetf(ios_base::scientific);
-		os << std::fixed
-		   << std::setprecision(num_decimals);
-	      }
-	      os << std::setfill(' ') << val << "%";
-	    }
-	    else {
-	      os << std::setw(eventAnnotationWidth);
-	      if ((double)eventCnt >= scientificFormatThreshold) {
-		os << (double)eventCnt;
-	      }
-	      else {
-		os << std::setfill(' ') << eventCnt;
-	      }
-	    }
-	    os << " ";
+	    colFmt.event_col(eventCnt, eventTotsProc[i]);
 	  }
 	}
 	else {
-	  os << setw(eventAnnotationWidthTot) << setfill(' ') << " ";
+	  colFmt.fill_cols();
 	}
 
 	insn->decode(os);
 	os << endl;
       }
     }
+    os << endl; // section
   }
 
   os << endl << endl;
 }
+
+
+void
+dump_event_summary(ostream& os, 
+		   const vector<const ProfFileEvent*>& eventDescs,
+		   const vector<uint64_t>& eventCnt,
+		   const vector<uint64_t>* eventTot)
+{
+  os << endl 
+     << "Columns correspond to the following events [event:period (events/sample)]\n";
+
+  for (uint i = 0; i < eventDescs.size(); ++i) {
+    const ProfFileEvent& profevent = *(eventDescs[i]);
+    
+    os << "  " << profevent.name() << ":" << profevent.period() 
+       << " - " << profevent.description() 
+       << " (" << eventCnt[i] << " samples";
+    
+    if (eventTot) {
+      double pct = ((double)eventCnt[i] / (double)(*eventTot)[i]) * 100;
+      os << " - " << std::fixed << std::setprecision(4) 
+	 << pct << "%";
+    }
+    
+    os << ")" << endl;
+  }
+}
+
+
+void
+ColumnFormatter::event_col(uint64_t eventCnt, uint64_t eventTot)
+{
+  if (show_as_percent) {
+    double val = 0.0;
+    if (eventTot != 0) {
+      val = ((double)eventCnt / (double)eventTot) * 100;
+    }
+    
+    m_os << std::setw(m_eventAnnotationWidth - 1);
+    if (val != 0.0 && val < m_scientificFormatThreshold) {
+      m_os << std::scientific 
+	   << std::setprecision(m_eventAnnotationWidth - 7);
+    }
+    else {
+      //m_os.unsetf(ios_base::scientific);
+      m_os << std::fixed
+	   << std::setprecision(m_num_decimals);
+    }
+    m_os << std::setfill(' ') << val << "%";
+  }
+  else {
+    m_os << std::setw(m_eventAnnotationWidth);
+    if ((double)eventCnt >= m_scientificFormatThreshold) {
+      m_os << (double)eventCnt;
+    }
+    else {
+      m_os << std::setfill(' ') << eventCnt;
+    }
+  }
+  m_os << " ";
+}
+
 
 
 EventCursor::EventCursor(const ProfFileLM& proflm, const binutils::LM& lm)
