@@ -70,6 +70,7 @@ using std::string;
 
 #include <map>  // STL
 #include <list> // STL
+#include <vector> // STL
 
 #include <algorithm> // STL
 
@@ -637,7 +638,7 @@ BuildProcLoopNests(ProcScope* pScope, binutils::Proc* p,
 
 // BuildProcLoopNests: Visit the object code loops in pre-order and
 // create source code representations.  Technically we choose to visit
-// in BFS order, which in a better would would allow us to check
+// in BFS order, which in a better world would would allow us to check
 // sibling loop boundaries.  Note that the resulting source coded
 // loops are UNNORMALIZED.
 static int 
@@ -650,6 +651,8 @@ BuildProcLoopNests(ProcScope* enclosingProc, binutils::Proc* p,
   typedef std::list<QNode> MyQueue;
 
   int nLoops = 0;
+
+  std::vector<bool> isNodeProcessed(tarj->getRIFG()->getHighWaterMarkNodeId() + 1);
   
   bloop::LocationMgr locMgr(enclosingProc->LoadMod());
 #if DBG_PROC
@@ -660,7 +663,7 @@ BuildProcLoopNests(ProcScope* enclosingProc, binutils::Proc* p,
   locMgr.begSeq(enclosingProc, fwdSubstOff);
   
   // -------------------------------------------------------
-  // Preorder on the Nested SCR (Tarjan tree)
+  // Process the Nested SCR (Tarjan tree) in preorder
   // -------------------------------------------------------
 
   // NOTE: The reason for this generality is that we experimented with
@@ -703,6 +706,7 @@ BuildProcLoopNests(ProcScope* enclosingProc, binutils::Proc* p,
       CodeInfo* myScope;
       myScope = BuildLoopAndStmts(locMgr, qnode.enclosingScope, p,
 				  tarj, cfg, qnode.fgNode, irrIvalIsLoop);
+      isNodeProcessed[qnode.fgNode] = true;
       qnode.scope = myScope;
       if (myScope->Type() == ScopeInfo::LOOP) {
 	nLoops++;
@@ -722,6 +726,7 @@ BuildProcLoopNests(ProcScope* enclosingProc, binutils::Proc* p,
       CodeInfo* myScope;
       myScope = BuildLoopAndStmts(locMgr, qnode.scope, p, 
 				  tarj, cfg, kid, irrIvalIsLoop);
+      isNodeProcessed[kid] = true;
       if (myScope->Type() == ScopeInfo::LOOP) {
 	nLoops++;
       }
@@ -749,6 +754,22 @@ BuildProcLoopNests(ProcScope* enclosingProc, binutils::Proc* p,
       }
     }
   }
+
+  // -------------------------------------------------------
+  // Process nodes that we have not visited.
+  //
+  // This may occur if the CFG is disconnected.  E.g., we do not
+  // correctly handle jump tables.  Note that we cannot be sure of the
+  // location of these statements within procedure structure.
+  // -------------------------------------------------------
+
+  for (uint i = 1; i < isNodeProcessed.size(); ++i) {
+    if (!isNodeProcessed[i]) {
+      // INVARIANT: return value is never a LoopScope
+      BuildLoopAndStmts(locMgr, enclosingProc, p, tarj, cfg, i, irrIvalIsLoop);
+    }
+  }
+
   
   locMgr.endSeq();
 
@@ -776,7 +797,8 @@ BuildLoopAndStmts(bloop::LocationMgr& locMgr,
   CodeInfo* childScope = enclosingScope;
 
   OA::NestedSCR::Node_t ity = tarj->getNodeType(fgNode);
-  if (ity == OA::NestedSCR::NODE_ACYCLIC) {
+  if (ity == OA::NestedSCR::NODE_ACYCLIC 
+      || ity == OA::NestedSCR::NODE_NOTHING) {
     // -----------------------------------------------------
     // ACYCLIC: No loops
     // -----------------------------------------------------
