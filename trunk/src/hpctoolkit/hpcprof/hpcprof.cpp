@@ -106,10 +106,16 @@ Options: General\n\
   --debug <n>         Debug: use debug level <n>.\n\
 \n\
 Options: Plain-text and HTML Output\n\
-  -e, --everything    Show load-module, file, function and line correlation.\n\
+  -e, --everything    Show load-module correlation, file correlation,\n\
+                      function correlation, line correlation, and annotated\n\
+                      source files.\n\
   -f, --files         Show file correlation.\n\
   -r, --funcs         Show function correlation.\n\
   -l, --lines         Show line correlation.\n\
+  -a <file>, --annotate <file> \n\
+                      Annotate source file <file>. (Note that <file> must\n\
+                      match the string contained in the binary's debugging\n\
+                      file tables.)\n\
 \n\
   -o, --object        Show object code correlation (plain-text only).\n\
                       Use the -l, --lines option to intermingle source line\n\
@@ -121,8 +127,6 @@ Options: Plain-text and HTML Output\n\
   -s <n>, --show <n>  Set threshold <n> for showing aggregate data.\n\
   -H <dir>, --html <dir>\n\
                       Output HTML into directory dir.\n\
-  -a <file>, --annotate <file> \n\
-                      Annotate source file <file>.\n\
 \n\
 Options: PROFILE Output\n\
   -p, --profile       Generate PROFILE output to stdout.\n";
