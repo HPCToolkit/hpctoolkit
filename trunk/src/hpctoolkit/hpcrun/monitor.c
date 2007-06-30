@@ -571,7 +571,7 @@ init_profdesc(hpcrun_profiles_desc_t** profdesc,
     HPC_GET_PAPIPROFS(*profdesc)->eset = PAPI_NULL;     
     if ((rval = PAPI_create_eventset(&HPC_GET_PAPIPROFS(*profdesc)->eset)) 
 	!= PAPI_OK) {
-      DIE("fatal error: PAPI error (%d): %s.", rval, PAPI_strerror(rval));
+      DIE("fatal error: PAPI_create_eventset (%d): %s.", rval, PAPI_strerror(rval));
     }
   }
 
@@ -1005,10 +1005,18 @@ init_profdesc_ofile(hpcrun_profiles_desc_t* profdesc, int sharedprofdesc)
   strcpy(profdesc->ofile.fname, outfilenm);
 
   /* Test whether we can write to this filesystem */
-  fs = fopen(outfilenm, "w");
+  do {
+    if (opt_debug >= 1 && (errno == ENFILE || errno == EMFILE)) {
+      MSG(stderr, "* waiting for file descriptors to test filesystem!");
+    }
+    errno = 0;
+    fs = fopen(outfilenm, "w");
+  }
+  while (errno == ENFILE || errno == EMFILE /* too many open files */);
+
   if (fs == NULL) {
-    DIE("fatal error: Filesystem test failed (cannot open file '%s').", 
-	outfilenm);
+    DIE("fatal error: Filesystem test failed (cannot open file '%s'): %s", 
+	outfilenm, strerror(errno));
   }
   fclose(fs);
   
@@ -1116,7 +1124,7 @@ init_papi_for_process()
   if (opt_debug >= 5) {
     MSG(stderr, "setting PAPI debug!");
     if ((rval = PAPI_set_debug(PAPI_VERB_ECONT)) != PAPI_OK) {
-      DIE("fatal error: PAPI error (%d): %s.", rval, PAPI_strerror(rval));
+      DIE("fatal error: PAPI_set_debug (%d): %s.", rval, PAPI_strerror(rval));
     }
   }
   
@@ -1129,7 +1137,7 @@ init_papi_for_process()
   }
   int retval = PAPI_set_domain(domain);
   if (retval != PAPI_OK) {
-    DIE("fatal error: PAPI error (%d): %s.", retval, PAPI_strerror(retval));
+    DIE("fatal error: PAPI_set_domain (%d): %s.", retval, PAPI_strerror(retval));
   }
 
 
@@ -1214,7 +1222,7 @@ add_papievent(hpcpapi_profile_desc_vec_t* profdescs, rtloadmap_t* rtmap,
 	eventnm);
   }
   if ((pcode = PAPI_get_event_info(prof->ecode, &prof->einfo)) != PAPI_OK) {
-    DIE("fatal error: PAPI error (%d): %s.", pcode, PAPI_strerror(pcode));
+    DIE("fatal error: PAPI_get_event_info (%d): %s.", pcode, PAPI_strerror(pcode));
   }
   
   /* NOTE: Although clumsy, this test has official sanction. */
@@ -1227,7 +1235,7 @@ add_papievent(hpcpapi_profile_desc_vec_t* profdescs, rtloadmap_t* rtmap,
   
   if ((pcode = PAPI_add_event(profdescs->eset, prof->ecode)) != PAPI_OK) {
     DIE("fatal error: (%d) Unable to add event '%s' to event set.\n"
-	"\tPAPI error %s.", pcode, eventnm, PAPI_strerror(pcode));
+	"\tPAPI_add_event %s.", pcode, eventnm, PAPI_strerror(pcode));
   }
   
   /* Profiling period */
@@ -1276,13 +1284,13 @@ start_papi_for_thread(hpcpapi_profile_desc_vec_t* profdescs)
     pcode = PAPI_sprofil(prof->sprofs, prof->numsprofs, profdescs->eset, 
 			 prof->ecode, prof->period, prof->flags);
     if (pcode != PAPI_OK) {
-      DIE("fatal error: PAPI error (%d): %s.", pcode, PAPI_strerror(pcode));
+      DIE("fatal error: PAPI_sprofil (%d): %s.", pcode, PAPI_strerror(pcode));
     }
   }
 
   /* 2. Launch PAPI */
   if ((pcode = PAPI_start(profdescs->eset)) != PAPI_OK) {
-    DIE("fatal error: PAPI error (%d): %s.", pcode, PAPI_strerror(pcode));
+    DIE("fatal error: PAPI_start (%d): %s.", pcode, PAPI_strerror(pcode));
   }
 }
 
@@ -1408,7 +1416,7 @@ stop_papi_for_thread(hpcpapi_profile_desc_vec_t* profdescs)
   
   if ((pcode = PAPI_stop(profdescs->eset, values)) != PAPI_OK) {
 #if 0
-    DIE("fatal error: PAPI error (%d): %s.", pcode, PAPI_strerror(pcode));
+    DIE("fatal error: PAPI_stop (%d): %s.", pcode, PAPI_strerror(pcode));
 #endif
   }
 
@@ -1420,7 +1428,7 @@ stop_papi_for_thread(hpcpapi_profile_desc_vec_t* profdescs)
 			 prof->ecode, 0, prof->flags);
 #if 0
     if (pcode != PAPI_OK) {
-      DIE("fatal error: PAPI error (%d): %s.", pcode, PAPI_strerror(pcode));
+      DIE("fatal error: PAPI_sprofil (%d): %s.", pcode, PAPI_strerror(pcode));
     }
 #endif
   }
@@ -1543,9 +1551,19 @@ write_all_profiles(hpcrun_profiles_desc_t* profdesc, rtloadmap_t* rtmap)
     return;
   }
 
-  fs = fopen(profdesc->ofile.fname, "w");
+  /* open the data file (wait if too many files are already open) */
+  do {
+    if (opt_debug >= 1 && (errno == ENFILE || errno == EMFILE)) {
+      MSG(stderr, "* waiting for file descriptors to write data!");
+    }
+    errno = 0;
+    fs = fopen(profdesc->ofile.fname, "w");
+  }
+  while (errno == ENFILE || errno == EMFILE /* too many open files */);
+
   if (fs == NULL) {
-    DIE("fatal error: Could not open file '%s'.", profdesc->ofile.fname);
+    DIE("fatal error: Could not open file '%s': %s", profdesc->ofile.fname, 
+	strerror(errno));
   }
   
   /* <header> */
