@@ -30,7 +30,7 @@
 \rcsInfo $Id$
 \setDate{\rcsInfoLongDate}
 }{
-\setDate{ 2007/06/09}
+\setDate{ 2007/06/29}
 \message{package rcsinfo not present, discard it}
 }
 
@@ -64,12 +64,18 @@ It is typically used to generate plain-text or HTML output.
 
 \Prog{hpcprof} can generate the following information.  Note that the term \emph{native} event refers to an event for which there is a program counter histogram.  
 \begin{Description}
-  \item[totals] Total sample counts for each native event.  If the same native event name appears more than once, min/max/sum \emph{derived} events are computed.
-  \item[load-module correlation] For each \emph{native} event (in order), show the exclusive percentage (or number) of samples attributed to each load module in the \Arg{hpcrun-file}s.
-  \item[file correlation] For each \emph{native} event (in order), show the exclusive percentage (or number) of samples attributed to each $<$load module$>$$<$source file$>$ pair.
+  \item[totals] Total sample counts for each native event, over each load module.  If the same native event name appears more than once, min/max/sum \emph{derived} events are computed.
+  \item[load-module correlation] For each \emph{native} event (in order), show the exclusive percentage (or number) of samples attributed to each load module in the \Arg{hpcrun-file}s.  
+Percentages are relative to totals.
+  \item[file correlation] For each \emph{native} event (in order), show the exclusive percentage (or number) of samples attributed to each $<$load module$>$$<$source file$>$ pair.  
+Percentages are relative to totals.
   \item[function correlation] For each \emph{native} event (in order), show the exclusive percentage (or number) of samples attributed to each $<$load module$>$$<$function$>$ pair.
+Percentages are relative to totals.
   \item[line correlation] For each \emph{native} event (in order), show the exclusive percentage (or number) of samples attributed to each $<$load module$>$$<$file$>$$<$line$>$ triple.
+Percentages are relative to totals.
+  \item[annotated source files] For each $<$load module$>$$<$source file$>$ pair, annotate the file's source lines with line correlation information.
   \item[object code correlation] For each \emph{native} event (in order), show the exclusive percentage (or number) of samples attributed to each (text segment) object code instruction from each load module.
+Percentages annotating an instruction are relative to that procedure.
 By default, only procedures where some event has a count greater than 0 are shown.
 NOTE: On ISA's with variable sized instructions, histogram buckets (4 bytes in size) may contain information for more than one instruction.  In this case, multiple instructions will report counts for the \emph{same} bucket.
 \end{Description}
@@ -97,20 +103,18 @@ Default values for an option's optional arguments are shown in \{\}.
 
 \subsection{Options: Plain-text and HTML Output}
 \begin{Description}
-  \item[\Opt{-e}, \Opt{--everything}] load-module, file, function and line correlations.
+  \item[\Opt{-e}, \Opt{--everything}] load-module, file, function, line correlations, and annotated source files.
   \item[\Opt{-f}, \Opt{--files}] Show file correlation described above.
   \item[\Opt{-r}, \Opt{--funcs}] Show function correlation described above.
   \item[\Opt{-l}, \Opt{--lines}] Show line correlation described above.
+  \item[\OptArg{-a}{file}, \OptArg{--annotate}{file}] Show annotated source file \Arg{file}.  (Note that \Arg{file} must match the string contained in the binary's debugging file tables.)
 
   \item[\Opt{-o}, \Opt{--object}] Show object code correlation (plain-text only).  Use the \Opt{-l}, \Opt{--lines} option to intermingle source line information with object code.
   \item[\Opt{--othreshold}] Show only object procedures with an event count greater than or equal to \Arg{n}.  \{1\}\  (Use 0 to see all procedures).
-Show object code correlation (plain-text only).  Use the \Opt{-l}, \Opt{--lines} option to intermingle source line information with object code.
 
   \item[\Opt{-n}, \Opt{--number}] Show number of samples instead of percentage
   \item[\OptArg{-s}{n}, \OptArg{--show}{n}] Use threshold \Arg{n} for showing aggregate data
-
   \item[\OptArg{-H}{dir}, \OptArg{--html}{dir}] Output HTML into directory \Arg{dir}
-  \item[\OptArg{-a}{file}, \OptArg{--annotate}{file}] Annotate the source file \Arg{file}
 \end{Description}
 
 \subsection{Options: PROFILE Output}
