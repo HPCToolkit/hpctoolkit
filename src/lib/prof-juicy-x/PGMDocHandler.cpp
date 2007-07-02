@@ -302,15 +302,15 @@ void PGMDocHandler:: startElement(const XMLCh* const uri,
   
   // F(ile)
   else if (XMLString::equals(name, elemFile)) {
-    string srcFile = getAttr(attributes, attrName);
-    srcFile = m_args.ReplacePath(srcFile);
+    string fnm = getAttr(attributes, attrName);
+    fnm = m_args.ReplacePath(fnm);
 
     // if the source file name is the same as the previous one, error.
     // otherwise find another one; it should not be the same as the
     // previous one
-    DIAG_Assert(srcFile != currentFileName, "");
+    DIAG_Assert(fnm != currentFileName, "");
     
-    currentFileName = srcFile;
+    currentFileName = fnm;
     FileScope* fileScope = m_nodeRetriever->MoveToFile(currentFileName);
     DIAG_Assert(fileScope != NULL, "");
     DIAG_DevMsgIf(DBG_ME, "PGM Handler: " << fileScope->toString_me());
@@ -385,6 +385,7 @@ void PGMDocHandler:: startElement(const XMLCh* const uri,
     
     string nm = getAttr(attributes, attrName); 
     string fnm = getAttr(attributes, attrAlienFile);
+    fnm = m_args.ReplacePath(fnm);
 
     SrcFile::ln begLn = ln_NULL, endLn = ln_NULL;
     string lineB = getAttr(attributes, attrBegin);
