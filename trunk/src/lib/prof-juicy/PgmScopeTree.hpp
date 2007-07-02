@@ -905,6 +905,8 @@ public:
   virtual ~AlienScope();
   
   const std::string& fileName() const { return m_filenm; }
+  void fileName(const std::string& fnm) { m_filenm = fnm; }
+
   virtual const std::string& name() const { return m_name; }
   
   virtual       std::string CodeName() const;

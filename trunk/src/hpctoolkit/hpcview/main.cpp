@@ -339,27 +339,45 @@ static int
 MatchFileWithPath(const string& filenm, const PathTupleVec& pathVec);
 
 
-// 'CopySourceFiles': For every file F in 'pgmScopeTree' that can be
-// reached with paths in 'pathVec', copy F to its appropriate
-// viewname path and update F's path to be relative to this location.
+static bool 
+CSF_ScopeFilter(const ScopeInfo& x, long type)
+{
+  return (x.Type() == ScopeInfo::FILE || x.Type() == ScopeInfo::ALIEN);
+}
+
+// 'CopySourceFiles': For every file FileScope and AlienScope in
+// 'pgmScope' that can be reached with paths in 'pathVec', copy F to
+// its appropriate viewname path and update F's path to be relative to
+// this location.
 static bool
-CopySourceFiles(PgmScope* pgmScopeTree, const PathTupleVec& pathVec,
+CopySourceFiles(PgmScope* pgmScope, const PathTupleVec& pathVec,
 		const string& dstDir)
 {
   bool noError = true;
 
-  // For each FILE
-  ScopeInfoIterator it(pgmScopeTree, &ScopeTypeFilter[ScopeInfo::FILE]); 
-  for (; it.Current(); /* */) {
-    FileScope* file = dynamic_cast<FileScope*>(it.Current());
-    DIAG_Assert(file != NULL, "");
-    it++; // advance iterator -- it is pointing at 'file'
-    
-    // Note: 'fileOrig' will be not be absolute if it is not possible to find
+  ScopeInfoFilter filter(CSF_ScopeFilter, "CSF_ScopeFilter", 0);
+  for (ScopeInfoIterator it(pgmScope, &filter); it.Current(); ++it) {
+    ScopeInfo* scope = it.CurScope();
+    FileScope* fileScope = NULL;
+    AlienScope* alienScope = NULL;
+
+    // Note: 'fnm_orig' will be not be absolute if it is not possible to find
     // the file on the current filesystem. (cf. NodeRetriever::MoveToFile)
-    string fileOrig = file->name();
-    if (fileOrig[0] == '/') {
-      int indx = MatchFileWithPath(fileOrig, pathVec);
+    string fnm_orig;
+    if (scope->Type() == ScopeInfo::FILE) {
+      fileScope = dynamic_cast<FileScope*>(scope);
+      fnm_orig = fileScope->name();
+    }
+    else if (scope->Type() == ScopeInfo::ALIEN) {
+      alienScope = dynamic_cast<AlienScope*>(scope);
+      fnm_orig = alienScope->fileName();
+    }
+    else {
+      DIAG_Die(DIAG_Unimplemented);
+    }
+    
+    if (fnm_orig[0] == '/') {
+      int indx = MatchFileWithPath(fnm_orig, pathVec);
       if (indx >= 0) {
 	const string& path     = pathVec[indx].first;
 	const string& viewname = pathVec[indx].second;
@@ -371,34 +389,39 @@ CopySourceFiles(PgmScope* pgmScopeTree, const PathTupleVec& pathVec,
 	}
 	realpath = RealPath(realpath.c_str()); 
 	
-	// 'realpath' must be a prefix of 'fileOrig'; find left-over portion
-	char* pathSuffx = const_cast<char*>(fileOrig.c_str());
+	// 'realpath' must be a prefix of 'fnm_orig'; find left-over portion
+	char* pathSuffx = const_cast<char*>(fnm_orig.c_str());
 	pathSuffx = &pathSuffx[realpath.length()];
 	while (pathSuffx[0] != '/') { --pathSuffx; } // should start with '/'
 	
 	// Create new file name and copy commands
-	string newSIFileNm = "./" + viewname + pathSuffx;
-	string toFile;
+	string fnm_new = "./" + viewname + pathSuffx;
+	string fnm_to;
 	if (dstDir[0]  != '/') {
-	  toFile = "./";
+	  fnm_to = "./";
 	}
-	toFile = toFile + dstDir + "/" + viewname + pathSuffx;
-	string toDir(toFile); // need to strip off ending filename to 
-	unsigned int end;     // get full path for 'toFile'
-	for (end = toDir.length() - 1; toDir[end] != '/'; end--) { }
-	toDir[end] = '\0'; // should not end with '/'
+	fnm_to = fnm_to + dstDir + "/" + viewname + pathSuffx;
+	string dir_to(fnm_to); // need to strip off ending filename to 
+	uint end;              // get full path for 'fnm_to'
+	for (end = dir_to.length() - 1; dir_to[end] != '/'; end--) { }
+	dir_to[end] = '\0';    // should not end with '/'
 	
-	string cmdMkdir = "mkdir -p " + toDir;
-	string cmdCp    = "cp -f " + fileOrig + " " + toFile;
+	string cmdMkdir = "mkdir -p " + dir_to;
+	string cmdCp    = "cp -f " + fnm_orig + " " + fnm_to;
 	//cerr << cmdCp << endl;
 	
 	// could use CopyFile; see StaticFiles::Copy
 	if (system(cmdMkdir.c_str()) == 0 && system(cmdCp.c_str()) == 0) {
-	  DIAG_Msg(1, "  " << toFile);
-	  file->SetName(newSIFileNm);
+	  DIAG_Msg(1, "  " << fnm_to);
+	  if (fileScope) {
+	    fileScope->SetName(fnm_new);
+	  }
+	  else {
+	    alienScope->fileName(fnm_new);
+	  }
 	} 
 	else {
-	  DIAG_EMsg("copying: '" << toFile);
+	  DIAG_EMsg("copying: '" << fnm_to);
 	}
       }
     } 
