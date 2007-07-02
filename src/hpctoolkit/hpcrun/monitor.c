@@ -115,7 +115,7 @@ init_library()
 {
   init_option_debug();
   
-  if (opt_debug >= 1) { MSG(stderr, "*** init_library ***"); }
+  if (opt_debug >= 1) { MSG0(stderr, "*** init_library ***"); }
   
   init_options();
 
@@ -134,12 +134,12 @@ fini_library()
 {
   static int is_finalized = 0;
   if (is_finalized) {
-    if (opt_debug >= 1) { MSG(stderr, "*** fini_library (skip) ***"); }
+    if (opt_debug >= 1) { MSG0(stderr, "*** fini_library (skip) ***"); }
     return;
   }
   
   is_finalized = 1;
-  if (opt_debug >= 1) { MSG(stderr, "*** fini_library ***"); }
+  if (opt_debug >= 1) { MSG0(stderr, "*** fini_library ***"); }
 }
 
 
@@ -184,7 +184,7 @@ init_options()
   }
   
   if (opt_debug >= 1) { 
-    MSG(stderr, "  LD_PRELOAD: %s", getenv("LD_PRELOAD")); 
+    MSGx(stderr, "  LD_PRELOAD: %s", getenv("LD_PRELOAD")); 
   }
   
   /* Recursive profiling: default is on */
@@ -197,7 +197,7 @@ init_options()
   }
 
   if (opt_debug >= 1) { 
-    MSG(stderr, "  recursive profiling: %d", opt_recursive); 
+    MSGx(stderr, "  recursive profiling: %d", opt_recursive); 
   }
   
   /* Threaded profiling: default is off */
@@ -213,7 +213,7 @@ init_options()
     opt_eventlist = env_eventlist;
   }
 
-  if (opt_debug >= 1) { MSG(stderr, "  event list: %s", opt_eventlist); }
+  if (opt_debug >= 1) { MSGx(stderr, "  event list: %s", opt_eventlist); }
   
   /* Output path: default . */
   env_outpath = getenv("HPCRUN_OUTPUT");
@@ -268,7 +268,7 @@ init_options()
 static void 
 hpcrun_sighandler(int sig)
 {
-  if (opt_debug >= 1) { MSG(stderr, "*** catching signal %d ***", sig); }
+  if (opt_debug >= 1) { MSGx(stderr, "*** catching signal %d ***", sig); }
   
   signal(sig, SIG_DFL); /* return to default action */
     
@@ -347,7 +347,7 @@ static void stop_papi_for_thread(hpcpapi_profile_desc_vec_t* profdescs);
 extern void 
 init_process()
 {
-  if (opt_debug >= 1) { MSG(stderr, "*** init_process ***"); }
+  if (opt_debug >= 1) { MSG0(stderr, "*** init_process ***"); }
 
   rtloadmap = hpcrun_get_rtloadmap(opt_debug);
 
@@ -410,7 +410,7 @@ handle_dlopen()
   if (HPC_GET_PAPIPROFS(hpc_profdesc)) {
     start_papi_for_thread(HPC_GET_PAPIPROFS(hpc_profdesc));
   }
-  if (opt_debug >= 1) { MSG(stderr, "*** dlopen handling complete ***"); }
+  if (opt_debug >= 1) { MSG0(stderr, "*** dlopen handling complete ***"); }
 }
 
 
@@ -424,8 +424,10 @@ extern hpcrun_profiles_desc_t*
 init_thread(int is_thread)
 {
   hpcrun_profiles_desc_t* profdesc = NULL, *sharedprofdesc = NULL;
+  const char* out_fname = NULL;
+  const char* out_sfx = "";
   
-  if (opt_debug >= 1) { MSG(stderr, "*** init_thread ***"); }
+  if (opt_debug >= 1) { MSG0(stderr, "*** init_thread ***"); }
   
   /* Create profile info from event list and perform error checking. */
   if (is_thread && opt_thread == HPCRUN_THREADPROF_ALL) {
@@ -433,6 +435,14 @@ init_thread(int is_thread)
   }
   init_profdesc(&profdesc, numSysEvents, numPAPIEvents, rtloadmap, 
 		sharedprofdesc);
+  
+  /* Let user know about output file */
+  out_fname = profdesc->ofile.fname;
+  if (!out_fname) {
+    out_fname = sharedprofdesc->ofile.fname;
+    out_sfx = " (SHARED)";
+  }
+  MSGx(stderr, "Using output file %s%s\n", out_fname, out_sfx);
   
   /* Init signal handlers */
   init_sighandlers();
@@ -494,9 +504,9 @@ init_profdesc(hpcrun_profiles_desc_t** profdesc,
   int rval, i;
       
   if (opt_debug >= 1) { 
-    MSG(stderr, "Initializing profile descriptors");
-    MSG(stderr, "  Found %d sys events and %d PAPI events", 
-	numSysEv, numPapiEv);
+    MSG0(stderr, "Initializing profile descriptors");
+    MSGx(stderr, "  Found %d sys events and %d PAPI events", 
+	 numSysEv, numPapiEv);
   }
   
   /* 1a. Ensure we do not profile both system and PAPI events. */
@@ -569,8 +579,8 @@ init_profdesc(hpcrun_profiles_desc_t** profdesc,
     memset(HPC_GET_PAPIPROFS(*profdesc)->vec, 0x00, vecsz);
 
     HPC_GET_PAPIPROFS(*profdesc)->eset = PAPI_NULL;     
-    if ((rval = PAPI_create_eventset(&HPC_GET_PAPIPROFS(*profdesc)->eset)) 
-	!= PAPI_OK) {
+    rval = PAPI_create_eventset(&HPC_GET_PAPIPROFS(*profdesc)->eset);
+    if (rval != PAPI_OK) {
       DIE("fatal error: PAPI_create_eventset (%d): %s.", rval, PAPI_strerror(rval));
     }
   }
@@ -618,7 +628,7 @@ init_profdesc(hpcrun_profiles_desc_t** profdesc,
     }
     
     if (opt_debug >= 1) { 
-      MSG(stderr, "  Event: '%s' (%d) '%"PRIu64"'", eventbuf, evty, period);
+      MSGx(stderr, "  Event: '%s' (%d) '%"PRIu64"'", eventbuf, evty, period);
     }
     
     /* Add the event to the appropriate place */
@@ -685,9 +695,9 @@ init_sysprofdesc_buffer(hpcsys_profile_desc_vec_t* profdesc,
     }
       
     if (opt_debug >= 4) { 
-      MSG(stderr, "profile buffer details for %s:", prof->ename); 
-      MSG(stderr, "  count = %d, sp=%"PRIu64" ef=%d",
-	  prof->numsprofs, prof->period, prof->flags);
+      MSGx(stderr, "profile buffer details for %s:", prof->ename); 
+      MSGx(stderr, "  count = %d, sp=%"PRIu64" ef=%d",
+	   prof->numsprofs, prof->period, prof->flags);
     }
     
     if (sharedprofdesc) {
@@ -716,7 +726,7 @@ init_sysprofdesc_buffer(hpcsys_profile_desc_vec_t* profdesc,
 	
 	if (opt_debug >= 4) {
 	  /* 'pr_size'/'pr_off' are of type 'size_t' which is of pointer size */
-	  MSG(stderr, "\tprofile[%d] base = %p size = %#"PRIxPTR" off = %#"PRIxPTR" scale = %#lx",
+	  MSGx(stderr, "\tprofile[%d] base = %p size = %#"PRIxPTR" off = %#"PRIxPTR" scale = %#lx",
 	      mapi, prof->sprofs[mapi].pr_base, prof->sprofs[mapi].pr_size, 
 	      prof->sprofs[mapi].pr_off, prof->sprofs[mapi].pr_scale);
 	}
@@ -746,9 +756,9 @@ append_sysprofdesc_buffer(hpcsys_profile_desc_vec_t* profdesc,
     }
     
     if (opt_debug >= 4) { 
-      MSG(stderr, "profile buffer details for %s:", prof->ename); 
-      MSG(stderr, "  count = %d, sp=%"PRIu64" ef=%d",
-	  prof->numsprofs, prof->period, prof->flags);
+      MSGx(stderr, "profile buffer details for %s:", prof->ename); 
+      MSGx(stderr, "  count = %d, sp=%"PRIu64" ef=%d",
+	   prof->numsprofs, prof->period, prof->flags);
     }
     
     if (sharedprofdesc) {
@@ -777,9 +787,9 @@ append_sysprofdesc_buffer(hpcsys_profile_desc_vec_t* profdesc,
 	
 	if (opt_debug >= 4) {
 	  /* 'pr_size'/'pr_off' are of type 'size_t' which is of pointer size */
-	  MSG(stderr, "\tprofile[%d] base = %p size = %#"PRIxPTR" off = %#"PRIxPTR" scale = %#lx",
-	      mapi, prof->sprofs[mapi].pr_base, prof->sprofs[mapi].pr_size, 
-	      prof->sprofs[mapi].pr_off, prof->sprofs[mapi].pr_scale);
+	  MSGx(stderr, "\tprofile[%d] base = %p size = %#"PRIxPTR" off = %#"PRIxPTR" scale = %#lx",
+	       mapi, prof->sprofs[mapi].pr_base, prof->sprofs[mapi].pr_size, 
+	       prof->sprofs[mapi].pr_off, prof->sprofs[mapi].pr_scale);
 	}
       }
     }
@@ -811,10 +821,10 @@ init_papiprofdesc_buffer(hpcpapi_profile_desc_vec_t* profdesc,
     }
     
     if (opt_debug >= 4) { 
-      MSG(stderr, "profile buffer details for %s:", prof->einfo.symbol); 
-      MSG(stderr, "  count = %d, es=%#x ec=%#x sp=%"PRIu64" ef=%d",
-	  prof->numsprofs, profdesc->eset, 
-	  prof->ecode, prof->period, prof->flags);
+      MSGx(stderr, "profile buffer details for %s:", prof->einfo.symbol); 
+      MSGx(stderr, "  count = %d, es=%#x ec=%#x sp=%"PRIu64" ef=%d",
+	   prof->numsprofs, profdesc->eset, 
+	   prof->ecode, prof->period, prof->flags);
     }
     
     if (sharedprofdesc) {
@@ -843,10 +853,10 @@ init_papiprofdesc_buffer(hpcpapi_profile_desc_vec_t* profdesc,
 	prof->sprofs[mapi].pr_scale = prof->scale;
 	
 	if (opt_debug >= 4) {
-	  MSG(stderr, 
-	      "\tprofile[%d] base = %p size = %#x off = %p scale = %#x",
-	      mapi, prof->sprofs[mapi].pr_base, prof->sprofs[mapi].pr_size, 
-	      prof->sprofs[mapi].pr_off, prof->sprofs[mapi].pr_scale);
+	  MSGx(stderr, 
+	       "\tprofile[%d] base = %p size = %#x off = %p scale = %#x",
+	       mapi, prof->sprofs[mapi].pr_base, prof->sprofs[mapi].pr_size, 
+	       prof->sprofs[mapi].pr_off, prof->sprofs[mapi].pr_scale);
 	}
       }
     }
@@ -874,10 +884,10 @@ append_papiprofdesc_buffer(hpcpapi_profile_desc_vec_t* profdesc,
     }
     
     if (opt_debug >= 4) { 
-      MSG(stderr, "profile buffer details for %s:", prof->einfo.symbol); 
-      MSG(stderr, "  count = %d, es=%#x ec=%#x sp=%"PRIu64" ef=%d",
-	  prof->numsprofs, profdesc->eset, 
-	  prof->ecode, prof->period, prof->flags);
+      MSGx(stderr, "profile buffer details for %s:", prof->einfo.symbol); 
+      MSGx(stderr, "  count = %d, es=%#x ec=%#x sp=%"PRIu64" ef=%d",
+	   prof->numsprofs, profdesc->eset, 
+	   prof->ecode, prof->period, prof->flags);
     }
     
     if (sharedprofdesc) {
@@ -906,10 +916,10 @@ append_papiprofdesc_buffer(hpcpapi_profile_desc_vec_t* profdesc,
 	prof->sprofs[mapi].pr_scale = prof->scale;
 	
 	if (opt_debug >= 4) {
-	  MSG(stderr, 
-	      "\tprofile[%d] base = %p size = %#x off = %p scale = %#x",
-	      mapi, prof->sprofs[mapi].pr_base, prof->sprofs[mapi].pr_size, 
-	      prof->sprofs[mapi].pr_off, prof->sprofs[mapi].pr_scale);
+	  MSGx(stderr, 
+	       "\tprofile[%d] base = %p size = %#x off = %p scale = %#x",
+	       mapi, prof->sprofs[mapi].pr_base, prof->sprofs[mapi].pr_size, 
+	       prof->sprofs[mapi].pr_off, prof->sprofs[mapi].pr_scale);
 	}
       }
     }
@@ -988,16 +998,18 @@ init_profdesc_ofile(hpcrun_profiles_desc_t* profdesc, int sharedprofdesc)
 	   opt_outpath, opt_prefix, cmd, event, evetc, hostnm, getpid(), 
 	   hpcrun_gettid());
 
-  /* If user has supplied an output filename use that overrides the setting above */
+  /* If user has supplied an output filename use that overrides the
+     setting above */
   /* Use a generation suffix if file exists */
   if (strlen(opt_file)) {
     int inst = get_next_gen(opt_file);
-    if (inst) 
+    if (inst) {
       snprintf(outfilenm, outfilenmLen, "%s.%d", opt_file, inst);
-    else
+    }
+    else {
      strncpy(outfilenm, opt_file, outfilenmLen);
+    }
   }
-  fprintf(stderr, "\nhpcrun output (TID=0x%lx) will be in %s\n\n", hpcrun_gettid(), outfilenm);
   
   profdesc->ofile.fs = NULL;
   profdesc->ofile.fname = (char*)malloc(strlen(outfilenm)+1);
@@ -1007,7 +1019,7 @@ init_profdesc_ofile(hpcrun_profiles_desc_t* profdesc, int sharedprofdesc)
   /* Test whether we can write to this filesystem */
   do {
     if (opt_debug >= 1 && (errno == ENFILE || errno == EMFILE)) {
-      MSG(stderr, "* waiting for file descriptors to test filesystem!");
+      MSG0(stderr, "* waiting for file descriptors to test filesystem!");
     }
     errno = 0;
     fs = fopen(outfilenm, "w");
@@ -1100,7 +1112,7 @@ start_sysprof(hpcsys_profile_desc_vec_t* profdescs)
   /* Note: should only be one profdesc! */
   hpcsys_profile_desc_t* prof = &profdescs->vec[0];
 
-  if (opt_debug >= 1) { MSG(stderr, "Calling sprofil(): %s", prof->ename); }
+  if (opt_debug >= 1) { MSGx(stderr, "Calling sprofil(): %s", prof->ename); }
   
   ecode = sprofil(prof->sprofs, prof->numsprofs, NULL, prof->flags);
   if (ecode != 0) {
@@ -1122,8 +1134,9 @@ init_papi_for_process()
   
   /* set PAPI debug */
   if (opt_debug >= 5) {
-    MSG(stderr, "setting PAPI debug!");
-    if ((rval = PAPI_set_debug(PAPI_VERB_ECONT)) != PAPI_OK) {
+    MSG0(stderr, "setting PAPI debug!");
+    rval = PAPI_set_debug(PAPI_VERB_ECONT);
+    if (rval != PAPI_OK) {
       DIE("fatal error: PAPI_set_debug (%d): %s.", rval, PAPI_strerror(rval));
     }
   }
@@ -1133,11 +1146,11 @@ init_papi_for_process()
     domain = PAPI_DOM_USER;
   }
   if (opt_debug >= 1) {
-    MSG(stderr, "Setting PAPI domain to: %d", domain);
+    MSGx(stderr, "Setting PAPI domain to: %d", domain);
   }
-  int retval = PAPI_set_domain(domain);
-  if (retval != PAPI_OK) {
-    DIE("fatal error: PAPI_set_domain (%d): %s.", retval, PAPI_strerror(retval));
+  rval = PAPI_set_domain(domain);
+  if (rval != PAPI_OK) {
+    DIE("fatal error: PAPI_set_domain (%d): %s.", rval, PAPI_strerror(rval));
   }
 
 
@@ -1196,7 +1209,7 @@ add_papievent(hpcpapi_profile_desc_vec_t* profdescs, rtloadmap_t* rtmap,
      The number of counters in the histogram should equal the number
      of blocks in the region to be profiled.  */
 
-  int pcode;
+  int rval;
   hpcpapi_profile_desc_t* prof = NULL;
   
   if (!profdescs) {
@@ -1213,16 +1226,19 @@ add_papievent(hpcpapi_profile_desc_vec_t* profdescs, rtloadmap_t* rtmap,
   /* Find event info, ensuring it is available.  Note: it is
      necessary to do a query_event *and* get_event_info.  Sometimes
      the latter will return info on an event that does not exist. */
-  if (PAPI_event_name_to_code(eventnm, &prof->ecode) != PAPI_OK) {
+  rval = PAPI_event_name_to_code(eventnm, &prof->ecode);
+  if (rval != PAPI_OK) {
     DIE("fatal error: Event '%s' is not recognized.\n"
 	"\tCheck the list of supported events with `hpcrun -L'.", eventnm);
   }
-  if (PAPI_query_event(prof->ecode) != PAPI_OK) { 
+  rval = PAPI_query_event(prof->ecode);
+  if (rval != PAPI_OK) {
     DIE("fatal error: PAPI_query_event for '%s' failed for unknown reason.", 
 	eventnm);
   }
-  if ((pcode = PAPI_get_event_info(prof->ecode, &prof->einfo)) != PAPI_OK) {
-    DIE("fatal error: PAPI_get_event_info (%d): %s.", pcode, PAPI_strerror(pcode));
+  rval = PAPI_get_event_info(prof->ecode, &prof->einfo);
+  if (rval != PAPI_OK) {
+    DIE("fatal error: PAPI_get_event_info (%d): %s.", rval, PAPI_strerror(rval));
   }
   
   /* NOTE: Although clumsy, this test has official sanction. */
@@ -1233,9 +1249,10 @@ add_papievent(hpcpapi_profile_desc_vec_t* profdescs, rtloadmap_t* rtmap,
 	"\tUse `hpcrun -L' to find the component native events of '%s' that you can monitor separately.", eventnm, eventnm);
   }
   
-  if ((pcode = PAPI_add_event(profdescs->eset, prof->ecode)) != PAPI_OK) {
+  rval = PAPI_add_event(profdescs->eset, prof->ecode);
+  if (rval != PAPI_OK) {
     DIE("fatal error: (%d) Unable to add event '%s' to event set.\n"
-	"\tPAPI_add_event %s.", pcode, eventnm, PAPI_strerror(pcode));
+	"\tPAPI_add_event %s.", rval, eventnm, PAPI_strerror(rval));
   }
   
   /* Profiling period */
@@ -1262,7 +1279,7 @@ add_papievent(hpcpapi_profile_desc_vec_t* profdescs, rtloadmap_t* rtmap,
 static void 
 start_papi_for_thread(hpcpapi_profile_desc_vec_t* profdescs)
 {
-  int pcode;
+  int rval;
   int i;
 
   if (!profdescs) { return; }
@@ -1278,19 +1295,20 @@ start_papi_for_thread(hpcpapi_profile_desc_vec_t* profdescs)
     hpcpapi_profile_desc_t* prof = &profdescs->vec[i];
 
     if (opt_debug >= 1) { 
-      MSG(stderr, "Calling PAPI_sprofil(): %s", prof->einfo.symbol);
+      MSGx(stderr, "Calling PAPI_sprofil(): %s", prof->einfo.symbol);
     }
     
-    pcode = PAPI_sprofil(prof->sprofs, prof->numsprofs, profdescs->eset, 
-			 prof->ecode, prof->period, prof->flags);
-    if (pcode != PAPI_OK) {
-      DIE("fatal error: PAPI_sprofil (%d): %s.", pcode, PAPI_strerror(pcode));
+    rval = PAPI_sprofil(prof->sprofs, prof->numsprofs, profdescs->eset, 
+			prof->ecode, prof->period, prof->flags);
+    if (rval != PAPI_OK) {
+      DIE("fatal error: PAPI_sprofil (%d): %s.", rval, PAPI_strerror(rval));
     }
   }
 
   /* 2. Launch PAPI */
-  if ((pcode = PAPI_start(profdescs->eset)) != PAPI_OK) {
-    DIE("fatal error: PAPI_start (%d): %s.", pcode, PAPI_strerror(pcode));
+  rval = PAPI_start(profdescs->eset);
+  if (rval != PAPI_OK) {
+    DIE("fatal error: PAPI_start (%d): %s.", rval, PAPI_strerror(rval));
   }
 }
 
@@ -1341,12 +1359,12 @@ fini_process()
   static int is_finalized = 0;
 
   if (is_finalized) {
-    if (opt_debug >= 1) { MSG(stderr, "*** fini_process (skip) ***"); }
+    if (opt_debug >= 1) { MSG0(stderr, "*** fini_process (skip) ***"); }
     return;
   }
   
   is_finalized = 1;
-  if (opt_debug >= 1) { MSG(stderr, "*** fini_process ***"); }
+  if (opt_debug >= 1) { MSG0(stderr, "*** fini_process ***"); }
 
   fini_thread(&hpc_profdesc, 0 /*is_thread*/);
 
@@ -1365,7 +1383,7 @@ fini_thread(hpcrun_profiles_desc_t** profdesc, int is_thread)
 {
   int sharedprofdesc = 0;
   
-  if (opt_debug >= 1) { MSG(stderr, "*** fini_thread ***"); }
+  if (opt_debug >= 1) { MSG0(stderr, "*** fini_thread ***"); }
 
   /* Stop profiling */
   if (HPC_GET_PAPIPROFS(*profdesc)) {
@@ -1411,26 +1429,23 @@ stop_sysprof(hpcsys_profile_desc_vec_t* profdescs)
 static void 
 stop_papi_for_thread(hpcpapi_profile_desc_vec_t* profdescs)
 {
-  int pcode, i;
+  int rval, i;
   long_long* values = NULL; // array the size of the eventset
   
-  if ((pcode = PAPI_stop(profdescs->eset, values)) != PAPI_OK) {
-#if 0
-    DIE("fatal error: PAPI_stop (%d): %s.", pcode, PAPI_strerror(pcode));
-#endif
+  rval = PAPI_stop(profdescs->eset, values);
+  if (rval != PAPI_OK) {
+    //DIE("fatal error: PAPI_stop (%d): %s.", rval, PAPI_strerror(rval));
   }
 
   /* Call PAPI_sprofil() with a 0 threshold to cleanup internal memory */
   for (i = 0; i < profdescs->size; ++i) {
     hpcpapi_profile_desc_t* prof = &profdescs->vec[i];
     
-    pcode = PAPI_sprofil(prof->sprofs, prof->numsprofs, profdescs->eset, 
-			 prof->ecode, 0, prof->flags);
-#if 0
-    if (pcode != PAPI_OK) {
-      DIE("fatal error: PAPI_sprofil (%d): %s.", pcode, PAPI_strerror(pcode));
+    rval = PAPI_sprofil(prof->sprofs, prof->numsprofs, profdescs->eset, 
+			prof->ecode, 0, prof->flags);
+    if (rval != PAPI_OK) {
+      //DIE("fatal error: PAPI_sprofil (%d): %s.", rval, PAPI_strerror(rval));
     }
-#endif
   }
 }
 
@@ -1438,15 +1453,25 @@ stop_papi_for_thread(hpcpapi_profile_desc_vec_t* profdescs)
 static void 
 fini_papi_for_thread(hpcpapi_profile_desc_vec_t* profdescs)
 {
-  /* No need to test for failures during PAPI calls -- we've already
-     got the goods! */
-  PAPI_cleanup_eventset(profdescs->eset);
-  PAPI_destroy_eventset(&profdescs->eset);
+  int rval;
+  /* Error need not be fatal -- we've already got the goods! */
+  rval = PAPI_cleanup_eventset(profdescs->eset);
+  if (rval != PAPI_OK) {
+    MSGx(stderr, "warning: PAPI_cleanup_eventset (%d): %s.", rval, PAPI_strerror(rval));
+  }
+
+  rval = PAPI_destroy_eventset(&profdescs->eset);
+  if (rval != PAPI_OK) {
+    MSGx(stderr, "warning: PAPI_destroy_eventset (%d): %s.", rval, PAPI_strerror(rval));
+  }
   profdescs->eset = PAPI_NULL;
 
   /* Call PAPI_stop, PAPI_cleanup_eventset and PAPI_destroy_eventset
      before PAPI_unregister_thread */
-  PAPI_unregister_thread();
+  rval = PAPI_unregister_thread();
+  if (rval != PAPI_OK) {
+    MSGx(stderr, "warning: PAPI_unregister_thread (%d): %s.", rval, PAPI_strerror(rval));
+  }
 }
 
 
@@ -1545,7 +1570,7 @@ write_all_profiles(hpcrun_profiles_desc_t* profdesc, rtloadmap_t* rtmap)
   int i;
   FILE* fs;
   
-  if (opt_debug >= 1) { MSG(stderr, "*** write_all_profiles: begin ***"); }
+  if (opt_debug >= 1) { MSG0(stderr, "*** write_all_profiles: begin ***"); }
 
   if (!profdesc->ofile.fname) {
     return;
@@ -1554,7 +1579,7 @@ write_all_profiles(hpcrun_profiles_desc_t* profdesc, rtloadmap_t* rtmap)
   /* open the data file (wait if too many files are already open) */
   do {
     if (opt_debug >= 1 && (errno == ENFILE || errno == EMFILE)) {
-      MSG(stderr, "* waiting for file descriptors to write data!");
+      MSG0(stderr, "* waiting for file descriptors to write data!");
     }
     errno = 0;
     fs = fopen(profdesc->ofile.fname, "w");
@@ -1571,7 +1596,7 @@ write_all_profiles(hpcrun_profiles_desc_t* profdesc, rtloadmap_t* rtmap)
   fwrite(HPCRUNFILE_VERSION, 1, HPCRUNFILE_VERSION_LEN, fs);
   fputc(HPCRUNFILE_ENDIAN, fs);
 
-  if (opt_debug >= 1) { MSG(stderr, "rtmap count: %d", rtmap->count); }
+  if (opt_debug >= 1) { MSGx(stderr, "rtmap count: %d", rtmap->count); }
 
   /* <loadmodule_list> */
   hpc_fwrite_le4(&(rtmap->count), fs);
@@ -1581,7 +1606,7 @@ write_all_profiles(hpcrun_profiles_desc_t* profdesc, rtloadmap_t* rtmap)
   
   fclose(fs);
 
-  if (opt_debug >= 1) { MSG(stderr, "*** write_all_profiles: end ***"); }
+  if (opt_debug >= 1) { MSG0(stderr, "*** write_all_profiles: end ***"); }
 }
 
 
@@ -1594,8 +1619,8 @@ write_module_profile(FILE* fs, rtloadmod_desc_t* mod,
   unsigned numSysEv = 0, numPapiEv = 0;
   
   if (opt_debug >= 2) { 
-    MSG(stderr, "writing module %s (at offset %#"PRIx64")", 
-	mod->name, mod->offset); 
+    MSGx(stderr, "writing module %s (at offset %#"PRIx64")", 
+	 mod->name, mod->offset); 
   }
 
   /* <loadmodule_name>, <loadmodule_loadoffset> */
@@ -1661,8 +1686,8 @@ write_papievent_data(FILE *fs, hpcpapi_profile_desc_t* prof, int sprofidx)
   uint64_t ncounters = (sprof->pr_size / prof->bytesPerCntr);
 
   if (opt_debug >= 4) { 
-    MSG(stderr, "  writing %p[%d] = %p for %s with buf (%p):", 
-	prof, sprofidx, sprof, ename, histo); 
+    MSGx(stderr, "  writing %p[%d] = %p for %s with buf (%p):", 
+	 prof, sprofidx, sprof, ename, histo); 
   }
 
   write_event_data(fs, ename, histo, ncounters, prof->bytesPerCodeBlk);
@@ -1683,8 +1708,8 @@ write_event_data(FILE *fs, char* ename, hpc_hist_bucket* histo,
   hpc_fwrite_le8(&count, fs);
   
   if (opt_debug >= 3) {
-    MSG(stderr, "  buffer (%p) for %s has %"PRIu64" of %"PRIu64" non-zero counters (last non-zero counter: %"PRIu64")", 
-	histo, ename, count, ncounters, inz);
+    MSGx(stderr, "  buffer (%p) for %s has %"PRIu64" of %"PRIu64" non-zero counters (last non-zero counter: %"PRIu64")", 
+	 histo, ename, count, ncounters, inz);
   }
   
   /* <histogram_non_zero_bucket_x_value> 
@@ -1698,7 +1723,7 @@ write_event_data(FILE *fs, char* ename, hpc_hist_bucket* histo,
       hpc_fwrite_le8(&offset, fs); /* offset (in bytes) from load addr */
 
       if (opt_debug >= 3) {
-        MSG(stderr, "  (cnt,offset)=(%d,%"PRIx64")", cnt, offset);
+        MSGx(stderr, "  (cnt,offset)=(%d,%"PRIx64")", cnt, offset);
       }
     }
   }
@@ -1762,10 +1787,10 @@ hpcrun_parse_execl(const char*** argv, const char* const** envp,
   if (opt_debug >= 2) { 
     int i;
     for (i = 0; i < argc; ++i) {
-      MSG(stderr, "  execl arg%d: %s", i, (*argv)[i]);
+      MSGx(stderr, "  execl arg%d: %s", i, (*argv)[i]);
     }
     if (envp) {
-      MSG(stderr, "  execl envp found");
+      MSG0(stderr, "  execl envp found");
     }
   }
 #endif

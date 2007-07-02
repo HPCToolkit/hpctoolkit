@@ -44,8 +44,31 @@
 // Private debugging level: messages for in-house debugging [0-9]
 #define HPCRUN_DBG_LVL 0
 
-#define MSG(x, ...)                                                   \
-  { fprintf((x), "hpcrun (pid %d, tid 0x%lx): ", getpid(), hpcrun_gettid()); fprintf((x), __VA_ARGS__); fputs("\n", (x)); }
+// MSG should be atomic so that thread messages are not interleaved.
+// Because we want to expand the format string with additional output
+// parameters, we need to know how to rebuild the fprintf parameters,
+// which involves knowing when to include a comma and when not to:
+//   "%x1 %x2" fmt, x1, x2   -OR-   "%x1 %x2" fmt, x1, x2, fmt_args
+// But doing this requires more compile time evaluation than macros
+// support.  Thus, the user must perform this selection by choosing
+// between MSG0 and MSGx.
+
+#define MSG_str(fmt)                                                    \
+  "hpcrun (pid %d, tid 0x%lx): " fmt "\n", getpid(), hpcrun_gettid()
+
+#define MSG0(x, fmt)                                                    \
+  { fprintf(x, MSG_str(fmt)); } 
+
+#define MSGx(x, fmt, ...)                                               \
+  { fprintf(x, MSG_str(fmt), __VA_ARGS__); }
+
+/* #define MSG(x, fmt, ...) \
+  { fprintf(x, "hpcrun (pid %d, tid 0x%lx): " fmt "\n", getpid(), hpcrun_gettid(), __VA_ARGS__); }
+*/
+
+/*#define MSG(x, ...)                                                   \
+  { fprintf((x), "hpcrun (pid %d, tid 0x%lx): ", getpid(), hpcrun_gettid()); fprintf((x), __VA_ARGS__); fputs("\n", (x)); } */
+
 
 #define ERRMSG(...)                                                   \
   { fputs("hpcrun", stderr);                                          \
