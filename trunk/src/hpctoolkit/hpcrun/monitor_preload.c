@@ -138,7 +138,7 @@ init_library_SPECIALIZED()
     hpcrun_handle_any_dlerror();
   }
   if (!real_start_main) {
-    DIE("fatal error: Cannot intercept beginning of process execution and therefore cannot begin profiling.");
+    DIE0("error: Cannot intercept beginning of process execution and therefore cannot begin profiling.");
   }
 
   
@@ -175,20 +175,20 @@ init_library_SPECIALIZED()
       (pthread_create_fptr_t)dlsym(RTLD_NEXT, "pthread_create");
     hpcrun_handle_any_dlerror();
     if (!real_pthread_create) {
-      DIE("fatal error: Cannot intercept POSIX thread creation and therefore cannot profile threads.");
+      DIE0("error: Cannot intercept POSIX thread creation and therefore cannot profile threads.");
     }
     
     real_pthread_self = (pthread_self_fptr_t)dlsym(RTLD_NEXT, "pthread_self");
     hpcrun_handle_any_dlerror();
     if (!real_pthread_self) {
-      DIE("fatal error: Cannot intercept POSIX thread id routine and therefore cannot profile threads.");
+      DIE0("error: Cannot intercept POSIX thread id routine and therefore cannot profile threads.");
     }
 
 #if 0
     // Note: this is dangerous becuase the app could use /lib/tls/libpthread!
     void* pthandle = dlopen("/lib/libpthread.so.0", RTLD_LAZY);
     if (!pthandle) {
-      DIE("fatal error: Cannot open libpthread");
+      DIE0("error: Cannot open libpthread");
     }
     real_pthread_create = 
       (pthread_create_fptr_t)dlsym(pthandle, "pthread_create");
@@ -492,13 +492,13 @@ hpcrun_pthread_create PARAMS_PTHREAD_CREATE
   if (opt_debug >= 1) { MSG(stderr, "==> creating thread <=="); }
   
   if (!real_pthread_create) {
-    DIE("fatal error: Cannot intercept POSIX thread creation.  Please use the -t option to profile threaded applications.");
+    DIE0("error: Cannot intercept POSIX thread creation.  Please use the -t option to profile threaded applications.");
   }
   
   /* squirrel away original arguments */
   sz = sizeof(hpcrun_pthread_create_args_t);
   hpcargs = (hpcrun_pthread_create_args_t*)malloc(sz);
-  if (!hpcargs) { DIE("fatal error: malloc() failed!"); }
+  if (!hpcargs) { DIE0("error: malloc() failed!"); }
   memset(hpcargs, 0x0, sizeof(hpcrun_pthread_create_args_t));
   hpcargs->start_routine = start_routine;
   hpcargs->arg = arg;
@@ -547,7 +547,7 @@ init_papi_for_process_SPECIALIZED()
 
   if (opt_thread) {
     if ((rval = PAPI_thread_init(real_pthread_self)) != PAPI_OK) {
-      DIE("fatal error: PAPI error (%d): %s.", rval, PAPI_strerror(rval));
+      DIEx("error: PAPI error (%d): %s.", rval, PAPI_strerror(rval));
     }
   }
 }
@@ -572,7 +572,7 @@ hpcrun_handle_any_dlerror()
   /* Note: We assume dlsym() or something similar has just been called! */
   char *error;
   if ((error = dlerror()) != NULL) {
-    DIE("fatal error: %s\n", error);
+    DIEx("error: %s\n", error);
   }
 }
 
@@ -623,7 +623,7 @@ monitor_init_thread_support(void)
 {
   int rval;
   if ((rval = PAPI_thread_init(pthread_self)) != PAPI_OK) {
-    DIE("fatal error: PAPI error (%d): %s.", rval, PAPI_strerror(rval));
+    DIEx("error: PAPI error (%d): %s.", rval, PAPI_strerror(rval));
   }
 }
 

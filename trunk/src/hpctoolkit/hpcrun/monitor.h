@@ -56,27 +56,39 @@
 #define MSG_str(fmt)                                                    \
   "hpcrun (pid %d, tid 0x%lx): " fmt "\n", getpid(), hpcrun_gettid()
 
+
 #define MSG0(x, fmt)                                                    \
   { fprintf(x, MSG_str(fmt)); } 
 
 #define MSGx(x, fmt, ...)                                               \
   { fprintf(x, MSG_str(fmt), __VA_ARGS__); }
 
-/* #define MSG(x, fmt, ...) \
-  { fprintf(x, "hpcrun (pid %d, tid 0x%lx): " fmt "\n", getpid(), hpcrun_gettid(), __VA_ARGS__); }
-*/
-
 /*#define MSG(x, ...)                                                   \
   { fprintf((x), "hpcrun (pid %d, tid 0x%lx): ", getpid(), hpcrun_gettid()); fprintf((x), __VA_ARGS__); fputs("\n", (x)); } */
 
 
-#define ERRMSG(...)                                                   \
+#define ERRMSG0(fmt)					                \
+  { if (HPCRUN_DBG_LVL) {                                               \
+      fprintf(stderr, MSG_str(fmt " [%s:%d]"), __FILE__, __LINE__); }   \
+    else { fprintf(stderr, MSG_str(fmt)); }                             \
+  }
+
+#define ERRMSGx(fmt, ...)					        \
+  { if (HPCRUN_DBG_LVL) {                                               \
+      fprintf(stderr, MSG_str(fmt " [%s:%d]"), __FILE__, __LINE__, __VA_ARGS__); } \
+    else { fprintf(stderr, MSG_str(fmt), __VA_ARGS__); }                \
+  }
+
+/*#define ERRMSG(...)						      \
   { fputs("hpcrun", stderr);                                          \
     if (HPCRUN_DBG_LVL) {                                             \
       fprintf(stderr, " [%s:%d]", __FILE__, __LINE__); }              \
-    fprintf(stderr, " (pid %d, tid 0x%lx): ", getpid(), hpcrun_gettid()); fprintf(stderr, __VA_ARGS__); fputs("\n", stderr); }
+      fprintf(stderr, " (pid %d, tid 0x%lx): ", getpid(), hpcrun_gettid()); fprintf(stderr, __VA_ARGS__); fputs("\n", stderr); } */
 
-#define DIE(...) ERRMSG(__VA_ARGS__); { exit(1); }
+
+#define DIE0(fmt)      ERRMSG0(fmt); { exit(1); }
+
+#define DIEx(fmt, ...) ERRMSGx(fmt, __VA_ARGS__); { exit(1); }
 
 /**************************** Forward Declarations **************************/
 

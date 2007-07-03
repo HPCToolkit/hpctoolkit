@@ -221,7 +221,7 @@ init_options()
     strncpy(opt_outpath, env_outpath, PATH_MAX);
     if(mkdir(opt_outpath, 0755))
       if (errno != EEXIST) {
-        DIE("fatal error: mkdir(%s) failed. %s\n", opt_outpath, strerror(errno));
+        DIEx("error: mkdir(%s) failed. %s\n", opt_outpath, strerror(errno));
       }
   }
   else
@@ -243,7 +243,7 @@ init_options()
     env_flags = getenv("HPCRUN_EVENT_FLAG");
     if (env_flags) {
       if ((f = hpcpapi_flag_by_name(env_flags)) == NULL) {
-	DIE("fatal error: Invalid profiling flag '%s'.", env_flags);
+	DIEx("error: Invalid profiling flag '%s'.", env_flags);
       }
       opt_flagscode = f->code;
     }
@@ -278,7 +278,7 @@ hpcrun_sighandler(int sig)
     break;
   }
   default: 
-    ERRMSG("Warning: Handling unknown signal %d.", sig);
+    MSGx(stderr, "warning: Handling unknown signal %d.", sig);
     break;
   }
   
@@ -369,7 +369,7 @@ extern void
 handle_dlopen()
 {
   if (hpc_profdesc == NULL) {
-    DIE("dlopen before process initialization!");
+    DIE0("dlopen before process initialization!");
   }
 
   /* Stop profiling */
@@ -511,7 +511,7 @@ init_profdesc(hpcrun_profiles_desc_t** profdesc,
   
   /* 1a. Ensure we do not profile both system and PAPI events. */
   if (numSysEv > 0 && numPapiEv > 0) {
-    DIE("Cannot profile both WALLCLK and PAPI events at the same time. (Both use SIGPROF.)");
+    DIE0("Cannot profile both WALLCLK and PAPI events at the same time. (Both use SIGPROF.)");
   }
   
   /* 1b. Ensure no more than one wall clock event is profiled.  (Only
@@ -522,7 +522,7 @@ init_profdesc(hpcrun_profiles_desc_t** profdesc,
 
   /* 1c. Ensure that we do not use system profile with threads */ 
   if (numSysEv > 0 && opt_thread) {
-    DIE("Cannot profile WALLCLK on multithreaded process. (sprofil() limitation.)");
+    DIE0("Cannot profile WALLCLK on multithreaded process. (sprofil() limitation.)");
   }
   
   /* 1d. Ensure we have enough hardware counters if using PAPI.  Note:
@@ -530,7 +530,7 @@ init_profdesc(hpcrun_profiles_desc_t** profdesc,
   {
     int numHwCntrs = PAPI_num_hwctrs();
     if (numPapiEv > numHwCntrs) {
-      ERRMSG("Warning: Too many events (%d) for hardware counters (%d).  Only using first %d events.", numPapiEv, numHwCntrs, numHwCntrs);
+      MSGx(stderr, "warning: Too many events (%d) for hardware counters (%d).  Only using first %d events.", numPapiEv, numHwCntrs, numHwCntrs);
       numPapiEv = numHwCntrs;
     }
   }
@@ -538,7 +538,7 @@ init_profdesc(hpcrun_profiles_desc_t** profdesc,
   
   /* 2a. Initialize profdesc */
   *profdesc = (hpcrun_profiles_desc_t*)malloc(sizeof(hpcrun_profiles_desc_t));
-  if (!(*profdesc)) { DIE("fatal error: malloc() failed!"); }
+  if (!(*profdesc)) { DIE0("error: malloc() failed!"); }
   memset(*profdesc, 0x00, sizeof(hpcrun_profiles_desc_t));
   
   /* 2b. Initialize system profdescs */
@@ -547,7 +547,7 @@ init_profdesc(hpcrun_profiles_desc_t** profdesc,
 
     HPC_GETL_SYSPROFS(*profdesc) = (hpcsys_profile_desc_vec_t*)malloc(sz);
     if (!HPC_GET_SYSPROFS(*profdesc)) { 
-      DIE("fatal error: malloc() failed!"); 
+      DIE0("error: malloc() failed!"); 
     }
 
     vecsz = sizeof(hpcsys_profile_desc_t) * numSysEv;    
@@ -555,7 +555,7 @@ init_profdesc(hpcrun_profiles_desc_t** profdesc,
     
     HPC_GET_SYSPROFS(*profdesc)->vec = (hpcsys_profile_desc_t*)malloc(vecsz);
     if (!HPC_GET_SYSPROFS(*profdesc)->vec) { 
-      DIE("fatal error: malloc() failed!"); 
+      DIE0("error: malloc() failed!"); 
     }
     memset(HPC_GET_SYSPROFS(*profdesc)->vec, 0x00, vecsz);
   }
@@ -566,7 +566,7 @@ init_profdesc(hpcrun_profiles_desc_t** profdesc,
     
     HPC_GETL_PAPIPROFS(*profdesc) = (hpcpapi_profile_desc_vec_t*)malloc(sz);
     if (!HPC_GET_PAPIPROFS(*profdesc)) { 
-      DIE("fatal error: malloc() failed!"); 
+      DIE0("error: malloc() failed!"); 
     }
 
     vecsz = sizeof(hpcpapi_profile_desc_t) * numPapiEv;
@@ -574,14 +574,14 @@ init_profdesc(hpcrun_profiles_desc_t** profdesc,
     
     HPC_GET_PAPIPROFS(*profdesc)->vec = (hpcpapi_profile_desc_t*)malloc(vecsz);
     if (!HPC_GET_PAPIPROFS(*profdesc)->vec) { 
-      DIE("fatal error: malloc() failed!"); 
+      DIE0("error: malloc() failed!"); 
     }
     memset(HPC_GET_PAPIPROFS(*profdesc)->vec, 0x00, vecsz);
 
     HPC_GET_PAPIPROFS(*profdesc)->eset = PAPI_NULL;     
     rval = PAPI_create_eventset(&HPC_GET_PAPIPROFS(*profdesc)->eset);
     if (rval != PAPI_OK) {
-      DIE("fatal error: PAPI_create_eventset (%d): %s.", rval, PAPI_strerror(rval));
+      DIEx("error: PAPI_create_eventset (%d): %s.", rval, PAPI_strerror(rval));
     }
   }
 
@@ -643,7 +643,7 @@ init_profdesc(hpcrun_profiles_desc_t** profdesc,
 		    eventbuf, period);
     } 
     else {
-      DIE("fatal error: internal programming error - invalid event.");
+      DIE0("error: internal programming error - invalid event.");
     }
   }
   free(tmp_eventlist);
@@ -689,7 +689,7 @@ init_sysprofdesc_buffer(hpcsys_profile_desc_vec_t* profdesc,
     }
     else {
       prof->sprofs = (struct prof*)malloc(sprofbufsz);
-      if (!prof->sprofs) { DIE("fatal error: malloc() failed!"); }
+      if (!prof->sprofs) { DIE0("error: malloc() failed!"); }
       memset(prof->sprofs, 0x00, sprofbufsz);
       prof->numsprofs = rtmap->count;
     }
@@ -716,7 +716,7 @@ init_sysprofdesc_buffer(hpcsys_profile_desc_vec_t* profdesc,
 	prof->sprofs[mapi].pr_base = (void*)malloc(bufsz);
 	prof->sprofs[mapi].pr_size = bufsz;
 	if (!prof->sprofs[mapi].pr_base) { 
-	  DIE("fatal error: malloc() failed!"); 
+	  DIE0("error: malloc() failed!"); 
 	}
 	memset(prof->sprofs[mapi].pr_base, 0x00, bufsz);
 	
@@ -750,7 +750,7 @@ append_sysprofdesc_buffer(hpcsys_profile_desc_vec_t* profdesc,
     
     if (!sharedprofdesc) {
       prof->sprofs = (struct prof*)realloc(prof->sprofs, sprofbufsz);
-      if (!prof->sprofs) { DIE("fatal error: realloc() failed!"); }
+      if (!prof->sprofs) { DIE0("error: realloc() failed!"); }
       memset(&(prof->sprofs[oldcount]), 0x00, sprofbufsz-(oldcount*sizeof(PAPI_sprofil_t)));
       prof->numsprofs = rtmap->count;
     }
@@ -777,7 +777,7 @@ append_sysprofdesc_buffer(hpcsys_profile_desc_vec_t* profdesc,
 	prof->sprofs[mapi].pr_base = (void*)malloc(bufsz);
 	prof->sprofs[mapi].pr_size = bufsz;
 	if (!prof->sprofs[mapi].pr_base) { 
-	  DIE("fatal error: malloc() failed!"); 
+	  DIE0("error: malloc() failed!"); 
 	}
 	memset(prof->sprofs[mapi].pr_base, 0x00, bufsz);
 	
@@ -814,7 +814,7 @@ init_papiprofdesc_buffer(hpcpapi_profile_desc_vec_t* profdesc,
     }
     else {
       prof->sprofs = (PAPI_sprofil_t*)malloc(sprofbufsz);
-      if (!prof->sprofs) { DIE("fatal error: malloc() failed!"); }
+      if (!prof->sprofs) { DIE0("error: malloc() failed!"); }
       memset(prof->sprofs, 0x00, sprofbufsz);
       prof->numsprofs = rtmap->count;
       
@@ -843,7 +843,7 @@ init_papiprofdesc_buffer(hpcpapi_profile_desc_vec_t* profdesc,
 	prof->sprofs[mapi].pr_base = (void*)malloc(bufsz);
 	prof->sprofs[mapi].pr_size = bufsz;
 	if (!prof->sprofs[mapi].pr_base) {
-	  DIE("fatal error: malloc() failed!");
+	  DIE0("error: malloc() failed!");
 	}
 	memset(prof->sprofs[mapi].pr_base, 0x00, bufsz);
 	
@@ -878,7 +878,7 @@ append_papiprofdesc_buffer(hpcpapi_profile_desc_vec_t* profdesc,
 		
     if (!sharedprofdesc) {
       prof->sprofs = (PAPI_sprofil_t*)realloc(prof->sprofs, sprofbufsz);
-      if (!prof->sprofs) { DIE("fatal error: realloc() failed!"); }
+      if (!prof->sprofs) { DIE0("error: realloc() failed!"); }
       memset(&(prof->sprofs[oldcount]), 0x00, sprofbufsz-(oldcount*sizeof(PAPI_sprofil_t)));
       prof->numsprofs = rtmap->count;
     }
@@ -906,7 +906,7 @@ append_papiprofdesc_buffer(hpcpapi_profile_desc_vec_t* profdesc,
 	prof->sprofs[mapi].pr_base = (void*)malloc(bufsz);
 	prof->sprofs[mapi].pr_size = bufsz;
 	if (!prof->sprofs[mapi].pr_base) {
-	  DIE("fatal error: malloc() failed!");
+	  DIE0("error: malloc() failed!");
 	}
 	memset(prof->sprofs[mapi].pr_base, 0x00, bufsz);
 	
@@ -1013,7 +1013,7 @@ init_profdesc_ofile(hpcrun_profiles_desc_t* profdesc, int sharedprofdesc)
   
   profdesc->ofile.fs = NULL;
   profdesc->ofile.fname = (char*)malloc(strlen(outfilenm)+1);
-  if (!profdesc->ofile.fname) { DIE("fatal error: malloc() failed!"); }
+  if (!profdesc->ofile.fname) { DIE0("error: malloc() failed!"); }
   strcpy(profdesc->ofile.fname, outfilenm);
 
   /* Test whether we can write to this filesystem */
@@ -1027,8 +1027,8 @@ init_profdesc_ofile(hpcrun_profiles_desc_t* profdesc, int sharedprofdesc)
   while (errno == ENFILE || errno == EMFILE /* too many open files */);
 
   if (fs == NULL) {
-    DIE("fatal error: Filesystem test failed (cannot open file '%s'): %s", 
-	outfilenm, strerror(errno));
+    DIEx("error: Filesystem test failed (cannot open file '%s'): %s", 
+	 outfilenm, strerror(errno));
   }
   fclose(fs);
   
@@ -1065,7 +1065,7 @@ add_sysevent(hpcsys_profile_desc_vec_t* profdescs, rtloadmap_t* rtmap,
   
   if (profidx >= profdescs->size) {
     /* Assumes that the only system event is wallclock time */
-    DIE("fatal error: Only one wallclock event may be profiled at a time.");
+    DIE0("error: Only one wallclock event may be profiled at a time.");
   }
 
   prof = &(profdescs->vec[profidx]);
@@ -1082,13 +1082,13 @@ add_sysevent(hpcsys_profile_desc_vec_t* profdescs, rtloadmap_t* rtmap,
     prof->period = 1; /* should be 1 ms; cf. /usr/include/sys/profile.h */
   }
   else {
-    DIE("fatal error: Invalid event: '%s'.", eventnm);
+    DIEx("error: Invalid event: '%s'.", eventnm);
   }
 
   /* Profiling period (already set) */
   if (period != 0) {
-    DIE("fatal error: Invalid period %"PRIu64" for event '%s'.", 
-	period, eventnm);
+    DIEx("error: Invalid period %"PRIu64" for event '%s'.", 
+	 period, eventnm);
   }
     
   /* Profiling flags */
@@ -1099,7 +1099,7 @@ add_sysevent(hpcsys_profile_desc_vec_t* profdescs, rtloadmap_t* rtmap,
   prof->scale = 0x10000;
   
   if ((prof->scale * prof->bytesPerCodeBlk) != (65536 * prof->bytesPerCntr)) {
-    DIE("fatal error: internal programming error - invalid profiling scale.");
+    DIE0("error: internal programming error - invalid profiling scale.");
   }
 }
 
@@ -1116,7 +1116,7 @@ start_sysprof(hpcsys_profile_desc_vec_t* profdescs)
   
   ecode = sprofil(prof->sprofs, prof->numsprofs, NULL, prof->flags);
   if (ecode != 0) {
-    DIE("fatal error: sprofil() error. %s.", strerror(errno));
+    DIEx("error: sprofil() error. %s.", strerror(errno));
   }
 }
 
@@ -1137,7 +1137,7 @@ init_papi_for_process()
     MSG0(stderr, "setting PAPI debug!");
     rval = PAPI_set_debug(PAPI_VERB_ECONT);
     if (rval != PAPI_OK) {
-      DIE("fatal error: PAPI_set_debug (%d): %s.", rval, PAPI_strerror(rval));
+      DIEx("error: PAPI_set_debug (%d): %s.", rval, PAPI_strerror(rval));
     }
   }
   
@@ -1150,7 +1150,7 @@ init_papi_for_process()
   }
   rval = PAPI_set_domain(domain);
   if (rval != PAPI_OK) {
-    DIE("fatal error: PAPI_set_domain (%d): %s.", rval, PAPI_strerror(rval));
+    DIEx("error: PAPI_set_domain (%d): %s.", rval, PAPI_strerror(rval));
   }
 
 
@@ -1213,11 +1213,11 @@ add_papievent(hpcpapi_profile_desc_vec_t* profdescs, rtloadmap_t* rtmap,
   hpcpapi_profile_desc_t* prof = NULL;
   
   if (!profdescs) {
-    DIE("fatal error: internal programming error.");
+    DIE0("error: internal programming error.");
   }
 
   if (profidx >= profdescs->size) {
-    ERRMSG("Warning: Ignoring event '%s:%"PRIu64"'.", eventnm, period);
+    MSGx(stderr, "warning: Ignoring event '%s:%"PRIu64"'.", eventnm, period);
     return;
   }
     
@@ -1228,37 +1228,37 @@ add_papievent(hpcpapi_profile_desc_vec_t* profdescs, rtloadmap_t* rtmap,
      the latter will return info on an event that does not exist. */
   rval = PAPI_event_name_to_code(eventnm, &prof->ecode);
   if (rval != PAPI_OK) {
-    DIE("fatal error: Event '%s' is not recognized.\n"
-	"\tCheck the list of supported events with `hpcrun -L'.", eventnm);
+    DIEx("error: Event '%s' is not recognized.\n"
+	 "\tCheck the list of supported events with `hpcrun -L'.", eventnm);
   }
   rval = PAPI_query_event(prof->ecode);
   if (rval != PAPI_OK) {
-    DIE("fatal error: PAPI_query_event for '%s' failed for unknown reason.", 
-	eventnm);
+    DIEx("error: PAPI_query_event for '%s' failed for unknown reason.", 
+	 eventnm);
   }
   rval = PAPI_get_event_info(prof->ecode, &prof->einfo);
   if (rval != PAPI_OK) {
-    DIE("fatal error: PAPI_get_event_info (%d): %s.", rval, PAPI_strerror(rval));
+    DIEx("error: PAPI_get_event_info (%d): %s.", rval, PAPI_strerror(rval));
   }
   
   /* NOTE: Although clumsy, this test has official sanction. */
   if ((prof->ecode & PAPI_PRESET_MASK) && (prof->einfo.count > 1) && 
       strcmp(prof->einfo.derived, "DERIVED_CMPD") != 0) {
-    DIE("fatal error: '%s' is a PAPI derived event.\n"
-	"\tSampling of derived events is not supported by PAPI.\n" 
-	"\tUse `hpcrun -L' to find the component native events of '%s' that you can monitor separately.", eventnm, eventnm);
+    DIEx("error: '%s' is a PAPI derived event.\n"
+	 "\tSampling of derived events is not supported by PAPI.\n" 
+	 "\tUse `hpcrun -L' to find the component native events of '%s' that you can monitor separately.", eventnm, eventnm);
   }
   
   rval = PAPI_add_event(profdescs->eset, prof->ecode);
   if (rval != PAPI_OK) {
-    DIE("fatal error: (%d) Unable to add event '%s' to event set.\n"
-	"\tPAPI_add_event %s.", rval, eventnm, PAPI_strerror(rval));
+    DIEx("error: (%d) Unable to add event '%s' to event set.\n"
+	 "\tPAPI_add_event %s.", rval, eventnm, PAPI_strerror(rval));
   }
   
   /* Profiling period */
   if (period == 0) {
-    DIE("fatal error: Invalid period %"PRIu64" for event '%s'.", 
-	period, eventnm);
+    DIEx("error: Invalid period %"PRIu64" for event '%s'.", 
+	 period, eventnm);
   }  
   prof->period = period;
     
@@ -1271,7 +1271,7 @@ add_papievent(hpcpapi_profile_desc_vec_t* profdescs, rtloadmap_t* rtmap,
   prof->scale = 0x8000;
 
   if ( (prof->scale * prof->bytesPerCodeBlk) != (65536 * 2) ) {
-    DIE("fatal error: internal programming error - invalid profiling scale.");
+    DIE0("error: internal programming error - invalid profiling scale.");
   }
 }
 
@@ -1301,14 +1301,14 @@ start_papi_for_thread(hpcpapi_profile_desc_vec_t* profdescs)
     rval = PAPI_sprofil(prof->sprofs, prof->numsprofs, profdescs->eset, 
 			prof->ecode, prof->period, prof->flags);
     if (rval != PAPI_OK) {
-      DIE("fatal error: PAPI_sprofil (%d): %s.", rval, PAPI_strerror(rval));
+      DIEx("error: PAPI_sprofil (%d): %s.", rval, PAPI_strerror(rval));
     }
   }
 
   /* 2. Launch PAPI */
   rval = PAPI_start(profdescs->eset);
   if (rval != PAPI_OK) {
-    DIE("fatal error: PAPI_start (%d): %s.", rval, PAPI_strerror(rval));
+    DIEx("error: PAPI_start (%d): %s.", rval, PAPI_strerror(rval));
   }
 }
 
@@ -1330,7 +1330,7 @@ init_sighandler(int sig)
     signal(sig, hpcrun_sighandler);
   } 
   else {
-    ERRMSG("Warning: Signal %d already has a handler.", sig);
+    MSGx(stderr, "warning: Signal %d already has a handler.", sig);
   }
 }
 
@@ -1420,7 +1420,7 @@ stop_sysprof(hpcsys_profile_desc_vec_t* profdescs)
      previous sprofil calls. */
   if ((ecode = sprofil(NULL, 0, NULL, 0)) != 0) {
 #if 0
-    DIE("fatal error: sprofil() error. %s.", strerror(errno));
+    DIEx("error: sprofil() error. %s.", strerror(errno));
 #endif
   }
 }
@@ -1434,7 +1434,7 @@ stop_papi_for_thread(hpcpapi_profile_desc_vec_t* profdescs)
   
   rval = PAPI_stop(profdescs->eset, values);
   if (rval != PAPI_OK) {
-    //DIE("fatal error: PAPI_stop (%d): %s.", rval, PAPI_strerror(rval));
+    //DIEx("error: PAPI_stop (%d): %s.", rval, PAPI_strerror(rval));
   }
 
   /* Call PAPI_sprofil() with a 0 threshold to cleanup internal memory */
@@ -1444,7 +1444,7 @@ stop_papi_for_thread(hpcpapi_profile_desc_vec_t* profdescs)
     rval = PAPI_sprofil(prof->sprofs, prof->numsprofs, profdescs->eset, 
 			prof->ecode, 0, prof->flags);
     if (rval != PAPI_OK) {
-      //DIE("fatal error: PAPI_sprofil (%d): %s.", rval, PAPI_strerror(rval));
+      //DIEx("error: PAPI_sprofil (%d): %s.", rval, PAPI_strerror(rval));
     }
   }
 }
@@ -1587,8 +1587,8 @@ write_all_profiles(hpcrun_profiles_desc_t* profdesc, rtloadmap_t* rtmap)
   while (errno == ENFILE || errno == EMFILE /* too many open files */);
 
   if (fs == NULL) {
-    DIE("fatal error: Could not open file '%s': %s", profdesc->ofile.fname, 
-	strerror(errno));
+    DIEx("error: Could not open file '%s': %s", profdesc->ofile.fname, 
+	 strerror(errno));
   }
   
   /* <header> */
@@ -1765,14 +1765,14 @@ hpcrun_parse_execl(const char*** argv, const char* const** envp,
   int argvSz = 32, argc = 1;
   
   *argv = malloc((argvSz+1) * sizeof(const char*));
-  if (!*argv) { DIE("fatal error: malloc() failed!"); }
+  if (!*argv) { DIE0("error: malloc() failed!"); }
   
   (*argv)[0] = arg;
   while ((argp = va_arg(arglist, const char*)) != NULL) { 
     if (argc > argvSz) {
       argvSz *= 2;
       *argv = realloc(*argv, (argvSz+1) * sizeof(const char*));
-      if (!*argv) { DIE("fatal error: realloc() failed!"); }
+      if (!*argv) { DIE0("error: realloc() failed!"); }
     }
     (*argv)[argc] = argp;
     argc++;
