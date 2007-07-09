@@ -162,7 +162,8 @@ Driver::Add(PerfMetric *m)
 
 
 string
-Driver::ToString() const {
+Driver::ToString() const 
+{
   string s =  string("Driver: " ) + "title=" + title + " " + 
     "path=" + path; 
   s += "\ndataSrc::\n"; 
@@ -291,7 +292,9 @@ Driver::ScopeTreeInsertHPCRUNData(PgmScopeTree& scopes,
   
   for (uint i = 0; i < prof.num_load_modules(); ++i) {
     const ProfFileLM& proflm = prof.load_module(i);
-    const std::string& lmname = proflm.name();
+    std::string lmname = proflm.name();
+    lmname = ReplacePath(lmname);
+
     LoadModScope* lmScope = nodeRet.MoveToLoadMod(lmname);
     if (lmScope->ChildCount() == 0) {
       DIAG_WMsg(1, "No STRUCTURE for " << lmname << ".");
@@ -342,7 +345,7 @@ Driver::ScopeTreeInsertHPCRUNData(PgmScopeTree& scopes,
 	ScopeInfo* scope = lmScope->findByVMA(ur_vma);
 	if (!scope) {
 	  if (NumberOfStructureFiles() > 0 && lmScope->ChildCount() > 0) {
-	    DIAG_WMsg(3, "Cannot find STRUCTURE for " << lmname << ":0x" << hex << ur_vma << dec << "[" << m->Name() << ", " << events << "]");
+	    DIAG_WMsg(3, "Cannot find STRUCTURE for " << lmname << ":0x" << hex << ur_vma << dec << " [" << m->Name() << ", " << events << "]");
 	  }
 	  scope = lmScope;
 	  mval_nostruct += events;
