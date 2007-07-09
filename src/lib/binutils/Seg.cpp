@@ -91,9 +91,9 @@ using std::string;
 // Seg
 //***************************************************************************
 
-binutils::Seg::Seg(binutils::LM* _lm, string& _name, Type t,
-		   VMA _beg, VMA _end, VMA _sz)
-  : lm(_lm), name(_name), type(t), beg(_beg), end(_end), size(_sz)
+binutils::Seg::Seg(binutils::LM* _lm, string& name, Type type,
+		   VMA beg, VMA end, VMA _sz)
+  : lm(_lm), m_name(name), m_type(type), m_beg(beg), m_end(end), m_size(_sz)
 {
 }
 
@@ -119,7 +119,7 @@ binutils::Seg::dump(std::ostream& o, int flags, const char* pre) const
   string p(pre);
   o << std::showbase;
   o << p << "------------------- Section Dump ------------------\n";
-  o << p << "  Name: `" << GetName() << "'\n";
+  o << p << "  Name: `" << name() << "'\n";
   o << p << "  Type: `";
   switch (GetType()) {
     case BSS:  o << "BSS'\n";  break;
@@ -157,10 +157,10 @@ public:
 };
 
 
-binutils::TextSeg::TextSeg(binutils::LM* _lm, string& _name, 
-			   VMA _beg, VMA _end, uint64_t _size, 
+binutils::TextSeg::TextSeg(binutils::LM* _lm, string& name, 
+			   VMA beg, VMA end, uint64_t size, 
 			   asymbol** syms, int numSyms, bfd* abfd)
-  : Seg(_lm, _name, Seg::Text, _beg, _end, _size), impl(NULL),
+  : Seg(_lm, name, Seg::Text, beg, end, size), impl(NULL),
     procedures(0)
 {
   impl = new TextSegImpl;
@@ -186,15 +186,15 @@ binutils::TextSeg::TextSeg(binutils::LM* _lm, string& _name,
   //   instruciton.
   
   // FIXME: Does "new" provide a way of returning an aligned pointer?
-  impl->contentsRaw = new char[_size+16+16];
+  impl->contentsRaw = new char[size+16+16];
   memset(impl->contentsRaw, 0, 16+16);        // zero the padding
   char* contentsTmp = impl->contentsRaw + 16; // add the padding
   impl->contents = (char *)( ((uintptr_t)contentsTmp + 15) & ~15 ); // align
 
-  const char *nameStr = _name.c_str();
+  const char *nameStr = name.c_str();
   int result = bfd_get_section_contents(abfd,
                                         bfd_get_section_by_name(abfd, nameStr),
-                                        impl->contents, 0, _size);
+                                        impl->contents, 0, size);
   if (!result) {
     delete [] impl->contentsRaw;
     impl->contentsRaw = impl->contents = NULL;
@@ -264,7 +264,8 @@ binutils::TextSeg::Create_InitializeProcs()
   for (int i = 0; i < impl->numSyms; i++) {
     // FIXME: exploit the fact that the symbol table is sorted by vma
     asymbol* sym = impl->symTable[i]; 
-    if (IsIn(bfd_asymbol_value(sym)) && (sym->flags & BSF_FUNCTION)
+    if (IsIn(bfd_asymbol_value(sym)) 
+	&& (sym->flags & BSF_FUNCTION)
         && !bfd_is_und_section(sym->section)) {
       
       VMA begVMA = bfd_asymbol_value(sym);
@@ -289,7 +290,7 @@ binutils::TextSeg::Create_InitializeProcs()
 	DIAG_Assert(proc->GetBegVMA() == begVMA, "TextSeg::Create_InitializeProcs: Procedure beginning at 0x" << hex << begVMA << " overlaps with:\n" << proc->toString());
 	if (procType == Proc::Global) {
 	  // 'global' types take precedence
-	  proc->type() = procType;
+	  proc->type(procType);
 	}
 	continue;
       }
@@ -346,6 +347,18 @@ binutils::TextSeg::Create_InitializeProcs()
       }
     }
   }
+
+  // ------------------------------------------------------------
+  //  If a text section does not have any function symbols, consider
+  //  the whole section a quasi procedure
+  // ------------------------------------------------------------
+  if (GetNumProcs() == 0) {
+    Proc* proc = new Proc(this, name(), name(), Proc::Quasi, 
+			  GetBeg(), GetEnd(), GetSize());
+    procedures.push_back(proc);
+    lm->insertProc(VMAInterval(GetBeg(), GetEnd()), proc);
+  }
+
 
   // ------------------------------------------------------------
   // Embed parent information
@@ -430,7 +443,7 @@ binutils::TextSeg::FindProcName(bfd *abfd, asymbol *procSym) const
   unsigned int bfd_line = 0;
 
   // cf. LM::GetSourceFileInfo
-  asection *bfdSeg = bfd_get_section_by_name(abfd, GetName().c_str());
+  asection *bfdSeg = bfd_get_section_by_name(abfd, name().c_str());
   bfd_vma secBase = bfd_section_vma(abfd, bfdSeg);
   bfd_vma symVal = bfd_asymbol_value(procSym);
   if (bfdSeg) {
