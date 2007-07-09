@@ -1011,12 +1011,12 @@ dump_object_lm(ostream& os, const ProfFileLM& proflm, const binutils::LM& lm)
     
     // We have a 'TextSeg'.  Iterate over procedures.
     os << endl 
-       << "Section: " << seg->GetName();
+       << "Section: " << seg->name();
 
     binutils::TextSeg* tseg = dynamic_cast<binutils::TextSeg*>(seg);
     for (binutils::TextSegProcIterator it(*tseg); it.IsValid(); ++it) {
       binutils::Proc* p = it.Current();
-      string bestName = GetBestFuncName(p->GetName());
+      string bestName = GetBestFuncName(p->name());
       
       binutils::Insn* endInsn = p->GetLastInsn();
       VMAInterval procint(p->GetBegVMA(), p->GetEndVMA() + endInsn->GetSize());
@@ -1029,7 +1029,7 @@ dump_object_lm(ostream& os, const ProfFileLM& proflm, const binutils::LM& lm)
 
       // We have a 'Procedure'.  Iterate over instructionsn
       os << endl << endl
-	 << "Procedure: " << p->GetName() << " (" << bestName << ")\n";
+	 << "Procedure: " << p->name() << " (" << bestName << ")\n";
 
       dump_event_summary(os, eventDescs, eventTotsProc, &eventTots);
       os << endl << endl;

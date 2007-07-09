@@ -230,7 +230,7 @@ DumpSymbolicInfoOld(std::ostream& os, binutils::LM* lm)
     binutils::TextSeg* tsec = dynamic_cast<binutils::TextSeg*>(sec);
     for (binutils::TextSegProcIterator it(*tsec); it.IsValid(); ++it) {
       binutils::Proc* p = it.Current();
-      string pName = GetBestFuncName(p->GetName());
+      string pName = GetBestFuncName(p->name());
 
       
       // We have a 'Procedure'.  Iterate over VMA values     

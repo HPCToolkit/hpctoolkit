@@ -371,7 +371,7 @@ binutils::LM::GetSourceFileInfo(VMA vma, ushort opIndex,
     Seg* sec = it.Current();
     if (sec->IsIn(opVMA)) {
       // Obtain the bfd section corresponding to our Seg.
-      bfdSeg = bfd_get_section_by_name(impl->abfd, sec->GetName().c_str());
+      bfdSeg = bfd_get_section_by_name(impl->abfd, sec->name().c_str());
       base = bfd_section_vma(impl->abfd, bfdSeg);
       break; 
     } 
