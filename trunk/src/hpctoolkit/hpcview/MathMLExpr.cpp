@@ -394,7 +394,6 @@ MathMLExpr::toString() const
 {
   std::ostringstream os;
   dump(os);
-  os << std::ends;
   return os.str();
 }
 

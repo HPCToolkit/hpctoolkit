@@ -114,7 +114,6 @@ binutils::Proc::toString(int flags) const
 {
   std::ostringstream os;
   dump(os, flags);
-  os << std::ends;
   return os.str();
 }
 
