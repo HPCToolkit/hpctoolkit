@@ -404,7 +404,6 @@ public:
   {
     std::ostringstream os;
     dump(os);
-    os << std::ends;
     return os.str();
   }
   

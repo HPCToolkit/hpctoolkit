@@ -109,7 +109,6 @@ binutils::Seg::toString(int flags, const char* pre) const
 {
   std::ostringstream os;
   dump(os, flags, pre);
-  os << std::ends;
   return os.str();
 }
 
