@@ -54,6 +54,8 @@ using std::string;
 using namespace std; // For compatibility with non-std C headers
 #endif
 
+#include <set>
+
 //*********************** Xerces Include Files *******************************
 
 //************************* User Include Files *******************************
@@ -355,6 +357,10 @@ CopySourceFiles(PgmScope* pgmScope, const PathTupleVec& pathVec,
 {
   bool noError = true;
 
+  // Alien scopes mean that we may attempt to copy the same file many
+  // times.  Prevent multiple copies of the same file.
+  std::map<string, string> copiedFiles;
+
   ScopeInfoFilter filter(CSF_ScopeFilter, "CSF_ScopeFilter", 0);
   for (ScopeInfoIterator it(pgmScope, &filter); it.Current(); ++it) {
     ScopeInfo* scope = it.CurScope();
@@ -377,54 +383,70 @@ CopySourceFiles(PgmScope* pgmScope, const PathTupleVec& pathVec,
     }
     
     if (fnm_orig[0] == '/') {
-      int indx = MatchFileWithPath(fnm_orig, pathVec);
-      if (indx >= 0) {
-	const string& path     = pathVec[indx].first;
-	const string& viewname = pathVec[indx].second;
+      string fnm_new;
+
+      // Given fnm_orig, find fnm_new
+      std::map<string, string>::iterator it = copiedFiles.find(fnm_orig);
+      if (it != copiedFiles.end()) {
+	fnm_new = it->second;
+      }
+      else {
+	int indx = MatchFileWithPath(fnm_orig, pathVec);
+	if (indx >= 0) {
+	  const string& path     = pathVec[indx].first;
+	  const string& viewname = pathVec[indx].second;
 	
-	// find the absolute form of 'path'
-	string realpath(path);
-	if (is_recursive_path(realpath.c_str())) {
-	  realpath[realpath.length()-RECURSIVE_PATH_SUFFIX_LN] = '\0';
-	}
-	realpath = RealPath(realpath.c_str()); 
-	
-	// 'realpath' must be a prefix of 'fnm_orig'; find left-over portion
-	char* pathSuffx = const_cast<char*>(fnm_orig.c_str());
-	pathSuffx = &pathSuffx[realpath.length()];
-	while (pathSuffx[0] != '/') { --pathSuffx; } // should start with '/'
-	
-	// Create new file name and copy commands
-	string fnm_new = "./" + viewname + pathSuffx;
-	string fnm_to;
-	if (dstDir[0]  != '/') {
-	  fnm_to = "./";
-	}
-	fnm_to = fnm_to + dstDir + "/" + viewname + pathSuffx;
-	string dir_to(fnm_to); // need to strip off ending filename to 
-	uint end;              // get full path for 'fnm_to'
-	for (end = dir_to.length() - 1; dir_to[end] != '/'; end--) { }
-	dir_to[end] = '\0';    // should not end with '/'
-	
-	string cmdMkdir = "mkdir -p " + dir_to;
-	string cmdCp    = "cp -f " + fnm_orig + " " + fnm_to;
-	//cerr << cmdCp << endl;
-	
-	// could use CopyFile; see StaticFiles::Copy
-	if (system(cmdMkdir.c_str()) == 0 && system(cmdCp.c_str()) == 0) {
-	  DIAG_Msg(1, "  " << fnm_to);
-	  if (fileScope) {
-	    fileScope->SetName(fnm_new);
+	  // find the absolute form of 'path'
+	  string realpath(path);
+	  if (is_recursive_path(realpath.c_str())) {
+	    realpath[realpath.length()-RECURSIVE_PATH_SUFFIX_LN] = '\0';
 	  }
+	  realpath = RealPath(realpath.c_str()); 
+	
+	  // 'realpath' must be a prefix of 'fnm_orig'; find left-over portion
+	  char* pathSuffx = const_cast<char*>(fnm_orig.c_str());
+	  pathSuffx = &pathSuffx[realpath.length()];
+	  while (pathSuffx[0] != '/') { --pathSuffx; } // should start with '/'
+	
+	  // Create new file name and copy commands
+	  fnm_new = "./" + viewname + pathSuffx;
+	
+	  string fnm_to;
+	  if (dstDir[0]  != '/') {
+	    fnm_to = "./";
+	  }
+	  fnm_to = fnm_to + dstDir + "/" + viewname + pathSuffx;
+	  string dir_to(fnm_to); // need to strip off ending filename to 
+	  uint end;              // get full path for 'fnm_to'
+	  for (end = dir_to.length() - 1; dir_to[end] != '/'; end--) { }
+	  dir_to[end] = '\0';    // should not end with '/'
+	
+	  string cmdMkdir = "mkdir -p " + dir_to;
+	  string cmdCp    = "cp -f " + fnm_orig + " " + fnm_to;
+	  //cerr << cmdCp << endl;
+	
+	  // could use CopyFile; see StaticFiles::Copy
+	  if (system(cmdMkdir.c_str()) == 0 && system(cmdCp.c_str()) == 0) {
+	    DIAG_Msg(1, "  " << fnm_to);
+	  } 
 	  else {
-	    alienScope->fileName(fnm_new);
+	    DIAG_EMsg("copying: '" << fnm_to);
 	  }
-	} 
-	else {
-	  DIAG_EMsg("copying: '" << fnm_to);
 	}
       }
-    } 
+
+      // Use find fnm_new
+      if (!fnm_new.empty()) {
+	if (fileScope) {
+	  fileScope->SetName(fnm_new);
+	}
+	else {
+	  alienScope->fileName(fnm_new);
+	}
+      }
+      
+      copiedFiles.insert(make_pair(fnm_orig, fnm_new));
+    }
   }
   
   return noError;
@@ -474,7 +496,8 @@ MatchFileWithPath(const string& filenm, const PathTupleVec& pathVec)
       bool update = false;
       if (foundIndex < 0) {
 	update = true;
-      } else if ((foundIndex >= 0) && (realPathLn > foundPathLn)) {
+      }
+      else if ((foundIndex >= 0) && (realPathLn > foundPathLn)) {
 	update = true;
       }
       
