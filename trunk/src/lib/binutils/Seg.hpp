@@ -127,7 +127,7 @@ public:
 			 VMA endVMA, ushort eOpIndex,
 			 std::string& func, std::string& file,
 			 SrcFile::ln& begLine, SrcFile::ln& endLine,
-			 unsigned flags = 1) const {
+			 uint flags = 1) const {
     return lm->GetSourceFileInfo(begVMA, bOpIndex, endVMA, eOpIndex,
 				 func, file, begLine, endLine, flags);
   }
@@ -186,7 +186,7 @@ public:
 	  uint64_t size, asymbol** syms, int numSyms, bfd* abfd);
   virtual ~TextSeg();
 
-  unsigned int GetNumProcs() const { return procedures.size(); }
+  uint GetNumProcs() const { return procedures.size(); }
 
   // -------------------------------------------------------
   // debugging

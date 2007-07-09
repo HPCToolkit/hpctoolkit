@@ -164,8 +164,7 @@ Driver::Add(PerfMetric *m)
 string
 Driver::ToString() const 
 {
-  string s =  string("Driver: " ) + "title=" + title + " " + 
-    "path=" + path; 
+  string s =  string("Driver: " ) + "title=" + title + " " + "path=" + path;
   s += "\ndataSrc::\n"; 
   for (uint i =0; i < dataSrc.size(); i++) {
     s += dataSrc[i]->ToString() + "\n"; 

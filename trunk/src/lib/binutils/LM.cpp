@@ -359,7 +359,7 @@ binutils::LM::GetSourceFileInfo(VMA vma, ushort opIndex,
 
   if (!impl->bfdSymbolTable) { return STATUS; }
   
-  unsigned int bfd_line = 0;
+  uint bfd_line = 0;
 
   VMA unrelocVMA = UnRelocateVMA(vma);
   VMA opVMA = isa->ConvertVMAToOpVMA(unrelocVMA, opIndex);
