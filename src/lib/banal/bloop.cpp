@@ -331,7 +331,7 @@ banal::bloop::BuildLMStructure(binutils::LM* lm,
     ProcScope* pScope = it->first;
     binutils::Proc* p = it->second;
 
-    DIAG_Msg(2, "Building scope tree for [" << p->GetName()  << "] ... ");
+    DIAG_Msg(2, "Building scope tree for [" << p->name()  << "] ... ");
     BuildProcStructure(pScope, p, 
 		       irreducibleIntervalIsLoop, forwardSubstitutionOff);
   }
@@ -476,7 +476,7 @@ FindOrCreateProcNode(FileScope* fScope, binutils::Proc* p)
 	      << bounds.toString());
   
   // Find procedure name
-  string procNm   = GetBestFuncName(p->GetName()); 
+  string procNm   = GetBestFuncName(p->name()); 
   string procLnNm = GetBestFuncName(p->GetLinkName());
   
   // Find preliminary source line bounds
@@ -557,7 +557,7 @@ static ProcScope*
 BuildProcStructure(ProcScope* pScope, binutils::Proc* p,
 		   bool irrIvalIsLoop, bool fwdSubstOff)
 {
-  DIAG_Msg(3, "==> Proc `" << p->GetName() << "' (" << p->GetId() << ") <==");
+  DIAG_Msg(3, "==> Proc `" << p->name() << "' (" << p->GetId() << ") <==");
   
 #if (DBG_PROC)
   DBG_PROC_print_now = false;

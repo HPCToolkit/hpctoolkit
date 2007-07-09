@@ -86,28 +86,29 @@ class Seg {
 public: 
   enum Type { BSS, Text, Data, Unknown };
   
-  Seg(LM* _lm, std::string& _name, Type t, VMA _beg, VMA _end, uint64_t _sz);
+  Seg(LM* _lm, std::string& name, Type type, VMA beg, VMA end, uint64_t _sz);
   virtual ~Seg();
 
   LM* GetLM() const { return lm; }
 
   // Return name and type of section
-  const std::string& GetName() const { return name; }
-  Type  GetType()  const { return type; }
+  const std::string& name() const { return m_name; }
+  
+  Type  GetType()  const { return m_type; }
   
   // Return begin/end virtual memory address for section: [beg, end).
   // Note that the end of a section is equal to the begin address of
   // the next section (or the end of the file) which is different than
   // the convention used for a 'Proc'.
-  VMA GetBeg() const { return beg; }
-  VMA GetEnd() const { return end; }
+  VMA GetBeg() const { return m_beg; }
+  VMA GetEnd() const { return m_end; }
 
   // Return size of section
-  uint64_t GetSize() const { return size; }
+  uint64_t GetSize() const { return m_size; }
 
   // Return true if virtual memory address 'vma' is within the section
   // WARNING: vma must be unrelocated
-  bool IsIn(VMA vma) const { return (beg <= vma && vma < end); }
+  bool IsIn(VMA vma) const { return (m_beg <= vma && vma < m_end); }
 
   // Convenient wrappers for the 'LM' versions of the same.
   MachInsn* findMachInsn(VMA vma, ushort &sz) const {
@@ -155,11 +156,11 @@ protected:
 private:
   LM* lm; // we are not owners
 
-  std::string name;
-  Type type;
-  VMA  beg;  // beginning of section 
-  VMA  end;  // end of section [equal to the beginning of next section]
-  uint64_t size; // size in bytes
+  std::string m_name;
+  Type m_type;
+  VMA  m_beg;  // beginning of section 
+  VMA  m_end;  // end of section [equal to the beginning of next section]
+  uint64_t m_size; // size in bytes
 };
 
 } // namespace binutils
@@ -181,8 +182,8 @@ class TextSegImpl;
 
 class TextSeg : public Seg { 
 public:
-  TextSeg(LM* _lm, std::string& _name, VMA _beg, VMA _end,
-	  uint64_t _size, asymbol **syms, int numSyms, bfd *abfd);
+  TextSeg(LM* _lm, std::string& name, VMA beg, VMA end,
+	  uint64_t size, asymbol** syms, int numSyms, bfd* abfd);
   virtual ~TextSeg();
 
   unsigned int GetNumProcs() const { return procedures.size(); }

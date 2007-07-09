@@ -78,7 +78,8 @@ using std::string;
 
 unsigned int binutils::Proc::nextId = 0;
 
-binutils::Proc::Proc(binutils::TextSeg* seg, string& name, string& linkname,
+binutils::Proc::Proc(binutils::TextSeg* seg, 
+		     const string& name, const string& linkname,
                      binutils::Proc::Type t, VMA begVMA, VMA endVMA, 
 		     unsigned int size)
   : m_seg(seg), m_name(name), m_linkname(linkname), m_type(t), m_begVMA(begVMA),
@@ -138,7 +139,7 @@ binutils::Proc::dump(std::ostream& os, int flags, const char* pre) const
   m_seg->GetSourceFileInfo(GetBegVMA(), 0, b_func, b_file, b_begLn);
   m_seg->GetSourceFileInfo(GetEndVMA(), endOp, e_func, e_file, e_endLn2);
 
-  string nm = GetBestFuncName(GetName());
+  string nm = GetBestFuncName(name());
   string ln_nm = GetBestFuncName(GetLinkName());
   
   os << p << "---------- Procedure Dump ----------\n";
@@ -157,6 +158,7 @@ binutils::Proc::dump(std::ostream& os, int flags, const char* pre) const
     case Local:   os << "Local'\n";  break;
     case Weak:    os << "Weak'\n";   break;
     case Global:  os << "Global'\n"; break;
+    case Quasi:   os << "Quasi'\n";  break;
     default:      os << "-unknown-'\n"; 
       DIAG_Die("Unknown Procedure type: " << type());
   }

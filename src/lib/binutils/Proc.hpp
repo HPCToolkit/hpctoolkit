@@ -81,13 +81,13 @@ namespace binutils {
 
 class Proc {
 public:
-  enum Type { Local, Weak, Global, Unknown };
+  enum Type { Local, Weak, Global, Quasi, Unknown };
   
 public:
   // -------------------------------------------------------  
   // Constructor/Destructor
   // -------------------------------------------------------
-  Proc(TextSeg* seg, std::string& name, std::string& linkname, 
+  Proc(TextSeg* seg, const std::string& name, const std::string& linkname,
        Type t, VMA begVMA, VMA endVMA, unsigned int size);
   virtual ~Proc();
 
@@ -102,15 +102,15 @@ public:
   // Returns the name as determined by debugging information; if this
   // is unavailable returns the name found in the symbol table.  (Note
   // that no demangling is performed.)
-  const std::string& GetName()     const { return m_name; }
-  std::string&       GetName()           { return m_name; }
+  const std::string& name()  const { return m_name; }
+  void               name(const std::string& name) { m_name = name; }
 
   // Returns the name as found in the symbol table
   const std::string& GetLinkName() const { return m_linkname; }
 
   // Return type of procedure
-  Type  type() const { return m_type; }
-  Type& type()       { return m_type; }
+  Type type() const    { return m_type; }
+  void type(Type type) { m_type = type; }
 
   // Return the begin and end virtual memory address of a procedure:
   // [beg, end].  Note that the end address points to the beginning of

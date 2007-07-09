@@ -535,7 +535,7 @@ banal::OAInterface::getProcSymHandle(OA::ProcHandle h)
   Proc* p = IRHNDL_TO_TY(h, Proc*);
   DIAG_Assert(p == proc, "");
 
-  string& name = p->GetName(); // this gives us persistent data!
+  const string& name = p->name(); // this gives us persistent data!
   const char* nm = name.c_str();
   return TY_TO_IRHNDL(nm, OA::SymHandle);
 }
