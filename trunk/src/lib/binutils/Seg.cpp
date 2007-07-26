@@ -318,7 +318,9 @@ binutils::TextSeg::Create_InitializeProcs()
       // *wrong*. (Intel 9 has generated significant over-estimates).
       VMA endVMA_approx = FindProcEnd(i);
       if (dbg) {
-	endVMA = std::min(dbg->endVMA, endVMA_approx);
+	// Remove this capability... the DWARF sizes can be wrong!!
+	// endVMA = std::min(dbg->endVMA, endVMA_approx);
+	endVMA = endVMA_approx;
 	if (!dbg->name.empty()) {
 	  procNm = dbg->name;
 	}
@@ -326,7 +328,7 @@ binutils::TextSeg::Create_InitializeProcs()
       if (!dbg || endVMA == 0) {
 	endVMA = endVMA_approx;
       }
-      unsigned int size = endVMA - begVMA; // see note above
+      uint size = endVMA - begVMA; // see note above
 
       if (size == 0) {
 	continue;
@@ -440,7 +442,7 @@ binutils::TextSeg::FindProcName(bfd *abfd, asymbol *procSym) const
 {
   string procName;
   const char* func = NULL, * file = NULL;
-  unsigned int bfd_line = 0;
+  uint bfd_line = 0;
 
   // cf. LM::GetSourceFileInfo
   asection *bfdSeg = bfd_get_section_by_name(abfd, name().c_str());
