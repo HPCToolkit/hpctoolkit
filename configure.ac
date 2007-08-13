@@ -75,7 +75,7 @@ m4_include(config/hpc-cxxutils.m4)
 #    correctly
 #----------------------------------------------------------------------------
 
-AC_INIT([HPCToolkit], [TRUNK-4.9.0=900], [hpc@cs.rice.edu], [hpctoolkit])
+AC_INIT([hpctoolkit], [TRUNK-4.9.0=901], [hpc@cs.rice.edu], [hpctoolkit])
 AC_CONFIG_SRCDIR([src/include/HPCToolkitVersionInfo.h])
 AC_CONFIG_AUX_DIR([config])
 
@@ -474,7 +474,7 @@ AC_SUBST([XERCES_LDFLAGS])
 
 AC_MSG_CHECKING([for OpenAnalysis])
 
-OA="${hpctoolkit_top}/../OpenAnalysis/${HPCTOOLKIT_PLATFORM}"
+OA="${hpctoolkit_top}/../open-analysis/${HPCTOOLKIT_PLATFORM}"
 
 AC_ARG_WITH([oa],
   AS_HELP_STRING([--with-oa=<OpenAnalysis path>],
@@ -634,7 +634,7 @@ AC_ARG_WITH([papi],
 #                        lib64/libpapi.so
 #   <papi-build-path>/ papi.h
 #                      libpapi.so
-# Note: same test is in HPCToolkitRoot's Makefile.quick
+# Note: same test is in hpctoolkit-oss's Makefile.quick
 if test "$OPT_HAVE_PAPI" = "yes" ; then
   if test -f "${OPT_PAPI}/include/papi.h"; then
     OPT_PAPI_IFLAGS="-I${OPT_PAPI}/include"

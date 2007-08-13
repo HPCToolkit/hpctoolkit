@@ -151,8 +151,8 @@ hpc_webdocs:
 #	Exclude CVS or .svn metadata
 	cd $(srcdir)/.. ; \
 	${MYTAR} cvf $(MYTARFILE) --exclude=CVS --exclude=".svn" \
-	 HPCToolkit/README* HPCToolkit/Sourceme* \
-	 HPCToolkit/doc \
-	 HPCToolkit/lib/dtd/*.dtd
+	 hpctoolkit/README* hpctoolkit/Sourceme* \
+	 hpctoolkit/doc \
+	 hpctoolkit/lib/dtd/*.dtd
 
 .PHONY: hpc_webdocs
