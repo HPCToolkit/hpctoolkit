@@ -33,10 +33,10 @@
 #include <unistd.h>
 #include <stdio.h>
 #include <stdarg.h>   /* va_arg */
+#include <ctype.h>
 #include <signal.h>
 #include <string.h>
 #include <limits.h>   /* for 'PATH_MAX' */
-#include <inttypes.h>
 #include <errno.h>
 #include <dlfcn.h>
 #include <pthread.h>
@@ -46,6 +46,8 @@
 /**************************** User Include Files ****************************/
 
 #include "monitor.h"
+
+#include <include/general.h>
 
 #ifdef HAVE_MONITOR  
 // FIXME: use libmonitor completely and include it
@@ -89,8 +91,8 @@ const char* hpcrun_cmd = NULL;
 
 /* monitoring variables: set when the process is initialized */
 static rtloadmap_t* rtloadmap = NULL;    /* run time load map */
-static unsigned     numSysEvents  = 0;   /* estimate */
-static unsigned     numPAPIEvents = 0;   /* estimate */
+static uint     numSysEvents  = 0;   /* estimate */
+static uint     numPAPIEvents = 0;   /* estimate */
 
 /* Profiling information for the first thread of execution in a
    process. N.B. The _shared_ profiling buffers live here when
@@ -297,28 +299,28 @@ hpcrun_sighandler(int sig)
  * Initialize profiling 
  ****************************************************************************/
 
-static void count_events(unsigned* sysEvents, unsigned* papiEvents);
+static void count_events(uint* sysEvents, uint* papiEvents);
 
 static void 
 init_profdesc(hpcrun_profiles_desc_t** profdesc, 
-	      unsigned numSysEv, unsigned numPapiEv, 
+	      uint numSysEv, uint numPapiEv, 
 	      rtloadmap_t* rtmap,
 	      hpcrun_profiles_desc_t* sharedprofdesc);
 static void 
 init_sysprofdesc_buffer(hpcsys_profile_desc_vec_t* profdesc, 
-			unsigned numEv, rtloadmap_t* rtmap,
+			uint numEv, rtloadmap_t* rtmap,
 			hpcsys_profile_desc_vec_t* sharedprofdesc);
 static void 
 append_sysprofdesc_buffer(hpcsys_profile_desc_vec_t* profdesc, 
-			unsigned numEv, rtloadmap_t* rtmap,
+			uint numEv, rtloadmap_t* rtmap,
 			hpcsys_profile_desc_vec_t* sharedprofdesc);
 static void 
 init_papiprofdesc_buffer(hpcpapi_profile_desc_vec_t* profdesc, 
-			 unsigned numEv, rtloadmap_t* rtmap,
+			 uint numEv, rtloadmap_t* rtmap,
 			 hpcpapi_profile_desc_vec_t* sharedprofdesc);
 static void 
 append_papiprofdesc_buffer(hpcpapi_profile_desc_vec_t* profdesc, 
-			   unsigned numEv, rtloadmap_t* rtmap,
+			   uint numEv, rtloadmap_t* rtmap,
 			   hpcpapi_profile_desc_vec_t* sharedprofdesc);
 
 static void init_profdesc_ofile(hpcrun_profiles_desc_t* profdesc, 
@@ -463,7 +465,7 @@ init_thread(int is_thread)
 
 
 static void
-count_events(unsigned* sysEvents, unsigned* papiEvents)
+count_events(uint* sysEvents, uint* papiEvents)
 {
   char* tok, *tmp_eventlist;
 
@@ -492,13 +494,13 @@ count_events(unsigned* sysEvents, unsigned* papiEvents)
 
 static void 
 init_profdesc(hpcrun_profiles_desc_t** profdesc, 
-	      unsigned numSysEv, unsigned numPapiEv, rtloadmap_t* rtmap,
+	      uint numSysEv, uint numPapiEv, rtloadmap_t* rtmap,
 	      hpcrun_profiles_desc_t* sharedprofdesc)
 {
   /* PAPI should already be initialized if necessary */
   
   int xprofidx = -1, yprofidx = -1; /* nth prof event for x/y */
-  const unsigned eventbufSZ = 128; /* really the last index, not the size */
+  const uint eventbufSZ = 128; /* really the last index, not the size */
   char eventbuf[eventbufSZ+1];
   char* tok, *tmp_eventlist;
   int rval, i;
@@ -543,7 +545,7 @@ init_profdesc(hpcrun_profiles_desc_t** profdesc,
   
   /* 2b. Initialize system profdescs */
   if (numSysEv > 0) {
-    unsigned int vecsz, sz = sizeof(hpcsys_profile_desc_vec_t);
+    uint vecsz, sz = sizeof(hpcsys_profile_desc_vec_t);
 
     HPC_GETL_SYSPROFS(*profdesc) = (hpcsys_profile_desc_vec_t*)malloc(sz);
     if (!HPC_GET_SYSPROFS(*profdesc)) { 
@@ -562,7 +564,7 @@ init_profdesc(hpcrun_profiles_desc_t** profdesc,
   
   /* 2c. Initialize papi profdescs */
   if (numPapiEv > 0) {
-    unsigned int vecsz, sz = sizeof(hpcpapi_profile_desc_vec_t);
+    uint vecsz, sz = sizeof(hpcpapi_profile_desc_vec_t);
     
     HPC_GETL_PAPIPROFS(*profdesc) = (hpcpapi_profile_desc_vec_t*)malloc(sz);
     if (!HPC_GET_PAPIPROFS(*profdesc)) { 
@@ -592,17 +594,25 @@ init_profdesc(hpcrun_profiles_desc_t** profdesc,
   tok = strtok(tmp_eventlist, ";");
   for (i = 0; (tok != NULL); i++, tok = strtok((char*)NULL, ";")) {
     uint64_t period = 0;
-    char* sep;
-    unsigned evty = 0; /* 1 is system; 2 is papi */
+    char* dlm;
+    uint evty = 0; /* 1 is system; 2 is papi */
     
-    /* Extract event field from token */
-    sep = strchr(tok, ':'); /* optional period delimiter */
-    if (sep) {
-      unsigned len = MIN(sep - tok, eventbufSZ);
-      strncpy(eventbuf, tok, len);
-      eventbuf[len] = '\0'; 
+    // Extract event field from token. 
+    //   'dlm' points to the optional period delimiter (a colon), if
+    //   available; search from the end of the string in case the event
+    //   name itself has colon.
+    dlm = strrchr(tok, ':');
+    if (dlm) {
+      if (isdigit(dlm[1])) { // assume this is the period
+	uint len = MIN(dlm - tok, eventbufSZ);
+	strncpy(eventbuf, tok, len);
+	eventbuf[len] = '\0';
+      }
+      else {
+	dlm = NULL; // it's not the period; fall through
+      }
     }
-    else {
+    if (!dlm) { // the fall through, not the 'else'!
       strncpy(eventbuf, tok, eventbufSZ);
       eventbuf[eventbufSZ] = '\0';
     }
@@ -616,9 +626,9 @@ init_profdesc(hpcrun_profiles_desc_t** profdesc,
       evty = 2;
     }
     
-    /* Extract period field from token */
-    if (sep) {
-      period = strtol(sep+1, (char **)NULL, 10);
+    // Extract period field from token
+    if (dlm) {
+      period = strtol(dlm+1, (char **)NULL, 10);
     }
     else if (evty == 1) {
       period = 0;
@@ -673,14 +683,14 @@ init_profdesc(hpcrun_profiles_desc_t** profdesc,
 
 static void
 init_sysprofdesc_buffer(hpcsys_profile_desc_vec_t* profdesc, 
-			unsigned numEv, rtloadmap_t* rtmap,
+			uint numEv, rtloadmap_t* rtmap,
 			hpcsys_profile_desc_vec_t* sharedprofdesc)
 {
   int i;
 
   for (i = 0; i < numEv; ++i) {
     int mapi;
-    unsigned int sprofbufsz = sizeof(struct prof) * rtmap->count;
+    uint sprofbufsz = sizeof(struct prof) * rtmap->count;
     hpcsys_profile_desc_t* prof = &profdesc->vec[i];
     
     if (sharedprofdesc) {
@@ -705,8 +715,8 @@ init_sysprofdesc_buffer(hpcsys_profile_desc_vec_t* profdesc,
     }
     else {
       for (mapi = 0; mapi < rtmap->count; ++mapi) {
-	unsigned int bufsz;
-	unsigned int ncntr;
+	uint bufsz;
+	uint ncntr;
 	
 	/* eliminate use of ceil() (link with libm) by adding 1 */
 	ncntr = (rtmap->module[mapi].length / prof->bytesPerCodeBlk) + 1;
@@ -737,16 +747,16 @@ init_sysprofdesc_buffer(hpcsys_profile_desc_vec_t* profdesc,
 
 static void
 append_sysprofdesc_buffer(hpcsys_profile_desc_vec_t* profdesc, 
-			  unsigned numEv, rtloadmap_t* rtmap,
+			  uint numEv, rtloadmap_t* rtmap,
 			  hpcsys_profile_desc_vec_t* sharedprofdesc)
 {
   int i;
   
   for (i = 0; i < numEv; ++i) {
     int mapi;
-    unsigned int sprofbufsz = sizeof(struct prof) * rtmap->count;
+    uint sprofbufsz = sizeof(struct prof) * rtmap->count;
     hpcsys_profile_desc_t* prof = &profdesc->vec[i];
-    unsigned int oldcount = prof->numsprofs;
+    uint oldcount = prof->numsprofs;
     
     if (!sharedprofdesc) {
       prof->sprofs = (struct prof*)realloc(prof->sprofs, sprofbufsz);
@@ -766,8 +776,8 @@ append_sysprofdesc_buffer(hpcsys_profile_desc_vec_t* profdesc,
     }
     else {
       for (mapi = oldcount; mapi < rtmap->count; ++mapi) {
-	unsigned int bufsz;
-	unsigned int ncntr;
+	uint bufsz;
+	uint ncntr;
 	
 	/* eliminate use of ceil() (link with libm) by adding 1 */
 	ncntr = (rtmap->module[mapi].length / prof->bytesPerCodeBlk) + 1;
@@ -798,14 +808,14 @@ append_sysprofdesc_buffer(hpcsys_profile_desc_vec_t* profdesc,
 
 static void
 init_papiprofdesc_buffer(hpcpapi_profile_desc_vec_t* profdesc, 
-			 unsigned numEv, rtloadmap_t* rtmap,
+			 uint numEv, rtloadmap_t* rtmap,
 			 hpcpapi_profile_desc_vec_t* sharedprofdesc)
 {
   int i;
 
   for (i = 0; i < numEv; ++i) {
     int mapi;
-    unsigned int sprofbufsz = sizeof(PAPI_sprofil_t) * rtmap->count;
+    uint sprofbufsz = sizeof(PAPI_sprofil_t) * rtmap->count;
     hpcpapi_profile_desc_t* prof = &profdesc->vec[i];
     
     if (sharedprofdesc) {
@@ -832,8 +842,8 @@ init_papiprofdesc_buffer(hpcpapi_profile_desc_vec_t* profdesc,
     }
     else {
       for (mapi = 0; mapi < rtmap->count; ++mapi) {
-	unsigned int bufsz;
-	unsigned int ncntr;
+	uint bufsz;
+	uint ncntr;
 	
 	/* eliminate use of ceil() (link with libm) by adding 1 */
 	ncntr = (rtmap->module[mapi].length / prof->bytesPerCodeBlk) + 1;
@@ -865,16 +875,16 @@ init_papiprofdesc_buffer(hpcpapi_profile_desc_vec_t* profdesc,
 
 static void
 append_papiprofdesc_buffer(hpcpapi_profile_desc_vec_t* profdesc, 
-			   unsigned numEv, rtloadmap_t* rtmap,
+			   uint numEv, rtloadmap_t* rtmap,
 			   hpcpapi_profile_desc_vec_t* sharedprofdesc)
 {
   int i;
 
   for (i = 0; i < numEv; ++i) {
     int mapi;
-    unsigned int sprofbufsz = sizeof(PAPI_sprofil_t) * rtmap->count;
+    uint sprofbufsz = sizeof(PAPI_sprofil_t) * rtmap->count;
     hpcpapi_profile_desc_t* prof = &profdesc->vec[i];
-    unsigned int oldcount = prof->numsprofs;
+    uint oldcount = prof->numsprofs;
 		
     if (!sharedprofdesc) {
       prof->sprofs = (PAPI_sprofil_t*)realloc(prof->sprofs, sprofbufsz);
@@ -895,8 +905,8 @@ append_papiprofdesc_buffer(hpcpapi_profile_desc_vec_t* profdesc,
     }
     else {
       for (mapi = oldcount; mapi < rtmap->count; ++mapi) {
-	unsigned int bufsz;
-	unsigned int ncntr;
+	uint bufsz;
+	uint ncntr;
 	
 	/* eliminate use of ceil() (link with libm) by adding 1 */
 	ncntr = (rtmap->module[mapi].length / prof->bytesPerCodeBlk) + 1;
@@ -951,13 +961,13 @@ static int get_next_gen(const char *path) {
 static void 
 init_profdesc_ofile(hpcrun_profiles_desc_t* profdesc, int sharedprofdesc)
 {
-  static unsigned int outfilenmLen = PATH_MAX; /* never redefined */
-  static unsigned int hostnmLen = 128;         /* never redefined */
+  static uint outfilenmLen = PATH_MAX; /* never redefined */
+  static uint hostnmLen = 128;         /* never redefined */
   char outfilenm[outfilenmLen];
   char hostnm[hostnmLen];
   const char* cmd = hpcrun_cmd; 
   char* event = NULL, *evetc = "", *slash = NULL;
-  unsigned numEvents = 0;
+  uint numEvents = 0;
   FILE* fs;
   
   if (sharedprofdesc) {
@@ -1486,7 +1496,7 @@ static void
 fini_profdesc(hpcrun_profiles_desc_t** profdesc, int sharedprofdesc)
 {
   int i, j;
-  unsigned numSysEv = 0, numPapiEv = 0;
+  uint numSysEv = 0, numPapiEv = 0;
   
   if (!profdesc || !*profdesc) { return; }
 
@@ -1556,7 +1566,7 @@ static void write_sysevent_data(FILE *fs, hpcsys_profile_desc_t* prof,
 static void write_papievent_data(FILE *fp, hpcpapi_profile_desc_t* prof, 
 			     int sprofidx);
 static void write_event_data(FILE *fs, char* ename, hpc_hist_bucket* histo, 
-			     uint64_t ncounters, unsigned int bytesPerCodeBlk);
+			     uint64_t ncounters, uint bytesPerCodeBlk);
 
 static void write_string(FILE *fp, char *str);
 
@@ -1615,8 +1625,8 @@ write_module_profile(FILE* fs, rtloadmod_desc_t* mod,
 		     hpcrun_profiles_desc_t* profdesc, int sprofidx)
 {
   int i;
-  unsigned numEv = 0;
-  unsigned numSysEv = 0, numPapiEv = 0;
+  uint numEv = 0;
+  uint numSysEv = 0, numPapiEv = 0;
   
   if (opt_debug >= 2) { 
     MSGx(stderr, "writing module %s (at offset %#"PRIx64")", 
@@ -1696,7 +1706,7 @@ write_papievent_data(FILE *fs, hpcpapi_profile_desc_t* prof, int sprofidx)
 
 static void 
 write_event_data(FILE *fs, char* ename, hpc_hist_bucket* histo, 
-		 uint64_t ncounters, unsigned int bytesPerCodeBlk)
+		 uint64_t ncounters, uint bytesPerCodeBlk)
 {
   uint64_t count = 0, offset = 0, i = 0, inz = 0;
 
@@ -1734,7 +1744,7 @@ static void
 write_string(FILE *fs, char *str)
 {
   /* <string_length> <string_without_terminator> */
-  unsigned int len = strlen(str);
+  uint len = strlen(str);
   hpc_fwrite_le4(&len, fs);
   fwrite(str, 1, len, fs);
 }
