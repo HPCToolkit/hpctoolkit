@@ -823,7 +823,7 @@ sub genHPCViewDB
   }
   
   # run hpcview
-  my $cmd = "hpcview -o $outputdb $cfgFnm";
+  my $cmd = "${RealBin}/hpcview -o $outputdb $cfgFnm";
   print STDOUT "  $cmd\n";
   print {$logFhndl} "$cmd\n";
   
@@ -1046,7 +1046,7 @@ sub canonicalizeProfileData
   BEGIN { 
     $sgiProfCmd = "prof -lines";
     $alphaProfCmd = "prof -lines";
-    $hpcprofCmd = "hpcprof -p";
+    $hpcprofCmd = "${RealBin}/hpcprof -p";
     $ptranCmd = "ptran";
   }
 }
@@ -1105,7 +1105,7 @@ sub findMetricsForHPCRUN
   my ($proffile) = @_;
   
   my $hpcprofEventRE = '(\w+):\d+ - .*';
-  my $hpcprofCmd = "hpcprof foo $proffile";
+  my $hpcprofCmd = "${RealBin}/hpcprof foo $proffile";
 
   my $metrics = [ ];
   
