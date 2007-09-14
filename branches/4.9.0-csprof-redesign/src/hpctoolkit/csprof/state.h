@@ -5,9 +5,17 @@
 #include "structs.h"
 #include "general.h"
 
+typedef csprof_state_t *state_t_f(void);
+
+typedef void state_t_setter(csprof_state_t *s);
+
 /* getting and setting states independent of threading support */
-csprof_state_t *csprof_get_state();
+csprof_state_t *csprof_get_state(void);
 void csprof_set_state(csprof_state_t *);
+csprof_state_t *csprof_get_safe_state(void);
+#ifdef CSPROF_THREADS
+void state_threaded(void);
+#endif
 
 /* initialize various parts of a state */
 int csprof_state_init(csprof_state_t *);

@@ -118,7 +118,6 @@ static inline void NOMSG(int level, char *format, ...)
 /* pervasive use of a character buffer because the direct
    printf-to-a-stream functions seem to have problems */
 
-
 #ifdef CSPROF_THREADS
 #define WRITE(desc,buf,n) do { \
   pthread_mutex_lock(&mylock); \
@@ -136,6 +135,8 @@ static inline void NOMSG(int level, char *format, ...)
 #define M1 "csprof msg [%d]: "
 #define MA(l) l
 #endif
+
+#ifndef INLINE_FN
 
 #if defined(CSPROF_PERF)
 #define MSG(l,fmt,...)
@@ -197,7 +198,7 @@ static inline void NOMSG(int level, char *format, ...)
   abort(); \
 } while(0)
 
-#ifdef INLINE_FN
+#else /* INLINE_FN is defined */
 static inline void MSG(int level, char *format, ...)
 #if defined(CSPROF_PERF)
 {
@@ -255,9 +256,9 @@ static inline void DBGMSG_PUB(int level, char *format, ...)
   int n;
 
 #ifdef CSPROF_THREADS
-  sprintf(fstr,"[%d][%lx]: ",level, pthread_self());
+  sprintf(fstr,"DBG [%d][%lx]: ",level, pthread_self());
 #else
-  sprintf(fstr,"[%d]: ",level);
+  sprintf(fstr,"DBG [%d]: ",level);
 #endif
   strcat(fstr,format);
   strcat(fstr,"\n");

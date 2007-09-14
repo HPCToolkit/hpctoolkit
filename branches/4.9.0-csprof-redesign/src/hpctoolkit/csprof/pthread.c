@@ -8,6 +8,7 @@
 #include <setjmp.h>
 
 #include "atomic.h"
+#include "killsafe.h"
 #include "mem.h"
 #include "driver.h"
 #include "state.h"
@@ -57,9 +58,8 @@ extern int csprof_write_profile_data(csprof_state_t *);
 
 static int library_stubs_initialized = 0;
 
-static void
-init_library_stubs()
-{
+static void init_library_stubs(){
+#ifdef NO
 #ifndef CSPROF_FIXED_LIBCALLS
 #ifdef NOMON
 #ifdef __osf__
@@ -74,12 +74,12 @@ init_library_stubs()
 #endif
     CSPROF_GRAB_FUNCPTR(pthread_sigmask, pthread_sigmask);
 #endif
+#endif
+    EMSG("!! pthread library stubs init called !!");
     library_stubs_initialized = 1;
 }
 
-void
-csprof_pthread_init_funcptrs()
-{
+void csprof_pthread_init_funcptrs(){
     MAYBE_INIT_STUBS();
 }
 
@@ -88,16 +88,15 @@ static void n_init(void){
   e = pthread_key_create(&k,free);
 }
 
-void
-csprof_pthread_init_data()
-{
-    pthread_key_create(&prof_data_key, NULL);
-    pthread_key_create(&thread_node_key, NULL);
-    pthread_key_create(&mem_store_key, NULL);
+void csprof_pthread_init_data(void){
 
-    pthread_mutex_init(&mylock,NULL);
+  pthread_key_create(&prof_data_key, NULL);
+  pthread_key_create(&thread_node_key, NULL);
+  pthread_key_create(&mem_store_key, NULL);
 
-    all_threads.head = all_threads.tail = NULL;
+  pthread_mutex_init(&mylock,NULL);
+
+  all_threads.head = all_threads.tail = NULL;
 }
 
 /* taken from Mellor-Crummey's paper */
@@ -126,68 +125,71 @@ csprof_pthread_enqueue(csprof_list_node_t *node)
    this identifier */
 static volatile long csprof_pthread_id = 0;
 
-void csprof_pthread_state_init()
-{
-    csprof_state_t *state;
-    csprof_mem_t *memstore;
+void csprof_pthread_support_init(void){
+}
 
-    pthread_t me = pthread_self();
+void csprof_pthread_state_init(killsafe_t *killsafe){
 
-    DBGMSG_PUB(CSPROF_DBG_PTHREAD, "Adding %lx to the all_threads list", me);
+  csprof_state_t *state;
+  csprof_mem_t *memstore;
 
-    memstore = csprof_malloc_init(1, 0);
+  pthread_t me = pthread_self();
 
-    if(memstore == NULL) {
-        DIE("Couldn't allocate memory for profiling state storage",
-            __FILE__, __LINE__);
+  DBGMSG_PUB(CSPROF_DBG_PTHREAD, "Adding %lx to the all_threads list", me);
+
+  memstore = csprof_malloc_init(1, 0);
+
+  if(memstore == NULL) {
+    DIE("Couldn't allocate memory for profiling state storage",
+        __FILE__, __LINE__);
+  }
+
+  DBGMSG_PUB(CSPROF_DBG_PTHREAD, "Setting mem_store_key");
+
+  pthread_setspecific(mem_store_key, memstore);
+
+  state = csprof_malloc(sizeof(csprof_state_t));
+  if(state == NULL) {
+    DBGMSG_PUB(1, "Couldn't allocate memory for profiling state");
+  }
+
+  DBGMSG_PUB(CSPROF_DBG_PTHREAD, "Allocated state, now init'ing and alloc'ing");
+
+  csprof_state_init(state);
+  csprof_state_alloc(state);
+
+  DBGMSG_PUB(CSPROF_DBG_PTHREAD, "Atomically incrementing thread_id");
+
+  state->pstate.thrid = csprof_atomic_increment(&csprof_pthread_id);
+
+  /* must set the data before putting the thread on the list */
+  pthread_setspecific(prof_data_key, state);
+
+  /* FIXME: is this the right place to put this call? */
+  csprof_driver_thread_init(state);
+
+  /* add us to the queue/list thingie */
+  {
+    /* it would be awfully nice if these could be allocated from
+       a freelist or contiguous memory of some sort.  unfortunately
+       that would mean the introduction of locking, which is a no-no.
+       so we tread all over memory with this */
+    csprof_list_node_t *node = csprof_malloc(sizeof(csprof_list_node_t));
+    if(node == NULL) {
+      ERRMSG("Couldn't allocate memory for thread node",
+             __FILE__, __LINE__);
+      return;
     }
 
-    DBGMSG_PUB(CSPROF_DBG_PTHREAD, "Setting mem_store_key");
+    node->ip = (void *)me;
+    node->sp = CSPROF_PTHREAD_LIVE;
+    node->node = state;
 
-    pthread_setspecific(mem_store_key, memstore);
+    csprof_pthread_enqueue(node);
+    pthread_setspecific(thread_node_key, node);
+  }
 
-    state = csprof_malloc(sizeof(csprof_state_t));
-    if(state == NULL) {
-        DBGMSG_PUB(1, "Couldn't allocate memory for profiling state");
-    }
-
-    DBGMSG_PUB(CSPROF_DBG_PTHREAD, "Allocated state, now init'ing and alloc'ing");
-
-    csprof_state_init(state);
-    csprof_state_alloc(state);
-
-    DBGMSG_PUB(CSPROF_DBG_PTHREAD, "Atomically incrementing thread_id");
-
-    state->pstate.thrid = csprof_atomic_increment(&csprof_pthread_id);
-
-    /* must set the data before putting the thread on the list */
-    pthread_setspecific(prof_data_key, state);
-
-    /* FIXME: is this the right place to put this call? */
-    csprof_driver_thread_init(state);
-
-    /* add us to the queue/list thingie */
-    {
-        /* it would be awfully nice if these could be allocated from
-           a freelist or contiguous memory of some sort.  unfortunately
-           that would mean the introduction of locking, which is a no-no.
-           so we tread all over memory with this */
-        csprof_list_node_t *node = csprof_malloc(sizeof(csprof_list_node_t));
-        if(node == NULL) {
-            ERRMSG("Couldn't allocate memory for thread node",
-                   __FILE__, __LINE__);
-            return;
-        }
-
-        node->ip = me;
-        node->sp = CSPROF_PTHREAD_LIVE;
-        node->node = state;
-
-        csprof_pthread_enqueue(node);
-        pthread_setspecific(thread_node_key, node);
-    }
-
-    return;
+  return;
 }
 
 void
@@ -219,8 +221,7 @@ csprof_pthread_state_fini2(csprof_state_t *state, csprof_list_node_t *node)
     libcall3(csprof_pthread_sigmask, SIG_SETMASK, &oldset, NULL);
 }
 
-void
-csprof_pthread_state_fini()
+void csprof_pthread_state_fini(void)
 {
     csprof_state_t *state;
     csprof_list_node_t *node;
@@ -229,6 +230,7 @@ csprof_pthread_state_fini()
     state = pthread_getspecific(prof_data_key);
     node = pthread_getspecific(thread_node_key);
 
+    MSG(1,"state = %p, node = %p",state,node);
     csprof_pthread_state_fini2(state, node);
 }
 
@@ -240,7 +242,7 @@ csprof_pthread_tramp(void *tramp_arg)
 
     DBGMSG_PUB(CSPROF_DBG_PTHREAD, "Entering pthread_tramp");
 
-    csprof_pthread_state_init();
+    csprof_pthread_state_init((killsafe_t *)NULL);
 
     DBGMSG_PUB(CSPROF_DBG_PTHREAD, "Preparing to funcall");
 

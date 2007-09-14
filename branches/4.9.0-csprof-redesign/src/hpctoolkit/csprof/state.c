@@ -12,11 +12,10 @@
 #include "mem.h"
 #include "epoch.h"
 
-#ifndef CSPROF_THREADS
 /* non-threaded profilers can have a single profiling state...
    but it can't be statically allocated because of epochs */
+
 static csprof_state_t *current_state;
-#endif
 
 /* forward declarations */
 static int csprof_state__gupdate_pstate(csprof_state_t* x);
@@ -28,81 +27,95 @@ static int csprof_pstate__fini(csprof_pstate_t* x);
 
 /* fetching states */
 
-static csprof_state_t *
-csprof_get_state_internal()
-{
+// get the static state variable, used for thread init of
+// initial thread
+static csprof_state_t *_get_static_state(void){
+  return current_state;
+}
+
+static void _set_static_state(csprof_state_t *state){
+  current_state = state;
+}
+
 #ifdef CSPROF_THREADS
+static state_t_f      *csprof_get_state_internal = &_get_static_state;
+static state_t_setter *_set_state_internal       = &_set_static_state;
+
+// get state from thread specific data
+static csprof_state_t *_get_threaded_state(void)
+{
+  MSG(1,"thread asking for state %p",pthread_getspecific(prof_data_key));
     return pthread_getspecific(prof_data_key);
-#else
-    return current_state;
-#endif
 }
 
-csprof_state_t *
-csprof_get_state()
-{
-    csprof_state_t *state = csprof_get_state_internal();
-
-#ifdef CSPROF_THREADS
-    if(state == NULL) {
-        csprof_pthread_state_init();
-        state = csprof_get_state_internal();
-    }
-#endif
-
-    return state;
+void _set_threaded_state(csprof_state_t *state){
+  pthread_setspecific(prof_data_key, state);
 }
 
-void
-csprof_set_state(csprof_state_t *state)
-{
-    csprof_state_t *old = csprof_get_state_internal();
-
-    state->next = old;
-
-#ifdef CSPROF_THREADS
-    pthread_setspecific(prof_data_key, state);
+void state_threaded(void){
+  csprof_get_state_internal = &_get_threaded_state;
+  _set_state_internal       = &_set_threaded_state;
+}
 #else
-    current_state = state;
+#define csprof_get_state_internal _get_static_state
+#define _set_state_internal       _set_static_state
 #endif
+
+// get main thread safe state
+csprof_state_t *csprof_get_safe_state(void){
+  return _get_static_state();
+}
+
+csprof_state_t *csprof_get_state(){
+
+  csprof_state_t *state = csprof_get_state_internal();
+
+  if(state == NULL) {
+    csprof_state_init(state);
+    state = csprof_get_state_internal();
+  }
+  return state;
+}
+
+void csprof_set_state(csprof_state_t *state){
+  csprof_state_t *old = csprof_get_state_internal();
+  state->next = old;
+  _set_state_internal(state);
 }
 
 #define CSPROF_NEED_PSTATE 0
 
-int
-csprof_state_init(csprof_state_t *x)
-{
-    /* ia64 Linux has this function return a `long int', which is a 64-bit
-       integer.  Tru64 Unix returns an `int'.  it probably won't hurt us
-       if we get truncated on ia64, right? */
-    int hostid = gethostid(); // FIXME: added gethostid
-    pid_t pid = getpid();
+int csprof_state_init(csprof_state_t *x){
+  /* ia64 Linux has this function return a `long int', which is a 64-bit
+     integer.  Tru64 Unix returns an `int'.  it probably won't hurt us
+     if we get truncated on ia64, right? */
 
-    memset(x, 0, sizeof(*x));
+  int hostid = gethostid(); // FIXME: added gethostid
+  pid_t pid = getpid();
 
-    x->pstate.pid = pid;
-    x->pstate.hostid = hostid;
+  memset(x, 0, sizeof(*x));
+
+  x->pstate.pid = pid;
+  x->pstate.hostid = hostid;
 
 #if CSPROF_NEED_PSTATE
-    // Persistent state: Note that filename should be a function of pid,
-    // b/c we may need to find it again. // FIXME: added gethostid
-    csprof_pstate__init(&x->pstate);
-    sprintf(x->pstate_fnm, "./%s%ld-%d%s", /* opts.out_path ,*/ /* FIXME */
-            CSPROF_FNM_PFX, hostid, pid, CSPROF_PSTATE_FNM_SFX);
-    if (csprof_state__gupdate_pstate(x) != CSPROF_OK) {
-        DIE("could not read/update persistent state file '%s'", __FILE__, __LINE__, x->pstate_fnm);
-    }
+  // Persistent state: Note that filename should be a function of pid,
+  // b/c we may need to find it again. // FIXME: added gethostid
+  csprof_pstate__init(&x->pstate);
+  sprintf(x->pstate_fnm, "./%s%ld-%d%s", /* opts.out_path ,*/ /* FIXME */
+          CSPROF_FNM_PFX, hostid, pid, CSPROF_PSTATE_FNM_SFX);
+  if (csprof_state__gupdate_pstate(x) != CSPROF_OK) {
+    DIE("could not read/update persistent state file '%s'", __FILE__, __LINE__, x->pstate_fnm);
+  }
 #endif
 
-    return CSPROF_OK;
+  return CSPROF_OK;
 }
 
 /* csprof_state_alloc: Special initialization for items stored in
    private memory.  Private memory must be initialized!  Returns
    CSPROF_OK upon success; CSPROF_ERR on error. */
-int 
-csprof_state_alloc(csprof_state_t *x)
-{
+int csprof_state_alloc(csprof_state_t *x){
   csprof_csdata__init(&x->csdata);
 
   x->epoch = csprof_get_epoch();
@@ -131,9 +144,7 @@ csprof_state_alloc(csprof_state_t *x)
   return CSPROF_OK;
 }
 
-int
-csprof_state_fini(csprof_state_t *x)
-{
+int csprof_state_fini(csprof_state_t *x){
 #if CSPROF_NEED_PSTATE
   csprof_pstate__fini(&x->pstate);
   csprof_state__destroy_pstate(x);
@@ -142,62 +153,56 @@ csprof_state_fini(csprof_state_t *x)
   return CSPROF_OK;
 }
 
-int
-csprof_state_insert_backtrace(csprof_state_t *state, int metric_id,
-			      csprof_frame_t *start, csprof_frame_t *end,
-			      size_t count)
-{
-    void *tn = csprof_csdata_insert_backtrace(&state->csdata, state->treenode,
-					      metric_id, start, end, count);
+int csprof_state_insert_backtrace(csprof_state_t *state, int metric_id,
+                                  csprof_frame_t *start, csprof_frame_t *end,
+                                  size_t count){
+  void *tn = csprof_csdata_insert_backtrace(&state->csdata, state->treenode,
+                                            metric_id, start, end, count);
 
-    DBGMSG_PUB(CSPROF_DBG_CCT_INSERTION, "Treenode is %p", tn);
+  DBGMSG_PUB(CSPROF_DBG_CCT_INSERTION, "Treenode is %p", tn);
 
-    state->treenode = tn;
+  state->treenode = tn;
 
-    if(tn == NULL) {
-	return CSPROF_ERR;
-    }
-    else {
-        return CSPROF_OK;
-    }
+  if(tn == NULL) {
+    return CSPROF_ERR;
+  }
+  else {
+    return CSPROF_OK;
+  }
 }
 
-csprof_frame_t *
-csprof_state_expand_buffer(csprof_state_t *state, csprof_frame_t *unwind)
-{
-    /* how big is the current buffer? */
-    size_t sz = state->bufend - state->btbuf;
-    size_t newsz = sz*2;
-    /* how big is the current backtrace? */
-    size_t btsz = state->bufend - state->bufstk;
-    /* how big is the backtrace we're recording? */
-    size_t recsz = unwind - state->btbuf;
-    /* get new buffer */
-    csprof_frame_t *newbt = csprof_malloc(newsz*sizeof(csprof_frame_t));
+csprof_frame_t * csprof_state_expand_buffer(csprof_state_t *state, csprof_frame_t *unwind){
+  /* how big is the current buffer? */
+  size_t sz = state->bufend - state->btbuf;
+  size_t newsz = sz*2;
+  /* how big is the current backtrace? */
+  size_t btsz = state->bufend - state->bufstk;
+  /* how big is the backtrace we're recording? */
+  size_t recsz = unwind - state->btbuf;
+  /* get new buffer */
+  csprof_frame_t *newbt = csprof_malloc(newsz*sizeof(csprof_frame_t));
 
-    if(state->bufstk > state->bufend) {
-        DIE("Invariant bufstk > bufend violated", __FILE__, __LINE__);
-    }
+  if(state->bufstk > state->bufend) {
+    DIE("Invariant bufstk > bufend violated", __FILE__, __LINE__);
+  }
 
-    /* copy frames from old to new */
-    memcpy(newbt, state->btbuf, recsz*sizeof(csprof_frame_t));
-    memcpy(newbt+newsz-btsz, state->bufend-btsz, btsz*sizeof(csprof_frame_t));
+  /* copy frames from old to new */
+  memcpy(newbt, state->btbuf, recsz*sizeof(csprof_frame_t));
+  memcpy(newbt+newsz-btsz, state->bufend-btsz, btsz*sizeof(csprof_frame_t));
 
-    /* setup new pointers */
-    state->btbuf = newbt;
-    state->bufend = newbt+newsz;
-    state->bufstk = newbt+newsz-btsz;
+  /* setup new pointers */
+  state->btbuf = newbt;
+  state->bufend = newbt+newsz;
+  state->bufstk = newbt+newsz-btsz;
 
-    /* return new unwind pointer */
-    return newbt+recsz;
+  /* return new unwind pointer */
+  return newbt+recsz;
 }
 
 /* csprof_state_free: Special finalization for items stored in
    private memory.  Private memory must be initialized!  Returns
    CSPROF_OK upon success; CSPROF_ERR on error. */
-int
-csprof_state_free(csprof_state_t *x)
-{
+int csprof_state_free(csprof_state_t *x){
   csprof_csdata__fini(&x->csdata);
 
   // no need to free memory
@@ -205,13 +210,10 @@ csprof_state_free(csprof_state_t *x)
   return CSPROF_OK;
 }
 
-
 /* persistent state handling */
 
 /* gets and updates (a 'gupdate', of course!) the persistent state. */
-static int 
-csprof_state__gupdate_pstate(csprof_state_t* x)
-{
+static int csprof_state__gupdate_pstate(csprof_state_t* x){
 #if CSPROF_NEED_PSTATE
   int fexists = 0, fd;
   mode_t mode = S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH;
@@ -265,9 +267,7 @@ csprof_state__gupdate_pstate(csprof_state_t* x)
   return CSPROF_OK;
 }
 
-static int 
-csprof_state__destroy_pstate(csprof_state_t* x)
-{
+static int csprof_state__destroy_pstate(csprof_state_t* x){
 #if CSPROF_NEED_PSTATE
   if (unlink(x->pstate_fnm) < 0) {
     DBGMSG_PUB(1, "error removing persistant state file '%s'", __FILE__, __LINE__, x->pstate_fnm);
@@ -277,15 +277,11 @@ csprof_state__destroy_pstate(csprof_state_t* x)
   return CSPROF_OK;
 }
 
-static int 
-csprof_pstate__init(csprof_pstate_t* x)
-{
+static int csprof_pstate__init(csprof_pstate_t* x){
   memset(x, 0, sizeof(*x));
   return CSPROF_OK;
 }
 
-static int 
-csprof_pstate__fini(csprof_pstate_t* x)
-{
+static int csprof_pstate__fini(csprof_pstate_t* x){
   return CSPROF_OK;
 }

@@ -1,8 +1,9 @@
+#include <math.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdarg.h>
 #define LIMIT_OUTER 100
-#define LIMIT 1000
+#define LIMIT 100
 
 #include <pthread.h>
 #include <sys/time.h>
@@ -13,18 +14,18 @@ double msin(double x){
 
         xx = x;
 	for(i=0;i<1000;i++) x++;
-	return xx;
+	return xx/(xx * 1000.);
 }
 
 double mcos(double x){
 	msin(x);
-	return x;
+	return x/(x * 100.);
 }
 
 
 double mlog(double x){
 	mcos(x);
-	return x;
+	return x/(x * 10.);
 }
 
 void foob(double *x){
@@ -61,6 +62,7 @@ int bar(){
       x = mlog(y) + mcos(x);
     }
   }
+  // printf("x = %g, y = %g\n",x,y);
   return 0;
 }
 #define NUM_THREADS	3
@@ -71,12 +73,11 @@ void *PrintHello(void *threadid)
    /*   pthread_exit(NULL); */
 }
 
-int main()
-{
-   pthread_t threads[NUM_THREADS];
-   int rc, t;
+int main(){
+  pthread_t threads[NUM_THREADS];
+  int rc, t;
 
-   for(t=0;t<NUM_THREADS;t++){
+  for(t=0;t<NUM_THREADS;t++){
       printf("Creating thread %d\n", t);
       rc = pthread_create(&threads[t], NULL, PrintHello, (void *)t);
       if (rc){
@@ -95,5 +96,6 @@ int main()
          exit(-1);
       }
    }
-   exit(0);
+   return 0;
+   //   exit(0);
 }

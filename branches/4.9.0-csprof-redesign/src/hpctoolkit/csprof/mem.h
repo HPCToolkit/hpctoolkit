@@ -155,6 +155,8 @@ typedef struct csprof_mem_s {
 
 } csprof_mem_t;
 
+typedef csprof_mem_t *get_memstore_f(void);
+
 //***************************************************************************
 //
 // Public interface to private memory allocation.
@@ -205,6 +207,9 @@ void* csprof_tmalloc(size_t size);
 void* csprof_tmalloc_threaded(csprof_mem_t *, size_t size);
 void csprof_tfree(void *, size_t);
 void  csprof_tfree_threaded(csprof_mem_t *, void* mem, size_t size);
+
+get_memstore_f *csprof_get_memstore;
+void mem_threaded(void);
 
 #if defined(__cplusplus)
 } /* extern "C" */

@@ -5,6 +5,7 @@
 #include <dlfcn.h>
 #include <setjmp.h>
 
+#include "bad_unwind.h"
 #include "general.h"
 
 #ifdef NO
@@ -84,8 +85,6 @@ csprof_set_up_alternate_signal_stack()
     }
 }
 
-extern jmp_buf bad_unwind;
-
 #include "thread_data.h"
 /* catch SIGSEGVs */
 
@@ -95,6 +94,7 @@ void
 polite_segv_handler(int sig, siginfo_t *siginfo, void *context)
 {
     extern void (*csprof_longjmp)(jmp_buf j,int v);
+    _jb *it = get_bad_unwind();
 
 #ifdef CSPROF_THREADS
     extern pthread_key_t k;
@@ -131,11 +131,7 @@ polite_segv_handler(int sig, siginfo_t *siginfo, void *context)
         catching_sigsegv = 1;
 #endif
         /* make sure we don't hose ourselves by doing re-entrant backtracing */
-#ifdef CSPROF_THREADS
-        siglongjmp(td->bad_unwind,9);
-#else
-        siglongjmp(bad_unwind,9);
-#endif
+        siglongjmp(it->jb,9);
         /* let the previous handler do its job */
         if(previous_sigsegv_handler.sa_flags & SA_SIGINFO) {
           /* new-style handler */
@@ -159,7 +155,7 @@ static void
 csprof_sigsegv_signal_handler(int sig, siginfo_t *siginfo, void *context)
 {
     extern void (*csprof_longjmp)(jmp_buf j,int v);
-
+    _jb *it = get_bad_unwind();
 #ifdef CSPROF_THREADS
     extern pthread_key_t k;
 #endif
@@ -195,11 +191,7 @@ csprof_sigsegv_signal_handler(int sig, siginfo_t *siginfo, void *context)
         catching_sigsegv = 1;
 #endif
         /* make sure we don't hose ourselves by doing re-entrant backtracing */
-#ifdef CSPROF_THREADS
-        siglongjmp(td->bad_unwind,9);
-#else
-        siglongjmp(bad_unwind,9);
-#endif
+        siglongjmp(it->jb,9);
         /* let the previous handler do its job */
         if(previous_sigsegv_handler.sa_flags & SA_SIGINFO) {
           /* new-style handler */
@@ -227,6 +219,8 @@ setup_segv(void){
 #ifdef STATIC_ONLY
   csprof_set_up_alternate_signal_stack();
 #endif
+
+  return 0;
 
   /* set up handler for catching sigsegv */
   sa.sa_sigaction = csprof_sigsegv_signal_handler;

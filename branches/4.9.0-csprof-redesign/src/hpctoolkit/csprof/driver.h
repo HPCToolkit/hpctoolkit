@@ -8,7 +8,11 @@
 extern void csprof_driver_init(csprof_state_t *, csprof_options_t *);
 extern void csprof_driver_fini(csprof_state_t *, csprof_options_t *);
 
+extern void csprof_process_driver_init(csprof_options_t *o);
+
 #ifdef CSPROF_THREADS
+
+extern void csprof_thread_driver_init(csprof_options_t *o);
 
 /* intended to be called at thread initialization and finalization */
 extern void csprof_driver_thread_init(csprof_state_t *);

@@ -18,8 +18,13 @@ else
 endif
 LIBUNWIND_HOME := /home/johnmc/pkgs
 
-LIB_UNWIND := -L$(LIBUNWIND_HOME)/lib -lunwind-x86_64 -lunwind -Wl,--rpath -Wl,$(LIBUNWIND_HOME)/lib -ldl
-INC_UNWIND := -I$(LIBUNWIND_HOME)/include
+ifndef PRIM_UNWIND
+  LIB_UNWIND := -L$(LIBUNWIND_HOME)/lib -lunwind-x86_64 -lunwind -Wl,--rpath -Wl,$(LIBUNWIND_HOME)/lib -ldl
+  INC_UNWIND := -I$(LIBUNWIND_HOME)/include
+else
+  INC_UNWIND := -I$(ARCH)
+endif
+
 
 # no need for an unwinding library; we unconditionally assume that frame
 # pointers exist on the binaries (and libraries!) we're profiling.

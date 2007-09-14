@@ -101,117 +101,125 @@ static int csprof_mem__is_enabled(csprof_mem_t *x, csprof_mem_store_t st);
 
 /* various convenience issues */
 
-#ifndef CSPROF_THREADS
 static csprof_mem_t MEM;
-#endif
 
 static const offset_t CSPROF_MEM_INIT_SZ     = 2 * 1024 * 1024; // 2 Mb
 /* this is rarely used, so the default size is small */
 static const offset_t CSPROF_MEM_INIT_SZ_TMP = 128 * 1024;  // 128 Kb
 
-csprof_mem_t *
-csprof_get_memstore()
-{
+#ifdef CSPROF_MALLOC_PROFILING
+extern void *(*csprof_xmalloc)(size_t);
+#endif
+
+csprof_mem_t *_get_static_memstore(void){
+  return &MEM;
+}
+
+static csprof_mem_t *_alloc_static_memstore(void){
+  return &MEM;
+}
+
 #ifdef CSPROF_THREADS
-    return pthread_getspecific(mem_store_key);
+csprof_mem_t *_get_thread_memstore(void){
+  return pthread_getspecific(mem_store_key);
+}
+
+get_memstore_f *csprof_get_memstore = &_get_static_memstore;
+
+static csprof_mem_t *_alloc_thread_memstore(void){
+  /* ugh -- avoid infinite loops during malloc profiling */
+#ifdef CSPROF_MALLOC_PROFILING
+  return (csprof_mem_t *)(*csprof_xmalloc)(sizeof(csprof_mem_t));
 #else
-    return &MEM;
+  return (csprof_mem_t *) malloc(sizeof(csprof_mem_t));
 #endif
 }
 
+static get_memstore_f *alloc_memstore = &_alloc_static_memstore;
+
+void mem_threaded(void){
+  csprof_get_memstore = &_get_thread_memstore;
+  alloc_memstore      = &_alloc_thread_memstore;
+}
+#else
+#define csprof_get_memstore _get_static_memstore
+#define alloc_memstore      _alloc_static_memstore
+#endif
 
 /* public interface */
 
 /* the system malloc is good about rounding odd amounts to be aligned.
    we need to do the same thing. */
-static size_t
-csprof_align_malloc_request(size_t size)
-{
-    /* might need to be different for 32-bit vs. 64-bit */
-    return (size + (8 - 1)) & (~(8 - 1));
+static size_t csprof_align_malloc_request(size_t size){
+  /* might need to be different for 32-bit vs. 64-bit */
+  return (size + (8 - 1)) & (~(8 - 1));
 }
 
-#ifdef CSPROF_MALLOC_PROFILING
-extern void *(*csprof_xmalloc)(size_t);
-#endif
-
 // See header file for documentation of public interface.
-csprof_mem_t *
-csprof_malloc_init(offset_t sz, offset_t sz_tmp)
-{
-    /* ugh -- avoid infinite loops during malloc profiling */
-#ifdef CSPROF_THREADS
-#ifdef CSPROF_MALLOC_PROFILING
-    csprof_mem_t *memstore = (*csprof_xmalloc)(sizeof(csprof_mem_t));
-#else
-    csprof_mem_t *memstore = malloc(sizeof(csprof_mem_t));
-#endif
-#else
-    csprof_mem_t *memstore = &MEM;
-#endif
 
-    int status;
+csprof_mem_t *csprof_malloc_init(offset_t sz, offset_t sz_tmp){
 
-    if(memstore == NULL) { return NULL; }
-    if(sz == 1) { sz = CSPROF_MEM_INIT_SZ; }
-    if(sz_tmp == 1) { sz_tmp = CSPROF_MEM_INIT_SZ_TMP; }
+  csprof_mem_t *memstore = alloc_memstore();
+
+  int status;
+
+  if(memstore == NULL) { return NULL; }
+  if(sz == 1) { sz = CSPROF_MEM_INIT_SZ; }
+  if(sz_tmp == 1) { sz_tmp = CSPROF_MEM_INIT_SZ_TMP; }
   
-    MSG(1,"csprof malloc init calls csprof_mem__init");
-    status = csprof_mem__init(memstore, sz, sz_tmp);
+  // MSG(1,"csprof malloc init calls csprof_mem__init");
+  status = csprof_mem__init(memstore, sz, sz_tmp);
 
-    if(status == CSPROF_ERR) {
-        return NULL;
-    }
+  if(status == CSPROF_ERR) {
+    return NULL;
+  }
 
-    MSG(1,"malloc_init returns %p",memstore);
-    return memstore;
+  // MSG(1,"malloc_init returns %p",memstore);
+  return memstore;
 }
 
+#ifdef NO
 // See header file for documentation of public interface.
-int 
-csprof_malloc_fini(csprof_mem_t *memstore)
-{
-    if(csprof_mem__get_status(memstore) != CSPROF_MEM_STATUS_INIT) {
-        return CSPROF_ERR;
-    }
+int csprof_malloc_fini(csprof_mem_t *memstore){
+  if(csprof_mem__get_status(memstore) != CSPROF_MEM_STATUS_INIT) {
+    return CSPROF_ERR;
+  }
   
-    return csprof_mem__fini(memstore);
+  return csprof_mem__fini(memstore);
 }
+#endif
 
-void *
-csprof_malloc(size_t size)
-{
-    csprof_mem_t *memstore = csprof_get_memstore();
+void *csprof_malloc(size_t size){
+  csprof_mem_t *memstore = csprof_get_memstore();
 
-    MSG(1,"csprof malloc memstore = %p",memstore);
-    return csprof_malloc_threaded(memstore, size);
+  // MSG(1,"csprof malloc memstore = %p",memstore);
+  return csprof_malloc_threaded(memstore, size);
 }
 
 // See header file for documentation of public interface.
-void* 
-csprof_malloc_threaded(csprof_mem_t *memstore, size_t size) 
-{
-    void* mem;
+void *csprof_malloc_threaded(csprof_mem_t *memstore, size_t size){
+  void *mem;
 
 #if 1
-    // Sanity check
-    if(csprof_mem__get_status(memstore) != CSPROF_MEM_STATUS_INIT) { MSG(1,"NO MEM STATUS");return NULL; }
-    if(!csprof_mem__is_enabled(memstore, CSPROF_MEM_STORE)) { MSG(1,"NO MEM ENBL");return NULL; }
+  // Sanity check
+  if(csprof_mem__get_status(memstore) != CSPROF_MEM_STATUS_INIT) { MSG(1,"NO MEM STATUS");return NULL; }
+  if(!csprof_mem__is_enabled(memstore, CSPROF_MEM_STORE)) { MSG(1,"NO MEM ENBL");return NULL; }
 #endif
-    if(size <= 0) { MSG(1,"size <=0");return NULL; } // check to prevent an infinite loop!
 
-    size = csprof_align_malloc_request(size);
+  if(size <= 0) { MSG(1,"size <=0");return NULL; } // check to prevent an infinite loop!
 
-    // Try to allocate the memory (should loop at most once)
-    while ((mem = csprof_mem__alloc(memstore, size, CSPROF_MEM_STORE)) == NULL) {
+  size = csprof_align_malloc_request(size);
 
-        if((csprof_mem__grow(memstore, size, CSPROF_MEM_STORE) != CSPROF_OK)) {
-            DIE("could not allocate swap space for memory manager", __FILE__, __LINE__);
-            return NULL;
-        }
+  // Try to allocate the memory (should loop at most once)
+  while ((mem = csprof_mem__alloc(memstore, size, CSPROF_MEM_STORE)) == NULL) {
+
+    if((csprof_mem__grow(memstore, size, CSPROF_MEM_STORE) != CSPROF_OK)) {
+      DIE("could not allocate swap space for memory manager", __FILE__, __LINE__);
+      return NULL;
     }
+  }
 
-    return mem;
+  return mem;
 }
 
 // See header file for documentation of public interface.
@@ -268,38 +276,35 @@ csprof_tfree_threaded(csprof_mem_t *memstore, void* ptr, size_t size)
 // respective stores.  If either size is 0, the respective store is
 // disabled; however it is an error for both stores to be
 // disabled.  Returns CSPROF_OK upon success; CSPROF_ERR on error.
-static int
-csprof_mem__init(csprof_mem_t *x, offset_t sz, offset_t sz_tmp)
-{
-    if(sz == 0 && sz_tmp == 0) { return CSPROF_ERR; }
+static int csprof_mem__init(csprof_mem_t *x, offset_t sz, offset_t sz_tmp){
+  if(sz == 0 && sz_tmp == 0) { return CSPROF_ERR; }
 
-    memset(x, 0, sizeof(*x));
+  memset(x, 0, sizeof(*x));
 
-    x->sz_next     = sz;
-    x->sz_next_tmp = sz_tmp;
+  x->sz_next     = sz;
+  x->sz_next_tmp = sz_tmp;
   
-    MSG(1,"csprof mem init about to call grow");
-    if(sz != 0
-       && csprof_mem__grow(x, sz, CSPROF_MEM_STORE) != CSPROF_OK) {
-      MSG(1,"** MEM GROW for main store failed");
-        return CSPROF_ERR;
-    }
-    if(sz_tmp != 0 
-       && csprof_mem__grow(x, sz_tmp, CSPROF_MEM_STORETMP) != CSPROF_OK) {
-      MSG(1,"** MEM GROW for tmp store failed");
-        return CSPROF_ERR;
-    }
+  // MSG(1,"csprof mem init about to call grow");
+  if(sz != 0
+     && csprof_mem__grow(x, sz, CSPROF_MEM_STORE) != CSPROF_OK) {
+    MSG(1,"** MEM GROW for main store failed");
+    return CSPROF_ERR;
+  }
+  if(sz_tmp != 0 
+     && csprof_mem__grow(x, sz_tmp, CSPROF_MEM_STORETMP) != CSPROF_OK) {
+    // MSG(1,"** MEM GROW for tmp store failed");
+    return CSPROF_ERR;
+  }
   
-    MSG(1,"mem init setting status to INIT");
-    x->status = CSPROF_MEM_STATUS_INIT;
-    return CSPROF_OK;
+  // MSG(1,"mem init setting status to INIT");
+  x->status = CSPROF_MEM_STATUS_INIT;
+  return CSPROF_OK;
 }
 
+#ifdef NO
 // csprof_mem__fini: Cleanup and deallocate memory stores.  Returns
 // CSPROF_OK upon success; CSPROF_ERR on error.
-static int
-csprof_mem__fini(csprof_mem_t *x)
-{
+static int csprof_mem__fini(csprof_mem_t *x){
     int i;
 
     csprof_mmap_info_t *mminf_vec[2];
@@ -379,6 +384,7 @@ csprof_mem__reset(csprof_mem_t *x, offset_t sz, offset_t sz_tmp)
 
   return CSPROF_OK;
 }
+#endif
 
 // csprof_mem__alloc: Attempts to allocate 'sz' bytes in the store
 // specified by 'st'.  If there is sufficient space, returns a
@@ -390,7 +396,7 @@ csprof_mem__alloc(csprof_mem_t *x, size_t sz, csprof_mem_store_t st)
   void* m, *new_mem;
   csprof_mmap_alloc_info_t *allocinf = NULL;
 
-  MSG(1,"csprof mem alloc: sz = %ld",sz);
+  // MSG(1,"csprof mem alloc: sz = %ld",sz);
 
   // Setup pointers
   switch (st) {

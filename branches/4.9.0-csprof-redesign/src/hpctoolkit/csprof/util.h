@@ -14,7 +14,11 @@ extern csprof_state_t *csprof_get_state();
 /* sets the state of the profiler (at epoch turns, e.g.) */
 extern void csprof_set_state(csprof_state_t *);
 /* fetches private memory for the profiler */
+
+#ifdef FIXME
 extern csprof_mem_t *csprof_get_memstore();
+#endif
+extern get_memstore_f *csprof_get_memstore;
 
 /* these are used to call into libc/libexc/libpthread and so forth, since
    we can't be assured that we'll have dlsym'd the appropriate addresses

@@ -638,8 +638,10 @@ monitor_libc_start_main_fini()
     }
     MONITOR_FINI_PROCESS;
 
-    if (monitor_cmd)
-	free(monitor_cmd);
+    if (monitor_cmd){
+      ;
+      // free(monitor_cmd);
+    }
 }
 
 extern void 
@@ -915,7 +917,13 @@ monitor_pthread_create_start_routine(void *arg)
 #endif
 
     tn->tn_appl_started = 1;
+    asm(".globl monitor_unwind_thread_fence1");
+    asm("monitor_unwind_thread_fence1:");
+
     rval = (tn->tn_start_routine)(tn->tn_arg);
+
+    asm(".globl monitor_unwind_thread_fence2");
+    asm("monitor_unwind_thread_fence2:");
 
 #if defined(USE_PTHREAD_CLEANUP_PUSH_POP)
     pthread_cleanup_pop(1);  

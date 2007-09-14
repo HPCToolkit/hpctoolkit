@@ -8,18 +8,47 @@ CC := gcc
 F90 := pgf90
 HPCF90 := PATH=Static:$$PATH;$(F90)
 HPCC   := PATH=Static:$$PATH;$(CC)
-F90FLAGS-g := -O -g
+F90FLAGS-g := -g
 F90FLAGS-o := -g -fast -gopt
-F90FLAGS   := $(F90FLAGS-g)
+F90FLAGS   := $(F90FLAGS-g) -v
+FLDFLAGS   := -Wl,--eh-frame-hdr
+LDFLAGS    := -lm -lpthread -Wl,--eh-frame-hdr
 CFLAGS := -g $(INC_UNWIND) -I.. -I../monitor/src
-LDFLAGS := $(LIB_UNWIND) -lm -lpthread
+CLDFLAGS := $(LIB_UNWIND) -lm -lpthread
 HPCLDFLAGS := -Bstatic $(filter-out -ldl,-L.. -lcsprof $(LIB_UNWIND) -lbfd -liberty)
+F90MAIN    := /opt/apps/pgi/7.0.3/linux86-64/7.0-3/lib/f90main.o
+#F90LD      := -rpath /opt/apps/pgi/7.0.3/linux86-64/7.0-3/lib 
+F90LD      := -L/opt/apps/pgi/7.0.3/linux86-64/7.0-3/lib 
+F90LD2     := -lpgf90 -lpgf90_rpm1 -lpgf902 -lpgf90rtl -lpgftnrtl -lnspgc -lpgc -lrt
+MPICC      := mpicc
 
 ### Try out override thing
 ###
 #SHELL   := PATH=Static:$$PATH;$(SHELL)
 
-.PHONY: TARGET TARGET2 TMSG T C
+.PHONY: TARGET TARGET2 TMSG T C 
+
+all: tmpi prof.so
+
+#tmpi: tmpi.c libcsp.so  # when making with csp thing
+tmpi: tmpi.c
+	$(MPICC) $(CFLAGS) $^ $(LDFLAGS) -o $@
+
+prof.so: prof.c
+	$(CC) -fPIC $(CFLAGS) -shared -o $@ -nostartfiles $< -lpthread
+
+libcsp.so: csp.c
+	$(CC) $(CFLAGS) -fPIC $< -shared -nostartfiles -o $@
+
+cf2: cf2.o f2m.o
+	$(CC) $^ -o $@  
+
+f2: f2.o
+#	$(CC) $(F90MAIN) $(F90LD) $^ -o $@ $(F90LD2)
+	$(F90) -Wl,--eh-frame-hdr $^ -o $@
+
+t4:  t4.c
+	$(CC) $(CFLAGS) -lm -o $@ $<
 
 f2.1 : f2.1.f90 hpc_main.o
 	$(HPCF90) $(F90FLAGS) $^ $(HPCLDFLAGS) -o $@
@@ -44,8 +73,8 @@ tmsg: tmsg.o mon_ovr.so
 tmsg.o: tmsg.c
 	$(CC) -I.. -I../src/monitor -c $< 
 
-f2: f2.f90
-	$(F90) $(F90FLAGS) $^ $(LDFLAGS) -o $@
+#f2: f2.f90
+	$(F90) -v -Wl,--eh-frame-hdr $(F90FLAGS) $^ -o $@
 
 TARGET2: f1-g f1-o
 
@@ -107,4 +136,5 @@ T:
 	@echo which ld = `which ld`
 
 C:
-	@rm -rf f2.1
+	rm -rf tmpi tmpi.o prof.so
+

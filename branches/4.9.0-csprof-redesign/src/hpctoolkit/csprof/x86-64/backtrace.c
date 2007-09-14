@@ -3,7 +3,11 @@
 #include <sys/types.h>
 #include <ucontext.h>
 
+#ifndef PRIM_UNWIND
 #include <libunwind.h>
+#else
+#include "prim_unw.h"
+#endif
 
 #include "backtrace.h"
 #include "state.h"
@@ -20,6 +24,7 @@ int csprof_sample_callstack_from_frame(csprof_state_t *, int,
 				       size_t, unw_cursor_t *);
 
 /* XXX duplication */
+#ifdef NO
 void
 csprof_record_metric_with_unwind(int metric_id, size_t value, int unwinds)
 {
@@ -116,7 +121,7 @@ backtrace_done(unw_cursor_t *frame, unw_word_t *pcp, unw_word_t *spp)
         return 0;
     }
 }
-
+#endif
 // ***FIXME: mmap interaction
 
 #define ensure_state_buffer_slot_available(state,unwind) \
@@ -126,10 +131,16 @@ backtrace_done(unw_cursor_t *frame, unw_word_t *pcp, unw_word_t *spp)
 }
 
 extern void *monitor_unwind_fence1,*monitor_unwind_fence2;
+extern void *monitor_unwind_thread_fence1,*monitor_unwind_thread_fence2;
 
-int csprof_check_fence(void *ip){
-  return (ip >= &monitor_unwind_fence1) && (ip <= &monitor_unwind_fence2);
+int csprof_check_fence(void *iip){
+  void **ip = (void **) iip;
+
+  return ((ip >= &monitor_unwind_fence1) && (ip <= &monitor_unwind_fence2)) ||
+    ((ip >= &monitor_unwind_thread_fence1) && (ip <= &monitor_unwind_thread_fence2));
 }
+
+extern void *unwind_pc;
 
 int
 csprof_sample_callstack_from_frame(csprof_state_t *state, int metric_id,
@@ -141,6 +152,9 @@ csprof_sample_callstack_from_frame(csprof_state_t *state, int metric_id,
 
     state->bufstk   = state->bufend;
     state->treenode = NULL;
+
+    // MSG(1,"would unwind now...");
+    // return CSPROF_OK; // temp hack to check on unwind precon
 
     for(;;){
       ensure_state_buffer_slot_available(state, unwind);
@@ -154,10 +168,13 @@ csprof_sample_callstack_from_frame(csprof_state_t *state, int metric_id,
         MSG(1,"Starting IP = %lp",(void *)ip);
         /*        first = 0; */
       }
+
+      unwind_pc = (void *) ip; // mark starting point in case of failure
+
       unwind->ip = (void *) ip;
       unwind->sp = (void *) 0;
       unwind++;
-      if ((unw_step (cursor) <= 0) || csprof_check_fence(ip)){
+      if (csprof_check_fence(ip) || (unw_step (cursor) <= 0)){
         MSG(1,"Hit unw_step break");
         break;
       }
@@ -172,6 +189,7 @@ csprof_sample_callstack_from_frame(csprof_state_t *state, int metric_id,
     return CSPROF_OK;
 }
 
+#ifdef NO
 int
 NO_csprof_sample_callstack_from_frame(csprof_state_t *state, int metric_id,
 				   size_t sample_count, unw_cursor_t *frame)
@@ -339,6 +357,7 @@ goto EXIT; \
  EXIT:
     return ret;
 }
+#endif
 
 /* FIXME: some of the checks from libunwind calls are checked for errors.
    I suppose that's a good thing, but there should be some way (CSPROF_PERF?)
@@ -354,7 +373,9 @@ csprof_sample_callstack(csprof_state_t *state, int metric_id,
     int first_ever_unwind = (state->bufstk == state->bufend);
     void *sp1 = first_ever_unwind ? (void *) -1 : state->bufstk->sp;
 
+#ifndef PRIM_UNWIND
     unw_context_t ctx;
+#endif
     unw_cursor_t frame;
 
     csprof_state_verify_backtrace_invariants(state);
@@ -365,13 +386,19 @@ csprof_sample_callstack(csprof_state_t *state, int metric_id,
         DIE("Could not initialize unwind context!", __FILE__, __LINE__);
     }
 #else
+#ifndef PRIM_UNWIND
     memcpy(&ctx.uc_mcontext, context, sizeof(mcontext_t));
+#else
+    unw_init_f_mcontext(context,&frame);
+    MSG(1,"back from cursor init: pc = %p, bp = %p\n",frame.pc,frame.bp);
+#endif
 #endif
 
+#ifndef PRIM_UNWIND
     if(unw_init_local(&frame, &ctx) < 0) {
         DIE("Could not initialize unwind cursor!", __FILE__, __LINE__);
     }
-
+#endif
 #if USE_LIBUNWIND_TO_START
     {
         int i;

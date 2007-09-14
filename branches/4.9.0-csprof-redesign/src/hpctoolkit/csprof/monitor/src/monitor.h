@@ -24,19 +24,19 @@ extern "C" {
 
 /* Defined by user code */
 
-extern void monitor_init_library();
-extern void monitor_fini_library();
+extern void monitor_init_library(void);
+extern void monitor_fini_library(void);
 extern void monitor_init_process(struct monitor_start_main_args *main_args);
-extern void monitor_fini_process();
-extern void monitor_init_thread_support();
+extern void monitor_fini_process(void);
+extern void monitor_init_thread_support(void);
 extern void *monitor_init_thread(unsigned tid);
 extern void monitor_fini_thread(void *init_thread_data);
 extern void monitor_dlopen(const char *library);
 
 /* Defined by libmonitor, they can be weak for clients */
 
-extern unsigned long __attribute__((weak)) monitor_gettid();
-extern void __attribute__((weak)) monitor_force_fini_process();
+extern unsigned long __attribute__((weak)) monitor_gettid(void);
+extern void __attribute__((weak)) monitor_force_fini_process(void);
 extern void __attribute__((weak)) __attribute__((noreturn)) monitor_real_exit(int);
 extern int __attribute__((weak)) monitor_real_execve(const char *filename, char *const argv [], char *const envp[]);
 extern pid_t __attribute__((weak)) monitor_real_fork(void);

@@ -223,42 +223,40 @@ csprof_set_up_alternate_signal_stack()
     }
 }
 
-void
-csprof_driver_init(csprof_state_t *state, csprof_options_t *options)
-{
-    struct sigaction sa;
-    int ret;
+void csprof_driver_init(csprof_state_t *state, csprof_options_t *options){
+  struct sigaction sa;
+  int ret;
 
-    /* compensate */
-    options->sample_period = 1;
+  /* compensate */
+  options->sample_period = 1;
 
     /* install metrics */
-    csprof_set_max_metrics(3);
-    csprof_set_metric_info_and_period(csprof_new_metric(),
-				      "# bytes allocated",
-				      CSPROF_METRIC_FLAGS_NIL, 1);
-    csprof_set_metric_info_and_period(csprof_new_metric(),
-				      "# bytes freed",
-				      CSPROF_METRIC_FLAGS_NIL, 1);
-    csprof_set_metric_info_and_period(csprof_new_metric(),
-				      "# SIGSEGVs",
-				      CSPROF_METRIC_FLAGS_NIL, 1);
+  csprof_set_max_metrics(3);
+  csprof_set_metric_info_and_period(csprof_new_metric(),
+                                    "# bytes allocated",
+                                    CSPROF_METRIC_FLAGS_NIL, 1);
+  csprof_set_metric_info_and_period(csprof_new_metric(),
+                                    "# bytes freed",
+                                    CSPROF_METRIC_FLAGS_NIL, 1);
+  csprof_set_metric_info_and_period(csprof_new_metric(),
+                                    "# SIGSEGVs",
+                                    CSPROF_METRIC_FLAGS_NIL, 1);
 
-    MAYBE_INIT_STUBS();
-    csprof_set_up_alternate_signal_stack();
+  MAYBE_INIT_STUBS();
+  csprof_set_up_alternate_signal_stack();
 
-    /* set up handler for catching sigsegv */
-    sa.sa_sigaction = csprof_sigsegv_signal_handler;
-    sigemptyset(&sa.sa_mask);
-    sa.sa_flags = SA_SIGINFO | SA_RESTART | SA_ONSTACK;
+  /* set up handler for catching sigsegv */
+  sa.sa_sigaction = csprof_sigsegv_signal_handler;
+  sigemptyset(&sa.sa_mask);
+ sa.sa_flags = SA_SIGINFO | SA_RESTART | SA_ONSTACK;
 
-    ret = sigaction(SIGSEGV, &sa, &previous_sigsegv_handler);
+ ret = sigaction(SIGSEGV, &sa, &previous_sigsegv_handler);
 
-    if(ret != 0) {
-        ERRMSG("Unable to install SIGSEGV handler", __FILE__, __LINE__);
-    }
+ if(ret != 0) {
+   ERRMSG("Unable to install SIGSEGV handler", __FILE__, __LINE__);
+ }
 
-    take_malloc_samples = 1;
+ take_malloc_samples = 1;
 }
 
 void

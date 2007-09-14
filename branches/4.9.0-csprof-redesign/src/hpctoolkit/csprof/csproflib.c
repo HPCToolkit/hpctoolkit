@@ -81,6 +81,7 @@
 #include "csproflib.h"
 #include "csproflib_private.h"
 #include "env.h"
+#include "killsafe.h"
 #include "mem.h"
 #include "csprof_csdata.h"
 #include "interface.h"
@@ -180,87 +181,147 @@ char *static_epoch_xname;
 void *static_epoch_end;
 long static_epoch_size;
 
-void
-csprof_init_internal()
-{
-    if (getenv("CSPROF_WAIT")){
-      while(wait_for_gdb);
-    }
-    csprof_libc_init();
-    MSG(CSPROF_MSG_SHUTDOWN, "***> csprof init internal ***");
+//
+// process level setup (assumes pthreads not started yet)
+//
+void csprof_init_internal(void){
+  if (getenv("CSPROF_WAIT")){
+    while(wait_for_gdb);
+  }
+  csprof_libc_init();
+  MSG(CSPROF_MSG_SHUTDOWN, "***> csprof init internal ***");
 
-    csprof_options__init(&opts);
-    csprof_options__getopts(&opts);
+  csprof_options__init(&opts);
+  csprof_options__getopts(&opts);
+
 #ifdef STATIC_ONLY
-    static_epoch_offset = (void *)&_start;
-    static_epoch_end    = (void *)&__stop___libc_freeres_ptrs;
-    static_epoch_size   = (long) (static_epoch_end - static_epoch_offset);
+  static_epoch_offset = (void *)&_start;
+  static_epoch_end    = (void *)&__stop___libc_freeres_ptrs;
+  static_epoch_size   = (long) (static_epoch_end - static_epoch_offset);
 #endif     
 
-#ifdef CSPROF_THREADS
-    /* our malloc needs to be thread-safe */
-    csprof_pthread_init_funcptrs();
-    csprof_pthread_init_data();
-#endif
+  if (status == CSPROF_STATUS_INIT) { 
+    MSG(CSPROF_MSG_SHUTDOWN, "!!! csprof init called again !!!");
+  }
+  else {
+    MSG(CSPROF_MSG_SHUTDOWN, "csprof init 1");
 
     /* private memory store for the initial thread is done below */
-#ifndef CSPROF_THREADS
-    /* (Re)Initialize private memory for call-stack data. [Case 1 & 2] */
+
     MSG(1,"calling malloc init");
     csprof_malloc_init(opts.mem_sz, 0);
-#endif
 
-    if (status == CSPROF_STATUS_INIT) { 
-        MSG(CSPROF_MSG_SHUTDOWN, "***> csprof init (redo) ***");
-    } else {
-        MSG(CSPROF_MSG_SHUTDOWN, "***> csprof init 1 ***");
-        /* profiling state needs the memory manager init'd */
-#if CSPROF_THREADS
-
-        csprof_pthread_state_init();
-#else
-        {
-            csprof_state_t *state = csprof_malloc(sizeof(csprof_state_t));
-
-            csprof_set_state(state);
-
-            csprof_state_init(state);
-            csprof_state_alloc(state);
-        }
-#endif
-
-        /* epoch poking needs the memory manager init'd() (and
-           the thread-specific memory manager if need be) */
-        /* figure out what libraries we currently have loaded */
-        csprof_epoch_lock();
-        csprof_epoch_new();
-        csprof_epoch_unlock();
+  /* epoch poking needs the memory manager init'd() (and
+     the thread-specific memory manager if need be) */
+  /* figure out what libraries we currently have loaded */
+    csprof_epoch_lock();
+    csprof_epoch_new();
+    csprof_epoch_unlock();
     
-        MSG(CSPROF_MSG_SHUTDOWN, "***> csprof init 2 ***");
-    }
+    /* profiling state needs the memory manager init'd */
+    csprof_state_t *state = csprof_malloc(sizeof(csprof_state_t));
+
+    csprof_set_state(state);
+
+    csprof_state_init(state);
+    csprof_state_alloc(state);
+
+    MSG(CSPROF_MSG_SHUTDOWN, "***> csprof init 2 ***");
+  }
 
 #if !defined(CSPROF_SYNCHRONOUS_PROFILING)
-    MSG(1,"sigemptyset(prof_sigset)");
-    sigemptyset(&prof_sigset);
-#endif
-    MSG(CSPROF_MSG_SHUTDOWN, "***> csprof init 3 ***");
-    csprof_driver_init(csprof_get_state(), &opts);
-    MSG(CSPROF_MSG_SHUTDOWN, "***> csprof init 4 ***");
-
-    /* FIXME: is this the right way to do things? */
-#ifdef CSPROF_THREADS
-    atexit(csprof_atexit_handler);
+  MSG(1,"sigemptyset(prof_sigset)");
+  sigemptyset(&prof_sigset);
 #endif
 
-    status = CSPROF_STATUS_INIT;
+  // MSG(CSPROF_MSG_SHUTDOWN, "***> csprof init 3 ***");
+
+  csprof_process_driver_init(&opts);
+
+  // MSG(CSPROF_MSG_SHUTDOWN, "***> csprof init 4 ***");
+
+  status = CSPROF_STATUS_INIT;
 }
 
+#ifdef CSPROF_THREADS
+extern pthread_key_t thread_node_key;
+extern pthread_key_t prof_data_key;
+extern pthread_key_t mem_store_key;
+
+void csprof_init_thread_support(int id){
+
+  csprof_state_t *state = csprof_get_state();
+
+  MSG(1,"csproflib init f initial thread");
+  csprof_pthread_init_data();
+
+  pthread_setspecific(mem_store_key,(void *)csprof_get_memstore());
+  pthread_setspecific(prof_data_key,(void *)state);
+  // do NOT create a list node -- monitor should make that unnecessary
+
+  // Switch to threaded variants for various components of csprof
+
+  state->pstate.thrid = id;
+
+  mem_threaded();
+  state_threaded();
+  MSG(1,"switch to threaded versions complete");
+}
+
+void csprof_thread_init(killsafe_t *kk,int id){
+
+  csprof_state_t *state;
+  csprof_mem_t *memstore;
+
+  // csprof_pthread_init_funcptrs();  // SHOULDN'T NEED THIS
+  // csprof_pthread_init_data();      // SHOULDN'T NEED THIS, called by init_support
+
+  // csprof_pthread_state_init(kk);  // SHOULDN'T NEED THIS -- follow process_init scheme
+  memstore = csprof_malloc_init(1, 0);
+
+  if(memstore == NULL) {
+    DIE("Couldn't allocate mem for csprof_malloc in thread",
+        __FILE__, __LINE__);
+  }
+  DBGMSG_PUB(CSPROF_DBG_PTHREAD, "Setting mem_store_key f thread %d",id);
+  pthread_setspecific(mem_store_key, memstore);
+
+  state = csprof_malloc(sizeof(csprof_state_t));
+  if(state == NULL) {
+    DBGMSG_PUB(1, "Couldn't allocate memory for profiling state in thread");
+  }
+
+  DBGMSG_PUB(CSPROF_DBG_PTHREAD, "Allocated thread state, now init'ing and alloc'ing f thread %d",id);
+
+  csprof_state_init(state);
+  csprof_state_alloc(state);
+
+  state->pstate.thrid = id; // local thread id in state
+
+  pthread_setspecific(prof_data_key,(void *)state);
+
+  kk->state = state;  // save pointer to state data in killsafe
+
+    /* FIXME: is this the right way to do things? */
+
+  MSG(1,"driver init f thread");
+  csprof_thread_driver_init(&opts);
+}
+
+void csprof_thread_fini(csprof_state_t *state){
+  extern void csprof_disable_timer(void);
+  // int csprof_write_profile_data(csprof_state_t *s);
+
+  MSG(1,"csprof thread fini");
+  csprof_disable_timer();
+  csprof_write_profile_data(state);
+}
+#endif
 // csprof_fini_internal: 
 // errors: handles all errors
-void
-csprof_fini_internal()
-{
+void csprof_fini_internal(void){
     extern int segv_count;
+    extern int samples_taken;
     csprof_state_t *state;
 
     /* Prevent multiple finalizations [Case 2] */
@@ -279,11 +340,10 @@ csprof_fini_internal()
     csprof_driver_fini(state, &opts);
 
     MSG(CSPROF_MSG_SHUTDOWN, "writing profile data");
-    state = csprof_get_state();
+    state = csprof_get_safe_state();
     csprof_write_profile_data(state);
-    printf("segv count = %d\n",segv_count);
+    printf("%d samples total, %d samples dropped\n", samples_taken, segv_count);
 }
-
 
 
 /* timing utility */
@@ -525,27 +585,30 @@ csprof_print_backtrace(csprof_state_t *state)
     }
 }
 
-
 /* writing profile data */
 
-int 
-csprof_write_profile_data(csprof_state_t *state)
-{
-    int ret = CSPROF_OK, ret1, ret2;
-    FILE* fs;
+int csprof_write_profile_data(csprof_state_t *state){
 
-    /* Generate a filename */
-    char fnm[CSPROF_FNM_SZ]; 
-#ifdef CSPROF_THREADS
+  extern int csprof_using_threads;
+
+  int ret = CSPROF_OK, ret1, ret2;
+  FILE* fs;
+
+  /* Generate a filename */
+  char fnm[CSPROF_FNM_SZ];
+
+
+  if (csprof_using_threads){
     sprintf(fnm, "%s/%s%lx-%x-%ld%s", opts.out_path,
             CSPROF_FNM_PFX, state->pstate.hostid, state->pstate.pid,
             state->pstate.thrid, CSPROF_OUT_FNM_SFX);
-#else
-    sprintf(fnm, "%s/%s%x-%x%s", opts.out_path, CSPROF_FNM_PFX,
+  }
+  else {
+    sprintf(fnm, "%s/%s%lx-%x%s", opts.out_path, CSPROF_FNM_PFX,
             state->pstate.hostid, state->pstate.pid, CSPROF_OUT_FNM_SFX);
-#endif
+  }
   
-    MSG(CSPROF_MSG_DATAFILE, "CSPROF write_profile_data: Writing %s", fnm);
+  MSG(CSPROF_MSG_DATAFILE, "CSPROF write_profile_data: Writing %s", fnm);
 
     /* Open file for writing; fail if the file already exists. */
     fs = hpcfile_open_for_write(fnm, /* overwrite */ 0);
@@ -628,26 +691,25 @@ csprof_write_profile_data(csprof_state_t *state)
    Since we can't rely on pthread_exit being called, we do the bare
    minimum in our pthread_exit and defer the flushing of profile data
    to disk until this point.  This simplifies a lot of things. */
-void
-csprof_atexit_handler()
-{
-    csprof_list_node_t *runner;
+void csprof_atexit_handler(){
 
-    MSG(CSPROF_MSG_DATAFILE, "ATEXIT: Dumping thread states");
+  csprof_list_node_t *runner;
 
-    for(runner = all_threads.head; runner; runner = runner->next) {
-      MSG(1,"checking thread runner = %lx",runner);
-        if(runner->sp == CSPROF_PTHREAD_LIVE) {
-            csprof_state_t *state = (csprof_state_t *)runner->node;
+  MSG(CSPROF_MSG_DATAFILE, "ATEXIT: Dumping thread states");
 
-            MSG(CSPROF_MSG_DATAFILE, "Exit Dumping state %#lx", state);
+  for(runner = all_threads.head; runner; runner = runner->next) {
+    MSG(1,"checking thread runner = %lx",runner);
+    if(runner->sp == CSPROF_PTHREAD_LIVE) {
+      csprof_state_t *state = (csprof_state_t *)runner->node;
 
-            csprof_write_profile_data(state);
+      MSG(CSPROF_MSG_DATAFILE, "Exit Dumping state %#lx", state);
 
-            /* mark this as being written out */
-            runner->sp = CSPROF_PTHREAD_DEAD;
-        }
+      csprof_write_profile_data(state);
+
+      /* mark this as being written out */
+      runner->sp = CSPROF_PTHREAD_DEAD;
     }
+  }
 }
 #endif
 
@@ -655,9 +717,7 @@ csprof_atexit_handler()
 /* option handling */
 /* FIXME: this needs to be split up a little bit for different backends */
 
-static int
-csprof_options__init(csprof_options_t* x)
-{
+static int csprof_options__init(csprof_options_t* x){
   memset(x, 0, sizeof(*x));
 
   x->mem_sz = CSPROF_MEM_SZ_INIT;
@@ -674,126 +734,124 @@ csprof_options__fini(csprof_options_t* x)
 }
 
 /* assumes no private 'heap' memory is available yet */
-static int
-csprof_options__getopts(csprof_options_t* x)
-{
-    char tmp[CSPROF_PATH_SZ];
-    char* s;
-    int i = 0;
+static int csprof_options__getopts(csprof_options_t* x){
+
+  char tmp[CSPROF_PATH_SZ];
+  char* s;
+  int i = 0;
 
 #ifndef CSPROF_PERF
-    /* Global option: CSPROF_OPT_VERBOSITY */
-    s = getenv(CSPROF_OPT_VERBOSITY);
-    if (s) {
-        i = atoi(s);
-        if ((0 <= i) && (i <= 65536)) {
-            CSPROF_MSG_LVL = i;
-	    fprintf(stderr, "setting message level to %d\n",i);
-        } else {
-            DIE("value of option `%s' [%s] not integer between 0-9", __FILE__, __LINE__,
-                CSPROF_OPT_VERBOSITY, s);
-        }
+  /* Global option: CSPROF_OPT_VERBOSITY */
+  s = getenv(CSPROF_OPT_VERBOSITY);
+  if (s) {
+    i = atoi(s);
+    if ((0 <= i) && (i <= 65536)) {
+      CSPROF_MSG_LVL = i;
+      fprintf(stderr, "setting message level to %d\n",i);
+    }
+    else {
+      DIE("value of option `%s' [%s] not integer between 0-9", __FILE__, __LINE__,
+          CSPROF_OPT_VERBOSITY, s);
+    }
+  } 
+
+  /* Global option: CSPROF_OPT_DEBUG */
+  s = getenv(CSPROF_OPT_DEBUG);
+  if (s) {
+    i = atoi(s);
+    /* FIXME: would like to provide letters as mnemonics, much like Perl */
+    CSPROF_DBG_LVL_PUB = i;
+  }
+#endif
+
+  /* Option: CSPROF_OPT_MAX_METRICS */
+  s = getenv(CSPROF_OPT_MAX_METRICS);
+  if (s) {
+    i = atoi(s);
+    if ((0 <= i) && (i <= 10)) {
+      x->max_metrics = i;
+    }
+    else {
+      DIE("value of option `%s' [%s] not integer between 0-10", __FILE__,
+          __LINE__, CSPROF_OPT_MAX_METRICS, s);
+    }
+  }
+  else {
+    x->max_metrics = 5;
+  }
+
+  /* Option: CSPROF_OPT_SAMPLE_PERIOD */
+  s = getenv(CSPROF_OPT_SAMPLE_PERIOD);
+  if (s) {
+    long l;
+    char* s1;
+    errno = 0; /* set b/c return values on error are all valid numbers! */
+    l = strtol(s, &s1, 10);
+    if (errno != 0 || l < 1 || *s1 != '\0') {
+      DIE("value of option `%s' [%s] is an invalid decimal integer", __FILE__, __LINE__,
+          CSPROF_OPT_SAMPLE_PERIOD, s);
+    }
+    else {
+      x->sample_period = l;
     } 
+  }
+  else {
+    x->sample_period = 5000; /* microseconds */
+  }
 
-    /* Global option: CSPROF_OPT_DEBUG */
-    s = getenv(CSPROF_OPT_DEBUG);
-    if (s) {
-        i = atoi(s);
-        /* FIXME: would like to provide letters as mnemonics, much like Perl */
-        CSPROF_DBG_LVL_PUB = i;
+  /* Option: CSPROF_OPT_MEM_SZ */
+  s = getenv(CSPROF_OPT_MEM_SZ);
+  if(s) {
+    unsigned long l;
+    char *s1;
+    errno = 0;
+    l = strtoul(s, &s1, 10);
+    if(errno != 0) {
+      DIE("value of option `%s' [%s] is an invalid decimal integer",
+          __FILE__, __LINE__, CSPROF_OPT_MEM_SZ, s);
     }
-#endif
-
-    /* Option: CSPROF_OPT_EVENT */
-#ifdef CSPROF_PAPI
-#endif
-
-    /* Option: CSPROF_OPT_MAX_METRICS */
-    s = getenv(CSPROF_OPT_MAX_METRICS);
-    if (s) {
-      i = atoi(s);
-      if ((0 <= i) && (i <= 10)) {
-	x->max_metrics = i;
-      }
-      else {
-	DIE("value of option `%s' [%s] not integer between 0-10", __FILE__,
-	    __LINE__, CSPROF_OPT_MAX_METRICS, s);
-      }
+    /* FIXME: may want to consider adding sanity checks (initial memory
+       sizes that are too high or too low) */
+    if(*s1 == '\0') {
+      x->mem_sz = l;
+    }
+    /* convinience */
+    else if(*s1 == 'M' || *s1 == 'm') {
+      x->mem_sz = l * 1024 * 1024;
+    }
+    else if(*s1 == 'K' || *s1 == 'k') {
+      x->mem_sz = l * 1024;
     }
     else {
-      x->max_metrics = 5;
+      DIE("unrecognized memory size unit `%c'",
+          __FILE__, __LINE__, *s1);
     }
+  }
+  else {
+    /* provide a reasonable default */
+    x->mem_sz = 2 * 1024 * 1024;
+  }
 
-    /* Option: CSPROF_OPT_SAMPLE_PERIOD */
-    s = getenv(CSPROF_OPT_SAMPLE_PERIOD);
-    if (s) {
-        long l;
-        char* s1;
-        errno = 0; /* set b/c return values on error are all valid numbers! */
-        l = strtol(s, &s1, 10);
-        if (errno != 0 || l < 1 || *s1 != '\0') {
-            DIE("value of option `%s' [%s] is an invalid decimal integer", __FILE__, __LINE__,
-                CSPROF_OPT_SAMPLE_PERIOD, s);
-        } else {
-            x->sample_period = l;
-        } 
+  /* Option: CSPROF_OPT_OUT_PATH */
+  s = getenv(CSPROF_OPT_OUT_PATH);
+  if (s) {
+    i = strlen(s);
+    if(i==0) {
+      strcpy(tmp, ".");
     }
-    else {
-        x->sample_period = 5000; /* microseconds */
+    if((i + 1) > CSPROF_PATH_SZ) {
+      DIE("value of option `%s' [%s] has a length greater than %d", __FILE__, __LINE__,
+          CSPROF_OPT_OUT_PATH, s, CSPROF_PATH_SZ);
     }
-
-    /* Option: CSPROF_OPT_MEM_SZ */
-    s = getenv(CSPROF_OPT_MEM_SZ);
-    if(s) {
-        unsigned long l;
-        char *s1;
-        errno = 0;
-        l = strtoul(s, &s1, 10);
-        if(errno != 0) {
-            DIE("value of option `%s' [%s] is an invalid decimal integer",
-                __FILE__, __LINE__, CSPROF_OPT_MEM_SZ, s);
-        }
-        /* FIXME: may want to consider adding sanity checks (initial memory
-           sizes that are too high or too low) */
-        if(*s1 == '\0') {
-            x->mem_sz = l;
-        }
-        /* convinience */
-        else if(*s1 == 'M' || *s1 == 'm') {
-            x->mem_sz = l * 1024 * 1024;
-        }
-        else if(*s1 == 'K' || *s1 == 'k') {
-            x->mem_sz = l * 1024;
-        }
-        else {
-            DIE("unrecognized memory size unit `%c'",
-                __FILE__, __LINE__, *s1);
-        }
-    }
-    else {
-        /* provide a reasonable default */
-        x->mem_sz = 2 * 1024 * 1024;
-    }
-
-    /* Option: CSPROF_OPT_OUT_PATH */
-    s = getenv(CSPROF_OPT_OUT_PATH);
-    if (s) {
-        i = strlen(s);
-        if(i==0) {
-            strcpy(tmp, ".");
-        }
-        if((i + 1) > CSPROF_PATH_SZ) {
-            DIE("value of option `%s' [%s] has a length greater than %d", __FILE__, __LINE__,
-                CSPROF_OPT_OUT_PATH, s, CSPROF_PATH_SZ);
-        }
-        strcpy(tmp, s);
-    } else {
-        strcpy(tmp, ".");
-    }
+    strcpy(tmp, s);
+  }
+  else {
+    strcpy(tmp, ".");
+  }
   
-    if (realpath(tmp, x->out_path) == NULL) {
-        DIE("could not access path `%s': %s", __FILE__, __LINE__, tmp, strerror(errno));
-    }
+  if (realpath(tmp, x->out_path) == NULL) {
+    DIE("could not access path `%s': %s", __FILE__, __LINE__, tmp, strerror(errno));
+  }
 
-    return CSPROF_OK;
+  return CSPROF_OK;
 }

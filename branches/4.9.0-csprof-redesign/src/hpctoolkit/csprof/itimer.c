@@ -9,6 +9,7 @@
 #include <stdio.h>
 #include <setjmp.h>
 
+#include "bad_unwind.h"
 #include "general.h"
 #include "driver.h"
 #include "structs.h"
@@ -17,6 +18,7 @@
 #include "sighand.h"
 #include "metrics.h"
 #include "interface.h"
+#include "pmsg.h"
 
 #ifndef STATIC_ONLY
 #define CSPROF_PROFILE_SIGNAL SIGPROF
@@ -27,9 +29,22 @@
 #endif
 
 
-extern int s1 = 0;
-extern int s2 = 0;
-extern int s3 = 0;
+int s1 = 0;
+int s2 = 0;
+int s3 = 0;
+
+#ifdef MPI_SPECIAL
+#define STATIC_RANK 0
+#include <mpi.h>
+
+static int csprof_rank = -1;
+static int chosen_rank = STATIC_RANK;
+
+void csprof_set_rank(int rank){
+  PMSG(ITIMER_HANDLER,"mpi set rank called with %d, prev csprof_rank = %d",rank,csprof_rank);
+  csprof_rank = rank;
+}
+#endif
 
 extern csprof_state_t *
 csprof_check_for_new_epoch(csprof_state_t *state);
@@ -44,12 +59,14 @@ static void csprof_take_profile_sample(csprof_state_t *, struct ucontext *);
 
 sigset_t prof_sigset;
 
+#ifdef NO
 void _zflags(void)
 {
   s1 = 0;
   s2 = 0;
   s3 = 0;
 }
+#endif
 
 static void
 csprof_init_sigset(sigset_t *ss)
@@ -105,8 +122,7 @@ csprof_set_timer(void)
     }
 }
 
-static void
-csprof_disable_timer()
+void csprof_disable_timer(void)
 {
     timerclear(&itimer.it_value);
     libcall3(csprof_setitimer, CSPROF_PROFILE_TIMER, &itimer, NULL);
@@ -209,11 +225,15 @@ csprof_swizzle_with_context(csprof_state_t *state, void *ctx)
 #endif
 }
 
+#ifdef NO
 static int
 dc(void)
 {
     return 0;
 }
+#endif
+
+void *context_pc = NULL;
 
 static void
 csprof_take_profile_sample(csprof_state_t *state, struct ucontext *ctx)
@@ -236,6 +256,7 @@ csprof_take_profile_sample(csprof_state_t *state, struct ucontext *ctx)
         return;
     }
 
+    context_pc = pc;
     DBGMSG_PUB(1, "Signalled at %#lx", pc);
 
     /* check to see if shared library state has changed out from under us */
@@ -257,45 +278,37 @@ csprof_take_profile_sample(csprof_state_t *state, struct ucontext *ctx)
     csprof_state_flag_clear(state, CSPROF_TAIL_CALL | CSPROF_EPILOGUE_RA_RELOADED | CSPROF_EPILOGUE_SP_RESET);
 }
 
-jmp_buf bad_unwind;
+void *unwind_pc;
 
-#ifdef CSPROF_THREADS
-extern pthread_key_t k;
-#include "thread_data.h"
-#endif
+int samples_taken = 0;
 
 static void
 csprof_itimer_signal_handler(int sig, siginfo_t *siginfo, void *context)
 {
-#ifdef CSPROF_THREADS
-    thread_data_t *td = (thread_data_t *)pthread_getspecific(k);
-    MSG(1,"got itimer signal f thread %d",td->id);
-    if (!sigsetjmp(td->bad_unwind,1)){
-      CSPROF_SIGNAL_HANDLER_GUTS(context);
-    }
-    else {
-      MSG(1,"got bad unwind");
-    }
+  _jb *it = get_bad_unwind();
+  samples_taken++;
+#ifdef MPI_SPECIAL
+  if (csprof_rank < 0){
+    PMSG(ITIMER_HANDLER,"sample before mpi_init");
     csprof_set_timer();
-#else
-    MSG(1,"got itimer signal");
-    if (!sigsetjmp(bad_unwind,1)){
-      CSPROF_SIGNAL_HANDLER_GUTS(context);
-    }
-    else {
-      MSG(1,"got bad unwind");
-    }
+    return;
+  }
+  MPI_Comm_rank(MPI_COMM_WORLD, &csprof_rank);
+  if (csprof_rank != chosen_rank){
+    PMSG(ITIMER_HANDLER,"got signal, but csprof_rank = %d",csprof_rank);
     csprof_set_timer();
+    return;
+  }
 #endif
-#ifdef NO
-    if (!setjmp(bad_unwind)){
-      CSPROF_SIGNAL_HANDLER_GUTS(context);
-    }
-    else {
-      MSG(1,"got bad unwind");
-      csprof_set_timer();
-    }
-#endif
+  MSG(1,"got itimer signal");
+  if (!sigsetjmp(it,1)){
+    CSPROF_SIGNAL_HANDLER_GUTS(context);
+  }
+  else {
+    EMSG("got bad unwind: context_pc = %p, unwind_pc = %p",context_pc,
+         unwind_pc);
+  }
+  csprof_set_timer();
 }
 
 static void
@@ -319,16 +332,45 @@ csprof_init_signal_handler()
     ret = sigaction(CSPROF_PROFILE_SIGNAL, &sa, 0);
 }
 
-void setup_segv(void);
+extern void setup_segv(void);
+extern void unw_init(void);
 
-void
-csprof_driver_init(csprof_state_t *state, csprof_options_t *opts)
-{
+static void heartbeat_init(csprof_options_t *opts){
+  csprof_init_signal_handler();
+  csprof_init_timer(opts);
+  csprof_init_sigset(&prof_sigset);
+  csprof_set_timer();
+}
+
+void csprof_process_driver_init(csprof_options_t *opts){
+  setup_segv();
+  unw_init();
+  {
+    int metric_id;
+
+    csprof_set_max_metrics(2);
+    metric_id = csprof_new_metric(); /* weight */
+    csprof_set_metric_info_and_period(metric_id, "# samples",
+                                      CSPROF_METRIC_ASYNCHRONOUS,
+                                      opts->sample_period);
+    metric_id = csprof_new_metric(); /* calls */
+    csprof_set_metric_info_and_period(metric_id, "# returns",
+                                      CSPROF_METRIC_FLAGS_NIL, 1);
+  }
+  heartbeat_init(opts);
+}
+
+void csprof_thread_driver_init(csprof_options_t *opts){
+  heartbeat_init(opts);
+}
+
+void csprof_driver_init(csprof_state_t *state,csprof_options_t *opts){
+
     csprof_init_signal_handler();
     setup_segv();
+    unw_init();
     csprof_init_timer(opts);
     csprof_init_sigset(&prof_sigset);
-
     {
       int metric_id;
 
@@ -341,12 +383,10 @@ csprof_driver_init(csprof_state_t *state, csprof_options_t *opts)
       csprof_set_metric_info_and_period(metric_id, "# returns",
 					CSPROF_METRIC_FLAGS_NIL, 1);
     }
-
     csprof_set_timer();
 }
 
-void
-csprof_driver_fini(csprof_state_t *state, csprof_options_t *opts)
+void csprof_driver_fini(csprof_state_t *state, csprof_options_t *opts)
 {
     csprof_disable_timer();
 }
@@ -369,26 +409,20 @@ csprof_driver_thread_fini(csprof_state_t *state)
 
 #endif
 
-void
-csprof_driver_suspend(csprof_state_t *state)
-{
+void csprof_driver_suspend(csprof_state_t *state){
     /* no support required */
 }
 
-void
-csprof_driver_resume(csprof_state_t *state)
-{
+void csprof_driver_resume(csprof_state_t *state) {
 #if (defined(CSPROF_THREADS) && !defined(CSPROF_ROUND_ROBIN_SIGNAL)) || (!defined(CSPROF_THREADS))
     csprof_set_timer();
 #endif
 }
 
 #if 1
-void
-csprof_driver_forbid_samples(csprof_state_t *state,
-                             csprof_profile_token_t *data)
-{
-    csprof_sigmask(SIG_BLOCK, &prof_sigset, data);
+void csprof_driver_forbid_samples(csprof_state_t *state,
+                                  csprof_profile_token_t *data){
+  csprof_sigmask(SIG_BLOCK, &prof_sigset, data);
 }
 
 void

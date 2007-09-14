@@ -62,6 +62,7 @@ opt_memsize=""
 opt_event=""
 opt_verbosity=""
 opt_debug=""
+opt_gdb=""
 
 #####################
 
@@ -106,9 +107,10 @@ f_usage()
   $p "\n"
   $p "    -v <level>  : Verbosity level, 0-9. [0] At level 0, only errors   \n"
   $p "                  are printed.                                        \n"
-  $p "    -D <level>  : Debug level, 0-9. [0]  Prints limited debugging     \n"
-  $p "                  messages and generates a text verstion of the       \n"
+  $p "    -L <level>  : Debug level, 0-9. [0]  Prints limited debugging     \n"
+  $p "                  messages and generates a text version of the        \n"
   $p "                  callstack data.                                     \n"
+  $p "    -d          : set csprof debug flag, for attaching gdb            \n"
   $p "\n"
   $p "NOTES:\n"
   $p "   csprof uses _RLD_LIST to initiate profiling; modifications to \n"
@@ -128,7 +130,6 @@ f_checkenv()
   fi 
 
   RLD_LIB="${CSPROF_HOME}/libcsprof.so.1:${CSPROF_HOME}/monitor/x86_64-Linux/libmonitor.so"
-
 
 #  if [ ! -r "${RLD_LIB}" ]; then 
 #    printf "${cmd}: launch library ${RLD_LIB} not found!\n"
@@ -203,10 +204,12 @@ f_getoptions()
       -x)   shift; opt_metrics="$1";
             f_opt_check "-x" "${opt_metrics}";
             ;;
-      -D)   shift; opt_debug="$1";
+      -L)   shift; opt_debug="$1";
             f_opt_check "-D" "${opt_debug}";
             ;;
 
+      -d)   opt_gdb=1;
+            ;;
 #      -o*) opt_out_path=`echo $1 | cut -c3-`;
 #            ;;
 
@@ -223,10 +226,27 @@ f_getoptions()
   f_error_on_nil "${cmd_to_profile}" "** no command to profile\n";
 }
 
-# assumes: all variables have been set
+# get the executable from the list of (remaining) args
+f_getexec()
+{
+    _EXEC=$1
+}
+
+# assumes: all csprof control variables have been set
+#
+# adds the unwind nm file to the LD_PRELOAD
+#
 f_prepareenv()
 {
   sysname=`uname`
+
+  f_getexec $cmd_to_profile
+
+#  $CSPROF_HOME/fnbound.py $_EXEC
+
+  $CSPROF_HOME/nm_tbl.py $_EXEC
+
+  LD_PRELOAD=${LD_PRELOAD}:${_EXEC}.nm.so
 
   # export the profiler library
   if [ $sysname = "OSF1" ]; then
@@ -264,11 +284,15 @@ f_prepareenv()
     CSPROF_OPT_DEBUG="${opt_debug}"
     export CSPROF_OPT_DEBUG
   fi
+  if [ -n "${opt_gdb}" ]; then
+    export CSPROF_WAIT=1
+  fi
 
   # Make sure that `.' is in the PATH so that we can find the command
   # to profile if in the current directory. [We can get around this,
   # but for now it is the quickest thing.] 
-  PATH=".:${PATH}" 
+  export PATH=".:${PATH}" 
+  export LD_LIBRARY_PATH=.:${LD_LIBRARY_PATH}
 }
 
 #############################################################################
@@ -283,4 +307,12 @@ f_getoptions $*
 
 f_prepareenv
 
+ulimit -c unlimited
+echo csprof script LD_PRELOAD = $LD_PRELOAD
+#
+# !!! WOW !!
+# prevent wierdo error:
+# *** glibc detected *** double free or corruption (out): 0x0000000000501030 ***
+#
+#export MALLOC_CHECK_=0
 exec ${cmd_to_profile}

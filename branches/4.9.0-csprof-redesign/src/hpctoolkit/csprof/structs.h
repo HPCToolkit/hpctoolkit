@@ -59,9 +59,9 @@ typedef struct csprof_options_s {
 typedef struct csprof_pstate_s { 
     long int hostid;            /* host id of the machine FIXME */
     pid_t pid;                  /* the process's pid */
-#ifdef CSPROF_THREADS
+  // #ifdef CSPROF_THREADS // keep the structure, but don't use it in unthreaded case
     pthread_t thrid;            /* the particular thread */
-#endif
+  // #endif
     unsigned int ninit;         /* how many times the pid has been init'd */
 } csprof_pstate_t;
 
