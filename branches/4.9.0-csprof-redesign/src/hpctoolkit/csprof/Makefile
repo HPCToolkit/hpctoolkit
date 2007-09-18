@@ -13,7 +13,7 @@ CC := gcc
 export PLATFORM
 export CC
 #export CHGROOT
-#DO_THREADS := 1
+DO_THREADS := 1
 #PERF := -DCSPROF_PERF=1
 export PERF
 

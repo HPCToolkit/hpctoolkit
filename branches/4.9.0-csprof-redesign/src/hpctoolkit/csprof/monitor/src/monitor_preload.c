@@ -912,6 +912,8 @@ monitor_pthread_create_start_routine(void *arg)
 		  tn->tn_thread_num);
     tn->tn_user_data = monitor_init_thread(tn->tn_thread_num);
 
+#define USE_PTHREAD_CLEANUP_PUSH_POP 1
+
 #if defined(USE_PTHREAD_CLEANUP_PUSH_POP)
     pthread_cleanup_push(monitor_pthread_cleanup_routine, tn);
 #endif

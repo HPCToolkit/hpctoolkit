@@ -130,7 +130,7 @@ t2: t2.c
 t3: t3.c
 
 clean:
-	rm -rf *.o t[123] f[0-9] *.so f1-[go] f2.1
+	rm -rf *.o t[123] f[0-9] *.so f1-[go] f2.1 tmpi tmpi.o prof.so *.nm.[co]
 
 T:
 	@echo which ld = `which ld`

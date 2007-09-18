@@ -470,103 +470,70 @@ csprof_trampoline2_end()
 }
 #endif
 
-#if defined(CSPROF_THREADS)
-static void
-csprof_duplicate_thread_state_reference(csprof_state_t *newstate)
-{
-    /* unfortunately, thread state is kept in *two* places: the
-       thread-local data variable and the `all_threads' list.
-       ugh ugh ugh.  go through and try to fix things (hopefully
-       this should not be happening very often, so we're willing
-       to pay the cost.  if this turns out to be problematic,
-       we'll have to provide another layer of indirection so that
-       threads have one state throughout their lifetime, with
-       possibly several different data trees). */
-    {
-        pthread_t me = pthread_self();
-        csprof_list_node_t *runner;
+csprof_state_t *csprof_check_for_new_epoch(csprof_state_t *state){
+  /* ugh, nasty race condition here:
 
-        runner = all_threads.head;
+  1. shared library state has changed since the last profile
+  signal, so we enter the if;
 
-        for(; runner != NULL; runner = runner->next) {
-            pthread_t other = (pthread_t)runner->ip;
+  2. somebody else dlclose()'s a library which holds something
+  located in our backtrace.  this is not in itself a problem,
+  since we don't bother doing anything on dlclose()...;
 
-            if(pthread_equal(me, other)) {
-                runner->node = newstate;
-                break;
-            }
-        }
+  3. somebody else (thread in step 2 or a different thread)
+  dlopen()'s a new shared object, which begins an entirely
+  new epoch--one which does not include the shared object
+  which resides in our backtrace;
 
-        /* if we get here...oh well.  FIXME: might want to add an
-           assert or something. */
+  4. we create a new state which receives the epoch from step 3,
+  not step 1, which is wrong.
+
+  attempt to take baby steps to stop this.  more drastic action
+  would involve grabbing the epoch lock, but I believe that would
+  be unacceptably slow (both in the atomic instruction overhead
+  and the simple fact that most programs are not frequent users
+  of dl*). */
+
+  csprof_epoch_t *current = csprof_get_epoch();
+
+  if(state->epoch != current) {
+    csprof_state_t *newstate = csprof_malloc(sizeof(csprof_state_t));
+
+    MSG(CSPROF_MSG_EPOCH, "Creating new epoch...");
+
+    /* we don't have to go through the usual csprof_state_{init,alloc}
+       business here because most of the stuff we want is already
+       in `state' */
+    memcpy(newstate, state, sizeof(csprof_state_t));
+
+    /* we do have to reinitialize the tree, though */
+    csprof_csdata__init(&newstate->csdata);
+
+    /* and reinsert backtraces */
+    if(newstate->bufend - newstate->bufstk != 0) {
+      newstate->treenode = NULL;
+      csprof_state_insert_backtrace(newstate, 0, /* pick one */
+                                    newstate->bufend - 1,
+                                    newstate->bufstk,
+                                    0);
     }
-}
-#endif
 
-csprof_state_t *
-csprof_check_for_new_epoch(csprof_state_t *state)
-{
-    /* ugh, nasty race condition here:
+    /* and inform the state about its epoch */
+    newstate->epoch = current;
 
-       1. shared library state has changed since the last profile
-       signal, so we enter the if;
-
-       2. somebody else dlclose()'s a library which holds something
-       located in our backtrace.  this is not in itself a problem,
-       since we don't bother doing anything on dlclose()...;
-
-       3. somebody else (thread in step 2 or a different thread)
-       dlopen()'s a new shared object, which begins an entirely
-       new epoch--one which does not include the shared object
-       which resides in our backtrace;
-
-       4. we create a new state which receives the epoch from step 3,
-       not step 1, which is wrong.
-
-       attempt to take baby steps to stop this.  more drastic action
-       would involve grabbing the epoch lock, but I believe that would
-       be unacceptably slow (both in the atomic instruction overhead
-       and the simple fact that most programs are not frequent users
-       of dl*). */
-    csprof_epoch_t *current = csprof_get_epoch();
-
-    if(state->epoch != current) {
-        csprof_state_t *newstate = csprof_malloc(sizeof(csprof_state_t));
-
-        MSG(CSPROF_MSG_EPOCH, "Creating new epoch...");
-
-        /* we don't have to go through the usual csprof_state_{init,alloc}
-           business here because most of the stuff we want is already
-           in `state' */
-        memcpy(newstate, state, sizeof(csprof_state_t));
-
-        /* we do have to reinitialize the tree, though */
-        csprof_csdata__init(&newstate->csdata);
-
-        /* and reinsert backtraces */
-        if(newstate->bufend - newstate->bufstk != 0) {
-            newstate->treenode = NULL;
-            csprof_state_insert_backtrace(newstate, 0, /* pick one */
-                                          newstate->bufend - 1,
-                                          newstate->bufstk,
-                                          0);
-        }
-
-        /* and inform the state about its epoch */
-        newstate->epoch = current;
-
-        /* and finally, set the new state */
-        csprof_set_state(newstate);
+    /* and finally, set the new state */
+    csprof_set_state(newstate);
 
 #ifdef CSPROF_THREADS
-        csprof_duplicate_thread_state_reference(newstate);
+    // csprof_duplicate_thread_state_reference(newstate);
+    ;
 #endif
 
-        return newstate;
-    }
-    else {
-        return state;
-    }
+    return newstate;
+  }
+  else {
+    return state;
+  }
 }
 
 /* only meant for debugging errors, so it's not subject to the normal
@@ -681,38 +648,6 @@ int csprof_write_profile_data(csprof_state_t *state){
     return ret;
 }
 
-#ifdef CSPROF_THREADS
-/* The primary reason for this function is that not all applications are
-   nice enough to shut down their threads with pthread_exit, preferring
-   instead to let application termination tear down the threads.  We
-   rely on having pthread_exit called so that some of our cleanup code
-   can be run.
-
-   Since we can't rely on pthread_exit being called, we do the bare
-   minimum in our pthread_exit and defer the flushing of profile data
-   to disk until this point.  This simplifies a lot of things. */
-void csprof_atexit_handler(){
-
-  csprof_list_node_t *runner;
-
-  MSG(CSPROF_MSG_DATAFILE, "ATEXIT: Dumping thread states");
-
-  for(runner = all_threads.head; runner; runner = runner->next) {
-    MSG(1,"checking thread runner = %lx",runner);
-    if(runner->sp == CSPROF_PTHREAD_LIVE) {
-      csprof_state_t *state = (csprof_state_t *)runner->node;
-
-      MSG(CSPROF_MSG_DATAFILE, "Exit Dumping state %#lx", state);
-
-      csprof_write_profile_data(state);
-
-      /* mark this as being written out */
-      runner->sp = CSPROF_PTHREAD_DEAD;
-    }
-  }
-}
-#endif
-
 
 /* option handling */
 /* FIXME: this needs to be split up a little bit for different backends */
@@ -727,8 +662,7 @@ static int csprof_options__init(csprof_options_t* x){
   return CSPROF_OK;
 }
 
-static int
-csprof_options__fini(csprof_options_t* x)
+static int csprof_options__fini(csprof_options_t* x)
 {
   return CSPROF_OK;
 }
