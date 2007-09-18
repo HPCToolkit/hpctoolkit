@@ -1,0 +1,172 @@
+* standard input for ./csprof needs to be standard input for profiled programs
+
+This is a common irritation.
+
+* Need to work on moving platform-specific stuff into separate locations
+
+Right now csproflib.c is a big fat mess and mostly assumes that
+including support for trampolines means including support for alpha,
+which is totally wrong.  A clean way of separating out functionality,
+while still keeping common code in csproflib.c would be a great thing to
+do.
+
+* Need to figure out some way of abstracting out the sample driver
+
+We already support SIGPROF; other useful alternatives would be PAPI and
+pfmon (Itanium/Linux only).  Should be reasonably general so supporting
+new interfaces is not that much of a problem.
+
+It's not clear how the single csprof script would be modified to work
+with potentially many sample drivers, since the options accepted would
+likely differ from driver to driver.
+
+Drivers are free to implement as much of this interface as they like.
+This is just here to get some thoughts out on the table and not meant as
+the final word until it actually gets coded up.
+
+** Synchronous vs. asynchronous
+
+We should also support a interface which allows a synchronous driver,
+rather than the asynchronous driver which the profiler was first
+developed with.  The classic example for something like this is
+triggering a sample event after n bytes of allocation.  Most likely this
+would be accomplished by providing a custom malloc() in a dynamically
+loaded library or somesuch which periodically calls the sampler.  This
+makes some things easier and some things much harder.
+
+For example, we never have to worry about propagating sample "events" to
+threads, since these events do not function like the time-based
+interrupts which we were using before.
+
+But how do we do the trampoline insertion?  Our trampoline insertion
+relies on getting a signal context which we can modify or having all of
+the registers pushed onto the stack--again, a location we can modify.
+One solution involves the function calling into the profiler to jump to
+a special assembly routine which fakes up a context and calls everything
+else normally.  Generating a context of some sort (preferably one which
+can be modified properly) would be a good idea, since the sample-taking
+mechanism assumes that such a thing is in place.  exc_capture_context
+and friends are something in the right direction.
+
+The trampoline insertion might have to be coded inline, via a macro or
+something similar.  Said insertion procedure might look like:
+
+    instptr = get_current_pc()
+    raptr = find_return_adddress_location(instptr)
+    swizzle(raptr)
+
+Inlining this is not likely to be that much of a hit and makes the
+swizzling procedure vastly simpler.  The downside is that we have added
+a place for swizzling logic; it'd be smarter to keep everything together
+in one location.  Modifying the location while everything executes also
+might be quite tricky, especially if `raptr' is actually a register
+(seems unlikely, but you never know, right?).
+
+One way of getting around this would be to declare a pointer variable
+for holding the return address location and passing a pointer to this
+variable to find_return_address_location (or whatever it actually gets
+called).  If I understand things correctly, this should force whatever
+procedure in which the code is located (remember, this is all done
+inline) to store things (including the return address) on the stack.
+If the calling conventions were designed properly, this shouldn't cause
+any weirdness, even if the overridden function were a register
+procedure.
+
+*** Psuedo-code for malloc (profiled):
+
+void *
+malloc(size_t nbytes)
+{
+    state = get_state();
+    state->data += nbytes;
+
+    if(state->data > bytes_threshold) {
+        int count = 0;
+
+        while(state->data >= bytes_threshold) {
+            count++; state->data -= bytes_threshold;
+        }
+
+        take_sample(count);
+    }
+
+    return malloc(nbytes);
+}
+
+** Hardware event counters
+
+We're currently not quite sure what to do about driving the profiler
+from hardware performance counter overflows.  On the Alpha, the issue is
+moot, since the counters are not exposed to userspace.  On the Itanium
+and x86 (Linux), the counters *are* exposed to userspace.  But then
+thorny issues of threaded and non-threaded programs come into play.
+What happens when a signal goes off?  A billion cycles have gone by, but
+presumably all of those shouldn't be attributed to the thread which is
+receiving the profile signal.  And relying on the threads to receive
+profile signals evenly seems dodgy, not to mention drastically
+increasing the time between events.
+
+So it would seem the best way to attack the problem is by having
+thread-specific hardware performance counters.  While the documentation
+seems a little unclear, perfmon 2 for the Itanium seems to support these
+beasts.  PAPI 3.0 supports thread level measurements with kernel or
+bound threads, which makes it appear as though it will work as expected
+with perfmon 2.  perfctr (x86) is in an unknown state, but I haven't
+looked at the docs to find out what's up.  There *are* people who have
+exploited perfctr to track multiple threads, so apparently it can be
+done.  Certainly oprofile and friends probably use it to track multiple
+processes, and threads are really just processes under Linux, so
+everything should be good on that front.
+
+** csprof_sample_driver_init()
+
+We currently perform the necessary processing for the SIGPROF driver in
+csprof_options_init(), I believe.  Some of the options would need to be
+moved into driver-specific initialization functions, which complicates
+things a little bit.
+
+There may need to be some sort of thread-specific support for
+initializing a driver.  If I understand the pfmon and perfmonctl
+documentation correctly, then the PFM driver in the kernel gets
+initialized on a per-thread basis, rather than a per-process (and then
+propagates to the threads) basis.  This appears to require 2.6 kernel
+support, which is unlikely (?) to find its way to the RTC and (possibly)
+to other high-scale clusters as well.  Maybe Itanium support is not a
+big deal right now?
+
+What about the x86?  Does the hardware performance counter support on
+x86 (both 32-bit and 64-bit implementations) do something similar to the
+Itanium?  Given what I know about the 2.4 vs. 2.6 thread support, I
+suspect that "proper" support for threads and counters doesn't appear
+until the 2.6 cycle...again making it questionable for large-scale
+clusters.
+
+** csprof_sample_driver_suspend()
+
+Some drivers need to halt work while a sample is being collect - PAPI
+and pfmon being the current standouts.  This hook gives them a way to do
+that.
+
+Not clear what needs to be done in the presence of multiple threads.
+Presumably, calling _suspend() whilst the driver is already suspended
+does not cause problems--but it might be annoying to have all the
+threads _resume() the driver on exit.  Error-prone, too.  Our earlier
+gateway-like scheme would work better for this, since there's a clear
+point where the driver should resume.  MPX seems to want the driver and
+the sample process to proceed concurrently.
+
+Does the driver (PAPI and pfmon, for the sake of argument) even need to
+be stopped?  One of the nice things about csprof is that you kinda-sorta
+get a handle on how much overhead the profiler is bringing to the
+table.  The driver would simply continue registering overflow events as
+the handler executed.  Small problem could be that if the counter *does*
+overflow whilst the handler executes, the signal generated would likely
+not get through, as the handler is blocking the signal while executing.
+
+** csprof_sample_driver_resume()
+
+After a sample is collected, the driver needs to startup again.
+
+** csprof_sample_driver_fini()
+
+Shutdown.

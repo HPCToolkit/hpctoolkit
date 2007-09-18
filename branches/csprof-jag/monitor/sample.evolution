@@ -1,0 +1,26 @@
+monitor_init_library()
+monitor_init_process(evolution,24782)
+monitor_init_dlopen(/usr/X11R6/lib/X11/locale/lib/common/xlcUTF8Load.so.2)
+monitor_init_dlopen(libXcursor.so.1.0.2)
+monitor_init_dlopen(libXcursor.so.1.0)
+monitor_init_dlopen(libXcursor.so.1)
+monitor_init_dlopen(/usr/lib/gtk-2.0/2.4.0/loaders/libpixbufloader-xpm.so)
+monitor_init_dlopen(/usr/lib/gtk-2.0/2.4.0/engines/libbluecurve.so)
+monitor_init_dlopen(/usr/lib/gtk-2.0/2.4.0/loaders/libpixbufloader-png.so)
+monitor_init_dlopen(/usr/lib/evolution/2.0/components/libevolution-mail.so)
+monitor_init_dlopen((null))
+monitor_init_dlopen((null))
+monitor_init_process(evolution,24785)
+monitor_init_dlopen(/usr/lib/libnssckbi.so)
+monitor_init_dlopen(/usr/lib/evolution/2.0/components/libevolution-calendar.so)
+monitor_init_dlopen(/usr/lib/evolution/2.0/components/libevolution-addressbook.so)
+monitor_init_dlopen(/usr/lib/evolution/2.0/camel-providers/libcamellocal.so)
+monitor_init_dlopen(/usr/lib/evolution/2.0/camel-providers/libcamelimap.so)
+monitor_init_thread_support()
+monitor_init_thread(0x49f4bb0) returns 0xdeadbeef
+monitor_init_thread(0x1acbbb0) returns 0xdeadbeef
+monitor_init_thread(0x53f5bb0) returns 0xdeadbeef
+monitor_init_dlopen(/usr/lib/pango/1.4.0/modules/pango-basic-fc.so)
+monitor_init_thread(0x7a62bb0) returns 0xdeadbeef
+monitor_fini_process()
+monitor_fini_library()

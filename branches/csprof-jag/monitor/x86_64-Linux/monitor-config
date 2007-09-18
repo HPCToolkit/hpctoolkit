@@ -1,0 +1,76 @@
+#!/bin/sh
+# $Id: monitor-config.in,v 1.3 2005/02/02 11:40:46 mucci Exp $
+
+do_libs=no
+do_cflags=no
+do_usage=no
+print_prefix=no
+print_exec_prefix=no
+library=monitor
+
+if test $# -eq 0; then
+  do_usage=yes
+  usage_exit=1
+fi
+
+for i in $*; do
+  case $i in
+  --help)
+    do_usage=yes
+    usage_exit=0
+    ;;
+  --version)
+    echo "monitor VERSION"
+    echo '$Id: monitor-config.in,v 1.3 2005/02/02 11:40:46 mucci Exp $'
+    exit 0
+    ;;
+  --prefix)
+    print_prefix=yes
+    ;;
+  --exec-prefix)
+    print_exec_prefix=yes
+    ;;
+  --libs)
+    do_libs=yes
+    ;;
+  --cflags)
+    do_cflags=yes
+    ;;
+  monitor)
+    library=monitor
+    ;;
+  *)
+    echo "unknown option: $i"
+    exit 1
+    ;;
+  esac
+done
+
+if test "$do_usage" = "yes"; then
+    echo "usage: $0 [options]"
+    echo "options: [--prefix] [--exec-prefix] [--libs] [--cflags]"
+    exit $usage_exit
+fi
+
+prefix=/usr/local
+execprefix=EXEC/usr/local
+libdir=/usr/local/lib64
+includedir=/usr/local/include
+
+if test "$print_prefix" = "yes"; then
+    echo $prefix
+fi
+
+if test "$print_exec_prefix" = "yes"; then
+    echo $exec_prefix
+fi
+
+if test "$do_libs" = "yes"; then
+    echo "-L${libdir} -lmonitor"
+fi
+
+if test "$do_cflags" = "yes"; then
+    echo "-I${includedir}"
+fi
+
+exit 0
