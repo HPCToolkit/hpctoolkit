@@ -1,7 +1,7 @@
 CC     := gcc
 CFLAGS := -g -I..
 LDFLAGS := -lm
-STATIC  := 1
+#STATIC  := 1
 
 .PHONY: clean
 

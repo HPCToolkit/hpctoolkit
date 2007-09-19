@@ -1,1 +1,7 @@
 splay tree, etc code in ~johnmc/tmp/search
+===================
+for jaguar, use this:
+
+  qsub -I -q debug -A CSC023 -V -lsize=1,walltime=30:00
+
+for an interactive session. (gets 1 core)
