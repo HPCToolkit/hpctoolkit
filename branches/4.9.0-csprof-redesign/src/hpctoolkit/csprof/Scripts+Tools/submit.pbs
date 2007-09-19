@@ -1,0 +1,8 @@
+#PBS -A CSC023
+#PBS -N output
+# xyz PBS -j oe
+#PBS -l walltime=00:00:30,size=4
+cd /autofs/spin/home/johnmc/tools/burn
+date
+nodeinfo
+yod -sz 8 -VN ./burn 40
