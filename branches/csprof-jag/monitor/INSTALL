@@ -1,0 +1,54 @@
+$Id: INSTALL,v 1.8 2007/02/15 18:10:51 mucci Exp $
+
+Building monitor
+---------------
+
+> make [optional args]
+
+Where args are: (defaults in parenthesis)
+
+CC=C compiler 		(gcc)
+CFLAGS=C compiler flags	(-g -O -Wall)
+PREFIX=<dir>		(/usr)
+EXECPREFIX=<dir>	(PREFIX)
+BINDIR=<dir>		(PREFIX/bin)
+INCDIR=<dir>		(PREFIX/lib)
+LIBDIR=<dir>		(PREFIX/include)
+MANDIR=<dir>		(PREFIX/share/man)
+DOCDIR=<dir>		(PREFIX/share/monitor-VERSION/doc)
+
+These arguments mirror GNU configure standards. YOU SHOULD SET THESE WHEN
+YOU BUILD AS WELL AS INSTALL if they are different than the defaults.
+
+Testing monitor
+---------------
+
+> make [args as above] test
+
+Compare this output with the results in maketest.output
+
+Installing monitor
+------------------
+
+> make [args as above] install
+
+Usually it's as simple as 'make' followed by 'make install'.
+
+Build options
+-------------
+
+USE_PTHREAD_CLEANUP_PUSH_POP
+
+Currently monitor makes use of pthread_cleanup_push/pop. These functions
+are actually macros which call functions in the pthread library. As a result,
+any exe linked with libmonitor needs to be linked with some sort of 
+pthreads library. To get rid of this behavior, remove the USE_PTHREAD_CLEANUP_PUSH_POP
+from Rules.gmake. The consequences? You will not currently be able to catch 
+the completion of threads that call pthread_exit.
+
+USE_PTHREAD_SELF
+
+Monitor can use gettid directly and doesn't need pthread_self. If you want
+pthread self, define the above in Rules.gmake.
+
+

@@ -1,0 +1,7 @@
+#! /bin/sh
+
+HERE="`dirname $0`"
+
+export MONITOR_DEBUG=1
+export LD_PRELOAD=$HERE/monitor/x86_64-Linux/libmonitor.so
+exec "$*"

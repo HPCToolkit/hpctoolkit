@@ -1,0 +1,5 @@
+#! /bin/bash
+
+export LD_PRELOAD=./mon_ovr.so:../monitor/x86_64-Linux/libmonitor.so
+export LD_LIBRARY_PATH=.
+exec ./tmsg

@@ -1,0 +1,82 @@
+//
+// @ORIGINAL_AUTHOR: Robert Muth
+//
+/*! @file
+  
+ */
+
+#ifdef LEVEL_BASE_H
+#error duplicate inclusion
+#else
+#define LEVEL_BASE_H
+
+
+#include <string>
+
+#include "foundation.PLH"
+
+#if defined(TARGET_IA32) || defined(TARGET_IA32E)
+#include "xed-iclass.H"
+#include "xed-category.H"
+#endif
+
+namespace LEVEL_BASE
+{
+using namespace std;
+
+
+#include "types_base.TLH"
+#include "message.PH"
+#include "util.PH"
+
+#include "knob.PH"
+//#include "stat.PH"
+//#include "bigarray.PH"
+
+//#include "tui.PH"
+
+//#include "version.PH"
+
+//#include "reg.PH"
+#include "lock.PH"
+
+// FIXME
+// rawintool is in base so we have to add reg_xxx.H here too
+//
+#if defined(TARGET_IA32) || defined(TARGET_IA32E)
+
+#include "reg_ia32.PH"
+#include "reg_partial_ia32.PH"
+#include "base_ia32.PH"
+GLOBALTYPE typedef XED::xed_category_t CATEGORY;
+GLOBALTYPE typedef PREDICATE_IA32 PREDICATE;
+
+
+#elif defined(TARGET_IPF)
+
+#include "reg_ipf.PH"
+#include "base_ipf.PH"
+GLOBALTYPE typedef CATEGORY_IPF CATEGORY;
+GLOBALTYPE typedef PREDICATE_IPF PREDICATE;
+#include "rawins_ipf.PH"
+
+#elif defined(TARGET_DOXYGEN)
+
+/*! @ingroup TYPES_BASE
+  Categorization of instuctions, can be @ref CATEGORY_IA32, @ref CATEGORY_ARM, or @ref CATEGORY_IPF
+*/
+GLOBALTYPE typedef XXX CATEGORY;
+
+/*! @ingroup TYPES_BASE
+  Can be @ref PREDICATE_IA32, @ref PREDICATE_ARM, or @ref PREDICATE_IPF
+*/
+GLOBALTYPE typedef XXX PREDICATE;
+
+#else
+#error "no target arch defined"
+#endif
+
+#include "tls.PH"
+
+}
+#endif

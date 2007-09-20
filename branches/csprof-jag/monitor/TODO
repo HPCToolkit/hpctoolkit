@@ -1,0 +1,9 @@
+- Make use of pthread_kill to terminate threads that haven't called
+  cleanup handlers.
+- Remove pthread_cleanup_push/pop
+- Use the info in /proc to detect threads.
+- Guard the following variables with a lock (or use atomic ops)
+	 monitor_thread_support_called
+	 monitor_thread_count
+
+
