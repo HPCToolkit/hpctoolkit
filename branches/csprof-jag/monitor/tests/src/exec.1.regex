@@ -1,0 +1,8 @@
+^CALLBACK: monitor_init_library.*$
+^CALLBACK: monitor_init_process.*$
+^CALLBACK: monitor_fini_process.*$
+^CALLBACK: monitor_fini_library.*$
+^CALLBACK: monitor_init_library.*$
+^CALLBACK: monitor_init_process.*$
+^CALLBACK: monitor_fini_process.*$
+^CALLBACK: monitor_fini_library.*$

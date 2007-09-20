@@ -1,0 +1,62 @@
+//
+// @ORIGINAL_AUTHOR: Robert Cohn
+//
+/*! @file
+ *
+ * Creates the namespace and includes header files for
+ * LEVEL_PINCLIENT. These are the functions that are accessed in libpin.a
+ * that are not part of vm or lower levels. Should only be included in
+ * pin.H
+ */
+
+#ifdef LEVEL_PINCLIENT_H
+#error duplicate inclusion
+#else
+#define LEVEL_PINCLIENT_H
+
+#include <stdarg.h>
+#include <vector>
+
+namespace LEVEL_PINCLIENT
+{
+
+// This includes the subset of vm types that pintools must access
+using namespace LEVEL_VM;
+
+#if defined(TARGET_IA32) || defined(TARGET_IA32E)
+#include "client_asm_ia32.PH"
+#elif defined(TARGET_IPF)
+#include "client_asm_ipf.PH"
+#endif
+
+#include "pin_client.PH"
+#include "deprecated_client.PH"
+#include "opin_client.PH"
+#include "tls_client.PH"
+#include "cache_client.PH"
+#include "sp_client.PH"
+#include "image.PH"
+
+#if defined(TARGET_LINUX)
+#include "image_elf.PH"
+#include "symbol_elf.PH"
+#include "debug_elf.PH"
+#else
+#if defined(TARGET_MAC)
+#include "image_macho.PH"
+#include "symbol_macho.PH"
+#include "debug_macho.PH"
+#else
+#if defined(TARGET_WINDOWS)
+#include "image_win.PH"
+#include "symbol_win.PH"
+#include "debug_win.PH"
+#else
+#error "Unknown OS"
+#endif
+#endif
+#endif
+
+}
+
+#endif
