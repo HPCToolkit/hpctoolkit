@@ -95,7 +95,10 @@ struct dwarf_eh_bases
   void *func;
 };
 
+#ifdef __cplusplus
 extern "C" {
+#endif
+
   extern void __register_frame_info_bases (const void *, struct object *,
 					   void *, void *);
   extern void __register_frame_info (const void *, struct object *);
@@ -107,7 +110,10 @@ extern "C" {
   extern void *__deregister_frame_info (const void *);
   extern void *__deregister_frame_info_bases (const void *);
   extern void __deregister_frame (void *);
+
+#ifdef __cplusplus
 }
+#endif
 
 
 typedef          int  sword __attribute__ ((mode (SI)));
@@ -170,9 +176,16 @@ next_fde (const fde *f)
   return (const fde *) ((char *) f + f->length + sizeof (f->length));
 }
 
+#ifdef __cplusplus
 extern "C" {
+#endif
+
   const fde * _Unwind_Find_FDE (void *, struct dwarf_eh_bases *);
+
+#ifdef __cplusplus
 }
+#endif
+
 
 static inline int
 last_fde (struct object *obj /*__attribute__((__unused__))*/, const fde *f)
