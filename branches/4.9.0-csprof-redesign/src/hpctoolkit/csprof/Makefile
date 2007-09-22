@@ -55,6 +55,14 @@ ifdef MPI_SPECIAL
 INCS += $(MPI_INC)
 endif
 
+local_incs += utilities                \
+              memory                   \
+              processor/x86-64         \
+              sampling/types/callstack \
+              sampling/sources/itimer
+
+INCS += $(addprefix -I,$(local_incs))
+
 # FIXME: PAPI?
 ifneq "$(DRIVER)" "itimer"
 DEFINES += -DCSPROF_SYNCHRONOUS_PROFILING_ONLY=1
@@ -103,13 +111,19 @@ ifdef DO_THREADS
    OBJS += pthread.o
 endif
 
-OBJS += $(ARCH)/backtrace.o 
+# OBJS += $(ARCH)/backtrace.o 
+OBJS += backtrace.o
 ifdef PRIM_UNWIND
-  OBJS += $(ARCH)/prim_unw.o
+#  OBJS += $(ARCH)/prim_unw.o
+OBJS += prim_unw.o
 endif
-OBJS += $(ARCH)/swizzle.o $(ARCH)/unsafe.o
-OBJS += $(ARCH)/tramp.o $(ARCH)/loadmod.o $(ARCH)/libc.o
-OBJS += $(ARCH_OBJS)
+#OBJS += $(ARCH)/swizzle.o $(ARCH)/unsafe.o
+#OBJS += $(ARCH)/tramp.o $(ARCH)/loadmod.o $(ARCH)/libc.o
+#OBJS += $(ARCH_OBJS)
+
+OBJS += swizzle.o unsafe.o
+OBJS += tramp.o loadmod.o processor-libc.o
+
 OBJS += $(DRIVER).o
 OBJS += state.o env.o data.o dump_backtraces.o segv_handler.o
 OBJS += pmsg.o
@@ -130,6 +144,20 @@ LIBS += $(XED_LIBS) $(XED_CPP_LIBS)
 #############################################################################
 # Compiling Rules:
 #############################################################################
+
+vpath %.c utilities                \
+          memory                   \
+          processor/x86-64         \
+          sampling/types/callstack \
+          sampling/sources/itimer
+
+vpath %.s processor/x86-64
+
+.PHONY: TT
+
+TT:
+	# OBJS = $(OBJS)
+	# INCS = $(INCS)
 
 $(LIB_CSFILE):
 	@cd hpcfile; $(MAKE) -I ..
@@ -161,3 +189,7 @@ $(CSPROFLIB): $(LIB_CSFILE) $(OBJS)
 
 %.E: %.c
 	$(CC) $(INCS) $(CFLAGS) -E $< > $@
+
+%.o: %.s
+	$(CC) $(INCS) $(CFLAGS) -c $< -o $@
+

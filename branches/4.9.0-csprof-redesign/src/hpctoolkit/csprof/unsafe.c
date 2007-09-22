@@ -198,6 +198,7 @@ csprof_addr_is_unsafe(void *addr)
 #endif
 }
 
+#ifdef NO
 int
 csprof_context_is_unsafe(void *context)
 {
@@ -227,6 +228,11 @@ csprof_context_is_unsafe(void *context)
 #endif
         csprof_addr_is_unsafe(pc) || csprof_is_unsafe_library(ra);
 #endif
+}
+#endif
+// don't check this for now
+csprof_context_is_unsafe(void *context){
+  return 0;
 }
 
 void
