@@ -95,18 +95,19 @@ struct dwarf_eh_bases
   void *func;
 };
 
-
-extern void __register_frame_info_bases (const void *, struct object *,
-					 void *, void *);
-extern void __register_frame_info (const void *, struct object *);
-extern void __register_frame (void *);
-extern void __register_frame_info_table_bases (void *, struct object *,
-					       void *, void *);
-extern void __register_frame_info_table (void *, struct object *);
-extern void __register_frame_table (void *);
-extern void *__deregister_frame_info (const void *);
-extern void *__deregister_frame_info_bases (const void *);
-extern void __deregister_frame (void *);
+extern "C" {
+  extern void __register_frame_info_bases (const void *, struct object *,
+					   void *, void *);
+  extern void __register_frame_info (const void *, struct object *);
+  extern void __register_frame (void *);
+  extern void __register_frame_info_table_bases (void *, struct object *,
+						 void *, void *);
+  extern void __register_frame_info_table (void *, struct object *);
+  extern void __register_frame_table (void *);
+  extern void *__deregister_frame_info (const void *);
+  extern void *__deregister_frame_info_bases (const void *);
+  extern void __deregister_frame (void *);
+}
 
 
 typedef          int  sword __attribute__ ((mode (SI)));
@@ -169,10 +170,12 @@ next_fde (const fde *f)
   return (const fde *) ((char *) f + f->length + sizeof (f->length));
 }
 
-extern const fde * _Unwind_Find_FDE (void *, struct dwarf_eh_bases *);
+extern "C" {
+  const fde * _Unwind_Find_FDE (void *, struct dwarf_eh_bases *);
+}
 
 static inline int
-last_fde (struct object *obj __attribute__ ((__unused__)), const fde *f)
+last_fde (struct object *obj /*__attribute__((__unused__))*/, const fde *f)
 {
 #ifdef DWARF2_OBJECT_END_PTR_EXTENSION
   return (char *)f == obj->fde_end || f->length == 0;

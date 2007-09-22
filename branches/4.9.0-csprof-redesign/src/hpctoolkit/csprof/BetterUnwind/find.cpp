@@ -8,18 +8,18 @@ static int debug = 0;
 
 #define USE_FDE 1
 
-extern "C" {
-extern int nm_bound(unsigned long pc, unsigned long *st, unsigned long *e);
 #include <unwind-dw2-fde.h>
-
 #include "pmsg.h"
 
-int find_enclosing_function_bounds(char *addr, char **start, char **end);
-void test_find_enclosing_function_bounds(char *addr);
-
+extern "C" {
+  extern int nm_bound(unsigned long pc, unsigned long *st, unsigned long *e);
+  int find_enclosing_function_bounds(char *addr, char **start, char **end);
+  void test_find_enclosing_function_bounds(char *addr);
 }
-static char *find_dwarf_end_addr(char *addr, struct dwarf_fde const *start_fde, 
-	struct dwarf_eh_bases *start_bases)
+
+
+static char *find_dwarf_end_addr(char *addr, struct dwarf_fde const *start_fde,
+				 struct dwarf_eh_bases *start_bases)
 {
 	struct dwarf_eh_bases end_bases;
 	struct dwarf_eh_bases new_bases;
