@@ -281,6 +281,7 @@ csprof_take_profile_sample(csprof_state_t *state, struct ucontext *ctx)
 void *unwind_pc;
 
 int samples_taken = 0;
+int bad_unwind_count    = 0;
 
 static void
 csprof_itimer_signal_handler(int sig, siginfo_t *siginfo, void *context)
@@ -307,6 +308,7 @@ csprof_itimer_signal_handler(int sig, siginfo_t *siginfo, void *context)
   else {
     EMSG("got bad unwind: context_pc = %p, unwind_pc = %p",context_pc,
          unwind_pc);
+    bad_unwind_count++;
   }
   csprof_set_timer();
 }

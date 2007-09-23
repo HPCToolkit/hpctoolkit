@@ -23,6 +23,9 @@ export PRIM_UNWIND
 # improved unwind here
 UNWIND := BetterUnwind
 
+#special decls for xed library usage
+XEDDCL := -DXED_SCALARS
+
 #MPI_SPECIAL :=1
 
 CSPROFLIB := libcsprof.so.1
@@ -41,11 +44,18 @@ all: $(CSPROFLIB)
 
 include mkinclude.$(PLATFORM)
 
+module_dirs := utilities                \
+               memory                   \
+               processor/x86-64         \
+               sampling/types/callstack \
+               BetterUnwind             \
+               sampling/sources/itimer
+
 LIB_CSFILE := libcsfile.a
 INC_CSFILE := -I./hpcfile
 
 INC_MON := -I./monitor/src
-INC_BETTER_UNW := -IBetterUnwind
+# INC_BETTER_UNW := -IBetterUnwind
 
 MPI_INC := -I/usr/mpich/mpich-1.2.6-pgi614/include
 
@@ -55,13 +65,8 @@ ifdef MPI_SPECIAL
 INCS += $(MPI_INC)
 endif
 
-local_incs += utilities                \
-              memory                   \
-              processor/x86-64         \
-              sampling/types/callstack \
-              sampling/sources/itimer
-
-INCS += $(addprefix -I,$(local_incs))
+INCS += $(addprefix -I,$(module_dirs))
+INCS += -IBetterUnwind/Include
 
 # FIXME: PAPI?
 ifneq "$(DRIVER)" "itimer"
@@ -111,15 +116,13 @@ ifdef DO_THREADS
    OBJS += pthread.o
 endif
 
-# OBJS += $(ARCH)/backtrace.o 
 OBJS += backtrace.o
 ifdef PRIM_UNWIND
-#  OBJS += $(ARCH)/prim_unw.o
-OBJS += prim_unw.o
+  // OBJS += splay_if.o
+  OBJS += splay.o
+  OBJS += simple-lock.o
+  OBJS += prim_unw.o
 endif
-#OBJS += $(ARCH)/swizzle.o $(ARCH)/unsafe.o
-#OBJS += $(ARCH)/tramp.o $(ARCH)/loadmod.o $(ARCH)/libc.o
-#OBJS += $(ARCH_OBJS)
 
 OBJS += swizzle.o unsafe.o
 OBJS += tramp.o loadmod.o processor-libc.o
@@ -129,7 +132,8 @@ OBJS += state.o env.o data.o dump_backtraces.o segv_handler.o
 OBJS += pmsg.o
 OBJS += nm_bound.o
 OBJS += bad_unwind.o
-OBJS += $(UNWIND)/find.o $(UNWIND)/xed_if.o
+//OBJS += $(UNWIND)/find.o $(UNWIND)/xed_if.o
+OBJS += find.o xed_if.o
 OBJS += last_func.o
 
 #LIBS := hpcfile/$(LIB_CSFILE) $(LIB_THREAD) $(LIB_UNWIND) $(LIB_PFM)
@@ -145,23 +149,23 @@ LIBS += $(XED_LIBS) $(XED_CPP_LIBS)
 # Compiling Rules:
 #############################################################################
 
-vpath %.c utilities                \
-          memory                   \
-          processor/x86-64         \
-          sampling/types/callstack \
-          sampling/sources/itimer
+vpath %.c $(module_dirs)
 
 vpath %.s processor/x86-64
+
+vpath %.cpp $(module_dirs)
 
 .PHONY: TT
 
 TT:
 	# OBJS = $(OBJS)
 	# INCS = $(INCS)
+	# CXX  = $(CXX)
+	# INC_CSFILE = $(INC_CSFILE)
 
 $(LIB_CSFILE):
 	@cd hpcfile; $(MAKE) -I ..
-	@cd BetterUnwind; $(MAKE)
+#	@cd BetterUnwind; $(MAKE)
 
 clean:
 	@echo "*** Cleaning csprof ***"
@@ -170,7 +174,7 @@ clean:
 	@cd BetterUnwind; $(MAKE) clean
 
 TAGS:
-	@etags *.[csh] hpcfile/*.[csh] $(ARCH)/*.[csh]
+	@etags *.[csh] hpcfile/*.[csh] $(addsuffix /*.[csh],$(module_dirs)) BetterUnwind/*.cpp BetterUnwind/*.[ch]
 
 tarball: 
 	@tar -cf csprof.tar $(filter-out %.o %.csp %.log t1 t2 t3,$(wildcard *))
@@ -192,4 +196,7 @@ $(CSPROFLIB): $(LIB_CSFILE) $(OBJS)
 
 %.o: %.s
 	$(CC) $(INCS) $(CFLAGS) -c $< -o $@
+
+%.o: %.cpp
+	$(CXX) $(INCS) $(XEDDCL) $(CFLAGS) -c $< -o $@
 

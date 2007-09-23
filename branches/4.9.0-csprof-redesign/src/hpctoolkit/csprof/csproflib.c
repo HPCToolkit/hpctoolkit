@@ -322,6 +322,7 @@ void csprof_thread_fini(csprof_state_t *state){
 void csprof_fini_internal(void){
     extern int segv_count;
     extern int samples_taken;
+    extern int bad_unwind_count;
     csprof_state_t *state;
 
     /* Prevent multiple finalizations [Case 2] */
@@ -342,7 +343,7 @@ void csprof_fini_internal(void){
     MSG(CSPROF_MSG_SHUTDOWN, "writing profile data");
     state = csprof_get_safe_state();
     csprof_write_profile_data(state);
-    printf("%d samples total, %d samples dropped\n", samples_taken, segv_count);
+    printf("%d samples total, %d samples dropped\n", samples_taken, segv_count+bad_unwind_count);
 }
 
 

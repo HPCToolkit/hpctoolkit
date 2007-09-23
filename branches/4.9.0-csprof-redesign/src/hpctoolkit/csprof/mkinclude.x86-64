@@ -22,7 +22,8 @@ ifndef PRIM_UNWIND
   LIB_UNWIND := -L$(LIBUNWIND_HOME)/lib -lunwind-x86_64 -lunwind -Wl,--rpath -Wl,$(LIBUNWIND_HOME)/lib -ldl
   INC_UNWIND := -I$(LIBUNWIND_HOME)/include
 else
-  INC_UNWIND := -I$(ARCH)
+#  INC_UNWIND := -I$(ARCH)
+  INC_UNWIND := 
 endif
 
 

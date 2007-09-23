@@ -259,7 +259,9 @@ unwind_interval *what(xed_decoded_inst_t& xedd, char *ins,
   if (xedd.get_iclass() == XEDICLASS_ENTER) {
     long offset = 8;
     int tmp;
-    int op_count = xedd.get_operand_count();
+
+    //    int op_count = xedd.get_operand_count();
+
     for(unsigned int i=0; i < xedd.get_operand_count() ; i++){
       const xed_decoded_resource_t& r =  xedd.get_operand_resource(i);
       switch(r.get_res()){
@@ -550,7 +552,7 @@ interval_status l_build_intervals(char  *ins, unsigned int len)
     current->endaddr = (unsigned long) ins;
   }
 
- done:
+  // done:
   xed_stat.first_undecoded_ins = ins;
   xed_stat.errcode = ecnt;
   xed_stat.first   = first;
