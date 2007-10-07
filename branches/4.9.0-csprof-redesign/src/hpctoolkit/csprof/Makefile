@@ -44,12 +44,14 @@ all: $(CSPROFLIB)
 
 include mkinclude.$(PLATFORM)
 
-module_dirs := utilities                \
-               memory                   \
-               processor/x86-64         \
-               sampling/types/callstack \
-               BetterUnwind             \
-               sampling/sources/itimer
+MODULE_DIRS := \
+	utilities                \
+        memory                   \
+        processor/x86-64         \
+        sampling/types/callstack \
+        BetterUnwind             \
+        sampling/sources/itimer  \
+	lush
 
 LIB_CSFILE := libcsfile.a
 INC_CSFILE := -I./hpcfile
@@ -65,7 +67,7 @@ ifdef MPI_SPECIAL
 INCS += $(MPI_INC)
 endif
 
-INCS += $(addprefix -I,$(module_dirs))
+INCS += $(addprefix -I,$(MODULE_DIRS))
 INCS += -IBetterUnwind/Include
 
 # FIXME: PAPI?
@@ -118,7 +120,7 @@ endif
 
 OBJS += backtrace.o
 ifdef PRIM_UNWIND
-  // OBJS += splay_if.o
+  # OBJS += splay_if.o
   OBJS += splay.o
   OBJS += simple-lock.o
   OBJS += prim_unw.o
@@ -132,9 +134,11 @@ OBJS += state.o env.o data.o dump_backtraces.o segv_handler.o
 OBJS += pmsg.o
 OBJS += nm_bound.o
 OBJS += bad_unwind.o
-//OBJS += $(UNWIND)/find.o $(UNWIND)/xed_if.o
+#OBJS += $(UNWIND)/find.o $(UNWIND)/xed_if.o
 OBJS += find.o xed_if.o
 OBJS += last_func.o
+
+OBJS += lush.o lushi-cb.o
 
 #LIBS := hpcfile/$(LIB_CSFILE) $(LIB_THREAD) $(LIB_UNWIND) $(LIB_PFM)
 
@@ -149,19 +153,19 @@ LIBS += $(XED_LIBS) $(XED_CPP_LIBS)
 # Compiling Rules:
 #############################################################################
 
-vpath %.c $(module_dirs)
+vpath %.c $(MODULE_DIRS)
 
 vpath %.s processor/x86-64
 
-vpath %.cpp $(module_dirs)
+vpath %.cpp $(MODULE_DIRS)
 
 .PHONY: TT
 
 TT:
-	# OBJS = $(OBJS)
-	# INCS = $(INCS)
-	# CXX  = $(CXX)
-	# INC_CSFILE = $(INC_CSFILE)
+#	 OBJS = $(OBJS)
+#	 INCS = $(INCS)
+#	 CXX  = $(CXX)
+#	 INC_CSFILE = $(INC_CSFILE)
 
 $(LIB_CSFILE):
 	@cd hpcfile; $(MAKE) -I ..
@@ -174,7 +178,7 @@ clean:
 	@cd BetterUnwind; $(MAKE) clean
 
 TAGS:
-	@etags *.[csh] hpcfile/*.[csh] $(addsuffix /*.[csh],$(module_dirs)) BetterUnwind/*.cpp BetterUnwind/*.[ch]
+	@etags *.[csh] hpcfile/*.[csh] $(addsuffix /*.[csh],$(MODULE_DIRS)) BetterUnwind/*.cpp BetterUnwind/*.[ch]
 
 tarball: 
 	@tar -cf csprof.tar $(filter-out %.o %.csp %.log t1 t2 t3,$(wildcard *))
