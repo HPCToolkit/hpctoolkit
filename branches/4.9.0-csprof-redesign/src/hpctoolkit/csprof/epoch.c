@@ -1,3 +1,6 @@
+// -*-Mode: C;-*-
+// $Id$
+
 /*
   Copyright ((c)) 2002, Rice University 
   All rights reserved.

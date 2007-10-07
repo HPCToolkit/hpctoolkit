@@ -1,3 +1,6 @@
+// -*-Mode: C;-*-
+// $Id$
+
 #include <stdlib.h>
 #include <unistd.h>
 #include <string.h>
@@ -22,7 +25,8 @@ static unsigned long segment_size(char *);
 
 /* MWF added utility f dumping w.o. modifying epoch stuff */
 void
-csprof_dump_loaded_modules(void){
+csprof_dump_loaded_modules(void)
+{
     char filename[PATH_MAX];
     char mapline[PATH_MAX+80];
     char *p;

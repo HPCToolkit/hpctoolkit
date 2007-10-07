@@ -11,6 +11,9 @@
 
 #include "hpcfile_csprof.h"
 
+// NOTE: tallent: added to eliminate compiler warning
+void csprof_record_metric_with_unwind(int metric_id, size_t value, int unwinds);
+
 /* total number of metrics we can track simultaneously */
 static int csprof_max_metrics = 0;
 /* information about tracked metrics */
