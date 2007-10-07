@@ -17,86 +17,61 @@
 //
 //***************************************************************************
 
+#ifndef lush_lush_h
+#define lush_lush_h
+
 //************************* System Include Files ****************************
 
 #include <stdlib.h>
-#include <string.h>
-#include <errno.h>
 
 //*************************** User Include Files ****************************
 
+#include "lush.i"
+#include "lushi.h"
+
 //*************************** Forward Declarations **************************
 
+
 //***************************************************************************
-//
+// LUSH Agents
 //***************************************************************************
 
-// ---------------------------------------------------------
-// [physical <-> logical] step associations
-//   since each can be one of [0, 1, 2:n] there are 9 possibilities
-// ---------------------------------------------------------
+// NOTE: This is here instead of <lush.i> because it depends on
+// <lushi.h> types.
+struct lush_agent_pool {
 
-enum lush_assoc_t {
-  LUSH_ASSOC_NULL = 0,
+  lush_agent_t agent; // FIXME: one agent for now
 
-  LUSH_ASSOC_1_to_1,   //   1 <-> 1
+  // for each LUSHI routine, a vector of pointers for each agent
+  // (indexed by agent id)
+#define POOL_DECL(FN) \
+  FN ## _fn_t*  FN
 
-  LUSH_ASSOC_1_n_to_0, // 2:n <-> 0 and 1 <-> 0
-  LUSH_ASSOC_2_n_to_1, // 2:n <-> 1
+  POOL_DECL(LUSHI_init);
+  POOL_DECL(LUSHI_fini);
+  POOL_DECL(LUSHI_strerror);
+  POOL_DECL(LUSHI_reg_dlopen);
+  POOL_DECL(LUSHI_ismycode);
+  POOL_DECL(LUSHI_peek_bichord);
+  POOL_DECL(LUSHI_step_pnote);
+  POOL_DECL(LUSHI_step_lnote);
 
-  LUSH_ASSOC_1_to_2_n, //   1 <-> 2:n
-  LUSH_ASSOC_0_to_2_n  //   0 <-> 2:n and 0 <-> 1
+#undef POOL_DECL
 };
 
+int lush_agent__init(lush_agent_t* x, int id, const char* path, 
+		     lush_agent_pool_t* pool);
 
-// ---------------------------------------------------------
-// 
-// ---------------------------------------------------------
-
-enum lush_step_t {
-  LUSH_STEP_NULL = 0,
-  LUSH_STEP_DONE,
-  LUSH_STEP_CONT,
-  LUSH_STEP_ERROR
-};
+int lush_agent__fini(lush_agent_t* x, lush_agent_pool_t* pool);
 
 
-// ---------------------------------------------------------
-// 
-// ---------------------------------------------------------
-
-#define lush_agentid_NULL 0
-typedef lush_agentid_t int;
+int lush_agent_pool__init(lush_agent_pool_t* x, const char* path);
+int lush_agent_pool__fini(lush_agent_pool_t* x);
 
 
-// ---------------------------------------------------------
-// LIP: An opaque logical id
-// ---------------------------------------------------------
-
-struct lush_lip_t {
-  uchar data1[8];
-  uchar data2[8];
-}
-
-
-// ---------------------------------------------------------
-// 
-// ---------------------------------------------------------
-
-struct lush_cursor_t {
-  // meta info:
-  //   is cursor just initialized
-  //   bichord assoc type
-  //   is bichord completed
-  //   id for agent that provided logical info (or NULL)
-
-  // physical context
-
-  // logical context (opaque)
-  // logical IP (opaque)
-  // active marker?
-};
-
+//***************************************************************************
+// LUSH Unwind Types
+//***************************************************************************
 
 inline lush_assoc_t 
 lush_cursor_get_assoc(lush_cursor_t* cursor);
@@ -112,15 +87,15 @@ lush_cursor_get_lcursor(lush_cursor_t* cursor);
 
 
 // **************************************************************************
-// 
+// LUSH Unwinding
 // **************************************************************************
 
 // Initialize the unwind.  Set a flag indicating initialization.
-void lush_init(lush_cursor_t* cursor, TNT_context_t* uc);
+void lush_init_unw(lush_cursor_t* cursor, void* context);;
 
 
 // Given a lush_cursor, peek the next bichord.
-lush_step_t lush_peek_bichord(lush_cursor_t& cursor);
+lush_step_t lush_peek_bichord(lush_cursor_t* cursor);
 
 
 // Given a lush_cursor, unwind to the next physical chord and locate the
@@ -137,3 +112,6 @@ lush_step_t lush_step_lnote(lush_cursor_t* cursor);
 // may also be the next pchord)
 lush_step_t lush_forcestep_pnote(lush_cursor_t* cursor);
 
+// **************************************************************************
+
+#endif /* lush_lushi_h */
