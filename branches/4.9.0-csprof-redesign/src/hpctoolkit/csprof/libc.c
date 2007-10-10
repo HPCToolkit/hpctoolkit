@@ -48,8 +48,8 @@
 #include "unsafe.h"
 #include "libstubs.h"
 
-int (*csprof_sigaction)(int sig, struct sigaction *act,
-                      struct sigaction *oact);
+int (*csprof_sigaction)(int sig, const struct sigaction *act,
+			struct sigaction *oact);
 sig_t (*csprof_signal)(int sig, sig_t func);
 
 #include <setjmp.h>
@@ -184,8 +184,8 @@ sig_t signal(int sig, sig_t func) {
 
 
 int sigaction(int sig, const struct sigaction *act,
-              struct sigaction *oact){
-
+              struct sigaction *oact)
+{
   static struct sigaction polite_act;
   extern void polite_segv_handler(int);
   extern void (*oth_segv_handler)(int);

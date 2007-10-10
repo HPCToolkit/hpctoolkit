@@ -13,6 +13,13 @@ arch_libc_init()
    better not call setjmp or longjmp in user code.
    Set to arbitrary value now
 */
+#ifdef JB_PC
+# undef JB_PC
+#endif
+#ifdef JB_RSP
+# undef JB_RSP
+#endif
+
 #define JB_PC  0
 #define JB_RSP 1
 

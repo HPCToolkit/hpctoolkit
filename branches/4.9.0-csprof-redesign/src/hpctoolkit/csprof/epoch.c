@@ -39,6 +39,8 @@
 #include "general.h"
 #include "atomic.h"
 
+#include "hpcfile_cstreelib.h"
+
 /* epochs are entirely separate from profiling state */
 static csprof_epoch_t *current_epoch = NULL;
 

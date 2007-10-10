@@ -231,7 +231,7 @@ csprof_context_is_unsafe(void *context)
 }
 #endif
 // don't check this for now
-csprof_context_is_unsafe(void *context){
+int csprof_context_is_unsafe(void *context){
   return 0;
 }
 

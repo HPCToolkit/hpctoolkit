@@ -18,7 +18,7 @@
 #endif
 
 extern int (*csprof_sigaction)(int sig, const struct sigaction *act,
-                             struct sigaction *oact);
+			       struct sigaction *oact);
 
 void (*oth_segv_handler)(int);
 
