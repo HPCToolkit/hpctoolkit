@@ -8,9 +8,12 @@ extern char *static_epoch_xname;
 extern void csprof_init_internal(void);
 extern void csprof_fini_internal(void);
 
-void monitor_init_process(struct monitor_start_main_args *m){
+// always need this variable, but only init thread support will turn it on
+int csprof_using_threads = 0;
+
+void monitor_init_process(char *process, int *argc, char **argv,unsigned pid){
   M("monitor calling csprof_init_internal");
-  static_epoch_xname = strdup((m->argv)[0]);
+  static_epoch_xname = strdup(argv[0]);
   csprof_init_internal();
 }
 

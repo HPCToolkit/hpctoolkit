@@ -2,10 +2,14 @@
 #include <setjmp.h>
 #include <unistd.h>
 
+#include "bad_unwind.h"
 #include "driver.h"
 #include "general.h"
 #include "state.h"
 #include "structs.h"
+
+#include "backtrace.h"
+#include "bad_unwind.h"
 
 #define THRESHOLD   100000000
 
@@ -13,9 +17,14 @@
 
 #define M(s) write(2,s"\n",strlen(s)+1)
 
+int samples_taken = 0;
+int bad_unwind_count    = 0;
+void *unwind_pc;
+
 void
 csprof_take_profile_sample(csprof_state_t *state,void *context,void *pc){
 
+  samples_taken++;
   MSG(1,"csprof take profile sample");
   DBGMSG_PUB(1, "Signalled at %#lx", pc);
 
@@ -25,24 +34,25 @@ csprof_take_profile_sample(csprof_state_t *state,void *context,void *pc){
 }
 
 extern int status;
-jmp_buf bad_unwind;
 
 void my_handler(int EventSet, void *pc, long long ovec, void *context) {
+  _jb *it = get_bad_unwind();
   M("In PAPI handler");
-  if (!sigsetjmp(bad_unwind,1)){
+  if (!sigsetjmp(it->jb,1)){
     if(status != CSPROF_STATUS_FINI){
 
       csprof_state_t *state = csprof_get_state();
 
       if(state != NULL) {
-	csprof_take_profile_sample(state, context,pc);
+	csprof_take_profile_sample(state,(void *)(&(((ucontext_t *)context)->uc_mcontext)),pc);
 	csprof_state_flag_clear(state, CSPROF_THRU_TRAMP);
       }
 
     }
   }
   else {
-      MSG(1,"got bad unwind");
+    bad_unwind_count++;
+    MSG(1,"got bad unwind");
   }
 }
 
@@ -88,3 +98,33 @@ void papi_pulse_fini(void){
     MSG(1,"values = %lld\n", values);
 }
 
+
+#include "metrics.h"
+
+extern void unw_init(void);
+
+extern int setup_segv(void);
+// extern double __ieee754_log();
+void csprof_process_driver_init(csprof_options_t *opts){
+    unw_init();
+    // csprof_addr_to_interval((unsigned long)__ieee754_log + 5);
+    setup_segv();
+    {
+      int metric_id;
+
+      csprof_set_max_metrics(2);
+      metric_id = csprof_new_metric(); /* weight */
+      csprof_set_metric_info_and_period(metric_id, "# samples",
+					CSPROF_METRIC_ASYNCHRONOUS,
+					opts->sample_period);
+      metric_id = csprof_new_metric(); /* calls */
+      csprof_set_metric_info_and_period(metric_id, "# returns",
+					CSPROF_METRIC_FLAGS_NIL, 1);
+    }
+    // FIXME: papi specific for now
+    papi_pulse_init();
+}
+
+void csprof_process_driver_fini(void){
+  papi_pulse_fini();
+}

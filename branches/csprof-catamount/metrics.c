@@ -11,9 +11,6 @@
 
 #include "hpcfile_csprof.h"
 
-// NOTE: tallent: added to eliminate compiler warning
-void csprof_record_metric_with_unwind(int metric_id, size_t value, int unwinds);
-
 /* total number of metrics we can track simultaneously */
 static int csprof_max_metrics = 0;
 /* information about tracked metrics */
@@ -94,6 +91,7 @@ csprof_set_metric_info(int metric_id, char *name, int flags)
   csprof_set_metric_info_and_period(metric_id, name, flags, 1);
 }
 
+#if 0
 void
 csprof_record_metric(int metric_id, size_t value)
 {
@@ -106,3 +104,4 @@ csprof_record_metric(int metric_id, size_t value)
   csprof_record_metric_with_unwind(metric_id, value, 1);
 }
 
+#endif

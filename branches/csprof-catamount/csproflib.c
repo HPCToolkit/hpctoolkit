@@ -1,6 +1,5 @@
-// -*-Mode: C;-*-
 // $Id$
-
+// -*-C-*-
 // * BeginRiceCopyright *****************************************************
 /*
   Copyright ((c)) 2002, Rice University 
@@ -109,27 +108,6 @@ sigset_t prof_sigset;
 
 /* initialization and finalization of the library */
 
-#ifdef NOMON
-#ifdef __GNUC__
-void csprof_init_internal() __attribute__((constructor));
-void csprof_fini_internal() __attribute__((destructor));
-#endif
-
-#ifndef __GNUC__
-/* Implicit interface */
-void
-_init()
-{
-  csprof_init_internal();
-}
-
-void
-_fini()
-{
-  csprof_fini_internal();
-}
-#endif
-#endif /* NOMON */
 /* Explicit interface */
 void
 csprof_init()
@@ -185,9 +163,8 @@ long static_epoch_size;
 //
 // process level setup (assumes pthreads not started yet)
 //
-void csprof_init_internal(void)
-{
-  if (getenv("CSPROF_WAIT")) {
+void csprof_init_internal(void){
+  if (getenv("CSPROF_WAIT")){
     while(wait_for_gdb);
   }
   csprof_libc_init();
@@ -224,11 +201,8 @@ void csprof_init_internal(void)
     csprof_state_t *state = csprof_malloc(sizeof(csprof_state_t));
 
     csprof_set_state(state);
-    csprof_state_init(state);
-    if (opts.agent_paths != '\0') {
-      lush_agent_pool__init(state->lush_agents, opts.agent_paths);
-    }
 
+    csprof_state_init(state);
     csprof_state_alloc(state);
 
     MSG(CSPROF_MSG_SHUTDOWN, "***> csprof init 2 ***");
@@ -253,8 +227,7 @@ extern pthread_key_t thread_node_key;
 extern pthread_key_t prof_data_key;
 extern pthread_key_t mem_store_key;
 
-void csprof_init_thread_support(int id)
-{
+void csprof_init_thread_support(int id){
 
   csprof_state_t *state = csprof_get_state();
 
@@ -274,8 +247,7 @@ void csprof_init_thread_support(int id)
   MSG(1,"switch to threaded versions complete");
 }
 
-void csprof_thread_init(killsafe_t *kk,int id)
-{
+void csprof_thread_init(killsafe_t *kk,int id){
 
   csprof_state_t *state;
   csprof_mem_t *memstore;
@@ -315,8 +287,7 @@ void csprof_thread_init(killsafe_t *kk,int id)
   csprof_thread_driver_init(&opts);
 }
 
-void csprof_thread_fini(csprof_state_t *state)
-{
+void csprof_thread_fini(csprof_state_t *state){
   extern void csprof_disable_timer(void);
   // int csprof_write_profile_data(csprof_state_t *s);
 
@@ -327,8 +298,7 @@ void csprof_thread_fini(csprof_state_t *state)
 #endif
 // csprof_fini_internal: 
 // errors: handles all errors
-void csprof_fini_internal(void)
-{
+void csprof_fini_internal(void){
     extern int segv_count;
     extern int samples_taken;
     extern int bad_unwind_count;
@@ -347,7 +317,7 @@ void csprof_fini_internal(void)
     status = CSPROF_STATUS_FINI;
 
     /* stop the profile driver */
-    csprof_driver_fini(state, &opts);
+    csprof_process_driver_fini(state, &opts);
 
     MSG(CSPROF_MSG_SHUTDOWN, "writing profile data");
     state = csprof_get_safe_state();
@@ -480,8 +450,7 @@ csprof_trampoline2_end()
 }
 #endif
 
-csprof_state_t *csprof_check_for_new_epoch(csprof_state_t *state)
-{
+csprof_state_t *csprof_check_for_new_epoch(csprof_state_t *state){
   /* ugh, nasty race condition here:
 
   1. shared library state has changed since the last profile
@@ -565,8 +534,7 @@ csprof_print_backtrace(csprof_state_t *state)
 
 /* writing profile data */
 
-int csprof_write_profile_data(csprof_state_t *state)
-{
+int csprof_write_profile_data(csprof_state_t *state){
 
   extern int csprof_using_threads;
 
@@ -586,7 +554,6 @@ int csprof_write_profile_data(csprof_state_t *state)
     sprintf(fnm, "%s/%s%lx-%x%s", opts.out_path, CSPROF_FNM_PFX,
             state->pstate.hostid, state->pstate.pid, CSPROF_OUT_FNM_SFX);
   }
-  
   MSG(CSPROF_MSG_DATAFILE, "CSPROF write_profile_data: Writing %s", fnm);
 
     /* Open file for writing; fail if the file already exists. */
@@ -664,8 +631,7 @@ int csprof_write_profile_data(csprof_state_t *state)
 /* option handling */
 /* FIXME: this needs to be split up a little bit for different backends */
 
-int csprof_options__init(csprof_options_t* x)
-{
+static int csprof_options__init(csprof_options_t* x){
   memset(x, 0, sizeof(*x));
 
   x->mem_sz = CSPROF_MEM_SZ_INIT;
@@ -675,14 +641,13 @@ int csprof_options__init(csprof_options_t* x)
   return CSPROF_OK;
 }
 
-int csprof_options__fini(csprof_options_t* x)
+static int csprof_options__fini(csprof_options_t* x)
 {
   return CSPROF_OK;
 }
 
-/* NOTE: assumes no private 'heap' memory is available yet */
-int csprof_options__getopts(csprof_options_t* x)
-{
+/* assumes no private 'heap' memory is available yet */
+static int csprof_options__getopts(csprof_options_t* x){
 
   char tmp[CSPROF_PATH_SZ];
   char* s;
@@ -711,15 +676,6 @@ int csprof_options__getopts(csprof_options_t* x)
     CSPROF_DBG_LVL_PUB = i;
   }
 #endif
-
-  /* Option: CSPROF_OPT_AGENTS */
-  s = getenv(CSPROF_OPT_AGENTS);
-  if (s) {
-    strcpy(x->agent_paths, s);
-  }
-  else {
-    x->agent_paths[0] = '\0';
-  }
 
   /* Option: CSPROF_OPT_MAX_METRICS */
   s = getenv(CSPROF_OPT_MAX_METRICS);

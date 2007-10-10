@@ -130,14 +130,22 @@ backtrace_done(unw_cursor_t *frame, unw_word_t *pcp, unw_word_t *spp)
         state->bufstk = state->bufend; \
 }
 
+
 extern void *monitor_unwind_fence1,*monitor_unwind_fence2;
+
+#ifdef DO_THREADS
 extern void *monitor_unwind_thread_fence1,*monitor_unwind_thread_fence2;
+#endif
 
 int csprof_check_fence(void *iip){
   void **ip = (void **) iip;
 
-  return ((ip >= &monitor_unwind_fence1) && (ip <= &monitor_unwind_fence2)) ||
-    ((ip >= &monitor_unwind_thread_fence1) && (ip <= &monitor_unwind_thread_fence2));
+  return ((ip >= &monitor_unwind_fence1) && (ip <= &monitor_unwind_fence2)) 
+#ifdef DO_THREADS
+	|| ((ip >= &monitor_unwind_thread_fence1) && 
+	    (ip <= &monitor_unwind_thread_fence2))
+#endif
+        ;
 }
 
 extern void *unwind_pc;

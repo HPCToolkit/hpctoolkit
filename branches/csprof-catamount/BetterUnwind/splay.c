@@ -10,6 +10,7 @@
 #include "intervals.h"
 #include "simple-lock.h"
 #include "splay.h"
+#include "general.h"
 
 #ifdef CSPROF_THREADS
 #include <pthread.h>
@@ -41,6 +42,7 @@ static interval_status build_intervals(char *ins, unsigned int len){
   pthread_mutex_lock(&xedlock);
 #endif
 
+  MSG(1,"SPLAY: calling l_build_intervals");
   rv = l_build_intervals(ins,len);
 
 #ifdef CSPROF_THREADS
@@ -135,6 +137,7 @@ csprof_addr_to_interval(unsigned long addr)
     root = interval_tree_splay(root, addr);
     if (root != NULL && root->start <= addr && addr < root->end) {
 	simple_spinlock_unlock(&lock);
+	MSG(1,"SPLAY:found %lx already in tree",addr);
 	return (unwind_interval *)root;
     }
 
@@ -142,6 +145,7 @@ csprof_addr_to_interval(unsigned long addr)
     ret = find_enclosing_function_bounds((char *)addr, &fcn_start, &fcn_end);
     if (ret != SUCCESS) {
 	simple_spinlock_unlock(&lock);
+	MSG(1,"SPLAY: no enclosing bounds found");
 	return (NULL);
     }
 #ifdef OLD_INTERFACE
@@ -151,6 +155,7 @@ csprof_addr_to_interval(unsigned long addr)
 #endif //OLD_INTERFACE
     if (istat.first == NULL) {
 	simple_spinlock_unlock(&lock);
+	MSG(1,"SPLAY: build intervals failed");
 	return (NULL);
     }
 
@@ -208,5 +213,6 @@ csprof_addr_to_interval(unsigned long addr)
     }
 
     simple_spinlock_unlock(&lock);
+    MSG(1,"SPLAY: returning interval = %p",ans);
     return (ans);
 }

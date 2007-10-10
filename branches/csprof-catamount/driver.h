@@ -9,6 +9,7 @@ extern void csprof_driver_init(csprof_state_t *, csprof_options_t *);
 extern void csprof_driver_fini(csprof_state_t *, csprof_options_t *);
 
 extern void csprof_process_driver_init(csprof_options_t *o);
+extern void csprof_process_driver_fini();
 
 #ifdef CSPROF_THREADS
 

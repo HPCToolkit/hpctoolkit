@@ -1,6 +1,3 @@
-// -*-Mode: C;-*-
-// $Id$
-
 /*
   Copyright ((c)) 2002, Rice University 
   All rights reserved.
@@ -37,34 +34,7 @@
 
 #include <stdio.h>
 
-/* an "epoch" in csprof-speak is a period of time during which our
-   dynamically loaded libraries are stable.  we start a new epoch when
-   a library is dlopen()'d; we don't have to worrying about what happens
-   after a dlclose() because the dlclose()'d library will not be
-   referenced again and it doesn't hurt us to keep around some information
-   related to it. */
-
-typedef struct csprof_epoch csprof_epoch_t;
-typedef struct csprof_epoch_module csprof_epoch_module_t;
-
-/* an individual load module--shared library or program binary */
-struct csprof_epoch_module
-{
-    struct csprof_epoch_module *next; /* just what it sounds like */
-    char *module_name;
-    void *vaddr;                /* the preferred virtual address */
-    void *mapaddr;              /* the actual mapped address */
-    size_t size;		/* just what it sounds like */
-};
-
-struct csprof_epoch
-{
-    struct csprof_epoch *next;  /* the next epoch */
-    unsigned int id;            /* an identifier for disk writeouts */
-    unsigned int num_modules;   /* how many modules are loaded? */
-    struct csprof_epoch_module *loaded_modules;
-};
-
+#include "structs.h"
 
 csprof_epoch_t *csprof_epoch_new();
 csprof_epoch_t *csprof_get_epoch();

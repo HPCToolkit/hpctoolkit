@@ -34,8 +34,9 @@ int main(int argc, char *argv[]){
 
   printf("building intervals for tfn\n");
   printf("--------------------------\n");
-  build_intervals(&tfn, (char *) &main - (char *) &tfn);
+  l_build_intervals(&tfn, (char *) &main - (char *) &tfn);
 
+#if 0
   test_find_enclosing_function_bounds((char *) &raidev_process_recv);
 
   printf("\n\n\n");
@@ -50,6 +51,7 @@ int main(int argc, char *argv[]){
     xed_show();
     p += len;
   }
+#endif
 #endif
 
   return 0;

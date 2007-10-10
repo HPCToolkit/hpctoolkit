@@ -1,6 +1,3 @@
-// -*-Mode: C;-*-
-// $Id$
-
 /*
   Copyright ((c)) 2002, Rice University 
   All rights reserved.
@@ -67,10 +64,8 @@ csprof_epoch_unlock()
 int
 csprof_epoch_is_locked()
 {
-    extern int s2;
-    s2 += 1;
-    MSG(1,"epoch lock val = %lx",epoch_lock);
-    return epoch_lock;
+  MSG(1,"epoch lock val = %lx",epoch_lock);
+  return epoch_lock;
 }
 
 csprof_epoch_t *

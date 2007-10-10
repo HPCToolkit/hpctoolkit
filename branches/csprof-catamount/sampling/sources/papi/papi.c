@@ -74,11 +74,15 @@ papi_event_t csprof_event_table[] = {
 { PAPI_SR_INS,  "PAPI_SR_INS",  "Store instructions executed" },
 { PAPI_BR_INS,  "PAPI_BR_INS",  "Total branch instructions executed" },
 { PAPI_VEC_INS, "PAPI_VEC_INS", "Vector/SIMD instructions executed" },
+#if 0
 { PAPI_FLOPS,   "PAPI_FLOPS",   "Floating Point instructions per second" },
+#endif
 { PAPI_RES_STL, "PAPI_RES_STL", "Any resource stalls" },
 { PAPI_FP_STAL, "PAPI_FP_STAL", "FP units are stalled " },
 { PAPI_TOT_CYC, "PAPI_TOT_CYC", "Total cycles" },
+#if 0
 { PAPI_IPS,     "PAPI_IPS",     "Instructions executed per second" },
+#endif
 { PAPI_LST_INS, "PAPI_LST_INS", "Total load/store inst. executed" },
 { PAPI_SYC_INS, "PAPI_SYC_INS", "Synchronization instructions executed" },
 
@@ -169,7 +173,7 @@ csprof_create_papi_event_set(int event)
 }
 
 static int
-csprof_determine_papi_event();
+csprof_determine_papi_event()
 {
     char *s = getenv(CSPROF_OPT_EVENT);
 
@@ -204,6 +208,11 @@ csprof_driver_init(csprof_state_t *state, csprof_options_t *opts)
 {
     int ret;
     int the_event_set;
+#ifdef CSPROF_THREADS
+    long thread = pthread_self();
+#else
+    long thread = 0;
+#endif
 
     ret = PAPI_library_init(PAPI_VER_CURRENT);
 
@@ -232,15 +241,14 @@ csprof_driver_init(csprof_state_t *state, csprof_options_t *opts)
 
     if(ret != PAPI_OK) {
         DIE("Couldn't set overflow handler on thread %lx", __FILE__,
-            __LINE__, pthread_self());
+            __LINE__, thread);
     }
 
     ret = PAPI_start(the_event_set);
 
     if(ret != PAPI_OK) {
         /* this is probably bad */
-        DIE("Couldn't initialize PAPI on thread %lx", __FILE__, __LINE__,
-            pthread_self());
+        DIE("Couldn't initialize PAPI on thread %lx", __FILE__, __LINE__, thread);
     }
 
     sigemptyset(&prof_sigset);

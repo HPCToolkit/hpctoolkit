@@ -1,6 +1,3 @@
-// -*-Mode: C;-*-
-// $Id$
-
 /*
   Copyright ((c)) 2002, Rice University 
   All rights reserved.
@@ -46,8 +43,6 @@ extern const char* CSPROF_OPT_MEM_SZ;
 
 extern const char* CSPROF_OPT_VERBOSITY;
 extern const char* CSPROF_OPT_DEBUG;
-
-extern const char* CSPROF_OPT_AGENTS;
 
 extern const char* CSPROF_OPT_MAX_METRICS;
 

@@ -36,13 +36,14 @@ DEFINES += $(PERF)
 
 #CSPROF_TRAMPOLINE := -DCSPROF_TRAMPOLINE_BACKEND=1
 
-CC := gcc
+CC := cc
 # CFLAGS := -fPIC -g -Wall -fomit-frame-pointer -Os
 CFLAGS := -fPIC -g -Wall 
+CFLAGS := -g -Wall  #CATAMOUNT
 
 AR := /usr/bin/ar
 ARFLAGS := -r
 
-LINK_FLAGS := -Wl,-soname,$(CSPROFLIB) -shared
+#LINK_FLAGS := -Wl,-soname,$(CSPROFLIB) -shared
 
 PLATFORM_OBJS := 

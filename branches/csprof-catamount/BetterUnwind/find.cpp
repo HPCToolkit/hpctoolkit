@@ -2,7 +2,9 @@
 #include <string.h>
 #include <sys/types.h>
 
+#ifndef STATIC_ONLY
 #include <dlfcn.h>
+#endif
 
 static int debug = 0;
 
@@ -52,11 +54,13 @@ static char *find_dwarf_end_addr(char *addr, struct dwarf_fde const *start_fde,
 }
 
 
+#ifndef STATIC_ONLY
 static char *find_dl_end_addr(char *addr, Dl_info *start)
 {
 	Dl_info end;
 	Dl_info otheri;
 	unsigned int offset, mine, other, res;
+
 
 	offset = 1;
 	do {
@@ -80,6 +84,7 @@ static char *find_dl_end_addr(char *addr, Dl_info *start)
 	if (debug) printf("finishing offset = %d, end = %p\n", other, addr + other);
 	return addr + other;
 }
+#endif
 
 int find_enclosing_function_bounds(char *addr, char **start, char **end) 
 {
@@ -108,6 +113,7 @@ int find_enclosing_function_bounds(char *addr, char **start, char **end)
             PMSG(FIND,"FIND:looked up address %p, fde = %p, found func addr = %p, end addr = %p\n",
                  addr, fde, *start, *end);
 #endif
+#ifndef STATIC_ONLY
 	} else {
 		Dl_info info;
 		if (dladdr(addr, &info) && info.dli_saddr) {
@@ -128,6 +134,7 @@ int find_enclosing_function_bounds(char *addr, char **start, char **end)
 #endif
 	                failure = 1;
 		}
+#endif // STATIC_ONLY
 	}
 	return failure;
 }

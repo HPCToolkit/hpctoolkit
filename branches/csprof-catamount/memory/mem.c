@@ -77,17 +77,14 @@
 #define MAP_FAILED ((void *)-1)
 #endif
 
-
 /* forward declarations */
 
 static const char *csprof_mem_store__str(csprof_mem_store_t st);
 
 static int csprof_mem__init(csprof_mem_t *x, offset_t sz, offset_t sz_tmp);
-
-#ifdef NO
 static int csprof_mem__fini(csprof_mem_t *x);
+
 static int csprof_mem__reset(csprof_mem_t *x, offset_t sz, offset_t sz_tmp);
-#endif
 
 static void *csprof_mem__alloc(csprof_mem_t *x, size_t sz, csprof_mem_store_t st);
 static int csprof_mem__free(csprof_mem_t *x, void* ptr, size_t sz,
@@ -100,7 +97,6 @@ static int csprof_mem__is_enabled(csprof_mem_t *x, csprof_mem_store_t st);
 // The first argument for each of these is of type 'csprof_mem_t*'.
 #define csprof_mem__get_status(x) (x)->status
 
-
 /* various convenience issues */
 
 static csprof_mem_t MEM;
@@ -147,7 +143,7 @@ void mem_threaded(void){
 #define csprof_get_memstore _get_static_memstore
 #define alloc_memstore      _alloc_static_memstore
 #endif
-
+
 /* public interface */
 
 /* the system malloc is good about rounding odd amounts to be aligned.
@@ -270,7 +266,6 @@ csprof_tfree_threaded(csprof_mem_t *memstore, void* ptr, size_t size)
     }
 }
 
-
 /* private implementation functions */
 
 // csprof_mem__init: Initialize and prepare memory stores for use,
@@ -554,7 +549,6 @@ csprof_mem__is_enabled(csprof_mem_t *x, csprof_mem_store_t st)
   }
 }
 
-
 /* debugging aid */
 
 static const char *
@@ -569,7 +563,6 @@ csprof_mem_store__str(csprof_mem_store_t st)
   }
 }
 
-
 /* csprof_mmap_info_t and csprof_mmap_alloc_info_t */
 
 int

@@ -4,7 +4,10 @@
 #include "killsafe.h"
 #include "monitor.h"
 
+#ifdef LINUX
 #include <linux/unistd.h>
+#endif
+
 #define M(s) write(2,s"\n",strlen(s)+1)
 
 static int (*the_main)(int, char **, char **);

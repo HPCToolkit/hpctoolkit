@@ -59,7 +59,11 @@
 #include <stdarg.h>
 #include <string.h>
 #include <unistd.h>
+
+#ifdef LINUX
 #include <linux/unistd.h>
+#endif
+
 #include <assert.h>
 
 #if defined(__cplusplus)

@@ -1,6 +1,5 @@
-// -*-Mode: C;-*-
 // $Id$
-
+// -*-C-*-
 // * BeginRiceCopyright *****************************************************
 /*
   Copyright ((c)) 2002, Rice University 
@@ -72,6 +71,10 @@
 
 //*************************** Forward Declarations **************************
 
+#ifndef NAME_MAX
+#define NAME_MAX 1024
+#endif
+
 #define CSPROF_FNM_SZ  (NAME_MAX+1) /* filename size */
 
 typedef void (*sig_handler_func_t)(int, siginfo_t *, void *);
@@ -89,10 +92,10 @@ typedef void (*sig_handler_func_t)(int, siginfo_t *, void *);
 #define CSPROF_MEM_SZ_INIT       32 * 1024 * 1024 /* FIXME: 1024 */
 #define CSPROF_BACKTRACE_CACHE_INIT_SZ 32
 
-int csprof_options__init(csprof_options_t* x);
-int csprof_options__fini(csprof_options_t* x);
+static int csprof_options__init(csprof_options_t* x);
+static int csprof_options__fini(csprof_options_t* x);
 
-int csprof_options__getopts(csprof_options_t* x);
+static int csprof_options__getopts(csprof_options_t* x);
 
 //***************************************************************************
 // csprof_pfmon_info

@@ -62,6 +62,7 @@ static void *(*csprof_xrealloc)(void *, size_t);
 static void (*csprof_xfree)(void *);
 #endif
 
+#ifndef STATIC_ONLY
 #define CSPROF_SIGSEGV_ALTERNATE_STACK_SIZE 16 * 1024
 
 static unsigned char sigsegv_alternate_stack[CSPROF_SIGSEGV_ALTERNATE_STACK_SIZE];
@@ -84,6 +85,7 @@ csprof_set_up_alternate_signal_stack()
         ERRMSG("Unable to setup alternate stack for SIGSEGV", __FILE__, __LINE__);
     }
 }
+#endif
 
 #include "thread_data.h"
 /* catch SIGSEGVs */
@@ -120,12 +122,14 @@ polite_segv_handler(int sig, siginfo_t *siginfo, void *context)
            !!!!!!
 	MSG(1,"SIGSEGV address %lx\n",ctx->uc_mcontext.sc_pc);
 	*/
+#ifndef STATIC_ONLY
 	MSG(1,"SIGSEGV address %lx\n",ctx->uc_mcontext.gregs[REG_RIP]);
 	for (i=REG_R8;i<=REG_CR2;i++) {
 	  MSG(1,"reg[%s] = %lx",
 	      _rnames[i],
 	      ctx->uc_mcontext.gregs[i]);
 	}
+#endif
 #ifdef NO
 	csprof_dump_loaded_modules();
         catching_sigsegv = 1;
@@ -180,12 +184,14 @@ csprof_sigsegv_signal_handler(int sig, siginfo_t *siginfo, void *context)
            !!!!!!
 	MSG(1,"SIGSEGV address %lx\n",ctx->uc_mcontext.sc_pc);
 	*/
+#ifndef STATIC_ONLY
 	MSG(1,"SIGSEGV address %lx\n",ctx->uc_mcontext.gregs[REG_RIP]);
 	for (i=REG_R8;i<=REG_CR2;i++) {
 	  MSG(1,"reg[%s] = %lx",
 	      _rnames[i],
 	      ctx->uc_mcontext.gregs[i]);
 	}
+#endif
 #ifdef NO
 	csprof_dump_loaded_modules();
         catching_sigsegv = 1;
@@ -216,7 +222,7 @@ setup_segv(void){
   struct sigaction sa;
   int ret;
 
-#ifdef STATIC_ONLY
+#if 0 // this doesn't work on catamount and needs to be fixed for threads
   csprof_set_up_alternate_signal_stack();
 #endif
 

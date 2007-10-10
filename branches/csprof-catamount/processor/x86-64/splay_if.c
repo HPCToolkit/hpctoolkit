@@ -47,6 +47,7 @@ unwind_interval *find_interval(unsigned long ipc, unwind_interval *ilist){
   return 0;
 }
 
+#define NO 1
 unwind_interval *csprof_addr_to_interval(unsigned long addr){
   interval_status istat;
   char *start,*end;

@@ -1,41 +1,3 @@
-// -*-Mode: C;-*-
-// $Id$
-
-// * BeginRiceCopyright *****************************************************
-/*
-  Copyright ((c)) 2002, Rice University 
-  All rights reserved.
-
-  Redistribution and use in source and binary forms, with or without
-  modification, are permitted provided that the following conditions are
-  met:
-
-  * Redistributions of source code must retain the above copyright
-  notice, this list of conditions and the following disclaimer.
-
-  * Redistributions in binary form must reproduce the above copyright
-  notice, this list of conditions and the following disclaimer in the
-  documentation and/or other materials provided with the distribution.
-
-  * Neither the name of Rice University (RICE) nor the names of its
-  contributors may be used to endorse or promote products derived from
-  this software without specific prior written permission.
-
-  This software is provided by RICE and contributors "as is" and any
-  express or implied warranties, including, but not limited to, the
-  implied warranties of merchantability and fitness for a particular
-  purpose are disclaimed. In no event shall RICE or contributors be
-  liable for any direct, indirect, incidental, special, exemplary, or
-  consequential damages (including, but not limited to, procurement of
-  substitute goods or services; loss of use, data, or profits; or
-  business interruption) however caused and on any theory of liability,
-  whether in contract, strict liability, or tort (including negligence
-  or otherwise) arising in any way out of the use of this software, even
-  if advised of the possibility of such damage.
-*/
-// ******************************************************* EndRiceCopyright *
-
-
 /* out-of-line defintions for library structures */
 #ifndef CSPROF_STRUCTS_H
 #define CSPROF_STRUCTS_H
@@ -49,24 +11,47 @@
 
 #include "csprof_csdata.h"
 #include "list.h"
-#include "epoch.h"
-
-#include "lush/lush.h"
 
 #define CSPROF_PATH_SZ (PATH_MAX+1) /* path size */
 
 
+/* an "epoch" in csprof-speak is a period of time during which our
+   dynamically loaded libraries are stable.  we start a new epoch when
+   a library is dlopen()'d; we don't have to worrying about what happens
+   after a dlclose() because the dlclose()'d library will not be
+   referenced again and it doesn't hurt us to keep around some information
+   related to it. */
+
+typedef struct csprof_epoch csprof_epoch_t;
+typedef struct csprof_epoch_module csprof_epoch_module_t;
+
+/* an individual load module--shared library or program binary */
+struct csprof_epoch_module
+{
+    struct csprof_epoch_module *next; /* just what it sounds like */
+    char *module_name;
+    void *vaddr;                /* the preferred virtual address */
+    void *mapaddr;              /* the actual mapped address */
+    size_t size;		/* just what it sounds like */
+};
+
+struct csprof_epoch
+{
+    struct csprof_epoch *next;  /* the next epoch */
+    unsigned int id;            /* an identifier for disk writeouts */
+    unsigned int num_modules;   /* how many modules are loaded? */
+    struct csprof_epoch_module *loaded_modules;
+};
+
+
 /* represents options for the library */
 typedef struct csprof_options_s {
-  char agent_paths[CSPROF_PATH_SZ]; /* paths for LUSH agents */
-
-  char out_path[CSPROF_PATH_SZ]; /* path for output */
-  char addr_file[CSPROF_PATH_SZ]; /* path for "bad address" file */
-  unsigned long mem_sz;       /* initial private memory size, bytes */
-  char *event;                /* name of the event */
-  unsigned long sample_period;
-  unsigned int max_metrics;
-
+    char out_path[CSPROF_PATH_SZ]; /* path for output */
+    char addr_file[CSPROF_PATH_SZ]; /* path for "bad address" file */
+    unsigned long mem_sz;       /* initial private memory size, bytes */
+    char *event;                /* name of the event */
+    unsigned long sample_period;
+    unsigned int max_metrics;
 } csprof_options_t;
 
 /* not currently used */
@@ -88,50 +73,47 @@ typedef enum csprof_status_e {
 
 /* profiling state of a single thread */
 typedef struct csprof_state_s {
-  /* information for recording function call returns; do not move this
-     block, since `swizzle_return' must be the first member of the
-     structure if we are doing backtracing */
-  void *swizzle_return;
-  void **swizzle_patch;
+    /* information for recording function call returns; do not move this
+       block, since `swizzle_return' must be the first member of the
+       structure if we are doing backtracing */
+    void *swizzle_return;
+    void **swizzle_patch;
 
-  /* last pc where we were signaled; useful for catching problems in
-     threaded builds of the profiler (can be useful for debugging in
-     non-threaded builds, too) */
-  void *last_pc;
+    /* last pc where we were signaled; useful for catching problems in
+       threaded builds of the profiler (can be useful for debugging in
+       non-threaded builds, too) */
+    void *last_pc;
 
-  csprof_frame_t *btbuf;      /* where we store backtraces */
-  csprof_frame_t *bufend;     /* the end of the buffer */
-  csprof_frame_t *bufstk;     /* the top frame in the current backtrace */
-  void *treenode;             /* cached pointer into the tree */
+    csprof_frame_t *btbuf;      /* where we store backtraces */
+    csprof_frame_t *bufend;     /* the end of the buffer */
+    csprof_frame_t *bufstk;     /* the top frame in the current backtrace */
+    void *treenode;             /* cached pointer into the tree */
 
-  csprof_list_pool_t *pool;
+    csprof_list_pool_t *pool;
 
-  /* how many bogus samples we took */
-  unsigned long trampoline_samples;
-  /* various flags, such as whether an exception is being processed or
-     whether we think there was a tail call since the last signal */
-  unsigned int flags;
+    /* how many bogus samples we took */
+    unsigned long trampoline_samples;
+    /* various flags, such as whether an exception is being processed or
+       whether we think there was a tail call since the last signal */
+    unsigned int flags;
 
-  // LUSH support
-  lush_agent_pool_t* lush_agents;
-
-  /* persistent state */
-  csprof_pstate_t pstate;
+    /* persistent state */
+    csprof_pstate_t pstate;
 #if CSPROF_NEED_PSTATE
-  char pstate_fnm[CSPROF_PATH_SZ];
+    char pstate_fnm[CSPROF_PATH_SZ];
 #endif
 
-  /* call stack data, stored in private memory */
-  csprof_csdata_t csdata;
+    /* call stack data, stored in private memory */
+    csprof_csdata_t csdata;
 
-  /* our notion of what the current epoch is */
-  csprof_epoch_t *epoch;
+    /* our notion of what the current epoch is */
+    csprof_epoch_t *epoch;
 
-  /* other profiling states which we have seen */
-  struct csprof_state_s *next;
+    /* other profiling states which we have seen */
+    struct csprof_state_s *next;
 
-  /* support for alternate profilers whose needs we don't provide */
-  void *extra_state;
+    /* support for alternate profilers whose needs we don't provide */
+    void *extra_state;
 } csprof_state_t;
 
 #endif

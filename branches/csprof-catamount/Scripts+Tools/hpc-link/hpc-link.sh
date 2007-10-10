@@ -12,8 +12,8 @@
 ## MWF change to accomodate csprof
 
 HPC_INSTALL_DIR=`dirname $0`
-HPC_WRAP_NAMES=
-HPC_INSERT_FILES=
+HPC_WRAP_NAMES='main _exit'
+HPC_INSERT_FILES='monitor.o libcsprof.o'
 CC=gcc
 
 insert_dir="${HPC_INSTALL_DIR}/libexec"

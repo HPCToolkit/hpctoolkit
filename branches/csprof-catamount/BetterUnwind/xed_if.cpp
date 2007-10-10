@@ -3,6 +3,7 @@ using namespace std;
 #include "xed-interface.H"
 #include "intervals.h"
 
+
 using namespace XED;
 
 // The state of the machine -- required for decoding
@@ -20,6 +21,12 @@ extern "C" {
   void idump(unwind_interval *u);
 
 #include "pmsg.h"
+  // turn off msgs @ compile time
+  // comment out code below 
+#undef INTV
+#define INTV NONE
+  // define DBG true to turn on all sorts of printing
+#define DBG false
 }
 
 void xed_init(void){
@@ -251,10 +258,10 @@ unwind_interval *what(xed_decoded_inst_t& xedd, char *ins,
   unwind_interval *next = NULL;
 
   // debug block
-  bool rdebug = false;
-  bool idebug = false;
-  bool fdebug = false;
-  bool mdebug = false;
+  bool rdebug = DBG;
+  bool idebug = DBG;
+  bool fdebug = DBG;
+  bool mdebug = DBG;
 
   if (xedd.get_iclass() == XEDICLASS_ENTER) {
     long offset = 8;
@@ -469,16 +476,18 @@ interval_status l_build_intervals(char  *ins, unsigned int len)
   int ecnt = 0;
 
   // debug block
-  bool idebug  = false;
-  bool ildebug = false;
-  bool irdebug = false;
+  bool idebug  = DBG;
+  bool ildebug = DBG;
+  bool irdebug = DBG;
 
   char *end = ins + len;
 
   xed_state_t dstate(XED_MACHINE_MODE_LONG_64, ADDR_WIDTH_64b, ADDR_WIDTH_64b);
 
+  PMSG(INTV,"L_BUILD: start = %p, end = %p",ins,end);
   current = newinterval(ins, RA_SP_RELATIVE, 0, NULL);
   if (ildebug){
+    PMSG(INTV,"L_BUILD:dump first");
     dump(current);
   }
 
@@ -488,20 +497,26 @@ interval_status l_build_intervals(char  *ins, unsigned int len)
     // fill in the machine mode (dstate)
     xedd.init(dstate);
 
+    PMSG(INTV,"L_BUILD: in loop, ins = %p",ins);
     xed_error = xed_decode(&xedd, reinterpret_cast<const UINT8*>(ins), 15);
     switch(xed_error) {
     case XED_ERROR_NONE:
       if (idebug){
+	PMSG(INTV,"trying to dump an instruction!!!");
 	cerr << (void *) ins << " (" << xedd.get_length() << " bytes) " 
 	     << xedd.get_iclass() << endl;
       }
+      PMSG(INTV,"%p yielded ok decode",ins);
       break;
     case XED_ERROR_BUFFER_TOO_SHORT:
+      PMSG(INTV,"Reached buffer too short error");
     case XED_ERROR_GENERAL_ERROR:
+      PMSG(INTV,"Reached General error");
     default:
       // Forge ahead, even though we know this is not a valid instruction
       // MWF + JMC
       //
+      PMSG(INTV,"taking default incr action");
       ins++;
       ecnt++;
       continue;

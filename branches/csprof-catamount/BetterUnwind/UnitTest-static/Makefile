@@ -1,6 +1,6 @@
 sources :=
 
-CC  := cc
+CC  := CC
 CXX := CC
 
 #top     := $(shell cd ../..;pwd)
@@ -12,10 +12,11 @@ includes := $(addprefix -I,$(src_locs))
 need 	:= nm_bound find_static pmsg
 main 	:= tfind
 tools   := $(top)/hpc-link
+tools   := ../../Scripts+Tools/hpc-link
 
 objs    := $(addsuffix .o,$(main) $(need))
 
-LDFLAGS := TARGET=catamount
+LDFLAGS := -target=catamount
 
 tfind: $(objs)
 	$(tools)/hpc-link.sh -v $(CC) $(LDFLAGS) $(objs) -o $@

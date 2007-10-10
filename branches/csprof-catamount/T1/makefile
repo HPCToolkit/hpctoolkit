@@ -1,140 +1,53 @@
-LIBUNWIND_HOME := /home/johnmc/pkgs
-#LIBUNWIND_HOME := /usr
+#CXED   := g++-4.1.2
+#CXED   := g++
+#CXED    := CC -target=catamount
+CXED    := g++
+INC_PMSG := -I..
+XEDINC := -I./Include
+XEDDCL := -DXED_SCALARS
+XEDLIB := -L../BetterUnwind/Lib -lxed
+#CC     := gcc
+CC      := cc
+CXX     := CC
+CFLAGS := -g -I..
+#CLINK    := mpicc  
+HPCL     := ../Scripts+Tools/hpc-link/hpc-link.sh
 
-LIB_UNWIND := -L$(LIBUNWIND_HOME)/lib -lunwind-x86_64 -lunwind -Wl,--rpath -Wl,$(LIBUNWIND_HOME)/lib -ldl
-INC_UNWIND := -I$(LIBUNWIND_HOME)/include
+monitor  := ../monitor-static/src/monitor.o
+CSPROF_DOT_O := ../libcsprof.o
 
-CC := gcc
-F90 := pgf90
-HPCF90 := PATH=Static:$$PATH;$(F90)
-HPCC   := PATH=Static:$$PATH;$(CC)
-F90FLAGS-g := -g
-F90FLAGS-o := -g -fast -gopt
-F90FLAGS   := $(F90FLAGS-g) -v
-FLDFLAGS   := -Wl,--eh-frame-hdr
-LDFLAGS    := -lm -lpthread -Wl,--eh-frame-hdr
-CFLAGS := -g $(INC_UNWIND) -I.. -I../monitor/src
-CLDFLAGS := $(LIB_UNWIND) -lm -lpthread
-HPCLDFLAGS := -Bstatic $(filter-out -ldl,-L.. -lcsprof $(LIB_UNWIND) -lbfd -liberty)
-F90MAIN    := /opt/apps/pgi/7.0.3/linux86-64/7.0-3/lib/f90main.o
-#F90LD      := -rpath /opt/apps/pgi/7.0.3/linux86-64/7.0-3/lib 
-F90LD      := -L/opt/apps/pgi/7.0.3/linux86-64/7.0-3/lib 
-F90LD2     := -lpgf90 -lpgf90_rpm1 -lpgf902 -lpgf90rtl -lpgftnrtl -lnspgc -lpgc -lrt
-MPICC      := mpicc
+LPATH = -m elf_x86_64 -static -L/opt/xt-mpt/1.5.52/mpich2-64/GP2/lib -L/opt/acml/3.6/gnu64/lib -L/opt/xt-libsci/1.5.52/gnu/cnos64/lib -L/opt/xt-mpt/1.5.52/sma/P2/lib -L/opt/xt-tools/iobuf/1.0.5/lib/cnos64 -L/opt/xt-lustre-ss/1.5.52/lib64 -L/opt/xt-catamount/1.5.52/lib/cnos64 -L/opt/xt-libc/1.5.52/amd64/lib -L/opt/xt-pe/1.5.52/lib/cnos64 -L/opt/xt-os/1.5.52/lib/cnos64 -L/opt/xt-service/1.5.52/lib/cnos64 -L/opt/gcc/4.2.0/cnos/lib/gcc-lib/x86_64-suse-linux/4.2.0/ -L/opt/gcc/4.2.0/cnos/lib/gcc/x86_64-suse-linux/4.2.0 -L/opt/gcc/4.2.0/cnos/lib/gcc/x86_64-suse-linux/4.2.0/../../../../lib64 -L/lib/../lib64 -L/usr/lib/../lib64 -L/apps/jaguar/lib -L/opt/gcc/4.2.0/cnos/lib/gcc/x86_64-suse-linux/4.2.0/../../..  -lsma -lmpichcxx -lmpich -lstdc++ -lgcc_eh -lportals -lcatamount # -lc -lgcc -lm --end /opt/xt-pe/1.5.52/lib/cnos64/crtend.o
 
-### Try out override thing
-###
-#SHELL   := PATH=Static:$$PATH;$(SHELL)
+test_targs := $(CSPROF_DOT_O) $(monitor)
 
-.PHONY: TARGET TARGET2 TMSG T C 
+t1: t1.o $(test_targs)
+	$(HPCL) -v $(CXX) $(filter-out $(test_targs),$^) -o $@
 
-all: tmpi prof.so
+.PHONY: $(CSPROF_DOT_O)
+$(CSPROF_DOT_O):
+	cd ..; $(MAKE)
 
-#tmpi: tmpi.c libcsp.so  # when making with csp thing
-tmpi: tmpi.c
-	$(MPICC) $(CFLAGS) $^ $(LDFLAGS) -o $@
+.PHONY: tt
+tt:
+	ls -l $(monitor)
+	cc --version
 
-prof.so: prof.c
-	$(CC) -fPIC $(CFLAGS) -shared -o $@ -nostartfiles $< -lpthread
+.PHONY: t-define
+t-define:
+	cc -o $@ t-define.c
 
-libcsp.so: csp.c
-	$(CC) $(CFLAGS) -fPIC $< -shared -nostartfiles -o $@
+.PHONY: clean components
 
-cf2: cf2.o f2m.o
-	$(CC) $^ -o $@  
+ot1: t1.o $(CSPROF_DOT_O) 
+	$(HPCL) -v CC -static -v $^ $(XEDLIB) -o $@
 
-f2: f2.o
-#	$(CC) $(F90MAIN) $(F90LD) $^ -o $@ $(F90LD2)
-	$(F90) -Wl,--eh-frame-hdr $^ -o $@
+#$(HPCL) -v g++ -static -v $^ $(XEDLIB) -o $@
 
-t4:  t4.c
-	$(CC) $(CFLAGS) -lm -o $@ $<
-
-f2.1 : f2.1.f90 hpc_main.o
-	$(HPCF90) $(F90FLAGS) $^ $(HPCLDFLAGS) -o $@
-
-f2.2 : f2.2.f90 hpc_init.o
-	$(F90) $(F90FLAGS) $^ $(HPCLDFLAGS) -o $@
-
-TMSG: mon_ovr.so tmsg
-
-mon_ovr.o: mon_ovr.c
-	$(CC) -fPIC $(CFLAGS) -c $<
-
-msg.o: msg.c
-	$(CC) -fPIC $(CFLAGS) -c $<
-
-mon_ovr.so: mon_ovr.o msg.o
-	$(CC) $(CFLAGS) -shared -nostartfiles -o $@ $^
-
-tmsg: tmsg.o mon_ovr.so
-	$(CC) $(CFLAGS) $^ $(LDFLAGS) -o $@
-
-tmsg.o: tmsg.c
-	$(CC) -I.. -I../src/monitor -c $< 
-
-#f2: f2.f90
-	$(F90) -v -Wl,--eh-frame-hdr $(F90FLAGS) $^ -o $@
-
-TARGET2: f1-g f1-o
-
-TARGET: f1 f0 lib-override.so
-
-f1-o: f1.f90
-	$(F90) $(F90FLAGS-o) -o $@ $^
-
-f1-g: f1.f90
-	$(F90) $(F90FLAGS-g) -o $@ $^
-
-f1: f1.f90
-	$(F90) $(F90FLAGS) $^ $(LDFLAGS) -o $@
-
-f0: f0.f90 f_unwind.o f_loadmod.o
-	$(F90) $(F90FLAGS) $^ $(LDFLAGS) -o $@
-
-lib-override.o: lib-override.c
-	$(CC) -fPIC $(CFLAGS) -c $<
-
-lib-override.so: lib-override.o f_unwind.o sighandlers.o timers.o
-	$(CC) $(LIB_UNWIND) -shared -nostartfiles -o $@ $^ 
-
-sighandlers.o : sighandlers.c
-	$(CC) -fPIC $(CFLAGS) -c $<
-
-timers.o : timers.c
-	$(CC) -fPIC $(CFLAGS) -c $<
-
-f_unwind.o: f_unwind.c
-	$(CC) -fPIC $(CFLAGS) -c $<
-
-tp: tp.c 
-tp0: tp0.c loadmod.o segv_handler.o
-loadmod.o: loadmod.c utils.h
-
-f_loadmod.o: f_loadmod.c
-g:  g.c main.c
-	$(CC) $(CFLAGS) $^ $(LDFLAGS) -o $@
-
-
-tp0.E: tp0.c
-	$(CC) -E $(CFLAGS) $^ > $@
-
-%.o : %.f90
-	$(F90) $(F90FLAGS) -c $<
-
-%: %.f90
-	$(F90) $(F90FLAGS) -o $@ $<
-
-t1: t1.c
-t2: t2.c
-t3: t3.c
 
 clean:
-	rm -rf *.o t[123] f[0-9] *.so f1-[go] f2.1 tmpi tmpi.o prof.so *.nm.[co]
+	rm -rf *.o t1
 
-T:
-	@echo which ld = `which ld`
+%.o : %.c
+	$(CC) -I.. -c $< -o $@
 
-C:
-	rm -rf tmpi tmpi.o prof.so
-
+vpath %.c ..
