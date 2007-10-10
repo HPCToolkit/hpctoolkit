@@ -57,6 +57,7 @@ LUSHI_DECL(int, LUSHI_fini, ());
 
 LUSHI_DECL(char*, LUSHI_strerror, (int code));
 
+
 // --------------------------------------------------------------------------
 // Maintaining Responsibility for Code/Frame-space
 // --------------------------------------------------------------------------

@@ -30,6 +30,8 @@
 #include "lush.i"
 #include "lushi.h"
 
+#include <state.h>
+
 //*************************** Forward Declarations **************************
 
 
@@ -103,8 +105,13 @@ lush_cursor_get_lcursor(lush_cursor_t* cursor);
 // LUSH Unwinding
 // **************************************************************************
 
+int lush_backtrace(csprof_state_t* state, 
+		   int metric_id, size_t sample_count, 
+		   mcontext_t* context);
+
 // Initialize the unwind.  Set a flag indicating initialization.
-void lush_init_unw(lush_cursor_t* cursor, mcontext_t *context);
+void lush_init_unw(lush_cursor_t* cursor, 
+		   lush_agent_pool_t* apool, mcontext_t *context);
 
 
 // Given a lush_cursor, peek the next bichord.

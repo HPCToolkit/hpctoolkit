@@ -150,6 +150,7 @@ struct lush_cursor {
   unsigned flags;      // lush_cursor_flags
   lush_assoc_t assoc;  // physical-logial association for this bichord
   lush_agentid_t aid;  // agent id (if any) owning this cursor
+  lush_agent_pool_t* apool; // agent pool
 
   // physical cursor
   unw_cursor_t pcursor;

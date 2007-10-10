@@ -162,20 +162,18 @@ handle_any_dlerror()
 // backtrace
 //***************************************************************************
 
-void
-lush_backtrace(csprof_state_t *state, 
+int
+lush_backtrace(csprof_state_t* state, 
 	       int metric_id, size_t sample_count, 
 	       mcontext_t* context)
 {
-  //lush_agent_pool_t* pool = state->lush_agents;
-
 #if 0 // FIXME
   unw_context_t uc;
   unw_getcontext(&uc);
 #endif
 
   lush_cursor_t cursor;
-  lush_init_unw(&cursor, context);
+  lush_init_unw(&cursor, state->lush_agents, context);
 
   while (lush_peek_bichord(&cursor) != LUSH_STEP_DONE) {
 
@@ -230,6 +228,8 @@ lush_backtrace(csprof_state_t *state,
     pool->LUSHI_get_concurrency[aid]();
   }
 #endif
+
+  return 0;
 }
 
 
@@ -238,7 +238,8 @@ lush_backtrace(csprof_state_t *state,
 // **************************************************************************
 
 void 
-lush_init_unw(lush_cursor_t* cursor, mcontext_t *context)
+lush_init_unw(lush_cursor_t* cursor, 
+	      lush_agent_pool_t* apool, mcontext_t* context)
 {
 #ifndef PRIM_UNWIND
 #  error "FIXME: we only know about PRIMITIVE UNWINDING"
@@ -246,17 +247,15 @@ lush_init_unw(lush_cursor_t* cursor, mcontext_t *context)
   
   memset(cursor, 0, sizeof(*cursor));
 
-  unw_init_f_mcontext(context, &cursor->pcursor);
+  cursor->apool = apool;
   lush_cursor_set_flag(cursor, LUSH_CURSOR_FLAGS_INIT);
+  unw_init_f_mcontext(context, &cursor->pcursor);
 }
 
 
 lush_step_t
 lush_peek_bichord(lush_cursor_t* cursor)
 {
-  csprof_state_t* state = csprof_get_state(); // FIXME: abstract?
-  lush_agent_pool_t* pool = state->lush_agents;
-
   lush_step_t ty = LUSH_STEP_NULL;
 
   // 1. Determine next physical chord (starting point of next bichord)
@@ -270,6 +269,7 @@ lush_peek_bichord(lush_cursor_t* cursor)
   unw_word_t ip = lush_cursor_get_ip(cursor);
   cursor->aid = lush_agentid_NULL;
 
+  lush_agent_pool_t* pool = cursor->apool;
   lush_agentid_t aid = 1;
   for (aid = 1; aid <= 1; ++aid) { // FIXME: first in list, etc.
     if (pool->LUSHI_ismycode[aid](ip)) {
@@ -349,11 +349,9 @@ lush_step_lnote(lush_cursor_t* cursor)
 lush_step_t
 lush_forcestep_pnote(lush_cursor_t* cursor)
 {
-  csprof_state_t* state = csprof_get_state(); // FIXME: abstract?
-  lush_agent_pool_t* pool = state->lush_agents;
-
   lush_step_t ty = LUSH_STEP_CONT;
 
+  lush_agent_pool_t* pool = cursor->apool;
   lush_agentid_t aid = cursor->aid;
   if (aid != lush_agentid_NULL) {
     ty = pool->LUSHI_step_pnote[aid](cursor);
@@ -378,7 +376,27 @@ lush_forcestep_pnote(lush_cursor_t* cursor)
 lush_step_t
 lush_forcestep_lnote(lush_cursor_t* cursor)
 {
-  return LUSH_STEP_ERROR; // FIXME
+  lush_step_t ty = LUSH_STEP_CONT;
+
+  lush_agent_pool_t* pool = cursor->apool;
+  lush_agentid_t aid = cursor->aid;
+  if (aid != lush_agentid_NULL) {
+    ty = pool->LUSHI_step_pnote[aid](cursor);
+  }
+  else {
+    int t = unw_step(&cursor->pcursor);
+    if (t > 0) {
+      // LUSH_STEP_CONT
+    }
+    else if (t == 0) {
+      ty = LUSH_STEP_DONE;
+    } 
+    else if (t < 0) {
+      ty = LUSH_STEP_ERROR;
+    }
+  }
+
+  return ty;
 }
 
 
