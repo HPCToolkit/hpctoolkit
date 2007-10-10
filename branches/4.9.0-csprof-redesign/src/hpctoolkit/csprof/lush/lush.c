@@ -22,11 +22,15 @@
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
+
 #include <dlfcn.h>
 
 //*************************** User Include Files ****************************
 
 #include "lush.h"
+
+#include <general.h>
+#include <state.h>
 
 //*************************** Forward Declarations **************************
 
@@ -158,51 +162,59 @@ handle_any_dlerror()
 // backtrace
 //***************************************************************************
 
-#if 0
 void
-lush_backtrace() 
+lush_backtrace(csprof_state_t *state, 
+	       int metric_id, size_t sample_count, 
+	       mcontext_t* context)
 {
-  unw_context_t uc;
-  lush_cursor_t cursor;
+  //lush_agent_pool_t* pool = state->lush_agents;
 
+#if 0 // FIXME
+  unw_context_t uc;
   unw_getcontext(&uc);
-  lush_init_unw(&cursor, &uc); // sets an init flag
+#endif
+
+  lush_cursor_t cursor;
+  lush_init_unw(&cursor, context);
 
   while (lush_peek_bichord(&cursor) != LUSH_STEP_DONE) {
 
-    lush_assoc_t as = lush_cursor_get_assoc(cursor);
+    lush_assoc_t as = lush_cursor_get_assoc(&cursor);
     switch (as) {
       
-      case LUSH_ASSOC_1_to_1: {
-	lush_step_pnote(cursor);
-	lush_step_lnote(cursor);
-      }
+      case LUSH_ASSOC_1_to_1:
+	lush_step_pnote(&cursor);
+	lush_step_lnote(&cursor);
+	break;
 
-	// many-to-1
+      // many-to-1
       case LUSH_ASSOC_1_n_to_0:
-      case LUSH_ASSOC_2_n_to_1: {
-	while (lush_step_pnote(cursor) != LUSH_STEP_DONE) {
+      case LUSH_ASSOC_2_n_to_1:
+	while (lush_step_pnote(&cursor) != LUSH_STEP_DONE) {
 	  // ... get IP
 	}
 	if (as == LUSH_ASSOC_2_n_to_1) {
-	  lush_step_lnote(cursor);
+	  lush_step_lnote(&cursor);
 	}
-      }
+	break;
 	
-	// 1-to-many
+      // 1-to-many
       case LUSH_ASSOC_1_to_2_n:
-      case LUSH_ASSOC_0_to_2_n: {
-	if (as = LUSH_ASSOC_1_to_2_n) {
-	  lush_step_pnote(cursor);
+      case LUSH_ASSOC_0_to_2_n:
+	if (as == LUSH_ASSOC_1_to_2_n) {
+	  lush_step_pnote(&cursor);
 	  // ... get IP
 	}
 
-	while (lush_step_lnote(cursor) != LUSH_STEP_DONE) {
-	  lush_agentid_t aid = lush_cursor_get_agent(cursor);
-	  lush_lip_t* lip = lush_cursor_get_lip(cursor);
+	while (lush_step_lnote(&cursor) != LUSH_STEP_DONE) {
+	  //lush_agentid_t aid = lush_cursor_get_agent(&cursor);
+	  //lush_lip_t* lip = lush_cursor_get_lip(&cursor);
 	  // ...
 	}
-      }
+	break;
+	
+      default:
+        ERRMSG("default case reached (%d) ", __FILE__, __LINE__, as);
 
     }
 
@@ -212,21 +224,39 @@ lush_backtrace()
   // register active marker [FIXME]
 
   // look at concurrency for agent at top of stack
-  if (... LUSHI_has_concurrency[agent]() ...) {
-    LUSHI_get_concurrency[agent]();
+#if 0 // FIXME
+  if (LUSHI_has_concurrency[agent]() ...) {
+    lush_agentid_t aid = 1;
+    pool->LUSHI_get_concurrency[aid]();
   }
-}
 #endif
+}
 
 
 // **************************************************************************
 // Unwind support
 // **************************************************************************
 
-#if 0
-lush_step_t 
+void 
+lush_init_unw(lush_cursor_t* cursor, mcontext_t *context)
+{
+#ifndef PRIM_UNWIND
+#  error "FIXME: we only know about PRIMITIVE UNWINDING"
+#endif
+  
+  memset(cursor, 0, sizeof(*cursor));
+
+  unw_init_f_mcontext(context, &cursor->pcursor);
+  lush_cursor_set_flag(cursor, LUSH_CURSOR_FLAGS_INIT);
+}
+
+
+lush_step_t
 lush_peek_bichord(lush_cursor_t* cursor)
 {
+  csprof_state_t* state = csprof_get_state(); // FIXME: abstract?
+  lush_agent_pool_t* pool = state->lush_agents;
+
   lush_step_t ty = LUSH_STEP_NULL;
 
   // 1. Determine next physical chord (starting point of next bichord)
@@ -237,21 +267,25 @@ lush_peek_bichord(lush_cursor_t* cursor)
   }
 
   // 2. Compute bichord and logical chord meta-info
+  unw_word_t ip = lush_cursor_get_ip(cursor);
+  cursor->aid = lush_agentid_NULL;
 
-  // zero cursor's logical agent pointer;
-  foreach (agent, starting with first in list) {
-    if (LUSHI_ismycode[agent](the-ip)) {
-      LUSHI_peek_bichord[agent](cursor);
-      // set cursor's logical agent pointer;
-      // move agent to beginning of list;
+  lush_agentid_t aid = 1;
+  for (aid = 1; aid <= 1; ++aid) { // FIXME: first in list, etc.
+    if (pool->LUSHI_ismycode[aid](ip)) {
+      pool->LUSHI_peek_bichord[aid](cursor);
+      cursor->aid = aid;
+      // FIXME: move agent to beginning of list;
       break;
     }
   }
   
-  if (cursor-has-no-agent) { 
-    // handle locally
-    set logical flags;
+  if (cursor->aid == lush_agentid_NULL) {
+    // identity function: the physical cursor is the logical cursor
+    cursor->assoc = LUSH_ASSOC_1_to_1;
   }
+
+  return ty;
 }
 
 
@@ -260,19 +294,22 @@ lush_step_pchord(lush_cursor_t* cursor)
 {
   lush_step_t ty = LUSH_STEP_NULL;
 
-  if (cursor is fully initialized) {
-    if (current pchord is outstanding) {
-      complete it;
+  if (!lush_cursor_is_flag(cursor, LUSH_CURSOR_FLAGS_INIT)) {
+    // complete the current pchord, if we haven't examined all pnotes
+    while (!lush_cursor_is_flag(cursor, LUSH_CURSOR_FLAGS_DONEP)) {
+      lush_forcestep_pnote(cursor);
     }
-
+    
     ty = lush_forcestep_pnote(cursor);
   }
   else {
-    physical cursor is the current mcontext;
-    set cursor_is_initialized bit;
+    // the first pchord begins at the current pnote (pcursor)
+    lush_cursor_unset_flag(cursor, LUSH_CURSOR_FLAGS_INIT);
     ty = LUSH_STEP_CONT;
   }
 
+  lush_cursor_set_flag(cursor, LUSH_CURSOR_FLAGS_INITALL);
+  lush_cursor_unset_flag(cursor, LUSH_CURSOR_FLAGS_DONEALL);
   return ty;
 }
 
@@ -282,9 +319,11 @@ lush_step_pnote(lush_cursor_t* cursor)
 {
   lush_step_t ty = LUSH_STEP_CONT;
 
-  if (!bichord_pnote_flag_init) {
+  if (!lush_cursor_is_flag(cursor, LUSH_CURSOR_FLAGS_DONEP)) {
     ty = lush_forcestep_pnote(cursor);
-    set bichord_pnote_flag_init;
+    if (ty == LUSH_STEP_DONE) {
+      lush_cursor_set_flag(cursor, LUSH_CURSOR_FLAGS_DONEP);
+    }
   }
   
   return ty;
@@ -296,9 +335,11 @@ lush_step_lnote(lush_cursor_t* cursor)
 {
   lush_step_t ty = LUSH_STEP_CONT;
 
-  if (!bichord_lnote_flag_init) {
+  if (!lush_cursor_is_flag(cursor, LUSH_CURSOR_FLAGS_DONEL)) {
     ty = lush_forcestep_lnote(cursor);
-    set bichord_lnote_flag_init;
+    if (ty == LUSH_STEP_DONE) {
+      lush_cursor_set_flag(cursor, LUSH_CURSOR_FLAGS_DONEL);
+    }
   }
 
   return ty;
@@ -308,17 +349,77 @@ lush_step_lnote(lush_cursor_t* cursor)
 lush_step_t
 lush_forcestep_pnote(lush_cursor_t* cursor)
 {
+  csprof_state_t* state = csprof_get_state(); // FIXME: abstract?
+  lush_agent_pool_t* pool = state->lush_agents;
+
   lush_step_t ty = LUSH_STEP_CONT;
-  
-  agent = get logical agent from cursor;
-  if (agent) {
-    ty = LUSHI_substep_phys[agent](cursor);
+
+  lush_agentid_t aid = cursor->aid;
+  if (aid != lush_agentid_NULL) {
+    ty = pool->LUSHI_step_pnote[aid](cursor);
   }
   else {
-    t = unw_step(cursor->phys_cursor);
-    ty = convert_to_ty(t);
+    int t = unw_step(&cursor->pcursor);
+    if (t > 0) {
+      // LUSH_STEP_CONT
+    }
+    else if (t == 0) {
+      ty = LUSH_STEP_DONE;
+    } 
+    else if (t < 0) {
+      ty = LUSH_STEP_ERROR;
+    }
   }
 
   return ty;
 }
-#endif
+
+
+lush_step_t
+lush_forcestep_lnote(lush_cursor_t* cursor)
+{
+  return LUSH_STEP_ERROR; // FIXME
+}
+
+
+//***************************************************************************
+// LUSH Unwind Types
+//***************************************************************************
+
+bool 
+lush_cursor_is_flag(lush_cursor_t* cursor, lush_cursor_flags_t f)
+{ 
+  return (cursor->flags & f); 
+}
+
+
+void 
+lush_cursor_set_flag(lush_cursor_t* cursor, lush_cursor_flags_t f)
+{
+  cursor->flags = cursor->flags | f;
+}
+
+
+void 
+lush_cursor_unset_flag(lush_cursor_t* cursor, lush_cursor_flags_t f)
+{
+  cursor->flags = cursor->flags & ~f;
+}
+
+
+lush_assoc_t 
+lush_cursor_get_assoc(lush_cursor_t* cursor)
+{
+  return cursor->assoc;
+}
+
+
+unw_word_t
+lush_cursor_get_ip(lush_cursor_t* cursor)
+{
+  unw_word_t ip = 0;
+  if (unw_get_reg(&(cursor->pcursor), UNW_REG_IP, &ip) < 0) {
+    // FIXME
+  }
+  return ip;
+}

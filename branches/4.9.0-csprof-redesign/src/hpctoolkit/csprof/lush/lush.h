@@ -23,6 +23,7 @@
 //************************* System Include Files ****************************
 
 #include <stdlib.h>
+#include <ucontext.h>
 
 //*************************** User Include Files ****************************
 
@@ -73,8 +74,20 @@ int lush_agent_pool__fini(lush_agent_pool_t* x);
 // LUSH Unwind Types
 //***************************************************************************
 
+inline bool 
+lush_cursor_is_flag(lush_cursor_t* cursor, lush_cursor_flags_t f);
+
+inline void 
+lush_cursor_set_flag(lush_cursor_t* cursor, lush_cursor_flags_t f);
+
+inline void 
+lush_cursor_unset_flag(lush_cursor_t* cursor, lush_cursor_flags_t f);
+
 inline lush_assoc_t 
 lush_cursor_get_assoc(lush_cursor_t* cursor);
+
+inline unw_word_t
+lush_cursor_get_ip(lush_cursor_t* cursor);
 
 inline lush_lip_t 
 lush_cursor_get_lip(lush_cursor_t* cursor);
@@ -91,7 +104,7 @@ lush_cursor_get_lcursor(lush_cursor_t* cursor);
 // **************************************************************************
 
 // Initialize the unwind.  Set a flag indicating initialization.
-void lush_init_unw(lush_cursor_t* cursor, void* context);;
+void lush_init_unw(lush_cursor_t* cursor, mcontext_t *context);
 
 
 // Given a lush_cursor, peek the next bichord.
@@ -109,8 +122,11 @@ lush_step_t lush_step_lnote(lush_cursor_t* cursor);
 
 
 // Given a lush_cursor, forcefully advance to the next pnote (which
-// may also be the next pchord)
+// may also be the next pchord).  On successful completion, returns
+// LUSH_STEP_CONT; if the previous pnote was the last frame in the
+// pchord, return LUSH_STEP_DONE; otherwise returns LUSH_STEP_ERROR.
 lush_step_t lush_forcestep_pnote(lush_cursor_t* cursor);
+lush_step_t lush_forcestep_lnote(lush_cursor_t* cursor);
 
 // **************************************************************************
 

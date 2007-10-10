@@ -30,7 +30,7 @@
 #ifndef PRIM_UNWIND
 # include <libunwind.h>
 #else
-# include "prim_unw.h"
+# include <prim_unw.h>
 #endif
 
 //*************************** Forward Declarations **************************
@@ -113,7 +113,7 @@ enum lush_step {
 
 
 // ---------------------------------------------------------
-// LIP: An opaque logical id
+// LUSH LIP: An opaque logical id
 // ---------------------------------------------------------
 
 typedef struct lush_lip lush_lip_t;
@@ -125,28 +125,39 @@ struct lush_lip {
 
 
 // ---------------------------------------------------------
-// 
+// LUSH cursor
 // ---------------------------------------------------------
+
+typedef enum lush_cursor_flags lush_cursor_flags_t;
+
+enum lush_cursor_flags {
+  LUSH_CURSOR_FLAGS_NONE = 0x00000000,
+
+  LUSH_CURSOR_FLAGS_INIT    = 0x00000001, // first use of the bichord
+  LUSH_CURSOR_FLAGS_INITP   = 0x00000002, // first use of the pchord
+  LUSH_CURSOR_FLAGS_INITL   = 0x00000004, // first use of the lchord
+  LUSH_CURSOR_FLAGS_INITALL = 0x00000007, // all together now!
+
+  LUSH_CURSOR_FLAGS_DONEP   = 0x00000010, // pchord notes are completed
+  LUSH_CURSOR_FLAGS_DONEL   = 0x00000020, // lchord notes are completed
+  LUSH_CURSOR_FLAGS_DONEALL = 0x00000030, // all together now!
+};
 
 typedef struct lush_cursor lush_cursor_t;
 
 struct lush_cursor {
-  // meta info:
-  //   is cursor just initialized
-  //   bichord assoc type
-  //   is bichord completed
-  //   id for agent that provided logical info (or NULL)
-  unsigned flags;
-  lush_agentid_t aid;
-  lush_assoc_t assoc;
+  // meta info
+  unsigned flags;      // lush_cursor_flags
+  lush_assoc_t assoc;  // physical-logial association for this bichord
+  lush_agentid_t aid;  // agent id (if any) owning this cursor
 
-  // physical context
+  // physical cursor
   unw_cursor_t pcursor;
 
-  // logical context (opaque)
+  // logical cursor
+  void* lcursor;
   lush_lip_t lip;
-  // logical IP (opaque)
-  // active marker?
+  // active marker FIXME
 };
 
 
