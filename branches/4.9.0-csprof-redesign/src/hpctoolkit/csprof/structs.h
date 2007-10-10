@@ -51,7 +51,7 @@
 #include "list.h"
 #include "epoch.h"
 
-#include "lush/lush.h"
+#include <lush/lush.i>
 
 #define CSPROF_PATH_SZ (PATH_MAX+1) /* path size */
 

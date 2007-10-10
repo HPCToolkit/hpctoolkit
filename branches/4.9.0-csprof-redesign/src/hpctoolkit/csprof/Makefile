@@ -4,7 +4,7 @@
 # files should not be the default target
 
 PLATFORM := x86-64
-CC := gcc
+CC := gcc #-std=gnu99
 #CHGROOT := 1 # undef for std root version
 
 #STATIC_ONLY := 1
@@ -51,7 +51,8 @@ MODULE_DIRS := \
         sampling/types/callstack \
         BetterUnwind             \
         sampling/sources/itimer  \
-	lush
+	lush                     \
+	lush-agents
 
 LIB_CSFILE := libcsfile.a
 INC_CSFILE := -I./hpcfile
@@ -138,7 +139,15 @@ OBJS += bad_unwind.o
 OBJS += find.o xed_if.o
 OBJS += last_func.o
 
+
+# ----------------------------------------------------------
+# LUSH
+# ----------------------------------------------------------
 OBJS += lush.o lushi-cb.o
+ifdef DO_LUSH
+  OBJS += cilk.o
+endif
+
 
 #LIBS := hpcfile/$(LIB_CSFILE) $(LIB_THREAD) $(LIB_UNWIND) $(LIB_PFM)
 

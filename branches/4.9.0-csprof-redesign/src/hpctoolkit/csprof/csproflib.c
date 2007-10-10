@@ -92,7 +92,10 @@
 #include "metrics.h"
 #include "dump_backtraces.h"
 
+#include <lush/lush.h>
+
 #include "hpcfile_csproflib.h"
+
 
 /* forward declarations and definitions of all kinds */
 
