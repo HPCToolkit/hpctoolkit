@@ -228,7 +228,7 @@ static inline void MSG(int level, char *format, ...)
 }
 #endif
 
-static inline void EMSG(char *format, ...){
+static inline void EMSG(const char *format, ...){
   va_list args;
   char fstr[256];
   char buf[512];

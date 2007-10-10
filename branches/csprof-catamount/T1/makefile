@@ -20,8 +20,13 @@ LPATH = -m elf_x86_64 -static -L/opt/xt-mpt/1.5.52/mpich2-64/GP2/lib -L/opt/acml
 
 test_targs := $(CSPROF_DOT_O) $(monitor)
 
+.PHONY: f2
+f2: f2.f90
+	$(HPCL) -v ftn -v $< -o $@
+
+.PHONY: t1
 t1: t1.o $(test_targs)
-	$(HPCL) -v $(CXX) $(filter-out $(test_targs),$^) -o $@
+	$(HPCL) -v $(CC) -v $(filter-out $(test_targs),$^) -o $@
 
 .PHONY: $(CSPROF_DOT_O)
 $(CSPROF_DOT_O):

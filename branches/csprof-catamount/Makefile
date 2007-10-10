@@ -51,7 +51,7 @@ all: $(CSPROF_DOT_O)
 # MWF: working on x86-64, make it (and gcc) the default 30jan07
 #PLATFORM ?= ia64
 
-include mkinclude.$(PLATFORM)
+#include mkinclude.$(PLATFORM)
 
 module_dirs := utilities                \
                memory                   \
@@ -59,6 +59,7 @@ module_dirs := utilities                \
                sampling/types/callstack \
                BetterUnwind             \
                hpcfile                  \
+               os/catamount             \
                sampling/sources/$(DRIVER_DIR)
 
 #LIB_CSFILE := libcsfile.a
@@ -66,8 +67,11 @@ module_dirs := utilities                \
 
 ifdef STATIC_ONLY
   INC_MON := -I./monitor-static/src
+  find_v  := find_static
+  gethost := gethostid.o
 else
   INC_MON := -I./monitor/src
+  find_v  := find
 endif
 # INC_BETTER_UNW := -IBetterUnwind
 
@@ -159,7 +163,9 @@ OBJS += nm_bound.o
 OBJS += bad_unwind.o
 OBJS += $(hpcfile_objs)
 #OBJS += $(UNWIND)/find.o $(UNWIND)/xed_if.o
-OBJS += find.o xed_if.o
+#OBJS += find.o xed_if.o
+OBJS += $(find_v).o xed_if.o
+OBJS += $(gethost)
 OBJS += last_func.o
 
 #LIBS := hpcfile/$(LIB_CSFILE) $(LIB_THREAD) $(LIB_UNWIND) $(LIB_PFM)
@@ -169,6 +175,8 @@ LIBS := $(LIB_THREAD) $(LIB_PFM)
 
 XED_LIBS := -L$(UNWIND)/Lib -lxed
 #XED_CPP_LIBS :=  -L/opt/apps/gcc/gcc-4.1.0/bin/../lib/gcc/x86_64-unknown-linux-gnu/4.1.0 -L/opt/apps/gcc/gcc-4.1.0/bin/../lib/gcc -L/opt/apps/gcc/gcc-4.1.0/bin/../lib/gcc/x86_64-unknown-linux-gnu/4.1.0/../../../../lib64 -L/lib/../lib64 -L/usr/lib/../lib64 -lstdc++ -ldl
+
+XED_CPP_LIBS :=  -L/opt/xt-mpt/1.5.52/mpich2-64/GP2/lib -L/opt/acml/3.6/gnu64/lib -L/opt/xt-libsci/1.5.52/gnu/cnos64/lib -L/opt/xt-mpt/1.5.52/sma/P2/lib -L/opt/xt-tools/papi/3.5.0C.1/xt-cat/lib -L/opt/xt-tools/iobuf/1.0.5/lib/cnos64 -L/opt/xt-lustre-ss/1.5.52/lib64 -L/opt/xt-catamount/1.5.52/lib/cnos64 -L/opt/xt-libc/1.5.52/amd64/lib -L/opt/xt-pe/1.5.52/lib/cnos64 -L/opt/xt-os/1.5.52/lib/cnos64 -L/opt/xt-service/1.5.52/lib/cnos64 -L/opt/gcc/4.2.0/cnos/lib/gcc-lib/x86_64-suse-linux/4.2.0/ -L/opt/gcc/4.2.0/cnos/lib/gcc/x86_64-suse-linux/4.2.0 -L/opt/gcc/4.2.0/cnos/lib/gcc/x86_64-suse-linux/4.2.0/../../../../lib64 -L/lib/../lib64 -L/usr/lib/../lib64 -L/spin/apps/Python/2.5/rizzo/python/2.5.1/cnl_gcc-3.3.3/lib -L/apps/jaguar/lib -L/opt/gcc/4.2.0/cnos/lib/gcc/x86_64-suse-linux/4.2.0/../../.. -lstdc++ -lgcc_eh
 
 LIBS += $(XED_LIBS) $(XED_CPP_LIBS)
 
@@ -189,8 +197,10 @@ TT:
 	# INCS = $(INCS)
 	# LIBS = $(LIBS)
 	# CXX  = $(CXX)
+	# CC   = $(CC)
 	# INC_CSFILE = $(INC_CSFILE)
 	$(CC) --version
+	# gethostid := |$(gethostid)|
 
 $(LIB_CSFILE):
 	@cd hpcfile; $(MAKE) -I ..

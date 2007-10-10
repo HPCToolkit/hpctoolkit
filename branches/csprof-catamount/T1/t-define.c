@@ -1,5 +1,10 @@
 #include <stdio.h>
 
+#if defined(__LIBCATAMOUNT__)
+#undef __CRAYXT_CATAMOUNT_TARGET
+#define __CRAYXT_CATAMOUNT_TARGET
+#endif
+
 #ifdef __CRAYXT_CATAMOUNT_TARGET
 char msg[] = "CRAYXT_CAT defined";
 #else

@@ -8,9 +8,6 @@
 
 static int debug = 0;
 
-#define USE_FDE 1
-
-#include <unwind-dw2-fde.h>
 #include "pmsg.h"
 
 extern "C" {
@@ -19,6 +16,10 @@ extern "C" {
   void test_find_enclosing_function_bounds(char *addr);
 }
 
+#ifndef STATIC_ONLY
+
+#define USE_FDE 1
+#include <unwind-dw2-fde.h>
 
 static char *find_dwarf_end_addr(char *addr, struct dwarf_fde const *start_fde,
 				 struct dwarf_eh_bases *start_bases)
@@ -54,7 +55,6 @@ static char *find_dwarf_end_addr(char *addr, struct dwarf_fde const *start_fde,
 }
 
 
-#ifndef STATIC_ONLY
 static char *find_dl_end_addr(char *addr, Dl_info *start)
 {
 	Dl_info end;
@@ -92,7 +92,9 @@ int find_enclosing_function_bounds(char *addr, char **start, char **end)
 
 	int failure = 0;
 	struct dwarf_eh_bases base;
+#ifndef STATIC_ONLY
 	struct dwarf_fde const *fde = _Unwind_Find_FDE(addr, &base);
+#endif
         int nmb = nm_bound((unsigned long)addr,(unsigned long *)start,(unsigned long *)end);
 
         if (nmb){

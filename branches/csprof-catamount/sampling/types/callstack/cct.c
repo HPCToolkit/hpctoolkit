@@ -598,7 +598,7 @@ csprof_cct__get_data_CB(csprof_cct_t* x, csprof_cct_node_t* node,
 #ifdef CSPROF_TRAMPOLINE_BACKEND
     d->sp = (hpcfile_uint_t)node->sp;
 #else
-    d->sp = NULL;
+    d->sp = (hpcfile_uint_t)NULL;
 #endif
     memcpy(d->metrics, node->metrics, d->num_metrics * sizeof(size_t));
 }

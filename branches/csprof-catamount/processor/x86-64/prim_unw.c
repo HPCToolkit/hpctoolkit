@@ -17,6 +17,10 @@
 
 #include "splay.h"
 
+#if defined(__LIBCATAMOUNT__)
+#undef __CRAYXT_CATAMOUNT_TARGET
+#define __CRAYXT_CATAMOUNT_TARGET
+#endif
 
 #define NO 1
 #define BUILD_INT 1

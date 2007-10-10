@@ -7,9 +7,9 @@
 extern "C" {
 #endif
 
-void PMSG(int mask, char *str, ...);
-void set_mask_f_numstr(char *s);
-void EMSG(char *str, ...);
+void PMSG(int mask, const char *str, ...);
+void set_mask_f_numstr(const char *s);
+void EMSG(const char *str, ...);
 
 #ifdef __cplusplus
 }

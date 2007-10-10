@@ -23,7 +23,7 @@ extern pthread_mutex_t mylock;
 
 static int __msg_mask = ALL;
 
-void set_mask_f_numstr(char *s){
+void set_mask_f_numstr(const char *s){
   int lmask;
 
   if (sscanf(s,"%d",&lmask)){
@@ -31,7 +31,7 @@ void set_mask_f_numstr(char *s){
   }
 }
 
-void EMSG(char *format,...){
+void EMSG(const char *format,...){
   va_list args;
   char fstr[256];
   char buf[512];
@@ -50,7 +50,7 @@ void EMSG(char *format,...){
   va_end(args);
 }
 
-void PMSG(int mask, char *format, ...)
+void PMSG(int mask, const char *format, ...)
 #if defined(CSPROF_PERF)
 {
 }

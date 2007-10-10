@@ -1,6 +1,7 @@
 #include <papi.h>
 #include <setjmp.h>
 #include <unistd.h>
+#include <ucontext.h>
 
 #include "bad_unwind.h"
 #include "driver.h"
