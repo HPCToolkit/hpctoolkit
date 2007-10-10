@@ -1,0 +1,14 @@
+1) monitor has no way to catch pthreads that
+have not called pthread_exit() or returned from
+the function passed to directly to pthread_create(). 
+
+2) pthread_cancel() doesn't appear to be handled either.
+
+3) In order to catch threads that call pthread_exit, we have to link 
+libmonitor with pthreads due to the cleanup handlers. I will try
+to find a workaround.
+
+If anyone has any idea how to handle the cases (badpthreads*) in
+the tests directory, let me know at ospat-devel@cs.utk.edu.
+
+-Philip Mucci (Dec 2006)

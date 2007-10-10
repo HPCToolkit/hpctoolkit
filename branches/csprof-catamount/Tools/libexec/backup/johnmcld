@@ -1,0 +1,45 @@
+#!/bin/sh
+
+############################################################################################
+#
+# ld/collect2:   a script for adding performance instrumentation into a statically-linked 
+#                executable during linking 
+#
+#           modification history 
+#           --------------------
+#           2007 08 04 - John Mellor-Crummey - created
+#
+############################################################################################
+
+#----------------------------------------------------------------------------------
+# turn on debugging by setting DEBUG to non-empty value
+#----------------------------------------------------------------------------------
+DEBUG=1
+if test x$1 = x-v; then
+  DEBUG=1
+  shift
+fi
+
+#----------------------------------------------------------------------------------
+# grab the command being used to link the executable
+#----------------------------------------------------------------------------------
+LINKCMD=$0
+LINKCMDBASE=`basename $LINKCMD`
+REALLINKCMD=$LINKCMDBASE
+
+#----------------------------------------------------------------------------------
+# debugging support
+#----------------------------------------------------------------------------------
+if test x$DEBUG != x; then
+  echo executing link command \"$REALLINKCMD $*\"
+fi
+
+#----------------------------------------------------------------------------------
+# trim off initial path component to enable real link 
+#----------------------------------------------------------------------------------
+export PATH=${PATH#[!:]*:}
+
+#----------------------------------------------------------------------------------
+# execute the command using our linker, which will add hpctoolkit's instrumentation
+#----------------------------------------------------------------------------------
+exec $REALLINKCMD $*

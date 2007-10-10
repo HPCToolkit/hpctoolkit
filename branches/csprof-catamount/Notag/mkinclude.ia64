@@ -1,0 +1,45 @@
+# hey, emacs, this is a -*- makefile -*-
+#
+# csprof on IA-64/Linux running with threads
+
+ARCH := ia64
+
+LIB_PFM :=
+INC_PFM :=
+
+LIB_UNWIND := -L$(LIBUNWIND_HOME)/lib -lunwind-ia64 -lunwind -Wl,--rpath -Wl,$(LIBUNWIND_HOME)/lib -ldl
+INC_UNWIND := -I$(LIBUNWIND_HOME)/include
+
+DEFINES := -D_GNU_SOURCE -D__USE_GNU=1
+# uncomment this to disable some debugging and sanity-checking potential
+#DEFINES += -DCSPROF_PERF=1
+
+ifeq "$(DRIVER)" "armciprof"
+ARMCI_HOME = /users/ccristi/pkgs/armci
+INC_UNWIND += -I$(ARMCI_HOME)/src
+# don't need to link against the library
+DEFINES += -DCSPROF_ARMCI_PROFILING=1
+endif
+
+# CSPROF_TRAMPOLINE := -DCSPROF_TRAMPOLINE_BACKEND=1
+
+# this must be gcc, since we use inline assembly (patches to remove
+# this limitation welcome)
+CC := gcc
+# __USE_GNU to get proper flags for <dlfcn.h>
+CFLAGS := -fPIC -Wall -g
+
+AR := /usr/bin/ar
+ARFLAGS := -r
+
+LINK_FLAGS = -Wl,-soname,$(CSPROFLIB) -shared
+
+PLATFORM_OBJS := 
+
+# automagically configure thread support for the user
+ifeq "$(THREADS)" "1"
+DEFINES += -DCSPROF_THREADS=1 -DCSPROF_ROUND_ROBIN_SIGNAL=1
+LIB_THREAD := -lpthread
+CFLAGS += -pthread
+ARCH_OBJS += pthread.o
+endif

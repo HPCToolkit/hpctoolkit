@@ -1,0 +1,186 @@
+# $Id: Rules.gmake,v 1.36 2007/03/29 17:07:10 mucci Exp $
+
+SHELL=/bin/sh
+ARCH=$(shell arch)
+OS=$(shell uname -s)
+
+# The user can change these via the makeline
+PREFIX=/usr/local
+EXECPREFIX=$(PREFIX)
+BINDIR=$(EXECPREFIX)/bin
+DOCDIR=$(PREFIX)/share/doc/$(LIBNAME)-$(VERSION)
+MANDIR=$(PREFIX)/share/man
+ifeq (x86_64,$(ARCH))
+	LIBDIR=$(PREFIX)/lib64
+else
+	LIBDIR=$(PREFIX)/lib
+endif
+INCDIR=$(PREFIX)/include
+export DESTDIR PREFIX EXECPREFIX BINDIR DOCDIR MANDIR LIBDIR INCDIR
+
+SONAME=lib$(LIBNAME).so.$(INTERFACE).$(REVISION).$(AGE)
+SOVERSION=lib$(LIBNAME).so.$(INTERFACE)
+SOBASE=lib$(LIBNAME).so
+export LIBNAME SONAME SOVERSION SOBASE INTERFACE REVISION AGE
+
+ifeq (${OS},Linux)
+CC	:= gcc -Wall
+F77	:= gfortran -Wall
+AR	:= ar
+RANLIB	:= ranlib
+OCC	:= pathcc
+CFLAGS	+= -O2 -g -D_REENTRANT -DDEBUG -D_GNU_SOURCE
+OCFLAGS += -O3 -g
+FFLAGS	?= -O2 -g 
+CC_PTHR	?= $(CC) -pthread
+CC_OMP	?= pathcc -openmp
+JAVAC	?= -gcj -C
+SHRCFLAGS ?= -fPIC -DPIC
+SHRLDFLAGS ?= -shared
+endif
+
+CFLAGS+=$(DEFINES)
+OCFLAGS+=$(DEFINES)
+root-dir?=$(PWD)
+build-dir?=$(PWD)/$(ARCH)-$(OS)
+VPATH=$(root-dir)/src:$(root-dir)/tests/src:$(root-dir)/man
+
+HTMLMANPAGES1 ?= 
+HTMLMANPAGES3 ?= 
+
+export VPATH root-dir build-dir SHELL CC OCC F77 AR RANLIB CFLAGS OCFLAGS FFLAGS CC_PTHR CC_OMP JAVAC SHRLDFLAGS SHRCFLAGS LIBS
+
+.PHONY: all
+all: show-config $(build-dir)
+
+.PHONY: show-config
+show-config:
+	@echo "$(LIBNAME) version:	$(VERSION)"
+	@echo ""
+	@echo "*** Build Parameters ***"
+	@echo "Architecture:	ARCH=$(ARCH)"
+	@echo "OS:		OS=$(OS)"
+	@echo "User defines: 	DEFINES=$(DEFINES)"
+	@echo "C Compiler:	CC=$(CC)"
+	@echo "F77 Compiler:	F77=$(F77)"
+	@echo "OptC Compiler: 	OCC=$(OCC)"
+	@echo "Linker:		LD=$(LD)"
+	@echo "AR:		AR=$(AR)"
+	@echo "Ranlibr:	RANLIB=$(RANLIB)"
+	@echo "C (Pthreads): 	CC_PTHR=$(CC_PTHR)"
+	@echo "C (OpenMP):	CC_OMP=$(CC_OMP)"
+	@echo "C Flags:   	CFLAGS=$(CFLAGS)"
+	@echo "OptC Flags:   	CFLAGS=$(OCFLAGS)"
+	@echo "F77 Flags:   	FFLAGS=$(FFLAGS)"
+	@echo "C (shared obj):	SHRCFLAGS=$(SHRCFLAGS)"
+	@echo "C (shared lib):	SHRLDFLAGS=$(SHRLDFLAGS)"
+	@echo "Extra libs:	LIBS=$(LIBS)"
+	@echo "VPATH:		VPATH=$(VPATH)"
+	@echo ""
+	@echo "*** Installation Parameters ***"
+	@echo "Destdir:    	DESTDIR=$(DESTDIR)"
+	@echo "Prefix:    	PREFIX=$(PREFIX)"
+	@echo "Execprefix:	EXECPREFIX=$(EXECPREFIX)"
+	@echo "Binaries:  	BINDIR=$(BINDIR)"
+	@echo "Includes:  	INCDIR=$(INCDIR)"
+	@echo "Libraries: 	LIBDIR=$(LIBDIR)"
+	@echo "Data dir: 	DATADIR=$(DATADIR)"
+	@echo "Man pages: 	MANDIR=$(MANDIR)"
+	@echo "Doc dir: 	DOCDIR=$(DOCDIR)"
+	@echo ""
+
+.PHONY: all
+all: $(build-dir) docs
+
+.PHONY: $(build-dir)
+$(build-dir): 
+	-mkdir -p $(build-dir)/tests
+	$(MAKE) -C $(build-dir) -f $(root-dir)/src/Makefile
+	$(MAKE) -C $(build-dir)/tests -f $(root-dir)/tests/src/Makefile
+
+.PHONY: clean
+clean:
+	-cd $(build-dir); rm -f *~ core.* *.o *.a *.class
+	find . -name "*~" -exec rm -f {} \;
+
+.PHONY: clobber distclean
+distclean clobber: clean
+	rm -rf $(build-dir)
+	rm -rf www
+	rm -f $(LIBNAME)-$(VERSION).tar.gz $(LIBNAME).html
+	cd man; rm -f $(HTMLMANPAGES1) $(HTMLMANPAGES3)
+
+.PHONY: dist
+dist: $(LIBNAME)-$(VERSION).tar.gz
+
+.PHONY: test tests
+test tests:
+	cd $(build-dir)/tests; ./runtests
+
+.PHONY: install-dirs
+install-dirs:
+	install -d $(DESTDIR)$(BINDIR)
+	install -d $(DESTDIR)$(LIBDIR)
+	install -d $(DESTDIR)$(INCDIR)
+	install -d $(DESTDIR)$(DOCDIR)
+	install -d $(DESTDIR)$(MANDIR)/man3
+	install -d $(DESTDIR)$(MANDIR)/man1
+
+.PHONY: install
+install: all install-dirs install-native
+	install $(build-dir)/$(LIBNAME)-config $(DESTDIR)$(BINDIR)
+	install $(build-dir)/$(SONAME) $(DESTDIR)$(LIBDIR)
+	cd $(DESTDIR)$(LIBDIR); ln -fs $(SONAME) $(SOVERSION)
+	cd $(DESTDIR)$(LIBDIR); ln -fs $(SOVERSION) $(SOBASE)
+	install -m 0644 src/$(LIBNAME).h $(DESTDIR)$(INCDIR)
+	cd man; install -m 0644 $(MANPAGES3) $(DESTDIR)$(MANDIR)/man3; 
+	cd man; install -m 0644 $(MANPAGES1) $(DESTDIR)$(MANDIR)/man1; 
+	cd man; install -m 0644 $(HTMLMANPAGES1) $(HTMLMANPAGES3) $(DESTDIR)$(DOCDIR)
+	install -m 0644 $(LIBNAME).html ChangeLog INSTALL BUGS $(DESTDIR)$(DOCDIR)
+
+.PHONY: uninstall
+uninstall: uninstall-native
+	-cd $(DESTDIR)$(BINDIR); rm -f $(LIBNAME)-config
+	-cd $(DESTDIR)$(LIBDIR); rm -f $(SONAME) $(SOVERSION) lib$(LIBNAME).so
+	-cd $(DESTDIR)$(INCDIR); rm -f $(LIBNAME).h 
+	-cd $(DESTDIR)$(MANDIR)/man3; rm -f $(MANPAGES3)
+	-cd $(DESTDIR)$(MANDIR)/man1; rm -f $(MANPAGES1)
+	-cd $(DESTDIR)$(DOCDIR); rm $(HTMLMANPAGES1) $(HTMLMANPAGES3) $(LIBNAME).html ChangeLog INSTALL
+	-rmdir -p $(DESTDIR)$(BINDIR) $(DESTDIR)$(LIBDIR) $(DESTDIR)$(INCDIR) $(DESTDIR)$(MANDIR)/man3 $(DESTDIR)$(MANDIR)/man1 $(DESTDIR)$(MANDIR) $(DESTDIR)$(DOCDIR)
+
+.PHONY: www-install
+www-install: www
+	cd www; scp -r * earth.cs.utk.edu:www-home/$(LIBNAME)
+
+.PHONY: www-dir
+www-dir:
+	-rm -rf www
+	mkdir www
+
+.PHONY: www docs
+www: www-dir $(LIBNAME)-$(VERSION).tar.gz docs www-native
+	cp $(LIBNAME).html www
+	cp src/$(LIBNAME).h www
+	cd man; cp $(HTMLMANPAGES1) $(HTMLMANPAGES3) ../www	
+	cp INSTALL ChangeLog www
+	cp $(LIBNAME)-$(VERSION).tar.gz www
+
+.PHONY: docs
+docs: $(HTMLMANPAGES1) $(HTMLMANPAGES3) $(LIBNAME).html 
+
+$(HTMLMANPAGES1): %-man.html: man/%.1
+	perl $(root-dir)/man/manserver.pl $< > man/$@
+
+$(HTMLMANPAGES3): %-man.html: man/%.3
+	perl $(root-dir)/man/manserver.pl $< > man/$@
+
+$(LIBNAME).html: $(LIBNAME).html.in
+	sed -e 's/VERSION/$(VERSION)/g' < $< > $@
+
+$(LIBNAME)-$(VERSION).tar.gz: docs
+	-rm $(LIBNAME)-$(VERSION).tar.gz
+	rm -rf /tmp/$(LIBNAME)
+	mkdir /tmp/$(LIBNAME)
+	cp -Rp . /tmp/$(LIBNAME)
+	cd /tmp; tar -c -v -z --exclude "CVS*" --exclude ".svn" --exclude "www" -f $(LIBNAME)-$(VERSION).tar.gz $(LIBNAME)
+	mv /tmp/$(LIBNAME)-$(VERSION).tar.gz .

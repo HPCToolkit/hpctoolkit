@@ -1,0 +1,10 @@
+# hey, emacs, this is a -*- makefile -*-
+#
+# csprof running on Tru64 unix with a trampoline
+
+include mkinclude.alpha-common
+
+CSPROF_THREADS :=
+CSPROF_TRAMPOLINE := -DCSPROF_TRAMPOLINE_BACKEND=1
+
+PLATFORM_OBJS += alpha/tramp.o

@@ -1,0 +1,437 @@
+/*BEGIN_LEGAL 
+Intel Open Source License 
+
+Copyright (c) 2002-2005 Intel Corporation 
+All rights reserved. 
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are
+met:
+
+Redistributions of source code must retain the above copyright notice,
+this list of conditions and the following disclaimer.  Redistributions
+in binary form must reproduce the above copyright notice, this list of
+conditions and the following disclaimer in the documentation and/or
+other materials provided with the distribution.  Neither the name of
+the Intel Corporation nor the names of its contributors may be used to
+endorse or promote products derived from this software without
+specific prior written permission.
+ 
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE INTEL OR
+ITS CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+END_LEGAL */
+//
+// @ORIGINAL_AUTHOR: Robert Cohn
+//
+
+/*! @file
+ *
+ * This file contains types that are in LEVEL_VM and are part of the Pin
+ * tool API. This is necessary because the pin client does not link against
+ * the vm and does not include vm header files.
+ *
+ */
+
+#ifndef TYPES_VMAPI_H
+#define TYPES_VMAPI_H
+
+/*! @ingroup CHECKPOINTING_PRIVATE
+    a checkpoint consists of the physical registers and spill area,
+    used to reconstruct the processor state at any given point
+*/
+GLOBALTYPE class CHECKPOINT
+{
+  public:
+    ADDRINT _pregs[NUM_PHYSICAL_REGS];     // physical registers
+    ADDRINT _spillareaptr;                 // location of spill area
+    ADDRINT _spillarea[NUM_SPILLED_REGS];  // content of spill area
+    ADDRINT _fpregs[NUM_FP_REGS];          // floating point state
+};
+
+/*! @ingroup CHECKPOINTING_PRIVATE
+    a context is the programmer-visible architectural state
+*/
+GLOBALTYPE class CONTEXT
+{
+  public:
+    ADDRINT _regs[NUM_PHYSICAL_REGS];      // architectural registers
+    ADDRINT _fregs[NUM_FP_REGS];           // floating point state
+    ADDRINT _specialregs[NUM_SPECIAL_REGS]; // special registers
+};
+
+/*! @ingroup INST_ARGS
+ *
+ * Determines where the analysis call is inserted relative to the
+ * instrumented object
+ */
+GLOBALTYPE typedef enum
+{
+    IPOINT_INVALID,
+    IPOINT_BEFORE, ///< Insert a call before an instruction or routine
+    IPOINT_AFTER,  ///< Insert a call on the fall thorugh path of an instruction or return path of a routine
+    IPOINT_ANYWHERE, ///< Insert a call anywhere inside a trace or a bbl
+    IPOINT_TAKEN_BRANCH ///< Insert a call on the taken edge of branch, side effects of branch are visible
+
+} IPOINT;
+
+/*! @ingroup PIN_CONTROL
+ * Possible reasons for an application context change.
+ */
+GLOBALTYPE enum CONTEXT_CHANGE_REASON
+{
+    CONTEXT_CHANGE_REASON_FATALSIGNAL,  ///< Receipt of fatal Unix signal
+    CONTEXT_CHANGE_REASON_SIGNAL,       ///< Receipt of handled Unix signal
+    CONTEXT_CHANGE_REASON_SIGRETURN,    ///< Return from Unix signal handler
+    CONTEXT_CHANGE_REASON_APC,          ///< Receipt of Windows APC
+    CONTEXT_CHANGE_REASON_EXCEPTION,    ///< Receipt of Windows exception
+    CONTEXT_CHANGE_REASON_CALLBACK,     ///< Receipt of Windows call-back
+    CONTEXT_CHANGE_REASON_CONTINUE,     ///< Execution of Windows NtContinue()
+    CONTEXT_CHANGE_REASON_CALLBACKRET   ///< Return from Windows call-back
+};
+
+/*! @ingroup INST_ARGS
+ *
+ * Determines the arguments that are passed to the analysis call.
+ */
+GLOBALTYPE typedef enum 
+{
+    IARG_INVALID,
+    IARG_END, ///< Must be last in IARG list for *_InsertCall
+
+    IARG_ADDRINT, ///< Type: ADDRINT. Constant value (additional arg required)
+    IARG_PTR, ///< Type: VOID *. Constant value (additional pointer arg required)
+    IARG_BOOL, ///< Type: BOOL. Constant (additional BOOL arg required)
+    IARG_UINT32, ///< Type: UINT32. Constant (additional integer arg required)
+
+    IARG_INST_PTR, ///< Type: ADDRINT. The address of the instrumented instruction. This value does not change at IPOINT_AFTER.
+
+    IARG_REG_VALUE, ///< Type: ADDRINT for integer register. Value of a register (additional register arg required) @ref REG_BASIC_API
+
+    IARG_REG_REFERENCE, ///< Type: PIN_REGISTER *. Pointer to union holding register contents. Registers are updated.
+    IARG_REG_CONST_REFERENCE, ///< Type: PIN_REGISTER *. Pointer to union holding register contents. Registers are not updated.
+
+    IARG_MEMORYREAD_EA, ///< Type: ADDRINT. Effective address of a memory read, only valid if INS_IsMemoryRead is true
+    IARG_MEMORYREAD2_EA, ///< Type: ADDRINT. Effective address of a 2nd memory read (e.g. 2nd operand in cmps on ia32)
+    IARG_MEMORYWRITE_EA,///< Type: ADDRINT. Effective address of a memory write
+    IARG_MEMORYREAD_SIZE, ///< Type: ADDRINT. Size in bytes of memory read, repeating ia32 string instructions are treated as a single memory operation
+    IARG_MEMORYWRITE_SIZE,///< Type: ADDRINT. Size in bytes of memory write
+    IARG_BRANCH_TAKEN, ///< Type: BOOL. Non zero if a branch is taken
+    IARG_BRANCH_TARGET_ADDR, ///< Type: ADDRINT. Target address of this branch instruction, only valid if INS_IsBranchOrCall is true
+    IARG_FALLTHROUGH_ADDR,  ///< Type: ADDRINT. Fall through address of this instruction
+    IARG_EXECUTING, ///< Type: BOOL. Return false if the instruction will not be executed because of predication, otherwise true
+    IARG_PREDICATE, ///< Reserved. Do not use
+    
+    // These are internal only
+    IARG_STACK_VALUE, ///< Reserved. Do not use
+    IARG_STACK_REFERENCE, ///< Reserved. Do not use
+    
+    // Syscall stuff
+    IARG_SYSCALL_NUMBER, ///< Type: ADDRINT. System call number. Valid for IPOINT_BEFORE at the system call instruction
+    IARG_SYSARG_REFERENCE, ///< Type: ADDRINT *. Pointer to system call argument n. Valid for IPOINT_BEFORE at the system call instruction.  (First argument number is 0.)
+    IARG_SYSARG_VALUE, ///< Type: ADDRINT. System call argument n. Valid for IPOINT_BEFORE at the system call instruction.  (First argument number is 0.)
+    IARG_SYSRET_VALUE, ///< Type: ADDRINT. System call return value. -1 if unsuccessful. (IPOINT_AFTER only)
+    IARG_SYSRET_ERRNO, ///< Type: INT32. System call errno (IPOINT_AFTER_only).
+    
+    // function arguments
+    IARG_FUNCARG_CALLSITE_REFERENCE, ///< Type: ADDRINT *. Pointer to integer argument n. Valid at the call site.  (First argument number is 0.)
+    IARG_FUNCARG_CALLSITE_VALUE, ///< Type: ADDRINT. Integer argument n. Valid at the call site.  (First argument number is 0.)
+    IARG_FUNCARG_ENTRYPOINT_REFERENCE, ///< Type: ADDRINT *. Pointer to integer argument n. Valid at the entry point of a routine.  (First argument number is 0.)
+    IARG_FUNCARG_ENTRYPOINT_VALUE, ///< Type: ADDRINT. Integer argument n. Valid at the entry point of a routine.  (First argument number is 0.)
+    IARG_FUNCRET_EXITPOINT_REFERENCE, ///< Type: ADDRINT *. Pointer to function result. Valid at return instruction.
+    IARG_FUNCRET_EXITPOINT_VALUE, ///< Type: ADDRINT. Function result. Valid at return instruction.
+
+    IARG_RETURN_IP,     ///< Type: ADDRINT. Return address for function call, only valid at the function entry point.
+ 
+    IARG_ORIG_FUNCPTR, ///< Type: AFUNPTR. Function pointer to the relocated entry of the original uninstrumented function.
+
+    IARG_PROTOTYPE, ///< Type: PROTO.  The function prototype of the application function. See @ref PROTO
+
+    IARG_THREAD_ID, ///< Type: THREADID. Application thread id.
+
+    IARG_CHECKPOINT, ///< Type: CHECKPOINT. Handle to access a checkpoint (processor state).
+    IARG_CONTEXT, ///< Type: CONTEXT. Handle to access a context (architectural state).
+    
+    IARG_RETURN_REGS,  ///< Register to write analysis function return value (additional register arg required).
+
+    IARG_REG_NAT_VALUE, ///< Type: BOOL. Nat value of register. Ipf only
+    IARG_REG_OUTPUT_FRAME_VALUE, ///< Type: ADDRINT for integer registers. Like IARG_REG_VALUE, but use index into RSE output frame instead of register name. Ipf only
+    IARG_REG_OUTPUT_FRAME_REFERENCE, ///< Type: ADDRINT *. Like IARG_REG_REFERENCE, but use index into RSE output frame instead of register name. Ipf only
+
+    IARG_IARGLIST, ///< Type: IARGLIST. List of IARGS which can be constructed one IARG at a time.
+
+    IARG_SYSCALL_ARG0, ///< DEPRECATED, see IARG_SYSARG_CALLSITE_{VALUE,REFERENCE}
+    IARG_SYSCALL_ARGBASE = IARG_SYSCALL_ARG0, 
+    IARG_SYSCALL_ARG1, ///< DEPRECATED, see IARG_SYSARG_CALLSITE_{VALUE,REFERENCE}
+    IARG_SYSCALL_ARG2, ///< DEPRECATED, see IARG_SYSARG_CALLSITE_{VALUE,REFERENCE}
+    IARG_SYSCALL_ARG3, ///< DEPRECATED, see IARG_SYSARG_CALLSITE_{VALUE,REFERENCE}
+    IARG_SYSCALL_ARG4, ///< DEPRECATED, see IARG_SYSARG_CALLSITE_{VALUE,REFERENCE}
+    IARG_SYSCALL_ARG5, ///< DEPRECATED, see IARG_SYSARG_CALLSITE_{VALUE,REFERENCE}
+    IARG_SYSCALL_ARGLAST = IARG_SYSCALL_ARG5,
+
+
+    IARG_G_RESULT0, ///< DEPRECATED, see IARG_SYSRET_{VALUE,REFERENCE}
+    IARG_G_RETBASE = IARG_G_RESULT0,
+    IARG_G_RESULTLAST = IARG_G_RESULT0,
+
+    IARG_G_ARG0_CALLEE, ///< DEPRECATED, see IARG_FUNCARG_CALLSITE_{VALUE,REFERENCE}
+    IARG_G_ARGBASE_CALLEE = IARG_G_ARG0_CALLEE,
+    IARG_G_ARG1_CALLEE, ///< DEPRECATED, see IARG_FUNCARG_CALLSITE_{VALUE,REFERENCE}
+    IARG_G_ARG2_CALLEE, ///< DEPRECATED, see IARG_FUNCARG_CALLSITE_{VALUE,REFERENCE}
+    IARG_G_ARG3_CALLEE, ///< DEPRECATED, see IARG_FUNCARG_CALLSITE_{VALUE,REFERENCE}
+    IARG_G_ARG4_CALLEE, ///< DEPRECATED, see IARG_FUNCARG_CALLSITE_{VALUE,REFERENCE}
+    IARG_G_ARG5_CALLEE, ///< DEPRECATED, see IARG_FUNCARG_CALLSITE_{VALUE,REFERENCE}
+    IARG_G_ARGLAST_CALLEE = IARG_G_ARG5_CALLEE,
+
+    IARG_G_ARG0_CALLER, ///< DEPRECATED, see IARG_FUNCARG_ENTRYPOINT_{VALUE,REFERENCE}
+    IARG_G_ARGBASE_CALLER = IARG_G_ARG0_CALLER,
+    IARG_G_ARG1_CALLER, ///< DEPRECATED, see IARG_FUNCARG_ENTRYPOINT_{VALUE,REFERENCE}
+    IARG_G_ARG2_CALLER, ///< DEPRECATED, see IARG_FUNCARG_ENTRYPOINT_{VALUE,REFERENCE}
+    IARG_G_ARG3_CALLER, ///< DEPRECATED, see IARG_FUNCARG_ENTRYPOINT_{VALUE,REFERENCE}
+    IARG_G_ARG4_CALLER, ///< DEPRECATED, see IARG_FUNCARG_ENTRYPOINT_{VALUE,REFERENCE}
+    IARG_G_ARG5_CALLER, ///< DEPRECATED, see IARG_FUNCARG_ENTRYPOINT_{VALUE,REFERENCE}
+    IARG_G_ARGLAST_CALLER = IARG_G_ARG5_CALLER
+    
+} IARG_TYPE;
+
+/*! @ingroup OPTIMIZATION_API
+ *
+ * Controls the type of probe
+ */
+GLOBALTYPE typedef enum 
+{
+    PROBE_INVALID,                  ///< Invalid
+    PROBE_REDIRECT,                 ///< Redirects control flow only. Does not need spill pointer
+    PROBE_SINGLE_THREAD,            ///< Spill pointer is set from static spill area
+    PROBE_MULTI_THREAD,             ///< Spill pointer is set by application before probe
+    PROBE_FUNCTION_WRAPPER          ///< Wraps a function, spill area allocated on stack and spill pointer initialized
+} PROBE_TYPE;
+
+        
+LOCALCONST UINT32 MAX_BYTES_PER_PIN_REG = 16;
+LOCALCONST UINT32 MAX_WORDS_PER_PIN_REG = (MAX_BYTES_PER_PIN_REG/2);
+LOCALCONST UINT32 MAX_DWORDS_PER_PIN_REG = (MAX_WORDS_PER_PIN_REG/2);
+LOCALCONST UINT32 MAX_QWORDS_PER_PIN_REG = (MAX_DWORDS_PER_PIN_REG/2);
+LOCALCONST UINT32 MAX_FLOATS_PER_PIN_REG = (MAX_BYTES_PER_PIN_REG/sizeof(float));
+LOCALCONST UINT32 MAX_DOUBLES_PER_PIN_REG = (MAX_BYTES_PER_PIN_REG/sizeof(double));
+
+
+union PIN_REGISTER
+{
+    UINT8  byte[MAX_BYTES_PER_PIN_REG];
+    UINT16 word[MAX_WORDS_PER_PIN_REG];
+    UINT32 dword[MAX_DWORDS_PER_PIN_REG];
+    UINT64 qword[MAX_QWORDS_PER_PIN_REG];
+
+    INT8   s_byte[MAX_BYTES_PER_PIN_REG];
+    INT16  s_word[MAX_WORDS_PER_PIN_REG];
+    INT32  s_dword[MAX_DWORDS_PER_PIN_REG];
+    INT64  s_qword[MAX_QWORDS_PER_PIN_REG];
+
+    FLT32  flt[MAX_FLOATS_PER_PIN_REG];
+    FLT64  dbl[MAX_DOUBLES_PER_PIN_REG];
+
+};
+
+
+
+/* SUPERPIN */
+
+LOCALCONST UINT32 maxPC = 1024;
+LOCALCONST UINT32 maxStack = 100;
+
+GLOBALTYPE struct SPSLICE_SIGNATURE
+{
+    BOOL   exited;
+    BOOL   timeout;  // this slice timed-out
+    BOOL   prevTimeout;  // this slice was created after a timeout
+    INT32  sliceNum;
+    UINT32 myPid;
+    UINT32 prevPid;
+    UINT32 skipCount;
+    UINT32 pcCount;
+    UINT32 curIndex;
+    ADDRINT pc[maxPC];
+    UINT32 checkIfCount;
+    UINT32 checkThenCount;
+    UINT32 checkStackCount;
+    REG     reg1, reg2;
+    ADDRINT rval1, rval2;
+    ADDRINT insCheckPC;
+    ADDRINT stackChksum;
+    UINT32 stackCount;
+    ADDRINT stack[maxStack];
+    ADDRINT regs[REG_GR_LAST+1];
+    ADDRINT lastRegs[REG_GR_LAST+1];
+    ADDRINT lastStackVal;
+    ADDRINT lastStackIndex;
+    UINT32  sysCount;
+    UINT32  sysIndex;
+};
+
+/*! @ingroup PROTO_API
+ *
+ * Type of calling standards used for compiling the function.  See @ref
+ * PROTO_Allocate() for its use.  CALLINGSTD_DEFAULT is the default calling
+ * standard for the platform. This is the recommended option.
+ */
+GLOBALTYPE typedef enum
+{
+    CALLINGSTD_INVALID,
+    CALLINGSTD_DEFAULT,
+    CALLINGSTD_CDECL, 
+    CALLINGSTD_REGPARMS
+} CALLINGSTD_TYPE;
+
+
+/*! @ingroup PROTO_API
+ *
+ * Function prototype argument types.  See @ref PROTO_Allocate() for its
+ * use.
+ */
+GLOBALTYPE typedef enum
+{
+    PARG_INVALID,
+    PARG_POINTER,
+    PARG_BOOL,
+    PARG_CHAR,
+    PARG_UCHAR,
+    PARG_SCHAR,
+    PARG_SHORT,
+    PARG_USHORT,
+    PARG_INT,
+    PARG_UINT,
+    PARG_LONG,
+    PARG_ULONG,
+    PARG_LONGLONG,
+    PARG_ULONGLONG,
+    PARG_FLOAT,
+    PARG_DOUBLE,
+    PARG_VOID,
+    PARG_ENUM,
+    PARG_AGGREGATE,
+    PARG_END
+} PARG_TYPE;
+
+struct PARG_T
+{
+    PARG_TYPE _parg;
+    size_t _size;
+};
+
+
+/*! @ingroup PROTO_API
+ *
+ * Macros used to simplify the passing of function prototype arguments.
+ * The macro will pass the type and size of each argument specified.  When
+ * passing an argument to @ref PROTO_Allocate(), use these macros.  As an
+ * example, PIN_PARG(int) will pass the PARG_TYPE PARG_INT and the size of
+ * an integer to @ref PROTO_Allocate().
+ */
+#define PIN_PARG(t)             _PinPargClass<t>::parg()
+
+/*! @ingroup PROTO_API
+ *
+ *  Type and size of an aggregate in @ref PROTO_Allocate()
+ *  See @ref PIN_PARG
+ */
+#define PIN_PARG_AGGREGATE(t)   _PinParg(PARG_AGGREGATE, sizeof(t))
+
+/*! @ingroup PROTO_API
+ *
+ *  Type and size of an enum in @ref PROTO_Allocate()
+ *  See @ref PIN_PARG
+ */
+#define PIN_PARG_ENUM(t)        _PinParg(PARG_ENUM, sizeof(t))
+
+/*! @ingroup PROTO_API
+ *
+ *  Ends a list of arguments in @ref PROTO_Allocate()
+ *  See @ref PIN_PARG
+ */
+#define PIN_PARG_END()          _PinParg(PARG_END, 0)
+
+template<typename T> struct _PinPargClass           {static PARG_T parg() {PARG_T x; x._parg = PARG_INVALID; x._size = 0; return x;}};
+template<typename T> struct _PinPargClass<T*>       {static PARG_T parg() {PARG_T x; x._parg = PARG_POINTER; x._size = sizeof(T*); return x;}};
+template<typename T> struct _PinPargClass<T&>       {static PARG_T parg() {PARG_T x; x._parg = PARG_POINTER; x._size = sizeof(T&); return x;}};
+template<> struct _PinPargClass<bool>               {static PARG_T parg() {PARG_T x; x._parg = PARG_BOOL; x._size = sizeof(bool); return x;}};
+template<> struct _PinPargClass<char>               {static PARG_T parg() {PARG_T x; x._parg = PARG_CHAR; x._size = sizeof(char); return x;}};
+template<> struct _PinPargClass<unsigned char>      {static PARG_T parg() {PARG_T x; x._parg = PARG_CHAR; x._size = sizeof(unsigned char); return x;}};
+template<> struct _PinPargClass<signed char>        {static PARG_T parg() {PARG_T x; x._parg = PARG_CHAR; x._size = sizeof(signed char); return x;}};
+template<> struct _PinPargClass<short>              {static PARG_T parg() {PARG_T x; x._parg = PARG_SHORT; x._size = sizeof(short); return x;}};
+template<> struct _PinPargClass<unsigned short>     {static PARG_T parg() {PARG_T x; x._parg = PARG_SHORT; x._size = sizeof(unsigned short); return x;}};
+template<> struct _PinPargClass<int>                {static PARG_T parg() {PARG_T x; x._parg = PARG_INT; x._size = sizeof(int); return x;}};
+template<> struct _PinPargClass<unsigned int>       {static PARG_T parg() {PARG_T x; x._parg = PARG_UINT; x._size = sizeof(unsigned int); return x;}};
+template<> struct _PinPargClass<long>               {static PARG_T parg() {PARG_T x; x._parg = PARG_LONG; x._size = sizeof(long); return x;}};
+template<> struct _PinPargClass<unsigned long>      {static PARG_T parg() {PARG_T x; x._parg = PARG_ULONG; x._size = sizeof(unsigned long); return x;}};
+template<> struct _PinPargClass<long long>          {static PARG_T parg() {PARG_T x; x._parg = PARG_LONGLONG; x._size = sizeof(long long); return x;}};
+template<> struct _PinPargClass<unsigned long long> {static PARG_T parg() {PARG_T x; x._parg = PARG_ULONGLONG; x._size = sizeof(unsigned long long); return x;}};
+template<> struct _PinPargClass<float>              {static PARG_T parg() {PARG_T x; x._parg = PARG_FLOAT; x._size = sizeof(float); return x;}};
+template<> struct _PinPargClass<double>             {static PARG_T parg() {PARG_T x; x._parg = PARG_DOUBLE; x._size = sizeof(double); return x;}};
+template<> struct _PinPargClass<void>             {static PARG_T parg() {PARG_T x; x._parg = PARG_VOID; x._size = 0; return x;}};
+
+static inline PARG_T _PinParg(PARG_TYPE p, size_t s) {PARG_T x; x._parg = p; x._size = s; return x;}
+
+/*
+ * Opaque types in api
+ */
+class IARGLIST_CLASS;
+class PROTO_CLASS;
+class CONTEXT;
+class CHECKPOINT;
+
+/*! @ingroup INST_ARGS
+ *
+ * List of IARG_TYPE elements. See @ref IARGLIST_Alloc() for its use.
+ */
+GLOBALTYPE typedef IARGLIST_CLASS * IARGLIST;
+
+/*! @ingroup PROTO_API
+ *
+ * List of function prototype arguments. See @ref PROTO_Allocate() for its
+ * use.
+ */
+GLOBALTYPE typedef PROTO_CLASS * PROTO;
+
+
+/*! @ingroup PIN_THREAD_API
+ *  Thread ID assigned by PIN.
+ */
+GLOBALTYPE typedef UINT32 THREADID;
+
+/*! @ingroup PIN_THREAD_API
+ *  Invalid value of the THREADID type.
+ */
+GLOBALCONST THREADID INVALID_THREADID = static_cast<THREADID>(-1);
+
+/*! @ingroup PIN_THREAD_API
+ *  Thread ID assigned by OS.
+ */
+GLOBALTYPE typedef UINT32 OS_THREAD_ID;
+
+/*! @ingroup PIN_THREAD_API
+ *  Invalid value of the OS_THREAD_ID type.
+ */
+GLOBALCONST OS_THREAD_ID INVALID_OS_THREAD_ID = 0;
+
+/*! @ingroup PIN_THREAD_PRIVATE
+ *  Type that represents thread context. It is returned by the
+ *  PIN_RegisterNewThread function when tool creates its own thread. 
+ *  It can be passed to the PIN_ExecuteInstrumented function in order
+ *  to start instrumented execution of the thread.
+ */
+GLOBALTYPE typedef VOID * THREAD_CONTEXT;
+
+/*! @ingroup PIN_THREAD_PRIVATE
+ * Maximum number of threads supported by PIN.
+ */
+GLOBALCONST UINT32 PIN_MAX_THREADS = 1024;
+
+#endif
