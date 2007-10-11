@@ -27,7 +27,7 @@
 
 //*************************** User Include Files ****************************
 
-#include "lush.i"
+#include "lush-support.h"
 #include "lushi-cb.h"
 
 //*************************** Forward Declarations **************************
@@ -71,8 +71,10 @@ LUSHI_DECL(bool, LUSHI_ismycode, (void* addr));
 // Logical Unwinding
 // --------------------------------------------------------------------------
 
-// Given a lush_cursor with a valid pchord, compute bichord and
-// lchord meta-information
+// Given a lush_cursor with a valid pchord, compute bichord and lchord
+// meta-information.  An agent may assume that the predicate
+// LUSHI_ismycode(ip) holds, where ip is the physical IP from the
+// pchord
 LUSHI_DECL(lush_step_t, LUSHI_peek_bichord, (lush_cursor_t* cursor));
 
 // Given a lush_cursor with a valid bichord, determine the next pnote

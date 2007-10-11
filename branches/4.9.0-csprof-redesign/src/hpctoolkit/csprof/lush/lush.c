@@ -30,15 +30,79 @@
 #include "lush.h"
 
 #include <general.h>
-#include <state.h>
 
 //*************************** Forward Declarations **************************
 
 static void handle_any_dlerror();
 
+// **************************************************************************
+// LUSH Agents
+// **************************************************************************
+
+int 
+lush_agent__init(lush_agent_t* x, int id, const char* path, 
+		 lush_agent_pool_t* pool)
+{
+  x->id = id;
+  x->path = strdup(path); // NOTE: assume it's safe to use malloc
+
+  x->dlhandle = dlopen(path, RTLD_LAZY);
+  handle_any_dlerror();
+
+#define CALL_DLSYM(BASE, X, ID, HANDLE)	       \
+  BASE->X[ID] = (X ## _fn_t)dlsym(HANDLE, #X); \
+  handle_any_dlerror()
+  
+  CALL_DLSYM(pool, LUSHI_init,         id, x->dlhandle);
+  CALL_DLSYM(pool, LUSHI_fini,         id, x->dlhandle);
+  CALL_DLSYM(pool, LUSHI_strerror,     id, x->dlhandle);
+  CALL_DLSYM(pool, LUSHI_reg_dlopen,   id, x->dlhandle);
+  CALL_DLSYM(pool, LUSHI_ismycode,     id, x->dlhandle);
+  CALL_DLSYM(pool, LUSHI_peek_bichord, id, x->dlhandle);
+  CALL_DLSYM(pool, LUSHI_step_pnote,   id, x->dlhandle);
+  CALL_DLSYM(pool, LUSHI_step_lnote,   id, x->dlhandle);
+
+#undef CALL_DLSYM
+
+  pool->LUSHI_init[x->id](0, NULL, 
+			  (LUSHCB_malloc_fn_t)NULL, 
+			  (LUSHCB_free_fn_t)NULL,
+			  (LUSHCB_step_fn_t)unw_step,
+			  LUSHCB_get_loadmap);
+  return 0;
+}
+
+
+int
+lush_agent__fini(lush_agent_t* x, lush_agent_pool_t* pool)
+{
+  pool->LUSHI_fini[x->id]();
+
+  dlclose(x->dlhandle);
+  handle_any_dlerror();
+
+  free(x->path);
+  return 0;
+}
 
 // **************************************************************************
-// Agents and Agent pool
+
+// FIXME: Copied form dlpapi.c.  When hpcrun and csprof are merged,
+// this can be merged into a common lib.
+static void
+handle_any_dlerror()
+{
+  // Note: We assume dlsym() or something similar has just been called!
+  char *error;
+  if ((error = dlerror()) != NULL) {
+    fprintf(stderr, "%s\n", error); 
+    exit(1);
+  }
+}
+
+
+// **************************************************************************
+// LUSH Agent Pool
 // **************************************************************************
 
 int 
@@ -94,146 +158,6 @@ lush_agent_pool__fini(lush_agent_pool_t* x)
 
 
 // **************************************************************************
-
-int 
-lush_agent__init(lush_agent_t* x, int id, const char* path, 
-		 lush_agent_pool_t* pool)
-{
-  x->id = id;
-  x->path = strdup(path); // NOTE: assume it's safe to use malloc
-
-  x->dlhandle = dlopen(path, RTLD_LAZY);
-  handle_any_dlerror();
-
-#define CALL_DLSYM(BASE, X, ID, HANDLE)	       \
-  BASE->X[ID] = (X ## _fn_t)dlsym(HANDLE, #X); \
-  handle_any_dlerror()
-  
-  CALL_DLSYM(pool, LUSHI_init,         id, x->dlhandle);
-  CALL_DLSYM(pool, LUSHI_fini,         id, x->dlhandle);
-  CALL_DLSYM(pool, LUSHI_strerror,     id, x->dlhandle);
-  CALL_DLSYM(pool, LUSHI_reg_dlopen,   id, x->dlhandle);
-  CALL_DLSYM(pool, LUSHI_ismycode,     id, x->dlhandle);
-  CALL_DLSYM(pool, LUSHI_peek_bichord, id, x->dlhandle);
-  CALL_DLSYM(pool, LUSHI_step_pnote,   id, x->dlhandle);
-  CALL_DLSYM(pool, LUSHI_step_lnote,   id, x->dlhandle);
-
-#undef CALL_DLSYM
-
-  pool->LUSHI_init[x->id](0, NULL, 
-			  (LUSHCB_malloc_fn_t)NULL, 
-			  (LUSHCB_free_fn_t)NULL,
-			  (LUSHCB_step_fn_t)unw_step,
-			  LUSHCB_get_loadmap);
-  return 0;
-}
-
-
-int
-lush_agent__fini(lush_agent_t* x, lush_agent_pool_t* pool)
-{
-  pool->LUSHI_fini[x->id]();
-
-  dlclose(x->dlhandle);
-  handle_any_dlerror();
-
-  free(x->path);
-  return 0;
-}
-
-
-// **************************************************************************
-
-// FIXME: Copied form dlpapi.c.  When hpcrun and csprof are merged,
-// this can be merged into a common lib.
-static void
-handle_any_dlerror()
-{
-  // Note: We assume dlsym() or something similar has just been called!
-  char *error;
-  if ((error = dlerror()) != NULL) {
-    fprintf(stderr, "%s\n", error); 
-    exit(1);
-  }
-}
-
-
-//***************************************************************************
-// backtrace
-//***************************************************************************
-
-int
-lush_backtrace(csprof_state_t* state, 
-	       int metric_id, size_t sample_count, 
-	       mcontext_t* context)
-{
-#if 0 // FIXME
-  unw_context_t uc;
-  unw_getcontext(&uc);
-#endif
-
-  lush_cursor_t cursor;
-  lush_init_unw(&cursor, state->lush_agents, context);
-
-  while (lush_peek_bichord(&cursor) != LUSH_STEP_DONE) {
-
-    lush_assoc_t as = lush_cursor_get_assoc(&cursor);
-    switch (as) {
-      
-      case LUSH_ASSOC_1_to_1:
-	lush_step_pnote(&cursor);
-	lush_step_lnote(&cursor);
-	break;
-
-      // many-to-1
-      case LUSH_ASSOC_1_n_to_0:
-      case LUSH_ASSOC_2_n_to_1:
-	while (lush_step_pnote(&cursor) != LUSH_STEP_DONE) {
-	  // ... get IP
-	}
-	if (as == LUSH_ASSOC_2_n_to_1) {
-	  lush_step_lnote(&cursor);
-	}
-	break;
-	
-      // 1-to-many
-      case LUSH_ASSOC_1_to_2_n:
-      case LUSH_ASSOC_0_to_2_n:
-	if (as == LUSH_ASSOC_1_to_2_n) {
-	  lush_step_pnote(&cursor);
-	  // ... get IP
-	}
-
-	while (lush_step_lnote(&cursor) != LUSH_STEP_DONE) {
-	  //lush_agentid_t aid = lush_cursor_get_agent(&cursor);
-	  //lush_lip_t* lip = lush_cursor_get_lip(&cursor);
-	  // ...
-	}
-	break;
-	
-      default:
-        ERRMSG("default case reached (%d) ", __FILE__, __LINE__, as);
-
-    }
-
-    // insert backtrace into spine-tree and bump sample counter
-  }
-
-  // register active marker [FIXME]
-
-  // look at concurrency for agent at top of stack
-#if 0 // FIXME
-  if (LUSHI_has_concurrency[agent]() ...) {
-    lush_agentid_t aid = 1;
-    pool->LUSHI_get_concurrency[aid]();
-  }
-#endif
-
-  return 0;
-}
-
-
-// **************************************************************************
 // Unwind support
 // **************************************************************************
 
@@ -269,6 +193,7 @@ lush_peek_bichord(lush_cursor_t* cursor)
   unw_word_t ip = lush_cursor_get_ip(cursor);
   cursor->aid = lush_agentid_NULL;
 
+  // 2a. First, see if an anget can interpret the pchord, giving an lchord
   lush_agent_pool_t* pool = cursor->apool;
   lush_agentid_t aid = 1;
   for (aid = 1; aid <= 1; ++aid) { // FIXME: first in list, etc.
@@ -280,8 +205,8 @@ lush_peek_bichord(lush_cursor_t* cursor)
     }
   }
   
+  // 2b. Otherwise, the physical chord is the logical chord (identity agent)
   if (cursor->aid == lush_agentid_NULL) {
-    // identity function: the physical cursor is the logical cursor
     cursor->assoc = LUSH_ASSOC_1_to_1;
   }
 
@@ -399,45 +324,4 @@ lush_forcestep_lnote(lush_cursor_t* cursor)
   return ty;
 }
 
-
 //***************************************************************************
-// LUSH Unwind Types
-//***************************************************************************
-
-bool 
-lush_cursor_is_flag(lush_cursor_t* cursor, lush_cursor_flags_t f)
-{ 
-  return (cursor->flags & f); 
-}
-
-
-void 
-lush_cursor_set_flag(lush_cursor_t* cursor, lush_cursor_flags_t f)
-{
-  cursor->flags = cursor->flags | f;
-}
-
-
-void 
-lush_cursor_unset_flag(lush_cursor_t* cursor, lush_cursor_flags_t f)
-{
-  cursor->flags = cursor->flags & ~f;
-}
-
-
-lush_assoc_t 
-lush_cursor_get_assoc(lush_cursor_t* cursor)
-{
-  return cursor->assoc;
-}
-
-
-unw_word_t
-lush_cursor_get_ip(lush_cursor_t* cursor)
-{
-  unw_word_t ip = 0;
-  if (unw_get_reg(&(cursor->pcursor), UNW_REG_IP, &ip) < 0) {
-    // FIXME
-  }
-  return ip;
-}

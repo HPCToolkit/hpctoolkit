@@ -26,7 +26,7 @@
 
 //*************************** User Include Files ****************************
 
-#include "lush.i"
+#include "lush-support.h"
 
 #include "epoch.h" // for csprof_epoch_t
 
@@ -54,13 +54,14 @@ LUSHI_DECL(void,  LUSHCB_free, ());
 
 typedef unw_cursor_t LUSHCB_cursor_t;
 
-LUSHI_DECL(int, LUSHCB_step, (LUSHCB_cursor_t cursor));
+LUSHI_DECL(int, LUSHCB_step, (LUSHCB_cursor_t* cursor));
 
 
 typedef csprof_epoch_t LUSHCB_epoch_t;
 
 LUSHI_DECL(int, LUSHCB_get_loadmap, (LUSHCB_epoch_t** epoch));
 
+// FIXME: do we need a find_proc callback?
 
 #ifdef __cplusplus
 }

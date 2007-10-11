@@ -27,20 +27,41 @@
 
 //*************************** User Include Files ****************************
 
-#include "lush.i"
 #include "lushi.h"
-
-#include <state.h>
+#include "lush-support.h"
 
 //*************************** Forward Declarations **************************
-
 
 //***************************************************************************
 // LUSH Agents
 //***************************************************************************
 
-// NOTE: This is here instead of <lush.i> because it depends on
-// <lushi.h> types.
+// ---------------------------------------------------------
+// LUSH agent id
+// ---------------------------------------------------------
+
+#define lush_agentid_NULL 0
+typedef int lush_agentid_t;
+
+
+// ---------------------------------------------------------
+// A LUSH agent
+// ---------------------------------------------------------
+
+typedef struct lush_agent lush_agent_t;
+
+struct lush_agent {
+  lush_agentid_t id;
+  char* path;
+  void* dlhandle;
+};
+
+// ---------------------------------------------------------
+// A pool of LUSH agents
+// ---------------------------------------------------------
+
+typedef struct lush_agent_pool lush_agent_pool_t;
+
 struct lush_agent_pool {
 
   lush_agent_t agent; // FIXME: one agent for now
@@ -72,49 +93,17 @@ int lush_agent_pool__init(lush_agent_pool_t* x, const char* path);
 int lush_agent_pool__fini(lush_agent_pool_t* x);
 
 
-//***************************************************************************
-// LUSH Unwind Types
-//***************************************************************************
-
-inline bool 
-lush_cursor_is_flag(lush_cursor_t* cursor, lush_cursor_flags_t f);
-
-inline void 
-lush_cursor_set_flag(lush_cursor_t* cursor, lush_cursor_flags_t f);
-
-inline void 
-lush_cursor_unset_flag(lush_cursor_t* cursor, lush_cursor_flags_t f);
-
-inline lush_assoc_t 
-lush_cursor_get_assoc(lush_cursor_t* cursor);
-
-inline unw_word_t
-lush_cursor_get_ip(lush_cursor_t* cursor);
-
-inline lush_lip_t 
-lush_cursor_get_lip(lush_cursor_t* cursor);
-
-inline void* 
-lush_cursor_get_pcursor(lush_cursor_t* cursor);
-
-inline void* 
-lush_cursor_get_lcursor(lush_cursor_t* cursor);
-
-
 // **************************************************************************
-// LUSH Unwinding
+// LUSH Unwinding Primitives
 // **************************************************************************
-
-int lush_backtrace(csprof_state_t* state, 
-		   int metric_id, size_t sample_count, 
-		   mcontext_t* context);
 
 // Initialize the unwind.  Set a flag indicating initialization.
 void lush_init_unw(lush_cursor_t* cursor, 
 		   lush_agent_pool_t* apool, mcontext_t *context);
 
 
-// Given a lush_cursor, peek the next bichord.
+// Given a lush_cursor, peek the next bichord.  Assumes that at most
+// one agent is responsible for any IP address.
 lush_step_t lush_peek_bichord(lush_cursor_t* cursor);
 
 
