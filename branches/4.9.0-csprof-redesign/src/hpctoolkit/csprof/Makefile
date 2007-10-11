@@ -143,7 +143,10 @@ OBJS += last_func.o
 # ----------------------------------------------------------
 # LUSH
 # ----------------------------------------------------------
-OBJS += lush.o lushi-cb.o
+OBJS += lush.o lush-backtrace.o \
+	lushi-cb.o \
+	lush-support.o
+
 ifdef DO_LUSH
   OBJS += cilk.o
 endif
