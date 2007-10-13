@@ -11,6 +11,7 @@
 #include "simple-lock.h"
 #include "splay.h"
 #include "general.h"
+#include "pmsg.h"
 
 #ifdef CSPROF_THREADS
 #include <pthread.h>
@@ -185,14 +186,14 @@ csprof_addr_to_interval(unsigned long addr)
 	    if (last->end <= root->start) {
 		root->left = first;
 	    } else {
-		warnx("%s: bad unwind interval at 0x%lx", __func__, addr);
+		EMSG("%s: bad unwind interval at 0x%lx", __func__, addr);
 	    }
 	} else {
 	    root->left = interval_tree_splay(root->left, root->end);
 	    if (root->left->end <= first->start && last->end <= root->start) {
 		root->left->right = first;
 	    } else {
-		warnx("%s: bad unwind interval at 0x%lx", __func__, addr);
+		EMSG("%s: bad unwind interval at 0x%lx", __func__, addr);
 	    }
 	}
     } else {
@@ -200,14 +201,14 @@ csprof_addr_to_interval(unsigned long addr)
 	    if (root->end <= first->start) {
 		root->right = first;
 	    } else {
-		warnx("%s: bad unwind interval at 0x%lx", __func__, addr);
+		EMSG("%s: bad unwind interval at 0x%lx", __func__, addr);
 	    }
 	} else {
 	    root->right = interval_tree_splay(root->right, root->start);
 	    if (root->end <= first->start && last->end <= root->right->start) {
 		root->right->left = first;
 	    } else {
-		warnx("%s: bad unwind interval at 0x%lx", __func__, addr);
+		EMSG("%s: bad unwind interval at 0x%lx", __func__, addr);
 	    }
 	}
     }

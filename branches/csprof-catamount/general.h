@@ -235,10 +235,14 @@ static inline void EMSG(const char *format, ...){
   va_start(args, format);
   int n;
 
+#ifdef EMSG_TAG
 #ifdef CSPROF_THREADS
   n = sprintf(fstr, "EMSG[%lx]: ", pthread_self());
 #else
   n = sprintf(fstr, "EMSG: ");
+#endif
+#else
+  fstr[0] = '\0';
 #endif
   strcat(fstr,format);
   strcat(fstr,"\n");

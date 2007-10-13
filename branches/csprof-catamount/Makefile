@@ -17,7 +17,7 @@ export PLATFORM
 export CC
 #export CHGROOT
 #DO_THREADS := 1
-#PERF := -DCSPROF_PERF=1
+PERF := -DCSPROF_PERF=1
 export PERF
 
 PRIM_UNWIND := 1
@@ -52,6 +52,20 @@ all: $(CSPROF_DOT_O)
 #PLATFORM ?= ia64
 
 #include mkinclude.$(PLATFORM)
+
+DEFINES := -D_GNU_SOURCE
+DEFINES += -DCSPROF_LAST_EDGE_ONLY=1
+DEFINES += $(PERF)
+
+#CSPROF_TRAMPOLINE := -DCSPROF_TRAMPOLINE_BACKEND=1
+
+CFLAGS := -fPIC -g -Wall 
+CFLAGS := -g -Wall  #CATAMOUNT
+
+AR := /usr/bin/ar
+ARFLAGS := -r
+
+#LINK_FLAGS := -Wl,-soname,$(CSPROFLIB) -shared
 
 module_dirs := utilities                \
                memory                   \

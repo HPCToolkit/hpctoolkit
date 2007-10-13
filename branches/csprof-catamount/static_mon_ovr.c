@@ -2,7 +2,9 @@
 #include <unistd.h>
 #include "monitor.h"
 
-#define M(s) write(2,s"\n",strlen(s)+1)
+// #define M(s) write(2,s"\n",strlen(s)+1)
+#define M(s) 
+
 
 extern char *static_epoch_xname;
 extern void csprof_init_internal(void);

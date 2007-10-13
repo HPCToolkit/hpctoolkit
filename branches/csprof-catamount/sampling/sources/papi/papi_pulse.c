@@ -38,7 +38,7 @@ extern int status;
 
 void my_handler(int EventSet, void *pc, long long ovec, void *context) {
   _jb *it = get_bad_unwind();
-  M("In PAPI handler");
+  MSG(1,"In PAPI handler");
   if (!sigsetjmp(it->jb,1)){
     if(status != CSPROF_STATUS_FINI){
 

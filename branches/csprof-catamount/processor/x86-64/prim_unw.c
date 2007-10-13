@@ -90,7 +90,7 @@ int unw_step (unw_cursor_t *cursor){
     siglongjmp(it->jb,9);
   } else {
      PMSG(UNW,"dumping the found interval");
-     idump(uw); // debug for now
+     // idump(uw); // debug for now
   }
   // spr rel step
   // FIXME: next bp needs to check if this is a frame procedure

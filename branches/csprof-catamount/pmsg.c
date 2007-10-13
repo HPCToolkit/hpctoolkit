@@ -21,7 +21,7 @@ extern pthread_mutex_t mylock;
 #define WRITE(desc,buf,n) write(desc,buf,n)
 #endif
 
-static int __msg_mask = ALL;
+static int __msg_mask = NONE;
 
 void set_mask_f_numstr(const char *s){
   int lmask;
