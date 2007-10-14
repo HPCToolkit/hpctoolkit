@@ -58,7 +58,7 @@ lush_agent__init(lush_agent_t* x, int id, const char* path,
   CALL_DLSYM(pool, LUSHI_strerror,     id, x->dlhandle);
   CALL_DLSYM(pool, LUSHI_reg_dlopen,   id, x->dlhandle);
   CALL_DLSYM(pool, LUSHI_ismycode,     id, x->dlhandle);
-  CALL_DLSYM(pool, LUSHI_peek_bichord, id, x->dlhandle);
+  CALL_DLSYM(pool, LUSHI_step_bichord, id, x->dlhandle);
   CALL_DLSYM(pool, LUSHI_step_pnote,   id, x->dlhandle);
   CALL_DLSYM(pool, LUSHI_step_lnote,   id, x->dlhandle);
 
@@ -119,7 +119,7 @@ lush_agent_pool__init(lush_agent_pool_t* x, const char* path)
   FN_TBL_ALLOC(x, LUSHI_strerror, num_agents + 1);
   FN_TBL_ALLOC(x, LUSHI_reg_dlopen, num_agents + 1);
   FN_TBL_ALLOC(x, LUSHI_ismycode, num_agents + 1);
-  FN_TBL_ALLOC(x, LUSHI_peek_bichord, num_agents + 1);
+  FN_TBL_ALLOC(x, LUSHI_step_bichord, num_agents + 1);
   FN_TBL_ALLOC(x, LUSHI_step_pnote, num_agents + 1);
   FN_TBL_ALLOC(x, LUSHI_step_lnote, num_agents + 1);
 
@@ -147,7 +147,7 @@ lush_agent_pool__fini(lush_agent_pool_t* x)
   FN_TBL_FREE(x, LUSHI_strerror);
   FN_TBL_FREE(x, LUSHI_reg_dlopen);
   FN_TBL_FREE(x, LUSHI_ismycode);
-  FN_TBL_FREE(x, LUSHI_peek_bichord);
+  FN_TBL_FREE(x, LUSHI_step_bichord);
   FN_TBL_FREE(x, LUSHI_step_pnote);
   FN_TBL_FREE(x, LUSHI_step_lnote);
 
@@ -173,12 +173,12 @@ lush_init_unw(lush_cursor_t* cursor,
 
   cursor->apool = apool;
   lush_cursor_set_flag(cursor, LUSH_CURSOR_FLAGS_INIT);
-  unw_init_f_mcontext(context, &cursor->pcursor);
+  unw_init_f_mcontext(context, lush_cursor_get_pcursor(cursor));
 }
 
 
 lush_step_t
-lush_peek_bichord(lush_cursor_t* cursor)
+lush_step_bichord(lush_cursor_t* cursor)
 {
   lush_step_t ty = LUSH_STEP_NULL;
 
@@ -193,12 +193,12 @@ lush_peek_bichord(lush_cursor_t* cursor)
   unw_word_t ip = lush_cursor_get_ip(cursor);
   cursor->aid = lush_agentid_NULL;
 
-  // 2a. First, see if an anget can interpret the pchord, giving an lchord
+  // 2a. First, see if an agent can interpret the pchord, giving an lchord
   lush_agent_pool_t* pool = cursor->apool;
   lush_agentid_t aid = 1;
   for (aid = 1; aid <= 1; ++aid) { // FIXME: first in list, etc.
     if (pool->LUSHI_ismycode[aid](ip)) {
-      pool->LUSHI_peek_bichord[aid](cursor);
+      pool->LUSHI_step_bichord[aid](cursor);
       cursor->aid = aid;
       // FIXME: move agent to beginning of list;
       break;
@@ -221,11 +221,17 @@ lush_step_pchord(lush_cursor_t* cursor)
 
   if (!lush_cursor_is_flag(cursor, LUSH_CURSOR_FLAGS_INIT)) {
     // complete the current pchord, if we haven't examined all pnotes
-    while (!lush_cursor_is_flag(cursor, LUSH_CURSOR_FLAGS_DONEP)) {
+    while (!lush_cursor_is_flag(cursor, LUSH_CURSOR_FLAGS_PCHORD_DONE)) {
       lush_forcestep_pnote(cursor);
     }
-    
+    lush_cursor_unset_flag(cursor, LUSH_CURSOR_FLAGS_CHORD_DONE);
+      
     ty = lush_forcestep_pnote(cursor);
+    
+    if (ty == LUSH_STEP_DONE || ty == LUSH_STEP_ERROR) {
+      // we have reached the outermost frame of the stack (or an error state)
+      lush_cursor_set_flag(cursor, LUSH_CURSOR_FLAGS_CHORD_DONE);
+    }
   }
   else {
     // the first pchord begins at the current pnote (pcursor)
@@ -233,8 +239,6 @@ lush_step_pchord(lush_cursor_t* cursor)
     ty = LUSH_STEP_CONT;
   }
 
-  lush_cursor_set_flag(cursor, LUSH_CURSOR_FLAGS_INITALL);
-  lush_cursor_unset_flag(cursor, LUSH_CURSOR_FLAGS_DONEALL);
   return ty;
 }
 
@@ -244,11 +248,8 @@ lush_step_pnote(lush_cursor_t* cursor)
 {
   lush_step_t ty = LUSH_STEP_CONT;
 
-  if (!lush_cursor_is_flag(cursor, LUSH_CURSOR_FLAGS_DONEP)) {
+  if (!lush_cursor_is_flag(cursor, LUSH_CURSOR_FLAGS_PCHORD_DONE)) {
     ty = lush_forcestep_pnote(cursor);
-    if (ty == LUSH_STEP_DONE) {
-      lush_cursor_set_flag(cursor, LUSH_CURSOR_FLAGS_DONEP);
-    }
   }
   
   return ty;
@@ -260,11 +261,8 @@ lush_step_lnote(lush_cursor_t* cursor)
 {
   lush_step_t ty = LUSH_STEP_CONT;
 
-  if (!lush_cursor_is_flag(cursor, LUSH_CURSOR_FLAGS_DONEL)) {
+  if (!lush_cursor_is_flag(cursor, LUSH_CURSOR_FLAGS_LCHORD_DONE)) {
     ty = lush_forcestep_lnote(cursor);
-    if (ty == LUSH_STEP_DONE) {
-      lush_cursor_set_flag(cursor, LUSH_CURSOR_FLAGS_DONEL);
-    }
   }
 
   return ty;
@@ -282,7 +280,7 @@ lush_forcestep_pnote(lush_cursor_t* cursor)
     ty = pool->LUSHI_step_pnote[aid](cursor);
   }
   else {
-    int t = unw_step(&cursor->pcursor);
+    int t = unw_step(lush_cursor_get_pcursor(cursor));
     if (t > 0) {
       // LUSH_STEP_CONT
     }
@@ -293,7 +291,10 @@ lush_forcestep_pnote(lush_cursor_t* cursor)
       ty = LUSH_STEP_ERROR;
     }
   }
-
+  
+  if (ty == LUSH_STEP_DONE || ty == LUSH_STEP_ERROR) {
+    lush_cursor_set_flag(cursor, LUSH_CURSOR_FLAGS_PCHORD_DONE);
+  }
   return ty;
 }
 
@@ -306,10 +307,10 @@ lush_forcestep_lnote(lush_cursor_t* cursor)
   lush_agent_pool_t* pool = cursor->apool;
   lush_agentid_t aid = cursor->aid;
   if (aid != lush_agentid_NULL) {
-    ty = pool->LUSHI_step_pnote[aid](cursor);
+    ty = pool->LUSHI_step_lnote[aid](cursor);
   }
   else {
-    int t = unw_step(&cursor->pcursor);
+    int t = unw_step(lush_cursor_get_pcursor(cursor));
     if (t > 0) {
       // LUSH_STEP_CONT
     }
@@ -321,6 +322,9 @@ lush_forcestep_lnote(lush_cursor_t* cursor)
     }
   }
 
+  if (ty == LUSH_STEP_DONE || ty == LUSH_STEP_ERROR) {
+    lush_cursor_set_flag(cursor, LUSH_CURSOR_FLAGS_LCHORD_DONE);
+  }
   return ty;
 }
 

@@ -68,8 +68,8 @@ enum lush_assoc {
   LUSH_ASSOC_1_n_to_0, // 2:n <-> 0 and 1 <-> 0
   LUSH_ASSOC_2_n_to_1, // 2:n <-> 1
 
-  LUSH_ASSOC_1_to_2_n, //   1 <-> 2:n
-  LUSH_ASSOC_0_to_2_n  //   0 <-> 2:n and 0 <-> 1
+  LUSH_ASSOC_0_to_1_n, //   0 <-> 2:n and 0 <-> 1
+  LUSH_ASSOC_1_to_2_n  //   1 <-> 2:n
 };
 
 
@@ -108,14 +108,11 @@ typedef enum lush_cursor_flags lush_cursor_flags_t;
 enum lush_cursor_flags {
   LUSH_CURSOR_FLAGS_NONE = 0x00000000,
 
-  LUSH_CURSOR_FLAGS_INIT    = 0x00000001, // first use of the bichord
-  LUSH_CURSOR_FLAGS_INITP   = 0x00000002, // first use of the pchord
-  LUSH_CURSOR_FLAGS_INITL   = 0x00000004, // first use of the lchord
-  LUSH_CURSOR_FLAGS_INITALL = 0x00000007, // all together now!
+  LUSH_CURSOR_FLAGS_INIT = 0x00000001, // first use of the cursor
 
-  LUSH_CURSOR_FLAGS_DONEP   = 0x00000010, // pchord notes are completed
-  LUSH_CURSOR_FLAGS_DONEL   = 0x00000020, // lchord notes are completed
-  LUSH_CURSOR_FLAGS_DONEALL = 0x00000030, // all together now!
+  LUSH_CURSOR_FLAGS_PCHORD_DONE = 0x00000010, // current pchord is completed
+  LUSH_CURSOR_FLAGS_LCHORD_DONE = 0x00000020, // current lchord is completed
+  LUSH_CURSOR_FLAGS_CHORD_DONE  = 0x00000030  // all together now!
 };
 
 
@@ -156,7 +153,7 @@ lush_cursor_get_ip(lush_cursor_t* cursor);
 /*inline*/ lush_lip_t 
 lush_cursor_get_lip(lush_cursor_t* cursor);
 
-/*inline*/ void* 
+/*inline*/ unw_cursor_t* 
 lush_cursor_get_pcursor(lush_cursor_t* cursor);
 
 /*inline*/ void* 

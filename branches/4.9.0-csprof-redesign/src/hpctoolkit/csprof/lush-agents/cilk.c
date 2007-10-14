@@ -22,6 +22,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
+#include <stdbool.h>
 
 //*************************** User Include Files ****************************
 
@@ -31,25 +32,44 @@
 //*************************** Forward Declarations **************************
 
 #define LUSHCB_DECL(FN) \
-  FN ## _fn_t  my ## FN
+ LUSH ## FN ## _fn_t  FN
 
-LUSHCB_DECL(LUSHCB_malloc);
-LUSHCB_DECL(LUSHCB_free);
-LUSHCB_DECL(LUSHCB_step);
-LUSHCB_DECL(LUSHCB_get_loadmap);
+LUSHCB_DECL(CB_malloc);
+LUSHCB_DECL(CB_free);
+LUSHCB_DECL(CB_step);
+LUSHCB_DECL(CB_get_loadmap);
+// lush_cursor stuff
 
 #undef LUSHCB_DECL
 
 //*************************** Forward Declarations **************************
 
-static const char* libcilk = "libcilk";
+// FIXME: hackish implementation
+static const char* libcilk_str = "libcilk";
+static const char* lib_str = "lib";
+static const char* ld_str = "ld-linux";
 
-// The libcilk address range [low, high)
-static void* libcilk_low_addr;
-static void* libcilk_high_addr;
+typedef struct {
+  void* beg; // [low, high)
+  void* end;
+} addr_pair_t;
+
+addr_pair_t tablecilk;
+
+#define tableother_sz 20
+addr_pair_t tableother[tableother_sz];
+
+//*************************** Forward Declarations **************************
 
 static int 
 determine_code_ranges();
+
+static bool
+is_libcilk(void* addr);
+
+static bool
+is_cilkprogram(void* addr);
+
 
 // **************************************************************************
 // Initialization/Finalization
@@ -62,10 +82,10 @@ LUSHI_init(int argc, char** argv,
 	   LUSHCB_step_fn_t        step_fn,
 	   LUSHCB_get_loadmap_fn_t loadmap_fn)
 {
-  myLUSHCB_malloc      = malloc_fn;
-  myLUSHCB_free        = free_fn;
-  myLUSHCB_step        = step_fn;
-  myLUSHCB_get_loadmap = loadmap_fn;
+  CB_malloc      = malloc_fn;
+  CB_free        = free_fn;
+  CB_step        = step_fn;
+  CB_get_loadmap = loadmap_fn;
   
   determine_code_ranges();
   return 0;
@@ -102,63 +122,187 @@ LUSHI_reg_dlopen()
 extern bool 
 LUSHI_ismycode(void* addr)
 {
-  return (libcilk_low_addr <= addr && addr < libcilk_high_addr);
+  return (is_libcilk(addr) || is_cilkprogram(addr));
 }
 
 
 int 
 determine_code_ranges()
 {
+  int i;
   LUSHCB_epoch_t* epoch;
-  myLUSHCB_get_loadmap(&epoch);
- 
-  libcilk_low_addr  = NULL;
-  libcilk_high_addr = NULL;
+  CB_get_loadmap(&epoch);
 
+  if (epoch->num_modules > 20) {
+    fprintf(stderr, "FIXME: too many load modules");
+  }
+
+  // Initialize
+  tablecilk.beg = NULL;
+  tablecilk.end = NULL;
+  
+  for (i = 0; i < tableother_sz; ++i) {
+    tableother[i].beg = NULL;
+    tableother[i].end = NULL;
+  }
+
+  // Fill interval table
+  i = 0;
   csprof_epoch_module_t* mod;
   for (mod = epoch->loaded_modules; mod != NULL; mod = mod->next) {
-    char* s = strstr(mod->module_name, libcilk);
-    if (s) {
-      if (libcilk_low_addr != NULL) {
-	// FIXME: we currently assume only one range of addresses
-	fprintf(stderr, "Internal Error: determine_code_ranges");
+
+    if (strstr(mod->module_name, libcilk_str)) {
+      if (tablecilk.beg != NULL) {
+	fprintf(stderr, "FIXME: assuming only one address interval");
       }
-      libcilk_low_addr  = mod->mapaddr;
-      libcilk_high_addr = mod->mapaddr + mod->size;
+      tablecilk.beg = mod->mapaddr;
+      tablecilk.end = mod->mapaddr + mod->size;
+    }
+
+    if (strstr(mod->module_name, lib_str)
+	|| strstr(mod->module_name, ld_str)) {
+      tableother[i].beg = mod->mapaddr;
+      tableother[i].end = mod->mapaddr + mod->size;
+      i++;
     }
   }
+
   return 0;
 }
 
 
+bool
+is_libcilk(void* addr)
+{
+  return (tablecilk.beg <= addr && addr < tablecilk.end);
+}
+
+
+bool
+is_cilkprogram(void* addr)
+{
+  int i;
+  for (i = 0; i < tableother_sz; ++i) {
+    if (tableother[i].beg <= addr && addr < tableother[i].end) {
+      return false;
+    }
+  }
+  return true;
+}
+
+
 // **************************************************************************
-// Logical Unwinding
+// 
 // **************************************************************************
 
-// Given a lush_cursor with a valid pchord, compute bichord and
-// lchord meta-information
 extern lush_step_t
 LUSHI_peek_bichord(lush_cursor_t* cursor)
 {
+#if 0
+  // INVARIANTS for the libcilk DSO simplified model:
+
+  // FIXME: for now we will assume there is always a 1-to-1 or 1-to-0 associativity.
+
+
+  // 1. LUSHI_ismycode(ip) holds, where ip is the physical ip of pchord.
+  //
+  // 2. libcilk implies the pnote is one of
+  //    - Cilk runtime [only n top frames] = no lnote => 1-to-0
+  //    - Cilk scheduler                   = no lnote => 1-to-0
+  //
+  //    !libother implies the pnote is in the app (given basic assumptions)
+  
+  // 3. bottom of the stack is a closure from which we can find stack
+  //    while walking stack, the first non-code function or
+  //    ...
+
+  void* ip = (void*)lush_cursor_get_ip(cursor);
+  bool is_cilkrt   = is_libcilk(ip);
+  bool is_cilkprog = !is_cilkrt; // cf. LUSHI_ismycode
+
+  bool is_TOS; // top of stack
+  if (lush_cursor_is_flag(cursor, LUSH_CURSOR_FLAGS_INIT)) {
+    is_TOS = true;
+  }
+
+  
+  if (is_cilkrt) {
+    if (is_TOS) {
+      // could be either scheduling or runtime. 
+      // in either case, we don't need a logical...
+      // is_TOS  => ***(rr-help or scheduling)***
+    }
+    else {
+      if (have-seen-cilk-prog) {
+	we are in scheduling routines --> look for anscestors
+      }
+      else {
+	we are in scheduling or rt routines --> no need to look for ancestors
+      }
+    // !is_TOS && have-seen-cilk-prog  => scheduling
+    }
+  }
+  // is_cilkrt && is_TOS && have note seen ==> 
+  // is_cilkrt && !is_TOS ==>
+    
+  // we know the top of the stack has stuff
+
+  // we need to identify the cilk fast and slow procedures too
+
+      - a Cilk runtime routine [can detect]
+      - a Cilk fast routine
+      - The Cilk scheduler code / loop
+
+  // have to figure out the assoc at this point...
+  
+
+
+  LUSHI_ismycode(ip);
+
+  // if within cilk AND RT support -> 
+
+  // pnote and lnote may need to consult this...
+
   // FIXME
+#endif
   return LUSH_STEP_ERROR;
 }
 
 
-// Given a lush_cursor with a valid bichord, determine the next pnote
-// (or lnote)
 extern lush_step_t
 LUSHI_step_pnote(lush_cursor_t* cursor)
 {
-  // FIXME
-  return LUSH_STEP_ERROR;
+  // FIXME: this becomes a force-step
+
+  lush_step_t ty = LUSH_ASSOC_NULL;
+
+  lush_assoc_t assoc = lush_cursor_get_assoc(cursor);
+
+  if (assoc == LUSH_ASSOC_0_to_1_n) {
+    ty = LUSH_STEP_DONE;
+    return ty;
+  }
+
+  int t = CB_step(lush_cursor_get_pcursor(cursor));
+  if (t > 0) {
+    // LUSH_STEP_CONT
+    ty = LUSH_STEP_DONE; // FIXME: pchord always contains on pnote
+  }
+  else if (t == 0) {
+    ty = LUSH_STEP_DONE;
+  }
+  else if (t < 0) {
+    ty = LUSH_STEP_ERROR;
+  }
+  
+  return ty;
 }
 
 
 extern lush_step_t
 LUSHI_step_lnote(lush_cursor_t* cursor)
 {
-  // FIXME
+  // FIXME: must account for *lchord* and associativity
   return LUSH_STEP_ERROR;
 }
 

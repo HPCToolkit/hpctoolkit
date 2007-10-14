@@ -75,12 +75,19 @@ LUSHI_DECL(bool, LUSHI_ismycode, (void* addr));
 // meta-information.  An agent may assume that the predicate
 // LUSHI_ismycode(ip) holds, where ip is the physical IP from the
 // pchord
-LUSHI_DECL(lush_step_t, LUSHI_peek_bichord, (lush_cursor_t* cursor));
+LUSHI_DECL(lush_step_t, LUSHI_step_bichord, (lush_cursor_t* cursor));
+
 
 // Given a lush_cursor with a valid bichord, determine the next pnote
-// (or lnote)
+// (or lnote).
+//
+// On successful completion, returns LUSH_STEP_CONT; if the previous
+// pnote was the last frame in the pchord, return LUSH_STEP_DONE;
+// otherwise returns LUSH_STEP_ERROR.
 LUSHI_DECL(lush_step_t, LUSHI_step_pnote, (lush_cursor_t* cursor));
 LUSHI_DECL(lush_step_t, LUSHI_step_lnote, (lush_cursor_t* cursor));
+
+LUSHI_DECL(lush_step_t, LUSHI_forcestep_pnote, (lush_cursor_t* cursor));
 
 LUSHI_DECL(int, LUSHI_set_active_frame_marker, (/*context, callback*/));
 

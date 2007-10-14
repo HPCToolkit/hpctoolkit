@@ -76,7 +76,7 @@ struct lush_agent_pool {
   POOL_DECL(LUSHI_strerror);
   POOL_DECL(LUSHI_reg_dlopen);
   POOL_DECL(LUSHI_ismycode);
-  POOL_DECL(LUSHI_peek_bichord);
+  POOL_DECL(LUSHI_step_bichord);
   POOL_DECL(LUSHI_step_pnote);
   POOL_DECL(LUSHI_step_lnote);
 
@@ -104,23 +104,37 @@ void lush_init_unw(lush_cursor_t* cursor,
 
 // Given a lush_cursor, peek the next bichord.  Assumes that at most
 // one agent is responsible for any IP address.
-lush_step_t lush_peek_bichord(lush_cursor_t* cursor);
+// 
+// If the peek finds a bichord returns LUSH_STEP_CONT; otherwise
+// returns LUSH_STEP_DONE to indicate the end of the unwind; or
+// LUSH_STEP_ERROR.
+lush_step_t lush_step_bichord(lush_cursor_t* cursor);
 
 
 // Given a lush_cursor, unwind to the next physical chord and locate the
-// physical cursor.  Use the appropriate agent or local procedures.
+// physical cursor.  Uses the appropriate agent or local procedures.
+//
+// On successful completion, returns LUSH_STEP_CONT; if the previous
+// bichord was the last bichord in the unwind, return LUSH_STEP_DONE;
+// otherwise returns LUSH_STEP_ERROR.
 lush_step_t lush_step_pchord(lush_cursor_t* cursor);
 
 
-// Given a lush_cursor, unwind one pnote/lonote of the pchord/lchord.
+// Given a lush_cursor, unwind one pnote/lnote of the current
+// pchord/lchord -- but only if the ?CHORD_DONE flag is not set.  In
+// other words, the current chord bounds the steps until a forcestep
+// is called (usually via lush_step_bichord)
 lush_step_t lush_step_pnote(lush_cursor_t* cursor);
 lush_step_t lush_step_lnote(lush_cursor_t* cursor);
 
 
 // Given a lush_cursor, forcefully advance to the next pnote (which
-// may also be the next pchord).  On successful completion, returns
-// LUSH_STEP_CONT; if the previous pnote was the last frame in the
-// pchord, return LUSH_STEP_DONE; otherwise returns LUSH_STEP_ERROR.
+// may also be the next pchord).  
+//
+// On successful completion, returns LUSH_STEP_CONT; if the previous
+// pnote was the last frame in the pchord, return LUSH_STEP_DONE;
+// otherwise returns LUSH_STEP_ERROR.  When the current pchord/lchord
+// is finished sets the appropriate cursor ?CHORD_DONE flag.
 lush_step_t lush_forcestep_pnote(lush_cursor_t* cursor);
 lush_step_t lush_forcestep_lnote(lush_cursor_t* cursor);
 
