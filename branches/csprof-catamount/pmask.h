@@ -2,6 +2,9 @@
 #define INTV  (1 << 1)
 #define ITIMER_HANDLER (1 << 2)
 #define UNW (1 << 3)
+#define SPLAY (1 << 4)
+#define INTV2 (1 << 5)
+
 #define NONE (0)
 #define ALL (~0)
 

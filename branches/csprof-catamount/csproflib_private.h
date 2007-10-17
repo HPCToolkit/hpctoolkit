@@ -71,11 +71,7 @@
 
 //*************************** Forward Declarations **************************
 
-#ifndef NAME_MAX
-#define NAME_MAX 1024
-#endif
-
-#define CSPROF_FNM_SZ  (NAME_MAX+1) /* filename size */
+#include "fname_max.h"
 
 typedef void (*sig_handler_func_t)(int, siginfo_t *, void *);
 

@@ -24,14 +24,16 @@ pthread_mutex_t xedlock = PTHREAD_MUTEX_INITIALIZER;
 
 static interval_tree_node_t csprof_interval_tree_root = NULL;
 static simple_spinlock csprof_interval_tree_lock;
+static simple_spinlock simple_xedlock = 0;
 
 void
 csprof_interval_tree_init(void)
 {
-    csprof_interval_tree_root = NULL;
-    simple_spinlock_unlock(&csprof_interval_tree_lock);
+  PMSG(SPLAY,"SPLAY:interval splay tree init");
+  csprof_interval_tree_root = NULL;
+  simple_spinlock_unlock(&csprof_interval_tree_lock);
 #ifdef CSPROF_THREADS
-    pthread_mutex_init(&xedlock,NULL);
+  pthread_mutex_init(&xedlock,NULL);
 #endif
 }
 
@@ -43,8 +45,10 @@ static interval_status build_intervals(char *ins, unsigned int len){
   pthread_mutex_lock(&xedlock);
 #endif
 
-  MSG(1,"SPLAY: calling l_build_intervals");
+  simple_spinlock_lock(&simple_xedlock);
+  PMSG(SPLAY,"SPLAY: calling l_build_intervals");
   rv = l_build_intervals(ins,len);
+  simple_spinlock_unlock(&simple_xedlock);
 
 #ifdef CSPROF_THREADS
   pthread_mutex_unlock(&xedlock);
@@ -138,7 +142,7 @@ csprof_addr_to_interval(unsigned long addr)
     root = interval_tree_splay(root, addr);
     if (root != NULL && root->start <= addr && addr < root->end) {
 	simple_spinlock_unlock(&lock);
-	MSG(1,"SPLAY:found %lx already in tree",addr);
+	PMSG(SPLAY,"SPLAY:found %lx already in tree",addr);
 	return (unwind_interval *)root;
     }
 
@@ -146,7 +150,7 @@ csprof_addr_to_interval(unsigned long addr)
     ret = find_enclosing_function_bounds((char *)addr, &fcn_start, &fcn_end);
     if (ret != SUCCESS) {
 	simple_spinlock_unlock(&lock);
-	MSG(1,"SPLAY: no enclosing bounds found");
+	PMSG(SPLAY,"SPLAY: no enclosing bounds found");
 	return (NULL);
     }
 #ifdef OLD_INTERFACE
@@ -156,7 +160,7 @@ csprof_addr_to_interval(unsigned long addr)
 #endif //OLD_INTERFACE
     if (istat.first == NULL) {
 	simple_spinlock_unlock(&lock);
-	MSG(1,"SPLAY: build intervals failed");
+	PMSG(1,"SPLAY: build intervals failed");
 	return (NULL);
     }
 

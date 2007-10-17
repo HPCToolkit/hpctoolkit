@@ -1,4 +1,5 @@
 #include <iostream>
+#include <strstream>
 using namespace std;
 #include "xed-interface.H"
 #include "intervals.h"
@@ -23,10 +24,9 @@ extern "C" {
 #include "pmsg.h"
   // turn off msgs @ compile time
   // comment out code below 
-#undef INTV
-#define INTV NONE
   // define DBG true to turn on all sorts of printing
 #define DBG false
+  // #define DBG true
 }
 
 void xed_init(void){
@@ -240,9 +240,15 @@ const char * const status(ra_loc l)
 
 void dump(unwind_interval *u)
 {
-  cerr <<  "start="<< (void *) u->startaddr << " end=" << (void *) u->endaddr << 
+  char buf[1000];
+  strstream cerr_s(buf,sizeof(buf));
+
+  // replace endl at end with a \n and explicit 0;
+  cerr_s <<  "start="<< (void *) u->startaddr << " end=" << (void *) u->endaddr <<
     " stat=" << status(u->ra_status) << " pos=" << u->ra_pos <<
-    " next=" << u->next << " prev=" << u->prev << endl;
+    " next=" << u->next << " prev=" << u->prev << "\n" << '\0';
+
+  PMSG(INTV|UNW,buf);
 }
 
 // wrapper to ensure a C interface
@@ -506,7 +512,7 @@ interval_status l_build_intervals(char  *ins, unsigned int len)
 	cerr << (void *) ins << " (" << xedd.get_length() << " bytes) " 
 	     << xedd.get_iclass() << endl;
       }
-      PMSG(INTV,"%p yielded ok decode",ins);
+      PMSG(INTV2,"%p yielded ok decode",ins);
       break;
     case XED_ERROR_BUFFER_TOO_SHORT:
       PMSG(INTV,"Reached buffer too short error");

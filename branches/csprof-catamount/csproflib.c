@@ -92,6 +92,7 @@
 #include "dump_backtraces.h"
 
 #include "hpcfile_csproflib.h"
+#include "pmsg.h"
 
 /* forward declarations and definitions of all kinds */
 
@@ -167,7 +168,8 @@ void csprof_init_internal(void){
   if (getenv("CSPROF_WAIT")){
     while(wait_for_gdb);
   }
-  csprof_libc_init();
+  pmsg_init();
+  // csprof_libc_init();
   MSG(CSPROF_MSG_SHUTDOWN, "***> csprof init internal ***");
 
   csprof_options__init(&opts);
