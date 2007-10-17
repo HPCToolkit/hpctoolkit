@@ -71,24 +71,39 @@ LUSHI_DECL(bool, LUSHI_ismycode, (void* addr));
 // Logical Unwinding
 // --------------------------------------------------------------------------
 
-// Given a lush_cursor with a valid pchord, compute bichord and lchord
-// meta-information.  An agent may assume that the predicate
-// LUSHI_ismycode(ip) holds, where ip is the physical IP from the
-// pchord
+// Given a lush_cursor, step the cursor to the next (less deeply
+// nested) bichord.  Returns:
+//   LUSH_STEP_CONT:     if step was sucessful
+//   LUSH_STEP_END_PROJ: if chord was end of projection
+//   LUSH_STEP_ERROR:    on account of an error.
+//
+// It is assumed that:
+// - the cursor is initialized with the first p-note of the p-chord
+// - the predicate LUSHI_ismycode(ip) holds, where ip is the physical
+//   IP from the p-chord
 LUSHI_DECL(lush_step_t, LUSHI_step_bichord, (lush_cursor_t* cursor));
 
 
-// Given a lush_cursor with a valid bichord, determine the next pnote
-// (or lnote).
-//
-// On successful completion, returns LUSH_STEP_CONT; if the previous
-// pnote was the last frame in the pchord, return LUSH_STEP_DONE;
-// otherwise returns LUSH_STEP_ERROR.
+// Given a lush_cursor, _forcefully_ step the cursor to the next (less
+// deeply nested) p-note which may also be the next p-chord.
+// Returns:
+//   LUSH_STEP_CONT:      if step was sucessful
+//   LUSH_STEP_END_CHORD: if prev p-note was the end of the p-chord
+//   LUSH_STEP_END_PROJ:  if prev p-chord was end of p-projection
+//   LUSH_STEP_ERROR:     on account of an error.
 LUSHI_DECL(lush_step_t, LUSHI_step_pnote, (lush_cursor_t* cursor));
+
+
+// Given a lush_cursor, step the cursor to the next (less deeply
+// nested) l-note of the current l-chord.
+// Returns: 
+//   LUSH_STEP_CONT:      if step was sucessful
+//   LUSH_STEP_END_CHORD: if prev l-note was the end of the l-chord
+//   LUSH_STEP_ERROR:     on account of an error.
 LUSHI_DECL(lush_step_t, LUSHI_step_lnote, (lush_cursor_t* cursor));
 
-LUSHI_DECL(lush_step_t, LUSHI_forcestep_pnote, (lush_cursor_t* cursor));
 
+// ...
 LUSHI_DECL(int, LUSHI_set_active_frame_marker, (/*context, callback*/));
 
 // --------------------------------------------------------------------------

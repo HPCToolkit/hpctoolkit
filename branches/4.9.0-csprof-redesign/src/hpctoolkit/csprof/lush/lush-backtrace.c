@@ -55,7 +55,7 @@ lush_backtrace(csprof_state_t* state,
   lush_cursor_t cursor;
   lush_init_unw(&cursor, state->lush_agents, context);
 
-  while (lush_step_bichord(&cursor) != LUSH_STEP_DONE) {
+  while (lush_step_bichord(&cursor) != LUSH_STEP_END_PROJ) {
 
     lush_assoc_t as = lush_cursor_get_assoc(&cursor);
     switch (as) {
@@ -65,10 +65,9 @@ lush_backtrace(csprof_state_t* state,
 	lush_step_lnote(&cursor);
 	break;
 
-      // many-to-1
       case LUSH_ASSOC_1_n_to_0:
       case LUSH_ASSOC_2_n_to_1:
-	while (lush_step_pnote(&cursor) != LUSH_STEP_DONE) {
+	while (lush_step_pnote(&cursor) != LUSH_STEP_END_CHORD) {
 	  // ... get IP
 	}
 	if (as == LUSH_ASSOC_2_n_to_1) {
@@ -76,15 +75,11 @@ lush_backtrace(csprof_state_t* state,
 	}
 	break;
 	
-      // 1-to-many
-      case LUSH_ASSOC_0_to_1_n:
       case LUSH_ASSOC_1_to_2_n:
-	if (as == LUSH_ASSOC_1_to_2_n) {
-	  lush_step_pnote(&cursor);
-	  // ... get IP
-	}
+	lush_step_pnote(&cursor);
+	// ... get IP
 
-	while (lush_step_lnote(&cursor) != LUSH_STEP_DONE) {
+	while (lush_step_lnote(&cursor) != LUSH_STEP_END_CHORD) {
 	  //lush_agentid_t aid = lush_cursor_get_agent(&cursor);
 	  //lush_lip_t* lip = lush_cursor_get_lip(&cursor);
 	  // ...

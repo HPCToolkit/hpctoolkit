@@ -87,7 +87,7 @@ lush_agent__fini(lush_agent_t* x, lush_agent_pool_t* pool)
 
 // **************************************************************************
 
-// FIXME: Copied form dlpapi.c.  When hpcrun and csprof are merged,
+// FIXME: Copied from dlpapi.c.  When hpcrun and csprof are merged,
 // this can be merged into a common lib.
 static void
 handle_any_dlerror()
@@ -158,7 +158,7 @@ lush_agent_pool__fini(lush_agent_pool_t* x)
 
 
 // **************************************************************************
-// Unwind support
+// LUSH Unwinding Interface
 // **************************************************************************
 
 void 
@@ -170,9 +170,10 @@ lush_init_unw(lush_cursor_t* cursor,
 #endif
   
   memset(cursor, 0, sizeof(*cursor));
-
+  
   cursor->apool = apool;
-  lush_cursor_set_flag(cursor, LUSH_CURSOR_FLAGS_INIT);
+  lush_cursor_set_flag(cursor, LUSH_CURSOR_FLAGS_BEG_PPROJ);
+  lush_cursor_set_flag(cursor, LUSH_CURSOR_FLAGS_BEG_PCHORD);
   unw_init_f_mcontext(context, lush_cursor_get_pcursor(cursor));
 }
 
@@ -182,18 +183,23 @@ lush_step_bichord(lush_cursor_t* cursor)
 {
   lush_step_t ty = LUSH_STEP_NULL;
 
-  // 1. Determine next physical chord (starting point of next bichord)
-  ty = lush_step_pchord(cursor);
-
-  if (ty == LUSH_STEP_DONE || ty == LUSH_STEP_ERROR) {
-    return ty;
+  // 1. Sanity check
+  if (lush_cursor_is_flag(cursor, LUSH_CURSOR_FLAGS_END_PPROJ)) {
+    return LUSH_STEP_END_PROJ;
   }
 
-  // 2. Compute bichord and logical chord meta-info
+  // INVARIANT: cursor 'unofficially' points to next p-chord/p-note
+  if (!lush_cursor_is_flag(cursor, LUSH_CURSOR_FLAGS_BEG_PCHORD)) {
+    // ... (FIXME)...
+  }
+
+  // 2. Officially step to next bichord.  First attempt to use an
+  // agent to interpret the p-chord.  Otherwise, use the 'identity
+  // agent'
   unw_word_t ip = lush_cursor_get_ip(cursor);
   cursor->aid = lush_agentid_NULL;
 
-  // 2a. First, see if an agent can interpret the pchord, giving an lchord
+  // attempt to find an agent
   lush_agent_pool_t* pool = cursor->apool;
   lush_agentid_t aid = 1;
   for (aid = 1; aid <= 1; ++aid) { // FIXME: first in list, etc.
@@ -205,38 +211,9 @@ lush_step_bichord(lush_cursor_t* cursor)
     }
   }
   
-  // 2b. Otherwise, the physical chord is the logical chord (identity agent)
+  // use the `identity agent'
   if (cursor->aid == lush_agentid_NULL) {
     cursor->assoc = LUSH_ASSOC_1_to_1;
-  }
-
-  return ty;
-}
-
-
-lush_step_t
-lush_step_pchord(lush_cursor_t* cursor)
-{
-  lush_step_t ty = LUSH_STEP_NULL;
-
-  if (!lush_cursor_is_flag(cursor, LUSH_CURSOR_FLAGS_INIT)) {
-    // complete the current pchord, if we haven't examined all pnotes
-    while (!lush_cursor_is_flag(cursor, LUSH_CURSOR_FLAGS_PCHORD_DONE)) {
-      lush_forcestep_pnote(cursor);
-    }
-    lush_cursor_unset_flag(cursor, LUSH_CURSOR_FLAGS_CHORD_DONE);
-      
-    ty = lush_forcestep_pnote(cursor);
-    
-    if (ty == LUSH_STEP_DONE || ty == LUSH_STEP_ERROR) {
-      // we have reached the outermost frame of the stack (or an error state)
-      lush_cursor_set_flag(cursor, LUSH_CURSOR_FLAGS_CHORD_DONE);
-    }
-  }
-  else {
-    // the first pchord begins at the current pnote (pcursor)
-    lush_cursor_unset_flag(cursor, LUSH_CURSOR_FLAGS_INIT);
-    ty = LUSH_STEP_CONT;
   }
 
   return ty;
@@ -246,12 +223,16 @@ lush_step_pchord(lush_cursor_t* cursor)
 lush_step_t 
 lush_step_pnote(lush_cursor_t* cursor)
 {
-  lush_step_t ty = LUSH_STEP_CONT;
-
-  if (!lush_cursor_is_flag(cursor, LUSH_CURSOR_FLAGS_PCHORD_DONE)) {
-    ty = lush_forcestep_pnote(cursor);
+  if (lush_cursor_is_flag(cursor, LUSH_CURSOR_FLAGS_END_PCHORD)) {
+    return LUSH_STEP_END_CHORD;
   }
-  
+
+  lush_step_t ty = lush_forcestep_pnote(cursor);
+
+  // filter return type
+  if (ty == LUSH_STEP_END_PROJ) {
+    ty = LUSH_STEP_END_CHORD;
+  }
   return ty;
 }
 
@@ -259,11 +240,83 @@ lush_step_pnote(lush_cursor_t* cursor)
 lush_step_t
 lush_step_lnote(lush_cursor_t* cursor)
 {
-  lush_step_t ty = LUSH_STEP_CONT;
+  lush_step_t ty = LUSH_STEP_NULL;
 
-  if (!lush_cursor_is_flag(cursor, LUSH_CURSOR_FLAGS_LCHORD_DONE)) {
-    ty = lush_forcestep_lnote(cursor);
+  if (lush_cursor_is_flag(cursor, LUSH_CURSOR_FLAGS_END_LCHORD)) {
+    return LUSH_STEP_END_CHORD;
   }
+
+  // Step cursor to next l-note, using the appropriate agent
+  lush_agent_pool_t* pool = cursor->apool;
+  lush_agentid_t aid = cursor->aid;
+  if (aid != lush_agentid_NULL) {
+    ty = pool->LUSHI_step_lnote[aid](cursor);
+  }
+  else {
+    // Identity agent: Association is 1-to-1, so l-chord is unit length
+    int t = unw_step(lush_cursor_get_pcursor(cursor));
+    if (t > 0) {
+      ty = LUSH_STEP_END_CHORD;
+    }
+    else if (t == 0) {
+      ty = LUSH_STEP_END_PROJ; // must filter this value...
+    } 
+    else if (t < 0) {
+      ty = LUSH_STEP_ERROR;
+    }
+  }
+
+  // Set cursor flags
+  if (ty == LUSH_STEP_END_CHORD
+      || ty == LUSH_STEP_END_PROJ
+      || ty == LUSH_STEP_ERROR) {
+    lush_cursor_set_flag(cursor, LUSH_CURSOR_FLAGS_END_LCHORD);
+  }
+  if (ty == LUSH_STEP_END_PROJ
+      || ty == LUSH_STEP_ERROR) {
+    lush_cursor_set_flag(cursor, LUSH_CURSOR_FLAGS_END_LPROJ);
+  }
+
+  // filter return type
+  if (ty == LUSH_STEP_END_PROJ) {
+    ty = LUSH_STEP_END_CHORD;
+  }
+
+  return ty;
+}
+
+
+// **************************************************************************
+// LUSH Unwinding Primitives
+// **************************************************************************
+
+lush_step_t
+lush_step_pchord(lush_cursor_t* cursor)
+{
+ 
+  lush_step_t ty = LUSH_STEP_NULL;
+
+#if 0 // FIXME: check this
+  if (!lush_cursor_is_flag(cursor, LUSH_CURSOR_FLAGS_INIT)) {
+    // complete the current p-chord, if we haven't examined all p-notes
+    while (!lush_cursor_is_flag(cursor, LUSH_CURSOR_FLAGS_DONE_PCHORD)) {
+      lush_forcestep_pnote(cursor);
+    }
+    lush_cursor_unset_flag(cursor, LUSH_CURSOR_FLAGS_DONE_CHORD);
+      
+    ty = lush_forcestep_pnote(cursor);
+    
+    if (ty == LUSH_STEP_DONE_CHORDS || ty == LUSH_STEP_ERROR) {
+      // we have reached the outermost frame of the stack (or an error state)
+      lush_cursor_set_flag(cursor, LUSH_CURSOR_FLAGS_DONE_CHORD);
+    }
+  }
+  else {
+    // the first p-chord begins at the current p-note (p-cursor)
+    lush_cursor_unset_flag(cursor, LUSH_CURSOR_FLAGS_INIT);
+    ty = LUSH_STEP_CONT;
+  }
+#endif
 
   return ty;
 }
@@ -272,60 +325,49 @@ lush_step_lnote(lush_cursor_t* cursor)
 lush_step_t
 lush_forcestep_pnote(lush_cursor_t* cursor)
 {
-  lush_step_t ty = LUSH_STEP_CONT;
+  if (lush_cursor_is_flag(cursor, LUSH_CURSOR_FLAGS_END_PPROJ)) {
+    return LUSH_STEP_END_PROJ;
+  }
 
+  lush_step_t ty = LUSH_STEP_NULL;
+  
+  // Step cursor to next p-note, using the appropriate agent
   lush_agent_pool_t* pool = cursor->apool;
   lush_agentid_t aid = cursor->aid;
   if (aid != lush_agentid_NULL) {
     ty = pool->LUSHI_step_pnote[aid](cursor);
   }
   else {
+    // Identity agent: Association is 1-to-1, so p-chord is unit length
     int t = unw_step(lush_cursor_get_pcursor(cursor));
     if (t > 0) {
-      // LUSH_STEP_CONT
+      ty = LUSH_STEP_END_CHORD;
     }
     else if (t == 0) {
-      ty = LUSH_STEP_DONE;
-    } 
-    else if (t < 0) {
-      ty = LUSH_STEP_ERROR;
-    }
-  }
-  
-  if (ty == LUSH_STEP_DONE || ty == LUSH_STEP_ERROR) {
-    lush_cursor_set_flag(cursor, LUSH_CURSOR_FLAGS_PCHORD_DONE);
-  }
-  return ty;
-}
-
-
-lush_step_t
-lush_forcestep_lnote(lush_cursor_t* cursor)
-{
-  lush_step_t ty = LUSH_STEP_CONT;
-
-  lush_agent_pool_t* pool = cursor->apool;
-  lush_agentid_t aid = cursor->aid;
-  if (aid != lush_agentid_NULL) {
-    ty = pool->LUSHI_step_lnote[aid](cursor);
-  }
-  else {
-    int t = unw_step(lush_cursor_get_pcursor(cursor));
-    if (t > 0) {
-      // LUSH_STEP_CONT
-    }
-    else if (t == 0) {
-      ty = LUSH_STEP_DONE;
+      ty = LUSH_STEP_END_PROJ;
     } 
     else if (t < 0) {
       ty = LUSH_STEP_ERROR;
     }
   }
 
-  if (ty == LUSH_STEP_DONE || ty == LUSH_STEP_ERROR) {
-    lush_cursor_set_flag(cursor, LUSH_CURSOR_FLAGS_LCHORD_DONE);
+  // Set cursor flags
+  if (ty == LUSH_STEP_END_CHORD) {
+    // since prev p-note was end of p-chord, the cursor is pointing to
+    // the beginning of the next p-chord
+    lush_cursor_set_flag(cursor, LUSH_CURSOR_FLAGS_BEG_PCHORD);
+  }
+  if (ty == LUSH_STEP_END_CHORD
+      || ty == LUSH_STEP_END_PROJ
+      || ty == LUSH_STEP_ERROR) {
+    lush_cursor_set_flag(cursor, LUSH_CURSOR_FLAGS_END_PCHORD);
+  }
+  if (ty == LUSH_STEP_END_PROJ
+      || ty == LUSH_STEP_ERROR) {
+    lush_cursor_set_flag(cursor, LUSH_CURSOR_FLAGS_END_PPROJ);
   }
   return ty;
 }
+
 
 //***************************************************************************

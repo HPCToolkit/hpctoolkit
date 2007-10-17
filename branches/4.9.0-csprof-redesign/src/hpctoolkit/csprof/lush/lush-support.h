@@ -64,11 +64,8 @@ enum lush_assoc {
   LUSH_ASSOC_NULL = 0,
 
   LUSH_ASSOC_1_to_1,   //   1 <-> 1
-
   LUSH_ASSOC_1_n_to_0, // 2:n <-> 0 and 1 <-> 0
   LUSH_ASSOC_2_n_to_1, // 2:n <-> 1
-
-  LUSH_ASSOC_0_to_1_n, //   0 <-> 2:n and 0 <-> 1
   LUSH_ASSOC_1_to_2_n  //   1 <-> 2:n
 };
 
@@ -81,9 +78,11 @@ typedef enum lush_step lush_step_t;
 
 enum lush_step {
   LUSH_STEP_NULL = 0,
-  LUSH_STEP_DONE,
-  LUSH_STEP_CONT,
-  LUSH_STEP_ERROR
+
+  LUSH_STEP_CONT,      // cursor represents valid chord/note
+  LUSH_STEP_END_CHORD, // prev note  was the end of the chord
+  LUSH_STEP_END_PROJ,  // prev chord was the end of the projection
+  LUSH_STEP_ERROR      // error during the step
 };
 
 
@@ -108,11 +107,15 @@ typedef enum lush_cursor_flags lush_cursor_flags_t;
 enum lush_cursor_flags {
   LUSH_CURSOR_FLAGS_NONE = 0x00000000,
 
-  LUSH_CURSOR_FLAGS_INIT = 0x00000001, // first use of the cursor
+  // projections
+  LUSH_CURSOR_FLAGS_BEG_PPROJ  = 0x00000001, // cursor @ beg of p-projection
+  LUSH_CURSOR_FLAGS_END_PPROJ  = 0x00000002, // cursor @ end of p-projection
+  LUSH_CURSOR_FLAGS_END_LPROJ  = 0x00000004, // cursor @ end of l-projection
 
-  LUSH_CURSOR_FLAGS_PCHORD_DONE = 0x00000010, // current pchord is completed
-  LUSH_CURSOR_FLAGS_LCHORD_DONE = 0x00000020, // current lchord is completed
-  LUSH_CURSOR_FLAGS_CHORD_DONE  = 0x00000030  // all together now!
+  // chords
+  LUSH_CURSOR_FLAGS_BEG_PCHORD = 0x00000010, // cursor @ beg of p-chord
+  LUSH_CURSOR_FLAGS_END_PCHORD = 0x00000020, // cursor @ end of p-chord
+  LUSH_CURSOR_FLAGS_END_LCHORD = 0x00000040  // cursor @ end of l-chord
 };
 
 

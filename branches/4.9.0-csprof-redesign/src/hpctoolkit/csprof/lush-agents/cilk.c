@@ -196,7 +196,7 @@ is_cilkprogram(void* addr)
 // **************************************************************************
 
 extern lush_step_t
-LUSHI_peek_bichord(lush_cursor_t* cursor)
+LUSHI_step_bichord(lush_cursor_t* cursor)
 {
 #if 0
   // INVARIANTS for the libcilk DSO simplified model:
@@ -272,24 +272,15 @@ LUSHI_peek_bichord(lush_cursor_t* cursor)
 extern lush_step_t
 LUSHI_step_pnote(lush_cursor_t* cursor)
 {
-  // FIXME: this becomes a force-step
+  lush_step_t ty = LUSH_STEP_NULL;
 
-  lush_step_t ty = LUSH_ASSOC_NULL;
-
-  lush_assoc_t assoc = lush_cursor_get_assoc(cursor);
-
-  if (assoc == LUSH_ASSOC_0_to_1_n) {
-    ty = LUSH_STEP_DONE;
-    return ty;
-  }
-
+  // FIXME: Association is fixed at 1-to-1
   int t = CB_step(lush_cursor_get_pcursor(cursor));
   if (t > 0) {
-    // LUSH_STEP_CONT
-    ty = LUSH_STEP_DONE; // FIXME: pchord always contains on pnote
+    ty = LUSH_STEP_END_CHORD;
   }
   else if (t == 0) {
-    ty = LUSH_STEP_DONE;
+    ty = LUSH_STEP_END_PROJ;
   }
   else if (t < 0) {
     ty = LUSH_STEP_ERROR;

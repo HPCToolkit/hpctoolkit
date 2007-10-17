@@ -56,6 +56,7 @@ struct lush_agent {
   void* dlhandle;
 };
 
+
 // ---------------------------------------------------------
 // A pool of LUSH agents
 // ---------------------------------------------------------
@@ -94,49 +95,57 @@ int lush_agent_pool__fini(lush_agent_pool_t* x);
 
 
 // **************************************************************************
-// LUSH Unwinding Primitives
+// LUSH Unwinding Interface
 // **************************************************************************
 
-// Initialize the unwind.  Set a flag indicating initialization.
+// Given an agent-pool and context, initialize the lush_cursor but do
+// not step to the first (innermost) bichord.
 void lush_init_unw(lush_cursor_t* cursor, 
 		   lush_agent_pool_t* apool, mcontext_t *context);
 
 
-// Given a lush_cursor, peek the next bichord.  Assumes that at most
-// one agent is responsible for any IP address.
-// 
-// If the peek finds a bichord returns LUSH_STEP_CONT; otherwise
-// returns LUSH_STEP_DONE to indicate the end of the unwind; or
-// LUSH_STEP_ERROR.
+// Given a lush_cursor, step the cursor to the next (less deeply
+// nested) bichord.  Returns:
+//   LUSH_STEP_CONT:     if step was sucessful
+//   LUSH_STEP_END_PROJ: if chord was end of projection
+//   LUSH_STEP_ERROR:    on account of an error.
 lush_step_t lush_step_bichord(lush_cursor_t* cursor);
 
 
-// Given a lush_cursor, unwind to the next physical chord and locate the
-// physical cursor.  Uses the appropriate agent or local procedures.
-//
-// On successful completion, returns LUSH_STEP_CONT; if the previous
-// bichord was the last bichord in the unwind, return LUSH_STEP_DONE;
-// otherwise returns LUSH_STEP_ERROR.
-lush_step_t lush_step_pchord(lush_cursor_t* cursor);
-
-
-// Given a lush_cursor, unwind one pnote/lnote of the current
-// pchord/lchord -- but only if the ?CHORD_DONE flag is not set.  In
-// other words, the current chord bounds the steps until a forcestep
-// is called (usually via lush_step_bichord)
+// Given a lush_cursor, step the cursor to the next (less deeply
+// nested) p-note/l-note of the current p-chord/l-chord.
+// Returns: 
+//   LUSH_STEP_CONT:      if step was sucessful
+//   LUSH_STEP_END_CHORD: if prev note was the end of the chord
+//   LUSH_STEP_ERROR:     on account of an error.
 lush_step_t lush_step_pnote(lush_cursor_t* cursor);
 lush_step_t lush_step_lnote(lush_cursor_t* cursor);
 
 
-// Given a lush_cursor, forcefully advance to the next pnote (which
-// may also be the next pchord).  
+// **************************************************************************
+// LUSH Unwinding Primitives
+// **************************************************************************
+
+// Given a lush_cursor, _forcefully_ step the cursor to the next (less
+// deeply nested) p-chord.  Return values are same as
+// lush_step_bichord.
+lush_step_t lush_forcestep_pchord(lush_cursor_t* cursor);
+
+
+// Given a lush_cursor, _forcefully_ step the cursor to the next (less
+// deeply nested) p-note which may also be the next p-chord.
+// Returns:
+//   LUSH_STEP_CONT:      if step was sucessful
+//   LUSH_STEP_END_CHORD: if prev p-note was the end of the p-chord
+//   LUSH_STEP_END_PROJ:  if prev p-chord was end of p-projection
+//   LUSH_STEP_ERROR:     on account of an error.
 //
-// On successful completion, returns LUSH_STEP_CONT; if the previous
-// pnote was the last frame in the pchord, return LUSH_STEP_DONE;
-// otherwise returns LUSH_STEP_ERROR.  When the current pchord/lchord
-// is finished sets the appropriate cursor ?CHORD_DONE flag.
+// Sets zero or more of the following flags (as appropriate):
+//   LUSH_CURSOR_FLAGS_END_PPROJ:  
+//   LUSH_CURSOR_FLAGS_BEG_PCHORD: 
+//   LUSH_CURSOR_FLAGS_END_PCHORD: 
 lush_step_t lush_forcestep_pnote(lush_cursor_t* cursor);
-lush_step_t lush_forcestep_lnote(lush_cursor_t* cursor);
+
 
 // **************************************************************************
 
