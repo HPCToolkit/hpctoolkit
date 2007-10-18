@@ -94,7 +94,7 @@ enum lush_step {
 typedef struct lush_lip lush_lip_t;
 
 struct lush_lip {
-  unsigned char data[32];
+  unsigned char data[16];
 };
 
 
