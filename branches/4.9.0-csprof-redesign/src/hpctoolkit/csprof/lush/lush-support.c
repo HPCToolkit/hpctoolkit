@@ -66,12 +66,54 @@ lush_cursor_get_assoc(lush_cursor_t* cursor)
 }
 
 
+void
+lush_cursor_set_assoc(lush_cursor_t* cursor, lush_assoc_t as)
+{
+  cursor->assoc = as;
+}
+
+
+lush_agentid_t
+lush_cursor_get_aid(lush_cursor_t* cursor)
+{
+  return cursor->aid;
+}
+
+
+void
+lush_cursor_set_aid(lush_cursor_t* cursor, lush_agentid_t aid)
+{
+  cursor->aid = aid;
+}
+
+
 unw_word_t
 lush_cursor_get_ip(lush_cursor_t* cursor)
 {
   unw_word_t ip = 0;
-  if (unw_get_reg(&(cursor->pcursor), UNW_REG_IP, &ip) < 0) {
+  if (unw_get_reg(&cursor->pcursor, UNW_REG_IP, &ip) < 0) {
     // FIXME
   }
   return ip;
+}
+
+
+lush_lip_t*
+lush_cursor_get_lip(lush_cursor_t* cursor)
+{
+  return &cursor->lip;
+}
+
+
+unw_cursor_t*
+lush_cursor_get_pcursor(lush_cursor_t* cursor)
+{
+  return &cursor->pcursor;
+}
+
+
+lush_lcursor_t*
+lush_cursor_get_lcursor(lush_cursor_t* cursor)
+{
+  return &cursor->lcursor;
 }

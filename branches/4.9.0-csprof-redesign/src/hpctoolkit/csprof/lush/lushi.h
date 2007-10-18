@@ -43,11 +43,13 @@
 extern "C" {
 #endif
 
+
 // --------------------------------------------------------------------------
 // Initialization/Finalization
 // --------------------------------------------------------------------------
 
 LUSHI_DECL(int, LUSHI_init, (int argc, char** argv,
+			     /*lush_agentid_t*/ int  aid,
 			     LUSHCB_malloc_fn_t      malloc_fn,
 			     LUSHCB_free_fn_t        free_fn,
 			     LUSHCB_step_fn_t        step_fn,
@@ -74,13 +76,17 @@ LUSHI_DECL(bool, LUSHI_ismycode, (void* addr));
 // Given a lush_cursor, step the cursor to the next (less deeply
 // nested) bichord.  Returns:
 //   LUSH_STEP_CONT:     if step was sucessful
-//   LUSH_STEP_END_PROJ: if chord was end of projection
 //   LUSH_STEP_ERROR:    on account of an error.
 //
 // It is assumed that:
-// - the cursor is initialized with the first p-note of the p-chord
+// - the cursor is initialized with the first p-note of what will be
+//   the current p-chord (IOW, p-note is always valid and part of the
+//   p-projection)
+// - consequently, LUSH_STEP_END_PROJ is not a valid return value.
 // - the predicate LUSHI_ismycode(ip) holds, where ip is the physical
 //   IP from the p-chord
+// - the cursor's agent-id field points to the agent responsible for
+//   the last bichord (or NULL).
 LUSHI_DECL(lush_step_t, LUSHI_step_bichord, (lush_cursor_t* cursor));
 
 

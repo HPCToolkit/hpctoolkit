@@ -42,6 +42,44 @@ LUSHCB_DECL(CB_get_loadmap);
 
 #undef LUSHCB_DECL
 
+LUSH_AGENTID_XXX_t lush_aid;
+
+//*************************** Forward Declarations **************************
+
+typedef struct cilk_ip cilk_ip_t;
+
+struct cilk_ip {
+  union {
+    // ------------------------------------------------------------
+    // LUSH type
+    // ------------------------------------------------------------
+    lush_lip_t official_lip;
+
+    // ------------------------------------------------------------
+    // superimposed with:    
+    // ------------------------------------------------------------
+    void* ip;
+  };
+};
+
+
+typedef struct cilk_cursor cilk_cursor_t;
+
+struct cilk_cursor {
+  union {
+    // ------------------------------------------------------------
+    // LUSH type
+    // ------------------------------------------------------------
+    lush_lcursor_t official_cursor;
+    
+    // ------------------------------------------------------------
+    // superimposed with:
+    // ------------------------------------------------------------
+    bool seen_cilkprog;
+  };
+};
+
+
 //*************************** Forward Declarations **************************
 
 // FIXME: hackish implementation
@@ -70,6 +108,11 @@ is_libcilk(void* addr);
 static bool
 is_cilkprogram(void* addr);
 
+//*************************** Forward Declarations **************************
+
+static void
+init_lcursor(lush_cursor_t* cursor);
+
 
 // **************************************************************************
 // Initialization/Finalization
@@ -77,11 +120,14 @@ is_cilkprogram(void* addr);
 
 extern int
 LUSHI_init(int argc, char** argv,
+	   LUSH_AGENTID_XXX_t aid,
 	   LUSHCB_malloc_fn_t      malloc_fn,
 	   LUSHCB_free_fn_t        free_fn,
 	   LUSHCB_step_fn_t        step_fn,
 	   LUSHCB_get_loadmap_fn_t loadmap_fn)
 {
+  lush_aid = aid;
+
   CB_malloc      = malloc_fn;
   CB_free        = free_fn;
   CB_step        = step_fn;
@@ -198,83 +244,60 @@ is_cilkprogram(void* addr)
 extern lush_step_t
 LUSHI_step_bichord(lush_cursor_t* cursor)
 {
-#if 0
-  // INVARIANTS for the libcilk DSO simplified model:
-
-  // FIXME: for now we will assume there is always a 1-to-1 or 1-to-0 associativity.
-
-
-  // 1. LUSHI_ismycode(ip) holds, where ip is the physical ip of pchord.
-  //
-  // 2. libcilk implies the pnote is one of
-  //    - Cilk runtime [only n top frames] = no lnote => 1-to-0
-  //    - Cilk scheduler                   = no lnote => 1-to-0
-  //
-  //    !libother implies the pnote is in the app (given basic assumptions)
-  
-  // 3. bottom of the stack is a closure from which we can find stack
-  //    while walking stack, the first non-code function or
-  //    ...
+  init_lcursor(cursor);
 
   void* ip = (void*)lush_cursor_get_ip(cursor);
   bool is_cilkrt   = is_libcilk(ip);
-  bool is_cilkprog = !is_cilkrt; // cf. LUSHI_ismycode
+  bool is_cilkprog = is_cilkprogram(ip);
 
   bool is_TOS; // top of stack
-  if (lush_cursor_is_flag(cursor, LUSH_CURSOR_FLAGS_INIT)) {
+  if (lush_cursor_is_flag(cursor, LUSH_CURSOR_FLAGS_BEG_PPROJ)) {
     is_TOS = true;
   }
 
-  
+  cilk_cursor_t* csr = (cilk_cursor_t*)lush_cursor_get_lcursor(cursor);
+  bool seen_cilkprog = csr->seen_cilkprog;
+
+  // Given p-note derive l-note:
+  //   1. is_cilkrt & is_TOS  => Cilk-scheduling or Cilk-overhead
+  //   2. is_cilkrt & !is_TOS & seen_cilkprog  => Cilk-sched + logical stack
+  //   3. is_cilkrt & !is_TOS & !seen_cilkprog => {result (1)}
+  //   4. is_cilkprog => Cilk + logical Cilk
   if (is_cilkrt) {
     if (is_TOS) {
-      // could be either scheduling or runtime. 
-      // in either case, we don't need a logical...
-      // is_TOS  => ***(rr-help or scheduling)***
+      // case (1)
+      lush_cursor_set_assoc(cursor, LUSH_ASSOC_1_to_0);
     }
     else {
-      if (have-seen-cilk-prog) {
-	we are in scheduling routines --> look for anscestors
+      if (seen_cilkprog) {
+	// case (2)
+	// FIXME: lush_cursor_set_assoc(cursor, LUSH_ASSOC_1_to_2_n)
+	lush_cursor_set_assoc(cursor, LUSH_ASSOC_1_to_0);
       }
       else {
-	we are in scheduling or rt routines --> no need to look for ancestors
+	// case (3)
+	lush_cursor_set_assoc(cursor, LUSH_ASSOC_1_to_0);
       }
-    // !is_TOS && have-seen-cilk-prog  => scheduling
     }
   }
-  // is_cilkrt && is_TOS && have note seen ==> 
-  // is_cilkrt && !is_TOS ==>
-    
-  // we know the top of the stack has stuff
+  if (is_cilkprog) {
+    // case (4)
+    lush_cursor_set_assoc(cursor, LUSH_ASSOC_1_to_1);
+    cilk_cursor_t* csr = (cilk_cursor_t*)lush_cursor_get_lcursor(cursor);
+    csr->seen_cilkprog = true;
+  }
 
-  // we need to identify the cilk fast and slow procedures too
-
-      - a Cilk runtime routine [can detect]
-      - a Cilk fast routine
-      - The Cilk scheduler code / loop
-
-  // have to figure out the assoc at this point...
-  
-
-
-  LUSHI_ismycode(ip);
-
-  // if within cilk AND RT support -> 
-
-  // pnote and lnote may need to consult this...
-
-  // FIXME
-#endif
-  return LUSH_STEP_ERROR;
+  return LUSH_STEP_CONT;
 }
 
 
 extern lush_step_t
 LUSHI_step_pnote(lush_cursor_t* cursor)
 {
+  // NOTE: Since all associations are 1 <-> x, it is always valid to step.
+
   lush_step_t ty = LUSH_STEP_NULL;
 
-  // FIXME: Association is fixed at 1-to-1
   int t = CB_step(lush_cursor_get_pcursor(cursor));
   if (t > 0) {
     ty = LUSH_STEP_END_CHORD;
@@ -282,7 +305,7 @@ LUSHI_step_pnote(lush_cursor_t* cursor)
   else if (t == 0) {
     ty = LUSH_STEP_END_PROJ;
   }
-  else if (t < 0) {
+  else /* (t < 0) */ {
     ty = LUSH_STEP_ERROR;
   }
   
@@ -293,8 +316,38 @@ LUSHI_step_pnote(lush_cursor_t* cursor)
 extern lush_step_t
 LUSHI_step_lnote(lush_cursor_t* cursor)
 {
-  // FIXME: must account for *lchord* and associativity
-  return LUSH_STEP_ERROR;
+  lush_step_t ty = LUSH_STEP_NULL;
+
+  lush_assoc_t as = lush_cursor_get_assoc(cursor);
+  cilk_ip_t* lip = (cilk_ip_t*)lush_cursor_get_lip(cursor);
+  
+  if (as == LUSH_ASSOC_1_to_0) {
+    ty = LUSH_STEP_END_CHORD;
+  }
+  else if (as == LUSH_ASSOC_1_to_1) {
+    if (lip->ip == NULL) {
+      lip->ip = lush_cursor_get_ip(cursor);
+      ty = LUSH_STEP_CONT;
+    }
+    else {
+      ty = LUSH_STEP_END_CHORD;
+    }
+  }
+  else if (LUSH_ASSOC_1_to_2_n) {
+    if (lip->ip == NULL) {
+      lip->ip = lush_cursor_get_ip(cursor);
+      ty = LUSH_STEP_CONT;
+    }
+    else {
+      // FIXME: advance lip;
+      ty = (lip->ip == NULL) ? LUSH_STEP_END_CHORD : LUSH_STEP_CONT;
+    }
+  }
+  else {
+    ty = LUSH_STEP_ERROR;
+  }
+
+  return ty;
 }
 
 
@@ -307,6 +360,21 @@ LUSHI_set_active_frame_marker(ctxt, cb)
 
 
 // --------------------------------------------------------------------------
+
+void
+init_lcursor(lush_cursor_t* cursor)
+{
+  lush_lcursor_t* csr = lush_cursor_get_lcursor(cursor);
+  memset(csr, 0, sizeof(*csr));
+
+  lush_lip_t* lip = lush_cursor_get_lip(cursor);
+  memset(lip, 0, sizeof(*lip));
+}
+
+
+// **************************************************************************
+// 
+// **************************************************************************
 
 extern int
 LUSHI_lip_destroy(lush_lip_t* lip)

@@ -46,8 +46,8 @@
 //*************************** Forward Declarations **************************
 
 // From <lush.h>
-#define LUSH_AGENTID_t      int
-#define LUSH_AGENT_POOL_t   struct lush_agent_pool
+#define LUSH_AGENTID_XXX_t      int
+#define LUSH_AGENT_POOL_XXX_t   struct lush_agent_pool
 
 //***************************************************************************
 // LUSH Unwind Types
@@ -64,8 +64,9 @@ enum lush_assoc {
   LUSH_ASSOC_NULL = 0,
 
   LUSH_ASSOC_1_to_1,   //   1 <-> 1
-  LUSH_ASSOC_1_n_to_0, // 2:n <-> 0 and 1 <-> 0
+  LUSH_ASSOC_1_to_0,   //   1 <-> 0
   LUSH_ASSOC_2_n_to_1, // 2:n <-> 1
+  LUSH_ASSOC_2_n_to_0, // 2:n <-> 0
   LUSH_ASSOC_1_to_2_n  //   1 <-> 2:n
 };
 
@@ -93,8 +94,18 @@ enum lush_step {
 typedef struct lush_lip lush_lip_t;
 
 struct lush_lip {
-  unsigned char data1[8];
-  unsigned char data2[8];
+  unsigned char data[32];
+};
+
+
+// ---------------------------------------------------------
+// LUSH l-cursor: space for a logical cursor
+// ---------------------------------------------------------
+
+typedef struct lush_lcursor lush_lcursor_t;
+
+struct lush_lcursor {
+  unsigned char data[32];
 };
 
 
@@ -106,6 +117,10 @@ typedef enum lush_cursor_flags lush_cursor_flags_t;
 
 enum lush_cursor_flags {
   LUSH_CURSOR_FLAGS_NONE = 0x00000000,
+  
+  //fixme: do we want this?
+  //LUSH_CURSOR_FLAGS_MASK       = 0x00000000,
+  //LUSH_CURSOR_FLAGS_MASK_AGENT = 0x00000000,
 
   // projections
   LUSH_CURSOR_FLAGS_BEG_PPROJ  = 0x00000001, // cursor @ beg of p-projection
@@ -125,15 +140,15 @@ struct lush_cursor {
   // meta info
   unsigned flags;      // lush_cursor_flags
   lush_assoc_t assoc;  // physical-logial association for this bichord
-  LUSH_AGENTID_t aid;  // agent id (if any) owning this cursor
-  LUSH_AGENT_POOL_t* apool; // agent pool
+  LUSH_AGENTID_XXX_t     aid;   // agent id (if any) owning this cursor
+  LUSH_AGENT_POOL_XXX_t* apool; // agent pool
 
   // physical cursor
   unw_cursor_t pcursor;
 
   // logical cursor
-  void* lcursor;
-  lush_lip_t lip;
+  lush_lcursor_t lcursor;
+  lush_lip_t     lip;
   // active marker FIXME
 };
 
@@ -150,16 +165,25 @@ lush_cursor_unset_flag(lush_cursor_t* cursor, lush_cursor_flags_t f);
 /*inline*/ lush_assoc_t 
 lush_cursor_get_assoc(lush_cursor_t* cursor);
 
+/*inline*/ void
+lush_cursor_set_assoc(lush_cursor_t* cursor, lush_assoc_t as);
+
+/*inline*/ LUSH_AGENTID_XXX_t
+lush_cursor_get_aid(lush_cursor_t* cursor);
+
+/*inline*/ void
+lush_cursor_set_aid(lush_cursor_t* cursor, LUSH_AGENTID_XXX_t aid);
+
 /*inline*/ unw_word_t
 lush_cursor_get_ip(lush_cursor_t* cursor);
 
-/*inline*/ lush_lip_t 
+/*inline*/ lush_lip_t*
 lush_cursor_get_lip(lush_cursor_t* cursor);
 
-/*inline*/ unw_cursor_t* 
+/*inline*/ unw_cursor_t*
 lush_cursor_get_pcursor(lush_cursor_t* cursor);
 
-/*inline*/ void* 
+/*inline*/ lush_lcursor_t*
 lush_cursor_get_lcursor(lush_cursor_t* cursor);
 
 

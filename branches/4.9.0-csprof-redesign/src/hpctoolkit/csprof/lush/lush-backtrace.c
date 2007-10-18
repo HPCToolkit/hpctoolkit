@@ -65,7 +65,8 @@ lush_backtrace(csprof_state_t* state,
 	lush_step_lnote(&cursor);
 	break;
 
-      case LUSH_ASSOC_1_n_to_0:
+      case LUSH_ASSOC_1_to_0:
+      case LUSH_ASSOC_2_n_to_0:
       case LUSH_ASSOC_2_n_to_1:
 	while (lush_step_pnote(&cursor) != LUSH_STEP_END_CHORD) {
 	  // ... get IP

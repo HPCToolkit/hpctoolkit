@@ -64,7 +64,7 @@ lush_agent__init(lush_agent_t* x, int id, const char* path,
 
 #undef CALL_DLSYM
 
-  pool->LUSHI_init[x->id](0, NULL, 
+  pool->LUSHI_init[x->id](0, NULL, id,
 			  (LUSHCB_malloc_fn_t)NULL, 
 			  (LUSHCB_free_fn_t)NULL,
 			  (LUSHCB_step_fn_t)unw_step,
@@ -181,6 +181,10 @@ lush_init_unw(lush_cursor_t* cursor,
 lush_step_t
 lush_step_bichord(lush_cursor_t* cursor)
 {
+  // INVARIANT: the cursor is initialized with the first p-note of
+  // what will be the current p-chord (LUSH_CURSOR_FLAGS_BEG_PCHORD),
+  // or has the LUSH_CURSOR_FLAGS_END_PPROJ flag set.
+
   lush_step_t ty = LUSH_STEP_NULL;
 
   // 1. Sanity check
@@ -188,33 +192,32 @@ lush_step_bichord(lush_cursor_t* cursor)
     return LUSH_STEP_END_PROJ;
   }
 
-  // INVARIANT: cursor 'unofficially' points to next p-chord/p-note
-  if (!lush_cursor_is_flag(cursor, LUSH_CURSOR_FLAGS_BEG_PCHORD)) {
-    // ... (FIXME)...
-  }
-
   // 2. Officially step to next bichord.  First attempt to use an
   // agent to interpret the p-chord.  Otherwise, use the 'identity
   // agent'
   unw_word_t ip = lush_cursor_get_ip(cursor);
-  cursor->aid = lush_agentid_NULL;
+  lush_agentid_t first_aid = lush_agentid_NULL;
 
   // attempt to find an agent
   lush_agent_pool_t* pool = cursor->apool;
   lush_agentid_t aid = 1;
   for (aid = 1; aid <= 1; ++aid) { // FIXME: first in list, etc.
     if (pool->LUSHI_ismycode[aid](ip)) {
-      pool->LUSHI_step_bichord[aid](cursor);
-      cursor->aid = aid;
+      ty = pool->LUSHI_step_bichord[aid](cursor);
+      first_aid = aid;
       // FIXME: move agent to beginning of list;
       break;
     }
   }
   
-  // use the `identity agent'
-  if (cursor->aid == lush_agentid_NULL) {
-    cursor->assoc = LUSH_ASSOC_1_to_1;
+  // use the 'identity agent'
+  if (first_aid == lush_agentid_NULL) {
+    ty = LUSH_STEP_CONT;
+    lush_cursor_set_assoc(cursor, LUSH_ASSOC_1_to_1);
   }
+
+  // 3. Set the cursor's agentid
+  lush_cursor_set_aid(cursor, first_aid);
 
   return ty;
 }
@@ -248,7 +251,7 @@ lush_step_lnote(lush_cursor_t* cursor)
 
   // Step cursor to next l-note, using the appropriate agent
   lush_agent_pool_t* pool = cursor->apool;
-  lush_agentid_t aid = cursor->aid;
+  lush_agentid_t aid = lush_cursor_get_aid(cursor);
   if (aid != lush_agentid_NULL) {
     ty = pool->LUSHI_step_lnote[aid](cursor);
   }
@@ -333,7 +336,7 @@ lush_forcestep_pnote(lush_cursor_t* cursor)
   
   // Step cursor to next p-note, using the appropriate agent
   lush_agent_pool_t* pool = cursor->apool;
-  lush_agentid_t aid = cursor->aid;
+  lush_agentid_t aid = lush_cursor_get_aid(cursor);
   if (aid != lush_agentid_NULL) {
     ty = pool->LUSHI_step_pnote[aid](cursor);
   }
