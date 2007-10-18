@@ -31,12 +31,18 @@ XEDDCL := -DXED_SCALARS
 CSPROFLIB := libcsprof.so.1
 CSPROFLIB_STATIC := libcsprof.a
 
+# LUSH
+LUSH_AGENTS =
+ifdef DO_LUSH
+  LUSH_AGENTS = cilk.so
+endif
+
 #DRIVER ?= mallocprof
 # MWF wants async timing, so chg default
 DRIVER = itimer
 #DRIVER = mallocprof
 
-all: $(CSPROFLIB)
+all: $(CSPROFLIB) $(LUSH_AGENTS)
 
 # we develop on Tru64, make it the default
 # MWF: working on x86-64, make it (and gcc) the default 30jan07
@@ -110,16 +116,20 @@ CFLAGS += $(DEFINES) $(CSPROF_THREADS) $(CSPROF_TRAMPOLINE) -I./$(ARCH)
 # library in the proper order and for correct functioning of the profiler
 OBJS := first_func.o
 ifndef STATIC_ONLY
-   OBJS += mon_ovr.o
+  OBJS += mon_ovr.o
 endif
 OBJS += csproflib.o metrics.o mem.o cct.o
 OBJS += list.o libc.o epoch.o
 
 ifdef DO_THREADS
-   OBJS += pthread.o
+  OBJS += pthread.o
 endif
 
-OBJS += backtrace.o
+# LUSH will provide its own backtrace
+ifndef DO_LUSH
+  OBJS += backtrace.o
+endif
+
 ifdef PRIM_UNWIND
   # OBJS += splay_if.o
   OBJS += splay.o
@@ -143,13 +153,16 @@ OBJS += last_func.o
 # ----------------------------------------------------------
 # LUSH
 # ----------------------------------------------------------
-OBJS += lush.o lush-backtrace.o \
-	lushi-cb.o \
-	lush-support.o
+LUSH_AGENT_OBJS =
 
 ifdef DO_LUSH
-  OBJS += cilk.o
+  OBJS += lush-backtrace.o
+  LUSH_AGENT_OBJS += cilk.o
 endif
+
+OBJS += lush.o \
+	lushi-cb.o \
+	lush-support.o
 
 
 #LIBS := hpcfile/$(LIB_CSFILE) $(LIB_THREAD) $(LIB_UNWIND) $(LIB_PFM)
@@ -186,6 +199,7 @@ $(LIB_CSFILE):
 clean:
 	@echo "*** Cleaning csprof ***"
 	@/bin/rm -f $(CSPROFLIB) $(CSPROFLIB_STATIC) $(OBJS)
+	@/bin/rm -f $(LUSH_AGENTS) $(LUSH_AGENT_OBJS)
 	@cd hpcfile; $(MAKE) -I .. clean
 	@cd BetterUnwind; $(MAKE) clean
 
@@ -199,10 +213,17 @@ tarball:
 .PHONY : all libcsfile clean tarball static check TAGS
 
 $(CSPROFLIB): $(LIB_CSFILE) $(OBJS)
-	$(CC) $(LINK_FLAGS) -o $(CSPROFLIB) $(OBJS) $(LIBS)
+	$(CC) $(LINK_FLAGS) -o $@ $(OBJS) $(LIBS)
 	mv hpcfile/$(LIB_CSFILE) ./$(CSPROFLIB_STATIC)
 	$(AR) $(ARFLAGS) $(CSPROFLIB_STATIC) $(OBJS)
-	@echo "*** $(CSPROFLIB) is up to date. ***"
+	@echo "*** $@ is up to date. ***"
+
+
+# LUSH agents
+$(LUSH_AGENTS): $(LUSH_AGENT_OBJS)
+	$(CC) $(LINK_FLAGS) -o $@ $<
+	@echo "*** $@ is up to date. ***"
+
 
 %.o: %.c
 	$(CC) $(INCS) $(CFLAGS) -c $< -o $@
