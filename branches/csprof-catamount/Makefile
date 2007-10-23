@@ -82,7 +82,7 @@ module_dirs := utilities                \
 ifdef STATIC_ONLY
   INC_MON := -I./monitor-static/src
   find_v  := find_static
-  gethost := gethostid.o
+  gethost := gethostid.o override.o
 else
   INC_MON := -I./monitor/src
   find_v  := find
