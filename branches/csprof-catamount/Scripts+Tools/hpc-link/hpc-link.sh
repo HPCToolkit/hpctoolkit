@@ -12,7 +12,7 @@
 ## MWF change to accomodate csprof
 
 HPC_INSTALL_DIR=`dirname $0`
-HPC_WRAP_NAMES='main _exit'
+HPC_WRAP_NAMES='main _exit malloc realloc calloc sigaction signal sigprocmask'
 HPC_INSERT_FILES='monitor.o libcsprof.o'
 CC=gcc
 
@@ -48,7 +48,7 @@ EOF
 
     if test -f "$binary" ; then
 	nm -v "$binary" |
-	awk '$2 == "T" { print "  0x" $1 ",  /* " $3 " */" }' >>"$file"
+	awk '$2 == "T" || $2 == "t" || $2 == "W" { print "  0x" $1 ",  /* " $3 " */" }' >>"$file"
     else
 	echo "  0x0," >>"$file"
     fi
