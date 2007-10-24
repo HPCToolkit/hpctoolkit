@@ -4,6 +4,7 @@
  * $Id$
  */
 
+#include <assert.h>
 #include <err.h>
 #include <stdio.h>
 #include "find.h"
@@ -118,6 +119,13 @@ interval_tree_splay(interval_tree_node_t root, unsigned long addr)
     return (root);
 }
 
+#ifdef DEBUG_TARGET
+
+#define TARGET_ADDR ((unsigned long) 0x400310)
+int debugflag;
+int debugonce = 1; 
+#endif 
+
 /*
  * Lookup the PC address in the interval tree and return a pointer to
  * the interval containing that address (the new root).  Grow the tree
@@ -132,19 +140,25 @@ csprof_addr_to_interval(unsigned long addr)
 {
     char *fcn_start, *fcn_end;
     interval_status istat;
-    interval_tree_node_t first, last, p;
+    interval_tree_node_t first, last, p, lroot;
     unwind_interval *ans;
     int ret;
 
     simple_spinlock_lock(&lock);
 
+
     /* See if addr is already in the tree. */
     root = interval_tree_splay(root, addr);
     if (root != NULL && root->start <= addr && addr < root->end) {
+	lroot = root;
 	simple_spinlock_unlock(&lock);
 	PMSG(SPLAY,"SPLAY:found %lx already in tree",addr);
-	return (unwind_interval *)root;
+	return (unwind_interval *)lroot;
     }
+
+#ifdef DEBUG_TARGET
+    if (addr == TARGET_ADDR) debugflag = debugonce;
+#endif
 
     /* Get list of new intervals to insert into the tree. */
     ret = find_enclosing_function_bounds((char *)addr, &fcn_start, &fcn_end);
@@ -153,6 +167,8 @@ csprof_addr_to_interval(unsigned long addr)
 	PMSG(SPLAY,"SPLAY: no enclosing bounds found");
 	return (NULL);
     }
+    assert(fcn_start <= (char *)addr && (char *)addr <= fcn_end);
+
 #ifdef OLD_INTERFACE
     istat = l_build_intervals(fcn_start, fcn_end - fcn_start);
 #else
@@ -177,6 +193,17 @@ csprof_addr_to_interval(unsigned long addr)
 	    ans = (unwind_interval *)p;
 	last = p;
     }
+    assert(fcn_start <= (char *) first->start);
+    assert((char *) last->end <= fcn_end);
+
+#ifdef DEBUG_TARGET
+    if (debugflag) {
+       unwind_interval *u;
+       for(u = istat.first; u; u = u->next) {
+         idump(u);
+       }
+    }
+#endif
 
     /*
      * Always link the new nodes into the tree whether we found the
@@ -218,6 +245,14 @@ csprof_addr_to_interval(unsigned long addr)
     }
 
     simple_spinlock_unlock(&lock);
+
+#ifdef DEBUG_TARGET
+    if (addr == TARGET_ADDR) {
+	debugonce = 0;
+	debugflag = debugonce;
+    }
+#endif
+
     MSG(1,"SPLAY: returning interval = %p",ans);
     return (ans);
 }

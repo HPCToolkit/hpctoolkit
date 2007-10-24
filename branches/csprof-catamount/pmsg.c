@@ -34,7 +34,9 @@ void pmsg_init(void){
   char tmp[100];
   int n;
 
+#if 0
   __msg_mask = UNW | SPLAY;
+#endif
 
   // tmp[0] = '\0';
   // n = sprintf(tmp,"__msg_mask = 0x%x\n",__msg_mask);

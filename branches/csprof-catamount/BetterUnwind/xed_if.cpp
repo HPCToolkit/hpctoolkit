@@ -25,8 +25,11 @@ extern "C" {
   // turn off msgs @ compile time
   // comment out code below 
   // define DBG true to turn on all sorts of printing
+#if 1
 #define DBG false
-  // #define DBG true
+#else
+#define DBG true
+#endif
 }
 
 void xed_init(void){
@@ -248,7 +251,7 @@ void dump(unwind_interval *u)
     " stat=" << status(u->ra_status) << " pos=" << u->ra_pos <<
     " next=" << u->next << " prev=" << u->prev << "\n" << '\0';
 
-  PMSG(INTV|UNW,buf);
+  PMSG(ALL, buf);
 }
 
 // wrapper to ensure a C interface
@@ -572,6 +575,8 @@ interval_status l_build_intervals(char  *ins, unsigned int len)
     ins += xedd.get_length();
     current->endaddr = (unsigned long) ins;
   }
+
+  current->endaddr = (long unsigned int) end;
 
   // done:
   xed_stat.first_undecoded_ins = ins;
