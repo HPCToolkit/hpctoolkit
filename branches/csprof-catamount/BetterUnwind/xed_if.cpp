@@ -210,6 +210,17 @@ print_operands(xed_decoded_inst_t& xedd)
     }
 }
 
+unwind_interval *fluke_interval(char *loc,unsigned int pos){
+  unwind_interval *u = (unwind_interval *) malloc(sizeof(unwind_interval)); 
+  u->startaddr = (unsigned long) loc;
+  u->endaddr = (unsigned long) loc;
+  u->ra_status = RA_SP_RELATIVE;
+  u->ra_pos = pos;
+  u->next = NULL;
+  u->prev = NULL;
+  return u; 
+}
+
 unwind_interval *newinterval(char *start, ra_loc loc, unsigned int pos,
 			     unwind_interval *prev)
 {
@@ -474,6 +485,34 @@ unwind_interval *what(xed_decoded_inst_t& xedd, char *ins,
 
 // #define DEBUG 1
 
+void handle_return(xed_decoded_inst_t xedd, unwind_interval *&current, unwind_interval *&next, char *&ins, char *end, 
+	bool irdebug)
+{
+      // if the return is not the last instruction in the interval, 
+      // set up an interval for code after the return 
+      if (ins + xedd.get_length() < end) {
+	if (current->prev){ 
+	  if (current->prev->ra_status == RA_BP_RELATIVE) {
+	    next = newinterval(ins + xedd.get_length(), RA_BP_RELATIVE, 
+			       current->prev->ra_pos, current);
+	  } else {
+	    if (irdebug){
+	      cerr << "--In RET interval backup" << endl;
+	    }
+	    next = current->prev;
+	    if (irdebug){
+	      cerr << "--looping thru prev" << endl;
+	    }
+	    while ((next->prev != NULL) && (next->ra_pos < next->prev->ra_pos)) {
+	      next = next->prev;
+	    }
+	    next = newinterval(ins + xedd.get_length(), next->ra_status,
+			       next->ra_pos, current);
+	  }
+	}
+      }
+}
+
 interval_status l_build_intervals(char  *ins, unsigned int len)
 {
   xed_decoded_inst_t xedd;
@@ -488,7 +527,9 @@ interval_status l_build_intervals(char  *ins, unsigned int len)
   bool idebug  = DBG;
   bool ildebug = DBG;
   bool irdebug = DBG;
+  bool jdebug = DBG;
 
+  char *start = ins;
   char *end = ins + len;
 
   xed_state_t dstate(XED_MACHINE_MODE_LONG_64, ADDR_WIDTH_64b, ADDR_WIDTH_64b);
@@ -538,6 +579,7 @@ interval_status l_build_intervals(char  *ins, unsigned int len)
       // if the return is not the last instruction in the interval, 
       // set up an interval for code after the return 
       if (ins + xedd.get_length() < end) {
+#if 0
 	if (current->prev){ 
 	  if (current->prev->ra_status == RA_BP_RELATIVE) {
 	    next = newinterval(ins + xedd.get_length(), RA_BP_RELATIVE, 
@@ -557,9 +599,25 @@ interval_status l_build_intervals(char  *ins, unsigned int len)
 			       next->ra_pos, current);
 	  }
 	}
+#else
+        handle_return(xedd, current, next, ins, end, irdebug); 
+#endif
       }
+    } else  if ((xedd.get_iclass() == XEDICLASS_JMP) || (xedd.get_iclass() == XEDICLASS_JMP_FAR)) { 	
+	    if (xedd.number_of_memory_operands() == 0) {
+		    const xed_immdis_t& disp =  xedd.get_disp();
+		    if (disp.is_present()) {
+			    long long offset = disp.get_signed64();
+			    char *target = ins + offset;
+			    if (jdebug) {
+	                            xedd.dump(cout);
+				    cerr << "JMP offset = " << offset << ", target = " << (void *) target << ", start = " << (void *) start << ", end = " << (void *) end << endl;
+			    } 
+			    if (target < start || target > end)  handle_return(xedd, current, next, ins, end, irdebug); 
+		    }
+	    }
     } else {
-      next = what(xedd, ins, current, bp_just_pushed);
+	    next = what(xedd, ins, current, bp_just_pushed);
     }
     if (next != current) {
       link(current, next);

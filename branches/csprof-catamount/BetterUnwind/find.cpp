@@ -6,15 +6,16 @@
 #include <dlfcn.h>
 #endif
 
-static int debug = 0;
-
 #include "pmsg.h"
+
+static int debug = 0;
 
 extern "C" {
   extern int nm_bound(unsigned long pc, unsigned long *st, unsigned long *e);
-  int find_enclosing_function_bounds(char *addr, char **start, char **end);
   void test_find_enclosing_function_bounds(char *addr);
 }
+
+#include "find.h"
 
 #ifndef STATIC_ONLY
 
@@ -86,7 +87,7 @@ static char *find_dl_end_addr(char *addr, Dl_info *start)
 }
 #endif
 
-int find_enclosing_function_bounds(char *addr, char **start, char **end) 
+int find_enclosing_function_bounds_v(char *addr, char **start, char **end, int verbose) 
 {
   // debug = 1;
 
@@ -132,7 +133,9 @@ int find_enclosing_function_bounds(char *addr, char **start, char **end)
 #ifdef USE_DEBUG_VAR
 			if (debug) fprintf(stderr,"FIND:look up failed!\n");
 #else
-                        PMSG(FIND,"FIND:look up failed @ %p!\n",addr); // FIXME: change to EMSG??
+			if (verbose){
+			  EMSG("FIND:look up failed @ %p!\n",addr);
+			}
 #endif
 	                failure = 1;
 		}

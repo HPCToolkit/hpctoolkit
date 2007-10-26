@@ -3,11 +3,11 @@
 extern "C" {
 extern int nm_bound(unsigned long pc, unsigned long *st, unsigned long *e);
 #include "pmsg.h"
-
-int find_enclosing_function_bounds(char *addr, char **start, char **end);
 }
 
-int find_enclosing_function_bounds(char *addr, char **start, char **end){
+#include "find.h"
+
+int find_enclosing_function_bounds_v(char *addr, char **start, char **end,int verbose){
   // debug = 1;
 
   int failure = 0;
@@ -17,9 +17,10 @@ int find_enclosing_function_bounds(char *addr, char **start, char **end){
     PMSG(FIND,"FIND:found in nm table for %p: start=%p,end=%p\n",addr, *start, *end);
   }
   else {
-    EMSG("FIND:look up failed @ %p!\n",addr); // FIXME: change to EMSG??
+    if (verbose){
+      EMSG("FIND:look up failed @ %p!\n",addr); // FIXME: change to EMSG??
+    }
     failure = 1;
   }
   return failure;
 }
-

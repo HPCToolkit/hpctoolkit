@@ -7,11 +7,16 @@
 #include <setjmp.h>
 #include <ucontext.h>
 
+#include "state.h"
+#include "dump_backtraces.h"
+
 #include "bad_unwind.h"
 #include "find.h"
 #include "general.h"
+#include "mem.h"
 #include "intervals.h"
 #include "pmsg.h"
+#include "stack_troll.h"
 
 #include "prim_unw_cursor.h"
 
@@ -24,6 +29,8 @@
 
 #define NO 1
 #define BUILD_INT 1
+
+int debug_unw = 0;
 
 void unw_init(void){
   extern void xed_init(void);
@@ -53,7 +60,17 @@ void unw_init_f_mcontext(void *context,unw_cursor_t *frame){
   PMSG(UNW,"UNW_INIT:frame pc = %p, frame bp = %p, frame sp = %p",frame->pc,frame->bp,
       frame->sp);
 
+  // EMSG("UNW_INIT:frame pc = %p, frame bp = %p, frame sp = %p",frame->pc,frame->bp, frame->sp);
+
   frame->intvl = csprof_addr_to_interval((unsigned long)frame->pc);
+  if (! frame->intvl){
+    PMSG(TROLL,"UNW INIT FAILURE :frame pc = %p, frame bp = %p, frame sp = %p",frame->pc,frame->bp, frame->sp);
+    PMSG(TROLL,"UNW INIT calls stack troll");
+    unsigned int tmp_ra_loc;
+    if (stack_troll((char **)frame->sp,&tmp_ra_loc)){
+      frame->intvl = fluke_interval((char *)frame->pc,tmp_ra_loc);
+    }
+  }
   PMSG(UNW,"UNW_INIT: returned interval = %p",frame->intvl);
 }
 
@@ -86,11 +103,16 @@ int unw_step (unw_cursor_t *cursor){
   uw         = cursor->intvl;
   if (! uw ){
     EMSG("!!! No interval found!!!,cursor pc = %p",pc);
+    assert(0);
+    dump_backtraces(csprof_get_state(),0);
     _jb *it = get_bad_unwind();
     siglongjmp(it->jb,9);
-  } else {
-     PMSG(UNW,"dumping the found interval");
-     idump(uw); // debug for now
+  }
+  else {
+    if (debug_unw) {
+      PMSG(UNW,"dumping the found interval");
+      idump(uw); // debug for now
+    }
   }
   // spr rel step
   // FIXME: next bp needs to check if this is a frame procedure
@@ -104,6 +126,14 @@ int unw_step (unw_cursor_t *cursor){
   cursor->bp = spr_bp;
   cursor->sp = spr_sp;
   cursor->intvl = csprof_addr_to_interval((unsigned long)spr_pc);
+  if (! cursor->intvl){
+    PMSG(TROLL,"UNW STEP FAILURE :cursor pc = %p, cursor bp = %p, cursor sp = %p",spr_pc,spr_bp,spr_sp);
+    PMSG(TROLL,"UNW STEP calls stack troll");
+    unsigned int tmp_ra_loc;
+    if (stack_troll((char **)spr_sp,&tmp_ra_loc)){
+      cursor->intvl = fluke_interval((char *)spr_pc,tmp_ra_loc);
+    }
+  }
 
   PMSG(UNW,"NEXT frame pc = %p, frame bp = %p\n",cursor->pc,cursor->bp);
 

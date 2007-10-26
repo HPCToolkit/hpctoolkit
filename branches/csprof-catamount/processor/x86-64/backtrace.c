@@ -18,6 +18,14 @@ extern void _start();
 
 void dump_backtraces(csprof_state_t *state, csprof_frame_t *unwind);
 
+#if 1
+#define debug_dump_backtraces(x,y)
+#else
+#define debug_dump_backtraces(x,y) dump_backtraces(x,y)
+#endif
+
+
+
 #define USE_LIBUNWIND_TO_START 0
 
 int csprof_sample_callstack_from_frame(csprof_state_t *, int,
@@ -187,7 +195,7 @@ csprof_sample_callstack_from_frame(csprof_state_t *state, int metric_id,
         break;
       }
     }
-    dump_backtraces(state,unwind);
+    debug_dump_backtraces(state,unwind);
     if(csprof_state_insert_backtrace(state, metric_id, unwind-1, state->btbuf,
                                      sample_count) != CSPROF_OK) {
         ERRMSG("failure recording callstack sample", __FILE__, __LINE__);
@@ -300,7 +308,7 @@ goto EXIT; \
             DBGMSG_PUB(CSPROF_DBG_UNWINDING, "breaking post-unwind ip = %p", ip);
 #endif
             MSG(1,"reached top of cached callstack");
-            dump_backtraces(state,unwind);
+            debug_dump_backtraces(state,unwind);
             break;
         }
 
@@ -312,7 +320,7 @@ goto EXIT; \
 
     DBGMSG_PUB(CSPROF_DBG_UNWINDING, "Done unwinding");
 
-    dump_backtraces(state, unwind);
+    debug_dump_backtraces(state, unwind);
 
     newsz = unwind - state->btbuf;
 

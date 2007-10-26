@@ -46,3 +46,8 @@ void *__wrap_malloc(size_t s){
   _csprof_in_malloc = 0;
   return alloc;
 }
+
+void *__wrap_pthread_create(void *dc){
+  EMSG("Called pthread_create!!");
+  assert(0);
+}

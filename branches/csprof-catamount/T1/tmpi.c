@@ -3,7 +3,6 @@
 #include <stdio.h>
 #include <stdarg.h>
 #include <sys/time.h>
-#include <math.h>
 
 #define LIMIT_OUTER 1000
 #define LIMIT 100

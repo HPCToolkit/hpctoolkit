@@ -179,6 +179,7 @@ OBJS += $(hpcfile_objs)
 #OBJS += $(UNWIND)/find.o $(UNWIND)/xed_if.o
 #OBJS += find.o xed_if.o
 OBJS += $(find_v).o xed_if.o
+OBJS += stack_troll.o
 OBJS += $(gethost)
 OBJS += last_func.o
 

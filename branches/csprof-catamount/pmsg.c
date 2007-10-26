@@ -34,8 +34,8 @@ void pmsg_init(void){
   char tmp[100];
   int n;
 
-#if 0
-  __msg_mask = UNW | SPLAY;
+#if 1
+  __msg_mask = TROLL;
 #endif
 
   // tmp[0] = '\0';
@@ -50,6 +50,10 @@ void set_mask_f_numstr(const char *s){
   if (sscanf(s,"%d",&lmask)){
     __msg_mask = lmask;
   }
+}
+
+void set_pmsg_mask(int m){
+  __msg_mask = m;
 }
 
 void EMSG(const char *format,...){

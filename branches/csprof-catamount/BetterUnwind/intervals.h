@@ -24,6 +24,7 @@ extern "C" {
 #endif
   interval_status l_build_intervals(char  *ins, unsigned int len);
   void idump(unwind_interval *u);
+  unwind_interval *fluke_interval(char *pc,unsigned int ra_pos);
 #ifdef __cplusplus
 };
 #endif

@@ -20,47 +20,47 @@ void dump_backtraces(csprof_state_t *state, csprof_frame_t *unwind)
   csprof_frame_t *x = state->bufstk;
 #endif
 
-  MSG(4,"in dump_backtraces(0x%lx, 0x%lx)",(unsigned long int) state, (unsigned long int) unwind);
+  EMSG("in dump_backtraces(0x%lx, 0x%lx)",(unsigned long int) state, (unsigned long int) unwind);
 
-  MSG(4, ""); 
+  EMSG( ""); 
 
   if (state->bufstk == state->bufend){
-    MSG(4, "Saved backtrace ...");
-    MSG(4, "------------------------"); 
+    EMSG( "Saved backtrace ...");
+    EMSG( "------------------------"); 
     cnt = 0;
     for( ; x != state->bufend; ++x) {
-      MSG(4, "ip %#lx | sp %#lx", x->ip, x->sp);
+      EMSG( "ip %#lx | sp %#lx", x->ip, x->sp);
       /* MWF: added to prevent long backtrace printout */
       cnt++;
       if (cnt > DUMP_LIMIT) {
-        MSG(4,"!!! Hit Dump Limit !!! ");
+        EMSG("!!! Hit Dump Limit !!! ");
         break;
       }
     }
   }
   cnt = 0;
-  MSG(4, ""); /* space */
+  EMSG( ""); /* space */
   if (unwind) {
     x = state->btbuf;
 
-    MSG(4, "New unwind backtrace ...");
-    MSG(4, "------------------------"); 
+    EMSG( "New unwind backtrace ...");
+    EMSG( "------------------------"); 
     for( ; x != unwind; ++x) {
-      MSG(4, "ip %#lx | sp %#lx", x->ip, x->sp);
+      EMSG( "ip %#lx | sp %#lx", x->ip, x->sp);
       /* MWF: added to prevent long backtrace printout */
       cnt++;
       if (cnt > DUMP_LIMIT) {
-        MSG(4,"!!! Hit Dump Limit !!! ");
+        EMSG("!!! Hit Dump Limit !!! ");
         break;
       }
     }
   } else {
-    MSG(4, "No unwind backtrace to dump");
+    EMSG( "No unwind backtrace to dump");
   }
-  MSG(4, "");
+  EMSG( "");
 
-  MSG(4, "other state information "); 
-  MSG(4, "------------------------"); 
-  MSG(4, "swizzle_return = 0x%lx",state->swizzle_return);
-  MSG(4, "last_pc = 0x%lx", state->last_pc);
+  EMSG( "other state information "); 
+  EMSG( "------------------------"); 
+  EMSG( "swizzle_return = 0x%lx",state->swizzle_return);
+  EMSG( "last_pc = 0x%lx", state->last_pc);
 }

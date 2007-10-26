@@ -12,7 +12,7 @@
 ## MWF change to accomodate csprof
 
 HPC_INSTALL_DIR=`dirname $0`
-HPC_WRAP_NAMES='main _exit malloc realloc calloc sigaction signal sigprocmask'
+HPC_WRAP_NAMES='main _exit malloc realloc calloc sigaction signal sigprocmask pthread_create'
 HPC_INSERT_FILES='monitor.o libcsprof.o'
 CC=gcc
 

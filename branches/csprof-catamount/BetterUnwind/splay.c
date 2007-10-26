@@ -11,7 +11,6 @@
 #include "intervals.h"
 #include "simple-lock.h"
 #include "splay.h"
-#include "general.h"
 #include "pmsg.h"
 
 #ifdef CSPROF_THREADS
@@ -253,6 +252,6 @@ csprof_addr_to_interval(unsigned long addr)
     }
 #endif
 
-    MSG(1,"SPLAY: returning interval = %p",ans);
+    PMSG(SPLAY,"SPLAY: returning interval = %p",ans);
     return (ans);
 }

@@ -23,7 +23,8 @@ tprog: tprog.o xed_if.o find_static.o nm_bound.o pmsg.o
 	$(HPCL) -v CC -static -v $^ $(XEDLIB) -o $@
 
 tp2: tp2.o xed_if.o pmsg.o simple-lock.o
-	CC -v $^ $(XEDLIB) -o $@
+#	CC -v $^ $(XEDLIB) -o $@
+	g++ -v $^ $(XEDLIB) -o $@
 
 #$(HPCL) -v g++ -static -v $^ $(XEDLIB) -o $@
 
@@ -33,6 +34,9 @@ tp2: tp2.o xed_if.o pmsg.o simple-lock.o
 components: xed_if.o find.o
 
 xed_if.o: xed_if.cpp
+	$(CXED) -fPIC -I.. $(XEDDCL) -g $(XEDINC) -c $<
+
+xed2.o: xed2.cpp
 	$(CXED) -fPIC -I.. $(XEDDCL) -g $(XEDINC) -c $<
 
 #	$(CXED) $^ $(XEDLIB) -o $@
@@ -46,9 +50,10 @@ find.o: find.cpp
 	$(CXED) -fPIC -I. $(INC_PMSG) -g -c $<
 
 clean:
-	rm -rf *.o tprog
+	rm -rf *.o tprog tp2
 
 %.o : %.c
-	cc -I.. -c $< -o $@
+#	cc -I.. -c $< -o $@
+	gcc -I. -I.. -c $< -o $@
 
 vpath %.c ..
