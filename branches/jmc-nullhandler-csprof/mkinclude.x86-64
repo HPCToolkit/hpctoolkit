@@ -1,0 +1,49 @@
+# hey, emacs, this is a -*- makefile -*-
+#
+# csprof on x86-64/Linux
+
+ARCH := x86-64
+
+LIB_PFM := -lbfd
+INC_PFM :=
+
+# a.k.a. '--prefix' to ./configure
+#
+# MWF adjust to latest libunwind
+#
+ifndef CHGROOT
+   LIBUNWIND_HOME := /usr
+else
+   LIBUNWIND_HOME := /root
+endif
+LIBUNWIND_HOME := /home/johnmc/pkgs
+
+ifndef PRIM_UNWIND
+  LIB_UNWIND := -L$(LIBUNWIND_HOME)/lib -lunwind-x86_64 -lunwind -Wl,--rpath -Wl,$(LIBUNWIND_HOME)/lib -ldl
+  INC_UNWIND := -I$(LIBUNWIND_HOME)/include
+else
+#  INC_UNWIND := -I$(ARCH)
+  INC_UNWIND := 
+endif
+
+
+# no need for an unwinding library; we unconditionally assume that frame
+# pointers exist on the binaries (and libraries!) we're profiling.
+
+DEFINES := -D_GNU_SOURCE
+DEFINES += -DCSPROF_LAST_EDGE_ONLY=1
+DEFINES += $(PERF)
+
+#CSPROF_TRAMPOLINE := -DCSPROF_TRAMPOLINE_BACKEND=1
+
+CC := cc
+# CFLAGS := -fPIC -g -Wall -fomit-frame-pointer -Os
+CFLAGS := -fPIC -g -Wall 
+CFLAGS := -g -Wall  #CATAMOUNT
+
+AR := /usr/bin/ar
+ARFLAGS := -r
+
+#LINK_FLAGS := -Wl,-soname,$(CSPROFLIB) -shared
+
+PLATFORM_OBJS := 

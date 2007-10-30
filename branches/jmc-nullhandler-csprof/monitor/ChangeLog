@@ -1,0 +1,127 @@
+3/5/07 mucci
+     	- Standardized MONITOR_DEBUG and MONITOR_ERROR callbacks.
+	- Bulletproof library call interceptions, checking against NULL
+	  at runtime for the case when other libraries _init sections run
+	  before ours, like Pathscale OpenMP. 
+	- Proper types for callng function call pointers.
+	- Conditionalize pthread_self() usage. Linux only needs gettid() BTW.
+	- Removed code that needed GOMP_parallel_end().
+	- Race detection for monitor_thread_count variable.
+	- Last revision, 33333
+2/16/07 mucci
+	- Added code to handle OpenMP runtimes that create threads during
+	_init like pathscale.
+2/14/07 mucci
+	- Install docs to /usr/share/doc/monitor-version
+	- Major code cleanup
+	- Standardized debug, warning and error messages
+	- Added test drivers and verify script
+	- Moved to gettid() where available otherwise defined USE_PTHREAD_SELF
+	- Moved monitor_gettid() to be unsigned long
+	- Made runtests and verify take -v (verbose) and -h (help) arguments
+	- Added execshell test case
+	- Documented USE_PTHREAD_SELF and USE_PTHREAD_CLEANUP_PUSH_POP in
+	  INSTALL file
+2/7/07 mucci
+	- Fixed ifdef for SYS_fork
+12/21/06 mucci
+	- Added monitor_real_fork/dlopen/execve/exit
+	- Added monitor_real_exit test case
+	- Added -DUSE_CLEANUP_PUSH_POP for pthreads, remove to
+	  remove dependency on pthreads lib.
+12/14/06 mucci
+	- Added fallback syscalls to fork, execve and exit.
+12/13/06 mucci
+	- Fixed GCC/OpenMP implementation to pass thread specific variable
+	- Extended API to include pointers to argc and argv.
+	- Added call for real exit for tools to bail without callbacks.
+	- Added call for forcing process fini callback for processes with
+	  additional runtime systems, like MPI.
+	- Improved documentation.
+	- Now using pthread_cleanup_push/pop to handle cases where pthread_exit() is used.
+	- Added numerous test cases for good and bad pthread usage.
+	- Added BUGS, TODO file
+12/10/06 mucci
+	- Fixed MONITOR_INC_PATH rule
+11/22/06 mucci
+	- Fixed build issue for testtool2.so
+	- Added an argument to the test driver for single test case handling
+	- Added support for the braindead implementation of GCC/OpenMP
+	  the problem is that those threads never return from the function
+	  passed to Pthread create. The only penalty is that the thread 
+	  completion handler no longer has access to the thread specific
+	  data.
+11/20/06 mucci
+	- Added lib.so as an install target
+	- Added LDFLAGS to final link
+11/3/06 mucci
+        - Fixed CC assignment in Rules.gmake
+        - Added -DPIC to build
+	- Fixed path to libmonitor in test script
+	- Updated to install in /usr/local like configure.
+9/19/06 v0.99rc9 mucci
+	- DESTDIR support for ebuilds
+	- Weak symbol binding fixes (10/16/06)
+7/20/06 v0.99rc8 mucci
+	- Abnormal termination handlers working again
+	- Added MONITOR_OPTIONS environment variable
+	- Consisent calling of fini_library and fini_process
+	  with abnormal termination.
+	- Cleaned up calls to exit throughout the library to avoid recursion.
+	- Added nonzeroexit test case.
+7/17/06 mucci
+	- Many fixes for GCC4 and Fedora Core 5
+	- Reworked exec and exit handling to use atexit
+	- The above platform does not call PRELOADed _exits
+	- Changed documentation to reflex poor operation of MONITOR_NONZERO_EXIT flag.
+	- Added loads of debugging, compiled with -DDEBUG
+	- Some selinux stuff calls dlopen before _init sections.
+	- Moved to gcc 4 openmp and gcj -C
+	- OpenMP in GCC4 doesn't appear to ever return from it's threads
+7/14/05 mucci
+        - Create the monitor-config script at install time instead.
+5/2/05 mucci
+        - Added Full threaded Java test case
+        - Added Process and Thread identifier to debug messages
+	- Added Java test case
+	- Improved run test script (removed duplicated code)
+	- Added MONITOR_DEBUG environment variable.
+	- Added java compiler to Rules.gmake
+4/28/05 mucci
+	- dlopen hook only gets called on dlopen of actual files
+	- test libraries and main libraries now built with -D_REENTRANT
+	- verified that this works with Java programs
+4/20/05 v0.99rc6 mucci
+	- Added proper makeflags for compilation of weak symbols.
+2/21/05
+	- Added more weak bindings
+2/7/2005 v0.99rc4 mucci
+	- Fix bad free in thread cleanup.
+	- Add root pid check to handle non-NPTL/IA64 case that was calling
+	  _exit
+2/7/2005 v0.99rc4 mucci
+	- Add monitor_opt_error functionality to conditionally execute abnormal
+	  termination cleanup.
+2/1/2005 v0.99rc2/3 mucci
+	- Made monitor_dlopen call be called after successful call to real dlopen.
+1/29/2005 v0.99rc1 mucci
+	- Added idempotent calls to fini_library and fini_process for IA64
+	- Added _exit test case
+1/25/2005 v0.92 mucci
+	- Bug fix for argv[0] for PPC Linux (use /proc/pid/cmdline)
+	- Bug fix for build on x86_64 Linux (needs -fPIC always)
+1/24/2005 v0.91 mucci
+	- Added web page
+	- Added www and dist target
+	- Improved man page
+	- Full arch independent build
+1/21/2005 v0.9 mucci
+	- Added weak symbols for user callbacks.
+	- Added man pages
+	- Added dlopen() callback and associated test script
+	- Added fully functional monitor-config script
+	- Added install/uninstall rules to makefile
+	- Added HTML generation of man page
+1/18/2005 v0.5 mucci
+	- Added library versioning, trapping SIGABRT, SIGINT, _exit, and _Exit
+	- Added lots of test cases

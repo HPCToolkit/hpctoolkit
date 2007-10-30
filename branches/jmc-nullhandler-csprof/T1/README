@@ -1,0 +1,7 @@
+If only running on 1 core of 1 processor, use
+
+   yod -sz 1 PROG.
+
+For jaguar,
+
+   qsub -I -q debg -A CSC023 -l walltime=15:00

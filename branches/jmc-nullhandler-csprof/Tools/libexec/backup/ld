@@ -1,0 +1,191 @@
+#!/bin/sh
+#
+
+# Rename symbols from system libraries.
+
+# Usage: cc -v --target=catamount file.o 2>&1 |
+#            ./new_linker.sh config_file
+
+
+
+#
+# Catamount (PGI C and Fortran) uses:
+#
+#   CC=cc   (or /opt/xt-pe/1.5.31/bin/snos64/cc)
+#   CC_OPTS='--target=catamount'
+#   CRT_FILE=cstart.o
+#
+
+HPC_TMP_DIR="$HOME/.hpctoolkit"
+
+CC=cc
+CC_OPTS='--target=catamount'
+CRT_FILE=cstart.o
+VERBOSE='-v'
+
+OUTPUT_FILE="monitor_sys_fcns.o"
+
+die()
+{
+    echo ; echo "*** Error: $1"
+    exit 1
+}
+
+mkdir -p "$HPC_TMP_DIR" || die "unable to mkdir $HPC_TMP_DIR"
+
+#cd $HPC_TMP_DIR || die "unable to cd to $HPC_TMP_DIR"
+
+config_file="$HPC_CONFIG"
+if [ "x$config_file" = x ]; then
+    die "missing config file"
+fi
+
+
+link_line="$*"
+
+echo ; echo
+echo "Linker line:"
+echo $link_line
+echo
+
+
+#
+# Step 3 -- Parse the link line for search directories with the form
+# -Ldir or -L dir.
+#
+search_path=
+arg_is_dir=no
+for opt in $link_line
+do
+    dir=
+    if [ $arg_is_dir = yes ]; then
+	dir="$opt"
+	arg_is_dir=no
+    else
+	case $opt in
+	    -L?* )
+		dir=`echo $opt | sed 's/-L//'`
+		;;
+	    -L )
+		arg_is_dir=yes
+		;;
+	esac
+    fi
+    if [ -n "$dir" ]; then
+	if [ -d "$dir" ]; then
+	    search_path="$search_path $dir"
+	else
+	    echo "not a directory: $dir" 1>&2
+	fi
+    fi
+done
+
+echo
+echo "Search path:"
+echo "$search_path"
+echo
+
+
+# Process lines from config file.
+#
+FAUX_FILES=
+while read old_name new_name lib
+do
+    if expr "x${old_name}" : "x#" >/dev/null 2>&1 ; then
+	continue
+    fi
+    echo
+    echo "Working on ${old_name} -> ${new_name} in ${lib}"
+
+    case "$lib" in
+	*.o )
+	    REPLACE_FILE="$lib"
+	    base_faux_name="faux_${lib}"
+	    faux_name="${HPC_TMP_DIR}/faux_${lib}"
+	    full_name=`echo $link_line | tr ' ' '\n' | grep -F $lib | head -1`
+	    if [ "x$full_name" = x ]; then
+		die "can't find $lib"
+	    fi
+	    if [ ! -f "$faux_name" ]; then
+		cp -v "$full_name" "$faux_name" \
+		    || die "unable to copy $full_name to $faux_name"
+	    fi
+	    ;;
+
+	*.a )
+	    for dir in $search_path
+	    do
+	        if [ -f "${dir}/${lib}" ]; then
+		    # cp -f -v "${dir}/${lib}" "${HPC_TMP_DIR}/$lib"
+		    break
+		fi
+	    done
+	    nm_line=`nm -A "${dir}/${lib}" 2>/dev/null | grep -E -e "[TW] $old_name" | head -1`
+	    obj_file=`echo $nm_line | awk -F: '{ print $2 }'`
+	    base_faux_name="faux_${obj_file}"
+	    faux_name="${HPC_TMP_DIR}/faux_${obj_file}"
+	    if [ ! -f "$faux_name" ]; then
+		ar xv "$dir/$lib" "$obj_file"
+		[ $? -eq 0 ] || die "unable to extract $obj_file"
+		cp -f "$obj_file" "$faux_name"
+	    fi
+	    ;;
+
+	* )
+	    die "unknown library file: $lib"
+	    ;;
+    esac
+
+    echo $FAUX_FILES | grep -F "$base_faux_name" >/dev/null 2>&1
+    if [ $? -ne 0 ]; then
+	FAUX_FILES="${FAUX_FILES} ${base_faux_name} "
+    fi
+    tmp_name="${HPC_TMP_DIR}/tmp_${base_faux_name}"
+    rm -f "$tmp_name"
+    mv -f "$faux_name" "$tmp_name"
+    objcopy --verbose --redefine-sym "${old_name}=${new_name}" "$tmp_name" "$faux_name"
+    [ $? -eq 0 ] || die "unable to objcopy"
+    rm -f "$tmp_name"
+done < "$config_file"
+
+
+echo
+echo FAUX FILES
+echo $FAUX_FILES
+echo
+echo REPLACE FILE
+echo $REPLACE_FILE
+echo
+
+
+# Build the new linker line.
+
+new_line=
+for opt in $link_line
+do
+    if expr "$opt" : ".*${REPLACE_FILE}" >/dev/null 2>&1 ; then
+	for f in $FAUX_FILES
+	do
+	    new_line="${new_line} ${HPC_TMP_DIR}/$f"
+	done
+    else
+	new_line="$new_line $opt "
+    fi
+done
+
+echo
+echo new link line
+echo $new_line
+echo
+
+
+
+#----------------------------------------------------------------------------------
+# trim off initial path component to enable real link 
+#----------------------------------------------------------------------------------
+export PATH=${PATH#[!:]*:}
+
+# Run the new link line.
+
+ld $new_line
+
