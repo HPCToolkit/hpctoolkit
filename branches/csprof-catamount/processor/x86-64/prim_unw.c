@@ -127,7 +127,8 @@ int unw_step (unw_cursor_t *cursor){
   cursor->sp = spr_sp;
   cursor->intvl = csprof_addr_to_interval((unsigned long)spr_pc);
   if (! cursor->intvl){
-    PMSG(TROLL,"UNW STEP FAILURE :cursor pc = %p, cursor bp = %p, cursor sp = %p",spr_pc,spr_bp,spr_sp);
+    PMSG(TROLL,"UNW STEP FAILURE :cursor pc = %p, cursor bp = %p, cursor sp = %p; backtrace below ...",spr_pc,spr_bp,spr_sp);
+    dump_backtraces(csprof_get_state(),0);
     PMSG(TROLL,"UNW STEP calls stack troll");
     unsigned int tmp_ra_loc;
     if (stack_troll((char **)spr_sp,&tmp_ra_loc)){

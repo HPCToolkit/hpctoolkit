@@ -6,6 +6,10 @@ long int gethostid(void){
 }
 
 #else
-#include <unistd.h>
-extern long gethostid(void);
+#include "name.h"
+
+long gethostid(void)
+{
+  return csprof_get_mpirank();
+}
 #endif

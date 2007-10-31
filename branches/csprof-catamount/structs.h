@@ -29,7 +29,7 @@ typedef struct csprof_epoch_module csprof_epoch_module_t;
 struct csprof_epoch_module
 {
     struct csprof_epoch_module *next; /* just what it sounds like */
-    char *module_name;
+    const char *module_name;
     void *vaddr;                /* the preferred virtual address */
     void *mapaddr;              /* the actual mapped address */
     size_t size;		/* just what it sounds like */

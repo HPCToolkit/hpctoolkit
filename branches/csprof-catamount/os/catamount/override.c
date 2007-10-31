@@ -2,8 +2,10 @@
 #include <signal.h>
 #include <stdlib.h>
 
+#include "pmsg.h"
+
 extern int __real_sigprocmask(int, const sigset_t *, sigset_t *);
-extern int __real_sigaction(int sig, struct sigaction *act,
+extern int __real_sigaction(int sig, const struct sigaction *act,
 			  struct sigaction *oact);
 extern sig_t __real_signal(int sig, sig_t func);
 

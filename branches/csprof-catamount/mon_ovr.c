@@ -3,6 +3,7 @@
 #include "general.h"
 #include "killsafe.h"
 #include "monitor.h"
+#include "name.h"
 
 #ifdef LINUX
 #include <linux/unistd.h>
@@ -32,6 +33,7 @@ static int faux_main(int n, char **argv, char **env){
 
 void monitor_init_process(struct monitor_start_main_args *m){
   the_main = m->main;
+  csprof_set_executable_name(m->argv[0]);
   m->main = &faux_main;
 }
 

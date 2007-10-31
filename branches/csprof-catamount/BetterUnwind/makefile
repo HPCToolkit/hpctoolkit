@@ -22,7 +22,7 @@ LPATH = -m elf_x86_64 -static -L/opt/xt-mpt/1.5.52/mpich2-64/GP2/lib -L/opt/acml
 tprog: tprog.o xed_if.o find_static.o nm_bound.o pmsg.o
 	$(HPCL) -v CC -static -v $^ $(XEDLIB) -o $@
 
-tp2: tp2.o xed_if.o pmsg.o simple-lock.o
+tp2: tp2.o xed2.o pmsg.o simple-lock.o
 #	CC -v $^ $(XEDLIB) -o $@
 	g++ -v $^ $(XEDLIB) -o $@
 

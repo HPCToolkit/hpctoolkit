@@ -91,6 +91,9 @@
 #include "metrics.h"
 #include "dump_backtraces.h"
 
+#include "name.h"
+#include "last.h"
+
 #include "hpcfile_csproflib.h"
 #include "pmsg.h"
 
@@ -157,7 +160,6 @@ extern void _start(void);
 extern int __stop___libc_freeres_ptrs;
 
 void *static_epoch_offset;
-char *static_epoch_xname;
 void *static_epoch_end;
 long static_epoch_size;
 
@@ -324,7 +326,11 @@ void csprof_fini_internal(void){
     MSG(CSPROF_MSG_SHUTDOWN, "writing profile data");
     state = csprof_get_safe_state();
     csprof_write_profile_data(state);
-    printf("%d samples total, %d samples dropped\n", samples_taken, segv_count+bad_unwind_count);
+    printf("host %ld process %ld: %d samples total, %d samples dropped\n", 
+	gethostid(), (unsigned long) getpid(), samples_taken, segv_count+bad_unwind_count);
+
+    printf("host %ld process %ld: last sample address = 0x%lx, raw sample count = %ld\n", 
+	gethostid(), (unsigned long) getpid(), csprof_get_last_sample_addr(), csprof_get_raw_sample_count());
 }
 
 
@@ -548,13 +554,13 @@ int csprof_write_profile_data(csprof_state_t *state){
 
 
   if (csprof_using_threads){
-    sprintf(fnm, "%s/%s%lx-%x-%ld%s", opts.out_path,
-            CSPROF_FNM_PFX, state->pstate.hostid, state->pstate.pid,
+    sprintf(fnm, "%s/%s.%lx-%x-%ld%s", opts.out_path,
+            csprof_get_executable_name(), gethostid(), state->pstate.pid,
             state->pstate.thrid, CSPROF_OUT_FNM_SFX);
   }
   else {
-    sprintf(fnm, "%s/%s%lx-%x%s", opts.out_path, CSPROF_FNM_PFX,
-            state->pstate.hostid, state->pstate.pid, CSPROF_OUT_FNM_SFX);
+    sprintf(fnm, "%s/%s.%lx-%x%s", opts.out_path, csprof_get_executable_name(),
+            gethostid(), state->pstate.pid, CSPROF_OUT_FNM_SFX);
   }
   MSG(CSPROF_MSG_DATAFILE, "CSPROF write_profile_data: Writing %s", fnm);
 

@@ -1,12 +1,12 @@
 #include <string.h>
 #include <unistd.h>
 #include "monitor.h"
+#include "name.h"
+#include "pmsg.h"
 
 // #define M(s) write(2,s"\n",strlen(s)+1)
 #define M(s) 
 
-
-extern char *static_epoch_xname;
 extern void csprof_init_internal(void);
 extern void csprof_fini_internal(void);
 
@@ -15,7 +15,7 @@ int csprof_using_threads = 0;
 
 void monitor_init_process(char *process, int *argc, char **argv,unsigned pid){
   M("monitor calling csprof_init_internal");
-  static_epoch_xname = strdup(argv[0]);
+  csprof_set_executable_name(argv[0]);
   csprof_init_internal();
 }
 

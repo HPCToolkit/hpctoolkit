@@ -11,8 +11,9 @@
 
 #include "backtrace.h"
 #include "bad_unwind.h"
+#include "last.h"
 
-#define THRESHOLD   100000000
+#define THRESHOLD   10000000
 
 #define WEIGHT_METRIC 0
 
@@ -36,24 +37,34 @@ csprof_take_profile_sample(csprof_state_t *state,void *context,void *pc){
 
 extern int status;
 
-void my_handler(int EventSet, void *pc, long long ovec, void *context) {
-  _jb *it = get_bad_unwind();
-  MSG(1,"In PAPI handler");
-  if (!sigsetjmp(it->jb,1)){
-    if(status != CSPROF_STATUS_FINI){
+void csprof_papi_event_handler(int EventSet, void *pc, long long ovec, 
+			       void *context) 
+{
+  csprof_set_last_sample_addr((unsigned long) pc);
+  csprof_increment_raw_sample_count();
+  // FIXME: arrange to skip the unwind when variable is set
+#if 0
+  return;
+#endif
+  {
+    _jb *it = get_bad_unwind();
+    MSG(1,"In PAPI handler");
+    if (!sigsetjmp(it->jb,1)){
+      if(status != CSPROF_STATUS_FINI){
 
-      csprof_state_t *state = csprof_get_state();
+	csprof_state_t *state = csprof_get_state();
 
-      if(state != NULL) {
-	csprof_take_profile_sample(state,(void *)(&(((ucontext_t *)context)->uc_mcontext)),pc);
-	csprof_state_flag_clear(state, CSPROF_THRU_TRAMP);
+	if(state != NULL) {
+	  csprof_take_profile_sample(state,(void *)(&(((ucontext_t *)context)->uc_mcontext)),pc);
+	  csprof_state_flag_clear(state, CSPROF_THRU_TRAMP);
+	}
+
       }
-
     }
-  }
-  else {
-    bad_unwind_count++;
-    MSG(1,"got bad unwind");
+    else {
+      bad_unwind_count++;
+      MSG(1,"got bad unwind");
+    }
   }
 }
 
@@ -64,6 +75,8 @@ void papi_pulse_init(void){
     int ret;
     int threshold = THRESHOLD;
 
+    PAPI_set_debug(0x3ff);
+
     ret = PAPI_library_init(PAPI_VER_CURRENT);
     MSG(1,"PAPI_library_init = %d\n", ret);
     MSG(1,"PAPI_VER_CURRENT =  %d\n", PAPI_VER_CURRENT);
@@ -71,6 +84,7 @@ void papi_pulse_init(void){
       MSG(1, "Failed: PAPI_library_init\n");
       exit(1);
     }
+
     ret = PAPI_create_eventset(&eventSet);
     MSG(1,"PAPI_create_eventset = %d\n", ret);
     if (ret != PAPI_OK){
@@ -84,7 +98,7 @@ void papi_pulse_init(void){
       MSG(1, "Failure: PAPI_add_event: %d", ret);
       exit(1);
     }
-    ret = PAPI_overflow(eventSet, PAPI_TOT_CYC, threshold, 0, my_handler);
+    ret = PAPI_overflow(eventSet, PAPI_TOT_CYC, threshold, 0, csprof_papi_event_handler);
     MSG(1,"PAPI_overflow = %d\n", ret);
     if (ret != PAPI_OK){
       MSG(1, "Failure: PAPI_overflow: %d", ret);

@@ -104,18 +104,9 @@ struct rbtree_node
 
 static struct rbtree_node *rbtree_node_create(csprof_cct_node_t *,
                                               struct rbtree_node *);
-static struct rbtree *rbtree_create();
 static struct rbtree_node *rbtree_search(struct rbtree *, void *, void *);
 static void rbtree_insert(struct rbtree *, csprof_cct_node_t *);
 
-static struct rbtree *
-rbtree_create()
-{
-    struct rbtree *tree = csprof_malloc(sizeof(struct rbtree));
-    tree->root = NULL;
-
-    return tree;
-}
 
 static struct rbtree_node *
 rbtree_node_create(csprof_cct_node_t *x, struct rbtree_node *parent)
@@ -157,7 +148,7 @@ rbtree_search(struct rbtree *tree, void *ip, void *sp)
 static void
 rbtree_left_rotate(struct rbtree *root, struct rbtree_node *parent)
 {
-    struct rbtree_node *curr, *gparent;
+    struct rbtree_node *curr;
 
     curr = RIGHT(parent);
 
@@ -185,7 +176,7 @@ rbtree_left_rotate(struct rbtree *root, struct rbtree_node *parent)
 static void
 rbtree_right_rotate(struct rbtree *root, struct rbtree_node *parent)
 {
-    struct rbtree_node *curr, *gparent;
+    struct rbtree_node *curr;
 
     curr = LEFT(parent);
 

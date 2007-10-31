@@ -11,6 +11,7 @@
 #include "csproflib_private.h"
 #include "mem.h"
 #include "epoch.h"
+#include "name.h"
 
 /* non-threaded profilers can have a single profiling state...
    but it can't be statically allocated because of epochs */
@@ -103,7 +104,7 @@ int csprof_state_init(csprof_state_t *x){
   // b/c we may need to find it again. // FIXME: added gethostid
   csprof_pstate__init(&x->pstate);
   sprintf(x->pstate_fnm, "./%s%ld-%d%s", /* opts.out_path ,*/ /* FIXME */
-          CSPROF_FNM_PFX, hostid, pid, CSPROF_PSTATE_FNM_SFX);
+          csprof_get_executable_name(), hostid, pid, CSPROF_PSTATE_FNM_SFX);
   if (csprof_state__gupdate_pstate(x) != CSPROF_OK) {
     DIE("could not read/update persistent state file '%s'", __FILE__, __LINE__, x->pstate_fnm);
   }

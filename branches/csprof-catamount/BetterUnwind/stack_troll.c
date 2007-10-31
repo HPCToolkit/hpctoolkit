@@ -29,7 +29,7 @@ unsigned int stack_troll(char **sp, unsigned int *ra_pos){
     char *s, *e;
     if (! find_enclosing_function_bounds_v(*tmp_sp,&s,&e,SILENT)){
       PMSG(TROLL,"found valid address %p at sp = %p",*tmp_sp,tmp_sp);
-      *ra_pos = (unsigned int)tmp_sp - (unsigned int)sp;
+      *ra_pos = (unsigned long) tmp_sp - (unsigned long) sp;
       return 1;
     }
     tmp_sp++;

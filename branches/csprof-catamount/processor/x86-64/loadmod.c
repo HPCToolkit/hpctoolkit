@@ -8,10 +8,10 @@
 #include "interface.h"
 #include "epoch.h"
 #include "mem.h"
+#include "name.h"
 
 #ifdef STATIC_ONLY
 extern void *static_epoch_offset;
-extern char *static_epoch_xname;
 extern long static_epoch_size;
 #endif
 
@@ -23,32 +23,33 @@ static unsigned long segment_size(char *);
 /* MWF added utility f dumping w.o. modifying epoch stuff */
 void
 csprof_dump_loaded_modules(void){
-    char filename[PATH_MAX];
-    char mapline[PATH_MAX+80];
-    char *p;
-    FILE *fs;
-    pid_t pid = getpid();
-
 #ifndef STATIC_ONLY
-    sprintf(filename, "/proc/%d/maps", pid);
-    fs = fopen(filename, "r");
+  char filename[PATH_MAX];
+  char mapline[PATH_MAX+80];
+  char *p;
+  FILE *fs; 
+  pid_t pid = getpid();
 
-    do {
-        p = fgets(mapline, PATH_MAX+80, fs);
+  sprintf(filename, "/proc/%d/maps", pid);
+  fs = fopen(filename, "r");
 
-        if(p) {
-            if(segment_is_executable(mapline)) {
-                char *name = strdup(xname(mapline));
-                unsigned long offset = htoll(mapline);
-		unsigned long thesize = segment_size(mapline);
+  do {
+    p = fgets(mapline, PATH_MAX+80, fs);
 
-		MSG(CSPROF_MSG_EPOCH, "Load module %s loaded at %p",
-		    name, (void *) offset);
-            }
-        }
-    } while(p);
+    if(p) {
+      if(segment_is_executable(mapline)) {
+	char *name = strdup(xname(mapline));
+	unsigned long offset = htoll(mapline);
+	unsigned long thesize = segment_size(mapline);
+
+	MSG(CSPROF_MSG_EPOCH, "Load module %s loaded at %p",
+	    name, (void *) offset);
+      }
+    }
+  } while(p);
+}
 #else
-    MSG(1,"STATIC ONLY: dump loaded modules = NOOP");
+  MSG(1,"STATIC ONLY: dump loaded modules = NOOP");
 #endif
 }
 
@@ -56,13 +57,13 @@ void
 csprof_epoch_get_loaded_modules(csprof_epoch_t *epoch,
                                 csprof_epoch_t *previous_epoch)
 {
+#ifndef STATIC_ONLY
     char filename[PATH_MAX];
     char mapline[PATH_MAX+80];
     char *p;
     FILE *fs;
     pid_t pid = getpid();
 
-#ifndef STATIC_ONLY
     sprintf(filename, "/proc/%d/maps", pid);
     fs = fopen(filename, "r");
 
@@ -92,13 +93,14 @@ csprof_epoch_get_loaded_modules(csprof_epoch_t *epoch,
         }
     } while(p);
 #else
+    csprof_epoch_module_t *newmod;
+
     MSG(1,"STATIC_ONLY: epoch loads no modules");
     MSG(1,"STATIC_ONLY: build fake initial epoch");
 
-    csprof_epoch_module_t *newmod;
 
     newmod = csprof_malloc(sizeof(csprof_epoch_module_t));
-    newmod->module_name = static_epoch_xname;
+    newmod->module_name = csprof_get_executable_name();
     newmod->mapaddr = static_epoch_offset;
     newmod->vaddr = NULL;
     newmod->size = static_epoch_size;
@@ -109,14 +111,13 @@ csprof_epoch_get_loaded_modules(csprof_epoch_t *epoch,
 
     MSG(1,"newmod thing: name = %s\n"
           "         mapaddr = %p\n"
-        "         size    = %lx", static_epoch_xname,
+        "         size    = %lx", csprof_get_executable_name(),
         static_epoch_offset,
         static_epoch_size);
 
 #endif
 }
 
-
 /* support procedures */
 
 static int

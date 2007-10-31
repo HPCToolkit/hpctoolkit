@@ -8,10 +8,10 @@
 #include "interface.h"
 #include "epoch.h"
 #include "mem.h"
+#include "name.h"
 
 #ifdef STATIC_ONLY
 extern void *static_epoch_offset;
-extern char *static_epoch_xname;
 extern long static_epoch_size;
 #endif
 
@@ -98,7 +98,7 @@ csprof_epoch_get_loaded_modules(csprof_epoch_t *epoch,
     csprof_epoch_module_t *newmod;
 
     newmod = csprof_malloc(sizeof(csprof_epoch_module_t));
-    newmod->module_name = static_epoch_xname;
+    newmod->module_name = csprof_get_executable_name();
     newmod->mapaddr = static_epoch_offset;
     newmod->vaddr = NULL;
     newmod->size = static_epoch_size;
@@ -109,7 +109,7 @@ csprof_epoch_get_loaded_modules(csprof_epoch_t *epoch,
 
     MSG(1,"newmod thing: name = %s\n"
           "         mapaddr = %p\n"
-        "         size    = %lx", static_epoch_xname,
+        "         size    = %lx", csprof_get_executable_name(),
         static_epoch_offset,
         static_epoch_size);
 

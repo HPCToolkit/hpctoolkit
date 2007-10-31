@@ -56,6 +56,7 @@ all: $(CSPROF_DOT_O)
 DEFINES := -D_GNU_SOURCE
 DEFINES += -DCSPROF_LAST_EDGE_ONLY=1
 DEFINES += $(PERF)
+#DEFINES += -I/ccs/home/johnmc/mypapi/pkgs/include
 
 #CSPROF_TRAMPOLINE := -DCSPROF_TRAMPOLINE_BACKEND=1
 
@@ -82,7 +83,7 @@ module_dirs := utilities                \
 ifdef STATIC_ONLY
   INC_MON := -I./monitor-static/src
   find_v  := find_static
-  gethost := gethostid.o override.o
+  gethost := gethostid.o override.o MPI_Init.o 
 else
   INC_MON := -I./monitor/src
   find_v  := find
@@ -149,7 +150,7 @@ else
    OBJS += static_mon_ovr.o
 endif
 OBJS += csproflib.o metrics.o mem.o cct.o
-OBJS += list.o libc.o epoch.o
+OBJS += name.o list.o libc.o epoch.o
 
 ifdef DO_THREADS
    OBJS += pthread.o
@@ -181,6 +182,7 @@ OBJS += $(hpcfile_objs)
 OBJS += $(find_v).o xed_if.o
 OBJS += stack_troll.o
 OBJS += $(gethost)
+OBJS += last.o
 OBJS += last_func.o
 
 #LIBS := hpcfile/$(LIB_CSFILE) $(LIB_THREAD) $(LIB_UNWIND) $(LIB_PFM)
@@ -190,8 +192,10 @@ LIBS := $(LIB_THREAD) $(LIB_PFM)
 
 XED_LIBS := -L$(UNWIND)/Lib -lxed
 XED_CPP_LIBS :=  -lstdc++ -ldl
+#PAPI_LIBS := -L/ccs/home/johnmc/mypapi/pkgs/lib -lpapi -lpfm
+#PAPI_LIBS  := -lpapi -lpfm
 
-LIBS += $(XED_LIBS) $(XED_CPP_LIBS)
+LIBS += $(XED_LIBS) $(XED_CPP_LIBS) $(PAPI_LIBS)
 
 #############################################################################
 # Compiling Rules:
