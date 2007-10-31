@@ -29,6 +29,8 @@
 #include <lush/lushi.h>
 #include <lush/lushi-cb.h>
 
+#include <general.h> // FIXME: for MSG -- but should not include
+
 //*************************** Forward Declarations **************************
 
 #define LUSHCB_DECL(FN) \
@@ -46,35 +48,34 @@ LUSH_AGENTID_XXX_t lush_aid;
 
 //*************************** Forward Declarations **************************
 
-typedef struct cilk_ip cilk_ip_t;
+typedef union cilk_ip cilk_ip_t;
 
-struct cilk_ip {
-  union {
-    // ------------------------------------------------------------
-    // LUSH type
-    // ------------------------------------------------------------
-    lush_lip_t official_lip;
-
-    // ------------------------------------------------------------
-    // superimposed with:    
-    // ------------------------------------------------------------
-    void* ip;
-  };
+union cilk_ip {
+  // ------------------------------------------------------------
+  // LUSH type
+  // ------------------------------------------------------------
+  lush_lip_t official_lip;
+  
+  // ------------------------------------------------------------
+  // superimposed with:    
+  // ------------------------------------------------------------
+  void* ip;
 };
 
 
-typedef struct cilk_cursor cilk_cursor_t;
+typedef union cilk_cursor cilk_cursor_t;
 
-struct cilk_cursor {
-  union {
-    // ------------------------------------------------------------
-    // LUSH type
-    // ------------------------------------------------------------
-    lush_lcursor_t official_cursor;
-    
-    // ------------------------------------------------------------
-    // superimposed with:
-    // ------------------------------------------------------------
+union cilk_cursor {
+  // ------------------------------------------------------------
+  // LUSH type
+  // ------------------------------------------------------------
+  lush_lcursor_t official_cursor;
+
+  // ------------------------------------------------------------
+  // superimposed with:
+  // ------------------------------------------------------------
+  struct {
+    void* ref_ip; // reference physical ip
     bool seen_cilkprog;
   };
 };
@@ -132,7 +133,7 @@ LUSHI_init(int argc, char** argv,
   CB_free        = free_fn;
   CB_step        = step_fn;
   CB_get_loadmap = loadmap_fn;
-  
+
   determine_code_ranges();
   return 0;
 }
@@ -245,18 +246,21 @@ extern lush_step_t
 LUSHI_step_bichord(lush_cursor_t* cursor)
 {
   init_lcursor(cursor);
+  cilk_cursor_t* csr = (cilk_cursor_t*)lush_cursor_get_lcursor(cursor);
 
-  void* ip = (void*)lush_cursor_get_ip(cursor);
-  bool is_cilkrt   = is_libcilk(ip);
-  bool is_cilkprog = is_cilkprogram(ip);
+  csr->ref_ip = (void*)lush_cursor_get_ip(cursor);
+  bool seen_cilkprog = csr->seen_cilkprog;
+
+  bool is_cilkrt   = is_libcilk(csr->ref_ip);
+  bool is_cilkprog = is_cilkprogram(csr->ref_ip);
 
   bool is_TOS; // top of stack
   if (lush_cursor_is_flag(cursor, LUSH_CURSOR_FLAGS_BEG_PPROJ)) {
     is_TOS = true;
   }
 
-  cilk_cursor_t* csr = (cilk_cursor_t*)lush_cursor_get_lcursor(cursor);
-  bool seen_cilkprog = csr->seen_cilkprog;
+  // FIXME: consider effects of multiple agents
+  //LUSH_AGENTID_XXX_t last_aid = lush_cursor_get_aid(cursor); 
 
   // Given p-note derive l-note:
   //   1. is_cilkrt & is_TOS  => Cilk-scheduling or Cilk-overhead
@@ -283,7 +287,6 @@ LUSHI_step_bichord(lush_cursor_t* cursor)
   if (is_cilkprog) {
     // case (4)
     lush_cursor_set_assoc(cursor, LUSH_ASSOC_1_to_1);
-    cilk_cursor_t* csr = (cilk_cursor_t*)lush_cursor_get_lcursor(cursor);
     csr->seen_cilkprog = true;
   }
 
@@ -326,7 +329,8 @@ LUSHI_step_lnote(lush_cursor_t* cursor)
   }
   else if (as == LUSH_ASSOC_1_to_1) {
     if (lip->ip == NULL) {
-      lip->ip = lush_cursor_get_ip(cursor);
+      cilk_cursor_t* csr = (cilk_cursor_t*)lush_cursor_get_lcursor(cursor);
+      lip->ip = csr->ref_ip;
       ty = LUSH_STEP_CONT;
     }
     else {
@@ -335,7 +339,8 @@ LUSHI_step_lnote(lush_cursor_t* cursor)
   }
   else if (LUSH_ASSOC_1_to_2_n) {
     if (lip->ip == NULL) {
-      lip->ip = lush_cursor_get_ip(cursor);
+      cilk_cursor_t* csr = (cilk_cursor_t*)lush_cursor_get_lcursor(cursor);
+      lip->ip = csr->ref_ip;
       ty = LUSH_STEP_CONT;
     }
     else {

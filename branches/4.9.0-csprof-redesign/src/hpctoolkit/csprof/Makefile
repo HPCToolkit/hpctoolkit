@@ -157,7 +157,7 @@ LUSH_AGENT_OBJS =
 
 ifdef DO_LUSH
   OBJS += lush-backtrace.o
-  LUSH_AGENT_OBJS += cilk.o
+  LUSH_AGENT_OBJS += cilk.o lush-support.o
 endif
 
 OBJS += lush.o \
@@ -221,7 +221,7 @@ $(CSPROFLIB): $(LIB_CSFILE) $(OBJS)
 
 # LUSH agents
 $(LUSH_AGENTS): $(LUSH_AGENT_OBJS)
-	$(CC) $(LINK_FLAGS) -o $@ $<
+	$(CC) $(LINK_FLAGS) -o $@ $(LUSH_AGENT_OBJS)
 	@echo "*** $@ is up to date. ***"
 
 

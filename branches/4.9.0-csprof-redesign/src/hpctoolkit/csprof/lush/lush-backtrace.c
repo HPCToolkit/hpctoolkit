@@ -46,7 +46,7 @@ int lush_backtrace(csprof_state_t* state,
 		   int metric_id, size_t sample_count, 
 		   mcontext_t* context);
 
-#if 0
+
 int
 csprof_sample_callstack(csprof_state_t *state, int metric_id,
 			size_t sample_count, void *context)
@@ -56,7 +56,9 @@ csprof_sample_callstack(csprof_state_t *state, int metric_id,
   ret = (ret == 0) ? CSPROF_OK : CSPROF_ERR;
   return ret;
 }
-#endif
+
+
+//volatile int DO_WAIT = 1;
 
 
 int
@@ -69,6 +71,8 @@ lush_backtrace(csprof_state_t* state,
   unw_getcontext(&uc);
 #endif
 
+  //while (DO_WAIT) { ; }
+
   lush_cursor_t cursor;
   lush_init_unw(&cursor, state->lush_agents, context);
 
@@ -76,19 +80,19 @@ lush_backtrace(csprof_state_t* state,
   while (lush_step_bichord(&cursor) != LUSH_STEP_END_PROJ) {
     lush_agentid_t aid = lush_cursor_get_aid(&cursor);
     lush_assoc_t as = lush_cursor_get_assoc(&cursor);
-    
+
     // Step through p-notes of p-chord
     while (lush_step_pnote(&cursor) != LUSH_STEP_END_CHORD) {
       unw_word_t ip = lush_cursor_get_ip(&cursor);
 
-      DBGMSG_PUB(CSPROF_DBG_UNWINDING, "IP %lx / %d", ip, as);
+      //DBGMSG_PUB(CSPROF_DBG_UNWINDING, "IP %lx / %d", ip, as);
     }
 
     // Step through l-notes of l-chord
     while (lush_step_lnote(&cursor) != LUSH_STEP_END_CHORD) {
       lush_lip_t* lip = lush_cursor_get_lip(&cursor);
       
-      DBGMSG_PUB(CSPROF_DBG_UNWINDING, "LIP[%d] %lx", aid, *((void**)lip));
+      //DBGMSG_PUB(CSPROF_DBG_UNWINDING, "LIP[%d] %lx", aid, *((void**)lip));
     }
 
     // FIXME: insert backtrace into spine-tree and bump sample counter

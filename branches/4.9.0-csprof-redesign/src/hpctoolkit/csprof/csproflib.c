@@ -228,11 +228,16 @@ void csprof_init_internal(void)
 
     csprof_set_state(state);
     csprof_state_init(state);
-    if (opts.agent_paths != '\0') {
-      lush_agent_pool__init(state->lush_agents, opts.agent_paths);
-    }
-
     csprof_state_alloc(state);
+
+    // Initialize LUSH agents
+    if (opts.lush_agent_paths != '\0') {
+      state->lush_agents = 
+	(lush_agent_pool_t*)csprof_malloc(sizeof(lush_agent_pool_t));
+      lush_agent_pool__init(state->lush_agents, opts.lush_agent_paths);
+      MSG(0xfeed, "***> LUSH: %s (%p / %p) ***", opts.lush_agent_paths, 
+	  state, state->lush_agents);
+    }
 
     MSG(CSPROF_MSG_SHUTDOWN, "***> csprof init 2 ***");
   }
@@ -303,8 +308,12 @@ void csprof_thread_init(killsafe_t *kk,int id)
 
   DBGMSG_PUB(CSPROF_DBG_PTHREAD, "Allocated thread state, now init'ing and alloc'ing f thread %d",id);
 
+  csprof_state_t* process_state = csprof_get_safe_state();
+
+  MSG(0xfeed, "=> csprof_init_thread: 0 (%p)", process_state);
   csprof_state_init(state);
   csprof_state_alloc(state);
+  state->lush_agents = process_state->lush_agents; // LUSH
 
   state->pstate.thrid = id; // local thread id in state
 
@@ -328,6 +337,8 @@ void csprof_thread_fini(csprof_state_t *state)
   csprof_write_profile_data(state);
 }
 #endif
+
+
 // csprof_fini_internal: 
 // errors: handles all errors
 void csprof_fini_internal(void)
@@ -349,13 +360,19 @@ void csprof_fini_internal(void)
        state.  FIXME: maybe provide another level--CSPROF_STATUS_SHUT_DOWN? */
     status = CSPROF_STATUS_FINI;
 
-    /* stop the profile driver */
+    // stop the profile driver
     csprof_driver_fini(state, &opts);
 
+    // write profile data
     MSG(CSPROF_MSG_SHUTDOWN, "writing profile data");
     state = csprof_get_safe_state();
     csprof_write_profile_data(state);
     printf("%d samples total, %d samples dropped\n", samples_taken, segv_count+bad_unwind_count);
+
+    // shutdown LUSH agents
+    if (state->lush_agents) {
+      lush_agent_pool__fini(state->lush_agents);
+    }
 }
 
 
@@ -513,7 +530,7 @@ csprof_state_t *csprof_check_for_new_epoch(csprof_state_t *state)
   if(state->epoch != current) {
     csprof_state_t *newstate = csprof_malloc(sizeof(csprof_state_t));
 
-    MSG(CSPROF_MSG_EPOCH, "Creating new epoch...");
+    MSG(0xfeed/*CSPROF_MSG_EPOCH*/, "Creating new epoch...");
 
     /* we don't have to go through the usual csprof_state_{init,alloc}
        business here because most of the stuff we want is already
@@ -715,13 +732,13 @@ int csprof_options__getopts(csprof_options_t* x)
   }
 #endif
 
-  /* Option: CSPROF_OPT_AGENTS */
-  s = getenv(CSPROF_OPT_AGENTS);
+  /* Option: CSPROF_OPT_LUSH_AGENTS */
+  s = getenv(CSPROF_OPT_LUSH_AGENTS);
   if (s) {
-    strcpy(x->agent_paths, s);
+    strcpy(x->lush_agent_paths, s);
   }
   else {
-    x->agent_paths[0] = '\0';
+    x->lush_agent_paths[0] = '\0';
   }
 
   /* Option: CSPROF_OPT_MAX_METRICS */

@@ -195,6 +195,9 @@ lush_step_bichord(lush_cursor_t* cursor)
   // 2. Officially step to next bichord.  First attempt to use an
   // agent to interpret the p-chord.  Otherwise, use the 'identity
   // agent'
+  lush_cursor_unset_flag(cursor, LUSH_CURSOR_FLAGS_END_PCHORD);
+  lush_cursor_unset_flag(cursor, LUSH_CURSOR_FLAGS_END_LCHORD);
+
   unw_word_t ip = lush_cursor_get_ip(cursor);
   lush_agentid_t first_aid = lush_agentid_NULL;
 
@@ -209,7 +212,7 @@ lush_step_bichord(lush_cursor_t* cursor)
       break;
     }
   }
-  
+
   // use the 'identity agent'
   if (first_aid == lush_agentid_NULL) {
     ty = LUSH_STEP_CONT;
@@ -230,6 +233,12 @@ lush_step_pnote(lush_cursor_t* cursor)
     return LUSH_STEP_END_CHORD;
   }
 
+  // Special case handling if LUSH_CURSOR_FLAGS_BEG_PCHORD is set
+  if (lush_cursor_is_flag(cursor, LUSH_CURSOR_FLAGS_BEG_PCHORD)) {
+    lush_cursor_unset_flag(cursor, LUSH_CURSOR_FLAGS_BEG_PCHORD);
+    return LUSH_STEP_CONT;
+  }
+
   lush_step_t ty = lush_forcestep_pnote(cursor);
 
   // filter return type
@@ -243,11 +252,11 @@ lush_step_pnote(lush_cursor_t* cursor)
 lush_step_t
 lush_step_lnote(lush_cursor_t* cursor)
 {
-  lush_step_t ty = LUSH_STEP_NULL;
-
   if (lush_cursor_is_flag(cursor, LUSH_CURSOR_FLAGS_END_LCHORD)) {
     return LUSH_STEP_END_CHORD;
   }
+
+  lush_step_t ty = LUSH_STEP_NULL;
 
   // Step cursor to next l-note, using the appropriate agent
   lush_agent_pool_t* pool = cursor->apool;

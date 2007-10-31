@@ -58,7 +58,7 @@
 
 /* represents options for the library */
 typedef struct csprof_options_s {
-  char agent_paths[CSPROF_PATH_SZ]; /* paths for LUSH agents */
+  char lush_agent_paths[CSPROF_PATH_SZ]; /* paths for LUSH agents */
 
   char out_path[CSPROF_PATH_SZ]; /* path for output */
   char addr_file[CSPROF_PATH_SZ]; /* path for "bad address" file */

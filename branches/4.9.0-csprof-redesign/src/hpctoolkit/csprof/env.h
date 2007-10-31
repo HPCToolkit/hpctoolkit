@@ -47,7 +47,7 @@ extern const char* CSPROF_OPT_MEM_SZ;
 extern const char* CSPROF_OPT_VERBOSITY;
 extern const char* CSPROF_OPT_DEBUG;
 
-extern const char* CSPROF_OPT_AGENTS;
+extern const char* CSPROF_OPT_LUSH_AGENTS;
 
 extern const char* CSPROF_OPT_MAX_METRICS;
 
