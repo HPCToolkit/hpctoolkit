@@ -175,7 +175,7 @@ csprof_fini()
 //   multiple calls to the initializer and finalizer where state is
 //   preserved.
 
-int wait_for_gdb = 1;
+volatile int CSPROF_WAIT = 1;
 
 extern void _start(void);
 extern int __stop___libc_freeres_ptrs;
@@ -191,7 +191,8 @@ long static_epoch_size;
 void csprof_init_internal(void)
 {
   if (getenv("CSPROF_WAIT")) {
-    while(wait_for_gdb);
+    DBGMSG_PUB(1, "CSPROF_WAIT... (pid=%d)", getpid());
+    while(CSPROF_WAIT);
   }
   csprof_libc_init();
   MSG(CSPROF_MSG_SHUTDOWN, "***> csprof init internal ***");
@@ -231,7 +232,7 @@ void csprof_init_internal(void)
     csprof_state_alloc(state);
 
     // Initialize LUSH agents
-    if (opts.lush_agent_paths != '\0') {
+    if (opts.lush_agent_paths[0] != '\0') {
       state->lush_agents = 
 	(lush_agent_pool_t*)csprof_malloc(sizeof(lush_agent_pool_t));
       lush_agent_pool__init(state->lush_agents, opts.lush_agent_paths);

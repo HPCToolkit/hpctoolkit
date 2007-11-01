@@ -133,7 +133,11 @@ backtrace_done(unw_cursor_t *frame, unw_word_t *pcp, unw_word_t *spp)
 extern void *monitor_unwind_fence1,*monitor_unwind_fence2;
 extern void *monitor_unwind_thread_fence1,*monitor_unwind_thread_fence2;
 
-int csprof_check_fence(void *iip){
+// Until this is part of unw_step (which is the plan), it needs to be
+// extern-ed for use by LUSH
+extern int csprof_check_fence(void *iip);
+int csprof_check_fence(void *iip)
+{
   void **ip = (void **) iip;
 
   return ((ip >= &monitor_unwind_fence1) && (ip <= &monitor_unwind_fence2)) ||
