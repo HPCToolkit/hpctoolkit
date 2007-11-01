@@ -61,6 +61,7 @@ typedef csprof_epoch_t LUSHCB_epoch_t;
 
 LUSHI_DECL(int, LUSHCB_get_loadmap, (LUSHCB_epoch_t** epoch));
 
+
 // FIXME: do we need a find_proc callback?
 
 #ifdef __cplusplus

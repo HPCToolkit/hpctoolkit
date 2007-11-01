@@ -77,6 +77,7 @@ union cilk_cursor {
   struct {
     void* ref_ip; // reference physical ip
     bool seen_cilkprog;
+    bool is_beg_lnote;
   };
 };
 
@@ -114,6 +115,19 @@ is_cilkprogram(void* addr);
 static void
 init_lcursor(lush_cursor_t* cursor);
 
+//*************************** Forward Declarations **************************
+
+// FIXME: should go away when unw_step is fixed
+extern void *monitor_unwind_fence1,*monitor_unwind_fence2;
+extern void *monitor_unwind_thread_fence1,*monitor_unwind_thread_fence2;
+
+int HACK_is_fence(void *iip)
+{
+  void **ip = (void **) iip;
+
+  return ((ip >= &monitor_unwind_fence1) && (ip <= &monitor_unwind_fence2)) ||
+    ((ip >= &monitor_unwind_thread_fence1) && (ip <= &monitor_unwind_thread_fence2));
+}
 
 // **************************************************************************
 // Initialization/Finalization
@@ -300,6 +314,13 @@ LUSHI_step_pnote(lush_cursor_t* cursor)
   // NOTE: Since all associations are 1 <-> x, it is always valid to step.
 
   lush_step_t ty = LUSH_STEP_NULL;
+  
+  { // FIXME: temporary
+    void* ip = (void*)lush_cursor_get_ip(cursor);
+    if (HACK_is_fence(ip)) {
+      return LUSH_STEP_END_PROJ;
+    }
+  }
 
   int t = CB_step(lush_cursor_get_pcursor(cursor));
   if (t > 0) {
@@ -322,30 +343,33 @@ LUSHI_step_lnote(lush_cursor_t* cursor)
   lush_step_t ty = LUSH_STEP_NULL;
 
   lush_assoc_t as = lush_cursor_get_assoc(cursor);
+  cilk_cursor_t* csr = (cilk_cursor_t*)lush_cursor_get_lcursor(cursor);
   cilk_ip_t* lip = (cilk_ip_t*)lush_cursor_get_lip(cursor);
   
   if (as == LUSH_ASSOC_1_to_0) {
     ty = LUSH_STEP_END_CHORD;
   }
   else if (as == LUSH_ASSOC_1_to_1) {
-    if (lip->ip == NULL) {
-      cilk_cursor_t* csr = (cilk_cursor_t*)lush_cursor_get_lcursor(cursor);
-      lip->ip = csr->ref_ip;
-      ty = LUSH_STEP_CONT;
+    if (csr->is_beg_lnote) {
+      ty = LUSH_STEP_END_CHORD;
+      csr->is_beg_lnote = false;
     }
     else {
-      ty = LUSH_STEP_END_CHORD;
+      lip->ip = csr->ref_ip;
+      ty = LUSH_STEP_CONT;
+      csr->is_beg_lnote = true;
     }
   }
   else if (LUSH_ASSOC_1_to_2_n) {
-    if (lip->ip == NULL) {
-      cilk_cursor_t* csr = (cilk_cursor_t*)lush_cursor_get_lcursor(cursor);
-      lip->ip = csr->ref_ip;
-      ty = LUSH_STEP_CONT;
-    }
-    else {
+    if (csr->is_beg_lnote) {
       // FIXME: advance lip;
       ty = (lip->ip == NULL) ? LUSH_STEP_END_CHORD : LUSH_STEP_CONT;
+      csr->is_beg_lnote = false;
+    }
+    else {
+      lip->ip = csr->ref_ip;
+      ty = LUSH_STEP_CONT;
+      csr->is_beg_lnote = true;
     }
   }
   else {
