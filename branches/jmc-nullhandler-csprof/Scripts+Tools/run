@@ -1,8 +1,0 @@
-#PBS -A CSC023
-#PBS -N run
-#PBS -l walltime=00:00:30,size=1
-cd /autofs/spin/home/mfagan/csprof/T1
-date
-nodeinfo
-yod -sz 1 ./burn 40
-date

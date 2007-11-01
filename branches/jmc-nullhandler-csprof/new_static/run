@@ -1,7 +1,0 @@
-#!/bin/sh
-#PBS -A CSC023
-#PBS -l size=1
-#PBS -l walltime=00:30
-
-yod -np 1 /spin/home/krentel/new_static/a.out
-

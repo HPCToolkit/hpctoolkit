@@ -1,7 +1,0 @@
-sigprocmask
-sigaction
-signal
-
-malloc
-calloc
-realloc
