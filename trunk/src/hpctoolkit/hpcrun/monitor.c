@@ -1,3 +1,4 @@
+
 /* -*-Mode: C;-*- */
 /* $Id$ */
 
@@ -1143,7 +1144,7 @@ init_papi_for_process()
   }
   
   /* set PAPI debug */
-  if (opt_debug >= 5) {
+  if (opt_debug >= 1) {
     MSG0(stderr, "setting PAPI debug!");
     rval = PAPI_set_debug(PAPI_VERB_ECONT);
     if (rval != PAPI_OK) {
