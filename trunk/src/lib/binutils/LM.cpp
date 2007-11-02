@@ -107,7 +107,7 @@ public:
 
 
 binutils::LM::LM()
-  : type(Unknown), textBeg(0), textEnd(0), 
+  : m_type(Unknown), textBeg(0), textEnd(0), 
     textBegReloc(0), unRelocDelta(0)
 {
   impl = new LMImpl;
@@ -147,11 +147,11 @@ binutils::LM::~LM()
 
 
 void
-binutils::LM::Open(const char* moduleName)
+binutils::LM::open(const char* moduleName)
 {
-  if (!name.empty()) {
+  if (!m_name.empty()) {
     // 'moduleName' should be equal to what already exists
-    DIAG_Assert(name == moduleName, "Cannot open a different file!");
+    DIAG_Assert(m_name == moduleName, "Cannot open a different file!");
   }
 
   // -------------------------------------------------------
@@ -173,7 +173,9 @@ binutils::LM::Open(const char* moduleName)
     BINUTILS_Throw("'" << moduleName << "': not an object or executable");
   }
   
-  name = moduleName;
+  m_name = moduleName;
+  realpath(m_name);
+  
   impl->abfd = abfd;
 
   // -------------------------------------------------------
@@ -184,13 +186,13 @@ binutils::LM::Open(const char* moduleName)
   // on some architectures (e.g. alpha).
   flagword flags = bfd_get_file_flags(impl->abfd);
   if (flags & EXEC_P) {         // BFD is directly executable
-    type = Executable;
+    m_type = Executable;
   } 
   else if (flags & DYNAMIC) { // BFD is a dynamic object
-    type = SharedLibrary;
+    m_type = SharedLibrary;
   } 
   else if (flags) {
-    type = Unknown;
+    m_type = Unknown;
   }
   
 #if defined(HAVE_HPC_GNUBINUTILS)
@@ -242,7 +244,7 @@ binutils::LM::Open(const char* moduleName)
   }
   else {
     delete newisa;
-    // typeid(*isa).name()
+    // typeid(*isa).m_name()
     DIAG_Assert(typeid(*newisa) == typeid(*isa),
 		"Cannot simultaneously open LMs with different ISAs!");
   }
@@ -250,10 +252,10 @@ binutils::LM::Open(const char* moduleName)
 
 
 void
-binutils::LM::Read()
+binutils::LM::read()
 {
   // If the file has not been opened...
-  DIAG_Assert(!name.empty(), "Must call LM::Open first");
+  DIAG_Assert(!m_name.empty(), "Must call LM::Open first");
 
   // Read if we have not already done so
   if (impl->bfdSymbolTable == NULL
@@ -351,7 +353,7 @@ binutils::LM::insertInsn(VMA vma, ushort opIndex, binutils::Insn* insn)
 bool
 binutils::LM::GetSourceFileInfo(VMA vma, ushort opIndex,
 				string& func, 
-				string& file, SrcFile::ln& line) const
+				string& file, SrcFile::ln& line) /*const*/
 {
   bool STATUS = false;
   func = file = "";
@@ -359,8 +361,6 @@ binutils::LM::GetSourceFileInfo(VMA vma, ushort opIndex,
 
   if (!impl->bfdSymbolTable) { return STATUS; }
   
-  uint bfd_line = 0;
-
   VMA unrelocVMA = UnRelocateVMA(vma);
   VMA opVMA = isa->ConvertVMAToOpVMA(unrelocVMA, opIndex);
   
@@ -375,16 +375,28 @@ binutils::LM::GetSourceFileInfo(VMA vma, ushort opIndex,
       base = bfd_section_vma(impl->abfd, bfdSeg);
       break; 
     } 
-  } 
+  }
+  if (!bfdSeg) {
+    return STATUS;
+  }
 
   // Obtain the source line information.
-  const char *_func = NULL, *_file = NULL;
-  if (bfdSeg
-      && bfd_find_nearest_line(impl->abfd, bfdSeg, impl->bfdSymbolTable,
-			       opVMA - base, &_file, &_func, &bfd_line)) {
-    STATUS = (_file && _func && SrcFile::isValid(bfd_line));
-    if (_func) { func = _func; }
-    if (_file) { file = _file; }
+  const char *bfd_func = NULL, *bfd_file = NULL;
+  uint bfd_line = 0;
+
+  bfd_boolean fnd = 
+    bfd_find_nearest_line(impl->abfd, bfdSeg, impl->bfdSymbolTable,
+			  opVMA - base, &bfd_file, &bfd_func, &bfd_line);
+  if (fnd) {
+    STATUS = (bfd_file && bfd_func && SrcFile::isValid(bfd_line));
+    
+    if (bfd_func) {
+      func = bfd_func;
+    }
+    if (bfd_file) { 
+      file = bfd_file;
+      m_realpath_mgr.realpath(file);
+    }
     line = (SrcFile::ln)bfd_line;
   }
 
@@ -397,7 +409,7 @@ binutils::LM::GetSourceFileInfo(VMA begVMA, ushort bOpIndex,
 				VMA endVMA, ushort eOpIndex,
 				string& func, string& file,
 				SrcFile::ln& begLine, SrcFile::ln& endLine,
-				unsigned flags) const
+				unsigned flags) /*const*/
 {
   bool STATUS = false;
   func = file = "";
@@ -628,13 +640,13 @@ binutils::LM::ReadSymbolTables()
     // don't want this warning emitted for every single mips binary.)
 
     if (bfd_get_arch(impl->abfd) != bfd_arch_mips) {
-      DIAG_Msg(1, "'" << GetName() << "': No regular symbols found; consulting dynamic symbols.");
+      DIAG_Msg(1, "'" << name() << "': No regular symbols found; consulting dynamic symbols.");
     }
 
     bytesNeeded = bfd_get_dynamic_symtab_upper_bound(impl->abfd);
     if (bytesNeeded <= 0) {
       // We can't find any symbols. 
-      DIAG_Msg(1, "Warning: '" << GetName() << "': No dynamic symbols found.");
+      DIAG_Msg(1, "Warning: '" << name() << "': No dynamic symbols found.");
       return false;
     }
     
@@ -729,13 +741,13 @@ binutils::LM::DumpModuleInfo(std::ostream& o, const char* pre) const
   string p(pre);
   bfd *abfd = impl->abfd;
 
-  o << p << "Name: `" << GetName() << "'\n";
+  o << p << "Name: `" << name() << "'\n";
 
   o << p << "Format: `" << bfd_get_target(abfd) << "'" << endl;
   // bfd_get_flavour
 
   o << p << "Type: `";
-  switch (GetType()) {
+  switch (type()) {
     case Executable:    
       o << "Executable (fully linked except for possible DSOs)'\n";
       break;
@@ -746,7 +758,7 @@ binutils::LM::DumpModuleInfo(std::ostream& o, const char* pre) const
       o << "Unknown load module type'\n";
       break;
     default:
-      DIAG_Die("Invalid load module type: " << GetType());
+      DIAG_Die("Invalid load module type: " << type());
   }
   
   o << p << "Load VMA: " << hex << firstaddr << dec << "\n";
@@ -861,10 +873,10 @@ binutils::Exe::~Exe()
 
 
 void
-binutils::Exe::Open(const char* moduleName)
+binutils::Exe::open(const char* moduleName)
 {
-  LM::Open(moduleName);
-  if (GetType() != LM::Executable) {
+  LM::open(moduleName);
+  if (type() != LM::Executable) {
     BINUTILS_Throw("'" << moduleName << "' is not an executable.");
   }
 

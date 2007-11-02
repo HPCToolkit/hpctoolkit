@@ -76,6 +76,7 @@ MYSOURCES = \
 	IOUtil.hpp IOUtil.cpp \
 	Files.hpp Files.cpp \
 	SrcFile.hpp SrcFile.cpp \
+	RealPathMgr.hpp RealPathMgr.cpp \
 	findinstall.h findinstall.c \
 	pathfind.h pathfind.cpp \
 	realpath.h realpath.c \

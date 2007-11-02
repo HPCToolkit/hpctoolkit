@@ -864,7 +864,7 @@ addSymbolicInfo(CSProfCodeNode* n, binutils::LM* lm)
   
   // if file name is missing then using load module name. 
   if (file.empty() || func.empty()) {
-    n->SetFile(lm->GetName() C_STR);
+    n->SetFile(lm->name() C_STR);
     n->SetLine(0); //don't need to have line number for loadmodule
     n->SetFileIsText(false);
   }

@@ -89,10 +89,10 @@ public:
   VMAInterval(const VMAInterval& x)
     { *this = x; }
 
-  VMAInterval& operator=(const VMAInterval& x) { 
+  VMAInterval& operator=(const VMAInterval& x) {
     mBeg = x.mBeg;
     mEnd = x.mEnd;
-    return *this; 
+    return *this;
   }
 
   ~VMAInterval() { }

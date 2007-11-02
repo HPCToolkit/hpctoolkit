@@ -140,8 +140,8 @@ realmain(int argc, char* const argv[])
   binutils::LM* lm = NULL;
   try {
     lm = new binutils::LM();
-    lm->Open(args.inputFile.c_str());
-    lm->Read();
+    lm->open(args.inputFile.c_str());
+    lm->read();
   } 
   catch (...) {
     DIAG_EMsg("Exception encountered while reading " << args.inputFile);
@@ -187,9 +187,9 @@ void
 DumpHeaderInfo(std::ostream& os, binutils::LM* lm, const char* pre = "")
 {
   os << "Begin LoadModule Stmt Dump\n";
-  os << pre << "Name: `" << lm->GetName() << "'\n";
+  os << pre << "Name: `" << lm->name() << "'\n";
   os << pre << "Type: `";
-  switch (lm->GetType()) {
+  switch (lm->type()) {
     case binutils::LM::Executable:
       os << "Executable (fully linked except for possible DSOs)'\n";
       break;

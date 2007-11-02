@@ -70,6 +70,7 @@
 
 #include <lib/support/Exception.hpp>
 #include <lib/support/SrcFile.hpp>
+#include <lib/support/RealPathMgr.hpp>
 
 //*************************** Forward Declarations **************************
 
@@ -127,26 +128,26 @@ public:
   // throw an exception on error.  If a file is already, do nothing.
   // (Segs, Procs and Insns are not constructed yet.)
   virtual void 
-  Open(const char* moduleName);
+  open(const char* moduleName);
 
   // Read: If module has not already been read, attempt to do so;
   // return an exception on error.  If a file has already been read do
   // nothing.
   virtual void 
-  Read();
+  read();
 
 
   // -------------------------------------------------------
   // 
   // -------------------------------------------------------
 
-  // GetName: Return name of load module
+  // name: Return name of load module
   const std::string& 
-  GetName() const { return name; }
+  name() const { return m_name; }
 
   // GetType:  Return type of load module
   Type 
-  GetType() const { return type; }
+  type() const { return m_type; }
 
   // GetTextBeg, GetTextEnd: (Unrelocated) Text begin and end.
   // FIXME: only guaranteed on alpha at present
@@ -265,18 +266,19 @@ public:
   bool 
   GetSourceFileInfo(VMA vma, ushort opIndex,
 		    std::string& func, 
-		    std::string& file, SrcFile::ln& line) const;
+		    std::string& file, SrcFile::ln& line) /*const*/;
 
   bool 
   GetSourceFileInfo(VMA begVMA, ushort bOpIndex,
 		    VMA endVMA, ushort eOpIndex,
 		    std::string& func, std::string& file,
 		    SrcFile::ln& begLine, SrcFile::ln& endLine,
-		    unsigned flags = 1) const;
+		    unsigned flags = 1) /*const*/;
 
   bool 
   GetProcFirstLineInfo(VMA vma, ushort opIndex, SrcFile::ln& line) const;
 
+  bool realpath(std::string& fnm) { m_realpath_mgr.realpath(fnm); }
   
   // -------------------------------------------------------
   // debugging
@@ -369,8 +371,8 @@ protected:
   LMImpl* impl; 
 
 private:
-  std::string name;
-  Type  type;
+  std::string m_name;
+  Type  m_type;
   VMA   textBeg, textEnd; // text begin and end
   VMA   firstaddr;        // shared library load address begin
   VMA   textBegReloc;     // relocated text begin
@@ -391,6 +393,8 @@ private:
 
   // symbolic info used in building procedures
   binutils::dbg::LM mDbgInfo;
+
+  RealPathMgr m_realpath_mgr;
 };
 
 } // namespace binutils
@@ -419,7 +423,7 @@ public:
   // -------------------------------------------------------
 
   // See LM::Open comments
-  virtual void Open(const char* moduleName);
+  virtual void open(const char* moduleName);
   
   VMA GetStartVMA() const { return startVMA; }
 

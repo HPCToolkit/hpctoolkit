@@ -162,8 +162,8 @@ real_main(int argc, char* argv[])
   
   try {
     lm = new binutils::LM();
-    lm->Open(lmNm.c_str());
-    lm->Read();
+    lm->open(lmNm.c_str());
+    lm->read();
   } 
   catch (...) {
     DIAG_EMsg("Exception encountered while reading " << lmNm);

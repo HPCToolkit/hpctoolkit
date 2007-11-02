@@ -50,95 +50,84 @@
 
 //************************* System Include Files ****************************
 
-#include <iostream>
-using std::cerr;
-using std::endl;
+#include <string>
+using std::string;
 
-#include <fstream>
-#include <new>
 
 //*************************** User Include Files ****************************
 
-#include "Args.hpp"
-
-#include <lib/banal/bloop.hpp>
-
-#include <lib/binutils/LM.hpp>
+#include "RealPathMgr.hpp"
 
 #include <lib/support/diagnostics.h>
+#include <lib/support/Logic.hpp>
 
-//*************************** Forward Declarations ***************************
+//*************************** Forward Declarations **************************
 
-int
-real_main(int argc, char* argv[]);
+//***************************************************************************
 
-//****************************************************************************
+//***************************************************************************
+// RealPathMgr
+//***************************************************************************
 
-int
-main(int argc, char* argv[])
+
+RealPathMgr::RealPathMgr()
 {
-  try {
-    return real_main(argc, argv);
-  }
-  catch (const Diagnostics::Exception& x) {
-    DIAG_EMsg(x.message());
-    exit(1);
-  } 
-  catch (const std::bad_alloc& x) {
-    DIAG_EMsg("[std::bad_alloc] " << x.what());
-    exit(1);
-  } 
-  catch (const std::exception& x) {
-    DIAG_EMsg("[std::exception] " << x.what());
-    exit(1);
-  } 
-  catch (...) {
-    DIAG_EMsg("Unknown exception encountered!");
-    exit(2);
-  }
 }
 
 
-int
-real_main(int argc, char* argv[])
+RealPathMgr::~RealPathMgr()
 {
-  Args args(argc, argv);
-  
-  // ------------------------------------------------------------
-  // Read executable
-  // ------------------------------------------------------------
-  binutils::LM* lm = NULL;
-  try {
-    lm = new binutils::LM();
-    lm->open(args.inputFile.c_str());
-    lm->read();
-  } 
-  catch (...) {
-    DIAG_EMsg("Exception encountered while reading " << args.inputFile);
-    throw;
-  }
-  
-  // ------------------------------------------------------------
-  // Build and print the ScopeTree
-  // ------------------------------------------------------------
-  { 
-    using namespace banal::bloop;
-    PgmScopeTree* pgmScopeTree =
-      BuildLMStructure(lm, args.canonicalPathList.c_str(),
-		       args.normalizeScopeTree, 
-		       args.unsafeNormalizations,
-		       args.irreducibleIntervalIsLoop,
-		       args.forwardSubstitutionOff);
-    
-    WriteScopeTree(std::cout, pgmScopeTree, args.prettyPrintOutput);
-    delete pgmScopeTree;
-  }
-  
-  // Cleanup
-  delete lm;
-  
-  return (0);
 }
 
-//****************************************************************************
+
+bool
+RealPathMgr::realpath(string& fnm)
+{
+  if (fnm.empty()) {
+    return false;
+  }
+  
+  // INVARIANT: 'fnm' is not empty
+
+  // INVARIANT: all entries in the map are non-empty
+  MyMap::iterator it = m_realpath_map.find(fnm);
+  
+  if (it != m_realpath_map.end()) {
+    const string& real_fnm = it->second;
+    if (real_fnm[0] == '/') { // only copy if realpath was found
+      fnm = real_fnm;
+    }
+  }
+  else {
+    string real_fnm = RealPath(fnm.c_str());
+    fnm = real_fnm;
+    m_realpath_map.insert(make_pair(fnm, real_fnm));
+  }
+
+  return (fnm[0] == '/'); // absolute path means realpath was found
+}
+
+
+//***************************************************************************
+
+string
+RealPathMgr::toString(int flags) const
+{
+  return "";
+}
+
+
+std::ostream&
+RealPathMgr::dump(std::ostream& os, int flags) const
+{
+  os.flush();
+  return os;
+}
+
+
+void
+RealPathMgr::ddump(int flags) const
+{
+  dump(std::cerr, flags);
+}
 
