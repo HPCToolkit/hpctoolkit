@@ -102,7 +102,7 @@ RELOCATEDcmp(const string& x)
 // When Alien contexts are nested, there may be many at the top of the
 // stack at one time; in the opposite case, only one is on the top of
 // the stack at any time.
-#define BLOOP_NEST_ALIEN_CONTEXTS 1
+#define BLOOP_NEST_ALIEN_CONTEXTS 0
 
 //***************************************************************************
 
