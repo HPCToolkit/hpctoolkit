@@ -48,97 +48,64 @@
 //
 //***************************************************************************
 
+#ifndef RealPathMgr_hpp 
+#define RealPathMgr_hpp
+
 //************************* System Include Files ****************************
 
+#include <string>
+#include <map>
 #include <iostream>
-using std::cerr;
-using std::endl;
 
-#include <fstream>
-#include <new>
+#include <cctype>
 
 //*************************** User Include Files ****************************
 
-#include "Args.hpp"
+#include <include/general.h>
 
-#include <lib/banal/bloop.hpp>
+#include "realpath.h"
 
-#include <lib/binutils/LM.hpp>
+//*************************** Forward Declarations **************************
 
-#include <lib/support/diagnostics.h>
-
-//*************************** Forward Declarations ***************************
-
-int
-real_main(int argc, char* argv[]);
-
-//****************************************************************************
-
-int
-main(int argc, char* argv[])
-{
-  try {
-    return real_main(argc, argv);
-  }
-  catch (const Diagnostics::Exception& x) {
-    DIAG_EMsg(x.message());
-    exit(1);
-  } 
-  catch (const std::bad_alloc& x) {
-    DIAG_EMsg("[std::bad_alloc] " << x.what());
-    exit(1);
-  } 
-  catch (const std::exception& x) {
-    DIAG_EMsg("[std::exception] " << x.what());
-    exit(1);
-  } 
-  catch (...) {
-    DIAG_EMsg("Unknown exception encountered!");
-    exit(2);
-  }
-}
+//***************************************************************************
+// RealPathMgr
+//***************************************************************************
 
 
-int
-real_main(int argc, char* argv[])
-{
-  Args args(argc, argv);
+// --------------------------------------------------------------------------
+// 'RealPathMgr' 
+// --------------------------------------------------------------------------
+
+class RealPathMgr {
+public:
+  RealPathMgr();
+  ~RealPathMgr();
+
+  // -------------------------------------------------------
+  // debugging
+  // -------------------------------------------------------
+
+  // realpath: Given 'fnm', convert it to its 'realpath' and return true;
+  // otherwise perform no converstion and return false.
+  bool realpath(std::string& fnm);
   
-  // ------------------------------------------------------------
-  // Read executable
-  // ------------------------------------------------------------
-  binutils::LM* lm = NULL;
-  try {
-    lm = new binutils::LM();
-    lm->open(args.inputFile.c_str());
-    lm->read();
-  } 
-  catch (...) {
-    DIAG_EMsg("Exception encountered while reading " << args.inputFile);
-    throw;
-  }
-  
-  // ------------------------------------------------------------
-  // Build and print the ScopeTree
-  // ------------------------------------------------------------
-  { 
-    using namespace banal::bloop;
-    PgmScopeTree* pgmScopeTree =
-      BuildLMStructure(lm, args.canonicalPathList.c_str(),
-		       args.normalizeScopeTree, 
-		       args.unsafeNormalizations,
-		       args.irreducibleIntervalIsLoop,
-		       args.forwardSubstitutionOff);
-    
-    WriteScopeTree(std::cout, pgmScopeTree, args.prettyPrintOutput);
-    delete pgmScopeTree;
-  }
-  
-  // Cleanup
-  delete lm;
-  
-  return (0);
-}
+  // -------------------------------------------------------
+  // debugging
+  // -------------------------------------------------------
+  std::string toString(int flags = 0) const;
 
-//****************************************************************************
+  // flags = -1: compressed dump / 0: normal dump / 1: extra info
+  std::ostream& dump(std::ostream& os, int flags = 0) const;
 
+  void ddump(int flags = 0) const;
+
+private:
+  typedef std::map<std::string, std::string> MyMap;
+  
+  MyMap m_realpath_map;
+};
+
+
+//***************************************************************************
+
+#endif // RealPathMgr_hpp

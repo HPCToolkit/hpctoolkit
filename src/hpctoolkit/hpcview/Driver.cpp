@@ -303,7 +303,7 @@ Driver::ScopeTreeInsertHPCRUNData(PgmScopeTree& scopes,
     binutils::LM* lm = NULL;
     try {
       lm = new binutils::LM();
-      lm->Open(lmname.c_str());
+      lm->open(lmname.c_str());
     }
     catch (const binutils::Exception& x) {
       DIAG_EMsg("While opening " << lmname.c_str() << ":\n" << x.message());
@@ -335,7 +335,7 @@ Driver::ScopeTreeInsertHPCRUNData(PgmScopeTree& scopes,
 	
 	// 1. Unrelocate vma.
 	VMA ur_vma = vma;
-	if (lm->GetType() == binutils::LM::SharedLibrary 
+	if (lm->type() == binutils::LM::SharedLibrary 
 	    && vma > proflm.load_addr()) {
 	  ur_vma = vma - proflm.load_addr();
 	}

@@ -967,8 +967,8 @@ dump_object(ostream& os,
     binutils::LM* lm = NULL;
     try {
       lm = new binutils::LM();
-      lm->Open(proflm.name().c_str());
-      lm->Read();
+      lm->open(proflm.name().c_str());
+      lm->read();
     } 
     catch (...) {
       DIAG_EMsg("Exception encountered while reading " << proflm.name());
@@ -1147,7 +1147,7 @@ ColumnFormatter::event_col(uint64_t eventCnt, uint64_t eventTot)
 
 EventCursor::EventCursor(const ProfFileLM& proflm, const binutils::LM& lm)
 {
-  m_doRelocate = (lm.GetType() == binutils::LM::SharedLibrary);
+  m_doRelocate = (lm.type() == binutils::LM::SharedLibrary);
   m_loadAddr = (VMA)proflm.load_addr();
   
   // --------------------------------------------------------

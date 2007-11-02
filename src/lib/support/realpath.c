@@ -60,7 +60,8 @@ RealPath(const char* nm)
   static char _RealPathBuf[PATH_MAX]; 
   if (realpath(nm, _RealPathBuf) == NULL) {
     return nm; /* error; return orig string */
-  } else {
+  }
+  else {
     return _RealPathBuf; /* resolved name has been copied here */
   }
 }

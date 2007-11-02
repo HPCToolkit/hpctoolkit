@@ -260,8 +260,8 @@ processCallingCtxtTree(CSProfile* profData, VMA begVMA, VMA endVMA,
 
   try {
     binutils::LM* lm = new binutils::LM();
-    lm->Open(lm_fnm.c_str());
-    if (lm->GetType() != binutils::LM::Executable) {
+    lm->open(lm_fnm.c_str());
+    if (lm->type() != binutils::LM::Executable) {
       relocVMA = begVMA;
     }
     delete lm;
@@ -282,8 +282,8 @@ processCallingCtxtTree(CSProfile* profData, VMA begVMA, VMA endVMA,
   binutils::LM* lm = NULL;
   try {
     lm = new binutils::LM();
-    lm->Open(lm_fnm.c_str());
-    lm->Read();
+    lm->open(lm_fnm.c_str());
+    lm->read();
   }
   catch (...) {
     DIAG_EMsg("While reading '" << lm_fnm << "'...");
@@ -291,7 +291,7 @@ processCallingCtxtTree(CSProfile* profData, VMA begVMA, VMA endVMA,
   }
   
   // get the start and end PC from the text sections 
-  if (lm->GetType() != binutils::LM::Executable) {
+  if (lm->type() != binutils::LM::Executable) {
     lm->Relocate(begVMA);
   }
   

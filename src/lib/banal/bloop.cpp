@@ -312,13 +312,13 @@ banal::bloop::BuildLMStructure(binutils::LM* lm,
   PgmScope* pgmScope = NULL;
 
   // FIXME (minor): relocate
-  OrphanedProcedureFile = "~~~" + lm->GetName() + ":<unknown-file>~~~";
+  OrphanedProcedureFile = "~~~" + lm->name() + ":<unknown-file>~~~";
 
   // Assume lm->Read() has been performed
   pgmScope = new PgmScope("");
   pgmScopeTree = new PgmScopeTree("", pgmScope);
 
-  LoadModScope* lmScope = new LoadModScope(lm->GetName(), pgmScope);
+  LoadModScope* lmScope = new LoadModScope(lm->name(), pgmScope);
 
   // 1. Build FileScope/ProcScope skeletal structure
   ProcScopeToProcMap* mp = BuildLMSkeleton(lmScope, lm);
@@ -452,6 +452,8 @@ FindOrCreateFileNode(LoadModScope* lmScope, binutils::Proc* p)
 {
   // Attempt to find filename for procedure
   string filenm = p->GetFilename();
+  p->GetLM()->realpath(filenm);
+  
   if (filenm.empty()) {
     string procnm;
     SrcFile::ln line;
