@@ -409,9 +409,11 @@ BuildLMSkeleton(LoadModScope* lmScope, binutils::LM* lm)
     binutils::TextSeg* tseg = dynamic_cast<binutils::TextSeg*>(seg);
     for (binutils::TextSegProcIterator it1(*tseg); it1.IsValid(); ++it1) {
       binutils::Proc* p = it1.Current();
-      FileScope* fScope = FindOrCreateFileNode(lmScope, p);
-      ProcScope* pScope = FindOrCreateProcNode(fScope, p);
-      mp->insert(make_pair(pScope, p));
+      if (p->GetSize() != 0) {
+	FileScope* fScope = FindOrCreateFileNode(lmScope, p);
+	ProcScope* pScope = FindOrCreateProcNode(fScope, p);
+	mp->insert(make_pair(pScope, p));
+      }
     }
   }
 
