@@ -82,8 +82,8 @@ string
 VMAInterval::toString() const
 {
   string self = "["
-    + StrUtil::toStr(mBeg, 16) + "-" 
-    + StrUtil::toStr(mEnd, 16) + ")";
+    + StrUtil::toStr(m_beg, 16) + "-" 
+    + StrUtil::toStr(m_end, 16) + ")";
   return self;
 }
 
@@ -108,17 +108,17 @@ VMAInterval::fromString(const char* formattedstr)
   DIAG_Assert(*p == '[', DIAG_UnexpectedInput << "'" << s << "'");
   p++;
 
-  // read 'mBeg'
+  // read 'm_beg'
   unsigned endidx;
-  mBeg = StrUtil::toUInt64(p, &endidx);
+  m_beg = StrUtil::toUInt64(p, &endidx);
   p += endidx;
  
   // skip '-'
   DIAG_Assert(*p == '-', DIAG_UnexpectedInput << "'" << s << "'");
   p++;
   
-  // read 'mEnd'
-  mEnd = StrUtil::toUInt64(p, &endidx);
+  // read 'm_end'
+  m_end = StrUtil::toUInt64(p, &endidx);
   p += endidx;
   
   // skip ')'
@@ -130,7 +130,7 @@ std::ostream&
 VMAInterval::dump(std::ostream& os) const
 {
   os << std::showbase;
-  os << std::hex << "[" << mBeg << "-" << mEnd << ")" << std::dec;
+  os << std::hex << "[" << m_beg << "-" << m_end << ")" << std::dec;
   return os;
 }
 

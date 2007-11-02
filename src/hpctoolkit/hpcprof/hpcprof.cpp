@@ -1018,8 +1018,8 @@ dump_object_lm(ostream& os, const ProfFileLM& proflm, const binutils::LM& lm)
       binutils::Proc* p = it.Current();
       string bestName = GetBestFuncName(p->name());
       
-      binutils::Insn* endInsn = p->GetLastInsn();
-      VMAInterval procint(p->GetBegVMA(), p->GetEndVMA() + endInsn->GetSize());
+      binutils::Insn* endInsn = p->lastInsn();
+      VMAInterval procint(p->begVMA(), p->endVMA() + endInsn->size());
       
       const vector<uint64_t> eventTotsProc = 
 	eventCursor.computeEventCounts(procint, false);
@@ -1039,8 +1039,8 @@ dump_object_lm(ostream& os, const ProfFileLM& proflm, const binutils::LM& lm)
 
       for (binutils::ProcInsnIterator it(*p); it.IsValid(); ++it) {
 	binutils::Insn* insn = it.Current();
-	VMA vma = insn->GetVMA();
-	VMA opVMA = binutils::LM::isa->ConvertVMAToOpVMA(vma, insn->GetOpIndex());
+	VMA vma = insn->vma();
+	VMA opVMA = binutils::LM::isa->ConvertVMAToOpVMA(vma, insn->opIndex());
 
 	// 1. Collect metric annotations
 	const vector<uint64_t>& eventCntVMA = 
@@ -1050,7 +1050,7 @@ dump_object_lm(ostream& os, const ProfFileLM& proflm, const binutils::LM& lm)
 	if (show_lines) {
 	  string func, file;
 	  SrcFile::ln line;
-	  p->GetSourceFileInfo(vma, insn->GetOpIndex(), func, file, line);
+	  p->GetSourceFileInfo(vma, insn->opIndex(), func, file, line);
 	
 	  if (file != the_file || line != the_line) {
 	    the_file = file;

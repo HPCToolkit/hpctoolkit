@@ -170,7 +170,7 @@ real_main(int argc, char* argv[])
     throw;
   }
   
-  lm->Relocate(pcprof->GetTxtStart());
+  lm->relocate(pcprof->GetTxtStart());
 
   
   // ------------------------------------------------------------

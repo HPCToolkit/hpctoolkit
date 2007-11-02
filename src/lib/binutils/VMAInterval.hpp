@@ -82,7 +82,7 @@ public:
   // constructor/destructor
   // -------------------------------------------------------
   VMAInterval(VMA beg, VMA end)
-    : mBeg(beg), mEnd(end) { }
+    : m_beg(beg), m_end(end) { }
   VMAInterval(const char* formattedstr)
     { fromString(formattedstr); }
 
@@ -90,8 +90,8 @@ public:
     { *this = x; }
 
   VMAInterval& operator=(const VMAInterval& x) {
-    mBeg = x.mBeg;
-    mEnd = x.mEnd;
+    m_beg = x.m_beg;
+    m_end = x.m_end;
     return *this;
   }
 
@@ -100,13 +100,13 @@ public:
   // -------------------------------------------------------
   // data
   // -------------------------------------------------------
-  VMA  beg() const { return mBeg; }
-  VMA& beg()       { return mBeg; }
+  VMA  beg() const { return m_beg; }
+  void beg(VMA x)  { m_beg = x; }
   
-  VMA  end() const { return mEnd; }
-  VMA& end()       { return mEnd; }
+  VMA  end() const { return m_end; }
+  void end(VMA x)  { m_end = x; }
 
-  bool empty() const { return mBeg >= mEnd; }
+  bool empty() const { return m_beg >= m_end; }
 
   // -------------------------------------------------------
   // interval comparison
@@ -145,8 +145,8 @@ public:
   void ddump() const;
   
 private:
-  VMA mBeg;
-  VMA mEnd;
+  VMA m_beg;
+  VMA m_end;
 };
 
 

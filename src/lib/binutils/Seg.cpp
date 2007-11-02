@@ -287,7 +287,7 @@ binutils::TextSeg::Create_InitializeProcs()
       
       Proc* proc = lm->findProc(begVMA);
       if (proc) {
-	DIAG_Assert(proc->GetBegVMA() == begVMA, "TextSeg::Create_InitializeProcs: Procedure beginning at 0x" << hex << begVMA << " overlaps with:\n" << proc->toString());
+	DIAG_Assert(proc->begVMA() == begVMA, "TextSeg::Create_InitializeProcs: Procedure beginning at 0x" << hex << begVMA << " overlaps with:\n" << proc->toString());
 	if (procType == Proc::Global) {
 	  // 'global' types take precedence
 	  proc->type(procType);
@@ -341,8 +341,8 @@ binutils::TextSeg::Create_InitializeProcs()
 
       // Add symbolic info
       if (dbg) {
-	proc->GetFilename() = dbg->filenm;
-	proc->GetBegLine() = dbg->begLine;
+	proc->filename(dbg->filenm);
+	proc->begLine(dbg->begLine);
 	if (dbg->parent) {
 	  parentMap.insert(std::make_pair(proc, dbg->parent->begVMA));
 	}
@@ -374,7 +374,7 @@ binutils::TextSeg::Create_InitializeProcs()
 		    << child->toString());
     DIAG_Assert(parent != child, "Procedure has itself as parent!\n" 
 		<< child->toString());
-    child->parent() = parent;
+    child->parent(parent);
   }
 }
 
@@ -392,8 +392,8 @@ binutils::TextSeg::Create_DisassembleProcs()
   
   for (TextSegProcIterator it(*this); it.IsValid(); ++it) {
     Proc* p = it.Current();
-    VMA procBeg = p->GetBegVMA();
-    VMA procEnd = p->GetEndVMA();
+    VMA procBeg = p->begVMA();
+    VMA procEnd = p->endVMA();
     ushort insnSz = 0;
     VMA lastInsnVMA = procBeg; // vma of last valid instruction in the proc
 
@@ -428,8 +428,8 @@ binutils::TextSeg::Create_DisassembleProcs()
     // know where the last instruction begins.  The procedure's
     // original end address was guessed to be the begin address of the
     // following procedure while determining all procedures above.
-    p->SetEndVMA(lastInsnVMA);
-    p->SetSize(p->GetEndVMA() - p->GetBegVMA() + insnSz); 
+    p->endVMA(lastInsnVMA);
+    p->size(p->endVMA() - p->begVMA() + insnSz); 
   }
 }
 

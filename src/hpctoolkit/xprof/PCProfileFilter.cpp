@@ -120,7 +120,7 @@ InsnFilter::operator()(VMA pc, ushort opIndex)
     return false;
   }
 
-  return (expr.IsSatisfied(ConvertToInsnClass(insn->GetDesc())));
+  return (expr.IsSatisfied(ConvertToInsnClass(insn->desc())));
 }
 
 //****************************************************************************

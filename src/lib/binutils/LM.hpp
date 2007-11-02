@@ -127,14 +127,12 @@ public:
   // Open: If 'moduleName' is not already open, attempt to do so;
   // throw an exception on error.  If a file is already, do nothing.
   // (Segs, Procs and Insns are not constructed yet.)
-  virtual void 
-  open(const char* moduleName);
+  virtual void open(const char* moduleName);
 
   // Read: If module has not already been read, attempt to do so;
   // return an exception on error.  If a file has already been read do
   // nothing.
-  virtual void 
-  read();
+  virtual void read();
 
 
   // -------------------------------------------------------
@@ -142,67 +140,50 @@ public:
   // -------------------------------------------------------
 
   // name: Return name of load module
-  const std::string& 
-  name() const { return m_name; }
+  const std::string& name() const { return m_name; }
 
   // GetType:  Return type of load module
-  Type 
-  type() const { return m_type; }
+  Type type() const { return m_type; }
 
   // GetTextBeg, GetTextEnd: (Unrelocated) Text begin and end.
   // FIXME: only guaranteed on alpha at present
-  VMA 
-  GetTextBeg() const { return textBeg; }
+  VMA textBeg() const { return m_txtBeg; }
+  VMA textEnd() const { return m_txtEnd; }
 
-  VMA 
-  GetTextEnd() const { return textEnd; }
-
-  // FIXME: on platform other than Alpha/Tru64 we need to set these
-  void 
-  SetTextBeg(VMA x)  { textBeg = x; }
-
-  void 
-  SetTextEnd(VMA x)  { textEnd = x; }
+  // FIXME: should be automatically set... (cf. Alpha/Tru64)
+  void textBeg(VMA x)  { m_txtBeg = x; }
+  void textEnd(VMA x)  { m_txtEnd = x; }
   
-  VMA 
-  GetFirstVMA() const { return firstaddr; }
-
-  void 
-  SetFirstVMA(VMA x) { firstaddr = x; }
+  VMA  firstVMA() const { return m_begVMA; }
+  void firstVMA(VMA x) { m_begVMA = x; }
 
 
   // after reading the binary, get the smallest begin VMA and largest end VMA
   // of all the text sections
-  void 
-  GetTextBegEndVMA(VMA* begVMA, VMA* endVMA);
+  void textBegEndVMA(VMA* begVMA, VMA* endVMA);
 
-  // Relocate: 'Relocate' the text section to the supplied text begin
+  // relocate: 'Relocate' the text section to the supplied text begin
   // address.  All member functions that take VMAs will assume they
   // receive *relocated* values.  A value of 0 unrelocates the module.
-  void 
-  Relocate(VMA textBegReloc_);
+  void relocate(VMA textBegReloc_);
 
-  bool 
-  IsRelocated() const;
+  bool is_relocated() const;
+
+  // -------------------------------------------------------
+  // Segments: 
+  // -------------------------------------------------------
 
   // GetNumSegs: Return number of segments/sections
-  uint 
-  GetNumSegs() const { return sections.size(); }
-
-  // AddSeg: Add a segment/section
-  void 
-  AddSeg(Seg* section) { sections.push_back(section); }
-
+  // insertSeg: insert a segment/section
+  uint numSegs() const { return sections.size(); }
+  void insertSeg(Seg* section) { sections.push_back(section); }
 
   // -------------------------------------------------------
   // Procedures: All procedures found in text sections may be
   // accessed here.
   // -------------------------------------------------------
-  Proc* 
-  findProc(VMA vma) const;
-
-  void  
-  insertProc(VMAInterval vmaint, Proc* proc);  
+  Proc* findProc(VMA vma) const;
+  void  insertProc(VMAInterval vmaint, Proc* proc);  
   
   // -------------------------------------------------------
   // Instructions: All instructions found in text sections may be
@@ -365,7 +346,7 @@ private:
   friend class TextSeg; // for TextSeg::Create_InitializeProcs();
 
   binutils::dbg::LM* 
-  GetDebugInfo() { return &mDbgInfo; }
+  GetDebugInfo() { return &m_dbgInfo; }
     
 protected:
   LMImpl* impl; 
@@ -373,8 +354,8 @@ protected:
 private:
   std::string m_name;
   Type  m_type;
-  VMA   textBeg, textEnd; // text begin and end
-  VMA   firstaddr;        // shared library load address begin
+  VMA   m_txtBeg, m_txtEnd; // text begin and end
+  VMA   m_begVMA;         // shared library load address begin
   VMA   textBegReloc;     // relocated text begin
   VMASigned unRelocDelta; // offset to unrelocate relocated VMAs
     
@@ -392,7 +373,7 @@ private:
   VMAToInsnMap vmaToInsnMap; // owns all Insn*
 
   // symbolic info used in building procedures
-  binutils::dbg::LM mDbgInfo;
+  binutils::dbg::LM m_dbgInfo;
 
   RealPathMgr m_realpath_mgr;
 };
