@@ -10,7 +10,7 @@
  *****************************************************************************/
 #include <strings.h>
 #include <string.h>
-
+#include <stddef.h>
 
 /******************************************************************************
  * local include files 
@@ -50,7 +50,8 @@ static char *basename(char *string);
 
 void csprof_set_executable_name(char *argv0)
 {
-  executable_name = strdup(basename(argv0));
+  // executable_name = strdup(basename(argv0));
+  executable_name = basename(argv0);
 }
 
 const char *csprof_get_executable_name()

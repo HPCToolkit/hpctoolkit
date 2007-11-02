@@ -4,20 +4,23 @@
 # files should not be the default target
 
 PLATFORM := x86-64
-CC :=  cc
-CXX := CC
+#CC :=  cc
+#CXX := CC
+CC   := gcc
+CXX  := g++
 link := gcc
-link_options := --verbose -nostdlib -nodefaultlibs -nostartfiles -static -Wl,-r
+static_link_options := --verbose -nostdlib -nodefaultlibs -nostartfiles -static -Wl,-r
 #CHGROOT := 1 # undef for std root version
 
-STATIC_ONLY := 1
-NO_MMAP := 1
+#STATIC_ONLY := 1
+#NO_MMAP := 1
+#USE_TRAMP := 1
 
 export PLATFORM
 export CC
 #export CHGROOT
-#DO_THREADS := 1
-PERF := -DCSPROF_PERF=1
+DO_THREADS := 1
+#PERF := -DCSPROF_PERF=1
 export PERF
 
 PRIM_UNWIND := 1
@@ -32,20 +35,19 @@ XEDDCL := -DXED_SCALARS
 #MPI_SPECIAL :=1
 
 CSPROFLIB := libcsprof.so.1
-CSPROFLIB := foolibcsprof.a
-CSPROFLIB_STATIC := libcsprof.a
+#CSPROFLIB_STATIC := libcsprof.a
 CSPROF_DOT_O := libcsprof.o
 
 #DRIVER ?= mallocprof
 # MWF wants async timing, so chg default
-#DRIVER = itimer
-#DRIVER_DIR = itimer
-DRIVER_DIR = papi
-DRIVER = papi_pulse
+DRIVER = itimer
+DRIVER_DIR = itimer
+#DRIVER_DIR = papi
+#DRIVER = papi_pulse
 #DRIVER = mallocprof
 
-#all: $(CSPROFLIB)
-all: $(CSPROF_DOT_O)
+all: $(CSPROFLIB)
+#all: $(CSPROF_DOT_O)
 
 # we develop on Tru64, make it the default
 # MWF: working on x86-64, make it (and gcc) the default 30jan07
@@ -61,12 +63,12 @@ DEFINES += $(PERF)
 #CSPROF_TRAMPOLINE := -DCSPROF_TRAMPOLINE_BACKEND=1
 
 CFLAGS := -fPIC -g -Wall 
-CFLAGS := -g -Wall  #CATAMOUNT
+#CFLAGS := -g -Wall  #CATAMOUNT
 
 AR := /usr/bin/ar
 ARFLAGS := -r
 
-#LINK_FLAGS := -Wl,-soname,$(CSPROFLIB) -shared
+link_flags := -Wl,-soname,$(CSPROFLIB) -shared
 
 module_dirs := utilities                \
                memory                   \
@@ -164,10 +166,10 @@ ifdef PRIM_UNWIND
   OBJS += prim_unw.o
 endif
 
-#OBJS += swizzle.o unsafe.o
+OBJS += swizzle.o unsafe.o
 OBJS += loadmod.o processor-libc.o
 
-ifndef STATIC_ONLY
+ifdef USE_TRAMP
   OBJS += tramp.o 
 endif
 
@@ -177,8 +179,6 @@ OBJS += pmsg.o
 OBJS += nm_bound.o
 OBJS += bad_unwind.o
 OBJS += $(hpcfile_objs)
-#OBJS += $(UNWIND)/find.o $(UNWIND)/xed_if.o
-#OBJS += find.o xed_if.o
 OBJS += $(find_v).o xed_if.o
 OBJS += stack_troll.o
 OBJS += $(gethost)
@@ -225,7 +225,7 @@ $(LIB_CSFILE):
 
 clean:
 	@echo "*** Cleaning csprof ***"
-	@/bin/rm -f $(CSPROFLIB) $(CSPROFLIB_STATIC) $(OBJS)
+	@/bin/rm -f $(CSPROFLIB) $(CSPROF_DOT_O) $(OBJS)
 	@cd hpcfile; $(MAKE) -I .. clean
 	@cd BetterUnwind; $(MAKE) clean
 
@@ -239,16 +239,12 @@ tarball:
 .PHONY : all libcsfile clean tarball static check TAGS
 
 $(CSPROFLIB): $(LIB_CSFILE) $(OBJS)
-	$(CC) $(LINK_FLAGS) -o $(CSPROFLIB) $(OBJS) $(LIBS)
-	mv hpcfile/$(LIB_CSFILE) ./$(CSPROFLIB_STATIC)
-	$(AR) $(ARFLAGS) $(CSPROFLIB_STATIC) $(OBJS)
+	$(link) $(link_flags) -o $(CSPROFLIB) $(OBJS) $(LIBS)
 	@echo "*** $(CSPROFLIB) is up to date. ***"
 
 
-# $(CSPROF_DOT_O): $(LIB_CSFILE) $(OBJS)
 $(CSPROF_DOT_O): $(OBJS)
-#	$(CC) --verbose -nostdlib -nodefaultlibs -nostartfiles -r -o $@ $(OBJS) $(LIBS)
-	$(link) $(link_options) -o $@ $(OBJS) $(LIBS)
+	$(link) $(static_link_options) -o $@ $(OBJS) $(LIBS)
 	@echo "*** $@ is up to date. ***"
 
 %.o: %.c
@@ -262,4 +258,3 @@ $(CSPROF_DOT_O): $(OBJS)
 
 %.o: %.cpp
 	$(CXX) $(INCS) $(XEDDCL) $(CFLAGS) -c $< -o $@
-

@@ -46,6 +46,9 @@ t_pmsg: t_pmsg.c ../pmsg.o
 %.E : %.c
 	$(CC) $(CFLAGS) -E $< > $@
 
+
+vpath %.c: ..
+
 clean:
 	rm -rf t_nm_bound *.o *.E *.so t_jb t_pmsg *.nm.c
 

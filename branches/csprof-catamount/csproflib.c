@@ -209,7 +209,7 @@ void csprof_init_internal(void){
     csprof_state_init(state);
     csprof_state_alloc(state);
 
-    MSG(CSPROF_MSG_SHUTDOWN, "***> csprof init 2 ***");
+    MSG(1,"***> after mem,epoch,state init ***");
   }
 
 #if !defined(CSPROF_SYNCHRONOUS_PROFILING)
@@ -217,11 +217,11 @@ void csprof_init_internal(void){
   sigemptyset(&prof_sigset);
 #endif
 
-  // MSG(CSPROF_MSG_SHUTDOWN, "***> csprof init 3 ***");
+  MSG(1,"***> calling driver init ***");
 
   csprof_process_driver_init(&opts);
 
-  // MSG(CSPROF_MSG_SHUTDOWN, "***> csprof init 4 ***");
+  MSG(1,"***> csprof init 4 ***");
 
   status = CSPROF_STATUS_INIT;
 }
@@ -300,6 +300,7 @@ void csprof_thread_fini(csprof_state_t *state){
   csprof_write_profile_data(state);
 }
 #endif
+
 // csprof_fini_internal: 
 // errors: handles all errors
 void csprof_fini_internal(void){
@@ -321,7 +322,7 @@ void csprof_fini_internal(void){
     status = CSPROF_STATUS_FINI;
 
     /* stop the profile driver */
-    csprof_process_driver_fini(state, &opts);
+    csprof_driver_fini(state, &opts);
 
     MSG(CSPROF_MSG_SHUTDOWN, "writing profile data");
     state = csprof_get_safe_state();

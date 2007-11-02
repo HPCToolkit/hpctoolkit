@@ -6,6 +6,7 @@
 #define INTV2 (1 << 5)
 #define TROLL (1 << 6)
 #define UNW_INIT (1 << 7)
+#define BASIC_INIT (1 << 8)
 
 #define NONE (0)
 #define ALL (~0)

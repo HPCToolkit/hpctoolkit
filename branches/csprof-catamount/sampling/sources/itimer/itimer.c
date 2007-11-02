@@ -111,23 +111,27 @@ csprof_init_timer(csprof_options_t *options)
 #endif
 }
 
-void
-csprof_set_timer(void)
-{
-    int success = libcall3(csprof_setitimer, CSPROF_PROFILE_TIMER, &itimer, NULL);
-    MSG(1,"called csprof_set_timer");
+void csprof_set_timer(void) {
 
-    if(success != 0) {
-        perror("setitimer");
-    }
+  // FIXME: Flush the libcall3 stuff
+  // int success = libcall3(csprof_setitimer, CSPROF_PROFILE_TIMER, &itimer, NULL);
+
+  setitimer(CSPROF_PROFILE_TIMER, &itimer, NULL);
+  MSG(1,"called csprof_set_timer");
+
+#if 0
+  if(success != 0) {
+    perror("setitimer");
+  }
+#endif
 }
 
 void csprof_disable_timer(void)
 {
     timerclear(&itimer.it_value);
-    libcall3(csprof_setitimer, CSPROF_PROFILE_TIMER, &itimer, NULL);
+    // libcall3(csprof_setitimer, CSPROF_PROFILE_TIMER, &itimer, NULL);
+    setitimer(CSPROF_PROFILE_TIMER, &itimer, NULL);
 }
-
 
 #if defined(CSPROF_THREADS) && defined(CSPROF_ROUND_ROBIN_SIGNAL)
 static volatile long outstanding_signal_count = 0;
@@ -241,6 +245,9 @@ csprof_take_profile_sample(csprof_state_t *state, struct ucontext *ctx)
     mcontext_t *context = &ctx->uc_mcontext;
     void *pc = csprof_get_pc(context);
 
+    csprof_set_last_sample_addr((unsigned long) pc);
+    csprof_increment_raw_sample_count();
+
     MSG(1,"csprof take profile sample");
     if(/* trampoline isn't exactly active during exception handling */
        csprof_state_flag_isset(state, CSPROF_EXC_HANDLING)
@@ -283,9 +290,8 @@ void *unwind_pc;
 int samples_taken = 0;
 int bad_unwind_count    = 0;
 
-static void
-csprof_itimer_signal_handler(int sig, siginfo_t *siginfo, void *context)
-{
+static void csprof_itimer_signal_handler(int sig, siginfo_t *siginfo, void *context){
+
   _jb *it = get_bad_unwind();
   samples_taken++;
 #ifdef MPI_SPECIAL

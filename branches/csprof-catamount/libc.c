@@ -170,6 +170,7 @@ _longjmp(jmp_buf env, int value)
 #endif /* CSPROF_TRAMPOLINE_BACKEND defined */
 
 #ifndef STATIC_ONLY
+#if 0
 sig_t signal(int sig, sig_t func) {
   EMSG("Override signal called");
 
@@ -203,6 +204,7 @@ int sigaction(int sig, const struct sigaction *act,
 
   return (*csprof_sigaction)(sig,&polite_act,oact);
 };
+#endif
 #endif
 
 /* override setitimer() so that we're the only party setting the profiling

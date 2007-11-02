@@ -30,12 +30,22 @@ extern pthread_mutex_t mylock;
 static int __msg_mask = NONE;
 static simple_spinlock pmsg_lock = 0;
 
+#define N_DEBUG_FLAGS 200
+static int _flag_array[N_DEBUG_FLAGS];
+
+static void _fill(int v){
+  int i;
+  for (i = 0; i < N_DEBUG_FLAGS; i++){
+    _flag_array[i] = v;
+  }
+}
+
 void pmsg_init(void){
   char tmp[100];
   int n;
 
 #if 1
-  __msg_mask = TROLL;
+  __msg_mask = TROLL | BASIC_INIT;
 #endif
 
   // tmp[0] = '\0';
@@ -52,8 +62,14 @@ void set_mask_f_numstr(const char *s){
   }
 }
 
-void set_pmsg_mask(int m){
+void set_pmsg_mask_f_int(int m){
   __msg_mask = m;
+}
+
+// mask comes in as string of (space separated) tokens.
+// each token is converted to it's code
+//
+void set_pmsg_mask_f_string(char *s){
 }
 
 void EMSG(const char *format,...){

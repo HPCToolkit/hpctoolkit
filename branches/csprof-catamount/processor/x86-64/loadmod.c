@@ -47,7 +47,6 @@ csprof_dump_loaded_modules(void){
       }
     }
   } while(p);
-}
 #else
   MSG(1,"STATIC ONLY: dump loaded modules = NOOP");
 #endif

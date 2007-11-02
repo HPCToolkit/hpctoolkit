@@ -25,6 +25,6 @@ csprof_process_driver_init(csprof_state_t *state, csprof_options_t *opts)
     papi_pulse_init();
 }
 
-void csprof_process_driver_fini(void){
+void csprof_driver_fini(void){
   papi_pulse_fini();
 }
