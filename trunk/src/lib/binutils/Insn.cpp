@@ -76,12 +76,12 @@ void
 binutils::Insn::dump(std::ostream& o, int flags, const char* pre) const
 {
   string p(pre);
-  VMA target = GetTargetVMA(vma);
+  VMA target = targetVMA(m_vma);
 
   o << showbase 
-    << p << hex << vma << dec << ": " << GetDesc().ToString();
+    << p << hex << m_vma << dec << ": " << desc().ToString();
 
-  if (target != 0 || GetOpIndex() != 0) { 
+  if (target != 0 || opIndex() != 0) { 
     o << " <" << hex << target << dec << "> "; 
   }
   else { 
@@ -129,7 +129,7 @@ binutils::CISCInsn::dump(std::ostream& o, int flags, const char* pre) const
 void
 binutils::CISCInsn::dumpme(std::ostream& o, const char* pre) const
 {
-  o << "(CISC sz:" << GetSize() << ")";
+  o << "(CISC sz:" << size() << ")";
 }
 
 
@@ -165,5 +165,5 @@ binutils::VLIWInsn::dump(std::ostream& o, int flags, const char* pre) const
 void
 binutils::VLIWInsn::dumpme(std::ostream& o, const char* pre) const
 {
-  o << "(VLIW opIdx:" << GetOpIndex() << ")";
+  o << "(VLIW opIdx:" << opIndex() << ")";
 }

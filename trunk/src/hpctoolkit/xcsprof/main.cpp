@@ -292,7 +292,7 @@ processCallingCtxtTree(CSProfile* profData, VMA begVMA, VMA endVMA,
   
   // get the start and end PC from the text sections 
   if (lm->type() != binutils::LM::Executable) {
-    lm->Relocate(begVMA);
+    lm->relocate(begVMA);
   }
   
   inferCallFrames(profData, begVMA, endVMA, lm);

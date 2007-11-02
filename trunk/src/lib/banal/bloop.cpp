@@ -409,7 +409,7 @@ BuildLMSkeleton(LoadModScope* lmScope, binutils::LM* lm)
     binutils::TextSeg* tseg = dynamic_cast<binutils::TextSeg*>(seg);
     for (binutils::TextSegProcIterator it1(*tseg); it1.IsValid(); ++it1) {
       binutils::Proc* p = it1.Current();
-      if (p->GetSize() != 0) {
+      if (p->size() != 0) {
 	FileScope* fScope = FindOrCreateFileNode(lmScope, p);
 	ProcScope* pScope = FindOrCreateProcNode(fScope, p);
 	mp->insert(make_pair(pScope, p));
@@ -426,7 +426,7 @@ BuildLMSkeleton(LoadModScope* lmScope, binutils::LM* lm)
     binutils::Proc* parent = p->parent();
 
     if (parent) {
-      ProcScope* parentScope = lmScope->findProc(parent->GetBegVMA());
+      ProcScope* parentScope = lmScope->findProc(parent->begVMA());
       pScope->Unlink();
       pScope->Link(parentScope);
     }
@@ -451,13 +451,13 @@ static FileScope*
 FindOrCreateFileNode(LoadModScope* lmScope, binutils::Proc* p)
 {
   // Attempt to find filename for procedure
-  string filenm = p->GetFilename();
+  string filenm = p->filename();
   p->GetLM()->realpath(filenm);
   
   if (filenm.empty()) {
     string procnm;
     SrcFile::ln line;
-    p->GetSourceFileInfo(p->GetBegVMA(), 0, procnm, filenm, line);
+    p->GetSourceFileInfo(p->begVMA(), 0, procnm, filenm, line);
   }
   if (filenm.empty()) { 
     filenm = OrphanedProcedureFile; 
@@ -474,8 +474,8 @@ static ProcScope*
 FindOrCreateProcNode(FileScope* fScope, binutils::Proc* p)
 {
   // Find VMA boundaries: [beg, end)
-  VMA endVMA = p->GetBegVMA() + p->GetSize();
-  VMAInterval bounds(p->GetBegVMA(), endVMA);
+  VMA endVMA = p->begVMA() + p->size();
+  VMAInterval bounds(p->begVMA(), endVMA);
   DIAG_Assert(!bounds.empty(), "Attempting to add empty procedure " 
 	      << bounds.toString());
   
@@ -486,16 +486,16 @@ FindOrCreateProcNode(FileScope* fScope, binutils::Proc* p)
   // Find preliminary source line bounds
   string file, proc;
   SrcFile::ln begLn1, endLn1;
-  binutils::Insn* eInsn = p->GetLastInsn();
-  ushort endOp = (eInsn) ? eInsn->GetOpIndex() : 0;
-  p->GetSourceFileInfo(p->GetBegVMA(), 0, p->GetEndVMA(), endOp, 
+  binutils::Insn* eInsn = p->lastInsn();
+  ushort endOp = (eInsn) ? eInsn->opIndex() : 0;
+  p->GetSourceFileInfo(p->begVMA(), 0, p->endVMA(), endOp, 
 		       proc, file, begLn1, endLn1, 0 /*no swapping*/);
   
   // Compute source line bounds to uphold invariant:
   //   (begLn == 0) <==> (endLn == 0)
   SrcFile::ln begLn, endLn;
   if (p->hasSymbolic()) {
-    begLn = p->GetBegLine();
+    begLn = p->begLine();
     endLn = std::max(begLn, endLn1);
   }
   else {
@@ -561,7 +561,7 @@ static ProcScope*
 BuildProcStructure(ProcScope* pScope, binutils::Proc* p,
 		   bool irrIvalIsLoop, bool fwdSubstOff)
 {
-  DIAG_Msg(3, "==> Proc `" << p->name() << "' (" << p->GetId() << ") <==");
+  DIAG_Msg(3, "==> Proc `" << p->name() << "' (" << p->id() << ") <==");
   
 #if (DBG_PROC)
   DBG_PROC_print_now = false;
@@ -794,7 +794,7 @@ BuildLoopAndStmts(bloop::LocationMgr& locMgr,
   OA::OA_ptr<OA::CFG::NodeInterface> bb = 
     rifg->getNode(fgNode).convert<OA::CFG::NodeInterface>();
   binutils::Insn* insn = banal::OA_CFG_getBegInsn(bb);
-  VMA begVMA = (insn) ? insn->GetOpVMA() : 0;
+  VMA begVMA = (insn) ? insn->opVMA() : 0;
   
   DIAG_DevMsg(10, "BuildLoopAndStmts: " << bb << " [id: " << bb->getId() << "] " << hex << begVMA << " --> " << enclosingScope << dec << " " << enclosingScope->toString_id());
 
@@ -854,9 +854,9 @@ BuildStmts(bloop::LocationMgr& locMgr,
     bb->getNodeStatementsIterator();
   for ( ; it->isValid(); ) {
     binutils::Insn* insn = IRHNDL_TO_TY(it->current(), binutils::Insn*);
-    VMA vma = insn->GetVMA();
-    ushort opIdx = insn->GetOpIndex();
-    VMA opvma = insn->GetOpVMA();
+    VMA vma = insn->vma();
+    ushort opIdx = insn->opIndex();
+    VMA opvma = insn->opVMA();
     
     // advance iterator [needed when creating VMA interval]
     ++(*it);
@@ -871,7 +871,7 @@ BuildStmts(bloop::LocationMgr& locMgr,
     // the next (or hypothetically next) insn begins no earlier than:
     binutils::Insn* n_insn = (it->isValid()) ? 
       IRHNDL_TO_TY(it->current(), binutils::Insn*) : NULL;
-    VMA n_opvma = (n_insn) ? n_insn->GetOpVMA() : insn->GetEndVMA();
+    VMA n_opvma = (n_insn) ? n_insn->opVMA() : insn->endVMA();
     DIAG_Assert(opvma < n_opvma, "Invalid VMAInterval: [" << opvma << ", "
 		<< n_opvma << ")");
 
@@ -881,7 +881,7 @@ BuildStmts(bloop::LocationMgr& locMgr,
     // way to protect against bad debugging information which would
     // later cause a call to treated as loop-invariant-code motion and
     // hoisted into a different loop.
-    ISA::InsnDesc idesc = insn->GetDesc();
+    ISA::InsnDesc idesc = insn->desc();
     
     // 4. locate stmt
     StmtRangeScope* stmt = 
@@ -993,8 +993,8 @@ FindLoopBegLineInfo(binutils::Proc* p,
 
   // Find the head vma
   binutils::Insn* head = banal::OA_CFG_getBegInsn(headBB);
-  VMA headVMA = head->GetVMA();
-  ushort headOpIdx = head->GetOpIndex();
+  VMA headVMA = head->vma();
+  ushort headOpIdx = head->opIndex();
   DIAG_Assert(headOpIdx == 0, "Target of a branch at " << headVMA 
 	      << " has op-index of: " << headOpIdx);
   
@@ -1011,8 +1011,8 @@ FindLoopBegLineInfo(binutils::Proc* p,
       continue;
     }
     
-    VMA vma = backBR->GetVMA();
-    ushort opIdx = backBR->GetOpIndex();
+    VMA vma = backBR->vma();
+    ushort opIdx = backBR->opIndex();
 
     // If we have a backward edge, find the source line of the
     // backward branch.  Note: back edges are not always labeled as such!
@@ -1030,7 +1030,7 @@ FindLoopBegLineInfo(binutils::Proc* p,
   }
   
   if (!SrcFile::isValid(begLn)) {
-    VMA headOpIdx = head->GetOpIndex();
+    VMA headOpIdx = head->opIndex();
     p->GetSourceFileInfo(headVMA, headOpIdx, begProcnm, begFilenm, begLn);
   }
 }

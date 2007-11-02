@@ -239,13 +239,13 @@ DumpSymbolicInfoOld(std::ostream& os, binutils::LM* lm)
 
       for (binutils::ProcInsnIterator it(*p); it.IsValid(); ++it) {
 	binutils::Insn* inst = it.Current();
-	VMA vma = inst->GetVMA();
-	VMA opVMA = binutils::LM::isa->ConvertVMAToOpVMA(vma, inst->GetOpIndex());
+	VMA vma = inst->vma();
+	VMA opVMA = binutils::LM::isa->ConvertVMAToOpVMA(vma, inst->opIndex());
 	
 	// 1. Attempt to find symbolic information
 	string func, file;
 	SrcFile::ln line;
-	p->GetSourceFileInfo(vma, inst->GetOpIndex(), func, file, line);
+	p->GetSourceFileInfo(vma, inst->opIndex(), func, file, line);
 	func = GetBestFuncName(func);
 	
 	// Bad line number: cannot fix; advance iteration

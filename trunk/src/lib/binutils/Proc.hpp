@@ -116,13 +116,13 @@ public:
   // [beg, end].  Note that the end address points to the beginning of
   // the last instruction which is different than the convention used
   // for 'Seg'.
-  VMA  GetBegVMA() const { return m_begVMA; }
-  VMA  GetEndVMA() const { return m_endVMA; }
-  void SetEndVMA(VMA endVMA) { m_endVMA = endVMA; }
+  VMA  begVMA() const     { return m_begVMA; }
+  VMA  endVMA() const     { return m_endVMA; }
+  void endVMA(VMA endVMA) { m_endVMA = endVMA; }
 
   // Return size, which is (endVMA - startVMA) + sizeof(last instruction)
-  unsigned int GetSize()   const { return m_size; }
-  void SetSize(unsigned int size)  { m_size = size; }
+  unsigned int size() const             { return m_size; }
+  void         size(unsigned int size)  { m_size = size; }
   
   // -------------------------------------------------------
   // Symbolic information: availability depends upon debugging information
@@ -130,14 +130,14 @@ public:
 
   bool hasSymbolic() { return SrcFile::isValid(m_begLine); }
 
-  const std::string& GetFilename() const { return m_filenm; }
-  std::string&       GetFilename()       { return m_filenm; }
+  const std::string& filename() const         { return m_filenm; }
+  void               filename(std::string& x) { m_filenm = x; }
 
-  SrcFile::ln  GetBegLine()      const { return m_begLine; }
-  SrcFile::ln& GetBegLine()            { return m_begLine; }
+  SrcFile::ln  begLine() const        { return m_begLine; }
+  void         begLine(SrcFile::ln x) { m_begLine = x; }
 
-  Proc*  parent() const { return m_parent; }
-  Proc*& parent()       { return m_parent; }
+  Proc* parent() const  { return m_parent; }
+  void  parent(Proc* x) { m_parent = x; }
 
   // -------------------------------------------------------
   //
@@ -145,17 +145,17 @@ public:
 
   // Return true if virtual memory address 'vma' is within the procedure
   // WARNING: vma must be unrelocated
-  bool  IsIn(VMA vma)  const { return (m_begVMA <= vma && vma <= m_endVMA); }
+  bool  isIn(VMA vma)  const { return (m_begVMA <= vma && vma <= m_endVMA); }
 
   // Return the unique number assigned to this procedure
-  unsigned int GetId() const { return m_id; }
+  unsigned int id() const { return m_id; }
 
   // Return the number of instructions in the procedure (FIXME: never computed)
-  unsigned int GetNumInsns()  const { return m_numInsns; }
+  unsigned int numInsns()  const { return m_numInsns; }
 
   // Return the first and last instruction in the procedure
-  Insn* GetFirstInsn() const { return findInsn(m_begVMA, 0); }
-  Insn* GetLastInsn() const;
+  Insn* firstInsn() const { return findInsn(m_begVMA, 0); }
+  Insn* lastInsn() const;
   
   // -------------------------------------------------------
   // Convenient wrappers for the 'LM' versions of the same.

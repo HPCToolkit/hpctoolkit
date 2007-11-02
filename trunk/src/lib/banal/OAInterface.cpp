@@ -102,9 +102,9 @@ banal::OAInterface::OAInterface (Proc* _p)
     
     // If this insn is a branch, record its target address in
     // the branch target set.
-    ISA::InsnDesc d = insn->GetDesc();
+    ISA::InsnDesc d = insn->desc();
     if (d.IsBrRel()) {
-      branchTargetSet.insert(insn->GetTargetVMA(insn->GetVMA()));
+      branchTargetSet.insert(insn->targetVMA(insn->vma()));
     }
   }
 }
@@ -214,8 +214,8 @@ banal::OAInterface::dump(OA::StmtHandle stmt, std::ostream& os)
   // want is a textual disassembly of the instruction from the
   // disassembler.
 
-  VMA pc = insn->GetVMA();
-  ISA::InsnDesc d = insn->GetDesc();
+  VMA pc = insn->vma();
+  ISA::InsnDesc d = insn->desc();
 
   // Output pc and descriptor
   os << showbase << hex << pc << dec << ": " << d.ToString();
@@ -225,9 +225,9 @@ banal::OAInterface::dump(OA::StmtHandle stmt, std::ostream& os)
     os << " [branch target]";
   }
   if (d.IsBrRel()) {
-    VMA targ = insn->GetTargetVMA(pc);
+    VMA targ = insn->targetVMA(pc);
     os << " <" << hex << targ << dec << ">";
-    if (proc->IsIn(targ) == false) {
+    if (proc->isIn(targ) == false) {
       os << " [out of procedure -- treated as SIMPLE]";
     }
   } 
@@ -278,13 +278,13 @@ banal::OAInterface::getCFGStmtType(OA::StmtHandle h)
   Insn* insn = IRHNDL_TO_TY(h, Insn*);
   VMA br_targ = 0;
 
-  ISA::InsnDesc d = insn->GetDesc();
+  ISA::InsnDesc d = insn->desc();
   if (d.IsBrUnCondRel()) {
     // Unconditional jump. If the branch targets a PC outside of its
     // procedure, then we just ignore it.  For bloop this is fine
     // since the branch won't create any loops.
-    br_targ = insn->GetTargetVMA(insn->GetVMA());
-    if (proc->IsIn(br_targ)) {
+    br_targ = insn->targetVMA(insn->vma());
+    if (proc->isIn(br_targ)) {
       ty = OA::CFG::UNCONDITIONAL_JUMP;
     } 
     else {
@@ -300,8 +300,8 @@ banal::OAInterface::getCFGStmtType(OA::StmtHandle h)
     // Unstructured two-way branches. If the branch targets a PC
     // outside of its procedure, then we just ignore it.  For bloop
     // this is fine since the branch won't create any loops.
-    br_targ = insn->GetTargetVMA(insn->GetVMA());
-    if (proc->IsIn(br_targ)) {
+    br_targ = insn->targetVMA(insn->vma());
+    if (proc->isIn(br_targ)) {
       ty = OA::CFG::USTRUCT_TWOWAY_CONDITIONAL_T;
     }
     else {
@@ -335,8 +335,8 @@ banal::OAInterface::getLabel(OA::StmtHandle h)
 {
   OA::StmtLabel lbl = 0;
   Insn* insn = IRHNDL_TO_TY(h, Insn*);
-  if (branchTargetSet.find(insn->GetVMA()) != branchTargetSet.end()) {
-    lbl = insn->GetVMA();
+  if (branchTargetSet.find(insn->vma()) != branchTargetSet.end()) {
+    lbl = insn->vma();
   } 
   return lbl;
 }
@@ -466,9 +466,9 @@ banal::OAInterface::getTargetLabel(OA::StmtHandle h, int n)
 {
   OA::StmtLabel lbl = 0;
   Insn* insn = IRHNDL_TO_TY(h, Insn*);
-  ISA::InsnDesc d = insn->GetDesc();
+  ISA::InsnDesc d = insn->desc();
   if (d.IsBrRel()) {
-    lbl = insn->GetTargetVMA(insn->GetVMA());
+    lbl = insn->targetVMA(insn->vma());
   } 
   else {
     lbl = 0; // FIXME: We're seeing indirect branches.
@@ -521,7 +521,7 @@ int
 banal::OAInterface::numberOfDelaySlots(OA::StmtHandle h)
 {
   Insn* insn = IRHNDL_TO_TY(h, Insn*);
-  return insn->GetNumDelaySlots();
+  return insn->numDelaySlots();
 }
 
 

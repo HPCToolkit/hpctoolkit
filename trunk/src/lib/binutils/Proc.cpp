@@ -97,11 +97,11 @@ binutils::Proc::~Proc()
 
 
 binutils::Insn* 
-binutils::Proc::GetLastInsn() const
+binutils::Proc::lastInsn() const
 {
   Insn* insn = findInsn(m_endVMA, 0);
   if (insn) {
-    ushort numOps = insn->GetNumOps();
+    ushort numOps = insn->numOps();
     if (numOps != 0) {
       insn = findInsn(m_endVMA, numOps - 1); // opIndex is 0-based
     }
@@ -128,16 +128,16 @@ binutils::Proc::dump(std::ostream& os, int flags, const char* pre) const
   
   string func, file, b_func, b_file, e_func, e_file;
   SrcFile::ln begLn, endLn, b_begLn, e_endLn2;
-  Insn* eInsn = GetLastInsn();
-  ushort endOp = (eInsn) ? eInsn->GetOpIndex() : 0;
+  Insn* eInsn = lastInsn();
+  ushort endOp = (eInsn) ? eInsn->opIndex() : 0;
 
   // This call performs some consistency checking
-  m_seg->GetSourceFileInfo(GetBegVMA(), 0, GetEndVMA(), endOp,
+  m_seg->GetSourceFileInfo(begVMA(), 0, endVMA(), endOp,
 			   func, file, begLn, endLn);
 
   // These calls perform no consistency checking
-  m_seg->GetSourceFileInfo(GetBegVMA(), 0, b_func, b_file, b_begLn);
-  m_seg->GetSourceFileInfo(GetEndVMA(), endOp, e_func, e_file, e_endLn2);
+  m_seg->GetSourceFileInfo(begVMA(), 0, b_func, b_file, b_begLn);
+  m_seg->GetSourceFileInfo(endVMA(), endOp, e_func, e_file, e_endLn2);
 
   string nm = GetBestFuncName(name());
   string ln_nm = GetBestFuncName(GetLinkName());
@@ -145,7 +145,7 @@ binutils::Proc::dump(std::ostream& os, int flags, const char* pre) const
   os << p << "---------- Procedure Dump ----------\n";
   os << p << "  Name:     `" << nm << "'\n";
   os << p << "  LinkName: `" << ln_nm << "'\n";
-  os << p << "  Sym:      {" << GetFilename() << "}:" << GetBegLine() << "\n";
+  os << p << "  Sym:      {" << filename() << "}:" << begLine() << "\n";
   os << p << "  LnMap:    {" << file << "}[" 
      << GetBestFuncName(func) <<"]:" << begLn << "-" << endLn << "\n";
   os << p << "  LnMap(b): {" << b_file << "}[" 
@@ -153,7 +153,7 @@ binutils::Proc::dump(std::ostream& os, int flags, const char* pre) const
   os << p << "  LnMap(e): {" << e_file << "}[" 
      << GetBestFuncName(e_func) << "]:" << e_endLn2 << "\n";
   
-  os << p << "  ID, Type: " << GetId() << ", `";
+  os << p << "  ID, Type: " << id() << ", `";
   switch (type()) {
     case Local:   os << "Local'\n";  break;
     case Weak:    os << "Weak'\n";   break;
@@ -163,9 +163,8 @@ binutils::Proc::dump(std::ostream& os, int flags, const char* pre) const
       DIAG_Die("Unknown Procedure type: " << type());
   }
   os << showbase
-     << p << "  VMA: [" << hex << GetBegVMA() << ", " 
-     << GetEndVMA() << dec << "]\n";
-  os << p << "  Size(b): " << GetSize() << "\n";
+     << p << "  VMA: [" << hex << begVMA() << ", " << endVMA() << dec << "]\n";
+  os << p << "  Size(b): " << size() << "\n";
   
   if ((flags & LM::DUMP_Flg_Insn_ty) 
       || (flags & LM::DUMP_Flg_Insn_decode)) {
@@ -174,7 +173,7 @@ binutils::Proc::dump(std::ostream& os, int flags, const char* pre) const
       Insn* insn = it.Current();
 
       if (flags & LM::DUMP_Flg_Insn_decode) {
-	os << p2 << hex << insn->GetVMA() << dec << ": ";
+	os << p2 << hex << insn->vma() << dec << ": ";
 	insn->decode(os);
 	os << endl;
       }
@@ -183,8 +182,8 @@ binutils::Proc::dump(std::ostream& os, int flags, const char* pre) const
       }
       
       if (flags & LM::DUMP_Flg_Sym) {
-	VMA vma = insn->GetVMA();
-	ushort opIdx = insn->GetOpIndex();
+	VMA vma = insn->vma();
+	ushort opIdx = insn->opIndex();
 
 	string func, file;
 	SrcFile::ln line;
@@ -192,7 +191,7 @@ binutils::Proc::dump(std::ostream& os, int flags, const char* pre) const
 	func = GetBestFuncName(func);
 	
 	os << p2 << "  ";
-	if (file == GetFilename()) { 
+	if (file == filename()) { 
 	  os << "-"; 
 	}
 	else {
@@ -251,8 +250,7 @@ binutils::ProcInsnIterator::Reset()
     // vma are also included.  Push 'endIt' back as needed; when done it
     // should remain one past the last valid instruction
     for (; // ((*endIt).second) returns Insn*
-	 (endIt != lm.vmaToInsnMap.end() 
-	  && endIt->second->GetVMA() == p.m_endVMA);
+	 (endIt != lm.vmaToInsnMap.end() && endIt->second->vma() == p.m_endVMA);
 	 endIt++)
       { }
   }

@@ -107,7 +107,7 @@ public:
 
 
 binutils::LM::LM()
-  : m_type(Unknown), textBeg(0), textEnd(0), 
+  : m_type(Unknown), m_txtBeg(0), m_txtEnd(0), 
     textBegReloc(0), unRelocDelta(0)
 {
   impl = new LMImpl;
@@ -197,18 +197,18 @@ binutils::LM::open(const char* moduleName)
   
 #if defined(HAVE_HPC_GNUBINUTILS)
   if (bfd_get_arch(impl->abfd) == bfd_arch_alpha) {
-    textBeg   = bfd_ecoff_get_text_start(impl->abfd);
-    textEnd   = bfd_ecoff_get_text_end(impl->abfd);
-    firstaddr = textBeg;
+    m_txtBeg = bfd_ecoff_get_text_start(impl->abfd);
+    m_txtEnd = bfd_ecoff_get_text_end(impl->abfd);
+    m_begVMA = m_txtBeg;
   } 
   else {
     // Currently, this is ELF specific
-    textBeg   = bfd_get_start_address(impl->abfd); // entry point
-    firstaddr = bfd_get_first_addr(impl->abfd);     
+    m_txtBeg = bfd_get_start_address(impl->abfd); // entry point
+    m_begVMA = bfd_get_first_addr(impl->abfd);     
   }
 #else
-  textBeg   = bfd_get_start_address(impl->abfd); // entry point
-  firstaddr = textBeg;
+  m_txtBeg = bfd_get_start_address(impl->abfd); // entry point
+  m_begVMA = m_txtBeg;
 #endif /* HAVE_HPC_GNUBINUTILS */
   
   // -------------------------------------------------------
@@ -266,26 +266,26 @@ binutils::LM::read()
 }
 
 
-// Relocate: Internally, all operations are performed on non-relocated
+// relocate: Internally, all operations are performed on non-relocated
 // VMAs.  All routines operating on VMAs should call UnRelocateVMA(),
 // which will do the right thing.
 void 
-binutils::LM::Relocate(VMA textBegReloc_)
+binutils::LM::relocate(VMA textBegReloc_)
 {
-  DIAG_Assert(textBeg != 0, "LM::Relocate not supported!");
+  DIAG_Assert(m_txtBeg != 0, "LM::Relocate not supported!");
   textBegReloc = textBegReloc_;
   
   if (textBegReloc == 0) {
     unRelocDelta = 0;
   } 
   else {
-    //unRelocDelta = -(textBegReloc - textBeg); // FMZ
-      unRelocDelta = -(textBegReloc - firstaddr);
+    //unRelocDelta = -(textBegReloc - m_txtBeg); // FMZ
+      unRelocDelta = -(textBegReloc - m_begVMA);
   } 
 }
 
 bool 
-binutils::LM::IsRelocated() const 
+binutils::LM::is_relocated() const 
 { 
   return (textBegReloc != 0);
 }
@@ -320,8 +320,8 @@ binutils::LM::findMachInsn(VMA vma, ushort &size) const
   size = 0;
   Insn* insn = findInsn(vma, 0);
   if (insn) {
-    size  = insn->GetSize();
-    minsn = insn->GetBits();
+    size  = insn->size();
+    minsn = insn->bits();
   }
   return minsn; 
 }
@@ -481,7 +481,7 @@ binutils::LM::GetSourceFileInfo(VMA begVMA, ushort bOpIndex,
 
 
 void
-binutils::LM::GetTextBegEndVMA(VMA* begVMA, VMA* endVMA)
+binutils::LM::textBegEndVMA(VMA* begVMA, VMA* endVMA)
 { 
   VMA curr_begVMA;
   VMA curr_endVMA;
@@ -547,7 +547,7 @@ binutils::LM::dump(std::ostream& o, int flags, const char* pre) const
     DumpSymTab(o, p2.c_str());
   }
   
-  o << p2 << "Sections (" << GetNumSegs() << "):\n";
+  o << p2 << "Sections (" << numSegs() << "):\n";
   for (LMSegIterator it(*this); it.IsValid(); ++it) {
     Seg* sec = it.Current();
     sec->dump(o, flags, p2.c_str());
@@ -680,7 +680,7 @@ binutils::LM::ReadSegs()
   if (!impl->bfdSymbolTable) { return false; }
   bfd *abfd = impl->abfd;
 
-  mDbgInfo.read(abfd, impl->bfdSymbolTable);
+  m_dbgInfo.read(abfd, impl->bfdSymbolTable);
 
   // Process each section in the object file.
   for (asection *sec = abfd->sections; sec; sec = sec->next) {
@@ -696,15 +696,15 @@ binutils::LM::ReadSegs()
       TextSeg *newSeg =
 	new TextSeg(this, secName, secBeg, secEnd, secSize,
 		    impl->sortedSymbolTable, impl->numSyms, abfd);
-      AddSeg(newSeg);
+      insertSeg(newSeg);
     } 
     else {
       Seg *newSeg = new Seg(this, secName, Seg::Data, secBeg, secEnd, secSize);
-      AddSeg(newSeg);
+      insertSeg(newSeg);
     }
   }
 
-  mDbgInfo.clear();
+  m_dbgInfo.clear();
   
   return STATUS;
 }
@@ -725,7 +725,7 @@ binutils::LM::GetProcFirstLineInfo(VMA vma, ushort opIndex,
   VMAToProcMap::const_iterator it = vmaToProcMap.find(vmaint);
   if (it != vmaToProcMap.end()) {
     Proc* proc = it->second;
-    line = proc->GetBegLine();
+    line = proc->begLine();
     STATUS = true;
   }
   DIAG_MsgIf(DBG_BLD_PROC_MAP, "LM::GetProcFirstLineInfo " 
@@ -761,10 +761,10 @@ binutils::LM::DumpModuleInfo(std::ostream& o, const char* pre) const
       DIAG_Die("Invalid load module type: " << type());
   }
   
-  o << p << "Load VMA: " << hex << firstaddr << dec << "\n";
+  o << p << "Load VMA: " << hex << m_begVMA << dec << "\n";
 
   o << p << "Text(beg,end): " 
-    << hex << GetTextBeg() << ", " << GetTextEnd() << dec << "\n";
+    << hex << textBeg() << ", " << textEnd() << dec << "\n";
   
   o << p << "Endianness: `"
     << ( (bfd_big_endian(abfd)) ? "Big'\n" : "Little'\n" );
