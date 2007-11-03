@@ -30,7 +30,7 @@
 \rcsInfo $Id$
 \setDate{\rcsInfoLongDate}
 }{
-\setDate{ 2007/06/29}
+\setDate{ 2007/11/02}
 \message{package rcsinfo not present, discard it}
 }
 
@@ -60,7 +60,7 @@ The code is derived from Curtis Janssen's VProf.
 
 \Prog{hpcprof} correlates `flat' execution profiles of \Arg{binary} with source code files, procedures, lines or with object code.
 It is typically used to generate plain-text or HTML output.
-\Arg{hpcrun-file} is a collection of event-based program counter histograms obtained using \Cmd{hpcrun}{1} (or \Cmd{hpcex}{1}).
+\Arg{hpcrun-file} is a collection of event-based program counter histograms obtained using \HTMLhref{hpcrun.html}{\Cmd{hpcrun}{1}} (or \Cmd{hpcex}{1}).
 
 \Prog{hpcprof} can generate the following information.  Note that the term \emph{native} event refers to an event for which there is a program counter histogram.  
 \begin{Description}
@@ -119,7 +119,7 @@ Default values for an option's optional arguments are shown in \{\}.
 
 \subsection{Options: PROFILE Output}
 \begin{Description}
-  \item[\Opt{-p}, \Opt{--profile}] Generate PROFILE output to stdout. Note: This option is deprecated; use \Cmd{hpcquick}{1}/\Cmd{hpcview}{1} for improved correlation.
+  \item[\Opt{-p}, \Opt{--profile}] Generate PROFILE output to stdout. Note: This option is deprecated; use \HTMLhref{hpcquick.html}{\Cmd{hpcquick}{1}}/\Cmd{hpcview}{1} for improved correlation.
 \end{Description}
 
 
@@ -129,7 +129,7 @@ Default values for an option's optional arguments are shown in \{\}.
 
 \begin{itemize}
 
-\item Assume we have collected flat profiling information using \Cmd{hpcrun}{1} \Cmd{hpcex}{1}).
+\item Assume we have collected flat profiling information using \HTMLhref{hpcrun.html}{\Cmd{hpcrun}{1}} \Cmd{hpcex}{1}).
 Let the binary and profile be named \File{poissonSolve} and \File{poissonSolve.PAPI_L2_DCM-etc...}, respectively.
 Assume further that we wish to correlate the profile with source lines.
 To do this, execute:
@@ -150,7 +150,7 @@ To do this, execute:
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{See Also}
 
-\Cmd{hpctoolkit}{1}.
+\HTMLhref{hpctoolkit.html}{\Cmd{hpctoolkit}{1}}.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Version}
