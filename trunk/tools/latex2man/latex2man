@@ -302,6 +302,9 @@ $manMacro2a{'oOptoArg'} 	= '[\fB';
 $manMacro2a{'setlength'}	= '';
 	$manMacro2b{'setlength'}= '';
 	$manMacro2c{'setlength'}= '';
+$manMacro2a{'HTMLhref'}		= '';
+	$manMacro2b{'HTMLhref'}	= '';
+	$manMacro2c{'HTMLhref'}	= '';
 
 ########################################################################
 # Translation for LaTeX macros for HTML
@@ -428,6 +431,9 @@ $htmlMacro2a{'oOptoArg'} 	  = '[<b>';
 $htmlMacro2a{'setlength'}	  = '';
 	$htmlMacro2b{'setlength'} = '';
 	$htmlMacro2c{'setlength'} = '';
+$htmlMacro2a{'HTMLhref'}	  = '<a href="';
+	$htmlMacro2b{'HTMLhref'}  = '">';
+	$htmlMacro2c{'HTMLhref'}  = '</a>';
 
 # we handle sections in HTML as having two arguments, 1. the number, 2. the name
 $htmlMacro2a{'section'}   	   = '\n<h2><a name="section_';
@@ -562,6 +568,9 @@ $texiMacro2a{'oOptoArg'} 	  = '[ ';
 $texiMacro2a{'setlength'}	  = '';
 	$texiMacro2b{'setlength'} = '';
 	$texiMacro2c{'setlength'} = '';
+$texiMacro2a{'HTMLhref'}	  = '';
+	$texiMacro2b{'HTMLhref'}  = '';
+	$texiMacro2c{'HTMLhref'}  = '';
 
 ########################################################################
 # reading of translations for user macros
@@ -1060,17 +1069,17 @@ sub texiVerbatimLine
 sub check_Macro
 {
     exists $Macro->{$_[0]} ||
-	die "Error in line $.: no such macro: \\$_[0]\n";
+	die "Error in line $.: no such macro (0): \\$_[0]\n";
 }
 sub check_Macro1
 {
     (exists $Macro1a->{$_[0]} && exists $Macro1b->{$_[0]}) ||
-	die "$CMD: Error in line $.: no such macro: \\$_[0]\n";
+	die "$CMD: Error in line $.: no such macro (1): \\$_[0]\n";
 }
 sub check_Macro2
 {
     (exists $Macro2a->{$_[0]} && exists $Macro2b->{$_[0]} && exists $Macro2c->{$_[0]}) ||
-	die "$CMD: Error in line $.: no such macro: \\$_[0]\n";
+	die "$CMD: Error in line $.: no such macro (2): \\$_[0]\n";
 }
 
 sub NL
@@ -1175,12 +1184,18 @@ sub interpret_word
 					    last SWITCH;
 					};
        # LaTeX macros with two arguments
-       /\\([a-zA-Z]+){([^}]*)}{([^}]*)}/
+       #   * \cmdA{}{ \cmdB{...}{...} }
+       #   * \cmd{}{...}
+       (/\\([a-zA-Z]+){([^}]*)}{([^{]*{[^}]*}{[^}]*}[^}{]*)}/ ||
+        /\\([a-zA-Z]+){([^}]*)}{([^}]*)}/)
  				     && do {$s=$`;$m=$1;$a1=$2;$a2=$3;$r=$';
+                                            #print "---> $m $a1 $a2\n";
                                             check_Macro2 $m;
                                             interpret_word $s;
 					    PrintM $Macro2a->{$m};
-					    interpret_word $a1;
+					    if ($m ne 'HTMLhref' || $opt_H) {
+					      interpret_word $a1;
+					    }
 					    PrintM $Macro2b->{$m};
 					    interpret_word $a2;
 					    PrintM $Macro2c->{$m};
