@@ -44,7 +44,7 @@
 
 \begin{Name}{1}{hpcview}{The HPCToolkit Performance Tools}{The HPCToolkit Performance Tools}{hpcview:\\ Correlation of Flat Profiles with Static Program Structure}
 
-\Prog{hpcview} correlates dynamic (`flat') profiles with static source code structure.  See \Cmd{hpctoolkit}{1} for an overview of \textbf{HPCToolkit}.
+\Prog{hpcview} correlates dynamic (`flat') profiles with static source code structure.  See \HTMLhref{hpctoolkit.html}{\Cmd{hpctoolkit}{1}} for an overview of \textbf{HPCToolkit}.
 
 \end{Name}
 
@@ -56,10 +56,10 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Description}
 
-\Prog{hpcview} correlates dynamic profiling metrics with static source code structure and (by default) generates an Experiment database for use with \Cmd{hpcviewer}{1}.
+\Prog{hpcview} correlates dynamic profiling metrics with static source code structure and (by default) generates an Experiment database for use with \HTMLhref{hpcviewer.html}{\Cmd{hpcviewer}{1}}.
 \Prog{hpcview} is driven by the configuration file \Arg{config-file}, which amongh other things, may contain user defined derived metrics.
 
-The easiest way to create a configuration file is to use the \Cmd{hpcquick}{1}, a front end to \Prog{hpcview}.
+The easiest way to create a configuration file is to use the \HTMLhref{hpcquick.html}{\Cmd{hpcquick}{1}}, a front end to \Prog{hpcview}.
 See the section \emph{Configuration File} below for more details about its syntax.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -169,7 +169,7 @@ which has several attributes.
 
 The two metric types are
   \begin{itemize}
-  \item \textbf{Native or FILE metrics}.  This metric is read from a file which can be of type HPCRUN (from \Cmd{hpcrun}{1}) or PROFILE (from \Cmd{hpcprof}{1}).
+  \item \textbf{Native or FILE metrics}.  This metric is read from a file which can be of type HPCRUN (from \HTMLhref{hpcrun.html}{\Cmd{hpcrun}{1}}) or PROFILE (from \Cmd{hpcprof}{1}).
 
   \texttt{$<$METRIC name="m1" ...$>$}\\
   \texttt{$<$FILE name="}\Arg{file1}\texttt{"}
@@ -298,7 +298,7 @@ and the following MathML operators (used within \verb+<apply>+):
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{See Also}
 
-\Cmd{hpctoolkit}{1}.
+\HTMLhref{hpctoolkit.html}{\Cmd{hpctoolkit}{1}}.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Version}

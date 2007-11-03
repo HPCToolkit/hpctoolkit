@@ -30,7 +30,7 @@
 \rcsInfo $Id$
 \setDate{\rcsInfoLongDate}
 }{
-\setDate{ 2007/06/15}
+\setDate{ 2007/11/02}
 \message{package rcsinfo not present, discard it}
 }
 
@@ -46,7 +46,7 @@
 
 \Prog{bloop} recovers the static program structure of \emph{fully optimized} object code for use with an \textbf{HPCToolkit} correlation tool.
 In particular, \Prog{bloop}, recovers source code procedures and loop nests, detects inlining, and associates procedures and loops with object code addresses.
-See \Cmd{hpctoolkit}{1} for an overview of \textbf{HPCToolkit}.
+See \HTMLhref{hpctoolkit.html}{\Cmd{hpctoolkit}{1}} for an overview of \textbf{HPCToolkit}.
 
 \end{Name}
 
@@ -105,7 +105,7 @@ Default values for an option's optional arguments are shown in \{\}.
 %\begin{enumerate}
 %\item 
 Assume we have collected profiling information for the (optimized) binary \File{sweep3dsingle}, compiled with debugging information.
-We wish to recover program structure in the file \File{sweep3dsingle.psxml} for use with \Cmd{hpcquick}{1}/\Cmd{hpcview}{1}.
+We wish to recover program structure in the file \File{sweep3dsingle.psxml} for use with \HTMLhref{hpcquick.html}{\Cmd{hpcquick}{1}}/\HTMLhref{hpcview.html}{\Cmd{hpcview}{1}}.
 To do this, execute:
 \begin{verbatim}
     bloop sweep3dsingle > sweep3dsingle.psxml
@@ -150,7 +150,7 @@ The workaround is to use an if/elseif/else statement.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{See Also}
 
-\Cmd{hpctoolkit}{1}.
+\HTMLhref{hpctoolkit.html}{\Cmd{hpctoolkit}{1}}.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Version}
