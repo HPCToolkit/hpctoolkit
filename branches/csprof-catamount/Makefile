@@ -68,6 +68,7 @@ CFLAGS := -fPIC -g -Wall
 AR := /usr/bin/ar
 ARFLAGS := -r
 
+#link_flags := -Wl,-Bstatic -Wl,-soname,$(CSPROFLIB) -shared # andre1
 link_flags := -Wl,-soname,$(CSPROFLIB) -shared
 
 module_dirs := utilities                \
@@ -75,6 +76,7 @@ module_dirs := utilities                \
                processor/x86-64         \
                sampling/types/callstack \
                BetterUnwind             \
+               Pmsg                     \
                hpcfile                  \
                os/catamount             \
                sampling/sources/$(DRIVER_DIR)
