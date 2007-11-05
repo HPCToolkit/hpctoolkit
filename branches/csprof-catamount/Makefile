@@ -241,7 +241,7 @@ tarball:
 .PHONY : all libcsfile clean tarball static check TAGS
 
 $(CSPROFLIB): $(LIB_CSFILE) $(OBJS)
-	$(link) $(link_flags) -o $(CSPROFLIB) $(OBJS) $(LIBS)
+	$(link) $(link_flags) -o $@ $(OBJS) $(LIBS)
 	@echo "*** $(CSPROFLIB) is up to date. ***"
 
 

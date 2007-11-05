@@ -33,7 +33,6 @@ t1: t1.o $(test_targs)
 #	$(HPCL) -v $(CC) -v $(filter-out $(test_targs),$^) -o $@
 	$(CC) $^ -lm -o $@
  
-
 .PHONY: $(CSPROF_DOT_O)
 $(CSPROF_DOT_O):
 	cd ..; $(MAKE)
