@@ -90,7 +90,6 @@ public:
   void DDump() const;
 
 public:  
-  static const std::string HPCTOOLKIT;
   std::string hpcHome;
 
   // Parsed Data: Command
@@ -116,6 +115,7 @@ private:
   void setHPCHome(); 
 
 private:
+  static const std::string HPCTOOLKIT;
   static CmdLineParser::OptArgDesc optArgs[];
   CmdLineParser parser;
 }; 

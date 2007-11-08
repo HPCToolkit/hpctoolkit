@@ -120,7 +120,7 @@ output filename <fname> (located within the Experiment database). The output\n\
 is sparse in the sense that it ignores program areas without profiling\n\
 information. (Set <fname> to '-' to write to stdout.)\n\
   -x [<fname>], --experiment [<fname>]\n\
-                       Default. ExperimentXML format. {"EXPERIMENTXML"}.\n\
+                       Default. ExperimentXML format. {"EXPERIMENTXML"}\n\
                        NOTE: To disable, set <fname> to 'no'.\n\
   --csv [<fname>]      Comma-separated-value format. {"EXPERIMENTCSV"}\n\
                        Includes flat scope tree and loops. Useful for\n\
