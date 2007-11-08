@@ -33,11 +33,11 @@ int csprof_new_metric();
 
 /* Associate `name' with `metric_id' for later processing.  The sample
    period defaults to `1' for this metric. */
-void csprof_set_metric_info(int metric_id, char *name, int flags);
+void csprof_set_metric_info(int metric_id, char *name, uint64_t flags);
 
 /* A more detailed version of `csprof_set_metric_info'. */
 void csprof_set_metric_info_and_period(int metric_id, char *name,
-				       int flags, size_t period);
+				       uint64_t flags, size_t period);
 
 /* Record `value' for `metric_id'. */
 void csprof_record_metric(int metric_id, size_t value);

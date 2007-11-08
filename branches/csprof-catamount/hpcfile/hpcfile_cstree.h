@@ -1,6 +1,38 @@
+// -*-Mode: C-*-
 // $Id$
-// -*-C-*-
+
 // * BeginRiceCopyright *****************************************************
+// 
+// Copyright ((c)) 2002-2007, Rice University 
+// All rights reserved.
+// 
+// Redistribution and use in source and binary forms, with or without
+// modification, are permitted provided that the following conditions are
+// met:
+// 
+// * Redistributions of source code must retain the above copyright
+//   notice, this list of conditions and the following disclaimer.
+// 
+// * Redistributions in binary form must reproduce the above copyright
+//   notice, this list of conditions and the following disclaimer in the
+//   documentation and/or other materials provided with the distribution.
+// 
+// * Neither the name of Rice University (RICE) nor the names of its
+//   contributors may be used to endorse or promote products derived from
+//   this software without specific prior written permission.
+// 
+// This software is provided by RICE and contributors "as is" and any
+// express or implied warranties, including, but not limited to, the
+// implied warranties of merchantability and fitness for a particular
+// purpose are disclaimed. In no event shall RICE or contributors be
+// liable for any direct, indirect, incidental, special, exemplary, or
+// consequential damages (including, but not limited to, procurement of
+// substitute goods or services; loss of use, data, or profits; or
+// business interruption) however caused and on any theory of liability,
+// whether in contract, strict liability, or tort (including negligence
+// or otherwise) arising in any way out of the use of this software, even
+// if advised of the possibility of such damage. 
+// 
 // ******************************************************* EndRiceCopyright *
 
 //***************************************************************************
@@ -56,11 +88,11 @@ extern "C" {
    depending on whether or not we've using the trampoline in this
    build.  make it so that the library doesn't get confused */
 #ifdef CSPROF_TRAMPOLINE_BACKEND
-#define HPCFILE_CSTREE_VERSION     "01.0T" /* `T' is for `trampoline' */
-#define HPCFILE_CSTREE_VERSION_LEN 5 /* exclude '\0' */
+# define HPCFILE_CSTREE_VERSION     "01.0T" /* 'T' is for trampoline */
+# define HPCFILE_CSTREE_VERSION_LEN 5 /* exclude '\0' */
 #else
-#define HPCFILE_CSTREE_VERSION     "01.00"
-#define HPCFILE_CSTREE_VERSION_LEN 5 /* exclude '\0' */
+# define HPCFILE_CSTREE_VERSION     "01.00"
+# define HPCFILE_CSTREE_VERSION_LEN 5 /* exclude '\0' */
 #endif
 
 #define HPCFILE_CSTREE_ENDIAN 'l' /* 'l' for little, 'b' for big */
@@ -91,15 +123,15 @@ int hpcfile_cstree_id__fprint(hpcfile_cstree_id_t* x, FILE* fs);
 // hpcfile_cstree_hdr_t:
 // ---------------------------------------------------------
 typedef struct hpcfile_cstree_hdr_s {
-    hpcfile_cstree_id_t fid;
+  hpcfile_cstree_id_t fid;
   
-    // data type sizes (currently, redundant info)
-    uint32_t vma_sz;    // 8
-    uint32_t uint_sz;   // 8
+  // data type sizes (currently, redundant info)
+  uint32_t vma_sz;    // 8
+  uint32_t uint_sz;   // 8
   
-    // data information
-    uint64_t num_nodes;         /* number of tree nodes */
-    uint32_t epoch;             /* epoch index */
+  // data information
+  uint64_t num_nodes;         /* number of tree nodes */
+  uint32_t epoch;             /* epoch index */
 } hpcfile_cstree_hdr_t;
 
 int hpcfile_cstree_hdr__init(hpcfile_cstree_hdr_t* x);
@@ -114,17 +146,17 @@ int hpcfile_cstree_hdr__fprint(hpcfile_cstree_hdr_t* x, FILE* fs);
 // ---------------------------------------------------------
 typedef struct hpcfile_cstree_nodedata_s {
 
-    /* instruction pointer: more accurately, this is an 'operation
-       pointer'.  The operation in the instruction packet is represented
-       by adding 0, 1, or 2 to the instruction pointer for the first,
-       second and third operation, respectively. */
-    hpcfile_vma_t ip;
-  
-    /* 'sp': the stack pointer of this node */
-    hpcfile_uint_t sp;
+  // instruction pointer: more accurately, this is an 'operation
+  // pointer'.  The operation in the instruction packet is represented
+  // by adding 0, 1, or 2 to the instruction pointer for the first,
+  // second and third operation, respectively.
+  hpcfile_vma_t ip;
 
-    hpcfile_uint_t num_metrics;
-    hpcfile_uint_t *metrics;
+  // 'sp': the stack pointer of this node 
+  hpcfile_uint_t sp;
+
+  hpcfile_uint_t num_metrics;
+  hpcfile_uint_t *metrics;
 } hpcfile_cstree_nodedata_t;
 
 int hpcfile_cstree_nodedata__init(hpcfile_cstree_nodedata_t* x);

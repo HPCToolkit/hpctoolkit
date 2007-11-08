@@ -68,7 +68,7 @@ csprof_new_metric()
 
 void
 csprof_set_metric_info_and_period(int metric_id, char *name,
-				  int flags, size_t period)
+				  uint64_t flags, size_t period)
 {
   if(metric_id >= metric_data.num_metrics) {
     ERRMSG("Metric id `%d' is not a defined metric",
@@ -81,12 +81,12 @@ csprof_set_metric_info_and_period(int metric_id, char *name,
     hpcfile_csprof_metric_t *metric = &metric_data.metrics[metric_id];
     metric->metric_name = name;
     metric->sample_period = period;
-    metric->metric_flags = flags;
+    metric->flags = flags;
   }
 }
 
 void
-csprof_set_metric_info(int metric_id, char *name, int flags)
+csprof_set_metric_info(int metric_id, char *name, uint64_t flags)
 {
   csprof_set_metric_info_and_period(metric_id, name, flags, 1);
 }

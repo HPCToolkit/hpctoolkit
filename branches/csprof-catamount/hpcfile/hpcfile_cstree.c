@@ -1,6 +1,38 @@
+// -*-Mode: C;-*-
 // $Id$
-// -*-C-*-
+
 // * BeginRiceCopyright *****************************************************
+// 
+// Copyright ((c)) 2002-2007, Rice University 
+// All rights reserved.
+// 
+// Redistribution and use in source and binary forms, with or without
+// modification, are permitted provided that the following conditions are
+// met:
+// 
+// * Redistributions of source code must retain the above copyright
+//   notice, this list of conditions and the following disclaimer.
+// 
+// * Redistributions in binary form must reproduce the above copyright
+//   notice, this list of conditions and the following disclaimer in the
+//   documentation and/or other materials provided with the distribution.
+// 
+// * Neither the name of Rice University (RICE) nor the names of its
+//   contributors may be used to endorse or promote products derived from
+//   this software without specific prior written permission.
+// 
+// This software is provided by RICE and contributors "as is" and any
+// express or implied warranties, including, but not limited to, the
+// implied warranties of merchantability and fitness for a particular
+// purpose are disclaimed. In no event shall RICE or contributors be
+// liable for any direct, indirect, incidental, special, exemplary, or
+// consequential damages (including, but not limited to, procurement of
+// substitute goods or services; loss of use, data, or profits; or
+// business interruption) however caused and on any theory of liability,
+// whether in contract, strict liability, or tort (including negligence
+// or otherwise) arising in any way out of the use of this software, even
+// if advised of the possibility of such damage. 
+// 
 // ******************************************************* EndRiceCopyright *
 
 //***************************************************************************
@@ -30,6 +62,7 @@
 #include <string.h>
 
 #include <sys/stat.h>
+#include <assert.h>
 
 //*************************** User Include Files ****************************
 
@@ -39,6 +72,8 @@
 
 //*************************** Forward Declarations **************************
 
+#define DBG_READ_METRICS 0
+
 static int
 hpcfile_cstree_write_node(FILE* fs, void* tree, void* node, 
 			  hpcfile_cstree_node_t *scratch,
@@ -47,7 +82,8 @@ hpcfile_cstree_write_node(FILE* fs, void* tree, void* node,
 			  hpcfile_cstree_cb__get_first_child_fn_t get_first_child_fn,
 			  hpcfile_cstree_cb__get_sibling_fn_t get_sibling_fn);
 
-static int hpcfile_cstree_read_hdr(FILE* fs, hpcfile_cstree_hdr_t* hdr);
+static int 
+hpcfile_cstree_read_hdr(FILE* fs, hpcfile_cstree_hdr_t* hdr);
 
 // HPC_CSTREE format details: 
 //
@@ -193,7 +229,8 @@ hpcfile_cstree_read(FILE* fs, void* tree,
     }
     if (fnode.id_parent >= fhdr.num_nodes) { 
       goto cstree_read_cleanup; // HPCFILE_ERR
-    }
+    } 
+    
     parent = node_vec[fnode.id_parent];
 
     // parent should already exist unless id_parent and id are equal
@@ -207,7 +244,7 @@ hpcfile_cstree_read(FILE* fs, void* tree,
     
     if (parent) {
       link_parent_fn(tree, node, parent);
-    } 
+    }
   }
 
   // Success! Note: We assume that it is possible for other data to
@@ -319,10 +356,11 @@ hpcfile_cstree_id__fread(hpcfile_cstree_id_t* x, FILE* fs)
   
   sz = fread((char*)x->version, 1, HPCFILE_CSTREE_VERSION_LEN, fs);
   if (sz != HPCFILE_CSTREE_VERSION_LEN) { return HPCFILE_ERR; }
- 
-  if ((c = fgetc(fs)) == EOF) { return HPCFILE_ERR; }
+
+  c = fgetc(fs);
+  if (c == EOF) { return HPCFILE_ERR; }
   x->endian = (char)c;
-  
+
   return HPCFILE_OK;
 }
 
