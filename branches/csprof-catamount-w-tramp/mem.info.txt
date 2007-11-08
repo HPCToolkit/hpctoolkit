@@ -1,0 +1,50 @@
+//***************************************************************************
+//
+// Public interface to private memory allocation.
+//
+// Note that the available dynamic memory is strictly tied to available swap
+// space.
+// 
+//***************************************************************************
+
+// csprof_malloc_init: Prepares the private memory management system
+// for use.  This function may be called multiple times; on each
+// successive call, the memory mangement system is reset and all
+// contents are lost.  If desired, users may choose initial sizes (in
+// bytes) for the regular ('sz') and temporary ('sz_tmp') memory
+// stores; set these parameters to 1 to use default sizes.  Either of
+// the memory stores may be disabled by passing a size of 0,
+// respectively, but it is an error to disable both.  Returns
+// CSPROF_OK upon success; CSPROF_ERR on error.
+//
+// * Must be called before any allocations are performed! *
+csprof_mem_t *csprof_malloc_init(offset_t sz, offset_t sz_tmp);
+
+// csprof_malloc_fini: Cleanup and deallocate memory stores.  Returns
+// CSPROF_OK upon success; CSPROF_ERR on error.
+int csprof_malloc_fini(csprof_mem_t *);
+
+// csprof_malloc: Returns a pointer to a block of memory of the
+// *exact* size (in bytes) requested.  If there is insufficient
+// memory, an attempt will be made to allocate more.  If this is not
+// possible, an error is printed and the program is terminated.
+// 
+// * This memory cannot be freed! *
+void* csprof_malloc(size_t size);
+void* csprof_malloc_threaded(csprof_mem_t *, size_t size);
+
+// csprof_tmalloc: Returns a pointer to a block of temporary memory of
+// the *exact* size (in bytes) requested.  If there is insufficient
+// memory, *no attempt* will be made to allocate more and NULL is
+// returned. Temporary memory is allocated analagous to a stack; it
+// may be freed using 'csprof_tfree' but it *must be* freed in the
+// reverse order of allocation.
+//
+// csprof_tfree: Frees a block of temporary memory allocated with
+// 'csprof_tmalloc'.
+//
+// * Be very careful when using. *
+void* csprof_tmalloc(size_t size);
+void* csprof_tmalloc_threaded(csprof_mem_t *, size_t size);
+void csprof_tfree(void *, size_t);
+void  csprof_tfree_threaded(csprof_mem_t *, void* mem, size_t size);

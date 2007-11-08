@@ -1,0 +1,1719 @@
+L_BUILD: start = 0x599020, end = 0x5993d0
+L_BUILD:dump first
+start=0x599020 end=0 stat=RA_SP_RELATIVE pos=0 next=0 prev=0
+
+L_BUILD: in loop, ins = 0x599020
+trying to dump an instruction!!!
+building intervals for chk
+--------------------------
+0x599020 (5 bytes) MOV
+0x599020 yielded ok decode
+  0 MEM0   1 REG Operands
+  0 MEM0  EXPLICIT / W
+  1 REG RBX EXPLICIT / R
+L_BUILD: in loop, ins = 0x599025
+trying to dump an instruction!!!
+0x599025 (5 bytes) MOV
+0x599025 yielded ok decode
+  0 MEM0   1 REG Operands
+  0 MEM0  EXPLICIT / W
+  1 REG RBP EXPLICIT / R
+L_BUILD: in loop, ins = 0x59902a
+trying to dump an instruction!!!
+0x59902a (5 bytes) MOV
+0x59902a yielded ok decode
+  0 MEM0   1 REG Operands
+  0 MEM0  EXPLICIT / W
+  1 REG R12 EXPLICIT / R
+L_BUILD: in loop, ins = 0x59902f
+trying to dump an instruction!!!
+0x59902f (5 bytes) MOV
+0x59902f yielded ok decode
+  0 MEM0   1 REG Operands
+  0 MEM0  EXPLICIT / W
+  1 REG R13 EXPLICIT / R
+L_BUILD: in loop, ins = 0x599034
+trying to dump an instruction!!!
+0x599034 (5 bytes) MOV
+0x599034 yielded ok decode
+  0 MEM0   1 REG Operands
+  0 MEM0  EXPLICIT / W
+  1 REG R14 EXPLICIT / R
+L_BUILD: in loop, ins = 0x599039
+trying to dump an instruction!!!
+0x599039 (5 bytes) MOV
+0x599039 yielded ok decode
+  0 MEM0   1 REG Operands
+  0 MEM0  EXPLICIT / W
+  1 REG R15 EXPLICIT / R
+L_BUILD: in loop, ins = 0x59903e
+trying to dump an instruction!!!
+0x59903e (4 bytes) SUB
+0x59903e yielded ok decode
+  0 REG 	 writes RSP
+sp immed arith val = 72
+  1 IMM    --immed value = 0x48
+  2 REG start=0x599042 end=0 stat=RA_SP_RELATIVE pos=72 next=0 prev=0x7c2010
+
+Operands
+  0 REG RSP EXPLICIT / RW
+  1 IMM 0x48 EXPLICIT / R
+  2 REG RFLAGS SUPPRESSED / W
+L_BUILD: in loop, ins = 0x599042
+trying to dump an instruction!!!
+0x599042 (3 bytes) TEST
+0x599042 yielded ok decode
+  0 REG   1 REG   2 REG Operands
+  0 REG RSI EXPLICIT / R
+  1 REG RSI EXPLICIT / R
+  2 REG RFLAGS SUPPRESSED / W
+L_BUILD: in loop, ins = 0x599045
+trying to dump an instruction!!!
+0x599045 (3 bytes) MOV
+0x599045 yielded ok decode
+  0 REG   1 REG Operands
+  0 REG RBX EXPLICIT / W
+  1 REG RDI EXPLICIT / R
+L_BUILD: in loop, ins = 0x599048
+trying to dump an instruction!!!
+0x599048 (2 bytes) JZ
+0x599048 yielded ok decode
+  0 DISP   1 REG   2 REG   3 REG Operands
+  0 DISP 0x46 EXPLICIT / R
+  1 REG RIP SUPPRESSED / R
+  2 REG RIP SUPPRESSED / W
+  3 REG RFLAGS SUPPRESSED / R
+L_BUILD: in loop, ins = 0x59904a
+trying to dump an instruction!!!
+0x59904a (4 bytes) MOV
+0x59904a yielded ok decode
+  0 REG   1 MEM0 Operands
+  0 REG RDX EXPLICIT / W
+  1 MEM0  EXPLICIT / R
+L_BUILD: in loop, ins = 0x59904e
+trying to dump an instruction!!!
+0x59904e (4 bytes) LEA
+0x59904e yielded ok decode
+  0 REG   1 AGEN Operands
+  0 REG RDI EXPLICIT / W
+  1 AGEN  EXPLICIT / R
+L_BUILD: in loop, ins = 0x599052
+trying to dump an instruction!!!
+0x599052 (3 bytes) MOV
+0x599052 yielded ok decode
+  0 REG   1 REG Operands
+  0 REG RCX EXPLICIT / W
+  1 REG RDX EXPLICIT / R
+L_BUILD: in loop, ins = 0x599055
+trying to dump an instruction!!!
+0x599055 (4 bytes) AND
+0x599055 yielded ok decode
+  0 REG   1 IMM    --immed value = 0xf8
+  2 REG Operands
+  0 REG RCX EXPLICIT / RW
+  1 IMM 0xf8 EXPLICIT / R
+  2 REG RFLAGS SUPPRESSED / W
+L_BUILD: in loop, ins = 0x599059
+trying to dump an instruction!!!
+0x599059 (3 bytes) MOV
+0x599059 yielded ok decode
+  0 REG   1 REG Operands
+  0 REG RAX EXPLICIT / W
+  1 REG RCX EXPLICIT / R
+L_BUILD: in loop, ins = 0x59905c
+trying to dump an instruction!!!
+0x59905c (3 bytes) NEG
+0x59905c yielded ok decode
+  0 REG   1 REG Operands
+  0 REG RAX EXPLICIT / RW
+  1 REG RFLAGS SUPPRESSED / W
+L_BUILD: in loop, ins = 0x59905f
+trying to dump an instruction!!!
+0x59905f (3 bytes) CMP
+0x59905f yielded ok decode
+  0 REG   1 REG   2 REG Operands
+  0 REG RDI EXPLICIT / R
+  1 REG RAX EXPLICIT / R
+  2 REG RFLAGS SUPPRESSED / W
+L_BUILD: in loop, ins = 0x599062
+trying to dump an instruction!!!
+0x599062 (6 bytes) JNBE
+0x599062 yielded ok decode
+  0 DISP   1 REG   2 REG   3 REG Operands
+  0 DISP 0x000002b0 EXPLICIT / R
+  1 REG RIP SUPPRESSED / R
+  2 REG RIP SUPPRESSED / W
+  3 REG RFLAGS SUPPRESSED / R
+L_BUILD: in loop, ins = 0x599068
+trying to dump an instruction!!!
+0x599068 (4 bytes) MOV
+0x599068 yielded ok decode
+  0 REG   1 MEM0 Operands
+  0 REG RAX EXPLICIT / W
+  1 MEM0  EXPLICIT / R
+L_BUILD: in loop, ins = 0x59906c
+trying to dump an instruction!!!
+0x59906c (3 bytes) CMP
+0x59906c yielded ok decode
+  0 REG   1 REG   2 REG Operands
+  0 REG RCX EXPLICIT / R
+  1 REG RAX EXPLICIT / R
+  2 REG RFLAGS SUPPRESSED / W
+L_BUILD: in loop, ins = 0x59906f
+trying to dump an instruction!!!
+0x59906f (2 bytes) JNBE
+0x59906f yielded ok decode
+  0 DISP   1 REG   2 REG   3 REG Operands
+  0 DISP 0x42 EXPLICIT / R
+  1 REG RIP SUPPRESSED / R
+  2 REG RIP SUPPRESSED / W
+  3 REG RFLAGS SUPPRESSED / R
+L_BUILD: in loop, ins = 0x599071
+trying to dump an instruction!!!
+0x599071 (3 bytes) AND
+0x599071 yielded ok decode
+  0 REG   1 IMM    --immed value = 0xfe
+  2 REG Operands
+  0 REG EAX EXPLICIT / RW
+  1 IMM 0xfe EXPLICIT / R
+  2 REG RFLAGS SUPPRESSED / W
+L_BUILD: in loop, ins = 0x599074
+trying to dump an instruction!!!
+0x599074 (4 bytes) MOV
+0x599074 yielded ok decode
+  0 MEM0   1 REG Operands
+  0 MEM0  EXPLICIT / W
+  1 REG RAX EXPLICIT / R
+L_BUILD: in loop, ins = 0x599078
+trying to dump an instruction!!!
+0x599078 (2 bytes) MOV
+0x599078 yielded ok decode
+  0 REG   1 REG Operands
+  0 REG EAX EXPLICIT / W
+  1 REG ECX EXPLICIT / R
+L_BUILD: in loop, ins = 0x59907a
+trying to dump an instruction!!!
+0x59907a (3 bytes) SHR
+0x59907a yielded ok decode
+  0 REG   1 IMM    --immed value = 0x03
+  2 REG Operands
+  0 REG EAX EXPLICIT / RW
+  1 IMM 0x03 EXPLICIT / R
+  2 REG RFLAGS SUPPRESSED / W
+L_BUILD: in loop, ins = 0x59907d
+trying to dump an instruction!!!
+0x59907d (3 bytes) SUB
+0x59907d yielded ok decode
+  0 REG   1 IMM    --immed value = 0x02
+  2 REG Operands
+  0 REG EAX EXPLICIT / RW
+  1 IMM 0x02 EXPLICIT / R
+  2 REG RFLAGS SUPPRESSED / W
+L_BUILD: in loop, ins = 0x599080
+trying to dump an instruction!!!
+0x599080 (4 bytes) LEA
+0x599080 yielded ok decode
+  0 REG   1 AGEN Operands
+  0 REG RAX EXPLICIT / W
+  1 AGEN  EXPLICIT / R
+L_BUILD: in loop, ins = 0x599084
+trying to dump an instruction!!!
+0x599084 (4 bytes) MOV
+0x599084 yielded ok decode
+  0 REG   1 MEM0 Operands
+  0 REG RDX EXPLICIT / W
+  1 MEM0  EXPLICIT / R
+L_BUILD: in loop, ins = 0x599088
+trying to dump an instruction!!!
+0x599088 (4 bytes) MOV
+0x599088 yielded ok decode
+  0 MEM0   1 REG Operands
+  0 MEM0  EXPLICIT / W
+  1 REG RDX EXPLICIT / R
+L_BUILD: in loop, ins = 0x59908c
+trying to dump an instruction!!!
+0x59908c (4 bytes) MOV
+0x59908c yielded ok decode
+  0 MEM0   1 REG Operands
+  0 MEM0  EXPLICIT / W
+  1 REG RDI EXPLICIT / R
+L_BUILD: in loop, ins = 0x599090
+trying to dump an instruction!!!
+0x599090 (5 bytes) MOV
+0x599090 yielded ok decode
+  0 REG   1 MEM0 Operands
+  0 REG RBX EXPLICIT / W
+  1 MEM0  EXPLICIT / R
+L_BUILD: in loop, ins = 0x599095
+trying to dump an instruction!!!
+0x599095 (5 bytes) MOV
+0x599095 yielded ok decode
+  0 REG 	 writes RBP
+  1 MEM0 Operands
+  0 REG RBP EXPLICIT / W
+  1 MEM0  EXPLICIT / R
+L_BUILD: in loop, ins = 0x59909a
+trying to dump an instruction!!!
+0x59909a (5 bytes) MOV
+0x59909a yielded ok decode
+  0 REG   1 MEM0 Operands
+  0 REG R12 EXPLICIT / W
+  1 MEM0  EXPLICIT / R
+L_BUILD: in loop, ins = 0x59909f
+trying to dump an instruction!!!
+0x59909f (5 bytes) MOV
+0x59909f yielded ok decode
+  0 REG   1 MEM0 Operands
+  0 REG R13 EXPLICIT / W
+  1 MEM0  EXPLICIT / R
+L_BUILD: in loop, ins = 0x5990a4
+trying to dump an instruction!!!
+0x5990a4 (5 bytes) MOV
+0x5990a4 yielded ok decode
+  0 REG   1 MEM0 Operands
+  0 REG R14 EXPLICIT / W
+  1 MEM0  EXPLICIT / R
+L_BUILD: in loop, ins = 0x5990a9
+trying to dump an instruction!!!
+0x5990a9 (5 bytes) MOV
+0x5990a9 yielded ok decode
+  0 REG   1 MEM0 Operands
+  0 REG R15 EXPLICIT / W
+  1 MEM0  EXPLICIT / R
+L_BUILD: in loop, ins = 0x5990ae
+trying to dump an instruction!!!
+0x5990ae (4 bytes) ADD
+0x5990ae yielded ok decode
+  0 REG 	 writes RSP
+sp immed arith val = -72
+  1 IMM    --immed value = 0x48
+  2 REG start=0x5990b2 end=0 stat=RA_SP_RELATIVE pos=0 next=0 prev=0x7c2040
+
+Operands
+  0 REG RSP EXPLICIT / RW
+  1 IMM 0x48 EXPLICIT / R
+  2 REG RFLAGS SUPPRESSED / W
+L_BUILD: in loop, ins = 0x5990b2
+trying to dump an instruction!!!
+0x5990b2 (1 bytes) RET_NEAR
+0x5990b2 yielded ok decode
+--In RET interval backup
+--looping thru prev
+start=0x5990b3 end=0 stat=RA_SP_RELATIVE pos=72 next=0 prev=0x7c2070
+
+Operands
+  0 MEM0  SUPPRESSED / R
+  1 REG RSP SUPPRESSED / RW
+  2 REG RIP SUPPRESSED / W
+L_BUILD: in loop, ins = 0x5990b3
+trying to dump an instruction!!!
+0x5990b3 (3 bytes) TEST
+0x5990b3 yielded ok decode
+  0 REG   1 IMM    --immed value = 0x02
+  2 REG Operands
+  0 REG DL EXPLICIT / R
+  1 IMM 0x02 EXPLICIT / R
+  2 REG RFLAGS SUPPRESSED / W
+L_BUILD: in loop, ins = 0x5990b6
+trying to dump an instruction!!!
+0x5990b6 (6 bytes) JNZ
+0x5990b6 yielded ok decode
+  0 DISP   1 REG   2 REG   3 REG Operands
+  0 DISP 0x00000144 EXPLICIT / R
+  1 REG RIP SUPPRESSED / R
+  2 REG RIP SUPPRESSED / W
+  3 REG RFLAGS SUPPRESSED / R
+L_BUILD: in loop, ins = 0x5990bc
+trying to dump an instruction!!!
+0x5990bc (4 bytes) LEA
+0x5990bc yielded ok decode
+  0 REG   1 AGEN Operands
+  0 REG R8 EXPLICIT / W
+  1 AGEN  EXPLICIT / R
+L_BUILD: in loop, ins = 0x5990c0
+trying to dump an instruction!!!
+0x5990c0 (4 bytes) MOV
+0x5990c0 yielded ok decode
+  0 REG   1 MEM0 Operands
+  0 REG R9 EXPLICIT / W
+  1 MEM0  EXPLICIT / R
+L_BUILD: in loop, ins = 0x5990c4
+trying to dump an instruction!!!
+0x5990c4 (3 bytes) MOV
+0x5990c4 yielded ok decode
+  0 REG   1 REG Operands
+  0 REG R10 EXPLICIT / W
+  1 REG R9 EXPLICIT / R
+L_BUILD: in loop, ins = 0x5990c7
+trying to dump an instruction!!!
+0x5990c7 (4 bytes) AND
+0x5990c7 yielded ok decode
+  0 REG   1 IMM    --immed value = 0xf8
+  2 REG Operands
+  0 REG R10 EXPLICIT / RW
+  1 IMM 0xf8 EXPLICIT / R
+  2 REG RFLAGS SUPPRESSED / W
+L_BUILD: in loop, ins = 0x5990cb
+trying to dump an instruction!!!
+0x5990cb (3 bytes) AND
+0x5990cb yielded ok decode
+  0 REG   1 IMM    --immed value = 0x01
+  2 REG Operands
+  0 REG EDX EXPLICIT / RW
+  1 IMM 0x01 EXPLICIT / R
+  2 REG RFLAGS SUPPRESSED / W
+L_BUILD: in loop, ins = 0x5990ce
+trying to dump an instruction!!!
+0x5990ce (2 bytes) JNZ
+0x5990ce yielded ok decode
+  0 DISP   1 REG   2 REG   3 REG Operands
+  0 DISP 0x1a EXPLICIT / R
+  1 REG RIP SUPPRESSED / R
+  2 REG RIP SUPPRESSED / W
+  3 REG RFLAGS SUPPRESSED / R
+L_BUILD: in loop, ins = 0x5990d0
+trying to dump an instruction!!!
+0x5990d0 (4 bytes) MOV
+0x5990d0 yielded ok decode
+  0 REG   1 MEM0 Operands
+  0 REG RAX EXPLICIT / W
+  1 MEM0  EXPLICIT / R
+L_BUILD: in loop, ins = 0x5990d4
+trying to dump an instruction!!!
+0x5990d4 (3 bytes) SUB
+0x5990d4 yielded ok decode
+  0 REG   1 REG   2 REG Operands
+  0 REG RDI EXPLICIT / RW
+  1 REG RAX EXPLICIT / R
+  2 REG RFLAGS SUPPRESSED / W
+L_BUILD: in loop, ins = 0x5990d7
+trying to dump an instruction!!!
+0x5990d7 (3 bytes) ADD
+0x5990d7 yielded ok decode
+  0 REG   1 REG   2 REG Operands
+  0 REG RCX EXPLICIT / RW
+  1 REG RAX EXPLICIT / R
+  2 REG RFLAGS SUPPRESSED / W
+L_BUILD: in loop, ins = 0x5990da
+trying to dump an instruction!!!
+0x5990da (4 bytes) MOV
+0x5990da yielded ok decode
+  0 REG   1 MEM0 Operands
+  0 REG RDX EXPLICIT / W
+  1 MEM0  EXPLICIT / R
+L_BUILD: in loop, ins = 0x5990de
+trying to dump an instruction!!!
+0x5990de (4 bytes) MOV
+0x5990de yielded ok decode
+  0 REG   1 MEM0 Operands
+  0 REG RAX EXPLICIT / W
+  1 MEM0  EXPLICIT / R
+L_BUILD: in loop, ins = 0x5990e2
+trying to dump an instruction!!!
+0x5990e2 (4 bytes) MOV
+0x5990e2 yielded ok decode
+  0 MEM0   1 REG Operands
+  0 MEM0  EXPLICIT / W
+  1 REG RAX EXPLICIT / R
+L_BUILD: in loop, ins = 0x5990e6
+trying to dump an instruction!!!
+0x5990e6 (4 bytes) MOV
+0x5990e6 yielded ok decode
+  0 MEM0   1 REG Operands
+  0 MEM0  EXPLICIT / W
+  1 REG RDX EXPLICIT / R
+L_BUILD: in loop, ins = 0x5990ea
+trying to dump an instruction!!!
+0x5990ea (7 bytes) CMP
+0x5990ea yielded ok decode
+  0 REG   1 MEM0   2 REG Operands
+  0 REG R8 EXPLICIT / R
+  1 MEM0  EXPLICIT / R
+  2 REG RFLAGS SUPPRESSED / W
+L_BUILD: in loop, ins = 0x5990f1
+trying to dump an instruction!!!
+0x5990f1 (6 bytes) JZ
+0x5990f1 yielded ok decode
+  0 DISP   1 REG   2 REG   3 REG Operands
+  0 DISP 0x00000239 EXPLICIT / R
+  1 REG RIP SUPPRESSED / R
+  2 REG RIP SUPPRESSED / W
+  3 REG RFLAGS SUPPRESSED / R
+L_BUILD: in loop, ins = 0x5990f7
+trying to dump an instruction!!!
+0x5990f7 (6 bytes) TEST
+0x5990f7 yielded ok decode
+  0 MEM0   1 IMM    --immed value = 0x01
+  2 REG Operands
+  0 MEM0  EXPLICIT / R
+  1 IMM 0x01 EXPLICIT / R
+  2 REG RFLAGS SUPPRESSED / W
+L_BUILD: in loop, ins = 0x5990fd
+trying to dump an instruction!!!
+0x5990fd (6 bytes) JNZ
+0x5990fd yielded ok decode
+  0 DISP   1 REG   2 REG   3 REG Operands
+  0 DISP 0x0000013c EXPLICIT / R
+  1 REG RIP SUPPRESSED / R
+  2 REG RIP SUPPRESSED / W
+  3 REG RFLAGS SUPPRESSED / R
+L_BUILD: in loop, ins = 0x599103
+trying to dump an instruction!!!
+0x599103 (4 bytes) MOV
+0x599103 yielded ok decode
+  0 REG   1 MEM0 Operands
+  0 REG RDX EXPLICIT / W
+  1 MEM0  EXPLICIT / R
+L_BUILD: in loop, ins = 0x599107
+trying to dump an instruction!!!
+0x599107 (4 bytes) MOV
+0x599107 yielded ok decode
+  0 REG   1 MEM0 Operands
+  0 REG RAX EXPLICIT / W
+  1 MEM0  EXPLICIT / R
+L_BUILD: in loop, ins = 0x59910b
+trying to dump an instruction!!!
+0x59910b (3 bytes) ADD
+0x59910b yielded ok decode
+  0 REG   1 REG   2 REG Operands
+  0 REG RCX EXPLICIT / RW
+  1 REG R10 EXPLICIT / R
+  2 REG RFLAGS SUPPRESSED / W
+L_BUILD: in loop, ins = 0x59910e
+trying to dump an instruction!!!
+0x59910e (4 bytes) MOV
+0x59910e yielded ok decode
+  0 MEM0   1 REG Operands
+  0 MEM0  EXPLICIT / W
+  1 REG RAX EXPLICIT / R
+L_BUILD: in loop, ins = 0x599112
+trying to dump an instruction!!!
+0x599112 (4 bytes) MOV
+0x599112 yielded ok decode
+  0 MEM0   1 REG Operands
+  0 MEM0  EXPLICIT / W
+  1 REG RDX EXPLICIT / R
+L_BUILD: in loop, ins = 0x599116
+trying to dump an instruction!!!
+0x599116 (7 bytes) LEA
+0x599116 yielded ok decode
+  0 REG   1 AGEN Operands
+  0 REG RAX EXPLICIT / W
+  1 AGEN  EXPLICIT / R
+L_BUILD: in loop, ins = 0x59911d
+trying to dump an instruction!!!
+0x59911d (4 bytes) MOV
+0x59911d yielded ok decode
+  0 MEM0   1 REG Operands
+  0 MEM0  EXPLICIT / W
+  1 REG RCX EXPLICIT / R
+L_BUILD: in loop, ins = 0x599121
+trying to dump an instruction!!!
+0x599121 (4 bytes) MOV
+0x599121 yielded ok decode
+  0 REG   1 MEM0 Operands
+  0 REG RDX EXPLICIT / W
+  1 MEM0  EXPLICIT / R
+L_BUILD: in loop, ins = 0x599125
+trying to dump an instruction!!!
+0x599125 (4 bytes) MOV
+0x599125 yielded ok decode
+  0 MEM0   1 REG Operands
+  0 MEM0  EXPLICIT / W
+  1 REG RAX EXPLICIT / R
+L_BUILD: in loop, ins = 0x599129
+trying to dump an instruction!!!
+0x599129 (4 bytes) MOV
+0x599129 yielded ok decode
+  0 MEM0   1 REG Operands
+  0 MEM0  EXPLICIT / W
+  1 REG RDX EXPLICIT / R
+L_BUILD: in loop, ins = 0x59912d
+trying to dump an instruction!!!
+0x59912d (4 bytes) MOV
+0x59912d yielded ok decode
+  0 MEM0   1 REG Operands
+  0 MEM0  EXPLICIT / W
+  1 REG RDI EXPLICIT / R
+L_BUILD: in loop, ins = 0x599131
+trying to dump an instruction!!!
+0x599131 (3 bytes) MOV
+0x599131 yielded ok decode
+  0 REG   1 REG Operands
+  0 REG RAX EXPLICIT / W
+  1 REG RCX EXPLICIT / R
+L_BUILD: in loop, ins = 0x599134
+trying to dump an instruction!!!
+0x599134 (4 bytes) OR
+0x599134 yielded ok decode
+  0 REG   1 IMM    --immed value = 0x01
+  2 REG Operands
+  0 REG RAX EXPLICIT / RW
+  1 IMM 0x01 EXPLICIT / R
+  2 REG RFLAGS SUPPRESSED / W
+L_BUILD: in loop, ins = 0x599138
+trying to dump an instruction!!!
+0x599138 (4 bytes) MOV
+0x599138 yielded ok decode
+  0 MEM0   1 REG Operands
+  0 MEM0  EXPLICIT / W
+  1 REG RDI EXPLICIT / R
+L_BUILD: in loop, ins = 0x59913c
+trying to dump an instruction!!!
+0x59913c (4 bytes) MOV
+0x59913c yielded ok decode
+  0 MEM0   1 REG Operands
+  0 MEM0  EXPLICIT / W
+  1 REG RAX EXPLICIT / R
+L_BUILD: in loop, ins = 0x599140
+trying to dump an instruction!!!
+0x599140 (7 bytes) CMP
+0x599140 yielded ok decode
+  0 REG   1 IMM    --immed value = 0x0000ffff
+  2 REG Operands
+  0 REG RCX EXPLICIT / R
+  1 IMM 0x0000ffff EXPLICIT / R
+  2 REG RFLAGS SUPPRESSED / W
+L_BUILD: in loop, ins = 0x599147
+trying to dump an instruction!!!
+0x599147 (6 bytes) JBE
+0x599147 yielded ok decode
+  0 DISP   1 REG   2 REG   3 REG Operands
+  0 DISP 0xffffff43 EXPLICIT / R
+  1 REG RIP SUPPRESSED / R
+  2 REG RIP SUPPRESSED / W
+  3 REG RFLAGS SUPPRESSED / R
+L_BUILD: in loop, ins = 0x59914d
+trying to dump an instruction!!!
+0x59914d (4 bytes) TEST
+0x59914d yielded ok decode
+  0 MEM0   1 IMM    --immed value = 0x01
+  2 REG Operands
+  0 MEM0  EXPLICIT / R
+  1 IMM 0x01 EXPLICIT / R
+  2 REG RFLAGS SUPPRESSED / W
+L_BUILD: in loop, ins = 0x599151
+trying to dump an instruction!!!
+0x599151 (6 bytes) JZ
+0x599151 yielded ok decode
+  0 DISP   1 REG   2 REG   3 REG Operands
+  0 DISP 0x000000f5 EXPLICIT / R
+  1 REG RIP SUPPRESSED / R
+  2 REG RIP SUPPRESSED / W
+  3 REG RFLAGS SUPPRESSED / R
+L_BUILD: in loop, ins = 0x599157
+trying to dump an instruction!!!
+0x599157 (7 bytes) CMP
+0x599157 yielded ok decode
+  0 REG   1 IMM    --immed value = 0x014716e0
+  2 REG Operands
+  0 REG RBX EXPLICIT / R
+  1 IMM 0x014716e0 EXPLICIT / R
+  2 REG RFLAGS SUPPRESSED / W
+L_BUILD: in loop, ins = 0x59915e
+trying to dump an instruction!!!
+0x59915e (6 bytes) JZ
+0x59915e yielded ok decode
+  0 DISP   1 REG   2 REG   3 REG Operands
+  0 DISP 0x00000215 EXPLICIT / R
+  1 REG RIP SUPPRESSED / R
+  2 REG RIP SUPPRESSED / W
+  3 REG RFLAGS SUPPRESSED / R
+L_BUILD: in loop, ins = 0x599164
+trying to dump an instruction!!!
+0x599164 (7 bytes) MOV
+0x599164 yielded ok decode
+  0 REG   1 MEM0 Operands
+  0 REG RDI EXPLICIT / W
+  1 MEM0  EXPLICIT / R
+L_BUILD: in loop, ins = 0x59916b
+trying to dump an instruction!!!
+0x59916b (7 bytes) MOV
+0x59916b yielded ok decode
+  0 REG   1 MEM0 Operands
+  0 REG RAX EXPLICIT / W
+  1 MEM0  EXPLICIT / R
+L_BUILD: in loop, ins = 0x599172
+trying to dump an instruction!!!
+0x599172 (7 bytes) MOV
+0x599172 yielded ok decode
+  0 REG   1 MEM0 Operands
+  0 REG R15D EXPLICIT / W
+  1 MEM0  EXPLICIT / R
+L_BUILD: in loop, ins = 0x599179
+trying to dump an instruction!!!
+0x599179 (7 bytes) AND
+0x599179 yielded ok decode
+  0 REG   1 IMM    --immed value = 0xfff00000
+  2 REG Operands
+  0 REG RDI EXPLICIT / RW
+  1 IMM 0xfff00000 EXPLICIT / R
+  2 REG RFLAGS SUPPRESSED / W
+L_BUILD: in loop, ins = 0x599180
+trying to dump an instruction!!!
+0x599180 (5 bytes) MOV
+0x599180 yielded ok decode
+  0 MEM0   1 REG Operands
+  0 MEM0  EXPLICIT / W
+  1 REG RAX EXPLICIT / R
+L_BUILD: in loop, ins = 0x599185
+trying to dump an instruction!!!
+0x599185 (3 bytes) MOV
+0x599185 yielded ok decode
+  0 REG   1 MEM0 Operands
+  0 REG R14 EXPLICIT / W
+  1 MEM0  EXPLICIT / R
+L_BUILD: in loop, ins = 0x599188
+trying to dump an instruction!!!
+0x599188 (4 bytes) LEA
+0x599188 yielded ok decode
+  0 REG   1 AGEN Operands
+  0 REG RAX EXPLICIT / W
+  1 AGEN  EXPLICIT / R
+L_BUILD: in loop, ins = 0x59918c
+trying to dump an instruction!!!
+0x59918c (7 bytes) MOV
+0x59918c yielded ok decode
+  0 REG   1 MEM0 Operands
+  0 REG R12 EXPLICIT / W
+  1 MEM0  EXPLICIT / R
+L_BUILD: in loop, ins = 0x599193
+trying to dump an instruction!!!
+0x599193 (3 bytes) CMP
+0x599193 yielded ok decode
+  0 REG   1 REG   2 REG Operands
+  0 REG R12 EXPLICIT / R
+  1 REG RAX EXPLICIT / R
+  2 REG RFLAGS SUPPRESSED / W
+L_BUILD: in loop, ins = 0x599196
+trying to dump an instruction!!!
+0x599196 (6 bytes) JZ
+0x599196 yielded ok decode
+  0 DISP   1 REG   2 REG   3 REG Operands
+  0 DISP 0x000000bd EXPLICIT / R
+  1 REG RIP SUPPRESSED / R
+  2 REG RIP SUPPRESSED / W
+  3 REG RFLAGS SUPPRESSED / R
+L_BUILD: in loop, ins = 0x59919c
+trying to dump an instruction!!!
+0x59919c (5 bytes) MOV
+0x59919c yielded ok decode
+  0 REG 	 writes RBP
+  1 MEM0 Operands
+  0 REG RBP EXPLICIT / W
+  1 MEM0  EXPLICIT / R
+L_BUILD: in loop, ins = 0x5991a1
+trying to dump an instruction!!!
+0x5991a1 (2 bytes) XOR
+0x5991a1 yielded ok decode
+  0 REG   1 REG   2 REG Operands
+  0 REG EDX EXPLICIT / RW
+  1 REG EDX EXPLICIT / R
+  2 REG RFLAGS SUPPRESSED / W
+L_BUILD: in loop, ins = 0x5991a3
+trying to dump an instruction!!!
+0x5991a3 (4 bytes) AND
+0x5991a3 yielded ok decode
+  0 REG 	 writes RBP
+  1 IMM    --immed value = 0xf8
+  2 REG Operands
+  0 REG RBP EXPLICIT / RW
+  1 IMM 0xf8 EXPLICIT / R
+  2 REG RFLAGS SUPPRESSED / W
+L_BUILD: in loop, ins = 0x5991a7
+trying to dump an instruction!!!
+0x5991a7 (3 bytes) MOV
+0x5991a7 yielded ok decode
+  0 REG   1 REG Operands
+  0 REG RAX EXPLICIT / W
+  1 REG RBP EXPLICIT / R
+L_BUILD: in loop, ins = 0x5991aa
+trying to dump an instruction!!!
+0x5991aa (5 bytes) SUB
+0x5991aa yielded ok decode
+  0 REG   1 MEM0   2 REG Operands
+  0 REG RAX EXPLICIT / RW
+  1 MEM0  EXPLICIT / R
+  2 REG RFLAGS SUPPRESSED / W
+L_BUILD: in loop, ins = 0x5991af
+trying to dump an instruction!!!
+0x5991af (5 bytes) LEA
+0x5991af yielded ok decode
+  0 REG   1 AGEN Operands
+  0 REG RAX EXPLICIT / W
+  1 AGEN  EXPLICIT / R
+L_BUILD: in loop, ins = 0x5991b4
+trying to dump an instruction!!!
+0x5991b4 (3 bytes) DIV
+0x5991b4 yielded ok decode
+  0 REG   1 REG   2 REG   3 REG Operands
+  0 REG R15 EXPLICIT / R
+  1 REG RAX SUPPRESSED / RW
+  2 REG RDX SUPPRESSED / RW
+  3 REG RFLAGS SUPPRESSED / W
+L_BUILD: in loop, ins = 0x5991b7
+trying to dump an instruction!!!
+0x5991b7 (4 bytes) LEA
+0x5991b7 yielded ok decode
+  0 REG   1 AGEN Operands
+  0 REG RBX EXPLICIT / W
+  1 AGEN  EXPLICIT / R
+L_BUILD: in loop, ins = 0x5991bb
+trying to dump an instruction!!!
+0x5991bb (4 bytes) IMUL
+0x5991bb yielded ok decode
+  0 REG   1 REG   2 REG Operands
+  0 REG RBX EXPLICIT / RW
+  1 REG R15 EXPLICIT / R
+  2 REG RFLAGS SUPPRESSED / W
+L_BUILD: in loop, ins = 0x5991bf
+trying to dump an instruction!!!
+0x5991bf (3 bytes) CMP
+0x5991bf yielded ok decode
+  0 REG   1 REG   2 REG Operands
+  0 REG RBX EXPLICIT / R
+  1 REG R15 EXPLICIT / R
+  2 REG RFLAGS SUPPRESSED / W
+L_BUILD: in loop, ins = 0x5991c2
+trying to dump an instruction!!!
+0x5991c2 (6 bytes) JL
+0x5991c2 yielded ok decode
+  0 DISP   1 REG   2 REG   3 REG Operands
+  0 DISP 0xfffffec8 EXPLICIT / R
+  1 REG RIP SUPPRESSED / R
+  2 REG RIP SUPPRESSED / W
+  3 REG RFLAGS SUPPRESSED / R
+L_BUILD: in loop, ins = 0x5991c8
+trying to dump an instruction!!!
+0x5991c8 (3 bytes) MOV
+0x5991c8 yielded ok decode
+  0 REG   1 REG Operands
+  0 REG RSI EXPLICIT / W
+  1 REG RBX EXPLICIT / R
+L_BUILD: in loop, ins = 0x5991cb
+trying to dump an instruction!!!
+0x5991cb (3 bytes) NEG
+0x5991cb yielded ok decode
+  0 REG   1 REG Operands
+  0 REG RSI EXPLICIT / RW
+  1 REG RFLAGS SUPPRESSED / W
+L_BUILD: in loop, ins = 0x5991ce
+trying to dump an instruction!!!
+0x5991ce (5 bytes) CALL_NEAR
+0x5991ce yielded ok decode
+  0 DISP   1 REG   2 MEM0   3 REG 	 writes RSP
+  4 REG Operands
+  0 DISP 0xfffffd8d EXPLICIT / R
+  1 REG RIP SUPPRESSED / R
+  2 MEM0  SUPPRESSED / W
+  3 REG RSP SUPPRESSED / RW
+  4 REG RIP SUPPRESSED / W
+L_BUILD: in loop, ins = 0x5991d3
+trying to dump an instruction!!!
+0x5991d3 (2 bytes) TEST
+0x5991d3 yielded ok decode
+  0 REG   1 REG   2 REG Operands
+  0 REG EAX EXPLICIT / R
+  1 REG EAX EXPLICIT / R
+  2 REG RFLAGS SUPPRESSED / W
+L_BUILD: in loop, ins = 0x5991d5
+trying to dump an instruction!!!
+0x5991d5 (6 bytes) JNZ
+0x5991d5 yielded ok decode
+  0 DISP   1 REG   2 REG   3 REG Operands
+  0 DISP 0xfffffeb5 EXPLICIT / R
+  1 REG RIP SUPPRESSED / R
+  2 REG RIP SUPPRESSED / W
+  3 REG RFLAGS SUPPRESSED / R
+L_BUILD: in loop, ins = 0x5991db
+trying to dump an instruction!!!
+0x5991db (7 bytes) SUB
+0x5991db yielded ok decode
+  0 MEM0   1 REG   2 REG Operands
+  0 MEM0  EXPLICIT / RW
+  1 REG RBX EXPLICIT / R
+  2 REG RFLAGS SUPPRESSED / W
+L_BUILD: in loop, ins = 0x5991e2
+trying to dump an instruction!!!
+0x5991e2 (7 bytes) SUB
+0x5991e2 yielded ok decode
+  0 MEM0   1 REG   2 REG Operands
+  0 MEM0  EXPLICIT / RW
+  1 REG RBX EXPLICIT / R
+  2 REG RFLAGS SUPPRESSED / W
+L_BUILD: in loop, ins = 0x5991e9
+trying to dump an instruction!!!
+0x5991e9 (3 bytes) SUB
+0x5991e9 yielded ok decode
+  0 REG 	 writes RBP
+  1 REG   2 REG Operands
+  0 REG RBP EXPLICIT / RW
+  1 REG RBX EXPLICIT / R
+  2 REG RFLAGS SUPPRESSED / W
+L_BUILD: in loop, ins = 0x5991ec
+trying to dump an instruction!!!
+0x5991ec (4 bytes) OR
+0x5991ec yielded ok decode
+  0 REG 	 writes RBP
+  1 IMM    --immed value = 0x01
+  2 REG Operands
+  0 REG RBP EXPLICIT / RW
+  1 IMM 0x01 EXPLICIT / R
+  2 REG RFLAGS SUPPRESSED / W
+L_BUILD: in loop, ins = 0x5991f0
+trying to dump an instruction!!!
+0x5991f0 (5 bytes) MOV
+0x5991f0 yielded ok decode
+  0 MEM0   1 REG Operands
+  0 MEM0  EXPLICIT / W
+  1 REG RBP EXPLICIT / R
+L_BUILD: in loop, ins = 0x5991f5
+trying to dump an instruction!!!
+0x5991f5 (5 bytes) JMP
+0x5991f5 yielded ok decode
+  0 DISP   1 REG   2 REG Operands
+  0 DISP 0xfffffe96 EXPLICIT / R
+  1 REG RIP SUPPRESSED / R
+  2 REG RIP SUPPRESSED / W
+L_BUILD: in loop, ins = 0x5991fa
+trying to dump an instruction!!!
+0x5991fa (3 bytes) XCHG
+0x5991fa yielded ok decode
+  0 REG   1 REG Operands
+  0 REG AX EXPLICIT / RW
+  1 REG AX IMPLICIT / RW
+L_BUILD: in loop, ins = 0x5991fd
+trying to dump an instruction!!!
+0x5991fd (3 bytes) XCHG
+0x5991fd yielded ok decode
+  0 REG   1 REG Operands
+  0 REG AX EXPLICIT / RW
+  1 REG AX IMPLICIT / RW
+L_BUILD: in loop, ins = 0x599200
+trying to dump an instruction!!!
+0x599200 (4 bytes) MOV
+0x599200 yielded ok decode
+  0 REG   1 MEM0 Operands
+  0 REG RAX EXPLICIT / W
+  1 MEM0  EXPLICIT / R
+L_BUILD: in loop, ins = 0x599204
+trying to dump an instruction!!!
+0x599204 (6 bytes) DEC
+0x599204 yielded ok decode
+  0 MEM0   1 REG Operands
+  0 MEM0  EXPLICIT / RW
+  1 REG RFLAGS SUPPRESSED / W
+L_BUILD: in loop, ins = 0x59920a
+trying to dump an instruction!!!
+0x59920a (5 bytes) MOV
+0x59920a yielded ok decode
+  0 REG   1 MEM0 Operands
+  0 REG RBX EXPLICIT / W
+  1 MEM0  EXPLICIT / R
+L_BUILD: in loop, ins = 0x59920f
+trying to dump an instruction!!!
+0x59920f (5 bytes) MOV
+0x59920f yielded ok decode
+  0 REG 	 writes RBP
+  1 MEM0 Operands
+  0 REG RBP EXPLICIT / W
+  1 MEM0  EXPLICIT / R
+L_BUILD: in loop, ins = 0x599214
+trying to dump an instruction!!!
+0x599214 (5 bytes) MOV
+0x599214 yielded ok decode
+  0 REG   1 MEM0 Operands
+  0 REG R12 EXPLICIT / W
+  1 MEM0  EXPLICIT / R
+L_BUILD: in loop, ins = 0x599219
+trying to dump an instruction!!!
+0x599219 (5 bytes) MOV
+0x599219 yielded ok decode
+  0 REG   1 MEM0 Operands
+  0 REG R13 EXPLICIT / W
+  1 MEM0  EXPLICIT / R
+L_BUILD: in loop, ins = 0x59921e
+trying to dump an instruction!!!
+0x59921e (4 bytes) LEA
+0x59921e yielded ok decode
+  0 REG   1 AGEN Operands
+  0 REG RSI EXPLICIT / W
+  1 AGEN  EXPLICIT / R
+L_BUILD: in loop, ins = 0x599222
+trying to dump an instruction!!!
+0x599222 (5 bytes) MOV
+0x599222 yielded ok decode
+  0 REG   1 MEM0 Operands
+  0 REG R14 EXPLICIT / W
+  1 MEM0  EXPLICIT / R
+L_BUILD: in loop, ins = 0x599227
+trying to dump an instruction!!!
+0x599227 (7 bytes) SUB
+0x599227 yielded ok decode
+  0 MEM0   1 REG   2 REG Operands
+  0 MEM0  EXPLICIT / RW
+  1 REG RSI EXPLICIT / R
+  2 REG RFLAGS SUPPRESSED / W
+L_BUILD: in loop, ins = 0x59922e
+trying to dump an instruction!!!
+0x59922e (5 bytes) MOV
+0x59922e yielded ok decode
+  0 REG   1 MEM0 Operands
+  0 REG R15 EXPLICIT / W
+  1 MEM0  EXPLICIT / R
+L_BUILD: in loop, ins = 0x599233
+trying to dump an instruction!!!
+0x599233 (3 bytes) SUB
+0x599233 yielded ok decode
+  0 REG   1 REG   2 REG Operands
+  0 REG RDI EXPLICIT / RW
+  1 REG RAX EXPLICIT / R
+  2 REG RFLAGS SUPPRESSED / W
+L_BUILD: in loop, ins = 0x599236
+trying to dump an instruction!!!
+0x599236 (4 bytes) ADD
+0x599236 yielded ok decode
+  0 REG 	 writes RSP
+sp immed arith val = -72
+  1 IMM    --immed value = 0x48
+  2 REG start=0x59923a end=0 stat=RA_SP_RELATIVE pos=0 next=0 prev=0x7c20a0
+
+Operands
+  0 REG RSP EXPLICIT / RW
+  1 IMM 0x48 EXPLICIT / R
+  2 REG RFLAGS SUPPRESSED / W
+L_BUILD: in loop, ins = 0x59923a
+trying to dump an instruction!!!
+0x59923a (5 bytes) JMP
+0x59923a yielded ok decode
+  0 DISP   1 REG   2 REG Operands
+  0 DISP 0x00013001 EXPLICIT / R
+  1 REG RIP SUPPRESSED / R
+  2 REG RIP SUPPRESSED / W
+L_BUILD: in loop, ins = 0x59923f
+trying to dump an instruction!!!
+0x59923f (4 bytes) AND
+0x59923f yielded ok decode
+  0 REG   1 IMM    --immed value = 0xfe
+  2 REG Operands
+  0 REG R9 EXPLICIT / RW
+  1 IMM 0xfe EXPLICIT / R
+  2 REG RFLAGS SUPPRESSED / W
+L_BUILD: in loop, ins = 0x599243
+trying to dump an instruction!!!
+0x599243 (4 bytes) MOV
+0x599243 yielded ok decode
+  0 MEM0   1 REG Operands
+  0 MEM0  EXPLICIT / W
+  1 REG R9 EXPLICIT / R
+L_BUILD: in loop, ins = 0x599247
+trying to dump an instruction!!!
+0x599247 (5 bytes) JMP
+0x599247 yielded ok decode
+  0 DISP   1 REG   2 REG Operands
+  0 DISP 0xfffffeca EXPLICIT / R
+  1 REG RIP SUPPRESSED / R
+  2 REG RIP SUPPRESSED / W
+L_BUILD: in loop, ins = 0x59924c
+trying to dump an instruction!!!
+0x59924c (3 bytes) MOV
+0x59924c yielded ok decode
+  0 REG   1 REG Operands
+  0 REG RDI EXPLICIT / W
+  1 REG RBX EXPLICIT / R
+L_BUILD: in loop, ins = 0x59924f
+trying to dump an instruction!!!
+0x59924f (5 bytes) CALL_NEAR
+0x59924f yielded ok decode
+  0 DISP   1 REG   2 MEM0   3 REG 	 writes RSP
+  4 REG Operands
+  0 DISP 0xffffe6dc EXPLICIT / R
+  1 REG RIP SUPPRESSED / R
+  2 MEM0  SUPPRESSED / W
+  3 REG RSP SUPPRESSED / RW
+  4 REG RIP SUPPRESSED / W
+L_BUILD: in loop, ins = 0x599254
+trying to dump an instruction!!!
+0x599254 (5 bytes) JMP
+0x599254 yielded ok decode
+  0 DISP   1 REG   2 REG Operands
+  0 DISP 0xfffffefe EXPLICIT / R
+  1 REG RIP SUPPRESSED / R
+  2 REG RIP SUPPRESSED / W
+L_BUILD: in loop, ins = 0x599259
+trying to dump an instruction!!!
+0x599259 (5 bytes) MOV
+0x599259 yielded ok decode
+  0 REG   1 MEM0 Operands
+  0 REG RAX EXPLICIT / W
+  1 MEM0  EXPLICIT / R
+L_BUILD: in loop, ins = 0x59925e
+trying to dump an instruction!!!
+0x59925e (5 bytes) LEA
+0x59925e yielded ok decode
+  0 REG   1 AGEN Operands
+  0 REG RAX EXPLICIT / W
+  1 AGEN  EXPLICIT / R
+L_BUILD: in loop, ins = 0x599263
+trying to dump an instruction!!!
+0x599263 (5 bytes) MOV
+0x599263 yielded ok decode
+  0 MEM0   1 REG Operands
+  0 MEM0  EXPLICIT / W
+  1 REG RAX EXPLICIT / R
+L_BUILD: in loop, ins = 0x599268
+trying to dump an instruction!!!
+0x599268 (4 bytes) MOV
+0x599268 yielded ok decode
+  0 REG   1 MEM0 Operands
+  0 REG R13 EXPLICIT / W
+  1 MEM0  EXPLICIT / R
+L_BUILD: in loop, ins = 0x59926c
+trying to dump an instruction!!!
+0x59926c (4 bytes) MOV
+0x59926c yielded ok decode
+  0 REG   1 MEM0 Operands
+  0 REG RCX EXPLICIT / W
+  1 MEM0  EXPLICIT / R
+L_BUILD: in loop, ins = 0x599270
+trying to dump an instruction!!!
+0x599270 (4 bytes) LEA
+0x599270 yielded ok decode
+  0 REG   1 AGEN Operands
+  0 REG RAX EXPLICIT / W
+  1 AGEN  EXPLICIT / R
+L_BUILD: in loop, ins = 0x599274
+trying to dump an instruction!!!
+0x599274 (4 bytes) LEA
+0x599274 yielded ok decode
+  0 REG   1 AGEN Operands
+  0 REG RBX EXPLICIT / W
+  1 AGEN  EXPLICIT / R
+L_BUILD: in loop, ins = 0x599278
+trying to dump an instruction!!!
+0x599278 (4 bytes) SUB
+0x599278 yielded ok decode
+  0 REG   1 MEM0   2 REG Operands
+  0 REG RBX EXPLICIT / RW
+  1 MEM0  EXPLICIT / R
+  2 REG RFLAGS SUPPRESSED / W
+L_BUILD: in loop, ins = 0x59927c
+trying to dump an instruction!!!
+0x59927c (4 bytes) MOV
+0x59927c yielded ok decode
+  0 REG   1 MEM0 Operands
+  0 REG RDX EXPLICIT / W
+  1 MEM0  EXPLICIT / R
+L_BUILD: in loop, ins = 0x599280
+trying to dump an instruction!!!
+0x599280 (3 bytes) MOV
+0x599280 yielded ok decode
+  0 REG   1 REG Operands
+  0 REG RAX EXPLICIT / W
+  1 REG RDX EXPLICIT / R
+L_BUILD: in loop, ins = 0x599283
+trying to dump an instruction!!!
+0x599283 (4 bytes) AND
+0x599283 yielded ok decode
+  0 REG   1 IMM    --immed value = 0xf8
+  2 REG Operands
+  0 REG RAX EXPLICIT / RW
+  1 IMM 0xf8 EXPLICIT / R
+  2 REG RFLAGS SUPPRESSED / W
+L_BUILD: in loop, ins = 0x599287
+trying to dump an instruction!!!
+0x599287 (3 bytes) AND
+0x599287 yielded ok decode
+  0 REG   1 IMM    --immed value = 0x01
+  2 REG Operands
+  0 REG EDX EXPLICIT / RW
+  1 IMM 0x01 EXPLICIT / R
+  2 REG RFLAGS SUPPRESSED / W
+L_BUILD: in loop, ins = 0x59928a
+trying to dump an instruction!!!
+0x59928a (4 bytes) LEA
+0x59928a yielded ok decode
+  0 REG 	 writes RBP
+  1 AGEN Operands
+  0 REG RBP EXPLICIT / W
+  1 AGEN  EXPLICIT / R
+L_BUILD: in loop, ins = 0x59928e
+trying to dump an instruction!!!
+0x59928e (2 bytes) JNZ
+0x59928e yielded ok decode
+  0 DISP   1 REG   2 REG   3 REG Operands
+  0 DISP 0x03 EXPLICIT / R
+  1 REG RIP SUPPRESSED / R
+  2 REG RIP SUPPRESSED / W
+  3 REG RFLAGS SUPPRESSED / R
+L_BUILD: in loop, ins = 0x599290
+trying to dump an instruction!!!
+0x599290 (3 bytes) ADD
+0x599290 yielded ok decode
+  0 REG 	 writes RBP
+  1 MEM0   2 REG Operands
+  0 REG RBP EXPLICIT / RW
+  1 MEM0  EXPLICIT / R
+  2 REG RFLAGS SUPPRESSED / W
+L_BUILD: in loop, ins = 0x599293
+trying to dump an instruction!!!
+0x599293 (3 bytes) MOV
+0x599293 yielded ok decode
+  0 REG   1 REG Operands
+  0 REG RAX EXPLICIT / W
+  1 REG RBP EXPLICIT / R
+L_BUILD: in loop, ins = 0x599296
+trying to dump an instruction!!!
+0x599296 (3 bytes) SUB
+0x599296 yielded ok decode
+  0 REG   1 REG   2 REG Operands
+  0 REG RAX EXPLICIT / RW
+  1 REG RCX EXPLICIT / R
+  2 REG RFLAGS SUPPRESSED / W
+L_BUILD: in loop, ins = 0x599299
+trying to dump an instruction!!!
+0x599299 (6 bytes) ADD
+0x599299 yielded ok decode
+  0 REG   1 IMM    --immed value = 0x00100000
+  2 REG Operands
+  0 REG RAX IMPLICIT / RW
+  1 IMM 0x00100000 EXPLICIT / R
+  2 REG RFLAGS SUPPRESSED / W
+L_BUILD: in loop, ins = 0x59929f
+trying to dump an instruction!!!
+0x59929f (5 bytes) CMP
+0x59929f yielded ok decode
+  0 REG   1 MEM0   2 REG Operands
+  0 REG RAX EXPLICIT / R
+  1 MEM0  EXPLICIT / R
+  2 REG RFLAGS SUPPRESSED / W
+L_BUILD: in loop, ins = 0x5992a4
+trying to dump an instruction!!!
+0x5992a4 (6 bytes) JB
+0x5992a4 yielded ok decode
+  0 DISP   1 REG   2 REG   3 REG Operands
+  0 DISP 0xfffffef2 EXPLICIT / R
+  1 REG RIP SUPPRESSED / R
+  2 REG RIP SUPPRESSED / W
+  3 REG RFLAGS SUPPRESSED / R
+L_BUILD: in loop, ins = 0x5992aa
+trying to dump an instruction!!!
+0x5992aa (7 bytes) MOV
+0x5992aa yielded ok decode
+  0 REG   1 MEM0 Operands
+  0 REG RAX EXPLICIT / W
+  1 MEM0  EXPLICIT / R
+L_BUILD: in loop, ins = 0x5992b1
+trying to dump an instruction!!!
+0x5992b1 (4 bytes) SUB
+0x5992b1 yielded ok decode
+  0 REG   1 MEM0   2 REG Operands
+  0 REG RAX EXPLICIT / RW
+  1 MEM0  EXPLICIT / R
+  2 REG RFLAGS SUPPRESSED / W
+L_BUILD: in loop, ins = 0x5992b5
+trying to dump an instruction!!!
+0x5992b5 (5 bytes) MOV
+0x5992b5 yielded ok decode
+  0 REG   1 IMM    --immed value = 0x00100000
+Operands
+  0 REG ESI EXPLICIT / W
+  1 IMM 0x00100000 EXPLICIT / R
+L_BUILD: in loop, ins = 0x5992ba
+trying to dump an instruction!!!
+0x5992ba (7 bytes) MOV
+0x5992ba yielded ok decode
+  0 MEM0   1 REG Operands
+  0 MEM0  EXPLICIT / W
+  1 REG RAX EXPLICIT / R
+L_BUILD: in loop, ins = 0x5992c1
+trying to dump an instruction!!!
+0x5992c1 (7 bytes) MOV
+0x5992c1 yielded ok decode
+  0 REG   1 MEM0 Operands
+  0 REG RAX EXPLICIT / W
+  1 MEM0  EXPLICIT / R
+L_BUILD: in loop, ins = 0x5992c8
+trying to dump an instruction!!!
+0x5992c8 (4 bytes) SUB
+0x5992c8 yielded ok decode
+  0 REG   1 MEM0   2 REG Operands
+  0 REG RAX EXPLICIT / RW
+  1 MEM0  EXPLICIT / R
+  2 REG RFLAGS SUPPRESSED / W
+L_BUILD: in loop, ins = 0x5992cc
+trying to dump an instruction!!!
+0x5992cc (7 bytes) MOV
+0x5992cc yielded ok decode
+  0 MEM0   1 REG Operands
+  0 MEM0  EXPLICIT / W
+  1 REG RAX EXPLICIT / R
+L_BUILD: in loop, ins = 0x5992d3
+trying to dump an instruction!!!
+0x5992d3 (5 bytes) CALL_NEAR
+0x5992d3 yielded ok decode
+  0 DISP   1 REG   2 MEM0   3 REG 	 writes RSP
+  4 REG Operands
+  0 DISP 0x00012f68 EXPLICIT / R
+  1 REG RIP SUPPRESSED / R
+  2 MEM0  SUPPRESSED / W
+  3 REG RSP SUPPRESSED / RW
+  4 REG RIP SUPPRESSED / W
+L_BUILD: in loop, ins = 0x5992d8
+trying to dump an instruction!!!
+0x5992d8 (4 bytes) TEST
+0x5992d8 yielded ok decode
+  0 MEM0   1 IMM    --immed value = 0x01
+  2 REG Operands
+  0 MEM0  EXPLICIT / R
+  1 IMM 0x01 EXPLICIT / R
+  2 REG RFLAGS SUPPRESSED / W
+L_BUILD: in loop, ins = 0x5992dc
+trying to dump an instruction!!!
+0x5992dc (3 bytes) MOV
+0x5992dc yielded ok decode
+  0 REG   1 REG Operands
+  0 REG RDI EXPLICIT / W
+  1 REG R13 EXPLICIT / R
+L_BUILD: in loop, ins = 0x5992df
+trying to dump an instruction!!!
+0x5992df (2 bytes) JNZ
+0x5992df yielded ok decode
+  0 DISP   1 REG   2 REG   3 REG Operands
+  0 DISP 0x13 EXPLICIT / R
+  1 REG RIP SUPPRESSED / R
+  2 REG RIP SUPPRESSED / W
+  3 REG RFLAGS SUPPRESSED / R
+L_BUILD: in loop, ins = 0x5992e1
+trying to dump an instruction!!!
+0x5992e1 (3 bytes) SUB
+0x5992e1 yielded ok decode
+  0 REG   1 MEM0   2 REG Operands
+  0 REG RBX EXPLICIT / RW
+  1 MEM0  EXPLICIT / R
+  2 REG RFLAGS SUPPRESSED / W
+L_BUILD: in loop, ins = 0x5992e4
+trying to dump an instruction!!!
+0x5992e4 (4 bytes) MOV
+0x5992e4 yielded ok decode
+  0 REG   1 MEM0 Operands
+  0 REG RDX EXPLICIT / W
+  1 MEM0  EXPLICIT / R
+L_BUILD: in loop, ins = 0x5992e8
+trying to dump an instruction!!!
+0x5992e8 (4 bytes) MOV
+0x5992e8 yielded ok decode
+  0 REG   1 MEM0 Operands
+  0 REG RAX EXPLICIT / W
+  1 MEM0  EXPLICIT / R
+L_BUILD: in loop, ins = 0x5992ec
+trying to dump an instruction!!!
+0x5992ec (4 bytes) MOV
+0x5992ec yielded ok decode
+  0 MEM0   1 REG Operands
+  0 MEM0  EXPLICIT / W
+  1 REG RAX EXPLICIT / R
+L_BUILD: in loop, ins = 0x5992f0
+trying to dump an instruction!!!
+0x5992f0 (4 bytes) MOV
+0x5992f0 yielded ok decode
+  0 MEM0   1 REG Operands
+  0 MEM0  EXPLICIT / W
+  1 REG RDX EXPLICIT / R
+L_BUILD: in loop, ins = 0x5992f4
+trying to dump an instruction!!!
+0x5992f4 (4 bytes) LEA
+0x5992f4 yielded ok decode
+  0 REG   1 AGEN Operands
+  0 REG RAX EXPLICIT / W
+  1 AGEN  EXPLICIT / R
+L_BUILD: in loop, ins = 0x5992f8
+trying to dump an instruction!!!
+0x5992f8 (4 bytes) OR
+0x5992f8 yielded ok decode
+  0 REG 	 writes RBP
+  1 IMM    --immed value = 0x01
+  2 REG Operands
+  0 REG RBP EXPLICIT / RW
+  1 IMM 0x01 EXPLICIT / R
+  2 REG RFLAGS SUPPRESSED / W
+L_BUILD: in loop, ins = 0x5992fc
+trying to dump an instruction!!!
+0x5992fc (3 bytes) MOV
+0x5992fc yielded ok decode
+  0 REG   1 REG Operands
+  0 REG R12 EXPLICIT / W
+  1 REG RBX EXPLICIT / R
+L_BUILD: in loop, ins = 0x5992ff
+trying to dump an instruction!!!
+0x5992ff (7 bytes) MOV
+0x5992ff yielded ok decode
+  0 MEM0   1 REG Operands
+  0 MEM0  EXPLICIT / W
+  1 REG RBX EXPLICIT / R
+L_BUILD: in loop, ins = 0x599306
+trying to dump an instruction!!!
+0x599306 (4 bytes) MOV
+0x599306 yielded ok decode
+  0 MEM0   1 REG Operands
+  0 MEM0  EXPLICIT / W
+  1 REG RBP EXPLICIT / R
+L_BUILD: in loop, ins = 0x59930a
+trying to dump an instruction!!!
+0x59930a (3 bytes) CMP
+0x59930a yielded ok decode
+  0 REG   1 REG   2 REG Operands
+  0 REG RBX EXPLICIT / R
+  1 REG RAX EXPLICIT / R
+  2 REG RFLAGS SUPPRESSED / W
+L_BUILD: in loop, ins = 0x59930d
+trying to dump an instruction!!!
+0x59930d (6 bytes) JZ
+0x59930d yielded ok decode
+  0 DISP   1 REG   2 REG   3 REG Operands
+  0 DISP 0xffffff55 EXPLICIT / R
+  1 REG RIP SUPPRESSED / R
+  2 REG RIP SUPPRESSED / W
+  3 REG RFLAGS SUPPRESSED / R
+L_BUILD: in loop, ins = 0x599313
+trying to dump an instruction!!!
+0x599313 (5 bytes) JMP
+0x599313 yielded ok decode
+  0 DISP   1 REG   2 REG Operands
+  0 DISP 0xfffffe84 EXPLICIT / R
+  1 REG RIP SUPPRESSED / R
+  2 REG RIP SUPPRESSED / W
+L_BUILD: in loop, ins = 0x599318
+trying to dump an instruction!!!
+0x599318 (6 bytes) MOV
+0x599318 yielded ok decode
+  0 REG   1 MEM0 Operands
+  0 REG EAX EXPLICIT / W
+  1 MEM0  EXPLICIT / R
+L_BUILD: in loop, ins = 0x59931e
+trying to dump an instruction!!!
+0x59931e (2 bytes) TEST
+0x59931e yielded ok decode
+  0 REG   1 IMM    --immed value = 0x01
+  2 REG Operands
+  0 REG AL IMPLICIT / R
+  1 IMM 0x01 EXPLICIT / R
+  2 REG RFLAGS SUPPRESSED / W
+L_BUILD: in loop, ins = 0x599320
+trying to dump an instruction!!!
+0x599320 (2 bytes) JNZ
+0x599320 yielded ok decode
+  0 DISP   1 REG   2 REG   3 REG Operands
+  0 DISP 0x24 EXPLICIT / R
+  1 REG RIP SUPPRESSED / R
+  2 REG RIP SUPPRESSED / W
+  3 REG RFLAGS SUPPRESSED / R
+L_BUILD: in loop, ins = 0x599322
+trying to dump an instruction!!!
+0x599322 (2 bytes) TEST
+0x599322 yielded ok decode
+  0 REG   1 IMM    --immed value = 0x02
+  2 REG Operands
+  0 REG AL IMPLICIT / R
+  1 IMM 0x02 EXPLICIT / R
+  2 REG RFLAGS SUPPRESSED / W
+L_BUILD: in loop, ins = 0x599324
+trying to dump an instruction!!!
+0x599324 (6 bytes) JZ
+0x599324 yielded ok decode
+  0 DISP   1 REG   2 REG   3 REG Operands
+  0 DISP 0xfffffd66 EXPLICIT / R
+  1 REG RIP SUPPRESSED / R
+  2 REG RIP SUPPRESSED / W
+  3 REG RFLAGS SUPPRESSED / R
+L_BUILD: in loop, ins = 0x59932a
+trying to dump an instruction!!!
+0x59932a (5 bytes) CALL_NEAR
+0x59932a yielded ok decode
+  0 DISP   1 REG   2 MEM0   3 REG 	 writes RSP
+  4 REG Operands
+  0 DISP 0xfffe2ff1 EXPLICIT / R
+  1 REG RIP SUPPRESSED / R
+  2 MEM0  SUPPRESSED / W
+  3 REG RSP SUPPRESSED / RW
+  4 REG RIP SUPPRESSED / W
+L_BUILD: in loop, ins = 0x59932f
+trying to dump an instruction!!!
+0x59932f (1 bytes) XCHG
+0x59932f yielded ok decode
+  0 REG   1 REG Operands
+  0 REG EAX EXPLICIT / RW
+  1 REG EAX IMPLICIT / RW
+L_BUILD: in loop, ins = 0x599330
+trying to dump an instruction!!!
+0x599330 (3 bytes) ADD
+0x599330 yielded ok decode
+  0 REG   1 REG   2 REG Operands
+  0 REG RCX EXPLICIT / RW
+  1 REG R10 EXPLICIT / R
+  2 REG RFLAGS SUPPRESSED / W
+L_BUILD: in loop, ins = 0x599333
+trying to dump an instruction!!!
+0x599333 (7 bytes) MOV
+0x599333 yielded ok decode
+  0 MEM0   1 REG Operands
+  0 MEM0  EXPLICIT / W
+  1 REG RDI EXPLICIT / R
+L_BUILD: in loop, ins = 0x59933a
+trying to dump an instruction!!!
+0x59933a (3 bytes) MOV
+0x59933a yielded ok decode
+  0 REG   1 REG Operands
+  0 REG RAX EXPLICIT / W
+  1 REG RCX EXPLICIT / R
+L_BUILD: in loop, ins = 0x59933d
+trying to dump an instruction!!!
+0x59933d (4 bytes) OR
+0x59933d yielded ok decode
+  0 REG   1 IMM    --immed value = 0x01
+  2 REG Operands
+  0 REG RAX EXPLICIT / RW
+  1 IMM 0x01 EXPLICIT / R
+  2 REG RFLAGS SUPPRESSED / W
+L_BUILD: in loop, ins = 0x599341
+trying to dump an instruction!!!
+0x599341 (5 bytes) JMP
+0x599341 yielded ok decode
+  0 DISP   1 REG   2 REG Operands
+  0 DISP 0xfffffdf6 EXPLICIT / R
+  1 REG RIP SUPPRESSED / R
+  2 REG RIP SUPPRESSED / W
+L_BUILD: in loop, ins = 0x599346
+trying to dump an instruction!!!
+0x599346 (7 bytes) MOV
+0x599346 yielded ok decode
+  0 REG   1 MEM0 Operands
+  0 REG RDI EXPLICIT / W
+  1 MEM0  EXPLICIT / R
+L_BUILD: in loop, ins = 0x59934d
+trying to dump an instruction!!!
+0x59934d (3 bytes) MOV
+0x59934d yielded ok decode
+  0 REG   1 REG Operands
+  0 REG RDX EXPLICIT / W
+  1 REG RSI EXPLICIT / R
+L_BUILD: in loop, ins = 0x599350
+trying to dump an instruction!!!
+0x599350 (5 bytes) MOV
+0x599350 yielded ok decode
+  0 REG   1 IMM    --immed value = 0x0081f0be
+Operands
+  0 REG ESI EXPLICIT / W
+  1 IMM 0x0081f0be EXPLICIT / R
+L_BUILD: in loop, ins = 0x599355
+trying to dump an instruction!!!
+0x599355 (3 bytes) MOV
+0x599355 yielded ok decode
+  0 REG   1 MEM0 Operands
+  0 REG EBX EXPLICIT / W
+  1 MEM0  EXPLICIT / R
+L_BUILD: in loop, ins = 0x599358
+trying to dump an instruction!!!
+0x599358 (2 bytes) MOV
+0x599358 yielded ok decode
+  0 REG   1 REG Operands
+  0 REG EAX EXPLICIT / W
+  1 REG EBX EXPLICIT / R
+L_BUILD: in loop, ins = 0x59935a
+trying to dump an instruction!!!
+0x59935a (3 bytes) OR
+0x59935a yielded ok decode
+  0 REG   1 IMM    --immed value = 0x02
+  2 REG Operands
+  0 REG EAX EXPLICIT / RW
+  1 IMM 0x02 EXPLICIT / R
+  2 REG RFLAGS SUPPRESSED / W
+L_BUILD: in loop, ins = 0x59935d
+trying to dump an instruction!!!
+0x59935d (3 bytes) MOV
+0x59935d yielded ok decode
+  0 MEM0   1 REG Operands
+  0 MEM0  EXPLICIT / W
+  1 REG EAX EXPLICIT / R
+L_BUILD: in loop, ins = 0x599360
+trying to dump an instruction!!!
+0x599360 (2 bytes) XOR
+0x599360 yielded ok decode
+  0 REG   1 REG   2 REG Operands
+  0 REG EAX EXPLICIT / RW
+  1 REG EAX EXPLICIT / R
+  2 REG RFLAGS SUPPRESSED / W
+L_BUILD: in loop, ins = 0x599362
+trying to dump an instruction!!!
+0x599362 (5 bytes) CALL_NEAR
+0x599362 yielded ok decode
+  0 DISP   1 REG   2 MEM0   3 REG 	 writes RSP
+  4 REG Operands
+  0 DISP 0xffff5819 EXPLICIT / R
+  1 REG RIP SUPPRESSED / R
+  2 MEM0  SUPPRESSED / W
+  3 REG RSP SUPPRESSED / RW
+  4 REG RIP SUPPRESSED / W
+L_BUILD: in loop, ins = 0x599367
+trying to dump an instruction!!!
+0x599367 (7 bytes) MOV
+0x599367 yielded ok decode
+  0 REG   1 MEM0 Operands
+  0 REG RAX EXPLICIT / W
+  1 MEM0  EXPLICIT / R
+L_BUILD: in loop, ins = 0x59936e
+trying to dump an instruction!!!
+0x59936e (3 bytes) OR
+0x59936e yielded ok decode
+  0 MEM0   1 REG   2 REG Operands
+  0 MEM0  EXPLICIT / RW
+  1 REG EBX EXPLICIT / R
+  2 REG RFLAGS SUPPRESSED / W
+L_BUILD: in loop, ins = 0x599371
+trying to dump an instruction!!!
+0x599371 (6 bytes) MOV
+0x599371 yielded ok decode
+  0 REG   1 MEM0 Operands
+  0 REG EAX EXPLICIT / W
+  1 MEM0  EXPLICIT / R
+L_BUILD: in loop, ins = 0x599377
+trying to dump an instruction!!!
+0x599377 (2 bytes) JMP
+0x599377 yielded ok decode
+  0 DISP   1 REG   2 REG Operands
+  0 DISP 0xffffffa9 EXPLICIT / R
+  1 REG RIP SUPPRESSED / R
+  2 REG RIP SUPPRESSED / W
+L_BUILD: in loop, ins = 0x599379
+trying to dump an instruction!!!
+0x599379 (7 bytes) MOV
+0x599379 yielded ok decode
+  0 REG   1 MEM0 Operands
+  0 REG RAX EXPLICIT / W
+  1 MEM0  EXPLICIT / R
+L_BUILD: in loop, ins = 0x599380
+trying to dump an instruction!!!
+0x599380 (4 bytes) MOV
+0x599380 yielded ok decode
+  0 REG   1 MEM0 Operands
+  0 REG RAX EXPLICIT / W
+  1 MEM0  EXPLICIT / R
+L_BUILD: in loop, ins = 0x599384
+trying to dump an instruction!!!
+0x599384 (4 bytes) AND
+0x599384 yielded ok decode
+  0 REG   1 IMM    --immed value = 0xf8
+  2 REG Operands
+  0 REG RAX EXPLICIT / RW
+  1 IMM 0xf8 EXPLICIT / R
+  2 REG RFLAGS SUPPRESSED / W
+L_BUILD: in loop, ins = 0x599388
+trying to dump an instruction!!!
+0x599388 (7 bytes) CMP
+0x599388 yielded ok decode
+  0 REG   1 MEM0   2 REG Operands
+  0 REG RAX EXPLICIT / R
+  1 MEM0  EXPLICIT / R
+  2 REG RFLAGS SUPPRESSED / W
+L_BUILD: in loop, ins = 0x59938f
+trying to dump an instruction!!!
+0x59938f (6 bytes) JB
+0x59938f yielded ok decode
+  0 DISP   1 REG   2 REG   3 REG Operands
+  0 DISP 0xfffffcfb EXPLICIT / R
+  1 REG RIP SUPPRESSED / R
+  2 REG RIP SUPPRESSED / W
+  3 REG RFLAGS SUPPRESSED / R
+L_BUILD: in loop, ins = 0x599395
+trying to dump an instruction!!!
+0x599395 (7 bytes) MOV
+0x599395 yielded ok decode
+  0 REG   1 MEM0 Operands
+  0 REG RDI EXPLICIT / W
+  1 MEM0  EXPLICIT / R
+L_BUILD: in loop, ins = 0x59939c
+trying to dump an instruction!!!
+0x59939c (5 bytes) MOV
+0x59939c yielded ok decode
+  0 REG   1 MEM0 Operands
+  0 REG RBX EXPLICIT / W
+  1 MEM0  EXPLICIT / R
+L_BUILD: in loop, ins = 0x5993a1
+trying to dump an instruction!!!
+0x5993a1 (5 bytes) MOV
+0x5993a1 yielded ok decode
+  0 REG   1 IMM    --immed value = 0x014716e0
+Operands
+  0 REG ESI EXPLICIT / W
+  1 IMM 0x014716e0 EXPLICIT / R
+L_BUILD: in loop, ins = 0x5993a6
+trying to dump an instruction!!!
+0x5993a6 (5 bytes) MOV
+0x5993a6 yielded ok decode
+  0 REG 	 writes RBP
+  1 MEM0 Operands
+  0 REG RBP EXPLICIT / W
+  1 MEM0  EXPLICIT / R
+L_BUILD: in loop, ins = 0x5993ab
+trying to dump an instruction!!!
+0x5993ab (5 bytes) MOV
+0x5993ab yielded ok decode
+  0 REG   1 MEM0 Operands
+  0 REG R12 EXPLICIT / W
+  1 MEM0  EXPLICIT / R
+L_BUILD: in loop, ins = 0x5993b0
+trying to dump an instruction!!!
+0x5993b0 (5 bytes) MOV
+0x5993b0 yielded ok decode
+  0 REG   1 MEM0 Operands
+  0 REG R13 EXPLICIT / W
+  1 MEM0  EXPLICIT / R
+L_BUILD: in loop, ins = 0x5993b5
+trying to dump an instruction!!!
+0x5993b5 (5 bytes) MOV
+0x5993b5 yielded ok decode
+  0 REG   1 MEM0 Operands
+  0 REG R14 EXPLICIT / W
+  1 MEM0  EXPLICIT / R
+L_BUILD: in loop, ins = 0x5993ba
+trying to dump an instruction!!!
+0x5993ba (5 bytes) MOV
+0x5993ba yielded ok decode
+  0 REG   1 MEM0 Operands
+  0 REG R15 EXPLICIT / W
+  1 MEM0  EXPLICIT / R
+L_BUILD: in loop, ins = 0x5993bf
+trying to dump an instruction!!!
+0x5993bf (4 bytes) ADD
+0x5993bf yielded ok decode
+  0 REG 	 writes RSP
+sp immed arith val = -72
+  1 IMM    --immed value = 0x48
+  2 REG start=0x5993c3 end=0 stat=RA_SP_RELATIVE pos=4294967224 next=0 prev=0x7c20d0
+
+Operands
+  0 REG RSP EXPLICIT / RW
+  1 IMM 0x48 EXPLICIT / R
+  2 REG RFLAGS SUPPRESSED / W
+L_BUILD: in loop, ins = 0x5993c3
+trying to dump an instruction!!!
+0x5993c3 (5 bytes) JMP
+0x5993c3 yielded ok decode
+  0 DISP   1 REG   2 REG Operands
+  0 DISP 0xffffe488 EXPLICIT / R
+  1 REG RIP SUPPRESSED / R
+  2 REG RIP SUPPRESSED / W
+L_BUILD: in loop, ins = 0x5993c8
+trying to dump an instruction!!!
+0x5993c8 (4 bytes) XCHG
+0x5993c8 yielded ok decode
+  0 REG   1 REG Operands
+  0 REG AX EXPLICIT / RW
+  1 REG AX IMPLICIT / RW
+L_BUILD: in loop, ins = 0x5993cc
+trying to dump an instruction!!!
+0x5993cc (4 bytes) XCHG
+0x5993cc yielded ok decode
+  0 REG   1 REG Operands
+  0 REG AX EXPLICIT / RW
+  1 REG AX IMPLICIT / RW

@@ -1,0 +1,37 @@
+#!/bin/sh
+#
+# Link monitor.o into an application by calling wrap-tool with the
+# correct arguments.
+#
+# This script is mainly for testing monitor, since it only uses the
+# default callbacks.  Normally, a monitor client would provide its own
+# script that also inserts its own object files and callbacks.
+#
+# Usage: monitor-link compiler arg ...
+#
+# $Id$
+#
+
+# These are relative to the location of this script.
+wrap_location=wrap-tool
+monitor_location=../libexec/monitor.o
+
+die()
+{
+    echo "Error: $*" 1>&2
+    exit 1
+}
+
+#
+# The dirname method of finding the monitor install directory is
+# simple but not guaranteed to work.  It will fail if the last path
+# component is a symlink, or if the program is run with sh.
+#
+dir=`dirname $0`
+wrap_tool="${dir}/${wrap_location}"
+monitor_obj="${dir}/${monitor_location}"
+
+test -x "$wrap_tool" || die "unable to find: $wrap_tool"
+test -f "$monitor_obj" || die "unable to find: $monitor_obj"
+
+$wrap_tool -w main -w _exit -i "$monitor_obj" "$@"

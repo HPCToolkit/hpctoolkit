@@ -1,0 +1,98 @@
+<HTML>
+<TITLE>Monitor Home Page</TITLE>
+<h1> Monitor - user callbacks for library, process and thread initialization/creation/destruction</h1>
+
+<b>Monitor</b> is a library that gives the user callbacks or traps
+upon events related to library/process/thread
+initialization/creation/destruction. Extra care is taken to
+appropriately handle important events such as all forms of fork(),
+exec() as well as variants of exit(), abort(), assert() as well as
+signals SIGABRT and SIGINT.  The most up to date documentation for
+monitor is always found in the <a href="monitor-man.html">man
+page</a>.
+
+<h3>Features</h3>
+<ul>
+<li> Callbacks on library initialization and finalization.
+<li> Callbacks on process initialization and finalization.
+<li> Callbacks on thread initialization and finalization.
+<li> Callback on dlopen().
+<li> Automatic thread detection.
+<li> A thread ID function that ALWAYS works. 
+<li> Run-time debugging facilities.
+<li> Direct access to functions intercepted by libmonitor (for tools).
+<li> Architecture independent build and <b>monitor-config</b> driver.
+<li> Extensive test cases.
+</ul>
+
+<h3>Download and Installation</h3>
+<ul> 
+<li><a href="#CVS">CVS</a> is the best way to get the code.
+<li>Those without CVS access (?!) can find the most recent release (VERSION): <a href="monitor-VERSION.tar.gz">monitor-VERSION.tar.gz</a>
+<li> To build/install <b>Monitor</b>, please see the <A HREF="INSTALL">INSTALL</a> file.
+<li> To use <b>Monitor</b>, please see the <A HREF="monitor-man.html">man page</a>.
+<li> To see the ChangeLog, please see the <A HREF="ChangeLog">file</a>.
+</ul>
+
+<h3>Example</h3>
+The best documentation is in the form of an example. This example <b>ASSUMES</b> you
+have successfully built <b>Monitor</b>, that you're in the platform specific build directory AND that you are running <b>Bourne shell</b>. 
+If you're not running <b>bash</b> now, start it now before continuing.
+<P>
+First we need a sample shared library to provide the callbacks that will be called by <b>libmonitor.so</b>. 
+The code is <a HREF="testtool.c">testtool.c</a>. It includes <a HREF="monitor.h">monitor.h</a>, 
+the header file containing the prototypes for the callbacks. The testtool library is very simple 
+and merely prints to stderr the callback name as it occurs. It has already been compiled (assuming the build went smoothly)
+in the platform/tests directory with the following command line: (note that it has not been properly versioned)
+<pre>
+gcc -Wall -g -O -shared -fPIC testtool.c -o libtesttool.so
+</pre>
+<P>
+Ok, so we have a tool library. Now we have to set up the <b>LD_PRELOAD</b> environment variable to point <b>FIRST</b> to the test tool code and <b>SECOND</b> to the monitor library. Please bother to 
+replace /path_to_build with the full path of the platform specific directory inside the directory where you unpacked and built monitor.
+
+<pre>
+export LD_PRELOAD=/path_to_build/tests/libtesttool.so:/path_to_build/libmonitor.so
+</pre>
+
+Now let's run a few programs and direct stderr to a file.
+<pre>
+[mucci@localhost]$ evolution 2> example.evolution
+[mucci@localhost]$ i686-Linux/tests/pthreads 2> example.pthreads
+</pre>
+
+Here's the output: <a HREF="sample.evolution">sample.evolution</a> and <a href="sample.pthreads">sample.pthreads</a>. You'll notice that evolution just ignores it's threads when it exits. Naughty, naughty.
+<P>
+If you don't want to both to define or use all the callbacks, they are all weak symbols on Linux. This means you can just define the one's you want and things will still work just fine. You can repeat the previous experiment with <b>libtesttool2.so</b> in the test directory. That library has been built with -DPROCESS_ONLY and thus only defines the monitor_init_process callback.
+
+<A name=CVS>
+<h3>CVS Access</h3>
+</A>
+Currently, the best way to get <b>Monitor</b> is to get it directly from CVS. You can <a href="http://icl.cs.utk.edu/viewcvs/viewcvs.cgi/monitor/?cvsroot=OSPAT">access the CVS repository</a> with your browser or use the anonymous CVS pserver. Just hit enter when asked for the password.
+<pre>
+% setenv CVSROOT :pserver:anonymous@cvs.cs.utk.edu:/cvs/homes/ospat
+% cvs login
+Password: 
+% cvs co monitor
+</pre>
+
+<h3>Testing</h3>
+The distribution includes a 'make test' phase. The current release has been tested on:
+<ul>
+<li>i686 (Pentium III) / Fedora Core 3/4/5
+<li>x86_64 (AMD 64-bit) / Suse 9 
+<li>ia64 (Itanium 2) / Debian 3.0
+<li>x86_64 (Intel EM64T) / Fedora Core 3
+<li>i686 (Pentium IV) / Redhat 9
+<li>PPC32 (7447/G4) / Yellow Dog 4.0
+<li>PPC64 (G5/Power4) / RHEL
+<li>MIPS64 (24K) / Gentoo
+</ul>
+
+<h3>Bug Reports</h3>
+Bugs should be submitted to the <a HREF="http://icl.cs.utk.edu/~mucci">author</a> via the <a HREF="http://lists.cs.utk.edu/listinfo/ospat-devel"> OSPAT development mailing List</a>. Be sure to mention the word MONITOR somewhere in the subject line.
+<h3>Author</h3>
+<b>Monitor</b> was written by <a HREF="http://icl.cs.utk.edu/~mucci">Philip J. Mucci</a> of the <a HREF="http://icl.cs.utk.edu">Innovative Computing Laboratory</a> while on sabbatical at the <a href="http://www.pdc.kth.se">Parallel Center for Computers</a> at the <a href="http://www.kth.se">Royal Institute of Technology</a> in Stockholm, Sweden. This library contains code from <A HREF="http://hipersoft.cs.rice.edu/hpctoolkit">HPCToolkit</a>, written by Nathan Tallent and John Mellor-Crummey of Rice University. 
+<h3>Copyright</h3>
+This software is <b>COMPLETELY OPEN SOURCE</b>.  If you incorporate any portion of this software, I would appreciate an acknowledgement in the appropriate places. Should you find <b>PapiEx</b> useful, please considering making a contribution in the form of hardware, software or plain old cash. 
+</HTML>

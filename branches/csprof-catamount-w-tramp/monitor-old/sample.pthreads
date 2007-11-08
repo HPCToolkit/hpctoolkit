@@ -1,0 +1,9 @@
+monitor_init_library()
+monitor_init_process(tests/pthreads,24795)
+monitor_init_thread_support()
+monitor_init_thread(0xf6fe9bb0) returns 0xdeadbeef
+monitor_init_thread(0xf65e8bb0) returns 0xdeadbeef
+monitor_fini_thread(0xdeadbeef)
+monitor_fini_thread(0xdeadbeef)
+monitor_fini_process()
+monitor_fini_library()
