@@ -258,7 +258,7 @@ csprof_take_profile_sample(csprof_state_t *state, struct ucontext *ctx)
       MSG(1,"No trampoline, s1 = %x, s2 = %x, s3 = %x",s1,s2,s3);
         /* ugh, don't even bother */
         state->trampoline_samples++;
-        _zflags();
+        // _zflags();
 
         return;
     }
@@ -308,7 +308,8 @@ static void csprof_itimer_signal_handler(int sig, siginfo_t *siginfo, void *cont
   }
 #endif
   MSG(1,"got itimer signal");
-  if (!sigsetjmp(it,1)){
+
+  if (!sigsetjmp(it->jb,1)){
     CSPROF_SIGNAL_HANDLER_GUTS(context);
   }
   else {
@@ -316,6 +317,7 @@ static void csprof_itimer_signal_handler(int sig, siginfo_t *siginfo, void *cont
          unwind_pc);
     bad_unwind_count++;
   }
+
   csprof_set_timer();
 }
 

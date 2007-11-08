@@ -20,7 +20,7 @@ export PLATFORM
 export CC
 #export CHGROOT
 DO_THREADS := 1
-#PERF := -DCSPROF_PERF=1
+PERF := -DCSPROF_PERF=1
 export PERF
 
 PRIM_UNWIND := 1
@@ -68,7 +68,8 @@ CFLAGS := -fPIC -g -Wall
 AR := /usr/bin/ar
 ARFLAGS := -r
 
-#link_flags := -Wl,-Bstatic -Wl,-soname,$(CSPROFLIB) -shared # andre1
+# andre1 link flags
+#link_flags := -Wl,-Bstatic -Wl,-soname,$(CSPROFLIB) -shared
 link_flags := -Wl,-soname,$(CSPROFLIB) -shared
 
 module_dirs := utilities                \
@@ -89,7 +90,7 @@ ifdef STATIC_ONLY
   find_v  := find_static
   gethost := gethostid.o override.o MPI_Init.o 
 else
-  INC_MON := -I./monitor/src
+  INC_MON := -I./monitor/Install/include
   find_v  := find
 endif
 # INC_BETTER_UNW := -IBetterUnwind
@@ -181,9 +182,11 @@ OBJS += pmsg.o
 OBJS += nm_bound.o
 OBJS += bad_unwind.o
 OBJS += $(hpcfile_objs)
+ifdef PRIM_UNWIND
 OBJS += $(find_v).o xed_if.o
 OBJS += stack_troll.o
 OBJS += $(gethost)
+endif
 OBJS += last.o
 OBJS += last_func.o
 
@@ -192,8 +195,17 @@ OBJS += last_func.o
 #LIBS := hpcfile/$(LIB_CSFILE) $(LIB_THREAD) $(LIB_PFM)
 LIBS := $(LIB_THREAD) $(LIB_PFM)
 
-XED_LIBS := -L$(UNWIND)/Lib -lxed
+# when libxed.a is used
+#
+#XED_LIBS := -L$(UNWIND)/Lib -lxed
+ifdef PRIM_UNWIND
+#XED_LIBS := -LXed0-Alt/Lib -lxed
 XED_CPP_LIBS :=  -lstdc++ -ldl
+else
+XED_LIBS := -LXed0-Alt/Lib -lxed
+#XED_LIBS := -L`pwd` lxed.so
+XED_CPP_LIBS :=  foo.o -lstdc++ -ldl
+endif
 #PAPI_LIBS := -L/ccs/home/johnmc/mypapi/pkgs/lib -lpapi -lpfm
 #PAPI_LIBS  := -lpapi -lpfm
 
@@ -241,6 +253,7 @@ tarball:
 .PHONY : all libcsfile clean tarball static check TAGS
 
 $(CSPROFLIB): $(LIB_CSFILE) $(OBJS)
+#	$(link) $(link_flags) -o $@ markfront.o $(OBJS) $(LIBS) markrear.o
 	$(link) $(link_flags) -o $@ $(OBJS) $(LIBS)
 	@echo "*** $(CSPROFLIB) is up to date. ***"
 

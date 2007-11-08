@@ -31,7 +31,7 @@ f2: f2.f90
 .PHONY: t1
 t1: t1.o $(test_targs)
 #	$(HPCL) -v $(CC) -v $(filter-out $(test_targs),$^) -o $@
-	$(CC) $^ -lm -o $@
+	$(CC) -g $^ -lm -o $@
  
 .PHONY: $(CSPROF_DOT_O)
 $(CSPROF_DOT_O):
@@ -58,7 +58,7 @@ clean:
 	rm -rf *.o t1
 
 %.o : %.c
-	$(CC) -I.. -c $< -o $@
+	$(CC) -g -I.. -c $< -o $@
 
 vpath %.c ..
 

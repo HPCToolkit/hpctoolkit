@@ -153,6 +153,7 @@ static inline void NOMSG(int level, char *format, ...)
 } while(0)
 #endif
 
+#if 0
 #ifdef CSPROF_THREADS
 #define EMSG(fmt,...) do {\
  char buf[256]; \
@@ -167,6 +168,7 @@ static inline void NOMSG(int level, char *format, ...)
  n = sprintf(buf,"EMSG: " fmt "\n", ##__VA_ARGS__); \
  WRITE(2,buf,n); \
 } while(0)
+#endif
 #endif
 
 #ifdef CSPROF_THREADS
@@ -228,6 +230,7 @@ static inline void MSG(int level, char *format, ...)
 }
 #endif
 
+#if 0
 static inline void EMSG(const char *format, ...){
   va_list args;
   char fstr[256];
@@ -250,6 +253,7 @@ static inline void EMSG(const char *format, ...){
   WRITE(2,buf,n);
   va_end(args);
 }
+#endif
 
 static inline void DBGMSG_PUB(int level, char *format, ...)
 #if defined(CSPROF_PERF)

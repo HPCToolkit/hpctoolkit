@@ -10,6 +10,7 @@
 #endif
 
 #include "backtrace.h"
+#include "monitor.h"
 #include "state.h"
 #include "general.h"
 #include "util.h"
@@ -31,105 +32,6 @@ void dump_backtraces(csprof_state_t *state, csprof_frame_t *unwind);
 int csprof_sample_callstack_from_frame(csprof_state_t *, int,
 				       size_t, unw_cursor_t *);
 
-/* XXX duplication */
-#ifdef NO
-void
-csprof_record_metric_with_unwind(int metric_id, size_t value, int unwinds)
-{
-  csprof_state_t *state = csprof_get_state();
-
-  if(state != NULL) {
-    unw_context_t ctx;
-    unw_cursor_t frame;
-    int i;
-
-    DBGMSG_PUB(CSPROF_DBG_UNWINDING, "recording with %d unwinds", unwinds);
-
-    /* force insertion from the root */
-    state->treenode = NULL;
-    state->bufstk = state->bufend;
-    state = csprof_check_for_new_epoch(state);
-
-    /* FIXME: error checking */
-    if(unw_getcontext(&ctx) < 0) {
-      ERRMSG("unw_getcontext failed", __FILE__, __LINE__);
-      return;
-    }
-    if(unw_init_local(&frame, &ctx) < 0) {
-      ERRMSG("unw_init_local failed", __FILE__, __LINE__);
-      return;
-    }
-    for(i = 0; i < unwinds; ++i) {
-      unw_word_t ip;
-      unw_word_t sp;
-
-      unw_get_reg(&frame, UNW_TDEP_IP, &ip);
-      unw_get_reg(&frame, UNW_TDEP_SP, &sp);
-
-      DBGMSG_PUB(CSPROF_DBG_UNWINDING, "stepping from IP %lx and SP %lx",
-		 ip, sp);
-      unw_step(&frame);		/* step out into our caller(s) */
-    }
-
-    csprof_sample_callstack_from_frame(state, metric_id, value, &frame);
-  }
-}
-
-static unw_word_t _lbrak;
-static unw_word_t _rbrak;
-static unw_word_t _stack_end;
-
-void
-backtrace_set_brackets(void (*a)(void),void (*b)(void),
-                       void *__unbounded stack_end){
-  _lbrak = (unw_word_t) *a;
-  _rbrak = (unw_word_t) *b;
-  _stack_end = (unw_word_t) stack_end;
-
-    DBGMSG_PUB(1,"lbrak = %lx, rbrak = %lx, end = %lx\n",_lbrak,_rbrak,
-                _stack_end);
-}
-
-static int
-backtrace_done(unw_cursor_t *frame, unw_word_t *pcp, unw_word_t *spp)
-{
-    unw_word_t pc = *pcp;
-    unw_word_t sp = *spp;
-
-    unw_word_t npc, nsp;
-
-#if 0 /* johnmc the stack pointer ast least is not getting the right value */
-    unw_get_reg(frame, UNW_X86_64_RIP, &npc);
-    unw_get_reg(frame, UNW_X86_64_RSP, &nsp);
-#endif
-    unw_get_reg(frame, UNW_TDEP_IP, &npc);
-    unw_get_reg(frame, UNW_TDEP_SP, &nsp);
-
-#if 1
-    /* johnmc: nsp isn't the right value for the sp; it is the previous sp, which is useless */
-    DBGMSG_PUB(CSPROF_DBG_UNWINDING, "npc %lx | pc %lx | nsp %lx | sp %lx",
-               npc, pc, nsp, sp);
-#endif
-#if 0 /* johnmc removed nsp == sp condition - can have procedures with no frame */
-    if((nsp == sp) || npc == 0) {
-	/* nsp isn't the right value for the sp; it is the previous sp, which is useless */
-#endif
-    if ((npc == 0)) {
-        DBGMSG_PUB(CSPROF_DBG_UNWINDING, "stop due to ==");
-        return 1;
-    }
-    else if (nsp+8 >= _stack_end) {
-        DBGMSG_PUB(CSPROF_DBG_UNWINDING, "stop due to detect stack end");
-        return 1;
-    }
-    else {
-        *pcp = npc;
-        *spp = nsp;
-
-        return 0;
-    }
-}
-#endif
 // ***FIXME: mmap interaction
 
 #define ensure_state_buffer_slot_available(state,unwind) \
@@ -139,21 +41,11 @@ backtrace_done(unw_cursor_t *frame, unw_word_t *pcp, unw_word_t *spp)
 }
 
 
-extern void *monitor_unwind_fence1,*monitor_unwind_fence2;
+    // extern void *monitor_unwind_fence1,*monitor_unwind_fence2;
 
-#ifdef DO_THREADS
-extern void *monitor_unwind_thread_fence1,*monitor_unwind_thread_fence2;
-#endif
 
-int csprof_check_fence(void *iip){
-  void **ip = (void **) iip;
-
-  return ((ip >= &monitor_unwind_fence1) && (ip <= &monitor_unwind_fence2)) 
-#ifdef DO_THREADS
-	|| ((ip >= &monitor_unwind_thread_fence1) && 
-	    (ip <= &monitor_unwind_thread_fence2))
-#endif
-        ;
+int csprof_check_fence(void *ip){
+  return monitor_unwind_process_bottom_frame(ip) || monitor_unwind_thread_bottom_frame(ip);
 }
 
 extern void *unwind_pc;
@@ -169,9 +61,6 @@ csprof_sample_callstack_from_frame(csprof_state_t *state, int metric_id,
     state->bufstk   = state->bufend;
     state->treenode = NULL;
 
-    // MSG(1,"would unwind now...");
-    // return CSPROF_OK; // temp hack to check on unwind precon
-
     for(;;){
       ensure_state_buffer_slot_available(state, unwind);
 
@@ -181,7 +70,7 @@ csprof_sample_callstack_from_frame(csprof_state_t *state, int metric_id,
       }
 
       if (first){
-        MSG(1,"Starting IP = %lp",(void *)ip);
+       MSG(1,"BTIP = %lp",(void *)ip);
         /*        first = 0; */
       }
 
@@ -190,11 +79,14 @@ csprof_sample_callstack_from_frame(csprof_state_t *state, int metric_id,
       unwind->ip = (void *) ip;
       unwind->sp = (void *) 0;
       unwind++;
-      if (csprof_check_fence(ip) || (unw_step (cursor) <= 0)){
+
+      if (csprof_check_fence((void *)ip) || (unw_step (cursor) <= 0)){
         MSG(1,"Hit unw_step break");
         break;
       }
+
     }
+    MSG(1,"BTIP------------");
     debug_dump_backtraces(state,unwind);
     if(csprof_state_insert_backtrace(state, metric_id, unwind-1, state->btbuf,
                                      sample_count) != CSPROF_OK) {
@@ -375,6 +267,10 @@ goto EXIT; \
 }
 #endif
 
+
+// #define JOHNMC_SKIP
+#ifndef JOHNMC_SKIP
+
 /* FIXME: some of the checks from libunwind calls are checked for errors.
    I suppose that's a good thing, but there should be some way (CSPROF_PERF?)
    to turn off the checking to avoid branch prediction penalties...
@@ -431,3 +327,17 @@ csprof_sample_callstack(csprof_state_t *state, int metric_id,
     return csprof_sample_callstack_from_frame(state, metric_id,
 					      sample_count, &frame);
 }
+#else
+void unw_init(void){}
+extern void xed_init(void);
+void foo() {
+  xed_init();
+}
+int csprof_sample_callstack(csprof_state_t *state, int metric_id,
+			size_t sample_count, void *context)
+{
+   EMSG("GOT SAMPLE");
+   return CSPROF_OK;
+}
+
+#endif

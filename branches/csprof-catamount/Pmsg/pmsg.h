@@ -8,6 +8,7 @@ extern "C" {
 #include "pmask.h"
 
 void pmsg_init(void);
+void pmsg_fini(void);
 void PMSG(int mask, const char *str, ...);
 void set_mask_f_numstr(const char *s);
 void set_pmsg_mask(int m);

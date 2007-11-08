@@ -75,7 +75,7 @@
 /* user include files */
 
 #include "xpthread.h"
-#include "general.h"
+// #include "general.h"
 #include "atomic.h"
 #include "libc.h"
 #include "csproflib.h"
@@ -303,6 +303,7 @@ void csprof_thread_fini(csprof_state_t *state){
 
 // csprof_fini_internal: 
 // errors: handles all errors
+
 void csprof_fini_internal(void){
     extern int segv_count;
     extern int samples_taken;
@@ -327,11 +328,19 @@ void csprof_fini_internal(void){
     MSG(CSPROF_MSG_SHUTDOWN, "writing profile data");
     state = csprof_get_safe_state();
     csprof_write_profile_data(state);
+    
+    EMSG("host %ld: %d samples total, %d samples dropped\n",
+	 gethostid(), samples_taken, segv_count+bad_unwind_count);
+
+    pmsg_fini();
+#if 0
     printf("host %ld process %ld: %d samples total, %d samples dropped\n", 
-	gethostid(), (unsigned long) getpid(), samples_taken, segv_count+bad_unwind_count);
+					 gethostid(), (unsigned long) getpid(), samples_taken, 
+					 segv_count+bad_unwind_count);
 
     printf("host %ld process %ld: last sample address = 0x%lx, raw sample count = %ld\n", 
 	gethostid(), (unsigned long) getpid(), csprof_get_last_sample_addr(), csprof_get_raw_sample_count());
+#endif
 }
 
 

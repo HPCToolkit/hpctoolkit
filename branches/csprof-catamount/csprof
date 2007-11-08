@@ -129,7 +129,8 @@ f_checkenv()
     exit 1
   fi 
 
-  RLD_LIB="${CSPROF_HOME}/libcsprof.so.1:${CSPROF_HOME}/monitor/x86_64-Linux/libmonitor.so"
+  RLD_LIB="libxed.so:${CSPROF_HOME}/libcsprof.so.1:${CSPROF_HOME}/monitor/Install/lib/libmonitor.so"
+# RLD_LIB="libxed.so:${CSPROF_HOME}/monitor/Install/lib/libmonitor.so"
 
 #  if [ ! -r "${RLD_LIB}" ]; then 
 #    printf "${cmd}: launch library ${RLD_LIB} not found!\n"
@@ -292,7 +293,7 @@ f_prepareenv()
   # to profile if in the current directory. [We can get around this,
   # but for now it is the quickest thing.] 
   export PATH=".:${PATH}" 
-  export LD_LIBRARY_PATH=.:$CSPROF_HOME/BetterUnwind/Lib:${LD_LIBRARY_PATH}
+  export LD_LIBRARY_PATH=.:$CSPROF_HOME/Xed0-Alt/Lib:${LD_LIBRARY_PATH}
 }
 
 #############################################################################
@@ -308,7 +309,9 @@ f_getoptions $*
 f_prepareenv
 
 ulimit -c unlimited
-echo csprof script LD_PRELOAD = $LD_PRELOAD
+if [ -n "${opt_debug}" ]; then
+  echo csprof script LD_PRELOAD = $LD_PRELOAD
+fi
 #
 # !!! WOW !!
 # prevent wierdo error:

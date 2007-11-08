@@ -11,6 +11,7 @@ int main(int argc, char *argv[]){
   double x,y;
   int i,j;
 
+  
   x = 2.78;
   foob(&x);
   for (i=0; i < LIMIT_OUTER; i++){

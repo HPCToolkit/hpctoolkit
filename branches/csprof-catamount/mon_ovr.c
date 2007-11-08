@@ -17,6 +17,7 @@ void csprof_init_internal(void);
 void csprof_fini_internal(void);
 void csprof_pthread_init_data(void);
 
+#if 0
 static int faux_main(int n, char **argv, char **env){
   int ret;
 
@@ -36,9 +37,15 @@ void monitor_init_process(struct monitor_start_main_args *m){
   csprof_set_executable_name(m->argv[0]);
   m->main = &faux_main;
 }
+#endif
+
+void monitor_init_process(char *process,int *argc,char **argv,unsigned pid){
+  csprof_set_executable_name(process);
+  csprof_init_internal();
+}
 
 void monitor_fini_process(void){
-  M("monitor calling csprof_fini_internal");
+  // M("monitor calling csprof_fini_internal");
   csprof_fini_internal();
 }
 

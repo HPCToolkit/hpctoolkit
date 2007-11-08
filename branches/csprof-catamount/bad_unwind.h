@@ -29,7 +29,7 @@
  */
 
 typedef struct {
-  jmp_buf jb;
+  sigjmp_buf jb;
 } _jb;
 
 _jb *get_bad_unwind(void);
