@@ -202,6 +202,13 @@ Args::printError(std::ostream& os, const std::string& msg) const
 }
 
 
+const std::string& 
+Args::getCmd() const
+{
+  return parser.GetCmd();
+}
+
+
 void
 Args::Parse(int argc, const char* const argv[])
 {
