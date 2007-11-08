@@ -404,7 +404,7 @@ dump_PROFILE(Summary& sum)
       if (sum.visible(i)) { 
 	const Event& ev = sum.event(i);
 	periodVec[i] = ev.period();
-	char* units = "PAPI events";
+	const char* units = "PAPI events";
 	
 	os << I[2] << "<METRIC shortName" << XMLAttr(i);
 	os << " nativeName" << XMLAttr(ev.name()); 
