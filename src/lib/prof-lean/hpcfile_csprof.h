@@ -2,6 +2,37 @@
 // $Id$
 
 // * BeginRiceCopyright *****************************************************
+// 
+// Copyright ((c)) 2002-2007, Rice University 
+// All rights reserved.
+// 
+// Redistribution and use in source and binary forms, with or without
+// modification, are permitted provided that the following conditions are
+// met:
+// 
+// * Redistributions of source code must retain the above copyright
+//   notice, this list of conditions and the following disclaimer.
+// 
+// * Redistributions in binary form must reproduce the above copyright
+//   notice, this list of conditions and the following disclaimer in the
+//   documentation and/or other materials provided with the distribution.
+// 
+// * Neither the name of Rice University (RICE) nor the names of its
+//   contributors may be used to endorse or promote products derived from
+//   this software without specific prior written permission.
+// 
+// This software is provided by RICE and contributors "as is" and any
+// express or implied warranties, including, but not limited to, the
+// implied warranties of merchantability and fitness for a particular
+// purpose are disclaimed. In no event shall RICE or contributors be
+// liable for any direct, indirect, incidental, special, exemplary, or
+// consequential damages (including, but not limited to, procurement of
+// substitute goods or services; loss of use, data, or profits; or
+// business interruption) however caused and on any theory of liability,
+// whether in contract, strict liability, or tort (including negligence
+// or otherwise) arising in any way out of the use of this software, even
+// if advised of the possibility of such damage. 
+// 
 // ******************************************************* EndRiceCopyright *
 
 //***************************************************************************
@@ -81,7 +112,7 @@ int hpcfile_csprof_id__fread(hpcfile_csprof_id_t* x, FILE* fs);
 int hpcfile_csprof_id__fwrite(hpcfile_csprof_id_t* x, FILE* fs);
 int hpcfile_csprof_id__fprint(hpcfile_csprof_id_t* x, FILE* fs);
 
-
+
 // ---------------------------------------------------------
 // hpcfile_csprof_hdr_t:
 // ---------------------------------------------------------
@@ -101,12 +132,12 @@ int hpcfile_csprof_hdr__fread(hpcfile_csprof_hdr_t* x, FILE* fs);
 int hpcfile_csprof_hdr__fwrite(hpcfile_csprof_hdr_t* x, FILE* fs);
 int hpcfile_csprof_hdr__fprint(hpcfile_csprof_hdr_t* x, FILE* fs);
 
-
+
 /* hpcfile_csprof_metric_t */
 
 typedef struct hpcfile_csprof_metric_s {
     char *metric_name;          /* name of the metric */
-    uint64_t flags;             /* flags of the metric (async, etc.) */
+    uint64_t flags;             /* metric flags (async, etc.) */
     uint64_t sample_period;     /* sample period of the metric */
 } hpcfile_csprof_metric_t;
 
@@ -117,7 +148,28 @@ int hpcfile_csprof_metric__fread(hpcfile_csprof_metric_t *x, FILE *fs);
 int hpcfile_csprof_metric__fwrite(hpcfile_csprof_metric_t *x, FILE *fs);
 int hpcfile_csprof_metric__fprint(hpcfile_csprof_metric_t *x, FILE *fs);
 
-
+
+// ---------------------------------------------------------
+// FIXME: 
+// ---------------------------------------------------------
+
+typedef struct ldmodule_s {
+  char *name;
+  uint64_t vaddr;
+  uint64_t  mapaddr;
+} ldmodule_t; 
+
+typedef struct epoch_entry_s { 
+  uint32_t num_loadmodule;
+  ldmodule_t *loadmodule;
+} epoch_entry_t;
+  
+typedef struct epoch_table_s {
+  uint32_t num_epoch;
+  epoch_entry_t *epoch_modlist;
+} epoch_table_t; 
+
+
 // ---------------------------------------------------------
 // hpcfile_csprof_data_t: used only for passing data; not actually
 // part of the file format
@@ -134,26 +186,6 @@ int hpcfile_csprof_data__init(hpcfile_csprof_data_t* x);
 int hpcfile_csprof_data__fini(hpcfile_csprof_data_t* x);
 
 int hpcfile_csprof_data__fprint(hpcfile_csprof_data_t* x, FILE* fs);
-
-
-//**************************************************************************
-// temp file for epoch read
-//**************************************************************************
-typedef struct ldmodule_s {
-   char *name;
-   uint64_t vaddr;
-   uint64_t  mapaddr;
-} ldmodule_t; 
-
-typedef struct epoch_entry_s { 
-  uint32_t num_loadmodule;
-  ldmodule_t *loadmodule;
-} epoch_entry_t;
-
-typedef struct epoch_table_s {
-       uint32_t num_epoch;
-       epoch_entry_t *epoch_modlist;
-} epoch_table_t; 
 
 
 //***************************************************************************

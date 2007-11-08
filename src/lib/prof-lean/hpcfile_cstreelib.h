@@ -57,8 +57,8 @@
 //
 //***************************************************************************
 
-#ifndef HPCFILE_CSTREELIB_H
-#define HPCFILE_CSTREELIB_H
+#ifndef prof_lean_hpcfile_cstreelib_h
+#define prof_lean_hpcfile_cstreelib_h
 
 //************************* System Include Files ****************************
 
@@ -135,10 +135,10 @@ void* hpcfile_cstree_cb__get_sibling(void* tree, void* node);
 //***************************************************************************
 
 typedef void* 
-(*hpcfile_cstree_cb__create_node_fn_t)(void*, 
-				       hpcfile_cstree_nodedata_t*, 
-				       int);
-typedef void  (*hpcfile_cstree_cb__link_parent_fn_t)(void*, void*, void*);
+  (*hpcfile_cstree_cb__create_node_fn_t)(void*, 
+					 hpcfile_cstree_nodedata_t*, 
+					 int);
+typedef void (*hpcfile_cstree_cb__link_parent_fn_t)(void*, void*, void*);
 
 // hpcfile_cstree_read: Given an empty (not non-NULL!) tree 'tree',
 // reads tree nodes from the file stream 'fs' and constructs the tree
@@ -185,11 +185,11 @@ void  hpcfile_cstree_cb__link_parent(void* tree, void* node, void* parent);
 // hpcfile_cstree_convert_to_txt()
 //***************************************************************************
 
-// hpcfile_cstree_convert_to_txt: Given an output file stream 'outfs',
-// reads tree data from the input file stream 'infs' and writes it to
-// 'outfs' as text for human inspection.  This text output is not
-// designed for parsing and any formatting is subject to change.
-// Returns HPCFILE_OK upon success; HPCFILE_ERR on error.
+// hpcfile_cstree_convert_to_txt: Given an input file stream 'infs',
+// reads tree data from the infs and writes it to 'outfs' as text for
+// human inspection.  This text output is not designed for parsing and
+// any formatting is subject to change.  Returns HPCFILE_OK upon
+// success; HPCFILE_ERR on error.
 int
 hpcfile_cstree_convert_to_txt(FILE* infs, FILE* outfs, int num_metrics);
 
@@ -199,5 +199,5 @@ hpcfile_cstree_convert_to_txt(FILE* infs, FILE* outfs, int num_metrics);
 } /* extern "C" */
 #endif
 
-#endif
+#endif /* prof_lean_hpcfile_cstreelib_h */
 
