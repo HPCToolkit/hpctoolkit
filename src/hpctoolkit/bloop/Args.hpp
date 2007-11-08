@@ -86,9 +86,9 @@ public:
   void dump(std::ostream& os = std::cerr) const;
   void ddump() const;
 
-public:  
+public:
   // Parsed Data: Command
-  const std::string& getCmd() const { return parser.GetCmd(); }
+  const std::string& getCmd() const;
 
   // Parsed Data: optional arguments
   bool irreducibleIntervalIsLoop; // default: true

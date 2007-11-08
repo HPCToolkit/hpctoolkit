@@ -172,36 +172,36 @@ Args::~Args()
 
 
 void 
-Args::PrintVersion(std::ostream& os) const
+Args::printVersion(std::ostream& os) const
 {
-  os << GetCmd() << ": " << version_info << endl;
+  os << getCmd() << ": " << version_info << endl;
 }
 
 
 void 
-Args::PrintUsage(std::ostream& os) const
+Args::printUsage(std::ostream& os) const
 {
-  os << "Usage: " << GetCmd() << " " << usage_summary << endl
+  os << "Usage: " << getCmd() << " " << usage_summary << endl
      << usage_details << endl;
 } 
 
 
 void 
-Args::PrintError(std::ostream& os, const char* msg) const
+Args::printError(std::ostream& os, const char* msg) const
 {
-  os << GetCmd() << ": " << msg << endl
-     << "Try `" << GetCmd() << " --help' for more information." << endl;
+  os << getCmd() << ": " << msg << endl
+     << "Try `" << getCmd() << " --help' for more information." << endl;
 }
 
 void 
-Args::PrintError(std::ostream& os, const std::string& msg) const
+Args::printError(std::ostream& os, const std::string& msg) const
 {
-  PrintError(os, msg.c_str());
+  printError(os, msg.c_str());
 }
 
 
 const std::string& 
-Args::GetCmd() const
+Args::getCmd() const
 { 
   // avoid error messages with: /.../HPCToolkit-x86_64-Linux/bin/xcsprof-bin
   static string cmd = "xcsprof";
@@ -233,11 +233,11 @@ Args::Parse(int argc, const char* const argv[])
       trace = dbg;
     }
     if (parser.IsOpt("help")) { 
-      PrintUsage(std::cerr); 
+      printUsage(std::cerr); 
       exit(1);
     }
     if (parser.IsOpt("version")) { 
-      PrintVersion(std::cerr);
+      printVersion(std::cerr);
       exit(1);
     }
 
@@ -271,14 +271,14 @@ Args::Parse(int argc, const char* const argv[])
 
     // Check for required arguments
     if (parser.GetNumArgs() != 2) {
-      PrintError(std::cerr, "Incorrect number of arguments!");
+      printError(std::cerr, "Incorrect number of arguments!");
       exit(1);
     }
     progFile = parser.GetArg(0);
     profileFile = parser.GetArg(1);
   }
   catch (const CmdLineParser::ParseError& x) {
-    PrintError(std::cerr, x.what());
+    printError(std::cerr, x.what());
     exit(1);
   }
   catch (const CmdLineParser::Exception& x) {
@@ -326,16 +326,16 @@ Args::Parse(int argc, const char* const argv[])
 
 
 void 
-Args::Dump(std::ostream& os) const
+Args::dump(std::ostream& os) const
 {
-  os << "Args.cmd= " << GetCmd() << endl; 
+  os << "Args.cmd= " << getCmd() << endl; 
   os << "Args.dbDir= " << dbDir << endl; 
 }
 
 void 
-Args::DDump() const
+Args::ddump() const
 {
-  Dump(std::cerr);
+  dump(std::cerr);
 }
 
 
