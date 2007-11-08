@@ -2,6 +2,37 @@
 // $Id$
 
 // * BeginRiceCopyright *****************************************************
+// 
+// Copyright ((c)) 2002-2007, Rice University 
+// All rights reserved.
+// 
+// Redistribution and use in source and binary forms, with or without
+// modification, are permitted provided that the following conditions are
+// met:
+// 
+// * Redistributions of source code must retain the above copyright
+//   notice, this list of conditions and the following disclaimer.
+// 
+// * Redistributions in binary form must reproduce the above copyright
+//   notice, this list of conditions and the following disclaimer in the
+//   documentation and/or other materials provided with the distribution.
+// 
+// * Neither the name of Rice University (RICE) nor the names of its
+//   contributors may be used to endorse or promote products derived from
+//   this software without specific prior written permission.
+// 
+// This software is provided by RICE and contributors "as is" and any
+// express or implied warranties, including, but not limited to, the
+// implied warranties of merchantability and fitness for a particular
+// purpose are disclaimed. In no event shall RICE or contributors be
+// liable for any direct, indirect, incidental, special, exemplary, or
+// consequential damages (including, but not limited to, procurement of
+// substitute goods or services; loss of use, data, or profits; or
+// business interruption) however caused and on any theory of liability,
+// whether in contract, strict liability, or tort (including negligence
+// or otherwise) arising in any way out of the use of this software, even
+// if advised of the possibility of such damage. 
+// 
 // ******************************************************* EndRiceCopyright *
 
 //***************************************************************************
@@ -81,22 +112,25 @@ hpcfile_csprof_write(FILE* fs, hpcfile_csprof_data_t* data)
 
   hpc_fwrite_le4(&data->num_metrics, fs);
 
-
-  for(i = 0; i < data->num_metrics; ++i) {
-      hpcfile_csprof_metric_t metric = data->metrics[i];
-
-      hpcfile_str__init(&str);
-      str.tag = HPCFILE_TAG__CSPROF_EVENT;
-      str.length = strlen(metric.metric_name);
-      str.str = metric.metric_name;
-      if(hpcfile_str__fwrite(&str, fs) != HPCFILE_OK) { return HPCFILE_ERR; }
-  
-      hpcfile_num8__init(&num8);
-      num8.tag = HPCFILE_TAG__CSPROF_PERIOD;
-      num8.num = metric.sample_period;
-      if (hpcfile_num8__fwrite(&num8, fs) != HPCFILE_OK) { return HPCFILE_ERR; }
+  for (i = 0; i < data->num_metrics; ++i) {
+    hpcfile_csprof_metric_t metric = data->metrics[i];
+    
+    hpcfile_str__init(&str);
+    str.tag = HPCFILE_TAG__CSPROF_EVENT;
+    str.length = strlen(metric.metric_name);
+    str.str = metric.metric_name;
+    if(hpcfile_str__fwrite(&str, fs) != HPCFILE_OK) { return HPCFILE_ERR; }
+    
+    hpcfile_num8__init(&num8);
+    num8.tag = HPCFILE_TAG__CSPROF_METRIC_FLAGS;
+    num8.num = metric.flags;
+    if (hpcfile_num8__fwrite(&num8, fs) != HPCFILE_OK) { return HPCFILE_ERR; }
+    
+    num8.tag = HPCFILE_TAG__CSPROF_PERIOD;
+    num8.num = metric.sample_period;
+    if (hpcfile_num8__fwrite(&num8, fs) != HPCFILE_OK) { return HPCFILE_ERR; }
   }
-
+  
   return HPCFILE_OK;
 }
 
@@ -227,8 +261,8 @@ hpcfile_csprof_read(FILE* fs, hpcfile_csprof_data_t* data,
     uint32_t num_modules;
     uint32_t num_trees;
     uint64_t tsamps;
-    size_t namelen;
-    char module_name[256];
+    //size_t namelen;
+    //char module_name[256];
     int i,jj;
     uint64_t vaddr,mapaddr;
     //read number of epochs

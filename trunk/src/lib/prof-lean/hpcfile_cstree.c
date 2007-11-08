@@ -2,6 +2,37 @@
 // $Id$
 
 // * BeginRiceCopyright *****************************************************
+// 
+// Copyright ((c)) 2002-2007, Rice University 
+// All rights reserved.
+// 
+// Redistribution and use in source and binary forms, with or without
+// modification, are permitted provided that the following conditions are
+// met:
+// 
+// * Redistributions of source code must retain the above copyright
+//   notice, this list of conditions and the following disclaimer.
+// 
+// * Redistributions in binary form must reproduce the above copyright
+//   notice, this list of conditions and the following disclaimer in the
+//   documentation and/or other materials provided with the distribution.
+// 
+// * Neither the name of Rice University (RICE) nor the names of its
+//   contributors may be used to endorse or promote products derived from
+//   this software without specific prior written permission.
+// 
+// This software is provided by RICE and contributors "as is" and any
+// express or implied warranties, including, but not limited to, the
+// implied warranties of merchantability and fitness for a particular
+// purpose are disclaimed. In no event shall RICE or contributors be
+// liable for any direct, indirect, incidental, special, exemplary, or
+// consequential damages (including, but not limited to, procurement of
+// substitute goods or services; loss of use, data, or profits; or
+// business interruption) however caused and on any theory of liability,
+// whether in contract, strict liability, or tort (including negligence
+// or otherwise) arising in any way out of the use of this software, even
+// if advised of the possibility of such damage. 
+// 
 // ******************************************************* EndRiceCopyright *
 
 //***************************************************************************
@@ -45,7 +76,7 @@
 
 #define DBG_READ_METRICS 0
 
-int
+static int
 hpcfile_cstree_write_node(FILE* fs, void* tree, void* node, 
 			  hpcfile_uint_t id_parent,
 			  hpcfile_cstree_cb__get_data_fn_t get_node_data_fn,
@@ -53,7 +84,8 @@ hpcfile_cstree_write_node(FILE* fs, void* tree, void* node,
 			  hpcfile_cstree_cb__get_sibling_fn_t get_sibling_fn, 
 			  int num_metrics);
 
-int hpcfile_cstree_read_hdr(FILE* fs, hpcfile_cstree_hdr_t* hdr);
+static int 
+hpcfile_cstree_read_hdr(FILE* fs, hpcfile_cstree_hdr_t* hdr);
 
 // HPC_CSTREE format details: 
 //
@@ -112,7 +144,7 @@ hpcfile_cstree_write(FILE* fs, void* tree, void* root,
   return ret;
 }
 
-int
+static int
 hpcfile_cstree_write_node(FILE* fs, void* tree, void* node, 
 			  hpcfile_uint_t id_parent,
 			  hpcfile_cstree_cb__get_data_fn_t get_data_fn,
@@ -194,14 +226,12 @@ hpcfile_cstree_read(FILE* fs, void* tree,
   
   // Read each node, creating it and linking it to its parent 
   for (i = 0; i < fhdr.num_nodes; ++i) {
-
     if (hpcfile_cstree_node__fread(&fnode, fs, num_metrics) != HPCFILE_OK) { 
       goto cstree_read_cleanup; // HPCFILE_ERR
     }
     if (fnode.id_parent >= fhdr.num_nodes) { 
       goto cstree_read_cleanup; // HPCFILE_ERR
     } 
-    
     
     parent = node_vec[fnode.id_parent];
 
@@ -215,8 +245,7 @@ hpcfile_cstree_read(FILE* fs, void* tree,
     node_vec[fnode.id] = node;  
     if (parent) {
       link_parent_fn(tree, node, parent);
-    }  
-
+    }
   }
 
   // Success! Note: We assume that it is possible for other data to
