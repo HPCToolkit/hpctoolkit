@@ -337,7 +337,7 @@ BuildConfFile(const string& hpcHome, const string& confFile)
 
 //****************************************************************************
 
-static int
+static pair<int, string>
 MatchFileWithPath(const string& filenm, const PathTupleVec& pathVec);
 
 
@@ -382,81 +382,93 @@ CopySourceFiles(PgmScope* pgmScope, const PathTupleVec& pathVec,
       DIAG_Die(DIAG_Unimplemented);
     }
     
-    if (fnm_orig[0] == '/') {
-      string fnm_new;
+    string fnm_new;
 
-      // Given fnm_orig, find fnm_new
-      std::map<string, string>::iterator it = copiedFiles.find(fnm_orig);
-      if (it != copiedFiles.end()) {
-	fnm_new = it->second;
+    // ------------------------------------------------------
+    // Given fnm_orig, find fnm_new. (Use PATH information.)
+    // ------------------------------------------------------
+    std::map<string, string>::iterator it = copiedFiles.find(fnm_orig);
+    if (it != copiedFiles.end()) {
+      fnm_new = it->second;
+    }
+    else {
+      pair<int, string> fnd = MatchFileWithPath(fnm_orig, pathVec);
+      int idx = fnd.first;
+
+      if (idx >= 0) {
+
+	string  path_fnd = pathVec[idx].first; // a real copy
+	string& fnm_fnd  = fnd.second;         // just an alias
+	const string& viewnm   = pathVec[idx].second;
+
+	// canonicalize path_fnd and fnm_fnd
+	if (is_recursive_path(path_fnd.c_str())) {
+	  path_fnd[path_fnd.length()-RECURSIVE_PATH_SUFFIX_LN] = '\0';
+	}
+	path_fnd = RealPath(path_fnd.c_str());
+	fnm_fnd = RealPath(fnm_fnd.c_str());
+
+	// INVARIANT 1: fnm_fnd is an absolute path
+	// INVARIANT 2: path_fnd must be a prefix of fnm_fnd
+	  
+	// find (fnm_fnd - path_fnd)
+	char* path_sfx = const_cast<char*>(fnm_fnd.c_str());
+	path_sfx = &path_sfx[path_fnd.length()];
+	while (path_sfx[0] != '/') { --path_sfx; } // should start with '/'
+	
+	// Create new file name and copy commands
+	fnm_new = "./" + viewnm + path_sfx;
+	
+	string fnm_to;
+	if (dstDir[0]  != '/') {
+	  fnm_to = "./";
+	}
+	fnm_to = fnm_to + dstDir + "/" + viewnm + path_sfx;
+	string dir_to(fnm_to); // need to strip off ending filename to 
+	uint end;              // get full path for 'fnm_to'
+	for (end = dir_to.length() - 1; dir_to[end] != '/'; end--) { }
+	dir_to[end] = '\0';    // should not end with '/'
+	
+	string cmdMkdir = "mkdir -p " + dir_to;
+	string cmdCp    = "cp -f " + fnm_fnd + " " + fnm_to;
+	//cerr << cmdCp << endl;
+	
+	// could use CopyFile; see StaticFiles::Copy
+	if (system(cmdMkdir.c_str()) == 0 && system(cmdCp.c_str()) == 0) {
+	  DIAG_Msg(1, "  " << fnm_to);
+	} 
+	else {
+	  DIAG_EMsg("copying: '" << fnm_to);
+	}
+      }
+    }
+
+    // ------------------------------------------------------
+    // Use find fnm_new
+    // ------------------------------------------------------
+    if (!fnm_new.empty()) {
+      if (fileScope) {
+	fileScope->SetName(fnm_new);
       }
       else {
-	int indx = MatchFileWithPath(fnm_orig, pathVec);
-	if (indx >= 0) {
-	  const string& path     = pathVec[indx].first;
-	  const string& viewname = pathVec[indx].second;
-	
-	  // find the absolute form of 'path'
-	  string realpath(path);
-	  if (is_recursive_path(realpath.c_str())) {
-	    realpath[realpath.length()-RECURSIVE_PATH_SUFFIX_LN] = '\0';
-	  }
-	  realpath = RealPath(realpath.c_str()); 
-	
-	  // 'realpath' must be a prefix of 'fnm_orig'; find left-over portion
-	  char* pathSuffx = const_cast<char*>(fnm_orig.c_str());
-	  pathSuffx = &pathSuffx[realpath.length()];
-	  while (pathSuffx[0] != '/') { --pathSuffx; } // should start with '/'
-	
-	  // Create new file name and copy commands
-	  fnm_new = "./" + viewname + pathSuffx;
-	
-	  string fnm_to;
-	  if (dstDir[0]  != '/') {
-	    fnm_to = "./";
-	  }
-	  fnm_to = fnm_to + dstDir + "/" + viewname + pathSuffx;
-	  string dir_to(fnm_to); // need to strip off ending filename to 
-	  uint end;              // get full path for 'fnm_to'
-	  for (end = dir_to.length() - 1; dir_to[end] != '/'; end--) { }
-	  dir_to[end] = '\0';    // should not end with '/'
-	
-	  string cmdMkdir = "mkdir -p " + dir_to;
-	  string cmdCp    = "cp -f " + fnm_orig + " " + fnm_to;
-	  //cerr << cmdCp << endl;
-	
-	  // could use CopyFile; see StaticFiles::Copy
-	  if (system(cmdMkdir.c_str()) == 0 && system(cmdCp.c_str()) == 0) {
-	    DIAG_Msg(1, "  " << fnm_to);
-	  } 
-	  else {
-	    DIAG_EMsg("copying: '" << fnm_to);
-	  }
-	}
+	alienScope->fileName(fnm_new);
       }
-
-      // Use find fnm_new
-      if (!fnm_new.empty()) {
-	if (fileScope) {
-	  fileScope->SetName(fnm_new);
-	}
-	else {
-	  alienScope->fileName(fnm_new);
-	}
-      }
-      
-      copiedFiles.insert(make_pair(fnm_orig, fnm_new));
     }
+    
+    copiedFiles.insert(make_pair(fnm_orig, fnm_new));
   }
   
   return noError;
 }
 
 
-// 'MatchFileWithPath': use 'pathfind_r' to determine which path in
-// 'pathVec', if any, reaches 'filenm'.  If a match is found, returns
-// an index in pathVec; otherwise returns a negative.
-static int
+// 'MatchFileWithPath': Given a file name 'filenm' and a vector of
+// paths 'pathVec', use 'pathfind_r' to determine which path in
+// 'pathVec', if any, reaches 'filenm'.  Returns an index and string
+// pair.  If a match is found, the index is an index in pathVec;
+// otherwise it is negative.  If a match is found, the string is the
+// found file name.
+static pair<int, string>
 MatchFileWithPath(const string& filenm, const PathTupleVec& pathVec)
 {
   // Find the index to the path that reaches 'filenm'.
@@ -467,6 +479,8 @@ MatchFileWithPath(const string& filenm, const PathTupleVec& pathVec)
   //   is valid test.) 
   int foundIndex = -1; // index into 'pathVec'
   int foundPathLn = 0; // length of the path represented by 'foundIndex'
+  string foundFnm; 
+
   for (unsigned int i = 0; i < pathVec.size(); i++) {
     // find the absolute form of 'curPath'
     const string& curPath = pathVec[i].first;
@@ -491,8 +505,8 @@ MatchFileWithPath(const string& filenm, const PathTupleVec& pathVec)
       }
     }
     
-    const char* result = pathfind_r(curPath.c_str(), curFile, "r");
-    if (result) {
+    const char* fnd_fnm = pathfind_r(curPath.c_str(), curFile, "r");
+    if (fnd_fnm) {
       bool update = false;
       if (foundIndex < 0) {
 	update = true;
@@ -504,9 +518,10 @@ MatchFileWithPath(const string& filenm, const PathTupleVec& pathVec)
       if (update) {
 	foundIndex = i;
 	foundPathLn = realPathLn;
+	foundFnm = fnd_fnm;
       }
     }
   }
-  return foundIndex;
+  return make_pair(foundIndex, foundFnm);
 }
 
