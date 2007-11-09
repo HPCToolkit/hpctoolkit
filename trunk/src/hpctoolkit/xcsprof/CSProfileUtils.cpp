@@ -94,8 +94,7 @@ using namespace xml;
 
 extern "C" {
   static void* cstree_create_node_CB(void* tree, 
-				     hpcfile_cstree_nodedata_t* data,
-				     int num_metrics);
+				     hpcfile_cstree_nodedata_t* data);
   static void  cstree_link_parent_CB(void* tree, void* node, void* parent);
 
   static void* hpcfile_alloc_CB(size_t sz);
@@ -173,35 +172,39 @@ writeCSProfile(CSProfile* prof, std::ostream& os, bool prettyPrint)
 CSProfile* 
 ReadProfile_CSPROF(const char* fnm, const char *execnm) 
 {
-  hpcfile_csprof_data_t data; 
+  hpcfile_csprof_data_t metadata;
   epoch_table_t epochtbl;
-  int ret1, ret2;
+  int ret;
   
   // ------------------------------------------------------------
   // Read profile
   // ------------------------------------------------------------
 
   FILE* fs = hpcfile_open_for_read(fnm);
-  ret1 = hpcfile_csprof_read(fs, &data, &epochtbl, hpcfile_alloc_CB, 
+  ret = hpcfile_csprof_read(fs, &metadata, &epochtbl, hpcfile_alloc_CB, 
 			     hpcfile_free_CB);
-  //hpcfile_csprof_convert_to_txt(fs, stdout);
+  DIAG_If(3) {
+    //hpcfile_csprof_convert_to_txt(fs, stdout);
+  }
 
-  if (ret1 != HPCFILE_OK) {
+  if (ret != HPCFILE_OK) {
     DIAG_Throw(fnm << ": error reading header (HPC_CSPROF)");
     return NULL;
   }
   
-  unsigned int num_metrics = data.num_metrics;
+  unsigned int num_metrics = metadata.num_metrics;
   
   DIAG_Msg(2, "Metrics found: " << num_metrics);
 
   CSProfile* prof = new CSProfile(num_metrics);
-  ret2 = hpcfile_cstree_read(fs, prof->GetTree(), 
-			     cstree_create_node_CB, cstree_link_parent_CB,
-			     hpcfile_alloc_CB, hpcfile_free_CB, num_metrics); 
-  //hpcfile_cstree_convert_to_txt();
-  if (ret2 != HPCFILE_OK) { 
-    DIAG_Throw(fnm << ": error reading data (HPC_CSPROF)."
+  ret = hpcfile_cstree_read(fs, prof->GetTree(), num_metrics,
+			    cstree_create_node_CB, cstree_link_parent_CB,
+			    hpcfile_alloc_CB, hpcfile_free_CB); 
+  DIAG_If(3) {
+    //hpcfile_cstree_convert_to_txt(fs, num_metrics, stdout);
+  }
+  if (ret != HPCFILE_OK) { 
+    DIAG_Throw(fnm << ": error reading metadata (HPC_CSPROF)."
 	       << " (Or no samples were taken.) [FIXME: should not have been lumped together!]");
     delete prof;
     return NULL;
@@ -236,18 +239,19 @@ ReadProfile_CSPROF(const char* fnm, const char *execnm)
   // Extract metrics
   for (int i = 0; i < num_metrics; i++) {
     CSProfileMetric* metric = prof->GetMetric(i);
-    metric->SetName(data.metrics[i].metric_name);
-    metric->SetFlags(data.metrics[i].flags);
-    metric->SetPeriod(data.metrics[i].sample_period);
+    metric->SetName(metadata.metrics[i].metric_name);
+    metric->SetFlags(metadata.metrics[i].flags);
+    metric->SetPeriod(metadata.metrics[i].sample_period);
   }
 
   prof->SetEpoch(epochmdlist);
 
-
   // We must deallocate pointer-data
-  hpcfile_free_CB(data.target);
-  // must deallocate metrics[] and  data.metrics
-  // hpcfile_free_CB(data.event);
+  for (int i = 0; i < num_metrics; i++) {
+    hpcfile_free_CB(metadata.metrics[i].metric_name);
+  }
+  hpcfile_free_CB(metadata.target);
+  hpcfile_free_CB(metadata.metrics);
 
   // Add PGM node to tree
   addPGMToCSProfTree(prof->GetTree(), prof->GetTarget().c_str());
@@ -263,8 +267,7 @@ ReadProfile_CSPROF(const char* fnm, const char *execnm)
 
 static void* 
 cstree_create_node_CB(void* tree, 
-		      hpcfile_cstree_nodedata_t* data,
-		      int num_metrics)
+		      hpcfile_cstree_nodedata_t* data)
 {
   CSProfTree* t = (CSProfTree*)tree; 
   
@@ -273,7 +276,7 @@ cstree_create_node_CB(void* tree,
   convertOpIPToIP((VMA)data->ip, ip, opIdx);
   vector<unsigned int> metricsVector;
   metricsVector.clear();
-  for (unsigned int i = 0; i < num_metrics; i++) {
+  for (unsigned int i = 0; i < data->num_metrics; i++) {
     metricsVector.push_back((unsigned int)data->metrics[i]);
   }
 

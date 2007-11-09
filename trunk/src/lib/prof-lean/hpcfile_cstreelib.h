@@ -100,13 +100,13 @@ typedef void* (*hpcfile_cstree_cb__get_sibling_fn_t)(void*, void*);
 // documentation below for their interfaces.  Returns HPCFILE_OK upon
 // success; HPCFILE_ERR on error.
 int
-hpcfile_cstree_write(FILE* fs, void* tree, void* root, 
+hpcfile_cstree_write(FILE* fs, void* tree, void* root,
+		     hpcfile_uint_t num_metrics,
 		     hpcfile_uint_t num_nodes,
                      hpcfile_uint_t epoch,
 		     hpcfile_cstree_cb__get_data_fn_t get_data_fn,
 		     hpcfile_cstree_cb__get_first_child_fn_t get_first_child_fn,
-		     hpcfile_cstree_cb__get_sibling_fn_t get_sibling_fn,
-		     int num_metrics);
+		     hpcfile_cstree_cb__get_sibling_fn_t get_sibling_fn);
   
 // ---------------------------------------------------------
 // callback helpers for hpcfile_cstree_write().
@@ -136,8 +136,7 @@ void* hpcfile_cstree_cb__get_sibling(void* tree, void* node);
 
 typedef void* 
   (*hpcfile_cstree_cb__create_node_fn_t)(void*, 
-					 hpcfile_cstree_nodedata_t*, 
-					 int);
+					 hpcfile_cstree_nodedata_t*);
 typedef void (*hpcfile_cstree_cb__link_parent_fn_t)(void*, void*, void*);
 
 // hpcfile_cstree_read: Given an empty (not non-NULL!) tree 'tree',
@@ -149,11 +148,11 @@ typedef void (*hpcfile_cstree_cb__link_parent_fn_t)(void*, void*, void*);
 // upon success; HPCFILE_ERR on error.
 int
 hpcfile_cstree_read(FILE* fs, void* tree, 
+		    int num_metrics,
 		    hpcfile_cstree_cb__create_node_fn_t create_node_fn,
 		    hpcfile_cstree_cb__link_parent_fn_t link_parent_fn,
 		    hpcfile_cb__alloc_fn_t alloc_fn,
-		    hpcfile_cb__free_fn_t free_fn,
-		    int num_metrics);
+		    hpcfile_cb__free_fn_t free_fn);
 
 // ---------------------------------------------------------
 // callback helpers for hpcfile_cstree_read().
@@ -191,7 +190,7 @@ void  hpcfile_cstree_cb__link_parent(void* tree, void* node, void* parent);
 // any formatting is subject to change.  Returns HPCFILE_OK upon
 // success; HPCFILE_ERR on error.
 int
-hpcfile_cstree_convert_to_txt(FILE* infs, FILE* outfs, int num_metrics);
+hpcfile_cstree_convert_to_txt(FILE* infs, int num_metrics, FILE* outfs);
 
 //***************************************************************************
 
