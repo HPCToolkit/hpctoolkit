@@ -194,43 +194,44 @@ hpcfile_csprof_read(FILE* fs, hpcfile_csprof_data_t* data,
 	}
 #endif
 	break;
+
       default:
 #if 0 
 	return HPCFILE_ERR; 
 #else  
-//do we have to use call back function to get the space we need here? FMZ
-        data->num_metrics=tag;
-        data->metrics=alloc_fn(data->num_metrics * sizeof(hpcfile_csprof_metric_t));
-        for (ii=0; ii<data->num_metrics; ++ii) {
-         // Read metrics data tag
-         sz = hpc_fread_le4(&tag, fs);
-         if (sz != sizeof(tag)) { return HPCFILE_ERR; }
-         // read in the name of the  metric
-                str.str = NULL;
-                if (hpcfile_str__fread(&str, fs, alloc_fn) != HPCFILE_OK) {
-                    free_fn(str.str);
-                    return HPCFILE_ERR;
-                  }
+	// do we have to use call back function to get the space we need here? FMZ
+        data->num_metrics = tag;
+        data->metrics = alloc_fn(data->num_metrics * sizeof(hpcfile_csprof_metric_t));
+        for (ii=0; ii < data->num_metrics; ++ii) {
+	  // Read metrics data tag
+	  sz = hpc_fread_le4(&tag, fs);
+	  if (sz != sizeof(tag)) { return HPCFILE_ERR; }
 
-                 data->metrics[ii].metric_name=str.str;
-
-// read in the flags of the metric (descriptive flags such as async,etc)
-                sz = hpc_fread_le4(&tag, fs);
-                if (sz != sizeof(tag)) { return HPCFILE_ERR; }
-                if (hpcfile_num8__fread(&num8, fs) != HPCFILE_OK) {
-                  return HPCFILE_ERR;
-                } 
-                data->metrics[ii].flags =num8.num;
-
-// read in the sample period
-                sz = hpc_fread_le4(&tag, fs);
-                if (sz != sizeof(tag)) { return HPCFILE_ERR; }
-                if (hpcfile_num8__fread(&num8, fs) != HPCFILE_OK) {
-                  return HPCFILE_ERR;
-                }
-
-                data->metrics[ii].sample_period=num8.num;
-           }
+	  // read in the name of the  metric
+	  str.str = NULL;
+	  if (hpcfile_str__fread(&str, fs, alloc_fn) != HPCFILE_OK) {
+	    free_fn(str.str);
+	    return HPCFILE_ERR;
+	  }
+	  data->metrics[ii].metric_name = str.str;
+	  
+	  // read in the flags of the metric
+	  sz = hpc_fread_le4(&tag, fs);
+	  if (sz != sizeof(tag)) { return HPCFILE_ERR; }
+	  if (hpcfile_num8__fread(&num8, fs) != HPCFILE_OK) {
+	    return HPCFILE_ERR;
+	  }
+	  data->metrics[ii].flags = num8.num;
+	  
+	  // read in the sample period
+	  sz = hpc_fread_le4(&tag, fs);
+	  if (sz != sizeof(tag)) { return HPCFILE_ERR; }
+	  if (hpcfile_num8__fread(&num8, fs) != HPCFILE_OK) {
+	    return HPCFILE_ERR;
+	  }
+	  
+	  data->metrics[ii].sample_period = num8.num;
+	}
 #endif
 	break;
     }
@@ -238,20 +239,20 @@ hpcfile_csprof_read(FILE* fs, hpcfile_csprof_data_t* data,
     // Interpret the data: FIXME sanity check
 #if 0 
     switch (tag) {
-      case HPCFILE_TAG__CSPROF_TARGET: 
-	data->target = str.str; 
-	break;
-      case HPCFILE_TAG__CSPROF_EVENT:
-	data->event = str.str; 
-	break;
-      case HPCFILE_TAG__CSPROF_PERIOD:
-	data->sample_period = num8.num;
-	break;
-      default: 
-	break; // skip 
+    case HPCFILE_TAG__CSPROF_TARGET: 
+      data->target = str.str; 
+      break;
+    case HPCFILE_TAG__CSPROF_EVENT:
+      data->event = str.str; 
+      break;
+    case HPCFILE_TAG__CSPROF_PERIOD:
+      data->sample_period = num8.num;
+      break;
+    default: 
+      break; // skip 
     }
 #endif
-
+    
   }
 
 
