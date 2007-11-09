@@ -52,8 +52,8 @@
 //
 //***************************************************************************
 
-#ifndef HPCFILE_CSTREE_H
-#define HPCFILE_CSTREE_H
+#ifndef prof_lean_hpcfile_cstree_h
+#define prof_lean_hpcfile_cstree_h
 
 //************************* System Include Files ****************************
 
@@ -84,16 +84,8 @@ extern "C" {
 #define HPCFILE_CSTREE_MAGIC_STR     "HPC_CSTREE"
 #define HPCFILE_CSTREE_MAGIC_STR_LEN 10 /* exclude '\0' */
 
-/* the format of the nodes contained in the file will be different
-   depending on whether or not we've using the trampoline in this
-   build.  make it so that the library doesn't get confused */
-#ifdef CSPROF_TRAMPOLINE_BACKEND
-# define HPCFILE_CSTREE_VERSION     "01.0T" /* 'T' is for trampoline */
-# define HPCFILE_CSTREE_VERSION_LEN 5 /* exclude '\0' */
-#else
-# define HPCFILE_CSTREE_VERSION     "01.00"
-# define HPCFILE_CSTREE_VERSION_LEN 5 /* exclude '\0' */
-#endif
+#define HPCFILE_CSTREE_VERSION     "01.00"
+#define HPCFILE_CSTREE_VERSION_LEN 5 /* exclude '\0' */
 
 #define HPCFILE_CSTREE_ENDIAN 'l' /* 'l' for little, 'b' for big */
 
@@ -192,5 +184,5 @@ int hpcfile_cstree_node__fprint(hpcfile_cstree_node_t* x, FILE* fs);
 } /* extern "C" */
 #endif
 
-#endif
+#endif /* prof_lean_hpcfile_cstree_h */
 

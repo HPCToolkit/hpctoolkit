@@ -148,6 +148,7 @@ typedef void (*hpcfile_cstree_cb__link_parent_fn_t)(void*, void*, void*);
 // upon success; HPCFILE_ERR on error.
 int
 hpcfile_cstree_read(FILE* fs, void* tree, 
+		    int num_metrics,
 		    hpcfile_cstree_cb__create_node_fn_t create_node_fn,
 		    hpcfile_cstree_cb__link_parent_fn_t link_parent_fn,
 		    hpcfile_cb__alloc_fn_t alloc_fn,
@@ -189,7 +190,7 @@ void  hpcfile_cstree_cb__link_parent(void* tree, void* node, void* parent);
 // any formatting is subject to change.  Returns HPCFILE_OK upon
 // success; HPCFILE_ERR on error.
 int
-hpcfile_cstree_convert_to_txt(FILE* infs, FILE* outfs);
+hpcfile_cstree_convert_to_txt(FILE* infs, int num_metrics, FILE* outfs);
 
 //***************************************************************************
 
@@ -197,5 +198,5 @@ hpcfile_cstree_convert_to_txt(FILE* infs, FILE* outfs);
 } /* extern "C" */
 #endif
 
-#endif
+#endif /* prof_lean_hpcfile_cstreelib_h */
 
