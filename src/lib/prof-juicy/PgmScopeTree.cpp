@@ -1076,10 +1076,22 @@ ScopeInfo::Merge(ScopeInfo* toNode, ScopeInfo* fromNode)
 bool 
 ScopeInfo::IsMergable(ScopeInfo* toNode, ScopeInfo* fromNode)
 {
-  // For now, merges are only defined on LOOPs and GROUPs
   ScopeInfo::ScopeType toTy = toNode->Type(), fromTy = fromNode->Type();
+
+  // 1. For now, merges are only defined on LOOPs and GROUPs
   bool goodTy = (toTy == ScopeInfo::LOOP || toTy == ScopeInfo::GROUP);
-  return ((toTy == fromTy) && goodTy);
+
+  // 2. Check bounds
+  bool goodBnds = true;
+  if (goodTy) {
+    CodeInfo* toCI = dynamic_cast<CodeInfo*>(toNode);
+    CodeInfo* fromCI = dynamic_cast<CodeInfo*>(fromNode);
+    goodBnds = 
+      logic::equiv(SrcFile::isValid(toCI->begLine(), toCI->endLine()),
+		   SrcFile::isValid(fromCI->begLine(), fromCI->endLine()));
+  }
+
+  return ((toTy == fromTy) && goodTy && goodBnds);
 }
 
 
