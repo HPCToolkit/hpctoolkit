@@ -76,33 +76,33 @@ interval_tree_splay(interval_tree_node_t root, unsigned long addr)
     ltree_max = rtree_min = &dummy;
     for (;;) {
 	/* root is never NULL in here. */
-	if (addr < root->start) {
-	    if ((y = root->left) == NULL)
+	if (addr < START(root)) {
+	    if ((y = LEFT(root)) == NULL)
 		break;
-	    if (addr < y->start) {
+	    if (addr < START(y)) {
 		/* rotate right */
-		root->left = y->right;
-		y->right = root;
+		LEFT(root) = RIGHT(y);
+		RIGHT(y) = root;
 		root = y;
-		if ((y = root->left) == NULL)
+		if ((y = LEFT(root)) == NULL)
 		    break;
 	    }
 	    /* Link new root into right tree. */
-	    rtree_min->left = root;
+	    LEFT(rtree_min) = root;
 	    rtree_min = root;
-	} else if (addr >= root->end) {
-	    if ((y = root->right) == NULL)
+	} else if (addr >= END(root)) {
+	    if ((y = RIGHT(root)) == NULL)
 		break;
-	    if (addr >= y->end) {
+	    if (addr >= END(y)) {
 		/* rotate left */
-		root->right = y->left;
-		y->left = root;
+		RIGHT(root) = LEFT(y);
+		LEFT(y) = root;
 		root = y;
-		if ((y = root->right) == NULL)
+		if ((y = RIGHT(root)) == NULL)
 		    break;
 	    }
 	    /* Link new root into left tree. */
-	    ltree_max->right = root;
+	    RIGHT(ltree_max) = root;
 	    ltree_max = root;
 	} else
 	    break;
@@ -110,10 +110,10 @@ interval_tree_splay(interval_tree_node_t root, unsigned long addr)
     }
 
     /* Assemble the new root. */
-    ltree_max->right = root->left;
-    rtree_min->left = root->right;
-    root->left = dummy.right;
-    root->right = dummy.left;
+    RIGHT(ltree_max) = LEFT(root);
+    LEFT(rtree_min) = RIGHT(root);
+    LEFT(root) = SRIGHT(dummy);
+    RIGHT(root) = SLEFT(dummy);
 
     return (root);
 }
@@ -148,7 +148,7 @@ csprof_addr_to_interval(unsigned long addr)
 
     /* See if addr is already in the tree. */
     root = interval_tree_splay(root, addr);
-    if (root != NULL && root->start <= addr && addr < root->end) {
+    if (root != NULL && START(root) <= addr && addr < END(root)) {
 	lroot = root;
 	simple_spinlock_unlock(&lock);
 	PMSG(SPLAY,"SPLAY:found %lx already in tree",addr);
@@ -186,19 +186,19 @@ csprof_addr_to_interval(unsigned long addr)
      */
     first = (interval_tree_node_t)istat.first;
     ans = NULL;
-    for (p = first; p != NULL; p = p->right) {
-	p->left = NULL;
-	if (p->start <= addr && addr < p->end)
+    for (p = first; p != NULL; p = RIGHT(p)) {
+	LEFT(p) = NULL;
+	if (START(p) <= addr && addr < END(p))
 	    ans = (unwind_interval *)p;
 	last = p;
     }
-    assert(fcn_start <= (char *) first->start);
-    assert((char *) last->end <= fcn_end);
+    assert(fcn_start <= (char *) START(first));
+    assert((char *) END(last) <= fcn_end);
 
 #ifdef DEBUG_TARGET
     if (debugflag) {
        unwind_interval *u;
-       for(u = istat.first; u; u = u->next) {
+       for(u = istat.first; u; u = NEXT(u)) {
          idump(u);
        }
     }
@@ -211,32 +211,32 @@ csprof_addr_to_interval(unsigned long addr)
      */
     if (root == NULL) {
 	root = first;
-    } else if (addr < root->start) {
-	if (root->left == NULL) {
-	    if (last->end <= root->start) {
-		root->left = first;
+    } else if (addr < START(root)) {
+	if (LEFT(root) == NULL) {
+	    if (END(last) <= START(root)) {
+		LEFT(root) = first;
 	    } else {
 		EMSG("%s: bad unwind interval at 0x%lx", __func__, addr);
 	    }
 	} else {
-	    root->left = interval_tree_splay(root->left, root->end);
-	    if (root->left->end <= first->start && last->end <= root->start) {
-		root->left->right = first;
+	    LEFT(root) = interval_tree_splay(LEFT(root), END(root));
+	    if (END(LEFT(root)) <= START(first) && END(last) <= START(root)) {
+		RIGHT(LEFT(root)) = first;
 	    } else {
 		EMSG("%s: bad unwind interval at 0x%lx", __func__, addr);
 	    }
 	}
     } else {
-	if (root->right == NULL) {
-	    if (root->end <= first->start) {
-		root->right = first;
+	if (RIGHT(root) == NULL) {
+	    if (END(root) <= START(first)) {
+		RIGHT(root) = first;
 	    } else {
 		EMSG("%s: bad unwind interval at 0x%lx", __func__, addr);
 	    }
 	} else {
-	    root->right = interval_tree_splay(root->right, root->start);
-	    if (root->end <= first->start && last->end <= root->right->start) {
-		root->right->left = first;
+	    RIGHT(root) = interval_tree_splay(RIGHT(root), START(root));
+	    if (END(root) <= START(first) && END(last) <= START(RIGHT(root))) {
+		LEFT(RIGHT(root)) = first;
 	    } else {
 		EMSG("%s: bad unwind interval at 0x%lx", __func__, addr);
 	    }

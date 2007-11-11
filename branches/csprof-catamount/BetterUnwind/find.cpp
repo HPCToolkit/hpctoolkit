@@ -8,7 +8,7 @@
 
 #include "pmsg.h"
 
-static int debug = 0;
+// static int debug = 0;
 
 extern "C" {
   extern int nm_bound(unsigned long pc, unsigned long *st, unsigned long *e);
@@ -23,8 +23,7 @@ extern "C" {
 #include <unwind-dw2-fde.h>
 
 static char *find_dwarf_end_addr(char *addr, struct dwarf_fde const *start_fde,
-				 struct dwarf_eh_bases *start_bases)
-{
+				 struct dwarf_eh_bases *start_bases) {
 	struct dwarf_eh_bases end_bases;
 	struct dwarf_eh_bases new_bases;
 	struct dwarf_fde const *other_fde;
@@ -34,7 +33,7 @@ static char *find_dwarf_end_addr(char *addr, struct dwarf_fde const *start_fde,
 	offset = 1;
 	do {
 		other_fde = _Unwind_Find_FDE(addr + offset, &end_bases);
-		if (debug) printf("testing offset = %d, end = %p\n", offset, end_bases.func);
+		PMSG(FIND,"FIND:testing offset = %d, end = %p", offset, end_bases.func);
 		offset <<= 1;
 	} while (other_fde && (end_bases.func == start_bases->func));
 
@@ -47,11 +46,11 @@ static char *find_dwarf_end_addr(char *addr, struct dwarf_fde const *start_fde,
 		mid = (other - mine) >> 1;
 		if (mid == 0) break;
 		new_fde = _Unwind_Find_FDE(addr + mine + mid, &new_bases);
-		if (debug) printf("testing offset = %d, end = %p\n", mine + mid, new_bases.func);
+		PMSG(FIND,"testing offset = %d, end = %p", mine + mid, new_bases.func);
 		if (new_bases.func == start_bases->func) mine += mid;
 		else other -= mid;
 	}
-	if (debug) printf("finishing with offset = %d, addr + other = %p, end = %p\n", other, addr + other, new_bases.func);
+	PMSG(FIND,"finishing with offset = %d, addr + other = %p, end = %p", other, addr + other, new_bases.func);
 	return (char *) addr + other; // new_bases.func;
 }
 
@@ -67,7 +66,7 @@ static char *find_dl_end_addr(char *addr, Dl_info *start)
 	do {
 		res = dladdr(addr + offset, &end);
 		offset <<= 1;
-		if (debug) printf("testing offset = %d, end = %p\n", offset, (void *) end.dli_saddr);
+		PMSG(FIND,"testing offset = %d, end = %p", offset, (void *) end.dli_saddr);
 	} while ((res == 0) && start->dli_saddr == end.dli_saddr);
 
 
@@ -78,11 +77,11 @@ static char *find_dl_end_addr(char *addr, Dl_info *start)
 		int mid = (other - mine) >> 1;
 		if (mid == 0) break;
 		res = dladdr(addr + mine + mid, &otheri);
-		if (debug) printf("testing offset = %d, end = %p\n", mine + mid, (void *) otheri.dli_saddr);
+	PMSG(FIND,"testing offset = %d, end = %p", mine + mid, (void *) otheri.dli_saddr);
 		if (otheri.dli_saddr == start->dli_saddr) mine += mid;
 		else other -= mid;
 	}
-	if (debug) printf("finishing offset = %d, end = %p\n", other, addr + other);
+	PMSG(FIND,"finishing offset = %d, end = %p", other, addr + other);
 	return addr + other;
 }
 #endif
@@ -99,44 +98,24 @@ int find_enclosing_function_bounds_v(char *addr, char **start, char **end, int v
         int nmb = nm_bound((unsigned long)addr,(unsigned long *)start,(unsigned long *)end);
 
         if (nmb){
-#ifdef USE_DEBUG_VAR
-          if (debug){
-            fprintf(stderr,"FIND:found in nm table for %p: start=%p,end=%p\n",addr, *start, *end);
-          }
-#else
-          PMSG(FIND,"FIND:found in nm table for %p: start=%p,end=%p\n",addr, *start, *end);
-#endif
+          PMSG(FIND,"FIND:found in nm table for %p: start=%p,end=%p",addr, *start, *end);
         } else if (fde && base.func) {
             *start = (char *) base.func;
             *end = find_dwarf_end_addr(addr, fde, &base);
-#ifdef USE_DEBUG_VAR
-            if (debug) fprintf(stderr,"FIND:looked up address %p, fde = %p, found func addr = %p, end addr = %p\n", 
-                               addr, fde, *start, *end);
-#else
-            PMSG(FIND,"FIND:looked up address %p, fde = %p, found func addr = %p, end addr = %p\n",
+            PMSG(FIND,"FIND:looked up address %p, fde = %p, found func addr = %p, end addr = %p",
                  addr, fde, *start, *end);
-#endif
 #ifndef STATIC_ONLY
 	} else {
 		Dl_info info;
 		if (dladdr(addr, &info) && info.dli_saddr) {
 			*start = (char *) info.dli_saddr;
 			*end = find_dl_end_addr(addr, &info);
-#ifdef USE_DEBUG_VAR
-			if (debug) fprintf(stderr,"FIND:looked up address using dladdr %p, found func addr = %p, end = %p\n",
-                                           addr, *start, *end);
-#else
-                        PMSG(FIND,"FIND:looked up address using dladdr %p, found func addr = %p, end = %p\n",
+                        PMSG(FIND,"FIND:looked up address using dladdr %p, found func addr = %p, end = %p",
                              addr, *start, *end);
-#endif
 		} else {
-#ifdef USE_DEBUG_VAR
-			if (debug) fprintf(stderr,"FIND:look up failed!\n");
-#else
 			if (verbose){
-			  EMSG("FIND:look up failed @ %p!\n",addr);
+			  PMSG(FIND, "FIND:look up failed @ %p!",addr);
 			}
-#endif
 	                failure = 1;
 		}
 #endif // STATIC_ONLY
@@ -145,6 +124,7 @@ int find_enclosing_function_bounds_v(char *addr, char **start, char **end, int v
 }
 
 
+#if 0
 void test_find_enclosing_function_bounds(char *addr) {
 	char *start, *end;
 	debug = 1;
@@ -152,3 +132,4 @@ void test_find_enclosing_function_bounds(char *addr) {
 	printf("found enclosing function: addr = %p, start = %p, end = %p\n", addr, start, end);
 	debug = 0;
 }
+#endif

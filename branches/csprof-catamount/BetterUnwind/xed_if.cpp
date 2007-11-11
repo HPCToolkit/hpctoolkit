@@ -3,9 +3,13 @@
 using namespace std;
 #include "xed-interface.H"
 #include "intervals.h"
+#include "find.h"
 
 
 using namespace XED;
+
+
+
 
 // The state of the machine -- required for decoding
 // static xed_state_t dstate(XED_MACHINE_MODE_LONG_64,
@@ -31,6 +35,24 @@ extern "C" {
 #define DBG true
 #endif
 }
+  //
+  // debug block
+static bool idebug  = DBG;
+static bool ildebug = DBG;
+static bool irdebug = DBG;
+static bool jdebug = DBG;
+static int dump_to_stdout = 0;
+
+
+
+static unwind_interval poison = {
+  0L,
+  0L,
+  POISON,
+  0,
+  NULL,
+  NULL
+};
 
 void xed_init(void){
    // initialize the XED tables -- one time.
@@ -262,7 +284,8 @@ void dump(unwind_interval *u)
     " stat=" << status(u->ra_status) << " pos=" << u->ra_pos <<
     " next=" << u->next << " prev=" << u->prev << "\n" << '\0';
 
-  PMSG(ALL, buf);
+  PMSG(INTV,buf);
+  if (dump_to_stdout) cerr << buf;
 }
 
 // wrapper to ensure a C interface
@@ -413,13 +436,17 @@ unwind_interval *what(xed_decoded_inst_t& xedd, char *ins,
 				       current);
 	    }
 	    else {
-	      EMSG("!! NO immediate in sp add/sub !!");
+	      EMSG("!! NO immediate in sp add/sub @ %p",ins);
 	      // assert(0 && "no immediate in add or sub!");
+	      return &poison;
 	    }
 	  }
 	  else{
-	    if (xedd.get_category() != XED_CATEGORY_CALL)
-	      assert(0 && "unexpected mod of RSP!");
+	    if (xedd.get_category() != XED_CATEGORY_CALL){
+	      // assert(0 && "unexpected mod of RSP!");
+	      EMSG("interval: unexpected mod of RSP @%p",ins);
+	      return &poison;
+	    }
 	  }
 	}
       }
@@ -437,7 +464,10 @@ unwind_interval *what(xed_decoded_inst_t& xedd, char *ins,
 	  if (bp_just_pushed &&  
 	      (xedd.get_category() == XED_CATEGORY_DATAXFER)) {
 	    const xed_decoded_resource_t& op1 = xedd.get_operand_resource(1);
-	    if (op1.get_reg() == XEDREG_RSP) {
+
+
+	    if ((op1.get_res() == XED_RESOURCE_REG) &&
+	        (op1.get_reg() == XEDREG_RSP)) {
 	      next = newinterval(ins + xedd.get_length(), 
 				 RA_BP_RELATIVE, current->ra_pos, 
 				 current); 
@@ -486,7 +516,7 @@ unwind_interval *what(xed_decoded_inst_t& xedd, char *ins,
 // #define DEBUG 1
 
 void handle_return(xed_decoded_inst_t xedd, unwind_interval *&current, unwind_interval *&next, char *&ins, char *end, 
-	bool irdebug)
+	bool irdebug, unwind_interval *first, unwind_interval *firstjmpi)
 {
       // if the return is not the last instruction in the interval, 
       // set up an interval for code after the return 
@@ -503,14 +533,37 @@ void handle_return(xed_decoded_inst_t xedd, unwind_interval *&current, unwind_in
 	    if (irdebug){
 	      cerr << "--looping thru prev" << endl;
 	    }
-	    while ((next->prev != NULL) && (next->ra_pos < next->prev->ra_pos)) {
-	      next = next->prev;
+	    while (first && first->next && (first->ra_pos < first->next->ra_pos) && (first != firstjmpi)) {
+	      first = first->next;
 	    }
-	    next = newinterval(ins + xedd.get_length(), next->ra_status,
-			       next->ra_pos, current);
+	    next = newinterval(ins + xedd.get_length(), first->ra_status,
+			       first->ra_pos, current);
 	  }
 	}
       }
+}
+void set_flags(bool val)
+{
+  idebug  = val;
+  ildebug = val;
+  irdebug = val;
+  jdebug = val;
+}
+void pl_build_intervals(char  *addr, int xed, int pint) 
+{
+	char *s, *e;
+	unwind_interval *u;
+	find_enclosing_function_bounds(addr, &s, &e);
+
+	interval_status intervals;
+	set_flags(xed);
+	intervals = l_build_intervals(s, e - s);
+	set_flags(false);
+	dump_to_stdout = pint;
+	for(u = intervals.first; u; u = u->next) {
+		dump(u);
+	}
+	dump_to_stdout = 0;
 }
 
 interval_status l_build_intervals(char  *ins, unsigned int len)
@@ -520,14 +573,10 @@ interval_status l_build_intervals(char  *ins, unsigned int len)
   interval_status xed_stat;
   xed_error_enum_t xed_error;
   unwind_interval *prev, *current, *next, *first;
+  unwind_interval *firstjmpi = 0;
   bool bp_just_pushed = false;
   int ecnt = 0;
 
-  // debug block
-  bool idebug  = DBG;
-  bool ildebug = DBG;
-  bool irdebug = DBG;
-  bool jdebug = DBG;
 
   char *start = ins;
   char *end = ins + len;
@@ -600,10 +649,11 @@ interval_status l_build_intervals(char  *ins, unsigned int len)
 	  }
 	}
 #else
-        handle_return(xedd, current, next, ins, end, irdebug); 
+        handle_return(xedd, current, next, ins, end, irdebug, first, firstjmpi); 
 #endif
       }
     } else  if ((xedd.get_iclass() == XEDICLASS_JMP) || (xedd.get_iclass() == XEDICLASS_JMP_FAR)) { 	
+            if (firstjmpi == 0) firstjmpi = current;
 	    if (xedd.number_of_memory_operands() == 0) {
 		    const xed_immdis_t& disp =  xedd.get_disp();
 		    if (disp.is_present()) {
@@ -613,11 +663,19 @@ interval_status l_build_intervals(char  *ins, unsigned int len)
 	                            xedd.dump(cout);
 				    cerr << "JMP offset = " << offset << ", target = " << (void *) target << ", start = " << (void *) start << ", end = " << (void *) end << endl;
 			    } 
-			    if (target < start || target > end)  handle_return(xedd, current, next, ins, end, irdebug); 
+			    if (target < start || target > end)  handle_return(xedd, current, next, ins, end, irdebug, first, firstjmpi); 
 		    }
 	    }
-    } else {
-	    next = what(xedd, ins, current, bp_just_pushed);
+    }else {
+      if ((xedd.get_category() == XED_CATEGORY_CALL) && (firstjmpi == 0)) firstjmpi = current;
+      next = what(xedd, ins, current, bp_just_pushed);
+    }
+    if (next == &poison){
+      xed_stat.first_undecoded_ins = ins;
+      xed_stat.errcode 		   = -1;
+      xed_stat.first   		   = NULL;
+      return xed_stat;
+      // break;
     }
     if (next != current) {
       link(current, next);

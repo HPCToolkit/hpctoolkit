@@ -1,11 +1,12 @@
 #ifndef INTERVALS_H
 #define INTERVALS_H
-typedef  enum {RA_SP_RELATIVE, RA_BP_RELATIVE, RA_REGISTER} ra_loc; 
+typedef  enum {RA_SP_RELATIVE, RA_BP_RELATIVE, RA_REGISTER, POISON} ra_loc; 
 struct unwind_interval_t {
   unsigned long startaddr;
   unsigned long endaddr;
   ra_loc ra_status;
   unsigned int ra_pos; /* SP or BP offset, or register number */
+  int bp_pos; /* BP offset */
   struct unwind_interval_t *next;
   struct unwind_interval_t *prev;
 };

@@ -18,7 +18,7 @@ int find_enclosing_function_bounds_v(char *addr, char **start, char **end,int ve
   }
   else {
     if (verbose){
-      EMSG("FIND:look up failed @ %p!\n",addr); // FIXME: change to EMSG??
+      PMSG(FIND,"FIND:look up failed @ %p!\n",addr); // FIXME: change to EMSG??
     }
     failure = 1;
   }

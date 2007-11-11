@@ -36,14 +36,14 @@ extern pthread_mutex_t mylock;
 #define WRITE(desc,buf,n) do { 	 \
   pthread_mutex_lock(&mylock); 	 \
   fprintf(log_file,buf);     	 \
-  fflush(log_file);            	 \ 
+  fflush(log_file);            	 \
   pthread_mutex_unlock(&mylock); \
 } while(0)
 #else
 #define WRITE(desc,buf,n) do {        \
   simple_spinlock_lock(&pmsg_lock);   \
   fprintf(log_file,buf);              \
-  fflush(log_file);                   \ 
+  fflush(log_file);                   \
   simple_spinlock_unlock(&pmsg_lock); \
 } while (0)
 #endif
@@ -52,7 +52,7 @@ extern pthread_mutex_t mylock;
 #define WRITE(desc,buf,n) do {        \
   simple_spinlock_lock(&pmsg_lock);   \
   fprintf(log_file,buf);              \
-  fflush(log_file);                   \ 
+  fflush(log_file);                   \
   simple_spinlock_unlock(&pmsg_lock); \
 } while (0)
 
@@ -103,11 +103,9 @@ void set_pmsg_mask_f_int(int m){
 void set_pmsg_mask_f_string(char *s){
 }
 
-void EMSG(const char *format,...){
-  va_list args;
+static void EMSG_internal(const char *format, va_list args) {
   char fstr[256];
   char buf[512];
-  va_start(args, format);
   int n;
 
 #ifdef CSPROF_THREADS
@@ -127,16 +125,23 @@ void EMSG(const char *format,...){
   va_end(args);
 }
 
+void EMSG(const char *format,...){
+  va_list args;
+  va_start(args, format);
+  EMSG_internal(format, args);
+}
+
 void PMSG(int mask, const char *format, ...){
   // #if defined(CSPROF_PERF)
   //}
   //#else
 
   va_list args;
+  va_start(args, format);
 
   if (! (mask & __msg_mask)){
     return;
   }
-  EMSG(format,args);
+  EMSG_internal(format,args);
 }
 // #endif

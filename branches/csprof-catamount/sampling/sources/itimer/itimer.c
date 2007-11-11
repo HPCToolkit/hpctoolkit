@@ -313,7 +313,7 @@ static void csprof_itimer_signal_handler(int sig, siginfo_t *siginfo, void *cont
     CSPROF_SIGNAL_HANDLER_GUTS(context);
   }
   else {
-    EMSG("got bad unwind: context_pc = %p, unwind_pc = %p",context_pc,
+    EMSG("got bad unwind: context_pc = %p, unwind_pc = %p\n\n",context_pc,
          unwind_pc);
     bad_unwind_count++;
   }

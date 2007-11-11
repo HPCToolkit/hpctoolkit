@@ -16,6 +16,9 @@ static_link_options := --verbose -nostdlib -nodefaultlibs -nostartfiles -static 
 #NO_MMAP := 1
 #USE_TRAMP := 1
 
+src_dir_prefix = $(patsubst %Makefile,%,  \
+                    $(word $(words $(MAKEFILE_LIST)),$(MAKEFILE_LIST)))
+
 export PLATFORM
 export CC
 #export CHGROOT
@@ -86,25 +89,25 @@ module_dirs := utilities                \
 #INC_CSFILE := -I./hpcfile
 
 ifdef STATIC_ONLY
-  INC_MON := -I./monitor-static/src
+  INC_MON := -I$(src_dir_prefix)monitor-static/src
   find_v  := find_static
   gethost := gethostid.o override.o MPI_Init.o 
 else
-  INC_MON := -I./monitor/Install/include
+  INC_MON := -I$(src_dir_prefix)monitor/Install/include
   find_v  := find
 endif
 # INC_BETTER_UNW := -IBetterUnwind
 
 #MPI_INC := -I/usr/mpich/mpich-1.2.6-pgi614/include
 
-INCS := -I. $(INC_CSFILE) $(INC_PFM) $(INC_UNWIND) $(INC_THREAD)\
+INCS := -I. $(INC_PFM) $(INC_UNWIND) $(INC_THREAD)\
          $(INC_MON) $(INC_BETTER_UNW)
 ifdef MPI_SPECIAL
 INCS += $(MPI_INC)
 endif
 
-INCS += $(addprefix -I,$(module_dirs))
-INCS += -IBetterUnwind/Include
+INCS += $(addprefix -I$(src_dir_prefix),$(module_dirs))
+INCS += -I$(src_dir_prefix)BetterUnwind/Include
 
 # FIXME: PAPI?
 ifneq "$(DRIVER_DIR)" "itimer"
@@ -215,11 +218,11 @@ LIBS += $(XED_LIBS) $(XED_CPP_LIBS) $(PAPI_LIBS)
 # Compiling Rules:
 #############################################################################
 
-vpath %.c $(module_dirs)
+vpath %.c $(addprefix $(src_dir_prefix),$(module_dirs))
 
-vpath %.s processor/x86-64
+vpath %.s $(src_dir_prefix)processor/x86-64
 
-vpath %.cpp $(module_dirs)
+vpath %.cpp $(addprefix $(src_dir_prefix),$(module_dirs))
 
 .PHONY: TT
 
@@ -232,6 +235,7 @@ TT:
 	# INC_CSFILE = $(INC_CSFILE)
 	$(CC) --version
 	# gethostid := |$(gethostid)|
+	# src dir = $(src_dir_prefix)
 
 $(LIB_CSFILE):
 	@cd hpcfile; $(MAKE) -I ..

@@ -20,13 +20,14 @@ void dump_backtraces(csprof_state_t *state, csprof_frame_t *unwind)
   csprof_frame_t *x = state->bufstk;
 #endif
 
+#if 0
   EMSG("in dump_backtraces(0x%lx, 0x%lx)",(unsigned long int) state, (unsigned long int) unwind);
 
   EMSG( ""); 
+#endif
 
   if (state->bufstk == state->bufend){
-    EMSG( "Saved backtrace ...");
-    EMSG( "------------------------"); 
+    EMSG( "--------Saved backtrace----------------"); 
     cnt = 0;
     for( ; x != state->bufend; ++x) {
       EMSG( "ip %#lx | sp %#lx", x->ip, x->sp);
@@ -37,14 +38,14 @@ void dump_backtraces(csprof_state_t *state, csprof_frame_t *unwind)
         break;
       }
     }
+    EMSG("--------End saved backtrace-----------");
   }
   cnt = 0;
   EMSG( ""); /* space */
   if (unwind) {
     x = state->btbuf;
 
-    EMSG( "New unwind backtrace ...");
-    EMSG( "------------------------"); 
+    EMSG( "-----New backtrace-------------------"); 
     for( ; x != unwind; ++x) {
       EMSG( "ip %#lx | sp %#lx", x->ip, x->sp);
       /* MWF: added to prevent long backtrace printout */
@@ -54,13 +55,16 @@ void dump_backtraces(csprof_state_t *state, csprof_frame_t *unwind)
         break;
       }
     }
+    EMSG( "-----End new backtrace---------------"); 
   } else {
     EMSG( "No unwind backtrace to dump");
   }
+#if 0
   EMSG( "");
 
   EMSG( "other state information "); 
   EMSG( "------------------------"); 
   EMSG( "swizzle_return = 0x%lx",state->swizzle_return);
   EMSG( "last_pc = 0x%lx", state->last_pc);
+#endif
 }
