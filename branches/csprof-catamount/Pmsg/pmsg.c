@@ -60,6 +60,7 @@ static int __msg_mask = NONE;
 static simple_spinlock pmsg_lock = 0;
 
 static FILE *log_file;
+FILE *pmsg_db_save_file;
 
 #define LOG_FILE_NAME "csprof.dbg.log"
 
@@ -103,6 +104,14 @@ void set_pmsg_mask_f_int(int m){
 void set_pmsg_mask_f_string(char *s){
 }
 
+// call from debugger to make pmsg output go to screen
+void _dbg_pmsg_stderr(void){
+  pmsg_db_save_file = log_file;
+  log_file          = stderr;
+}
+void _dbg_pmsg_restore(void){
+  log_file = pmsg_db_save_file;
+}
 static void EMSG_internal(const char *format, va_list args) {
   char fstr[256];
   char buf[512];

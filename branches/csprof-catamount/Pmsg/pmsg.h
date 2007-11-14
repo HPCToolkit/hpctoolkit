@@ -13,6 +13,8 @@ void PMSG(int mask, const char *str, ...);
 void set_mask_f_numstr(const char *s);
 void set_pmsg_mask(int m);
 void EMSG(const char *str, ...);
+void _dbg_pmsg_stderr(void);
+void _dbg_pmsg_restore(void);
 
 #ifdef __cplusplus
 }

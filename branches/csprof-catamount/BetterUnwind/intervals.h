@@ -1,12 +1,21 @@
 #ifndef INTERVALS_H
 #define INTERVALS_H
-typedef  enum {RA_SP_RELATIVE, RA_BP_RELATIVE, RA_REGISTER, POISON} ra_loc; 
+typedef  enum {RA_SP_RELATIVE, RA_STD_FRAME, RA_BP_FRAME, RA_REGISTER, POISON} ra_loc; 
+typedef  enum {BP_UNCHANGED, BP_SAVED, BP_HOSED} bp_loc;
 struct unwind_interval_t {
   unsigned long startaddr;
   unsigned long endaddr;
-  ra_loc ra_status;
-  unsigned int ra_pos; /* SP or BP offset, or register number */
-  int bp_pos; /* BP offset */
+  ra_loc ra_status; /* how to find the return address */
+  unsigned int ra_pos; /* return address offset from sp */
+#if 1
+  unsigned int bp_ra_pos; /* return address offset from bp */
+#endif
+  bp_loc bp_status; /* how to find the bp register */
+  int bp_pos; /* BP offset from sp */
+
+#if 1
+  int bp_bp_pos; /* (caller's) BP offset from bp */
+#endif
   struct unwind_interval_t *next;
   struct unwind_interval_t *prev;
 };

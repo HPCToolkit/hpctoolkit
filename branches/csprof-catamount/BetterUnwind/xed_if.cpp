@@ -43,13 +43,21 @@ static bool irdebug = DBG;
 static bool jdebug = DBG;
 static int dump_to_stdout = 0;
 
-
+static bool bp_frames_found = false;
 
 static unwind_interval poison = {
   0L,
   0L,
   POISON,
   0,
+#if 1
+  0,
+#endif  
+  BP_HOSED,
+  0,
+#if 1
+  0,
+#endif
   NULL,
   NULL
 };
@@ -243,45 +251,78 @@ unwind_interval *fluke_interval(char *loc,unsigned int pos){
   return u; 
 }
 
-unwind_interval *newinterval(char *start, ra_loc loc, unsigned int pos,
-			     unwind_interval *prev)
-{
+unwind_interval *newinterval(char *start,
+			     ra_loc loc, unsigned int pos,
+#if 1
+			     int bp_ra_pos,
+#endif
+			     bp_loc loc2, int pos2,
+#if 1
+			     int bp_bp_pos,
+#endif
+			     unwind_interval *prev){
+
   unwind_interval *u = (unwind_interval *) malloc(sizeof(unwind_interval)); 
   u->startaddr = (unsigned long) start;
   u->endaddr = 0;
   u->ra_status = loc;
   u->ra_pos = pos;
+  u->bp_status = loc2;
+  u->bp_pos    = pos2;
+  #if 1
+  // johnmc 11am Nov 13, 2007
+  u->bp_bp_pos = bp_bp_pos;
+  u->bp_ra_pos = bp_ra_pos;
+  #endif
   u->next = NULL;
   u->prev = prev;
   return u; 
 }
 
-void link(unwind_interval *current, unwind_interval *next)
-{
+void link(unwind_interval *current, unwind_interval *next){
   current->endaddr = next->startaddr;
   current->next= next;
 }
 
+#define STR(s) case s: return #s
 const char * const status(ra_loc l) 
 {
   switch(l) {
-  case RA_BP_RELATIVE: return "RA_BP_RELATIVE";
-  case RA_SP_RELATIVE: return "RA_SP_RELATIVE";
-  case RA_REGISTER: return "RA_REGISTER";
+   STR(RA_SP_RELATIVE);
+   STR(RA_STD_FRAME);
+   STR(RA_BP_FRAME);
+   STR(RA_REGISTER);
+   STR(POISON);
+
   default:
     assert(0);
   }
   return NULL;
 }
+const char * bp_status(bp_loc l){
+  switch(l){
+    STR(BP_UNCHANGED);
+    STR(BP_SAVED);
+    STR(BP_HOSED);
+  default:
+    assert(0);
+  }
+}
 
-void dump(unwind_interval *u)
-{
+void dump(unwind_interval *u){
   char buf[1000];
   strstream cerr_s(buf,sizeof(buf));
 
   // replace endl at end with a \n and explicit 0;
   cerr_s <<  "start="<< (void *) u->startaddr << " end=" << (void *) u->endaddr <<
     " stat=" << status(u->ra_status) << " pos=" << u->ra_pos <<
+#if 1
+    " bp_ra_pos=" << u->bp_ra_pos <<
+#endif
+    " bp_stat=" << bp_status(u->bp_status) << " bp_pos=" << u->bp_pos <<
+#if 1
+    " bp_bp_pos=" << u->bp_bp_pos <<
+#endif
     " next=" << u->next << " prev=" << u->prev << "\n" << '\0';
 
   PMSG(INTV,buf);
@@ -298,7 +339,8 @@ unwind_interval *what(xed_decoded_inst_t& xedd, char *ins,
   int size;
 
   bool next_bp_just_pushed = false;
-  unwind_interval *next = NULL;
+  bool next_bp_popped      = false;
+  unwind_interval *next    = NULL;
 
   // debug block
   bool rdebug = DBG;
@@ -306,6 +348,7 @@ unwind_interval *what(xed_decoded_inst_t& xedd, char *ins,
   bool fdebug = DBG;
   bool mdebug = DBG;
 
+  // FIXME: look up bp action f enter
   if (xedd.get_iclass() == XEDICLASS_ENTER) {
     long offset = 8;
     int tmp;
@@ -327,9 +370,18 @@ unwind_interval *what(xed_decoded_inst_t& xedd, char *ins,
 	break;
       }
     }
+    PMSG(INTV,"new interval from ENTER");
     return newinterval(ins + xedd.get_length(),
-		       RA_BP_RELATIVE,
+		       RA_STD_FRAME,
 		       current->ra_pos + offset,
+#if 1
+		       8,
+#endif
+		       BP_SAVED,
+		       current->bp_pos + offset -8,
+#if 1
+		       0,
+#endif
 		       current);
   }
   for(unsigned int i=0; i < xedd.get_operand_count() ; i++){ 
@@ -389,10 +441,20 @@ unwind_interval *what(xed_decoded_inst_t& xedd, char *ins,
 	      EMSG("!! push class, but not specfic push encountered");
 	      assert(0);
 	    }
+	    PMSG(INTV,"new interval from PUSH");
 	    next = newinterval(ins + xedd.get_length(), 
 			       // RA_SP_RELATIVE, 
 			       current->ra_status,
-			       current->ra_pos + size, current);
+			       current->ra_pos + size,
+#if 1
+			       current->bp_ra_pos,
+#endif
+			       current->bp_status,
+			       current->bp_pos + size,
+#if 1
+			       current->bp_bp_pos,
+#endif
+			       current);
 	  }
 	  else if (xedd.get_category() == XED_CATEGORY_POP) {
 	    switch(xedd.get_iclass()) {
@@ -413,10 +475,39 @@ unwind_interval *what(xed_decoded_inst_t& xedd, char *ins,
 	      EMSG("!! pop class, but not specific pop");
 	      assert(0);
 	    }
+	    PMSG(INTV,"new interval from POP");
 	    next = newinterval(ins + xedd.get_length(), 
-			       // RA_SP_RELATIVE, 
+			       // RA_SP_RELATIVE,
 			       current->ra_status,
-			       current->ra_pos + size, current);
+			       current->ra_pos + size,
+#if 1
+			       current->bp_ra_pos,
+#endif
+			       current->bp_status,
+			       current->bp_pos + size,
+#if 1
+			       current->bp_bp_pos,
+#endif
+			       current);
+	  }
+	  else if (xedd.get_category() == XED_CATEGORY_DATAXFER){
+	    const xed_decoded_resource_t& op1 = xedd.get_operand_resource(1);
+
+	    if ((op1.get_res() == XED_RESOURCE_REG) &&
+	        (op1.get_reg() == XEDREG_RBP)) {
+	      PMSG(INTV,"Restore RSP from BP detected @%p",ins);
+#if 1
+	      next = newinterval(ins + xedd.get_length(),
+				 RA_SP_RELATIVE, current->bp_ra_pos, current->bp_ra_pos,
+				 current->bp_status,current->bp_bp_pos, current->bp_bp_pos,
+				 current);
+#else
+	      next = newinterval(ins + xedd.get_length(),
+				 RA_SP_RELATIVE, current->ra_pos,
+				 current->bp_status,current->bp_pos,
+				 current);
+#endif
+	    }
 	  }
 	  else if ((xedd.get_iclass() == XEDICLASS_SUB) ||
 		   (xedd.get_iclass() == XEDICLASS_ADD)) { 
@@ -429,23 +520,55 @@ unwind_interval *what(xed_decoded_inst_t& xedd, char *ins,
 			   << immedv
 			   << endl;
 		    }
+		    PMSG(INTV,"newinterval from ADD/SUB immediate");
 		    next = newinterval(ins + xedd.get_length(), 
 				       // RA_SP_RELATIVE, 
 				       current->ra_status,
 				       current->ra_pos + sign * immed.get_signed64(),
+#if 1
+				       current->bp_ra_pos,
+#endif
+				       current->bp_status,
+				       current->bp_pos + sign * immed.get_signed64(),
+#if 1
+				       current->bp_bp_pos,
+#endif
 				       current);
 	    }
 	    else {
-	      EMSG("!! NO immediate in sp add/sub @ %p",ins);
-	      // assert(0 && "no immediate in add or sub!");
-	      return &poison;
+#if 1 
+// johnmc - i think this is wrong in my replacement below, I update ra_pos to be bp-relative. I also set bp_pos to zero after the move.
+	      if (current->ra_status != RA_BP_FRAME){
+		EMSG("!! NO immediate in sp add/sub @ %p, switching to BP_FRAME",ins);
+		next = newinterval(ins + xedd.get_length(),
+				   RA_BP_FRAME,
+				   current->ra_pos,
+				   current->bp_ra_pos,
+				   current->bp_status,
+				   current->bp_pos,
+				   current->bp_bp_pos,
+				   current);
+#else
+		next = newinterval(ins + xedd.get_length(),
+				   RA_BP_FRAME,
+				   current->ra_pos - current->bp_pos,
+				   current->bp_status,
+				   0,
+				   current);
+#endif
+		bp_frames_found = true;
+		// assert(0 && "no immediate in add or sub!");
+		// return &poison;
+	      }
 	    }
 	  }
 	  else{
 	    if (xedd.get_category() != XED_CATEGORY_CALL){
 	      // assert(0 && "unexpected mod of RSP!");
-	      EMSG("interval: unexpected mod of RSP @%p",ins);
-	      return &poison;
+	      if (current->ra_status == RA_SP_RELATIVE){
+		EMSG("interval: SP_RELATIVE unexpected mod of RSP @%p",ins);
+		return &poison;
+	      }
 	    }
 	  }
 	}
@@ -454,27 +577,43 @@ unwind_interval *what(xed_decoded_inst_t& xedd, char *ins,
 	if (r.get_opnd_action() == XED_OPND_ACTION_R) {
 	  if (xedd.get_category() == XED_CATEGORY_PUSH) {
 	    next_bp_just_pushed = true;
-	  } 
+	  }
 	}
 	else if (((r.get_opnd_action() == XED_OPND_ACTION_RW) ||  
 		    (r.get_opnd_action() == XED_OPND_ACTION_W))) {
 	  if (fdebug){
 	    cerr << "\t writes RBP" << endl;
 	  }
-	  if (bp_just_pushed &&  
+#if 0 // just pushed replaced by BP_SAVED
+	  if (bp_just_pushed &&
+#endif
+	  if (xedd.get_category() == XED_CATEGORY_POP){
+	    next_bp_popped = true;
+	  }
+          if( (current->bp_status == BP_SAVED) &&
 	      (xedd.get_category() == XED_CATEGORY_DATAXFER)) {
 	    const xed_decoded_resource_t& op1 = xedd.get_operand_resource(1);
 
 
 	    if ((op1.get_res() == XED_RESOURCE_REG) &&
 	        (op1.get_reg() == XEDREG_RSP)) {
+	      PMSG(INTV,"new interval from PUSH BP");
 	      next = newinterval(ins + xedd.get_length(), 
-				 RA_BP_RELATIVE, current->ra_pos, 
+				 RA_STD_FRAME,
+				 current->ra_pos,
+#if 1
+				 current->ra_pos,
+#endif
+				 BP_SAVED,
+				 current->bp_pos,
+#if 1
+				 current->bp_pos,
+#endif
 				 current); 
 	    }
 	  }
 	  else if ((xedd.get_category() == XED_CATEGORY_POP) &&
-		   (current->ra_status == RA_BP_RELATIVE)){
+		   (current->ra_status == RA_BP_FRAME)){
 	    switch(xedd.get_iclass()) {
 	    case XEDICLASS_POP:
 	      // hack: assume 64-bit mode
@@ -493,8 +632,19 @@ unwind_interval *what(xed_decoded_inst_t& xedd, char *ins,
 	      EMSG("!! pop class, but no pop type !!");
 	      assert(0);
 	    }
+#if 1
+	    // johnmc
+	    EMSG("PROBLEM @%p: pop bp in BP_FRAME mode",ins);
 	    next = newinterval(ins + xedd.get_length(), 
-			       RA_SP_RELATIVE, 0, current);
+			       RA_SP_RELATIVE, 0, 0,
+			       BP_UNCHANGED, current->bp_pos, 0,
+			       current);
+#else
+	    next = newinterval(ins + xedd.get_length(), 
+			       RA_SP_RELATIVE, 0,
+			       BP_UNCHANGED, 0,
+			       current);
+#endif
 	  }
 	} 
       }
@@ -510,21 +660,73 @@ unwind_interval *what(xed_decoded_inst_t& xedd, char *ins,
     }
   }
   bp_just_pushed = next_bp_just_pushed;
+  if (bp_just_pushed){
+    next->bp_status = BP_SAVED;
+    next->bp_pos    = 0;
+  }
+  if (next_bp_popped){
+    next->bp_status = BP_UNCHANGED;
+  }
   return (next) ? next : current;
 }
 
 // #define DEBUG 1
 
+unwind_interval *find_first_bp_frame(unwind_interval *first){
+  while (first && (first->ra_status != RA_BP_FRAME)){
+    first = first->next;
+  }
+  return first;
+}
+
+unwind_interval *find_first_non_decr(unwind_interval *first, unwind_interval *firstjmpi){
+
+  while (first && first->next && (first->ra_pos <= first->next->ra_pos) && (first != firstjmpi)) {
+    first = first->next;
+  }
+  return first;
+}
 void handle_return(xed_decoded_inst_t xedd, unwind_interval *&current, unwind_interval *&next, char *&ins, char *end, 
-	bool irdebug, unwind_interval *first, unwind_interval *firstjmpi)
-{
-      // if the return is not the last instruction in the interval, 
-      // set up an interval for code after the return 
+		   bool irdebug, unwind_interval *first, unwind_interval *firstjmpi){
+
+  // if the return is not the last instruction in the interval, 
+  // set up an interval for code after the return 
+  if (ins + xedd.get_length() < end){
+    if (bp_frames_found){ // look for first bp frame
+      first = find_first_bp_frame(first);
+    }
+    else { // look for first nondecreasing with no jmp
+      first = find_first_non_decr(first,firstjmpi);
+    }
+#if 1
+    PMSG(INTV,"new interval from RET");
+    next = newinterval(ins + xedd.get_length(),
+		       first->ra_status,first->ra_pos,first->bp_ra_pos,
+		       first->bp_status,first->bp_pos,first->bp_bp_pos,
+		       current);
+#else
+    next = newinterval(ins + xedd.get_length(),
+		       first->ra_status,first->ra_pos,
+		       first->bp_status,first->bp_pos,
+		       current);
+#endif
+  }
+}
+#ifdef NO_IS_OLD
+#if 1
+	    next = newinterval(ins + xedd.get_length(),
+			       RA_BP_FRAME,current->prev->ra_pos,current->prev->bp_ra_pos,
+			       current->bp_status,current->bp_pos,current->bp_bp_pos,
+			       current);
+#else
+	    next = newinterval(ins + xedd.get_length(),
+			       RA_BP_FRAME,current->prev->ra_pos,
+			       current->bp_status,current->bp_pos,
+			       current);
+#endif
       if (ins + xedd.get_length() < end) {
 	if (current->prev){ 
-	  if (current->prev->ra_status == RA_BP_RELATIVE) {
-	    next = newinterval(ins + xedd.get_length(), RA_BP_RELATIVE, 
-			       current->prev->ra_pos, current);
+	  if (current->prev->ra_status == RA_BP_FRAME) {
 	  } else {
 	    if (irdebug){
 	      cerr << "--In RET interval backup" << endl;
@@ -533,15 +735,18 @@ void handle_return(xed_decoded_inst_t xedd, unwind_interval *&current, unwind_in
 	    if (irdebug){
 	      cerr << "--looping thru prev" << endl;
 	    }
-	    while (first && first->next && (first->ra_pos < first->next->ra_pos) && (first != firstjmpi)) {
+	    while (first && first->next && (first->ra_pos <= first->next->ra_pos) && (first != firstjmpi)) {
+	      if (first->next->ra_status == RA_BP_FRAME){
+		first = first->next;
+		break;
+	      }
 	      first = first->next;
 	    }
-	    next = newinterval(ins + xedd.get_length(), first->ra_status,
-			       first->ra_pos, current);
 	  }
 	}
       }
 }
+#endif
 void set_flags(bool val)
 {
   idebug  = val;
@@ -560,10 +765,12 @@ void pl_build_intervals(char  *addr, int xed, int pint)
 	intervals = l_build_intervals(s, e - s);
 	set_flags(false);
 	dump_to_stdout = pint;
+	_dbg_pmsg_stderr();
 	for(u = intervals.first; u; u = u->next) {
 		dump(u);
 	}
 	dump_to_stdout = 0;
+	_dbg_pmsg_restore();
 }
 
 interval_status l_build_intervals(char  *ins, unsigned int len)
@@ -578,13 +785,19 @@ interval_status l_build_intervals(char  *ins, unsigned int len)
   int ecnt = 0;
 
 
+  bp_frames_found = false;  // handle return is different if there are any bp frames
+
   char *start = ins;
   char *end = ins + len;
 
   xed_state_t dstate(XED_MACHINE_MODE_LONG_64, ADDR_WIDTH_64b, ADDR_WIDTH_64b);
 
   PMSG(INTV,"L_BUILD: start = %p, end = %p",ins,end);
-  current = newinterval(ins, RA_SP_RELATIVE, 0, NULL);
+#if 1
+  current = newinterval(ins, RA_SP_RELATIVE, 0, 0, BP_UNCHANGED, 0, 0, NULL);
+#else
+  current = newinterval(ins, RA_SP_RELATIVE, 0, BP_UNCHANGED, 0, NULL);
+#endif
   if (ildebug){
     PMSG(INTV,"L_BUILD:dump first");
     dump(current);
@@ -623,7 +836,12 @@ interval_status l_build_intervals(char  *ins, unsigned int len)
     }
 
     if (xedd.get_iclass() == XEDICLASS_LEAVE) {
-      next = newinterval(ins + xedd.get_length(), RA_SP_RELATIVE, 0, current);
+#if 1
+      PMSG(INTV,"new interval from LEAVE");
+      next = newinterval(ins + xedd.get_length(), RA_SP_RELATIVE, 0, 0, BP_UNCHANGED, 0, 0, current);
+#else
+      next = newinterval(ins + xedd.get_length(), RA_SP_RELATIVE, 0, BP_UNCHANGED, 0, current);
+#endif
     } else if (xedd.get_category() == XED_CATEGORY_RET) {
       // if the return is not the last instruction in the interval, 
       // set up an interval for code after the return 

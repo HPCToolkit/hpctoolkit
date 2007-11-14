@@ -127,13 +127,37 @@ int unw_step (unw_cursor_t *cursor){
   pc = cursor->pc;
   uw = cursor->intvl;
 
-  // spr rel step
-  // FIXME: next bp needs to check if this is a frame procedure
-   
-  spr_sp  = ((void **)((unsigned long) sp + uw->ra_pos));
-  spr_pc  = *spr_sp;
-  spr_bp  = (void **) *(spr_sp -1);
-  spr_sp += 1; 
+  if (uw->ra_status == RA_BP_FRAME){
+    // bp relative
+#if 1
+    spr_sp  = ((void **)((unsigned long) bp + uw->bp_bp_pos));
+#else
+    spr_sp  = ((void **)((unsigned long) bp + uw->bp_pos));
+#endif
+    spr_bp  = *spr_sp;
+#if 1
+    spr_sp  = ((void **)((unsigned long) bp + uw->bp_ra_pos));
+#else
+    spr_sp  = ((void **)((unsigned long) bp + uw->ra_pos));
+#endif
+    spr_pc  = *spr_sp;
+    spr_sp += 1;
+  }
+  else {
+  // sp rel or std frame
+    spr_sp  = ((void **)((unsigned long) sp + uw->ra_pos));
+    spr_pc  = *spr_sp;
+    if (uw->bp_status == BP_UNCHANGED){
+      spr_bp = bp;
+    }
+    else if (uw->ra_status == RA_STD_FRAME){
+      spr_bp  = (void **) *(spr_sp -1);
+    }
+    else {
+      spr_bp = (void **)((unsigned long) sp + uw->bp_pos);
+    }
+    spr_sp += 1;
+  }
 
   cursor->intvl = csprof_addr_to_interval((unsigned long)spr_pc);
 
@@ -165,39 +189,53 @@ int unw_step (unw_cursor_t *cursor){
  * private operations
  ***************************************************************************************/
 
+int _dbg_no_longjmp = 0;
 
-static void update_cursor_with_troll(unw_cursor_t *cursor, void *sp, void *pc)
-{
-	void  **spr_sp, **spr_bp, *spr_pc;
-
-	unsigned int tmp_ra_loc;
-	if (stack_troll((char **)sp,&tmp_ra_loc)){
-		spr_sp  = ((void **)((unsigned long) sp + tmp_ra_loc));
-		spr_pc  = *spr_sp;
-		spr_bp  = (void **) *(spr_sp - 1);
-		spr_sp += 1;
-
-		cursor->intvl = csprof_addr_to_interval((unsigned long)spr_pc);
-		if (! cursor->intvl){
-			EMSG("No interval found for trolled pc, dropping sample,cursor pc = %p",pc);
-			// assert(0);
-			dump_backtraces(csprof_get_state(),0);
-			_jb *it = get_bad_unwind();
-			siglongjmp(it->jb,9);
-		}
-		else {
-			PMSG(TROLL,"Trolling advances cursor to pc = %p,sp = %p",spr_pc,spr_sp);
-			cursor->pc = spr_pc;
-			cursor->bp = spr_bp;
-			cursor->sp = spr_sp;
-		}
-	}
-	else {
-		EMSG("Troll failed: dropping sample,cursor pc = %p",pc);
-		// assert(0);
-		dump_backtraces(csprof_get_state(),0);
-		_jb *it = get_bad_unwind();
-		siglongjmp(it->jb,9);
-	}
+static void drop_sample(void){
+  if (_dbg_no_longjmp){
+    return;
+  }
+  dump_backtraces(csprof_get_state(),0);
+  _jb *it = get_bad_unwind();
+  siglongjmp(it->jb,9);
 }
+static void update_cursor_with_troll(unw_cursor_t *cursor, void *sp, void *pc){
+  void  **spr_sp, **spr_bp, *spr_pc;
 
+  unsigned int tmp_ra_loc;
+  if (stack_troll((char **)sp,&tmp_ra_loc)){
+    spr_sp  = ((void **)((unsigned long) sp + tmp_ra_loc));
+    spr_pc  = *spr_sp;
+    spr_bp  = (void **) *(spr_sp - 1);
+    spr_sp += 1;
+
+    cursor->intvl = csprof_addr_to_interval((unsigned long)spr_pc);
+    if (! cursor->intvl){
+      EMSG("No interval found for trolled pc, dropping sample,cursor pc = %p",pc);
+      // assert(0);
+      drop_sample();
+    }
+    else {
+      PMSG(TROLL,"Trolling advances cursor to pc = %p,sp = %p",spr_pc,spr_sp);
+      cursor->pc = spr_pc;
+      cursor->bp = spr_bp;
+      cursor->sp = spr_sp;
+    }
+  }
+  else {
+    EMSG("Troll failed: dropping sample,cursor pc = %p",pc);
+    // assert(0);
+    drop_sample();
+  }
+}
+/****************************************************************************************
+ * debug operations
+ ***************************************************************************************/
+
+unw_cursor_t _dbg_cursor;
+
+void dbg_init_cursor(void *context){
+  _dbg_no_longjmp = 1;
+  unw_init_f_mcontext(context,&_dbg_cursor);
+  _dbg_no_longjmp = 0;
+}

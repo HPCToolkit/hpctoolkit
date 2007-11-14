@@ -100,7 +100,13 @@ endif
 
 #MPI_INC := -I/usr/mpich/mpich-1.2.6-pgi614/include
 
-INCS := -I. $(INC_PFM) $(INC_UNWIND) $(INC_THREAD)\
+ifeq "$(strip $(src_dir_prefix))" ""
+src_dir_inc := .
+else
+src_dir_inc := $(patsubst %/,%,$(src_dir_prefix))
+endif
+
+INCS := -I$(src_dir_inc) $(INC_PFM) $(INC_UNWIND) $(INC_THREAD)\
          $(INC_MON) $(INC_BETTER_UNW)
 ifdef MPI_SPECIAL
 INCS += $(MPI_INC)
