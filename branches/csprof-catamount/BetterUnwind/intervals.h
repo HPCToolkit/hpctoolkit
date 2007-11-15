@@ -7,15 +7,10 @@ struct unwind_interval_t {
   unsigned long endaddr;
   ra_loc ra_status; /* how to find the return address */
   unsigned int ra_pos; /* return address offset from sp */
-#if 1
   unsigned int bp_ra_pos; /* return address offset from bp */
-#endif
   bp_loc bp_status; /* how to find the bp register */
   int bp_pos; /* BP offset from sp */
-
-#if 1
   int bp_bp_pos; /* (caller's) BP offset from bp */
-#endif
   struct unwind_interval_t *next;
   struct unwind_interval_t *prev;
 };

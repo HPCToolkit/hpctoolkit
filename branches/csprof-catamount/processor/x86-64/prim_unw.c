@@ -129,17 +129,9 @@ int unw_step (unw_cursor_t *cursor){
 
   if (uw->ra_status == RA_BP_FRAME){
     // bp relative
-#if 1
     spr_sp  = ((void **)((unsigned long) bp + uw->bp_bp_pos));
-#else
-    spr_sp  = ((void **)((unsigned long) bp + uw->bp_pos));
-#endif
     spr_bp  = *spr_sp;
-#if 1
     spr_sp  = ((void **)((unsigned long) bp + uw->bp_ra_pos));
-#else
-    spr_sp  = ((void **)((unsigned long) bp + uw->ra_pos));
-#endif
     spr_pc  = *spr_sp;
     spr_sp += 1;
   }
@@ -150,11 +142,9 @@ int unw_step (unw_cursor_t *cursor){
     if (uw->bp_status == BP_UNCHANGED){
       spr_bp = bp;
     }
-    else if (uw->ra_status == RA_STD_FRAME){
-      spr_bp  = (void **) *(spr_sp -1);
-    }
     else {
       spr_bp = (void **)((unsigned long) sp + uw->bp_pos);
+      spr_bp  = *spr_bp; /* john and nathan's modification */
     }
     spr_sp += 1;
   }

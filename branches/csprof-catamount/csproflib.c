@@ -718,7 +718,8 @@ static int csprof_options__getopts(csprof_options_t* x){
     char* s1;
     errno = 0; /* set b/c return values on error are all valid numbers! */
     l = strtol(s, &s1, 10);
-    if (errno != 0 || l < 1 || *s1 != '\0') {
+    // mwf allow 0 as a sample period for debugging
+    if (errno != 0 || l < 0 || *s1 != '\0') {
       DIE("value of option `%s' [%s] is an invalid decimal integer", __FILE__, __LINE__,
           CSPROF_OPT_SAMPLE_PERIOD, s);
     }

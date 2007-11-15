@@ -5,6 +5,15 @@ using namespace std;
 #include "intervals.h"
 #include "find.h"
 
+#if 0
+#include "mem.h"
+// johnmc - we should include mem.h, but it defines a variable
+#else
+extern "C" {
+void* csprof_malloc(size_t size);
+};
+#endif
+
 
 using namespace XED;
 
@@ -50,14 +59,10 @@ static unwind_interval poison = {
   0L,
   POISON,
   0,
-#if 1
   0,
-#endif  
   BP_HOSED,
   0,
-#if 1
   0,
-#endif
   NULL,
   NULL
 };
@@ -105,143 +110,137 @@ print_flags(xed_decoded_inst_t& xedd)
     }
 }
 
-void
-print_memops(xed_decoded_inst_t& xedd)
-{
-
-    cerr << "Memory Operands" << endl;
-    for(unsigned int i=0;i<xedd.number_of_memory_operands() ; i++)
+void print_memops(xed_decoded_inst_t& xedd){
+  cerr << "Memory Operands" << endl;
+  for(unsigned int i=0;i<xedd.number_of_memory_operands() ; i++)
     {
-        cerr << "  " << i << " ";
-        if ( xedd.mem_read(i))
+      cerr << "  " << i << " ";
+      if ( xedd.mem_read(i))
         {
-            cerr << "read ";
+	  cerr << "read ";
         }
-        else if (xedd.mem_written(i))
+      else if (xedd.mem_written(i))
         {
-            cerr << "written ";
+	  cerr << "written ";
         }
-        else 
+      else 
         {
-            cerr << "agen "; // LEA instructions
-        }
-
-        xedregs_t seg = xedd.get_seg_reg(i);
-        if (seg != XEDREG_INVALID) 
-        {
-            cerr << "SEG= " << seg << " ";
+	  cerr << "agen "; // LEA instructions
         }
 
-        xedregs_t base = xedd.get_base_reg(i);
-        if (base != XEDREG_INVALID) 
+      xedregs_t seg = xedd.get_seg_reg(i);
+      if (seg != XEDREG_INVALID) 
         {
-            cerr << "BASE= " << base << "/" <<  xed_reg_class(base) << " ";
+	  cerr << "SEG= " << seg << " ";
         }
 
-        xedregs_t indx = xedd.get_index_reg();
-        if (i == 0 && indx != XEDREG_INVALID) 
+      xedregs_t base = xedd.get_base_reg(i);
+      if (base != XEDREG_INVALID) 
         {
-            cerr << "INDEX= " << indx
-                 << "/" <<  xed_reg_class(indx) << " ";
-            if (xedd.get_scale() != 0) 
+	  cerr << "BASE= " << base << "/" <<  xed_reg_class(base) << " ";
+        }
+
+      xedregs_t indx = xedd.get_index_reg();
+      if (i == 0 && indx != XEDREG_INVALID) 
+        {
+	  cerr << "INDEX= " << indx
+	       << "/" <<  xed_reg_class(indx) << " ";
+	  if (xedd.get_scale() != 0) 
             {
-                // only have a scale if the index exists.
-                cerr << "SCALE= " <<  xedd.get_scale() << " ";
+	      // only have a scale if the index exists.
+	      cerr << "SCALE= " <<  xedd.get_scale() << " ";
             }
         }
 
-        if (i == 0)
+      if (i == 0)
         {
-            const unsigned int disp_bytes = xedd.get_disp().get_bytes();
-            if (disp_bytes && xedd.get_displacement_for_memop()) 
+	  const unsigned int disp_bytes = xedd.get_disp().get_bytes();
+	  if (disp_bytes && xedd.get_displacement_for_memop()) 
             {
-                cerr  << "DISPLACEMENT= " 
-                      << disp_bytes
-                      << " ";
-                const xed_immdis_t& disp =  xedd.get_disp();
-                disp.print_value_signed(cerr);
+	      cerr  << "DISPLACEMENT= " 
+		    << disp_bytes
+		    << " ";
+	      const xed_immdis_t& disp =  xedd.get_disp();
+	      disp.print_value_signed(cerr);
             }
         }
 
-        cerr << endl;
+      cerr << endl;
     }
 
-    cerr << "  MemopLength = " << xedd.get_memory_operand_length() << endl;
+  cerr << "  MemopLength = " << xedd.get_memory_operand_length() << endl;
 
 }
 
-void
-print_operands(xed_decoded_inst_t& xedd)
-{
-    cerr << "Operands" << endl;
-    for(unsigned int i=0; i < xedd.get_operand_count() ; i++)
-    { 
-        const xed_decoded_resource_t& r =  xedd.get_operand_resource(i);
-        cerr << "  "
-             << i 
-             << " "
-             << r.get_res() 
-             << " ";
-        switch(r.get_res())
-        {
-          case XED_RESOURCE_AGEN:
-          case XED_RESOURCE_MEM0:
-          case XED_RESOURCE_MEM1:
-            // we print memops in a different function
-            break;
-          case XED_RESOURCE_DISP: // branch displacements
-            {
-	      // assert(xedd.has_disp() && ! xedd.get_displacement_for_memop());
-	        assert(r.disp());
-                const xed_immdis_t& disp =  xedd.get_disp();
-                disp.print_value_signed(cerr);
-            }
-            break;
+void print_operands(xed_decoded_inst_t& xedd){
+  cerr << "Operands" << endl;
+  for(unsigned int i=0; i < xedd.get_operand_count() ; i++){ 
+    const xed_decoded_resource_t& r =  xedd.get_operand_resource(i);
+    cerr << "  "
+	 << i 
+	 << " "
+	 << r.get_res() 
+	 << " ";
+    switch(r.get_res())
+      {
+      case XED_RESOURCE_AGEN:
+      case XED_RESOURCE_MEM0:
+      case XED_RESOURCE_MEM1:
+	// we print memops in a different function
+	break;
+      case XED_RESOURCE_DISP: // branch displacements
+	{
+	  // assert(xedd.has_disp() && ! xedd.get_displacement_for_memop());
+	  assert(r.disp());
+	  const xed_immdis_t& disp =  xedd.get_disp();
+	  disp.print_value_signed(cerr);
+	}
+	break;
 
-          case XED_RESOURCE_IMM: // immediates
-            {
+      case XED_RESOURCE_IMM: // immediates
+	{
 
-                const xed_immdis_t& immed =  xedd.get_immed();
-                assert(immed.is_present());
-                immed.print_value_unsigned(cerr);
-            }
-            break;
+	  const xed_immdis_t& immed =  xedd.get_immed();
+	  assert(immed.is_present());
+	  immed.print_value_unsigned(cerr);
+	}
+	break;
 
-          case XED_RESOURCE_IMM8: // Only for the ENTER instruction
-                cerr << hex 
-                     << "0x"
-                     << std::setfill('0')
-                     << (unsigned int)r.get_imm8() 
-                     << std::setfill(' ')
-                     << dec;
-                break;
+      case XED_RESOURCE_IMM8: // Only for the ENTER instruction
+	cerr << hex 
+	     << "0x"
+	     << std::setfill('0')
+	     << (unsigned int)r.get_imm8() 
+	     << std::setfill(' ')
+	     << dec;
+	break;
 
-          case XED_RESOURCE_PSEUDO: // pseudo resources
-            cerr  << r.get_pseudo_res();
-            break;
+      case XED_RESOURCE_PSEUDO: // pseudo resources
+	cerr  << r.get_pseudo_res();
+	break;
 
-          case XED_RESOURCE_REG: // registers
-            cerr << r.get_reg();
-            break;
+      case XED_RESOURCE_REG: // registers
+	cerr << r.get_reg();
+	break;
 
-          case XED_RESOURCE_INVALID:
-            cerr  << "INVALID"; 
-            break;
+      case XED_RESOURCE_INVALID:
+	cerr  << "INVALID"; 
+	break;
             
-          default:
-	    EMSG("reached default, should not!!");
-            assert(0);
+      default:
+	EMSG("reached default, should not!!");
+	assert(0);
 
-        }
-        cerr << " " 
-             << r.get_opvis() << " / "
-             << r.get_opnd_action() 
-             << endl;
-    }
+      }
+    cerr << " " 
+	 << r.get_opvis() << " / "
+	 << r.get_opnd_action() 
+	 << endl;
+  }
 }
 
 unwind_interval *fluke_interval(char *loc,unsigned int pos){
-  unwind_interval *u = (unwind_interval *) malloc(sizeof(unwind_interval)); 
+  unwind_interval *u = (unwind_interval *) csprof_malloc(sizeof(unwind_interval)); 
   u->startaddr = (unsigned long) loc;
   u->endaddr = (unsigned long) loc;
   u->ra_status = RA_SP_RELATIVE;
@@ -253,27 +252,21 @@ unwind_interval *fluke_interval(char *loc,unsigned int pos){
 
 unwind_interval *newinterval(char *start,
 			     ra_loc loc, unsigned int pos,
-#if 1
 			     int bp_ra_pos,
-#endif
 			     bp_loc loc2, int pos2,
-#if 1
 			     int bp_bp_pos,
-#endif
 			     unwind_interval *prev){
 
-  unwind_interval *u = (unwind_interval *) malloc(sizeof(unwind_interval)); 
+  unwind_interval *u = (unwind_interval *) csprof_malloc(sizeof(unwind_interval)); 
   u->startaddr = (unsigned long) start;
   u->endaddr = 0;
   u->ra_status = loc;
   u->ra_pos = pos;
   u->bp_status = loc2;
   u->bp_pos    = pos2;
-  #if 1
   // johnmc 11am Nov 13, 2007
   u->bp_bp_pos = bp_bp_pos;
   u->bp_ra_pos = bp_ra_pos;
-  #endif
   u->next = NULL;
   u->prev = prev;
   return u; 
@@ -316,13 +309,9 @@ void dump(unwind_interval *u){
   // replace endl at end with a \n and explicit 0;
   cerr_s <<  "start="<< (void *) u->startaddr << " end=" << (void *) u->endaddr <<
     " stat=" << status(u->ra_status) << " pos=" << u->ra_pos <<
-#if 1
     " bp_ra_pos=" << u->bp_ra_pos <<
-#endif
     " bp_stat=" << bp_status(u->bp_status) << " bp_pos=" << u->bp_pos <<
-#if 1
     " bp_bp_pos=" << u->bp_bp_pos <<
-#endif
     " next=" << u->next << " prev=" << u->prev << "\n" << '\0';
 
   PMSG(INTV,buf);
@@ -332,6 +321,22 @@ void dump(unwind_interval *u){
 // wrapper to ensure a C interface
 void idump(unwind_interval *u){
   dump(u);
+}
+
+bool no_push_bp_save(xed_decoded_inst_t xedd){
+  
+  if (xedd.get_iclass() == XEDICLASS_MOV){
+    const xed_decoded_resource_t& r0 =  xedd.get_operand_resource(0);
+    const xed_decoded_resource_t& r1 =  xedd.get_operand_resource(1);
+
+    return ((r0.get_res() == XED_RESOURCE_MEM0) &&
+	    (r0.get_opnd_action() == XED_OPND_ACTION_W) &&
+	    (xedd.get_base_reg(0) == XEDREG_RSP) &&
+	    (r1.get_res() == XED_RESOURCE_REG) &&
+	    (r1.get_reg() == XEDREG_RBP) &&
+	    (r1.get_opnd_action() == XED_OPND_ACTION_R));
+  }
+  return false;
 }
 
 unwind_interval *what(xed_decoded_inst_t& xedd, char *ins, 
@@ -348,6 +353,12 @@ unwind_interval *what(xed_decoded_inst_t& xedd, char *ins,
   bool fdebug = DBG;
   bool mdebug = DBG;
 
+  if (no_push_bp_save(xedd)){
+    return newinterval(ins + xedd.get_length(),
+		       current->ra_status,current->ra_pos,current->bp_ra_pos,
+		       BP_SAVED,xedd.get_disp().get_signed64(),current->bp_bp_pos,
+		       current);
+  }
   // FIXME: look up bp action f enter
   if (xedd.get_iclass() == XEDICLASS_ENTER) {
     long offset = 8;
@@ -374,14 +385,10 @@ unwind_interval *what(xed_decoded_inst_t& xedd, char *ins,
     return newinterval(ins + xedd.get_length(),
 		       RA_STD_FRAME,
 		       current->ra_pos + offset,
-#if 1
 		       8,
-#endif
 		       BP_SAVED,
 		       current->bp_pos + offset -8,
-#if 1
 		       0,
-#endif
 		       current);
   }
   for(unsigned int i=0; i < xedd.get_operand_count() ; i++){ 
@@ -446,14 +453,10 @@ unwind_interval *what(xed_decoded_inst_t& xedd, char *ins,
 			       // RA_SP_RELATIVE, 
 			       current->ra_status,
 			       current->ra_pos + size,
-#if 1
 			       current->bp_ra_pos,
-#endif
 			       current->bp_status,
 			       current->bp_pos + size,
-#if 1
 			       current->bp_bp_pos,
-#endif
 			       current);
 	  }
 	  else if (xedd.get_category() == XED_CATEGORY_POP) {
@@ -480,14 +483,10 @@ unwind_interval *what(xed_decoded_inst_t& xedd, char *ins,
 			       // RA_SP_RELATIVE,
 			       current->ra_status,
 			       current->ra_pos + size,
-#if 1
 			       current->bp_ra_pos,
-#endif
 			       current->bp_status,
 			       current->bp_pos + size,
-#if 1
 			       current->bp_bp_pos,
-#endif
 			       current);
 	  }
 	  else if (xedd.get_category() == XED_CATEGORY_DATAXFER){
@@ -496,17 +495,10 @@ unwind_interval *what(xed_decoded_inst_t& xedd, char *ins,
 	    if ((op1.get_res() == XED_RESOURCE_REG) &&
 	        (op1.get_reg() == XEDREG_RBP)) {
 	      PMSG(INTV,"Restore RSP from BP detected @%p",ins);
-#if 1
 	      next = newinterval(ins + xedd.get_length(),
 				 RA_SP_RELATIVE, current->bp_ra_pos, current->bp_ra_pos,
 				 current->bp_status,current->bp_bp_pos, current->bp_bp_pos,
 				 current);
-#else
-	      next = newinterval(ins + xedd.get_length(),
-				 RA_SP_RELATIVE, current->ra_pos,
-				 current->bp_status,current->bp_pos,
-				 current);
-#endif
 	    }
 	  }
 	  else if ((xedd.get_iclass() == XEDICLASS_SUB) ||
@@ -525,19 +517,15 @@ unwind_interval *what(xed_decoded_inst_t& xedd, char *ins,
 				       // RA_SP_RELATIVE, 
 				       current->ra_status,
 				       current->ra_pos + sign * immed.get_signed64(),
-#if 1
 				       current->bp_ra_pos,
-#endif
 				       current->bp_status,
 				       current->bp_pos + sign * immed.get_signed64(),
-#if 1
 				       current->bp_bp_pos,
-#endif
 				       current);
 	    }
 	    else {
-#if 1 
-// johnmc - i think this is wrong in my replacement below, I update ra_pos to be bp-relative. I also set bp_pos to zero after the move.
+	      // johnmc - i think this is wrong in my replacement below
+	      // I update ra_pos to be bp-relative. I also set bp_pos to zero after the move.
 	      if (current->ra_status != RA_BP_FRAME){
 		EMSG("!! NO immediate in sp add/sub @ %p, switching to BP_FRAME",ins);
 		next = newinterval(ins + xedd.get_length(),
@@ -548,14 +536,6 @@ unwind_interval *what(xed_decoded_inst_t& xedd, char *ins,
 				   current->bp_pos,
 				   current->bp_bp_pos,
 				   current);
-#else
-		next = newinterval(ins + xedd.get_length(),
-				   RA_BP_FRAME,
-				   current->ra_pos - current->bp_pos,
-				   current->bp_status,
-				   0,
-				   current);
-#endif
 		bp_frames_found = true;
 		// assert(0 && "no immediate in add or sub!");
 		// return &poison;
@@ -584,9 +564,6 @@ unwind_interval *what(xed_decoded_inst_t& xedd, char *ins,
 	  if (fdebug){
 	    cerr << "\t writes RBP" << endl;
 	  }
-#if 0 // just pushed replaced by BP_SAVED
-	  if (bp_just_pushed &&
-#endif
 	  if (xedd.get_category() == XED_CATEGORY_POP){
 	    next_bp_popped = true;
 	  }
@@ -601,14 +578,10 @@ unwind_interval *what(xed_decoded_inst_t& xedd, char *ins,
 	      next = newinterval(ins + xedd.get_length(), 
 				 RA_STD_FRAME,
 				 current->ra_pos,
-#if 1
 				 current->ra_pos,
-#endif
 				 BP_SAVED,
 				 current->bp_pos,
-#if 1
 				 current->bp_pos,
-#endif
 				 current); 
 	    }
 	  }
@@ -632,28 +605,16 @@ unwind_interval *what(xed_decoded_inst_t& xedd, char *ins,
 	      EMSG("!! pop class, but no pop type !!");
 	      assert(0);
 	    }
-#if 1
 	    // johnmc
 	    EMSG("PROBLEM @%p: pop bp in BP_FRAME mode",ins);
 	    next = newinterval(ins + xedd.get_length(), 
 			       RA_SP_RELATIVE, 0, 0,
 			       BP_UNCHANGED, current->bp_pos, 0,
 			       current);
-#else
-	    next = newinterval(ins + xedd.get_length(), 
-			       RA_SP_RELATIVE, 0,
-			       BP_UNCHANGED, 0,
-			       current);
-#endif
 	  }
 	} 
       }
       break;
-#if 0
-    case XED_RESOURCE_INVALID:
-      cerr  << "INVALID"; 
-      break;
-#endif
     default:
       break;
 
@@ -698,55 +659,13 @@ void handle_return(xed_decoded_inst_t xedd, unwind_interval *&current, unwind_in
     else { // look for first nondecreasing with no jmp
       first = find_first_non_decr(first,firstjmpi);
     }
-#if 1
     PMSG(INTV,"new interval from RET");
     next = newinterval(ins + xedd.get_length(),
 		       first->ra_status,first->ra_pos,first->bp_ra_pos,
 		       first->bp_status,first->bp_pos,first->bp_bp_pos,
 		       current);
-#else
-    next = newinterval(ins + xedd.get_length(),
-		       first->ra_status,first->ra_pos,
-		       first->bp_status,first->bp_pos,
-		       current);
-#endif
   }
 }
-#ifdef NO_IS_OLD
-#if 1
-	    next = newinterval(ins + xedd.get_length(),
-			       RA_BP_FRAME,current->prev->ra_pos,current->prev->bp_ra_pos,
-			       current->bp_status,current->bp_pos,current->bp_bp_pos,
-			       current);
-#else
-	    next = newinterval(ins + xedd.get_length(),
-			       RA_BP_FRAME,current->prev->ra_pos,
-			       current->bp_status,current->bp_pos,
-			       current);
-#endif
-      if (ins + xedd.get_length() < end) {
-	if (current->prev){ 
-	  if (current->prev->ra_status == RA_BP_FRAME) {
-	  } else {
-	    if (irdebug){
-	      cerr << "--In RET interval backup" << endl;
-	    }
-	    next = current->prev;
-	    if (irdebug){
-	      cerr << "--looping thru prev" << endl;
-	    }
-	    while (first && first->next && (first->ra_pos <= first->next->ra_pos) && (first != firstjmpi)) {
-	      if (first->next->ra_status == RA_BP_FRAME){
-		first = first->next;
-		break;
-	      }
-	      first = first->next;
-	    }
-	  }
-	}
-      }
-}
-#endif
 void set_flags(bool val)
 {
   idebug  = val;
@@ -773,6 +692,30 @@ void pl_build_intervals(char  *addr, int xed, int pint)
 	_dbg_pmsg_restore();
 }
 
+xed_decoded_inst_t _dbg_xedd;
+
+void pl_xedd(void *ins){
+  xed_state_t dstate(XED_MACHINE_MODE_LONG_64, ADDR_WIDTH_64b, ADDR_WIDTH_64b);
+
+  _dbg_xedd.init(dstate);
+  xed_decode(&_dbg_xedd, reinterpret_cast<const UINT8*>(ins), 15);
+}
+
+void pl_dump_ins(void *ins){
+  xed_decoded_inst_t xedd;
+  xed_error_enum_t xed_error;
+
+  xed_state_t dstate(XED_MACHINE_MODE_LONG_64, ADDR_WIDTH_64b, ADDR_WIDTH_64b);
+
+  xedd.init(dstate);
+  xed_error = xed_decode(&xedd, reinterpret_cast<const UINT8*>(ins), 15);
+
+  cerr << (void *) ins << " (" << xedd.get_length() << " bytes) " 
+       << xedd.get_iclass() << endl;
+  print_operands(xedd);
+  print_memops(xedd);
+}
+
 interval_status l_build_intervals(char  *ins, unsigned int len)
 {
   xed_decoded_inst_t xedd;
@@ -793,11 +736,8 @@ interval_status l_build_intervals(char  *ins, unsigned int len)
   xed_state_t dstate(XED_MACHINE_MODE_LONG_64, ADDR_WIDTH_64b, ADDR_WIDTH_64b);
 
   PMSG(INTV,"L_BUILD: start = %p, end = %p",ins,end);
-#if 1
   current = newinterval(ins, RA_SP_RELATIVE, 0, 0, BP_UNCHANGED, 0, 0, NULL);
-#else
-  current = newinterval(ins, RA_SP_RELATIVE, 0, BP_UNCHANGED, 0, NULL);
-#endif
+
   if (ildebug){
     PMSG(INTV,"L_BUILD:dump first");
     dump(current);
@@ -834,41 +774,14 @@ interval_status l_build_intervals(char  *ins, unsigned int len)
       continue;
       // goto done;
     }
-
     if (xedd.get_iclass() == XEDICLASS_LEAVE) {
-#if 1
       PMSG(INTV,"new interval from LEAVE");
       next = newinterval(ins + xedd.get_length(), RA_SP_RELATIVE, 0, 0, BP_UNCHANGED, 0, 0, current);
-#else
-      next = newinterval(ins + xedd.get_length(), RA_SP_RELATIVE, 0, BP_UNCHANGED, 0, current);
-#endif
     } else if (xedd.get_category() == XED_CATEGORY_RET) {
       // if the return is not the last instruction in the interval, 
       // set up an interval for code after the return 
       if (ins + xedd.get_length() < end) {
-#if 0
-	if (current->prev){ 
-	  if (current->prev->ra_status == RA_BP_RELATIVE) {
-	    next = newinterval(ins + xedd.get_length(), RA_BP_RELATIVE, 
-			       current->prev->ra_pos, current);
-	  } else {
-	    if (irdebug){
-	      cerr << "--In RET interval backup" << endl;
-	    }
-	    next = current->prev;
-	    if (irdebug){
-	      cerr << "--looping thru prev" << endl;
-	    }
-	    while ((next->prev != NULL) && (next->ra_pos < next->prev->ra_pos)) {
-	      next = next->prev;
-	    }
-	    next = newinterval(ins + xedd.get_length(), next->ra_status,
-			       next->ra_pos, current);
-	  }
-	}
-#else
         handle_return(xedd, current, next, ins, end, irdebug, first, firstjmpi); 
-#endif
       }
     } else  if ((xedd.get_iclass() == XEDICLASS_JMP) || (xedd.get_iclass() == XEDICLASS_JMP_FAR)) { 	
             if (firstjmpi == 0) firstjmpi = current;
