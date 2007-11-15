@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <stdarg.h>
 #include <string.h>
+#include <sys/types.h>
 #include <unistd.h>
 
 #include "simple-lock.h"
@@ -66,9 +67,12 @@ FILE *pmsg_db_save_file;
 
 void pmsg_init(void){
 
-  __msg_mask = TROLL;
+  /* Generate a filename */
+  char fnm[CSPROF_FNM_SZ];
 
-  log_file = fopen(LOG_FILE_NAME,"w");
+  sprintf(fnm, "%d.%s",getpid(),LOG_FILE_NAME);
+
+  log_file = fopen(fnm,"w");
   if (! log_file){
     log_file = stderr;
   }

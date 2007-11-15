@@ -28,7 +28,6 @@
 #define CSPROF_PROFILE_TIMER ITIMER_REAL
 #endif
 
-
 int s1 = 0;
 int s2 = 0;
 int s3 = 0;
@@ -287,8 +286,9 @@ csprof_take_profile_sample(csprof_state_t *state, struct ucontext *ctx)
 
 void *unwind_pc;
 
-int samples_taken = 0;
-int bad_unwind_count    = 0;
+int samples_taken    = 0;
+int bad_unwind_count = 0;
+int csprof_sample    = 0;
 
 static void csprof_itimer_signal_handler(int sig, siginfo_t *siginfo, void *context){
 
@@ -309,6 +309,7 @@ static void csprof_itimer_signal_handler(int sig, siginfo_t *siginfo, void *cont
 #endif
   MSG(1,"got itimer signal");
 
+  csprof_sample = 1;
   if (!sigsetjmp(it->jb,1)){
     CSPROF_SIGNAL_HANDLER_GUTS(context);
   }
@@ -317,29 +318,27 @@ static void csprof_itimer_signal_handler(int sig, siginfo_t *siginfo, void *cont
          unwind_pc);
     bad_unwind_count++;
   }
-
+  csprof_sample = 0;
   csprof_set_timer();
 }
 
-static void
-csprof_init_signal_handler()
-{
-    struct sigaction sa;
-    int ret;
+static void csprof_init_signal_handler(void){
+  struct sigaction sa;
+  int ret;
 
-    MSG(1,"Got to init signal handler\n");
+  MSG(1,"Got to init signal handler\n");
 
-    /* set up handler for profiling purposes */
-    sa.sa_sigaction = csprof_itimer_signal_handler;
-    /* do we care very much about other signals being delivered
-       while we're recording profiling information? */
-    sigemptyset(&sa.sa_mask);
-    /* get new-style signals and automagically restart any system calls
-       that we interrupt -- especially useful when using SIGPROF for
-       CSPROF_PROFILE_SIGNAL. */
-    sa.sa_flags = SA_SIGINFO | SA_RESTART;
+  /* set up handler for profiling purposes */
+  sa.sa_sigaction = csprof_itimer_signal_handler;
+  /* do we care very much about other signals being delivered
+     while we're recording profiling information? */
+  sigemptyset(&sa.sa_mask);
+  /* get new-style signals and automagically restart any system calls
+     that we interrupt -- especially useful when using SIGPROF for
+     CSPROF_PROFILE_SIGNAL. */
+  sa.sa_flags = SA_SIGINFO | SA_RESTART;
 
-    ret = sigaction(CSPROF_PROFILE_SIGNAL, &sa, 0);
+  ret = sigaction(CSPROF_PROFILE_SIGNAL, &sa, 0);
 }
 
 extern void setup_segv(void);

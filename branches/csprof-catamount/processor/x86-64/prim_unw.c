@@ -201,7 +201,7 @@ static void update_cursor_with_troll(unw_cursor_t *cursor, void *sp, void *pc){
 
     cursor->intvl = csprof_addr_to_interval((unsigned long)spr_pc);
     if (! cursor->intvl){
-      EMSG("No interval found for trolled pc, dropping sample,cursor pc = %p",pc);
+      PMSG(TROLL, "No interval found for trolled pc, dropping sample,cursor pc = %p",pc);
       // assert(0);
       drop_sample();
     }
@@ -213,7 +213,7 @@ static void update_cursor_with_troll(unw_cursor_t *cursor, void *sp, void *pc){
     }
   }
   else {
-    EMSG("Troll failed: dropping sample,cursor pc = %p",pc);
+    PMSG(TROLL, "Troll failed: dropping sample,cursor pc = %p",pc);
     // assert(0);
     drop_sample();
   }

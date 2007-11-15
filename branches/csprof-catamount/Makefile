@@ -65,7 +65,7 @@ DEFINES += $(PERF)
 
 #CSPROF_TRAMPOLINE := -DCSPROF_TRAMPOLINE_BACKEND=1
 
-CFLAGS := -fPIC -g -Wall 
+CFLAGS := -fPIC -O2 -Wall 
 #CFLAGS := -g -Wall  #CATAMOUNT
 
 AR := /usr/bin/ar

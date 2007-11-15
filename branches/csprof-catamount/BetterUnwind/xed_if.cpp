@@ -716,6 +716,11 @@ void pl_dump_ins(void *ins){
   print_memops(xedd);
 }
 
+int is_jump(xed_decoded_inst_t *xedd)
+{
+    return (xedd->get_iclass() >= XEDICLASS_JB) && (xedd->get_iclass() <= XEDICLASS_JZ);
+}
+
 interval_status l_build_intervals(char  *ins, unsigned int len)
 {
   xed_decoded_inst_t xedd;
@@ -783,7 +788,7 @@ interval_status l_build_intervals(char  *ins, unsigned int len)
       if (ins + xedd.get_length() < end) {
         handle_return(xedd, current, next, ins, end, irdebug, first, firstjmpi); 
       }
-    } else  if ((xedd.get_iclass() == XEDICLASS_JMP) || (xedd.get_iclass() == XEDICLASS_JMP_FAR)) { 	
+    } else  if ((xedd.get_iclass() >= XEDICLASS_JMP) || (xedd.get_iclass() == XEDICLASS_JMP_FAR)) { 	
             if (firstjmpi == 0) firstjmpi = current;
 	    if (xedd.number_of_memory_operands() == 0) {
 		    const xed_immdis_t& disp =  xedd.get_disp();
@@ -798,7 +803,8 @@ interval_status l_build_intervals(char  *ins, unsigned int len)
 		    }
 	    }
     }else {
-      if ((xedd.get_category() == XED_CATEGORY_CALL) && (firstjmpi == 0)) firstjmpi = current;
+      if (((xedd.get_category() == XED_CATEGORY_CALL) || is_jump(&xedd)) && (firstjmpi == 0)) firstjmpi = current;
+
       next = what(xedd, ins, current, bp_just_pushed);
     }
     if (next == &poison){
