@@ -19,6 +19,7 @@ using namespace XED;
 
 
 
+xed_state_t dstate(XED_MACHINE_MODE_LONG_64, ADDR_WIDTH_64b, ADDR_WIDTH_64b);
 
 // The state of the machine -- required for decoding
 // static xed_state_t dstate(XED_MACHINE_MODE_LONG_64,
@@ -353,7 +354,9 @@ unwind_interval *what(xed_decoded_inst_t& xedd, char *ins,
   bool fdebug = DBG;
   bool mdebug = DBG;
 
-  if (no_push_bp_save(xedd)){
+  // johnmc: don't consider this a save of the caller's RBP if the
+  // caller's RBP has already been saved. (change 2)
+  if (no_push_bp_save(xedd) && current->bp_status != BP_SAVED){
     return newinterval(ins + xedd.get_length(),
 		       current->ra_status,current->ra_pos,current->bp_ra_pos,
 		       BP_SAVED,xedd.get_disp().get_signed64(),current->bp_bp_pos,
@@ -664,6 +667,8 @@ void handle_return(xed_decoded_inst_t xedd, unwind_interval *&current, unwind_in
 		       first->ra_status,first->ra_pos,first->bp_ra_pos,
 		       first->bp_status,first->bp_pos,first->bp_bp_pos,
 		       current);
+  } else { 
+  	next = current; 
   }
 }
 void set_flags(bool val)
@@ -695,8 +700,6 @@ void pl_build_intervals(char  *addr, int xed, int pint)
 xed_decoded_inst_t _dbg_xedd;
 
 void pl_xedd(void *ins){
-  xed_state_t dstate(XED_MACHINE_MODE_LONG_64, ADDR_WIDTH_64b, ADDR_WIDTH_64b);
-
   _dbg_xedd.init(dstate);
   xed_decode(&_dbg_xedd, reinterpret_cast<const UINT8*>(ins), 15);
 }
@@ -704,8 +707,6 @@ void pl_xedd(void *ins){
 void pl_dump_ins(void *ins){
   xed_decoded_inst_t xedd;
   xed_error_enum_t xed_error;
-
-  xed_state_t dstate(XED_MACHINE_MODE_LONG_64, ADDR_WIDTH_64b, ADDR_WIDTH_64b);
 
   xedd.init(dstate);
   xed_error = xed_decode(&xedd, reinterpret_cast<const UINT8*>(ins), 15);
@@ -721,13 +722,95 @@ int is_jump(xed_decoded_inst_t *xedd)
     return (xedd->get_iclass() >= XEDICLASS_JB) && (xedd->get_iclass() <= XEDICLASS_JZ);
 }
 
-interval_status l_build_intervals(char  *ins, unsigned int len)
+#undef USE_CALL_LOOKAHEAD
+#ifdef USE_CALL_LOOKAHEAD
+unwind_interval *
+call_lookahead(xed_decoded_inst_t *call_xedd, unwind_interval *current, char *ins)
+{
+  // Assumes: 'ins' is pointing at the instruction from which
+  // lookahead is to occur (i.e, the instruction prior to the first
+  // lookahead).
+
+  unwind_interval *next;
+  xed_error_enum_t xed_err;
+  int length = call_xedd->get_length();
+  xed_decoded_inst_t xeddobj;
+  xed_decoded_inst_t* xedd = &xeddobj;
+  char *jmp_ins_addr = ins + length;
+  char *jmp_target = NULL;
+  char *jmp_succ_addr = NULL;
+
+  if (current->ra_status == RA_BP_FRAME) {
+    return current;
+  }
+
+  // -------------------------------------------------------
+  // requirement 1: unconditional jump with known target within routine
+  // -------------------------------------------------------
+  xedd->init(dstate);
+  xed_err = xed_decode(xedd, reinterpret_cast<const UINT8*>(jmp_ins_addr), 15);
+  if (xed_err != XED_ERROR_NONE) {
+    return current;
+  }
+
+  if ((xedd->get_iclass() == XEDICLASS_JMP) || 
+      (xedd->get_iclass() == XEDICLASS_JMP_FAR)) {
+    if (xedd->number_of_memory_operands() == 0) {
+      const xed_immdis_t& disp = xedd->get_disp();
+      if (disp.is_present()) {
+	long long offset = disp.get_signed64();
+	jmp_succ_addr = jmp_ins_addr + xedd->get_length();
+	jmp_target = jmp_succ_addr + offset;
+      }
+    }
+  }
+  if (jmp_target == NULL) {
+    // jump of proper type not recognized 
+    return current;
+  }
+  // FIXME: possibly test to ensure jmp_target is within routine
+
+  // -------------------------------------------------------
+  // requirement 2: jump target affects stack
+  // -------------------------------------------------------
+  xedd->init(dstate);
+  xed_err = xed_decode(xedd, reinterpret_cast<const UINT8*>(jmp_target), 15);
+  if (xed_err != XED_ERROR_NONE) {
+    return current;
+  }
+  
+  if ((xedd->get_iclass() == XEDICLASS_SUB) ||
+      (xedd->get_iclass() == XEDICLASS_ADD)) {
+    const xed_decoded_resource_t& r0 = xedd->get_operand_resource(0);
+    if ((r0.get_res() == XED_RESOURCE_REG) && (r0.get_reg() == XEDREG_RSP)) {
+      const xed_immdis_t& immed = xedd->get_immed();
+      if (immed.is_present()) {
+	int sign = (xedd->get_iclass() == XEDICLASS_ADD) ? -1 : 1;
+	long offset = sign * immed.get_signed64();
+	PMSG(INTV,"newinterval from ADD/SUB immediate");
+	next = newinterval(jmp_succ_addr,
+			   current->ra_status,
+			   current->ra_pos + offset,
+			   current->bp_ra_pos,
+			   current->bp_status,
+			   current->bp_pos + offset,
+			   current->bp_bp_pos,
+			   current);
+        return next;
+      }
+    }
+  }
+  return current;
+}
+#endif
+
+interval_status l_build_intervals(char *ins, unsigned int len)
 {
   xed_decoded_inst_t xedd;
 
   interval_status xed_stat;
   xed_error_enum_t xed_error;
-  unwind_interval *prev, *current, *next, *first;
+  unwind_interval *prev = NULL, *current = NULL, *next = NULL, *first = NULL;
   unwind_interval *firstjmpi = 0;
   bool bp_just_pushed = false;
   int ecnt = 0;
@@ -738,7 +821,6 @@ interval_status l_build_intervals(char  *ins, unsigned int len)
   char *start = ins;
   char *end = ins + len;
 
-  xed_state_t dstate(XED_MACHINE_MODE_LONG_64, ADDR_WIDTH_64b, ADDR_WIDTH_64b);
 
   PMSG(INTV,"L_BUILD: start = %p, end = %p",ins,end);
   current = newinterval(ins, RA_SP_RELATIVE, 0, 0, BP_UNCHANGED, 0, 0, NULL);
@@ -782,32 +864,70 @@ interval_status l_build_intervals(char  *ins, unsigned int len)
     if (xedd.get_iclass() == XEDICLASS_LEAVE) {
       PMSG(INTV,"new interval from LEAVE");
       next = newinterval(ins + xedd.get_length(), RA_SP_RELATIVE, 0, 0, BP_UNCHANGED, 0, 0, current);
-    } else if (xedd.get_category() == XED_CATEGORY_RET) {
+    } 
+    else if (xedd.get_category() == XED_CATEGORY_RET) {
       // if the return is not the last instruction in the interval, 
       // set up an interval for code after the return 
       if (ins + xedd.get_length() < end) {
         handle_return(xedd, current, next, ins, end, irdebug, first, firstjmpi); 
       }
-    } else  if ((xedd.get_iclass() >= XEDICLASS_JMP) || (xedd.get_iclass() == XEDICLASS_JMP_FAR)) { 	
-            if (firstjmpi == 0) firstjmpi = current;
-	    if (xedd.number_of_memory_operands() == 0) {
-		    const xed_immdis_t& disp =  xedd.get_disp();
-		    if (disp.is_present()) {
-			    long long offset = disp.get_signed64();
-			    char *target = ins + offset;
-			    if (jdebug) {
-	                            xedd.dump(cout);
-				    cerr << "JMP offset = " << offset << ", target = " << (void *) target << ", start = " << (void *) start << ", end = " << (void *) end << endl;
-			    } 
-			    if (target < start || target > end)  handle_return(xedd, current, next, ins, end, irdebug, first, firstjmpi); 
-		    }
-	    }
-    }else {
-      if (((xedd.get_category() == XED_CATEGORY_CALL) || is_jump(&xedd)) && (firstjmpi == 0)) firstjmpi = current;
+    } 
+    else if ((xedd.get_iclass() == XEDICLASS_JMP) || 
+	     (xedd.get_iclass() == XEDICLASS_JMP_FAR)) {
 
+      if (firstjmpi == 0)  firstjmpi = current; 
+
+#define RESET_FRAME_FOR_ALL_UNCONDITIONAL_JUMPS
+#ifdef  RESET_FRAME_FOR_ALL_UNCONDITIONAL_JUMPS
+      handle_return(xedd, current, next, ins, end, irdebug, first, firstjmpi); 
+#else
+      if (xedd.number_of_memory_operands() == 0) {
+	const xed_immdis_t& disp =  xedd.get_disp();
+	if (disp.is_present()) {
+	  long long offset = disp.get_signed64();
+	  char *target = ins + offset;
+	  if (jdebug) {
+	    xedd.dump(cout);
+	    cerr << "JMP offset = " << offset << ", target = " << (void *) target << ", start = " << (void *) start << ", end = " << (void *) end << endl;
+	  } 
+	  if (target < start || target > end) {
+	    handle_return(xedd, current, next, ins, end, irdebug, 
+			  first, firstjmpi); 
+	  }
+	}
+	if (xedd.get_operand_count() >= 1) { 
+	  const xed_decoded_resource_t& op0 = xedd.get_operand_resource(0);
+	  if ((op0.get_res() == XED_RESOURCE_REG) && 
+	      (current->ra_status == RA_SP_RELATIVE) && 
+	      (current->ra_pos == 0)) {
+	    // jump to a register when the stack is in an SP relative state
+	    // with the return address at offset 0 in the stack.
+	    // a good assumption is that this is a tail call. -- johnmc
+	    // (change 1)
+	    handle_return(xedd, current, next, ins, end, irdebug, 
+			  first, firstjmpi); 
+	  }
+	}
+      }
+#endif
+    } else if (xedd.get_category() == XED_CATEGORY_CALL) {
+
+      if (firstjmpi == 0) firstjmpi = current;
+
+#ifdef USE_CALL_LOOKAHEAD
+      next = call_lookahead(&xedd, current, ins);
+#endif
+    } else if (is_jump(&xedd) && (firstjmpi == 0)) {
+      firstjmpi = current;
+    } else {
       next = what(xedd, ins, current, bp_just_pushed);
     }
-    if (next == &poison){
+    
+    if (!next) {
+      next = current;
+    }
+   
+    if (next == &poison) {
       xed_stat.first_undecoded_ins = ins;
       xed_stat.errcode 		   = -1;
       xed_stat.first   		   = NULL;

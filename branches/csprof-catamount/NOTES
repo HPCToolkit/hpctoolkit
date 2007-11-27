@@ -14,3 +14,12 @@ convert_to_ssa
 cse_insn
 
 all drop samples
+============
+Mark's new mon @:
+
+   https://outreach.scidac.gov/svn/libmonitor/trunk 
+
+hpcfile @:
+
+   src/libs/prof-lean/hpcfile
+

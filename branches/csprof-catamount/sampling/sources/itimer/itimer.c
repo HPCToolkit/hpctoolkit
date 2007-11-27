@@ -310,6 +310,7 @@ static void csprof_itimer_signal_handler(int sig, siginfo_t *siginfo, void *cont
   MSG(1,"got itimer signal");
 
   csprof_sample = 1;
+  setup_segv();
   if (!sigsetjmp(it->jb,1)){
     CSPROF_SIGNAL_HANDLER_GUTS(context);
   }

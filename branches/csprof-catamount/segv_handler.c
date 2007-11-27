@@ -4,6 +4,7 @@
 #include <signal.h>
 #include <dlfcn.h>
 #include <setjmp.h>
+#include <signal.h>
 
 #include "bad_unwind.h"
 // #include "general.h"
@@ -26,6 +27,7 @@ void csprof_sigsegv_signal_handler(int sig, siginfo_t *siginfo, void *context){
     siglongjmp(it->jb,9);
   }
   else {
+    raise(SIGABRT);
     EMSG("NON-SAMPLING SEGV!");
   }
 }

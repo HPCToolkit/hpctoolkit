@@ -57,7 +57,7 @@ extern pthread_mutex_t mylock;
   simple_spinlock_unlock(&pmsg_lock); \
 } while (0)
 
-static int __msg_mask = NONE;
+static int __msg_mask = TROLL;
 static simple_spinlock pmsg_lock = 0;
 
 static FILE *log_file;

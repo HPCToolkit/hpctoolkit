@@ -207,6 +207,7 @@ static void update_cursor_with_troll(unw_cursor_t *cursor, void *sp, void *pc){
     }
     else {
       PMSG(TROLL,"Trolling advances cursor to pc = %p,sp = %p",spr_pc,spr_sp);
+      PMSG(TROLL,"TROLL SUCCESS pc = %p",pc);
       cursor->pc = spr_pc;
       cursor->bp = spr_bp;
       cursor->sp = spr_sp;
@@ -214,6 +215,7 @@ static void update_cursor_with_troll(unw_cursor_t *cursor, void *sp, void *pc){
   }
   else {
     PMSG(TROLL, "Troll failed: dropping sample,cursor pc = %p",pc);
+    PMSG(TROLL,"TROLL FAILURE pc = %p",pc);
     // assert(0);
     drop_sample();
   }
