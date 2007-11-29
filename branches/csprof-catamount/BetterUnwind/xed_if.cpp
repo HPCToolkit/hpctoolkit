@@ -341,7 +341,8 @@ bool no_push_bp_save(xed_decoded_inst_t xedd){
 }
 
 unwind_interval *what(xed_decoded_inst_t& xedd, char *ins, 
-		      unwind_interval *current,bool &bp_just_pushed){
+		      unwind_interval *current,bool &bp_just_pushed, 
+		      unwind_interval *&highwatermark){
   int size;
 
   bool next_bp_just_pushed = false;
@@ -357,10 +358,12 @@ unwind_interval *what(xed_decoded_inst_t& xedd, char *ins,
   // johnmc: don't consider this a save of the caller's RBP if the
   // caller's RBP has already been saved. (change 2)
   if (no_push_bp_save(xedd) && current->bp_status != BP_SAVED){
-    return newinterval(ins + xedd.get_length(),
+    next = newinterval(ins + xedd.get_length(),
 		       current->ra_status,current->ra_pos,current->bp_ra_pos,
 		       BP_SAVED,xedd.get_disp().get_signed64(),current->bp_bp_pos,
 		       current);
+    highwatermark = next;
+    return next;
   }
   // FIXME: look up bp action f enter
   if (xedd.get_iclass() == XEDICLASS_ENTER) {
@@ -385,7 +388,7 @@ unwind_interval *what(xed_decoded_inst_t& xedd, char *ins,
       }
     }
     PMSG(INTV,"new interval from ENTER");
-    return newinterval(ins + xedd.get_length(),
+    next = newinterval(ins + xedd.get_length(),
 		       RA_STD_FRAME,
 		       current->ra_pos + offset,
 		       8,
@@ -393,6 +396,8 @@ unwind_interval *what(xed_decoded_inst_t& xedd, char *ins,
 		       current->bp_pos + offset -8,
 		       0,
 		       current);
+    highwatermark = next;
+    return next;
   }
   for(unsigned int i=0; i < xedd.get_operand_count() ; i++){ 
     const xed_decoded_resource_t& r =  xedd.get_operand_resource(i);
@@ -525,6 +530,7 @@ unwind_interval *what(xed_decoded_inst_t& xedd, char *ins,
 				       current->bp_pos + sign * immed.get_signed64(),
 				       current->bp_bp_pos,
 				       current);
+		    if (xedd.get_iclass() == XEDICLASS_SUB) highwatermark = next;
 	    }
 	    else {
 	      // johnmc - i think this is wrong in my replacement below
@@ -586,6 +592,7 @@ unwind_interval *what(xed_decoded_inst_t& xedd, char *ins,
 				 current->bp_pos,
 				 current->bp_pos,
 				 current); 
+	      highwatermark = next;
 	    }
 	  }
 	  else if ((xedd.get_category() == XED_CATEGORY_POP) &&
@@ -643,15 +650,15 @@ unwind_interval *find_first_bp_frame(unwind_interval *first){
   return first;
 }
 
-unwind_interval *find_first_non_decr(unwind_interval *first, unwind_interval *firstjmpi){
+unwind_interval *find_first_non_decr(unwind_interval *first, unwind_interval *highwatermark){
 
-  while (first && first->next && (first->ra_pos <= first->next->ra_pos) && (first != firstjmpi)) {
+  while (first && first->next && (first->ra_pos <= first->next->ra_pos) && (first != highwatermark)) {
     first = first->next;
   }
   return first;
 }
 void handle_return(xed_decoded_inst_t xedd, unwind_interval *&current, unwind_interval *&next, char *&ins, char *end, 
-		   bool irdebug, unwind_interval *first, unwind_interval *firstjmpi){
+		   bool irdebug, unwind_interval *first, unwind_interval *highwatermark){
 
   // if the return is not the last instruction in the interval, 
   // set up an interval for code after the return 
@@ -660,16 +667,23 @@ void handle_return(xed_decoded_inst_t xedd, unwind_interval *&current, unwind_in
       first = find_first_bp_frame(first);
     }
     else { // look for first nondecreasing with no jmp
-      first = find_first_non_decr(first,firstjmpi);
+      first = find_first_non_decr(first,highwatermark);
     }
     PMSG(INTV,"new interval from RET");
-    next = newinterval(ins + xedd.get_length(),
-		       first->ra_status,first->ra_pos,first->bp_ra_pos,
-		       first->bp_status,first->bp_pos,first->bp_bp_pos,
-		       current);
-  } else { 
-  	next = current; 
+    if ((current->ra_status != first->ra_status) ||
+	(current->bp_status != first->bp_status) ||
+	(current->ra_pos != first->ra_pos) ||
+	(current->bp_ra_pos != first->bp_ra_pos) ||
+	(current->bp_bp_pos != first->bp_bp_pos) ||
+	(current->bp_pos != first->bp_pos)) {
+      next = newinterval(ins + xedd.get_length(),
+			 first->ra_status,first->ra_pos,first->bp_ra_pos,
+			 first->bp_status,first->bp_pos,first->bp_bp_pos,
+			 current);
+      return;
+    }
   }
+  next = current; 
 }
 void set_flags(bool val)
 {
@@ -719,7 +733,34 @@ void pl_dump_ins(void *ins){
 
 int is_jump(xed_decoded_inst_t *xedd)
 {
+  switch(xedd->get_iclass()) {
+  case XEDICLASS_JBE: 
+  case XEDICLASS_JL:
+  case XEDICLASS_JLE:
+  case XEDICLASS_JMP:
+  case XEDICLASS_JMP_FAR:
+  case XEDICLASS_JNB:
+  case XEDICLASS_JNBE:
+  case XEDICLASS_JNL:
+  case XEDICLASS_JNLE:
+  case XEDICLASS_JNO:
+  case XEDICLASS_JNP:
+  case XEDICLASS_JNS:
+  case XEDICLASS_JNZ:
+  case XEDICLASS_JO:
+  case XEDICLASS_JP:
+  case XEDICLASS_JrCXZ:
+  case XEDICLASS_JS:
+  case XEDICLASS_JZ:
+     return true;
+  default:
+     return false;
+  }
+  return false;
+#if 0
+    // careless, broken implementation
     return (xedd->get_iclass() >= XEDICLASS_JB) && (xedd->get_iclass() <= XEDICLASS_JZ);
+#endif
 }
 
 #undef USE_CALL_LOOKAHEAD
@@ -811,7 +852,7 @@ interval_status l_build_intervals(char *ins, unsigned int len)
   interval_status xed_stat;
   xed_error_enum_t xed_error;
   unwind_interval *prev = NULL, *current = NULL, *next = NULL, *first = NULL;
-  unwind_interval *firstjmpi = 0;
+  unwind_interval *highwatermark = 0;
   bool bp_just_pushed = false;
   int ecnt = 0;
 
@@ -822,7 +863,7 @@ interval_status l_build_intervals(char *ins, unsigned int len)
   char *end = ins + len;
 
 
-  PMSG(INTV,"L_BUILD: start = %p, end = %p",ins,end);
+  PMSG(INTV,"L_BUILD: start = %p, end = %p",start,end);
   current = newinterval(ins, RA_SP_RELATIVE, 0, 0, BP_UNCHANGED, 0, 0, NULL);
 
   if (ildebug){
@@ -869,17 +910,17 @@ interval_status l_build_intervals(char *ins, unsigned int len)
       // if the return is not the last instruction in the interval, 
       // set up an interval for code after the return 
       if (ins + xedd.get_length() < end) {
-        handle_return(xedd, current, next, ins, end, irdebug, first, firstjmpi); 
+        handle_return(xedd, current, next, ins, end, irdebug, first, highwatermark); 
       }
     } 
     else if ((xedd.get_iclass() == XEDICLASS_JMP) || 
 	     (xedd.get_iclass() == XEDICLASS_JMP_FAR)) {
 
-      if (firstjmpi == 0)  firstjmpi = current; 
+      if (highwatermark == 0)  highwatermark = current; 
 
 #define RESET_FRAME_FOR_ALL_UNCONDITIONAL_JUMPS
 #ifdef  RESET_FRAME_FOR_ALL_UNCONDITIONAL_JUMPS
-      handle_return(xedd, current, next, ins, end, irdebug, first, firstjmpi); 
+      handle_return(xedd, current, next, ins, end, irdebug, first, highwatermark); 
 #else
       if (xedd.number_of_memory_operands() == 0) {
 	const xed_immdis_t& disp =  xedd.get_disp();
@@ -892,7 +933,7 @@ interval_status l_build_intervals(char *ins, unsigned int len)
 	  } 
 	  if (target < start || target > end) {
 	    handle_return(xedd, current, next, ins, end, irdebug, 
-			  first, firstjmpi); 
+			  first, highwatermark); 
 	  }
 	}
 	if (xedd.get_operand_count() >= 1) { 
@@ -905,22 +946,22 @@ interval_status l_build_intervals(char *ins, unsigned int len)
 	    // a good assumption is that this is a tail call. -- johnmc
 	    // (change 1)
 	    handle_return(xedd, current, next, ins, end, irdebug, 
-			  first, firstjmpi); 
+			  first, highwatermark); 
 	  }
 	}
       }
 #endif
     } else if (xedd.get_category() == XED_CATEGORY_CALL) {
 
-      if (firstjmpi == 0) firstjmpi = current;
+      if (highwatermark == 0) highwatermark = current;
 
 #ifdef USE_CALL_LOOKAHEAD
       next = call_lookahead(&xedd, current, ins);
 #endif
-    } else if (is_jump(&xedd) && (firstjmpi == 0)) {
-      firstjmpi = current;
+    } else if (is_jump(&xedd) && (highwatermark == 0)) {
+      highwatermark = current;
     } else {
-      next = what(xedd, ins, current, bp_just_pushed);
+      next = what(xedd, ins, current, bp_just_pushed, highwatermark);
     }
     
     if (!next) {
