@@ -329,8 +329,8 @@ void csprof_fini_internal(void){
     state = csprof_get_safe_state();
     csprof_write_profile_data(state);
     
-    EMSG("host %ld: %d samples total, %d samples dropped\n",
-	 gethostid(), samples_taken, segv_count+bad_unwind_count);
+    EMSG("host %ld: %d samples total, %d samples dropped (%d segvs)\n",
+	 gethostid(), samples_taken, bad_unwind_count, segv_count);
 
     pmsg_fini();
 #if 0

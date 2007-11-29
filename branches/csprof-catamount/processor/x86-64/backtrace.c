@@ -14,10 +14,10 @@
 #include "state.h"
 #include "general.h"
 #include "util.h"
+#include "dump_backtraces.h"
 
 extern void _start();
 
-void dump_backtraces(csprof_state_t *state, csprof_frame_t *unwind);
 
 #if 1
 #define debug_dump_backtraces(x,y)
@@ -48,7 +48,6 @@ int csprof_check_fence(void *ip){
   return monitor_unwind_process_bottom_frame(ip) || monitor_unwind_thread_bottom_frame(ip);
 }
 
-extern void *unwind_pc;
 
 int
 csprof_sample_callstack_from_frame(csprof_state_t *state, int metric_id,
@@ -56,13 +55,13 @@ csprof_sample_callstack_from_frame(csprof_state_t *state, int metric_id,
 {
   unw_word_t ip;
   int first = 1;
-  csprof_frame_t *unwind = state->btbuf;
+  state->unwind = state->btbuf;
 
     state->bufstk   = state->bufend;
     state->treenode = NULL;
 
     for(;;){
-      ensure_state_buffer_slot_available(state, unwind);
+      ensure_state_buffer_slot_available(state, state->unwind);
 
       if (unw_get_reg (cursor, UNW_REG_IP, &ip) < 0){
         MSG(1,"get_reg break");
@@ -74,11 +73,11 @@ csprof_sample_callstack_from_frame(csprof_state_t *state, int metric_id,
         /*        first = 0; */
       }
 
-      unwind_pc = (void *) ip; // mark starting point in case of failure
+      state->unwind_pc = (void *) ip; // mark starting point in case of failure
 
-      unwind->ip = (void *) ip;
-      unwind->sp = (void *) 0;
-      unwind++;
+      state->unwind->ip = (void *) ip;
+      state->unwind->sp = (void *) 0;
+      state->unwind++;
 
       if (csprof_check_fence((void *)ip) || (unw_step (cursor) <= 0)){
         MSG(1,"Hit unw_step break");
@@ -87,8 +86,8 @@ csprof_sample_callstack_from_frame(csprof_state_t *state, int metric_id,
 
     }
     MSG(1,"BTIP------------");
-    debug_dump_backtraces(state,unwind);
-    if(csprof_state_insert_backtrace(state, metric_id, unwind-1, state->btbuf,
+    debug_dump_backtraces(state,state->unwind);
+    if(csprof_state_insert_backtrace(state, metric_id, state->unwind-1, state->btbuf,
                                      sample_count) != CSPROF_OK) {
         ERRMSG("failure recording callstack sample", __FILE__, __LINE__);
         return CSPROF_ERR;

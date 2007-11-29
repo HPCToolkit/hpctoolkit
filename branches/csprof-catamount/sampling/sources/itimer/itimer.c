@@ -236,8 +236,6 @@ dc(void)
 }
 #endif
 
-void *context_pc = NULL;
-
 static void
 csprof_take_profile_sample(csprof_state_t *state, struct ucontext *ctx)
 {
@@ -262,7 +260,7 @@ csprof_take_profile_sample(csprof_state_t *state, struct ucontext *ctx)
         return;
     }
 
-    context_pc = pc;
+    state->context_pc = pc;
     DBGMSG_PUB(1, "Signalled at %#lx", pc);
 
     /* check to see if shared library state has changed out from under us */
@@ -283,8 +281,6 @@ csprof_take_profile_sample(csprof_state_t *state, struct ucontext *ctx)
 
     csprof_state_flag_clear(state, CSPROF_TAIL_CALL | CSPROF_EPILOGUE_RA_RELOADED | CSPROF_EPILOGUE_SP_RESET);
 }
-
-void *unwind_pc;
 
 int samples_taken    = 0;
 int bad_unwind_count = 0;
@@ -315,8 +311,10 @@ static void csprof_itimer_signal_handler(int sig, siginfo_t *siginfo, void *cont
     CSPROF_SIGNAL_HANDLER_GUTS(context);
   }
   else {
-    EMSG("got bad unwind: context_pc = %p, unwind_pc = %p\n\n",context_pc,
-         unwind_pc);
+    csprof_state_t *state = csprof_get_state();
+    EMSG("got bad unwind: context_pc = %p, unwind_pc = %p\n\n",state->context_pc,
+         state->unwind_pc);
+    dump_backtraces(state, state->unwind);
     bad_unwind_count++;
   }
   csprof_sample = 0;

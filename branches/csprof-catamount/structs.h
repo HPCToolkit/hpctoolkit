@@ -83,6 +83,9 @@ typedef struct csprof_state_s {
        threaded builds of the profiler (can be useful for debugging in
        non-threaded builds, too) */
     void *last_pc;
+    void *unwind_pc;
+    csprof_frame_t *unwind;
+    void *context_pc;
 
     csprof_frame_t *btbuf;      /* where we store backtraces */
     csprof_frame_t *bufend;     /* the end of the buffer */

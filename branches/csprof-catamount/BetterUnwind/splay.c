@@ -166,7 +166,7 @@ csprof_addr_to_interval(unsigned long addr)
 	PMSG(SPLAY,"SPLAY: no enclosing bounds found");
 	return (NULL);
     }
-    assert(fcn_start <= (char *)addr && (char *)addr <= fcn_end);
+    assert(fcn_start <= (char *)addr && (char *)addr < fcn_end);
 
 #ifdef OLD_INTERFACE
     istat = l_build_intervals(fcn_start, fcn_end - fcn_start);

@@ -644,40 +644,55 @@ unwind_interval *what(xed_decoded_inst_t& xedd, char *ins,
 // #define DEBUG 1
 
 unwind_interval *find_first_bp_frame(unwind_interval *first){
-  while (first && (first->ra_status != RA_BP_FRAME)){
+  while (first && (first->ra_status != RA_BP_FRAME)) first = first->next;
+  return first;
+}
+
+unwind_interval *find_first_non_decr(unwind_interval *first, 
+				     unwind_interval *highwatermark){
+
+  while (first && first->next && (first->ra_pos <= first->next->ra_pos) && 
+	 (first != highwatermark)) {
     first = first->next;
   }
   return first;
 }
 
-unwind_interval *find_first_non_decr(unwind_interval *first, unwind_interval *highwatermark){
-
-  while (first && first->next && (first->ra_pos <= first->next->ra_pos) && (first != highwatermark)) {
-    first = first->next;
-  }
-  return first;
-}
-void handle_return(xed_decoded_inst_t xedd, unwind_interval *&current, unwind_interval *&next, char *&ins, char *end, 
-		   bool irdebug, unwind_interval *first, unwind_interval *highwatermark){
+void reset_to_canonical_interval(xed_decoded_inst_t xedd, unwind_interval *&current, 
+				 unwind_interval *&next, char *&ins, char *end, 
+				 bool irdebug, unwind_interval *first, 
+				 unwind_interval *highwatermark, 
+				 unwind_interval *&canonical_interval){
 
   // if the return is not the last instruction in the interval, 
   // set up an interval for code after the return 
   if (ins + xedd.get_length() < end){
-    if (bp_frames_found){ // look for first bp frame
+    if (canonical_interval) {
+      if ((highwatermark->bp_status == BP_SAVED) && 
+	  (canonical_interval->bp_status != BP_SAVED) &&
+	  (canonical_interval->ra_pos == highwatermark->ra_pos))
+	canonical_interval = highwatermark;
+      first = canonical_interval;
+    } else if (bp_frames_found){ 
+      // look for first bp frame
       first = find_first_bp_frame(first);
-    }
-    else { // look for first nondecreasing with no jmp
+      canonical_interval = first;
+    } else { 
+      // look for first nondecreasing with no jmp
       first = find_first_non_decr(first,highwatermark);
+      canonical_interval = first;
     }
     PMSG(INTV,"new interval from RET");
-    if ((current->ra_status != first->ra_status) ||
+    ra_loc istatus =  
+      (first->ra_status == RA_STD_FRAME) ? RA_BP_FRAME : first->ra_status;
+    if ((current->ra_status != istatus) ||
 	(current->bp_status != first->bp_status) ||
 	(current->ra_pos != first->ra_pos) ||
 	(current->bp_ra_pos != first->bp_ra_pos) ||
 	(current->bp_bp_pos != first->bp_bp_pos) ||
 	(current->bp_pos != first->bp_pos)) {
       next = newinterval(ins + xedd.get_length(),
-			 first->ra_status,first->ra_pos,first->bp_ra_pos,
+			 istatus,first->ra_pos,first->bp_ra_pos,
 			 first->bp_status,first->bp_pos,first->bp_bp_pos,
 			 current);
       return;
@@ -853,6 +868,7 @@ interval_status l_build_intervals(char *ins, unsigned int len)
   xed_error_enum_t xed_error;
   unwind_interval *prev = NULL, *current = NULL, *next = NULL, *first = NULL;
   unwind_interval *highwatermark = 0;
+  unwind_interval *canonical_interval = 0;
   bool bp_just_pushed = false;
   int ecnt = 0;
 
@@ -910,7 +926,8 @@ interval_status l_build_intervals(char *ins, unsigned int len)
       // if the return is not the last instruction in the interval, 
       // set up an interval for code after the return 
       if (ins + xedd.get_length() < end) {
-        handle_return(xedd, current, next, ins, end, irdebug, first, highwatermark); 
+        reset_to_canonical_interval(xedd, current, next, ins, end, irdebug, first, 
+				    highwatermark, canonical_interval); 
       }
     } 
     else if ((xedd.get_iclass() == XEDICLASS_JMP) || 
@@ -920,7 +937,8 @@ interval_status l_build_intervals(char *ins, unsigned int len)
 
 #define RESET_FRAME_FOR_ALL_UNCONDITIONAL_JUMPS
 #ifdef  RESET_FRAME_FOR_ALL_UNCONDITIONAL_JUMPS
-      handle_return(xedd, current, next, ins, end, irdebug, first, highwatermark); 
+      reset_to_canonical_interval(xedd, current, next, ins, end, irdebug, first, 
+				  highwatermark, canonical_interval); 
 #else
       if (xedd.number_of_memory_operands() == 0) {
 	const xed_immdis_t& disp =  xedd.get_disp();
@@ -932,8 +950,8 @@ interval_status l_build_intervals(char *ins, unsigned int len)
 	    cerr << "JMP offset = " << offset << ", target = " << (void *) target << ", start = " << (void *) start << ", end = " << (void *) end << endl;
 	  } 
 	  if (target < start || target > end) {
-	    handle_return(xedd, current, next, ins, end, irdebug, 
-			  first, highwatermark); 
+	    reset_to_canonical_interval(xedd, current, next, ins, end, irdebug, 
+					first, highwatermark, canonical_interval); 
 	  }
 	}
 	if (xedd.get_operand_count() >= 1) { 
@@ -945,8 +963,8 @@ interval_status l_build_intervals(char *ins, unsigned int len)
 	    // with the return address at offset 0 in the stack.
 	    // a good assumption is that this is a tail call. -- johnmc
 	    // (change 1)
-	    handle_return(xedd, current, next, ins, end, irdebug, 
-			  first, highwatermark); 
+	    reset_to_canonical_interval(xedd, current, next, ins, end, irdebug, 
+					first, highwatermark, canonical_interval); 
 	  }
 	}
       }
