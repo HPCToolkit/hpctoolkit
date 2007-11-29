@@ -123,4 +123,3 @@ void monitor_fini_thread(void *init_thread_data ){
   csprof_thread_fini(state);
 }
 #endif
-

@@ -3,6 +3,8 @@
 # work around irritating bug in GNU make--targets defined in the include
 # files should not be the default target
 
+install_loc := $(HOME)/csprof-install/libexec
+
 PLATFORM := x86-64
 #CC :=  cc
 #CXX := CC
@@ -19,6 +21,7 @@ static_link_options := --verbose -nostdlib -nodefaultlibs -nostartfiles -static 
 src_dir_prefix = $(patsubst %Makefile,%,  \
                     $(word $(words $(MAKEFILE_LIST)),$(MAKEFILE_LIST)))
 
+src_dir        = $(patsubst %/,%,$(src_dir_prefix))
 export PLATFORM
 export CC
 #export CHGROOT
@@ -30,7 +33,7 @@ PRIM_UNWIND := 1
 export PRIM_UNWIND
 
 # improved unwind here
-UNWIND := BetterUnwind
+UNWIND := $(src_dir_prefix)BetterUnwind
 
 #special decls for xed library usage
 XEDDCL := -DXED_SCALARS
@@ -71,8 +74,9 @@ CFLAGS := -fPIC -g -Wall
 AR := /usr/bin/ar
 ARFLAGS := -r
 
+#ADA link flags
+link_flags := -Wl,-Bstatic -Wl,-soname,$(CSPROFLIB) -shared
 # andre1 link flags
-#link_flags := -Wl,-Bstatic -Wl,-soname,$(CSPROFLIB) -shared
 link_flags := -Wl,-soname,$(CSPROFLIB) -shared
 
 module_dirs := utilities                \
@@ -206,7 +210,7 @@ LIBS := $(LIB_THREAD) $(LIB_PFM)
 
 # when libxed.a is used
 #
-#XED_LIBS := -L$(UNWIND)/Lib -lxed
+XED_LIBS := -L$(UNWIND)/Lib -lxed
 ifdef PRIM_UNWIND
 #XED_LIBS := -LXed0-Alt/Lib -lxed
 XED_CPP_LIBS :=  -lstdc++ -ldl
@@ -224,7 +228,7 @@ LIBS += $(XED_LIBS) $(XED_CPP_LIBS) $(PAPI_LIBS)
 # Compiling Rules:
 #############################################################################
 
-vpath %.c $(addprefix $(src_dir_prefix),$(module_dirs))
+vpath %.c $(src_dir) $(addprefix $(src_dir_prefix),$(module_dirs))
 
 vpath %.s $(src_dir_prefix)processor/x86-64
 
@@ -241,7 +245,9 @@ TT:
 	# INC_CSFILE = $(INC_CSFILE)
 	$(CC) --version
 	# gethostid := |$(gethostid)|
-	# src dir = $(src_dir_prefix)
+	# src dir prefix = |$(src_dir_prefix)|, src dir = |$(src_dir)|
+	# PRIM_UNWIND = |$(PRIM_UNWIND)|
+	# XED_LIBS = |$(XED_LIBS)|
 
 $(LIB_CSFILE):
 	@cd hpcfile; $(MAKE) -I ..
@@ -253,14 +259,15 @@ clean:
 	@cd hpcfile; $(MAKE) -I .. clean
 	@cd BetterUnwind; $(MAKE) clean
 
+.PHONY: TAGS
 TAGS:
-	@etags *.[csh] hpcfile/*.[csh] $(addsuffix /*.[csh],$(module_dirs)) BetterUnwind/*.cpp BetterUnwind/*.[ch]
+	etags *.[csh] hpcfile/*.[csh] $(addsuffix /*.[csh],$(module_dirs)) BetterUnwind/*.cpp BetterUnwind/*.[ch]
 
 tarball: 
 	@tar -cf csprof.tar $(filter-out %.o %.csp %.log t1 t2 t3,$(wildcard *))
 	@gzip --best csprof.tar
 
-.PHONY : all libcsfile clean tarball static check TAGS
+.PHONY : all libcsfile clean tarball static check install
 
 $(CSPROFLIB): $(LIB_CSFILE) $(OBJS)
 #	$(link) $(link_flags) -o $@ markfront.o $(OBJS) $(LIBS) markrear.o
@@ -271,6 +278,9 @@ $(CSPROFLIB): $(LIB_CSFILE) $(OBJS)
 $(CSPROF_DOT_O): $(OBJS)
 	$(link) $(static_link_options) -o $@ $(OBJS) $(LIBS)
 	@echo "*** $@ is up to date. ***"
+
+install: all
+	cp $(CSPROFLIB) $(install_loc)
 
 %.o: %.c
 	$(CC) $(INCS) $(CFLAGS) -c $< -o $@

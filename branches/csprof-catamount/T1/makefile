@@ -8,6 +8,7 @@ XEDDCL := -DXED_SCALARS
 XEDLIB := -L../BetterUnwind/Lib -lxed
 CC     := gcc
 CXX    := g++
+FC     := pgf90
 #CC      := cc
 #CXX     := CC
 
@@ -24,6 +25,7 @@ LPATH = -m elf_x86_64 -static -L/opt/xt-mpt/1.5.52/mpich2-64/GP2/lib -L/opt/acml
 
 test_targs := 
 
+ifdef NO
 .PHONY: f2
 f2: f2.f90
 	$(HPCL) -v ftn -v $< -o $@
@@ -36,6 +38,7 @@ t1: t1.o $(test_targs)
 .PHONY: $(CSPROF_DOT_O)
 $(CSPROF_DOT_O):
 	cd ..; $(MAKE)
+endif
 
 .PHONY: tt
 tt:
@@ -48,6 +51,9 @@ t-define:
 
 .PHONY: clean components
 
+t1: t1.o
+	$(CC) -g $< -lm -o $@
+
 ot1: t1.o $(CSPROF_DOT_O) 
 	$(HPCL) -v CC -static -v $^ $(XEDLIB) -o $@
 
@@ -56,6 +62,12 @@ ot1: t1.o $(CSPROF_DOT_O)
 
 clean:
 	rm -rf *.o t1
+
+%   : %.f90
+	$(FC) -g $< -o $@
+
+%.o : %.f90
+	$(FC) -g -c $< -o $@
 
 %.o : %.c
 	$(CC) -g -I.. -c $< -o $@

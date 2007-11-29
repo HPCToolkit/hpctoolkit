@@ -37,8 +37,8 @@ program f1
   double precision :: msin, mlog, mcos
   integer :: i,j
 
-  integer,parameter :: LIMIT_OUTER = 1000
-  integer,parameter :: LIMIT       = 1000
+  integer,parameter :: LIMIT_OUTER = 100
+  integer,parameter :: LIMIT       = 100
 
   x = 2.78
   call foob(x)

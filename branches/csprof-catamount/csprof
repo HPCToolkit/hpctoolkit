@@ -54,6 +54,9 @@ CSPROF_VERSION="1.0"
 
 CSPROF_HOME="`dirname $0`"
 
+#Add build directory if appropriate
+CSPROFLIB_HOME=$CSPROF_HOME/Build
+
 # One can set personal defaults here, instead of changing source code.
 # These values will be overriden by commandline options.
 opt_out_path=""
@@ -129,8 +132,8 @@ f_checkenv()
     exit 1
   fi 
 
-  RLD_LIB="libxed.so:${CSPROF_HOME}/libcsprof.so.1:${CSPROF_HOME}/monitor/Install/lib/libmonitor.so"
-# RLD_LIB="libxed.so:${CSPROF_HOME}/monitor/Install/lib/libmonitor.so"
+#  RLD_LIB="libxed.so:${CSPROF_HOME}/libcsprof.so.1:${CSPROF_HOME}/monitor/Install/lib/libmonitor.so"
+RLD_LIB="${CSPROFLIB_HOME}/libcsprof.so.1:${CSPROF_HOME}/monitor/Install/lib/libmonitor.so"
 
 #  if [ ! -r "${RLD_LIB}" ]; then 
 #    printf "${cmd}: launch library ${RLD_LIB} not found!\n"
