@@ -860,6 +860,76 @@ call_lookahead(xed_decoded_inst_t *call_xedd, unwind_interval *current, char *in
 }
 #endif
 
+
+int plt_is_next(char *ins)
+{
+  // Assumes: 'ins' is pointing at the instruction from which
+  // lookahead is to occur (i.e, the instruction prior to the first
+  // lookahead).
+
+  xed_error_enum_t xed_err;
+  xed_decoded_inst_t xedd;
+  char *val_pushed = NULL;
+  char *push_succ_addr = NULL;
+  char *jmp_target = NULL;
+
+  // -------------------------------------------------------
+  // requirement 1: push of displacement relative to rip 
+  // -------------------------------------------------------
+  xedd.init(dstate);
+  xed_err = xed_decode(&xedd, reinterpret_cast<const UINT8*>(ins), 15);
+  if (xed_err != XED_ERROR_NONE) {
+    return 0;
+  }
+
+  if (xedd.get_iclass() == XEDICLASS_PUSH) {
+    if (xedd.number_of_memory_operands() == 2) {
+      const xed_decoded_resource_t& r0 = xedd.get_operand_resource(0);
+      if ((r0.get_res() == XED_RESOURCE_MEM0) && (xedd.get_base_reg(0) == XEDREG_RIP)){
+	const xed_immdis_t& disp = xedd.get_disp();
+	if (disp.is_present()) {
+	  long long offset = disp.get_signed64();
+	  push_succ_addr = ins + xedd.get_length();
+	  val_pushed = push_succ_addr + offset;
+	}
+      }
+    }
+  }
+  if (val_pushed == NULL) {
+    // push of proper type not recognized 
+    return 0;
+  }
+
+  // -------------------------------------------------------
+  // requirement 2: jump target affects stack
+  // -------------------------------------------------------
+  xedd.init(dstate);
+  xed_err = xed_decode(&xedd, reinterpret_cast<const UINT8*>(push_succ_addr), 15);
+  if (xed_err != XED_ERROR_NONE) {
+    return 0;
+  }
+
+  if ((xedd.get_iclass() == XEDICLASS_JMP) || 
+      (xedd.get_iclass() == XEDICLASS_JMP_FAR)) {
+    if (xedd.number_of_memory_operands() == 1) {
+      const xed_decoded_resource_t& r0 = xedd.get_operand_resource(0);
+      if ((r0.get_res() == XED_RESOURCE_MEM0) && (xedd.get_base_reg(0) == XEDREG_RIP)){
+	const xed_immdis_t& disp = xedd.get_disp();
+	if (disp.is_present()) {
+	  long long offset = disp.get_signed64();
+	  jmp_target = push_succ_addr + xedd.get_length() + offset;
+	}
+      }
+    }
+  }
+  if (jmp_target == NULL) {
+    // jump of proper type not recognized 
+    return 0;
+  }
+  if ((jmp_target - val_pushed) == 8) return 1;
+  return 0;
+}
+
 interval_status l_build_intervals(char *ins, unsigned int len)
 {
   xed_decoded_inst_t xedd;
@@ -926,8 +996,11 @@ interval_status l_build_intervals(char *ins, unsigned int len)
       // if the return is not the last instruction in the interval, 
       // set up an interval for code after the return 
       if (ins + xedd.get_length() < end) {
-        reset_to_canonical_interval(xedd, current, next, ins, end, irdebug, first, 
-				    highwatermark, canonical_interval); 
+	if (plt_is_next(ins + xedd.get_length())) canonical_interval = current;
+	else {
+	  reset_to_canonical_interval(xedd, current, next, ins, end, irdebug, first, 
+				      highwatermark, canonical_interval); 
+	}
       }
     } 
     else if ((xedd.get_iclass() == XEDICLASS_JMP) || 
