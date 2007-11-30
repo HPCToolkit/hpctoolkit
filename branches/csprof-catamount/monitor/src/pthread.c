@@ -446,6 +446,7 @@ monitor_pthread_start_routine(void *arg)
 	return (NULL);
     }
 
+    asm(".globl monitor_unwind_thread_fence1");
     asm("monitor_unwind_thread_fence1:");
     MONITOR_DEBUG("calling monitor_init_thread(num = %u) ...\n",
 		  tn->tn_thread_num);
@@ -455,6 +456,7 @@ monitor_pthread_start_routine(void *arg)
     tn->tn_appl_started = 1;
     ret = (tn->tn_start_routine)(tn->tn_arg);
     PTHREAD_CLEANUP_POP(1);
+    asm(".globl monitor_unwind_thread_fence2");
     asm("monitor_unwind_thread_fence2:");
 
     return (ret);

@@ -30,21 +30,26 @@ def process(prog):
         m = t_re.match(l)
         if m:
             if m.group(2) in 'TtW':
-               seg_addrs.append('0x%s /* %s */' % (m.group(1),m.group(3)))
-	       #---------------------------------------------------------
-	       # don't look for any more symbols after _fini. we won't
-	       # get any samples in _fini because we turn off sampling 
-	       # by then. looking for more symbols is dangerous because 
-	       # a weak symbol data_start causes us to treat addresses
-	       # BETWEEN the text and data segment as valid.
-	       #---------------------------------------------------------
-	       if m.group(3) == "_fini": break
+                if seg_addrs and seg_addrs[-1][0] == m.group(1):
+                    seg_addrs[-1] = (seg_addrs[-1][0],seg_addrs[-1][1] + ',' + m.group(3))
+                else:
+                    seg_addrs.append((m.group(1),m.group(3)))
+
+#---------------------------------------------------------
+# don't look for any more symbols after _fini. we won't
+# get any samples in _fini because we turn off sampling 
+# by then. looking for more symbols is dangerous because 
+# a weak symbol data_start causes us to treat addresses
+# BETWEEN the text and data segment as valid.
+#---------------------------------------------------------
+
+                if m.group(3) == "_fini": break
+    
     c_prog_f = file(c_prog_name,'w')
-    addr_s   = '  ' + ',\n  '.join(seg_addrs)
+    addr_s   = '  ' + ',\n  '.join([ '0x%s /* %s */' % v for v in seg_addrs ])
     c_prog_f.write(c_prog % addr_s)
     c_prog_f.close()
     os.system('gcc %s -fPIC -shared -nostartfiles -o %s' %(c_prog_name,so_name))
 
 if __name__ == '__main__':
     process(sys.argv[1])
-

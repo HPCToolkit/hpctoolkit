@@ -279,6 +279,10 @@ $(CSPROF_DOT_O): $(OBJS)
 	$(link) $(static_link_options) -o $@ $(OBJS) $(LIBS)
 	@echo "*** $@ is up to date. ***"
 
+.PHONY: bclean
+bclean:
+	rm -rf *.o *.so *.so.[0-9]*
+
 install: all
 	cp $(CSPROFLIB) $(install_loc)
 
