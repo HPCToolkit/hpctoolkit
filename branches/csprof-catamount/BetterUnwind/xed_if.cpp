@@ -340,9 +340,26 @@ bool no_push_bp_save(xed_decoded_inst_t xedd){
   return false;
 }
 
+bool no_pop_bp_restore(xed_decoded_inst_t xedd){
+  
+  if (xedd.get_iclass() == XEDICLASS_MOV){
+    const xed_decoded_resource_t& r0 =  xedd.get_operand_resource(0);
+    const xed_decoded_resource_t& r1 =  xedd.get_operand_resource(1);
+
+    return ((r0.get_res() == XED_RESOURCE_MEM0) &&
+	    (r0.get_opnd_action() == XED_OPND_ACTION_R) &&
+	    (xedd.get_base_reg(0) == XEDREG_RSP) &&
+	    (r1.get_res() == XED_RESOURCE_REG) &&
+	    (r1.get_reg() == XEDREG_RBP) &&
+	    (r1.get_opnd_action() == XED_OPND_ACTION_W));
+  }
+  return false;
+}
+
 unwind_interval *what(xed_decoded_inst_t& xedd, char *ins, 
 		      unwind_interval *current,bool &bp_just_pushed, 
-		      unwind_interval *&highwatermark){
+		      unwind_interval *&highwatermark,
+		      unwind_interval *&canonical_interval){
   int size;
 
   bool next_bp_just_pushed = false;
@@ -363,6 +380,13 @@ unwind_interval *what(xed_decoded_inst_t& xedd, char *ins,
 		       BP_SAVED,xedd.get_disp().get_signed64(),current->bp_bp_pos,
 		       current);
     highwatermark = next;
+    return next;
+  }
+  if (current->bp_status == BP_SAVED && no_pop_bp_restore(xedd)){
+    next = newinterval(ins + xedd.get_length(),
+		       current->ra_status,current->ra_pos,current->bp_ra_pos,
+		       BP_UNCHANGED,current->bp_pos,current->bp_bp_pos,
+		       current);
     return next;
   }
   // FIXME: look up bp action f enter
@@ -530,7 +554,12 @@ unwind_interval *what(xed_decoded_inst_t& xedd, char *ins,
 				       current->bp_pos + sign * immed.get_signed64(),
 				       current->bp_bp_pos,
 				       current);
-		    if (xedd.get_iclass() == XEDICLASS_SUB) highwatermark = next;
+		    if (xedd.get_iclass() == XEDICLASS_SUB){
+		      if (! canonical_interval) {
+			canonical_interval = next;
+		      }
+		      highwatermark = next;
+		    }
 	    }
 	    else {
 	      // johnmc - i think this is wrong in my replacement below
@@ -1052,7 +1081,7 @@ interval_status l_build_intervals(char *ins, unsigned int len)
     } else if (is_jump(&xedd) && (highwatermark == 0)) {
       highwatermark = current;
     } else {
-      next = what(xedd, ins, current, bp_just_pushed, highwatermark);
+      next = what(xedd, ins, current, bp_just_pushed, highwatermark, canonical_interval);
     }
     
     if (!next) {
