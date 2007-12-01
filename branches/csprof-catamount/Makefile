@@ -210,9 +210,9 @@ LIBS := $(LIB_THREAD) $(LIB_PFM)
 
 # when libxed.a is used
 #
-XED_LIBS := -L$(UNWIND)/Lib -lxed
+#XED_LIBS := -L$(UNWIND)/Lib -lxed
 ifdef PRIM_UNWIND
-#XED_LIBS := -LXed0-Alt/Lib -lxed
+XED_LIBS := -LXed0-Alt/Lib -lxed
 XED_CPP_LIBS :=  -lstdc++ -ldl
 else
 XED_LIBS := -LXed0-Alt/Lib -lxed
