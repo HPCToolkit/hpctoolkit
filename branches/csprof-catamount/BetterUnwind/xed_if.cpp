@@ -697,7 +697,7 @@ void reset_to_canonical_interval(xed_decoded_inst_t xedd, unwind_interval *&curr
   // set up an interval for code after the return 
   if (ins + xedd.get_length() < end){
     if (canonical_interval) {
-      if ((highwatermark->bp_status == BP_SAVED) && 
+      if ((highwatermark && highwatermark->bp_status == BP_SAVED) && 
 	  (canonical_interval->bp_status != BP_SAVED) &&
 	  (canonical_interval->ra_pos == highwatermark->ra_pos))
 	canonical_interval = highwatermark;
