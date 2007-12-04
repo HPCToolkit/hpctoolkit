@@ -88,10 +88,6 @@ typedef void (*sig_handler_func_t)(int, siginfo_t *, void *);
 #define CSPROF_MEM_SZ_INIT       32 * 1024 * 1024 /* FIXME: 1024 */
 #define CSPROF_BACKTRACE_CACHE_INIT_SZ 32
 
-static int csprof_options__init(csprof_options_t* x);
-static int csprof_options__fini(csprof_options_t* x);
-
-static int csprof_options__getopts(csprof_options_t* x);
 
 //***************************************************************************
 // csprof_pfmon_info

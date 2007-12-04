@@ -99,6 +99,10 @@
 
 /* forward declarations and definitions of all kinds */
 
+static int csprof_options__init(csprof_options_t* x);
+static int csprof_options__fini(csprof_options_t* x);
+static int csprof_options__getopts(csprof_options_t* x);
+
 /* the library's basic state */
 csprof_status_t status = CSPROF_STATUS_UNINIT;
 static csprof_options_t opts;
@@ -536,8 +540,7 @@ csprof_state_t *csprof_check_for_new_epoch(csprof_state_t *state){
 
 /* only meant for debugging errors, so it's not subject to the normal
    DBG variables and suchlike. */
-static void
-csprof_print_backtrace(csprof_state_t *state)
+void csprof_print_backtrace(csprof_state_t *state)
 {
     csprof_frame_t *frame = state->bufstk;
     csprof_cct_node_t *tn = state->treenode;

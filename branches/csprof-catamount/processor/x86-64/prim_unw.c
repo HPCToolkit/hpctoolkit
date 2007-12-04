@@ -186,7 +186,7 @@ static void drop_sample(void){
     return;
   }
   dump_backtraces(csprof_get_state(),0);
-  _jb *it = get_bad_unwind();
+  sigjmp_buf_t *it = get_bad_unwind();
   siglongjmp(it->jb,9);
 }
 static void update_cursor_with_troll(unw_cursor_t *cursor, void *sp, void *pc){

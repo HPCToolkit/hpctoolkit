@@ -6,11 +6,11 @@
 #include "thread_use.h"
 #endif
 
-static _jb bad_unwind;
+static sigjmp_buf_t bad_unwind;
 
 
 #if JOHNFIX
-_jb *get_bad_unwind(void){
+sigjmp_buf_t *get_bad_unwind(void){
 #if 0
 #ifdef CSPROF_THREADS
   thread_data_t *td = (thread_data_t *)pthread_getspecific(k);
@@ -19,13 +19,13 @@ _jb *get_bad_unwind(void){
   return &bad_unwind;
 #endif
 #else
-static _jb bad_unwind;
+static sigjmp_buf_t bad_unwind;
   return &bad_unwind;
 #endif
 }
 #endif
 
-_jb *get_bad_unwind(void){
+sigjmp_buf_t *get_bad_unwind(void){
 #ifdef CSPROF_THREADS
   if (csprof_using_threads){
     thread_data_t *td = (thread_data_t *)pthread_getspecific(k);

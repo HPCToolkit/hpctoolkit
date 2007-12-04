@@ -30,7 +30,7 @@
 
 typedef struct {
   sigjmp_buf jb;
-} _jb;
+} sigjmp_buf_t;
 
-_jb *get_bad_unwind(void);
+sigjmp_buf_t *get_bad_unwind(void);
 #endif

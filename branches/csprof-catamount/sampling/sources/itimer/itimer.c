@@ -18,7 +18,10 @@
 #include "sighand.h"
 #include "metrics.h"
 #include "interface.h"
+#include "segv_handler.h"
+#include "dump_backtraces.h"
 #include "pmsg.h"
+#include "name.h"
 
 #ifndef STATIC_ONLY
 #define CSPROF_PROFILE_SIGNAL SIGPROF
@@ -34,15 +37,7 @@ int s3 = 0;
 
 #ifdef MPI_SPECIAL
 #define STATIC_RANK 0
-#include <mpi.h>
-
-static int csprof_rank = -1;
 static int chosen_rank = STATIC_RANK;
-
-void csprof_set_rank(int rank){
-  PMSG(ITIMER_HANDLER,"mpi set rank called with %d, prev csprof_rank = %d",rank,csprof_rank);
-  csprof_rank = rank;
-}
 #endif
 
 extern csprof_state_t *
@@ -110,10 +105,8 @@ csprof_init_timer(csprof_options_t *options)
 #endif
 }
 
-void csprof_set_timer(void) {
-
-  // FIXME: Flush the libcall3 stuff
-  // int success = libcall3(csprof_setitimer, CSPROF_PROFILE_TIMER, &itimer, NULL);
+void csprof_set_timer(void) 
+{
 
   setitimer(CSPROF_PROFILE_TIMER, &itimer, NULL);
   MSG(1,"called csprof_set_timer");
@@ -128,7 +121,6 @@ void csprof_set_timer(void) {
 void csprof_disable_timer(void)
 {
     timerclear(&itimer.it_value);
-    // libcall3(csprof_setitimer, CSPROF_PROFILE_TIMER, &itimer, NULL);
     setitimer(CSPROF_PROFILE_TIMER, &itimer, NULL);
 }
 
@@ -288,17 +280,16 @@ int csprof_sample    = 0;
 
 static void csprof_itimer_signal_handler(int sig, siginfo_t *siginfo, void *context){
 
-  _jb *it = get_bad_unwind();
+  sigjmp_buf_t *it = get_bad_unwind();
   samples_taken++;
 #ifdef MPI_SPECIAL
-  if (csprof_rank < 0){
+  if (csprof_mpirank() < 0){
     PMSG(ITIMER_HANDLER,"sample before mpi_init");
     csprof_set_timer();
     return;
   }
-  MPI_Comm_rank(MPI_COMM_WORLD, &csprof_rank);
-  if (csprof_rank != chosen_rank){
-    PMSG(ITIMER_HANDLER,"got signal, but csprof_rank = %d",csprof_rank);
+  if (csprof_mpirank() != chosen_rank){
+    PMSG(ITIMER_HANDLER,"got signal, but csprof_rank = %d",csprof_mpirank());
     csprof_set_timer();
     return;
   }
@@ -340,7 +331,6 @@ static void csprof_init_signal_handler(void){
   ret = sigaction(CSPROF_PROFILE_SIGNAL, &sa, 0);
 }
 
-extern void setup_segv(void);
 extern void unw_init(void);
 
 static void heartbeat_init(csprof_options_t *opts){

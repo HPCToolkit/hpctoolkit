@@ -210,14 +210,14 @@ LIBS := $(LIB_THREAD) $(LIB_PFM)
 
 # when libxed.a is used
 #
-#XED_LIBS := -L$(UNWIND)/Lib -lxed
+XED_LIBS := -L$(UNWIND)/Lib -lxed
 ifdef PRIM_UNWIND
-XED_LIBS := -LXed0-Alt/Lib -lxed
+#XED_LIBS := -LXed0-Alt/Lib -lxed
 XED_CPP_LIBS :=  -lstdc++ -ldl
 else
 XED_LIBS := -LXed0-Alt/Lib -lxed
 #XED_LIBS := -L`pwd` lxed.so
-XED_CPP_LIBS :=  foo.o -lstdc++ -ldl
+XED_CPP_LIBS :=  -lstdc++ -ldl
 endif
 #PAPI_LIBS := -L/ccs/home/johnmc/mypapi/pkgs/lib -lpapi -lpfm
 #PAPI_LIBS  := -lpapi -lpfm

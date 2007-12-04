@@ -19,7 +19,7 @@ extern int csprof_sample;
 void csprof_sigsegv_signal_handler(int sig, siginfo_t *siginfo, void *context){
 
   if (csprof_sample){
-    _jb *it = get_bad_unwind();
+    sigjmp_buf_t *it = get_bad_unwind();
 
     segv_count++;
 

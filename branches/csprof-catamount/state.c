@@ -18,14 +18,6 @@
 
 static csprof_state_t *current_state;
 
-/* forward declarations */
-static int csprof_state__gupdate_pstate(csprof_state_t* x);
-static int csprof_state__destroy_pstate(csprof_state_t* x);
-
-static int csprof_pstate__init(csprof_pstate_t* x);
-static int csprof_pstate__fini(csprof_pstate_t* x);
-
-
 /* fetching states */
 
 // get the static state variable, used for thread init of
@@ -84,8 +76,6 @@ void csprof_set_state(csprof_state_t *state){
   _set_state_internal(state);
 }
 
-#define CSPROF_NEED_PSTATE 0
-
 int csprof_state_init(csprof_state_t *x){
   /* ia64 Linux has this function return a `long int', which is a 64-bit
      integer.  Tru64 Unix returns an `int'.  it probably won't hurt us
@@ -98,17 +88,6 @@ int csprof_state_init(csprof_state_t *x){
 
   x->pstate.pid = pid;
   x->pstate.hostid = hostid;
-
-#if CSPROF_NEED_PSTATE
-  // Persistent state: Note that filename should be a function of pid,
-  // b/c we may need to find it again. // FIXME: added gethostid
-  csprof_pstate__init(&x->pstate);
-  sprintf(x->pstate_fnm, "./%s%ld-%d%s", /* opts.out_path ,*/ /* FIXME */
-          csprof_get_executable_name(), hostid, pid, CSPROF_PSTATE_FNM_SFX);
-  if (csprof_state__gupdate_pstate(x) != CSPROF_OK) {
-    DIE("could not read/update persistent state file '%s'", __FILE__, __LINE__, x->pstate_fnm);
-  }
-#endif
 
   return CSPROF_OK;
 }
@@ -146,10 +125,6 @@ int csprof_state_alloc(csprof_state_t *x){
 }
 
 int csprof_state_fini(csprof_state_t *x){
-#if CSPROF_NEED_PSTATE
-  csprof_pstate__fini(&x->pstate);
-  csprof_state__destroy_pstate(x);
-#endif
 
   return CSPROF_OK;
 }
@@ -208,81 +183,5 @@ int csprof_state_free(csprof_state_t *x){
 
   // no need to free memory
 
-  return CSPROF_OK;
-}
-
-/* persistent state handling */
-
-/* gets and updates (a 'gupdate', of course!) the persistent state. */
-static int csprof_state__gupdate_pstate(csprof_state_t* x){
-#if CSPROF_NEED_PSTATE
-  int fexists = 0, fd;
-  mode_t mode = S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH;
-  ssize_t sz;
-  long int hostid = gethostid(); // FIXME: added gethostid
-  pid_t pid = getpid();
-  
-  if (x->pstate_fnm[0] == '\0') {
-    return CSPROF_ERR;
-  }
-  
-  // 1. Open the associated file, checking to see if it already exists
-  // (use unbuffered access).
-  fd = open(x->pstate_fnm, O_RDWR | O_CREAT | O_EXCL, mode); 
-  if (fd < 0) { 
-    // the file exists; please reopen
-    fexists = 1;
-    fd = open(x->pstate_fnm, O_RDWR, mode);
-    if (fd < 0) { return CSPROF_ERR; }
-  }
-
-  /* 2. Read any existing persistent state (Note: It is permissible
-     to simply read/write structures because this file is only valid
-     for the duration of the profile run.  Thus, we do not have to
-     worry about issues like compiler-added structure padding or
-     endianness b/c the reads/writes will be self-consistent during
-     the profile run.) */
-  if (fexists) {
-
-    if (lseek(fd, 0, SEEK_SET) < 0) { return CSPROF_ERR; }
-    sz = read(fd, &x->pstate, sizeof(x->pstate));
-    if (sz != sizeof(x->pstate)) { return CSPROF_ERR; }
-
-    /* 2a. Sanity check */
-    if (x->pstate.pid != pid) { return CSPROF_ERR; } 
-    
-  }
-  
-  /* 3. Update and save persistent state */
-  x->pstate.hostid = hostid; // FIXME: added gethostid
-  x->pstate.pid = pid;
-  x->pstate.ninit++;
-  
-  if (lseek(fd, 0, SEEK_SET) < 0) { return CSPROF_ERR; }
-  sz = write(fd, &x->pstate, sizeof(x->pstate));
-  if (sz != sizeof(x->pstate)) { return CSPROF_ERR; }
-
-  if (close(fd) < 0) { return CSPROF_ERR; }
-#endif
-
-  return CSPROF_OK;
-}
-
-static int csprof_state__destroy_pstate(csprof_state_t* x){
-#if CSPROF_NEED_PSTATE
-  if (unlink(x->pstate_fnm) < 0) {
-    DBGMSG_PUB(1, "error removing persistant state file '%s'", __FILE__, __LINE__, x->pstate_fnm);
-    return CSPROF_ERR;
-  }
-#endif
-  return CSPROF_OK;
-}
-
-static int csprof_pstate__init(csprof_pstate_t* x){
-  memset(x, 0, sizeof(*x));
-  return CSPROF_OK;
-}
-
-static int csprof_pstate__fini(csprof_pstate_t* x){
   return CSPROF_OK;
 }
