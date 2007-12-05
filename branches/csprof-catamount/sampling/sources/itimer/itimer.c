@@ -120,8 +120,9 @@ void csprof_set_timer(void)
 
 void csprof_disable_timer(void)
 {
-    timerclear(&itimer.it_value);
-    setitimer(CSPROF_PROFILE_TIMER, &itimer, NULL);
+  struct itimerval itimer;
+  timerclear(&itimer.it_value);
+  setitimer(CSPROF_PROFILE_TIMER, &itimer, NULL);
 }
 
 #if defined(CSPROF_THREADS) && defined(CSPROF_ROUND_ROBIN_SIGNAL)

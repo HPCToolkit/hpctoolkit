@@ -346,12 +346,12 @@ bool no_pop_bp_restore(xed_decoded_inst_t xedd){
     const xed_decoded_resource_t& r0 =  xedd.get_operand_resource(0);
     const xed_decoded_resource_t& r1 =  xedd.get_operand_resource(1);
 
-    return ((r0.get_res() == XED_RESOURCE_MEM0) &&
-	    (r0.get_opnd_action() == XED_OPND_ACTION_R) &&
+    return ((r1.get_res() == XED_RESOURCE_MEM0) &&
+	    (r1.get_opnd_action() == XED_OPND_ACTION_R) &&
 	    (xedd.get_base_reg(0) == XEDREG_RSP) &&
-	    (r1.get_res() == XED_RESOURCE_REG) &&
-	    (r1.get_reg() == XEDREG_RBP) &&
-	    (r1.get_opnd_action() == XED_OPND_ACTION_W));
+	    (r0.get_res() == XED_RESOURCE_REG) &&
+	    (r0.get_reg() == XEDREG_RBP) &&
+	    (r0.get_opnd_action() == XED_OPND_ACTION_W));
   }
   return false;
 }
@@ -362,6 +362,7 @@ unwind_interval *what(xed_decoded_inst_t& xedd, char *ins,
 		      unwind_interval *&canonical_interval){
   int size;
 
+  bool done = false;
   bool next_bp_just_pushed = false;
   bool next_bp_popped      = false;
   unwind_interval *next    = NULL;
@@ -423,7 +424,7 @@ unwind_interval *what(xed_decoded_inst_t& xedd, char *ins,
     highwatermark = next;
     return next;
   }
-  for(unsigned int i=0; i < xedd.get_operand_count() ; i++){ 
+  for(unsigned int i=0; i < xedd.get_operand_count()  && done == false; i++){ 
     const xed_decoded_resource_t& r =  xedd.get_operand_resource(i);
     if (rdebug){
       cerr << "  "
@@ -490,6 +491,7 @@ unwind_interval *what(xed_decoded_inst_t& xedd, char *ins,
 			       current->bp_pos + size,
 			       current->bp_bp_pos,
 			       current);
+             done = true;
 	  }
 	  else if (xedd.get_category() == XED_CATEGORY_POP) {
 	    switch(xedd.get_iclass()) {
@@ -520,6 +522,7 @@ unwind_interval *what(xed_decoded_inst_t& xedd, char *ins,
 			       current->bp_pos + size,
 			       current->bp_bp_pos,
 			       current);
+             done = true;
 	  }
 	  else if (xedd.get_category() == XED_CATEGORY_DATAXFER){
 	    const xed_decoded_resource_t& op1 = xedd.get_operand_resource(1);
@@ -530,7 +533,8 @@ unwind_interval *what(xed_decoded_inst_t& xedd, char *ins,
 	      next = newinterval(ins + xedd.get_length(),
 				 RA_SP_RELATIVE, current->bp_ra_pos, current->bp_ra_pos,
 				 current->bp_status,current->bp_bp_pos, current->bp_bp_pos,
-				 current);
+			 	 current);
+              done = true;
 	    }
 	  }
 	  else if ((xedd.get_iclass() == XEDICLASS_SUB) ||
@@ -554,10 +558,17 @@ unwind_interval *what(xed_decoded_inst_t& xedd, char *ins,
 				       current->bp_pos + sign * immed.get_signed64(),
 				       current->bp_bp_pos,
 				       current);
+	            done = true;
 		    if (xedd.get_iclass() == XEDICLASS_SUB){
+#if 0
+// we think we don't need to worry about resetting the canonical
+// interval every time
 		      if (! canonical_interval) {
 			canonical_interval = next;
 		      }
+#else
+		      canonical_interval = next;
+#endif
 		      highwatermark = next;
 		    }
 	    }
@@ -575,6 +586,7 @@ unwind_interval *what(xed_decoded_inst_t& xedd, char *ins,
 				   current->bp_bp_pos,
 				   current);
 		bp_frames_found = true;
+	        done = true;
 		// assert(0 && "no immediate in add or sub!");
 		// return &poison;
 	      }
@@ -622,6 +634,7 @@ unwind_interval *what(xed_decoded_inst_t& xedd, char *ins,
 				 current->bp_pos,
 				 current); 
 	      highwatermark = next;
+	      done = true;
 	    }
 	  }
 	  else if ((xedd.get_category() == XED_CATEGORY_POP) &&
@@ -650,6 +663,7 @@ unwind_interval *what(xed_decoded_inst_t& xedd, char *ins,
 			       RA_SP_RELATIVE, 0, 0,
 			       BP_UNCHANGED, current->bp_pos, 0,
 			       current);
+	    done = true;
 	  }
 	} 
       }
@@ -901,6 +915,9 @@ int plt_is_next(char *ins)
   char *val_pushed = NULL;
   char *push_succ_addr = NULL;
   char *jmp_target = NULL;
+
+  // skip optional padding if there appears to be any
+  while ((((long) ins) & 0x11) && (*ins == 0x0)) ins++; 
 
   // -------------------------------------------------------
   // requirement 1: push of displacement relative to rip 

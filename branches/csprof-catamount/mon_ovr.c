@@ -17,27 +17,6 @@ void csprof_init_internal(void);
 void csprof_fini_internal(void);
 void csprof_pthread_init_data(void);
 
-#if 0
-static int faux_main(int n, char **argv, char **env){
-  int ret;
-
-  M("calling regular main f faux main");
-  csprof_init_internal();
-  asm(".globl monitor_unwind_fence1");
-  asm("monitor_unwind_fence1:");
-  ret = (*the_main)(n,argv,env);
-  asm(".globl monitor_unwind_fence2");
-  asm("monitor_unwind_fence2:");
-
-  return ret;
-}
-
-void monitor_init_process(struct monitor_start_main_args *m){
-  the_main = m->main;
-  csprof_set_executable_name(m->argv[0]);
-  m->main = &faux_main;
-}
-#endif
 
 void monitor_init_process(char *process,int *argc,char **argv,unsigned pid){
   csprof_set_executable_name(process);
@@ -81,8 +60,6 @@ void csprof_init_thread_support(int id);
 void monitor_init_thread_support(void){
   thread_data_t *loc;
 
-  M("MONITOR init thread support");
-
   csprof_using_threads = 1;
 
   pthread_once(&iflg,n_init);
@@ -98,8 +75,6 @@ void csprof_thread_init(killsafe_t *kk, int id);
 void *monitor_init_thread(unsigned tid){
   thread_data_t *loc;
   killsafe_t    *safe;
-
-  M("MONITOR init thread called");
 
   MSG(1,"mon init thread id = %d, thr_c = %d",tid,thr_c);
   pthread_once(&iflg,n_init);
@@ -119,7 +94,6 @@ void monitor_fini_thread(void *init_thread_data ){
 
   csprof_state_t *state = ((killsafe_t *)init_thread_data)->state;
 
-  M("monitor writing data");
   csprof_thread_fini(state);
 }
 #endif

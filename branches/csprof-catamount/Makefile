@@ -3,7 +3,7 @@
 # work around irritating bug in GNU make--targets defined in the include
 # files should not be the default target
 
-install_loc := $(HOME)/csprof-install/libexec
+install_loc := /home/mfagan/csprof-install/libexec
 
 PLATFORM := x86-64
 #CC :=  cc
