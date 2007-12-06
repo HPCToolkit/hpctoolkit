@@ -151,6 +151,23 @@ int unw_step (unw_cursor_t *cursor){
 
   cursor->intvl = csprof_addr_to_interval((unsigned long)spr_pc);
 
+  if (!cursor->intvl && uw->ra_status == RA_STD_FRAME){
+     // try a BP relative unwind since the sp-based unwind didn't work.
+     // this case can prove useful for alloca frames
+    spr_sp  = ((void **)((unsigned long) bp + uw->bp_bp_pos));
+    spr_bp  = *spr_sp;
+    spr_sp  = ((void **)((unsigned long) bp + uw->bp_ra_pos));
+    spr_pc  = *spr_sp;
+    spr_sp += 1;
+
+    if ((unsigned long) spr_sp > (unsigned long) sp) { 
+      // this condition is a weak correctness check. only
+      // try building an interval for the return address again if it succeeds
+      cursor->intvl = csprof_addr_to_interval((unsigned long)spr_pc);
+    }
+  }
+     
+
   if (! cursor->intvl){
     PMSG(TROLL,"UNW STEP FAILURE :candidate pc = %p, cursor pc = %p, cursor bp = %p, cursor sp = %p",spr_pc,pc,bp,sp);
     PMSG(TROLL,"UNW STEP calls stack troll");

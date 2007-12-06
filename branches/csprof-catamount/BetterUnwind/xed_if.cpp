@@ -384,11 +384,13 @@ unwind_interval *what(xed_decoded_inst_t& xedd, char *ins,
     return next;
   }
   if (current->bp_status == BP_SAVED && no_pop_bp_restore(xedd)){
-    next = newinterval(ins + xedd.get_length(),
-		       current->ra_status,current->ra_pos,current->bp_ra_pos,
-		       BP_UNCHANGED,current->bp_pos,current->bp_bp_pos,
-		       current);
-    return next;
+    if (xedd.get_disp().get_signed64() == current->bp_pos){
+      next = newinterval(ins + xedd.get_length(),
+			 current->ra_status,current->ra_pos,current->bp_ra_pos,
+			 BP_UNCHANGED,current->bp_pos,current->bp_bp_pos,
+			 current);
+      return next;
+    }
   }
   // FIXME: look up bp action f enter
   if (xedd.get_iclass() == XEDICLASS_ENTER) {
@@ -415,7 +417,7 @@ unwind_interval *what(xed_decoded_inst_t& xedd, char *ins,
     PMSG(INTV,"new interval from ENTER");
     next = newinterval(ins + xedd.get_length(),
 
-#define PREFER_BP_FRAME 1
+#define PREFER_BP_FRAME 0
 #if PREFER_BP_FRAME
 		       RA_BP_FRAME,
 #else
