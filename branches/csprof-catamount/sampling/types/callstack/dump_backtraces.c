@@ -8,7 +8,7 @@
 #include "util.h"
 #include "csprof_csdata.h"
 
-#define DUMP_LIMIT 10
+#define DUMP_LIMIT 100
 
 void dump_backtraces(csprof_state_t *state, csprof_frame_t *unwind)
 {

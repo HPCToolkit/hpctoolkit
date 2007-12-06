@@ -414,7 +414,13 @@ unwind_interval *what(xed_decoded_inst_t& xedd, char *ins,
     }
     PMSG(INTV,"new interval from ENTER");
     next = newinterval(ins + xedd.get_length(),
+
+#define PREFER_BP_FRAME 1
+#if PREFER_BP_FRAME
+		       RA_BP_FRAME,
+#else
 		       RA_STD_FRAME,
+#endif
 		       current->ra_pos + offset,
 		       8,
 		       BP_SAVED,
@@ -626,7 +632,11 @@ unwind_interval *what(xed_decoded_inst_t& xedd, char *ins,
 	        (op1.get_reg() == XEDREG_RSP)) {
 	      PMSG(INTV,"new interval from PUSH BP");
 	      next = newinterval(ins + xedd.get_length(), 
+#if PREFER_BP_FRAME
+				 RA_BP_FRAME,
+#else
 				 RA_STD_FRAME,
+#endif
 				 current->ra_pos,
 				 current->ra_pos,
 				 BP_SAVED,
