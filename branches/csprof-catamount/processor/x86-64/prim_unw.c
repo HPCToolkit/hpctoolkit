@@ -37,7 +37,7 @@ int debug_unw = 0;
  ***************************************************************************************/
 
 
-static void update_cursor_with_troll(unw_cursor_t *cursor, void *sp, void *pc);
+static void update_cursor_with_troll(unw_cursor_t *cursor, void *sp, void *pc, void *bp);
 
 
 
@@ -83,7 +83,7 @@ void unw_init_f_mcontext(void *context,unw_cursor_t *cursor){
     PMSG(TROLL,"UNW INIT FAILURE :frame pc = %p, frame bp = %p, frame sp = %p",pc,bp,sp);
     PMSG(TROLL,"UNW INIT calls stack troll");
 
-    update_cursor_with_troll(cursor, sp, pc);
+    update_cursor_with_troll(cursor, sp, pc, bp);
   }
   else {
     cursor->pc = pc;
@@ -137,13 +137,13 @@ int unw_step (unw_cursor_t *cursor){
   }
   else {
   // sp rel or std frame
-    spr_sp  = ((void **)((unsigned long) sp + uw->ra_pos));
+    spr_sp  = ((void **)((unsigned long) sp + uw->sp_ra_pos));
     spr_pc  = *spr_sp;
     if (uw->bp_status == BP_UNCHANGED){
       spr_bp = bp;
     }
     else {
-      spr_bp = (void **)((unsigned long) sp + uw->bp_pos);
+      spr_bp = (void **)((unsigned long) sp + uw->sp_bp_pos);
       spr_bp  = *spr_bp; /* john and nathan's modification */
     }
     spr_sp += 1;
@@ -172,7 +172,7 @@ int unw_step (unw_cursor_t *cursor){
     PMSG(TROLL,"UNW STEP FAILURE :candidate pc = %p, cursor pc = %p, cursor bp = %p, cursor sp = %p",spr_pc,pc,bp,sp);
     PMSG(TROLL,"UNW STEP calls stack troll");
 
-    update_cursor_with_troll(cursor, sp, pc);
+    update_cursor_with_troll(cursor, sp, pc, bp);
   }
   else {
     cursor->pc = spr_pc;
@@ -206,14 +206,18 @@ static void drop_sample(void){
   sigjmp_buf_t *it = get_bad_unwind();
   siglongjmp(it->jb,9);
 }
-static void update_cursor_with_troll(unw_cursor_t *cursor, void *sp, void *pc){
+static void update_cursor_with_troll(unw_cursor_t *cursor, void *sp, void *pc, void *bp){
   void  **spr_sp, **spr_bp, *spr_pc;
 
   unsigned int tmp_ra_loc;
   if (stack_troll((char **)sp,&tmp_ra_loc)){
     spr_sp  = ((void **)((unsigned long) sp + tmp_ra_loc));
     spr_pc  = *spr_sp;
+#if 0
     spr_bp  = (void **) *(spr_sp - 1);
+#else
+    spr_bp  = (void **) bp;
+#endif
     spr_sp += 1;
 
     cursor->intvl = csprof_addr_to_interval((unsigned long)spr_pc);

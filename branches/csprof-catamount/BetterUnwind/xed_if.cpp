@@ -245,7 +245,7 @@ unwind_interval *fluke_interval(char *loc,unsigned int pos){
   u->startaddr = (unsigned long) loc;
   u->endaddr = (unsigned long) loc;
   u->ra_status = RA_SP_RELATIVE;
-  u->ra_pos = pos;
+  u->sp_ra_pos = pos;
   u->next = NULL;
   u->prev = NULL;
   return u; 
@@ -262,9 +262,9 @@ unwind_interval *newinterval(char *start,
   u->startaddr = (unsigned long) start;
   u->endaddr = 0;
   u->ra_status = loc;
-  u->ra_pos = pos;
+  u->sp_ra_pos = pos;
   u->bp_status = loc2;
-  u->bp_pos    = pos2;
+  u->sp_bp_pos    = pos2;
   // johnmc 11am Nov 13, 2007
   u->bp_bp_pos = bp_bp_pos;
   u->bp_ra_pos = bp_ra_pos;
@@ -309,9 +309,11 @@ void dump(unwind_interval *u){
 
   // replace endl at end with a \n and explicit 0;
   cerr_s <<  "start="<< (void *) u->startaddr << " end=" << (void *) u->endaddr <<
-    " stat=" << status(u->ra_status) << " pos=" << u->ra_pos <<
+    " stat=" << status(u->ra_status) << 
+    " sp_ra_pos=" << u->sp_ra_pos <<
+    " sp_bp_pos=" << u->sp_bp_pos << "\t" 
+    " bp_stat=" << bp_status(u->bp_status) << 
     " bp_ra_pos=" << u->bp_ra_pos <<
-    " bp_stat=" << bp_status(u->bp_status) << " bp_pos=" << u->bp_pos <<
     " bp_bp_pos=" << u->bp_bp_pos <<
     " next=" << u->next << " prev=" << u->prev << "\n" << '\0';
 
@@ -377,17 +379,17 @@ unwind_interval *what(xed_decoded_inst_t& xedd, char *ins,
   // caller's RBP has already been saved. (change 2)
   if (no_push_bp_save(xedd) && current->bp_status != BP_SAVED){
     next = newinterval(ins + xedd.get_length(),
-		       current->ra_status,current->ra_pos,current->bp_ra_pos,
+		       current->ra_status,current->sp_ra_pos,current->bp_ra_pos,
 		       BP_SAVED,xedd.get_disp().get_signed64(),current->bp_bp_pos,
 		       current);
     highwatermark = next;
     return next;
   }
   if (current->bp_status == BP_SAVED && no_pop_bp_restore(xedd)){
-    if (xedd.get_disp().get_signed64() == current->bp_pos){
+    if (xedd.get_disp().get_signed64() == current->sp_bp_pos){
       next = newinterval(ins + xedd.get_length(),
-			 current->ra_status,current->ra_pos,current->bp_ra_pos,
-			 BP_UNCHANGED,current->bp_pos,current->bp_bp_pos,
+			 current->ra_status,current->sp_ra_pos,current->bp_ra_pos,
+			 BP_UNCHANGED,current->sp_bp_pos,current->bp_bp_pos,
 			 current);
       return next;
     }
@@ -423,10 +425,10 @@ unwind_interval *what(xed_decoded_inst_t& xedd, char *ins,
 #else
 		       RA_STD_FRAME,
 #endif
-		       current->ra_pos + offset,
+		       current->sp_ra_pos + offset,
 		       8,
 		       BP_SAVED,
-		       current->bp_pos + offset -8,
+		       current->sp_bp_pos + offset -8,
 		       0,
 		       current);
     highwatermark = next;
@@ -493,10 +495,10 @@ unwind_interval *what(xed_decoded_inst_t& xedd, char *ins,
 	    next = newinterval(ins + xedd.get_length(), 
 			       // RA_SP_RELATIVE, 
 			       current->ra_status,
-			       current->ra_pos + size,
+			       current->sp_ra_pos + size,
 			       current->bp_ra_pos,
 			       current->bp_status,
-			       current->bp_pos + size,
+			       current->sp_bp_pos + size,
 			       current->bp_bp_pos,
 			       current);
              done = true;
@@ -524,10 +526,10 @@ unwind_interval *what(xed_decoded_inst_t& xedd, char *ins,
 	    next = newinterval(ins + xedd.get_length(), 
 			       // RA_SP_RELATIVE,
 			       current->ra_status,
-			       current->ra_pos + size,
+			       current->sp_ra_pos + size,
 			       current->bp_ra_pos,
 			       current->bp_status,
-			       current->bp_pos + size,
+			       current->sp_bp_pos + size,
 			       current->bp_bp_pos,
 			       current);
              done = true;
@@ -560,10 +562,10 @@ unwind_interval *what(xed_decoded_inst_t& xedd, char *ins,
 		    next = newinterval(ins + xedd.get_length(), 
 				       // RA_SP_RELATIVE, 
 				       current->ra_status,
-				       current->ra_pos + sign * immed.get_signed64(),
+				       current->sp_ra_pos + sign * immed.get_signed64(),
 				       current->bp_ra_pos,
 				       current->bp_status,
-				       current->bp_pos + sign * immed.get_signed64(),
+				       current->sp_bp_pos + sign * immed.get_signed64(),
 				       current->bp_bp_pos,
 				       current);
 	            done = true;
@@ -582,15 +584,15 @@ unwind_interval *what(xed_decoded_inst_t& xedd, char *ins,
 	    }
 	    else {
 	      // johnmc - i think this is wrong in my replacement below
-	      // I update ra_pos to be bp-relative. I also set bp_pos to zero after the move.
+	      // I update sp_ra_pos to be bp-relative. I also set sp_bp_pos to zero after the move.
 	      if (current->ra_status != RA_BP_FRAME){
 		EMSG("!! NO immediate in sp add/sub @ %p, switching to BP_FRAME",ins);
 		next = newinterval(ins + xedd.get_length(),
 				   RA_BP_FRAME,
-				   current->ra_pos,
+				   current->sp_ra_pos,
 				   current->bp_ra_pos,
 				   current->bp_status,
-				   current->bp_pos,
+				   current->sp_bp_pos,
 				   current->bp_bp_pos,
 				   current);
 		bp_frames_found = true;
@@ -639,11 +641,11 @@ unwind_interval *what(xed_decoded_inst_t& xedd, char *ins,
 #else
 				 RA_STD_FRAME,
 #endif
-				 current->ra_pos,
-				 current->ra_pos,
+				 current->sp_ra_pos,
+				 current->sp_ra_pos,
 				 BP_SAVED,
-				 current->bp_pos,
-				 current->bp_pos,
+				 current->sp_bp_pos,
+				 current->sp_bp_pos,
 				 current); 
 	      highwatermark = next;
 	      done = true;
@@ -673,7 +675,7 @@ unwind_interval *what(xed_decoded_inst_t& xedd, char *ins,
 	    EMSG("PROBLEM @%p: pop bp in BP_FRAME mode",ins);
 	    next = newinterval(ins + xedd.get_length(), 
 			       RA_SP_RELATIVE, 0, 0,
-			       BP_UNCHANGED, current->bp_pos, 0,
+			       BP_UNCHANGED, current->sp_bp_pos, 0,
 			       current);
 	    done = true;
 	  }
@@ -688,7 +690,7 @@ unwind_interval *what(xed_decoded_inst_t& xedd, char *ins,
   bp_just_pushed = next_bp_just_pushed;
   if (bp_just_pushed){
     next->bp_status = BP_SAVED;
-    next->bp_pos    = 0;
+    next->sp_bp_pos    = 0;
   }
   if (next_bp_popped){
     next->bp_status = BP_UNCHANGED;
@@ -706,7 +708,7 @@ unwind_interval *find_first_bp_frame(unwind_interval *first){
 unwind_interval *find_first_non_decr(unwind_interval *first, 
 				     unwind_interval *highwatermark){
 
-  while (first && first->next && (first->ra_pos <= first->next->ra_pos) && 
+  while (first && first->next && (first->sp_ra_pos <= first->next->sp_ra_pos) && 
 	 (first != highwatermark)) {
     first = first->next;
   }
@@ -725,7 +727,7 @@ void reset_to_canonical_interval(xed_decoded_inst_t xedd, unwind_interval *&curr
     if (canonical_interval) {
       if ((highwatermark && highwatermark->bp_status == BP_SAVED) && 
 	  (canonical_interval->bp_status != BP_SAVED) &&
-	  (canonical_interval->ra_pos == highwatermark->ra_pos))
+	  (canonical_interval->sp_ra_pos == highwatermark->sp_ra_pos))
 	canonical_interval = highwatermark;
       first = canonical_interval;
     } else if (bp_frames_found){ 
@@ -738,17 +740,22 @@ void reset_to_canonical_interval(xed_decoded_inst_t xedd, unwind_interval *&curr
       canonical_interval = first;
     }
     PMSG(INTV,"new interval from RET");
+#if 0
+
     ra_loc istatus =  
       (first->ra_status == RA_STD_FRAME) ? RA_BP_FRAME : first->ra_status;
+#else
+    ra_loc istatus = first->ra_status;
+#endif
     if ((current->ra_status != istatus) ||
 	(current->bp_status != first->bp_status) ||
-	(current->ra_pos != first->ra_pos) ||
+	(current->sp_ra_pos != first->sp_ra_pos) ||
 	(current->bp_ra_pos != first->bp_ra_pos) ||
 	(current->bp_bp_pos != first->bp_bp_pos) ||
-	(current->bp_pos != first->bp_pos)) {
+	(current->sp_bp_pos != first->sp_bp_pos)) {
       next = newinterval(ins + xedd.get_length(),
-			 istatus,first->ra_pos,first->bp_ra_pos,
-			 first->bp_status,first->bp_pos,first->bp_bp_pos,
+			 istatus,first->sp_ra_pos,first->bp_ra_pos,
+			 first->bp_status,first->sp_bp_pos,first->bp_bp_pos,
 			 current);
       return;
     }
@@ -901,10 +908,10 @@ call_lookahead(xed_decoded_inst_t *call_xedd, unwind_interval *current, char *in
 	PMSG(INTV,"newinterval from ADD/SUB immediate");
 	next = newinterval(jmp_succ_addr,
 			   current->ra_status,
-			   current->ra_pos + offset,
+			   current->sp_ra_pos + offset,
 			   current->bp_ra_pos,
 			   current->bp_status,
-			   current->bp_pos + offset,
+			   current->sp_bp_pos + offset,
 			   current->bp_bp_pos,
 			   current);
         return next;
@@ -1089,7 +1096,7 @@ interval_status l_build_intervals(char *ins, unsigned int len)
 	  const xed_decoded_resource_t& op0 = xedd.get_operand_resource(0);
 	  if ((op0.get_res() == XED_RESOURCE_REG) && 
 	      (current->ra_status == RA_SP_RELATIVE) && 
-	      (current->ra_pos == 0)) {
+	      (current->sp_ra_pos == 0)) {
 	    // jump to a register when the stack is in an SP relative state
 	    // with the return address at offset 0 in the stack.
 	    // a good assumption is that this is a tail call. -- johnmc

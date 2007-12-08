@@ -1,0 +1,62 @@
+#! /bin/sh
+#
+
+# =============== utility functions ================
+# args: ($1, $2): (string_to_check, string_for_error_msg[optional])
+f_error_on_nil()
+{
+  if [ -z "$1" ]; then
+    if [ -n "$2" ]; then printf "ERROR: $2\n"; fi
+#    f_usage
+    exit 1
+  fi
+}
+md_if_needed()
+{
+    if [ ! -e $1 ]; then
+	mkdir $1
+    fi
+    if [ ! -d $1 ]; then
+	echo "ERROR: $1 already exists, but is not a directory!!"
+	exit 1
+    fi
+}
+# ================ Main code =====================
+
+conf_home=`dirname $0`
+opt_prefix='.'
+
+while [ $# -gt 0 ]
+do
+    case $1 in
+	--prefix=*) opt_prefix=${1#--prefix=}
+#	            f_error_on_nil "$opt_prefix" "empty prefix specified"
+	          ;;
+
+	--*) printf "--Invalid option '$1'\n";
+	    exit 1;
+	    ;;
+
+	-*) printf "--Invalid option '$1'\n";
+	    exit 1;
+	    ;;
+
+         *) break ;;
+    esac
+    shift
+done
+
+opt_prefix=${opt_prefix:="."}
+opt_prefix=${opt_prefix%/}
+
+## configure Makefile (by creating Makefile.conf)
+
+echo install_loc := $opt_prefix > Makefile.conf
+echo src_dir_prefix := "$conf_home/" >> Makefile.conf
+cp $conf_home/Makefile.in ./Makefile
+
+## make install directory and subdirectories
+
+md_if_needed $opt_prefix
+md_if_needed $opt_prefix/bin
+md_if_needed $opt_prefix/lib
