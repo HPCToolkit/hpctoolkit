@@ -17,6 +17,12 @@ void* csprof_malloc(size_t size);
 
 using namespace XED;
 
+typedef enum {HW_NONE, HW_BRANCH, HW_CALL, HW_BPSAVE, HW_SPSUB, HW_CREATE_STD} hw_type;
+
+typedef struct highwatermark_s {
+  unwind_interval *uwi;
+  hw_type type;
+} highwatermark_t;
 
 
 xed_state_t dstate(XED_MACHINE_MODE_LONG_64, ADDR_WIDTH_64b, ADDR_WIDTH_64b);
@@ -360,7 +366,7 @@ bool no_pop_bp_restore(xed_decoded_inst_t xedd){
 
 unwind_interval *what(xed_decoded_inst_t& xedd, char *ins, 
 		      unwind_interval *current,bool &bp_just_pushed, 
-		      unwind_interval *&highwatermark,
+		      highwatermark_t &highwatermark,
 		      unwind_interval *&canonical_interval){
   int size;
 
@@ -382,7 +388,8 @@ unwind_interval *what(xed_decoded_inst_t& xedd, char *ins,
 		       current->ra_status,current->sp_ra_pos,current->bp_ra_pos,
 		       BP_SAVED,xedd.get_disp().get_signed64(),current->bp_bp_pos,
 		       current);
-    highwatermark = next;
+    highwatermark.uwi = next;
+    highwatermark.type = HW_BPSAVE;
     return next;
   }
   if (current->bp_status == BP_SAVED && no_pop_bp_restore(xedd)){
@@ -431,7 +438,8 @@ unwind_interval *what(xed_decoded_inst_t& xedd, char *ins,
 		       current->sp_bp_pos + offset -8,
 		       0,
 		       current);
-    highwatermark = next;
+    highwatermark.uwi = next;
+    highwatermark.type = HW_BPSAVE;
     return next;
   }
   for(unsigned int i=0; i < xedd.get_operand_count()  && done == false; i++){ 
@@ -559,9 +567,24 @@ unwind_interval *what(xed_decoded_inst_t& xedd, char *ins,
 			   << endl;
 		    }
 		    PMSG(INTV,"newinterval from ADD/SUB immediate");
+		    ra_loc istatus = current->ra_status;
+		    if ((istatus == RA_STD_FRAME) && 
+			(xedd.get_iclass() == XEDICLASS_SUB) &&
+			(highwatermark.type != HW_SPSUB)) {
+		      //---------------------------------------------------------------------------
+		      // if we are in a standard frame and we see a second subtract, it is time
+		      // to convert interval to a BP frame to minimize the chance we get the 
+		      // wrong offset for the return address in a routine that manipulates the
+		      // SP frequently (as in leapfrog_mod_leapfrog_ in the 
+		      // SPEC CPU2006 benchmark 459.GemsFDTD
+		      //
+		      // 9 December 2007 -- John Mellor-Crummey
+		      //---------------------------------------------------------------------------
+		      istatus = RA_BP_FRAME;
+		    }
 		    next = newinterval(ins + xedd.get_length(), 
 				       // RA_SP_RELATIVE, 
-				       current->ra_status,
+				       istatus,
 				       current->sp_ra_pos + sign * immed.get_signed64(),
 				       current->bp_ra_pos,
 				       current->bp_status,
@@ -576,17 +599,21 @@ unwind_interval *what(xed_decoded_inst_t& xedd, char *ins,
 		      if (! canonical_interval) {
 			canonical_interval = next;
 		      }
-#else
-		      canonical_interval = next;
 #endif
-		      highwatermark = next;
+		      if (highwatermark.type != HW_SPSUB) {
+			// test case: main in lbm spec benchmark contains multiple subtracts from sp
+			highwatermark.uwi = next;
+			highwatermark.type = HW_SPSUB;
+			canonical_interval = next;
+		      }
 		    }
-	    }
-	    else {
-	      // johnmc - i think this is wrong in my replacement below
-	      // I update sp_ra_pos to be bp-relative. I also set sp_bp_pos to zero after the move.
+	    } else {
 	      if (current->ra_status != RA_BP_FRAME){
-		EMSG("!! NO immediate in sp add/sub @ %p, switching to BP_FRAME",ins);
+		//---------------------------------------------------------------------------
+		// no immediate in add/subtract from stack pointer; switch to BP_FRAME
+		//
+		// 9 December 2007 -- John Mellor-Crummey
+		//---------------------------------------------------------------------------
 		next = newinterval(ins + xedd.get_length(),
 				   RA_BP_FRAME,
 				   current->sp_ra_pos,
@@ -647,7 +674,8 @@ unwind_interval *what(xed_decoded_inst_t& xedd, char *ins,
 				 current->sp_bp_pos,
 				 current->sp_bp_pos,
 				 current); 
-	      highwatermark = next;
+	      highwatermark.uwi = next;
+	      highwatermark.type = HW_CREATE_STD;
 	      done = true;
 	    }
 	  }
@@ -718,17 +746,18 @@ unwind_interval *find_first_non_decr(unwind_interval *first,
 void reset_to_canonical_interval(xed_decoded_inst_t xedd, unwind_interval *&current, 
 				 unwind_interval *&next, char *&ins, char *end, 
 				 bool irdebug, unwind_interval *first, 
-				 unwind_interval *highwatermark, 
+				 highwatermark_t &highwatermark, 
 				 unwind_interval *&canonical_interval){
 
+  unwind_interval *hw_uwi = highwatermark.uwi;
   // if the return is not the last instruction in the interval, 
   // set up an interval for code after the return 
   if (ins + xedd.get_length() < end){
     if (canonical_interval) {
-      if ((highwatermark && highwatermark->bp_status == BP_SAVED) && 
+      if ((hw_uwi && hw_uwi->bp_status == BP_SAVED) && 
 	  (canonical_interval->bp_status != BP_SAVED) &&
-	  (canonical_interval->sp_ra_pos == highwatermark->sp_ra_pos))
-	canonical_interval = highwatermark;
+	  (canonical_interval->sp_ra_pos == hw_uwi->sp_ra_pos))
+	canonical_interval = hw_uwi;
       first = canonical_interval;
     } else if (bp_frames_found){ 
       // look for first bp frame
@@ -736,7 +765,7 @@ void reset_to_canonical_interval(xed_decoded_inst_t xedd, unwind_interval *&curr
       canonical_interval = first;
     } else { 
       // look for first nondecreasing with no jmp
-      first = find_first_non_decr(first,highwatermark);
+      first = find_first_non_decr(first, hw_uwi);
       canonical_interval = first;
     }
     PMSG(INTV,"new interval from RET");
@@ -1002,7 +1031,7 @@ interval_status l_build_intervals(char *ins, unsigned int len)
   interval_status xed_stat;
   xed_error_enum_t xed_error;
   unwind_interval *prev = NULL, *current = NULL, *next = NULL, *first = NULL;
-  unwind_interval *highwatermark = 0;
+  highwatermark_t highwatermark = { 0, HW_NONE };
   unwind_interval *canonical_interval = 0;
   bool bp_just_pushed = false;
   int ecnt = 0;
@@ -1071,7 +1100,10 @@ interval_status l_build_intervals(char *ins, unsigned int len)
     else if ((xedd.get_iclass() == XEDICLASS_JMP) || 
 	     (xedd.get_iclass() == XEDICLASS_JMP_FAR)) {
 
-      if (highwatermark == 0)  highwatermark = current; 
+      if (highwatermark.type == HW_NONE)  {
+	highwatermark.uwi = current; 
+	highwatermark.type = HW_BRANCH; 
+      }
 
 #define RESET_FRAME_FOR_ALL_UNCONDITIONAL_JUMPS
 #ifdef  RESET_FRAME_FOR_ALL_UNCONDITIONAL_JUMPS
@@ -1109,13 +1141,17 @@ interval_status l_build_intervals(char *ins, unsigned int len)
 #endif
     } else if (xedd.get_category() == XED_CATEGORY_CALL) {
 
-      if (highwatermark == 0) highwatermark = current;
+      if (highwatermark.type == HW_NONE) {
+	highwatermark.uwi = current;
+	highwatermark.type = HW_CALL;
+      }
 
 #ifdef USE_CALL_LOOKAHEAD
       next = call_lookahead(&xedd, current, ins);
 #endif
-    } else if (is_jump(&xedd) && (highwatermark == 0)) {
-      highwatermark = current;
+    } else if (is_jump(&xedd) && (highwatermark.type == HW_NONE))  {
+      highwatermark.uwi = current; 
+      highwatermark.type = HW_BRANCH; 
     } else {
       next = what(xedd, ins, current, bp_just_pushed, highwatermark, canonical_interval);
     }
