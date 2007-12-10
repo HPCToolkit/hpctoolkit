@@ -574,9 +574,10 @@ unwind_interval *what(xed_decoded_inst_t& xedd, char *ins,
 		      //---------------------------------------------------------------------------
 		      // if we are in a standard frame and we see a second subtract, it is time
 		      // to convert interval to a BP frame to minimize the chance we get the 
-		      // wrong offset for the return address in a routine that manipulates the
+		      // wrong offset for the return address in a routine that manipulates 
 		      // SP frequently (as in leapfrog_mod_leapfrog_ in the 
-		      // SPEC CPU2006 benchmark 459.GemsFDTD
+		      // SPEC CPU2006 benchmark 459.GemsFDTD, when compiled with PGI 7.0.3 with
+		      // high levels of optimization).
 		      //
 		      // 9 December 2007 -- John Mellor-Crummey
 		      //---------------------------------------------------------------------------
@@ -593,15 +594,18 @@ unwind_interval *what(xed_decoded_inst_t& xedd, char *ins,
 				       current);
 	            done = true;
 		    if (xedd.get_iclass() == XEDICLASS_SUB){
-#if 0
-// we think we don't need to worry about resetting the canonical
-// interval every time
-		      if (! canonical_interval) {
-			canonical_interval = next;
-		      }
-#endif
 		      if (highwatermark.type != HW_SPSUB) {
-			// test case: main in lbm spec benchmark contains multiple subtracts from sp
+			//-------------------------------------------------------------------------
+			// set the highwatermark and canonical interval upon seeing the FIRST
+			// subtract from SP; take no action on subsequent subtracts.
+			//
+			// test case: main in SPEC CPU2006 benchmark 470.lbm contains multiple 
+			// subtracts from SP when compiled with PGI 7.0.3 with high levels of 
+			// optimization. the first subtract from SP is to set up the frame; 
+			// subsequent ones are to reserve space for arguments passed to functions.
+			//
+			// 9 December 2007 -- John Mellor-Crummey
+			//-------------------------------------------------------------------------
 			highwatermark.uwi = next;
 			highwatermark.type = HW_SPSUB;
 			canonical_interval = next;
