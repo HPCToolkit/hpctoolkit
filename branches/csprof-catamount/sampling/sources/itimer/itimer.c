@@ -23,6 +23,8 @@
 #include "pmsg.h"
 #include "name.h"
 
+#include "monitor.h"
+
 #ifndef STATIC_ONLY
 #define CSPROF_PROFILE_SIGNAL SIGPROF
 #define CSPROF_PROFILE_TIMER ITIMER_PROF
@@ -279,7 +281,7 @@ int samples_taken    = 0;
 int bad_unwind_count = 0;
 int csprof_sample    = 0;
 
-static void csprof_itimer_signal_handler(int sig, siginfo_t *siginfo, void *context){
+static int csprof_itimer_signal_handler(int sig, siginfo_t *siginfo, void *context){
 
   sigjmp_buf_t *it = get_bad_unwind();
   samples_taken++;
@@ -298,8 +300,10 @@ static void csprof_itimer_signal_handler(int sig, siginfo_t *siginfo, void *cont
   MSG(1,"got itimer signal");
 
   csprof_sample = 1;
-  setup_segv();
   if (!sigsetjmp(it->jb,1)){
+#if TEST_SEGV_HANDLING
+    if (samples_taken % 20 == 0)  *((int *) 0) = 1;
+#endif
     CSPROF_SIGNAL_HANDLER_GUTS(context);
   }
   else {
@@ -311,11 +315,14 @@ static void csprof_itimer_signal_handler(int sig, siginfo_t *siginfo, void *cont
   }
   csprof_sample = 0;
   csprof_set_timer();
+
+  return 0; /* tell monitor that the signal has been handled */
 }
 
 static void csprof_init_signal_handler(void){
-  struct sigaction sa;
   int ret;
+#if 0
+  struct sigaction sa;
 
   MSG(1,"Got to init signal handler\n");
 
@@ -330,6 +337,8 @@ static void csprof_init_signal_handler(void){
   sa.sa_flags = SA_SIGINFO | SA_RESTART;
 
   ret = sigaction(CSPROF_PROFILE_SIGNAL, &sa, 0);
+#endif 
+  ret = monitor_sigaction(CSPROF_PROFILE_SIGNAL, &csprof_itimer_signal_handler, 0, NULL);
 }
 
 extern void unw_init(void);
@@ -363,6 +372,7 @@ void csprof_thread_driver_init(csprof_options_t *opts){
   heartbeat_init(opts);
 }
 
+#if 0
 void csprof_driver_init(csprof_state_t *state,csprof_options_t *opts){
 
     csprof_init_signal_handler();
@@ -384,6 +394,7 @@ void csprof_driver_init(csprof_state_t *state,csprof_options_t *opts){
     }
     csprof_set_timer();
 }
+#endif
 
 void csprof_driver_fini(csprof_state_t *state, csprof_options_t *opts)
 {

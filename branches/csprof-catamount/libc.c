@@ -48,9 +48,11 @@
 #include "unsafe.h"
 #include "libstubs.h"
 
+#if 0
 int (*csprof_sigaction)(int sig, struct sigaction *act,
                       struct sigaction *oact);
 sig_t (*csprof_signal)(int sig, sig_t func);
+#endif
 
 #include <setjmp.h>
 
@@ -104,11 +106,13 @@ init_library_stubs()
     CSPROF_GRAB_FUNCPTR(_exit, _exit);
 #endif
 
+#if 0
     CSPROF_GRAB_FUNCPTR(sigaction, sigaction);
     CSPROF_GRAB_FUNCPTR(signal, signal);
     /*    real_sigaction = dlsym(RTLD_NEXT,"sigaction");
     real_signal = dlsym(RTLD_NEXT,"signal");
     */
+#endif
 
     library_stubs_initialized = 1;
 }

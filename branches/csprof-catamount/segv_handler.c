@@ -7,8 +7,8 @@
 #include <signal.h>
 
 #include "bad_unwind.h"
-// #include "general.h"
 #include "pmsg.h"
+#include "monitor.h"
 
 #include "thread_data.h"
 /* catch SIGSEGVs */
@@ -16,7 +16,7 @@
 int segv_count = 0;
 extern int csprof_sample;
 
-void csprof_sigsegv_signal_handler(int sig, siginfo_t *siginfo, void *context){
+int csprof_sigsegv_signal_handler(int sig, siginfo_t *siginfo, void *context){
 
   if (csprof_sample){
     sigjmp_buf_t *it = get_bad_unwind();
@@ -30,13 +30,16 @@ void csprof_sigsegv_signal_handler(int sig, siginfo_t *siginfo, void *context){
     raise(SIGABRT);
     EMSG("NON-SAMPLING SEGV!");
   }
+
+  return 1; /* pass the segv to the application handler */
 }
 
 static struct sigaction previous_sigsegv_handler;
 
 int setup_segv(void){
-  struct sigaction sa;
   int ret;
+#if 0
+  struct sigaction sa;
 
   /* set up handler for catching sigsegv */
   sa.sa_sigaction = csprof_sigsegv_signal_handler;
@@ -44,6 +47,8 @@ int setup_segv(void){
   sa.sa_flags = SA_SIGINFO | SA_RESTART | SA_ONSTACK;
 
   ret = sigaction(SIGSEGV, &sa, &previous_sigsegv_handler);
+#endif
+  ret = monitor_sigaction(SIGSEGV, &csprof_sigsegv_signal_handler, 0, NULL);
 
   if(ret != 0) {
     EMSG("Unable to install SIGSEGV handler", __FILE__, __LINE__);
