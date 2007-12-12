@@ -99,7 +99,7 @@ ifdef STATIC_ONLY
   find_v  := find_static
   gethost := gethostid.o override.o MPI_Init.o 
 else
-  INC_MON := -I$(src_dir_prefix)monitor/Install/include
+  INC_MON := -I$(install_loc)/include
   find_v  := find
 endif
 # INC_BETTER_UNW := -IBetterUnwind
@@ -202,6 +202,7 @@ OBJS += $(find_v).o xed_if.o
 OBJS += stack_troll.o
 OBJS += $(gethost)
 endif
+OBJS += sample_event.o
 OBJS += last.o
 OBJS += last_func.o
 
@@ -287,8 +288,8 @@ bclean:
 
 install: all
 	cp $(CSPROFLIB) $(install_loc)/lib
-	cp csprof.in $(install_loc)/bin/csprof
-	cp nm_tbl.py $(install_loc)/bin
+	cp $(src_dir_prefix)csprof.in $(install_loc)/bin/csprof
+	cp $(src_dir_prefix)nm_tbl.py $(install_loc)/bin
 
 .PHONY: realclean
 realclean: bclean

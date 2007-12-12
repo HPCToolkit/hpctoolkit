@@ -7,7 +7,8 @@
 #define TROLL (1 << 6)
 #define UNW_INIT (1 << 7)
 #define BASIC_INIT (1 << 8)
+#define SAMPLE     (1 << 9)
+#define SWIZZLE    (1 << 10)
 
 #define NONE (0)
 #define ALL (~0)
-

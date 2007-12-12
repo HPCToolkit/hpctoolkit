@@ -61,7 +61,10 @@ ot1: t1.o $(CSPROF_DOT_O)
 
 
 clean:
-	rm -rf *.o t1
+	rm -rf *.o t1 tp *.nm.c *.nm.so
+
+%   :  %.c
+	$(CC) -g $< -lm -lpthread -o $@
 
 %   : %.f90
 	$(FC) -g $< -o $@

@@ -21,6 +21,7 @@
 #include "segv_handler.h"
 #include "dump_backtraces.h"
 #include "pmsg.h"
+#include "sample_event.h"
 #include "name.h"
 
 #include "monitor.h"
@@ -33,10 +34,6 @@
 #define CSPROF_PROFILE_TIMER ITIMER_REAL
 #endif
 
-int s1 = 0;
-int s2 = 0;
-int s3 = 0;
-
 #ifdef MPI_SPECIAL
 #define STATIC_RANK 0
 static int chosen_rank = STATIC_RANK;
@@ -45,24 +42,11 @@ static int chosen_rank = STATIC_RANK;
 extern csprof_state_t *
 csprof_check_for_new_epoch(csprof_state_t *state);
 
-/* indices into a treenode's `metrics' array */
-#define WEIGHT_METRIC 0
-#define CALLS_METRIC 1
-
 static struct itimerval itimer;
 
 static void csprof_take_profile_sample(csprof_state_t *, struct ucontext *);
 
 sigset_t prof_sigset;
-
-#ifdef NO
-void _zflags(void)
-{
-  s1 = 0;
-  s2 = 0;
-  s3 = 0;
-}
-#endif
 
 static void
 csprof_init_sigset(sigset_t *ss)
@@ -191,38 +175,6 @@ extern void csprof_trampoline2();
 extern void csprof_trampoline2_end();
 #endif
 
-static void
-csprof_undo_swizzled_data(csprof_state_t *state, void *ctx)
-{
-#ifdef CSPROF_TRAMPOLINE_BACKEND
-    if(csprof_swizzle_patch_is_valid(state)) {
-        csprof_remove_trampoline(state, ctx);
-    }
-#endif
-}
-
-void
-csprof_swizzle_with_context(csprof_state_t *state, void *ctx)
-{
-#ifdef CSPROF_TRAMPOLINE_BACKEND
-    struct lox l;
-    int proceed = csprof_find_return_address_for_context(state, &l, ctx);
-
-    if(proceed) {
-        /* record */
-        if(l.stored.type == REGISTER) {
-            state->swizzle_patch = (void **) l.stored.location.reg;
-        }
-        else {
-            state->swizzle_patch = l.stored.location.address;
-        }
-        /* recording the return is machine-dependent */
-
-        csprof_insert_trampoline(state, &l, ctx);
-    }
-#endif
-}
-
 #ifdef NO
 static int
 dc(void)
@@ -231,58 +183,9 @@ dc(void)
 }
 #endif
 
-static void
-csprof_take_profile_sample(csprof_state_t *state, struct ucontext *ctx)
-{
-    mcontext_t *context = &ctx->uc_mcontext;
-    void *pc = csprof_get_pc(context);
-
-    csprof_set_last_sample_addr((unsigned long) pc);
-    csprof_increment_raw_sample_count();
-
-    MSG(1,"csprof take profile sample");
-    if(/* trampoline isn't exactly active during exception handling */
-       csprof_state_flag_isset(state, CSPROF_EXC_HANDLING)
-       /* dynamical libraries are in flux; don't bother */
-       || csprof_epoch_is_locked()
-       /* general checking for addresses in libraries */
-       || csprof_context_is_unsafe(ctx)) {
-      MSG(1,"No trampoline, s1 = %x, s2 = %x, s3 = %x",s1,s2,s3);
-        /* ugh, don't even bother */
-        state->trampoline_samples++;
-        // _zflags();
-
-        return;
-    }
-
-    state->context_pc = pc;
-    DBGMSG_PUB(1, "Signalled at %#lx", pc);
-
-    /* check to see if shared library state has changed out from under us */
-    state = csprof_check_for_new_epoch(state);
-
-    MSG(1,"undo swizzled data\n");
-    csprof_undo_swizzled_data(state, context);
-
-#if defined(__ia64__) && defined(__linux__) 
-    /* force insertion from the root */
-    state->treenode = NULL;
-    state->bufstk = state->bufend;
-#endif
-    if(csprof_sample_callstack(state, WEIGHT_METRIC, 1, context) == CSPROF_OK) {
-      MSG(1,"about to swizzle w context\n");
-      csprof_swizzle_with_context(state, (void *)context);
-    }
-
-    csprof_state_flag_clear(state, CSPROF_TAIL_CALL | CSPROF_EPILOGUE_RA_RELOADED | CSPROF_EPILOGUE_SP_RESET);
-}
-
-int samples_taken    = 0;
-int bad_unwind_count = 0;
-int csprof_sample    = 0;
-
 static int csprof_itimer_signal_handler(int sig, siginfo_t *siginfo, void *context){
 
+#ifdef NO
   sigjmp_buf_t *it = get_bad_unwind();
   samples_taken++;
 #ifdef MPI_SPECIAL
@@ -314,6 +217,9 @@ static int csprof_itimer_signal_handler(int sig, siginfo_t *siginfo, void *conte
     bad_unwind_count++;
   }
   csprof_sample = 0;
+#endif // NO
+  PMSG(ITIMER_HANDLER,"Itimer sample event");
+  csprof_sample_event(context);
   csprof_set_timer();
 
   return 0; /* tell monitor that the signal has been handled */
@@ -324,7 +230,7 @@ static void csprof_init_signal_handler(void){
 #if 0
   struct sigaction sa;
 
-  MSG(1,"Got to init signal handler\n");
+  PMSG(BASIC_INIT,"Got to init signal handler\n");
 
   /* set up handler for profiling purposes */
   sa.sa_sigaction = csprof_itimer_signal_handler;
