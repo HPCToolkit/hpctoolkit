@@ -61,21 +61,11 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-
-// #include <sys/stat.h>
-
-// #include <sys/types.h>
-// #include <signal.h>
-// #include <sys/signal.h>         /* sigaction(), sigemptyset() */
-// #include <sys/resource.h>
-// #include <errno.h>
-// #include <ucontext.h>           /* struct ucontext */
-// #include <unistd.h>
+#include <signal.h>
 
 /* user include files */
 
 #include "xpthread.h"
-// #include "general.h"
 #include "atomic.h"
 #include "libc.h"
 #include "csproflib.h"
@@ -84,17 +74,12 @@
 #include "killsafe.h"
 #include "mem.h"
 #include "csprof_csdata.h"
-// #include "interface.h"
-// #include "util.h"
 #include "segv_handler.h"
-// #include "driver.h"
 #include "epoch.h"
 #include "metrics.h"
-// #include "dump_backtraces.h"
 #include "itimer.h"
 
 #include "name.h"
-// #include "last.h"
 
 #include "hpcfile_csproflib.h"
 #include "pmsg.h"
@@ -104,56 +89,9 @@
 csprof_status_t status = CSPROF_STATUS_UNINIT;
 static csprof_options_t opts;
 
-//static void csprof_print_state(csprof_state_t *, CONTEXT *);
-
 #if !defined(CSPROF_SYNCHRONOUS_PROFILING) 
 sigset_t prof_sigset;
 #endif
-
-
-/* initialization and finalization of the library */
-
-/* Explicit interface */
-void
-csprof_init()
-{
-  csprof_init_internal();
-}
-
-void
-csprof_fini()
-{
-  csprof_fini_internal(); 
-}
-
-//***************************************************************************
-// Initialize and Finalize this library
-//***************************************************************************
-
-/* FIXME: this whole implicit/explicit interface thing has gotten hosed
-   over the transition to alpha/multiple threads/trampoline.  go back
-   and examine the issues involved */
-
-// Difficulties related to initializing/finalizing the library:
-//
-//   Case 1: Implicit interface: It is important to note that when
-//   this library is loaded with LD_PRELOAD, _init may be called
-//   multiple times per process.  A common example of this is when an
-//   application program is called through a shell's 'exec'.  The
-//   library is initialized when the shell interpreter is loaded and
-//   then again when the application is loaded.  Note that the library
-//   loads with *completely fresh* state each time -- exec replaces
-//   the current process *without calling library finalizers*.  We
-//   need to support profiling accross such indirect invocation where
-//   1) library state is lost if only saved in memory and 2) hw
-//   performance counters continue to run.
-//
-//   Case 2: Explicit interface: If the explicit interface is used,
-//   the implicit interface will *also* be called as this library
-//   loads and unloads.  In this case, since the library is not loaded
-//   multiple times, memory state is preserved.  We need to support
-//   multiple calls to the initializer and finalizer where state is
-//   preserved.
 
 int wait_for_gdb = 1;
 
@@ -172,7 +110,7 @@ void csprof_init_internal(void){
     while(wait_for_gdb);
   }
   pmsg_init();
-  // csprof_libc_init();
+
   MSG(CSPROF_MSG_SHUTDOWN, "***> csprof init internal ***");
 
   csprof_options__init(&opts);
@@ -254,12 +192,10 @@ void csprof_init_thread_support(int id){
 
   pthread_setspecific(mem_store_key,(void *)csprof_get_memstore());
   pthread_setspecific(prof_data_key,(void *)state);
-  // do NOT create a list node -- monitor should make that unnecessary
-
-  // Switch to threaded variants for various components of csprof
 
   state->pstate.thrid = id;
 
+  // Switch to threaded variants for various components of csprof
   mem_threaded();
   state_threaded();
   MSG(1,"switch to threaded versions complete");
@@ -270,10 +206,6 @@ void csprof_thread_init(killsafe_t *kk,int id){
   csprof_state_t *state;
   csprof_mem_t *memstore;
 
-  // csprof_pthread_init_funcptrs();  // SHOULDN'T NEED THIS
-  // csprof_pthread_init_data();      // SHOULDN'T NEED THIS, called by init_support
-
-  // csprof_pthread_state_init(kk);  // SHOULDN'T NEED THIS -- follow process_init scheme
   memstore = csprof_malloc_init(1, 0);
 
   if(memstore == NULL) {
@@ -347,123 +279,7 @@ void csprof_fini_internal(void){
 	 gethostid(), samples_taken, bad_unwind_count, segv_count);
 
     pmsg_fini();
-#if 0
-    printf("host %ld process %ld: %d samples total, %d samples dropped\n", 
-					 gethostid(), (unsigned long) getpid(), samples_taken, 
-					 segv_count+bad_unwind_count);
-
-    printf("host %ld process %ld: last sample address = 0x%lx, raw sample count = %ld\n", 
-	gethostid(), (unsigned long) getpid(), csprof_get_last_sample_addr(), csprof_get_raw_sample_count());
-#endif
 }
-/* the C trampoline */
-#ifdef CSPROF_TRAMPOLINE_BACKEND
-
-/* the !defined(CSPROF_PERF) are intended to help reduce the code footprint
-   of the trampoline.  every little bit counts */
-void *
-csprof_trampoline2(void **stackptr)
-{
-    csprof_state_t *state;
-    void *return_ip;
-    struct lox l;
-    int should_insert;
-
-    state = csprof_get_state();
-    csprof_state_flag_set(state, CSPROF_EXC_HANDLING);
-    return_ip = state->swizzle_return;
-
-    DBGMSG_PUB(1, "%%trampoline returning to %p", return_ip);
-    DBGMSG_PUB(1, "%%stackptr = %p => %p", stackptr, *stackptr);
-    {
-        csprof_cct_node_t *treenode = (csprof_cct_node_t *)state->treenode;
-
-        assert(treenode != NULL);
-
-#if defined(CSPROF_LAST_EDGE_ONLY)
-        if(!csprof_state_flag_isset(state, CSPROF_THRU_TRAMP)) {
-#endif
-            /* count this; FIXME HACK */
-            treenode->metrics[1]++;
-#if defined(CSPROF_LAST_EDGE_ONLY)
-        }
-#endif
-
-        csprof_bt_pop(state);
-        state->treenode = treenode->parent;
-
-        csprof_state_verify_backtrace_invariants(state);
-    }
-
-    if(return_ip != csprof_bt_top_ip(state)) {
-#if !defined(CSPROF_PERF)
-      csprof_frame_t *x = state->bufstk - 1;
-
-#if 0
-      for( ; x != state->bufend; ++x) {
-	printf("ip %#lx | sp %#lx\n", x->ip, x->sp);
-      }
-#else
-      dump_backtraces(state, 0);
-#endif
-
-
-        ERRMSG("Thought we were returning to %#lx, but %#lx",
-               __FILE__, __LINE__, return_ip, csprof_bt_top_ip(state));
-        ERRMSG("csprof_trampoline2 %#lx",
-               __FILE__, __LINE__, csprof_trampoline2);
-	csprof_dump_loaded_modules();
-#endif
-        DIE("Returning to an unexpected location.",
-            __FILE__, __LINE__);
-    }
-
-    should_insert = csprof_find_return_address_for_function(state, &l, stackptr);
-
-    if(should_insert) {
-        if(l.stored.type == REGISTER) {
-            int reg = l.stored.location.reg;
-
-            DBGMSG_PUB(1, "%%trampoline patching register %d", reg);
-            state->swizzle_patch = reg;
-            state->swizzle_return =
-                csprof_replace_return_address_onstack(stackptr, reg);
-        }
-        else {
-            void **address = l.stored.location.address;
-
-            DBGMSG_PUB(1, "%%trampoline patching address %p = %p",
-		       address, *address);
-
-            state->swizzle_patch = address;
-            if(*address != CSPROF_TRAMPOLINE_ADDRESS) {
-                state->swizzle_return = *address;
-                *address = CSPROF_TRAMPOLINE_ADDRESS;
-            }
-            else {
-                DIE("Trampoline not patched out at %#lx", __FILE__, __LINE__,
-                    address);
-            }
-        }
-    }
-    else {
-        /* clear out swizzle info */
-        state->swizzle_patch = 0;
-        state->swizzle_return = 0;
-    }
-
-    csprof_state_flag_set(state, CSPROF_THRU_TRAMP);
-    csprof_state_flag_clear(state, CSPROF_EXC_HANDLING | CSPROF_SIGNALED_DURING_TRAMPOLINE);
-
-    
-    return return_ip;
-}
-
-void
-csprof_trampoline2_end()
-{
-}
-#endif
 
 csprof_state_t *csprof_check_for_new_epoch(csprof_state_t *state){
   /* ugh, nasty race condition here:
@@ -520,7 +336,6 @@ csprof_state_t *csprof_check_for_new_epoch(csprof_state_t *state){
     csprof_set_state(newstate);
 
 #ifdef CSPROF_THREADS
-    // csprof_duplicate_thread_state_reference(newstate);
     ;
 #endif
 
