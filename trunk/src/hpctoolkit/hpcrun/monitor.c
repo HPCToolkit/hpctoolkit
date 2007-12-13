@@ -245,10 +245,16 @@ init_options()
 
     env_flags = getenv("HPCRUN_EVENT_FLAG");
     if (env_flags) {
-      if ((f = hpcpapi_flag_by_name(env_flags)) == NULL) {
-	DIEx("error: Invalid profiling flag '%s'.", env_flags);
+      char *ptr = NULL, *token = NULL;
+      token = strtok_r(env_flags,",:",&ptr);
+      while (token) {
+	if ((f = hpcpapi_flag_by_name(token)) == NULL) {
+	  DIEx("error: Invalid profiling flag '%s'.", token);
+	}
+	opt_flagscode |= f->code;
+	MSGx(stderr, "  flag: %s, 0x%x, 0x%x", token, f->code, opt_flagscode);
+	token = strtok_r(token,",:",&ptr);
       }
-      opt_flagscode = f->code;
     }
   }
 }
