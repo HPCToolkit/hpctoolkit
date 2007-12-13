@@ -79,7 +79,7 @@ void csprof_sample_event(void *context){
   csprof_sample = 1;
 
   // FIXME: setup_segv only necessary here because some apps install segv handler of their own
-  setup_segv();
+  // setup_segv();
 
   csprof_state_t *state = csprof_get_state();
 

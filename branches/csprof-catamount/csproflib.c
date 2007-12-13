@@ -85,8 +85,10 @@
 #include "pmsg.h"
 #include "prim_unw.h"
 
+#if 0
 /* the library's basic state */
 csprof_status_t status = CSPROF_STATUS_UNINIT;
+#endif
 static csprof_options_t opts;
 
 #if !defined(CSPROF_SYNCHRONOUS_PROFILING) 
@@ -122,34 +124,29 @@ void csprof_init_internal(void){
   static_epoch_size   = (long) (static_epoch_end - static_epoch_offset);
 #endif     
 
-  if (status == CSPROF_STATUS_INIT) { 
-    MSG(CSPROF_MSG_SHUTDOWN, "!!! csprof init called again !!!");
-  }
-  else {
-    MSG(CSPROF_MSG_SHUTDOWN, "csprof init 1");
+  MSG(CSPROF_MSG_SHUTDOWN, "csprof init 1");
 
-    /* private memory store for the initial thread is done below */
+  /* private memory store for the initial thread is done below */
 
-    MSG(1,"calling malloc init");
-    csprof_malloc_init(opts.mem_sz, 0);
+  MSG(1,"calling malloc init");
+  csprof_malloc_init(opts.mem_sz, 0);
 
   /* epoch poking needs the memory manager init'd() (and
      the thread-specific memory manager if need be) */
   /* figure out what libraries we currently have loaded */
-    csprof_epoch_lock();
-    csprof_epoch_new();
-    csprof_epoch_unlock();
+  csprof_epoch_lock();
+  csprof_epoch_new();
+  csprof_epoch_unlock();
     
-    /* profiling state needs the memory manager init'd */
-    csprof_state_t *state = csprof_malloc(sizeof(csprof_state_t));
+  /* profiling state needs the memory manager init'd */
+  csprof_state_t *state = csprof_malloc(sizeof(csprof_state_t));
 
-    csprof_set_state(state);
+  csprof_set_state(state);
 
-    csprof_state_init(state);
-    csprof_state_alloc(state);
+  csprof_state_init(state);
+  csprof_state_alloc(state);
 
-    MSG(1,"***> after mem,epoch,state init ***");
-  }
+  MSG(1,"***> after mem,epoch,state init ***");
 
 #if !defined(CSPROF_SYNCHRONOUS_PROFILING)
   MSG(1,"sigemptyset(prof_sigset)");
@@ -175,7 +172,6 @@ void csprof_init_internal(void){
 
   MSG(1,"***> csprof init 4 ***");
 
-  status = CSPROF_STATUS_INIT;
 }
 
 #ifdef CSPROF_THREADS
@@ -250,38 +246,28 @@ void csprof_thread_fini(csprof_state_t *state){
 // csprof_fini_internal: 
 // errors: handles all errors
 
-void csprof_fini_internal(void){
-    extern int segv_count;
-    extern int samples_taken;
-    extern int bad_unwind_count;
-    csprof_state_t *state;
+void
+csprof_fini_internal(void){
+  extern int segv_count;
+  extern int samples_taken;
+  extern int bad_unwind_count;
+  csprof_state_t *state;
 
-    /* Prevent multiple finalizations [Case 2] */
-    if (status == CSPROF_STATUS_FINI) {
-        MSG(CSPROF_MSG_SHUTDOWN, "***< csprof fini ***");
-        return;
-    }
+  /* stop the profile driver */
+  // csprof_driver_fini(state, &opts);
 
-    /* do this *before* doing everything else.  it's "technically" incorrect,
-       since we're not actually "done" until all the functions below are
-       called.  but this enables the signal handler to not screw with our
-       state.  FIXME: maybe provide another level--CSPROF_STATUS_SHUT_DOWN? */
-    status = CSPROF_STATUS_FINI;
-
-    /* stop the profile driver */
-    // csprof_driver_fini(state, &opts);
-
-    MSG(CSPROF_MSG_SHUTDOWN, "writing profile data");
-    state = csprof_get_safe_state();
-    csprof_write_profile_data(state);
+  MSG(CSPROF_MSG_SHUTDOWN, "writing profile data");
+  state = csprof_get_safe_state();
+  csprof_write_profile_data(state);
     
-    EMSG("host %ld: %d samples total, %d samples dropped (%d segvs)\n",
-	 gethostid(), samples_taken, bad_unwind_count, segv_count);
+  EMSG("host %ld: %d samples total, %d samples dropped (%d segvs)\n",
+       gethostid(), samples_taken, bad_unwind_count, segv_count);
 
-    pmsg_fini();
+  pmsg_fini();
 }
 
-csprof_state_t *csprof_check_for_new_epoch(csprof_state_t *state){
+csprof_state_t *
+csprof_check_for_new_epoch(csprof_state_t *state){
   /* ugh, nasty race condition here:
 
   1. shared library state has changed since the last profile
