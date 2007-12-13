@@ -2,6 +2,7 @@
 #ifndef CSPROF_DRIVER_H
 #define CSPROF_DRIVER_H
 
+#include "csprof_options.h"
 #include "structs.h"
 
 /* intended to be called at library initialization and finalization */

@@ -9,6 +9,8 @@
 #define BASIC_INIT (1 << 8)
 #define SAMPLE     (1 << 9)
 #define SWIZZLE    (1 << 10)
+#define FINALIZE   (1 << 11)
+#define DATA_WRITE (1 << 12)
 
 #define NONE (0)
 #define ALL (~0)

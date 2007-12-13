@@ -4,5 +4,4 @@
 typedef enum {
 #include "pmsg2.src"
 } pmsg_category;
-#else
 #endif

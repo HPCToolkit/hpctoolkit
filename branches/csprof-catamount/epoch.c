@@ -35,43 +35,39 @@
 #include "csprof_csdata.h"
 #include "general.h"
 #include "atomic.h"
+#include "state.h"
 
 /* epochs are entirely separate from profiling state */
 static csprof_epoch_t *current_epoch = NULL;
 
-
 /* locking functions to ensure that epochs are consistent */
 static volatile long epoch_lock = 0;
 
 void
-csprof_epoch_lock()
-{
-    /* implement our own spinlocks, since the lock has to be tested in
-       the signal handler and we're not allowed to call pthread locking
-       functions while we're in the signal handler. */
-    while(csprof_atomic_exchange_pointer(&epoch_lock, 1)) {
-        while(epoch_lock == 1) ; /* spin efficiently */
-    }
+csprof_epoch_lock() {
+  /* implement our own spinlocks, since the lock has to be tested in
+     the signal handler and we're not allowed to call pthread locking
+     functions while we're in the signal handler. */
+  while(csprof_atomic_exchange_pointer(&epoch_lock, 1)) {
+    while(epoch_lock == 1) ; /* spin efficiently */
+  }
 }
 
 void
-csprof_epoch_unlock()
-{
-    /* FIXME: does this *need* to be atomic? */
-    csprof_atomic_decrement(&epoch_lock);
+csprof_epoch_unlock(){
+  /* FIXME: does this *need* to be atomic? */
+  csprof_atomic_decrement(&epoch_lock);
 }
 
 int
-csprof_epoch_is_locked()
-{
+csprof_epoch_is_locked(){
   MSG(1,"epoch lock val = %lx",epoch_lock);
   return epoch_lock;
 }
 
 csprof_epoch_t *
-csprof_get_epoch()
-{
-    return current_epoch;
+csprof_get_epoch(){
+  return current_epoch;
 }
 
 /* epochs are totally distinct from profiling states */
@@ -107,9 +103,7 @@ csprof_epoch_new()
 #define HPCFILE_EPOCH_ENDIAN 'l' /* 'l' for little, 'b' for big */
 
 void
-csprof_write_epoch_header(FILE *fs)
-{
-    
+csprof_write_epoch_header(FILE *fs){
 }
 
 void
@@ -171,3 +165,71 @@ csprof_write_all_epochs(FILE *fs)
         runner = runner->next;
     }
 }
+#ifdef NOTYET
+csprof_state_t *
+csprof_check_for_new_epoch(csprof_state_t *state){
+  /* ugh, nasty race condition here:
+
+  1. shared library state has changed since the last profile
+  signal, so we enter the if;
+
+  2. somebody else dlclose()'s a library which holds something
+  located in our backtrace.  this is not in itself a problem,
+  since we don't bother doing anything on dlclose()...;
+
+  3. somebody else (thread in step 2 or a different thread)
+  dlopen()'s a new shared object, which begins an entirely
+  new epoch--one which does not include the shared object
+  which resides in our backtrace;
+
+  4. we create a new state which receives the epoch from step 3,
+  not step 1, which is wrong.
+
+  attempt to take baby steps to stop this.  more drastic action
+  would involve grabbing the epoch lock, but I believe that would
+  be unacceptably slow (both in the atomic instruction overhead
+  and the simple fact that most programs are not frequent users
+  of dl*). */
+
+  csprof_epoch_t *current = csprof_get_epoch();
+
+  if(state->epoch != current) {
+    csprof_state_t *newstate = csprof_malloc(sizeof(csprof_state_t));
+
+    MSG(CSPROF_MSG_EPOCH, "Creating new epoch...");
+
+    /* we don't have to go through the usual csprof_state_{init,alloc}
+       business here because most of the stuff we want is already
+       in `state' */
+    memcpy(newstate, state, sizeof(csprof_state_t));
+
+    /* we do have to reinitialize the tree, though */
+    csprof_csdata__init(&newstate->csdata);
+
+    /* and reinsert backtraces */
+    if(newstate->bufend - newstate->bufstk != 0) {
+      newstate->treenode = NULL;
+      csprof_state_insert_backtrace(newstate, 0, /* pick one */
+                                    newstate->bufend - 1,
+                                    newstate->bufstk,
+                                    0);
+    }
+
+    /* and inform the state about its epoch */
+    newstate->epoch = current;
+
+    /* and finally, set the new state */
+    csprof_set_state(newstate);
+
+#ifdef CSPROF_THREADS
+    // csprof_duplicate_thread_state_reference(newstate);
+    ;
+#endif
+
+    return newstate;
+  }
+  else {
+    return state;
+  }
+}
+#endif

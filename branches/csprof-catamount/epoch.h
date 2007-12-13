@@ -34,6 +34,7 @@
 
 #include <stdio.h>
 
+#include "state.h"
 #include "structs.h"
 
 csprof_epoch_t *csprof_epoch_new();
@@ -45,5 +46,6 @@ void csprof_epoch_unlock();
 int csprof_epoch_is_locked();
 
 void csprof_write_all_epochs(FILE *);
+// csprof_state_t *csprof_check_for_new_epoch(csprof_state_t *state);
 
 #endif /* CSPROF_EPOCH_H */

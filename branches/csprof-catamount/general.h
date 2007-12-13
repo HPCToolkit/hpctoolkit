@@ -101,8 +101,7 @@ extern int CSPROF_MSG_LVL; // default 0
 
 /* Common function status values */
 #define CSPROF_TRAMPOLINE 2     /* hack */
-#define CSPROF_OK      1
-#define CSPROF_ERR    -1
+#include "csprof_misc_fn_stat.h"
 
   /* #ifdef CSPROF_THREADS */
 extern pthread_mutex_t mylock;

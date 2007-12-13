@@ -170,6 +170,7 @@ else
    OBJS += static_mon_ovr.o
 endif
 OBJS += csproflib.o metrics.o mem.o cct.o
+OBJS += csprof_options.o
 OBJS += name.o list.o libc.o epoch.o
 
 ifdef DO_THREADS
@@ -186,6 +187,7 @@ endif
 
 OBJS += swizzle.o unsafe.o
 OBJS += loadmod.o processor-libc.o
+// OBJS += csprof_write_data.o
 
 ifdef USE_TRAMP
   OBJS += tramp.o 

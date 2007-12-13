@@ -82,10 +82,6 @@ typedef void (*sig_handler_func_t)(int, siginfo_t *, void *);
 //***************************************************************************
 
 // Defaults (see general.h for verbosity and debug)
-#define CSPROF_OUT_PATH          "."
-#define CSPROF_EVENT       "microseconds"
-#define CSPROF_SMPL_PERIOD 1000UL /* microseconds */
-#define CSPROF_MEM_SZ_INIT       32 * 1024 * 1024 /* FIXME: 1024 */
 #define CSPROF_BACKTRACE_CACHE_INIT_SZ 32
 
 

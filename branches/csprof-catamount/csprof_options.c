@@ -1,0 +1,154 @@
+#include <errno.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+#include "csprof_options.h"
+#include "csprof_misc_fn_stat.h"
+#include "env.h"
+
+/* option handling */
+/* FIXME: this needs to be split up a little bit for different backends */
+
+int
+csprof_options__init(csprof_options_t *x){
+  memset(x, 0, sizeof(*x));
+
+  x->mem_sz = CSPROF_MEM_SZ_INIT;
+  x->event = CSPROF_EVENT;
+  x->sample_period = CSPROF_SMPL_PERIOD;
+  x->sample_source = ITIMER;
+  
+  return CSPROF_OK;
+}
+
+int
+csprof_options__fini(csprof_options_t* x){
+  return CSPROF_OK;
+}
+
+/* assumes no private 'heap' memory is available yet */
+int
+csprof_options__getopts(csprof_options_t* x){
+
+  char tmp[CSPROF_PATH_SZ];
+  char* s;
+  int i = 0;
+
+#ifndef CSPROF_PERF
+  /* Global option: CSPROF_OPT_VERBOSITY */
+  s = getenv(CSPROF_OPT_VERBOSITY);
+  if (s) {
+    i = atoi(s);
+    if ((0 <= i) && (i <= 65536)) {
+      CSPROF_MSG_LVL = i;
+      fprintf(stderr, "setting message level to %d\n",i);
+    }
+    else {
+      DIE("value of option `%s' [%s] not integer between 0-9", __FILE__, __LINE__,
+          CSPROF_OPT_VERBOSITY, s);
+    }
+  } 
+
+  /* Global option: CSPROF_OPT_DEBUG */
+  s = getenv(CSPROF_OPT_DEBUG);
+  if (s) {
+    i = atoi(s);
+    /* FIXME: would like to provide letters as mnemonics, much like Perl */
+    CSPROF_DBG_LVL_PUB = i;
+  }
+#endif
+
+  /* Option: CSPROF_OPT_MAX_METRICS */
+  s = getenv(CSPROF_OPT_MAX_METRICS);
+  if (s) {
+    i = atoi(s);
+    if ((0 <= i) && (i <= 10)) {
+      x->max_metrics = i;
+    }
+    else {
+      EMSG("value of option `%s' [%s] not integer between 0-10", __FILE__,
+          __LINE__, CSPROF_OPT_MAX_METRICS, s);
+      abort();
+    }
+  }
+  else {
+    x->max_metrics = 5;
+  }
+
+  /* Option: CSPROF_OPT_SAMPLE_PERIOD */
+  s = getenv(CSPROF_OPT_SAMPLE_PERIOD);
+  if (s) {
+    long l;
+    char* s1;
+    errno = 0; /* set b/c return values on error are all valid numbers! */
+    l = strtol(s, &s1, 10);
+    // mwf allow 0 as a sample period for debugging
+    if (errno != 0 || l < 0 || *s1 != '\0') {
+      DIE("value of option `%s' [%s] is an invalid decimal integer", __FILE__, __LINE__,
+          CSPROF_OPT_SAMPLE_PERIOD, s);
+    }
+    else {
+      x->sample_period = l;
+    } 
+  }
+  else {
+    x->sample_period = 5000; /* microseconds */
+  }
+
+  /* Option: CSPROF_OPT_MEM_SZ */
+  s = getenv(CSPROF_OPT_MEM_SZ);
+  if(s) {
+    unsigned long l;
+    char *s1;
+    errno = 0;
+    l = strtoul(s, &s1, 10);
+    if(errno != 0) {
+      DIE("value of option `%s' [%s] is an invalid decimal integer",
+          __FILE__, __LINE__, CSPROF_OPT_MEM_SZ, s);
+    }
+    /* FIXME: may want to consider adding sanity checks (initial memory
+       sizes that are too high or too low) */
+    if(*s1 == '\0') {
+      x->mem_sz = l;
+    }
+    /* convinience */
+    else if(*s1 == 'M' || *s1 == 'm') {
+      x->mem_sz = l * 1024 * 1024;
+    }
+    else if(*s1 == 'K' || *s1 == 'k') {
+      x->mem_sz = l * 1024;
+    }
+    else {
+      DIE("unrecognized memory size unit `%c'",
+          __FILE__, __LINE__, *s1);
+    }
+  }
+  else {
+    /* provide a reasonable default */
+    x->mem_sz = 2 * 1024 * 1024;
+  }
+
+  /* Option: CSPROF_OPT_OUT_PATH */
+  s = getenv(CSPROF_OPT_OUT_PATH);
+  if (s) {
+    i = strlen(s);
+    if(i==0) {
+      strcpy(tmp, ".");
+    }
+    if((i + 1) > CSPROF_PATH_SZ) {
+      DIE("value of option `%s' [%s] has a length greater than %d", __FILE__, __LINE__,
+          CSPROF_OPT_OUT_PATH, s, CSPROF_PATH_SZ);
+    }
+    strcpy(tmp, s);
+  }
+  else {
+    strcpy(tmp, ".");
+  }
+  
+  if (realpath(tmp, x->out_path) == NULL) {
+    DIE("could not access path `%s': %s", __FILE__, __LINE__, tmp, strerror(errno));
+  }
+
+  return CSPROF_OK;
+}

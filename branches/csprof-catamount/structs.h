@@ -44,16 +44,6 @@ struct csprof_epoch
 };
 
 
-/* represents options for the library */
-typedef struct csprof_options_s {
-    char out_path[CSPROF_PATH_SZ]; /* path for output */
-    char addr_file[CSPROF_PATH_SZ]; /* path for "bad address" file */
-    unsigned long mem_sz;       /* initial private memory size, bytes */
-    char *event;                /* name of the event */
-    unsigned long sample_period;
-    unsigned int max_metrics;
-} csprof_options_t;
-
 /* not currently used */
 /* contents of the persistent state file for the profiler */
 typedef struct csprof_pstate_s { 
