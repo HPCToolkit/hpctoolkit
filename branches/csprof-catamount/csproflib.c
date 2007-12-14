@@ -78,6 +78,7 @@
 #include "epoch.h"
 #include "metrics.h"
 #include "itimer.h"
+#include "papi_sample.h"
 
 #include "name.h"
 
@@ -107,6 +108,10 @@ long static_epoch_size;
 //
 // process level setup (assumes pthreads not started yet)
 //
+
+static int evs[10];
+static int tc = 0;
+
 void csprof_init_internal(void){
   if (getenv("CSPROF_WAIT")){
     while(wait_for_gdb);
@@ -167,8 +172,16 @@ void csprof_init_internal(void){
   csprof_set_metric_info_and_period(metric_id, "# returns",
                                     CSPROF_METRIC_FLAGS_NIL, 1);
 
-  csprof_init_itimer_signal_handler();
-  itimer_event_init(&opts);
+  if (opts.sample_source == ITIMER){
+    csprof_init_itimer_signal_handler();
+    itimer_event_init(&opts);
+  }
+  else { // PAPI
+    papi_setup();
+    papi_event_init(&evs[0]);
+    papi_pulse_init(evs[0]);
+    tc++;
+  }
 
   MSG(1,"***> csprof init 4 ***");
 
@@ -178,6 +191,8 @@ void csprof_init_internal(void){
 extern pthread_key_t thread_node_key;
 extern pthread_key_t prof_data_key;
 extern pthread_key_t mem_store_key;
+#include "thread_use.h"
+#include "thread_data.h"
 
 void csprof_init_thread_support(int id){
 
@@ -230,7 +245,17 @@ void csprof_thread_init(killsafe_t *kk,int id){
     /* FIXME: is this the right way to do things? */
 
   MSG(1,"driver init f thread");
-  itimer_event_init(&opts);
+  if (opts.sample_source == ITIMER){
+    itimer_event_init(&opts);
+  }
+  else { // PAPI
+    
+    PMSG(PAPI,"Thread id = %d",id);
+    thread_data_t *td = (thread_data_t *) pthread_getspecific(k);
+    papi_event_init(&(td->eventSet));
+    papi_pulse_init(td->eventSet);
+    tc++;
+  }
 }
 
 void csprof_thread_fini(csprof_state_t *state){
@@ -238,7 +263,12 @@ void csprof_thread_fini(csprof_state_t *state){
   // int csprof_write_profile_data(csprof_state_t *s);
 
   MSG(1,"csprof thread fini");
-  csprof_disable_timer();
+  if (opts.sample_source == ITIMER){
+    csprof_disable_timer();
+  }
+  else { // PAPI
+    // papi_pulse_fini();
+  }
   csprof_write_profile_data(state);
 }
 #endif
@@ -253,8 +283,12 @@ csprof_fini_internal(void){
   extern int bad_unwind_count;
   csprof_state_t *state;
 
-  /* stop the profile driver */
-  // csprof_driver_fini(state, &opts);
+  if (opts.sample_source == ITIMER){
+    csprof_disable_timer();
+  }
+  else { // PAPI
+    papi_pulse_fini();
+  }
 
   MSG(CSPROF_MSG_SHUTDOWN, "writing profile data");
   state = csprof_get_safe_state();

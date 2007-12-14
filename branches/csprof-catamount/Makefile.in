@@ -89,7 +89,8 @@ module_dirs := utilities                \
                Pmsg                     \
                hpcfile                  \
                os/catamount             \
-               sampling/sources/$(DRIVER_DIR)
+               sampling/sources/itimer  \
+               sampling/sources/papi
 
 #LIB_CSFILE := libcsfile.a
 #INC_CSFILE := -I./hpcfile
@@ -120,6 +121,8 @@ endif
 
 INCS += $(addprefix -I$(src_dir_prefix),$(module_dirs))
 INCS += -I$(src_dir_prefix)BetterUnwind/Include
+PAPI_INCLUDE_OPTS_XD := -I/projects/hpc/pkgs/papi/include
+INCS += $(PAPI_INCLUDE_OPTS_XD)
 
 # FIXME: PAPI?
 ifneq "$(DRIVER_DIR)" "itimer"
@@ -193,7 +196,7 @@ ifdef USE_TRAMP
   OBJS += tramp.o 
 endif
 
-OBJS += $(DRIVER).o
+OBJS += itimer.o papi_sample.o
 OBJS += state.o env.o data.o dump_backtraces.o segv_handler.o
 OBJS += pmsg.o
 OBJS += nm_bound.o
@@ -226,6 +229,9 @@ XED_CPP_LIBS :=  -lstdc++ -ldl
 endif
 #PAPI_LIBS := -L/ccs/home/johnmc/mypapi/pkgs/lib -lpapi -lpfm
 #PAPI_LIBS  := -lpapi -lpfm
+# for 3.5 on ada
+PAPI_LD_OPTS_XD := -L/projects/hpc/pkgs/papi/lib -L/projects/hpc/pkgs/papi/lib64 -lpapi -lperfctr
+PAPI_LIBS   := $(PAPI_LD_OPTS_XD)
 
 LIBS += $(XED_LIBS) $(XED_CPP_LIBS) $(PAPI_LIBS)
 

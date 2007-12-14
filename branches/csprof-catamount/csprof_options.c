@@ -6,6 +6,7 @@
 #include "csprof_options.h"
 #include "csprof_misc_fn_stat.h"
 #include "env.h"
+#include "pmsg.h"
 
 /* option handling */
 /* FIXME: this needs to be split up a little bit for different backends */
@@ -17,7 +18,8 @@ csprof_options__init(csprof_options_t *x){
   x->mem_sz = CSPROF_MEM_SZ_INIT;
   x->event = CSPROF_EVENT;
   x->sample_period = CSPROF_SMPL_PERIOD;
-  x->sample_source = ITIMER;
+  // x->sample_source = ITIMER;
+  x->sample_source = PAPI;
   
   return CSPROF_OK;
 }
@@ -67,8 +69,7 @@ csprof_options__getopts(csprof_options_t* x){
       x->max_metrics = i;
     }
     else {
-      EMSG("value of option `%s' [%s] not integer between 0-10", __FILE__,
-          __LINE__, CSPROF_OPT_MAX_METRICS, s);
+      EMSG("value of option `%s' [%s] not integer between 0-10",CSPROF_OPT_MAX_METRICS, s);
       abort();
     }
   }
@@ -85,8 +86,9 @@ csprof_options__getopts(csprof_options_t* x){
     l = strtol(s, &s1, 10);
     // mwf allow 0 as a sample period for debugging
     if (errno != 0 || l < 0 || *s1 != '\0') {
-      DIE("value of option `%s' [%s] is an invalid decimal integer", __FILE__, __LINE__,
-          CSPROF_OPT_SAMPLE_PERIOD, s);
+      EMSG("value of option `%s' [%s] is an invalid decimal integer", 
+           CSPROF_OPT_SAMPLE_PERIOD, s);
+      abort();
     }
     else {
       x->sample_period = l;
@@ -104,8 +106,8 @@ csprof_options__getopts(csprof_options_t* x){
     errno = 0;
     l = strtoul(s, &s1, 10);
     if(errno != 0) {
-      DIE("value of option `%s' [%s] is an invalid decimal integer",
-          __FILE__, __LINE__, CSPROF_OPT_MEM_SZ, s);
+      EMSG("value of option `%s' [%s] is an invalid decimal integer",CSPROF_OPT_MEM_SZ, s);
+      abort();
     }
     /* FIXME: may want to consider adding sanity checks (initial memory
        sizes that are too high or too low) */
@@ -120,8 +122,8 @@ csprof_options__getopts(csprof_options_t* x){
       x->mem_sz = l * 1024;
     }
     else {
-      DIE("unrecognized memory size unit `%c'",
-          __FILE__, __LINE__, *s1);
+      EMSG("unrecognized memory size unit `%c'",*s1);
+      abort();
     }
   }
   else {
@@ -137,8 +139,8 @@ csprof_options__getopts(csprof_options_t* x){
       strcpy(tmp, ".");
     }
     if((i + 1) > CSPROF_PATH_SZ) {
-      DIE("value of option `%s' [%s] has a length greater than %d", __FILE__, __LINE__,
-          CSPROF_OPT_OUT_PATH, s, CSPROF_PATH_SZ);
+      EMSG("value of option `%s' [%s] has a length greater than %d",CSPROF_OPT_OUT_PATH, s, CSPROF_PATH_SZ);
+      abort();
     }
     strcpy(tmp, s);
   }
@@ -147,7 +149,8 @@ csprof_options__getopts(csprof_options_t* x){
   }
   
   if (realpath(tmp, x->out_path) == NULL) {
-    DIE("could not access path `%s': %s", __FILE__, __LINE__, tmp, strerror(errno));
+    EMSG("could not access path `%s': %s", tmp, strerror(errno));
+    abort();
   }
 
   return CSPROF_OK;

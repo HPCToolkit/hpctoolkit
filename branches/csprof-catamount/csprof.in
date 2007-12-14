@@ -297,7 +297,7 @@ f_prepareenv()
   # to profile if in the current directory. [We can get around this,
   # but for now it is the quickest thing.] 
   export PATH=".:${PATH}" 
-  export LD_LIBRARY_PATH=.:$CSPROF_HOME/Xed0-Alt/Lib:${LD_LIBRARY_PATH}
+  export LD_LIBRARY_PATH=.:$CSPROF_HOME/Xed0-Alt/Lib:${LD_LIBRARY_PATH}:/projects/hpc/pkgs/papi/lib64
 }
 
 #############################################################################

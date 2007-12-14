@@ -16,6 +16,7 @@
 #include "xpthread.h"
 #include "util.h"
 #include "libstubs.h"
+#include "pmsg.h"
 
 #ifdef __osf__
 
@@ -41,8 +42,6 @@ pthread_key_t prof_data_key;
 pthread_key_t mem_store_key;
 
 static pthread_key_t k;
-
-static pthread_once_t iflg = PTHREAD_ONCE_INIT;
 
 #include "thread_data.h"
 
@@ -83,11 +82,6 @@ void csprof_pthread_init_funcptrs(){
     MAYBE_INIT_STUBS();
 }
 
-static void n_init(void){
-  int e;
-  e = pthread_key_create(&k,free);
-}
-
 void csprof_pthread_init_data(void){
 
   pthread_key_create(&prof_data_key, NULL);
@@ -96,7 +90,7 @@ void csprof_pthread_init_data(void){
 
   pthread_mutex_init(&mylock,NULL);
 
-  all_threads.head = all_threads.tail = NULL;
+  // all_threads.head = all_threads.tail = NULL;
 }
 
 /* taken from Mellor-Crummey's paper */
@@ -265,6 +259,13 @@ typedef struct _xptfnt {
 
 
 #ifdef NOMON
+static void n_init(void){
+  int e;
+  e = pthread_key_create(&k,free);
+}
+
+static pthread_once_t iflg = PTHREAD_ONCE_INIT;
+
 void *doit (void *arg){
   void *rv;
   void *(*ff)(void *);

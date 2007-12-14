@@ -87,7 +87,8 @@ module_dirs := utilities                \
                Pmsg                     \
                hpcfile                  \
                os/catamount             \
-               sampling/sources/$(DRIVER_DIR)
+               sampling/sources/itimer  \
+               sampling/sources/papi
 
 #LIB_CSFILE := libcsfile.a
 #INC_CSFILE := -I./hpcfile

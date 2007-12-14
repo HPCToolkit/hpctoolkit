@@ -12,13 +12,9 @@
 // routine to take samples
 
 static void
-csprof_take_profile_sample(csprof_state_t *state, struct ucontext *ctx)
-{
+csprof_take_profile_sample(csprof_state_t *state, struct ucontext *ctx){
     mcontext_t *context = &ctx->uc_mcontext;
     void *pc = csprof_get_pc(context);
-
-    // csprof_set_last_sample_addr((unsigned long) pc);
-    // csprof_increment_raw_sample_count();
 
     PMSG(SAMPLE,"csprof take profile sample");
 #ifdef USE_TRAMP
