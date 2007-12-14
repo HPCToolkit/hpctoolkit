@@ -109,16 +109,13 @@ long static_epoch_size;
 // process level setup (assumes pthreads not started yet)
 //
 
-static int evs[10];
-static int tc = 0;
+static int evs;
 
 void csprof_init_internal(void){
   if (getenv("CSPROF_WAIT")){
     while(wait_for_gdb);
   }
   pmsg_init();
-
-  MSG(CSPROF_MSG_SHUTDOWN, "***> csprof init internal ***");
 
   csprof_options__init(&opts);
   csprof_options__getopts(&opts);
@@ -129,11 +126,8 @@ void csprof_init_internal(void){
   static_epoch_size   = (long) (static_epoch_end - static_epoch_offset);
 #endif     
 
-  MSG(CSPROF_MSG_SHUTDOWN, "csprof init 1");
-
   /* private memory store for the initial thread is done below */
 
-  MSG(1,"calling malloc init");
   csprof_malloc_init(opts.mem_sz, 0);
 
   /* epoch poking needs the memory manager init'd() (and
@@ -151,14 +145,10 @@ void csprof_init_internal(void){
   csprof_state_init(state);
   csprof_state_alloc(state);
 
-  MSG(1,"***> after mem,epoch,state init ***");
-
 #if !defined(CSPROF_SYNCHRONOUS_PROFILING)
   MSG(1,"sigemptyset(prof_sigset)");
   sigemptyset(&prof_sigset);
 #endif
-
-  MSG(1,"***> calling driver init ***");
 
   setup_segv();
   unw_init();
@@ -178,13 +168,9 @@ void csprof_init_internal(void){
   }
   else { // PAPI
     papi_setup();
-    papi_event_init(&evs[0]);
-    papi_pulse_init(evs[0]);
-    tc++;
+    papi_event_init(&evs);
+    papi_pulse_init(evs);
   }
-
-  MSG(1,"***> csprof init 4 ***");
-
 }
 
 #ifdef CSPROF_THREADS
@@ -249,12 +235,10 @@ void csprof_thread_init(killsafe_t *kk,int id){
     itimer_event_init(&opts);
   }
   else { // PAPI
-    
     PMSG(PAPI,"Thread id = %d",id);
     thread_data_t *td = (thread_data_t *) pthread_getspecific(k);
     papi_event_init(&(td->eventSet));
     papi_pulse_init(td->eventSet);
-    tc++;
   }
 }
 
