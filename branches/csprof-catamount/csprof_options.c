@@ -18,8 +18,8 @@ csprof_options__init(csprof_options_t *x){
   x->mem_sz = CSPROF_MEM_SZ_INIT;
   x->event = CSPROF_EVENT;
   x->sample_period = CSPROF_SMPL_PERIOD;
-  // x->sample_source = ITIMER;
-  x->sample_source = PAPI;
+  x->sample_source = ITIMER;
+  // x->sample_source = PAPI;
   
   return CSPROF_OK;
 }
@@ -151,6 +151,12 @@ csprof_options__getopts(csprof_options_t* x){
   if (realpath(tmp, x->out_path) == NULL) {
     EMSG("could not access path `%s': %s", tmp, strerror(errno));
     abort();
+  }
+
+  /* Option: papi */
+  s = getenv(SWITCH_TO_PAPI);
+  if (s){
+    x->sample_source = PAPI;
   }
 
   return CSPROF_OK;

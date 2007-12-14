@@ -67,6 +67,7 @@ opt_event=""
 opt_verbosity=""
 opt_debug=""
 opt_gdb=""
+opt_papi=""
 
 #####################
 
@@ -115,6 +116,7 @@ f_usage()
   $p "                  messages and generates a text version of the        \n"
   $p "                  callstack data.                                     \n"
   $p "    -d          : set csprof debug flag, for attaching gdb            \n"
+  $p "   --papi       : use papi instead of itimer                          \n" 
   $p "\n"
   $p "NOTES:\n"
   $p "   csprof uses _RLD_LIST to initiate profiling; modifications to \n"
@@ -215,6 +217,8 @@ f_getoptions()
 
       -d)   opt_gdb=1;
             ;;
+  --papi)   opt_papi=1;
+            ;;
 #      -o*) opt_out_path=`echo $1 | cut -c3-`;
 #            ;;
 
@@ -291,6 +295,9 @@ f_prepareenv()
   fi
   if [ -n "${opt_gdb}" ]; then
     export CSPROF_WAIT=1
+  fi
+  if [ -n "${opt_papi}" ]; then
+    export SWITCH_TO_PAPI=1
   fi
 
   # Make sure that `.' is in the PATH so that we can find the command

@@ -12,6 +12,8 @@ const char* CSPROF_OPT_DEBUG         = "CSPROF_OPT_DEBUG";
 
 const char* CSPROF_OPT_MAX_METRICS   = "CSPROF_OPT_MAX_METRICS";
 
+const char* SWITCH_TO_PAPI           = "SWITCH_TO_PAPI";
+
 #ifdef CSPROF_PAPI
 const char* CSPROF_OPT_EVENT         = "CSPROF_OPT_PAPI_EVENT";
 #endif
