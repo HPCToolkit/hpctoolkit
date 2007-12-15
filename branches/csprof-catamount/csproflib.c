@@ -97,6 +97,7 @@ sigset_t prof_sigset;
 #endif
 
 int wait_for_gdb = 1;
+int csprof_initialized = 0;
 
 extern void _start(void);
 extern int __stop___libc_freeres_ptrs;
@@ -171,6 +172,7 @@ void csprof_init_internal(void){
     papi_event_init(&evs);
     papi_pulse_init(evs);
   }
+  csprof_initialized = 1;
 }
 
 #ifdef CSPROF_THREADS
@@ -244,16 +246,17 @@ void csprof_thread_init(killsafe_t *kk,int id){
 
 void csprof_thread_fini(csprof_state_t *state){
   extern void csprof_disable_timer(void);
-  // int csprof_write_profile_data(csprof_state_t *s);
 
-  MSG(1,"csprof thread fini");
-  if (opts.sample_source == ITIMER){
-    csprof_disable_timer();
+  if (csprof_initialized) {
+    MSG(1,"csprof thread fini");
+    if (opts.sample_source == ITIMER){
+      csprof_disable_timer();
+    }
+    else { // PAPI
+      // papi_pulse_fini();
+    }
+    csprof_write_profile_data(state);
   }
-  else { // PAPI
-    // papi_pulse_fini();
-  }
-  csprof_write_profile_data(state);
 }
 #endif
 
@@ -267,21 +270,22 @@ csprof_fini_internal(void){
   extern int bad_unwind_count;
   csprof_state_t *state;
 
-  if (opts.sample_source == ITIMER){
-    csprof_disable_timer();
-  }
-  else { // PAPI
-    papi_pulse_fini();
-  }
+  if (csprof_initialized) {
+    if (opts.sample_source == ITIMER){
+      csprof_disable_timer();
+    }
+    else { // PAPI
+      papi_pulse_fini();
+    }
+    MSG(CSPROF_MSG_SHUTDOWN, "writing profile data");
+    state = csprof_get_safe_state();
+    csprof_write_profile_data(state);
 
-  MSG(CSPROF_MSG_SHUTDOWN, "writing profile data");
-  state = csprof_get_safe_state();
-  csprof_write_profile_data(state);
-    
-  EMSG("host %ld: %d samples total, %d samples dropped (%d segvs)\n",
-       gethostid(), samples_taken, bad_unwind_count, segv_count);
+    EMSG("host %ld: %d samples total, %d samples dropped (%d segvs)\n",
+	 gethostid(), samples_taken, bad_unwind_count, segv_count);
 
-  pmsg_fini();
+    pmsg_fini();
+  }
 }
 
 csprof_state_t *

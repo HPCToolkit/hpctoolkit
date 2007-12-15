@@ -3,7 +3,7 @@
 # work around irritating bug in GNU make--targets defined in the include
 # files should not be the default target
 
-install_loc := /home/mfagan/csprof-install/libexec
+install_loc := /projects/pkgs/csprof/libexec
 
 PLATFORM := x86-64
 #CC :=  cc
@@ -13,6 +13,7 @@ CXX  := g++
 link := gcc
 static_link_options := --verbose -nostdlib -nodefaultlibs -nostartfiles -static -Wl,-r
 #CHGROOT := 1 # undef for std root version
+
 
 #STATIC_ONLY := 1
 #NO_MMAP := 1
@@ -34,6 +35,9 @@ export PRIM_UNWIND
 
 # improved unwind here
 UNWIND := $(src_dir_prefix)BetterUnwind
+
+XED_DIR = /projects/pkgs/Xed2
+XED_DIR := $(src_dir_prefix)BetterUnwind
 
 #special decls for xed library usage
 XEDDCL := -DXED_SCALARS
@@ -77,6 +81,7 @@ ARFLAGS := -r
 #ADA link flags
 link_flags := -Wl,-Bstatic -Wl,-soname,$(CSPROFLIB) -shared
 # andre1 link flags
+link_flags := -Wl,-symbolic -Wl,-soname,$(CSPROFLIB) -shared
 link_flags := -Wl,-soname,$(CSPROFLIB) -shared
 
 module_dirs := utilities                \
@@ -118,7 +123,7 @@ INCS += $(MPI_INC)
 endif
 
 INCS += $(addprefix -I$(src_dir_prefix),$(module_dirs))
-INCS += -I$(src_dir_prefix)BetterUnwind/Include
+INCS += -I$(XED_DIR)/Include 
 
 # FIXME: PAPI?
 ifneq "$(DRIVER_DIR)" "itimer"
@@ -170,6 +175,8 @@ else
 endif
 OBJS += csproflib.o metrics.o mem.o cct.o
 OBJS += name.o list.o libc.o epoch.o
+OBJS += sample_event.o 
+OBJS += csprof_options.o 
 
 ifdef DO_THREADS
    OBJS += pthread.o
@@ -211,15 +218,17 @@ LIBS := $(LIB_THREAD) $(LIB_PFM)
 
 # when libxed.a is used
 #
-XED_LIBS := -L$(UNWIND)/Lib -lxed
+XED_LIBS := -L$(XED_DIR)/Lib -lxed
+
 ifdef PRIM_UNWIND
-#XED_LIBS := -LXed0-Alt/Lib -lxed
-XED_CPP_LIBS :=  -lstdc++ -ldl
+  XED_LIBS := -L../Xed0-Alt/Lib -lxed
+  XED_CPP_LIBS :=  -lstdc++ -ldl
 else
-XED_LIBS := -LXed0-Alt/Lib -lxed
-#XED_LIBS := -L`pwd` lxed.so
-XED_CPP_LIBS :=  -lstdc++ -ldl
+  XED_LIBS := -LXed0-Alt/Lib -lxed
+  #XED_LIBS := -L`pwd` lxed.so
+  XED_CPP_LIBS :=  -lstdc++ -ldl
 endif
+
 #PAPI_LIBS := -L/ccs/home/johnmc/mypapi/pkgs/lib -lpapi -lpfm
 #PAPI_LIBS  := -lpapi -lpfm
 

@@ -145,6 +145,16 @@ int unw_step (unw_cursor_t *cursor){
     else {
       spr_bp = (void **)((unsigned long) sp + uw->sp_bp_pos);
       spr_bp  = *spr_bp; /* john and nathan's modification */
+      if (spr_bp <= spr_sp) {
+	/* the value we are restoring from the stack doesn't
+           look like a reasonable frame pointer. a reasonable
+	   value for a frame pointer should be larger than SP.
+           since this one doesn't look like a reasonable frame
+	   pointer value, let's use the value in our BP register 
+           if it looks better
+	*/ 
+	if (bp >= spr_sp) spr_bp = bp;
+      }
     }
     spr_sp += 1;
   }
