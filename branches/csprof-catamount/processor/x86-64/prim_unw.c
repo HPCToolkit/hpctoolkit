@@ -19,6 +19,7 @@
 #include "stack_troll.h"
 
 #include "prim_unw_cursor.h"
+#include "x86-decoder.h"
 
 #include "splay.h"
 
@@ -51,7 +52,7 @@ void unw_init(void){
 
   
   PMSG(UNW,"UNW: xed, splay tree init");
-  xed_init();
+  x86_family_decoder_init();
   csprof_interval_tree_init();
 }
 
@@ -93,7 +94,7 @@ void unw_init_f_mcontext(void *context,unw_cursor_t *cursor){
 
   if (debug_unw) {
     PMSG(UNW,"dumping the found interval");
-    idump(cursor->intvl); // debug for now
+    dump_ui(cursor->intvl,1); // debug for now
   }
   PMSG(UNW,"UNW_INIT: returned interval = %p",cursor->intvl);
 }
@@ -143,8 +144,30 @@ int unw_step (unw_cursor_t *cursor){
       spr_bp = bp;
     }
     else {
+      //-----------------------------------------------------------
+      // reload the candidate value for the caller's BP from the 
+      // save area in the activation frame according to the unwind 
+      // information produced by binary analysis
+      //-----------------------------------------------------------
       spr_bp = (void **)((unsigned long) sp + uw->sp_bp_pos);
-      spr_bp  = *spr_bp; /* john and nathan's modification */
+      spr_bp  = *spr_bp; 
+
+      //-----------------------------------------------------------
+      // if value of BP reloaded from the save area does not point 
+      // into the stack, then it cannot possibly be useful as a frame 
+      // pointer in the caller or any of its ancesters.
+      //
+      // if the value in the BP register points into the stack, then 
+      // it might be useful as a frame pointer. in this case, we have 
+      // nothing to lose by assuming that our binary analysis for 
+      // unwinding might have been mistaken and that the value in 
+      // the register is the one we might want. 
+      //
+      // 19 December 2007 - John Mellor-Crummey
+      //-----------------------------------------------------------
+      if (((unsigned long) spr_bp < (unsigned long) sp) && 
+          ((unsigned long) bp > (unsigned long) sp)) 
+        spr_bp = bp;
       if (spr_bp <= spr_sp) {
 	/* the value we are restoring from the stack doesn't
            look like a reasonable frame pointer. a reasonable
@@ -192,7 +215,7 @@ int unw_step (unw_cursor_t *cursor){
 
   if (debug_unw) {
     PMSG(UNW,"dumping the found interval");
-    idump(cursor->intvl); // debug for now
+    dump_ui(cursor->intvl,1); // debug for now
   }
 
   PMSG(UNW,"NEXT frame pc = %p, frame bp = %p\n",cursor->pc,cursor->bp);
