@@ -3,7 +3,7 @@
 # work around irritating bug in GNU make--targets defined in the include
 # files should not be the default target
 
-install_loc := /projects/pkgs/csprof/libexec
+install_loc := ../Install/csprof/libexec
 
 PLATFORM := x86-64
 #CC :=  cc
@@ -14,6 +14,7 @@ link := gcc
 static_link_options := --verbose -nostdlib -nodefaultlibs -nostartfiles -static -Wl,-r
 #CHGROOT := 1 # undef for std root version
 
+XED_DIR = /projects/pkgs/Xed2
 
 #STATIC_ONLY := 1
 #NO_MMAP := 1
@@ -80,15 +81,16 @@ ARFLAGS := -r
 
 #ADA link flags
 link_flags := -Wl,-Bstatic -Wl,-soname,$(CSPROFLIB) -shared
+
 # andre1 link flags
-link_flags := -Wl,-symbolic -Wl,-soname,$(CSPROFLIB) -shared
-link_flags := -Wl,-soname,$(CSPROFLIB) -shared
+link_flags := -Wl,-Bsymbolic -Wl,-soname,$(CSPROFLIB) -shared
 
 module_dirs := utilities                \
                memory                   \
                processor/x86-64         \
+               unwind-analysis/common \
+               unwind-analysis/x86-family \
                sampling/types/callstack \
-               BetterUnwind             \
                Pmsg                     \
                hpcfile                  \
                os/catamount             \
@@ -175,7 +177,7 @@ else
 endif
 OBJS += csproflib.o metrics.o mem.o cct.o
 OBJS += name.o list.o libc.o epoch.o
-OBJS += sample_event.o 
+#OBJS += sample_event.o 
 OBJS += csprof_options.o 
 
 ifdef DO_THREADS
@@ -204,7 +206,11 @@ OBJS += nm_bound.o
 OBJS += bad_unwind.o
 OBJS += $(hpcfile_objs)
 ifdef PRIM_UNWIND
-OBJS += $(find_v).o xed_if.o
+OBJS += $(find_v).o intervals.o 
+#OBJS += x86-xed-print.o 
+OBJS += x86-addsub.o x86-build-intervals.o x86-canonical.o x86-decoder.o x86-jump.o x86-move.o x86-push.o
+OBJS += x86-call.o x86-debug.o x86-enter.o x86-leave.o x86-process-inst.o x86-return.o
+
 OBJS += stack_troll.o
 OBJS += $(gethost)
 endif
@@ -219,15 +225,6 @@ LIBS := $(LIB_THREAD) $(LIB_PFM)
 # when libxed.a is used
 #
 XED_LIBS := -L$(XED_DIR)/Lib -lxed
-
-ifdef PRIM_UNWIND
-  XED_LIBS := -L../Xed0-Alt/Lib -lxed
-  XED_CPP_LIBS :=  -lstdc++ -ldl
-else
-  XED_LIBS := -LXed0-Alt/Lib -lxed
-  #XED_LIBS := -L`pwd` lxed.so
-  XED_CPP_LIBS :=  -lstdc++ -ldl
-endif
 
 #PAPI_LIBS := -L/ccs/home/johnmc/mypapi/pkgs/lib -lpapi -lpfm
 #PAPI_LIBS  := -lpapi -lpfm
