@@ -14,11 +14,21 @@ link := gcc
 static_link_options := --verbose -nostdlib -nodefaultlibs -nostartfiles -static -Wl,-r
 #CHGROOT := 1 # undef for std root version
 
-XED_DIR = /projects/pkgs/Xed2
-
 #STATIC_ONLY := 1
 #NO_MMAP := 1
 #USE_TRAMP := 1
+
+
+WITH_PAPI=1
+PAPI_DIR := /projects/pkgs/papi-3.5.1-2007-12-10
+PAPI_INCLUDE_OPTS := -I$(PAPI_DIR)/include
+PAPI_LIBS := -L$(PAPI_DIR)/lib -lpapi -lpfm
+
+WITH_XED2=1
+XED_DIR := $(src_dir_prefix)BetterUnwind
+XED2_DIR = /projects/pkgs/Xed2
+XED2_INCLUDE_OPTS = -I$(XED2_DIR)/Include
+XED2_LIBS := -L$(XED2_DIR)/Lib -lxed
 
 src_dir_prefix = $(patsubst %Makefile,%,  \
                     $(word $(words $(MAKEFILE_LIST)),$(MAKEFILE_LIST)))
@@ -37,8 +47,6 @@ export PRIM_UNWIND
 # improved unwind here
 UNWIND := $(src_dir_prefix)BetterUnwind
 
-XED_DIR = /projects/pkgs/Xed2
-XED_DIR := $(src_dir_prefix)BetterUnwind
 
 #special decls for xed library usage
 XEDDCL := -DXED_SCALARS
@@ -53,9 +61,6 @@ CSPROF_DOT_O := libcsprof.o
 # MWF wants async timing, so chg default
 DRIVER = itimer
 DRIVER_DIR = itimer
-#DRIVER_DIR = papi
-#DRIVER = papi_pulse
-#DRIVER = mallocprof
 
 all: $(CSPROFLIB)
 #all: $(CSPROF_DOT_O)
@@ -125,17 +130,22 @@ INCS += $(MPI_INC)
 endif
 
 INCS += $(addprefix -I$(src_dir_prefix),$(module_dirs))
-INCS += -I$(XED_DIR)/Include 
 
-# FIXME: PAPI?
 ifneq "$(DRIVER_DIR)" "itimer"
 DEFINES += -DCSPROF_SYNCHRONOUS_PROFILING_ONLY=1
 endif
 ifeq "$(DRIVER_DIR)" "mallocprof"
 DEFINES += -DCSPROF_MALLOC_PROFILING=1
 endif
-ifeq "$(DRIVER_DIR)" "papi"
+
+ifdef WITH_PAPI
 INCS += $(PAPI_INCLUDE_OPTS)
+LIBS += $(PAPI_LIBS) 
+endif
+
+ifdef WITH_XED2
+INCS += $(XED2_INCLUDE_OPTS)
+LIBS += $(XED2_LIBS) 
 endif
 
 ifdef DO_THREADS
@@ -177,7 +187,7 @@ else
 endif
 OBJS += csproflib.o metrics.o mem.o cct.o
 OBJS += name.o list.o libc.o epoch.o
-#OBJS += sample_event.o 
+OBJS += sample_event.o 
 OBJS += csprof_options.o 
 
 ifdef DO_THREADS
@@ -199,7 +209,7 @@ ifdef USE_TRAMP
   OBJS += tramp.o 
 endif
 
-OBJS += $(DRIVER).o
+OBJS += itimer.o papi_sample.o
 OBJS += state.o env.o data.o dump_backtraces.o segv_handler.o
 OBJS += pmsg.o
 OBJS += nm_bound.o
@@ -222,14 +232,7 @@ OBJS += last_func.o
 #LIBS := hpcfile/$(LIB_CSFILE) $(LIB_THREAD) $(LIB_PFM)
 LIBS := $(LIB_THREAD) $(LIB_PFM)
 
-# when libxed.a is used
-#
-XED_LIBS := -L$(XED_DIR)/Lib -lxed
-
-#PAPI_LIBS := -L/ccs/home/johnmc/mypapi/pkgs/lib -lpapi -lpfm
-#PAPI_LIBS  := -lpapi -lpfm
-
-LIBS += $(XED_LIBS) $(XED_CPP_LIBS) $(PAPI_LIBS)
+LIBS += $(XED_LIBS) $(XED_CPP_LIBS) 
 
 #############################################################################
 # Compiling Rules:

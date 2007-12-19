@@ -3,6 +3,11 @@
 #define LIMIT_OUTER 100
 #define LIMIT 100000
 
+int bar() {
+	int x, y;
+	x = 1; y = 2;
+	return x+y;
+}
 void foob(double *x){
   *x = (*x) * 3.14 + atan(*x);
 }

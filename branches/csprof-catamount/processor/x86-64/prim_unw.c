@@ -168,7 +168,6 @@ int unw_step (unw_cursor_t *cursor){
       if (((unsigned long) spr_bp < (unsigned long) sp) && 
           ((unsigned long) bp > (unsigned long) sp)) 
         spr_bp = bp;
-      }
     }
     spr_sp += 1;
   }

@@ -25,16 +25,16 @@ reset_to_canonical_interval(xed_decoded_inst_t *xptr, unwind_interval *current,
 			    unwind_interval **canonical_interval, 
 			    bool bp_frames_found)
 {
-  unwind_interval *crhs = *canonical_interval;
   unwind_interval *hw_uwi = highwatermark->uwi;
   // if the return is not the last instruction in the interval, 
   // set up an interval for code after the return 
   if (ins + xed_decoded_inst_get_length(xptr) < end){
+    unwind_interval *crhs = *canonical_interval;
     if (crhs) {
       if ((hw_uwi && hw_uwi->bp_status == BP_SAVED) && 
 	  (crhs->bp_status != BP_SAVED) &&
 	  (crhs->sp_ra_pos == hw_uwi->sp_ra_pos)) *canonical_interval = hw_uwi;
-      first = crhs;
+      first = *canonical_interval;
     } else if (bp_frames_found){ 
       // look for first bp frame
       first = find_first_bp_frame(first);

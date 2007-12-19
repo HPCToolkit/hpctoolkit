@@ -47,7 +47,7 @@ new_ui(char *startaddr, ra_loc ra_status, unsigned int sp_ra_pos,
 {
   unwind_interval *u = (unwind_interval *) csprof_malloc(sizeof(unwind_interval)); 
 
-  u->startaddr = (unsigned long) startaddr;
+  u->startaddr = startaddr;
   u->endaddr = 0;
 
   u->ra_status = ra_status;
@@ -70,8 +70,8 @@ fluke_ui(char *loc,unsigned int pos)
 {
   unwind_interval *u = (unwind_interval *) csprof_malloc(sizeof(unwind_interval)); 
 
-  u->startaddr = (unsigned long) loc;
-  u->endaddr = (unsigned long) loc;
+  u->startaddr = loc;
+  u->endaddr = loc;
 
   u->ra_status = RA_SP_RELATIVE;
   u->sp_ra_pos = pos;
