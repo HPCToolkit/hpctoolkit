@@ -24,13 +24,13 @@ process_move(char *ins, xed_decoded_inst_t *xptr, const xed_inst_t *xi,
 	// register being stored is BP
 	//-------------------------------------------------------------------------
 	if (current->bp_status != BP_SAVED){
-	  //=========================================================================
+	  //=======================================================================
 	  // instruction: save caller's BP into the stack  
 	  // action:      create a new interval with 
 	  //                (1) BP status reset to BP_SAVED
-	  //                (2) BP position relative to the stack pointer set to the
-	  //                    offset from SP 
-	  //=========================================================================
+	  //                (2) BP position relative to the stack pointer set to 
+	  //                    the offset from SP 
+	  //=======================================================================
 	  next = new_ui(ins + xed_decoded_inst_get_length(xptr),
 			current->ra_status,current->sp_ra_pos,current->bp_ra_pos,
 			BP_SAVED,
@@ -52,15 +52,15 @@ process_move(char *ins, xed_decoded_inst_t *xptr, const xed_inst_t *xi,
 	if (current->bp_status == BP_SAVED) {
 	  int64_t offset = xed_decoded_inst_get_memory_displacement(xptr, 0);
 	  if (offset == current->sp_bp_pos) { 
-	    //=======================================================================
+	    //=====================================================================
 	    // instruction: restore BP from its saved location in the stack  
-	    // action:      create a new interval with BP status reset to BP_UNCHANGED
-	    //=======================================================================
-	    unwind_interval *next; 
+	    // action:      create a new interval with BP status reset to 
+	    //              BP_UNCHANGED
+	    //=====================================================================
 	    next = new_ui(ins + xed_decoded_inst_get_length(xptr),
-			  current->ra_status, current->sp_ra_pos, current->bp_ra_pos,
-			  BP_UNCHANGED, current->sp_bp_pos, current->bp_bp_pos,
-			  current);
+			  current->ra_status, current->sp_ra_pos, 
+			  current->bp_ra_pos, BP_UNCHANGED, current->sp_bp_pos, 
+			  current->bp_bp_pos, current);
 	  }
 	}
       }

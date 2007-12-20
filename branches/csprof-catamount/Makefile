@@ -26,8 +26,8 @@ PAPI_LIBS := -L$(PAPI_DIR)/lib -lpapi -lpfm
 
 WITH_XED2=1
 XED_DIR := $(src_dir_prefix)BetterUnwind
-XED2_DIR = /projects/pkgs/Xed2
-XED2_INCLUDE_OPTS = -I$(XED2_DIR)/Include
+XED2_DIR := /projects/pkgs/Xed2
+XED2_INCLUDE_OPTS := -I$(XED2_DIR)/Include
 XED2_LIBS := -L$(XED2_DIR)/Lib -lxed
 
 src_dir_prefix = $(patsubst %Makefile,%,  \
@@ -230,9 +230,10 @@ OBJS += last_func.o
 #LIBS := hpcfile/$(LIB_CSFILE) $(LIB_THREAD) $(LIB_UNWIND) $(LIB_PFM)
 
 #LIBS := hpcfile/$(LIB_CSFILE) $(LIB_THREAD) $(LIB_PFM)
-LIBS := $(LIB_THREAD) $(LIB_PFM)
+#LIBS = $(LIB_THREAD) $(LIB_PFM)
+LIBS += $(LIB_THREAD) 
 
-LIBS += $(XED_LIBS) $(XED_CPP_LIBS) 
+#LIBS += $(XED_LIBS) $(XED_CPP_LIBS) 
 
 #############################################################################
 # Compiling Rules:
