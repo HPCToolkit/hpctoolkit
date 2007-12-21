@@ -50,6 +50,21 @@ unwind_interval *process_inst(xed_decoded_inst_t *xptr, char *ins, char *end,
     next = process_conditional_branch(current, highwatermark);
     break;
 
+  case XED_ICLASS_FNSTCW:
+  case XED_ICLASS_STMXCSR:
+    if (highwatermark->succ_inst_ptr == ins) { 
+      //----------------------------------------------------------
+      // recognize Pathscale idiom for routine prefix and ignore
+      // any highwatermark setting that resulted from it.
+      //
+      // 20 December 2007 - John Mellor-Crummey
+      //----------------------------------------------------------
+      highwatermark_t empty_highwatermark = { NULL, NULL, HW_NONE };
+      *highwatermark = empty_highwatermark;
+    }
+    next = current;
+    break;
+
 
   case XED_ICLASS_MOV: 
     next = process_move(ins, xptr, xi, current, highwatermark);

@@ -30,6 +30,11 @@ XED2_DIR := /projects/pkgs/Xed2
 XED2_INCLUDE_OPTS := -I$(XED2_DIR)/Include
 XED2_LIBS := -L$(XED2_DIR)/Lib -lxed
 
+
+MONITOR_DIR := /projects/pkgs/libmonitor
+MONITOR_INCLUDE_OPTS := -I$(MONITOR_DIR)/include
+MONITOR_LIBS := -L$(MONITOR_DIR)/lib -lmonitor
+
 src_dir_prefix = $(patsubst %Makefile,%,  \
                     $(word $(words $(MAKEFILE_LIST)),$(MAKEFILE_LIST)))
 
@@ -110,9 +115,10 @@ ifdef STATIC_ONLY
   find_v  := find_static
   gethost := gethostid.o override.o MPI_Init.o 
 else
-  INC_MON := -I$(src_dir_prefix)monitor/Install/include
   find_v  := find
 endif
+
+
 # INC_BETTER_UNW := -IBetterUnwind
 
 #MPI_INC := -I/usr/mpich/mpich-1.2.6-pgi614/include
@@ -124,7 +130,7 @@ src_dir_inc := $(patsubst %/,%,$(src_dir_prefix))
 endif
 
 INCS := -I$(src_dir_inc) $(INC_PFM) $(INC_UNWIND) $(INC_THREAD)\
-         $(INC_MON) $(INC_BETTER_UNW)
+         $(INC_BETTER_UNW)
 ifdef MPI_SPECIAL
 INCS += $(MPI_INC)
 endif
@@ -147,6 +153,9 @@ ifdef WITH_XED2
 INCS += $(XED2_INCLUDE_OPTS)
 LIBS += $(XED2_LIBS) 
 endif
+
+INCS += $(MONITOR_INCLUDE_OPTS)
+LIBS += $(MONITOR_LIBS) 
 
 ifdef DO_THREADS
   CSPROF_THREADS := -DCSPROF_THREADS=1

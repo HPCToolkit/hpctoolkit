@@ -31,9 +31,15 @@ reset_to_canonical_interval(xed_decoded_inst_t *xptr, unwind_interval *current,
   if (ins + xed_decoded_inst_get_length(xptr) < end){
     unwind_interval *crhs = *canonical_interval;
     if (crhs) {
+#if 0
       if ((hw_uwi && hw_uwi->bp_status == BP_SAVED) && 
 	  (crhs->bp_status != BP_SAVED) &&
 	  (crhs->sp_ra_pos == hw_uwi->sp_ra_pos)) *canonical_interval = hw_uwi;
+      if ((hw_uwi && hw_uwi->bp_status == BP_SAVED) && 
+	  (crhs->bp_status != BP_SAVED)) *canonical_interval = hw_uwi;
+#endif
+      if (hw_uwi && hw_uwi->bp_status == BP_SAVED)  
+	if (crhs->bp_status != BP_SAVED) *canonical_interval = hw_uwi;
       first = *canonical_interval;
     } else if (bp_frames_found){ 
       // look for first bp frame
@@ -44,7 +50,6 @@ reset_to_canonical_interval(xed_decoded_inst_t *xptr, unwind_interval *current,
       first = find_first_non_decr(first, hw_uwi);
       *canonical_interval = first;
     }
-    PMSG(INTV,"new interval from RET");
     {
 #if 0
       ra_loc istatus =  

@@ -38,7 +38,8 @@ process_move(char *ins, xed_decoded_inst_t *xptr, const xed_inst_t *xi,
 			current->bp_bp_pos,
 			current);
 	  highwatermark->uwi = next;
-	  highwatermark->type = HW_BPSAVE;
+	  if (highwatermark->type == HW_SPSUB) highwatermark->type = HW_BPSAVE_AFTER_SUB;
+	  else highwatermark->type = HW_BPSAVE;
 	}
       }
     } else if ((op1_name == XED_OPERAND_MEM0) && (op0_name == XED_OPERAND_REG0)) { 

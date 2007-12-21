@@ -21,9 +21,8 @@ process_addsub(char *ins, xed_decoded_inst_t *xptr, const xed_inst_t *xi,
       int sign = (iclass_eq(xptr, XED_ICLASS_ADD)) ? -1 : 1;
       long immedv = sign * xed_decoded_inst_get_signed_immediate(xptr);
       ra_loc istatus = current->ra_status;
-      if ((istatus == RA_STD_FRAME) && 
-	  iclass_eq(xptr, XED_ICLASS_SUB) &&
-	  (highwatermark->type != HW_SPSUB)) {
+      if ((istatus == RA_STD_FRAME) && (immedv > 0) &&
+	  (highwatermark->type == HW_SPSUB)) {
 	//---------------------------------------------------------------------------
 	// if we are in a standard frame and we see a second subtract, it is time
 	// to convert interval to a BP frame to minimize the chance we get the 
@@ -34,15 +33,18 @@ process_addsub(char *ins, xed_decoded_inst_t *xptr, const xed_inst_t *xi,
 	//
 	// 9 December 2007 -- John Mellor-Crummey
 	//---------------------------------------------------------------------------
+#if PREFER_BP_FRAME
 	istatus = RA_BP_FRAME;
+	*bp_frames_found = true;
+#endif
       }
       next = new_ui(ins + xed_decoded_inst_get_length(xptr), 
 		    istatus, current->sp_ra_pos + immedv, current->bp_ra_pos, 
 		    current->bp_status, current->sp_bp_pos + immedv, 
 		    current->bp_bp_pos, current);
 
-      if (iclass_eq(xptr, XED_ICLASS_SUB)) {
-	if (highwatermark->type != HW_SPSUB) {
+      if (immedv > 0) {
+	if (highwatermark->type != HW_SPSUB && highwatermark->type != HW_BPSAVE_AFTER_SUB) {
 	  //-------------------------------------------------------------------------
 	  // set the highwatermark and canonical interval upon seeing the FIRST
 	  // subtract from SP; take no action on subsequent subtracts.
@@ -55,6 +57,7 @@ process_addsub(char *ins, xed_decoded_inst_t *xptr, const xed_inst_t *xi,
 	  // 9 December 2007 -- John Mellor-Crummey
 	  //-------------------------------------------------------------------------
 	  highwatermark->uwi = next;
+	  highwatermark->succ_inst_ptr = ins + xed_decoded_inst_get_length(xptr);
 	  highwatermark->type = HW_SPSUB;
 	  *canonical_interval = next;
 	}

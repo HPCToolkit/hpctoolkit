@@ -13,11 +13,13 @@
  * local types
  *****************************************************************************/
 
-typedef enum {HW_NONE, HW_BRANCH, HW_CALL, HW_BPSAVE, HW_SPSUB, HW_CREATE_STD} 
+typedef enum {HW_NONE, HW_BRANCH, HW_CALL, HW_BPSAVE, HW_SPSUB, HW_CREATE_STD, 
+	      HW_BPSAVE_AFTER_SUB} 
   hw_type;
 
 typedef struct highwatermark_s {
   unwind_interval *uwi;
+  void *succ_inst_ptr; // pointer to successor (support for pathscale idiom)
   hw_type type;
 } highwatermark_t;
 
