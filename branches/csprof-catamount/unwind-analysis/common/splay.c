@@ -9,7 +9,7 @@
 #include <stdio.h>
 #include "find.h"
 #include "intervals.h"
-#include "simple-lock.h"
+#include "spinlock.h"
 #include "splay.h"
 #include "pmsg.h"
 
@@ -23,15 +23,15 @@ pthread_mutex_t xedlock = PTHREAD_MUTEX_INITIALIZER;
 
 
 static interval_tree_node_t csprof_interval_tree_root = NULL;
-static simple_spinlock csprof_interval_tree_lock;
-static simple_spinlock simple_xedlock = 0;
+static spinlock_t csprof_interval_tree_lock;
+static spinlock_t xed_spinlock = SPINLOCK_UNLOCKED;
 
 void
 csprof_interval_tree_init(void)
 {
   PMSG(SPLAY,"SPLAY:interval splay tree init");
   csprof_interval_tree_root = NULL;
-  simple_spinlock_unlock(&csprof_interval_tree_lock);
+  spinlock_unlock(&csprof_interval_tree_lock);
 #ifdef CSPROF_THREADS
   pthread_mutex_init(&xedlock,NULL);
 #endif
@@ -46,10 +46,10 @@ static interval_status build_intervals(char *ins, unsigned int len){
   pthread_mutex_lock(&xedlock);
 #endif
 
-  simple_spinlock_lock(&simple_xedlock);
+  spinlock_lock(&xed_spinlock);
   PMSG(SPLAY,"SPLAY: calling l_build_intervals");
   rv = l_build_intervals(ins,len);
-  simple_spinlock_unlock(&simple_xedlock);
+  spinlock_unlock(&xed_spinlock);
 
 #ifdef CSPROF_THREADS
   pthread_mutex_unlock(&xedlock);
@@ -137,23 +137,22 @@ int debugonce = 1;
 #define root  csprof_interval_tree_root
 #define lock  csprof_interval_tree_lock
 unwind_interval *
-csprof_addr_to_interval(unsigned long laddr)
+csprof_addr_to_interval(void *addr)
 {
-  void *addr = (void *) laddr;
-    char *fcn_start, *fcn_end;
+    void *fcn_start, *fcn_end;
     interval_status istat;
     interval_tree_node_t first, last, p, lroot;
     unwind_interval *ans;
     int ret;
 
-    simple_spinlock_lock(&lock);
+    spinlock_lock(&lock);
 
 
     /* See if addr is already in the tree. */
     root = interval_tree_splay(root, addr);
     if (root != NULL && START(root) <= addr && addr < END(root)) {
 	lroot = root;
-	simple_spinlock_unlock(&lock);
+	spinlock_unlock(&lock);
 	PMSG(SPLAY,"SPLAY:found %lx already in tree",addr);
 	return (unwind_interval *)lroot;
     }
@@ -165,16 +164,16 @@ csprof_addr_to_interval(unsigned long laddr)
     /* Get list of new intervals to insert into the tree. */
     ret = find_enclosing_function_bounds((char *)addr, &fcn_start, &fcn_end);
     if (ret != SUCCESS) {
-	simple_spinlock_unlock(&lock);
+	spinlock_unlock(&lock);
 	PMSG(SPLAY,"SPLAY: no enclosing bounds found");
 	return (NULL);
     }
-    assert(fcn_start <= (char *)addr && (char *)addr < fcn_end);
+    assert(fcn_start <= addr && addr < fcn_end);
 
     istat = build_intervals(fcn_start, fcn_end - fcn_start);
 
     if (istat.first == NULL) {
-	simple_spinlock_unlock(&lock);
+	spinlock_unlock(&lock);
 	PMSG(1,"SPLAY: build intervals failed");
 	return (NULL);
     }
@@ -192,8 +191,8 @@ csprof_addr_to_interval(unsigned long laddr)
 	    ans = (unwind_interval *)p;
 	last = p;
     }
-    assert(fcn_start <= (char *) START(first));
-    assert((char *) END(last) <= fcn_end);
+    assert(fcn_start <= START(first));
+    assert(END(last) <= fcn_end);
 
 #ifdef DEBUG_TARGET
     if (debugflag) {
@@ -243,7 +242,7 @@ csprof_addr_to_interval(unsigned long laddr)
 	}
     }
 
-    simple_spinlock_unlock(&lock);
+    spinlock_unlock(&lock);
 
 #ifdef DEBUG_TARGET
     if (addr == TARGET_ADDR) {

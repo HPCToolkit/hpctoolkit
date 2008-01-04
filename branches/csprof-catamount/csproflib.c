@@ -85,6 +85,7 @@
 #include "hpcfile_csproflib.h"
 #include "pmsg.h"
 #include "prim_unw.h"
+#include "dl_bound.h"
 
 #if 0
 /* the library's basic state */
@@ -137,6 +138,7 @@ void csprof_init_internal(void){
   csprof_epoch_lock();
   csprof_epoch_new();
   csprof_epoch_unlock();
+  dl_init();
     
   /* profiling state needs the memory manager init'd */
   csprof_state_t *state = csprof_malloc(sizeof(csprof_state_t));
@@ -277,6 +279,9 @@ csprof_fini_internal(void){
     else { // PAPI
       papi_pulse_fini();
     }
+
+    dl_fini();
+
     MSG(CSPROF_MSG_SHUTDOWN, "writing profile data");
     state = csprof_get_safe_state();
     csprof_write_profile_data(state);

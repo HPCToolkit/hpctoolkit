@@ -18,8 +18,8 @@
 
 /* based on Mellor-Crummey's implementation */
 struct csprof_thread_queue {
-    volatile csprof_list_node_t *head;
-    volatile csprof_list_node_t *tail;
+    csprof_list_node_t *volatile head;
+    csprof_list_node_t *volatile tail;
 };
 
 /* the key that references the profiling state of the thread */

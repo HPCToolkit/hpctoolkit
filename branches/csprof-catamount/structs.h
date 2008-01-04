@@ -109,4 +109,10 @@ typedef struct csprof_state_s {
     void *extra_state;
 } csprof_state_t;
 
+#define CSPROF_SAMPLING_ENABLED 1
+
+#define CLEAR_FLAGS(state, flagvals) state->flags &= ~(flagvals)
+#define SET_FLAGS(state, flagvals) state->flags |= (flagvals)
+#define TEST_FLAGS(state, flagvals) (state->flags & (flagvals))
+
 #endif

@@ -78,7 +78,7 @@ void unw_init_f_mcontext(void *context,unw_cursor_t *cursor){
 
   // EMSG("UNW_INIT:frame pc = %p, frame bp = %p, frame sp = %p",pc,bp,sp);
 
-  cursor->intvl = csprof_addr_to_interval((unsigned long)pc);
+  cursor->intvl = csprof_addr_to_interval(pc);
 
   if (! cursor->intvl){
     PMSG(TROLL,"UNW INIT FAILURE :frame pc = %p, frame bp = %p, frame sp = %p",pc,bp,sp);
@@ -163,11 +163,13 @@ int unw_step (unw_cursor_t *cursor){
 	spr_bp = bp;
     }
     spr_sp += 1;
-    cursor->intvl = csprof_addr_to_interval((unsigned long)spr_pc);
+    cursor->intvl = csprof_addr_to_interval(spr_pc);
   }
 
   if ((cursor->intvl == NULL) && 
-      (uw->ra_status == RA_BP_FRAME || (uw->ra_status == RA_STD_FRAME && bp >= sp))) {
+      ((uw->ra_status == RA_BP_FRAME) || 
+       ((uw->ra_status == RA_STD_FRAME) && 
+	((unsigned long) bp >= (unsigned long) sp)))) {
     // bp relative
     spr_sp  = ((void **)((unsigned long) bp + uw->bp_bp_pos));
     spr_bp  = *spr_sp;
@@ -177,7 +179,7 @@ int unw_step (unw_cursor_t *cursor){
     if ((unsigned long) spr_sp > (unsigned long) sp) { 
       // this condition is a weak correctness check. only
       // try building an interval for the return address again if it succeeds
-      cursor->intvl = csprof_addr_to_interval((unsigned long)spr_pc);
+      cursor->intvl = csprof_addr_to_interval(spr_pc);
     }
   }
 
@@ -233,7 +235,7 @@ static void update_cursor_with_troll(unw_cursor_t *cursor, void *sp, void *pc, v
 #endif
     spr_sp += 1;
 
-    cursor->intvl = csprof_addr_to_interval((unsigned long)spr_pc);
+    cursor->intvl = csprof_addr_to_interval(spr_pc);
     if (! cursor->intvl){
       PMSG(TROLL, "No interval found for trolled pc, dropping sample,cursor pc = %p",pc);
       // assert(0);

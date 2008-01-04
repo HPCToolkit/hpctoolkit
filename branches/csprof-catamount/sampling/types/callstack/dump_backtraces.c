@@ -7,6 +7,7 @@
 #include "libc.h"
 #include "util.h"
 #include "csprof_csdata.h"
+#include "pmsg.h"
 
 #define DUMP_LIMIT 100
 

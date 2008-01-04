@@ -40,7 +40,6 @@ csprof_dump_loaded_modules(void){
       if(segment_is_executable(mapline)) {
 	char *name = strdup(xname(mapline));
 	unsigned long offset = htoll(mapline);
-	unsigned long thesize = segment_size(mapline);
 
 	MSG(CSPROF_MSG_EPOCH, "Load module %s loaded at %p",
 	    name, (void *) offset);

@@ -248,7 +248,7 @@ f_prepareenv()
 
 #  $CSPROF_HOME/fnbound.py $_EXEC
 
-  $CSPROF_HOME/nm_tbl.py $_EXEC
+  $CSPROF_HOME/nm_tbl.py $_EXEC .
 
   LD_PRELOAD=${LD_PRELOAD}:${_EXEC}.nm.so
 

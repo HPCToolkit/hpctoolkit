@@ -78,6 +78,7 @@ static int
 hpcfile_cstree_write_node(FILE* fs, void* tree, void* node, 
 			  hpcfile_cstree_node_t *scratch,
 			  hpcfile_uint_t id_parent,
+			  hpcfile_uint_t *id,
 			  hpcfile_cstree_cb__get_data_fn_t get_node_data_fn,
 			  hpcfile_cstree_cb__get_first_child_fn_t get_first_child_fn,
 			  hpcfile_cstree_cb__get_sibling_fn_t get_sibling_fn);
@@ -99,11 +100,6 @@ hpcfile_cstree_read_hdr(FILE* fs, hpcfile_cstree_hdr_t* hdr);
 // children, the id of x is less than the id of any child and less
 // than the id of any child's descendent.
 
-/* FIXME: HACK HACK HACK: this used to be static in
-   `hpcfile_cstree_write_node', but multiple invocations of
-   `hpcfile_cstree_write' made that problematic. */
-static hpcfile_uint_t id = 0;
-
 //***************************************************************************
 // hpcfile_cstree_write()
 //***************************************************************************
@@ -121,6 +117,8 @@ hpcfile_cstree_write(FILE* fs, void* tree, void* root,
 {
   hpcfile_cstree_hdr_t fhdr;
   hpcfile_cstree_node_t fnode;
+  hpcfile_uint_t id;
+
   int ret;
 
   if (!fs) { return HPCFILE_ERR; }
@@ -140,7 +138,7 @@ hpcfile_cstree_write(FILE* fs, void* tree, void* root,
   hpcfile_cstree_node__init(&fnode);
   fnode.data.num_metrics = num_metrics;
   fnode.data.metrics = malloc(num_metrics * sizeof(hpcfile_uint_t));
-  ret = hpcfile_cstree_write_node(fs, tree, root, &fnode, 0, get_data_fn, 
+  ret = hpcfile_cstree_write_node(fs, tree, root, &fnode, 0, &id, get_data_fn, 
 				  get_first_child_fn, get_sibling_fn);
   free(fnode.data.metrics);
   
@@ -151,6 +149,7 @@ static int
 hpcfile_cstree_write_node(FILE* fs, void* tree, void* node, 
 			  hpcfile_cstree_node_t *scratch,
 			  hpcfile_uint_t id_parent,
+			  hpcfile_uint_t *id,
 			  hpcfile_cstree_cb__get_data_fn_t get_data_fn,
 			  hpcfile_cstree_cb__get_first_child_fn_t get_first_child_fn,
 			  hpcfile_cstree_cb__get_sibling_fn_t get_sibling_fn)
@@ -160,7 +159,7 @@ hpcfile_cstree_write_node(FILE* fs, void* tree, void* node,
 
   if (!node) { return HPCFILE_OK; }
 
-  scratch->id = myid = id;
+  scratch->id = myid = *id;
   scratch->id_parent = id_parent;
   get_data_fn(tree, node, &(scratch->data));
 
@@ -169,13 +168,13 @@ hpcfile_cstree_write_node(FILE* fs, void* tree, void* node,
   }
 
   // Prepare next id -- assigned in the order that this func is called
-  id++;
+  (*id)++;
   
   // Write each child of node.  Works with either a circular or
   // non-circular structure
   first = c = get_first_child_fn(tree, node);
   while (c) {
-    if (hpcfile_cstree_write_node(fs, tree, c, scratch, myid, get_data_fn, 
+    if (hpcfile_cstree_write_node(fs, tree, c, scratch, myid, id, get_data_fn, 
 				  get_first_child_fn, get_sibling_fn) 
 	!= HPCFILE_OK) {
       return HPCFILE_ERR;

@@ -26,7 +26,7 @@ unsigned int stack_troll(char **sp, unsigned int *ra_pos){
   PMSG(TROLL,"stack trolling initiated at sp = %p",sp);
   tmp_sp = sp;
   for (i = 0; i < TROLL_LIMIT; i++){
-    char *s, *e;
+    void *s, *e;
     if (! find_enclosing_function_bounds_v(*tmp_sp,&s,&e,SILENT)){
       PMSG(TROLL,"found valid address %p at sp = %p",*tmp_sp,tmp_sp);
       *ra_pos = (unsigned long) tmp_sp - (unsigned long) sp;

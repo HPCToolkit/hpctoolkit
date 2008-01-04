@@ -30,7 +30,11 @@ reset_to_canonical_interval(xed_decoded_inst_t *xptr, unwind_interval *current,
   // set up an interval for code after the return 
   if (ins + xed_decoded_inst_get_length(xptr) < end){
     unwind_interval *crhs = *canonical_interval;
-    if (crhs) {
+    if (bp_frames_found) { 
+      // look for first bp frame
+      first = find_first_bp_frame(first);
+      *canonical_interval = first;
+    } else if (crhs) {
 #if 0
       if ((hw_uwi && hw_uwi->bp_status == BP_SAVED) && 
 	  (crhs->bp_status != BP_SAVED) &&
@@ -41,10 +45,13 @@ reset_to_canonical_interval(xed_decoded_inst_t *xptr, unwind_interval *current,
       if (hw_uwi && hw_uwi->bp_status == BP_SAVED)  
 	if (crhs->bp_status != BP_SAVED) *canonical_interval = hw_uwi;
       first = *canonical_interval;
+#if 0
+      // moved bp frame code first
     } else if (bp_frames_found){ 
       // look for first bp frame
       first = find_first_bp_frame(first);
       *canonical_interval = first;
+#endif
     } else { 
       // look for first nondecreasing with no jmp
       first = find_first_non_decr(first, hw_uwi);

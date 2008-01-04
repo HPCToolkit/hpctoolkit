@@ -5,7 +5,7 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-#include "simple-lock.h"
+#include "spinlock.h"
 #include "pmsg.h"
 #include "fname_max.h"
 
@@ -25,9 +25,9 @@ extern pthread_mutex_t mylock;
 } while(0)
 #else
 #define WRITE(desc,buf,n) do {\
-  simple_spinlock_lock(&pmsg_lock); \
+  spinlock_lock(&pmsg_lock); \
   write(desc,buf,n); \
-  simple_spinlock_unlock(&pmsg_lock); \
+  spinlock_unlock(&pmsg_lock); \
 } while (0)
 #endif
 #endif
@@ -42,30 +42,31 @@ extern pthread_mutex_t mylock;
 } while(0)
 #else
 #define WRITE(desc,buf,n) do {        \
-  simple_spinlock_lock(&pmsg_lock);   \
+  spinlock_lock(&pmsg_lock);   \
   fprintf(log_file,buf);              \
   fflush(log_file);                   \
-  simple_spinlock_unlock(&pmsg_lock); \
+  spinlock_unlock(&pmsg_lock); \
 } while (0)
 #endif
 #endif
 
 #define WRITE(desc,buf,n) do {        \
-  simple_spinlock_lock(&pmsg_lock);   \
+  spinlock_lock(&pmsg_lock);   \
   fprintf(log_file,buf);              \
   fflush(log_file);                   \
-  simple_spinlock_unlock(&pmsg_lock); \
+  spinlock_unlock(&pmsg_lock); \
 } while (0)
 
 static int __msg_mask = TROLL;
-static simple_spinlock pmsg_lock = 0;
+static spinlock_t pmsg_lock = 0;
 
 static FILE *log_file;
 FILE *pmsg_db_save_file;
 
 #define LOG_FILE_NAME "csprof.dbg.log"
 
-void pmsg_init(void){
+void pmsg_init(void)
+{
 
   /* Generate a filename */
   char fnm[CSPROF_FNM_SZ];
@@ -73,56 +74,64 @@ void pmsg_init(void){
   sprintf(fnm, "%d.%s",getpid(),LOG_FILE_NAME);
 
   log_file = fopen(fnm,"w");
-  if (! log_file){
+  if (! log_file) {
     log_file = stderr;
   }
   
   // tmp[0] = '\0';
   // n = sprintf(tmp,"__msg_mask = 0x%x\n",__msg_mask);
-  // simple_spinlock_lock(&pmsg_lock);
+  // spinlock_lock(&pmsg_lock);
   // write(2,tmp,n);
-  // simple_spinlock_unlock(&pmsg_lock);
+  // spinlock_unlock(&pmsg_lock);
 }
 
-void pmsg_fini(void){
-  if (! (log_file == stderr)){
+void pmsg_fini(void)
+{
+  if (! (log_file == stderr)) {
     fclose(log_file);
   }
 }
 
-void set_mask_f_numstr(const char *s){
+void set_mask_f_numstr(const char *s)
+{
   int lmask;
 
-  if (sscanf(s,"%d",&lmask)){
+  if (sscanf(s,"%d",&lmask)) {
     __msg_mask = lmask;
   }
 }
 
-void set_pmsg_mask_f_int(int m){
+void set_pmsg_mask_f_int(int m)
+{
   __msg_mask = m;
 }
 
 // mask comes in as string of (space separated) tokens.
 // each token is converted to it's code
 //
-void set_pmsg_mask_f_string(char *s){
+void set_pmsg_mask_f_string(char *s)
+{
 }
 
 // call from debugger to make pmsg output go to screen
-void _dbg_pmsg_stderr(void){
+void _dbg_pmsg_stderr(void)
+{
   pmsg_db_save_file = log_file;
   log_file          = stderr;
 }
-void _dbg_pmsg_restore(void){
+void _dbg_pmsg_restore(void)
+{
   log_file = pmsg_db_save_file;
 }
-static void EMSG_internal(const char *format, va_list args) {
+
+static void EMSG_internal(const char *format, va_list args) 
+{
   char fstr[256];
   char buf[512];
   int n;
 
 #ifdef CSPROF_THREADS
-  if (csprof_using_threads){
+  if (csprof_using_threads) {
     sprintf(fstr,"[%lx]: ", pthread_self());
   }
   else {
@@ -138,23 +147,20 @@ static void EMSG_internal(const char *format, va_list args) {
   va_end(args);
 }
 
-void EMSG(const char *format,...){
+void EMSG(const char *format,...)
+{
   va_list args;
   va_start(args, format);
+
   EMSG_internal(format, args);
 }
 
-void PMSG(int mask, const char *format, ...){
-  // #if defined(CSPROF_PERF)
-  //}
-  //#else
-
+void PMSG(int mask, const char *format, ...)
+{
   va_list args;
   va_start(args, format);
 
-  if (! (mask & __msg_mask)){
-    return;
-  }
+  if (! (mask & __msg_mask)) return;
+
   EMSG_internal(format,args);
 }
-// #endif

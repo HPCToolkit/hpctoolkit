@@ -4,7 +4,7 @@
 
 void x86_dump_intervals(char  *addr) 
 {
-  char *s, *e;
+  void *s, *e;
   unwind_interval *u;
   interval_status intervals;
 

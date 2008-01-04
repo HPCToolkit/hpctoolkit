@@ -198,6 +198,7 @@ OBJS += csproflib.o metrics.o mem.o cct.o
 OBJS += name.o list.o libc.o epoch.o
 OBJS += sample_event.o 
 OBJS += csprof_options.o 
+OBJS += spinlock.o
 
 ifdef DO_THREADS
    OBJS += pthread.o
@@ -207,7 +208,6 @@ OBJS += backtrace.o
 ifdef PRIM_UNWIND
   #OBJS += splay_if.o
   OBJS += splay.o
-  OBJS += simple-lock.o
   OBJS += prim_unw.o
 endif
 
@@ -231,6 +231,7 @@ OBJS += x86-addsub.o x86-build-intervals.o x86-canonical.o x86-decoder.o x86-jum
 OBJS += x86-call.o x86-debug.o x86-enter.o x86-leave.o x86-process-inst.o x86-return.o
 
 OBJS += stack_troll.o
+OBJS += dl_bound.o
 OBJS += $(gethost)
 endif
 OBJS += last.o

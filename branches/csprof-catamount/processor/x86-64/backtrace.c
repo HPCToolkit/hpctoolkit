@@ -57,43 +57,43 @@ csprof_sample_callstack_from_frame(csprof_state_t *state, int metric_id,
   int first = 1;
   state->unwind = state->btbuf;
 
-    state->bufstk   = state->bufend;
-    state->treenode = NULL;
+  state->bufstk   = state->bufend;
+  state->treenode = NULL;
 
-    for(;;){
-      ensure_state_buffer_slot_available(state, state->unwind);
+  for(;;){
+    ensure_state_buffer_slot_available(state, state->unwind);
 
-      if (unw_get_reg (cursor, UNW_REG_IP, &ip) < 0){
-        MSG(1,"get_reg break");
-        break;
-      }
-
-      if (first){
-       MSG(1,"BTIP = %lp",(void *)ip);
-        /*        first = 0; */
-      }
-
-      state->unwind_pc = (void *) ip; // mark starting point in case of failure
-
-      state->unwind->ip = (void *) ip;
-      state->unwind->sp = (void *) 0;
-      state->unwind++;
-
-      if (csprof_check_fence((void *)ip) || (unw_step (cursor) <= 0)){
-        MSG(1,"Hit unw_step break");
-        break;
-      }
-
-    }
-    MSG(1,"BTIP------------");
-    debug_dump_backtraces(state,state->unwind);
-    if(csprof_state_insert_backtrace(state, metric_id, state->unwind-1, state->btbuf,
-                                     sample_count) != CSPROF_OK) {
-        ERRMSG("failure recording callstack sample", __FILE__, __LINE__);
-        return CSPROF_ERR;
+    if (unw_get_reg (cursor, UNW_REG_IP, &ip) < 0){
+      MSG(1,"get_reg break");
+      break;
     }
 
-    return CSPROF_OK;
+    if (first){
+      MSG(1,"BTIP = %lp",(void *)ip);
+      /*        first = 0; */
+    }
+
+    state->unwind_pc = (void *) ip; // mark starting point in case of failure
+
+    state->unwind->ip = (void *) ip;
+    state->unwind->sp = (void *) 0;
+    state->unwind++;
+
+    if (csprof_check_fence((void *)ip) || (unw_step (cursor) <= 0)){
+      MSG(1,"Hit unw_step break");
+      break;
+    }
+
+  }
+  MSG(1,"BTIP------------");
+  debug_dump_backtraces(state,state->unwind);
+  if (csprof_state_insert_backtrace(state, metric_id, state->unwind - 1, 
+				    state->btbuf, sample_count) != CSPROF_OK) {
+    ERRMSG("failure recording callstack sample", __FILE__, __LINE__);
+    return CSPROF_ERR;
+  }
+
+  return CSPROF_OK;
 }
 
 #ifdef NO
@@ -267,9 +267,6 @@ goto EXIT; \
 #endif
 
 
-// #define JOHNMC_SKIP
-#ifndef JOHNMC_SKIP
-
 /* FIXME: some of the checks from libunwind calls are checked for errors.
    I suppose that's a good thing, but there should be some way (CSPROF_PERF?)
    to turn off the checking to avoid branch prediction penalties...
@@ -326,17 +323,3 @@ csprof_sample_callstack(csprof_state_t *state, int metric_id,
     return csprof_sample_callstack_from_frame(state, metric_id,
 					      sample_count, &frame);
 }
-#else
-void unw_init(void){}
-extern void xed_init(void);
-void foo() {
-  xed_init();
-}
-int csprof_sample_callstack(csprof_state_t *state, int metric_id,
-			size_t sample_count, void *context)
-{
-   EMSG("GOT SAMPLE");
-   return CSPROF_OK;
-}
-
-#endif

@@ -4,11 +4,12 @@
 
 #ifndef STATIC_ONLY
 #include <dlfcn.h>
+#include "dl_bound.h"
 #endif
 
 #include "pmsg.h"
+#include "nm_bound.h"
 
-extern int nm_bound(unsigned long pc, unsigned long *st, unsigned long *e);
 
 #include "find.h"
 
@@ -85,45 +86,42 @@ static char *find_dl_end_addr(char *addr, Dl_info *start)
 #endif
 
 int 
-find_enclosing_function_bounds_v(char *addr, char **start, char **end, 
+find_enclosing_function_bounds_v(char *addr, void **start, void **end, 
 				 int verbose) 
 {
-  // debug = 1;
-
-  int failure = 0;
+  char *method = NULL;
+#ifdef STATIC_ONLY
+  if (!nm_bound((unsigned long)addr, start, end)) {
+    method = "NM static";
+  } 
+#else 
   struct dwarf_eh_bases base;
-#ifndef STATIC_ONLY
   struct dwarf_fde const *fde = _Unwind_Find_FDE(addr, &base);
-#endif
-  int nmb = nm_bound((unsigned long)addr,(unsigned long *)start,
-		     (unsigned long *)end);
-
-  if (nmb){
-    PMSG(FIND,"FIND:found in nm table for %p: start=%p,end=%p",addr, *start, *end);
-  } else if (fde && base.func) {
+  if (fde && base.func) {
     *start = (char *) base.func;
     *end = find_dwarf_end_addr(addr, fde, &base);
-    PMSG(FIND,"FIND:looked up address %p, fde = %p, " 
-	 "found func addr = %p, end addr = %p",
-	 addr, fde, *start, *end);
-#ifndef STATIC_ONLY
+    method = "FDE";
   } else {
     Dl_info info;
-    if (dladdr(addr, &info) && info.dli_saddr) {
-      *start = (char *) info.dli_saddr;
-      *end = find_dl_end_addr(addr, &info);
-      PMSG(FIND,"FIND:looked up address using dladdr %p, "
-	   "found func addr = %p, end = %p",
-	   addr, *start, *end);
-    } else {
-      if (verbose){
-	PMSG(FIND, "FIND:look up failed @ %p!",addr);
+    if (dladdr(addr, &info)) {
+      if (info.dli_saddr) {
+	*start = (char *) info.dli_saddr;
+	*end = find_dl_end_addr(addr, &info);
+	method = "dladdr";
+      } else if (info.dli_fname != 0) {
+	if (!find_dl_bound(info.dli_fname, info.dli_fbase, addr, start, end)) 
+	  method = "NM dynamic";
       }
-      failure = 1;
     }
 #endif // STATIC_ONLY
   }
-  return failure;
+  if (method) {
+    PMSG(FIND,"FIND:found %p (method %s): start=%p,end=%p",addr, method, *start, *end);
+    return 0;
+  } else {
+    PMSG(FIND, "FIND:look up failed @ %p!",addr);
+    return 1;
+  }
 }
 
 

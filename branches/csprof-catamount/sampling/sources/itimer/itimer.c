@@ -1,17 +1,38 @@
 /* driver implementation using interval timers and SIGPROF */
 
-/* system includes */
+/******************************************************************************
+ * system includes
+ *****************************************************************************/
+
 #include <stddef.h>
 #include <sys/time.h>           /* setitimer() */
 #include <ucontext.h>           /* struct ucontext */
 
+
+
+/******************************************************************************
+ * local includes
+ *****************************************************************************/
+
+/*---------------------------
+ * monitor
+ *--------------------------*/
+#include "monitor.h"
+
+/*---------------------------
+ * csprof
+ *--------------------------*/
 #include "csprof_options.h"
-// #include "interface.h"
 #include "pmsg.h"
 #include "sample_event.h"
 
-#include "monitor.h"
 
+
+/******************************************************************************
+ * macros
+ *****************************************************************************/
+
+// FIXME: this should not be keyed on STATIC_ONLY
 #ifndef STATIC_ONLY
 #define CSPROF_PROFILE_SIGNAL SIGPROF
 #define CSPROF_PROFILE_TIMER ITIMER_PROF
@@ -20,11 +41,31 @@
 #define CSPROF_PROFILE_TIMER ITIMER_REAL
 #endif
 
+
+/******************************************************************************
+ * forward declarations 
+ *****************************************************************************/
+
+static int
+csprof_itimer_signal_handler(int sig, siginfo_t *siginfo, void *context);
+
+
+
+/******************************************************************************
+ * local variables
+ *****************************************************************************/
+
 static struct itimerval itimer;
 
-unsigned long sample_period = 0L;
-unsigned long seconds = 0L;
-unsigned long microseconds = 0L;
+static unsigned long sample_period = 0L;
+static unsigned long seconds = 0L;
+static unsigned long microseconds = 0L;
+
+
+
+/******************************************************************************
+ * interface operations
+ *****************************************************************************/
 
 void
 csprof_init_timer(csprof_options_t *options)
@@ -35,7 +76,8 @@ csprof_init_timer(csprof_options_t *options)
 
     PMSG(ITIMER_HANDLER,"init timer w sample_period = %ld, seconds = %ld, usec = %ld",
         sample_period, seconds, microseconds);
-    /* begin timing after the given delay */
+
+    /* signal once after the given delay */
     itimer.it_value.tv_sec = seconds;
     itimer.it_value.tv_usec = microseconds;
 
@@ -43,40 +85,53 @@ csprof_init_timer(csprof_options_t *options)
     itimer.it_interval.tv_usec = 0;
 }
 
-void
-csprof_set_timer(void){
 
+void
+csprof_set_timer(void)
+{
   setitimer(CSPROF_PROFILE_TIMER, &itimer, NULL);
   PMSG(ITIMER_HANDLER,"called csprof_set_timer");
-
 }
 
+
 void
-csprof_disable_timer(void){
+csprof_disable_timer(void)
+{
   struct itimerval itimer;
+
   timerclear(&itimer.it_value);
   setitimer(CSPROF_PROFILE_TIMER, &itimer, NULL);
 }
 
-static int
-csprof_itimer_signal_handler(int sig, siginfo_t *siginfo, void *context){
 
+void
+csprof_init_itimer_signal_handler(void)
+{
+  monitor_sigaction(CSPROF_PROFILE_SIGNAL, &csprof_itimer_signal_handler, 0, NULL);
+}
+
+
+void
+itimer_event_init(csprof_options_t *opts)
+{
+  // csprof_init_signal_handler();
+  csprof_init_timer(opts);
+  csprof_set_timer();
+}
+
+
+
+/******************************************************************************
+ * private operations 
+ *****************************************************************************/
+
+static int
+csprof_itimer_signal_handler(int sig, siginfo_t *siginfo, void *context)
+{
   PMSG(ITIMER_HANDLER,"Itimer sample event");
   csprof_sample_event(context);
   csprof_set_timer();
 
   return 0; /* tell monitor that the signal has been handled */
-}
-
-void
-csprof_init_itimer_signal_handler(void){
-  monitor_sigaction(CSPROF_PROFILE_SIGNAL, &csprof_itimer_signal_handler, 0, NULL);
-}
-
-void
-itimer_event_init(csprof_options_t *opts){
-  // csprof_init_signal_handler();
-  csprof_init_timer(opts);
-  csprof_set_timer();
 }
 

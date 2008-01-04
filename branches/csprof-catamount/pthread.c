@@ -57,7 +57,8 @@ extern int csprof_write_profile_data(csprof_state_t *);
 
 static int library_stubs_initialized = 0;
 
-static void init_library_stubs(){
+static void init_library_stubs()
+{
 #ifdef NO
 #ifndef CSPROF_FIXED_LIBCALLS
 #ifdef NOMON
@@ -78,11 +79,13 @@ static void init_library_stubs(){
     library_stubs_initialized = 1;
 }
 
-void csprof_pthread_init_funcptrs(){
+void csprof_pthread_init_funcptrs()
+{
     MAYBE_INIT_STUBS();
 }
 
-void csprof_pthread_init_data(void){
+void csprof_pthread_init_data(void)
+{
 
   pthread_key_create(&prof_data_key, NULL);
   pthread_key_create(&thread_node_key, NULL);
@@ -100,14 +103,10 @@ csprof_pthread_enqueue(csprof_list_node_t *node)
     csprof_list_node_t *last;
 
     node->next = NULL;
-    last = (csprof_list_node_t *)csprof_atomic_exchange_pointer(&all_threads.tail, node);
+    last = (csprof_list_node_t *)csprof_atomic_swap_p(&all_threads.tail, node);
 
-    if(last == NULL) {
-        csprof_atomic_exchange_pointer(&all_threads.head, node);
-    }
-    else {
-        csprof_atomic_exchange_pointer(&last->next, node);
-    }
+    if(last == NULL) all_threads.head = node;
+    else last->next = node;
 }
 
 /* we maintain this counter to provide sane filenames when writing out
@@ -119,11 +118,14 @@ csprof_pthread_enqueue(csprof_list_node_t *node)
    this identifier */
 static volatile long csprof_pthread_id = 0;
 
-void csprof_pthread_support_init(void){
+
+void csprof_pthread_support_init(void)
+{
 }
 
-void csprof_pthread_state_init(killsafe_t *killsafe){
 
+void csprof_pthread_state_init(killsafe_t *killsafe)
+{
   csprof_state_t *state;
   csprof_mem_t *memstore;
 
@@ -259,14 +261,16 @@ typedef struct _xptfnt {
 
 
 #ifdef NOMON
-static void n_init(void){
+static void n_init(void)
+{
   int e;
   e = pthread_key_create(&k,free);
 }
 
 static pthread_once_t iflg = PTHREAD_ONCE_INIT;
 
-void *doit (void *arg){
+void *doit (void *arg)
+{
   void *rv;
   void *(*ff)(void *);
   void *argf;
@@ -295,7 +299,9 @@ void *doit (void *arg){
 }
 #endif
 
-void thread_write_data(void){
+void 
+thread_write_data(void) 
+{
     csprof_state_t *state;
     
     state = pthread_getspecific(prof_data_key);

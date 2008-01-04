@@ -34,39 +34,36 @@
 #include "mem.h"
 #include "csprof_csdata.h"
 #include "general.h"
-#include "atomic.h"
+#include "spinlock.h"
 #include "state.h"
 
 /* epochs are entirely separate from profiling state */
 static csprof_epoch_t *current_epoch = NULL;
 
 /* locking functions to ensure that epochs are consistent */
-static volatile long epoch_lock = 0;
+static spinlock_t epoch_lock = 0;
 
 void
-csprof_epoch_lock() {
-  /* implement our own spinlocks, since the lock has to be tested in
-     the signal handler and we're not allowed to call pthread locking
-     functions while we're in the signal handler. */
-  while(csprof_atomic_exchange_pointer(&epoch_lock, 1)) {
-    while(epoch_lock == 1) ; /* spin efficiently */
-  }
+csprof_epoch_lock() 
+{
+  spinlock_lock(&epoch_lock);
 }
 
 void
-csprof_epoch_unlock(){
-  /* FIXME: does this *need* to be atomic? */
-  csprof_atomic_decrement(&epoch_lock);
+csprof_epoch_unlock()
+{
+  spinlock_unlock(&epoch_lock);
 }
 
 int
-csprof_epoch_is_locked(){
-  MSG(1,"epoch lock val = %lx",epoch_lock);
-  return epoch_lock;
+csprof_epoch_is_locked()
+{
+  return spinlock_is_locked(&epoch_lock);
 }
 
 csprof_epoch_t *
-csprof_get_epoch(){
+csprof_get_epoch()
+{
   return current_epoch;
 }
 
@@ -103,7 +100,8 @@ csprof_epoch_new()
 #define HPCFILE_EPOCH_ENDIAN 'l' /* 'l' for little, 'b' for big */
 
 void
-csprof_write_epoch_header(FILE *fs){
+csprof_write_epoch_header(FILE *fs)
+{
 }
 
 void
@@ -167,7 +165,8 @@ csprof_write_all_epochs(FILE *fs)
 }
 #ifdef NOTYET
 csprof_state_t *
-csprof_check_for_new_epoch(csprof_state_t *state){
+csprof_check_for_new_epoch(csprof_state_t *state)
+{
   /* ugh, nasty race condition here:
 
   1. shared library state has changed since the last profile
