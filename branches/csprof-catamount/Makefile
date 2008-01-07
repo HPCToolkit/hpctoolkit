@@ -284,7 +284,6 @@ tarball:
 .PHONY : all libcsfile clean tarball static check install
 
 $(CSPROFLIB): $(LIB_CSFILE) $(OBJS)
-#	$(link) $(link_flags) -o $@ markfront.o $(OBJS) $(LIBS) markrear.o
 	$(link) $(link_flags) -o $@ $(OBJS) $(LIBS)
 	@echo "*** $(CSPROFLIB) is up to date. ***"
 

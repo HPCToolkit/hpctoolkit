@@ -1,2 +1,0 @@
-#! /bin/bash
-exec /home/mfagan/HPCToolkitOSS.trunk/HPCToolkit/src/hpctoolkit/csprof/csprof $1 > $1.log 2>&1
