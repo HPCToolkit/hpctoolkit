@@ -107,7 +107,7 @@ void monitor_dlopen(const char *library)
   /* create a new epoch */
   epoch = csprof_epoch_new();
 
-  dl_add_library(library);
+  dl_add_module(library);
 
   csprof_epoch_unlock();
 

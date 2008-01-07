@@ -71,7 +71,6 @@ all: $(CSPROFLIB)
 # MWF: working on x86-64, make it (and gcc) the default 30jan07
 #PLATFORM ?= ia64
 
-#include mkinclude.$(PLATFORM)
 
 DEFINES := -D_GNU_SOURCE
 DEFINES += -DCSPROF_LAST_EDGE_ONLY=1
