@@ -27,7 +27,6 @@ PAPI_INCLUDE_OPTS := -I$(PAPI_DIR)/include
 PAPI_LIBS := -L$(PAPI_DIR)/lib64 -lpapi # -lpfm
 
 WITH_XED2=1
-XED_DIR := $(src_dir_prefix)BetterUnwind
 XED2_DIR := /projects/hpc/pkgs/XED2
 XED2_INCLUDE_OPTS := -I$(XED2_DIR)/include
 XED2_LIBS := -L$(XED2_DIR)/lib -lxed
@@ -50,10 +49,6 @@ export PERF
 
 PRIM_UNWIND := 1
 export PRIM_UNWIND
-
-# improved unwind here
-UNWIND := $(src_dir_prefix)BetterUnwind
-
 
 #special decls for xed library usage
 XEDDCL := -DXED_SCALARS
@@ -120,8 +115,6 @@ else
   find_v  := find
 endif
 
-
-# INC_BETTER_UNW := -IBetterUnwind
 
 #MPI_INC := -I/usr/mpich/mpich-1.2.6-pgi614/include
 
@@ -274,17 +267,15 @@ TT:
 
 $(LIB_CSFILE):
 	@cd hpcfile; $(MAKE) -I ..
-#	@cd BetterUnwind; $(MAKE)
 
 clean:
 	@echo "*** Cleaning csprof ***"
 	@/bin/rm -f $(CSPROFLIB) $(CSPROF_DOT_O) $(OBJS)
 	@cd hpcfile; $(MAKE) -I .. clean
-	@cd BetterUnwind; $(MAKE) clean
 
 .PHONY: TAGS
 TAGS:
-	etags *.[csh] hpcfile/*.[csh] $(addsuffix /*.[csh],$(module_dirs)) BetterUnwind/*.cpp BetterUnwind/*.[ch]
+	etags *.[csh] hpcfile/*.[csh] $(addsuffix /*.[csh],$(module_dirs))
 
 tarball: 
 	@tar -cf csprof.tar $(filter-out %.o %.csp %.log t1 t2 t3,$(wildcard *))
