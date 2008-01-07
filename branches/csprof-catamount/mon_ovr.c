@@ -113,4 +113,17 @@ void monitor_dlopen(const char *library)
 
 }
 
+void monitor_dlclose(const char *library)
+{
+/*
+  assert(0);
+
+  dl_remove_library(library);
+  FIXME: delete intervals from the splay tree too
+*/
+
+
+}
+
+
 #endif
