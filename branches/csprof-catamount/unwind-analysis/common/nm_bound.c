@@ -29,24 +29,6 @@ nm_tab_bound(void **table, int length, void *pc,
   *start = table[lo];
   *end   = table[lo+1];
   return 0;
-
-
-#if 0
-  for(i = 0; i < last; i++){
-    if (table[i] == pc){
-      *start = table[i];
-      *end   = table[i+1];
-      return 0;
-    }
-    if (table[i] > pc){
-      *start = table[i-1];
-      *end   = table[i];
-      return 0;
-    }
-  }
-
-  return 1;
-#endif
 }
 
 #if STATIC_ONLY

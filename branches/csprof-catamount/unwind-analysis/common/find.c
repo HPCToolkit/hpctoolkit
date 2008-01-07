@@ -15,7 +15,9 @@
 
 #ifndef STATIC_ONLY
 
-#define USE_FDE 1
+#define USE_FDE 0
+
+#if USE_FDE
 #include <unwind-dw2-fde.h>
 
 static char *find_dwarf_end_addr(char *addr, struct dwarf_fde const *start_fde,
@@ -51,6 +53,7 @@ static char *find_dwarf_end_addr(char *addr, struct dwarf_fde const *start_fde,
        other, addr + other, new_bases.func);
   return (char *) addr + other; // new_bases.func;
 }
+#endif
 
 
 static char *find_dl_end_addr(char *addr, Dl_info *start)
@@ -95,20 +98,26 @@ find_enclosing_function_bounds_v(char *addr, void **start, void **end,
     method = "NM static";
   } 
 #else 
+#if USE_FDE
   struct dwarf_eh_bases base;
   struct dwarf_fde const *fde = _Unwind_Find_FDE(addr, &base);
   if (fde && base.func) {
     *start = (char *) base.func;
     *end = find_dwarf_end_addr(addr, fde, &base);
     method = "FDE";
-  } else {
+  } else 
+#endif
+  {
     Dl_info info;
     if (dladdr(addr, &info)) {
+#if 0
       if (info.dli_saddr) {
 	*start = (char *) info.dli_saddr;
 	*end = find_dl_end_addr(addr, &info);
 	method = "dladdr";
-      } else if (info.dli_fname != 0) {
+      } else if (info.dli_fname != 0) 
+#endif
+      {
 	if (!find_dl_bound(info.dli_fname, info.dli_fbase, addr, start, end)) 
 	  method = "NM dynamic";
       }

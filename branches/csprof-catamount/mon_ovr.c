@@ -4,6 +4,8 @@
 #include "killsafe.h"
 #include "monitor.h"
 #include "name.h"
+#include "epoch.h"
+#include "dl_bound.h"
 
 #ifdef LINUX
 #include <linux/unistd.h>
@@ -96,4 +98,19 @@ void monitor_fini_thread(void *init_thread_data ){
 
   csprof_thread_fini(state);
 }
+
+void monitor_dlopen(const char *library)
+{
+  csprof_epoch_t *epoch;
+  csprof_epoch_lock();
+
+  /* create a new epoch */
+  epoch = csprof_epoch_new();
+
+  dl_add_library(library);
+
+  csprof_epoch_unlock();
+
+}
+
 #endif

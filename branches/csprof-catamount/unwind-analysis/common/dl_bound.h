@@ -8,3 +8,7 @@ dl_fini();
 
 void 
 dl_init();
+
+void
+dl_add_module(const char *module);
+

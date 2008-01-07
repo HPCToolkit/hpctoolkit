@@ -3,7 +3,9 @@
 # work around irritating bug in GNU make--targets defined in the include
 # files should not be the default target
 
-install_loc := ../Install/csprof/libexec
+install_prefix := /projects/hpc/pkgs/csprof-2008.01.07
+install_lib := $(install_prefix)/lib
+install_bin := $(install_prefix)/bin
 
 PLATFORM := x86-64
 #CC :=  cc
@@ -20,18 +22,18 @@ static_link_options := --verbose -nostdlib -nodefaultlibs -nostartfiles -static 
 
 
 WITH_PAPI=1
-PAPI_DIR := /projects/pkgs/papi-3.5.1-2007-12-10
+PAPI_DIR := /projects/hpc/pkgs/papi
 PAPI_INCLUDE_OPTS := -I$(PAPI_DIR)/include
-PAPI_LIBS := -L$(PAPI_DIR)/lib -lpapi -lpfm
+PAPI_LIBS := -L$(PAPI_DIR)/lib64 -lpapi # -lpfm
 
 WITH_XED2=1
 XED_DIR := $(src_dir_prefix)BetterUnwind
-XED2_DIR := /projects/pkgs/Xed2
-XED2_INCLUDE_OPTS := -I$(XED2_DIR)/Include
-XED2_LIBS := -L$(XED2_DIR)/Lib -lxed
+XED2_DIR := /projects/hpc/pkgs/XED2
+XED2_INCLUDE_OPTS := -I$(XED2_DIR)/include
+XED2_LIBS := -L$(XED2_DIR)/lib -lxed
 
 
-MONITOR_DIR := /projects/pkgs/libmonitor
+MONITOR_DIR := /projects/hpc/pkgs/libmonitor-2008.01.07
 MONITOR_INCLUDE_OPTS := -I$(MONITOR_DIR)/include
 MONITOR_LIBS := -L$(MONITOR_DIR)/lib -lmonitor
 
@@ -305,7 +307,11 @@ bclean:
 	rm -rf *.o *.so *.so.[0-9]*
 
 install: all
-	cp $(CSPROFLIB) $(install_loc)
+	-install -d $(install_lib) $(install_bin)
+	install $(CSPROFLIB) $(install_lib)
+	install $(MONITOR_DIR)/lib/libmonitor.so $(install_lib)
+	install $(src_dir_prefix)csprof $(install_bin)
+	install $(src_dir_prefix)nm_tbl.py $(install_bin)
 
 %.o: %.c
 	$(CC) $(INCS) $(CFLAGS) -c $< -o $@

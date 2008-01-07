@@ -74,13 +74,32 @@ static dl_record_t *dl_list;
  *****************************************************************************/
 
 void 
-dl_add_module(const char *module_name, void *baseaddr)
+dl_add_module_base(const char *module_name, void *baseaddr)
 {
   char real_module_name[PATH_MAX];
   realpath(module_name, real_module_name);
   dl_compute(real_module_name, baseaddr);
 }
 
+
+void 
+dl_add_module(const char *module)
+{
+  struct csprof_epoch *e = csprof_get_epoch();
+  struct csprof_epoch_module *m = e->loaded_modules;
+  //--------------------------------------------------------------
+  // post condition: filename is a canonical absolute path
+  //--------------------------------------------------------------
+  char real_module[PATH_MAX];
+  realpath(module, real_module);
+
+  for(;m; m = m->next) {
+    if (strcmp(m->module_name, real_module) == 0) {
+	dl_add_module_base(m->module_name, m->mapaddr);
+        break;
+    }
+  }
+}
 
 void 
 dl_init()
@@ -90,7 +109,7 @@ dl_init()
   struct csprof_epoch_module *m = e->loaded_modules;
   sprintf(mytmpdir,"%s/%d", tmproot, (int) getpid());
   if (!mkdir(mytmpdir, 0777)) {
-    for(;m; m = m->next) dl_add_module(m->module_name, m->mapaddr);
+    for(;m; m = m->next) dl_add_module_base(m->module_name, m->mapaddr);
   } else {
     EMSG("fatal error: unable to make temporary directory %s\n", mytmpdir);
     exit(-1);
