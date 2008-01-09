@@ -470,11 +470,12 @@ inferCallFrames(CSProfile* prof, CSProfNode* node,
 		 || n->GetType() == CSProfNode::STATEMENT);
 
     if (isTy && (begVMA <= n->GetIP() && n->GetIP() <= endVMA)) {
-      VMA curr_ip = n->GetIP() - relocVMA;
+      VMA ip = n->GetIP(); // for debuggers
+      VMA curr_ip = ip - relocVMA;
       
       DIAG_DevIf(50) {
 	CSProfCallSiteNode* p = node->AncestorCallSite();
-	DIAG_DevMsg(0, "inferCallFrames: " << hex << ((p) ? p->GetIP() : 0) << " --> " << n->GetIP() << dec);
+	DIAG_DevMsg(0, "inferCallFrames: " << hex << ((p) ? p->GetIP() : 0) << " --> " << ip << dec);
       }
       
       CodeInfo* scope = lmScope->findByVMA(curr_ip);
@@ -558,8 +559,8 @@ findOrCreateProcFrame(CSProfCodeNode* node,
       addSymbolicInfo(frame, lmScope, NULL, NULL);
       frame->Link(node->Parent());
 
-      string nm = string("unknown@") + StrUtil::toStr(curr_ip, 16); // FIXME
-      //string nm = "unknown@" + StrUtil::toStr(ip, 16);
+      string nm = string("unknown(s)@") + StrUtil::toStr(curr_ip, 16); // FIXME
+      //string nm = "unknown(s)@" + StrUtil::toStr(ip, 16);
       frame->SetProc(nm C_STR);
       
       frameMap.insert(std::make_pair(toFind, frame));
@@ -787,7 +788,7 @@ inferCallFrames(CSProfile* prof, CSProfNode* node,
 	
 	string frameNm = n->GetProc();
 	if (frameNm.empty()) {
-	  frameNm = string("unknown@") + StrUtil::toStr(curr_ip, 16);
+	  frameNm = string("unknown(~s)@") + StrUtil::toStr(curr_ip, 16);
 	} 
 	DIAG_MsgIf(DBG_NORM_PROC_FRAME, "frame name: " << n->GetProc() 
 		   << " --> " << frameNm);

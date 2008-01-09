@@ -464,4 +464,13 @@ VMAIntervalSet::ddump() const
 // VMAIntervalMap
 //***************************************************************************
 
+/*
+Cf. LoadModScope::dumpmaps
 
+template<typename T>
+void 
+VMAIntervalMap_ddump(VMAIntervalMap<T>* x)
+{
+  x->ddump();
+}
+*/
