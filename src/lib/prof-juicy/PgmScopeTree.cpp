@@ -374,7 +374,6 @@ PgmScope::Ctor(const char* nm)
   m_name = nm;
   groupMap = new GroupScopeMap();
   lmMap = new LoadModScopeMap();
-  fileMap = new FileScopeMap();
 }
 
 
@@ -387,7 +386,6 @@ PgmScope::operator=(const PgmScope& x)
     m_name     = x.m_name;
     groupMap = NULL;
     lmMap    = NULL;
-    fileMap  = NULL;
   }
   return *this;
 }
@@ -398,7 +396,6 @@ PgmScope::~PgmScope()
   frozen = false;
   delete groupMap;
   delete lmMap;
-  delete fileMap;
 }
 
 
@@ -458,6 +455,7 @@ LoadModScope::Ctor(const char* nm, ScopeInfo* parent)
   DIAG_Assert((parent == NULL) || (t == PGM) || (t == GROUP), "");
 
   m_name = nm;
+  fileMap = new FileScopeMap();
   procMap = NULL;
   stmtMap = NULL;
 
@@ -471,6 +469,7 @@ LoadModScope::operator=(const LoadModScope& x)
   // shallow copy
   if (&x != this) {
     m_name     = x.m_name;
+    fileMap  = NULL;
     procMap  = NULL;
     stmtMap  = NULL;
   }
@@ -480,6 +479,7 @@ LoadModScope::operator=(const LoadModScope& x)
 
 LoadModScope::~LoadModScope() 
 {
+  delete fileMap;
   delete procMap;
   delete stmtMap;
 }
@@ -513,7 +513,7 @@ FileScope::Ctor(const char* srcFileWithPath, bool srcIsReadble_,
 
   srcIsReadable = srcIsReadble_;
   m_name = srcFileWithPath;
-  Pgm()->AddToFileMap(*this);
+  LoadMod()->AddToFileMap(*this);
   procMap = new ProcScopeMap();
 }
 
@@ -539,7 +539,7 @@ FileScope::~FileScope()
 FileScope* 
 FileScope::findOrCreate(LoadModScope* lmScope, const string& filenm)
 {
-  FileScope* fScope = lmScope->Pgm()->FindFile(filenm);
+  FileScope* fScope = lmScope->FindFile(filenm);
   if (fScope == NULL) {
     bool fileIsReadable = FileIsReadable(filenm.c_str());
     fScope = new FileScope(filenm, fileIsReadable, lmScope);
@@ -1156,12 +1156,12 @@ PgmScope::AddToLoadModMap(LoadModScope& lm)
 
 
 void 
-PgmScope::AddToFileMap(FileScope& f)
+LoadModScope::AddToFileMap(FileScope& f)
 {
   string fName = RealPath(f.name().c_str());
-  DIAG_DevMsg(2, "PgmScope: mapping file name '" << fName 
+  DIAG_DevMsg(2, "LoadModScope: mapping file name '" << fName
 	      << "' to FileScope* " << &f);
-  DIAG_Assert(fileMap->count(fName) == 0, "Adding multiple instances of file " 
+  DIAG_Assert(fileMap->count(fName) == 0, "Adding multiple instances of file "
 	      << f.name() << " to\n" << toStringXML());
   (*fileMap)[fName] = &f;
 }
@@ -1195,21 +1195,21 @@ PgmScope::FindLoadMod(const char* nm) const
 }
 
 
-FileScope*
-PgmScope::FindFile(const char* nm) const
-{
-  string fName = RealPath(nm);
-  if (fileMap->count(fName) != 0) 
-    return (*fileMap)[fName];
-  return NULL;
-}
-
-
 GroupScope*
 PgmScope::FindGroup(const char* nm) const
 {
   if (groupMap->count(nm) != 0)
     return (*groupMap)[nm];
+  return NULL;
+}
+
+
+FileScope*
+LoadModScope::FindFile(const char* nm) const
+{
+  string fName = RealPath(nm);
+  if (fileMap->count(fName) != 0) 
+    return (*fileMap)[fName];
   return NULL;
 }
 
@@ -1244,11 +1244,13 @@ LoadModScope::buildMap(VMAIntervalMap<T>*& m, ScopeInfo::ScopeType ty) const
   ScopeInfoIterator it(this, &ScopeTypeFilter[ty]);
   for (; it.Current(); ++it) {
     T x = dynamic_cast<T>(it.Current());
-    
+
     const VMAIntervalSet& vmaset = x->vmaSet();
     for (VMAIntervalSet::const_iterator it = vmaset.begin();
 	 it != vmaset.end(); ++it) {
-      m->insert(make_pair(*it, x));
+      const VMAInterval& vmaint = *it;
+      DIAG_MsgIf(0, vmaint.toString());
+      m->insert(make_pair(vmaint, x));
     }
   }
 }
@@ -1618,6 +1620,7 @@ LoadModScope::dumpmaps() const
   int dmpFlag = 0;
   const char* pre = "";
   
+  os << "Procedure map\n";
   for (VMAToProcMap::const_iterator it = procMap->begin(); 
        it != procMap->end(); ++it) {
     it->first.dump(os);
@@ -1626,6 +1629,7 @@ LoadModScope::dumpmaps() const
   
   os << endl;
 
+  os << "Statement map\n";
   for (VMAToStmtRangeMap::const_iterator it = stmtMap->begin(); 
        it != stmtMap->end(); ++it) {
     it->first.dump(os);

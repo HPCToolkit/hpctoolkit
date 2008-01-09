@@ -553,11 +553,6 @@ public:
   LoadModScope* FindLoadMod(const std::string& nm) const 
     { return FindLoadMod(nm.c_str()); }
 
-  // FIXME: probably better moved to LoadModule
-  FileScope*    FindFile(const char* nm) const;    // find by 'realpath'
-  FileScope*    FindFile(const std::string& nm) const
-    { return FindFile(nm.c_str()); }
-
   GroupScope*   FindGroup(const char* nm) const;
   GroupScope*   FindGroup(const std::string& nm) const
     { return FindGroup(nm.c_str()); }
@@ -593,11 +588,9 @@ private:
 
   void AddToGroupMap(GroupScope& grp);
   void AddToLoadModMap(LoadModScope& lm);
-  void AddToFileMap(FileScope& file);
-
+ 
   friend class GroupScope;
   friend class LoadModScope;
-  friend class FileScope;
 
 private:
   bool frozen;
@@ -605,7 +598,6 @@ private:
 
   GroupScopeMap*     groupMap;
   LoadModScopeMap*   lmMap;     // mapped by 'realpath'
-  FileScopeMap*      fileMap;   // mapped by 'realpath'
 };
 
 
@@ -671,6 +663,10 @@ public:
 
   virtual ScopeInfo* Clone() { return new LoadModScope(*this); }
 
+  FileScope*    FindFile(const char* nm) const;    // find by 'realpath'
+  FileScope*    FindFile(const std::string& nm) const
+    { return FindFile(nm.c_str()); }
+
   // find scope by *unrelocated* VMA
   CodeInfo* findByVMA(VMA vma);
   
@@ -712,6 +708,8 @@ public:
 protected: 
   void Ctor(const char* nm, ScopeInfo* mom);
 
+  void AddToFileMap(FileScope& file);
+
   template<typename T> 
   void buildMap(VMAIntervalMap<T>*& m, ScopeInfo::ScopeType ty) const;
 
@@ -719,9 +717,12 @@ protected:
   static bool 
   verifyMap(VMAIntervalMap<T>* m, const char* map_nm);
 
-private: 
+  friend class FileScope;
+
+private:
   std::string m_name; // the load module name
-  
+
+  FileScopeMap*      fileMap;   // mapped by 'realpath'
   VMAToProcMap*      procMap;
   VMAToStmtRangeMap* stmtMap;
 };
