@@ -5,6 +5,7 @@
 #include <assert.h>
 #include <limits.h>
 #include <stdlib.h>
+#include <assert.h>
 #include <sys/param.h>
 #include <sys/stat.h>
 #include <dlfcn.h>
@@ -37,11 +38,21 @@
 
 typedef struct dl_record_s {
   char *name;
-  void *table;
+  void **table;
   int length;
+
+  void *start_addr;
+  void *end_addr;
+  int relocate;
+
   struct dl_record_s *next;
 } dl_record_t;
 
+#define PERFORM_RELOCATION(addr, base) \
+	((void *) (((unsigned long) addr) + ((unsigned long) base)))
+
+#define MAPPING_END(addr, length) \
+	((void *) (((unsigned long) addr) + ((unsigned long) length)))
 
 
 /******************************************************************************
@@ -49,7 +60,7 @@ typedef struct dl_record_s {
  *****************************************************************************/
 
 static dl_record_t *
-dl_compute(const char *filename, void *baseaddr);
+dl_compute(const char *filename, void *start, void *end);
 
 // FIXME: this should come from monitor
 static int
@@ -74,11 +85,11 @@ static dl_record_t *dl_list;
  *****************************************************************************/
 
 void 
-dl_add_module_base(const char *module_name, void *baseaddr)
+dl_add_module_base(const char *module_name, void *start, void *end)
 {
   char real_module_name[PATH_MAX];
   realpath(module_name, real_module_name);
-  dl_compute(real_module_name, baseaddr);
+  dl_compute(real_module_name, start, end);
 }
 
 
@@ -95,8 +106,21 @@ dl_add_module(const char *module)
 
   for(;m; m = m->next) {
     if (strcmp(m->module_name, real_module) == 0) {
-	dl_add_module_base(m->module_name, m->mapaddr);
-        break;
+	const char *module_name = m->module_name;
+	void *start = m->mapaddr;
+	void *end = MAPPING_END(start, m->size);
+	while (m->next && strcmp(m->next->module_name, module_name) == 0) {
+	    m = m->next;
+	    if (m->mapaddr < start) {
+	        start = m->mapaddr;
+	    }
+	    if (m->mapaddr > start) {
+	        void *nend = MAPPING_END(m->mapaddr, m->size);
+		if (nend > end) end = nend;
+	    }
+        }
+	dl_add_module_base(module_name, start, end);
+	break;
     }
   }
 }
@@ -109,7 +133,22 @@ dl_init()
   struct csprof_epoch_module *m = e->loaded_modules;
   sprintf(mytmpdir,"%s/%d", tmproot, (int) getpid());
   if (!mkdir(mytmpdir, 0777)) {
-    for(;m; m = m->next) dl_add_module_base(m->module_name, m->mapaddr);
+    for(;m; m = m->next) {
+	const char *module_name = m->module_name;
+	void *start = m->mapaddr;
+	void *end = MAPPING_END(start, m->size);
+	while (m->next && strcmp(m->next->module_name, module_name) == 0) {
+	    m = m->next;
+	    if (m->mapaddr < start) {
+		start = m->mapaddr;
+	    }
+	    if (m->mapaddr > start) {
+	        void *nend = MAPPING_END(m->mapaddr, m->size);
+		if (nend > end) end = nend;
+	    }
+        }
+	dl_add_module_base(module_name, start, end);
+    }
   } else {
     EMSG("fatal error: unable to make temporary directory %s\n", mytmpdir);
     exit(-1);
@@ -117,6 +156,22 @@ dl_init()
 #endif
 }
 
+
+
+void dump_dl_record(dl_record_t *r)
+{
+  printf("record addr = %p: name = '%s', table = %p, length = 0x%x, "
+	 "start = %p, end = %p, relocate = %d\n",
+         r, r->name, r->table, r->length, r->start_addr, 
+	 r->end_addr, r->relocate);
+}
+
+void dump_dl_list()
+{
+  dl_record_t *r = dl_list;
+  for (; r; r = r->next) dump_dl_record(r);
+}
+	
 
 void 
 dl_fini()
@@ -135,6 +190,7 @@ find_dl_bound(const char *filename, void *baseaddr, void *pc,
 {
 #ifndef STATIC_ONLY
   dl_record_t *r = dl_list;
+  int ret = 1;
 
   //--------------------------------------------------------------
   // post condition: filename is a canonical absolute path
@@ -142,13 +198,23 @@ find_dl_bound(const char *filename, void *baseaddr, void *pc,
   char real_filename[PATH_MAX];
   realpath(filename, real_filename);
 
-  while (r && strcmp(r->name, real_filename) != 0) r = r->next; 
+  while (r && (strcmp(r->name, real_filename) != 0 
+	       || pc < r->start_addr || pc > r->end_addr)) r = r->next; 
+#if 0
   if (!r) r = dl_compute(real_filename, baseaddr);
-  
-  if (r && r->length > 0) 
-    return nm_tab_bound(r->table, r->length, (unsigned long) pc, start, end);
 #endif
-  return 1;
+  
+  if (r && r->length > 0) { 
+    unsigned long rpc = (unsigned long) pc;
+    if (r->relocate) rpc -=  (unsigned long) r->start_addr; 
+    ret =  nm_tab_bound(r->table, r->length, rpc, start, end);
+    if (ret == 0 && r->relocate) {
+	*start = PERFORM_RELOCATION(*start, r->start_addr);
+	*end   = PERFORM_RELOCATION(*end  , r->start_addr);
+    }
+  }
+#endif
+  return ret;
 }
 
 
@@ -168,13 +234,18 @@ relocate_symbols(unsigned long *table, int nsymbols, unsigned long baseaddr)
 
 
 static dl_record_t *
-new_dlentry(const char *name, void * table, int length) 
+new_dl_record(const char *name, void **table, int length, int relocate, void *startaddr, void *endaddr) 
 {
   dl_record_t *r = (dl_record_t *) malloc(sizeof(dl_record_t));
   r->next = dl_list;
   r->name = strdup(name);
   r->table = table;
   r->length = length;
+
+  r->relocate = relocate;
+  r->start_addr = startaddr;
+  r->end_addr = endaddr;
+
   dl_list = r;
   return r;
 }
@@ -190,7 +261,7 @@ mybasename(const char *string)
 
 
 static dl_record_t *
-dl_compute(const char *filename, void *baseaddr)
+dl_compute(const char *filename, void *start, void *end)
 {
 #ifndef STATIC_ONLY
   char *nm_command = getenv("CSPROF_NM_COMMAND"); 
@@ -202,8 +273,10 @@ dl_compute(const char *filename, void *baseaddr)
     {
       monitor_real_system(command); 
       int nsymbols = 0; // default is that there are no symbols
+      int relocate = 0; // default is no relocation
+      int addmapping = 0; // default is omit
       void *dlhandle = monitor_real_dlopen(dlname, RTLD_LAZY);
-      void *nm_table = dlsym(dlhandle, "csprof_nm_addrs");
+      void **nm_table = dlsym(dlhandle, "csprof_nm_addrs");
       int *nm_table_len = (int *) dlsym(dlhandle, "csprof_nm_addrs_len");
       int *relocatable = (int *) dlsym(dlhandle, "csprof_relocatable");
       int *stripped = (int *) dlsym(dlhandle, "csprof_stripped");
@@ -212,8 +285,10 @@ dl_compute(const char *filename, void *baseaddr)
 	// information are available. in this case, we can consider using
 	// symbols values available in the table.
 	nsymbols = *nm_table_len;
+        relocate = *relocatable;
+#if 0
 	if (*relocatable == 1) {
-	  relocate_symbols(nm_table, nsymbols, (unsigned long) baseaddr);
+	  relocate_symbols(nm_table, nsymbols, (unsigned long) start);
 
 	  //------------------------------------------------------------
 	  // unset relocatable to prevent us from relocating the symbols 
@@ -221,9 +296,24 @@ dl_compute(const char *filename, void *baseaddr)
 	  //------------------------------------------------------------
 	  *relocatable = 0; 
 	}
+#else
+	if (nsymbols >= 1) {
+	  if (nm_table[0] >= start && nm_table[0] <= end)
+	    relocate = 0; // segment loaded at its preferred address
+
+#if 0
+	  // the mapping only makes sense if the length of the mapping
+	  // is at least as long as the code size
+	  if (nm_table[nsymbols-1] - nm_table[0] <= length) 
+#endif
+          addmapping = 1;
+	}
+#endif
       }
-      dl_record_t *r = new_dlentry(filename, nm_table, nsymbols);
-      return r;
+      if (addmapping) {
+         dl_record_t *r = new_dl_record(filename, nm_table, nsymbols, relocate, start, end);
+         return r;
+      }
     }
   }
 #endif

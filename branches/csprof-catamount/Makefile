@@ -3,7 +3,8 @@
 # work around irritating bug in GNU make--targets defined in the include
 # files should not be the default target
 
-install_prefix := /projects/hpc/pkgs/csprof-2008.01.07
+install_prefix := /projects/pkgs/csprof
+#install_prefix := ../Install/csprof
 install_lib := $(install_prefix)/lib
 install_bin := $(install_prefix)/bin
 
@@ -22,17 +23,17 @@ static_link_options := --verbose -nostdlib -nodefaultlibs -nostartfiles -static 
 
 
 WITH_PAPI=1
-PAPI_DIR := /projects/hpc/pkgs/papi
+PAPI_DIR := /projects/pkgs/papi-3.5.1-2007-12-10
 PAPI_INCLUDE_OPTS := -I$(PAPI_DIR)/include
-PAPI_LIBS := -L$(PAPI_DIR)/lib64 -lpapi # -lpfm
+PAPI_LIBS := -L$(PAPI_DIR)/lib -lpapi -lpfm
 
 WITH_XED2=1
-XED2_DIR := /projects/hpc/pkgs/XED2
+XED2_DIR := /projects/pkgs/XED2
 XED2_INCLUDE_OPTS := -I$(XED2_DIR)/include
 XED2_LIBS := -L$(XED2_DIR)/lib -lxed
 
 
-MONITOR_DIR := /projects/hpc/pkgs/libmonitor-2008.01.07
+MONITOR_DIR := /projects/pkgs/libmonitor
 MONITOR_INCLUDE_OPTS := -I$(MONITOR_DIR)/include
 MONITOR_LIBS := -L$(MONITOR_DIR)/lib -lmonitor
 

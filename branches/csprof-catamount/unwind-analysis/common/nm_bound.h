@@ -2,7 +2,7 @@
 #define nm_bound_h
 
 int 
-nm_tab_bound(unsigned long *table, int length, unsigned long pc, 
+nm_tab_bound(void **table, int length, unsigned long pc, 
 	     void **start, void **end);
 
 int 

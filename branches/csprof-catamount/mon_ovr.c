@@ -99,7 +99,7 @@ void monitor_fini_thread(void *init_thread_data ){
   csprof_thread_fini(state);
 }
 
-void monitor_dlopen(const char *library)
+void monitor_dlopen(const char *path, int flags, void *handle)
 {
   csprof_epoch_t *epoch;
   csprof_epoch_lock();
@@ -107,15 +107,17 @@ void monitor_dlopen(const char *library)
   /* create a new epoch */
   epoch = csprof_epoch_new();
 
-  dl_add_module(library);
+  dl_add_module(path);
 
   csprof_epoch_unlock();
 
 }
 
-void monitor_dlclose(const char *library)
+void monitor_dlclose(void *handle) // (const char *library)
 {
+// we really want the library name
 /*
+ 
   assert(0);
 
   dl_remove_library(library);
