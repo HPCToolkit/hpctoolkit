@@ -150,20 +150,27 @@ NodeRetriever::MoveToFile(const char* name)
   string knownByName;
   
   DIAG_Assert(name, "");
+  DIAG_Assert(currentLM, "");
 
+#if 0
+  // If the file is not found, a load module will be created, if
+  // needed, with the same name as the root.
+  if (!currentLM) {
+    currentLM = MoveToLoadMod(root->name());
+  } 
+#endif
+
+  // -------------------------------------------------------
+  // Obtain a 'canonical' file name
+  // -------------------------------------------------------
   if (strcmp(name, unknownFileName) == 0) {
-    if (!currentLM) {
-      currentLM = MoveToLoadMod(root->name());
-    } 
     knownByName = "Unknown file in " + currentLM->BaseName();
     unknownFileIndex++;
-    
   } 
   else {
     knownByName = name;
   }
  
-  // Obtain a 'canonical' file name
   string fileName = GetFormattedSourceFileName(knownByName);
   
   bool srcIsReadable = true; 
@@ -178,23 +185,18 @@ NodeRetriever::MoveToFile(const char* name)
     filePath = RealPath(pf);
   }
 
+  // -------------------------------------------------------
   // Search for the file
-  FileScope *f = root->FindFile(filePath);
+  // -------------------------------------------------------
+  FileScope *f = currentLM->FindFile(filePath);
   const char* msg = "File Scope Found "; // an optimistic variable
   if (f == NULL) {
-
-    if (!currentLM) {
-      currentLM = MoveToLoadMod(root->name());
-    } 
-    f = new FileScope(filePath, srcIsReadable, currentLM); 
+    f = new FileScope(filePath, srcIsReadable, currentLM);
 
     msg = "File Scope Created for ";
     DIAG_DevMsg(3, "NodeRetriever::MoveToFile makes new FileScope:" << endl
 		<< "  name=" << name << "  fname=" << filePath);
-  } else {
-    currentLM = f->LoadMod();
-    DIAG_Assert(currentLM, "");
-  }
+  } 
   currentFile = f;
 
   // Invalidate any previous proc

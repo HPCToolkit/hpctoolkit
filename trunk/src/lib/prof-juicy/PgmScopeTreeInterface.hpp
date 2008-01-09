@@ -95,9 +95,8 @@ public:
     { return MoveToLoadMod(name.c_str()); }
 
   // get/make file with name 'name' and remember it as current file.
-  // Both the current file and load module will be set.  If the file
-  // is not found, a load module will be created, if needed, with the
-  // same name as the root.
+  // Requires the current load module to be set. Resets the current
+  // proc.
   FileScope* MoveToFile(const char* name);
   FileScope* MoveToFile(const std::string& name)
     { return MoveToFile(name.c_str()); }
