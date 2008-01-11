@@ -3,8 +3,7 @@
 # work around irritating bug in GNU make--targets defined in the include
 # files should not be the default target
 
-install_prefix := /projects/pkgs/csprof
-#install_prefix := ../Install/csprof
+install_prefix := /projects/pkgs/csprof-2008.01.09
 install_lib := $(install_prefix)/lib
 install_bin := $(install_prefix)/bin
 
@@ -193,7 +192,12 @@ OBJS += csproflib.o metrics.o mem.o cct.o
 OBJS += name.o list.o libc.o epoch.o
 OBJS += sample_event.o 
 OBJS += csprof_options.o 
+
+#-------------------
+# utilities
+#-------------------
 OBJS += spinlock.o
+OBJS += unlink.o
 
 ifdef DO_THREADS
    OBJS += pthread.o

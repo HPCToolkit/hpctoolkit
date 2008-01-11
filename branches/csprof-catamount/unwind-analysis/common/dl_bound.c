@@ -29,6 +29,7 @@
 #include "structs.h"
 #include "pmsg.h"
 #include "dl_bound.h"
+#include "unlink.h"
 
 
 
@@ -177,9 +178,12 @@ void
 dl_fini()
 {
 #ifndef STATIC_ONLY
+  unlink_tree(mytmpdir);
+#if 0
   char command[PATH_MAX+1024];
   sprintf(command,"/bin/rm -rf %s\n", mytmpdir); 
   monitor_real_system(command); 
+#endif
 #endif
 }
 
