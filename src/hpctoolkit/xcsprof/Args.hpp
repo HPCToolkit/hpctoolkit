@@ -99,7 +99,7 @@ public:
   std::string dbDir;
   std::string OutFilename_XML;
   std::vector<std::string> searchPaths; // list of serch paths
-  std::string structureFile;
+  std::vector<std::string> structureFiles;
   
   // Parsed Data: arguments
   std::string progFile; // binary that was profiled

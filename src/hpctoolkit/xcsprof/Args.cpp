@@ -108,6 +108,7 @@ static const char* usage_details =
 "                       multiple times.\n"
 "  -S <file>, --structure <file>\n"
 "                       Use the bloop structure file <file> for correlation.\n"
+"                       May pass multiple times (e.g., for shared libraries).\n"
 "\n"
 "Options: Output\n"
 "  -o <db-path>, --db <db-path>, --output <db-path>\n"
@@ -117,6 +118,7 @@ static const char* usage_details =
 
 
 #define CLP CmdLineParser
+#define CLP_SEPARATOR "***"
 
 // Note: Changing the option name requires changing the name in Parse()
 CmdLineParser::OptArgDesc Args::optArgs[] = {
@@ -124,8 +126,8 @@ CmdLineParser::OptArgDesc Args::optArgs[] = {
   { 'o', "output",          CLP::ARG_REQ , CLP::DUPOPT_CLOB, NULL },
   {  0 , "db",              CLP::ARG_REQ , CLP::DUPOPT_CLOB, NULL },
 
-  { 'I', "include",         CLP::ARG_OPT,  CLP::DUPOPT_CAT,  ":"  },
-  { 'S', "structure",       CLP::ARG_OPT,  CLP::DUPOPT_CLOB, NULL },
+  { 'I', "include",         CLP::ARG_OPT,  CLP::DUPOPT_CAT,  CLP_SEPARATOR },
+  { 'S', "structure",       CLP::ARG_OPT,  CLP::DUPOPT_CAT,  CLP_SEPARATOR },
 
   // General
   { 'v', "verbose",         CLP::ARG_OPT,  CLP::DUPOPT_CLOB, NULL },
@@ -254,10 +256,11 @@ Args::Parse(int argc, const char* const argv[])
     // Check for other options: Correlation options
     if (parser.IsOpt("include")) {
       string str = parser.GetOptArg("include");
-      StrUtil::tokenize(str, ":", searchPaths);
+      StrUtil::tokenize(str, CLP_SEPARATOR, searchPaths);
     }
     if (parser.IsOpt("structure")) {
-      structureFile = parser.GetOptArg("structure");
+      string str = parser.GetOptArg("structure");
+      StrUtil::tokenize(str, CLP_SEPARATOR, structureFiles);
     }
     
     // Check for other options: Output options
