@@ -399,7 +399,7 @@ Driver::ProcessPGMFile(NodeRetriever* nretriever,
     return;
   }
   
-  for (uint i = 0; i < files->size(); i++) {
+  for (uint i = 0; i < files->size(); ++i) {
     const string& fnm = *((*files)[i]);
     DriverDocHandlerArgs args(this);
     read_PGM(nretriever, fnm.c_str(), docty, args);
