@@ -57,6 +57,8 @@
 #include <string>
 using std::string;
 
+#include <vector>
+
 #include <sys/stat.h>
 #include <sys/types.h>
 
@@ -73,15 +75,15 @@ using std::string;
 //*************************** Forward Declarations ***************************
 
 PgmScopeTree*
-readStructureData(const char* filenm);
+readStructureData(std::vector<string>& structureFiles);
 
 static void
 processCallingCtxtTree(CSProfile* profData, VMA begVMA, VMA endVMA, 
-		       const std::string& lm_fnm, LoadModScope* lmScope);
+		       const string& lm_fnm, LoadModScope* lmScope);
 
 static void
 processCallingCtxtTree(CSProfile* profData, VMA begVMA, VMA endVMA, 
-		       const std::string& lm_fnm);
+		       const string& lm_fnm);
 
 
 //****************************************************************************
@@ -143,8 +145,8 @@ realmain(int argc, char* const* argv)
 
   PgmScopeTree* scopeTree = NULL;
   PgmScope* pgmScope = NULL;
-  if (!args.structureFile.empty()) {
-    scopeTree = readStructureData(args.structureFile.c_str());
+  if (!args.structureFiles.empty()) {
+    scopeTree = readStructureData(args.structureFiles);
     pgmScope = scopeTree->GetRoot();
   }
   
@@ -167,7 +169,7 @@ realmain(int argc, char* const* argv)
       VMA begVMA = csp_lm->GetMapaddr(); // for next csploadmodule
 
       if (csp_lm->GetUsedFlag()) {
-	const std::string& lm_fnm = csp_lm->GetName();
+	const string& lm_fnm = csp_lm->GetName();
 	LoadModScope* lmScope = NULL;
 	if (pgmScope) {
 	  lmScope = pgmScope->FindLoadMod(lm_fnm);
@@ -233,7 +235,7 @@ public:
 
 
 PgmScopeTree*
-readStructureData(const char* filenm)
+readStructureData(std::vector<string>& structureFiles)
 {
   InitXerces();
 
@@ -242,8 +244,11 @@ readStructureData(const char* filenm)
   PgmScopeTree* scopeTree = new PgmScopeTree("", pgm);
   NodeRetriever scopeTreeInterface(pgm, path);
   MyDocHandlerArgs args;
-  
-  read_PGM(&scopeTreeInterface, filenm, PGMDocHandler::Doc_STRUCT, args);
+
+  for (uint i = 0; i < structureFiles.size(); ++i) {
+    const string& fnm = structureFiles[i];
+    read_PGM(&scopeTreeInterface, fnm.c_str(), PGMDocHandler::Doc_STRUCT, args);
+  }
 
   FiniXerces();
   
@@ -254,7 +259,7 @@ readStructureData(const char* filenm)
 
 static void
 processCallingCtxtTree(CSProfile* profData, VMA begVMA, VMA endVMA, 
-		       const std::string& lm_fnm, LoadModScope* lmScope)
+		       const string& lm_fnm, LoadModScope* lmScope)
 {
   VMA relocVMA = 0;
 
@@ -277,7 +282,7 @@ processCallingCtxtTree(CSProfile* profData, VMA begVMA, VMA endVMA,
 
 static void
 processCallingCtxtTree(CSProfile* profData, VMA begVMA, VMA endVMA, 
-		       const std::string& lm_fnm)
+		       const string& lm_fnm)
 {
   binutils::LM* lm = NULL;
   try {
