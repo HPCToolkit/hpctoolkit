@@ -55,6 +55,7 @@ CSPROF_VERSION="1.0"
 CSPROF_DIR="`dirname $0`"
 CSPROF_ROOT="`dirname ${CSPROF_DIR}`"
 CSPROF_LIB=${CSPROF_ROOT}/lib
+CSPROF_LIBEXEC=${CSPROF_ROOT}/libexec
 
 # One can set personal defaults here, instead of changing source code.
 # These values will be overriden by commandline options.
@@ -247,7 +248,8 @@ f_prepareenv()
     export LD_PRELOAD
   fi
 
-  export CSPROF_NM_COMMAND="${CSPROF_DIR}/nm_tbl.py"
+#  export CSPROF_NM_COMMAND="${CSPROF_DIR}/nm_tbl.py"
+  export CSPROF_NM_COMMAND="${CSPROF_LIBEXEC}/csprof_syms"
 
   # export profiler options
   if [ -n "${opt_out_path}" ]; then
