@@ -1,0 +1,25 @@
+#!/bin/sh 
+libexecdir=`dirname $0`
+base=`basename $1`
+if test ${libexecdir}x == "$0"; then
+   libexecdir=.
+fi
+if test ${libexecdir} == "."; then
+   rootdir=..
+else
+   rootdir=`dirname ${libexecdir}`
+fi
+libdir=${rootdir}/lib
+
+# output directory
+if test "$2"x == "x"; then
+odir=/tmp
+else
+odir=$2
+fi
+
+prog_file=${odir}/${base}.nm.c
+so_file=${odir}/${base}.nm.so
+
+LD_LIBRARY_PATH=${libdir} ${libexecdir}/stapi_syms $1 > ${prog_file} 2> /dev/null
+gcc ${prog_file} -fPIC -shared -nostartfiles -o ${so_file}
