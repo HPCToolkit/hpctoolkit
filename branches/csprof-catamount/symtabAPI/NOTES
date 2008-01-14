@@ -1,0 +1,6 @@
+top level directory shows these links
+
+include -> /data/home/mfagan/symtabAPI/src/core/symtabAPI/h
+x86_64-unknown-linux2.4 -> /data/home/mfagan/symtabAPI/src/x86_64-unknown-linux2.4
+
+inside src/x86_64-unknown-linux2.4/lib, need to link libelf.so.0 to libelf.so
