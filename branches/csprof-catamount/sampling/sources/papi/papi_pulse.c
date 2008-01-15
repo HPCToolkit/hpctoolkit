@@ -13,7 +13,7 @@
 #include "bad_unwind.h"
 #include "last.h"
 
-#define THRESHOLD   10000000
+#define THRESHOLD   1000000
 
 #define WEIGHT_METRIC 0
 

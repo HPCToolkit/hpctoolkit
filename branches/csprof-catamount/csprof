@@ -66,6 +66,7 @@ opt_event=""
 opt_verbosity=""
 opt_debug=""
 opt_gdb=""
+opt_papi=""
 
 #####################
 
@@ -209,6 +210,8 @@ f_getoptions()
 
       -d)   opt_gdb=1;
             ;;
+      --papi)   opt_papi=1;
+            ;;
 #      -o*) opt_out_path=`echo $1 | cut -c3-`;
 #            ;;
 
@@ -282,6 +285,9 @@ f_prepareenv()
   fi
   if [ -n "${opt_gdb}" ]; then
     export CSPROF_WAIT=1
+  fi
+  if [ -n "${opt_papi}" ]; then
+    export SWITCH_TO_PAPI=1
   fi
 
   # Make sure that `.' is in the PATH so that we can find the command
