@@ -26,11 +26,40 @@ md_if_needed()
 conf_home=`dirname $0`
 opt_prefix='.'
 
+if [ -d /projects/hpc/pkgs ]; then
+  PKGS=/projects/hpc/pkgs
+elif [ -d /projects/pkgs ]; then
+  PKGS=/projects/hpc/pkgs
+else
+  PKGS=$conf_home
+fi
+
+opt_papi_dir=$PKGS/papi
+opt_xed2_dir=$PKGS/XED2
+
+if [ -d /projects/hpc/pkgs/libmonitor-2008.01.07 ]; then
+  opt_monitor_dir=/projects/hpc/pkgs/libmonitor-2008.01.07
+else
+  opt_monitor_dir=""
+fi
+
 while [ $# -gt 0 ]
 do
     case $1 in
 	--prefix=*) opt_prefix=${1#--prefix=}
 #	            f_error_on_nil "$opt_prefix" "empty prefix specified"
+	          ;;
+
+	--papi-dir=*) opt_papi_dir=${1#--papi-dir=}
+#	            f_error_on_nil "$opt_papi_dir" "empty prefix specified"
+	          ;;
+
+	--xed2-dir=*) opt_xed2_dir=${1#--xed2-dir=}
+#	            f_error_on_nil "$opt_xed2_dir" "empty prefix specified"
+	          ;;
+
+	--monitor-dir=*) opt_monitor_dir=${1#--monitor-dir=}
+#	            f_error_on_nil "$opt_monitor_dir" "empty prefix specified"
 	          ;;
 
 	--*) printf "--Invalid option '$1'\n";
@@ -49,14 +78,62 @@ done
 opt_prefix=${opt_prefix:="."}
 opt_prefix=${opt_prefix%/}
 
+if [ -d "$opt_papi_dir/lib" ]; then
+  papi_lib_name=lib
+elif [ -d "$opt_papi_dir/lib64" ]; then
+  papi_lib_name=lib64
+fi
+
+if [ -e /dev/perfctr ]; then
+  perfc="-lperfctr"
+fi
+
+if [ -z $opt_monitor_dir ]; then
+  opt_monitor_dir=$opt_prefix
+fi
+
 ## configure Makefile (by creating Makefile.conf)
 
-echo install_loc := $opt_prefix > Makefile.conf
-echo src_dir_prefix := "$conf_home/" >> Makefile.conf
+cat <<EOF > Makefile.conf
+install_prefix := $opt_prefix
+src_dir_prefix := $conf_home/
+PAPI_DIR       := $opt_papi_dir
+XED2_DIR       := $opt_xed2_dir
+MONITOR_DIR    := $opt_monitor_dir
+papi_lib_name  := $papi_lib_name
+perfctr        := $perfc
+
+###### these will be configured later ##############
+
+WITH_PAPI=1
+WITH_XED2=1
+
+#STATIC_ONLY := 1
+#NO_MMAP := 1
+#USE_TRAMP := 1
+
+DO_THREADS := 1
+PERF := -DCSPROF_PERF=1
+export PERF
+
+#PRIM_UNWIND := 1
+#export PRIM_UNWIND
+
+#special decls for xed library usage
+XEDDCL := -DXED_SCALARS
+
+#CSPROF_TRAMPOLINE := -DCSPROF_TRAMPOLINE_BACKEND=1
+
+##### end config later block #########
+
+EOF
+
 cp $conf_home/Makefile.in ./Makefile
+
+###### NOT USED ANYMORE -- install target now does this (via install program) #########
 
 ## make install directory and subdirectories
 
-md_if_needed $opt_prefix
-md_if_needed $opt_prefix/bin
-md_if_needed $opt_prefix/lib
+#md_if_needed $opt_prefix
+#md_if_needed $opt_prefix/bin
+#md_if_needed $opt_prefix/lib

@@ -13,8 +13,6 @@
 
 #define M(s) write(2,s"\n",strlen(s)+1)
 
-static int (*the_main)(int, char **, char **);
-
 void csprof_init_internal(void);
 void csprof_fini_internal(void);
 void csprof_pthread_init_data(void);

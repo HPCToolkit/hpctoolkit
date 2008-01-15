@@ -34,6 +34,7 @@
 #include "mem.h"
 #include "csprof_csdata.h"
 #include "general.h"
+#include "hpcfile_general.h"
 #include "spinlock.h"
 #include "state.h"
 

@@ -1,4 +1,4 @@
-SP = /home/mfagan/symtabAPI
+SP = ../symtabAPI
 SPI = -I$(SP)/include
 SPL = -L$(SP)/x86_64-unknown-linux2.4/lib -lsymtabAPI -ldwarf -lelf -lcommon
 CXXFLAGS = $(SPI) -g

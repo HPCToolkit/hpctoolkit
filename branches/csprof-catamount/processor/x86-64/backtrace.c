@@ -3,11 +3,16 @@
 #include <sys/types.h>
 #include <ucontext.h>
 
+/* FIXME: configure backtrace to use libunwind if that is wanted
+   FORNOW: just use binary analyzer
 #ifndef PRIM_UNWIND
 #include <libunwind.h>
 #else
 #include "prim_unw.h"
 #endif
+*/
+
+#include "prim_unw.h"
 
 #include "backtrace.h"
 #include "monitor.h"
@@ -281,13 +286,17 @@ csprof_sample_callstack(csprof_state_t *state, int metric_id,
     int first_ever_unwind = (state->bufstk == state->bufend);
     void *sp1 = first_ever_unwind ? (void *) -1 : state->bufstk->sp;
 
+#if 0
 #ifndef PRIM_UNWIND
     unw_context_t ctx;
 #endif
+#endif
+
     unw_cursor_t frame;
 
     csprof_state_verify_backtrace_invariants(state);
 
+#if 0
 #if USE_LIBUNWIND_TO_START
     /* would be nice if we could just copy in the signal context... */
     if(unw_getcontext(&ctx) < 0) {
@@ -301,7 +310,12 @@ csprof_sample_callstack(csprof_state_t *state, int metric_id,
     MSG(1,"back from cursor init: pc = %p, bp = %p\n",frame.pc,frame.bp);
 #endif
 #endif
+#endif
 
+    unw_init_f_mcontext(context,&frame);
+    MSG(1,"back from cursor init: pc = %p, bp = %p\n",frame.pc,frame.bp);
+
+#if 0
 #ifndef PRIM_UNWIND
     if(unw_init_local(&frame, &ctx) < 0) {
         DIE("Could not initialize unwind cursor!", __FILE__, __LINE__);
@@ -319,7 +333,7 @@ csprof_sample_callstack(csprof_state_t *state, int metric_id,
         }
     }
 #endif
-
+#endif
     return csprof_sample_callstack_from_frame(state, metric_id,
 					      sample_count, &frame);
 }

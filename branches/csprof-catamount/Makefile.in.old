@@ -1,11 +1,9 @@
-# the Makefile that holds everything together
+# Makefile.in intermediate to full autoconf, automake
+# now, just the std Makefile, but include Makefile.conf
 
-# work around irritating bug in GNU make--targets defined in the include
-# files should not be the default target
+include Makefile.conf
 
-install_prefix := /projects/pkgs/csprof-2008.01.09
-install_lib := $(install_prefix)/lib
-install_bin := $(install_prefix)/bin
+#install_loc := /home/mfagan/csprof-install/libexec
 
 PLATFORM := x86-64
 #CC :=  cc
@@ -20,24 +18,8 @@ static_link_options := --verbose -nostdlib -nodefaultlibs -nostartfiles -static 
 #NO_MMAP := 1
 #USE_TRAMP := 1
 
-
-WITH_PAPI=1
-PAPI_DIR := /projects/pkgs/papi-3.5.1-2007-12-10
-PAPI_INCLUDE_OPTS := -I$(PAPI_DIR)/include
-PAPI_LIBS := -L$(PAPI_DIR)/lib -lpapi -lpfm
-
-WITH_XED2=1
-XED2_DIR := /projects/pkgs/XED2
-XED2_INCLUDE_OPTS := -I$(XED2_DIR)/include
-XED2_LIBS := -L$(XED2_DIR)/lib -lxed
-
-
-MONITOR_DIR := /projects/pkgs/libmonitor
-MONITOR_INCLUDE_OPTS := -I$(MONITOR_DIR)/include
-MONITOR_LIBS := -L$(MONITOR_DIR)/lib -lmonitor
-
-src_dir_prefix = $(patsubst %Makefile,%,  \
-                    $(word $(words $(MAKEFILE_LIST)),$(MAKEFILE_LIST)))
+#src_dir_prefix = $(patsubst %Makefile,%,  \
+#                    $(word $(words $(MAKEFILE_LIST)),$(MAKEFILE_LIST)))
 
 src_dir        = $(patsubst %/,%,$(src_dir_prefix))
 export PLATFORM
@@ -49,6 +31,9 @@ export PERF
 
 PRIM_UNWIND := 1
 export PRIM_UNWIND
+
+# improved unwind here
+UNWIND := $(src_dir_prefix)BetterUnwind
 
 #special decls for xed library usage
 XEDDCL := -DXED_SCALARS
@@ -63,6 +48,9 @@ CSPROF_DOT_O := libcsprof.o
 # MWF wants async timing, so chg default
 DRIVER = itimer
 DRIVER_DIR = itimer
+#DRIVER_DIR = papi
+#DRIVER = papi_pulse
+#DRIVER = mallocprof
 
 all: $(CSPROFLIB)
 #all: $(CSPROF_DOT_O)
@@ -71,6 +59,7 @@ all: $(CSPROFLIB)
 # MWF: working on x86-64, make it (and gcc) the default 30jan07
 #PLATFORM ?= ia64
 
+#include mkinclude.$(PLATFORM)
 
 DEFINES := -D_GNU_SOURCE
 DEFINES += -DCSPROF_LAST_EDGE_ONLY=1
@@ -87,16 +76,14 @@ ARFLAGS := -r
 
 #ADA link flags
 link_flags := -Wl,-Bstatic -Wl,-soname,$(CSPROFLIB) -shared
-
 # andre1 link flags
-link_flags := -Wl,-Bsymbolic -Wl,-soname,$(CSPROFLIB) -shared
+link_flags := -Wl,-soname,$(CSPROFLIB) -shared
 
 module_dirs := utilities                \
                memory                   \
                processor/x86-64         \
-               unwind-analysis/common \
-               unwind-analysis/x86-family \
                sampling/types/callstack \
+               BetterUnwind             \
                Pmsg                     \
                hpcfile                  \
                os/catamount             \
@@ -111,9 +98,10 @@ ifdef STATIC_ONLY
   find_v  := find_static
   gethost := gethostid.o override.o MPI_Init.o 
 else
+  INC_MON := -I$(install_loc)/include
   find_v  := find
 endif
-
+# INC_BETTER_UNW := -IBetterUnwind
 
 #MPI_INC := -I/usr/mpich/mpich-1.2.6-pgi614/include
 
@@ -124,32 +112,26 @@ src_dir_inc := $(patsubst %/,%,$(src_dir_prefix))
 endif
 
 INCS := -I$(src_dir_inc) $(INC_PFM) $(INC_UNWIND) $(INC_THREAD)\
-         $(INC_BETTER_UNW)
+         $(INC_MON) $(INC_BETTER_UNW)
 ifdef MPI_SPECIAL
 INCS += $(MPI_INC)
 endif
 
 INCS += $(addprefix -I$(src_dir_prefix),$(module_dirs))
+INCS += -I$(src_dir_prefix)BetterUnwind/Include
+PAPI_INCLUDE_OPTS_XD := -I/projects/hpc/pkgs/papi/include
+INCS += $(PAPI_INCLUDE_OPTS_XD)
 
+# FIXME: PAPI?
 ifneq "$(DRIVER_DIR)" "itimer"
 DEFINES += -DCSPROF_SYNCHRONOUS_PROFILING_ONLY=1
 endif
 ifeq "$(DRIVER_DIR)" "mallocprof"
 DEFINES += -DCSPROF_MALLOC_PROFILING=1
 endif
-
-ifdef WITH_PAPI
+ifeq "$(DRIVER_DIR)" "papi"
 INCS += $(PAPI_INCLUDE_OPTS)
-LIBS += $(PAPI_LIBS) 
 endif
-
-ifdef WITH_XED2
-INCS += $(XED2_INCLUDE_OPTS)
-LIBS += $(XED2_LIBS) 
-endif
-
-INCS += $(MONITOR_INCLUDE_OPTS)
-LIBS += $(MONITOR_LIBS) 
 
 ifdef DO_THREADS
   CSPROF_THREADS := -DCSPROF_THREADS=1
@@ -189,15 +171,8 @@ else
    OBJS += static_mon_ovr.o
 endif
 OBJS += csproflib.o metrics.o mem.o cct.o
+OBJS += csprof_options.o
 OBJS += name.o list.o libc.o epoch.o
-OBJS += sample_event.o 
-OBJS += csprof_options.o 
-
-#-------------------
-# utilities
-#-------------------
-OBJS += spinlock.o
-OBJS += unlink.o
 
 ifdef DO_THREADS
    OBJS += pthread.o
@@ -207,11 +182,13 @@ OBJS += backtrace.o
 ifdef PRIM_UNWIND
   #OBJS += splay_if.o
   OBJS += splay.o
+  OBJS += simple-lock.o
   OBJS += prim_unw.o
 endif
 
 OBJS += swizzle.o unsafe.o
 OBJS += loadmod.o processor-libc.o
+// OBJS += csprof_write_data.o
 
 ifdef USE_TRAMP
   OBJS += tramp.o 
@@ -224,25 +201,37 @@ OBJS += nm_bound.o
 OBJS += bad_unwind.o
 OBJS += $(hpcfile_objs)
 ifdef PRIM_UNWIND
-OBJS += $(find_v).o intervals.o 
-#OBJS += x86-xed-print.o 
-OBJS += x86-addsub.o x86-build-intervals.o x86-canonical.o x86-decoder.o x86-jump.o x86-move.o x86-push.o
-OBJS += x86-call.o x86-debug.o x86-enter.o x86-leave.o x86-process-inst.o x86-return.o
-
+OBJS += $(find_v).o xed_if.o
 OBJS += stack_troll.o
-OBJS += dl_bound.o
 OBJS += $(gethost)
 endif
+OBJS += sample_event.o
 OBJS += last.o
 OBJS += last_func.o
 
 #LIBS := hpcfile/$(LIB_CSFILE) $(LIB_THREAD) $(LIB_UNWIND) $(LIB_PFM)
 
 #LIBS := hpcfile/$(LIB_CSFILE) $(LIB_THREAD) $(LIB_PFM)
-#LIBS = $(LIB_THREAD) $(LIB_PFM)
-LIBS += $(LIB_THREAD) 
+LIBS := $(LIB_THREAD) $(LIB_PFM)
 
-#LIBS += $(XED_LIBS) $(XED_CPP_LIBS) 
+# when libxed.a is used
+#
+XED_LIBS := -L$(UNWIND)/Lib -lxed
+ifdef PRIM_UNWIND
+#XED_LIBS := -LXed0-Alt/Lib -lxed
+XED_CPP_LIBS :=  -lstdc++ -ldl
+else
+XED_LIBS := -LXed0-Alt/Lib -lxed
+#XED_LIBS := -L`pwd` lxed.so
+XED_CPP_LIBS :=  -lstdc++ -ldl
+endif
+#PAPI_LIBS := -L/ccs/home/johnmc/mypapi/pkgs/lib -lpapi -lpfm
+#PAPI_LIBS  := -lpapi -lpfm
+# for 3.5 on ada
+PAPI_LD_OPTS_XD := -L/projects/hpc/pkgs/papi/lib -L/projects/hpc/pkgs/papi/lib64 -lpapi -lperfctr
+PAPI_LIBS   := $(PAPI_LD_OPTS_XD)
+
+LIBS += $(XED_LIBS) $(XED_CPP_LIBS) $(PAPI_LIBS)
 
 #############################################################################
 # Compiling Rules:
@@ -268,19 +257,20 @@ TT:
 	# src dir prefix = |$(src_dir_prefix)|, src dir = |$(src_dir)|
 	# PRIM_UNWIND = |$(PRIM_UNWIND)|
 	# XED_LIBS = |$(XED_LIBS)|
-	# src_dir = |$(src_dir)|
 
 $(LIB_CSFILE):
 	@cd hpcfile; $(MAKE) -I ..
+#	@cd BetterUnwind; $(MAKE)
 
 clean:
 	@echo "*** Cleaning csprof ***"
 	@/bin/rm -f $(CSPROFLIB) $(CSPROF_DOT_O) $(OBJS)
 	@cd hpcfile; $(MAKE) -I .. clean
+	@cd BetterUnwind; $(MAKE) clean
 
 .PHONY: TAGS
 TAGS:
-	etags *.[csh] hpcfile/*.[csh] $(addsuffix /*.[csh],$(module_dirs))
+	etags *.[csh] hpcfile/*.[csh] $(addsuffix /*.[csh],$(module_dirs)) BetterUnwind/*.cpp BetterUnwind/*.[ch]
 
 tarball: 
 	@tar -cf csprof.tar $(filter-out %.o %.csp %.log t1 t2 t3,$(wildcard *))
@@ -289,6 +279,7 @@ tarball:
 .PHONY : all libcsfile clean tarball static check install
 
 $(CSPROFLIB): $(LIB_CSFILE) $(OBJS)
+#	$(link) $(link_flags) -o $@ markfront.o $(OBJS) $(LIBS) markrear.o
 	$(link) $(link_flags) -o $@ $(OBJS) $(LIBS)
 	@echo "*** $(CSPROFLIB) is up to date. ***"
 
@@ -302,11 +293,13 @@ bclean:
 	rm -rf *.o *.so *.so.[0-9]*
 
 install: all
-	-install -d $(install_lib) $(install_bin)
-	install $(CSPROFLIB) $(install_lib)
-	install $(MONITOR_DIR)/lib/libmonitor.so $(install_lib)
-	install $(src_dir_prefix)csprof $(install_bin)
-	install $(src_dir_prefix)nm_tbl.py $(install_bin)
+	cp $(CSPROFLIB) $(install_loc)/lib
+	cp $(src_dir_prefix)csprof.in $(install_loc)/bin/csprof
+	cp $(src_dir_prefix)nm_tbl.py $(install_loc)/bin
+
+.PHONY: realclean
+realclean: bclean
+	rm -rf $(install_loc)
 
 %.o: %.c
 	$(CC) $(INCS) $(CFLAGS) -c $< -o $@
