@@ -62,11 +62,11 @@ do
 #	            f_error_on_nil "$opt_monitor_dir" "empty prefix specified"
 	          ;;
 
-	--*) printf "--Invalid option '$1'\n";
+	--*) printf "invalid option: '$1'\n";
 	    exit 1;
 	    ;;
 
-	-*) printf "--Invalid option '$1'\n";
+	-*) printf "invalid option: '$1'\n";
 	    exit 1;
 	    ;;
 
