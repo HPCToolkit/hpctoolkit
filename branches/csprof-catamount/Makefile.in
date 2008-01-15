@@ -80,10 +80,10 @@ module_dirs := utilities                \
 #INC_CSFILE := -I./hpcfile
 
 ifdef STATIC_ONLY
-#  find_v  := find_static
+  find_v  := find_static
   gethost := gethostid.o override.o MPI_Init.o 
 else
-#  find_v  := find
+  find_v  := find
 endif
 
 
@@ -164,7 +164,12 @@ OBJS += csproflib.o metrics.o mem.o cct.o
 OBJS += name.o list.o libc.o epoch.o
 OBJS += sample_event.o 
 OBJS += csprof_options.o 
+
+#-------------------
+# utilities
+#-------------------
 OBJS += spinlock.o
+OBJS += unlink.o
 
 ifdef DO_THREADS
    OBJS += pthread.o
@@ -173,9 +178,9 @@ endif
 OBJS += backtrace.o
 ifdef PRIM_UNWIND
   #OBJS += splay_if.o
+endif
   OBJS += splay.o
   OBJS += prim_unw.o
-endif
 
 OBJS += swizzle.o unsafe.o
 OBJS += loadmod.o processor-libc.o
@@ -190,8 +195,10 @@ OBJS += pmsg.o
 OBJS += nm_bound.o
 OBJS += bad_unwind.o
 OBJS += $(hpcfile_objs)
-ifdef PRIM_UNWIND
-OBJS += $(find_v).o intervals.o 
+#ifdef PRIM_UNWIND
+OBJS += $(find_v).o
+#endif
+OBJS += intervals.o 
 #OBJS += x86-xed-print.o 
 OBJS += x86-addsub.o x86-build-intervals.o x86-canonical.o x86-decoder.o x86-jump.o x86-move.o x86-push.o
 OBJS += x86-call.o x86-debug.o x86-enter.o x86-leave.o x86-process-inst.o x86-return.o
@@ -199,7 +206,7 @@ OBJS += x86-call.o x86-debug.o x86-enter.o x86-leave.o x86-process-inst.o x86-re
 OBJS += stack_troll.o
 OBJS += dl_bound.o
 OBJS += $(gethost)
-endif
+
 OBJS += last.o
 OBJS += last_func.o
 
@@ -274,7 +281,7 @@ install: all
 #	install $(MONITOR_DIR)/lib/libmonitor.so $(install_lib)
 	install $(src_dir_prefix)csprof $(install_bin)
 #	install $(src_dir_prefix)nm_tbl.py $(install_bin)
-	install csprof_syms $(install_libexec)
+	install $(src_dir_prefix)csprof_syms $(install_libexec)
 #	install symbols/symbols $(install_libexec)
 
 %.o: %.c

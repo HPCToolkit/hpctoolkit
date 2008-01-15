@@ -115,6 +115,7 @@ f_usage()
   $p "                  messages and generates a text version of the        \n"
   $p "                  callstack data.                                     \n"
   $p "    -d          : set csprof debug flag, for attaching gdb            \n"
+  $p "   --papi       : use papi instead of itimer                          \n" 
   $p "\n"
   $p "NOTES:\n"
   $p "   csprof uses _RLD_LIST to initiate profiling; modifications to \n"
@@ -129,16 +130,13 @@ f_usage()
 f_checkenv()
 {
 
-RLD_LIB="${CSPROF_LIB}/libcsprof.so.1:${CSPROF_LIB}/libmonitor.so"
+  RLD_LIB="${CSPROF_LIB}/libcsprof.so.1:${CSPROF_LIB}/libmonitor.so"
 
-#  if [ ! -r "${RLD_LIB}" ]; then 
-#    printf "${cmd}: launch library ${RLD_LIB} not found!\n"
-#    exit 1
-#  fi 
   # preload our library first before loading all of those specified in
   # the application binary (signified by DEFAULT).
   # this turns our sampling on at the beginning of the application
   # when our library is loaded.
+
   sysname=`uname`
 
   if [ $sysname = "OSF1" ]; then
@@ -210,7 +208,7 @@ f_getoptions()
 
       -d)   opt_gdb=1;
             ;;
-      --papi)   opt_papi=1;
+  --papi)   opt_papi=1;
             ;;
 #      -o*) opt_out_path=`echo $1 | cut -c3-`;
 #            ;;
@@ -251,7 +249,6 @@ f_prepareenv()
     export LD_PRELOAD
   fi
 
-#  export CSPROF_NM_COMMAND="${CSPROF_DIR}/nm_tbl.py"
   export CSPROF_NM_COMMAND="${CSPROF_LIBEXEC}/csprof_syms"
 
   # export profiler options

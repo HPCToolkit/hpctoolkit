@@ -26,8 +26,6 @@
 #include "pmsg.h"
 #include "sample_event.h"
 
-
-
 /******************************************************************************
  * macros
  *****************************************************************************/
@@ -70,53 +68,47 @@ static unsigned long microseconds = 0L;
 void
 csprof_init_timer(csprof_options_t *options)
 {
-    sample_period = options->sample_period;
-    seconds = sample_period / 1000000;
-    microseconds = sample_period % 1000000;
+  sample_period = options->sample_period;
+  seconds = sample_period / 1000000;
+  microseconds = sample_period % 1000000;
 
-    PMSG(ITIMER_HANDLER,"init timer w sample_period = %ld, seconds = %ld, usec = %ld",
-        sample_period, seconds, microseconds);
+  PMSG(ITIMER_HANDLER,"init timer w sample_period = %ld, seconds = %ld, usec = %ld",
+       sample_period, seconds, microseconds);
 
-    /* signal once after the given delay */
-    itimer.it_value.tv_sec = seconds;
-    itimer.it_value.tv_usec = microseconds;
+  /* signal once after the given delay */
+  itimer.it_value.tv_sec = seconds;
+  itimer.it_value.tv_usec = microseconds;
 
-    itimer.it_interval.tv_sec = 0;
-    itimer.it_interval.tv_usec = 0;
+  itimer.it_interval.tv_sec = 0;
+  itimer.it_interval.tv_usec = 0;
 }
 
 
-void
-csprof_set_timer(void)
+int
+csprof_itimer_start(void)
 {
-  setitimer(CSPROF_PROFILE_TIMER, &itimer, NULL);
-  PMSG(ITIMER_HANDLER,"called csprof_set_timer");
+  return setitimer(CSPROF_PROFILE_TIMER, &itimer, NULL);
 }
 
 
-void
-csprof_disable_timer(void)
+int
+csprof_itimer_stop(void)
 {
   struct itimerval itimer;
+  int rc;
 
   timerclear(&itimer.it_value);
-  setitimer(CSPROF_PROFILE_TIMER, &itimer, NULL);
+  timerclear(&itimer.it_interval);
+  rc = setitimer(CSPROF_PROFILE_TIMER, &itimer, NULL);
+  return rc;
 }
 
 
 void
-csprof_init_itimer_signal_handler(void)
+csprof_itimer_init(csprof_options_t *opts)
 {
-  monitor_sigaction(CSPROF_PROFILE_SIGNAL, &csprof_itimer_signal_handler, 0, NULL);
-}
-
-
-void
-itimer_event_init(csprof_options_t *opts)
-{
-  // csprof_init_signal_handler();
   csprof_init_timer(opts);
-  csprof_set_timer();
+  monitor_sigaction(CSPROF_PROFILE_SIGNAL, &csprof_itimer_signal_handler, 0, NULL);
 }
 
 
@@ -130,8 +122,7 @@ csprof_itimer_signal_handler(int sig, siginfo_t *siginfo, void *context)
 {
   PMSG(ITIMER_HANDLER,"Itimer sample event");
   csprof_sample_event(context);
-  csprof_set_timer();
+  csprof_itimer_start();
 
   return 0; /* tell monitor that the signal has been handled */
 }
-

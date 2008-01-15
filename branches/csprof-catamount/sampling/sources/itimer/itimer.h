@@ -3,9 +3,8 @@
 
 #include "csprof_options.h"
 
-void csprof_set_timer(void);
-void csprof_disable_timer(void);
-void itimer_event_init(csprof_options_t *opts);
-void csprof_init_itimer_signal_handler();
+int  csprof_itimer_start(void);
+int  csprof_itimer_stop(void);
+void csprof_itimer_init(csprof_options_t *opts);
 
 #endif

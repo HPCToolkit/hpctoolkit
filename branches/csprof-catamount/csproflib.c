@@ -166,10 +166,11 @@ void csprof_init_internal(void){
                                     CSPROF_METRIC_FLAGS_NIL, 1);
 
   if (opts.sample_source == ITIMER){
-    csprof_init_itimer_signal_handler();
-    itimer_event_init(&opts);
-  }
-  else { // PAPI
+    csprof_itimer_init(&opts);
+    if (csprof_itimer_start()){
+      EMSG("WARNING: couldn't start itimer");
+    }
+  } else { // PAPI
     papi_setup();
     papi_event_init(&evs);
     papi_pulse_init(evs);
@@ -236,7 +237,9 @@ void csprof_thread_init(killsafe_t *kk,int id){
 
   MSG(1,"driver init f thread");
   if (opts.sample_source == ITIMER){
-    itimer_event_init(&opts);
+    if (csprof_itimer_start()){
+      EMSG("WARNING: couldn't start itimer");
+    }
   }
   else { // PAPI
     PMSG(PAPI,"Thread id = %d",id);
@@ -246,15 +249,17 @@ void csprof_thread_init(killsafe_t *kk,int id){
   }
 }
 
-void csprof_thread_fini(csprof_state_t *state){
-  extern void csprof_disable_timer(void);
-
-  if (csprof_initialized) {
+void
+csprof_thread_fini(csprof_state_t *state)
+{
+  if (csprof_initialized){
     MSG(1,"csprof thread fini");
     if (opts.sample_source == ITIMER){
-      csprof_disable_timer();
-    }
-    else { // PAPI
+      int fail = csprof_itimer_stop();
+      if (fail){
+        EMSG("WARNING: failed to stop itimer (in thread)");
+      }
+    } else { // PAPI
       // papi_pulse_fini();
     }
     csprof_write_profile_data(state);
@@ -266,7 +271,8 @@ void csprof_thread_fini(csprof_state_t *state){
 // errors: handles all errors
 
 void
-csprof_fini_internal(void){
+csprof_fini_internal(void)
+{
   extern int segv_count;
   extern int samples_taken;
   extern int bad_unwind_count;
@@ -274,9 +280,11 @@ csprof_fini_internal(void){
 
   if (csprof_initialized) {
     if (opts.sample_source == ITIMER){
-      csprof_disable_timer();
-    }
-    else { // PAPI
+      int fail = csprof_itimer_stop();
+      if (fail){
+        EMSG("WARNING: failed to stop itimer (in process)");
+      }
+    } else { // PAPI
       papi_pulse_fini();
     }
 
@@ -294,7 +302,8 @@ csprof_fini_internal(void){
 }
 
 csprof_state_t *
-csprof_check_for_new_epoch(csprof_state_t *state){
+csprof_check_for_new_epoch(csprof_state_t *state)
+{
   /* ugh, nasty race condition here:
 
   1. shared library state has changed since the last profile
