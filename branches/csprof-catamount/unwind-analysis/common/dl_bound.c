@@ -30,6 +30,7 @@
 #include "pmsg.h"
 #include "dl_bound.h"
 #include "unlink.h"
+#include "executable-path.h"
 
 
 
@@ -95,25 +96,29 @@ dl_add_module(const char *module)
   // post condition: filename is a canonical absolute path
   //--------------------------------------------------------------
   char real_module[PATH_MAX];
-  realpath(module, real_module);
+  const char *ld_library_path = getenv("LD_LIBRARY_PATH");
+  if (executable_path(module, ld_library_path, real_module) == NULL) {
+    EMSG("unable to locate object file '%s' loaded with dlopen", module);
+    return;
+  }
 
   for(;m; m = m->next) {
     if (strcmp(m->module_name, real_module) == 0) {
-	const char *module_name = m->module_name;
-	void *start = m->mapaddr;
-	void *end = MAPPING_END(start, m->size);
-	while (m->next && strcmp(m->next->module_name, module_name) == 0) {
-	    m = m->next;
-	    if (m->mapaddr < start) {
-	        start = m->mapaddr;
-	    }
-	    if (m->mapaddr > start) {
-	        void *nend = MAPPING_END(m->mapaddr, m->size);
-		if (nend > end) end = nend;
-	    }
-        }
-	dl_add_module_base(module_name, start, end);
-	break;
+      const char *module_name = m->module_name;
+      void *start = m->mapaddr;
+      void *end = MAPPING_END(start, m->size);
+      while (m->next && strcmp(m->next->module_name, module_name) == 0) {
+	m = m->next;
+	if (m->mapaddr < start) {
+	  start = m->mapaddr;
+	}
+	if (m->mapaddr > start) {
+	  void *nend = MAPPING_END(m->mapaddr, m->size);
+	  if (nend > end) end = nend;
+	}
+      }
+      dl_add_module_base(module_name, start, end);
+      break;
     }
   }
 }
@@ -127,20 +132,20 @@ dl_init()
   sprintf(mytmpdir,"%s/%d", tmproot, (int) getpid());
   if (!mkdir(mytmpdir, 0777)) {
     for(;m; m = m->next) {
-	const char *module_name = m->module_name;
-	void *start = m->mapaddr;
-	void *end = MAPPING_END(start, m->size);
-	while (m->next && strcmp(m->next->module_name, module_name) == 0) {
-	    m = m->next;
-	    if (m->mapaddr < start) {
-		start = m->mapaddr;
-	    }
-	    if (m->mapaddr > start) {
-	        void *nend = MAPPING_END(m->mapaddr, m->size);
-		if (nend > end) end = nend;
-	    }
-        }
-	dl_add_module_base(module_name, start, end);
+      const char *module_name = m->module_name;
+      void *start = m->mapaddr;
+      void *end = MAPPING_END(start, m->size);
+      while (m->next && strcmp(m->next->module_name, module_name) == 0) {
+	m = m->next;
+	if (m->mapaddr < start) {
+	  start = m->mapaddr;
+	}
+	if (m->mapaddr > start) {
+	  void *nend = MAPPING_END(m->mapaddr, m->size);
+	  if (nend > end) end = nend;
+	}
+      }
+      dl_add_module_base(module_name, start, end);
     }
   } else {
     EMSG("fatal error: unable to make temporary directory %s\n", mytmpdir);
@@ -160,29 +165,21 @@ dl_fini()
 
 
 int 
-find_dl_bound(const char *filename, void *baseaddr, void *pc, 
-              void **start, void **end)
+find_dl_bound(void *pc, void **start, void **end)
 {
 #ifndef STATIC_ONLY
   dl_record_t *r = dl_list;
   int ret = 1;
 
-  //--------------------------------------------------------------
-  // post condition: filename is a canonical absolute path
-  //--------------------------------------------------------------
-  char real_filename[PATH_MAX];
-  realpath(filename, real_filename);
-
-  while (r && (strcmp(r->name, real_filename) != 0 
-	       || pc < r->start_addr || pc > r->end_addr)) r = r->next; 
+  while (r && (pc < r->start_addr || pc > r->end_addr)) r = r->next; 
   
   if (r && r->nsymbols > 0) { 
     unsigned long rpc = (unsigned long) pc;
     if (r->relocate) rpc -=  (unsigned long) r->start_addr; 
     ret =  nm_tab_bound(r->table, r->nsymbols, rpc, start, end);
     if (ret == 0 && r->relocate) {
-	*start = PERFORM_RELOCATION(*start, r->start_addr);
-	*end   = PERFORM_RELOCATION(*end  , r->start_addr);
+      *start = PERFORM_RELOCATION(*start, r->start_addr);
+      *end   = PERFORM_RELOCATION(*end  , r->start_addr);
     }
   }
 #endif
@@ -216,9 +213,7 @@ new_dl_record(const char *name, void **table, int nsymbols, int relocate, void *
 static void 
 dl_add_module_base(const char *module_name, void *start, void *end)
 {
-  char real_module_name[PATH_MAX];
-  realpath(module_name, real_module_name);
-  dl_compute(real_module_name, start, end);
+  dl_compute(module_name, start, end);
 }
 
  

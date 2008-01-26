@@ -1,6 +1,5 @@
 int 
-find_dl_bound(const char *filename, void *base, void *pc, 
-	      void **start, void **end);
+find_dl_bound(void *pc, void **start, void **end);
 
 
 void 

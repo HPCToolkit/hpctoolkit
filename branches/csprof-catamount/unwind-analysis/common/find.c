@@ -14,8 +14,10 @@
 #include "find.h"
 
 #ifndef STATIC_ONLY
-
 #define USE_FDE 0
+#define USE_DLADDR 0
+#define USE_DLBOUND 1
+#endif
 
 #if USE_FDE
 #include <unwind-dw2-fde.h>
@@ -53,8 +55,6 @@ static char *find_dwarf_end_addr(char *addr, struct dwarf_fde const *start_fde,
        other, addr + other, new_bases.func);
   return (char *) addr + other; // new_bases.func;
 }
-#endif
-
 
 static char *find_dl_end_addr(char *addr, Dl_info *start)
 {
@@ -86,7 +86,7 @@ static char *find_dl_end_addr(char *addr, Dl_info *start)
   PMSG(FIND,"finishing offset = %d, end = %p", other, addr + other);
   return addr + other;
 }
-#endif
+#endif // USE_FDE
 
 int 
 find_enclosing_function_bounds_v(char *addr, void **start, void **end, 
@@ -95,37 +95,44 @@ find_enclosing_function_bounds_v(char *addr, void **start, void **end,
   char *method = NULL;
 #ifdef STATIC_ONLY
   if (!nm_bound((unsigned long)addr, start, end)) {
-    method = "NM static";
+    method = "stapi static";
   } 
 #else 
+
 #if USE_FDE
-  struct dwarf_eh_bases base;
-  struct dwarf_fde const *fde = _Unwind_Find_FDE(addr, &base);
-  if (fde && base.func) {
-    *start = (char *) base.func;
-    *end = find_dwarf_end_addr(addr, fde, &base);
-    method = "FDE";
-  } else 
-#endif
-  {
+  if (method == NULL) {
+    struct dwarf_eh_bases base;
+    struct dwarf_fde const *fde = _Unwind_Find_FDE(addr, &base);
+    if (fde && base.func) {
+      *start = (char *) base.func;
+      *end = find_dwarf_end_addr(addr, fde, &base);
+      method = "FDE";
+    } 
+  }
+#endif // USE_FDE
+
+#if USE_DLADDR 
+  if (method == NULL) {
     Dl_info info;
-    if (dladdr(addr, &info)) {
-#if 0
-      if (info.dli_saddr) {
+    if (dladdr(addr, &info) && info.dli_saddr) {
 	*start = (char *) info.dli_saddr;
 	*end = find_dl_end_addr(addr, &info);
 	method = "dladdr";
-      } else if (info.dli_fname != 0) 
-#endif
-      {
-	if (!find_dl_bound(info.dli_fname, info.dli_fbase, addr, start, end)) 
-	  method = "NM dynamic";
-      }
     }
-#endif // STATIC_ONLY
   }
+#endif // USE_DLADDR
+
+#if USE_DLBOUND
+  if (method == NULL) {
+    if (!find_dl_bound(addr, start, end)) method = "stapi dynamic";
+  }
+#endif // USE_DLBOUND
+
+#endif // STATIC_ONLY
+
   if (method) {
-    PMSG(FIND,"FIND:found %p (method %s): start=%p,end=%p",addr, method, *start, *end);
+    PMSG(FIND,"FIND:found %p (method %s): start=%p,end=%p",addr, method, 
+	 *start, *end);
     return 0;
   } else {
     PMSG(FIND, "FIND:look up failed @ %p!",addr);
