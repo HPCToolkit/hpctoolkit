@@ -198,6 +198,7 @@ OBJS += csprof_options.o
 #-------------------
 OBJS += spinlock.o
 OBJS += unlink.o
+OBJS += executable-path.o
 
 ifdef DO_THREADS
    OBJS += pthread.o

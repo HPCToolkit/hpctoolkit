@@ -182,6 +182,11 @@ find_dl_bound(void *pc, void **start, void **end)
       *end   = PERFORM_RELOCATION(*end  , r->start_addr);
     }
   }
+#if 0
+  /* debugging output */
+  printf("find_dl_bound: pc = %p found=%d start = %p end = %p\n", pc, !ret, (!ret) ? *start : 0, 
+	(!ret) ? *end : 0);
+#endif
 #endif
   return ret;
 }

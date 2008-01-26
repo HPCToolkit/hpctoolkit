@@ -46,8 +46,8 @@ papi_setup(void){
 }
 
 void
-papi_event_init(int *eventSet){
-
+papi_event_init(int *eventSet)
+{
   int ret;
   int threshold = THRESHOLD;
 
@@ -75,7 +75,8 @@ papi_event_init(int *eventSet){
 }
 
 void
-papi_pulse_init(int eventSet){
+papi_pulse_init(int eventSet)
+{
   PMSG(PAPI,"starting PAPI w event set %d",eventSet);
   PAPI_start(eventSet);
 }
