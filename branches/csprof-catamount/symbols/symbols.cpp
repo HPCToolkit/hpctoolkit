@@ -17,23 +17,20 @@ using namespace SymtabAPI;
 static void dump_file_info(const char *filename);
 
 extern "C" {
-  void cplus_demangle();
+   // we don't care about demangled names. define
+   // a no-op that meets symtabAPI semantic needs
+   // only
+   char *cplus_demangle(char *s, int opts)
+   {
+     return strdup(s);
+   }  
 };
-
-void cplus_demangle()
-{
-}
 
 int 
 main(int argc, char **argv)
 {
   dump_file_info(argv[1]);
   return 0;
-}
-
-static const char *sym_name(Symbol *sym)
-{
-  return sym->getName().c_str(); 
 }
 
 static bool matches_prefix(string s, const char *pre, int n)
