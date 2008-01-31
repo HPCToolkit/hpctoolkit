@@ -14,6 +14,7 @@ typedef struct csprof_options_s {
   char *event;                /* name of the event */
   unsigned long sample_period; /* when itimer is used */
   sample_source_t sample_source; /* what kind of event is used */
+  char *papi_event_list;    /* string repr list of papi events (when papi is used) */
   unsigned int max_metrics;
 } csprof_options_t;
 

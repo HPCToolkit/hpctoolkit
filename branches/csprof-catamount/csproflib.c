@@ -172,6 +172,7 @@ void csprof_init_internal(void){
     }
   } else { // PAPI
     papi_setup();
+    papi_event_info_from_opt(&opts,&code,&thresh);
     papi_event_init(&evs);
     papi_pulse_init(evs);
   }

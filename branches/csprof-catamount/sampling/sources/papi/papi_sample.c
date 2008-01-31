@@ -8,6 +8,8 @@
 #include "pmsg.h"
 #include "sample_event.h"
 
+#include "papi_sample.h"
+
 #define THRESHOLD   10000000
 
 #define WEIGHT_METRIC 0
@@ -46,7 +48,7 @@ papi_setup(void){
 }
 
 void
-papi_event_init(int *eventSet)
+papi_event_init(int *eventSet,int eventcode,long threshold)
 {
   int ret;
   int threshold = THRESHOLD;
@@ -88,3 +90,11 @@ papi_pulse_fini(void){
   PAPI_stop(eventSet, &values);
   PMSG(PAPI,"values = %lld\n", values);
 }
+
+void
+papi_event_info_from_opt(csprof_options_t *opts,int *code,
+                         long *thresh)
+{
+  
+}
+
