@@ -14,7 +14,6 @@ extern "C" {
 
 #include <set>
 #include <map>
-#include <stack>
 
 using namespace std;
 
@@ -63,11 +62,9 @@ static xed_state_t xed_machine_state_x86_64 = { XED_MACHINE_MODE_LONG_64,
 
 
 typedef map<void*,Function*> FunctionSet;
-typedef stack<void*> FunctionWorklist;
 typedef set<void*> CondBranchTargets;
 
 static FunctionSet function_entries;
-static FunctionWorklist worklist;
 static CondBranchTargets cbtargets;
 static int stripped_count;
 
