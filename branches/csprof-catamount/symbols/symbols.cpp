@@ -28,13 +28,15 @@ static void usage(char *command);
 static void dump_file_info(const char *filename, bool fn_discovery);
 
 extern "C" {
-   // we don't care about demangled names. define
-   // a no-op that meets symtabAPI semantic needs
-   // only
-   char *cplus_demangle(char *s, int opts)
-   {
-     return strdup(s);
-   }  
+
+// we don't care about demangled names. define
+// a no-op that meets symtabAPI semantic needs only
+char *
+cplus_demangle(char *s, int opts)
+{
+return strdup(s);
+}  
+
 };
 
 
@@ -65,12 +67,14 @@ main(int argc, char **argv)
 //*****************************************************************
 // private operations
 //*****************************************************************
-static bool file_is_stripped(Symtab *syms)
+static bool 
+file_is_stripped(Symtab *syms)
 {
   Section *sec;
   if (syms->findSection(sec, SECTION_SYMTAB)  == false) return true;
   return bool(sec == NULL);
 }
+
 
 static void 
 usage(char *command)
@@ -82,7 +86,9 @@ usage(char *command)
   
 }
 
-static bool matches_prefix(string s, const char *pre, int n)
+
+static bool 
+matches_prefix(string s, const char *pre, int n)
 {
   const char *sc = s.c_str();
   return strncmp(sc, pre, n) == 0;
@@ -109,6 +115,7 @@ report_symbol(Symbol *sym)
   return true;
 }
 
+
 static void
 note_code_range(Section *s, long memaddr)
 {
@@ -117,26 +124,6 @@ note_code_range(Section *s, long memaddr)
   new_code_range(start, end, memaddr);
       
 }
-
-#if 0
-static void
-note_code_ranges(Symtab *syms)
-{
-  vector<Section *> sections;
-  if (syms->getAllSections(sections)) {
-    vector<Section *>::iterator it = sections.begin();
-    for (; it != sections.end(); it++) {
-      Section *s = *it;
-      if (s->isText()) {
-	long memaddr = (long) syms->mem_image();
-	char *start = (char *) s->getSecAddr();
-	char *end = start + s->getSecSize();
-	new_code_range(start, end, memaddr);
-      }
-    }
-  }
-}
-#endif
 
 
 static void
@@ -192,17 +179,6 @@ dump_symbols(Symtab *syms, vector<Symbol *> &symvec, int fn_discovery)
     comment += " */";
     new_function_entry(last, new string(comment));
   }
-
-#if 0
-  //-----------------------------------------------------------------
-  // analyze the binary as directed to discover additional 
-  // functions other than those explicitly known from the symbol 
-  // table.
-  //-----------------------------------------------------------------
-  find_reachable_functions((long) syms->getBaseOffset() - (long) syms->mem_image(), 
-			   syms->mem_image() + ((long)first - syms->getLoadOffset()), 
-			   (unsigned long) last - (unsigned long) first, fn_discovery);
-#endif
   
   note_code_ranges(syms);
   process_code_ranges(fn_discovery);

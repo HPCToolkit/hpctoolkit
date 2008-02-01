@@ -89,40 +89,6 @@ process_range_init()
   xed_tables_init();
 }
 
-#if 0
-void 
-find_reachable_functions(long offset, void *code_start, long code_length, 
-			 bool fn_discovery) 
-{
-  platform_init_process_ranges();
-  process_range(offset, code_start, code_length + (char *) code_start, 
-		fn_discovery);
-}
-#endif
-
-
-#if 0
-// oldest version
-void 
-find_reachable_functions(void *mem_image)
-{
-  void *function_entry;
-
-  xed_tables_init();
-
-  while(!worklist.empty()) {
-    function_entry = worklist.top();
-    worklist.pop();
-
-    FunctionSet::iterator endi = function_entries.upper_bound(function_entry);
-    if (endi != function_entries.end()) {
-      Function *succ = (*endi).second;
-      process_range((long) mem_image, function_entry, succ->address, fn_discovery);
-    }
-  }
-}
-#endif
-
 
 void 
 dump_reachable_functions()
