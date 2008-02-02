@@ -31,6 +31,7 @@
 #include "dl_bound.h"
 #include "unlink.h"
 #include "executable-path.h"
+#include "loadmod.h"
 
 
 
@@ -173,6 +174,14 @@ find_dl_bound(void *pc, void **start, void **end)
 
   while (r && (pc < r->start_addr || pc > r->end_addr)) r = r->next; 
   
+  if (!r) {
+    char module_name[PATH_MAX];
+    unsigned long long addr, mstart, mend;
+    addr = (unsigned long long) pc;
+    if (find_load_module(addr, module_name, &mstart, &mend)) {
+      r = dl_compute(module_name, (void *) mstart, (void *) mend);
+    }
+  }
   if (r && r->nsymbols > 0) { 
     unsigned long rpc = (unsigned long) pc;
     if (r->relocate) rpc -=  (unsigned long) r->start_addr; 

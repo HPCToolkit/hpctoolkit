@@ -36,7 +36,7 @@ char *
 executable_path(const char *filename, const char *path_list, 
 		char *executable_name)
 {
-  if (!access(filename, X_OK)) return realpath(filename, executable_name);
+  if (!access(filename, F_OK)) return realpath(filename, executable_name);
   else {
     char path[PATH_MAX];
     int failure;
