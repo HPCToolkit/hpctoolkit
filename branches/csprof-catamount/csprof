@@ -115,7 +115,14 @@ f_usage()
   $p "                  messages and generates a text version of the        \n"
   $p "                  callstack data.                                     \n"
   $p "    -d          : set csprof debug flag, for attaching gdb            \n"
-  $p "   --papi       : use papi instead of itimer                          \n" 
+  $p "   --pp(=EVLST) : use papi instead of itimer                          \n"
+  $p "                  without an event list(EVLST) argument, defauts to   \n"
+  $p "                  PAPI_TOT_CYC, with threshold set to 1000000         \n"
+  $p "                  EVLST consists of space separated items of the form \n"
+  $p "                      PAPI_EVENT:THRESHOLD                            \n"
+  $p "                  consequently, the EVLST must be quoted              \n"
+  $p "                  EXAMPLE                                             \n"
+  $p "                    --pp='PAPI_TOT_INS:100000 PAPI_FP_INS:100000'     \n"
   $p "\n"
   $p "NOTES:\n"
   $p "   csprof uses _RLD_LIST to initiate profiling; modifications to \n"
@@ -208,7 +215,10 @@ f_getoptions()
 
       -d)   opt_gdb=1;
             ;;
-  --papi)   opt_papi=1;
+    --pp)   opt_papi=1;
+            ;;
+  --pp=*)   opt_papi=1;
+            opt_papi_evlst=${1#--pp=}
             ;;
 #      -o*) opt_out_path=`echo $1 | cut -c3-`;
 #            ;;
@@ -286,6 +296,9 @@ f_prepareenv()
   if [ -n "${opt_papi}" ]; then
     export SWITCH_TO_PAPI=1
   fi
+  if [ -n "$opt_papi_evlst" ]; then
+    export PAPI_EVLST=$opt_papi_evlst
+  fi
 
   # Make sure that `.' is in the PATH so that we can find the command
   # to profile if in the current directory. [We can get around this,
@@ -301,7 +314,7 @@ f_prepareenv()
 
 f_checkenv 
 
-f_getoptions $*
+f_getoptions "$@"
 
 f_prepareenv
 

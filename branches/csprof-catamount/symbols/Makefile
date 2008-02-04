@@ -1,4 +1,5 @@
-XED2_DIR := /projects/pkgs/XED2
+include Makefile.conf
+
 XED2_INCLUDE_OPTS := -I$(XED2_DIR)/include
 XED2_LIBS := -L$(XED2_DIR)/lib -lxed
 
@@ -14,6 +15,9 @@ CXXFLAGS = $(INCL) -g
 
 OBJS = symbols.o x86-process-ranges.o code-ranges.o
 
+csprof_syms: symbols
+	@cp $^ $@
+
 symbols: $(OBJS)
 	g++ -o $@ $(OBJS) $(LIBS)
 
@@ -26,5 +30,11 @@ x86-process-ranges.o: x86-process-ranges.cpp
 code-ranges.o: code-ranges.cpp
 	g++ $(CXXFLAGS) -c $< 
 
+.PHONY: clean
 clean:
-	rm -f *.o symbols *.e
+	rm -f *.o symbols csprof_syms *.e
+
+.PHONY: distclean
+distclean: clean
+	rm -f Makefile.conf
+

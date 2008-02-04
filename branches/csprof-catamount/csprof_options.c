@@ -158,7 +158,7 @@ csprof_options__getopts(csprof_options_t* x){
   if (s){
     x->sample_source = PAPI;
     x->papi_event_list = "PAPI_TOT_CYC:10000000";
-    s = getenv(PAPI_EVENT_LIST);
+    s = getenv("PAPI_EVLST");
     if(s){
       x->papi_event_list = s;
     }

@@ -172,8 +172,8 @@ void csprof_init_internal(void){
     }
   } else { // PAPI
     papi_setup();
-    papi_event_info_from_opt(&opts,&code,&thresh);
-    papi_event_init(&evs);
+    //    papi_event_info_from_opt(&opts,&code,&thresh);
+    papi_event_init(&evs,opts.papi_event_list);
     papi_pulse_init(evs);
   }
   csprof_initialized = 1;
@@ -245,7 +245,7 @@ void csprof_thread_init(killsafe_t *kk,int id){
   else { // PAPI
     PMSG(PAPI,"Thread id = %d",id);
     thread_data_t *td = (thread_data_t *) pthread_getspecific(k);
-    papi_event_init(&(td->eventSet));
+    papi_event_init(&(td->eventSet),opts.papi_event_list);
     papi_pulse_init(td->eventSet);
   }
 }

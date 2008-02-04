@@ -29,13 +29,26 @@ opt_prefix='.'
 if [ -d /projects/hpc/pkgs ]; then
   PKGS=/projects/hpc/pkgs
 elif [ -d /projects/pkgs ]; then
-  PKGS=/projects/hpc/pkgs
+  PKGS=/projects/pkgs
 else
   PKGS=$conf_home
 fi
 
-opt_papi_dir=$PKGS/papi
 opt_xed2_dir=$PKGS/XED2
+
+papi_dir=$PKGS/papi
+
+papi_inc=-I${papi_dir}/include
+pinc=`/usr/bin/env | egrep -i 'papi.*include'`
+if [ "$pinc"x != x ]; then
+    papi_inc=${pinc#*=}
+fi
+
+papi_ld=""
+pld=`/usr/bin/env | egrep -i 'papi.*ld'`
+if [ "$pld"x != x ]; then
+    papi_ld=${pld#*=}
+fi
 
 if [ -d /projects/hpc/pkgs/libmonitor-2008.01.07 ]; then
   opt_monitor_dir=/projects/hpc/pkgs/libmonitor-2008.01.07
@@ -78,14 +91,16 @@ done
 opt_prefix=${opt_prefix:="."}
 opt_prefix=${opt_prefix%/}
 
-if [ -d "$opt_papi_dir/lib" ]; then
-  papi_lib_name=lib
-elif [ -d "$opt_papi_dir/lib64" ]; then
-  papi_lib_name=lib64
-fi
-
-if [ -e /dev/perfctr ]; then
-  perfc="-lperfctr"
+if [ "papi_ld"x == x ]; then
+    if [ -d "$opt_papi_dir/lib" ]; then
+        papi_lib_name=lib
+    elif [ -d "$opt_papi_dir/lib64" ]; then
+        papi_lib_name=lib64
+    fi
+    if [ -e /dev/perfctr ]; then
+        perfc="-lperfctr"
+    fi
+    papi_ld="-L${opt_papi_dir}/${papi_lib_name} -lpapi ${perfc}"
 fi
 
 if [ -z $opt_monitor_dir ]; then
@@ -97,11 +112,11 @@ fi
 cat <<EOF > Makefile.conf
 install_prefix := $opt_prefix
 src_dir_prefix := $conf_home/
+PAPI_INCLUDES  := $papi_inc
+PAPI_LD        := $papi_ld
 PAPI_DIR       := $opt_papi_dir
 XED2_DIR       := $opt_xed2_dir
 MONITOR_DIR    := $opt_monitor_dir
-papi_lib_name  := $papi_lib_name
-perfctr        := $perfc
 
 ###### these will be configured later ##############
 
@@ -129,6 +144,7 @@ XEDDCL := -DXED_SCALARS
 EOF
 
 cp $conf_home/Makefile.in ./Makefile
+cp Makefile.conf $conf_home/symbols
 
 ###### NOT USED ANYMORE -- install target now does this (via install program) #########
 

@@ -14,33 +14,28 @@ CXX  := g++
 link := gcc
 static_link_options := --verbose -nostdlib -nodefaultlibs -nostartfiles -static -Wl,-r
 
-PAPI_INCLUDE_OPTS := -I$(PAPI_DIR)/include
-PAPI_LIBS := -L$(PAPI_DIR)/$(papi_lib_name) -lpapi $(perfctr) # -lpfm
-
 XED2_INCLUDE_OPTS := -I$(XED2_DIR)/include
 XED2_LIBS := -L$(XED2_DIR)/lib -lxed
-
-#FIXME: kill this when working
-#MONITOR_DIR := /projects/hpc/pkgs/libmonitor-2008.01.07
 
 MONITOR_INCLUDE_OPTS := -I$(MONITOR_DIR)/include
 MONITOR_LIBS := -L$(MONITOR_DIR)/lib -lmonitor
 
 src_dir        = $(patsubst %/,%,$(src_dir_prefix))
 
-
 CSPROFLIB := libcsprof.so.1
-
-#CSPROFLIB_STATIC := libcsprof.a
 
 CSPROF_DOT_O := libcsprof.o
 
+#### FIXME: *Revisit* this when need synchronous profiling
+####
 #DRIVER ?= mallocprof
 # MWF wants async timing, so chg default
-DRIVER = itimer
-DRIVER_DIR = itimer
+#DRIVER = itimer
+#DRIVER_DIR = itimer
+####
+#### 
 
-all: $(CSPROFLIB)
+all: $(CSPROFLIB) csprof_syms
 #all: $(CSPROF_DOT_O)
 
 # we develop on Tru64, make it the default
@@ -49,18 +44,14 @@ all: $(CSPROFLIB)
 DEFINES := -D_GNU_SOURCE
 DEFINES += -DCSPROF_LAST_EDGE_ONLY=1
 DEFINES += $(PERF)
-#DEFINES += -I/ccs/home/johnmc/mypapi/pkgs/include
 
 CFLAGS := -fPIC -g -Wall 
-#CFLAGS := -g -Wall  #CATAMOUNT
+
+#CFLAGS := -g -Wall  #CATAMOUNT doesn't use fPIC
 
 AR := /usr/bin/ar
 ARFLAGS := -r
 
-#ADA link flags
-#link_flags := -Wl,-Bstatic -Wl,-soname,$(CSPROFLIB) -shared
-
-# andre1 link flags
 link_flags := -Wl,-Bsymbolic -Wl,-soname,$(CSPROFLIB) -shared
 
 module_dirs := utilities                \
@@ -75,9 +66,6 @@ module_dirs := utilities                \
                sampling/sources/itimer  \
                sampling/sources/papi
 
-#LIB_CSFILE := libcsfile.a
-#INC_CSFILE := -I./hpcfile
-
 ifdef STATIC_ONLY
   find_v  := find_static
   gethost := gethostid.o override.o MPI_Init.o 
@@ -85,8 +73,6 @@ else
   find_v  := find
 endif
 
-
-#MPI_INC := -I/usr/mpich/mpich-1.2.6-pgi614/include
 
 ifeq "$(strip $(src_dir_prefix))" ""
 src_dir_inc := .
@@ -110,8 +96,8 @@ DEFINES += -DCSPROF_MALLOC_PROFILING=1
 endif
 
 ifdef WITH_PAPI
-INCS += $(PAPI_INCLUDE_OPTS)
-LIBS += $(PAPI_LIBS) 
+INCS += $(PAPI_INCLUDES)
+LIBS += $(PAPI_LD) 
 endif
 
 ifdef WITH_XED2
@@ -170,6 +156,7 @@ OBJS += csprof_options.o
 OBJS += spinlock.o
 OBJS += unlink.o
 OBJS += executable-path.o
+OBJS += tokenize.o
 
 ifdef DO_THREADS
    OBJS += pthread.o
@@ -274,6 +261,11 @@ $(CSPROF_DOT_O): $(OBJS)
 .PHONY: bclean
 bclean:
 	rm -rf *.o *.so *.so.[0-9]*
+
+.PHONY: csprof_syms
+csprof_syms:
+	cd $(src_dir)/symbols; $(MAKE) $@
+
 
 install: all
 	-install -d $(install_lib) $(install_bin) $(install_libexec)
