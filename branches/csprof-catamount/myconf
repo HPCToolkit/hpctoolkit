@@ -2,6 +2,7 @@
 #
 
 # =============== utility functions ================
+
 # args: ($1, $2): (string_to_check, string_for_error_msg[optional])
 f_error_on_nil()
 {
@@ -11,6 +12,7 @@ f_error_on_nil()
     exit 1
   fi
 }
+
 md_if_needed()
 {
     if [ ! -e $1 ]; then
@@ -21,7 +23,34 @@ md_if_needed()
 	exit 1
     fi
 }
+
+f_find_cpp_lib()
+{
+    _ts=_cplib.cc
+    _t=_t
+    cat <<EOF > ${_ts}
+main(){}
+EOF
+
+    g++ -o ${_t} ${_ts}
+    libcpp_path=`ldd $_t | awk '/libstdc\+\+/ {print $3}'`
+    rm -f ${_ts} ${_t}
+}
+
+f_papi_ld_list()
+{
+    papi_ld_lst=''
+    for a in $1; do
+	if [ ${a#-L} != $a ]; then
+	    papi_ld_lst=${a#-L}:$papi_ld_lst
+	fi
+    done
+    papi_ld_lst=${papi_ld_lst%:}
+}
+
 # ================ Main code =====================
+
+f_find_cpp_lib
 
 conf_home=`dirname $0`
 opt_prefix='.'
@@ -103,9 +132,18 @@ if [ "papi_ld"x == x ]; then
     papi_ld="-L${opt_papi_dir}/${papi_lib_name} -lpapi ${perfc}"
 fi
 
+f_papi_ld_list "$papi_ld"
+
 if [ -z $opt_monitor_dir ]; then
   opt_monitor_dir=$opt_prefix
 fi
+
+cat <<EOF2 > conf.sh
+## file to be sourced when running csprof script or other scripts
+
+libcpp_path=$libcpp_path
+papi_ld_lst=$papi_ld_lst
+EOF2
 
 ## configure Makefile (by creating Makefile.conf)
 
@@ -114,7 +152,6 @@ install_prefix := $opt_prefix
 src_dir_prefix := $conf_home/
 PAPI_INCLUDES  := $papi_inc
 PAPI_LD        := $papi_ld
-PAPI_DIR       := $opt_papi_dir
 XED2_DIR       := $opt_xed2_dir
 MONITOR_DIR    := $opt_monitor_dir
 

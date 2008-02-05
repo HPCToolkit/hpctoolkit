@@ -15,7 +15,7 @@ CXXFLAGS = $(INCL) -g
 
 OBJS = symbols.o x86-process-ranges.o code-ranges.o
 
-csprof_syms: symbols
+stapi_syms: symbols
 	@cp $^ $@
 
 symbols: $(OBJS)

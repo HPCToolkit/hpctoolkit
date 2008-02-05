@@ -81,6 +81,11 @@ cmd_to_profile=""
 
 cmd="$0"
 
+# source the configure info
+#
+
+. ${CSPROF_ROOT}/conf.sh
+
 f_usage()
 {
   p="printf"
@@ -136,6 +141,8 @@ f_usage()
 
 f_checkenv()
 {
+
+  f_find_cpp_lib
 
   RLD_LIB="${CSPROF_LIB}/libcsprof.so.1:${CSPROF_LIB}/libmonitor.so"
 
@@ -304,6 +311,10 @@ f_prepareenv()
   # to profile if in the current directory. [We can get around this,
   # but for now it is the quickest thing.] 
   export PATH=".:${PATH}" 
+
+  # set up the LD_LIBRARY_PATH
+
+  export LD_LIBRARY_PATH=$papi_path:$LD_LIBRARY_PATH
 }
 
 #############################################################################
