@@ -63,6 +63,7 @@ module_dirs := utilities                \
                Pmsg                     \
                hpcfile                  \
                os/catamount             \
+               os/linux                 \
                sampling/sources/itimer  \
                sampling/sources/papi
 
