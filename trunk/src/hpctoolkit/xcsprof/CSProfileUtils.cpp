@@ -199,12 +199,12 @@ ReadProfile_CSPROF(const char* fnm, const char *execnm)
   CSProfile* prof = new CSProfile(num_metrics);
   ret = hpcfile_cstree_read(fs, prof->GetTree(), num_metrics,
 			    cstree_create_node_CB, cstree_link_parent_CB,
-			    hpcfile_alloc_CB, hpcfile_free_CB); 
+			    hpcfile_alloc_CB, hpcfile_free_CB);
   DIAG_If(3) {
     //hpcfile_cstree_convert_to_txt(fs, num_metrics, stdout);
   }
   if (ret != HPCFILE_OK) { 
-    DIAG_Throw(fnm << ": error reading metadata (HPC_CSPROF)."
+    DIAG_Throw(fnm << ": error reading calling context tree (HPC_CSTREE)."
 	       << " (Or no samples were taken.) [FIXME: should not have been lumped together!]");
     delete prof;
     return NULL;

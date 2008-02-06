@@ -102,8 +102,8 @@ public:
   std::vector<std::string> structureFiles;
   
   // Parsed Data: arguments
-  std::string progFile; // binary that was profiled
-  std::string profileFile; // profiling output for 'progFile'
+  std::string exeFile; // executable that was profiled
+  std::vector<std::string> profileFiles; // profiling output for 'exeFile'
 
 private:
   void Ctor();

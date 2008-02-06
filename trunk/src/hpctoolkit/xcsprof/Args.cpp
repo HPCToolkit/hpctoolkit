@@ -88,12 +88,13 @@ static const char* version_info =
 #include <include/HPCToolkitVersionInfo.h>
 
 static const char* usage_summary =
-"[options] <binary> <profile-file>\n";
+"[options] <executable> <profile-file>...\n";
 
 static const char* usage_details =
 "xcsprof correlates dynamic call-path profiling metrics with static source\n"
 "code structure and generates an Experiment database for use with hpcviewer.\n"
-"xcsprof consumes one call path profile, <profile-file>.\n"
+"It expects an executable <executable> and one or more associated call path\n"
+"profiles.\n"
 "\n"
 "Options: General\n"
 "  -v, --verbose [<n>]  Verbose: generate progress messages to stderr at\n"
@@ -273,12 +274,15 @@ Args::Parse(int argc, const char* const argv[])
     dbDir = normalizeFilePath(dbDir);
 
     // Check for required arguments
-    if (parser.GetNumArgs() != 2) {
+    if ( !(parser.GetNumArgs() >= 2) ) {
       printError(std::cerr, "Incorrect number of arguments!");
       exit(1);
     }
-    progFile = parser.GetArg(0);
-    profileFile = parser.GetArg(1);
+
+    exeFile = parser.GetArg(0);
+    for (int i = 1; i < parser.GetNumArgs(); ++i) {
+      profileFiles.push_back(parser.GetArg(i));
+    }
   }
   catch (const CmdLineParser::ParseError& x) {
     printError(std::cerr, x.what());
@@ -316,8 +320,8 @@ Args::Parse(int argc, const char* const argv[])
   }
   
   
-  DIAG_Msg(2, "load module: " << progFile << "\n"
-	   << "profile: " << profileFile << "\n"
+  DIAG_Msg(2, "load module: " << exeFile << "\n"
+	   << "profile[0]: " << profileFiles[0] << "\n"
 	   << "output: " << dbDir);
   if (searchPaths.size() > 0) {
     DIAG_Msg(2, "search paths:");
