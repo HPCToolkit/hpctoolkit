@@ -15,10 +15,7 @@ CXXFLAGS = $(INCL) -g
 
 OBJS = symbols.o x86-process-ranges.o code-ranges.o function-entries.o
 
-stapi_syms: symbols
-	@cp $^ $@
-
-symbols: $(OBJS)
+stapi_syms: $(OBJS)
 	g++ -o $@ $(OBJS) $(LIBS)
 
 symbols.o: symbols.cpp
@@ -35,7 +32,7 @@ function-entries.o: function-entries.cpp
 
 .PHONY: clean
 clean:
-	rm -f *.o symbols csprof_syms *.e
+	rm -f *.o stapi_syms csprof_syms *.e
 
 .PHONY: distclean
 distclean: clean
