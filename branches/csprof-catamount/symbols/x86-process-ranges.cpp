@@ -10,26 +10,8 @@ extern "C" {
 };
 
 #include "code-ranges.h"
+#include "function-entries.h"
 #include "process-ranges.h"
-
-#include <set>
-#include <map>
-
-using namespace std;
-
-
-
-/******************************************************************************
- * types
- *****************************************************************************/
-
-class Function {
-public:
-  Function(void *_address, string *_comment);
-  void *address;
-  string *comment;
-  int operator<(Function *right);
-};
 
 
 
@@ -42,13 +24,7 @@ static void process_call(char *ins, xed_decoded_inst_t *xptr, long offset,
 
 static void process_branch(char *ins, xed_decoded_inst_t *xptr);
 
-static void add_function_entry(void *function_entry);
-
-static int is_branch_target(void *addr);
-static void add_branch_target(void *bt);
-
 static void after_unconditional(long offset, char *ins, xed_decoded_inst_t *xptr);
-static void process_branch(char *ins, xed_decoded_inst_t *xptr);
 
 
 
@@ -61,54 +37,14 @@ static xed_state_t xed_machine_state_x86_64 = { XED_MACHINE_MODE_LONG_64,
 						XED_ADDRESS_WIDTH_64b };
 
 
-typedef map<void*,Function*> FunctionSet;
-typedef set<void*> CondBranchTargets;
-
-static FunctionSet function_entries;
-static CondBranchTargets cbtargets;
-static int stripped_count;
-
 /******************************************************************************
  * interface operations 
  *****************************************************************************/
-
-void 
-new_function_entry(void *addr, string *comment)
-{
-  Function *f = new Function(addr, comment);
-  function_entries.insert(pair<void*, Function*>(addr, f));
-}
-
 
 void
 process_range_init()
 {
   xed_tables_init();
-}
-
-
-void 
-dump_reachable_functions()
-{
-  char buffer[1024];
-  FunctionSet::iterator i = function_entries.begin();
-  for (; i != function_entries.end();) {
-    const char *sep;
-    Function *f = (*i).second;
-    i++;
-    if (i != function_entries.end())  sep = ",";
-    else sep = " ";
-
-    const char *name;
-    if (f->comment) {
-      name = f->comment->c_str();
-    } else {
-      if (is_branch_target(f->address)) continue;
-      sprintf(buffer,"/* stripped_%p */", f->address);
-      name = buffer;
-    }
-    printf("   %p%s %s\n", f->address, sep, name);
-  }
 }
 
 
@@ -144,10 +80,6 @@ process_range(long offset, void *vstart, void *vend, bool fn_discovery)
 
     case XED_ICLASS_JMP: 
     case XED_ICLASS_JMP_FAR:
-      // process_branch(ins + offset, xptr);
-      if (fn_discovery) after_unconditional(offset, ins ,xptr);
-      break;
-
     case XED_ICLASS_RET_FAR:
     case XED_ICLASS_RET_NEAR:
       if (fn_discovery) after_unconditional(offset, ins ,xptr);
@@ -200,30 +132,8 @@ after_unconditional(long offset, char *ins, xed_decoded_inst_t *xptr)
   unsigned char *uins = (unsigned char *) ins;
   if (is_padding(*uins++)) { // try always adding
     for (; is_padding(*uins); uins++); // skip remaining padding 
-    add_function_entry(uins + offset); // potential function entry point
+    add_stripped_function_entry(uins + offset); // potential function entry point
   }
-}
-
-static void 
-add_function_entry(void *addr)
-{
-  if (function_entries.find(addr) == function_entries.end()) {
-    new_function_entry(addr, NULL);
-  }
-}
-
-
-static int 
-is_branch_target(void *addr)
-{
-  return (cbtargets.find(addr) != cbtargets.end());
-}
-
-
-static void 
-add_branch_target(void *addr)
-{
-  if (!is_branch_target(addr)) cbtargets.insert(addr);
 }
 
 
@@ -249,7 +159,8 @@ get_branch_target(char *ins, xed_decoded_inst_t *xptr, xed_operand_values_t *val
 
 
 static void 
-process_call(char *ins, xed_decoded_inst_t *xptr, long offset, void *start, void *end)
+process_call(char *ins, xed_decoded_inst_t *xptr, long offset, void *start, 
+	     void *end)
 { 
   const xed_inst_t *xi = xed_decoded_inst_inst(xptr);
   const xed_operand_t *op0 =  xed_inst_operand(xi, 0);
@@ -263,7 +174,7 @@ process_call(char *ins, xed_decoded_inst_t *xptr, long offset, void *start, void
     if (xed_operand_values_has_branch_displacement(vals)) {
       void *target = get_branch_target(ins,xptr,vals);
       void *vaddr = (char *)target + offset;
-      if (is_valid_code_address(vaddr)) add_function_entry(vaddr);
+      if (is_valid_code_address(vaddr)) add_stripped_function_entry(vaddr);
     }
 
   }
@@ -287,18 +198,3 @@ process_branch(char *ins, xed_decoded_inst_t *xptr)
     }
   }
 }
-
-
-Function::Function(void *_address, string *_comment) 
-{ 
-  address = _address; 
-  comment = _comment; 
-}
-
-int 
-Function::operator<(Function *right)
-{
-  return this->address < right->address;
-}
-
-

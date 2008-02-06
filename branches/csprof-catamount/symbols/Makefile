@@ -13,7 +13,7 @@ LIBS += $(SPL) $(XED2_LIBS)
 
 CXXFLAGS = $(INCL) -g
 
-OBJS = symbols.o x86-process-ranges.o code-ranges.o
+OBJS = symbols.o x86-process-ranges.o code-ranges.o function-entries.o
 
 stapi_syms: symbols
 	@cp $^ $@
@@ -30,6 +30,9 @@ x86-process-ranges.o: x86-process-ranges.cpp
 code-ranges.o: code-ranges.cpp
 	g++ $(CXXFLAGS) -c $< 
 
+function-entries.o: function-entries.cpp
+	g++ $(CXXFLAGS) -c $< 
+
 .PHONY: clean
 clean:
 	rm -f *.o symbols csprof_syms *.e
@@ -37,4 +40,3 @@ clean:
 .PHONY: distclean
 distclean: clean
 	rm -f Makefile.conf
-

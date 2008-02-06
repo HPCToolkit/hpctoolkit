@@ -1,10 +1,10 @@
-#include <iostream>
 #include <vector>
 #include <string>
 #include <stdio.h>
 
 #include "code-ranges.h"
 #include "process-ranges.h"
+#include "function-entries.h"
 #include "Symtab.h"
 #include "Symbol.h"
 
@@ -67,6 +67,7 @@ main(int argc, char **argv)
 //*****************************************************************
 // private operations
 //*****************************************************************
+
 static bool 
 file_is_stripped(Symtab *syms)
 {
@@ -116,13 +117,25 @@ report_symbol(Symbol *sym)
 }
 
 
+static string * 
+code_range_comment(string &name, string section, const char *which)
+{
+  name = which; 
+  name = name + " " + section + " section";
+  return &name;
+}
+
+
 static void
 note_code_range(Section *s, long memaddr)
 {
   char *start = (char *) s->getSecAddr();
   char *end = start + s->getSecSize();
+  string ntmp;
   new_code_range(start, end, memaddr);
-      
+
+  add_function_entry(start, code_range_comment(ntmp, s->getSecName(), "start"));
+  add_function_entry(end, code_range_comment(ntmp, s->getSecName(), "end"));
 }
 
 
@@ -131,7 +144,8 @@ note_section(Symtab *syms, const char *sname)
 {
   long memaddr = (long) syms->mem_image();
   Section *s;
-  if (syms->findSection(s, sname) && s) note_code_range(s, memaddr - syms->imageOffset());
+  if (syms->findSection(s, sname) && s) 
+    note_code_range(s, memaddr - syms->imageOffset());
 }
 
 
@@ -139,18 +153,16 @@ static void
 note_code_ranges(Symtab *syms)
 {
   note_section(syms, SECTION_INIT);
-  note_section(syms, SECTION_FINI);
-  note_section(syms, SECTION_TEXT);
   note_section(syms, SECTION_PLT);
+  note_section(syms, SECTION_TEXT);
+  note_section(syms, SECTION_FINI);
 }
 
 
-static int 
+static void 
 dump_symbols(Symtab *syms, vector<Symbol *> &symvec, int fn_discovery)
 {
-  string comment;
-  void *last = 0;
-  void *first = 0;
+  note_code_ranges(syms);
 
   //-----------------------------------------------------------------
   // collect function start addresses and pair them with a comment
@@ -160,48 +172,27 @@ dump_symbols(Symtab *syms, vector<Symbol *> &symvec, int fn_discovery)
   //-----------------------------------------------------------------
   for (int i = 0; i < symvec.size(); i++) {
     Symbol *s = symvec[i];
-    if (report_symbol(s)) {
-      void *addr = (void *) s->getAddr();
-      if (first == 0) first = addr;
-      if (last == addr) { 
-	comment  = comment + ", " + s->getName();
-      } else {
-	if (last) {
-	  comment += " */";
-	  new_function_entry(last, new string(comment));
-	}
-        comment = "/* " + s->getName();
-	last = addr;
-      }
-    }
-  }
-  if (last) { 
-    comment += " */";
-    new_function_entry(last, new string(comment));
+    if (report_symbol(s)) add_function_entry((void *) s->getAddr(), &s->getName());
   }
   
-  note_code_ranges(syms);
   process_code_ranges(fn_discovery);
 
   //-----------------------------------------------------------------
   // dump the address and comment for each function  
   //-----------------------------------------------------------------
   dump_reachable_functions();
-  return (first == 0);
 }
 
 
-static int 
+static void 
 dump_file_symbols(Symtab *syms, vector<Symbol *> &symvec, bool fn_discovery)
 {
-  int no_symbols_dumped;
   printf("unsigned long csprof_nm_addrs[] = {\n");
 
-  no_symbols_dumped = dump_symbols(syms, symvec, fn_discovery);
+  dump_symbols(syms, symvec, fn_discovery);
 
   printf("};\nint csprof_nm_addrs_len = "
 	 "sizeof(csprof_nm_addrs) / sizeof(csprof_nm_addrs[0]);\n");
-  return no_symbols_dumped;
 }
 
 
@@ -220,7 +211,8 @@ dump_file_info(const char *filename, bool fn_discovery)
     if (symvec.size() > 0) {
       // be conservative with function discovery: only apply it to stripped 
       // objects
-      stripped = dump_file_symbols(syms, symvec, fn_discovery & is_stripped);
+      dump_file_symbols(syms, symvec, fn_discovery & is_stripped);
+      stripped = 0;
     }
     int relocatable = syms->isExec() ? 0 : 1;
     printf("unsigned int csprof_relocatable = %d;\n", relocatable);
