@@ -187,9 +187,13 @@ OBJS += $(hpcfile_objs)
 OBJS += $(find_v).o
 #endif
 OBJS += intervals.o 
-#OBJS += x86-xed-print.o 
-OBJS += x86-addsub.o x86-build-intervals.o x86-canonical.o x86-decoder.o x86-jump.o x86-move.o x86-push.o
-OBJS += x86-call.o x86-debug.o x86-enter.o x86-leave.o x86-process-inst.o x86-return.o
+
+#-----------------------------------------------------------------
+# all x86 binary analysis files are now included into one file and 
+# compiled into a single object file to avoid replicating lots of
+# static functions defined in the xed interface files
+#-----------------------------------------------------------------
+OBJS += x86-all.o 
 
 OBJS += stack_troll.o
 OBJS += dl_bound.o
