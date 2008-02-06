@@ -74,6 +74,9 @@ using std::string;
 
 //*************************** Forward Declarations ***************************
 
+CSProfile* 
+readProfileData(std::vector<string>& profileFiles, const string& exe_fnm);
+
 PgmScopeTree*
 readStructureData(std::vector<string>& structureFiles);
 
@@ -127,18 +130,8 @@ realmain(int argc, char* const* argv)
   // ------------------------------------------------------------
   // Read 'profData', the profiling data file
   // ------------------------------------------------------------
-  CSProfile* profData = NULL;
-  try {
-    //profData = TheProfileReader.ReadProfileFile(args.profileFile /*type*/);
-    profData = ReadProfile_CSPROF(args.profileFile.c_str(),
-				  args.progFile.c_str());
-  } 
-  catch (...) {
-    DIAG_EMsg("While reading profile '" << args.profileFile << "'...");
-    throw;
-  }
-  
-  
+  CSProfile* profData = readProfileData(args.profileFiles, args.exeFile);
+
   // ------------------------------------------------------------
   // Add source file info
   // ------------------------------------------------------------
@@ -220,6 +213,44 @@ realmain(int argc, char* const* argv)
   delete profData;
   return (0);
 }
+
+//****************************************************************************
+
+static CSProfile* 
+readProfileFile(const string& prof_fnm, const string& exe_fnm);
+
+
+CSProfile* 
+readProfileData(std::vector<string>& profileFiles, const string& exe_fnm)
+{
+  DIAG_Assert(profileFiles.size() == 1, DIAG_UnexpectedInput);
+  
+  CSProfile* data = readProfileFile(profileFiles[0], exe_fnm);
+  
+  for (int i = 1; i < profileFiles.size(); ++i) {
+    //CSProfile* tmp = readProfileFile(profileFiles[i], exe_fnm);
+    //merge tmp into data
+  }
+  
+  return data;
+}
+
+
+static CSProfile* 
+readProfileFile(const string& prof_fnm, const string& exe_fnm)
+{
+  CSProfile* data = NULL;
+  try {
+    //data = TheProfileReader.ReadProfileFile(args.profFnm /*type*/);
+    data = ReadProfile_CSPROF(prof_fnm.c_str(), exe_fnm.c_str());
+  } 
+  catch (...) {
+    DIAG_EMsg("While reading profile '" << prof_fnm << "'...");
+    throw;
+  }
+  return data;
+}
+
 
 //****************************************************************************
 

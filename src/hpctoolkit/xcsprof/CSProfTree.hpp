@@ -155,7 +155,7 @@ public:
   };
   
   static const string& NodeTypeToName(NodeType tp);
-  static NodeType    IntToNodeType(long i);
+  static NodeType      IntToNodeType(long i);
 
 private:
   static const string NodeNames[NUMBER_OF_TYPES];
@@ -258,10 +258,11 @@ public:
 
   void SetLineRange(SrcFile::ln begLn, SrcFile::ln endLn); // use carefully!
 
-  // eraxxon: I made this stuff virtual in order to handle both
+  // tallent: I made this stuff virtual in order to handle both
   // CSProfCallSiteNode/CSProfProcedureFrameNode or
   // CSProfStatementNode in the same way.  FIXME: The abstractions
-  // need to be fixed! Classes have been duplicated with impunity.
+  // need to be fixed! Classes had been duplicated with impunity; I'm
+  // just trying to contain the mess.
   virtual const std::string& GetFile() const
     { DIAG_Die(DIAG_Unimplemented); return BOGUS; }
   virtual void SetFile(const char* fnm) 
