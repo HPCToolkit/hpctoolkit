@@ -58,7 +58,7 @@ main(int argc, char **argv)
     if (strcmp(arg, NO_DISCOVERY_ARGUMENT) == 0) fn_discovery = 0;
     else usage(argv[0]);
   }
-    
+
   dump_file_info(file, fn_discovery);
   return 0;
 }
@@ -84,7 +84,6 @@ usage(char *command)
 	 "Usage: %s [%s] object-file\n"
 	 "\t%s\tdon't perform function discovery on stripped code\n",
 	 command, NO_DISCOVERY_ARGUMENT, NO_DISCOVERY_ARGUMENT);
-  
 }
 
 
@@ -174,7 +173,7 @@ dump_symbols(Symtab *syms, vector<Symbol *> &symvec, int fn_discovery)
     Symbol *s = symvec[i];
     if (report_symbol(s)) add_function_entry((void *) s->getAddr(), &s->getName());
   }
-  
+
   process_code_ranges(fn_discovery);
 
   //-----------------------------------------------------------------

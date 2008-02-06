@@ -61,7 +61,7 @@ process_range(long offset, void *vstart, void *vend, bool fn_discovery)
   xed_decoded_inst_zero_set_mode(xptr, &xed_machine_state_x86_64);
 
   while (ins < end) {
-    
+
     xed_decoded_inst_zero_keep_mode(xptr);
     xed_error = xed_decode(xptr, (uint8_t*) ins, 15);
 
@@ -103,7 +103,7 @@ process_range(long offset, void *vstart, void *vend, bool fn_discovery)
     case XED_ICLASS_JZ:
       if (fn_discovery) process_branch(ins + offset, xptr);
       break;
-      
+
     default:
       break;
     }
