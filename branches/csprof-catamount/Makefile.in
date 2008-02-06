@@ -277,7 +277,8 @@ install: all
 	install $(src_dir_prefix)csprof $(install_bin)
 #	install $(src_dir_prefix)nm_tbl.py $(install_bin)
 	install $(src_dir_prefix)csprof_syms $(install_libexec)
-	install symbols/stapi_syms $(install_libexec)
+	install $(src_dir_prefix)symbols/stapi_syms $(install_libexec)
+	install conf.sh $(install_prefix)
 
 %.o: %.c
 	$(CC) $(INCS) $(CFLAGS) -c $< -o $@

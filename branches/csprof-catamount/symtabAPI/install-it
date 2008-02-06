@@ -1,0 +1,17 @@
+#! /bin/bash
+
+if [ $# -lt 1 ]; then
+   echo need to supply a prefix argument \(absolute directory path\)
+   exit 1
+fi
+
+prefix=$1
+
+cd x86_64-unknown-linux2.4/lib
+for d in libcommon.so libdwarf.so libelf.a libelf.so.0 libsymtabAPI.so; do
+    install $d $prefix/lib
+done
+cd $prefix/lib
+ln -s libelf.so.0 libelf.so
+
+

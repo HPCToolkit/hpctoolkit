@@ -65,9 +65,10 @@ fi
 
 opt_xed2_dir=$PKGS/XED2
 
-papi_dir=$PKGS/papi
+opt_papi_dir=$PKGS/papi
 
-papi_inc=-I${papi_dir}/include
+
+papi_inc=''
 pinc=`/usr/bin/env | egrep -i 'papi.*include'`
 if [ "$pinc"x != x ]; then
     papi_inc=${pinc#*=}
@@ -120,7 +121,11 @@ done
 opt_prefix=${opt_prefix:="."}
 opt_prefix=${opt_prefix%/}
 
-if [ "papi_ld"x == x ]; then
+if [ "$papi_inc"x == x ]; then
+    papi_inc=-I${opt_papi_dir}/include
+fi
+
+if [ "$papi_ld"x == x ]; then
     if [ -d "$opt_papi_dir/lib" ]; then
         papi_lib_name=lib
     elif [ -d "$opt_papi_dir/lib64" ]; then

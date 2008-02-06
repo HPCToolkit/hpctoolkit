@@ -142,8 +142,6 @@ f_usage()
 f_checkenv()
 {
 
-  f_find_cpp_lib
-
   RLD_LIB="${CSPROF_LIB}/libcsprof.so.1:${CSPROF_LIB}/libmonitor.so"
 
   # preload our library first before loading all of those specified in
@@ -314,7 +312,7 @@ f_prepareenv()
 
   # set up the LD_LIBRARY_PATH
 
-  export LD_LIBRARY_PATH=$papi_path:$LD_LIBRARY_PATH
+  export LD_LIBRARY_PATH=$papi_ld_lst:$LD_LIBRARY_PATH
 }
 
 #############################################################################
