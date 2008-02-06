@@ -89,7 +89,7 @@ static const char* version_info =
 #include <include/HPCToolkitVersionInfo.h>
 
 static const char* usage_details = "\
-hpcprof correlates 'flat' execution profiles of <binary> with source code\n\
+hpcprof correlates 'flat' profiles of <executable> with source code\n\
 files, procedures, lines or with object code.  It is typically used to\n\
 generate plain-text or HTML output.  <hpcrun-file> is a collection of\n\
 event-based program counter histograms obtained using hpcrun (or hpcex).\n\
@@ -135,7 +135,7 @@ static void
 usage(const string &argv0)
 {
   cout << "Usage:\n"
-       << "  " << argv0 << " [options] <binary> <hpcrun-file>...\n"
+       << "  " << argv0 << " [options] <executable> <hpcrun-file>...\n"
        << endl 
        << usage_details;
 }

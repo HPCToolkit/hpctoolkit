@@ -30,7 +30,7 @@
 \rcsInfo $Id$
 \setDate{\rcsInfoLongDate}
 }{
-\setDate{ 2007/11/02}
+\setDate{ 2008/02/06}
 \message{package rcsinfo not present, discard it}
 }
 
@@ -53,12 +53,12 @@ The code is derived from Curtis Janssen's VProf.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Synopsis}
 
-\Prog{hpcprof} \oOpt{options} \Arg{binary} \Arg{hpcrun-file}...
+\Prog{hpcprof} \oOpt{options} \Arg{executable} \Arg{hpcrun-file}...
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Description}
 
-\Prog{hpcprof} correlates `flat' execution profiles of \Arg{binary} with source code files, procedures, lines or with object code.
+\Prog{hpcprof} correlates `flat' execution profiles of \Arg{executable} with source code files, procedures, lines or with object code.
 It is typically used to generate plain-text or HTML output.
 \Arg{hpcrun-file} is a collection of event-based program counter histograms obtained using \HTMLhref{hpcrun.html}{\Cmd{hpcrun}{1}} (or \Cmd{hpcex}{1}).
 
@@ -84,7 +84,7 @@ NOTE: On ISA's with variable sized instructions, histogram buckets (4 bytes in s
 \section{Arguments}
 
 \begin{Description}
-\item[\Arg{binary}] An executable binary.
+\item[\Arg{executable}] An executable binary.
 \item[\Arg{hpcrun-file}...] A non-empty list of \Arg{hpcrun-file}s.
 \end{Description}
 
@@ -107,7 +107,7 @@ Default values for an option's optional arguments are shown in \{\}.
   \item[\Opt{-f}, \Opt{--files}] Show file correlation described above.
   \item[\Opt{-r}, \Opt{--funcs}] Show function correlation described above.
   \item[\Opt{-l}, \Opt{--lines}] Show line correlation described above.
-  \item[\OptArg{-a}{file}, \OptArg{--annotate}{file}] Show annotated source file \Arg{file}.  (Note that \Arg{file} must match the string contained in the binary's debugging file tables.)
+  \item[\OptArg{-a}{file}, \OptArg{--annotate}{file}] Show annotated source file \Arg{file}.  (Note that \Arg{file} must match the string contained in the executables's debugging file tables.)
 
   \item[\Opt{-o}, \Opt{--object}] Show object code correlation (plain-text only).  Use the \Opt{-l}, \Opt{--lines} option to intermingle source line information with object code.
   \item[\Opt{--othreshold}] Show only object procedures with an event count greater than or equal to \Arg{n}.  \{1\}\  (Use 0 to see all procedures).
@@ -130,7 +130,7 @@ Default values for an option's optional arguments are shown in \{\}.
 \begin{itemize}
 
 \item Assume we have collected flat profiling information using \HTMLhref{hpcrun.html}{\Cmd{hpcrun}{1}} \Cmd{hpcex}{1}).
-Let the binary and profile be named \File{poissonSolve} and \File{poissonSolve.PAPI_L2_DCM-etc...}, respectively.
+Let the executable and profile be named \File{poissonSolve} and \File{poissonSolve.PAPI_L2_DCM-etc...}, respectively.
 Assume further that we wish to correlate the profile with source lines.
 To do this, execute:
 \begin{verbatim}
