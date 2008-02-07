@@ -45,6 +45,10 @@ DEFINES := -D_GNU_SOURCE
 DEFINES += -DCSPROF_LAST_EDGE_ONLY=1
 DEFINES += $(PERF)
 
+ifdef dbg_extra
+    DEFINES += -DDBG_EXTRA
+endif
+
 CFLAGS := -fPIC -g -Wall 
 
 #CFLAGS := -g -Wall  #CATAMOUNT doesn't use fPIC
@@ -200,6 +204,9 @@ OBJS += dl_bound.o
 OBJS += $(gethost)
 
 OBJS += last.o
+ifdef dbg_extra
+    OBJS += dbg_extra.o
+endif
 OBJS += last_func.o
 
 #LIBS := hpcfile/$(LIB_CSFILE) $(LIB_THREAD) $(LIB_UNWIND) $(LIB_PFM)
@@ -235,6 +242,7 @@ TT:
 	# PRIM_UNWIND = |$(PRIM_UNWIND)|
 	# XED_LIBS = |$(XED_LIBS)|
 	# src_dir = |$(src_dir)|
+	# DEFINES = $(DEFINES)
 
 $(LIB_CSFILE):
 	@cd hpcfile; $(MAKE) -I ..

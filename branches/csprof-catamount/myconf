@@ -105,6 +105,8 @@ do
 #	            f_error_on_nil "$opt_monitor_dir" "empty prefix specified"
 	          ;;
 
+	  --with-dbg)opt_with_dbg=1;
+                  ;;
 	--*) printf "invalid option: '$1'\n";
 	    exit 1;
 	    ;;
@@ -159,6 +161,7 @@ PAPI_INCLUDES  := $papi_inc
 PAPI_LD        := $papi_ld
 XED2_DIR       := $opt_xed2_dir
 MONITOR_DIR    := $opt_monitor_dir
+dbg_extra      := $opt_with_dbg
 
 ###### these will be configured later ##############
 

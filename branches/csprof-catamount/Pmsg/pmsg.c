@@ -57,7 +57,14 @@ extern pthread_mutex_t mylock;
   spinlock_unlock(&pmsg_lock); \
 } while (0)
 
-static int __msg_mask = TROLL | PAPI;
+#define INIT_MASK0 TROLL | PAPI
+#ifdef DBG_EXTRA
+#define INIT_MASK (DBG | INIT_MASK0)
+#else // ! defined DBG_EXTRA
+#define INIT_MASK INIT_MASK0
+#endif // DBG_EXTRA
+
+static int __msg_mask = INIT_MASK;
 static spinlock_t pmsg_lock = 0;
 
 static FILE *log_file;

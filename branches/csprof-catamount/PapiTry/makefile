@@ -1,7 +1,14 @@
 CC=gcc
-CFLAGS=-g $(PAPI_INCLUDE_OPTS_XD)
-LDLIBS=$(PAPI_LD_OPTS_XD) -lm
+PAPI_INCLUDES  := -I/projects/pkgs/papi/include
+PAPI_LD        := -L/projects/pkgs/papi/lib -lpapi -lpthread
 
+CFLAGS=-g $(PAPI_INCLUDES)
+LDLIBS=$(PAPI_LD) -lm
+
+#CFLAGS=-g $(PAPI_INCLUDE_OPTS_XD)
+#LDLIBS=$(PAPI_LD_OPTS_XD) -lm
+
+papi2: papi2.o tp.o tokenize.o
 papi1: papi1.o t1.o tokenize.o
 
 NO_EXT_FILES = $(shell ls | egrep -v '\..*$$')

@@ -132,7 +132,7 @@ main(int argc, char *argv[])
   char *tmp = (argc < 2) ? "PAPI_TOT_CYC:1000000" : argv[1];
   ev = papi_setup(tmp);
   PAPI_start(ev);
-  tfn();
+  tp();
   PAPI_stop(ev,&values);
   printf("final counts = %ld  %ld  %ld  %ld  %ld\n",counts[0],counts[1],counts[2],counts[3],counts[4]);
   return 0;

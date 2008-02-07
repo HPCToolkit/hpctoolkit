@@ -12,6 +12,7 @@
 #define FINALIZE   (1 << 11)
 #define DATA_WRITE (1 << 12)
 #define PAPI       (1 << 13)
+#define DBG        (1 << 14)
 
 #define NONE (0)
 #define ALL (~0)

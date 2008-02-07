@@ -86,6 +86,7 @@
 #include "pmsg.h"
 #include "prim_unw.h"
 #include "dl_bound.h"
+#include "dbg_extra.h"
 
 #if 0
 /* the library's basic state */
@@ -118,6 +119,10 @@ void csprof_init_internal(void){
     while(wait_for_gdb);
   }
   pmsg_init();
+
+#ifdef DBG_EXTRA
+  dbg_init();
+#endif
 
   csprof_options__init(&opts);
   csprof_options__getopts(&opts);
@@ -204,8 +209,9 @@ void csprof_init_thread_support(int id){
   MSG(1,"switch to threaded versions complete");
 }
 
-void csprof_thread_init(killsafe_t *kk,int id){
-
+void
+csprof_thread_init(killsafe_t *kk,int id)
+{
   csprof_state_t *state;
   csprof_mem_t *memstore;
 

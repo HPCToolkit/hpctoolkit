@@ -49,7 +49,9 @@ static pthread_once_t iflg = PTHREAD_ONCE_INIT;
 
 pthread_mutex_t mylock;
 
-static void n_init(void){
+static void
+n_init(void)
+{
   int e;
   // e = pthread_key_create(&k,free);
   e = pthread_key_create(&k,NULL);
@@ -57,7 +59,9 @@ static void n_init(void){
 
 void csprof_init_thread_support(int id);
 
-void monitor_init_thread_support(void){
+void
+monitor_init_thread_support(void)
+{
   thread_data_t *loc;
 
   csprof_using_threads = 1;
@@ -72,7 +76,9 @@ void monitor_init_thread_support(void){
 
 void csprof_thread_init(killsafe_t *kk, int id);
 
-void *monitor_init_thread(unsigned tid){
+void *
+monitor_init_thread(int tid, void *data)
+{
   thread_data_t *loc;
   killsafe_t    *safe;
 
