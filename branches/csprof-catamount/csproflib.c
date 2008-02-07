@@ -156,6 +156,7 @@ void csprof_init_internal(void){
 #if !defined(CSPROF_SYNCHRONOUS_PROFILING)
   MSG(1,"sigemptyset(prof_sigset)");
   sigemptyset(&prof_sigset);
+  sigaddset(&prof_sigset,SIGPROF);
 #endif
 
   setup_segv();
@@ -214,7 +215,12 @@ csprof_thread_init(killsafe_t *kk,int id)
 {
   csprof_state_t *state;
   csprof_mem_t *memstore;
+  int ret;
 
+  ret = pthread_sigmask(SIG_BLOCK,&prof_sigset,NULL);
+  if (ret){
+    EMSG("WARNING: Thread init could not block SIGPROF, ret = %d",ret);
+  }
   memstore = csprof_malloc_init(1, 0);
 
   if(memstore == NULL) {
@@ -253,6 +259,10 @@ csprof_thread_init(killsafe_t *kk,int id)
     thread_data_t *td = (thread_data_t *) pthread_getspecific(k);
     papi_event_init(&(td->eventSet),opts.papi_event_list);
     papi_pulse_init(td->eventSet);
+  }
+  ret = pthread_sigmask(SIG_UNBLOCK,&prof_sigset,NULL);
+  if (ret){
+    EMSG("WARNING: Thread init could not unblock SIGPROF, ret = %d",ret);
   }
 }
 

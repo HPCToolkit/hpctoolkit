@@ -377,6 +377,7 @@ PTHREAD_EXIT_FN(void *result)
     csprof_pthread_state_fini();
 }
 #endif
+#ifdef NO
 int
 pthread_sigmask(int mode, const sigset_t *inset, sigset_t *outset)
 {
@@ -395,7 +396,7 @@ pthread_sigmask(int mode, const sigset_t *inset, sigset_t *outset)
 
     return libcall3(csprof_pthread_sigmask, mode, &safe_inset, outset);
 }
-
+#endif
 unsigned int
 csprof_pthread_count()
 {
