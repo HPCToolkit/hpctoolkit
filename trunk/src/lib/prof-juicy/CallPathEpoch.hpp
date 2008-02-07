@@ -48,8 +48,8 @@
 //
 //***************************************************************************
 
-#ifndef CSProfEpoch_H
-#define CSProfEpoch_H
+#ifndef prof_juicy_CallPathEpoch
+#define prof_juicy_CallPathEpoch
 
 //************************* System Include Files ****************************
 
@@ -195,6 +195,7 @@ private:
   const  CSProfEpoch& p;
   CSProfLDmoduleVecCIt it;
 };
-#endif
 
+//***************************************************************************
 
+#endif /* prof_juicy_CallPathEpoch */

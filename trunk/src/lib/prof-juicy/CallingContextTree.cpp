@@ -38,13 +38,13 @@
 //***************************************************************************
 //
 // File:
-//    CSProfTree.C
+//   $Source$
 //
 // Purpose:
-//    [The purpose of this file]
+//   [The purpose of this file]
 //
 // Description:
-//    [The set of functions, macros, etc. defined in the file]
+//   [The set of functions, macros, etc. defined in the file]
 //
 //***************************************************************************
 
@@ -61,7 +61,7 @@ using std::string;
 
 #include <include/general.h>
 
-#include "CSProfTree.hpp"
+#include "CallingContextTree.hpp"
 
 #include <lib/xml/xml.hpp> 
 using namespace xml;

@@ -38,13 +38,13 @@
 //***************************************************************************
 //
 // File:
-//    CSProfTreeIterator.C
+//   $Source$
 //
 // Purpose:
-//    [The purpose of this file]
+//   [The purpose of this file]
 //
 // Description:
-//    [The set of functions, macros, etc. defined in the file]
+//   [The set of functions, macros, etc. defined in the file]
 //
 //***************************************************************************
 
@@ -52,7 +52,7 @@
 
 //*************************** User Include Files ****************************
 
-#include "CSProfTreeIterator.hpp"
+#include "CallingContextTreeIterator.hpp"
 
 #include <lib/support/diagnostics.h>
 

@@ -38,18 +38,18 @@
 //***************************************************************************
 //
 // File:
-//    CSProfTreeIterator.h
+//   $Source$
 //
 // Purpose:
-//    [The purpose of this file]
+//   [The purpose of this file]
 //
 // Description:
-//    [The set of functions, macros, etc. defined in the file]
+//   [The set of functions, macros, etc. defined in the file]
 //
 //***************************************************************************
 
-#ifndef CSProfTreeIterator_h
-#define CSProfTreeIterator_h
+#ifndef prof_juicy_CallingContextTreeIterator
+#define prof_juicy_CallingContextTreeIterator
 
 //************************* System Include Files ****************************
 
@@ -59,7 +59,8 @@
 
 #include <include/general.h>               
 
-#include "CSProfTree.hpp"
+#include "CallingContextTree.hpp"
+
 #include <lib/support/NonUniformDegreeTree.hpp>
 #include <lib/support/PtrSetIterator.hpp>
 
@@ -215,4 +216,4 @@ private:
 
 //***************************************************************************
 
-#endif 
+#endif /* prof_juicy_CallingContextTreeIterator */

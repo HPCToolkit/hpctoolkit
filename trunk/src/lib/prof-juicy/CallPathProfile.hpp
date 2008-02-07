@@ -48,8 +48,8 @@
 //
 //***************************************************************************
 
-#ifndef CSProfile_hpp 
-#define CSProfile_hpp
+#ifndef prof_juicy_CallPathProfile 
+#define prof_juicy_CallPathProfile
 
 //************************* System Include Files ****************************
 
@@ -57,11 +57,11 @@
 
 //*************************** User Include Files ****************************
 
-#include <include/general.h> 
+#include <include/general.h>
 
-#include "CSProfTree.hpp"
-#include "CSProfMetric.hpp"
-#include "CSProfEpoch.hpp"
+#include "CallingContextTree.hpp"
+#include "CallPathMetric.hpp"
+#include "CallPathEpoch.hpp"
 
 //*************************** Forward Declarations ***************************
 
@@ -115,5 +115,7 @@ private:
   CSProfEpoch* epoch;
 };
 
-#endif /* CSProfile_hpp */
+//***************************************************************************
+
+#endif /* prof_juicy_CallPathProfile */
 

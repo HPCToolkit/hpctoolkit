@@ -48,67 +48,92 @@
 //
 //***************************************************************************
 
-#ifndef CSProfileUtils_hpp 
-#define CSProfileUtils_hpp
-
 //************************* System Include Files ****************************
-
-#include <iostream>
-#include <vector>
-#include <stack>
-#include <string>
 
 //*************************** User Include Files ****************************
 
-#include <include/general.h> 
+#include "CallPathEpoch.hpp"
 
-#include <lib/binutils/LM.hpp>
-
-#include <lib/prof-juicy/CallPathProfile.hpp>
-
-//*************************** Forward Declarations ***************************
+#include <lib/xml/xml.hpp>
+using namespace xml;
 
 //*************************** Forward Declarations ***************************
 
-CSProfile* ReadProfile_CSPROF(const char* fnm, const char *execnm);
-
 //****************************************************************************
 
-void inferCallFrames(CSProfile* prof, VMA begVMA, VMA endVMA,
-		     LoadModScope* lmScope, VMA relocVMA);
+CSProfLDmodule::CSProfLDmodule()
+{
+  lm = NULL;
+}
 
-void inferCallFrames(CSProfile* prof, VMA begVMA, VMA endVMA,
-		     binutils::LM* lm);
+CSProfLDmodule::~CSProfLDmodule()
+{
+  delete lm;
+}
 
-bool normalizeCSProfile(CSProfile* prof);
 
-//****************************************************************************
+CSProfEpoch::CSProfEpoch(const unsigned int i)
+  : loadmoduleVec(i)
+{
+  numberofldmodule = i;
+} 
 
-void writeCSProfileInDatabase(CSProfile* prof, 
-			      const std::string& dbDirectory);
-void writeCSProfile(CSProfile* prof, std::ostream& os,
-		    bool prettyPrint = true);
 
-void copySourceFiles (CSProfile *prof, 
-		      std::vector<std::string>& searchPaths,
-		      const std::string& dbSourceDirectory);  
+CSProfEpoch::~CSProfEpoch()
+{
+  for (CSProfEpoch_LdModuleIterator it(*this); it.IsValid(); ++it) {
+    CSProfLDmodule* lm = it.Current(); 
+    delete lm; 
+  }
+  
+  loadmoduleVec.clear();
+}
 
-void ldmdSetUsedFlag(CSProfile* prof); 
+CSProfLDmodule* 
+CSProfEpoch::FindLDmodule(VMA ip)
+{
+  CSProfLDmodule* pre=loadmoduleVec[0];
+  for (int i=0; i< numberofldmodule; i++) { 
+    CSProfLDmodule* curr =loadmoduleVec[i];
+    if (ip >= (pre->GetMapaddr()) &&
+	ip < curr->GetMapaddr())
+      return pre;
+    else 
+      pre = curr;
+  }
+  
+  return pre;
+}
 
-//****************************************************************************
+void CSProfLDmodule::Dump(std::ostream& o)
+{ 
+  using std::hex;
+  using std::dec;
+  using std::endl; 
+  
+  o<<"the load module name is " << name;
+  o<<" vaddr is 0x" << hex  << vaddr;
+  o<<" mapaddr is 0x" << hex <<  mapaddr;
+  o<< dec << endl; 
+}
 
-#define MAX_PATH_SIZE 2048 
-/** Normalizes a file path.*/
-std::string normalizeFilePath(const std::string& filePath);
-std::string normalizeFilePath(const std::string& filePath, 
-			      std::stack<std::string>& pathSegmentsStack);
-void breakPathIntoSegments(const std::string& normFilePath, 
-			   std::stack<std::string>& pathSegmentsStack);
+void CSProfLDmodule::DDump()
+{
+  Dump(std::cerr);
+}
 
-#define DEB_READ_MMETRICS 0
-#define DEB_LOAD_MODULE 0
-#define DEB_PROC_FIRST_LINE 0
-#define DEB_NORM_SEARCH_PATH  0
-#define DEB_MKDIR_SRC_DIR 0
+void CSProfEpoch::Dump(std::ostream& o)
+{
+  for (int i=0; i<numberofldmodule; i++) {
+    CSProfLDmodule* lm = loadmoduleVec[i];
+    lm->Dump(o);
+  }
+}
 
-#endif
+
+void CSProfEpoch::DDump()
+{
+  Dump(std::cerr);
+}
+
+

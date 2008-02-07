@@ -48,8 +48,8 @@
 //
 //***************************************************************************
 
-#ifndef CSProfTree_hpp 
-#define CSProfTree_hpp
+#ifndef prof_juicy_CallingContextTree 
+#define prof_juicy_CallingContextTree
 
 //************************* System Include Files ****************************
 
@@ -62,7 +62,7 @@
 #include <include/general.h>
 
 // FIXME: CSProfTree should be merged or at least relocated a la PgmScopeTree
-#include <lib/prof-juicy/PgmScopeTree.hpp>
+#include "PgmScopeTree.hpp"
 
 #include <lib/isa/ISATypes.hpp>
 
@@ -569,6 +569,10 @@ public:
 #define DEB_READ_MMETRICS 0
 #define DEB_UNIFY_PROCEDURE_FRAME 0
 
-#include "CSProfTreeIterator.hpp"
+//***************************************************************************
 
-#endif
+#include "CallingContextTreeIterator.hpp"
+
+//***************************************************************************
+
+#endif /* prof_juicy_CallingContextTree */

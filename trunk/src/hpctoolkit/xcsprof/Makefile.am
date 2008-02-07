@@ -64,11 +64,7 @@ include $(top_srcdir)/src/Makeinclude.config
 MYSOURCES = \
 	main.cpp \
 	Args.hpp Args.cpp \
-	CSProfTree.hpp CSProfTree.cpp \
-	CSProfTreeIterator.hpp CSProfTreeIterator.cpp \
-	CSProfile.hpp CSProfile.cpp \
-	CSProfileUtils.hpp CSProfileUtils.cpp \
-	CSProfEpoch.hpp CSProfEpoch.cpp
+	CSProfileUtils.hpp CSProfileUtils.cpp
 
 MYCFLAGS   = @HOST_CFLAGS@   $(HPC_IFLAGS) @GNUBINUTILS_IFLAGS@
 MYCXXFLAGS = @HOST_CXXFLAGS@ $(HPC_IFLAGS) @GNUBINUTILS_IFLAGS@ @XERCES_IFLAGS@
