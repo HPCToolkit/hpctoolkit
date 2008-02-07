@@ -38,80 +38,67 @@
 //***************************************************************************
 //
 // File:
-//    CSProfile.C
+//   $Source$
 //
 // Purpose:
-//    [The purpose of this file]
+//   [The purpose of this file]
 //
 // Description:
-//    [The set of functions, macros, etc. defined in the file]
+//   [The set of functions, macros, etc. defined in the file]
 //
 //***************************************************************************
 
-//************************* System Include Files ****************************
+#ifndef prof_juicy_CallPathMetric 
+#define prof_juicy_CallPathMetric
 
-//*************************** User Include Files ****************************
+//************************* System Include Files ****************************//
 
-#include <include/general.h>
+#include <iostream>
 
-#include "CSProfile.hpp"
-#include <lib/support/Trace.hpp>
+//*************************** User Include Files ****************************//
 
-#include <lib/xml/xml.hpp>
+#include <include/general.h> 
 
-//*************************** Forward Declarations ***************************
+//*************************** Forward Declarations **************************//
 
-using namespace xml;
+//***************************************************************************//
+// CSProfMetric
+//***************************************************************************//
 
-using std::ostream;
-using std::endl;
+class CSProfileMetric
+{
+public:
+  CSProfileMetric() : period(0) { }
+  ~CSProfileMetric() { }
+
+  // Name, Description: The metric name and a description
+  // Period: The sampling period (whether event or instruction based)
+  const std::string& GetName()        const { return name; }
+  const std::string& GetDescription() const { return description; }
+  unsigned int GetFlags()      const { return flags; }
+  unsigned int GetPeriod()      const { return period; }
+  
+  void SetName(const char* s)        { name = (s) ? s : ""; }
+  void SetDescription(const char* s) { description = (s) ? s : ""; }
+  void SetFlags(unsigned int p)      { flags = p; }
+  void SetPeriod(unsigned int p)     { period = p; }
+
+  void Dump(std::ostream& os = std::cerr) const;
+  void DDump() const; 
+
+private:
+  // Should not be used  
+  CSProfileMetric(const CSProfileMetric& m) { }
+  CSProfileMetric& operator=(const CSProfileMetric& m) { return *this; }
+
+protected:
+private:  
+  std::string name;
+  std::string description;
+  unsigned int flags;  // flags of the metric
+  unsigned int period; // sampling period
+};
 
 //***************************************************************************
 
-//***************************************************************************
-// CSProfile
-//***************************************************************************
-CSProfile::CSProfile(unsigned int i)
-{
-  numberofmetrics = i;
-  metrics         = new CSProfileMetric[i];
-  tree            = new CSProfTree;
-  epoch           = NULL;
-}
-
-CSProfile::~CSProfile()
-{
-  delete[] metrics;  
-  delete tree; 
-  if (epoch) {
-    delete   epoch;
-  }
-}
-
-void 
-CSProfile::Dump(std::ostream& os) const
-{
-  // FIXME
-}
-
-void 
-CSProfile::DDump() const
-{
-  Dump();
-}
-
-//***************************************************************************
-// CSProfileMetric
-//***************************************************************************
-
-void 
-CSProfileMetric::Dump(std::ostream& os) const
-{
-  // FIXME
-}
-
-void 
-CSProfileMetric::DDump() const
-{
-  Dump();
-}
+#endif /* prof_juicy_CallPathMetric */

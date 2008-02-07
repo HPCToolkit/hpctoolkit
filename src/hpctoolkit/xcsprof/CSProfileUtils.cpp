@@ -53,12 +53,12 @@
 #include <iostream>
 #include <fstream>
 #include <stack>
+#include <string>
+using std::string;
+
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <sys/errno.h>
-
-#include <string>
-using std::string;
 
 #ifdef NO_STD_CHEADERS  // FIXME
 # include <string.h>

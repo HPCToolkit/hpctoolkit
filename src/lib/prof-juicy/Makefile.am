@@ -67,7 +67,14 @@ MYSOURCES = \
 	PgmScopeTreeIterator.hpp PgmScopeTreeIterator.cpp \
 	PgmScopeTreeInterface.hpp PgmScopeTreeInterface.cpp \
 	\
-	FlatProfileReader.hpp FlatProfileReader.cpp
+	FlatProfileReader.hpp FlatProfileReader.cpp \
+	\
+	CallPathProfile.hpp CallPathProfile.cpp \
+	CallPathEpoch.hpp CallPathEpoch.cpp \
+	CallPathMetric.hpp \
+	CallingContextTree.hpp CallingContextTree.cpp \
+	CallingContextTreeIterator.hpp CallingContextTreeIterator.cpp
+
 
 # GNU binutils flags are needed for HPC_LIBISA.
 MYCFLAGS   = @HOST_CFLAGS@   $(HPC_IFLAGS) @GNUBINUTILS_IFLAGS@

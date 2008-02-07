@@ -52,88 +52,67 @@
 
 //*************************** User Include Files ****************************
 
-#include "CSProfEpoch.hpp"
+#include <include/general.h>
+
+#include "CallPathProfile.hpp"
 
 #include <lib/xml/xml.hpp>
-using namespace xml;
+
+#include <lib/support/Trace.hpp>
 
 //*************************** Forward Declarations ***************************
 
-//****************************************************************************
+using namespace xml;
 
-CSProfLDmodule::CSProfLDmodule()
+using std::ostream;
+using std::endl;
+
+//***************************************************************************
+
+//***************************************************************************
+// CSProfile
+//***************************************************************************
+CSProfile::CSProfile(unsigned int i)
 {
-  lm = NULL;
+  numberofmetrics = i;
+  metrics         = new CSProfileMetric[i];
+  tree            = new CSProfTree;
+  epoch           = NULL;
 }
 
-CSProfLDmodule::~CSProfLDmodule()
+CSProfile::~CSProfile()
 {
-  delete lm;
-}
-
-
-CSProfEpoch::CSProfEpoch(const unsigned int i)
-  : loadmoduleVec(i)
-{
-  numberofldmodule = i;
-} 
-
-
-CSProfEpoch::~CSProfEpoch()
-{
-  for (CSProfEpoch_LdModuleIterator it(*this); it.IsValid(); ++it) {
-    CSProfLDmodule* lm = it.Current(); 
-    delete lm; 
-  }
-  
-  loadmoduleVec.clear();
-}
-
-CSProfLDmodule* 
-CSProfEpoch::FindLDmodule(VMA ip)
-{
-  CSProfLDmodule* pre=loadmoduleVec[0];
-  for (int i=0; i< numberofldmodule; i++) { 
-    CSProfLDmodule* curr =loadmoduleVec[i];
-    if (ip >= (pre->GetMapaddr()) &&
-	ip < curr->GetMapaddr())
-      return pre;
-    else 
-      pre = curr;
-  }
-  
-  return pre;
-}
-
-void CSProfLDmodule::Dump(std::ostream& o)
-{ 
-  using std::hex;
-  using std::dec;
-  using std::endl; 
-  
-  o<<"the load module name is " << name;
-  o<<" vaddr is 0x" << hex  << vaddr;
-  o<<" mapaddr is 0x" << hex <<  mapaddr;
-  o<< dec << endl; 
-}
-
-void CSProfLDmodule::DDump()
-{
-  Dump(std::cerr);
-}
-
-void CSProfEpoch::Dump(std::ostream& o)
-{
-  for (int i=0; i<numberofldmodule; i++) {
-    CSProfLDmodule* lm = loadmoduleVec[i];
-    lm->Dump(o);
+  delete[] metrics;  
+  delete tree; 
+  if (epoch) {
+    delete   epoch;
   }
 }
 
-
-void CSProfEpoch::DDump()
+void 
+CSProfile::Dump(std::ostream& os) const
 {
-  Dump(std::cerr);
+  // FIXME
 }
 
+void 
+CSProfile::DDump() const
+{
+  Dump();
+}
 
+//***************************************************************************
+// CSProfileMetric
+//***************************************************************************
+
+void 
+CSProfileMetric::Dump(std::ostream& os) const
+{
+  // FIXME
+}
+
+void 
+CSProfileMetric::DDump() const
+{
+  Dump();
+}
