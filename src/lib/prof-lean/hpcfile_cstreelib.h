@@ -181,16 +181,16 @@ void  hpcfile_cstree_cb__link_parent(void* tree, void* node, void* parent);
 #endif /* describe callbacks */
 
 //***************************************************************************
-// hpcfile_cstree_convert_to_txt()
+// hpcfile_cstree_fprint()
 //***************************************************************************
 
-// hpcfile_cstree_convert_to_txt: Given an input file stream 'infs',
+// hpcfile_cstree_fprint: Given an input file stream 'infs',
 // reads tree data from the infs and writes it to 'outfs' as text for
 // human inspection.  This text output is not designed for parsing and
 // any formatting is subject to change.  Returns HPCFILE_OK upon
 // success; HPCFILE_ERR on error.
 int
-hpcfile_cstree_convert_to_txt(FILE* infs, int num_metrics, FILE* outfs);
+hpcfile_cstree_fprint(FILE* infs, int num_metrics, FILE* outfs);
 
 //***************************************************************************
 

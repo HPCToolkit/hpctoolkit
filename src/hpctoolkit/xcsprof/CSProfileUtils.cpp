@@ -119,7 +119,8 @@ const char *CSPROFILEdtd =
 #include <lib/xml/CSPROFILE.dtd.h>
 
 
-void writeCSProfileInDatabase(CSProfile* prof, const string& fnm) 
+void 
+writeCSProfileInDatabase(CSProfile* prof, const string& fnm) 
 {
   filebuf fb;
   fb.open(fnm.c_str(), ios::out);
@@ -175,7 +176,7 @@ ReadProfile_CSPROF(const char* fnm, const char *execnm)
   hpcfile_csprof_data_t metadata;
   epoch_table_t epochtbl;
   int ret;
-  
+
   // ------------------------------------------------------------
   // Read profile
   // ------------------------------------------------------------
@@ -183,10 +184,6 @@ ReadProfile_CSPROF(const char* fnm, const char *execnm)
   FILE* fs = hpcfile_open_for_read(fnm);
   ret = hpcfile_csprof_read(fs, &metadata, &epochtbl, hpcfile_alloc_CB, 
 			     hpcfile_free_CB);
-  DIAG_If(3) {
-    //hpcfile_csprof_convert_to_txt(fs, stdout);
-  }
-
   if (ret != HPCFILE_OK) {
     DIAG_Throw(fnm << ": error reading header (HPC_CSPROF)");
     return NULL;
@@ -200,10 +197,7 @@ ReadProfile_CSPROF(const char* fnm, const char *execnm)
   ret = hpcfile_cstree_read(fs, prof->GetTree(), num_metrics,
 			    cstree_create_node_CB, cstree_link_parent_CB,
 			    hpcfile_alloc_CB, hpcfile_free_CB);
-  DIAG_If(3) {
-    //hpcfile_cstree_convert_to_txt(fs, num_metrics, stdout);
-  }
-  if (ret != HPCFILE_OK) { 
+  if (ret != HPCFILE_OK) {
     DIAG_Throw(fnm << ": error reading calling context tree (HPC_CSTREE)."
 	       << " (Or no samples were taken.) [FIXME: should not have been lumped together!]");
     delete prof;
@@ -216,19 +210,20 @@ ReadProfile_CSPROF(const char* fnm, const char *execnm)
   // ------------------------------------------------------------
   // 
   // ------------------------------------------------------------
+
+  DIAG_WMsgIf(epochtbl.num_epoch > 1, "Only processing first epoch!");
   
-  unsigned int num_lm = epochtbl.epoch_modlist->num_loadmodule;
+  unsigned int num_lm = epochtbl.epoch_modlist[0].num_loadmodule;
 
   CSProfEpoch* epochmdlist = new CSProfEpoch(num_lm);
 
   for (int i = 0; i < num_lm; i++) { 
-    CSProfLDmodule* mli = new CSProfLDmodule();
-    
-    mli->SetName(epochtbl.epoch_modlist[0].loadmodule[i].name);
-    mli->SetVaddr(epochtbl.epoch_modlist[0].loadmodule[i].vaddr);
-    mli->SetMapaddr(epochtbl.epoch_modlist[0].loadmodule[i].mapaddr);  
-    mli->SetUsedFlag(false);
-    epochmdlist->SetLoadmodule(i,mli);
+    CSProfLDmodule* lm = new CSProfLDmodule();
+    lm->SetName(epochtbl.epoch_modlist[0].loadmodule[i].name);
+    lm->SetVaddr(epochtbl.epoch_modlist[0].loadmodule[i].vaddr);
+    lm->SetMapaddr(epochtbl.epoch_modlist[0].loadmodule[i].mapaddr);  
+    lm->SetUsedFlag(false);
+    epochmdlist->SetLoadmodule(i,lm);
   }
   
   epochmdlist->SortLoadmoduleByVMA(); 
@@ -262,6 +257,30 @@ ReadProfile_CSPROF(const char* fnm, const char *execnm)
   fixLeaves(prof->GetTree()->GetRoot());
   
   return prof;
+}
+
+
+void
+DumpProfile_CSPROF(const char* fnm) 
+{
+  hpcfile_csprof_data_t metadata;
+  int ret;
+
+  FILE* fs = hpcfile_open_for_read(fnm);
+
+ ret = hpcfile_csprof_fprint(fs, stdout, &metadata);
+  if (ret != HPCFILE_OK) {
+    DIAG_Throw(fnm << ": error reading HPC_CSPROF");
+  }
+  
+  unsigned int num_metrics = metadata.num_metrics;
+  
+  ret = hpcfile_cstree_fprint(fs, num_metrics, stdout);
+  if (ret != HPCFILE_OK) { 
+    DIAG_Throw(fnm << ": error reading HPC_CSTREE.");
+  }
+
+  hpcfile_close(fs);
 }
 
 
@@ -382,6 +401,19 @@ fixLeaves(CSProfNode* node)
   return noError;
 }
 
+
+//****************************************************************************
+// Routines for merging two trees (without structure information)
+//****************************************************************************
+
+CSProfile*
+mergeCallPathProfiles(CSProfile* prof1, CSProfile* prof2)
+{
+  // merge metrics...
+  // merge epochs...
+  // merge tree...
+  return prof1;
+}
 
 //****************************************************************************
 // Routines for Inferring Call Frames (based on STRUCTURE information)
