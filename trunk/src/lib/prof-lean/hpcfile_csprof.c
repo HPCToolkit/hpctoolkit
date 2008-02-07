@@ -164,7 +164,7 @@ hpcfile_csprof_read(FILE* fs, hpcfile_csprof_data_t* data,
   }
   
   // Read data chunks (except epoch)
-  for (i = 0; i < fhdr.num_data-1; ++i) {  
+  for (i = 0; i < fhdr.num_data-1; ++i) {
     // Read data tag
     sz = hpc_fread_le4(&tag, fs);
     if (sz != sizeof(tag)) { return HPCFILE_ERR; }
@@ -307,24 +307,45 @@ hpcfile_csprof_read(FILE* fs, hpcfile_csprof_data_t* data,
 
 // See header file for documentation of public interface.
 int
-hpcfile_csprof_convert_to_txt(FILE* infs, FILE* outfs)
+hpcfile_csprof_fprint(FILE* infs, FILE* outfs, hpcfile_csprof_data_t* data)
 {
+#if 0
   hpcfile_csprof_hdr_t fhdr;
-  
-  // Open file for reading; read and sanity check header
-  if (hpcfile_csprof_read_hdr(infs, &fhdr) != HPCFILE_OK) {
-    fputs("** Error reading header **\n", outfs);
-    return HPCFILE_ERR;
-  }
+  // Read header...
   
   // Print header
   hpcfile_csprof_hdr__fprint(&fhdr, outfs);
   fputs("\n", outfs);
 
-  // Read and print each data chunk
-  // --FIXME--
+  // Read and print each data chunk...
+#endif
 
-  
+  epoch_table_t epochtbl;
+
+  hpcfile_csprof_read(infs, data, &epochtbl, 
+		      (hpcfile_cb__alloc_fn_t)malloc,
+		      (hpcfile_cb__free_fn_t)free);
+
+  for (int i = 0; i < epochtbl.num_epoch; ++i) {
+    // print an epoch
+    epoch_entry_t* epoch = & epochtbl.epoch_modlist[i];
+    fprintf(outfs, "{epoch %d:\n", i);
+
+    for (int j = 0; j < epoch->num_loadmodule; ++j) {
+      ldmodule_t* lm = & epoch->loadmodule[j];
+
+      fprintf(outfs, "  lm %d: %s %"PRIx64" -> %"PRIx64"\n",
+	      j, lm->name, lm->vaddr, lm->mapaddr);
+      
+      free(lm->name);
+    }
+    fprintf(outfs, "}\n");
+
+    free(epoch->loadmodule);
+  }
+  free(epochtbl.epoch_modlist);
+
+
   // Success! Note: We assume that it is possible for other data to
   // exist beyond this point in the stream; don't check for EOF.
   return HPCFILE_OK;

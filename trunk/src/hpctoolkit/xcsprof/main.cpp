@@ -51,6 +51,7 @@
 //************************* System Include Files ****************************
 
 #include <iostream>
+#include <iomanip>
 #include <fstream>
 #include <new>
 
@@ -74,11 +75,14 @@ using std::string;
 
 //*************************** Forward Declarations ***************************
 
-CSProfile* 
+static CSProfile* 
 readProfileData(std::vector<string>& profileFiles, const string& exe_fnm);
 
-PgmScopeTree*
+static PgmScopeTree*
 readStructureData(std::vector<string>& structureFiles);
+
+static void
+dumpProfileData(std::ostream& os, std::vector<string>& profileFiles);
 
 static void
 processCallingCtxtTree(CSProfile* profData, VMA begVMA, VMA endVMA, 
@@ -126,6 +130,15 @@ int
 realmain(int argc, char* const* argv) 
 {
   Args args(argc, argv);
+
+  // ------------------------------------------------------------
+  // Special short-circuit behavior
+  // ------------------------------------------------------------
+
+  if (args.dumpProfiles) {
+    dumpProfileData(cout, args.profileFiles);
+    return 0;
+  }
   
   // ------------------------------------------------------------
   // Read 'profData', the profiling data file
@@ -220,7 +233,7 @@ static CSProfile*
 readProfileFile(const string& prof_fnm, const string& exe_fnm);
 
 
-CSProfile* 
+static CSProfile* 
 readProfileData(std::vector<string>& profileFiles, const string& exe_fnm)
 {
   DIAG_Assert(profileFiles.size() == 1, DIAG_UnexpectedInput);
@@ -228,7 +241,7 @@ readProfileData(std::vector<string>& profileFiles, const string& exe_fnm)
   CSProfile* data = readProfileFile(profileFiles[0], exe_fnm);
   
   for (int i = 1; i < profileFiles.size(); ++i) {
-    //CSProfile* tmp = readProfileFile(profileFiles[i], exe_fnm);
+    CSProfile* tmp = readProfileFile(profileFiles[i], exe_fnm);
     //merge tmp into data
   }
   
@@ -252,6 +265,21 @@ readProfileFile(const string& prof_fnm, const string& exe_fnm)
 }
 
 
+static void
+dumpProfileData(std::ostream& os, std::vector<string>& profileFiles)
+{
+  for (int i = 0; i < profileFiles.size(); ++i) {
+    const char* fnm = profileFiles[i].c_str();
+
+    os << std::setfill('=') << std::setw(77) << "=" << endl;
+    os << fnm << std::endl;
+    os << std::setfill('=') << std::setw(77) << "=" << endl;
+
+    DumpProfile_CSPROF(fnm); // stdout
+  }
+}
+
+
 //****************************************************************************
 
   
@@ -265,7 +293,7 @@ public:
 };
 
 
-PgmScopeTree*
+static PgmScopeTree*
 readStructureData(std::vector<string>& structureFiles)
 {
   InitXerces();

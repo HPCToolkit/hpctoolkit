@@ -100,6 +100,8 @@ public:
   std::string OutFilename_XML;
   std::vector<std::string> searchPaths; // list of serch paths
   std::vector<std::string> structureFiles;
+
+  bool dumpProfiles; // default: false
   
   // Parsed Data: arguments
   std::string exeFile; // executable that was profiled
