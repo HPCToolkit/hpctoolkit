@@ -132,7 +132,6 @@ class CSProfGroupNode;
 class CSProfCallSiteNode;
 class CSProfLoopNode; 
 class CSProfStmtRangeNode; 
-class CSProfMetricsNode; 
 
 class CSProfProcedureFrameNode;
 class CSProfStatementNode;

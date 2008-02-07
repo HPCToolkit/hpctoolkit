@@ -92,14 +92,16 @@ public:
   virtual ~CSProfile();
   
   // Data
-
   const std::string& GetTarget()             const { return target; }
+
   unsigned int     GetNumberOfMetrics()      const { return numberofmetrics; }
   CSProfileMetric* GetMetric(unsigned int i) const { return &metrics[i]; }
+
   CSProfTree*      GetTree()                 const { return tree; }
-  void             SetEpoch(CSProfEpoch *ep)  {epoch=ep;}
-  CSProfEpoch*     GetEpoch()               const { return epoch; }
-  void             ProfileDumpEpoch() {epoch->Dump(); }
+
+  void             SetEpoch(CSProfEpoch *ep)       { epoch = ep; }
+  CSProfEpoch*     GetEpoch()                const { return epoch; }
+  void             ProfileDumpEpoch()              { epoch->Dump(); }
 
   void SetTarget(const char* s) { target = (s) ? s : ""; }
 
