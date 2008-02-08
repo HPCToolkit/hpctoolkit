@@ -106,18 +106,19 @@ public:
   virtual ~CSProfTree();
 
   // Tree data
-  CSProfNode* GetRoot() const { return root; }
-  bool        IsEmpty() const { return (root == NULL); }
+  CSProfNode* root() const { return m_root; }
+  void        root(CSProfNode* x) { m_root = x; }
 
-  void SetRoot(CSProfNode* x) { root = x; } 
+  bool empty() const { return (m_root == NULL); }
+
 
   // Dump contents for inspection
-  virtual void Dump(std::ostream& os = std::cerr, 
+  virtual void dump(std::ostream& os = std::cerr, 
 		    int dmpFlag = XML_TRUE) const;
-  virtual void DDump() const;
+  virtual void ddump() const;
  
 private:
-  CSProfNode* root;
+  CSProfNode* m_root;
 };
 
 //***************************************************************************

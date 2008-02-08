@@ -54,6 +54,7 @@
 //************************* System Include Files ****************************
 
 #include <iostream>
+#include <vector>
 
 //*************************** User Include Files ****************************
 
@@ -92,29 +93,28 @@ public:
   virtual ~CSProfile();
   
   // Data
-  const std::string& GetTarget()             const { return target; }
+  const std::string& name() const { return m_name; }
+  void               name(const char* s) { m_name = (s) ? s : ""; }
 
-  unsigned int     GetNumberOfMetrics()      const { return numberofmetrics; }
-  CSProfileMetric* GetMetric(unsigned int i) const { return &metrics[i]; }
+  unsigned int     numMetrics() const           { return m_metrics.size(); }
+  CSProfileMetric* metric(unsigned int i) const { return m_metrics[i]; }
 
-  CSProfTree*      GetTree()                 const { return tree; }
+  CSProfTree* tree() const { return m_tree; }
 
-  void             SetEpoch(CSProfEpoch *ep)       { epoch = ep; }
-  CSProfEpoch*     GetEpoch()                const { return epoch; }
-  void             ProfileDumpEpoch()              { epoch->Dump(); }
+  CSProfEpoch* epoch() const         { return m_epoch; }
+  void         epoch(CSProfEpoch* x) { m_epoch = x; }
 
-  void SetTarget(const char* s) { target = (s) ? s : ""; }
 
   // Dump contents for inspection
-  virtual void Dump(std::ostream& os = std::cerr) const;
-  virtual void DDump() const;
+  virtual void dump(std::ostream& os = std::cerr) const;
+  virtual void ddump() const;
  
 private:
-  std::string target; 
-  unsigned int  numberofmetrics;
-  CSProfileMetric* metrics;
-  CSProfTree* tree;
-  CSProfEpoch* epoch;
+  std::string m_name;
+
+  CSProfTree* m_tree;
+  std::vector<CSProfileMetric*> m_metrics;
+  CSProfEpoch* m_epoch;
 };
 
 //***************************************************************************

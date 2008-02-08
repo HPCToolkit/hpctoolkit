@@ -80,29 +80,29 @@ using SrcFile::ln_NULL;
 //***************************************************************************
 
 CSProfTree::CSProfTree()
-  : root(NULL)
+  : m_root(NULL)
 {
 }
 
 CSProfTree::~CSProfTree()
 {
-  delete root; 
+  delete m_root; 
 }
 
 void 
-CSProfTree::Dump(std::ostream& os, int dmpFlag) const
+CSProfTree::dump(std::ostream& os, int dmpFlag) const
 {
   os << "<CSPROFILETREE>\n";
-  if (root) {
-    root->DumpLineSorted(os, dmpFlag);
+  if (m_root) {
+    m_root->DumpLineSorted(os, dmpFlag);
   }
   os << "</CSPROFILETREE>\n";
 }
 
 void 
-CSProfTree::DDump() const
+CSProfTree::ddump() const
 {
-  Dump();
+  dump();
 }
 
 //***************************************************************************

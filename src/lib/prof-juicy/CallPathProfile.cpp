@@ -74,45 +74,29 @@ using std::endl;
 //***************************************************************************
 CSProfile::CSProfile(unsigned int i)
 {
-  numberofmetrics = i;
-  metrics         = new CSProfileMetric[i];
-  tree            = new CSProfTree;
-  epoch           = NULL;
+  m_metrics.resize(i);
+  m_tree  = new CSProfTree;
+  m_epoch = NULL;
 }
 
 CSProfile::~CSProfile()
 {
-  delete[] metrics;  
-  delete tree; 
-  if (epoch) {
-    delete   epoch;
+  for (int i = 0; i < m_metrics.size(); ++i) {
+    delete m_metrics[i];
   }
+  delete m_tree;
+  delete m_epoch;
 }
 
 void 
-CSProfile::Dump(std::ostream& os) const
+CSProfile::dump(std::ostream& os) const
 {
   // FIXME
 }
 
 void 
-CSProfile::DDump() const
+CSProfile::ddump() const
 {
-  Dump();
+  dump();
 }
 
-//***************************************************************************
-// CSProfileMetric
-//***************************************************************************
-
-void 
-CSProfileMetric::Dump(std::ostream& os) const
-{
-  // FIXME
-}
-
-void 
-CSProfileMetric::DDump() const
-{
-  Dump();
-}
