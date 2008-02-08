@@ -71,6 +71,20 @@ public:
   CSProfileMetric() : m_period(0) { }
   ~CSProfileMetric() { }
 
+  CSProfileMetric(const CSProfileMetric& x)
+    : m_name(x.m_name), m_description(x.m_description), 
+      m_flags(x.m_flags), m_period(x.m_period) { }
+
+  CSProfileMetric& operator=(const CSProfileMetric& x) {
+    if (this != &x) {
+      m_name        = x.m_name;
+      m_description = x.m_description;
+      m_flags       = x.m_flags;
+      m_period      = x.m_period;
+    }
+    return *this;
+  }
+
   // Name, Description: The metric name and a description
   // Period: The sampling period (whether event or instruction based)
   const std::string& name() const        { return m_name; }
@@ -88,15 +102,10 @@ public:
   void dump(std::ostream& os = std::cerr) const { }
   void ddump() const { }
 
-private:
-  // Should not be used  
-  CSProfileMetric(const CSProfileMetric& m) { }
-  CSProfileMetric& operator=(const CSProfileMetric& m) { return *this; }
-
 protected:
 private:  
-  std::string m_name;
-  std::string m_description;
+  std::string  m_name;
+  std::string  m_description;
   unsigned int m_flags;  // flags of the metric
   unsigned int m_period; // sampling period
 };
