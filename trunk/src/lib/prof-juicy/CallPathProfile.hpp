@@ -92,27 +92,36 @@ public:
   CSProfile(unsigned int i);
   virtual ~CSProfile();
   
+  // -------------------------------------------------------
   // Data
+  // -------------------------------------------------------
   const std::string& name() const { return m_name; }
   void               name(const char* s) { m_name = (s) ? s : ""; }
 
   unsigned int     numMetrics() const           { return m_metrics.size(); }
   CSProfileMetric* metric(unsigned int i) const { return m_metrics[i]; }
 
-  CSProfTree* tree() const { return m_tree; }
+  CSProfTree*  cct() const { return m_cct; }
 
   CSProfEpoch* epoch() const         { return m_epoch; }
   void         epoch(CSProfEpoch* x) { m_epoch = x; }
 
 
+  // -------------------------------------------------------
+  // Given a CSProfile, merge into 'this'
+  // -------------------------------------------------------
+  void merge(const CSProfile& x);
+
+  // -------------------------------------------------------
   // Dump contents for inspection
+  // -------------------------------------------------------
   virtual void dump(std::ostream& os = std::cerr) const;
   virtual void ddump() const;
  
 private:
   std::string m_name;
 
-  CSProfTree* m_tree;
+  CSProfTree* m_cct;
   std::vector<CSProfileMetric*> m_metrics;
   CSProfEpoch* m_epoch;
 };

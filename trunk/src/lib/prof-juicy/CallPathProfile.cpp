@@ -57,42 +57,61 @@
 #include "CallPathProfile.hpp"
 
 #include <lib/xml/xml.hpp>
+using namespace xml;
 
 #include <lib/support/Trace.hpp>
 
-//*************************** Forward Declarations ***************************
-
-using namespace xml;
-
-using std::ostream;
-using std::endl;
+//*************************** Forward Declarations **************************
 
 //***************************************************************************
+
 
 //***************************************************************************
 // CSProfile
 //***************************************************************************
+
 CSProfile::CSProfile(unsigned int i)
 {
   m_metrics.resize(i);
-  m_tree  = new CSProfTree;
+  for (int i = 0; i < m_metrics.size(); ++i) {
+    m_metrics[i] = new CSProfileMetric();
+  }
+  m_cct  = new CSProfTree;
   m_epoch = NULL;
 }
+
 
 CSProfile::~CSProfile()
 {
   for (int i = 0; i < m_metrics.size(); ++i) {
     delete m_metrics[i];
   }
-  delete m_tree;
+  delete m_cct;
   delete m_epoch;
 }
+
+
+void 
+CSProfile::merge(const CSProfile& x)
+{
+  // merge metrics
+  for (int i = 0; i < x.numMetrics(); ++i) {
+    const CSProfileMetric* m = x.metric(i);
+    m_metrics.push_back(new CSProfileMetric(*m));
+  }
+  
+  // merge epochs... [FIXME]
+
+  m_cct->merge(x.cct());
+}
+
 
 void 
 CSProfile::dump(std::ostream& os) const
 {
   // FIXME
 }
+
 
 void 
 CSProfile::ddump() const

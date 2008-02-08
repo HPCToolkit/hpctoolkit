@@ -84,10 +84,26 @@ CSProfTree::CSProfTree()
 {
 }
 
+
 CSProfTree::~CSProfTree()
 {
   delete m_root; 
 }
+
+
+void 
+CSProfTree::merge(const CSProfTree* y)
+{
+  CSProfPgmNode* x_root = dynamic_cast<CSProfPgmNode*>(root());
+  CSProfPgmNode* y_root = dynamic_cast<CSProfPgmNode*>(y->root());
+
+  DIAG_Assert(x_root && y_root && x_root->GetName() == y_root->GetName(),
+	      "Unexpected root!");
+  
+  x_root->merge(y_root);
+}
+
+
 
 void 
 CSProfTree::dump(std::ostream& os, int dmpFlag) const
@@ -98,6 +114,7 @@ CSProfTree::dump(std::ostream& os, int dmpFlag) const
   }
   os << "</CSPROFILETREE>\n";
 }
+
 
 void 
 CSProfTree::ddump() const
@@ -172,8 +189,9 @@ CSProfCodeNode::CSProfCodeNode(NodeType t, CSProfNode* _parent,
   xDEBUG(DEB_UNIFY_PROCEDURE_FRAME,
 	 if (type==STATEMENT) {
 	   fprintf(stderr, " CSProfCodeNode constructor: copying callsite into statement node\n");
-	   )
-	 }}
+	 })
+}
+
 
 CSProfCodeNode::~CSProfCodeNode() 
 {
@@ -231,10 +249,10 @@ CSProfCallSiteNode::CSProfCallSiteNode(CSProfNode* _parent)
 }
 
 
-CSProfCallSiteNode::CSProfCallSiteNode(CSProfNode* _parent, VMA _ip, 
-			      ushort _opIndex, vector<unsigned int> _metrics)
+CSProfCallSiteNode::CSProfCallSiteNode(CSProfNode* _parent, VMA ip, 
+			      ushort opIndex, vector<unsigned int>& metrics)
   : CSProfCodeNode(CALLSITE, _parent, ln_NULL, ln_NULL), 
-    ip(_ip), opIndex(_opIndex), metrics(_metrics) 
+    IDynNode(ip, opIndex, metrics)
 {
   CSProfCallSiteNode_Check(this, _parent);
 }
@@ -257,13 +275,14 @@ CSProfStatementNode::~CSProfStatementNode()
 void 
 CSProfStatementNode::operator=(const CSProfStatementNode& x)
 {
+  //DIAG_Die(DIAG_Unimplemented);// FIXME/TEST
+
+  ip(x.ip(), x.opIndex()); // FIXME
+  IDynNode::merge(x);
+
   file = x.GetFile();
   proc = x.GetProc();
   SetLine(x.GetLine());
-  SetIP(x.GetIP(), x.GetOpIndex());
-
-  metrics.resize(x.GetMetricCount());
-  addMetrics(&x);
 
   xDEBUG(DEB_UNIFY_PROCEDURE_FRAME,
 	 fprintf(stderr, " copied metrics\n"));
@@ -272,23 +291,17 @@ CSProfStatementNode::operator=(const CSProfStatementNode& x)
 
 
 void 
-CSProfStatementNode::copyCallSiteNode(CSProfCallSiteNode* _node) 
+CSProfStatementNode::copyCallSiteNode(CSProfCallSiteNode* y) 
 {
-  xDEBUG(DEB_UNIFY_PROCEDURE_FRAME,
-	 fprintf(stderr, " explicit copying callsite into statement node\n"));
-  file = _node->GetFile();
-  proc = _node->GetProc();
-  SetLine(_node->GetLine());
-  SetIP(_node->GetRA(), _node->GetOpIndex());
-  xDEBUG(DEB_UNIFY_PROCEDURE_FRAME,
-	 fprintf(stderr, " copied file, proc, line, ip, opindex\n"));
-  int i;
-  for (i=0; i<_node->GetMetrics().size(); i++) 
-    metrics.push_back(_node->GetMetric(i));
-  xDEBUG(DEB_UNIFY_PROCEDURE_FRAME,
-	 fprintf(stderr, " copied metrics\n"));
-  fileistext = _node->FileIsText();
-  donewithsrcinfproc = _node->GotSrcInfo();
+  ip(y->ra(), y->opIndex());
+  IDynNode::merge_append(*y);
+
+  file = y->GetFile();
+  proc = y->GetProc();
+  SetLine(y->GetLine());
+
+  fileistext = y->FileIsText();
+  donewithsrcinfproc = y->GotSrcInfo();
 }
 
 
@@ -346,6 +359,7 @@ CSProfNode::NextSibling() const
   return NULL;  
 }
 
+
 CSProfNode* 
 CSProfNode::PrevSibling() const
 { 
@@ -356,6 +370,7 @@ CSProfNode::PrevSibling() const
   return NULL;
 }
 
+
 #define dyn_cast_return(base, derived, expr) \
     { base* ptr = expr;  \
       if (ptr == NULL) {  \
@@ -364,6 +379,7 @@ CSProfNode::PrevSibling() const
 	return dynamic_cast<derived*>(ptr);  \
       } \
     }
+
 
 CSProfNode* 
 CSProfNode::Ancestor(NodeType tp) const
@@ -374,6 +390,7 @@ CSProfNode::Ancestor(NodeType tp) const
   } 
   return s;
 } 
+
 
 #if 0
 
@@ -391,6 +408,7 @@ int IsAncestorOf(CSProfNode* _parent, CSProfNode *son, int difference)
 
 #endif
 
+
 CSProfPgmNode*
 CSProfNode::AncestorPgm() const 
 {
@@ -401,17 +419,20 @@ CSProfNode::AncestorPgm() const
   }
 }
 
+
 CSProfGroupNode*
 CSProfNode::AncestorGroup() const 
 {
   dyn_cast_return(CSProfNode, CSProfGroupNode, Ancestor(GROUP)); 
 }
 
+
 CSProfCallSiteNode*
 CSProfNode::AncestorCallSite() const
 {
   dyn_cast_return(CSProfNode, CSProfCallSiteNode, Ancestor(CALLSITE)); 
 }
+
 
 CSProfProcedureFrameNode*
 CSProfNode::AncestorProcedureFrame() const
@@ -421,17 +442,70 @@ CSProfNode::AncestorProcedureFrame() const
 		  Ancestor(PROCEDURE_FRAME)); 
 }
 
+
 CSProfLoopNode*
 CSProfNode::AncestorLoop() const 
 {
   dyn_cast_return(CSProfNode, CSProfLoopNode, Ancestor(LOOP));
 }
 
+
 CSProfStmtRangeNode*
 CSProfNode::AncestorStmtRange() const 
 {
   dyn_cast_return(CSProfNode, CSProfStmtRangeNode, Ancestor(STMT_RANGE));
 }
+
+//**********************************************************************
+// 
+//**********************************************************************
+
+void 
+IDynNode::merge(const IDynNode& y)
+{
+  if (numMetrics() != y.numMetrics()) {
+    m_metrics.resize(y.numMetrics());
+  }
+
+  for (int i = 0; i < y.numMetrics(); ++i) {
+    m_metrics[i] += y.metric(i);
+  }
+}
+
+
+void 
+IDynNode::merge_append(const IDynNode& y)
+{
+  for (int i = 0; i < y.numMetrics(); ++i) {
+    m_metrics.push_back(y.metric(i));
+  }
+}
+
+
+// Let y be a node corresponding to 'this'(= x) and assume x is already
+// merged.  Given y, merge y's children into x.
+void
+CSProfNode::merge(CSProfNode* y)
+{
+  // 0. For each child c of x, extend c's metric vector.
+  
+  
+  // 1. If y is childless, return.
+  if (y->IsLeaf()) {
+    return;
+  }
+  
+  // 2. If a child d of y _does not_ appear as a child of x, then copy
+  //    (subtree) d [fixing d's metrics], make it a child of x and
+  //    return.
+  
+
+  // 3. If a child d of y _does_ have a corresponding child c of x,
+  //    merge [the metrics of] d into c and recur.
+  
+  // FIXME
+}
+
 
 //**********************************************************************
 // CSProfNode, etc: CodeName methods
@@ -445,6 +519,7 @@ CSProfLoopNode::CodeName() const
   return self;
 }
 
+
 string
 CSProfStmtRangeNode::CodeName() const
 {
@@ -452,6 +527,7 @@ CSProfStmtRangeNode::CodeName() const
   self += " " + CSProfCodeNode::ToDumpString();
   return self;
 }
+
 
 //**********************************************************************
 // CSProfNode, etc: Dump contents for inspection
@@ -468,6 +544,7 @@ CSProfNode::ToDumpString(int dmpFlag) const
   return self;
 } 
 
+
 string 
 CSProfNode::ToDumpMetricsString(int dmpFlag) const {
   return "";
@@ -483,6 +560,7 @@ CSProfCodeNode::ToDumpString(int dmpFlag) const
   return self;
 }
 
+
 string
 CSProfPgmNode::ToDumpString(int dmpFlag) const
 { 
@@ -490,6 +568,7 @@ CSProfPgmNode::ToDumpString(int dmpFlag) const
     MakeAttrStr(name, AddXMLEscapeChars(dmpFlag));
   return self;
 }
+
 
 string 
 CSProfGroupNode::ToDumpString(int dmpFlag) const
@@ -499,14 +578,15 @@ CSProfGroupNode::ToDumpString(int dmpFlag) const
   return self;
 }
 
+
 string
 CSProfCallSiteNode::ToDumpString(int dmpFlag) const
 {
   string self = CSProfNode::ToDumpString(dmpFlag);
   
   if (!(dmpFlag & CSProfTree::XML_TRUE)) {
-    self = self + " ip" + MakeAttrNum(ip, 16) 
-      + " op" + MakeAttrNum(opIndex);
+    self = self + " ip" + MakeAttrNum(ip(), 16) 
+      + " op" + MakeAttrNum(opIndex());
   } 
 
   if (!file.empty()) { 
@@ -520,7 +600,7 @@ CSProfCallSiteNode::ToDumpString(int dmpFlag) const
     self = self + " p" + MakeAttrStr(proc, AddXMLEscapeChars(dmpFlag));
   } 
   else {
-    self = self + " ip" + MakeAttrNum(ip, 16);
+    self = self + " ip" + MakeAttrNum(ip(), 16);
   }
   
 
@@ -539,17 +619,17 @@ CSProfCallSiteNode::ToDumpMetricsString(int dmpFlag) const
   string metricsString;
 
   xDEBUG(DEB_READ_MMETRICS,
-	 fprintf(stderr, "dumping metrics for node %lx \n", ip); 
+	 fprintf(stderr, "dumping metrics for node %lx \n", ip()); 
 	 fflush(stderr);
-	 for (i=0; i<metrics.size(); i++) {
-	   fprintf(stderr, "Metric %d: %ld\n", i, metrics[i]);
+	 for (i=0; i < numMetrics(); i++) {
+	   fprintf(stderr, "Metric %d: %ld\n", i, metric(i));
 	   fflush(stderr);
 	 }
 	 );
 
   metricsString ="";
-  for (i=0; i<metrics.size(); i++) {
-    unsigned int crtMetric = metrics[i];
+  for (i = 0; i < numMetrics(); i++) {
+    unsigned int crtMetric = metric(i);
     if (crtMetric!= 0) {
       metricsString  +=  " <M ";
       metricsString  +=  "n"+MakeAttrNum(i)+" v" + MakeAttrNum(crtMetric);
@@ -559,19 +639,6 @@ CSProfCallSiteNode::ToDumpMetricsString(int dmpFlag) const
   return metricsString;
 }
 
-/** Add metrics from call site node c to current node.
- * @param c call site node to be "added" to this node
- */
-void 
-CSProfCallSiteNode::addMetrics(CSProfCallSiteNode* c) 
-{
-  DIAG_Assert(metrics.size() == c->metrics.size(), "");
-  int numMetrics = metrics.size();
-  int i;
-  for (i=0; i<numMetrics; i++) {
-    metrics[i] += c->metrics[i];
-  }
-}
 
 string
 CSProfStatementNode::ToDumpString(int dmpFlag) const
@@ -579,8 +646,8 @@ CSProfStatementNode::ToDumpString(int dmpFlag) const
   string self = CSProfNode::ToDumpString(dmpFlag);
   
   if (!(dmpFlag & CSProfTree::XML_TRUE)) {
-    self = self + " ip" + MakeAttrNum(ip, 16) 
-      + " op" + MakeAttrNum(opIndex);
+    self = self + " ip" + MakeAttrNum(ip(), 16) 
+      + " op" + MakeAttrNum(opIndex());
   } 
 
   if (!file.empty()) { 
@@ -594,7 +661,7 @@ CSProfStatementNode::ToDumpString(int dmpFlag) const
     self = self + " p" + MakeAttrStr(proc, AddXMLEscapeChars(dmpFlag));
   } 
   else {
-    self = self + " ip" + MakeAttrNum(ip, 16);
+    self = self + " ip" + MakeAttrNum(ip(), 16);
   }
   
 
@@ -612,17 +679,17 @@ CSProfStatementNode::ToDumpMetricsString(int dmpFlag) const {
   string metricsString;
 
   xDEBUG(DEB_READ_MMETRICS,
-	 fprintf(stderr, "dumping metrics for node %lx \n", ip); 
+	 fprintf(stderr, "dumping metrics for node %lx \n", ip()); 
 	 fflush(stderr);
-	 for (i=0; i<metrics.size(); i++) {
-	   fprintf(stderr, "Metric %d: %ld\n", i, metrics[i]);
+	 for (i = 0; i < numMetrics(); i++) {
+	   fprintf(stderr, "Metric %d: %ld\n", i, metric(i));
 	   fflush(stderr);
 	 }
 	 );
 
   metricsString ="";
-  for (i=0; i<metrics.size(); i++) {
-    unsigned int crtMetric = metrics[i];
+  for (i = 0; i < numMetrics(); i++) {
+    unsigned int crtMetric = metric(i);
     if (crtMetric!= 0) {
       metricsString += " <M ";
       metricsString += "n" + MakeAttrNum(i) + " v" + MakeAttrNum(crtMetric);
@@ -630,21 +697,6 @@ CSProfStatementNode::ToDumpMetricsString(int dmpFlag) const {
     }
   }
   return metricsString;
-}
-
-
-/** Add metrics from call site node c to current node.
- * @param c call site node to be "added" to this node
- */
-void 
-CSProfStatementNode::addMetrics(const CSProfStatementNode* c) 
-{
-  DIAG_Assert(metrics.size() == c->metrics.size(), "");
-  int numMetrics = metrics.size();
-  int i;
-  for (i=0; i<numMetrics; i++) {
-    metrics[i] += c->metrics[i];
-  }
 }
 
 

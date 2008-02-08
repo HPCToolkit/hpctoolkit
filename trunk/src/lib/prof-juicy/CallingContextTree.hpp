@@ -105,14 +105,22 @@ public:
   CSProfTree();
   virtual ~CSProfTree();
 
+  // -------------------------------------------------------
   // Tree data
+  // -------------------------------------------------------
   CSProfNode* root() const { return m_root; }
   void        root(CSProfNode* x) { m_root = x; }
 
   bool empty() const { return (m_root == NULL); }
 
+  // -------------------------------------------------------
+  // Given a CSProfile, merge into 'this'
+  // -------------------------------------------------------
+  void merge(const CSProfTree* x);
 
+  // -------------------------------------------------------
   // Dump contents for inspection
+  // -------------------------------------------------------
   virtual void dump(std::ostream& os = std::cerr, 
 		    int dmpFlag = XML_TRUE) const;
   virtual void ddump() const;
@@ -209,6 +217,12 @@ public:
   // --------------------------------------------------------
   // Dump contents for inspection
   // --------------------------------------------------------
+
+  void merge(CSProfNode* y);
+
+  // --------------------------------------------------------
+  // Dump contents for inspection
+  // --------------------------------------------------------
   virtual std::string ToDumpString(int dmpFlag = CSProfTree::XML_TRUE) const; 
   virtual std::string ToDumpMetricsString(int dmpFlag) const; 
 
@@ -235,6 +249,7 @@ public:
   NodeType type;
   unsigned int uid; 
 };
+
 
 // ---------------------------------------------------------
 // CSProfCodeNode is a base class for all CSProfNode's that describe
@@ -280,14 +295,6 @@ public:
   virtual void SetLine(SrcFile::ln ln) 
     { DIAG_Die(DIAG_Unimplemented); } 
  
-  virtual VMA GetIP() const 
-    { DIAG_Die(DIAG_Unimplemented); return 0; }
-  virtual ushort GetOpIndex() const 
-    { DIAG_Die(DIAG_Unimplemented); return 0; }
-
-  virtual void SetIP(VMA _ip, ushort _opIndex) 
-    { DIAG_Die(DIAG_Unimplemented); }
-
   virtual bool FileIsText() const
     { DIAG_Die(DIAG_Unimplemented); return false; }
   virtual void SetFileIsText(bool bi) 
@@ -313,6 +320,69 @@ protected:
 
 // - if x < y; 0 if x == y; + otherwise
 int CSProfCodeNodeLineComp(CSProfCodeNode* x, CSProfCodeNode* y);
+
+
+//***************************************************************************
+// IDynNode
+//***************************************************************************
+
+// IDynNode: an interface (mixin) representing dynamic nodes
+
+class IDynNode {
+public:
+
+  // -------------------------------------------------------
+  // 
+  // -------------------------------------------------------
+
+  IDynNode() { }
+
+  IDynNode(VMA ip, ushort opIdx)
+    : m_ip(ip), m_opIdx(opIdx) { }
+
+  IDynNode(VMA ip, ushort opIdx, vector<unsigned int>& metrics)
+    : m_ip(ip), m_opIdx(opIdx), m_metrics(metrics) { }
+
+  virtual ~IDynNode() { }
+
+  IDynNode(const IDynNode& x)
+    : m_ip(x.m_ip), m_opIdx(x.m_opIdx), m_metrics(x.m_metrics) { }
+
+  IDynNode& operator=(const IDynNode& x) {
+    if (this != &x) {
+      m_ip = x.m_ip;
+      m_opIdx = x.m_opIdx;
+      m_metrics = x.m_metrics;
+    }
+    return *this;
+  }
+
+  // -------------------------------------------------------
+  // 
+  // -------------------------------------------------------
+
+  virtual VMA ip() const { return m_ip; }
+  void ip(VMA ip, ushort opIdx) { m_ip = ip; m_opIdx = opIdx; }
+
+  ushort opIndex() const { return m_opIdx; }
+
+  unsigned int metric(int i) const { return m_metrics[i]; }
+  unsigned int numMetrics() const { return m_metrics.size(); }
+
+  // -------------------------------------------------------
+  // 
+  // -------------------------------------------------------
+
+  void merge(const IDynNode& y);
+  void merge_append(const IDynNode& y);
+
+private:
+  VMA m_ip;       // instruction pointer for this node
+  ushort m_opIdx; // index in the instruction 
+
+  vector<unsigned int> m_metrics;  
+};
+
 
 //***************************************************************************
 // CSProfPgmNode, CSProfCallSiteNode, CSProfGroupNodes,
@@ -371,25 +441,23 @@ private:
 // children: CSProfGroupNode, CSProfCallSiteNode, CSProfLoopNode,
 //   CSProfStmtRangeNode
 // ---------------------------------------------------------
-  
-class CSProfCallSiteNode: public CSProfCodeNode {
+
+class CSProfCallSiteNode: public CSProfCodeNode, public IDynNode {
 public:
   // Constructor/Destructor
   CSProfCallSiteNode(CSProfNode* _parent);
   CSProfCallSiteNode(CSProfNode* _parent, 
-		     VMA _ip, ushort _opIndex, vector<unsigned int> _metrics);
+		     VMA ip, ushort opIdx, vector<unsigned int>& metrics);
   virtual ~CSProfCallSiteNode();
   
   // Node data
-  VMA GetIP() const { return ip-1; }
-  ushort GetOpIndex() const { return opIndex; }
-  VMA GetRA() const { return ip; }
+  virtual VMA ip() const { return (IDynNode::ip() - 1); }
+  VMA ra() const { return IDynNode::ip(); }
   
   const std::string& GetFile() const { return file; }
   const std::string& GetProc() const { return proc; }
   SrcFile::ln        GetLine() const { return begLine; }
 
-  void SetIP(VMA _ip, ushort _opIndex) { ip = _ip; opIndex = _opIndex; }
 
   void SetFile(const char* fnm) { file = fnm; }
   void SetFile(const std::string& fnm) { file = fnm; }
@@ -402,22 +470,12 @@ public:
   void SetFileIsText(bool bi) {fileistext = bi;}
   bool GotSrcInfo() const {return donewithsrcinfproc;} 
   void SetSrcInfoDone(bool bi) {donewithsrcinfproc=bi;}
-
-  unsigned int GetMetric(int metricIndex) {return metrics[metricIndex];}
-  vector<unsigned int>& GetMetrics() {return metrics;}
   
   // Dump contents for inspection
   virtual std::string ToDumpString(int dmpFlag = CSProfTree::XML_TRUE) const;
   virtual std::string ToDumpMetricsString(int dmpFlag = CSProfTree::XML_TRUE) const;
  
-  /// add metrics from call site node c to current node.
-  void addMetrics(CSProfCallSiteNode* c);
 protected: 
-  VMA ip;        // instruction pointer for this node
-  ushort opIndex; // index in the instruction 
-
-  vector<unsigned int> metrics;  
-
   // source file info
   std::string file; 
   bool   fileistext; //separated from load module 
@@ -430,7 +488,7 @@ protected:
 // children of: CSProfPgmNode, CSProfGroupNode, CSProfCallSiteNode
 // ---------------------------------------------------------
   
-class CSProfStatementNode: public CSProfCodeNode {
+class CSProfStatementNode: public CSProfCodeNode, public IDynNode {
  public:
   // Constructor/Destructor
   CSProfStatementNode(CSProfNode* _parent);
@@ -440,14 +498,10 @@ class CSProfStatementNode: public CSProfCodeNode {
   void copyCallSiteNode(CSProfCallSiteNode* _node); // FIXME: remove
 
   // Node data
-  VMA GetIP() const { return ip; }
-  ushort GetOpIndex() const { return opIndex; }
-  
   const std::string& GetFile() const { return file; }
   const std::string& GetProc() const { return proc; }
   SrcFile::ln        GetLine() const { return begLine; }
 
-  void SetIP(VMA _ip, ushort _opIndex) { ip = _ip; opIndex = _opIndex; }
 
   void SetFile(const char* fnm) { file = fnm; }
   void SetFile(const std::string& fnm) { file = fnm; }
@@ -460,22 +514,12 @@ class CSProfStatementNode: public CSProfCodeNode {
   void SetFileIsText(bool bi) { fileistext = bi; }
   bool GotSrcInfo() const { return donewithsrcinfproc; }
   void SetSrcInfoDone(bool bi) { donewithsrcinfproc = bi; }
-
-  SrcFile::ln GetMetric(int metricIndex) const { return metrics[metricIndex]; }
-  SrcFile::ln GetMetricCount() const { return metrics.size(); }
   
   // Dump contents for inspection
   virtual std::string ToDumpString(int dmpFlag = CSProfTree::XML_TRUE) const;
   virtual std::string ToDumpMetricsString(int dmpFlag = CSProfTree::XML_TRUE) const;
 
-  /// add metrics from call site node c to current node.
-  void addMetrics(const CSProfStatementNode* c);
- 
 protected: 
-  VMA ip;        // instruction pointer for this node
-  ushort opIndex; // index in the instruction 
-
-  vector<unsigned int> metrics;  
 
   // source file info
   std::string file; 
