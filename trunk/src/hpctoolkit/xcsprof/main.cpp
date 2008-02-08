@@ -167,11 +167,11 @@ realmain(int argc, char* const* argv)
     ldmdSetUsedFlag(profData); 
 
     // Note that this assumes iteration in reverse sorted order
-    int num_lm = profData->GetEpoch()->GetNumLdModule();
+    int num_lm = profData->epoch()->GetNumLdModule();
     VMA endVMA = VMA_MAX;
     
     for (int i = num_lm - 1; i >= 0; i--) {
-      CSProfLDmodule* csp_lm = profData->GetEpoch()->GetLdModule(i); 
+      CSProfLDmodule* csp_lm = profData->epoch()->GetLdModule(i); 
       VMA begVMA = csp_lm->GetMapaddr(); // for next csploadmodule
 
       if (csp_lm->GetUsedFlag()) {

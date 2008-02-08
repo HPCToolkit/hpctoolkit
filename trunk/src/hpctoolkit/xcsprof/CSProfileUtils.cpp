@@ -140,16 +140,16 @@ writeCSProfile(CSProfile* prof, std::ostream& os, bool prettyPrint)
   os << "<CSPROFILE version=\"1.0.2\">\n";
   os << "<CSPROFILEHDR>\n</CSPROFILEHDR>\n"; 
   os << "<CSPROFILEPARAMS>\n";
-  os << "<TARGET name"; WriteAttrStr(os, prof->GetTarget()); os << "/>\n";
+  os << "<TARGET name"; WriteAttrStr(os, prof->name()); os << "/>\n";
 
   // write out metrics
-  unsigned int numberofmetrics = prof->GetNumberOfMetrics();
-  for (unsigned int i = 0; i < numberofmetrics; i++) {
-    CSProfileMetric * metric = prof->GetMetric(i);
+  unsigned int n_metrics = prof->numMetrics();
+  for (unsigned int i = 0; i < n_metrics; i++) {
+    CSProfileMetric * metric = prof->metric(i);
     os << "<METRIC shortName"; WriteAttrNum(os, i);
-    os << " nativeName";       WriteAttrNum(os, metric->GetName());
-    os << " period";           WriteAttrNum(os, metric->GetPeriod());
-    os << " flags";            WriteAttrNum(os, metric->GetFlags());
+    os << " nativeName";       WriteAttrNum(os, metric->name());
+    os << " period";           WriteAttrNum(os, metric->period());
+    os << " flags";            WriteAttrNum(os, metric->flags());
     os << "/>\n";
   }
   os << "</CSPROFILEPARAMS>\n";
@@ -159,7 +159,7 @@ writeCSProfile(CSProfile* prof, std::ostream& os, bool prettyPrint)
   int dumpFlags = (CSProfTree::XML_TRUE); // CSProfTree::XML_NO_ESC_CHARS
   if (!prettyPrint) { dumpFlags |= CSProfTree::COMPRESSED_OUTPUT; }
   
-  prof->GetTree()->Dump(os, dumpFlags);
+  prof->tree()->dump(os, dumpFlags);
 
   os << "</CSPROFILE>\n";
   os.flush();
@@ -194,7 +194,7 @@ ReadProfile_CSPROF(const char* fnm, const char *execnm)
   DIAG_Msg(2, "Metrics found: " << num_metrics);
 
   CSProfile* prof = new CSProfile(num_metrics);
-  ret = hpcfile_cstree_read(fs, prof->GetTree(), num_metrics,
+  ret = hpcfile_cstree_read(fs, prof->tree(), num_metrics,
 			    cstree_create_node_CB, cstree_link_parent_CB,
 			    hpcfile_alloc_CB, hpcfile_free_CB);
   if (ret != HPCFILE_OK) {
@@ -229,17 +229,17 @@ ReadProfile_CSPROF(const char* fnm, const char *execnm)
   epochmdlist->SortLoadmoduleByVMA(); 
 
   // Extract profiling info
-  prof->SetTarget(execnm); 
+  prof->name(execnm); 
   
   // Extract metrics
   for (int i = 0; i < num_metrics; i++) {
-    CSProfileMetric* metric = prof->GetMetric(i);
-    metric->SetName(metadata.metrics[i].metric_name);
-    metric->SetFlags(metadata.metrics[i].flags);
-    metric->SetPeriod(metadata.metrics[i].sample_period);
+    CSProfileMetric* metric = prof->metric(i);
+    metric->name(metadata.metrics[i].metric_name);
+    metric->flags(metadata.metrics[i].flags);
+    metric->period(metadata.metrics[i].sample_period);
   }
 
-  prof->SetEpoch(epochmdlist);
+  prof->epoch(epochmdlist);
 
   // We must deallocate pointer-data
   for (int i = 0; i < num_metrics; i++) {
@@ -249,12 +249,12 @@ ReadProfile_CSPROF(const char* fnm, const char *execnm)
   hpcfile_free_CB(metadata.metrics);
 
   // Add PGM node to tree
-  addPGMToCSProfTree(prof->GetTree(), prof->GetTarget().c_str());
+  addPGMToCSProfTree(prof->tree(), prof->name().c_str());
   
   // Convert leaves (CSProfCallSiteNode) to CSProfStatementNodes
   // FIXME: There should be a better way of doing this.  We could
   // merge it with a normalization step...
-  fixLeaves(prof->GetTree()->GetRoot());
+  fixLeaves(prof->tree()->root());
   
   return prof;
 }
@@ -305,8 +305,8 @@ cstree_create_node_CB(void* tree,
   n->SetSrcInfoDone(false);
   
   // Initialize the tree, if necessary
-  if (t->IsEmpty()) {
-    t->SetRoot(n);
+  if (t->empty()) {
+    t->root(n);
   }
   
   return n;
@@ -354,13 +354,13 @@ addPGMToCSProfTree(CSProfTree* tree, const char* progName)
   bool noError = true;
 
   // Add PGM node
-  CSProfNode* n = tree->GetRoot();
+  CSProfNode* n = tree->root();
   if (!n || n->GetType() != CSProfNode::PGM) {
     CSProfNode* root = new CSProfPgmNode(progName);
     if (n) { 
       n->Link(root); // 'root' is parent of 'n'
     }
-    tree->SetRoot(root);
+    tree->root(root);
   }
   
   return noError;
@@ -401,19 +401,6 @@ fixLeaves(CSProfNode* node)
   return noError;
 }
 
-
-//****************************************************************************
-// Routines for merging two trees (without structure information)
-//****************************************************************************
-
-CSProfile*
-mergeCallPathProfiles(CSProfile* prof1, CSProfile* prof2)
-{
-  // merge metrics...
-  // merge epochs...
-  // merge tree...
-  return prof1;
-}
 
 //****************************************************************************
 // Routines for Inferring Call Frames (based on STRUCTURE information)
@@ -470,10 +457,10 @@ void
 inferCallFrames(CSProfile* prof, VMA begVMA, VMA endVMA, 
 		LoadModScope* lmScope, VMA relocVMA)
 {
-  CSProfTree* csproftree = prof->GetTree();
+  CSProfTree* csproftree = prof->tree();
   if (!csproftree) { return; }
   
-  inferCallFrames(prof, csproftree->GetRoot(), begVMA, endVMA, 
+  inferCallFrames(prof, csproftree->root(), begVMA, endVMA, 
 		  lmScope, relocVMA);
 }
 
@@ -760,11 +747,11 @@ void inferCallFrames(CSProfile* prof, CSProfNode* node,
 void 
 inferCallFrames(CSProfile* prof, VMA begVMA, VMA endVMA, binutils::LM *lm)
 {
-  CSProfTree* csproftree = prof->GetTree();
+  CSProfTree* csproftree = prof->tree();
   if (!csproftree) { return; }
   
   DIAG_MsgIf(DBG_NORM_PROC_FRAME, "start normalizing same procedure children");
-  inferCallFrames(prof, csproftree->GetRoot(), begVMA, endVMA, lm);
+  inferCallFrames(prof, csproftree->root(), begVMA, endVMA, lm);
 }
 
 
@@ -933,10 +920,10 @@ bool coalesceCallsiteLeaves(CSProfNode* node);
 bool 
 coalesceCallsiteLeaves(CSProfile* prof)
 {
-  CSProfTree* csproftree = prof->GetTree();
+  CSProfTree* csproftree = prof->tree();
   if (!csproftree) { return true; }
   
-  return coalesceCallsiteLeaves(csproftree->GetRoot());
+  return coalesceCallsiteLeaves(csproftree->root());
 }
 
 
@@ -1000,10 +987,10 @@ removeEmptyScopes(CSProfNode* node);
 void 
 removeEmptyScopes(CSProfile* prof)
 {
-  CSProfTree* csproftree = prof->GetTree();
+  CSProfTree* csproftree = prof->tree();
   if (!csproftree) { return; }
   
-  removeEmptyScopes(csproftree->GetRoot());
+  removeEmptyScopes(csproftree->root());
 }
 
 
@@ -1050,12 +1037,10 @@ copySourceFiles(CSProfile *prof,
 		std::vector<string>& searchPaths,
 		const string& dbSourceDirectory) 
 {
-  CSProfTree* csproftree = prof->GetTree();
+  CSProfTree* csproftree = prof->tree();
   if (!csproftree) { return ; }
 
-  copySourceFiles(csproftree->GetRoot(), 
-		  searchPaths, 
-		  dbSourceDirectory);
+  copySourceFiles(csproftree->root(), searchPaths, dbSourceDirectory);
 }
 
 
@@ -1472,8 +1457,8 @@ ldmdSetUsedFlag(CSProfile* prof)
 { 
   VMA curr_ip;  
   
-  CSProfTree* tree = prof->GetTree();
-  CSProfNode* root = tree->GetRoot();
+  CSProfTree* tree = prof->tree();
+  CSProfNode* root = tree->root();
   
   for (CSProfNodeIterator it(root); it.CurNode(); ++it) {
     CSProfNode* n = it.CurNode();
@@ -1481,7 +1466,7 @@ ldmdSetUsedFlag(CSProfile* prof)
     
     if (nn)  {
       curr_ip = nn->GetIP();
-      CSProfLDmodule * csploadmd = prof->GetEpoch()->FindLDmodule(curr_ip);
+      CSProfLDmodule * csploadmd = prof->epoch()->FindLDmodule(curr_ip);
       if (!(csploadmd->GetUsedFlag())) {
 	csploadmd->SetUsedFlag(true);
       }

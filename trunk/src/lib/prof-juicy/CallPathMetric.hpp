@@ -68,23 +68,25 @@
 class CSProfileMetric
 {
 public:
-  CSProfileMetric() : period(0) { }
+  CSProfileMetric() : m_period(0) { }
   ~CSProfileMetric() { }
 
   // Name, Description: The metric name and a description
   // Period: The sampling period (whether event or instruction based)
-  const std::string& GetName()        const { return name; }
-  const std::string& GetDescription() const { return description; }
-  unsigned int GetFlags()      const { return flags; }
-  unsigned int GetPeriod()      const { return period; }
-  
-  void SetName(const char* s)        { name = (s) ? s : ""; }
-  void SetDescription(const char* s) { description = (s) ? s : ""; }
-  void SetFlags(unsigned int p)      { flags = p; }
-  void SetPeriod(unsigned int p)     { period = p; }
+  const std::string& name() const        { return m_name; }
+  void               name(const char* x) { m_name = (x) ? x : ""; }
 
-  void Dump(std::ostream& os = std::cerr) const;
-  void DDump() const; 
+  const std::string& description() const { return m_description; }
+  void description(const char* x) { m_description = (x) ? x : ""; }
+
+  unsigned int flags() const         { return m_flags; }
+  void         flags(unsigned int x) { m_flags = x; }
+
+  unsigned int period() const         { return m_period; }
+  void         period(unsigned int x) { m_period = x; }
+
+  void dump(std::ostream& os = std::cerr) const { }
+  void ddump() const { }
 
 private:
   // Should not be used  
@@ -93,10 +95,10 @@ private:
 
 protected:
 private:  
-  std::string name;
-  std::string description;
-  unsigned int flags;  // flags of the metric
-  unsigned int period; // sampling period
+  std::string m_name;
+  std::string m_description;
+  unsigned int m_flags;  // flags of the metric
+  unsigned int m_period; // sampling period
 };
 
 //***************************************************************************
