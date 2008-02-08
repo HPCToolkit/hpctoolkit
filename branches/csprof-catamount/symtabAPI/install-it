@@ -1,17 +1,24 @@
 #! /bin/bash
 
+die() {
+    echo "$@"
+    exit 1
+}
+
 if [ $# -lt 1 ]; then
    echo need to supply a prefix argument \(absolute directory path\)
    exit 1
 fi
 
-prefix=$1
+libdir="$1/lib"
+mkdir -p "$libdir" || die "unable to mkdir: $libdir"
 
-cd x86_64-unknown-linux2.4/lib
+cd x86_64-unknown-linux2.4/lib \
+    || die "unable to cd: x86_64-unknown-linux2.4/lib"
+
 for d in libcommon.so libdwarf.so libelf.a libelf.so.0 libsymtabAPI.so; do
-    install $d $prefix/lib
+    install $d $libdir
 done
-cd $prefix/lib
+
+cd $libdir || die "unable to cd: $libdir"
 ln -s libelf.so.0 libelf.so
-
-
