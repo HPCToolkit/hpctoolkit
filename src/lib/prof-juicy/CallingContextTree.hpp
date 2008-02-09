@@ -116,7 +116,7 @@ public:
   // -------------------------------------------------------
   // Given a CSProfile, merge into 'this'
   // -------------------------------------------------------
-  void merge(const CSProfTree* x);
+  void merge(const CSProfTree* y, uint x_numMetrics, uint y_numMetrics);
 
   // -------------------------------------------------------
   // Dump contents for inspection
@@ -175,8 +175,8 @@ public:
   // --------------------------------------------------------
   // General Interface to fields 
   // --------------------------------------------------------
-  NodeType     GetType() const     { return type; }
-  unsigned int GetUniqueId() const { return uid; }
+  NodeType GetType() const     { return type; }
+  uint     GetUniqueId() const { return uid; }
 
   // 'GetName()' is overridden by some derived classes
   virtual const std::string& GetName() const { return NodeTypeToName(GetType()); }
@@ -215,10 +215,12 @@ public:
   CSProfStatementNode* AncestorStatement() const; // CC
 
   // --------------------------------------------------------
-  // Dump contents for inspection
+  // 
   // --------------------------------------------------------
 
-  void merge(CSProfNode* y);
+  void merge(CSProfNode* y, uint x_numMetrics, uint y_numMetrics);
+
+  CSProfNode* findDynChild(VMA ip);
 
   // --------------------------------------------------------
   // Dump contents for inspection
@@ -243,11 +245,14 @@ public:
   
   void DDump();
   void DDumpSort();
+
+protected:
+  void merge_fixup(int metric_offset);
   
- protected:
+protected:
   // private: 
   NodeType type;
-  unsigned int uid; 
+  uint uid; 
 };
 
 
@@ -259,7 +264,7 @@ class CSProfCodeNode : public CSProfNode {
 protected: 
   CSProfCodeNode(NodeType t, CSProfNode* _parent, 
 		 SrcFile::ln begLn = ln_NULL, SrcFile::ln endLn = ln_NULL,
-		 unsigned int sId = 0);
+		 uint sId = 0);
   
 public: 
   virtual ~CSProfCodeNode();
@@ -304,8 +309,8 @@ public:
   virtual void SetSrcInfoDone(bool bi) 
     { DIAG_Die(DIAG_Unimplemented); }
 
-  unsigned int   structureId() const { return m_sId; }
-  unsigned int&  structureId()       { return m_sId; }
+  uint  structureId() const { return m_sId; }
+  uint& structureId()       { return m_sId; }
   
   // Dump contents for inspection
   virtual std::string ToDumpString(int dmpFlag = CSProfTree::XML_TRUE) const;
@@ -314,7 +319,7 @@ protected:
   void Relocate();
   SrcFile::ln begLine;
   SrcFile::ln endLine;
-  unsigned int m_sId;  // static structure id
+  uint m_sId;  // static structure id
   static string BOGUS;
 }; 
 
@@ -340,7 +345,7 @@ public:
   IDynNode(VMA ip, ushort opIdx)
     : m_ip(ip), m_opIdx(opIdx) { }
 
-  IDynNode(VMA ip, ushort opIdx, vector<unsigned int>& metrics)
+  IDynNode(VMA ip, ushort opIdx, vector<uint>& metrics)
     : m_ip(ip), m_opIdx(opIdx), m_metrics(metrics) { }
 
   virtual ~IDynNode() { }
@@ -366,21 +371,24 @@ public:
 
   ushort opIndex() const { return m_opIdx; }
 
-  unsigned int metric(int i) const { return m_metrics[i]; }
-  unsigned int numMetrics() const { return m_metrics.size(); }
+  uint metric(int i) const { return m_metrics[i]; }
+  uint numMetrics() const { return m_metrics.size(); }
 
   // -------------------------------------------------------
   // 
   // -------------------------------------------------------
 
-  void merge(const IDynNode& y);
-  void merge_append(const IDynNode& y);
+  void mergeMetrics(const IDynNode& y, uint beg_idx = 0);
+  void appendMetrics(const IDynNode& y);
+
+  void expandMetrics_before(uint offset);
+  void expandMetrics_after(uint offset);
 
 private:
   VMA m_ip;       // instruction pointer for this node
   ushort m_opIdx; // index in the instruction 
 
-  vector<unsigned int> m_metrics;  
+  vector<uint> m_metrics;  
 };
 
 
@@ -447,7 +455,7 @@ public:
   // Constructor/Destructor
   CSProfCallSiteNode(CSProfNode* _parent);
   CSProfCallSiteNode(CSProfNode* _parent, 
-		     VMA ip, ushort opIdx, vector<unsigned int>& metrics);
+		     VMA ip, ushort opIdx, vector<uint>& metrics);
   virtual ~CSProfCallSiteNode();
   
   // Node data
@@ -578,7 +586,7 @@ class CSProfLoopNode: public CSProfCodeNode {
 public: 
   // Constructor/Destructor
   CSProfLoopNode(CSProfNode* _parent, SrcFile::ln begLn, SrcFile::ln endLn,
-		 unsigned int sId = 0);
+		 uint sId = 0);
   ~CSProfLoopNode();
   
   // Dump contents for inspection
@@ -598,7 +606,7 @@ public:
   // Constructor/Destructor
   CSProfStmtRangeNode(CSProfNode* _parent, 
 		      SrcFile::ln begLn, SrcFile::ln endLn, 
-		      unsigned int sId = 0);
+		      uint sId = 0);
   ~CSProfStmtRangeNode();
   
   // Dump contents for inspection

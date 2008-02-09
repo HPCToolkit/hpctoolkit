@@ -143,8 +143,8 @@ writeCSProfile(CSProfile* prof, std::ostream& os, bool prettyPrint)
   os << "<TARGET name"; WriteAttrStr(os, prof->name()); os << "/>\n";
 
   // write out metrics
-  unsigned int n_metrics = prof->numMetrics();
-  for (unsigned int i = 0; i < n_metrics; i++) {
+  uint n_metrics = prof->numMetrics();
+  for (uint i = 0; i < n_metrics; i++) {
     const CSProfileMetric* metric = prof->metric(i);
     os << "<METRIC shortName"; WriteAttrNum(os, i);
     os << " nativeName";       WriteAttrNum(os, metric->name());
@@ -189,7 +189,7 @@ ReadProfile_CSPROF(const char* fnm, const char *execnm)
     return NULL;
   }
   
-  unsigned int num_metrics = metadata.num_metrics;
+  uint num_metrics = metadata.num_metrics;
   
   DIAG_Msg(2, "Metrics found: " << num_metrics);
 
@@ -211,9 +211,9 @@ ReadProfile_CSPROF(const char* fnm, const char *execnm)
   // 
   // ------------------------------------------------------------
 
-  DIAG_WMsgIf(epochtbl.num_epoch > 1, "Only processing first epoch!");
+  DIAG_WMsgIf(epochtbl.num_epoch > 1, fnm << ": only processing first epoch!");
   
-  unsigned int num_lm = epochtbl.epoch_modlist[0].num_loadmodule;
+  uint num_lm = epochtbl.epoch_modlist[0].num_loadmodule;
 
   CSProfEpoch* epochmdlist = new CSProfEpoch(num_lm);
 
@@ -273,7 +273,7 @@ DumpProfile_CSPROF(const char* fnm)
     DIAG_Throw(fnm << ": error reading HPC_CSPROF");
   }
   
-  unsigned int num_metrics = metadata.num_metrics;
+  uint num_metrics = metadata.num_metrics;
   
   ret = hpcfile_cstree_fprint(fs, num_metrics, stdout);
   if (ret != HPCFILE_OK) { 
@@ -293,15 +293,14 @@ cstree_create_node_CB(void* tree,
   VMA ip;
   ushort opIdx;
   convertOpIPToIP((VMA)data->ip, ip, opIdx);
-  vector<unsigned int> metricsVector;
-  metricsVector.clear();
-  for (unsigned int i = 0; i < data->num_metrics; i++) {
-    metricsVector.push_back((unsigned int)data->metrics[i]);
+  vector<uint> metricVec;
+  metricVec.clear();
+  for (uint i = 0; i < data->num_metrics; i++) {
+    metricVec.push_back((uint)data->metrics[i]);
   }
 
   DIAG_DevMsgIf(0, "cstree_create_node_CB: " << hex << data->ip << dec);
-  CSProfCallSiteNode* n = new CSProfCallSiteNode(NULL, ip, 
-						 opIdx, metricsVector); 
+  CSProfCallSiteNode* n = new CSProfCallSiteNode(NULL, ip, opIdx, metricVec);
   n->SetSrcInfoDone(false);
   
   // Initialize the tree, if necessary
@@ -956,10 +955,10 @@ coalesceCallsiteLeaves(CSProfNode* node)
 	+ StrUtil::toStr(c->GetLine());
       
       StringToCallSiteMap::iterator it = sourceInfoMap.find(myid);
-      if (it != sourceInfoMap.end()) { 
+      if (it != sourceInfoMap.end()) {
 	// found -- we have a duplicate
 	CSProfStatementNode* c1 = (*it).second;
-	c1->IDynNode::merge(*c);
+	c1->mergeMetrics(*c);
 	
 	// remove 'child' from tree
 	child->Unlink();

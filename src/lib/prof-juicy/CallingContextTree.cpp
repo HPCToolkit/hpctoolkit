@@ -92,7 +92,7 @@ CSProfTree::~CSProfTree()
 
 
 void 
-CSProfTree::merge(const CSProfTree* y)
+CSProfTree::merge(const CSProfTree* y, uint x_numMetrics, uint y_numMetrics)
 {
   CSProfPgmNode* x_root = dynamic_cast<CSProfPgmNode*>(root());
   CSProfPgmNode* y_root = dynamic_cast<CSProfPgmNode*>(y->root());
@@ -100,7 +100,7 @@ CSProfTree::merge(const CSProfTree* y)
   DIAG_Assert(x_root && y_root && x_root->GetName() == y_root->GetName(),
 	      "Unexpected root!");
   
-  x_root->merge(y_root);
+  x_root->merge(y_root, x_numMetrics, y_numMetrics);
 }
 
 
@@ -154,7 +154,7 @@ CSProfNode::CSProfNode(NodeType t, CSProfNode* _parent)
 { 
   DIAG_Assert((type == PGM) || (AncestorPgm() == NULL) || 
 	      !AncestorPgm()->IsFrozen(), "");
-  static unsigned int uniqueId = 0; 
+  static uint uniqueId = 0; 
   uid = uniqueId++; 
   xDEBUG(DEB_UNIFY_PROCEDURE_FRAME,
 	 if (type==STATEMENT) {
@@ -181,7 +181,7 @@ CSProfNode::~CSProfNode()
 
 CSProfCodeNode::CSProfCodeNode(NodeType t, CSProfNode* _parent, 
 			       SrcFile::ln begLn, SrcFile::ln endLn,
-			       unsigned int sId) 
+			       uint sId) 
   : CSProfNode(t, _parent), begLine(ln_NULL), endLine(ln_NULL),
     m_sId(sId)
 { 
@@ -250,7 +250,7 @@ CSProfCallSiteNode::CSProfCallSiteNode(CSProfNode* _parent)
 
 
 CSProfCallSiteNode::CSProfCallSiteNode(CSProfNode* _parent, VMA ip, 
-			      ushort opIndex, vector<unsigned int>& metrics)
+				       ushort opIndex, vector<uint>& metrics)
   : CSProfCodeNode(CALLSITE, _parent, ln_NULL, ln_NULL), 
     IDynNode(ip, opIndex, metrics)
 {
@@ -275,10 +275,8 @@ CSProfStatementNode::~CSProfStatementNode()
 void 
 CSProfStatementNode::operator=(const CSProfStatementNode& x)
 {
-  //DIAG_Die(DIAG_Unimplemented);// FIXME/TEST
-
-  ip(x.ip(), x.opIndex()); // FIXME
-  IDynNode::merge(x);
+  ip(x.ip(), x.opIndex());
+  mergeMetrics(x);
 
   file = x.GetFile();
   proc = x.GetProc();
@@ -294,7 +292,7 @@ void
 CSProfStatementNode::copyCallSiteNode(CSProfCallSiteNode* y) 
 {
   ip(y->ra(), y->opIndex());
-  IDynNode::merge_append(*y);
+  appendMetrics(*y);
 
   file = y->GetFile();
   proc = y->GetProc();
@@ -318,7 +316,7 @@ CSProfProcedureFrameNode::~CSProfProcedureFrameNode()
 
 
 CSProfLoopNode::CSProfLoopNode(CSProfNode* _parent, 
-			       SrcFile::ln begLn, SrcFile::ln endLn, unsigned int sId)
+			       SrcFile::ln begLn, SrcFile::ln endLn, uint sId)
   : CSProfCodeNode(LOOP, _parent, begLn, endLn, sId)
 {
   DIAG_Assert((_parent == NULL) || (_parent->GetType() == GROUP) 
@@ -333,7 +331,7 @@ CSProfLoopNode::~CSProfLoopNode()
 
 CSProfStmtRangeNode::CSProfStmtRangeNode(CSProfNode* _parent, 
 					 SrcFile::ln begLn, SrcFile::ln endLn, 
-					 unsigned int sId)
+					 uint sId)
   : CSProfCodeNode(STMT_RANGE, _parent, begLn, endLn, sId)
 {
   DIAG_Assert((_parent == NULL) || (_parent->GetType() == GROUP)
@@ -461,20 +459,25 @@ CSProfNode::AncestorStmtRange() const
 //**********************************************************************
 
 void 
-IDynNode::merge(const IDynNode& y)
+IDynNode::mergeMetrics(const IDynNode& y, uint beg_idx)
 {
+#if 0
   if (numMetrics() != y.numMetrics()) {
     m_metrics.resize(y.numMetrics());
   }
+#endif
 
-  for (int i = 0; i < y.numMetrics(); ++i) {
-    m_metrics[i] += y.metric(i);
+  uint x_end = y.numMetrics() + beg_idx;
+  DIAG_Assert(x_end <= numMetrics(), "Insufficient space for merging.");
+
+  for (uint x_i = beg_idx, y_i = 0; x_i < x_end; ++x_i, ++y_i) {
+    m_metrics[x_i] += y.metric(y_i);
   }
 }
 
 
 void 
-IDynNode::merge_append(const IDynNode& y)
+IDynNode::appendMetrics(const IDynNode& y)
 {
   for (int i = 0; i < y.numMetrics(); ++i) {
     m_metrics.push_back(y.metric(i));
@@ -482,28 +485,109 @@ IDynNode::merge_append(const IDynNode& y)
 }
 
 
+void 
+IDynNode::expandMetrics_before(uint offset)
+{
+  for (int i = 0; i < offset; ++i) {
+    m_metrics.insert(m_metrics.begin(), 0);
+  }
+}
+
+
+void 
+IDynNode::expandMetrics_after(uint offset)
+{
+  for (int i = 0; i < offset; ++i) {
+    m_metrics.push_back(0);
+  }
+}
+
+
 // Let y be a node corresponding to 'this'(= x) and assume x is already
 // merged.  Given y, merge y's children into x.
+// NOTE: assume we can destroy y...
 void
-CSProfNode::merge(CSProfNode* y)
+CSProfNode::merge(CSProfNode* y, uint x_numMetrics, uint y_numMetrics)
 {
+  CSProfNode* x = this;
+
+  // ------------------------------------------------------------
   // 0. For each child c of x, extend c's metric vector.
+  // ------------------------------------------------------------
+  for (CSProfNodeChildIterator it(x); it.Current(); ++it) {
+    CSProfNode* child = it.CurNode();
+    IDynNode* child_dyn = dynamic_cast<IDynNode*>(child);
+    if (child_dyn) {
+      child_dyn->expandMetrics_after(y_numMetrics);
+    }
+  }
   
-  
+  // ------------------------------------------------------------
   // 1. If y is childless, return.
+  // ------------------------------------------------------------
   if (y->IsLeaf()) {
     return;
   }
-  
+
+  // ------------------------------------------------------------  
   // 2. If a child d of y _does not_ appear as a child of x, then copy
   //    (subtree) d [fixing d's metrics], make it a child of x and
   //    return.
-  
-
   // 3. If a child d of y _does_ have a corresponding child c of x,
   //    merge [the metrics of] d into c and recur.
-  
-  // FIXME
+  // ------------------------------------------------------------  
+  for (CSProfNodeChildIterator it(y); it.Current(); /* */) {
+    CSProfNode* y_child = it.CurNode();
+    IDynNode* y_child_dyn = dynamic_cast<IDynNode*>(y_child);
+    DIAG_Assert(y_child_dyn, "");
+    it++; // advance iterator -- it is pointing at 'child'
+
+    CSProfNode* x_child = findDynChild(y_child_dyn->ip());
+    
+    if (!x_child) {
+      y_child->Unlink();
+      y_child->merge_fixup(x_numMetrics);
+      y_child->Link(x);
+    }
+    else {
+      IDynNode* x_child_dyn = dynamic_cast<IDynNode*>(x_child);
+      x_child_dyn->mergeMetrics(*y_child_dyn, x_numMetrics);
+      x_child->merge(y_child, x_numMetrics, y_numMetrics);
+    }
+  }
+}
+
+
+CSProfNode* 
+CSProfNode::findDynChild(VMA ip)
+{
+  for (CSProfNodeChildIterator it(this); it.Current(); ++it) {
+    CSProfNode* child = it.CurNode();
+    IDynNode* child_dyn = dynamic_cast<IDynNode*>(child);
+    
+    if (child_dyn && child_dyn->ip() == ip) {
+      return child;
+    }
+  }
+  return NULL;
+}
+
+
+void
+CSProfNode::merge_fixup(int metric_offset)
+{
+  IDynNode* x_dyn = dynamic_cast<IDynNode*>(this);
+  if (x_dyn) {
+    x_dyn->expandMetrics_before(metric_offset);
+  }
+
+  for (CSProfNodeChildIterator it(this); it.Current(); ++it) {
+    CSProfNode* child = it.CurNode();
+    IDynNode* child_dyn = dynamic_cast<IDynNode*>(child);
+    if (child_dyn) {
+      child->merge_fixup(metric_offset);
+    }
+  }
 }
 
 
@@ -629,7 +713,7 @@ CSProfCallSiteNode::ToDumpMetricsString(int dmpFlag) const
 
   metricsString ="";
   for (i = 0; i < numMetrics(); i++) {
-    unsigned int crtMetric = metric(i);
+    uint crtMetric = metric(i);
     if (crtMetric!= 0) {
       metricsString  +=  " <M ";
       metricsString  +=  "n"+MakeAttrNum(i)+" v" + MakeAttrNum(crtMetric);
@@ -689,7 +773,7 @@ CSProfStatementNode::ToDumpMetricsString(int dmpFlag) const {
 
   metricsString ="";
   for (i = 0; i < numMetrics(); i++) {
-    unsigned int crtMetric = metric(i);
+    uint crtMetric = metric(i);
     if (crtMetric!= 0) {
       metricsString += " <M ";
       metricsString += "n" + MakeAttrNum(i) + " v" + MakeAttrNum(crtMetric);
