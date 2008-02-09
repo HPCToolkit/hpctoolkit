@@ -143,7 +143,7 @@ realmain(int argc, char* const* argv)
   // ------------------------------------------------------------
   // Read 'profData', the profiling data file
   // ------------------------------------------------------------
-  CSProfile* profData = readProfileData(args.profileFiles, args.exeFile);
+  CSProfile* prof = readProfileData(args.profileFiles, args.exeFile);
 
   // ------------------------------------------------------------
   // Add source file info
@@ -164,14 +164,14 @@ realmain(int argc, char* const* argv)
     // add one more pass search the callstack tree, to set 
     // the flag -"alpha"- only, since we get info from binary 
     // profile file not from bfd  
-    ldmdSetUsedFlag(profData); 
+    ldmdSetUsedFlag(prof); 
 
     // Note that this assumes iteration in reverse sorted order
-    int num_lm = profData->epoch()->GetNumLdModule();
+    int num_lm = prof->epoch()->GetNumLdModule();
     VMA endVMA = VMA_MAX;
     
     for (int i = num_lm - 1; i >= 0; i--) {
-      CSProfLDmodule* csp_lm = profData->epoch()->GetLdModule(i); 
+      CSProfLDmodule* csp_lm = prof->epoch()->GetLdModule(i); 
       VMA begVMA = csp_lm->GetMapaddr(); // for next csploadmodule
 
       if (csp_lm->GetUsedFlag()) {
@@ -183,18 +183,18 @@ realmain(int argc, char* const* argv)
 	
 	if (lmScope) {
 	  DIAG_Msg(1, "Using STRUCTURE for: " << lm_fnm);
-	  processCallingCtxtTree(profData, begVMA, endVMA, lm_fnm, lmScope);
+	  processCallingCtxtTree(prof, begVMA, endVMA, lm_fnm, lmScope);
 	}
 	else {
 	  DIAG_Msg(1, "Using debug info for: " << lm_fnm);
-	  processCallingCtxtTree(profData, begVMA, endVMA, lm_fnm);
+	  processCallingCtxtTree(prof, begVMA, endVMA, lm_fnm);
 	}
       }
 
       endVMA = begVMA - 1;
     } /* for each load module */ 
     
-    normalizeCSProfile(profData);
+    normalizeCSProfile(prof);
   }
   catch (...) {
     DIAG_EMsg("While preparing CSPROFILE...");
@@ -216,14 +216,14 @@ realmain(int argc, char* const* argv)
     DIAG_Die("could not create database source code directory " << dbSrcDir);
   }
   
-  copySourceFiles(profData, args.searchPaths, dbSrcDir);
+  copySourceFiles(prof, args.searchPaths, dbSrcDir);
   
   string experiment_fnm = args.dbDir + "/" + args.OutFilename_XML;
-  writeCSProfileInDatabase(profData, experiment_fnm);
-  //writeCSProfile(profData, std::cout, /* prettyPrint */ true);
+  writeCSProfileInDatabase(prof, experiment_fnm);
+  //writeCSProfile(prof, std::cout, /* prettyPrint */ true);
   
 
-  delete profData;
+  delete prof;
   return (0);
 }
 
@@ -236,32 +236,31 @@ readProfileFile(const string& prof_fnm, const string& exe_fnm);
 static CSProfile* 
 readProfileData(std::vector<string>& profileFiles, const string& exe_fnm)
 {
-  DIAG_Assert(profileFiles.size() == 1, DIAG_UnexpectedInput);
-  
-  CSProfile* data = readProfileFile(profileFiles[0], exe_fnm);
+  CSProfile* prof = readProfileFile(profileFiles[0], exe_fnm);
   
   for (int i = 1; i < profileFiles.size(); ++i) {
-    CSProfile* tmp = readProfileFile(profileFiles[i], exe_fnm);
-    //merge tmp into data
+    CSProfile* p = readProfileFile(profileFiles[i], exe_fnm);
+    prof->merge(*p);
+    delete p;
   }
   
-  return data;
+  return prof;
 }
 
 
 static CSProfile* 
 readProfileFile(const string& prof_fnm, const string& exe_fnm)
 {
-  CSProfile* data = NULL;
+  CSProfile* prof = NULL;
   try {
-    //data = TheProfileReader.ReadProfileFile(args.profFnm /*type*/);
-    data = ReadProfile_CSPROF(prof_fnm.c_str(), exe_fnm.c_str());
+    //prof = TheProfileReader.ReadProfileFile(args.profFnm /*type*/);
+    prof = ReadProfile_CSPROF(prof_fnm.c_str(), exe_fnm.c_str());
   } 
   catch (...) {
     DIAG_EMsg("While reading profile '" << prof_fnm << "'...");
     throw;
   }
-  return data;
+  return prof;
 }
 
 
@@ -317,7 +316,7 @@ readStructureData(std::vector<string>& structureFiles)
 //****************************************************************************
 
 static void
-processCallingCtxtTree(CSProfile* profData, VMA begVMA, VMA endVMA, 
+processCallingCtxtTree(CSProfile* prof, VMA begVMA, VMA endVMA, 
 		       const string& lm_fnm, LoadModScope* lmScope)
 {
   VMA relocVMA = 0;
@@ -335,12 +334,12 @@ processCallingCtxtTree(CSProfile* profData, VMA begVMA, VMA endVMA,
     throw;
   }
   
-  inferCallFrames(profData, begVMA, endVMA, lmScope, relocVMA);
+  inferCallFrames(prof, begVMA, endVMA, lmScope, relocVMA);
 }
 
 
 static void
-processCallingCtxtTree(CSProfile* profData, VMA begVMA, VMA endVMA, 
+processCallingCtxtTree(CSProfile* prof, VMA begVMA, VMA endVMA, 
 		       const string& lm_fnm)
 {
   binutils::LM* lm = NULL;
@@ -359,7 +358,7 @@ processCallingCtxtTree(CSProfile* profData, VMA begVMA, VMA endVMA,
     lm->relocate(begVMA);
   }
   
-  inferCallFrames(profData, begVMA, endVMA, lm);
+  inferCallFrames(prof, begVMA, endVMA, lm);
   
   delete lm;
 }

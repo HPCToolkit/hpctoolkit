@@ -89,7 +89,7 @@
 class CSProfile: public Unique {
 public:
   // Constructor/Destructor
-  CSProfile(unsigned int i);
+  CSProfile(uint i);
   virtual ~CSProfile();
   
   // -------------------------------------------------------
@@ -98,8 +98,8 @@ public:
   const std::string& name() const { return m_name; }
   void               name(const char* s) { m_name = (s) ? s : ""; }
 
-  unsigned int     numMetrics() const           { return m_metrics.size(); }
-  CSProfileMetric* metric(unsigned int i) const { return m_metrics[i]; }
+  uint             numMetrics() const   { return m_metrics.size(); }
+  CSProfileMetric* metric(uint i) const { return m_metrics[i]; }
 
   CSProfTree*  cct() const { return m_cct; }
 

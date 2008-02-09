@@ -70,7 +70,7 @@ using namespace xml;
 // CSProfile
 //***************************************************************************
 
-CSProfile::CSProfile(unsigned int i)
+CSProfile::CSProfile(uint i)
 {
   m_metrics.resize(i);
   for (int i = 0; i < m_metrics.size(); ++i) {
@@ -92,17 +92,19 @@ CSProfile::~CSProfile()
 
 
 void 
-CSProfile::merge(const CSProfile& x)
+CSProfile::merge(const CSProfile& y)
 {
+  uint x_numMetrics = numMetrics();
+
   // merge metrics
-  for (int i = 0; i < x.numMetrics(); ++i) {
-    const CSProfileMetric* m = x.metric(i);
+  for (int i = 0; i < y.numMetrics(); ++i) {
+    const CSProfileMetric* m = y.metric(i);
     m_metrics.push_back(new CSProfileMetric(*m));
   }
   
   // merge epochs... [FIXME]
-
-  m_cct->merge(x.cct());
+  
+  m_cct->merge(y.cct(), x_numMetrics, y.numMetrics());
 }
 
 
