@@ -23,21 +23,46 @@
 //************************* System Include Files ****************************
 
 #include <stdlib.h>
+#include <ucontext.h>
 
 //*************************** User Include Files ****************************
 
-#include "lush.i"
 #include "lushi.h"
+#include "lush-support.h"
 
 //*************************** Forward Declarations **************************
-
 
 //***************************************************************************
 // LUSH Agents
 //***************************************************************************
 
-// NOTE: This is here instead of <lush.i> because it depends on
-// <lushi.h> types.
+// ---------------------------------------------------------
+// LUSH agent id
+// ---------------------------------------------------------
+
+#define lush_agentid_NULL 0
+typedef int lush_agentid_t;
+
+
+// ---------------------------------------------------------
+// A LUSH agent
+// ---------------------------------------------------------
+
+typedef struct lush_agent lush_agent_t;
+
+struct lush_agent {
+  lush_agentid_t id;
+  char* path;
+  void* dlhandle;
+};
+
+
+// ---------------------------------------------------------
+// A pool of LUSH agents
+// ---------------------------------------------------------
+
+typedef struct lush_agent_pool lush_agent_pool_t;
+
 struct lush_agent_pool {
 
   lush_agent_t agent; // FIXME: one agent for now
@@ -52,7 +77,7 @@ struct lush_agent_pool {
   POOL_DECL(LUSHI_strerror);
   POOL_DECL(LUSHI_reg_dlopen);
   POOL_DECL(LUSHI_ismycode);
-  POOL_DECL(LUSHI_peek_bichord);
+  POOL_DECL(LUSHI_step_bichord);
   POOL_DECL(LUSHI_step_pnote);
   POOL_DECL(LUSHI_step_lnote);
 
@@ -69,48 +94,58 @@ int lush_agent_pool__init(lush_agent_pool_t* x, const char* path);
 int lush_agent_pool__fini(lush_agent_pool_t* x);
 
 
-//***************************************************************************
-// LUSH Unwind Types
-//***************************************************************************
-
-inline lush_assoc_t 
-lush_cursor_get_assoc(lush_cursor_t* cursor);
-
-inline lush_lip_t 
-lush_cursor_get_lip(lush_cursor_t* cursor);
-
-inline void* 
-lush_cursor_get_pcursor(lush_cursor_t* cursor);
-
-inline void* 
-lush_cursor_get_lcursor(lush_cursor_t* cursor);
-
-
 // **************************************************************************
-// LUSH Unwinding
+// LUSH Unwinding Interface
 // **************************************************************************
 
-// Initialize the unwind.  Set a flag indicating initialization.
-void lush_init_unw(lush_cursor_t* cursor, void* context);;
+// Given an agent-pool and context, initialize the lush_cursor but do
+// not step to the first (innermost) bichord.
+void lush_init_unw(lush_cursor_t* cursor, 
+		   lush_agent_pool_t* apool, mcontext_t *context);
 
 
-// Given a lush_cursor, peek the next bichord.
-lush_step_t lush_peek_bichord(lush_cursor_t* cursor);
+// Given a lush_cursor, step the cursor to the next (less deeply
+// nested) bichord.  Returns:
+//   LUSH_STEP_CONT:     if step was sucessful
+//   LUSH_STEP_END_PROJ: if chord was end of projection
+//   LUSH_STEP_ERROR:    on account of an error.
+lush_step_t lush_step_bichord(lush_cursor_t* cursor);
 
 
-// Given a lush_cursor, unwind to the next physical chord and locate the
-// physical cursor.  Use the appropriate agent or local procedures.
-lush_step_t lush_step_pchord(lush_cursor_t* cursor);
-
-
-// Given a lush_cursor, unwind one pnote/lonote of the pchord/lchord.
+// Given a lush_cursor, step the cursor to the next (less deeply
+// nested) p-note/l-note of the current p-chord/l-chord.
+// Returns: 
+//   LUSH_STEP_CONT:      if step was sucessful
+//   LUSH_STEP_END_CHORD: if prev note was the end of the chord
+//   LUSH_STEP_ERROR:     on account of an error.
 lush_step_t lush_step_pnote(lush_cursor_t* cursor);
 lush_step_t lush_step_lnote(lush_cursor_t* cursor);
 
 
-// Given a lush_cursor, forcefully advance to the next pnote (which
-// may also be the next pchord)
+// **************************************************************************
+// LUSH Unwinding Primitives
+// **************************************************************************
+
+// Given a lush_cursor, _forcefully_ step the cursor to the next (less
+// deeply nested) p-chord.  Return values are same as
+// lush_step_bichord.
+lush_step_t lush_forcestep_pchord(lush_cursor_t* cursor);
+
+
+// Given a lush_cursor, _forcefully_ step the cursor to the next (less
+// deeply nested) p-note which may also be the next p-chord.
+// Returns:
+//   LUSH_STEP_CONT:      if step was sucessful
+//   LUSH_STEP_END_CHORD: if prev p-note was the end of the p-chord
+//   LUSH_STEP_END_PROJ:  if prev p-chord was end of p-projection
+//   LUSH_STEP_ERROR:     on account of an error.
+//
+// Sets zero or more of the following flags (as appropriate):
+//   LUSH_CURSOR_FLAGS_END_PPROJ:  
+//   LUSH_CURSOR_FLAGS_BEG_PCHORD: 
+//   LUSH_CURSOR_FLAGS_END_PCHORD: 
 lush_step_t lush_forcestep_pnote(lush_cursor_t* cursor);
+
 
 // **************************************************************************
 
