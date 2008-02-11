@@ -22,64 +22,145 @@
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
+#include <stdbool.h>
 
 //*************************** User Include Files ****************************
 
 #include <lush/lushi.h>
 #include <lush/lushi-cb.h>
 
-//*************************** Forward Declarations **************************
-
-#define LUSH_CB_DECL(FN) \
-  FN ## _fn_t FN
-
-LUSH_CB_DECL(LUSHCB_malloc);
-LUSH_CB_DECL(LUSHCB_free);
-LUSH_CB_DECL(LUSHCB_step);
-LUSH_CB_DECL(LUSHCB_get_loadmap);
-
-#undef LUSH_CB_DECL(FN)
+#include <general.h> // FIXME: for MSG -- but should not include
 
 //*************************** Forward Declarations **************************
 
-static const char* libcilk = "libcilk";
+#define LUSHCB_DECL(FN) \
+ LUSH ## FN ## _fn_t  FN
 
-// The libcilk address range [low, high)
-static void* libcilk_low_addr;
-static void* libcilk_high_addr;
+LUSHCB_DECL(CB_malloc);
+LUSHCB_DECL(CB_free);
+LUSHCB_DECL(CB_step);
+LUSHCB_DECL(CB_get_loadmap);
+// lush_cursor stuff
+
+#undef LUSHCB_DECL
+
+LUSH_AGENTID_XXX_t lush_aid;
+
+//*************************** Forward Declarations **************************
+
+typedef union cilk_ip cilk_ip_t;
+
+union cilk_ip {
+  // ------------------------------------------------------------
+  // LUSH type
+  // ------------------------------------------------------------
+  lush_lip_t official_lip;
+  
+  // ------------------------------------------------------------
+  // superimposed with:    
+  // ------------------------------------------------------------
+  void* ip;
+};
+
+
+typedef union cilk_cursor cilk_cursor_t;
+
+union cilk_cursor {
+  // ------------------------------------------------------------
+  // LUSH type
+  // ------------------------------------------------------------
+  lush_lcursor_t official_cursor;
+
+  // ------------------------------------------------------------
+  // superimposed with:
+  // ------------------------------------------------------------
+  struct {
+    void* ref_ip; // reference physical ip
+    bool seen_cilkprog;
+    bool is_beg_lnote;
+  };
+};
+
+
+//*************************** Forward Declarations **************************
+
+// FIXME: hackish implementation
+static const char* libcilk_str = "libcilk";
+static const char* lib_str = "lib";
+static const char* ld_str = "ld-linux";
+
+typedef struct {
+  void* beg; // [low, high)
+  void* end;
+} addr_pair_t;
+
+addr_pair_t tablecilk;
+
+#define tableother_sz 20
+addr_pair_t tableother[tableother_sz];
+
+//*************************** Forward Declarations **************************
 
 static int 
 determine_code_ranges();
+
+static bool
+is_libcilk(void* addr);
+
+static bool
+is_cilkprogram(void* addr);
+
+//*************************** Forward Declarations **************************
+
+static void
+init_lcursor(lush_cursor_t* cursor);
+
+//*************************** Forward Declarations **************************
+
+// FIXME: should go away when unw_step is fixed
+extern void *monitor_unwind_fence1,*monitor_unwind_fence2;
+extern void *monitor_unwind_thread_fence1,*monitor_unwind_thread_fence2;
+
+int HACK_is_fence(void *iip)
+{
+  void **ip = (void **) iip;
+
+  return ((ip >= &monitor_unwind_fence1) && (ip <= &monitor_unwind_fence2)) ||
+    ((ip >= &monitor_unwind_thread_fence1) && (ip <= &monitor_unwind_thread_fence2));
+}
 
 // **************************************************************************
 // Initialization/Finalization
 // **************************************************************************
 
-export int
+extern int
 LUSHI_init(int argc, char** argv,
+	   LUSH_AGENTID_XXX_t aid,
 	   LUSHCB_malloc_fn_t      malloc_fn,
 	   LUSHCB_free_fn_t        free_fn,
 	   LUSHCB_step_fn_t        step_fn,
 	   LUSHCB_get_loadmap_fn_t loadmap_fn)
 {
-  LUSHCB_malloc      = malloc_fn;
-  LUSHCB_free        = free_fn;
-  LUSHCB_step        = step_fn;
-  LUSHCB_get_loadmap = loadmap_fn;
-  
+  lush_aid = aid;
+
+  CB_malloc      = malloc_fn;
+  CB_free        = free_fn;
+  CB_step        = step_fn;
+  CB_get_loadmap = loadmap_fn;
+
   determine_code_ranges();
   return 0;
 }
 
 
-export int 
+extern int 
 LUSHI_fini()
 {
   return 0;
 }
 
 
-export char* 
+extern char* 
 LUSHI_strerror(int code)
 {
   // STUB
@@ -91,7 +172,7 @@ LUSHI_strerror(int code)
 // Maintaining Responsibility for Code/Frame-space
 // **************************************************************************
 
-export int 
+extern int 
 LUSHI_reg_dlopen()
 {
   determine_code_ranges();
@@ -99,68 +180,207 @@ LUSHI_reg_dlopen()
 }
 
 
-export bool 
+extern bool 
 LUSHI_ismycode(void* addr)
 {
-  return (libcilk_low_addr <= addr && addr < libcilk_high_addr);
+  return (is_libcilk(addr) || is_cilkprogram(addr));
 }
 
 
 int 
 determine_code_ranges()
 {
+  int i;
   LUSHCB_epoch_t* epoch;
-  LUSHCB_get_loadmap(&epoch);
- 
-  libcilk_low_addr  = NULL;
-  libcilk_high_addr = NULL;
+  CB_get_loadmap(&epoch);
 
-  for (csprof_epoch_module_t* mod = epoch->loaded_modules; 
-       mod != NULL; mod = mod->next) {
-    char* s = strstr(mod->module_name, libcilk);
-    if (s) {
-      if (libcilk_low_addr != NULL) {
-	// FIXME: we currently assume only one range of addresses
-	fprintf(stderr, "Internal Error: determine_code_ranges");
+  if (epoch->num_modules > 20) {
+    fprintf(stderr, "FIXME: too many load modules");
+  }
+
+  // Initialize
+  tablecilk.beg = NULL;
+  tablecilk.end = NULL;
+  
+  for (i = 0; i < tableother_sz; ++i) {
+    tableother[i].beg = NULL;
+    tableother[i].end = NULL;
+  }
+
+  // Fill interval table
+  i = 0;
+  csprof_epoch_module_t* mod;
+  for (mod = epoch->loaded_modules; mod != NULL; mod = mod->next) {
+
+    if (strstr(mod->module_name, libcilk_str)) {
+      if (tablecilk.beg != NULL) {
+	fprintf(stderr, "FIXME: assuming only one address interval");
       }
-      libcilk_low_addr  = mod->mapaddr;
-      libcilk_high_addr = mod->mapaddr + mod->size;
+      tablecilk.beg = mod->mapaddr;
+      tablecilk.end = mod->mapaddr + mod->size;
+    }
+
+    if (strstr(mod->module_name, lib_str)
+	|| strstr(mod->module_name, ld_str)) {
+      tableother[i].beg = mod->mapaddr;
+      tableother[i].end = mod->mapaddr + mod->size;
+      i++;
     }
   }
+
   return 0;
 }
 
 
-// **************************************************************************
-// Logical Unwinding
-// **************************************************************************
-
-// Given a lush_cursor with a valid pchord, compute bichord and
-// lchord meta-information
-export lush_step_t
-LUSHI_peek_bichord(lush_cursor_t& cursor)
+bool
+is_libcilk(void* addr)
 {
-  
+  return (tablecilk.beg <= addr && addr < tablecilk.end);
 }
 
 
-// Given a lush_cursor with a valid bichord, determine the next pnote
-// (or lnote)
-export lush_step_t
+bool
+is_cilkprogram(void* addr)
+{
+  int i;
+  for (i = 0; i < tableother_sz; ++i) {
+    if (tableother[i].beg <= addr && addr < tableother[i].end) {
+      return false;
+    }
+  }
+  return true;
+}
+
+
+// **************************************************************************
+// 
+// **************************************************************************
+
+extern lush_step_t
+LUSHI_step_bichord(lush_cursor_t* cursor)
+{
+  init_lcursor(cursor);
+  cilk_cursor_t* csr = (cilk_cursor_t*)lush_cursor_get_lcursor(cursor);
+
+  csr->ref_ip = (void*)lush_cursor_get_ip(cursor);
+  bool seen_cilkprog = csr->seen_cilkprog;
+
+  bool is_cilkrt   = is_libcilk(csr->ref_ip);
+  bool is_cilkprog = is_cilkprogram(csr->ref_ip);
+
+  bool is_TOS; // top of stack
+  if (lush_cursor_is_flag(cursor, LUSH_CURSOR_FLAGS_BEG_PPROJ)) {
+    is_TOS = true;
+  }
+
+  // FIXME: consider effects of multiple agents
+  //LUSH_AGENTID_XXX_t last_aid = lush_cursor_get_aid(cursor); 
+
+  // Given p-note derive l-note:
+  //   1. is_cilkrt & is_TOS  => Cilk-scheduling or Cilk-overhead
+  //   2. is_cilkrt & !is_TOS & seen_cilkprog  => Cilk-sched + logical stack
+  //   3. is_cilkrt & !is_TOS & !seen_cilkprog => {result (1)}
+  //   4. is_cilkprog => Cilk + logical Cilk
+  if (is_cilkrt) {
+    if (is_TOS) {
+      // case (1)
+      lush_cursor_set_assoc(cursor, LUSH_ASSOC_1_to_0);
+    }
+    else {
+      if (seen_cilkprog) {
+	// case (2)
+	// FIXME: lush_cursor_set_assoc(cursor, LUSH_ASSOC_1_to_2_n)
+	lush_cursor_set_assoc(cursor, LUSH_ASSOC_1_to_0);
+      }
+      else {
+	// case (3)
+	lush_cursor_set_assoc(cursor, LUSH_ASSOC_1_to_0);
+      }
+    }
+  }
+  if (is_cilkprog) {
+    // case (4)
+    lush_cursor_set_assoc(cursor, LUSH_ASSOC_1_to_1);
+    csr->seen_cilkprog = true;
+  }
+
+  return LUSH_STEP_CONT;
+}
+
+
+extern lush_step_t
 LUSHI_step_pnote(lush_cursor_t* cursor)
 {
+  // NOTE: Since all associations are 1 <-> x, it is always valid to step.
+
+  lush_step_t ty = LUSH_STEP_NULL;
   
+  { // FIXME: temporary
+    void* ip = (void*)lush_cursor_get_ip(cursor);
+    if (HACK_is_fence(ip)) {
+      return LUSH_STEP_END_PROJ;
+    }
+  }
+
+  int t = CB_step(lush_cursor_get_pcursor(cursor));
+  if (t > 0) {
+    ty = LUSH_STEP_END_CHORD;
+  }
+  else if (t == 0) {
+    ty = LUSH_STEP_END_PROJ;
+  }
+  else /* (t < 0) */ {
+    ty = LUSH_STEP_ERROR;
+  }
+  
+  return ty;
 }
 
 
-export lush_step_t
+extern lush_step_t
 LUSHI_step_lnote(lush_cursor_t* cursor)
 {
+  lush_step_t ty = LUSH_STEP_NULL;
+
+  lush_assoc_t as = lush_cursor_get_assoc(cursor);
+  cilk_cursor_t* csr = (cilk_cursor_t*)lush_cursor_get_lcursor(cursor);
+  cilk_ip_t* lip = (cilk_ip_t*)lush_cursor_get_lip(cursor);
   
+  if (as == LUSH_ASSOC_1_to_0) {
+    ty = LUSH_STEP_END_CHORD;
+  }
+  else if (as == LUSH_ASSOC_1_to_1) {
+    if (csr->is_beg_lnote) {
+      ty = LUSH_STEP_END_CHORD;
+      csr->is_beg_lnote = false;
+    }
+    else {
+      lip->ip = csr->ref_ip;
+      ty = LUSH_STEP_CONT;
+      csr->is_beg_lnote = true;
+    }
+  }
+  else if (LUSH_ASSOC_1_to_2_n) {
+    if (csr->is_beg_lnote) {
+      // FIXME: advance lip;
+      ty = (lip->ip == NULL) ? LUSH_STEP_END_CHORD : LUSH_STEP_CONT;
+      csr->is_beg_lnote = false;
+    }
+    else {
+      lip->ip = csr->ref_ip;
+      ty = LUSH_STEP_CONT;
+      csr->is_beg_lnote = true;
+    }
+  }
+  else {
+    ty = LUSH_STEP_ERROR;
+  }
+
+  return ty;
 }
 
 
-export int 
+extern int 
 LUSHI_set_active_frame_marker(ctxt, cb)
 {
   // STUB
@@ -170,7 +390,22 @@ LUSHI_set_active_frame_marker(ctxt, cb)
 
 // --------------------------------------------------------------------------
 
-export int
+void
+init_lcursor(lush_cursor_t* cursor)
+{
+  lush_lcursor_t* csr = lush_cursor_get_lcursor(cursor);
+  memset(csr, 0, sizeof(*csr));
+
+  lush_lip_t* lip = lush_cursor_get_lip(cursor);
+  memset(lip, 0, sizeof(*lip));
+}
+
+
+// **************************************************************************
+// 
+// **************************************************************************
+
+extern int
 LUSHI_lip_destroy(lush_lip_t* lip)
 {
   // STUB
@@ -178,7 +413,7 @@ LUSHI_lip_destroy(lush_lip_t* lip)
 }
 
 
-export int 
+extern int 
 LUSHI_lip_eq(lush_lip_t* lip)
 {
   // STUB
@@ -186,7 +421,7 @@ LUSHI_lip_eq(lush_lip_t* lip)
 }
 
 
-export int
+extern int
 LUSHI_lip_read()
 {
   // STUB
@@ -194,7 +429,7 @@ LUSHI_lip_read()
 }
 
 
-export int
+extern int
 LUSHI_lip_write()
 {
   // STUB
@@ -206,14 +441,14 @@ LUSHI_lip_write()
 // Concurrency
 // **************************************************************************
 
-export int
+extern int
 LUSHI_has_concurrency()
 {
   // STUB
   return 0;
 }
 
-export int 
+extern int 
 LUSHI_get_concurrency()
 {
   // STUB
