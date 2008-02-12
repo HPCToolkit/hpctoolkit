@@ -45,7 +45,7 @@ typedef int lush_agentid_t;
 
 
 // ---------------------------------------------------------
-// A LUSH agent
+// A LUSH agentfind
 // ---------------------------------------------------------
 
 typedef struct lush_agent lush_agent_t;
@@ -149,4 +149,4 @@ lush_step_t lush_forcestep_pnote(lush_cursor_t* cursor);
 
 // **************************************************************************
 
-#endif /* lush_lushi_h */
+#endif /* lush_lush_h */
