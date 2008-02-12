@@ -47,15 +47,18 @@ int csprof_sample_callstack_from_frame(csprof_state_t *, int,
 
 // ***FIXME: mmap interaction
 
-#define ensure_state_buffer_slot_available(state,unwind) \
-    if (unwind == state->bufend) { \
-        unwind = csprof_state_expand_buffer(state, unwind);\
-        state->bufstk = state->bufend; \
-}
+#define ensure_state_buffer_slot_available(state,unwind)    \
+    if (unwind == state->bufend) {                          \
+        unwind = csprof_state_expand_buffer(state, unwind); \
+        state->bufstk = state->bufend;                      \
+    }
 
 
-int csprof_check_fence(void *ip){
-  return monitor_unwind_process_bottom_frame(ip) || monitor_unwind_thread_bottom_frame(ip);
+int 
+csprof_check_fence(void *ip)
+{
+  return (monitor_unwind_process_bottom_frame(ip) 
+	  || monitor_unwind_thread_bottom_frame(ip));
 }
 
 
@@ -68,62 +71,64 @@ int csprof_check_fence(void *ip){
    of memory...maybe we don't care that much. */
 int
 csprof_sample_callstack(csprof_state_t *state, int metric_id,
-			size_t sample_count, mcontext_t* mctxt)
+			size_t sample_count, ucontext_t* context)
 {
-    int first_ever_unwind = (state->bufstk == state->bufend);
-    void *sp1 = first_ever_unwind ? (void *) -1 : state->bufstk->sp;
+  mcontext_t* mctxt = &context->uc_mcontext;
+
+  int first_ever_unwind = (state->bufstk == state->bufend);
+  void *sp1 = first_ever_unwind ? (void *) -1 : state->bufstk->sp;
 
 #if 0
 #ifndef PRIM_UNWIND
-    unw_context_t ctx;
+  unw_context_t unwctxt;
 #endif
 #endif
 
-    unw_cursor_t frame;
+  unw_cursor_t frame;
 
-    csprof_state_verify_backtrace_invariants(state);
+  csprof_state_verify_backtrace_invariants(state);
 
 #if 0
 #if USE_LIBUNWIND_TO_START
-    /* would be nice if we could just copy in the signal context... */
-    if(unw_getcontext(&ctx) < 0) {
-        DIE("Could not initialize unwind context!", __FILE__, __LINE__);
-    }
+  /* would be nice if we could just copy in the signal context... */
+  if(unw_getcontext(&unwctxt) < 0) {
+    DIE("Could not initialize unwind context!", __FILE__, __LINE__);
+  }
 #else
 #ifndef PRIM_UNWIND
-    memcpy(&ctx.uc_mcontext, mctxt, sizeof(mcontext_t));
+  memcpy(&unwctxt.uc_mcontext, mctxt, sizeof(mcontext_t));
 #else
-    unw_init_f_mcontext(mctxt,&frame);
-    MSG(1,"back from cursor init: pc = %p, bp = %p\n",frame.pc,frame.bp);
+  unw_init_f_mcontext(mctxt,&frame);
+  MSG(1,"back from cursor init: pc = %p, bp = %p\n",frame.pc,frame.bp);
 #endif
 #endif
 #endif
 
-    unw_init_f_mcontext(mctxt,&frame);
-    MSG(1,"back from cursor init: pc = %p, bp = %p\n",frame.pc,frame.bp);
+  unw_init_f_mcontext(mctxt,&frame);
+  MSG(1,"back from cursor init: pc = %p, bp = %p\n",frame.pc,frame.bp);
 
 #if 0
 #ifndef PRIM_UNWIND
-    if(unw_init_local(&frame, &ctx) < 0) {
-        DIE("Could not initialize unwind cursor!", __FILE__, __LINE__);
-    }
+  if(unw_init_local(&frame, &unwctxt) < 0) {
+    DIE("Could not initialize unwind cursor!", __FILE__, __LINE__);
+  }
 #endif
 #if USE_LIBUNWIND_TO_START
-    {
-        int i;
+  {
+    int i;
 
-        /* unwind through libcsprof and the signal handler */
-        for(i=0; i<CSPROF_SAMPLE_CALLSTACK_DEPTH; ++i) {
-            if(unw_step(&frame) < 0) {
-                DIE("An error occurred while unwinding", __FILE__, __LINE__);
-            }
-        }
+    /* unwind through libcsprof and the signal handler */
+    for(i=0; i<CSPROF_SAMPLE_CALLSTACK_DEPTH; ++i) {
+      if(unw_step(&frame) < 0) {
+	DIE("An error occurred while unwinding", __FILE__, __LINE__);
+      }
     }
+  }
 #endif
 #endif
 
-    return csprof_sample_callstack_from_frame(state, metric_id,
-					      sample_count, &frame);
+  return csprof_sample_callstack_from_frame(state, metric_id,
+					    sample_count, &frame);
 }
 
 
@@ -165,6 +170,8 @@ csprof_sample_callstack_from_frame(csprof_state_t *state, int metric_id,
   }
   MSG(1,"BTIP------------");
   debug_dump_backtraces(state,state->unwind);
+  
+  
   if (csprof_state_insert_backtrace(state, metric_id, state->unwind - 1, 
 				    state->btbuf, sample_count) != CSPROF_OK) {
     ERRMSG("failure recording callstack sample", __FILE__, __LINE__);

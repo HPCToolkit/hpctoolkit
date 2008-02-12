@@ -108,15 +108,15 @@ csprof_write_epoch_header(FILE *fs)
 void
 csprof_write_epoch_module(csprof_epoch_module_t *module, FILE *fs)
 {
-    size_t namelen = strlen(module->module_name);
+    uint32_t namelen = strlen(module->module_name);
 
     /* write the string */
     hpc_fwrite_le4(&namelen, fs);
     fwrite(module->module_name, sizeof(char), namelen, fs);
 
     /* write the appropriate addresses */
-    hpc_fwrite_le8(&module->vaddr, fs);
-    hpc_fwrite_le8(&module->mapaddr, fs);
+    hpc_fwrite_le8((uint64_t*)&module->vaddr, fs);
+    hpc_fwrite_le8((uint64_t*)&module->mapaddr, fs);
 }
 
 void

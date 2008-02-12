@@ -1,12 +1,21 @@
+// -*-Mode: C++;-*- // technically C99
+// $Id$
+
 /* backtrace.h -- an interface for performing stack unwinding */
 
 #ifndef CSPROF_BACKTRACE_H
 #define CSPROF_BACKTRACE_H
 
+//************************* System Include Files ****************************
+
 #include <stddef.h>
 #include <ucontext.h>
 
+//*************************** User Include Files ****************************
+
 #include "state.h"
+
+//*************************** Forward Declarations **************************
 
 // Amount to chop off call stack samples b/c of the profiler.
 // Beginning from top:
@@ -25,7 +34,8 @@
 
 int
 csprof_sample_callstack(csprof_state_t *state, int metric_id,
-			size_t sample_count, mcontext_t* mctxt);
+			size_t sample_count, ucontext_t* context);
 
+//***************************************************************************
 
 #endif

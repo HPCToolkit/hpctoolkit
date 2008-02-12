@@ -15,6 +15,7 @@
 #include "pmsg.h"
 #include "segv_handler.h"
 #include "state.h"
+#include "backtrace.h"
 
 //*************************** Forward Declarations **************************
 
@@ -103,13 +104,15 @@ csprof_take_profile_sample(csprof_state_t* state, ucontext_t* context)
   state->treenode = NULL;
   state->bufstk = state->bufend;
 #endif
-  if(csprof_sample_callstack(state, WEIGHT_METRIC, 1, mctxt) == CSPROF_OK) {
+  if(csprof_sample_callstack(state, WEIGHT_METRIC, 1, context) == CSPROF_OK) {
     PMSG(SWIZZLE,"about to swizzle w context\n");
 #ifdef USE_TRAMP
     csprof_swizzle_with_context(state, mctxt);
 #endif
   }
 
-  csprof_state_flag_clear(state, CSPROF_TAIL_CALL | CSPROF_EPILOGUE_RA_RELOADED | CSPROF_EPILOGUE_SP_RESET);
+  csprof_state_flag_clear(state, (CSPROF_TAIL_CALL 
+				  | CSPROF_EPILOGUE_RA_RELOADED 
+				  | CSPROF_EPILOGUE_SP_RESET));
 }
 

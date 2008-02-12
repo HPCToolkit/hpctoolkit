@@ -82,9 +82,12 @@
 static const char *csprof_mem_store__str(csprof_mem_store_t st);
 
 static int csprof_mem__init(csprof_mem_t *x, offset_t sz, offset_t sz_tmp);
+
+#ifdef NO
 static int csprof_mem__fini(csprof_mem_t *x);
 
 static int csprof_mem__reset(csprof_mem_t *x, offset_t sz, offset_t sz_tmp);
+#endif
 
 static void *csprof_mem__alloc(csprof_mem_t *x, size_t sz, csprof_mem_store_t st);
 static int csprof_mem__free(csprof_mem_t *x, void* ptr, size_t sz,
