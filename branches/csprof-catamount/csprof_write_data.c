@@ -15,7 +15,7 @@
 extern csprof_options_t opts;
 
 int
-csprof_write_profile_data(csprof_state_t *state){
+csprof_write_profile_data(csprof_state_t* state){
 
   extern int csprof_using_threads;
 

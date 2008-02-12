@@ -1,3 +1,6 @@
+// -*-Mode: C++;-*- // technically C99
+// $Id$
+
 #include <stdio.h>
 #include <fcntl.h>
 #include <stdlib.h>

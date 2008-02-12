@@ -1,3 +1,6 @@
+// -*-Mode: C++;-*- // technically C99
+// $Id$
+
 /* out-of-line defintions for library structures */
 #ifndef CSPROF_STRUCTS_H
 #define CSPROF_STRUCTS_H

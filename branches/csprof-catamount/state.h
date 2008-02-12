@@ -1,3 +1,6 @@
+// -*-Mode: C++;-*- // technically C99
+// $Id$
+
 /* functions operating on thread-local state */
 #ifndef CSPROF_STATE_H
 #define CSPROF_STATE_H
