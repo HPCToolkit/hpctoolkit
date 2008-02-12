@@ -20,7 +20,7 @@ more_tok(void)
   if (! tk){
     free(tmp);
   }
-  return (int) tk;
+  return (tk != NULL);
 }
 
 char *
