@@ -56,22 +56,21 @@ void unw_init(void){
   csprof_interval_tree_init();
 }
 
-void unw_init_f_mcontext(void *context,unw_cursor_t *cursor){
+void unw_init_f_mcontext(mcontext_t* mctxt, unw_cursor_t *cursor){
 
   void **bp, *sp,*pc;
 
-  PMSG(UNW,"init prim unw (mcontext) called: context = %p, cursor_p = %p\n",context,cursor);
-  mcontext_t *ctx = (mcontext_t *) context;
+  PMSG(UNW,"init prim unw (mcontext) called: mctxt = %p, cursor_p = %p\n",mctxt,cursor);
 
 
 #ifdef __CRAYXT_CATAMOUNT_TARGET
-  pc = (void *)ctx->sc_rip;
-  bp = (void **)ctx->sc_rbp;
-  sp = (void **)ctx->sc_rsp;
+  pc = (void *)mctxt->sc_rip;
+  bp = (void **)mctxt->sc_rbp;
+  sp = (void **)mctxt->sc_rsp;
 #else
-  pc = (void *)ctx->gregs[REG_RIP];
-  bp = (void **)ctx->gregs[REG_RBP];
-  sp = (void **)ctx->gregs[REG_RSP];
+  pc = (void *)mctxt->gregs[REG_RIP];
+  bp = (void **)mctxt->gregs[REG_RBP];
+  sp = (void **)mctxt->gregs[REG_RSP];
 #endif
 
   PMSG(UNW,"UNW_INIT:frame pc = %p, frame bp = %p, frame sp = %p",pc,bp,sp);
@@ -100,12 +99,10 @@ void unw_init_f_mcontext(void *context,unw_cursor_t *cursor){
 }
 
 
-void unw_init_f_ucontext(void *context,unw_cursor_t *cursor){
+void unw_init_f_ucontext(ucontext_t* context, unw_cursor_t *cursor){
 
   PMSG(UNW,"init prim unw called w ucontext: context = %p, cursor_p = %p\n",context,cursor);
-  ucontext_t *ctx = (ucontext_t *) context;
-
-  unw_init_f_mcontext((void *) &(ctx->uc_mcontext),cursor);
+  unw_init_f_mcontext(&(context->uc_mcontext),cursor);
 }
 
 // This get_reg just extracts the pc, regardless of REGID

@@ -68,7 +68,7 @@ int csprof_check_fence(void *ip){
    of memory...maybe we don't care that much. */
 int
 csprof_sample_callstack(csprof_state_t *state, int metric_id,
-			size_t sample_count, void *context)
+			size_t sample_count, mcontext_t* mctxt)
 {
     int first_ever_unwind = (state->bufstk == state->bufend);
     void *sp1 = first_ever_unwind ? (void *) -1 : state->bufstk->sp;
@@ -91,15 +91,15 @@ csprof_sample_callstack(csprof_state_t *state, int metric_id,
     }
 #else
 #ifndef PRIM_UNWIND
-    memcpy(&ctx.uc_mcontext, context, sizeof(mcontext_t));
+    memcpy(&ctx.uc_mcontext, mctxt, sizeof(mcontext_t));
 #else
-    unw_init_f_mcontext(context,&frame);
+    unw_init_f_mcontext(mctxt,&frame);
     MSG(1,"back from cursor init: pc = %p, bp = %p\n",frame.pc,frame.bp);
 #endif
 #endif
 #endif
 
-    unw_init_f_mcontext(context,&frame);
+    unw_init_f_mcontext(mctxt,&frame);
     MSG(1,"back from cursor init: pc = %p, bp = %p\n",frame.pc,frame.bp);
 
 #if 0

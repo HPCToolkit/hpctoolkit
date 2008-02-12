@@ -4,6 +4,7 @@
 #define CSPROF_BACKTRACE_H
 
 #include <stddef.h>
+#include <ucontext.h>
 
 #include "state.h"
 
@@ -22,6 +23,9 @@
 #define CSPROF_CS_CHOP 4
 #endif
 
-int csprof_sample_callstack(csprof_state_t *, int, size_t, void *);
+int
+csprof_sample_callstack(csprof_state_t *state, int metric_id,
+			size_t sample_count, mcontext_t* mctxt);
+
 
 #endif
