@@ -27,7 +27,7 @@ do { \
         csprof_state_t *state = csprof_get_state(); \
         csprof_driver_suspend(state); \
         if(state != NULL) { \
-            csprof_take_profile_sample(state, ctx); \
+	  csprof_take_profile_sample(state, ctx, WEIGHT_METRIC, 1);	       \
             csprof_state_flag_clear(state, CSPROF_THRU_TRAMP); \
         } \
         csprof_driver_resume(state); \

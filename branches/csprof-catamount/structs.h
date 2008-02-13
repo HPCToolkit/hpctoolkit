@@ -64,7 +64,29 @@ typedef enum csprof_status_e {
   CSPROF_STATUS_FINI        /* lib has been finalized (after init) */
 } csprof_status_t;
 
-/* profiling state of a single thread */
+
+// ---------------------------------------------------------
+// LUSH: thread creation context
+// ---------------------------------------------------------
+
+// Forms a linked list of this thread's creation context:
+//   get-ctxt(t): [t.creation_context, get-ctxt(t.parent)]
+
+typedef struct lush_ctxt_list_s {
+
+  // pointer into parent thread; usually a CCT node
+  void* creation_context;
+  
+  // parent thread
+  struct csprof_state_s* parent;
+  
+} lush_ctxt_list_t;
+
+
+// ---------------------------------------------------------
+// profiling state of a single thread
+// ---------------------------------------------------------
+
 typedef struct csprof_state_s {
     /* information for recording function call returns; do not move this
        block, since `swizzle_return' must be the first member of the
@@ -108,8 +130,12 @@ typedef struct csprof_state_s {
     /* other profiling states which we have seen */
     struct csprof_state_s *next;
 
+    /* creation context */
+    lush_ctxt_list_t* context_list;
+
     /* support for alternate profilers whose needs we don't provide */
     void *extra_state;
+
 } csprof_state_t;
 
 #define CSPROF_SAMPLING_ENABLED 1

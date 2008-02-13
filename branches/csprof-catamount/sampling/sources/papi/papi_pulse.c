@@ -12,10 +12,9 @@
 #include "backtrace.h"
 #include "bad_unwind.h"
 #include "last.h"
+#include "metrics_types.h"
 
-#define THRESHOLD   1000000
-
-#define WEIGHT_METRIC 0
+#define THRESHOLD   1000000 /* FIXME: what about papi_sample...*/
 
 #define M(s) write(2,s"\n",strlen(s)+1)
 
@@ -23,14 +22,16 @@ int samples_taken = 0;
 int bad_unwind_count    = 0;
 void *unwind_pc;
 
+// FIXME, FIXME: this appears to be duplicated from sample_event.c!
 void
-csprof_take_profile_sample(csprof_state_t *state,void *context,void *pc){
+csprof_take_profile_sample(csprof_state_t *state,void *context,void *pc)
+{
 
   samples_taken++;
   MSG(1,"csprof take profile sample");
   DBGMSG_PUB(1, "Signalled at %#lx", pc);
 
-  csprof_sample_callstack(state, WEIGHT_METRIC, 1, context);
+  csprof_sample_callstack(state, context, WEIGHT_METRIC, 1);
   csprof_state_flag_clear(state,
 			  CSPROF_TAIL_CALL | CSPROF_EPILOGUE_RA_RELOADED | CSPROF_EPILOGUE_SP_RESET);
 }
@@ -70,7 +71,8 @@ void csprof_papi_event_handler(int EventSet, void *pc, long long ovec,
 
 static int eventSet = PAPI_NULL;
 
-void papi_pulse_init(void){
+void papi_pulse_init(void)
+{
 
     int ret;
     int threshold = THRESHOLD;
@@ -106,7 +108,9 @@ void papi_pulse_init(void){
     }
     PAPI_start(eventSet);
 }
-void papi_pulse_fini(void){
+
+void papi_pulse_fini(void)
+{
     long long values;
 
     PAPI_stop(eventSet, &values);
@@ -120,7 +124,8 @@ extern void unw_init(void);
 
 extern int setup_segv(void);
 // extern double __ieee754_log();
-void csprof_process_driver_init(csprof_options_t *opts){
+void csprof_process_driver_init(csprof_options_t *opts)
+{
     unw_init();
     // csprof_addr_to_interval((unsigned long)__ieee754_log + 5);
     setup_segv();
@@ -140,6 +145,7 @@ void csprof_process_driver_init(csprof_options_t *opts){
     papi_pulse_init();
 }
 
-void csprof_process_driver_fini(void){
+void csprof_process_driver_fini(void)
+{
   papi_pulse_fini();
 }

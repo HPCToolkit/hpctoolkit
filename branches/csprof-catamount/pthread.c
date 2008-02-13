@@ -41,7 +41,7 @@ pthread_key_t thread_node_key;
 pthread_key_t prof_data_key;
 pthread_key_t mem_store_key;
 
-static pthread_key_t k;
+// static pthread_key_t k; // FIXME: what is this for?
 
 #include "thread_data.h"
 

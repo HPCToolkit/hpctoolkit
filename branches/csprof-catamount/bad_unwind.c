@@ -28,7 +28,7 @@ static sigjmp_buf_t bad_unwind;
 sigjmp_buf_t *get_bad_unwind(void){
 #ifdef CSPROF_THREADS
   if (csprof_using_threads){
-    thread_data_t *td = (thread_data_t *)pthread_getspecific(k);
+    thread_data_t *td = (thread_data_t *)pthread_getspecific(my_thread_specific_key);
     return &(td->bad_unwind);
   }
   else {

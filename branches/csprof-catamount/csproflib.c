@@ -1,5 +1,6 @@
+// -*-Mode: C++;-*- // technically C99
 // $Id$
-// -*-C-*-
+
 // * BeginRiceCopyright *****************************************************
 /*
   Copyright ((c)) 2002, Rice University 
@@ -114,7 +115,8 @@ long static_epoch_size;
 
 static int evs;
 
-void csprof_init_internal(void){
+void csprof_init_internal(void)
+{
   if (getenv("CSPROF_WAIT")){
     while(wait_for_gdb);
   }
@@ -192,8 +194,8 @@ extern pthread_key_t mem_store_key;
 #include "thread_use.h"
 #include "thread_data.h"
 
-void csprof_init_thread_support(int id){
-
+void csprof_init_thread_support(int id)
+{
   csprof_state_t *state = csprof_get_state();
 
   MSG(1,"csproflib init f initial thread");
@@ -256,7 +258,7 @@ csprof_thread_init(killsafe_t *kk,int id)
   }
   else { // PAPI
     PMSG(PAPI,"Thread id = %d",id);
-    thread_data_t *td = (thread_data_t *) pthread_getspecific(k);
+    thread_data_t *td = (thread_data_t *) pthread_getspecific(my_thread_specific_key);
     papi_event_init(&(td->eventSet),opts.papi_event_list);
     papi_pulse_init(td->eventSet);
   }

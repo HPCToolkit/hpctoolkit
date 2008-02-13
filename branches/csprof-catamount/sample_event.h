@@ -11,7 +11,6 @@
 //*************************** Forward Declarations **************************
 
 void 
-csprof_sample_event(ucontext_t* context);
-
+csprof_sample_event(ucontext_t* context, int metric_id, size_t sample_count);
 
 #endif /* sample_event */

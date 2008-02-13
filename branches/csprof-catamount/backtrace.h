@@ -33,8 +33,8 @@
 #endif
 
 int
-csprof_sample_callstack(csprof_state_t* state, int metric_id,
-			size_t sample_count, ucontext_t* context);
+csprof_sample_callstack(csprof_state_t *state, ucontext_t* context, 
+			int metric_id, size_t sample_count);
 
 //***************************************************************************
 

@@ -25,6 +25,7 @@
 #include "csprof_options.h"
 #include "pmsg.h"
 #include "sample_event.h"
+#include "metrics_types.h"
 
 /******************************************************************************
  * macros
@@ -45,7 +46,7 @@
  *****************************************************************************/
 
 static int
-csprof_itimer_signal_handler(int sig, siginfo_t *siginfo, void *context);
+csprof_itimer_signal_handler(int sig, siginfo_t *siginfo, ucontext_t* context);
 
 
 
@@ -108,7 +109,9 @@ void
 csprof_itimer_init(csprof_options_t *opts)
 {
   csprof_init_timer(opts);
-  monitor_sigaction(CSPROF_PROFILE_SIGNAL, &csprof_itimer_signal_handler, 0, NULL);
+  monitor_sigaction(CSPROF_PROFILE_SIGNAL, 
+		    (monitor_sighandler_t*)&csprof_itimer_signal_handler,
+		    0, NULL);
 }
 
 
@@ -118,10 +121,10 @@ csprof_itimer_init(csprof_options_t *opts)
  *****************************************************************************/
 
 static int
-csprof_itimer_signal_handler(int sig, siginfo_t *siginfo, void *context)
+csprof_itimer_signal_handler(int sig, siginfo_t *siginfo, ucontext_t* context)
 {
   PMSG(ITIMER_HANDLER,"Itimer sample event");
-  csprof_sample_event(context);
+  csprof_sample_event(context, WEIGHT_METRIC, 1);
   csprof_itimer_start();
 
   return 0; /* tell monitor that the signal has been handled */

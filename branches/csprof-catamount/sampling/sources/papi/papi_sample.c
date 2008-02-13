@@ -13,13 +13,11 @@
 #include "sample_event.h"
 
 #include "tokenize.h"
-
+#include "metrics_types.h"
 
 #define THRESHOLD   10000000
 #define MIN(a,b) ((a)<=(b))?a:b
 
-
-#define WEIGHT_METRIC 0
 
 #define M(s) write(2,s"\n",strlen(s)+1)
 
@@ -28,7 +26,7 @@ extern int status;
 void
 csprof_papi_event_handler(int EventSet, void *pc, long long ovec,void *context){
   PMSG(PAPI,"papi event happened, ovec = %ld",ovec);
-  csprof_sample_event(context);
+  csprof_sample_event(context, WEIGHT_METRIC, 1);
 }
 
 static int eventSet = PAPI_NULL;

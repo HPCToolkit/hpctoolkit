@@ -24,7 +24,8 @@ int bad_unwind_count = 0;
 int csprof_sample    = 0;
 
 static void
-csprof_take_profile_sample(csprof_state_t* state, ucontext_t* context);
+csprof_take_profile_sample(csprof_state_t* state, ucontext_t* context,
+			   int metric_id, size_t sample_count);
 
 
 //***************************************************************************
@@ -33,7 +34,7 @@ csprof_take_profile_sample(csprof_state_t* state, ucontext_t* context);
 
 //FIXME: Add the pc argument ???
 void 
-csprof_sample_event(ucontext_t* context)
+csprof_sample_event(ucontext_t* context, int metric_id, size_t sample_count)
 {
   sigjmp_buf_t *it = get_bad_unwind();
   samples_taken++;
@@ -52,7 +53,7 @@ csprof_sample_event(ucontext_t* context)
     MPI_SPECIAL_SKIP();
 
     if(state != NULL) {
-      csprof_take_profile_sample(state, context);
+      csprof_take_profile_sample(state, context, metric_id, sample_count);
       csprof_state_flag_clear(state, CSPROF_THRU_TRAMP);
     }
   }
@@ -67,7 +68,8 @@ csprof_sample_event(ucontext_t* context)
 
 
 static void
-csprof_take_profile_sample(csprof_state_t* state, ucontext_t* context)
+csprof_take_profile_sample(csprof_state_t* state, ucontext_t* context,
+			   int metric_id, size_t sample_count)
 {
   mcontext_t* mctxt = &context->uc_mcontext;
   void *pc = csprof_get_pc(mctxt);
@@ -104,7 +106,7 @@ csprof_take_profile_sample(csprof_state_t* state, ucontext_t* context)
   state->treenode = NULL;
   state->bufstk = state->bufend;
 #endif
-  if(csprof_sample_callstack(state, WEIGHT_METRIC, 1, context) == CSPROF_OK) {
+  if (csprof_sample_callstack(state, context, metric_id, sample_count) == CSPROF_OK) {
     PMSG(SWIZZLE,"about to swizzle w context\n");
 #ifdef USE_TRAMP
     csprof_swizzle_with_context(state, mctxt);

@@ -1,3 +1,6 @@
+// -*-Mode: C++;-*- // technically C99
+// $Id$
+
 #include <pthread.h>
 
 #include "general.h"
@@ -18,22 +21,26 @@ void csprof_fini_internal(void);
 void csprof_pthread_init_data(void);
 
 
-void monitor_init_process(char *process,int *argc,char **argv,unsigned pid){
+void monitor_init_process(char *process,int *argc,char **argv,unsigned pid)
+{
   csprof_set_executable_name(process);
   csprof_init_internal();
 }
 
-void monitor_fini_process(void){
+void monitor_fini_process(void)
+{
   // M("monitor calling csprof_fini_internal");
   csprof_fini_internal();
 }
 
-void monitor_init_library(void){
+void monitor_init_library(void)
+{
   //  extern void csprof_init_internal(void);
   // M("monitor init lib (NOT) calling csprof_init_internal");
 }
 
-void monitor_fini_library(void){
+void monitor_fini_library(void)
+{
   //  extern void csprof_fini_internal(void);
 }
 
@@ -42,7 +49,7 @@ int csprof_using_threads = 0;
 
 #ifdef CSPROF_THREADS
 #include "thread_data.h"
-pthread_key_t k;
+pthread_key_t my_thread_specific_key;
 
 static int thr_c = 0;
 static pthread_once_t iflg = PTHREAD_ONCE_INIT;
@@ -54,7 +61,7 @@ n_init(void)
 {
   int e;
   // e = pthread_key_create(&k,free);
-  e = pthread_key_create(&k,NULL);
+  e = pthread_key_create(&my_thread_specific_key, NULL);
 }
 
 void csprof_init_thread_support(int id);
@@ -69,10 +76,52 @@ monitor_init_thread_support(void)
   pthread_once(&iflg,n_init);
   loc = malloc(sizeof(thread_data_t));
   loc->id = thr_c++;
-  pthread_setspecific(k,(void *)loc);
+  pthread_setspecific(my_thread_specific_key, (void *)loc);
 
   csprof_init_thread_support(loc->id);
 }
+
+
+void*
+monitor_thread_pre_create()
+{
+  // N.B.: monitor_thread_pre_create() can be called before
+  // monitor_init_thread_support() or even monitor_init_process().
+  // Must delay any thread functions until monitor_init_thread()...
+
+  // NOTE: For the first thread, this is run in the main *process*
+
+#if 0
+  csprof_state_t* state = csprof_get_state();
+
+  // Disable timers 
+
+  // Gather context
+  int ret;
+  ucontext_t context;
+
+  ret = getcontext(&context);
+  if (ret != 0) { 
+    EMSG("Error: getcontext = %d", ret); 
+  }
+  
+  csprof_sample_event(&context, WEIGHT_METRIC, 0); //... insert in (parent's) CCT w/ no weight
+  
+  
+  // 4. Capture context for 
+  lush_ctxt_list_t* thr_ctxt = csprof_malloc(sizeof(lush_ctxt_list_t));
+  thr_ctxt->creation_context = NULL; // ...
+  thr_ctxt->parent = NULL; // ...
+
+  // Enable timers
+  // ...
+
+  return thr_ctxt;
+#else 
+  return NULL;
+#endif
+}
+
 
 void csprof_thread_init(killsafe_t *kk, int id);
 
@@ -86,7 +135,7 @@ monitor_init_thread(int tid, void *data)
   pthread_once(&iflg,n_init);
   loc = malloc(sizeof(thread_data_t));
   loc->id = thr_c++;
-  pthread_setspecific(k,(void *)loc);
+  pthread_setspecific(my_thread_specific_key, (void *)loc);
 
   safe = (killsafe_t *)malloc(sizeof(killsafe_t));
   csprof_thread_init(safe,loc->id);
@@ -94,7 +143,8 @@ monitor_init_thread(int tid, void *data)
   return (void *) safe;
 }
 
-void monitor_fini_thread(void *init_thread_data ){
+void monitor_fini_thread(void *init_thread_data )
+{
 
   extern void csprof_thread_fini(csprof_state_t *s);
 

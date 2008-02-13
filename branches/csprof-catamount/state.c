@@ -44,11 +44,13 @@ static csprof_state_t *_get_threaded_state(void)
     return pthread_getspecific(prof_data_key);
 }
 
-void _set_threaded_state(csprof_state_t *state){
+void _set_threaded_state(csprof_state_t *state)
+{
   pthread_setspecific(prof_data_key, state);
 }
 
-void state_threaded(void){
+void state_threaded(void)
+{
   csprof_get_state_internal = &_get_threaded_state;
   _set_state_internal       = &_set_threaded_state;
 }
@@ -58,12 +60,13 @@ void state_threaded(void){
 #endif
 
 // get main thread safe state
-csprof_state_t *csprof_get_safe_state(void){
+csprof_state_t *csprof_get_safe_state(void)
+{
   return _get_static_state();
 }
 
-csprof_state_t *csprof_get_state(){
-
+csprof_state_t *csprof_get_state()
+{
   csprof_state_t *state = csprof_get_state_internal();
 
   if(state == NULL) {
@@ -73,13 +76,15 @@ csprof_state_t *csprof_get_state(){
   return state;
 }
 
-void csprof_set_state(csprof_state_t *state){
+void csprof_set_state(csprof_state_t *state)
+{
   csprof_state_t *old = csprof_get_state_internal();
   state->next = old;
   _set_state_internal(state);
 }
 
-int csprof_state_init(csprof_state_t *x){
+int csprof_state_init(csprof_state_t *x)
+{
   /* ia64 Linux has this function return a `long int', which is a 64-bit
      integer.  Tru64 Unix returns an `int'.  it probably won't hurt us
      if we get truncated on ia64, right? */
@@ -98,7 +103,8 @@ int csprof_state_init(csprof_state_t *x){
 /* csprof_state_alloc: Special initialization for items stored in
    private memory.  Private memory must be initialized!  Returns
    CSPROF_OK upon success; CSPROF_ERR on error. */
-int csprof_state_alloc(csprof_state_t *x){
+int csprof_state_alloc(csprof_state_t *x)
+{
   csprof_csdata__init(&x->csdata);
 
   x->epoch = csprof_get_epoch();
