@@ -279,7 +279,7 @@ csprof_thread_fini(csprof_state_t *state)
         EMSG("WARNING: failed to stop itimer (in thread)");
       }
     } else { // PAPI
-      // papi_pulse_fini();
+      papi_pulse_fini();
     }
     csprof_write_profile_data(state);
   }

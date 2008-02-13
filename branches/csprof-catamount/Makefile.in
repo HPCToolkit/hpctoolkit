@@ -281,7 +281,9 @@ stapi_syms:
 install: all
 	-install -d $(install_lib) $(install_bin) $(install_libexec)
 	install $(CSPROFLIB) $(install_lib)
-	install $(MONITOR_DIR)/lib/libmonitor.so $(install_lib)
+	if [ ! -e $(MONITOR_DIR)/lib/libmonitor.so ]; then \
+	    install $(MONITOR_DIR)/lib/libmonitor.so $(install_lib); \
+	fi
 	install $(src_dir_prefix)csprof $(install_bin)
 #	install $(src_dir_prefix)nm_tbl.py $(install_bin)
 	install $(src_dir_prefix)csprof_syms $(install_libexec)

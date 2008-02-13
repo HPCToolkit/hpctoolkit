@@ -10,7 +10,7 @@ char *
 start_tok(char *lst)
 {
   tmp = strdup(lst);
-  tk  = strtok(tmp," ;");
+  tk  = strtok_r(tmp," ;");
   return tk;
 }
 
@@ -26,6 +26,6 @@ more_tok(void)
 char *
 next_tok(void)
 {
-  tk = strtok(NULL," ;");
+  tk = strtok_r(NULL," ;");
   return tk;
 }
