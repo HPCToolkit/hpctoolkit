@@ -5,12 +5,13 @@
 
 static char *tmp;
 static char *tk;
+static char *last;
 
 char *
 start_tok(char *lst)
 {
   tmp = strdup(lst);
-  tk  = strtok_r(tmp," ;");
+  tk  = strtok_r(tmp," ;",&last);
   return tk;
 }
 
@@ -26,6 +27,6 @@ more_tok(void)
 char *
 next_tok(void)
 {
-  tk = strtok_r(NULL," ;");
+  tk = strtok_r(NULL," ;",&last);
   return tk;
 }
