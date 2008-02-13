@@ -8,6 +8,10 @@
 
 #include <ucontext.h>
 
+//*************************** User Include Files ****************************
+
+#include "metrics_types.h"
+
 //*************************** Forward Declarations **************************
 
 void 

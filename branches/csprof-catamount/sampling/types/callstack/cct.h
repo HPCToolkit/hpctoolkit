@@ -58,12 +58,12 @@
 #ifndef csprof_cct_h
 #define csprof_cct_h
 
-/* system include files */
+//************************* System Include Files ****************************
 
 #include <stdio.h>
 #include <stddef.h>
 
-/* user include files */
+//*************************** User Include Files ****************************
 
 #ifdef CSPROF_TRAMPOLINE_BACKEND
 #include "list.h"
@@ -72,7 +72,7 @@
 #define CSPROF_TREE_USES_DOUBLE_LINKING 0
 #define CSPROF_TREE_USES_SORTED_CHILDREN 1
 
-/* forward declarations */
+//*************************** Forward Declarations **************************
 
 struct rbtree_node;
 
@@ -160,9 +160,10 @@ csprof_cct_insert_backtrace(csprof_cct_t *, void *, int metric_id,
 			    csprof_frame_t *, csprof_frame_t *,
 			    size_t);
 
-int csprof_cct__write_txt(csprof_cct_t* x, FILE* fs);
+int csprof_cct__write_txt(FILE* fs, csprof_cct_t* x);
 
-int csprof_cct__write_bin(csprof_cct_t* x, unsigned int, FILE* fs);
+int csprof_cct__write_bin(FILE* fs, unsigned int, 
+			  csprof_cct_t* x, void* x_ctxt);
 
 /* First argument: 'csprof_cct_t *' */
 #define csprof_cct__isempty(x) ((x)->tree_root == NULL)
@@ -170,6 +171,6 @@ int csprof_cct__write_bin(csprof_cct_t* x, unsigned int, FILE* fs);
 /* private interface */
 int csprof_cct__write_txt_q(csprof_cct_t *);
 
-int csprof_cct__write_txt_r(csprof_cct_t *, csprof_cct_node_t *, FILE *);
+int csprof_cct__write_txt_r(FILE *, csprof_cct_t *, csprof_cct_node_t *);
 
 #endif 

@@ -32,7 +32,7 @@ csprof_take_profile_sample(csprof_state_t* state, ucontext_t* context,
 // common sampling code, called by all event handlers
 //***************************************************************************
 
-//FIXME: Add the pc argument ???
+// FIXME: Add the pc argument ???
 void 
 csprof_sample_event(ucontext_t* context, int metric_id, size_t sample_count)
 {

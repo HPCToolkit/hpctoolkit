@@ -79,6 +79,7 @@
 #include "epoch.h"
 #include "metrics.h"
 #include "itimer.h"
+#include "sample_event.h"
 #include "papi_sample.h"
 
 #include "name.h"
@@ -194,7 +195,54 @@ extern pthread_key_t mem_store_key;
 #include "thread_use.h"
 #include "thread_data.h"
 
-void csprof_init_thread_support(int id)
+
+void*
+csprof_thread_pre_create()
+{
+#if 0
+  int ret;
+
+  // N.B.: Can be called before init-thread-support or even init-process.
+  // Therefore, we ignore any calls before process init time.
+  if (!csprof_initialized) {
+    return NULL;
+  }
+
+  // INVARIANTS at this point:
+  //   1. init-process has occurred.
+  //   2. current execution context is either the spawning process or thread.
+
+  // Disable timers... [FIXME]
+
+  // -------------------------------------------------------
+  // Capture new thread's parent context.
+  // -------------------------------------------------------
+  csprof_state_t* state = csprof_get_state();
+
+  ucontext_t context;
+  ret = getcontext(&context);
+  if (ret != 0) {
+    EMSG("Error: getcontext = %d", ret); 
+  }
+  
+  // insert into CCT as a placeholder (weight of 0)
+  csprof_sample_event(&context, WEIGHT_METRIC, 0); // [FIXME: CCT node?]
+  
+  lush_ctxt_list_t* thr_ctxt = csprof_malloc(sizeof(lush_ctxt_list_t));
+  thr_ctxt->creation_context = NULL; // [FIXME: capture CCT node]
+  thr_ctxt->parent = state;
+
+  // Enable timers... [FIXME]
+
+  return thr_ctxt;
+#else
+  return NULL;
+#endif
+}
+
+
+void 
+csprof_init_thread_support(int id)
 {
   csprof_state_t *state = csprof_get_state();
 
@@ -212,8 +260,9 @@ void csprof_init_thread_support(int id)
   MSG(1,"switch to threaded versions complete");
 }
 
+
 void
-csprof_thread_init(killsafe_t *kk,int id)
+csprof_thread_init(killsafe_t *kk, int id, lush_ctxt_list_t* ctxt_list)
 {
   csprof_state_t *state;
   csprof_mem_t *memstore;
@@ -243,6 +292,7 @@ csprof_thread_init(killsafe_t *kk,int id)
   csprof_state_alloc(state);
 
   state->pstate.thrid = id; // local thread id in state
+  state->context_list = ctxt_list;
 
   pthread_setspecific(prof_data_key,(void *)state);
 
@@ -267,6 +317,7 @@ csprof_thread_init(killsafe_t *kk,int id)
     EMSG("WARNING: Thread init could not unblock SIGPROF, ret = %d",ret);
   }
 }
+
 
 void
 csprof_thread_fini(csprof_state_t *state)
@@ -404,8 +455,8 @@ void csprof_print_backtrace(csprof_state_t *state)
 
 /* writing profile data */
 
-int csprof_write_profile_data(csprof_state_t *state){
-
+int csprof_write_profile_data(csprof_state_t *state)
+{
   extern int csprof_using_threads;
 
   int ret = CSPROF_OK, ret1, ret2;
@@ -426,73 +477,73 @@ int csprof_write_profile_data(csprof_state_t *state){
   }
   MSG(CSPROF_MSG_DATAFILE, "CSPROF write_profile_data: Writing %s", fnm);
 
-    /* Open file for writing; fail if the file already exists. */
-    fs = hpcfile_open_for_write(fnm, /* overwrite */ 0);
-    ret1 = hpcfile_csprof_write(fs, csprof_get_metric_data());
+  /* Open file for writing; fail if the file already exists. */
+  fs = hpcfile_open_for_write(fnm, /* overwrite */ 0);
+  ret1 = hpcfile_csprof_write(fs, csprof_get_metric_data());
 
-    MSG(CSPROF_MSG_DATAFILE, "Done writing metric data");
+  MSG(CSPROF_MSG_DATAFILE, "Done writing metric data");
 
-    if(ret1 != HPCFILE_OK) {
-        goto error;
+  if(ret1 != HPCFILE_OK) {
+    goto error;
+  }
+
+  MSG(CSPROF_MSG_DATAFILE, "Preparing to write epochs");
+  csprof_write_all_epochs(fs);
+
+  MSG(CSPROF_MSG_DATAFILE, "Done writing epochs");
+  /* write profile states out to disk */
+  {
+    csprof_state_t *runner = state;
+    unsigned int nstates = 0;
+    unsigned long tsamps = 0;
+
+    /* count states */
+    while(runner != NULL) {
+      if(runner->epoch != NULL) {
+	nstates++;
+	tsamps += runner->trampoline_samples;
+      }
+      runner = runner->next;
     }
 
-    MSG(CSPROF_MSG_DATAFILE, "Preparing to write epochs");
-    csprof_write_all_epochs(fs);
+    hpc_fwrite_le4(&nstates, fs);
+    hpc_fwrite_le8(&tsamps, fs);
 
-    MSG(CSPROF_MSG_DATAFILE, "Done writing epochs");
-    /* write profile states out to disk */
-    {
-        csprof_state_t *runner = state;
-        unsigned int nstates = 0;
-        unsigned long tsamps = 0;
+    /* write states */
+    runner = state;
 
-        /* count states */
-        while(runner != NULL) {
-            if(runner->epoch != NULL) {
-                nstates++;
-                tsamps += runner->trampoline_samples;
-            }
-            runner = runner->next;
-        }
-
-        hpc_fwrite_le4(&nstates, fs);
-        hpc_fwrite_le8(&tsamps, fs);
-
-        /* write states */
-        runner = state;
-
-        while(runner != NULL) {
-            if(runner->epoch != NULL) {
-		MSG(CSPROF_MSG_DATAFILE, "Writing %ld nodes", runner->csdata.num_nodes);
-                ret2 = csprof_csdata__write_bin(&runner->csdata,
-                                                runner->epoch->id, fs);
+    while(runner != NULL) {
+      if(runner->epoch != NULL) {
+	MSG(CSPROF_MSG_DATAFILE, "Writing %ld nodes", runner->csdata.num_nodes);
+	ret2 = csprof_csdata__write_bin(fs, runner->epoch->id, 
+					&runner->csdata, runner->context_list);
           
-                if(ret2 != CSPROF_OK) {
-                    MSG(CSPROF_MSG_DATAFILE, "Error writing tree %#lx", &runner->csdata);
-                    MSG(CSPROF_MSG_DATAFILE, "Number of tree nodes lost: %ld", runner->csdata.num_nodes);
-                    ERRMSG("could not save profile data to file '%s'", __FILE__, __LINE__, fnm);
-                    perror("write_profile_data");
-                    ret = CSPROF_ERR;
-                }
-            }
-            else {
-                MSG(CSPROF_MSG_DATAFILE, "Not writing tree %#lx; null epoch", &runner->csdata);
-                MSG(CSPROF_MSG_DATAFILE, "Number of tree nodes lost: %ld", runner->csdata.num_nodes);
-            }
+	if(ret2 != CSPROF_OK) {
+	  MSG(CSPROF_MSG_DATAFILE, "Error writing tree %#lx", &runner->csdata);
+	  MSG(CSPROF_MSG_DATAFILE, "Number of tree nodes lost: %ld", runner->csdata.num_nodes);
+	  ERRMSG("could not save profile data to file '%s'", __FILE__, __LINE__, fnm);
+	  perror("write_profile_data");
+	  ret = CSPROF_ERR;
+	}
+      }
+      else {
+	MSG(CSPROF_MSG_DATAFILE, "Not writing tree %#lx; null epoch", &runner->csdata);
+	MSG(CSPROF_MSG_DATAFILE, "Number of tree nodes lost: %ld", runner->csdata.num_nodes);
+      }
 
-            runner = runner->next;
-        }
+      runner = runner->next;
     }
+  }
           
-    if(ret1 == HPCFILE_OK && ret2 == CSPROF_OK) {
-        MSG(CSPROF_MSG_DATAFILE, "saved profile data to file '%s'", fnm);
-    }
-    /* if we've gotten this far, there haven't been any fatal errors */
-    goto end;
+  if(ret1 == HPCFILE_OK && ret2 == CSPROF_OK) {
+    MSG(CSPROF_MSG_DATAFILE, "saved profile data to file '%s'", fnm);
+  }
+  /* if we've gotten this far, there haven't been any fatal errors */
+  goto end;
 
  error:
  end:
-    hpcfile_close(fs);
+  hpcfile_close(fs);
 
-    return ret;
+  return ret;
 }

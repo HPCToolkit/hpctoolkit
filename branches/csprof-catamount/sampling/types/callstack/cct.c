@@ -561,7 +561,8 @@ csprof_cct_insert_backtrace(csprof_cct_t *x, void *treenode, int metric_id,
    stream 'fs'.  The tree is written in HPC_CSTREE format.  Returns
    CSPROF_OK upon success; CSPROF_ERR on error. */
 int 
-csprof_cct__write_bin(csprof_cct_t* x, unsigned int epoch_id, FILE* fs)
+csprof_cct__write_bin(FILE* fs, unsigned int epoch_id,
+		      csprof_cct_t* x, void* x_ctxt)
 {
   int ret;
   if (!fs) { return CSPROF_ERR; }

@@ -1,3 +1,5 @@
+// FIXME: Appears to be deprecated code.
+
 #include <stdio.h>
 
 #include "csprof_misc_fn_stat.h"
@@ -75,8 +77,9 @@ csprof_write_profile_data(csprof_state_t* state){
         while(runner != NULL) {
             if(runner->epoch != NULL) {
 		PMSG(DATA_WRITE, "Writing %ld nodes", runner->csdata.num_nodes);
-                ret2 = csprof_csdata__write_bin(&runner->csdata,
-                                                runner->epoch->id, fs);
+                ret2 = csprof_csdata__write_bin(fs, runner->epoch->id, 
+						&runner->csdata, 
+						runner->context_list);
           
                 if(ret2 != CSPROF_OK) {
                     PMSG(DATA_WRITE, "Error writing tree %#lx", &runner->csdata);

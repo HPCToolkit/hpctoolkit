@@ -1,7 +1,11 @@
 // -*-Mode: C++;-*- // technically C99
 // $Id$
 
+//************************* System Include Files ****************************
+
 #include <pthread.h>
+
+//*************************** User Include Files ****************************
 
 #include "general.h"
 #include "killsafe.h"
@@ -9,17 +13,26 @@
 #include "name.h"
 #include "epoch.h"
 #include "dl_bound.h"
+#include "structs.h"
 
 #ifdef LINUX
 #include <linux/unistd.h>
 #endif
 
+//*************************** Forward Declarations **************************
+
 #define M(s) write(2,s"\n",strlen(s)+1)
 
+// FIXME: this stuff should come in from a .h
 void csprof_init_internal(void);
 void csprof_fini_internal(void);
 void csprof_pthread_init_data(void);
+void csprof_init_thread_support(int id);
+void* csprof_thread_pre_create();
+void csprof_thread_init(killsafe_t *kk, int id, lush_ctxt_list_t* ctxt_list);
+void csprof_thread_fini(csprof_state_t *s);
 
+//***************************************************************************
 
 void monitor_init_process(char *process,int *argc,char **argv,unsigned pid)
 {
@@ -64,7 +77,6 @@ n_init(void)
   e = pthread_key_create(&my_thread_specific_key, NULL);
 }
 
-void csprof_init_thread_support(int id);
 
 void
 monitor_init_thread_support(void)
@@ -87,43 +99,9 @@ monitor_thread_pre_create()
 {
   // N.B.: monitor_thread_pre_create() can be called before
   // monitor_init_thread_support() or even monitor_init_process().
-  // Must delay any thread functions until monitor_init_thread()...
-
-  // NOTE: For the first thread, this is run in the main *process*
-
-#if 0
-  csprof_state_t* state = csprof_get_state();
-
-  // Disable timers 
-
-  // Gather context
-  int ret;
-  ucontext_t context;
-
-  ret = getcontext(&context);
-  if (ret != 0) { 
-    EMSG("Error: getcontext = %d", ret); 
-  }
-  
-  csprof_sample_event(&context, WEIGHT_METRIC, 0); //... insert in (parent's) CCT w/ no weight
-  
-  
-  // 4. Capture context for 
-  lush_ctxt_list_t* thr_ctxt = csprof_malloc(sizeof(lush_ctxt_list_t));
-  thr_ctxt->creation_context = NULL; // ...
-  thr_ctxt->parent = NULL; // ...
-
-  // Enable timers
-  // ...
-
-  return thr_ctxt;
-#else 
-  return NULL;
-#endif
+  return csprof_thread_pre_create();
 }
 
-
-void csprof_thread_init(killsafe_t *kk, int id);
 
 void *
 monitor_init_thread(int tid, void *data)
@@ -138,20 +116,19 @@ monitor_init_thread(int tid, void *data)
   pthread_setspecific(my_thread_specific_key, (void *)loc);
 
   safe = (killsafe_t *)malloc(sizeof(killsafe_t));
-  csprof_thread_init(safe,loc->id);
+  csprof_thread_init(safe, loc->id, (lush_ctxt_list_t*)data);
 
   return (void *) safe;
 }
 
+
 void monitor_fini_thread(void *init_thread_data )
 {
-
-  extern void csprof_thread_fini(csprof_state_t *s);
-
   csprof_state_t *state = ((killsafe_t *)init_thread_data)->state;
 
   csprof_thread_fini(state);
 }
+
 
 void monitor_dlopen(const char *path, int flags, void *handle)
 {
@@ -164,8 +141,8 @@ void monitor_dlopen(const char *path, int flags, void *handle)
   dl_add_module(path);
 
   csprof_epoch_unlock();
-
 }
+
 
 void monitor_dlclose(void *handle) // (const char *library)
 {
@@ -177,8 +154,6 @@ void monitor_dlclose(void *handle) // (const char *library)
   dl_remove_library(library);
   FIXME: delete intervals from the splay tree too
 */
-
-
 }
 
 
