@@ -318,12 +318,20 @@ binutils::TextSeg::Create_InitializeProcs()
       // *wrong*. (Intel 9 has generated significant over-estimates).
       VMA endVMA_approx = FindProcEnd(i);
       if (dbg) {
-	// Remove this capability... the DWARF sizes can be wrong!!
-	// endVMA = std::min(dbg->endVMA, endVMA_approx);
-	endVMA = endVMA_approx;
 	if (!dbg->name.empty()) {
 	  procNm = dbg->name;
 	}
+
+#if 1
+	// Remove capability below... the DWARF sizes can be wrong!!
+	endVMA = endVMA_approx;
+#else
+	endVMA = std::min(dbg->endVMA, endVMA_approx);
+	if (endVMA != endVMA_approx) {
+	  int64_t diff = endVMA - endVMA_approx;
+	  DIAG_DevMsg(0, procNm << ": inconsistent end VMA: " << diff << " [" << std::showbase << std::hex << begVMA << "-" << endVMA << "/" << endVMA_approx << std::dec << "]");
+	}
+#endif
       }
       if (!dbg || endVMA == 0) {
 	endVMA = endVMA_approx;
