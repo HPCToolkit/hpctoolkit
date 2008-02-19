@@ -74,6 +74,7 @@
 
 //*************************** Forward Declarations **************************
 
+#define CSTREE_ID_ROOT 1
 #define DBG_READ_METRICS 0
 
 static int
@@ -219,29 +220,34 @@ hpcfile_cstree_read(FILE* fs, void* tree,
   if (hpcfile_cstree_read_hdr(fs, &fhdr) != HPCFILE_OK) { 
     return HPCFILE_ERR; 
   }
-  
+
+  // node id upper bound
+  unsigned int id_ub = fhdr.num_nodes + CSTREE_ID_ROOT;
+
   // Allocate space for 'node_vec'
   if (fhdr.num_nodes != 0) {
-    node_vec = alloc_fn(sizeof(void*) * fhdr.num_nodes);
-    node_vec[0] = 0;
+    node_vec = alloc_fn(sizeof(void*) * id_ub);
+    for (int i = 0; i <= CSTREE_ID_ROOT; ++i) {
+      node_vec[i] = NULL;
+    }
   }
   
   // Read each node, creating it and linking it to its parent 
   fnode.data.num_metrics = num_metrics;
   fnode.data.metrics = malloc(num_metrics * sizeof(hpcfile_uint_t));
-
-  for (i = 0; i < fhdr.num_nodes; ++i) {
+  
+  for (i = CSTREE_ID_ROOT; i < id_ub; ++i) {
     if (hpcfile_cstree_node__fread(&fnode, fs) != HPCFILE_OK) { 
       goto cstree_read_cleanup; // HPCFILE_ERR
     }
-    if (fnode.id_parent >= fhdr.num_nodes) { 
+    if (fnode.id_parent >= id_ub) { 
       goto cstree_read_cleanup; // HPCFILE_ERR
     } 
     
     parent = node_vec[fnode.id_parent];
 
-    // parent should already exist unless id_parent and id are equal
-    if (!parent && fnode.id_parent != fnode.id) { 
+    // parent should already exist unless id == CSTREE_ID_ROOT
+    if (!parent && fnode.id != CSTREE_ID_ROOT) {
       goto cstree_read_cleanup; // HPCFILE_ERR
     }
 
@@ -276,6 +282,8 @@ hpcfile_cstree_read(FILE* fs, void* tree,
 int
 hpcfile_cstree_fprint(FILE* infs, int num_metrics, FILE* outfs)
 {
+  // FIXME: could share some code with the reader
+  
   hpcfile_cstree_hdr_t fhdr;
   hpcfile_cstree_node_t fnode;
   int i;
@@ -291,10 +299,11 @@ hpcfile_cstree_fprint(FILE* infs, int num_metrics, FILE* outfs)
   fputs("\n", outfs);
 
   // Read and print each node
-  for (i = 0; i < fhdr.num_nodes; ++i) {
+  unsigned int id_ub = fhdr.num_nodes + CSTREE_ID_ROOT;
+  for (i = CSTREE_ID_ROOT; i < id_ub; ++i) {
     fnode.data.num_metrics = num_metrics;
 
-    if (hpcfile_cstree_node__fread(&fnode, infs) != HPCFILE_OK) { 
+    if (hpcfile_cstree_node__fread(&fnode, infs) != HPCFILE_OK) {
       fprintf(outfs, "** Error reading node number %d **\n", i);
       return HPCFILE_ERR;
     }
