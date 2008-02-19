@@ -87,7 +87,7 @@ main(int argc, char *argv[])
   }
   for(t=0;t<nthreads;t++){
       printf("Creating thread %d\n", t+1);
-      rc = pthread_create(&threads[t], NULL, PrintHello, (void *)t);
+      rc = pthread_create(&threads[t], NULL, PrintHello, (void *)(long)t);
       if (rc){
          printf("ERROR; return code from pthread_create() is %d\n", rc);
          exit(-1);
