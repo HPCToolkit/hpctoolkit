@@ -149,7 +149,6 @@ hpcfile_csprof_read(FILE* fs, hpcfile_csprof_data_t* data,
   hpcfile_csprof_hdr_t fhdr;
   hpcfile_str_t str;
   hpcfile_num8_t num8;
-  uint64_t i,ii;
   uint32_t tag;
   size_t sz;
   int ret = HPCFILE_ERR;
@@ -162,7 +161,72 @@ hpcfile_csprof_read(FILE* fs, hpcfile_csprof_data_t* data,
   if (hpcfile_csprof_read_hdr(fs, &fhdr) != HPCFILE_OK) { 
     return HPCFILE_ERR; 
   }
+
   
+  // FIXME: TEMPORARY
+  
+  // ----------------------------------------------------------
+  // 1. Target
+  // ----------------------------------------------------------
+  sz = hpc_fread_le4(&tag, fs); // HPCFILE_STR
+  if (sz != sizeof(tag)) { return HPCFILE_ERR; }
+  
+  str.str = NULL;
+  ret = hpcfile_str__fread(&str, fs, alloc_fn);
+  if (ret != HPCFILE_OK) { 
+    free_fn(str.str);
+    return HPCFILE_ERR;
+  }
+  
+  data->target = str.str;
+
+  
+  // ----------------------------------------------------------
+  // 2. Metrics
+  // ----------------------------------------------------------
+
+  // 2a. number of metrics
+  sz = hpc_fread_le4(&tag, fs); 
+  if (sz != sizeof(tag)) { return HPCFILE_ERR; }
+
+  data->num_metrics = tag; // FIXME: YUCK
+
+  // 2b. metric descriptions
+  data->metrics = alloc_fn(data->num_metrics * sizeof(hpcfile_csprof_metric_t));
+  
+  for (uint32_t i = 0; i < data->num_metrics; ++i) {
+    // Read metrics data tag
+    sz = hpc_fread_le4(&tag, fs);
+    if (sz != sizeof(tag)) { return HPCFILE_ERR; }
+
+    // read in the name of the  metric
+    str.str = NULL;
+    if (hpcfile_str__fread(&str, fs, alloc_fn) != HPCFILE_OK) {
+      free_fn(str.str);
+      return HPCFILE_ERR;
+    }
+    data->metrics[i].metric_name = str.str;
+	  
+    // read in the flags of the metric
+    sz = hpc_fread_le4(&tag, fs);
+    if (sz != sizeof(tag)) { return HPCFILE_ERR; }
+    if (hpcfile_num8__fread(&num8, fs) != HPCFILE_OK) {
+      return HPCFILE_ERR;
+    }
+    data->metrics[i].flags = num8.num;
+	  
+    // read in the sample period
+    sz = hpc_fread_le4(&tag, fs);
+    if (sz != sizeof(tag)) { return HPCFILE_ERR; }
+    if (hpcfile_num8__fread(&num8, fs) != HPCFILE_OK) {
+      return HPCFILE_ERR;
+    }
+	  
+    data->metrics[i].sample_period = num8.num;
+  }
+
+
+#if 0  
   // Read data chunks (except epoch)
   for (i = 0; i < fhdr.num_data-1; ++i) {  
     // Read data tag
@@ -182,59 +246,25 @@ hpcfile_csprof_read(FILE* fs, hpcfile_csprof_data_t* data,
 
 	break;
       case HPCFILE_NUM8:
-	if (hpcfile_num8__fread(&num8, fs) != HPCFILE_OK) { 
-	  return HPCFILE_ERR;
+	ret = hpcfile_num8__fread(&num8, fs);
+	if (ret != HPCFILE_OK) { 
+
 	}
-#if 0
+	break;
+
       case HPCFILE_NUM8S:
 	num8s.nums = NULL;
 	if (hpcfile_num8s__fread(&num8s, fs, alloc_fn) != HPCFILE_OK) { 
 	  free_fn(num8s.nums);
 	  return HPCFILE_ERR;
 	}
-#endif
 	break;
 
       default:
-#if 0 
 	return HPCFILE_ERR; 
-#else  
-	// do we have to use call back function to get the space we need here? FMZ
-        data->num_metrics = tag;
-        data->metrics = alloc_fn(data->num_metrics * sizeof(hpcfile_csprof_metric_t));
-        for (ii=0; ii < data->num_metrics; ++ii) {
-	  // Read metrics data tag
-	  sz = hpc_fread_le4(&tag, fs);
-	  if (sz != sizeof(tag)) { return HPCFILE_ERR; }
-
-	  // read in the name of the  metric
-	  str.str = NULL;
-	  if (hpcfile_str__fread(&str, fs, alloc_fn) != HPCFILE_OK) {
-	    free_fn(str.str);
-	    return HPCFILE_ERR;
-	  }
-	  data->metrics[ii].metric_name = str.str;
-	  
-	  // read in the flags of the metric
-	  sz = hpc_fread_le4(&tag, fs);
-	  if (sz != sizeof(tag)) { return HPCFILE_ERR; }
-	  if (hpcfile_num8__fread(&num8, fs) != HPCFILE_OK) {
-	    return HPCFILE_ERR;
-	  }
-	  data->metrics[ii].flags = num8.num;
-	  
-	  // read in the sample period
-	  sz = hpc_fread_le4(&tag, fs);
-	  if (sz != sizeof(tag)) { return HPCFILE_ERR; }
-	  if (hpcfile_num8__fread(&num8, fs) != HPCFILE_OK) {
-	    return HPCFILE_ERR;
-	  }
-	  
-	  data->metrics[ii].sample_period = num8.num;
-	}
-#endif
 	break;
     }
+#endif
     
     // Interpret the data: FIXME sanity check
 #if 0 
@@ -251,10 +281,9 @@ hpcfile_csprof_read(FILE* fs, hpcfile_csprof_data_t* data,
     default: 
       break; // skip 
     }
+  }
 #endif
     
-  }
-
 
   // processing the epoch part here to reach the trees part--FMZ
   {
@@ -307,24 +336,45 @@ hpcfile_csprof_read(FILE* fs, hpcfile_csprof_data_t* data,
 
 // See header file for documentation of public interface.
 int
-hpcfile_csprof_convert_to_txt(FILE* infs, FILE* outfs)
+hpcfile_csprof_fprint(FILE* infs, FILE* outfs, hpcfile_csprof_data_t* data)
 {
+#if 0
   hpcfile_csprof_hdr_t fhdr;
-  
-  // Open file for reading; read and sanity check header
-  if (hpcfile_csprof_read_hdr(infs, &fhdr) != HPCFILE_OK) {
-    fputs("** Error reading header **\n", outfs);
-    return HPCFILE_ERR;
-  }
+  // Read header...
   
   // Print header
   hpcfile_csprof_hdr__fprint(&fhdr, outfs);
   fputs("\n", outfs);
 
-  // Read and print each data chunk
-  // --FIXME--
+  // Read and print each data chunk...
+#endif
 
-  
+  epoch_table_t epochtbl;
+
+  hpcfile_csprof_read(infs, data, &epochtbl, 
+		      (hpcfile_cb__alloc_fn_t)malloc,
+		      (hpcfile_cb__free_fn_t)free);
+
+  for (int i = 0; i < epochtbl.num_epoch; ++i) {
+    // print an epoch
+    epoch_entry_t* epoch = & epochtbl.epoch_modlist[i];
+    fprintf(outfs, "{epoch %d:\n", i);
+
+    for (int j = 0; j < epoch->num_loadmodule; ++j) {
+      ldmodule_t* lm = & epoch->loadmodule[j];
+
+      fprintf(outfs, "  lm %d: %s %"PRIx64" -> %"PRIx64"\n",
+	      j, lm->name, lm->vaddr, lm->mapaddr);
+      
+      free(lm->name);
+    }
+    fprintf(outfs, "}\n");
+
+    free(epoch->loadmodule);
+  }
+  free(epochtbl.epoch_modlist);
+
+
   // Success! Note: We assume that it is possible for other data to
   // exist beyond this point in the stream; don't check for EOF.
   return HPCFILE_OK;

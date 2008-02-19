@@ -66,24 +66,6 @@ typedef enum csprof_status_e {
 
 
 // ---------------------------------------------------------
-// LUSH: thread creation context
-// ---------------------------------------------------------
-
-// Forms a linked list of this thread's creation context:
-//   get-ctxt(t): [t.creation_context, get-ctxt(t.parent)]
-
-typedef struct lush_ctxt_list_s {
-
-  // pointer into parent thread; usually a CCT node
-  void* creation_context;
-  
-  // parent thread
-  struct csprof_state_s* parent;
-  
-} lush_ctxt_list_t;
-
-
-// ---------------------------------------------------------
 // profiling state of a single thread
 // ---------------------------------------------------------
 
@@ -123,15 +105,13 @@ typedef struct csprof_state_s {
 
     /* call stack data, stored in private memory */
     csprof_csdata_t csdata;
+    lush_cct_ctxt_t* csdata_ctxt; // creation context
 
     /* our notion of what the current epoch is */
     csprof_epoch_t *epoch;
 
     /* other profiling states which we have seen */
     struct csprof_state_s *next;
-
-    /* creation context */
-    lush_ctxt_list_t* context_list;
 
     /* support for alternate profilers whose needs we don't provide */
     void *extra_state;

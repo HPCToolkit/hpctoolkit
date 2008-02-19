@@ -1,5 +1,6 @@
+// -*-Mode: C++;-*- // technically C99
 // $Id$
-// -*-C-*-
+
 // * BeginRiceCopyright *****************************************************
 /*
   Copyright ((c)) 2002, Rice University 
@@ -74,12 +75,21 @@
 
 //*************************** Forward Declarations **************************
 
+//***************************************************************************
+// 
+//***************************************************************************
+
 struct rbtree_node;
 
 struct rbtree
 {
     struct rbtree_node *root;
 };
+
+
+// ---------------------------------------------------------
+// 
+// ---------------------------------------------------------
 
 /* try to order these so that the most-often referenced things fit into
    a single cache line... */
@@ -115,7 +125,12 @@ typedef struct csprof_frame_s {
 } csprof_frame_t;
 #endif
 
-
+
+// ---------------------------------------------------------
+// 
+// ---------------------------------------------------------
+
+
 /* public interface */
 
 // returns the number of ancestors walking up the tree
@@ -150,6 +165,26 @@ typedef struct csprof_cct_s {
 #endif
 } csprof_cct_t;
 
+// ---------------------------------------------------------
+// LUSH: thread creation context
+// ---------------------------------------------------------
+
+// Represents the creation creation of a given calling context tree as
+// a linked list.
+//   get-ctxt(ctxt): [t.context, get-ctxt(ctxt.parent)]
+typedef struct lush_cct_ctxt_s {
+  
+  // the leaf node of the creation context
+  csprof_cct_node_t* context;
+  
+  struct lush_cct_ctxt_s* parent; // a list of lush_cct_ctxt_t
+
+} lush_cct_ctxt_t;
+
+
+//***************************************************************************
+// 
+//***************************************************************************
 
 int csprof_cct__init(csprof_cct_t* x);
 int csprof_cct__fini(csprof_cct_t *x);
@@ -162,15 +197,31 @@ csprof_cct_insert_backtrace(csprof_cct_t *, void *, int metric_id,
 
 int csprof_cct__write_txt(FILE* fs, csprof_cct_t* x);
 
-int csprof_cct__write_bin(FILE* fs, unsigned int, 
-			  csprof_cct_t* x, void* x_ctxt);
+int csprof_cct__write_bin(FILE* fs, unsigned int epoch_id,
+			  csprof_cct_t* x, lush_cct_ctxt_t* x_ctxt);
+
 
 /* First argument: 'csprof_cct_t *' */
 #define csprof_cct__isempty(x) ((x)->tree_root == NULL)
-
+
 /* private interface */
 int csprof_cct__write_txt_q(csprof_cct_t *);
 
 int csprof_cct__write_txt_r(FILE *, csprof_cct_t *, csprof_cct_node_t *);
+
+
+//***************************************************************************
+// 
+//***************************************************************************
+
+unsigned int
+lush_cct_ctxt__length(lush_cct_ctxt_t* cct_ctxt);
+
+int
+lush_cct_ctxt__write(FILE* fs, lush_cct_ctxt_t* cct_ctxt,
+		     unsigned int id_root, unsigned int* nodes_written);
+
+
+//***************************************************************************
 
 #endif 

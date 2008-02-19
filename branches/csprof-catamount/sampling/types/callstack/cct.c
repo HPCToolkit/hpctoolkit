@@ -1,3 +1,6 @@
+// -*-Mode: C++;-*- // technically C99
+// $Id$
+
 //***************************************************************************
 //
 // File:
@@ -37,6 +40,7 @@
 
 #include "hpcfile_cstreelib.h"
 
+//*************************** Forward Declarations **************************
 
 /* cstree callbacks (CB) */
 static void  
@@ -58,7 +62,10 @@ csprof_cct_node__find_child(csprof_cct_node_t*, void*);
 static int
 csprof_cct_node__link(csprof_cct_node_t *, csprof_cct_node_t *);
 
-
+//***************************************************************************
+//
+//***************************************************************************
+
 /* balanced red black trees for finding children */
 
 /* for efficiency's sake, we store the color information in the low-order
@@ -292,7 +299,12 @@ rbtree_insert(struct rbtree *tree, csprof_cct_node_t *node)
     }
     BLACKEN(tree->root);
 }
-
+
+
+//***************************************************************************
+//
+//***************************************************************************
+
 /* various internal functions for maintaining vdegree trees */
 
 /* csprof_cct_node__init: initializes empty node and links
@@ -425,7 +437,12 @@ csprof_cct_node__find_child(csprof_cct_node_t* x, void* ip)
     return NULL;
 }
 #endif
-
+
+
+//***************************************************************************
+//
+//***************************************************************************
+
 /* building and deleting trees */
 
 int
@@ -554,7 +571,12 @@ csprof_cct_insert_backtrace(csprof_cct_t *x, void *treenode, int metric_id,
     tn->metrics[metric_id] += sample_count;
     return tn;
 }
-
+
+
+//***************************************************************************
+//
+//***************************************************************************
+
 /* writing trees to streams of various kinds */
 
 /* csprof_cct__write_bin: Write the tree 'x' to the file
@@ -562,15 +584,20 @@ csprof_cct_insert_backtrace(csprof_cct_t *x, void *treenode, int metric_id,
    CSPROF_OK upon success; CSPROF_ERR on error. */
 int 
 csprof_cct__write_bin(FILE* fs, unsigned int epoch_id,
-		      csprof_cct_t* x, void* x_ctxt)
+		      csprof_cct_t* x, lush_cct_ctxt_t* x_ctxt)
 {
   int ret;
   if (!fs) { return CSPROF_ERR; }
 
-  ret = hpcfile_cstree_write(fs, x, x->tree_root,
+  // Collect stats on the creation context
+  unsigned int x_ctxt_len = lush_cct_ctxt__length(x_ctxt);
+  hpcfile_uint_t num_nodes = x_ctxt_len + x->num_nodes;
+
+  ret = hpcfile_cstree_write(fs, x, x->tree_root, x_ctxt,
 			     csprof_num_recorded_metrics(),
-			     x->num_nodes,
-                             epoch_id,
+			     num_nodes, epoch_id,
+			     (hpcfile_cstree_cb__write_context_fn_t)
+			       lush_cct_ctxt__write,
 			     (hpcfile_cstree_cb__get_data_fn_t)
 			       csprof_cct__get_data_CB,
 			     (hpcfile_cstree_cb__get_first_child_fn_t)
@@ -578,8 +605,14 @@ csprof_cct__write_bin(FILE* fs, unsigned int epoch_id,
 			     (hpcfile_cstree_cb__get_sibling_fn_t)
 			       csprof_cct__get_sibling_CB);
 
+
+  // splice creation context out of tree
+
   return (ret == HPCFILE_OK) ? CSPROF_OK : CSPROF_ERR;
 }
+
+
+
 
 /* cstree callbacks (CB) */
 static void  
@@ -606,3 +639,146 @@ csprof_cct__get_sibling_CB(csprof_cct_t* x, csprof_cct_node_t* node)
 {
   return csprof_cct_node__next_sibling(node);
 }
+
+
+//***************************************************************************
+//
+//***************************************************************************
+
+static int
+lush_cct_ctxt__write_gbl(FILE* fs, lush_cct_ctxt_t* cct_ctxt,
+			 unsigned int id_root, unsigned int* nodes_written,
+			 hpcfile_cstree_node_t* tmp_node);
+
+static int
+lush_cct_ctxt__write_lcl(FILE* fs, csprof_cct_node_t* node,
+			 unsigned int id_root, unsigned int* nodes_written,
+			 hpcfile_cstree_node_t* tmp_node);
+
+
+unsigned int
+lush_cct_ctxt__length(lush_cct_ctxt_t* cct_ctxt)
+{
+  unsigned int len = 0;
+  for (lush_cct_ctxt_t* ctxt = cct_ctxt; (ctxt); ctxt = ctxt->parent) {
+    for (csprof_cct_node_t* x = ctxt->context; (x); x = x->parent) {
+      len++;
+    }
+  }
+  return len;
+}
+
+
+int
+lush_cct_ctxt__write(FILE* fs, lush_cct_ctxt_t* cct_ctxt,
+		     unsigned int id_root, unsigned int* nodes_written)
+{
+  // N.B.: assumes that calling malloc is acceptible!
+
+  int ret;
+  unsigned int num_metrics = csprof_num_recorded_metrics();
+
+  hpcfile_cstree_node_t tmp_node;
+  hpcfile_cstree_node__init(&tmp_node);
+  tmp_node.data.num_metrics = num_metrics;
+  tmp_node.data.metrics = malloc(num_metrics * sizeof(hpcfile_uint_t));
+    
+  ret = lush_cct_ctxt__write_gbl(fs, cct_ctxt, id_root,
+				 nodes_written, &tmp_node);
+
+  free(tmp_node.data.metrics);
+
+  return ret;
+}
+
+
+// Post order write of 'cct_ctxt'
+static int
+lush_cct_ctxt__write_gbl(FILE* fs, lush_cct_ctxt_t* cct_ctxt,
+			 unsigned int id_root, unsigned int* nodes_written,
+			 hpcfile_cstree_node_t* tmp_node)
+{
+  int ret = CSPROF_OK;
+  
+  // Base case
+  if (!cct_ctxt) {
+    return ret;
+  }
+
+
+  // General case
+  ret = lush_cct_ctxt__write_gbl(fs, cct_ctxt->parent, id_root, 
+				 nodes_written, tmp_node);
+  if (ret != CSPROF_OK) { return CSPROF_ERR; }
+  
+  unsigned int lcl_written = 0;
+  unsigned int id_lcl_root = *nodes_written;
+  ret = lush_cct_ctxt__write_lcl(fs, cct_ctxt->context, id_lcl_root, 
+				 &lcl_written, tmp_node);
+  if (ret != CSPROF_OK) { return CSPROF_ERR; }
+  nodes_written += lcl_written;
+  
+  return ret;
+}
+
+
+// Post order write of 'node'
+static int
+lush_cct_ctxt__write_lcl(FILE* fs, csprof_cct_node_t* node,
+			 unsigned int id_root, unsigned int* nodes_written,
+			 hpcfile_cstree_node_t* tmp_node)
+{
+  int ret;
+
+  // Base case
+  if (!node) {
+    return CSPROF_OK;
+  }
+  
+
+  // General case
+  lush_cct_ctxt__write_lcl(fs, node->parent, id_root,
+			   nodes_written, tmp_node);
+  
+  // write a node
+  unsigned int id_parent = *nodes_written;
+  unsigned int id        = id_parent + 1;
+  
+  tmp_node->id = id;
+  tmp_node->id_parent = id_parent;
+  csprof_cct__get_data_CB(NULL, node, &(tmp_node->data));
+  
+  ret = hpcfile_cstree_node__fwrite(tmp_node, fs);
+  if (ret != HPCFILE_OK) {
+    return HPCFILE_ERR;
+  }
+  
+  (*nodes_written)++;
+  
+  return ret;
+}
+
+
+#if 0
+csprof_cct_node_t* 
+xxx_copy_list(FILE* fs, csprof_cct_node_t* node, &new_tail)
+{
+  if (!node) {
+    *new_tail = NULL;
+    return NULL;
+  }
+
+  csprof_cct_node_t* cp_head = xxx_copy(node);
+  csprof_cct_node_t* cp_tail = cp_head;
+
+  for (csprof_cct_node_t* x = node->parent; (x); x = x->parent) {
+    csprof_cct_node_t* tmp = xxx_copy(x);
+    cp_tail->parent = tmp;
+    cp_tail = tmp;
+  }
+  
+  *new_tail = cp_tail;
+  return cp_head;
+}
+#endif
+

@@ -14,6 +14,7 @@
 #include "epoch.h"
 #include "dl_bound.h"
 #include "structs.h"
+#include "csprof_monitor_callbacks.h"
 
 #ifdef LINUX
 #include <linux/unistd.h>
@@ -23,9 +24,7 @@
 
 #define M(s) write(2,s"\n",strlen(s)+1)
 
-// FIXME: this stuff should come in from a .h
 
-#include "csprof_monitor_callbacks.h"
 
 //***************************************************************************
 
@@ -116,7 +115,7 @@ monitor_init_thread(int tid, void *data)
   pthread_setspecific(my_thread_specific_key, (void *)loc);
 
   safe = (killsafe_t *)malloc(sizeof(killsafe_t));
-  csprof_thread_init(safe, loc->id);
+  csprof_thread_init(safe, loc->id, (lush_cct_ctxt_t*)data);
 
   return (void *) safe;
 }
