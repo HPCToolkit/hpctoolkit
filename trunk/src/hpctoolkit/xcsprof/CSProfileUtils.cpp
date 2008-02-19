@@ -182,6 +182,10 @@ ReadProfile_CSPROF(const char* fnm, const char *execnm)
   // ------------------------------------------------------------
 
   FILE* fs = hpcfile_open_for_read(fnm);
+  if (!fs) { 
+    DIAG_Throw(fnm << ": could not open");
+  }
+
   ret = hpcfile_csprof_read(fs, &metadata, &epochtbl, hpcfile_alloc_CB, 
 			     hpcfile_free_CB);
   if (ret != HPCFILE_OK) {
@@ -267,8 +271,11 @@ DumpProfile_CSPROF(const char* fnm)
   int ret;
 
   FILE* fs = hpcfile_open_for_read(fnm);
+  if (!fs) { 
+    DIAG_Throw(fnm << ": could not open");
+  }
 
- ret = hpcfile_csprof_fprint(fs, stdout, &metadata);
+  ret = hpcfile_csprof_fprint(fs, stdout, &metadata);
   if (ret != HPCFILE_OK) {
     DIAG_Throw(fnm << ": error reading HPC_CSPROF");
   }
