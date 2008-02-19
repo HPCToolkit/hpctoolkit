@@ -54,6 +54,9 @@ t-define:
 t1: t1.o
 	$(CC) -g $< -lm -o $@
 
+tp2: tp2.o
+	$(CC) -g $< -lpthread -o $@
+
 ot1: t1.o $(CSPROF_DOT_O) 
 	$(HPCL) -v CC -static -v $^ $(XEDLIB) -o $@
 

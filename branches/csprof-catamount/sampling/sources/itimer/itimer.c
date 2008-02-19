@@ -25,7 +25,7 @@
 #include "csprof_options.h"
 #include "pmsg.h"
 #include "sample_event.h"
-#include "metrics_types.h"
+#include "metrics.h"
 
 /******************************************************************************
  * macros
@@ -46,7 +46,7 @@
  *****************************************************************************/
 
 static int
-csprof_itimer_signal_handler(int sig, siginfo_t *siginfo, ucontext_t* context);
+csprof_itimer_signal_handler(int sig, siginfo_t *siginfo, void *context);
 
 
 
@@ -82,6 +82,18 @@ csprof_init_timer(csprof_options_t *options)
 
   itimer.it_interval.tv_sec = 0;
   itimer.it_interval.tv_usec = 0;
+
+  csprof_set_max_metrics(1);
+  int metric_id = csprof_new_metric(); 
+  csprof_set_metric_info_and_period(metric_id, "WALLCLOCK (ms)",
+                                    CSPROF_METRIC_ASYNCHRONOUS,
+                                    sample_period);
+
+#if 0
+  metric_id = csprof_new_metric(); /* calls */
+  csprof_set_metric_info_and_period(metric_id, "# returns",
+                                    CSPROF_METRIC_FLAGS_NIL, 1);
+#endif
 }
 
 
@@ -109,9 +121,7 @@ void
 csprof_itimer_init(csprof_options_t *opts)
 {
   csprof_init_timer(opts);
-  monitor_sigaction(CSPROF_PROFILE_SIGNAL, 
-		    (monitor_sighandler_t*)&csprof_itimer_signal_handler,
-		    0, NULL);
+  monitor_sigaction(CSPROF_PROFILE_SIGNAL, &csprof_itimer_signal_handler, 0, NULL);
 }
 
 
@@ -120,11 +130,12 @@ csprof_itimer_init(csprof_options_t *opts)
  * private operations 
  *****************************************************************************/
 
+#define ITIMER_METRIC_ID 0
 static int
-csprof_itimer_signal_handler(int sig, siginfo_t *siginfo, ucontext_t* context)
+csprof_itimer_signal_handler(int sig, siginfo_t *siginfo, void *context)
 {
   PMSG(ITIMER_HANDLER,"Itimer sample event");
-  csprof_sample_event(context, WEIGHT_METRIC, 1);
+  csprof_sample_event(context, ITIMER_METRIC_ID);
   csprof_itimer_start();
 
   return 0; /* tell monitor that the signal has been handled */

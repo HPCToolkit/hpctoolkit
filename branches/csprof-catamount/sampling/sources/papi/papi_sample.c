@@ -1,3 +1,4 @@
+#include <assert.h>
 #include <ctype.h>
 #include <papi.h>
 #include <setjmp.h>
@@ -11,25 +12,90 @@
 
 #include "pmsg.h"
 #include "sample_event.h"
+#include "metrics.h"
 
 #include "tokenize.h"
-#include "metrics_types.h"
+
+
+// #define OVERFLOW_MODE PAPI_OVERFLOW_FORCE_SW
+#define OVERFLOW_MODE 0
 
 #define THRESHOLD   10000000
 #define MIN(a,b) ((a)<=(b))?a:b
 
 
+#define WEIGHT_METRIC 0
+
 #define M(s) write(2,s"\n",strlen(s)+1)
 
 extern int status;
 
-void
-csprof_papi_event_handler(int EventSet, void *pc, long long ovec,void *context){
-  PMSG(PAPI,"papi event happened, ovec = %ld",ovec);
-  csprof_sample_event(context, WEIGHT_METRIC, 1);
+
+#define MAX_CSPROF_PAPI_EVENTS 16
+
+typedef struct {
+  int events[MAX_CSPROF_PAPI_EVENTS];
+  int thresh[MAX_CSPROF_PAPI_EVENTS];
+  int nevents;
+} csprof_papi_events_t;
+
+csprof_papi_events_t csprof_papi_events;
+
+#define NO_EVENT_INDEX -1
+
+static void
+csprof_papi_events_add_event(int event, int thresh)
+{
+  assert(csprof_papi_events.nevents < MAX_CSPROF_PAPI_EVENTS - 1);
+  csprof_papi_events.events[csprof_papi_events.nevents] = event;
+  csprof_papi_events.thresh[csprof_papi_events.nevents++] = thresh;
 }
 
-static int eventSet = PAPI_NULL;
+static int
+csprof_papi_events_initialized()
+{
+  return csprof_papi_events.nevents > 0;
+}
+
+#if 0
+static int 
+csprof_get_event_index(int event)
+{
+  int i;
+  for (i = 0; i < csprof_papi_events.nevents; i++) {
+    if (event == csprof_papi_events.events[i]) return i;
+  }
+  return NO_EVENT_INDEX;
+}
+#endif
+
+void
+csprof_papi_event_handler(int event_set, void *pc, long long ovec,
+			  void *context)
+{
+  int i;
+  int my_events[MAX_CSPROF_PAPI_EVENTS];
+  int my_event_count = MAX_CSPROF_PAPI_EVENTS;
+
+  PMSG(PAPI,"papi event happened, ovec = %ld",ovec);
+
+  int retval = 
+    PAPI_get_overflow_event_index(event_set, ovec, my_events, 
+				  &my_event_count);
+
+  assert(retval == PAPI_OK);
+
+  for(i = 0; i < my_event_count; i++) {
+#if 0
+    int metric_id = csprof_get_event_index(my_events[i]);
+    assert(metric_id != NO_EVENT_INDEX);
+#endif
+    int metric_id = my_events[i];
+    csprof_sample_event(context, metric_id);
+  }
+}
+
+// static int eventSet = PAPI_NULL;
 
 void
 papi_setup(void){
@@ -113,37 +179,81 @@ extract_ev_thresh(char *in,int *ec,long *th)
 void
 papi_event_init(int *eventSet,char *evlist)
 {
+  int i;
   int ret;
   long thresh = THRESHOLD;
   int evcode  = PAPI_TOT_CYC;
   char *event;
+  int initialized = csprof_papi_events_initialized();
 
   *eventSet = PAPI_NULL;
   PMSG(PAPI,"INITIAL &eventSet = %p, eventSet value = %d",eventSet, *eventSet);
   ret = PAPI_create_eventset(eventSet);
-  PMSG(PAPI,"PAPI_create_eventset = %d, eventSet = %d", ret,*eventSet);
-  if (ret != PAPI_OK){
-    EMSG("Failure: PAPI_create_eventset: %d", ret);
-    abort();
-  }
-  for(event = start_tok(evlist);more_tok();event = next_tok()){
-    PMSG(PAPI,"checking event spec = %s",event);
-    extract_ev_thresh(event,&evcode,&thresh);
-    PMSG(PAPI,"got event code = %x, thresh = %ld",evcode,thresh);
-    PMSG(PAPI,"compare PAPI_TOT_CYC = %x",PAPI_TOT_CYC);
 
-    ret = PAPI_add_event(*eventSet, evcode);
+  if (!initialized) {
+    PMSG(PAPI,"PAPI_create_eventset = %d, eventSet = %d", ret,*eventSet);
     if (ret != PAPI_OK){
-      EMSG("Failure: PAPI_add_event: %d", ret);
+      EMSG("Failure: PAPI_create_eventset: %d", ret);
       abort();
     }
-    ret = PAPI_overflow(*eventSet, evcode, thresh, PAPI_OVERFLOW_FORCE_SW, csprof_papi_event_handler);
-    PMSG(PAPI,"PAPI_overflow = %d", ret);
-    if (ret != PAPI_OK){
-      EMSG("Failure: PAPI_overflow: %d", ret);
-      abort();
+    for(event = start_tok(evlist);more_tok();event = next_tok()){
+      PMSG(PAPI,"checking event spec = %s",event);
+      extract_ev_thresh(event,&evcode,&thresh);
+      PMSG(PAPI,"got event code = %x, thresh = %ld",evcode,thresh);
+      PMSG(PAPI,"compare PAPI_TOT_CYC = %x",PAPI_TOT_CYC);
+
+
+      ret = PAPI_add_event(*eventSet, evcode);
+      if (ret != PAPI_OK){
+	EMSG("Failure: PAPI_add_event: %d", ret);
+	abort();
+      } else {
+	csprof_papi_events_add_event(evcode, thresh);
+      }
+      ret = PAPI_overflow(*eventSet, evcode, thresh, OVERFLOW_MODE,
+			  csprof_papi_event_handler);
+
+      PMSG(PAPI,"PAPI_overflow = %d", ret);
+      if (ret != PAPI_OK){
+	EMSG("Failure: PAPI_overflow: %d", ret);
+	abort();
+      }
+    }
+
+    csprof_set_max_metrics(csprof_papi_events.nevents);
+    for (i = 0; i < csprof_papi_events.nevents; i++) {
+      char buffer[PAPI_MAX_STR_LEN];
+      int metric_id = csprof_new_metric(); /* weight */
+      PAPI_event_code_to_name(csprof_papi_events.events[i], buffer);
+      csprof_set_metric_info_and_period(metric_id, strdup(buffer),
+					CSPROF_METRIC_ASYNCHRONOUS,
+					csprof_papi_events.thresh[i]);
+    }
+  } else {
+    for (i = 0; i < csprof_papi_events.nevents; i++) {
+      int evcode = csprof_papi_events.events[i];
+      int thresh = csprof_papi_events.thresh[i];
+      ret = PAPI_add_event(*eventSet, evcode);
+      if (ret != PAPI_OK){
+	EMSG("Failure: PAPI_add_event: %d", ret);
+	abort();
+      }
+      ret = PAPI_overflow(*eventSet, evcode, thresh, 0, 
+			  csprof_papi_event_handler);
+      if (ret != PAPI_OK){
+	EMSG("Failure: PAPI_overflow: %d", ret);
+	abort();
+      }
     }
   }
+  
+#if 0
+  metric_id = csprof_new_metric(); /* calls */
+  csprof_set_metric_info_and_period(metric_id, "# returns",
+                                    CSPROF_METRIC_FLAGS_NIL, 1);
+#endif
+  
+  
 }
 
 void
@@ -154,9 +264,11 @@ papi_pulse_init(int eventSet)
 }
 
 void
-papi_pulse_fini(void){
-  long long values;
+papi_pulse_fini(int eventSet)
+{
+  long_long values;
 
+  return;
   PAPI_stop(eventSet, &values);
   PMSG(PAPI,"values = %lld\n", values);
 }

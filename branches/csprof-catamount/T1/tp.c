@@ -65,7 +65,9 @@ int bar(){
   // printf("x = %g, y = %g\n",x,y);
   return 0;
 }
-#define NUM_THREADS	3
+
+#define MAX_THREADS	    200
+#define DEFAULT_NUM_THREADS 1
 
 void *PrintHello(void *threadid)
 {
@@ -73,12 +75,18 @@ void *PrintHello(void *threadid)
    /*   pthread_exit(NULL); */
 }
 
-int main(){
-  pthread_t threads[NUM_THREADS];
+int
+main(int argc, char *argv[])
+{
+  pthread_t threads[MAX_THREADS];
   int rc, t;
+  int nthreads = DEFAULT_NUM_THREADS;
 
-  for(t=0;t<NUM_THREADS;t++){
-      printf("Creating thread %d\n", t);
+  if (argc >= 2){
+    nthreads = atoi(argv[1]);
+  }
+  for(t=0;t<nthreads;t++){
+      printf("Creating thread %d\n", t+1);
       rc = pthread_create(&threads[t], NULL, PrintHello, (void *)t);
       if (rc){
          printf("ERROR; return code from pthread_create() is %d\n", rc);
@@ -88,8 +96,8 @@ int main(){
    printf("Main thread calls bar\n");
    bar();
    printf("Main thread back from bar\n");
-   for(t=0;t<NUM_THREADS;t++){
-      printf("Joining thread %d\n", t);
+   for(t=0;t<nthreads;t++){
+      printf("Joining thread %d\n", t+1);
       rc = pthread_join(threads[t],0);
       if (rc){
          printf("ERROR; return code from pthread_join() is %d\n", rc);

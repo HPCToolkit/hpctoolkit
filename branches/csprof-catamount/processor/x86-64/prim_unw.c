@@ -17,6 +17,7 @@
 #include "intervals.h"
 #include "pmsg.h"
 #include "stack_troll.h"
+#include "monitor.h"
 
 #include "prim_unw_cursor.h"
 #include "x86-decoder.h"
@@ -181,6 +182,8 @@ int unw_step (unw_cursor_t *cursor){
   }
 
   if (! cursor->intvl){
+    if (((void *)spr_sp) >= monitor_stack_bottom()) return -1;
+
     PMSG(TROLL,"UNW STEP FAILURE :candidate pc = %p, cursor pc = %p, cursor bp = %p, cursor sp = %p",spr_pc,pc,bp,sp);
     PMSG(TROLL,"UNW STEP calls stack troll");
 

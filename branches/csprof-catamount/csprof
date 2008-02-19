@@ -137,12 +137,12 @@ f_usage()
   $p "                    --pp='PAPI_TOT_INS:100000 PAPI_FP_INS:100000'     \n"
   $p "\n"
   $p "NOTES:\n"
-  $p "   csprof uses _RLD_LIST to initiate profiling; modifications to \n"
-  $p "   at least the csprof launcher script will be necessary to profile \n" 
-  $p "   programs that use _RLD_LIST. \n"
+  $p "   csprof uses preloaded shared libraries to initiate profiling;      \n"
+  $p "   modifications to the csprof launcher script will be necessary      \n" 
+  $p "   to profile programs that use library preloading. \n"
   $p "\n"
-  $p "   csprof cannot be used to profile setuid commands as _RLD_LIST\n"
-  $p "   is not permitted for them.\n" 
+  $p "   csprof cannot be used to profile setuid commands as preloading     \n"
+  $p "   shared libraries is not permitted for them.\n" 
   $p "\n"
 }
 

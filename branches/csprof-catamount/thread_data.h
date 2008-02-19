@@ -12,4 +12,5 @@ typedef struct _td_t {
   csprof_mem_t    *memstore;
   sigjmp_buf_t bad_unwind;
   int eventSet; // for PAPI
+  int handling_sample;
 } thread_data_t;

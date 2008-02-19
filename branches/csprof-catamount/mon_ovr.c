@@ -24,13 +24,8 @@
 #define M(s) write(2,s"\n",strlen(s)+1)
 
 // FIXME: this stuff should come in from a .h
-void csprof_init_internal(void);
-void csprof_fini_internal(void);
-void csprof_pthread_init_data(void);
-void csprof_init_thread_support(int id);
-void* csprof_thread_pre_create();
-void csprof_thread_init(killsafe_t *kk, int id, lush_ctxt_list_t* ctxt_list);
-void csprof_thread_fini(csprof_state_t *s);
+
+#include "csprof_monitor_callbacks.h"
 
 //***************************************************************************
 
@@ -94,14 +89,19 @@ monitor_init_thread_support(void)
 }
 
 
-void*
-monitor_thread_pre_create()
+void *
+monitor_thread_pre_create(void)
 {
   // N.B.: monitor_thread_pre_create() can be called before
   // monitor_init_thread_support() or even monitor_init_process().
   return csprof_thread_pre_create();
 }
 
+void
+monitor_thread_post_create(void *dc)
+{
+  return csprof_thread_post_create(dc);
+}
 
 void *
 monitor_init_thread(int tid, void *data)
@@ -116,7 +116,7 @@ monitor_init_thread(int tid, void *data)
   pthread_setspecific(my_thread_specific_key, (void *)loc);
 
   safe = (killsafe_t *)malloc(sizeof(killsafe_t));
-  csprof_thread_init(safe, loc->id, (lush_ctxt_list_t*)data);
+  csprof_thread_init(safe, loc->id);
 
   return (void *) safe;
 }

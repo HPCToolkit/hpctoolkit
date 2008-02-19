@@ -75,8 +75,10 @@ csprof_sample_callstack(csprof_state_t *state, ucontext_t* context,
 {
   mcontext_t* mctxt = &context->uc_mcontext;
 
+#if 0
   int first_ever_unwind = (state->bufstk == state->bufend);
   void *sp1 = first_ever_unwind ? (void *) -1 : state->bufstk->sp;
+#endif
 
 #if 0
 #ifndef PRIM_UNWIND

@@ -6,5 +6,5 @@
 void papi_setup();
 void papi_event_init(int *evs,char *evlst);
 void papi_pulse_init(int evs);
-void papi_pulse_fini(void);
+void papi_pulse_fini(int evs);
 #endif

@@ -76,6 +76,8 @@ extern "C" {
   // Explicit interface
   void csprof_init();
   void csprof_fini();
+
+  int csprof_is_handling_sample();
   
 #if defined(__cplusplus)
 } /* extern "C" */

@@ -1,4 +1,5 @@
 #include <stdlib.h>
+#include <assert.h>
 #include <unistd.h>
 #include <string.h>
 #include <limits.h>
@@ -59,6 +60,7 @@ find_load_module(unsigned long long addr,
 		 unsigned long long *start, 
 		 unsigned long long *end)
 {
+  int retval = 0;
 #ifndef STATIC_ONLY
     char filename[PATH_MAX];
     char mapline[PATH_MAX+80];
@@ -70,7 +72,8 @@ find_load_module(unsigned long long addr,
     sprintf(filename, "/proc/%d/maps", pid);
     fs = fopen(filename, "r");
 
-    
+    assert(fs);
+
     module_name[0] = 0;
     module_start   = ~(0ULL);
     module_end     = 0;
@@ -94,8 +97,8 @@ find_load_module(unsigned long long addr,
 		if (module_start <= addr  && addr < module_end) {
 		  *start = module_start;
 		  *end = module_end;
-		  fclose(fs);
-		  return 1;
+		  retval = 1;
+		  goto epilogue;
 		}
 		strcpy(module_name, xname(mapline));
 		module_start = seg_start;
@@ -113,10 +116,12 @@ find_load_module(unsigned long long addr,
     if (module_start <= addr  && addr < module_end) {
       *start = module_start;
       *end = module_end;
-      fclose(fs);
-      return 1;
+      retval = 1;
     }
-    return 0;
+
+ epilogue:
+    fclose(fs);
+    return retval;
 #endif
 }
 
@@ -161,6 +166,7 @@ csprof_epoch_get_loaded_modules(csprof_epoch_t *epoch,
             }
         }
     } while(p);
+    fclose(fs);
 #else
     csprof_epoch_module_t *newmod;
 

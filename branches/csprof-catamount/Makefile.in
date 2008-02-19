@@ -285,7 +285,6 @@ install: all
 	    install $(MONITOR_DIR)/lib/libmonitor.so $(install_lib); \
 	fi
 	install $(src_dir_prefix)csprof $(install_bin)
-#	install $(src_dir_prefix)nm_tbl.py $(install_bin)
 	install $(src_dir_prefix)csprof_syms $(install_libexec)
 	install $(src_dir_prefix)symbols/stapi_syms $(install_libexec)
 	install conf.sh $(install_prefix)
