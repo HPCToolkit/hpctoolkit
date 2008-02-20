@@ -141,21 +141,21 @@ hpcfile_cstree_write(FILE* fs, void* tree, void* root, void* tree_ctxt,
   // Write context
   // -------------------------------------------------------
   hpcfile_uint_t id_root = CSTREE_ID_ROOT;
-  unsigned int num_tree_ctxt_nodes = 0;
-  write_context_fn(fs, tree_ctxt, id_root, &num_tree_ctxt_nodes);
+  unsigned int num_ctxt_nodes = 0;
+  write_context_fn(fs, tree_ctxt, id_root, &num_ctxt_nodes);
 
   // -------------------------------------------------------
   // Write each node, beginning with root
   // -------------------------------------------------------
-  hpcfile_uint_t id_root1 = num_tree_ctxt_nodes + 1;
-  hpcfile_uint_t id = id_root1;
+  hpcfile_uint_t id_ctxt = CSTREE_ID_ROOT + num_ctxt_nodes - 1;
+  hpcfile_uint_t id = id_ctxt + 1;
   hpcfile_cstree_node_t tmp_node;
 
   hpcfile_cstree_node__init(&tmp_node);
   tmp_node.data.num_metrics = num_metrics;
   tmp_node.data.metrics = malloc(num_metrics * sizeof(hpcfile_uint_t));
 
-  ret = hpcfile_cstree_write_node(fs, tree, root, &tmp_node, id_root1, &id,
+  ret = hpcfile_cstree_write_node(fs, tree, root, &tmp_node, id_ctxt, &id,
 				  get_data_fn,
 				  get_first_child_fn,
 				  get_sibling_fn);
