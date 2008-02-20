@@ -183,7 +183,9 @@ csprof_init_internal(void)
   } else { // PAPI
     papi_setup();
     //    papi_event_info_from_opt(&opts,&code,&thresh);
-    papi_event_init(&evs,opts.papi_event_list);
+    papi_parse_evlist(opts.papi_event_list);
+    evs = papi_event_init();
+    PMSG(PAPI,"PROCESS INIT papi event list = %d",evs);
     papi_pulse_init(evs);
   }
   csprof_initialized = 1;
@@ -317,7 +319,7 @@ csprof_thread_init(killsafe_t *kk, int id, lush_cct_ctxt_t* thr_ctxt)
   else { // PAPI
     PMSG(PAPI,"PAPI Thread init: id = %d",id);
     thread_data_t *td = (thread_data_t *) pthread_getspecific(my_thread_specific_key);
-    papi_event_init(&(td->eventSet),opts.papi_event_list);
+    td->eventSet = papi_event_init();
     papi_pulse_init(td->eventSet);
   }
   ret = pthread_sigmask(SIG_UNBLOCK,&prof_sigset,NULL);

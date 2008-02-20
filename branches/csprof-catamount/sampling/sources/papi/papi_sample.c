@@ -35,18 +35,18 @@ extern int status;
 
 typedef struct {
   int events[MAX_CSPROF_PAPI_EVENTS];
-  int thresh[MAX_CSPROF_PAPI_EVENTS];
+  long thresh[MAX_CSPROF_PAPI_EVENTS];
   int nevents;
 } csprof_papi_events_t;
 
-csprof_papi_events_t csprof_papi_events;
+static csprof_papi_events_t csprof_papi_events;
 
 #define NO_EVENT_INDEX -1
 
 static void
 csprof_papi_events_add_event(int event, int thresh)
 {
-  assert(csprof_papi_events.nevents < MAX_CSPROF_PAPI_EVENTS - 1);
+  assert(csprof_papi_events.nevents < MAX_CSPROF_PAPI_EVENTS-1);
   csprof_papi_events.events[csprof_papi_events.nevents] = event;
   csprof_papi_events.thresh[csprof_papi_events.nevents++] = thresh;
 }
@@ -177,90 +177,92 @@ extract_ev_thresh(char *in,int *ec,long *th)
 }
 
 void
-papi_event_init(int *eventSet,char *evlist)
+papi_parse_evlist(char *evlist)
+{
+  char *event;
+  int i;
+
+  for(event = start_tok(evlist); more_tok(); event = next_tok()){
+    int evcode;
+    long thresh;
+
+    PMSG(PAPI,"checking event spec = %s",event);
+    extract_ev_thresh(event,&evcode,&thresh);
+    PMSG(PAPI,"got event code = %x, thresh = %ld",evcode,thresh);
+    // PMSG(PAPI,"compare PAPI_TOT_CYC = %x",PAPI_TOT_CYC);
+    csprof_papi_events_add_event(evcode, thresh);
+  }
+
+  csprof_set_max_metrics(csprof_papi_events.nevents);
+  for(i=0; i < csprof_papi_events.nevents; i++){
+    char buffer[PAPI_MAX_STR_LEN];
+    int metric_id = csprof_new_metric(); /* weight */
+    PAPI_event_code_to_name(csprof_papi_events.events[i], buffer);
+    csprof_set_metric_info_and_period(metric_id, strdup(buffer),
+				      CSPROF_METRIC_ASYNCHRONOUS,
+				      csprof_papi_events.thresh[i]);
+  }
+}
+
+int 
+papi_event_init(void) //int *eventSet,char *evlist)
 {
   int i;
   int ret;
-  long thresh = THRESHOLD;
-  int evcode  = PAPI_TOT_CYC;
-  char *event;
-  int initialized = csprof_papi_events_initialized();
+  // long thresh = THRESHOLD;
+  // int evcode  = PAPI_TOT_CYC;
+  int eventSet;
 
-  *eventSet = PAPI_NULL;
-  PMSG(PAPI,"INITIAL &eventSet = %p, eventSet value = %d",eventSet, *eventSet);
-  ret = PAPI_create_eventset(eventSet);
+  // int initialized = csprof_papi_events_initialized();
 
-  if (!initialized) {
-    PMSG(PAPI,"PAPI_create_eventset = %d, eventSet = %d", ret,*eventSet);
+  eventSet = PAPI_NULL;
+  // PMSG(PAPI,"INITIAL &eventSet = %p, eventSet value = %d",eventSet, *eventSet);
+  PMSG(PAPI,"create event set");
+  ret = PAPI_create_eventset(&eventSet);
+  PMSG(PAPI,"PAPI_create_eventset = %d, eventSet = %d", ret,eventSet);
+  if (ret != PAPI_OK){
+    EMSG("Failure: PAPI_create_eventset: %d", ret);
+    abort();
+  }
+  for (i=0; i < csprof_papi_events.nevents; i++){
+    int evcode = csprof_papi_events.events[i];
+
+    ret = PAPI_add_event(eventSet, evcode);
     if (ret != PAPI_OK){
-      EMSG("Failure: PAPI_create_eventset: %d", ret);
+      EMSG("Failure: PAPI_add_event: %d", ret);
       abort();
     }
-    for(event = start_tok(evlist);more_tok();event = next_tok()){
-      PMSG(PAPI,"checking event spec = %s",event);
-      extract_ev_thresh(event,&evcode,&thresh);
-      PMSG(PAPI,"got event code = %x, thresh = %ld",evcode,thresh);
-      PMSG(PAPI,"compare PAPI_TOT_CYC = %x",PAPI_TOT_CYC);
+  }
+  for(i=0;i < csprof_papi_events.nevents;i++){
+    int evcode  = csprof_papi_events.events[i];
+    long thresh = csprof_papi_events.thresh[i];
 
+    ret = PAPI_overflow(eventSet, evcode, thresh, OVERFLOW_MODE,
+			csprof_papi_event_handler);
 
-      ret = PAPI_add_event(*eventSet, evcode);
-      if (ret != PAPI_OK){
-	EMSG("Failure: PAPI_add_event: %d", ret);
-	abort();
-      } else {
-	csprof_papi_events_add_event(evcode, thresh);
-      }
-      ret = PAPI_overflow(*eventSet, evcode, thresh, OVERFLOW_MODE,
-			  csprof_papi_event_handler);
-
-      PMSG(PAPI,"PAPI_overflow = %d", ret);
-      if (ret != PAPI_OK){
-	EMSG("Failure: PAPI_overflow: %d", ret);
-	abort();
-      }
-    }
-
-    csprof_set_max_metrics(csprof_papi_events.nevents);
-    for (i = 0; i < csprof_papi_events.nevents; i++) {
-      char buffer[PAPI_MAX_STR_LEN];
-      int metric_id = csprof_new_metric(); /* weight */
-      PAPI_event_code_to_name(csprof_papi_events.events[i], buffer);
-      csprof_set_metric_info_and_period(metric_id, strdup(buffer),
-					CSPROF_METRIC_ASYNCHRONOUS,
-					csprof_papi_events.thresh[i]);
-    }
-  } else {
-    for (i = 0; i < csprof_papi_events.nevents; i++) {
-      int evcode = csprof_papi_events.events[i];
-      int thresh = csprof_papi_events.thresh[i];
-      ret = PAPI_add_event(*eventSet, evcode);
-      if (ret != PAPI_OK){
-	EMSG("Failure: PAPI_add_event: %d", ret);
-	abort();
-      }
-      ret = PAPI_overflow(*eventSet, evcode, thresh, 0, 
-			  csprof_papi_event_handler);
-      if (ret != PAPI_OK){
-	EMSG("Failure: PAPI_overflow: %d", ret);
-	abort();
-      }
+    PMSG(PAPI,"PAPI_overflow = %d", ret);
+    if (ret != PAPI_OK){
+      EMSG("Failure: PAPI_overflow: %d", ret);
+      abort();
     }
   }
-  
+  return eventSet;
+}
 #if 0
   metric_id = csprof_new_metric(); /* calls */
   csprof_set_metric_info_and_period(metric_id, "# returns",
                                     CSPROF_METRIC_FLAGS_NIL, 1);
 #endif
   
-  
-}
-
 void
 papi_pulse_init(int eventSet)
 {
   PMSG(PAPI,"starting PAPI w event set %d",eventSet);
-  PAPI_start(eventSet);
+  int ret = PAPI_start(eventSet);
+  if (ret != PAPI_OK){
+    EMSG("Failed to start papi f eventset %, ret = %d",eventSet,ret);
+    abort();
+  }
 }
 
 void
@@ -269,6 +271,10 @@ papi_pulse_fini(int eventSet)
   long_long values;
 
   return;
-  PAPI_stop(eventSet, &values);
+  int ret = PAPI_stop(eventSet, &values);
+  if (ret != PAPI_OK){
+    EMSG("Failed to stop papi f eventset %, ret = %d",eventSet,ret);
+    abort();
+  }
   PMSG(PAPI,"values = %lld\n", values);
 }
