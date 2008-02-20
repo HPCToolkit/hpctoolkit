@@ -109,25 +109,25 @@ hpcfile_csprof_write(FILE* fs, hpcfile_csprof_data_t* data);
 // Note: Any corresponding call stack tree is *not* read by this
 // function.  Users must also call hpcfile_cstree_read().
 int
-hpcfile_csprof_read(FILE* fs, hpcfile_csprof_data_t* data,  
-                    epoch_table_t* epochtbl,
+hpcfile_csprof_read(FILE* fs, 
+		    hpcfile_csprof_data_t* data, epoch_table_t* epochtbl,
 		    hpcfile_cb__alloc_fn_t alloc_fn,
 		    hpcfile_cb__free_fn_t free_fn);
 
 //***************************************************************************
-// hpcfile_csprof_convert_to_txt()
+// hpcfile_csprof_fprint()
 //***************************************************************************
 
-// hpcfile_csprof_convert_to_txt: Given an output file stream 'outfs',
+// hpcfile_csprof_fprint: Given an output file stream 'outfs',
 // reads profile data from the input file stream 'infs' and writes it to
 // 'outfs' as text for human inspection.  This text output is not
 // designed for parsing and any formatting is subject to change.
 // Returns HPCFILE_OK upon success; HPCFILE_ERR on error.
 //
 // Note: Any corresponding call stack tree is *not* converted by this
-// function.  Users must also call hpcfile_cstree_convert_to_txt().
+// function.  Users must also call hpcfile_cstree_fprint().
 int
-hpcfile_csprof_convert_to_txt(FILE* infs, FILE* outfs);
+hpcfile_csprof_fprint(FILE* infs, FILE* outfs, hpcfile_csprof_data_t* data);
 
 //***************************************************************************
 

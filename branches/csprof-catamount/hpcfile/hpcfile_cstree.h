@@ -109,7 +109,8 @@ int hpcfile_cstree_id__fini(hpcfile_cstree_id_t* x);
 
 int hpcfile_cstree_id__fread(hpcfile_cstree_id_t* x, FILE* fs);
 int hpcfile_cstree_id__fwrite(hpcfile_cstree_id_t* x, FILE* fs);
-int hpcfile_cstree_id__fprint(hpcfile_cstree_id_t* x, FILE* fs);
+int hpcfile_cstree_id__fprint(hpcfile_cstree_id_t* x, FILE* fs, 
+			      const char* pre);
 
 // ---------------------------------------------------------
 // hpcfile_cstree_hdr_t:
@@ -156,7 +157,8 @@ int hpcfile_cstree_nodedata__fini(hpcfile_cstree_nodedata_t* x);
 
 int hpcfile_cstree_nodedata__fread(hpcfile_cstree_nodedata_t* x, FILE* fs);
 int hpcfile_cstree_nodedata__fwrite(hpcfile_cstree_nodedata_t* x, FILE* fs);
-int hpcfile_cstree_nodedata__fprint(hpcfile_cstree_nodedata_t* x, FILE* fs);
+int hpcfile_cstree_nodedata__fprint(hpcfile_cstree_nodedata_t* x, FILE* fs,
+				    const char* pre);
 
 // ---------------------------------------------------------
 // hpcfile_cstree_node_t: The root node -- the node without a parent -- is
@@ -176,7 +178,8 @@ int hpcfile_cstree_node__fini(hpcfile_cstree_node_t* x);
 
 int hpcfile_cstree_node__fread(hpcfile_cstree_node_t* x, FILE* fs);
 int hpcfile_cstree_node__fwrite(hpcfile_cstree_node_t* x, FILE* fs);
-int hpcfile_cstree_node__fprint(hpcfile_cstree_node_t* x, FILE* fs);
+int hpcfile_cstree_node__fprint(hpcfile_cstree_node_t* x, FILE* f, 
+				const char* pres);
 
 //***************************************************************************
 

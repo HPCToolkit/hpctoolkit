@@ -1,4 +1,4 @@
-// -*-Mode: C;-*-
+// -*-Mode: C++;-*-
 // $Id$
 
 // * BeginRiceCopyright *****************************************************
@@ -93,11 +93,12 @@ hpcfile_cstree_read_hdr(FILE* fs, hpcfile_cstree_hdr_t* hdr);
 //
 // As the nodes are written, each will be given a persistent id and
 // each node will know its parent's persistent id.  The id numbers are
-// between 0 and n-1 where n is the number of nodes in the tree.
-// Furthermore, parents are always written before any of their
-// children.  This scheme allows hpcfile_cstree_read to easily and efficiently
-// construct the tree since the persistent ids correspond to simple
-// array indices and parent nodes will be read before children.
+// between CSTREE_ID_ROOT and (CSTREE_ID_ROOT + n - 1) where n is the
+// number of nodes in the tree.  Furthermore, parents are always
+// written before any of their children.  This scheme allows
+// hpcfile_cstree_read to easily and efficiently construct the tree
+// since the persistent ids correspond to simple array indices and
+// parent nodes will be read before children.
 //
 // The id's will be will be assigned so that given a node x and its
 // children, the id of x is less than the id of any child and less
@@ -234,29 +235,34 @@ hpcfile_cstree_read(FILE* fs, void* tree,
   if (hpcfile_cstree_read_hdr(fs, &fhdr) != HPCFILE_OK) { 
     return HPCFILE_ERR; 
   }
-  
+
+  // node id upper bound
+  unsigned int id_ub = fhdr.num_nodes + CSTREE_ID_ROOT;
+
   // Allocate space for 'node_vec'
   if (fhdr.num_nodes != 0) {
-    node_vec = alloc_fn(sizeof(void*) * fhdr.num_nodes);
-    node_vec[0] = 0;
+    node_vec = alloc_fn(sizeof(void*) * id_ub);
+    for (int i = 0; i <= CSTREE_ID_ROOT; ++i) {
+      node_vec[i] = NULL;
+    }
   }
   
   // Read each node, creating it and linking it to its parent 
   tmp_node.data.num_metrics = num_metrics;
   tmp_node.data.metrics = malloc(num_metrics * sizeof(hpcfile_uint_t));
-
-  for (i = 0; i < fhdr.num_nodes; ++i) {
+  
+  for (i = CSTREE_ID_ROOT; i < id_ub; ++i) {
     if (hpcfile_cstree_node__fread(&tmp_node, fs) != HPCFILE_OK) { 
       goto cstree_read_cleanup; // HPCFILE_ERR
     }
-    if (tmp_node.id_parent >= fhdr.num_nodes) { 
+    if (tmp_node.id_parent >= id_ub) { 
       goto cstree_read_cleanup; // HPCFILE_ERR
     } 
     
     parent = node_vec[tmp_node.id_parent];
 
-    // parent should already exist unless id_parent and id are equal
-    if (!parent && tmp_node.id_parent != tmp_node.id) { 
+    // parent should already exist unless id == CSTREE_ID_ROOT
+    if (!parent && tmp_node.id != CSTREE_ID_ROOT) {
       goto cstree_read_cleanup; // HPCFILE_ERR
     }
 
@@ -284,13 +290,15 @@ hpcfile_cstree_read(FILE* fs, void* tree,
 }
 
 //***************************************************************************
-// hpcfile_cstree_convert_to_txt()
+// hpcfile_cstree_fprint()
 //***************************************************************************
 
 // See header file for documentation of public interface.
 int
-hpcfile_cstree_convert_to_txt(FILE* infs, int num_metrics, FILE* outfs)
+hpcfile_cstree_fprint(FILE* infs, int num_metrics, FILE* outfs)
 {
+  // FIXME: could share some code with the reader
+  
   hpcfile_cstree_hdr_t fhdr;
   hpcfile_cstree_node_t tmp_node;
   int i;
@@ -306,15 +314,16 @@ hpcfile_cstree_convert_to_txt(FILE* infs, int num_metrics, FILE* outfs)
   fputs("\n", outfs);
 
   // Read and print each node
-  for (i = 0; i < fhdr.num_nodes; ++i) {
+  unsigned int id_ub = fhdr.num_nodes + CSTREE_ID_ROOT;
+  for (i = CSTREE_ID_ROOT; i < id_ub; ++i) {
     tmp_node.data.num_metrics = num_metrics;
 
-    if (hpcfile_cstree_node__fread(&tmp_node, infs) != HPCFILE_OK) { 
+    if (hpcfile_cstree_node__fread(&tmp_node, infs) != HPCFILE_OK) {
       fprintf(outfs, "** Error reading node number %d **\n", i);
       return HPCFILE_ERR;
     }
     
-    hpcfile_cstree_node__fprint(&tmp_node, outfs);
+    hpcfile_cstree_node__fprint(&tmp_node, outfs, "  ");
   }
   
   // Success! Note: We assume that it is possible for other data to
@@ -409,10 +418,10 @@ hpcfile_cstree_id__fwrite(hpcfile_cstree_id_t* x, FILE* fs)
 }
 
 int 
-hpcfile_cstree_id__fprint(hpcfile_cstree_id_t* x, FILE* fs)
+hpcfile_cstree_id__fprint(hpcfile_cstree_id_t* x, FILE* fs, const char* pre)
 {
-  fprintf(fs, "{fileid: (magic: %s) (ver: %s) (end: %c)}\n", 
-	  x->magic_str, x->version, x->endian);
+  fprintf(fs, "%s{fileid: (magic: %s) (ver: %s) (end: %c)}\n", 
+	  pre, x->magic_str, x->version, x->endian);
 
   return HPCFILE_OK;
 }
@@ -485,12 +494,13 @@ hpcfile_cstree_hdr__fwrite(hpcfile_cstree_hdr_t* x, FILE* fs)
 int 
 hpcfile_cstree_hdr__fprint(hpcfile_cstree_hdr_t* x, FILE* fs)
 {
+  const char* pre = "  ";
   fputs("{cstree_hdr:\n", fs);
 
-  hpcfile_cstree_id__fprint(&x->fid, fs);
+  hpcfile_cstree_id__fprint(&x->fid, fs, pre);
 
-  fprintf(fs, "(vma_sz: %u) (uint_sz: %u) (num_nodes: %"PRIu64")}\n", 
-	  x->vma_sz, x->uint_sz, x->num_nodes);
+  fprintf(fs, "%s(vma_sz: %u) (uint_sz: %u) (num_nodes: %"PRIu64")}\n", 
+	  pre, x->vma_sz, x->uint_sz, x->num_nodes);
   
   return HPCFILE_OK;
 }
@@ -560,14 +570,15 @@ hpcfile_cstree_nodedata__fwrite(hpcfile_cstree_nodedata_t* x, FILE* fs)
 }
 
 int 
-hpcfile_cstree_nodedata__fprint(hpcfile_cstree_nodedata_t* x, FILE* fs)
+hpcfile_cstree_nodedata__fprint(hpcfile_cstree_nodedata_t* x, FILE* fs, 
+				const char* pre)
 {
   int i;
-  fprintf(fs, "{nodedata: (ip: %"PRIx64") ", x->ip); 
+  fprintf(fs, "%s{nodedata: (ip: %"PRIx64") ", pre, x->ip);
   for (i = 0; i < x->num_metrics; ++i) {
     fprintf(fs, " %"PRIu64" ", x->metrics[i]);
   }
-  fprintf(fs, "} \n");
+  fprintf(fs, "}\n");
   
   return HPCFILE_OK;
 }
@@ -626,13 +637,14 @@ hpcfile_cstree_node__fwrite(hpcfile_cstree_node_t* x, FILE* fs)
 }
 
 int 
-hpcfile_cstree_node__fprint(hpcfile_cstree_node_t* x, FILE* fs)
+hpcfile_cstree_node__fprint(hpcfile_cstree_node_t* x, FILE* fs, const char* pre)
 {
-  fputs("{node:\n", fs);
+  fprintf(fs, "{node:\n");
 
-  hpcfile_cstree_nodedata__fprint(&x->data, fs);
-  
-  fprintf(fs, "(id: %"PRIu64") (id_parent: %"PRIu64")}\n", x->id, x->id_parent);
+  fprintf(fs, "%s(id: %"PRIu64") (id_parent: %"PRIu64")}\n", 
+	  pre, x->id, x->id_parent);
+
+  hpcfile_cstree_nodedata__fprint(&x->data, fs, pre);
   
   return HPCFILE_OK;
 }
