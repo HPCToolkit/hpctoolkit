@@ -716,7 +716,7 @@ lush_cct_ctxt__write_gbl(FILE* fs, lush_cct_ctxt_t* cct_ctxt,
   ret = lush_cct_ctxt__write_lcl(fs, cct_ctxt->context, id_lcl_root, 
 				 &lcl_written, tmp_node);
   if (ret != CSPROF_OK) { return CSPROF_ERR; }
-  nodes_written += lcl_written;
+  (*nodes_written) += lcl_written;
   
   return ret;
 }
