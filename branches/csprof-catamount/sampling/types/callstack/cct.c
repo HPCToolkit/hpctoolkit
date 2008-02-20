@@ -448,128 +448,128 @@ csprof_cct_node__find_child(csprof_cct_node_t* x, void* ip)
 int
 csprof_cct__init(csprof_cct_t* x)
 {
-    memset(x, 0, sizeof(*x));
+  memset(x, 0, sizeof(*x));
 
 #ifndef CSPROF_TRAMPOLINE_BACKEND
-    {
-      unsigned int l;
+  {
+    unsigned int l;
 
-      /* initialize cached arrays */
-      x->cache_len = l = CSPROF_BACKTRACE_CACHE_INIT_SZ;
-      x->cache_bt    = csprof_malloc(sizeof(void*) * l);
-      x->cache_nodes = csprof_malloc(sizeof(csprof_cct_node_t*) * l);
-    }
+    /* initialize cached arrays */
+    x->cache_len = l = CSPROF_BACKTRACE_CACHE_INIT_SZ;
+    x->cache_bt    = csprof_malloc(sizeof(void*) * l);
+    x->cache_nodes = csprof_malloc(sizeof(csprof_cct_node_t*) * l);
+  }
 #endif
 
-    return CSPROF_OK;
+  return CSPROF_OK;
 }
 
 int
 csprof_cct__fini(csprof_cct_t *x)
 {
-    return CSPROF_OK;
+  return CSPROF_OK;
 }
 
-csprof_cct_node_t *
+csprof_cct_node_t*
 csprof_cct_insert_backtrace(csprof_cct_t *x, void *treenode, int metric_id,
 			    csprof_frame_t *start, csprof_frame_t *end,
 			    size_t sample_count)
 {
-    csprof_cct_node_t *tn = (csprof_cct_node_t *)treenode;
+  csprof_cct_node_t *tn = (csprof_cct_node_t *)treenode;
 
-    MSG(1,"Insert backtrace w x=%lp,tn=%lp,strt=%lp,end=%lp",x,treenode,start,end);
-    if(csprof_cct__isempty(x)) {
-      MSG(1,"x is empty");
-        x->tree_root = csprof_cct_node__create(start->ip, start->sp);
+  MSG(1,"Insert backtrace w x=%lp,tn=%lp,strt=%lp,end=%lp",x,treenode,start,end);
+  if(csprof_cct__isempty(x)) {
+    MSG(1,"x is empty");
+    x->tree_root = csprof_cct_node__create(start->ip, start->sp);
 
-        tn = x->tree_root;
-        x->num_nodes = 1;
+    tn = x->tree_root;
+    x->num_nodes = 1;
 
-        DBGMSG_PUB(CSPROF_DBG_CCT_INSERTION, "--start ip %#lx | sp %#lx",
-                   start->ip, start->sp);
-        start--;
+    DBGMSG_PUB(CSPROF_DBG_CCT_INSERTION, "--start ip %#lx | sp %#lx",
+	       start->ip, start->sp);
+    start--;
 
 #ifdef CSPROF_TRAMPOLINE_BACKEND
-        DBGMSG_PUB(CSPROF_DBG_CCT_INSERTION, "root ip %#lx | sp %#lx",
-                   tn->ip, tn->sp);
+    DBGMSG_PUB(CSPROF_DBG_CCT_INSERTION, "root ip %#lx | sp %#lx",
+	       tn->ip, tn->sp);
 #else
-        DBGMSG_PUB(CSPROF_DBG_CCT_INSERTION, "root ip %#lx",
-                   tn->ip);
+    DBGMSG_PUB(CSPROF_DBG_CCT_INSERTION, "root ip %#lx",
+	       tn->ip);
 #endif
-        DBGMSG_PUB(CSPROF_DBG_CCT_INSERTION, "nxt start ip %#lx | sp %#lx",
-                   start->ip, start->sp);
+    DBGMSG_PUB(CSPROF_DBG_CCT_INSERTION, "nxt start ip %#lx | sp %#lx",
+	       start->ip, start->sp);
+  }
+
+  if(tn == NULL) {
+    tn = x->tree_root;
+
+#ifdef CSPROF_TRAMPOLINE_BACKEND
+    DBGMSG_PUB(CSPROF_DBG_CCT_INSERTION, "(NULL) root ip %#lx | sp %#lx",
+	       tn->ip, tn->sp);
+#else
+    DBGMSG_PUB(CSPROF_DBG_CCT_INSERTION, "(NULL) root ip %#lx",
+	       tn->ip);
+#endif
+    DBGMSG_PUB(CSPROF_DBG_CCT_INSERTION, "start ip %#lx | sp %#lx",
+	       start->ip, start->sp);
+
+    /* we don't want the tree root calling itself */
+#ifdef CSPROF_TRAMPOLINE_BACKEND
+    if(start->ip == tn->ip && start->sp == tn->sp) {
+      start--;
     }
-
-    if(tn == NULL) {
-        tn = x->tree_root;
-
-#ifdef CSPROF_TRAMPOLINE_BACKEND
-        DBGMSG_PUB(CSPROF_DBG_CCT_INSERTION, "(NULL) root ip %#lx | sp %#lx",
-                   tn->ip, tn->sp);
 #else
-        DBGMSG_PUB(CSPROF_DBG_CCT_INSERTION, "(NULL) root ip %#lx",
-                   tn->ip);
+    if(start->ip == tn->ip) {
+      MSG(1,"start ip == tn ip = %lx",tn->ip);
+      start--;
+    }
 #endif
-        DBGMSG_PUB(CSPROF_DBG_CCT_INSERTION, "start ip %#lx | sp %#lx",
-                   start->ip, start->sp);
+    DBGMSG_PUB(CSPROF_DBG_CCT_INSERTION, "start ip %#lx | sp %#lx",
+	       start->ip, start->sp);
+  }
 
-        /* we don't want the tree root calling itself */
+  while(1) {
+    if(start < end) {
+      /* done */
+      break;
+    }
+    else {
+      /* find child */
 #ifdef CSPROF_TRAMPOLINE_BACKEND
-        if(start->ip == tn->ip && start->sp == tn->sp) {
-            start--;
-        }
+      csprof_cct_node_t *c =
+	csprof_cct_node__find_child(tn, start->ip, start->sp);
 #else
-	if(start->ip == tn->ip) {
-          MSG(1,"start ip == tn ip = %lx",tn->ip);
+      MSG(1,"finding child in tree w ip = %lx",start->ip);
+      csprof_cct_node_t *c =
+	csprof_cct_node__find_child(tn, start->ip);
+#endif
+
+      if(c) {
+	/* child exists; recur */
+	MSG(1,"found child");
+	tn = c;
+	start--;
+      }
+      else {
+	/* no such child; insert new tail */
+	MSG(1,"No child found, inserting new tail");
+	while(start >= end) {
+	  MSG(1,"create node w ip = %lx",start->ip);
+	  c = csprof_cct_node__create(start->ip, start->sp);
+	  csprof_cct_node__parent_insert(c, tn);
+	  x->num_nodes++;
+
+	  tn = c;
 	  start--;
 	}
-#endif
-        DBGMSG_PUB(CSPROF_DBG_CCT_INSERTION, "start ip %#lx | sp %#lx",
-                   start->ip, start->sp);
+      }
     }
+  }
 
-    while(1) {
-        if(start < end) {
-            /* done */
-            break;
-        }
-        else {
-            /* find child */
-#ifdef CSPROF_TRAMPOLINE_BACKEND
-            csprof_cct_node_t *c =
-                csprof_cct_node__find_child(tn, start->ip, start->sp);
-#else
-            MSG(1,"finding child in tree w ip = %lx",start->ip);
-	    csprof_cct_node_t *c =
-                csprof_cct_node__find_child(tn, start->ip);
-#endif
-
-            if(c) {
-                /* child exists; recur */
-              MSG(1,"found child");
-                tn = c;
-                start--;
-            }
-            else {
-                /* no such child; insert new tail */
-              MSG(1,"No child found, inserting new tail");
-                while(start >= end) {
-                  MSG(1,"create node w ip = %lx",start->ip);
-                    c = csprof_cct_node__create(start->ip, start->sp);
-                    csprof_cct_node__parent_insert(c, tn);
-                    x->num_nodes++;
-
-                    tn = c;
-                    start--;
-                }
-            }
-        }
-    }
-
-    DBGMSG_PUB(CSPROF_DBG_CCT_INSERTION,
-	       "Inserted in %#lx for count %d", x, x->num_nodes);
-    tn->metrics[metric_id] += sample_count;
-    return tn;
+  DBGMSG_PUB(CSPROF_DBG_CCT_INSERTION,
+	     "Inserted in %#lx for count %d", x, x->num_nodes);
+  tn->metrics[metric_id] += sample_count;
+  return tn;
 }
 
 

@@ -190,6 +190,7 @@ int csprof_cct__init(csprof_cct_t* x);
 int csprof_cct__fini(csprof_cct_t *x);
 
 
+// Returns the leaf node representing the sample, if successful
 csprof_cct_node_t *
 csprof_cct_insert_backtrace(csprof_cct_t *, void *, int metric_id,
 			    csprof_frame_t *, csprof_frame_t *,

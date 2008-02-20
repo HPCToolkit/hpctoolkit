@@ -18,12 +18,13 @@
 #include "thread_data.h"
 #include "thread_use.h"
 #include "backtrace.h"
+#include "csprof_csdata.h"
 
 //*************************** Forward Declarations **************************
 
 void csprof_set_handling_sample(thread_data_t *td, int in);
 
-static void
+static csprof_cct_node_t*
 csprof_take_profile_sample(csprof_state_t *state, struct ucontext *ctx,
 			   int metric_id, size_t sample_count);
 
@@ -35,8 +36,7 @@ csprof_take_profile_sample(csprof_state_t *state, struct ucontext *ctx,
 int samples_taken    = 0;
 int bad_unwind_count = 0;
 
-//FIXME: Add the pc argument ???
-void 
+csprof_cct_node_t*
 csprof_sample_event(void *context, int metric_id, size_t sample_count)
 {
   sigjmp_buf_t *it = get_bad_unwind();
@@ -51,6 +51,7 @@ csprof_sample_event(void *context, int metric_id, size_t sample_count)
   // FIXME: setup_segv only necessary here because some apps install segv handler of their own
   // setup_segv();
 
+  csprof_cct_node_t* node = NULL;
   csprof_state_t *state = csprof_get_state();
 
   if (!sigsetjmp(it->jb,1)){
@@ -58,8 +59,8 @@ csprof_sample_event(void *context, int metric_id, size_t sample_count)
     MPI_SPECIAL_SKIP();
 
     struct ucontext *ctx = (struct ucontext *)(context);
-    if(state != NULL) {
-      csprof_take_profile_sample(state, ctx, metric_id, sample_count);
+    if (state != NULL) {
+      node = csprof_take_profile_sample(state, ctx, metric_id, sample_count);
       csprof_state_flag_clear(state, CSPROF_THRU_TRAMP);
     }
   }
@@ -71,15 +72,15 @@ csprof_sample_event(void *context, int metric_id, size_t sample_count)
   }
 
   csprof_set_handling_sample(td, 0);
+
+  return node;
 }
 
 
-static void
+static csprof_cct_node_t*
 csprof_take_profile_sample(csprof_state_t *state, struct ucontext *ctx,
 			   int metric_id, size_t sample_count)
 {
-  int ret;
-
   mcontext_t *context = &ctx->uc_mcontext;
   void *pc = csprof_get_pc(context);
 
@@ -116,8 +117,9 @@ csprof_take_profile_sample(csprof_state_t *state, struct ucontext *ctx,
   state->bufstk = state->bufend;
 #endif
   
-  ret = csprof_sample_callstack(state, ctx, metric_id, sample_count);
-  if (ret == CSPROF_OK) {
+  csprof_cct_node_t* n;
+  n = csprof_sample_callstack(state, ctx, metric_id, sample_count);
+  if (!n) {
 #ifdef USE_TRAMP
     PMSG(SWIZZLE,"about to swizzle w context\n");
     csprof_swizzle_with_context(state, (void *)context);
@@ -127,6 +129,8 @@ csprof_take_profile_sample(csprof_state_t *state, struct ucontext *ctx,
   csprof_state_flag_clear(state, (CSPROF_TAIL_CALL 
 				  | CSPROF_EPILOGUE_RA_RELOADED 
 				  | CSPROF_EPILOGUE_SP_RESET));
+  
+  return n;
 }
 
 

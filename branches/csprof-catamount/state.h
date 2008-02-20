@@ -28,9 +28,13 @@ int csprof_state_alloc(csprof_state_t *);
 extern csprof_state_t *csprof_check_for_new_epoch(csprof_state_t *);
 
 /* expand the internal backtrace buffer */
-csprof_frame_t *csprof_state_expand_buffer(csprof_state_t *, csprof_frame_t *);
-int csprof_state_insert_backtrace(csprof_state_t *, int, csprof_frame_t *,
-                                  csprof_frame_t *, size_t);
+csprof_frame_t*
+csprof_state_expand_buffer(csprof_state_t *, csprof_frame_t *);
+
+csprof_cct_node_t* 
+csprof_state_insert_backtrace(csprof_state_t *, int, csprof_frame_t *,
+			      csprof_frame_t *, size_t);
+
 #if defined(CSPROF_PERF)
 #define csprof_state_verify_backtrace_invariants(state)
 #else

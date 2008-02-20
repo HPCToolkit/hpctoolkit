@@ -40,8 +40,9 @@ extern void _start();
 #endif
 
 
-int csprof_sample_callstack_from_frame(csprof_state_t *, int,
-				       size_t, unw_cursor_t *);
+static csprof_cct_node_t*
+csprof_sample_callstack_from_frame(csprof_state_t *, int,
+				   size_t, unw_cursor_t *);
 
 //***************************************************************************
 
@@ -69,7 +70,10 @@ csprof_check_fence(void *ip)
    Then again, branch prediction penalities after you've already made a
    function call and decoded DWARF unwind info and written several words
    of memory...maybe we don't care that much. */
-int
+
+// If successful, returns the leaf node representing the sample;
+// otherwise, returns NULL.
+csprof_cct_node_t*
 csprof_sample_callstack(csprof_state_t *state, ucontext_t* context, 
 			int metric_id, size_t sample_count)
 {
@@ -129,12 +133,17 @@ csprof_sample_callstack(csprof_state_t *state, ucontext_t* context,
 #endif
 #endif
 
-  return csprof_sample_callstack_from_frame(state, metric_id,
-					    sample_count, &frame);
+  csprof_cct_node_t* n;
+  n = csprof_sample_callstack_from_frame(state, metric_id,
+					 sample_count, &frame);
+  if (!n) {
+    ERRMSG("failure recording callstack sample", __FILE__, __LINE__);
+  }
+  return n;
 }
 
 
-int
+static csprof_cct_node_t*
 csprof_sample_callstack_from_frame(csprof_state_t *state, int metric_id,
 				   size_t sample_count, unw_cursor_t *cursor)
 {
@@ -173,13 +182,9 @@ csprof_sample_callstack_from_frame(csprof_state_t *state, int metric_id,
   MSG(1,"BTIP------------");
   debug_dump_backtraces(state,state->unwind);
   
-  
-  if (csprof_state_insert_backtrace(state, metric_id, state->unwind - 1, 
-				    state->btbuf, sample_count) != CSPROF_OK) {
-    ERRMSG("failure recording callstack sample", __FILE__, __LINE__);
-    return CSPROF_ERR;
-  }
-
-  return CSPROF_OK;
+  csprof_cct_node_t* n;
+  n = csprof_state_insert_backtrace(state, metric_id, state->unwind - 1,
+				    state->btbuf, sample_count);
+  return n;
 }
 

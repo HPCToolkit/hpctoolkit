@@ -32,7 +32,7 @@
 #define CSPROF_CS_CHOP 4
 #endif
 
-int
+csprof_cct_node_t*
 csprof_sample_callstack(csprof_state_t *state, ucontext_t* context, 
 			int metric_id, size_t sample_count);
 

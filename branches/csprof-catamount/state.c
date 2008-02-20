@@ -138,22 +138,19 @@ int csprof_state_fini(csprof_state_t *x){
   return CSPROF_OK;
 }
 
-int csprof_state_insert_backtrace(csprof_state_t *state, int metric_id,
-                                  csprof_frame_t *start, csprof_frame_t *end,
-                                  size_t count){
-  void *tn = csprof_csdata_insert_backtrace(&state->csdata, state->treenode,
-                                            metric_id, start, end, count);
+csprof_cct_node_t*
+csprof_state_insert_backtrace(csprof_state_t *state, int metric_id,
+			      csprof_frame_t *start, csprof_frame_t *end,
+			      size_t count)
+{
+  csprof_cct_node_t* n;
+  n = csprof_csdata_insert_backtrace(&state->csdata, state->treenode,
+				     metric_id, start, end, count);
 
-  DBGMSG_PUB(CSPROF_DBG_CCT_INSERTION, "Treenode is %p", tn);
-
-  state->treenode = tn;
-
-  if(tn == NULL) {
-    return CSPROF_ERR;
-  }
-  else {
-    return CSPROF_OK;
-  }
+  DBGMSG_PUB(CSPROF_DBG_CCT_INSERTION, "Treenode is %p", n);
+  
+  state->treenode = n;
+  return n;
 }
 
 csprof_frame_t * csprof_state_expand_buffer(csprof_state_t *state, csprof_frame_t *unwind){

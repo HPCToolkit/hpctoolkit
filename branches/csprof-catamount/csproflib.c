@@ -258,10 +258,11 @@ csprof_thread_pre_create(void)
 
 #if 0
   // insert into CCT as a placeholder
-  csprof_sample_event(&context, metric_id, 0 /*sample_count*/);
+  csprof_cct_node_t* n;
+  n = csprof_sample_event(&context, metric_id, 0 /*sample_count*/);
 
   lush_cct_ctxt_t* thr_ctxt = csprof_malloc(sizeof(lush_cct_ctxt_t));
-  thr_ctxt->context = NULL; // [FIXME: capture CCT node]
+  thr_ctxt->context = n;
   thr_ctxt->parent = state->csdata_ctxt;
 
   return thr_ctxt;
