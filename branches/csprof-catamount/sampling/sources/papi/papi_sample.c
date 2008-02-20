@@ -91,7 +91,7 @@ csprof_papi_event_handler(int event_set, void *pc, long long ovec,
     assert(metric_id != NO_EVENT_INDEX);
 #endif
     int metric_id = my_events[i];
-    csprof_sample_event(context, metric_id);
+    csprof_sample_event(context, metric_id, 1 /*sample_count*/);
   }
 }
 

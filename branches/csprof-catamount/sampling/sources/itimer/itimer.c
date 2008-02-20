@@ -135,7 +135,7 @@ static int
 csprof_itimer_signal_handler(int sig, siginfo_t *siginfo, void *context)
 {
   PMSG(ITIMER_HANDLER,"Itimer sample event");
-  csprof_sample_event(context, ITIMER_METRIC_ID);
+  csprof_sample_event(context, ITIMER_METRIC_ID, 1 /*sample_count*/);
   csprof_itimer_start();
 
   return 0; /* tell monitor that the signal has been handled */

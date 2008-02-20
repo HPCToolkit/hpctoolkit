@@ -26,7 +26,8 @@ csprof_get_max_metrics()
   return csprof_max_metrics;
 }
 
-int csprof_set_max_metrics(int max_metrics){
+int csprof_set_max_metrics(int max_metrics)
+{
   if(has_set_max_metrics) {
     ERRMSG("Unable to set max_metrics multiple times", __FILE__, __LINE__);
     return -1;
@@ -41,11 +42,13 @@ int csprof_set_max_metrics(int max_metrics){
   }
 }
 
-hpcfile_csprof_data_t *csprof_get_metric_data(){
+hpcfile_csprof_data_t *csprof_get_metric_data()
+{
   return &metric_data;
 }
 
-int csprof_num_recorded_metrics(){
+int csprof_num_recorded_metrics()
+{
   return metric_data.num_metrics;
 }
 

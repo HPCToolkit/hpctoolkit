@@ -80,6 +80,7 @@
 #include "metrics.h"
 #include "itimer.h"
 #include "papi_sample.h"
+#include "sample_event.h"
 
 #include "name.h"
 
@@ -220,16 +221,11 @@ csprof_init_thread_support(int id)
 void *
 csprof_thread_pre_create(void)
 {
-  int ret;
-
-  ret = pthread_sigmask(SIG_BLOCK,&prof_sigset,NULL);
-  if (ret){
-    EMSG("WARNING: Thread init could not block SIGPROF, ret = %d",ret);
-  }
-
-#if 0
   // N.B.: Can be called before init-thread-support or even init-process.
   // Therefore, we ignore any calls before process init time.
+
+  int ret;
+
   if (!csprof_initialized) {
     return NULL;
   }
@@ -238,7 +234,11 @@ csprof_thread_pre_create(void)
   //   1. init-process has occurred.
   //   2. current execution context is either the spawning process or thread.
 
-  // Disable timers... [FIXME]
+  // Disable signals (could also disable timers)
+  ret = pthread_sigmask(SIG_BLOCK,&prof_sigset,NULL);
+  if (ret){
+    EMSG("WARNING: Thread init could not block SIGPROF, ret = %d",ret);
+  }
 
   // -------------------------------------------------------
   // Capture new thread's parent context.
@@ -250,20 +250,26 @@ csprof_thread_pre_create(void)
   if (ret != 0) {
     EMSG("Error: getcontext = %d", ret); 
   }
-  
-  // insert into CCT as a placeholder (weight of 0)
-  csprof_sample_event(&context, WEIGHT_METRIC, 0);
-  
+
+  int metric_id = 0; // FIXME: should be able to obtain index of first metric
+  if ( !(metric_id < csprof_num_recorded_metrics()) ) {
+    DIE("Won't need this once the above is fixed", __FILE__, __LINE__);
+  }
+
+#if 0
+  // insert into CCT as a placeholder
+  csprof_sample_event(&context, metric_id, 0 /*sample_count*/);
+
   lush_cct_ctxt_t* thr_ctxt = csprof_malloc(sizeof(lush_cct_ctxt_t));
   thr_ctxt->context = NULL; // [FIXME: capture CCT node]
   thr_ctxt->parent = state->csdata_ctxt;
-
-  // Enable timers... [FIXME]
 
   return thr_ctxt;
 #else
   return NULL;
 #endif
+
+  // Enable signals (done in post_create)
 }
 
 void
