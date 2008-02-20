@@ -88,6 +88,10 @@ extern "C" {
 // hpcfile_cstree_write()
 //***************************************************************************
 
+typedef void (*hpcfile_cstree_cb__write_context_fn_t)(FILE* fs,
+						      void* cct_ctxt,
+						      unsigned int id_root,
+						      unsigned int* nodes_written);
 typedef void  (*hpcfile_cstree_cb__get_data_fn_t)(void*, void*, 
 						  hpcfile_cstree_nodedata_t*);
 typedef void* (*hpcfile_cstree_cb__get_first_child_fn_t)(void*, void*);
@@ -100,13 +104,15 @@ typedef void* (*hpcfile_cstree_cb__get_sibling_fn_t)(void*, void*);
 // documentation below for their interfaces.  Returns HPCFILE_OK upon
 // success; HPCFILE_ERR on error.
 int
-hpcfile_cstree_write(FILE* fs, void* tree, void* root,
+hpcfile_cstree_write(FILE* fs, void* tree, void* root, void* tree_ctxt,
 		     hpcfile_uint_t num_metrics,
 		     hpcfile_uint_t num_nodes,
                      hpcfile_uint_t epoch,
+		     hpcfile_cstree_cb__write_context_fn_t write_context_fn,
 		     hpcfile_cstree_cb__get_data_fn_t get_data_fn,
 		     hpcfile_cstree_cb__get_first_child_fn_t get_first_child_fn,
 		     hpcfile_cstree_cb__get_sibling_fn_t get_sibling_fn);
+
   
 // ---------------------------------------------------------
 // callback helpers for hpcfile_cstree_write().
