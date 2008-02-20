@@ -1,4 +1,4 @@
-// -*-Mode: C;-*-
+// -*-Mode: C++;-*-
 // $Id$
 
 // * BeginRiceCopyright *****************************************************
@@ -79,8 +79,9 @@
 
 static int
 hpcfile_cstree_write_node(FILE* fs, void* tree, void* node, 
-			  hpcfile_cstree_node_t *scratch,
+			  hpcfile_cstree_node_t *tmp_node,
 			  hpcfile_uint_t id_parent,
+			  hpcfile_uint_t *id,
 			  hpcfile_cstree_cb__get_data_fn_t get_node_data_fn,
 			  hpcfile_cstree_cb__get_first_child_fn_t get_first_child_fn,
 			  hpcfile_cstree_cb__get_sibling_fn_t get_sibling_fn);
@@ -92,20 +93,16 @@ hpcfile_cstree_read_hdr(FILE* fs, hpcfile_cstree_hdr_t* hdr);
 //
 // As the nodes are written, each will be given a persistent id and
 // each node will know its parent's persistent id.  The id numbers are
-// between 0 and n-1 where n is the number of nodes in the tree.
-// Furthermore, parents are always written before any of their
-// children.  This scheme allows hpcfile_cstree_read to easily and efficiently
-// construct the tree since the persistent ids correspond to simple
-// array indices and parent nodes will be read before children.
+// between CSTREE_ID_ROOT and (CSTREE_ID_ROOT + n - 1) where n is the
+// number of nodes in the tree.  Furthermore, parents are always
+// written before any of their children.  This scheme allows
+// hpcfile_cstree_read to easily and efficiently construct the tree
+// since the persistent ids correspond to simple array indices and
+// parent nodes will be read before children.
 //
 // The id's will be will be assigned so that given a node x and its
 // children, the id of x is less than the id of any child and less
 // than the id of any child's descendent.
-
-/* FIXME: HACK HACK HACK: this used to be static in
-   `hpcfile_cstree_write_node', but multiple invocations of
-   `hpcfile_cstree_write' made that problematic. */
-static hpcfile_uint_t id = 0;
 
 //***************************************************************************
 // hpcfile_cstree_write()
@@ -114,46 +111,64 @@ static hpcfile_uint_t id = 0;
 // See header file for documentation of public interface.
 // Cf. 'HPC_CSTREE format details' above.
 int
-hpcfile_cstree_write(FILE* fs, void* tree, void* root,
+hpcfile_cstree_write(FILE* fs, void* tree, void* root, void* tree_ctxt,
 		     hpcfile_uint_t num_metrics,
 		     hpcfile_uint_t num_nodes,
                      hpcfile_uint_t epoch,
+		     hpcfile_cstree_cb__write_context_fn_t write_context_fn,
 		     hpcfile_cstree_cb__get_data_fn_t get_data_fn,
 		     hpcfile_cstree_cb__get_first_child_fn_t get_first_child_fn,
 		     hpcfile_cstree_cb__get_sibling_fn_t get_sibling_fn)
 {
-  hpcfile_cstree_hdr_t fhdr;
-  hpcfile_cstree_node_t fnode;
   int ret;
 
   if (!fs) { return HPCFILE_ERR; }
   
+  // -------------------------------------------------------
   // Write header
+  // -------------------------------------------------------
+  hpcfile_cstree_hdr_t fhdr;
+
   hpcfile_cstree_hdr__init(&fhdr);
   fhdr.epoch = epoch;
   fhdr.num_nodes = num_nodes;
-  if (hpcfile_cstree_hdr__fwrite(&fhdr, fs) != HPCFILE_OK) { 
+  ret = hpcfile_cstree_hdr__fwrite(&fhdr, fs); 
+  if (ret != HPCFILE_OK) {
     return HPCFILE_ERR; 
   }
 
-  /* reset the node id */
-  id = 0;
+  // -------------------------------------------------------
+  // Write context
+  // -------------------------------------------------------
+  hpcfile_uint_t id_root = CSTREE_ID_ROOT;
+  unsigned int num_tree_ctxt_nodes = 0;
+  write_context_fn(fs, tree_ctxt, id_root, &num_tree_ctxt_nodes);
 
+  // -------------------------------------------------------
   // Write each node, beginning with root
-  hpcfile_cstree_node__init(&fnode);
-  fnode.data.num_metrics = num_metrics;
-  fnode.data.metrics = malloc(num_metrics * sizeof(hpcfile_uint_t));
-  ret = hpcfile_cstree_write_node(fs, tree, root, &fnode, 0, get_data_fn, 
-				  get_first_child_fn, get_sibling_fn);
-  free(fnode.data.metrics);
+  // -------------------------------------------------------
+  hpcfile_uint_t id_root1 = num_tree_ctxt_nodes + 1;
+  hpcfile_uint_t id = id_root1;
+  hpcfile_cstree_node_t tmp_node;
+
+  hpcfile_cstree_node__init(&tmp_node);
+  tmp_node.data.num_metrics = num_metrics;
+  tmp_node.data.metrics = malloc(num_metrics * sizeof(hpcfile_uint_t));
+
+  ret = hpcfile_cstree_write_node(fs, tree, root, &tmp_node, id_root1, &id,
+				  get_data_fn,
+				  get_first_child_fn,
+				  get_sibling_fn);
+  free(tmp_node.data.metrics);
   
   return ret;
 }
 
 static int
 hpcfile_cstree_write_node(FILE* fs, void* tree, void* node, 
-			  hpcfile_cstree_node_t *scratch,
+			  hpcfile_cstree_node_t *tmp_node,
 			  hpcfile_uint_t id_parent,
+			  hpcfile_uint_t *id,
 			  hpcfile_cstree_cb__get_data_fn_t get_data_fn,
 			  hpcfile_cstree_cb__get_first_child_fn_t get_first_child_fn,
 			  hpcfile_cstree_cb__get_sibling_fn_t get_sibling_fn)
@@ -163,23 +178,23 @@ hpcfile_cstree_write_node(FILE* fs, void* tree, void* node,
 
   if (!node) { return HPCFILE_OK; }
 
-  scratch->id = myid = id;
-  scratch->id_parent = id_parent;
-  get_data_fn(tree, node, &(scratch->data));
+  tmp_node->id = myid = *id;
+  tmp_node->id_parent = id_parent;
+  get_data_fn(tree, node, &(tmp_node->data));
 
-  if (hpcfile_cstree_node__fwrite(scratch, fs) != HPCFILE_OK) { 
+  if (hpcfile_cstree_node__fwrite(tmp_node, fs) != HPCFILE_OK) { 
     return HPCFILE_ERR; 
   }
 
   // Prepare next id -- assigned in the order that this func is called
-  id++;
+  (*id)++;
   
   // Write each child of node.  Works with either a circular or
   // non-circular structure
   first = c = get_first_child_fn(tree, node);
   while (c) {
-    if (hpcfile_cstree_write_node(fs, tree, c, scratch, myid, get_data_fn, 
-				  get_first_child_fn, get_sibling_fn) 
+    if (hpcfile_cstree_write_node(fs, tree, c, tmp_node, myid, id, get_data_fn,
+				  get_first_child_fn, get_sibling_fn)
 	!= HPCFILE_OK) {
       return HPCFILE_ERR;
     }
@@ -206,7 +221,7 @@ hpcfile_cstree_read(FILE* fs, void* tree,
 		    hpcfile_cb__free_fn_t free_fn)
 {
   hpcfile_cstree_hdr_t fhdr;
-  hpcfile_cstree_node_t fnode;
+  hpcfile_cstree_node_t tmp_node;
   void* node, *parent;
   int i, ret = HPCFILE_ERR;
   
@@ -233,34 +248,34 @@ hpcfile_cstree_read(FILE* fs, void* tree,
   }
   
   // Read each node, creating it and linking it to its parent 
-  fnode.data.num_metrics = num_metrics;
-  fnode.data.metrics = malloc(num_metrics * sizeof(hpcfile_uint_t));
+  tmp_node.data.num_metrics = num_metrics;
+  tmp_node.data.metrics = malloc(num_metrics * sizeof(hpcfile_uint_t));
   
   for (i = CSTREE_ID_ROOT; i < id_ub; ++i) {
-    if (hpcfile_cstree_node__fread(&fnode, fs) != HPCFILE_OK) { 
+    if (hpcfile_cstree_node__fread(&tmp_node, fs) != HPCFILE_OK) { 
       goto cstree_read_cleanup; // HPCFILE_ERR
     }
-    if (fnode.id_parent >= id_ub) { 
+    if (tmp_node.id_parent >= id_ub) { 
       goto cstree_read_cleanup; // HPCFILE_ERR
     } 
     
-    parent = node_vec[fnode.id_parent];
+    parent = node_vec[tmp_node.id_parent];
 
     // parent should already exist unless id == CSTREE_ID_ROOT
-    if (!parent && fnode.id != CSTREE_ID_ROOT) {
+    if (!parent && tmp_node.id != CSTREE_ID_ROOT) {
       goto cstree_read_cleanup; // HPCFILE_ERR
     }
 
     // Create node and link to parent
-    node = create_node_fn(tree, &fnode.data);
-    node_vec[fnode.id] = node;
+    node = create_node_fn(tree, &tmp_node.data);
+    node_vec[tmp_node.id] = node;
 
     if (parent) {
       link_parent_fn(tree, node, parent);
     }
   }
 
-  free(fnode.data.metrics);
+  free(tmp_node.data.metrics);
 
 
   // Success! Note: We assume that it is possible for other data to
@@ -285,7 +300,7 @@ hpcfile_cstree_fprint(FILE* infs, int num_metrics, FILE* outfs)
   // FIXME: could share some code with the reader
   
   hpcfile_cstree_hdr_t fhdr;
-  hpcfile_cstree_node_t fnode;
+  hpcfile_cstree_node_t tmp_node;
   int i;
   
   // Open file for reading; read and sanity check header
@@ -301,14 +316,14 @@ hpcfile_cstree_fprint(FILE* infs, int num_metrics, FILE* outfs)
   // Read and print each node
   unsigned int id_ub = fhdr.num_nodes + CSTREE_ID_ROOT;
   for (i = CSTREE_ID_ROOT; i < id_ub; ++i) {
-    fnode.data.num_metrics = num_metrics;
+    tmp_node.data.num_metrics = num_metrics;
 
-    if (hpcfile_cstree_node__fread(&fnode, infs) != HPCFILE_OK) {
+    if (hpcfile_cstree_node__fread(&tmp_node, infs) != HPCFILE_OK) {
       fprintf(outfs, "** Error reading node number %d **\n", i);
       return HPCFILE_ERR;
     }
     
-    hpcfile_cstree_node__fprint(&fnode, outfs, "  ");
+    hpcfile_cstree_node__fprint(&tmp_node, outfs, "  ");
   }
   
   // Success! Note: We assume that it is possible for other data to

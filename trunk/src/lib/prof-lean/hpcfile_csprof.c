@@ -149,7 +149,6 @@ hpcfile_csprof_read(FILE* fs, hpcfile_csprof_data_t* data,
   hpcfile_csprof_hdr_t fhdr;
   hpcfile_str_t str;
   hpcfile_num8_t num8;
-  uint64_t i,ii;
   uint32_t tag;
   size_t sz;
   int ret = HPCFILE_ERR;
@@ -179,7 +178,7 @@ hpcfile_csprof_read(FILE* fs, hpcfile_csprof_data_t* data,
     return HPCFILE_ERR;
   }
   
-  data->target = str.str; 
+  data->target = str.str;
 
   
   // ----------------------------------------------------------
@@ -194,7 +193,8 @@ hpcfile_csprof_read(FILE* fs, hpcfile_csprof_data_t* data,
 
   // 2b. metric descriptions
   data->metrics = alloc_fn(data->num_metrics * sizeof(hpcfile_csprof_metric_t));
-  for (ii=0; ii < data->num_metrics; ++ii) {
+  
+  for (uint32_t i = 0; i < data->num_metrics; ++i) {
     // Read metrics data tag
     sz = hpc_fread_le4(&tag, fs);
     if (sz != sizeof(tag)) { return HPCFILE_ERR; }
@@ -205,7 +205,7 @@ hpcfile_csprof_read(FILE* fs, hpcfile_csprof_data_t* data,
       free_fn(str.str);
       return HPCFILE_ERR;
     }
-    data->metrics[ii].metric_name = str.str;
+    data->metrics[i].metric_name = str.str;
 	  
     // read in the flags of the metric
     sz = hpc_fread_le4(&tag, fs);
@@ -213,7 +213,7 @@ hpcfile_csprof_read(FILE* fs, hpcfile_csprof_data_t* data,
     if (hpcfile_num8__fread(&num8, fs) != HPCFILE_OK) {
       return HPCFILE_ERR;
     }
-    data->metrics[ii].flags = num8.num;
+    data->metrics[i].flags = num8.num;
 	  
     // read in the sample period
     sz = hpc_fread_le4(&tag, fs);
@@ -222,7 +222,7 @@ hpcfile_csprof_read(FILE* fs, hpcfile_csprof_data_t* data,
       return HPCFILE_ERR;
     }
 	  
-    data->metrics[ii].sample_period = num8.num;
+    data->metrics[i].sample_period = num8.num;
   }
 
 
