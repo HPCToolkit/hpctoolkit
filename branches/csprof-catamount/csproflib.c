@@ -256,7 +256,6 @@ csprof_thread_pre_create(void)
     DIE("Won't need this once the above is fixed", __FILE__, __LINE__);
   }
 
-#if 0
   // insert into CCT as a placeholder
   csprof_cct_node_t* n;
   n = csprof_sample_event(&context, metric_id, 0 /*sample_count*/);
@@ -266,9 +265,6 @@ csprof_thread_pre_create(void)
   thr_ctxt->parent = state->csdata_ctxt;
 
   return thr_ctxt;
-#else
-  return NULL;
-#endif
 
   // Enable signals (done in post_create)
 }
