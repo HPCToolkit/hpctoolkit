@@ -12,7 +12,8 @@
 /* FIXME: this needs to be split up a little bit for different backends */
 
 int
-csprof_options__init(csprof_options_t *x){
+csprof_options__init(csprof_options_t *x)
+{
   memset(x, 0, sizeof(*x));
 
   x->mem_sz = CSPROF_MEM_SZ_INIT;
@@ -25,13 +26,15 @@ csprof_options__init(csprof_options_t *x){
 }
 
 int
-csprof_options__fini(csprof_options_t* x){
+csprof_options__fini(csprof_options_t* x)
+{
   return CSPROF_OK;
 }
 
 /* assumes no private 'heap' memory is available yet */
 int
-csprof_options__getopts(csprof_options_t* x){
+csprof_options__getopts(csprof_options_t* x)
+{
 
   char tmp[CSPROF_PATH_SZ];
   char* s;
@@ -60,6 +63,15 @@ csprof_options__getopts(csprof_options_t* x){
     CSPROF_DBG_LVL_PUB = i;
   }
 #endif
+
+  /* Option: CSPROF_OPT_LUSH_AGENTS */
+  s = getenv(CSPROF_OPT_LUSH_AGENTS);
+  if (s) {
+    strcpy(x->lush_agent_paths, s);
+  }
+  else {
+    x->lush_agent_paths[0] = '\0';
+  }
 
   /* Option: CSPROF_OPT_MAX_METRICS */
   s = getenv(CSPROF_OPT_MAX_METRICS);

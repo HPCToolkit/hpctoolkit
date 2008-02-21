@@ -27,12 +27,7 @@
 
 //*************************** User Include Files ****************************
 
-// FIXME: Part of the general csprof mess
-#ifndef PRIM_UNWIND
-# include <libunwind.h>
-#else
-# include <prim_unw.h>
-#endif
+#include <prim_unw.h>
 
 //*************************** Forward Declarations **************************
 

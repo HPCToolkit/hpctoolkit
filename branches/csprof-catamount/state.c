@@ -41,7 +41,7 @@ static state_t_setter *_set_state_internal       = &_set_static_state;
 static csprof_state_t *_get_threaded_state(void)
 {
   MSG(1,"thread asking for state %p",pthread_getspecific(prof_data_key));
-    return pthread_getspecific(prof_data_key);
+  return pthread_getspecific(prof_data_key);
 }
 
 void _set_threaded_state(csprof_state_t *state)
@@ -69,7 +69,7 @@ csprof_state_t *csprof_get_state()
 {
   csprof_state_t *state = csprof_get_state_internal();
 
-  if(state == NULL) {
+  if (state == NULL) {
     csprof_state_init(state);
     state = csprof_get_state_internal();
   }
@@ -96,6 +96,8 @@ int csprof_state_init(csprof_state_t *x)
 
   x->pstate.pid = pid;
   x->pstate.hostid = hostid;
+
+  x->lush_agents = NULL;
 
   return CSPROF_OK;
 }

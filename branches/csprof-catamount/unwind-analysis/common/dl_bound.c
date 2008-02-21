@@ -2,15 +2,17 @@
  * system includes
  *****************************************************************************/
 
+#include <sys/param.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+
 #include <assert.h>
 #include <limits.h>
 #include <stdlib.h>
+#include <string.h>
 #include <assert.h>
-#include <sys/param.h>
-#include <sys/stat.h>
 #include <dlfcn.h>
-
-
+#include <unistd.h>
 
 /******************************************************************************
  * local includes

@@ -1,6 +1,11 @@
+// -*-Mode: C;-*-
+// $Id$
+
 const char* CSPROF_FNM_PFX        = "csprof.";    /* general filename prefix */
 const char* CSPROF_PSTATE_FNM_SFX = ".cspstate";  /* pstate filename suffix */
 const char* CSPROF_OUT_FNM_SFX    = ".csp";       /* out filename suffix */
+
+const char* CSPROF_OPT_LUSH_AGENTS   = "CSPROF_OPT_LUSH_AGENTS";
 
 /* Names for option environment variables */
 const char* CSPROF_OPT_OUT_PATH      = "CSPROF_OPT_OUT_PATH";

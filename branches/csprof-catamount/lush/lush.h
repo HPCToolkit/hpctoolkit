@@ -45,7 +45,7 @@ typedef int lush_agentid_t;
 
 
 // ---------------------------------------------------------
-// A LUSH agentfind
+// A LUSH agent
 // ---------------------------------------------------------
 
 typedef struct lush_agent lush_agent_t;

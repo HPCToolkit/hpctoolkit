@@ -1,3 +1,6 @@
+// -*-Mode: C++;-*- // technically C99
+// $Id$
+
 /*
   Copyright ((c)) 2002, Rice University 
   All rights reserved.
@@ -72,25 +75,25 @@ csprof_get_epoch()
 csprof_epoch_t *
 csprof_epoch_new()
 {
-    csprof_epoch_t *e = csprof_malloc(sizeof(csprof_epoch_t));
+  csprof_epoch_t *e = csprof_malloc(sizeof(csprof_epoch_t));
 
-    if(e == NULL) {
-        /* memory subsystem hasn't been initialized yet (happens sometimes
-           with threaded programs) */
-        return NULL;
-    }
+  if(e == NULL) {
+    /* memory subsystem hasn't been initialized yet (happens sometimes
+       with threaded programs) */
+    return NULL;
+  }
 
-    memset(e, 0, sizeof(*e));
+  memset(e, 0, sizeof(*e));
 
-    /* initialize the modules list */
-    csprof_epoch_get_loaded_modules(e, current_epoch);
+  /* initialize the modules list */
+  csprof_epoch_get_loaded_modules(e, current_epoch);
 
-    /* make sure everything is up-to-date before setting the
-       current_epoch */
-    e->next = current_epoch;
-    current_epoch = e;
+  /* make sure everything is up-to-date before setting the
+     current_epoch */
+  e->next = current_epoch;
+  current_epoch = e;
 
-    return e;
+  return e;
 }
 
 
@@ -108,62 +111,63 @@ csprof_write_epoch_header(FILE *fs)
 void
 csprof_write_epoch_module(csprof_epoch_module_t *module, FILE *fs)
 {
-    uint32_t namelen = strlen(module->module_name);
+  uint32_t namelen = strlen(module->module_name);
 
-    /* write the string */
-    hpc_fwrite_le4(&namelen, fs);
-    fwrite(module->module_name, sizeof(char), namelen, fs);
+  /* write the string */
+  hpc_fwrite_le4(&namelen, fs);
+  fwrite(module->module_name, sizeof(char), namelen, fs);
 
-    /* write the appropriate addresses */
-    hpc_fwrite_le8((uint64_t*)&module->vaddr, fs);
-    hpc_fwrite_le8((uint64_t*)&module->mapaddr, fs);
+  /* write the appropriate addresses */
+  hpc_fwrite_le8((uint64_t*)&module->vaddr, fs);
+  hpc_fwrite_le8((uint64_t*)&module->mapaddr, fs);
 }
 
 void
 csprof_write_epoch(csprof_epoch_t *epoch, FILE *fs)
 {
-    csprof_epoch_module_t *module_runner;
+  csprof_epoch_module_t *module_runner;
 
-    hpc_fwrite_le4(&epoch->num_modules, fs);
+  hpc_fwrite_le4(&epoch->num_modules, fs);
 
-    module_runner = epoch->loaded_modules;
+  module_runner = epoch->loaded_modules;
 
-    while(module_runner != NULL) {
-	MSG(CSPROF_MSG_DATAFILE, "Writing module %s", module_runner->module_name);
-        csprof_write_epoch_module(module_runner, fs);
+  while(module_runner != NULL) {
+    MSG(CSPROF_MSG_DATAFILE, "Writing module %s", module_runner->module_name);
+    csprof_write_epoch_module(module_runner, fs);
 
-        module_runner = module_runner->next;
-    }
+    module_runner = module_runner->next;
+  }
 }
 
 void
 csprof_write_all_epochs(FILE *fs)
 {
-    /* go through and assign all epochs an id; this id will be used by
-       the callstack data trees to indicate in which epoch they were
-       collected. */
-    csprof_epoch_t *runner = current_epoch;
-    unsigned int id_runner = 0;
+  /* go through and assign all epochs an id; this id will be used by
+     the callstack data trees to indicate in which epoch they were
+     collected. */
+  csprof_epoch_t *runner = current_epoch;
+  unsigned int id_runner = 0;
 
-    while(runner != NULL) {
-        runner->id = id_runner;
+  while(runner != NULL) {
+    runner->id = id_runner;
 
-        id_runner++;
-        runner = runner->next;
-    }
+    id_runner++;
+    runner = runner->next;
+  }
 
-    /* indicate how many epochs there are to read */
-    hpc_fwrite_le4(&id_runner, fs);
+  /* indicate how many epochs there are to read */
+  hpc_fwrite_le4(&id_runner, fs);
 
-    runner = current_epoch;
+  runner = current_epoch;
 
-    while(runner != NULL) {
-	MSG(CSPROF_MSG_DATAFILE, "Writing epoch %d", runner->id);
-        csprof_write_epoch(runner, fs);
+  while(runner != NULL) {
+    MSG(CSPROF_MSG_DATAFILE, "Writing epoch %d", runner->id);
+    csprof_write_epoch(runner, fs);
 
-        runner = runner->next;
-    }
+    runner = runner->next;
+  }
 }
+
 #ifdef NOTYET
 csprof_state_t *
 csprof_check_for_new_epoch(csprof_state_t *state)

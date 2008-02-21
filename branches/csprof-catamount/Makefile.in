@@ -1,3 +1,6 @@
+# -*-Mode: makefile;-*-
+# $Id$
+
 # Makefile.in intermediate to full autoconf, automake
 # now, just the std Makefile, but include Makefile.conf
 
@@ -26,6 +29,15 @@ CSPROFLIB := libcsprof.so.1
 
 CSPROF_DOT_O := libcsprof.o
 
+# ----------------------------------------------------------
+# LUSH
+# ----------------------------------------------------------
+# DO_LUSH = 1
+LUSH_AGENTS =
+ifdef DO_LUSH
+  LUSH_AGENTS = cilk.so
+endif
+
 #### FIXME: *Revisit* this when need synchronous profiling
 ####
 #DRIVER ?= mallocprof
@@ -35,7 +47,7 @@ CSPROF_DOT_O := libcsprof.o
 ####
 #### 
 
-all: $(CSPROFLIB) stapi_syms
+all: $(CSPROFLIB) $(LUSH_AGENTS) stapi_syms
 #all: $(CSPROF_DOT_O)
 
 # we develop on Tru64, make it the default
@@ -69,7 +81,10 @@ module_dirs := utilities                \
                os/catamount             \
                os/linux                 \
                sampling/sources/itimer  \
-               sampling/sources/papi
+               sampling/sources/papi    \
+               lush                     \
+               lush-agents
+
 
 ifdef STATIC_ONLY
   find_v  := find_static
@@ -167,7 +182,11 @@ ifdef DO_THREADS
    OBJS += pthread.o
 endif
 
-OBJS += backtrace.o
+# LUSH will provide its own backtrace [FIXME: clutzy]
+ifndef DO_LUSH
+  OBJS += backtrace.o
+endif
+
 ifdef PRIM_UNWIND
   #OBJS += splay_if.o
 endif
@@ -191,6 +210,20 @@ OBJS += $(hpcfile_objs)
 OBJS += $(find_v).o
 #endif
 OBJS += intervals.o 
+
+# ----------------------------------------------------------
+# LUSH
+# ----------------------------------------------------------
+LUSH_AGENT_OBJS =
+
+ifdef DO_LUSH
+  OBJS += lush-backtrace.o
+  LUSH_AGENT_OBJS += cilk.o lush-support.o
+endif
+
+OBJS += lush.o \
+	lushi-cb.o \
+	lush-support.o
 
 #-----------------------------------------------------------------
 # all x86 binary analysis files are now included into one file and 
@@ -230,25 +263,26 @@ vpath %.cpp $(addprefix $(src_dir_prefix),$(module_dirs))
 .PHONY: TT
 
 TT:
-	# OBJS = $(OBJS)
-	# INCS = $(INCS)
-	# LIBS = $(LIBS)
-	# CXX  = $(CXX)
-	# CC   = $(CC)
-	# INC_CSFILE = $(INC_CSFILE)
+#	 OBJS = $(OBJS)
+#	 INCS = $(INCS)
+#	 LIBS = $(LIBS)
+#	 CXX  = $(CXX)
+#	 CC   = $(CC)
+#	 INC_CSFILE = $(INC_CSFILE)
 	$(CC) --version
-	# gethostid := |$(gethostid)|
-	# src dir prefix = |$(src_dir_prefix)|, src dir = |$(src_dir)|
-	# PRIM_UNWIND = |$(PRIM_UNWIND)|
-	# XED_LIBS = |$(XED_LIBS)|
-	# src_dir = |$(src_dir)|
-	# DEFINES = $(DEFINES)
+#	 gethostid := |$(gethostid)|
+#	 src dir prefix = |$(src_dir_prefix)|, src dir = |$(src_dir)|
+#	 PRIM_UNWIND = |$(PRIM_UNWIND)|
+#	 XED_LIBS = |$(XED_LIBS)|
+#	 src_dir = |$(src_dir)|
+#	 DEFINES = $(DEFINES)
 
 $(LIB_CSFILE):
 	@cd hpcfile; $(MAKE) -I ..
 
 # clean (for now) is bclean
 clean: bclean
+	@/bin/rm -f $(LUSH_AGENTS) $(LUSH_AGENT_OBJS)
 
 .PHONY: TAGS
 TAGS:
@@ -264,10 +298,15 @@ $(CSPROFLIB): $(LIB_CSFILE) $(OBJS)
 	$(link) $(link_flags) -o $@ $(OBJS) $(LIBS)
 	@echo "*** $(CSPROFLIB) is up to date. ***"
 
+# LUSH agents
+$(LUSH_AGENTS): $(LUSH_AGENT_OBJS)
+	$(CC) $(LINK_FLAGS) -o $@ $(LUSH_AGENT_OBJS)
+	@echo "*** $@ is up to date. ***"
 
 $(CSPROF_DOT_O): $(OBJS)
 	$(link) $(static_link_options) -o $@ $(OBJS) $(LIBS)
 	@echo "*** $@ is up to date. ***"
+
 
 .PHONY: bclean
 bclean:

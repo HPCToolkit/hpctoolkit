@@ -82,6 +82,8 @@
 #include "papi_sample.h"
 #include "sample_event.h"
 
+#include <lush/lush.h>
+
 #include "name.h"
 
 #include "hpcfile_csproflib.h"
@@ -156,6 +158,15 @@ csprof_init_internal(void)
 
   csprof_state_init(state);
   csprof_state_alloc(state);
+
+  // Initialize LUSH agents
+  if (opts.lush_agent_paths[0] != '\0') {
+    state->lush_agents = 
+      (lush_agent_pool_t*)csprof_malloc(sizeof(lush_agent_pool_t));
+    lush_agent_pool__init(state->lush_agents, opts.lush_agent_paths);
+    MSG(0xfeed, "***> LUSH: %s (%p / %p) ***", opts.lush_agent_paths, 
+	state, state->lush_agents);
+  }
 
 #if !defined(CSPROF_SYNCHRONOUS_PROFILING)
   MSG(1,"sigemptyset(prof_sigset)");
@@ -301,8 +312,12 @@ csprof_thread_init(killsafe_t *kk, int id, lush_cct_ctxt_t* thr_ctxt)
 
   DBGMSG_PUB(CSPROF_DBG_PTHREAD, "Allocated thread state, now init'ing and alloc'ing f thread %d",id);
 
+  csprof_state_t* process_state = csprof_get_safe_state();
+
+  MSG(0xfeed, "=> csprof_init_thread: 0 (%p)", process_state);
   csprof_state_init(state);
   csprof_state_alloc(state);
+  state->lush_agents = process_state->lush_agents; // LUSH
 
   state->pstate.thrid = id; // local thread id in state
   state->csdata_ctxt = thr_ctxt;
@@ -330,6 +345,7 @@ csprof_thread_init(killsafe_t *kk, int id, lush_cct_ctxt_t* thr_ctxt)
     EMSG("WARNING: Thread init could not unblock SIGPROF, ret = %d",ret);
   }
 }
+
 
 void
 csprof_thread_fini(csprof_state_t *state)
@@ -383,6 +399,11 @@ csprof_fini_internal(void)
     MSG(CSPROF_MSG_SHUTDOWN, "writing profile data");
     state = csprof_get_safe_state();
     csprof_write_profile_data(state);
+
+    // shutdown LUSH agents
+    if (state->lush_agents) {
+      lush_agent_pool__fini(state->lush_agents);
+    }
 
     EMSG("host %ld: %d samples total, %d samples dropped (%d segvs)\n",
 	 gethostid(), samples_taken, bad_unwind_count, segv_count);
@@ -460,7 +481,8 @@ csprof_check_for_new_epoch(csprof_state_t *state)
 
 /* only meant for debugging errors, so it's not subject to the normal
    DBG variables and suchlike. */
-void csprof_print_backtrace(csprof_state_t *state)
+void 
+csprof_print_backtrace(csprof_state_t *state)
 {
     csprof_frame_t *frame = state->bufstk;
     csprof_cct_node_t *tn = state->treenode;
@@ -475,7 +497,8 @@ void csprof_print_backtrace(csprof_state_t *state)
 
 /* writing profile data */
 
-int csprof_write_profile_data(csprof_state_t *state){
+int csprof_write_profile_data(csprof_state_t *state)
+{
 
   extern int csprof_using_threads;
 

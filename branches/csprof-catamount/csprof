@@ -67,6 +67,7 @@ CSPROF_LIBEXEC=${CSPROF_ROOT}/libexec
 # One can set personal defaults here, instead of changing source code.
 # These values will be overriden by commandline options.
 opt_out_path=""
+opt_lush_agents="";
 opt_period=""
 opt_memsize=""
 opt_event=""
@@ -120,6 +121,7 @@ f_usage()
   $p "                  and profiling overhead.  Note: When the verbosity   \n"
   $p "                  level is 1 or greater, a message will be printed    \n"
   $p "                  when an additional mmap is created. [FIXME]         \n"
+  $p "    -a <agents>   LUSH agents                                         \n"
   $p "\n"
   $p "    -v <level>  : Verbosity level, 0-9. [0] At level 0, only errors   \n"
   $p "                  are printed.                                        \n"
@@ -203,6 +205,9 @@ f_getoptions()
   # parse argument list
   while [ $# -ge 1 ]; do
     case $1 in
+      -a)   shift; opt_lush_agents="$1";
+            f_opt_check "-a" "${opt_lush_agents}";
+            ;;
       -e)   shift; opt_event="$1";
             f_opt_check "-e" "${opt_event}";
             ;;
@@ -274,6 +279,10 @@ f_prepareenv()
   export CSPROF_NM_COMMAND="${CSPROF_LIBEXEC}/csprof_syms"
 
   # export profiler options
+  if [ -n "${opt_lush_agents}" ]; then
+    CSPROF_OPT_LUSH_AGENTS="${opt_lush_agents}"
+    export CSPROF_OPT_LUSH_AGENTS
+  fi
   if [ -n "${opt_out_path}" ]; then
     CSPROF_OPT_OUT_PATH="${opt_out_path}"
     export CSPROF_OPT_OUT_PATH

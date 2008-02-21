@@ -1,3 +1,6 @@
+// -*-Mode: C;-*-
+// $Id$
+
 /*
   Copyright ((c)) 2002, Rice University 
   All rights reserved.
@@ -35,6 +38,8 @@
 extern const char* CSPROF_FNM_PFX;
 extern const char* CSPROF_PSTATE_FNM_SFX;
 extern const char* CSPROF_OUT_FNM_SFX;
+
+extern const char* CSPROF_OPT_LUSH_AGENTS;
 
 /* Names for option environment variables */
 extern const char* CSPROF_OPT_OUT_PATH;

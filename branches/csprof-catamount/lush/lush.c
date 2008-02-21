@@ -165,10 +165,7 @@ void
 lush_init_unw(lush_cursor_t* cursor, 
 	      lush_agent_pool_t* apool, mcontext_t* context)
 {
-#ifndef PRIM_UNWIND
-#  error "FIXME: we only know about PRIMITIVE UNWINDING"
-#endif
-  
+  // FIXME: mcontext_t should probably be a ucontext_t
   memset(cursor, 0, sizeof(*cursor));
   
   cursor->apool = apool;
