@@ -48,7 +48,8 @@ static void update_cursor_with_troll(unw_cursor_t *cursor, void *sp, void *pc, v
  ***************************************************************************************/
 
 
-void unw_init(void){
+void unw_init(void)
+{
   extern void xed_init(void);
 
   
@@ -57,7 +58,8 @@ void unw_init(void){
   csprof_interval_tree_init();
 }
 
-void unw_init_f_mcontext(mcontext_t* mctxt, unw_cursor_t *cursor){
+void unw_init_f_mcontext(mcontext_t* mctxt, unw_cursor_t *cursor)
+{
 
   void **bp, *sp,*pc;
 
@@ -100,7 +102,8 @@ void unw_init_f_mcontext(mcontext_t* mctxt, unw_cursor_t *cursor){
 }
 
 
-void unw_init_f_ucontext(ucontext_t* context, unw_cursor_t *cursor){
+void unw_init_f_ucontext(ucontext_t* context, unw_cursor_t *cursor)
+{
 
   PMSG(UNW,"init prim unw called w ucontext: context = %p, cursor_p = %p\n",context,cursor);
   unw_init_f_mcontext(&(context->uc_mcontext),cursor);
@@ -108,14 +111,16 @@ void unw_init_f_ucontext(ucontext_t* context, unw_cursor_t *cursor){
 
 // This get_reg just extracts the pc, regardless of REGID
 
-int unw_get_reg(unw_cursor_t *cursor,int REGID,void **regv){
+int unw_get_reg(unw_cursor_t *cursor,int REGID,void **regv)
+{
 
   *regv = cursor->pc;
   
   return 0;
 }
 
-int unw_step (unw_cursor_t *cursor){
+int unw_step (unw_cursor_t *cursor)
+{
   void **bp, **spr_sp, **spr_bp;
   void *sp,*pc,*spr_pc;
   unwind_interval *uw;
@@ -182,8 +187,10 @@ int unw_step (unw_cursor_t *cursor){
   }
 
   if (! cursor->intvl){
-    if (((void *)spr_sp) >= monitor_stack_bottom()) return -1;
-
+    if (((void *)spr_sp) >= monitor_stack_bottom()) { 
+      return -1; 
+    }
+    
     PMSG(TROLL,"UNW STEP FAILURE :candidate pc = %p, cursor pc = %p, cursor bp = %p, cursor sp = %p",spr_pc,pc,bp,sp);
     PMSG(TROLL,"UNW STEP calls stack troll");
 
@@ -207,13 +214,15 @@ int unw_step (unw_cursor_t *cursor){
 
 
 
+
 /****************************************************************************************
  * private operations
  ***************************************************************************************/
 
 int _dbg_no_longjmp = 0;
 
-static void drop_sample(void){
+static void drop_sample(void)
+{
   if (_dbg_no_longjmp){
     return;
   }
@@ -221,7 +230,9 @@ static void drop_sample(void){
   sigjmp_buf_t *it = get_bad_unwind();
   siglongjmp(it->jb,9);
 }
-static void update_cursor_with_troll(unw_cursor_t *cursor, void *sp, void *pc, void *bp){
+
+static void update_cursor_with_troll(unw_cursor_t *cursor, void *sp, void *pc, void *bp)
+{
   void  **spr_sp, **spr_bp, *spr_pc;
 
   unsigned int tmp_ra_loc;
@@ -256,13 +267,15 @@ static void update_cursor_with_troll(unw_cursor_t *cursor, void *sp, void *pc, v
     drop_sample();
   }
 }
+
 /****************************************************************************************
  * debug operations
  ***************************************************************************************/
 
 unw_cursor_t _dbg_cursor;
 
-void dbg_init_cursor(void *context){
+void dbg_init_cursor(void *context)
+{
   _dbg_no_longjmp = 1;
   unw_init_f_mcontext(context,&_dbg_cursor);
   _dbg_no_longjmp = 0;

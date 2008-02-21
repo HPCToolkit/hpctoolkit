@@ -38,7 +38,7 @@
 //***************************************************************************
 //
 // File:
-//   csprof_cct.h
+//   $Source$
 //
 // Purpose:
 //   A variable degree-tree for storing call stack samples.  Each node
@@ -75,17 +75,17 @@
 
 //*************************** Forward Declarations **************************
 
+
 //***************************************************************************
-// 
+// Calling context tree node
 //***************************************************************************
 
 struct rbtree_node;
 
 struct rbtree
 {
-    struct rbtree_node *root;
+  struct rbtree_node *root;
 };
-
 
 // ---------------------------------------------------------
 // 
@@ -94,29 +94,32 @@ struct rbtree
 /* try to order these so that the most-often referenced things fit into
    a single cache line... */
 typedef struct csprof_cct_node_s {
-    /* instruction pointer: more accurately, this is an 'operation
-       pointer'.  The operation in the instruction packet is represented
-       by adding 0, 1, or 2 to the instruction pointer for the first,
-       second and third operation, respectively. */
-    void *ip;
 
-    /* parent node and the beginning of the child list */
-    struct csprof_cct_node_s *parent, *children;
+  /* instruction pointer: more accurately, this is an 'operation
+     pointer'.  The operation in the instruction packet is represented
+     by adding 0, 1, or 2 to the instruction pointer for the first,
+     second and third operation, respectively. */
+  void *ip;
 
-    /* tree index of children */
-    struct rbtree tree_children;
+  /* parent node and the beginning of the child list */
+  struct csprof_cct_node_s *parent, *children;
 
-    /* singly/doubly linked list of siblings */
-    struct csprof_cct_node_s *next_sibling;
+  /* tree index of children */
+  struct rbtree tree_children;
 
-    void *sp;
-    /* sp is only used if we are using trampolines (i.e.,
-       CSPROF_TRAMPOLINE_BACKEND is defined); otherwise its value is
-       set to NULL  */
+  /* singly/doubly linked list of siblings */
+  struct csprof_cct_node_s *next_sibling;
 
-    /* variable-sized array for recording metrics */
-    size_t metrics[1];
+  void *sp;
+  /* sp is only used if we are using trampolines (i.e.,
+     CSPROF_TRAMPOLINE_BACKEND is defined); otherwise its value is
+     set to NULL  */
+
+  /* variable-sized array for recording metrics */
+  size_t metrics[1];
+
 } csprof_cct_node_t;
+
 
 #if !defined(CSPROF_LIST_BACKTRACE_CACHE)
 typedef struct csprof_frame_s {
@@ -125,13 +128,6 @@ typedef struct csprof_frame_s {
 } csprof_frame_t;
 #endif
 
-
-// ---------------------------------------------------------
-// 
-// ---------------------------------------------------------
-
-
-/* public interface */
 
 // returns the number of ancestors walking up the tree
 unsigned int
@@ -146,27 +142,13 @@ csprof_cct_node__ancestor_count(csprof_cct_node_t* x);
 #define csprof_cct_node__last_child(x)   \
   ((x)->children ? (x)->children->prev_sibling : NULL)
 
-typedef struct csprof_cct_s {
-    csprof_cct_node_t* tree_root;
-    unsigned long num_nodes;
 
-#ifndef CSPROF_TRAMPOLINE_BACKEND
-    /* Two cached arrays: one contains a copy of the most recent
-       backtrace (with the first element being the *top* of the call
-       stack); the other contains corresponding node pointers into the
-       tree (where the last element will point to the tree root).  We
-       try to resize these arrays as little as possible.  For
-       convenience, the beginning of the array serves as padding instead
-       of the end (i.e. the arrays grow from high to smaller indices.) */
-    void **cache_bt;
-    csprof_cct_node_t **cache_nodes;
-    unsigned int cache_top;     /* current top (smallest index) of arrays */
-    unsigned int cache_len;     /* maximum size of the arrays */
-#endif
-} csprof_cct_t;
+//***************************************************************************
+// LUSH: thread creation context
+//***************************************************************************
 
 // ---------------------------------------------------------
-// LUSH: thread creation context
+// 
 // ---------------------------------------------------------
 
 // Represents the creation creation of a given calling context tree as
@@ -182,39 +164,6 @@ typedef struct lush_cct_ctxt_s {
 } lush_cct_ctxt_t;
 
 
-//***************************************************************************
-// 
-//***************************************************************************
-
-int csprof_cct__init(csprof_cct_t* x);
-int csprof_cct__fini(csprof_cct_t *x);
-
-
-// Returns the leaf node representing the sample, if successful
-csprof_cct_node_t *
-csprof_cct_insert_backtrace(csprof_cct_t *, void *, int metric_id,
-			    csprof_frame_t *, csprof_frame_t *,
-			    size_t);
-
-int csprof_cct__write_txt(FILE* fs, csprof_cct_t* x);
-
-int csprof_cct__write_bin(FILE* fs, unsigned int epoch_id,
-			  csprof_cct_t* x, lush_cct_ctxt_t* x_ctxt);
-
-
-/* First argument: 'csprof_cct_t *' */
-#define csprof_cct__isempty(x) ((x)->tree_root == NULL)
-
-/* private interface */
-int csprof_cct__write_txt_q(csprof_cct_t *);
-
-int csprof_cct__write_txt_r(FILE *, csprof_cct_t *, csprof_cct_node_t *);
-
-
-//***************************************************************************
-// 
-//***************************************************************************
-
 unsigned int
 lush_cct_ctxt__length(lush_cct_ctxt_t* cct_ctxt);
 
@@ -224,5 +173,57 @@ lush_cct_ctxt__write(FILE* fs, lush_cct_ctxt_t* cct_ctxt,
 
 
 //***************************************************************************
+// Calling context tree
+//***************************************************************************
 
-#endif 
+// ---------------------------------------------------------
+// 
+// ---------------------------------------------------------
+
+typedef struct csprof_cct_s {
+
+  csprof_cct_node_t* tree_root;
+  unsigned long num_nodes;
+
+#ifndef CSPROF_TRAMPOLINE_BACKEND
+  /* Two cached arrays: one contains a copy of the most recent
+     backtrace (with the first element being the *top* of the call
+     stack); the other contains corresponding node pointers into the
+     tree (where the last element will point to the tree root).  We
+     try to resize these arrays as little as possible.  For
+     convenience, the beginning of the array serves as padding instead
+     of the end (i.e. the arrays grow from high to smaller indices.) */
+  void **cache_bt;
+  csprof_cct_node_t **cache_nodes;
+  unsigned int cache_top;     /* current top (smallest index) of arrays */
+  unsigned int cache_len;     /* maximum size of the arrays */
+#endif
+
+} csprof_cct_t;
+
+
+int csprof_cct__init(csprof_cct_t* x);
+int csprof_cct__fini(csprof_cct_t *x);
+
+
+// Returns the leaf node representing the sample, if successful
+csprof_cct_node_t *
+csprof_cct_insert_backtrace(csprof_cct_t*, void*, int metric_id,
+			    csprof_frame_t *, csprof_frame_t*, size_t);
+
+int csprof_cct__write_txt(FILE* fs, csprof_cct_t* x);
+
+int csprof_cct__write_bin(FILE* fs, unsigned int epoch_id,
+			  csprof_cct_t* x, lush_cct_ctxt_t* x_ctxt);
+
+#define csprof_cct__isempty(/* csprof_cct_t* */x) ((x)->tree_root == NULL)
+
+/* private interface */
+int csprof_cct__write_txt_q(csprof_cct_t *);
+
+int csprof_cct__write_txt_r(FILE *, csprof_cct_t *, csprof_cct_node_t *);
+
+
+//***************************************************************************
+
+#endif /* csprof_cct_h */
