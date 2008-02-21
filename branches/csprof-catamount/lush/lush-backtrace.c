@@ -42,31 +42,27 @@ volatile int LUSH_WAIT = 1;
 // backtrace
 //***************************************************************************
 
-int csprof_sample_callstack(csprof_state_t *state, 
-			    int metric_id, size_t sample_count, 
-			    void* context);
-
-int lush_backtrace(csprof_state_t* state, 
-		   int metric_id, size_t sample_count, 
-		   mcontext_t* context);
+csprof_cct_node_t*
+lush_backtrace(csprof_state_t* state, ucontext_t* context,
+	       int metric_id, size_t sample_count);
 
 
-int
-csprof_sample_callstack(csprof_state_t *state, int metric_id,
-			size_t sample_count, void *context)
+csprof_cct_node_t*
+csprof_sample_callstack(csprof_state_t* state, ucontext_t* context,
+			int metric_id, size_t sample_count)
 {
-  int ret;
-  ret = lush_backtrace(state, metric_id, sample_count, (mcontext_t*)context);
-  ret = (ret == 0) ? CSPROF_OK : CSPROF_ERR;
-  return ret;
+  csprof_cct_node_t* n;
+  n = lush_backtrace(state, context, metric_id, sample_count);
+  if (!n) {
+    DBGMSG_PUB(1, "LUSH_WAIT... (pid=%d)", getpid()); // FIXME: improve
+  }
+  return n;
 }
 
 
-
-int
-lush_backtrace(csprof_state_t* state, 
-	       int metric_id, size_t sample_count, 
-	       mcontext_t* context)
+csprof_cct_node_t*
+lush_backtrace(csprof_state_t* state, ucontext_t* context,
+	       int metric_id, size_t sample_count)
 {
 #if 0 // FIXME
   unw_context_t uc;
@@ -115,6 +111,6 @@ lush_backtrace(csprof_state_t* state,
   }
 #endif
 
-  return 0;
+  return (csprof_cct_node_t*)(1); // FIXME: bogus non-NULL value
 }
 

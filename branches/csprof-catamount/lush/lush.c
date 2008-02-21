@@ -163,15 +163,14 @@ lush_agent_pool__fini(lush_agent_pool_t* x)
 
 void 
 lush_init_unw(lush_cursor_t* cursor, 
-	      lush_agent_pool_t* apool, mcontext_t* context)
+	      lush_agent_pool_t* apool, ucontext_t* context)
 {
-  // FIXME: mcontext_t should probably be a ucontext_t
   memset(cursor, 0, sizeof(*cursor));
   
   cursor->apool = apool;
   lush_cursor_set_flag(cursor, LUSH_CURSOR_FLAGS_BEG_PPROJ);
   lush_cursor_set_flag(cursor, LUSH_CURSOR_FLAGS_BEG_PCHORD);
-  unw_init_f_mcontext(context, lush_cursor_get_pcursor(cursor));
+  unw_init_f_context(context, lush_cursor_get_pcursor(cursor));
 }
 
 

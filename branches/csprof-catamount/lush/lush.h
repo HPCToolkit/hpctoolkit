@@ -101,7 +101,7 @@ int lush_agent_pool__fini(lush_agent_pool_t* x);
 // Given an agent-pool and context, initialize the lush_cursor but do
 // not step to the first (innermost) bichord.
 void lush_init_unw(lush_cursor_t* cursor, 
-		   lush_agent_pool_t* apool, mcontext_t *context);
+		   lush_agent_pool_t* apool, ucontext_t* context);
 
 
 // Given a lush_cursor, step the cursor to the next (less deeply

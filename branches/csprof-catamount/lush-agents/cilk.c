@@ -78,7 +78,7 @@ union cilk_cursor {
     void* ref_ip; // reference physical ip
     bool seen_cilkprog;
     bool is_beg_lnote;
-  };
+  } u;
 };
 
 
@@ -262,11 +262,11 @@ LUSHI_step_bichord(lush_cursor_t* cursor)
   init_lcursor(cursor);
   cilk_cursor_t* csr = (cilk_cursor_t*)lush_cursor_get_lcursor(cursor);
 
-  csr->ref_ip = (void*)lush_cursor_get_ip(cursor);
-  bool seen_cilkprog = csr->seen_cilkprog;
+  csr->u.ref_ip = (void*)lush_cursor_get_ip(cursor);
+  bool seen_cilkprog = csr->u.seen_cilkprog;
 
-  bool is_cilkrt   = is_libcilk(csr->ref_ip);
-  bool is_cilkprog = is_cilkprogram(csr->ref_ip);
+  bool is_cilkrt   = is_libcilk(csr->u.ref_ip);
+  bool is_cilkprog = is_cilkprogram(csr->u.ref_ip);
 
   bool is_TOS; // top of stack
   if (lush_cursor_is_flag(cursor, LUSH_CURSOR_FLAGS_BEG_PPROJ)) {
@@ -301,7 +301,7 @@ LUSHI_step_bichord(lush_cursor_t* cursor)
   if (is_cilkprog) {
     // case (4)
     lush_cursor_set_assoc(cursor, LUSH_ASSOC_1_to_1);
-    csr->seen_cilkprog = true;
+    csr->u.seen_cilkprog = true;
   }
 
   return LUSH_STEP_CONT;
@@ -350,26 +350,26 @@ LUSHI_step_lnote(lush_cursor_t* cursor)
     ty = LUSH_STEP_END_CHORD;
   }
   else if (as == LUSH_ASSOC_1_to_1) {
-    if (csr->is_beg_lnote) {
+    if (csr->u.is_beg_lnote) {
       ty = LUSH_STEP_END_CHORD;
-      csr->is_beg_lnote = false;
+      csr->u.is_beg_lnote = false;
     }
     else {
-      lip->ip = csr->ref_ip;
+      lip->ip = csr->u.ref_ip;
       ty = LUSH_STEP_CONT;
-      csr->is_beg_lnote = true;
+      csr->u.is_beg_lnote = true;
     }
   }
   else if (LUSH_ASSOC_1_to_2_n) {
-    if (csr->is_beg_lnote) {
+    if (csr->u.is_beg_lnote) {
       // FIXME: advance lip;
       ty = (lip->ip == NULL) ? LUSH_STEP_END_CHORD : LUSH_STEP_CONT;
-      csr->is_beg_lnote = false;
+      csr->u.is_beg_lnote = false;
     }
     else {
-      lip->ip = csr->ref_ip;
+      lip->ip = csr->u.ref_ip;
       ty = LUSH_STEP_CONT;
-      csr->is_beg_lnote = true;
+      csr->u.is_beg_lnote = true;
     }
   }
   else {
@@ -381,7 +381,7 @@ LUSHI_step_lnote(lush_cursor_t* cursor)
 
 
 extern int 
-LUSHI_set_active_frame_marker(ctxt, cb)
+LUSHI_set_active_frame_marker(/*ctxt, cb*/)
 {
   // STUB
   return 0;

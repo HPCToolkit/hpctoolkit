@@ -300,8 +300,10 @@ $(CSPROFLIB): $(LIB_CSFILE) $(OBJS)
 
 # LUSH agents
 $(LUSH_AGENTS): $(LUSH_AGENT_OBJS)
-	$(CC) $(LINK_FLAGS) -o $@ $(LUSH_AGENT_OBJS)
+	$(CC) -Wl,-Bsymbolic -Wl,-soname,$@ -shared -o $@ $(LUSH_AGENT_OBJS)
 	@echo "*** $@ is up to date. ***"
+
+
 
 $(CSPROF_DOT_O): $(OBJS)
 	$(link) $(static_link_options) -o $@ $(OBJS) $(LIBS)
