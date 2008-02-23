@@ -12,12 +12,14 @@ typedef csprof_state_t *state_t_f(void);
 
 typedef void state_t_setter(csprof_state_t *s);
 
+#if 0
 /* getting and setting states independent of threading support */
 csprof_state_t *csprof_get_state(void);
 void csprof_set_state(csprof_state_t *);
 csprof_state_t *csprof_get_safe_state(void);
 #ifdef CSPROF_THREADS
 void state_threaded(void);
+#endif
 #endif
 
 /* initialize various parts of a state */

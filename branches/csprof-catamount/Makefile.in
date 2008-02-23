@@ -204,7 +204,8 @@ OBJS += itimer.o papi_sample.o
 OBJS += state.o env.o data.o dump_backtraces.o segv_handler.o
 OBJS += pmsg.o
 OBJS += nm_bound.o
-OBJS += bad_unwind.o
+# OBJS += bad_unwind.o
+OBJS += handling_sample.o thread_data.o
 OBJS += $(hpcfile_objs)
 #ifdef PRIM_UNWIND
 OBJS += $(find_v).o

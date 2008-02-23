@@ -9,11 +9,13 @@
 #include "libc.h"
 #endif
 
+#if 0
 /* fetches the state of the profiler */
 extern csprof_state_t *csprof_get_state();
 /* sets the state of the profiler (at epoch turns, e.g.) */
 extern void csprof_set_state(csprof_state_t *);
 /* fetches private memory for the profiler */
+#endif
 
 #ifdef FIXME
 extern csprof_mem_t *csprof_get_memstore();
