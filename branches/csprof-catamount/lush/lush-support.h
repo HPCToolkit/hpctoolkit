@@ -50,7 +50,8 @@
 
 // ---------------------------------------------------------
 // [physical <-> logical] step associations
-//   since each can be one of [0, 1, 2:n] there are 9 possibilities
+//   since each can be one of [0, 1, M], there are 9 possibilities
+//   M represents "multi", i.e., { n | n >= 2 }
 // ---------------------------------------------------------
 
 typedef enum lush_assoc lush_assoc_t;
@@ -58,11 +59,14 @@ typedef enum lush_assoc lush_assoc_t;
 enum lush_assoc {
   LUSH_ASSOC_NULL = 0,
 
-  LUSH_ASSOC_1_to_1,   //   1 <-> 1
-  LUSH_ASSOC_1_to_0,   //   1 <-> 0
-  LUSH_ASSOC_2_n_to_1, // 2:n <-> 1
-  LUSH_ASSOC_2_n_to_0, // 2:n <-> 0
-  LUSH_ASSOC_1_to_2_n  //   1 <-> 2:n
+  LUSH_ASSOC_1_to_1, // 1 <-> 1
+
+  LUSH_ASSOC_1_to_0, // 1 <-> 0
+  LUSH_ASSOC_M_to_0, // M <-> 0
+
+  LUSH_ASSOC_M_to_1, // M <-> 1
+
+  LUSH_ASSOC_1_to_M  // 1 <-> M
 };
 
 

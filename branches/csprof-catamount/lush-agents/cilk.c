@@ -289,7 +289,7 @@ LUSHI_step_bichord(lush_cursor_t* cursor)
     else {
       if (seen_cilkprog) {
 	// case (2)
-	// FIXME: lush_cursor_set_assoc(cursor, LUSH_ASSOC_1_to_2_n)
+	// FIXME: lush_cursor_set_assoc(cursor, LUSH_ASSOC_1_to_M)
 	lush_cursor_set_assoc(cursor, LUSH_ASSOC_1_to_0);
       }
       else {
@@ -360,7 +360,7 @@ LUSHI_step_lnote(lush_cursor_t* cursor)
       csr->u.is_beg_lnote = true;
     }
   }
-  else if (LUSH_ASSOC_1_to_2_n) {
+  else if (LUSH_ASSOC_1_to_M) {
     if (csr->u.is_beg_lnote) {
       // FIXME: advance lip;
       ty = (lip->ip == NULL) ? LUSH_STEP_END_CHORD : LUSH_STEP_CONT;
