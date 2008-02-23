@@ -1,0 +1,283 @@
+#!/bin/ksh
+# $Id: files_PD,v 1.40 2007/03/22 19:56:35 legendre Exp $
+# list (or otherwise examine) all Paradyn/Dyninst executable/library files
+
+#SOS=sparc-sun-sunos4.1.3
+SOL=sparc-sun-solaris2.8
+SP2=rs6000-ibm-aix5.1
+AIX=rs6000-ibm-aix5.1
+#HPX=hppa1.1-hp-hpux
+WNT=i386-unknown-nt4.0
+I64=ia64-unknown-linux2.4
+LNX=i386-unknown-linux2.4
+IRX=mips-sgi-irix6.5
+OSF=alpha-dec-osf4.0
+
+ALL_PLATFORMS="$SOL $LNX $AIX $WNT $I64"
+ARCH_LIST=$PLATFORM
+
+#USAGE="usage: files_PD [-a] [-w] [-i|-t] [-C[dlopvx]] [platform-list]\n\
+#   -C_comps_: consider only the components matching the _comps_ key\n\
+#     o: miscellaneous objects\n\
+#     v: visualizers/visis\n\
+USAGE="usage: files_PD [-a] [-w] [-W dir] [-i|-t] [-d|-l|-p|-x] [platform-list]\n\
+   -a: consider all supported platforms (instead of optional platform-list)\n\
+   -w: use developer's work repository (instead of default common repository)\n\
+   -W: use specified directory as the repository\n\
+   -i: show ident_PD information (instead of default file listing)\n\
+   -t: only list stale files (i.e., those not dated today)\n\
+   -d: DyninstAPI components only\n\
+   -l: libraries/objects only\n\
+   -p: Paradyn components only\n\
+   -x: executables only\n\
+   platform-list: one or more platforms (defaults to only current platform)\n\
+(current PLATFORM=$PLATFORM)\n\
+(supported platforms: $ALL_PLATFORMS)\n"
+
+if [ "$PARADYN_ROOT" = "" ]; then
+    P_ROOT="/p/paradyn"
+else
+    P_ROOT=`dirname $PARADYN_ROOT`
+    # remove "/development/$USER" suffix, if present
+    TMP=`dirname $P_ROOT`
+    if [ `basename $TMP` = "development" ]; then
+        P_ROOT=`dirname $TMP`
+    fi
+fi
+
+FILTER="cat"
+
+case "$PLATFORM" in
+  "$SP2"|"$AIX"|"$OSF")
+    ACTION="ls -oLF";;
+  *)
+    ACTION="ls -lGLF";;
+esac
+
+tmp_file="/tmp/.tmp_file"
+
+X_COMPS=true
+L_COMPS=true
+D_COMPS=false
+P_COMPS=false
+
+while [ -n "$1" ]
+do
+  case "$1" in
+    "-C")
+        # consider only listed components
+        ;;
+    "-x")
+        # consider only executables
+        X_COMPS=true
+        L_COMPS=
+        ;;
+    "-l")
+        # consider only libraries
+        X_COMPS=
+        L_COMPS=true
+        ;;
+    "-d")
+        # consider only dynInstAPI components
+        X_COMPS=true
+        L_COMPS=true
+        D_COMPS=true
+        ;;
+    "-p")
+        # consider only Paradyn components
+        X_COMPS=
+        L_COMPS=true
+        P_COMPS=true
+        ;;
+    "-a")
+        # consider all (current) platforms
+        ARCH_LIST=$ALL_PLATFORMS
+        ;;
+    "-w")
+        # use developer's work repository
+        if [ -n "$USER" -a "$USER" != "paradyn" ]; then
+            P_ROOT=$P_ROOT/development/$USER
+        else
+            echo "Sorry, no developer repository for USER=$USER"
+        fi
+        ;;
+    "-W")
+        # use specified work repository
+        if [ -d "$2" ]; then
+            P_ROOT=$2
+            shift
+        else
+            echo "Sorry, $2 is not a repository"
+        fi
+        ;;
+    "-i")
+        # show ident info (assumes ident_PD is available)
+        #ACTION=$P_ROOT/scripts/ident_PD
+        IDENT_ACTION=true
+        ;;
+    "-t")
+        # time to check or rebuild a stale file
+        CHECK_FRESH=true
+        ;;
+    "-"*)
+        #echo "Unrecognized flag: $1"
+        PRINT_USAGE=true
+        ;;
+    *)
+        # any non-flag arguments are platforms to consider
+        ARCH_LIST=$*
+        break
+        ;;
+  esac
+  shift
+done
+
+if { [[ $D_COMPS == "false" ]] && [[ $P_COMPS == "false" ]] }
+then
+   D_COMPS="true"
+   P_COMPS="true"
+fi
+
+if [ $PLATFORM = "$WNT" ]; then
+   P_ROOT="/$P_ROOT"
+fi
+
+if [ -n "$PRINT_USAGE" ]; then
+   printf "$USAGE"
+   exit 1
+fi
+
+if [ -n "$IDENT_ACTION" ]; then
+   if [ $PLATFORM = "$WNT" ]; then
+      ACTION="sh $P_ROOT/scripts/ident_PD"
+   else
+      ACTION="$P_ROOT/scripts/ident_PD"
+   fi
+elif [ -n "$CHECK_FRESH" ]; then
+   TODAY=`date '+%b %e'`
+   date '+%b %e' > $tmp_file
+   TODAY="($TODAY)"
+   FILTER="grep -v -f $tmp_file"
+fi
+
+V_COMPS="rthist barChart phaseTable tableVisi tclVisi terrain"
+V_COMPS_WNT="rthist.exe barchart.exe phaseTable.exe tableVisi.exe tclVisi.exe"
+DYNINST_UNX_MUTTEES="testprogs/test1.mutatee_g++ testprogs/test1.mutatee_gcc testprogs/test2.mutatee_g++ testprogs/test2.mutatee_gcc testprogs/test3.mutatee_g++ testprogs/test3.mutatee_gcc testprogs/test4a.mutatee_g++ testprogs/test4a.mutatee_gcc testprogs/test4b.mutatee_g++ testprogs/test4b.mutatee_gcc testprogs/test5.mutatee_g++"
+DYNINST_SOL_MUTTEES="testprogs/test1.mutatee_CC testprogs/test1.mutatee_cc testprogs/test2.mutatee_CC testprogs/test2.mutatee_cc testprogs/test3.mutatee_CC testprogs/test3.mutatee_cc testprogs/test4a.mutatee_CC testprogs/test4a.mutatee_cc testprogs/test4b.mutatee_CC testprogs/test4b.mutatee_cc testprogs/test5.mutatee_CC testprogs/test6.mutatee_cc testprogs/test7.mutatee_CC testprogs/test7.mutatee_cc"
+DYNINST_LNX_MUTTEES="testprogs/test1.mutatee_pgCC testprogs/test1.mutatee_pgcc testprogs/test2.mutatee_pgCC testprogs/test2.mutatee_pgcc testprogs/test3.mutatee_pgCC testprogs/test3.mutatee_pgcc testprogs/test4a.mutatee_pgCC testprogs/test4a.mutatee_pgcc testprogs/test4b.mutatee_pgCC testprogs/test4b.mutatee_pgcc testprogs/test5.mutatee_pgCC testprogs/test6.mutatee_pgcc testprogs/test7.mutatee_pgCC testprogs/test7.mutatee_pgcc"
+DYNINST_AIX_MUTTEES="testprogs/test1.mutatee_xlC testprogs/test1.mutatee_xlc testprogs/test1.mutatee_xlf90 testprogs/test2.mutatee_xlC testprogs/test2.mutatee_xlc testprogs/test3.mutatee_xlC testprogs/test3.mutatee_xlc testprogs/test4a.mutatee_xlC testprogs/test4a.mutatee_xlc testprogs/test4b.mutatee_xlC testprogs/test4b.mutatee_xlc testprogs/test5.mutatee_xlC testprogs/test6.mutatee_xlc testprogs/test7.mutatee_xlC testprogs/test7.mutatee_xlc"
+DYNINST_UNX_MUTTORS="testprogs/test1 testprogs/test2 testprogs/test3 testprogs/test4 testprogs/test5"
+
+DYNINST_WNT_MUTTEES="testprogs/test1.mutatee_VC++.exe* testprogs/test1.mutatee_VC.exe* testprogs/test2.mutatee_VC++.exe* testprogs/test2.mutatee_VC.exe* testprogs/test3.mutatee_VC++.exe* testprogs/test3.mutatee_VC.exe* testprogs/test4a.mutatee_VC++.exe* testprogs/test4a.mutatee_VC.exe* testprogs/test4b.mutatee_VC++.exe* testprogs/test4b.mutatee_VC.exe* testprogs/test5.mutatee_VC++.exe*"
+DYNINST_WNT_MUTTORS="testprogs/test1.exe testprogs/test2.exe testprogs/test3.exe testprogs/test4.exe testprogs/test5.exe"
+
+PDN_UNX_EXES="paradyn paradynd* igen dyner $V_COMPS"
+PDN_OSF_EXES="paradynd igen dyner"
+PDN_WNT_EXES="paradyn.exe paradynd.exe igen.exe dyner.exe $V_COMPS_WNT"
+
+PDN_UNX_LIBS="libmrnet.a libparadynRT* libpdutil.a libvisi.a libdynShmMutatee* libdynShmMutator* libxplat.a"
+THR_UNX_LIB="libpdthread.so"
+THR_AIX_LIB="libpdthread.a"
+
+DYN_UNX_LIBS='libdyninstAPI.* libdyninstAPI_RT*'
+
+PDN_WNT_LIBS="libmrnet.lib libparadynRT.dll pdutil.lib pdthread.lib libvisi.lib libxplat.lib"
+DYN_WNT_LIBS="libdyninstAPI.lib libdyninstAPI_RT.dll"
+
+function get_exes
+{
+   typeset PF=$1
+   typeset RET_EXES
+
+   cd $P_ROOT/$PF/bin   # need to be in proper dir so "*" in vars will work
+
+   if [[ $D_COMPS == "true" ]]
+   then
+      case $PF in
+      $SOL|$LNX|$AIX|$I64)
+	 RET_EXES="$DYNINST_UNX_MUTTORS $DYNINST_UNX_MUTTEES"  ;;
+      $WNT)
+	 RET_EXES="$DYNINST_WNT_MUTTORS $DYNINST_WNT_MUTTEES"  ;;
+      $OSF)
+	 RET_EXES="" ;;
+      esac
+   fi
+
+   if [[ $P_COMPS == "true" ]]
+   then
+      case $PF in
+      $SOL|$AIX|$LNX|$I64)
+	 RET_EXES="$PDN_UNX_EXES $RET_EXES"  ;;
+      $WNT)
+	 RET_EXES="$PDN_WNT_EXES $RET_EXES"  ;;
+      esac
+   fi
+
+   print $RET_EXES
+}
+
+function get_libs
+{
+   typeset PF=$1
+   typeset RET_LIBS
+
+   cd $P_ROOT/$PF/lib   # need to be in proper dir so "*" in vars will work
+
+   if [[ $D_COMPS == "true" ]]
+   then
+      case $PF in
+      $SOL|$LNX|$AIX|$OSF|$I64)
+	 RET_LIBS="$DYN_UNX_LIBS" ;;
+      $WNT)
+	 RET_LIBS=$DYN_WNT_LIBS ;;
+      $IRX)
+	 RET_LIBS="$DYN_UNX_LIBS libdyninstAPI_RT_n32.so.1" ;;
+      esac
+   fi
+
+   if [[ $P_COMPS == "true" ]]
+   then
+      case $PF in
+      $SOL|$LNX|$I64)
+        RET_LIBS="$PDN_UNX_LIBS $THR_UNX_LIB $RET_LIBS" ;;
+      $AIX)
+        RET_LIBS="$PDN_UNX_LIBS $THR_AIX_LIB $RET_LIBS" ;;
+      $WNT)
+        RET_LIBS="$PDN_WNT_LIBS $RET_LIBS" ;;
+      esac
+   fi
+
+   print $RET_LIBS
+}
+
+for PLATFORM in $ARCH_LIST
+do
+   PF_LIBS=$(get_libs $PLATFORM)
+   PF_EXES=$(get_exes $PLATFORM)
+
+   printf "\nPLATFORM=%-22s %8s\n" $PLATFORM "$TODAY"
+   if [ -n "$X_COMPS" ]; then
+      PROGRAM_DEST=$P_ROOT/$PLATFORM/bin
+      if [ ! -d $PROGRAM_DEST ]; then       
+	 echo "$PROGRAM_DEST does not exist!"
+      else
+	 cd $PROGRAM_DEST ; echo "[7m$PROGRAM_DEST[m"
+	 $ACTION $PF_EXES | $FILTER
+      fi
+   fi
+
+   if [ -n "$L_COMPS" ]; then
+      LIBRARY_DEST=$P_ROOT/$PLATFORM/lib
+      if [ ! -d $LIBRARY_DEST ]; then       
+	 echo "$LIBRARY_DEST does not exist!"
+      else
+	 cd $LIBRARY_DEST ; echo "[7m$LIBRARY_DEST[m"
+	 $ACTION $PF_LIBS | $FILTER
+      fi
+   fi
+done
+
+if [ "$FILTER" != "cat" ]; then rm -f $tmp_file; fi
+
+exit
+

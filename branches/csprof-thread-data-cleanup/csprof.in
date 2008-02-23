@@ -1,0 +1,332 @@
+#!/bin/sh
+# Testing: set -x: line by line (set -n: syntax)
+# set -x
+
+# $Id: csprof 978 2007-11-08 05:33:01Z mfagan $
+## * BeginRiceCopyright *****************************************************
+ # Copyright ((c)) 2002, Rice University 
+ # All rights reserved.
+ # 
+ # Redistribution and use in source and binary forms, with or without
+ # modification, are permitted provided that the following conditions are
+ # met:
+ # 
+ # * Redistributions of source code must retain the above copyright
+ #   notice, this list of conditions and the following disclaimer.
+ # 
+ # * Redistributions in binary form must reproduce the above copyright
+ #   notice, this list of conditions and the following disclaimer in the
+ #   documentation and/or other materials provided with the distribution.
+ # 
+ # * Neither the name of Rice University (RICE) nor the names of its
+ #   contributors may be used to endorse or promote products derived from
+ #   this software without specific prior written permission.
+ # 
+ # This software is provided by RICE and contributors "as is" and any
+ # express or implied warranties, including, but not limited to, the
+ # implied warranties of merchantability and fitness for a particular
+ # purpose are disclaimed. In no event shall RICE or contributors be
+ # liable for any direct, indirect, incidental, special, exemplary, or
+ # consequential damages (including, but not limited to, procurement of
+ # substitute goods or services; loss of use, data, or profits; or
+ # business interruption) however caused and on any theory of liability,
+ # whether in contract, strict liability, or tort (including negligence
+ # or otherwise) arising in any way out of the use of this software, even
+ # if advised of the possibility of such damage.
+## ******************************************************* EndRiceCopyright *
+
+## **************************************************************************
+##
+## File: 
+##    csprof: Launch the call stack profiler by setting up a preloaded
+##    library that will intercept an application's execution and start
+##    the profiler.  This script processes arguments and passes them
+##    to the profiling library through environment variables.
+##
+## Author:
+##    Written by Nathan Tallent, Rice University.
+##    
+## **************************************************************************
+
+#############################################################################
+
+CSPROF_VERSION="1.0"
+
+CSPROF_HOME="`dirname $0`"
+
+#Add build directory if appropriate
+CSPROFLIB_HOME=$CSPROF_HOME/../lib
+MONITOR_HOME=$CSPROFLIB_HOME
+
+# One can set personal defaults here, instead of changing source code.
+# These values will be overriden by commandline options.
+opt_out_path=""
+opt_period=""
+opt_memsize=""
+opt_event=""
+opt_verbosity=""
+opt_debug=""
+opt_gdb=""
+opt_papi=""
+
+#####################
+
+# These option variables cannot be modified with personal defaults.
+
+cmd_to_profile=""
+
+#############################################################################
+
+# Note: All function names are prefixed with 'f_' in order to make
+# function calls very clear.
+
+cmd="$0"
+
+f_usage()
+{
+  p="printf"
+  $p "\n"
+  $p "Usage:\n"
+  $p "  ${cmd} [[-o <outpath>]] <command> [args...]\n"
+  $p "\n"
+  $p "  Profiles the execution of an arbitrary command.                     \n"
+  $p "\n"
+  $p "  Options: Defaults are shown in square brackets [].\n"
+  $p "    -o <outpath>: Path to store profiler output data. [.]             \n"
+  $p "    -e <event>  : Event to count [FIXME] [IA64_INST_RETIRED]          \n"
+  $p "    -p <period> : Sample period in milliseconds                       \n"
+  $p "    -x <n_met>  : Maximum number of metrics that can be tracked at once\n"
+  $p "    -m <memsize>: Initial size of private dynamic memory. [32 Mb]     \n"
+  $p "                  All dynamic memory (for storing call stack samples) \n"
+  $p "                  is automatically managed using mmaps and additional \n"
+  $p "                  storage is allocated as needed.  However, dynamic   \n"
+  $p "                  memory requirements will greatly vary between       \n"
+  $p "                  different applications and creating too much        \n"
+  $p "                  initial storage or creating additional storage      \n"
+  $p "                  during profiling can cause undesired system and     \n"
+  $p "                  profiling overhead.  This option allows a user to   \n"
+  $p "                  specify an initial size to achieve minimal system   \n"
+  $p "                  and profiling overhead.  Note: When the verbosity   \n"
+  $p "                  level is 1 or greater, a message will be printed    \n"
+  $p "                  when an additional mmap is created. [FIXME]         \n"
+  $p "\n"
+  $p "    -v <level>  : Verbosity level, 0-9. [0] At level 0, only errors   \n"
+  $p "                  are printed.                                        \n"
+  $p "    -L <level>  : Debug level, 0-9. [0]  Prints limited debugging     \n"
+  $p "                  messages and generates a text version of the        \n"
+  $p "                  callstack data.                                     \n"
+  $p "    -d          : set csprof debug flag, for attaching gdb            \n"
+  $p "   --papi       : use papi instead of itimer                          \n" 
+  $p "\n"
+  $p "NOTES:\n"
+  $p "   csprof uses _RLD_LIST to initiate profiling; modifications to \n"
+  $p "   at least the csprof launcher script will be necessary to profile \n" 
+  $p "   programs that use _RLD_LIST. \n"
+  $p "\n"
+  $p "   csprof cannot be used to profile setuid commands as _RLD_LIST\n"
+  $p "   is not permitted for them.\n" 
+  $p "\n"
+}
+
+f_checkenv()
+{
+  if [ -z "${CSPROF_HOME}" ]; then 
+    $printf "${cmd} error: Please set CSPROF_HOME before using!\n"
+    exit 1
+  fi 
+
+#  RLD_LIB="libxed.so:${CSPROF_HOME}/libcsprof.so.1:${CSPROF_HOME}/monitor/Install/lib/libmonitor.so"
+RLD_LIB="${CSPROFLIB_HOME}/libcsprof.so.1:${MONITOR_HOME}/libmonitor.so"
+
+#  if [ ! -r "${RLD_LIB}" ]; then 
+#    printf "${cmd}: launch library ${RLD_LIB} not found!\n"
+#    exit 1
+#  fi 
+  # preload our library first before loading all of those specified in
+  # the application binary (signified by DEFAULT).
+  # this turns our sampling on at the beginning of the application
+  # when our library is loaded.
+  sysname=`uname`
+
+  if [ $sysname = "OSF1" ]; then
+    _RLD_LIST="${RLD_LIB}:DEFAULT"
+  else
+    LD_PRELOAD="${RLD_LIB}"
+  fi
+}
+
+# args: ($1, $2): (string_to_check, string_for_error_msg[optional])
+f_error_on_nil()
+{
+  if [ -z "$1" ]; then
+    if [ -n "$2" ]; then printf "$2"; fi
+    f_usage
+    exit 1
+  fi
+}
+
+# args: ($1, $2): (option, option_value)
+f_opt_check()
+{
+  # 'option_value' should be non-nil
+  f_error_on_nil "$2" "** no value for option $1\n"
+    
+  # 'option_value' should not start with '-'
+  if ( echo "$2" | grep '^-.*' >/dev/null 2>&1 ); then
+    printf "** invalid value for option $1: $2\n"
+    f_usage
+    exit 1
+  fi
+}
+
+# args: ($1..$n): all arguments given to this script
+f_getoptions()
+{
+  # We can't easily use 'getopt' or 'getopts' because we have to
+  # protect options given to the command to profile.
+
+  if [ -z "$1" ]; then
+    f_usage
+    exit 0
+  fi
+
+  # parse argument list
+  while [ $# -ge 1 ]; do
+    case $1 in
+      -e)   shift; opt_event="$1";
+            f_opt_check "-e" "${opt_event}";
+            ;;
+      -o)   shift; opt_out_path="$1"; 
+            f_opt_check "-o" "${opt_out_path}";
+            ;;
+      -p)   shift; opt_period="$1";
+            f_opt_check "-p" "${opt_period}";
+            ;;
+      -m)   shift; opt_memsize="$1";
+            f_opt_check "-m" "${opt_memsize}";
+            ;;
+      -v)   shift; opt_verbosity="$1";
+            f_opt_check "-v" "${opt_verbosity}";
+            ;;
+      -x)   shift; opt_metrics="$1";
+            f_opt_check "-x" "${opt_metrics}";
+            ;;
+      -L)   shift; opt_debug="$1";
+            f_opt_check "-D" "${opt_debug}";
+            ;;
+
+      -d)   opt_gdb=1;
+            ;;
+  --papi)   opt_papi=1;
+            ;;
+#      -o*) opt_out_path=`echo $1 | cut -c3-`;
+#            ;;
+
+      -*)  printf "** Invalid option '$1'\n";
+           f_usage; exit 1;
+           ;;
+
+      *)   break ;;
+    esac
+    shift
+  done
+
+  cmd_to_profile="$*"
+  f_error_on_nil "${cmd_to_profile}" "** no command to profile\n";
+}
+
+# get the executable from the list of (remaining) args
+f_getexec()
+{
+    _EXEC=$1
+}
+
+# assumes: all csprof control variables have been set
+#
+# adds the unwind nm file to the LD_PRELOAD
+#
+f_prepareenv()
+{
+  sysname=`uname`
+
+  f_getexec $cmd_to_profile
+
+#  $CSPROF_HOME/fnbound.py $_EXEC
+
+  $CSPROF_HOME/nm_tbl.py $_EXEC
+
+  LD_PRELOAD=${LD_PRELOAD}:${_EXEC}.nm.so
+
+  # export the profiler library
+  if [ $sysname = "OSF1" ]; then
+    export _RLD_LIST
+  else
+    export LD_PRELOAD
+  fi
+
+  # export profiler options
+  if [ -n "${opt_out_path}" ]; then
+    CSPROF_OPT_OUT_PATH="${opt_out_path}"
+    export CSPROF_OPT_OUT_PATH
+  fi
+  if [ -n "${opt_period}" ]; then
+    CSPROF_OPT_SAMPLE_PERIOD="${opt_period}"
+    export CSPROF_OPT_SAMPLE_PERIOD
+  fi
+  if [ -n "${opt_memsize}" ]; then
+    CSPROF_OPT_MEM_SZ="${opt_memsize}"
+    export CSPROF_OPT_MEM_SZ
+  fi
+  if [ -n "${opt_event}" ]; then
+    CSPROF_OPT_EVENT="${opt_event}"
+    export CSPROF_OPT_EVENT
+  fi
+  if [ -n "${opt_verbosity}" ]; then
+    CSPROF_OPT_VERBOSITY="${opt_verbosity}"
+    export CSPROF_OPT_VERBOSITY
+  fi
+  if [ -n "${opt_metrics}" ]; then
+    CSPROF_OPT_MAX_METRICS="${opt_metrics}"
+    export CSPROF_OPT_MAX_METRICS
+  fi
+  if [ -n "${opt_debug}" ]; then
+    CSPROF_OPT_DEBUG="${opt_debug}"
+    export CSPROF_OPT_DEBUG
+  fi
+  if [ -n "${opt_gdb}" ]; then
+    export CSPROF_WAIT=1
+  fi
+  if [ -n "${opt_papi}" ]; then
+    export SWITCH_TO_PAPI=1
+  fi
+
+  # Make sure that `.' is in the PATH so that we can find the command
+  # to profile if in the current directory. [We can get around this,
+  # but for now it is the quickest thing.] 
+  export PATH=".:${PATH}" 
+  export LD_LIBRARY_PATH=.:$CSPROF_HOME/Xed0-Alt/Lib:${LD_LIBRARY_PATH}:/projects/hpc/pkgs/papi/lib64
+}
+
+#############################################################################
+# Main
+#############################################################################
+# $n: argument n, with $0 being the command name
+# $*: all arguments from $1 to $n
+
+f_checkenv 
+
+f_getoptions $*
+
+f_prepareenv
+
+ulimit -c unlimited
+if [ -n "${opt_debug}" ]; then
+  echo csprof script LD_PRELOAD = $LD_PRELOAD
+fi
+#
+# !!! WOW !!
+# prevent wierdo error:
+# *** glibc detected *** double free or corruption (out): 0x0000000000501030 ***
+#
+#export MALLOC_CHECK_=0
+exec ${cmd_to_profile}

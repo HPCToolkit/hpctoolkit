@@ -1,0 +1,71 @@
+#!/bin/sh
+# $Id: ident_PD,v 1.7 1999/07/29 21:10:54 wylie Exp $
+# $Paradyn/$Dyninst-specific voucher "ident" (a la RCS ident)
+
+USAGE="usage: ident_PD [-l|-a] files"
+
+FILTER="head -1"
+
+while [ ! -z "$1" ]
+do
+  case "$1" in
+    "-l")
+        # show filenames as a "long" option or not
+        LONGOPT=TRUE
+        ;;
+    "-a")
+        # show "all" ident info, or just first (default)
+        ALLOPT=TRUE
+        FILTER="cat"
+        ;;
+    "-"*)
+        echo "Unrecognized flag: $1"
+        break
+        ;;
+    *)
+        # any non-flag arguments are files to ident
+        FILES=$*
+        break
+        ;;
+  esac
+  shift
+done
+
+# common bail-out point for unknown flags and empty lists of files
+if [ -z "$FILES" ]; then
+    echo $USAGE
+    exit 1
+fi
+
+OSTYPE=`uname -s`
+if [ "$OSTYPE" = "AIX" ]; then
+    echo "Warning! SP2/AIX has broken \"strings\" command and may give spurious results!"
+fi
+
+for FILE in $FILES
+do
+    if [ -n "$ALLOPT" -a "$FILE" != "$FILES" ]; then printf "(%s)\n" $FILE; fi
+    if [ "$LONGOPT" ]; then printf "%-18s: " $FILE; fi
+    if [ -f $FILE ]; then
+##      IDENT=`strings -9 $FILE 2>&1 | egrep '\$(Paradyn)|(Dyninst):' | 
+        IDENT=`strings -8 $FILE 2>&1 | egrep '(Dyninst:)|(Paradyn:)' | 
+        	$FILTER | cut -d$ -f2`
+##        	$FILTER | sed -n -e 's/^.*\@\$/$/p'`
+##        	$FILTER | sed -n -e 's/.*^ \$/$/p'`
+##        	$FILTER | sed -n -e 's/.*\$Dyninst:/$Dyninst:/p'`
+##        	$FILTER | sed -n -e 's/.*\$Paradyn:/$Paradyn:/p'`
+#       IDENT=`strings -n9 $FILE 2>&1 | sed -n -e 's/.*\$Paradyn:/$Paradyn:/p'`
+        if [ "$IDENT" ]; then
+            printf "$%s %-9s %-16s %-4s %s %s %s\n" $IDENT
+        else
+            if [ -z "$LONGOPT" ]; then printf "%-18s: " $FILE; fi
+            echo "contains no \$Paradyn/Dyninst\$ identification information"
+        fi
+    elif [ -d $FILE ]; then
+        if [ -z "$LONGOPT" ]; then printf "%-18s: " $FILE; fi
+        echo "is a directory"
+    else
+        if [ -z "$LONGOPT" ]; then printf "%-18s: " $FILE; fi
+        echo "does not exist"
+    fi
+done

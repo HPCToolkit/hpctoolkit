@@ -1,0 +1,195 @@
+#!/bin/sh
+# $Id: reap,v 1.3 2006/04/21 17:05:30 mjbrim Exp $
+# reap the named process(es)
+# Usage: reap [-a] [-n] [-q] [process_expressions]
+
+USAGE="usage: $0 [-a] [-n] [-q] [process_expressions]\n\
+  -a: auto-reap\n\
+  -n: no-reap (just name)\n\
+  -q: quiet checking\n\
+"
+
+EXPR_LIST="ALL_TRACED_PROCESSES"
+
+while [ ! -z "$1" ]
+do
+  case "$1" in
+    -a)
+        #echo "Auto-reap"
+        AUTOREAP=1
+        ;;
+    -n)
+        #echo "No-reap"
+        NOREAP=1
+        ;;
+    -q)
+        #echo "Quiet!"
+        QUIETREAP=1
+        ;;
+    -*)
+        echo "Unrecognized flag: $1"
+        BAILOUT=1
+        break
+        ;;
+    *)
+        # first non-flag argument is the target (others silently ignored!)
+        EXPR_LIST=$*
+        break
+        ;;
+  esac
+  shift
+done
+
+# bail-point for unknown flags
+if [ -n "$BAILOUT" ]; then
+    printf "$USAGE"
+    exit 1
+fi
+
+case "$PLATFORM" in
+  alpha-dec-osf*)
+    PS="ps"
+    PSX="$PS"
+    PS1="$PS"
+    CUT="-c1-6"
+    ;;
+  i386-unknown-linux*)
+    PS="ps"
+    PSX="$PS uxa"
+    PS1="$PS -fp"
+    CUT="-c9-15"
+    ;;
+  ia64-unknown-linux*)
+    PS="ps"
+    PSX="$PS uxa"
+    PS1="$PS -fp"
+    CUT="-c9-15"
+    ;;
+  x86_64-unknown-linux*)
+    PS="ps"
+    PSX="$PS uxa"
+    PS1="$PS -fp"
+    CUT="-c9-15"
+    ;;
+  mips-sgi-irix*)
+    PS="ps"
+    PSX="$PS -fa"
+    PSX="$PS -a -o user,pid,pcpu,vsz,tty,state,stime,time,comm"
+    PSX="$PS -o user,pid,pcpu,vsz,tty,state,stime,time,comm"
+    PS1="$PS -fp"
+    CUT="-c9-19"
+    ;;
+  rs6000-ibm-aix*)
+    PS="ps"
+    PSX="$PS uw"
+    PS1="$PS uw"
+    CUT="-c9-15"
+    ;;
+  i386-unknown-nt4.0*)
+    PS="ps"
+    PSX="$PS uxa"
+    PS1="$PS -f"
+    CUT="-c2-7"
+    ;;
+  *)
+    PS="/usr/ucb/ps"
+    PSX="$PS -uwax"
+    PS1="$PS -uwx"
+    CUT="-c9-15"
+    ;;
+esac
+
+for EXPR in $EXPR_LIST
+do
+
+if [ -n "$AUTOREAP" -a -z "$QUIETREAP" ]; then
+  printf "Auto-"
+fi
+if [ "$EXPR" != "ALL_TRACED_PROCESSES" ]; then
+    if [ -z "$QUIETREAP" ]; then
+      echo "Reaping processes matching \"$EXPR\"..."
+              $PSX | grep -v grep | grep -v reap | egrep $EXPR | grep "$USER "
+      sleep 1
+    fi
+    PROCLIST=`$PSX | grep -v grep | grep -v reap | egrep $EXPR | grep "$USER " \
+                   | cut $CUT`
+else
+    if [ -z "$QUIETREAP" ]; then
+      echo "Reaping traced processes..."
+              $PSX | grep ' T ' | grep "^$USER"
+      sleep 1
+    fi
+    PROCLIST=`$PSX | grep ' T ' | grep "^$USER" | cut $CUT`
+fi
+
+if [ "$PROCLIST" = "" ]; then
+    if [ -z "$QUIETREAP" ]; then
+        echo "No processes to reap!"
+    fi
+    continue
+fi
+
+if [ -n "$PROCLIST" -a -z "$QUIETREAP" ]; then
+    echo 
+    echo Reap candidates: $PROCLIST
+fi
+
+for process in $PROCLIST
+do
+  $PS1 $process
+  if [ -z "$AUTOREAP" ]; then
+      echo -n "Kill $process [y/n/q] (n) ? "
+      read OK
+      if [ "$OK" = "q" -o "$OK" = "quit" ]; then
+        break
+      fi
+      if [ "$OK" != "y" -a "$OK" != "yes" ]; then
+        echo "Skipping..."
+        continue
+      else
+        echo -n "Killing!..."
+      fi
+  else
+      printf "Runaway process $process ..."
+  fi
+  # try being nice and give the process a chance to terminate
+  kill $process
+  sleep 1
+  $PS1 $process > /dev/null
+  if [ $? -ne 0 ]; then
+      printf " terminated.\n"
+      continue
+  else
+      printf " failed to terminate ..."
+  fi
+  # no more chances, kill'em
+  kill -9 $process
+  sleep 1
+  $PS1 $process > /dev/null
+  if [ $? -ne 0 ]; then
+      printf " reaped!\n"
+      continue
+  else
+      printf " survived SIGKILL ..."
+  fi
+  # er, let's try once more
+  kill -9 $process
+  sleep 1
+  $PS1 $process > /dev/null
+  if [ $? -ne 0 ]; then
+      printf " reaped!\n"
+      continue
+  else
+      printf " immortal?\n"
+  fi
+done # process in $PROCLIST
+
+if [ -n "$NOREAP" ]; then
+  REAPLIST="$REAPLIST $PROCLIST"
+fi
+
+done # EXPR in $EXPR_LIST
+
+if [ -n "$NOREAP" ]; then
+  echo $REAPLIST
+fi

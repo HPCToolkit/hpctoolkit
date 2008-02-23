@@ -1,0 +1,25 @@
+splay tree, etc code in ~johnmc/tmp/search
+===================
+for jaguar, use this:
+
+  qsub -I -q debug -A CSC023 -V -lsize=1,walltime=30:00
+
+for an interactive session. (gets 1 core)
+
+=============
+SPEC benchmark
+
+yyparse_1
+convert_to_ssa
+cse_insn
+
+all drop samples
+============
+Mark's new mon @:
+
+   https://outreach.scidac.gov/svn/libmonitor/trunk 
+
+hpcfile @:
+
+   src/libs/prof-lean/hpcfile
+
