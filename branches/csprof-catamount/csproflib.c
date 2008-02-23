@@ -71,7 +71,6 @@
 #include "libc.h"
 #include "csproflib.h"
 #include "csproflib_private.h"
-#include "csprof_monitor_callbacks.h"
 #include "env.h"
 #include "killsafe.h"
 #include "mem.h"
@@ -82,12 +81,8 @@
 #include "itimer.h"
 #include "papi_sample.h"
 #include "sample_event.h"
-#include "state.h"
 
-#include "monitor.h"
-
-#include "thread_use.h"
-#include "thread_data.h"
+#include <lush/lush.h>
 
 #include "name.h"
 
@@ -126,26 +121,36 @@ static int evs;
 void
 csprof_init_internal(void)
 {
-#if NO
   if (getenv("CSPROF_WAIT")){
     while(wait_for_gdb);
   }
-#endif
   pmsg_init();
 
-# ifdef DBG_EXTRA
-    dbg_init();
-# endif                 // DBG_EXTRA
+#ifdef DBG_EXTRA
+  dbg_init();
+#endif
 
   csprof_options__init(&opts);
   csprof_options__getopts(&opts);
 
+#ifdef STATIC_ONLY
+  static_epoch_offset = (void *)&_start;
+  static_epoch_end    = (void *)&__stop___libc_freeres_ptrs;
+  static_epoch_size   = (long) (static_epoch_end - static_epoch_offset);
+#endif     
+
   /* private memory store for the initial thread is done below */
 
-  csprof_thread_data_init(0,opts.mem_sz,0);
-
-#if 0
   csprof_malloc_init(opts.mem_sz, 0);
+
+  /* epoch poking needs the memory manager init'd() (and
+     the thread-specific memory manager if need be) */
+  /* figure out what libraries we currently have loaded */
+  csprof_epoch_lock();
+  csprof_epoch_new();
+  csprof_epoch_unlock();
+  dl_init();
+    
   /* profiling state needs the memory manager init'd */
   csprof_state_t *state = csprof_malloc(sizeof(csprof_state_t));
 
@@ -154,26 +159,20 @@ csprof_init_internal(void)
   csprof_state_init(state);
   csprof_state_alloc(state);
 
-#endif
+  // Initialize LUSH agents
+  if (opts.lush_agent_paths[0] != '\0') {
+    state->lush_agents = 
+      (lush_agent_pool_t*)csprof_malloc(sizeof(lush_agent_pool_t));
+    lush_agent_pool__init(state->lush_agents, opts.lush_agent_paths);
+    MSG(0xfeed, "***> LUSH: %s (%p / %p) ***", opts.lush_agent_paths, 
+	state, state->lush_agents);
+  }
 
-  /* epoch poking needs the memory manager init'd() (and
-     the thread-specific memory manager if need be) */
-  /* figure out what libraries we currently have loaded */
-
-#ifdef STATIC_ONLY
-  static_epoch_offset = (void *)&_start;
-  static_epoch_end    = (void *)&__stop___libc_freeres_ptrs;
-  static_epoch_size   = (long) (static_epoch_end - static_epoch_offset);
-#else
-  csprof_epoch_lock();
-  csprof_epoch_new();
-  csprof_epoch_unlock();
-#endif     
-
-  dl_init();
-    
+#if !defined(CSPROF_SYNCHRONOUS_PROFILING)
+  MSG(1,"sigemptyset(prof_sigset)");
   sigemptyset(&prof_sigset);
   sigaddset(&prof_sigset,SIGPROF);
+#endif
 
   setup_segv();
   unw_init();
@@ -205,15 +204,15 @@ csprof_init_internal(void)
 }
 
 #ifdef CSPROF_THREADS
+extern pthread_key_t thread_node_key;
+extern pthread_key_t prof_data_key;
+extern pthread_key_t mem_store_key;
+#include "thread_use.h"
+#include "thread_data.h"
 
 void
-csprof_init_thread_support(void)
+csprof_init_thread_support(int id)
 {
-  csprof_init_pthread_key();
-  csprof_set_thread0_data();
-  csprof_threaded_data();
-
-#if 0
   csprof_state_t *state = csprof_get_state();
 
   MSG(1,"csproflib init f initial thread");
@@ -228,9 +227,6 @@ csprof_init_thread_support(void)
   mem_threaded();
   state_threaded();
   MSG(1,"switch to threaded versions complete");
-
-#endif
-
 }
 
 void *
@@ -250,7 +246,7 @@ csprof_thread_pre_create(void)
   //   2. current execution context is either the spawning process or thread.
 
   // Disable signals (could also disable timers)
-  ret = monitor_real_pthread_sigmask(SIG_BLOCK,&prof_sigset,NULL);
+  ret = pthread_sigmask(SIG_BLOCK,&prof_sigset,NULL);
   if (ret){
     EMSG("WARNING: Thread init could not block SIGPROF, ret = %d",ret);
   }
@@ -287,7 +283,7 @@ csprof_thread_pre_create(void)
 void
 csprof_thread_post_create(void *dc)
 {
-  int ret = monitor_real_pthread_sigmask(SIG_UNBLOCK,&prof_sigset,NULL);
+  int ret = pthread_sigmask(SIG_UNBLOCK,&prof_sigset,NULL);
   if (ret){
     EMSG("WARNING: Thread init could not unblock SIGPROF, ret = %d",ret);
   }
@@ -296,7 +292,6 @@ csprof_thread_post_create(void *dc)
 void 
 csprof_thread_init(killsafe_t *kk, int id, lush_cct_ctxt_t* thr_ctxt)
 {
-#if 0
   csprof_state_t *state;
   csprof_mem_t *memstore;
   int ret;
@@ -317,21 +312,17 @@ csprof_thread_init(killsafe_t *kk, int id, lush_cct_ctxt_t* thr_ctxt)
 
   DBGMSG_PUB(CSPROF_DBG_PTHREAD, "Allocated thread state, now init'ing and alloc'ing f thread %d",id);
 
+  csprof_state_t* process_state = csprof_get_safe_state();
+
+  MSG(0xfeed, "=> csprof_init_thread: 0 (%p)", process_state);
   csprof_state_init(state);
   csprof_state_alloc(state);
-
-  pthread_setspecific(prof_data_key,(void *)state);
-
-#endif
-
-  thread_data_t *td  = csprof_allocate_thread_data();
-  csprof_set_thread_data(td);
-  csprof_thread_data_init(id,1,0);
-
-  csprof_state_t *state = TD_GET(state);
+  state->lush_agents = process_state->lush_agents; // LUSH
 
   state->pstate.thrid = id; // local thread id in state
   state->csdata_ctxt = thr_ctxt;
+
+  pthread_setspecific(prof_data_key,(void *)state);
 
   kk->state = state;  // save pointer to state data in killsafe
 
@@ -345,22 +336,21 @@ csprof_thread_init(killsafe_t *kk, int id, lush_cct_ctxt_t* thr_ctxt)
   }
   else { // PAPI
     PMSG(PAPI,"PAPI Thread init: id = %d",id);
-    thread_data_t *td = csprof_get_thread_data();
+    thread_data_t *td = (thread_data_t *) pthread_getspecific(my_thread_specific_key);
     td->eventSet = papi_event_init();
     papi_pulse_init(td->eventSet);
   }
-  int ret = monitor_real_pthread_sigmask(SIG_UNBLOCK,&prof_sigset,NULL);
+  ret = pthread_sigmask(SIG_UNBLOCK,&prof_sigset,NULL);
   if (ret){
     EMSG("WARNING: Thread init could not unblock SIGPROF, ret = %d",ret);
   }
 }
 
+
 void
 csprof_thread_fini(csprof_state_t *state)
 {
-#if 0
   thread_data_t *td = (thread_data_t *) pthread_getspecific(my_thread_specific_key);
-#endif
 
   if (csprof_initialized){
     MSG(1,"csprof thread fini");
@@ -370,12 +360,8 @@ csprof_thread_fini(csprof_state_t *state)
         EMSG("WARNING: failed to stop itimer (in thread)");
       }
     } else { // PAPI
-#if 0
       PMSG(PAPI,"PAPI Thread fini: id = %d",td->id);
       papi_pulse_fini(td->eventSet);
-#endif
-      PMSG(PAPI,"PAPI Thread fini: id = %d",TD_GET(id));
-      papi_pulse_fini(TD_GET(eventSet));
     }
     csprof_write_profile_data(state);
   }
@@ -391,14 +377,12 @@ csprof_fini_internal(void)
   extern int segv_count;
   extern int samples_taken;
   extern int bad_unwind_count;
+  csprof_state_t *state;
 
-  int ret = monitor_real_sigprocmask(SIG_BLOCK,&prof_sigset,NULL);
+  int ret = sigprocmask(SIG_BLOCK,&prof_sigset,NULL);
   if (ret){
     EMSG("WARNING: process fini could not block SIGPROF, ret = %d",ret);
   }
-
-  csprof_unthreaded_data();
-  csprof_state_t *state = TD_GET(state);
 
   if (csprof_initialized) {
     if (opts.sample_source == ITIMER){
@@ -407,17 +391,19 @@ csprof_fini_internal(void)
         EMSG("WARNING: failed to stop itimer (in process)");
       }
     } else { // PAPI
-      papi_pulse_fini(TD_GET(eventSet));
+      papi_pulse_fini(evs);
     }
 
     dl_fini();
 
-#if 0    
     MSG(CSPROF_MSG_SHUTDOWN, "writing profile data");
     state = csprof_get_safe_state();
-#endif
-
     csprof_write_profile_data(state);
+
+    // shutdown LUSH agents
+    if (state->lush_agents) {
+      lush_agent_pool__fini(state->lush_agents);
+    }
 
     EMSG("host %ld: %d samples total, %d samples dropped (%d segvs)\n",
 	 gethostid(), samples_taken, bad_unwind_count, segv_count);
@@ -495,7 +481,8 @@ csprof_check_for_new_epoch(csprof_state_t *state)
 
 /* only meant for debugging errors, so it's not subject to the normal
    DBG variables and suchlike. */
-void csprof_print_backtrace(csprof_state_t *state)
+void 
+csprof_print_backtrace(csprof_state_t *state)
 {
     csprof_frame_t *frame = state->bufstk;
     csprof_cct_node_t *tn = state->treenode;
@@ -510,7 +497,8 @@ void csprof_print_backtrace(csprof_state_t *state)
 
 /* writing profile data */
 
-int csprof_write_profile_data(csprof_state_t *state){
+int csprof_write_profile_data(csprof_state_t *state)
+{
 
   extern int csprof_using_threads;
 

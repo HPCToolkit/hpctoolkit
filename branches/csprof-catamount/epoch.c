@@ -96,6 +96,7 @@ csprof_epoch_new()
   return e;
 }
 
+
 /* writing epochs to disk */
 
 #define HPCFILE_EPOCH_MAGIC_STR     "HPC_EPOCH"

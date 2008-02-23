@@ -19,9 +19,10 @@
 #include "thread_use.h"
 #include "backtrace.h"
 #include "csprof_csdata.h"
-#include "handling_sample.h"
 
 //*************************** Forward Declarations **************************
+
+void csprof_set_handling_sample(thread_data_t *td, int in);
 
 static csprof_cct_node_t*
 csprof_take_profile_sample(csprof_state_t *state, struct ucontext *ctx,
@@ -38,19 +39,24 @@ int bad_unwind_count = 0;
 csprof_cct_node_t*
 csprof_sample_event(void *context, int metric_id, size_t sample_count)
 {
-  PMSG(SAMPLE,"Handling sample");
-
-  thread_data_t *td = csprof_get_thread_data();
-  sigjmp_buf_t *it = &(td->bad_unwind);
-
+  sigjmp_buf_t *it = get_bad_unwind();
   samples_taken++;
 
-  csprof_set_handling_sample(td);
+  PMSG(SAMPLE,"Handling sample");
+
+  thread_data_t *td = (thread_data_t *) pthread_getspecific(my_thread_specific_key);
+
+  csprof_set_handling_sample(td, 1);
+
+  // FIXME: setup_segv only necessary here because some apps install segv handler of their own
+  // setup_segv();
 
   csprof_cct_node_t* node = NULL;
-  csprof_state_t *state = td->state;
+  csprof_state_t *state = csprof_get_state();
 
   if (!sigsetjmp(it->jb,1)){
+
+    MPI_SPECIAL_SKIP();
 
     struct ucontext *ctx = (struct ucontext *)(context);
     if (state != NULL) {
@@ -65,7 +71,7 @@ csprof_sample_event(void *context, int metric_id, size_t sample_count)
     bad_unwind_count++;
   }
 
-  csprof_clear_handling_sample(td);
+  csprof_set_handling_sample(td, 0);
 
   return node;
 }
@@ -113,7 +119,6 @@ csprof_take_profile_sample(csprof_state_t *state, struct ucontext *ctx,
   
   csprof_cct_node_t* n;
   n = csprof_sample_callstack(state, ctx, metric_id, sample_count);
-
   if (!n) {
 #ifdef USE_TRAMP
     PMSG(SWIZZLE,"about to swizzle w context\n");
@@ -126,4 +131,18 @@ csprof_take_profile_sample(csprof_state_t *state, struct ucontext *ctx,
 				  | CSPROF_EPILOGUE_SP_RESET));
   
   return n;
+}
+
+
+
+void csprof_set_handling_sample(thread_data_t *td, int in)
+{
+  td->handling_sample = in;
+}
+
+int
+csprof_is_handling_sample(void)
+{
+  thread_data_t *td = (thread_data_t *) pthread_getspecific(my_thread_specific_key);
+  return td->handling_sample;
 }
