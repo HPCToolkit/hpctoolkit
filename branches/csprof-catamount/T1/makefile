@@ -12,13 +12,11 @@ FC     := pgf90
 #CC      := cc
 #CXX     := CC
 
-INSTALL := ~/xxx-csprof/csprof-catamount-install
-
 CFLAGS := -g -I..
 #CLINK    := mpicc  
 HPCL     := ../Scripts+Tools/hpc-link/hpc-link.sh
 
-monitor  := $(INSTALL)/lib
+monitor  := ../monitor/x86_64-Linux/
 CSPROF_DOT_O := ../libcsprof.o
 
 LPATH = -m elf_x86_64 -static -L/opt/xt-mpt/1.5.52/mpich2-64/GP2/lib -L/opt/acml/3.6/gnu64/lib -L/opt/xt-libsci/1.5.52/gnu/cnos64/lib -L/opt/xt-mpt/1.5.52/sma/P2/lib -L/opt/xt-tools/iobuf/1.0.5/lib/cnos64 -L/opt/xt-lustre-ss/1.5.52/lib64 -L/opt/xt-catamount/1.5.52/lib/cnos64 -L/opt/xt-libc/1.5.52/amd64/lib -L/opt/xt-pe/1.5.52/lib/cnos64 -L/opt/xt-os/1.5.52/lib/cnos64 -L/opt/xt-service/1.5.52/lib/cnos64 -L/opt/gcc/4.2.0/cnos/lib/gcc-lib/x86_64-suse-linux/4.2.0/ -L/opt/gcc/4.2.0/cnos/lib/gcc/x86_64-suse-linux/4.2.0 -L/opt/gcc/4.2.0/cnos/lib/gcc/x86_64-suse-linux/4.2.0/../../../../lib64 -L/lib/../lib64 -L/usr/lib/../lib64 -L/apps/jaguar/lib -L/opt/gcc/4.2.0/cnos/lib/gcc/x86_64-suse-linux/4.2.0/../../..  -lsma -lmpichcxx -lmpich -lstdc++ -lgcc_eh -lportals -lcatamount # -lc -lgcc -lm --end /opt/xt-pe/1.5.52/lib/cnos64/crtend.o
@@ -36,7 +34,7 @@ f2: f2.f90
 t1: t1.o $(test_targs)
 #	$(HPCL) -v $(CC) -v $(filter-out $(test_targs),$^) -o $@
 	$(CC) -g $^ -lm -o $@
-
+ 
 .PHONY: $(CSPROF_DOT_O)
 $(CSPROF_DOT_O):
 	cd ..; $(MAKE)
