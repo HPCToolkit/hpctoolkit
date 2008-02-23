@@ -87,19 +87,31 @@ struct rbtree
   struct rbtree_node *root;
 };
 
-// ---------------------------------------------------------
+// --------------------------------------------------------------------------
 // 
-// ---------------------------------------------------------
+// --------------------------------------------------------------------------
 
 /* try to order these so that the most-often referenced things fit into
    a single cache line... */
 typedef struct csprof_cct_node_s {
+
+  // ---------------------------------------------------------
+  // 
+  // ---------------------------------------------------------
 
   /* instruction pointer: more accurately, this is an 'operation
      pointer'.  The operation in the instruction packet is represented
      by adding 0, 1, or 2 to the instruction pointer for the first,
      second and third operation, respectively. */
   void *ip;
+  
+  // ADD:
+  //   association
+  //   lip [lip], pip [pip]
+
+  // ---------------------------------------------------------
+  // tree structure
+  // ---------------------------------------------------------
 
   /* parent node and the beginning of the child list */
   struct csprof_cct_node_s *parent, *children;
@@ -110,13 +122,20 @@ typedef struct csprof_cct_node_s {
   /* singly/doubly linked list of siblings */
   struct csprof_cct_node_s *next_sibling;
 
+  // ---------------------------------------------------------
+  // 
+  // ---------------------------------------------------------
+
   void *sp;
   /* sp is only used if we are using trampolines (i.e.,
      CSPROF_TRAMPOLINE_BACKEND is defined); otherwise its value is
      set to NULL  */
 
-  /* variable-sized array for recording metrics */
-  size_t metrics[1];
+  // ---------------------------------------------------------
+  // metrics (N.B.: MUST APPEAR AT END! cf. csprof_cct_node__create)
+  // ---------------------------------------------------------
+  
+  size_t metrics[1]; /* variable-sized array */
 
 } csprof_cct_node_t;
 

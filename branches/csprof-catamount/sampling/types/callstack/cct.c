@@ -76,32 +76,32 @@ csprof_cct_node__link(csprof_cct_node_t *, csprof_cct_node_t *);
 #define MASK 3L
 
 #define COLOR(node) (((unsigned long)((node)->data)) & MASK)
-#define SET_COLOR(node, c) \
-{ \
-  csprof_cct_node_t *p = (node)->data; \
-  unsigned long pl = (unsigned long) p; \
-  \
-  (node)->data = (csprof_cct_node_t *)((pl & ~MASK) | (c)); \
-}
+#define SET_COLOR(node, c)					\
+  {								\
+    csprof_cct_node_t *p = (node)->data;			\
+    unsigned long pl = (unsigned long) p;			\
+								\
+    (node)->data = (csprof_cct_node_t *)((pl & ~MASK) | (c));	\
+  }
 #define REDDEN(node) SET_COLOR((node), RED)
 #define BLACKEN(node) SET_COLOR((node), BLACK)
 #define IS_RED(node) (COLOR((node)))
 
 #define DATA(node) ((csprof_cct_node_t *)((unsigned long)((node)->data) & ~MASK))
-#define SET_DATA(node, d) \
-{ \
-  unsigned long c = COLOR(node); \
-  \
-  node->data = d; \
-  SET_COLOR(node, c); \
-}
+#define SET_DATA(node, d)			\
+  {						\
+    unsigned long c = COLOR(node);		\
+						\
+    node->data = d;				\
+    SET_COLOR(node, c);				\
+  }
 
 /* fills one cache line.  we think this is a good thing */
 struct rbtree_node
 {
-    struct rbtree_node *parent;
-    struct rbtree_node *children[2];
-    csprof_cct_node_t *data;
+  struct rbtree_node *parent;
+  struct rbtree_node *children[2];
+  csprof_cct_node_t *data;
 };
 
 #define RIGHT_INDEX 0
@@ -118,186 +118,186 @@ static void rbtree_insert(struct rbtree *, csprof_cct_node_t *);
 static struct rbtree_node *
 rbtree_node_create(csprof_cct_node_t *x, struct rbtree_node *parent)
 {
-    struct rbtree_node *node = csprof_malloc(sizeof(struct rbtree_node));
+  struct rbtree_node *node = csprof_malloc(sizeof(struct rbtree_node));
 
-    node->parent = parent;
-    LEFT(node) = NULL;
-    RIGHT(node) = NULL;
-    node->data = x;
-    REDDEN(node);
+  node->parent = parent;
+  LEFT(node) = NULL;
+  RIGHT(node) = NULL;
+  node->data = x;
+  REDDEN(node);
 
-    return node;
+  return node;
 }
     
 static struct rbtree_node *
 rbtree_search(struct rbtree *tree, void *ip, void *sp)
 {
-    struct rbtree_node *curr = tree->root;
+  struct rbtree_node *curr = tree->root;
 
-    while(curr != NULL) {
-        void *cip = DATA(curr)->ip;
-        int val = (cip == ip);
+  while(curr != NULL) {
+    void *cip = DATA(curr)->ip;
+    int val = (cip == ip);
 
-        if(val) {
-            return curr;
-        }
-        else {
-            int val = (ip < cip);
-
-            curr = curr->children[val];
-        }
+    if(val) {
+      return curr;
     }
+    else {
+      int val = (ip < cip);
 
-    return NULL;
+      curr = curr->children[val];
+    }
+  }
+
+  return NULL;
 }
 
 /* Rotate the right child of parent upwards */
 static void
 rbtree_left_rotate(struct rbtree *root, struct rbtree_node *parent)
 {
-    struct rbtree_node *curr;
+  struct rbtree_node *curr;
 
-    curr = RIGHT(parent);
+  curr = RIGHT(parent);
 
-    if (curr != NULL) {
-        RIGHT(parent) = LEFT(curr);
-        if (LEFT(curr) != NULL) {
-            LEFT(curr)->parent = parent;
-        }
-
-        curr->parent = parent->parent;
-        if (parent->parent == NULL) {
-            root->root = curr;
-        }
-        else {
-            int val = (parent == LEFT(parent->parent));
-
-            parent->parent->children[val] = curr;
-        }
-        LEFT(curr) = parent;
-        parent->parent = curr;
+  if (curr != NULL) {
+    RIGHT(parent) = LEFT(curr);
+    if (LEFT(curr) != NULL) {
+      LEFT(curr)->parent = parent;
     }
+
+    curr->parent = parent->parent;
+    if (parent->parent == NULL) {
+      root->root = curr;
+    }
+    else {
+      int val = (parent == LEFT(parent->parent));
+
+      parent->parent->children[val] = curr;
+    }
+    LEFT(curr) = parent;
+    parent->parent = curr;
+  }
 }
 
 /* Rotate the left child of parent upwards */
 static void
 rbtree_right_rotate(struct rbtree *root, struct rbtree_node *parent)
 {
-    struct rbtree_node *curr;
+  struct rbtree_node *curr;
 
-    curr = LEFT(parent);
+  curr = LEFT(parent);
 
-    if (curr != NULL) {
-        LEFT(parent) = RIGHT(curr);
-        if (RIGHT(curr) != NULL) {
-            RIGHT(curr)->parent = parent;
-        }
-        curr->parent = parent->parent;
-        if (parent->parent == NULL) {
-            root->root = curr;
-        }
-        else {
-            int val = (parent != RIGHT(parent->parent));
-
-            parent->parent->children[val] = curr;
-        }
-        RIGHT(curr) = parent;
-        parent->parent = curr;
+  if (curr != NULL) {
+    LEFT(parent) = RIGHT(curr);
+    if (RIGHT(curr) != NULL) {
+      RIGHT(curr)->parent = parent;
     }
+    curr->parent = parent->parent;
+    if (parent->parent == NULL) {
+      root->root = curr;
+    }
+    else {
+      int val = (parent != RIGHT(parent->parent));
+
+      parent->parent->children[val] = curr;
+    }
+    RIGHT(curr) = parent;
+    parent->parent = curr;
+  }
 }
 
 static void
 rbtree_insert(struct rbtree *tree, csprof_cct_node_t *node)
 {
-    struct rbtree_node *curr = tree->root;
-    struct rbtree_node *parent, *gparent, *prev = NULL, *x;
-    void *ip = node->ip;
-    int val;
+  struct rbtree_node *curr = tree->root;
+  struct rbtree_node *parent, *gparent, *prev = NULL, *x;
+  void *ip = node->ip;
+  int val;
 
-    /* handle an empty tree */
-    if(curr == NULL) {
-        tree->root = rbtree_node_create(node, NULL);
-        return;
-    }
+  /* handle an empty tree */
+  if(curr == NULL) {
+    tree->root = rbtree_node_create(node, NULL);
+    return;
+  }
 
-    /* like 'rbtree_search', except that we need a little extra information */
-    while(curr != NULL) {
-        void *cip = DATA(curr)->ip;
-        val = (cip == ip);
-
-        if(val) {
-            DIE("Did something wrong before inserting!", __FILE__, __LINE__);
-        }
-        else {
-            prev = curr;
-            val = (ip < cip);
-
-            curr = curr->children[val];
-        }
-    }
-
-    /* didn't contain key */
+  /* like 'rbtree_search', except that we need a little extra information */
+  while(curr != NULL) {
+    void *cip = DATA(curr)->ip;
+    val = (cip == ip);
 
     if(val) {
-        /* came from the left */
-        x = curr = LEFT(prev) = rbtree_node_create(node, prev);
+      DIE("Did something wrong before inserting!", __FILE__, __LINE__);
     }
     else {
-        /* came from the right */
-        x = curr = RIGHT(prev) = rbtree_node_create(node, prev);
-    }
+      prev = curr;
+      val = (ip < cip);
 
-    /* rebalance */
-    while((parent = curr->parent) != NULL
-          && (gparent = parent->parent) != NULL
-          && (IS_RED(curr->parent))) {
-        if(parent == LEFT(gparent)) {
-            if(RIGHT(gparent) != NULL && IS_RED(RIGHT(gparent))) {
-                BLACKEN(parent);
-                BLACKEN(RIGHT(gparent));
-                REDDEN(gparent);
-                curr = gparent;
-            }
-            else {
-                if(curr == RIGHT(parent)) {
-                    curr = parent;
-                    rbtree_left_rotate(tree, curr);
-                    parent = curr->parent;
-                }
-                BLACKEN(parent);
-                if((gparent = parent->parent) != NULL) {
-                    REDDEN(gparent);
-                    rbtree_right_rotate(tree, gparent);
-                }
-            }
-        }
-        /* mirror case */
-        else {
-            if(LEFT(gparent) != NULL && IS_RED(LEFT(gparent))) {
-                BLACKEN(parent);
-                BLACKEN(LEFT(gparent));
-                REDDEN(gparent);
-                curr = gparent;
-            }
-            else {
-                if(curr == LEFT(parent)) {
-                    curr = parent;
-                    rbtree_right_rotate(tree, curr);
-                    parent = curr->parent;
-                }
-                BLACKEN(parent);
-                if((gparent = parent->parent) != NULL) {
-                    REDDEN(gparent);
-                    rbtree_left_rotate(tree, gparent);
-                }
-            }
-        }
+      curr = curr->children[val];
     }
+  }
 
-    if(curr->parent == NULL) {
-        tree->root = curr;
+  /* didn't contain key */
+
+  if(val) {
+    /* came from the left */
+    x = curr = LEFT(prev) = rbtree_node_create(node, prev);
+  }
+  else {
+    /* came from the right */
+    x = curr = RIGHT(prev) = rbtree_node_create(node, prev);
+  }
+
+  /* rebalance */
+  while((parent = curr->parent) != NULL
+	&& (gparent = parent->parent) != NULL
+	&& (IS_RED(curr->parent))) {
+    if(parent == LEFT(gparent)) {
+      if(RIGHT(gparent) != NULL && IS_RED(RIGHT(gparent))) {
+	BLACKEN(parent);
+	BLACKEN(RIGHT(gparent));
+	REDDEN(gparent);
+	curr = gparent;
+      }
+      else {
+	if(curr == RIGHT(parent)) {
+	  curr = parent;
+	  rbtree_left_rotate(tree, curr);
+	  parent = curr->parent;
+	}
+	BLACKEN(parent);
+	if((gparent = parent->parent) != NULL) {
+	  REDDEN(gparent);
+	  rbtree_right_rotate(tree, gparent);
+	}
+      }
     }
-    BLACKEN(tree->root);
+    /* mirror case */
+    else {
+      if(LEFT(gparent) != NULL && IS_RED(LEFT(gparent))) {
+	BLACKEN(parent);
+	BLACKEN(LEFT(gparent));
+	REDDEN(gparent);
+	curr = gparent;
+      }
+      else {
+	if(curr == LEFT(parent)) {
+	  curr = parent;
+	  rbtree_right_rotate(tree, curr);
+	  parent = curr->parent;
+	}
+	BLACKEN(parent);
+	if((gparent = parent->parent) != NULL) {
+	  REDDEN(gparent);
+	  rbtree_left_rotate(tree, gparent);
+	}
+      }
+    }
+  }
+
+  if(curr->parent == NULL) {
+    tree->root = curr;
+  }
+  BLACKEN(tree->root);
 }
 
 
@@ -313,48 +313,48 @@ static int
 csprof_cct_node__init(csprof_cct_node_t* x, csprof_cct_node_t* parent,
 		      void *ip, void *sp)
 {
-    memset(x, 0, sizeof(*x));
+  memset(x, 0, sizeof(*x));
 
-    x->ip = ip;
+  x->ip = ip;
 #ifdef CSPROF_TRAMPOLINE_BACKEND
-    x->sp = sp;
+  x->sp = sp;
 #else
-    x->sp = NULL;
+  x->sp = NULL;
 #endif
 
-    /* initial circular list of siblings includes only self */
-    x->next_sibling = NULL;
+  /* initial circular list of siblings includes only self */
+  x->next_sibling = NULL;
   
-    /* link to parent and siblings if any */
-    csprof_cct_node__link(x, parent); 
-    return CSPROF_OK;
+  /* link to parent and siblings if any */
+  csprof_cct_node__link(x, parent); 
+  return CSPROF_OK;
 }
 
 static csprof_cct_node_t *
 csprof_cct_node__create(void *ip, void *sp)
 {
-    size_t node_size = sizeof(csprof_cct_node_t)
-	+ sizeof(size_t)*(csprof_get_max_metrics() - 1);
-    csprof_cct_node_t *node = csprof_malloc(node_size);
+  size_t sz = (sizeof(csprof_cct_node_t)
+	       + sizeof(size_t)*(csprof_get_max_metrics() - 1));
+  csprof_cct_node_t *node = csprof_malloc(sz);
 
-    memset(node, 0, node_size);
+  memset(node, 0, sz);
 
-    node->ip = ip;
+  node->ip = ip;
 #ifdef CSPROF_TRAMPOLINE_BACKEND
-    node->sp = sp;
+  node->sp = sp;
 #else
-    node->sp = NULL;
+  node->sp = NULL;
 #endif
-    node->next_sibling = NULL;
+  node->next_sibling = NULL;
 
-    return node;
+  return node;
 }
 
 static void
 csprof_cct_node__parent_insert(csprof_cct_node_t *x, csprof_cct_node_t *parent)
 {
-    csprof_cct_node__link(x, parent);
-    rbtree_insert(&parent->tree_children, x);
+  csprof_cct_node__link(x, parent);
+  rbtree_insert(&parent->tree_children, x);
 }
 
 static int
@@ -368,25 +368,25 @@ csprof_cct_node__fini(csprof_cct_node_t* x)
 static int
 csprof_cct_node__link(csprof_cct_node_t* x, csprof_cct_node_t* parent)
 {
-    /* Sanity check */
-    if (x->parent != NULL) { return CSPROF_ERR; } /* can only have one parent */
+  /* Sanity check */
+  if (x->parent != NULL) { return CSPROF_ERR; } /* can only have one parent */
   
-    if (parent != NULL) {
-        /* Children are maintained as a doubly linked ring.  A new node
-           is linked at the end of the ring (as a predecessor of
-           "parent->children") which points to first child in the ring */
-        csprof_cct_node_t *first_sibling = parent->children;
-        if (first_sibling) {
-            x->next_sibling = parent->children;
-            parent->children = x;
-        } else {
-            /* create a single element ring. */
-            parent->children = x;
-        }
-
-        x->parent = parent;
+  if (parent != NULL) {
+    /* Children are maintained as a doubly linked ring.  A new node
+       is linked at the end of the ring (as a predecessor of
+       "parent->children") which points to first child in the ring */
+    csprof_cct_node_t *first_sibling = parent->children;
+    if (first_sibling) {
+      x->next_sibling = parent->children;
+      parent->children = x;
+    } else {
+      /* create a single element ring. */
+      parent->children = x;
     }
-    return CSPROF_OK;
+
+    x->parent = parent;
+  }
+  return CSPROF_OK;
 }
 
 /* csprof_cct_node__find_child: finds the child of 'x' with
@@ -400,17 +400,17 @@ static csprof_cct_node_t*
 csprof_cct_node__find_child(csprof_cct_node_t* x, void* ip, void* sp)
 {
 #if 1
-    struct rbtree_node *node = rbtree_search(&x->tree_children, ip, sp);
+  struct rbtree_node *node = rbtree_search(&x->tree_children, ip, sp);
 
-    return node ? DATA(node) : NULL;
+  return node ? DATA(node) : NULL;
 #else
   csprof_cct_node_t* c, *first;
 
   first = c = csprof_cct_node__first_child(x);
   if (c) {
     do {
-        void *cip = c->ip;
-        if(cip == ip) { return c; }
+      void *cip = c->ip;
+      if(cip == ip) { return c; }
 	
       c = csprof_cct_node__next_sibling(c);
     } while (c != NULL);
@@ -423,18 +423,18 @@ csprof_cct_node__find_child(csprof_cct_node_t* x, void* ip, void* sp)
 static csprof_cct_node_t*
 csprof_cct_node__find_child(csprof_cct_node_t* x, void* ip)
 {
-    csprof_cct_node_t* c, *first;
+  csprof_cct_node_t* c, *first;
 
-    first = c = csprof_cct_node__first_child(x);
-    if (c) {
-        do {
-            if (c->ip == ip) { return c; }
+  first = c = csprof_cct_node__first_child(x);
+  if (c) {
+    do {
+      if (c->ip == ip) { return c; }
 
-            c = csprof_cct_node__next_sibling(c);
-        } while (c != NULL);
-    }
+      c = csprof_cct_node__next_sibling(c);
+    } while (c != NULL);
+  }
 
-    return NULL;
+  return NULL;
 }
 #endif
 
@@ -597,13 +597,13 @@ csprof_cct__write_bin(FILE* fs, unsigned int epoch_id,
 			     csprof_num_recorded_metrics(),
 			     num_nodes, epoch_id,
 			     (hpcfile_cstree_cb__write_context_fn_t)
-			       lush_cct_ctxt__write,
+			     lush_cct_ctxt__write,
 			     (hpcfile_cstree_cb__get_data_fn_t)
-			       csprof_cct__get_data_CB,
+			     csprof_cct__get_data_CB,
 			     (hpcfile_cstree_cb__get_first_child_fn_t)
-			       csprof_cct__get_first_child_CB,
+			     csprof_cct__get_first_child_CB,
 			     (hpcfile_cstree_cb__get_sibling_fn_t)
-			       csprof_cct__get_sibling_CB);
+			     csprof_cct__get_sibling_CB);
 
 
   // splice creation context out of tree
@@ -619,13 +619,13 @@ static void
 csprof_cct__get_data_CB(csprof_cct_t* x, csprof_cct_node_t* node,
 			hpcfile_cstree_nodedata_t* d)
 {
-    d->ip = (hpcfile_vma_t)node->ip;
+  d->ip = (hpcfile_vma_t)node->ip;
 #ifdef CSPROF_TRAMPOLINE_BACKEND
-    d->sp = (hpcfile_uint_t)node->sp;
+  d->sp = (hpcfile_uint_t)node->sp;
 #else
-    d->sp = (hpcfile_uint_t)NULL;
+  d->sp = (hpcfile_uint_t)NULL;
 #endif
-    memcpy(d->metrics, node->metrics, d->num_metrics * sizeof(size_t));
+  memcpy(d->metrics, node->metrics, d->num_metrics * sizeof(size_t));
 }
 
 static void* 

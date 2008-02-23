@@ -64,11 +64,6 @@ csprof_cct_node_t*
 lush_backtrace(csprof_state_t* state, ucontext_t* context,
 	       int metric_id, size_t sample_count)
 {
-#if 0 // FIXME
-  unw_context_t uc;
-  unw_getcontext(&uc);
-#endif
-
   if (getenv("LUSH_WAIT")) {
     DBGMSG_PUB(1, "LUSH_WAIT... (pid=%d)", getpid());
     while(LUSH_WAIT);
