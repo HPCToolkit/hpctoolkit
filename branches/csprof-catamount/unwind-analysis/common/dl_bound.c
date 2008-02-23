@@ -35,7 +35,6 @@
 #include "executable-path.h"
 #include "loadmod.h"
 
-#include "pmsg.h"
 
 
 /******************************************************************************
@@ -259,11 +258,6 @@ dl_compute(const char *filename, void *start, void *end)
       int relocate = 0; // default is no relocation
       int addmapping = 0; // default is omit
       void *dlhandle = monitor_real_dlopen(dlname, RTLD_LAZY);
-      int *bogus = dlsym(dlhandle,"BOGUS");
-      if (bogus){
-	EMSG("dl_compute for file %s produced bogus symbol table",filename);
-	abort();
-      }
       void **nm_table = dlsym(dlhandle, "csprof_nm_addrs");
       int *nm_table_len = (int *) dlsym(dlhandle, "csprof_nm_addrs_len");
       int *relocatable = (int *) dlsym(dlhandle, "csprof_relocatable");
