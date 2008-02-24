@@ -85,6 +85,8 @@ main(int argc, char *argv[])
   if (argc >= 2){
     nthreads = atoi(argv[1]);
   }
+  printf("Num threads = %d\n", nthreads);
+
   for(t=0;t<nthreads;t++){
       printf("Creating thread %d\n", t+1);
       rc = pthread_create(&threads[t], NULL, PrintHello, (void *)(long)t);
