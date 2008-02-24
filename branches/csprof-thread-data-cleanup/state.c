@@ -15,10 +15,12 @@
 #include "mem.h"
 #include "epoch.h"
 #include "name.h"
+#include "thread_data.h"
 
 /* non-threaded profilers can have a single profiling state...
    but it can't be statically allocated because of epochs */
 
+#if 0
 static csprof_state_t *current_state;
 
 /* fetching states */
@@ -32,7 +34,9 @@ static csprof_state_t *_get_static_state(void){
 static void _set_static_state(csprof_state_t *state){
   current_state = state;
 }
+#endif
 
+#if 0
 #ifdef CSPROF_THREADS
 static state_t_f      *csprof_get_state_internal = &_get_static_state;
 static state_t_setter *_set_state_internal       = &_set_static_state;
@@ -54,10 +58,9 @@ void state_threaded(void)
   csprof_get_state_internal = &_get_threaded_state;
   _set_state_internal       = &_set_threaded_state;
 }
-#else
+#else // ! CSPROF_THREADS
 #define csprof_get_state_internal _get_static_state
 #define _set_state_internal       _set_static_state
-#endif
 
 // get main thread safe state
 csprof_state_t *csprof_get_safe_state(void)
@@ -75,12 +78,19 @@ csprof_state_t *csprof_get_state()
   }
   return state;
 }
+#endif // CSPROF_THREADS
+#endif
 
 void csprof_set_state(csprof_state_t *state)
 {
+#if 0
   csprof_state_t *old = csprof_get_state_internal();
   state->next = old;
   _set_state_internal(state);
+#endif
+
+  state->next = TD_GET(state);
+  TD_GET(state) = state;
 }
 
 int csprof_state_init(csprof_state_t *x)

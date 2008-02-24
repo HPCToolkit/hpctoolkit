@@ -87,9 +87,11 @@ void csprof_pthread_init_funcptrs()
 void csprof_pthread_init_data(void)
 {
 
+#if 0
   pthread_key_create(&prof_data_key, NULL);
   pthread_key_create(&thread_node_key, NULL);
   pthread_key_create(&mem_store_key, NULL);
+#endif
 
   pthread_mutex_init(&mylock,NULL);
 

@@ -28,19 +28,29 @@
 
 //***************************************************************************
 
-void monitor_init_process(char *process,int *argc,char **argv,unsigned pid)
+extern int wait_for_gdb;
+
+void
+monitor_init_process(char *process,int *argc,char **argv,unsigned pid)
 {
+  if (getenv("CSPROF_WAIT")){
+    while(wait_for_gdb);
+  }
   csprof_set_executable_name(process);
   csprof_init_internal();
 }
 
-void monitor_fini_process(void)
+
+void
+monitor_fini_process(void)
 {
   // M("monitor calling csprof_fini_internal");
   csprof_fini_internal();
 }
 
-void monitor_init_library(void)
+#if 0
+void
+monitor_init_library(void)
 {
   //  extern void csprof_init_internal(void);
   // M("monitor init lib (NOT) calling csprof_init_internal");
@@ -50,41 +60,25 @@ void monitor_fini_library(void)
 {
   //  extern void csprof_fini_internal(void);
 }
+#endif
 
 // always need this variable, but only init thread support will turn it on
 int csprof_using_threads = 0;
 
 #ifdef CSPROF_THREADS
-#include "thread_data.h"
-pthread_key_t my_thread_specific_key;
-
-static int thr_c = 0;
-static pthread_once_t iflg = PTHREAD_ONCE_INIT;
-
-pthread_mutex_t mylock;
-
-static void
-n_init(void)
-{
-  int e;
-  // e = pthread_key_create(&k,free);
-  e = pthread_key_create(&my_thread_specific_key, NULL);
-}
-
 
 void
 monitor_init_thread_support(void)
 {
-  thread_data_t *loc;
-
   csprof_using_threads = 1;
 
-  pthread_once(&iflg,n_init);
-  loc = malloc(sizeof(thread_data_t));
+#if 0
   loc->id = thr_c++;
   pthread_setspecific(my_thread_specific_key, (void *)loc);
+  csprof_init_handling_sample(loc, 0);
+#endif
 
-  csprof_init_thread_support(loc->id);
+  csprof_init_thread_support();
 }
 
 
@@ -105,17 +99,19 @@ monitor_thread_post_create(void *dc)
 void *
 monitor_init_thread(int tid, void *data)
 {
-  thread_data_t *loc;
   killsafe_t    *safe;
 
+#if 0
+  thread_data_t *loc;
   MSG(1,"mon init thread id = %d, thr_c = %d",tid,thr_c);
   pthread_once(&iflg,n_init);
   loc = malloc(sizeof(thread_data_t));
   loc->id = thr_c++;
   pthread_setspecific(my_thread_specific_key, (void *)loc);
+#endif
 
   safe = (killsafe_t *)malloc(sizeof(killsafe_t));
-  csprof_thread_init(safe, loc->id, (lush_cct_ctxt_t*)data);
+  csprof_thread_init(safe, tid, (lush_cct_ctxt_t*)data);
 
   return (void *) safe;
 }
