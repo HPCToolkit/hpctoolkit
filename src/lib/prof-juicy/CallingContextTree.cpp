@@ -99,7 +99,8 @@ CSProfTree::merge(const CSProfTree* y, uint x_numMetrics, uint y_numMetrics)
 
   DIAG_Assert(x_root && y_root && x_root->GetName() == y_root->GetName(),
 	      "Unexpected root!");
-  
+
+  x_root->merge_prepare(y_numMetrics);
   x_root->merge(y_root, x_numMetrics, y_numMetrics);
 }
 
@@ -503,37 +504,44 @@ IDynNode::expandMetrics_after(uint offset)
 }
 
 
+void
+CSProfNode::merge_prepare(uint numMetrics)
+{
+  IDynNode* dyn = dynamic_cast<IDynNode*>(this);
+  if (dyn) {
+    dyn->expandMetrics_after(numMetrics);
+    DIAG_MsgIf(0, "Expanding " << hex << dyn << dec << " +" << numMetrics << " -> " << dyn->numMetrics());
+  }
+
+  // Recur on children
+  for (CSProfNodeChildIterator it(this); it.Current(); ++it) {
+    CSProfNode* child = it.CurNode();
+    child->merge_prepare(numMetrics);
+  }
+}
+
+
 // Let y be a node corresponding to 'this'(= x) and assume x is already
 // merged.  Given y, merge y's children into x.
 // NOTE: assume we can destroy y...
+// NOTE: assume x already has space to store merged metrics
 void
 CSProfNode::merge(CSProfNode* y, uint x_numMetrics, uint y_numMetrics)
 {
   CSProfNode* x = this;
-
-  // ------------------------------------------------------------
-  // 0. For each child c of x, extend c's metric vector.
-  // ------------------------------------------------------------
-  for (CSProfNodeChildIterator it(x); it.Current(); ++it) {
-    CSProfNode* child = it.CurNode();
-    IDynNode* child_dyn = dynamic_cast<IDynNode*>(child);
-    if (child_dyn) {
-      child_dyn->expandMetrics_after(y_numMetrics);
-    }
-  }
   
   // ------------------------------------------------------------
-  // 1. If y is childless, return.
+  // 0. If y is childless, return.
   // ------------------------------------------------------------
   if (y->IsLeaf()) {
     return;
   }
 
   // ------------------------------------------------------------  
-  // 2. If a child d of y _does not_ appear as a child of x, then copy
+  // 1. If a child d of y _does not_ appear as a child of x, then copy
   //    (subtree) d [fixing d's metrics], make it a child of x and
   //    return.
-  // 3. If a child d of y _does_ have a corresponding child c of x,
+  // 2. If a child d of y _does_ have a corresponding child c of x,
   //    merge [the metrics of] d into c and recur.
   // ------------------------------------------------------------  
   for (CSProfNodeChildIterator it(y); it.Current(); /* */) {

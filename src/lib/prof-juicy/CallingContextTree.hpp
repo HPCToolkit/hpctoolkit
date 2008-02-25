@@ -218,6 +218,7 @@ public:
   // 
   // --------------------------------------------------------
 
+  void merge_prepare(uint numMetrics);
   void merge(CSProfNode* y, uint x_numMetrics, uint y_numMetrics);
 
   CSProfNode* findDynChild(VMA ip);
