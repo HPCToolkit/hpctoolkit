@@ -70,6 +70,8 @@
 #include "list.h"
 #endif
 
+#include <lush/lush-support.h>
+
 #define CSPROF_TREE_USES_DOUBLE_LINKING 0
 #define CSPROF_TREE_USES_SORTED_CHILDREN 1
 
@@ -99,15 +101,15 @@ typedef struct csprof_cct_node_s {
   // 
   // ---------------------------------------------------------
 
+  lush_assoc_info_t as_info;
+
   /* instruction pointer: more accurately, this is an 'operation
      pointer'.  The operation in the instruction packet is represented
      by adding 0, 1, or 2 to the instruction pointer for the first,
      second and third operation, respectively. */
-  void *ip;
-  
-  // ADD:
-  //   association
-  //   lip [lip], pip [pip]
+  void* ip; /* physcial ip */
+
+  // lip: if assoc = a <-> {1, M} then it is tacked onto the end of metrics...
 
   // ---------------------------------------------------------
   // tree structure
@@ -142,8 +144,10 @@ typedef struct csprof_cct_node_s {
 
 #if !defined(CSPROF_LIST_BACKTRACE_CACHE)
 typedef struct csprof_frame_s {
-    void *ip;
-    void *sp;
+  lush_assoc_info_t as_info; // LUSH
+  void *ip;
+  lush_lip_t* lip; // LUSH
+  void *sp;
 } csprof_frame_t;
 #endif
 

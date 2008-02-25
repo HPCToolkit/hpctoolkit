@@ -24,6 +24,7 @@
 
 #include <stdlib.h>
 #include <stdbool.h>
+#include <stdint.h>
 
 //*************************** User Include Files ****************************
 
@@ -49,15 +50,16 @@
 //***************************************************************************
 
 // ---------------------------------------------------------
-// [physical <-> logical] step associations
-//   since each can be one of [0, 1, M], there are 9 possibilities
-//   M represents "multi", i.e., { n | n >= 2 }
+// bichord association classification: [p-chord <-> l-chord]
+//
+// - each association is a member of {0, 1, M} x {0, 1, M}
+// - M represents "multi", i.e., { n | n >= 2 }
 // ---------------------------------------------------------
 
 typedef enum lush_assoc lush_assoc_t;
 
 enum lush_assoc {
-  LUSH_ASSOC_NULL = 0,
+  LUSH_ASSOC_NULL   = 0x00,
 
   LUSH_ASSOC_1_to_1, // 1 <-> 1
 
@@ -68,6 +70,41 @@ enum lush_assoc {
 
   LUSH_ASSOC_1_to_M  // 1 <-> M
 };
+
+
+typedef struct lush_assoc_info_s lush_assoc_info_t;
+
+struct lush_assoc_info_s {
+  lush_assoc_t as    : 8;
+  uint32_t     M_val : 24; // the value of M (if applicable)
+};
+
+
+
+#define lush_assoc_is_1_to_x(/*lush_assoc*/ as) \
+  ((as) == LUSH_ASSOC_1_to_1 || (as) == LUSH_ASSOC_1_to_M)
+
+#define lush_assoc_is_x_to_1(/*lush_assoc*/ as) \
+  ((as) == LUSH_ASSOC_1_to_1 || (as) == LUSH_ASSOC_M_to_1)
+
+
+
+#define lush_assoc_info__get_assoc(/*lush_assoc_info_t*/ x) \
+  x.as
+
+#define lush_assoc_info__set_assoc(/*lush_assoc_info_t*/ x, \
+				   /*lush_assoc_t*/ as)	    \
+  x.as = as
+
+#define lush_assoc_info__get_M(/*lush_assoc_info_t*/ x) \
+  x.M_val
+
+#define lush_assoc_info__set_M(/*lush_assoc_info_t*/ x, \
+			       /*lush_assoc_t*/ m_val)	\
+  x.M_val = m_val
+
+
+
 
 
 // ---------------------------------------------------------
@@ -96,6 +133,9 @@ struct lush_lip {
   unsigned char data[16];
 };
 
+
+/*inline*/ lush_lip_t*
+lush_lip_clone(lush_lip_t* x);
 
 // ---------------------------------------------------------
 // LUSH l-cursor: space for a logical cursor
@@ -137,8 +177,8 @@ typedef struct lush_cursor lush_cursor_t;
 
 struct lush_cursor {
   // meta info
-  unsigned flags;      // lush_cursor_flags
-  lush_assoc_t assoc;  // physical-logial association for this bichord
+  unsigned flags;               // lush_cursor_flags
+  lush_assoc_info_t as_info;    // bichord's physical-logical association
   LUSH_AGENTID_XXX_t     aid;   // agent id (if any) owning this cursor
   LUSH_AGENT_POOL_XXX_t* apool; // agent pool
 
@@ -161,7 +201,7 @@ lush_cursor_set_flag(lush_cursor_t* cursor, lush_cursor_flags_t f);
 /*inline*/ void 
 lush_cursor_unset_flag(lush_cursor_t* cursor, lush_cursor_flags_t f);
 
-/*inline*/ lush_assoc_t 
+/*inline*/ lush_assoc_t
 lush_cursor_get_assoc(lush_cursor_t* cursor);
 
 /*inline*/ void
