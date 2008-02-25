@@ -38,11 +38,9 @@ struct interval_tree_node {
 
 typedef struct interval_tree_node *interval_tree_node_t;
 
-void 
-csprof_interval_tree_init(void);
-
-unwind_interval *
-csprof_addr_to_interval(void *addr);
+extern void             csprof_interval_tree_init(void);
+extern void             csprof_release_splay_lock(void);
+extern unwind_interval *csprof_addr_to_interval(void *addr);
 
 #define SUCCESS  0
 #define FAILURE  1

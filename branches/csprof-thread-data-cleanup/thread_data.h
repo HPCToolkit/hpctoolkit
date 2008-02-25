@@ -16,6 +16,7 @@ typedef struct _td_t {
   sigjmp_buf_t    bad_unwind;
   int             eventSet;     // for PAPI
   int             handling_sample;
+  int             splay_lock;
 } thread_data_t;
 
 #define TD_GET(field) csprof_get_thread_data()->field
@@ -31,6 +32,5 @@ extern void           csprof_threaded_data(void);
 
 // utilities to match previous api
 #define csprof_get_state()  TD_GET(state)
-
 
 #endif // !defined(THREAD_DATA_H)

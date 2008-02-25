@@ -14,6 +14,7 @@
 #include "mpi_special.h"
 #include "pmsg.h"
 #include "segv_handler.h"
+#include "splay.h"
 #include "state.h"
 #include "thread_data.h"
 #include "thread_use.h"
@@ -63,6 +64,9 @@ csprof_sample_event(void *context, int metric_id, size_t sample_count)
          state->unwind_pc);
     dump_backtraces(state, state->unwind);
     bad_unwind_count++;
+    if (TD_GET(splay_lock)){
+      csprof_release_splay_lock();
+    }
   }
 
   csprof_clear_handling_sample(td);

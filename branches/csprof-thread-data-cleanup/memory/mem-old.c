@@ -1,3 +1,59 @@
+// $Id: mem.c 1088 2008-02-12 15:03:16Z eraxxon $
+// -*-C-*-
+// * BeginRiceCopyright *****************************************************
+/*
+  Copyright ((c)) 2002, Rice University 
+  All rights reserved.
+
+  Redistribution and use in source and binary forms, with or without
+  modification, are permitted provided that the following conditions are
+  met:
+
+  * Redistributions of source code must retain the above copyright
+  notice, this list of conditions and the following disclaimer.
+
+  * Redistributions in binary form must reproduce the above copyright
+  notice, this list of conditions and the following disclaimer in the
+  documentation and/or other materials provided with the distribution.
+
+  * Neither the name of Rice University (RICE) nor the names of its
+  contributors may be used to endorse or promote products derived from
+  this software without specific prior written permission.
+
+  This software is provided by RICE and contributors "as is" and any
+  express or implied warranties, including, but not limited to, the
+  implied warranties of merchantability and fitness for a particular
+  purpose are disclaimed. In no event shall RICE or contributors be
+  liable for any direct, indirect, incidental, special, exemplary, or
+  consequential damages (including, but not limited to, procurement of
+  substitute goods or services; loss of use, data, or profits; or
+  business interruption) however caused and on any theory of liability,
+  whether in contract, strict liability, or tort (including negligence
+  or otherwise) arising in any way out of the use of this software, even
+  if advised of the possibility of such damage.
+*/
+// ******************************************************* EndRiceCopyright *
+
+//***************************************************************************
+//
+// File:
+//    csprof_mem.c
+//
+// Purpose:
+//    An interface to and implementation of privately managed dynamic
+//    memory as an alternative to malloc.  The memory is implemented
+//    using memory maps that use the system's swap space for backing
+//    (in contrast to a file or some other shared device).  When space
+//    in one pool of dynamic store becomes low, another pool will be
+//    allocated if possible.
+//
+// Description:
+//    [The set of functions, macros, etc. defined in the file]
+//
+//***************************************************************************
+
+/* system include files */
+
 #include <stdio.h>
 #include <fcntl.h>
 #include <stdlib.h>
@@ -11,18 +67,90 @@
 
 /* user include files */
 
+#include "general.h"
 #include "mem.h"
+#include "xpthread.h"
+#include "util.h"
 #include "pmsg.h"
 #include "thread_data.h"
+
+/* compensate for very old systems */
+#ifndef MAP_FAILED
+#define MAP_FAILED ((void *)-1)
+#endif
+
+/* forward declarations */
+
+static const char *csprof_mem_store__str(csprof_mem_store_t st);
+
+static int csprof_mem__init(csprof_mem_t *x, offset_t sz, offset_t sz_tmp);
+
+#ifdef NO
+static int csprof_mem__fini(csprof_mem_t *x);
+
+static int csprof_mem__reset(csprof_mem_t *x, offset_t sz, offset_t sz_tmp);
+#endif
+
+static void *csprof_mem__alloc(csprof_mem_t *x, size_t sz, csprof_mem_store_t st);
+static int csprof_mem__free(csprof_mem_t *x, void* ptr, size_t sz,
+		       csprof_mem_store_t st);
+
+static int csprof_mem__grow(csprof_mem_t *x, size_t sz, csprof_mem_store_t st);
+
+static int csprof_mem__is_enabled(csprof_mem_t *x, csprof_mem_store_t st);
+
+// The first argument for each of these is of type 'csprof_mem_t*'.
+#define csprof_mem__get_status(x) (x)->status
 
 /* various convenience issues */
 
 static csprof_mem_t MEM;
 
 static const offset_t CSPROF_MEM_INIT_SZ     = 2 * 1024 * 1024; // 2 Mb
-
 /* this is rarely used, so the default size is small */
 static const offset_t CSPROF_MEM_INIT_SZ_TMP = 128 * 1024;  // 128 Kb
+
+#ifdef CSPROF_MALLOC_PROFILING
+extern void *(*csprof_xmalloc)(size_t);
+#endif
+
+
+#if 0
+csprof_mem_t *_get_static_memstore(void){
+  return &MEM;
+}
+
+static csprof_mem_t *_alloc_static_memstore(void){
+  return &MEM;
+}
+
+#ifdef CSPROF_THREADS
+csprof_mem_t *_get_thread_memstore(void){
+  return pthread_getspecific(mem_store_key);
+}
+
+get_memstore_f *csprof_get_memstore = &_get_static_memstore;
+
+static csprof_mem_t *_alloc_thread_memstore(void){
+  /* ugh -- avoid infinite loops during malloc profiling */
+#ifdef CSPROF_MALLOC_PROFILING
+  return (csprof_mem_t *)(*csprof_xmalloc)(sizeof(csprof_mem_t));
+#else
+  return (csprof_mem_t *) malloc(sizeof(csprof_mem_t));
+#endif
+}
+
+static get_memstore_f *alloc_memstore = &_alloc_static_memstore;
+
+void mem_threaded(void){
+  csprof_get_memstore = &_get_thread_memstore;
+  alloc_memstore      = &_alloc_thread_memstore;
+}
+#else
+#define csprof_get_memstore _get_static_memstore
+#define alloc_memstore      _alloc_static_memstore
+#endif
+#endif
 
 /* public interface */
 

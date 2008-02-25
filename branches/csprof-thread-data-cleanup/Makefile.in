@@ -76,7 +76,7 @@ module_dirs := utilities                \
                unwind-analysis/common \
                unwind-analysis/x86-family \
                sampling/types/callstack \
-               Pmsg                     \
+               Dbg                      \
                hpcfile                  \
                os/catamount             \
                os/linux                 \

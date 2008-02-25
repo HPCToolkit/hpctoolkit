@@ -126,13 +126,6 @@ static int evs;
 void
 csprof_init_internal(void)
 {
-#if NO
-  if (getenv("CSPROF_WAIT")){
-    while(wait_for_gdb);
-  }
-#endif
-  pmsg_init();
-
 # ifdef DBG_EXTRA
     dbg_init();
 # endif                 // DBG_EXTRA
@@ -144,31 +137,19 @@ csprof_init_internal(void)
 
   csprof_thread_data_init(0,opts.mem_sz,0);
 
-#if 0
-  csprof_malloc_init(opts.mem_sz, 0);
-  /* profiling state needs the memory manager init'd */
-  csprof_state_t *state = csprof_malloc(sizeof(csprof_state_t));
-
-  csprof_set_state(state);
-
-  csprof_state_init(state);
-  csprof_state_alloc(state);
-
-#endif
-
   /* epoch poking needs the memory manager init'd() (and
      the thread-specific memory manager if need be) */
   /* figure out what libraries we currently have loaded */
 
-#ifdef STATIC_ONLY
-  static_epoch_offset = (void *)&_start;
-  static_epoch_end    = (void *)&__stop___libc_freeres_ptrs;
-  static_epoch_size   = (long) (static_epoch_end - static_epoch_offset);
-#else
-  csprof_epoch_lock();
-  csprof_epoch_new();
-  csprof_epoch_unlock();
-#endif     
+# ifdef STATIC_ONLY
+    static_epoch_offset = (void *)&_start;
+    static_epoch_end    = (void *)&__stop___libc_freeres_ptrs;
+    static_epoch_size   = (long) (static_epoch_end - static_epoch_offset);
+# else     // ! STATIC_ONLY
+    csprof_epoch_lock();
+    csprof_epoch_new();
+    csprof_epoch_unlock();
+# endif // STATIC_ONLY
 
   dl_init();
     
@@ -178,16 +159,6 @@ csprof_init_internal(void)
   setup_segv();
   unw_init();
 
-#if 0
-  csprof_set_max_metrics(2);
-  int metric_id = csprof_new_metric(); /* weight */
-  csprof_set_metric_info_and_period(metric_id, "# samples",
-                                    CSPROF_METRIC_ASYNCHRONOUS,
-                                    opts.sample_period);
-  metric_id = csprof_new_metric(); /* calls */
-  csprof_set_metric_info_and_period(metric_id, "# returns",
-                                    CSPROF_METRIC_FLAGS_NIL, 1);
-#endif
   if (opts.sample_source == ITIMER){
     csprof_itimer_init(&opts);
     if (csprof_itimer_start()){
@@ -212,25 +183,6 @@ csprof_init_thread_support(void)
   csprof_init_pthread_key();
   csprof_set_thread0_data();
   csprof_threaded_data();
-
-#if 0
-  csprof_state_t *state = csprof_get_state();
-
-  MSG(1,"csproflib init f initial thread");
-  csprof_pthread_init_data();
-
-  pthread_setspecific(mem_store_key,(void *)csprof_get_memstore());
-  pthread_setspecific(prof_data_key,(void *)state);
-
-  state->pstate.thrid = id;
-
-  // Switch to threaded variants for various components of csprof
-  mem_threaded();
-  state_threaded();
-  MSG(1,"switch to threaded versions complete");
-
-#endif
-
 }
 
 void *
@@ -275,7 +227,9 @@ csprof_thread_pre_create(void)
   csprof_cct_node_t* n;
   n = csprof_sample_event(&context, metric_id, 0 /*sample_count*/);
 
+  TMSG(THREAD,"before lush malloc");
   lush_cct_ctxt_t* thr_ctxt = csprof_malloc(sizeof(lush_cct_ctxt_t));
+  TMSG(THREAD,"after lush malloc, thr_ctxt = %p",thr_ctxt);
   thr_ctxt->context = n;
   thr_ctxt->parent = state->csdata_ctxt;
 
@@ -296,34 +250,6 @@ csprof_thread_post_create(void *dc)
 void 
 csprof_thread_init(killsafe_t *kk, int id, lush_cct_ctxt_t* thr_ctxt)
 {
-#if 0
-  csprof_state_t *state;
-  csprof_mem_t *memstore;
-  int ret;
-
-  memstore = csprof_malloc_init(1, 0);
-
-  if(memstore == NULL) {
-    EMSG("Couldn't allocate mem for csprof_malloc in thread");
-    abort();
-  }
-  DBGMSG_PUB(CSPROF_DBG_PTHREAD, "Setting mem_store_key f thread %d",id);
-  pthread_setspecific(mem_store_key, memstore);
-
-  state = csprof_malloc(sizeof(csprof_state_t));
-  if(state == NULL) {
-    DBGMSG_PUB(1, "Couldn't allocate memory for profiling state in thread");
-  }
-
-  DBGMSG_PUB(CSPROF_DBG_PTHREAD, "Allocated thread state, now init'ing and alloc'ing f thread %d",id);
-
-  csprof_state_init(state);
-  csprof_state_alloc(state);
-
-  pthread_setspecific(prof_data_key,(void *)state);
-
-#endif
-
   thread_data_t *td  = csprof_allocate_thread_data();
   csprof_set_thread_data(td);
   csprof_thread_data_init(id,1,0);

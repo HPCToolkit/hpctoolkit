@@ -175,6 +175,6 @@ csprof_options__getopts(csprof_options_t* x)
       x->papi_event_list = s;
     }
   }
-
+  // Option: debug print -- not handled here !!
   return CSPROF_OK;
 }

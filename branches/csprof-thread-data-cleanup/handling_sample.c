@@ -7,7 +7,7 @@
 void
 csprof_init_handling_sample(thread_data_t *td, int in)
 {
-  EMSG("handling sample called f thread %d",td->id);
+  TMSG(HANDLING_SAMPLE,"INIT called f thread %d",td->id);
   td->handling_sample = in;
 }
 

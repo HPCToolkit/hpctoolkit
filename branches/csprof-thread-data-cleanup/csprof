@@ -129,6 +129,7 @@ f_usage()
   $p "                  messages and generates a text version of the        \n"
   $p "                  callstack data.                                     \n"
   $p "    -d          : set csprof debug flag, for attaching gdb            \n"
+  $p "    -dd <dbgl>  : DEVELOPER. Turn on print categories(NOTE:quote list)\n"
   $p "   --pp(=EVLST) : use papi instead of itimer                          \n"
   $p "                  without an event list(EVLST) argument, defauts to   \n"
   $p "                  PAPI_TOT_CYC, with threshold set to 1000000         \n"
@@ -229,8 +230,9 @@ f_getoptions()
       -L)   shift; opt_debug="$1";
             f_opt_check "-D" "${opt_debug}";
             ;;
-
       -d)   opt_gdb=1;
+            ;;
+     -dd)   shift; opt_dd=$1;
             ;;
     --pp)   opt_papi=1;
             ;;
@@ -313,6 +315,9 @@ f_prepareenv()
   fi
   if [ -n "${opt_gdb}" ]; then
     export CSPROF_WAIT=1
+  fi
+  if [ -n "${opt_dd}" ]; then
+    export CSPROF_DD=$opt_dd
   fi
   if [ -n "${opt_papi}" ]; then
     export SWITCH_TO_PAPI=1

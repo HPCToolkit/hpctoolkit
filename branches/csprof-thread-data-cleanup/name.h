@@ -20,12 +20,12 @@
  * interface functions
  *****************************************************************************/
 
-void csprof_set_executable_name(char *argv0);
+extern void csprof_set_executable_name(char *argv0);
+extern const char *csprof_get_executable_name();
 
-const char *csprof_get_executable_name();
-
+#if 0
 void csprof_set_mpirank(int rank);
-
 int csprof_get_mpirank();
+#endif
 
 #endif
