@@ -46,15 +46,6 @@ csprof_sample_callstack_from_frame(csprof_state_t *, int,
 
 //***************************************************************************
 
-// ***FIXME: mmap interaction
-
-#define ensure_state_buffer_slot_available(state,unwind)    \
-    if (unwind == state->bufend) {                          \
-        unwind = csprof_state_expand_buffer(state, unwind); \
-        state->bufstk = state->bufend;                      \
-    }
-
-
 int 
 csprof_check_fence(void *ip)
 {
@@ -149,13 +140,14 @@ csprof_sample_callstack_from_frame(csprof_state_t *state, int metric_id,
 {
   unw_word_t ip;
   int first = 1;
-  state->unwind = state->btbuf;
 
+  // FIXME: why cannot some of these be local variables
+  state->unwind   = state->btbuf;
   state->bufstk   = state->bufend;
   state->treenode = NULL;
 
   for(;;){
-    ensure_state_buffer_slot_available(state, state->unwind);
+    csprof_state_ensure_buffer_avail(state, state->unwind);
 
     if (unw_get_reg (cursor, UNW_REG_IP, &ip) < 0){
       MSG(1,"get_reg break");

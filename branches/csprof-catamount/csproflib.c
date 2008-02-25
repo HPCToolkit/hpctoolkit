@@ -252,7 +252,7 @@ csprof_thread_pre_create(void)
   }
 
   // -------------------------------------------------------
-  // Capture new thread's parent context.
+  // Capture new thread's creation context.
   // -------------------------------------------------------
   csprof_state_t* state = csprof_get_state();
 

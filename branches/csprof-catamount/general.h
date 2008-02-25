@@ -66,6 +66,18 @@
 
 #include <assert.h>
 
+
+// FIXME: from hpctoolkit's <include/general.h>
+#if !defined(__cplusplus)
+
+# undef MIN
+# undef MAX
+# define MIN(a,b) (((a) < (b)) ? (a) : (b))
+# define MAX(a,b) (((a) > (b)) ? (a) : (b))
+
+#endif
+
+
 #if defined(__cplusplus)
 extern "C" {
 #endif
