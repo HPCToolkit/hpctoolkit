@@ -270,6 +270,12 @@ csprof_thread_pre_create(void)
   // insert into CCT as a placeholder
   csprof_cct_node_t* n;
   n = csprof_sample_event(&context, metric_id, 0 /*sample_count*/);
+  int i;
+  for(i=0; i<2 ; i++) { 
+    // drop two innermost levels of context
+    //    csprof_thread_pre_create -> monitor_thread_pre_create
+    if(n) n = n->parent;
+  }
 
   lush_cct_ctxt_t* thr_ctxt = csprof_malloc(sizeof(lush_cct_ctxt_t));
   thr_ctxt->context = n;

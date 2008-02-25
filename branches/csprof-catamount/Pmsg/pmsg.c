@@ -58,7 +58,8 @@ extern pthread_mutex_t mylock;
 } while (0)
 
 #if 1
-#  define INIT_MASK0 TROLL | PAPI
+// #  define INIT_MASK0 TROLL | PAPI
+#  define INIT_MASK0 TROLL 
 #else
 #  define INIT_MASK0 TROLL
 #endif

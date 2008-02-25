@@ -84,7 +84,8 @@ hpcfile_cstree_write_node(FILE* fs, void* tree, void* node,
 			  hpcfile_uint_t *id,
 			  hpcfile_cstree_cb__get_data_fn_t get_node_data_fn,
 			  hpcfile_cstree_cb__get_first_child_fn_t get_first_child_fn,
-			  hpcfile_cstree_cb__get_sibling_fn_t get_sibling_fn);
+			  hpcfile_cstree_cb__get_sibling_fn_t get_sibling_fn,
+			  int children_only);
 
 static int 
 hpcfile_cstree_read_hdr(FILE* fs, hpcfile_cstree_hdr_t* hdr);
@@ -123,6 +124,12 @@ hpcfile_cstree_write(FILE* fs, void* tree, void* root, void* tree_ctxt,
   int ret;
 
   if (!fs) { return HPCFILE_ERR; }
+
+  // -------------------------------------------------------
+  // When tree_ctxt is non-null, we will peel off the top
+  // node in the tree to eliminate the call frame for
+  // monitor_pthread_start_routine
+  // -------------------------------------------------------
   
   // -------------------------------------------------------
   // Write header
@@ -131,7 +138,7 @@ hpcfile_cstree_write(FILE* fs, void* tree, void* root, void* tree_ctxt,
 
   hpcfile_cstree_hdr__init(&fhdr);
   fhdr.epoch = epoch;
-  fhdr.num_nodes = num_nodes;
+  fhdr.num_nodes = num_nodes - (tree_ctxt ? 1 : 0);
   ret = hpcfile_cstree_hdr__fwrite(&fhdr, fs); 
   if (ret != HPCFILE_OK) {
     return HPCFILE_ERR; 
@@ -158,7 +165,7 @@ hpcfile_cstree_write(FILE* fs, void* tree, void* root, void* tree_ctxt,
   ret = hpcfile_cstree_write_node(fs, tree, root, &tmp_node, id_ctxt, &id,
 				  get_data_fn,
 				  get_first_child_fn,
-				  get_sibling_fn);
+				  get_sibling_fn, tree_ctxt != 0);
   free(tmp_node.data.metrics);
   
   return ret;
@@ -171,30 +178,34 @@ hpcfile_cstree_write_node(FILE* fs, void* tree, void* node,
 			  hpcfile_uint_t *id,
 			  hpcfile_cstree_cb__get_data_fn_t get_data_fn,
 			  hpcfile_cstree_cb__get_first_child_fn_t get_first_child_fn,
-			  hpcfile_cstree_cb__get_sibling_fn_t get_sibling_fn)
+			  hpcfile_cstree_cb__get_sibling_fn_t get_sibling_fn,
+			  int children_only)
 {
   hpcfile_uint_t myid;
   void* first, *c;
 
   if (!node) { return HPCFILE_OK; }
 
-  tmp_node->id = myid = *id;
-  tmp_node->id_parent = id_parent;
-  get_data_fn(tree, node, &(tmp_node->data));
+  if (children_only) myid = id_parent;
+  else {
+    tmp_node->id = myid = *id;
+    tmp_node->id_parent = id_parent;
+    get_data_fn(tree, node, &(tmp_node->data));
 
-  if (hpcfile_cstree_node__fwrite(tmp_node, fs) != HPCFILE_OK) { 
-    return HPCFILE_ERR; 
+    if (hpcfile_cstree_node__fwrite(tmp_node, fs) != HPCFILE_OK) { 
+      return HPCFILE_ERR; 
+    }
+
+    // Prepare next id -- assigned in the order that this func is called
+    (*id)++;
   }
-
-  // Prepare next id -- assigned in the order that this func is called
-  (*id)++;
   
   // Write each child of node.  Works with either a circular or
   // non-circular structure
   first = c = get_first_child_fn(tree, node);
   while (c) {
     if (hpcfile_cstree_write_node(fs, tree, c, tmp_node, myid, id, get_data_fn,
-				  get_first_child_fn, get_sibling_fn)
+				  get_first_child_fn, get_sibling_fn, 0)
 	!= HPCFILE_OK) {
       return HPCFILE_ERR;
     }

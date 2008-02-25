@@ -83,6 +83,7 @@ monitor_init_thread_support(void)
   loc = malloc(sizeof(thread_data_t));
   loc->id = thr_c++;
   pthread_setspecific(my_thread_specific_key, (void *)loc);
+  handling_sample_threaded();
 
   csprof_init_thread_support(loc->id);
 }
@@ -113,6 +114,7 @@ monitor_init_thread(int tid, void *data)
   loc = malloc(sizeof(thread_data_t));
   loc->id = thr_c++;
   pthread_setspecific(my_thread_specific_key, (void *)loc);
+  csprof_set_handling_sample(0);
 
   safe = (killsafe_t *)malloc(sizeof(killsafe_t));
   csprof_thread_init(safe, loc->id, (lush_cct_ctxt_t*)data);

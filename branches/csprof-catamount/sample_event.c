@@ -22,7 +22,7 @@
 
 //*************************** Forward Declarations **************************
 
-void csprof_set_handling_sample(thread_data_t *td, int in);
+void csprof_set_handling_sample(int in);
 
 static csprof_cct_node_t*
 csprof_take_profile_sample(csprof_state_t *state, struct ucontext *ctx,
@@ -44,9 +44,7 @@ csprof_sample_event(void *context, int metric_id, size_t sample_count)
 
   PMSG(SAMPLE,"Handling sample");
 
-  thread_data_t *td = (thread_data_t *) pthread_getspecific(my_thread_specific_key);
-
-  csprof_set_handling_sample(td, 1);
+  csprof_set_handling_sample(1);
 
   // FIXME: setup_segv only necessary here because some apps install segv handler of their own
   // setup_segv();
@@ -71,7 +69,7 @@ csprof_sample_event(void *context, int metric_id, size_t sample_count)
     bad_unwind_count++;
   }
 
-  csprof_set_handling_sample(td, 0);
+  csprof_set_handling_sample(0);
 
   return node;
 }
@@ -134,15 +132,37 @@ csprof_take_profile_sample(csprof_state_t *state, struct ucontext *ctx,
 }
 
 
+static int handling_sample = 0;
+static int handling_sample_unthreaded = 1;
 
-void csprof_set_handling_sample(thread_data_t *td, int in)
+int *get_handling_sample()
 {
-  td->handling_sample = in;
+  if (handling_sample_unthreaded) return &handling_sample;
+  else {
+    thread_data_t *td = (thread_data_t *) 
+	pthread_getspecific(my_thread_specific_key);
+
+    return &(td->handling_sample);
+
+  }
+}
+
+void handling_sample_threaded()
+{
+  handling_sample_unthreaded = 0;
+  csprof_set_handling_sample(handling_sample);
+}
+
+
+void csprof_set_handling_sample(int in)
+{
+  int *my_handling_sample = get_handling_sample();
+  *my_handling_sample = in;
 }
 
 int
 csprof_is_handling_sample(void)
 {
-  thread_data_t *td = (thread_data_t *) pthread_getspecific(my_thread_specific_key);
-  return td->handling_sample;
+  int *my_handling_sample = get_handling_sample();
+  return *my_handling_sample;
 }
