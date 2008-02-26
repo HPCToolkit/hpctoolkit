@@ -338,23 +338,21 @@ hpcfile_csprof_read(FILE* fs, hpcfile_csprof_data_t* data,
 int
 hpcfile_csprof_fprint(FILE* infs, FILE* outfs, hpcfile_csprof_data_t* data)
 {
-#if 0
-  hpcfile_csprof_hdr_t fhdr;
-  // Read header...
-  
-  // Print header
-  hpcfile_csprof_hdr__fprint(&fhdr, outfs);
-  fputs("\n", outfs);
-
-  // Read and print each data chunk...
-#endif
-
+  // Read header and basic data
   epoch_table_t epochtbl;
-
   hpcfile_csprof_read(infs, data, &epochtbl, 
 		      (hpcfile_cb__alloc_fn_t)malloc,
 		      (hpcfile_cb__free_fn_t)free);
 
+  // Print header
+  //-- hpcfile_csprof_id__fprint();
+  //-- hpcfile_csprof_hdr__fprint(&fhdr, outfs);
+  //-- fputs("\n", outfs);
+
+  // Print data
+  hpcfile_csprof_data__fprint(data, outfs);
+
+  // Print epochs
   for (int i = 0; i < epochtbl.num_epoch; ++i) {
     // print an epoch
     epoch_entry_t* epoch = & epochtbl.epoch_modlist[i];
@@ -552,21 +550,19 @@ hpcfile_csprof_data__fini(hpcfile_csprof_data_t* x)
 int 
 hpcfile_csprof_data__fprint(hpcfile_csprof_data_t* x, FILE* fs)
 {
-  int i;
-
-  fputs("# csprof_data:\n", fs);
+  fputs("{csprof_data:\n", fs);
   
-  if (x->target) { fprintf(fs, "# target: %s\n", x->target); }
-  fprintf(fs, "# metrics: %d\n", x->num_metrics);
+  if (x->target) { fprintf(fs, "  target: %s\n", x->target); }
+  fprintf(fs, "  metrics: %d\n", x->num_metrics);
   
-  for(i = 0; i < x->num_metrics; ++i) {
+  for (int i = 0; i < x->num_metrics; ++i) {
     hpcfile_csprof_metric_t metric = x->metrics[i];
     
-    if (metric.metric_name) { 
-      fprintf(fs, "# event: %s\n", metric.metric_name); 
-    }
-    fprintf(fs, "# sample period: %"PRIu64"\n", metric.sample_period); 
+    // (metric.metric_name)
+    fprintf(fs, "  { event: %s\t", metric.metric_name); 
+    fprintf(fs, "  sample period: %"PRIu64" }\n", metric.sample_period); 
   }
+  fputs("  }\n", fs);
   
   return HPCFILE_OK;
 }
