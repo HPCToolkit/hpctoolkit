@@ -229,10 +229,19 @@ int csprof_cct__init(csprof_cct_t* x);
 int csprof_cct__fini(csprof_cct_t *x);
 
 
-// Returns the leaf node representing the sample, if successful
-csprof_cct_node_t *
-csprof_cct_insert_backtrace(csprof_cct_t*, void*, int metric_id,
-			    csprof_frame_t *, csprof_frame_t*, size_t);
+// Given a call path of the following form, insert the path into the
+// calling context tree and, if successful, return the leaf node
+// representing the sample point (innermost frame).
+//
+//               (low VMAs)                       (high VMAs)
+//   backtrace: [inner-frame......................outer-frame]
+//              ^ bt_beg                                       ^ bt_end
+//              ^ path_end                                   ^ path_beg
+//
+csprof_cct_node_t*
+csprof_cct_insert_backtrace(csprof_cct_t *x, void *treenode, int metric_id,
+			    csprof_frame_t *path_beg, csprof_frame_t *path_end,
+			    size_t sample_count);
 
 int csprof_cct__write_txt(FILE* fs, csprof_cct_t* x);
 

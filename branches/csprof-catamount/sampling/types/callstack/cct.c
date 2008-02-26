@@ -470,98 +470,92 @@ csprof_cct__fini(csprof_cct_t *x)
   return CSPROF_OK;
 }
 
+
+// See usage in header.
 csprof_cct_node_t*
 csprof_cct_insert_backtrace(csprof_cct_t *x, void *treenode, int metric_id,
-			    csprof_frame_t *start, csprof_frame_t *end,
+			    csprof_frame_t *path_beg, csprof_frame_t *path_end,
 			    size_t sample_count)
 {
+#define insert_backtrace__ADVANCE_PATH_FRAME(x) (x)--
+#define insert_backtrace__IS_PATH_FRAME_AT_END(x) ((x) < path_end)
+
+  MSG(1,"Insert backtrace w x=%lp,tn=%lp,strt=%lp,end=%lp", x, treenode,
+      path_beg, path_end);
+
+  csprof_frame_t* cur_frame = path_beg;
   csprof_cct_node_t *tn = (csprof_cct_node_t *)treenode;
 
-  MSG(1,"Insert backtrace w x=%lp,tn=%lp,strt=%lp,end=%lp",x,treenode,start,end);
-  if(csprof_cct__isempty(x)) {
-    MSG(1,"x is empty");
-    x->tree_root = csprof_cct_node__create(start->ip, start->sp);
-
+  if (csprof_cct__isempty(x)) {
+    x->tree_root = csprof_cct_node__create(cur_frame->ip, cur_frame->sp);
     tn = x->tree_root;
     x->num_nodes = 1;
 
-    DBGMSG_PUB(CSPROF_DBG_CCT_INSERTION, "--start ip %#lx | sp %#lx",
-	       start->ip, start->sp);
-    start--;
-
-#ifdef CSPROF_TRAMPOLINE_BACKEND
+    DBGMSG_PUB(CSPROF_DBG_CCT_INSERTION, "beg ip %#lx | sp %#lx",
+	       cur_frame->ip, cur_frame->sp);
     DBGMSG_PUB(CSPROF_DBG_CCT_INSERTION, "root ip %#lx | sp %#lx",
 	       tn->ip, tn->sp);
-#else
-    DBGMSG_PUB(CSPROF_DBG_CCT_INSERTION, "root ip %#lx",
-	       tn->ip);
-#endif
-    DBGMSG_PUB(CSPROF_DBG_CCT_INSERTION, "nxt start ip %#lx | sp %#lx",
-	       start->ip, start->sp);
+
+    insert_backtrace__ADVANCE_PATH_FRAME(cur_frame);
+
+    DBGMSG_PUB(CSPROF_DBG_CCT_INSERTION, "nxt beg ip %#lx | sp %#lx",
+	       cur_frame->ip, cur_frame->sp);
   }
 
-  if(tn == NULL) {
+  if (tn == NULL) {
     tn = x->tree_root;
 
-#ifdef CSPROF_TRAMPOLINE_BACKEND
     DBGMSG_PUB(CSPROF_DBG_CCT_INSERTION, "(NULL) root ip %#lx | sp %#lx",
 	       tn->ip, tn->sp);
-#else
-    DBGMSG_PUB(CSPROF_DBG_CCT_INSERTION, "(NULL) root ip %#lx",
-	       tn->ip);
-#endif
-    DBGMSG_PUB(CSPROF_DBG_CCT_INSERTION, "start ip %#lx | sp %#lx",
-	       start->ip, start->sp);
+    DBGMSG_PUB(CSPROF_DBG_CCT_INSERTION, "beg ip %#lx | sp %#lx",
+	       cur_frame->ip, cur_frame->sp);
 
     /* we don't want the tree root calling itself */
+
+    if (cur_frame->ip == tn->ip 
 #ifdef CSPROF_TRAMPOLINE_BACKEND
-    if(start->ip == tn->ip && start->sp == tn->sp) {
-      start--;
-    }
-#else
-    if(start->ip == tn->ip) {
-      MSG(1,"start ip == tn ip = %lx",tn->ip);
-      start--;
-    }
+	&& cur_frame->sp == tn->sp
 #endif
-    DBGMSG_PUB(CSPROF_DBG_CCT_INSERTION, "start ip %#lx | sp %#lx",
-	       start->ip, start->sp);
+	) {
+      MSG(1,"beg ip == tn ip = %lx",tn->ip);
+      insert_backtrace__ADVANCE_PATH_FRAME(cur_frame);
+    }
+
+    DBGMSG_PUB(CSPROF_DBG_CCT_INSERTION, "beg ip %#lx | sp %#lx",
+	       cur_frame->ip, cur_frame->sp);
   }
 
-  while(1) {
-    if(start < end) {
-      /* done */
+  while (1) {
+    if (insert_backtrace__IS_PATH_FRAME_AT_END(cur_frame)) {
       break;
     }
-    else {
-      /* find child */
+
+    /* find child */
+    MSG(1,"finding child in tree w ip = %lx", cur_frame->ip);
+    csprof_cct_node_t *c = csprof_cct_node__find_child(tn, cur_frame->ip
 #ifdef CSPROF_TRAMPOLINE_BACKEND
-      csprof_cct_node_t *c =
-	csprof_cct_node__find_child(tn, start->ip, start->sp);
-#else
-      MSG(1,"finding child in tree w ip = %lx",start->ip);
-      csprof_cct_node_t *c =
-	csprof_cct_node__find_child(tn, start->ip);
+						       , cur_frame->sp
 #endif
-
-      if(c) {
-	/* child exists; recur */
-	MSG(1,"found child");
+						       );
+    
+    if (c) {
+      /* child exists; recur */
+      MSG(1,"found child");
+      tn = c;
+      insert_backtrace__ADVANCE_PATH_FRAME(cur_frame);
+    }
+    else {
+      /* no such child; insert new tail */
+      MSG(1,"No child found, inserting new tail");
+      
+      while (!insert_backtrace__IS_PATH_FRAME_AT_END(cur_frame)) {
+	MSG(1,"create node w ip = %lx",cur_frame->ip);
+	c = csprof_cct_node__create(cur_frame->ip, cur_frame->sp);
+	csprof_cct_node__parent_insert(c, tn);
+	x->num_nodes++;
+	
 	tn = c;
-	start--;
-      }
-      else {
-	/* no such child; insert new tail */
-	MSG(1,"No child found, inserting new tail");
-	while(start >= end) {
-	  MSG(1,"create node w ip = %lx",start->ip);
-	  c = csprof_cct_node__create(start->ip, start->sp);
-	  csprof_cct_node__parent_insert(c, tn);
-	  x->num_nodes++;
-
-	  tn = c;
-	  start--;
-	}
+	insert_backtrace__ADVANCE_PATH_FRAME(cur_frame);
       }
     }
   }
