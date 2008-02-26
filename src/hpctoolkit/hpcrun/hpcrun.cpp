@@ -464,6 +464,8 @@ list_available_events_helper(Args::EventList_t listType)
   count = 0;
   if (isP4) {
     /* Pentium IV special case */
+    // FIXME: Pentium IV PRESETS have been deprecated
+#if defined(PAPI_PENT4_ENUM_BITS) & defined(PAPI_PENT4_ENUM_GROUPS)
     do {
       int j = i;
       unsigned l = 0;
@@ -480,6 +482,7 @@ list_available_events_helper(Args::EventList_t listType)
 	}
       }
     } while (dl_PAPI_enum_event(&i, PAPI_PENT4_ENUM_GROUPS) == PAPI_OK);
+#endif
   }
   else {
     do {
@@ -498,7 +501,8 @@ list_available_events_helper(Args::EventList_t listType)
 	}
 	count++;
       }
-    } while (dl_PAPI_enum_event(&i, PAPI_ENUM_ALL) == PAPI_OK);
+    } while (dl_PAPI_enum_event(&i, 0 /*PAPI_ENUM_ALL*/) == PAPI_OK);
+    // FIXME: PAPI 3.5.0 had PAPI_ENUM_ALL=0 vs 3.x.x CVS's PAPI_ENUM_ALL=0
   }
   
   os << "Total native events reported: " << count << "\n";
