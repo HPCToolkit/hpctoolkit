@@ -101,13 +101,13 @@ typedef struct csprof_cct_node_s {
   // 
   // ---------------------------------------------------------
 
-  lush_assoc_info_t as_info;
+  lush_assoc_info_t as_info; // LUSH
 
-  /* instruction pointer: more accurately, this is an 'operation
-     pointer'.  The operation in the instruction packet is represented
-     by adding 0, 1, or 2 to the instruction pointer for the first,
-     second and third operation, respectively. */
-  void* ip; /* physcial ip */
+  /* physical instruction pointer: more accurately, this is an
+     'operation pointer'.  The operation in the instruction packet is
+     represented by adding 0, 1, or 2 to the instruction pointer for
+     the first, second and third operation, respectively. */
+  void* ip;
 
   // lip: if assoc = a <-> {1, M} then it is tacked onto the end of metrics...
 

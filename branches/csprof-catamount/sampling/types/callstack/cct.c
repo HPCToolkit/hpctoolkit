@@ -51,13 +51,8 @@ csprof_cct__get_first_child_CB(csprof_cct_t* x, csprof_cct_node_t* node);
 static void*
 csprof_cct__get_sibling_CB(csprof_cct_t* x, csprof_cct_node_t* node);
 
-#ifdef CSPROF_TRAMPOLINE_BACKEND
 static csprof_cct_node_t *
 csprof_cct_node__find_child(csprof_cct_node_t*, void*, void*);
-#else
-static csprof_cct_node_t *
-csprof_cct_node__find_child(csprof_cct_node_t*, void*);
-#endif
 
 static int
 csprof_cct_node__link(csprof_cct_node_t *, csprof_cct_node_t *);
@@ -316,11 +311,7 @@ csprof_cct_node__init(csprof_cct_node_t* x, csprof_cct_node_t* parent,
   memset(x, 0, sizeof(*x));
 
   x->ip = ip;
-#ifdef CSPROF_TRAMPOLINE_BACKEND
   x->sp = sp;
-#else
-  x->sp = NULL;
-#endif
 
   /* initial circular list of siblings includes only self */
   x->next_sibling = NULL;
@@ -331,7 +322,10 @@ csprof_cct_node__init(csprof_cct_node_t* x, csprof_cct_node_t* parent,
 }
 
 static csprof_cct_node_t *
-csprof_cct_node__create(void *ip, void *sp)
+csprof_cct_node__create(lush_assoc_info_t as_info, 
+			void* ip,
+			lush_lip_t* lip,
+			void* sp)
 {
   size_t sz = (sizeof(csprof_cct_node_t)
 	       + sizeof(size_t)*(csprof_get_max_metrics() - 1));
@@ -339,12 +333,11 @@ csprof_cct_node__create(void *ip, void *sp)
 
   memset(node, 0, sz);
 
+  node->as_info = as_info;
   node->ip = ip;
-#ifdef CSPROF_TRAMPOLINE_BACKEND
+  //node->lip = lip; // LUSH:FIXME
   node->sp = sp;
-#else
-  node->sp = NULL;
-#endif
+
   node->next_sibling = NULL;
 
   return node;
@@ -389,40 +382,19 @@ csprof_cct_node__link(csprof_cct_node_t* x, csprof_cct_node_t* parent)
   return CSPROF_OK;
 }
 
-/* csprof_cct_node__find_child: finds the child of 'x' with
-   instruction pointer equal to 'ip'.
-
-   we have different versions because the trampoline-based backends
-   need to worry about stack pointers and such.  this should be FIXME. */
-
-#ifdef CSPROF_TRAMPOLINE_BACKEND
+// csprof_cct_node__find_child: finds the child of 'x' with
+// instruction pointer equal to 'ip'.
+//
+// tallent: I slightly sanitied the different versions, but FIXME
+//
 static csprof_cct_node_t*
 csprof_cct_node__find_child(csprof_cct_node_t* x, void* ip, void* sp)
 {
-#if 1
+#ifdef CSPROF_TRAMPOLINE_BACKEND
   struct rbtree_node *node = rbtree_search(&x->tree_children, ip, sp);
 
   return node ? DATA(node) : NULL;
 #else
-  csprof_cct_node_t* c, *first;
-
-  first = c = csprof_cct_node__first_child(x);
-  if (c) {
-    do {
-      void *cip = c->ip;
-      if(cip == ip) { return c; }
-	
-      c = csprof_cct_node__next_sibling(c);
-    } while (c != NULL);
-  }
-
-  return NULL;
-#endif
-}
-#else
-static csprof_cct_node_t*
-csprof_cct_node__find_child(csprof_cct_node_t* x, void* ip)
-{
   csprof_cct_node_t* c, *first;
 
   first = c = csprof_cct_node__first_child(x);
@@ -435,8 +407,9 @@ csprof_cct_node__find_child(csprof_cct_node_t* x, void* ip)
   }
 
   return NULL;
-}
 #endif
+}
+
 
 
 //***************************************************************************
@@ -483,23 +456,26 @@ csprof_cct_insert_backtrace(csprof_cct_t *x, void *treenode, int metric_id,
   MSG(1,"Insert backtrace w x=%lp,tn=%lp,strt=%lp,end=%lp", x, treenode,
       path_beg, path_end);
 
-  csprof_frame_t* cur_frame = path_beg;
+  csprof_frame_t* frm = path_beg; // current frame 
   csprof_cct_node_t *tn = (csprof_cct_node_t *)treenode;
 
   if (csprof_cct__isempty(x)) {
-    x->tree_root = csprof_cct_node__create(cur_frame->ip, cur_frame->sp);
+    // LUSH:FIXME: introduce bogus root to handle possible forests?
+
+    x->tree_root = csprof_cct_node__create(frm->as_info, frm->ip, 
+					   frm->lip, frm->sp);
     tn = x->tree_root;
     x->num_nodes = 1;
 
     DBGMSG_PUB(CSPROF_DBG_CCT_INSERTION, "beg ip %#lx | sp %#lx",
-	       cur_frame->ip, cur_frame->sp);
+	       frm->ip, frm->sp);
     DBGMSG_PUB(CSPROF_DBG_CCT_INSERTION, "root ip %#lx | sp %#lx",
 	       tn->ip, tn->sp);
 
-    insert_backtrace__ADVANCE_PATH_FRAME(cur_frame);
+    insert_backtrace__ADVANCE_PATH_FRAME(frm);
 
     DBGMSG_PUB(CSPROF_DBG_CCT_INSERTION, "nxt beg ip %#lx | sp %#lx",
-	       cur_frame->ip, cur_frame->sp);
+	       frm->ip, frm->sp);
   }
 
   if (tn == NULL) {
@@ -508,54 +484,52 @@ csprof_cct_insert_backtrace(csprof_cct_t *x, void *treenode, int metric_id,
     DBGMSG_PUB(CSPROF_DBG_CCT_INSERTION, "(NULL) root ip %#lx | sp %#lx",
 	       tn->ip, tn->sp);
     DBGMSG_PUB(CSPROF_DBG_CCT_INSERTION, "beg ip %#lx | sp %#lx",
-	       cur_frame->ip, cur_frame->sp);
+	       frm->ip, frm->sp);
 
     /* we don't want the tree root calling itself */
 
-    if (cur_frame->ip == tn->ip 
+    if (frm->ip == tn->ip 
 #ifdef CSPROF_TRAMPOLINE_BACKEND
-	&& cur_frame->sp == tn->sp
+	&& frm->sp == tn->sp
 #endif
 	) {
       MSG(1,"beg ip == tn ip = %lx",tn->ip);
-      insert_backtrace__ADVANCE_PATH_FRAME(cur_frame);
+      insert_backtrace__ADVANCE_PATH_FRAME(frm);
     }
 
     DBGMSG_PUB(CSPROF_DBG_CCT_INSERTION, "beg ip %#lx | sp %#lx",
-	       cur_frame->ip, cur_frame->sp);
+	       frm->ip, frm->sp);
   }
 
   while (1) {
-    if (insert_backtrace__IS_PATH_FRAME_AT_END(cur_frame)) {
+    if (insert_backtrace__IS_PATH_FRAME_AT_END(frm)) {
       break;
     }
 
-    /* find child */
-    MSG(1,"finding child in tree w ip = %lx", cur_frame->ip);
-    csprof_cct_node_t *c = csprof_cct_node__find_child(tn, cur_frame->ip
-#ifdef CSPROF_TRAMPOLINE_BACKEND
-						       , cur_frame->sp
-#endif
-						       );
-    
+    // Attempt to find a child 'c' corresponding to 'frm'
+    MSG(1,"finding child in tree w ip = %lx", frm->ip);
+    // LUSH:FIXME: match with <assoc, ip, lip>
+
+    csprof_cct_node_t *c = csprof_cct_node__find_child(tn, frm->ip, frm->sp);
     if (c) {
-      /* child exists; recur */
+      // child exists; recur
       MSG(1,"found child");
       tn = c;
-      insert_backtrace__ADVANCE_PATH_FRAME(cur_frame);
+      // LUSH:FIXME: if new assoc is 1:1 (and old is not), set assoc
+      insert_backtrace__ADVANCE_PATH_FRAME(frm);
     }
     else {
-      /* no such child; insert new tail */
+      // no such child; insert new tail
       MSG(1,"No child found, inserting new tail");
       
-      while (!insert_backtrace__IS_PATH_FRAME_AT_END(cur_frame)) {
-	MSG(1,"create node w ip = %lx",cur_frame->ip);
-	c = csprof_cct_node__create(cur_frame->ip, cur_frame->sp);
+      while (!insert_backtrace__IS_PATH_FRAME_AT_END(frm)) {
+	MSG(1,"create node w ip = %lx",frm->ip);
+	c = csprof_cct_node__create(frm->as_info, frm->ip, frm->lip, frm->sp);
 	csprof_cct_node__parent_insert(c, tn);
 	x->num_nodes++;
 	
 	tn = c;
-	insert_backtrace__ADVANCE_PATH_FRAME(cur_frame);
+	insert_backtrace__ADVANCE_PATH_FRAME(frm);
       }
     }
   }
@@ -614,11 +588,7 @@ csprof_cct__get_data_CB(csprof_cct_t* x, csprof_cct_node_t* node,
 			hpcfile_cstree_nodedata_t* d)
 {
   d->ip = (hpcfile_vma_t)node->ip;
-#ifdef CSPROF_TRAMPOLINE_BACKEND
   d->sp = (hpcfile_uint_t)node->sp;
-#else
-  d->sp = (hpcfile_uint_t)NULL;
-#endif
   memcpy(d->metrics, node->metrics, d->num_metrics * sizeof(size_t));
 }
 
