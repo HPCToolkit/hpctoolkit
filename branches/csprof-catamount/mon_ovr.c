@@ -14,6 +14,7 @@
 #include "epoch.h"
 #include "dl_bound.h"
 #include "structs.h"
+#include "sample_event.h"
 #include "csprof_monitor_callbacks.h"
 
 #ifdef LINUX
