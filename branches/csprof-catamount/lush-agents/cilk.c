@@ -94,9 +94,10 @@ typedef struct {
   void* end;
 } addr_pair_t;
 
-addr_pair_t tablecilk;
+#define tablecilk_sz 5
+addr_pair_t tablecilk[tablecilk_sz];
 
-#define tableother_sz 20
+#define tableother_sz 200
 addr_pair_t tableother[tableother_sz];
 
 //*************************** Forward Declarations **************************
@@ -190,41 +191,47 @@ LUSHI_ismycode(void* addr)
 int 
 determine_code_ranges()
 {
-  int i;
   LUSHCB_epoch_t* epoch;
   CB_get_loadmap(&epoch);
 
-  if (epoch->num_modules > 20) {
-    fprintf(stderr, "FIXME: too many load modules");
-  }
-
   // Initialize
-  tablecilk.beg = NULL;
-  tablecilk.end = NULL;
+  for (int i = 0; i < tablecilk_sz; ++i) {
+    tablecilk[i].beg = NULL;
+    tablecilk[i].end = NULL;
+  }
   
-  for (i = 0; i < tableother_sz; ++i) {
+  for (int i = 0; i < tableother_sz; ++i) {
     tableother[i].beg = NULL;
     tableother[i].end = NULL;
   }
 
   // Fill interval table
-  i = 0;
+  int i_cilk = 0;
+  int i_other = 0;
   csprof_epoch_module_t* mod;
   for (mod = epoch->loaded_modules; mod != NULL; mod = mod->next) {
 
     if (strstr(mod->module_name, libcilk_str)) {
-      if (tablecilk.beg != NULL) {
-	fprintf(stderr, "FIXME: assuming only one address interval");
+      tablecilk[i_cilk].beg = mod->mapaddr;
+      tablecilk[i_cilk].end = mod->mapaddr + mod->size;
+      i_cilk++;
+
+      if ( !(i_cilk < tablecilk_sz) ) {
+	fprintf(stderr, "FIXME: libcilk has too many address intervals\n");
+	i_cilk = tablecilk_sz - 1;
       }
-      tablecilk.beg = mod->mapaddr;
-      tablecilk.end = mod->mapaddr + mod->size;
     }
 
     if (strstr(mod->module_name, lib_str)
 	|| strstr(mod->module_name, ld_str)) {
-      tableother[i].beg = mod->mapaddr;
-      tableother[i].end = mod->mapaddr + mod->size;
-      i++;
+      tableother[i_other].beg = mod->mapaddr;
+      tableother[i_other].end = mod->mapaddr + mod->size;
+      i_other++;
+
+      if ( !(i_other < tableother_sz) ) {
+	fprintf(stderr, "FIXME: too many load modules\n");
+	i_other = tableother_sz - 1;
+      }
     }
   }
 
@@ -235,15 +242,21 @@ determine_code_ranges()
 bool
 is_libcilk(void* addr)
 {
-  return (tablecilk.beg <= addr && addr < tablecilk.end);
+  for (int i = 0; i < tablecilk_sz; ++i) {
+    if (!tablecilk[i].beg) { break; }
+    if (tablecilk[i].beg <= addr && addr < tablecilk[i].end) {
+      return true;
+    }
+  }
+  return false;
 }
 
 
 bool
 is_cilkprogram(void* addr)
 {
-  int i;
-  for (i = 0; i < tableother_sz; ++i) {
+  for (int i = 0; i < tableother_sz; ++i) {
+    if (!tableother[i].beg) { break; }
     if (tableother[i].beg <= addr && addr < tableother[i].end) {
       return false;
     }

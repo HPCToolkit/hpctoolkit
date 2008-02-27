@@ -152,7 +152,7 @@ lush_backtrace(csprof_state_t* state, ucontext_t* context,
   }
 
   // ---------------------------------------------------------
-  // insert backtrace into calling context tree (FIXME)
+  // insert backtrace into calling context tree
   // ---------------------------------------------------------
   csprof_cct_node_t* node = NULL;
   node = csprof_state_insert_backtrace(state, metric_id, 
