@@ -51,8 +51,11 @@ csprof_cct__get_first_child_CB(csprof_cct_t* x, csprof_cct_node_t* node);
 static void*
 csprof_cct__get_sibling_CB(csprof_cct_t* x, csprof_cct_node_t* node);
 
-static csprof_cct_node_t *
-csprof_cct_node__find_child(csprof_cct_node_t*, void*, void*);
+static csprof_cct_node_t*
+csprof_cct_node__find_child(csprof_cct_node_t* x,
+			    lush_assoc_info_t as_info, void* ip,
+			    lush_lip_t* lip,
+			    void* sp);
 
 static int
 csprof_cct_node__link(csprof_cct_node_t *, csprof_cct_node_t *);
@@ -333,9 +336,9 @@ csprof_cct_node__create(lush_assoc_info_t as_info,
 
   memset(node, 0, sz);
 
-  node->as_info = as_info;
+  node->as_info = as_info; // LUSH
   node->ip = ip;
-  //node->lip = lip; // LUSH:FIXME
+  node->lip = lip;         // LUSH
   node->sp = sp;
 
   node->next_sibling = NULL;
@@ -382,25 +385,35 @@ csprof_cct_node__link(csprof_cct_node_t* x, csprof_cct_node_t* parent)
   return CSPROF_OK;
 }
 
+
 // csprof_cct_node__find_child: finds the child of 'x' with
 // instruction pointer equal to 'ip'.
 //
 // tallent: I slightly sanitied the different versions, but FIXME
 //
 static csprof_cct_node_t*
-csprof_cct_node__find_child(csprof_cct_node_t* x, void* ip, void* sp)
+csprof_cct_node__find_child(csprof_cct_node_t* x,
+			    lush_assoc_info_t as_info, void* ip,
+			    lush_lip_t* lip,
+			    void* sp)
 {
 #ifdef CSPROF_TRAMPOLINE_BACKEND
+  // FIXME:LUSH: match assoc and lip
   struct rbtree_node *node = rbtree_search(&x->tree_children, ip, sp);
 
   return node ? DATA(node) : NULL;
 #else
   csprof_cct_node_t* c, *first;
-
+  lush_assoc_t as = lush_assoc_info__get_assoc(as_info);
+      
   first = c = csprof_cct_node__first_child(x);
   if (c) {
     do {
-      if (c->ip == ip) { return c; }
+      // LUSH
+      lush_assoc_t c_as = lush_assoc_info__get_assoc(c->as_info);
+      if (c->ip == ip && c->lip == lip && lush_assoc_class_eq(c_as, as)) {
+	return c;
+      }
 
       c = csprof_cct_node__next_sibling(c);
     } while (c != NULL);
@@ -450,8 +463,8 @@ csprof_cct_insert_backtrace(csprof_cct_t *x, void *treenode, int metric_id,
 			    csprof_frame_t *path_beg, csprof_frame_t *path_end,
 			    size_t sample_count)
 {
-#define insert_backtrace__ADVANCE_PATH_FRAME(x) (x)--
-#define insert_backtrace__IS_PATH_FRAME_AT_END(x) ((x) < path_end)
+#define csprof_MY_ADVANCE_PATH_FRAME(x)   (x)--
+#define csprof_MY_IS_PATH_FRAME_AT_END(x) ((x) < path_end)
 
   MSG(1,"Insert backtrace w x=%lp,tn=%lp,strt=%lp,end=%lp", x, treenode,
       path_beg, path_end);
@@ -472,7 +485,7 @@ csprof_cct_insert_backtrace(csprof_cct_t *x, void *treenode, int metric_id,
     DBGMSG_PUB(CSPROF_DBG_CCT_INSERTION, "root ip %#lx | sp %#lx",
 	       tn->ip, tn->sp);
 
-    insert_backtrace__ADVANCE_PATH_FRAME(frm);
+    csprof_MY_ADVANCE_PATH_FRAME(frm);
 
     DBGMSG_PUB(CSPROF_DBG_CCT_INSERTION, "nxt beg ip %#lx | sp %#lx",
 	       frm->ip, frm->sp);
@@ -494,7 +507,7 @@ csprof_cct_insert_backtrace(csprof_cct_t *x, void *treenode, int metric_id,
 #endif
 	) {
       MSG(1,"beg ip == tn ip = %lx",tn->ip);
-      insert_backtrace__ADVANCE_PATH_FRAME(frm);
+      csprof_MY_ADVANCE_PATH_FRAME(frm);
     }
 
     DBGMSG_PUB(CSPROF_DBG_CCT_INSERTION, "beg ip %#lx | sp %#lx",
@@ -502,34 +515,41 @@ csprof_cct_insert_backtrace(csprof_cct_t *x, void *treenode, int metric_id,
   }
 
   while (1) {
-    if (insert_backtrace__IS_PATH_FRAME_AT_END(frm)) {
+    if (csprof_MY_IS_PATH_FRAME_AT_END(frm)) {
       break;
     }
 
     // Attempt to find a child 'c' corresponding to 'frm'
     MSG(1,"finding child in tree w ip = %lx", frm->ip);
-    // LUSH:FIXME: match with <assoc, ip, lip>
 
-    csprof_cct_node_t *c = csprof_cct_node__find_child(tn, frm->ip, frm->sp);
+    csprof_cct_node_t *c;
+    c = csprof_cct_node__find_child(tn, frm->as_info, frm->ip, frm->lip, 
+				    frm->sp);
     if (c) {
       // child exists; recur
       MSG(1,"found child");
       tn = c;
-      // LUSH:FIXME: if new assoc is 1:1 (and old is not), set assoc
-      insert_backtrace__ADVANCE_PATH_FRAME(frm);
+
+      // If as_frm is 1 <-> 1 and c->as_info is not, update the latter
+      lush_assoc_t as_frm = lush_assoc_info__get_assoc(frm->as_info);
+      if (as_frm == LUSH_ASSOC_1_to_1) {
+	// INVARIANT: c->as_info must be either a <-> 1 or 1 <-> a
+	lush_assoc_info__set_assoc(c->as_info, LUSH_ASSOC_1_to_1);
+      }
+      csprof_MY_ADVANCE_PATH_FRAME(frm);
     }
     else {
       // no such child; insert new tail
       MSG(1,"No child found, inserting new tail");
       
-      while (!insert_backtrace__IS_PATH_FRAME_AT_END(frm)) {
+      while (!csprof_MY_IS_PATH_FRAME_AT_END(frm)) {
 	MSG(1,"create node w ip = %lx",frm->ip);
 	c = csprof_cct_node__create(frm->as_info, frm->ip, frm->lip, frm->sp);
 	csprof_cct_node__parent_insert(c, tn);
 	x->num_nodes++;
 	
 	tn = c;
-	insert_backtrace__ADVANCE_PATH_FRAME(frm);
+	csprof_MY_ADVANCE_PATH_FRAME(frm);
       }
     }
   }

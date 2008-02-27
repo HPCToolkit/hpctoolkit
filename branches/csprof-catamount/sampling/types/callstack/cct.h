@@ -109,7 +109,7 @@ typedef struct csprof_cct_node_s {
      the first, second and third operation, respectively. */
   void* ip;
 
-  // lip: if assoc = a <-> {1, M} then it is tacked onto the end of metrics...
+  lush_lip_t* lip; // LUSH (if assoc != a <-> 0, then tack onto end...)
 
   // ---------------------------------------------------------
   // tree structure
