@@ -138,7 +138,10 @@ hpcfile_cstree_write(FILE* fs, void* tree, void* root, void* tree_ctxt,
 
   hpcfile_cstree_hdr__init(&fhdr);
   fhdr.epoch = epoch;
-  fhdr.num_nodes = num_nodes - (tree_ctxt ? 1 : 0);
+  fhdr.num_nodes = num_nodes;
+  if (num_nodes > 0 && tree_ctxt) { // FIXME: better way...
+    fhdr.num_nodes--;
+  }
   ret = hpcfile_cstree_hdr__fwrite(&fhdr, fs); 
   if (ret != HPCFILE_OK) {
     return HPCFILE_ERR; 
