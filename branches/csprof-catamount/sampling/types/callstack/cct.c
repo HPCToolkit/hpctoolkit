@@ -530,10 +530,10 @@ csprof_cct_insert_backtrace(csprof_cct_t *x, void *treenode, int metric_id,
       MSG(1,"found child");
       tn = c;
 
-      // If as_frm is 1 <-> 1 and c->as_info is not, update the latter
+      // If as_frm is 1-to-1 and c->as_info is not, update the latter
       lush_assoc_t as_frm = lush_assoc_info__get_assoc(frm->as_info);
       if (as_frm == LUSH_ASSOC_1_to_1) {
-	// INVARIANT: c->as_info must be either a <-> 1 or 1 <-> a
+	// INVARIANT: c->as_info must be either a-to-1 or 1-to-a
 	lush_assoc_info__set_assoc(c->as_info, LUSH_ASSOC_1_to_1);
       }
       csprof_MY_ADVANCE_PATH_FRAME(frm);
