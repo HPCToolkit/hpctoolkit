@@ -115,7 +115,7 @@ lush_backtrace(csprof_state_t* state, ucontext_t* context,
       lush_lip_t* lip = lush_cursor_get_lip(&cursor);
       DBGMSG_PUB(CSPROF_DBG_UNWINDING, "LIP: %p", *((void**)lip));
       
-      if (lush_assoc_is_x_to_1(as) && !lip_persistent) {
+      if (lush_assoc_is_a_to_1(as) && !lip_persistent) {
 	lip_persistent = lush_lip_clone(lip);
       }
       else {
@@ -155,12 +155,9 @@ lush_backtrace(csprof_state_t* state, ucontext_t* context,
   // insert backtrace into calling context tree (FIXME)
   // ---------------------------------------------------------
   csprof_cct_node_t* node = NULL;
-#if 0
-  node = csprof_state_insert_backtrace(state, metric_id, state->unwind - 1,
-				       state->btbuf, sample_count);
-#else
-  node = (csprof_cct_node_t*)(1); // FIXME: bogus non-NULL value
-#endif
+  node = csprof_state_insert_backtrace(state, metric_id, 
+				       state->unwind - 1, state->btbuf,
+				       sample_count);
 
   // FIXME: register active marker
 
