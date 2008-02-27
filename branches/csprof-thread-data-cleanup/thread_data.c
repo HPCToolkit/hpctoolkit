@@ -26,9 +26,9 @@ csprof_unthreaded_data(void)
 void
 csprof_thread_data_init(int id, offset_t sz, offset_t sz_tmp)
 {
-  TD_GET(id)       	= id;
-  TD_GET(memstore) 	= csprof_malloc_init(sz,sz_tmp);
-  TD_GET(state)         = NULL;
+  TD_GET(id)       = id;
+  TD_GET(memstore) = csprof_malloc_init(sz,sz_tmp);
+  TD_GET(state)    = NULL;
 
   csprof_state_t *state = csprof_malloc(sizeof(csprof_state_t));
 

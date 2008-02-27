@@ -229,7 +229,9 @@ papi_event_init(void) //int *eventSet,char *evlist)
 
     ret = PAPI_add_event(eventSet, evcode);
     if (ret != PAPI_OK){
-      EMSG("Failure: PAPI_add_event: %d", ret);
+      char nm[256];
+      PAPI_event_code_to_name(evcode,nm);
+      EMSG("Failure: PAPI_add_event:, trying to add event %s, got ret code = %d", nm, ret);
       abort();
     }
   }

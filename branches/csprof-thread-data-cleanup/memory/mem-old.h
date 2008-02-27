@@ -1,3 +1,57 @@
+// $Id: mem.h 918 2007-09-21 02:34:57Z mfagan $
+// -*-C-*-
+// * BeginRiceCopyright *****************************************************
+/*
+  Copyright ((c)) 2002, Rice University 
+  All rights reserved.
+
+  Redistribution and use in source and binary forms, with or without
+  modification, are permitted provided that the following conditions are
+  met:
+
+  * Redistributions of source code must retain the above copyright
+  notice, this list of conditions and the following disclaimer.
+
+  * Redistributions in binary form must reproduce the above copyright
+  notice, this list of conditions and the following disclaimer in the
+  documentation and/or other materials provided with the distribution.
+
+  * Neither the name of Rice University (RICE) nor the names of its
+  contributors may be used to endorse or promote products derived from
+  this software without specific prior written permission.
+
+  This software is provided by RICE and contributors "as is" and any
+  express or implied warranties, including, but not limited to, the
+  implied warranties of merchantability and fitness for a particular
+  purpose are disclaimed. In no event shall RICE or contributors be
+  liable for any direct, indirect, incidental, special, exemplary, or
+  consequential damages (including, but not limited to, procurement of
+  substitute goods or services; loss of use, data, or profits; or
+  business interruption) however caused and on any theory of liability,
+  whether in contract, strict liability, or tort (including negligence
+  or otherwise) arising in any way out of the use of this software, even
+  if advised of the possibility of such damage.
+*/
+// ******************************************************* EndRiceCopyright *
+
+//***************************************************************************
+//
+// File:
+//    csprof_mem.h
+//
+// Purpose:
+//    An interface to and implementation of privately managed dynamic
+//    memory as an alternative to malloc.  The memory is implemented
+//    using memory maps that use the system's swap space for backing
+//    (in contrast to a file or some other shared device).  When space
+//    in one pool of dynamic store becomes low, another pool will be
+//    allocated if possible.
+//
+// Description:
+//    [The set of functions, macros, etc. defined in the file]
+//
+//***************************************************************************
+
 #ifndef CSPROF_MEM_H
 #define CSPROF_MEM_H
 
@@ -40,14 +94,14 @@ typedef struct csprof_mmap_info_s {
 } csprof_mmap_info_t;
 
 int csprof_mmap_info__init(csprof_mmap_info_t* x);
-// int csprof_mmap_info__fini(csprof_mmap_info_t* x);
+int csprof_mmap_info__fini(csprof_mmap_info_t* x);
 
 
 // ---------------------------------------------------------
 // csprof_mmap_alloc_info_t: Store information about memory allocation
 // in 'mmap'
 // ---------------------------------------------------------
-typedef struct _mmap_alloc_info_s { 
+typedef struct csprof_mmap_alloc_info_s { 
 
   csprof_mmap_info_t* mmap; // mmap to allocate memory in
 
@@ -58,7 +112,7 @@ typedef struct _mmap_alloc_info_s {
 } csprof_mmap_alloc_info_t;
 
 int csprof_mmap_alloc_info__init(csprof_mmap_alloc_info_t* x);
-  // int csprof_mmap_alloc_info__fini(csprof_mmap_alloc_info_t* x);
+int csprof_mmap_alloc_info__fini(csprof_mmap_alloc_info_t* x);
 
 //***************************************************************************
 // csprof_mem: (quasi-class)
@@ -85,7 +139,7 @@ typedef enum csprof_mem_store_e {
 // each csprof_mmap_info_t structure in a 'store' list is placed at
 // the beginning of the mmap that it refers to.
 // ---------------------------------------------------------
-typedef struct _mem_s {
+typedef struct csprof_mem_s {
 
   // A list of mmaps and alloc info for regular storage
   csprof_mmap_info_t*      store;    // NULL if disabled
@@ -101,7 +155,7 @@ typedef struct _mem_s {
 
 } csprof_mem_t;
 
-  // typedef csprof_mem_t *get_memstore_f(void);
+typedef csprof_mem_t *get_memstore_f(void);
 
 //***************************************************************************
 //
@@ -127,7 +181,7 @@ csprof_mem_t *csprof_malloc_init(offset_t sz, offset_t sz_tmp);
 
 // csprof_malloc_fini: Cleanup and deallocate memory stores.  Returns
 // CSPROF_OK upon success; CSPROF_ERR on error.
-// int csprof_malloc_fini(csprof_mem_t *);
+int csprof_malloc_fini(csprof_mem_t *);
 
 // csprof_malloc: Returns a pointer to a block of memory of the
 // *exact* size (in bytes) requested.  If there is insufficient
@@ -136,7 +190,7 @@ csprof_mem_t *csprof_malloc_init(offset_t sz, offset_t sz_tmp);
 // 
 // * This memory cannot be freed! *
 void* csprof_malloc(size_t size);
-// void* csprof_malloc_threaded(csprof_mem_t *, size_t size);
+void* csprof_malloc_threaded(csprof_mem_t *, size_t size);
 
 // csprof_tmalloc: Returns a pointer to a block of temporary memory of
 // the *exact* size (in bytes) requested.  If there is insufficient
@@ -149,19 +203,16 @@ void* csprof_malloc(size_t size);
 // 'csprof_tmalloc'.
 //
 // * Be very careful when using. *
-//void* csprof_tmalloc(size_t size);
-//void* csprof_tmalloc_threaded(csprof_mem_t *, size_t size);
-//void csprof_tfree(void *, size_t);
-//void  csprof_tfree_threaded(csprof_mem_t *, void* mem, size_t size);
+void* csprof_tmalloc(size_t size);
+void* csprof_tmalloc_threaded(csprof_mem_t *, size_t size);
+void csprof_tfree(void *, size_t);
+void  csprof_tfree_threaded(csprof_mem_t *, void* mem, size_t size);
 
-//get_memstore_f *csprof_get_memstore;
-//void mem_threaded(void);
+get_memstore_f *csprof_get_memstore;
+void mem_threaded(void);
 
 #if defined(__cplusplus)
 } /* extern "C" */
 #endif
-
-// The first argument for each of these is of type 'csprof_mem_t*'.
-#define csprof_mem__get_status(x) (x)->status
 
 #endif

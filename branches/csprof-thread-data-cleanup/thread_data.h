@@ -11,6 +11,7 @@
 
 typedef struct _td_t {
   int id;
+  csprof_mem_t    _mem;
   csprof_state_t  *state;
   csprof_mem_t    *memstore;
   sigjmp_buf_t    bad_unwind;
