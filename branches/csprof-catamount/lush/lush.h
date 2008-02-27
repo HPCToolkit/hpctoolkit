@@ -116,6 +116,7 @@ lush_step_t lush_step_bichord(lush_cursor_t* cursor);
 // nested) p-note/l-note of the current p-chord/l-chord.
 // Returns: 
 //   LUSH_STEP_CONT:      if step was sucessful
+//                        (for l-notes, only possible if not a-to-0)
 //   LUSH_STEP_END_CHORD: if prev note was the end of the chord
 //   LUSH_STEP_ERROR:     on account of an error.
 lush_step_t lush_step_pnote(lush_cursor_t* cursor);

@@ -35,6 +35,7 @@
 
 static void handle_any_dlerror();
 
+
 // **************************************************************************
 // LUSH Agents
 // **************************************************************************
@@ -264,10 +265,11 @@ lush_step_lnote(lush_cursor_t* cursor)
     // Identity agent: Association is 1-to-1, so l-chord is unit length
     int t = unw_step(lush_cursor_get_pcursor(cursor));
     if (t > 0) {
-      ty = LUSH_STEP_END_CHORD;
+      ty = LUSH_STEP_CONT;
+      lush_cursor_set_flag(cursor, LUSH_CURSOR_FLAGS_END_LCHORD);
     }
     else if (t == 0) {
-      ty = LUSH_STEP_END_PROJ; // must filter this value...
+      ty = LUSH_STEP_END_PROJ; // must filter (invalid return type)
     } 
     else if (t < 0) {
       ty = LUSH_STEP_ERROR;
@@ -347,6 +349,7 @@ lush_forcestep_pnote(lush_cursor_t* cursor)
   }
   else {
     // Identity agent: Association is 1-to-1, so p-chord is unit length
+
     int t = unw_step(lush_cursor_get_pcursor(cursor));
     if (t > 0) {
       ty = LUSH_STEP_END_CHORD;
@@ -354,7 +357,7 @@ lush_forcestep_pnote(lush_cursor_t* cursor)
     else if (t == 0) {
       ty = LUSH_STEP_END_PROJ;
     } 
-    else if (t < 0) {
+    else /* (t < 0) */ {
       ty = LUSH_STEP_ERROR;
     }
   }

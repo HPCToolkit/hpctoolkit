@@ -54,6 +54,12 @@ LUSHI_DECL(void,  LUSHCB_free, ());
 
 typedef unw_cursor_t LUSHCB_cursor_t;
 
+// LUSHCB_step: Given a cursor, step the cursor to the next (less
+// deeply nested) frame.  Conforms to the semantics of libunwind's
+// unw_step.  In particular, returns:
+//   > 0 : successfully advanced cursor to next frame
+//     0 : previous frame was the end of the unwind
+//   < 0 : error condition
 LUSHI_DECL(int, LUSHCB_step, (LUSHCB_cursor_t* cursor));
 
 
