@@ -95,13 +95,13 @@ csprof_sample_callstack(csprof_state_t *state, ucontext_t* context,
 #ifndef PRIM_UNWIND
   memcpy(&unwctxt.uc_mcontext, mctxt, sizeof(mcontext_t));
 #else
-  unw_init_f_mcontext(mctxt,&frame);
+  unw_init_mcontext(mctxt,&frame);
   MSG(1,"back from cursor init: pc = %p, bp = %p\n",frame.pc,frame.bp);
 #endif
 #endif
 #endif
 
-  unw_init_f_mcontext(mctxt,&frame);
+  unw_init_mcontext(mctxt,&frame);
   MSG(1,"back from cursor init: pc = %p, bp = %p\n",frame.pc,frame.bp);
 
 #if 0

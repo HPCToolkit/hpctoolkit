@@ -58,7 +58,16 @@ void unw_init(void)
   csprof_interval_tree_init();
 }
 
-void unw_init_f_mcontext(mcontext_t* mctxt, unw_cursor_t *cursor)
+
+void unw_init_context(ucontext_t* context, unw_cursor_t *cursor)
+{
+
+  PMSG(UNW,"init prim unw called w ucontext: context = %p, cursor_p = %p\n",context,cursor);
+  unw_init_mcontext(&(context->uc_mcontext),cursor);
+}
+
+
+void unw_init_mcontext(mcontext_t* mctxt, unw_cursor_t *cursor)
 {
 
   void **bp, *sp,*pc;
@@ -101,13 +110,6 @@ void unw_init_f_mcontext(mcontext_t* mctxt, unw_cursor_t *cursor)
   PMSG(UNW,"UNW_INIT: returned interval = %p",cursor->intvl);
 }
 
-
-void unw_init_f_ucontext(ucontext_t* context, unw_cursor_t *cursor)
-{
-
-  PMSG(UNW,"init prim unw called w ucontext: context = %p, cursor_p = %p\n",context,cursor);
-  unw_init_f_mcontext(&(context->uc_mcontext),cursor);
-}
 
 // This get_reg just extracts the pc, regardless of REGID
 
@@ -277,6 +279,6 @@ unw_cursor_t _dbg_cursor;
 void dbg_init_cursor(void *context)
 {
   _dbg_no_longjmp = 1;
-  unw_init_f_mcontext(context,&_dbg_cursor);
+  unw_init_mcontext(context,&_dbg_cursor);
   _dbg_no_longjmp = 0;
 }
