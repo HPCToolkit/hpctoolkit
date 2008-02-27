@@ -21,7 +21,6 @@
 #include "prim_unw.h"
 
 #include "backtrace.h"
-#include "monitor.h"
 #include "state.h"
 #include "general.h"
 #include "util.h"
@@ -46,12 +45,7 @@ csprof_sample_callstack_from_frame(csprof_state_t *, int,
 
 //***************************************************************************
 
-int 
-csprof_check_fence(void *ip)
-{
-  return (monitor_unwind_process_bottom_frame(ip) 
-	  || monitor_unwind_thread_bottom_frame(ip));
-}
+
 
 
 /* FIXME: some of the checks from libunwind calls are checked for errors.
@@ -140,6 +134,7 @@ csprof_sample_callstack_from_frame(csprof_state_t *state, int metric_id,
 {
   unw_word_t ip;
   int first = 1;
+  int ret;
 
   // FIXME: why cannot some of these be local variables
   state->unwind   = state->btbuf;
@@ -149,7 +144,7 @@ csprof_sample_callstack_from_frame(csprof_state_t *state, int metric_id,
   for(;;){
     csprof_state_ensure_buffer_avail(state, state->unwind);
 
-    if (unw_get_reg (cursor, UNW_REG_IP, &ip) < 0){
+    if (unw_get_reg(cursor, UNW_REG_IP, &ip) < 0) {
       MSG(1,"get_reg break");
       break;
     }
@@ -165,7 +160,8 @@ csprof_sample_callstack_from_frame(csprof_state_t *state, int metric_id,
     state->unwind->sp = (void *) 0;
     state->unwind++;
 
-    if (csprof_check_fence((void *)ip) || (unw_step (cursor) <= 0)){
+    ret = unw_step(cursor);
+    if (ret <= 0) {
       MSG(1,"Hit unw_step break");
       break;
     }

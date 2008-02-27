@@ -41,6 +41,14 @@ int debug_unw = 0;
 
 static void update_cursor_with_troll(unw_cursor_t *cursor, void *sp, void *pc, void *bp);
 
+// tallent: relocated here from backtrace.c 
+// FIXME: perhaps rename and better package
+static int 
+csprof_check_fence(void *ip)
+{
+  return (monitor_unwind_process_bottom_frame(ip) 
+	  || monitor_unwind_thread_bottom_frame(ip));
+}
 
 
 /****************************************************************************************
@@ -133,6 +141,16 @@ int unw_step (unw_cursor_t *cursor)
   pc = cursor->pc;
   uw = cursor->intvl;
 
+  //-----------------------------------------------------------
+  // 
+  //-----------------------------------------------------------
+  if (csprof_check_fence(pc)) {
+    return 0;
+  }
+  
+  //-----------------------------------------------------------
+  // 
+  //-----------------------------------------------------------
   cursor->intvl = NULL;
   if ((cursor->intvl == NULL) && 
       (uw->ra_status == RA_SP_RELATIVE || uw->ra_status == RA_STD_FRAME)) {
