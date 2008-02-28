@@ -95,7 +95,7 @@ struct lush_assoc_info_s {
 
 
 #define lush_assoc_class(/*lush_assoc*/ as) \
-  ((as) && LUSH_ASSOC_CLASS_MASK)
+  ((as) & LUSH_ASSOC_CLASS_MASK)
 
 #define lush_assoc_class_eq(/*lush_assoc*/ x, /*lush_assoc*/ y) \
   ( ((x) == (y)) /* handles x == y == LUSH_ASSOC_NULL */	\
