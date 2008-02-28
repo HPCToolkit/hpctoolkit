@@ -686,19 +686,21 @@ lush_cct_ctxt__write_gbl(FILE* fs, lush_cct_ctxt_t* cct_ctxt,
   
   // Base case
   if (!cct_ctxt) {
-    return ret;
+    return CSPROF_OK;
   }
 
-
-  // General case
-  ret = lush_cct_ctxt__write_gbl(fs, cct_ctxt->parent, id_root, 
+  // -------------------------------------------------------
+  // General case (post order)
+  // -------------------------------------------------------
+  ret = lush_cct_ctxt__write_gbl(fs, cct_ctxt->parent, id_root,
 				 nodes_written, tmp_node);
   if (ret != CSPROF_OK) { return CSPROF_ERR; }
   
+  // write this context
   unsigned int lcl_written = 0;
-  unsigned int id_lcl_root = *nodes_written;
-  ret = lush_cct_ctxt__write_lcl(fs, cct_ctxt->context, id_lcl_root, 
-				 &lcl_written, tmp_node);
+  unsigned int id_lcl_root = id_root + (*nodes_written);
+  ret = lush_cct_ctxt__write_lcl(fs, cct_ctxt->context, 
+				 id_lcl_root, &lcl_written, tmp_node);
   if (ret != CSPROF_OK) { return CSPROF_ERR; }
   (*nodes_written) += lcl_written;
   
@@ -712,31 +714,27 @@ lush_cct_ctxt__write_lcl(FILE* fs, csprof_cct_node_t* node,
 			 unsigned int id_root, unsigned int* nodes_written,
 			 hpcfile_cstree_node_t* tmp_node)
 {
-  int ret;
+  int ret = CSPROF_OK;
 
   // Base case
   if (!node) {
     return CSPROF_OK;
   }
   
-
-  // General case
-  lush_cct_ctxt__write_lcl(fs, node->parent, id_root,
-			   nodes_written, tmp_node);
+  // -------------------------------------------------------
+  // General case (post order)
+  // -------------------------------------------------------
+  ret = lush_cct_ctxt__write_lcl(fs, node->parent, id_root,
+				 nodes_written, tmp_node);
+  if (ret != CSPROF_OK) { return CSPROF_ERR; }
   
-  // write a node
-  unsigned int id_parent = *nodes_written;
-  unsigned int id        = id_parent + 1;
-  
-  tmp_node->id = id;
-  tmp_node->id_parent = id_parent;
+  // write this node
+  tmp_node->id        = id_root + (*nodes_written);
+  tmp_node->id_parent = tmp_node->id - 1;
   csprof_cct__get_data_CB(NULL, node, &(tmp_node->data));
   
   ret = hpcfile_cstree_node__fwrite(tmp_node, fs);
-  if (ret != HPCFILE_OK) {
-    return HPCFILE_ERR;
-  }
-  
+  if (ret != CSPROF_OK) { return CSPROF_ERR; }
   (*nodes_written)++;
   
   return ret;
