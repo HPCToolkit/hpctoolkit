@@ -350,7 +350,10 @@ static void
 csprof_cct_node__parent_insert(csprof_cct_node_t *x, csprof_cct_node_t *parent)
 {
   csprof_cct_node__link(x, parent);
+#ifdef CSPROF_TRAMPOLINE_BACKEND
+  // FIXME:LUSH: for lush, must match assoc and lip
   rbtree_insert(&parent->tree_children, x);
+#endif
 }
 
 static int
