@@ -5,8 +5,16 @@
 #ifndef CSPROF_STATE_H
 #define CSPROF_STATE_H
 
+//************************* System Include Files ****************************
+
 #include "structs.h"
 #include "general.h"
+
+//*************************** User Include Files ****************************
+
+//*************************** Forward Declarations **************************
+
+//***************************************************************************
 
 typedef csprof_state_t *state_t_f(void);
 
@@ -30,9 +38,24 @@ int csprof_state_alloc(csprof_state_t *);
 
 extern csprof_state_t *csprof_check_for_new_epoch(csprof_state_t *);
 
-/* expand the internal backtrace buffer */
+// ---------------------------------------------------------
+// expand the internal backtrace buffer
+// ---------------------------------------------------------
+
+// tallent: move this macro here from processor/x86-64/backtrace.c.
+// Undoubtedly a better solution than this is possible, but this at
+// least is a more appropriate location.
+
+#define csprof_state_ensure_buffer_avail(/*csprof_state_t*/ state,    \
+					 /*csprof_frame_t*/ unwind)   \
+  if (unwind == state->bufend) {				      \
+    unwind = csprof_state_expand_buffer(state, unwind);		      \
+    state->bufstk = state->bufend;				      \
+  }
+
 csprof_frame_t*
 csprof_state_expand_buffer(csprof_state_t *, csprof_frame_t *);
+
 
 csprof_cct_node_t* 
 csprof_state_insert_backtrace(csprof_state_t *, int, csprof_frame_t *,

@@ -43,6 +43,14 @@ int debug_unw = 0;
 
 static void update_cursor_with_troll(unw_cursor_t *cursor, void *sp, void *pc, void *bp);
 
+// tallent: relocated here from backtrace.c 
+// FIXME: perhaps rename and better package
+static int 
+csprof_check_fence(void *ip)
+{
+  return (monitor_unwind_process_bottom_frame(ip) 
+	  || monitor_unwind_thread_bottom_frame(ip));
+}
 
 
 /****************************************************************************************
@@ -61,7 +69,16 @@ unw_init(void)
   csprof_interval_tree_init();
 }
 
-void unw_init_f_mcontext(mcontext_t* mctxt, unw_cursor_t *cursor)
+
+void unw_init_context(ucontext_t* context, unw_cursor_t *cursor)
+{
+
+  PMSG(UNW,"init prim unw called w ucontext: context = %p, cursor_p = %p\n",context,cursor);
+  unw_init_mcontext(&(context->uc_mcontext),cursor);
+}
+
+
+void unw_init_mcontext(mcontext_t* mctxt, unw_cursor_t *cursor)
 {
 
   void **bp, *sp,*pc;
@@ -105,13 +122,6 @@ void unw_init_f_mcontext(mcontext_t* mctxt, unw_cursor_t *cursor)
 }
 
 
-void unw_init_f_ucontext(ucontext_t* context, unw_cursor_t *cursor)
-{
-
-  PMSG(UNW,"init prim unw called w ucontext: context = %p, cursor_p = %p\n",context,cursor);
-  unw_init_f_mcontext(&(context->uc_mcontext),cursor);
-}
-
 // This get_reg just extracts the pc, regardless of REGID
 
 int unw_get_reg(unw_cursor_t *cursor,int REGID,void **regv)
@@ -134,6 +144,16 @@ int unw_step (unw_cursor_t *cursor)
   pc = cursor->pc;
   uw = cursor->intvl;
 
+  //-----------------------------------------------------------
+  // 
+  //-----------------------------------------------------------
+  if (csprof_check_fence(pc)) {
+    return 0;
+  }
+  
+  //-----------------------------------------------------------
+  // 
+  //-----------------------------------------------------------
   cursor->intvl = NULL;
   if ((cursor->intvl == NULL) && 
       (uw->ra_status == RA_SP_RELATIVE || uw->ra_status == RA_STD_FRAME)) {
@@ -280,6 +300,6 @@ unw_cursor_t _dbg_cursor;
 void dbg_init_cursor(void *context)
 {
   _dbg_no_longjmp = 1;
-  unw_init_f_mcontext(context,&_dbg_cursor);
+  unw_init_mcontext(context,&_dbg_cursor);
   _dbg_no_longjmp = 0;
 }

@@ -21,7 +21,6 @@
 #include "prim_unw.h"
 
 #include "backtrace.h"
-#include "monitor.h"
 #include "state.h"
 #include "general.h"
 #include "util.h"
@@ -46,21 +45,7 @@ csprof_sample_callstack_from_frame(csprof_state_t *, int,
 
 //***************************************************************************
 
-// ***FIXME: mmap interaction
 
-#define ensure_state_buffer_slot_available(state,unwind)    \
-    if (unwind == state->bufend) {                          \
-        unwind = csprof_state_expand_buffer(state, unwind); \
-        state->bufstk = state->bufend;                      \
-    }
-
-
-int 
-csprof_check_fence(void *ip)
-{
-  return (monitor_unwind_process_bottom_frame(ip) 
-	  || monitor_unwind_thread_bottom_frame(ip));
-}
 
 
 /* FIXME: some of the checks from libunwind calls are checked for errors.
@@ -104,13 +89,13 @@ csprof_sample_callstack(csprof_state_t *state, ucontext_t* context,
 #ifndef PRIM_UNWIND
   memcpy(&unwctxt.uc_mcontext, mctxt, sizeof(mcontext_t));
 #else
-  unw_init_f_mcontext(mctxt,&frame);
+  unw_init_mcontext(mctxt,&frame);
   MSG(1,"back from cursor init: pc = %p, bp = %p\n",frame.pc,frame.bp);
 #endif
 #endif
 #endif
 
-  unw_init_f_mcontext(mctxt,&frame);
+  unw_init_mcontext(mctxt,&frame);
   MSG(1,"back from cursor init: pc = %p, bp = %p\n",frame.pc,frame.bp);
 
 #if 0
@@ -149,15 +134,17 @@ csprof_sample_callstack_from_frame(csprof_state_t *state, int metric_id,
 {
   unw_word_t ip;
   int first = 1;
-  state->unwind = state->btbuf;
+  int ret;
 
+  // FIXME: why cannot some of these be local variables
+  state->unwind   = state->btbuf;
   state->bufstk   = state->bufend;
   state->treenode = NULL;
 
   for(;;){
-    ensure_state_buffer_slot_available(state, state->unwind);
+    csprof_state_ensure_buffer_avail(state, state->unwind);
 
-    if (unw_get_reg (cursor, UNW_REG_IP, &ip) < 0){
+    if (unw_get_reg(cursor, UNW_REG_IP, &ip) < 0) {
       MSG(1,"get_reg break");
       break;
     }
@@ -173,7 +160,8 @@ csprof_sample_callstack_from_frame(csprof_state_t *state, int metric_id,
     state->unwind->sp = (void *) 0;
     state->unwind++;
 
-    if (csprof_check_fence((void *)ip) || (unw_step (cursor) <= 0)){
+    ret = unw_step(cursor);
+    if (ret <= 0) {
       MSG(1,"Hit unw_step break");
       break;
     }

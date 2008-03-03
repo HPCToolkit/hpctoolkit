@@ -76,6 +76,7 @@
 
 #define CSTREE_ID_ROOT 1
 #define DBG_READ_METRICS 0
+#define WRITE_ALL_NODES 0
 
 static int
 hpcfile_cstree_write_node(FILE* fs, void* tree, void* node, 
@@ -84,7 +85,8 @@ hpcfile_cstree_write_node(FILE* fs, void* tree, void* node,
 			  hpcfile_uint_t *id,
 			  hpcfile_cstree_cb__get_data_fn_t get_node_data_fn,
 			  hpcfile_cstree_cb__get_first_child_fn_t get_first_child_fn,
-			  hpcfile_cstree_cb__get_sibling_fn_t get_sibling_fn);
+			  hpcfile_cstree_cb__get_sibling_fn_t get_sibling_fn,
+			  int children_only);
 
 static int 
 hpcfile_cstree_read_hdr(FILE* fs, hpcfile_cstree_hdr_t* hdr);
@@ -104,6 +106,62 @@ hpcfile_cstree_read_hdr(FILE* fs, hpcfile_cstree_hdr_t* hdr);
 // children, the id of x is less than the id of any child and less
 // than the id of any child's descendent.
 
+
+
+static int
+hpcfile_cstree_count_nodes(void* tree, void* node, 
+			  hpcfile_cstree_cb__get_first_child_fn_t get_first_child_fn,
+			  hpcfile_cstree_cb__get_sibling_fn_t get_sibling_fn,
+			  int levels_to_skip)
+{
+  int skipped_subtree_count = 0;
+
+  if (node) { 
+    if (levels_to_skip-- > 0) {
+      skipped_subtree_count++; // count self
+
+      // ---------------------------------------------------------
+      // count skipped children 
+      // (handles either a circular or non-circular structure)
+      // ---------------------------------------------------------
+      int kids = 0;
+      void *first = get_first_child_fn(tree, node);
+      void *c = first; 
+      while (c) {
+	kids += hpcfile_cstree_count_nodes(tree, c, get_first_child_fn,
+					   get_sibling_fn, levels_to_skip);
+	c = get_sibling_fn(tree, c);
+	if (c == first) { break; }
+      }
+      skipped_subtree_count += kids; 
+    }
+  }
+  return skipped_subtree_count; 
+}
+
+
+static int
+node_child_count(void* tree, void* node, 
+		 hpcfile_cstree_cb__get_first_child_fn_t get_first_child_fn,
+		 hpcfile_cstree_cb__get_sibling_fn_t get_sibling_fn)
+{
+  int children = 0;
+  if (node) { 
+    // ---------------------------------------------------------
+    // count children 
+    // (handles either a circular or non-circular structure)
+    // ---------------------------------------------------------
+    void *first = get_first_child_fn(tree, node);
+    void *c = first; 
+    while (c) {
+      children++;
+      c = get_sibling_fn(tree, c);
+      if (c == first) { break; }
+    }
+  }
+  return children; 
+}
+
 //***************************************************************************
 // hpcfile_cstree_write()
 //***************************************************************************
@@ -121,8 +179,26 @@ hpcfile_cstree_write(FILE* fs, void* tree, void* root, void* tree_ctxt,
 		     hpcfile_cstree_cb__get_sibling_fn_t get_sibling_fn)
 {
   int ret;
+  int levels_to_skip = 0;
+
+  if (tree_ctxt != 0) {
+    levels_to_skip = 2;
+#if 0
+  } else {
+    // this case needs to be coordinated with the context writer. it should skip the same.
+    int children = node_child_count(tree, root, get_first_child_fn, get_sibling_fn);
+    if (children == 1) levels_to_skip = 1;
+#endif
+  }
+    
 
   if (!fs) { return HPCFILE_ERR; }
+
+  // -------------------------------------------------------
+  // When tree_ctxt is non-null, we will peel off the top
+  // node in the tree to eliminate the call frame for
+  // monitor_pthread_start_routine
+  // -------------------------------------------------------
   
   // -------------------------------------------------------
   // Write header
@@ -132,6 +208,11 @@ hpcfile_cstree_write(FILE* fs, void* tree, void* root, void* tree_ctxt,
   hpcfile_cstree_hdr__init(&fhdr);
   fhdr.epoch = epoch;
   fhdr.num_nodes = num_nodes;
+  if (num_nodes > 0 && levels_to_skip > 0) { // FIXME: better way...
+    int skipped = hpcfile_cstree_count_nodes(tree, root, get_first_child_fn,
+					     get_sibling_fn, levels_to_skip);
+    fhdr.num_nodes -= skipped;
+  }
   ret = hpcfile_cstree_hdr__fwrite(&fhdr, fs); 
   if (ret != HPCFILE_OK) {
     return HPCFILE_ERR; 
@@ -158,7 +239,7 @@ hpcfile_cstree_write(FILE* fs, void* tree, void* root, void* tree_ctxt,
   ret = hpcfile_cstree_write_node(fs, tree, root, &tmp_node, id_ctxt, &id,
 				  get_data_fn,
 				  get_first_child_fn,
-				  get_sibling_fn);
+				  get_sibling_fn, levels_to_skip);
   free(tmp_node.data.metrics);
   
   return ret;
@@ -171,31 +252,45 @@ hpcfile_cstree_write_node(FILE* fs, void* tree, void* node,
 			  hpcfile_uint_t *id,
 			  hpcfile_cstree_cb__get_data_fn_t get_data_fn,
 			  hpcfile_cstree_cb__get_first_child_fn_t get_first_child_fn,
-			  hpcfile_cstree_cb__get_sibling_fn_t get_sibling_fn)
+			  hpcfile_cstree_cb__get_sibling_fn_t get_sibling_fn,
+			  int levels_to_skip)
 {
   hpcfile_uint_t myid;
   void* first, *c;
+  int ret;
 
   if (!node) { return HPCFILE_OK; }
 
-  tmp_node->id = myid = *id;
-  tmp_node->id_parent = id_parent;
-  get_data_fn(tree, node, &(tmp_node->data));
-
-  if (hpcfile_cstree_node__fwrite(tmp_node, fs) != HPCFILE_OK) { 
-    return HPCFILE_ERR; 
+  // ---------------------------------------------------------
+  // Write this node
+  // ---------------------------------------------------------
+  if (levels_to_skip > 0) {
+    myid = id_parent;
+    levels_to_skip--;
   }
+  else {
+    tmp_node->id = myid = *id;
+    tmp_node->id_parent = id_parent;
+    get_data_fn(tree, node, &(tmp_node->data));
 
-  // Prepare next id -- assigned in the order that this func is called
-  (*id)++;
+    ret = hpcfile_cstree_node__fwrite(tmp_node, fs);
+    if (ret != HPCFILE_OK) { 
+      return HPCFILE_ERR; 
+    }
+    
+    // Prepare next id -- assigned in pre-order
+    (*id)++;
+  }
   
-  // Write each child of node.  Works with either a circular or
-  // non-circular structure
+  // ---------------------------------------------------------
+  // Write children (handles either a circular or non-circular structure)
+  // ---------------------------------------------------------
   first = c = get_first_child_fn(tree, node);
   while (c) {
-    if (hpcfile_cstree_write_node(fs, tree, c, tmp_node, myid, id, get_data_fn,
-				  get_first_child_fn, get_sibling_fn)
-	!= HPCFILE_OK) {
+    ret = hpcfile_cstree_write_node(fs, tree, c, tmp_node, myid, id,
+				    get_data_fn, get_first_child_fn,
+				    get_sibling_fn, levels_to_skip);
+    if (ret != HPCFILE_OK) {
       return HPCFILE_ERR;
     }
 

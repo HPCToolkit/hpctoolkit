@@ -70,6 +70,8 @@
 #include "list.h"
 #endif
 
+#include <lush/lush-support.h>
+
 #define CSPROF_TREE_USES_DOUBLE_LINKING 0
 #define CSPROF_TREE_USES_SORTED_CHILDREN 1
 
@@ -99,15 +101,15 @@ typedef struct csprof_cct_node_s {
   // 
   // ---------------------------------------------------------
 
-  /* instruction pointer: more accurately, this is an 'operation
-     pointer'.  The operation in the instruction packet is represented
-     by adding 0, 1, or 2 to the instruction pointer for the first,
-     second and third operation, respectively. */
-  void *ip;
-  
-  // ADD:
-  //   association
-  //   lip [lip], pip [pip]
+  lush_assoc_info_t as_info; // LUSH
+
+  /* physical instruction pointer: more accurately, this is an
+     'operation pointer'.  The operation in the instruction packet is
+     represented by adding 0, 1, or 2 to the instruction pointer for
+     the first, second and third operation, respectively. */
+  void* ip;
+
+  lush_lip_t* lip; // LUSH (if assoc != a-to-0, then tack onto end...)
 
   // ---------------------------------------------------------
   // tree structure
@@ -142,8 +144,10 @@ typedef struct csprof_cct_node_s {
 
 #if !defined(CSPROF_LIST_BACKTRACE_CACHE)
 typedef struct csprof_frame_s {
-    void *ip;
-    void *sp;
+  lush_assoc_info_t as_info; // LUSH
+  void *ip;
+  lush_lip_t* lip; // LUSH
+  void *sp;
 } csprof_frame_t;
 #endif
 
@@ -225,10 +229,19 @@ int csprof_cct__init(csprof_cct_t* x);
 int csprof_cct__fini(csprof_cct_t *x);
 
 
-// Returns the leaf node representing the sample, if successful
-csprof_cct_node_t *
-csprof_cct_insert_backtrace(csprof_cct_t*, void*, int metric_id,
-			    csprof_frame_t *, csprof_frame_t*, size_t);
+// Given a call path of the following form, insert the path into the
+// calling context tree and, if successful, return the leaf node
+// representing the sample point (innermost frame).
+//
+//               (low VMAs)                       (high VMAs)
+//   backtrace: [inner-frame......................outer-frame]
+//              ^ bt_beg                                       ^ bt_end
+//              ^ path_end                                   ^ path_beg
+//
+csprof_cct_node_t*
+csprof_cct_insert_backtrace(csprof_cct_t *x, void *treenode, int metric_id,
+			    csprof_frame_t *path_beg, csprof_frame_t *path_end,
+			    size_t sample_count);
 
 int csprof_cct__write_txt(FILE* fs, csprof_cct_t* x);
 

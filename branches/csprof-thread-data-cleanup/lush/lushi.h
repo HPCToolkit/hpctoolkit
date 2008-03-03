@@ -103,7 +103,7 @@ LUSHI_DECL(lush_step_t, LUSHI_step_pnote, (lush_cursor_t* cursor));
 // Given a lush_cursor, step the cursor to the next (less deeply
 // nested) l-note of the current l-chord.
 // Returns: 
-//   LUSH_STEP_CONT:      if step was sucessful
+//   LUSH_STEP_CONT:      if step was sucessful (only possible if not a-to-0)
 //   LUSH_STEP_END_CHORD: if prev l-note was the end of the l-chord
 //   LUSH_STEP_ERROR:     on account of an error.
 LUSHI_DECL(lush_step_t, LUSHI_step_lnote, (lush_cursor_t* cursor));

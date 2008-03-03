@@ -45,7 +45,6 @@ csprof_sample_event(void *context, int metric_id, size_t sample_count)
   sigjmp_buf_t *it = &(td->bad_unwind);
 
   samples_taken++;
-
   csprof_set_handling_sample(td);
 
   csprof_cct_node_t* node = NULL;
@@ -70,7 +69,6 @@ csprof_sample_event(void *context, int metric_id, size_t sample_count)
   }
 
   csprof_clear_handling_sample(td);
-
   return node;
 }
 

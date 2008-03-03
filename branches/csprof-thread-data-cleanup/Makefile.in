@@ -12,8 +12,8 @@ install_bin := $(install_prefix)/bin
 # location of helper scripts+executables
 install_libexec := $(install_prefix)/libexec
 
-CC   := gcc -std=c99
-CXX  := g++
+CC   := gcc -std=c99 -Wall -Wunused-function
+CXX  := g++ -Wall
 link := gcc
 static_link_options := --verbose -nostdlib -nodefaultlibs -nostartfiles -static -Wl,-r
 

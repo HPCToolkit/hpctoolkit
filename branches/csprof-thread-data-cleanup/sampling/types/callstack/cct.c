@@ -51,13 +51,11 @@ csprof_cct__get_first_child_CB(csprof_cct_t* x, csprof_cct_node_t* node);
 static void*
 csprof_cct__get_sibling_CB(csprof_cct_t* x, csprof_cct_node_t* node);
 
-#ifdef CSPROF_TRAMPOLINE_BACKEND
-static csprof_cct_node_t *
-csprof_cct_node__find_child(csprof_cct_node_t*, void*, void*);
-#else
-static csprof_cct_node_t *
-csprof_cct_node__find_child(csprof_cct_node_t*, void*);
-#endif
+static csprof_cct_node_t*
+csprof_cct_node__find_child(csprof_cct_node_t* x,
+			    lush_assoc_info_t as_info, void* ip,
+			    lush_lip_t* lip,
+			    void* sp);
 
 static int
 csprof_cct_node__link(csprof_cct_node_t *, csprof_cct_node_t *);
@@ -316,11 +314,7 @@ csprof_cct_node__init(csprof_cct_node_t* x, csprof_cct_node_t* parent,
   memset(x, 0, sizeof(*x));
 
   x->ip = ip;
-#ifdef CSPROF_TRAMPOLINE_BACKEND
   x->sp = sp;
-#else
-  x->sp = NULL;
-#endif
 
   /* initial circular list of siblings includes only self */
   x->next_sibling = NULL;
@@ -331,7 +325,10 @@ csprof_cct_node__init(csprof_cct_node_t* x, csprof_cct_node_t* parent,
 }
 
 static csprof_cct_node_t *
-csprof_cct_node__create(void *ip, void *sp)
+csprof_cct_node__create(lush_assoc_info_t as_info, 
+			void* ip,
+			lush_lip_t* lip,
+			void* sp)
 {
   size_t sz = (sizeof(csprof_cct_node_t)
 	       + sizeof(size_t)*(csprof_get_max_metrics() - 1));
@@ -339,12 +336,11 @@ csprof_cct_node__create(void *ip, void *sp)
 
   memset(node, 0, sz);
 
+  node->as_info = as_info; // LUSH
   node->ip = ip;
-#ifdef CSPROF_TRAMPOLINE_BACKEND
+  node->lip = lip;         // LUSH
   node->sp = sp;
-#else
-  node->sp = NULL;
-#endif
+
   node->next_sibling = NULL;
 
   return node;
@@ -354,7 +350,10 @@ static void
 csprof_cct_node__parent_insert(csprof_cct_node_t *x, csprof_cct_node_t *parent)
 {
   csprof_cct_node__link(x, parent);
+#ifdef CSPROF_TRAMPOLINE_BACKEND
+  // FIXME:LUSH: for lush, must match assoc and lip
   rbtree_insert(&parent->tree_children, x);
+#endif
 }
 
 static int
@@ -389,29 +388,36 @@ csprof_cct_node__link(csprof_cct_node_t* x, csprof_cct_node_t* parent)
   return CSPROF_OK;
 }
 
-/* csprof_cct_node__find_child: finds the child of 'x' with
-   instruction pointer equal to 'ip'.
 
-   we have different versions because the trampoline-based backends
-   need to worry about stack pointers and such.  this should be FIXME. */
-
-#ifdef CSPROF_TRAMPOLINE_BACKEND
+// csprof_cct_node__find_child: finds the child of 'x' with
+// instruction pointer equal to 'ip'.
+//
+// tallent: I slightly sanitied the different versions, but FIXME
+//
 static csprof_cct_node_t*
-csprof_cct_node__find_child(csprof_cct_node_t* x, void* ip, void* sp)
+csprof_cct_node__find_child(csprof_cct_node_t* x,
+			    lush_assoc_info_t as_info, void* ip,
+			    lush_lip_t* lip,
+			    void* sp)
 {
-#if 1
+#ifdef CSPROF_TRAMPOLINE_BACKEND
+  // FIXME:LUSH: match assoc and lip
   struct rbtree_node *node = rbtree_search(&x->tree_children, ip, sp);
 
   return node ? DATA(node) : NULL;
 #else
   csprof_cct_node_t* c, *first;
-
+  lush_assoc_t as = lush_assoc_info__get_assoc(as_info);
+      
   first = c = csprof_cct_node__first_child(x);
   if (c) {
     do {
-      void *cip = c->ip;
-      if(cip == ip) { return c; }
-	
+      // LUSH
+      lush_assoc_t c_as = lush_assoc_info__get_assoc(c->as_info);
+      if (c->ip == ip && c->lip == lip && lush_assoc_class_eq(c_as, as)) {
+	return c;
+      }
+
       c = csprof_cct_node__next_sibling(c);
     } while (c != NULL);
   }
@@ -419,24 +425,7 @@ csprof_cct_node__find_child(csprof_cct_node_t* x, void* ip, void* sp)
   return NULL;
 #endif
 }
-#else
-static csprof_cct_node_t*
-csprof_cct_node__find_child(csprof_cct_node_t* x, void* ip)
-{
-  csprof_cct_node_t* c, *first;
 
-  first = c = csprof_cct_node__first_child(x);
-  if (c) {
-    do {
-      if (c->ip == ip) { return c; }
-
-      c = csprof_cct_node__next_sibling(c);
-    } while (c != NULL);
-  }
-
-  return NULL;
-}
-#endif
 
 
 //***************************************************************************
@@ -461,6 +450,7 @@ csprof_cct__init(csprof_cct_t* x)
   }
 #endif
 
+
   return CSPROF_OK;
 }
 
@@ -470,98 +460,107 @@ csprof_cct__fini(csprof_cct_t *x)
   return CSPROF_OK;
 }
 
+
+// See usage in header.
 csprof_cct_node_t*
 csprof_cct_insert_backtrace(csprof_cct_t *x, void *treenode, int metric_id,
-			    csprof_frame_t *start, csprof_frame_t *end,
+			    csprof_frame_t *path_beg, csprof_frame_t *path_end,
 			    size_t sample_count)
 {
+#define csprof_MY_ADVANCE_PATH_FRAME(x)   (x)--
+#define csprof_MY_IS_PATH_FRAME_AT_END(x) ((x) < path_end)
+
+  MSG(1,"Insert backtrace w x=%lp,tn=%lp,strt=%lp,end=%lp", x, treenode,
+      path_beg, path_end);
+
+  csprof_frame_t* frm = path_beg; // current frame 
   csprof_cct_node_t *tn = (csprof_cct_node_t *)treenode;
 
-  MSG(1,"Insert backtrace w x=%lp,tn=%lp,strt=%lp,end=%lp",x,treenode,start,end);
-  if(csprof_cct__isempty(x)) {
-    MSG(1,"x is empty");
-    x->tree_root = csprof_cct_node__create(start->ip, start->sp);
 
+  if (csprof_cct__isempty(x)) {
+    // introduce placeholder root node to prevent forests
+    x->tree_root = csprof_cct_node__create(frm->as_info, 0, 0, 0);
+    x->num_nodes = 1;
+  }
+
+  if (csprof_cct__isempty(x)) {
+    // LUSH:FIXME: introduce bogus root to handle possible forests?
+
+    x->tree_root = csprof_cct_node__create(frm->as_info, frm->ip, 
+					   frm->lip, frm->sp);
     tn = x->tree_root;
     x->num_nodes = 1;
 
-    DBGMSG_PUB(CSPROF_DBG_CCT_INSERTION, "--start ip %#lx | sp %#lx",
-	       start->ip, start->sp);
-    start--;
-
-#ifdef CSPROF_TRAMPOLINE_BACKEND
+    DBGMSG_PUB(CSPROF_DBG_CCT_INSERTION, "beg ip %#lx | sp %#lx",
+	       frm->ip, frm->sp);
     DBGMSG_PUB(CSPROF_DBG_CCT_INSERTION, "root ip %#lx | sp %#lx",
 	       tn->ip, tn->sp);
-#else
-    DBGMSG_PUB(CSPROF_DBG_CCT_INSERTION, "root ip %#lx",
-	       tn->ip);
-#endif
-    DBGMSG_PUB(CSPROF_DBG_CCT_INSERTION, "nxt start ip %#lx | sp %#lx",
-	       start->ip, start->sp);
+
+    csprof_MY_ADVANCE_PATH_FRAME(frm);
+
+    DBGMSG_PUB(CSPROF_DBG_CCT_INSERTION, "nxt beg ip %#lx | sp %#lx",
+	       frm->ip, frm->sp);
   }
 
-  if(tn == NULL) {
+  if (tn == NULL) {
     tn = x->tree_root;
 
-#ifdef CSPROF_TRAMPOLINE_BACKEND
     DBGMSG_PUB(CSPROF_DBG_CCT_INSERTION, "(NULL) root ip %#lx | sp %#lx",
 	       tn->ip, tn->sp);
-#else
-    DBGMSG_PUB(CSPROF_DBG_CCT_INSERTION, "(NULL) root ip %#lx",
-	       tn->ip);
-#endif
-    DBGMSG_PUB(CSPROF_DBG_CCT_INSERTION, "start ip %#lx | sp %#lx",
-	       start->ip, start->sp);
+    DBGMSG_PUB(CSPROF_DBG_CCT_INSERTION, "beg ip %#lx | sp %#lx",
+	       frm->ip, frm->sp);
 
     /* we don't want the tree root calling itself */
+
+    if (frm->ip == tn->ip 
 #ifdef CSPROF_TRAMPOLINE_BACKEND
-    if(start->ip == tn->ip && start->sp == tn->sp) {
-      start--;
-    }
-#else
-    if(start->ip == tn->ip) {
-      MSG(1,"start ip == tn ip = %lx",tn->ip);
-      start--;
-    }
+	&& frm->sp == tn->sp
 #endif
-    DBGMSG_PUB(CSPROF_DBG_CCT_INSERTION, "start ip %#lx | sp %#lx",
-	       start->ip, start->sp);
+	) {
+      MSG(1,"beg ip == tn ip = %lx",tn->ip);
+      csprof_MY_ADVANCE_PATH_FRAME(frm);
+    }
+
+    DBGMSG_PUB(CSPROF_DBG_CCT_INSERTION, "beg ip %#lx | sp %#lx",
+	       frm->ip, frm->sp);
   }
 
-  while(1) {
-    if(start < end) {
-      /* done */
+  while (1) {
+    if (csprof_MY_IS_PATH_FRAME_AT_END(frm)) {
       break;
     }
-    else {
-      /* find child */
-#ifdef CSPROF_TRAMPOLINE_BACKEND
-      csprof_cct_node_t *c =
-	csprof_cct_node__find_child(tn, start->ip, start->sp);
-#else
-      MSG(1,"finding child in tree w ip = %lx",start->ip);
-      csprof_cct_node_t *c =
-	csprof_cct_node__find_child(tn, start->ip);
-#endif
 
-      if(c) {
-	/* child exists; recur */
-	MSG(1,"found child");
-	tn = c;
-	start--;
+    // Attempt to find a child 'c' corresponding to 'frm'
+    MSG(1,"finding child in tree w ip = %lx", frm->ip);
+
+    csprof_cct_node_t *c;
+    c = csprof_cct_node__find_child(tn, frm->as_info, frm->ip, frm->lip, 
+				    frm->sp);
+    if (c) {
+      // child exists; recur
+      MSG(1,"found child");
+      tn = c;
+
+      // If as_frm is 1-to-1 and c->as_info is not, update the latter
+      lush_assoc_t as_frm = lush_assoc_info__get_assoc(frm->as_info);
+      if (as_frm == LUSH_ASSOC_1_to_1) {
+	// INVARIANT: c->as_info must be either a-to-1 or 1-to-a
+	lush_assoc_info__set_assoc(c->as_info, LUSH_ASSOC_1_to_1);
       }
-      else {
-	/* no such child; insert new tail */
-	MSG(1,"No child found, inserting new tail");
-	while(start >= end) {
-	  MSG(1,"create node w ip = %lx",start->ip);
-	  c = csprof_cct_node__create(start->ip, start->sp);
-	  csprof_cct_node__parent_insert(c, tn);
-	  x->num_nodes++;
-
-	  tn = c;
-	  start--;
-	}
+      csprof_MY_ADVANCE_PATH_FRAME(frm);
+    }
+    else {
+      // no such child; insert new tail
+      MSG(1,"No child found, inserting new tail");
+      
+      while (!csprof_MY_IS_PATH_FRAME_AT_END(frm)) {
+	MSG(1,"create node w ip = %lx",frm->ip);
+	c = csprof_cct_node__create(frm->as_info, frm->ip, frm->lip, frm->sp);
+	csprof_cct_node__parent_insert(c, tn);
+	x->num_nodes++;
+	
+	tn = c;
+	csprof_MY_ADVANCE_PATH_FRAME(frm);
       }
     }
   }
@@ -620,11 +619,7 @@ csprof_cct__get_data_CB(csprof_cct_t* x, csprof_cct_node_t* node,
 			hpcfile_cstree_nodedata_t* d)
 {
   d->ip = (hpcfile_vma_t)node->ip;
-#ifdef CSPROF_TRAMPOLINE_BACKEND
   d->sp = (hpcfile_uint_t)node->sp;
-#else
-  d->sp = (hpcfile_uint_t)NULL;
-#endif
   memcpy(d->metrics, node->metrics, d->num_metrics * sizeof(size_t));
 }
 
@@ -702,19 +697,21 @@ lush_cct_ctxt__write_gbl(FILE* fs, lush_cct_ctxt_t* cct_ctxt,
   
   // Base case
   if (!cct_ctxt) {
-    return ret;
+    return CSPROF_OK;
   }
 
-
-  // General case
-  ret = lush_cct_ctxt__write_gbl(fs, cct_ctxt->parent, id_root, 
+  // -------------------------------------------------------
+  // General case (post order)
+  // -------------------------------------------------------
+  ret = lush_cct_ctxt__write_gbl(fs, cct_ctxt->parent, id_root,
 				 nodes_written, tmp_node);
   if (ret != CSPROF_OK) { return CSPROF_ERR; }
   
+  // write this context
   unsigned int lcl_written = 0;
-  unsigned int id_lcl_root = *nodes_written;
-  ret = lush_cct_ctxt__write_lcl(fs, cct_ctxt->context, id_lcl_root, 
-				 &lcl_written, tmp_node);
+  unsigned int id_lcl_root = id_root + (*nodes_written);
+  ret = lush_cct_ctxt__write_lcl(fs, cct_ctxt->context, 
+				 id_lcl_root, &lcl_written, tmp_node);
   if (ret != CSPROF_OK) { return CSPROF_ERR; }
   (*nodes_written) += lcl_written;
   
@@ -728,31 +725,27 @@ lush_cct_ctxt__write_lcl(FILE* fs, csprof_cct_node_t* node,
 			 unsigned int id_root, unsigned int* nodes_written,
 			 hpcfile_cstree_node_t* tmp_node)
 {
-  int ret;
+  int ret = CSPROF_OK;
 
   // Base case
   if (!node) {
     return CSPROF_OK;
   }
   
-
-  // General case
-  lush_cct_ctxt__write_lcl(fs, node->parent, id_root,
-			   nodes_written, tmp_node);
+  // -------------------------------------------------------
+  // General case (post order)
+  // -------------------------------------------------------
+  ret = lush_cct_ctxt__write_lcl(fs, node->parent, id_root,
+				 nodes_written, tmp_node);
+  if (ret != CSPROF_OK) { return CSPROF_ERR; }
   
-  // write a node
-  unsigned int id_parent = *nodes_written;
-  unsigned int id        = id_parent + 1;
-  
-  tmp_node->id = id;
-  tmp_node->id_parent = id_parent;
+  // write this node
+  tmp_node->id        = id_root + (*nodes_written);
+  tmp_node->id_parent = tmp_node->id - 1;
   csprof_cct__get_data_CB(NULL, node, &(tmp_node->data));
   
   ret = hpcfile_cstree_node__fwrite(tmp_node, fs);
-  if (ret != HPCFILE_OK) {
-    return HPCFILE_ERR;
-  }
-  
+  if (ret != CSPROF_OK) { return CSPROF_ERR; }
   (*nodes_written)++;
   
   return ret;

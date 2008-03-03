@@ -97,15 +97,9 @@
 #include "dl_bound.h"
 #include "dbg_extra.h"
 
-#if 0
-/* the library's basic state */
-csprof_status_t status = CSPROF_STATUS_UNINIT;
-#endif
 static csprof_options_t opts;
 
-#if !defined(CSPROF_SYNCHRONOUS_PROFILING) 
 sigset_t prof_sigset;
-#endif
 
 int wait_for_gdb = 1;
 int csprof_initialized = 0;
@@ -175,8 +169,6 @@ csprof_init_internal(void)
   csprof_initialized = 1;
 }
 
-#ifdef CSPROF_THREADS
-
 void
 csprof_init_thread_support(void)
 {
@@ -208,7 +200,7 @@ csprof_thread_pre_create(void)
   }
 
   // -------------------------------------------------------
-  // Capture new thread's parent context.
+  // Capture new thread's creation context.
   // -------------------------------------------------------
   csprof_state_t* state = csprof_get_state();
 
@@ -226,6 +218,12 @@ csprof_thread_pre_create(void)
   // insert into CCT as a placeholder
   csprof_cct_node_t* n;
   n = csprof_sample_event(&context, metric_id, 0 /*sample_count*/);
+  int i;
+  for(i=0; i<2 ; i++) { 
+    // drop two innermost levels of context
+    //    csprof_thread_pre_create -> monitor_thread_pre_create
+    if(n) n = n->parent;
+  }
 
   TMSG(THREAD,"before lush malloc");
   lush_cct_ctxt_t* thr_ctxt = csprof_malloc(sizeof(lush_cct_ctxt_t));
@@ -284,10 +282,6 @@ csprof_thread_init(killsafe_t *kk, int id, lush_cct_ctxt_t* thr_ctxt)
 void
 csprof_thread_fini(csprof_state_t *state)
 {
-#if 0
-  thread_data_t *td = (thread_data_t *) pthread_getspecific(my_thread_specific_key);
-#endif
-
   if (csprof_initialized){
     MSG(1,"csprof thread fini");
     if (opts.sample_source == ITIMER){
@@ -296,17 +290,12 @@ csprof_thread_fini(csprof_state_t *state)
         EMSG("WARNING: failed to stop itimer (in thread)");
       }
     } else { // PAPI
-#if 0
-      PMSG(PAPI,"PAPI Thread fini: id = %d",td->id);
-      papi_pulse_fini(td->eventSet);
-#endif
       PMSG(PAPI,"PAPI Thread fini: id = %d",TD_GET(id));
       papi_pulse_fini(TD_GET(eventSet));
     }
     csprof_write_profile_data(state);
   }
 }
-#endif
 
 // csprof_fini_internal: 
 // errors: handles all errors
@@ -337,11 +326,6 @@ csprof_fini_internal(void)
     }
 
     dl_fini();
-
-#if 0    
-    MSG(CSPROF_MSG_SHUTDOWN, "writing profile data");
-    state = csprof_get_safe_state();
-#endif
 
     csprof_write_profile_data(state);
 
@@ -407,10 +391,6 @@ csprof_check_for_new_epoch(csprof_state_t *state)
 
     /* and finally, set the new state */
     csprof_set_state(newstate);
-
-#ifdef CSPROF_THREADS
-    ;
-#endif
 
     return newstate;
   }

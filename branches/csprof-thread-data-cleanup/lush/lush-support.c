@@ -35,7 +35,20 @@
 //*************************** Forward Declarations **************************
 
 //***************************************************************************
-// LUSH Unwind Types
+// LUSH LIP
+//***************************************************************************
+
+lush_lip_t*
+lush_lip_clone(lush_lip_t* x)
+{
+  lush_lip_t* x_clone = csprof_malloc(sizeof(lush_lip_t));
+  memcpy(x_clone, x, sizeof(lush_lip_t));
+  return x_clone;
+}
+
+
+//***************************************************************************
+// LUSH cursor
 //***************************************************************************
 
 bool 
@@ -62,14 +75,14 @@ lush_cursor_unset_flag(lush_cursor_t* cursor, lush_cursor_flags_t f)
 lush_assoc_t 
 lush_cursor_get_assoc(lush_cursor_t* cursor)
 {
-  return cursor->assoc;
+  return lush_assoc_info__get_assoc(cursor->as_info);
 }
 
 
 void
 lush_cursor_set_assoc(lush_cursor_t* cursor, lush_assoc_t as)
 {
-  cursor->assoc = as;
+  lush_assoc_info__set_assoc(cursor->as_info, as);
 }
 
 
