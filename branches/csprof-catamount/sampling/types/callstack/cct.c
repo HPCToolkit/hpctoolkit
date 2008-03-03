@@ -450,6 +450,7 @@ csprof_cct__init(csprof_cct_t* x)
   }
 #endif
 
+
   return CSPROF_OK;
 }
 
@@ -474,6 +475,13 @@ csprof_cct_insert_backtrace(csprof_cct_t *x, void *treenode, int metric_id,
 
   csprof_frame_t* frm = path_beg; // current frame 
   csprof_cct_node_t *tn = (csprof_cct_node_t *)treenode;
+
+
+  if (csprof_cct__isempty(x)) {
+    // introduce placeholder root node to prevent forests
+    x->tree_root = csprof_cct_node__create(frm->as_info, 0, 0, 0);
+    x->num_nodes = 1;
+  }
 
   if (csprof_cct__isempty(x)) {
     // LUSH:FIXME: introduce bogus root to handle possible forests?

@@ -268,13 +268,8 @@ papi_pulse_init(int eventSet)
 void
 papi_pulse_fini(int eventSet)
 {
-  long_long values;
-
-  return;
-  int ret = PAPI_stop(eventSet, &values);
+  int ret = PAPI_stop(eventSet, NULL);
   if (ret != PAPI_OK){
     EMSG("Failed to stop papi f eventset %, ret = %d",eventSet,ret);
-    abort();
   }
-  PMSG(PAPI,"values = %lld\n", values);
 }

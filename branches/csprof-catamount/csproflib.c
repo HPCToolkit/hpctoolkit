@@ -246,7 +246,7 @@ csprof_thread_pre_create(void)
   //   2. current execution context is either the spawning process or thread.
 
   // Disable signals (could also disable timers)
-  ret = pthread_sigmask(SIG_BLOCK,&prof_sigset,NULL);
+  ret = monitor_real_pthread_sigmask(SIG_BLOCK,&prof_sigset,NULL);
   if (ret){
     EMSG("WARNING: Thread init could not block SIGPROF, ret = %d",ret);
   }
@@ -289,7 +289,7 @@ csprof_thread_pre_create(void)
 void
 csprof_thread_post_create(void *dc)
 {
-  int ret = pthread_sigmask(SIG_UNBLOCK,&prof_sigset,NULL);
+  int ret = monitor_real_pthread_sigmask(SIG_UNBLOCK,&prof_sigset,NULL);
   if (ret){
     EMSG("WARNING: Thread init could not unblock SIGPROF, ret = %d",ret);
   }
@@ -346,7 +346,7 @@ csprof_thread_init(killsafe_t *kk, int id, lush_cct_ctxt_t* thr_ctxt)
     td->eventSet = papi_event_init();
     papi_pulse_init(td->eventSet);
   }
-  ret = pthread_sigmask(SIG_UNBLOCK,&prof_sigset,NULL);
+  ret = monitor_real_pthread_sigmask(SIG_UNBLOCK,&prof_sigset,NULL);
   if (ret){
     EMSG("WARNING: Thread init could not unblock SIGPROF, ret = %d",ret);
   }
