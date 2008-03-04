@@ -38,6 +38,11 @@
 
 volatile int LUSH_WAIT = 1;
 
+static csprof_frame_t*
+canonicalize_chord(csprof_frame_t* chord_beg, lush_assoc_t as,
+		   unsigned int pchord_len, unsigned int lchord_len);
+
+
 //***************************************************************************
 // backtrace
 //***************************************************************************
@@ -128,25 +133,10 @@ lush_backtrace(csprof_state_t* state, ucontext_t* context,
     }
 
     // ---------------------------------------------------------
-    // Set assoc and fill empty p-notes/l-notes
+    // canonicalize frames to form a chord
     // ---------------------------------------------------------
-    // INVARIANT: chord_len >= 1
-    unsigned int chord_len = MAX(pchord_len, lchord_len); 
-    csprof_frame_t* chord_end  = chord_beg + chord_len; // N.B.: exclusive
-    csprof_frame_t* pchord_end = chord_beg + pchord_len;
-    csprof_frame_t* lchord_end = chord_beg + lchord_len;
-
-    for (csprof_frame_t* x = chord_beg; x < chord_end; ++x) {
-      lush_assoc_info__set_assoc(state->unwind->as_info, as);
-      lush_assoc_info__set_M(state->unwind->as_info, chord_len);
-      
-      if (x >= pchord_end) {
-	x->ip = NULL;
-      }
-      if (x >= lchord_end) {
-	x->lip = NULL;
-      }
-    }
+    csprof_frame_t* chord_end;
+    chord_end = canonicalize_chord(chord_beg, as, pchord_len, lchord_len);
 
     state->unwind = chord_end;
   }
@@ -172,3 +162,49 @@ lush_backtrace(csprof_state_t* state, ucontext_t* context,
   return node;
 }
 
+
+// returns the end of the chord (exclusive)
+static csprof_frame_t* 
+canonicalize_chord(csprof_frame_t* chord_beg, lush_assoc_t as,
+		   unsigned int pchord_len, unsigned int lchord_len)
+{
+  // Set assoc and fill empty p-notes/l-notes
+
+  // INVARIANT: chord_len >= 1
+  //   [chord_beg = innermost ... outermost, chord_end)
+
+  unsigned int chord_len = MAX(pchord_len, lchord_len);
+  csprof_frame_t* chord_end  = chord_beg + chord_len; // N.B.: exclusive
+  csprof_frame_t* pchord_end = chord_beg + pchord_len;
+  csprof_frame_t* lchord_end = chord_beg + lchord_len;
+
+  unw_word_t ip = 0;
+  lush_lip_t* lip = NULL;
+
+  if (as == LUSH_ASSOC_1_to_M) {
+    ip = chord_beg->ip;
+  }
+  else if (as == LUSH_ASSOC_M_to_1) {
+    lip = chord_beg->lip;
+  }
+  // else: default is fine for a-to-0 and 1-to-1
+  
+  unsigned int path_len = chord_len;
+  for (csprof_frame_t* x = chord_beg; x < chord_end; ++x, --path_len) {
+    lush_assoc_info__set_assoc(x->as_info, as);
+    lush_assoc_info__set_path_len(x->as_info, path_len);
+    
+    if (x >= pchord_end) {
+      // INVARIANT: as must be 1-to-M
+      x->ip = ip;
+    }
+    if (x >= lchord_end) {
+      // INVARIANT: as is one of: M-to-1, a-to-0
+      x->lip = lip;
+    }
+  }
+  
+  return chord_end;
+}
+
+//***************************************************************************

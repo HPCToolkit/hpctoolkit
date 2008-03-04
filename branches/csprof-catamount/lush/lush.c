@@ -349,7 +349,6 @@ lush_forcestep_pnote(lush_cursor_t* cursor)
   }
   else {
     // Identity agent: Association is 1-to-1, so p-chord is unit length
-
     int t = unw_step(lush_cursor_get_pcursor(cursor));
     if (t > 0) {
       ty = LUSH_STEP_END_CHORD;

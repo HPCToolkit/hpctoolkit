@@ -28,6 +28,7 @@
 #include <fcntl.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdbool.h>
 
 //*************************** User Include Files ****************************
 
@@ -59,6 +60,14 @@ csprof_cct_node__find_child(csprof_cct_node_t* x,
 
 static int
 csprof_cct_node__link(csprof_cct_node_t *, csprof_cct_node_t *);
+
+//*************************** Forward Declarations **************************
+
+// FIXME: tallent: when code is merged into hpctoolkit tree, this
+// should come from src/lib/support/Logic.hpp (where a C version can
+// easily be created).
+static bool implies(bool p, bool q) { return (!p || q); }
+
 
 //***************************************************************************
 //
@@ -414,7 +423,11 @@ csprof_cct_node__find_child(csprof_cct_node_t* x,
     do {
       // LUSH
       lush_assoc_t c_as = lush_assoc_info__get_assoc(c->as_info);
-      if (c->ip == ip && c->lip == lip && lush_assoc_class_eq(c_as, as)) {
+      if (c->ip == ip 
+	  && c->lip == lip 
+	  && lush_assoc_class_eq(c_as, as) 
+	  && implies(lush_assoc_info_is_root_note(as_info), 
+		     lush_assoc_info_is_root_note(c->as_info))) {
 	return c;
       }
 
@@ -510,8 +523,8 @@ csprof_cct_insert_backtrace(csprof_cct_t *x, void *treenode, int metric_id,
     DBGMSG_PUB(CSPROF_DBG_CCT_INSERTION, "beg ip %#lx | sp %#lx",
 	       frm->ip, frm->sp);
 
+    // tallent: what is this for?
     /* we don't want the tree root calling itself */
-
     if (frm->ip == tn->ip 
 #ifdef CSPROF_TRAMPOLINE_BACKEND
 	&& frm->sp == tn->sp
@@ -541,10 +554,11 @@ csprof_cct_insert_backtrace(csprof_cct_t *x, void *treenode, int metric_id,
       MSG(1,"found child");
       tn = c;
 
-      // If as_frm is 1-to-1 and c->as_info is not, update the latter
+      // If as_frm is 1-to-1 and as_c is not, update the latter
       lush_assoc_t as_frm = lush_assoc_info__get_assoc(frm->as_info);
-      if (as_frm == LUSH_ASSOC_1_to_1) {
-	// INVARIANT: c->as_info must be either a-to-1 or 1-to-a
+      lush_assoc_t as_c = lush_assoc_info__get_assoc(c->as_info);
+      if (as_frm == LUSH_ASSOC_1_to_1 && as_c != LUSH_ASSOC_1_to_1) {
+	// INVARIANT: c->as_info must be either M-to-1 or 1-to-M
 	lush_assoc_info__set_assoc(c->as_info, LUSH_ASSOC_1_to_1);
       }
       csprof_MY_ADVANCE_PATH_FRAME(frm);

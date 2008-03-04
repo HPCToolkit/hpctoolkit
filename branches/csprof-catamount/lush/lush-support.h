@@ -89,8 +89,8 @@ enum lush_assoc {
 typedef struct lush_assoc_info_s lush_assoc_info_t;
 
 struct lush_assoc_info_s {
-  lush_assoc_t as    : 8;
-  uint32_t     M_val : 24; // the value of M (if applicable)
+  lush_assoc_t as  : 8;
+  uint32_t     len : 24; // (inclusive) length of path to root note: >= 1
 };
 
 
@@ -112,21 +112,23 @@ struct lush_assoc_info_s {
   (lush_assoc_class(as) & LUSH_ASSOC_CLASS_a_to_1)
 
 
-
 #define lush_assoc_info__get_assoc(/*lush_assoc_info_t*/ x) \
   (x).as
 
 #define lush_assoc_info__set_assoc(/*lush_assoc_info_t*/ x,	    \
-				   /*lush_assoc_t*/ newas)	    \
-  (x).as = (newas)
+				   /*lush_assoc_t*/ new_as)	    \
+  (x).as = (new_as)
 
-#define lush_assoc_info__get_M(/*lush_assoc_info_t*/ x) \
-  x.M_val
 
-#define lush_assoc_info__set_M(/*lush_assoc_info_t*/ x, \
-			       /*lush_assoc_t*/ m_val)	\
-  x.M_val = m_val
+#define lush_assoc_info__get_path_len(/*lush_assoc_info_t*/ x) \
+  (x).len
 
+#define lush_assoc_info__set_path_len(/*lush_assoc_info_t*/ x,	 \
+				      /*lush_assoc_t*/ new_len)  \
+  (x).len = (new_len)
+
+#define lush_assoc_info_is_root_note(/*lush_assoc_info_t*/ x) \
+  ((x).len == 1)
 
 
 
