@@ -17,6 +17,8 @@
 #include "sample_event.h"
 #include "csprof_monitor_callbacks.h"
 
+#include "pmsg.h"
+
 #ifdef LINUX
 #include <linux/unistd.h>
 #endif
@@ -29,19 +31,31 @@
 
 //***************************************************************************
 
-void monitor_init_process(char *process,int *argc,char **argv,unsigned pid)
+extern int wait_for_gdb;
+
+void
+monitor_init_process(char *process,int *argc,char **argv,unsigned pid)
 {
+  if (getenv("CSPROF_WAIT")){
+    while(wait_for_gdb);
+  }
   csprof_set_executable_name(process);
+  pmsg_init(process);
+  NMSG(PROCESS,"init");
   csprof_init_internal();
 }
 
-void monitor_fini_process(void)
+
+void
+monitor_fini_process(void)
 {
   // M("monitor calling csprof_fini_internal");
   csprof_fini_internal();
 }
 
-void monitor_init_library(void)
+#if 0
+void
+monitor_init_library(void)
 {
   //  extern void csprof_init_internal(void);
   // M("monitor init lib (NOT) calling csprof_init_internal");
@@ -51,42 +65,20 @@ void monitor_fini_library(void)
 {
   //  extern void csprof_fini_internal(void);
 }
+#endif
 
 // always need this variable, but only init thread support will turn it on
 int csprof_using_threads = 0;
 
 #ifdef CSPROF_THREADS
-#include "thread_data.h"
-pthread_key_t my_thread_specific_key;
-
-static int thr_c = 0;
-static pthread_once_t iflg = PTHREAD_ONCE_INIT;
-
-pthread_mutex_t mylock;
-
-static void
-n_init(void)
-{
-  int e;
-  // e = pthread_key_create(&k,free);
-  e = pthread_key_create(&my_thread_specific_key, NULL);
-}
-
 
 void
 monitor_init_thread_support(void)
 {
-  thread_data_t *loc;
-
+  NMSG(THREAD,"REALLY init_thread_support ---");
+  csprof_init_thread_support();
   csprof_using_threads = 1;
-
-  pthread_once(&iflg,n_init);
-  loc = malloc(sizeof(thread_data_t));
-  loc->id = thr_c++;
-  pthread_setspecific(my_thread_specific_key, (void *)loc);
-  handling_sample_threaded();
-
-  csprof_init_thread_support(loc->id);
+  NMSG(THREAD,"Init thread support done");
 }
 
 
@@ -95,30 +87,32 @@ monitor_thread_pre_create(void)
 {
   // N.B.: monitor_thread_pre_create() can be called before
   // monitor_init_thread_support() or even monitor_init_process().
-  return csprof_thread_pre_create();
+  NMSG(THREAD,"pre create");
+
+  void *ret = csprof_thread_pre_create();
+
+  NMSG(THREAD,"->finish pre create");
+  return ret;
+  // return csprof_thread_pre_create();
 }
 
 void
 monitor_thread_post_create(void *dc)
 {
-  return csprof_thread_post_create(dc);
+  NMSG(THREAD,"post create");
+  csprof_thread_post_create(dc);
+  NMSG(THREAD,"done post create");
 }
 
 void *
 monitor_init_thread(int tid, void *data)
 {
-  thread_data_t *loc;
   killsafe_t    *safe;
 
-  MSG(1,"mon init thread id = %d, thr_c = %d",tid,thr_c);
-  pthread_once(&iflg,n_init);
-  loc = malloc(sizeof(thread_data_t));
-  loc->id = thr_c++;
-  pthread_setspecific(my_thread_specific_key, (void *)loc);
-  csprof_set_handling_sample(0);
-
+  NMSG(THREAD,"init thread %d",tid);
   safe = (killsafe_t *)malloc(sizeof(killsafe_t));
-  csprof_thread_init(safe, loc->id, (lush_cct_ctxt_t*)data);
+  csprof_thread_init(safe, tid, (lush_cct_ctxt_t*)data);
+  NMSG(THREAD,"back from init thread %d",tid);
 
   return (void *) safe;
 }

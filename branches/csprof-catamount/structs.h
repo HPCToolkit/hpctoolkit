@@ -50,12 +50,14 @@ typedef struct csprof_state_s {
   /* information for recording function call returns; do not move this
      block, since `swizzle_return' must be the first member of the
      structure if we are doing backtracing */
+
   void *swizzle_return;
   void **swizzle_patch;
 
   /* last pc where we were signaled; useful for catching problems in
      threaded builds of the profiler (can be useful for debugging in
      non-threaded builds, too) */
+
   void *last_pc;
   void *unwind_pc;
   csprof_frame_t *unwind;
@@ -70,12 +72,14 @@ typedef struct csprof_state_s {
 
   /* how many bogus samples we took */
   unsigned long trampoline_samples;
+
   /* various flags, such as whether an exception is being processed or
      whether we think there was a tail call since the last signal */
   unsigned int flags;
 
   /* persistent state */
   csprof_pstate_t pstate;
+
 #if CSPROF_NEED_PSTATE
   char pstate_fnm[CSPROF_PATH_SZ];
 #endif

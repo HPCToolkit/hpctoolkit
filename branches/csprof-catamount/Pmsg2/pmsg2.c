@@ -4,7 +4,7 @@
 #include <string.h>
 #include <unistd.h>
 
-#include "simple-lock.h"
+#include "spinlock.h"
 #include "pmsg2.h"
 #include "fname_max.h"
 

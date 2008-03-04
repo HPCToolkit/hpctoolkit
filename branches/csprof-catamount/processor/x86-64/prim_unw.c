@@ -24,6 +24,8 @@
 
 #include "splay.h"
 
+#include "thread_data.h"
+
 #if defined(__LIBCATAMOUNT__)
 #undef __CRAYXT_CATAMOUNT_TARGET
 #define __CRAYXT_CATAMOUNT_TARGET
@@ -56,7 +58,8 @@ csprof_check_fence(void *ip)
  ***************************************************************************************/
 
 
-void unw_init(void)
+void
+unw_init(void)
 {
   extern void xed_init(void);
 
@@ -246,8 +249,8 @@ static void drop_sample(void)
   if (_dbg_no_longjmp){
     return;
   }
-  dump_backtraces(csprof_get_state(),0);
-  sigjmp_buf_t *it = get_bad_unwind();
+  dump_backtraces(TD_GET(state),0);
+  sigjmp_buf_t *it = &(TD_GET(bad_unwind));
   siglongjmp(it->jb,9);
 }
 

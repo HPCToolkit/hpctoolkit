@@ -24,11 +24,14 @@ typedef void state_t_setter(csprof_state_t *s);
 // getting and setting states independent of threading support
 // ---------------------------------------------------------
 
-csprof_state_t *csprof_get_state(void);
 void csprof_set_state(csprof_state_t *);
+
+#if 0
+csprof_state_t *csprof_get_state(void);
 csprof_state_t *csprof_get_safe_state(void);
 #ifdef CSPROF_THREADS
 void state_threaded(void);
+#endif
 #endif
 
 /* initialize various parts of a state */

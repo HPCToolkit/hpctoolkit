@@ -5,7 +5,6 @@
 
 #include "hpcfile_csprof.h"
 
-
 /* flags for metrics */
 
 #define CSPROF_METRIC_FLAGS_NIL 0
@@ -13,7 +12,6 @@
 /* whether this metric is asynchronous (set if it is) */
 #define CSPROF_METRIC_ASYNCHRONOUS (1<<1)
 
-
 /* prototypes */
 
 /* Does what you expect. */

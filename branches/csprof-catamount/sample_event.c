@@ -14,15 +14,15 @@
 #include "mpi_special.h"
 #include "pmsg.h"
 #include "segv_handler.h"
+#include "splay.h"
 #include "state.h"
 #include "thread_data.h"
 #include "thread_use.h"
 #include "backtrace.h"
 #include "csprof_csdata.h"
+#include "handling_sample.h"
 
 //*************************** Forward Declarations **************************
-
-void csprof_set_handling_sample(int in);
 
 static csprof_cct_node_t*
 csprof_take_profile_sample(csprof_state_t *state, struct ucontext *ctx,
@@ -39,23 +39,19 @@ int bad_unwind_count = 0;
 csprof_cct_node_t*
 csprof_sample_event(void *context, int metric_id, size_t sample_count)
 {
-  sigjmp_buf_t *it = get_bad_unwind();
+  PMSG(SAMPLE,"Handling sample");
+
+  thread_data_t *td = csprof_get_thread_data();
+  sigjmp_buf_t *it = &(td->bad_unwind);
 
   samples_taken++;
 
-  PMSG(SAMPLE,"Handling sample");
-
-  csprof_set_handling_sample(1);
-
-  // FIXME: setup_segv only necessary here because some apps install segv handler of their own
-  // setup_segv();
+  csprof_set_handling_sample(td);
 
   csprof_cct_node_t* node = NULL;
-  csprof_state_t *state = csprof_get_state();
+  csprof_state_t *state = td->state;
 
   if (!sigsetjmp(it->jb,1)){
-
-    MPI_SPECIAL_SKIP();
 
     struct ucontext *ctx = (struct ucontext *)(context);
     if (state != NULL) {
@@ -68,9 +64,12 @@ csprof_sample_event(void *context, int metric_id, size_t sample_count)
          state->unwind_pc);
     dump_backtraces(state, state->unwind);
     bad_unwind_count++;
+    if (TD_GET(splay_lock)){
+      csprof_release_splay_lock();
+    }
   }
 
-  csprof_set_handling_sample(0);
+  csprof_clear_handling_sample(td);
 
   return node;
 }
@@ -118,6 +117,7 @@ csprof_take_profile_sample(csprof_state_t *state, struct ucontext *ctx,
   
   csprof_cct_node_t* n;
   n = csprof_sample_callstack(state, ctx, metric_id, sample_count);
+
   if (!n) {
 #ifdef USE_TRAMP
     PMSG(SWIZZLE,"about to swizzle w context\n");
@@ -130,40 +130,4 @@ csprof_take_profile_sample(csprof_state_t *state, struct ucontext *ctx,
 				  | CSPROF_EPILOGUE_SP_RESET));
   
   return n;
-}
-
-
-static int handling_sample = 0;
-static int handling_sample_unthreaded = 1;
-
-int *get_handling_sample()
-{
-  if (handling_sample_unthreaded) return &handling_sample;
-  else {
-    thread_data_t *td = (thread_data_t *) 
-	pthread_getspecific(my_thread_specific_key);
-
-    return &(td->handling_sample);
-
-  }
-}
-
-void handling_sample_threaded()
-{
-  handling_sample_unthreaded = 0;
-  csprof_set_handling_sample(handling_sample);
-}
-
-
-void csprof_set_handling_sample(int in)
-{
-  int *my_handling_sample = get_handling_sample();
-  *my_handling_sample = in;
-}
-
-int
-csprof_is_handling_sample(void)
-{
-  int *my_handling_sample = get_handling_sample();
-  return *my_handling_sample;
 }

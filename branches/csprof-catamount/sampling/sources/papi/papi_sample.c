@@ -1,3 +1,4 @@
+#include <alloca.h>
 #include <assert.h>
 #include <ctype.h>
 #include <papi.h>
@@ -229,7 +230,9 @@ papi_event_init(void) //int *eventSet,char *evlist)
 
     ret = PAPI_add_event(eventSet, evcode);
     if (ret != PAPI_OK){
-      EMSG("Failure: PAPI_add_event: %d", ret);
+      char nm[256];
+      PAPI_event_code_to_name(evcode,nm);
+      EMSG("Failure: PAPI_add_event:, trying to add event %s, got ret code = %d", nm, ret);
       abort();
     }
   }
@@ -268,7 +271,8 @@ papi_pulse_init(int eventSet)
 void
 papi_pulse_fini(int eventSet)
 {
-  int ret = PAPI_stop(eventSet, NULL);
+  long_long *values = (long_long *) alloca(sizeof(long_long) * (csprof_papi_events.nevents+2));
+  int ret = PAPI_stop(eventSet, values);
   if (ret != PAPI_OK){
     EMSG("Failed to stop papi f eventset %, ret = %d",eventSet,ret);
   }
