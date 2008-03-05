@@ -211,7 +211,7 @@ int unw_step (unw_cursor_t *cursor)
 
   if (! cursor->intvl){
     if (((void *)spr_sp) >= monitor_stack_bottom()) { 
-      return -1; 
+      return 0; 
     }
     
     PMSG(TROLL,"UNW STEP FAILURE :candidate pc = %p, cursor pc = %p, cursor bp = %p, cursor sp = %p",spr_pc,pc,bp,sp);
