@@ -46,7 +46,10 @@ static pthread_key_t _csprof_key;
 void
 csprof_init_pthread_key(void)
 {
-  int ret = pthread_key_create(&_csprof_key, NULL);
+  int bad = pthread_key_create(&_csprof_key, NULL);
+  if (bad){
+    EMSG("pthread_key_create returned non-zero = %d",bad);
+  }
 }
 
 

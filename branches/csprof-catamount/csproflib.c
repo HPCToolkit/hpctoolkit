@@ -339,7 +339,11 @@ csprof_fini_internal(void)
         EMSG("WARNING: failed to stop itimer (in process)");
       }
     } else { // PAPI
+#if 0
       papi_pulse_fini(TD_GET(eventSet));
+#else
+      papi_pulse_shutdown(TD_GET(eventSet)); // process shutdown needs hard stop
+#endif
     }
 
     dl_fini();

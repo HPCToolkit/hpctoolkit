@@ -8,4 +8,5 @@ void papi_parse_evlist(char *evlst);
 int papi_event_init(void);
 void papi_pulse_init(int evs);
 void papi_pulse_fini(int evs);
+void papi_pulse_shutdown(int evs);
 #endif

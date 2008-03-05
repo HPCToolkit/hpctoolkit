@@ -76,8 +76,10 @@ int (*csprof_setitimer)(int, const struct itimerval *, struct itimerval *);
 #endif
 
 int (*csprof_sigprocmask)(int, const sigset_t *, sigset_t *);
+#if 0
 static void (*csprof_exit)(int);
 static void (*csprof__exit)(int);
+#endif
 
 #if !defined(CSPROF_SYNCHRONOUS_PROFILING)
 extern sigset_t prof_sigset;

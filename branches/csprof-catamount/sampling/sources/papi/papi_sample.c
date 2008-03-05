@@ -277,3 +277,14 @@ papi_pulse_fini(int eventSet)
     EMSG("Failed to stop papi f eventset %, ret = %d",eventSet,ret);
   }
 }
+
+
+//
+// call PAPI shutdown (this is to take care of fork/exec anomaly f PAPI)
+//
+void
+papi_pulse_shutdown(int eventSet)
+{
+  papi_pulse_fini(eventSet);
+  PAPI_shutdown();
+}
