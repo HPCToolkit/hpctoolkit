@@ -139,17 +139,23 @@ int hpcfile_cstree_hdr__fprint(hpcfile_cstree_hdr_t* x, FILE* fs);
 // ---------------------------------------------------------
 typedef struct hpcfile_cstree_nodedata_s {
 
+  uint32_t /*lush_assoc_info_t*/ as_info;
+
   // instruction pointer: more accurately, this is an 'operation
   // pointer'.  The operation in the instruction packet is represented
   // by adding 0, 1, or 2 to the instruction pointer for the first,
   // second and third operation, respectively.
   hpcfile_vma_t ip;
 
-  // 'sp': the stack pointer of this node 
+  hpcfile_uint_t lip; // canonical lip id
+
+  // 'sp': the stack pointer of this node
+  // tallent: Why is this needed?
   hpcfile_uint_t sp;
 
   hpcfile_uint_t num_metrics;
   hpcfile_uint_t *metrics;
+
 } hpcfile_cstree_nodedata_t;
 
 int hpcfile_cstree_nodedata__init(hpcfile_cstree_nodedata_t* x);
