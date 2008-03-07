@@ -332,7 +332,7 @@ int CSProfCodeNodeLineComp(CSProfCodeNode* x, CSProfCodeNode* y);
 // IDynNode
 //***************************************************************************
 
-// IDynNode: an interface (mixin) representing dynamic nodes
+// IDynNode: a mixin interface representing dynamic nodes
 
 class IDynNode {
 public:
