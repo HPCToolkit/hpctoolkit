@@ -158,11 +158,15 @@ csprof_cct_node__ancestor_count(csprof_cct_node_t* x);
 
 // functions for inspecting links to other nodes
 
-#define csprof_cct_node__parent(x)       (x)->parent
-#define csprof_cct_node__next_sibling(x) (x)->next_sibling
-#define csprof_cct_node__prev_sibling(x) (x)->prev_sibling
-#define csprof_cct_node__first_child(x)  (x)->children
-#define csprof_cct_node__last_child(x)   \
+#define csprof_cct_node__parent(/* csprof_cct_node_t* */ x)       \
+  (x)->parent
+#define csprof_cct_node__next_sibling(/* csprof_cct_node_t* */ x) \
+  (x)->next_sibling
+#define csprof_cct_node__prev_sibling(/* csprof_cct_node_t* */ x) \
+  (x)->prev_sibling
+#define csprof_cct_node__first_child(/* csprof_cct_node_t* */ x)  \
+  (x)->children
+#define csprof_cct_node__last_child(/* csprof_cct_node_t* */ x)   \
   ((x)->children ? (x)->children->prev_sibling : NULL)
 
 

@@ -69,6 +69,9 @@
 
 //*************************** Forward Declarations **************************
 
+#define HPCFILE_CSTREE_ID_ROOT 1
+
+
 #if defined(__cplusplus)
 extern "C" {
 #endif
@@ -83,58 +86,6 @@ extern "C" {
 // these functions use.
 //
 //***************************************************************************
-
-//***************************************************************************
-// hpcfile_cstree_write()
-//***************************************************************************
-
-typedef void (*hpcfile_cstree_cb__write_context_fn_t)(FILE* fs,
-						      void* cct_ctxt,
-						      unsigned int id_root,
-						      unsigned int* nodes_written);
-typedef void  (*hpcfile_cstree_cb__get_data_fn_t)(void*, void*, 
-						  hpcfile_cstree_nodedata_t*);
-typedef void* (*hpcfile_cstree_cb__get_first_child_fn_t)(void*, void*);
-typedef void* (*hpcfile_cstree_cb__get_sibling_fn_t)(void*, void*);
-
-
-// hpcfile_cstree_write: Writes all nodes of the tree 'tree' beginning
-// at 'root' to file stream 'fs'.  The tree should have 'num_nodes'
-// nodes.  The user must supply appropriate callback functions; see
-// documentation below for their interfaces.  Returns HPCFILE_OK upon
-// success; HPCFILE_ERR on error.
-int
-hpcfile_cstree_write(FILE* fs, void* tree, void* root, void* tree_ctxt,
-		     hpcfile_uint_t num_metrics,
-		     hpcfile_uint_t num_nodes,
-                     hpcfile_uint_t epoch,
-		     hpcfile_cstree_cb__write_context_fn_t write_context_fn,
-		     hpcfile_cstree_cb__get_data_fn_t get_data_fn,
-		     hpcfile_cstree_cb__get_first_child_fn_t get_first_child_fn,
-		     hpcfile_cstree_cb__get_sibling_fn_t get_sibling_fn);
-
-  
-// ---------------------------------------------------------
-// callback helpers for hpcfile_cstree_write().
-// ---------------------------------------------------------
-
-#if 0 /* describe callbacks */
-
-// Sets fields of node data 'd' given the node 'node' of the tree 'tree'.
-void hpcfile_cstree_cb__get_data(void* tree, void* node, 
-				 hpcfile_cstree_nodedata_t* d);
-
-// Returns a pointer to the first child of node 'node' of the tree
-// 'tree'.  Returns NULL if no children exist.
-void* hpcfile_cstree_cb__get_first_child(void* tree, void* node);
-
-// Returns a pointer to the next sibling of 'node' of the tree 'tree'.
-// If 'node' does not have a sibling, returns NULL.  (Or, to support
-// circular structures, this function may return the same node as
-// returned by first_child above.)
-void* hpcfile_cstree_cb__get_sibling(void* tree, void* node);
-
-#endif /* describe callbacks */
 
 //***************************************************************************
 // hpcfile_cstree_read()
