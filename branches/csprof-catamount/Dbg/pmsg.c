@@ -196,3 +196,10 @@ csprof_nmsg(pmsg_category flag,const char *fmt,...)
   _nmsg(fmt,args);
 }
 
+
+// interface to the debug flags
+int
+csprof_dbg(pmsg_category flag)
+{
+  return dbg_flags[flag];
+}

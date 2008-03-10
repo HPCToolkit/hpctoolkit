@@ -118,12 +118,15 @@ csprof_take_profile_sample(csprof_state_t *state, struct ucontext *ctx,
   csprof_cct_node_t* n;
   n = csprof_sample_callstack(state, ctx, metric_id, sample_count);
 
+  // FIXME: n == -1 if sample is filtered
+#if 0
   if (!n) {
 #ifdef USE_TRAMP
     PMSG(SWIZZLE,"about to swizzle w context\n");
     csprof_swizzle_with_context(state, (void *)context);
 #endif
   }
+#endif
 
   csprof_state_flag_clear(state, (CSPROF_TAIL_CALL 
 				  | CSPROF_EPILOGUE_RA_RELOADED 

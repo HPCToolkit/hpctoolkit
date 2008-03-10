@@ -25,6 +25,8 @@
 #include "general.h"
 #include "util.h"
 #include "dump_backtraces.h"
+#include "pmsg.h"
+#include "monitor.h"
 
 //*************************** Forward Declarations **************************
 
@@ -37,6 +39,9 @@ extern void _start();
 #else
 #define debug_dump_backtraces(x,y) dump_backtraces(x,y)
 #endif
+
+// global variable to count filtered samples
+int filtered_samples = 0;
 
 
 static csprof_cct_node_t*
@@ -121,10 +126,19 @@ csprof_sample_callstack(csprof_state_t *state, ucontext_t* context,
   csprof_cct_node_t* n;
   n = csprof_sample_callstack_from_frame(state, metric_id,
 					 sample_count, &frame);
-  if (!n) {
+#if 0
+  if (!n){
     ERRMSG("failure recording callstack sample", __FILE__, __LINE__);
   }
+#endif
   return n;
+}
+
+
+static int
+csprof_sample_filter(int len,csprof_frame_t *start, csprof_frame_t *last)
+{
+  return (! ( monitor_in_start_func_narrow(last->ip) && (len > 1) ));
 }
 
 
@@ -141,6 +155,7 @@ csprof_sample_callstack_from_frame(csprof_state_t *state, int metric_id,
   state->bufstk   = state->bufend;
   state->treenode = NULL;
 
+  int unw_len = 0;
   for(;;){
     csprof_state_ensure_buffer_avail(state, state->unwind);
 
@@ -159,20 +174,30 @@ csprof_sample_callstack_from_frame(csprof_state_t *state, int metric_id,
     state->unwind->ip = (void *) ip;
     state->unwind->sp = (void *) 0;
     state->unwind++;
+    unw_len++;
 
     ret = unw_step(cursor);
     if (ret <= 0) {
       MSG(1,"Hit unw_step break");
       break;
     }
-
   }
   MSG(1,"BTIP------------");
   debug_dump_backtraces(state,state->unwind);
   
+  if (! DBG(DISABLE_SAMPLE_FILTER)){
+    if (csprof_sample_filter(unw_len,state->btbuf,state->unwind - 1)){
+      TMSG(SAMPLE_FILTER,"filter sample of length %d",unw_len);
+      csprof_frame_t *fr = state->btbuf;
+      for (int i = 0; i < unw_len; i++,fr++){
+	PMSG(SAMPLE_FILTER,"  frame ip[%d] = %p",i,fr->ip);
+      }
+      filtered_samples++;
+      return 0;
+    }
+  }
   csprof_cct_node_t* n;
   n = csprof_state_insert_backtrace(state, metric_id, state->unwind - 1,
 				    state->btbuf, sample_count);
   return n;
 }
-

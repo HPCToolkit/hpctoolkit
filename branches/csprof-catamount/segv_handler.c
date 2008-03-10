@@ -17,6 +17,7 @@
 
 int segv_count = 0;
 extern int csprof_sample;
+extern int filtered_samples;
 
 int
 csprof_sigsegv_signal_handler(int sig, siginfo_t *siginfo, void *context)

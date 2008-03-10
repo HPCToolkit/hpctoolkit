@@ -323,6 +323,7 @@ csprof_fini_internal(void)
   extern int segv_count;
   extern int samples_taken;
   extern int bad_unwind_count;
+  extern int filtered_samples;
 
   int ret = monitor_real_sigprocmask(SIG_BLOCK,&prof_sigset,NULL);
   if (ret){
@@ -355,8 +356,8 @@ csprof_fini_internal(void)
 
     csprof_write_profile_data(state);
 
-    EMSG("host %ld: %d samples total, %d samples dropped (%d segvs)\n",
-	 gethostid(), samples_taken, bad_unwind_count, segv_count);
+    EMSG("host %ld: %d samples total, %d samples filtered, %d samples dropped (%d segvs)\n",
+	 gethostid(), samples_taken, filtered_samples, bad_unwind_count, segv_count);
 
     pmsg_fini();
   }

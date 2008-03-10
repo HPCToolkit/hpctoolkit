@@ -43,6 +43,7 @@ int debug_unw = 0;
 
 static void update_cursor_with_troll(unw_cursor_t *cursor, void *sp, void *pc, void *bp);
 
+#if 0
 // tallent: relocated here from backtrace.c 
 // FIXME: perhaps rename and better package
 static int 
@@ -51,7 +52,12 @@ csprof_check_fence(void *ip)
   return (monitor_unwind_process_bottom_frame(ip) 
 	  || monitor_unwind_thread_bottom_frame(ip));
 }
-
+#endif
+static int 
+csprof_check_fence(void *ip)
+{
+  return monitor_in_start_func_wide(ip);
+}
 
 /****************************************************************************************
  * interface functions
