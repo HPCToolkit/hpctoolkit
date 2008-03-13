@@ -323,9 +323,7 @@ stapi_syms:
 install: all
 	-install -d $(install_lib) $(install_bin) $(install_libexec)
 	install $(CSPROFLIB) $(install_lib)
-	if [ ! -e $(MONITOR_DIR)/lib/libmonitor.so ]; then \
-	    install $(MONITOR_DIR)/lib/libmonitor.so $(install_lib); \
-	fi
+	install $(MONITOR_DIR)/lib/libmonitor.so $(install_lib)
 	install $(src_dir_prefix)csprof $(install_bin)
 	install $(src_dir_prefix)csprof_syms $(install_libexec)
 	install $(src_dir_prefix)symbols/stapi_syms $(install_libexec)
