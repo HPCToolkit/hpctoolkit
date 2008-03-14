@@ -27,7 +27,7 @@
 
 //*************************** User Include Files ****************************
 
-#include "lush-support.h"
+#include "lush-support-rt.h"
 
 #include <general.h>
 #include <state.h>
@@ -38,6 +38,7 @@
 // LUSH LIP
 //***************************************************************************
 
+// N.B.: Currently, this routine belongs here and not in lush-support.c!
 lush_lip_t*
 lush_lip_clone(lush_lip_t* x)
 {

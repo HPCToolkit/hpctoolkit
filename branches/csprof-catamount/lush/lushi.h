@@ -27,10 +27,14 @@
 
 //*************************** User Include Files ****************************
 
-#include "lush-support.h"
+#include "lush-support-rt.h"
 #include "lushi-cb.h"
 
 //*************************** Forward Declarations **************************
+
+#if defined(__cplusplus)
+extern "C" {
+#endif
 
 // **************************************************************************
 // A LUSH agent provides:
@@ -136,5 +140,9 @@ LUSHI_DECL(int, LUSHI_get_concurrency, ());
 // **************************************************************************
 
 #undef LUSHI_DECL
+
+#if defined(__cplusplus)
+} /* extern "C" */
+#endif
 
 #endif /* lush_lushi_h */

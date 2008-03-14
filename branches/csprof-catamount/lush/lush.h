@@ -28,9 +28,13 @@
 //*************************** User Include Files ****************************
 
 #include "lushi.h"
-#include "lush-support.h"
+#include "lush-support-rt.h"
 
 //*************************** Forward Declarations **************************
+
+#if defined(__cplusplus)
+extern "C" {
+#endif
 
 //***************************************************************************
 // LUSH Agents
@@ -149,5 +153,9 @@ lush_step_t lush_forcestep_pnote(lush_cursor_t* cursor);
 
 
 // **************************************************************************
+
+#if defined(__cplusplus)
+} /* extern "C" */
+#endif
 
 #endif /* lush_lush_h */

@@ -219,12 +219,12 @@ LUSH_AGENT_OBJS =
 
 ifdef DO_LUSH
   OBJS += lush-backtrace.o
-  LUSH_AGENT_OBJS += cilk.o lush-support.o
+  LUSH_AGENT_OBJS += cilk.o lush-support-rt.o
 endif
 
 OBJS += lush.o \
 	lushi-cb.o \
-	lush-support.o
+	lush-support-rt.o
 
 #-----------------------------------------------------------------
 # all x86 binary analysis files are now included into one file and 
@@ -323,7 +323,10 @@ stapi_syms:
 install: all
 	-install -d $(install_lib) $(install_bin) $(install_libexec)
 	install $(CSPROFLIB) $(install_lib)
-	install $(MONITOR_DIR)/lib/libmonitor.so $(install_lib)
+# crazy test for the time being
+	if test $(MONITOR_DIR)/lib/libmonitor.so != $(install_lib)/libmonitor.so; then \
+	  install $(MONITOR_DIR)/lib/libmonitor.so $(install_lib); \
+	fi
 	install $(src_dir_prefix)csprof $(install_bin)
 	install $(src_dir_prefix)csprof_syms $(install_libexec)
 	install $(src_dir_prefix)symbols/stapi_syms $(install_libexec)

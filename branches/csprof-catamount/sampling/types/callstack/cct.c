@@ -626,9 +626,12 @@ csprof_cct__write_bin(FILE* fs, unsigned int epoch_id,
 // -- PLEASE remove once we agree this is a good decision. --
 
 
+
 static int
-hpcfile_cstree_write_node(FILE* fs, csprof_cct_t* tree, csprof_cct_node_t* node, 
+hpcfile_cstree_write_node(FILE* fs, csprof_cct_t* tree, 
+			  csprof_cct_node_t* node, 
 			  hpcfile_cstree_node_t *tmp_node,
+			  hpcfile_uint_t id_as_root,
 			  hpcfile_uint_t id_parent,
 			  hpcfile_uint_t *id,
 			  int levels_to_skip);
@@ -712,7 +715,8 @@ hpcfile_cstree_write(FILE* fs, csprof_cct_t* tree, void* root, void* tree_ctxt,
   tmp_node.data.num_metrics = num_metrics;
   tmp_node.data.metrics = malloc(num_metrics * sizeof(hpcfile_uint_t));
 
-  ret = hpcfile_cstree_write_node(fs, tree, root, &tmp_node, id_ctxt, &id,
+  ret = hpcfile_cstree_write_node(fs, tree, root, &tmp_node, 
+				  id_ctxt, id, &id,
 				  levels_to_skip);
   free(tmp_node.data.metrics);
   
@@ -721,13 +725,16 @@ hpcfile_cstree_write(FILE* fs, csprof_cct_t* tree, void* root, void* tree_ctxt,
 
 
 static int
-hpcfile_cstree_write_node(FILE* fs, csprof_cct_t* tree, csprof_cct_node_t* node, 
+hpcfile_cstree_write_node(FILE* fs, csprof_cct_t* tree, 
+			  csprof_cct_node_t* node, 
 			  hpcfile_cstree_node_t *tmp_node,
 			  hpcfile_uint_t id_parent,
+			  hpcfile_uint_t id_as_root,
 			  hpcfile_uint_t *id,
 			  int levels_to_skip)
 {
-  hpcfile_uint_t myid;
+  hpcfile_uint_t my_id_as_root = id_as_root;
+  hpcfile_uint_t my_id = *id;
   csprof_cct_node_t* first, *c;
   int ret;
 
@@ -737,17 +744,23 @@ hpcfile_cstree_write_node(FILE* fs, csprof_cct_t* tree, csprof_cct_node_t* node,
   // Write this node
   // ---------------------------------------------------------
   if (levels_to_skip > 0) {
-    myid = id_parent;
+    my_id = id_parent;
     levels_to_skip--;
   }
   else {
-    tmp_node->id = myid = *id;
-    tmp_node->id_parent = id_parent;
     
+    if (lush_assoc_info_is_root_note(node->as_info)) {
+      my_id_as_root = my_id;
+      hpcfile_cstree_lip__fwrite(node->lip, fs);
+    }
+
+    tmp_node->id = my_id;
+    tmp_node->id_parent = id_parent;
+
     // tallent:FIXME: for now I have inlined what was the get_data_fn
-    tmp_node->data.as_info = node->as_info.bits;
+    tmp_node->data.as_info = node->as_info;
     tmp_node->data.ip = (hpcfile_vma_t)node->ip;
-    tmp_node->data.lip = (hpcfile_vma_t)NULL; // node->lip; // LUSH:FIXME
+    tmp_node->data.lip.id = my_id_as_root;
     tmp_node->data.sp = (hpcfile_uint_t)node->sp;
     memcpy(tmp_node->data.metrics, node->metrics, 
 	   tmp_node->data.num_metrics * sizeof(size_t));
@@ -767,7 +780,8 @@ hpcfile_cstree_write_node(FILE* fs, csprof_cct_t* tree, csprof_cct_node_t* node,
   // ---------------------------------------------------------
   first = c = csprof_cct_node__first_child(node);
   while (c) {
-    ret = hpcfile_cstree_write_node(fs, tree, c, tmp_node, myid, id,
+    ret = hpcfile_cstree_write_node(fs, tree, c, tmp_node, 
+				    my_id, id_as_root, id,
 				    levels_to_skip);
     if (ret != HPCFILE_OK) {
       return HPCFILE_ERR;
@@ -939,9 +953,9 @@ lush_cct_ctxt__write_lcl(FILE* fs, csprof_cct_node_t* node,
   tmp_node->id_parent = tmp_node->id - 1;
 
   // tallent:FIXME: for now I have inlined what was the get_data_fn
-  tmp_node->data.as_info = node->as_info.bits;
+  tmp_node->data.as_info = node->as_info;
   tmp_node->data.ip = (hpcfile_vma_t)node->ip;
-  tmp_node->data.lip = (hpcfile_vma_t)NULL; // node->lip; // LUSH:FIXME
+  tmp_node->data.lip.id = 0;
   tmp_node->data.sp = (hpcfile_uint_t)node->sp;
   memcpy(tmp_node->data.metrics, node->metrics, 
 	 tmp_node->data.num_metrics * sizeof(size_t));

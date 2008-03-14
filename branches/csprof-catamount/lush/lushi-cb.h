@@ -26,7 +26,7 @@
 
 //*************************** User Include Files ****************************
 
-#include "lush-support.h"
+#include "lush-support-rt.h"
 
 #include "epoch.h" // for csprof_epoch_t
 

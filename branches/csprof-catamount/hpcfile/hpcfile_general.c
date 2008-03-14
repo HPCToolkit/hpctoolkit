@@ -153,9 +153,10 @@ int
 hpcfile_str__fwrite(hpcfile_str_t* x, FILE* fs)
 {
   size_t sz;
+  int ret;
 
-  sz = hpc_fwrite_le4(&x->tag, fs);
-  if (sz != sizeof(x->tag)) { return HPCFILE_ERR; }
+  ret = hpcfile_tag__fwrite(x->tag, fs);
+  if (ret != HPCFILE_OK) { return HPCFILE_ERR; }
 
   sz = hpc_fwrite_le4(&x->length, fs);
   if (sz != sizeof(x->length)) { return HPCFILE_ERR; }
@@ -177,6 +178,30 @@ hpcfile_str__fprint(hpcfile_str_t* x, FILE* fs)
   if (x->str) { fprintf(fs, " (str: %s)", x->str); }
   
   fputs("\n", fs);
+
+  return HPCFILE_OK;
+}
+
+//***************************************************************************
+
+int
+hpcfile_tag__fread(uint32_t* tag, FILE* fs)
+{
+  size_t sz;
+  
+  sz = hpc_fread_le4(tag, fs);
+  if (sz != sizeof(*tag)) { return HPCFILE_ERR; }
+
+  return HPCFILE_OK;
+}
+
+int 
+hpcfile_tag__fwrite(uint32_t tag, FILE* fs)
+{
+  size_t sz;
+
+  sz = hpc_fwrite_le4(&tag, fs);
+  if (sz != sizeof(tag)) { return HPCFILE_ERR; }
 
   return HPCFILE_OK;
 }
@@ -213,10 +238,11 @@ int
 hpcfile_num8__fwrite(hpcfile_num8_t* x, FILE* fs)
 {
   size_t sz;
+  int ret;
 
-  sz = hpc_fwrite_le4(&x->tag, fs);
-  if (sz != sizeof(x->tag)) { return HPCFILE_ERR; }
-  
+  ret = hpcfile_tag__fwrite(x->tag, fs);
+  if (ret != HPCFILE_OK) { return HPCFILE_ERR; }
+
   sz = hpc_fwrite_le8(&x->num, fs);
   if (sz != sizeof(x->num)) { return HPCFILE_ERR; }
   
@@ -277,10 +303,11 @@ int
 hpcfile_num8s__fwrite(hpcfile_num8s_t* x, FILE* fs)
 {
   size_t sz;
+  int ret;
 
-  sz = hpc_fwrite_le4(&x->tag, fs);
-  if (sz != sizeof(x->tag)) { return HPCFILE_ERR; }
-  
+  ret = hpcfile_tag__fwrite(x->tag, fs);
+  if (ret != HPCFILE_OK) { return HPCFILE_ERR; }
+
   sz = hpc_fwrite_le4(&x->length, fs);
   if (sz != sizeof(x->length)) { return HPCFILE_ERR; }
   

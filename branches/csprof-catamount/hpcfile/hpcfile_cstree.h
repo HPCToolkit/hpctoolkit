@@ -61,6 +61,8 @@
 
 #include "hpcfile_general.h"
 
+#include <lush/lush-support.h>
+
 //*************************** Forward Declarations **************************
 
 #if defined(__cplusplus)
@@ -139,7 +141,7 @@ int hpcfile_cstree_hdr__fprint(hpcfile_cstree_hdr_t* x, FILE* fs);
 // ---------------------------------------------------------
 typedef struct hpcfile_cstree_nodedata_s {
 
-  uint32_t /*lush_assoc_info_t*/ as_info;
+  lush_assoc_info_t as_info;
 
   // instruction pointer: more accurately, this is an 'operation
   // pointer'.  The operation in the instruction packet is represented
@@ -147,7 +149,10 @@ typedef struct hpcfile_cstree_nodedata_s {
   // second and third operation, respectively.
   hpcfile_vma_t ip;
 
-  hpcfile_uint_t lip; // canonical lip id
+  union {
+    hpcfile_uint_t id;  // canonical lip id
+    lush_lip_t*    ptr; // pointer
+  } lip; 
 
   // 'sp': the stack pointer of this node
   // tallent: Why is this needed?
@@ -165,6 +170,20 @@ int hpcfile_cstree_nodedata__fread(hpcfile_cstree_nodedata_t* x, FILE* fs);
 int hpcfile_cstree_nodedata__fwrite(hpcfile_cstree_nodedata_t* x, FILE* fs);
 int hpcfile_cstree_nodedata__fprint(hpcfile_cstree_nodedata_t* x, FILE* fs,
 				    const char* pre);
+
+// ---------------------------------------------------------
+// 
+// ---------------------------------------------------------
+
+
+int hpcfile_cstree_as_info__fread(lush_assoc_info_t* x, FILE* fs);
+int hpcfile_cstree_as_info__fwrite(lush_assoc_info_t* x, FILE* fs);
+
+
+int hpcfile_cstree_lip__fread(lush_lip_t* x, FILE* fs);
+int hpcfile_cstree_lip__fwrite(lush_lip_t* x, FILE* fs);
+int hpcfile_cstree_lip__fprint(lush_lip_t* x, FILE* fs, const char* pre);
+
 
 // ---------------------------------------------------------
 // hpcfile_cstree_node_t: The root node -- the node without a parent -- is
