@@ -35,6 +35,7 @@ csprof_take_profile_sample(csprof_state_t *state, struct ucontext *ctx,
 
 int samples_taken    = 0;
 int bad_unwind_count = 0;
+int filtered_samples = 0; // global variable to count filtered samples
 
 csprof_cct_node_t*
 csprof_sample_event(void *context, int metric_id, size_t sample_count)

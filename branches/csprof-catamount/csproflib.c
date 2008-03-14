@@ -320,11 +320,6 @@ csprof_thread_fini(csprof_state_t *state)
 void
 csprof_fini_internal(void)
 {
-  extern int segv_count;
-  extern int samples_taken;
-  extern int bad_unwind_count;
-  extern int filtered_samples;
-
   int ret = monitor_real_sigprocmask(SIG_BLOCK,&prof_sigset,NULL);
   if (ret){
     EMSG("WARNING: process fini could not block SIGPROF, ret = %d",ret);

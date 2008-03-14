@@ -27,6 +27,7 @@
 #include "dump_backtraces.h"
 #include "pmsg.h"
 #include "monitor.h"
+#include "sample_event.h"
 
 //*************************** Forward Declarations **************************
 
@@ -39,9 +40,6 @@ extern void _start();
 #else
 #define debug_dump_backtraces(x,y) dump_backtraces(x,y)
 #endif
-
-// global variable to count filtered samples
-int filtered_samples = 0;
 
 
 static csprof_cct_node_t*
