@@ -1,4 +1,0 @@
-^CALLBACK: monitor_init_library.*$
-^CALLBACK: monitor_init_process\(.*\)\:\s+argc\=4,\s+argv\=a\=b\s+c\=d\s+\-X\s+$
-^CALLBACK: monitor_fini_process.*$
-^CALLBACK: monitor_fini_library.*$
