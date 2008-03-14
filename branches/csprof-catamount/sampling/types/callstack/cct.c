@@ -733,7 +733,7 @@ hpcfile_cstree_write_node(FILE* fs, csprof_cct_t* tree,
 			  hpcfile_uint_t *id,
 			  int levels_to_skip)
 {
-  hpcfile_uint_t my_id_as_root = id_as_root;
+  hpcfile_uint_t my_id_as_root = 0;
   hpcfile_uint_t my_id = *id;
   csprof_cct_node_t* first, *c;
   int ret;
@@ -748,10 +748,16 @@ hpcfile_cstree_write_node(FILE* fs, csprof_cct_t* tree,
     levels_to_skip--;
   }
   else {
-    
-    if (lush_assoc_info_is_root_note(node->as_info)) {
-      my_id_as_root = my_id;
-      hpcfile_cstree_lip__fwrite(node->lip, fs);
+    lush_assoc_t as = lush_assoc_info__get_assoc(node->as_info);
+
+    if (as != LUSH_ASSOC_NULL) {
+      if (lush_assoc_info_is_root_note(node->as_info)) {
+	my_id_as_root = my_id;
+	hpcfile_cstree_lip__fwrite(node->lip, fs);
+      }
+      else {
+	my_id_as_root = id_as_root;
+      }
     }
 
     tmp_node->id = my_id;
