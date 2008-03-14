@@ -1,7 +1,0 @@
-
-# $Id$
-# For csh: -*-csh-*-
-
-setenv CSPROF_HOME "/home/hpcview/Develop/csprof"
-
-setenv PATH "${PATH}:${CSPROF_HOME}"
