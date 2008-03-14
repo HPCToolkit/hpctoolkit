@@ -97,6 +97,9 @@
 #include "dl_bound.h"
 #include "dbg_extra.h"
 
+#include <lush/lush.h>
+
+
 #if 0
 /* the library's basic state */
 csprof_status_t status = CSPROF_STATUS_UNINIT;
@@ -151,7 +154,19 @@ csprof_init_internal(void)
 # endif // STATIC_ONLY
 
   dl_init();
-    
+
+
+  // Initialize LUSH agents
+  if (opts.lush_agent_paths[0] != '\0') {
+    csprof_state_t* state = TD_GET(state);
+    state->lush_agents = 
+      (lush_agent_pool_t*)csprof_malloc(sizeof(lush_agent_pool_t));
+    lush_agent_pool__init(state->lush_agents, opts.lush_agent_paths);
+    MSG(0xfeed, "***> LUSH: %s (%p / %p) ***", opts.lush_agent_paths, 
+	state, state->lush_agents);
+  }
+
+  
   sigemptyset(&prof_sigset);
   sigaddset(&prof_sigset,SIGPROF);
 
@@ -163,7 +178,8 @@ csprof_init_internal(void)
     if (csprof_itimer_start()){
       EMSG("WARNING: couldn't start itimer");
     }
-  } else { // PAPI
+  } 
+  else { // PAPI
     papi_setup();
     //    papi_event_info_from_opt(&opts,&code,&thresh);
     papi_parse_evlist(opts.papi_event_list);
@@ -349,6 +365,11 @@ csprof_fini_internal(void)
 #endif
 
     csprof_write_profile_data(state);
+
+    // shutdown LUSH agents
+    if (state->lush_agents) {
+      lush_agent_pool__fini(state->lush_agents);
+    }
 
     EMSG("host %ld: %d samples total, %d samples filtered, %d samples dropped (%d segvs)\n",
 	 gethostid(), samples_taken, filtered_samples, bad_unwind_count, segv_count);
