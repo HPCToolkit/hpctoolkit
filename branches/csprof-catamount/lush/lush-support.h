@@ -44,8 +44,6 @@ extern "C" {
 // - M represents "multi", i.e., { n | n >= 2 }
 // ---------------------------------------------------------
 
-typedef enum lush_assoc lush_assoc_t;
-
 enum lush_assoc {
   // Association classes 
 #define MKASSOC1(as, c1)      ( ((as) << 4) | (c1) )
@@ -72,6 +70,8 @@ enum lush_assoc {
 #undef MKASSOC1
 #undef MKASSOC2
 };
+
+typedef enum lush_assoc lush_assoc_t;
 
 
 typedef union lush_assoc_info_u lush_assoc_info_t;
