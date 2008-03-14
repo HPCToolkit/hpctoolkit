@@ -753,7 +753,9 @@ hpcfile_cstree_write_node(FILE* fs, csprof_cct_t* tree,
     if (as != LUSH_ASSOC_NULL) {
       if (lush_assoc_info_is_root_note(node->as_info)) {
 	my_id_as_root = my_id;
-	hpcfile_cstree_lip__fwrite(node->lip, fs);
+	if (node->lip != NULL) {
+	  hpcfile_cstree_lip__fwrite(node->lip, fs);
+	}
       }
       else {
 	my_id_as_root = id_as_root;
