@@ -179,6 +179,11 @@ int   hpcfile_close(FILE* fs);
 // CSPROF metric flags
 #define HPCFILE_TAG__CSPROF_METRIC_FLAGS  HPCTAG(5, HPCFILE_NUM8) 
 
+
+int hpcfile_tag__fread(uint32_t* tag, FILE* fs);
+int hpcfile_tag__fwrite(uint32_t tag, FILE* fs);
+
+
 // ---------------------------------------------------------
 // hpcfile_str_t: An arbitrary length character string.
 // ---------------------------------------------------------

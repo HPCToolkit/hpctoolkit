@@ -100,8 +100,10 @@ hpcfile_csprof_write(FILE* fs, hpcfile_csprof_data_t* data)
   if (hpcfile_csprof_hdr__fwrite(&fhdr, fs) != HPCFILE_OK) { 
     return HPCFILE_ERR; 
   }
-  
-  // Write HPCFILE_TAG__CSPROF_TARGET
+
+  // ----------------------------------------------------------
+  // 1. Target: HPCFILE_TAG__CSPROF_TARGET
+  // ----------------------------------------------------------
   hpcfile_str__init(&str);
   str.tag = HPCFILE_TAG__CSPROF_TARGET;
   if (data->target) {
@@ -110,6 +112,9 @@ hpcfile_csprof_write(FILE* fs, hpcfile_csprof_data_t* data)
   }
   if (hpcfile_str__fwrite(&str, fs) != HPCFILE_OK) { return HPCFILE_ERR; }
 
+  // ----------------------------------------------------------
+  // 2. Metrics
+  // ----------------------------------------------------------
   hpc_fwrite_le4(&data->num_metrics, fs);
 
   for (i = 0; i < data->num_metrics; ++i) {
@@ -158,9 +163,8 @@ hpcfile_csprof_read(FILE* fs, hpcfile_csprof_data_t* data,
   hpcfile_csprof_data__init(data);
   
   // Read and sanity check header
-  if (hpcfile_csprof_read_hdr(fs, &fhdr) != HPCFILE_OK) { 
-    return HPCFILE_ERR; 
-  }
+  ret = hpcfile_csprof_read_hdr(fs, &fhdr);
+  if (ret != HPCFILE_OK) { return HPCFILE_ERR; }
 
   
   // FIXME: TEMPORARY
@@ -168,8 +172,8 @@ hpcfile_csprof_read(FILE* fs, hpcfile_csprof_data_t* data,
   // ----------------------------------------------------------
   // 1. Target
   // ----------------------------------------------------------
-  sz = hpc_fread_le4(&tag, fs); // HPCFILE_STR
-  if (sz != sizeof(tag)) { return HPCFILE_ERR; }
+  ret = hpcfile_tag__fread(&tag, fs); // HPCFILE_STR
+  if (ret != HPCFILE_OK) { return HPCFILE_ERR; }
   
   str.str = NULL;
   ret = hpcfile_str__fread(&str, fs, alloc_fn);
@@ -186,8 +190,8 @@ hpcfile_csprof_read(FILE* fs, hpcfile_csprof_data_t* data,
   // ----------------------------------------------------------
 
   // 2a. number of metrics
-  sz = hpc_fread_le4(&tag, fs); 
-  if (sz != sizeof(tag)) { return HPCFILE_ERR; }
+  ret = hpcfile_tag__fread(&tag, fs);
+  if (ret != HPCFILE_OK) { return HPCFILE_ERR; }
 
   data->num_metrics = tag; // FIXME: YUCK
 
@@ -196,8 +200,8 @@ hpcfile_csprof_read(FILE* fs, hpcfile_csprof_data_t* data,
   
   for (uint32_t i = 0; i < data->num_metrics; ++i) {
     // Read metrics data tag
-    sz = hpc_fread_le4(&tag, fs);
-    if (sz != sizeof(tag)) { return HPCFILE_ERR; }
+    ret = hpcfile_tag__fread(&tag, fs);
+    if (ret != HPCFILE_OK) { return HPCFILE_ERR; }
 
     // read in the name of the  metric
     str.str = NULL;
@@ -208,19 +212,20 @@ hpcfile_csprof_read(FILE* fs, hpcfile_csprof_data_t* data,
     data->metrics[i].metric_name = str.str;
 	  
     // read in the flags of the metric
-    sz = hpc_fread_le4(&tag, fs);
-    if (sz != sizeof(tag)) { return HPCFILE_ERR; }
-    if (hpcfile_num8__fread(&num8, fs) != HPCFILE_OK) {
-      return HPCFILE_ERR;
-    }
+    ret = hpcfile_tag__fread(&tag, fs);
+    if (ret != HPCFILE_OK) { return HPCFILE_ERR; }
+
+    ret = hpcfile_num8__fread(&num8, fs);
+    if (ret != HPCFILE_OK) { return HPCFILE_ERR; }
+
     data->metrics[i].flags = num8.num;
 	  
     // read in the sample period
-    sz = hpc_fread_le4(&tag, fs);
-    if (sz != sizeof(tag)) { return HPCFILE_ERR; }
-    if (hpcfile_num8__fread(&num8, fs) != HPCFILE_OK) {
-      return HPCFILE_ERR;
-    }
+    ret = hpcfile_tag__fread(&tag, fs);
+    if (ret != HPCFILE_OK) { return HPCFILE_ERR; }
+
+    ret = hpcfile_num8__fread(&num8, fs);
+    if (ret != HPCFILE_OK) { return HPCFILE_ERR; }
 	  
     data->metrics[i].sample_period = num8.num;
   }
@@ -284,6 +289,9 @@ hpcfile_csprof_read(FILE* fs, hpcfile_csprof_data_t* data,
   }
 #endif
     
+  // ----------------------------------------------------------
+  // 3. Epochs
+  // ----------------------------------------------------------
 
   // processing the epoch part here to reach the trees part--FMZ
   {
@@ -338,11 +346,13 @@ hpcfile_csprof_read(FILE* fs, hpcfile_csprof_data_t* data,
 int
 hpcfile_csprof_fprint(FILE* infs, FILE* outfs, hpcfile_csprof_data_t* data)
 {
+  int ret;
   // Read header and basic data
   epoch_table_t epochtbl;
-  hpcfile_csprof_read(infs, data, &epochtbl, 
-		      (hpcfile_cb__alloc_fn_t)malloc,
-		      (hpcfile_cb__free_fn_t)free);
+  ret = hpcfile_csprof_read(infs, data, &epochtbl, 
+			    (hpcfile_cb__alloc_fn_t)malloc,
+			    (hpcfile_cb__free_fn_t)free);
+  if (ret != HPCFILE_OK) { return HPCFILE_ERR; }
 
   // Print header
   //-- hpcfile_csprof_id__fprint();

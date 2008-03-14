@@ -67,7 +67,9 @@ MYSOURCES = \
 	hpcfile_cstree.h hpcfile_cstree.c \
 	hpcfile_cstreelib.h \
 	hpcfile_general.h hpcfile_general.c \
-	io.h io.c
+	io.h io.c \
+	\
+	lush/lush-support.h
 
 MYCFLAGS   = @HOST_CFLAGS@   $(HPC_IFLAGS) 
 MYCXXFLAGS = @HOST_CXXFLAGS@ $(HPC_IFLAGS) 
