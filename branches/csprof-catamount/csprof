@@ -73,7 +73,7 @@ opt_memsize=""
 opt_event=""
 opt_verbosity=""
 opt_debug=""
-opt_gdb=""
+opt_debug_wait=""
 opt_papi=""
 
 #####################
@@ -230,7 +230,7 @@ f_getoptions()
       -L)   shift; opt_debug="$1";
             f_opt_check "-D" "${opt_debug}";
             ;;
-      -d)   opt_gdb=1;
+      -d)   opt_debug_wait=1;
             ;;
      -dd)   shift; opt_dd=$1;
             ;;
@@ -313,7 +313,7 @@ f_prepareenv()
     CSPROF_OPT_DEBUG="${opt_debug}"
     export CSPROF_OPT_DEBUG
   fi
-  if [ -n "${opt_gdb}" ]; then
+  if [ -n "${opt_debug_wait}" ]; then
     export CSPROF_WAIT=1
   fi
   if [ -n "${opt_dd}" ]; then

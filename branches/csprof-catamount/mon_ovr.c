@@ -27,17 +27,17 @@
 
 #define M(s) write(2,s"\n",strlen(s)+1)
 
-
+volatile int DEBUGGER_WAIT = 1;
 
 //***************************************************************************
 
-extern int wait_for_gdb;
+
 
 void
 monitor_init_process(char *process,int *argc,char **argv,unsigned pid)
 {
   if (getenv("CSPROF_WAIT")){
-    while(wait_for_gdb);
+    while(DEBUGGER_WAIT);
   }
   csprof_set_executable_name(process);
   pmsg_init(process);

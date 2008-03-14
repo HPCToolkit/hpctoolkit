@@ -107,7 +107,6 @@ static csprof_options_t opts;
 sigset_t prof_sigset;
 #endif
 
-int wait_for_gdb = 1;
 int csprof_initialized = 0;
 
 extern void _start(void);

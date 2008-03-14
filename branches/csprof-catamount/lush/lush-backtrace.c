@@ -36,8 +36,6 @@
 
 //*************************** Forward Declarations **************************
 
-volatile int LUSH_WAIT = 1;
-
 static csprof_frame_t*
 canonicalize_chord(csprof_frame_t* chord_beg, lush_assoc_t as,
 		   unsigned int pchord_len, unsigned int lchord_len);
@@ -59,7 +57,7 @@ csprof_sample_callstack(csprof_state_t* state, ucontext_t* context,
   csprof_cct_node_t* n;
   n = lush_backtrace(state, context, metric_id, sample_count);
   if (!n) {
-    DBGMSG_PUB(1, "LUSH_WAIT... (pid=%d)", getpid()); // FIXME: improve
+    DBGMSG_PUB(1, "LUSH... (pid=%d)", getpid()); // FIXME: improve
   }
   return n;
 }
@@ -69,11 +67,6 @@ csprof_cct_node_t*
 lush_backtrace(csprof_state_t* state, ucontext_t* context,
 	       int metric_id, size_t sample_count)
 {
-  if (getenv("LUSH_WAIT")) {
-    DBGMSG_PUB(1, "LUSH_WAIT... (pid=%d)", getpid());
-    while(LUSH_WAIT);
-  }
-
   lush_cursor_t cursor;
   lush_init_unw(&cursor, state->lush_agents, context);
 
