@@ -1,0 +1,56 @@
+#!/bin/sh 
+libexecdir=`dirname $0`
+base=`basename $1`
+if test ${libexecdir}x == "$0"x; then
+   libexecdir=.
+fi
+if test ${libexecdir} == "."; then
+   rootdir=..
+else
+   rootdir=`dirname ${libexecdir}`
+fi
+libdir=${rootdir}/lib
+
+. ${rootdir}/conf.sh
+
+# output directory
+if test "$2"x == "x"; then
+odir=/tmp
+else
+odir=$2
+fi
+
+OLDIFS=${IFS}
+IFS=':'
+
+# set default object file in case real one not found 
+object_file=/dev/null
+
+if [ -r $1 ]; then
+  object_file=$1
+else
+   for d in ${LD_LIBRARY_PATH}; do
+      if [ -r ${d}/${base} ]; then
+         object_file=${d}/${base} 
+         break;
+      fi
+   done
+fi
+IFS=${OLDIFS}
+
+prog_file=${odir}/${base}.nm.c
+so_file=${odir}/${base}.nm.so
+
+#LD_LIBRARY_PATH=${libcpp_path}:${libdir}:$LD_LIBRARY_PATH ${libexecdir}/stapi_syms ${object_file} > ${prog_file} 2> /dev/null
+LD_LIBRARY_PATH=${libcpp_path}:${libdir}:$LD_LIBRARY_PATH ${libexecdir}/stapi_syms ${object_file} > ${prog_file} 2> /tmp/eee.$$
+if [ ! -s $prog_file ]; then
+    echo stapi_syms create ${prog_file} from ${object_file} failed '!!' 1>&2
+    cat /tmp/eee.$$
+    echo creating default $prog_file 1>&2
+    cat <<EOF > $prog_file
+int BOGUS = 1;
+unsigned int csprof_stripped = 1;
+EOF
+fi
+rm -f /tmp/eee.$$
+gcc ${prog_file} -fPIC -shared -nostartfiles -o ${so_file}
