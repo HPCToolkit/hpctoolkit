@@ -28,6 +28,7 @@
 //*************************** User Include Files ****************************
 
 #include "lush.h"
+#include "lush-backtrace.h"
 
 #include <general.h>
 #include <state.h>
@@ -42,12 +43,15 @@ canonicalize_chord(csprof_frame_t* chord_beg, lush_assoc_t as,
 
 
 //***************************************************************************
-// backtrace
+// LUSH Agents
 //***************************************************************************
 
-csprof_cct_node_t*
-lush_backtrace(csprof_state_t* state, ucontext_t* context,
-	       int metric_id, size_t sample_count);
+// FIXME: def in state.c for the time being
+//lush_agent_pool_t* lush_agents = NULL;
+
+//***************************************************************************
+// LUSH backtrace
+//***************************************************************************
 
 
 csprof_cct_node_t*
@@ -68,7 +72,7 @@ lush_backtrace(csprof_state_t* state, ucontext_t* context,
 	       int metric_id, size_t sample_count)
 {
   lush_cursor_t cursor;
-  lush_init_unw(&cursor, state->lush_agents, context);
+  lush_init_unw(&cursor, lush_agents, context);
 
   // FIXME: processor/x86-64/backtrace.c
   state->unwind   = state->btbuf;

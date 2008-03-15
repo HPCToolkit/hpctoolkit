@@ -17,6 +17,11 @@
 #include "name.h"
 #include "thread_data.h"
 
+
+// FIXME: cf. lush-backtrace.c
+lush_agent_pool_t* lush_agents = NULL;
+
+
 /* non-threaded profilers can have a single profiling state...
    but it can't be statically allocated because of epochs */
 
@@ -106,8 +111,6 @@ int csprof_state_init(csprof_state_t *x)
 
   x->pstate.pid = pid;
   x->pstate.hostid = hostid;
-
-  x->lush_agents = NULL;
 
   return CSPROF_OK;
 }

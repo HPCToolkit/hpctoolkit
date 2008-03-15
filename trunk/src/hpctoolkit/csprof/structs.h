@@ -84,9 +84,6 @@ typedef struct csprof_state_s {
   char pstate_fnm[CSPROF_PATH_SZ];
 #endif
 
-  // LUSH support
-  lush_agent_pool_t* lush_agents;
-
   /* call stack data, stored in private memory */
   csprof_csdata_t csdata;
   lush_cct_ctxt_t* csdata_ctxt; // creation context

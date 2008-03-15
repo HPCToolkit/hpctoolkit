@@ -98,6 +98,7 @@
 #include "dbg_extra.h"
 
 #include <lush/lush.h>
+#include <lush/lush-backtrace.h>
 
 
 #if 0
@@ -159,11 +160,10 @@ csprof_init_internal(void)
   // Initialize LUSH agents
   if (opts.lush_agent_paths[0] != '\0') {
     csprof_state_t* state = TD_GET(state);
-    state->lush_agents = 
-      (lush_agent_pool_t*)csprof_malloc(sizeof(lush_agent_pool_t));
-    lush_agent_pool__init(state->lush_agents, opts.lush_agent_paths);
+    lush_agents = (lush_agent_pool_t*)csprof_malloc(sizeof(lush_agent_pool_t));
+    lush_agent_pool__init(lush_agents, opts.lush_agent_paths);
     MSG(0xfeed, "***> LUSH: %s (%p / %p) ***", opts.lush_agent_paths, 
-	state, state->lush_agents);
+	state, lush_agents);
   }
 
   
@@ -367,8 +367,8 @@ csprof_fini_internal(void)
     csprof_write_profile_data(state);
 
     // shutdown LUSH agents
-    if (state->lush_agents) {
-      lush_agent_pool__fini(state->lush_agents);
+    if (lush_agents) {
+      lush_agent_pool__fini(lush_agents);
     }
 
     EMSG("host %ld: %d samples total, %d samples filtered, %d samples dropped (%d segvs)\n",
