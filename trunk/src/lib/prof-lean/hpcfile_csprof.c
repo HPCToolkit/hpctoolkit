@@ -155,8 +155,7 @@ hpcfile_csprof_read(FILE* fs, hpcfile_csprof_data_t* data,
   hpcfile_str_t str;
   hpcfile_num8_t num8;
   uint32_t tag;
-  size_t sz;
-  int ret = HPCFILE_ERR;
+  int ret;
 
   if (!fs) { return HPCFILE_ERR; }
 
@@ -232,6 +231,7 @@ hpcfile_csprof_read(FILE* fs, hpcfile_csprof_data_t* data,
 
 
 #if 0  
+  size_t sz;
   // Read data chunks (except epoch)
   for (i = 0; i < fhdr.num_data-1; ++i) {  
     // Read data tag
