@@ -35,9 +35,6 @@
 #include "executable-path.h"
 #include "loadmod.h"
 
-#include "pmsg.h"
-
-
 /******************************************************************************
  * local types
  *****************************************************************************/
@@ -163,7 +160,9 @@ void
 dl_fini()
 {
 #ifndef STATIC_ONLY
-  unlink_tree(mytmpdir);
+  IF_NOT_DISABLED(DL_BOUND_UNLINK){
+    unlink_tree(mytmpdir);
+  }
 #endif
 }
 
@@ -251,8 +250,15 @@ dl_compute(const char *filename, void *start, void *end)
   if (nm_command) {
     char command[MAXPATHLEN+1024];
     char dlname[MAXPATHLEN];
+    char redir[64] = {'\0'};
+
+    IF_NOT_DISABLED(DL_BOUND_REDIR) {
+      int logfile_fd = csprof_logfile_fd();
+      sprintf(redir,"1>&%d 2>&%d",logfile_fd,logfile_fd);
+    }
     sprintf(dlname, "%s/%s.nm.so", mytmpdir, mybasename(filename));
-    sprintf(command, "%s %s %s\n", nm_command, filename, mytmpdir);
+    sprintf(command, "%s %s %s %s\n", nm_command, filename, mytmpdir, redir);
+    TMSG(DL_BOUND,"system command = %s",command);
     {
       monitor_real_system(command); 
       int nsymbols = 0; // default is that there are no symbols

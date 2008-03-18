@@ -19,13 +19,19 @@
 #include "thread_use.h"
 #include "tokenize.h"
 
+// FIXME: use tbl below to count # flags
+
 #define N_DBG_FLAGS 200
 static int dbg_flags[N_DBG_FLAGS];
 
 static char *tbl[] = {
 # undef E
+# undef D
 # define E(s) #s
+# define D(s) E(s)
 # include "pmsg.src"
+# undef E
+# undef D
 };
 
 #define N_CATEGORIES (sizeof(tbl)/sizeof(tbl[0]))
@@ -202,4 +208,11 @@ int
 csprof_dbg(pmsg_category flag)
 {
   return dbg_flags[flag];
+}
+
+
+int
+csprof_logfile_fd(void)
+{
+  return fileno(log_file);
 }
