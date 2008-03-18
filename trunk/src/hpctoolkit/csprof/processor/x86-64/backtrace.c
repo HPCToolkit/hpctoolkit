@@ -183,12 +183,12 @@ csprof_sample_callstack_from_frame(csprof_state_t *state, int metric_id,
   MSG(1,"BTIP------------");
   debug_dump_backtraces(state,state->unwind);
   
-  if (! DBG(DISABLE_SAMPLE_FILTER)){
+  IF_NOT_DISABLED(SAMPLE_FILTERING){
     if (csprof_sample_filter(unw_len,state->btbuf,state->unwind - 1)){
       TMSG(SAMPLE_FILTER,"filter sample of length %d",unw_len);
       csprof_frame_t *fr = state->btbuf;
       for (int i = 0; i < unw_len; i++,fr++){
-	PMSG(SAMPLE_FILTER,"  frame ip[%d] = %p",i,fr->ip);
+	TMSG(SAMPLE_FILTER,"  frame ip[%d] = %p",i,fr->ip);
       }
       filtered_samples++;
       return 0;
