@@ -115,7 +115,6 @@ pmsg_init(char *exec_name)
   if(s){
     csprof_dbg_init(s);
   }
-
   spinlock_unlock(&pmsg_lock);
   // dump();
 }

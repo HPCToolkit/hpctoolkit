@@ -27,6 +27,7 @@ extern int  csprof_logfile_fd(void);
 #define NMSG(f,...) csprof_nmsg(DBG_PREFIX(f),#f ": " __VA_ARGS__)
 #define DBG(f)      csprof_dbg(DBG_PREFIX(f))
 #define IF_NOT_DISABLED(f) if ( ! DBG(f) )
+#define IF_ENABLED(f)      if ( DBG(f) )
 
 #endif // PMSG_H
 

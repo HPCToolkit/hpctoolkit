@@ -257,7 +257,11 @@ dl_compute(const char *filename, void *start, void *end)
       sprintf(redir,"1>&%d 2>&%d",logfile_fd,logfile_fd);
     }
     sprintf(dlname, "%s/%s.nm.so", mytmpdir, mybasename(filename));
-    sprintf(command, "%s %s %s %s\n", nm_command, filename, mytmpdir, redir);
+    char *script_debug = "";
+    IF_ENABLED(DL_BOUND_SCRIPT_DEBUG) {
+      script_debug = "DBG";
+    }
+    sprintf(command, "%s %s %s %s %s\n", nm_command, filename, mytmpdir, script_debug, redir);
     TMSG(DL_BOUND,"system command = %s",command);
     {
       monitor_real_system(command); 

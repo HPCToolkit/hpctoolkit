@@ -50,6 +50,9 @@
 
 #############################################################################
 
+# umask -S g=rwx,o=rwx # temporary check
+# umask -S -p # see change
+
 CSPROF_VERSION="1.0"
 
 CSPROF_DIR="`dirname $0`"
