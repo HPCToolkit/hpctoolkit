@@ -474,13 +474,16 @@ int csprof_write_profile_data(csprof_state_t *state){
 
 
   if (csprof_using_threads){
-    sprintf(fnm, "%s/%s.%lx-%x-%ld%s", opts.out_path,
-            csprof_get_executable_name(), gethostid(), state->pstate.pid,
-            state->pstate.thrid, CSPROF_OUT_FNM_SFX);
+    sprintf(fnm, "%s/%s.%lx-%u-%lu%s", 
+	    opts.out_path, csprof_get_executable_name(), 
+	    gethostid(), state->pstate.pid, state->pstate.thrid, 
+	    CSPROF_OUT_FNM_SFX);
   }
   else {
-    sprintf(fnm, "%s/%s.%lx-%x%s", opts.out_path, csprof_get_executable_name(),
-            gethostid(), state->pstate.pid, CSPROF_OUT_FNM_SFX);
+    sprintf(fnm, "%s/%s.%lx-%u%s", 
+	    opts.out_path, csprof_get_executable_name(),
+            gethostid(), state->pstate.pid, 
+	    CSPROF_OUT_FNM_SFX);
   }
   MSG(CSPROF_MSG_DATAFILE, "CSPROF write_profile_data: Writing %s", fnm);
 

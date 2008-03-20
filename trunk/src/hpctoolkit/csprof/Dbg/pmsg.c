@@ -82,7 +82,7 @@ csprof_dbg_init(char *in)
 static FILE *log_file;
 // FILE *pmsg_db_save_file;
 
-#define LOG_FILE_NAME "csprof.dbg.log"
+#define LOG_FILE_NAME "log"
 
 static spinlock_t pmsg_lock = SPINLOCK_UNLOCKED;
 
@@ -103,7 +103,7 @@ pmsg_init(char *exec_name)
   /* Generate a filename */
   char fnm[CSPROF_FNM_SZ];
 
-  sprintf(fnm, "%s.%d.%s",exec_name,getpid(),LOG_FILE_NAME);
+  sprintf(fnm, "%s.%lx-%u.%s", exec_name, gethostid(), getpid(), LOG_FILE_NAME);
 
   log_file = fopen(fnm,"w");
   if (! log_file) {
