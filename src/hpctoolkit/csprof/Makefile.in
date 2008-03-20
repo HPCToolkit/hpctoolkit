@@ -218,6 +218,9 @@ OBJS += intervals.o
 LUSH_AGENT_OBJS =
 
 ifdef DO_LUSH
+  CILK_INSTALL = /home/eraxxon/pkgs/cilk
+  INCS += -I$(CILK_INSTALL)/include/cilk
+
   OBJS += lush-backtrace.o
   LUSH_AGENT_OBJS += cilk.o lush-support-rt.o
 endif

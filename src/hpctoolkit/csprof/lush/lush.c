@@ -230,6 +230,10 @@ lush_step_pnote(lush_cursor_t* cursor)
     return LUSH_STEP_END_CHORD;
   }
 
+  if (lush_cursor_is_flag(cursor, LUSH_CURSOR_FLAGS_BEG_PPROJ)) {
+    lush_cursor_unset_flag(cursor, LUSH_CURSOR_FLAGS_BEG_PPROJ);
+  }
+
   // Special case handling if LUSH_CURSOR_FLAGS_BEG_PCHORD is set
   if (lush_cursor_is_flag(cursor, LUSH_CURSOR_FLAGS_BEG_PCHORD)) {
     lush_cursor_unset_flag(cursor, LUSH_CURSOR_FLAGS_BEG_PCHORD);
