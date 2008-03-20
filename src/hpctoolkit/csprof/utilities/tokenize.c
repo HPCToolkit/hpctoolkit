@@ -7,11 +7,13 @@ static char *tmp;
 static char *tk;
 static char *last;
 
+static char *sep1 = " ;";
+
 char *
 start_tok(char *lst)
 {
   tmp = strdup(lst);
-  tk  = strtok_r(tmp," ;",&last);
+  tk  = strtok_r(tmp,sep1,&last);
   return tk;
 }
 
@@ -27,6 +29,6 @@ more_tok(void)
 char *
 next_tok(void)
 {
-  tk = strtok_r(NULL," ;",&last);
+  tk = strtok_r(NULL,sep1,&last);
   return tk;
 }

@@ -34,6 +34,7 @@ EOF
 
     g++ -o ${_t} ${_ts}
     libcpp_path=`ldd $_t | awk '/libstdc\+\+/ {print $3}'`
+    libcpp_path=`dirname $libcpp_path`
     rm -f ${_ts} ${_t}
 }
 

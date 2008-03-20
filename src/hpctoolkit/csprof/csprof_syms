@@ -1,4 +1,16 @@
 #!/bin/sh 
+
+############ UTILITY FUNCTIONS #################
+
+dbg()
+{
+    if [ $dbg_script ]; then
+	echo "CSPROF_SYMS:" "$@"
+    fi
+}
+
+############ MAIN CODE ###################
+
 libexecdir=`dirname $0`
 base=`basename $1`
 if test ${libexecdir}x == "$0"x; then
@@ -15,10 +27,18 @@ libdir=${rootdir}/lib
 
 # output directory
 if test "$2"x == "x"; then
-odir=/tmp
+    odir=/tmp
 else
-odir=$2
+    odir=$2
+    if [ $dbg_script ]; then
+	chmod +rx $odir
+    fi
 fi
+
+# debug script
+dbg_script=$3
+
+dbg args = "$@"
 
 OLDIFS=${IFS}
 IFS=':'
@@ -41,19 +61,27 @@ IFS=${OLDIFS}
 prog_file=${odir}/${base}.nm.c
 so_file=${odir}/${base}.nm.so
 
-#LD_LIBRARY_PATH=${libcpp_path}:${libdir}:$LD_LIBRARY_PATH ${libexecdir}/stapi_syms ${object_file} > ${prog_file} 2> /dev/null
-#LD_LIBRARY_PATH=${libcpp_path}:${libdir}:$LD_LIBRARY_PATH ${libexecdir}/stapi_syms ${object_file} > ${prog_file} 2> /tmp/eee.$$
+dbg object_file = $object_file
+dbg prog_file = $prog_file
+
 LD_LIBRARY_PATH=${libcpp_path}:${libdir}:$LD_LIBRARY_PATH ${libexecdir}/stapi_syms ${object_file} > ${prog_file}
 if [ ! -s $prog_file ]; then
     echo stapi_syms create $prog_file from $object_file failed ... 
     echo ... trying stripped version
-    echo doing cp $object_file $odir';' strip $odir/$base
-    cp $object_file $odir 
+    dbg doing cp $object_file $odir';' strip $odir/$base
+    dbg umask = `umask -S -p`
+    cp $object_file $odir
+
+    dbg version of strip = `which strip`
+    dbg permissions for object file = `ls -l $odir/$base`
+
+    chmod u+w $odir/$base
+    dbg permissions for object file AFTER CHMOD = `ls -l $odir/$base`
+
     strip $odir/$base
     LD_LIBRARY_PATH=${libcpp_path}:${libdir}:$LD_LIBRARY_PATH ${libexecdir}/stapi_syms $odir/$base > ${prog_file}
     if [ -s $prog_file ]; then
         echo stripping succeeds '!!'. $prog_file exists
-	rm -f $odir/$base /tmp/_s.$$
     else
         echo stapi_syms tried stripping $object_file, but that failed also ...
 	rm -f /tmp/_s.$$
@@ -64,7 +92,4 @@ unsigned int csprof_stripped = 1;
 EOF
     fi
 fi
-#if [ ! -s $prog_file ]; then
-#fi
-rm -f /tmp/eee.$$
 gcc ${prog_file} -fPIC -shared -nostartfiles -o ${so_file}
