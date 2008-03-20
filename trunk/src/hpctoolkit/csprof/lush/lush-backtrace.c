@@ -114,13 +114,17 @@ lush_backtrace(csprof_state_t* state, ucontext_t* context,
     // ---------------------------------------------------------
     lush_lip_t* lip_persistent = NULL;
     while (lush_step_lnote(&cursor) != LUSH_STEP_END_CHORD) {
-      lush_lip_t* lip = lush_cursor_get_lip(&cursor);
+      lush_lip_t* lip = lush_cursor_get_lip(&cursor); // ephemeral
       DBGMSG_PUB(CSPROF_DBG_UNWINDING, "LIP: %p", *((void**)lip));
       
-      if (lush_assoc_is_a_to_1(as) && !lip_persistent) {
-	lip_persistent = lush_lip_clone(lip);
+      if (lush_assoc_is_a_to_1(as)) {
+	if (!lip_persistent) {
+	  lip_persistent = lush_lip_clone(lip);
+	}
+	// else: lip_persistent is already set
       }
       else {
+	// INVARIANT: as must be 1-to-M
 	lip_persistent = lush_lip_clone(lip);
       }
       state->unwind->lip = lip_persistent;

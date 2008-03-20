@@ -33,6 +33,14 @@
 
 //*************************** Forward Declarations **************************
 
+#include <pthread.h>
+
+#include <../cilk/cilk.h> /* Cilk */
+// Cilk runtime
+extern pthread_key_t CILK_WorkerState_key;
+
+//*************************** Forward Declarations **************************
+
 #define LUSHCB_DECL(FN) \
  LUSH ## FN ## _fn_t  FN
 
@@ -57,7 +65,7 @@ union cilk_ip {
   lush_lip_t official_lip;
   
   // ------------------------------------------------------------
-  // superimposed with:    
+  // superimposed with:
   // ------------------------------------------------------------
   void* ip;
 };
@@ -76,11 +84,18 @@ union cilk_cursor {
   // ------------------------------------------------------------
   struct {
     void* ref_ip; // reference physical ip
+    CilkWorkerState* cilk_worker_state;
+    volatile CilkStackFrame** cilk_frame;
     bool seen_cilkprog;
-    bool is_beg_lnote;
+    bool flg_beg_lnote;
   } u;
 };
 
+#define CILK_WS_HEAD_PTR(/* CilkWorkerState* */ x)  ((x)->cache.head)
+#define CILK_WS_TAIL_PTR(/* CilkWorkerState* */ x)  ((x)->cache.tail)
+
+#define CILK_FRAME(/* CilkStackFrame** */ x)      (*(x))
+#define CILK_FRAME_PROC(/* CilkStackFrame** */ x) ((**(x)).sig[0].inlet)
 
 //*************************** Forward Declarations **************************
 
@@ -261,10 +276,24 @@ is_cilkprogram(void* addr)
 extern lush_step_t
 LUSHI_step_bichord(lush_cursor_t* cursor)
 {
-  init_lcursor(cursor);
+  // -------------------------------------------------------
+  // Initialize cursor
+  // -------------------------------------------------------
+  if (lush_cursor_is_flag(cursor, LUSH_CURSOR_FLAGS_BEG_PPROJ)) {
+    init_lcursor(cursor);
+  }
   cilk_cursor_t* csr = (cilk_cursor_t*)lush_cursor_get_lcursor(cursor);
 
+  // -------------------------------------------------------
+  // Collect predicates
+  // -------------------------------------------------------
   csr->u.ref_ip = (void*)lush_cursor_get_ip(cursor);
+
+  csr->u.cilk_worker_state = 
+    (CilkWorkerState*)pthread_getspecific(CILK_WorkerState_key);
+  csr->u.cilk_frame = 
+    (csr->u.cilk_worker_state) ? CILK_WS_TAIL_PTR(csr->u.cilk_worker_state) : NULL;
+
   bool seen_cilkprog = csr->u.seen_cilkprog;
 
   bool is_cilkrt   = is_libcilk(csr->u.ref_ip);
@@ -278,11 +307,13 @@ LUSHI_step_bichord(lush_cursor_t* cursor)
   // FIXME: consider effects of multiple agents
   //LUSH_AGENTID_XXX_t last_aid = lush_cursor_get_aid(cursor); 
 
+  // -------------------------------------------------------
   // Given p-note derive l-note:
   //   1. is_cilkrt & is_TOS  => Cilk-scheduling or Cilk-overhead
   //   2. is_cilkrt & !is_TOS & seen_cilkprog  => Cilk-sched + logical stack
   //   3. is_cilkrt & !is_TOS & !seen_cilkprog => {result (1)}
   //   4. is_cilkprog => Cilk + logical Cilk
+  // -------------------------------------------------------
   if (is_cilkrt) {
     if (is_TOS) {
       // case (1)
@@ -291,8 +322,7 @@ LUSHI_step_bichord(lush_cursor_t* cursor)
     else {
       if (seen_cilkprog) {
 	// case (2)
-	// FIXME: lush_cursor_set_assoc(cursor, LUSH_ASSOC_1_to_M)
-	lush_cursor_set_assoc(cursor, LUSH_ASSOC_1_to_0);
+	lush_cursor_set_assoc(cursor, LUSH_ASSOC_1_to_M);
       }
       else {
 	// case (3)
@@ -345,26 +375,38 @@ LUSHI_step_lnote(lush_cursor_t* cursor)
     ty = LUSH_STEP_END_CHORD;
   }
   else if (as == LUSH_ASSOC_1_to_1) {
-    if (csr->u.is_beg_lnote) {
+    if (csr->u.flg_beg_lnote) {
       ty = LUSH_STEP_END_CHORD;
-      csr->u.is_beg_lnote = false;
+      csr->u.flg_beg_lnote = false;
     }
     else {
       lip->ip = csr->u.ref_ip;
       ty = LUSH_STEP_CONT;
-      csr->u.is_beg_lnote = true;
+      csr->u.flg_beg_lnote = true;
     }
   }
   else if (LUSH_ASSOC_1_to_M) {
-    if (csr->u.is_beg_lnote) {
-      // FIXME: advance lip;
-      ty = (lip->ip == NULL) ? LUSH_STEP_END_CHORD : LUSH_STEP_CONT;
-      csr->u.is_beg_lnote = false;
+    if (csr->u.flg_beg_lnote) {
+      // INVARIANT csr->u.cilk_frame is non-NULL
+
+      // Advance frame (moves toward the head)
+      --(csr->u.cilk_frame);
+      if (1 || csr->u.cilk_frame < CILK_WS_HEAD_PTR(csr->u.cilk_worker_state)) {
+	lip->ip = NULL;
+	ty = LUSH_STEP_END_CHORD;
+      }
+      else {
+	lip->ip = CILK_FRAME_PROC(csr->u.cilk_frame);
+	ty = LUSH_STEP_CONT;
+      }
+      
+      //HEY ty = (lip->ip == NULL) ? LUSH_STEP_END_CHORD : LUSH_STEP_CONT;
+      csr->u.flg_beg_lnote = false;
     }
     else {
-      lip->ip = csr->u.ref_ip;
+      lip->ip = CILK_FRAME_PROC(csr->u.cilk_frame);
       ty = LUSH_STEP_CONT;
-      csr->u.is_beg_lnote = true;
+      csr->u.flg_beg_lnote = true;
     }
   }
   else {

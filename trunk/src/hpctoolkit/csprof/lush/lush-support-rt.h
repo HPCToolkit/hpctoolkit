@@ -83,7 +83,7 @@ lush_lip_clone(lush_lip_t* x);
 typedef struct lush_lcursor lush_lcursor_t;
 
 struct lush_lcursor {
-  unsigned char data[32];
+  unsigned char data[64];
 };
 
 
