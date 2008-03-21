@@ -275,3 +275,38 @@ csprof_addr_to_interval(void *addr)
     PMSG(SPLAY,"SPLAY: returning interval = %p",ans);
     return (ans);
 }
+
+#undef root
+
+/* *********************************************************************** */
+
+static void
+csprof_print_interval_tree_r(FILE* fs, interval_tree_node_t node);
+
+
+void
+csprof_print_interval_tree()
+{
+  FILE* fs = stdout;
+
+  fprintf(fs, "Interval tree:\n");
+  csprof_print_interval_tree_r(fs, csprof_interval_tree_root);
+  fprintf(fs, "\n");
+  fflush(fs);
+}
+
+
+static void
+csprof_print_interval_tree_r(FILE* fs, interval_tree_node_t node)
+{
+  // Base case
+  if (node == NULL) {
+    return;
+  }
+  
+  fprintf(fs, "  {%p start=%p end=%p}\n", node, START(node), END(node));
+  
+  // Recur
+  csprof_print_interval_tree_r(fs, RIGHT(node));
+  csprof_print_interval_tree_r(fs, LEFT(node));
+}
