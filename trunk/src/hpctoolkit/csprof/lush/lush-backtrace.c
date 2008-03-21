@@ -99,6 +99,8 @@ lush_backtrace(csprof_state_t* state, ucontext_t* context,
     // Step through p-notes of p-chord
     // ---------------------------------------------------------
     while (lush_step_pnote(&cursor) != LUSH_STEP_END_CHORD) {
+      csprof_state_ensure_buffer_avail(state, state->unwind);
+
       unw_word_t ip = lush_cursor_get_ip(&cursor);
       DBGMSG_PUB(CSPROF_DBG_UNWINDING, "IP:  %p", ip);
       state->unwind->ip = ip;
@@ -114,6 +116,8 @@ lush_backtrace(csprof_state_t* state, ucontext_t* context,
     // ---------------------------------------------------------
     lush_lip_t* lip_persistent = NULL;
     while (lush_step_lnote(&cursor) != LUSH_STEP_END_CHORD) {
+      csprof_state_ensure_buffer_avail(state, state->unwind);
+
       lush_lip_t* lip = lush_cursor_get_lip(&cursor); // ephemeral
       DBGMSG_PUB(CSPROF_DBG_UNWINDING, "LIP: %p", *((void**)lip));
       
