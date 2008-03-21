@@ -42,6 +42,8 @@ extern void             csprof_interval_tree_init(void);
 extern void             csprof_release_splay_lock(void);
 extern unwind_interval *csprof_addr_to_interval(void *addr);
 
+extern void             csprof_print_interval_tree(void);
+
 #define SUCCESS  0
 #define FAILURE  1
 
