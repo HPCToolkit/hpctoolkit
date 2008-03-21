@@ -83,16 +83,24 @@ union cilk_cursor {
   // superimposed with:
   // ------------------------------------------------------------
   struct {
-    void* ref_ip; // reference physical ip
+    // ---------------------------------
+    // inter-bichord data
+    // ---------------------------------
     CilkWorkerState* cilk_worker_state;
-    volatile CilkStackFrame** cilk_frame;
     bool seen_cilkprog;
-    bool flg_beg_lnote;
+
+    // ---------------------------------
+    // intra-bichord data
+    // ---------------------------------
+    void* ref_ip;          // reference physical ip
+    bool after_beg_lnote;
+    volatile CilkStackFrame** cilk_frame;
+
   } u;
 };
 
-#define CILK_WS_HEAD_PTR(/* CilkWorkerState* */ x)  ((x)->cache.head)
-#define CILK_WS_TAIL_PTR(/* CilkWorkerState* */ x)  ((x)->cache.tail)
+#define CILK_WS_HEAD_PTR(/* CilkWorkerState* */ x) ((x)->cache.head)
+#define CILK_WS_TAIL_PTR(/* CilkWorkerState* */ x) ((x)->cache.tail)
 
 #define CILK_FRAME(/* CilkStackFrame** */ x)      (*(x))
 #define CILK_FRAME_PROC(/* CilkStackFrame** */ x) ((**(x)).sig[0].inlet)
@@ -279,21 +287,12 @@ LUSHI_step_bichord(lush_cursor_t* cursor)
   // -------------------------------------------------------
   // Initialize cursor
   // -------------------------------------------------------
-  if (lush_cursor_is_flag(cursor, LUSH_CURSOR_FLAGS_BEG_PPROJ)) {
-    init_lcursor(cursor);
-  }
+  init_lcursor(cursor);
   cilk_cursor_t* csr = (cilk_cursor_t*)lush_cursor_get_lcursor(cursor);
 
   // -------------------------------------------------------
   // Collect predicates
   // -------------------------------------------------------
-  csr->u.ref_ip = (void*)lush_cursor_get_ip(cursor);
-
-  csr->u.cilk_worker_state = 
-    (CilkWorkerState*)pthread_getspecific(CILK_WorkerState_key);
-  csr->u.cilk_frame = 
-    (csr->u.cilk_worker_state) ? CILK_WS_TAIL_PTR(csr->u.cilk_worker_state) : NULL;
-
   bool seen_cilkprog = csr->u.seen_cilkprog;
 
   bool is_cilkrt   = is_libcilk(csr->u.ref_ip);
@@ -375,23 +374,21 @@ LUSHI_step_lnote(lush_cursor_t* cursor)
     ty = LUSH_STEP_END_CHORD;
   }
   else if (as == LUSH_ASSOC_1_to_1) {
-    if (csr->u.flg_beg_lnote) {
+    if (csr->u.after_beg_lnote) {
       ty = LUSH_STEP_END_CHORD;
-      csr->u.flg_beg_lnote = false;
     }
     else {
       lip->ip = csr->u.ref_ip;
       ty = LUSH_STEP_CONT;
-      csr->u.flg_beg_lnote = true;
+      csr->u.after_beg_lnote = true;
     }
   }
   else if (LUSH_ASSOC_1_to_M) {
-    if (csr->u.flg_beg_lnote) {
+    if (csr->u.after_beg_lnote) {
       // INVARIANT csr->u.cilk_frame is non-NULL
-
-      // Advance frame (moves toward the head)
-      --(csr->u.cilk_frame);
-      if (1 || csr->u.cilk_frame < CILK_WS_HEAD_PTR(csr->u.cilk_worker_state)) {
+      
+      --(csr->u.cilk_frame); // Advance frame (moves toward the head)
+      if (csr->u.cilk_frame < CILK_WS_HEAD_PTR(csr->u.cilk_worker_state)) {
 	lip->ip = NULL;
 	ty = LUSH_STEP_END_CHORD;
       }
@@ -399,14 +396,11 @@ LUSHI_step_lnote(lush_cursor_t* cursor)
 	lip->ip = CILK_FRAME_PROC(csr->u.cilk_frame);
 	ty = LUSH_STEP_CONT;
       }
-      
-      //HEY ty = (lip->ip == NULL) ? LUSH_STEP_END_CHORD : LUSH_STEP_CONT;
-      csr->u.flg_beg_lnote = false;
     }
     else {
       lip->ip = CILK_FRAME_PROC(csr->u.cilk_frame);
       ty = LUSH_STEP_CONT;
-      csr->u.flg_beg_lnote = true;
+      csr->u.after_beg_lnote = true;
     }
   }
   else {
@@ -430,11 +424,27 @@ LUSHI_set_active_frame_marker(/*ctxt, cb*/)
 void
 init_lcursor(lush_cursor_t* cursor)
 {
-  lush_lcursor_t* csr = lush_cursor_get_lcursor(cursor);
-  memset(csr, 0, sizeof(*csr));
-
   lush_lip_t* lip = lush_cursor_get_lip(cursor);
+  cilk_cursor_t* csr = (cilk_cursor_t*)lush_cursor_get_lcursor(cursor);
+  
+  // -------------------------------------------------------
+  // inter-bichord data
+  // -------------------------------------------------------
+  if (lush_cursor_is_flag(cursor, LUSH_CURSOR_FLAGS_BEG_PPROJ)) {
+    csr->u.cilk_worker_state = 
+      (CilkWorkerState*)pthread_getspecific(CILK_WorkerState_key);
+    csr->u.seen_cilkprog = false;
+  }
+
+  // -------------------------------------------------------
+  // intra-bichord data
+  // -------------------------------------------------------
   memset(lip, 0, sizeof(*lip));
+
+  csr->u.ref_ip = (void*)lush_cursor_get_ip(cursor);
+  csr->u.after_beg_lnote = false;
+  csr->u.cilk_frame = ((csr->u.cilk_worker_state) ? 
+		       CILK_WS_TAIL_PTR(csr->u.cilk_worker_state) : NULL);
 }
 
 
