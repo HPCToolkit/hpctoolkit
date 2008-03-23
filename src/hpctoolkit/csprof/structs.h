@@ -63,9 +63,20 @@ typedef struct csprof_state_s {
   csprof_frame_t *unwind;
   void *context_pc;
 
-  csprof_frame_t *btbuf;      /* where we store backtraces */
-  csprof_frame_t *bufend;     /* the end of the buffer */
-  csprof_frame_t *bufstk;     /* the top frame in the current backtrace */
+  // btbuf                                                      bufend
+  // |                                                            |
+  // v low VMAs                                                   v
+  // +------------------------------------------------------------+
+  // [new backtrace         )              [cached backtrace      )
+  // +------------------------------------------------------------+
+  //                        ^              ^ 
+  //                        |              |
+  //                      unwind         bufstk
+  
+
+  csprof_frame_t *btbuf;      // innermost frame in new backtrace
+  csprof_frame_t *bufend;     // 
+  csprof_frame_t *bufstk;     // innermost frame in cached backtrace
   void *treenode;             /* cached pointer into the tree */
 
   csprof_list_pool_t *pool;

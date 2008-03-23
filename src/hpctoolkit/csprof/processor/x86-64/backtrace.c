@@ -194,8 +194,12 @@ csprof_sample_callstack_from_frame(csprof_state_t *state, int metric_id,
       return 0;
     }
   }
+
+  csprof_frame_t* bt_beg = state->btbuf;      // innermost, inclusive 
+  csprof_frame_t* bt_end = state->unwind - 1; // outermost, inclusive
+
   csprof_cct_node_t* n;
-  n = csprof_state_insert_backtrace(state, metric_id, state->unwind - 1,
-				    state->btbuf, sample_count);
+  n = csprof_state_insert_backtrace(state, metric_id, 
+				    bt_end, bt_beg, sample_count);
   return n;
 }
