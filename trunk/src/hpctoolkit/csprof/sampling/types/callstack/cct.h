@@ -239,8 +239,8 @@ int csprof_cct__fini(csprof_cct_t *x);
 //
 //               (low VMAs)                       (high VMAs)
 //   backtrace: [inner-frame......................outer-frame]
+//              ^ path_end                        ^ path_beg
 //              ^ bt_beg                                       ^ bt_end
-//              ^ path_end                                   ^ path_beg
 //
 csprof_cct_node_t*
 csprof_cct_insert_backtrace(csprof_cct_t *x, void *treenode, int metric_id,
@@ -253,6 +253,11 @@ int csprof_cct__write_bin(FILE* fs, unsigned int epoch_id,
 			  csprof_cct_t* x, lush_cct_ctxt_t* x_ctxt);
 
 #define csprof_cct__isempty(/* csprof_cct_t* */x) ((x)->tree_root == NULL)
+
+
+void
+csprof_cct_print_path_to_root(csprof_cct_t *tree, csprof_cct_node_t* node);
+
 
 /* private interface */
 int csprof_cct__write_txt_q(csprof_cct_t *);

@@ -11,15 +11,12 @@
 
 #define DUMP_LIMIT 100
 
-void dump_backtraces(csprof_state_t *state, csprof_frame_t *unwind)
+
+void dump_backtraces(csprof_state_t *state, csprof_frame_t* unwind)
 {
   int cnt = 0;
-#if 0
-  /* according to Froyd's diagram's this is an off by one error - johnmc 8/29 */
-  csprof_frame_t *x = state->bufstk - 1;
-#else
-  csprof_frame_t *x = state->bufstk;
-#endif
+  csprof_frame_t* x;
+  char as_str[LUSH_ASSOC_INFO_STR_MIN_LEN];
 
 #if 0
   EMSG("in dump_backtraces(0x%lx, 0x%lx)",(unsigned long int) state, (unsigned long int) unwind);
@@ -27,11 +24,12 @@ void dump_backtraces(csprof_state_t *state, csprof_frame_t *unwind)
   EMSG( ""); 
 #endif
 
-  if (state->bufstk == state->bufend){
-    EMSG( "--------Saved backtrace----------------"); 
+  if (state->bufstk != state->bufend) {
+    EMSG( "--------Cached backtrace (innermost first)-----"); 
     cnt = 0;
-    for( ; x != state->bufend; ++x) {
-      EMSG( "ip %#lx | sp %#lx", x->ip, x->sp);
+    for (x = state->bufstk; x != state->bufend; ++x) {
+      lush_assoc_info_sprintf(as_str, x->as_info);
+      EMSG( "%s: ip %p | lip %p | sp %p", as_str, x->ip, x->lip, x->sp);
       /* MWF: added to prevent long backtrace printout */
       cnt++;
       if (cnt > DUMP_LIMIT) {
@@ -39,16 +37,17 @@ void dump_backtraces(csprof_state_t *state, csprof_frame_t *unwind)
         break;
       }
     }
-    EMSG("--------End saved backtrace-----------");
+    EMSG("--------End cached backtrace-----------");
   }
+  
   cnt = 0;
-  EMSG( ""); /* space */
+  EMSG(""); /* space */
   if (unwind) {
-    x = state->btbuf;
 
-    EMSG( "-----New backtrace-------------------"); 
-    for( ; x != unwind; ++x) {
-      EMSG( "ip %#lx | sp %#lx", x->ip, x->sp);
+    EMSG( "-----New backtrace (innermost first)-----");
+    for (x = state->btbuf; x != unwind; ++x) {
+      lush_assoc_info_sprintf(as_str, x->as_info);
+      EMSG( "%s: ip %p | lip %p | sp %p", as_str, x->ip, x->lip, x->sp);
       /* MWF: added to prevent long backtrace printout */
       cnt++;
       if (cnt > DUMP_LIMIT) {
@@ -57,9 +56,11 @@ void dump_backtraces(csprof_state_t *state, csprof_frame_t *unwind)
       }
     }
     EMSG( "-----End new backtrace---------------"); 
-  } else {
-    EMSG( "No unwind backtrace to dump");
   }
+  else {
+    EMSG( "No bt_end backtrace to dump");
+  }
+
 #if 0
   EMSG( "");
 
