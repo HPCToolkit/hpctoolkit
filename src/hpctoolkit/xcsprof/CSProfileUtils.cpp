@@ -307,7 +307,9 @@ cstree_create_node_CB(void* tree,
   }
 
   DIAG_DevMsgIf(0, "cstree_create_node_CB: " << hex << data->ip << dec);
-  CSProfCallSiteNode* n = new CSProfCallSiteNode(NULL, ip, opIdx, metricVec);
+  CSProfCallSiteNode* n = 
+    new CSProfCallSiteNode(NULL, data->as_info, ip, opIdx, data->lip.ptr,
+			   metricVec);
   n->SetSrcInfoDone(false);
   
   // Initialize the tree, if necessary
