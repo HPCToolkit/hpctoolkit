@@ -75,7 +75,7 @@ lush_backtrace(csprof_state_t* state, ucontext_t* context,
   lush_init_unw(&cursor, lush_agents, context);
 
   // FIXME: processor/x86-64/backtrace.c
-  state->unwind   = state->btbuf;
+  state->unwind   = state->btbuf;  // innermost
   state->bufstk   = state->bufend;
   state->treenode = NULL;
 
@@ -149,10 +149,14 @@ lush_backtrace(csprof_state_t* state, ucontext_t* context,
   // ---------------------------------------------------------
   // insert backtrace into calling context tree
   // ---------------------------------------------------------
+  csprof_frame_t* bt_beg = state->btbuf;      // innermost, inclusive 
+  csprof_frame_t* bt_end = state->unwind - 1; // outermost, inclusive
+
+  dump_backtraces(state, state->unwind);
+
   csprof_cct_node_t* node = NULL;
   node = csprof_state_insert_backtrace(state, metric_id, 
-				       state->unwind - 1, state->btbuf,
-				       sample_count);
+				       bt_end, bt_beg, sample_count);
 
   // FIXME: register active marker
 
