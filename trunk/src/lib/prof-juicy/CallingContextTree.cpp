@@ -250,10 +250,13 @@ CSProfCallSiteNode::CSProfCallSiteNode(CSProfNode* _parent)
 }
 
 
-CSProfCallSiteNode::CSProfCallSiteNode(CSProfNode* _parent, VMA ip, 
-				       ushort opIndex, vector<uint>& metrics)
+CSProfCallSiteNode::CSProfCallSiteNode(CSProfNode* _parent, 
+				       lush_assoc_info_t as_info,
+				       VMA ip, ushort opIndex, 
+				       lush_lip_t* lip,
+				       vector<uint>& metrics)
   : CSProfCodeNode(CALLSITE, _parent, ln_NULL, ln_NULL), 
-    IDynNode(ip, opIndex, metrics)
+    IDynNode(as_info, ip, opIndex, lip, metrics)
 {
   CSProfCallSiteNode_Check(this, _parent);
 }
@@ -292,7 +295,10 @@ CSProfStatementNode::operator=(const CSProfStatementNode& x)
 void 
 CSProfStatementNode::copyCallSiteNode(CSProfCallSiteNode* y) 
 {
+  // FIXME: copy IDynNode portion
+  assoc(y->assoc());
   ip(y->ra(), y->opIndex());
+  lip(y->lip());
   appendMetrics(*y);
 
   file = y->GetFile();

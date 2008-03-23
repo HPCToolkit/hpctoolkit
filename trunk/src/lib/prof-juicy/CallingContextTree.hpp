@@ -66,6 +66,8 @@
 
 #include <lib/isa/ISATypes.hpp>
 
+#include <lib/prof-lean/lush/lush-support.h>
+
 #include <lib/support/diagnostics.h>
 #include <lib/support/NonUniformDegreeTree.hpp>
 #include <lib/support/SrcFile.hpp>
@@ -343,21 +345,31 @@ public:
 
   IDynNode() { }
 
-  IDynNode(VMA ip, ushort opIdx)
-    : m_ip(ip), m_opIdx(opIdx) { }
+  IDynNode(lush_assoc_info_t as_info, VMA ip, ushort opIdx, lush_lip_t* lip)
+    : m_as_info(as_info), m_ip(ip), m_opIdx(opIdx), m_lip(lip)
+    { }
 
-  IDynNode(VMA ip, ushort opIdx, vector<uint>& metrics)
-    : m_ip(ip), m_opIdx(opIdx), m_metrics(metrics) { }
+  IDynNode(lush_assoc_info_t as_info, VMA ip, ushort opIdx, lush_lip_t* lip,
+	   vector<uint>& metrics)
+    : m_as_info(as_info), m_ip(ip), m_opIdx(opIdx), m_lip(lip), 
+      m_metrics(metrics) 
+    { }
 
   virtual ~IDynNode() { }
 
   IDynNode(const IDynNode& x)
-    : m_ip(x.m_ip), m_opIdx(x.m_opIdx), m_metrics(x.m_metrics) { }
+    : m_as_info(x.m_as_info), 
+      m_ip(x.m_ip), m_opIdx(x.m_opIdx), 
+      m_lip(x.m_lip),
+      m_metrics(x.m_metrics) 
+    { }
 
   IDynNode& operator=(const IDynNode& x) {
     if (this != &x) {
+      m_as_info = x.m_as_info;
       m_ip = x.m_ip;
       m_opIdx = x.m_opIdx;
+      m_lip = x.m_lip;
       m_metrics = x.m_metrics;
     }
     return *this;
@@ -367,10 +379,16 @@ public:
   // 
   // -------------------------------------------------------
 
+  lush_assoc_info_t assoc() const { return m_as_info; }
+  void assoc(lush_assoc_info_t x) { m_as_info = x; }
+
   virtual VMA ip() const { return m_ip; }
   void ip(VMA ip, ushort opIdx) { m_ip = ip; m_opIdx = opIdx; }
 
   ushort opIndex() const { return m_opIdx; }
+
+  lush_lip_t* lip() const { return m_lip; }
+  void lip(lush_lip_t* lip) { m_lip = lip; }
 
   uint metric(int i) const { return m_metrics[i]; }
   uint numMetrics() const { return m_metrics.size(); }
@@ -386,10 +404,14 @@ public:
   void expandMetrics_after(uint offset);
 
 private:
-  VMA m_ip;       // instruction pointer for this node
-  ushort m_opIdx; // index in the instruction 
+  lush_assoc_info_t m_as_info;
 
-  vector<uint> m_metrics;  
+  VMA m_ip;       // instruction pointer for this node
+  ushort m_opIdx; // index in the instruction
+
+  lush_lip_t* m_lip; // lush logical ip
+
+  vector<uint> m_metrics;
 };
 
 
@@ -456,7 +478,10 @@ public:
   // Constructor/Destructor
   CSProfCallSiteNode(CSProfNode* _parent);
   CSProfCallSiteNode(CSProfNode* _parent, 
-		     VMA ip, ushort opIdx, vector<uint>& metrics);
+		     lush_assoc_info_t as_info,
+		     VMA ip, ushort opIdx, 
+		     lush_lip_t* lip,
+		     vector<uint>& metrics);
   virtual ~CSProfCallSiteNode();
   
   // Node data
