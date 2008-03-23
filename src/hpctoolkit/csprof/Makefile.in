@@ -227,6 +227,7 @@ endif
 
 OBJS += lush.o \
 	lushi-cb.o \
+	lush-support.o \
 	lush-support-rt.o
 
 #-----------------------------------------------------------------

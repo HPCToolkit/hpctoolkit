@@ -124,6 +124,17 @@ union lush_assoc_info_u {
   ((x).u.len == 1)
 
 
+#define LUSH_ASSOC_STR_MAX_LEN 6
+
+const char* 
+lush_assoc_tostr(lush_assoc_t as);
+
+
+#define LUSH_ASSOC_INFO_STR_MIN_LEN (LUSH_ASSOC_STR_MAX_LEN + 26)
+
+const char* 
+lush_assoc_info_sprintf(char* str, lush_assoc_info_t as_info);
+
 
 // ---------------------------------------------------------
 // LUSH LIP: An opaque logical id
