@@ -121,7 +121,7 @@ union lush_assoc_info_u {
   (x).u.len = (new_len)
 
 #define lush_assoc_info_is_root_note(/*lush_assoc_info_t*/ x)    \
-  ((x).u.len == 1)
+  (((x).u.as != LUSH_ASSOC_NULL) && ((x).u.len == 1))
 
 
 #define LUSH_ASSOC_STR_MAX_LEN 6
