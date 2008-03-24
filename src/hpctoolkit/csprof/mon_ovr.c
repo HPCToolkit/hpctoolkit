@@ -1,11 +1,22 @@
 // -*-Mode: C++;-*- // technically C99
 // $Id$
 
-//************************* System Include Files ****************************
 
+//***************************************************************************
+// system include files 
+//***************************************************************************
+//
 #include <pthread.h>
 
-//*************************** User Include Files ****************************
+#ifdef LINUX
+#include <linux/unistd.h>
+#endif
+
+
+
+//***************************************************************************
+// local include files 
+//***************************************************************************
 
 #include "general.h"
 #include "killsafe.h"
@@ -16,59 +27,56 @@
 #include "structs.h"
 #include "sample_event.h"
 #include "csprof_monitor_callbacks.h"
-
 #include "pmsg.h"
 
-#ifdef LINUX
-#include <linux/unistd.h>
-#endif
 
-//*************************** Forward Declarations **************************
 
-#define M(s) write(2,s"\n",strlen(s)+1)
+//***************************************************************************
+// global variables 
+//***************************************************************************
+
+// --------------------------------------------------------------------------
+// default is single threaded. monitor_init_thread_support sets this variable
+// to 1 if threads are used.
+// --------------------------------------------------------------------------
+int csprof_using_threads = 0;
+
+
+
+//***************************************************************************
+// local variables 
+//***************************************************************************
 
 volatile int DEBUGGER_WAIT = 1;
 
+
+
+//***************************************************************************
+// interface functions
 //***************************************************************************
 
-
-
-void
-monitor_init_process(char *process,int *argc,char **argv,unsigned pid)
+void *
+monitor_init_process(int *argc, char **argv, void *data)
 {
+  char *process_name = argv[0];
+
   if (getenv("CSPROF_WAIT")){
     while(DEBUGGER_WAIT);
   }
-  csprof_set_executable_name(process);
-  pmsg_init(process);
+  csprof_set_executable_name(process_name);
+  pmsg_init(process_name);
   NMSG(PROCESS,"init");
   csprof_init_internal();
+  return data;
 }
 
 
 void
-monitor_fini_process(void)
+monitor_fini_process(int how, void *data)
 {
-  // M("monitor calling csprof_fini_internal");
   csprof_fini_internal();
 }
 
-#if 0
-void
-monitor_init_library(void)
-{
-  //  extern void csprof_init_internal(void);
-  // M("monitor init lib (NOT) calling csprof_init_internal");
-}
-
-void monitor_fini_library(void)
-{
-  //  extern void csprof_fini_internal(void);
-}
-#endif
-
-// always need this variable, but only init thread support will turn it on
-int csprof_using_threads = 0;
 
 #ifdef CSPROF_THREADS
 
@@ -96,6 +104,7 @@ monitor_thread_pre_create(void)
   // return csprof_thread_pre_create();
 }
 
+
 void
 monitor_thread_post_create(void *dc)
 {
@@ -103,6 +112,7 @@ monitor_thread_post_create(void *dc)
   csprof_thread_post_create(dc);
   NMSG(THREAD,"done post create");
 }
+
 
 void *
 monitor_init_thread(int tid, void *data)
@@ -118,15 +128,21 @@ monitor_init_thread(int tid, void *data)
 }
 
 
-void monitor_fini_thread(void *init_thread_data )
+void 
+monitor_fini_thread(void *init_thread_data)
 {
   csprof_state_t *state = ((killsafe_t *)init_thread_data)->state;
 
   csprof_thread_fini(state);
 }
 
+#endif
 
-void monitor_dlopen(const char *path, int flags, void *handle)
+
+#ifndef STATIC_ONLY
+
+void 
+monitor_dlopen(const char *path, int flags, void *handle)
 {
   csprof_epoch_t *epoch;
   csprof_epoch_lock();
@@ -140,17 +156,15 @@ void monitor_dlopen(const char *path, int flags, void *handle)
 }
 
 
-void monitor_dlclose(void *handle) // (const char *library)
+void 
+monitor_dlclose(void *handle)
 {
-// we really want the library name
 /*
- 
   assert(0);
 
-  dl_remove_library(library);
+  dl_remove_library(handle);
   FIXME: delete intervals from the splay tree too
 */
 }
 
-
-#endif
+#endif /* STATIC_ONLY */
