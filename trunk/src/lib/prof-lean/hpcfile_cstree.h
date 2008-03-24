@@ -182,8 +182,8 @@ int hpcfile_cstree_as_info__fwrite(lush_assoc_info_t* x, FILE* fs);
 
 int hpcfile_cstree_lip__fread(lush_lip_t* x, FILE* fs);
 int hpcfile_cstree_lip__fwrite(lush_lip_t* x, FILE* fs);
-int hpcfile_cstree_lip__fprint(lush_lip_t* x, FILE* fs, const char* pre);
-
+int hpcfile_cstree_lip__fprint(lush_lip_t* x, hpcfile_uint_t id, 
+			       FILE* fs, const char* pre);
 
 // ---------------------------------------------------------
 // hpcfile_cstree_node_t: The root node -- the node without a parent -- is

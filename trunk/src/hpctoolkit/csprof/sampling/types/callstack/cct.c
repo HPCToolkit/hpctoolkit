@@ -626,13 +626,12 @@ csprof_cct__write_bin(FILE* fs, unsigned int epoch_id,
 // -- PLEASE remove once we agree this is a good decision. --
 
 
-
 static int
-hpcfile_cstree_write_node(FILE* fs, csprof_cct_t* tree, 
+hpcfile_cstree_write_node(FILE* fs, csprof_cct_t* tree,
 			  csprof_cct_node_t* node, 
 			  hpcfile_cstree_node_t *tmp_node,
-			  hpcfile_uint_t id_as_root,
 			  hpcfile_uint_t id_parent,
+			  hpcfile_uint_t id_root,
 			  hpcfile_uint_t *id,
 			  int levels_to_skip);
 
@@ -725,17 +724,14 @@ hpcfile_cstree_write(FILE* fs, csprof_cct_t* tree, void* root, void* tree_ctxt,
 
 
 static int
-hpcfile_cstree_write_node(FILE* fs, csprof_cct_t* tree, 
-			  csprof_cct_node_t* node, 
+hpcfile_cstree_write_node(FILE* fs, csprof_cct_t* tree,
+			  csprof_cct_node_t* node,
 			  hpcfile_cstree_node_t *tmp_node,
 			  hpcfile_uint_t id_parent,
-			  hpcfile_uint_t id_as_root,
+			  hpcfile_uint_t id_root,
 			  hpcfile_uint_t *id,
 			  int levels_to_skip)
 {
-  hpcfile_uint_t my_id_as_root = 0;
-  hpcfile_uint_t my_id = *id;
-  csprof_cct_node_t* first, *c;
   int ret;
 
   if (!node) { return HPCFILE_OK; }
@@ -743,22 +739,25 @@ hpcfile_cstree_write_node(FILE* fs, csprof_cct_t* tree,
   // ---------------------------------------------------------
   // Write this node
   // ---------------------------------------------------------
+  hpcfile_uint_t my_id = *id;
+  hpcfile_uint_t my_id_lip = 0;
+
   if (levels_to_skip > 0) {
     my_id = id_parent;
     levels_to_skip--;
   }
   else {
     lush_assoc_t as = lush_assoc_info__get_assoc(node->as_info);
-
     if (as != LUSH_ASSOC_NULL) {
-      if (lush_assoc_info_is_root_note(node->as_info)) {
-	my_id_as_root = my_id;
+      if (lush_assoc_info_is_root_note(node->as_info)
+	  || as == LUSH_ASSOC_1_to_M) {
+	my_id_lip = my_id;
 	if (node->lip != NULL) {
 	  hpcfile_cstree_lip__fwrite(node->lip, fs);
 	}
       }
       else {
-	my_id_as_root = id_as_root;
+	my_id_lip = id_root;
       }
     }
 
@@ -768,14 +767,13 @@ hpcfile_cstree_write_node(FILE* fs, csprof_cct_t* tree,
     // tallent:FIXME: for now I have inlined what was the get_data_fn
     tmp_node->data.as_info = node->as_info;
     tmp_node->data.ip = (hpcfile_vma_t)node->ip;
-    tmp_node->data.lip.id = my_id_as_root;
+    tmp_node->data.lip.id = my_id_lip;
     tmp_node->data.sp = (hpcfile_uint_t)node->sp;
     memcpy(tmp_node->data.metrics, node->metrics, 
 	   tmp_node->data.num_metrics * sizeof(size_t));
 
     ret = hpcfile_cstree_node__fwrite(tmp_node, fs);
     if (ret != HPCFILE_OK) { 
-
       return HPCFILE_ERR; 
     }
     
@@ -786,10 +784,14 @@ hpcfile_cstree_write_node(FILE* fs, csprof_cct_t* tree,
   // ---------------------------------------------------------
   // Write children (handles either a circular or non-circular structure)
   // ---------------------------------------------------------
+  hpcfile_uint_t my_id_root = 
+    (lush_assoc_info_is_root_note(node->as_info) ? my_id : id_root);
+
+  csprof_cct_node_t* first, *c;
   first = c = csprof_cct_node__first_child(node);
   while (c) {
     ret = hpcfile_cstree_write_node(fs, tree, c, tmp_node, 
-				    my_id, id_as_root, id,
+				    my_id, my_id_root, id,
 				    levels_to_skip);
     if (ret != HPCFILE_OK) {
       return HPCFILE_ERR;
