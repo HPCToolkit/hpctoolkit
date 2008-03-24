@@ -73,7 +73,6 @@
 #include "csproflib_private.h"
 #include "csprof_monitor_callbacks.h"
 #include "env.h"
-#include "killsafe.h"
 #include "mem.h"
 #include "csprof_csdata.h"
 #include "segv_handler.h"
@@ -268,8 +267,8 @@ csprof_thread_post_create(void *dc)
   }
 }
 
-void 
-csprof_thread_init(killsafe_t *kk, int id, lush_cct_ctxt_t* thr_ctxt)
+void *
+csprof_thread_init(int id, lush_cct_ctxt_t* thr_ctxt)
 {
   thread_data_t *td  = csprof_allocate_thread_data();
   csprof_set_thread_data(td);
@@ -279,8 +278,6 @@ csprof_thread_init(killsafe_t *kk, int id, lush_cct_ctxt_t* thr_ctxt)
 
   state->pstate.thrid = id; // local thread id in state
   state->csdata_ctxt = thr_ctxt;
-
-  kk->state = state;  // save pointer to state data in killsafe
 
     /* FIXME: is this the right way to do things? */
 
@@ -300,6 +297,7 @@ csprof_thread_init(killsafe_t *kk, int id, lush_cct_ctxt_t* thr_ctxt)
   if (ret){
     EMSG("WARNING: Thread init could not unblock SIGPROF, ret = %d",ret);
   }
+  return (void *)state;
 }
 
 void

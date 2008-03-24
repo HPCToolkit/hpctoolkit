@@ -19,7 +19,6 @@
 //***************************************************************************
 
 #include "general.h"
-#include "killsafe.h"
 #include "monitor.h"
 #include "name.h"
 #include "epoch.h"
@@ -117,21 +116,18 @@ monitor_thread_post_create(void *dc)
 void *
 monitor_init_thread(int tid, void *data)
 {
-  killsafe_t    *safe;
-
   NMSG(THREAD,"init thread %d",tid);
-  safe = (killsafe_t *)malloc(sizeof(killsafe_t));
-  csprof_thread_init(safe, tid, (lush_cct_ctxt_t*)data);
+  void *thread_data = csprof_thread_init(tid, (lush_cct_ctxt_t*)data);
   NMSG(THREAD,"back from init thread %d",tid);
 
-  return (void *) safe;
+  return thread_data;
 }
 
 
 void 
 monitor_fini_thread(void *init_thread_data)
 {
-  csprof_state_t *state = ((killsafe_t *)init_thread_data)->state;
+  csprof_state_t *state = (csprof_state_t *)init_thread_data;
 
   csprof_thread_fini(state);
 }
