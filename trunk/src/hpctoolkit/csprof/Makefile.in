@@ -161,7 +161,7 @@ hpcfile_objs := $(addsuffix .o,$(addprefix hpcfile_,general cstree csprof))
 # library in the proper order and for correct functioning of the profiler
 OBJS := first_func.o
 ifndef STATIC_ONLY
-   OBJS += mon_ovr.o
+   OBJS += libmonitor_upcalls.o
 else
    OBJS += static_mon_ovr.o
 endif
