@@ -9,6 +9,11 @@ dbg()
     fi
 }
 
+run_stapi_syms()
+{
+    LD_LIBRARY_PATH=${libcpp_path}:${libdir} ${libexecdir}/stapi_syms $1 > ${prog_file}
+}
+
 ############ MAIN CODE ###################
 
 libexecdir=`dirname $0`
@@ -64,7 +69,7 @@ so_file=${odir}/${base}.nm.so
 dbg object_file = $object_file
 dbg prog_file = $prog_file
 
-LD_LIBRARY_PATH=${libcpp_path}:${libdir}:$LD_LIBRARY_PATH ${libexecdir}/stapi_syms ${object_file} > ${prog_file}
+run_stapi_syms $object_file
 if [ ! -s $prog_file ]; then
     echo stapi_syms create $prog_file from $object_file failed ... 
     echo ... trying stripped version
@@ -79,7 +84,7 @@ if [ ! -s $prog_file ]; then
     dbg permissions for object file AFTER CHMOD = `ls -l $odir/$base`
 
     strip $odir/$base
-    LD_LIBRARY_PATH=${libcpp_path}:${libdir}:$LD_LIBRARY_PATH ${libexecdir}/stapi_syms $odir/$base > ${prog_file}
+    run_stapi_syms $odir/$base
     if [ -s $prog_file ]; then
         echo stripping succeeds '!!'. $prog_file exists
     else
