@@ -66,7 +66,6 @@
 
 /* user include files */
 
-#include "xpthread.h"
 #include "atomic.h"
 #include "libc.h"
 #include "csproflib.h"
