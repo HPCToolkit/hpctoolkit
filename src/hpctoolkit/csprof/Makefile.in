@@ -178,10 +178,6 @@ OBJS += unlink.o
 OBJS += executable-path.o
 OBJS += tokenize.o
 
-ifdef DO_THREADS
-   OBJS += pthread.o
-endif
-
 # LUSH will provide its own backtrace [FIXME: clutzy]
 ifndef DO_LUSH
   OBJS += backtrace.o
