@@ -166,7 +166,7 @@ else
    OBJS += static_mon_ovr.o
 endif
 OBJS += csproflib.o metrics.o mem.o cct.o
-OBJS += name.o list.o libc.o epoch.o
+OBJS += name.o list.o epoch.o
 OBJS += sample_event.o 
 OBJS += csprof_options.o 
 

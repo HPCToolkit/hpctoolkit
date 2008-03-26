@@ -23,7 +23,6 @@
 #include "backtrace.h"
 #include "state.h"
 #include "general.h"
-#include "util.h"
 #include "dump_backtraces.h"
 #include "pmsg.h"
 #include "monitor.h"
