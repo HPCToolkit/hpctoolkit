@@ -3,11 +3,6 @@
 
 #include "structs.h"
 #include "mem.h"
-#ifdef CSPROF_THREADS
-#include "xpthread.h"
-#else
-#include "libc.h"
-#endif
 
 #if 0
 /* fetches the state of the profiler */
@@ -38,6 +33,7 @@ extern get_memstore_f *csprof_get_memstore;
 /* it'd also be great if the compiler paid no attention to these things
    whatsoever...since they're only here to say "yes, I know about this
    particular function." */
+#if 0
 #ifdef CSPROF_FIXED_LIBCALLS
 extern void *libcall1(void *func_addr, void *);
 extern void *libcall2(void *func_addr, void *, void *);
@@ -65,5 +61,6 @@ csprof_sigmask(int mode, const sigset_t *inset, sigset_t *outset)
     return libcall3(csprof_sigprocmask, mode, inset, outset);
 #endif
 }
+#endif
 
 #endif
