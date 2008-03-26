@@ -40,7 +40,6 @@
 #include "atomic.h"
 #include "general.h"
 #include "list.h"
-#include "xpthread.h"
 #include "interface.h"
 #include "epoch.h"
 #include "state.h"

@@ -8,10 +8,6 @@
 #include <limits.h>             /* PATH_MAX */
 #include <sys/types.h>          /* pid_t, e.g. */
 
-#if defined(CSPROF_PTHREADS)
-#include "xpthread.h"
-#endif
-
 #include "csprof_csdata.h"
 #include "list.h"
 
