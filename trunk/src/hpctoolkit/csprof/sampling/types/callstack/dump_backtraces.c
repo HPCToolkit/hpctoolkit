@@ -5,7 +5,6 @@
 #include "general.h"
 #include "list.h"
 #include "libc.h"
-#include "util.h"
 #include "csprof_csdata.h"
 #include "pmsg.h"
 
