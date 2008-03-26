@@ -8,7 +8,6 @@
 #include <string.h>
 
 #include "env.h"
-#include "xpthread.h"
 #include "state.h"
 #include "general.h"
 #include "csproflib_private.h"
