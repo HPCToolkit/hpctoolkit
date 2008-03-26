@@ -112,7 +112,8 @@ am__DEPENDENCIES_1 =
 libHPCprof_lean_la_DEPENDENCIES = $(am__DEPENDENCIES_1)
 am__objects_1 = libHPCprof_lean_la-hpcfile_csprof.lo \
 	libHPCprof_lean_la-hpcfile_cstree.lo \
-	libHPCprof_lean_la-hpcfile_general.lo libHPCprof_lean_la-io.lo
+	libHPCprof_lean_la-hpcfile_general.lo libHPCprof_lean_la-io.lo \
+	libHPCprof_lean_la-lush-support.lo
 am_libHPCprof_lean_la_OBJECTS = $(am__objects_1)
 libHPCprof_lean_la_OBJECTS = $(am_libHPCprof_lean_la_OBJECTS)
 libHPCprof_lean_la_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
@@ -319,7 +320,7 @@ MYSOURCES = \
 	hpcfile_general.h hpcfile_general.c \
 	io.h io.c \
 	\
-	lush/lush-support.h
+	lush/lush-support.h lush/lush-support.c
 
 MYCFLAGS = @HOST_CFLAGS@   $(HPC_IFLAGS) 
 MYCXXFLAGS = @HOST_CXXFLAGS@ $(HPC_IFLAGS) 
@@ -399,6 +400,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCprof_lean_la-hpcfile_cstree.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCprof_lean_la-hpcfile_general.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCprof_lean_la-io.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCprof_lean_la-lush-support.Plo@am__quote@
 
 .c.o:
 @am__fastdepCC_TRUE@	$(COMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
@@ -448,6 +450,13 @@ libHPCprof_lean_la-io.lo: io.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='io.c' object='libHPCprof_lean_la-io.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprof_lean_la_CFLAGS) $(CFLAGS) -c -o libHPCprof_lean_la-io.lo `test -f 'io.c' || echo '$(srcdir)/'`io.c
+
+libHPCprof_lean_la-lush-support.lo: lush/lush-support.c
+@am__fastdepCC_TRUE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprof_lean_la_CFLAGS) $(CFLAGS) -MT libHPCprof_lean_la-lush-support.lo -MD -MP -MF $(DEPDIR)/libHPCprof_lean_la-lush-support.Tpo -c -o libHPCprof_lean_la-lush-support.lo `test -f 'lush/lush-support.c' || echo '$(srcdir)/'`lush/lush-support.c
+@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/libHPCprof_lean_la-lush-support.Tpo $(DEPDIR)/libHPCprof_lean_la-lush-support.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='lush/lush-support.c' object='libHPCprof_lean_la-lush-support.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprof_lean_la_CFLAGS) $(CFLAGS) -c -o libHPCprof_lean_la-lush-support.lo `test -f 'lush/lush-support.c' || echo '$(srcdir)/'`lush/lush-support.c
 
 mostlyclean-libtool:
 	-rm -f *.lo

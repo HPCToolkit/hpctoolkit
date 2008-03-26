@@ -563,7 +563,10 @@ int
 hpcfile_cstree_nodedata__fprint(hpcfile_cstree_nodedata_t* x, FILE* fs, 
 				const char* pre)
 {
-  fprintf(fs, "%s{nodedata: (as: %x) (ip: %"PRIx64") (lip: %"PRIx64") (sp: %"PRIx64")\n", pre, x->as_info.bits, x->ip, x->lip.id, x->sp);
+  char as_str[LUSH_ASSOC_INFO_STR_MIN_LEN];
+  lush_assoc_info_sprintf(as_str, x->as_info);
+
+  fprintf(fs, "%s{nodedata: (as: %s) (ip: 0x%"PRIx64") (lip: [%"PRIu64"] [0x%"PRIx64"]) (sp: %"PRIx64")\n", pre, as_str, x->ip, x->lip.id, x->lip.ptr, x->sp);
 
   fprintf(fs, "%s  (metrics:", pre);
   for (int i = 0; i < x->num_metrics; ++i) {
@@ -645,7 +648,7 @@ int
 hpcfile_cstree_lip__fprint(lush_lip_t* x, hpcfile_uint_t id, 
 			   FILE* fs, const char* pre)
 {
-  fprintf(fs, "%s{lip: (id: %"PRIu64")", pre, id);
+  fprintf(fs, "%s{lip:  (id: %"PRIu64")", pre, id);
   
   for (int i = 0; i < LUSH_LIP_DATA8_SZ; ++i) {
     fprintf(fs, " %"PRIx64, x->data8[i]);
@@ -723,10 +726,8 @@ hpcfile_cstree_node__fwrite(hpcfile_cstree_node_t* x, FILE* fs)
 int 
 hpcfile_cstree_node__fprint(hpcfile_cstree_node_t* x, FILE* fs, const char* pre)
 {
-  fprintf(fs, "{node:\n");
-
-  fprintf(fs, "%s(id: %"PRIu64") (id_parent: %"PRIu64")}\n", 
-	  pre, x->id, x->id_parent);
+  fprintf(fs, "{node: (id: %"PRIu64") (id_parent: %"PRIu64")}\n", 
+	  x->id, x->id_parent);
 
   hpcfile_cstree_nodedata__fprint(&x->data, fs, pre);
   
