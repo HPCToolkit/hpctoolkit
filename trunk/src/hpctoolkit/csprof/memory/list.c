@@ -34,7 +34,6 @@
 #include "general.h"
 #include "mem.h"
 
-#include "xpthread.h"
 #include "list.h"
 
 static csprof_list_node_t *csprof_list_node_alloc(csprof_list_pool_t *pool);
