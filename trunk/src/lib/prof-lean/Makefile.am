@@ -69,7 +69,7 @@ MYSOURCES = \
 	hpcfile_general.h hpcfile_general.c \
 	io.h io.c \
 	\
-	lush/lush-support.h
+	lush/lush-support.h lush/lush-support.c
 
 MYCFLAGS   = @HOST_CFLAGS@   $(HPC_IFLAGS) 
 MYCXXFLAGS = @HOST_CXXFLAGS@ $(HPC_IFLAGS) 
