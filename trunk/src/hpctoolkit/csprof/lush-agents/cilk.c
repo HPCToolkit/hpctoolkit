@@ -26,16 +26,18 @@
 
 //*************************** User Include Files ****************************
 
+#include <general.h> // FIXME: for MSG -- but should not include
+#include <pmsg.h>
+
 #include <lush/lushi.h>
 #include <lush/lushi-cb.h>
-
-#include <general.h> // FIXME: for MSG -- but should not include
 
 //*************************** Forward Declarations **************************
 
 #include <pthread.h>
 
-#include <../cilk/cilk.h> /* Cilk */
+#include <../cilk/cilk.h>          /* Cilk (installed) */
+#include <../cilk/cilk-internal.h> /* Cilk (not installed) */
 // Cilk runtime
 extern pthread_key_t CILK_WorkerState_key;
 
@@ -87,6 +89,7 @@ union cilk_cursor {
     // inter-bichord data
     // ---------------------------------
     CilkWorkerState* cilk_worker_state;
+    Closure*         cilk_closure;
     bool seen_cilkprog;
 
     // ---------------------------------
@@ -94,16 +97,16 @@ union cilk_cursor {
     // ---------------------------------
     void* ref_ip;          // reference physical ip
     bool after_beg_lnote;
-    volatile CilkStackFrame** cilk_frame;
 
   } u;
 };
 
-#define CILK_WS_HEAD_PTR(/* CilkWorkerState* */ x) ((x)->cache.head)
-#define CILK_WS_TAIL_PTR(/* CilkWorkerState* */ x) ((x)->cache.tail)
+#define CILKWS_CL_DEQ_TOP(/* CilkWorkerState* */ x) \
+  ((x)->context->Cilk_RO_params->deques[(x)->self].top)
+#define CILKWS_FRAME_DEQ_HEAD(/* CilkWorkerState* */ x) ((x)->cache.head)
+#define CILKWS_FRAME_DEQ_TAIL(/* CilkWorkerState* */ x) ((x)->cache.tail)
 
-#define CILK_FRAME(/* CilkStackFrame** */ x)      (*(x))
-#define CILK_FRAME_PROC(/* CilkStackFrame** */ x) ((**(x)).sig[0].inlet)
+#define CILKFRM_PROC(/* CilkStackFrame* */ x) ((x)->sig[0].inlet)
 
 //*************************** Forward Declarations **************************
 
@@ -309,7 +312,8 @@ LUSHI_step_bichord(lush_cursor_t* cursor)
   // -------------------------------------------------------
   // Given p-note derive l-note:
   //   1. is_cilkrt & is_TOS  => Cilk-scheduling or Cilk-overhead
-  //   2. is_cilkrt & !is_TOS & seen_cilkprog  => Cilk-sched + logical stack
+  //   2. is_cilkrt & !is_TOS & seen_cilkprog & closure
+  //                                           => Cilk-sched + logical stack
   //   3. is_cilkrt & !is_TOS & !seen_cilkprog => {result (1)}
   //   4. is_cilkprog => Cilk + logical Cilk
   // -------------------------------------------------------
@@ -319,7 +323,7 @@ LUSHI_step_bichord(lush_cursor_t* cursor)
       lush_cursor_set_assoc(cursor, LUSH_ASSOC_1_to_0);
     }
     else {
-      if (seen_cilkprog) {
+      if (seen_cilkprog && csr->u.cilk_closure) {
 	// case (2)
 	lush_cursor_set_assoc(cursor, LUSH_ASSOC_1_to_M);
       }
@@ -383,22 +387,21 @@ LUSHI_step_lnote(lush_cursor_t* cursor)
       csr->u.after_beg_lnote = true;
     }
   }
-  else if (LUSH_ASSOC_1_to_M) {
+  else if (as == LUSH_ASSOC_1_to_M) {
+    // INVARIANT: csr->u.cilk_closure is non-NULL
     if (csr->u.after_beg_lnote) {
-      // INVARIANT csr->u.cilk_frame is non-NULL
-      
-      --(csr->u.cilk_frame); // Advance frame (moves toward the head)
-      if (csr->u.cilk_frame < CILK_WS_HEAD_PTR(csr->u.cilk_worker_state)) {
+      csr->u.cilk_closure = csr->u.cilk_closure->parent;
+      if (!csr->u.cilk_closure) {
 	lip->ip = NULL;
 	ty = LUSH_STEP_END_CHORD;
       }
       else {
-	lip->ip = CILK_FRAME_PROC(csr->u.cilk_frame);
+	lip->ip = CILKFRM_PROC(csr->u.cilk_closure->frame);
 	ty = LUSH_STEP_CONT;
       }
     }
     else {
-      lip->ip = CILK_FRAME_PROC(csr->u.cilk_frame);
+      lip->ip = CILKFRM_PROC(csr->u.cilk_closure->frame);
       ty = LUSH_STEP_CONT;
       csr->u.after_beg_lnote = true;
     }
@@ -433,6 +436,8 @@ init_lcursor(lush_cursor_t* cursor)
   if (lush_cursor_is_flag(cursor, LUSH_CURSOR_FLAGS_BEG_PPROJ)) {
     csr->u.cilk_worker_state = 
       (CilkWorkerState*)pthread_getspecific(CILK_WorkerState_key);
+    csr->u.cilk_closure = ((csr->u.cilk_worker_state) ? 
+			   CILKWS_CL_DEQ_TOP(csr->u.cilk_worker_state) : NULL);
     csr->u.seen_cilkprog = false;
   }
 
@@ -443,8 +448,6 @@ init_lcursor(lush_cursor_t* cursor)
 
   csr->u.ref_ip = (void*)lush_cursor_get_ip(cursor);
   csr->u.after_beg_lnote = false;
-  csr->u.cilk_frame = ((csr->u.cilk_worker_state) ? 
-		       CILK_WS_TAIL_PTR(csr->u.cilk_worker_state) : NULL);
 }
 
 
