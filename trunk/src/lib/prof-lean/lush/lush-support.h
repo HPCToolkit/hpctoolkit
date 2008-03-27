@@ -24,14 +24,18 @@
 
 #include <stdlib.h>
 #include <stdint.h>
+#include <stdbool.h>
 
 //*************************** User Include Files ****************************
+
 
 //*************************** Forward Declarations **************************
 
 #if defined(__cplusplus)
 extern "C" {
 #endif
+
+//*************************** Forward Declarations **************************
 
 //***************************************************************************
 // LUSH association Types
@@ -86,42 +90,79 @@ union lush_assoc_info_u {
 };
 
 
+static inline unsigned
+lush_assoc_class(lush_assoc_t as) 
+{
+  return ((as) & LUSH_ASSOC_CLASS_MASK);
+}
 
-#define lush_assoc_class(/*lush_assoc*/ as) \
-  ((as) & LUSH_ASSOC_CLASS_MASK)
+static inline bool 
+lush_assoc_class_eq(lush_assoc_t x, lush_assoc_t y)
+{
+  return ( ((x) == (y)) /* handles x == y == LUSH_ASSOC_NULL */
+	   || (lush_assoc_class(x) & lush_assoc_class(y)) );
+}
 
-#define lush_assoc_class_eq(/*lush_assoc*/ x, /*lush_assoc*/ y) \
-  ( ((x) == (y)) /* handles x == y == LUSH_ASSOC_NULL */	\
-    || lush_assoc_class(x) & lush_assoc_class(y) )
+static inline bool 
+lush_assoc_is_a_to_0(lush_assoc_t as) 
+{
+  return (lush_assoc_class(as) & LUSH_ASSOC_CLASS_a_to_0);
+}
+
+static inline bool 
+lush_assoc_is_1_to_a(lush_assoc_t as) 
+{
+  return (lush_assoc_class(as) & LUSH_ASSOC_CLASS_1_to_a);
+}
+
+static inline bool
+lush_assoc_is_a_to_1(lush_assoc_t as) 
+{
+  return (lush_assoc_class(as) & LUSH_ASSOC_CLASS_a_to_1);
+}
 
 
-#define lush_assoc_is_a_to_0(/*lush_assoc*/ as) \
-  (lush_assoc_class(as) & LUSH_ASSOC_CLASS_a_to_0)
+static inline lush_assoc_t 
+lush_assoc_info__get_assoc(lush_assoc_info_t x)
+{
+  return x.u.as;
+}
 
-#define lush_assoc_is_1_to_a(/*lush_assoc*/ as) \
-  (lush_assoc_class(as) & LUSH_ASSOC_CLASS_1_to_a)
-
-#define lush_assoc_is_a_to_1(/*lush_assoc*/ as) \
-  (lush_assoc_class(as) & LUSH_ASSOC_CLASS_a_to_1)
-
-
-#define lush_assoc_info__get_assoc(/*lush_assoc_info_t*/ x) \
-  (x).u.as
-
+#if 0
+static inline void
+lush_assoc_info__set_assoc(lush_assoc_info_t& x, lush_assoc_t new_as)
+{
+  x->u.as = (new_as);
+}
+#else
 #define lush_assoc_info__set_assoc(/*lush_assoc_info_t*/ x,	    \
 				   /*lush_assoc_t*/ new_as)	    \
   (x).u.as = (new_as)
+#endif
 
+static inline uint32_t
+lush_assoc_info__get_path_len(lush_assoc_info_t x)
+{
+  return (x).u.len;
+}
 
-#define lush_assoc_info__get_path_len(/*lush_assoc_info_t*/ x)   \
-  (x).u.len
-
-#define lush_assoc_info__set_path_len(/*lush_assoc_info_t*/ x,	 \
-				      /*lush_assoc_t*/ new_len)  \
+#if 0
+static inline void
+lush_assoc_info__set_path_len(lush_assoc_info_t& x, uint32_t new_len)
+{
+  x->.u.len = (new_len);
+}
+#else
+#define lush_assoc_info__set_path_len(/*lush_assoc_info_t*/ x,	\
+				      /*uint32_t*/ new_len)	\
   (x).u.len = (new_len)
+#endif
 
-#define lush_assoc_info_is_root_note(/*lush_assoc_info_t*/ x)    \
-  (((x).u.as != LUSH_ASSOC_NULL) && ((x).u.len == 1))
+static inline bool
+lush_assoc_info_is_root_note(lush_assoc_info_t x)
+{
+  return (((x).u.as != LUSH_ASSOC_NULL) && ((x).u.len == 1));
+}
 
 
 #define LUSH_ASSOC_STR_MAX_LEN 6
@@ -150,6 +191,14 @@ union lush_lip {
   uint64_t      data8[LUSH_LIP_DATA8_SZ];
 };
 
+
+static inline bool
+lush_lip_eq(lush_lip_t* x, lush_lip_t* y)
+{
+  return ((x == y) || (x && y 
+		       && x->data8[0] == y->data8[0]
+		       && x->data8[1] == y->data8[1])); 
+}
 
 // **************************************************************************
 
