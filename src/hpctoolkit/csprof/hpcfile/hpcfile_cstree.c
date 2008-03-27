@@ -566,7 +566,7 @@ hpcfile_cstree_nodedata__fprint(hpcfile_cstree_nodedata_t* x, FILE* fs,
   char as_str[LUSH_ASSOC_INFO_STR_MIN_LEN];
   lush_assoc_info_sprintf(as_str, x->as_info);
 
-  fprintf(fs, "%s{nodedata: (as: %s) (ip: 0x%"PRIx64") (lip: [%"PRIu64"] [0x%"PRIx64"]) (sp: %"PRIx64")\n", pre, as_str, x->ip, x->lip.id, x->lip.ptr, x->sp);
+  fprintf(fs, "%s{nodedata: (as: %s) (ip: 0x%"PRIx64") (lip: [%"PRIu64"][%p]) (sp: %"PRIx64")\n", pre, as_str, x->ip, x->lip.id, x->lip.ptr, x->sp);
 
   fprintf(fs, "%s  (metrics:", pre);
   for (int i = 0; i < x->num_metrics; ++i) {

@@ -58,8 +58,7 @@ csprof_cct_node__link(csprof_cct_node_t *, csprof_cct_node_t *);
 // FIXME: tallent: when code is merged into hpctoolkit tree, this
 // should come from src/lib/support/Logic.hpp (where a C version can
 // easily be created).
-static bool implies(bool p, bool q) { return (!p || q); }
-
+inline bool implies(bool p, bool q) { return (!p || q); }
 
 //***************************************************************************
 //
@@ -416,7 +415,7 @@ csprof_cct_node__find_child(csprof_cct_node_t* x,
       // LUSH
       lush_assoc_t c_as = lush_assoc_info__get_assoc(c->as_info);
       if (c->ip == ip 
-	  && c->lip == lip 
+	  && lush_lip_eq(c->lip, lip)
 	  && lush_assoc_class_eq(c_as, as) 
 	  && implies(lush_assoc_info_is_root_note(as_info), 
 		     lush_assoc_info_is_root_note(c->as_info))) {
