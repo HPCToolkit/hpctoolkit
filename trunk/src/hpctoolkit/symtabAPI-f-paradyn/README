@@ -1,0 +1,42 @@
+Download symtabAPI source tarball
+
+Download libdwarf for amd64    (binary)
+Download libelf   for amd64    (binary)
+
+possibly get the rpm for libxml2, libxml-devel from somewhere:
+
+   unpack via rpm2cpio | cpio -i -d  # cpio -t to just list it
+
+unpack everything
+
+mv symtabAPI/src/core/make.config.local{,.orig}
+
+create make.config.local (from the .orig) to point libelf,libdwarf,libxml to current installations
+NOTE:    in paradyn/libelf/x86-64-unknown-linux, link libelf.so.0 libelf.so (else build fails).
+NOTE 2:  rather than link, just change the name
+
+Makefile, and mf.ext.mk as seen here.
+
+Compile using gcc (g++) 4.1.2
+
+Fix source:
+
+ symtabAPI/src/core/symtabAPI/h/Type.h
+ -------------------------------------
+    #if 0
+       DLLEXPORT std::vector<Field *> * fieldListType::getFields() const;
+    #else
+       DLLEXPORT std::vector<Field *> *getFields() const;
+    #endif
+ -------------------------------------
+
+ symtabAPI/src/core/symtabAPI/h/Symtab.h
+ ---------------------------------------
+    #if 0
+       DLLEXPORT Symbol *relocationEntry::getDynSym() const;
+       DLLEXPORT bool relocationEntry::addDynSym(Symbol *dynref);
+    #else
+       DLLEXPORT Symbol *getDynSym() const;
+       DLLEXPORT bool addDynSym(Symbol *dynref);
+    #endif
+ ---------------------------------------

@@ -1,0 +1,174 @@
+Object-elf.o: ../src/Object-elf.C ../../symtabAPI/src/Object.h \
+  ../../symtabAPI/h/Symbol.h ../../symtabAPI/h/util.h \
+  ../../dynutil/h/dyntypes.h ../../symtabAPI/h/Type.h \
+  ../../symtabAPI/h/LineInformation.h ../../symtabAPI/h/RangeLookup.h \
+  ../../common/h/lprintf.h ../../symtabAPI/src/Object-elf.h \
+  ../../common/h/Types.h ../../dynutil/h/dyntypes.h \
+  /data/home/mfagan/symtabAPI-f-paradyn.org/paradyn/libelf/include/libelf.h \
+  /data/home/mfagan/symtabAPI-f-paradyn.org/paradyn/libelf/include/libelf/sys_elf.h \
+  ../../symtabAPI/src/Elf_X.h ../../common/h/headers.h \
+  ../../common/h/Types.h ../../common/h/linuxHeaders.h \
+  ../../symtabAPI/h/Symtab.h ../../symtabAPI/h/Symbol.h \
+  ../../symtabAPI/h/LineInformation.h ../src/emitElf.h ../src/Object.h \
+  ../src/emitElf-64.h \
+  /data/home/mfagan/symtabAPI-f-paradyn.org/libdwarf/include/dwarf.h \
+  /data/home/mfagan/symtabAPI-f-paradyn.org/libdwarf/include/libdwarf.h \
+  ../../common/h/pathName.h ../../common/h/String.h \
+  ../../common/h/debugOstream.h ../../common/h/std_namesp.h \
+  ../../common/h/headers.h ../../common/h/refCounter.h \
+  ../src/Collections.h ../../symtabAPI/h/Type.h
+parseDwarf.o: ../src/parseDwarf.C \
+  /data/home/mfagan/symtabAPI-f-paradyn.org/paradyn/libelf/include/libelf.h \
+  /data/home/mfagan/symtabAPI-f-paradyn.org/paradyn/libelf/include/libelf/sys_elf.h \
+  /data/home/mfagan/symtabAPI-f-paradyn.org/libdwarf/include/dwarf.h \
+  /data/home/mfagan/symtabAPI-f-paradyn.org/libdwarf/include/libdwarf.h \
+  ../h/Type.h ../h/util.h ../../dynutil/h/dyntypes.h ../h/Symbol.h \
+  ../h/Type.h ../h/Symtab.h ../h/Symbol.h ../h/LineInformation.h \
+  ../h/RangeLookup.h ../../symtabAPI/src/Object.h \
+  ../../symtabAPI/h/Symbol.h ../../symtabAPI/h/LineInformation.h \
+  ../../common/h/lprintf.h ../../symtabAPI/src/Object-elf.h \
+  ../../common/h/Types.h ../../dynutil/h/dyntypes.h \
+  /data/home/mfagan/symtabAPI-f-paradyn.org/paradyn/libelf/include/libelf.h \
+  ../../symtabAPI/src/Elf_X.h ../../common/h/headers.h \
+  ../../common/h/Types.h ../../common/h/linuxHeaders.h \
+  ../../symtabAPI/src/Collections.h ../../symtabAPI/h/Type.h \
+  ../../common/h/pathName.h ../../common/h/String.h \
+  ../../common/h/debugOstream.h ../../common/h/std_namesp.h \
+  ../../common/h/headers.h ../../common/h/refCounter.h
+parseStab.o: ../src/parseStab.C ../h/util.h ../../dynutil/h/dyntypes.h \
+  ../h/Symtab.h ../h/Symbol.h ../h/util.h ../h/Type.h \
+  ../h/LineInformation.h ../h/RangeLookup.h ../h/Symbol.h \
+  ../../symtabAPI/src/Collections.h ../../symtabAPI/h/Type.h \
+  ../../common/h/String.h ../../common/h/debugOstream.h \
+  ../../common/h/std_namesp.h ../../common/h/Types.h \
+  ../../dynutil/h/dyntypes.h ../../common/h/headers.h \
+  ../../common/h/linuxHeaders.h ../../common/h/refCounter.h
+emitElf.o: ../src/emitElf.C ../src/emitElf.h ../src/Object.h \
+  ../../symtabAPI/h/Symbol.h ../../symtabAPI/h/util.h \
+  ../../dynutil/h/dyntypes.h ../../symtabAPI/h/Type.h \
+  ../../symtabAPI/h/LineInformation.h ../../symtabAPI/h/RangeLookup.h \
+  ../../common/h/lprintf.h ../src/Object-elf.h ../../common/h/Types.h \
+  ../../dynutil/h/dyntypes.h \
+  /data/home/mfagan/symtabAPI-f-paradyn.org/paradyn/libelf/include/libelf.h \
+  /data/home/mfagan/symtabAPI-f-paradyn.org/paradyn/libelf/include/libelf/sys_elf.h \
+  ../src/Elf_X.h ../../common/h/headers.h ../../common/h/Types.h \
+  ../../common/h/linuxHeaders.h ../h/Symtab.h ../h/Symbol.h \
+  ../h/LineInformation.h
+emitElf-64.o: ../src/emitElf-64.C ../src/emitElf-64.h ../src/Object.h \
+  ../../symtabAPI/h/Symbol.h ../../symtabAPI/h/util.h \
+  ../../dynutil/h/dyntypes.h ../../symtabAPI/h/Type.h \
+  ../../symtabAPI/h/LineInformation.h ../../symtabAPI/h/RangeLookup.h \
+  ../../common/h/lprintf.h ../src/Object-elf.h ../../common/h/Types.h \
+  ../../dynutil/h/dyntypes.h \
+  /data/home/mfagan/symtabAPI-f-paradyn.org/paradyn/libelf/include/libelf.h \
+  /data/home/mfagan/symtabAPI-f-paradyn.org/paradyn/libelf/include/libelf/sys_elf.h \
+  ../src/Elf_X.h ../../common/h/headers.h ../../common/h/Types.h \
+  ../../common/h/linuxHeaders.h ../h/Symtab.h ../h/Symbol.h \
+  ../h/LineInformation.h
+addrtranslate.o: ../src/addrtranslate.C ../src/addrtranslate.h \
+  ../../common/h/Dictionary.h ../../common/h/language.h \
+  ../../common/h/Vector.h ../../common/h/Pair.h ../../common/h/Types.h \
+  ../../dynutil/h/dyntypes.h ../../dynutil/h/dyntypes.h \
+  ../../symtabAPI/h/Symtab.h ../../symtabAPI/h/Symbol.h \
+  ../../symtabAPI/h/util.h ../../dynutil/h/dyntypes.h \
+  ../../symtabAPI/h/Type.h ../../symtabAPI/h/LineInformation.h \
+  ../../symtabAPI/h/RangeLookup.h ../../symtabAPI/h/AddrLookup.h \
+  ../../symtabAPI/h/Symtab.h
+addrtranslate-linux.o: ../src/addrtranslate-linux.C \
+  ../../symtabAPI/src/addrtranslate.h ../../common/h/Dictionary.h \
+  ../../common/h/language.h ../../common/h/Vector.h ../../common/h/Pair.h \
+  ../../common/h/Types.h ../../dynutil/h/dyntypes.h \
+  ../../dynutil/h/dyntypes.h ../../symtabAPI/h/Symtab.h \
+  ../../symtabAPI/h/Symbol.h ../../symtabAPI/h/util.h \
+  ../../dynutil/h/dyntypes.h ../../symtabAPI/h/Type.h \
+  ../../symtabAPI/h/LineInformation.h ../../symtabAPI/h/RangeLookup.h \
+  ../../symtabAPI/h/AddrLookup.h ../../symtabAPI/h/Symtab.h \
+  ../../symtabAPI/src/addrtranslate-sysv.h \
+  ../../symtabAPI/src/addrtranslate.h ../../symtabAPI/h/util.h \
+  ../../common/h/linuxKludges.h
+addrtranslate-sysv.o: ../src/addrtranslate-sysv.C \
+  ../../common/h/parseauxv.h ../../common/h/Types.h \
+  ../../dynutil/h/dyntypes.h ../../common/h/headers.h \
+  ../../common/h/linuxHeaders.h ../../symtabAPI/h/Symtab.h \
+  ../../symtabAPI/h/Symbol.h ../../symtabAPI/h/util.h \
+  ../../dynutil/h/dyntypes.h ../../symtabAPI/h/Type.h \
+  ../../symtabAPI/h/LineInformation.h ../../symtabAPI/h/RangeLookup.h \
+  ../../symtabAPI/src/addrtranslate.h ../../common/h/Dictionary.h \
+  ../../common/h/language.h ../../common/h/Vector.h ../../common/h/Pair.h \
+  ../../common/h/Types.h ../../dynutil/h/dyntypes.h \
+  ../../symtabAPI/h/Symtab.h ../../symtabAPI/h/AddrLookup.h \
+  ../../symtabAPI/h/Symtab.h ../../symtabAPI/src/addrtranslate-sysv.h \
+  ../../symtabAPI/src/addrtranslate.h ../../symtabAPI/h/util.h
+Object.o: ../src/Object.C ../../symtabAPI/src/Object.h \
+  ../../symtabAPI/h/Symbol.h ../../symtabAPI/h/util.h \
+  ../../dynutil/h/dyntypes.h ../../symtabAPI/h/Type.h \
+  ../../symtabAPI/h/LineInformation.h ../../symtabAPI/h/RangeLookup.h \
+  ../../common/h/lprintf.h ../../symtabAPI/src/Object-elf.h \
+  ../../common/h/Types.h ../../dynutil/h/dyntypes.h \
+  /data/home/mfagan/symtabAPI-f-paradyn.org/paradyn/libelf/include/libelf.h \
+  /data/home/mfagan/symtabAPI-f-paradyn.org/paradyn/libelf/include/libelf/sys_elf.h \
+  ../../symtabAPI/src/Elf_X.h ../../common/h/headers.h \
+  ../../common/h/Types.h ../../common/h/linuxHeaders.h \
+  ../../symtabAPI/h/Symtab.h ../../symtabAPI/h/Symbol.h \
+  ../../symtabAPI/h/LineInformation.h ../../symtabAPI/src/Collections.h \
+  ../../symtabAPI/h/Type.h
+LineInformation.o: ../src/LineInformation.C \
+  ../../symtabAPI/h/LineInformation.h ../../symtabAPI/h/util.h \
+  ../../dynutil/h/dyntypes.h ../../symtabAPI/h/RangeLookup.h \
+  ../src/RangeLookup.t ../../symtabAPI/h/RangeLookup.h
+Symtab.o: ../src/Symtab.C ../../common/h/debugOstream.h \
+  ../../common/h/std_namesp.h ../../common/h/Types.h \
+  ../../dynutil/h/dyntypes.h ../../common/h/Timer.h \
+  ../../common/h/headers.h ../../common/h/linuxHeaders.h \
+  ../../symtabAPI/src/Object.h ../../symtabAPI/h/Symbol.h \
+  ../../symtabAPI/h/util.h ../../dynutil/h/dyntypes.h \
+  ../../symtabAPI/h/Type.h ../../symtabAPI/h/LineInformation.h \
+  ../../symtabAPI/h/RangeLookup.h ../../common/h/lprintf.h \
+  ../../symtabAPI/src/Object-elf.h ../../common/h/Types.h \
+  /data/home/mfagan/symtabAPI-f-paradyn.org/paradyn/libelf/include/libelf.h \
+  /data/home/mfagan/symtabAPI-f-paradyn.org/paradyn/libelf/include/libelf/sys_elf.h \
+  ../../symtabAPI/src/Elf_X.h ../../common/h/headers.h \
+  ../../symtabAPI/h/Symtab.h ../../symtabAPI/h/Symbol.h \
+  ../../symtabAPI/h/LineInformation.h ../../symtabAPI/src/Collections.h \
+  ../../symtabAPI/h/Type.h ../../common/h/pathName.h \
+  ../../common/h/String.h ../../common/h/debugOstream.h \
+  ../../common/h/refCounter.h /usr/include/libxml2/libxml/xmlwriter.h \
+  /usr/include/libxml2/libxml/xmlversion.h \
+  /usr/include/libxml2/libxml/xmlexports.h \
+  /usr/include/libxml2/libxml/xmlIO.h \
+  /usr/include/libxml2/libxml/globals.h \
+  /usr/include/libxml2/libxml/parser.h /usr/include/libxml2/libxml/tree.h \
+  /usr/include/libxml2/libxml/xmlstring.h \
+  /usr/include/libxml2/libxml/xmlregexp.h \
+  /usr/include/libxml2/libxml/dict.h /usr/include/libxml2/libxml/hash.h \
+  /usr/include/libxml2/libxml/valid.h \
+  /usr/include/libxml2/libxml/xmlerror.h \
+  /usr/include/libxml2/libxml/list.h \
+  /usr/include/libxml2/libxml/xmlautomata.h \
+  /usr/include/libxml2/libxml/entities.h \
+  /usr/include/libxml2/libxml/encoding.h \
+  /usr/include/libxml2/libxml/SAX.h /usr/include/libxml2/libxml/xlink.h \
+  /usr/include/libxml2/libxml/SAX2.h \
+  /usr/include/libxml2/libxml/xmlmemory.h \
+  /usr/include/libxml2/libxml/threads.h
+Collections.o: ../src/Collections.C ../../symtabAPI/src/Collections.h \
+  ../../symtabAPI/h/Type.h ../../symtabAPI/h/util.h \
+  ../../dynutil/h/dyntypes.h ../h/Symtab.h ../h/Symbol.h ../h/util.h \
+  ../h/Type.h ../h/LineInformation.h ../h/RangeLookup.h \
+  ../../dynutil/h/dyntypes.h
+Type.o: ../src/Type.C ../../symtabAPI/h/util.h ../../dynutil/h/dyntypes.h \
+  ../../symtabAPI/h/Type.h ../../symtabAPI/h/util.h \
+  ../../symtabAPI/h/Symtab.h ../../symtabAPI/h/Symbol.h \
+  ../../symtabAPI/h/Type.h ../../symtabAPI/h/LineInformation.h \
+  ../../symtabAPI/h/RangeLookup.h ../../symtabAPI/src/Collections.h \
+  ../../symtabAPI/h/Type.h
+AddrLookup.o: ../src/AddrLookup.C ../../symtabAPI/h/Symtab.h \
+  ../../symtabAPI/h/Symbol.h ../../symtabAPI/h/util.h \
+  ../../dynutil/h/dyntypes.h ../../symtabAPI/h/Type.h \
+  ../../symtabAPI/h/LineInformation.h ../../symtabAPI/h/RangeLookup.h \
+  ../../symtabAPI/h/Symbol.h ../../symtabAPI/h/AddrLookup.h \
+  ../../symtabAPI/h/Symtab.h ../../symtabAPI/src/addrtranslate.h \
+  ../../common/h/Dictionary.h ../../common/h/language.h \
+  ../../common/h/Vector.h ../../common/h/Pair.h ../../common/h/Types.h \
+  ../../dynutil/h/dyntypes.h ../../dynutil/h/dyntypes.h \
+  ../../symtabAPI/h/Symtab.h ../../symtabAPI/h/AddrLookup.h

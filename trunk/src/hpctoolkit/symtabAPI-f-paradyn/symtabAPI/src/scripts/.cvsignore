@@ -1,0 +1,2 @@
+build_PD tests_DI buildlog buildnum test-nt.sh disass rgrep \
+build_PD_cron update_PD_cron chenv_PD ldd_PD

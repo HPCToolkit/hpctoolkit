@@ -1,0 +1,67 @@
+#!/bin/sh
+# $Id: ldd_PD,v 1.1 2002/08/21 19:42:28 schendel Exp $
+# portable? ldd-wrapper (or ldd-like dbx-script if necessary)
+
+USAGE="usage: $0 EXECUTABLE(s)"
+if [ $# -lt 1 ]; then
+    echo $USAGE
+    exit
+else
+    EXECLIST=$*
+fi
+
+if [ `uname` = "AIX" ]; then
+#   echo "$0 not supported on AIX"
+    exit
+fi
+
+#LDD=`which ldd`
+ldd $1 >/dev/null 2>&1
+if [ $? -eq 0 ]; then
+    ldd $EXECLIST
+    exit
+fi
+
+if [ $PLATFORM = "i386-unknown-nt4.0" ]; then
+    RM="rm"
+else
+    RM="/bin/rm"
+fi
+
+# continue with ldd-like dbx script
+
+CMDS=/tmp/.dbx.ldd.cmd
+LLOG=/tmp/.dbx.ldd.log
+$RM -f $CMDS $LLOG
+touch $CMDS
+echo "stop in main;run" >> $CMDS
+echo "record output $LLOG" >> $CMDS
+echo "listobj;quit" >> $CMDS
+
+for EXEC in $EXECLIST
+do
+
+if [ ! -f "$EXEC" ]; then
+    echo "$EXEC does not exist!"
+    next
+fi
+if [ -d "$EXEC" ]; then
+    echo "$EXEC is a directory!"
+    next
+fi
+if [ ! -x "$EXEC" ]; then
+    echo "$EXEC is not executable!"
+    next
+fi
+
+echo "$EXEC:"
+
+dbx -c $CMDS $EXEC >/dev/null
+
+grep -v 'record output' $LLOG
+$RM -f $LLOG
+
+done
+
+$RM -f $CMDS
+

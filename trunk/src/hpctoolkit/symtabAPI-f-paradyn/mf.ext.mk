@@ -1,0 +1,10 @@
+include Makefile
+
+.PHONY:TTT
+TTT:
+	# LIBDWARFDIR = $(LIBDWARFDIR)
+	# LIBELFDIR   = $(LIBELFDIR)
+	# IFLAGS      = $(IFLAGS)
+	# MAKEFLAGS   = $(MAKEFLAGS)
+	# TARGETS     = $(MAKECMDGOALS)
+
