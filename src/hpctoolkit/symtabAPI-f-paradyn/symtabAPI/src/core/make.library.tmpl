@@ -1,0 +1,169 @@
+#
+# This file defines the things that should be common to all "libraries"
+# in the paradyn build tree.  It depends on things like SRCS and
+# TARGET being set correctly in the module-specific template and the
+# architecture-specific Makefile.
+# 
+# $Id: make.library.tmpl,v 1.30 2005/12/19 19:41:36 pack Exp $
+#
+
+BUILD_ID= -s $(SUITE_NAME) -v $(RELEASE_NUM)$(BUILD_MARK)$(BUILD_NUM)
+
+XTARGET	= $(basename $(basename $(TARGET)))
+VOUCHER	= V_$(XTARGET)
+
+$(VOUCHER):
+	@echo Updating build voucher information: $(VOUCHER)
+	$(BUILDSTAMP) $(BUILD_ID) $(XTARGET)
+	$(MODCC) -c $(MODCFLAGS) $(VOUCHER).c
+
+VPATH		+= ../src
+
+ifndef NO_STD_OBJS
+OBJS +=		$(filter %.o, $(patsubst %.C, %.o, $(filter %.C,$(notdir $(SRCS)))) \
+		$(patsubst %.c, %.o, $(filter %.c,$(notdir $(SRCS)))) \
+		$(patsubst %.y, %.o, $(filter %.y,$(notdir $(SRCS)))) \
+		$(patsubst %.l, %.o, $(filter %.l,$(notdir $(SRCS)))) \
+		$(patsubst %.s, %.o, $(filter %.s,$(notdir $(SRCS)))) \
+		$(patsubst %.S, %.o, $(filter %.S,$(notdir $(SRCS)))) \
+		$(IGEN_GEN_SRCS:%.C=%.o))
+endif
+
+XLC_DEPFILES =  $(filter %.u, $(patsubst %.u, %.o, $(filter %.u,$(notdir $(SRCS)))))
+
+# specify build prerequisite dependencies (for parallel make)
+ifdef PREREQUISITES
+$(OBJS): $(PREREQUISITES)
+endif
+
+XTARGET= $(basename $(basename $(TARGET)))
+VOUCHER= V_$(XTARGET)
+
+ifndef OVERRIDE_LINK
+ifndef STATIC_LIBRARY
+$(TARGET): $(OBJS) $(EXTRA_LIBS)
+	@$(RM) $(TARGET)
+	@$(MAKE) $(VOUCHER)
+	$(LD) $(LDFLAGS) -o $(TARGET) $(VOUCHER).o $(OBJS) $(LIBS)
+else # build a static lib
+$(TARGET): $(OBJS) $(EXTRA_LIBS)
+	@$(RM) $(TARGET)
+	@$(MAKE) $(VOUCHER)
+	$(AR) rcs $(TARGET) $(VOUCHER).o $(OBJS)
+endif # STATIC_LIBRARY
+endif  # OVERRIDE_LINK
+
+ifndef DEST
+DEST		= $(TO_CORE)/$(LIBRARY_DEST)
+endif
+
+echo:
+	echo $(OBJS)
+
+clean:
+	$(RM) *.o *.[hC] *.a *.so* .__afs* $(TARGET) 
+
+distclean: clean
+	$(RM) DEPENDS
+
+install_generic: $(TARGET)
+	-$(CP) $(TARGET) $(DEST)
+
+
+ifndef OVERRIDE_INSTALL
+install: install_generic
+endif
+
+#
+# dependency generation definitions
+#
+
+.PHONY : depend
+depend:
+	$(RM) DEPENDS
+	$(MAKE) DEPENDS
+
+# 
+# Define DEPENDS dependencies such that the DEPENDS files depends on
+# the .I files, not the .[Ch] files; otherwise, DEPENDS get rebuilt
+# all the time.  We do need to build the Igen-generated files before
+# updating DEPENDS, however,
+#
+ifndef DEPENDFLAGS
+  DEPENDFLAGS = -MM
+endif
+ifdef IGEN_ISRCS
+ifdef EXPLICIT_DEPENDS
+DEPENDS:
+else
+DEPENDS: $(SRCS) $(IGEN_ISRCS)
+endif
+	touch DEPENDS
+	$(MAKE) $(IGEN_GEN_SRCS)
+	$(MAKE) $(SRCS)
+	$(DEPCC) $(DEPENDFLAGS) $(MODCFLAGS) $(SRCS) $(filter %.C,$(IGEN_GEN_SRCS)) > DEPENDS
+#	makedepend -fDEPENDS -- $(CFLAGS) $(SRCS) $(IGEN_SRCS) $(NOPED_SRCS)
+else
+ifdef EXPLICIT_DEPENDS
+DEPENDS:
+else
+DEPENDS: $(SRCS)
+endif
+	touch DEPENDS
+	$(MAKE) $(SRCS)
+### TODO: remove this in favor of native compiler support
+ifeq ($(MODCC),cc)
+	gcc -MM $(MODCFLAGS) $(SRCS) > DEPENDS
+else
+ifdef IBM_BPATCH_COMPAT
+  ifeq ($(DEPCC), xlC)
+	$(DEPCC) $(DEPENDFLAGS) $(MODCFLAGS) $(SRCS) > DEPENDS
+	cat *.u > DEPENDS
+	rm -f *.u
+  else
+	$(DEPCC) $(DEPENDFLAGS) $(MODCFLAGS) $(SRCS) > DEPENDS
+  endif #aix/power platform
+else
+	$(DEPCC) $(DEPENDFLAGS) $(MODCFLAGS) $(SRCS) > DEPENDS
+endif #IBM_BPATCH_COMPAT
+endif
+#	makedepend -fDEPENDS -- $(CFLAGS) $(SRCS)
+endif
+
+
+#.depend.% %.C:
+#	makedepend -fDEPENDS -- $(CFLAGS) $(SRCS)
+
+pure:
+
+%.C: %.y
+	$(YACC) $(YFLAGS) $<
+	$(MV) y.tab.c $@
+
+%.C: %.l
+	$(LEX) -t $(LFLAGS) $< > $@
+
+#
+# A few pattern rules for simplicity in handling igen-generated files.
+#
+
+%.mrnet.CLNT.C %.mrnet.CLNT.h %.mrnet.SRVR.C %.mrnet.SRVR.h %.mrnet.h %.mrnet.temp.C: %.I
+	$(IGEN) -mrnet $(ICFLAGS) $<
+
+%.xdr.C %.xdr.CLNT.C %.xdr.CLNT.h %.xdr.SRVR.C %.xdr.SRVR.h %.xdr.h %.xdr.temp.C: %.I
+
+	$(IGEN) -xdr $(ICFLAGS) $<
+
+%.thread.C %.thread.CLNT.h %.thread.SRVR.h %.thread.h: %.I
+	$(IGEN) -thread $(ICFLAGS) $<
+
+
+#
+# include the dependencies.
+#
+ifneq ($(MAKECMDGOALS),distclean)
+include DEPENDS
+endif
+
+# platform-specific options
+include $(TO_CORE)/make.platform.tmpl

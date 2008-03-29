@@ -1,0 +1,62 @@
+#!/bin/sh
+# $Id: buildnum_incr,v 1.5 2002/04/17 16:00:55 schendel Exp $
+# automatically increment build number BUILD_NUM
+
+USAGE="usage: $0 [-a] FILE"
+DEF_FILE=make.config.local
+TMP=.incr.tmp
+
+while [ ! -z "$1" ]
+do
+  case "$1" in
+    -a) # append BUILD_NUM information, if missing
+        APPEND=true
+        ;;
+    -*)
+        echo "Unrecognized flag: $1"
+        break
+        ;;
+    *)
+        # first non-flag argument is the target (others silently ignored!)
+        FILE=$1
+        break
+        ;;
+  esac
+  shift
+done
+
+# common bail-point for unknown flags and undefined file
+if [ -z "$FILE" ]; then
+    echo $USAGE
+    exit 1
+fi
+
+if [ -f $FILE ]; then
+    buildnumstr=`grep BUILD_NUM $FILE`
+    if [ -z "$buildnumstr" ]; then
+        echo "BUILD_NUM not found in file $FILE"
+        if [ -n "$APPEND" ]; then
+            echo "Appended BUILD_NUM field to file $FILE!"
+            echo "BUILD_NUM=-000" | tee -a $FILE
+        fi
+        exit 0
+    fi
+
+    # extract previous build number
+    oldbuildnum=`echo $buildnumstr | awk -F- '{print (substr($2,0,3))}'`
+    newbuildnum=`echo $oldbuildnum | awk '{print int($1+1)}'`
+    newbuildnum=`printf "%03d" $newbuildnum`
+    sedcmd=s/BUILD_NUM=-$oldbuildnum/BUILD_NUM=-$newbuildnum/
+    sed -e $sedcmd $FILE > $TMP
+    if [ $? -ne 0 ]; then
+        echo "Aborting broken sed"
+        exit 1
+    fi
+    echo "BUILD_NUM=-$oldbuildnum->$newbuildnum"
+    mv $TMP $FILE
+else
+    echo "$FILE does not exist -- but will be created with BUILD_NUM info!"
+    echo "BUILD_NUM=-000" | tee $FILE
+fi
+
+exit 0
