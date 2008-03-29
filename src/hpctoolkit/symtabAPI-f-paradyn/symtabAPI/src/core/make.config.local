@@ -19,12 +19,10 @@ LIBDWARF_LIB    = $(LIBDWARFDIR)/$(PLATFORM)
 LIBDWARF_INC    = $(LIBDWARFDIR)/include
 
 #libxml2 and libxml++ are required on all platforms
-LIBXML2DIR	= $(ROOT)/usr
+#LIBXML2DIR	= $(ROOT)/usr   # locally installed libxml
+LIBXML2DIR	= /usr
 LIBXML2_LIB	= $(LIBXML2DIR)/lib64
 LIBXML2_INC	= $(LIBXML2DIR)/include/libxml2
-
-#MWF: added LDFLAGS to make sure we look for our libelf before the system libelf
-#LDFLAGS += -L$(LIBELF_LIB)
 
 #libunwind is required by Linux/ia64
 LIBUNWINDDIR    = /usr

@@ -5,7 +5,7 @@ export PLATFORM=x86_64-unknown-linux2.4
 export DYNINST_ROOT=$(ROOT)/symtabAPI
 
 .PHONY: build
-build:
+build: prep
 	cd $(DYNINST_ROOT)/src/core; $(MAKE)
 
 .PHONY: T
@@ -31,3 +31,9 @@ install: build
 
 .DEFAULT:
 	cd $(DYNINST_ROOT)/src/core; $(MAKE) -f $(ROOT)/mf.ext.mk $(MAKECMDGOALS)
+
+.PHONY: prep
+prep: $(libelf)/libelf.so
+
+$(libelf)/libelf.so: $(libelf)/libelf.so.0
+	cd $(libelf); ln -s libelf.so.0 libelf.so
