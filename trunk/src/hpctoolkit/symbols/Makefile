@@ -37,13 +37,14 @@ sts:
 	@echo 'LD_LIBRARY_PATH=$(symtabAPI_lib):$(XED2_DIR)/lib ./stapi_syms "$$@"' >> $@
 	chmod +x sts
 
+.PHONY: install
+install:
+	install -d $(PREFIX)/libexec
+	cp stapi_syms $(PREFIX)/libexec
+
 .PHONY: clean
 clean:
 	rm -f *.o stapi_syms csprof_syms sts *.e
-
-.PHONY: distclean
-distclean: clean
-	rm -f Makefile.conf
 
 .PHONY:TT
 TT:
