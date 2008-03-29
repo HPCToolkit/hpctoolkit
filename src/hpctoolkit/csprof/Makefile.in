@@ -324,12 +324,12 @@ install: all
 	-install -d $(install_lib) $(install_bin) $(install_libexec)
 	install $(CSPROFLIB) $(install_lib)
 # crazy test for the time being
-	if test $(MONITOR_DIR)/lib/libmonitor.so != $(install_lib)/libmonitor.so; then \
-	  install $(MONITOR_DIR)/lib/libmonitor.so $(install_lib); \
-	fi
+#	if test $(MONITOR_DIR)/lib/libmonitor.so != $(install_lib)/libmonitor.so; then \
+#	  install $(MONITOR_DIR)/lib/libmonitor.so $(install_lib); \
+#	fi
 	cp $(src_dir_prefix)csprof $(install_bin)
 	cp $(src_dir_prefix)csprof_syms $(install_libexec)
-	cp $(src_dir_prefix)symbols/stapi_syms $(install_libexec)
+#	cp $(src_dir_prefix)symbols/stapi_syms $(install_libexec)
 	cp conf.sh $(install_prefix)
 
 %.o: %.c
