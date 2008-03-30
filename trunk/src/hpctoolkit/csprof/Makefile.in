@@ -47,7 +47,7 @@ endif
 ####
 #### 
 
-all: $(CSPROFLIB) $(LUSH_AGENTS) stapi_syms
+all: $(CSPROFLIB) $(LUSH_AGENTS)
 #all: $(CSPROF_DOT_O)
 
 # we develop on Tru64, make it the default
@@ -314,11 +314,6 @@ $(CSPROF_DOT_O): $(OBJS)
 .PHONY: bclean
 bclean:
 	rm -rf *.o *.so *.so.[0-9]*
-
-.PHONY: stapi_syms
-stapi_syms:
-	cd $(src_dir)/symbols; $(MAKE) $@
-
 
 install: all
 	-install -d $(install_lib) $(install_bin) $(install_libexec)
