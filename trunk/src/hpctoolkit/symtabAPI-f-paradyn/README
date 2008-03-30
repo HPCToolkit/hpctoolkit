@@ -40,3 +40,28 @@ Fix source:
        DLLEXPORT bool addDynSym(Symbol *dynref);
     #endif
  ---------------------------------------
+
+For g++ 4.2.1 on jacquard, there was another declaration error in
+  symtabAPI/src/core/symtabAPI/src/parseStab.C
+
+  had to alter as follows:
+
+    -std::string SymtabAPI::parseStabString(Module *mod, int linenum, char *stabstr, 
+    -		      int framePtr, typeCommon *commonBlock = NULL)
+    +namespace Dyninst {
+    +namespace SymtabAPI {
+    +
+    +std::string parseStabString(Module *mod, int linenum, char *stabstr, 
+    +						int framePtr, typeCommon *commonBlock = NULL)
+     {
+         
+         int cnt;
+    @@ -727,7 +730,10 @@
+         return(&stabstr[cnt]);
+     } /* end of parseStabString */
+     
+    +} // end of namespace SymtabAPI
+    +} // end of namespace Dyninst
+
+Make distclean (to remove DEPENDS) in subdir when make clean invoked at highlevel
+modified make.library.tmpl to remove .c files as well

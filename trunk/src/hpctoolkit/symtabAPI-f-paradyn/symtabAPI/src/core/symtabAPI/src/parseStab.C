@@ -176,8 +176,11 @@ Symbol *mangledNameMatchKLUDGE(const char *pretty, const char *mangled,
 //
 // <paramList> = | <typeUse>;<paramList> 
 //
-std::string SymtabAPI::parseStabString(Module *mod, int linenum, char *stabstr, 
-		      int framePtr, typeCommon *commonBlock = NULL)
+namespace Dyninst {
+namespace SymtabAPI {
+
+std::string parseStabString(Module *mod, int linenum, char *stabstr, 
+						int framePtr, typeCommon *commonBlock = NULL)
 {
     
     int cnt;
@@ -726,6 +729,9 @@ std::string SymtabAPI::parseStabString(Module *mod, int linenum, char *stabstr,
     }
     return(&stabstr[cnt]);
 } /* end of parseStabString */
+
+} // end of namespace SymtabAPI
+} // end of namespace Dyninst
 
 
 //

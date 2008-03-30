@@ -20,7 +20,7 @@ LIBDWARF_INC    = $(LIBDWARFDIR)/include
 
 #libxml2 and libxml++ are required on all platforms
 #LIBXML2DIR	= $(ROOT)/usr   # locally installed libxml
-LIBXML2DIR	= /project/projectdirs/perc/rice/pkgs/libxml2
+LIBXML2DIR	= /usr
 LIBXML2_LIB	= $(LIBXML2DIR)/lib64
 LIBXML2_INC	= $(LIBXML2DIR)/include/libxml2
 
