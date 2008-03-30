@@ -31,10 +31,12 @@ code-ranges.o: code-ranges.cpp
 function-entries.o: function-entries.cpp
 	g++ $(CXXFLAGS) -c $< 
 
+cxxp = $(patsubst %/,%,$(dir $(shell ldd ./stapi_syms | awk '/libstdc\+\+/ {print $$3}')))
+
 sts:
 	@echo "#! /bin/bash" > $@
 	@echo >> $@
-	@echo 'LD_LIBRARY_PATH=$(symtabAPI_lib):$(XED2_DIR)/lib ./stapi_syms "$$@"' >> $@
+	@echo 'LD_LIBRARY_PATH=$(cxxp):$(symtabAPI_lib):$(XED2_DIR)/lib ./stapi_syms "$$@"' >> $@
 	chmod +x sts
 
 .PHONY: install
@@ -48,4 +50,5 @@ clean:
 
 .PHONY:TT
 TT:
-	@echo xed2 includes; ls $(XED2_DIR)/include
+#	@echo xed2 includes; ls $(XED2_DIR)/include
+	@echo cxxp = $(cxxp)
