@@ -53,6 +53,8 @@
 
 //************************* System Include Files ****************************
 
+#include <string.h> // for memcpy
+
 #include <iostream>
 #include <vector>
 #include <string>
@@ -223,7 +225,7 @@ public:
   void merge_prepare(uint numMetrics);
   void merge(CSProfNode* y, uint x_numMetrics, uint y_numMetrics);
 
-  CSProfNode* findDynChild(VMA ip);
+  CSProfNode* findDynChild(lush_assoc_info_t as_info, VMA ip, lush_lip_t* lip);
 
   // --------------------------------------------------------
   // Dump contents for inspection
@@ -342,53 +344,95 @@ public:
   // -------------------------------------------------------
   // 
   // -------------------------------------------------------
-
-  IDynNode() { }
-
-  IDynNode(lush_assoc_info_t as_info, VMA ip, ushort opIdx, lush_lip_t* lip)
-    : m_as_info(as_info), m_ip(ip), m_opIdx(opIdx), m_lip(lip)
+  
+  IDynNode(CSProfCodeNode* proxy)
+    : m_proxy(proxy),
+      m_as_info(lush_assoc_info_NULL), m_ip(0), m_opIdx(0), m_lip(NULL)
     { }
 
-  IDynNode(lush_assoc_info_t as_info, VMA ip, ushort opIdx, lush_lip_t* lip,
+  IDynNode(CSProfCodeNode* proxy, 
+	   lush_assoc_info_t as_info, VMA ip, ushort opIdx, lush_lip_t* lip)
+    : m_proxy(proxy), 
+      m_as_info(as_info), m_ip(ip), m_opIdx(opIdx), m_lip(lip)
+    { }
+
+  IDynNode(CSProfCodeNode* proxy, 
+	   lush_assoc_info_t as_info, VMA ip, ushort opIdx, lush_lip_t* lip,
 	   vector<uint>& metrics)
-    : m_as_info(as_info), m_ip(ip), m_opIdx(opIdx), m_lip(lip), 
+    : m_proxy(proxy),
+      m_as_info(as_info), m_ip(ip), m_opIdx(opIdx), m_lip(lip), 
       m_metrics(metrics) 
     { }
 
-  virtual ~IDynNode() { }
-
+  virtual ~IDynNode() {
+    delete_lip(m_lip);
+  }
+   
+  // deep copy
   IDynNode(const IDynNode& x)
-    : m_as_info(x.m_as_info), 
+    : //m_proxy(x.m_proxy),
+      m_as_info(x.m_as_info), 
       m_ip(x.m_ip), m_opIdx(x.m_opIdx), 
-      m_lip(x.m_lip),
+      m_lip(clone_lip(x.m_lip)),
       m_metrics(x.m_metrics) 
     { }
 
+  // deep copy
   IDynNode& operator=(const IDynNode& x) {
     if (this != &x) {
+      //m_proxy = x.m_proxy;
       m_as_info = x.m_as_info;
       m_ip = x.m_ip;
       m_opIdx = x.m_opIdx;
-      m_lip = x.m_lip;
+      delete_lip(m_lip);
+      m_lip = clone_lip(x.m_lip);
       m_metrics = x.m_metrics;
     }
     return *this;
   }
 
+
+  // -------------------------------------------------------
+  // 
+  // -------------------------------------------------------
+  CSProfCodeNode* proxy() const { return m_proxy; }
+
   // -------------------------------------------------------
   // 
   // -------------------------------------------------------
 
-  lush_assoc_info_t assoc() const { return m_as_info; }
-  void assoc(lush_assoc_info_t x) { m_as_info = x; }
+  lush_assoc_info_t assocInfo() const { return m_as_info; }
+  void assocInfo(lush_assoc_info_t x) { m_as_info = x; }
 
-  virtual VMA ip() const { return m_ip; }
+  lush_assoc_t assoc() const { return lush_assoc_info__get_assoc(m_as_info); }
+
+  std::string assocInfo_str() const;
+
+
+  virtual VMA ip() const;
   void ip(VMA ip, ushort opIdx) { m_ip = ip; m_opIdx = opIdx; }
 
   ushort opIndex() const { return m_opIdx; }
 
+
   lush_lip_t* lip() const { return m_lip; }
   void lip(lush_lip_t* lip) { m_lip = lip; }
+
+  static lush_lip_t* clone_lip(lush_lip_t* x) {
+    lush_lip_t* x_clone = NULL;
+    if (x) {
+      // NOTE: for consistency with hpcfile_alloc_CB
+      size_t sz = sizeof(lush_lip_t);
+      x_clone = (lush_lip_t*) new char[sz];
+      memcpy(x_clone, x, sz);
+    }
+    return x_clone;
+  }
+
+  static void delete_lip(lush_lip_t* x) {
+    delete[] (char*)x;
+  }
+
 
   uint metric(int i) const { return m_metrics[i]; }
   uint numMetrics() const { return m_metrics.size(); }
@@ -404,6 +448,8 @@ public:
   void expandMetrics_after(uint offset);
 
 private:
+  CSProfCodeNode* m_proxy;
+
   lush_assoc_info_t m_as_info;
 
   VMA m_ip;       // instruction pointer for this node
@@ -529,7 +575,7 @@ class CSProfStatementNode: public CSProfCodeNode, public IDynNode {
   virtual ~CSProfStatementNode();
 
   void operator=(const CSProfStatementNode& x);
-  void copyCallSiteNode(CSProfCallSiteNode* _node); // FIXME: remove
+  void operator=(const CSProfCallSiteNode& x);
 
   // Node data
   const std::string& GetFile() const { return file; }
