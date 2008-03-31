@@ -34,6 +34,8 @@
 // 
 //***************************************************************************
 
+lush_assoc_info_t lush_assoc_info_NULL = { 0 };
+
 const char* 
 lush_assoc_tostr(lush_assoc_t as)
 {

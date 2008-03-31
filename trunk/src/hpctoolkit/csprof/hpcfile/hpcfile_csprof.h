@@ -170,6 +170,9 @@ typedef struct epoch_table_s {
 } epoch_table_t; 
 
 
+// frees the data of 'x' but not x itself
+void epoch_table__free_data(epoch_table_t* x, hpcfile_cb__free_fn_t free_fn);
+
 // ---------------------------------------------------------
 // hpcfile_csprof_data_t: used only for passing data; not actually
 // part of the file format

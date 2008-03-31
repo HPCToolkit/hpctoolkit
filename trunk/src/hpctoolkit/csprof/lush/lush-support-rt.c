@@ -20,10 +20,6 @@
 //************************* System Include Files ****************************
 
 #include <stdlib.h>
-#include <string.h>
-#include <errno.h>
-
-#include <dlfcn.h>
 
 //*************************** User Include Files ****************************
 
@@ -37,15 +33,6 @@
 //***************************************************************************
 // LUSH LIP
 //***************************************************************************
-
-// N.B.: Currently, this routine belongs here and not in lush-support.c!
-lush_lip_t*
-lush_lip_clone(lush_lip_t* x)
-{
-  lush_lip_t* x_clone = csprof_malloc(sizeof(lush_lip_t));
-  memcpy(x_clone, x, sizeof(lush_lip_t));
-  return x_clone;
-}
 
 
 //***************************************************************************

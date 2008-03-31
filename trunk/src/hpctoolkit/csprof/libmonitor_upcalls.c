@@ -18,8 +18,9 @@
 // local include files 
 //***************************************************************************
 
+#include <monitor.h>
+
 #include "general.h"
-#include "monitor.h"
 #include "name.h"
 #include "epoch.h"
 #include "dl_bound.h"
@@ -47,8 +48,6 @@ int csprof_using_threads = 0;
 //***************************************************************************
 
 volatile int DEBUGGER_WAIT = 1;
-
-
 
 //***************************************************************************
 // interface functions

@@ -180,7 +180,7 @@ csprof_cct_node__ancestor_count(csprof_cct_node_t* x);
 
 // Represents the creation creation of a given calling context tree as
 // a linked list.
-//   get-ctxt(ctxt): [t.context, get-ctxt(ctxt.parent)]
+//   get-ctxt(ctxt): [ctxt.context, get-ctxt(ctxt.parent)]
 typedef struct lush_cct_ctxt_s {
   
   // the leaf node of the creation context
