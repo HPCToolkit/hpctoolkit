@@ -25,6 +25,10 @@
 
 #include <dlfcn.h>
 
+//************************** Xtrnl Include Files ****************************
+
+#include <monitor.h>
+
 //*************************** User Include Files ****************************
 
 #include "lush.h"
@@ -47,7 +51,8 @@ lush_agent__init(lush_agent_t* x, int id, const char* path,
   x->id = id;
   x->path = strdup(path); // NOTE: assume it's safe to use malloc
 
-  x->dlhandle = dlopen(path, RTLD_LAZY);
+  //x->dlhandle = dlopen(path, RTLD_LAZY);
+  x->dlhandle = monitor_real_dlopen(path, RTLD_LAZY);
   handle_any_dlerror();
 
 #define CALL_DLSYM(BASE, X, ID, HANDLE)	       \
@@ -79,7 +84,8 @@ lush_agent__fini(lush_agent_t* x, lush_agent_pool_t* pool)
 {
   pool->LUSHI_fini[x->id]();
 
-  dlclose(x->dlhandle);
+  //dlclose(x->dlhandle);
+  monitor_real_dlclose(x->dlhandle);
   handle_any_dlerror();
 
   free(x->path);
