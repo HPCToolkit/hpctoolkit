@@ -239,12 +239,12 @@ csprof_thread_pre_create(void)
   // insert into CCT as a placeholder
   csprof_cct_node_t* n;
   n = csprof_sample_event(&context, metric_id, 0 /*sample_count*/);
-  int i;
-  for(i=0; i<2 ; i++) { 
+
+  // tallent: only drop one to account for inlining.
+  if (n) { n = n->parent; }
     // drop two innermost levels of context
     //    csprof_thread_pre_create -> monitor_thread_pre_create
-    if(n) n = n->parent;
-  }
+    //for(int i = 0; i < 2 ; i++) { }
 
   TMSG(THREAD,"before lush malloc");
   lush_cct_ctxt_t* thr_ctxt = csprof_malloc(sizeof(lush_cct_ctxt_t));
