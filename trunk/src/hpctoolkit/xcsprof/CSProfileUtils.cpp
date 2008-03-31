@@ -82,6 +82,7 @@ using namespace std; // For compatibility with non-std C headers
 
 //*************************** Forward Declarations ***************************
 
+#define FIXME_ADD_ASSOC_TAGS 1
 #define DBG_NORM_PROC_FRAME 0
 
 // FIXME: why is the output different without c_str()?
@@ -174,7 +175,6 @@ CSProfile*
 ReadProfile_CSPROF(const char* fnm, const char *execnm) 
 {
   hpcfile_csprof_data_t metadata;
-  epoch_table_t epochtbl;
   int ret;
 
   // ------------------------------------------------------------
@@ -186,6 +186,7 @@ ReadProfile_CSPROF(const char* fnm, const char *execnm)
     DIAG_Throw(fnm << ": could not open");
   }
 
+  epoch_table_t epochtbl;
   ret = hpcfile_csprof_read(fs, &metadata, &epochtbl, hpcfile_alloc_CB, 
 			     hpcfile_free_CB);
   if (ret != HPCFILE_OK) {
@@ -229,6 +230,7 @@ ReadProfile_CSPROF(const char* fnm, const char *execnm)
     lm->SetUsedFlag(false);
     epochmdlist->SetLoadmodule(i,lm);
   }
+  epoch_table__free_data(&epochtbl, hpcfile_free_CB);
   
   epochmdlist->SortLoadmoduleByVMA(); 
 
@@ -395,7 +397,7 @@ fixLeaves(CSProfNode* node)
       CSProfCallSiteNode* c = dynamic_cast<CSProfCallSiteNode*>(child);
       
       CSProfStatementNode* newc = new CSProfStatementNode(NULL);
-      newc->copyCallSiteNode(c);
+      *newc = *c;
       
       newc->LinkBefore(node->FirstChild()); // do not break iteration!
       c->Unlink();
@@ -432,11 +434,11 @@ typedef std::map<ProcFrameAndLoop, CSProfLoopNode*> ProcFrameAndLoopToCSLoopMap;
 
 
 void
-addSymbolicInfo(CSProfCodeNode* n, LoadModScope* lmScope,
-		CodeInfo* callingCtxt, CodeInfo* scope);
+addSymbolicInfo(CSProfCodeNode* n, IDynNode* n_dyn,
+		LoadModScope* lmScope, CodeInfo* callingCtxt, CodeInfo* scope);
 
 CSProfProcedureFrameNode*
-findOrCreateProcFrame(CSProfCodeNode* node, 
+findOrCreateProcFrame(IDynNode* node,
 		      LoadModScope* lmScope, CodeInfo* callingCtxt,
 		      LoopScope* loop,
 		      VMA curr_ip,
@@ -444,7 +446,7 @@ findOrCreateProcFrame(CSProfCodeNode* node,
 		      ProcFrameAndLoopToCSLoopMap& loopMap);
 
 void
-createFramesForProc(ProcScope* proc, CSProfNode* csnode,
+createFramesForProc(ProcScope* proc, IDynNode* dyn_node,
 		    CodeInfoToProcFrameMap& frameMap,
 		    ProcFrameAndLoopToCSLoopMap& loopMap);
 
@@ -515,11 +517,11 @@ inferCallFrames(CSProfile* prof, CSProfNode* node,
       }
 
       // Add symbolic information to 'n'
-      addSymbolicInfo(n, lmScope, ctxt, scope);
+      addSymbolicInfo(n, n_dyn, lmScope, ctxt, scope);
 
       // Find (or create) a procedure frame for 'n'.
       CSProfProcedureFrameNode* frame = 
-	findOrCreateProcFrame(n, lmScope, ctxt, loop, curr_ip, 
+	findOrCreateProcFrame(n_dyn, lmScope, ctxt, loop, curr_ip, 
 			      frameMap, loopMap);
       
       // Find appropriate (new) parent context for 'node': the frame
@@ -552,7 +554,7 @@ inferCallFrames(CSProfile* prof, CSProfNode* node,
 // 
 // Assumes that symbolic information has been added to node.
 CSProfProcedureFrameNode*
-findOrCreateProcFrame(CSProfCodeNode* node, 
+findOrCreateProcFrame(IDynNode* node,
 		      LoadModScope* lmScope, CodeInfo* callingCtxt,
 		      LoopScope* loop,
 		      VMA curr_ip,
@@ -582,8 +584,8 @@ findOrCreateProcFrame(CSProfCodeNode* node,
     }
     else {
       frame = new CSProfProcedureFrameNode(NULL);
-      addSymbolicInfo(frame, lmScope, NULL, NULL);
-      frame->Link(node->Parent());
+      addSymbolicInfo(frame, node, lmScope, NULL, NULL);
+      frame->Link(node->proxy()->Parent());
 
       string nm = string("unknown(s)@") + StrUtil::toStr(curr_ip, 16); // FIXME
       //string nm = "unknown(s)@" + StrUtil::toStr(ip, 16);
@@ -598,15 +600,15 @@ findOrCreateProcFrame(CSProfCodeNode* node,
 
 
 void 
-createFramesForProc(ProcScope* proc, CSProfNode* csnode,
+createFramesForProc(ProcScope* proc, IDynNode* node_dyn,
 		    CodeInfoToProcFrameMap& frameMap,
 		    ProcFrameAndLoopToCSLoopMap& loopMap)
 {
   CSProfProcedureFrameNode* frame;
   
   frame = new CSProfProcedureFrameNode(NULL);
-  addSymbolicInfo(frame, NULL, proc, proc);
-  frame->Link(csnode->Parent());
+  addSymbolicInfo(frame, node_dyn, NULL, proc, proc);
+  frame->Link(node_dyn->proxy()->Parent());
   frameMap.insert(std::make_pair(proc, frame));
 
   loopifyFrame(frame, proc, frameMap, loopMap);
@@ -672,7 +674,7 @@ loopifyFrame(CSProfCodeNode* mirrorNode, CodeInfo* node,
     }
     else if (n->Type() == ScopeInfo::ALIEN) {
       CSProfProcedureFrameNode* fr = new CSProfProcedureFrameNode(NULL);
-      addSymbolicInfo(fr, NULL, n, n);
+      addSymbolicInfo(fr, NULL, NULL, n, n);
       fr->isAlien() = true;
       frameMap.insert(std::make_pair(n, fr));
       DIAG_DevMsgIf(0, hex << fr->GetProc() << " [" << n << " -> " << fr << "]" << dec);
@@ -695,9 +697,8 @@ loopifyFrame(CSProfCodeNode* mirrorNode, CodeInfo* node,
 
 //***************************************************************************
 
-// FIXME: Takes either CSProfCallSiteNode or CSProfStatementNode
 void 
-addSymbolicInfo(CSProfCodeNode* n, 
+addSymbolicInfo(CSProfCodeNode* n, IDynNode* n_dyn,
 		LoadModScope* lmScope, CodeInfo* callingCtxt, CodeInfo* scope)
 {
   if (!n) {
@@ -712,7 +713,15 @@ addSymbolicInfo(CSProfCodeNode* n,
       callingCtxt->File()->name();
 
     n->SetFile(fnm C_STR);
+#if (FIXME_ADD_ASSOC_TAGS)
+    std::string nm = callingCtxt->name() C_STR;
+    if (n_dyn && (n_dyn->assoc() != LUSH_ASSOC_NULL)) {
+      nm +=  " [" + n_dyn->assocInfo_str() + "]";
+    }
+    n->SetProc(nm);
+#else
     n->SetProc(callingCtxt->name() C_STR);
+#endif
     n->SetLine(scope->begLine());
     n->SetFileIsText(true);
     n->structureId() = scope->UniqueId();
@@ -732,7 +741,7 @@ addSymbolicInfo(CSProfCodeNode* n,
 
 typedef std::map<string, CSProfProcedureFrameNode*> StringToProcFrameMap;
 
-void addSymbolicInfo(CSProfCodeNode* node, binutils::LM* lm);
+void addSymbolicInfo(IDynNode* n, binutils::LM* lm);
 
 void inferCallFrames(CSProfile* prof, CSProfNode* node, 
 		     VMA begVMA, VMA endVMA, binutils::LM* lm);
@@ -795,7 +804,7 @@ inferCallFrames(CSProfile* prof, CSProfNode* node,
       DIAG_MsgIf(DBG_NORM_PROC_FRAME, "analyzing node " << n->GetProc()
 		 << hex << " " << curr_ip);
       
-      addSymbolicInfo(n, lm);
+      addSymbolicInfo(n_dyn, lm);
       
       string myid = n->GetFile() + n->GetProc();
       
@@ -873,21 +882,24 @@ addSymbolicInfo(CSProfile* prof, VMA begVMA, VMA endVMA, binutils::LM* lm)
 
 
 void 
-addSymbolicInfo(CSProfCodeNode* n, binutils::LM* lm)
+addSymbolicInfo(IDynNode* n_dyn, binutils::LM* lm)
 {
-  if (!n) {
+  if (!n_dyn) {
     return;
   }
 
-  // FIXME: still clunky...  
-  IDynNode* n_dyn = dynamic_cast<IDynNode*>(n);
-  DIAG_Assert(n_dyn, "Takes either CSProfCallSiteNode or CSProfStatementNode");
+  CSProfCodeNode* n = n_dyn->proxy();
 
   string func, file;
   SrcFile::ln srcLn;
   lm->GetSourceFileInfo(n_dyn->ip(), n_dyn->opIndex(), func, file, srcLn);
   func = GetBestFuncName(func);
-  
+#if (FIXME_ADD_ASSOC_TAGS)
+  if (!func.empty() && n_dyn && (n_dyn->assoc() != LUSH_ASSOC_NULL)) {
+    func +=  " [" + n_dyn->assocInfo_str() + "]";
+  }
+#endif
+
   n->SetFile(file C_STR);
   n->SetProc(func C_STR);
   n->SetLine(srcLn);
