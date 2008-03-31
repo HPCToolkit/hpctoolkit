@@ -89,6 +89,7 @@ union lush_assoc_info_u {
   } u;
 };
 
+extern lush_assoc_info_t lush_assoc_info_NULL;
 
 static inline unsigned
 lush_assoc_class(lush_assoc_t as) 

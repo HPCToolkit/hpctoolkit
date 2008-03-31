@@ -25,12 +25,14 @@
 #include <stdlib.h>
 #include <stdbool.h>
 #include <stdint.h>
+#include <string.h>
 
 //*************************** User Include Files ****************************
 
 #include <lush-support.h>
 
 #include <prim_unw.h>
+#include <mem.h>
 
 //*************************** Forward Declarations **************************
 
@@ -72,8 +74,14 @@ enum lush_step {
 // LUSH LIP: An opaque logical id
 // ---------------------------------------------------------
 
-/*inline*/ lush_lip_t*
-lush_lip_clone(lush_lip_t* x);
+// N.B.: Currently, this routine belongs here and not in lush-support.h!
+static inline lush_lip_t*
+lush_lip_clone(lush_lip_t* x)
+{
+  lush_lip_t* x_clone = csprof_malloc(sizeof(lush_lip_t));
+  memcpy(x_clone, x, sizeof(lush_lip_t));
+  return x_clone;
+}
 
 
 // ---------------------------------------------------------

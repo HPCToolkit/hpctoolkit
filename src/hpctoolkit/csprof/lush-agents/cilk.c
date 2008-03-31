@@ -86,14 +86,14 @@ union cilk_cursor {
   // ------------------------------------------------------------
   struct {
     // ---------------------------------
-    // inter-bichord data
+    // inter-bichord data (valid for the whole of one logical unwind)
     // ---------------------------------
     CilkWorkerState* cilk_worker_state;
     Closure*         cilk_closure;
     bool seen_cilkprog;
 
     // ---------------------------------
-    // intra-bichord data
+    // intra-bichord data (valid for only one bichord)
     // ---------------------------------
     void* ref_ip;          // reference physical ip
     bool after_beg_lnote;
@@ -312,9 +312,10 @@ LUSHI_step_bichord(lush_cursor_t* cursor)
   // -------------------------------------------------------
   // Given p-note derive l-note:
   //   1. is_cilkrt & is_TOS  => Cilk-scheduling or Cilk-overhead
-  //   2. is_cilkrt & !is_TOS & seen_cilkprog & closure
+  //   2. is_cilkrt & !is_TOS & (seen_cilkprog & closure)
   //                                           => Cilk-sched + logical stack
-  //   3. is_cilkrt & !is_TOS & !seen_cilkprog => {result (1)}
+  //   3. is_cilkrt & !is_TOS & !(seen_cilkprog & closure) 
+  //                                           => {result (1)}
   //   4. is_cilkprog => Cilk + logical Cilk
   // -------------------------------------------------------
   if (is_cilkrt) {

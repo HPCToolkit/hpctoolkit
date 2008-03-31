@@ -373,15 +373,11 @@ hpcfile_csprof_fprint(FILE* infs, FILE* outfs, hpcfile_csprof_data_t* data)
 
       fprintf(outfs, "  lm %d: %s %"PRIx64" -> %"PRIx64"\n",
 	      j, lm->name, lm->vaddr, lm->mapaddr);
-      
-      free(lm->name);
     }
     fprintf(outfs, "}\n");
-
-    free(epoch->loadmodule);
   }
-  free(epochtbl.epoch_modlist);
 
+  epoch_table__free_data(&epochtbl, (hpcfile_cb__free_fn_t)free);
 
   // Success! Note: We assume that it is possible for other data to
   // exist beyond this point in the stream; don't check for EOF.
@@ -544,6 +540,24 @@ hpcfile_csprof_hdr__fprint(hpcfile_csprof_hdr_t* x, FILE* fs)
 
 //***************************************************************************
 
+
+void 
+epoch_table__free_data(epoch_table_t* x, hpcfile_cb__free_fn_t free_fn)
+{
+  for (int i = 0; i < x->num_epoch; ++i) {
+    epoch_entry_t* epoch = & x->epoch_modlist[i];
+    for (int j = 0; j < epoch->num_loadmodule; ++j) {
+      ldmodule_t* lm = & epoch->loadmodule[j];
+      free_fn(lm->name);
+    }
+    free_fn(epoch->loadmodule);
+  }
+  free_fn(x->epoch_modlist);
+}
+
+
+//***************************************************************************
+
 int 
 hpcfile_csprof_data__init(hpcfile_csprof_data_t* x)
 {
@@ -578,4 +592,3 @@ hpcfile_csprof_data__fprint(hpcfile_csprof_data_t* x, FILE* fs)
 }
 
 //***************************************************************************
-

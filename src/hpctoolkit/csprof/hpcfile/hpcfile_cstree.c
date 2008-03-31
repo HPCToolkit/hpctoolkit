@@ -129,7 +129,7 @@ hpcfile_cstree_read(FILE* fs, void* tree,
 {
   hpcfile_cstree_hdr_t fhdr;
   hpcfile_cstree_node_t tmp_node;
-  int i, ret = HPCFILE_ERR;
+  int ret = HPCFILE_ERR;
   uint32_t tag;
   
   // A vector storing created tree nodes.  The vector indices correspond to
@@ -144,14 +144,14 @@ hpcfile_cstree_read(FILE* fs, void* tree,
     return HPCFILE_ERR; 
   }
 
-  // node id upper bound
+  // node id upper bound (exclusive)
   unsigned int id_ub = fhdr.num_nodes + HPCFILE_CSTREE_ID_ROOT;
 
   // Allocate space for 'node_vec'
   if (fhdr.num_nodes != 0) {
     node_vec = alloc_fn(sizeof(void*) * id_ub);
     lip_vec  = alloc_fn(sizeof(void*) * id_ub);
-    for (int i = 0; i <= HPCFILE_CSTREE_ID_ROOT; ++i) {
+    for (int i = 0; i < HPCFILE_CSTREE_ID_ROOT; ++i) {
       node_vec[i] = NULL;
       lip_vec[i]  = NULL;
     }
@@ -161,7 +161,7 @@ hpcfile_cstree_read(FILE* fs, void* tree,
   tmp_node.data.num_metrics = num_metrics;
   tmp_node.data.metrics = alloc_fn(num_metrics * sizeof(hpcfile_uint_t));
   
-  for (i = HPCFILE_CSTREE_ID_ROOT; i < id_ub; ++i) {
+  for (int i = HPCFILE_CSTREE_ID_ROOT; i < id_ub; ++i) {
 
     ret = hpcfile_tag__fread(&tag, fs);
     if (ret != HPCFILE_OK) { return HPCFILE_ERR; }
@@ -169,18 +169,19 @@ hpcfile_cstree_read(FILE* fs, void* tree,
     // ----------------------------------------------------------
     // Read the LIP
     // ----------------------------------------------------------
+    lush_lip_t* lip = NULL;
+    hpcfile_uint_t lip_idx = i;
+    
     if (tag == HPCFILE_TAG__CSTREE_LIP) {
-      lush_lip_t* lip = alloc_fn(sizeof(lush_lip_t));
-      unsigned lip_idx = i;
-
+      lip = alloc_fn(sizeof(lush_lip_t));
       ret = hpcfile_cstree_lip__fread(lip, fs);
       if (ret != HPCFILE_OK) { return HPCFILE_ERR; }
-
-      lip_vec[lip_idx] = lip;
 
       ret = hpcfile_tag__fread(&tag, fs);
       if (ret != HPCFILE_OK) { return HPCFILE_ERR; }
     }
+
+    lip_vec[lip_idx] = lip;
 
     // ----------------------------------------------------------
     // Read the node
@@ -195,7 +196,7 @@ hpcfile_cstree_read(FILE* fs, void* tree,
       goto cstree_read_cleanup; // HPCFILE_ERR
     }
 
-    hpcfile_uint_t lip_idx = tmp_node.data.lip.id;
+    lip_idx = tmp_node.data.lip.id;
     tmp_node.data.lip.ptr = lip_vec[lip_idx];
 
     if (tmp_node.id_parent >= id_ub) { 
