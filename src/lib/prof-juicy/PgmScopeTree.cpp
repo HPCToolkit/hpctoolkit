@@ -307,6 +307,7 @@ ScopeInfo::~ScopeInfo()
 		<< " " << hex << this << dec);
   DIAG_Assert(OkToDelete(this), "ScopeInfo '" << this << " " << ToString() 
 	      << "' is not ready for deletion!");
+  delete perfData;
 }
 
 
