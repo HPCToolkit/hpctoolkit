@@ -67,6 +67,7 @@ using std::string;
 using namespace xml;
 
 #include <lib/support/diagnostics.h>
+#include <lib/support/Logic.hpp>
 #include <lib/support/SrcFile.hpp>
 using SrcFile::ln_NULL;
 #include <lib/support/Trace.hpp>
@@ -183,8 +184,8 @@ CSProfNode::~CSProfNode()
 CSProfCodeNode::CSProfCodeNode(NodeType t, CSProfNode* _parent, 
 			       SrcFile::ln begLn, SrcFile::ln endLn,
 			       uint sId) 
-  : CSProfNode(t, _parent), begLine(ln_NULL), endLine(ln_NULL),
-    m_sId(sId)
+  : CSProfNode(t, _parent), 
+    begLine(ln_NULL), endLine(ln_NULL), m_sId(sId)
 { 
   SetLineRange(begLn, endLn); 
   xDEBUG(DEB_UNIFY_PROCEDURE_FRAME,
@@ -244,7 +245,8 @@ CSProfCallSiteNode_Check(CSProfCallSiteNode* n, CSProfNode* _parent)
 
 
 CSProfCallSiteNode::CSProfCallSiteNode(CSProfNode* _parent)
-  : CSProfCodeNode(CALLSITE, _parent, ln_NULL, ln_NULL)
+  : CSProfCodeNode(CALLSITE, _parent, ln_NULL, ln_NULL),
+    IDynNode(this)
 {
   CSProfCallSiteNode_Check(this, _parent);
 }
@@ -256,7 +258,7 @@ CSProfCallSiteNode::CSProfCallSiteNode(CSProfNode* _parent,
 				       lush_lip_t* lip,
 				       vector<uint>& metrics)
   : CSProfCodeNode(CALLSITE, _parent, ln_NULL, ln_NULL), 
-    IDynNode(as_info, ip, opIndex, lip, metrics)
+    IDynNode(this, as_info, ip, opIndex, lip, metrics)
 {
   CSProfCallSiteNode_Check(this, _parent);
 }
@@ -267,7 +269,8 @@ CSProfCallSiteNode::~CSProfCallSiteNode()
 
 
 CSProfStatementNode::CSProfStatementNode(CSProfNode* _parent)
-  :  CSProfCodeNode(STATEMENT, _parent, ln_NULL, ln_NULL)
+  :  CSProfCodeNode(STATEMENT, _parent, ln_NULL, ln_NULL),
+     IDynNode(this)
 {
 }
 
@@ -279,34 +282,31 @@ CSProfStatementNode::~CSProfStatementNode()
 void 
 CSProfStatementNode::operator=(const CSProfStatementNode& x)
 {
-  ip(x.ip(), x.opIndex());
-  mergeMetrics(x);
+  if (this != &x) {
+    IDynNode::operator=(x);
 
-  file = x.GetFile();
-  proc = x.GetProc();
-  SetLine(x.GetLine());
-
-  xDEBUG(DEB_UNIFY_PROCEDURE_FRAME,
-	 fprintf(stderr, " copied metrics\n"));
-  fileistext = x.FileIsText();
+    file = x.GetFile();
+    proc = x.GetProc();
+    SetLine(x.GetLine());
+    
+    xDEBUG(DEB_UNIFY_PROCEDURE_FRAME,
+	   fprintf(stderr, " copied metrics\n"));
+    fileistext = x.FileIsText();
+  }
 }
 
 
 void 
-CSProfStatementNode::copyCallSiteNode(CSProfCallSiteNode* y) 
+CSProfStatementNode::operator=(const CSProfCallSiteNode& x)
 {
-  // FIXME: copy IDynNode portion
-  assoc(y->assoc());
-  ip(y->ra(), y->opIndex());
-  lip(y->lip());
-  appendMetrics(*y);
-
-  file = y->GetFile();
-  proc = y->GetProc();
-  SetLine(y->GetLine());
-
-  fileistext = y->FileIsText();
-  donewithsrcinfproc = y->GotSrcInfo();
+  IDynNode::operator=(x);
+  
+  file = x.GetFile();
+  proc = x.GetProc();
+  SetLine(x.GetLine());
+  
+  fileistext = x.FileIsText();
+  donewithsrcinfproc = x.GotSrcInfo();
 }
 
 
@@ -465,6 +465,30 @@ CSProfNode::AncestorStmtRange() const
 // 
 //**********************************************************************
 
+std::string 
+IDynNode::assocInfo_str() const
+{
+  char as_str[LUSH_ASSOC_INFO_STR_MIN_LEN];
+  lush_assoc_info_sprintf(as_str, m_as_info);
+  return string(as_str);
+}
+
+
+VMA 
+IDynNode::ip() const 
+{
+  lush_assoc_t as = lush_assoc_info__get_assoc(m_as_info);
+  if (as == LUSH_ASSOC_1_to_M) {
+    // FIXME: Hack for interpreting Cilk LIPs.
+    VMA cilk_ip = m_lip->data8[0];
+    return (cilk_ip + 1); // add 1 since 1 will be subtracted...
+  }
+  else {
+    return m_ip; 
+  }
+}
+
+
 void 
 IDynNode::mergeMetrics(const IDynNode& y, uint beg_idx)
 {
@@ -556,7 +580,8 @@ CSProfNode::merge(CSProfNode* y, uint x_numMetrics, uint y_numMetrics)
     DIAG_Assert(y_child_dyn, "");
     it++; // advance iterator -- it is pointing at 'child'
 
-    CSProfNode* x_child = findDynChild(y_child_dyn->ip());
+    CSProfNode* x_child = findDynChild(y_child_dyn->assocInfo(), 
+				       y_child_dyn->ip(), y_child_dyn->lip());
     
     if (!x_child) {
       y_child->Unlink();
@@ -573,13 +598,20 @@ CSProfNode::merge(CSProfNode* y, uint x_numMetrics, uint y_numMetrics)
 
 
 CSProfNode* 
-CSProfNode::findDynChild(VMA ip)
+CSProfNode::findDynChild(lush_assoc_info_t as_info, VMA ip, lush_lip_t* lip)
 {
   for (CSProfNodeChildIterator it(this); it.Current(); ++it) {
     CSProfNode* child = it.CurNode();
     IDynNode* child_dyn = dynamic_cast<IDynNode*>(child);
     
-    if (child_dyn && child_dyn->ip() == ip) {
+    lush_assoc_t as = lush_assoc_info__get_assoc(as_info);
+
+    if (child_dyn 
+	&& child_dyn->ip() == ip
+	&& lush_lip_eq(child_dyn->lip(), lip)
+	&& lush_assoc_class_eq(child_dyn->assoc(), as) 
+	&& logic::implies(lush_assoc_info_is_root_note(as_info), 
+			  lush_assoc_info_is_root_note(child_dyn->assocInfo()))) {
       return child;
     }
   }
