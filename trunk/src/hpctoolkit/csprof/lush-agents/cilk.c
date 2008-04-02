@@ -102,7 +102,9 @@ union cilk_cursor {
 };
 
 #define CILKWS_CL_DEQ_TOP(/* CilkWorkerState* */ x) \
-  ((x)->context->Cilk_RO_params->deques[(x)->self].top)
+  ((x)->context->Cilk_RO_params->deques[(x)->self].top)    /* outermost! */
+#define CILKWS_CL_DEQ_BOT(/* CilkWorkerState* */ x) \
+  ((x)->context->Cilk_RO_params->deques[(x)->self].bottom) /* innermost! */
 #define CILKWS_FRAME_DEQ_HEAD(/* CilkWorkerState* */ x) ((x)->cache.head)
 #define CILKWS_FRAME_DEQ_TAIL(/* CilkWorkerState* */ x) ((x)->cache.tail)
 
@@ -438,7 +440,7 @@ init_lcursor(lush_cursor_t* cursor)
     csr->u.cilk_worker_state = 
       (CilkWorkerState*)pthread_getspecific(CILK_WorkerState_key);
     csr->u.cilk_closure = ((csr->u.cilk_worker_state) ? 
-			   CILKWS_CL_DEQ_TOP(csr->u.cilk_worker_state) : NULL);
+			   CILKWS_CL_DEQ_BOT(csr->u.cilk_worker_state) : NULL);
     csr->u.seen_cilkprog = false;
   }
 
