@@ -409,7 +409,18 @@ public:
   std::string assocInfo_str() const;
 
 
-  virtual VMA ip() const;
+  virtual VMA ip() const {
+    // FIXME: Hack for interpreting Cilk-like LIPs.
+    if (m_lip) {
+      VMA cilk_ip = m_lip->data8[0];
+      if (cilk_ip != 0 && cilk_ip != m_ip) {
+	return (cilk_ip + 1); // add 1 since 1 will be subtracted...
+      }
+    }
+    return m_ip; 
+  }
+  VMA ip_real() { return m_ip; } // FIXME: get ip while Cilk hack above exists
+
   void ip(VMA ip, ushort opIdx) { m_ip = ip; m_opIdx = opIdx; }
 
   ushort opIndex() const { return m_opIdx; }
