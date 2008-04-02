@@ -79,10 +79,11 @@ using namespace std; // For compatibility with non-std C headers
 
 #include <lib/support/diagnostics.h>
 #include <lib/support/Logic.hpp>
+#include <lib/support/StrUtil.hpp>
 
 //*************************** Forward Declarations ***************************
 
-#define FIXME_ADD_ASSOC_TAGS 1
+#define FIXME_ADD_ASSOC_TAGS 0
 #define DBG_NORM_PROC_FRAME 0
 
 // FIXME: why is the output different without c_str()?
@@ -716,7 +717,9 @@ addSymbolicInfo(CSProfCodeNode* n, IDynNode* n_dyn,
 #if (FIXME_ADD_ASSOC_TAGS)
     std::string nm = callingCtxt->name() C_STR;
     if (n_dyn && (n_dyn->assoc() != LUSH_ASSOC_NULL)) {
-      nm +=  " [" + n_dyn->assocInfo_str() + "]";
+      nm += " (" + StrUtil::toStr(n_dyn->ip_real(), 16) 
+	+ ", " + StrUtil::toStr(n_dyn->ip(), 16) + ") [" 
+	+ n_dyn->assocInfo_str() + "]";
     }
     n->SetProc(nm);
 #else
@@ -896,7 +899,9 @@ addSymbolicInfo(IDynNode* n_dyn, binutils::LM* lm)
   func = GetBestFuncName(func);
 #if (FIXME_ADD_ASSOC_TAGS)
   if (!func.empty() && n_dyn && (n_dyn->assoc() != LUSH_ASSOC_NULL)) {
-    func +=  " [" + n_dyn->assocInfo_str() + "]";
+    func +=  " (" + StrUtil::toStr(n_dyn->ip_real(), 16) 
+      + ", " + StrUtil::toStr(n_dyn->ip(), 16) + ") [" 
+      + n_dyn->assocInfo_str() + "]";
   }
 #endif
 
