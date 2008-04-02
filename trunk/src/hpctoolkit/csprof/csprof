@@ -351,7 +351,9 @@ f_getoptions "$@"
 
 f_prepareenv
 
-ulimit -c unlimited
+if [ -n $ulimit_works ]; then
+   ulimit -c unlimited
+fi
 if [ -n "${opt_debug}" ]; then
   echo csprof script LD_PRELOAD = $LD_PRELOAD
 fi

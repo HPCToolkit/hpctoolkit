@@ -70,7 +70,7 @@ opt_papi_dir=$PKGS/papi
 
 
 papi_inc=''
-pinc=`/usr/bin/env | egrep -i 'papi.*include'`
+pinc=`/usr/bin/env | egrep -i 'papi.*include.*='`
 if [ "$pinc"x != x ]; then
     papi_inc=${pinc#*=}
 fi
