@@ -474,21 +474,6 @@ IDynNode::assocInfo_str() const
 }
 
 
-VMA 
-IDynNode::ip() const 
-{
-  lush_assoc_t as = lush_assoc_info__get_assoc(m_as_info);
-  if (as == LUSH_ASSOC_1_to_M) {
-    // FIXME: Hack for interpreting Cilk LIPs.
-    VMA cilk_ip = m_lip->data8[0];
-    return (cilk_ip + 1); // add 1 since 1 will be subtracted...
-  }
-  else {
-    return m_ip; 
-  }
-}
-
-
 void 
 IDynNode::mergeMetrics(const IDynNode& y, uint beg_idx)
 {
@@ -580,8 +565,9 @@ CSProfNode::merge(CSProfNode* y, uint x_numMetrics, uint y_numMetrics)
     DIAG_Assert(y_child_dyn, "");
     it++; // advance iterator -- it is pointing at 'child'
 
-    CSProfNode* x_child = findDynChild(y_child_dyn->assocInfo(), 
-				       y_child_dyn->ip(), y_child_dyn->lip());
+    CSProfNode* x_child = findDynChild(y_child_dyn->assocInfo(),
+				       y_child_dyn->ip_real(),
+				       y_child_dyn->lip());
     
     if (!x_child) {
       y_child->Unlink();
@@ -607,7 +593,7 @@ CSProfNode::findDynChild(lush_assoc_info_t as_info, VMA ip, lush_lip_t* lip)
     lush_assoc_t as = lush_assoc_info__get_assoc(as_info);
 
     if (child_dyn 
-	&& child_dyn->ip() == ip
+	&& child_dyn->ip_real() == ip
 	&& lush_lip_eq(child_dyn->lip(), lip)
 	&& lush_assoc_class_eq(child_dyn->assoc(), as) 
 	&& logic::implies(lush_assoc_info_is_root_note(as_info), 
