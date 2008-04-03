@@ -164,7 +164,7 @@ f_checkenv()
 
   sysname=`uname`
 
-  if [ $sysname = "OSF1" ]; then
+  if [ "$sysname" = "OSF1" ]; then
     _RLD_LIST="${RLD_LIB}:DEFAULT"
   else
     LD_PRELOAD="${RLD_LIB}"
