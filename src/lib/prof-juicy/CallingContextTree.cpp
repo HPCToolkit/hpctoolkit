@@ -121,7 +121,7 @@ CSProfTree::dump(std::ostream& os, int dmpFlag) const
 void 
 CSProfTree::ddump() const
 {
-  dump();
+  dump(std::cerr, XML_FALSE);
 }
 
 //***************************************************************************
@@ -465,14 +465,6 @@ CSProfNode::AncestorStmtRange() const
 // 
 //**********************************************************************
 
-std::string 
-IDynNode::assocInfo_str() const
-{
-  char as_str[LUSH_ASSOC_INFO_STR_MIN_LEN];
-  lush_assoc_info_sprintf(as_str, m_as_info);
-  return string(as_str);
-}
-
 
 void 
 IDynNode::mergeMetrics(const IDynNode& y, uint beg_idx)
@@ -576,6 +568,9 @@ CSProfNode::merge(CSProfNode* y, uint x_numMetrics, uint y_numMetrics)
     }
     else {
       IDynNode* x_child_dyn = dynamic_cast<IDynNode*>(x_child);
+      DIAG_MsgIf(0, "CSProfNode::merge: Merging y into x:\n"
+		 << "  y: " << y_child_dyn->toString()
+		 << "  x: " << x_child_dyn->toString());
       x_child_dyn->mergeMetrics(*y_child_dyn, x_numMetrics);
       x_child->merge(y_child, x_numMetrics, y_numMetrics);
     }
@@ -668,6 +663,57 @@ CSProfNode::ToDumpMetricsString(int dmpFlag) const {
 
 
 string
+IDynNode::toString(const char* pre) const
+{
+  std::ostringstream os;
+  dump(os, pre);
+  return os.str();
+}
+
+
+std::string 
+IDynNode::assocInfo_str() const
+{
+  char str[LUSH_ASSOC_INFO_STR_MIN_LEN];
+  lush_assoc_info_sprintf(str, m_as_info);
+  return string(str);
+}
+
+
+std::string 
+IDynNode::lip_str() const
+{
+  char str[LUSH_LIP_STR_MIN_LEN];
+  lush_lip_sprintf(str, m_lip);
+  return string(str);
+}
+
+
+void
+IDynNode::dump(std::ostream& o, const char* pre) const
+{
+  string p(pre);
+
+  o << std::showbase;
+  o << p << assocInfo_str() 
+    << hex << " [ip " << m_ip << ", " << dec << m_opIdx << "] ";
+  o << hex << m_lip << " [lip " << lip_str() << "]" << dec;
+  o << p << " [metrics";
+  for (uint i = 0; i < m_metrics.size(); ++i) {
+    o << " " << m_metrics[i];
+  }
+  o << "]" << endl;
+}
+
+
+void
+IDynNode::ddump() const
+{
+  dump(std::cerr);
+}
+
+
+string
 CSProfCodeNode::ToDumpString(int dmpFlag) const
 { 
   string self = CSProfNode::ToDumpString(dmpFlag)
@@ -701,8 +747,11 @@ CSProfCallSiteNode::ToDumpString(int dmpFlag) const
   string self = CSProfNode::ToDumpString(dmpFlag);
   
   if (!(dmpFlag & CSProfTree::XML_TRUE)) {
-    self = self + " ip" + MakeAttrNum(ip(), 16) 
-      + " op" + MakeAttrNum(opIndex());
+    self = self 
+      + " assoc" + MakeAttrStr(assocInfo_str()) 
+      + " ip_real" + MakeAttrNum(ip_real(), 16)
+      + " op" + MakeAttrNum(opIndex())
+      + " lip" + MakeAttrStr(lip_str());
   } 
 
   if (!file.empty()) { 
