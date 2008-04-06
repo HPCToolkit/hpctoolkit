@@ -63,6 +63,8 @@
 
 //*************************** User Include Files ****************************
 
+//#include <include/general.h> /* special printf format strings */
+
 //*************************** Forward Declarations **************************
 
 #if defined(__cplusplus)

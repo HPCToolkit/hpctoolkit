@@ -354,8 +354,15 @@ hpcfile_free_CB(void* mem)
 void 
 convertOpIPToIP(VMA opIP, VMA& ip, ushort& opIdx)
 {
+#if 0  
   opIdx = (ushort)(opIP & 0x3); // the mask ...00011 covers 0, 1 and 2
   ip = opIP - opIdx;
+#else
+  // FIXME: tallent: Sigh! The above is only true for IA64! Replace
+  // with ISA::ConvertVMAToOpVMA, probably accessed through LM::isa
+  ip = opIP;
+  opIdx = 0;
+#endif
 }
 
 
@@ -718,8 +725,7 @@ addSymbolicInfo(CSProfCodeNode* n, IDynNode* n_dyn,
     std::string nm = callingCtxt->name() C_STR;
     if (n_dyn && (n_dyn->assoc() != LUSH_ASSOC_NULL)) {
       nm += " (" + StrUtil::toStr(n_dyn->ip_real(), 16) 
-	+ ", " + StrUtil::toStr(n_dyn->ip(), 16) + ") [" 
-	+ n_dyn->assocInfo_str() + "]";
+	+ ", " + n_dyn->lip_str() + ") [" + n_dyn->assocInfo_str() + "]";
     }
     n->SetProc(nm);
 #else
@@ -900,8 +906,7 @@ addSymbolicInfo(IDynNode* n_dyn, binutils::LM* lm)
 #if (FIXME_ADD_ASSOC_TAGS)
   if (!func.empty() && n_dyn && (n_dyn->assoc() != LUSH_ASSOC_NULL)) {
     func +=  " (" + StrUtil::toStr(n_dyn->ip_real(), 16) 
-      + ", " + StrUtil::toStr(n_dyn->ip(), 16) + ") [" 
-      + n_dyn->assocInfo_str() + "]";
+      + ", " + n_dyn->lip_str() + ") [" + n_dyn->assocInfo_str() + "]";
   }
 #endif
 
