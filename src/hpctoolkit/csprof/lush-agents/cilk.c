@@ -38,8 +38,6 @@
 
 #include <../cilk/cilk.h>          /* Cilk (installed) */
 #include <../cilk/cilk-internal.h> /* Cilk (not installed) */
-// Cilk runtime
-extern pthread_key_t CILK_WorkerState_key;
 
 //*************************** Forward Declarations **************************
 
@@ -69,8 +67,17 @@ union cilk_ip {
   // ------------------------------------------------------------
   // superimposed with:
   // ------------------------------------------------------------
-  void* ip;
+  struct {
+    void* ip;
+    //uint32_t status;
+  } u;
 };
+
+static inline void cilk_ip_init(cilk_ip_t* x, void* ip /*uint32_t status*/)
+{
+  x->u.ip = ip;
+  //x->u.status = status;
+}
 
 
 typedef union cilk_cursor cilk_cursor_t;
@@ -101,12 +108,18 @@ union cilk_cursor {
   } u;
 };
 
+// NOTE: Each thread has a deque.
+// - Local work (innermost) is pushed and popped from the BOTTOM or
+//   the TAIL of the deque while thieves steal from the TOP or HEAD
+//   (outermost).
 #define CILKWS_CL_DEQ_TOP(/* CilkWorkerState* */ x) \
   ((x)->context->Cilk_RO_params->deques[(x)->self].top)    /* outermost! */
 #define CILKWS_CL_DEQ_BOT(/* CilkWorkerState* */ x) \
   ((x)->context->Cilk_RO_params->deques[(x)->self].bottom) /* innermost! */
-#define CILKWS_FRAME_DEQ_HEAD(/* CilkWorkerState* */ x) ((x)->cache.head)
-#define CILKWS_FRAME_DEQ_TAIL(/* CilkWorkerState* */ x) ((x)->cache.tail)
+#define CILKWS_FRAME_DEQ_HEAD(/* CilkWorkerState* */ x) \
+  ((x)->cache.head)                                        /* outermost! */
+#define CILKWS_FRAME_DEQ_TAIL(/* CilkWorkerState* */ x) \
+  ((x)->cache.tail)                                        /* innermost! */
 
 #define CILKFRM_PROC(/* CilkStackFrame* */ x) ((x)->sig[0].inlet)
 
@@ -385,26 +398,27 @@ LUSHI_step_lnote(lush_cursor_t* cursor)
       ty = LUSH_STEP_END_CHORD;
     }
     else {
-      lip->ip = csr->u.ref_ip;
+      cilk_ip_init(lip, csr->u.ref_ip /*0*/);
       ty = LUSH_STEP_CONT;
       csr->u.after_beg_lnote = true;
     }
   }
   else if (as == LUSH_ASSOC_1_to_M) {
     // INVARIANT: csr->u.cilk_closure is non-NULL
+    Closure* cl = csr->u.cilk_closure;
     if (csr->u.after_beg_lnote) {
-      csr->u.cilk_closure = csr->u.cilk_closure->parent;
-      if (!csr->u.cilk_closure) {
-	lip->ip = NULL;
+      cl = csr->u.cilk_closure = cl->parent;
+      if (!cl) {
+	cilk_ip_init(lip, NULL /*0*/);
 	ty = LUSH_STEP_END_CHORD;
       }
       else {
-	lip->ip = CILKFRM_PROC(csr->u.cilk_closure->frame);
+	cilk_ip_init(lip, CILKFRM_PROC(cl->frame) /*cl->status*/);
 	ty = LUSH_STEP_CONT;
       }
     }
     else {
-      lip->ip = CILKFRM_PROC(csr->u.cilk_closure->frame);
+      cilk_ip_init(lip, CILKFRM_PROC(cl->frame) /*cl->status*/);
       ty = LUSH_STEP_CONT;
       csr->u.after_beg_lnote = true;
     }
@@ -437,11 +451,15 @@ init_lcursor(lush_cursor_t* cursor)
   // inter-bichord data
   // -------------------------------------------------------
   if (lush_cursor_is_flag(cursor, LUSH_CURSOR_FLAGS_BEG_PPROJ)) {
-    csr->u.cilk_worker_state = 
+    CilkWorkerState* ws = csr->u.cilk_worker_state = 
       (CilkWorkerState*)pthread_getspecific(CILK_WorkerState_key);
-    csr->u.cilk_closure = ((csr->u.cilk_worker_state) ? 
-			   CILKWS_CL_DEQ_BOT(csr->u.cilk_worker_state) : NULL);
+    csr->u.cilk_closure = ((ws) ? CILKWS_CL_DEQ_BOT(ws) : NULL);
     csr->u.seen_cilkprog = false;
+    if (ws && ws->self == 0 && !CILK_Has_Thread0_Stolen) {
+      // This is the "initial" state of thread 0.  Since we should not
+      // consult the cactus stack, set "cilk_closure" to NULL.
+      csr->u.cilk_closure = NULL;
+    }
   }
 
   // -------------------------------------------------------
