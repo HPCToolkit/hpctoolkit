@@ -8,6 +8,8 @@
 #include "csprof_csdata.h"
 #include "pmsg.h"
 
+#include <lush/lush-support.h>
+
 #define DUMP_LIMIT 100
 
 
@@ -16,6 +18,7 @@ void dump_backtraces(csprof_state_t *state, csprof_frame_t* unwind)
   int cnt = 0;
   csprof_frame_t* x;
   char as_str[LUSH_ASSOC_INFO_STR_MIN_LEN];
+  char lip_str[LUSH_LIP_STR_MIN_LEN];
 
 #if 0
   EMSG("in dump_backtraces(0x%lx, 0x%lx)",(unsigned long int) state, (unsigned long int) unwind);
@@ -26,9 +29,11 @@ void dump_backtraces(csprof_state_t *state, csprof_frame_t* unwind)
   if (state->bufstk != state->bufend) {
     EMSG( "--------Cached backtrace (innermost first)-----"); 
     cnt = 0;
-    for (x = state->bufstk; x != state->bufend; ++x) {
+    for (x = state->bufstk; x < state->bufend; ++x) {
       lush_assoc_info_sprintf(as_str, x->as_info);
-      EMSG( "%s: ip %p | lip %p | sp %p", as_str, x->ip, x->lip, x->sp);
+      lush_lip_sprintf(lip_str, x->lip);
+      EMSG( "%s: ip %p | lip %s | sp %p", as_str, x->ip, lip_str, x->sp);
+
       /* MWF: added to prevent long backtrace printout */
       cnt++;
       if (cnt > DUMP_LIMIT) {
@@ -44,9 +49,10 @@ void dump_backtraces(csprof_state_t *state, csprof_frame_t* unwind)
   if (unwind) {
 
     EMSG( "-----New backtrace (innermost first)-----");
-    for (x = state->btbuf; x != unwind; ++x) {
+    for (x = state->btbuf; x < unwind; ++x) {
       lush_assoc_info_sprintf(as_str, x->as_info);
-      EMSG( "%s: ip %p | lip %p | sp %p", as_str, x->ip, x->lip, x->sp);
+      lush_lip_sprintf(lip_str, x->lip);
+      EMSG( "%s: ip %p | lip %s | sp %p", as_str, x->ip, lip_str, x->sp);
       /* MWF: added to prevent long backtrace printout */
       cnt++;
       if (cnt > DUMP_LIMIT) {
