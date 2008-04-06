@@ -23,8 +23,11 @@
 #include <stdio.h>
 #include <string.h>
 #include <errno.h>
+#include <inttypes.h> /* commonly available, unlike <stdint.h> */
 
 //*************************** User Include Files ****************************
+
+//#include <include/general.h> /* special printf format strings */
 
 #include "lush-support.h"
 
@@ -65,3 +68,39 @@ lush_assoc_info_sprintf(char* str, lush_assoc_info_t as_info)
   return str;
 }
 
+//***************************************************************************
+// 
+//***************************************************************************
+
+const char* 
+lush_lip_sprintf(char* str, lush_lip_t* x)
+{
+  str[0] = '\0';
+
+  if (x) {
+    int num;
+    char* p = str;
+    for (int i = 0; i < LUSH_LIP_DATA8_SZ; ++i) {
+      if (i != 0) {
+	sprintf(p, " ");
+	p++;
+      }
+      num = sprintf(p, "0x%"PRIx64, x->data8[i]);
+      p += num;
+    }
+  }
+
+  return str;
+}
+
+#if 0
+void 
+lush_lip_fprint(FILE* fs, lush_lip_t* x);
+{
+  if (x) {
+    for (int i = 0; i < LUSH_LIP_DATA8_SZ; ++i) {
+      fprintf(fs, " %"PRIx64, x->data8[i]);
+    }
+  }
+}
+#endif

@@ -649,13 +649,10 @@ int
 hpcfile_cstree_lip__fprint(lush_lip_t* x, hpcfile_uint_t id, 
 			   FILE* fs, const char* pre)
 {
-  fprintf(fs, "%s{lip:  (id: %"PRIu64")", pre, id);
-  
-  for (int i = 0; i < LUSH_LIP_DATA8_SZ; ++i) {
-    fprintf(fs, " %"PRIx64, x->data8[i]);
-  }
+  char lip_str[LUSH_LIP_STR_MIN_LEN];
+  lush_lip_sprintf(lip_str, x);
 
-  fprintf(fs, "}\n");
+  fprintf(fs, "%s{lip:  (id: %"PRIu64") %s}\n", pre, id, lip_str);
 
   return HPCFILE_OK;
 }

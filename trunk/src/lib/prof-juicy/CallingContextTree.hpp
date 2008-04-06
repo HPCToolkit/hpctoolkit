@@ -406,9 +406,6 @@ public:
 
   lush_assoc_t assoc() const { return lush_assoc_info__get_assoc(m_as_info); }
 
-  std::string assocInfo_str() const;
-
-
   virtual VMA ip() const {
     // FIXME: Hack for interpreting Cilk-like LIPs.
     if (m_lip) {
@@ -419,7 +416,7 @@ public:
     }
     return m_ip; 
   }
-  VMA ip_real() { return m_ip; } // FIXME: get ip while Cilk hack above exists
+  VMA ip_real() const { return m_ip; } // motivated by Cilk hack above
 
   void ip(VMA ip, ushort opIdx) { m_ip = ip; m_opIdx = opIdx; }
 
@@ -457,6 +454,19 @@ public:
 
   void expandMetrics_before(uint offset);
   void expandMetrics_after(uint offset);
+
+  // -------------------------------------------------------
+  // Dump contents for inspection
+  // -------------------------------------------------------
+
+  virtual std::string toString(const char* pre = "") const;
+
+  std::string assocInfo_str() const;
+  std::string lip_str() const;
+  
+  virtual void dump(std::ostream& os = std::cerr, 
+		    const char* pre = "") const;
+  virtual void ddump() const;
 
 private:
   CSProfCodeNode* m_proxy;

@@ -201,6 +201,13 @@ lush_lip_eq(lush_lip_t* x, lush_lip_t* y)
 		       && x->data8[1] == y->data8[1])); 
 }
 
+
+#define LUSH_LIP_STR_MIN_LEN (20 * LUSH_LIP_DATA8_SZ) /* 0x + 16 + space */
+
+const char* 
+lush_lip_sprintf(char* str, lush_lip_t* x);
+
+
 // **************************************************************************
 
 #if defined(__cplusplus)
