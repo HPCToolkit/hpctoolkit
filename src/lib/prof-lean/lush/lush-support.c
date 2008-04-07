@@ -48,6 +48,7 @@ lush_assoc_tostr(lush_assoc_t as)
     case LUSH_ASSOC_1_to_1: return "1-to-1";
     case LUSH_ASSOC_M_to_1: return "M-to-1";
     case LUSH_ASSOC_1_to_M: return "1-to-M";
+    case LUSH_ASSOC_0_to_0: return "0-to-0";
     default:                return "ERROR!"; // FIXME: DIAG_assert
   }
 }
