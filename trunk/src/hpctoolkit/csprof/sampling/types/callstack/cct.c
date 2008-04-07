@@ -481,6 +481,9 @@ csprof_cct_insert_backtrace(csprof_cct_t *x, void *treenode, int metric_id,
   csprof_frame_t* frm = path_beg; // current frame 
   csprof_cct_node_t *tn = (csprof_cct_node_t *)treenode;
 
+  if ( !(path_beg >= path_end) ) {
+    return NULL;
+  }
 
   if (csprof_cct__isempty(x)) {
     // introduce bogus root to handle possible forests
