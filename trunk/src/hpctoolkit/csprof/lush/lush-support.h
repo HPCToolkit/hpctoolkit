@@ -54,6 +54,7 @@ enum lush_assoc {
 #define MKASSOC2(as, c1, c2)  ( ((as) << 4) | (c1) | (c2) )
 
   LUSH_ASSOC_CLASS_MASK   = 0x0f,
+  LUSH_ASSOC_CLASS_NULL   = 0x00,
   LUSH_ASSOC_CLASS_a_to_0 = 0x01, // a-to-0
   LUSH_ASSOC_CLASS_a_to_1 = 0x02, // a-to-1
   LUSH_ASSOC_CLASS_1_to_a = 0x04, // 1-to-a
@@ -65,11 +66,14 @@ enum lush_assoc {
   LUSH_ASSOC_M_to_0 = MKASSOC1(2, LUSH_ASSOC_CLASS_a_to_0), // M-to-0
 
   LUSH_ASSOC_1_to_1 = MKASSOC2(3, LUSH_ASSOC_CLASS_a_to_1,
-				  LUSH_ASSOC_CLASS_1_to_a), // 1-to-1
+			          LUSH_ASSOC_CLASS_1_to_a), // 1-to-1
 
   LUSH_ASSOC_M_to_1 = MKASSOC1(4, LUSH_ASSOC_CLASS_a_to_1), // M-to-1
 
-  LUSH_ASSOC_1_to_M = MKASSOC1(5, LUSH_ASSOC_CLASS_1_to_a)  // 1-to-M
+  LUSH_ASSOC_1_to_M = MKASSOC1(5, LUSH_ASSOC_CLASS_1_to_a), // 1-to-M
+
+  // A special association for use during unwinding
+  LUSH_ASSOC_0_to_0 = MKASSOC1(10, LUSH_ASSOC_CLASS_a_to_0) // 0-to-0
 
 #undef MKASSOC1
 #undef MKASSOC2

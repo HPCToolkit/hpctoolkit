@@ -240,14 +240,22 @@ lush_step_pnote(lush_cursor_t* cursor)
     lush_cursor_unset_flag(cursor, LUSH_CURSOR_FLAGS_BEG_PPROJ);
   }
 
-  // Special case handling if LUSH_CURSOR_FLAGS_BEG_PCHORD is set
+  lush_step_t ty;
+
+  // Special case: LUSH_CURSOR_FLAGS_BEG_PCHORD is set
   if (lush_cursor_is_flag(cursor, LUSH_CURSOR_FLAGS_BEG_PCHORD)) {
     lush_cursor_unset_flag(cursor, LUSH_CURSOR_FLAGS_BEG_PCHORD);
-    return LUSH_STEP_CONT;
+    if (lush_cursor_get_assoc(cursor) == LUSH_ASSOC_0_to_0) {
+      // Special case: LUSH_ASSOC_0_to_0
+      ty = LUSH_STEP_END_CHORD;
+    }
+    else {
+      return LUSH_STEP_CONT;
+    }
   }
 
-  lush_step_t ty = lush_forcestep_pnote(cursor);
-
+  ty = lush_forcestep_pnote(cursor);
+  
   // filter return type
   if (ty == LUSH_STEP_END_PROJ) {
     ty = LUSH_STEP_END_CHORD;
