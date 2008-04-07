@@ -79,6 +79,9 @@ static inline void cilk_ip_init(cilk_ip_t* x, void* ip /*uint32_t status*/)
   //x->u.status = status;
 }
 
+//*************************** Forward Declarations **************************
+
+typedef enum cilk_unw_seg_e cilk_unw_seg_t;
 
 typedef union cilk_cursor cilk_cursor_t;
 
@@ -98,7 +101,8 @@ union cilk_cursor {
     CilkWorkerState* cilk_worker_state;
     Closure*         cilk_closure;
     bool seen_cilkprog;
-
+    bool seen_lctxt;
+    
     // ---------------------------------
     // intra-bichord data (valid for only one bichord)
     // ---------------------------------
@@ -122,6 +126,18 @@ union cilk_cursor {
   ((x)->cache.tail)                                        /* innermost! */
 
 #define CILKFRM_PROC(/* CilkStackFrame* */ x) ((x)->sig[0].inlet)
+
+
+enum cilk_unw_seg_e {
+  CILK_UNW_NULL  = 0,     // Currently unused
+
+  // Currently unused, but to replace above
+  CILK_UNW_SEG_RT,
+  CILK_UNW_SEG_USER,
+  CILK_UNW_SEG_LCTXT,
+  CILK_UNW_SEG_SCHED
+};
+
 
 //*************************** Forward Declarations **************************
 
@@ -312,6 +328,7 @@ LUSHI_step_bichord(lush_cursor_t* cursor)
   // Collect predicates
   // -------------------------------------------------------
   bool seen_cilkprog = csr->u.seen_cilkprog;
+  bool seen_lctxt    = csr->u.seen_lctxt;
 
   bool is_cilkrt   = is_libcilk(csr->u.ref_ip);
   bool is_cilkprog = is_cilkprogram(csr->u.ref_ip);
@@ -327,6 +344,7 @@ LUSHI_step_bichord(lush_cursor_t* cursor)
   // -------------------------------------------------------
   // Given p-note derive l-note:
   //   1. is_cilkrt & is_TOS  => Cilk-scheduling or Cilk-overhead
+  //      ** Can disambiguate by peeking at DEQUE (FIXME) **
   //   2. is_cilkrt & !is_TOS & (seen_cilkprog & closure)
   //                                           => Cilk-sched + logical stack
   //   3. is_cilkrt & !is_TOS & !(seen_cilkprog & closure) 
@@ -339,17 +357,38 @@ LUSHI_step_bichord(lush_cursor_t* cursor)
       lush_cursor_set_assoc(cursor, LUSH_ASSOC_1_to_0);
     }
     else {
-      if (seen_cilkprog && csr->u.cilk_closure) {
-	// case (2)
-	lush_cursor_set_assoc(cursor, LUSH_ASSOC_1_to_M);
+      if (seen_cilkprog) {
+	if (!seen_lctxt && csr->u.cilk_closure) {
+	  // INVARIANT: this is a worker thread!
+	  // case (2)
+	  lush_cursor_set_assoc(cursor, LUSH_ASSOC_1_to_M);
+	  csr->u.seen_lctxt = true;
+	}
+	else if (seen_lctxt && csr->u.cilk_worker_state) {
+#if 1
+	  // If we are unwinding a worker (tested by a non-NULL worker
+	  // state), then we skip this frame
+	  lush_cursor_set_assoc(cursor, LUSH_ASSOC_0_to_0);
+#else
+	  if (csr->u.cilk_closure) {
+	    lush_cursor_set_assoc(cursor, LUSH_ASSOC_1_to_M);
+	  }
+	  else {
+	    lush_cursor_set_assoc(cursor, LUSH_ASSOC_1_to_0);
+	  }
+#endif
+	}
+	else {
+	  lush_cursor_set_assoc(cursor, LUSH_ASSOC_1_to_0);
+	}
       }
       else {
-	// case (3)
+	// case (3) [FIXME: assume Cilk-overhead for now]
 	lush_cursor_set_assoc(cursor, LUSH_ASSOC_1_to_0);
       }
     }
   }
-  if (is_cilkprog) {
+  else if (is_cilkprog) {
     // case (4)
     lush_cursor_set_assoc(cursor, LUSH_ASSOC_1_to_1);
     csr->u.seen_cilkprog = true;
@@ -455,10 +494,12 @@ init_lcursor(lush_cursor_t* cursor)
       (CilkWorkerState*)pthread_getspecific(CILK_WorkerState_key);
     csr->u.cilk_closure = ((ws) ? CILKWS_CL_DEQ_BOT(ws) : NULL);
     csr->u.seen_cilkprog = false;
+    csr->u.seen_lctxt    = false;
     if (ws && ws->self == 0 && !CILK_Has_Thread0_Stolen) {
       // This is the "initial" state of thread 0.  Since we should not
       // consult the cactus stack, set "cilk_closure" to NULL.
-      csr->u.cilk_closure = NULL;
+      csr->u.cilk_closure = NULL; // forward looking!
+      csr->u.seen_lctxt   = true; // forward looking!
     }
   }
 
