@@ -45,7 +45,7 @@ LUSHCB_DECL(CB_get_loadmap);
 
 #undef LUSHCB_DECL
 
-static LUSH_AGENTID_XXX_t MY_lush_aid;
+static lush_agentid_t MY_lush_aid;
 
 //*************************** Forward Declarations **************************
 
@@ -86,7 +86,7 @@ is_cilkprogram(void* addr);
 
 extern int
 LUSHI_init(int argc, char** argv,
-	   LUSH_AGENTID_XXX_t      aid,
+	   lush_agentid_t          aid,
 	   LUSHCB_malloc_fn_t      malloc_fn,
 	   LUSHCB_free_fn_t        free_fn,
 	   LUSHCB_step_fn_t        step_fn,
@@ -277,7 +277,7 @@ LUSHI_step_bichord(lush_cursor_t* cursor)
   // -------------------------------------------------------
 
   // FIXME: consider effects of multiple agents
-  //LUSH_AGENTID_XXX_t last_aid = lush_cursor_get_aid(cursor); 
+  //lush_agentid_t last_aid = lush_cursor_get_aid(cursor); 
 
   if (cur_seg == UNW_SEG_CILKRT) {
     // INVARIANT: unw_ty_is_worker() == true
@@ -418,12 +418,12 @@ init_lcursor(lush_cursor_t* cursor)
 {
   lush_lip_t* lip = lush_cursor_get_lip(cursor);
   cilk_cursor_t* csr = (cilk_cursor_t*)lush_cursor_get_lcursor(cursor);
-  LUSH_AGENTID_XXX_t aid_prev = lush_cursor_get_aid_prev(cursor);
+  lush_agentid_t aid_prev = lush_cursor_get_aid_prev(cursor);
   
   // -------------------------------------------------------
   // inter-bichord data
   // -------------------------------------------------------
-  if (aid_prev == 0 /*FIXME: lush_agentid_NULL*/) {
+  if (aid_prev == lush_agentid_NULL) {
     CilkWorkerState* ws = 
       (CilkWorkerState*)pthread_getspecific(CILK_WorkerState_key);
     
