@@ -53,6 +53,8 @@
 # umask -S g=rwx,o=rwx # temporary check
 # umask -S -p # see change
 
+ulimit_works='' # default to NO on jacquard
+
 CSPROF_VERSION="1.0"
 
 CSPROF_DIR="`dirname $0`"
@@ -230,8 +232,9 @@ f_getoptions()
       -x)   shift; opt_metrics="$1";
             f_opt_check "-x" "${opt_metrics}";
             ;;
-      -L)   shift; opt_debug="$1";
-            f_opt_check "-D" "${opt_debug}";
+      -L)   # shift; opt_debug="$1";
+            # f_opt_check "-L" "${opt_debug}";
+	    opt_debug=1
             ;;
       -d)   opt_debug_wait=1;
             ;;
@@ -351,7 +354,7 @@ f_getoptions "$@"
 
 f_prepareenv
 
-if [ -n $ulimit_works ]; then
+if [ ${ulimit_works}x != x ]; then
    ulimit -c unlimited
 fi
 if [ -n "${opt_debug}" ]; then

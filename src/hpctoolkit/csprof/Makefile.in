@@ -190,7 +190,7 @@ endif
   OBJS += prim_unw.o
 
 OBJS += swizzle.o unsafe.o
-OBJS += loadmod.o processor-libc.o
+OBJS += loadmod.o processor-libc.o dl_add_module.o
 
 ifdef USE_TRAMP
   OBJS += tramp.o 

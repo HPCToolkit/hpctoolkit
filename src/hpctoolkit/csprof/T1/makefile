@@ -51,6 +51,9 @@ t-define:
 
 .PHONY: clean components
 
+tmpi: tmpi.c
+	mpicc $< -lm -o $@
+
 t1: t1.o
 	$(CC) -g $< -lm -o $@
 
