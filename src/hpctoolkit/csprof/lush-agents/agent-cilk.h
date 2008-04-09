@@ -179,7 +179,7 @@ csr_set_flag(cilk_cursor_t* csr, unw_flg_t flg)
 static inline void
 csr_unset_flag(cilk_cursor_t* csr, unw_flg_t flg)
 {
-  csr->u.flg = (csr->u.flg & ~f);
+  csr->u.flg = (csr->u.flg & ~flg);
 }
 
 
