@@ -1,4 +1,5 @@
 #include <mpi.h>
+#include <math.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdarg.h>
@@ -60,7 +61,9 @@ int bar(int myRank){
       x = mlog(y) + mcos(x);
     }
   }
-  if (myRank == 0){
+  // printf("[%d] Before barrier\n",myRank);
+  MPI_Barrier(MPI_COMM_WORLD);
+  if (myRank == 3){
     printf("x = %g, y = %g\n",x,y);
   }
   return 0;
@@ -79,6 +82,11 @@ int main(int argc, char *argv[]){
   // csprof_set_rank(myRank); // temporary until gen soln can be found
 
   bar(myRank);
+  MPI_Barrier(MPI_COMM_WORLD);
+  if (myRank == 3){
+    printf("Ending TMPI\n");
+  }
+  fflush(stdout);
   MPI_Finalize();
   return 0;
 }

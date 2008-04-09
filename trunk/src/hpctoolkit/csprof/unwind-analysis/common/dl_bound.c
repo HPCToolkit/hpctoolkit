@@ -64,7 +64,7 @@ typedef struct dl_record_s {
 
 static dl_record_t *dl_compute(const char *filename, void *start, void *end);
 
-static void dl_add_module_base(const char *module_name, void *start, void *end);
+void dl_add_module_base(const char *module_name, void *start, void *end);
 
 // FIXME: this should come from monitor
 static int
@@ -88,6 +88,7 @@ static dl_record_t *dl_list;
  * interface operations
  *****************************************************************************/
 
+#if 0
 void 
 dl_add_module(const char *module)
 {
@@ -123,6 +124,7 @@ dl_add_module(const char *module)
     }
   }
 }
+#endif
 
 void 
 dl_init()
@@ -203,6 +205,13 @@ find_dl_bound(void *pc, void **start, void **end)
 }
 
 
+char *csprof_strdup(char *str)
+{
+	int n = strlen(str);
+	void *mem = csprof_malloc(n+1);
+        char *result = strcpy(mem, str);
+	return result;
+}
 
 /******************************************************************************
  * private operations
@@ -211,9 +220,9 @@ find_dl_bound(void *pc, void **start, void **end)
 static dl_record_t *
 new_dl_record(const char *name, void **table, int nsymbols, int relocate, void *startaddr, void *endaddr) 
 {
-  dl_record_t *r = (dl_record_t *) malloc(sizeof(dl_record_t));
+  dl_record_t *r = (dl_record_t *) csprof_malloc(sizeof(dl_record_t));
   r->next = dl_list;
-  r->name = strdup(name);
+  r->name = csprof_strdup(name);
   r->table = table;
   r->nsymbols = nsymbols;
 
@@ -226,7 +235,7 @@ new_dl_record(const char *name, void **table, int nsymbols, int relocate, void *
 }
 
 
-static void 
+void 
 dl_add_module_base(const char *module_name, void *start, void *end)
 {
   dl_compute(module_name, start, end);
