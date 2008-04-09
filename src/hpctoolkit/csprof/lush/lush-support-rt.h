@@ -144,14 +144,14 @@ lush_cursor_is_flag(lush_cursor_t* cursor, lush_cursor_flags_t f)
 static inline void 
 lush_cursor_set_flag(lush_cursor_t* cursor, lush_cursor_flags_t f)
 {
-  cursor->flags = cursor->flags | f;
+  cursor->flags = (cursor->flags | f);
 }
 
 
 static inline void 
 lush_cursor_unset_flag(lush_cursor_t* cursor, lush_cursor_flags_t f)
 {
-  cursor->flags = cursor->flags & ~f;
+  cursor->flags = (cursor->flags & ~f);
 }
 
 
