@@ -35,7 +35,7 @@ CSPROF_DOT_O := libcsprof.o
 # DO_LUSH = 1
 LUSH_AGENTS =
 ifdef DO_LUSH
-  LUSH_AGENTS = cilk.so
+  LUSH_AGENTS = agent-cilk.so
 endif
 
 #### FIXME: *Revisit* this when need synchronous profiling
@@ -218,7 +218,7 @@ ifdef DO_LUSH
   INCS += -I$(CILK_INSTALL)/include/cilk
 
   OBJS += lush-backtrace.o
-  LUSH_AGENT_OBJS += cilk.o lush-support-rt.o
+  LUSH_AGENT_OBJS += agent-cilk.o lush-support-rt.o
 endif
 
 OBJS += lush.o \
