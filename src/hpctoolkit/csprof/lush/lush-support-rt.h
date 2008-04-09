@@ -133,27 +133,55 @@ struct lush_cursor {
   // active marker FIXME
 };
 
-// FIXME: inline
-/*inline*/ bool 
-lush_cursor_is_flag(lush_cursor_t* cursor, lush_cursor_flags_t f);
 
-/*inline*/ void 
-lush_cursor_set_flag(lush_cursor_t* cursor, lush_cursor_flags_t f);
+static inline bool 
+lush_cursor_is_flag(lush_cursor_t* cursor, lush_cursor_flags_t f)
+{ 
+  return (cursor->flags & f); 
+}
 
-/*inline*/ void 
-lush_cursor_unset_flag(lush_cursor_t* cursor, lush_cursor_flags_t f);
 
-/*inline*/ lush_assoc_t
-lush_cursor_get_assoc(lush_cursor_t* cursor);
+static inline void 
+lush_cursor_set_flag(lush_cursor_t* cursor, lush_cursor_flags_t f)
+{
+  cursor->flags = cursor->flags | f;
+}
 
-/*inline*/ void
-lush_cursor_set_assoc(lush_cursor_t* cursor, lush_assoc_t as);
 
-/*inline*/ lush_agentid_t
-lush_cursor_get_aid(lush_cursor_t* cursor);
+static inline void 
+lush_cursor_unset_flag(lush_cursor_t* cursor, lush_cursor_flags_t f)
+{
+  cursor->flags = cursor->flags & ~f;
+}
 
-/*inline*/ void
-lush_cursor_set_aid(lush_cursor_t* cursor, lush_agentid_t aid);
+
+static inline lush_assoc_t 
+lush_cursor_get_assoc(lush_cursor_t* cursor)
+{
+  return lush_assoc_info__get_assoc(cursor->as_info);
+}
+
+
+static inline void
+lush_cursor_set_assoc(lush_cursor_t* cursor, lush_assoc_t as)
+{
+  lush_assoc_info__set_assoc(cursor->as_info, as);
+}
+
+
+static inline lush_agentid_t
+lush_cursor_get_aid(lush_cursor_t* cursor)
+{
+  return cursor->aid;
+}
+
+
+static inline void
+lush_cursor_set_aid(lush_cursor_t* cursor, lush_agentid_t aid)
+{
+  cursor->aid = aid;
+}
+
 
 static inline lush_agentid_t
 lush_cursor_get_aid_prev(lush_cursor_t* cursor)
@@ -161,23 +189,44 @@ lush_cursor_get_aid_prev(lush_cursor_t* cursor)
   return cursor->aid_prev;
 }
 
+
 static inline void
 lush_cursor_set_aid_prev(lush_cursor_t* cursor, lush_agentid_t aid)
 {
   cursor->aid_prev = aid;
 }
 
-/*inline*/ unw_word_t
-lush_cursor_get_ip(lush_cursor_t* cursor);
 
-/*inline*/ lush_lip_t*
-lush_cursor_get_lip(lush_cursor_t* cursor);
+static inline unw_word_t
+lush_cursor_get_ip(lush_cursor_t* cursor)
+{
+  unw_word_t ip = 0;
+  if (unw_get_reg(&cursor->pcursor, UNW_REG_IP, &ip) < 0) {
+    // FIXME
+  }
+  return ip;
+}
 
-/*inline*/ unw_cursor_t*
-lush_cursor_get_pcursor(lush_cursor_t* cursor);
 
-/*inline*/ lush_lcursor_t*
-lush_cursor_get_lcursor(lush_cursor_t* cursor);
+static inline lush_lip_t*
+lush_cursor_get_lip(lush_cursor_t* cursor)
+{
+  return &cursor->lip;
+}
+
+
+static inline unw_cursor_t*
+lush_cursor_get_pcursor(lush_cursor_t* cursor)
+{
+  return &cursor->pcursor;
+}
+
+
+static inline lush_lcursor_t*
+lush_cursor_get_lcursor(lush_cursor_t* cursor)
+{
+  return &cursor->lcursor;
+}
 
 
 // **************************************************************************
