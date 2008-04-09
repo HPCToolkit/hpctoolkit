@@ -62,7 +62,10 @@ inline bool implies(bool p, bool q) { return (!p || q); }
 
 //***************************************************************************
 //
+
 //***************************************************************************
+
+#if 0 // tallent: eliminate defined-but-not-used-warning (FIXME)
 
 /* balanced red black trees for finding children */
 
@@ -126,7 +129,7 @@ rbtree_node_create(csprof_cct_node_t *x, struct rbtree_node *parent)
 
   return node;
 }
-    
+
 static struct rbtree_node *
 rbtree_search(struct rbtree *tree, void *ip, void *sp)
 {
@@ -298,6 +301,7 @@ rbtree_insert(struct rbtree *tree, csprof_cct_node_t *node)
   BLACKEN(tree->root);
 }
 
+#endif
 
 //***************************************************************************
 //

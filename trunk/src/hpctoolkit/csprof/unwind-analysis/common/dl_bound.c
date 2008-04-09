@@ -205,7 +205,7 @@ find_dl_bound(void *pc, void **start, void **end)
 }
 
 
-char *csprof_strdup(char *str)
+char *csprof_strdup(const char *str)
 {
 	int n = strlen(str);
 	void *mem = csprof_malloc(n+1);

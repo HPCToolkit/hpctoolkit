@@ -7,6 +7,8 @@
 
 #include "thread_data.h"
 
+#include <monitor.h>
+
 static thread_data_t _local_td;
 
 static thread_data_t *

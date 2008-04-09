@@ -64,6 +64,8 @@ extern void *libcall3_end;
 extern void *libcall4_end;
 #endif
 
+#if 0 // tallent: eliminate defined-but-not-used-warning (FIXME)
+
 /* these arrays need to be sorted lowest address to highest */
 /* these arrays should also be automagically generated in some fashion */
 /* we don't include the trampoline function and so forth in here because
@@ -121,6 +123,8 @@ static void *invalid_static_procedures_end[] =
 static void **invalid_loaded_procedures_start = NULL;
 static void **invalid_loaded_procedures_end = NULL;
 static size_t n_loaded_procedures;
+
+#endif
 
 static unsigned int
 bisect(void **array, void *x, size_t n)
@@ -187,6 +191,8 @@ csprof_is_unsafe_library(void *addr)
 #endif
 }
 
+#if 0 // tallent: eliminate defined-but-not-used-warning (FIXME)
+
 static int
 csprof_addr_is_unsafe(void *addr)
 {
@@ -197,6 +203,8 @@ csprof_addr_is_unsafe(void *addr)
                                           invalid_loaded_procedures_start, n_loaded_procedures);
 #endif
 }
+
+#endif
 
 #ifdef NO
 int
