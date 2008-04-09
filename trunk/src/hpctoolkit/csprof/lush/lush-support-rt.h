@@ -43,12 +43,6 @@
   typedef RET (* FN ## _fn_t) ARGS
 
 
-//*************************** Forward Declarations **************************
-
-// From <lush.h> [FIXME: reevaluate]
-#define LUSH_AGENTID_XXX_t      int
-#define LUSH_AGENT_POOL_XXX_t   struct lush_agent_pool
-
 //***************************************************************************
 // LUSH Unwind Types
 //***************************************************************************
@@ -124,11 +118,11 @@ typedef struct lush_cursor lush_cursor_t;
 
 struct lush_cursor {
   // meta info
-  unsigned flags;               // lush_cursor_flags
-  lush_assoc_info_t as_info;    // bichord's physical-logical association
-  LUSH_AGENTID_XXX_t aid;       // agent id (if any) owning this cursor
-  LUSH_AGENTID_XXX_t aid_prev;  // previous agent id (excluding identity agent)
-  LUSH_AGENT_POOL_XXX_t* apool; // agent pool
+  unsigned flags;            // lush_cursor_flags
+  lush_assoc_info_t as_info; // bichord's physical-logical association
+  lush_agentid_t aid;        // agent id (if any) owning this cursor
+  lush_agentid_t aid_prev;   // previous agent id (excluding identity agent)
+  lush_agent_pool_t* apool;  // agent pool
 
   // physical cursor
   unw_cursor_t pcursor;
@@ -155,20 +149,20 @@ lush_cursor_get_assoc(lush_cursor_t* cursor);
 /*inline*/ void
 lush_cursor_set_assoc(lush_cursor_t* cursor, lush_assoc_t as);
 
-/*inline*/ LUSH_AGENTID_XXX_t
+/*inline*/ lush_agentid_t
 lush_cursor_get_aid(lush_cursor_t* cursor);
 
 /*inline*/ void
-lush_cursor_set_aid(lush_cursor_t* cursor, LUSH_AGENTID_XXX_t aid);
+lush_cursor_set_aid(lush_cursor_t* cursor, lush_agentid_t aid);
 
-static inline LUSH_AGENTID_XXX_t
+static inline lush_agentid_t
 lush_cursor_get_aid_prev(lush_cursor_t* cursor)
 {
   return cursor->aid_prev;
 }
 
 static inline void
-lush_cursor_set_aid_prev(lush_cursor_t* cursor, LUSH_AGENTID_XXX_t aid)
+lush_cursor_set_aid_prev(lush_cursor_t* cursor, lush_agentid_t aid)
 {
   cursor->aid_prev = aid;
 }
@@ -187,9 +181,5 @@ lush_cursor_get_lcursor(lush_cursor_t* cursor);
 
 
 // **************************************************************************
-
-#undef LUSH_AGENTID_t
-#undef LUSH_AGENT_POOL_t
-
 
 #endif /* lush_support_rt_h */

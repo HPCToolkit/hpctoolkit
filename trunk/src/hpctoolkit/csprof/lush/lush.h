@@ -41,32 +41,10 @@ extern "C" {
 //***************************************************************************
 
 // ---------------------------------------------------------
-// LUSH agent id
-// ---------------------------------------------------------
-
-#define lush_agentid_NULL 0
-typedef int lush_agentid_t;
-
-
-// ---------------------------------------------------------
-// A LUSH agent
-// ---------------------------------------------------------
-
-typedef struct lush_agent lush_agent_t;
-
-struct lush_agent {
-  lush_agentid_t id;
-  char* path;
-  void* dlhandle;
-};
-
-
-// ---------------------------------------------------------
 // A pool of LUSH agents
 // ---------------------------------------------------------
 
-typedef struct lush_agent_pool lush_agent_pool_t;
-
+// FIXME: put this and agent decls in lush-support.h into one file.
 struct lush_agent_pool {
 
   lush_agent_t agent; // FIXME: one agent for now
