@@ -247,13 +247,13 @@ LUSHI_step_bichord(lush_cursor_t* cursor)
 
     if (is_user) {
       cur_seg = UNW_SEG_USER;
-      csr_flg_set(csr, UNW_FLG_SEEN_USER);
+      csr_set_flag(csr, UNW_FLG_SEEN_USER);
     }
     else if (is_cilkrt) {
       cur_seg = (deq_diff <= 1) ? UNW_SEG_CILKSCHED : UNW_SEG_CILKRT;
 
       // FIXME: sometimes the above test is not correct... OVERRIDE
-      if (cur_seg == UNW_SEG_CILKRT && csr_flg_is(csr, UNW_FLG_SEEN_USER)) {
+      if (cur_seg == UNW_SEG_CILKRT && csr_is_flag(csr, UNW_FLG_SEEN_USER)) {
 	cur_seg = UNW_SEG_CILKSCHED;
       }
     }
@@ -294,11 +294,11 @@ LUSHI_step_bichord(lush_cursor_t* cursor)
 	break;
       case UNW_TY_WORKER0:
 	if (csr->u.prev_seg == UNW_SEG_USER 
-	    && !csr_flg_is(csr, UNW_FLG_HAVE_LCTXT)) {
+	    && !csr_is_flag(csr, UNW_FLG_HAVE_LCTXT)) {
 	  lush_cursor_set_assoc(cursor, LUSH_ASSOC_1_to_1);
-	  csr_flg_set(csr, UNW_FLG_HAVE_LCTXT);
+	  csr_set_flag(csr, UNW_FLG_HAVE_LCTXT);
     	}
-	else if (csr_flg_is(csr, UNW_FLG_HAVE_LCTXT)) {
+	else if (csr_is_flag(csr, UNW_FLG_HAVE_LCTXT)) {
 	  lush_cursor_set_assoc(cursor, LUSH_ASSOC_0_to_0);
 	}
 	else {
@@ -307,11 +307,11 @@ LUSHI_step_bichord(lush_cursor_t* cursor)
 	break;
       case UNW_TY_WORKER1:
 	if (csr->u.prev_seg == UNW_SEG_USER 
-	    && !csr_flg_is(csr, UNW_FLG_HAVE_LCTXT)) {
+	    && !csr_is_flag(csr, UNW_FLG_HAVE_LCTXT)) {
 	  lush_cursor_set_assoc(cursor, LUSH_ASSOC_1_to_M);
-	  csr_flg_set(csr, UNW_FLG_HAVE_LCTXT);
+	  csr_set_flag(csr, UNW_FLG_HAVE_LCTXT);
 	}
-	else if (csr_flg_is(csr, UNW_FLG_HAVE_LCTXT)) {
+	else if (csr_is_flag(csr, UNW_FLG_HAVE_LCTXT)) {
 	  //TRY: lush_cursor_set_assoc(cursor, LUSH_ASSOC_0_to_0);
 	  lush_cursor_set_assoc(cursor, LUSH_ASSOC_1_to_0);
 	}
@@ -366,19 +366,19 @@ LUSHI_step_lnote(lush_cursor_t* cursor)
     ty = LUSH_STEP_END_CHORD;
   }
   else if (as == LUSH_ASSOC_1_to_1) {
-    if (csr->u.after_beg_lnote) {
+    if (csr_is_flag(csr, UNW_FLG_BEG_LNOTE)) {
       ty = LUSH_STEP_END_CHORD;
     }
     else {
       cilk_ip_init(lip, csr->u.ref_ip /*0*/);
       ty = LUSH_STEP_CONT;
-      csr->u.after_beg_lnote = true;
+      csr_set_flag(csr, UNW_FLG_BEG_LNOTE);
     }
   }
   else if (as == LUSH_ASSOC_1_to_M) {
     // INVARIANT: csr->u.cilk_closure is non-NULL
     Closure* cl = csr->u.cilk_closure;
-    if (csr->u.after_beg_lnote) {
+    if (csr_is_flag(csr, UNW_FLG_BEG_LNOTE)) {
       cl = csr->u.cilk_closure = cl->parent;
       if (!cl) {
 	cilk_ip_init(lip, NULL /*0*/);
@@ -392,7 +392,7 @@ LUSHI_step_lnote(lush_cursor_t* cursor)
     else {
       cilk_ip_init(lip, CILKFRM_PROC(cl->frame) /*cl->status*/);
       ty = LUSH_STEP_CONT;
-      csr->u.after_beg_lnote = true;
+      csr_set_flag(csr, UNW_FLG_BEG_LNOTE);
     }
   }
   else {
@@ -455,7 +455,7 @@ init_lcursor(lush_cursor_t* cursor)
   memset(lip, 0, sizeof(*lip));
 
   csr->u.ref_ip = (void*)lush_cursor_get_ip(cursor);
-  csr->u.after_beg_lnote = false;
+  csr_unset_flag(csr, UNW_FLG_BEG_LNOTE);
 }
 
 

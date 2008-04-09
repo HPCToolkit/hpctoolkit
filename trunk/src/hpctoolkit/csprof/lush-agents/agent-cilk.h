@@ -125,8 +125,9 @@ typedef enum unw_flg_e unw_flg_t;
 
 enum unw_flg_e {
   UNW_FLG_NULL       = 0x00,
-  UNW_FLG_SEEN_USER  = 0x01,
-  UNW_FLG_HAVE_LCTXT = 0x02
+  UNW_FLG_SEEN_USER  = 0x01, // user code has been seen (inter)
+  UNW_FLG_HAVE_LCTXT = 0x02, // logical context has been obtained (inter)
+  UNW_FLG_BEG_LNOTE  = 0x04, // past beginning note an an lchord
 };
 
 
@@ -147,33 +148,38 @@ union cilk_cursor {
     // ---------------------------------
     // inter-bichord data (valid for the whole of one logical unwind)
     // ---------------------------------
-    unw_seg_t prev_seg: 8; // ty of prev bi-chord
     unw_ty_t  ty      : 8; // type of current unwind
+    unw_seg_t prev_seg: 8; // ty of prev bi-chord
     unw_flg_t flg     : 8; // unwind flags
     unsigned  xxx     : 8; // UNUSED
     CilkWorkerState* cilk_worker_state;
-    Closure*         cilk_closure;
+    Closure*         cilk_closure; // modified during traversal
     
     // ---------------------------------
     // intra-bichord data (valid for only one bichord)
     // ---------------------------------
     void* ref_ip;          // reference physical ip
-    bool after_beg_lnote;
 
   } u;
 };
 
 
+static inline bool
+csr_is_flag(cilk_cursor_t* csr, unw_flg_t flg)
+{
+  return (csr->u.flg & flg);
+}
+
 static inline void
-csr_flg_set(cilk_cursor_t* csr, unw_flg_t flg)
+csr_set_flag(cilk_cursor_t* csr, unw_flg_t flg)
 {
   csr->u.flg = (csr->u.flg | flg);
 }
 
-static inline bool
-csr_flg_is(cilk_cursor_t* csr, unw_flg_t flg)
+static inline void
+csr_unset_flag(cilk_cursor_t* csr, unw_flg_t flg)
 {
-  return (csr->u.flg & flg);
+  csr->u.flg = (csr->u.flg & ~f);
 }
 
 
