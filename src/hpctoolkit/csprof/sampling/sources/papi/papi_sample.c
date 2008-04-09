@@ -52,11 +52,13 @@ csprof_papi_events_add_event(int event, int thresh)
   csprof_papi_events.thresh[csprof_papi_events.nevents++] = thresh;
 }
 
+#if 0 // tallent: eliminate defined-but-not-used-warning
 static int
 csprof_papi_events_initialized()
 {
   return csprof_papi_events.nevents > 0;
 }
+#endif
 
 #if 0
 static int 
