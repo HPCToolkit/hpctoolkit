@@ -210,6 +210,7 @@ lush_step_bichord(lush_cursor_t* cursor)
   for (aid = 1; aid <= 1; ++aid) { // FIXME: first in list, etc.
     if (pool->LUSHI_ismycode[aid](ip)) {
       ty = pool->LUSHI_step_bichord[aid](cursor);
+      lush_cursor_set_aid_prev(cursor, aid);
       first_aid = aid;
       // FIXME: move agent to beginning of list;
       break;
