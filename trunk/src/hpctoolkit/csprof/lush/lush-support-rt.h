@@ -126,7 +126,8 @@ struct lush_cursor {
   // meta info
   unsigned flags;               // lush_cursor_flags
   lush_assoc_info_t as_info;    // bichord's physical-logical association
-  LUSH_AGENTID_XXX_t     aid;   // agent id (if any) owning this cursor
+  LUSH_AGENTID_XXX_t aid;       // agent id (if any) owning this cursor
+  LUSH_AGENTID_XXX_t aid_prev;  // previous agent id (excluding identity agent)
   LUSH_AGENT_POOL_XXX_t* apool; // agent pool
 
   // physical cursor
@@ -159,6 +160,18 @@ lush_cursor_get_aid(lush_cursor_t* cursor);
 
 /*inline*/ void
 lush_cursor_set_aid(lush_cursor_t* cursor, LUSH_AGENTID_XXX_t aid);
+
+static inline LUSH_AGENTID_XXX_t
+lush_cursor_get_aid_prev(lush_cursor_t* cursor)
+{
+  return cursor->aid_prev;
+}
+
+static inline void
+lush_cursor_set_aid_prev(lush_cursor_t* cursor, LUSH_AGENTID_XXX_t aid)
+{
+  cursor->aid_prev = aid;
+}
 
 /*inline*/ unw_word_t
 lush_cursor_get_ip(lush_cursor_t* cursor);

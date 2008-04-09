@@ -23,21 +23,14 @@
 #include <string.h>
 #include <errno.h>
 #include <stdbool.h>
+#include <pthread.h>
 
 //*************************** User Include Files ****************************
 
+#include "agent-cilk.h"
+
 #include <general.h> // FIXME: for MSG -- but should not include
 #include <pmsg.h>
-
-#include <lush/lushi.h>
-#include <lush/lushi-cb.h>
-
-//*************************** Forward Declarations **************************
-
-#include <pthread.h>
-
-#include <../cilk/cilk.h>          /* Cilk (installed) */
-#include <../cilk/cilk-internal.h> /* Cilk (not installed) */
 
 //*************************** Forward Declarations **************************
 
@@ -52,92 +45,7 @@ LUSHCB_DECL(CB_get_loadmap);
 
 #undef LUSHCB_DECL
 
-LUSH_AGENTID_XXX_t lush_aid;
-
-//*************************** Forward Declarations **************************
-
-typedef union cilk_ip cilk_ip_t;
-
-union cilk_ip {
-  // ------------------------------------------------------------
-  // LUSH type
-  // ------------------------------------------------------------
-  lush_lip_t official_lip;
-  
-  // ------------------------------------------------------------
-  // superimposed with:
-  // ------------------------------------------------------------
-  struct {
-    void* ip;
-    //uint32_t status;
-  } u;
-};
-
-static inline void cilk_ip_init(cilk_ip_t* x, void* ip /*uint32_t status*/)
-{
-  x->u.ip = ip;
-  //x->u.status = status;
-}
-
-//*************************** Forward Declarations **************************
-
-typedef enum cilk_unw_seg_e cilk_unw_seg_t;
-
-typedef union cilk_cursor cilk_cursor_t;
-
-union cilk_cursor {
-  // ------------------------------------------------------------
-  // LUSH type
-  // ------------------------------------------------------------
-  lush_lcursor_t official_cursor;
-
-  // ------------------------------------------------------------
-  // superimposed with:
-  // ------------------------------------------------------------
-  struct {
-    // ---------------------------------
-    // inter-bichord data (valid for the whole of one logical unwind)
-    // ---------------------------------
-    CilkWorkerState* cilk_worker_state;
-    Closure*         cilk_closure;
-    bool seen_cilkprog;
-    bool seen_lctxt;
-    
-    // ---------------------------------
-    // intra-bichord data (valid for only one bichord)
-    // ---------------------------------
-    void* ref_ip;          // reference physical ip
-    bool after_beg_lnote;
-
-  } u;
-};
-
-// NOTE: Each thread has a deque.
-// - Local work (innermost) is pushed and popped from the BOTTOM or
-//   the TAIL of the deque while thieves steal from the TOP or HEAD
-//   (outermost).
-#define CILKWS_CL_DEQ_TOP(/* CilkWorkerState* */ x) \
-  ((x)->context->Cilk_RO_params->deques[(x)->self].top)    /* outermost! */
-#define CILKWS_CL_DEQ_BOT(/* CilkWorkerState* */ x) \
-  ((x)->context->Cilk_RO_params->deques[(x)->self].bottom) /* innermost! */
-#define CILKWS_FRAME_DEQ_HEAD(/* CilkWorkerState* */ x) \
-  ((x)->cache.head)                                        /* outermost! */
-#define CILKWS_FRAME_DEQ_TAIL(/* CilkWorkerState* */ x) \
-  ((x)->cache.tail)                                        /* innermost! */
-
-#define CILKFRM_PROC(/* CilkStackFrame* */ x) ((x)->sig[0].inlet)
-
-
-enum cilk_unw_seg_e {
-  CILK_UNW_NULL  = 0,     // Currently unused
-
-  // Currently unused, but to replace above
-  CILK_UNW_SEG_RT,
-  CILK_UNW_SEG_USER,
-  CILK_UNW_SEG_LCTXT,
-  CILK_UNW_SEG_SCHED
-};
-
+static LUSH_AGENTID_XXX_t MY_lush_aid;
 
 //*************************** Forward Declarations **************************
 
@@ -159,6 +67,9 @@ addr_pair_t tableother[tableother_sz];
 
 //*************************** Forward Declarations **************************
 
+static void
+init_lcursor(lush_cursor_t* cursor);
+
 static int 
 determine_code_ranges();
 
@@ -168,13 +79,6 @@ is_libcilk(void* addr);
 static bool
 is_cilkprogram(void* addr);
 
-//*************************** Forward Declarations **************************
-
-static void
-init_lcursor(lush_cursor_t* cursor);
-
-//*************************** Forward Declarations **************************
-
 
 // **************************************************************************
 // Initialization/Finalization
@@ -182,13 +86,13 @@ init_lcursor(lush_cursor_t* cursor);
 
 extern int
 LUSHI_init(int argc, char** argv,
-	   LUSH_AGENTID_XXX_t aid,
+	   LUSH_AGENTID_XXX_t      aid,
 	   LUSHCB_malloc_fn_t      malloc_fn,
 	   LUSHCB_free_fn_t        free_fn,
 	   LUSHCB_step_fn_t        step_fn,
 	   LUSHCB_get_loadmap_fn_t loadmap_fn)
 {
-  lush_aid = aid;
+  MY_lush_aid = aid;
 
   CB_malloc      = malloc_fn;
   CB_free        = free_fn;
@@ -325,74 +229,103 @@ LUSHI_step_bichord(lush_cursor_t* cursor)
   cilk_cursor_t* csr = (cilk_cursor_t*)lush_cursor_get_lcursor(cursor);
 
   // -------------------------------------------------------
-  // Collect predicates
+  // Compute p-note's current stack segment ('cur_seg')
   // -------------------------------------------------------
-  bool seen_cilkprog = csr->u.seen_cilkprog;
-  bool seen_lctxt    = csr->u.seen_lctxt;
+  unw_seg_t cur_seg = UNW_SEG_NULL;
 
-  bool is_cilkrt   = is_libcilk(csr->u.ref_ip);
-  bool is_cilkprog = is_cilkprogram(csr->u.ref_ip);
+  bool is_cilkrt = is_libcilk(csr->u.ref_ip);
+  bool is_user   = is_cilkprogram(csr->u.ref_ip);
 
-  bool is_TOS; // top of stack
-  if (lush_cursor_is_flag(cursor, LUSH_CURSOR_FLAGS_BEG_PPROJ)) {
-    is_TOS = true;
+  if (unw_ty_is_worker(csr->u.ty)) {
+    // -------------------------------------------------------
+    // 1. is_cilkrt &  (deq_diff <= 1) => UNW_SEG_CILKSCHED 
+    // 2. is_cilkrt & !(deq_diff <= 1) => UNW_SEG_CILKRT
+    // 3. is_user                      => UNW_SEG_USER
+    // -------------------------------------------------------
+    CilkWorkerState* ws = csr->u.cilk_worker_state;
+    long deq_diff = CILKWS_FRAME_DEQ_TAIL(ws) - CILKWS_FRAME_DEQ_HEAD(ws);
+
+    if (is_user) {
+      cur_seg = UNW_SEG_USER;
+      csr_flg_set(csr, UNW_FLG_SEEN_USER);
+    }
+    else if (is_cilkrt) {
+      cur_seg = (deq_diff <= 1) ? UNW_SEG_CILKSCHED : UNW_SEG_CILKRT;
+
+      // FIXME: sometimes the above test is not correct... OVERRIDE
+      if (cur_seg == UNW_SEG_CILKRT && csr_flg_is(csr, UNW_FLG_SEEN_USER)) {
+	cur_seg = UNW_SEG_CILKSCHED;
+      }
+    }
+    else {
+      fprintf(stderr, "FIXME: (assert): neither cilkrt nor user\n");
+    }
   }
+  else if (unw_ty_is_master(csr->u.ty)) {
+    cur_seg = UNW_SEG_CILKSCHED;
+    if ( !(is_user || is_cilkrt) ) {
+      // is_user may be true when executing main
+      fprintf(stderr, "FIXME: Unknown segment for master (assert)\n"); 
+    }
+  }
+  else {
+    fprintf(stderr, "FIXME: Unknown thread type! (assert)\n");
+  }
+
+  // -------------------------------------------------------
+  // Given p-note derive l-note:
+  // -------------------------------------------------------
 
   // FIXME: consider effects of multiple agents
   //LUSH_AGENTID_XXX_t last_aid = lush_cursor_get_aid(cursor); 
 
-  // -------------------------------------------------------
-  // Given p-note derive l-note:
-  //   1. is_cilkrt & is_TOS  => Cilk-scheduling or Cilk-overhead
-  //      ** Can disambiguate by peeking at DEQUE (FIXME) **
-  //   2. is_cilkrt & !is_TOS & (seen_cilkprog & closure)
-  //                                           => Cilk-sched + logical stack
-  //   3. is_cilkrt & !is_TOS & !(seen_cilkprog & closure) 
-  //                                           => {result (1)}
-  //   4. is_cilkprog => Cilk + logical Cilk
-  // -------------------------------------------------------
-  if (is_cilkrt) {
-    if (is_TOS) {
-      // case (1)
-      lush_cursor_set_assoc(cursor, LUSH_ASSOC_1_to_0);
-    }
-    else {
-      if (seen_cilkprog) {
-	if (!seen_lctxt && csr->u.cilk_closure) {
-	  // INVARIANT: this is a worker thread!
-	  // case (2)
-	  lush_cursor_set_assoc(cursor, LUSH_ASSOC_1_to_M);
-	  csr->u.seen_lctxt = true;
-	}
-	else if (seen_lctxt && csr->u.cilk_worker_state) {
-#if 1
-	  // If we are unwinding a worker (tested by a non-NULL worker
-	  // state), then we skip this frame
+  if (cur_seg == UNW_SEG_CILKRT) {
+    // INVARIANT: unw_ty_is_worker() == true
+    lush_cursor_set_assoc(cursor, LUSH_ASSOC_1_to_0);
+  }
+  else if (cur_seg == UNW_SEG_USER) {
+    // INVARIANT: unw_ty_is_worker() == true
+    lush_cursor_set_assoc(cursor, LUSH_ASSOC_1_to_1);
+  }
+  else if (cur_seg == UNW_SEG_CILKSCHED) {
+    switch (csr->u.ty) {
+      case UNW_TY_MASTER:
+	lush_cursor_set_assoc(cursor, LUSH_ASSOC_1_to_0);
+	break;
+      case UNW_TY_WORKER0:
+	if (csr->u.prev_seg == UNW_SEG_USER 
+	    && !csr_flg_is(csr, UNW_FLG_HAVE_LCTXT)) {
+	  lush_cursor_set_assoc(cursor, LUSH_ASSOC_1_to_1);
+	  csr_flg_set(csr, UNW_FLG_HAVE_LCTXT);
+    	}
+	else if (csr_flg_is(csr, UNW_FLG_HAVE_LCTXT)) {
 	  lush_cursor_set_assoc(cursor, LUSH_ASSOC_0_to_0);
-#else
-	  if (csr->u.cilk_closure) {
-	    lush_cursor_set_assoc(cursor, LUSH_ASSOC_1_to_M);
-	  }
-	  else {
-	    lush_cursor_set_assoc(cursor, LUSH_ASSOC_1_to_0);
-	  }
-#endif
 	}
 	else {
 	  lush_cursor_set_assoc(cursor, LUSH_ASSOC_1_to_0);
 	}
-      }
-      else {
-	// case (3) [FIXME: assume Cilk-overhead for now]
-	lush_cursor_set_assoc(cursor, LUSH_ASSOC_1_to_0);
-      }
+	break;
+      case UNW_TY_WORKER1:
+	if (csr->u.prev_seg == UNW_SEG_USER 
+	    && !csr_flg_is(csr, UNW_FLG_HAVE_LCTXT)) {
+	  lush_cursor_set_assoc(cursor, LUSH_ASSOC_1_to_M);
+	  csr_flg_set(csr, UNW_FLG_HAVE_LCTXT);
+	}
+	else if (csr_flg_is(csr, UNW_FLG_HAVE_LCTXT)) {
+	  //TRY: lush_cursor_set_assoc(cursor, LUSH_ASSOC_0_to_0);
+	  lush_cursor_set_assoc(cursor, LUSH_ASSOC_1_to_0);
+	}
+	else {
+	  lush_cursor_set_assoc(cursor, LUSH_ASSOC_1_to_0);
+	}
+	break;
+      default: fprintf(stderr, "FIXME: default case (assert)\n");
     }
   }
-  else if (is_cilkprog) {
-    // case (4)
-    lush_cursor_set_assoc(cursor, LUSH_ASSOC_1_to_1);
-    csr->u.seen_cilkprog = true;
-  }
+
+
+  // record for next bi-chord
+  csr->u.prev_seg = cur_seg;
 
   return LUSH_STEP_CONT;
 }
@@ -485,22 +418,35 @@ init_lcursor(lush_cursor_t* cursor)
 {
   lush_lip_t* lip = lush_cursor_get_lip(cursor);
   cilk_cursor_t* csr = (cilk_cursor_t*)lush_cursor_get_lcursor(cursor);
+  LUSH_AGENTID_XXX_t aid_prev = lush_cursor_get_aid_prev(cursor);
   
   // -------------------------------------------------------
   // inter-bichord data
   // -------------------------------------------------------
-  if (lush_cursor_is_flag(cursor, LUSH_CURSOR_FLAGS_BEG_PPROJ)) {
-    CilkWorkerState* ws = csr->u.cilk_worker_state = 
+  if (aid_prev == 0 /*FIXME: lush_agentid_NULL*/) {
+    CilkWorkerState* ws = 
       (CilkWorkerState*)pthread_getspecific(CILK_WorkerState_key);
-    csr->u.cilk_closure = ((ws) ? CILKWS_CL_DEQ_BOT(ws) : NULL);
-    csr->u.seen_cilkprog = false;
-    csr->u.seen_lctxt    = false;
-    if (ws && ws->self == 0 && !CILK_Has_Thread0_Stolen) {
-      // This is the "initial" state of thread 0.  Since we should not
-      // consult the cactus stack, set "cilk_closure" to NULL.
-      csr->u.cilk_closure = NULL; // forward looking!
-      csr->u.seen_lctxt   = true; // forward looking!
+    
+    csr->u.prev_seg = UNW_SEG_NULL;
+
+    // unw_ty_t
+    if (!ws) {
+      csr->u.ty = UNW_TY_MASTER;
     }
+    else if (ws->self == 0 && !CILK_Has_Thread0_Stolen) {
+      csr->u.ty = UNW_TY_WORKER0;
+    }
+    else {
+      csr->u.ty = UNW_TY_WORKER1;
+    }
+
+    csr->u.flg = UNW_FLG_NULL;
+
+    csr->u.cilk_worker_state = ws;
+    csr->u.cilk_closure = (ws) ? CILKWS_CL_DEQ_BOT(ws) : NULL;
+  }
+  else if (aid_prev != MY_lush_aid) {
+    fprintf(stderr, "FIXME: HOW TO HANDLE MULTIPLE AGENTS?\n");
   }
 
   // -------------------------------------------------------
