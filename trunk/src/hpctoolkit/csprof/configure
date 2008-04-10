@@ -91,19 +91,15 @@ while [ $# -gt 0 ]
 do
     case $1 in
 	--prefix=*) opt_prefix=${1#--prefix=}
-#	            f_error_on_nil "$opt_prefix" "empty prefix specified"
 	          ;;
 
 	--papi-dir=*) opt_papi_dir=${1#--papi-dir=}
-#	            f_error_on_nil "$opt_papi_dir" "empty prefix specified"
 	          ;;
 
 	--xed2-dir=*) opt_xed2_dir=${1#--xed2-dir=}
-#	            f_error_on_nil "$opt_xed2_dir" "empty prefix specified"
 	          ;;
 
 	--monitor-dir=*) opt_monitor_dir=${1#--monitor-dir=}
-#	            f_error_on_nil "$opt_monitor_dir" "empty prefix specified"
 	          ;;
 
 	  --with-dbg)opt_with_dbg=1;
@@ -191,8 +187,7 @@ XEDDCL := -DXED_SCALARS
 
 EOF
 
-cp $conf_home/Makefile.in ./Makefile
-cp Makefile.conf $conf_home/symbols
+cp $conf_home/Makefile ./Makefile
 
 ###### NOT USED ANYMORE -- install target now does this (via install program) #########
 

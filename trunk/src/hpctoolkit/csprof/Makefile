@@ -1,10 +1,7 @@
-# -*-Mode: makefile;-*-
-# $Id$
-
-# Makefile.in intermediate to full autoconf, automake
+# Makefile intermediate to full autoconf, automake
 # now, just the std Makefile, but include Makefile.conf
 
-include Makefile.conf
+-include Makefile.conf
 
 install_lib := $(install_prefix)/lib
 install_bin := $(install_prefix)/bin
@@ -84,6 +81,11 @@ module_dirs := utilities                \
                sampling/sources/papi    \
                lush                     \
                lush-agents
+
+
+.PHONY: TAGS
+TAGS:
+	etags *.[csh] hpcfile/*.[csh] $(addsuffix /*.[csh],$(module_dirs))
 
 
 ifdef STATIC_ONLY
@@ -281,19 +283,12 @@ TT:
 $(LIB_CSFILE):
 	@cd hpcfile; $(MAKE) -I ..
 
-# clean (for now) is bclean
-clean: bclean
+.PHONY: clean
+clean:
+	rm -rf *.o *.so *.so.[0-9]*
 	@/bin/rm -f $(LUSH_AGENTS) $(LUSH_AGENT_OBJS)
 
-.PHONY: TAGS
-TAGS:
-	etags *.[csh] hpcfile/*.[csh] $(addsuffix /*.[csh],$(module_dirs))
-
-tarball: 
-	@tar -cf csprof.tar $(filter-out %.o %.csp %.log t1 t2 t3,$(wildcard *))
-	@gzip --best csprof.tar
-
-.PHONY : all libcsfile clean tarball static check install
+.PHONY : all libcsfile static check install
 
 $(CSPROFLIB): $(LIB_CSFILE) $(OBJS)
 	$(link) $(link_flags) -o $@ $(OBJS) $(LIBS)
@@ -313,7 +308,6 @@ $(CSPROF_DOT_O): $(OBJS)
 
 .PHONY: bclean
 bclean:
-	rm -rf *.o *.so *.so.[0-9]*
 
 install: all
 	-install -d $(install_lib) $(install_bin) $(install_libexec)
