@@ -128,6 +128,8 @@ if [ "$papi_inc"x == x ]; then
     papi_inc=-I${opt_papi_dir}/include
 fi
 
+## FIXME opt_papi_dir non-null ==> do this also
+##
 if [ "$papi_ld"x == x ]; then
     if [ -d "$opt_papi_dir/lib" ]; then
         papi_lib_name=lib
