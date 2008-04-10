@@ -312,7 +312,6 @@ LUSHI_step_bichord(lush_cursor_t* cursor)
 	  csr_set_flag(csr, UNW_FLG_HAVE_LCTXT);
 	}
 	else if (csr_is_flag(csr, UNW_FLG_HAVE_LCTXT)) {
-	  //TRY: lush_cursor_set_assoc(cursor, LUSH_ASSOC_0_to_0);
 	  lush_cursor_set_assoc(cursor, LUSH_ASSOC_1_to_0);
 	}
 	else {
