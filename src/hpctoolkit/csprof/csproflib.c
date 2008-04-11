@@ -172,7 +172,8 @@ csprof_init_internal(void)
   unw_init();
 
   if (opts.sample_source == ITIMER){
-    csprof_itimer_init(&opts);
+    int lush_metrics = (lush_agents) ? 1 : 0;
+    csprof_itimer_init(&opts, lush_metrics);
     if (csprof_itimer_start()){
       EMSG("WARNING: couldn't start itimer");
     }

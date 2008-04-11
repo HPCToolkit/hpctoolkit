@@ -48,6 +48,7 @@ extern "C" {
 struct lush_agent_pool {
 
   lush_agent_t agent; // FIXME: one agent for now
+  int metric_id; // FIXME: only one for now
 
   // for each LUSHI routine, a vector of pointers for each agent
   // (indexed by agent id)
@@ -62,6 +63,8 @@ struct lush_agent_pool {
   POOL_DECL(LUSHI_step_bichord);
   POOL_DECL(LUSHI_step_pnote);
   POOL_DECL(LUSHI_step_lnote);
+  POOL_DECL(LUSHI_has_concurrency);
+  POOL_DECL(LUSHI_get_concurrency);
 
 #undef POOL_DECL
 };

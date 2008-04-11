@@ -321,6 +321,9 @@ LUSHI_step_bichord(lush_cursor_t* cursor)
       default: fprintf(stderr, "FIXME: default case (assert)\n");
     }
   }
+  else {
+    fprintf(stderr, "FIXME: Unknown segment! (assert)\n");
+  }
 
 
   // record for next bi-chord
@@ -501,15 +504,13 @@ LUSHI_lip_write()
 extern int
 LUSHI_has_concurrency()
 {
-  // STUB
-  return 0;
+  return 1;
 }
 
-extern int 
+extern uint
 LUSHI_get_concurrency()
 {
-  // STUB
-  return 0;
+  return CILK_Threads_Working;
 }
 
 // **************************************************************************

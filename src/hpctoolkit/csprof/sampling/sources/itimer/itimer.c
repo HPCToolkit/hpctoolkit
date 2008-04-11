@@ -7,7 +7,7 @@
 #include <stddef.h>
 #include <sys/time.h>           /* setitimer() */
 #include <ucontext.h>           /* struct ucontext */
-
+#include <assert.h>
 
 
 /******************************************************************************
@@ -67,7 +67,7 @@ static unsigned long microseconds = 0L;
  *****************************************************************************/
 
 void
-csprof_init_timer(csprof_options_t *options)
+csprof_init_timer(csprof_options_t *options, int lush_metrics)
 {
   sample_period = options->sample_period;
   seconds = sample_period / 1000000;
@@ -83,7 +83,8 @@ csprof_init_timer(csprof_options_t *options)
   itimer.it_interval.tv_sec = 0;
   itimer.it_interval.tv_usec = 0;
 
-  csprof_set_max_metrics(1);
+  csprof_set_max_metrics(1 + lush_metrics);
+
   int metric_id = csprof_new_metric(); 
   csprof_set_metric_info_and_period(metric_id, "WALLCLOCK (ms)",
                                     CSPROF_METRIC_ASYNCHRONOUS,
@@ -94,6 +95,18 @@ csprof_init_timer(csprof_options_t *options)
   csprof_set_metric_info_and_period(metric_id, "# returns",
                                     CSPROF_METRIC_FLAGS_NIL, 1);
 #endif
+
+  if (lush_metrics == 1) {
+    // FIXME: ASSUMES itimer!
+    //   1. This only makes sense for time-like metrics (must check metrics)
+    //   2. Should we have one for each time-like metric?
+    //   3. Better located elsewhere?
+    int lush_metric_id = csprof_new_metric();
+    assert(lush_metric_id == 1);
+    csprof_set_metric_info_and_period(lush_metric_id, "Goodness (ms)",
+				      CSPROF_METRIC_ASYNCHRONOUS,
+				      sample_period);
+  }
 }
 
 
@@ -118,9 +131,9 @@ csprof_itimer_stop(void)
 
 
 void
-csprof_itimer_init(csprof_options_t *opts)
+csprof_itimer_init(csprof_options_t *opts, int lush_metrics)
 {
-  csprof_init_timer(opts);
+  csprof_init_timer(opts, lush_metrics);
   monitor_sigaction(CSPROF_PROFILE_SIGNAL, &csprof_itimer_signal_handler, 0, NULL);
 }
 
