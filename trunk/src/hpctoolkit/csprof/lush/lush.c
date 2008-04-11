@@ -59,14 +59,16 @@ lush_agent__init(lush_agent_t* x, int id, const char* path,
   BASE->X[ID] = (X ## _fn_t)dlsym(HANDLE, #X); \
   handle_any_dlerror()
   
-  CALL_DLSYM(pool, LUSHI_init,         id, x->dlhandle);
-  CALL_DLSYM(pool, LUSHI_fini,         id, x->dlhandle);
-  CALL_DLSYM(pool, LUSHI_strerror,     id, x->dlhandle);
-  CALL_DLSYM(pool, LUSHI_reg_dlopen,   id, x->dlhandle);
-  CALL_DLSYM(pool, LUSHI_ismycode,     id, x->dlhandle);
-  CALL_DLSYM(pool, LUSHI_step_bichord, id, x->dlhandle);
-  CALL_DLSYM(pool, LUSHI_step_pnote,   id, x->dlhandle);
-  CALL_DLSYM(pool, LUSHI_step_lnote,   id, x->dlhandle);
+  CALL_DLSYM(pool, LUSHI_init,            id, x->dlhandle);
+  CALL_DLSYM(pool, LUSHI_fini,            id, x->dlhandle);
+  CALL_DLSYM(pool, LUSHI_strerror,        id, x->dlhandle);
+  CALL_DLSYM(pool, LUSHI_reg_dlopen,      id, x->dlhandle);
+  CALL_DLSYM(pool, LUSHI_ismycode,        id, x->dlhandle);
+  CALL_DLSYM(pool, LUSHI_step_bichord,    id, x->dlhandle);
+  CALL_DLSYM(pool, LUSHI_step_pnote,      id, x->dlhandle);
+  CALL_DLSYM(pool, LUSHI_step_lnote,      id, x->dlhandle);
+  CALL_DLSYM(pool, LUSHI_has_concurrency, id, x->dlhandle);
+  CALL_DLSYM(pool, LUSHI_get_concurrency, id, x->dlhandle);
 
 #undef CALL_DLSYM
 
@@ -117,18 +119,22 @@ lush_agent_pool__init(lush_agent_pool_t* x, const char* path)
 {
   int num_agents = 1; // count the agents
 
+  x->metric_id = 1; // FIXME: (ITIMER_METRIC_ID + 1)
+
   // 1. Allocate tables first
 #define FN_TBL_ALLOC(BASE, FN, SZ) \
   BASE->FN = (FN ## _fn_t *) malloc(sizeof(FN ## _fn_t) * (SZ))
   
-  FN_TBL_ALLOC(x, LUSHI_init, num_agents + 1);
-  FN_TBL_ALLOC(x, LUSHI_fini, num_agents + 1);
-  FN_TBL_ALLOC(x, LUSHI_strerror, num_agents + 1);
-  FN_TBL_ALLOC(x, LUSHI_reg_dlopen, num_agents + 1);
-  FN_TBL_ALLOC(x, LUSHI_ismycode, num_agents + 1);
-  FN_TBL_ALLOC(x, LUSHI_step_bichord, num_agents + 1);
-  FN_TBL_ALLOC(x, LUSHI_step_pnote, num_agents + 1);
-  FN_TBL_ALLOC(x, LUSHI_step_lnote, num_agents + 1);
+  FN_TBL_ALLOC(x, LUSHI_init,            num_agents + 1);
+  FN_TBL_ALLOC(x, LUSHI_fini,            num_agents + 1);
+  FN_TBL_ALLOC(x, LUSHI_strerror,        num_agents + 1);
+  FN_TBL_ALLOC(x, LUSHI_reg_dlopen,      num_agents + 1);
+  FN_TBL_ALLOC(x, LUSHI_ismycode,        num_agents + 1);
+  FN_TBL_ALLOC(x, LUSHI_step_bichord,    num_agents + 1);
+  FN_TBL_ALLOC(x, LUSHI_step_pnote,      num_agents + 1);
+  FN_TBL_ALLOC(x, LUSHI_step_lnote,      num_agents + 1);
+  FN_TBL_ALLOC(x, LUSHI_has_concurrency, num_agents + 1);
+  FN_TBL_ALLOC(x, LUSHI_get_concurrency, num_agents + 1);
 
 #undef FN_TBL_ALLOC
 
@@ -137,7 +143,7 @@ lush_agent_pool__init(lush_agent_pool_t* x, const char* path)
   // FIXME: assumes only one agent at the moment
   int aid = 1;
   const char* apath = path;
-  lush_agent__init(&x->agent, aid, apath, x);
+  lush_agent__init(&x->agent, aid, apath, x);  
 
   return 0;
 }
@@ -157,6 +163,8 @@ lush_agent_pool__fini(lush_agent_pool_t* x)
   FN_TBL_FREE(x, LUSHI_step_bichord);
   FN_TBL_FREE(x, LUSHI_step_pnote);
   FN_TBL_FREE(x, LUSHI_step_lnote);
+  FN_TBL_FREE(x, LUSHI_has_concurrency);
+  FN_TBL_FREE(x, LUSHI_get_concurrency);
 
 #undef FN_TBL_FREE
   

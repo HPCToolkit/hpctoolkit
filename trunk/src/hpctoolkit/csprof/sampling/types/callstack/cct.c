@@ -335,7 +335,7 @@ csprof_cct_node__create(lush_assoc_info_t as_info,
 			void* sp)
 {
   size_t sz = (sizeof(csprof_cct_node_t)
-	       + sizeof(size_t)*(csprof_get_max_metrics() - 1));
+	       + sizeof(cct_metric_data_t)*(csprof_get_max_metrics() - 1));
   csprof_cct_node_t *node = csprof_malloc(sz);
 
   memset(node, 0, sz);
@@ -841,7 +841,7 @@ hpcfile_cstree_write_node_hlp(FILE* fs, csprof_cct_node_t* node,
   tmp_node->data.lip.id = id_lip;
   tmp_node->data.sp = (hpcfile_uint_t)node->sp;
   memcpy(tmp_node->data.metrics, node->metrics, 
-	 tmp_node->data.num_metrics * sizeof(size_t));
+	 tmp_node->data.num_metrics * sizeof(cct_metric_data_t));
 
   ret = hpcfile_cstree_node__fwrite(tmp_node, fs);
   if (ret != HPCFILE_OK) { 

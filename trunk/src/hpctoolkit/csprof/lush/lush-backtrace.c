@@ -156,16 +156,17 @@ lush_backtrace(csprof_state_t* state, ucontext_t* context,
   csprof_cct_node_t* node = NULL;
   node = csprof_state_insert_backtrace(state, metric_id, 
 				       bt_end, bt_beg, sample_count);
-
+  
   // FIXME: register active marker
 
-  // look at concurrency for agent at top of stack
-#if 0 // FIXME
-  if (LUSHI_has_concurrency[agent]() ...) {
-    lush_agentid_t aid = 1;
-    pool->LUSHI_get_concurrency[aid]();
+  if (node) {
+    // look at concurrency for agent at top of stack
+    lush_agentid_t aid = 1; // FIXME: choose agent at top of stack (if any)
+    if (lush_agents->LUSHI_has_concurrency[aid]()) {
+      uint scale = lush_agents->LUSHI_get_concurrency[aid]();
+      node->metrics[lush_agents->metric_id] += sample_count * scale;
+    }
   }
-#endif
 
   return node;
 }

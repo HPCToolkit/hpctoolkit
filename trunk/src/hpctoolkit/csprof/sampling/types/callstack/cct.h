@@ -72,6 +72,8 @@
 
 #include <lush/lush-support.h>
 
+#include "hpcfile_cstreelib.h"
+
 #define CSPROF_TREE_USES_DOUBLE_LINKING 0
 #define CSPROF_TREE_USES_SORTED_CHILDREN 1
 
@@ -92,6 +94,10 @@ struct rbtree
 // --------------------------------------------------------------------------
 // 
 // --------------------------------------------------------------------------
+
+// tallent: was 'size_t'.  If this should change the memcpy in
+// hpcfile_cstree_write_node_hlp should be modified.
+typedef hpcfile_uint_t cct_metric_data_t;
 
 /* try to order these so that the most-often referenced things fit into
    a single cache line... */
@@ -137,7 +143,7 @@ typedef struct csprof_cct_node_s {
   // metrics (N.B.: MUST APPEAR AT END! cf. csprof_cct_node__create)
   // ---------------------------------------------------------
   
-  size_t metrics[1]; /* variable-sized array */
+  cct_metric_data_t metrics[1]; /* variable-sized array */
 
 } csprof_cct_node_t;
 
