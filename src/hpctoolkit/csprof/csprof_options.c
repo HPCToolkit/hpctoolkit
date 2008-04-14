@@ -8,6 +8,7 @@
 #include "csprof_misc_fn_stat.h"
 #include "env.h"
 #include "pmsg.h"
+#include "tokenize.h"
 
 /* option handling */
 /* FIXME: this needs to be split up a little bit for different backends */
@@ -17,8 +18,8 @@ csprof_options__init(csprof_options_t *x)
 {
   memset(x, 0, sizeof(*x));
 
-  x->mem_sz = CSPROF_MEM_SZ_INIT;
-  x->event = CSPROF_EVENT;
+  // x->mem_sz = CSPROF_MEM_SZ_INIT;
+  // x->event = CSPROF_EVENT;
   x->sample_period = CSPROF_SMPL_PERIOD;
   x->sample_source = ITIMER;
   // x->sample_source = PAPI;
@@ -41,30 +42,6 @@ csprof_options__getopts(csprof_options_t* x)
   char* s;
   int i = 0;
 
-#ifndef CSPROF_PERF
-  /* Global option: CSPROF_OPT_VERBOSITY */
-  s = getenv(CSPROF_OPT_VERBOSITY);
-  if (s) {
-    i = atoi(s);
-    if ((0 <= i) && (i <= 65536)) {
-      CSPROF_MSG_LVL = i;
-      fprintf(stderr, "setting message level to %d\n",i);
-    }
-    else {
-      DIE("value of option `%s' [%s] not integer between 0-9", __FILE__, __LINE__,
-          CSPROF_OPT_VERBOSITY, s);
-    }
-  } 
-
-  /* Global option: CSPROF_OPT_DEBUG */
-  s = getenv(CSPROF_OPT_DEBUG);
-  if (s) {
-    i = atoi(s);
-    /* FIXME: would like to provide letters as mnemonics, much like Perl */
-    CSPROF_DBG_LVL_PUB = i;
-  }
-#endif
-
   /* Option: CSPROF_OPT_LUSH_AGENTS */
   s = getenv(CSPROF_OPT_LUSH_AGENTS);
   if (s) {
@@ -72,76 +49,6 @@ csprof_options__getopts(csprof_options_t* x)
   }
   else {
     x->lush_agent_paths[0] = '\0';
-  }
-
-  /* Option: CSPROF_OPT_MAX_METRICS */
-  s = getenv(CSPROF_OPT_MAX_METRICS);
-  if (s) {
-    i = atoi(s);
-    if ((0 <= i) && (i <= 10)) {
-      x->max_metrics = i;
-    }
-    else {
-      EMSG("value of option `%s' [%s] not integer between 0-10",CSPROF_OPT_MAX_METRICS, s);
-      abort();
-    }
-  }
-  else {
-    x->max_metrics = 5;
-  }
-
-  /* Option: CSPROF_OPT_SAMPLE_PERIOD */
-  s = getenv(CSPROF_OPT_SAMPLE_PERIOD);
-  if (s) {
-    long l;
-    char* s1;
-    errno = 0; /* set b/c return values on error are all valid numbers! */
-    l = strtol(s, &s1, 10);
-    // mwf allow 0 as a sample period for debugging
-    if (errno != 0 || l < 0 || *s1 != '\0') {
-      EMSG("value of option `%s' [%s] is an invalid decimal integer", 
-           CSPROF_OPT_SAMPLE_PERIOD, s);
-      abort();
-    }
-    else {
-      x->sample_period = l;
-    } 
-  }
-  else {
-    x->sample_period = 5000; /* microseconds */
-  }
-
-  /* Option: CSPROF_OPT_MEM_SZ */
-  s = getenv(CSPROF_OPT_MEM_SZ);
-  if(s) {
-    unsigned long l;
-    char *s1;
-    errno = 0;
-    l = strtoul(s, &s1, 10);
-    if(errno != 0) {
-      EMSG("value of option `%s' [%s] is an invalid decimal integer",CSPROF_OPT_MEM_SZ, s);
-      abort();
-    }
-    /* FIXME: may want to consider adding sanity checks (initial memory
-       sizes that are too high or too low) */
-    if(*s1 == '\0') {
-      x->mem_sz = l;
-    }
-    /* convinience */
-    else if(*s1 == 'M' || *s1 == 'm') {
-      x->mem_sz = l * 1024 * 1024;
-    }
-    else if(*s1 == 'K' || *s1 == 'k') {
-      x->mem_sz = l * 1024;
-    }
-    else {
-      EMSG("unrecognized memory size unit `%c'",*s1);
-      abort();
-    }
-  }
-  else {
-    /* provide a reasonable default */
-    x->mem_sz = 2 * 1024 * 1024;
   }
 
   /* Option: CSPROF_OPT_OUT_PATH */
@@ -166,16 +73,39 @@ csprof_options__getopts(csprof_options_t* x)
     abort();
   }
 
-  /* Option: papi */
-  s = getenv(SWITCH_TO_PAPI);
-  if (s){
-    x->sample_source = PAPI;
-    x->papi_event_list = "PAPI_TOT_CYC:10000000";
-    s = getenv("PAPI_EVLST");
-    if(s){
-      x->papi_event_list = s;
+  // process event list
+  // for now, just look thru the list for wallclock, to set sample period
+  // and check to make sure that both wallclock and papi events are not
+  // both set
+  // FIXME: error checking code needs to be more general
+  
+  int use_wallclock    = 0;
+  int use_papi         = 0;
+  unsigned long period = 0L;
+
+  char *evl         = getenv("CSPROF_OPT_EVENT");
+  TMSG(OPTIONS,"evl (before processing) = |%s|",evl);
+  for(char *event = start_tok(evl); more_tok(); event = next_tok()){
+    use_wallclock = (strstr(event,"WALLCLOCK") != NULL);
+    if (use_wallclock){
+      char *_p = strchr(event,':');
+      if (! _p){
+        EMSG("Syntax for wallclock event is: WALLCLOCK:_Your_Period_Here");
+        abort();
+      }
+      period = strtol(_p+1,NULL,10);
+      TMSG(OPTIONS,"wallclock period set to %ld",period);
+    }
+    use_papi = use_papi || ! use_wallclock;
+    if (use_wallclock && use_papi) {
+      EMSG("Simultaneous wallclock and papi NOT allowed");
+      abort();
     }
   }
+  x->sample_source = use_wallclock ? ITIMER : PAPI;
+  x->event_list = evl;
+  TMSG(OPTIONS,"options event list(AFTER processing) = |%s|",x->event_list);
+
   // Option: debug print -- not handled here !!
   return CSPROF_OK;
 }
