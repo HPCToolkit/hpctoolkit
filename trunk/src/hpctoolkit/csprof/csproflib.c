@@ -136,7 +136,7 @@ csprof_init_internal(void)
 
   /* private memory store for the initial thread is done below */
 
-  csprof_thread_data_init(0,opts.mem_sz,0);
+  csprof_thread_data_init(0,CSPROF_MEM_SZ_DEFAULT,0);
 
   /* epoch poking needs the memory manager init'd() (and
      the thread-specific memory manager if need be) */
@@ -181,7 +181,8 @@ csprof_init_internal(void)
   else { // PAPI
     papi_setup();
     //    papi_event_info_from_opt(&opts,&code,&thresh);
-    papi_parse_evlist(opts.papi_event_list);
+    
+    papi_parse_evlist(opts.event_list);
     evs = papi_event_init();
     PMSG(PAPI,"PROCESS INIT papi event list = %d",evs);
     papi_pulse_init(evs);

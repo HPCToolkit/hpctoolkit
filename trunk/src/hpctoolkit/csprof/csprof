@@ -80,6 +80,7 @@ opt_verbosity=""
 opt_debug=""
 opt_debug_wait=""
 opt_papi=""
+opt_ev_list=''
 
 #####################
 
@@ -214,44 +215,30 @@ f_getoptions()
       -a)   shift; opt_lush_agents="$1";
             f_opt_check "-a" "${opt_lush_agents}";
             ;;
-      -e)   shift; opt_event="$1";
-            f_opt_check "-e" "${opt_event}";
+      -e)   shift; 
+            opt_ev_list="$LL$1";
+	    LL="$opt_ev_list "
             ;;
+#      -E)   shift; opt_papi=1;
+#            opt_papi_evlst="${opt_papi_evlst} $1"
+#            ;;
       -o)   shift; opt_out_path="$1"; 
             f_opt_check "-o" "${opt_out_path}";
-            ;;
-      -p)   shift; opt_period="$1";
-            f_opt_check "-p" "${opt_period}";
-            ;;
-      -m)   shift; opt_memsize="$1";
-            f_opt_check "-m" "${opt_memsize}";
-            ;;
-      -v)   shift; opt_verbosity="$1";
-            f_opt_check "-v" "${opt_verbosity}";
-            ;;
-      -x)   shift; opt_metrics="$1";
-            f_opt_check "-x" "${opt_metrics}";
             ;;
       -L)   # shift; opt_debug="$1";
             # f_opt_check "-L" "${opt_debug}";
 	    opt_debug=1
             ;;
+     -md)   opt_monitor_debug=1 ;;
+     -dd)   shift; 
+            dd_list="$L2$1"
+	    L2="$dd_list "
+            ;;
       -d)   opt_debug_wait=1;
             ;;
-     -dd)   shift; opt_dd=$1;
-            ;;
-    --pp)   opt_papi=1;
-            ;;
-  --pp=*)   opt_papi=1;
-            opt_papi_evlst=${1#--pp=}
-            ;;
-#      -o*) opt_out_path=`echo $1 | cut -c3-`;
-#            ;;
-
       -*)  printf "** Invalid option '$1'\n";
            f_usage; exit 1;
            ;;
-
       *)   break ;;
     esac
     shift
@@ -295,26 +282,20 @@ f_prepareenv()
     CSPROF_OPT_OUT_PATH="${opt_out_path}"
     export CSPROF_OPT_OUT_PATH
   fi
-  if [ -n "${opt_period}" ]; then
-    CSPROF_OPT_SAMPLE_PERIOD="${opt_period}"
-    export CSPROF_OPT_SAMPLE_PERIOD
+#  if [ -n "${opt_period}" ]; then
+#    CSPROF_OPT_SAMPLE_PERIOD="${opt_period}"
+#    export CSPROF_OPT_SAMPLE_PERIOD
+#  fi
+#  if [ -n "${opt_memsize}" ]; then
+#    CSPROF_OPT_MEM_SZ="${opt_memsize}"
+#    export CSPROF_OPT_MEM_SZ
+#  fi
+  if [ -n "${opt_ev_list}" ]; then
+    CSPROF_OPT_EVENT="${opt_ev_list}"
+  else
+    CSPROF_OPT_EVENT="WALLCLOCK:5000"
   fi
-  if [ -n "${opt_memsize}" ]; then
-    CSPROF_OPT_MEM_SZ="${opt_memsize}"
-    export CSPROF_OPT_MEM_SZ
-  fi
-  if [ -n "${opt_event}" ]; then
-    CSPROF_OPT_EVENT="${opt_event}"
-    export CSPROF_OPT_EVENT
-  fi
-  if [ -n "${opt_verbosity}" ]; then
-    CSPROF_OPT_VERBOSITY="${opt_verbosity}"
-    export CSPROF_OPT_VERBOSITY
-  fi
-  if [ -n "${opt_metrics}" ]; then
-    CSPROF_OPT_MAX_METRICS="${opt_metrics}"
-    export CSPROF_OPT_MAX_METRICS
-  fi
+  export CSPROF_OPT_EVENT
   if [ -n "${opt_debug}" ]; then
     CSPROF_OPT_DEBUG="${opt_debug}"
     export CSPROF_OPT_DEBUG
@@ -322,15 +303,18 @@ f_prepareenv()
   if [ -n "${opt_debug_wait}" ]; then
     export CSPROF_WAIT=1
   fi
-  if [ -n "${opt_dd}" ]; then
-    export CSPROF_DD=$opt_dd
+  if [ -n "$dd_list" ]; then
+    export CSPROF_DD=$dd_list
   fi
-  if [ -n "${opt_papi}" ]; then
-    export SWITCH_TO_PAPI=1
+  if [ -n "$opt_monitor_debug" ]; then
+    export MONITOR_DEBUG=1
   fi
-  if [ -n "$opt_papi_evlst" ]; then
-    export PAPI_EVLST=$opt_papi_evlst
-  fi
+#  if [ -n "${opt_papi}" ]; then
+#    export SWITCH_TO_PAPI=1
+#  fi
+#  if [ -n "$opt_papi_evlst" ]; then
+#    export PAPI_EVLST=$opt_papi_evlst
+#  fi
 
   # Make sure that `.' is in the PATH so that we can find the command
   # to profile if in the current directory. [We can get around this,
@@ -359,6 +343,8 @@ if [ ${ulimit_works}x != x ]; then
 fi
 if [ -n "${opt_debug}" ]; then
   echo csprof script LD_PRELOAD = $LD_PRELOAD
+  echo CSPROF_DD = $CSPROF_DD
+  echo event list = $CSPROF_OPT_EVENT
 fi
 #
 # !!! WOW !!

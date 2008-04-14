@@ -80,7 +80,7 @@ csprof_papi_event_handler(int event_set, void *pc, long long ovec,
   int my_events[MAX_CSPROF_PAPI_EVENTS];
   int my_event_count = MAX_CSPROF_PAPI_EVENTS;
 
-  PMSG(PAPI,"papi event happened, ovec = %ld",ovec);
+  PMSG(PAPI_SAMPLE,"papi event happened, ovec = %ld",ovec);
 
   int retval = 
     PAPI_get_overflow_event_index(event_set, ovec, my_events, 
