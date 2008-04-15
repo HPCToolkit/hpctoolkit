@@ -187,7 +187,7 @@ XEDDCL := -DXED_SCALARS
 
 EOF
 
-cp $conf_home/Makefile ./Makefile
+cp $conf_home/Makefile.in ./Makefile
 
 ###### NOT USED ANYMORE -- install target now does this (via install program) #########
 
