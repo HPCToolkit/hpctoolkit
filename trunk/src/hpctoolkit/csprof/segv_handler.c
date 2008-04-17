@@ -6,7 +6,6 @@
 #include <setjmp.h>
 #include <signal.h>
 
-#include "bad_unwind.h"
 #include "pmsg.h"
 #include "monitor.h"
 

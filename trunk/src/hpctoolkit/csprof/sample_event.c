@@ -7,11 +7,10 @@
 
 //*************************** User Include Files ****************************
 
-#include "bad_unwind.h"
 #include "dump_backtraces.h"
 #include "getregs.h"
 #include "metrics_types.h"
-#include "mpi_special.h"
+// #include "mpi_special.h"
 #include "pmsg.h"
 #include "segv_handler.h"
 #include "splay.h"

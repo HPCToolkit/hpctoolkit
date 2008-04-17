@@ -5,9 +5,14 @@
 // (there is just 1 thread).
 
 #include <setjmp.h>
-#include "bad_unwind.h"
 #include "mem.h"
 #include "state.h"
+
+
+typedef struct {
+  sigjmp_buf jb;
+} sigjmp_buf_t;
+
 
 typedef struct _td_t {
   int id;
