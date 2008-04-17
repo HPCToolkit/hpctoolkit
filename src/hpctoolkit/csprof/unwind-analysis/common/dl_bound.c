@@ -182,6 +182,7 @@ find_dl_bound(void *pc, void **start, void **end)
     char module_name[PATH_MAX];
     unsigned long long addr, mstart, mend;
     addr = (unsigned long long) pc;
+    //FIXME: use dylib.c dylib_find_module_containing_addr
     if (find_load_module(addr, module_name, &mstart, &mend)) {
       r = dl_compute(module_name, (void *) mstart, (void *) mend);
     }
