@@ -54,6 +54,7 @@ csprof_dump_loaded_modules(void){
 }
 
 
+// FIXME: kill this fopen + other
 int
 find_load_module(unsigned long long addr, 
 		 char *module_name,
