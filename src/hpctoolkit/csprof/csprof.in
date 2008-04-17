@@ -98,61 +98,53 @@ cmd="$0"
 # source the configure info
 #
 
-. ${CSPROF_ROOT}/conf.sh
+. ${CSPROF_ROOT}/libexec/conf.sh
 
 f_usage()
 {
-  p="printf"
-  $p "\n"
-  $p "Usage:\n"
-  $p "  ${cmd} [[-o <outpath>]] <command> [args...]\n"
-  $p "\n"
-  $p "  Profiles the execution of an arbitrary command.                     \n"
-  $p "\n"
-  $p "  Options: Defaults are shown in square brackets [].\n"
-  $p "    -o <outpath>: Path to store profiler output data. [.]             \n"
-  $p "    -e <event>  : Event to count [FIXME] [IA64_INST_RETIRED]          \n"
-  $p "    -p <period> : Sample period in milliseconds                       \n"
-  $p "    -x <n_met>  : Maximum number of metrics that can be tracked at once\n"
-  $p "    -m <memsize>: Initial size of private dynamic memory. [32 Mb]     \n"
-  $p "                  All dynamic memory (for storing call stack samples) \n"
-  $p "                  is automatically managed using mmaps and additional \n"
-  $p "                  storage is allocated as needed.  However, dynamic   \n"
-  $p "                  memory requirements will greatly vary between       \n"
-  $p "                  different applications and creating too much        \n"
-  $p "                  initial storage or creating additional storage      \n"
-  $p "                  during profiling can cause undesired system and     \n"
-  $p "                  profiling overhead.  This option allows a user to   \n"
-  $p "                  specify an initial size to achieve minimal system   \n"
-  $p "                  and profiling overhead.  Note: When the verbosity   \n"
-  $p "                  level is 1 or greater, a message will be printed    \n"
-  $p "                  when an additional mmap is created. [FIXME]         \n"
-  $p "    -a <agents>   LUSH agents                                         \n"
-  $p "\n"
-  $p "    -v <level>  : Verbosity level, 0-9. [0] At level 0, only errors   \n"
-  $p "                  are printed.                                        \n"
-  $p "    -L <level>  : Debug level, 0-9. [0]  Prints limited debugging     \n"
-  $p "                  messages and generates a text version of the        \n"
-  $p "                  callstack data.                                     \n"
-  $p "    -d          : set csprof debug flag, for attaching gdb            \n"
-  $p "    -dd <dbgl>  : DEVELOPER. Turn on print categories(NOTE:quote list)\n"
-  $p "   --pp(=EVLST) : use papi instead of itimer                          \n"
-  $p "                  without an event list(EVLST) argument, defauts to   \n"
-  $p "                  PAPI_TOT_CYC, with threshold set to 1000000         \n"
-  $p "                  EVLST consists of space separated items of the form \n"
-  $p "                      PAPI_EVENT:THRESHOLD                            \n"
-  $p "                  consequently, the EVLST must be quoted              \n"
-  $p "                  EXAMPLE                                             \n"
-  $p "                    --pp='PAPI_TOT_INS:100000 PAPI_FP_INS:100000'     \n"
-  $p "\n"
-  $p "NOTES:\n"
-  $p "   csprof uses preloaded shared libraries to initiate profiling;      \n"
-  $p "   modifications to the csprof launcher script will be necessary      \n" 
-  $p "   to profile programs that use library preloading. \n"
-  $p "\n"
-  $p "   csprof cannot be used to profile setuid commands as preloading     \n"
-  $p "   shared libraries is not permitted for them.\n" 
-  $p "\n"
+  cat <<EOF
+Usage:
+   csprof [-o outpath] [-e EVENT:PERIOD]* cmd
+
+   -o outpath
+      Directory in which to store profiler output data.
+      Defaults to the current directory.
+
+   -e EVENT:PERIOD EVENT_NAME:PERIOD,(can have more than 1)
+
+      If no events are specified, the default is WALLCLOCK:5000
+      (every 5000 microseconds).
+
+      Currently only PAPI events, and the special WALLCLOCK event are
+      supported.
+      CAVEAT: You *cannot* use both PAPI events and the WALLCLOCK event.
+              You may, however, use multiple PAPI events
+
+      PAPI events use the hardware performance counters as the
+      sampling source (via the PAPI interface). The "PERIOD" component of a
+      PAPI event specfication is a count of the number of events.
+
+      For a list of PAPI events, please run
+        hpcrun -L
+
+      The WALLCLOCK event is triggered by the Unix itimer feature. The "PERIOD"
+      component of the WALLCLOCK event is the number of microseconds between
+      samples
+
+      EXAMPLE
+        csprof -e PAPI_TOT_INS:1000000 -e PAPI_FP_INS:100000 A_PROGRAM
+
+        The above command line would sample A_PROGRAM every 1000000 instructions
+        OR every 1000000 floating point instructions.
+
+  NOTES:
+     csprof uses preloaded shared libraries to initiate profiling;      
+     modifications to the csprof launcher script will be necessary      
+     to profile programs that use library preloading
+
+     csprof cannot be used to profile setuid commands as preloading
+     shared libraries is not permitted for them.
+EOF
 }
 
 f_checkenv()
