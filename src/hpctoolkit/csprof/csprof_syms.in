@@ -28,7 +28,7 @@ else
 fi
 libdir=${rootdir}/lib
 
-. ${rootdir}/conf.sh
+. ${rootdir}/libexec/conf.sh
 
 # output directory
 if test "$2"x == "x"; then
