@@ -22,7 +22,7 @@ MONITOR_LIBS := -L$(MONITOR_DIR)/lib -lmonitor
 
 src_dir        = $(patsubst %/,%,$(src_dir_prefix))
 
-CSPROFLIB := libcsprof.so.1
+CSPROFLIB := libcsprof.dln.so.1
 
 CSPROF_DOT_O := libcsprof.o
 
@@ -312,7 +312,7 @@ bclean:
 install: all
 	-install -d $(install_lib) $(install_bin) $(install_libexec)
 	install $(CSPROFLIB) $(install_lib)
-	cp $(src_dir_prefix)csprof.in $(install_bin)/csprof
+	cp $(src_dir_prefix)csprof.dln.in $(install_bin)/csprof.dln
 	cp $(src_dir_prefix)csprof_syms.in $(install_libexec)/csprof_syms
 	cp conf.sh $(install_libexec)
 

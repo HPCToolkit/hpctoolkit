@@ -2,7 +2,7 @@
 # Testing: set -x: line by line (set -n: syntax)
 # set -x
 
-# $Id$
+# $Id: csprof.in 1257 2008-04-17 19:09:28Z mfagan $
 ## * BeginRiceCopyright *****************************************************
  # Copyright ((c)) 2002, Rice University 
  # All rights reserved.
@@ -150,7 +150,7 @@ EOF
 f_checkenv()
 {
 
-  RLD_LIB="${CSPROF_LIB}/libcsprof.so.1:${CSPROF_LIB}/libmonitor.so"
+  RLD_LIB="${CSPROF_LIB}/libcsprof.dln.so.1:${CSPROF_LIB}/libmonitor.so"
 
   # preload our library first before loading all of those specified in
   # the application binary (signified by DEFAULT).
