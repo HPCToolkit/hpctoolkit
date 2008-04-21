@@ -1,0 +1,198 @@
+#! /bin/sh
+#
+
+# =============== utility functions ================
+
+# args: ($1, $2): (string_to_check, string_for_error_msg[optional])
+f_error_on_nil()
+{
+  if [ -z "$1" ]; then
+    if [ -n "$2" ]; then printf "ERROR: $2\n"; fi
+#    f_usage
+    exit 1
+  fi
+}
+
+md_if_needed()
+{
+    if [ ! -e $1 ]; then
+	mkdir $1
+    fi
+    if [ ! -d $1 ]; then
+	echo "ERROR: $1 already exists, but is not a directory!!"
+	exit 1
+    fi
+}
+
+f_find_cpp_lib()
+{
+    _ts=_cplib.cc
+    _t=_t
+    cat <<EOF > ${_ts}
+main(){}
+EOF
+
+    g++ -o ${_t} ${_ts}
+    libcpp_path=`ldd $_t | awk '/libstdc\+\+/ {print $3}'`
+    libcpp_path=`dirname $libcpp_path`
+    rm -f ${_ts} ${_t}
+}
+
+f_papi_ld_list()
+{
+    papi_ld_lst=''
+    for a in $1; do
+	if [ ${a#-L} != $a ]; then
+	    papi_ld_lst=${a#-L}:$papi_ld_lst
+	fi
+    done
+    papi_ld_lst=${papi_ld_lst%:}
+}
+
+# ================ Main code =====================
+
+f_find_cpp_lib
+
+conf_home=`dirname $0`
+opt_prefix='.'
+
+if [ -d /projects/hpc/pkgs ]; then
+  PKGS=/projects/hpc/pkgs
+elif [ -d /projects/pkgs ]; then
+  PKGS=/projects/pkgs
+else
+  PKGS=$conf_home
+fi
+
+opt_xed2_dir=$PKGS/XED2
+
+opt_papi_dir=$PKGS/papi
+
+
+papi_inc=''
+pinc=`/usr/bin/env | egrep -i 'papi.*include.*='`
+if [ "$pinc"x != x ]; then
+    papi_inc=${pinc#*=}
+fi
+
+papi_ld=""
+pld=`/usr/bin/env | egrep -i 'papi.*ld'`
+if [ "$pld"x != x ]; then
+    papi_ld=${pld#*=}
+fi
+
+if [ -d /projects/hpc/pkgs/libmonitor-2008.01.07 ]; then
+  opt_monitor_dir=/projects/hpc/pkgs/libmonitor-2008.01.07
+else
+  opt_monitor_dir=""
+fi
+
+while [ $# -gt 0 ]
+do
+    case $1 in
+	--prefix=*) opt_prefix=${1#--prefix=}
+	          ;;
+
+	--papi-dir=*) opt_papi_dir=${1#--papi-dir=}
+	          ;;
+
+	--xed2-dir=*) opt_xed2_dir=${1#--xed2-dir=}
+	          ;;
+
+	--monitor-dir=*) opt_monitor_dir=${1#--monitor-dir=}
+	          ;;
+
+	  --with-dbg)opt_with_dbg=1;
+                  ;;
+	--*) printf "invalid option: '$1'\n";
+	    exit 1;
+	    ;;
+
+	-*) printf "invalid option: '$1'\n";
+	    exit 1;
+	    ;;
+
+         *) break ;;
+    esac
+    shift
+done
+
+opt_prefix=${opt_prefix:="."}
+opt_prefix=${opt_prefix%/}
+
+if [ "$papi_inc"x == x ]; then
+    papi_inc=-I${opt_papi_dir}/include
+fi
+
+## FIXME opt_papi_dir non-null ==> do this also
+##
+if [ "$papi_ld"x == x ]; then
+    if [ -d "$opt_papi_dir/lib" ]; then
+        papi_lib_name=lib
+    elif [ -d "$opt_papi_dir/lib64" ]; then
+        papi_lib_name=lib64
+    fi
+    if [ -e /dev/perfctr ]; then
+        perfc="-lperfctr"
+    fi
+    papi_ld="-L${opt_papi_dir}/${papi_lib_name} -lpapi ${perfc}"
+fi
+
+f_papi_ld_list "$papi_ld"
+
+if [ -z $opt_monitor_dir ]; then
+  opt_monitor_dir=$opt_prefix
+fi
+
+cat <<EOF2 > conf.sh
+## file to be sourced when running csprof script or other scripts
+
+libcpp_path=$libcpp_path
+papi_ld_lst=$papi_ld_lst
+EOF2
+
+## configure Makefile (by creating Makefile.conf)
+
+cat <<EOF > Makefile.conf
+install_prefix := $opt_prefix
+src_dir_prefix := $conf_home/
+PAPI_INCLUDES  := $papi_inc
+PAPI_LD        := $papi_ld
+XED2_DIR       := $opt_xed2_dir
+MONITOR_DIR    := $opt_monitor_dir
+dbg_extra      := $opt_with_dbg
+
+###### these will be configured later ##############
+
+WITH_PAPI=1
+WITH_XED2=1
+
+#STATIC_ONLY := 1
+#NO_MMAP := 1
+#USE_TRAMP := 1
+
+DO_THREADS := 1
+PERF := -DCSPROF_PERF=1
+export PERF
+
+#PRIM_UNWIND := 1
+#export PRIM_UNWIND
+
+#special decls for xed library usage
+XEDDCL := -DXED_SCALARS
+
+#CSPROF_TRAMPOLINE := -DCSPROF_TRAMPOLINE_BACKEND=1
+
+##### end config later block #########
+
+EOF
+
+cp $conf_home/Makefile.in ./Makefile
+
+###### NOT USED ANYMORE -- install target now does this (via install program) #########
+
+## make install directory and subdirectories
+
+#md_if_needed $opt_prefix
+#md_if_needed $opt_prefix/bin
+#md_if_needed $opt_prefix/lib
