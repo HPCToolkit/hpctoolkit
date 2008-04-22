@@ -30,7 +30,7 @@
 \rcsInfo $Id$
 \setDate{\rcsInfoLongDate}
 }{
-\setDate{ 2007/11/02}
+\setDate{ 2008/04/22}
 \message{package rcsinfo not present, discard it}
 }
 
@@ -73,11 +73,11 @@ Collect low-overhead, high-accuracy profiles using statistical sampling.
 \HTMLhref{hpcrun.html}{\Cmd{hpcrun}{1}} collects `flat' profiles (IP histograms, where IP is instruction pointer) while \Cmd{csprof}{1} collects call path profiles.
 
 \item \textbf{Recovering static source code structure.} 
-\HTMLhref{bloop.html}{\Cmd{bloop}{1}} recovers static program structure such as procedures and loop nests.
+\HTMLhref{hpcstruct.html}{\Cmd{hpcstruct}{1}} recovers static program structure such as procedures and loop nests.
 It accounts for procedure and loop transformations such as inlining and software pipelining.
 
 \item \textbf{Correlating dynamic profiles with static source code structure.} 
-\textbf{HPCToolkit}'s correlation tool combines dynamic profile information with \HTMLhref{bloop.html}{\Cmd{bloop}{1}}'s static program structure to correlate costs of the optimized object code to useful source code constructs such as loop nests.
+\textbf{HPCToolkit}'s correlation tool combines dynamic profile information with \HTMLhref{hpcstruct.html}{\Cmd{hpcstruct}{1}}'s static program structure to correlate costs of the optimized object code to useful source code constructs such as loop nests.
 The result of correlation is called an Experiment database.
 Currently, \HTMLhref{hpcquick.html}{\Cmd{hpcquick}{1}}/\HTMLhref{hpcview.html}{\Cmd{hpcview}{1}} is used for flat profiles and \Cmd{xcsprof}{1} for call stack profiles.
 
@@ -112,9 +112,9 @@ Assume we have an application called \emph{zoo} whose source code is located in 
   hpcrun <event-set-2> zoo
 \end{verbatim}
 
-\item \textbf{Recover static source code structure}. Use \HTMLhref{bloop.html}{\Cmd{bloop}{1}} to recover program structure.
+\item \textbf{Recover static source code structure}. Use \HTMLhref{hpcstruct.html}{\Cmd{hpcstruct}{1}} to recover program structure.
 \begin{verbatim}
-  bloop zoo > zoo.psxml
+  hpcstruct zoo > zoo.psxml
 \end{verbatim}
 
 \item \textbf{Correlate dynamic profiles with static source code structure}.
@@ -160,7 +160,7 @@ Visualize the Experiment database using \HTMLhref{hpcviewer.html}{\Cmd{hpcviewer
 \section{See Also}
 
 \HTMLhref{hpcrun.html}{\Cmd{hpcrun}{1}}, \Cmd{csprof}{1} \\
-\HTMLhref{bloop.html}{\Cmd{bloop}{1}} \\
+\HTMLhref{hpcstruct.html}{\Cmd{hpcstruct}{1}} \\
 \HTMLhref{hpcquick.html}{\Cmd{hpcquick}{1}}, \HTMLhref{hpcview.html}{\Cmd{hpcview}{1}}, \Cmd{xcsprof}{1}, \HTMLhref{hpcprof.html}{\Cmd{hpcprof}{1}} \\ %\Cmd{xprof}{1} 
 \HTMLhref{hpcviewer.html}{\Cmd{hpcviewer}{1}}
 
