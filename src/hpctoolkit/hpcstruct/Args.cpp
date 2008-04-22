@@ -81,13 +81,13 @@ static const char* usage_summary =
 "[options] <binary>\n";
 
 static const char* usage_details = "\
-Given an application binary or DSO <binary>, bloop recovers the program\n\
+Given an application binary or DSO <binary>, hpcstruct recovers the program\n\
 structure of its object code and writes to standard output a program\n\
-structure to object code mapping. bloop is designed primarily for highly\n\
+structure to object code mapping. hpcstruct is designed primarily for highly\n\
 optimized binaries created from C, C++ and Fortran source code. Because\n\
-bloop's algorithms exploit a binary's debugging information, for best\n\
+hpcstruct's algorithms exploit a binary's debugging information, for best\n\
 results, binary should be compiled with standard debugging information.\n\
-bloop's output is typically passed to an HPCToolkit's correlation tool.\n\
+hpcstruct's output is typically passed to an HPCToolkit's correlation tool.\n\
 See the documentation for more information.\
 \n\
 Options: General\n\

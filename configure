@@ -883,7 +883,7 @@ HOST_LIBTREPOSITORY
 HOST_LINK_NO_START_FILES
 IS_HOST_AR_TRUE
 IS_HOST_AR_FALSE
-HOST_BLOOP_LDFLAGS
+HOST_HPCSTRUCT_LDFLAGS
 HOST_HPCVIEW_LDFLAGS
 HOST_XPROF_LDFLAGS
 HOST_XCSPROF_LDFLAGS
@@ -22915,7 +22915,7 @@ HOST_LINK_NO_START_FILES="-nostartfiles"
 
 # Specific settings for programs
 HOST_HPCVIEW_LDFLAGS=""
-HOST_BLOOP_LDFLAGS=""
+HOST_HPCSTRUCT_LDFLAGS=""
 HOST_XPROF_LDFLAGS=""
 HOST_XCSPROF_LDFLAGS=""
 HOST_HPCRUN_LDFLAGS=""
@@ -23054,7 +23054,7 @@ HOST_CFLAGS="${HOST_CFLAGS} ${my_opt_cflags}"
 HOST_CXXFLAGS="${HOST_CXXFLAGS} ${my_opt_cxxflags}"
 
 # Several programs need system's demangle option
-HOST_BLOOP_LDFLAGS="${HOST_BLOOP_LDFLAGS} ${my_demangle_ldflags}"
+HOST_HPCSTRUCT_LDFLAGS="${HOST_HPCSTRUCT_LDFLAGS} ${my_demangle_ldflags}"
 HOST_XPROF_LDFLAGS="${HOST_XPROF_LDFLAGS} ${my_demangle_ldflags}"
 HOST_XCSPROF_LDFLAGS="${HOST_XCSPROF_LDFLAGS} ${my_demangle_ldflags}"
 
@@ -23695,7 +23695,7 @@ echo "${ECHO_T}yes (${OPT_OBJCOPY})" >&6; }
 # Makefiles to create
 #----------------------------------------------------------------------------
 
-ac_config_files="$ac_config_files Makefile doc/Makefile doc/man/Makefile doc/man/HPCToolkitVersionInfo.tex lib/Makefile src/Makefile src/hpctoolkit/Makefile src/hpctoolkit/bloop/Makefile src/hpctoolkit/filters/Makefile src/hpctoolkit/hpcquick/Makefile src/hpctoolkit/hpcprof/Makefile src/hpctoolkit/hpcrun/Makefile src/hpctoolkit/hpcview/Makefile src/hpctoolkit/lump/Makefile src/hpctoolkit/misc/Makefile src/hpctoolkit/ptran/Makefile src/hpctoolkit/xcsprof/Makefile src/hpctoolkit/xprof/Makefile src/lib/Makefile src/lib/banal/Makefile src/lib/binutils/Makefile src/lib/isa/Makefile src/lib/perl/Makefile src/lib/perl/HPCToolkitVersionInfo.pm src/lib/prof-juicy/Makefile src/lib/prof-juicy-x/Makefile src/lib/prof-lean/Makefile src/lib/support/Makefile src/lib/xml/Makefile"
+ac_config_files="$ac_config_files Makefile doc/Makefile doc/man/Makefile doc/man/HPCToolkitVersionInfo.tex lib/Makefile src/Makefile src/hpctoolkit/Makefile src/hpctoolkit/filters/Makefile src/hpctoolkit/lump/Makefile src/hpctoolkit/hpcprof/Makefile src/hpctoolkit/hpcquick/Makefile src/hpctoolkit/hpcrun/Makefile src/hpctoolkit/hpcstruct/Makefile src/hpctoolkit/hpcview/Makefile src/hpctoolkit/misc/Makefile src/hpctoolkit/ptran/Makefile src/hpctoolkit/xcsprof/Makefile src/hpctoolkit/xprof/Makefile src/lib/Makefile src/lib/banal/Makefile src/lib/binutils/Makefile src/lib/isa/Makefile src/lib/perl/Makefile src/lib/perl/HPCToolkitVersionInfo.pm src/lib/prof-juicy/Makefile src/lib/prof-juicy-x/Makefile src/lib/prof-lean/Makefile src/lib/support/Makefile src/lib/xml/Makefile"
 
 
 ac_config_commands="$ac_config_commands "
@@ -24378,13 +24378,13 @@ do
     "lib/Makefile") CONFIG_FILES="$CONFIG_FILES lib/Makefile" ;;
     "src/Makefile") CONFIG_FILES="$CONFIG_FILES src/Makefile" ;;
     "src/hpctoolkit/Makefile") CONFIG_FILES="$CONFIG_FILES src/hpctoolkit/Makefile" ;;
-    "src/hpctoolkit/bloop/Makefile") CONFIG_FILES="$CONFIG_FILES src/hpctoolkit/bloop/Makefile" ;;
     "src/hpctoolkit/filters/Makefile") CONFIG_FILES="$CONFIG_FILES src/hpctoolkit/filters/Makefile" ;;
-    "src/hpctoolkit/hpcquick/Makefile") CONFIG_FILES="$CONFIG_FILES src/hpctoolkit/hpcquick/Makefile" ;;
-    "src/hpctoolkit/hpcprof/Makefile") CONFIG_FILES="$CONFIG_FILES src/hpctoolkit/hpcprof/Makefile" ;;
-    "src/hpctoolkit/hpcrun/Makefile") CONFIG_FILES="$CONFIG_FILES src/hpctoolkit/hpcrun/Makefile" ;;
-    "src/hpctoolkit/hpcview/Makefile") CONFIG_FILES="$CONFIG_FILES src/hpctoolkit/hpcview/Makefile" ;;
     "src/hpctoolkit/lump/Makefile") CONFIG_FILES="$CONFIG_FILES src/hpctoolkit/lump/Makefile" ;;
+    "src/hpctoolkit/hpcprof/Makefile") CONFIG_FILES="$CONFIG_FILES src/hpctoolkit/hpcprof/Makefile" ;;
+    "src/hpctoolkit/hpcquick/Makefile") CONFIG_FILES="$CONFIG_FILES src/hpctoolkit/hpcquick/Makefile" ;;
+    "src/hpctoolkit/hpcrun/Makefile") CONFIG_FILES="$CONFIG_FILES src/hpctoolkit/hpcrun/Makefile" ;;
+    "src/hpctoolkit/hpcstruct/Makefile") CONFIG_FILES="$CONFIG_FILES src/hpctoolkit/hpcstruct/Makefile" ;;
+    "src/hpctoolkit/hpcview/Makefile") CONFIG_FILES="$CONFIG_FILES src/hpctoolkit/hpcview/Makefile" ;;
     "src/hpctoolkit/misc/Makefile") CONFIG_FILES="$CONFIG_FILES src/hpctoolkit/misc/Makefile" ;;
     "src/hpctoolkit/ptran/Makefile") CONFIG_FILES="$CONFIG_FILES src/hpctoolkit/ptran/Makefile" ;;
     "src/hpctoolkit/xcsprof/Makefile") CONFIG_FILES="$CONFIG_FILES src/hpctoolkit/xcsprof/Makefile" ;;
@@ -24616,7 +24616,7 @@ HOST_LIBTREPOSITORY!$HOST_LIBTREPOSITORY$ac_delim
 HOST_LINK_NO_START_FILES!$HOST_LINK_NO_START_FILES$ac_delim
 IS_HOST_AR_TRUE!$IS_HOST_AR_TRUE$ac_delim
 IS_HOST_AR_FALSE!$IS_HOST_AR_FALSE$ac_delim
-HOST_BLOOP_LDFLAGS!$HOST_BLOOP_LDFLAGS$ac_delim
+HOST_HPCSTRUCT_LDFLAGS!$HOST_HPCSTRUCT_LDFLAGS$ac_delim
 HOST_HPCVIEW_LDFLAGS!$HOST_HPCVIEW_LDFLAGS$ac_delim
 HOST_XPROF_LDFLAGS!$HOST_XPROF_LDFLAGS$ac_delim
 HOST_XCSPROF_LDFLAGS!$HOST_XCSPROF_LDFLAGS$ac_delim

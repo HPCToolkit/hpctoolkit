@@ -274,7 +274,7 @@ HOST_LINK_NO_START_FILES="-nostartfiles"
 
 # Specific settings for programs
 HOST_HPCVIEW_LDFLAGS=""
-HOST_BLOOP_LDFLAGS=""
+HOST_HPCSTRUCT_LDFLAGS=""
 HOST_XPROF_LDFLAGS=""
 HOST_XCSPROF_LDFLAGS=""
 HOST_HPCRUN_LDFLAGS=""
@@ -413,7 +413,7 @@ HOST_CFLAGS="${HOST_CFLAGS} ${my_opt_cflags}"
 HOST_CXXFLAGS="${HOST_CXXFLAGS} ${my_opt_cxxflags}"
 
 # Several programs need system's demangle option
-HOST_BLOOP_LDFLAGS="${HOST_BLOOP_LDFLAGS} ${my_demangle_ldflags}"
+HOST_HPCSTRUCT_LDFLAGS="${HOST_HPCSTRUCT_LDFLAGS} ${my_demangle_ldflags}"
 HOST_XPROF_LDFLAGS="${HOST_XPROF_LDFLAGS} ${my_demangle_ldflags}"
 HOST_XCSPROF_LDFLAGS="${HOST_XCSPROF_LDFLAGS} ${my_demangle_ldflags}"
 
@@ -427,7 +427,7 @@ AC_SUBST([HOST_LIBTREPOSITORY])
 AC_SUBST([HOST_LINK_NO_START_FILES])
 AM_CONDITIONAL(IS_HOST_AR, test "${HOST_AR}" != "")
 
-AC_SUBST([HOST_BLOOP_LDFLAGS])
+AC_SUBST([HOST_HPCSTRUCT_LDFLAGS])
 AC_SUBST([HOST_HPCVIEW_LDFLAGS])
 AC_SUBST([HOST_XPROF_LDFLAGS])
 AC_SUBST([HOST_XCSPROF_LDFLAGS])
@@ -874,13 +874,13 @@ AC_CONFIG_FILES([ \
   \
   src/Makefile \
   src/hpctoolkit/Makefile \
-  src/hpctoolkit/bloop/Makefile \
   src/hpctoolkit/filters/Makefile \
-  src/hpctoolkit/hpcquick/Makefile \
-  src/hpctoolkit/hpcprof/Makefile \
-  src/hpctoolkit/hpcrun/Makefile \
-  src/hpctoolkit/hpcview/Makefile \
   src/hpctoolkit/lump/Makefile \
+  src/hpctoolkit/hpcprof/Makefile \
+  src/hpctoolkit/hpcquick/Makefile \
+  src/hpctoolkit/hpcrun/Makefile \
+  src/hpctoolkit/hpcstruct/Makefile \
+  src/hpctoolkit/hpcview/Makefile \
   src/hpctoolkit/misc/Makefile \
   src/hpctoolkit/ptran/Makefile \
   src/hpctoolkit/xcsprof/Makefile \

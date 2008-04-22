@@ -74,7 +74,7 @@ MYLDADD = \
 	@HOST_LIBTREPOSITORY@ \
 	$(HPC_LIBBANAL) $(HPC_LIBPROFJUICY) $(HPC_LIBBINUTILS) $(HPC_LIBISA) $(HPC_LIBXML) $(HPC_LIBSUPPORT) \
 	@OA_LDFLAGS@ @GNUBINUTILS_LDFLAGS@ \
-	@HOST_BLOOP_LDFLAGS@ \
+	@HOST_HPCSTRUCT_LDFLAGS@ \
 	-lm
 
 MYCLEAN = @HOST_LIBTREPOSITORY@
@@ -83,13 +83,13 @@ MYCLEAN = @HOST_LIBTREPOSITORY@
 # Automake rules
 #############################################################################
 
-bin_PROGRAMS = bloop
+bin_PROGRAMS = hpcstruct
 
-bloop_SOURCES  = $(MYSOURCES)
-bloop_CFLAGS   = $(MYCFLAGS)
-bloop_CXXFLAGS = $(MYCXXFLAGS)
-bloop_LDFLAGS  = $(MYLDFLAGS)
-bloop_LDADD    = $(MYLDADD)
+hpcstruct_SOURCES  = $(MYSOURCES)
+hpcstruct_CFLAGS   = $(MYCFLAGS)
+hpcstruct_CXXFLAGS = $(MYCXXFLAGS)
+hpcstruct_LDFLAGS  = $(MYLDFLAGS)
+hpcstruct_LDADD    = $(MYLDADD)
 
 MOSTLYCLEANFILES = $(MYCLEAN)
 
