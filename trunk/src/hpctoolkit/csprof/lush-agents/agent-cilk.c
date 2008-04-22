@@ -504,7 +504,9 @@ LUSHI_lip_write()
 extern int
 LUSHI_has_concurrency()
 {
-  return 1;
+  CilkWorkerState* ws = 
+    (CilkWorkerState*)pthread_getspecific(CILK_WorkerState_key);
+  return CILK_WS_is_working(ws);
 }
 
 extern uint
