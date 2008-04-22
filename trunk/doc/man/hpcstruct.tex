@@ -30,7 +30,7 @@
 \rcsInfo $Id$
 \setDate{\rcsInfoLongDate}
 }{
-\setDate{ 2007/11/02}
+\setDate{ 2008/04/22}
 \message{package rcsinfo not present, discard it}
 }
 
@@ -42,10 +42,10 @@
 
 \begin{document}
 
-\begin{Name}{1}{bloop}{The HPCToolkit Performance Tools}{The HPCToolkit Performance Tools}{bloop:\\ Recovery of Static Program Structure}
+\begin{Name}{1}{hpcstruct}{The HPCToolkit Performance Tools}{The HPCToolkit Performance Tools}{hpcstruct:\\ Recovery of Static Program Structure}
 
-\Prog{bloop} recovers the static program structure of \emph{fully optimized} object code for use with an \textbf{HPCToolkit} correlation tool.
-In particular, \Prog{bloop}, recovers source code procedures and loop nests, detects inlining, and associates procedures and loops with object code addresses.
+\Prog{hpcstruct} recovers the static program structure of \emph{fully optimized} object code for use with an \textbf{HPCToolkit} correlation tool.
+In particular, \Prog{hpcstruct}, recovers source code procedures and loop nests, detects inlining, and associates procedures and loops with object code addresses.
 See \HTMLhref{hpctoolkit.html}{\Cmd{hpctoolkit}{1}} for an overview of \textbf{HPCToolkit}.
 
 \end{Name}
@@ -53,25 +53,25 @@ See \HTMLhref{hpctoolkit.html}{\Cmd{hpctoolkit}{1}} for an overview of \textbf{H
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Synopsis}
 
-\Prog{bloop} \oOpt{options} \Arg{binary}
+\Prog{hpcstruct} \oOpt{options} \Arg{binary}
 
 Typical usage:\\
-\Prog{bloop} \Arg{binary} > \Arg{output.psxml}
+\Prog{hpcstruct} \Arg{binary} > \Arg{output.psxml}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Description}
 
-Given an application binary \Arg{binary}, \Prog{bloop} recovers the program structure of its object code and writes to standard output a program structure to object code mapping.
-\Prog{bloop} is designed primarily for highly optimized binaries created from C, C++ and Fortran source code.
-Because \Prog{bloop}'s algorithms exploit a binary's debugging information, for best results, \Arg{binary} should be compiled with standard debugging information.
-\Prog{bloop}'s output is typically passed to \textbf{HPCToolkit}'s correlation tool. %% hpcview (change to hpcprof)
+Given an application binary \Arg{binary}, \Prog{hpcstruct} recovers the program structure of its object code and writes to standard output a program structure to object code mapping.
+\Prog{hpcstruct} is designed primarily for highly optimized binaries created from C, C++ and Fortran source code.
+Because \Prog{hpcstruct}'s algorithms exploit a binary's debugging information, for best results, \Arg{binary} should be compiled with standard debugging information.
+\Prog{hpcstruct}'s output is typically passed to \textbf{HPCToolkit}'s correlation tool. %% hpcview (change to hpcprof)
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Arguments}
 
 \begin{Description}
 \item[\Arg{binary}] An executable binary or dynamically linked library.
-Note that \Prog{bloop} does not recover program structure for libraries that \Arg{binary} depends on.  To create such information, run bloop on each dynamically linked library (or relink your program with static versions of the libraries).
+Note that \Prog{hpcstruct} does not recover program structure for libraries that \Arg{binary} depends on.  To create such information, run hpcstruct on each dynamically linked library (or relink your program with static versions of the libraries).
 \end{Description}
 
 Default values for an option's optional arguments are shown in \{\}.
@@ -108,7 +108,7 @@ Assume we have collected profiling information for the (optimized) binary \File{
 We wish to recover program structure in the file \File{sweep3dsingle.psxml} for use with \HTMLhref{hpcquick.html}{\Cmd{hpcquick}{1}}/\HTMLhref{hpcview.html}{\Cmd{hpcview}{1}}.
 To do this, execute:
 \begin{verbatim}
-    bloop sweep3dsingle > sweep3dsingle.psxml
+    hpcstruct sweep3dsingle > sweep3dsingle.psxml
 \end{verbatim}
 
 %\end{enumerate}
@@ -127,10 +127,10 @@ To generate debugging information while also enabling optimizations, use the app
 \item Sun Compilers: \verb+-g -xs+
 \end{itemize}
 
-\item While \Prog{bloop} attempts to guard against inaccurate debugging information, some compilers (notably PGI's) often generate invalid and inconsistent debugging information.
+\item While \Prog{hpcstruct} attempts to guard against inaccurate debugging information, some compilers (notably PGI's) often generate invalid and inconsistent debugging information.
 Garbage in; garbage out.
 
-\item C++ mangling is compiler specific. On non-GNU platforms, \Prog{bloop}
+\item C++ mangling is compiler specific. On non-GNU platforms, \Prog{hpcstruct}
 tries both platform's and GNU's demangler.
 
 \end{enumerate}
@@ -140,8 +140,8 @@ tries both platform's and GNU's demangler.
 
 \begin{enumerate}
 
-\item \Prog{bloop} may incorrectly infer the structure of loops contained within switch statements.
-When reconstructing the control flow graph (CFG) of the object code, \Prog{bloop} currently ignores indirect jumps and does not add edges from the jump to possible target basic blocks.
+\item \Prog{hpcstruct} may incorrectly infer the structure of loops contained within switch statements.
+When reconstructing the control flow graph (CFG) of the object code, \Prog{hpcstruct} currently ignores indirect jumps and does not add edges from the jump to possible target basic blocks.
 The result is an incomplete CFG and a misleading loop nesting tree.
 The workaround is to use an if/elseif/else statement.
 
