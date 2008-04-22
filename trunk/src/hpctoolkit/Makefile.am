@@ -60,9 +60,9 @@ AUTOMAKE_OPTIONS = foreign
 #############################################################################
 
 SUBDIRS = \
-	bloop \
 	filters \
 	hpcquick \
+	hpcstruct \
 	hpcprof \
 	hpcview \
 	lump \

@@ -99,8 +99,8 @@ host_triplet = @host@
 DIST_COMMON = $(srcdir)/Makefile.am $(srcdir)/Makefile.in \
 	$(top_srcdir)/src/Makeinclude.config \
 	$(top_srcdir)/src/Makeinclude.rules
-bin_PROGRAMS = bloop$(EXEEXT)
-subdir = src/hpctoolkit/bloop
+bin_PROGRAMS = hpcstruct$(EXEEXT)
+subdir = src/hpctoolkit/hpcstruct
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/config/hpc-cxxutils.m4 \
 	$(top_srcdir)/configure.ac
@@ -111,16 +111,16 @@ CONFIG_CLEAN_FILES =
 am__installdirs = "$(DESTDIR)$(bindir)"
 binPROGRAMS_INSTALL = $(INSTALL_PROGRAM)
 PROGRAMS = $(bin_PROGRAMS)
-am__objects_1 = bloop-main.$(OBJEXT) bloop-Args.$(OBJEXT)
-am_bloop_OBJECTS = $(am__objects_1)
-bloop_OBJECTS = $(am_bloop_OBJECTS)
+am__objects_1 = hpcstruct-main.$(OBJEXT) hpcstruct-Args.$(OBJEXT)
+am_hpcstruct_OBJECTS = $(am__objects_1)
+hpcstruct_OBJECTS = $(am_hpcstruct_OBJECTS)
 am__DEPENDENCIES_1 = $(HPC_LIBBANAL) $(HPC_LIBPROFJUICY) \
 	$(HPC_LIBBINUTILS) $(HPC_LIBISA) $(HPC_LIBXML) \
 	$(HPC_LIBSUPPORT)
-bloop_DEPENDENCIES = $(am__DEPENDENCIES_1)
-bloop_LINK = $(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
-	--mode=link $(CXXLD) $(bloop_CXXFLAGS) $(CXXFLAGS) \
-	$(bloop_LDFLAGS) $(LDFLAGS) -o $@
+hpcstruct_DEPENDENCIES = $(am__DEPENDENCIES_1)
+hpcstruct_LINK = $(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) \
+	$(LIBTOOLFLAGS) --mode=link $(CXXLD) $(hpcstruct_CXXFLAGS) \
+	$(CXXFLAGS) $(hpcstruct_LDFLAGS) $(LDFLAGS) -o $@
 DEFAULT_INCLUDES = -I.@am__isrc@
 depcomp = $(SHELL) $(top_srcdir)/config/depcomp
 am__depfiles_maybe = depfiles
@@ -142,8 +142,8 @@ CCLD = $(CC)
 LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
 	--mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) \
 	$(LDFLAGS) -o $@
-SOURCES = $(bloop_SOURCES)
-DIST_SOURCES = $(bloop_SOURCES)
+SOURCES = $(hpcstruct_SOURCES)
+DIST_SOURCES = $(hpcstruct_SOURCES)
 ETAGS = etags
 CTAGS = ctags
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
@@ -179,11 +179,11 @@ GNUBINUTILS_IFLAGS = @GNUBINUTILS_IFLAGS@
 GNUBINUTILS_LDFLAGS = @GNUBINUTILS_LDFLAGS@
 GREP = @GREP@
 HOST_AR = @HOST_AR@
-HOST_BLOOP_LDFLAGS = @HOST_BLOOP_LDFLAGS@
 HOST_CFLAGS = @HOST_CFLAGS@
 HOST_CXXFLAGS = @HOST_CXXFLAGS@
 HOST_HPCPROF_LDFLAGS = @HOST_HPCPROF_LDFLAGS@
 HOST_HPCRUN_LDFLAGS = @HOST_HPCRUN_LDFLAGS@
+HOST_HPCSTRUCT_LDFLAGS = @HOST_HPCSTRUCT_LDFLAGS@
 HOST_HPCVIEW_LDFLAGS = @HOST_HPCVIEW_LDFLAGS@
 HOST_LIBTREPOSITORY = @HOST_LIBTREPOSITORY@
 HOST_LINK_NO_START_FILES = @HOST_LINK_NO_START_FILES@
@@ -333,15 +333,15 @@ MYLDADD = \
 	@HOST_LIBTREPOSITORY@ \
 	$(HPC_LIBBANAL) $(HPC_LIBPROFJUICY) $(HPC_LIBBINUTILS) $(HPC_LIBISA) $(HPC_LIBXML) $(HPC_LIBSUPPORT) \
 	@OA_LDFLAGS@ @GNUBINUTILS_LDFLAGS@ \
-	@HOST_BLOOP_LDFLAGS@ \
+	@HOST_HPCSTRUCT_LDFLAGS@ \
 	-lm
 
 MYCLEAN = @HOST_LIBTREPOSITORY@
-bloop_SOURCES = $(MYSOURCES)
-bloop_CFLAGS = $(MYCFLAGS)
-bloop_CXXFLAGS = $(MYCXXFLAGS)
-bloop_LDFLAGS = $(MYLDFLAGS)
-bloop_LDADD = $(MYLDADD)
+hpcstruct_SOURCES = $(MYSOURCES)
+hpcstruct_CFLAGS = $(MYCFLAGS)
+hpcstruct_CXXFLAGS = $(MYCXXFLAGS)
+hpcstruct_LDFLAGS = $(MYLDFLAGS)
+hpcstruct_LDADD = $(MYLDADD)
 MOSTLYCLEANFILES = $(MYCLEAN)
 MYCPPFLAGS_CXX = $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) \
 	$(MYCXXFLAGS)
@@ -362,9 +362,9 @@ $(srcdir)/Makefile.in:  $(srcdir)/Makefile.am $(top_srcdir)/src/Makeinclude.conf
 	      exit 1;; \
 	  esac; \
 	done; \
-	echo ' cd $(top_srcdir) && $(AUTOMAKE) --foreign  src/hpctoolkit/bloop/Makefile'; \
+	echo ' cd $(top_srcdir) && $(AUTOMAKE) --foreign  src/hpctoolkit/hpcstruct/Makefile'; \
 	cd $(top_srcdir) && \
-	  $(AUTOMAKE) --foreign  src/hpctoolkit/bloop/Makefile
+	  $(AUTOMAKE) --foreign  src/hpctoolkit/hpcstruct/Makefile
 .PRECIOUS: Makefile
 Makefile: $(srcdir)/Makefile.in $(top_builddir)/config.status
 	@case '$?' in \
@@ -410,9 +410,9 @@ clean-binPROGRAMS:
 	  echo " rm -f $$p $$f"; \
 	  rm -f $$p $$f ; \
 	done
-bloop$(EXEEXT): $(bloop_OBJECTS) $(bloop_DEPENDENCIES) 
-	@rm -f bloop$(EXEEXT)
-	$(bloop_LINK) $(bloop_OBJECTS) $(bloop_LDADD) $(LIBS)
+hpcstruct$(EXEEXT): $(hpcstruct_OBJECTS) $(hpcstruct_DEPENDENCIES) 
+	@rm -f hpcstruct$(EXEEXT)
+	$(hpcstruct_LINK) $(hpcstruct_OBJECTS) $(hpcstruct_LDADD) $(LIBS)
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
@@ -420,8 +420,8 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/bloop-Args.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/bloop-main.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/hpcstruct-Args.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/hpcstruct-main.Po@am__quote@
 
 .cpp.o:
 @am__fastdepCXX_TRUE@	$(CXXCOMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
@@ -444,33 +444,33 @@ distclean-compile:
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(LTCXXCOMPILE) -c -o $@ $<
 
-bloop-main.o: main.cpp
-@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(bloop_CXXFLAGS) $(CXXFLAGS) -MT bloop-main.o -MD -MP -MF $(DEPDIR)/bloop-main.Tpo -c -o bloop-main.o `test -f 'main.cpp' || echo '$(srcdir)/'`main.cpp
-@am__fastdepCXX_TRUE@	mv -f $(DEPDIR)/bloop-main.Tpo $(DEPDIR)/bloop-main.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='main.cpp' object='bloop-main.o' libtool=no @AMDEPBACKSLASH@
+hpcstruct-main.o: main.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(hpcstruct_CXXFLAGS) $(CXXFLAGS) -MT hpcstruct-main.o -MD -MP -MF $(DEPDIR)/hpcstruct-main.Tpo -c -o hpcstruct-main.o `test -f 'main.cpp' || echo '$(srcdir)/'`main.cpp
+@am__fastdepCXX_TRUE@	mv -f $(DEPDIR)/hpcstruct-main.Tpo $(DEPDIR)/hpcstruct-main.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='main.cpp' object='hpcstruct-main.o' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(bloop_CXXFLAGS) $(CXXFLAGS) -c -o bloop-main.o `test -f 'main.cpp' || echo '$(srcdir)/'`main.cpp
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(hpcstruct_CXXFLAGS) $(CXXFLAGS) -c -o hpcstruct-main.o `test -f 'main.cpp' || echo '$(srcdir)/'`main.cpp
 
-bloop-main.obj: main.cpp
-@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(bloop_CXXFLAGS) $(CXXFLAGS) -MT bloop-main.obj -MD -MP -MF $(DEPDIR)/bloop-main.Tpo -c -o bloop-main.obj `if test -f 'main.cpp'; then $(CYGPATH_W) 'main.cpp'; else $(CYGPATH_W) '$(srcdir)/main.cpp'; fi`
-@am__fastdepCXX_TRUE@	mv -f $(DEPDIR)/bloop-main.Tpo $(DEPDIR)/bloop-main.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='main.cpp' object='bloop-main.obj' libtool=no @AMDEPBACKSLASH@
+hpcstruct-main.obj: main.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(hpcstruct_CXXFLAGS) $(CXXFLAGS) -MT hpcstruct-main.obj -MD -MP -MF $(DEPDIR)/hpcstruct-main.Tpo -c -o hpcstruct-main.obj `if test -f 'main.cpp'; then $(CYGPATH_W) 'main.cpp'; else $(CYGPATH_W) '$(srcdir)/main.cpp'; fi`
+@am__fastdepCXX_TRUE@	mv -f $(DEPDIR)/hpcstruct-main.Tpo $(DEPDIR)/hpcstruct-main.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='main.cpp' object='hpcstruct-main.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(bloop_CXXFLAGS) $(CXXFLAGS) -c -o bloop-main.obj `if test -f 'main.cpp'; then $(CYGPATH_W) 'main.cpp'; else $(CYGPATH_W) '$(srcdir)/main.cpp'; fi`
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(hpcstruct_CXXFLAGS) $(CXXFLAGS) -c -o hpcstruct-main.obj `if test -f 'main.cpp'; then $(CYGPATH_W) 'main.cpp'; else $(CYGPATH_W) '$(srcdir)/main.cpp'; fi`
 
-bloop-Args.o: Args.cpp
-@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(bloop_CXXFLAGS) $(CXXFLAGS) -MT bloop-Args.o -MD -MP -MF $(DEPDIR)/bloop-Args.Tpo -c -o bloop-Args.o `test -f 'Args.cpp' || echo '$(srcdir)/'`Args.cpp
-@am__fastdepCXX_TRUE@	mv -f $(DEPDIR)/bloop-Args.Tpo $(DEPDIR)/bloop-Args.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='Args.cpp' object='bloop-Args.o' libtool=no @AMDEPBACKSLASH@
+hpcstruct-Args.o: Args.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(hpcstruct_CXXFLAGS) $(CXXFLAGS) -MT hpcstruct-Args.o -MD -MP -MF $(DEPDIR)/hpcstruct-Args.Tpo -c -o hpcstruct-Args.o `test -f 'Args.cpp' || echo '$(srcdir)/'`Args.cpp
+@am__fastdepCXX_TRUE@	mv -f $(DEPDIR)/hpcstruct-Args.Tpo $(DEPDIR)/hpcstruct-Args.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='Args.cpp' object='hpcstruct-Args.o' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(bloop_CXXFLAGS) $(CXXFLAGS) -c -o bloop-Args.o `test -f 'Args.cpp' || echo '$(srcdir)/'`Args.cpp
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(hpcstruct_CXXFLAGS) $(CXXFLAGS) -c -o hpcstruct-Args.o `test -f 'Args.cpp' || echo '$(srcdir)/'`Args.cpp
 
-bloop-Args.obj: Args.cpp
-@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(bloop_CXXFLAGS) $(CXXFLAGS) -MT bloop-Args.obj -MD -MP -MF $(DEPDIR)/bloop-Args.Tpo -c -o bloop-Args.obj `if test -f 'Args.cpp'; then $(CYGPATH_W) 'Args.cpp'; else $(CYGPATH_W) '$(srcdir)/Args.cpp'; fi`
-@am__fastdepCXX_TRUE@	mv -f $(DEPDIR)/bloop-Args.Tpo $(DEPDIR)/bloop-Args.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='Args.cpp' object='bloop-Args.obj' libtool=no @AMDEPBACKSLASH@
+hpcstruct-Args.obj: Args.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(hpcstruct_CXXFLAGS) $(CXXFLAGS) -MT hpcstruct-Args.obj -MD -MP -MF $(DEPDIR)/hpcstruct-Args.Tpo -c -o hpcstruct-Args.obj `if test -f 'Args.cpp'; then $(CYGPATH_W) 'Args.cpp'; else $(CYGPATH_W) '$(srcdir)/Args.cpp'; fi`
+@am__fastdepCXX_TRUE@	mv -f $(DEPDIR)/hpcstruct-Args.Tpo $(DEPDIR)/hpcstruct-Args.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='Args.cpp' object='hpcstruct-Args.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(bloop_CXXFLAGS) $(CXXFLAGS) -c -o bloop-Args.obj `if test -f 'Args.cpp'; then $(CYGPATH_W) 'Args.cpp'; else $(CYGPATH_W) '$(srcdir)/Args.cpp'; fi`
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(hpcstruct_CXXFLAGS) $(CXXFLAGS) -c -o hpcstruct-Args.obj `if test -f 'Args.cpp'; then $(CYGPATH_W) 'Args.cpp'; else $(CYGPATH_W) '$(srcdir)/Args.cpp'; fi`
 
 mostlyclean-libtool:
 	-rm -f *.lo
