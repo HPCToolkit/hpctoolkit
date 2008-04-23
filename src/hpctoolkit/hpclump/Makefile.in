@@ -99,8 +99,8 @@ host_triplet = @host@
 DIST_COMMON = $(srcdir)/Makefile.am $(srcdir)/Makefile.in \
 	$(top_srcdir)/src/Makeinclude.config \
 	$(top_srcdir)/src/Makeinclude.rules
-bin_PROGRAMS = lump$(EXEEXT)
-subdir = src/hpctoolkit/lump
+bin_PROGRAMS = hpclump$(EXEEXT)
+subdir = src/hpctoolkit/hpclump
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/config/hpc-cxxutils.m4 \
 	$(top_srcdir)/configure.ac
@@ -111,15 +111,15 @@ CONFIG_CLEAN_FILES =
 am__installdirs = "$(DESTDIR)$(bindir)"
 binPROGRAMS_INSTALL = $(INSTALL_PROGRAM)
 PROGRAMS = $(bin_PROGRAMS)
-am__objects_1 = lump-main.$(OBJEXT) lump-Args.$(OBJEXT)
-am_lump_OBJECTS = $(am__objects_1)
-lump_OBJECTS = $(am_lump_OBJECTS)
+am__objects_1 = hpclump-main.$(OBJEXT) hpclump-Args.$(OBJEXT)
+am_hpclump_OBJECTS = $(am__objects_1)
+hpclump_OBJECTS = $(am_hpclump_OBJECTS)
 am__DEPENDENCIES_1 = $(HPC_LIBBINUTILS) $(HPC_LIBISA) \
 	$(HPC_LIBSUPPORT)
-lump_DEPENDENCIES = $(am__DEPENDENCIES_1)
-lump_LINK = $(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
-	--mode=link $(CXXLD) $(lump_CXXFLAGS) $(CXXFLAGS) \
-	$(lump_LDFLAGS) $(LDFLAGS) -o $@
+hpclump_DEPENDENCIES = $(am__DEPENDENCIES_1)
+hpclump_LINK = $(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
+	--mode=link $(CXXLD) $(hpclump_CXXFLAGS) $(CXXFLAGS) \
+	$(hpclump_LDFLAGS) $(LDFLAGS) -o $@
 DEFAULT_INCLUDES = -I.@am__isrc@
 depcomp = $(SHELL) $(top_srcdir)/config/depcomp
 am__depfiles_maybe = depfiles
@@ -141,8 +141,8 @@ CCLD = $(CC)
 LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
 	--mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) \
 	$(LDFLAGS) -o $@
-SOURCES = $(lump_SOURCES)
-DIST_SOURCES = $(lump_SOURCES)
+SOURCES = $(hpclump_SOURCES)
+DIST_SOURCES = $(hpclump_SOURCES)
 ETAGS = etags
 CTAGS = ctags
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
@@ -336,11 +336,11 @@ MYLDADD = \
 	-lm
 
 MYCLEAN = @HOST_LIBTREPOSITORY@
-lump_SOURCES = $(MYSOURCES)
-lump_CFLAGS = $(MYCFLAGS)
-lump_CXXFLAGS = $(MYCXXFLAGS)
-lump_LDFLAGS = $(MYLDFLAGS)
-lump_LDADD = $(MYLDADD)
+hpclump_SOURCES = $(MYSOURCES)
+hpclump_CFLAGS = $(MYCFLAGS)
+hpclump_CXXFLAGS = $(MYCXXFLAGS)
+hpclump_LDFLAGS = $(MYLDFLAGS)
+hpclump_LDADD = $(MYLDADD)
 MOSTLYCLEANFILES = $(MYCLEAN)
 MYCPPFLAGS_CXX = $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) \
 	$(MYCXXFLAGS)
@@ -361,9 +361,9 @@ $(srcdir)/Makefile.in:  $(srcdir)/Makefile.am $(top_srcdir)/src/Makeinclude.conf
 	      exit 1;; \
 	  esac; \
 	done; \
-	echo ' cd $(top_srcdir) && $(AUTOMAKE) --foreign  src/hpctoolkit/lump/Makefile'; \
+	echo ' cd $(top_srcdir) && $(AUTOMAKE) --foreign  src/hpctoolkit/hpclump/Makefile'; \
 	cd $(top_srcdir) && \
-	  $(AUTOMAKE) --foreign  src/hpctoolkit/lump/Makefile
+	  $(AUTOMAKE) --foreign  src/hpctoolkit/hpclump/Makefile
 .PRECIOUS: Makefile
 Makefile: $(srcdir)/Makefile.in $(top_builddir)/config.status
 	@case '$?' in \
@@ -409,9 +409,9 @@ clean-binPROGRAMS:
 	  echo " rm -f $$p $$f"; \
 	  rm -f $$p $$f ; \
 	done
-lump$(EXEEXT): $(lump_OBJECTS) $(lump_DEPENDENCIES) 
-	@rm -f lump$(EXEEXT)
-	$(lump_LINK) $(lump_OBJECTS) $(lump_LDADD) $(LIBS)
+hpclump$(EXEEXT): $(hpclump_OBJECTS) $(hpclump_DEPENDENCIES) 
+	@rm -f hpclump$(EXEEXT)
+	$(hpclump_LINK) $(hpclump_OBJECTS) $(hpclump_LDADD) $(LIBS)
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
@@ -419,8 +419,8 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/lump-Args.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/lump-main.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/hpclump-Args.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/hpclump-main.Po@am__quote@
 
 .cpp.o:
 @am__fastdepCXX_TRUE@	$(CXXCOMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
@@ -443,33 +443,33 @@ distclean-compile:
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(LTCXXCOMPILE) -c -o $@ $<
 
-lump-main.o: main.cpp
-@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(lump_CXXFLAGS) $(CXXFLAGS) -MT lump-main.o -MD -MP -MF $(DEPDIR)/lump-main.Tpo -c -o lump-main.o `test -f 'main.cpp' || echo '$(srcdir)/'`main.cpp
-@am__fastdepCXX_TRUE@	mv -f $(DEPDIR)/lump-main.Tpo $(DEPDIR)/lump-main.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='main.cpp' object='lump-main.o' libtool=no @AMDEPBACKSLASH@
+hpclump-main.o: main.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(hpclump_CXXFLAGS) $(CXXFLAGS) -MT hpclump-main.o -MD -MP -MF $(DEPDIR)/hpclump-main.Tpo -c -o hpclump-main.o `test -f 'main.cpp' || echo '$(srcdir)/'`main.cpp
+@am__fastdepCXX_TRUE@	mv -f $(DEPDIR)/hpclump-main.Tpo $(DEPDIR)/hpclump-main.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='main.cpp' object='hpclump-main.o' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(lump_CXXFLAGS) $(CXXFLAGS) -c -o lump-main.o `test -f 'main.cpp' || echo '$(srcdir)/'`main.cpp
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(hpclump_CXXFLAGS) $(CXXFLAGS) -c -o hpclump-main.o `test -f 'main.cpp' || echo '$(srcdir)/'`main.cpp
 
-lump-main.obj: main.cpp
-@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(lump_CXXFLAGS) $(CXXFLAGS) -MT lump-main.obj -MD -MP -MF $(DEPDIR)/lump-main.Tpo -c -o lump-main.obj `if test -f 'main.cpp'; then $(CYGPATH_W) 'main.cpp'; else $(CYGPATH_W) '$(srcdir)/main.cpp'; fi`
-@am__fastdepCXX_TRUE@	mv -f $(DEPDIR)/lump-main.Tpo $(DEPDIR)/lump-main.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='main.cpp' object='lump-main.obj' libtool=no @AMDEPBACKSLASH@
+hpclump-main.obj: main.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(hpclump_CXXFLAGS) $(CXXFLAGS) -MT hpclump-main.obj -MD -MP -MF $(DEPDIR)/hpclump-main.Tpo -c -o hpclump-main.obj `if test -f 'main.cpp'; then $(CYGPATH_W) 'main.cpp'; else $(CYGPATH_W) '$(srcdir)/main.cpp'; fi`
+@am__fastdepCXX_TRUE@	mv -f $(DEPDIR)/hpclump-main.Tpo $(DEPDIR)/hpclump-main.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='main.cpp' object='hpclump-main.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(lump_CXXFLAGS) $(CXXFLAGS) -c -o lump-main.obj `if test -f 'main.cpp'; then $(CYGPATH_W) 'main.cpp'; else $(CYGPATH_W) '$(srcdir)/main.cpp'; fi`
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(hpclump_CXXFLAGS) $(CXXFLAGS) -c -o hpclump-main.obj `if test -f 'main.cpp'; then $(CYGPATH_W) 'main.cpp'; else $(CYGPATH_W) '$(srcdir)/main.cpp'; fi`
 
-lump-Args.o: Args.cpp
-@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(lump_CXXFLAGS) $(CXXFLAGS) -MT lump-Args.o -MD -MP -MF $(DEPDIR)/lump-Args.Tpo -c -o lump-Args.o `test -f 'Args.cpp' || echo '$(srcdir)/'`Args.cpp
-@am__fastdepCXX_TRUE@	mv -f $(DEPDIR)/lump-Args.Tpo $(DEPDIR)/lump-Args.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='Args.cpp' object='lump-Args.o' libtool=no @AMDEPBACKSLASH@
+hpclump-Args.o: Args.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(hpclump_CXXFLAGS) $(CXXFLAGS) -MT hpclump-Args.o -MD -MP -MF $(DEPDIR)/hpclump-Args.Tpo -c -o hpclump-Args.o `test -f 'Args.cpp' || echo '$(srcdir)/'`Args.cpp
+@am__fastdepCXX_TRUE@	mv -f $(DEPDIR)/hpclump-Args.Tpo $(DEPDIR)/hpclump-Args.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='Args.cpp' object='hpclump-Args.o' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(lump_CXXFLAGS) $(CXXFLAGS) -c -o lump-Args.o `test -f 'Args.cpp' || echo '$(srcdir)/'`Args.cpp
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(hpclump_CXXFLAGS) $(CXXFLAGS) -c -o hpclump-Args.o `test -f 'Args.cpp' || echo '$(srcdir)/'`Args.cpp
 
-lump-Args.obj: Args.cpp
-@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(lump_CXXFLAGS) $(CXXFLAGS) -MT lump-Args.obj -MD -MP -MF $(DEPDIR)/lump-Args.Tpo -c -o lump-Args.obj `if test -f 'Args.cpp'; then $(CYGPATH_W) 'Args.cpp'; else $(CYGPATH_W) '$(srcdir)/Args.cpp'; fi`
-@am__fastdepCXX_TRUE@	mv -f $(DEPDIR)/lump-Args.Tpo $(DEPDIR)/lump-Args.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='Args.cpp' object='lump-Args.obj' libtool=no @AMDEPBACKSLASH@
+hpclump-Args.obj: Args.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(hpclump_CXXFLAGS) $(CXXFLAGS) -MT hpclump-Args.obj -MD -MP -MF $(DEPDIR)/hpclump-Args.Tpo -c -o hpclump-Args.obj `if test -f 'Args.cpp'; then $(CYGPATH_W) 'Args.cpp'; else $(CYGPATH_W) '$(srcdir)/Args.cpp'; fi`
+@am__fastdepCXX_TRUE@	mv -f $(DEPDIR)/hpclump-Args.Tpo $(DEPDIR)/hpclump-Args.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='Args.cpp' object='hpclump-Args.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(lump_CXXFLAGS) $(CXXFLAGS) -c -o lump-Args.obj `if test -f 'Args.cpp'; then $(CYGPATH_W) 'Args.cpp'; else $(CYGPATH_W) '$(srcdir)/Args.cpp'; fi`
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(hpclump_CXXFLAGS) $(CXXFLAGS) -c -o hpclump-Args.obj `if test -f 'Args.cpp'; then $(CYGPATH_W) 'Args.cpp'; else $(CYGPATH_W) '$(srcdir)/Args.cpp'; fi`
 
 mostlyclean-libtool:
 	-rm -f *.lo

@@ -83,13 +83,13 @@ MYCLEAN = @HOST_LIBTREPOSITORY@
 # Automake rules
 #############################################################################
 
-bin_PROGRAMS = lump
+bin_PROGRAMS = hpclump
 
-lump_SOURCES  = $(MYSOURCES)
-lump_CFLAGS   = $(MYCFLAGS)
-lump_CXXFLAGS = $(MYCXXFLAGS)
-lump_LDFLAGS  = $(MYLDFLAGS)
-lump_LDADD    = $(MYLDADD)
+hpclump_SOURCES  = $(MYSOURCES)
+hpclump_CFLAGS   = $(MYCFLAGS)
+hpclump_CXXFLAGS = $(MYCXXFLAGS)
+hpclump_LDFLAGS  = $(MYLDFLAGS)
+hpclump_LDADD    = $(MYLDADD)
 
 MOSTLYCLEANFILES = $(MYCLEAN)
 

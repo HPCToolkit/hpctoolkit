@@ -38,18 +38,18 @@
 //***************************************************************************
 //
 // File:
-//    Args.h
+//   $Source$
 //
 // Purpose:
-//    [The purpose of this file]
+//   [The purpose of this file]
 //
 // Description:
-//    [The set of functions, macros, etc. defined in the file]
+//   [The set of functions, macros, etc. defined in the file]
 //
 //***************************************************************************
 
-#ifndef Args_h
-#define Args_h
+#ifndef Args_hpp
+#define Args_hpp
 
 //************************* System Include Files ****************************
 
@@ -111,4 +111,4 @@ private:
   CmdLineParser parser;
 }; 
 
-#endif
+#endif /* Args_hpp */
