@@ -875,7 +875,7 @@ AC_CONFIG_FILES([ \
   src/Makefile \
   src/hpctoolkit/Makefile \
   src/hpctoolkit/filters/Makefile \
-  src/hpctoolkit/lump/Makefile \
+  src/hpctoolkit/hpclump/Makefile \
   src/hpctoolkit/hpcprof/Makefile \
   src/hpctoolkit/hpcquick/Makefile \
   src/hpctoolkit/hpcrun/Makefile \

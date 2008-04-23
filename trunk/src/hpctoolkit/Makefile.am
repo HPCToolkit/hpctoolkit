@@ -60,16 +60,19 @@ AUTOMAKE_OPTIONS = foreign
 #############################################################################
 
 SUBDIRS = \
-	filters \
 	hpcquick \
 	hpcstruct \
 	hpcprof \
 	hpcview \
-	lump \
-	misc \
-	ptran \
 	xcsprof \
-	xprof
+	\
+	hpclump \
+	\
+	xprof \
+	filters \
+	misc \
+	ptran
+
 
 if OPT_ENABLE_HPCRUN
   SUBDIRS += hpcrun
