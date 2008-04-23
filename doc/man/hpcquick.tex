@@ -30,7 +30,7 @@
 \rcsInfo $Id$
 \setDate{\rcsInfoLongDate}
 }{
-\setDate{ 2007/11/02}
+\setDate{ 2008/04/22}
 \message{package rcsinfo not present, discard it}
 }
 
@@ -71,7 +71,7 @@ All shell commands used to create the Experiment database are recorded in a log 
   \item binary output from SGI's ssrun and 
   \item XML PROFILE files (e.g., from \Cmd{hpcprof}{1} and \Prog{xprof})
 \end{itemize}
-For best results, two other options should be used: \textbf{-I} to provide paths for source code directories and \textbf{-S} to provide source code structure from \HTMLhref{bloop.html}{\Cmd{bloop}{1}}.
+For best results, two other options should be used: \textbf{-I} to provide paths for source code directories and \textbf{-S} to provide source code structure from \HTMLhref{hpcstruct.html}{\Cmd{hpcstruct}{1}}.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Arguments}
@@ -80,7 +80,7 @@ For best results, two other options should be used: \textbf{-I} to provide paths
 
 \begin{Description}
 \item[\OptArg{-I}{path}] A path (relative or absolute) containing source code to which performance data should be correlated.  In order to search a directory \emph{and} recursively search all of its descendents, append an escaped `*' after the last slash, e.g., \verb+/mypath/\*+ (escaping is for the shell). May be passed multiple times.
-\item[\OptArg{-S}{struct-file}] A structure file (from \HTMLhref{bloop.html}{\Cmd{bloop}{1}}) for the main program and/or any or all of the shared libraries used by the program.  May be passed multiple times.
+\item[\OptArg{-S}{struct-file}] A structure file (from \HTMLhref{hpcstruct.html}{\Cmd{hpcstruct}{1}}) for the main program and/or any or all of the shared libraries used by the program.  May be passed multiple times.
 %\item[\OptArg{-G}{group-file}] A group file for the main program and/or any or all of the shared libraries used by the program. May be passed multiple times.
 \end{Description}
 
@@ -98,7 +98,7 @@ For best results, two other options should be used: \textbf{-I} to provide paths
 %\begin{enumerate}
 %\item 
 
-Assume we have collected \HTMLhref{hpcrun.html}{\Cmd{hpcrun}{1}} data for a run of \texttt{poissonSolve3d}.  Further assume we have used \HTMLhref{bloop.html}{\Cmd{bloop}{1}} to compute program structure and stored the result in \texttt{poissonSolve3d.psxml}.  Source code for the application is located under the relative paths \verb+../lib+ and \verb+../example+.  \Prog{hpcquick} can be used to generate an Experiment database:
+Assume we have collected \HTMLhref{hpcrun.html}{\Cmd{hpcrun}{1}} data for a run of \texttt{poissonSolve3d}.  Further assume we have used \HTMLhref{hpcstruct.html}{\Cmd{hpcstruct}{1}} to compute program structure and stored the result in \texttt{poissonSolve3d.psxml}.  Source code for the application is located under the relative paths \verb+../lib+ and \verb+../example+.  \Prog{hpcquick} can be used to generate an Experiment database:
 \begin{verbatim}
    hpcquick -I ../lib/\* -I ../example/\* -S poissonSolve3d.psxml -P poissonSolve3d.Linux.icpc.ifort.ex.PAPI_L2_DCM-etc.andre1.2150.0x866
 \end{verbatim}
