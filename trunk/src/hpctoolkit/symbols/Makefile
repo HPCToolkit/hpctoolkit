@@ -40,7 +40,7 @@ sts:
 	chmod +x sts
 
 .PHONY: install
-install:
+install: build
 	install -d $(PREFIX)/libexec
 	cp stapi_syms $(PREFIX)/libexec
 
