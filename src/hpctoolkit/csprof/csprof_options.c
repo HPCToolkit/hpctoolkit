@@ -5,10 +5,10 @@
 #include <string.h>
 
 #include "csprof_options.h"
+#include "process_event_list.h"
 #include "csprof_misc_fn_stat.h"
 #include "env.h"
 #include "pmsg.h"
-#include "tokenize.h"
 
 /* option handling */
 /* FIXME: this needs to be split up a little bit for different backends */
@@ -20,8 +20,8 @@ csprof_options__init(csprof_options_t *x)
 
   // x->mem_sz = CSPROF_MEM_SZ_INIT;
   // x->event = CSPROF_EVENT;
-  x->sample_period = CSPROF_SMPL_PERIOD;
-  x->sample_source = ITIMER;
+  // x->sample_period = CSPROF_SMPL_PERIOD;
+  // x->sample_source = ITIMER;
   // x->sample_source = PAPI;
   
   return CSPROF_OK;
@@ -74,38 +74,15 @@ csprof_options__getopts(csprof_options_t* x)
   }
 
   // process event list
-  // for now, just look thru the list for wallclock, to set sample period
-  // and check to make sure that both wallclock and papi events are not
-  // both set
-  // FIXME: error checking code needs to be more general
   
-  int use_wallclock    = 0;
-  int use_papi         = 0;
-  unsigned long period = 0L;
+  csprof_sample_sources_from_eventlist(getenv("CSPROF_OPT_EVENT"));
 
-  char *evl         = getenv("CSPROF_OPT_EVENT");
-  TMSG(OPTIONS,"evl (before processing) = |%s|",evl);
-  for(char *event = start_tok(evl); more_tok(); event = next_tok()){
-    use_wallclock = (strstr(event,"WALLCLOCK") != NULL);
-    if (use_wallclock){
-      char *_p = strchr(event,':');
-      if (! _p){
-        EMSG("Syntax for wallclock event is: WALLCLOCK:_Your_Period_Here");
-        abort();
-      }
-      period = strtol(_p+1,NULL,10);
-      TMSG(OPTIONS,"wallclock period set to %ld",period);
-    }
-    use_papi = use_papi || ! use_wallclock;
-    if (use_wallclock && use_papi) {
-      EMSG("Simultaneous wallclock and papi NOT allowed");
-      abort();
-    }
-  }
-  x->sample_source = use_wallclock ? ITIMER : PAPI;
-  x->event_list = evl;
-  TMSG(OPTIONS,"options event list(AFTER processing) = |%s|",x->event_list);
+#if 0
+  csprof_process_event_list(getenv("CSPROF_OPT_EVENT"),&(x->evi));
+  NMSG(OPTIONS,"sample source = %s",SS_PNAME((x->evi).sample_source));
+  NMSG(OPTIONS,"sample_period = %ld",(x->evi).sample_period);
+  NMSG(OPTIONS,"event list = %s",(x->evi).event_list);
+#endif
 
-  // Option: debug print -- not handled here !!
   return CSPROF_OK;
 }
