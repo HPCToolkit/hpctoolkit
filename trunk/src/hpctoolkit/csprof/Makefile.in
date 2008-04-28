@@ -170,7 +170,8 @@ endif
 OBJS += csproflib.o metrics.o mem.o cct.o
 OBJS += name.o list.o epoch.o
 OBJS += sample_event.o 
-OBJS += csprof_options.o 
+#OBJS += csprof_options.o process_event_list.o
+OBJS += csprof_options.o
 
 #-------------------
 # utilities
@@ -198,7 +199,11 @@ ifdef USE_TRAMP
   OBJS += tramp.o 
 endif
 
-OBJS += itimer.o papi_sample.o
+# OBJS += itimer.o papi_sample.o
+OBJS += all_sample_sources.o \
+        registered_sample_sources.o \
+        common.sample_source.o \
+        itimer.sample_source.o
 OBJS += state.o env.o data.o dump_backtraces.o segv_handler.o
 OBJS += pmsg.o
 OBJS += nm_bound.o

@@ -5,6 +5,7 @@
 // (there is just 1 thread).
 
 #include <setjmp.h>
+#include "registered_sample_sources.h"
 #include "mem.h"
 #include "state.h"
 
@@ -20,7 +21,7 @@ typedef struct _td_t {
   csprof_state_t  *state;
   csprof_mem_t    *memstore;
   sigjmp_buf_t    bad_unwind;
-  int             eventSet;     // for PAPI
+  int             eventSet[MAX_POSSIBLE_SAMPLE_SOURCES];
   int             handling_sample;
   int             splay_lock;
 } thread_data_t;

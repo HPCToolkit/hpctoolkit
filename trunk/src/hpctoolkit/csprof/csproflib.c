@@ -66,6 +66,7 @@
 
 /* user include files */
 
+#include "all_sample_sources.h"
 #include "atomic.h"
 #include "libc.h"
 #include "csproflib.h"
@@ -124,6 +125,8 @@ long static_epoch_size;
 
 static int evs;
 
+int lush_metrics = 0; // FIXME: global variable for now
+
 void
 csprof_init_internal(void)
 {
@@ -164,14 +167,23 @@ csprof_init_internal(void)
 	state, lush_agents);
   }
 
-  
+  lush_metrics = (lush_agents) ? 1 : 0;
+
   sigemptyset(&prof_sigset);
   sigaddset(&prof_sigset,SIGPROF);
 
   setup_segv();
   unw_init();
 
-  if (opts.sample_source == ITIMER){
+  // sample source setup
+
+  SAMPLE_SOURCES(init);
+  SAMPLE_SOURCES(process_event_list);
+  SAMPLE_SOURCES(gen_event_set,lush_metrics);
+  SAMPLE_SOURCES(start);
+
+#if 0
+  if (opts.evi.sample_source == ITIMER){
     int lush_metrics = (lush_agents) ? 1 : 0;
     csprof_itimer_init(&opts, lush_metrics);
     if (csprof_itimer_start()){
@@ -182,11 +194,12 @@ csprof_init_internal(void)
     papi_setup();
     //    papi_event_info_from_opt(&opts,&code,&thresh);
     
-    papi_parse_evlist(opts.event_list);
+    papi_parse_evlist(opts.evi.event_list);
     evs = papi_event_init();
     PMSG(PAPI,"PROCESS INIT papi event list = %d",evs);
     papi_pulse_init(evs);
   }
+#endif
   csprof_initialized = 1;
 }
 
@@ -280,10 +293,17 @@ csprof_thread_init(int id, lush_cct_ctxt_t* thr_ctxt)
   state->pstate.thrid = id; // local thread id in state
   state->csdata_ctxt = thr_ctxt;
 
+  // start sampling sources
+  TMSG(INIT,"starting sampling sources");
+
+  SAMPLE_SOURCES(gen_event_set,lush_metrics);
+  SAMPLE_SOURCES(start);
+
+#if 0
     /* FIXME: is this the right way to do things? */
 
   MSG(1,"driver init f thread");
-  if (opts.sample_source == ITIMER){
+  if (opts.evi.sample_source == ITIMER){
     if (csprof_itimer_start()){
       EMSG("WARNING: couldn't start itimer");
     }
@@ -294,6 +314,7 @@ csprof_thread_init(int id, lush_cct_ctxt_t* thr_ctxt)
     td->eventSet = papi_event_init();
     papi_pulse_init(td->eventSet);
   }
+#endif
   int ret = monitor_real_pthread_sigmask(SIG_UNBLOCK,&prof_sigset,NULL);
   if (ret){
     EMSG("WARNING: Thread init could not unblock SIGPROF, ret = %d",ret);
@@ -304,13 +325,12 @@ csprof_thread_init(int id, lush_cct_ctxt_t* thr_ctxt)
 void
 csprof_thread_fini(csprof_state_t *state)
 {
-#if 0
-  thread_data_t *td = (thread_data_t *) pthread_getspecific(my_thread_specific_key);
-#endif
-
+  TMSG(FINI,"thread fini");
   if (csprof_initialized){
-    MSG(1,"csprof thread fini");
-    if (opts.sample_source == ITIMER){
+    TMSG(FINI,"thread finit stops sampling");
+    SAMPLE_SOURCES(stop);
+#if 0
+    if (opts.evi.sample_source == ITIMER){
       int fail = csprof_itimer_stop();
       if (fail){
         EMSG("WARNING: failed to stop itimer (in thread)");
@@ -323,6 +343,7 @@ csprof_thread_fini(csprof_state_t *state)
       PMSG(PAPI,"PAPI Thread fini: id = %d",TD_GET(id));
       papi_pulse_fini(TD_GET(eventSet));
     }
+#endif
     csprof_write_profile_data(state);
   }
 }
@@ -334,6 +355,7 @@ csprof_thread_fini(csprof_state_t *state)
 void
 csprof_fini_internal(void)
 {
+  NMSG(FINI,"process");
   int ret = monitor_real_sigprocmask(SIG_BLOCK,&prof_sigset,NULL);
   if (ret){
     EMSG("WARNING: process fini could not block SIGPROF, ret = %d",ret);
@@ -343,7 +365,12 @@ csprof_fini_internal(void)
   csprof_state_t *state = TD_GET(state);
 
   if (csprof_initialized) {
-    if (opts.sample_source == ITIMER){
+    NMSG(FINI,"process attempting sample shutdown");
+    SAMPLE_SOURCES(stop);
+    SAMPLE_SOURCES(shutdown);
+
+#if 0
+    if (opts.evi.sample_source == ITIMER){
       int fail = csprof_itimer_stop();
       if (fail){
         EMSG("WARNING: failed to stop itimer (in process)");
@@ -355,6 +382,7 @@ csprof_fini_internal(void)
       papi_pulse_shutdown(TD_GET(eventSet)); // process shutdown needs hard stop
 #endif
     }
+#endif
 
     dl_fini();
 
