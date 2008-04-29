@@ -72,19 +72,19 @@ using namespace xml;
 
 CSProfile::CSProfile(uint i)
 {
-  m_metrics.resize(i);
-  for (int i = 0; i < m_metrics.size(); ++i) {
-    m_metrics[i] = new CSProfileMetric();
+  m_metricdesc.resize(i);
+  for (int i = 0; i < m_metricdesc.size(); ++i) {
+    m_metricdesc[i] = new CSProfileMetric();
   }
-  m_cct  = new CSProfTree;
+  m_cct  = new CSProfTree(this);
   m_epoch = NULL;
 }
 
 
 CSProfile::~CSProfile()
 {
-  for (int i = 0; i < m_metrics.size(); ++i) {
-    delete m_metrics[i];
+  for (int i = 0; i < m_metricdesc.size(); ++i) {
+    delete m_metricdesc[i];
   }
   delete m_cct;
   delete m_epoch;
@@ -99,12 +99,12 @@ CSProfile::merge(const CSProfile& y)
   // merge metrics
   for (int i = 0; i < y.numMetrics(); ++i) {
     const CSProfileMetric* m = y.metric(i);
-    m_metrics.push_back(new CSProfileMetric(*m));
+    m_metricdesc.push_back(new CSProfileMetric(*m));
   }
   
   // merge epochs... [FIXME]
   
-  m_cct->merge(y.cct(), x_numMetrics, y.numMetrics());
+  m_cct->merge(y.cct(), &m_metricdesc, x_numMetrics, y.numMetrics());
 }
 
 

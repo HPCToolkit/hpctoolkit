@@ -38,20 +38,20 @@
 //***************************************************************************
 //
 // File:
-//    xml.H
+//   $Source$
 //
 // Purpose:
-//    Some useful and simple routines for using XML.  The xerces
-//    library is much much more complete and powerful, but for simple
-//    apps, it can be overkill.
+//   Some useful and simple routines for using XML.  The xerces
+//   library is much much more complete and powerful, but for simple
+//   apps, it can be overkill.
 //
 // Description:
-//    [The set of functions, macros, etc. defined in the file]
+//   [The set of functions, macros, etc. defined in the file]
 //
 //***************************************************************************
 
-#ifndef xml_H 
-#define xml_H
+#ifndef xml_xml_hpp
+#define xml_xml_hpp
 
 //************************* System Include Files ****************************
 
@@ -176,22 +176,32 @@ namespace xml {
     return MakeAttrStr(x.c_str(), flags);
   }
 
+
   inline std::string 
   MakeAttrNum(int x) {
     return (attB + StrUtil::toStr(x) + attE);
   }
+
   inline std::string 
   MakeAttrNum(unsigned int x, int base = 10) {
     return (attB + StrUtil::toStr(x, base) + attE);
   }
+
   inline std::string 
   MakeAttrNum(int64_t x) {
     return (attB + StrUtil::toStr(x) + attE);
   }
+
   inline std::string 
   MakeAttrNum(uint64_t x, int base = 10) {
     return (attB + StrUtil::toStr(x, base) + attE);
   }
+
+  inline std::string 
+  MakeAttrNum(double x, const char* format = "%.15f") {
+    return (attB + StrUtil::toStr(x, format) + attE);
+  }
+
 }
 
-#endif
+#endif /* xml_xml_hpp */

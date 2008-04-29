@@ -70,9 +70,10 @@
 #include "list.h"
 #endif
 
+#include <metrics.h>
 #include <lush/lush-support.h>
 
-#include "hpcfile_cstreelib.h"
+#include <hpcfile_cstreelib.h>
 
 #define CSPROF_TREE_USES_DOUBLE_LINKING 0
 #define CSPROF_TREE_USES_SORTED_CHILDREN 1
@@ -97,7 +98,25 @@ struct rbtree
 
 // tallent: was 'size_t'.  If this should change the memcpy in
 // hpcfile_cstree_write_node_hlp should be modified.
-typedef hpcfile_uint_t cct_metric_data_t;
+typedef hpcfile_metric_data_t cct_metric_data_t;
+
+static inline void
+cct_metric_data_increment(int metric_id,
+			  cct_metric_data_t* x, 
+			  cct_metric_data_t incr)
+{
+  hpcfile_csprof_data_t* mdata = csprof_get_metric_data();
+  hpcfile_csprof_metric_t* minfo = &mdata->metrics[metric_id];
+  
+  if (hpcfile_csprof_metric_is_flag(minfo->flags, HPCFILE_METRIC_FLAG_REAL)) {
+    x->r += incr.r;
+  }
+  else {
+    x->i += incr.i;
+  }
+}
+
+
 
 /* try to order these so that the most-often referenced things fit into
    a single cache line... */
@@ -251,7 +270,7 @@ int csprof_cct__fini(csprof_cct_t *x);
 csprof_cct_node_t*
 csprof_cct_insert_backtrace(csprof_cct_t *x, void *treenode, int metric_id,
 			    csprof_frame_t *path_beg, csprof_frame_t *path_end,
-			    size_t sample_count);
+			    cct_metric_data_t sample_count);
 
 int csprof_cct__write_txt(FILE* fs, csprof_cct_t* x);
 

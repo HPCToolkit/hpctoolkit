@@ -59,6 +59,8 @@
 
 #include <include/general.h> 
 
+#include <lib/prof-lean/hpcfile_csprof.h>
+
 //*************************** Forward Declarations **************************//
 
 //***************************************************************************//
@@ -93,11 +95,11 @@ public:
   const std::string& description() const { return m_description; }
   void description(const char* x) { m_description = (x) ? x : ""; }
 
-  unsigned int flags() const         { return m_flags; }
-  void         flags(unsigned int x) { m_flags = x; }
+  hpcfile_csprof_metric_flag_t flags() const         { return m_flags; }
+  void                         flags(hpcfile_csprof_metric_flag_t x) { m_flags = x; }
 
   unsigned int period() const         { return m_period; }
-  void         period(unsigned int x) { m_period = x; }
+  void         period(unsigned long x) { m_period = x; }
 
   void dump(std::ostream& os = std::cerr) const { }
   void ddump() const { }
@@ -106,9 +108,19 @@ protected:
 private:  
   std::string  m_name;
   std::string  m_description;
-  unsigned int m_flags;  // flags of the metric
-  unsigned int m_period; // sampling period
+  hpcfile_csprof_metric_flag_t m_flags;  // flags of the metric
+  unsigned long m_period; // sampling period
 };
+
+
+//***************************************************************************//
+// CSProfMetricVec
+//***************************************************************************//
+
+class CSProfileMetricDescVec : public std::vector<CSProfileMetric*>
+{
+};
+
 
 //***************************************************************************
 

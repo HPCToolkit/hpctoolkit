@@ -76,7 +76,7 @@ csprof_sample_sources_from_eventlist(char *evl)
 
   for(char *event = start_tok(evl); more_tok(); event = next_tok()){
     sample_source_t *s;
-    if (s = csprof_source_can_process(event)){
+    if ( (s = csprof_source_can_process(event)) ){
       add_source(s);
       METHOD_CALL(s,add_event,event);
     }

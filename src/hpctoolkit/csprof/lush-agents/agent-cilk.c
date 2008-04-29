@@ -506,13 +506,25 @@ LUSHI_has_concurrency()
 {
   CilkWorkerState* ws = 
     (CilkWorkerState*)pthread_getspecific(CILK_WorkerState_key);
-  return CILK_WS_is_working(ws);
+  
+  return (ws && CILK_WS_is_working(ws));
 }
 
-extern uint
+extern double
 LUSHI_get_concurrency()
 {
-  return CILK_Threads_Working;
+  // INVARIANT: at least one thread is working
+  // INVARIANT: ws is non-NULL
+
+  CilkWorkerState* ws = 
+    (CilkWorkerState*)pthread_getspecific(CILK_WorkerState_key);
+
+  double n = CILK_WS_num_workers(ws);
+  double n_working = (double)CILK_Threads_Working;
+  double n_not_working = n - n_working;
+
+  double c = (n_not_working) / (n * n_working);
+  return c;
 }
 
 // **************************************************************************

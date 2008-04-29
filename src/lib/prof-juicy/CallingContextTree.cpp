@@ -64,7 +64,6 @@ using std::string;
 #include "CallingContextTree.hpp"
 
 #include <lib/xml/xml.hpp> 
-using namespace xml;
 
 #include <lib/support/diagnostics.h>
 #include <lib/support/Logic.hpp>
@@ -80,8 +79,8 @@ using SrcFile::ln_NULL;
 // CSProfTree
 //***************************************************************************
 
-CSProfTree::CSProfTree()
-  : m_root(NULL)
+CSProfTree::CSProfTree(const CSProfile* metadata)
+  : m_root(NULL), m_metadata(metadata)
 {
 }
 
@@ -89,11 +88,14 @@ CSProfTree::CSProfTree()
 CSProfTree::~CSProfTree()
 {
   delete m_root; 
+  m_metadata = NULL;
 }
 
 
 void 
-CSProfTree::merge(const CSProfTree* y, uint x_numMetrics, uint y_numMetrics)
+CSProfTree::merge(const CSProfTree* y, 
+		  const CSProfileMetricDescVec* new_mdesc,		  
+		  uint x_numMetrics, uint y_numMetrics)
 {
   CSProfPgmNode* x_root = dynamic_cast<CSProfPgmNode*>(root());
   CSProfPgmNode* y_root = dynamic_cast<CSProfPgmNode*>(y->root());
@@ -102,7 +104,7 @@ CSProfTree::merge(const CSProfTree* y, uint x_numMetrics, uint y_numMetrics)
 	      "Unexpected root!");
 
   x_root->merge_prepare(y_numMetrics);
-  x_root->merge(y_root, x_numMetrics, y_numMetrics);
+  x_root->merge(y_root, new_mdesc, x_numMetrics, y_numMetrics);
 }
 
 
@@ -244,9 +246,10 @@ CSProfCallSiteNode_Check(CSProfCallSiteNode* n, CSProfNode* _parent)
 }
 
 
-CSProfCallSiteNode::CSProfCallSiteNode(CSProfNode* _parent)
+CSProfCallSiteNode::CSProfCallSiteNode(CSProfNode* _parent,
+				       const CSProfileMetricDescVec* metricdesc)
   : CSProfCodeNode(CALLSITE, _parent, ln_NULL, ln_NULL),
-    IDynNode(this)
+    IDynNode(this, metricdesc)
 {
   CSProfCallSiteNode_Check(this, _parent);
 }
@@ -256,9 +259,10 @@ CSProfCallSiteNode::CSProfCallSiteNode(CSProfNode* _parent,
 				       lush_assoc_info_t as_info,
 				       VMA ip, ushort opIndex, 
 				       lush_lip_t* lip,
-				       vector<uint>& metrics)
+				       const CSProfileMetricDescVec* metricdesc,
+				       vector<hpcfile_metric_data_t>& metrics)
   : CSProfCodeNode(CALLSITE, _parent, ln_NULL, ln_NULL), 
-    IDynNode(this, as_info, ip, opIndex, lip, metrics)
+    IDynNode(this, as_info, ip, opIndex, lip, metricdesc, metrics)
 {
   CSProfCallSiteNode_Check(this, _parent);
 }
@@ -268,9 +272,10 @@ CSProfCallSiteNode::~CSProfCallSiteNode()
 }
 
 
-CSProfStatementNode::CSProfStatementNode(CSProfNode* _parent)
+CSProfStatementNode::CSProfStatementNode(CSProfNode* _parent, 
+					 const CSProfileMetricDescVec* metricdesc)
   :  CSProfCodeNode(STATEMENT, _parent, ln_NULL, ln_NULL),
-     IDynNode(this)
+     IDynNode(this, metricdesc)
 {
 }
 
@@ -479,7 +484,7 @@ IDynNode::mergeMetrics(const IDynNode& y, uint beg_idx)
   DIAG_Assert(x_end <= numMetrics(), "Insufficient space for merging.");
 
   for (uint x_i = beg_idx, y_i = 0; x_i < x_end; ++x_i, ++y_i) {
-    m_metrics[x_i] += y.metric(y_i);
+    metricIncr((*m_metricdesc)[x_i], &m_metrics[x_i], y.metric(y_i));
   }
 }
 
@@ -497,7 +502,7 @@ void
 IDynNode::expandMetrics_before(uint offset)
 {
   for (int i = 0; i < offset; ++i) {
-    m_metrics.insert(m_metrics.begin(), 0);
+    m_metrics.insert(m_metrics.begin(), hpcfile_metric_data_ZERO);
   }
 }
 
@@ -506,7 +511,7 @@ void
 IDynNode::expandMetrics_after(uint offset)
 {
   for (int i = 0; i < offset; ++i) {
-    m_metrics.push_back(0);
+    m_metrics.push_back(hpcfile_metric_data_ZERO);
   }
 }
 
@@ -533,7 +538,9 @@ CSProfNode::merge_prepare(uint numMetrics)
 // NOTE: assume we can destroy y...
 // NOTE: assume x already has space to store merged metrics
 void
-CSProfNode::merge(CSProfNode* y, uint x_numMetrics, uint y_numMetrics)
+CSProfNode::merge(CSProfNode* y, 
+		  const CSProfileMetricDescVec* new_mdesc,
+		  uint x_numMetrics, uint y_numMetrics)
 {
   CSProfNode* x = this;
   
@@ -560,10 +567,9 @@ CSProfNode::merge(CSProfNode* y, uint x_numMetrics, uint y_numMetrics)
     CSProfNode* x_child = findDynChild(y_child_dyn->assocInfo(),
 				       y_child_dyn->ip_real(),
 				       y_child_dyn->lip());
-    
     if (!x_child) {
       y_child->Unlink();
-      y_child->merge_fixup(x_numMetrics);
+      y_child->merge_fixup(new_mdesc, x_numMetrics);
       y_child->Link(x);
     }
     else {
@@ -572,7 +578,7 @@ CSProfNode::merge(CSProfNode* y, uint x_numMetrics, uint y_numMetrics)
 		 << "  y: " << y_child_dyn->toString()
 		 << "  x: " << x_child_dyn->toString());
       x_child_dyn->mergeMetrics(*y_child_dyn, x_numMetrics);
-      x_child->merge(y_child, x_numMetrics, y_numMetrics);
+      x_child->merge(y_child, new_mdesc, x_numMetrics, y_numMetrics);
     }
   }
 }
@@ -601,18 +607,20 @@ CSProfNode::findDynChild(lush_assoc_info_t as_info, VMA ip, lush_lip_t* lip)
 
 
 void
-CSProfNode::merge_fixup(int metric_offset)
+CSProfNode::merge_fixup(const CSProfileMetricDescVec* new_mdesc, 
+			int metric_offset)
 {
   IDynNode* x_dyn = dynamic_cast<IDynNode*>(this);
   if (x_dyn) {
     x_dyn->expandMetrics_before(metric_offset);
+    x_dyn->metricdesc(new_mdesc);
   }
 
   for (CSProfNodeChildIterator it(this); it.Current(); ++it) {
     CSProfNode* child = it.CurNode();
     IDynNode* child_dyn = dynamic_cast<IDynNode*>(child);
     if (child_dyn) {
-      child->merge_fixup(metric_offset);
+      child->merge_fixup(new_mdesc, metric_offset);
     }
   }
 }
@@ -650,16 +658,10 @@ CSProfNode::ToDumpString(int dmpFlag) const
   string self;
   self = NodeTypeToName(GetType());
   if ((dmpFlag & CSProfTree::XML_TRUE) == CSProfTree::XML_FALSE) {
-    self = self + " uid" + MakeAttrNum(GetUniqueId());
+    self = self + " uid" + xml::MakeAttrNum(GetUniqueId());
   }
   return self;
 } 
-
-
-string 
-CSProfNode::ToDumpMetricsString(int dmpFlag) const {
-  return "";
-}
 
 
 string
@@ -686,6 +688,24 @@ IDynNode::lip_str() const
   char str[LUSH_LIP_STR_MIN_LEN];
   lush_lip_sprintf(str, m_lip);
   return string(str);
+}
+
+
+void 
+IDynNode::writeMetrics_xml(std::ostream& os, 
+			   int dmpFlag, const char* prefix) const
+{
+  bool wasMetricWritten = false;
+
+  for (uint i = 0; i < numMetrics(); i++) {
+    hpcfile_metric_data_t m = metric(i);
+    if (!hpcfile_metric_data_iszero(m)) {
+      os << ((!wasMetricWritten) ? prefix : " ");
+      os << "<M " << "n" << xml::MakeAttrNum(i) 
+	 << " v" << writeMetric((*m_metricdesc)[i], m) << "/>";
+      wasMetricWritten = true;
+    }
+  }
 }
 
 
@@ -717,8 +737,8 @@ string
 CSProfCodeNode::ToDumpString(int dmpFlag) const
 { 
   string self = CSProfNode::ToDumpString(dmpFlag)
-    + " sid" + MakeAttrNum(m_sId)
-    + " b" + MakeAttrNum(begLine) + " e" + MakeAttrNum(endLine);
+    + " sid" + xml::MakeAttrNum(m_sId)
+    + " b" + xml::MakeAttrNum(begLine) + " e" + xml::MakeAttrNum(endLine);
   return self;
 }
 
@@ -727,7 +747,7 @@ string
 CSProfPgmNode::ToDumpString(int dmpFlag) const
 { 
   string self = CSProfNode::ToDumpString(dmpFlag) + " n" +
-    MakeAttrStr(name, AddXMLEscapeChars(dmpFlag));
+    xml::MakeAttrStr(name, AddXMLEscapeChars(dmpFlag));
   return self;
 }
 
@@ -736,7 +756,7 @@ string
 CSProfGroupNode::ToDumpString(int dmpFlag) const
 {
   string self = CSProfNode::ToDumpString(dmpFlag) + " n" +
-    MakeAttrStr(name, AddXMLEscapeChars(dmpFlag));
+    xml::MakeAttrStr(name, AddXMLEscapeChars(dmpFlag));
   return self;
 }
 
@@ -748,61 +768,33 @@ CSProfCallSiteNode::ToDumpString(int dmpFlag) const
   
   if (!(dmpFlag & CSProfTree::XML_TRUE)) {
     self = self 
-      + " assoc" + MakeAttrStr(assocInfo_str()) 
-      + " ip_real" + MakeAttrNum(ip_real(), 16)
-      + " op" + MakeAttrNum(opIndex())
-      + " lip" + MakeAttrStr(lip_str());
+      + " assoc" + xml::MakeAttrStr(assocInfo_str()) 
+      + " ip_real" + xml::MakeAttrNum(ip_real(), 16)
+      + " op" + xml::MakeAttrNum(opIndex())
+      + " lip" + xml::MakeAttrStr(lip_str());
   } 
 
   if (!file.empty()) { 
      if (fileistext)
-        self = self + " f" + MakeAttrStr(file, AddXMLEscapeChars(dmpFlag)); 
+        self = self + " f" + xml::MakeAttrStr(file, AddXMLEscapeChars(dmpFlag));
      else 
-        self = self + " lm" + MakeAttrStr(file, AddXMLEscapeChars(dmpFlag)); 
+        self = self + " lm" + xml::MakeAttrStr(file, AddXMLEscapeChars(dmpFlag));
    } 
 
   if (!proc.empty()) {
-    self = self + " p" + MakeAttrStr(proc, AddXMLEscapeChars(dmpFlag));
+    self = self + " p" + xml::MakeAttrStr(proc, AddXMLEscapeChars(dmpFlag));
   } 
   else {
-    self = self + " ip" + MakeAttrNum(ip(), 16);
+    self = self + " ip" + xml::MakeAttrNum(ip(), 16);
   }
   
 
   if (GetBegLine() != ln_NULL) {
-    self = self + " l" + MakeAttrNum(GetBegLine());
+    self = self + " l" + xml::MakeAttrNum(GetBegLine());
   }  
 
   return self; 
 } 
-
-
-string 
-CSProfCallSiteNode::ToDumpMetricsString(int dmpFlag) const 
-{
-  int i;
-  string metricsString;
-
-  xDEBUG(DEB_READ_MMETRICS,
-	 fprintf(stderr, "dumping metrics for node %lx \n", ip()); 
-	 fflush(stderr);
-	 for (i=0; i < numMetrics(); i++) {
-	   fprintf(stderr, "Metric %d: %ld\n", i, metric(i));
-	   fflush(stderr);
-	 }
-	 );
-
-  metricsString ="";
-  for (i = 0; i < numMetrics(); i++) {
-    uint crtMetric = metric(i);
-    if (crtMetric!= 0) {
-      metricsString  +=  " <M ";
-      metricsString  +=  "n"+MakeAttrNum(i)+" v" + MakeAttrNum(crtMetric);
-      metricsString  +=  " />";
-    }
-  }
-  return metricsString;
-}
 
 
 string
@@ -811,58 +803,31 @@ CSProfStatementNode::ToDumpString(int dmpFlag) const
   string self = CSProfNode::ToDumpString(dmpFlag);
   
   if (!(dmpFlag & CSProfTree::XML_TRUE)) {
-    self = self + " ip" + MakeAttrNum(ip(), 16) 
-      + " op" + MakeAttrNum(opIndex());
+    self = self + " ip" + xml::MakeAttrNum(ip(), 16) 
+      + " op" + xml::MakeAttrNum(opIndex());
   } 
 
   if (!file.empty()) { 
      if (fileistext)
-        self = self + " f" + MakeAttrStr(file, AddXMLEscapeChars(dmpFlag)); 
+        self = self + " f" + xml::MakeAttrStr(file, AddXMLEscapeChars(dmpFlag)); 
      else 
-        self = self + " lm" + MakeAttrStr(file, AddXMLEscapeChars(dmpFlag)); 
+        self = self + " lm" + xml::MakeAttrStr(file, AddXMLEscapeChars(dmpFlag)); 
    } 
 
   if (!proc.empty()) {
-    self = self + " p" + MakeAttrStr(proc, AddXMLEscapeChars(dmpFlag));
+    self = self + " p" + xml::MakeAttrStr(proc, AddXMLEscapeChars(dmpFlag));
   } 
   else {
-    self = self + " ip" + MakeAttrNum(ip(), 16);
+    self = self + " ip" + xml::MakeAttrNum(ip(), 16);
   }
   
 
   if (GetBegLine() != ln_NULL) {
-    self = self + " l" + MakeAttrNum(GetBegLine());
+    self = self + " l" + xml::MakeAttrNum(GetBegLine());
   }  
 
   return self; 
 } 
-
-
-string 
-CSProfStatementNode::ToDumpMetricsString(int dmpFlag) const {
-  int i;
-  string metricsString;
-
-  xDEBUG(DEB_READ_MMETRICS,
-	 fprintf(stderr, "dumping metrics for node %lx \n", ip()); 
-	 fflush(stderr);
-	 for (i = 0; i < numMetrics(); i++) {
-	   fprintf(stderr, "Metric %d: %ld\n", i, metric(i));
-	   fflush(stderr);
-	 }
-	 );
-
-  metricsString ="";
-  for (i = 0; i < numMetrics(); i++) {
-    uint crtMetric = metric(i);
-    if (crtMetric!= 0) {
-      metricsString += " <M ";
-      metricsString += "n" + MakeAttrNum(i) + " v" + MakeAttrNum(crtMetric);
-      metricsString += " />";
-    }
-  }
-  return metricsString;
-}
 
 
 string
@@ -872,23 +837,23 @@ CSProfProcedureFrameNode::ToDumpString(int dmpFlag) const
   
   if (!file.empty()) { 
      if (fileistext)
-        self = self + " f" + MakeAttrStr(file, AddXMLEscapeChars(dmpFlag)); 
+        self = self + " f" + xml::MakeAttrStr(file, AddXMLEscapeChars(dmpFlag)); 
      else 
-        self = self + " lm" + MakeAttrStr(file, AddXMLEscapeChars(dmpFlag)); 
+        self = self + " lm" + xml::MakeAttrStr(file, AddXMLEscapeChars(dmpFlag)); 
    } 
 
   if (!proc.empty()) {
-    self = self + " p" + MakeAttrStr(proc, AddXMLEscapeChars(dmpFlag));
+    self = self + " p" + xml::MakeAttrStr(proc, AddXMLEscapeChars(dmpFlag));
   } else {
-    self = self + " p" + MakeAttrStr("unknown", AddXMLEscapeChars(dmpFlag)) ; 
+    self = self + " p" + xml::MakeAttrStr("unknown", AddXMLEscapeChars(dmpFlag)) ; 
   }
 
   if (GetBegLine() != ln_NULL) {
-    self = self + " l" + MakeAttrNum(GetBegLine());
+    self = self + " l" + xml::MakeAttrNum(GetBegLine());
   }
   
   const char* alien = isAlien() ? "true" : "false";
-  self = self + " alien" + MakeAttrStr(alien, AddXMLEscapeChars(dmpFlag)); 
+  self = self + " alien" + xml::MakeAttrStr(alien, AddXMLEscapeChars(dmpFlag)); 
 
   return self; 
 } 
@@ -910,21 +875,17 @@ CSProfStmtRangeNode::ToDumpString(int dmpFlag) const
 
 
 void
-CSProfNode::DumpSelfBefore(ostream &os, int dmpFlag, const char *prefix) const
+CSProfNode::DumpSelfBefore(ostream& os, int dmpFlag, const char *prefix) const
 {
   os << prefix << "<" << ToDumpString(dmpFlag);
   os << ">"; 
-  switch (GetType()) {
-  case CALLSITE:  
-  case STATEMENT:
-    if (ToDumpMetricsString(dmpFlag)!="") {
-      os << endl;
-      os << prefix << "  " << ToDumpMetricsString(dmpFlag); 
-    }
-    break;
-  default:
-    break;
+
+  const IDynNode* this_dyn = dynamic_cast<const IDynNode*>(this);
+  if (this_dyn) {
+    os << endl;
+    this_dyn->writeMetrics_xml(os, dmpFlag, prefix);
   }
+
   if (!(dmpFlag & CSProfTree::COMPRESSED_OUTPUT)) { os << endl; }
 }
 

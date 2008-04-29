@@ -87,13 +87,13 @@ csprof_init_timer(csprof_options_t *options, int lush_metrics)
 
   int metric_id = csprof_new_metric(); 
   csprof_set_metric_info_and_period(metric_id, "WALLCLOCK (ms)",
-                                    CSPROF_METRIC_ASYNCHRONOUS,
+                                    HPCFILE_METRIC_FLAG_ASYNC,
                                     sample_period);
 
 #if 0
   metric_id = csprof_new_metric(); /* calls */
   csprof_set_metric_info_and_period(metric_id, "# returns",
-                                    CSPROF_METRIC_FLAGS_NIL, 1);
+                                    HPCFILE_METRIC_FLAG_NULL, 1);
 #endif
 
   if (lush_metrics == 1) {
@@ -104,7 +104,8 @@ csprof_init_timer(csprof_options_t *options, int lush_metrics)
     int lush_metric_id = csprof_new_metric();
     assert(lush_metric_id == 1);
     csprof_set_metric_info_and_period(lush_metric_id, "Goodness (ms)",
-				      CSPROF_METRIC_ASYNCHRONOUS,
+				      HPCFILE_METRIC_FLAG_ASYNC 
+				      | HPCFILE_METRIC_FLAG_REAL,
 				      sample_period);
   }
 }

@@ -474,7 +474,7 @@ csprof_cct__fini(csprof_cct_t *x)
 csprof_cct_node_t*
 csprof_cct_insert_backtrace(csprof_cct_t *x, void *treenode, int metric_id,
 			    csprof_frame_t *path_beg, csprof_frame_t *path_end,
-			    size_t sample_count)
+			    cct_metric_data_t increment)
 {
 #define csprof_MY_ADVANCE_PATH_FRAME(x)   (x)--
 #define csprof_MY_IS_PATH_FRAME_AT_END(x) ((x) < path_end)
@@ -573,7 +573,8 @@ csprof_cct_insert_backtrace(csprof_cct_t *x, void *treenode, int metric_id,
 
   DBGMSG_PUB(CSPROF_DBG_CCT_INSERTION,
 	     "Inserted in %#lx for count %d", x, x->num_nodes);
-  tn->metrics[metric_id] += sample_count;
+
+  cct_metric_data_increment(metric_id, &tn->metrics[metric_id], increment);
   return tn;
 }
 
