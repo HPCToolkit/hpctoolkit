@@ -77,6 +77,8 @@
 #define HPCFILE_TAG__CSTREE_NODE 13 /* just because */
 #define HPCFILE_TAG__CSTREE_LIP  77 /* feel free to change */
 
+hpcfile_metric_data_t hpcfile_metric_data_ZERO = { .bits = 0 };
+
 //*************************** Forward Declarations **************************
 
 #define DBG_READ_METRICS 0
@@ -521,7 +523,7 @@ hpcfile_cstree_nodedata__fread(hpcfile_cstree_nodedata_t* x, FILE* fs)
 
   DIAG_MsgIf(DBG_READ_METRICS, "reading node ip=%"PRIx64, x->ip);
   for (i = 0; i < x->num_metrics; ++i) {
-    sz = hpc_fread_le8(&x->metrics[i], fs);
+    sz = hpc_fread_le8(&x->metrics[i].bits, fs);
     DIAG_MsgIf(DBG_READ_METRICS, "metrics[%d]=%"PRIu64, i, x->metrics[i]);
     if (sz != sizeof(x->metrics[i])) {
       return HPCFILE_ERR;
@@ -551,7 +553,7 @@ hpcfile_cstree_nodedata__fwrite(hpcfile_cstree_nodedata_t* x, FILE* fs)
   if (sz != sizeof(x->sp)) { return HPCFILE_ERR; }
 
   for (i = 0; i < x->num_metrics; ++i) {
-    sz = hpc_fwrite_le8(&x->metrics[i], fs);
+    sz = hpc_fwrite_le8(&x->metrics[i].bits, fs);
     if (sz != sizeof(x->metrics[i])) {
       return HPCFILE_ERR;
     }
@@ -571,7 +573,7 @@ hpcfile_cstree_nodedata__fprint(hpcfile_cstree_nodedata_t* x, FILE* fs,
 
   fprintf(fs, "%s  (metrics:", pre);
   for (int i = 0; i < x->num_metrics; ++i) {
-    fprintf(fs, " %"PRIu64" ", x->metrics[i]);
+    fprintf(fs, " %"PRIu64" ", x->metrics[i].bits);
   }
   fprintf(fs, ") }\n");
   

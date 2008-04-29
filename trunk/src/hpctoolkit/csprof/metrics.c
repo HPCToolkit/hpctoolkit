@@ -1,3 +1,6 @@
+// -*-Mode: C++;-*- // technically C99
+// $Id$
+
 /* metrics.c -- informing the system about what metrics to record */
 #if defined(__ia64__) && defined(__linux__)
 #include <libunwind.h>

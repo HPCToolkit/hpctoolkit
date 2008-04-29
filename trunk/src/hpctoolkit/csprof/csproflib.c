@@ -452,7 +452,7 @@ csprof_check_for_new_epoch(csprof_state_t *state)
       csprof_state_insert_backtrace(newstate, 0, /* pick one */
                                     newstate->bufend - 1,
                                     newstate->bufstk,
-                                    0);
+				    (cct_metric_data_t){ .i = 0 });
     }
 
     /* and inform the state about its epoch */

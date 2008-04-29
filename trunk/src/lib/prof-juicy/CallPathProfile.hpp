@@ -98,8 +98,9 @@ public:
   const std::string& name() const { return m_name; }
   void               name(const char* s) { m_name = (s) ? s : ""; }
 
-  uint             numMetrics() const   { return m_metrics.size(); }
-  CSProfileMetric* metric(uint i) const { return m_metrics[i]; }
+  uint             numMetrics() const   { return m_metricdesc.size(); }
+  CSProfileMetric* metric(uint i) const { return m_metricdesc[i]; }
+  const CSProfileMetricDescVec& metricDesc() const { return m_metricdesc; }
 
   CSProfTree*  cct() const { return m_cct; }
 
@@ -122,9 +123,10 @@ private:
   std::string m_name;
 
   CSProfTree* m_cct;
-  std::vector<CSProfileMetric*> m_metrics;
+  CSProfileMetricDescVec m_metricdesc;
   CSProfEpoch* m_epoch;
 };
+
 
 //***************************************************************************
 

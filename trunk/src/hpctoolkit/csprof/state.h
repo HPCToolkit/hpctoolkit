@@ -62,7 +62,7 @@ csprof_state_expand_buffer(csprof_state_t *, csprof_frame_t *);
 
 csprof_cct_node_t* 
 csprof_state_insert_backtrace(csprof_state_t *, int, csprof_frame_t *,
-			      csprof_frame_t *, size_t);
+			      csprof_frame_t *, cct_metric_data_t);
 
 #if defined(CSPROF_PERF)
 #define csprof_state_verify_backtrace_invariants(state)

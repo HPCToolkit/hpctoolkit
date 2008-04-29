@@ -130,7 +130,7 @@ LUSHI_DECL(int, LUSHI_lip_write, ());
 // --------------------------------------------------------------------------
 
 LUSHI_DECL(int, LUSHI_has_concurrency, ());
-LUSHI_DECL(uint, LUSHI_get_concurrency, ());
+LUSHI_DECL(double, LUSHI_get_concurrency, ());
 
 
 #ifdef __cplusplus

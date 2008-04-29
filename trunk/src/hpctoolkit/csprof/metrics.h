@@ -1,3 +1,6 @@
+// -*-Mode: C++;-*- // technically C99
+// $Id$
+
 #ifndef CSPROF_METRICS_H
 #define CSPROF_METRICS_H
 
@@ -7,10 +10,13 @@
 
 /* flags for metrics */
 
-#define CSPROF_METRIC_FLAGS_NIL 0
-
-/* whether this metric is asynchronous (set if it is) */
-#define CSPROF_METRIC_ASYNCHRONOUS (1<<1)
+// tallent: I have moved flags into hpcfile_csprof.h.  The flags don't
+// really belong there but:
+// 1) metrics.c uses hpcfile_csprof_data_t to implement metrics
+//    info, which already confuses boundaries
+// 2) metric info needs to exist in a library so csprof (hpcrun),
+//    xcsprof (hpcprof) and hpcfile can use it.  hpcfile at least
+//    satisfies this.
 
 /* prototypes */
 

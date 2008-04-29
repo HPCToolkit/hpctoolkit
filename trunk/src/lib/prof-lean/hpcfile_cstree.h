@@ -139,6 +139,24 @@ int hpcfile_cstree_hdr__fprint(hpcfile_cstree_hdr_t* x, FILE* fs);
 // ---------------------------------------------------------
 // hpcfile_cstree_nodedata_t:
 // ---------------------------------------------------------
+
+// tallent: was 'size_t'.  If this should change the memcpy in
+// hpcfile_cstree_write_node_hlp should be modified.
+
+typedef union hpcfile_metric_data_u {
+  uint64_t bits; // for reading/writing
+
+  uint64_t i; // integral data
+  double   r; // real
+  
+} hpcfile_metric_data_t;
+
+extern hpcfile_metric_data_t hpcfile_metric_data_ZERO;
+  
+static inline bool hpcfile_metric_data_iszero(hpcfile_metric_data_t x) {
+  return (x.bits == hpcfile_metric_data_ZERO.bits);
+}
+
 typedef struct hpcfile_cstree_nodedata_s {
 
   lush_assoc_info_t as_info;
@@ -159,7 +177,7 @@ typedef struct hpcfile_cstree_nodedata_s {
   hpcfile_uint_t sp;
 
   hpcfile_uint_t num_metrics;
-  hpcfile_uint_t *metrics;
+  hpcfile_metric_data_t* metrics;
 
 } hpcfile_cstree_nodedata_t;
 

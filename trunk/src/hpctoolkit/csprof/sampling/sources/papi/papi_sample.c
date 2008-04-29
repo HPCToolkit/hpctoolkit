@@ -202,7 +202,7 @@ papi_parse_evlist(char *evlist)
     int metric_id = csprof_new_metric(); /* weight */
     PAPI_event_code_to_name(csprof_papi_events.events[i], buffer);
     csprof_set_metric_info_and_period(metric_id, strdup(buffer),
-				      CSPROF_METRIC_ASYNCHRONOUS,
+				      HPCFILE_METRIC_FLAG_ASYNC,
 				      csprof_papi_events.thresh[i]);
   }
 }

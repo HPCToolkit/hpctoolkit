@@ -148,11 +148,11 @@ writeCSProfile(CSProfile* prof, std::ostream& os, bool prettyPrint)
   uint n_metrics = prof->numMetrics();
   for (uint i = 0; i < n_metrics; i++) {
     const CSProfileMetric* metric = prof->metric(i);
-    os << "<METRIC shortName"; WriteAttrNum(os, i);
-    os << " nativeName";       WriteAttrNum(os, metric->name());
-    os << " period";           WriteAttrNum(os, metric->period());
-    os << " flags";            WriteAttrNum(os, metric->flags());
-    os << "/>\n";
+    os << "<METRIC shortName" << MakeAttrNum(i)
+       << " nativeName" << MakeAttrStr(metric->name())
+       << " period" << MakeAttrNum(metric->period())
+       << " flags" << MakeAttrNum(metric->flags(), 16)
+       << "/>\n";
   }
   os << "</CSPROFILEPARAMS>\n";
 
@@ -298,26 +298,26 @@ static void*
 cstree_create_node_CB(void* tree, 
 		      hpcfile_cstree_nodedata_t* data)
 {
-  CSProfTree* t = (CSProfTree*)tree; 
+  CSProfTree* my_tree = (CSProfTree*)tree; 
   
   VMA ip;
   ushort opIdx;
   convertOpIPToIP((VMA)data->ip, ip, opIdx);
-  vector<uint> metricVec;
+  vector<hpcfile_metric_data_t> metricVec;
   metricVec.clear();
   for (uint i = 0; i < data->num_metrics; i++) {
-    metricVec.push_back((uint)data->metrics[i]);
+    metricVec.push_back(data->metrics[i]);
   }
 
   DIAG_DevMsgIf(0, "cstree_create_node_CB: " << hex << data->ip << dec);
   CSProfCallSiteNode* n = 
     new CSProfCallSiteNode(NULL, data->as_info, ip, opIdx, data->lip.ptr,
-			   metricVec);
+			   &my_tree->metadata()->metricDesc(), metricVec);
   n->SetSrcInfoDone(false);
   
   // Initialize the tree, if necessary
-  if (t->empty()) {
-    t->root(n);
+  if (my_tree->empty()) {
+    my_tree->root(n);
   }
   
   return n;
@@ -404,7 +404,7 @@ fixLeaves(CSProfNode* node)
       // This child is a leaf. Convert.
       CSProfCallSiteNode* c = dynamic_cast<CSProfCallSiteNode*>(child);
       
-      CSProfStatementNode* newc = new CSProfStatementNode(NULL);
+      CSProfStatementNode* newc = new CSProfStatementNode(NULL, c->metricdesc());
       *newc = *c;
       
       newc->LinkBefore(node->FirstChild()); // do not break iteration!

@@ -57,6 +57,8 @@
 
 //************************* System Include Files ****************************
 
+#include <stdbool.h>
+
 //*************************** User Include Files ****************************
 
 #include "hpcfile_general.h"
@@ -133,13 +135,48 @@ int hpcfile_csprof_hdr__fwrite(hpcfile_csprof_hdr_t* x, FILE* fs);
 int hpcfile_csprof_hdr__fprint(hpcfile_csprof_hdr_t* x, FILE* fs);
 
 
+/* hpcfile_csprof_metric_flag_t */
+
+typedef uint64_t hpcfile_csprof_metric_flag_t;
+
+#define HPCFILE_METRIC_FLAG_NULL  0x0
+#define HPCFILE_METRIC_FLAG_ASYNC (1 << 1)
+#define HPCFILE_METRIC_FLAG_REAL  (1 << 2)
+
+
+static inline bool
+hpcfile_csprof_metric_is_flag(hpcfile_csprof_metric_flag_t flagbits, 
+			      hpcfile_csprof_metric_flag_t f)
+{ 
+  return (flagbits & f); 
+}
+
+
+static inline void 
+hpcfile_csprof_metric_set_flag(hpcfile_csprof_metric_flag_t* flagbits, 
+			       hpcfile_csprof_metric_flag_t f)
+{
+  *flagbits = (*flagbits | f);
+}
+
+
+static inline void 
+hpcfile_csprof_metric_unset_flag(hpcfile_csprof_metric_flag_t* flagbits, 
+				 hpcfile_csprof_metric_flag_t f)
+{
+  *flagbits = (*flagbits & ~f);
+}
+
+
 /* hpcfile_csprof_metric_t */
 
 typedef struct hpcfile_csprof_metric_s {
     char *metric_name;          /* name of the metric */
-    uint64_t flags;             /* metric flags (async, etc.) */
+    hpcfile_csprof_metric_flag_t flags;  /* metric flags (async, etc.) */
     uint64_t sample_period;     /* sample period of the metric */
 } hpcfile_csprof_metric_t;
+
+
 
 int hpcfile_csprof_metric__init(hpcfile_csprof_metric_t *x);
 int hpcfile_csprof_metric__fini(hpcfile_csprof_metric_t *x);
@@ -147,6 +184,7 @@ int hpcfile_csprof_metric__fini(hpcfile_csprof_metric_t *x);
 int hpcfile_csprof_metric__fread(hpcfile_csprof_metric_t *x, FILE *fs);
 int hpcfile_csprof_metric__fwrite(hpcfile_csprof_metric_t *x, FILE *fs);
 int hpcfile_csprof_metric__fprint(hpcfile_csprof_metric_t *x, FILE *fs);
+
 
 
 // ---------------------------------------------------------
