@@ -69,7 +69,6 @@ SUBDIRS = \
 	hpclump \
 	\
 	xprof \
-	filters \
 	misc \
 	ptran
 

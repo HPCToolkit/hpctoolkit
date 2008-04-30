@@ -61,11 +61,12 @@ include $(top_srcdir)/src/Makeinclude.config
 # Local settings
 #############################################################################
 
-MYSCRIPTS = \
-	hpcmissing \
-	dcpicounts \
-	pxmlcat \
-	xprofquick
+MYSCRIPTS =
+#	dcpicounts \
+#	hpcmissing \
+#	f90modfilt \
+#	pxmlcat \
+#	xprofquick
 
 #############################################################################
 # Automake rules
