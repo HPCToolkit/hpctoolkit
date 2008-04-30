@@ -60,11 +60,11 @@ AUTOMAKE_OPTIONS = foreign
 #############################################################################
 
 SUBDIRS = \
-	hpcquick \
 	hpcstruct \
+	hpcprof \
 	hpcproftt \
+	hpcquick \
 	hpcview \
-	xcsprof \
 	\
 	hpclump \
 	\
