@@ -35,7 +35,6 @@
 
 //*************************** User Include Files ****************************
 
-#include "hpcprof.hpp"
 #include "summary.hpp"
 
 #include <lib/isa/ISATypes.hpp>
