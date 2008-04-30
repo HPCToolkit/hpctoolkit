@@ -42,7 +42,6 @@ using std::vector;
 
 #include <include/general.h>
 
-#include "hpcprof.hpp"
 #include "summary.hpp"
 
 #include <lib/binutils/LM.hpp>
@@ -89,7 +88,7 @@ static const char* version_info =
 #include <include/HPCToolkitVersionInfo.h>
 
 static const char* usage_details = "\
-hpcprof correlates 'flat' profiles of <executable> with source code\n\
+hpcproftt correlates 'flat' profiles of <executable> with source code\n\
 files, procedures, lines or with object code.  It is typically used to\n\
 generate plain-text or HTML output.  <hpcrun-file> is a collection of\n\
 event-based program counter histograms obtained using hpcrun (or hpcex).\n\

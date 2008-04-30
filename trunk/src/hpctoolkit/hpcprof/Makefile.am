@@ -62,7 +62,7 @@ include $(top_srcdir)/src/Makeinclude.config
 #############################################################################
 
 MYSOURCES = \
-	hpcprof.hpp hpcprof.cpp \
+	main.cpp \
 	summary.hpp summary.cpp \
 	loadmodule.hpp loadmodule.cpp
 
@@ -86,12 +86,12 @@ MYINSTALLDIR = $(DESTDIR)$(prefix)
 # Automake rules
 #############################################################################
 
-bin_PROGRAMS            = hpcprof
-hpcprof_SOURCES         = $(MYSOURCES)
-hpcprof_CFLAGS          = $(MYCFLAGS)
-hpcprof_CXXFLAGS        = $(MYCXXFLAGS)
-hpcprof_LDFLAGS         = $(MYLDFLAGS)
-hpcprof_LDADD           = $(MYLDADD)
+bin_PROGRAMS            = hpcproftt
+hpcproftt_SOURCES       = $(MYSOURCES)
+hpcproftt_CFLAGS        = $(MYCFLAGS)
+hpcproftt_CXXFLAGS      = $(MYCXXFLAGS)
+hpcproftt_LDFLAGS       = $(MYLDFLAGS)
+hpcproftt_LDADD         = $(MYLDADD)
 
 MOSTLYCLEANFILES        = $(MYCLEAN)
 

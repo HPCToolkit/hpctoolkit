@@ -37,8 +37,6 @@
 
 #include <include/gnu_bfd.h>
 
-#include "hpcprof.hpp"
-
 #include <lib/isa/ISATypes.hpp>
 
 //*************************** Forward Declarations **************************
