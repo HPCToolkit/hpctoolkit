@@ -262,12 +262,12 @@ HPC_LIBSUPPORT = $(top_builddir)/src/lib/support/libHPCsupport.la
 #############################################################################
 # Local settings
 #############################################################################
-MYSCRIPTS = \
-	hpcmissing \
-	dcpicounts \
-	pxmlcat \
-	xprofquick
-
+MYSCRIPTS = 
+#	dcpicounts \
+#	hpcmissing \
+#	f90modfilt \
+#	pxmlcat \
+#	xprofquick
 
 #############################################################################
 # Automake rules
