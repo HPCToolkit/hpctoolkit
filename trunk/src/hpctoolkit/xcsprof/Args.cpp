@@ -91,7 +91,7 @@ static const char* usage_summary =
 "[options] <executable> <profile-file>...\n";
 
 static const char* usage_details =
-"xcsprof correlates dynamic call-path profiling metrics with static source\n"
+"hpcprof correlates dynamic call-path profiling metrics with static source\n"
 "code structure and generates an Experiment database for use with hpcviewer.\n"
 "It expects an executable <executable> and one or more associated call path\n"
 "profiles.\n"
@@ -214,8 +214,8 @@ Args::printError(std::ostream& os, const std::string& msg) const
 const std::string& 
 Args::getCmd() const
 { 
-  // avoid error messages with: /.../HPCToolkit-x86_64-Linux/bin/xcsprof-bin
-  static string cmd = "xcsprof";
+  // avoid error messages with: /.../HPCToolkit-x86_64-Linux/bin/hpcprof-bin
+  static string cmd = "hpcprof";
   return cmd; // parser.GetCmd(); 
 }
 

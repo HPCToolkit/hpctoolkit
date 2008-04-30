@@ -100,7 +100,7 @@ host_triplet = @host@
 DIST_COMMON = $(srcdir)/Makefile.am $(srcdir)/Makefile.in \
 	$(top_srcdir)/src/Makeinclude.config \
 	$(top_srcdir)/src/Makeinclude.rules
-bin_PROGRAMS = xcsprof-bin$(EXEEXT)
+bin_PROGRAMS = hpcprof-bin$(EXEEXT)
 subdir = src/hpctoolkit/xcsprof
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/config/hpc-cxxutils.m4 \
@@ -112,17 +112,17 @@ CONFIG_CLEAN_FILES =
 am__installdirs = "$(DESTDIR)$(bindir)" "$(DESTDIR)$(bindir)"
 binPROGRAMS_INSTALL = $(INSTALL_PROGRAM)
 PROGRAMS = $(bin_PROGRAMS)
-am__objects_1 = xcsprof_bin-main.$(OBJEXT) xcsprof_bin-Args.$(OBJEXT) \
-	xcsprof_bin-CSProfileUtils.$(OBJEXT)
-am_xcsprof_bin_OBJECTS = $(am__objects_1)
-xcsprof_bin_OBJECTS = $(am_xcsprof_bin_OBJECTS)
+am__objects_1 = hpcprof_bin-main.$(OBJEXT) hpcprof_bin-Args.$(OBJEXT) \
+	hpcprof_bin-CSProfileUtils.$(OBJEXT)
+am_hpcprof_bin_OBJECTS = $(am__objects_1)
+hpcprof_bin_OBJECTS = $(am_hpcprof_bin_OBJECTS)
 am__DEPENDENCIES_1 = $(HPC_LIBPROFJUICYX) $(HPC_LIBPROFJUICY) \
 	$(HPC_LIBPROFLEAN) $(HPC_LIBBINUTILS) $(HPC_LIBISA) \
 	$(HPC_LIBXML) $(HPC_LIBSUPPORT)
-xcsprof_bin_DEPENDENCIES = $(am__DEPENDENCIES_1)
-xcsprof_bin_LINK = $(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) \
-	$(LIBTOOLFLAGS) --mode=link $(CXXLD) $(xcsprof_bin_CXXFLAGS) \
-	$(CXXFLAGS) $(xcsprof_bin_LDFLAGS) $(LDFLAGS) -o $@
+hpcprof_bin_DEPENDENCIES = $(am__DEPENDENCIES_1)
+hpcprof_bin_LINK = $(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) \
+	$(LIBTOOLFLAGS) --mode=link $(CXXLD) $(hpcprof_bin_CXXFLAGS) \
+	$(CXXFLAGS) $(hpcprof_bin_LDFLAGS) $(LDFLAGS) -o $@
 binSCRIPT_INSTALL = $(INSTALL_SCRIPT)
 SCRIPTS = $(bin_SCRIPTS)
 DEFAULT_INCLUDES = -I.@am__isrc@
@@ -146,8 +146,8 @@ CCLD = $(CC)
 LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
 	--mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) \
 	$(LDFLAGS) -o $@
-SOURCES = $(xcsprof_bin_SOURCES)
-DIST_SOURCES = $(xcsprof_bin_SOURCES)
+SOURCES = $(hpcprof_bin_SOURCES)
+DIST_SOURCES = $(hpcprof_bin_SOURCES)
 ETAGS = etags
 CTAGS = ctags
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
@@ -185,13 +185,13 @@ GREP = @GREP@
 HOST_AR = @HOST_AR@
 HOST_CFLAGS = @HOST_CFLAGS@
 HOST_CXXFLAGS = @HOST_CXXFLAGS@
+HOST_HPCPROFTT_LDFLAGS = @HOST_HPCPROFTT_LDFLAGS@
 HOST_HPCPROF_LDFLAGS = @HOST_HPCPROF_LDFLAGS@
 HOST_HPCRUN_LDFLAGS = @HOST_HPCRUN_LDFLAGS@
 HOST_HPCSTRUCT_LDFLAGS = @HOST_HPCSTRUCT_LDFLAGS@
 HOST_HPCVIEW_LDFLAGS = @HOST_HPCVIEW_LDFLAGS@
 HOST_LIBTREPOSITORY = @HOST_LIBTREPOSITORY@
 HOST_LINK_NO_START_FILES = @HOST_LINK_NO_START_FILES@
-HOST_XCSPROF_LDFLAGS = @HOST_XCSPROF_LDFLAGS@
 HOST_XPROF_LDFLAGS = @HOST_XPROF_LDFLAGS@
 HPCTOOLKIT_PLATFORM = @HPCTOOLKIT_PLATFORM@
 HPC_MONITOR = @HPC_MONITOR@
@@ -338,7 +338,7 @@ MYLDADD = \
 	@HOST_LIBTREPOSITORY@ \
 	$(HPC_LIBPROFJUICYX) $(HPC_LIBPROFJUICY) $(HPC_LIBPROFLEAN) $(HPC_LIBBINUTILS) $(HPC_LIBISA) $(HPC_LIBXML) $(HPC_LIBSUPPORT) \
 	@XERCES_LDFLAGS@ @GNUBINUTILS_LDFLAGS@ \
-	@HOST_XCSPROF_LDFLAGS@ \
+	@HOST_HPCPROF_LDFLAGS@ \
 	-lm
 
 MYCLEAN = @HOST_LIBTREPOSITORY@
@@ -346,12 +346,12 @@ MYCLEAN = @HOST_LIBTREPOSITORY@
 #############################################################################
 # Automake rules
 #############################################################################
-bin_SCRIPTS = xcsprof
-xcsprof_bin_SOURCES = $(MYSOURCES)
-xcsprof_bin_CFLAGS = $(MYCFLAGS)
-xcsprof_bin_CXXFLAGS = $(MYCXXFLAGS)
-xcsprof_bin_LDFLAGS = $(MYLDFLAGS)
-xcsprof_bin_LDADD = $(MYLDADD)
+bin_SCRIPTS = hpcprof
+hpcprof_bin_SOURCES = $(MYSOURCES)
+hpcprof_bin_CFLAGS = $(MYCFLAGS)
+hpcprof_bin_CXXFLAGS = $(MYCXXFLAGS)
+hpcprof_bin_LDFLAGS = $(MYLDFLAGS)
+hpcprof_bin_LDADD = $(MYLDADD)
 MOSTLYCLEANFILES = $(MYCLEAN)
 MYCPPFLAGS_CXX = $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) \
 	$(MYCXXFLAGS)
@@ -420,9 +420,9 @@ clean-binPROGRAMS:
 	  echo " rm -f $$p $$f"; \
 	  rm -f $$p $$f ; \
 	done
-xcsprof-bin$(EXEEXT): $(xcsprof_bin_OBJECTS) $(xcsprof_bin_DEPENDENCIES) 
-	@rm -f xcsprof-bin$(EXEEXT)
-	$(xcsprof_bin_LINK) $(xcsprof_bin_OBJECTS) $(xcsprof_bin_LDADD) $(LIBS)
+hpcprof-bin$(EXEEXT): $(hpcprof_bin_OBJECTS) $(hpcprof_bin_DEPENDENCIES) 
+	@rm -f hpcprof-bin$(EXEEXT)
+	$(hpcprof_bin_LINK) $(hpcprof_bin_OBJECTS) $(hpcprof_bin_LDADD) $(LIBS)
 install-binSCRIPTS: $(bin_SCRIPTS)
 	@$(NORMAL_INSTALL)
 	test -z "$(bindir)" || $(MKDIR_P) "$(DESTDIR)$(bindir)"
@@ -449,9 +449,9 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/xcsprof_bin-Args.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/xcsprof_bin-CSProfileUtils.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/xcsprof_bin-main.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/hpcprof_bin-Args.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/hpcprof_bin-CSProfileUtils.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/hpcprof_bin-main.Po@am__quote@
 
 .cpp.o:
 @am__fastdepCXX_TRUE@	$(CXXCOMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
@@ -474,47 +474,47 @@ distclean-compile:
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(LTCXXCOMPILE) -c -o $@ $<
 
-xcsprof_bin-main.o: main.cpp
-@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(xcsprof_bin_CXXFLAGS) $(CXXFLAGS) -MT xcsprof_bin-main.o -MD -MP -MF $(DEPDIR)/xcsprof_bin-main.Tpo -c -o xcsprof_bin-main.o `test -f 'main.cpp' || echo '$(srcdir)/'`main.cpp
-@am__fastdepCXX_TRUE@	mv -f $(DEPDIR)/xcsprof_bin-main.Tpo $(DEPDIR)/xcsprof_bin-main.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='main.cpp' object='xcsprof_bin-main.o' libtool=no @AMDEPBACKSLASH@
+hpcprof_bin-main.o: main.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(hpcprof_bin_CXXFLAGS) $(CXXFLAGS) -MT hpcprof_bin-main.o -MD -MP -MF $(DEPDIR)/hpcprof_bin-main.Tpo -c -o hpcprof_bin-main.o `test -f 'main.cpp' || echo '$(srcdir)/'`main.cpp
+@am__fastdepCXX_TRUE@	mv -f $(DEPDIR)/hpcprof_bin-main.Tpo $(DEPDIR)/hpcprof_bin-main.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='main.cpp' object='hpcprof_bin-main.o' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(xcsprof_bin_CXXFLAGS) $(CXXFLAGS) -c -o xcsprof_bin-main.o `test -f 'main.cpp' || echo '$(srcdir)/'`main.cpp
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(hpcprof_bin_CXXFLAGS) $(CXXFLAGS) -c -o hpcprof_bin-main.o `test -f 'main.cpp' || echo '$(srcdir)/'`main.cpp
 
-xcsprof_bin-main.obj: main.cpp
-@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(xcsprof_bin_CXXFLAGS) $(CXXFLAGS) -MT xcsprof_bin-main.obj -MD -MP -MF $(DEPDIR)/xcsprof_bin-main.Tpo -c -o xcsprof_bin-main.obj `if test -f 'main.cpp'; then $(CYGPATH_W) 'main.cpp'; else $(CYGPATH_W) '$(srcdir)/main.cpp'; fi`
-@am__fastdepCXX_TRUE@	mv -f $(DEPDIR)/xcsprof_bin-main.Tpo $(DEPDIR)/xcsprof_bin-main.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='main.cpp' object='xcsprof_bin-main.obj' libtool=no @AMDEPBACKSLASH@
+hpcprof_bin-main.obj: main.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(hpcprof_bin_CXXFLAGS) $(CXXFLAGS) -MT hpcprof_bin-main.obj -MD -MP -MF $(DEPDIR)/hpcprof_bin-main.Tpo -c -o hpcprof_bin-main.obj `if test -f 'main.cpp'; then $(CYGPATH_W) 'main.cpp'; else $(CYGPATH_W) '$(srcdir)/main.cpp'; fi`
+@am__fastdepCXX_TRUE@	mv -f $(DEPDIR)/hpcprof_bin-main.Tpo $(DEPDIR)/hpcprof_bin-main.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='main.cpp' object='hpcprof_bin-main.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(xcsprof_bin_CXXFLAGS) $(CXXFLAGS) -c -o xcsprof_bin-main.obj `if test -f 'main.cpp'; then $(CYGPATH_W) 'main.cpp'; else $(CYGPATH_W) '$(srcdir)/main.cpp'; fi`
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(hpcprof_bin_CXXFLAGS) $(CXXFLAGS) -c -o hpcprof_bin-main.obj `if test -f 'main.cpp'; then $(CYGPATH_W) 'main.cpp'; else $(CYGPATH_W) '$(srcdir)/main.cpp'; fi`
 
-xcsprof_bin-Args.o: Args.cpp
-@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(xcsprof_bin_CXXFLAGS) $(CXXFLAGS) -MT xcsprof_bin-Args.o -MD -MP -MF $(DEPDIR)/xcsprof_bin-Args.Tpo -c -o xcsprof_bin-Args.o `test -f 'Args.cpp' || echo '$(srcdir)/'`Args.cpp
-@am__fastdepCXX_TRUE@	mv -f $(DEPDIR)/xcsprof_bin-Args.Tpo $(DEPDIR)/xcsprof_bin-Args.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='Args.cpp' object='xcsprof_bin-Args.o' libtool=no @AMDEPBACKSLASH@
+hpcprof_bin-Args.o: Args.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(hpcprof_bin_CXXFLAGS) $(CXXFLAGS) -MT hpcprof_bin-Args.o -MD -MP -MF $(DEPDIR)/hpcprof_bin-Args.Tpo -c -o hpcprof_bin-Args.o `test -f 'Args.cpp' || echo '$(srcdir)/'`Args.cpp
+@am__fastdepCXX_TRUE@	mv -f $(DEPDIR)/hpcprof_bin-Args.Tpo $(DEPDIR)/hpcprof_bin-Args.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='Args.cpp' object='hpcprof_bin-Args.o' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(xcsprof_bin_CXXFLAGS) $(CXXFLAGS) -c -o xcsprof_bin-Args.o `test -f 'Args.cpp' || echo '$(srcdir)/'`Args.cpp
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(hpcprof_bin_CXXFLAGS) $(CXXFLAGS) -c -o hpcprof_bin-Args.o `test -f 'Args.cpp' || echo '$(srcdir)/'`Args.cpp
 
-xcsprof_bin-Args.obj: Args.cpp
-@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(xcsprof_bin_CXXFLAGS) $(CXXFLAGS) -MT xcsprof_bin-Args.obj -MD -MP -MF $(DEPDIR)/xcsprof_bin-Args.Tpo -c -o xcsprof_bin-Args.obj `if test -f 'Args.cpp'; then $(CYGPATH_W) 'Args.cpp'; else $(CYGPATH_W) '$(srcdir)/Args.cpp'; fi`
-@am__fastdepCXX_TRUE@	mv -f $(DEPDIR)/xcsprof_bin-Args.Tpo $(DEPDIR)/xcsprof_bin-Args.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='Args.cpp' object='xcsprof_bin-Args.obj' libtool=no @AMDEPBACKSLASH@
+hpcprof_bin-Args.obj: Args.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(hpcprof_bin_CXXFLAGS) $(CXXFLAGS) -MT hpcprof_bin-Args.obj -MD -MP -MF $(DEPDIR)/hpcprof_bin-Args.Tpo -c -o hpcprof_bin-Args.obj `if test -f 'Args.cpp'; then $(CYGPATH_W) 'Args.cpp'; else $(CYGPATH_W) '$(srcdir)/Args.cpp'; fi`
+@am__fastdepCXX_TRUE@	mv -f $(DEPDIR)/hpcprof_bin-Args.Tpo $(DEPDIR)/hpcprof_bin-Args.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='Args.cpp' object='hpcprof_bin-Args.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(xcsprof_bin_CXXFLAGS) $(CXXFLAGS) -c -o xcsprof_bin-Args.obj `if test -f 'Args.cpp'; then $(CYGPATH_W) 'Args.cpp'; else $(CYGPATH_W) '$(srcdir)/Args.cpp'; fi`
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(hpcprof_bin_CXXFLAGS) $(CXXFLAGS) -c -o hpcprof_bin-Args.obj `if test -f 'Args.cpp'; then $(CYGPATH_W) 'Args.cpp'; else $(CYGPATH_W) '$(srcdir)/Args.cpp'; fi`
 
-xcsprof_bin-CSProfileUtils.o: CSProfileUtils.cpp
-@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(xcsprof_bin_CXXFLAGS) $(CXXFLAGS) -MT xcsprof_bin-CSProfileUtils.o -MD -MP -MF $(DEPDIR)/xcsprof_bin-CSProfileUtils.Tpo -c -o xcsprof_bin-CSProfileUtils.o `test -f 'CSProfileUtils.cpp' || echo '$(srcdir)/'`CSProfileUtils.cpp
-@am__fastdepCXX_TRUE@	mv -f $(DEPDIR)/xcsprof_bin-CSProfileUtils.Tpo $(DEPDIR)/xcsprof_bin-CSProfileUtils.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='CSProfileUtils.cpp' object='xcsprof_bin-CSProfileUtils.o' libtool=no @AMDEPBACKSLASH@
+hpcprof_bin-CSProfileUtils.o: CSProfileUtils.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(hpcprof_bin_CXXFLAGS) $(CXXFLAGS) -MT hpcprof_bin-CSProfileUtils.o -MD -MP -MF $(DEPDIR)/hpcprof_bin-CSProfileUtils.Tpo -c -o hpcprof_bin-CSProfileUtils.o `test -f 'CSProfileUtils.cpp' || echo '$(srcdir)/'`CSProfileUtils.cpp
+@am__fastdepCXX_TRUE@	mv -f $(DEPDIR)/hpcprof_bin-CSProfileUtils.Tpo $(DEPDIR)/hpcprof_bin-CSProfileUtils.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='CSProfileUtils.cpp' object='hpcprof_bin-CSProfileUtils.o' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(xcsprof_bin_CXXFLAGS) $(CXXFLAGS) -c -o xcsprof_bin-CSProfileUtils.o `test -f 'CSProfileUtils.cpp' || echo '$(srcdir)/'`CSProfileUtils.cpp
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(hpcprof_bin_CXXFLAGS) $(CXXFLAGS) -c -o hpcprof_bin-CSProfileUtils.o `test -f 'CSProfileUtils.cpp' || echo '$(srcdir)/'`CSProfileUtils.cpp
 
-xcsprof_bin-CSProfileUtils.obj: CSProfileUtils.cpp
-@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(xcsprof_bin_CXXFLAGS) $(CXXFLAGS) -MT xcsprof_bin-CSProfileUtils.obj -MD -MP -MF $(DEPDIR)/xcsprof_bin-CSProfileUtils.Tpo -c -o xcsprof_bin-CSProfileUtils.obj `if test -f 'CSProfileUtils.cpp'; then $(CYGPATH_W) 'CSProfileUtils.cpp'; else $(CYGPATH_W) '$(srcdir)/CSProfileUtils.cpp'; fi`
-@am__fastdepCXX_TRUE@	mv -f $(DEPDIR)/xcsprof_bin-CSProfileUtils.Tpo $(DEPDIR)/xcsprof_bin-CSProfileUtils.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='CSProfileUtils.cpp' object='xcsprof_bin-CSProfileUtils.obj' libtool=no @AMDEPBACKSLASH@
+hpcprof_bin-CSProfileUtils.obj: CSProfileUtils.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(hpcprof_bin_CXXFLAGS) $(CXXFLAGS) -MT hpcprof_bin-CSProfileUtils.obj -MD -MP -MF $(DEPDIR)/hpcprof_bin-CSProfileUtils.Tpo -c -o hpcprof_bin-CSProfileUtils.obj `if test -f 'CSProfileUtils.cpp'; then $(CYGPATH_W) 'CSProfileUtils.cpp'; else $(CYGPATH_W) '$(srcdir)/CSProfileUtils.cpp'; fi`
+@am__fastdepCXX_TRUE@	mv -f $(DEPDIR)/hpcprof_bin-CSProfileUtils.Tpo $(DEPDIR)/hpcprof_bin-CSProfileUtils.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='CSProfileUtils.cpp' object='hpcprof_bin-CSProfileUtils.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(xcsprof_bin_CXXFLAGS) $(CXXFLAGS) -c -o xcsprof_bin-CSProfileUtils.obj `if test -f 'CSProfileUtils.cpp'; then $(CYGPATH_W) 'CSProfileUtils.cpp'; else $(CYGPATH_W) '$(srcdir)/CSProfileUtils.cpp'; fi`
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(hpcprof_bin_CXXFLAGS) $(CXXFLAGS) -c -o hpcprof_bin-CSProfileUtils.obj `if test -f 'CSProfileUtils.cpp'; then $(CYGPATH_W) 'CSProfileUtils.cpp'; else $(CYGPATH_W) '$(srcdir)/CSProfileUtils.cpp'; fi`
 
 mostlyclean-libtool:
 	-rm -f *.lo
