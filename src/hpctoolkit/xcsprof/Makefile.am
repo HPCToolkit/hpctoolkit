@@ -75,7 +75,7 @@ MYLDADD = \
 	@HOST_LIBTREPOSITORY@ \
 	$(HPC_LIBPROFJUICYX) $(HPC_LIBPROFJUICY) $(HPC_LIBPROFLEAN) $(HPC_LIBBINUTILS) $(HPC_LIBISA) $(HPC_LIBXML) $(HPC_LIBSUPPORT) \
 	@XERCES_LDFLAGS@ @GNUBINUTILS_LDFLAGS@ \
-	@HOST_XCSPROF_LDFLAGS@ \
+	@HOST_HPCPROF_LDFLAGS@ \
 	-lm
 
 MYCLEAN = @HOST_LIBTREPOSITORY@
@@ -84,15 +84,15 @@ MYCLEAN = @HOST_LIBTREPOSITORY@
 # Automake rules
 #############################################################################
 
-bin_SCRIPTS = xcsprof
+bin_SCRIPTS = hpcprof
 
-bin_PROGRAMS = xcsprof-bin
+bin_PROGRAMS = hpcprof-bin
 
-xcsprof_bin_SOURCES  = $(MYSOURCES)
-xcsprof_bin_CFLAGS   = $(MYCFLAGS)
-xcsprof_bin_CXXFLAGS = $(MYCXXFLAGS)
-xcsprof_bin_LDFLAGS  = $(MYLDFLAGS)
-xcsprof_bin_LDADD    = $(MYLDADD)
+hpcprof_bin_SOURCES  = $(MYSOURCES)
+hpcprof_bin_CFLAGS   = $(MYCFLAGS)
+hpcprof_bin_CXXFLAGS = $(MYCXXFLAGS)
+hpcprof_bin_LDFLAGS  = $(MYLDFLAGS)
+hpcprof_bin_LDADD    = $(MYLDADD)
 
 MOSTLYCLEANFILES = $(MYCLEAN)
 
