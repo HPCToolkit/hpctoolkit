@@ -30,7 +30,7 @@
 \rcsInfo $Id$
 \setDate{\rcsInfoLongDate}
 }{
-\setDate{ 2008/02/06}
+\setDate{ 2008/04/30}
 \message{package rcsinfo not present, discard it}
 }
 
@@ -42,9 +42,9 @@
 
 \begin{document}
 
-\begin{Name}{1}{hpcprof}{The HPCToolkit Performance Tools}{The HPCToolkit Performance Tools}{hpcprof:\\ Simple correlation of flat profiles with source code}
+\begin{Name}{1}{hpcproftt}{The HPCToolkit Performance Tools}{The HPCToolkit Performance Tools}{hpcproftt:\\ Simple correlation of flat profiles with source code}
 
-\Prog{hpcprof} correlates `flat' execution profiles with source code files, procedures, lines or with object code.
+\Prog{hpcproftt} correlates `flat' execution profiles with source code files, procedures, lines or with object code.
 It is typically used to generate plain-text or HTML output.
 The code is derived from Curtis Janssen's VProf.
 
@@ -53,16 +53,16 @@ The code is derived from Curtis Janssen's VProf.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Synopsis}
 
-\Prog{hpcprof} \oOpt{options} \Arg{executable} \Arg{hpcrun-file}...
+\Prog{hpcproftt} \oOpt{options} \Arg{executable} \Arg{hpcrun-file}...
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Description}
 
-\Prog{hpcprof} correlates `flat' execution profiles of \Arg{executable} with source code files, procedures, lines or with object code.
-It is typically used to generate plain-text or HTML output.
+\Prog{hpcproftt} correlates `flat' execution profiles of \Arg{executable} with source code files, procedures, lines or with object code.
+It is typically used to generate plain-text or HTML output (hence the tt, for teletype, in its name).
 \Arg{hpcrun-file} is a collection of event-based program counter histograms obtained using \HTMLhref{hpcrun.html}{\Cmd{hpcrun}{1}} (or \Cmd{hpcex}{1}).
 
-\Prog{hpcprof} can generate the following information.  Note that the term \emph{native} event refers to an event for which there is a program counter histogram.  
+\Prog{hpcproftt} can generate the following information.  Note that the term \emph{native} event refers to an event for which there is a program counter histogram.  
 \begin{Description}
   \item[totals] Total sample counts for each native event, over each load module.  If the same native event name appears more than once, min/max/sum \emph{derived} events are computed.
   \item[load-module correlation] For each \emph{native} event (in order), show the exclusive percentage (or number) of samples attributed to each load module in the \Arg{hpcrun-file}s.  
@@ -134,12 +134,12 @@ Let the executable and profile be named \File{poissonSolve} and \File{poissonSol
 Assume further that we wish to correlate the profile with source lines.
 To do this, execute:
 \begin{verbatim}
-    hpcprof -l poissonSolve sweep3dsingle poissonSolve.PAPI_L2_DCM-etc...
+    hpcproftt -l poissonSolve sweep3dsingle poissonSolve.PAPI_L2_DCM-etc...
 \end{verbatim}
 
 \item Using the same example as above, assume we wish to correlate the profile with object code.  Execute the following command:
 \begin{verbatim}
-    hpcprof -o poissonSolve sweep3dsingle poissonSolve.PAPI_L2_DCM-etc...
+    hpcproftt -o poissonSolve sweep3dsingle poissonSolve.PAPI_L2_DCM-etc...
 \end{verbatim}
 
 \end{itemize}
