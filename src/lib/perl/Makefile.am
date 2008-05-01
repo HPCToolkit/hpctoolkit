@@ -61,12 +61,12 @@ include $(top_srcdir)/src/Makeinclude.config
 # Local settings
 #############################################################################
 
-MYSCRIPTS = \
-	PapiSpec.pm \
-	PROFILEXMLWriter.pm \
-	ptranDec.pm \
-	ptranSgi.pm \
-	XMLWriter.pm
+MYSCRIPTS = 
+#	ptranDec.pm \
+#	ptranSgi.pm \
+#	PROFILEXMLWriter.pm \
+#	XMLWriter.pm \
+#	PapiSpec.pm
 
 MYSCRIPTS_IN = \
 	HPCToolkitVersionInfo.pm
