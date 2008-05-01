@@ -69,8 +69,7 @@ SUBDIRS = \
 	hpclump \
 	\
 	xprof \
-	misc \
-	ptran
+	misc
 
 
 if OPT_ENABLE_HPCRUN

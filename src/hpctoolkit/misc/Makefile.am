@@ -65,6 +65,7 @@ MYSCRIPTS =
 #	dcpicounts \
 #	hpcmissing \
 #	f90modfilt \
+#       ptran \
 #	pxmlcat \
 #	xprofquick
 

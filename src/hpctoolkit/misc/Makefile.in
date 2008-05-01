@@ -15,7 +15,7 @@
 @SET_MAKE@
 
 # -*-Mode: makefile;-*-
-# $Id: Makefile.am 661 2007-01-05 04:46:06Z eraxxon $
+# $Id: Makefile.am 1274 2008-04-30 21:21:12Z eraxxon $
 
 #############################################################################
 #
@@ -266,6 +266,7 @@ MYSCRIPTS =
 #	dcpicounts \
 #	hpcmissing \
 #	f90modfilt \
+#       ptran \
 #	pxmlcat \
 #	xprofquick
 
