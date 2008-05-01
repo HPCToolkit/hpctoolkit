@@ -30,7 +30,7 @@
 \rcsInfo $Id$
 \setDate{\rcsInfoLongDate}
 }{
-\setDate{ 2008/04/22}
+\setDate{ 2008/04/30}
 \message{package rcsinfo not present, discard it}
 }
 
@@ -79,7 +79,7 @@ It accounts for procedure and loop transformations such as inlining and software
 \item \textbf{Correlating dynamic profiles with static source code structure.} 
 \textbf{HPCToolkit}'s correlation tool combines dynamic profile information with \HTMLhref{hpcstruct.html}{\Cmd{hpcstruct}{1}}'s static program structure to correlate costs of the optimized object code to useful source code constructs such as loop nests.
 The result of correlation is called an Experiment database.
-Currently, \HTMLhref{hpcquick.html}{\Cmd{hpcquick}{1}}/\HTMLhref{hpcview.html}{\Cmd{hpcview}{1}} is used for flat profiles and \Cmd{xcsprof}{1} for call stack profiles.
+Currently, \HTMLhref{hpcquick.html}{\Cmd{hpcquick}{1}}/\HTMLhref{hpcview.html}{\Cmd{hpcview}{1}} is used for flat profiles and \Cmd{hpcprof}{1} for call stack profiles.
 
 \item \textbf{Top-down visualization}
 \Prog{hpcviewer} is a Java-based top-down viewer for flat and call stack profiles.
@@ -94,7 +94,7 @@ This means that the first three steps can be performed remotely on a cluster and
 Collect low-overhead, high-accuracy `flat' profiles using statistical sampling (\HTMLhref{hpcrun.html}{\Cmd{hpcrun}{1}}).
 
 \item \textbf{Correlating dynamic profiles with procedures source lines.} 
-\HTMLhref{hpcprof.html}{\Cmd{hpcprof}{1}} correlates `flat' profiles with procedure source line information.
+\HTMLhref{hpcproftt.html}{\Cmd{hpcproftt}{1}} correlates `flat' profiles with procedure source line information and produces textual output.
 It does not account for procedure transformations such as inlining and does not detect loops.
 \end{enumerate}
 
@@ -161,7 +161,7 @@ Visualize the Experiment database using \HTMLhref{hpcviewer.html}{\Cmd{hpcviewer
 
 \HTMLhref{hpcrun.html}{\Cmd{hpcrun}{1}}, \Cmd{csprof}{1} \\
 \HTMLhref{hpcstruct.html}{\Cmd{hpcstruct}{1}} \\
-\HTMLhref{hpcquick.html}{\Cmd{hpcquick}{1}}, \HTMLhref{hpcview.html}{\Cmd{hpcview}{1}}, \Cmd{xcsprof}{1}, \HTMLhref{hpcprof.html}{\Cmd{hpcprof}{1}} \\ %\Cmd{xprof}{1} 
+\HTMLhref{hpcquick.html}{\Cmd{hpcquick}{1}}, \HTMLhref{hpcview.html}{\Cmd{hpcview}{1}}, \Cmd{hpcprof}{1}, \HTMLhref{hpcproftt.html}{\Cmd{hpcproftt}{1}} \\ %\Cmd{xprof}{1} 
 \HTMLhref{hpcviewer.html}{\Cmd{hpcviewer}{1}}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

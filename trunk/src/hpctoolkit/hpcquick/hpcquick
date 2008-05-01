@@ -1046,7 +1046,7 @@ sub canonicalizeProfileData
   BEGIN { 
     $sgiProfCmd = "prof -lines";
     $alphaProfCmd = "prof -lines";
-    $hpcprofCmd = "${RealBin}/hpcprof -p";
+    $hpcprofCmd = "${RealBin}/hpcproftt -p";
     $ptranCmd = "ptran";
   }
 }

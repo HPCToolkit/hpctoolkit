@@ -64,7 +64,7 @@ MYSOURCES = \
 	\
 	hpcquick.tex \
 	hpcview.tex \
-	hpcprof.tex \
+	hpcproftt.tex \
 	\
 	hpcviewer.tex
 
@@ -88,7 +88,7 @@ man_MANS = \
 	hpcstruct.1hpctoolkit \
 	hpcquick.1hpctoolkit \
 	hpcview.1hpctoolkit \
-	hpcprof.1hpctoolkit \
+	hpcproftt.1hpctoolkit \
 	hpcviewer.1hpctoolkit
 
 nobase_dist_doc_DATA = $(MYMANHTML)
