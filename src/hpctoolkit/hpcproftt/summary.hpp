@@ -21,8 +21,8 @@
 //***************************************************************************
 
 /** @file */
-#ifndef _summary_h
-#define _summary_h
+#ifndef _summary_hpp_
+#define _summary_hpp_
 
 //************************* System Include Files ****************************
 
@@ -494,4 +494,4 @@ class Summary {
     void print(std::ostream &o = std::cout) const;
 };
 
-#endif
+#endif /* _summary_hpp_ */
