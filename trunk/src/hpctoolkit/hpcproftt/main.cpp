@@ -354,7 +354,7 @@ real_main(int argc, char *argv[])
 const char *PROFILEdtd =
 #include "lib/xml/PROFILE.dtd.h"
 
-		     const char* I[] = { "", // Indent levels (0 - 5)
+const char* I[] = { "", // Indent levels (0 - 5)
     "  ",
     "    ",
     "      ",
