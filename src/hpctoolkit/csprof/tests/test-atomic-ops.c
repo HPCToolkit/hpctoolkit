@@ -23,7 +23,9 @@ main(int argc, char **argv)
 	print_long_status();
 	assert(p == &l && *p == L_INIT);
 
-	printf("swapping *(%p) = %p with %p; old value = %p, new value = %p\n", &p, p, &m, fetch_and_store_ptr(&p, &m), p);
+	printf("swapping *(%p) = %p with %p, ", &p, p, &m); 
+	long *oldptr = fetch_and_store_ptr(&p, &m);
+ 	printf("old value = %p, new value = %p\n", oldptr, p); 
 	assert(p == &m && *p == M_INIT);
 	print_long_status();
 
