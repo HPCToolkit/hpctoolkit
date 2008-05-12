@@ -15,7 +15,7 @@
 @SET_MAKE@
 
 # -*-Mode: makefile;-*-
-# $Id: Makefile.am 797 2007-05-12 21:09:13Z eraxxon $
+# $Id: Makefile.am 1287 2008-05-12 18:42:27Z eraxxon $
 
 #############################################################################
 #
@@ -116,8 +116,7 @@ am__objects_1 = hpcview_bin-main.$(OBJEXT) hpcview_bin-Args.$(OBJEXT) \
 	hpcview_bin-Driver.$(OBJEXT) \
 	hpcview_bin-HPCViewDocParser.$(OBJEXT) \
 	hpcview_bin-DerivedPerfMetrics.$(OBJEXT) \
-	hpcview_bin-MathMLExpr.$(OBJEXT) \
-	hpcview_bin-EvalNode.$(OBJEXT)
+	hpcview_bin-MathMLExpr.$(OBJEXT)
 am_hpcview_bin_OBJECTS = $(am__objects_1)
 hpcview_bin_OBJECTS = $(am_hpcview_bin_OBJECTS)
 am__DEPENDENCIES_1 = $(HPC_LIBPROFJUICYX) $(HPC_LIBPROFJUICY) \
@@ -337,8 +336,7 @@ MYSOURCES = \
 	HPCViewDocParser.hpp HPCViewDocParser.cpp \
 	\
 	DerivedPerfMetrics.hpp DerivedPerfMetrics.cpp \
-	MathMLExpr.hpp MathMLExpr.cpp \
-	EvalNode.hpp EvalNode.cpp
+	MathMLExpr.hpp MathMLExpr.cpp
 
 
 # GNU binutils flags are needed for HPC_LIBISA.
@@ -463,7 +461,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/hpcview_bin-Args.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/hpcview_bin-DerivedPerfMetrics.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/hpcview_bin-Driver.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/hpcview_bin-EvalNode.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/hpcview_bin-HPCViewDocParser.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/hpcview_bin-MathMLExpr.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/hpcview_bin-main.Po@am__quote@
@@ -572,20 +569,6 @@ hpcview_bin-MathMLExpr.obj: MathMLExpr.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='MathMLExpr.cpp' object='hpcview_bin-MathMLExpr.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(hpcview_bin_CXXFLAGS) $(CXXFLAGS) -c -o hpcview_bin-MathMLExpr.obj `if test -f 'MathMLExpr.cpp'; then $(CYGPATH_W) 'MathMLExpr.cpp'; else $(CYGPATH_W) '$(srcdir)/MathMLExpr.cpp'; fi`
-
-hpcview_bin-EvalNode.o: EvalNode.cpp
-@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(hpcview_bin_CXXFLAGS) $(CXXFLAGS) -MT hpcview_bin-EvalNode.o -MD -MP -MF $(DEPDIR)/hpcview_bin-EvalNode.Tpo -c -o hpcview_bin-EvalNode.o `test -f 'EvalNode.cpp' || echo '$(srcdir)/'`EvalNode.cpp
-@am__fastdepCXX_TRUE@	mv -f $(DEPDIR)/hpcview_bin-EvalNode.Tpo $(DEPDIR)/hpcview_bin-EvalNode.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='EvalNode.cpp' object='hpcview_bin-EvalNode.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(hpcview_bin_CXXFLAGS) $(CXXFLAGS) -c -o hpcview_bin-EvalNode.o `test -f 'EvalNode.cpp' || echo '$(srcdir)/'`EvalNode.cpp
-
-hpcview_bin-EvalNode.obj: EvalNode.cpp
-@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(hpcview_bin_CXXFLAGS) $(CXXFLAGS) -MT hpcview_bin-EvalNode.obj -MD -MP -MF $(DEPDIR)/hpcview_bin-EvalNode.Tpo -c -o hpcview_bin-EvalNode.obj `if test -f 'EvalNode.cpp'; then $(CYGPATH_W) 'EvalNode.cpp'; else $(CYGPATH_W) '$(srcdir)/EvalNode.cpp'; fi`
-@am__fastdepCXX_TRUE@	mv -f $(DEPDIR)/hpcview_bin-EvalNode.Tpo $(DEPDIR)/hpcview_bin-EvalNode.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='EvalNode.cpp' object='hpcview_bin-EvalNode.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(hpcview_bin_CXXFLAGS) $(CXXFLAGS) -c -o hpcview_bin-EvalNode.obj `if test -f 'EvalNode.cpp'; then $(CYGPATH_W) 'EvalNode.cpp'; else $(CYGPATH_W) '$(srcdir)/EvalNode.cpp'; fi`
 
 mostlyclean-libtool:
 	-rm -f *.lo

@@ -61,8 +61,8 @@
 //
 // ----------------------------------------------------------------------
 
-#ifndef EvalNode_hpp
-#define EvalNode_hpp
+#ifndef prof_juicy_EvalNode
+#define prof_juicy_EvalNode
 
 //************************ System Include Files ******************************
 
@@ -71,7 +71,7 @@
 
 //************************* User Include Files *******************************
 
-#include <lib/prof-juicy/PgmScopeTree.hpp>
+#include "PgmScopeTree.hpp"
 
 //************************ Forward Declarations ******************************
 
@@ -263,4 +263,4 @@ private:
   int n;
 };
 
-#endif  // EvalNode_hpp
+#endif /* prof_juicy_EvalNode */

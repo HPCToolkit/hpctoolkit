@@ -37,7 +37,6 @@
 
 // ----------------------------------------------------------------------
 //
-// EvalNode.C
 //   the implementation of evaluation tree nodes
 //
 // ----------------------------------------------------------------------
@@ -48,9 +47,7 @@
 using std::endl;
 
 #include <sstream>
-
 #include <string>
-
 #include <algorithm>
 
 #ifdef NO_STD_CHEADERS
@@ -66,9 +63,8 @@ using namespace std; // For compatibility with non-std C headers
 
 #include "EvalNode.hpp"
 
-#include <lib/support/Trace.hpp>
-
 #include <lib/support/NaN.h>
+#include <lib/support/Trace.hpp>
 
 //************************ Forward Declarations ******************************
 

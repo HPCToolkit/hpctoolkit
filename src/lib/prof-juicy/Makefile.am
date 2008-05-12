@@ -62,10 +62,12 @@ include $(top_srcdir)/src/Makeinclude.config
 #############################################################################
 
 MYSOURCES = \
-	PerfMetric.hpp PerfMetric.cpp \
 	PgmScopeTree.hpp PgmScopeTree.cpp \
 	PgmScopeTreeIterator.hpp PgmScopeTreeIterator.cpp \
 	PgmScopeTreeInterface.hpp PgmScopeTreeInterface.cpp \
+	\
+	PerfMetric.hpp PerfMetric.cpp \
+	EvalNode.hpp EvalNode.cpp \
 	\
 	FlatProfileReader.hpp FlatProfileReader.cpp \
 	\
