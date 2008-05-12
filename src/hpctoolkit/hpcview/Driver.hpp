@@ -151,10 +151,10 @@ private:
   std::string path;        // a string-list of paths (includes '.') 
   PathTupleVec pathVec;    // a list of {path, viewname} 
 
-  std::vector<std::string> replaceInPath; 
-  std::vector<std::string> replaceOutPath; 
+  std::vector<std::string> replaceInPath;
+  std::vector<std::string> replaceOutPath;
 
-  std::vector<PerfMetric*> dataSrc;
+  std::vector<PerfMetric*>  dataSrc;
   std::vector<std::string*> structureFiles;
   std::vector<std::string*> groupFiles;
 };
