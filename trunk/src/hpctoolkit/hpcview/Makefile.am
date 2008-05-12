@@ -68,8 +68,7 @@ MYSOURCES = \
 	HPCViewDocParser.hpp HPCViewDocParser.cpp \
 	\
 	DerivedPerfMetrics.hpp DerivedPerfMetrics.cpp \
-	MathMLExpr.hpp MathMLExpr.cpp \
-	EvalNode.hpp EvalNode.cpp
+	MathMLExpr.hpp MathMLExpr.cpp
 
 # GNU binutils flags are needed for HPC_LIBISA.
 MYCFLAGS   = @HOST_CFLAGS@   $(HPC_IFLAGS) @GNUBINUTILS_IFLAGS@

@@ -53,15 +53,13 @@
 
 //************************ Xerces Include Files ******************************
 
-// class DOMNode;
-#include <xercesc/dom/DOMNode.hpp>         /* johnmc */
+#include <xercesc/dom/DOMNode.hpp>
 using XERCES_CPP_NAMESPACE::DOMNode;
 
 //************************* User Include Files *******************************
 
-#include "EvalNode.hpp"
-
 #include <lib/prof-juicy/PgmScopeTree.hpp>
+#include <lib/prof-juicy/EvalNode.hpp>
 
 //************************ Forward Declarations ******************************
 
