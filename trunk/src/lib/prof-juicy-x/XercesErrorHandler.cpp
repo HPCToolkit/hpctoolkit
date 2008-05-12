@@ -85,7 +85,7 @@ XercesErrorHandler::report(std::ostream& cerr,
 void 
 XercesErrorHandler::error(const SAXParseException& e)
 {
-  // TODO: HPCViewDoc_Throw(...)
+  // TODO: ConfigParser_Throw(...)
   report(cerr, "Xerces non-fatal error", CONFIG, e, userFile.c_str(), numPrefixLines); 
 }
 
@@ -93,7 +93,7 @@ XercesErrorHandler::error(const SAXParseException& e)
 void 
 XercesErrorHandler::fatalError(const SAXParseException& e)
 {
-  // TODO: HPCViewDoc_Throw(...)
+  // TODO: ConfigParser_Throw(...)
   report(cerr, "Xerces fatal error", CONFIG, e, userFile.c_str(), numPrefixLines); 
   throw e; 
 }
@@ -102,7 +102,7 @@ XercesErrorHandler::fatalError(const SAXParseException& e)
 void 
 XercesErrorHandler::warning(const SAXParseException& e)
 {
-  // TODO: HPCViewDoc_Throw(...)
+  // TODO: ConfigParser_Throw(...)
   report(cerr, "Xerces warning", CONFIG, e, userFile.c_str(), numPrefixLines); 
 }
 

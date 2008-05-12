@@ -55,8 +55,7 @@ using std::atoi;
 
 //************************* User Include Files *******************************
 
-// #include "XMLAdapter.h"
-#include "MathMLExpr.hpp"
+#include "MathMLExprParser.hpp"
 
 #include <lib/prof-juicy/PerfMetric.hpp>
 

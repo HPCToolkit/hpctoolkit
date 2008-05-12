@@ -65,10 +65,10 @@ using XERCES_CPP_NAMESPACE::DOMNamedNodeMap;
 
 //************************* User Include Files *******************************
 
-#include "HPCViewDocParser.hpp"
+#include "ConfigParser.hpp"
 
 #include "Driver.hpp"
-#include "MathMLExpr.hpp"
+#include "MathMLExprParser.hpp"
 #include "DerivedPerfMetrics.hpp"
 
 #include <lib/prof-juicy/PgmScopeTree.hpp>
@@ -113,7 +113,7 @@ PrintName(DOMNode *node)
 // external operations
 // -------------------------------------------------------------------------
 
-HPCViewDocParser::HPCViewDocParser(const string& inputFile, 
+ConfigParser::ConfigParser(const string& inputFile, 
 				   XercesErrorHandler& errHndlr)
 {
   DIAG_DevMsgIf(DBG_ME, "HPCVIEW: " << inputFile);
@@ -123,7 +123,7 @@ HPCViewDocParser::HPCViewDocParser(const string& inputFile,
   mParser->setErrorHandler(&errHndlr);
   mParser->parse(inputFile.c_str());
   if (mParser->getErrorCount() > 0) {
-    HPCViewDoc_Throw("terminating because of previously reported CONFIGURATION file parse errors.");
+    ConfigParser_Throw("terminating because of previously reported CONFIGURATION file parse errors.");
   }
   
   mDoc = mParser->getDocument();
@@ -131,21 +131,21 @@ HPCViewDocParser::HPCViewDocParser(const string& inputFile,
 }
 
 
-HPCViewDocParser::~HPCViewDocParser()
+ConfigParser::~ConfigParser()
 {
   delete mParser;
 }
 
 
 void
-HPCViewDocParser::pass1(Driver& driver)
+ConfigParser::pass1(Driver& driver)
 {
   ProcessDOCUMENT(mDoc, driver, false /*onlyMetrics*/);
 }
 
 
 void
-HPCViewDocParser::pass2(Driver& driver)
+ConfigParser::pass2(Driver& driver)
 {
   // FIXME: should not really need driver
   ProcessDOCUMENT(mDoc, driver, true /*onlyMetrics*/);
@@ -171,7 +171,7 @@ ProcessHPCVIEW(DOMNode *node, Driver &driver, bool onlyMetrics)
 
   if ((node == NULL) ||
       (node->getNodeType() != DOMNode::DOCUMENT_TYPE_NODE) ){ 
-    HPCViewDoc_Throw("CONFIGURATION file does not begin with <HPCVIEW>");
+    ConfigParser_Throw("CONFIGURATION file does not begin with <HPCVIEW>");
   };
   
   node = node->getNextSibling();
@@ -179,7 +179,7 @@ ProcessHPCVIEW(DOMNode *node, Driver &driver, bool onlyMetrics)
 
   if ( (node == NULL)
        || (node->getNodeType() != DOMNode::ELEMENT_NODE)) {
-    HPCViewDoc_Throw("No DOCUMENT_NODE found in CONFIGURATION file.");
+    ConfigParser_Throw("No DOCUMENT_NODE found in CONFIGURATION file.");
   };
 
   // process each child 
@@ -214,7 +214,7 @@ ProcessELEMENT(DOMNode *node, Driver &driver, bool onlyMetrics)
     return;
   }
   else if (node->getNodeType() != DOMNode::ELEMENT_NODE) {
-    HPCViewDoc_Throw("Unexpected XML object found: '" << XMLString::transcode(nodeName) << "'");
+    ConfigParser_Throw("Unexpected XML object found: '" << XMLString::transcode(nodeName) << "'");
   }
 
   // Parse ELEMENT nodes
@@ -225,10 +225,10 @@ ProcessELEMENT(DOMNode *node, Driver &driver, bool onlyMetrics)
       DIAG_DevMsgIf(DBG_ME, "HPCVIEW: " << "PATH: " << path << ", v=" << viewname);
       
       if (path.empty()) {
-	HPCViewDoc_Throw("PATH name attribute cannot be empty.");
+	ConfigParser_Throw("PATH name attribute cannot be empty.");
       }
       else if (driver.CopySrcFiles() && viewname.empty()) {
-	HPCViewDoc_Throw("PATH '" << path << "': viewname attribute cannot be empty when source files are to be copied.");
+	ConfigParser_Throw("PATH '" << path << "': viewname attribute cannot be empty when source files are to be copied.");
       } // there could be many other nefarious values of these attributes
       
       driver.AddPath(path, viewname);
@@ -272,7 +272,7 @@ ProcessELEMENT(DOMNode *node, Driver &driver, bool onlyMetrics)
       DIAG_DevMsgIf(DBG_ME, "HPCVIEW: " << "STRUCTURE file: " << fnm);
       
       if (fnm.empty()) {
-	HPCViewDoc_Throw("STRUCTURE file name is empty.");
+	ConfigParser_Throw("STRUCTURE file name is empty.");
       } 
       else {
 	driver.AddStructureFile(fnm);
@@ -285,7 +285,7 @@ ProcessELEMENT(DOMNode *node, Driver &driver, bool onlyMetrics)
       DIAG_DevMsgIf(DBG_ME, "HPCVIEW: " << "GROUP file: " << fnm);
       
       if (fnm.empty()) {
-	HPCViewDoc_Throw("GROUP file name is empty.");
+	ConfigParser_Throw("GROUP file name is empty.");
       } 
       else {
 	driver.AddGroupFile(fnm);
@@ -293,7 +293,7 @@ ProcessELEMENT(DOMNode *node, Driver &driver, bool onlyMetrics)
     }
   } 
   else {
-    HPCViewDoc_Throw("Unexpected ELEMENT type encountered: '" << XMLString::transcode(nodeName) << "'");
+    ConfigParser_Throw("Unexpected ELEMENT type encountered: '" << XMLString::transcode(nodeName) << "'");
   }
 }
 
@@ -318,14 +318,14 @@ ProcessMETRIC(DOMNode *node, Driver &driver)
   bool metricDoSortBy = (getAttr(node,SORTBYATTR) == "true"); 
 
   if (metricName.empty()) {
-    HPCViewDoc_Throw("METRIC: Invalid name: '" << metricName << "'.");
+    ConfigParser_Throw("METRIC: Invalid name: '" << metricName << "'.");
   }
   else if (NameToPerfDataIndex(metricName) != UNDEF_METRIC_INDEX) {
-    HPCViewDoc_Throw("METRIC: Metric name '" << metricName << "' was previously defined.");
+    ConfigParser_Throw("METRIC: Metric name '" << metricName << "' was previously defined.");
   }
 
   if (metricDisplayName.empty()) {
-    HPCViewDoc_Throw("METRIC: Invalid displayName: '" << metricDisplayName << "'.");
+    ConfigParser_Throw("METRIC: Invalid displayName: '" << metricDisplayName << "'.");
   }
     
   DIAG_DevMsgIf(DBG_ME, "HPCVIEW: " << "METRIC: name=" << metricName
@@ -375,7 +375,7 @@ ProcessMETRIC(DOMNode *node, Driver &driver)
       }
     } 
     else {
-      HPCViewDoc_Throw("Unexpected METRIC type '" << XMLString::transcode(metricType) << "'.");
+      ConfigParser_Throw("Unexpected METRIC type '" << XMLString::transcode(metricType) << "'.");
     }
   }
 }
@@ -409,7 +409,7 @@ ProcessFILE(DOMNode* fileNode, Driver& driver,
 				  &driver));
   } 
   else {
-    HPCViewDoc_Throw("METRIC '" << metricName << "' FILE name empty.");
+    ConfigParser_Throw("METRIC '" << metricName << "' FILE name empty.");
   }
 
 }

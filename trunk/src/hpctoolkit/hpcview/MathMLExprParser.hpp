@@ -37,14 +37,13 @@
 
 // ----------------------------------------------------------------------
 //
-// MathMLExpr.h
 //   header file for the implementation of arithmetic evaluation of
 //   metrics
 //
 // ----------------------------------------------------------------------
 
-#ifndef MathMLExpr_H
-#define MathMLExpr_H
+#ifndef MathMLExprParser
+#define MathMLExprParser
 
 //************************ System Include Files ******************************
 
@@ -168,4 +167,4 @@ private:
   EvalNode* buildEvalTree(DOMNode *node);
 };
 
-#endif  // MathMLExpr_H
+#endif /* MathMLExprParser */

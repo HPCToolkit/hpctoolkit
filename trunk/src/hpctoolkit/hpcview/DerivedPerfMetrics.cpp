@@ -47,7 +47,7 @@ using std::string;
 
 #include "DerivedPerfMetrics.hpp"
 #include "Driver.hpp"
-#include "MathMLExpr.hpp"
+#include "MathMLExprParser.hpp"
 
 #include <lib/prof-juicy-x/XercesSAX2.hpp>
 #include <lib/prof-juicy-x/PROFILEDocHandler.hpp>
