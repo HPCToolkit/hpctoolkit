@@ -185,11 +185,11 @@ ProfFileLM::read(FILE *fp)
   if (sz != sizeof(count)) { 
     FLATPROF_Throw("Error reading <loadmodule_eventcount>.");
   }
-  eventvec_.resize(count);
+  m_eventvec.resize(count);
   
   // Event data
   for (uint i = 0; i < count; ++i) {
-    eventvec_[i].read(fp, m_load_addr);
+    m_eventvec[i].read(fp, m_load_addr);
   }
 }
 
