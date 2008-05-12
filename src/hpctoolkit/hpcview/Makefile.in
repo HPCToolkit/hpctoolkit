@@ -336,7 +336,6 @@ MYSOURCES = \
 	Driver.hpp Driver.cpp \
 	HPCViewDocParser.hpp HPCViewDocParser.cpp \
 	\
-	PerfIndex.hpp \
 	DerivedPerfMetrics.hpp DerivedPerfMetrics.cpp \
 	MathMLExpr.hpp MathMLExpr.cpp \
 	EvalNode.hpp EvalNode.cpp
