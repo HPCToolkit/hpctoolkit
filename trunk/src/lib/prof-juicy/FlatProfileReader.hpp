@@ -50,8 +50,6 @@
 
 //***************************************************************************
 
-// FIXME FIXME FIXME: should incrementally read the file
-
 // Basic format for the hpcprof data file:
 //   A profile file (ProfFile) contains one or more load module sections
 //   (ProfFileLM) with each load module section containing one or more
@@ -72,9 +70,9 @@ public:
   // read: Throws an exception on an error!
   void read(FILE*, uint64_t load_addr);
   
-  const char* name() const { return name_.c_str(); }
-  const char* description() const { return desc_.c_str(); }
-  uint64_t    period() const { return period_; }
+  const char* name() const { return m_name.c_str(); }
+  const char* description() const { return m_desc.c_str(); }
+  uint64_t    period() const { return m_period; }
   int         bucket_size() const { return sizeof(uint32_t); }
   
   uint outofrange() const { return outofrange_; }
@@ -89,9 +87,9 @@ public:
   void dump(std::ostream& o = std::cerr, const char* pre = "") const;
   
 private:
-  std::string  name_;
-  std::string  desc_;
-  uint64_t     period_;
+  std::string  m_name;
+  std::string  m_desc;
+  uint64_t     m_period;
   uint outofrange_;
   uint overflow_;
   std::vector<ProfFileEventDatum> dat_;
@@ -108,19 +106,19 @@ public:
   // read: Throws an exception on an error!
   void read(FILE*);
   
-  const std::string& name() const { return name_; }
-  uint64_t load_addr() const { return load_addr_; }
+  const std::string& name() const { return m_name; }
+  uint64_t load_addr() const { return m_load_addr; }
   
   // 0 based indexing
-  uint num_events() const { return eventvec_.size(); }
-  const ProfFileEvent& event(uint i) const { return eventvec_[i]; }
+  uint num_events() const { return m_eventvec.size(); }
+  const ProfFileEvent& event(uint i) const { return m_eventvec[i]; }
   
   void dump(std::ostream& o = std::cerr, const char* pre = "") const;
   
 private:
-  std::string name_;                    // module name
-  uint64_t load_addr_;                  // load offset during runtime
-  std::vector<ProfFileEvent> eventvec_; // events
+  std::string m_name;                    // module name
+  uint64_t m_load_addr;                  // load offset during runtime
+  std::vector<ProfFileEvent> m_eventvec; // events
 };
 
 //***************************************************************************
@@ -134,21 +132,21 @@ public:
   ProfFile(const ProfFile& f) { DIAG_Die(DIAG_Unimplemented); }
   
   // read: Throws an exception on an error!
-  void read(const std::string &filename);
+  void read(const std::string& filename);
   
-  const std::string& name() const { return name_; }
-  time_t mtime() const { return mtime_; }
+  const std::string& name() const { return m_name; }
+  time_t mtime() const { return m_mtime; }
   
   // 0 based indexing
-  uint num_load_modules() const { return lmvec_.size(); }
-  const ProfFileLM& load_module(uint i) const { return lmvec_[i]; }
+  uint num_load_modules() const { return m_lmvec.size(); }
+  const ProfFileLM& load_module(uint i) const { return m_lmvec[i]; }
   
   void dump(std::ostream& o = std::cerr, const char* pre = "") const;
 
 private:
-  std::string name_; 
-  time_t mtime_;
-  std::vector<ProfFileLM> lmvec_; // load modules
+  std::string m_name; 
+  time_t m_mtime;
+  std::vector<ProfFileLM> m_lmvec; // load modules
 };
 
 //***************************************************************************
