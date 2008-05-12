@@ -11,6 +11,7 @@
 #include "epoch.h"
 #include "metrics.h"
 #include "state.h"
+#include "pmsg.h"
 
 #include "hpcfile_csprof.h"
 
@@ -76,6 +77,7 @@ void
 csprof_set_metric_info_and_period(int metric_id, char *name,
 				  uint64_t flags, size_t period)
 {
+  TMSG(METRICS,"id = %d, name = %s, flags = %lx, period = %d",metric_id,name,flags,period);
   if(metric_id >= metric_data.num_metrics) {
     ERRMSG("Metric id `%d' is not a defined metric",
            __FILE__, __LINE__, metric_id);

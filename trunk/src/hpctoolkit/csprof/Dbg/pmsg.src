@@ -33,4 +33,9 @@
  E(OPTIONS),
  E(PRE_FORK),
  E(POST_FORK),
- E(EVENTS)
+ E(EVENTS),
+ E(SYSTEM_SERVER),
+ E(AS_add_source),
+ E(AS_started),
+ E(SS_COMMON),
+ E(METRICS)

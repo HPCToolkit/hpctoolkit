@@ -47,9 +47,6 @@ flag_fill(int v)
   for(int i=0; i < N_DBG_FLAGS; i++){
     dbg_flags[i] = v;
   }
-  for (int i=0; i < NDEFAULTS; i++){
-    dbg_flags[defaults[i]] = 1;
-  }
 }
 
 static int
@@ -64,10 +61,19 @@ lookup(char *s)
 }
 
 static void
+turn_on_all(void)
+{
+}
+
+static void
 csprof_dbg_init(char *in)
 {
   // csprof_emsg("input string f init = %s",in);
   for (char *f=start_tok(in); more_tok(); f=next_tok()){
+    if (strcmp(f,"ALL") == 0){
+      flag_fill(1);
+      return;
+    }
     // csprof_emsg("checking token %s",f);
     int ii = lookup(f);
     if (ii >= 0){
@@ -110,6 +116,9 @@ pmsg_init(char *exec_name)
     log_file = stderr;
   }
   flag_fill(0);
+  for (int i=0; i < NDEFAULTS; i++){
+    dbg_flags[defaults[i]] = 1;
+  }
 
   char *s = getenv("CSPROF_DD");
   if(s){
@@ -179,6 +188,18 @@ csprof_emsg(const char *fmt,...)
 }
 
 void
+csprof_exit_on_error(int ret, int ret_expected, const char *fmt, ...)
+{
+  if (ret == ret_expected) {
+    return;
+  }
+  va_list args;
+  va_start(args,fmt);
+  _msg(fmt,args);
+  abort();
+}
+
+void
 csprof_pmsg(pmsg_category flag,const char *fmt,...)
 {
   if (! dbg_flags[flag]){
@@ -201,6 +222,13 @@ csprof_nmsg(pmsg_category flag,const char *fmt,...)
   _nmsg(fmt,args);
 }
 
+void
+csprof_amsg(const char *fmt,...)
+{
+  va_list args;
+  va_start(args,fmt);
+  _nmsg(fmt,args);
+}
 
 // interface to the debug flags
 int

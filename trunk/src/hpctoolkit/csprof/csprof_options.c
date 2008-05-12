@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "all_sample_sources.h"
 #include "csprof_options.h"
 #include "process_event_list.h"
 #include "csprof_misc_fn_stat.h"
@@ -76,13 +77,5 @@ csprof_options__getopts(csprof_options_t* x)
   // process event list
   
   csprof_sample_sources_from_eventlist(getenv("CSPROF_OPT_EVENT"));
-
-#if 0
-  csprof_process_event_list(getenv("CSPROF_OPT_EVENT"),&(x->evi));
-  NMSG(OPTIONS,"sample source = %s",SS_PNAME((x->evi).sample_source));
-  NMSG(OPTIONS,"sample_period = %ld",(x->evi).sample_period);
-  NMSG(OPTIONS,"event list = %s",(x->evi).event_list);
-#endif
-
   return CSPROF_OK;
 }

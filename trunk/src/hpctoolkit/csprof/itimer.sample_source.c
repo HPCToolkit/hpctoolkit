@@ -34,6 +34,7 @@
 #include "sample_event.h"
 #include "sample_source.h"
 #include "simple_oo.h"
+#include "thread_data.h"
 
 
 /******************************************************************************
@@ -64,23 +65,21 @@ csprof_itimer_signal_handler(int sig, siginfo_t *siginfo, void *context);
 
 static struct itimerval itimer;
 
-static unsigned long sample_period = 0L;
-static unsigned long seconds = 0L;
-static unsigned long microseconds = 0L;
-
 // ******* METHOD DEFINITIONS ***********
 
 static void
 METHOD_FN(init)
 {
-  ; // no init necessary for itimer
+  self->state = INIT; // no init necessary for itimer
 }
 
 static void
 METHOD_FN(start)
 {
   TMSG(ITIMER_CTL,"starting itimer");
-  int rv = setitimer(CSPROF_PROFILE_TIMER, &itimer, NULL);
+  setitimer(CSPROF_PROFILE_TIMER, &itimer, NULL);
+  self->state = START;
+  // int rv = setitimer(CSPROF_PROFILE_TIMER, &itimer, NULL);
   // return rv
 }
 
@@ -94,6 +93,7 @@ METHOD_FN(stop)
   timerclear(&itimer.it_interval);
   rc = setitimer(CSPROF_PROFILE_TIMER, &itimer, NULL);
   TMSG(ITIMER_CTL,"stopping itimer");
+  self->state = STOP;
   // return rc;
 }
 
@@ -101,6 +101,7 @@ static void
 METHOD_FN(shutdown)
 {
   METHOD_CALL(self,stop); // make sure stop has been called
+  self->state = UNINIT;
 }
 
 static int
@@ -132,7 +133,7 @@ METHOD_FN(process_event_list)
   int microseconds = period % 1000000;
 
   TMSG(OPTIONS,"init timer w sample_period = %ld, seconds = %ld, usec = %ld",
-       sample_period, seconds, microseconds);
+       period, seconds, microseconds);
 
   /* signal once after the given delay */
   itimer.it_value.tv_sec = seconds;
@@ -150,7 +151,10 @@ METHOD_FN(gen_event_set,int lush_metrics)
   int ret = csprof_set_max_metrics(1 + lush_metrics);
   
   if (ret > 0) {
-    int metric_id = csprof_new_metric(); 
+    long sample_period = self->evl.events[0].thresh;
+
+    int metric_id = csprof_new_metric();
+    TMSG(ITIMER_CTL,"setting metric id = %d,period = %ld",metric_id,sample_period);
     csprof_set_metric_info_and_period(metric_id, "WALLCLOCK (ms)",
 				      HPCFILE_METRIC_FLAG_ASYNC,
 				      sample_period);
@@ -167,6 +171,8 @@ METHOD_FN(gen_event_set,int lush_metrics)
 					sample_period);
     }
   }
+  thread_data_t *td = csprof_get_thread_data();
+  td->eventSet[self->evset_idx] = 0xDEAD; // Event sets not relevant for itimer
 
   monitor_sigaction(CSPROF_PROFILE_SIGNAL, &csprof_itimer_signal_handler, 0, NULL);
 }
@@ -178,9 +184,10 @@ METHOD_FN(gen_event_set,int lush_metrics)
 sample_source_t _itimer_obj = {
   // common methods
 
-  .add_event   = csprof_ss_add_event,
-  .store_event = csprof_ss_store_event,
+  .add_event     = csprof_ss_add_event,
+  .store_event   = csprof_ss_store_event,
   .get_event_str = csprof_ss_get_event_str,
+  .started       = csprof_ss_started,
 
   // specific methods
 
@@ -198,18 +205,20 @@ sample_source_t _itimer_obj = {
     .nevents = 0
   },
   .evset_idx = 0,
-  .name = "itimer"
+  .name = "itimer",
+  .state = UNINIT
 };
 
 /******************************************************************************
  * constructor 
  *****************************************************************************/
-static void itimer_ss_register(void) __attribute__ ((constructor));
+static void itimer_obj_reg(void) __attribute__ ((constructor));
 
 static void
 itimer_obj_reg(void)
 {
   csprof_ss_register(&_itimer_obj);
+  METHOD_CALL(&_itimer_obj,init);
 }
 
 /******************************************************************************

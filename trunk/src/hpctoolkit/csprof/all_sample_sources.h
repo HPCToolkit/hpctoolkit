@@ -11,6 +11,7 @@ void csprof_all_sources_gen_event_set(int lush_metrics);
 void csprof_all_sources_start(void);
 void csprof_all_sources_stop(void);
 void csprof_all_sources_shutdown(void);
+int  csprof_all_sources_started(void);
 
 #define SAMPLE_SOURCES(op,...) csprof_all_sources_ ##op(__VA_ARGS__)
 

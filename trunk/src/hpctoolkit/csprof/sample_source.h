@@ -14,6 +14,13 @@
 #include "evlist.h"
 
 typedef enum {
+  UNINIT,
+  INIT,
+  START,
+  STOP
+} source_state_t;
+
+typedef enum {
   ITIMER,
   PAPI
 } sample_source_id_t;
@@ -24,6 +31,7 @@ typedef struct _obj_s {
   VMETHOD_DEF(add_event,const char *ev_str);
   VMETHOD_DEF(store_event,int event_id,long thresh);
   METHOD_DEF(char *,get_event_str);
+  METHOD_DEF(int,started);
 
   // specific methods
 
@@ -36,9 +44,10 @@ typedef struct _obj_s {
   VMETHOD_DEF(gen_event_set,int lush_agents);
 
   // data
-  evlist_t evl;       // event list
-  int      evset_idx; // index of sample source
-  char *   name;
+  evlist_t       evl;       // event list
+  int            evset_idx; // index of sample source
+  char *         name;      // text name of sample source
+  source_state_t state; // state of sample source: UNINIT,INIT, etc
   
 } sample_source_t;
 
