@@ -3,11 +3,22 @@
 #include "pmsg.h"
 #include "sample_source.h"
 
+int
+METHOD_FN(csprof_ss_started)
+{
+  NMSG(SS_COMMON,"check start for %s = %d",self->name,self->state);
+  return (self->state == START);
+}
+
 void
 METHOD_FN(csprof_ss_add_event,const char *ev)
 {
-  strcpy(self->evl.evl_spec,ev);
-  strcat(self->evl.evl_spec," ");
+  char *evl = self->evl.evl_spec;
+
+  NMSG(SS_COMMON,"add event %s to evl |%s|",ev,evl);
+  strcat(evl,ev);
+  strcat(evl," ");
+  NMSG(SS_COMMON,"evl after event added = |%s|",evl);
 }
 
 void

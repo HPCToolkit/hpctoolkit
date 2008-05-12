@@ -30,6 +30,7 @@ in_sources(sample_source_t *ss)
 static void
 add_source(sample_source_t *ss)
 {
+  NMSG(AS_add_source,"%s",ss->name);
   if (n_sources == MAX_SAMPLE_SOURCES){
     // check to see is ss already present
     if (! in_sources(ss)){
@@ -40,6 +41,7 @@ add_source(sample_source_t *ss)
   }
   sample_sources[n_sources] = ss;
   n_sources++;
+  NMSG(AS_add_source,"# sources now = %d",n_sources);
 }
 
 #define _AS0(n) \
@@ -60,6 +62,20 @@ csprof_all_sources_ ##n(t arg)                                \
   }                                                           \
 }
 
+#define _ASB(n) \
+int                                                \
+csprof_all_sources_ ##n(void)                      \
+{                                                  \
+  NMSG(AS_ ##n,"checking %d sources",n_sources);   \
+  for(int i=0;i < n_sources;i++) {                 \
+    if (! METHOD_CALL(sample_sources[i],n)) {      \
+      NMSG(AS_ ##n,"%s not started",sample_sources[i]->name); \
+      return 0;                                    \
+    }                                              \
+  }                                                \
+  return 1;                                        \
+}
+
 // The mapped operations
 
 _AS0(process_event_list)
@@ -68,6 +84,7 @@ _AS1(gen_event_set,int,lush_metrics)
 _AS0(start)
 _AS0(stop)
 _AS0(shutdown)
+_ASB(started)
 
 void
 csprof_sample_sources_from_eventlist(char *evl)

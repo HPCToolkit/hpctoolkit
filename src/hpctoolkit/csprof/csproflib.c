@@ -123,8 +123,6 @@ long static_epoch_size;
 // process level setup (assumes pthreads not started yet)
 //
 
-static int evs;
-
 int lush_metrics = 0; // FIXME: global variable for now
 
 void
@@ -157,7 +155,6 @@ csprof_init_internal(void)
 
   dl_init();
 
-
   // Initialize LUSH agents
   if (opts.lush_agent_paths[0] != '\0') {
     csprof_state_t* state = TD_GET(state);
@@ -177,7 +174,7 @@ csprof_init_internal(void)
 
   // sample source setup
 
-  SAMPLE_SOURCES(init);
+  // SAMPLE_SOURCES(init); // Now done at constructor time
   SAMPLE_SOURCES(process_event_list);
   SAMPLE_SOURCES(gen_event_set,lush_metrics);
   SAMPLE_SOURCES(start);
@@ -398,7 +395,7 @@ csprof_fini_internal(void)
       lush_agent_pool__fini(lush_agents);
     }
 
-    EMSG("host %ld: %d samples total, %d samples filtered, %d samples dropped (%d segvs)\n",
+    AMSG("host %ld: %d samples total, %d samples filtered, %d samples dropped (%d segvs)\n",
 	 gethostid(), samples_taken, filtered_samples, bad_unwind_count, segv_count);
 
     pmsg_fini();
@@ -516,7 +513,15 @@ int csprof_write_profile_data(csprof_state_t *state){
 
   /* Open file for writing; fail if the file already exists. */
   fs = hpcfile_open_for_write(fnm, /* overwrite */ 0);
-  ret1 = hpcfile_csprof_write(fs, csprof_get_metric_data());
+
+  hpcfile_csprof_data_t *tmp = csprof_get_metric_data();
+  NMSG(DATA_WRITE,"metric data target = %s",tmp->target);
+  NMSG(DATA_WRITE,"metric data num metrics = %d",tmp->num_metrics);
+  hpcfile_csprof_metric_t *tmp1 = tmp->metrics;
+  for (int i=0;i<tmp->num_metrics;i++,tmp1++){
+    NMSG(DATA_WRITE,"--metric %s period = %ld",tmp1->metric_name,tmp1->sample_period);
+  }
+  ret1 = hpcfile_csprof_write(fs, tmp);
 
   MSG(CSPROF_MSG_DATAFILE, "Done writing metric data");
 

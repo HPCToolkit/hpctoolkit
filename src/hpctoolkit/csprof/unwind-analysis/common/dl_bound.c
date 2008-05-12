@@ -34,6 +34,7 @@
 #include "unlink.h"
 #include "executable-path.h"
 #include "loadmod.h"
+#include "fnbounds_dynamic_server.h"
 
 /******************************************************************************
  * local types
@@ -66,10 +67,11 @@ static dl_record_t *dl_compute(const char *filename, void *start, void *end);
 
 void dl_add_module_base(const char *module_name, void *start, void *end);
 
+#if 0
 // FIXME: this should come from monitor
 static int
 monitor_real_system(const char *command);
-
+#endif
 
 
 /******************************************************************************
@@ -262,7 +264,9 @@ dl_compute(const char *filename, void *start, void *end)
     char dlname[MAXPATHLEN];
     char redir[64] = {'\0'};
 
-    IF_NOT_DISABLED(DL_BOUND_REDIR) {
+    //    IF_NOT_DISABLED(DL_BOUND_REDIR) {
+    if (1) {
+      TMSG(DL_BOUND,"redirecting csprof_syms output");
       int logfile_fd = csprof_logfile_fd();
       sprintf(redir,"1>&%d 2>&%d",logfile_fd,logfile_fd);
     }
@@ -274,7 +278,8 @@ dl_compute(const char *filename, void *start, void *end)
     sprintf(command, "%s %s %s %s %s\n", nm_command, filename, mytmpdir, script_debug, redir);
     TMSG(DL_BOUND,"system command = %s",command);
     {
-      monitor_real_system(command); 
+      //      monitor_real_system(command); 
+      fnbounds_dynamic_server_execute_command(command);
       int nsymbols = 0; // default is that there are no symbols
       int relocate = 0; // default is no relocation
       int addmapping = 0; // default is omit
@@ -311,6 +316,7 @@ dl_compute(const char *filename, void *start, void *end)
 }
 
 
+#if 0
 // FIXME: this should be in monitor and it should not have the side
 // effect of unsetting LD_PRELOAD
 static int
@@ -319,6 +325,7 @@ monitor_real_system(const char *command)
   unsetenv("LD_PRELOAD");
   return system(command);
 }
+#endif
 
 /******************************************************************************
  * debugging support

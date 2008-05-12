@@ -26,7 +26,7 @@ csprof_atomic_decrement(volatile long *addr)
 static inline long
 csprof_atomic_swap_l(volatile long *addr, long new)
 {
-    long old = fetch_and_store(adr, new);
+    long old = fetch_and_store(addr, new);
     return old;
 }
 

@@ -163,7 +163,7 @@ hpcfile_objs := $(addsuffix .o,$(addprefix hpcfile_,general cstree csprof))
 # library in the proper order and for correct functioning of the profiler
 OBJS := first_func.o
 ifndef STATIC_ONLY
-   OBJS += libmonitor_upcalls.o
+   OBJS += fnbounds_dynamic_server.o libmonitor_upcalls.o
 else
    OBJS += static_mon_ovr.o
 endif
@@ -203,7 +203,8 @@ endif
 OBJS += all_sample_sources.o \
         registered_sample_sources.o \
         common.sample_source.o \
-        itimer.sample_source.o
+        itimer.sample_source.o \
+        papi.sample_source.o
 OBJS += state.o env.o data.o dump_backtraces.o segv_handler.o
 OBJS += pmsg.o
 OBJS += nm_bound.o

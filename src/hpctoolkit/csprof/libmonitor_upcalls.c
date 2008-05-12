@@ -25,6 +25,7 @@
 #include "name.h"
 #include "epoch.h"
 #include "dl_bound.h"
+#include "fnbounds_dynamic_server.h"
 #include "structs.h"
 #include "sample_event.h"
 #include "csprof_monitor_callbacks.h"
@@ -62,10 +63,11 @@ monitor_init_process(int *argc, char **argv, void *data)
   if (getenv("CSPROF_WAIT")){
     while(DEBUGGER_WAIT);
   }
-  csprof_init_sample_source_registration();
   csprof_set_executable_name(process_name);
   pmsg_init(process_name);
   NMSG(PROCESS,"init");
+
+  fnbounds_init();
   csprof_init_internal();
   return data;
 }
@@ -79,8 +81,11 @@ monitor_pre_fork(void)
 {
   NMSG(PRE_FORK,"pre_fork call");
 
-  SAMPLE_SOURCES(stop);
-  SAMPLE_SOURCES(shutdown);
+  if ((! csprof_child_process) && SAMPLE_SOURCES(started)) {
+    NMSG(PRE_FORK,"sources shutdown");
+    SAMPLE_SOURCES(stop);
+    SAMPLE_SOURCES(shutdown);
+  }
 
   NMSG(PRE_FORK,"finished pre_fork call");
 
@@ -92,10 +97,13 @@ monitor_post_fork(pid_t child, void *data)
 {
   NMSG(POST_FORK,"Post fork call");
 
-  SAMPLE_SOURCES(init);
-  SAMPLE_SOURCES(process_event_list);
-  SAMPLE_SOURCES(gen_event_set,0); // FIXME: pass lush_metrics here somehow
-  SAMPLE_SOURCES(start);
+  if ((! csprof_child_process) && (! SAMPLE_SOURCES(started))){
+    NMSG(POST_FORK,"sample sources re-init+re-start");
+    SAMPLE_SOURCES(init);
+    SAMPLE_SOURCES(process_event_list);
+    SAMPLE_SOURCES(gen_event_set,0); // FIXME: pass lush_metrics here somehow
+    SAMPLE_SOURCES(start);
+  }
 
   NMSG(POST_FORK,"Finished post fork");
 }
@@ -105,6 +113,7 @@ void
 monitor_fini_process(int how, void *data)
 {
   csprof_fini_internal();
+  fnbounds_fini();
 }
 
 
