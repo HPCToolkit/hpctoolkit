@@ -1105,7 +1105,7 @@ sub findMetricsForHPCRUN
   my ($proffile) = @_;
   
   my $hpcprofEventRE = '(\w+):\d+ - .*';
-  my $hpcprofCmd = "${RealBin}/hpcprof foo $proffile";
+  my $hpcprofCmd = "${RealBin}/hpcproftt foo $proffile";
 
   my $metrics = [ ];
   
