@@ -109,7 +109,7 @@ Driver::AddReplacePath(const char* inPath, const char* outPath)
   // If we need to add a '/' to the in path, then add one to the out
   // path, too because when is time to replace we don't know if we
   // added one or not to the IN path.
-  if (strlen(inPath)>0 && inPath[strlen(inPath)-1] != '/') {
+  if (strlen(inPath) > 0 && inPath[strlen(inPath)-1] != '/') {
     replaceInPath.push_back(string(inPath) + '/');
     replaceOutPath.push_back(string(outPath) + '/');
   }
