@@ -51,7 +51,7 @@ read_string(FILE *fp, std::string& str);
 
 ProfFile::ProfFile()
 {
-  mtime_ = 0;
+  m_mtime = 0;
 }
 
 
@@ -65,14 +65,14 @@ ProfFile::read(const string &filename)
 {
   FILE *fp;
 
-  mtime_ = 0;
+  m_mtime = 0;
 
   struct stat statbuf;
   if (stat(filename.c_str(), &statbuf)) {
     FLATPROF_Throw("Cannot stat file.");
   }
-  name_ = filename;
-  mtime_ = statbuf.st_mtime;
+  m_name = filename;
+  m_mtime = statbuf.st_mtime;
 
   fp = fopen(filename.c_str(), "r");
   if (!fp) {
@@ -122,9 +122,9 @@ ProfFile::read(const string &filename)
     FLATPROF_Throw("Error reading <loadmodule_list>.");
   }
   
-  lmvec_.resize(count);
+  m_lmvec.resize(count);
   for (uint i = 0; i < count; ++i) {
-    lmvec_[i].read(fp);
+    m_lmvec[i].read(fp);
   }
 
   fclose(fp);
@@ -138,7 +138,7 @@ ProfFile::dump(std::ostream& o, const char* pre) const
   string p1 = p + "  ";
 
   o << p << "--- ProfFile Dump ---" << endl;
-  o << p << "{ ProfFile: " << name_ << ", modtime: " << mtime_ << " }" 
+  o << p << "{ ProfFile: " << m_name << ", modtime: " << m_mtime << " }" 
     << endl;
 
   for (uint i = 0; i < num_load_modules(); ++i) {
@@ -167,17 +167,17 @@ ProfFileLM::read(FILE *fp)
   size_t sz;
   
   // <loadmodule_name>, <loadmodule_loadoffset>
-  if (read_string(fp, name_) != 0) { 
+  if (read_string(fp, m_name) != 0) { 
     FLATPROF_Throw("Error reading <loadmodule_name>.");
   }
   
-  sz = hpc_fread_le8(&load_addr_, fp);
-  if (sz != sizeof(load_addr_)) { 
+  sz = hpc_fread_le8(&m_load_addr, fp);
+  if (sz != sizeof(m_load_addr)) { 
     FLATPROF_Throw("Error reading <loadmodule_loadoffset>.");
   }
 
-  DIAG_Msg(5, "Reading: " << name_ << " loaded at 0x" 
-	   << hex << load_addr_ << dec);
+  DIAG_Msg(5, "Reading: " << m_name << " loaded at 0x" 
+	   << hex << m_load_addr << dec);
   
   // <loadmodule_eventcount>
   uint count = 1;
@@ -189,7 +189,7 @@ ProfFileLM::read(FILE *fp)
   
   // Event data
   for (uint i = 0; i < count; ++i) {
-    eventvec_[i].read(fp, load_addr_);
+    eventvec_[i].read(fp, m_load_addr);
   }
 }
 
@@ -200,8 +200,8 @@ ProfFileLM::dump(std::ostream& o, const char* pre) const
   string p = pre;
   string p1 = p + "  ";
 
-  o << p << "{ ProfFileLM: " << name_ << ", loadAddr: 0x" << hex 
-    << load_addr_ << dec << " }" << endl;
+  o << p << "{ ProfFileLM: " << m_name << ", loadAddr: 0x" << hex 
+    << m_load_addr << dec << " }" << endl;
   
   for (uint i = 0; i < num_events(); ++i) {
     const ProfFileEvent& profevent = event(i);
@@ -229,15 +229,15 @@ ProfFileEvent::read(FILE *fp, uint64_t load_addr)
   size_t sz;
   
   // <event_x_name> <event_x_description> <event_x_period>
-  if (read_string(fp, name_) != 0) { 
+  if (read_string(fp, m_name) != 0) { 
     FLATPROF_Throw("Error reading <event_x_name>.");
   }
-  if (read_string(fp, desc_) != 0) { 
+  if (read_string(fp, m_desc) != 0) { 
     FLATPROF_Throw("Error reading <event_x_description>.");
   }
   
-  sz = hpc_fread_le8(&period_, fp);
-  if (sz != sizeof(period_)) { 
+  sz = hpc_fread_le8(&m_period, fp);
+  if (sz != sizeof(m_period)) { 
     FLATPROF_Throw("Error reading <event_x_period>.");
   }
   
@@ -254,7 +254,7 @@ ProfFileEvent::read(FILE *fp, uint64_t load_addr)
   }
   dat_.resize(ndat);
 
-  DIAG_Msg(6, "  Event: " << name_ << ": " << ndat << " entries (cnt,offset)");
+  DIAG_Msg(6, "  Event: " << m_name << ": " << ndat << " entries (cnt,offset)");
 
   // <histogram_non_zero_bucket_x_value> 
   // <histogram_non_zero_bucket_x_offset>
