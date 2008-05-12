@@ -101,7 +101,7 @@ void
 Driver::AddReplacePath(const char* inPath, const char* outPath)
 {
   // Assumes error and warning check has been performed
-  // (cf. HPCViewDocParser)
+  // (cf. ConfigParser)
 
   // Add a '/' at the end of the in path; it's good when testing for
   // equality, to make sure that the last directory in the path is not

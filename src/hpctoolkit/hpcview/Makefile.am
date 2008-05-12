@@ -65,10 +65,10 @@ MYSOURCES = \
 	main.cpp \
 	Args.hpp Args.cpp \
 	Driver.hpp Driver.cpp \
-	HPCViewDocParser.hpp HPCViewDocParser.cpp \
+	ConfigParser.hpp ConfigParser.cpp \
 	\
-	DerivedPerfMetrics.hpp DerivedPerfMetrics.cpp \
-	MathMLExpr.hpp MathMLExpr.cpp
+	MathMLExprParser.hpp MathMLExprParser.cpp \
+	DerivedPerfMetrics.hpp DerivedPerfMetrics.cpp
 
 # GNU binutils flags are needed for HPC_LIBISA.
 MYCFLAGS   = @HOST_CFLAGS@   $(HPC_IFLAGS) @GNUBINUTILS_IFLAGS@

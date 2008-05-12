@@ -63,7 +63,7 @@ using namespace std; // For compatibility with non-std C headers
 #include "Args.hpp"
 #include "Driver.hpp"
 
-#include "HPCViewDocParser.hpp"
+#include "ConfigParser.hpp"
 
 #include <lib/prof-juicy-x/XercesUtil.hpp>
 #include <lib/prof-juicy-x/XercesErrorHandler.hpp>
@@ -167,7 +167,7 @@ realmain(int argc, char* const* argv)
   
   try {
     XercesErrorHandler errHndlr(cfgFile, tmpFile, NUM_PREFIX_LINES, true);
-    HPCViewDocParser parser(tmpFile, errHndlr);
+    ConfigParser parser(tmpFile, errHndlr);
     parser.pass1(driver); // FIXME: merge into one pass
     parser.pass2(driver);
   }
@@ -176,7 +176,7 @@ realmain(int argc, char* const* argv)
     //DIAG_EMsg(XMLString::transcode(x.getMessage()));
     exit(1);
   }
-  catch (const HPCViewDocException& x) {
+  catch (const ConfigParserException& x) {
     unlink(tmpFile.c_str());
     DIAG_EMsg(x.message());
     exit(1);

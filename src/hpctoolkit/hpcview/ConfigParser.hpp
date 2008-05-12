@@ -35,8 +35,8 @@
 // 
 // ******************************************************* EndRiceCopyright *
 
-#ifndef HPCViewDocParser_h
-#define HPCViewDocParser_h
+#ifndef ConfigParser_hpp
+#define ConfigParser_hpp
 
 //************************ System Include Files ******************************
 
@@ -62,12 +62,11 @@ class Driver;
 
 //****************************************************************************
 
-class HPCViewDocParser {
+class ConfigParser {
 public:
-  HPCViewDocParser(const std::string& inputFile, 
-		   XercesErrorHandler &errHndlr);
+  ConfigParser(const std::string& inputFile, XercesErrorHandler &errHndlr);
   
-  ~HPCViewDocParser();
+  ~ConfigParser();
 
   void pass1(Driver& driver);
   void pass2(Driver& driver);
@@ -82,21 +81,21 @@ private:
 // 
 //***************************************************************************
 
-#define HPCViewDoc_Throw(streamArgs) DIAG_ThrowX(HPCViewDocException, streamArgs)
+#define ConfigParser_Throw(streamArgs) DIAG_ThrowX(ConfigParserException, streamArgs)
 
-class HPCViewDocException : public Diagnostics::Exception {
+class ConfigParserException : public Diagnostics::Exception {
 public:
-  HPCViewDocException(const std::string x,
+  ConfigParserException(const std::string x,
 		      const char* filenm = NULL, unsigned int lineno = 0)
     : Diagnostics::Exception(x, filenm, lineno)
     { }
   
   virtual std::string message() const { 
-    return "CONFIGURATION file error [HPCViewDocException]: " + what();
+    return "CONFIGURATION file error [ConfigParserException]: " + what();
   }
 
 private:
 };
 
 
-#endif
+#endif /* ConfigParser_hpp */
