@@ -829,7 +829,7 @@ public:
   EventCursor(const Prof::Flat::LM& proflm, const binutils::LM& lm);
   ~EventCursor();
   
-  const vector<const Prof::Flat::Event*>& eventDescs() const { return m_eventDescs; }
+  const vector<const Prof::Flat::EventData*>& eventDescs() const { return m_eventDescs; }
   const vector<uint64_t>& eventTots() const { return m_eventTots; }
 
   // Assumptions:
@@ -868,7 +868,7 @@ private:
   bool m_doRelocate;
   VMA m_loadAddr;
 
-  vector<const Prof::Flat::Event*> m_eventDescs;
+  vector<const Prof::Flat::EventData*> m_eventDescs;
   vector<uint64_t> m_eventTots;
 
   vector<int> m_curEventIdx;
@@ -942,7 +942,7 @@ dump_object_lm(ostream& os, const Prof::Flat::LM& proflm, const binutils::LM& lm
 
 void
 dump_event_summary(ostream& os, 
-		   const vector<const Prof::Flat::Event*>& eventDescs,
+		   const vector<const Prof::Flat::EventData*>& eventDescs,
 		   const vector<uint64_t>& eventCnt,
 		   const vector<uint64_t>* eventTot);
 
@@ -998,7 +998,7 @@ dump_object_lm(ostream& os, const Prof::Flat::LM& proflm, const binutils::LM& lm
   os << std::setfill('=') << std::setw(77) << "=" << endl;
   os << "Load module: " << proflm.name() << endl;
 
-  const vector<const Prof::Flat::Event*>& eventDescs = eventCursor.eventDescs();
+  const vector<const Prof::Flat::EventData*>& eventDescs = eventCursor.eventDescs();
   const vector<uint64_t>& eventTots = eventCursor.eventTots();
   
   dump_event_summary(os, eventDescs, eventTots, NULL);
@@ -1087,7 +1087,7 @@ dump_object_lm(ostream& os, const Prof::Flat::LM& proflm, const binutils::LM& lm
 
 void
 dump_event_summary(ostream& os, 
-		   const vector<const Prof::Flat::Event*>& eventDescs,
+		   const vector<const Prof::Flat::EventData*>& eventDescs,
 		   const vector<uint64_t>& eventCnt,
 		   const vector<uint64_t>* eventTot)
 {
@@ -1095,10 +1095,11 @@ dump_event_summary(ostream& os,
      << "Columns correspond to the following events [event:period (events/sample)]\n";
 
   for (uint i = 0; i < eventDescs.size(); ++i) {
-    const Prof::Flat::Event& profevent = *(eventDescs[i]);
+    const Prof::Flat::EventData& profevent = *(eventDescs[i]);
     
-    os << "  " << profevent.name() << ":" << profevent.period() 
-       << " - " << profevent.description() 
+    const Prof::SampledMetricDesc& mdesc = profevent.mdesc();
+    os << "  " << mdesc.name() << ":" << mdesc.period() 
+       << " - " << mdesc.description() 
        << " (" << eventCnt[i] << " samples";
     
     if (eventTot) {
@@ -1156,13 +1157,13 @@ EventCursor::EventCursor(const Prof::Flat::LM& proflm, const binutils::LM& lm)
   // Find all events for load module and compute totals for each event
   // --------------------------------------------------------
   for (uint i = 0; i < proflm.num_events(); ++i) {
-    const Prof::Flat::Event& profevent = proflm.event(i);
+    const Prof::Flat::EventData& profevent = proflm.event(i);
     m_eventDescs.push_back(&profevent);
   }
 
   m_eventTots.resize(m_eventDescs.size());
   for (uint i = 0; i < m_eventDescs.size(); ++i) {
-    const Prof::Flat::Event& profevent = *(m_eventDescs[i]);
+    const Prof::Flat::EventData& profevent = *(m_eventDescs[i]);
     uint64_t& eventTotal = m_eventTots[i];
     eventTotal = 0;
 
@@ -1203,7 +1204,7 @@ EventCursor::computeEventCounts(const VMAInterval vmaint,
 
   // For each event, determine if a count exists at vma_beg
   for (uint i = 0; i < m_eventDescs.size(); ++i) {
-    const Prof::Flat::Event& profevent = *(m_eventDescs[i]);
+    const Prof::Flat::EventData& profevent = *(m_eventDescs[i]);
     
     // advance ith bucket until it arrives at vmaint region:
     //   (bucket overlaps beg_vma) || (bucket is beyond beg_vma)

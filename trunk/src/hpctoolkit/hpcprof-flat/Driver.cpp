@@ -324,8 +324,8 @@ Driver::ScopeTreeInsertHPCRUNData(PgmScopeTree& scopes,
       FilePerfMetric* m = *it;
       uint mIdx = (uint)StrUtil::toUInt64(m->NativeName());
       
-      const Prof::Flat::Event& profevent = proflm->event(mIdx);
-      uint64_t period = profevent.period();
+      const Prof::Flat::EventData& profevent = proflm->event(mIdx);
+      unsigned long period = profevent.mdesc().period();
       double mval = 0.0;
       double mval_nostruct = 0.0;
 
