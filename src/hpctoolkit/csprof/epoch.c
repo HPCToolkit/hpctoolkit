@@ -106,8 +106,7 @@ csprof_epoch_new()
 
   memset(e, 0, sizeof(*e));
 
-  /* initialize the modules list */
-  csprof_epoch_get_loaded_modules(e, current_epoch);
+  e->loaded_modules = NULL;
 
   /* make sure everything is up-to-date before setting the
      current_epoch */
