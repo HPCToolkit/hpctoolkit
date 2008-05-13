@@ -173,7 +173,7 @@ writeCSProfile(CSProfile* prof, std::ostream& os, bool prettyPrint)
 //****************************************************************************
 
 CSProfile* 
-ReadProfile_CSPROF(const char* fnm, const char *execnm) 
+ReadProfile_CSPROF(const char* fnm) 
 {
   hpcfile_csprof_data_t metadata;
   int ret;
@@ -236,7 +236,7 @@ ReadProfile_CSPROF(const char* fnm, const char *execnm)
   epochmdlist->SortLoadmoduleByVMA(); 
 
   // Extract profiling info
-  prof->name(execnm); 
+  prof->name("[Profile Name]"); 
   
   // Extract metrics
   for (int i = 0; i < num_metrics; i++) {

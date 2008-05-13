@@ -70,7 +70,7 @@
 
 //*************************** Forward Declarations ***************************
 
-CSProfile* ReadProfile_CSPROF(const char* fnm, const char *execnm);
+CSProfile* ReadProfile_CSPROF(const char* fnm);
 void DumpProfile_CSPROF(const char* fnm);
 
 //****************************************************************************

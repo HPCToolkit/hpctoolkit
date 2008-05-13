@@ -104,7 +104,7 @@ public:
   bool dumpProfiles; // default: false
   
   // Parsed Data: arguments
-  std::string exeFile; // executable that was profiled
+  //std::string exeFile; // executable that was profiled
   std::vector<std::string> profileFiles; // profiling output for 'exeFile'
 
 private:
