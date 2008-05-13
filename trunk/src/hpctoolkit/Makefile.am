@@ -64,7 +64,6 @@ SUBDIRS = \
 	hpcprof \
 	hpcprof-flat \
 	hpcproftt \
-	hpcquick \
 	\
 	hpclump \
 	\

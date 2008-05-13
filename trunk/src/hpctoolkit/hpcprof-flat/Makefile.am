@@ -61,6 +61,9 @@ include $(top_srcdir)/src/Makeinclude.config
 # Local settings
 #############################################################################
 
+MYSCRIPTS = \
+        hpcquick
+
 MYSOURCES = \
 	main.cpp \
 	Args.hpp Args.cpp \
@@ -89,7 +92,8 @@ MYCLEAN = @HOST_LIBTREPOSITORY@
 # Automake rules
 #############################################################################
 
-bin_SCRIPTS = hpcview
+bin_SCRIPTS = hpcprof-flat \
+	      hpcquick
 
 bin_PROGRAMS = hpcprof-flat-bin
 

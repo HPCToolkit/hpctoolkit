@@ -89,8 +89,8 @@ static const char* usage_summary =
 static const char* usage_details = "\
 hpcprof-flat correlates dynamic profiling metrics with static source code\n\
 structure and (by default) generates an Experiment database for use with\n\
-hpcprof-flater. hpcprof-flat is driven by the configuration file <config-file>, which\n\
-among other things, may contain user defined derived metrics.\n\
+hpcviewer. hpcprof-flat is driven by the configuration file <config-file>,\n\
+which among other things, may contain user defined derived metrics.\n\
 \n\
 Options: General:\n\
   -v, --verbose [<n>]  Verbose: generate progress messages to stderr at\n\
