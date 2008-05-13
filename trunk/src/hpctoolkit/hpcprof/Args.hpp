@@ -48,8 +48,8 @@
 //
 //***************************************************************************
 
-#ifndef Args_h
-#define Args_h
+#ifndef Args_hpp
+#define Args_hpp
 
 //************************* System Include Files ****************************
 
@@ -115,4 +115,4 @@ private:
   CmdLineParser parser;
 }; 
 
-#endif
+#endif // Args_hpp 

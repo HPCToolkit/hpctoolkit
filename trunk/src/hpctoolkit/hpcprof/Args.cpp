@@ -72,15 +72,15 @@ using std::string;
 
 //*************************** Forward Declarations **************************
 
+// Cf. DIAG_Die.
+#define ARG_ERROR(streamArgs)                                        \
+  { std::ostringstream WeIrDnAmE;                                    \
+    WeIrDnAmE << streamArgs /*<< std::ends*/;                        \
+    printError(std::cerr, WeIrDnAmE.str());                          \
+    exit(1); }
+
 #define EXPERIMENTDB  "experiment-db"
 #define EXPERIMENTXML "experiment.xml"
-
-// FIXME
-#ifndef xDEBUG
-#define xDEBUG(flag, code) {if (flag) {code; fflush(stdout); fflush(stderr);}} 
-#endif
-
-#define DEB_PROCESS_ARGUMENTS 0
 
 //***************************************************************************
 
@@ -214,7 +214,7 @@ Args::printError(std::ostream& os, const std::string& msg) const
 const std::string& 
 Args::getCmd() const
 { 
-  // avoid error messages with: /.../HPCToolkit-x86_64-Linux/bin/hpcprof-bin
+  // avoid error messages with: .../bin/hpcprof-bin
   static string cmd = "hpcprof";
   return cmd; // parser.GetCmd(); 
 }
@@ -251,9 +251,7 @@ Args::Parse(int argc, const char* const argv[])
       printVersion(std::cerr);
       exit(1);
     }
-
-    // Check for other options:
-    if (parser.IsOpt("verbose")) { 
+    if (parser.IsOpt("verbose")) {
       int verb = 1;
       if (parser.IsOptArg("verbose")) {
 	const string& arg = parser.GetOptArg("verbose");
@@ -288,8 +286,7 @@ Args::Parse(int argc, const char* const argv[])
 
     // Check for required arguments
     if ( !(parser.GetNumArgs() >= 2) ) {
-      printError(std::cerr, "Incorrect number of arguments!");
-      exit(1);
+      ARG_ERROR("Incorrect number of arguments!");
     }
 
     exeFile = parser.GetArg(0);
@@ -298,8 +295,7 @@ Args::Parse(int argc, const char* const argv[])
     }
   }
   catch (const CmdLineParser::ParseError& x) {
-    printError(std::cerr, x.what());
-    exit(1);
+    ARG_ERROR(x.what());
   }
   catch (const CmdLineParser::Exception& x) {
     DIAG_EMsg(x.message());
