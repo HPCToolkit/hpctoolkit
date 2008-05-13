@@ -51,7 +51,7 @@ read_string(FILE *fp, std::string& str);
 //***************************************************************************
 
 Prof::Flat::Profile::Profile()
-  : m_mtime(0), m_fs(NULL)
+  : m_fs(NULL)
 {
 }
 
@@ -62,6 +62,10 @@ Prof::Flat::Profile::~Profile()
     const Prof::Flat::LM* proflm = it->second;
     delete proflm;
   }
+  for (SampledMetricDescVec::iterator it = m_mdescs.begin();
+       it != m_mdescs.end(); ++it) {
+    delete (*it);
+  }
 }
 
 
@@ -71,55 +75,147 @@ Prof::Flat::Profile::open(const char* filename)
 {
   DIAG_Assert(Logic::implies(!m_name.empty(), m_name.c_str() == filename), "Cannot open a different file!");
 
-  // -------------------------------------------------------
   // Open file
-  // -------------------------------------------------------
+  m_fs = Profile::fopen(filename);
+  m_name = filename;  
 
+  // Gather metrics
+  read_metrics();
+  fseek(m_fs, 0L, SEEK_SET); // rewind
+}
+
+
+void
+Prof::Flat::Profile::read(const char* filename)
+{
+  // Open file
+  m_fs = Profile::fopen(filename);
+  m_name = filename;  
+
+  // Read it
+  read();
+
+  // Gather metrics
+  iterator it = begin();
+  mdescs(it->second);
+}
+
+
+void
+Prof::Flat::Profile::read()
+{
+  // INVARIANT: at least one LM must exist in a profile.
+
+  DIAG_Assert(m_fs, "No open file stream!");
+
+  // -------------------------------------------------------
+  // <header>
+  // -------------------------------------------------------
+  read_header(m_fs);
+
+  // -------------------------------------------------------
+  // <loadmodule_list>
+  // -------------------------------------------------------
+  uint count = read_lm_count(m_fs);
+  DIAG_Assert(count > 0, "At least one LM must exist in a profile!");
+  
+  for (uint i = 0; i < count; ++i) {
+    Prof::Flat::LM* proflm = new Prof::Flat::LM();
+    proflm->read(m_fs);
+    pair<iterator,bool> ret = insert(make_pair(proflm->name(), proflm));
+    // FIXME: must merge if duplicate is found
+    DIAG_Assert(ret.second, "Load module already exists:" << proflm->name());
+  }
+
+  fclose(m_fs);
+  m_fs = NULL;
+}
+
+
+void
+Prof::Flat::Profile::read_metrics()
+{
+  // ASSUMES: Each LM has the *same* set of metrics
+
+  DIAG_Assert(m_fs, "No open file stream!");
+
+  // -------------------------------------------------------
+  // <header>
+  // -------------------------------------------------------
+  read_header(m_fs);
+
+  // -------------------------------------------------------
+  // read one load module
+  // -------------------------------------------------------
+  uint count = read_lm_count(m_fs);
+  DIAG_Assert(count > 0, "At least one LM must exist in a profile!");
+
+  Prof::Flat::LM* proflm = new Prof::Flat::LM();
+  proflm->read(m_fs);
+
+  // -------------------------------------------------------
+  // gather metrics
+  // -------------------------------------------------------
+  mdescs(proflm);
+
+  delete proflm;
+}
+
+
+void
+Prof::Flat::Profile::mdescs(LM* proflm)
+{
+  // ASSUMES: Each LM has the *same* set of metrics
+
+  uint sz = proflm->num_events();
+
+  m_mdescs.resize(sz);
+
+  for (uint i = 0; i < sz; ++i) {
+    const Prof::Flat::EventData& profevent = proflm->event(i);
+    m_mdescs[i] = new SampledMetricDesc(profevent.mdesc());
+  }
+}
+
+
+FILE*
+Prof::Flat::Profile::fopen(const char* filename)
+{
   struct stat statbuf;
   int ret = stat(filename, &statbuf);
   if (ret != 0) {
     PROFFLAT_Throw("Cannot stat file:" << filename);
   }
 
-  m_name = filename;
-  m_mtime = statbuf.st_mtime;
-
-  m_fs = fopen(filename, "r");
-  if (!m_fs) {
+  FILE* fs = ::fopen(filename, "r");
+  if (!fs) {
     PROFFLAT_Throw("Cannot open file:" << filename);
   }
 
-  // -------------------------------------------------------
-  // Gather metrics
-  // -------------------------------------------------------
-  
+  return fs;
 }
 
-void
-Prof::Flat::Profile::read()
-{
-  DIAG_Assert(m_fs, "No open file stream!");
 
-  // -------------------------------------------------------
-  // <header>
-  // -------------------------------------------------------
+void
+Prof::Flat::Profile::read_header(FILE* fs)
+{
   char magic_str[HPCRUNFILE_MAGIC_STR_LEN];
   char version[HPCRUNFILE_VERSION_LEN];
   char endian;
   int c;
   size_t sz;
 
-  sz = fread((char*)magic_str, 1, HPCRUNFILE_MAGIC_STR_LEN, m_fs);
+  sz = fread((char*)magic_str, 1, HPCRUNFILE_MAGIC_STR_LEN, fs);
   if (sz != HPCRUNFILE_MAGIC_STR_LEN) { 
     PROFFLAT_Throw("Error reading <header>.");
   }
   
-  sz = fread((char*)version, 1, HPCRUNFILE_VERSION_LEN, m_fs);
+  sz = fread((char*)version, 1, HPCRUNFILE_VERSION_LEN, fs);
   if (sz != HPCRUNFILE_VERSION_LEN) { 
     PROFFLAT_Throw("Error reading <header>.");
   }
   
-  if ((c = fgetc(m_fs)) == EOF) { 
+  if ((c = fgetc(fs)) == EOF) { 
     PROFFLAT_Throw("Error reading <header>.");
   }
   endian = (char)c;
@@ -136,28 +232,20 @@ Prof::Flat::Profile::read()
   if (endian != HPCRUNFILE_ENDIAN) { 
     PROFFLAT_Throw("Error reading <header>: bad endianness.");
   }
+}
 
 
-  // -------------------------------------------------------
-  // <loadmodule_list>
-  // -------------------------------------------------------
+uint
+Prof::Flat::Profile::read_lm_count(FILE* fs)
+{
   uint32_t count;
 
-  sz = hpc_fread_le4(&count, m_fs);
+  size_t sz = hpc_fread_le4(&count, fs);
   if (sz != sizeof(count)) { 
     PROFFLAT_Throw("Error reading <loadmodule_list>.");
   }
   
-  for (uint i = 0; i < count; ++i) {
-    Prof::Flat::LM* proflm = new Prof::Flat::LM();
-    proflm->read(m_fs);
-    pair<iterator,bool> ret = insert(make_pair(proflm->name(), proflm));
-    // FIXME: must merge if duplicate is found
-    DIAG_Assert(ret.second, "Load module already exists:" << proflm->name());
-  }
-
-  fclose(m_fs);
-  m_fs = NULL;
+  return count;
 }
 
 
@@ -168,8 +256,7 @@ Prof::Flat::Profile::dump(std::ostream& o, const char* pre) const
   string p1 = p + "  ";
 
   o << p << "--- Profile Dump ---" << endl;
-  o << p << "{ Profile: " << m_name << ", modtime: " << m_mtime << " }" 
-    << endl;
+  o << p << "{ Profile: " << m_name << " }" << endl;
 
   for (const_iterator it = begin(); it != end(); ++it) {
     const Prof::Flat::LM* proflm = it->second;

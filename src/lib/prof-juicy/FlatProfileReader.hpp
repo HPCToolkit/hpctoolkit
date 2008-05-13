@@ -87,32 +87,29 @@ public:
   ~Profile();
   
   const std::string& name() const { return m_name; }
-  time_t mtime() const { return m_mtime; }
   
   // -------------------------------------------------------
   // LM: iterator, find/insert, etc
   // -------------------------------------------------------
-
   // use inherited std::map routines
-#if 0 // FIXME
-  // 0 based indexing
-  uint num_load_modules() const { return m_lmvec.size(); }
-  const LM& load_module(uint i) const { return m_lmvec[i]; }
-#endif
 
   // -------------------------------------------------------
   // Metrics
   // -------------------------------------------------------
-  
+  const SampledMetricDescVec& mdescs() { return m_mdescs; }
 
   // -------------------------------------------------------
   // open/read: Throws an exception on an error!
   // -------------------------------------------------------
-
+  // Two ways of using:
+  //   1. open(...): opens file and read metrics only
+  //      read(): reads file
+  //   2. read(...): open and reads file
+  
   void open(const char* filename);
   void read();
-  
-
+  void read(const char* filename);
+ 
   // -------------------------------------------------------
   // 
   // -------------------------------------------------------
@@ -123,11 +120,17 @@ private:
   Profile(const Profile& x);
   Profile& operator=(const Profile& x) { return *this; }
 
+  void read_metrics();
+  void mdescs(LM* proflm);
+
+  static FILE* fopen(const char* filename);
+  static void read_header(FILE* fs);
+  static uint read_lm_count(FILE* fs);
+
 private:
   std::string m_name;
-  time_t m_mtime;
+  SampledMetricDescVec m_mdescs;
 
-  std::vector<LM*> m_lmvec; // load modules
   // temporary data
   FILE* m_fs;
 };
