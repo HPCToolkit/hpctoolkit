@@ -62,9 +62,9 @@ AUTOMAKE_OPTIONS = foreign
 SUBDIRS = \
 	hpcstruct \
 	hpcprof \
+	hpcprof-flat \
 	hpcproftt \
 	hpcquick \
-	hpcview \
 	\
 	hpclump \
 	\

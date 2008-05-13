@@ -823,7 +823,7 @@ sub genHPCViewDB
   }
   
   # run hpcview
-  my $cmd = "${RealBin}/hpcview -o $outputdb $cfgFnm";
+  my $cmd = "${RealBin}/hpcprof-flat -o $outputdb $cfgFnm";
   print STDOUT "  $cmd\n";
   print {$logFhndl} "$cmd\n";
   

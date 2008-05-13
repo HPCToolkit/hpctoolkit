@@ -87,9 +87,9 @@ static const char* usage_summary =
 "[options] <config-file>\n";
 
 static const char* usage_details = "\
-hpcview correlates dynamic profiling metrics with static source code\n\
+hpcprof-flat correlates dynamic profiling metrics with static source code\n\
 structure and (by default) generates an Experiment database for use with\n\
-hpcviewer. hpcview is driven by the configuration file <config-file>, which\n\
+hpcprof-flater. hpcprof-flat is driven by the configuration file <config-file>, which\n\
 among other things, may contain user defined derived metrics.\n\
 \n\
 Options: General:\n\
@@ -248,8 +248,8 @@ Args::PrintError(std::ostream& os, const std::string& msg) const
 const std::string& 
 Args::GetCmd() const
 { 
-  // avoid error messages with: /.../HPCToolkit-x86_64-Linux/bin/hpcview-bin
-  static string cmd = "hpcview";
+  // avoid error messages with: .../bin/hpcprof-flat-bin
+  static string cmd = "hpcprof-flat";
   return cmd; // parser.GetCmd(); 
 }
 
