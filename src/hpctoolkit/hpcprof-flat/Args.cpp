@@ -69,14 +69,19 @@ using std::string;
 
 //*************************** Forward Declarations **************************
 
+// Cf. DIAG_Die.
+#define ARG_ERROR(streamArgs)                                        \
+  { std::ostringstream WeIrDnAmE;                                    \
+    WeIrDnAmE << streamArgs /*<< std::ends*/;                        \
+    printError(std::cerr, WeIrDnAmE.str());                          \
+    exit(1); }
+
 #define EXPERIMENTDB  "experiment-db"
 #define EXPERIMENTXML "experiment.xml"
 #define EXPERIMENTCSV "experiment.csv"
 #define EXPERIMENTTSV "experiment.tsv"
 
 //***************************************************************************
-
-int fileTrace = 0;
 
 const string Args::HPCTOOLKIT = "HPCTOOLKIT"; 
 
@@ -217,36 +222,36 @@ Args::~Args()
 
 
 void 
-Args::PrintVersion(std::ostream& os) const
+Args::printVersion(std::ostream& os) const
 {
-  os << GetCmd() << ": " << version_info << endl;
+  os << getCmd() << ": " << version_info << endl;
 }
 
 
 void 
-Args::PrintUsage(std::ostream& os) const
+Args::printUsage(std::ostream& os) const
 {
-  os << "Usage: " << GetCmd() << " " << usage_summary << endl
+  os << "Usage: " << getCmd() << " " << usage_summary << endl
      << usage_details << endl;
 } 
 
 
 void 
-Args::PrintError(std::ostream& os, const char* msg) const
+Args::printError(std::ostream& os, const char* msg) const
 {
-  os << GetCmd() << ": " << msg << endl
-     << "Try `" << GetCmd() << " --help' for more information." << endl;
+  os << getCmd() << ": " << msg << endl
+     << "Try `" << getCmd() << " --help' for more information." << endl;
 }
 
 void 
-Args::PrintError(std::ostream& os, const std::string& msg) const
+Args::printError(std::ostream& os, const std::string& msg) const
 {
-  PrintError(os, msg.c_str());
+  printError(os, msg.c_str());
 }
 
 
 const std::string& 
-Args::GetCmd() const
+Args::getCmd() const
 { 
   // avoid error messages with: .../bin/hpcprof-flat-bin
   static string cmd = "hpcprof-flat";
@@ -278,16 +283,14 @@ Args::Parse(int argc, const char* const argv[])
       trace = dbg;
     }
     if (parser.IsOpt("help")) { 
-      PrintUsage(std::cerr); 
+      printUsage(std::cerr); 
       exit(1);
     }
     if (parser.IsOpt("version")) { 
-      PrintVersion(std::cerr);
+      printVersion(std::cerr);
       exit(1);
     }
-
-    // Check for other options:
-    if (parser.IsOpt("verbose")) { 
+    if (parser.IsOpt("verbose")) {
       int verb = 1;
       if (parser.IsOptArg("verbose")) {
 	const string& arg = parser.GetOptArg("verbose");
@@ -295,7 +298,7 @@ Args::Parse(int argc, const char* const argv[])
       }
       Diagnostics_SetDiagnosticFilterLevel(verb);
     }
-    
+
     // Check for other options: Output options
     if (parser.IsOpt("output")) {
       dbDir = parser.GetOptArg("output");
@@ -344,8 +347,7 @@ Args::Parse(int argc, const char* const argv[])
     
     // Check for required arguments
     if (parser.GetNumArgs() != 1) {
-      PrintError(std::cerr, "Incorrect number of arguments!");
-      exit(1);
+      ARG_ERROR("Incorrect number of arguments!");
     }
     configurationFile = parser.GetArg(0);
 
@@ -355,8 +357,7 @@ Args::Parse(int argc, const char* const argv[])
     //}
   }
   catch (const CmdLineParser::ParseError& x) {
-    PrintError(std::cerr, x.what());
-    exit(1);
+    ARG_ERROR(x.what());
   }
   catch (const CmdLineParser::Exception& x) {
     DIAG_EMsg(x.message());
@@ -366,9 +367,9 @@ Args::Parse(int argc, const char* const argv[])
 
 
 void 
-Args::Dump(std::ostream& os) const
+Args::dump(std::ostream& os) const
 {
-  os << "Args.cmd= " << GetCmd() << endl; 
+  os << "Args.cmd= " << getCmd() << endl; 
   os << "Args.hpcHome= " << hpcHome << endl; 
   os << "Args.dbDir= " << dbDir << endl; 
   os << "Args.OutFilename_XML= " << OutFilename_XML << endl; 
@@ -379,9 +380,9 @@ Args::Dump(std::ostream& os) const
 }
 
 void 
-Args::DDump() const
+Args::ddump() const
 {
-  Dump(std::cerr);
+  dump(std::cerr);
 }
 
 

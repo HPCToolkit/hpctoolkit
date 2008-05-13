@@ -151,11 +151,13 @@ Args::Args()
   Ctor();
 }
 
+
 Args::Args(int argc, const char* const argv[])
 {
   Ctor();
   Parse(argc, argv);
 }
+
 
 void
 Args::Ctor()
