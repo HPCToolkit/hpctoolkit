@@ -26,6 +26,7 @@
 //************************* System Include Files ****************************
 
 #include <vector>
+#include <map>
 #include <string>
 #include <utility>
 
@@ -38,8 +39,6 @@
 //*************************** User Include Files ****************************
 
 #include <include/general.h>
-
-#include "FlatProfileReader.hpp"
 
 #include <lib/isa/ISATypes.hpp>
 
@@ -59,6 +58,12 @@ public:
 private:
 };
 
+//***************************************************************************
+
+
+namespace Prof {
+namespace Flat {
+
 
 //***************************************************************************
 // Basic format for the hpcprof data file:
@@ -67,12 +72,72 @@ private:
 //   profiling data sets, one for each event/metric. (ProfileEvent).
 //***************************************************************************
 
-namespace Prof {
-namespace Flat {
+class LM;
 
+//---------------------------------------------------------------------------
+// Profile: represents flat profile information
+//   INVARIANT: a load module appears once
+//---------------------------------------------------------------------------
+
+class Profile : public std::map<std::string, LM*> {
+public:
+  Profile();
+  ~Profile();
+  
+  const std::string& name() const { return m_name; }
+  time_t mtime() const { return m_mtime; }
+  
+  // -------------------------------------------------------
+  // LM: iterator, find/insert, etc
+  // -------------------------------------------------------
+
+  // use inherited std::map routines
+#if 0 // FIXME
+  // 0 based indexing
+  uint num_load_modules() const { return m_lmvec.size(); }
+  const LM& load_module(uint i) const { return m_lmvec[i]; }
+#endif
+
+  // -------------------------------------------------------
+  // Metrics
+  // -------------------------------------------------------
+  
+
+  // -------------------------------------------------------
+  // open/read: Throws an exception on an error!
+  // -------------------------------------------------------
+
+  void open(const char* filename);
+  void read();
+  
+
+  // -------------------------------------------------------
+  // 
+  // -------------------------------------------------------
+  
+  void dump(std::ostream& o = std::cerr, const char* pre = "") const;
+
+private:
+  Profile(const Profile& x);
+  Profile& operator=(const Profile& x) { return *this; }
+
+private:
+  std::string m_name;
+  time_t m_mtime;
+
+  std::vector<LM*> m_lmvec; // load modules
+  // temporary data
+  FILE* m_fs;
+};
+
+
+//***************************************************************************
 
 // <VMA, count>
 typedef std::pair<VMA, uint32_t> Datum;
+
+//***************************************************************************
+
 
 // Event: contains the event name, profiling period and
 // profiling data for the event
@@ -80,9 +145,6 @@ class Event {
 public:
   Event();
   ~Event();
-  
-  // read: Throws an exception on an error!
-  void read(FILE*, uint64_t load_addr);
   
   const char* name() const { return m_name.c_str(); }
   const char* description() const { return m_desc.c_str(); }
@@ -98,6 +160,14 @@ public:
   // <VMA, count> where VMA is a *relocated* VMA
   const Datum& datum(uint i) const { return m_sparsevec[i]; }
   
+  // -------------------------------------------------------
+  // read: Throws an exception on an error!
+  // -------------------------------------------------------
+  void read(FILE*, uint64_t load_addr);
+  
+  // -------------------------------------------------------
+  // 
+  // -------------------------------------------------------
   void dump(std::ostream& o = std::cerr, const char* pre = "") const;
   
 private:
@@ -118,52 +188,31 @@ class LM {
 public:
   LM();
   ~LM();
-  
-  // read: Throws an exception on an error!
-  void read(FILE*);
-  
+
   const std::string& name() const { return m_name; }
   uint64_t load_addr() const { return m_load_addr; }
   
   // 0 based indexing
   uint num_events() const { return m_eventvec.size(); }
   const Event& event(uint i) const { return m_eventvec[i]; }
-  
+
+
+  // -------------------------------------------------------
+  // read: Throws an exception on an error!
+  // -------------------------------------------------------
+  void read(FILE*);
+
+  // -------------------------------------------------------
+  // 
+  // -------------------------------------------------------
   void dump(std::ostream& o = std::cerr, const char* pre = "") const;
   
 private:
-  std::string m_name;                    // module name
-  uint64_t m_load_addr;                  // load offset during runtime
+  std::string m_name;            // module name
+  uint64_t m_load_addr;          // load offset during runtime
   std::vector<Event> m_eventvec; // events
 };
 
-//***************************************************************************
-
-// Profile: Contains profilng information from one run of the profiler
-class Profile {
-public:
-  Profile();
-  ~Profile();
-  
-  Profile(const Profile& f) { DIAG_Die(DIAG_Unimplemented); }
-  
-  // read: Throws an exception on an error!
-  void read(const std::string& filename);
-  
-  const std::string& name() const { return m_name; }
-  time_t mtime() const { return m_mtime; }
-  
-  // 0 based indexing
-  uint num_load_modules() const { return m_lmvec.size(); }
-  const LM& load_module(uint i) const { return m_lmvec[i]; }
-  
-  void dump(std::ostream& o = std::cerr, const char* pre = "") const;
-
-private:
-  std::string m_name; 
-  time_t m_mtime;
-  std::vector<LM> m_lmvec; // load modules
-};
 
 //***************************************************************************
 // Exception
@@ -183,6 +232,8 @@ public:
 
 private:
 };
+
+//***************************************************************************
 
 } // namespace Flat
 } // namespace Prof

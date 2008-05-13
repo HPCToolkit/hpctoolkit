@@ -597,7 +597,7 @@ CSProfNode::findDynChild(lush_assoc_info_t as_info, VMA ip, lush_lip_t* lip)
 	&& child_dyn->ip_real() == ip
 	&& lush_lip_eq(child_dyn->lip(), lip)
 	&& lush_assoc_class_eq(child_dyn->assoc(), as) 
-	&& logic::implies(lush_assoc_info_is_root_note(as_info), 
+	&& Logic::implies(lush_assoc_info_is_root_note(as_info), 
 			  lush_assoc_info_is_root_note(child_dyn->assocInfo()))) {
       return child;
     }

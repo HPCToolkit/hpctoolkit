@@ -304,7 +304,8 @@ real_main(int argc, char *argv[])
   for (unsigned int i = 0; i < the_proffilenms.size(); ++i) {
     try {
       the_profiles[i] = new Prof::Flat::Profile();
-      the_profiles[i]->read(the_proffilenms[i]);
+      the_profiles[i]->open(the_proffilenms[i].c_str());
+      the_profiles[i]->read();
     }
     catch (...) {
       DIAG_EMsg("While reading '" << the_proffilenms[i] << "'");
@@ -959,22 +960,24 @@ dump_object(ostream& os,
   DIAG_Assert(profiles.size() > 0, DIAG_UnexpectedInput);
   
   const Prof::Flat::Profile* prof = profiles[0];
-  for (uint i = 0; i < prof->num_load_modules(); ++i) {
-    const Prof::Flat::LM& proflm = prof->load_module(i);
+
+  for (Prof::Flat::Profile::const_iterator it = prof->begin(); 
+       it != prof->end(); ++it) {
+    const Prof::Flat::LM* proflm = it->second;
     
     // 1. Open and read the load module
     binutils::LM* lm = NULL;
     try {
       lm = new binutils::LM();
-      lm->open(proflm.name().c_str());
+      lm->open(proflm->name().c_str());
       lm->read();
     } 
     catch (...) {
-      DIAG_EMsg("Exception encountered while reading " << proflm.name());
+      DIAG_EMsg("Exception encountered while reading " << proflm->name());
       throw;
     }
     
-    dump_object_lm(os, proflm, *lm);
+    dump_object_lm(os, *proflm, *lm);
 
     delete lm;
   }

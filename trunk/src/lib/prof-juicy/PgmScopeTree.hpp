@@ -423,11 +423,11 @@ public:
 
   void checkLineRange(SrcFile::ln begLn, SrcFile::ln endLn)
   {
-    DIAG_Assert(logic::equiv(begLn == ln_NULL, endLn == ln_NULL),
+    DIAG_Assert(Logic::equiv(begLn == ln_NULL, endLn == ln_NULL),
 		"CodeInfo::checkLineRange: b=" << begLn << " e=" << endLn);
     DIAG_Assert(begLn <= endLn, 
 		"CodeInfo::checkLineRange: b=" << begLn << " e=" << endLn);
-    DIAG_Assert(logic::equiv(m_begLn == ln_NULL, m_endLn == ln_NULL),
+    DIAG_Assert(Logic::equiv(m_begLn == ln_NULL, m_endLn == ln_NULL),
 		"CodeInfo::checkLineRange: b=" << m_begLn << " e=" << m_endLn);
   }
   

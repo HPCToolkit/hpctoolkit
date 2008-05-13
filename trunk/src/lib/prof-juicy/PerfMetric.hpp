@@ -162,7 +162,7 @@ private:
   bool display; 
   bool percent; 
   bool pcomputed; 
-  bool sortBy; 
+  bool sortBy;
   
 protected: 
   unsigned int perfInfoIndex; 

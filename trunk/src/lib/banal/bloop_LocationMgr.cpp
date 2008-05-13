@@ -431,7 +431,7 @@ LocationMgr::determineContext(CodeInfo* proposed_scope,
   const Ctxt* top_ctxt = topCtxt();
   const string& top_filenm = top_ctxt->fileName();
   const string& top_procnm = top_ctxt->ctxt()->name();
-  DIAG_Assert(logic::implies(proposed_ctxt != top_ctxt, top_ctxt->isAlien()),
+  DIAG_Assert(Logic::implies(proposed_ctxt != top_ctxt, top_ctxt->isAlien()),
 	      "Inconsistent context stack!");
   
   // -----------------------------------------------------
@@ -609,7 +609,7 @@ LocationMgr::fixScopeTree(CodeInfo* from_scope, CodeInfo* true_ctxt,
     //         cur2_scope               cur2_scope [bounds]
     //           ..                       ..
     //             cur1_scope               cur1_scope [bounds]
-    DIAG_Assert(logic::implies(cur_ctxt != true_ctxt, 
+    DIAG_Assert(Logic::implies(cur_ctxt != true_ctxt, 
 			       cur_ctxt->Type() == ScopeInfo::ALIEN), "");
     
     // 1. cur2_scope becomes a sibling of cur_ctxt
