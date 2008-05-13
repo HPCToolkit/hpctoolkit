@@ -65,7 +65,7 @@
 
 // FIXME: CSProfTree should be merged or at least relocated a la PgmScopeTree
 #include "PgmScopeTree.hpp"
-#include "CallPathMetric.hpp"
+#include "MetricDesc.hpp"
 
 #include <lib/isa/ISATypes.hpp>
 
@@ -98,6 +98,8 @@ operator<<(std::ostream& os, const hpcfile_metric_data_t x)
 //***************************************************************************
 // CSProfTree
 //***************************************************************************
+
+using namespace Prof; // temporary: for SampledMetricDesc
 
 class CSProfile;
 class CSProfNode;
@@ -139,7 +141,7 @@ public:
   // Given a CSProfTree, merge into 'this'
   // -------------------------------------------------------
   void merge(const CSProfTree* y, 
-	     const CSProfileMetricDescVec* new_mdesc, 
+	     const SampledMetricDescVec* new_mdesc, 
 	     uint x_numMetrics, uint y_numMetrics);
 
   // -------------------------------------------------------
@@ -246,7 +248,7 @@ public:
 
   void merge_prepare(uint numMetrics);
   void merge(CSProfNode* y, 
-	     const CSProfileMetricDescVec* new_mdesc,
+	     const SampledMetricDescVec* new_mdesc,
 	     uint x_numMetrics, uint y_numMetrics);
 
   CSProfNode* findDynChild(lush_assoc_info_t as_info, VMA ip, lush_lip_t* lip);
@@ -275,7 +277,7 @@ public:
   void DDumpSort();
 
 protected:
-  void merge_fixup(const CSProfileMetricDescVec* mdesc, int metric_offset);
+  void merge_fixup(const SampledMetricDescVec* mdesc, int metric_offset);
   
 protected:
   // private: 
@@ -369,7 +371,7 @@ public:
   // -------------------------------------------------------
   
   IDynNode(CSProfCodeNode* proxy, 
-	   const CSProfileMetricDescVec* metricdesc)
+	   const SampledMetricDescVec* metricdesc)
     : m_proxy(proxy),
       m_as_info(lush_assoc_info_NULL), m_ip(0), m_opIdx(0), m_lip(NULL),
       m_metricdesc(metricdesc)
@@ -377,7 +379,7 @@ public:
 
   IDynNode(CSProfCodeNode* proxy, 
 	   lush_assoc_info_t as_info, VMA ip, ushort opIdx, lush_lip_t* lip,
-	   const CSProfileMetricDescVec* metricdesc)
+	   const SampledMetricDescVec* metricdesc)
     : m_proxy(proxy), 
       m_as_info(as_info), m_ip(ip), m_opIdx(opIdx), m_lip(lip),
       m_metricdesc(metricdesc)
@@ -385,7 +387,7 @@ public:
 
   IDynNode(CSProfCodeNode* proxy, 
 	   lush_assoc_info_t as_info, VMA ip, ushort opIdx, lush_lip_t* lip,
-	   const CSProfileMetricDescVec* metricdesc,
+	   const SampledMetricDescVec* metricdesc,
 	   vector<hpcfile_metric_data_t>& metrics)
     : m_proxy(proxy),
       m_as_info(as_info), m_ip(ip), m_opIdx(opIdx), m_lip(lip), 
@@ -475,8 +477,8 @@ public:
   hpcfile_metric_data_t metric(int i) const { return m_metrics[i]; }
   uint numMetrics() const { return m_metrics.size(); }
 
-  const CSProfileMetricDescVec* metricdesc() const { return m_metricdesc; }
-  void                          metricdesc(const CSProfileMetricDescVec* x) { m_metricdesc = x; }
+  const SampledMetricDescVec* metricdesc() const { return m_metricdesc; }
+  void                        metricdesc(const SampledMetricDescVec* x) { m_metricdesc = x; }
 
 
   // -------------------------------------------------------
@@ -490,7 +492,7 @@ public:
   void expandMetrics_after(uint offset);
 
   static inline void
-  metricIncr(const CSProfileMetric* mdesc, 
+  metricIncr(const SampledMetricDesc* mdesc, 
 	     hpcfile_metric_data_t* x, hpcfile_metric_data_t incr)
   {
     if (hpcfile_csprof_metric_is_flag(mdesc->flags(), 
@@ -517,12 +519,12 @@ public:
 				int dmpFlag = 0, const char* prefix = "") const;
 
   struct WriteMetricInfo_ {
-    const CSProfileMetric* mdesc;
+    const SampledMetricDesc* mdesc;
     hpcfile_metric_data_t x;
   };
       
   static inline WriteMetricInfo_
-  writeMetric(const CSProfileMetric* mdesc, hpcfile_metric_data_t x) 
+  writeMetric(const SampledMetricDesc* mdesc, hpcfile_metric_data_t x) 
   {
     WriteMetricInfo_ info;
     info.mdesc = mdesc;
@@ -546,7 +548,7 @@ private:
   lush_lip_t* m_lip; // lush logical ip
 
   // A bit vector indicates whether a metric is of integral or real type.
-  const CSProfileMetricDescVec* m_metricdesc; // does not own memory
+  const SampledMetricDescVec*   m_metricdesc; // does not own memory
   vector<hpcfile_metric_data_t> m_metrics;
 };
 
@@ -626,12 +628,12 @@ class CSProfCallSiteNode: public CSProfCodeNode, public IDynNode {
 public:
   // Constructor/Destructor
   CSProfCallSiteNode(CSProfNode* _parent,
-		     const CSProfileMetricDescVec* metricdesc);
+		     const SampledMetricDescVec* metricdesc);
   CSProfCallSiteNode(CSProfNode* _parent, 
 		     lush_assoc_info_t as_info,
 		     VMA ip, ushort opIdx, 
 		     lush_lip_t* lip,
-		     const CSProfileMetricDescVec* metricdesc,
+		     const SampledMetricDescVec* metricdesc,
 		     vector<hpcfile_metric_data_t>& metrics);
   virtual ~CSProfCallSiteNode();
   
@@ -676,7 +678,7 @@ class CSProfStatementNode: public CSProfCodeNode, public IDynNode {
  public:
   // Constructor/Destructor
   CSProfStatementNode(CSProfNode* _parent, 
-		      const CSProfileMetricDescVec* metricdesc);
+		      const SampledMetricDescVec* metricdesc);
   virtual ~CSProfStatementNode();
 
   void operator=(const CSProfStatementNode& x);

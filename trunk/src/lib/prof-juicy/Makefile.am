@@ -66,6 +66,7 @@ MYSOURCES = \
 	PgmScopeTreeIterator.hpp PgmScopeTreeIterator.cpp \
 	PgmScopeTreeInterface.hpp PgmScopeTreeInterface.cpp \
 	\
+	MetricDesc.hpp \
 	PerfMetric.hpp PerfMetric.cpp \
 	EvalNode.hpp EvalNode.cpp \
 	\
@@ -73,7 +74,6 @@ MYSOURCES = \
 	\
 	CallPathProfile.hpp CallPathProfile.cpp \
 	CallPathEpoch.hpp CallPathEpoch.cpp \
-	CallPathMetric.hpp \
 	CallingContextTree.hpp CallingContextTree.cpp \
 	CallingContextTreeIterator.hpp CallingContextTreeIterator.cpp
 

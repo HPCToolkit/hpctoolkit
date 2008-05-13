@@ -74,7 +74,7 @@ CSProfile::CSProfile(uint i)
 {
   m_metricdesc.resize(i);
   for (int i = 0; i < m_metricdesc.size(); ++i) {
-    m_metricdesc[i] = new CSProfileMetric();
+    m_metricdesc[i] = new SampledMetricDesc();
   }
   m_cct  = new CSProfTree(this);
   m_epoch = NULL;
@@ -98,8 +98,8 @@ CSProfile::merge(const CSProfile& y)
 
   // merge metrics
   for (int i = 0; i < y.numMetrics(); ++i) {
-    const CSProfileMetric* m = y.metric(i);
-    m_metricdesc.push_back(new CSProfileMetric(*m));
+    const SampledMetricDesc* m = y.metric(i);
+    m_metricdesc.push_back(new SampledMetricDesc(*m));
   }
   
   // merge epochs... [FIXME]

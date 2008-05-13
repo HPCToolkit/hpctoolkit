@@ -61,7 +61,7 @@
 #include <include/general.h>
 
 #include "CallingContextTree.hpp"
-#include "CallPathMetric.hpp"
+#include "MetricDesc.hpp"
 #include "CallPathEpoch.hpp"
 
 //*************************** Forward Declarations ***************************
@@ -86,6 +86,8 @@
 // the bottom of the all the call stack smples
 // muliple metrics => multiple sample data associated with each tree leaf
 
+using namespace Prof; // temporary: for SampledMetricDesc
+
 class CSProfile: public Unique {
 public:
   // Constructor/Destructor
@@ -99,8 +101,8 @@ public:
   void               name(const char* s) { m_name = (s) ? s : ""; }
 
   uint             numMetrics() const   { return m_metricdesc.size(); }
-  CSProfileMetric* metric(uint i) const { return m_metricdesc[i]; }
-  const CSProfileMetricDescVec& metricDesc() const { return m_metricdesc; }
+  SampledMetricDesc* metric(uint i) const { return m_metricdesc[i]; }
+  const SampledMetricDescVec& metricDesc() const { return m_metricdesc; }
 
   CSProfTree*  cct() const { return m_cct; }
 
@@ -123,7 +125,7 @@ private:
   std::string m_name;
 
   CSProfTree* m_cct;
-  CSProfileMetricDescVec m_metricdesc;
+  SampledMetricDescVec m_metricdesc;
   CSProfEpoch* m_epoch;
 };
 

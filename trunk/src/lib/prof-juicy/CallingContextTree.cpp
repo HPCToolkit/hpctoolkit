@@ -94,7 +94,7 @@ CSProfTree::~CSProfTree()
 
 void 
 CSProfTree::merge(const CSProfTree* y, 
-		  const CSProfileMetricDescVec* new_mdesc,		  
+		  const SampledMetricDescVec* new_mdesc,		  
 		  uint x_numMetrics, uint y_numMetrics)
 {
   CSProfPgmNode* x_root = dynamic_cast<CSProfPgmNode*>(root());
@@ -247,7 +247,7 @@ CSProfCallSiteNode_Check(CSProfCallSiteNode* n, CSProfNode* _parent)
 
 
 CSProfCallSiteNode::CSProfCallSiteNode(CSProfNode* _parent,
-				       const CSProfileMetricDescVec* metricdesc)
+				       const SampledMetricDescVec* metricdesc)
   : CSProfCodeNode(CALLSITE, _parent, ln_NULL, ln_NULL),
     IDynNode(this, metricdesc)
 {
@@ -259,7 +259,7 @@ CSProfCallSiteNode::CSProfCallSiteNode(CSProfNode* _parent,
 				       lush_assoc_info_t as_info,
 				       VMA ip, ushort opIndex, 
 				       lush_lip_t* lip,
-				       const CSProfileMetricDescVec* metricdesc,
+				       const SampledMetricDescVec* metricdesc,
 				       vector<hpcfile_metric_data_t>& metrics)
   : CSProfCodeNode(CALLSITE, _parent, ln_NULL, ln_NULL), 
     IDynNode(this, as_info, ip, opIndex, lip, metricdesc, metrics)
@@ -273,7 +273,7 @@ CSProfCallSiteNode::~CSProfCallSiteNode()
 
 
 CSProfStatementNode::CSProfStatementNode(CSProfNode* _parent, 
-					 const CSProfileMetricDescVec* metricdesc)
+					 const SampledMetricDescVec* metricdesc)
   :  CSProfCodeNode(STATEMENT, _parent, ln_NULL, ln_NULL),
      IDynNode(this, metricdesc)
 {
@@ -539,7 +539,7 @@ CSProfNode::merge_prepare(uint numMetrics)
 // NOTE: assume x already has space to store merged metrics
 void
 CSProfNode::merge(CSProfNode* y, 
-		  const CSProfileMetricDescVec* new_mdesc,
+		  const SampledMetricDescVec* new_mdesc,
 		  uint x_numMetrics, uint y_numMetrics)
 {
   CSProfNode* x = this;
@@ -607,7 +607,7 @@ CSProfNode::findDynChild(lush_assoc_info_t as_info, VMA ip, lush_lip_t* lip)
 
 
 void
-CSProfNode::merge_fixup(const CSProfileMetricDescVec* new_mdesc, 
+CSProfNode::merge_fixup(const SampledMetricDescVec* new_mdesc, 
 			int metric_offset)
 {
   IDynNode* x_dyn = dynamic_cast<IDynNode*>(this);
