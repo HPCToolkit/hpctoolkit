@@ -124,12 +124,12 @@ public:
   // open/read (cf. istreams)
   // -------------------------------------------------------
 
-  // Open: If 'moduleName' is not already open, attempt to do so;
+  // open: If 'moduleName' is not already open, attempt to do so;
   // throw an exception on error.  If a file is already, do nothing.
   // (Segs, Procs and Insns are not constructed yet.)
   virtual void open(const char* moduleName);
 
-  // Read: If module has not already been read, attempt to do so;
+  // read: If module has not already been read, attempt to do so;
   // return an exception on error.  If a file has already been read do
   // nothing.
   virtual void read();

@@ -280,7 +280,8 @@ Driver::ScopeTreeInsertHPCRUNData(PgmScopeTree& scopes,
   //-------------------------------------------------------
   Prof::Flat::Profile prof;
   try {
-    prof.read(profFilenm);
+    prof.open(profFilenm.c_str());
+    prof.read();
   }
   catch (...) {
     DIAG_EMsg("While reading '" << profFilenm << "'");
@@ -289,9 +290,10 @@ Driver::ScopeTreeInsertHPCRUNData(PgmScopeTree& scopes,
 
   uint num_samples = 0;
   
-  for (uint i = 0; i < prof.num_load_modules(); ++i) {
-    const Prof::Flat::LM& proflm = prof.load_module(i);
-    std::string lmname = proflm.name();
+  for (Prof::Flat::Profile::const_iterator it = prof.begin(); 
+       it != prof.end(); ++it) {
+    const Prof::Flat::LM* proflm = it->second;
+    std::string lmname = proflm->name();
     lmname = ReplacePath(lmname);
 
     LoadModScope* lmScope = nodeRet.MoveToLoadMod(lmname);
@@ -322,7 +324,7 @@ Driver::ScopeTreeInsertHPCRUNData(PgmScopeTree& scopes,
       FilePerfMetric* m = *it;
       uint mIdx = (uint)StrUtil::toUInt64(m->NativeName());
       
-      const Prof::Flat::Event& profevent = proflm.event(mIdx);
+      const Prof::Flat::Event& profevent = proflm->event(mIdx);
       uint64_t period = profevent.period();
       double mval = 0.0;
       double mval_nostruct = 0.0;
@@ -336,8 +338,8 @@ Driver::ScopeTreeInsertHPCRUNData(PgmScopeTree& scopes,
 	// 1. Unrelocate vma.
 	VMA ur_vma = vma;
 	if (lm->type() == binutils::LM::SharedLibrary 
-	    && vma > proflm.load_addr()) {
-	  ur_vma = vma - proflm.load_addr();
+	    && vma > proflm->load_addr()) {
+	  ur_vma = vma - proflm->load_addr();
 	}
 	
 	// 2. Find associated scope and insert into scope tree

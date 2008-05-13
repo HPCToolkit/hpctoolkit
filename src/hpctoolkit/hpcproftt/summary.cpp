@@ -315,10 +315,11 @@ Summary::init(const string& pgm, const vector<Prof::Flat::Profile*>& profs)
     // We inspect only the first load module of each prof file because
     // while one prof file contains multiple load modules, each load
     // module contains the same events.  
-    const Prof::Flat::LM& proflm = prof->load_module(0);
-    n_event_ += proflm.num_events();
-    for (uint k = 0; k < proflm.num_events(); ++k, ++ev_i) {
-      const Prof::Flat::Event& profevent = proflm.event(k);
+    Prof::Flat::Profile::const_iterator it = prof->begin();
+    const Prof::Flat::LM* proflm = it->second;
+    n_event_ += proflm->num_events();
+    for (uint k = 0; k < proflm->num_events(); ++k, ++ev_i) {
+      const Prof::Flat::Event& profevent = proflm->event(k);
       string name = stringcat(profevent.name(), profevent.period());
       event2locs_map_[name].set_offset(ev_i, profevent.name(),
 				       /*profevent.event()*/
@@ -362,12 +363,17 @@ Summary::init(const string& pgm, const vector<Prof::Flat::Profile*>& profs)
   ev_i = 0;
   for (uint i = 0; i < profs.size(); ++i) {
     const Prof::Flat::Profile* prof = profs[i];
-    const Prof::Flat::LM& proflm1 = prof->load_module(0);
-    for (uint j = 0; j < prof->num_load_modules(); ++j) {
-      const Prof::Flat::LM& proflm = prof->load_module(j);
-      process_lm(proflm, ev_i);
+
+    Prof::Flat::Profile::const_iterator it0 = prof->begin();
+    const Prof::Flat::LM* proflm0 = it0->second;
+
+    for (Prof::Flat::Profile::const_iterator it = prof->begin();
+	 it != prof->end(); ++it) {
+      const Prof::Flat::LM* proflm = it->second;
+      process_lm(*proflm, ev_i);
     }
-    ev_i += proflm1.num_events();
+
+    ev_i += proflm0->num_events();
   }
 
   // 4. Create collective events (multiple elementary events of the

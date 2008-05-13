@@ -81,6 +81,7 @@ using std::dec;
 #include <lib/isa/IA64ISA.hpp>
 
 #include <lib/support/diagnostics.h>
+#include <lib/support/Logic.hpp>
 #include <lib/support/QuickSort.hpp>
 
 //*************************** Forward Declarations **************************
@@ -149,11 +150,8 @@ binutils::LM::~LM()
 void
 binutils::LM::open(const char* moduleName)
 {
-  if (!m_name.empty()) {
-    // 'moduleName' should be equal to what already exists
-    DIAG_Assert(m_name == moduleName, "Cannot open a different file!");
-  }
-
+  DIAG_Assert(Logic::implies(!m_name.empty(), m_name.c_str() == moduleName), "Cannot open a different file!");
+  
   // -------------------------------------------------------
   // 1. Initialize bfd and open the object file.
   // -------------------------------------------------------

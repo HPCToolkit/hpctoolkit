@@ -36,6 +36,7 @@
 #include <lib/prof-lean/io.h>
 
 #include <lib/support/diagnostics.h>
+#include <lib/support/Logic.hpp>
 
 //*************************** Forward Declarations **************************
 
@@ -50,57 +51,80 @@ read_string(FILE *fp, std::string& str);
 //***************************************************************************
 
 Prof::Flat::Profile::Profile()
+  : m_mtime(0), m_fs(NULL)
 {
-  m_mtime = 0;
 }
 
 
 Prof::Flat::Profile::~Profile()
 {
+  for (const_iterator it = begin(); it != end(); ++it) {
+    const Prof::Flat::LM* proflm = it->second;
+    delete proflm;
+  }
 }
 
 
-void
-Prof::Flat::Profile::read(const string &filename)
-{
-  FILE *fp;
 
-  m_mtime = 0;
+void
+Prof::Flat::Profile::open(const char* filename)
+{
+  DIAG_Assert(Logic::implies(!m_name.empty(), m_name.c_str() == filename), "Cannot open a different file!");
+
+  // -------------------------------------------------------
+  // Open file
+  // -------------------------------------------------------
 
   struct stat statbuf;
-  if (stat(filename.c_str(), &statbuf)) {
-    PROFFLAT_Throw("Cannot stat file.");
+  int ret = stat(filename, &statbuf);
+  if (ret != 0) {
+    PROFFLAT_Throw("Cannot stat file:" << filename);
   }
+
   m_name = filename;
   m_mtime = statbuf.st_mtime;
 
-  fp = fopen(filename.c_str(), "r");
-  if (!fp) {
-    PROFFLAT_Throw("Cannot open file.");
+  m_fs = fopen(filename, "r");
+  if (!m_fs) {
+    PROFFLAT_Throw("Cannot open file:" << filename);
   }
 
+  // -------------------------------------------------------
+  // Gather metrics
+  // -------------------------------------------------------
+  
+}
+
+void
+Prof::Flat::Profile::read()
+{
+  DIAG_Assert(m_fs, "No open file stream!");
+
+  // -------------------------------------------------------
   // <header>
+  // -------------------------------------------------------
   char magic_str[HPCRUNFILE_MAGIC_STR_LEN];
   char version[HPCRUNFILE_VERSION_LEN];
   char endian;
   int c;
   size_t sz;
 
-  sz = fread((char*)magic_str, 1, HPCRUNFILE_MAGIC_STR_LEN, fp);
+  sz = fread((char*)magic_str, 1, HPCRUNFILE_MAGIC_STR_LEN, m_fs);
   if (sz != HPCRUNFILE_MAGIC_STR_LEN) { 
     PROFFLAT_Throw("Error reading <header>.");
   }
   
-  sz = fread((char*)version, 1, HPCRUNFILE_VERSION_LEN, fp);
+  sz = fread((char*)version, 1, HPCRUNFILE_VERSION_LEN, m_fs);
   if (sz != HPCRUNFILE_VERSION_LEN) { 
     PROFFLAT_Throw("Error reading <header>.");
   }
   
-  if ((c = fgetc(fp)) == EOF) { 
+  if ((c = fgetc(m_fs)) == EOF) { 
     PROFFLAT_Throw("Error reading <header>.");
   }
   endian = (char)c;
   
+
   // sanity check header
   if (strncmp(magic_str, HPCRUNFILE_MAGIC_STR, 
 	      HPCRUNFILE_MAGIC_STR_LEN) != 0) { 
@@ -114,20 +138,26 @@ Prof::Flat::Profile::read(const string &filename)
   }
 
 
+  // -------------------------------------------------------
   // <loadmodule_list>
+  // -------------------------------------------------------
   uint32_t count;
 
-  sz = hpc_fread_le4(&count, fp);
+  sz = hpc_fread_le4(&count, m_fs);
   if (sz != sizeof(count)) { 
     PROFFLAT_Throw("Error reading <loadmodule_list>.");
   }
   
-  m_lmvec.resize(count);
   for (uint i = 0; i < count; ++i) {
-    m_lmvec[i].read(fp);
+    Prof::Flat::LM* proflm = new Prof::Flat::LM();
+    proflm->read(m_fs);
+    pair<iterator,bool> ret = insert(make_pair(proflm->name(), proflm));
+    // FIXME: must merge if duplicate is found
+    DIAG_Assert(ret.second, "Load module already exists:" << proflm->name());
   }
 
-  fclose(fp);
+  fclose(m_fs);
+  m_fs = NULL;
 }
 
 
@@ -141,9 +171,9 @@ Prof::Flat::Profile::dump(std::ostream& o, const char* pre) const
   o << p << "{ Profile: " << m_name << ", modtime: " << m_mtime << " }" 
     << endl;
 
-  for (uint i = 0; i < num_load_modules(); ++i) {
-    const LM& proflm = load_module(i);
-    proflm.dump(o, p1.c_str());
+  for (const_iterator it = begin(); it != end(); ++it) {
+    const Prof::Flat::LM* proflm = it->second;
+    proflm->dump(o, p1.c_str());
   }
   o << p << "--- End Profile Dump ---" << endl;
 }
@@ -162,16 +192,16 @@ Prof::Flat::LM::~LM()
 
 
 void
-Prof::Flat::LM::read(FILE *fp)
+Prof::Flat::LM::read(FILE *fs)
 {
   size_t sz;
   
   // <loadmodule_name>, <loadmodule_loadoffset>
-  if (read_string(fp, m_name) != 0) { 
+  if (read_string(fs, m_name) != 0) { 
     PROFFLAT_Throw("Error reading <loadmodule_name>.");
   }
   
-  sz = hpc_fread_le8(&m_load_addr, fp);
+  sz = hpc_fread_le8(&m_load_addr, fs);
   if (sz != sizeof(m_load_addr)) { 
     PROFFLAT_Throw("Error reading <loadmodule_loadoffset>.");
   }
@@ -181,7 +211,7 @@ Prof::Flat::LM::read(FILE *fp)
   
   // <loadmodule_eventcount>
   uint count = 1;
-  sz = hpc_fread_le4(&count, fp);
+  sz = hpc_fread_le4(&count, fs);
   if (sz != sizeof(count)) { 
     PROFFLAT_Throw("Error reading <loadmodule_eventcount>.");
   }
@@ -189,7 +219,7 @@ Prof::Flat::LM::read(FILE *fp)
   
   // Event data
   for (uint i = 0; i < count; ++i) {
-    m_eventvec[i].read(fp, m_load_addr);
+    m_eventvec[i].read(fs, m_load_addr);
   }
 }
 
@@ -224,19 +254,19 @@ Prof::Flat::Event::~Event()
 
 
 void
-Prof::Flat::Event::read(FILE *fp, uint64_t load_addr)
+Prof::Flat::Event::read(FILE *fs, uint64_t load_addr)
 {
   size_t sz;
   
   // <event_x_name> <event_x_description> <event_x_period>
-  if (read_string(fp, m_name) != 0) { 
+  if (read_string(fs, m_name) != 0) { 
     PROFFLAT_Throw("Error reading <event_x_name>.");
   }
-  if (read_string(fp, m_desc) != 0) { 
+  if (read_string(fs, m_desc) != 0) { 
     PROFFLAT_Throw("Error reading <event_x_description>.");
   }
   
-  sz = hpc_fread_le8(&m_period, fp);
+  sz = hpc_fread_le8(&m_period, fs);
   if (sz != sizeof(m_period)) { 
     PROFFLAT_Throw("Error reading <event_x_period>.");
   }
@@ -248,7 +278,7 @@ Prof::Flat::Event::read(FILE *fp, uint64_t load_addr)
   
   // <histogram_non_zero_bucket_count>
   uint64_t ndat;    // number of profile entries
-  sz = hpc_fread_le8(&ndat, fp);
+  sz = hpc_fread_le8(&ndat, fs);
   if (sz != sizeof(ndat)) { 
     PROFFLAT_Throw("Error reading <histogram_non_zero_bucket_count>.");
   }
@@ -261,12 +291,12 @@ Prof::Flat::Event::read(FILE *fp, uint64_t load_addr)
   uint32_t count;   // profile count
   uint64_t offset;  // offset from load address
   for (uint i = 0; i < ndat; ++i) {
-    sz = hpc_fread_le4(&count, fp);        // count
+    sz = hpc_fread_le4(&count, fs);        // count
     if (sz != sizeof(count)) { 
       PROFFLAT_Throw("Error reading <histogram_non_zero_bucket_x_value>.");
     }
 
-    sz = hpc_fread_le8(&offset, fp);       // offset
+    sz = hpc_fread_le8(&offset, fs);       // offset
     if (sz != sizeof(offset)) { 
       PROFFLAT_Throw("Error reading <histogram_non_zero_bucket_x_offset>.");
     }
@@ -299,21 +329,21 @@ Prof::Flat::Event::dump(std::ostream& o, const char* pre) const
 //***************************************************************************
 
 static int
-read_string(FILE *fp, std::string& str)
+read_string(FILE *fs, std::string& str)
 {
   size_t sz;
   uint32_t len; // string length  
   int c;
 
   // <string_length> <string_without_terminator>
-  sz = hpc_fread_le4(&len, fp);
+  sz = hpc_fread_le4(&len, fs);
   if (sz != sizeof(len)) { 
     return 1;
   }
   
   str.resize(len);
   for (uint n = 0; n < len; ++n) { 
-    if ((c = fgetc(fp)) == EOF) { 
+    if ((c = fgetc(fs)) == EOF) { 
       return 1;
     }
     str[n] = (char)c;

@@ -1058,7 +1058,7 @@ ScopeInfo::Merge(ScopeInfo* toNode, ScopeInfo* fromNode)
   // 2. If merging CodeInfos, update line ranges
   CodeInfo* toCI = dynamic_cast<CodeInfo*>(toNode);
   CodeInfo* fromCI = dynamic_cast<CodeInfo*>(fromNode);
-  DIAG_Assert(logic::equiv(toCI, fromCI), "Invariant broken!");
+  DIAG_Assert(Logic::equiv(toCI, fromCI), "Invariant broken!");
   if (toCI && fromCI) {
     SrcFile::ln begLn = std::min(toCI->begLine(), fromCI->begLine());
     SrcFile::ln endLn = std::max(toCI->endLine(), fromCI->endLine());
@@ -1088,7 +1088,7 @@ ScopeInfo::IsMergable(ScopeInfo* toNode, ScopeInfo* fromNode)
     CodeInfo* toCI = dynamic_cast<CodeInfo*>(toNode);
     CodeInfo* fromCI = dynamic_cast<CodeInfo*>(fromNode);
     goodBnds = 
-      logic::equiv(SrcFile::isValid(toCI->begLine(), toCI->endLine()),
+      Logic::equiv(SrcFile::isValid(toCI->begLine(), toCI->endLine()),
 		   SrcFile::isValid(fromCI->begLine(), fromCI->endLine()));
   }
 
