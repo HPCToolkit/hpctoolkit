@@ -93,7 +93,7 @@
 #include "hpcfile_csproflib.h"
 #include "pmsg.h"
 #include "prim_unw.h"
-#include "dl_bound.h"
+#include "fnbounds_interface.h"
 #include "dbg_extra.h"
 
 #include <lush/lush.h>
@@ -153,7 +153,7 @@ csprof_init_internal(void)
     csprof_epoch_unlock();
 # endif // STATIC_ONLY
 
-  dl_init();
+  fnbounds_init();
 
   // Initialize LUSH agents
   if (opts.lush_agent_paths[0] != '\0') {
@@ -381,7 +381,7 @@ csprof_fini_internal(void)
     }
 #endif
 
-    dl_fini();
+    fnbounds_fini();
 
 #if 0    
     MSG(CSPROF_MSG_SHUTDOWN, "writing profile data");

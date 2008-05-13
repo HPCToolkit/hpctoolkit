@@ -37,12 +37,13 @@
 
 #include <stdio.h>
 
-/* an "epoch" in csprof-speak is a period of time during which our
-   dynamically loaded libraries are stable.  we start a new epoch when
-   a library is dlopen()'d; we don't have to worrying about what happens
-   after a dlclose() because the dlclose()'d library will not be
-   referenced again and it doesn't hurt us to keep around some information
-   related to it. */
+/* an "epoch" is an interval of time during which no two dynamic 
+   libraries are mapped to the same region of the address space. 
+   an epoch can span across dlopen and dlclose operations. an epoch
+   ends when a dlopen maps a new load module on top of a region of 
+   the address space that has previously been occupied by another
+   module earlier during the epoch.
+*/
 
 typedef struct csprof_epoch csprof_epoch_t;
 typedef struct csprof_epoch_module csprof_epoch_module_t;
@@ -65,9 +66,13 @@ struct csprof_epoch
   struct csprof_epoch_module *loaded_modules;
 };
 
-
 csprof_epoch_t *csprof_epoch_new();
 csprof_epoch_t *csprof_get_epoch();
+
+void csprof_epoch_add_module(const char *module_name, 
+	void *vaddr,                /* the preferred virtual address */
+  	void *mapaddr,              /* the actual mapped address */
+        size_t size);               /* just what it sounds like */
 
 /* avoid weird dynamic loading conflicts */
 void csprof_epoch_lock();

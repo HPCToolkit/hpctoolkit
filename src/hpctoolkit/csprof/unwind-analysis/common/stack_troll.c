@@ -15,9 +15,9 @@
  */
 
 #include <stdlib.h>
-#include "find.h"
 #include "pmsg.h"
 #include "stack_troll.h"
+#include "fnbounds_interface.h"
 
 unsigned int stack_troll(char **sp, unsigned int *ra_pos){
   int i;
@@ -27,7 +27,7 @@ unsigned int stack_troll(char **sp, unsigned int *ra_pos){
   tmp_sp = sp;
   for (i = 0; i < TROLL_LIMIT; i++){
     void *s, *e;
-    if (! find_enclosing_function_bounds_v(*tmp_sp,&s,&e,SILENT)){
+    if (!fnbounds_enclosing_addr(*tmp_sp , &s, &e)) { 
       PMSG(TROLL,"found valid address %p at sp = %p",*tmp_sp,tmp_sp);
       *ra_pos = (unsigned long) tmp_sp - (unsigned long) sp;
       return 1;
