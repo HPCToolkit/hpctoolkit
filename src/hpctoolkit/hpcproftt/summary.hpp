@@ -66,7 +66,7 @@ class Event {
 
   public:
     /// Construct a Event using a papi_event_t structure.
-    Event(const char* name, const char* desc, uint64_t period);
+    Event(const std::string& name, const std::string& desc, uint64_t period);
     /** Destroy the Event. This does not delete the papi_event_t given
         to the constructor. */
     virtual ~Event();
@@ -221,7 +221,7 @@ class CollectiveLocations {
         offset for the next available event slot.  If needed, slots will be
         allocated for min, max, and sum events and offset will be
         incremented.  */
-    void set_offset(int i, /*const Event* e*/ const char* ename, int &offset) {
+  void set_offset(int i, /*const Event* e*/ const std::string& ename, int &offset) {
       elementary_locations_.push_back(i);
       //event_ = e;
       eventname_ = ename;

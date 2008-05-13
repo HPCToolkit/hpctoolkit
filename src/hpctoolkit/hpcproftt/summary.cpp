@@ -85,7 +85,7 @@ stringcat(const string& s, T n)
 ///////////////////////////////////////////////////////////////////////
 // Event
 
-Event::Event(const char* name, const char* desc, uint64_t period)
+Event::Event(const std::string& name, const std::string& desc, uint64_t period)
 {
   name_ = name;
   description_ = desc;
@@ -319,9 +319,10 @@ Summary::init(const string& pgm, const vector<Prof::Flat::Profile*>& profs)
     const Prof::Flat::LM* proflm = it->second;
     n_event_ += proflm->num_events();
     for (uint k = 0; k < proflm->num_events(); ++k, ++ev_i) {
-      const Prof::Flat::Event& profevent = proflm->event(k);
-      string name = stringcat(profevent.name(), profevent.period());
-      event2locs_map_[name].set_offset(ev_i, profevent.name(),
+      const Prof::Flat::EventData& profevent = proflm->event(k);
+      string name = stringcat(profevent.mdesc().name(), 
+			      profevent.mdesc().period());
+      event2locs_map_[name].set_offset(ev_i, profevent.mdesc().name(),
 				       /*profevent.event()*/
 				       n_collective_);
     }
@@ -487,10 +488,11 @@ Summary::process_lm(const Prof::Flat::LM& proflm, int ev_i_start)
   for (uint l = 0; l < proflm.num_events(); ++l, ++ev_i) {
 
     // Create event
-    const Prof::Flat::Event& profevent = proflm.event(l);
+    const Prof::Flat::EventData& profevent = proflm.event(l);
+    const Prof::SampledMetricDesc& mdesc = profevent.mdesc();
     if (event_[ev_i] == NULL) {
-      event_[ev_i] = new Event(profevent.name(), profevent.description(),
-			       profevent.period());
+      event_[ev_i] = new Event(mdesc.name(), mdesc.description(),
+			       mdesc.period());
     }
     outofrange_[ev_i] += profevent.outofrange();
     overflow_[ev_i] += profevent.overflow();

@@ -162,8 +162,8 @@ public:
   hpcfile_csprof_metric_flag_t flags() const         { return m_flags; }
   void                         flags(hpcfile_csprof_metric_flag_t x) { m_flags = x; }
 
-  unsigned int period() const          { return m_period; }
-  void         period(unsigned long x) { m_period = x; }
+  uint64_t period() const     { return m_period; }
+  void     period(uint64_t x) { m_period = x; }
 
   // -------------------------------------------------------
   // 
@@ -175,7 +175,7 @@ public:
 protected:
 private:  
   hpcfile_csprof_metric_flag_t m_flags;  // flags of the metric
-  unsigned long m_period; // sampling period
+  uint64_t m_period; // sampling period
 };
 
 

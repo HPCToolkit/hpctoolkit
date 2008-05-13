@@ -195,8 +195,10 @@ void
 Prof::Flat::LM::read(FILE *fs)
 {
   size_t sz;
-  
+
+  // -------------------------------------------------------
   // <loadmodule_name>, <loadmodule_loadoffset>
+  // -------------------------------------------------------
   if (read_string(fs, m_name) != 0) { 
     PROFFLAT_Throw("Error reading <loadmodule_name>.");
   }
@@ -208,8 +210,10 @@ Prof::Flat::LM::read(FILE *fs)
 
   DIAG_Msg(5, "Reading: " << m_name << " loaded at 0x" 
 	   << hex << m_load_addr << dec);
-  
+
+  // -------------------------------------------------------  
   // <loadmodule_eventcount>
+  // -------------------------------------------------------
   uint count = 1;
   sz = hpc_fread_le4(&count, fs);
   if (sz != sizeof(count)) { 
@@ -217,7 +221,9 @@ Prof::Flat::LM::read(FILE *fs)
   }
   m_eventvec.resize(count);
   
+  // -------------------------------------------------------
   // Event data
+  // -------------------------------------------------------
   for (uint i = 0; i < count; ++i) {
     m_eventvec[i].read(fs, m_load_addr);
   }
@@ -234,7 +240,7 @@ Prof::Flat::LM::dump(std::ostream& o, const char* pre) const
     << m_load_addr << dec << " }" << endl;
   
   for (uint i = 0; i < num_events(); ++i) {
-    const Event& profevent = event(i);
+    const EventData& profevent = event(i);
     profevent.dump(o, p1.c_str());
   }
 }
@@ -243,35 +249,46 @@ Prof::Flat::LM::dump(std::ostream& o, const char* pre) const
 //***************************************************************************
 
 
-Prof::Flat::Event::Event()
+Prof::Flat::EventData::EventData()
 {
 }
 
 
-Prof::Flat::Event::~Event()
+Prof::Flat::EventData::~EventData()
 {
 }
 
 
 void
-Prof::Flat::Event::read(FILE *fs, uint64_t load_addr)
+Prof::Flat::EventData::read(FILE *fs, uint64_t load_addr)
 {
   size_t sz;
   
+  std::string name, desc;
+  uint64_t period;
+  
+  // -------------------------------------------------------
   // <event_x_name> <event_x_description> <event_x_period>
-  if (read_string(fs, m_name) != 0) { 
+  // -------------------------------------------------------
+  if (read_string(fs, name) != 0) { 
     PROFFLAT_Throw("Error reading <event_x_name>.");
   }
-  if (read_string(fs, m_desc) != 0) { 
+  if (read_string(fs, desc) != 0) { 
     PROFFLAT_Throw("Error reading <event_x_description>.");
   }
   
-  sz = hpc_fread_le8(&m_period, fs);
-  if (sz != sizeof(m_period)) { 
+  sz = hpc_fread_le8(&period, fs);
+  if (sz != sizeof(period)) { 
     PROFFLAT_Throw("Error reading <event_x_period>.");
   }
   
+  m_mdesc.name(name);
+  m_mdesc.description(desc);
+  m_mdesc.period(period);
+
+  // -------------------------------------------------------
   // <event_x_data>
+  // -------------------------------------------------------
   m_sparsevec.clear();
   m_outofrange = 0;
   m_overflow = 0;
@@ -284,7 +301,7 @@ Prof::Flat::Event::read(FILE *fs, uint64_t load_addr)
   }
   m_sparsevec.resize(ndat);
 
-  DIAG_Msg(6, "  Event: " << m_name << ": " << ndat << " entries (cnt,offset)");
+  DIAG_Msg(6, "  EventData: " << name << ": " << ndat << " entries (cnt,offset)");
 
   // <histogram_non_zero_bucket_x_value> 
   // <histogram_non_zero_bucket_x_offset>
@@ -309,13 +326,15 @@ Prof::Flat::Event::read(FILE *fs, uint64_t load_addr)
 
 
 void
-Prof::Flat::Event::dump(std::ostream& o, const char* pre) const
+Prof::Flat::EventData::dump(std::ostream& o, const char* pre) const
 {
   string p = pre;
   string p1 = p + "  ";
 
-  o << p << "{ Event: " << name() << ", period: " << period() 
-    << ", outofrange: " << outofrange() << ", overflow: " << overflow()
+  o << p << "{ EventData: " << mdesc().name() 
+    << ", period: " << mdesc().period() 
+    << ", outofrange: " << outofrange() 
+    << ", overflow: " << overflow()
     << " }" << endl;
   
   for (uint i = 0; i < num_data(); ++i) {

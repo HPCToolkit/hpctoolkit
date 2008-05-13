@@ -40,6 +40,8 @@
 
 #include <include/general.h>
 
+#include "MetricDesc.hpp"
+
 #include <lib/isa/ISATypes.hpp>
 
 #include <lib/support/diagnostics.h>
@@ -133,26 +135,29 @@ private:
 
 //***************************************************************************
 
+typedef uint32_t bucketsz_t;
+
 // <VMA, count>
-typedef std::pair<VMA, uint32_t> Datum;
+typedef std::pair<VMA, bucketsz_t> Datum;
 
 //***************************************************************************
 
 
-// Event: contains the event name, profiling period and
-// profiling data for the event
-class Event {
+// EventData: contains event description and profiling data
+class EventData {
 public:
-  Event();
-  ~Event();
+  EventData();
+  ~EventData();
   
-  const char* name() const { return m_name.c_str(); }
-  const char* description() const { return m_desc.c_str(); }
-  uint64_t    period() const { return m_period; }
-  int         bucket_size() const { return sizeof(uint32_t); }
-  
+  const SampledMetricDesc& mdesc() const { return m_mdesc; }
+
+  int  bucket_size() const { return sizeof(bucketsz_t); }
   uint outofrange() const { return m_outofrange; }
   uint overflow() const { return m_overflow; }
+
+  // -------------------------------------------------------
+  // 
+  // -------------------------------------------------------
   
   // 0 based indexing
   uint num_data() const { return m_sparsevec.size(); }
@@ -171,9 +176,7 @@ public:
   void dump(std::ostream& o = std::cerr, const char* pre = "") const;
   
 private:
-  std::string  m_name;
-  std::string  m_desc;
-  uint64_t     m_period;
+  SampledMetricDesc m_mdesc;
   uint m_outofrange;
   uint m_overflow;
   std::vector<Datum> m_sparsevec;
@@ -194,7 +197,7 @@ public:
   
   // 0 based indexing
   uint num_events() const { return m_eventvec.size(); }
-  const Event& event(uint i) const { return m_eventvec[i]; }
+  const EventData& event(uint i) const { return m_eventvec[i]; }
 
 
   // -------------------------------------------------------
@@ -210,7 +213,7 @@ public:
 private:
   std::string m_name;            // module name
   uint64_t m_load_addr;          // load offset during runtime
-  std::vector<Event> m_eventvec; // events
+  std::vector<EventData> m_eventvec; // events
 };
 
 
