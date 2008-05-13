@@ -15,7 +15,7 @@
 @SET_MAKE@
 
 # -*-Mode: makefile;-*-
-# $Id: Makefile.am 1289 2008-05-12 21:31:58Z eraxxon $
+# $Id: Makefile.am 1292 2008-05-13 00:00:59Z eraxxon $
 
 #############################################################################
 #
@@ -329,6 +329,9 @@ HPC_LIBSUPPORT = $(top_builddir)/src/lib/support/libHPCsupport.la
 #############################################################################
 # Local settings
 #############################################################################
+MYSCRIPTS = \
+        hpcquick
+
 MYSOURCES = \
 	main.cpp \
 	Args.hpp Args.cpp \
@@ -355,7 +358,9 @@ MYCLEAN = @HOST_LIBTREPOSITORY@
 #############################################################################
 # Automake rules
 #############################################################################
-bin_SCRIPTS = hpcview
+bin_SCRIPTS = hpcprof-flat \
+	      hpcquick
+
 hpcprof_flat_bin_SOURCES = $(MYSOURCES)
 hpcprof_flat_bin_CFLAGS = $(MYCFLAGS)
 hpcprof_flat_bin_CXXFLAGS = $(MYCXXFLAGS)

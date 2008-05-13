@@ -878,7 +878,6 @@ AC_CONFIG_FILES([ \
   src/hpctoolkit/hpcprof/Makefile \
   src/hpctoolkit/hpcprof-flat/Makefile \
   src/hpctoolkit/hpcproftt/Makefile \
-  src/hpctoolkit/hpcquick/Makefile \
   src/hpctoolkit/hpcrun/Makefile \
   src/hpctoolkit/hpcstruct/Makefile \
   src/hpctoolkit/misc/Makefile \

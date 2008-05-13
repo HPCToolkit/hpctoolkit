@@ -23695,7 +23695,7 @@ echo "${ECHO_T}yes (${OPT_OBJCOPY})" >&6; }
 # Makefiles to create
 #----------------------------------------------------------------------------
 
-ac_config_files="$ac_config_files Makefile doc/Makefile doc/man/Makefile doc/man/HPCToolkitVersionInfo.tex lib/Makefile src/Makefile src/hpctoolkit/Makefile src/hpctoolkit/hpclump/Makefile src/hpctoolkit/hpcprof/Makefile src/hpctoolkit/hpcprof-flat/Makefile src/hpctoolkit/hpcproftt/Makefile src/hpctoolkit/hpcquick/Makefile src/hpctoolkit/hpcrun/Makefile src/hpctoolkit/hpcstruct/Makefile src/hpctoolkit/misc/Makefile src/hpctoolkit/xprof/Makefile src/lib/Makefile src/lib/banal/Makefile src/lib/binutils/Makefile src/lib/isa/Makefile src/lib/perl/Makefile src/lib/perl/HPCToolkitVersionInfo.pm src/lib/prof-juicy/Makefile src/lib/prof-juicy-x/Makefile src/lib/prof-lean/Makefile src/lib/support/Makefile src/lib/xml/Makefile"
+ac_config_files="$ac_config_files Makefile doc/Makefile doc/man/Makefile doc/man/HPCToolkitVersionInfo.tex lib/Makefile src/Makefile src/hpctoolkit/Makefile src/hpctoolkit/hpclump/Makefile src/hpctoolkit/hpcprof/Makefile src/hpctoolkit/hpcprof-flat/Makefile src/hpctoolkit/hpcproftt/Makefile src/hpctoolkit/hpcrun/Makefile src/hpctoolkit/hpcstruct/Makefile src/hpctoolkit/misc/Makefile src/hpctoolkit/xprof/Makefile src/lib/Makefile src/lib/banal/Makefile src/lib/binutils/Makefile src/lib/isa/Makefile src/lib/perl/Makefile src/lib/perl/HPCToolkitVersionInfo.pm src/lib/prof-juicy/Makefile src/lib/prof-juicy-x/Makefile src/lib/prof-lean/Makefile src/lib/support/Makefile src/lib/xml/Makefile"
 
 
 ac_config_commands="$ac_config_commands "
@@ -24382,7 +24382,6 @@ do
     "src/hpctoolkit/hpcprof/Makefile") CONFIG_FILES="$CONFIG_FILES src/hpctoolkit/hpcprof/Makefile" ;;
     "src/hpctoolkit/hpcprof-flat/Makefile") CONFIG_FILES="$CONFIG_FILES src/hpctoolkit/hpcprof-flat/Makefile" ;;
     "src/hpctoolkit/hpcproftt/Makefile") CONFIG_FILES="$CONFIG_FILES src/hpctoolkit/hpcproftt/Makefile" ;;
-    "src/hpctoolkit/hpcquick/Makefile") CONFIG_FILES="$CONFIG_FILES src/hpctoolkit/hpcquick/Makefile" ;;
     "src/hpctoolkit/hpcrun/Makefile") CONFIG_FILES="$CONFIG_FILES src/hpctoolkit/hpcrun/Makefile" ;;
     "src/hpctoolkit/hpcstruct/Makefile") CONFIG_FILES="$CONFIG_FILES src/hpctoolkit/hpcstruct/Makefile" ;;
     "src/hpctoolkit/misc/Makefile") CONFIG_FILES="$CONFIG_FILES src/hpctoolkit/misc/Makefile" ;;
