@@ -253,7 +253,7 @@ Summary::Summary(int d)
 }
 
 
-Summary::Summary(const LoadModule *exec, const vector<ProfFile*>& profs, int d)
+Summary::Summary(const LoadModule *exec, const vector<Prof::Flat::Profile*>& profs, int d)
   : debug_(d)
 {
   abort();  // FIXME: do we want a LoadModule?
@@ -279,9 +279,9 @@ Summary::~Summary()
 }
 
 
-// 'profs' contains at least one ProfFile
+// 'profs' contains at least one Prof::Flat::Profile
 bool
-Summary::init(const string& pgm, const vector<ProfFile*>& profs)
+Summary::init(const string& pgm, const vector<Prof::Flat::Profile*>& profs)
 { 
   // FIXME: For what we want to do, the order in which vprof creates a
   // summary is annoying.  For now, to avoid a rewrite, I have hacked
@@ -291,7 +291,7 @@ Summary::init(const string& pgm, const vector<ProfFile*>& profs)
   
   // 1a. Sanity check file modification times
   for (uint i = 0; i < profs.size(); ++i) {
-    const ProfFile* prof = profs[i];
+    const Prof::Flat::Profile* prof = profs[i];
 
     if (i == 0) { 
       prof_mtime_ = prof->mtime();
@@ -310,15 +310,15 @@ Summary::init(const string& pgm, const vector<ProfFile*>& profs)
   uint ev_i = 0; // nth event
 
   for (uint i = 0; i < profs.size(); ++i) {
-    const ProfFile* prof = profs[i];
+    const Prof::Flat::Profile* prof = profs[i];
       
     // We inspect only the first load module of each prof file because
     // while one prof file contains multiple load modules, each load
     // module contains the same events.  
-    const ProfFileLM& proflm = prof->load_module(0);
+    const Prof::Flat::LM& proflm = prof->load_module(0);
     n_event_ += proflm.num_events();
     for (uint k = 0; k < proflm.num_events(); ++k, ++ev_i) {
-      const ProfFileEvent& profevent = proflm.event(k);
+      const Prof::Flat::Event& profevent = proflm.event(k);
       string name = stringcat(profevent.name(), profevent.period());
       event2locs_map_[name].set_offset(ev_i, profevent.name(),
 				       /*profevent.event()*/
@@ -361,10 +361,10 @@ Summary::init(const string& pgm, const vector<ProfFile*>& profs)
   //    them more than once.
   ev_i = 0;
   for (uint i = 0; i < profs.size(); ++i) {
-    const ProfFile* prof = profs[i];
-    const ProfFileLM& proflm1 = prof->load_module(0);
+    const Prof::Flat::Profile* prof = profs[i];
+    const Prof::Flat::LM& proflm1 = prof->load_module(0);
     for (uint j = 0; j < prof->num_load_modules(); ++j) {
-      const ProfFileLM& proflm = prof->load_module(j);
+      const Prof::Flat::LM& proflm = prof->load_module(j);
       process_lm(proflm, ev_i);
     }
     ev_i += proflm1.num_events();
@@ -452,7 +452,7 @@ Summary::cleanup()
 }
 
 bool
-Summary::process_lm(const ProfFileLM& proflm, int ev_i_start)
+Summary::process_lm(const Prof::Flat::LM& proflm, int ev_i_start)
 {
   const string& lmname = proflm.name();
 
@@ -481,7 +481,7 @@ Summary::process_lm(const ProfFileLM& proflm, int ev_i_start)
   for (uint l = 0; l < proflm.num_events(); ++l, ++ev_i) {
 
     // Create event
-    const ProfFileEvent& profevent = proflm.event(l);
+    const Prof::Flat::Event& profevent = proflm.event(l);
     if (event_[ev_i] == NULL) {
       event_[ev_i] = new Event(profevent.name(), profevent.description(),
 			       profevent.period());
@@ -491,7 +491,7 @@ Summary::process_lm(const ProfFileLM& proflm, int ev_i_start)
 	  
     // Inspect the event data and try to find symbolic info
     for (uint m = 0; m < profevent.num_data(); ++m) {
-      const ProfFileEventDatum& dat = profevent.datum(m);
+      const Prof::Flat::Datum& dat = profevent.datum(m);
       VMA pc = dat.first;
       uint32_t count = dat.second;
 
