@@ -1,6 +1,7 @@
 #include "x86-unwind-analysis.h"
 #include "x86-build-intervals.h"
 #include "x86-decoder.h"
+#include "fnbounds_interface.h"
 
 void x86_dump_intervals(char  *addr) 
 {
@@ -8,7 +9,7 @@ void x86_dump_intervals(char  *addr)
   unwind_interval *u;
   interval_status intervals;
 
-  find_enclosing_function_bounds(addr, &s, &e);
+  fnbounds_enclosing_addr(addr, &s, &e);
 
   intervals = x86_build_intervals(s, e - s, 0);
 

@@ -147,6 +147,7 @@ _msg(const char *fmt,va_list args)
   if (csprof_using_threads){
     sprintf(fstr,"[%d]: ",TD_GET(id));
   }
+  sprintf(fstr,"[%d]: ",getpid());
   strcat(fstr,fmt);
   strcat(fstr,"\n");
   n = vsprintf(buf,fstr,args);

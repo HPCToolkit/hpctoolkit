@@ -71,6 +71,27 @@ csprof_get_epoch()
   return current_epoch;
 }
 
+
+void
+csprof_epoch_add_module(const char *module_name, 
+	void *vaddr,                /* the preferred virtual address */
+  	void *mapaddr,              /* the actual mapped address */
+        size_t size)                /* just what it sounds like */
+{
+  csprof_epoch_module_t *m = (csprof_epoch_module_t *) csprof_malloc(sizeof(csprof_epoch_module_t));
+
+  // fill in the fields of the structure
+  m->module_name = module_name;
+  m->vaddr = vaddr;
+  m->mapaddr = mapaddr;
+  m->size = size;
+
+  // link it into the list of loaded modules for the current epoch
+  m->next = current_epoch->loaded_modules;
+  current_epoch->loaded_modules = m->next; 
+}
+
+
 /* epochs are totally distinct from profiling states */
 csprof_epoch_t *
 csprof_epoch_new()

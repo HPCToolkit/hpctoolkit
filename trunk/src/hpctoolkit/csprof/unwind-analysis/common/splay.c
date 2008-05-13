@@ -7,12 +7,13 @@
 #include <assert.h>
 #include <err.h>
 #include <stdio.h>
-#include "find.h"
 #include "intervals.h"
 #include "spinlock.h"
 #include "splay.h"
 #include "pmsg.h"
 #include "thread_data.h"
+
+#include "fnbounds_interface.h"
 
 
 static interval_tree_node_t csprof_interval_tree_root = NULL;
@@ -183,7 +184,7 @@ csprof_addr_to_interval(void *addr)
 #endif
 
     /* Get list of new intervals to insert into the tree. */
-    ret = find_enclosing_function_bounds((char *)addr, &fcn_start, &fcn_end);
+    ret = fnbounds_enclosing_addr(addr, &fcn_start, &fcn_end);
     if (ret != SUCCESS) {
 	SPINUNLOCK(&lock);
 	PMSG(SPLAY,"SPLAY: no enclosing bounds found");

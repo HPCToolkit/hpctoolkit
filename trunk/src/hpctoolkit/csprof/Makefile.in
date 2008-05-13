@@ -68,6 +68,7 @@ ARFLAGS := -r
 link_flags := -Wl,-Bsymbolic -Wl,-soname,$(CSPROFLIB) -shared
 
 module_dirs := utilities                \
+               fnbounds                 \
                memory                   \
                processor/x86-64         \
                unwind-analysis/common \
@@ -89,10 +90,7 @@ TAGS:
 
 
 ifdef STATIC_ONLY
-  find_v  := find_static
   gethost := gethostid.o override.o MPI_Init.o 
-else
-  find_v  := find
 endif
 
 
@@ -163,7 +161,7 @@ hpcfile_objs := $(addsuffix .o,$(addprefix hpcfile_,general cstree csprof))
 # library in the proper order and for correct functioning of the profiler
 OBJS := first_func.o
 ifndef STATIC_ONLY
-   OBJS += fnbounds_dynamic_server.o libmonitor_upcalls.o
+   OBJS += libmonitor_upcalls.o
 else
    OBJS += static_mon_ovr.o
 endif
@@ -172,6 +170,19 @@ OBJS += name.o list.o epoch.o
 OBJS += sample_event.o 
 #OBJS += csprof_options.o process_event_list.o
 OBJS += csprof_options.o
+
+#-------------------------
+# finding function bounds
+#-------------------------
+OBJS += fnbounds_common.o 
+ifdef STATIC_ONLY
+   OBJS += fnbounds_static.o
+else
+   OBJS += system_server.o
+   OBJS += fnbounds_dynamic.o
+   OBJS += dylib.o
+   OBJS += csprof_dlfns.o
+endif
 
 #-------------------
 # utilities
@@ -207,13 +218,10 @@ OBJS += all_sample_sources.o \
         papi.sample_source.o
 OBJS += state.o env.o data.o dump_backtraces.o segv_handler.o
 OBJS += pmsg.o
-OBJS += nm_bound.o
 # OBJS += bad_unwind.o
 OBJS += handling_sample.o thread_data.o
 OBJS += $(hpcfile_objs)
-#ifdef PRIM_UNWIND
-OBJS += $(find_v).o
-#endif
+
 OBJS += intervals.o 
 
 # ----------------------------------------------------------
@@ -242,7 +250,6 @@ OBJS += lush.o \
 OBJS += x86-all.o 
 
 OBJS += stack_troll.o
-OBJS += dl_bound.o
 OBJS += $(gethost)
 
 OBJS += last.o

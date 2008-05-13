@@ -13,7 +13,7 @@
 // local includes
 //***********************************************************************************
 
-#include "dl_bound.h"
+#include "fnbounds_interface.h"
 #include "pmsg.h"
 
 
@@ -52,9 +52,7 @@ struct dylib_fmca_s {
 // forward declarations
 //***********************************************************************************
 
-static int dylib_note_dlopen_callback(struct dl_phdr_info *info, 
-	                              size_t size, 
-				      void *module_name_v);
+static int dylib_map_open_dsos_callback(struct dl_phdr_info *info, size_t size, void *);
 
 static int dylib_find_module_containing_addr_callback(struct dl_phdr_info *info, 
 						      size_t size, 
@@ -66,13 +64,35 @@ static int dylib_find_module_containing_addr_callback(struct dl_phdr_info *info,
 // interface operations
 //***********************************************************************************
 
-//-------------------------------------------------------------
-// postprocess a module after dynamic loading
-//-------------------------------------------------------------
+//------------------------------------------------------------------
+// ensure bounds information computed for all open shared libraries
+//------------------------------------------------k-----------------
 void 
-dylib_note_dlopen(const char *module_name)
+dylib_map_open_dsos()
 {
-  dl_iterate_phdr(dylib_note_dlopen_callback, (void *) module_name);
+  dl_iterate_phdr(dylib_map_open_dsos_callback, (void *)0);
+}
+
+
+//------------------------------------------------------------------
+// ensure bounds information computed for the executable
+//------------------------------------------------------------------
+void 
+dylib_map_executable()
+{
+  const char *executable_name = "/proc/self/exe";
+  fnbounds_note_module(executable_name, NULL, NULL);
+}
+
+
+int 
+dylib_addr_is_mapped(unsigned long long addr) 
+{
+  struct dylib_fmca_s arg;
+
+  // initialize arg structure
+  arg.addr = addr;
+  return dl_iterate_phdr(dylib_find_module_containing_addr_callback, &arg);
 }
 
 
@@ -134,31 +154,12 @@ dylib_get_segment_bounds(struct dl_phdr_info *info,
 
 
 static int
-dylib_note_dlopen_callback(struct dl_phdr_info *info, 
-			   size_t size, 
-			   void *module_name_v)
+dylib_map_open_dsos_callback(struct dl_phdr_info *info, size_t size, void *unused)
 {
-  const char *module_name = (char *) module_name_v;
-
-  TMSG(DL_ADD_MODULE,"name in = %s, name considered = %s", module_name,
-       info->dlpi_name);
-
-  //------------------------------------------------------------------------
-  // if the segment name matches the name supplied ...
-  //------------------------------------------------------------------------
-  if (strstr(info->dlpi_name, module_name)) {
-
-    char resolved_path[PATH_MAX];
+  if (strcmp(info->dlpi_name,"") != 0) {
     struct dylib_seg_bounds_s bounds;
-
     dylib_get_segment_bounds(info, &bounds);
-    realpath(info->dlpi_name, resolved_path);
-
-    TMSG(ADD_MODULE_BASE,"name in:%s => %s, start = %p, end = %p", module_name,
-	 resolved_path, bounds.start, bounds.end);
-
-    dl_add_module_base(resolved_path, (char *) bounds.start, (char *) bounds.end);
-    return 1;
+    fnbounds_note_module(info->dlpi_name, (void *) bounds.start, (void *) bounds.end);
   }
 
   return 0;
@@ -167,8 +168,7 @@ dylib_note_dlopen_callback(struct dl_phdr_info *info,
 
 static int
 dylib_find_module_containing_addr_callback(struct dl_phdr_info *info, 
-					   size_t size, 
-					   void *fargs_v)
+					   size_t size, void *fargs_v)
 {
   struct dylib_fmca_s *fargs = (struct dylib_fmca_s *) fargs_v;
   dylib_get_segment_bounds(info, &fargs->bounds);
@@ -176,7 +176,8 @@ dylib_find_module_containing_addr_callback(struct dl_phdr_info *info,
   //------------------------------------------------------------------------
   // if addr is in within the segment bounds
   //------------------------------------------------------------------------
-  if (fargs->addr >= (long long) fargs->bounds.start && fargs->addr >= (long long) fargs->bounds.end) {
+  if (fargs->addr >= (long long) fargs->bounds.start && 
+      fargs->addr <  (long long) fargs->bounds.end) {
     fargs->module_name = info->dlpi_name;
     return 1;
   }
