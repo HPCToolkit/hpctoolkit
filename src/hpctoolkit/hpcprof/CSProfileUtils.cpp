@@ -147,7 +147,7 @@ writeCSProfile(CSProfile* prof, std::ostream& os, bool prettyPrint)
   // write out metrics
   uint n_metrics = prof->numMetrics();
   for (uint i = 0; i < n_metrics; i++) {
-    const CSProfileMetric* metric = prof->metric(i);
+    const SampledMetricDesc* metric = prof->metric(i);
     os << "<METRIC shortName" << MakeAttrNum(i)
        << " nativeName" << MakeAttrStr(metric->name())
        << " period" << MakeAttrNum(metric->period())
@@ -240,7 +240,7 @@ ReadProfile_CSPROF(const char* fnm, const char *execnm)
   
   // Extract metrics
   for (int i = 0; i < num_metrics; i++) {
-    CSProfileMetric* metric = prof->metric(i);
+    SampledMetricDesc* metric = prof->metric(i);
     metric->name(metadata.metrics[i].metric_name);
     metric->flags(metadata.metrics[i].flags);
     metric->period(metadata.metrics[i].sample_period);

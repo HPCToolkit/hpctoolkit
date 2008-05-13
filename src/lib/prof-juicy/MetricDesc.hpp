@@ -48,12 +48,13 @@
 //
 //***************************************************************************
 
-#ifndef prof_juicy_CallPathMetric 
-#define prof_juicy_CallPathMetric
+#ifndef prof_juicy_MetricDesc 
+#define prof_juicy_MetricDesc
 
 //************************* System Include Files ****************************//
 
 #include <iostream>
+#include <vector>
 
 //*************************** User Include Files ****************************//
 
@@ -63,65 +64,132 @@
 
 //*************************** Forward Declarations **************************//
 
+namespace Prof {
+
 //***************************************************************************//
-// CSProfMetric
+// MetricDesc
 //***************************************************************************//
 
-class CSProfileMetric
+class MetricDesc
 {
 public:
-  CSProfileMetric() : m_period(0) { }
-  ~CSProfileMetric() { }
+  MetricDesc() 
+    { }
 
-  CSProfileMetric(const CSProfileMetric& x)
-    : m_name(x.m_name), m_description(x.m_description), 
-      m_flags(x.m_flags), m_period(x.m_period) { }
+  MetricDesc(const char* name, const char* description)
+    : m_name((name) ? name : ""), 
+      m_description((description) ? description : "")
+    { }
 
-  CSProfileMetric& operator=(const CSProfileMetric& x) {
+  MetricDesc(const std::string& name, const std::string& description)
+    : m_name(name), m_description(description)
+    { }
+
+  virtual ~MetricDesc() { }
+
+  MetricDesc(const MetricDesc& x)
+    : m_name(x.m_name), m_description(x.m_description)
+    { }
+
+  MetricDesc& operator=(const MetricDesc& x) {
     if (this != &x) {
       m_name        = x.m_name;
       m_description = x.m_description;
-      m_flags       = x.m_flags;
-      m_period      = x.m_period;
     }
     return *this;
   }
 
-  // Name, Description: The metric name and a description
-  // Period: The sampling period (whether event or instruction based)
+  // -------------------------------------------------------
+  // name, description: The metric name and a description
+  // -------------------------------------------------------
   const std::string& name() const        { return m_name; }
   void               name(const char* x) { m_name = (x) ? x : ""; }
+  void               name(const std::string& x) { m_name = x; }
 
   const std::string& description() const { return m_description; }
-  void description(const char* x) { m_description = (x) ? x : ""; }
+  void description(const char* x)        { m_description = (x) ? x : ""; }
+  void description(const std::string& x) { m_description = x; }
 
-  hpcfile_csprof_metric_flag_t flags() const         { return m_flags; }
-  void                         flags(hpcfile_csprof_metric_flag_t x) { m_flags = x; }
-
-  unsigned int period() const         { return m_period; }
-  void         period(unsigned long x) { m_period = x; }
+  // -------------------------------------------------------
+  // 
+  // -------------------------------------------------------
 
   void dump(std::ostream& os = std::cerr) const { }
   void ddump() const { }
 
 protected:
 private:  
-  std::string  m_name;
-  std::string  m_description;
+  std::string m_name;
+  std::string m_description;
+};
+
+
+//***************************************************************************//
+// SampledMetricDesc
+//***************************************************************************//
+
+class SampledMetricDesc : public MetricDesc
+{
+public:
+  SampledMetricDesc() 
+    : m_flags(HPCFILE_METRIC_FLAG_NULL), m_period(0) 
+    { }
+
+  SampledMetricDesc(const char* name, const char* description,
+		    unsigned long period)
+    : MetricDesc(name, description),
+      m_flags(HPCFILE_METRIC_FLAG_NULL), m_period(period)
+    { }
+
+  virtual ~SampledMetricDesc() 
+    { }
+
+  SampledMetricDesc(const SampledMetricDesc& x)
+    : MetricDesc(x.name(), x.description()), m_period(x.m_period)
+    { }
+
+  SampledMetricDesc& operator=(const SampledMetricDesc& x) {
+    MetricDesc::operator=(x);
+    if (this != &x) {
+      m_period = x.m_period;
+    }
+    return *this;
+  }
+
+  // -------------------------------------------------------
+  // 
+  // -------------------------------------------------------
+  hpcfile_csprof_metric_flag_t flags() const         { return m_flags; }
+  void                         flags(hpcfile_csprof_metric_flag_t x) { m_flags = x; }
+
+  unsigned int period() const          { return m_period; }
+  void         period(unsigned long x) { m_period = x; }
+
+  // -------------------------------------------------------
+  // 
+  // -------------------------------------------------------
+
+  void dump(std::ostream& os = std::cerr) const { }
+  void ddump() const { }
+
+protected:
+private:  
   hpcfile_csprof_metric_flag_t m_flags;  // flags of the metric
   unsigned long m_period; // sampling period
 };
 
 
 //***************************************************************************//
-// CSProfMetricVec
+// SampledMetricDesc
 //***************************************************************************//
 
-class CSProfileMetricDescVec : public std::vector<CSProfileMetric*>
+class SampledMetricDescVec : public std::vector<SampledMetricDesc*>
 {
 };
 
 
+} // namespace Prof
+
 //***************************************************************************
 
-#endif /* prof_juicy_CallPathMetric */
+#endif /* prof_juicy_MetricDesc */
