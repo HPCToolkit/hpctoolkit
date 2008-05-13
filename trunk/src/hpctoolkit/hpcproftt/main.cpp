@@ -144,7 +144,7 @@ usage(const string &argv0)
 int
 real_main(int argc, char* argv[]);
 
-int dump_object(ostream& os, const string& pgm, const vector<ProfFile*>& profs);
+int dump_object(ostream& os, const string& pgm, const vector<Prof::Flat::Profile*>& profs);
 int dump_html_or_text(Summary& sum);
 int dump_PROFILE(Summary& sum);
 
@@ -300,10 +300,10 @@ real_main(int argc, char *argv[])
     return 1;
   }
   
-  vector<ProfFile*> the_profiles(the_proffilenms.size());
+  vector<Prof::Flat::Profile*> the_profiles(the_proffilenms.size());
   for (unsigned int i = 0; i < the_proffilenms.size(); ++i) {
     try {
-      the_profiles[i] = new ProfFile();
+      the_profiles[i] = new Prof::Flat::Profile();
       the_profiles[i]->read(the_proffilenms[i]);
     }
     catch (...) {
@@ -335,7 +335,7 @@ real_main(int argc, char *argv[])
   }
   
   // 3. Cleanup profiling data
-  for (vector<ProfFile*>::iterator it = the_profiles.begin(); 
+  for (vector<Prof::Flat::Profile*>::iterator it = the_profiles.begin(); 
        it != the_profiles.end(); ++it) {
     delete (*it);
   }
@@ -825,10 +825,10 @@ add_to_index(ostream &htmlindex, const string &linkname,
 
 class EventCursor {
 public:
-  EventCursor(const ProfFileLM& proflm, const binutils::LM& lm);
+  EventCursor(const Prof::Flat::LM& proflm, const binutils::LM& lm);
   ~EventCursor();
   
-  const vector<const ProfFileEvent*>& eventDescs() const { return m_eventDescs; }
+  const vector<const Prof::Flat::Event*>& eventDescs() const { return m_eventDescs; }
   const vector<uint64_t>& eventTots() const { return m_eventTots; }
 
   // Assumptions:
@@ -867,7 +867,7 @@ private:
   bool m_doRelocate;
   VMA m_loadAddr;
 
-  vector<const ProfFileEvent*> m_eventDescs;
+  vector<const Prof::Flat::Event*> m_eventDescs;
   vector<uint64_t> m_eventTots;
 
   vector<int> m_curEventIdx;
@@ -937,17 +937,17 @@ private:
 
 
 void
-dump_object_lm(ostream& os, const ProfFileLM& proflm, const binutils::LM& lm);
+dump_object_lm(ostream& os, const Prof::Flat::LM& proflm, const binutils::LM& lm);
 
 void
 dump_event_summary(ostream& os, 
-		   const vector<const ProfFileEvent*>& eventDescs,
+		   const vector<const Prof::Flat::Event*>& eventDescs,
 		   const vector<uint64_t>& eventCnt,
 		   const vector<uint64_t>* eventTot);
 
 int
 dump_object(ostream& os, 
-	    const string& binary, const vector<ProfFile*>& profiles)
+	    const string& binary, const vector<Prof::Flat::Profile*>& profiles)
 {
   // FIXME
   //   verify that load map is the same for each profile
@@ -958,9 +958,9 @@ dump_object(ostream& os,
   // --------------------------------------------------------
   DIAG_Assert(profiles.size() > 0, DIAG_UnexpectedInput);
   
-  const ProfFile* prof = profiles[0];
+  const Prof::Flat::Profile* prof = profiles[0];
   for (uint i = 0; i < prof->num_load_modules(); ++i) {
-    const ProfFileLM& proflm = prof->load_module(i);
+    const Prof::Flat::LM& proflm = prof->load_module(i);
     
     // 1. Open and read the load module
     binutils::LM* lm = NULL;
@@ -983,7 +983,7 @@ dump_object(ostream& os,
 
 
 void
-dump_object_lm(ostream& os, const ProfFileLM& proflm, const binutils::LM& lm)
+dump_object_lm(ostream& os, const Prof::Flat::LM& proflm, const binutils::LM& lm)
 {
   EventCursor eventCursor(proflm, lm);
   ColumnFormatter colFmt(os, eventCursor.eventDescs().size(), 2);
@@ -995,7 +995,7 @@ dump_object_lm(ostream& os, const ProfFileLM& proflm, const binutils::LM& lm)
   os << std::setfill('=') << std::setw(77) << "=" << endl;
   os << "Load module: " << proflm.name() << endl;
 
-  const vector<const ProfFileEvent*>& eventDescs = eventCursor.eventDescs();
+  const vector<const Prof::Flat::Event*>& eventDescs = eventCursor.eventDescs();
   const vector<uint64_t>& eventTots = eventCursor.eventTots();
   
   dump_event_summary(os, eventDescs, eventTots, NULL);
@@ -1084,7 +1084,7 @@ dump_object_lm(ostream& os, const ProfFileLM& proflm, const binutils::LM& lm)
 
 void
 dump_event_summary(ostream& os, 
-		   const vector<const ProfFileEvent*>& eventDescs,
+		   const vector<const Prof::Flat::Event*>& eventDescs,
 		   const vector<uint64_t>& eventCnt,
 		   const vector<uint64_t>* eventTot)
 {
@@ -1092,7 +1092,7 @@ dump_event_summary(ostream& os,
      << "Columns correspond to the following events [event:period (events/sample)]\n";
 
   for (uint i = 0; i < eventDescs.size(); ++i) {
-    const ProfFileEvent& profevent = *(eventDescs[i]);
+    const Prof::Flat::Event& profevent = *(eventDescs[i]);
     
     os << "  " << profevent.name() << ":" << profevent.period() 
        << " - " << profevent.description() 
@@ -1144,7 +1144,7 @@ ColumnFormatter::event_col(uint64_t eventCnt, uint64_t eventTot)
 
 
 
-EventCursor::EventCursor(const ProfFileLM& proflm, const binutils::LM& lm)
+EventCursor::EventCursor(const Prof::Flat::LM& proflm, const binutils::LM& lm)
 {
   m_doRelocate = (lm.type() == binutils::LM::SharedLibrary);
   m_loadAddr = (VMA)proflm.load_addr();
@@ -1153,18 +1153,18 @@ EventCursor::EventCursor(const ProfFileLM& proflm, const binutils::LM& lm)
   // Find all events for load module and compute totals for each event
   // --------------------------------------------------------
   for (uint i = 0; i < proflm.num_events(); ++i) {
-    const ProfFileEvent& profevent = proflm.event(i);
+    const Prof::Flat::Event& profevent = proflm.event(i);
     m_eventDescs.push_back(&profevent);
   }
 
   m_eventTots.resize(m_eventDescs.size());
   for (uint i = 0; i < m_eventDescs.size(); ++i) {
-    const ProfFileEvent& profevent = *(m_eventDescs[i]);
+    const Prof::Flat::Event& profevent = *(m_eventDescs[i]);
     uint64_t& eventTotal = m_eventTots[i];
     eventTotal = 0;
 
     for (uint j = 0; j < profevent.num_data(); ++j) {
-      const ProfFileEventDatum& evdat = profevent.datum(j);
+      const Prof::Flat::Datum& evdat = profevent.datum(j);
       uint32_t count = evdat.second;
       eventTotal += count;
     }
@@ -1200,12 +1200,12 @@ EventCursor::computeEventCounts(const VMAInterval vmaint,
 
   // For each event, determine if a count exists at vma_beg
   for (uint i = 0; i < m_eventDescs.size(); ++i) {
-    const ProfFileEvent& profevent = *(m_eventDescs[i]);
+    const Prof::Flat::Event& profevent = *(m_eventDescs[i]);
     
     // advance ith bucket until it arrives at vmaint region:
     //   (bucket overlaps beg_vma) || (bucket is beyond beg_vma)
     for (int& j = m_curEventIdx[i]; j < profevent.num_data(); ++j) {
-      const ProfFileEventDatum& evdat = profevent.datum(j);
+      const Prof::Flat::Datum& evdat = profevent.datum(j);
       VMA ev_vma = evdat.first;
       VMA ev_ur_vma = relocate(ev_vma);
       VMA ev_ur_vma_ub = ev_ur_vma + profevent.bucket_size();
@@ -1219,7 +1219,7 @@ EventCursor::computeEventCounts(const VMAInterval vmaint,
     // count until bucket moves beyond vmaint region
     // INVARIANT: upon entry, bucket overlaps or is beyond region
     for (int j = m_curEventIdx[i]; j < profevent.num_data(); ++j) {
-      const ProfFileEventDatum& evdat = profevent.datum(j);
+      const Prof::Flat::Datum& evdat = profevent.datum(j);
       VMA ev_vma = evdat.first;
       VMA ev_ur_vma = relocate(ev_vma);
       VMA ev_ur_vma_ub = ev_ur_vma + profevent.bucket_size();

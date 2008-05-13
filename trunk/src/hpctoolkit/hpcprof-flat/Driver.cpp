@@ -278,7 +278,7 @@ Driver::ScopeTreeInsertHPCRUNData(PgmScopeTree& scopes,
   //-------------------------------------------------------
   // Read the profile and insert the data
   //-------------------------------------------------------
-  ProfFile prof;
+  Prof::Flat::Profile prof;
   try {
     prof.read(profFilenm);
   }
@@ -290,7 +290,7 @@ Driver::ScopeTreeInsertHPCRUNData(PgmScopeTree& scopes,
   uint num_samples = 0;
   
   for (uint i = 0; i < prof.num_load_modules(); ++i) {
-    const ProfFileLM& proflm = prof.load_module(i);
+    const Prof::Flat::LM& proflm = prof.load_module(i);
     std::string lmname = proflm.name();
     lmname = ReplacePath(lmname);
 
@@ -322,13 +322,13 @@ Driver::ScopeTreeInsertHPCRUNData(PgmScopeTree& scopes,
       FilePerfMetric* m = *it;
       uint mIdx = (uint)StrUtil::toUInt64(m->NativeName());
       
-      const ProfFileEvent& profevent = proflm.event(mIdx);
+      const Prof::Flat::Event& profevent = proflm.event(mIdx);
       uint64_t period = profevent.period();
       double mval = 0.0;
       double mval_nostruct = 0.0;
 
       for (uint k = 0; k < profevent.num_data(); ++k) {
-	const ProfFileEventDatum& dat = profevent.datum(k);
+	const Prof::Flat::Datum& dat = profevent.datum(k);
 	VMA vma = dat.first; // relocated VMA
 	uint32_t samples = dat.second;
 	double events = samples * period; // samples * (events/sample)
