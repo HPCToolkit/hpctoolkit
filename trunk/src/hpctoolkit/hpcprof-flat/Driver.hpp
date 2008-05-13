@@ -79,19 +79,17 @@ public:
   void SetTitle(const std::string& tit) { title = tit; }
   const std::string& Title() const      { return title; }
 
-  void AddStructureFile(const char* pf) 
-    { structureFiles.push_back(new std::string(pf)); }
-  void AddStructureFile(const std::string& pf) 
-    { AddStructureFile(pf.c_str()); }
-  const std::string& GetStructureFile(int i) const 
-    { return *structureFiles[i]; }
+
+  //void AddStructureFile(const char* pf) 
+  //  { structureFiles.push_back(std::string(pf)); }
+  void AddStructureFile(const std::string& pf) { structureFiles.push_back(pf); }
+  const std::string& GetStructureFile(int i) const { return structureFiles[i]; }
   int NumberOfStructureFiles() const { return structureFiles.size(); }
 
-  void AddGroupFile(const char* pf) 
-    { groupFiles.push_back(new std::string(pf)); }
-  void AddGroupFile(const std::string& pf) 
-    { AddGroupFile(pf.c_str()); }
-  const std::string& GetGroupFile(int i) const { return *groupFiles[i]; }
+  //void AddGroupFile(const char* pf) 
+  //  { groupFiles.push_back(std::string(pf)); }
+  void AddGroupFile(const std::string& pf)     { groupFiles.push_back(pf); }
+  const std::string& GetGroupFile(int i) const { return groupFiles[i]; }
   int NumberOfGroupFiles() const { return groupFiles.size(); }
 
   void AddPath(const char* _path, const char* _viewname);
@@ -135,7 +133,7 @@ private:
   
   void ProcessPGMFile(NodeRetriever* nretriever, 
 		      PGMDocHandler::Doc_t docty, 
-		      std::vector<std::string*>* files);
+		      const std::vector<std::string>& files);
 
   void ScopeTreeComputeHPCRUNMetrics(PgmScopeTree& scopes);
   void ScopeTreeComputeOtherMetrics(PgmScopeTree& scopes);
@@ -154,9 +152,9 @@ private:
   std::vector<std::string> replaceInPath;
   std::vector<std::string> replaceOutPath;
 
-  std::vector<PerfMetric*>  dataSrc;
-  std::vector<std::string*> structureFiles;
-  std::vector<std::string*> groupFiles;
+  std::vector<PerfMetric*> dataSrc;
+  std::vector<std::string> structureFiles;
+  std::vector<std::string> groupFiles;
 };
 
 //****************************************************************************

@@ -76,7 +76,7 @@ using std::string;
 //*************************** Forward Declarations ***************************
 
 static CSProfile* 
-readProfileData(std::vector<string>& profileFiles, const string& exe_fnm);
+readProfileData(std::vector<string>& profileFiles);
 
 static PgmScopeTree*
 readStructureData(std::vector<string>& structureFiles);
@@ -143,7 +143,7 @@ realmain(int argc, char* const* argv)
   // ------------------------------------------------------------
   // Read 'profData', the profiling data file
   // ------------------------------------------------------------
-  CSProfile* prof = readProfileData(args.profileFiles, args.exeFile);
+  CSProfile* prof = readProfileData(args.profileFiles);
 
   // ------------------------------------------------------------
   // Add source file info
@@ -230,16 +230,16 @@ realmain(int argc, char* const* argv)
 //****************************************************************************
 
 static CSProfile* 
-readProfileFile(const string& prof_fnm, const string& exe_fnm);
+readProfileFile(const string& prof_fnm);
 
 
 static CSProfile* 
-readProfileData(std::vector<string>& profileFiles, const string& exe_fnm)
+readProfileData(std::vector<string>& profileFiles)
 {
-  CSProfile* prof = readProfileFile(profileFiles[0], exe_fnm);
+  CSProfile* prof = readProfileFile(profileFiles[0]);
   
   for (int i = 1; i < profileFiles.size(); ++i) {
-    CSProfile* p = readProfileFile(profileFiles[i], exe_fnm);
+    CSProfile* p = readProfileFile(profileFiles[i]);
     prof->merge(*p);
     delete p;
   }
@@ -249,12 +249,12 @@ readProfileData(std::vector<string>& profileFiles, const string& exe_fnm)
 
 
 static CSProfile* 
-readProfileFile(const string& prof_fnm, const string& exe_fnm)
+readProfileFile(const string& prof_fnm)
 {
   CSProfile* prof = NULL;
   try {
     //prof = TheProfileReader.ReadProfileFile(args.profFnm /*type*/);
-    prof = ReadProfile_CSPROF(prof_fnm.c_str(), exe_fnm.c_str());
+    prof = ReadProfile_CSPROF(prof_fnm.c_str());
   } 
   catch (...) {
     DIAG_EMsg("While reading profile '" << prof_fnm << "'...");

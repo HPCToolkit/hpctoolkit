@@ -183,7 +183,7 @@ Driver::ScopeTreeInitialize(PgmScopeTree& scopes)
   // initialize the structure of the scope tree
   //-------------------------------------------------------
   if (NumberOfStructureFiles() > 0) {
-    ProcessPGMFile(&ret, PGMDocHandler::Doc_STRUCT, &structureFiles);
+    ProcessPGMFile(&ret, PGMDocHandler::Doc_STRUCT, structureFiles);
   }
 
   //-------------------------------------------------------
@@ -191,7 +191,7 @@ Driver::ScopeTreeInitialize(PgmScopeTree& scopes)
   // group partitions (as wall as initialize/extend the scope tree)
   //-------------------------------------------------------
   if (NumberOfGroupFiles() > 0) {
-    ProcessPGMFile(&ret, PGMDocHandler::Doc_GROUP, &groupFiles);
+    ProcessPGMFile(&ret, PGMDocHandler::Doc_GROUP, groupFiles);
   }
 }
 
@@ -395,14 +395,10 @@ Driver::ScopeTreeInsertHPCRUNData(PgmScopeTree& scopes,
 void
 Driver::ProcessPGMFile(NodeRetriever* nretriever, 
 		       PGMDocHandler::Doc_t docty, 
-		       std::vector<string*>* files)
+		       const std::vector<string>& files)
 {
-  if (!files) {
-    return;
-  }
-  
-  for (uint i = 0; i < files->size(); ++i) {
-    const string& fnm = *((*files)[i]);
+  for (uint i = 0; i < files.size(); ++i) {
+    const string& fnm = files[i];
     DriverDocHandlerArgs args(this);
     read_PGM(nretriever, fnm.c_str(), docty, args);
   }
