@@ -80,7 +80,7 @@ MYLDADD = \
 	@HOST_LIBTREPOSITORY@ \
 	$(HPC_LIBPROFJUICYX) $(HPC_LIBPROFJUICY) $(HPC_LIBPROFLEAN) $(HPC_LIBBINUTILS) $(HPC_LIBISA) $(HPC_LIBXML) $(HPC_LIBSUPPORT) \
 	@XERCES_LDFLAGS@ @GNUBINUTILS_LDFLAGS@ \
-	@HOST_HPCVIEW_LDFLAGS@ \
+	@HOST_HPCPROF_FLAT_LDFLAGS@ \
 	-lm
 
 MYCLEAN = @HOST_LIBTREPOSITORY@
@@ -91,13 +91,13 @@ MYCLEAN = @HOST_LIBTREPOSITORY@
 
 bin_SCRIPTS = hpcview
 
-bin_PROGRAMS = hpcview-bin
+bin_PROGRAMS = hpcprof-flat-bin
 
-hpcview_bin_SOURCES  = $(MYSOURCES)
-hpcview_bin_CFLAGS   = $(MYCFLAGS)
-hpcview_bin_CXXFLAGS = $(MYCXXFLAGS)
-hpcview_bin_LDFLAGS  = $(MYLDFLAGS)
-hpcview_bin_LDADD    = $(MYLDADD)
+hpcprof_flat_bin_SOURCES  = $(MYSOURCES)
+hpcprof_flat_bin_CFLAGS   = $(MYCFLAGS)
+hpcprof_flat_bin_CXXFLAGS = $(MYCXXFLAGS)
+hpcprof_flat_bin_LDFLAGS  = $(MYLDFLAGS)
+hpcprof_flat_bin_LDADD    = $(MYLDADD)
 
 MOSTLYCLEANFILES = $(MYCLEAN)
 

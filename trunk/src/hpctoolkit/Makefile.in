@@ -70,8 +70,8 @@ RECURSIVE_CLEAN_TARGETS = mostlyclean-recursive clean-recursive	\
   distclean-recursive maintainer-clean-recursive
 ETAGS = etags
 CTAGS = ctags
-DIST_SUBDIRS = hpcstruct hpcprof hpcproftt hpcquick hpcview hpclump \
-	xprof misc hpcrun
+DIST_SUBDIRS = hpcstruct hpcprof hpcprof-flat hpcproftt hpcquick \
+	hpclump xprof misc hpcrun
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
 ACLOCAL = @ACLOCAL@
 AMTAR = @AMTAR@
@@ -108,10 +108,10 @@ HOST_AR = @HOST_AR@
 HOST_CFLAGS = @HOST_CFLAGS@
 HOST_CXXFLAGS = @HOST_CXXFLAGS@
 HOST_HPCPROFTT_LDFLAGS = @HOST_HPCPROFTT_LDFLAGS@
+HOST_HPCPROF_FLAT_LDFLAGS = @HOST_HPCPROF_FLAT_LDFLAGS@
 HOST_HPCPROF_LDFLAGS = @HOST_HPCPROF_LDFLAGS@
 HOST_HPCRUN_LDFLAGS = @HOST_HPCRUN_LDFLAGS@
 HOST_HPCSTRUCT_LDFLAGS = @HOST_HPCSTRUCT_LDFLAGS@
-HOST_HPCVIEW_LDFLAGS = @HOST_HPCVIEW_LDFLAGS@
 HOST_LIBTREPOSITORY = @HOST_LIBTREPOSITORY@
 HOST_LINK_NO_START_FILES = @HOST_LINK_NO_START_FILES@
 HOST_XPROF_LDFLAGS = @HOST_XPROF_LDFLAGS@
@@ -225,8 +225,8 @@ AUTOMAKE_OPTIONS = foreign
 #############################################################################
 # Automake rules
 #############################################################################
-SUBDIRS = hpcstruct hpcprof hpcproftt hpcquick hpcview hpclump xprof \
-	misc $(am__append_1)
+SUBDIRS = hpcstruct hpcprof hpcprof-flat hpcproftt hpcquick hpclump \
+	xprof misc $(am__append_1)
 all: all-recursive
 
 .SUFFIXES:

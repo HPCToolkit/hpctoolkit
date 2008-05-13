@@ -276,7 +276,7 @@ HOST_LINK_NO_START_FILES="-nostartfiles"
 HOST_HPCRUN_LDFLAGS=""
 HOST_HPCSTRUCT_LDFLAGS=""
 HOST_HPCPROF_LDFLAGS=""
-HOST_HPCVIEW_LDFLAGS=""
+HOST_HPCPROF_FLAT_LDFLAGS=""
 HOST_HPCPROFTT_LDFLAGS=""
 HOST_XPROF_LDFLAGS=""
 my_demangle_ldflags=""
@@ -430,7 +430,7 @@ AM_CONDITIONAL(IS_HOST_AR, test "${HOST_AR}" != "")
 AC_SUBST([HOST_HPCRUN_LDFLAGS])
 AC_SUBST([HOST_HPCSTRUCT_LDFLAGS])
 AC_SUBST([HOST_HPCPROF_LDFLAGS])
-AC_SUBST([HOST_HPCVIEW_LDFLAGS])
+AC_SUBST([HOST_HPCPROF_FLAT_LDFLAGS])
 AC_SUBST([HOST_HPCPROFTT_LDFLAGS])
 AC_SUBST([HOST_XPROF_LDFLAGS])
 
@@ -876,11 +876,11 @@ AC_CONFIG_FILES([ \
   src/hpctoolkit/Makefile \
   src/hpctoolkit/hpclump/Makefile \
   src/hpctoolkit/hpcprof/Makefile \
+  src/hpctoolkit/hpcprof-flat/Makefile \
   src/hpctoolkit/hpcproftt/Makefile \
   src/hpctoolkit/hpcquick/Makefile \
   src/hpctoolkit/hpcrun/Makefile \
   src/hpctoolkit/hpcstruct/Makefile \
-  src/hpctoolkit/hpcview/Makefile \
   src/hpctoolkit/misc/Makefile \
   src/hpctoolkit/xprof/Makefile \
   src/lib/Makefile \
