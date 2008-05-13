@@ -292,12 +292,7 @@ Summary::init(const string& pgm, const vector<Prof::Flat::Profile*>& profs)
   // 1a. Sanity check file modification times
   for (uint i = 0; i < profs.size(); ++i) {
     const Prof::Flat::Profile* prof = profs[i];
-
-    if (i == 0) { 
-      prof_mtime_ = prof->mtime();
-    } else if (prof->mtime() < prof_mtime_) {
-      prof_mtime_ = prof->mtime();
-    }
+    prof_mtime_ = 0;
   }
 
   exec_mtime_ = prof_mtime_; // FIXME: oldest prof (newer than) newest lm
