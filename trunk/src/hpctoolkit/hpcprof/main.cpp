@@ -208,7 +208,9 @@ realmain(int argc, char* const* argv)
   // ------------------------------------------------------------
 
   // prepare output directory 
-  args.createDatabaseDirectory();
+  std::pair<string, bool> ret = createUniqueDir(args.dbDir);
+  args.dbDir = ret.first;
+  if (!ret.second) { /* exit on failure */ }
     
   string dbSrcDir = args.dbDir + "/src";
   if (mkdir(dbSrcDir.c_str(),

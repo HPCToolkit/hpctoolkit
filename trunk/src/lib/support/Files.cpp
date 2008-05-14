@@ -64,7 +64,9 @@ using std::string;
 
 //*************************** User Include Files ****************************
 
+#include "diagnostics.h"
 #include "Files.hpp"
+#include "StrUtil.hpp"
 #include "Trace.hpp"
 
 //*************************** Forward Declarations **************************
@@ -232,4 +234,38 @@ PathComponent(const char* fName)
     pathComponent.resize(lastSlash - fName);
   }
   return pathComponent; 
+}
+
+
+pair<string, bool>
+createUniqueDir(const char* dirnm)
+{
+  string dirnm_new = dirnm;
+  bool is_done = false;
+
+  mode_t mkmode = S_IRWXU | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH;
+
+  int ret = mkdir(dirnm, mkmode);
+  if (ret == -1) {
+    if (errno == EEXIST) {
+      // attempt to create dirnm+pid;
+      pid_t pid = getpid();
+      string pid_str = StrUtil::toStr(pid);
+      dirnm_new = dirnm_new + "-" + pid_str;
+      DIAG_Msg(1, "Directory '" << dirnm << "' already exists. Trying " << dirnm_new);
+      ret = mkdir(dirnm_new.c_str(), mkmode);
+      if (ret == -1) {
+	DIAG_Die("Could not create alternate directory " << dirnm_new);
+      }
+      else {
+	DIAG_Msg(1, "Created directory: " << dirnm_new);
+	is_done = true;
+      }
+    } 
+    else {
+      DIAG_Die("Could not create database directory " << dirnm);
+    }
+  }
+  
+  return make_pair(dirnm_new, is_done);
 }

@@ -88,9 +88,6 @@ public:
   void ddump() const;
 
 public:
-  void createDatabaseDirectory();
-
-public:  
 
   // Parsed Data: Command
   const std::string& getCmd() const;

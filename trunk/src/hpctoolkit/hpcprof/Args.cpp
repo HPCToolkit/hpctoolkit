@@ -353,34 +353,3 @@ Args::ddump() const
   dump(std::cerr);
 }
 
-
-//***************************************************************************
-
-void 
-Args::createDatabaseDirectory() 
-{
-  bool uniqueDatabaseDirectoryCreated;
-
-  if (mkdir(dbDir.c_str(), 
-	    S_IRWXU | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH) == -1) {
-    if (errno == EEXIST) {
-      // attempt to create dbDir+pid;
-      pid_t myPid = getpid();
-      string myPidStr = StrUtil::toStr(myPid);
-      string dbDirPid = dbDir + "-" + myPidStr;
-      DIAG_Msg(1, "Database '" << dbDir << "' already exists.  Trying " 
-	       << dbDirPid);
-      if (mkdir(dbDirPid.c_str(), 
-		S_IRWXU | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH) == -1) {
-	DIAG_Die("Could not create alternate database directory " << dbDirPid);
-      } 
-      else {
-	DIAG_Msg(1, "Created database directory: " << dbDirPid);
-	dbDir = dbDirPid;
-      }
-    } 
-    else {
-      DIAG_Die("Could not create database directory " << dbDir);
-    }
-  }
-}

@@ -104,4 +104,17 @@ PathComponent(const std::string& fname)
   return PathComponent(fname.c_str());
 }
 
+
+// createUniqueDir: 
+std::pair<std::string, bool>
+createUniqueDir(const char* dirnm);
+
+inline std::pair<std::string, bool>
+createUniqueDir(const std::string& dirnm)
+{
+  return createUniqueDir(dirnm.c_str());
+}
+
+
+
 #endif 
