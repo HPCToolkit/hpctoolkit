@@ -142,11 +142,7 @@ information. (Set <fname> to '-' to write to stdout.)\n\
 "Options: Correlation\n\
   <profile-files>      A list of hpcrun profiles. Requires bloop STRUCTURE\n\
                        information for correlation.\n\
-  -u                   Do not remove trailing underscores on routine names.\n\
-                       [hpcprof] normally deletes any trailing underscore\n\
-                       from routine names to avoid problems caused when\n\
-                       Fortran compilers provide inconsistent information\n\
-                       about routine names.\n\
+
   -l          By default, the generated scope tree contains aggregated\n\
               metrics at all internal nodes of the scope tree.  This option\n\
               saves space by outputting metrics only at the leaves. A\n\
@@ -216,8 +212,7 @@ Args::Ctor()
   outFilename_TSV    = "";
   db_copySrcFiles    = true;
 
-  metrics_computeInteriorValues = true;  // dump metrics on interior nodes
-  deleteUnderscores  = 1;
+  metrics_computeInteriorValues = true; // dump metrics on interior nodes
 
   Diagnostics_SetDiagnosticFilterLevel(1);
 }
@@ -350,9 +345,6 @@ Args::parse(int argc, const char* const argv[])
     }
     
     // Check for other options:
-    if (parser.IsOpt("u")) {
-      deleteUnderscores--; 
-    }
 
     // Check for Config-file-mode:
     if (parser.IsOpt("config")) {

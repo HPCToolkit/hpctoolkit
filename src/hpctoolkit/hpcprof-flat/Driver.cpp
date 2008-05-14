@@ -148,9 +148,8 @@ Driver::SearchPathStr() const
 {
   string path = ".";
   
-  const PathTupleVec& searchpaths = SearchPathVec();
-  for (uint i = 0; i < searchpaths.size(); ++i) { 
-    path += string(":") + searchpaths[i].first;
+  for (uint i = 0; i < m_args.searchPaths.size(); ++i) { 
+    path += string(":") + m_args.searchPaths[i].first;
   }
 
   return path;
@@ -179,7 +178,7 @@ Driver::ScopeTreeInitialize(PgmScopeTree& scopes)
   // if a PGM/Structure document has been provided, use it to 
   // initialize the structure of the scope tree
   //-------------------------------------------------------
-  if (NumberOfStructureFiles() > 0) {
+  if (!m_args.structureFiles.empty()) {
     ProcessPGMFile(&ret, PGMDocHandler::Doc_STRUCT, m_args.structureFiles);
   }
 
@@ -187,7 +186,7 @@ Driver::ScopeTreeInitialize(PgmScopeTree& scopes)
   // if a PGM/Group document has been provided, use it to form the 
   // group partitions (as wall as initialize/extend the scope tree)
   //-------------------------------------------------------
-  if (NumberOfGroupFiles() > 0) {
+  if (!m_args.groupFiles.empty()) {
     ProcessPGMFile(&ret, PGMDocHandler::Doc_GROUP, m_args.groupFiles);
   }
 }
@@ -342,7 +341,7 @@ Driver::ScopeTreeInsertHPCRUNData(PgmScopeTree& scopes,
 	// 2. Find associated scope and insert into scope tree
 	ScopeInfo* scope = lmScope->findByVMA(ur_vma);
 	if (!scope) {
-	  if (NumberOfStructureFiles() > 0 && lmScope->ChildCount() > 0) {
+	  if (!m_args.structureFiles.empty() && lmScope->ChildCount() > 0) {
 	    DIAG_WMsg(3, "Cannot find STRUCTURE for " << lmname << ":0x" << hex << ur_vma << dec << " [" << m->Name() << ", " << events << "]");
 	  }
 	  scope = lmScope;
@@ -422,9 +421,9 @@ Driver::XML_Dump(PgmScope* pgm, int dumpFlags, std::ostream &os,
   // Dump CONFIG
   os << pre << "<CONFIG>" << endl;
 
-  os << pre1 << "<TITLE name=\042" << Title() << "\042/>" << endl;
+  os << pre1 << "<TITLE name=\042" << m_args.title << "\042/>" << endl;
 
-  const PathTupleVec& pVec = SearchPathVec();
+  const PathTupleVec& pVec = m_args.searchPaths;
   for (uint i = 0; i < pVec.size(); i++) {
     const string& pathStr = pVec[i].first;
     os << pre1 << "<PATH name=\042" << pathStr << "\042/>" << endl;

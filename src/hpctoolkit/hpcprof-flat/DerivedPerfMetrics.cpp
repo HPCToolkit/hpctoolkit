@@ -183,9 +183,11 @@ FilePerfMetric::Make(NodeRetriever &ret)
   if (m_type == "HPCRUN") {
     // FIXME: handled elsewhere [currently within Driver.cpp]
   }
+#if 0 // FIXME
   else if (m_type == "PROFILE") {
     MakePROFILE(ret);
   }
+#endif
   else {
     DIAG_Die(DIAG_Unimplemented);
   }

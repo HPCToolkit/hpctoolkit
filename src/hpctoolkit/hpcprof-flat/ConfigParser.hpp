@@ -58,7 +58,8 @@ using XERCES_CPP_NAMESPACE::DOMNode;
 
 //************************ Forward Declarations ******************************
 
-class Driver;
+#include "Args.hpp"
+#include "Driver.hpp"
 
 //****************************************************************************
 
@@ -68,8 +69,7 @@ public:
   
   ~ConfigParser();
 
-  void pass1(Driver& driver);
-  void pass2(Driver& driver);
+  void parse(Args& args, Driver& driver);
 
 private:
   XercesDOMParser* mParser;

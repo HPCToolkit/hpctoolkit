@@ -67,7 +67,6 @@ using XERCES_CPP_NAMESPACE::DOMNamedNodeMap;
 
 #include "ConfigParser.hpp"
 
-#include "Driver.hpp"
 #include "MathMLExprParser.hpp"
 #include "DerivedPerfMetrics.hpp"
 
@@ -79,44 +78,21 @@ using XERCES_CPP_NAMESPACE::DOMNamedNodeMap;
 
 //************************ Forward Declarations ******************************
 
-#define DBG_ME 0
+#define DBG 0
 
 //****************************************************************************
 
-
-// -------------------------------------------------------------------------
-// declare forward references 
-// -------------------------------------------------------------------------
-
-static void ProcessDOCUMENT(DOMNode *node, Driver &driver, bool onlyMetrics);
-static void ProcessHPCVIEW(DOMNode *node, Driver &driver, bool onlyMetrics);
-static void ProcessELEMENT(DOMNode *node, Driver &driver, bool onlyMetrics);
-static void ProcessMETRIC(DOMNode *node, Driver &driver);
-static void ProcessFILE(DOMNode *fileNode, Driver &driver, 
-			const string& metricName, bool metricDoDisplay, 
-			bool metricDoPercent, bool metricDoSortBy, 
-			const string& metricDisplayName);
-
-static string getAttr(DOMNode *node, const XMLCh *attrName);
+static void ProcessDOCUMENT(DOMNode *node, Args& args, Driver &driver);
 
 
-void 
-PrintName(DOMNode *node)
-{
-  const XMLCh *nodeName = node->getNodeName();
-  const XMLCh *nodeValue = node->getNodeValue();
-  cerr << "name=" << XMLString::transcode(nodeName) 
-       << " value=" << XMLString::transcode(nodeValue) << endl;
-}
-
-// -------------------------------------------------------------------------
-// external operations
-// -------------------------------------------------------------------------
+//***************************************************************************
+// 
+//***************************************************************************
 
 ConfigParser::ConfigParser(const string& inputFile, 
-				   XercesErrorHandler& errHndlr)
+			   XercesErrorHandler& errHndlr)
 {
-  DIAG_DevMsgIf(DBG_ME, "HPCVIEW: " << inputFile);
+  DIAG_DevMsgIf(DBG, "CONFIG: " << inputFile);
 
   mParser = new XercesDOMParser;
   mParser->setValidationScheme(XercesDOMParser::Val_Auto);
@@ -127,7 +103,10 @@ ConfigParser::ConfigParser(const string& inputFile,
   }
   
   mDoc = mParser->getDocument();
-  DIAG_DevMsgIf(DBG_ME, "HPCVIEW: "<< "document: " << mDoc);
+  DIAG_DevMsgIf(DBG, "CONFIG: "<< "document: " << mDoc);
+
+
+
 }
 
 
@@ -138,36 +117,48 @@ ConfigParser::~ConfigParser()
 
 
 void
-ConfigParser::pass1(Driver& driver)
+ConfigParser::parse(Args& args, Driver& driver)
 {
-  ProcessDOCUMENT(mDoc, driver, false /*onlyMetrics*/);
+  ProcessDOCUMENT(mDoc, args, driver);
 }
 
 
-void
-ConfigParser::pass2(Driver& driver)
-{
-  // FIXME: should not really need driver
-  ProcessDOCUMENT(mDoc, driver, true /*onlyMetrics*/);
-}
+//***************************************************************************
+// 
+//***************************************************************************
 
+static void ProcessHPCVIEW(DOMNode *node, Args& args, Driver &driver);
+static void ProcessELEMENT(DOMNode *node, Args& args, Driver &driver);
+static void ProcessMETRIC(DOMNode *node, Args& args, Driver &driver);
+static void ProcessFILE(DOMNode *fileNode, Args& args, Driver &driver, 
+			const string& metricName, bool metricDoDisplay, 
+			bool metricDoPercent, bool metricDoSortBy, 
+			const string& metricDisplayName);
 
-// -------------------------------------------------------------------------
-// internal operations
-// -------------------------------------------------------------------------
+static string getAttr(DOMNode *node, const XMLCh *attrName);
 
 static void 
-ProcessDOCUMENT(DOMNode *node, Driver &driver, bool onlyMetrics)
+printName(DOMNode *node)
+{
+  const XMLCh *nodeName = node->getNodeName();
+  const XMLCh *nodeValue = node->getNodeValue();
+  cerr << "name=" << XMLString::transcode(nodeName) 
+       << " value=" << XMLString::transcode(nodeValue) << endl;
+}
+
+
+static void 
+ProcessDOCUMENT(DOMNode *node, Args& args, Driver &driver)
 {
   DOMNode *child = node->getFirstChild();
-  ProcessHPCVIEW(child, driver, onlyMetrics);
+  ProcessHPCVIEW(child, args, driver);
 }
 
 
 static void 
-ProcessHPCVIEW(DOMNode *node, Driver &driver, bool onlyMetrics)
+ProcessHPCVIEW(DOMNode *node, Args& args, Driver &driver)
 {
-  DIAG_DevMsgIf(DBG_ME, "HPCVIEW: " << node);
+  DIAG_DevMsgIf(DBG, "CONFIG: " << node);
 
   if ((node == NULL) ||
       (node->getNodeType() != DOMNode::DOCUMENT_TYPE_NODE) ){ 
@@ -175,7 +166,7 @@ ProcessHPCVIEW(DOMNode *node, Driver &driver, bool onlyMetrics)
   };
   
   node = node->getNextSibling();
-  DIAG_DevMsgIf(DBG_ME, "HPCVIEW: " << node);
+  DIAG_DevMsgIf(DBG, "CONFIG: " << node);
 
   if ( (node == NULL)
        || (node->getNodeType() != DOMNode::ELEMENT_NODE)) {
@@ -185,13 +176,13 @@ ProcessHPCVIEW(DOMNode *node, Driver &driver, bool onlyMetrics)
   // process each child 
   DOMNode *child = node->getFirstChild();
   for (; child != NULL; child = child->getNextSibling()) {
-    ProcessELEMENT(child, driver, onlyMetrics);
+    ProcessELEMENT(child, args, driver);
   }
 } 
 
 
 static void 
-ProcessELEMENT(DOMNode *node, Driver &driver, bool onlyMetrics)
+ProcessELEMENT(DOMNode *node, Args& args, Driver &driver)
 {
   static XMLCh* METRIC       = XMLString::transcode("METRIC");
   static XMLCh* PATH         = XMLString::transcode("PATH");
@@ -218,78 +209,66 @@ ProcessELEMENT(DOMNode *node, Driver &driver, bool onlyMetrics)
   }
 
   // Parse ELEMENT nodes
-  if (XMLString::equals(nodeName,PATH)) {  
-    if (!onlyMetrics) {
-      string path = getAttr(node, NAMEATTR);
-      string viewname = getAttr(node, VIEWNAMEATTR);
-      DIAG_DevMsgIf(DBG_ME, "HPCVIEW: " << "PATH: " << path << ", v=" << viewname);
+  if (XMLString::equals(nodeName, PATH)) {
+    string path = getAttr(node, NAMEATTR);
+    string viewname = getAttr(node, VIEWNAMEATTR);
+    DIAG_DevMsgIf(DBG, "CONFIG: " << "PATH: " << path << ", v=" << viewname);
       
-      if (path.empty()) {
-	ConfigParser_Throw("PATH name attribute cannot be empty.");
-      }
-      else if (driver.CopySrcFiles() && viewname.empty()) {
-	ConfigParser_Throw("PATH '" << path << "': viewname attribute cannot be empty when source files are to be copied.");
-      } // there could be many other nefarious values of these attributes
-      
-      driver.AddSearchPath(path, viewname);
+    if (path.empty()) {
+      ConfigParser_Throw("PATH name attribute cannot be empty.");
     }
-  }
-  else if (XMLString::equals(nodeName,REPLACE)) {  
-    if (!onlyMetrics) {
-      string inPath = getAttr(node, INATTR); 
-      string outPath = getAttr(node, OUTATTR); 
-      DIAG_DevMsgIf(DBG_ME, "HPCVIEW: " << "REPLACE: " << inPath << " -to- " << outPath);
+    else if (args.db_copySrcFiles && viewname.empty()) {
+      ConfigParser_Throw("PATH '" << path << "': viewname attribute cannot be empty when source files are to be copied.");
+    } // there could be many other nefarious values of these attributes
       
-      bool addPath = true;
-      if (inPath == outPath) {
-	cerr << "WARNING: REPLACE: Identical 'in' and 'out' paths: '"
-	     << inPath << "'!  No action will be performed." << endl;
-	addPath = false;
-      }
-      else if (inPath.empty() && !outPath.empty()) {
-	cerr << "WARNING: REPLACE: 'in' path is empty; 'out' path '" << outPath
-	     << "' will be prepended to every file path!" << endl;
-      }
+    args.searchPaths.push_back(PathTuple(path, viewname));
+  }
+  else if (XMLString::equals(nodeName, REPLACE)) {  
+    string inPath = getAttr(node, INATTR); 
+    string outPath = getAttr(node, OUTATTR); 
+    DIAG_DevMsgIf(DBG, "CONFIG: " << "REPLACE: " << inPath << " -to- " << outPath);
       
-      if (addPath) { driver.AddReplacePath(inPath, outPath); }
+    bool addPath = true;
+    if (inPath == outPath) {
+      cerr << "WARNING: REPLACE: Identical 'in' and 'out' paths: '"
+	   << inPath << "'!  No action will be performed." << endl;
+      addPath = false;
     }
-  }
-  else if (XMLString::equals(nodeName,METRIC)) {
-    if (onlyMetrics) {
-      ProcessMETRIC(node, driver);
+    else if (inPath.empty() && !outPath.empty()) {
+      cerr << "WARNING: REPLACE: 'in' path is empty; 'out' path '" << outPath
+	   << "' will be prepended to every file path!" << endl;
     }
-  }
-  else if (XMLString::equals(nodeName,TITLE)) {
-    if (!onlyMetrics) {
-      string title = getAttr(node, NAMEATTR); 
-      DIAG_DevMsgIf(DBG_ME, "HPCVIEW: " << "TITLE: " << title);
-      driver.SetTitle(title);
-    }
-  }
-  else if (XMLString::equals(nodeName,STRUCTURE)) {
-    if (!onlyMetrics) {
-      string fnm = getAttr(node, NAMEATTR); // file name
-      DIAG_DevMsgIf(DBG_ME, "HPCVIEW: " << "STRUCTURE file: " << fnm);
       
-      if (fnm.empty()) {
-	ConfigParser_Throw("STRUCTURE file name is empty.");
-      } 
-      else {
-	driver.AddStructureFile(fnm);
-      }
+    if (addPath) { driver.AddReplacePath(inPath, outPath); }
+  }
+  else if (XMLString::equals(nodeName, METRIC)) {
+    ProcessMETRIC(node, args, driver);
+  }
+  else if (XMLString::equals(nodeName, TITLE)) {
+    string title = getAttr(node, NAMEATTR); 
+    DIAG_DevMsgIf(DBG, "CONFIG: " << "TITLE: " << title);
+    args.title = title;
+  }
+  else if (XMLString::equals(nodeName, STRUCTURE)) {
+    string fnm = getAttr(node, NAMEATTR); // file name
+    DIAG_DevMsgIf(DBG, "CONFIG: " << "STRUCTURE file: " << fnm);
+      
+    if (fnm.empty()) {
+      ConfigParser_Throw("STRUCTURE file name is empty.");
+    } 
+    else {
+      args.structureFiles.push_back(fnm);
     }
   } 
-  else if (XMLString::equals(nodeName,GROUP)) {
-    if (!onlyMetrics) {
-      string fnm = getAttr(node, NAMEATTR); // file name
-      DIAG_DevMsgIf(DBG_ME, "HPCVIEW: " << "GROUP file: " << fnm);
+  else if (XMLString::equals(nodeName, GROUP)) {
+    string fnm = getAttr(node, NAMEATTR); // file name
+    DIAG_DevMsgIf(DBG, "CONFIG: " << "GROUP file: " << fnm);
       
-      if (fnm.empty()) {
-	ConfigParser_Throw("GROUP file name is empty.");
-      } 
-      else {
-	driver.AddGroupFile(fnm);
-      }
+    if (fnm.empty()) {
+      ConfigParser_Throw("GROUP file name is empty.");
+    } 
+    else {
+      args.groupFiles.push_back(fnm);
     }
   } 
   else {
@@ -299,7 +278,7 @@ ProcessELEMENT(DOMNode *node, Driver &driver, bool onlyMetrics)
 
 
 static void 
-ProcessMETRIC(DOMNode *node, Driver &driver)
+ProcessMETRIC(DOMNode *node, Args& args, Driver &driver)
 {
   static XMLCh* FILE = XMLString::transcode("FILE");
   static XMLCh* COMPUTE = XMLString::transcode("COMPUTE");
@@ -328,7 +307,7 @@ ProcessMETRIC(DOMNode *node, Driver &driver)
     ConfigParser_Throw("METRIC: Invalid displayName: '" << metricDisplayName << "'.");
   }
     
-  DIAG_DevMsgIf(DBG_ME, "HPCVIEW: " << "METRIC: name=" << metricName
+  DIAG_DevMsgIf(DBG, "CONFIG: " << "METRIC: name=" << metricName
 		<< " display=" <<  ((metricDoDisplay) ? "true" : "false")
 		<< " doPercent=" <<  ((metricDoPercent) ? "true" : "false")
 		<< " sortBy=" <<  ((metricDoSortBy) ? "true" : "false")
@@ -349,15 +328,15 @@ ProcessMETRIC(DOMNode *node, Driver &driver)
     
     const XMLCh *metricType = metricImpl->getNodeName();
 
-    if (XMLString::equals(metricType,FILE)) {
+    if (XMLString::equals(metricType, FILE)) {
 
-      ProcessFILE(metricImpl, driver, metricName, 
+      ProcessFILE(metricImpl, args, driver, metricName, 
 		  metricDoDisplay, metricDoPercent, metricDoSortBy, 
 		  metricDisplayName);
     }
     else if (XMLString::equals(metricType,COMPUTE)) {
       bool propagateComputed
-	= (getAttr(metricImpl,PROPAGATEATTR) == "computed"); 
+	= (getAttr(metricImpl, PROPAGATEATTR) == "computed"); 
       DOMNode *child = metricImpl->getFirstChild();
       for (; child != NULL; child = child->getNextSibling()) {
 	if (child->getNodeType() == DOMNode::TEXT_NODE) {
@@ -382,7 +361,7 @@ ProcessMETRIC(DOMNode *node, Driver &driver)
 
 
 static void 
-ProcessFILE(DOMNode* fileNode, Driver& driver, 
+ProcessFILE(DOMNode* fileNode, Args& args, Driver& driver, 
 	    const string& metricName, bool metricDoDisplay, 
 	    bool metricDoPercent, bool metricDoSortBy, 
 	    const string& metricDisplayName)
@@ -424,7 +403,7 @@ getAttr(DOMNode *node, const XMLCh *attrName)
 {
   DOMNamedNodeMap  *attributes = node->getAttributes();
   DOMNode *attrNode = attributes->getNamedItem(attrName);
-  DIAG_DevMsgIf(DBG_ME, "HPCVIEW: " << "getAttr(): attrNode" << attrNode);
+  DIAG_DevMsgIf(DBG, "CONFIG: " << "getAttr(): attrNode" << attrNode);
   if (attrNode == NULL) {
     return "";
   } 
