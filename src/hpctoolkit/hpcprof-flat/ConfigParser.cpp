@@ -93,7 +93,7 @@ ConfigParser::ConfigParser(const string& inputFile,
 			   XercesErrorHandler& errHndlr)
 {
   DIAG_DevMsgIf(DBG, "CONFIG: " << inputFile);
-
+  
   mParser = new XercesDOMParser;
   mParser->setValidationScheme(XercesDOMParser::Val_Auto);
   mParser->setErrorHandler(&errHndlr);
@@ -104,9 +104,6 @@ ConfigParser::ConfigParser(const string& inputFile,
   
   mDoc = mParser->getDocument();
   DIAG_DevMsgIf(DBG, "CONFIG: "<< "document: " << mDoc);
-
-
-
 }
 
 
@@ -131,11 +128,14 @@ static void ProcessHPCVIEW(DOMNode *node, Args& args, Driver &driver);
 static void ProcessELEMENT(DOMNode *node, Args& args, Driver &driver);
 static void ProcessMETRIC(DOMNode *node, Args& args, Driver &driver);
 static void ProcessFILE(DOMNode *fileNode, Args& args, Driver &driver, 
-			const string& metricName, bool metricDoDisplay, 
+			const string& metricNm, bool metricDoDisp, 
 			bool metricDoPercent, bool metricDoSortBy, 
-			const string& metricDisplayName);
+			const string& metricDispNm);
 
 static string getAttr(DOMNode *node, const XMLCh *attrName);
+
+static string 
+canonicalizePaths(string& inPath, string& outPath);
 
 static void 
 printName(DOMNode *node)
@@ -209,7 +209,12 @@ ProcessELEMENT(DOMNode *node, Args& args, Driver &driver)
   }
 
   // Parse ELEMENT nodes
-  if (XMLString::equals(nodeName, PATH)) {
+  if (XMLString::equals(nodeName, TITLE)) {
+    string title = getAttr(node, NAMEATTR); 
+    DIAG_DevMsgIf(DBG, "CONFIG: " << "TITLE: " << title);
+    args.title = title;
+  }
+  else if (XMLString::equals(nodeName, PATH)) {
     string path = getAttr(node, NAMEATTR);
     string viewname = getAttr(node, VIEWNAMEATTR);
     DIAG_DevMsgIf(DBG, "CONFIG: " << "PATH: " << path << ", v=" << viewname);
@@ -222,32 +227,6 @@ ProcessELEMENT(DOMNode *node, Args& args, Driver &driver)
     } // there could be many other nefarious values of these attributes
       
     args.searchPaths.push_back(PathTuple(path, viewname));
-  }
-  else if (XMLString::equals(nodeName, REPLACE)) {  
-    string inPath = getAttr(node, INATTR); 
-    string outPath = getAttr(node, OUTATTR); 
-    DIAG_DevMsgIf(DBG, "CONFIG: " << "REPLACE: " << inPath << " -to- " << outPath);
-      
-    bool addPath = true;
-    if (inPath == outPath) {
-      cerr << "WARNING: REPLACE: Identical 'in' and 'out' paths: '"
-	   << inPath << "'!  No action will be performed." << endl;
-      addPath = false;
-    }
-    else if (inPath.empty() && !outPath.empty()) {
-      cerr << "WARNING: REPLACE: 'in' path is empty; 'out' path '" << outPath
-	   << "' will be prepended to every file path!" << endl;
-    }
-      
-    if (addPath) { driver.AddReplacePath(inPath, outPath); }
-  }
-  else if (XMLString::equals(nodeName, METRIC)) {
-    ProcessMETRIC(node, args, driver);
-  }
-  else if (XMLString::equals(nodeName, TITLE)) {
-    string title = getAttr(node, NAMEATTR); 
-    DIAG_DevMsgIf(DBG, "CONFIG: " << "TITLE: " << title);
-    args.title = title;
   }
   else if (XMLString::equals(nodeName, STRUCTURE)) {
     string fnm = getAttr(node, NAMEATTR); // file name
@@ -271,6 +250,31 @@ ProcessELEMENT(DOMNode *node, Args& args, Driver &driver)
       args.groupFiles.push_back(fnm);
     }
   } 
+  else if (XMLString::equals(nodeName, REPLACE)) {  
+    string inPath = getAttr(node, INATTR); 
+    string outPath = getAttr(node, OUTATTR); 
+    DIAG_DevMsgIf(DBG, "CONFIG: " << "REPLACE: " << inPath << " -to- " << outPath);
+      
+    bool addPath = true;
+    if (inPath == outPath) {
+      cerr << "WARNING: REPLACE: Identical 'in' and 'out' paths: '"
+	   << inPath << "'!  No action will be performed." << endl;
+      addPath = false;
+    }
+    else if (inPath.empty() && !outPath.empty()) {
+      cerr << "WARNING: REPLACE: 'in' path is empty; 'out' path '" << outPath
+	   << "' will be prepended to every file path!" << endl;
+    }
+      
+    if (addPath) {
+      canonicalizePaths(inPath, outPath);
+      args.replaceInPath.push_back(inPath);
+      args.replaceOutPath.push_back(outPath);
+    }
+  }
+  else if (XMLString::equals(nodeName, METRIC)) {
+    ProcessMETRIC(node, args, driver);
+  }
   else {
     ConfigParser_Throw("Unexpected ELEMENT type encountered: '" << XMLString::transcode(nodeName) << "'");
   }
@@ -290,28 +294,28 @@ ProcessMETRIC(DOMNode *node, Args& args, Driver &driver)
   static XMLCh* SORTBYATTR = XMLString::transcode("sortBy");
 
   // get metric attributes
-  string metricName = getAttr(node, NAMEATTR); 
-  string metricDisplayName = getAttr(node, DISPLAYNAMEATTR); 
-  bool metricDoDisplay = (getAttr(node, DISPLAYATTR) == "true"); 
+  string metricNm = getAttr(node, NAMEATTR); 
+  string metricDispNm = getAttr(node, DISPLAYNAMEATTR); 
+  bool metricDoDisp = (getAttr(node, DISPLAYATTR) == "true"); 
   bool metricDoPercent = (getAttr(node,PERCENTATTR) == "true"); 
   bool metricDoSortBy = (getAttr(node,SORTBYATTR) == "true"); 
 
-  if (metricName.empty()) {
-    ConfigParser_Throw("METRIC: Invalid name: '" << metricName << "'.");
+  if (metricNm.empty()) {
+    ConfigParser_Throw("METRIC: Invalid name: '" << metricNm << "'.");
   }
-  else if (NameToPerfDataIndex(metricName) != UNDEF_METRIC_INDEX) {
-    ConfigParser_Throw("METRIC: Metric name '" << metricName << "' was previously defined.");
+  else if (NameToPerfDataIndex(metricNm) != UNDEF_METRIC_INDEX) {
+    ConfigParser_Throw("METRIC: Metric name '" << metricNm << "' was previously defined.");
   }
 
-  if (metricDisplayName.empty()) {
-    ConfigParser_Throw("METRIC: Invalid displayName: '" << metricDisplayName << "'.");
+  if (metricDispNm.empty()) {
+    ConfigParser_Throw("METRIC: Invalid displayName: '" << metricDispNm << "'.");
   }
     
-  DIAG_DevMsgIf(DBG, "CONFIG: " << "METRIC: name=" << metricName
-		<< " display=" <<  ((metricDoDisplay) ? "true" : "false")
+  DIAG_DevMsgIf(DBG, "CONFIG: " << "METRIC: name=" << metricNm
+		<< " display=" <<  ((metricDoDisp) ? "true" : "false")
 		<< " doPercent=" <<  ((metricDoPercent) ? "true" : "false")
 		<< " sortBy=" <<  ((metricDoSortBy) ? "true" : "false")
-		<< " metricDisplayName=" << metricDisplayName);
+		<< " metricDispNm=" << metricDispNm);
 		
   // should have exactly one child
   DOMNode *metricImpl = node->getFirstChild();
@@ -330,9 +334,9 @@ ProcessMETRIC(DOMNode *node, Args& args, Driver &driver)
 
     if (XMLString::equals(metricType, FILE)) {
 
-      ProcessFILE(metricImpl, args, driver, metricName, 
-		  metricDoDisplay, metricDoPercent, metricDoSortBy, 
-		  metricDisplayName);
+      ProcessFILE(metricImpl, args, driver, metricNm, 
+		  metricDoDisp, metricDoPercent, metricDoSortBy, 
+		  metricDispNm);
     }
     else if (XMLString::equals(metricType,COMPUTE)) {
       bool propagateComputed
@@ -347,10 +351,10 @@ ProcessMETRIC(DOMNode *node, Args& args, Driver &driver)
 	  continue;
 	}
 	
-	driver.Add(new ComputedPerfMetric(metricName, metricDisplayName, 
-					  metricDoDisplay, metricDoPercent, 
-					  metricDoSortBy,
-					  propagateComputed, child)); 
+	driver.addMetric(new ComputedPerfMetric(metricNm, metricDispNm, 
+						metricDoDisp, metricDoPercent, 
+						metricDoSortBy,
+						propagateComputed, child)); 
       }
     } 
     else {
@@ -362,9 +366,9 @@ ProcessMETRIC(DOMNode *node, Args& args, Driver &driver)
 
 static void 
 ProcessFILE(DOMNode* fileNode, Args& args, Driver& driver, 
-	    const string& metricName, bool metricDoDisplay, 
+	    const string& metricNm, bool metricDoDisp, 
 	    bool metricDoPercent, bool metricDoSortBy, 
-	    const string& metricDisplayName)
+	    const string& metricDispNm)
 {
   static XMLCh* TYPEATTR = XMLString::transcode("type");
   static XMLCh* NAMEATTR = XMLString::transcode("name");
@@ -372,27 +376,26 @@ ProcessFILE(DOMNode* fileNode, Args& args, Driver& driver,
 
   string metricFile     = getAttr(fileNode, NAMEATTR); 
   string metricFileType = getAttr(fileNode, TYPEATTR);
-  string nativeName     = getAttr(fileNode, SELECTATTR);
+  string nativeNm     = getAttr(fileNode, SELECTATTR);
   
-  if (nativeName.empty()) {
-    //    string error = "FILE: Invalid select attribute '" + nativeName + "'";
+  if (nativeNm.empty()) {
+    //    string error = "FILE: Invalid select attribute '" + nativeNm + "'";
     //    throw DocException(error);
     //  Default is to select "0"
-    nativeName = "0";
+    nativeNm = "0";
   }
 
   if (!metricFile.empty()) { 
-    driver.Add(new FilePerfMetric(metricName, nativeName, metricDisplayName, 
-				  metricDoDisplay, metricDoPercent, 
-				  metricDoSortBy, metricFile, metricFileType, 
-				  &driver));
+    driver.addMetric(new FilePerfMetric(metricNm, nativeNm, metricDispNm, 
+					metricDoDisp, metricDoPercent, 
+					metricDoSortBy, metricFile, 
+					metricFileType, 
+					&driver));
   } 
   else {
-    ConfigParser_Throw("METRIC '" << metricName << "' FILE name empty.");
+    ConfigParser_Throw("METRIC '" << metricNm << "' FILE name empty.");
   }
-
 }
-
 
 // -------------------------------------------------------------------------
 
@@ -410,6 +413,23 @@ getAttr(DOMNode *node, const XMLCh *attrName)
   else {
     const XMLCh *attrNodeValue = attrNode->getNodeValue();
     return XMLString::transcode(attrNodeValue);
+  }
+}
+
+// -------------------------------------------------------------------------
+
+static string 
+canonicalizePaths(string& inPath, string& outPath)
+{
+  // Add a '/' at the end of the in path; it's good when testing for
+  // equality, to make sure that the last directory in the path is not
+  // a prefix of the tested path.  
+  // If we need to add a '/' to the in path, then add one to the out
+  // path, too because when is time to replace we don't know if we
+  // added one or not to the IN path.
+  if (!inPath.empty() && inPath[inPath.length()-1] != '/') {
+    inPath += '/';
+    outPath += '/';
   }
 }
 

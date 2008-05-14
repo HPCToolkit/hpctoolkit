@@ -137,6 +137,7 @@ int
 realmain(int argc, char* const* argv) 
 {
   NaN_init();
+
   Args args(argc,argv);  // exits if error on command line
   InitXerces();          // exits iff failure 
 
@@ -190,6 +191,7 @@ realmain(int argc, char* const* argv)
   DIAG_Msg(2, "Driver is now: " << driver.ToString());
   
   
+
   //-------------------------------------------------------
   // 2. Initialize scope tree
   //-------------------------------------------------------
@@ -213,7 +215,7 @@ realmain(int argc, char* const* argv)
   //-------------------------------------------------------
   if (args.outFilename_CSV.empty() && args.outFilename_TSV.empty()) {
     // Prune the scope tree (remove scopeTree without metrics)
-    PruneScopeTreeMetrics(scopeTree.GetRoot(), driver.NumberOfMetrics());
+    PruneScopeTreeMetrics(scopeTree.GetRoot(), driver.numMetrics());
   }
   
   scopeTree.GetRoot()->Freeze();      // disallow further additions to tree 
