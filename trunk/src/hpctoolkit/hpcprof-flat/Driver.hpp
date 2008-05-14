@@ -71,25 +71,12 @@ public:
   ~Driver(); 
   
   // -------------------------------------------------------
-  // Backwards compatibility interace to Args
+  // Results of ConfigParser
   // -------------------------------------------------------
 
-  void AddReplacePath(const std::string& inPath, const std::string& outPath);
-
-  // -------------------------------------------------------
-  //
-  // -------------------------------------------------------
-
-  unsigned int NumberOfMetrics() const       { return dataSrc.size(); }
-  const PerfMetric& PerfDataSrc(int i) const { return *dataSrc[i]; }
-  void Add(PerfMetric* metric); 
-
-  std::string ReplacePath(const char* path);
-  std::string ReplacePath(const std::string& path)
-    { return ReplacePath(path.c_str()); }
-
-  std::string SearchPathStr() const;
-
+  unsigned int numMetrics() const          { return m_metrics.size(); }
+  const PerfMetric& getMetric(int i) const { return *m_metrics[i]; }
+  void addMetric(PerfMetric* metric);
 
   // -------------------------------------------------------
   //
@@ -98,6 +85,17 @@ public:
   void ScopeTreeInitialize(PgmScopeTree& scopes);
   void ScopeTreeComputeMetrics(PgmScopeTree& scopes);
 
+  // -------------------------------------------------------
+  //
+  // -------------------------------------------------------
+
+  std::string ReplacePath(const char* path);
+  std::string ReplacePath(const std::string& path)
+    { return ReplacePath(path.c_str()); }
+
+  std::string SearchPathStr() const;
+
+
   // see 'ScopeInfo' class for dump flags
   void XML_Dump(PgmScope* pgm, std::ostream &os = std::cout, 
 		const char *pre = "") const;
@@ -105,6 +103,7 @@ public:
 		const char *pre = "") const;
   void CSV_Dump(PgmScope* pgm, std::ostream &os = std::cout) const;
   void TSV_Dump(PgmScope* pgm, std::ostream &os = std::cout) const;
+
 
   std::string ToString() const; 
   void Dump() const { std::cerr << ToString() << std::endl; }
@@ -121,11 +120,10 @@ private:
   void ScopeTreeInsertHPCRUNData(PgmScopeTree& scopes,
 				 const string& profFilenm,
 				 const MetricList_t& metricList);
-public:
-  Args& m_args;
 
 private:
-  std::vector<PerfMetric*> dataSrc;
+  Args& m_args;
+  std::vector<PerfMetric*> m_metrics;
 };
 
 //****************************************************************************

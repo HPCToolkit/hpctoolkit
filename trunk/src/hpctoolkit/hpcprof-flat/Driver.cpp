@@ -87,34 +87,10 @@ Driver::~Driver()
 
 
 void
-Driver::AddReplacePath(const std::string& inPath, const std::string& outPath)
+Driver::addMetric(PerfMetric *m) 
 {
-  // Assumes error and warning check has been performed
-  // (cf. ConfigParser)
-
-  // Add a '/' at the end of the in path; it's good when testing for
-  // equality, to make sure that the last directory in the path is not
-  // a prefix of the tested path.  
-  // If we need to add a '/' to the in path, then add one to the out
-  // path, too because when is time to replace we don't know if we
-  // added one or not to the IN path.
-  if (!inPath.empty() && inPath[inPath.length()-1] != '/') {
-    m_args.replaceInPath.push_back(string(inPath) + '/');
-    m_args.replaceOutPath.push_back(string(outPath) + '/');
-  }
-  else {
-    m_args.replaceInPath.push_back(string(inPath));
-    m_args.replaceOutPath.push_back(string(outPath)); 
-  }
-  DIAG_Msg(3, "AddReplacePath: " << inPath << " -to- " << outPath);
-}
-
-
-void
-Driver::Add(PerfMetric *m) 
-{
-  dataSrc.push_back(m); 
-  DIAG_Msg(3, "Add:: dataSrc[" << dataSrc.size()-1 << "]=" << m->ToString());
+  m_metrics.push_back(m); 
+  DIAG_Msg(3, "Add:: m_metrics[" << m_metrics.size()-1 << "]=" << m->ToString());
 } 
 
 
@@ -161,9 +137,9 @@ Driver::ToString() const
 {
   string s =  string("Driver: " )
     + "title=" + m_args.title + " " // + "path=" + path;
-    + "\ndataSrc::\n"; 
-  for (uint i =0; i < dataSrc.size(); i++) {
-    s += dataSrc[i]->ToString() + "\n"; 
+    + "\nm_metrics::\n"; 
+  for (uint i =0; i < m_metrics.size(); i++) {
+    s += m_metrics[i]->ToString() + "\n"; 
   }
   return s; 
 } 
@@ -227,8 +203,8 @@ Driver::ScopeTreeComputeHPCRUNMetrics(PgmScopeTree& scopes)
 
   PgmScope* pgmScope = scopes.GetRoot();
   NodeRetriever ret(pgmScope, SearchPathStr());
-  for (uint i = 0; i < dataSrc.size(); i++) {
-    PerfMetric* m = dataSrc[i];
+  for (uint i = 0; i < m_metrics.size(); i++) {
+    PerfMetric* m = m_metrics[i];
     if (IsHPCRUNFilePerfMetric(m)) {
       DIAG_Assert(pgmScope && pgmScope->ChildCount() > 0, "Attempting to correlate HPCRUN type profile-files without STRUCTURE information.");
       
@@ -252,8 +228,8 @@ Driver::ScopeTreeComputeOtherMetrics(PgmScopeTree& scopes)
   // create PROFILE file and computed metrics
   NodeRetriever ret(scopes.GetRoot(), SearchPathStr());
   
-  for (uint i = 0; i < dataSrc.size(); i++) {
-    PerfMetric* m = dataSrc[i];
+  for (uint i = 0; i < m_metrics.size(); i++) {
+    PerfMetric* m = m_metrics[i];
     if (!IsHPCRUNFilePerfMetric(m)) {
       m->Make(ret);
     }
