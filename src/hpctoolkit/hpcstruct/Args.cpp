@@ -155,7 +155,7 @@ Args::Args()
 Args::Args(int argc, const char* const argv[])
 {
   Ctor();
-  Parse(argc, argv);
+  parse(argc, argv);
 }
 
 
@@ -212,7 +212,7 @@ Args::getCmd() const
 
 
 void
-Args::Parse(int argc, const char* const argv[])
+Args::parse(int argc, const char* const argv[])
 {
   try {
     // -------------------------------------------------------

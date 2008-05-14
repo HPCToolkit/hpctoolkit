@@ -96,7 +96,7 @@ public:
 
 public:  
   // Parsed Data: Command
-  const std::string& getCmd() const { return parser.GetCmd(); }
+  const std::string& getCmd() const;
 
   // Parsed Data: optional arguments
   EventList_t listEvents; // default: LIST_NONE
