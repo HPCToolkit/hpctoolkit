@@ -75,12 +75,9 @@ using std::vector;
 
 //****************************************************************************
 
-Driver::Driver(int deleteUnderscores, bool _cpySrcFiles)
-  : Unique("Driver") 
+Driver::Driver(Args& args)
+  : Unique("Driver"), m_args(args) 
 {
-  path = ".";
-  deleteTrailingUnderscores = deleteUnderscores;
-  cpySrcFiles = _cpySrcFiles;
 } 
 
 
@@ -90,15 +87,7 @@ Driver::~Driver()
 
 
 void
-Driver::AddPath(const char* _path, const char* _viewname)
-{
-  path += string(":") + _path;
-  pathVec.push_back( PathTuple(string(_path), string(_viewname)) );
-}
-
-
-void
-Driver::AddReplacePath(const char* inPath, const char* outPath)
+Driver::AddReplacePath(const std::string& inPath, const std::string& outPath)
 {
   // Assumes error and warning check has been performed
   // (cf. ConfigParser)
@@ -109,47 +98,15 @@ Driver::AddReplacePath(const char* inPath, const char* outPath)
   // If we need to add a '/' to the in path, then add one to the out
   // path, too because when is time to replace we don't know if we
   // added one or not to the IN path.
-  if (strlen(inPath) > 0 && inPath[strlen(inPath)-1] != '/') {
-    replaceInPath.push_back(string(inPath) + '/');
-    replaceOutPath.push_back(string(outPath) + '/');
+  if (!inPath.empty() && inPath[inPath.length()-1] != '/') {
+    m_args.replaceInPath.push_back(string(inPath) + '/');
+    m_args.replaceOutPath.push_back(string(outPath) + '/');
   }
   else {
-    replaceInPath.push_back(string(inPath));
-    replaceOutPath.push_back(string(outPath)); 
+    m_args.replaceInPath.push_back(string(inPath));
+    m_args.replaceOutPath.push_back(string(outPath)); 
   }
   DIAG_Msg(3, "AddReplacePath: " << inPath << " -to- " << outPath);
-}
-
-
-/* Test the specified path against each of the paths in the database. 
- * Replace with the pair of the first matching path.
- */
-string 
-Driver::ReplacePath(const char* oldpath)
-{
-  DIAG_Assert(replaceInPath.size() == replaceOutPath.size(), "");
-  for (uint i = 0 ; i<replaceInPath.size() ; i++ ) {
-    uint length = replaceInPath[i].length();
-    // it makes sense to test for matching only if 'oldpath' is strictly longer
-    // than this replacement inPath.
-    if (strlen(oldpath) > length &&  
-	strncmp(oldpath, replaceInPath[i].c_str(), length) == 0 ) { 
-      // it's a match
-      string s = replaceOutPath[i] + &oldpath[length];
-      DIAG_Msg(3, "ReplacePath: Found a match! New path: " << s);
-      return s;
-    }
-  }
-  // If nothing matched, return the original path
-  DIAG_Msg(3, "ReplacePath: Nothing matched! Init path: " << oldpath);
-  return string(oldpath);
-}
-
-
-bool
-Driver::MustDeleteUnderscore()
-{
-  return (deleteTrailingUnderscores > 0);
 }
 
 
@@ -161,11 +118,51 @@ Driver::Add(PerfMetric *m)
 } 
 
 
+/* Test the specified path against each of the paths in the database. 
+ * Replace with the pair of the first matching path.
+ */
+string 
+Driver::ReplacePath(const char* oldpath)
+{
+  DIAG_Assert(m_args.replaceInPath.size() == m_args.replaceOutPath.size(), "");
+  for (uint i = 0 ; i<m_args.replaceInPath.size() ; i++ ) {
+    uint length = m_args.replaceInPath[i].length();
+    // it makes sense to test for matching only if 'oldpath' is strictly longer
+    // than this replacement inPath.
+    if (strlen(oldpath) > length &&  
+	strncmp(oldpath, m_args.replaceInPath[i].c_str(), length) == 0 ) { 
+      // it's a match
+      string s = m_args.replaceOutPath[i] + &oldpath[length];
+      DIAG_Msg(3, "ReplacePath: Found a match! New path: " << s);
+      return s;
+    }
+  }
+  // If nothing matched, return the original path
+  DIAG_Msg(3, "ReplacePath: Nothing matched! Init path: " << oldpath);
+  return string(oldpath);
+}
+
+
+string 
+Driver::SearchPathStr() const
+{
+  string path = ".";
+  
+  const PathTupleVec& searchpaths = SearchPathVec();
+  for (uint i = 0; i < searchpaths.size(); ++i) { 
+    path += string(":") + searchpaths[i].first;
+  }
+
+  return path;
+}
+
+
 string
 Driver::ToString() const 
 {
-  string s =  string("Driver: " ) + "title=" + title + " " + "path=" + path;
-  s += "\ndataSrc::\n"; 
+  string s =  string("Driver: " )
+    + "title=" + m_args.title + " " // + "path=" + path;
+    + "\ndataSrc::\n"; 
   for (uint i =0; i < dataSrc.size(); i++) {
     s += dataSrc[i]->ToString() + "\n"; 
   }
@@ -176,14 +173,14 @@ Driver::ToString() const
 void
 Driver::ScopeTreeInitialize(PgmScopeTree& scopes) 
 {
-  NodeRetriever ret(scopes.GetRoot(), path);
+  NodeRetriever ret(scopes.GetRoot(), SearchPathStr());
   
   //-------------------------------------------------------
   // if a PGM/Structure document has been provided, use it to 
   // initialize the structure of the scope tree
   //-------------------------------------------------------
   if (NumberOfStructureFiles() > 0) {
-    ProcessPGMFile(&ret, PGMDocHandler::Doc_STRUCT, structureFiles);
+    ProcessPGMFile(&ret, PGMDocHandler::Doc_STRUCT, m_args.structureFiles);
   }
 
   //-------------------------------------------------------
@@ -191,7 +188,7 @@ Driver::ScopeTreeInitialize(PgmScopeTree& scopes)
   // group partitions (as wall as initialize/extend the scope tree)
   //-------------------------------------------------------
   if (NumberOfGroupFiles() > 0) {
-    ProcessPGMFile(&ret, PGMDocHandler::Doc_GROUP, groupFiles);
+    ProcessPGMFile(&ret, PGMDocHandler::Doc_GROUP, m_args.groupFiles);
   }
 }
 
@@ -230,7 +227,7 @@ Driver::ScopeTreeComputeHPCRUNMetrics(PgmScopeTree& scopes)
   // a certain file.
 
   PgmScope* pgmScope = scopes.GetRoot();
-  NodeRetriever ret(pgmScope, path);
+  NodeRetriever ret(pgmScope, SearchPathStr());
   for (uint i = 0; i < dataSrc.size(); i++) {
     PerfMetric* m = dataSrc[i];
     if (IsHPCRUNFilePerfMetric(m)) {
@@ -254,7 +251,7 @@ void
 Driver::ScopeTreeComputeOtherMetrics(PgmScopeTree& scopes) 
 {
   // create PROFILE file and computed metrics
-  NodeRetriever ret(scopes.GetRoot(), path);
+  NodeRetriever ret(scopes.GetRoot(), SearchPathStr());
   
   for (uint i = 0; i < dataSrc.size(); i++) {
     PerfMetric* m = dataSrc[i];
@@ -271,7 +268,7 @@ Driver::ScopeTreeInsertHPCRUNData(PgmScopeTree& scopes,
 				  const MetricList_t& metricList)
 {
   PgmScope* pgm = scopes.GetRoot();
-  NodeRetriever nodeRet(pgm, path);
+  NodeRetriever nodeRet(pgm, SearchPathStr());
   
   vector<PerfMetric*> eventToPerfMetricMap;
 
@@ -427,7 +424,7 @@ Driver::XML_Dump(PgmScope* pgm, int dumpFlags, std::ostream &os,
 
   os << pre1 << "<TITLE name=\042" << Title() << "\042/>" << endl;
 
-  const PathTupleVec& pVec = PathVec();
+  const PathTupleVec& pVec = SearchPathVec();
   for (uint i = 0; i < pVec.size(); i++) {
     const string& pathStr = pVec[i].first;
     os << pre1 << "<PATH name=\042" << pathStr << "\042/>" << endl;

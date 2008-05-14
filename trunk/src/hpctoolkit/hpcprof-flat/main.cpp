@@ -141,11 +141,11 @@ realmain(int argc, char* const* argv)
   InitXerces();          // exits iff failure 
 
   // FIXME: pulled out of HTMLDriver
-  if (MakeDir(args.dbDir.c_str()) != 0) {
+  if (MakeDir(args.db_dir.c_str()) != 0) {
     exit(1);
   }
 
-  Driver driver(args.deleteUnderscores, args.CopySrcFiles); 
+  Driver driver(args); 
 
   PgmScopeTree scopeTree("", new PgmScope("")); // FIXME: better location
   
@@ -205,14 +205,14 @@ realmain(int argc, char* const* argv)
 
   DIAG_If(3) {
     DIAG_Msg(3, "Initial scope tree:");
-    int flg = (args.XML_DumpAllMetrics) ? 0 : PgmScopeTree::DUMP_LEAF_METRICS;
+    int flg = (args.metrics_computeInteriorValues) ? 0 : PgmScopeTree::DUMP_LEAF_METRICS;
     driver.XML_Dump(scopeTree.GetRoot(), flg, std::cerr);
   }
   
   //-------------------------------------------------------
   // 4. Finalize scope tree
   //-------------------------------------------------------
-  if (args.OutFilename_CSV.empty() && args.OutFilename_TSV.empty()) {
+  if (args.outFilename_CSV.empty() && args.outFilename_TSV.empty()) {
     // Prune the scope tree (remove scopeTree without metrics)
     PruneScopeTreeMetrics(scopeTree.GetRoot(), driver.NumberOfMetrics());
   }
@@ -224,46 +224,46 @@ realmain(int argc, char* const* argv)
 
   DIAG_If(3) {
     DIAG_Msg(3, "Final scope tree:");
-    int flg = (args.XML_DumpAllMetrics) ? 0 : PgmScopeTree::DUMP_LEAF_METRICS;
+    int flg = (args.metrics_computeInteriorValues) ? 0 : PgmScopeTree::DUMP_LEAF_METRICS;
     driver.XML_Dump(scopeTree.GetRoot(), flg, std::cerr);
   }
 
   //-------------------------------------------------------
   // 5. Generate Experiment database
   //-------------------------------------------------------
-  if (args.CopySrcFiles) {
-    DIAG_Msg(1, "Copying source files reached by REPLACE/PATH statements to " << args.dbDir);
+  if (args.db_copySrcFiles) {
+    DIAG_Msg(1, "Copying source files reached by REPLACE/PATH statements to " << args.db_dir);
     
     // Note that this may modify file names in the ScopeTree
-    CopySourceFiles(scopeTree.GetRoot(), driver.PathVec(), args.dbDir);
+    CopySourceFiles(scopeTree.GetRoot(), driver.SearchPathVec(), args.db_dir);
   }
 
-  if (!args.OutFilename_CSV.empty()) {
-    const string& fnm = args.OutFilename_CSV;
+  if (!args.outFilename_CSV.empty()) {
+    const string& fnm = args.outFilename_CSV;
     DIAG_Msg(1, "Writing final scope tree (in CSV) to " << fnm);
-    string fpath = args.dbDir + "/" + fnm;
+    string fpath = args.db_dir + "/" + fnm;
     const char* osnm = (fnm == "-") ? NULL : fpath.c_str();
     std::ostream* os = IOUtil::OpenOStream(osnm);
     driver.CSV_Dump(scopeTree.GetRoot(), *os);
     IOUtil::CloseStream(os);
   } 
 
-  if (!args.OutFilename_TSV.empty()) {
-    const string& fnm = args.OutFilename_TSV;
+  if (!args.outFilename_TSV.empty()) {
+    const string& fnm = args.outFilename_TSV;
     DIAG_Msg(1, "Writing final scope tree (in TSV) to " << fnm);
-    string fpath = args.dbDir + "/" + fnm;
+    string fpath = args.db_dir + "/" + fnm;
     const char* osnm = (fnm == "-") ? NULL : fpath.c_str();
     std::ostream* os = IOUtil::OpenOStream(osnm);
     driver.TSV_Dump(scopeTree.GetRoot(), *os);
     IOUtil::CloseStream(os);
   }
   
-  if (args.OutFilename_XML != "no") {
-    int flg = (args.XML_DumpAllMetrics) ? 0 : PgmScopeTree::DUMP_LEAF_METRICS;
+  if (args.outFilename_XML != "no") {
+    int flg = (args.metrics_computeInteriorValues) ? 0 : PgmScopeTree::DUMP_LEAF_METRICS;
 
-    const string& fnm = args.OutFilename_XML;
+    const string& fnm = args.outFilename_XML;
     DIAG_Msg(1, "Writing final scope tree (in XML) to " << fnm);
-    string fpath = args.dbDir + "/" + fnm;
+    string fpath = args.db_dir + "/" + fnm;
     const char* osnm = (fnm == "-") ? NULL : fpath.c_str();
     std::ostream* os = IOUtil::OpenOStream(osnm);
     driver.XML_Dump(scopeTree.GetRoot(), flg, *os);
