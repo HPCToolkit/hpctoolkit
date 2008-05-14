@@ -208,11 +208,11 @@ realmain(int argc, char* const* argv)
   // ------------------------------------------------------------
 
   // prepare output directory 
-  std::pair<string, bool> ret = createUniqueDir(args.dbDir);
-  args.dbDir = ret.first;
+  std::pair<string, bool> ret = createUniqueDir(args.db_dir);
+  args.db_dir = ret.first;
   if (!ret.second) { /* exit on failure */ }
     
-  string dbSrcDir = args.dbDir + "/src";
+  string dbSrcDir = args.db_dir + "/src";
   if (mkdir(dbSrcDir.c_str(),
 	    S_IRWXU | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH) != 0) {
     DIAG_Die("could not create database source code directory " << dbSrcDir);
@@ -220,7 +220,7 @@ realmain(int argc, char* const* argv)
   
   copySourceFiles(prof, args.searchPaths, dbSrcDir);
   
-  string experiment_fnm = args.dbDir + "/" + args.OutFilename_XML;
+  string experiment_fnm = args.db_dir + "/" + args.outFilename_XML;
   writeCSProfileInDatabase(prof, experiment_fnm);
   //writeCSProfile(prof, std::cout, /* prettyPrint */ true);
   

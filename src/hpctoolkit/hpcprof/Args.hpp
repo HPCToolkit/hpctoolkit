@@ -92,9 +92,10 @@ public:
   // Parsed Data: Command
   const std::string& getCmd() const;
 
-  // Parsed Data: optional arguments
-  std::string dbDir;
-  std::string OutFilename_XML;
+  // Parsed Data: output arguments
+  std::string db_dir;
+  std::string outFilename_XML;
+
   std::vector<std::string> searchPaths; // list of search paths
   std::vector<std::string> structureFiles;
 

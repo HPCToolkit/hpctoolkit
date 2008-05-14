@@ -116,17 +116,16 @@ public:
   std::string title;
 
   PathTupleVec             searchPaths;
-  //std::vector<std::string> searchPaths;
+  std::vector<std::string> pvt_searchPaths; // temporary for now
   std::vector<std::string> structureFiles;
   std::vector<std::string> groupFiles;
 
   std::vector<std::string> replaceInPath;
   std::vector<std::string> replaceOutPath;
-  // -------------------------------------
-
 
   // Parsed Data: arguments
   std::vector<std::string> profileFiles;
+  // -------------------------------------
 
 private:
   void Ctor();

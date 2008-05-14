@@ -79,26 +79,12 @@ using namespace std; // For compatibility with non-std C headers
 
 //************************ Forward Declarations ******************************
 
-class FileException
-{
-public:
-  FileException(const string& s) {
-    error = s;
-  }
-  const string& GetError() const { return error; };
-private:
-  string error;
-};
+static void
+readConfFile(Args& args, Driver& driver);
 
-#define NUM_PREFIX_LINES 2
-
-static void AppendContents(std::ofstream &dest, const char *srcFile);
-
-static string BuildConfFile(const string& hpcHome, const string& confFile);
-
-static bool CopySourceFiles(PgmScope* pgmScopeTree, 
-			    const PathTupleVec& pathVec, 
-			    const string& dstDir);
+static bool 
+copySourceFiles(PgmScope* pgmScopeTree, const PathTupleVec& pathVec, 
+		const string& dstDir);
 
 //****************************************************************************
 
@@ -136,70 +122,32 @@ main(int argc, char* const* argv)
 int 
 realmain(int argc, char* const* argv) 
 {
+  Args args(argc, argv);  // exits if error on command line
+
   NaN_init();
+  InitXerces(); // exits iff failure 
 
-  Args args(argc,argv);  // exits if error on command line
-  InitXerces();          // exits iff failure 
-
-  // FIXME: pulled out of HTMLDriver
-  if (MakeDir(args.db_dir.c_str()) != 0) {
-    exit(1);
-  }
-
-  Driver driver(args); 
-
-  PgmScopeTree scopeTree("", new PgmScope("")); // FIXME: better location
-  
+  Driver driver(args);
   //-------------------------------------------------------
-  // 1. Read configuration file
+  // 1. Initialize metric information
   //-------------------------------------------------------
-  const string& cfgFile = args.configurationFile;
-  DIAG_Msg(2, "Initializing Driver from " << cfgFile); 
-  
-  string tmpFile;
-  try {
-    tmpFile = BuildConfFile(args.hpcHome, cfgFile); 
-    // exits iff it fails 
+  if (args.configurationFileMode) {
+    readConfFile(args, driver); // exits on failure
   }
-  catch (const FileException& x) {
-    DIAG_EMsg(x.GetError());
-    exit(1);
+  else {
+    //driver.makePerfMetrics
   }
-  
-  try {
-    XercesErrorHandler errHndlr(cfgFile, tmpFile, NUM_PREFIX_LINES, true);
-    ConfigParser parser(tmpFile, errHndlr);
-    parser.parse(args, driver);
-  }
-  catch (const SAXParseException& x) {
-    unlink(tmpFile.c_str());
-    //DIAG_EMsg(XMLString::transcode(x.getMessage()));
-    exit(1);
-  }
-  catch (const ConfigParserException& x) {
-    unlink(tmpFile.c_str());
-    DIAG_EMsg(x.message());
-    exit(1);
-  }
-  catch (...) {
-    unlink(tmpFile.c_str());
-    DIAG_EMsg("While processing '" << cfgFile << "'...");
-    throw;
-  };
-
-  unlink(tmpFile.c_str());
   DIAG_Msg(2, "Driver is now: " << driver.ToString());
   
-  
-
   //-------------------------------------------------------
-  // 2. Initialize scope tree
+  // 2. Initialize scope tree structure
   //-------------------------------------------------------
   DIAG_Msg(2, "Initializing scope tree...");
+  PgmScopeTree scopeTree("", new PgmScope("")); // FIXME: better location
   driver.ScopeTreeInitialize(scopeTree); 
 
   //-------------------------------------------------------
-  // 3. Correlate program source with metrics
+  // 3. Compute metrcis and correlate with program structure
   //-------------------------------------------------------
   DIAG_Msg(2, "Creating and correlating metrics with program structure: ...");
   driver.ScopeTreeComputeMetrics(scopeTree);
@@ -232,11 +180,16 @@ realmain(int argc, char* const* argv)
   //-------------------------------------------------------
   // 5. Generate Experiment database
   //-------------------------------------------------------
+  // FIXME: pulled out of HTMLDriver
+  if (MakeDir(args.db_dir.c_str()) != 0) {
+    exit(1);
+  }
+
   if (args.db_copySrcFiles) {
     DIAG_Msg(1, "Copying source files reached by REPLACE/PATH statements to " << args.db_dir);
     
     // Note that this may modify file names in the ScopeTree
-    CopySourceFiles(scopeTree.GetRoot(), args.searchPaths, args.db_dir);
+    copySourceFiles(scopeTree.GetRoot(), args.searchPaths, args.db_dir);
   }
 
   if (!args.outFilename_CSV.empty()) {
@@ -281,34 +234,49 @@ realmain(int argc, char* const* argv)
 
 
 //****************************************************************************
+//
+//****************************************************************************
 
+#define NUM_PREFIX_LINES 2
 
-static void 
-AppendContents(std::ofstream &dest, const char *srcFile)
+static string buildConfFile(const string& hpcHome, const string& confFile);
+static void appendContents(std::ofstream &dest, const char *srcFile);
+
+static void
+readConfFile(Args& args, Driver& driver) 
 {
-#define MAX_IO_SIZE (64 * 1024)
-
-  std::ifstream src(srcFile);
-  if (src.fail()) {
-    string error = string("Unable to open ") + srcFile + " for reading.";
-    throw FileException(error);
+  const string& cfgFile = args.configurationFile;
+  DIAG_Msg(2, "Initializing Driver from " << cfgFile);
+  
+  string tmpFile = buildConfFile(args.hpcHome, cfgFile);
+  
+  try {
+    XercesErrorHandler errHndlr(cfgFile, tmpFile, NUM_PREFIX_LINES, true);
+    ConfigParser parser(tmpFile, errHndlr);
+    parser.parse(args, driver);
   }
+  catch (const SAXParseException& x) {
+    unlink(tmpFile.c_str());
+    //DIAG_EMsg(XMLString::transcode(x.getMessage()));
+    exit(1);
+  }
+  catch (const ConfigParserException& x) {
+    unlink(tmpFile.c_str());
+    DIAG_EMsg(x.message());
+    exit(1);
+  }
+  catch (...) {
+    unlink(tmpFile.c_str());
+    DIAG_EMsg("While processing '" << cfgFile << "'...");
+    throw;
+  };
 
-  char buf[MAX_IO_SIZE]; 
-  for(;!src.eof();) {
-    src.read(buf, MAX_IO_SIZE);
-
-    ssize_t nRead = src.gcount();
-    if (nRead == 0) break;
-    dest.write(buf, nRead); 
-    if (dest.fail()) throw FileException("write failed");
-  } 
-  src.close();
+  unlink(tmpFile.c_str());
 }
 
 
 static string
-BuildConfFile(const string& hpcHome, const string& confFile) 
+buildConfFile(const string& hpcHome, const string& confFile) 
 {
   string tmpFile = TmpFileName(); 
   string hpcloc = hpcHome;
@@ -318,9 +286,7 @@ BuildConfFile(const string& hpcHome, const string& confFile)
   std::ofstream tmp(tmpFile.c_str(), std::ios_base::out);
 
   if (tmp.fail()) {
-    string error = "Unable to open temporary file " + tmpFile + 
-      " for writing.";
-    throw FileException(error);
+    DIAG_Throw("Unable to write temporary file: " << tmpFile);
   }
   
   // the number of lines added below must equal NUM_PREFIX_LINES
@@ -331,15 +297,43 @@ BuildConfFile(const string& hpcHome, const string& confFile)
   //std::cout << "TMP DTD file: '" << tmpFile << "'" << std::endl;
   //std::cout << "  " << hpcloc << std::endl;
 
-  AppendContents(tmp, confFile.c_str());
+  appendContents(tmp, confFile.c_str());
   tmp.close();
   return tmpFile; 
 }
 
+
+static void 
+appendContents(std::ofstream &dest, const char *srcFile)
+{
+#define MAX_IO_SIZE (64 * 1024)
+
+  std::ifstream src(srcFile);
+  if (src.fail()) {
+    DIAG_Throw("Unable to read file: " << srcFile);
+  }
+
+  char buf[MAX_IO_SIZE]; 
+  for(; !src.eof(); ) {
+    src.read(buf, MAX_IO_SIZE);
+
+    ssize_t nRead = src.gcount();
+    if (nRead == 0) break;
+    dest.write(buf, nRead); 
+    if (dest.fail()) {
+      DIAG_Throw("appendContents: failed!");
+    }
+  } 
+  src.close();
+}
+
+
+//****************************************************************************
+//
 //****************************************************************************
 
 static pair<int, string>
-MatchFileWithPath(const string& filenm, const PathTupleVec& pathVec);
+matchFileWithPath(const string& filenm, const PathTupleVec& pathVec);
 
 
 static bool 
@@ -348,12 +342,12 @@ CSF_ScopeFilter(const ScopeInfo& x, long type)
   return (x.Type() == ScopeInfo::FILE || x.Type() == ScopeInfo::ALIEN);
 }
 
-// 'CopySourceFiles': For every file FileScope and AlienScope in
+// 'copySourceFiles': For every file FileScope and AlienScope in
 // 'pgmScope' that can be reached with paths in 'pathVec', copy F to
 // its appropriate viewname path and update F's path to be relative to
 // this location.
 static bool
-CopySourceFiles(PgmScope* pgmScope, const PathTupleVec& pathVec,
+copySourceFiles(PgmScope* pgmScope, const PathTupleVec& pathVec,
 		const string& dstDir)
 {
   bool noError = true;
@@ -393,7 +387,7 @@ CopySourceFiles(PgmScope* pgmScope, const PathTupleVec& pathVec,
       fnm_new = it->second;
     }
     else {
-      pair<int, string> fnd = MatchFileWithPath(fnm_orig, pathVec);
+      pair<int, string> fnd = matchFileWithPath(fnm_orig, pathVec);
       int idx = fnd.first;
 
       if (idx >= 0) {
@@ -463,14 +457,14 @@ CopySourceFiles(PgmScope* pgmScope, const PathTupleVec& pathVec,
 }
 
 
-// 'MatchFileWithPath': Given a file name 'filenm' and a vector of
+// 'matchFileWithPath': Given a file name 'filenm' and a vector of
 // paths 'pathVec', use 'pathfind_r' to determine which path in
 // 'pathVec', if any, reaches 'filenm'.  Returns an index and string
 // pair.  If a match is found, the index is an index in pathVec;
 // otherwise it is negative.  If a match is found, the string is the
 // found file name.
 static pair<int, string>
-MatchFileWithPath(const string& filenm, const PathTupleVec& pathVec)
+matchFileWithPath(const string& filenm, const PathTupleVec& pathVec)
 {
   // Find the index to the path that reaches 'filenm'.
   // It is possible that more than one path could reach the same
