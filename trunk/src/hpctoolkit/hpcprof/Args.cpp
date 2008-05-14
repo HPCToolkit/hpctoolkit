@@ -57,14 +57,10 @@ using std::endl;
 #include <string>
 using std::string;
 
-#include <sys/stat.h> // for mkdir
-#include <sys/types.h>
-#include <sys/errno.h>
-
 //*************************** User Include Files ****************************
 
 #include "Args.hpp"
-#include "CSProfileUtils.hpp"
+#include "CSProfileUtils.hpp" /* for normalizeFilePath */
 
 #include <lib/support/diagnostics.h>
 #include <lib/support/Trace.hpp>
@@ -90,35 +86,35 @@ static const char* version_info =
 static const char* usage_summary =
 "[options] <profile-file>...\n";
 
-static const char* usage_details =
-"hpcprof correlates dynamic call-path profiling metrics with static source\n"
-"code structure and generates an Experiment database for use with hpcviewer.\n"
-"It expects one or more related call path profiles.\n"
-"\n"
-"Options: General\n"
-"  -v, --verbose [<n>]  Verbose: generate progress messages to stderr at\n"
-"                       verbosity level <n>. {1}\n"
-"  -V, --version        Print version information.\n"
-"  -h, --help           Print this help.\n"
-"  --debug [<n>]        Debug: use debug level <n>. {1}\n"
-"\n"
-"Options: Correlation\n"
-"  -I <path>, --include <path>\n"
-"                       Use <path> when searching for source files. May pass\n"
-"                       multiple times.\n"
-"  -S <file>, --structure <file>\n"
-"                       Use the bloop structure file <file> for correlation.\n"
-"                       May pass multiple times (e.g., for shared libraries).\n"
-"\n"
-"Options: Output\n"
-"  -o <db-path>, --db <db-path>, --output <db-path>\n"
-"                       Specify Experiment database name <db-path>.\n"
-"                       {./"EXPERIMENTDB"}\n"
-"                       Experiment format {"EXPERIMENTXML"}\n"
-"\n"
-"Options: Development\n"
-"  --dump\n"
-"                       Dump text representation of profiles.\n";
+static const char* usage_details = "\
+hpcprof correlates dynamic call-path profiling metrics with static source\n\
+code structure and generates an Experiment database for use with hpcviewer.\n\
+It expects a list of call path profiles.\n\
+\n\
+Options: General:\n\
+  -v, --verbose [<n>]  Verbose: generate progress messages to stderr at\n\
+                       verbosity level <n>. {1}\n\
+  -V, --version        Print version information.\n\
+  -h, --help           Print this help.\n\
+  --debug [<n>]        Debug: use debug level <n>. {1}\n\
+\n\
+Options: Correlation:\n\
+  -I <path>, --include <path>\n\
+                       Use <path> when searching for source files. May pass\n\
+                       multiple times.\n\
+  -S <file>, --structure <file>\n\
+                       Use the bloop structure file <file> for correlation.\n\
+                       May pass multiple times (e.g., for shared libraries).\n\
+\n\
+Options: Output:\n\
+  -o <db-path>, --db <db-path>, --output <db-path>\n\
+                       Specify Experiment database name <db-path>.\n\
+                       {./"EXPERIMENTDB"}\n\
+                       Experiment format {"EXPERIMENTXML"}\n\
+\n\
+Options: Development:\n\
+  --dump\n\
+                       Dump text representation of profiles.\n";
 
 
 #define CLP CmdLineParser
@@ -126,12 +122,13 @@ static const char* usage_details =
 
 // Note: Changing the option name requires changing the name in Parse()
 CmdLineParser::OptArgDesc Args::optArgs[] = {
+  // Correlation options
+  { 'I', "include",         CLP::ARG_OPT,  CLP::DUPOPT_CAT,  CLP_SEPARATOR },
+  { 'S', "structure",       CLP::ARG_OPT,  CLP::DUPOPT_CAT,  CLP_SEPARATOR },
+
   // Output options
   { 'o', "output",          CLP::ARG_REQ , CLP::DUPOPT_CLOB, NULL },
   {  0 , "db",              CLP::ARG_REQ , CLP::DUPOPT_CLOB, NULL },
-
-  { 'I', "include",         CLP::ARG_OPT,  CLP::DUPOPT_CAT,  CLP_SEPARATOR },
-  { 'S', "structure",       CLP::ARG_OPT,  CLP::DUPOPT_CAT,  CLP_SEPARATOR },
 
   {  0 , "dump",            CLP::ARG_NONE, CLP::DUPOPT_CLOB, NULL },
 
@@ -167,8 +164,8 @@ void
 Args::Ctor()
 {
   // arguments
-  dbDir           = EXPERIMENTDB;
-  OutFilename_XML = EXPERIMENTXML;
+  db_dir          = EXPERIMENTDB;
+  outFilename_XML = EXPERIMENTXML;
 
   dumpProfiles = false;
 
@@ -233,7 +230,7 @@ Args::parse(int argc, const char* const argv[])
     // -------------------------------------------------------
     
     // Special options that should be checked first
-    if (parser.IsOpt("debug")) { 
+    if (parser.IsOpt("debug")) {
       int dbg = 1;
       if (parser.IsOptArg("debug")) {
 	const string& arg = parser.GetOptArg("debug");
@@ -271,12 +268,12 @@ Args::parse(int argc, const char* const argv[])
     
     // Check for other options: Output options
     if (parser.IsOpt("output")) {
-      dbDir = parser.GetOptArg("output");
+      db_dir = parser.GetOptArg("output");
     }
     if (parser.IsOpt("db")) {
-      dbDir = parser.GetOptArg("db");
+      db_dir = parser.GetOptArg("db");
     }
-    dbDir = normalizeFilePath(dbDir);
+    db_dir = normalizeFilePath(db_dir);
 
     // Check for other options: 
     if (parser.IsOpt("dump")) {
@@ -330,7 +327,7 @@ Args::parse(int argc, const char* const argv[])
   
   
   DIAG_Msg(2, "profile[0]: " << profileFiles[0] << "\n"
-	   << "output: " << dbDir);
+	   << "output: " << db_dir);
   if (searchPaths.size() > 0) {
     DIAG_Msg(2, "search paths:");
     for (int i = 0; i < searchPaths.size(); ++i) {
@@ -344,7 +341,7 @@ void
 Args::dump(std::ostream& os) const
 {
   os << "Args.cmd= " << getCmd() << endl; 
-  os << "Args.dbDir= " << dbDir << endl; 
+  os << "Args.db_dir= " << db_dir << endl; 
 }
 
 void 

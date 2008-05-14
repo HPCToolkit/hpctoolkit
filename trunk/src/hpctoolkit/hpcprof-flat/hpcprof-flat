@@ -53,7 +53,7 @@ export XERCESCROOT
 
 XERCESPLATFORM="${XERCESCROOT}"
 
-if test ${HPCTOOLKIT_PLATFORM} = 'mips-IRIX64' ; then
+if test "${HPCTOOLKIT_PLATFORM}" = 'mips-IRIX64' ; then
   # set library path for IRIX systems
   if test -z LD_LIBRARYN32_PATH ; then
     LD_LIBRARYN32_PATH=${XERCESPLATFORM}

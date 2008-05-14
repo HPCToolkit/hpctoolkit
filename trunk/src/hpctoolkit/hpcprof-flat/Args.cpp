@@ -66,6 +66,7 @@ using std::string;
 
 #include <lib/support/diagnostics.h>
 #include <lib/support/Trace.hpp>
+#include <lib/support/StrUtil.hpp>
 
 //*************************** Forward Declarations **************************
 
@@ -98,8 +99,9 @@ static const char* usage_details = "\
 hpcprof-flat correlates dynamic profiling metrics with static source code\n\
 structure and (by default) generates an Experiment database for use with\n\
 hpcviewer. hpcprof-flat is invoked in one of two ways.  In the former,\n\
-correlation options are specified on the command line.  In the latter, these\n\
-options along with derived metrics are specified in the configuration file.\n\
+correlation options are specified on the command line along with a list of\n\
+flat profile files.  In the latter, these options along with derived metrics\n\
+are specified in the configuration file.\n\
 \n\
 Options: General:\n\
   -v, --verbose [<n>]  Verbose: generate progress messages to stderr at\n\
@@ -109,6 +111,14 @@ Options: General:\n\
   -V, --version        Print version information.\n\
   -h, --help           Print this help.\n\
   --debug [<n>]        Debug: use debug level <n>. {1}\n\
+\n\
+Options: Correlation:\n\
+  -I <path>, --include <path>\n\
+                       Use <path> when searching for source files. May pass\n\
+                       multiple times.\n\
+  -S <file>, --structure <file>\n\
+                       Use the bloop structure file <file> for correlation.\n\
+                       May pass multiple times (e.g., for shared libraries).\n\
 \n\
 Options: Output:\n\
   -o <db-path>, --db <db-path>, --output <db-path>\n\
@@ -138,24 +148,19 @@ information. (Set <fname> to '-' to write to stdout.)\n\
                        Includes flat scope tree and lines. Useful for\n\
                        downstream external tools.\n";
 
-#if 0
-"Options: Correlation\n\
-  <profile-files>      A list of hpcrun profiles. Requires bloop STRUCTURE\n\
-                       information for correlation.\n\
-
-  -l          By default, the generated scope tree contains aggregated\n\
-              metrics at all internal nodes of the scope tree.  This option\n\
-              saves space by outputting metrics only at the leaves. A\n\
-              FUTURE version of HPCViewer will be able to use the option,\n\
-              but no current software can.\n\
-\n"
-#endif
-
 
 #define CLP CmdLineParser
+#define CLP_SEPARATOR "***"
 
 // Note: Changing the option name requires changing the name in Parse()
 CmdLineParser::OptArgDesc Args::optArgs[] = {
+  // Config-file-mode
+  {  0 , "config",          CLP::ARG_REQ,  CLP::DUPOPT_CLOB, NULL },
+
+  // Correlation options
+  { 'I', "include",         CLP::ARG_OPT,  CLP::DUPOPT_CAT,  CLP_SEPARATOR },
+  { 'S', "structure",       CLP::ARG_OPT,  CLP::DUPOPT_CAT,  CLP_SEPARATOR },
+
   // Output options
   { 'o', "output",          CLP::ARG_REQ , CLP::DUPOPT_CLOB, NULL },
   {  0 , "db",              CLP::ARG_REQ , CLP::DUPOPT_CLOB, NULL },
@@ -167,11 +172,6 @@ CmdLineParser::OptArgDesc Args::optArgs[] = {
   { 'x', "experiment",      CLP::ARG_OPT,  CLP::DUPOPT_CLOB, NULL },
   {  0 , "csv",             CLP::ARG_OPT,  CLP::DUPOPT_CLOB, NULL },
   {  0 , "tsv",             CLP::ARG_OPT,  CLP::DUPOPT_CLOB, NULL },
-
-  // Config-file-mode
-  {  0 , "config",          CLP::ARG_REQ,  CLP::DUPOPT_CLOB, NULL },
-
-  { 'u', NULL,              CLP::ARG_NONE, CLP::DUPOPT_CLOB, NULL },
 
   // General
   { 'v', "verbose",         CLP::ARG_OPT,  CLP::DUPOPT_CLOB, NULL },
@@ -206,11 +206,11 @@ Args::Ctor()
 {
   setHPCHome(); 
 
-  db_dir             = EXPERIMENTDB;
-  outFilename_XML    = EXPERIMENTXML;
-  outFilename_CSV    = "";
-  outFilename_TSV    = "";
-  db_copySrcFiles    = true;
+  db_dir          = EXPERIMENTDB;
+  outFilename_XML = EXPERIMENTXML;
+  outFilename_CSV = "";
+  outFilename_TSV = "";
+  db_copySrcFiles = true;
 
   metrics_computeInteriorValues = true; // dump metrics on interior nodes
 
@@ -303,6 +303,26 @@ Args::parse(int argc, const char* const argv[])
       Diagnostics_SetDiagnosticFilterLevel(verb);
     }
 
+    // Check for Config-file-mode:
+    if (parser.IsOpt("config")) {
+      configurationFile = parser.GetOptArg("config");
+    }
+    configurationFileMode = (!configurationFile.empty());
+
+    // Check for other options: Correlation options
+    if (parser.IsOpt("include")) {
+      string str = parser.GetOptArg("include");
+      StrUtil::tokenize(str, CLP_SEPARATOR, pvt_searchPaths);
+      
+      for (uint i = 0; i < pvt_searchPaths.size(); ++i) {
+	searchPaths.push_back(PathTuple(pvt_searchPaths[i], "src"));
+      }
+    }
+    if (parser.IsOpt("structure")) {
+      string str = parser.GetOptArg("structure");
+      StrUtil::tokenize(str, CLP_SEPARATOR, structureFiles);
+    }
+    
     // Check for other options: Output options
     if (parser.IsOpt("output")) {
       db_dir = parser.GetOptArg("output");
@@ -343,14 +363,6 @@ Args::parse(int argc, const char* const argv[])
       }
       db_copySrcFiles = false; // FIXME:
     }
-    
-    // Check for other options:
-
-    // Check for Config-file-mode:
-    if (parser.IsOpt("config")) {
-      configurationFile = parser.GetOptArg("config");
-    }
-    configurationFileMode = (!configurationFile.empty());
     
     // Check for required arguments
     uint numArgs = parser.GetNumArgs();
