@@ -55,7 +55,7 @@
 
 #include <iostream>
 #include <string>
-#include <list>
+#include <vector>
 
 //*************************** User Include Files ****************************
 
@@ -63,6 +63,12 @@
 #include <lib/support/CmdLineParser.hpp>
 
 //*************************** Forward Declarations **************************
+
+// PathTuple: a {path, viewname} pair.
+//   PathTuple.first = path; PathTuple.second = viewname
+// PathTupleVec: the vector of all 'PathTuple'
+typedef std::pair<std::string, std::string> PathTuple;
+typedef std::vector<PathTuple> PathTupleVec;
 
 //***************************************************************************
 
@@ -73,7 +79,7 @@ public:
   ~Args(); 
 
   // Parse the command line
-  void Parse(int argc, const char* const argv[]);
+  void parse(int argc, const char* const argv[]);
 
   // Version and Usage information
   void printVersion(std::ostream& os) const;
@@ -93,20 +99,36 @@ public:
   // Parsed Data: Command
   const std::string& getCmd() const;
 
-  // Parsed Data: optional arguments
-  std::string dbDir;
-  std::string OutFilename_XML; // disable: "no", stdout: "-"
-  std::string OutFilename_CSV; // disable: ""  , stdout: "-"
-  std::string OutFilename_TSV; // disable: ""  , stdout: "-"
+  // Parsed Data: output arguments
+  std::string db_dir;
+  std::string outFilename_XML; // disable: "no", stdout: "-"
+  std::string outFilename_CSV; // disable: ""  , stdout: "-"
+  std::string outFilename_TSV; // disable: ""  , stdout: "-"
+  bool db_copySrcFiles;
 
-  bool CopySrcFiles;
-  bool XML_DumpAllMetrics;
+  bool metrics_computeInteriorValues;
 
   int deleteUnderscores;
 
-  // Parsed Data: arguments
+  // Parsed Data: correlation arguments
+  bool configurationFileMode;
   std::string configurationFile;
-  //TODO std::list<std::string> profileFiles;
+
+  // -------------------------------------
+  std::string title;
+
+  PathTupleVec             searchPaths;
+  //std::vector<std::string> searchPaths;
+  std::vector<std::string> structureFiles;
+  std::vector<std::string> groupFiles;
+
+  std::vector<std::string> replaceInPath;
+  std::vector<std::string> replaceOutPath;
+  // -------------------------------------
+
+
+  // Parsed Data: arguments
+  std::vector<std::string> profileFiles;
 
 private:
   void Ctor();

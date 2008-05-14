@@ -88,14 +88,18 @@ const string Args::HPCTOOLKIT = "HPCTOOLKIT";
 static const char* version_info =
 #include <include/HPCToolkitVersionInfo.h>
 
-static const char* usage_summary =
-"[options] <config-file>\n";
+static const char* usage_summary1 =
+"[output-options] [correlation-options] <profile-file>...";
+
+static const char* usage_summary2 =
+"[output-options] --config <config-file>\n";
 
 static const char* usage_details = "\
 hpcprof-flat correlates dynamic profiling metrics with static source code\n\
 structure and (by default) generates an Experiment database for use with\n\
-hpcviewer. hpcprof-flat is driven by the configuration file <config-file>,\n\
-which among other things, may contain user defined derived metrics.\n\
+hpcviewer. hpcprof-flat is invoked in one of two ways.  In the former,\n\
+correlation options are specified on the command line.  In the latter, these\n\
+options along with derived metrics are specified in the configuration file.\n\
 \n\
 Options: General:\n\
   -v, --verbose [<n>]  Verbose: generate progress messages to stderr at\n\
@@ -168,6 +172,9 @@ CmdLineParser::OptArgDesc Args::optArgs[] = {
   {  0 , "csv",             CLP::ARG_OPT,  CLP::DUPOPT_CLOB, NULL },
   {  0 , "tsv",             CLP::ARG_OPT,  CLP::DUPOPT_CLOB, NULL },
 
+  // Config-file-mode
+  {  0 , "config",          CLP::ARG_REQ,  CLP::DUPOPT_CLOB, NULL },
+
   { 'u', NULL,              CLP::ARG_NONE, CLP::DUPOPT_CLOB, NULL },
 
   // General
@@ -194,7 +201,7 @@ Args::Args()
 Args::Args(int argc, const char* const argv[])
 {
   Ctor();
-  Parse(argc, argv);
+  parse(argc, argv);
 }
 
 
@@ -203,14 +210,14 @@ Args::Ctor()
 {
   setHPCHome(); 
 
-  dbDir                = EXPERIMENTDB;
-  OutFilename_XML      = EXPERIMENTXML;
-  OutFilename_CSV      = "";
-  OutFilename_TSV      = "";
+  db_dir             = EXPERIMENTDB;
+  outFilename_XML    = EXPERIMENTXML;
+  outFilename_CSV    = "";
+  outFilename_TSV    = "";
+  db_copySrcFiles    = true;
 
-  CopySrcFiles         = true;
-  XML_DumpAllMetrics   = true;  // dump metrics on interior nodes
-  deleteUnderscores = 1;
+  metrics_computeInteriorValues = true;  // dump metrics on interior nodes
+  deleteUnderscores  = 1;
 
   Diagnostics_SetDiagnosticFilterLevel(1);
 }
@@ -231,7 +238,9 @@ Args::printVersion(std::ostream& os) const
 void 
 Args::printUsage(std::ostream& os) const
 {
-  os << "Usage: " << getCmd() << " " << usage_summary << endl
+  os << "Usage: \n"
+     << "  " << getCmd() << " " << usage_summary1 << endl
+     << "  " << getCmd() << " " << usage_summary2 << endl
      << usage_details << endl;
 } 
 
@@ -260,7 +269,7 @@ Args::getCmd() const
 
 
 void
-Args::Parse(int argc, const char* const argv[])
+Args::parse(int argc, const char* const argv[])
 {
   try {
     // -------------------------------------------------------
@@ -273,7 +282,7 @@ Args::Parse(int argc, const char* const argv[])
     // -------------------------------------------------------
     
     // Special options that should be checked first
-    if (parser.IsOpt("debug")) { 
+    if (parser.IsOpt("debug")) {
       int dbg = 1;
       if (parser.IsOptArg("debug")) {
 	const string& arg = parser.GetOptArg("debug");
@@ -301,10 +310,10 @@ Args::Parse(int argc, const char* const argv[])
 
     // Check for other options: Output options
     if (parser.IsOpt("output")) {
-      dbDir = parser.GetOptArg("output");
+      db_dir = parser.GetOptArg("output");
     }
     if (parser.IsOpt("db")) {
-      dbDir = parser.GetOptArg("db");
+      db_dir = parser.GetOptArg("db");
     }
 
     string cpysrc;
@@ -315,46 +324,60 @@ Args::Parse(int argc, const char* const argv[])
       if (parser.IsOptArg("source")) { cpysrc = parser.GetOptArg("source"); }
     }
     if (!cpysrc.empty()) {
-      CopySrcFiles = (cpysrc != "no");
+      db_copySrcFiles = (cpysrc != "no");
     }
 
     // Check for other options: Output formats
     if (parser.IsOpt("experiment")) {
-      OutFilename_XML = EXPERIMENTXML;
+      outFilename_XML = EXPERIMENTXML;
       if (parser.IsOptArg("experiment")) {
-	OutFilename_XML = parser.GetOptArg("experiment");
+	outFilename_XML = parser.GetOptArg("experiment");
       }
     }
     if (parser.IsOpt("csv")) {
-      OutFilename_CSV = EXPERIMENTCSV;
+      outFilename_CSV = EXPERIMENTCSV;
       if (parser.IsOptArg("csv")) {
-	OutFilename_CSV = parser.GetOptArg("csv");
+	outFilename_CSV = parser.GetOptArg("csv");
       }
-      CopySrcFiles = false; // FIXME:
+      db_copySrcFiles = false; // FIXME:
     }
     if (parser.IsOpt("tsv")) { 
-      OutFilename_TSV = EXPERIMENTTSV;
+      outFilename_TSV = EXPERIMENTTSV;
       if (parser.IsOptArg("tsv")) {
-	OutFilename_TSV = parser.GetOptArg("tsv");
+	outFilename_TSV = parser.GetOptArg("tsv");
       }
-      CopySrcFiles = false; // FIXME:
+      db_copySrcFiles = false; // FIXME:
     }
     
     // Check for other options:
     if (parser.IsOpt("u")) {
       deleteUnderscores--; 
     }
+
+    // Check for Config-file-mode:
+    if (parser.IsOpt("config")) {
+      configurationFile = parser.GetOptArg("config");
+    }
+    configurationFileMode = (!configurationFile.empty());
     
     // Check for required arguments
-    if (parser.GetNumArgs() != 1) {
-      ARG_ERROR("Incorrect number of arguments!");
+    uint numArgs = parser.GetNumArgs();
+    if (configurationFileMode) {
+      if (numArgs != 0) {
+	ARG_ERROR("Incorrect number of arguments!");
+      }
     }
-    configurationFile = parser.GetArg(0);
+    else {
+      if ( !(numArgs >= 1) ) {
+	ARG_ERROR("Incorrect number of arguments!");
+      }
 
-    // TODO
-    //for (uint i = 1; i < parser.GetNumArgs(); ++i) {
-    //  profileFiles.push_back(parser.GetArg(i));
-    //}
+      profileFiles.resize(numArgs);
+      for (uint i = 0; i < numArgs; ++i) {
+	profileFiles[i] = parser.GetArg(i);
+      }
+    }
+
   }
   catch (const CmdLineParser::ParseError& x) {
     ARG_ERROR(x.what());
@@ -371,10 +394,10 @@ Args::dump(std::ostream& os) const
 {
   os << "Args.cmd= " << getCmd() << endl; 
   os << "Args.hpcHome= " << hpcHome << endl; 
-  os << "Args.dbDir= " << dbDir << endl; 
-  os << "Args.OutFilename_XML= " << OutFilename_XML << endl; 
-  os << "Args.OutFilename_CSV= " << OutFilename_CSV << endl; 
-  os << "Args.OutFilename_TSV= " << OutFilename_TSV << endl; 
+  os << "Args.db_dir= " << db_dir << endl; 
+  os << "Args.outFilename_XML= " << outFilename_XML << endl; 
+  os << "Args.outFilename_CSV= " << outFilename_CSV << endl; 
+  os << "Args.outFilename_TSV= " << outFilename_TSV << endl; 
   os << "Args.configurationFile= " << configurationFile << endl; 
   os << "::trace " << ::trace << endl; 
 }
