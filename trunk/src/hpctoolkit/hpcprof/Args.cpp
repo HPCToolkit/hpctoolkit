@@ -159,7 +159,7 @@ Args::Args()
 Args::Args(int argc, const char* const argv[])
 {
   Ctor();
-  Parse(argc, argv);
+  parse(argc, argv);
 }
 
 
@@ -220,7 +220,7 @@ Args::getCmd() const
 
 
 void
-Args::Parse(int argc, const char* const argv[])
+Args::parse(int argc, const char* const argv[])
 {
   try {
     // -------------------------------------------------------
@@ -284,12 +284,14 @@ Args::Parse(int argc, const char* const argv[])
     }
 
     // Check for required arguments
-    if ( !(parser.GetNumArgs() >= 1) ) {
+    uint numArgs = parser.GetNumArgs();
+    if ( !(numArgs >= 1) ) {
       ARG_ERROR("Incorrect number of arguments!");
     }
 
-    for (int i = 0; i < parser.GetNumArgs(); ++i) {
-      profileFiles.push_back(parser.GetArg(i));
+    profileFiles.resize(numArgs);
+    for (uint i = 0; i < numArgs; ++i) {
+      profileFiles[i] = parser.GetArg(i);
     }
   }
   catch (const CmdLineParser::ParseError& x) {

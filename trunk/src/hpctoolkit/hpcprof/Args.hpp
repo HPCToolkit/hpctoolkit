@@ -73,7 +73,7 @@ public:
   ~Args(); 
 
   // Parse the command line
-  void Parse(int argc, const char* const argv[]);
+  void parse(int argc, const char* const argv[]);
 
   // Version and Usage information
   void printVersion(std::ostream& os) const;
@@ -104,8 +104,7 @@ public:
   bool dumpProfiles; // default: false
   
   // Parsed Data: arguments
-  //std::string exeFile; // executable that was profiled
-  std::vector<std::string> profileFiles; // profiling output for 'exeFile'
+  std::vector<std::string> profileFiles;
 
 private:
   void Ctor();
