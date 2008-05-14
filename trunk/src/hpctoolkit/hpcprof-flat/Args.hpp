@@ -108,8 +108,6 @@ public:
 
   bool metrics_computeInteriorValues;
 
-  int deleteUnderscores;
-
   // Parsed Data: correlation arguments
   bool configurationFileMode;
   std::string configurationFile;

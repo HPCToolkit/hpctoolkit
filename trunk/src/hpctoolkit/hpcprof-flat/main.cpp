@@ -168,8 +168,7 @@ realmain(int argc, char* const* argv)
   try {
     XercesErrorHandler errHndlr(cfgFile, tmpFile, NUM_PREFIX_LINES, true);
     ConfigParser parser(tmpFile, errHndlr);
-    parser.pass1(driver); // FIXME: merge into one pass
-    parser.pass2(driver);
+    parser.parse(args, driver);
   }
   catch (const SAXParseException& x) {
     unlink(tmpFile.c_str());
@@ -235,7 +234,7 @@ realmain(int argc, char* const* argv)
     DIAG_Msg(1, "Copying source files reached by REPLACE/PATH statements to " << args.db_dir);
     
     // Note that this may modify file names in the ScopeTree
-    CopySourceFiles(scopeTree.GetRoot(), driver.SearchPathVec(), args.db_dir);
+    CopySourceFiles(scopeTree.GetRoot(), args.searchPaths, args.db_dir);
   }
 
   if (!args.outFilename_CSV.empty()) {

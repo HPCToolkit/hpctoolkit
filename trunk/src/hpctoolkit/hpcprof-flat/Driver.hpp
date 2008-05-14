@@ -74,26 +74,7 @@ public:
   // Backwards compatibility interace to Args
   // -------------------------------------------------------
 
-  void SetTitle(const std::string& x) { m_args.title = x; }
-  const std::string& Title() const    { return m_args.title; }
-
-  void AddSearchPath(const std::string& _path, const std::string& _viewname)
-    { m_args.searchPaths.push_back(PathTuple(_path, _viewname)); }
-  const PathTupleVec& SearchPathVec() const { return m_args.searchPaths; }
-
-  void AddStructureFile(const std::string& pf) { m_args.structureFiles.push_back(pf); }
-  const std::string& GetStructureFile(int i) const { return m_args.structureFiles[i]; }
-  int NumberOfStructureFiles() const { return m_args.structureFiles.size(); }
-
-  void AddGroupFile(const std::string& pf) { m_args.groupFiles.push_back(pf); }
-  const std::string& GetGroupFile(int i) const { return m_args.groupFiles[i]; }
-  int NumberOfGroupFiles() const { return m_args.groupFiles.size(); }
-
   void AddReplacePath(const std::string& inPath, const std::string& outPath);
-
-  bool MustDeleteUnderscore( void ) { return m_args.deleteUnderscores > 0; }
-  bool CopySrcFiles() { return m_args.db_copySrcFiles; }
-
 
   // -------------------------------------------------------
   //
@@ -140,9 +121,10 @@ private:
   void ScopeTreeInsertHPCRUNData(PgmScopeTree& scopes,
 				 const string& profFilenm,
 				 const MetricList_t& metricList);
-  
-private:
+public:
   Args& m_args;
+
+private:
   std::vector<PerfMetric*> dataSrc;
 };
 
@@ -159,10 +141,6 @@ public:
     return m_driver->ReplacePath(oldpath);
   };
   
-  virtual bool MustDeleteUnderscore() const { 
-    return m_driver->MustDeleteUnderscore();
-  }
-
 private:
   Driver* m_driver;
 };
