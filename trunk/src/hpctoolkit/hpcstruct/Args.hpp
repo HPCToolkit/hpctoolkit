@@ -72,7 +72,7 @@ public:
   ~Args(); 
 
   // Parse the command line
-  void Parse(int argc, const char* const argv[]);
+  void parse(int argc, const char* const argv[]);
 
   // Version and Usage information
   void printVersion(std::ostream& os) const;

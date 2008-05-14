@@ -187,11 +187,13 @@ Args::Args()
   Ctor();
 }
 
+
 Args::Args(int argc, const char* const argv[])
 {
   Ctor();
   parse(argc, argv);
 }
+
 
 void
 Args::Ctor()
@@ -234,6 +236,13 @@ void
 Args::printError(std::ostream& os, const std::string& msg) const
 {
   printError(os, msg.c_str());
+}
+
+
+const std::string& 
+Args::getCmd() const
+{ 
+  return parser.GetCmd(); 
 }
 
 
