@@ -91,7 +91,7 @@ Analysis::Args::Ctor()
 
   db_copySrcFiles = true;
 
-  metrics_computeInteriorValues = true; // dump metrics on interior nodes
+  metrics_computeInteriorValues = false;
 }
 
 

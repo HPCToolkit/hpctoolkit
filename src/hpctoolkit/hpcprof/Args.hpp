@@ -60,17 +60,20 @@
 //*************************** User Include Files ****************************
 
 #include <include/general.h>
+
+#include <lib/analysis/Args.hpp>
+
 #include <lib/support/CmdLineParser.hpp>
 
 //*************************** Forward Declarations **************************
 
 //***************************************************************************
 
-class Args {
+class Args : public Analysis::Args {
 public: 
   Args(); 
   Args(int argc, const char* const argv[]);
-  ~Args(); 
+  virtual ~Args(); 
 
   // Parse the command line
   void parse(int argc, const char* const argv[]);
@@ -84,25 +87,15 @@ public:
   void printError(std::ostream& os, const std::string& msg) const;
 
   // Dump
-  void dump(std::ostream& os = std::cerr) const;
-  void ddump() const;
+  virtual void dump(std::ostream& os = std::cerr) const;
 
 public:
 
   // Parsed Data: Command
   const std::string& getCmd() const;
 
-  // Parsed Data: output arguments
-  std::string db_dir;
-  std::string outFilename_XML;
-
-  std::vector<std::string> searchPaths; // list of search paths
-  std::vector<std::string> structureFiles;
-
-  bool dumpProfiles; // default: false
-  
-  // Parsed Data: arguments
-  std::vector<std::string> profileFiles;
+  // Parsed Data
+  bool dumpProfiles; // default: false [FIXME]
 
 private:
   void Ctor();

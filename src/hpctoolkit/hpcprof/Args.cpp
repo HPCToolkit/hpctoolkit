@@ -76,9 +76,6 @@ using std::string;
     printError(std::cerr, WeIrDnAmE.str());                          \
     exit(1); }
 
-#define EXPERIMENTDB  "experiment-db"
-#define EXPERIMENTXML "experiment.xml"
-
 //***************************************************************************
 
 static const char* version_info =
@@ -110,8 +107,8 @@ Options: Correlation:\n\
 Options: Output:\n\
   -o <db-path>, --db <db-path>, --output <db-path>\n\
                        Specify Experiment database name <db-path>.\n\
-                       {./"EXPERIMENTDB"}\n\
-                       Experiment format {"EXPERIMENTXML"}\n\
+                       {./"Analysis_EXPERIMENTDB"}\n\
+                       Experiment format {"Analysis_EXPERIMENTXML"}\n\
 \n\
 Options: Development:\n\
   --dump\n\
@@ -164,12 +161,7 @@ Args::Args(int argc, const char* const argv[])
 void
 Args::Ctor()
 {
-  // arguments
-  db_dir          = EXPERIMENTDB;
-  outFilename_XML = EXPERIMENTXML;
-
   dumpProfiles = false;
-
   Diagnostics_SetDiagnosticFilterLevel(1);
 }
 
@@ -342,12 +334,7 @@ void
 Args::dump(std::ostream& os) const
 {
   os << "Args.cmd= " << getCmd() << endl; 
-  os << "Args.db_dir= " << db_dir << endl; 
+  Analysis::Args::dump(os);
 }
 
-void 
-Args::ddump() const
-{
-  dump(std::cerr);
-}
 
