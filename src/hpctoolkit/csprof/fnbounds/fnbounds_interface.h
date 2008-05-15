@@ -8,6 +8,7 @@ int fnbounds_module_domap(const char *module_name, void *start, void *end);
 void fnbounds_map_open_dsos();
 void fnbounds_unmap_closed_dsos();
 
+void fnbounds_epoch_finalize();
 void fnbounds_fini();
 
 // support routine

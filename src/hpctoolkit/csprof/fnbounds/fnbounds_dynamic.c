@@ -373,7 +373,7 @@ fnbounds_compute(const char *incoming_filename, void *start, void *end)
 }
 
 
-static void 
+void 
 fnbounds_epoch_finalize()
 {
   dso_info_t * dso_info;
