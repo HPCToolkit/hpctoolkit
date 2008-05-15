@@ -389,8 +389,7 @@ ProcessFILE(DOMNode* fileNode, Args& args, Driver& driver,
     driver.addMetric(new FilePerfMetric(metricNm, nativeNm, metricDispNm, 
 					metricDoDisp, metricDoPercent, 
 					metricDoSortBy, metricFile, 
-					metricFileType, 
-					&driver));
+					metricFileType));
   } 
   else {
     ConfigParser_Throw("METRIC '" << metricNm << "' FILE name empty.");

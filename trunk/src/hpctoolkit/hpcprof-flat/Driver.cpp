@@ -193,7 +193,7 @@ Driver::makePerfMetricDescs(std::vector<std::string>& profileFiles)
       addMetric(new FilePerfMetric(metricNm, nativeNm, metricNm, 
 				   true /*display*/, true /*percent*/, 
 				   metricDoSortBy, proffnm, 
-				   string("HPCRUN"), this));
+				   string("HPCRUN")));
     }
   }
 }
