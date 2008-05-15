@@ -55,7 +55,6 @@ using XERCES_CPP_NAMESPACE::DOMNode;
 
 //************************ Forward Declarations ******************************
 
-class Driver;
 class MathMLExpr;
 
 //****************************************************************************
@@ -64,18 +63,20 @@ class MathMLExpr;
 class ScopeInfo;
 void AccumulateMetricsFromChildren(ScopeInfo* si, int perfInfoIndex);
 
+//****************************************************************************
+//
+//****************************************************************************
 
 class FilePerfMetric : public PerfMetric {
 public: 
   // NOTE: NativeName() is the 'select' attribute
   FilePerfMetric(const char* nm, const char* nativeNm, const char* displayNm,
 		 bool display, bool percent, bool sortBy, 
-		 const char* fname, const char* ftype, Driver* driver); 
+		 const char* fname, const char* ftype); 
   FilePerfMetric(const std::string& nm, const std::string& nativeNm, 
 		 const std::string& displayNm,
 		 bool display, bool percent, bool sortBy, 
-		 const std::string& fname, const std::string& ftype, 
-		 Driver* driver); 
+		 const std::string& fname, const std::string& ftype); 
 
   virtual ~FilePerfMetric(); 
   
@@ -87,13 +88,13 @@ public:
   virtual std::string ToString() const; 
 
 private: 
-  void MakeHPCRUN(NodeRetriever &ret); // read the file
-  void MakePROFILE(NodeRetriever &ret); // read the file
-
   std::string m_file;
   std::string m_type; // for later use
-  Driver* m_driver;
 };
+
+//****************************************************************************
+//
+//****************************************************************************
 
 class ComputedPerfMetric : public PerfMetric {
 public: 

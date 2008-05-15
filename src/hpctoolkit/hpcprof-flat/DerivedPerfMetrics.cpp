@@ -46,7 +46,6 @@ using std::string;
 //************************* User Include Files *******************************
 
 #include "DerivedPerfMetrics.hpp"
-#include "Driver.hpp"
 #include "MathMLExprParser.hpp"
 
 #include <lib/prof-juicy-x/XercesSAX2.hpp>
@@ -74,9 +73,9 @@ FilePerfMetric::FilePerfMetric(const char* nm,
 			       const char* displayNm, 
 			       bool doDisp, bool doPerc, bool doSort, 
 			       const char* file,
-			       const char* type, Driver* driver) 
+			       const char* type) 
   : PerfMetric(nm, nativeNm, displayNm, doDisp, doPerc, false, doSort),
-    m_file(file), m_type(type), m_driver(driver)
+    m_file(file), m_type(type)
 { 
   // trace = 1;
 }
@@ -87,10 +86,9 @@ FilePerfMetric::FilePerfMetric(const std::string& nm,
 			       const std::string& displayNm,
 			       bool doDisp, bool doPerc, bool doSort, 
 			       const std::string& file, 
-			       const std::string& type, 
-			       Driver* driver)
+			       const std::string& type)
   : PerfMetric(nm, nativeNm, displayNm, doDisp, doPerc, false, doSort),
-    m_file(file), m_type(type), m_driver(driver)
+    m_file(file), m_type(type)
 { 
   // trace = 1;
 }
@@ -180,65 +178,8 @@ void
 FilePerfMetric::Make(NodeRetriever &ret)
 {
   IFTRACE << "FilePerfMetric::Make " << endl << " " << ToString() << endl;
-  if (m_type == "HPCRUN") {
-    // FIXME: handled elsewhere [currently within Driver.cpp]
-  }
-#if 0 // FIXME
-  else if (m_type == "PROFILE") {
-    MakePROFILE(ret);
-  }
-#endif
-  else {
-    DIAG_Die(DIAG_Unimplemented);
-  }
-}
-
-
-void 
-FilePerfMetric::MakeHPCRUN(NodeRetriever &ret)
-{
-  
-  
-}
-
-
-void 
-FilePerfMetric::MakePROFILE(NodeRetriever &ret)
-{
-  IFTRACE << "FilePerfMetric::MakePROFILE " << endl << " " << ToString() << endl;
-  
-  SAX2XMLReader* parser = XMLReaderFactory::createXMLReader();
-
-  parser->setFeature(XMLUni::fgSAX2CoreValidation, true);
-  // parser->setFeature(XMLUni::fgXercesDynamic, true);
-
-  DriverDocHandlerArgs args(m_driver);
-  PROFILEDocHandler handler(&ret, args);
-  parser->setContentHandler(&handler);
-  parser->setErrorHandler(&handler); 
-
-  const char* filePath = pathfind(".", m_file.c_str(), "r");
-  if (!filePath) {
-    DIAG_Throw("Could not open PROFILE file '" << m_file << "'.");
-  }
-  
-  try {
-    handler.Initialize(Index(), filePath);
-    parser->parse(filePath);
-  }
-  catch (const PROFILEException& toCatch) {
-    string msg = "Error creating " + Name() + " from '" + FileName() + "':" 
-      + toCatch.message();
-    throw MetricException(msg);
-  }
-  delete parser;
-  
-  AccumulateMetricsFromChildren(ret.GetRoot(), Index());
-  
-  if (!ret.GetRoot()->HasPerfData(Index())) {
-    DIAG_Msg(1, "Warning: File '" << m_file << "' does not contain any information for metric '" << Name() << "'");
-  }
-  IFTRACE << "FilePerfMetric::Make yields: " << ToString() << endl;
+  DIAG_Assert(m_type == "HPCRUN", "Unexpected FilePefMetric type: " << m_type);
+  // handled within the Driver
 }
 
 
