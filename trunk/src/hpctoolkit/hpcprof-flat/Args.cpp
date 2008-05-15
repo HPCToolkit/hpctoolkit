@@ -77,11 +77,6 @@ using std::string;
     printError(std::cerr, WeIrDnAmE.str());                          \
     exit(1); }
 
-#define EXPERIMENTDB  "experiment-db"
-#define EXPERIMENTXML "experiment.xml"
-#define EXPERIMENTCSV "experiment.csv"
-#define EXPERIMENTTSV "experiment.tsv"
-
 //***************************************************************************
 
 const string Args::HPCTOOLKIT = "HPCTOOLKIT"; 
@@ -123,7 +118,7 @@ Options: Correlation:\n\
 Options: Output:\n\
   -o <db-path>, --db <db-path>, --output <db-path>\n\
                        Specify Experiment database name <db-path>.\n\
-                       {./"EXPERIMENTDB"}\n\
+                       {./"Analysis_EXPERIMENTDB"}\n\
   --src [yes|no], --source [yes|no]\n\
                        Whether to copy source code files into Experiment\n\
                        database. {yes} By default, [hpcprof] copies source\n\
@@ -139,12 +134,12 @@ output filename <fname> (located within the Experiment database). The output\n\
 is sparse in the sense that it ignores program areas without profiling\n\
 information. (Set <fname> to '-' to write to stdout.)\n\
   -x [<fname>], --experiment [<fname>]\n\
-                       Default. ExperimentXML format. {"EXPERIMENTXML"}\n\
+                       Default. ExperimentXML format. {"Analysis_EXPERIMENTXML"}\n\
                        NOTE: To disable, set <fname> to 'no'.\n\
-  --csv [<fname>]      Comma-separated-value format. {"EXPERIMENTCSV"}\n\
+  --csv [<fname>]      Comma-separated-value format. {"Analysis_EXPERIMENTCSV"}\n\
                        Includes flat scope tree and loops. Useful for\n\
                        downstream external tools.\n\
-  --tsv [<fname>]      Tab-separated-value format. {"EXPERIMENTTSV"}\n\
+  --tsv [<fname>]      Tab-separated-value format. {"Analysis_EXPERIMENTTSV"}\n\
                        Includes flat scope tree and lines. Useful for\n\
                        downstream external tools.\n";
 
@@ -205,16 +200,10 @@ void
 Args::Ctor()
 {
   setHPCHome(); 
-
-  db_dir          = EXPERIMENTDB;
-  outFilename_XML = EXPERIMENTXML;
-  outFilename_CSV = "";
-  outFilename_TSV = "";
-  db_copySrcFiles = true;
-
-  metrics_computeInteriorValues = true; // dump metrics on interior nodes
-
   Diagnostics_SetDiagnosticFilterLevel(1);
+
+  // override Analysis::Args defaults
+  metrics_computeInteriorValues = true; // dump metrics on interior nodes
 }
 
 
