@@ -62,7 +62,9 @@ include $(top_srcdir)/src/Makeinclude.config
 #############################################################################
 
 MYSOURCES = \
-	CallPath.hpp CallPath.cpp
+	CallPath.hpp CallPath.cpp \
+	\
+	DerivedPerfMetrics.hpp DerivedPerfMetrics.cpp
 
 # GNU binutils flags are needed for HPC_LIBISA.
 MYCFLAGS   = @HOST_CFLAGS@   $(HPC_IFLAGS) @GNUBINUTILS_IFLAGS@

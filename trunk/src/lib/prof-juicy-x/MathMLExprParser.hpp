@@ -42,8 +42,8 @@
 //
 // ----------------------------------------------------------------------
 
-#ifndef MathMLExprParser
-#define MathMLExprParser
+#ifndef prof_juicy_x_MathMLExprParser_hpp
+#define prof_juicy_x_MathMLExprParser_hpp
 
 //************************ System Include Files ******************************
 
@@ -167,4 +167,4 @@ private:
   EvalNode* buildEvalTree(DOMNode *node);
 };
 
-#endif /* MathMLExprParser */
+#endif /* prof_juicy_x_MathMLExprParser_hpp */
