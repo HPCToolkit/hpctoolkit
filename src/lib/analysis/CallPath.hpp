@@ -48,8 +48,8 @@
 //
 //***************************************************************************
 
-#ifndef CSProfileUtils_hpp 
-#define CSProfileUtils_hpp
+#ifndef Analysis_CallPath_CallPath_hpp 
+#define Analysis_CallPath_CallPath_hpp
 
 //************************* System Include Files ****************************
 
@@ -68,12 +68,11 @@
 
 //*************************** Forward Declarations ***************************
 
-//*************************** Forward Declarations ***************************
-
-CSProfile* ReadProfile_CSPROF(const char* fnm);
-void DumpProfile_CSPROF(const char* fnm);
-
 //****************************************************************************
+
+namespace Analysis {
+
+namespace CallPath {
 
 void inferCallFrames(CSProfile* prof, VMA begVMA, VMA endVMA,
 		     LoadModScope* lmScope, VMA relocVMA);
@@ -81,22 +80,30 @@ void inferCallFrames(CSProfile* prof, VMA begVMA, VMA endVMA,
 void inferCallFrames(CSProfile* prof, VMA begVMA, VMA endVMA,
 		     binutils::LM* lm);
 
-bool normalizeCSProfile(CSProfile* prof);
+bool normalize(CSProfile* prof);
 
-//****************************************************************************
+void writeInDatabase(CSProfile* prof, const std::string& filenm);
 
-void writeCSProfileInDatabase(CSProfile* prof, 
-			      const std::string& dbDirectory);
-void writeCSProfile(CSProfile* prof, std::ostream& os,
-		    bool prettyPrint = true);
+void write(CSProfile* prof, std::ostream& os, bool prettyPrint = true);
 
-void copySourceFiles (CSProfile *prof, 
-		      std::vector<std::string>& searchPaths,
-		      const std::string& dbSourceDirectory);  
+void copySourceFiles(CSProfile *prof, 
+		     std::vector<std::string>& searchPaths,
+		     const std::string& dest_dir);  
 
 void ldmdSetUsedFlag(CSProfile* prof); 
 
+} // namespace CallPath
+
+} // namespace Analysis
+
 //****************************************************************************
+
+// FIXME: move to prof-juicy
+
+CSProfile* ReadProfile_CSPROF(const char* fnm);
+void DumpProfile_CSPROF(const char* fnm);
+
+// FIXME: move to support
 
 #define MAX_PATH_SIZE 2048 
 /** Normalizes a file path.*/
@@ -106,10 +113,9 @@ std::string normalizeFilePath(const std::string& filePath,
 void breakPathIntoSegments(const std::string& normFilePath, 
 			   std::stack<std::string>& pathSegmentsStack);
 
-#define DEB_READ_MMETRICS 0
-#define DEB_LOAD_MODULE 0
-#define DEB_PROC_FIRST_LINE 0
 #define DEB_NORM_SEARCH_PATH  0
 #define DEB_MKDIR_SRC_DIR 0
 
-#endif
+//****************************************************************************
+
+#endif // Analysis_CallPath_CallPath_hpp

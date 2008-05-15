@@ -60,7 +60,8 @@ using std::string;
 //*************************** User Include Files ****************************
 
 #include "Args.hpp"
-#include "CSProfileUtils.hpp" /* for normalizeFilePath */
+
+#include <lib/analysis/CallPath.hpp> /* for normalizeFilePath */
 
 #include <lib/support/diagnostics.h>
 #include <lib/support/Trace.hpp>

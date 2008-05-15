@@ -238,6 +238,7 @@ HPC_IFLAGS = -I@abs_top_srcdir@/src
 ############################################################
 
 # Linking dependencies:
+#   HPC_LIBBANALYSIS  : HPC_LIBPROFJUICYX...
 #   HPC_LIBBANAL      : HPC_LIBPROFJUICY HPC_LIBBINUTILS
 #   HPC_LIBPROFJUICY  : HPC_LIBBINUTILS HPC_LIBSUPPORT
 #   HPC_LIBPROFJUICYX : HPC_LIBPROFJUICY HPC_LIBBINUTILS HPC_LIBSUPPORT
@@ -246,6 +247,7 @@ HPC_IFLAGS = -I@abs_top_srcdir@/src
 #   HPC_LIBISA        : HPC_LIBSUPPORT
 #   HPC_LIBXML        : HPC_LIBSUPPORT
 #   HPC_LIBSUPPORT    :
+HPC_LIBANALYSIS = $(top_builddir)/src/lib/analysis/libHPCanalysis.la
 HPC_LIBBANAL = $(top_builddir)/src/lib/banal/libHPCbanal.la
 HPC_LIBPROFJUICY = $(top_builddir)/src/lib/prof-juicy/libHPCprof-juicy.la
 HPC_LIBPROFJUICYX = $(top_builddir)/src/lib/prof-juicy-x/libHPCprof-juicy-x.la

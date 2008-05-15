@@ -69,7 +69,7 @@ using namespace std; // For compatibility with non-std C headers
 
 //*************************** User Include Files ****************************
 
-#include "CSProfileUtils.hpp"
+#include "CallPath.hpp"
 
 #include <lib/prof-lean/hpcfile_csproflib.h>
 
@@ -122,19 +122,19 @@ const char *CSPROFILEdtd =
 
 
 void 
-writeCSProfileInDatabase(CSProfile* prof, const string& fnm) 
+Analysis::CallPath::writeInDatabase(CSProfile* prof, const string& filenm) 
 {
   filebuf fb;
-  fb.open(fnm.c_str(), ios::out);
+  fb.open(filenm.c_str(), ios::out);
   std::ostream os(&fb);
-  writeCSProfile(prof, os, true);
+  write(prof, os, true);
   fb.close();
 }
 
 
 /* version=1.0.2 for alpha memory profile---FMZ */
 void
-writeCSProfile(CSProfile* prof, std::ostream& os, bool prettyPrint)
+Analysis::CallPath::write(CSProfile* prof, std::ostream& os, bool prettyPrint)
 {
   os << "<?xml version=\"1.0\"?>" << std::endl;
   os << "<!DOCTYPE CSPROFILE [\n" << CSPROFILEdtd << "]>" << std::endl;
@@ -473,7 +473,7 @@ inferCallFrames(CSProfile* prof, CSProfNode* node,
 // for all the return addresses found under.
 //
 void
-inferCallFrames(CSProfile* prof, VMA begVMA, VMA endVMA, 
+Analysis::CallPath::inferCallFrames(CSProfile* prof, VMA begVMA, VMA endVMA, 
 		LoadModScope* lmScope, VMA relocVMA)
 {
   CSProfTree* csproftree = prof->cct();
@@ -752,8 +752,9 @@ typedef std::map<string, CSProfProcedureFrameNode*> StringToProcFrameMap;
 
 void addSymbolicInfo(IDynNode* n, binutils::LM* lm);
 
-void inferCallFrames(CSProfile* prof, CSProfNode* node, 
-		     VMA begVMA, VMA endVMA, binutils::LM* lm);
+void 
+inferCallFrames(CSProfile* prof, CSProfNode* node, 
+		VMA begVMA, VMA endVMA, binutils::LM* lm);
 
 // create an extended profile representation
 // normalize call sites 
@@ -770,7 +771,8 @@ void inferCallFrames(CSProfile* prof, CSProfNode* node,
 // coalese these leaves into one.
 
 void 
-inferCallFrames(CSProfile* prof, VMA begVMA, VMA endVMA, binutils::LM *lm)
+Analysis::CallPath::inferCallFrames(CSProfile* prof, VMA begVMA, VMA endVMA, 
+				    binutils::LM *lm)
 {
   CSProfTree* csproftree = prof->cct();
   if (!csproftree) { return; }
@@ -932,7 +934,7 @@ bool coalesceCallsiteLeaves(CSProfile* prof);
 void removeEmptyScopes(CSProfile* prof);
 
 bool 
-normalizeCSProfile(CSProfile* prof)
+Analysis::CallPath::normalize(CSProfile* prof)
 {
   // Remove duplicate/inplied file and procedure information from tree
   coalesceCallsiteLeaves(prof);
@@ -1053,24 +1055,24 @@ removeEmptyScopes(CSProfNode* node)
 
 void copySourceFiles(CSProfNode* node, 
 		     std::vector<string>& searchPaths,
-		     const string& dbSourceDirectory);
+		     const string& dest_dir);
 
 void innerCopySourceFiles(CSProfNode* node, 
 			  std::vector<string>& searchPaths,
-			  const string& dbSourceDirectory);
+			  const string& dest_dir);
 
 
 /** Copies the source files for the executable into the database 
     directory. */
 void 
-copySourceFiles(CSProfile *prof, 
-		std::vector<string>& searchPaths,
-		const string& dbSourceDirectory) 
+Analysis::CallPath::copySourceFiles(CSProfile *prof, 
+				    std::vector<string>& searchPaths,
+				    const string& dest_dir) 
 {
   CSProfTree* csproftree = prof->cct();
   if (!csproftree) { return ; }
 
-  copySourceFiles(csproftree->root(), searchPaths, dbSourceDirectory);
+  copySourceFiles(csproftree->root(), searchPaths, dest_dir);
 }
 
 
@@ -1080,7 +1082,7 @@ copySourceFiles(CSProfile *prof,
 void 
 copySourceFiles(CSProfNode* node, 
 		std::vector<string>& searchPaths,
-		const string& dbSourceDirectory) 
+		const string& dest_dir) 
 {
   xDEBUG(DEB_MKDIR_SRC_DIR, 
 	 cerr << "descend into node" << std::endl;);
@@ -1092,17 +1094,17 @@ copySourceFiles(CSProfNode* node,
   // For each immediate child of this node...
   for (CSProfNodeChildIterator it(node); it.CurNode(); it++) {
     // recur 
-    copySourceFiles(it.CurNode(), searchPaths, dbSourceDirectory);
+    copySourceFiles(it.CurNode(), searchPaths, dest_dir);
   }
 
-  innerCopySourceFiles(node, searchPaths, dbSourceDirectory);
+  innerCopySourceFiles(node, searchPaths, dest_dir);
 }
 
 
 void 
 innerCopySourceFiles(CSProfNode* node, 
 		     std::vector<string>& searchPaths,
-		     const string& dbSourceDirectory)
+		     const string& dest_dir)
 {
   bool inspect; 
   string nodeSourceFile;
@@ -1209,7 +1211,7 @@ innerCopySourceFiles(CSProfNode* node,
 	    fclose (sourceFileHandle);
 
 	    // check if the file already exists (we've copied it for a previous sample)
-	    string testFilePath = dbSourceDirectory + normTestPath;
+	    string testFilePath = dest_dir + normTestPath;
 	    FILE *testFileHandle = fopen(testFilePath.c_str(), "rt");
 	    if (testFileHandle != NULL) {
 	      fclose(testFileHandle);
@@ -1233,13 +1235,13 @@ innerCopySourceFiles(CSProfNode* node,
 		     cerr << "converted stack to vector" << std::endl;);
 
 	      char filePathChr[MAX_PATH_SIZE +1];
-	      strcpy(filePathChr, dbSourceDirectory.c_str());
+	      strcpy(filePathChr, dest_dir.c_str());
 	      chdir(filePathChr);
 
 	      xDEBUG(DEB_MKDIR_SRC_DIR,
 		     cerr << "after chdir " << std::endl;);
 
-	      string subPath = dbSourceDirectory;
+	      string subPath = dest_dir;
 	      int pathSegmentIndex;
 	      for (pathSegmentIndex=0; 
 		   pathSegmentIndex<pathSegmentsVector.size()-1;
@@ -1480,7 +1482,7 @@ breakPathIntoSegments(const string& normFilePath,
 //***************************************************************************
 
 void
-ldmdSetUsedFlag(CSProfile* prof)
+Analysis::CallPath::ldmdSetUsedFlag(CSProfile* prof)
 {
   VMA curr_ip;  
   

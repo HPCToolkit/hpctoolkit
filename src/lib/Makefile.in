@@ -220,6 +220,7 @@ AUTOMAKE_OPTIONS = foreign
 # Automake rules
 #############################################################################
 SUBDIRS = \
+	analysis \
 	banal \
 	binutils \
 	isa \
