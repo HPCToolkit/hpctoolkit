@@ -48,8 +48,8 @@
 //
 //***************************************************************************
 
-#ifndef Args_hpp
-#define Args_hpp
+#ifndef Analysis_Args_hpp
+#define Analysis_Args_hpp
 
 //************************* System Include Files ****************************
 
@@ -61,52 +61,85 @@
 
 #include <include/general.h>
 
-#include <lib/analysis/Args.hpp>
-
-#include <lib/support/CmdLineParser.hpp>
-
 //*************************** Forward Declarations **************************
 
 //***************************************************************************
 
-class Args : public Analysis::Args {
+#define Analysis_EXPERIMENTDB  "experiment-db"
+#define Analysis_EXPERIMENTXML "experiment.xml"
+#define Analysis_EXPERIMENTCSV "experiment.csv"
+#define Analysis_EXPERIMENTTSV "experiment.tsv"
+
+namespace Analysis {
+
+// PathTuple: a {path, viewname} pair.
+//   PathTuple.first = path; PathTuple.second = viewname
+// PathTupleVec: the vector of all 'PathTuple'
+typedef std::pair<std::string, std::string> PathTuple;
+typedef std::vector<PathTuple> PathTupleVec;
+
+} // namespace Analysis
+
+//***************************************************************************
+
+namespace Analysis {
+
+class Args {
 public: 
-  Args(); 
-  Args(int argc, const char* const argv[]);
-  virtual ~Args(); 
-
-  // Parse the command line
-  void parse(int argc, const char* const argv[]);
-
-  // Version and Usage information
-  void printVersion(std::ostream& os) const;
-  void printUsage(std::ostream& os) const;
-  
-  // Error
-  void printError(std::ostream& os, const char* msg) const;
-  void printError(std::ostream& os, const std::string& msg) const;
+  Args();
+  virtual ~Args();
 
   // Dump
+  virtual std::string toString() const;
+
   virtual void dump(std::ostream& os = std::cerr) const;
+  void ddump() const;
 
 public:
-  std::string hpcHome;
+  // -------------------------------------------------------
+  // Correlation arguments
+  // -------------------------------------------------------
 
-  // Parsed Data: Command
-  const std::string& getCmd() const;
+  // Title
+  std::string title;
 
-  // Parsed Data
-  bool configurationFileMode;
-  std::string configurationFile;
+  // Search paths
+  std::vector<std::string> searchPaths;
+  PathTupleVec             searchPathTpls;
+
+  // Structure files
+  std::vector<std::string> structureFiles;
+
+  // Group files
+  std::vector<std::string> groupFiles;
+
+  // Replace paths
+  std::vector<std::string> replaceInPath;
+  std::vector<std::string> replaceOutPath;
+
+  // Profile files
+  std::vector<std::string> profileFiles;
+
+
+  // -------------------------------------------------------
+  // Output arguments
+  // -------------------------------------------------------
+  std::string db_dir;
+
+  std::string outFilename_XML; // disable: "no", stdout: "-"
+  std::string outFilename_CSV; // disable: ""  , stdout: "-"
+  std::string outFilename_TSV; // disable: ""  , stdout: "-"
+  
+  bool db_copySrcFiles;
+
+  bool metrics_computeInteriorValues;
 
 private:
   void Ctor();
-  void setHPCHome(); 
-
-private:
-  static const std::string HPCTOOLKIT;
-  static CmdLineParser::OptArgDesc optArgs[];
-  CmdLineParser parser;
 }; 
 
-#endif // Args_hpp 
+} // namespace Analysis
+
+//***************************************************************************
+
+#endif // Analysis_Args_hpp 

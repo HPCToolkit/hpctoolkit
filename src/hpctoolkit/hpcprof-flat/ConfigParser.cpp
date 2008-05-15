@@ -227,7 +227,7 @@ ProcessELEMENT(DOMNode *node, Args& args, Driver &driver)
       ConfigParser_Throw("PATH '" << path << "': viewname attribute cannot be empty when source files are to be copied.");
     } // there could be many other nefarious values of these attributes
       
-    args.searchPaths.push_back(PathTuple(path, viewname));
+    args.searchPathTpls.push_back(Analysis::PathTuple(path, viewname));
   }
   else if (XMLString::equals(nodeName, STRUCTURE)) {
     string fnm = getAttr(node, NAMEATTR); // file name

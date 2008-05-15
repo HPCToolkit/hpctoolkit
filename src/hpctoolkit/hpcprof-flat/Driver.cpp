@@ -75,7 +75,7 @@ using std::vector;
 
 //****************************************************************************
 
-Driver::Driver(Args& args)
+Driver::Driver(Analysis::Args& args)
   : Unique("Driver"), m_args(args) 
 {
 } 
@@ -124,8 +124,8 @@ Driver::SearchPathStr() const
 {
   string path = ".";
   
-  for (uint i = 0; i < m_args.searchPaths.size(); ++i) { 
-    path += string(":") + m_args.searchPaths[i].first;
+  for (uint i = 0; i < m_args.searchPathTpls.size(); ++i) { 
+    path += string(":") + m_args.searchPathTpls[i].first;
   }
 
   return path;
@@ -452,7 +452,7 @@ Driver::XML_Dump(PgmScope* pgm, int dumpFlags, std::ostream &os,
 
   os << pre1 << "<TITLE name=\042" << m_args.title << "\042/>" << endl;
 
-  const PathTupleVec& pVec = m_args.searchPaths;
+  const Analysis::PathTupleVec& pVec = m_args.searchPathTpls;
   for (uint i = 0; i < pVec.size(); i++) {
     const string& pathStr = pVec[i].first;
     os << pre1 << "<PATH name=\042" << pathStr << "\042/>" << endl;
@@ -492,7 +492,7 @@ Driver::write_config(std::ostream &os) const
 
   // search paths
   for (uint i = 0; i < m_args.searchPaths.size(); ++i) { 
-    const PathTuple& x = m_args.searchPaths[i];
+    const Analysis::PathTuple& x = m_args.searchPathTpls[i];
     os << "<PATH name=\"" << x.first << "\" viewname=\"" << x.second <<"\"/>\n";
   }
   if (!m_args.searchPaths.empty()) { os << "\n"; }

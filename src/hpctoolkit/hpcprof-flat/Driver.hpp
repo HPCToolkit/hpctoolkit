@@ -51,7 +51,7 @@
 
 #include <include/general.h>
 
-#include "Args.hpp"
+#include <lib/analysis/Args.hpp>
 #include <lib/analysis/DerivedPerfMetrics.hpp>
 
 #include <lib/prof-juicy-x/PGMDocHandler.hpp>
@@ -69,7 +69,7 @@ typedef std::map<string, int> StringToIntMap;
 
 class Driver : public Unique { // at most one instance 
 public: 
-  Driver(Args& args);
+  Driver(Analysis::Args& args);
   ~Driver(); 
   
   // -------------------------------------------------------
@@ -128,7 +128,7 @@ private:
 				 const MetricList_t& metricList);
 
 private:
-  Args& m_args;
+  Analysis::Args& m_args;
   std::vector<PerfMetric*> m_metrics;
 };
 

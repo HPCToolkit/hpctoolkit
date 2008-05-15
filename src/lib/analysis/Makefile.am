@@ -62,6 +62,8 @@ include $(top_srcdir)/src/Makeinclude.config
 #############################################################################
 
 MYSOURCES = \
+	Args.hpp Args.cpp \
+	\
 	CallPath.hpp CallPath.cpp \
 	\
 	DerivedPerfMetrics.hpp DerivedPerfMetrics.cpp
