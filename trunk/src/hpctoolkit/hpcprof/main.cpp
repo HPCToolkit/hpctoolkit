@@ -66,7 +66,8 @@ using std::string;
 //*************************** User Include Files ****************************
 
 #include "Args.hpp"
-#include "CSProfileUtils.hpp"
+
+#include <lib/analysis/CallPath.hpp>
 
 #include <lib/prof-juicy-x/XercesUtil.hpp>
 #include <lib/prof-juicy-x/PGMReader.hpp>
@@ -164,7 +165,7 @@ realmain(int argc, char* const* argv)
     // add one more pass search the callstack tree, to set 
     // the flag -"alpha"- only, since we get info from binary 
     // profile file not from bfd  
-    ldmdSetUsedFlag(prof); 
+    Analysis::CallPath::ldmdSetUsedFlag(prof); 
 
     // Note that this assumes iteration in reverse sorted order
     int num_lm = prof->epoch()->GetNumLdModule();
@@ -194,7 +195,7 @@ realmain(int argc, char* const* argv)
       endVMA = begVMA - 1;
     } /* for each load module */ 
     
-    normalizeCSProfile(prof);
+    Analysis::CallPath::normalize(prof);
   }
   catch (...) {
     DIAG_EMsg("While preparing CSPROFILE...");
@@ -218,11 +219,11 @@ realmain(int argc, char* const* argv)
     DIAG_Die("could not create database source code directory " << dbSrcDir);
   }
   
-  copySourceFiles(prof, args.searchPaths, dbSrcDir);
+  Analysis::CallPath::copySourceFiles(prof, args.searchPaths, dbSrcDir);
   
   string experiment_fnm = args.db_dir + "/" + args.outFilename_XML;
-  writeCSProfileInDatabase(prof, experiment_fnm);
-  //writeCSProfile(prof, std::cout, /* prettyPrint */ true);
+  Analysis::CallPath::writeInDatabase(prof, experiment_fnm);
+  //Analysis::CallPath::write(prof, std::cout, /* prettyPrint */ true);
   
 
   delete prof;
@@ -336,7 +337,7 @@ processCallingCtxtTree(CSProfile* prof, VMA begVMA, VMA endVMA,
     throw;
   }
   
-  inferCallFrames(prof, begVMA, endVMA, lmScope, relocVMA);
+  Analysis::CallPath::inferCallFrames(prof, begVMA, endVMA, lmScope, relocVMA);
 }
 
 
@@ -360,7 +361,7 @@ processCallingCtxtTree(CSProfile* prof, VMA begVMA, VMA endVMA,
     lm->relocate(begVMA);
   }
   
-  inferCallFrames(prof, begVMA, endVMA, lm);
+  Analysis::CallPath::inferCallFrames(prof, begVMA, endVMA, lm);
   
   delete lm;
 }

@@ -110,13 +110,12 @@ CONFIG_CLEAN_FILES =
 am__installdirs = "$(DESTDIR)$(bindir)" "$(DESTDIR)$(bindir)"
 binPROGRAMS_INSTALL = $(INSTALL_PROGRAM)
 PROGRAMS = $(bin_PROGRAMS)
-am__objects_1 = hpcprof_bin-main.$(OBJEXT) hpcprof_bin-Args.$(OBJEXT) \
-	hpcprof_bin-CSProfileUtils.$(OBJEXT)
+am__objects_1 = hpcprof_bin-main.$(OBJEXT) hpcprof_bin-Args.$(OBJEXT)
 am_hpcprof_bin_OBJECTS = $(am__objects_1)
 hpcprof_bin_OBJECTS = $(am_hpcprof_bin_OBJECTS)
-am__DEPENDENCIES_1 = $(HPC_LIBPROFJUICYX) $(HPC_LIBPROFJUICY) \
-	$(HPC_LIBPROFLEAN) $(HPC_LIBBINUTILS) $(HPC_LIBISA) \
-	$(HPC_LIBXML) $(HPC_LIBSUPPORT)
+am__DEPENDENCIES_1 = $(HPC_LIBANALYSIS) $(HPC_LIBPROFJUICYX) \
+	$(HPC_LIBPROFJUICY) $(HPC_LIBPROFLEAN) $(HPC_LIBBINUTILS) \
+	$(HPC_LIBISA) $(HPC_LIBXML) $(HPC_LIBSUPPORT)
 hpcprof_bin_DEPENDENCIES = $(am__DEPENDENCIES_1)
 hpcprof_bin_LINK = $(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CXXLD) $(hpcprof_bin_CXXFLAGS) \
@@ -300,6 +299,7 @@ HPC_IFLAGS = -I@abs_top_srcdir@/src
 ############################################################
 
 # Linking dependencies:
+#   HPC_LIBBANALYSIS  : HPC_LIBPROFJUICYX...
 #   HPC_LIBBANAL      : HPC_LIBPROFJUICY HPC_LIBBINUTILS
 #   HPC_LIBPROFJUICY  : HPC_LIBBINUTILS HPC_LIBSUPPORT
 #   HPC_LIBPROFJUICYX : HPC_LIBPROFJUICY HPC_LIBBINUTILS HPC_LIBSUPPORT
@@ -308,6 +308,7 @@ HPC_IFLAGS = -I@abs_top_srcdir@/src
 #   HPC_LIBISA        : HPC_LIBSUPPORT
 #   HPC_LIBXML        : HPC_LIBSUPPORT
 #   HPC_LIBSUPPORT    :
+HPC_LIBANALYSIS = $(top_builddir)/src/lib/analysis/libHPCanalysis.la
 HPC_LIBBANAL = $(top_builddir)/src/lib/banal/libHPCbanal.la
 HPC_LIBPROFJUICY = $(top_builddir)/src/lib/prof-juicy/libHPCprof-juicy.la
 HPC_LIBPROFJUICYX = $(top_builddir)/src/lib/prof-juicy-x/libHPCprof-juicy-x.la
@@ -326,15 +327,14 @@ HPC_LIBSUPPORT = $(top_builddir)/src/lib/support/libHPCsupport.la
 #############################################################################
 MYSOURCES = \
 	main.cpp \
-	Args.hpp Args.cpp \
-	CSProfileUtils.hpp CSProfileUtils.cpp
+	Args.hpp Args.cpp
 
 MYCFLAGS = @HOST_CFLAGS@   $(HPC_IFLAGS) @GNUBINUTILS_IFLAGS@
 MYCXXFLAGS = @HOST_CXXFLAGS@ $(HPC_IFLAGS) @GNUBINUTILS_IFLAGS@ @XERCES_IFLAGS@
 MYLDFLAGS = @HOST_CXXFLAGS@
 MYLDADD = \
 	@HOST_LIBTREPOSITORY@ \
-	$(HPC_LIBPROFJUICYX) $(HPC_LIBPROFJUICY) $(HPC_LIBPROFLEAN) $(HPC_LIBBINUTILS) $(HPC_LIBISA) $(HPC_LIBXML) $(HPC_LIBSUPPORT) \
+	$(HPC_LIBANALYSIS) $(HPC_LIBPROFJUICYX) $(HPC_LIBPROFJUICY) $(HPC_LIBPROFLEAN) $(HPC_LIBBINUTILS) $(HPC_LIBISA) $(HPC_LIBXML) $(HPC_LIBSUPPORT) \
 	@XERCES_LDFLAGS@ @GNUBINUTILS_LDFLAGS@ \
 	@HOST_HPCPROF_LDFLAGS@ \
 	-lm
@@ -452,7 +452,6 @@ distclean-compile:
 	-rm -f *.tab.c
 
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/hpcprof_bin-Args.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/hpcprof_bin-CSProfileUtils.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/hpcprof_bin-main.Po@am__quote@
 
 .cpp.o:
@@ -503,20 +502,6 @@ hpcprof_bin-Args.obj: Args.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='Args.cpp' object='hpcprof_bin-Args.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(hpcprof_bin_CXXFLAGS) $(CXXFLAGS) -c -o hpcprof_bin-Args.obj `if test -f 'Args.cpp'; then $(CYGPATH_W) 'Args.cpp'; else $(CYGPATH_W) '$(srcdir)/Args.cpp'; fi`
-
-hpcprof_bin-CSProfileUtils.o: CSProfileUtils.cpp
-@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(hpcprof_bin_CXXFLAGS) $(CXXFLAGS) -MT hpcprof_bin-CSProfileUtils.o -MD -MP -MF $(DEPDIR)/hpcprof_bin-CSProfileUtils.Tpo -c -o hpcprof_bin-CSProfileUtils.o `test -f 'CSProfileUtils.cpp' || echo '$(srcdir)/'`CSProfileUtils.cpp
-@am__fastdepCXX_TRUE@	mv -f $(DEPDIR)/hpcprof_bin-CSProfileUtils.Tpo $(DEPDIR)/hpcprof_bin-CSProfileUtils.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='CSProfileUtils.cpp' object='hpcprof_bin-CSProfileUtils.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(hpcprof_bin_CXXFLAGS) $(CXXFLAGS) -c -o hpcprof_bin-CSProfileUtils.o `test -f 'CSProfileUtils.cpp' || echo '$(srcdir)/'`CSProfileUtils.cpp
-
-hpcprof_bin-CSProfileUtils.obj: CSProfileUtils.cpp
-@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(hpcprof_bin_CXXFLAGS) $(CXXFLAGS) -MT hpcprof_bin-CSProfileUtils.obj -MD -MP -MF $(DEPDIR)/hpcprof_bin-CSProfileUtils.Tpo -c -o hpcprof_bin-CSProfileUtils.obj `if test -f 'CSProfileUtils.cpp'; then $(CYGPATH_W) 'CSProfileUtils.cpp'; else $(CYGPATH_W) '$(srcdir)/CSProfileUtils.cpp'; fi`
-@am__fastdepCXX_TRUE@	mv -f $(DEPDIR)/hpcprof_bin-CSProfileUtils.Tpo $(DEPDIR)/hpcprof_bin-CSProfileUtils.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='CSProfileUtils.cpp' object='hpcprof_bin-CSProfileUtils.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(hpcprof_bin_CXXFLAGS) $(CXXFLAGS) -c -o hpcprof_bin-CSProfileUtils.obj `if test -f 'CSProfileUtils.cpp'; then $(CYGPATH_W) 'CSProfileUtils.cpp'; else $(CYGPATH_W) '$(srcdir)/CSProfileUtils.cpp'; fi`
 
 mostlyclean-libtool:
 	-rm -f *.lo

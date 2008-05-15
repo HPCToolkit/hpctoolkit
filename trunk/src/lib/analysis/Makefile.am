@@ -1,5 +1,5 @@
 # -*-Mode: makefile;-*-
-# $Id$
+# $Id: Makefile.am 797 2007-05-12 21:09:13Z eraxxon $
 
 ## * BeginRiceCopyright *****************************************************
 ## 
@@ -42,7 +42,7 @@
 #
 # Description:
 #   *Process with automake to produce Makefile.in*
-#
+#   
 #   Note: All local variables are prefixed with MY to prevent name
 #   clashes with automatic automake variables.
 #
@@ -52,21 +52,49 @@
 AUTOMAKE_OPTIONS = foreign
 
 #############################################################################
+# Common settings
+#############################################################################
+
+include $(top_srcdir)/src/Makeinclude.config
+
+#############################################################################
+# Local settings
+#############################################################################
+
+MYSOURCES = \
+	CallPath.hpp CallPath.cpp
+
+# GNU binutils flags are needed for HPC_LIBISA.
+MYCFLAGS   = @HOST_CFLAGS@   $(HPC_IFLAGS) @GNUBINUTILS_IFLAGS@
+MYCXXFLAGS = @HOST_CXXFLAGS@ $(HPC_IFLAGS) @GNUBINUTILS_IFLAGS@ @XERCES_IFLAGS@
+
+if IS_HOST_AR
+  MYAR = @HOST_AR@
+else
+  MYAR = $(AR) cru
+endif
+
+MYLIBADD = @HOST_LIBTREPOSITORY@
+
+MYCLEAN = @HOST_LIBTREPOSITORY@
+
+#############################################################################
 # Automake rules
 #############################################################################
 
-SUBDIRS = \
-	analysis \
-	banal \
-	binutils \
-	isa \
-	perl \
-	prof-juicy \
-	prof-juicy-x \
-	prof-lean \
-	support \
-	xml
+noinst_LTLIBRARIES = libHPCanalysis.la
+
+libHPCanalysis_la_SOURCES  = $(MYSOURCES)
+libHPCanalysis_la_CFLAGS   = $(MYCFLAGS)
+libHPCanalysis_la_CXXFLAGS = $(MYCXXFLAGS)
+libHPCanalysis_la_AR       = $(MYAR)
+libHPCanalysis_la_LIBADD   = $(MYLIBADD)
+
+MOSTLYCLEANFILES = $(MYCLEAN)
 
 #############################################################################
-# Other rules
+# Common rules
 #############################################################################
+
+include $(top_srcdir)/src/Makeinclude.rules
+
