@@ -48,65 +48,84 @@
 //
 //***************************************************************************
 
-#ifndef Args_hpp
-#define Args_hpp
-
 //************************* System Include Files ****************************
 
 #include <iostream>
+
 #include <string>
-#include <vector>
+using std::string;
 
 //*************************** User Include Files ****************************
 
-#include <include/general.h>
+#include "Args.hpp"
 
-#include <lib/analysis/Args.hpp>
-
-#include <lib/support/CmdLineParser.hpp>
+#include <lib/support/diagnostics.h>
 
 //*************************** Forward Declarations **************************
 
 //***************************************************************************
+// Args
+//***************************************************************************
 
-class Args : public Analysis::Args {
-public: 
-  Args(); 
-  Args(int argc, const char* const argv[]);
-  virtual ~Args(); 
+Analysis::Args::Args()
+{
+  Ctor();
+}
 
-  // Parse the command line
-  void parse(int argc, const char* const argv[]);
 
-  // Version and Usage information
-  void printVersion(std::ostream& os) const;
-  void printUsage(std::ostream& os) const;
-  
-  // Error
-  void printError(std::ostream& os, const char* msg) const;
-  void printError(std::ostream& os, const std::string& msg) const;
+void
+Analysis::Args::Ctor()
+{
+  // -------------------------------------------------------
+  // Correlation arguments
+  // -------------------------------------------------------
 
-  // Dump
-  virtual void dump(std::ostream& os = std::cerr) const;
+  // -------------------------------------------------------
+  // Output arguments
+  // -------------------------------------------------------
 
-public:
-  std::string hpcHome;
+  db_dir          = Analysis_EXPERIMENTDB;
+  outFilename_XML = Analysis_EXPERIMENTXML;
+  outFilename_CSV = "";
+  outFilename_TSV = "";
 
-  // Parsed Data: Command
-  const std::string& getCmd() const;
+  db_copySrcFiles = true;
 
-  // Parsed Data
-  bool configurationFileMode;
-  std::string configurationFile;
+  metrics_computeInteriorValues = true; // dump metrics on interior nodes
+}
 
-private:
-  void Ctor();
-  void setHPCHome(); 
 
-private:
-  static const std::string HPCTOOLKIT;
-  static CmdLineParser::OptArgDesc optArgs[];
-  CmdLineParser parser;
-}; 
+Analysis::Args::~Args()
+{
+}
 
-#endif // Args_hpp 
+
+string
+Analysis::Args::toString() const
+{
+  std::ostringstream os;
+  dump(os);
+  return os.str();
+}
+
+
+void 
+Analysis::Args::dump(std::ostream& os) const
+{
+  os << "db_dir= " << db_dir << std::endl;
+  os << "outFilename_XML= " << outFilename_XML << std::endl;
+  os << "outFilename_CSV= " << outFilename_CSV << std::endl;
+  os << "outFilename_TSV= " << outFilename_TSV << std::endl;
+}
+
+
+void 
+Analysis::Args::ddump() const
+{
+  dump(std::cerr);
+}
+
+
+//***************************************************************************
+ 
+

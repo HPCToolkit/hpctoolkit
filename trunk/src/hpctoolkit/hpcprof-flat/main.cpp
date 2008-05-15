@@ -83,7 +83,8 @@ static void
 readConfFile(Args& args, Driver& driver);
 
 static bool 
-copySourceFiles(PgmScope* pgmScopeTree, const PathTupleVec& pathVec, 
+copySourceFiles(PgmScope* pgmScopeTree, 
+		const Analysis::PathTupleVec& pathVec, 
 		const string& dstDir);
 
 //****************************************************************************
@@ -196,7 +197,7 @@ realmain(int argc, char* const* argv)
     DIAG_Msg(1, "Copying source files reached by REPLACE/PATH statements to " << args.db_dir);
     
     // Note that this may modify file names in the ScopeTree
-    copySourceFiles(scopeTree.GetRoot(), args.searchPaths, args.db_dir);
+    copySourceFiles(scopeTree.GetRoot(), args.searchPathTpls, args.db_dir);
   }
 
   if (!args.outFilename_CSV.empty()) {
@@ -340,7 +341,7 @@ appendContents(std::ofstream &dest, const char *srcFile)
 //****************************************************************************
 
 static pair<int, string>
-matchFileWithPath(const string& filenm, const PathTupleVec& pathVec);
+matchFileWithPath(const string& filenm, const Analysis::PathTupleVec& pathVec);
 
 
 static bool 
@@ -354,7 +355,7 @@ CSF_ScopeFilter(const ScopeInfo& x, long type)
 // its appropriate viewname path and update F's path to be relative to
 // this location.
 static bool
-copySourceFiles(PgmScope* pgmScope, const PathTupleVec& pathVec,
+copySourceFiles(PgmScope* pgmScope, const Analysis::PathTupleVec& pathVec,
 		const string& dstDir)
 {
   bool noError = true;
@@ -471,7 +472,7 @@ copySourceFiles(PgmScope* pgmScope, const PathTupleVec& pathVec,
 // otherwise it is negative.  If a match is found, the string is the
 // found file name.
 static pair<int, string>
-matchFileWithPath(const string& filenm, const PathTupleVec& pathVec)
+matchFileWithPath(const string& filenm, const Analysis::PathTupleVec& pathVec)
 {
   // Find the index to the path that reaches 'filenm'.
   // It is possible that more than one path could reach the same
@@ -483,7 +484,7 @@ matchFileWithPath(const string& filenm, const PathTupleVec& pathVec)
   int foundPathLn = 0; // length of the path represented by 'foundIndex'
   string foundFnm; 
 
-  for (unsigned int i = 0; i < pathVec.size(); i++) {
+  for (uint i = 0; i < pathVec.size(); i++) {
     // find the absolute form of 'curPath'
     const string& curPath = pathVec[i].first;
     string realPath(curPath);

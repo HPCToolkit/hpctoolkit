@@ -108,7 +108,8 @@ CONFIG_CLEAN_FILES =
 LTLIBRARIES = $(noinst_LTLIBRARIES)
 am__DEPENDENCIES_1 =
 libHPCanalysis_la_DEPENDENCIES = $(am__DEPENDENCIES_1)
-am__objects_1 = libHPCanalysis_la-CallPath.lo \
+am__objects_1 = libHPCanalysis_la-Args.lo \
+	libHPCanalysis_la-CallPath.lo \
 	libHPCanalysis_la-DerivedPerfMetrics.lo
 am_libHPCanalysis_la_OBJECTS = $(am__objects_1)
 libHPCanalysis_la_OBJECTS = $(am_libHPCanalysis_la_OBJECTS)
@@ -320,6 +321,8 @@ HPC_LIBSUPPORT = $(top_builddir)/src/lib/support/libHPCsupport.la
 # Local settings
 #############################################################################
 MYSOURCES = \
+	Args.hpp Args.cpp \
+	\
 	CallPath.hpp CallPath.cpp \
 	\
 	DerivedPerfMetrics.hpp DerivedPerfMetrics.cpp
@@ -404,6 +407,7 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCanalysis_la-Args.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCanalysis_la-CallPath.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCanalysis_la-DerivedPerfMetrics.Plo@am__quote@
 
@@ -427,6 +431,13 @@ distclean-compile:
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='$<' object='$@' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(LTCXXCOMPILE) -c -o $@ $<
+
+libHPCanalysis_la-Args.lo: Args.cpp
+@am__fastdepCXX_TRUE@	$(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCanalysis_la_CXXFLAGS) $(CXXFLAGS) -MT libHPCanalysis_la-Args.lo -MD -MP -MF $(DEPDIR)/libHPCanalysis_la-Args.Tpo -c -o libHPCanalysis_la-Args.lo `test -f 'Args.cpp' || echo '$(srcdir)/'`Args.cpp
+@am__fastdepCXX_TRUE@	mv -f $(DEPDIR)/libHPCanalysis_la-Args.Tpo $(DEPDIR)/libHPCanalysis_la-Args.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='Args.cpp' object='libHPCanalysis_la-Args.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCanalysis_la_CXXFLAGS) $(CXXFLAGS) -c -o libHPCanalysis_la-Args.lo `test -f 'Args.cpp' || echo '$(srcdir)/'`Args.cpp
 
 libHPCanalysis_la-CallPath.lo: CallPath.cpp
 @am__fastdepCXX_TRUE@	$(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCanalysis_la_CXXFLAGS) $(CXXFLAGS) -MT libHPCanalysis_la-CallPath.lo -MD -MP -MF $(DEPDIR)/libHPCanalysis_la-CallPath.Tpo -c -o libHPCanalysis_la-CallPath.lo `test -f 'CallPath.cpp' || echo '$(srcdir)/'`CallPath.cpp

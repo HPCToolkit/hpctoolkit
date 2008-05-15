@@ -312,10 +312,10 @@ Args::parse(int argc, const char* const argv[])
     // Check for other options: Correlation options
     if (parser.IsOpt("include")) {
       string str = parser.GetOptArg("include");
-      StrUtil::tokenize(str, CLP_SEPARATOR, pvt_searchPaths);
+      StrUtil::tokenize(str, CLP_SEPARATOR, searchPaths);
       
-      for (uint i = 0; i < pvt_searchPaths.size(); ++i) {
-	searchPaths.push_back(PathTuple(pvt_searchPaths[i], "src"));
+      for (uint i = 0; i < searchPaths.size(); ++i) {
+	searchPathTpls.push_back(Analysis::PathTuple(searchPaths[i], "src"));
       }
     }
     if (parser.IsOpt("structure")) {
@@ -398,18 +398,8 @@ Args::dump(std::ostream& os) const
 {
   os << "Args.cmd= " << getCmd() << endl; 
   os << "Args.hpcHome= " << hpcHome << endl; 
-  os << "Args.db_dir= " << db_dir << endl; 
-  os << "Args.outFilename_XML= " << outFilename_XML << endl; 
-  os << "Args.outFilename_CSV= " << outFilename_CSV << endl; 
-  os << "Args.outFilename_TSV= " << outFilename_TSV << endl; 
-  os << "Args.configurationFile= " << configurationFile << endl; 
   os << "::trace " << ::trace << endl; 
-}
-
-void 
-Args::ddump() const
-{
-  dump(std::cerr);
+  Analysis::Args::dump(os);
 }
 
 
