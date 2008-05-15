@@ -64,11 +64,10 @@ class MathMLExpr;
 class ScopeInfo;
 void AccumulateMetricsFromChildren(ScopeInfo* si, int perfInfoIndex);
 
-bool IsHPCRUNFilePerfMetric(PerfMetric* m);
-
 
 class FilePerfMetric : public PerfMetric {
 public: 
+  // NOTE: NativeName() is the 'select' attribute
   FilePerfMetric(const char* nm, const char* nativeNm, const char* displayNm,
 		 bool display, bool percent, bool sortBy, 
 		 const char* fname, const char* ftype, Driver* driver); 

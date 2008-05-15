@@ -63,6 +63,8 @@
 
 //************************ Forward Declarations ******************************
 
+typedef std::map<string, int> StringToIntMap;
+
 //****************************************************************************
 
 class Driver : public Unique { // at most one instance 
@@ -82,8 +84,9 @@ public:
   //
   // -------------------------------------------------------
 
-  void ScopeTreeInitialize(PgmScopeTree& scopes);
-  void ScopeTreeComputeMetrics(PgmScopeTree& scopes);
+  void makePerfMetricDescs(std::vector<std::string>& profileFiles);
+  void createProgramStructure(PgmScopeTree& scopes);
+  void correlateMetricsWithStructure(PgmScopeTree& scopes);
 
   // -------------------------------------------------------
   //
@@ -95,6 +98,7 @@ public:
 
   std::string SearchPathStr() const;
 
+  std::string makeUniqueName(StringToIntMap& tbl, const std::string& nm);
 
   // see 'ScopeInfo' class for dump flags
   void XML_Dump(PgmScope* pgm, std::ostream &os = std::cout, 
@@ -103,6 +107,8 @@ public:
 		const char *pre = "") const;
   void CSV_Dump(PgmScope* pgm, std::ostream &os = std::cout) const;
   void TSV_Dump(PgmScope* pgm, std::ostream &os = std::cout) const;
+
+  void write_config(std::ostream &os = std::cout) const;
 
 
   std::string ToString() const; 
@@ -115,9 +121,9 @@ private:
 		      PGMDocHandler::Doc_t docty, 
 		      const std::vector<std::string>& files);
 
-  void ScopeTreeComputeHPCRUNMetrics(PgmScopeTree& scopes);
-  void ScopeTreeComputeOtherMetrics(PgmScopeTree& scopes);
-  void ScopeTreeInsertHPCRUNData(PgmScopeTree& scopes,
+  void computeSampledMetrics(PgmScopeTree& scopes);
+  void computeDerivedMetrics(PgmScopeTree& scopes);
+  void computeFlatProfileMetrics(PgmScopeTree& scopes,
 				 const string& profFilenm,
 				 const MetricList_t& metricList);
 

@@ -58,6 +58,9 @@ Prof::Flat::Profile::Profile()
 
 Prof::Flat::Profile::~Profile()
 {
+  if (m_fs) {
+    fclose(m_fs);
+  }
   for (const_iterator it = begin(); it != end(); ++it) {
     const Prof::Flat::LM* proflm = it->second;
     delete proflm;

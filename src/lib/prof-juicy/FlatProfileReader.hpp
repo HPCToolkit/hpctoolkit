@@ -143,8 +143,8 @@ typedef uint32_t bucketsz_t;
 // <VMA, count>
 typedef std::pair<VMA, bucketsz_t> Datum;
 
-//***************************************************************************
 
+//***************************************************************************
 
 // EventData: contains event description and profiling data
 class EventData {
@@ -188,8 +188,10 @@ private:
 
 //***************************************************************************
 
+//---------------------------------------------------------------------------
+// LM: represents flat profile information for a load module
+//---------------------------------------------------------------------------
 
-// LM: Contains profiling information for a load module
 class LM {
 public:
   LM();
