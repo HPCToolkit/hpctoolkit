@@ -51,8 +51,8 @@
 
 #include <include/general.h>
 
-#include "Args.hpp" // for FilePerfMetric
-#include "DerivedPerfMetrics.hpp" // for FilePerfMetric
+#include "Args.hpp"
+#include <lib/analysis/DerivedPerfMetrics.hpp>
 
 #include <lib/prof-juicy-x/PGMDocHandler.hpp>
 #include <lib/prof-juicy-x/DocHandlerArgs.hpp>

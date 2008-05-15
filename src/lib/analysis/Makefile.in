@@ -108,7 +108,8 @@ CONFIG_CLEAN_FILES =
 LTLIBRARIES = $(noinst_LTLIBRARIES)
 am__DEPENDENCIES_1 =
 libHPCanalysis_la_DEPENDENCIES = $(am__DEPENDENCIES_1)
-am__objects_1 = libHPCanalysis_la-CallPath.lo
+am__objects_1 = libHPCanalysis_la-CallPath.lo \
+	libHPCanalysis_la-DerivedPerfMetrics.lo
 am_libHPCanalysis_la_OBJECTS = $(am__objects_1)
 libHPCanalysis_la_OBJECTS = $(am_libHPCanalysis_la_OBJECTS)
 libHPCanalysis_la_LINK = $(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) \
@@ -319,7 +320,9 @@ HPC_LIBSUPPORT = $(top_builddir)/src/lib/support/libHPCsupport.la
 # Local settings
 #############################################################################
 MYSOURCES = \
-	CallPath.hpp CallPath.cpp
+	CallPath.hpp CallPath.cpp \
+	\
+	DerivedPerfMetrics.hpp DerivedPerfMetrics.cpp
 
 
 # GNU binutils flags are needed for HPC_LIBISA.
@@ -402,6 +405,7 @@ distclean-compile:
 	-rm -f *.tab.c
 
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCanalysis_la-CallPath.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCanalysis_la-DerivedPerfMetrics.Plo@am__quote@
 
 .cpp.o:
 @am__fastdepCXX_TRUE@	$(CXXCOMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
@@ -430,6 +434,13 @@ libHPCanalysis_la-CallPath.lo: CallPath.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='CallPath.cpp' object='libHPCanalysis_la-CallPath.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCanalysis_la_CXXFLAGS) $(CXXFLAGS) -c -o libHPCanalysis_la-CallPath.lo `test -f 'CallPath.cpp' || echo '$(srcdir)/'`CallPath.cpp
+
+libHPCanalysis_la-DerivedPerfMetrics.lo: DerivedPerfMetrics.cpp
+@am__fastdepCXX_TRUE@	$(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCanalysis_la_CXXFLAGS) $(CXXFLAGS) -MT libHPCanalysis_la-DerivedPerfMetrics.lo -MD -MP -MF $(DEPDIR)/libHPCanalysis_la-DerivedPerfMetrics.Tpo -c -o libHPCanalysis_la-DerivedPerfMetrics.lo `test -f 'DerivedPerfMetrics.cpp' || echo '$(srcdir)/'`DerivedPerfMetrics.cpp
+@am__fastdepCXX_TRUE@	mv -f $(DEPDIR)/libHPCanalysis_la-DerivedPerfMetrics.Tpo $(DEPDIR)/libHPCanalysis_la-DerivedPerfMetrics.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='DerivedPerfMetrics.cpp' object='libHPCanalysis_la-DerivedPerfMetrics.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCanalysis_la_CXXFLAGS) $(CXXFLAGS) -c -o libHPCanalysis_la-DerivedPerfMetrics.lo `test -f 'DerivedPerfMetrics.cpp' || echo '$(srcdir)/'`DerivedPerfMetrics.cpp
 
 mostlyclean-libtool:
 	-rm -f *.lo

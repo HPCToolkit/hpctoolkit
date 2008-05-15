@@ -113,7 +113,7 @@ am__objects_1 = libHPCprof_juicy_x_la-XercesUtil.lo \
 	libHPCprof_juicy_x_la-XercesErrorHandler.lo \
 	libHPCprof_juicy_x_la-PGMReader.lo \
 	libHPCprof_juicy_x_la-PGMDocHandler.lo \
-	libHPCprof_juicy_x_la-PROFILEDocHandler.lo
+	libHPCprof_juicy_x_la-MathMLExprParser.lo
 am_libHPCprof_juicy_x_la_OBJECTS = $(am__objects_1)
 libHPCprof_juicy_x_la_OBJECTS = $(am_libHPCprof_juicy_x_la_OBJECTS)
 libHPCprof_juicy_x_la_LINK = $(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) \
@@ -331,8 +331,11 @@ MYSOURCES = \
 	PGMReader.hpp PGMReader.cpp \
 	DocHandlerArgs.hpp \
 	PGMDocHandler.hpp PGMDocHandler.cpp \
-	PROFILEDocHandler.hpp PROFILEDocHandler.cpp
+	\
+	MathMLExprParser.hpp MathMLExprParser.cpp
 
+
+# Obsolete: PROFILEDocHandler.hpp PROFILEDocHandler.cpp
 
 # GNU binutils flags are needed for HPC_LIBISA.
 MYCFLAGS = @HOST_CFLAGS@   $(HPC_IFLAGS) @GNUBINUTILS_IFLAGS@
@@ -413,9 +416,9 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCprof_juicy_x_la-MathMLExprParser.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCprof_juicy_x_la-PGMDocHandler.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCprof_juicy_x_la-PGMReader.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCprof_juicy_x_la-PROFILEDocHandler.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCprof_juicy_x_la-XercesErrorHandler.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCprof_juicy_x_la-XercesSAX2.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCprof_juicy_x_la-XercesUtil.Plo@am__quote@
@@ -476,12 +479,12 @@ libHPCprof_juicy_x_la-PGMDocHandler.lo: PGMDocHandler.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprof_juicy_x_la_CXXFLAGS) $(CXXFLAGS) -c -o libHPCprof_juicy_x_la-PGMDocHandler.lo `test -f 'PGMDocHandler.cpp' || echo '$(srcdir)/'`PGMDocHandler.cpp
 
-libHPCprof_juicy_x_la-PROFILEDocHandler.lo: PROFILEDocHandler.cpp
-@am__fastdepCXX_TRUE@	$(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprof_juicy_x_la_CXXFLAGS) $(CXXFLAGS) -MT libHPCprof_juicy_x_la-PROFILEDocHandler.lo -MD -MP -MF $(DEPDIR)/libHPCprof_juicy_x_la-PROFILEDocHandler.Tpo -c -o libHPCprof_juicy_x_la-PROFILEDocHandler.lo `test -f 'PROFILEDocHandler.cpp' || echo '$(srcdir)/'`PROFILEDocHandler.cpp
-@am__fastdepCXX_TRUE@	mv -f $(DEPDIR)/libHPCprof_juicy_x_la-PROFILEDocHandler.Tpo $(DEPDIR)/libHPCprof_juicy_x_la-PROFILEDocHandler.Plo
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='PROFILEDocHandler.cpp' object='libHPCprof_juicy_x_la-PROFILEDocHandler.lo' libtool=yes @AMDEPBACKSLASH@
+libHPCprof_juicy_x_la-MathMLExprParser.lo: MathMLExprParser.cpp
+@am__fastdepCXX_TRUE@	$(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprof_juicy_x_la_CXXFLAGS) $(CXXFLAGS) -MT libHPCprof_juicy_x_la-MathMLExprParser.lo -MD -MP -MF $(DEPDIR)/libHPCprof_juicy_x_la-MathMLExprParser.Tpo -c -o libHPCprof_juicy_x_la-MathMLExprParser.lo `test -f 'MathMLExprParser.cpp' || echo '$(srcdir)/'`MathMLExprParser.cpp
+@am__fastdepCXX_TRUE@	mv -f $(DEPDIR)/libHPCprof_juicy_x_la-MathMLExprParser.Tpo $(DEPDIR)/libHPCprof_juicy_x_la-MathMLExprParser.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='MathMLExprParser.cpp' object='libHPCprof_juicy_x_la-MathMLExprParser.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprof_juicy_x_la_CXXFLAGS) $(CXXFLAGS) -c -o libHPCprof_juicy_x_la-PROFILEDocHandler.lo `test -f 'PROFILEDocHandler.cpp' || echo '$(srcdir)/'`PROFILEDocHandler.cpp
+@am__fastdepCXX_FALSE@	$(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprof_juicy_x_la_CXXFLAGS) $(CXXFLAGS) -c -o libHPCprof_juicy_x_la-MathMLExprParser.lo `test -f 'MathMLExprParser.cpp' || echo '$(srcdir)/'`MathMLExprParser.cpp
 
 mostlyclean-libtool:
 	-rm -f *.lo

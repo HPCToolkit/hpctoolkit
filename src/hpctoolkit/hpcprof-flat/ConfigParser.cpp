@@ -67,8 +67,9 @@ using XERCES_CPP_NAMESPACE::DOMNamedNodeMap;
 
 #include "ConfigParser.hpp"
 
-#include "MathMLExprParser.hpp"
-#include "DerivedPerfMetrics.hpp"
+#include <lib/analysis/DerivedPerfMetrics.hpp>
+
+#include <lib/prof-juicy-x/MathMLExprParser.hpp>
 
 #include <lib/prof-juicy/PgmScopeTree.hpp>
 #include <lib/prof-juicy/PerfMetric.hpp>

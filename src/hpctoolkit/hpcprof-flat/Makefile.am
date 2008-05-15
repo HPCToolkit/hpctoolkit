@@ -63,12 +63,10 @@ include $(top_srcdir)/src/Makeinclude.config
 
 MYSOURCES = \
 	main.cpp \
-	Driver.hpp Driver.cpp \
 	Args.hpp Args.cpp \
 	ConfigParser.hpp ConfigParser.cpp \
 	\
-	MathMLExprParser.hpp MathMLExprParser.cpp \
-	DerivedPerfMetrics.hpp DerivedPerfMetrics.cpp
+	Driver.hpp Driver.cpp
 
 # GNU binutils flags are needed for HPC_LIBISA.
 MYCFLAGS   = @HOST_CFLAGS@   $(HPC_IFLAGS) @GNUBINUTILS_IFLAGS@
@@ -78,7 +76,7 @@ MYLDFLAGS = @HOST_CXXFLAGS@
 
 MYLDADD = \
 	@HOST_LIBTREPOSITORY@ \
-	$(HPC_LIBPROFJUICYX) $(HPC_LIBPROFJUICY) $(HPC_LIBPROFLEAN) $(HPC_LIBBINUTILS) $(HPC_LIBISA) $(HPC_LIBXML) $(HPC_LIBSUPPORT) \
+	$(HPC_LIBANALYSIS) $(HPC_LIBPROFJUICYX) $(HPC_LIBPROFJUICY) $(HPC_LIBPROFLEAN) $(HPC_LIBBINUTILS) $(HPC_LIBISA) $(HPC_LIBXML) $(HPC_LIBSUPPORT) \
 	@XERCES_LDFLAGS@ @GNUBINUTILS_LDFLAGS@ \
 	@HOST_HPCPROF_FLAT_LDFLAGS@ \
 	-lm

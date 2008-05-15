@@ -46,10 +46,9 @@ using std::string;
 //************************* User Include Files *******************************
 
 #include "DerivedPerfMetrics.hpp"
-#include "MathMLExprParser.hpp"
 
 #include <lib/prof-juicy-x/XercesSAX2.hpp>
-#include <lib/prof-juicy-x/PROFILEDocHandler.hpp>
+#include <lib/prof-juicy-x/MathMLExprParser.hpp>
 
 #include <lib/prof-juicy/PgmScopeTreeInterface.hpp>
 #include <lib/prof-juicy/PgmScopeTree.hpp>
