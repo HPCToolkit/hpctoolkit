@@ -62,14 +62,9 @@ include $(top_srcdir)/src/Makeinclude.config
 #############################################################################
 
 MYSCRIPTS = 
-#	ptranDec.pm \
-#	ptranSgi.pm \
-#	PROFILEXMLWriter.pm \
-#	XMLWriter.pm \
-#	PapiSpec.pm
 
-MYSCRIPTS_IN = \
-	HPCToolkitVersionInfo.pm
+MYSCRIPTS_IN = 
+#	HPCToolkitVersionInfo.pm
 
 #############################################################################
 # Automake rules
