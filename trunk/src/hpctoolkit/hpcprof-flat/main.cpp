@@ -38,8 +38,6 @@
 //************************ System Include Files ******************************
 
 #include <iostream>
-using std::endl;
-
 #include <fstream>
 
 #include <string>
@@ -61,9 +59,9 @@ using namespace std; // For compatibility with non-std C headers
 //************************* User Include Files *******************************
 
 #include "Args.hpp"
-#include "Driver.hpp"
-
 #include "ConfigParser.hpp"
+
+#include <lib/analysis/Flat.hpp>
 
 #include <lib/prof-juicy-x/XercesUtil.hpp>
 #include <lib/prof-juicy-x/XercesErrorHandler.hpp>
@@ -80,7 +78,7 @@ using namespace std; // For compatibility with non-std C headers
 //************************ Forward Declarations ******************************
 
 static void
-readConfFile(Args& args, Driver& driver);
+readConfFile(Args& args, Analysis::Flat::Driver& driver);
 
 static bool 
 copySourceFiles(PgmScope* pgmScopeTree, 
@@ -128,7 +126,7 @@ realmain(int argc, char* const* argv)
   NaN_init();
   InitXerces(); // exits iff failure 
 
-  Driver driver(args);
+  Analysis::Flat::Driver driver(args);
   //-------------------------------------------------------
   // 1. Initialize metric descriptors
   //-------------------------------------------------------
@@ -251,7 +249,7 @@ static string buildConfFile(const string& hpcHome, const string& confFile);
 static void appendContents(std::ofstream &dest, const char *srcFile);
 
 static void
-readConfFile(Args& args, Driver& driver) 
+readConfFile(Args& args, Analysis::Flat::Driver& driver) 
 {
   const string& cfgFile = args.configurationFile;
   DIAG_Msg(2, "Initializing Driver from " << cfgFile);
@@ -298,11 +296,11 @@ buildConfFile(const string& hpcHome, const string& confFile)
   }
   
   // the number of lines added below must equal NUM_PREFIX_LINES
-  tmp << "<?xml version=\"1.0\"?>" << endl 
+  tmp << "<?xml version=\"1.0\"?>" << std::endl 
       << "<!DOCTYPE HPCVIEW SYSTEM \"" << hpcloc // has trailing '/'
-      << "share/hpctoolkit/dtd/HPCView.dtd\">" << endl;
+      << "share/hpctoolkit/dtd/HPCView.dtd\">" << std::endl;
 
-  //std::cout << "TMP DTD file: '" << tmpFile << "'" << std::endl;
+  //std::cout << "TMP DTD file: '" << tmpFile << "'" << std::std::endl;
   //std::cout << "  " << hpcloc << std::endl;
 
   appendContents(tmp, confFile.c_str());
@@ -434,7 +432,7 @@ copySourceFiles(PgmScope* pgmScope, const Analysis::PathTupleVec& pathVec,
 	
 	string cmdMkdir = "mkdir -p " + dir_to;
 	string cmdCp    = "cp -f " + fnm_fnd + " " + fnm_to;
-	//cerr << cmdCp << endl;
+	//cerr << cmdCp << std::endl;
 	
 	// could use CopyFile; see StaticFiles::Copy
 	if (system(cmdMkdir.c_str()) == 0 && system(cmdCp.c_str()) == 0) {

@@ -66,6 +66,7 @@ MYSOURCES = \
 	\
 	CallPath.hpp CallPath.cpp \
 	\
+	Flat.hpp Flat.cpp \
 	DerivedPerfMetrics.hpp DerivedPerfMetrics.cpp
 
 # GNU binutils flags are needed for HPC_LIBISA.
