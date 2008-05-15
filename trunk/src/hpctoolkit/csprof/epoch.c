@@ -88,7 +88,8 @@ csprof_epoch_add_module(const char *module_name,
 
   // link it into the list of loaded modules for the current epoch
   m->next = current_epoch->loaded_modules;
-  current_epoch->loaded_modules = m->next; 
+  current_epoch->loaded_modules = m; 
+  current_epoch->num_modules++;
 }
 
 
@@ -166,6 +167,9 @@ csprof_write_all_epochs(FILE *fs)
      collected. */
   csprof_epoch_t *runner = current_epoch;
   unsigned int id_runner = 0;
+
+  // lazily finalize the last epoch
+  if (current_epoch->loaded_modules == NULL) fnbounds_epoch_finalize();
 
   while(runner != NULL) {
     runner->id = id_runner;
