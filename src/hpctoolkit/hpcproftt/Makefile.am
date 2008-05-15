@@ -61,8 +61,10 @@ include $(top_srcdir)/src/Makeinclude.config
 # Local settings
 #############################################################################
 
-MYSOURCES = \
-	main.cpp \
+MYSOURCES = 
+
+MYSOURCES_OLD = \
+	main-old.cpp \
 	summary.hpp summary.cpp \
 	loadmodule.hpp loadmodule.cpp
 
@@ -86,12 +88,12 @@ MYINSTALLDIR = $(DESTDIR)$(prefix)
 # Automake rules
 #############################################################################
 
-bin_PROGRAMS            = hpcproftt
-hpcproftt_SOURCES       = $(MYSOURCES)
-hpcproftt_CFLAGS        = $(MYCFLAGS)
-hpcproftt_CXXFLAGS      = $(MYCXXFLAGS)
-hpcproftt_LDFLAGS       = $(MYLDFLAGS)
-hpcproftt_LDADD         = $(MYLDADD)
+bin_PROGRAMS            = hpcproftt-old
+hpcproftt_old_SOURCES   = $(MYSOURCES_OLD)
+hpcproftt_old_CFLAGS    = $(MYCFLAGS)
+hpcproftt_old_CXXFLAGS  = $(MYCXXFLAGS)
+hpcproftt_old_LDFLAGS   = $(MYLDFLAGS)
+hpcproftt_old_LDADD     = $(MYLDADD)
 
 MOSTLYCLEANFILES        = $(MYCLEAN)
 
