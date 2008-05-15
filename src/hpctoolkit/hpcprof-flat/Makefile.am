@@ -64,9 +64,7 @@ include $(top_srcdir)/src/Makeinclude.config
 MYSOURCES = \
 	main.cpp \
 	Args.hpp Args.cpp \
-	ConfigParser.hpp ConfigParser.cpp \
-	\
-	Driver.hpp Driver.cpp
+	ConfigParser.hpp ConfigParser.cpp
 
 # GNU binutils flags are needed for HPC_LIBISA.
 MYCFLAGS   = @HOST_CFLAGS@   $(HPC_IFLAGS) @GNUBINUTILS_IFLAGS@

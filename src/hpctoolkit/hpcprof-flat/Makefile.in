@@ -112,8 +112,7 @@ binPROGRAMS_INSTALL = $(INSTALL_PROGRAM)
 PROGRAMS = $(bin_PROGRAMS)
 am__objects_1 = hpcprof_flat_bin-main.$(OBJEXT) \
 	hpcprof_flat_bin-Args.$(OBJEXT) \
-	hpcprof_flat_bin-ConfigParser.$(OBJEXT) \
-	hpcprof_flat_bin-Driver.$(OBJEXT)
+	hpcprof_flat_bin-ConfigParser.$(OBJEXT)
 am_hpcprof_flat_bin_OBJECTS = $(am__objects_1)
 hpcprof_flat_bin_OBJECTS = $(am_hpcprof_flat_bin_OBJECTS)
 am__DEPENDENCIES_1 = $(HPC_LIBANALYSIS) $(HPC_LIBPROFJUICYX) \
@@ -332,9 +331,7 @@ HPC_LIBSUPPORT = $(top_builddir)/src/lib/support/libHPCsupport.la
 MYSOURCES = \
 	main.cpp \
 	Args.hpp Args.cpp \
-	ConfigParser.hpp ConfigParser.cpp \
-	\
-	Driver.hpp Driver.cpp
+	ConfigParser.hpp ConfigParser.cpp
 
 
 # GNU binutils flags are needed for HPC_LIBISA.
@@ -462,7 +459,6 @@ distclean-compile:
 
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/hpcprof_flat_bin-Args.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/hpcprof_flat_bin-ConfigParser.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/hpcprof_flat_bin-Driver.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/hpcprof_flat_bin-main.Po@am__quote@
 
 .cpp.o:
@@ -527,20 +523,6 @@ hpcprof_flat_bin-ConfigParser.obj: ConfigParser.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='ConfigParser.cpp' object='hpcprof_flat_bin-ConfigParser.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(hpcprof_flat_bin_CXXFLAGS) $(CXXFLAGS) -c -o hpcprof_flat_bin-ConfigParser.obj `if test -f 'ConfigParser.cpp'; then $(CYGPATH_W) 'ConfigParser.cpp'; else $(CYGPATH_W) '$(srcdir)/ConfigParser.cpp'; fi`
-
-hpcprof_flat_bin-Driver.o: Driver.cpp
-@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(hpcprof_flat_bin_CXXFLAGS) $(CXXFLAGS) -MT hpcprof_flat_bin-Driver.o -MD -MP -MF $(DEPDIR)/hpcprof_flat_bin-Driver.Tpo -c -o hpcprof_flat_bin-Driver.o `test -f 'Driver.cpp' || echo '$(srcdir)/'`Driver.cpp
-@am__fastdepCXX_TRUE@	mv -f $(DEPDIR)/hpcprof_flat_bin-Driver.Tpo $(DEPDIR)/hpcprof_flat_bin-Driver.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='Driver.cpp' object='hpcprof_flat_bin-Driver.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(hpcprof_flat_bin_CXXFLAGS) $(CXXFLAGS) -c -o hpcprof_flat_bin-Driver.o `test -f 'Driver.cpp' || echo '$(srcdir)/'`Driver.cpp
-
-hpcprof_flat_bin-Driver.obj: Driver.cpp
-@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(hpcprof_flat_bin_CXXFLAGS) $(CXXFLAGS) -MT hpcprof_flat_bin-Driver.obj -MD -MP -MF $(DEPDIR)/hpcprof_flat_bin-Driver.Tpo -c -o hpcprof_flat_bin-Driver.obj `if test -f 'Driver.cpp'; then $(CYGPATH_W) 'Driver.cpp'; else $(CYGPATH_W) '$(srcdir)/Driver.cpp'; fi`
-@am__fastdepCXX_TRUE@	mv -f $(DEPDIR)/hpcprof_flat_bin-Driver.Tpo $(DEPDIR)/hpcprof_flat_bin-Driver.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='Driver.cpp' object='hpcprof_flat_bin-Driver.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(hpcprof_flat_bin_CXXFLAGS) $(CXXFLAGS) -c -o hpcprof_flat_bin-Driver.obj `if test -f 'Driver.cpp'; then $(CYGPATH_W) 'Driver.cpp'; else $(CYGPATH_W) '$(srcdir)/Driver.cpp'; fi`
 
 mostlyclean-libtool:
 	-rm -f *.lo

@@ -35,8 +35,8 @@
 // 
 // ******************************************************* EndRiceCopyright *
 
-#ifndef Driver_hpp
-#define Driver_hpp 
+#ifndef Analysis_Flat_Driver_hpp
+#define Analysis_Flat_Driver_hpp 
 
 //************************ System Include Files ******************************
 
@@ -51,8 +51,8 @@
 
 #include <include/general.h>
 
-#include <lib/analysis/Args.hpp>
-#include <lib/analysis/DerivedPerfMetrics.hpp>
+#include "Args.hpp"
+#include "DerivedPerfMetrics.hpp"
 
 #include <lib/prof-juicy-x/PGMDocHandler.hpp>
 #include <lib/prof-juicy-x/DocHandlerArgs.hpp>
@@ -66,6 +66,11 @@
 typedef std::map<string, int> StringToIntMap;
 
 //****************************************************************************
+
+namespace Analysis {
+
+namespace Flat {
+
 
 class Driver : public Unique { // at most one instance 
 public: 
@@ -149,4 +154,12 @@ private:
   Driver* m_driver;
 };
 
-#endif 
+//****************************************************************************
+
+} // namespace CallPath
+
+} // namespace Analysis
+
+//****************************************************************************
+
+#endif // Analysis_Flat_Driver_hpp

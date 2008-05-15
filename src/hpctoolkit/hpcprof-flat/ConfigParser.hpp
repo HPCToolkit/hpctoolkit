@@ -52,14 +52,13 @@ using XERCES_CPP_NAMESPACE::DOMNode;
 
 //************************* User Include Files *******************************
 
+#include <lib/analysis/Flat.hpp>
+
 #include <lib/prof-juicy-x/XercesErrorHandler.hpp>
 
 #include <lib/support/diagnostics.h>
 
 //************************ Forward Declarations ******************************
-
-#include "Args.hpp"
-#include "Driver.hpp"
 
 //****************************************************************************
 
@@ -69,7 +68,7 @@ public:
   
   ~ConfigParser();
 
-  void parse(Args& args, Driver& driver);
+  void parse(Analysis::Args& args, Analysis::Flat::Driver& driver);
 
 private:
   XercesDOMParser* mParser;

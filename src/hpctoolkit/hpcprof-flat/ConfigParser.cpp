@@ -83,7 +83,7 @@ using XERCES_CPP_NAMESPACE::DOMNamedNodeMap;
 
 //****************************************************************************
 
-static void ProcessDOCUMENT(DOMNode *node, Args& args, Driver &driver);
+static void ProcessDOCUMENT(DOMNode *node, Analysis::Args& args, Analysis::Flat::Driver& driver);
 
 
 //***************************************************************************
@@ -115,7 +115,7 @@ ConfigParser::~ConfigParser()
 
 
 void
-ConfigParser::parse(Args& args, Driver& driver)
+ConfigParser::parse(Analysis::Args& args, Analysis::Flat::Driver& driver)
 {
   ProcessDOCUMENT(mDoc, args, driver);
 }
@@ -125,10 +125,10 @@ ConfigParser::parse(Args& args, Driver& driver)
 // 
 //***************************************************************************
 
-static void ProcessHPCVIEW(DOMNode *node, Args& args, Driver &driver);
-static void ProcessELEMENT(DOMNode *node, Args& args, Driver &driver);
-static void ProcessMETRIC(DOMNode *node, Args& args, Driver &driver);
-static void ProcessFILE(DOMNode *fileNode, Args& args, Driver &driver, 
+static void ProcessHPCVIEW(DOMNode *node, Analysis::Args& args, Analysis::Flat::Driver& driver);
+static void ProcessELEMENT(DOMNode *node, Analysis::Args& args, Analysis::Flat::Driver& driver);
+static void ProcessMETRIC(DOMNode *node, Analysis::Args& args, Analysis::Flat::Driver& driver);
+static void ProcessFILE(DOMNode *fileNode, Analysis::Args& args, Analysis::Flat::Driver& driver, 
 			const string& metricNm, bool metricDoDisp, 
 			bool metricDoPercent, bool metricDoSortBy, 
 			const string& metricDispNm);
@@ -149,7 +149,7 @@ printName(DOMNode *node)
 
 
 static void 
-ProcessDOCUMENT(DOMNode *node, Args& args, Driver &driver)
+ProcessDOCUMENT(DOMNode *node, Analysis::Args& args, Analysis::Flat::Driver& driver)
 {
   DOMNode *child = node->getFirstChild();
   ProcessHPCVIEW(child, args, driver);
@@ -157,7 +157,7 @@ ProcessDOCUMENT(DOMNode *node, Args& args, Driver &driver)
 
 
 static void 
-ProcessHPCVIEW(DOMNode *node, Args& args, Driver &driver)
+ProcessHPCVIEW(DOMNode *node, Analysis::Args& args, Analysis::Flat::Driver& driver)
 {
   DIAG_DevMsgIf(DBG, "CONFIG: " << node);
 
@@ -183,7 +183,7 @@ ProcessHPCVIEW(DOMNode *node, Args& args, Driver &driver)
 
 
 static void 
-ProcessELEMENT(DOMNode *node, Args& args, Driver &driver)
+ProcessELEMENT(DOMNode *node, Analysis::Args& args, Analysis::Flat::Driver& driver)
 {
   static XMLCh* METRIC       = XMLString::transcode("METRIC");
   static XMLCh* PATH         = XMLString::transcode("PATH");
@@ -283,7 +283,7 @@ ProcessELEMENT(DOMNode *node, Args& args, Driver &driver)
 
 
 static void 
-ProcessMETRIC(DOMNode *node, Args& args, Driver &driver)
+ProcessMETRIC(DOMNode *node, Analysis::Args& args, Analysis::Flat::Driver& driver)
 {
   static XMLCh* FILE = XMLString::transcode("FILE");
   static XMLCh* COMPUTE = XMLString::transcode("COMPUTE");
@@ -366,7 +366,8 @@ ProcessMETRIC(DOMNode *node, Args& args, Driver &driver)
 
 
 static void 
-ProcessFILE(DOMNode* fileNode, Args& args, Driver& driver, 
+ProcessFILE(DOMNode* fileNode, 
+	    Analysis::Args& args, Analysis::Flat::Driver& driver, 
 	    const string& metricNm, bool metricDoDisp, 
 	    bool metricDoPercent, bool metricDoSortBy, 
 	    const string& metricDispNm)

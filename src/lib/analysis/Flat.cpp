@@ -53,7 +53,7 @@ using std::vector;
 
 //************************* User Include Files *******************************
 
-#include "Driver.hpp"
+#include "Flat.hpp"
 
 #include <lib/prof-juicy-x/PGMReader.hpp>
 #include <lib/prof-juicy-x/XercesSAX2.hpp>
@@ -75,19 +75,19 @@ using std::vector;
 
 //****************************************************************************
 
-Driver::Driver(Analysis::Args& args)
+Analysis::Flat::Driver::Driver(Analysis::Args& args)
   : Unique("Driver"), m_args(args) 
 {
 } 
 
 
-Driver::~Driver()
+Analysis::Flat::Driver::~Driver()
 {
 } 
 
 
 void
-Driver::addMetric(PerfMetric *m) 
+Analysis::Flat::Driver::addMetric(PerfMetric *m) 
 {
   m_metrics.push_back(m); 
   DIAG_Msg(3, "Add:: m_metrics[" << m_metrics.size()-1 << "]=" << m->ToString());
@@ -98,7 +98,7 @@ Driver::addMetric(PerfMetric *m)
  * Replace with the pair of the first matching path.
  */
 string 
-Driver::ReplacePath(const char* oldpath)
+Analysis::Flat::Driver::ReplacePath(const char* oldpath)
 {
   DIAG_Assert(m_args.replaceInPath.size() == m_args.replaceOutPath.size(), "");
   for (uint i = 0 ; i<m_args.replaceInPath.size() ; i++ ) {
@@ -120,7 +120,7 @@ Driver::ReplacePath(const char* oldpath)
 
 
 string 
-Driver::SearchPathStr() const
+Analysis::Flat::Driver::SearchPathStr() const
 {
   string path = ".";
   
@@ -133,7 +133,7 @@ Driver::SearchPathStr() const
 
 
 string 
-Driver::makeUniqueName(StringToIntMap& tbl, const std::string& nm)
+Analysis::Flat::Driver::makeUniqueName(StringToIntMap& tbl, const std::string& nm)
 {
   StringToIntMap::iterator it = tbl.find(nm);
   if (it != tbl.end()) {
@@ -150,7 +150,7 @@ Driver::makeUniqueName(StringToIntMap& tbl, const std::string& nm)
 
 
 string
-Driver::ToString() const 
+Analysis::Flat::Driver::ToString() const 
 {
   string s =  string("Driver: " )
     + "title=" + m_args.title + " " // + "path=" + path;
@@ -165,7 +165,7 @@ Driver::ToString() const
 //****************************************************************************
 
 void 
-Driver::makePerfMetricDescs(std::vector<std::string>& profileFiles)
+Analysis::Flat::Driver::makePerfMetricDescs(std::vector<std::string>& profileFiles)
 {
   StringToIntMap metricDisambiguationTbl;
 
@@ -200,7 +200,7 @@ Driver::makePerfMetricDescs(std::vector<std::string>& profileFiles)
 
 
 void
-Driver::createProgramStructure(PgmScopeTree& scopes) 
+Analysis::Flat::Driver::createProgramStructure(PgmScopeTree& scopes) 
 {
   NodeRetriever ret(scopes.GetRoot(), SearchPathStr());
   
@@ -223,7 +223,7 @@ Driver::createProgramStructure(PgmScopeTree& scopes)
 
 
 void
-Driver::correlateMetricsWithStructure(PgmScopeTree& scopes) 
+Analysis::Flat::Driver::correlateMetricsWithStructure(PgmScopeTree& scopes) 
 {
   // -------------------------------------------------------
   // Create metrics, file and computed metrics. 
@@ -247,7 +247,7 @@ Driver::correlateMetricsWithStructure(PgmScopeTree& scopes)
 
 
 void
-Driver::computeSampledMetrics(PgmScopeTree& scopes) 
+Analysis::Flat::Driver::computeSampledMetrics(PgmScopeTree& scopes) 
 {
   typedef std::map<string, MetricList_t> StringToMetricListMap_t;
   StringToMetricListMap_t fileToMetricMap;
@@ -276,7 +276,7 @@ Driver::computeSampledMetrics(PgmScopeTree& scopes)
 
 
 void
-Driver::computeDerivedMetrics(PgmScopeTree& scopes) 
+Analysis::Flat::Driver::computeDerivedMetrics(PgmScopeTree& scopes) 
 {
   // create PROFILE file and computed metrics
   NodeRetriever ret(scopes.GetRoot(), SearchPathStr());
@@ -292,7 +292,7 @@ Driver::computeDerivedMetrics(PgmScopeTree& scopes)
 
 
 void
-Driver::computeFlatProfileMetrics(PgmScopeTree& scopes,
+Analysis::Flat::Driver::computeFlatProfileMetrics(PgmScopeTree& scopes,
 				  const string& profFilenm,
 				  const MetricList_t& metricList)
 {
@@ -418,7 +418,7 @@ Driver::computeFlatProfileMetrics(PgmScopeTree& scopes,
 
 
 void
-Driver::ProcessPGMFile(NodeRetriever* nretriever, 
+Analysis::Flat::Driver::ProcessPGMFile(NodeRetriever* nretriever, 
 		       PGMDocHandler::Doc_t docty, 
 		       const std::vector<string>& files)
 {
@@ -431,7 +431,7 @@ Driver::ProcessPGMFile(NodeRetriever* nretriever,
 
 
 void
-Driver::XML_Dump(PgmScope* pgm, std::ostream &os, const char *pre) const
+Analysis::Flat::Driver::XML_Dump(PgmScope* pgm, std::ostream &os, const char *pre) const
 {
   int dumpFlags = 0; // no dump flags
   XML_Dump(pgm, dumpFlags, os, pre);
@@ -439,7 +439,7 @@ Driver::XML_Dump(PgmScope* pgm, std::ostream &os, const char *pre) const
 
 
 void
-Driver::XML_Dump(PgmScope* pgm, int dumpFlags, std::ostream &os,
+Analysis::Flat::Driver::XML_Dump(PgmScope* pgm, int dumpFlags, std::ostream &os,
 		 const char *pre) const
 {
   string pre1 = string(pre) + "  ";
@@ -483,7 +483,7 @@ Driver::XML_Dump(PgmScope* pgm, int dumpFlags, std::ostream &os,
 }
 
 void 
-Driver::write_config(std::ostream &os) const
+Analysis::Flat::Driver::write_config(std::ostream &os) const
 {
   os << "<HPCVIEW>\n\n";
 
@@ -532,7 +532,7 @@ Driver::write_config(std::ostream &os) const
 
 
 void
-Driver::CSV_Dump(PgmScope* pgm, std::ostream &os) const
+Analysis::Flat::Driver::CSV_Dump(PgmScope* pgm, std::ostream &os) const
 {
   os << "File name,Routine name,Start line,End line,Loop level";
   for (uint i = 0; i < NumberOfPerfDataInfos(); i++) {
@@ -549,7 +549,7 @@ Driver::CSV_Dump(PgmScope* pgm, std::ostream &os) const
 
 
 void
-Driver::TSV_Dump(PgmScope* pgm, std::ostream &os) const
+Analysis::Flat::Driver::TSV_Dump(PgmScope* pgm, std::ostream &os) const
 {
   os << "LineID";
   for (uint i = 0; i < NumberOfPerfDataInfos(); i++) {
