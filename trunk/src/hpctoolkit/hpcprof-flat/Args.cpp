@@ -333,20 +333,20 @@ Args::parse(int argc, const char* const argv[])
 
     // Check for other options: Output formats
     if (parser.IsOpt("experiment")) {
-      outFilename_XML = EXPERIMENTXML;
+      outFilename_XML = Analysis_EXPERIMENTXML;
       if (parser.IsOptArg("experiment")) {
 	outFilename_XML = parser.GetOptArg("experiment");
       }
     }
     if (parser.IsOpt("csv")) {
-      outFilename_CSV = EXPERIMENTCSV;
+      outFilename_CSV = Analysis_EXPERIMENTCSV;
       if (parser.IsOptArg("csv")) {
 	outFilename_CSV = parser.GetOptArg("csv");
       }
       db_copySrcFiles = false; // FIXME:
     }
     if (parser.IsOpt("tsv")) { 
-      outFilename_TSV = EXPERIMENTTSV;
+      outFilename_TSV = Analysis_EXPERIMENTTSV;
       if (parser.IsOptArg("tsv")) {
 	outFilename_TSV = parser.GetOptArg("tsv");
       }
