@@ -132,6 +132,23 @@ Driver::SearchPathStr() const
 }
 
 
+string 
+Driver::makeUniqueName(StringToIntMap& tbl, const std::string& nm)
+{
+  StringToIntMap::iterator it = tbl.find(nm);
+  if (it != tbl.end()) {
+    int& qualifier = it->second;
+    qualifier++;
+    string nm_new = nm + "-" + StrUtil::toStr(qualifier);
+    return nm_new;
+  }
+  else {
+    tbl.insert(make_pair(nm, 0));
+    return nm;
+  }
+}
+
+
 string
 Driver::ToString() const 
 {
@@ -145,8 +162,45 @@ Driver::ToString() const
 } 
 
 
+//****************************************************************************
+
+void 
+Driver::makePerfMetricDescs(std::vector<std::string>& profileFiles)
+{
+  StringToIntMap metricDisambiguationTbl;
+
+  for (uint i = 0; i < profileFiles.size(); ++i) {
+    const string& proffnm = profileFiles[i];
+
+    Prof::Flat::Profile prof;
+    try {
+      prof.open(proffnm.c_str());
+    }
+    catch (...) {
+      DIAG_EMsg("While reading '" << proffnm << "'");
+      throw;
+    }
+
+    // For each metric: compute a canonical name and create a metric desc.
+    const Prof::SampledMetricDescVec& mdescs = prof.mdescs();
+    for (uint j = 0; j < mdescs.size(); ++j) {
+      const Prof::SampledMetricDesc& m = *mdescs[j];
+      
+      string metricNm = makeUniqueName(metricDisambiguationTbl, m.name());
+      string nativeNm = StrUtil::toStr(j);
+      bool metricDoSortBy = (numMetrics() == 0);
+      
+      addMetric(new FilePerfMetric(metricNm, nativeNm, metricNm, 
+				   true /*display*/, true /*percent*/, 
+				   metricDoSortBy, proffnm, 
+				   string("HPCRUN"), this));
+    }
+  }
+}
+
+
 void
-Driver::ScopeTreeInitialize(PgmScopeTree& scopes) 
+Driver::createProgramStructure(PgmScopeTree& scopes) 
 {
   NodeRetriever ret(scopes.GetRoot(), SearchPathStr());
   
@@ -169,7 +223,7 @@ Driver::ScopeTreeInitialize(PgmScopeTree& scopes)
 
 
 void
-Driver::ScopeTreeComputeMetrics(PgmScopeTree& scopes) 
+Driver::correlateMetricsWithStructure(PgmScopeTree& scopes) 
 {
   // -------------------------------------------------------
   // Create metrics, file and computed metrics. 
@@ -179,8 +233,8 @@ Driver::ScopeTreeComputeMetrics(PgmScopeTree& scopes)
   // expressions of file metrics).
   // -------------------------------------------------------
   try {
-    ScopeTreeComputeHPCRUNMetrics(scopes);
-    ScopeTreeComputeOtherMetrics(scopes);
+    computeSampledMetrics(scopes);
+    computeDerivedMetrics(scopes);
   } 
   catch (const MetricException &x) {
     DIAG_EMsg(x.message());
@@ -193,7 +247,7 @@ Driver::ScopeTreeComputeMetrics(PgmScopeTree& scopes)
 
 
 void
-Driver::ScopeTreeComputeHPCRUNMetrics(PgmScopeTree& scopes) 
+Driver::computeSampledMetrics(PgmScopeTree& scopes) 
 {
   typedef std::map<string, MetricList_t> StringToMetricListMap_t;
   StringToMetricListMap_t fileToMetricMap;
@@ -205,11 +259,10 @@ Driver::ScopeTreeComputeHPCRUNMetrics(PgmScopeTree& scopes)
   NodeRetriever ret(pgmScope, SearchPathStr());
   for (uint i = 0; i < m_metrics.size(); i++) {
     PerfMetric* m = m_metrics[i];
-    if (IsHPCRUNFilePerfMetric(m)) {
+    FilePerfMetric* mm = dynamic_cast<FilePerfMetric*>(m);
+    if (mm) {
       DIAG_Assert(pgmScope && pgmScope->ChildCount() > 0, "Attempting to correlate HPCRUN type profile-files without STRUCTURE information.");
-      
-      FilePerfMetric* fm = dynamic_cast<FilePerfMetric*>(m);
-      fileToMetricMap[fm->FileName()].push_back(fm);
+      fileToMetricMap[mm->FileName()].push_back(mm);
     }
   }
   
@@ -217,28 +270,29 @@ Driver::ScopeTreeComputeHPCRUNMetrics(PgmScopeTree& scopes)
        it != fileToMetricMap.end(); ++it) {
     const string& fnm = it->first;
     const MetricList_t& metrics = it->second;
-    ScopeTreeInsertHPCRUNData(scopes, fnm, metrics);
+    computeFlatProfileMetrics(scopes, fnm, metrics);
   }
 }
 
 
 void
-Driver::ScopeTreeComputeOtherMetrics(PgmScopeTree& scopes) 
+Driver::computeDerivedMetrics(PgmScopeTree& scopes) 
 {
   // create PROFILE file and computed metrics
   NodeRetriever ret(scopes.GetRoot(), SearchPathStr());
   
   for (uint i = 0; i < m_metrics.size(); i++) {
     PerfMetric* m = m_metrics[i];
-    if (!IsHPCRUNFilePerfMetric(m)) {
-      m->Make(ret);
+    ComputedPerfMetric* mm = dynamic_cast<ComputedPerfMetric*>(m);
+    if (mm) {
+      mm->Make(ret);
     }
   } 
 }
 
 
 void
-Driver::ScopeTreeInsertHPCRUNData(PgmScopeTree& scopes,
+Driver::computeFlatProfileMetrics(PgmScopeTree& scopes,
 				  const string& profFilenm,
 				  const MetricList_t& metricList)
 {
@@ -252,8 +306,7 @@ Driver::ScopeTreeInsertHPCRUNData(PgmScopeTree& scopes,
   //-------------------------------------------------------
   Prof::Flat::Profile prof;
   try {
-    prof.open(profFilenm.c_str());
-    prof.read();
+    prof.read(profFilenm.c_str());
   }
   catch (...) {
     DIAG_EMsg("While reading '" << profFilenm << "'");
@@ -428,6 +481,54 @@ Driver::XML_Dump(PgmScope* pgm, int dumpFlags, std::ostream &os,
 
   os << pre << "</HPCVIEWER>" << endl;
 }
+
+void 
+Driver::write_config(std::ostream &os) const
+{
+  os << "<HPCVIEW>\n\n";
+
+  // title
+  os << "<TITLE name=\"" << m_args.title << "\"/>\n\n";
+
+  // search paths
+  for (uint i = 0; i < m_args.searchPaths.size(); ++i) { 
+    const PathTuple& x = m_args.searchPaths[i];
+    os << "<PATH name=\"" << x.first << "\" viewname=\"" << x.second <<"\"/>\n";
+  }
+  if (!m_args.searchPaths.empty()) { os << "\n"; }
+  
+  // structure files
+  for (uint i = 0; i < m_args.structureFiles.size(); ++i) { 
+    os << "<STRUCTURE name=\"" << m_args.structureFiles[i] << "\"/>\n";
+  }
+  if (!m_args.structureFiles.empty()) { os << "\n"; }
+
+  // group files
+  for (uint i = 0; i < m_args.groupFiles.size(); ++i) { 
+    os << "<STRUCTURE name=\"" << m_args.groupFiles[i] << "\"/>\n";
+  }
+  if (!m_args.groupFiles.empty()) { os << "\n"; }
+
+  // metrics
+  for (uint i = 0; i < m_metrics.size(); i++) {
+    PerfMetric* m = m_metrics[i];
+    FilePerfMetric* mm = dynamic_cast<FilePerfMetric*>(m);
+    if (mm) {
+      const char* sortbystr = ((i == 0) ? " sortBy=\"true\"" : "");
+      os << "<METRIC name=\"" << m->Name() 
+	 << "\" displayName=\"" << m->DisplayInfo().Name() << "\"" 
+	 << sortbystr << ">\n";
+      os << "  <FILE name=\"" << mm->FileName() 
+	 << "\" select=\"" << mm->NativeName()
+	 << "\" type=\"" << mm->FileType() << "\"/>\n";
+      os << "</METRIC>\n\n";
+    }
+  }
+  if (!m_metrics.empty()) { os << "\n"; }
+  
+  os << "</HPCVIEW>\n";
+}
+
 
 
 void

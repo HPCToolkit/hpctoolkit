@@ -129,28 +129,28 @@ realmain(int argc, char* const* argv)
 
   Driver driver(args);
   //-------------------------------------------------------
-  // 1. Initialize metric information
+  // 1. Initialize metric descriptors
   //-------------------------------------------------------
   if (args.configurationFileMode) {
     readConfFile(args, driver); // exits on failure
   }
   else {
-    //driver.makePerfMetrics
+    driver.makePerfMetricDescs(args.profileFiles);
   }
   DIAG_Msg(2, "Driver is now: " << driver.ToString());
   
   //-------------------------------------------------------
-  // 2. Initialize scope tree structure
+  // 2. Initialize static program structure
   //-------------------------------------------------------
   DIAG_Msg(2, "Initializing scope tree...");
   PgmScopeTree scopeTree("", new PgmScope("")); // FIXME: better location
-  driver.ScopeTreeInitialize(scopeTree); 
+  driver.createProgramStructure(scopeTree); 
 
   //-------------------------------------------------------
-  // 3. Compute metrcis and correlate with program structure
+  // 3. Correlate metrics with program structure
   //-------------------------------------------------------
   DIAG_Msg(2, "Creating and correlating metrics with program structure: ...");
-  driver.ScopeTreeComputeMetrics(scopeTree);
+  driver.correlateMetricsWithStructure(scopeTree);
 
   DIAG_If(3) {
     DIAG_Msg(3, "Initial scope tree:");
@@ -183,6 +183,13 @@ realmain(int argc, char* const* argv)
   // FIXME: pulled out of HTMLDriver
   if (MakeDir(args.db_dir.c_str()) != 0) {
     exit(1);
+  }
+
+  if (!args.configurationFileMode) {
+    string configfnm = args.db_dir + "/config.xml";
+    std::ostream* os = IOUtil::OpenOStream(configfnm.c_str());
+    driver.write_config(*os);
+    IOUtil::CloseStream(os);
   }
 
   if (args.db_copySrcFiles) {

@@ -282,13 +282,3 @@ ComputedPerfMetric::ToString() const
          "MathMLExpr=\"" + StrUtil::toStr((void*)mathExpr);
 } 
 
-// **************************************************************************
-// ToString methods 
-// **************************************************************************
-
-bool 
-IsHPCRUNFilePerfMetric(PerfMetric* m)
-{
-  FilePerfMetric* filemetric = dynamic_cast<FilePerfMetric*>(m);
-  return (filemetric && filemetric->FileType() == "HPCRUN");
-}
