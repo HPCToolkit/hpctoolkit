@@ -48,57 +48,38 @@
 //
 //***************************************************************************
 
-#ifndef Args_hpp
-#define Args_hpp
+#ifndef Analysis_Util_hpp 
+#define Analysis_Util_hpp
 
 //************************* System Include Files ****************************
 
-#include <iostream>
 #include <string>
-#include <vector>
 
 //*************************** User Include Files ****************************
 
-#include <include/general.h>
+#include <include/general.h> 
 
-#include <lib/analysis/Args.hpp>
+//*************************** Forward Declarations ***************************
 
-#include <lib/support/CmdLineParser.hpp>
+//****************************************************************************
 
-//*************************** Forward Declarations **************************
+namespace Analysis {
 
-//***************************************************************************
+namespace Util {
 
-class Args : public Analysis::Args {
-public: 
-  Args(); 
-  Args(int argc, const char* const argv[]);
-  virtual ~Args(); 
+enum ProfType_t {
+  ProfType_NULL,
+  ProfType_CALLPATH,
+  ProfType_FLAT
+};
 
-  // Parse the command line
-  void parse(int argc, const char* const argv[]);
+ProfType_t
+getProfileType(const std::string& filenm);
 
-  // Version and Usage information
-  void printVersion(std::ostream& os) const;
-  void printUsage(std::ostream& os) const;
-  
-  // Error
-  void printError(std::ostream& os, const char* msg) const;
-  void printError(std::ostream& os, const std::string& msg) const;
+} // namespace Util
 
-  // Dump
-  virtual void dump(std::ostream& os = std::cerr) const;
+} // namespace Analysis
 
-public:
-  // Parsed Data: Command
-  const std::string& getCmd() const;
+//****************************************************************************
 
-private:
-  void Ctor();
-
-private:
-  static CmdLineParser::OptArgDesc optArgs[];
-  CmdLineParser parser;
-}; 
-
-#endif // Args_hpp 
+#endif // Analysis_Util_hpp

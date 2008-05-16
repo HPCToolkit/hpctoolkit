@@ -138,7 +138,7 @@ Options: Dump Raw Profile Data:\n\
                       control of standard metrics\n\
   --threshold <n>     Show only load modules, files or procedures with an\n\
                       event count >= <n> {1}  (Use 0 to see all procedures.)\n\
-  --addmetric <...>   ??? a few predefined metrics...???\n"
+  --addmetric <...>   ??? a few predefined metrics...???\n";
 #endif
 
 
@@ -192,6 +192,7 @@ Args::Args(int argc, const char* const argv[])
 void
 Args::Ctor()
 {
+  mode = Mode_SourceCorrelation;
   Diagnostics_SetDiagnosticFilterLevel(1);
 
   // override Analysis::Args defaults
@@ -285,7 +286,13 @@ Args::parse(int argc, const char* const argv[])
       Diagnostics_SetDiagnosticFilterLevel(verb);
     }
 
-    // Check for other options: Correlation options
+    // Check for other options: Source correlation options
+    if (parser.IsOpt("source") || parser.IsOpt("src")) {
+      mode = Mode_SourceCorrelation;
+      string opt;
+      if (parser.IsOptArg("source"))   { opt = parser.GetOptArg("source"); }
+      else if (parser.IsOptArg("src")) { opt = parser.GetOptArg("src"); }
+    }
     if (parser.IsOpt("include")) {
       string str = parser.GetOptArg("include");
       StrUtil::tokenize(str, CLP_SEPARATOR, searchPaths);
@@ -298,26 +305,26 @@ Args::parse(int argc, const char* const argv[])
       string str = parser.GetOptArg("structure");
       StrUtil::tokenize(str, CLP_SEPARATOR, structureFiles);
     }
+    if (parser.IsOpt("file")) {
+      string str = parser.GetOptArg("file");
+      // ...
+    }
     
-    // Check for other options: Output options
-    if (parser.IsOpt("output")) {
-      db_dir = parser.GetOptArg("output");
-    }
-    if (parser.IsOpt("db")) {
-      db_dir = parser.GetOptArg("db");
-    }
-
-    string cpysrc;
-    if (parser.IsOpt("src")) {
-      if (parser.IsOptArg("src")) { cpysrc = parser.GetOptArg("src"); }
-    }
-    if (parser.IsOpt("source")) {
-      if (parser.IsOptArg("source")) { cpysrc = parser.GetOptArg("source"); }
-    }
-    if (!cpysrc.empty()) {
-      db_copySrcFiles = (cpysrc != "no");
+    // Check for other options: Object correlation options
+    if (parser.IsOpt("object") || parser.IsOpt("obj")) {
+      mode = Mode_ObjectCorrelation;
+      string opt;
+      if (parser.IsOptArg("object"))   { opt = parser.GetOptArg("object"); }
+      else if (parser.IsOptArg("obj")) { opt = parser.GetOptArg("obj"); }
     }
 
+    // Check for other options: Dump raw profile data
+    if (parser.IsOpt("dump")) {
+      mode = Mode_RawDataDump;
+    }
+
+    // FIXME: sanity check that options correspond to mode
+    
     // Check for required arguments
     uint numArgs = parser.GetNumArgs();
     if ( !(numArgs >= 1) ) {

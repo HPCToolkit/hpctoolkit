@@ -48,57 +48,42 @@
 //
 //***************************************************************************
 
-#ifndef Args_hpp
-#define Args_hpp
+#ifndef Analysis_Raw_Raw_hpp 
+#define Analysis_Raw_Raw_hpp
 
 //************************* System Include Files ****************************
 
-#include <iostream>
 #include <string>
-#include <vector>
 
 //*************************** User Include Files ****************************
 
-#include <include/general.h>
+#include <include/general.h> 
 
-#include <lib/analysis/Args.hpp>
+//*************************** Forward Declarations ***************************
 
-#include <lib/support/CmdLineParser.hpp>
+//****************************************************************************
 
-//*************************** Forward Declarations **************************
+namespace Analysis {
 
-//***************************************************************************
+namespace Raw {
 
-class Args : public Analysis::Args {
-public: 
-  Args(); 
-  Args(int argc, const char* const argv[]);
-  virtual ~Args(); 
+void 
+writeAsText(/*destination,*/ const char* filenm);
 
-  // Parse the command line
-  void parse(int argc, const char* const argv[]);
+inline void 
+writeAsText(/*destination,*/ const std::string& filenm)
+{ writeAsText(filenm.c_str()); }
 
-  // Version and Usage information
-  void printVersion(std::ostream& os) const;
-  void printUsage(std::ostream& os) const;
-  
-  // Error
-  void printError(std::ostream& os, const char* msg) const;
-  void printError(std::ostream& os, const std::string& msg) const;
+void
+writeAsText_callpath(/*destination,*/ const char* filenm);
 
-  // Dump
-  virtual void dump(std::ostream& os = std::cerr) const;
+void
+writeAsText_flat(/*destination,*/ const char* filenm);
 
-public:
-  // Parsed Data: Command
-  const std::string& getCmd() const;
+} // namespace Raw
 
-private:
-  void Ctor();
+} // namespace Analysis
 
-private:
-  static CmdLineParser::OptArgDesc optArgs[];
-  CmdLineParser parser;
-}; 
+//****************************************************************************
 
-#endif // Args_hpp 
+#endif // Analysis_Raw_Raw_hpp

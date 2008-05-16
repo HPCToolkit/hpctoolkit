@@ -108,9 +108,11 @@ CONFIG_CLEAN_FILES =
 LTLIBRARIES = $(noinst_LTLIBRARIES)
 am__DEPENDENCIES_1 =
 libHPCanalysis_la_DEPENDENCIES = $(am__DEPENDENCIES_1)
-am__objects_1 = libHPCanalysis_la-Args.lo \
-	libHPCanalysis_la-CallPath.lo libHPCanalysis_la-Flat.lo \
-	libHPCanalysis_la-DerivedPerfMetrics.lo
+am__objects_1 = libHPCanalysis_la-CallPath.lo \
+	libHPCanalysis_la-Flat.lo \
+	libHPCanalysis_la-DerivedPerfMetrics.lo \
+	libHPCanalysis_la-Raw.lo libHPCanalysis_la-Args.lo \
+	libHPCanalysis_la-Util.lo
 am_libHPCanalysis_la_OBJECTS = $(am__objects_1)
 libHPCanalysis_la_OBJECTS = $(am_libHPCanalysis_la_OBJECTS)
 libHPCanalysis_la_LINK = $(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) \
@@ -321,12 +323,15 @@ HPC_LIBSUPPORT = $(top_builddir)/src/lib/support/libHPCsupport.la
 # Local settings
 #############################################################################
 MYSOURCES = \
-	Args.hpp Args.cpp \
-	\
 	CallPath.hpp CallPath.cpp \
 	\
 	Flat.hpp Flat.cpp \
-	DerivedPerfMetrics.hpp DerivedPerfMetrics.cpp
+	DerivedPerfMetrics.hpp DerivedPerfMetrics.cpp \
+	\
+	Raw.hpp Raw.cpp	\
+	\
+	Args.hpp Args.cpp \
+	Util.hpp Util.cpp
 
 
 # GNU binutils flags are needed for HPC_LIBISA.
@@ -412,6 +417,8 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCanalysis_la-CallPath.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCanalysis_la-DerivedPerfMetrics.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCanalysis_la-Flat.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCanalysis_la-Raw.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCanalysis_la-Util.Plo@am__quote@
 
 .cpp.o:
 @am__fastdepCXX_TRUE@	$(CXXCOMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
@@ -434,13 +441,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(LTCXXCOMPILE) -c -o $@ $<
 
-libHPCanalysis_la-Args.lo: Args.cpp
-@am__fastdepCXX_TRUE@	$(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCanalysis_la_CXXFLAGS) $(CXXFLAGS) -MT libHPCanalysis_la-Args.lo -MD -MP -MF $(DEPDIR)/libHPCanalysis_la-Args.Tpo -c -o libHPCanalysis_la-Args.lo `test -f 'Args.cpp' || echo '$(srcdir)/'`Args.cpp
-@am__fastdepCXX_TRUE@	mv -f $(DEPDIR)/libHPCanalysis_la-Args.Tpo $(DEPDIR)/libHPCanalysis_la-Args.Plo
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='Args.cpp' object='libHPCanalysis_la-Args.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCanalysis_la_CXXFLAGS) $(CXXFLAGS) -c -o libHPCanalysis_la-Args.lo `test -f 'Args.cpp' || echo '$(srcdir)/'`Args.cpp
-
 libHPCanalysis_la-CallPath.lo: CallPath.cpp
 @am__fastdepCXX_TRUE@	$(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCanalysis_la_CXXFLAGS) $(CXXFLAGS) -MT libHPCanalysis_la-CallPath.lo -MD -MP -MF $(DEPDIR)/libHPCanalysis_la-CallPath.Tpo -c -o libHPCanalysis_la-CallPath.lo `test -f 'CallPath.cpp' || echo '$(srcdir)/'`CallPath.cpp
 @am__fastdepCXX_TRUE@	mv -f $(DEPDIR)/libHPCanalysis_la-CallPath.Tpo $(DEPDIR)/libHPCanalysis_la-CallPath.Plo
@@ -461,6 +461,27 @@ libHPCanalysis_la-DerivedPerfMetrics.lo: DerivedPerfMetrics.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='DerivedPerfMetrics.cpp' object='libHPCanalysis_la-DerivedPerfMetrics.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCanalysis_la_CXXFLAGS) $(CXXFLAGS) -c -o libHPCanalysis_la-DerivedPerfMetrics.lo `test -f 'DerivedPerfMetrics.cpp' || echo '$(srcdir)/'`DerivedPerfMetrics.cpp
+
+libHPCanalysis_la-Raw.lo: Raw.cpp
+@am__fastdepCXX_TRUE@	$(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCanalysis_la_CXXFLAGS) $(CXXFLAGS) -MT libHPCanalysis_la-Raw.lo -MD -MP -MF $(DEPDIR)/libHPCanalysis_la-Raw.Tpo -c -o libHPCanalysis_la-Raw.lo `test -f 'Raw.cpp' || echo '$(srcdir)/'`Raw.cpp
+@am__fastdepCXX_TRUE@	mv -f $(DEPDIR)/libHPCanalysis_la-Raw.Tpo $(DEPDIR)/libHPCanalysis_la-Raw.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='Raw.cpp' object='libHPCanalysis_la-Raw.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCanalysis_la_CXXFLAGS) $(CXXFLAGS) -c -o libHPCanalysis_la-Raw.lo `test -f 'Raw.cpp' || echo '$(srcdir)/'`Raw.cpp
+
+libHPCanalysis_la-Args.lo: Args.cpp
+@am__fastdepCXX_TRUE@	$(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCanalysis_la_CXXFLAGS) $(CXXFLAGS) -MT libHPCanalysis_la-Args.lo -MD -MP -MF $(DEPDIR)/libHPCanalysis_la-Args.Tpo -c -o libHPCanalysis_la-Args.lo `test -f 'Args.cpp' || echo '$(srcdir)/'`Args.cpp
+@am__fastdepCXX_TRUE@	mv -f $(DEPDIR)/libHPCanalysis_la-Args.Tpo $(DEPDIR)/libHPCanalysis_la-Args.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='Args.cpp' object='libHPCanalysis_la-Args.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCanalysis_la_CXXFLAGS) $(CXXFLAGS) -c -o libHPCanalysis_la-Args.lo `test -f 'Args.cpp' || echo '$(srcdir)/'`Args.cpp
+
+libHPCanalysis_la-Util.lo: Util.cpp
+@am__fastdepCXX_TRUE@	$(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCanalysis_la_CXXFLAGS) $(CXXFLAGS) -MT libHPCanalysis_la-Util.lo -MD -MP -MF $(DEPDIR)/libHPCanalysis_la-Util.Tpo -c -o libHPCanalysis_la-Util.lo `test -f 'Util.cpp' || echo '$(srcdir)/'`Util.cpp
+@am__fastdepCXX_TRUE@	mv -f $(DEPDIR)/libHPCanalysis_la-Util.Tpo $(DEPDIR)/libHPCanalysis_la-Util.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='Util.cpp' object='libHPCanalysis_la-Util.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCanalysis_la_CXXFLAGS) $(CXXFLAGS) -c -o libHPCanalysis_la-Util.lo `test -f 'Util.cpp' || echo '$(srcdir)/'`Util.cpp
 
 mostlyclean-libtool:
 	-rm -f *.lo

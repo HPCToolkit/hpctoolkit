@@ -121,7 +121,7 @@ Options: Output:\n\
                        {./"Analysis_EXPERIMENTDB"}\n\
   --src [yes|no], --source [yes|no]\n\
                        Whether to copy source code files into Experiment\n\
-                       database. {yes} By default, [hpcprof] copies source\n\
+                       database. {yes} By default, hpcprof-flat copies source\n\
                        files with performance metrics and that can be\n\
                        reached by PATH/REPLACE statements, resulting in a\n\
                        self-contained dataset that does not rely on an\n\
@@ -320,15 +320,11 @@ Args::parse(int argc, const char* const argv[])
       db_dir = parser.GetOptArg("db");
     }
 
-    string cpysrc;
-    if (parser.IsOpt("src")) {
-      if (parser.IsOptArg("src")) { cpysrc = parser.GetOptArg("src"); }
-    }
-    if (parser.IsOpt("source")) {
-      if (parser.IsOptArg("source")) { cpysrc = parser.GetOptArg("source"); }
-    }
-    if (!cpysrc.empty()) {
-      db_copySrcFiles = (cpysrc != "no");
+    if (parser.IsOpt("source") || parser.IsOpt("src")) {
+      string opt;
+      if (parser.IsOptArg("source"))   { opt = parser.GetOptArg("source"); }
+      else if (parser.IsOptArg("src")) { opt = parser.GetOptArg("src"); }
+      db_copySrcFiles = (opt != "no");
     }
 
     // Check for other options: Output formats
@@ -343,14 +339,14 @@ Args::parse(int argc, const char* const argv[])
       if (parser.IsOptArg("csv")) {
 	outFilename_CSV = parser.GetOptArg("csv");
       }
-      db_copySrcFiles = false; // FIXME:
+      db_copySrcFiles = false;
     }
     if (parser.IsOpt("tsv")) { 
       outFilename_TSV = Analysis_EXPERIMENTTSV;
       if (parser.IsOptArg("tsv")) {
 	outFilename_TSV = parser.GetOptArg("tsv");
       }
-      db_copySrcFiles = false; // FIXME:
+      db_copySrcFiles = false;
     }
     
     // Check for required arguments

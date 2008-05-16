@@ -267,33 +267,6 @@ ReadProfile_CSPROF(const char* fnm)
 }
 
 
-void
-DumpProfile_CSPROF(const char* fnm) 
-{
-  hpcfile_csprof_data_t metadata;
-  int ret;
-
-  FILE* fs = hpcfile_open_for_read(fnm);
-  if (!fs) { 
-    DIAG_Throw(fnm << ": could not open");
-  }
-
-  ret = hpcfile_csprof_fprint(fs, stdout, &metadata);
-  if (ret != HPCFILE_OK) {
-    DIAG_Throw(fnm << ": error reading HPC_CSPROF");
-  }
-  
-  uint num_metrics = metadata.num_metrics;
-  
-  ret = hpcfile_cstree_fprint(fs, num_metrics, stdout);
-  if (ret != HPCFILE_OK) { 
-    DIAG_Throw(fnm << ": error reading HPC_CSTREE.");
-  }
-
-  hpcfile_close(fs);
-}
-
-
 static void* 
 cstree_create_node_CB(void* tree, 
 		      hpcfile_cstree_nodedata_t* data)

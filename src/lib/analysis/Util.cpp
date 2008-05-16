@@ -48,57 +48,37 @@
 //
 //***************************************************************************
 
-#ifndef Args_hpp
-#define Args_hpp
-
 //************************* System Include Files ****************************
 
-#include <iostream>
 #include <string>
-#include <vector>
+using std::string;
 
 //*************************** User Include Files ****************************
 
-#include <include/general.h>
+#include "Util.hpp"
 
-#include <lib/analysis/Args.hpp>
+#include <lib/support/diagnostics.h>
 
-#include <lib/support/CmdLineParser.hpp>
+//*************************** Forward Declarations ***************************
 
-//*************************** Forward Declarations **************************
+//****************************************************************************
 
-//***************************************************************************
-
-class Args : public Analysis::Args {
-public: 
-  Args(); 
-  Args(int argc, const char* const argv[]);
-  virtual ~Args(); 
-
-  // Parse the command line
-  void parse(int argc, const char* const argv[]);
-
-  // Version and Usage information
-  void printVersion(std::ostream& os) const;
-  void printUsage(std::ostream& os) const;
+Analysis::Util::ProfType_t 
+Analysis::Util::getProfileType(const std::string& filenm)
+{
+  // FIXME: a better way of doing this would be to read the first 32
+  // bytes and test for the magic cookie.
   
-  // Error
-  void printError(std::ostream& os, const char* msg) const;
-  void printError(std::ostream& os, const std::string& msg) const;
+  // FIXME: not yet abstracted since csprof is still a mess
+  static const string CALLPATH_SFX = ".csp";
+  
+  if (filenm.length() > CALLPATH_SFX.length()) {
+    uint begpos = filenm.length() - CALLPATH_SFX.length();
+    if (filenm.find(CALLPATH_SFX, begpos) != string::npos) {
+      return ProfType_CALLPATH;
+    }
+  }
+  
+  return ProfType_FLAT;
+}
 
-  // Dump
-  virtual void dump(std::ostream& os = std::cerr) const;
-
-public:
-  // Parsed Data: Command
-  const std::string& getCmd() const;
-
-private:
-  void Ctor();
-
-private:
-  static CmdLineParser::OptArgDesc optArgs[];
-  CmdLineParser parser;
-}; 
-
-#endif // Args_hpp 

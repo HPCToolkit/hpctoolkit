@@ -51,9 +51,7 @@
 //************************* System Include Files ****************************
 
 #include <iostream>
-#include <iomanip>
 #include <fstream>
-#include <new>
 
 #include <string>
 using std::string;
@@ -132,15 +130,6 @@ realmain(int argc, char* const* argv)
 {
   Args args(argc, argv);
 
-  // ------------------------------------------------------------
-  // Special short-circuit behavior
-  // ------------------------------------------------------------
-
-  if (args.dumpProfiles) {
-    dumpProfileData(cout, args.profileFiles);
-    return 0;
-  }
-  
   // ------------------------------------------------------------
   // Read 'profData', the profiling data file
   // ------------------------------------------------------------
@@ -264,21 +253,6 @@ readProfileFile(const string& prof_fnm)
     throw;
   }
   return prof;
-}
-
-
-static void
-dumpProfileData(std::ostream& os, std::vector<string>& profileFiles)
-{
-  for (int i = 0; i < profileFiles.size(); ++i) {
-    const char* fnm = profileFiles[i].c_str();
-
-    os << std::setfill('=') << std::setw(77) << "=" << endl;
-    os << fnm << std::endl;
-    os << std::setfill('=') << std::setw(77) << "=" << endl;
-
-    DumpProfile_CSPROF(fnm); // stdout
-  }
 }
 
 

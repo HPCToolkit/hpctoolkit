@@ -70,6 +70,14 @@
 //***************************************************************************
 
 class Args : public Analysis::Args {
+public:
+  enum Mode_t {
+    Mode_NULL,
+    Mode_SourceCorrelation,
+    Mode_ObjectCorrelation,
+    Mode_RawDataDump
+  };
+
 public: 
   Args(); 
   Args(int argc, const char* const argv[]);
@@ -94,7 +102,7 @@ public:
   const std::string& getCmd() const;
 
   // Parsed Data
-  bool dumpRawProfileMode;
+  Mode_t mode;
 
 private:
   void Ctor();
