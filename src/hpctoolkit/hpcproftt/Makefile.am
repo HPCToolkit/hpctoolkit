@@ -61,24 +61,27 @@ include $(top_srcdir)/src/Makeinclude.config
 # Local settings
 #############################################################################
 
-MYSOURCES = 
+MYSOURCES = \
+	main.cpp \
+	Args.hpp Args.cpp
 
 MYSOURCES_OLD = \
 	main-old.cpp \
 	summary.hpp summary.cpp \
 	loadmodule.hpp loadmodule.cpp
 
+# GNU binutils flags are needed for HPC_LIBISA.
 MYCFLAGS   = @HOST_CFLAGS@   $(HPC_IFLAGS) @GNUBINUTILS_IFLAGS@
-MYCXXFLAGS = @HOST_CXXFLAGS@ $(HPC_IFLAGS) @GNUBINUTILS_IFLAGS@
+MYCXXFLAGS = @HOST_CXXFLAGS@ $(HPC_IFLAGS) @GNUBINUTILS_IFLAGS@ @XERCES_IFLAGS@
 
-MYLDFLAGS   = \
-	@HOST_CXXFLAGS@
+MYLDFLAGS = @HOST_CXXFLAGS@
 
-MYLDADD   = \
-	$(HPC_LIBPROFJUICY) $(HPC_LIBPROFLEAN) $(HPC_LIBBINUTILS) $(HPC_LIBISA)  $(HPC_LIBSUPPORT) \
+MYLDADD = \
 	@HOST_LIBTREPOSITORY@ \
-	@GNUBINUTILS_LDFLAGS@
-
+	$(HPC_LIBANALYSIS) $(HPC_LIBPROFJUICYX) $(HPC_LIBPROFJUICY) $(HPC_LIBPROFLEAN) $(HPC_LIBBINUTILS) $(HPC_LIBISA) $(HPC_LIBXML) $(HPC_LIBSUPPORT) \
+	@XERCES_LDFLAGS@ @GNUBINUTILS_LDFLAGS@ \
+	@HOST_HPCPROFTT_LDFLAGS@ \
+	-lm
 
 MYCLEAN = @HOST_LIBTREPOSITORY@
 
@@ -88,18 +91,23 @@ MYINSTALLDIR = $(DESTDIR)$(prefix)
 # Automake rules
 #############################################################################
 
-bin_PROGRAMS            = hpcproftt-old
+bin_SCRIPTS = hpcproftt
+
+bin_PROGRAMS = hpcproftt-bin hpcproftt-old
+
+hpcproftt_bin_SOURCES   = $(MYSOURCES)
+hpcproftt_bin_CFLAGS    = $(MYCFLAGS)
+hpcproftt_bin_CXXFLAGS  = $(MYCXXFLAGS)
+hpcproftt_bin_LDFLAGS   = $(MYLDFLAGS)
+hpcproftt_bin_LDADD     = $(MYLDADD)
+
 hpcproftt_old_SOURCES   = $(MYSOURCES_OLD)
 hpcproftt_old_CFLAGS    = $(MYCFLAGS)
 hpcproftt_old_CXXFLAGS  = $(MYCXXFLAGS)
 hpcproftt_old_LDFLAGS   = $(MYLDFLAGS)
 hpcproftt_old_LDADD     = $(MYLDADD)
 
-MOSTLYCLEANFILES        = $(MYCLEAN)
-
-#############################################################################
-# Other rules
-#############################################################################
+MOSTLYCLEANFILES = $(MYCLEAN)
 
 #############################################################################
 # Common rules
