@@ -108,11 +108,7 @@ Options: Output:\n\
   -o <db-path>, --db <db-path>, --output <db-path>\n\
                        Specify Experiment database name <db-path>.\n\
                        {./"Analysis_EXPERIMENTDB"}\n\
-                       Experiment format {"Analysis_EXPERIMENTXML"}\n\
-\n\
-Options: Development:\n\
-  --dump\n\
-                       Dump text representation of profiles.\n";
+                       Experiment format {"Analysis_EXPERIMENTXML"}\n";
 
 
 #define CLP CmdLineParser
@@ -127,8 +123,6 @@ CmdLineParser::OptArgDesc Args::optArgs[] = {
   // Output options
   { 'o', "output",          CLP::ARG_REQ , CLP::DUPOPT_CLOB, NULL },
   {  0 , "db",              CLP::ARG_REQ , CLP::DUPOPT_CLOB, NULL },
-
-  {  0 , "dump",            CLP::ARG_NONE, CLP::DUPOPT_CLOB, NULL },
 
   // General
   { 'v', "verbose",         CLP::ARG_OPT,  CLP::DUPOPT_CLOB, NULL },
@@ -161,7 +155,6 @@ Args::Args(int argc, const char* const argv[])
 void
 Args::Ctor()
 {
-  dumpProfiles = false;
   Diagnostics_SetDiagnosticFilterLevel(1);
 }
 
@@ -267,11 +260,6 @@ Args::parse(int argc, const char* const argv[])
       db_dir = parser.GetOptArg("db");
     }
     db_dir = normalizeFilePath(db_dir);
-
-    // Check for other options: 
-    if (parser.IsOpt("dump")) {
-      dumpProfiles = true;
-    }
 
     // Check for required arguments
     uint numArgs = parser.GetNumArgs();

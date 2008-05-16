@@ -48,57 +48,88 @@
 //
 //***************************************************************************
 
-#ifndef Args_hpp
-#define Args_hpp
-
 //************************* System Include Files ****************************
 
 #include <iostream>
 #include <string>
-#include <vector>
+using std::string;
 
 //*************************** User Include Files ****************************
 
-#include <include/general.h>
+#include "Raw.hpp"
+#include "Util.hpp"
 
-#include <lib/analysis/Args.hpp>
+#include <lib/prof-lean/hpcfile_csproflib.h>
+#include <lib/prof-juicy/FlatProfileReader.hpp>
 
-#include <lib/support/CmdLineParser.hpp>
+#include <lib/support/diagnostics.h>
 
-//*************************** Forward Declarations **************************
+//*************************** Forward Declarations ***************************
 
-//***************************************************************************
+//****************************************************************************
 
-class Args : public Analysis::Args {
-public: 
-  Args(); 
-  Args(int argc, const char* const argv[]);
-  virtual ~Args(); 
+void 
+Analysis::Raw::writeAsText(/*destination,*/ const char* filenm)
+{
+  using namespace Analysis::Util;
 
-  // Parse the command line
-  void parse(int argc, const char* const argv[]);
+  ProfType_t ty = getProfileType(filenm);
+  if (ty == ProfType_CALLPATH) {
+    writeAsText_callpath(filenm);
+  }
+  else if (ty == ProfType_FLAT) {
+    writeAsText_flat(filenm);
+  }
+  else {
+    DIAG_Die(DIAG_Unimplemented);
+  }
+}
 
-  // Version and Usage information
-  void printVersion(std::ostream& os) const;
-  void printUsage(std::ostream& os) const;
+
+void
+Analysis::Raw::writeAsText_callpath(const char* filenm) 
+{
+  if (!filenm) { return; }
+
+  hpcfile_csprof_data_t metadata;
+  int ret;
+
+  FILE* fs = hpcfile_open_for_read(filenm);
+  if (!fs) { 
+    DIAG_Throw(filenm << ": could not open");
+  }
+
+  ret = hpcfile_csprof_fprint(fs, stdout, &metadata);
+  if (ret != HPCFILE_OK) {
+    DIAG_Throw(filenm << ": error reading HPC_CSPROF");
+  }
   
-  // Error
-  void printError(std::ostream& os, const char* msg) const;
-  void printError(std::ostream& os, const std::string& msg) const;
+  uint num_metrics = metadata.num_metrics;
+  
+  ret = hpcfile_cstree_fprint(fs, num_metrics, stdout);
+  if (ret != HPCFILE_OK) { 
+    DIAG_Throw(filenm << ": error reading HPC_CSTREE.");
+  }
 
-  // Dump
-  virtual void dump(std::ostream& os = std::cerr) const;
+  hpcfile_close(fs);
+}
 
-public:
-  // Parsed Data: Command
-  const std::string& getCmd() const;
 
-private:
-  void Ctor();
+void
+Analysis::Raw::writeAsText_flat(const char* filenm) 
+{
+  if (!filenm) { return; }
+  
+  Prof::Flat::Profile prof;
+  try {
+    prof.read(filenm);
+  }
+  catch (...) {
+    DIAG_EMsg("While reading '" << filenm << "'");
+    throw;
+  }
 
-private:
-  static CmdLineParser::OptArgDesc optArgs[];
-  CmdLineParser parser;
-}; 
+  prof.dump(std::cout);
+}
 
-#endif // Args_hpp 
+

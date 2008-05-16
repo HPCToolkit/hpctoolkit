@@ -39,6 +39,7 @@
 
 #include <iostream>
 #include <fstream>
+#include <iomanip>
 
 #include <string>
 using std::string;
@@ -52,13 +53,15 @@ using std::string;
 #include "Args.hpp"
 
 #include <lib/analysis/Flat.hpp>
-
-#include <lib/prof-juicy/PgmScopeTree.hpp>
+#include <lib/analysis/Raw.hpp>
 
 #include <lib/support/diagnostics.h>
-#include <lib/support/NaN.h>
 
 //************************ Forward Declarations ******************************
+
+static void
+writeAsText(std::ostream& os, std::vector<string>& profileFiles);
+
 
 //****************************************************************************
 
@@ -98,6 +101,20 @@ realmain(int argc, char* const* argv)
 {
   Args args(argc, argv);  // exits if error on command line
 
+  switch (args.mode) {
+    case Args::Mode_SourceCorrelation:
+      break;
+    case Args::Mode_ObjectCorrelation:
+      break;
+    case Args::Mode_RawDataDump:
+      writeAsText(std::cout, args.profileFiles);
+      break;
+    default:
+      DIAG_Die("Unhandled case: " << args.mode);
+  }
+
+
+#if 0
   NaN_init();
 
   Analysis::Flat::Driver driver(args);
@@ -128,7 +145,6 @@ realmain(int argc, char* const* argv)
   // 5. Generate Experiment database
   //-------------------------------------------------------
 
-#if 0
   if (args.outFilename_XML != "no") {
     int flg = (args.metrics_computeInteriorValues) ? 0 : PgmScopeTree::DUMP_LEAF_METRICS;
 
@@ -140,16 +156,32 @@ realmain(int argc, char* const* argv)
     driver.XML_Dump(scopeTree.GetRoot(), flg, *os);
     IOUtil::CloseStream(os);
   }
-#endif
 
   //-------------------------------------------------------
   // Cleanup
   //-------------------------------------------------------
   ClearPerfDataSrcTable(); 
-  
+#endif
+
   return 0; 
 } 
 
 //****************************************************************************
 //
 //****************************************************************************
+
+static void
+writeAsText(std::ostream& os, std::vector<string>& profileFiles)
+{
+  for (int i = 0; i < profileFiles.size(); ++i) {
+    const char* fnm = profileFiles[i].c_str();
+
+    // generate nice header
+    os << std::setfill('=') << std::setw(77) << "=" << std::endl;
+    os << fnm << std::endl;
+    os << std::setfill('=') << std::setw(77) << "=" << std::endl;
+
+    Analysis::Raw::writeAsText(fnm); // stdout
+  }
+}
+

@@ -101,7 +101,6 @@ void ldmdSetUsedFlag(CSProfile* prof);
 // FIXME: move to prof-juicy
 
 CSProfile* ReadProfile_CSPROF(const char* fnm);
-void DumpProfile_CSPROF(const char* fnm);
 
 // FIXME: move to support
 
