@@ -96,8 +96,8 @@ public:
   ~MetricCursor();
   
   const vector<const Prof::Flat::EventData*>& 
-  eventDescs() const {
-    return m_eventDescs; 
+  metricDescs() const {
+    return m_metricDescs; 
   }
   const vector<uint64_t>& 
   metricTots() const {
@@ -144,10 +144,10 @@ private:
   bool m_doRelocate;
   VMA m_loadAddr;
 
-  vector<const Prof::Flat::EventData*> m_eventDescs;
+  vector<const Prof::Flat::EventData*> m_metricDescs;
   vector<uint64_t> m_metricTots;
 
-  vector<int> m_curEventIdx;
+  vector<int> m_curMetricIdx;
   vector<uint64_t> m_metricValAtVMA;
 };
 
@@ -158,16 +158,17 @@ MetricCursor::MetricCursor(const Prof::Flat::LM& proflm, const binutils::LM& lm)
   m_loadAddr = (VMA)proflm.load_addr();
   
   // --------------------------------------------------------
-  // Find all events for load module and compute totals for each event
+  // Find all metrics for load module and compute totals for each metric
+  // For now we have one metric per sampled event.
   // --------------------------------------------------------
   for (uint i = 0; i < proflm.num_events(); ++i) {
     const Prof::Flat::EventData& profevent = proflm.event(i);
-    m_eventDescs.push_back(&profevent);
+    m_metricDescs.push_back(&profevent);
   }
 
-  m_metricTots.resize(m_eventDescs.size());
-  for (uint i = 0; i < m_eventDescs.size(); ++i) {
-    const Prof::Flat::EventData& profevent = *(m_eventDescs[i]);
+  m_metricTots.resize(m_metricDescs.size());
+  for (uint i = 0; i < m_metricDescs.size(); ++i) {
+    const Prof::Flat::EventData& profevent = *(m_metricDescs[i]);
     uint64_t& metricTotal = m_metricTots[i];
     metricTotal = 0;
 
@@ -178,12 +179,12 @@ MetricCursor::MetricCursor(const Prof::Flat::LM& proflm, const binutils::LM& lm)
     }
   }
 
-  m_curEventIdx.resize(m_eventDescs.size());
-  for (uint i = 0; i < m_curEventIdx.size(); ++i) {
-    m_curEventIdx[i] = 0;
+  m_curMetricIdx.resize(m_metricDescs.size());
+  for (uint i = 0; i < m_curMetricIdx.size(); ++i) {
+    m_curMetricIdx[i] = 0;
   }
 
-  m_metricValAtVMA.resize(m_eventDescs.size());
+  m_metricValAtVMA.resize(m_metricDescs.size());
 }
 
 
@@ -207,12 +208,12 @@ MetricCursor::computeMetricVals(const VMAInterval vmaint,
   }
 
   // For each event, determine if a count exists at vma_beg
-  for (uint i = 0; i < m_eventDescs.size(); ++i) {
-    const Prof::Flat::EventData& profevent = *(m_eventDescs[i]);
+  for (uint i = 0; i < m_metricDescs.size(); ++i) {
+    const Prof::Flat::EventData& profevent = *(m_metricDescs[i]);
     
     // advance ith bucket until it arrives at vmaint region:
     //   (bucket overlaps beg_vma) || (bucket is beyond beg_vma)
-    for (int& j = m_curEventIdx[i]; j < profevent.num_data(); ++j) {
+    for (int& j = m_curMetricIdx[i]; j < profevent.num_data(); ++j) {
       const Prof::Flat::Datum& evdat = profevent.datum(j);
       VMA ev_vma = evdat.first;
       VMA ev_ur_vma = relocate(ev_vma);
@@ -226,7 +227,7 @@ MetricCursor::computeMetricVals(const VMAInterval vmaint,
     
     // count until bucket moves beyond vmaint region
     // INVARIANT: upon entry, bucket overlaps or is beyond region
-    for (int j = m_curEventIdx[i]; j < profevent.num_data(); ++j) {
+    for (int j = m_curMetricIdx[i]; j < profevent.num_data(); ++j) {
       const Prof::Flat::Datum& evdat = profevent.datum(j);
       VMA ev_vma = evdat.first;
       VMA ev_ur_vma = relocate(ev_vma);
@@ -244,7 +245,7 @@ MetricCursor::computeMetricVals(const VMAInterval vmaint,
 	// if the vmaint region extends beyond the current bucket,
 	// advance bucket
 	if (advanceCounters && (vmaint.end() > ev_ur_vma_ub)) {
-	  m_curEventIdx[i]++;
+	  m_curMetricIdx[i]++;
 	}
       }
     }
@@ -318,7 +319,7 @@ public:
   ~ColumnFormatter() { }
 
   void 
-  event_col(uint64_t metricCnt, uint64_t metricTot);
+  metric_col(uint64_t metricCnt, uint64_t metricTot);
 
   void
   fill_cols() {
@@ -337,7 +338,7 @@ private:
 
 
 void
-ColumnFormatter::event_col(uint64_t metricCnt, uint64_t metricTot)
+ColumnFormatter::metric_col(uint64_t metricCnt, uint64_t metricTot)
 {
   if (m_showAsPercent) {
     double val = 0.0;
@@ -376,7 +377,7 @@ ColumnFormatter::event_col(uint64_t metricCnt, uint64_t metricTot)
 
 static void
 writeMetricSummary(std::ostream& os, 
-		   const vector<const Prof::Flat::EventData*>& eventDescs,
+		   const vector<const Prof::Flat::EventData*>& metricDescs,
 		   const vector<uint64_t>& metricCnt,
 		   const vector<uint64_t>* metricTot);
 
@@ -437,21 +438,21 @@ correlateWithObject_LM(ostream& os,
 		       uint64_t procVisThreshold)
 {
   MetricCursor metricCursor(proflm, lm);
-  ColumnFormatter colFmt(os, metricCursor.eventDescs().size(), 2, 
+  ColumnFormatter colFmt(os, metricCursor.metricDescs().size(), 2, 
 			 metricsAsPercent);
 
   // --------------------------------------------------------
-  // 0. Print event list
+  // 0. Print metric list
   // --------------------------------------------------------
 
   os << std::setfill('=') << std::setw(77) << "=" << std::endl;
   os << "Load module: " << proflm.name() << std::endl;
 
-  const vector<const Prof::Flat::EventData*>& eventDescs = 
-    metricCursor.eventDescs();
+  const vector<const Prof::Flat::EventData*>& metricDescs = 
+    metricCursor.metricDescs();
   const vector<uint64_t>& metricTots = metricCursor.metricTots();
   
-  writeMetricSummary(os, eventDescs, metricTots, NULL);
+  writeMetricSummary(os, metricDescs, metricTots, NULL);
 
   // --------------------------------------------------------
   // 1. Print annotated load module
@@ -483,7 +484,7 @@ correlateWithObject_LM(ostream& os,
       os << std::endl << std::endl
 	 << "Procedure: " << p->name() << " (" << bestName << ")\n";
 
-      writeMetricSummary(os, eventDescs, metricTotsProc, &metricTots);
+      writeMetricSummary(os, metricDescs, metricTotsProc, &metricTots);
       os << std::endl << std::endl;
       
       string the_file;
@@ -517,7 +518,7 @@ correlateWithObject_LM(ostream& os,
 	if (metricCursor.hasNonZeroMetricVal(metricValVMA)) {
 	  for (uint i = 0; i < metricValVMA.size(); ++i) {
 	    uint64_t metricCnt = metricValVMA[i];
-	    colFmt.event_col(metricCnt, metricTotsProc[i]);
+	    colFmt.metric_col(metricCnt, metricTotsProc[i]);
 	  }
 	}
 	else {
@@ -537,15 +538,15 @@ correlateWithObject_LM(ostream& os,
 
 void
 writeMetricSummary(std::ostream& os, 
-		   const vector<const Prof::Flat::EventData*>& eventDescs,
+		   const vector<const Prof::Flat::EventData*>& metricDescs,
 		   const vector<uint64_t>& metricCnt,
 		   const vector<uint64_t>* metricTot)
 {
   os << std::endl 
-     << "Columns correspond to the following events [event:period (events/sample)]\n";
+     << "Columns correspond to the following metrics [event:period (events/sample)]\n";
 
-  for (uint i = 0; i < eventDescs.size(); ++i) {
-    const Prof::Flat::EventData& profevent = *(eventDescs[i]);
+  for (uint i = 0; i < metricDescs.size(); ++i) {
+    const Prof::Flat::EventData& profevent = *(metricDescs[i]);
     
     const Prof::SampledMetricDesc& mdesc = profevent.mdesc();
     os << "  " << mdesc.name() << ":" << mdesc.period() 
