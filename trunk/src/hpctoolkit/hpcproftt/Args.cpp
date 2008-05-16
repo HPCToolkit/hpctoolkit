@@ -89,7 +89,7 @@ static const char* usage_summary3 =
 "--dump <profile-file>...\n";
 
 static const char* usage_details = "\
-hpcproftt correlates 'flat' profiles of with either source code structure\n\
+hpcproftt correlates 'flat' profiles with either source code structure\n\
 (the first mode above) or object code (second mode above) and generates\n\
 textual output suitable for a terminal.  In each of these cases, hpcproftt\n\
 expects a list of flat profile files.\n\

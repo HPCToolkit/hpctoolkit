@@ -52,7 +52,8 @@ using std::string;
 
 #include "Args.hpp"
 
-#include <lib/analysis/Flat.hpp>
+#include <lib/analysis/Flat_SrcCorrelation.hpp>
+#include <lib/analysis/Flat_ObjCorrelation.hpp>
 #include <lib/analysis/Raw.hpp>
 
 #include <lib/support/diagnostics.h>
@@ -60,7 +61,13 @@ using std::string;
 //************************ Forward Declarations ******************************
 
 static void
-writeAsText(std::ostream& os, std::vector<string>& profileFiles);
+main_srcCorrelation(const Args& args);
+
+static void
+main_objCorrelation(const Args& args);
+
+static void
+main_rawData(const std::vector<string>& profileFiles);
 
 
 //****************************************************************************
@@ -103,17 +110,29 @@ realmain(int argc, char* const* argv)
 
   switch (args.mode) {
     case Args::Mode_SourceCorrelation:
+      main_srcCorrelation(args);
       break;
     case Args::Mode_ObjectCorrelation:
+      main_objCorrelation(args);
       break;
     case Args::Mode_RawDataDump:
-      writeAsText(std::cout, args.profileFiles);
+      main_rawData(args.profileFiles);
       break;
     default:
       DIAG_Die("Unhandled case: " << args.mode);
   }
 
+  return 0; 
+}
+ 
 
+//****************************************************************************
+//
+//****************************************************************************
+
+static void
+main_srcCorrelation(const Args& args)
+{
 #if 0
   NaN_init();
 
@@ -162,17 +181,35 @@ realmain(int argc, char* const* argv)
   //-------------------------------------------------------
   ClearPerfDataSrcTable(); 
 #endif
+}
 
-  return 0; 
-} 
-
-//****************************************************************************
-//
-//****************************************************************************
 
 static void
-writeAsText(std::ostream& os, std::vector<string>& profileFiles)
+main_objCorrelation(const Args& args)
 {
+  std::ostream& os = std::cout;
+  
+  for (int i = 0; i < args.profileFiles.size(); ++i) {
+    const char* fnm = args.profileFiles[i].c_str();
+
+    // generate nice header
+    os << std::setfill('=') << std::setw(77) << "=" << std::endl;
+    os << fnm << std::endl;
+    os << std::setfill('=') << std::setw(77) << "=" << std::endl;
+
+    Analysis::Flat::correlateWithObject(os, fnm,
+					true, /*source*/   // FIXME
+					true, /*percent*/
+					1 /*procthreshhold*/);
+  }
+}
+
+
+static void
+main_rawData(const std::vector<string>& profileFiles)
+{
+  std::ostream& os = std::cout;
+
   for (int i = 0; i < profileFiles.size(); ++i) {
     const char* fnm = profileFiles[i].c_str();
 
@@ -181,7 +218,6 @@ writeAsText(std::ostream& os, std::vector<string>& profileFiles)
     os << fnm << std::endl;
     os << std::setfill('=') << std::setw(77) << "=" << std::endl;
 
-    Analysis::Raw::writeAsText(fnm); // stdout
+    Analysis::Raw::writeAsText(fnm); // pass os FIXME
   }
 }
-

@@ -52,7 +52,7 @@ using XERCES_CPP_NAMESPACE::DOMNode;
 
 //************************* User Include Files *******************************
 
-#include <lib/analysis/Flat.hpp>
+#include <lib/analysis/Flat_SrcCorrelation.hpp> // FIXME
 
 #include <lib/prof-juicy-x/XercesErrorHandler.hpp>
 

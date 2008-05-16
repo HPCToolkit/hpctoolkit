@@ -84,6 +84,10 @@ typedef std::vector<PathTuple> PathTupleVec;
 
 namespace Analysis {
 
+//---------------------------------------------------------------------------
+// Arguments for source code correlation
+//---------------------------------------------------------------------------
+
 class Args {
 public: 
   Args();

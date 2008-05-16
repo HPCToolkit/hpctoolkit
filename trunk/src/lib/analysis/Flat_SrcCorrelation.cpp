@@ -53,7 +53,7 @@ using std::vector;
 
 //************************* User Include Files *******************************
 
-#include "Flat.hpp"
+#include "Flat_SrcCorrelation.hpp"
 
 #include <lib/prof-juicy-x/PGMReader.hpp>
 #include <lib/prof-juicy-x/XercesSAX2.hpp>
