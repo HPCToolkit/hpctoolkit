@@ -35,8 +35,8 @@
 // 
 // ******************************************************* EndRiceCopyright *
 
-#ifndef Analysis_Flat_Driver_hpp
-#define Analysis_Flat_Driver_hpp 
+#ifndef Analysis_Flat_SrcCorrelation_hpp
+#define Analysis_Flat_SrcCorrelation_hpp 
 
 //************************ System Include Files ******************************
 
@@ -156,10 +156,10 @@ private:
 
 //****************************************************************************
 
-} // namespace CallPath
+} // namespace Flat
 
 } // namespace Analysis
 
 //****************************************************************************
 
-#endif // Analysis_Flat_Driver_hpp
+#endif // Analysis_Flat_SrcCorrelation_hpp

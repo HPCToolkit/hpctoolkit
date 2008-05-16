@@ -61,7 +61,7 @@ using namespace std; // For compatibility with non-std C headers
 #include "Args.hpp"
 #include "ConfigParser.hpp"
 
-#include <lib/analysis/Flat.hpp>
+#include <lib/analysis/Flat_SrcCorrelation.hpp>
 
 #include <lib/prof-juicy-x/XercesUtil.hpp>
 #include <lib/prof-juicy-x/XercesErrorHandler.hpp>

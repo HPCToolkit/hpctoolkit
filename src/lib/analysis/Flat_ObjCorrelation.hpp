@@ -48,54 +48,40 @@
 //
 //***************************************************************************
 
+#ifndef Analysis_Flat_ObjCorrelation_hpp 
+#define Analysis_Flat_ObjCorrelation_hpp
+
 //************************* System Include Files ****************************
 
 #include <string>
-using std::string;
 
 //*************************** User Include Files ****************************
 
-#include "Util.hpp"
-
-#include <lib/support/diagnostics.h>
+#include <include/general.h> 
 
 //*************************** Forward Declarations ***************************
 
 //****************************************************************************
 
-Analysis::Util::ProfType_t 
-Analysis::Util::getProfileType(const std::string& filenm)
-{
-  // FIXME: a better way of doing this would be to read the first 32
-  // bytes and test for the magic cookie.
-  
-  // FIXME: not yet abstracted since csprof is still a mess
-  static const string CALLPATH_SFX = ".csp";
-  
-  if (filenm.length() > CALLPATH_SFX.length()) {
-    uint begpos = filenm.length() - CALLPATH_SFX.length();
-    if (filenm.find(CALLPATH_SFX, begpos) != string::npos) {
-      return ProfType_CALLPATH;
-    }
-  }
+namespace Analysis {
 
-#if 0
-  // version 1
-  char* buf = new char[32+1];
-  int bytesRead = ::fread(f, buf, sizeof(char), 32);
+namespace Flat {
 
-  // version 2
-  std::ifstream in(fname);
-  in.get()...
+  // Given a flat profile file, correlate metrics for the events contained
+  // therein with the object code instructions
+  void
+  correlateWithObject(std::ostream& os, const string& profileFile,
+		      // show source code lines		      
+		      bool srcCode,
+		      // show metric values as percent
+		      bool metricsAsPercent, 
+		      // show procs with at least one metric total >= threshold
+		      uint64_t procVisThreshold);
 
-  // version 3
-  std::ifstream in(fname);
-  std::istreambuf_iterator<char> i(in);
-  std::istreambuf_iterator<char> eos;
-  std::vector<char> v(i, eos);
-  // or: string str(i, i+32);
-#endif
-  
-  return ProfType_FLAT;
-}
+} // namespace Flat
 
+} // namespace Analysis
+
+//****************************************************************************
+
+#endif // Analysis_Flat_ObjCorrelation_hpp
