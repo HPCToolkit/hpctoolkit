@@ -62,6 +62,7 @@ using namespace std; // For compatibility with non-std C headers
 #include "ConfigParser.hpp"
 
 #include <lib/analysis/Flat_SrcCorrelation.hpp>
+#include <lib/analysis/MetricDescMgr.hpp>
 
 #include <lib/prof-juicy-x/XercesUtil.hpp>
 #include <lib/prof-juicy-x/XercesErrorHandler.hpp>
@@ -78,7 +79,7 @@ using namespace std; // For compatibility with non-std C headers
 //************************ Forward Declarations ******************************
 
 static void
-readConfFile(Args& args, Analysis::Flat::Driver& driver);
+readConfFile(Args& args, Analysis::MetricDescMgr& metricMgr);
 
 static bool 
 copySourceFiles(PgmScope* pgmScopeTree, 
@@ -126,27 +127,32 @@ realmain(int argc, char* const* argv)
   NaN_init();
   InitXerces(); // exits iff failure 
 
-  Analysis::Flat::Driver driver(args);
+
   //-------------------------------------------------------
-  // 1. Initialize metric descriptors
+  // Create metric descriptors
   //-------------------------------------------------------
+  Analysis::MetricDescMgr metricMgr;
+
+  DIAG_Msg(2, "Creating metrics... ");
   if (args.configurationFileMode) {
-    readConfFile(args, driver); // exits on failure
+    readConfFile(args, metricMgr); // exits on failure
   }
   else {
-    driver.makePerfMetricDescs(args.profileFiles);
+    metricMgr.makePerfMetricDescs(args.profileFiles);
   }
-  DIAG_Msg(2, "Driver is now: " << driver.ToString());
   
+
+  Analysis::Flat::Driver driver(args, metricMgr);
+
   //-------------------------------------------------------
-  // 2. Initialize static program structure
+  // 1. Initialize static program structure
   //-------------------------------------------------------
   DIAG_Msg(2, "Initializing scope tree...");
   PgmScopeTree scopeTree("", new PgmScope("")); // FIXME: better location
   driver.createProgramStructure(scopeTree); 
 
   //-------------------------------------------------------
-  // 3. Correlate metrics with program structure
+  // 2. Correlate metrics with program structure
   //-------------------------------------------------------
   DIAG_Msg(2, "Creating and correlating metrics with program structure: ...");
   driver.correlateMetricsWithStructure(scopeTree);
@@ -158,11 +164,11 @@ realmain(int argc, char* const* argv)
   }
   
   //-------------------------------------------------------
-  // 4. Finalize scope tree
+  // 3. Finalize scope tree
   //-------------------------------------------------------
   if (args.outFilename_CSV.empty() && args.outFilename_TSV.empty()) {
     // Prune the scope tree (remove scopeTree without metrics)
-    PruneScopeTreeMetrics(scopeTree.GetRoot(), driver.numMetrics());
+    PruneScopeTreeMetrics(scopeTree.GetRoot(), metricMgr.size());
   }
   
   scopeTree.GetRoot()->Freeze();      // disallow further additions to tree 
@@ -177,7 +183,7 @@ realmain(int argc, char* const* argv)
   }
 
   //-------------------------------------------------------
-  // 5. Generate Experiment database
+  // 4. Generate Experiment database
   //-------------------------------------------------------
   // FIXME: pulled out of HTMLDriver
   if (MakeDir(args.db_dir.c_str()) != 0) {
@@ -249,17 +255,17 @@ static string buildConfFile(const string& hpcHome, const string& confFile);
 static void appendContents(std::ofstream &dest, const char *srcFile);
 
 static void
-readConfFile(Args& args, Analysis::Flat::Driver& driver) 
+readConfFile(Args& args, Analysis::MetricDescMgr& metricMgr)
 {
   const string& cfgFile = args.configurationFile;
-  DIAG_Msg(2, "Initializing Driver from " << cfgFile);
+  DIAG_Msg(2, "Initializing from: " << cfgFile);
   
   string tmpFile = buildConfFile(args.hpcHome, cfgFile);
   
   try {
     XercesErrorHandler errHndlr(cfgFile, tmpFile, NUM_PREFIX_LINES, true);
     ConfigParser parser(tmpFile, errHndlr);
-    parser.parse(args, driver);
+    parser.parse(args, metricMgr);
   }
   catch (const SAXParseException& x) {
     unlink(tmpFile.c_str());

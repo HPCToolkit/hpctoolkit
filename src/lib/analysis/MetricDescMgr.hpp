@@ -35,66 +35,76 @@
 // 
 // ******************************************************* EndRiceCopyright *
 
-#ifndef ConfigParser_hpp
-#define ConfigParser_hpp
+#ifndef Analysis_MetricDescMgr_hpp
+#define Analysis_MetricDescMgr_hpp 
 
 //************************ System Include Files ******************************
 
+#include <iostream>
 #include <string>
+#include <list>
+#include <vector>
+#include <map>
 
-//*********************** Xerces Include Files *******************************
-
-#include <xercesc/parsers/XercesDOMParser.hpp>
-using XERCES_CPP_NAMESPACE::XercesDOMParser;
-
-#include <xercesc/dom/DOMNode.hpp> 
-using XERCES_CPP_NAMESPACE::DOMNode;
 
 //************************* User Include Files *******************************
 
-#include <lib/analysis/Args.hpp>
-#include <lib/analysis/MetricDescMgr.hpp>
+#include <include/general.h>
 
-#include <lib/prof-juicy-x/XercesErrorHandler.hpp>
+#include "DerivedPerfMetrics.hpp"
 
-#include <lib/support/diagnostics.h>
+#include <lib/support/Unique.hpp>
 
 //************************ Forward Declarations ******************************
 
+namespace Analysis {
+
 //****************************************************************************
-// 
-//***************************************************************************
 
-class ConfigParser {
-public:
-  ConfigParser(const std::string& inputFile, XercesErrorHandler &errHndlr);
-  ~ConfigParser();
+class MetricDescMgr : public Unique { // non copyable
+public: 
+  MetricDescMgr();
+  ~MetricDescMgr(); 
 
-  void parse(Analysis::Args& args, Analysis::MetricDescMgr& metricMgr);
+  void makePerfMetricDescs(std::vector<std::string>& profileFiles);
 
+  // ------------------------------------------------------------
+  // 
+  // ------------------------------------------------------------
+  PerfMetric* metric(int i) const { return m_metrics[i]; }
+  void insert(PerfMetric* m) { m_metrics.push_back(m); }
+  uint size() const { return m_metrics.size(); }
+  bool empty() const { return m_metrics.empty(); }
+
+  // ------------------------------------------------------------
+  // 
+  // ------------------------------------------------------------
+  std::string 
+  toString(const char* pre = "") const;
+
+  void 
+  dump(std::ostream& o = std::cerr, const char* pre = "") const;
+
+  void 
+  ddump() const;
+
+
+  typedef std::list<FilePerfMetric*> MetricList_t;
 private:
-  XercesDOMParser* m_parser;
-  DOMNode* m_doc;
-};
+  typedef std::map<string, int> StringToIntMap;
 
-
-//***************************************************************************
-
-#define ConfigParser_Throw(streamArgs) DIAG_ThrowX(ConfigParserException, streamArgs)
-
-class ConfigParserException : public Diagnostics::Exception {
-public:
-  ConfigParserException(const std::string x,
-		      const char* filenm = NULL, unsigned int lineno = 0)
-    : Diagnostics::Exception(x, filenm, lineno)
-    { }
+  std::string makeUniqueName(const std::string& nm);
   
-  virtual std::string message() const { 
-    return "CONFIGURATION file error [ConfigParserException]: " + what();
-  }
-
 private:
+  std::vector<PerfMetric*> m_metrics;
+
+  StringToIntMap m_metricDisambiguationTbl;
 };
 
+//****************************************************************************
 
-#endif /* ConfigParser_hpp */
+} // namespace Analysis
+
+//****************************************************************************
+
+#endif // Analysis_MetricDescMgr_hpp
