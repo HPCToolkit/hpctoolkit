@@ -71,6 +71,7 @@ MYSOURCES = \
 	Raw.hpp Raw.cpp	\
 	\
 	Args.hpp Args.cpp \
+	MetricDescMgr.hpp MetricDescMgr.cpp \
 	Util.hpp Util.cpp
 
 # GNU binutils flags are needed for HPC_LIBISA.

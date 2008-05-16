@@ -35,66 +35,113 @@
 // 
 // ******************************************************* EndRiceCopyright *
 
-#ifndef ConfigParser_hpp
-#define ConfigParser_hpp
-
 //************************ System Include Files ******************************
 
+#include <iostream>
+
 #include <string>
+using std::string;
 
-//*********************** Xerces Include Files *******************************
+#include <map>
+using std::map;
 
-#include <xercesc/parsers/XercesDOMParser.hpp>
-using XERCES_CPP_NAMESPACE::XercesDOMParser;
-
-#include <xercesc/dom/DOMNode.hpp> 
-using XERCES_CPP_NAMESPACE::DOMNode;
+#include <vector>
+using std::vector;
 
 //************************* User Include Files *******************************
 
-#include <lib/analysis/Args.hpp>
-#include <lib/analysis/MetricDescMgr.hpp>
+#include "MetricDescMgr.hpp"
 
-#include <lib/prof-juicy-x/XercesErrorHandler.hpp>
+#include <lib/prof-juicy/FlatProfileReader.hpp>
 
 #include <lib/support/diagnostics.h>
+#include <lib/support/StrUtil.hpp>
 
 //************************ Forward Declarations ******************************
 
+
 //****************************************************************************
-// 
-//***************************************************************************
 
-class ConfigParser {
-public:
-  ConfigParser(const std::string& inputFile, XercesErrorHandler &errHndlr);
-  ~ConfigParser();
-
-  void parse(Analysis::Args& args, Analysis::MetricDescMgr& metricMgr);
-
-private:
-  XercesDOMParser* m_parser;
-  DOMNode* m_doc;
-};
+Analysis::MetricDescMgr::MetricDescMgr()
+{
+} 
 
 
-//***************************************************************************
+Analysis::MetricDescMgr::~MetricDescMgr()
+{
+} 
 
-#define ConfigParser_Throw(streamArgs) DIAG_ThrowX(ConfigParserException, streamArgs)
 
-class ConfigParserException : public Diagnostics::Exception {
-public:
-  ConfigParserException(const std::string x,
-		      const char* filenm = NULL, unsigned int lineno = 0)
-    : Diagnostics::Exception(x, filenm, lineno)
-    { }
-  
-  virtual std::string message() const { 
-    return "CONFIGURATION file error [ConfigParserException]: " + what();
+string 
+Analysis::MetricDescMgr::makeUniqueName(const std::string& nm)
+{
+  StringToIntMap::iterator it = m_metricDisambiguationTbl.find(nm);
+  if (it != m_metricDisambiguationTbl.end()) {
+    int& qualifier = it->second;
+    qualifier++;
+    string nm_new = nm + "-" + StrUtil::toStr(qualifier);
+    return nm_new;
   }
+  else {
+    m_metricDisambiguationTbl.insert(make_pair(nm, 0));
+    return nm;
+  }
+}
 
-private:
-};
+
+void 
+Analysis::MetricDescMgr::makePerfMetricDescs(std::vector<std::string>& profileFiles)
+{
+  for (uint i = 0; i < profileFiles.size(); ++i) {
+    const string& proffnm = profileFiles[i];
+
+    Prof::Flat::Profile prof;
+    try {
+      prof.open(proffnm.c_str());
+    }
+    catch (...) {
+      DIAG_EMsg("While reading '" << proffnm << "'");
+      throw;
+    }
+
+    // For each metric: compute a canonical name and create a metric desc.
+    const Prof::SampledMetricDescVec& mdescs = prof.mdescs();
+    for (uint j = 0; j < mdescs.size(); ++j) {
+      const Prof::SampledMetricDesc& m = *mdescs[j];
+      
+      string metricNm = makeUniqueName(m.name());
+      string nativeNm = StrUtil::toStr(j);
+      bool metricDoSortBy = empty();
+      
+      insert(new FilePerfMetric(metricNm, nativeNm, metricNm, 
+				true /*display*/, true /*percent*/, 
+				metricDoSortBy, proffnm, 
+				string("HPCRUN")));
+    }
+  }
+}
 
 
-#endif /* ConfigParser_hpp */
+string
+Analysis::MetricDescMgr::toString(const char* pre) const
+{
+  std::ostringstream os;
+  dump(os, pre);
+  return os.str();
+}
+
+
+void
+Analysis::MetricDescMgr::dump(std::ostream& o, const char* pre) const
+{
+  for (uint i = 0; i < m_metrics.size(); i++) {
+    o << m_metrics[i]->ToString() + "\n";
+  }
+}
+
+
+void
+Analysis::MetricDescMgr::ddump() const
+{
+  dump(std::cerr);
+}

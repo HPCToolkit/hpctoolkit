@@ -75,8 +75,9 @@ using std::vector;
 
 //****************************************************************************
 
-Analysis::Flat::Driver::Driver(Analysis::Args& args)
-  : Unique("Driver"), m_args(args) 
+Analysis::Flat::Driver::Driver(const Analysis::Args& args, 
+			       const Analysis::MetricDescMgr& mMgr)
+  : Unique("Driver"), m_args(args), m_metricMgr(mMgr)
 {
 } 
 
@@ -85,13 +86,6 @@ Analysis::Flat::Driver::~Driver()
 {
 } 
 
-
-void
-Analysis::Flat::Driver::addMetric(PerfMetric *m) 
-{
-  m_metrics.push_back(m); 
-  DIAG_Msg(3, "Add:: m_metrics[" << m_metrics.size()-1 << "]=" << m->ToString());
-} 
 
 
 /* Test the specified path against each of the paths in the database. 
@@ -132,72 +126,18 @@ Analysis::Flat::Driver::SearchPathStr() const
 }
 
 
-string 
-Analysis::Flat::Driver::makeUniqueName(StringToIntMap& tbl, const std::string& nm)
-{
-  StringToIntMap::iterator it = tbl.find(nm);
-  if (it != tbl.end()) {
-    int& qualifier = it->second;
-    qualifier++;
-    string nm_new = nm + "-" + StrUtil::toStr(qualifier);
-    return nm_new;
-  }
-  else {
-    tbl.insert(make_pair(nm, 0));
-    return nm;
-  }
-}
-
-
 string
-Analysis::Flat::Driver::ToString() const 
+Analysis::Flat::Driver::toString() const 
 {
   string s =  string("Driver: " )
     + "title=" + m_args.title + " " // + "path=" + path;
-    + "\nm_metrics::\n"; 
-  for (uint i =0; i < m_metrics.size(); i++) {
-    s += m_metrics[i]->ToString() + "\n"; 
-  }
+    + "\nm_metrics::\n"
+    + m_metricMgr.toString();
   return s; 
 } 
 
 
 //****************************************************************************
-
-void 
-Analysis::Flat::Driver::makePerfMetricDescs(std::vector<std::string>& profileFiles)
-{
-  StringToIntMap metricDisambiguationTbl;
-
-  for (uint i = 0; i < profileFiles.size(); ++i) {
-    const string& proffnm = profileFiles[i];
-
-    Prof::Flat::Profile prof;
-    try {
-      prof.open(proffnm.c_str());
-    }
-    catch (...) {
-      DIAG_EMsg("While reading '" << proffnm << "'");
-      throw;
-    }
-
-    // For each metric: compute a canonical name and create a metric desc.
-    const Prof::SampledMetricDescVec& mdescs = prof.mdescs();
-    for (uint j = 0; j < mdescs.size(); ++j) {
-      const Prof::SampledMetricDesc& m = *mdescs[j];
-      
-      string metricNm = makeUniqueName(metricDisambiguationTbl, m.name());
-      string nativeNm = StrUtil::toStr(j);
-      bool metricDoSortBy = (numMetrics() == 0);
-      
-      addMetric(new FilePerfMetric(metricNm, nativeNm, metricNm, 
-				   true /*display*/, true /*percent*/, 
-				   metricDoSortBy, proffnm, 
-				   string("HPCRUN")));
-    }
-  }
-}
-
 
 void
 Analysis::Flat::Driver::createProgramStructure(PgmScopeTree& scopes) 
@@ -209,7 +149,7 @@ Analysis::Flat::Driver::createProgramStructure(PgmScopeTree& scopes)
   // initialize the structure of the scope tree
   //-------------------------------------------------------
   if (!m_args.structureFiles.empty()) {
-    ProcessPGMFile(&ret, PGMDocHandler::Doc_STRUCT, m_args.structureFiles);
+    processPGMFile(&ret, PGMDocHandler::Doc_STRUCT, m_args.structureFiles);
   }
 
   //-------------------------------------------------------
@@ -217,7 +157,7 @@ Analysis::Flat::Driver::createProgramStructure(PgmScopeTree& scopes)
   // group partitions (as wall as initialize/extend the scope tree)
   //-------------------------------------------------------
   if (!m_args.groupFiles.empty()) {
-    ProcessPGMFile(&ret, PGMDocHandler::Doc_GROUP, m_args.groupFiles);
+    processPGMFile(&ret, PGMDocHandler::Doc_GROUP, m_args.groupFiles);
   }
 }
 
@@ -249,7 +189,7 @@ Analysis::Flat::Driver::correlateMetricsWithStructure(PgmScopeTree& scopes)
 void
 Analysis::Flat::Driver::computeSampledMetrics(PgmScopeTree& scopes) 
 {
-  typedef std::map<string, MetricList_t> StringToMetricListMap_t;
+  typedef std::map<string, MetricDescMgr::MetricList_t> StringToMetricListMap_t;
   StringToMetricListMap_t fileToMetricMap;
 
   // create HPCRUN file metrics.  Process all metrics associated with
@@ -257,8 +197,8 @@ Analysis::Flat::Driver::computeSampledMetrics(PgmScopeTree& scopes)
 
   PgmScope* pgmScope = scopes.GetRoot();
   NodeRetriever ret(pgmScope, SearchPathStr());
-  for (uint i = 0; i < m_metrics.size(); i++) {
-    PerfMetric* m = m_metrics[i];
+  for (uint i = 0; i < m_metricMgr.size(); i++) {
+    PerfMetric* m = m_metricMgr.metric(i);
     FilePerfMetric* mm = dynamic_cast<FilePerfMetric*>(m);
     if (mm) {
       DIAG_Assert(pgmScope && pgmScope->ChildCount() > 0, "Attempting to correlate HPCRUN type profile-files without STRUCTURE information.");
@@ -269,7 +209,7 @@ Analysis::Flat::Driver::computeSampledMetrics(PgmScopeTree& scopes)
   for (StringToMetricListMap_t::iterator it = fileToMetricMap.begin();
        it != fileToMetricMap.end(); ++it) {
     const string& fnm = it->first;
-    const MetricList_t& metrics = it->second;
+    const MetricDescMgr::MetricList_t& metrics = it->second;
     computeFlatProfileMetrics(scopes, fnm, metrics);
   }
 }
@@ -281,8 +221,8 @@ Analysis::Flat::Driver::computeDerivedMetrics(PgmScopeTree& scopes)
   // create PROFILE file and computed metrics
   NodeRetriever ret(scopes.GetRoot(), SearchPathStr());
   
-  for (uint i = 0; i < m_metrics.size(); i++) {
-    PerfMetric* m = m_metrics[i];
+  for (uint i = 0; i < m_metricMgr.size(); i++) {
+    PerfMetric* m = m_metricMgr.metric(i);
     ComputedPerfMetric* mm = dynamic_cast<ComputedPerfMetric*>(m);
     if (mm) {
       mm->Make(ret);
@@ -293,8 +233,8 @@ Analysis::Flat::Driver::computeDerivedMetrics(PgmScopeTree& scopes)
 
 void
 Analysis::Flat::Driver::computeFlatProfileMetrics(PgmScopeTree& scopes,
-				  const string& profFilenm,
-				  const MetricList_t& metricList)
+						  const string& profFilenm,
+						  const MetricDescMgr::MetricList_t& metricList)
 {
   PgmScope* pgm = scopes.GetRoot();
   NodeRetriever nodeRet(pgm, SearchPathStr());
@@ -344,7 +284,7 @@ Analysis::Flat::Driver::computeFlatProfileMetrics(PgmScopeTree& scopes,
     //-------------------------------------------------------
     // For each metric, insert performance data into scope tree
     //-------------------------------------------------------
-    for (MetricList_t::const_iterator it = metricList.begin(); 
+    for (MetricDescMgr::MetricList_t::const_iterator it = metricList.begin(); 
 	 it != metricList.end(); ++it) {
       FilePerfMetric* m = *it;
       uint mIdx = (uint)StrUtil::toUInt64(m->NativeName());
@@ -409,7 +349,7 @@ Analysis::Flat::Driver::computeFlatProfileMetrics(PgmScopeTree& scopes,
   //-------------------------------------------------------
   // Accumulate metrics
   //-------------------------------------------------------
-  for (MetricList_t::const_iterator it = metricList.begin(); 
+  for (MetricDescMgr::MetricList_t::const_iterator it = metricList.begin(); 
        it != metricList.end(); ++it) {
     FilePerfMetric* m = *it;
     AccumulateMetricsFromChildren(pgm, m->Index());
@@ -418,9 +358,9 @@ Analysis::Flat::Driver::computeFlatProfileMetrics(PgmScopeTree& scopes,
 
 
 void
-Analysis::Flat::Driver::ProcessPGMFile(NodeRetriever* nretriever, 
-		       PGMDocHandler::Doc_t docty, 
-		       const std::vector<string>& files)
+Analysis::Flat::Driver::processPGMFile(NodeRetriever* nretriever, 
+				       PGMDocHandler::Doc_t docty, 
+				       const std::vector<string>& files)
 {
   for (uint i = 0; i < files.size(); ++i) {
     const string& fnm = files[i];
@@ -510,8 +450,8 @@ Analysis::Flat::Driver::write_config(std::ostream &os) const
   if (!m_args.groupFiles.empty()) { os << "\n"; }
 
   // metrics
-  for (uint i = 0; i < m_metrics.size(); i++) {
-    PerfMetric* m = m_metrics[i];
+  for (uint i = 0; i < m_metricMgr.size(); i++) {
+    PerfMetric* m = m_metricMgr.metric(i);
     FilePerfMetric* mm = dynamic_cast<FilePerfMetric*>(m);
     if (mm) {
       const char* sortbystr = ((i == 0) ? " sortBy=\"true\"" : "");
@@ -524,7 +464,7 @@ Analysis::Flat::Driver::write_config(std::ostream &os) const
       os << "</METRIC>\n\n";
     }
   }
-  if (!m_metrics.empty()) { os << "\n"; }
+  if (!m_metricMgr.empty()) { os << "\n"; }
   
   os << "</HPCVIEW>\n";
 }

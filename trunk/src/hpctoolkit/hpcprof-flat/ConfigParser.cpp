@@ -83,7 +83,7 @@ using XERCES_CPP_NAMESPACE::DOMNamedNodeMap;
 
 //****************************************************************************
 
-static void ProcessDOCUMENT(DOMNode *node, Analysis::Args& args, Analysis::Flat::Driver& driver);
+static void ProcessDOCUMENT(DOMNode *node, Analysis::Args& args, Analysis::MetricDescMgr& mMgr);
 
 
 //***************************************************************************
@@ -95,29 +95,29 @@ ConfigParser::ConfigParser(const string& inputFile,
 {
   DIAG_DevMsgIf(DBG, "CONFIG: " << inputFile);
   
-  mParser = new XercesDOMParser;
-  mParser->setValidationScheme(XercesDOMParser::Val_Auto);
-  mParser->setErrorHandler(&errHndlr);
-  mParser->parse(inputFile.c_str());
-  if (mParser->getErrorCount() > 0) {
+  m_parser = new XercesDOMParser;
+  m_parser->setValidationScheme(XercesDOMParser::Val_Auto);
+  m_parser->setErrorHandler(&errHndlr);
+  m_parser->parse(inputFile.c_str());
+  if (m_parser->getErrorCount() > 0) {
     ConfigParser_Throw("terminating because of previously reported CONFIGURATION file parse errors.");
   }
   
-  mDoc = mParser->getDocument();
-  DIAG_DevMsgIf(DBG, "CONFIG: "<< "document: " << mDoc);
+  m_doc = m_parser->getDocument();
+  DIAG_DevMsgIf(DBG, "CONFIG: "<< "document: " << m_doc);
 }
 
 
 ConfigParser::~ConfigParser()
 {
-  delete mParser;
+  delete m_parser;
 }
 
 
 void
-ConfigParser::parse(Analysis::Args& args, Analysis::Flat::Driver& driver)
+ConfigParser::parse(Analysis::Args& args, Analysis::MetricDescMgr& mMgr)
 {
-  ProcessDOCUMENT(mDoc, args, driver);
+  ProcessDOCUMENT(m_doc, args, mMgr);
 }
 
 
@@ -125,10 +125,10 @@ ConfigParser::parse(Analysis::Args& args, Analysis::Flat::Driver& driver)
 // 
 //***************************************************************************
 
-static void ProcessHPCVIEW(DOMNode *node, Analysis::Args& args, Analysis::Flat::Driver& driver);
-static void ProcessELEMENT(DOMNode *node, Analysis::Args& args, Analysis::Flat::Driver& driver);
-static void ProcessMETRIC(DOMNode *node, Analysis::Args& args, Analysis::Flat::Driver& driver);
-static void ProcessFILE(DOMNode *fileNode, Analysis::Args& args, Analysis::Flat::Driver& driver, 
+static void ProcessHPCVIEW(DOMNode *node, Analysis::Args& args, Analysis::MetricDescMgr& mMgr);
+static void ProcessELEMENT(DOMNode *node, Analysis::Args& args, Analysis::MetricDescMgr& mMgr);
+static void ProcessMETRIC(DOMNode *node, Analysis::Args& args, Analysis::MetricDescMgr& mMgr);
+static void ProcessFILE(DOMNode *fileNode, Analysis::Args& args, Analysis::MetricDescMgr& mMgr, 
 			const string& metricNm, bool metricDoDisp, 
 			bool metricDoPercent, bool metricDoSortBy, 
 			const string& metricDispNm);
@@ -149,15 +149,15 @@ printName(DOMNode *node)
 
 
 static void 
-ProcessDOCUMENT(DOMNode *node, Analysis::Args& args, Analysis::Flat::Driver& driver)
+ProcessDOCUMENT(DOMNode *node, Analysis::Args& args, Analysis::MetricDescMgr& mMgr)
 {
   DOMNode *child = node->getFirstChild();
-  ProcessHPCVIEW(child, args, driver);
+  ProcessHPCVIEW(child, args, mMgr);
 }
 
 
 static void 
-ProcessHPCVIEW(DOMNode *node, Analysis::Args& args, Analysis::Flat::Driver& driver)
+ProcessHPCVIEW(DOMNode *node, Analysis::Args& args, Analysis::MetricDescMgr& mMgr)
 {
   DIAG_DevMsgIf(DBG, "CONFIG: " << node);
 
@@ -177,13 +177,13 @@ ProcessHPCVIEW(DOMNode *node, Analysis::Args& args, Analysis::Flat::Driver& driv
   // process each child 
   DOMNode *child = node->getFirstChild();
   for (; child != NULL; child = child->getNextSibling()) {
-    ProcessELEMENT(child, args, driver);
+    ProcessELEMENT(child, args, mMgr);
   }
 } 
 
 
 static void 
-ProcessELEMENT(DOMNode *node, Analysis::Args& args, Analysis::Flat::Driver& driver)
+ProcessELEMENT(DOMNode *node, Analysis::Args& args, Analysis::MetricDescMgr& mMgr)
 {
   static XMLCh* METRIC       = XMLString::transcode("METRIC");
   static XMLCh* PATH         = XMLString::transcode("PATH");
@@ -274,7 +274,7 @@ ProcessELEMENT(DOMNode *node, Analysis::Args& args, Analysis::Flat::Driver& driv
     }
   }
   else if (XMLString::equals(nodeName, METRIC)) {
-    ProcessMETRIC(node, args, driver);
+    ProcessMETRIC(node, args, mMgr);
   }
   else {
     ConfigParser_Throw("Unexpected ELEMENT type encountered: '" << XMLString::transcode(nodeName) << "'");
@@ -283,7 +283,7 @@ ProcessELEMENT(DOMNode *node, Analysis::Args& args, Analysis::Flat::Driver& driv
 
 
 static void 
-ProcessMETRIC(DOMNode *node, Analysis::Args& args, Analysis::Flat::Driver& driver)
+ProcessMETRIC(DOMNode *node, Analysis::Args& args, Analysis::MetricDescMgr& mMgr)
 {
   static XMLCh* FILE = XMLString::transcode("FILE");
   static XMLCh* COMPUTE = XMLString::transcode("COMPUTE");
@@ -335,7 +335,7 @@ ProcessMETRIC(DOMNode *node, Analysis::Args& args, Analysis::Flat::Driver& drive
 
     if (XMLString::equals(metricType, FILE)) {
 
-      ProcessFILE(metricImpl, args, driver, metricNm, 
+      ProcessFILE(metricImpl, args, mMgr, metricNm, 
 		  metricDoDisp, metricDoPercent, metricDoSortBy, 
 		  metricDispNm);
     }
@@ -352,10 +352,10 @@ ProcessMETRIC(DOMNode *node, Analysis::Args& args, Analysis::Flat::Driver& drive
 	  continue;
 	}
 	
-	driver.addMetric(new ComputedPerfMetric(metricNm, metricDispNm, 
-						metricDoDisp, metricDoPercent, 
-						metricDoSortBy,
-						propagateComputed, child)); 
+	mMgr.insert(new ComputedPerfMetric(metricNm, metricDispNm, 
+					   metricDoDisp, metricDoPercent, 
+					   metricDoSortBy,
+					   propagateComputed, child)); 
       }
     } 
     else {
@@ -367,7 +367,7 @@ ProcessMETRIC(DOMNode *node, Analysis::Args& args, Analysis::Flat::Driver& drive
 
 static void 
 ProcessFILE(DOMNode* fileNode, 
-	    Analysis::Args& args, Analysis::Flat::Driver& driver, 
+	    Analysis::Args& args, Analysis::MetricDescMgr& mMgr, 
 	    const string& metricNm, bool metricDoDisp, 
 	    bool metricDoPercent, bool metricDoSortBy, 
 	    const string& metricDispNm)
@@ -388,10 +388,10 @@ ProcessFILE(DOMNode* fileNode,
   }
 
   if (!metricFile.empty()) { 
-    driver.addMetric(new FilePerfMetric(metricNm, nativeNm, metricDispNm, 
-					metricDoDisp, metricDoPercent, 
-					metricDoSortBy, metricFile, 
-					metricFileType));
+    mMgr.insert(new FilePerfMetric(metricNm, nativeNm, metricDispNm, 
+				   metricDoDisp, metricDoPercent, 
+				   metricDoSortBy, metricFile, 
+				   metricFileType));
   } 
   else {
     ConfigParser_Throw("METRIC '" << metricNm << "' FILE name empty.");

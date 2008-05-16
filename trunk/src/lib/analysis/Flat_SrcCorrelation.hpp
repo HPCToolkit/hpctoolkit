@@ -41,10 +41,8 @@
 //************************ System Include Files ******************************
 
 #include <iostream>
-#include <ostream>
 #include <list>    // STL
 #include <vector>  // STL
-#include <utility> // STL
 #include <string>
 
 //************************* User Include Files *******************************
@@ -52,7 +50,7 @@
 #include <include/general.h>
 
 #include "Args.hpp"
-#include "DerivedPerfMetrics.hpp"
+#include "MetricDescMgr.hpp"
 
 #include <lib/prof-juicy-x/PGMDocHandler.hpp>
 #include <lib/prof-juicy-x/DocHandlerArgs.hpp>
@@ -63,8 +61,6 @@
 
 //************************ Forward Declarations ******************************
 
-typedef std::map<string, int> StringToIntMap;
-
 //****************************************************************************
 
 namespace Analysis {
@@ -74,36 +70,15 @@ namespace Flat {
 
 class Driver : public Unique { // at most one instance 
 public: 
-  Driver(Analysis::Args& args);
+  Driver(const Analysis::Args& args, const Analysis::MetricDescMgr& mMgr);
   ~Driver(); 
   
   // -------------------------------------------------------
-  // Results of ConfigParser
+  // 
   // -------------------------------------------------------
 
-  unsigned int numMetrics() const          { return m_metrics.size(); }
-  const PerfMetric& getMetric(int i) const { return *m_metrics[i]; }
-  void addMetric(PerfMetric* metric);
-
-  // -------------------------------------------------------
-  //
-  // -------------------------------------------------------
-
-  void makePerfMetricDescs(std::vector<std::string>& profileFiles);
   void createProgramStructure(PgmScopeTree& scopes);
   void correlateMetricsWithStructure(PgmScopeTree& scopes);
-
-  // -------------------------------------------------------
-  //
-  // -------------------------------------------------------
-
-  std::string ReplacePath(const char* path);
-  std::string ReplacePath(const std::string& path)
-    { return ReplacePath(path.c_str()); }
-
-  std::string SearchPathStr() const;
-
-  std::string makeUniqueName(StringToIntMap& tbl, const std::string& nm);
 
   // see 'ScopeInfo' class for dump flags
   void XML_Dump(PgmScope* pgm, std::ostream &os = std::cout, 
@@ -115,14 +90,16 @@ public:
 
   void write_config(std::ostream &os = std::cout) const;
 
+  std::string toString() const; 
+  void dump() const { std::cerr << toString() << std::endl; }
 
-  std::string ToString() const; 
-  void Dump() const { std::cerr << ToString() << std::endl; }
+
+  std::string ReplacePath(const char* path);
+  std::string ReplacePath(const std::string& path)
+    { return ReplacePath(path.c_str()); }
 
 private:
-  typedef std::list<FilePerfMetric*> MetricList_t;
-  
-  void ProcessPGMFile(NodeRetriever* nretriever, 
+  void processPGMFile(NodeRetriever* nretriever, 
 		      PGMDocHandler::Doc_t docty, 
 		      const std::vector<std::string>& files);
 
@@ -130,11 +107,13 @@ private:
   void computeDerivedMetrics(PgmScopeTree& scopes);
   void computeFlatProfileMetrics(PgmScopeTree& scopes,
 				 const string& profFilenm,
-				 const MetricList_t& metricList);
+				 const MetricDescMgr::MetricList_t& metricList);
+
+  std::string SearchPathStr() const;
 
 private:
-  Analysis::Args& m_args;
-  std::vector<PerfMetric*> m_metrics;
+  const Analysis::Args& m_args;
+  const Analysis::MetricDescMgr& m_metricMgr;
 };
 
 //****************************************************************************
