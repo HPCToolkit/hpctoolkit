@@ -94,10 +94,11 @@ public:
   const std::string& getCmd() const;
 
   // Parsed Data
-  bool dumpProfiles; // default: false [FIXME]
+  bool dumpRawProfileMode;
 
 private:
   void Ctor();
+  void setHPCHome(); 
 
 private:
   static CmdLineParser::OptArgDesc optArgs[];

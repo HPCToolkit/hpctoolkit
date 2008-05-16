@@ -107,12 +107,12 @@ Options: General:\n\
   -h, --help           Print this help.\n\
   --debug [<n>]        Debug: use debug level <n>. {1}\n\
 \n\
-Options: Correlation:\n\
+Options: Source Structure Correlation:\n\
   -I <path>, --include <path>\n\
                        Use <path> when searching for source files. May pass\n\
                        multiple times.\n\
   -S <file>, --structure <file>\n\
-                       Use the bloop structure file <file> for correlation.\n\
+                       Use hpcstruct structure file <file> for correlation.\n\
                        May pass multiple times (e.g., for shared libraries).\n\
 \n\
 Options: Output:\n\
@@ -152,9 +152,9 @@ CmdLineParser::OptArgDesc Args::optArgs[] = {
   // Config-file-mode
   {  0 , "config",          CLP::ARG_REQ,  CLP::DUPOPT_CLOB, NULL },
 
-  // Correlation options
-  { 'I', "include",         CLP::ARG_OPT,  CLP::DUPOPT_CAT,  CLP_SEPARATOR },
-  { 'S', "structure",       CLP::ARG_OPT,  CLP::DUPOPT_CAT,  CLP_SEPARATOR },
+  // Source structure correlation options
+  { 'I', "include",         CLP::ARG_REQ,  CLP::DUPOPT_CAT,  CLP_SEPARATOR },
+  { 'S', "structure",       CLP::ARG_REQ,  CLP::DUPOPT_CAT,  CLP_SEPARATOR },
 
   // Output options
   { 'o', "output",          CLP::ARG_REQ , CLP::DUPOPT_CLOB, NULL },

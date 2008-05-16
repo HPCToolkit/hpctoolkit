@@ -61,8 +61,6 @@ using std::string;
 
 #include "Args.hpp"
 
-#include <lib/analysis/CallPath.hpp> /* for normalizeFilePath */
-
 #include <lib/support/diagnostics.h>
 #include <lib/support/Trace.hpp>
 #include <lib/support/StrUtil.hpp>
@@ -81,13 +79,24 @@ using std::string;
 static const char* version_info =
 #include <include/HPCToolkitVersionInfo.h>
 
-static const char* usage_summary =
-"[options] <profile-file>...\n";
+static const char* usage_summary1 =
+"--source [options] <profile-file>...";
+
+static const char* usage_summary2 =
+"--object [options] <profile-file>...";
+
+static const char* usage_summary3 =
+"--dump <profile-file>...\n";
 
 static const char* usage_details = "\
-hpcprof correlates dynamic call path profiling metrics with static source\n\
-code structure and generates an Experiment database for use with hpcviewer.\n\
-It expects a list of call path profile files.\n\
+hpcproftt correlates 'flat' profiles of with either source code structure\n\
+(the first mode above) or object code (second mode above) and generates\n\
+textual output suitable for a terminal.  In each of these cases, hpcproftt\n\
+expects a list of flat profile files.\n\
+\n\
+hpcproftt also supports a third mode in which it generates textual dumps of\n\
+profile files.  In this mode, the profile list may contain either flat or\n\
+call path profile files.\n\
 \n\
 Options: General:\n\
   -v, --verbose [<n>]  Verbose: generate progress messages to stderr at\n\
@@ -97,22 +106,40 @@ Options: General:\n\
   --debug [<n>]        Debug: use debug level <n>. {1}\n\
 \n\
 Options: Source Structure Correlation:\n\
+  --source=[fpls]      Defaults to showing all structure: load modules,\n\
+  --src=[...]          files, procedures, loops, statements.\n\
+                       Optionally select specific structure to show:\n\
+                         f: files\n\
+                         p: procedures\n\
+                         l: loops\n\
+                         s: statements\n\
   -I <path>, --include <path>\n\
                        Use <path> when searching for source files. May pass\n\
                        multiple times.\n\
   -S <file>, --structure <file>\n\
                        Use hpcstruct structure file <file> for correlation.\n\
                        May pass multiple times (e.g., for shared libraries).\n\
+  --file=<path-substring>\n\
+                       Annotate source files with path names that match\n\
+                       <path-substring>.\n\
 \n\
-Options: Output:\n\
-  -o <db-path>, --db <db-path>, --output <db-path>\n\
-                       Specify Experiment database name <db-path>.\n\
-                       {./"Analysis_EXPERIMENTDB"}\n\
-                       Experiment format {"Analysis_EXPERIMENTXML"}\n\
+Options: Object Correlation:\n\
+  --object[=s]         Show object code correlation: load modules,\n\
+                       procedures, instructions.\n\
+  --obj[=...]          Options:\n\
+                         s: intermingle source line info with object code\n\
 \n\
-Options: Development:\n\
-  --dump\n\
-                       Dump text representation of profiles.\n";
+Options: Dump Raw Profile Data:\n\
+  --dump               Generate textual representation of raw profile data.\n";
+
+#if 0
+"Options: Metrics [??? not sure ???]\n\
+  --metric <samples|percent|events>\n\
+                      control of standard metrics\n\
+  --threshold <n>     Show only load modules, files or procedures with an\n\
+                      event count >= <n> {1}  (Use 0 to see all procedures.)\n\
+  --addmetric <...>   ??? a few predefined metrics...???\n"
+#endif
 
 
 #define CLP CmdLineParser
@@ -121,13 +148,17 @@ Options: Development:\n\
 // Note: Changing the option name requires changing the name in Parse()
 CmdLineParser::OptArgDesc Args::optArgs[] = {
   // Source structure correlation options
+  {  0 , "source",          CLP::ARG_OPT , CLP::DUPOPT_CLOB, NULL },
+  {  0 , "src",             CLP::ARG_OPT , CLP::DUPOPT_CLOB, NULL },
   { 'I', "include",         CLP::ARG_REQ,  CLP::DUPOPT_CAT,  CLP_SEPARATOR },
   { 'S', "structure",       CLP::ARG_REQ,  CLP::DUPOPT_CAT,  CLP_SEPARATOR },
+  {  0 , "file",            CLP::ARG_REQ , CLP::DUPOPT_CAT,  CLP_SEPARATOR },
 
-  // Output options
-  { 'o', "output",          CLP::ARG_REQ , CLP::DUPOPT_CLOB, NULL },
-  {  0 , "db",              CLP::ARG_REQ , CLP::DUPOPT_CLOB, NULL },
+  // Object correlation options
+  {  0 , "object",          CLP::ARG_OPT , CLP::DUPOPT_CLOB, NULL },
+  {  0 , "obj",             CLP::ARG_OPT , CLP::DUPOPT_CLOB, NULL },
 
+  // Raw profile data
   {  0 , "dump",            CLP::ARG_NONE, CLP::DUPOPT_CLOB, NULL },
 
   // General
@@ -161,8 +192,10 @@ Args::Args(int argc, const char* const argv[])
 void
 Args::Ctor()
 {
-  dumpProfiles = false;
   Diagnostics_SetDiagnosticFilterLevel(1);
+
+  // override Analysis::Args defaults
+  metrics_computeInteriorValues = true; // dump metrics on interior nodes
 }
 
 
@@ -181,7 +214,10 @@ Args::printVersion(std::ostream& os) const
 void 
 Args::printUsage(std::ostream& os) const
 {
-  os << "Usage: " << getCmd() << " " << usage_summary << endl
+  os << "Usage: \n"
+     << "  " << getCmd() << " " << usage_summary1 << endl
+     << "  " << getCmd() << " " << usage_summary2 << endl
+     << "  " << getCmd() << " " << usage_summary3 << endl
      << usage_details << endl;
 } 
 
@@ -203,8 +239,8 @@ Args::printError(std::ostream& os, const std::string& msg) const
 const std::string& 
 Args::getCmd() const
 { 
-  // avoid error messages with: .../bin/hpcprof-bin
-  static string cmd = "hpcprof";
+  // avoid error messages with: .../bin/hpcproftt-bin
+  static string cmd = "hpcproftt";
   return cmd; // parser.GetCmd(); 
 }
 
@@ -253,6 +289,10 @@ Args::parse(int argc, const char* const argv[])
     if (parser.IsOpt("include")) {
       string str = parser.GetOptArg("include");
       StrUtil::tokenize(str, CLP_SEPARATOR, searchPaths);
+      
+      for (uint i = 0; i < searchPaths.size(); ++i) {
+	searchPathTpls.push_back(Analysis::PathTuple(searchPaths[i], "src"));
+      }
     }
     if (parser.IsOpt("structure")) {
       string str = parser.GetOptArg("structure");
@@ -266,11 +306,16 @@ Args::parse(int argc, const char* const argv[])
     if (parser.IsOpt("db")) {
       db_dir = parser.GetOptArg("db");
     }
-    db_dir = normalizeFilePath(db_dir);
 
-    // Check for other options: 
-    if (parser.IsOpt("dump")) {
-      dumpProfiles = true;
+    string cpysrc;
+    if (parser.IsOpt("src")) {
+      if (parser.IsOptArg("src")) { cpysrc = parser.GetOptArg("src"); }
+    }
+    if (parser.IsOpt("source")) {
+      if (parser.IsOptArg("source")) { cpysrc = parser.GetOptArg("source"); }
+    }
+    if (!cpysrc.empty()) {
+      db_copySrcFiles = (cpysrc != "no");
     }
 
     // Check for required arguments
@@ -290,42 +335,6 @@ Args::parse(int argc, const char* const argv[])
   catch (const CmdLineParser::Exception& x) {
     DIAG_EMsg(x.message());
     exit(1);
-  }
-
-  // -------------------------------------------------------
-  // Postprocess
-  // -------------------------------------------------------
-
-  char cwd[MAX_PATH_SIZE+1];
-  getcwd(cwd, MAX_PATH_SIZE);
-
-  for (std::vector<string>::iterator it = searchPaths.begin(); 
-       it != searchPaths.end(); /* */) {
-    string& x = *it; // current path
-    std::vector<string>::iterator x_it = it;
-    
-    ++it; // advance iterator 
-    
-    if (chdir(x.c_str()) == 0) {
-      char norm_x[MAX_PATH_SIZE+1];
-      getcwd(norm_x, MAX_PATH_SIZE);
-      x = norm_x; // replace x with norm_x
-    }
-    else {
-      DIAG_Msg(1, "Discarding search path: " << x);
-      searchPaths.erase(x_it);
-    }
-    chdir(cwd);
-  }
-  
-  
-  DIAG_Msg(2, "profile[0]: " << profileFiles[0] << "\n"
-	   << "output: " << db_dir);
-  if (searchPaths.size() > 0) {
-    DIAG_Msg(2, "search paths:");
-    for (int i = 0; i < searchPaths.size(); ++i) {
-      DIAG_Msg(2, "  " << searchPaths[i]);
-    }
   }
 }
 
