@@ -53,6 +53,8 @@
 
 //************************ System Include Files ******************************
 
+#include <vector>
+
 //************************* User Include Files *******************************
 
 #include "PGMDocHandler.hpp"
@@ -62,11 +64,25 @@
 
 //************************ Forward Declarations ******************************
 
+namespace Prof {
+
+namespace Struct {
+
 void
-read_PGM(NodeRetriever* pgmTreeInterface,
+readStructure(NodeRetriever& structIF, 
+	      const std::vector<string>& structureFiles,
+	      PGMDocHandler::Doc_t docty, 
+	      DocHandlerArgs& docargs);
+
+void
+read_PGM(NodeRetriever& structIF,
 	 const char* filenm,
 	 PGMDocHandler::Doc_t docty,
 	 DocHandlerArgs& docHandlerArgs);
+
+} // namespace Util
+
+} // namespace Analysis
 
 //****************************************************************************
 

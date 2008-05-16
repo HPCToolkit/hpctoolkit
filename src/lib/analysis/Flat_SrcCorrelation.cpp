@@ -54,10 +54,9 @@ using std::vector;
 //************************* User Include Files *******************************
 
 #include "Flat_SrcCorrelation.hpp"
+#include "Util.hpp"
 
 #include <lib/prof-juicy-x/PGMReader.hpp>
-#include <lib/prof-juicy-x/XercesSAX2.hpp>
-#include <lib/prof-juicy-x/XercesErrorHandler.hpp>
 
 #include <lib/prof-juicy/PgmScopeTreeInterface.hpp>
 #include <lib/prof-juicy/PgmScopeTree.hpp>
@@ -142,23 +141,22 @@ Analysis::Flat::Driver::toString() const
 void
 Analysis::Flat::Driver::createProgramStructure(PgmScopeTree& scopes) 
 {
-  NodeRetriever ret(scopes.GetRoot(), SearchPathStr());
+  NodeRetriever structIF(scopes.GetRoot(), SearchPathStr());
+  DriverDocHandlerArgs docargs(this);
   
   //-------------------------------------------------------
   // if a PGM/Structure document has been provided, use it to 
   // initialize the structure of the scope tree
   //-------------------------------------------------------
-  if (!m_args.structureFiles.empty()) {
-    processPGMFile(&ret, PGMDocHandler::Doc_STRUCT, m_args.structureFiles);
-  }
+  Prof::Struct::readStructure(structIF, m_args.structureFiles,
+			      PGMDocHandler::Doc_STRUCT, docargs);
 
   //-------------------------------------------------------
   // if a PGM/Group document has been provided, use it to form the 
   // group partitions (as wall as initialize/extend the scope tree)
   //-------------------------------------------------------
-  if (!m_args.groupFiles.empty()) {
-    processPGMFile(&ret, PGMDocHandler::Doc_GROUP, m_args.groupFiles);
-  }
+  Prof::Struct::readStructure(structIF, m_args.groupFiles,
+			      PGMDocHandler::Doc_GROUP, docargs);
 }
 
 
@@ -353,19 +351,6 @@ Analysis::Flat::Driver::computeFlatProfileMetrics(PgmScopeTree& scopes,
        it != metricList.end(); ++it) {
     FilePerfMetric* m = *it;
     AccumulateMetricsFromChildren(pgm, m->Index());
-  }
-}
-
-
-void
-Analysis::Flat::Driver::processPGMFile(NodeRetriever* nretriever, 
-				       PGMDocHandler::Doc_t docty, 
-				       const std::vector<string>& files)
-{
-  for (uint i = 0; i < files.size(); ++i) {
-    const string& fnm = files[i];
-    DriverDocHandlerArgs args(this);
-    read_PGM(nretriever, fnm.c_str(), docty, args);
   }
 }
 

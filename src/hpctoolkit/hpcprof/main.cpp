@@ -78,7 +78,7 @@ static CSProfile*
 readProfileData(std::vector<string>& profileFiles);
 
 static PgmScopeTree*
-readStructureData(std::vector<string>& structureFiles);
+readStructure(std::vector<string>& structureFiles);
 
 static void
 dumpProfileData(std::ostream& os, std::vector<string>& profileFiles);
@@ -142,7 +142,7 @@ realmain(int argc, char* const* argv)
   PgmScopeTree* scopeTree = NULL;
   PgmScope* pgmScope = NULL;
   if (!args.structureFiles.empty()) {
-    scopeTree = readStructureData(args.structureFiles);
+    scopeTree = readStructure(args.structureFiles);
     pgmScope = scopeTree->GetRoot();
   }
   
@@ -270,24 +270,19 @@ public:
 
 
 static PgmScopeTree*
-readStructureData(std::vector<string>& structureFiles)
+readStructure(std::vector<string>& structureFiles)
 {
-  InitXerces();
 
-  string path = ".";
+  string searchPath = "."; // FIXME
   PgmScope* pgm = new PgmScope("");
-  PgmScopeTree* scopeTree = new PgmScopeTree("", pgm);
-  NodeRetriever scopeTreeInterface(pgm, path);
-  MyDocHandlerArgs args;
+  PgmScopeTree* structure = new PgmScopeTree("", pgm);
+  NodeRetriever structIF(pgm, searchPath);
+  MyDocHandlerArgs docargs; // FIXME
 
-  for (uint i = 0; i < structureFiles.size(); ++i) {
-    const string& fnm = structureFiles[i];
-    read_PGM(&scopeTreeInterface, fnm.c_str(), PGMDocHandler::Doc_STRUCT, args);
-  }
-
-  FiniXerces();
+  Prof::Struct::readStructure(structIF, structureFiles, 
+			      PGMDocHandler::Doc_STRUCT, docargs);
   
-  return scopeTree;
+  return structure;
 }
 
 //****************************************************************************
