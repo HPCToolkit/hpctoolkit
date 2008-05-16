@@ -99,10 +99,6 @@ public:
     { return ReplacePath(path.c_str()); }
 
 private:
-  void processPGMFile(NodeRetriever* nretriever, 
-		      PGMDocHandler::Doc_t docty, 
-		      const std::vector<std::string>& files);
-
   void computeSampledMetrics(PgmScopeTree& scopes);
   void computeDerivedMetrics(PgmScopeTree& scopes);
   void computeFlatProfileMetrics(PgmScopeTree& scopes,

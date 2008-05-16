@@ -61,6 +61,8 @@ using std::string;
 
 #include "PGMReader.hpp"
 
+#include <lib/prof-juicy-x/XercesUtil.hpp>
+
 #include <lib/support/pathfind.h>
 
 //*********************** Xerces Include Files *******************************
@@ -72,8 +74,33 @@ using XERCES_CPP_NAMESPACE::XMLString;
 
 //****************************************************************************
 
+namespace Prof {
+
+namespace Struct {
+
+
 void
-read_PGM(NodeRetriever* pgmTreeInterface,
+readStructure(NodeRetriever& structIF, 
+	      const std::vector<string>& structureFiles,
+	      PGMDocHandler::Doc_t docty, 
+	      DocHandlerArgs& docargs)
+{
+  if (structureFiles.empty()) { return; }
+
+  InitXerces();
+
+  for (uint i = 0; i < structureFiles.size(); ++i) {
+    const string& fnm = structureFiles[i];
+    read_PGM(structIF, fnm.c_str(), docty, docargs);
+  }
+
+  FiniXerces();
+}
+
+
+
+void
+read_PGM(NodeRetriever& structIF,
 	 const char* filenm,
 	 PGMDocHandler::Doc_t docty,
 	 DocHandlerArgs& docHandlerArgs)
@@ -92,7 +119,7 @@ read_PGM(NodeRetriever* pgmTreeInterface,
       parser->setFeature(XMLUni::fgXercesDynamic, true);
       parser->setFeature(XMLUni::fgXercesValidationErrorAsFatal, true);
       
-      PGMDocHandler* handler = new PGMDocHandler(docty, pgmTreeInterface, 
+      PGMDocHandler* handler = new PGMDocHandler(docty, &structIF, 
 						 docHandlerArgs);
       parser->setContentHandler(handler);
       parser->setErrorHandler(handler);
@@ -122,3 +149,8 @@ read_PGM(NodeRetriever* pgmTreeInterface,
 	       << " file '" << filenm << "'.");
   }
 }
+
+
+} // namespace Util
+
+} // namespace Analysis

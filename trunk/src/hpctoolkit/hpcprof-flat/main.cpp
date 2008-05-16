@@ -64,6 +64,7 @@ using namespace std; // For compatibility with non-std C headers
 #include <lib/analysis/Flat_SrcCorrelation.hpp>
 #include <lib/analysis/MetricDescMgr.hpp>
 
+#include <lib/prof-juicy-x/PGMReader.hpp>
 #include <lib/prof-juicy-x/XercesUtil.hpp>
 #include <lib/prof-juicy-x/XercesErrorHandler.hpp>
 
@@ -125,8 +126,6 @@ realmain(int argc, char* const* argv)
   Args args(argc, argv);  // exits if error on command line
 
   NaN_init();
-  InitXerces(); // exits iff failure 
-
 
   //-------------------------------------------------------
   // Create metric descriptors
@@ -174,7 +173,6 @@ realmain(int argc, char* const* argv)
   scopeTree.GetRoot()->Freeze();      // disallow further additions to tree 
   scopeTree.CollectCrossReferences(); // collect cross referencing information
 
-  FiniXerces();
 
   DIAG_If(3) {
     DIAG_Msg(3, "Final scope tree:");
@@ -251,12 +249,17 @@ realmain(int argc, char* const* argv)
 
 #define NUM_PREFIX_LINES 2
 
-static string buildConfFile(const string& hpcHome, const string& confFile);
-static void appendContents(std::ofstream &dest, const char *srcFile);
+static string 
+buildConfFile(const string& hpcHome, const string& confFile);
+
+static void 
+appendContents(std::ofstream &dest, const char *srcFile);
 
 static void
 readConfFile(Args& args, Analysis::MetricDescMgr& metricMgr)
 {
+  InitXerces(); // exits iff failure 
+
   const string& cfgFile = args.configurationFile;
   DIAG_Msg(2, "Initializing from: " << cfgFile);
   
@@ -284,6 +287,8 @@ readConfFile(Args& args, Analysis::MetricDescMgr& metricMgr)
   };
 
   unlink(tmpFile.c_str());
+
+  FiniXerces();
 }
 
 

@@ -54,6 +54,7 @@
 //************************* System Include Files ****************************
 
 #include <string>
+#include <vector>
 
 //*************************** User Include Files ****************************
 
@@ -75,6 +76,7 @@ enum ProfType_t {
 
 ProfType_t
 getProfileType(const std::string& filenm);
+
 
 } // namespace Util
 
