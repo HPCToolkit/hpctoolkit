@@ -62,18 +62,30 @@ namespace Analysis {
 //****************************************************************************
 
 class MetricDescMgr : public Unique { // non copyable
+public:
+  typedef std::vector<PerfMetric*> PerfMetricVec;
+  typedef std::map<string, PerfMetricVec> StringPerfMetricVecMap;
+
 public: 
   MetricDescMgr();
   ~MetricDescMgr(); 
 
-  void makePerfMetricDescs(std::vector<std::string>& profileFiles);
+  void makeTable(std::vector<std::string>& profileFiles);
 
   // ------------------------------------------------------------
-  // 
+  // The metric table
   // ------------------------------------------------------------
   PerfMetric* metric(int i) const { return m_metrics[i]; }
-  void insert(PerfMetric* m) { m_metrics.push_back(m); }
+
+  // Given m, insert m into the tables.  If 'unique' is set, ensures
+  // the uniqueness of m's name by qualifying it if necessary.
+  // Returns true if the name was modified, false otherwise.
+  bool insert(PerfMetric* m, bool unique = false);
+  
+  bool insertUnique(PerfMetric* m) { return insert(m, true); }
+
   uint size() const { return m_metrics.size(); }
+
   bool empty() const { return m_metrics.empty(); }
 
   // ------------------------------------------------------------
@@ -88,17 +100,23 @@ public:
   void 
   ddump() const;
 
+public:
 
   typedef std::list<FilePerfMetric*> MetricList_t;
-private:
-  typedef std::map<string, int> StringToIntMap;
 
+private:
   std::string makeUniqueName(const std::string& nm);
   
 private:
-  std::vector<PerfMetric*> m_metrics;
+  // the metric table
+  PerfMetricVec m_metrics;
 
-  StringToIntMap m_metricDisambiguationTbl;
+  // non-unique-metric name to PerfMetricVec table (i.e., name excludes
+  // qualifications added by insertUnique()
+  StringPerfMetricVecMap m_mnameToMetricMap;
+
+  // profile file name to FilePerfMetric table
+  StringPerfMetricVecMap m_fnameToFMetricMap;
 };
 
 //****************************************************************************
