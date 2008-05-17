@@ -137,7 +137,7 @@ realmain(int argc, char* const* argv)
     readConfFile(args, metricMgr); // exits on failure
   }
   else {
-    metricMgr.makePerfMetricDescs(args.profileFiles);
+    metricMgr.makeTable(args.profileFiles);
   }
   
 

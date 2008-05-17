@@ -87,7 +87,7 @@ void
 PerfMetric::Ctor(const char *nm, const char* displayNm)
 {
   // trace = 1; 
-  DIAG_Assert(!IsPerfDataIndex(NameToPerfDataIndex(nm)), "");
+  //FIXME DIAG_Assert(!IsPerfDataIndex(NameToPerfDataIndex(nm)), "");
   int i = PerfMetricTable.GetNumElements();
   PerfMetricTable[i] = this;
   perfInfoIndex = i;

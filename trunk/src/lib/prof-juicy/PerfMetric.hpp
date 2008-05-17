@@ -66,7 +66,8 @@ public:
 
   ~DataDisplayInfo();
 
-  const std::string&  Name()        const { return name; }; 
+  const std::string&  Name()        const { return name; }
+  void                Name(const std::string& nm)  { name = nm; }
   const std::string&  Color()       const { return color; }
   unsigned int        Width()       const { return width; }
   bool                FormatAsInt() const { return formatAsInt; }
@@ -126,6 +127,7 @@ public:
   virtual ~PerfMetric();       
 
   const std::string& Name() const          { return name; }
+  void               Name(const std::string& nm)  { name = nm; }
   const std::string& NativeName() const    { return nativeName; }
   unsigned int Index() const          { return perfInfoIndex; } 
   

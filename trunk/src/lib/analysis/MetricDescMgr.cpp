@@ -72,26 +72,12 @@ Analysis::MetricDescMgr::~MetricDescMgr()
 } 
 
 
-string 
-Analysis::MetricDescMgr::makeUniqueName(const std::string& nm)
-{
-  StringToIntMap::iterator it = m_metricDisambiguationTbl.find(nm);
-  if (it != m_metricDisambiguationTbl.end()) {
-    int& qualifier = it->second;
-    qualifier++;
-    string nm_new = nm + "-" + StrUtil::toStr(qualifier);
-    return nm_new;
-  }
-  else {
-    m_metricDisambiguationTbl.insert(make_pair(nm, 0));
-    return nm;
-  }
-}
-
-
 void 
-Analysis::MetricDescMgr::makePerfMetricDescs(std::vector<std::string>& profileFiles)
+Analysis::MetricDescMgr::makeTable(std::vector<std::string>& profileFiles)
 {
+  // ------------------------------------------------------------
+  // Create a FilePerfMetric for each event within each profile
+  // ------------------------------------------------------------
   for (uint i = 0; i < profileFiles.size(); ++i) {
     const string& proffnm = profileFiles[i];
 
@@ -104,21 +90,69 @@ Analysis::MetricDescMgr::makePerfMetricDescs(std::vector<std::string>& profileFi
       throw;
     }
 
-    // For each metric: compute a canonical name and create a metric desc.
     const Prof::SampledMetricDescVec& mdescs = prof.mdescs();
     for (uint j = 0; j < mdescs.size(); ++j) {
       const Prof::SampledMetricDesc& m = *mdescs[j];
       
-      string metricNm = makeUniqueName(m.name());
       string nativeNm = StrUtil::toStr(j);
-      bool metricDoSortBy = empty();
-      
-      insert(new FilePerfMetric(metricNm, nativeNm, metricNm, 
-				true /*display*/, true /*percent*/, 
-				metricDoSortBy, proffnm, 
-				string("HPCRUN")));
+      bool sortby = empty();
+      insertUnique(new FilePerfMetric(m.name(), nativeNm, m.name(),
+				      true /*display*/, true /*percent*/, 
+				      sortby, proffnm, string("HPCRUN")));
     }
   }
+
+  // ------------------------------------------------------------
+  // Create computed metrics
+  // ------------------------------------------------------------
+  // FIXME: 
+  
+}
+
+
+bool 
+Analysis::MetricDescMgr::insert(PerfMetric* m, bool unique)
+{ 
+  bool ans = false;
+  
+  // 1. metric table
+  m_metrics.push_back(m);
+
+  // 2. metric name to PerfMetricVec table
+  const string& nm = m->Name();
+  StringPerfMetricVecMap::iterator it = m_mnameToMetricMap.find(nm);
+  if (it != m_mnameToMetricMap.end()) {
+    PerfMetricVec& mvec = it->second;
+
+    if (unique) {
+      int qualifier = mvec.size();
+      string nm_new = nm + "-" + StrUtil::toStr(qualifier);
+
+      m->Name(nm_new);
+      m->DisplayInfo().Name(nm_new);
+      ans = true; 
+    }
+    mvec.push_back(m);
+  }
+  else {
+    m_mnameToMetricMap.insert(make_pair(nm, PerfMetricVec(1, m)));
+  }
+
+  // 3. profile file name to FilePerfMetric table
+  FilePerfMetric* m_fm = dynamic_cast<FilePerfMetric*>(m);
+  if (m_fm) {
+    const string& fnm = m_fm->FileName();
+    StringPerfMetricVecMap::iterator it = m_fnameToFMetricMap.find(fnm);
+    if (it != m_fnameToFMetricMap.end()) {
+      PerfMetricVec& mvec = it->second;
+      mvec.push_back(m_fm);
+    }
+    else {
+      m_fnameToFMetricMap.insert(make_pair(fnm, PerfMetricVec(1, m_fm)));
+    }
+  }
+
+  return ans;
 }
 
 
