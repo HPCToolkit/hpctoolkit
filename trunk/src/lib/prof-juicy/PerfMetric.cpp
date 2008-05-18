@@ -87,11 +87,14 @@ void
 PerfMetric::Ctor(const char *nm, const char* displayNm)
 {
   // trace = 1; 
-  //FIXME DIAG_Assert(!IsPerfDataIndex(NameToPerfDataIndex(nm)), "");
+#if 0 // FIXME:METRIC
+  DIAG_Assert(!IsPerfDataIndex(NameToPerfDataIndex(nm)), "");
   int i = PerfMetricTable.GetNumElements();
   PerfMetricTable[i] = this;
-  perfInfoIndex = i;
+#endif 
 
+  m_id = 0;
+  
   DIAG_Assert((displayNm != NULL) && (strlen(displayNm) > 0), ""); 
   dispInfo = new DataDisplayInfo(displayNm, NULL, 9, false); 
   
@@ -124,13 +127,15 @@ PerfMetric::SetEventsPerCount(int events)
 
 
 void
-PerfMetric::Make(NodeRetriever& ret) 
+PerfMetric::Make(NodeRetriever& ret) const
 {
   // nothing to do
 }
 
 
+#if 0 //FIXME:METRIC
 VectorTmpl<PerfMetric*> PerfMetric::PerfMetricTable; 
+
 
 bool 
 IsPerfDataIndex(int i) 
@@ -179,6 +184,7 @@ ClearPerfDataSrcTable()
   }
   PerfMetric::PerfMetricTable.SetNumElements(0); 
 }
+#endif
 
 
 // ************************************************************************* //
@@ -210,7 +216,7 @@ PerfMetric::ToString() const
   return string("PerfMetric: ") + 
     "name=" + name + " " + 
     "display=" + ((display) ? "true " : "false ") + 
-    "perfInfoIndex=" + StrUtil::toStr(perfInfoIndex) + " " + 
+    "perfInfoIndex=" + StrUtil::toStr(m_id) + " " + 
     "eventsPerCount=" + StrUtil::toStr(eventsPerCount) + " " + 
     "dispInfo=" + dispInfo->ToString(); 
 }

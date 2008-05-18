@@ -103,7 +103,7 @@ private:
   void computeDerivedMetrics(PgmScopeTree& scopes);
   void computeFlatProfileMetrics(PgmScopeTree& scopes,
 				 const string& profFilenm,
-				 const MetricDescMgr::MetricList_t& metricList);
+				 const MetricDescMgr::PerfMetricVec& metrics);
 
   std::string SearchPathStr() const;
 

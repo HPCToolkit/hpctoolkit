@@ -76,7 +76,6 @@ public:
 
 private:
   void SetWidth(unsigned int w) { width = w; } 
-  friend class HTMLTable; 
 
   std::string name; 
   std::string color;  
@@ -87,6 +86,7 @@ private:
 
 class PerfMetric; 
 
+#if 0 // FIXME:METRIC
 extern bool              IsPerfDataIndex(int i); 
 extern unsigned int      NumberOfPerfDataInfos(); 
 
@@ -101,6 +101,7 @@ extern PerfMetric&  IndexToPerfDataInfo(int i);
                          // asserts out iff !IsPerfDataIndex(i)
 			 
 extern void ClearPerfDataSrcTable(); 
+#endif
 
 
 class PerfMetric {
@@ -129,7 +130,8 @@ public:
   const std::string& Name() const          { return name; }
   void               Name(const std::string& nm)  { name = nm; }
   const std::string& NativeName() const    { return nativeName; }
-  unsigned int Index() const          { return perfInfoIndex; } 
+  unsigned int Index() const          { return m_id; } 
+  void         Index(uint id)         { m_id = id; } 
   
   bool Display() const                { return display; }
   bool Percent() const                { return percent; }
@@ -142,7 +144,7 @@ public:
   unsigned int EventsPerCount()      const; 
   void SetEventsPerCount(int eventsPerCount); 
   
-  virtual void Make(NodeRetriever& ret);
+  virtual void Make(NodeRetriever& ret) const;
   
   std::string ToString() const; 
 
@@ -150,12 +152,14 @@ private:
   void Ctor(const char *name, const char* displayName); 
 
 private: 
+#if 0 // FIXME:METRIC
   static VectorTmpl<PerfMetric*> PerfMetricTable; 
   friend bool              IsPerfDataIndex(int i); 
   friend unsigned int      NumberOfPerfDataInfos(); 
   friend int               NameToPerfDataIndex(const char* name); 
   friend PerfMetric&       IndexToPerfDataInfo(int i);
   friend void              ClearPerfDataSrcTable(); 
+#endif
 
   std::string name;
   std::string nativeName;
@@ -167,7 +171,7 @@ private:
   bool sortBy;
   
 protected: 
-  unsigned int perfInfoIndex; 
+  uint m_id;
 };
 
 

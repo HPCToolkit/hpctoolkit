@@ -47,9 +47,6 @@ using std::string;
 
 #include "DerivedPerfMetrics.hpp"
 
-#include <lib/prof-juicy-x/XercesSAX2.hpp>
-#include <lib/prof-juicy-x/MathMLExprParser.hpp>
-
 #include <lib/prof-juicy/PgmScopeTreeInterface.hpp>
 #include <lib/prof-juicy/PgmScopeTree.hpp>
 
@@ -102,7 +99,7 @@ FilePerfMetric::~FilePerfMetric()
 ComputedPerfMetric::ComputedPerfMetric(const char* nm, const char* displayNm,
 				       bool doDisp, bool doPerc, bool doSort,
 				       bool propagateComputed,
-				       DOMNode *expr)
+				       EvalNode* expr)
   : PerfMetric(nm, "", displayNm, doDisp, doPerc, propagateComputed, doSort)
 {
   Ctor(nm, expr);
@@ -113,7 +110,7 @@ ComputedPerfMetric::ComputedPerfMetric(const std::string& nm,
 				       const std::string& displayNm,
 				       bool doDisp, bool doPerc, bool doSort,
 				       bool propagateComputed,
-				       DOMNode *expr)
+				       EvalNode* expr)
   : PerfMetric(nm, "", displayNm, doDisp, doPerc, propagateComputed, doSort)
 {
   Ctor(nm.c_str(), expr);
@@ -121,28 +118,16 @@ ComputedPerfMetric::ComputedPerfMetric(const std::string& nm,
 
 
 void
-ComputedPerfMetric::Ctor(const char* nm, DOMNode *expr)
+ComputedPerfMetric::Ctor(const char* nm, EvalNode* expr)
 {
-  try {
-    mathExpr = new MathMLExpr(expr); 
-  }
-  catch (const MathMLExprException& e) {
-    DIAG_Throw("Could not construct METRIC '" << nm << "'.  XML exception encountered when processing MathML expression: " << e.what() << ".");
-  }
-  catch (...) {
-    DIAG_Throw("Could not construct METRIC '" << nm << "'.");
-  }
-  if (mathExpr != NULL) {
-    DIAG_Msg(1, "Computed METRIC " << nm << ": " << nm << " = " 
-	     << mathExpr->toString());
-  } 
+  m_exprTree = expr;
 }
 
 
 ComputedPerfMetric::~ComputedPerfMetric() 
 {
   IFTRACE << "~ComputedPerfMetric " << ToString() << endl; 
-  delete mathExpr; 
+  delete m_exprTree;
 }
 
 // **************************************************************************
@@ -174,7 +159,7 @@ AccumulateMetricsFromChildren(ScopeInfo* si, int perfInfoIndex)
 
 
 void 
-FilePerfMetric::Make(NodeRetriever &ret)
+FilePerfMetric::Make(NodeRetriever &ret) const
 {
   IFTRACE << "FilePerfMetric::Make " << endl << " " << ToString() << endl;
   DIAG_Assert(m_type == "HPCRUN", "Unexpected FilePefMetric type: " << m_type);
@@ -183,23 +168,26 @@ FilePerfMetric::Make(NodeRetriever &ret)
 
 
 void 
-ComputedPerfMetric::Make(NodeRetriever &ret)
+ComputedPerfMetric::Make(NodeRetriever &ret) const
 {
   ScopeInfoIterator it(ret.GetRoot(), 
 		       /*filter*/ NULL, /*leavesOnly*/ false, 
 		       IteratorStack::PostOrder);
 
   for (; it.Current(); it++) {
-    if (it.CurScope()->IsLeaf() 
-	|| !IndexToPerfDataInfo(Index()).PropComputed()) {
-      double val = mathExpr->eval(it.CurScope()); 
+    if (it.CurScope()->IsLeaf() || !PropComputed()) {
+      double val = c_FP_NAN_d;
+      if (m_exprTree) {
+	val = m_exprTree->eval(it.CurScope());
+      }
+
       if (! c_isnan_d(val)) {
 	it.CurScope()->SetPerfData(Index(), val); 
       } 
     }
   }
 
-  if (IndexToPerfDataInfo(Index()).PropComputed()) {
+  if (PropComputed()) {
     AccumulateMetricsFromChildren(ret.GetRoot(), Index());
   }
 }
@@ -218,7 +206,7 @@ FilePerfMetric::ToString() const
 string
 ComputedPerfMetric::ToString() const 
 {
-  return PerfMetric::ToString() + " " + string("ComputeMetricInfo: " ) + 
-         "MathMLExpr=\"" + StrUtil::toStr((void*)mathExpr);
+  return PerfMetric::ToString() + " " + string("ComputeMetricInfo: " ) 
+    + "exprTree=\"" + m_exprTree->toString();
 } 
 

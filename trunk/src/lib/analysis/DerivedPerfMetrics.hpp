@@ -46,16 +46,10 @@
 
 #include <include/general.h> 
 
+#include <lib/prof-juicy/EvalNode.hpp>
 #include <lib/prof-juicy/PerfMetric.hpp>
 
-//************************* Xerces Declarations ******************************
-
-#include <xercesc/dom/DOMNode.hpp>         /* johnmc */
-using XERCES_CPP_NAMESPACE::DOMNode;
-
 //************************ Forward Declarations ******************************
-
-class MathMLExpr;
 
 //****************************************************************************
 
@@ -83,7 +77,7 @@ public:
   const std::string& FileName() const { return m_file; }
   const std::string& FileType() const { return m_type; } // HPCRUN, PROFILE
   
-  virtual void Make(NodeRetriever &ret);
+  virtual void Make(NodeRetriever &ret) const;
   
   virtual std::string ToString() const; 
 
@@ -91,6 +85,7 @@ private:
   std::string m_file;
   std::string m_type; // for later use
 };
+
 
 //****************************************************************************
 //
@@ -100,22 +95,24 @@ class ComputedPerfMetric : public PerfMetric {
 public: 
   ComputedPerfMetric(const char* nm, const char* displayNm,
 		     bool display, bool percent, bool sortBy, 
-		     bool propagateComputed, DOMNode *expr);
+		     bool propagateComputed, EvalNode* expr);
   ComputedPerfMetric(const std::string& nm, const std::string& displayNm,
 		     bool display, bool percent, bool sortBy, 
-		     bool propagateComputed, DOMNode *expr);
+		     bool propagateComputed, EvalNode* expr);
 
   virtual ~ComputedPerfMetric(); 
 
-  virtual void Make(NodeRetriever &ret); // compute node by node
+  virtual void Make(NodeRetriever &ret) const; // compute node by node
   
   virtual std::string ToString() const; 
 
 private:
-  void Ctor(const char* nm, DOMNode *expr);
+  void Ctor(const char* nm, EvalNode* expr);
 
 private: 
-  MathMLExpr *mathExpr; 
+  EvalNode* m_exprTree; 
 };
+
+//****************************************************************************
 
 #endif 

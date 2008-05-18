@@ -57,40 +57,21 @@ using XERCES_CPP_NAMESPACE::DOMNode;
 
 //************************* User Include Files *******************************
 
-#include <lib/prof-juicy/PgmScopeTree.hpp>
 #include <lib/prof-juicy/EvalNode.hpp>
 
 //************************ Forward Declarations ******************************
 
+namespace Analysis {
+  class MetricDescMgr; // FIXME:METRIC
+}
+
 //****************************************************************************
-
-// ----------------------------------------------------------------------
-// class MathMLException
-//   Exceptions thrown during the construction of MathMLExpr object or
-//   evaluation of MathMLExpr
-// ----------------------------------------------------------------------
-
-#define MathML_Throw(streamArgs) DIAG_ThrowX(MathMLExprException, streamArgs)
-
-class MathMLExprException : public Diagnostics::Exception {
-public:
-  MathMLExprException(const std::string x,
-		      const char* filenm = NULL, unsigned int lineno = 0)
-    : Diagnostics::Exception(x, filenm, lineno)
-    { }
-
-  virtual std::string message() const { 
-    return "Math ML Exception: " + what();
-  }
-  
-private:
-};
 
 
 // ----------------------------------------------------------------------
 //
-// class MathMLExpr
-//   The expressive power of this MathMLExpr class is determined by the
+// class MathMLExprParser
+//   The expressive power of this MathMLExprParser class is determined by the
 //   kinds of nodes supported by class EvalNode.  Only the content
 //   markup part of the MathML is employed here.  Currently, only the
 //   following is supported: (the corresponding MathML content mark up
@@ -119,52 +100,62 @@ private:
 //
 // ----------------------------------------------------------------------
 
-class MathMLExpr
+class MathMLExprParser
 {
-
 public:
 
+  MathMLExprParser();
+  ~MathMLExprParser();
+
   // ------------------------------------------------------------
-  // -- MathMLExpr(const XMLCh* inputSource) --
-  //   Build a new MathMLExpr object out of the specified input string.
+  //   Build a new MathMLExprParser object out of the specified input string.
   //   This string contains MathML expressions.
   // -- params --
   //   inputSource:    input string in XMLCh format
   // -- exception --
-  //   MathMLExprException could be thrown due to invalid or unsupported
+  //   MathMLExprParserException could be thrown due to invalid or unsupported
   //   MathML expressions.
   // ------------------------------------------------------------
-  
-  MathMLExpr(DOMNode *math);
+  static EvalNode* parse(DOMNode* mathMLExpr, 
+			 const Analysis::MetricDescMgr& mMgr);
 
   // ------------------------------------------------------------
-  // -- ~MathMLExpr() --
-  //   Destructor.
+  //
   // ------------------------------------------------------------
-  
-  ~MathMLExpr();
-
-  // ------------------------------------------------------------
-  // -- double eval() --
-  //   Evaluate the MathML expression.  
-  // ------------------------------------------------------------
-
-  double eval(const ScopeInfo *si);
-
-  // ------------------------------------------------------------
-  // -- void print() --
-  //   Simple printout of nodes.
-  // ------------------------------------------------------------
-  
+#if 0
   std::string toString() const;
-
   std::ostream& dump(std::ostream& os = std::cout) const;
+#endif
+
+private:
+  static EvalNode* buildEvalTree(DOMNode *node,
+				 const Analysis::MetricDescMgr& mMgr);
+};
+
+
+
+// ----------------------------------------------------------------------
+// class MathMLException
+//   Exceptions thrown during the construction of MathMLExpr object or
+//   evaluation of MathMLExpr
+// ----------------------------------------------------------------------
+
+#define MathML_Throw(streamArgs) DIAG_ThrowX(MathMLExprException, streamArgs)
+
+class MathMLExprException : public Diagnostics::Exception {
+public:
+  MathMLExprException(const std::string x,
+		      const char* filenm = NULL, unsigned int lineno = 0)
+    : Diagnostics::Exception(x, filenm, lineno)
+    { }
+
+  virtual std::string message() const { 
+    return "Math ML Exception: " + what();
+  }
   
 private:
-  EvalNode* topNode;
-  bool isNumber;           // not sure about this
-  // helper function
-  EvalNode* buildEvalTree(DOMNode *node);
 };
+
+
 
 #endif /* prof_juicy_x_MathMLExprParser_hpp */

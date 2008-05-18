@@ -187,28 +187,26 @@ Analysis::Flat::Driver::correlateMetricsWithStructure(PgmScopeTree& scopes)
 void
 Analysis::Flat::Driver::computeSampledMetrics(PgmScopeTree& scopes) 
 {
-  typedef std::map<string, MetricDescMgr::MetricList_t> StringToMetricListMap_t;
-  StringToMetricListMap_t fileToMetricMap;
-
   // create HPCRUN file metrics.  Process all metrics associated with
   // a certain file.
 
-  PgmScope* pgmScope = scopes.GetRoot();
-  NodeRetriever ret(pgmScope, SearchPathStr());
-  for (uint i = 0; i < m_metricMgr.size(); i++) {
-    PerfMetric* m = m_metricMgr.metric(i);
-    FilePerfMetric* mm = dynamic_cast<FilePerfMetric*>(m);
+  const MetricDescMgr::StringPerfMetricVecMap& fnameToFMetricMap = 
+    m_metricMgr.fnameToFMetricMap();
+  
+  for (MetricDescMgr::StringPerfMetricVecMap::const_iterator it = 
+	 fnameToFMetricMap.begin();
+       it != fnameToFMetricMap.end(); ++it) {
+    const string& fnm = it->first;
+    const MetricDescMgr::PerfMetricVec& metrics = it->second;
+    computeFlatProfileMetrics(scopes, fnm, metrics);
+
+#if 0 //FIXME
+    const FilePerfMetric* mm = dynamic_cast<const FilePerfMetric*>(m);
     if (mm) {
       DIAG_Assert(pgmScope && pgmScope->ChildCount() > 0, "Attempting to correlate HPCRUN type profile-files without STRUCTURE information.");
       fileToMetricMap[mm->FileName()].push_back(mm);
     }
-  }
-  
-  for (StringToMetricListMap_t::iterator it = fileToMetricMap.begin();
-       it != fileToMetricMap.end(); ++it) {
-    const string& fnm = it->first;
-    const MetricDescMgr::MetricList_t& metrics = it->second;
-    computeFlatProfileMetrics(scopes, fnm, metrics);
+#endif
   }
 }
 
@@ -217,13 +215,13 @@ void
 Analysis::Flat::Driver::computeDerivedMetrics(PgmScopeTree& scopes) 
 {
   // create PROFILE file and computed metrics
-  NodeRetriever ret(scopes.GetRoot(), SearchPathStr());
+  NodeRetriever structIF(scopes.GetRoot(), SearchPathStr());
   
   for (uint i = 0; i < m_metricMgr.size(); i++) {
-    PerfMetric* m = m_metricMgr.metric(i);
-    ComputedPerfMetric* mm = dynamic_cast<ComputedPerfMetric*>(m);
+    const PerfMetric* m = m_metricMgr.metric(i);
+    const ComputedPerfMetric* mm = dynamic_cast<const ComputedPerfMetric*>(m);
     if (mm) {
-      mm->Make(ret);
+      mm->Make(structIF);
     }
   } 
 }
@@ -232,13 +230,11 @@ Analysis::Flat::Driver::computeDerivedMetrics(PgmScopeTree& scopes)
 void
 Analysis::Flat::Driver::computeFlatProfileMetrics(PgmScopeTree& scopes,
 						  const string& profFilenm,
-						  const MetricDescMgr::MetricList_t& metricList)
+						  const MetricDescMgr::PerfMetricVec& metrics)
 {
   PgmScope* pgm = scopes.GetRoot();
-  NodeRetriever nodeRet(pgm, SearchPathStr());
+  NodeRetriever structIF(pgm, SearchPathStr());
   
-  vector<PerfMetric*> eventToPerfMetricMap;
-
   //-------------------------------------------------------
   // Read the profile and insert the data
   //-------------------------------------------------------
@@ -259,7 +255,7 @@ Analysis::Flat::Driver::computeFlatProfileMetrics(PgmScopeTree& scopes,
     std::string lmname = proflm->name();
     lmname = ReplacePath(lmname);
 
-    LoadModScope* lmScope = nodeRet.MoveToLoadMod(lmname);
+    LoadModScope* lmScope = structIF.MoveToLoadMod(lmname);
     if (lmScope->ChildCount() == 0) {
       DIAG_WMsg(1, "No STRUCTURE for " << lmname << ".");
     }
@@ -282,9 +278,9 @@ Analysis::Flat::Driver::computeFlatProfileMetrics(PgmScopeTree& scopes,
     //-------------------------------------------------------
     // For each metric, insert performance data into scope tree
     //-------------------------------------------------------
-    for (MetricDescMgr::MetricList_t::const_iterator it = metricList.begin(); 
-	 it != metricList.end(); ++it) {
-      FilePerfMetric* m = *it;
+    for (MetricDescMgr::PerfMetricVec::const_iterator it = metrics.begin(); 
+	 it != metrics.end(); ++it) {
+      FilePerfMetric* m = dynamic_cast<FilePerfMetric*>(*it);
       uint mIdx = (uint)StrUtil::toUInt64(m->NativeName());
       
       const Prof::Flat::EventData& profevent = proflm->event(mIdx);
@@ -347,9 +343,9 @@ Analysis::Flat::Driver::computeFlatProfileMetrics(PgmScopeTree& scopes,
   //-------------------------------------------------------
   // Accumulate metrics
   //-------------------------------------------------------
-  for (MetricDescMgr::MetricList_t::const_iterator it = metricList.begin(); 
-       it != metricList.end(); ++it) {
-    FilePerfMetric* m = *it;
+  for (MetricDescMgr::PerfMetricVec::const_iterator it = metrics.begin(); 
+       it != metrics.end(); ++it) {
+    FilePerfMetric* m = dynamic_cast<FilePerfMetric*>(*it);
     AccumulateMetricsFromChildren(pgm, m->Index());
   }
 }
@@ -365,7 +361,7 @@ Analysis::Flat::Driver::XML_Dump(PgmScope* pgm, std::ostream &os, const char *pr
 
 void
 Analysis::Flat::Driver::XML_Dump(PgmScope* pgm, int dumpFlags, std::ostream &os,
-		 const char *pre) const
+				 const char *pre) const
 {
   string pre1 = string(pre) + "  ";
   string pre2 = string(pre1) + "  ";
@@ -384,15 +380,15 @@ Analysis::Flat::Driver::XML_Dump(PgmScope* pgm, int dumpFlags, std::ostream &os,
   }
   
   os << pre1 << "<METRICS>" << endl;
-  for (uint i = 0; i < NumberOfPerfDataInfos(); i++) {
-    const PerfMetric& metric = IndexToPerfDataInfo(i); 
+  for (uint i = 0; i < m_metricMgr.size(); ++i) {
+    const PerfMetric* metric = m_metricMgr.metric(i); 
     os << pre2 << "<METRIC shortName=\042" << i
-       << "\042 nativeName=\042"  << metric.NativeName()
-       << "\042 displayName=\042" << metric.DisplayInfo().Name()
-       << "\042 display=\042" << ((metric.Display()) ? "true" : "false")
-       << "\042 percent=\042" << ((metric.Percent()) ? "true" : "false")
+       << "\042 nativeName=\042"  << metric->NativeName()
+       << "\042 displayName=\042" << metric->DisplayInfo().Name()
+       << "\042 display=\042" << ((metric->Display()) ? "true" : "false")
+       << "\042 percent=\042" << ((metric->Percent()) ? "true" : "false")
 #if 0   // hpcviewer does dynamic sorting, no need for this flag
-       << "\042 sortBy=\042"  << ((metric.SortBy())  ? "true" : "false")
+       << "\042 sortBy=\042"  << ((metric->SortBy())  ? "true" : "false")
 #endif
        << "\042/>" << endl;
   }
@@ -436,8 +432,8 @@ Analysis::Flat::Driver::write_config(std::ostream &os) const
 
   // metrics
   for (uint i = 0; i < m_metricMgr.size(); i++) {
-    PerfMetric* m = m_metricMgr.metric(i);
-    FilePerfMetric* mm = dynamic_cast<FilePerfMetric*>(m);
+    const PerfMetric* m = m_metricMgr.metric(i);
+    const FilePerfMetric* mm = dynamic_cast<const FilePerfMetric*>(m);
     if (mm) {
       const char* sortbystr = ((i == 0) ? " sortBy=\"true\"" : "");
       os << "<METRIC name=\"" << m->Name() 
@@ -460,11 +456,11 @@ void
 Analysis::Flat::Driver::CSV_Dump(PgmScope* pgm, std::ostream &os) const
 {
   os << "File name,Routine name,Start line,End line,Loop level";
-  for (uint i = 0; i < NumberOfPerfDataInfos(); i++) {
-    const PerfMetric& metric = IndexToPerfDataInfo(i); 
-    os << "," << metric.DisplayInfo().Name();
-    if (metric.Percent())
-      os << "," << metric.DisplayInfo().Name() << " (%)";
+  for (uint i = 0; i < m_metricMgr.size(); ++i) {
+    const PerfMetric* m = m_metricMgr.metric(i); 
+    os << "," << m->DisplayInfo().Name();
+    if (m->Percent())
+      os << "," << m->DisplayInfo().Name() << " (%)";
   }
   os << endl;
   
@@ -477,12 +473,12 @@ void
 Analysis::Flat::Driver::TSV_Dump(PgmScope* pgm, std::ostream &os) const
 {
   os << "LineID";
-  for (uint i = 0; i < NumberOfPerfDataInfos(); i++) {
-    const PerfMetric& metric = IndexToPerfDataInfo(i); 
-    os << "\t" << metric.DisplayInfo().Name();
+  for (uint i = 0; i < m_metricMgr.size(); ++i) {
+    const PerfMetric* m = m_metricMgr.metric(i); 
+    os << "\t" << m->DisplayInfo().Name();
     /*
-    if (metric.Percent())
-      os << "\t" << metric.DisplayInfo().Name() << " (%)";
+    if (m->Percent())
+      os << "\t" << m->DisplayInfo().Name() << " (%)";
     */
   }
   os << endl;

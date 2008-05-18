@@ -224,6 +224,7 @@ public:
   bool   HasPerfData(int i) const;     // checks whether PerfData(i) is set
   double PerfData(int i) const;        // returns FP_NAN iff !HasPerfData(i) 
   void   SetPerfData(int i, double d); // asserts out iff HasPerfData(i) 
+  uint   NumPerfData() const;
   
   // --------------------------------------------------------
   // Parent
