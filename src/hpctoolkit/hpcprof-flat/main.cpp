@@ -237,7 +237,7 @@ realmain(int argc, char* const* argv)
   //-------------------------------------------------------
   // Cleanup
   //-------------------------------------------------------
-  ClearPerfDataSrcTable(); 
+  //FIXME:METRIC ClearPerfDataSrcTable(); 
   
   return 0; 
 } 

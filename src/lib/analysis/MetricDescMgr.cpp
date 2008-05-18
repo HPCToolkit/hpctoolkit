@@ -69,6 +69,9 @@ Analysis::MetricDescMgr::MetricDescMgr()
 
 Analysis::MetricDescMgr::~MetricDescMgr()
 {
+  for (uint i = 0; i < m_metrics.size(); ++i) {
+    delete m_metrics[i];
+  }
 } 
 
 
@@ -96,9 +99,9 @@ Analysis::MetricDescMgr::makeTable(std::vector<std::string>& profileFiles)
       
       string nativeNm = StrUtil::toStr(j);
       bool sortby = empty();
-      insertUnique(new FilePerfMetric(m.name(), nativeNm, m.name(),
-				      true /*display*/, true /*percent*/, 
-				      sortby, proffnm, string("HPCRUN")));
+      insert(new FilePerfMetric(m.name(), nativeNm, m.name(),
+				true /*display*/, true /*percent*/, 
+				sortby, proffnm, string("HPCRUN")));
     }
   }
 
@@ -111,34 +114,41 @@ Analysis::MetricDescMgr::makeTable(std::vector<std::string>& profileFiles)
 
 
 bool 
-Analysis::MetricDescMgr::insert(PerfMetric* m, bool unique)
+Analysis::MetricDescMgr::insert(PerfMetric* m)
 { 
   bool ans = false;
   
   // 1. metric table
+  uint id = m_metrics.size();
   m_metrics.push_back(m);
+  m->Index(id);
 
   // 2. metric name to PerfMetricVec table
   const string& nm = m->Name();
-  StringPerfMetricVecMap::iterator it = m_mnameToMetricMap.find(nm);
-  if (it != m_mnameToMetricMap.end()) {
+  StringPerfMetricVecMap::iterator it = m_nuniqnmToMetricMap.find(nm);
+  if (it != m_nuniqnmToMetricMap.end()) {
     PerfMetricVec& mvec = it->second;
 
-    if (unique) {
-      int qualifier = mvec.size();
-      string nm_new = nm + "-" + StrUtil::toStr(qualifier);
+    // ensure uniqueness
+    int qualifier = mvec.size();
+    string nm_new = nm + "-" + StrUtil::toStr(qualifier);
+    
+    m->Name(nm_new);
+    m->DisplayInfo().Name(nm_new);
+    ans = true; 
 
-      m->Name(nm_new);
-      m->DisplayInfo().Name(nm_new);
-      ans = true; 
-    }
     mvec.push_back(m);
   }
   else {
-    m_mnameToMetricMap.insert(make_pair(nm, PerfMetricVec(1, m)));
+    m_nuniqnmToMetricMap.insert(make_pair(nm, PerfMetricVec(1, m)));
   }
 
-  // 3. profile file name to FilePerfMetric table
+  // 3. unique name to PerfMetric table
+  std::pair<StringPerfMetricMap::iterator, bool> ret = 
+    m_uniqnmToMetricMap.insert(make_pair(nm, m));
+  DIAG_Assert(ret.second, "Found duplicate entry; should be unique name!");
+  
+  // 4. profile file name to FilePerfMetric table
   FilePerfMetric* m_fm = dynamic_cast<FilePerfMetric*>(m);
   if (m_fm) {
     const string& fnm = m_fm->FileName();

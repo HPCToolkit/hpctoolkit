@@ -133,7 +133,12 @@ static void ProcessFILE(DOMNode *fileNode, Analysis::Args& args, Analysis::Metri
 			bool metricDoPercent, bool metricDoSortBy, 
 			const string& metricDispNm);
 
-static string getAttr(DOMNode *node, const XMLCh *attrName);
+static EvalNode*
+makeMathMLExpr(const char* nm, DOMNode* mathMLExpr, 
+	       Analysis::MetricDescMgr& mMgr);
+
+static string 
+getAttr(DOMNode *node, const XMLCh *attrName);
 
 static string 
 canonicalizePaths(string& inPath, string& outPath);
@@ -304,7 +309,7 @@ ProcessMETRIC(DOMNode *node, Analysis::Args& args, Analysis::MetricDescMgr& mMgr
   if (metricNm.empty()) {
     ConfigParser_Throw("METRIC: Invalid name: '" << metricNm << "'.");
   }
-  else if (NameToPerfDataIndex(metricNm) != UNDEF_METRIC_INDEX) {
+  else if (mMgr.metric(metricNm) != NULL) {
     ConfigParser_Throw("METRIC: Metric name '" << metricNm << "' was previously defined.");
   }
 
@@ -351,17 +356,43 @@ ProcessMETRIC(DOMNode *node, Analysis::Args& args, Analysis::MetricDescMgr& mMgr
 	else if (child->getNodeType() == DOMNode::COMMENT_NODE) {
 	  continue;
 	}
-	
+
+	EvalNode* expr = makeMathMLExpr(metricNm.c_str(), child, mMgr);
 	mMgr.insert(new ComputedPerfMetric(metricNm, metricDispNm, 
 					   metricDoDisp, metricDoPercent, 
 					   metricDoSortBy,
-					   propagateComputed, child)); 
+					   propagateComputed, expr));
       }
     } 
     else {
       ConfigParser_Throw("Unexpected METRIC type '" << XMLString::transcode(metricType) << "'.");
     }
   }
+}
+
+
+static EvalNode*
+makeMathMLExpr(const char* nm, DOMNode* mathMLExpr, 
+	       Analysis::MetricDescMgr& mMgr)
+{
+  EvalNode* expr = NULL;
+
+  try {
+    expr = MathMLExprParser::parse(mathMLExpr, mMgr);
+  }
+  catch (const MathMLExprException& e) {
+    DIAG_Throw("Could not construct METRIC '" << nm << "'.  XML exception encountered when processing MathML expression: " << e.what() << ".");
+  }
+  catch (...) {
+    DIAG_Throw("Could not construct METRIC '" << nm << "'.");
+  }
+  
+  if (expr != NULL) {
+    DIAG_Msg(1, "Computed METRIC " << nm << ": " << nm << " = " 
+	     << expr->toString());
+  } 
+  
+  return expr;
 }
 
 

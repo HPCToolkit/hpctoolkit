@@ -1100,23 +1100,10 @@ ScopeInfo::IsMergable(ScopeInfo* toNode, ScopeInfo* fromNode)
 // Performance Data
 //***************************************************************************
 
-void 
-ScopeInfo::SetPerfData(int i, double d) 
-{
-  DIAG_Assert(IsPerfDataIndex(i), "");
-  if (c_isnan_d((*perfData)[i])) {
-    (*perfData)[i] = d;
-  }
-  else {
-    (*perfData)[i] += d;
-  }
-}
-
-
 bool 
 ScopeInfo::HasPerfData(int i) const
 {
-  DIAG_Assert(IsPerfDataIndex(i), "");
+  //FIXME:METRIC DIAG_Assert(IsPerfDataIndex(i), "");
   ScopeInfo *si = (ScopeInfo*) this;
   double x = (*si->perfData)[i];
   return (x != 0.0 && !c_isnan_d(x));
@@ -1129,6 +1116,28 @@ ScopeInfo::PerfData(int i) const
   //DIAG_Assert(HasPerfData(i), "");
   ScopeInfo *si = (ScopeInfo*) this;
   return (*si->perfData)[i];
+}
+
+
+void 
+ScopeInfo::SetPerfData(int i, double d) 
+{
+  // NOTE: VectorTmpl::operator[] automatically 'adds' the index if necessary
+
+  //FIXME:METRIC DIAG_Assert(IsPerfDataIndex(i), "");
+  if (c_isnan_d((*perfData)[i])) {
+    (*perfData)[i] = d;
+  }
+  else {
+    (*perfData)[i] += d;
+  }
+}
+
+
+uint
+ScopeInfo::NumPerfData() const
+{
+  return perfData->GetNumElements();
 }
 
 
@@ -1497,9 +1506,9 @@ ScopeInfo::dump(ostream& os, int dmpFlag, const char* pre) const
   string prefix = string(pre) + "  ";
 
   dumpme(os, dmpFlag, pre);
-  
-  for (uint i = 0; i < NumberOfPerfDataInfos(); i++) {
-    os << IndexToPerfDataInfo(i).Name() << "=" ;
+
+  for (uint i = 0; i < NumPerfData(); i++) {
+    os << i << " = " ;
     if (HasPerfData(i)) {
       os << PerfData(i);
     } 
@@ -1796,7 +1805,7 @@ ScopeInfo::XML_DumpSelfBefore(ostream& os, int dmpFlag,
   
   bool dumpMetrics = false;
   if (attemptToDumpMetrics) {
-    for (uint i = 0; i < NumberOfPerfDataInfos(); i++) {
+    for (uint i = 0; i < NumPerfData(); i++) {
       if (HasPerfData(i)) {
 	dumpMetrics = true;
 	break;
@@ -1808,7 +1817,7 @@ ScopeInfo::XML_DumpSelfBefore(ostream& os, int dmpFlag,
   if (dumpMetrics) {
     // by definition this element is not empty
     os << ">";
-    for (uint i = 0; i < NumberOfPerfDataInfos(); i++) {
+    for (uint i = 0; i < NumPerfData(); i++) {
       if (HasPerfData(i)) {
 	if (!(dmpFlag & PgmScopeTree::COMPRESSED_OUTPUT)) { os << endl; }
 	os << prefix << "  <M n=\"" << i << "\" v=\"" << PerfData(i) << "\"/>";
@@ -1930,11 +1939,18 @@ void
 ScopeInfo::CSV_DumpSelf(const PgmScope &root, ostream& os) const
 { 
   char temp[32];
-  for (uint i = 0; i < NumberOfPerfDataInfos(); i++) {
+  for (uint i = 0; i < NumPerfData(); i++) {
     double val = (HasPerfData(i) ? PerfData(i) : 0);
     os << "," << val;
+#if 0
+    // FIXME: tallent: Conversioon from static perf-table to MetricDescMgr
     const PerfMetric& metric = IndexToPerfDataInfo(i);
-    if (metric.Percent()) {
+    bool percent = metric.Percent();
+#else
+    bool percent = true;
+#endif
+
+    if (percent) {
       double percVal = val / root.PerfData(i) * 100;
       sprintf(temp, "%5.2lf", percVal);
       os << "," << temp;
@@ -2033,7 +2049,7 @@ void
 ScopeInfo::TSV_DumpSelf(const PgmScope &root, ostream& os) const
 { 
   char temp[32];
-  for (uint i = 0; i < NumberOfPerfDataInfos(); i++) {
+  for (uint i = 0; i < NumPerfData(); i++) {
     double val = (HasPerfData(i) ? PerfData(i) : 0);
     os << "\t" << val;
     /*const PerfMetric& metric = IndexToPerfDataInfo(i);

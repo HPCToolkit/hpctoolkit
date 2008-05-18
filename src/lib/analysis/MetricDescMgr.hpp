@@ -64,7 +64,8 @@ namespace Analysis {
 class MetricDescMgr : public Unique { // non copyable
 public:
   typedef std::vector<PerfMetric*> PerfMetricVec;
-  typedef std::map<string, PerfMetricVec> StringPerfMetricVecMap;
+  typedef std::map<std::string, PerfMetric*> StringPerfMetricMap;
+  typedef std::map<std::string, PerfMetricVec> StringPerfMetricVecMap;
 
 public: 
   MetricDescMgr();
@@ -75,18 +76,45 @@ public:
   // ------------------------------------------------------------
   // The metric table
   // ------------------------------------------------------------
-  PerfMetric* metric(int i) const { return m_metrics[i]; }
+  PerfMetric* metric(int i) { 
+    return m_metrics[i]; 
+  }
 
-  // Given m, insert m into the tables.  If 'unique' is set, ensures
-  // the uniqueness of m's name by qualifying it if necessary.
-  // Returns true if the name was modified, false otherwise.
-  bool insert(PerfMetric* m, bool unique = false);
-  
-  bool insertUnique(PerfMetric* m) { return insert(m, true); }
+  const PerfMetric* metric(int i) const { 
+    return m_metrics[i]; 
+  }
+
+  PerfMetric* metric(const std::string& uniqNm) { 
+    StringPerfMetricMap::const_iterator it = m_uniqnmToMetricMap.find(uniqNm);
+    return (it != m_uniqnmToMetricMap.end()) ? it->second : NULL;
+  }
+
+  const PerfMetric* metric(const std::string& uniqNm) const { 
+    StringPerfMetricMap::const_iterator it = m_uniqnmToMetricMap.find(uniqNm);
+    return (it != m_uniqnmToMetricMap.end()) ? it->second : NULL;
+  }
 
   uint size() const { return m_metrics.size(); }
 
   bool empty() const { return m_metrics.empty(); }
+
+  // Given m, insert m into the tables, ensuring it has a unique name
+  // by qualifying it if necessary.  Returns true if the name was
+  // modified, false otherwise.
+  // NOTE: Assumes ownership of 'm'
+  bool insert(PerfMetric* m);
+  
+  // makeFileMetric
+  // makeComputedMetric
+
+  // ------------------------------------------------------------
+  // helper tables
+  // ------------------------------------------------------------
+
+  const StringPerfMetricVecMap& fnameToFMetricMap() const { 
+    return m_fnameToFMetricMap;
+  }
+
 
   // ------------------------------------------------------------
   // 
@@ -113,7 +141,10 @@ private:
 
   // non-unique-metric name to PerfMetricVec table (i.e., name excludes
   // qualifications added by insertUnique()
-  StringPerfMetricVecMap m_mnameToMetricMap;
+  StringPerfMetricVecMap m_nuniqnmToMetricMap;
+
+  // unique-metric name to PerfMetricVec table
+  StringPerfMetricMap m_uniqnmToMetricMap;
 
   // profile file name to FilePerfMetric table
   StringPerfMetricVecMap m_fnameToFMetricMap;

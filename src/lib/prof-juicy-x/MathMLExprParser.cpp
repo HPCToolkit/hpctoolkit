@@ -57,6 +57,8 @@ using std::atoi;
 
 #include "MathMLExprParser.hpp"
 
+#include <lib/analysis/MetricDescMgr.hpp> // FIXME:METRIC
+
 #include <lib/prof-juicy/PerfMetric.hpp>
 
 #include <lib/support/NaN.h>
@@ -70,52 +72,35 @@ using XERCES_CPP_NAMESPACE::XMLString;
 
 //************************ Forward Declarations ******************************
 
-//****************************************************************************
-
-// ----------------------------------------------------------------------
-//
-// class MathMLExpr
-//   The expressive power of this MathMLExpr class is determined by the
-//   kinds of nodes supported by class EvalNode.  Currently, only the
-//   following is supported: (the corresponding MathMLML content mark up
-//   is include in the parenthesis)
-//     unary  -- constant (<cn></cn>), variable (<ci></ci>) and
-//               minus (<minus/>)
-//     binary -- power (<power/>), divide (<divide/>) and minus (<minus/>)
-//     Nary   -- plus (<plus/>) and times (<times/>)
-//
-//   A sample of MathMLML expression is as follows:
-//      <apply>
-//         <plus/>
-//         <apply>
-//            <power/>
-//            <ci>x</ci>
-//            <cn>2</cn>
-//         </apply>
-//         <apply>
-//            <times/>
-//            <cn>4</cn>
-//            <ci>x</ci>
-//         </apply>
-//         <cn>4</cn>
-//      </apply>
-//   It is equal to:  x ^ 2 + 4 * x + 4.
-//
-// ----------------------------------------------------------------------
-
-// ----------------------------------------------------------------------
-//
-// Declarations of helper functions
-//
-// ----------------------------------------------------------------------
-
 static bool isOperatorNode(DOMNode *node);
 static bool isOperandNode(DOMNode *node);
 
-MathMLExpr::MathMLExpr(DOMNode *math) 
+//****************************************************************************
+
+
+//****************************************************************************
+//
+//****************************************************************************
+
+MathMLExprParser::MathMLExprParser()
 {
+}
+
+
+MathMLExprParser::~MathMLExprParser()
+{
+}
+
+
+EvalNode* 
+MathMLExprParser::parse(DOMNode* mathMLExpr, 
+			const Analysis::MetricDescMgr& mMgr)
+{
+  EvalNode* exprTree = NULL;
+
   int exprs = 0;
-  DOMNode *child = math->getFirstChild();
+
+  DOMNode *child = mathMLExpr->getFirstChild();
   for (; child != NULL; child = child->getNextSibling()) {
     if (child->getNodeType() == DOMNode::TEXT_NODE) {
       // DTD ensures this can't contain anything but white space
@@ -130,65 +115,13 @@ MathMLExpr::MathMLExpr(DOMNode *math)
     }
     IFTRACE << child->getNodeType() << endl; 
     exprs++;
-    topNode = buildEvalTree(child);
+    exprTree = buildEvalTree(child, mMgr);
   }
   if (exprs == 0) {
     throw MathMLExprException("No MathML expression specified for COMPUTE");
   }
-}
 
-MathMLExpr::~MathMLExpr() 
-{
-  delete topNode;
-}
-
-double 
-MathMLExpr::eval(const ScopeInfo *si) 
-{
-  IFDOTRACE { si->dumpme(cerr); }
-  if (topNode != NULL)
-    return topNode->eval(si);
-  return c_FP_NAN_d;
-}
-
-// ----------------------------------------------------------------------
-// -- bool isOperatorNode(DOMNode *node) --
-//   Tests whether a DOMNode is one of the operator nodes -- divide,
-//   minus, plus, power and times.
-// -- params --
-//   node:       a DOMNode
-// ----------------------------------------------------------------------
-
-static bool 
-isOperatorNode(DOMNode *node) 
-{  
-  static const XMLCh* DIVISION = XMLString::transcode("divide");
-  static const XMLCh* SUBTRACTION = XMLString::transcode("minus");
-  static const XMLCh* ADDITION = XMLString::transcode("plus");
-  static const XMLCh* MAXML = XMLString::transcode("max");
-  static const XMLCh* MINML = XMLString::transcode("min");
-  static const XMLCh* EXPONENTIATION = XMLString::transcode("power");
-  static const XMLCh* MULTIPLICATION = XMLString::transcode("times");
-
-  const XMLCh* nodeName = node->getNodeName();
-
-  return (XMLString::equals(nodeName,DIVISION) || XMLString::equals(nodeName,SUBTRACTION) ||
-	  XMLString::equals(nodeName,ADDITION) || XMLString::equals(nodeName,EXPONENTIATION) ||
-	  XMLString::equals(nodeName,MULTIPLICATION) || XMLString::equals(nodeName,MAXML) || 
-		XMLString::equals(nodeName,MINML));
-}
-
-static bool 
-isOperandNode(DOMNode *node) 
-{
-  static const XMLCh* APPLY = XMLString::transcode("apply");
-  static const XMLCh* NUMBER = XMLString::transcode("cn");
-  static const XMLCh* IDENTIFIER = XMLString::transcode("ci");
-
-  const XMLCh* nodeName = node->getNodeName();
-
-  return (XMLString::equals(nodeName,APPLY) ||
-	  XMLString::equals(nodeName,NUMBER) || XMLString::equals(nodeName,IDENTIFIER));
+  return exprTree;
 }
 
 
@@ -202,8 +135,11 @@ isOperandNode(DOMNode *node)
 // ----------------------------------------------------------------------
 
 EvalNode* 
-MathMLExpr::buildEvalTree(DOMNode *node) 
+MathMLExprParser::buildEvalTree(DOMNode *node, 
+				const Analysis::MetricDescMgr& mMgr) 
 {
+  bool isNumber;
+
   static const XMLCh* APPLY = XMLString::transcode("apply");
   static const XMLCh* DIVISION = XMLString::transcode("divide");
   static const XMLCh* SUBTRACTION = XMLString::transcode("minus");
@@ -234,12 +170,14 @@ MathMLExpr::buildEvalTree(DOMNode *node)
       else {           // is a variable
 	std::string str = XMLString::transcode(nodeValue);
 	IFTRACE << "str --" << str << "--" << endl; 
-	int perfDataIndex = NameToPerfDataIndex(str);
-	IFTRACE << "index --" << perfDataIndex << "--" << endl; 
-	if (!IsPerfDataIndex(perfDataIndex)) {
+
+	const PerfMetric* m = mMgr.metric(str);
+	if (!m) {
 	  MathML_Throw("Undefined metric '" + str + "' encountered");
 	}
-	evalNode = new Var(str, perfDataIndex);
+
+	IFTRACE << "index --" << m->Index() << "--" << endl;
+	evalNode = new Var(str, m->Index());
       }
       return evalNode;
     }
@@ -296,7 +234,7 @@ MathMLExpr::buildEvalTree(DOMNode *node)
 	} while (!isOperandNode(child));
 	IFTRACE << "child " << i << " " << child << endl; 
 	try {
-	  nodes[i] = buildEvalTree(child);
+	  nodes[i] = buildEvalTree(child, mMgr);
 	}
 	catch (const MathMLExprException& e) {
 	  for (int j = 0; j < i; j++)
@@ -339,7 +277,7 @@ MathMLExpr::buildEvalTree(DOMNode *node)
       isNumber = true;
       EvalNode* builtNode;
       try {
-	builtNode = buildEvalTree(child);
+	builtNode = buildEvalTree(child, mMgr);
 	return builtNode;
       }
       catch (const MathMLExprException& e) {
@@ -352,7 +290,7 @@ MathMLExpr::buildEvalTree(DOMNode *node)
       isNumber = false;
       EvalNode* builtNode;
       try {
-	builtNode = buildEvalTree(child);
+	builtNode = buildEvalTree(child, mMgr);
 	return builtNode;
       }
       catch (const MathMLExprException& e) {
@@ -388,8 +326,9 @@ MathMLExpr::buildEvalTree(DOMNode *node)
 }
 
 
+#if 0
 std::string
-MathMLExpr::toString() const
+MathMLExprParser::toString() const
 {
   std::ostringstream os;
   dump(os);
@@ -398,8 +337,50 @@ MathMLExpr::toString() const
 
 
 std::ostream&
-MathMLExpr::dump(std::ostream& os) const
+MathMLExprParser::dump(std::ostream& os) const
 { 
-  topNode->dump(os); 
   return os;
 }
+#endif
+
+
+// ----------------------------------------------------------------------
+// -- bool isOperatorNode(DOMNode *node) --
+//   Tests whether a DOMNode is one of the operator nodes -- divide,
+//   minus, plus, power and times.
+// -- params --
+//   node:       a DOMNode
+// ----------------------------------------------------------------------
+
+static bool 
+isOperatorNode(DOMNode *node) 
+{  
+  static const XMLCh* DIVISION = XMLString::transcode("divide");
+  static const XMLCh* SUBTRACTION = XMLString::transcode("minus");
+  static const XMLCh* ADDITION = XMLString::transcode("plus");
+  static const XMLCh* MAXML = XMLString::transcode("max");
+  static const XMLCh* MINML = XMLString::transcode("min");
+  static const XMLCh* EXPONENTIATION = XMLString::transcode("power");
+  static const XMLCh* MULTIPLICATION = XMLString::transcode("times");
+
+  const XMLCh* nodeName = node->getNodeName();
+
+  return (XMLString::equals(nodeName,DIVISION) || XMLString::equals(nodeName,SUBTRACTION) ||
+	  XMLString::equals(nodeName,ADDITION) || XMLString::equals(nodeName,EXPONENTIATION) ||
+	  XMLString::equals(nodeName,MULTIPLICATION) || XMLString::equals(nodeName,MAXML) || 
+		XMLString::equals(nodeName,MINML));
+}
+
+static bool 
+isOperandNode(DOMNode *node) 
+{
+  static const XMLCh* APPLY = XMLString::transcode("apply");
+  static const XMLCh* NUMBER = XMLString::transcode("cn");
+  static const XMLCh* IDENTIFIER = XMLString::transcode("ci");
+
+  const XMLCh* nodeName = node->getNodeName();
+
+  return (XMLString::equals(nodeName,APPLY) ||
+	  XMLString::equals(nodeName,NUMBER) || XMLString::equals(nodeName,IDENTIFIER));
+}
+
