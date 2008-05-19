@@ -50,11 +50,11 @@
 #include <include/general.h>
 
 #include "Args.hpp"
-#include "MetricDescMgr.hpp"
 
 #include <lib/prof-juicy-x/PGMDocHandler.hpp>
 #include <lib/prof-juicy-x/DocHandlerArgs.hpp>
 
+#include <lib/prof-juicy/MetricDescMgr.hpp>
 #include <lib/prof-juicy/PgmScopeTree.hpp>
 
 #include <lib/support/Unique.hpp>
@@ -70,7 +70,7 @@ namespace Flat {
 
 class Driver : public Unique { // at most one instance 
 public: 
-  Driver(const Analysis::Args& args, const Analysis::MetricDescMgr& mMgr);
+  Driver(const Analysis::Args& args, const Prof::MetricDescMgr& mMgr);
   ~Driver(); 
   
   // -------------------------------------------------------
@@ -103,13 +103,13 @@ private:
   void computeDerivedMetrics(PgmScopeTree& scopes);
   void computeFlatProfileMetrics(PgmScopeTree& scopes,
 				 const string& profFilenm,
-				 const MetricDescMgr::PerfMetricVec& metrics);
+				 const Prof::MetricDescMgr::PerfMetricVec& metrics);
 
   std::string SearchPathStr() const;
 
 private:
   const Analysis::Args& m_args;
-  const Analysis::MetricDescMgr& m_metricMgr;
+  const Prof::MetricDescMgr& m_metricMgr;
 };
 
 //****************************************************************************

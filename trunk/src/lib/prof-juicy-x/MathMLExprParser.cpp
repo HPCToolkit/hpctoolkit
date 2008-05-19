@@ -57,8 +57,6 @@ using std::atoi;
 
 #include "MathMLExprParser.hpp"
 
-#include <lib/analysis/MetricDescMgr.hpp> // FIXME:METRIC
-
 #include <lib/prof-juicy/PerfMetric.hpp>
 
 #include <lib/support/NaN.h>
@@ -94,7 +92,7 @@ MathMLExprParser::~MathMLExprParser()
 
 EvalNode* 
 MathMLExprParser::parse(DOMNode* mathMLExpr, 
-			const Analysis::MetricDescMgr& mMgr)
+			const Prof::MetricDescMgr& mMgr)
 {
   EvalNode* exprTree = NULL;
 
@@ -136,7 +134,7 @@ MathMLExprParser::parse(DOMNode* mathMLExpr,
 
 EvalNode* 
 MathMLExprParser::buildEvalTree(DOMNode *node, 
-				const Analysis::MetricDescMgr& mMgr) 
+				const Prof::MetricDescMgr& mMgr) 
 {
   bool isNumber;
 

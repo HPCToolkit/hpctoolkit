@@ -75,7 +75,7 @@ using std::vector;
 //****************************************************************************
 
 Analysis::Flat::Driver::Driver(const Analysis::Args& args, 
-			       const Analysis::MetricDescMgr& mMgr)
+			       const Prof::MetricDescMgr& mMgr)
   : Unique("Driver"), m_args(args), m_metricMgr(mMgr)
 {
 } 
@@ -181,14 +181,14 @@ Analysis::Flat::Driver::computeSampledMetrics(PgmScopeTree& scopes)
   // create HPCRUN file metrics.  Process all metrics associated with
   // a certain file.
 
-  const MetricDescMgr::StringPerfMetricVecMap& fnameToFMetricMap = 
+  const Prof::MetricDescMgr::StringPerfMetricVecMap& fnameToFMetricMap = 
     m_metricMgr.fnameToFMetricMap();
   
-  for (MetricDescMgr::StringPerfMetricVecMap::const_iterator it = 
+  for (Prof::MetricDescMgr::StringPerfMetricVecMap::const_iterator it = 
 	 fnameToFMetricMap.begin();
        it != fnameToFMetricMap.end(); ++it) {
     const string& fnm = it->first;
-    const MetricDescMgr::PerfMetricVec& metrics = it->second;
+    const Prof::MetricDescMgr::PerfMetricVec& metrics = it->second;
     computeFlatProfileMetrics(scopes, fnm, metrics);
 
 #if 0 //FIXME
@@ -221,7 +221,7 @@ Analysis::Flat::Driver::computeDerivedMetrics(PgmScopeTree& scopes)
 void
 Analysis::Flat::Driver::computeFlatProfileMetrics(PgmScopeTree& scopes,
 						  const string& profFilenm,
-						  const MetricDescMgr::PerfMetricVec& metrics)
+						  const Prof::MetricDescMgr::PerfMetricVec& metrics)
 {
   PgmScope* pgm = scopes.GetRoot();
   NodeRetriever structIF(pgm, SearchPathStr());
@@ -269,7 +269,7 @@ Analysis::Flat::Driver::computeFlatProfileMetrics(PgmScopeTree& scopes,
     //-------------------------------------------------------
     // For each metric, insert performance data into scope tree
     //-------------------------------------------------------
-    for (MetricDescMgr::PerfMetricVec::const_iterator it = metrics.begin(); 
+    for (Prof::MetricDescMgr::PerfMetricVec::const_iterator it = metrics.begin(); 
 	 it != metrics.end(); ++it) {
       FilePerfMetric* m = dynamic_cast<FilePerfMetric*>(*it);
       uint mIdx = (uint)StrUtil::toUInt64(m->NativeName());
@@ -334,7 +334,7 @@ Analysis::Flat::Driver::computeFlatProfileMetrics(PgmScopeTree& scopes,
   //-------------------------------------------------------
   // Accumulate metrics
   //-------------------------------------------------------
-  for (MetricDescMgr::PerfMetricVec::const_iterator it = metrics.begin(); 
+  for (Prof::MetricDescMgr::PerfMetricVec::const_iterator it = metrics.begin(); 
        it != metrics.end(); ++it) {
     FilePerfMetric* m = dynamic_cast<FilePerfMetric*>(*it);
     AccumulateMetricsFromChildren(pgm, m->Index());

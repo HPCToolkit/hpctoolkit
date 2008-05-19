@@ -67,10 +67,9 @@ using XERCES_CPP_NAMESPACE::DOMNamedNodeMap;
 
 #include "ConfigParser.hpp"
 
-#include <lib/analysis/DerivedPerfMetrics.hpp>
-
 #include <lib/prof-juicy-x/MathMLExprParser.hpp>
 
+#include <lib/prof-juicy/DerivedPerfMetrics.hpp>
 #include <lib/prof-juicy/PgmScopeTree.hpp>
 #include <lib/prof-juicy/PerfMetric.hpp>
 
@@ -83,7 +82,7 @@ using XERCES_CPP_NAMESPACE::DOMNamedNodeMap;
 
 //****************************************************************************
 
-static void ProcessDOCUMENT(DOMNode *node, Analysis::Args& args, Analysis::MetricDescMgr& mMgr);
+static void ProcessDOCUMENT(DOMNode *node, Analysis::Args& args, Prof::MetricDescMgr& mMgr);
 
 
 //***************************************************************************
@@ -115,7 +114,7 @@ ConfigParser::~ConfigParser()
 
 
 void
-ConfigParser::parse(Analysis::Args& args, Analysis::MetricDescMgr& mMgr)
+ConfigParser::parse(Analysis::Args& args, Prof::MetricDescMgr& mMgr)
 {
   ProcessDOCUMENT(m_doc, args, mMgr);
 }
@@ -125,17 +124,17 @@ ConfigParser::parse(Analysis::Args& args, Analysis::MetricDescMgr& mMgr)
 // 
 //***************************************************************************
 
-static void ProcessHPCVIEW(DOMNode *node, Analysis::Args& args, Analysis::MetricDescMgr& mMgr);
-static void ProcessELEMENT(DOMNode *node, Analysis::Args& args, Analysis::MetricDescMgr& mMgr);
-static void ProcessMETRIC(DOMNode *node, Analysis::Args& args, Analysis::MetricDescMgr& mMgr);
-static void ProcessFILE(DOMNode *fileNode, Analysis::Args& args, Analysis::MetricDescMgr& mMgr, 
+static void ProcessHPCVIEW(DOMNode *node, Analysis::Args& args, Prof::MetricDescMgr& mMgr);
+static void ProcessELEMENT(DOMNode *node, Analysis::Args& args, Prof::MetricDescMgr& mMgr);
+static void ProcessMETRIC(DOMNode *node, Analysis::Args& args, Prof::MetricDescMgr& mMgr);
+static void ProcessFILE(DOMNode *fileNode, Analysis::Args& args, Prof::MetricDescMgr& mMgr, 
 			const string& metricNm, bool metricDoDisp, 
 			bool metricDoPercent, bool metricDoSortBy, 
 			const string& metricDispNm);
 
 static EvalNode*
 makeMathMLExpr(const char* nm, DOMNode* mathMLExpr, 
-	       Analysis::MetricDescMgr& mMgr);
+	       Prof::MetricDescMgr& mMgr);
 
 static string 
 getAttr(DOMNode *node, const XMLCh *attrName);
@@ -154,7 +153,7 @@ printName(DOMNode *node)
 
 
 static void 
-ProcessDOCUMENT(DOMNode *node, Analysis::Args& args, Analysis::MetricDescMgr& mMgr)
+ProcessDOCUMENT(DOMNode *node, Analysis::Args& args, Prof::MetricDescMgr& mMgr)
 {
   DOMNode *child = node->getFirstChild();
   ProcessHPCVIEW(child, args, mMgr);
@@ -162,7 +161,7 @@ ProcessDOCUMENT(DOMNode *node, Analysis::Args& args, Analysis::MetricDescMgr& mM
 
 
 static void 
-ProcessHPCVIEW(DOMNode *node, Analysis::Args& args, Analysis::MetricDescMgr& mMgr)
+ProcessHPCVIEW(DOMNode *node, Analysis::Args& args, Prof::MetricDescMgr& mMgr)
 {
   DIAG_DevMsgIf(DBG, "CONFIG: " << node);
 
@@ -188,7 +187,7 @@ ProcessHPCVIEW(DOMNode *node, Analysis::Args& args, Analysis::MetricDescMgr& mMg
 
 
 static void 
-ProcessELEMENT(DOMNode *node, Analysis::Args& args, Analysis::MetricDescMgr& mMgr)
+ProcessELEMENT(DOMNode *node, Analysis::Args& args, Prof::MetricDescMgr& mMgr)
 {
   static XMLCh* METRIC       = XMLString::transcode("METRIC");
   static XMLCh* PATH         = XMLString::transcode("PATH");
@@ -288,7 +287,7 @@ ProcessELEMENT(DOMNode *node, Analysis::Args& args, Analysis::MetricDescMgr& mMg
 
 
 static void 
-ProcessMETRIC(DOMNode *node, Analysis::Args& args, Analysis::MetricDescMgr& mMgr)
+ProcessMETRIC(DOMNode *node, Analysis::Args& args, Prof::MetricDescMgr& mMgr)
 {
   static XMLCh* FILE = XMLString::transcode("FILE");
   static XMLCh* COMPUTE = XMLString::transcode("COMPUTE");
@@ -373,7 +372,7 @@ ProcessMETRIC(DOMNode *node, Analysis::Args& args, Analysis::MetricDescMgr& mMgr
 
 static EvalNode*
 makeMathMLExpr(const char* nm, DOMNode* mathMLExpr, 
-	       Analysis::MetricDescMgr& mMgr)
+	       Prof::MetricDescMgr& mMgr)
 {
   EvalNode* expr = NULL;
 
@@ -398,7 +397,7 @@ makeMathMLExpr(const char* nm, DOMNode* mathMLExpr,
 
 static void 
 ProcessFILE(DOMNode* fileNode, 
-	    Analysis::Args& args, Analysis::MetricDescMgr& mMgr, 
+	    Analysis::Args& args, Prof::MetricDescMgr& mMgr, 
 	    const string& metricNm, bool metricDoDisp, 
 	    bool metricDoPercent, bool metricDoSortBy, 
 	    const string& metricDispNm)

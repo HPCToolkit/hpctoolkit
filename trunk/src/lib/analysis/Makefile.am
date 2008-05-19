@@ -66,12 +66,10 @@ MYSOURCES = \
 	\
 	Flat_SrcCorrelation.hpp Flat_SrcCorrelation.cpp \
 	Flat_ObjCorrelation.hpp Flat_ObjCorrelation.cpp \
-	DerivedPerfMetrics.hpp DerivedPerfMetrics.cpp \
 	\
 	Raw.hpp Raw.cpp	\
 	\
 	Args.hpp Args.cpp \
-	MetricDescMgr.hpp MetricDescMgr.cpp \
 	Util.hpp Util.cpp
 
 # GNU binutils flags are needed for HPC_LIBISA.
