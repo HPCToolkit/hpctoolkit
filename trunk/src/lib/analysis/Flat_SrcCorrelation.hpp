@@ -68,48 +68,67 @@ namespace Analysis {
 namespace Flat {
 
 
-class Driver : public Unique { // at most one instance 
+class Driver : public Unique { // not copyable
 public: 
-  Driver(const Analysis::Args& args, const Prof::MetricDescMgr& mMgr);
+  Driver(const Analysis::Args& args, 
+	 Prof::MetricDescMgr& mMgr, PgmScopeTree& structure);
   ~Driver(); 
+
+  // -------------------------------------------------------
+  // 
+  // -------------------------------------------------------
+  int run();
   
   // -------------------------------------------------------
   // 
   // -------------------------------------------------------
+  // Test the specified path against each of the paths in the
+  // database.  Replace with the pair of the first matching path.
+  std::string replacePath(const char* path);
+  std::string replacePath(const std::string& path)
+    { return replacePath(path.c_str()); }
 
-  void createProgramStructure(PgmScopeTree& scopes);
-  void correlateMetricsWithStructure(PgmScopeTree& scopes);
 
-  // see 'ScopeInfo' class for dump flags
-  void XML_Dump(PgmScope* pgm, std::ostream &os = std::cout, 
-		const char *pre = "") const;
-  void XML_Dump(PgmScope* pgm, int dumpFlags, std::ostream &os = std::cout, 
-		const char *pre = "") const;
-  void CSV_Dump(PgmScope* pgm, std::ostream &os = std::cout) const;
-  void TSV_Dump(PgmScope* pgm, std::ostream &os = std::cout) const;
+  // -------------------------------------------------------
+  // 
+  // -------------------------------------------------------
+  void write_experiment(std::ostream &os) const;
+  void write_csv(std::ostream &os) const;
+  void write_tsv(std::ostream &os) const;
 
   void write_config(std::ostream &os = std::cout) const;
 
-  std::string toString() const; 
-  void dump() const { std::cerr << toString() << std::endl; }
+  // -------------------------------------------------------
+  // 
+  // -------------------------------------------------------
+  std::string toString() const;
+  void dump() const;
 
 
-  std::string ReplacePath(const char* path);
-  std::string ReplacePath(const std::string& path)
-    { return ReplacePath(path.c_str()); }
+public:
+  void 
+  populatePgmStructure(PgmScopeTree& structure);
 
-private:
-  void computeSampledMetrics(PgmScopeTree& scopes);
-  void computeDerivedMetrics(PgmScopeTree& scopes);
-  void computeFlatProfileMetrics(PgmScopeTree& scopes,
-				 const string& profFilenm,
-				 const Prof::MetricDescMgr::PerfMetricVec& metrics);
+  void 
+  correlateMetricsWithStructure(Prof::MetricDescMgr& mMgr,
+				PgmScopeTree& structure);
+  void 
+  computeRawMetrics(Prof::MetricDescMgr& mMgr, PgmScopeTree& structure);
+  void 
+  computeDerivedMetrics(Prof::MetricDescMgr& mMgr, PgmScopeTree& structure);
+
+  void 
+  computeFlatProfileMetrics(PgmScopeTree& structure,
+			    const string& profFilenm,
+			    const Prof::MetricDescMgr::PerfMetricVec& metrics);
 
   std::string SearchPathStr() const;
 
 private:
   const Analysis::Args& m_args;
-  const Prof::MetricDescMgr& m_metricMgr;
+
+  Prof::MetricDescMgr& m_mMgr;
+  PgmScopeTree& m_structure;
 };
 
 //****************************************************************************
@@ -121,8 +140,8 @@ public:
   
   ~DriverDocHandlerArgs() { }
   
-  virtual string ReplacePath(const char* oldpath) const { 
-    return m_driver->ReplacePath(oldpath);
+  virtual string replacePath(const char* oldpath) const { 
+    return m_driver->replacePath(oldpath);
   };
   
 private:
