@@ -88,7 +88,6 @@ public:
   std::string replacePath(const std::string& path)
     { return replacePath(path.c_str()); }
 
-
   // -------------------------------------------------------
   // 
   // -------------------------------------------------------

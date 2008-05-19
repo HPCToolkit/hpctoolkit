@@ -76,7 +76,7 @@ Prof::MetricDescMgr::~MetricDescMgr()
 
 
 void 
-Prof::MetricDescMgr::makeTable(std::vector<std::string>& profileFiles)
+Prof::MetricDescMgr::makeTable(const std::vector<std::string>& profileFiles)
 {
   // ------------------------------------------------------------
   // Create a FilePerfMetric for each event within each profile

@@ -57,16 +57,17 @@ using std::string;
 #include <lib/analysis/Raw.hpp>
 
 #include <lib/support/diagnostics.h>
+#include <lib/support/NaN.h>
 
 //************************ Forward Declarations ******************************
 
-static void
+static int
 main_srcCorrelation(const Args& args);
 
-static void
+static int
 main_objCorrelation(const Args& args);
 
-static void
+static int
 main_rawData(const std::vector<string>& profileFiles);
 
 
@@ -108,83 +109,54 @@ realmain(int argc, char* const* argv)
 {
   Args args(argc, argv);  // exits if error on command line
 
+  int ret = 0;
+
   switch (args.mode) {
     case Args::Mode_SourceCorrelation:
-      main_srcCorrelation(args);
+      ret = main_srcCorrelation(args);
       break;
     case Args::Mode_ObjectCorrelation:
-      main_objCorrelation(args);
+      ret = main_objCorrelation(args);
       break;
     case Args::Mode_RawDataDump:
-      main_rawData(args.profileFiles);
+      ret = main_rawData(args.profileFiles);
       break;
     default:
       DIAG_Die("Unhandled case: " << args.mode);
   }
 
-  return 0; 
+  return ret; 
 }
- 
+
 
 //****************************************************************************
 //
 //****************************************************************************
 
-static void
+static int
 main_srcCorrelation(const Args& args)
 {
-#if 0
   NaN_init();
 
-  Analysis::Flat::Driver driver(args);
   //-------------------------------------------------------
-  // 1. Initialize metric descriptors
+  // Create metric descriptors
   //-------------------------------------------------------
-  driver.makePerfMetricDescs(args.profileFiles);
-  
-  //-------------------------------------------------------
-  // 2. Initialize static program structure
-  //-------------------------------------------------------
-  PgmScopeTree scopeTree("", new PgmScope(""));
-  driver.createProgramStructure(scopeTree); 
+  Prof::MetricDescMgr metricMgr;
+  metricMgr.makeTable(args.profileFiles);
 
   //-------------------------------------------------------
-  // 3. Correlate metrics with program structure
+  // Correlate metrics with program structure and Generate output
   //-------------------------------------------------------
-  driver.correlateMetricsWithStructure(scopeTree);
-  
-  //-------------------------------------------------------
-  // 4. Finalize scope tree
-  //-------------------------------------------------------
-  PruneScopeTreeMetrics(scopeTree.GetRoot(), driver.numMetrics());
-  scopeTree.GetRoot()->Freeze();      // disallow further additions to tree 
-  scopeTree.CollectCrossReferences(); // collect cross referencing information
+  PgmScopeTree structure("", new PgmScope(""));
 
-  //-------------------------------------------------------
-  // 5. Generate Experiment database
-  //-------------------------------------------------------
+  Analysis::Flat::Driver driver(args, metricMgr, structure);
+  int ret = driver.run();
 
-  if (args.outFilename_XML != "no") {
-    int flg = (args.metrics_computeInteriorValues) ? 0 : PgmScopeTree::DUMP_LEAF_METRICS;
-
-    const string& fnm = args.outFilename_XML;
-    DIAG_Msg(1, "Writing final scope tree (in XML) to " << fnm);
-    string fpath = args.db_dir + "/" + fnm;
-    const char* osnm = (fnm == "-") ? NULL : fpath.c_str();
-    std::ostream* os = IOUtil::OpenOStream(osnm);
-    driver.XML_Dump(scopeTree.GetRoot(), flg, *os);
-    IOUtil::CloseStream(os);
-  }
-
-  //-------------------------------------------------------
-  // Cleanup
-  //-------------------------------------------------------
-  ClearPerfDataSrcTable(); 
-#endif
+  return ret;
 }
 
 
-static void
+static int
 main_objCorrelation(const Args& args)
 {
   std::ostream& os = std::cout;
@@ -202,10 +174,11 @@ main_objCorrelation(const Args& args)
 					true, /*percent*/
 					1 /*procthreshhold*/);
   }
+  return 0;
 }
 
 
-static void
+static int
 main_rawData(const std::vector<string>& profileFiles)
 {
   std::ostream& os = std::cout;
@@ -220,4 +193,5 @@ main_rawData(const std::vector<string>& profileFiles)
 
     Analysis::Raw::writeAsText(fnm); // pass os FIXME
   }
+  return 0;
 }

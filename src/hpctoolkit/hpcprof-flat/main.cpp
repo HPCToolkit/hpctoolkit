@@ -64,9 +64,6 @@ using namespace std; // For compatibility with non-std C headers
 #include <lib/prof-juicy-x/XercesUtil.hpp>
 #include <lib/prof-juicy-x/XercesErrorHandler.hpp>
 
-#include <lib/prof-juicy/MetricDescMgr.hpp>
-#include <lib/prof-juicy/PgmScopeTree.hpp>
-
 #include <lib/support/diagnostics.h>
 #include <lib/support/NaN.h>
 #include <lib/support/IOUtil.hpp>
@@ -117,11 +114,10 @@ realmain(int argc, char* const* argv)
   NaN_init();
 
   //-------------------------------------------------------
-  // Create metric descriptors
+  // Create metric descriptors (and for conf file, rest of the args)
   //-------------------------------------------------------
   Prof::MetricDescMgr metricMgr;
 
-  DIAG_Msg(2, "Creating metrics... ");
   if (args.configurationFileMode) {
     readConfFile(args, metricMgr); // exits on failure
   }
@@ -130,8 +126,7 @@ realmain(int argc, char* const* argv)
   }
   
   //-------------------------------------------------------
-  // - Correlate metrics with program structure
-  // - Generate output
+  // Correlate metrics with program structure and Generate output
   //-------------------------------------------------------
   PgmScopeTree structure("", new PgmScope(""));
 

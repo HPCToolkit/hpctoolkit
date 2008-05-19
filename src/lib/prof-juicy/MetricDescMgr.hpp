@@ -73,7 +73,7 @@ public:
   MetricDescMgr();
   ~MetricDescMgr(); 
 
-  void makeTable(std::vector<std::string>& profileFiles);
+  void makeTable(const std::vector<std::string>& profileFiles);
 
   // ------------------------------------------------------------
   // The metric table
