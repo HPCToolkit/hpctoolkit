@@ -62,12 +62,12 @@ using std::vector;
 
 //****************************************************************************
 
-Analysis::MetricDescMgr::MetricDescMgr()
+Prof::MetricDescMgr::MetricDescMgr()
 {
 } 
 
 
-Analysis::MetricDescMgr::~MetricDescMgr()
+Prof::MetricDescMgr::~MetricDescMgr()
 {
   for (uint i = 0; i < m_metrics.size(); ++i) {
     delete m_metrics[i];
@@ -76,7 +76,7 @@ Analysis::MetricDescMgr::~MetricDescMgr()
 
 
 void 
-Analysis::MetricDescMgr::makeTable(std::vector<std::string>& profileFiles)
+Prof::MetricDescMgr::makeTable(std::vector<std::string>& profileFiles)
 {
   // ------------------------------------------------------------
   // Create a FilePerfMetric for each event within each profile
@@ -114,7 +114,7 @@ Analysis::MetricDescMgr::makeTable(std::vector<std::string>& profileFiles)
 
 
 bool 
-Analysis::MetricDescMgr::insert(PerfMetric* m)
+Prof::MetricDescMgr::insert(PerfMetric* m)
 { 
   bool ans = false;
   
@@ -167,7 +167,7 @@ Analysis::MetricDescMgr::insert(PerfMetric* m)
 
 
 string
-Analysis::MetricDescMgr::toString(const char* pre) const
+Prof::MetricDescMgr::toString(const char* pre) const
 {
   std::ostringstream os;
   dump(os, pre);
@@ -176,7 +176,7 @@ Analysis::MetricDescMgr::toString(const char* pre) const
 
 
 void
-Analysis::MetricDescMgr::dump(std::ostream& o, const char* pre) const
+Prof::MetricDescMgr::dump(std::ostream& o, const char* pre) const
 {
   for (uint i = 0; i < m_metrics.size(); i++) {
     o << m_metrics[i]->ToString() + "\n";
@@ -185,7 +185,7 @@ Analysis::MetricDescMgr::dump(std::ostream& o, const char* pre) const
 
 
 void
-Analysis::MetricDescMgr::ddump() const
+Prof::MetricDescMgr::ddump() const
 {
   dump(std::cerr);
 }

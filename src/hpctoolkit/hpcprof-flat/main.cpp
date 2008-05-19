@@ -62,12 +62,12 @@ using namespace std; // For compatibility with non-std C headers
 #include "ConfigParser.hpp"
 
 #include <lib/analysis/Flat_SrcCorrelation.hpp>
-#include <lib/analysis/MetricDescMgr.hpp>
 
 #include <lib/prof-juicy-x/PGMReader.hpp>
 #include <lib/prof-juicy-x/XercesUtil.hpp>
 #include <lib/prof-juicy-x/XercesErrorHandler.hpp>
 
+#include <lib/prof-juicy/MetricDescMgr.hpp>
 #include <lib/prof-juicy/PgmScopeTree.hpp>
 
 #include <lib/support/diagnostics.h>
@@ -80,7 +80,7 @@ using namespace std; // For compatibility with non-std C headers
 //************************ Forward Declarations ******************************
 
 static void
-readConfFile(Args& args, Analysis::MetricDescMgr& metricMgr);
+readConfFile(Args& args, Prof::MetricDescMgr& metricMgr);
 
 static bool 
 copySourceFiles(PgmScope* pgmScopeTree, 
@@ -130,7 +130,7 @@ realmain(int argc, char* const* argv)
   //-------------------------------------------------------
   // Create metric descriptors
   //-------------------------------------------------------
-  Analysis::MetricDescMgr metricMgr;
+  Prof::MetricDescMgr metricMgr;
 
   DIAG_Msg(2, "Creating metrics... ");
   if (args.configurationFileMode) {
@@ -237,7 +237,6 @@ realmain(int argc, char* const* argv)
   //-------------------------------------------------------
   // Cleanup
   //-------------------------------------------------------
-  //FIXME:METRIC ClearPerfDataSrcTable(); 
   
   return 0; 
 } 
@@ -256,7 +255,7 @@ static void
 appendContents(std::ofstream &dest, const char *srcFile);
 
 static void
-readConfFile(Args& args, Analysis::MetricDescMgr& metricMgr)
+readConfFile(Args& args, Prof::MetricDescMgr& metricMgr)
 {
   InitXerces(); // exits iff failure 
 

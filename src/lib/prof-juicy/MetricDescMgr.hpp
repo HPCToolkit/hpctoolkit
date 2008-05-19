@@ -35,8 +35,8 @@
 // 
 // ******************************************************* EndRiceCopyright *
 
-#ifndef Analysis_MetricDescMgr_hpp
-#define Analysis_MetricDescMgr_hpp 
+#ifndef Prof_Metric_Mgr_hpp
+#define Prof_Metric_Mgr_hpp 
 
 //************************ System Include Files ******************************
 
@@ -57,7 +57,9 @@
 
 //************************ Forward Declarations ******************************
 
-namespace Analysis {
+namespace Prof {
+
+//namespace Metric {
 
 //****************************************************************************
 
@@ -152,8 +154,11 @@ private:
 
 //****************************************************************************
 
-} // namespace Analysis
+//} // namespace Metric
+
+} // namespace Prof
+
 
 //****************************************************************************
 
-#endif // Analysis_MetricDescMgr_hpp
+#endif // Prof_Metric_Mgr_hpp

@@ -35,8 +35,8 @@
 // 
 // ******************************************************* EndRiceCopyright *
 
-#ifndef DerivedPerfMetrics_hpp 
-#define DerivedPerfMetrics_hpp 
+#ifndef Prof_Metric_DerivedPerfMetrics_hpp 
+#define Prof_Metric_DerivedPerfMetrics_hpp 
 
 //************************ System Include Files ******************************
 
@@ -46,8 +46,8 @@
 
 #include <include/general.h> 
 
-#include <lib/prof-juicy/EvalNode.hpp>
-#include <lib/prof-juicy/PerfMetric.hpp>
+#include "EvalNode.hpp"
+#include "PerfMetric.hpp"
 
 //************************ Forward Declarations ******************************
 
@@ -115,4 +115,4 @@ private:
 
 //****************************************************************************
 
-#endif 
+#endif // prof_juicy_Prof_Metric_DerivedPerfMetrics_hpp

@@ -66,8 +66,10 @@ MYSOURCES = \
 	PgmScopeTreeIterator.hpp PgmScopeTreeIterator.cpp \
 	PgmScopeTreeInterface.hpp PgmScopeTreeInterface.cpp \
 	\
+	MetricDescMgr.hpp MetricDescMgr.cpp \
 	MetricDesc.hpp \
 	PerfMetric.hpp PerfMetric.cpp \
+	DerivedPerfMetrics.hpp DerivedPerfMetrics.cpp \
 	EvalNode.hpp EvalNode.cpp \
 	\
 	FlatProfileReader.hpp FlatProfileReader.cpp \

@@ -1103,7 +1103,6 @@ ScopeInfo::IsMergable(ScopeInfo* toNode, ScopeInfo* fromNode)
 bool 
 ScopeInfo::HasPerfData(int i) const
 {
-  //FIXME:METRIC DIAG_Assert(IsPerfDataIndex(i), "");
   ScopeInfo *si = (ScopeInfo*) this;
   double x = (*si->perfData)[i];
   return (x != 0.0 && !c_isnan_d(x));
@@ -1123,8 +1122,6 @@ void
 ScopeInfo::SetPerfData(int i, double d) 
 {
   // NOTE: VectorTmpl::operator[] automatically 'adds' the index if necessary
-
-  //FIXME:METRIC DIAG_Assert(IsPerfDataIndex(i), "");
   if (c_isnan_d((*perfData)[i])) {
     (*perfData)[i] = d;
   }

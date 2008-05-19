@@ -53,8 +53,8 @@ using XERCES_CPP_NAMESPACE::DOMNode;
 //************************* User Include Files *******************************
 
 #include <lib/analysis/Args.hpp>
-#include <lib/analysis/MetricDescMgr.hpp>
 
+#include <lib/prof-juicy/MetricDescMgr.hpp>
 #include <lib/prof-juicy-x/XercesErrorHandler.hpp>
 
 #include <lib/support/diagnostics.h>
@@ -70,7 +70,7 @@ public:
   ConfigParser(const std::string& inputFile, XercesErrorHandler &errHndlr);
   ~ConfigParser();
 
-  void parse(Analysis::Args& args, Analysis::MetricDescMgr& metricMgr);
+  void parse(Analysis::Args& args, Prof::MetricDescMgr& metricMgr);
 
 private:
   XercesDOMParser* m_parser;

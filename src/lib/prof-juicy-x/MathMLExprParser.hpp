@@ -58,12 +58,9 @@ using XERCES_CPP_NAMESPACE::DOMNode;
 //************************* User Include Files *******************************
 
 #include <lib/prof-juicy/EvalNode.hpp>
+#include <lib/prof-juicy/MetricDescMgr.hpp>
 
 //************************ Forward Declarations ******************************
-
-namespace Analysis {
-  class MetricDescMgr; // FIXME:METRIC
-}
 
 //****************************************************************************
 
@@ -117,7 +114,7 @@ public:
   //   MathML expressions.
   // ------------------------------------------------------------
   static EvalNode* parse(DOMNode* mathMLExpr, 
-			 const Analysis::MetricDescMgr& mMgr);
+			 const Prof::MetricDescMgr& mMgr);
 
   // ------------------------------------------------------------
   //
@@ -129,7 +126,7 @@ public:
 
 private:
   static EvalNode* buildEvalTree(DOMNode *node,
-				 const Analysis::MetricDescMgr& mMgr);
+				 const Prof::MetricDescMgr& mMgr);
 };
 
 
