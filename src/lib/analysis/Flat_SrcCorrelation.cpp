@@ -66,82 +66,284 @@ using std::vector;
 
 #include <lib/support/diagnostics.h>
 #include <lib/support/Trace.hpp>
+#include <lib/support/Files.hpp>
+#include <lib/support/IOUtil.hpp>
 #include <lib/support/StrUtil.hpp>
 #include <lib/support/pathfind.h>
+#include <lib/support/realpath.h>
 
 //************************ Forward Declarations ******************************
 
+static bool 
+copySourceFiles(PgmScope* structure, 
+		const Analysis::PathTupleVec& pathVec, 
+		const string& dstDir);
 
 //****************************************************************************
 
-Analysis::Flat::Driver::Driver(const Analysis::Args& args, 
-			       const Prof::MetricDescMgr& mMgr)
-  : Unique("Driver"), m_args(args), m_metricMgr(mMgr)
+namespace Analysis {
+
+namespace Flat {
+
+Driver::Driver(const Analysis::Args& args,
+	       Prof::MetricDescMgr& mMgr, PgmScopeTree& structure)
+  : Unique(), m_args(args), m_mMgr(mMgr), m_structure(structure)
 {
 } 
 
 
-Analysis::Flat::Driver::~Driver()
+Driver::~Driver()
 {
 } 
 
 
-
-/* Test the specified path against each of the paths in the database. 
- * Replace with the pair of the first matching path.
- */
-string 
-Analysis::Flat::Driver::ReplacePath(const char* oldpath)
+int
+Driver::run()
 {
-  DIAG_Assert(m_args.replaceInPath.size() == m_args.replaceOutPath.size(), "");
-  for (uint i = 0 ; i<m_args.replaceInPath.size() ; i++ ) {
-    uint length = m_args.replaceInPath[i].length();
-    // it makes sense to test for matching only if 'oldpath' is strictly longer
-    // than this replacement inPath.
-    if (strlen(oldpath) > length &&  
-	strncmp(oldpath, m_args.replaceInPath[i].c_str(), length) == 0 ) { 
-      // it's a match
-      string s = m_args.replaceOutPath[i] + &oldpath[length];
-      DIAG_Msg(3, "ReplacePath: Found a match! New path: " << s);
-      return s;
-    }
+  //-------------------------------------------------------
+  // 1. Initialize static program structure
+  //-------------------------------------------------------
+  DIAG_Msg(2, "Initializing scope tree...");
+  populatePgmStructure(m_structure);
+
+  DIAG_If(3) {
+    DIAG_Msg(3, "Initial scope tree:");
+    write_experiment(DIAG_CERR);
   }
-  // If nothing matched, return the original path
-  DIAG_Msg(3, "ReplacePath: Nothing matched! Init path: " << oldpath);
-  return string(oldpath);
+
+  //-------------------------------------------------------
+  // 2. Correlate metrics with program structure
+  //-------------------------------------------------------
+  DIAG_Msg(2, "Creating and correlating metrics with program structure: ...");
+  correlateMetricsWithStructure(m_mMgr, m_structure);
+  
+  if (m_args.outFilename_CSV.empty() && m_args.outFilename_TSV.empty()) {
+    // Prune the scope tree (remove structure without metrics)
+    PruneScopeTreeMetrics(m_structure.GetRoot(), m_mMgr.size());
+  }
+  
+  m_structure.GetRoot()->Freeze();      // disallow further additions to tree 
+  m_structure.CollectCrossReferences(); // collect cross referencing information
+
+  DIAG_If(3) {
+    DIAG_Msg(3, "Final scope tree:");
+    write_experiment(DIAG_CERR);
+  }
+
+  //-------------------------------------------------------
+  // 3. Generate Experiment database
+  //-------------------------------------------------------
+  if (MakeDir(m_args.db_dir.c_str()) != 0) { // FIXME: pulled out of HTMLDriver
+    return 1;
+  }
+
+  if (m_args.db_copySrcFiles) {
+    DIAG_Msg(1, "Copying source files reached by REPLACE/PATH statements to " << m_args.db_dir);
+    
+    // Note that this may modify file names in the ScopeTree
+    copySourceFiles(m_structure.GetRoot(), m_args.searchPathTpls, m_args.db_dir);
+  }
+
+  if (!m_args.outFilename_CSV.empty()) {
+    const string& fnm = m_args.outFilename_CSV;
+    DIAG_Msg(1, "Writing final scope tree (in CSV) to " << fnm);
+    string fpath = m_args.db_dir + "/" + fnm;
+    const char* osnm = (fnm == "-") ? NULL : fpath.c_str();
+    std::ostream* os = IOUtil::OpenOStream(osnm);
+    write_csv(*os);
+    IOUtil::CloseStream(os);
+  } 
+
+  if (!m_args.outFilename_TSV.empty()) {
+    const string& fnm = m_args.outFilename_TSV;
+    DIAG_Msg(1, "Writing final scope tree (in TSV) to " << fnm);
+    string fpath = m_args.db_dir + "/" + fnm;
+    const char* osnm = (fnm == "-") ? NULL : fpath.c_str();
+    std::ostream* os = IOUtil::OpenOStream(osnm);
+    write_tsv(*os);
+    IOUtil::CloseStream(os);
+  }
+  
+  if (m_args.outFilename_XML != "no") {
+    const string& fnm = m_args.outFilename_XML;
+    DIAG_Msg(1, "Writing final scope tree (in XML) to " << fnm);
+    string fpath = m_args.db_dir + "/" + fnm;
+    const char* osnm = (fnm == "-") ? NULL : fpath.c_str();
+    std::ostream* os = IOUtil::OpenOStream(osnm);
+    write_experiment(*os);
+    IOUtil::CloseStream(os);
+  }
+
+  return 0;
+} 
+
+
+void
+Driver::write_experiment(std::ostream &os) const
+{
+  string pre  = "";
+  string pre1 = pre + "  ";
+  string pre2 = string(pre1) + "  ";
+  
+  os << pre << "<HPCVIEWER>" << endl;
+
+  // ------------------------------------------------------------
+  // 
+  // ------------------------------------------------------------
+  os << pre << "<CONFIG>" << endl;
+
+  os << pre1 << "<TITLE name=\"" << m_args.title << "\"/>" << endl;
+
+  const Analysis::PathTupleVec& searchPaths = m_args.searchPathTpls;
+  for (uint i = 0; i < searchPaths.size(); i++) {
+    const string& path = searchPaths[i].first;
+    os << pre1 << "<PATH name=\"" << path << "\"/>" << endl;
+  }
+  
+  os << pre1 << "<METRICS>" << endl;
+  for (uint i = 0; i < m_mMgr.size(); ++i) {
+    const PerfMetric* metric = m_mMgr.metric(i); 
+    os << pre2 << "<METRIC shortName=\"" << i
+       << "\" nativeName=\""  << metric->NativeName()
+       << "\" displayName=\"" << metric->DisplayInfo().Name()
+       << "\" display=\"" << ((metric->Display()) ? "true" : "false")
+       << "\" percent=\"" << ((metric->Percent()) ? "true" : "false")
+      //<< "\" sortBy=\""  << ((metric->SortBy())  ? "true" : "false")
+       << "\"/>" << endl;
+  }
+  os << pre1 << "</METRICS>" << endl;
+  os << pre << "</CONFIG>" << endl;
+
+  // ------------------------------------------------------------
+  // 
+  // ------------------------------------------------------------
+  os << pre << "<SCOPETREE>" << endl;
+  int dumpFlags = (m_args.metrics_computeInteriorValues) ? 0 : PgmScopeTree::DUMP_LEAF_METRICS;
+  m_structure.GetRoot()->XML_DumpLineSorted(os, dumpFlags, pre.c_str());
+  os << pre << "</SCOPETREE>" << endl;
+
+  os << pre << "</HPCVIEWER>" << endl;
 }
 
 
-string 
-Analysis::Flat::Driver::SearchPathStr() const
+void
+Driver::write_csv(std::ostream &os) const
 {
-  string path = ".";
-  
-  for (uint i = 0; i < m_args.searchPathTpls.size(); ++i) { 
-    path += string(":") + m_args.searchPathTpls[i].first;
+  os << "File name,Routine name,Start line,End line,Loop level";
+  for (uint i = 0; i < m_mMgr.size(); ++i) {
+    const PerfMetric* m = m_mMgr.metric(i); 
+    os << "," << m->DisplayInfo().Name();
+    if (m->Percent())
+      os << "," << m->DisplayInfo().Name() << " (%)";
   }
+  os << endl;
+  
+  // Dump SCOPETREE
+  m_structure.GetRoot()->CSV_TreeDump(os);
+}
 
-  return path;
+
+void
+Driver::write_tsv(std::ostream &os) const
+{
+  os << "LineID";
+  for (uint i = 0; i < m_mMgr.size(); ++i) {
+    const PerfMetric* m = m_mMgr.metric(i); 
+    os << "\t" << m->DisplayInfo().Name();
+    /*
+    if (m->Percent())
+      os << "\t" << m->DisplayInfo().Name() << " (%)";
+    */
+  }
+  os << endl;
+  
+  // Dump SCOPETREE
+  m_structure.GetRoot()->TSV_TreeDump(os);
+}
+
+
+void 
+Driver::write_config(std::ostream &os) const
+{
+  os << "<HPCVIEW>\n\n";
+
+  // title
+  os << "<TITLE name=\"" << m_args.title << "\"/>\n\n";
+
+  // search paths
+  for (uint i = 0; i < m_args.searchPaths.size(); ++i) { 
+    const Analysis::PathTuple& x = m_args.searchPathTpls[i];
+    os << "<PATH name=\"" << x.first << "\" viewname=\"" << x.second <<"\"/>\n";
+  }
+  if (!m_args.searchPaths.empty()) { os << "\n"; }
+  
+  // structure files
+  for (uint i = 0; i < m_args.structureFiles.size(); ++i) { 
+    os << "<STRUCTURE name=\"" << m_args.structureFiles[i] << "\"/>\n";
+  }
+  if (!m_args.structureFiles.empty()) { os << "\n"; }
+
+  // group files
+  for (uint i = 0; i < m_args.groupFiles.size(); ++i) { 
+    os << "<STRUCTURE name=\"" << m_args.groupFiles[i] << "\"/>\n";
+  }
+  if (!m_args.groupFiles.empty()) { os << "\n"; }
+
+  // metrics
+  for (uint i = 0; i < m_mMgr.size(); i++) {
+    const PerfMetric* m = m_mMgr.metric(i);
+    const FilePerfMetric* mm = dynamic_cast<const FilePerfMetric*>(m);
+    if (mm) {
+      const char* sortbystr = ((i == 0) ? " sortBy=\"true\"" : "");
+      os << "<METRIC name=\"" << m->Name() 
+	 << "\" displayName=\"" << m->DisplayInfo().Name() << "\"" 
+	 << sortbystr << ">\n";
+      os << "  <FILE name=\"" << mm->FileName() 
+	 << "\" select=\"" << mm->NativeName()
+	 << "\" type=\"" << mm->FileType() << "\"/>\n";
+      os << "</METRIC>\n\n";
+    }
+  }
+  if (!m_mMgr.empty()) { os << "\n"; }
+  
+  os << "</HPCVIEW>\n";
 }
 
 
 string
-Analysis::Flat::Driver::toString() const 
+Driver::toString() const 
 {
   string s =  string("Driver: " )
     + "title=" + m_args.title + " " // + "path=" + path;
     + "\nm_metrics::\n"
-    + m_metricMgr.toString();
+    + m_mMgr.toString();
   return s; 
 } 
 
 
+void 
+Driver::dump() const 
+{ 
+  std::cerr << toString() << std::endl; 
+}
+
+
+} // namespace Flat
+
+} // namespace Analysis
+
+
 //****************************************************************************
 
+namespace Analysis {
+
+namespace Flat {
+
+
 void
-Analysis::Flat::Driver::createProgramStructure(PgmScopeTree& scopes) 
+Driver::populatePgmStructure(PgmScopeTree& structure)
 {
-  NodeRetriever structIF(scopes.GetRoot(), SearchPathStr());
+  NodeRetriever structIF(structure.GetRoot(), SearchPathStr());
   DriverDocHandlerArgs docargs(this);
   
   //-------------------------------------------------------
@@ -161,35 +363,32 @@ Analysis::Flat::Driver::createProgramStructure(PgmScopeTree& scopes)
 
 
 void
-Analysis::Flat::Driver::correlateMetricsWithStructure(PgmScopeTree& scopes) 
+Driver::correlateMetricsWithStructure(Prof::MetricDescMgr& mMgr,
+				      PgmScopeTree& structure) 
 {
-  // -------------------------------------------------------
-  // Create metrics, file and computed metrics. 
-  //
-  // (File metrics are read from PROFILE/HPCRUN files and will update
-  // the scope tree with any new information; computed metrics are
-  // expressions of file metrics).
-  // -------------------------------------------------------
-  computeSampledMetrics(scopes);
-  computeDerivedMetrics(scopes);
+  computeRawMetrics(mMgr, structure);
+  computeDerivedMetrics(mMgr, structure);
 }
 
 
 void
-Analysis::Flat::Driver::computeSampledMetrics(PgmScopeTree& scopes) 
+Driver::computeRawMetrics(Prof::MetricDescMgr& mMgr, PgmScopeTree& structure) 
 {
+  // -------------------------------------------------------
+  // Create metrics
+  // -------------------------------------------------------
   // create HPCRUN file metrics.  Process all metrics associated with
   // a certain file.
 
   const Prof::MetricDescMgr::StringPerfMetricVecMap& fnameToFMetricMap = 
-    m_metricMgr.fnameToFMetricMap();
+    mMgr.fnameToFMetricMap();
   
   for (Prof::MetricDescMgr::StringPerfMetricVecMap::const_iterator it = 
 	 fnameToFMetricMap.begin();
        it != fnameToFMetricMap.end(); ++it) {
     const string& fnm = it->first;
     const Prof::MetricDescMgr::PerfMetricVec& metrics = it->second;
-    computeFlatProfileMetrics(scopes, fnm, metrics);
+    computeFlatProfileMetrics(structure, fnm, metrics);
 
 #if 0 //FIXME
     const FilePerfMetric* mm = dynamic_cast<const FilePerfMetric*>(m);
@@ -203,13 +402,14 @@ Analysis::Flat::Driver::computeSampledMetrics(PgmScopeTree& scopes)
 
 
 void
-Analysis::Flat::Driver::computeDerivedMetrics(PgmScopeTree& scopes) 
+Driver::computeDerivedMetrics(Prof::MetricDescMgr& mMgr, 
+			      PgmScopeTree& structure)
 {
   // create PROFILE file and computed metrics
-  NodeRetriever structIF(scopes.GetRoot(), SearchPathStr());
+  NodeRetriever structIF(structure.GetRoot(), SearchPathStr());
   
-  for (uint i = 0; i < m_metricMgr.size(); i++) {
-    const PerfMetric* m = m_metricMgr.metric(i);
+  for (uint i = 0; i < mMgr.size(); i++) {
+    const PerfMetric* m = mMgr.metric(i);
     const ComputedPerfMetric* mm = dynamic_cast<const ComputedPerfMetric*>(m);
     if (mm) {
       mm->Make(structIF);
@@ -219,11 +419,11 @@ Analysis::Flat::Driver::computeDerivedMetrics(PgmScopeTree& scopes)
 
 
 void
-Analysis::Flat::Driver::computeFlatProfileMetrics(PgmScopeTree& scopes,
+Driver::computeFlatProfileMetrics(PgmScopeTree& structure,
 						  const string& profFilenm,
 						  const Prof::MetricDescMgr::PerfMetricVec& metrics)
 {
-  PgmScope* pgm = scopes.GetRoot();
+  PgmScope* pgm = structure.GetRoot();
   NodeRetriever structIF(pgm, SearchPathStr());
   
   //-------------------------------------------------------
@@ -234,6 +434,7 @@ Analysis::Flat::Driver::computeFlatProfileMetrics(PgmScopeTree& scopes,
     prof.read(profFilenm.c_str());
   }
   catch (...) {
+
     DIAG_EMsg("While reading '" << profFilenm << "'");
     throw;
   }
@@ -244,7 +445,7 @@ Analysis::Flat::Driver::computeFlatProfileMetrics(PgmScopeTree& scopes,
        it != prof.end(); ++it) {
     const Prof::Flat::LM* proflm = it->second;
     std::string lmname = proflm->name();
-    lmname = ReplacePath(lmname);
+    lmname = replacePath(lmname);
 
     LoadModScope* lmScope = structIF.MoveToLoadMod(lmname);
     if (lmScope->ChildCount() == 0) {
@@ -328,7 +529,7 @@ Analysis::Flat::Driver::computeFlatProfileMetrics(PgmScopeTree& scopes,
 
   DIAG_If(3) {
     DIAG_Msg(3, "Initial scope tree, before aggregation:");
-    XML_Dump(pgm, 0, std::cerr);
+    write_experiment(DIAG_CERR);
   }
   
   //-------------------------------------------------------
@@ -342,139 +543,234 @@ Analysis::Flat::Driver::computeFlatProfileMetrics(PgmScopeTree& scopes,
 }
 
 
-void
-Analysis::Flat::Driver::XML_Dump(PgmScope* pgm, std::ostream &os, const char *pre) const
+string 
+Driver::replacePath(const char* oldpath)
 {
-  int dumpFlags = 0; // no dump flags
-  XML_Dump(pgm, dumpFlags, os, pre);
-}
-
-
-void
-Analysis::Flat::Driver::XML_Dump(PgmScope* pgm, int dumpFlags, std::ostream &os,
-				 const char *pre) const
-{
-  string pre1 = string(pre) + "  ";
-  string pre2 = string(pre1) + "  ";
-  
-  os << pre << "<HPCVIEWER>" << endl;
-
-  // Dump CONFIG
-  os << pre << "<CONFIG>" << endl;
-
-  os << pre1 << "<TITLE name=\042" << m_args.title << "\042/>" << endl;
-
-  const Analysis::PathTupleVec& pVec = m_args.searchPathTpls;
-  for (uint i = 0; i < pVec.size(); i++) {
-    const string& pathStr = pVec[i].first;
-    os << pre1 << "<PATH name=\042" << pathStr << "\042/>" << endl;
-  }
-  
-  os << pre1 << "<METRICS>" << endl;
-  for (uint i = 0; i < m_metricMgr.size(); ++i) {
-    const PerfMetric* metric = m_metricMgr.metric(i); 
-    os << pre2 << "<METRIC shortName=\042" << i
-       << "\042 nativeName=\042"  << metric->NativeName()
-       << "\042 displayName=\042" << metric->DisplayInfo().Name()
-       << "\042 display=\042" << ((metric->Display()) ? "true" : "false")
-       << "\042 percent=\042" << ((metric->Percent()) ? "true" : "false")
-#if 0   // hpcviewer does dynamic sorting, no need for this flag
-       << "\042 sortBy=\042"  << ((metric->SortBy())  ? "true" : "false")
-#endif
-       << "\042/>" << endl;
-  }
-  os << pre1 << "</METRICS>" << endl;
-  os << pre << "</CONFIG>" << endl;
-  
-  // Dump SCOPETREE
-  os << pre << "<SCOPETREE>" << endl;
-  pgm->XML_DumpLineSorted(os, dumpFlags, pre);
-  os << pre << "</SCOPETREE>" << endl;
-
-  os << pre << "</HPCVIEWER>" << endl;
-}
-
-void 
-Analysis::Flat::Driver::write_config(std::ostream &os) const
-{
-  os << "<HPCVIEW>\n\n";
-
-  // title
-  os << "<TITLE name=\"" << m_args.title << "\"/>\n\n";
-
-  // search paths
-  for (uint i = 0; i < m_args.searchPaths.size(); ++i) { 
-    const Analysis::PathTuple& x = m_args.searchPathTpls[i];
-    os << "<PATH name=\"" << x.first << "\" viewname=\"" << x.second <<"\"/>\n";
-  }
-  if (!m_args.searchPaths.empty()) { os << "\n"; }
-  
-  // structure files
-  for (uint i = 0; i < m_args.structureFiles.size(); ++i) { 
-    os << "<STRUCTURE name=\"" << m_args.structureFiles[i] << "\"/>\n";
-  }
-  if (!m_args.structureFiles.empty()) { os << "\n"; }
-
-  // group files
-  for (uint i = 0; i < m_args.groupFiles.size(); ++i) { 
-    os << "<STRUCTURE name=\"" << m_args.groupFiles[i] << "\"/>\n";
-  }
-  if (!m_args.groupFiles.empty()) { os << "\n"; }
-
-  // metrics
-  for (uint i = 0; i < m_metricMgr.size(); i++) {
-    const PerfMetric* m = m_metricMgr.metric(i);
-    const FilePerfMetric* mm = dynamic_cast<const FilePerfMetric*>(m);
-    if (mm) {
-      const char* sortbystr = ((i == 0) ? " sortBy=\"true\"" : "");
-      os << "<METRIC name=\"" << m->Name() 
-	 << "\" displayName=\"" << m->DisplayInfo().Name() << "\"" 
-	 << sortbystr << ">\n";
-      os << "  <FILE name=\"" << mm->FileName() 
-	 << "\" select=\"" << mm->NativeName()
-	 << "\" type=\"" << mm->FileType() << "\"/>\n";
-      os << "</METRIC>\n\n";
+  DIAG_Assert(m_args.replaceInPath.size() == m_args.replaceOutPath.size(), "");
+  for (uint i = 0 ; i<m_args.replaceInPath.size() ; i++ ) {
+    uint length = m_args.replaceInPath[i].length();
+    // it makes sense to test for matching only if 'oldpath' is strictly longer
+    // than this replacement inPath.
+    if (strlen(oldpath) > length &&  
+	strncmp(oldpath, m_args.replaceInPath[i].c_str(), length) == 0 ) { 
+      // it's a match
+      string s = m_args.replaceOutPath[i] + &oldpath[length];
+      DIAG_Msg(3, "replacePath: Found a match! New path: " << s);
+      return s;
     }
   }
-  if (!m_metricMgr.empty()) { os << "\n"; }
-  
-  os << "</HPCVIEW>\n";
+  // If nothing matched, return the original path
+  DIAG_Msg(3, "replacePath: Nothing matched! Init path: " << oldpath);
+  return string(oldpath);
 }
 
 
-
-void
-Analysis::Flat::Driver::CSV_Dump(PgmScope* pgm, std::ostream &os) const
+string 
+Driver::SearchPathStr() const
 {
-  os << "File name,Routine name,Start line,End line,Loop level";
-  for (uint i = 0; i < m_metricMgr.size(); ++i) {
-    const PerfMetric* m = m_metricMgr.metric(i); 
-    os << "," << m->DisplayInfo().Name();
-    if (m->Percent())
-      os << "," << m->DisplayInfo().Name() << " (%)";
-  }
-  os << endl;
+  string path = ".";
   
-  // Dump SCOPETREE
-  pgm->CSV_TreeDump(os);
+  for (uint i = 0; i < m_args.searchPathTpls.size(); ++i) { 
+    path += string(":") + m_args.searchPathTpls[i].first;
+  }
+
+  return path;
+}
+
+} // namespace Flat
+
+} // namespace Analysis
+
+
+//****************************************************************************
+//
+//****************************************************************************
+
+static std::pair<int, string>
+matchFileWithPath(const string& filenm, const Analysis::PathTupleVec& pathVec);
+
+
+static bool 
+CSF_ScopeFilter(const ScopeInfo& x, long type)
+{
+  return (x.Type() == ScopeInfo::FILE || x.Type() == ScopeInfo::ALIEN);
+}
+
+// 'copySourceFiles': For every file FileScope and AlienScope in
+// 'pgmScope' that can be reached with paths in 'pathVec', copy F to
+// its appropriate viewname path and update F's path to be relative to
+// this location.
+static bool
+copySourceFiles(PgmScope* structure, const Analysis::PathTupleVec& pathVec,
+		const string& dstDir)
+{
+  bool noError = true;
+
+  // Alien scopes mean that we may attempt to copy the same file many
+  // times.  Prevent multiple copies of the same file.
+  std::map<string, string> copiedFiles;
+
+  ScopeInfoFilter filter(CSF_ScopeFilter, "CSF_ScopeFilter", 0);
+  for (ScopeInfoIterator it(structure, &filter); it.Current(); ++it) {
+    ScopeInfo* scope = it.CurScope();
+    FileScope* fileScope = NULL;
+    AlienScope* alienScope = NULL;
+
+    // Note: 'fnm_orig' will be not be absolute if it is not possible to find
+    // the file on the current filesystem. (cf. NodeRetriever::MoveToFile)
+    string fnm_orig;
+    if (scope->Type() == ScopeInfo::FILE) {
+      fileScope = dynamic_cast<FileScope*>(scope);
+      fnm_orig = fileScope->name();
+    }
+    else if (scope->Type() == ScopeInfo::ALIEN) {
+      alienScope = dynamic_cast<AlienScope*>(scope);
+      fnm_orig = alienScope->fileName();
+    }
+    else {
+      DIAG_Die(DIAG_Unimplemented);
+    }
+    
+    string fnm_new;
+
+    // ------------------------------------------------------
+    // Given fnm_orig, find fnm_new. (Use PATH information.)
+    // ------------------------------------------------------
+    std::map<string, string>::iterator it = copiedFiles.find(fnm_orig);
+    if (it != copiedFiles.end()) {
+      fnm_new = it->second;
+    }
+    else {
+      std::pair<int, string> fnd = matchFileWithPath(fnm_orig, pathVec);
+      int idx = fnd.first;
+
+      if (idx >= 0) {
+
+	string  path_fnd = pathVec[idx].first; // a real copy
+	string& fnm_fnd  = fnd.second;         // just an alias
+	const string& viewnm   = pathVec[idx].second;
+
+	// canonicalize path_fnd and fnm_fnd
+	if (is_recursive_path(path_fnd.c_str())) {
+	  path_fnd[path_fnd.length()-RECURSIVE_PATH_SUFFIX_LN] = '\0';
+	}
+	path_fnd = RealPath(path_fnd.c_str());
+	fnm_fnd = RealPath(fnm_fnd.c_str());
+
+	// INVARIANT 1: fnm_fnd is an absolute path
+	// INVARIANT 2: path_fnd must be a prefix of fnm_fnd
+	  
+	// find (fnm_fnd - path_fnd)
+	char* path_sfx = const_cast<char*>(fnm_fnd.c_str());
+	path_sfx = &path_sfx[path_fnd.length()];
+	while (path_sfx[0] != '/') { --path_sfx; } // should start with '/'
+	
+	// Create new file name and copy commands
+	fnm_new = "./" + viewnm + path_sfx;
+	
+	string fnm_to;
+	if (dstDir[0]  != '/') {
+	  fnm_to = "./";
+	}
+	fnm_to = fnm_to + dstDir + "/" + viewnm + path_sfx;
+	string dir_to(fnm_to); // need to strip off ending filename to 
+	uint end;              // get full path for 'fnm_to'
+	for (end = dir_to.length() - 1; dir_to[end] != '/'; end--) { }
+	dir_to[end] = '\0';    // should not end with '/'
+	
+	string cmdMkdir = "mkdir -p " + dir_to;
+	string cmdCp    = "cp -f " + fnm_fnd + " " + fnm_to;
+	//cerr << cmdCp << std::endl;
+	
+	// could use CopyFile; see StaticFiles::Copy
+	if (system(cmdMkdir.c_str()) == 0 && system(cmdCp.c_str()) == 0) {
+	  DIAG_Msg(1, "  " << fnm_to);
+	} 
+	else {
+	  DIAG_EMsg("copying: '" << fnm_to);
+	}
+      }
+    }
+
+    // ------------------------------------------------------
+    // Use find fnm_new
+    // ------------------------------------------------------
+    if (!fnm_new.empty()) {
+      if (fileScope) {
+	fileScope->SetName(fnm_new);
+      }
+      else {
+	alienScope->fileName(fnm_new);
+      }
+    }
+    
+    copiedFiles.insert(make_pair(fnm_orig, fnm_new));
+  }
+  
+  return noError;
 }
 
 
-void
-Analysis::Flat::Driver::TSV_Dump(PgmScope* pgm, std::ostream &os) const
+// 'matchFileWithPath': Given a file name 'filenm' and a vector of
+// paths 'pathVec', use 'pathfind_r' to determine which path in
+// 'pathVec', if any, reaches 'filenm'.  Returns an index and string
+// pair.  If a match is found, the index is an index in pathVec;
+// otherwise it is negative.  If a match is found, the string is the
+// found file name.
+static std::pair<int, string>
+matchFileWithPath(const string& filenm, const Analysis::PathTupleVec& pathVec)
 {
-  os << "LineID";
-  for (uint i = 0; i < m_metricMgr.size(); ++i) {
-    const PerfMetric* m = m_metricMgr.metric(i); 
-    os << "\t" << m->DisplayInfo().Name();
-    /*
-    if (m->Percent())
-      os << "\t" << m->DisplayInfo().Name() << " (%)";
-    */
+  // Find the index to the path that reaches 'filenm'.
+  // It is possible that more than one path could reach the same
+  //   file because of substrings.
+  //   E.g.: p1: /p1/p2/p3/*, p2: /p1/p2/*, f: /p1/p2/p3/f.c
+  //   Choose the path that is most qualified (We assume RealPath length
+  //   is valid test.) 
+  int foundIndex = -1; // index into 'pathVec'
+  int foundPathLn = 0; // length of the path represented by 'foundIndex'
+  string foundFnm; 
+
+  for (uint i = 0; i < pathVec.size(); i++) {
+    // find the absolute form of 'curPath'
+    const string& curPath = pathVec[i].first;
+    string realPath(curPath);
+    if (is_recursive_path(curPath.c_str())) {
+      realPath[realPath.length()-RECURSIVE_PATH_SUFFIX_LN] = '\0';
+    }
+    realPath = RealPath(realPath.c_str());
+    int realPathLn = realPath.length();
+       
+    // 'filenm' should be relative as input for pathfind_r.  If 'filenm'
+    // is absolute and 'realPath' is a prefix, make it relative. 
+    string tmpFile(filenm);
+    char* curFile = const_cast<char*>(tmpFile.c_str());
+    if (filenm[0] == '/') { // is 'filenm' absolute?
+      if (strncmp(curFile, realPath.c_str(), realPathLn) == 0) {
+	curFile = &curFile[realPathLn];
+	while (curFile[0] == '/') { ++curFile; } // should not start with '/'
+      } 
+      else {
+	continue; // pathfind_r can't posibly find anything
+      }
+    }
+    
+    const char* fnd_fnm = pathfind_r(curPath.c_str(), curFile, "r");
+    if (fnd_fnm) {
+      bool update = false;
+      if (foundIndex < 0) {
+	update = true;
+      }
+      else if ((foundIndex >= 0) && (realPathLn > foundPathLn)) {
+	update = true;
+      }
+      
+      if (update) {
+	foundIndex = i;
+	foundPathLn = realPathLn;
+	foundFnm = fnd_fnm;
+      }
+    }
   }
-  os << endl;
-  
-  // Dump SCOPETREE
-  pgm->TSV_TreeDump(os);
+  return make_pair(foundIndex, foundFnm);
 }
 
