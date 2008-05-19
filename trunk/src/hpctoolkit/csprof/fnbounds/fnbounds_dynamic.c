@@ -303,10 +303,11 @@ fnbounds_compute(const char *incoming_filename, void *start, void *end)
     char dlname[MAXPATHLEN];
     char redir[64] = {'\0'};
 
-    IF_NOT_DISABLED(DL_BOUND_REDIR) {
-      int logfile_fd = csprof_logfile_fd();
-      sprintf(redir,"1>&%d 2>&%d",logfile_fd, logfile_fd);
-    }
+    //    IF_NOT_DISABLED(DL_BOUND_REDIR) {
+    // }
+
+    int logfile_fd = csprof_logfile_fd();
+    sprintf(redir,"1>&%d 2>&%d",logfile_fd, logfile_fd);
 
     sprintf(dlname, "%s/%s.nm.so", fnbounds_tmpdir_get(), mybasename(filename));
     char *script_debug = "";

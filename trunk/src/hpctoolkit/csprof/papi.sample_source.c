@@ -65,7 +65,9 @@
  *****************************************************************************/
 
 static void papi_event_handler(int event_set, void *pc, long long ovec, void *context);
-static void extract_ev_thresh(char *in,int *ec,long *th);
+static void extract_and_check_event(char *in,int *ec,long *th);
+static void extract_ev_thresh(char *in,int evlen,char *ev,long *th);
+static int event_name_to_code(char *evname,int *ec);
 
 /******************************************************************************
  * local variables
@@ -105,22 +107,26 @@ METHOD_FN(start)
     EMSG("Failed to start papi f eventset %, ret = %d",eventSet,ret);
     abort();
   }
-  self->state = START;
+
+  TD_GET(ss_state)[self->evset_idx] = START;
 }
 
 static void
 METHOD_FN(stop)
 {
   thread_data_t *td = csprof_get_thread_data();
+
   int eventSet = td->eventSet[self->evset_idx];
   int nevents  = self->evl.nevents;
 
-  if (self->state == STOP) {
+  source_state_t my_state = TD_GET(ss_state)[self->evset_idx];
+
+  if (my_state == STOP) {
     TMSG(PAPI,"--stop called on an already stopped event set %d",eventSet);
     return;
   }
 
-  if (self->state != START) {
+  if (my_state != START) {
     TMSG(PAPI,"*WARNING* Stop called on event set that has not been started");
     return;
   }
@@ -131,7 +137,8 @@ METHOD_FN(stop)
   if (ret != PAPI_OK){
     EMSG("Failed to stop papi f eventset %d, ret = %d",eventSet,ret);
   }
-  self->state = STOP;
+
+  TD_GET(ss_state)[self->evset_idx] = STOP;
 }
 
 static void
@@ -139,13 +146,24 @@ METHOD_FN(shutdown)
 {
   METHOD_CALL(self,stop); // make sure stop has been called
   PAPI_shutdown();
+
   self->state = UNINIT;
 }
 
 static int
 METHOD_FN(supports_event,const char *ev_str)
 {
-  return (strstr(ev_str,"WALLCLOCK") == NULL); // FIXME: Better way to tell prior to init?
+  if (self->state == UNINIT){
+    METHOD_CALL(self,init);
+  }
+  
+  char evtmp[1024];
+  int ec;
+  long th;
+
+  extract_ev_thresh(ev_str,sizeof(evtmp),evtmp,&th);
+  return event_name_to_code(evtmp,&ec);
+  // return (strstr(ev_str,"WALLCLOCK") == NULL); // FIXME: Better way to tell prior to init?
 }
  
 static void
@@ -160,9 +178,8 @@ METHOD_FN(process_event_list)
     long thresh;
 
     TMSG(PAPI,"checking event spec = %s",event);
-    extract_ev_thresh(event,&evcode,&thresh);
+    extract_and_check_event(event,&evcode,&thresh);
     TMSG(PAPI,"got event code = %x, thresh = %ld",evcode,thresh);
-    // TMSG(PAPI,"compare PAPI_TOT_CYC = %x",PAPI_TOT_CYC);
     METHOD_CALL(self,store_event,evcode,thresh);
   }
   int nevents = (self->evl).nevents;
@@ -262,52 +279,73 @@ static void
 papi_obj_reg(void)
 {
   csprof_ss_register(&_papi_obj);
-  METHOD_CALL(&_papi_obj,init);
 }
 
 /******************************************************************************
  * private operations 
  *****************************************************************************/
 
-static char evbuf[1024];
-
 #define DEFAULT_THRESHOLD 1000000L
+
 static void
-extract_ev_thresh(char *in,int *ec,long *th)
+extract_ev_thresh(char *in,int evlen,char *ev,long *th)
 {
   unsigned int len;
-  PAPI_event_info_t info;
 
   char *dlm = strrchr(in,':');
   if (dlm) {
-    if (isdigit(dlm[1])) { // assume this is the threshold
-      len = MIN(dlm-in,sizeof(evbuf));
-      strncpy(evbuf,in,len);
-      evbuf[len] = '\0';
+    if (isdigit(dlm[1])){ // assume this is the threshold
+      len = MIN(dlm-in,evlen);
+      strncpy(ev,in,len);
+      ev[len] = '\0';
     }
     else {
       dlm = NULL;
     }
   }
   if (!dlm) {
-    strncpy(evbuf,in,len);
-    evbuf[len] = '\0';
+    len = strlen(in);
+    strncpy(ev,in,len);
+    ev[len] = '\0';
   }
   *th = dlm ? strtol(dlm+1,(char **)NULL,10) : DEFAULT_THRESHOLD;
-  int ret = PAPI_event_name_to_code(evbuf, ec);
+}
+
+// convert papi event name to code
+// NOTE: return status is true if succeeded, false otherwise
+
+static int
+event_name_to_code(char *evname,int *ec)
+{
+  PAPI_event_info_t info;
+
+  int ret = PAPI_event_name_to_code(evname, ec);
   if (ret != PAPI_OK) {
-    EMSG("event name to code failed with name = %s",evbuf);
-    EMSG("event_code_to_name failed: %d",ret);
-    abort();
+    TMSG(PAPI_EVENT_NAME,"event name to code failed with name = %s",evname);
+    TMSG(PAPI_EVENT_NAME,"event_code_to_name failed: %d",ret);
+    return 0;
   }
   ret = PAPI_query_event(*ec);
   if (ret != PAPI_OK) {
-    EMSG("PAPI query event failed: %d",ret);
-    abort();
+    TMSG(PAPI_EVENT_NAME,"PAPI query event failed: %d",ret);
+    return 0;
   }
   ret = PAPI_get_event_info(*ec, &info);
   if (ret != PAPI_OK) {
-    EMSG("PAPI_get_event_info failed :%d",ret);
+    TMSG(PAPI_EVENT_NAME,"PAPI_get_event_info failed :%d",ret);
+    return 0;
+  }
+  return 1;
+}
+
+static void
+extract_and_check_event(char *in,int *ec,long *th)
+{
+  char evbuf[1024];
+
+  extract_ev_thresh(in,sizeof(evbuf),evbuf,th);
+  if (! event_name_to_code(evbuf,ec)){
+    EMSG("PAPI event spec %s failed!",in);
     abort();
   }
 }

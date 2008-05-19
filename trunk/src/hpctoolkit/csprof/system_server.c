@@ -214,38 +214,3 @@ system_server_execute_command(char *command)
 
   return status;
 }
-
-//*******************************************************************************
-// private operations  
-//*******************************************************************************
-
-#if 0
-static void 
-exit_on_error(int ret, int ret_expected, char *format, ...) 
-{
-  va_list args;
-  va_start(args, format);
-  if (ret != ret_expected) {
-    vprintf(format, args);
-    monitor_real_exit(-1);
-  }
-  va_end(args);
-}
-
-#endif
-	
-#if 0
-main()
-{
-	char buffer[512];
-	int i;
-        fnbounds_init();
-	for(i=0;i<10; i++) {
-	   sprintf(buffer, "DIR=%d /bin/ls\n", i);
-	   int status = fnbounds_server_execute_command(buffer);
-           printf("server executed command, return code = %d\n", status);
-        }
-        fnbounds_fini();
-}
-#endif
-
