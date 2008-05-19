@@ -13,6 +13,10 @@
 
 #include "evlist.h"
 
+// A sample source "state"
+// UNINIT and INIT refer to the source
+//  START and STOP are on a per-thread basis
+
 typedef enum {
   UNINIT,
   INIT,
@@ -47,7 +51,7 @@ typedef struct _obj_s {
   evlist_t       evl;       // event list
   int            evset_idx; // index of sample source
   char *         name;      // text name of sample source
-  source_state_t state; // state of sample source: UNINIT,INIT, etc
+  source_state_t state;     // state of sample source: limited to UNINIT or INIT
   
 } sample_source_t;
 

@@ -70,7 +70,7 @@ static struct itimerval itimer;
 static void
 METHOD_FN(init)
 {
-  self->state = INIT; // no init necessary for itimer
+  self->state = INIT; // no actual init actions necessary for itimer
 }
 
 static void
@@ -78,7 +78,9 @@ METHOD_FN(start)
 {
   TMSG(ITIMER_CTL,"starting itimer");
   setitimer(CSPROF_PROFILE_TIMER, &itimer, NULL);
-  self->state = START;
+
+  TD_GET(ss_state)[self->evset_idx] = START;
+
   // int rv = setitimer(CSPROF_PROFILE_TIMER, &itimer, NULL);
   // return rv
 }
@@ -93,7 +95,7 @@ METHOD_FN(stop)
   timerclear(&itimer.it_interval);
   rc = setitimer(CSPROF_PROFILE_TIMER, &itimer, NULL);
   TMSG(ITIMER_CTL,"stopping itimer");
-  self->state = STOP;
+  TD_GET(ss_state)[self->evset_idx] = STOP;
   // return rc;
 }
 
@@ -218,7 +220,6 @@ static void
 itimer_obj_reg(void)
 {
   csprof_ss_register(&_itimer_obj);
-  METHOD_CALL(&_itimer_obj,init);
 }
 
 /******************************************************************************

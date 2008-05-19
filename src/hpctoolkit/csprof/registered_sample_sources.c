@@ -1,7 +1,9 @@
 #include <stdlib.h>
 
 #include "pmsg.h"
+#if 0
 #include "pre_registered_sources.h"
+#endif
 #include "registered_sample_sources.h"
 #include "sample_source.h"
 
@@ -31,11 +33,11 @@ csprof_source_can_process(char *event)
   return NULL;
 }
 
-// FIXME: constructor attribute doesn't work for LD_PRELOAD ??
 void
-csprof_init_sample_source_registration(void)
+csprof_registered_sources_init(void)
 {
-  for (int i=0; i < N_PRE_REGISTERED; i++){
-    csprof_ss_register(pre_registered_sources[i]);
+  for (int i=0;i<nregs;i++){
+    METHOD_CALL(registered_sample_sources[i],init);
+    NMSG(SS_COMMON,"sample source \"%s\": init",registered_sample_sources[i]->name);
   }
 }

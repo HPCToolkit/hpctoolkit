@@ -16,6 +16,7 @@
  E(DATA_WRITE),
  E(PAPI),
  E(PAPI_SAMPLE),
+ E(PAPI_EVENT_NAME),
  E(DBG),
  E(THREAD),
  E(PROCESS),
@@ -39,4 +40,5 @@
  E(AS_add_source),
  E(AS_started),
  E(SS_COMMON),
+ D(PID),
  E(METRICS)

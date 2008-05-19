@@ -17,14 +17,8 @@
 int
 csprof_options__init(csprof_options_t *x)
 {
+  NMSG(OPTIONS,"__init");
   memset(x, 0, sizeof(*x));
-
-  // x->mem_sz = CSPROF_MEM_SZ_INIT;
-  // x->event = CSPROF_EVENT;
-  // x->sample_period = CSPROF_SMPL_PERIOD;
-  // x->sample_source = ITIMER;
-  // x->sample_source = PAPI;
-  
   return CSPROF_OK;
 }
 
@@ -76,6 +70,8 @@ csprof_options__getopts(csprof_options_t* x)
 
   // process event list
   
+  NMSG(OPTIONS,"--before init of registered sample sources");
+  csprof_registered_sources_init();
   csprof_sample_sources_from_eventlist(getenv("CSPROF_OPT_EVENT"));
   return CSPROF_OK;
 }
