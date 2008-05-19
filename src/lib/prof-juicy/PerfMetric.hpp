@@ -46,7 +46,6 @@
 
 #include <include/general.h>
 
-#include <lib/support/VectorTmpl.hpp>
 #include <lib/support/diagnostics.h>
 
 //************************ Forward Declarations ******************************
@@ -82,26 +81,6 @@ private:
   unsigned int width; 
   bool formatAsInt; 
 }; 
-
-
-class PerfMetric; 
-
-#if 0 // FIXME:METRIC
-extern bool              IsPerfDataIndex(int i); 
-extern unsigned int      NumberOfPerfDataInfos(); 
-
-#define UNDEF_METRIC_INDEX (-1)
-extern int               NameToPerfDataIndex(const char* name); 
-inline int               NameToPerfDataIndex(const std::string& name)
-{ return NameToPerfDataIndex(name.c_str()); }
-                         // returns UNDEF_METRIC_INDEX 
-                         // if name is not a PerfMetric name
-
-extern PerfMetric&  IndexToPerfDataInfo(int i);
-                         // asserts out iff !IsPerfDataIndex(i)
-			 
-extern void ClearPerfDataSrcTable(); 
-#endif
 
 
 class PerfMetric {
@@ -152,15 +131,6 @@ private:
   void Ctor(const char *name, const char* displayName); 
 
 private: 
-#if 0 // FIXME:METRIC
-  static VectorTmpl<PerfMetric*> PerfMetricTable; 
-  friend bool              IsPerfDataIndex(int i); 
-  friend unsigned int      NumberOfPerfDataInfos(); 
-  friend int               NameToPerfDataIndex(const char* name); 
-  friend PerfMetric&       IndexToPerfDataInfo(int i);
-  friend void              ClearPerfDataSrcTable(); 
-#endif
-
   std::string name;
   std::string nativeName;
   unsigned int eventsPerCount; 
@@ -175,19 +145,4 @@ protected:
 };
 
 
-class MetricException : public Diagnostics::Exception {
-public:
-  MetricException(const std::string x,
-		  const char* filenm = NULL, unsigned int lineno = 0)
-    : Diagnostics::Exception(x, filenm, lineno)
-  { }
-
-  virtual std::string message() const {
-    return "Error constructing METRIC (from CONFIGURATION file) [MetricException]: " + what();
-  }
-
-public:
-  std::string error; 
-}; 
-
-#endif 
+#endif // PerfMetric_h

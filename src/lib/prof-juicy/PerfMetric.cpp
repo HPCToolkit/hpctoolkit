@@ -56,13 +56,13 @@ using std::string;
 
 //************************ Forward Declarations ******************************
 
-#define DBG_ME 0
-
 //****************************************************************************
+
 
 // ************************************************************************* //
 // PerfMetric
 // ************************************************************************* //
+
 PerfMetric::PerfMetric(const char *nm, const char *nativeNm, 
 		       const char* displayNm, 
 		       bool disp, bool perc, bool propComputed, bool sort)
@@ -87,24 +87,15 @@ void
 PerfMetric::Ctor(const char *nm, const char* displayNm)
 {
   // trace = 1; 
-#if 0 // FIXME:METRIC
-  DIAG_Assert(!IsPerfDataIndex(NameToPerfDataIndex(nm)), "");
-  int i = PerfMetricTable.GetNumElements();
-  PerfMetricTable[i] = this;
-#endif 
-
   m_id = 0;
   
   DIAG_Assert((displayNm != NULL) && (strlen(displayNm) > 0), ""); 
   dispInfo = new DataDisplayInfo(displayNm, NULL, 9, false); 
-  
-  DIAG_DevMsgIf(DBG_ME, "PerfMetric: Ctor" << ToString());
 }
 
 
 PerfMetric::~PerfMetric() 
 {
-  DIAG_DevMsgIf(DBG_ME, "PerfMetric: ~PerfMetric: " << ToString());
   delete dispInfo; 
 }
 
@@ -133,83 +124,6 @@ PerfMetric::Make(NodeRetriever& ret) const
 }
 
 
-#if 0 //FIXME:METRIC
-VectorTmpl<PerfMetric*> PerfMetric::PerfMetricTable; 
-
-
-bool 
-IsPerfDataIndex(int i) 
-{
-  return ((i >= 0) &&
-	  ((uint)i < PerfMetric::PerfMetricTable.GetNumElements())); 
-}
-
-uint      
-NumberOfPerfDataInfos()
-{
-   return PerfMetric::PerfMetricTable.GetNumElements(); 
-}
-
-
-PerfMetric&    
-IndexToPerfDataInfo(int i)
-{
-  DIAG_Assert(IsPerfDataIndex(i), ""); 
-  PerfMetric* pds = PerfMetric::PerfMetricTable[i];
-  DIAG_Assert(pds, ""); 
-  return *pds; 
-}
-
-
-int       
-NameToPerfDataIndex(const char* name)
-{
-  for (uint i = 0; 
-       i < PerfMetric::PerfMetricTable.GetNumElements(); i++) {
-    PerfMetric* pds = PerfMetric::PerfMetricTable[i];
-    DIAG_Assert(pds, ""); 
-    if (pds->Name() == name) 
-      return i;
-  } 
-  return UNDEF_METRIC_INDEX; 
-} 
-
-
-void 
-ClearPerfDataSrcTable() 
-{
-  DIAG_DevMsgIf(DBG_ME, "PerfMetric: ClearPerfDataSrcTable");
-  for (uint i = 0; i < PerfMetric::PerfMetricTable.GetNumElements(); i++) {
-    delete PerfMetric::PerfMetricTable[i]; 
-  }
-  PerfMetric::PerfMetricTable.SetNumElements(0); 
-}
-#endif
-
-
-// ************************************************************************* //
-// DataDisplayInfo
-// ************************************************************************* //
-
-DataDisplayInfo::~DataDisplayInfo() 
-{
-  DIAG_DevMsgIf(DBG_ME, "PerfMetric: ~DataDisplayInfo " << ToString());
-}
-
-// ************************************************************************** //
-// ToString methods 
-// ************************************************************************** //
-string 
-DataDisplayInfo::ToString() const 
-{
-  return string("DisplayInfo ") + 
-    "name=" + name + " " + 
-    "color=" + color + " " + 
-    "width=" + StrUtil::toStr(width) + " " + 
-    "asInt=" + ((formatAsInt) ? "true" : "false"); 
-}
-
-
 string
 PerfMetric::ToString() const 
 {
@@ -219,5 +133,25 @@ PerfMetric::ToString() const
     "perfInfoIndex=" + StrUtil::toStr(m_id) + " " + 
     "eventsPerCount=" + StrUtil::toStr(eventsPerCount) + " " + 
     "dispInfo=" + dispInfo->ToString(); 
+}
+
+
+// ************************************************************************* //
+// DataDisplayInfo
+// ************************************************************************* //
+
+DataDisplayInfo::~DataDisplayInfo() 
+{
+}
+
+
+string 
+DataDisplayInfo::ToString() const 
+{
+  return string("DisplayInfo ") + 
+    "name=" + name + " " + 
+    "color=" + color + " " + 
+    "width=" + StrUtil::toStr(width) + " " + 
+    "asInt=" + ((formatAsInt) ? "true" : "false"); 
 }
 

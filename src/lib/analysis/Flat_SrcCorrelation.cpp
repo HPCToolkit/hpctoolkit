@@ -170,17 +170,8 @@ Analysis::Flat::Driver::correlateMetricsWithStructure(PgmScopeTree& scopes)
   // the scope tree with any new information; computed metrics are
   // expressions of file metrics).
   // -------------------------------------------------------
-  try {
-    computeSampledMetrics(scopes);
-    computeDerivedMetrics(scopes);
-  } 
-  catch (const MetricException &x) {
-    DIAG_EMsg(x.message());
-    throw;
-  }
-  catch (...) {
-    throw;
-  }
+  computeSampledMetrics(scopes);
+  computeDerivedMetrics(scopes);
 }
 
 
