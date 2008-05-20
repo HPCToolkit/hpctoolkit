@@ -54,8 +54,11 @@
 #include <lib/prof-juicy-x/PGMDocHandler.hpp>
 #include <lib/prof-juicy-x/DocHandlerArgs.hpp>
 
+#include <lib/prof-juicy/FlatProfileReader.hpp>
 #include <lib/prof-juicy/MetricDescMgr.hpp>
 #include <lib/prof-juicy/PgmScopeTree.hpp>
+
+#include <lib/binutils/LM.hpp>
 
 #include <lib/support/Unique.hpp>
 
@@ -103,6 +106,12 @@ public:
   std::string toString() const;
   void dump() const;
 
+public:
+  typedef std::map<string, bool> StringToBoolMap;
+
+  typedef std::pair<Prof::Flat::Profile*, 
+		    Prof::MetricDescMgr::PerfMetricVec*> ProfToMetricsTuple;
+  typedef std::vector<ProfToMetricsTuple> ProfToMetricsTupleVec;
 
 public:
   void 
@@ -111,23 +120,61 @@ public:
   void 
   correlateMetricsWithStructure(Prof::MetricDescMgr& mMgr,
 				PgmScopeTree& structure);
+
+
+  // -------------------------------------------------------
+
   void 
   computeRawMetrics(Prof::MetricDescMgr& mMgr, PgmScopeTree& structure);
+
+  void
+  correlateUsingStructure(const string& lmname,
+			  const string& lmname_orig,
+			  NodeRetriever& structIF,
+			  ProfToMetricsTupleVec& profToMetricsVec);
+
+  void
+  correlateUsingStructure(PerfMetric* metric,
+			  const Prof::Flat::EventData& profevent,
+			  VMA lm_load_addr,
+			  LoadModScope* lmScope,
+			  const binutils::LM* lm);
+  
+  bool
+  getNextBatch(ProfToMetricsTupleVec& batchJob,
+	       Prof::MetricDescMgr::StringPerfMetricVecMap::const_iterator& it,
+	       const Prof::MetricDescMgr::StringPerfMetricVecMap::const_iterator& it_end);
+
+  void
+  clearBatch(ProfToMetricsTupleVec& batchJob);
+
+  bool
+  hasStructure(const string& lmname, NodeRetriever& structIF,
+	       StringToBoolMap& hasStructureTbl);
+
+  // -------------------------------------------------------
+
   void 
   computeDerivedMetrics(Prof::MetricDescMgr& mMgr, PgmScopeTree& structure);
 
-  void 
-  computeFlatProfileMetrics(PgmScopeTree& structure,
-			    const string& profFilenm,
-			    const Prof::MetricDescMgr::PerfMetricVec& metrics);
+  // -------------------------------------------------------
 
-  std::string SearchPathStr() const;
+  Prof::Flat::Profile*
+  openProf(const string& fnm);
+
+  binutils::LM*
+  openLM(const string& fnm);
+
+  std::string 
+  searchPathStr() const;
 
 private:
   const Analysis::Args& m_args;
 
   Prof::MetricDescMgr& m_mMgr;
   PgmScopeTree& m_structure;
+
+  static uint profileBatchSz;
 };
 
 //****************************************************************************

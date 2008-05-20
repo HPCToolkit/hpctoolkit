@@ -85,6 +85,9 @@ namespace Analysis {
 
 namespace Flat {
 
+uint Driver::profileBatchSz = 16;
+
+
 Driver::Driver(const Analysis::Args& args,
 	       Prof::MetricDescMgr& mMgr, PgmScopeTree& structure)
   : Unique(), m_args(args), m_mMgr(mMgr), m_structure(structure)
@@ -176,6 +179,28 @@ Driver::run()
 
   return 0;
 } 
+
+
+string 
+Driver::replacePath(const char* oldpath)
+{
+  DIAG_Assert(m_args.replaceInPath.size() == m_args.replaceOutPath.size(), "");
+  for (uint i = 0 ; i<m_args.replaceInPath.size() ; i++ ) {
+    uint length = m_args.replaceInPath[i].length();
+    // it makes sense to test for matching only if 'oldpath' is strictly longer
+    // than this replacement inPath.
+    if (strlen(oldpath) > length &&  
+	strncmp(oldpath, m_args.replaceInPath[i].c_str(), length) == 0 ) { 
+      // it's a match
+      string s = m_args.replaceOutPath[i] + &oldpath[length];
+      DIAG_Msg(3, "replacePath: Found a match! New path: " << s);
+      return s;
+    }
+  }
+  // If nothing matched, return the original path
+  DIAG_Msg(3, "replacePath: Nothing matched! Init path: " << oldpath);
+  return string(oldpath);
+}
 
 
 void
@@ -343,7 +368,7 @@ namespace Flat {
 void
 Driver::populatePgmStructure(PgmScopeTree& structure)
 {
-  NodeRetriever structIF(structure.GetRoot(), SearchPathStr());
+  NodeRetriever structIF(structure.GetRoot(), searchPathStr());
   DriverDocHandlerArgs docargs(this);
   
   //-------------------------------------------------------
@@ -371,42 +396,219 @@ Driver::correlateMetricsWithStructure(Prof::MetricDescMgr& mMgr,
 }
 
 
+//----------------------------------------------------------------------------
+
 void
 Driver::computeRawMetrics(Prof::MetricDescMgr& mMgr, PgmScopeTree& structure) 
 {
-  // -------------------------------------------------------
-  // Create metrics
-  // -------------------------------------------------------
-  // create HPCRUN file metrics.  Process all metrics associated with
-  // a certain file.
-
+  NodeRetriever structIF(structure.GetRoot(), searchPathStr());
+  StringToBoolMap hasStructureTbl;
+  
   const Prof::MetricDescMgr::StringPerfMetricVecMap& fnameToFMetricMap = 
     mMgr.fnameToFMetricMap();
-  
-  for (Prof::MetricDescMgr::StringPerfMetricVecMap::const_iterator it = 
-	 fnameToFMetricMap.begin();
-       it != fnameToFMetricMap.end(); ++it) {
-    const string& fnm = it->first;
-    const Prof::MetricDescMgr::PerfMetricVec& metrics = it->second;
-    computeFlatProfileMetrics(structure, fnm, metrics);
 
-#if 0 //FIXME
-    const FilePerfMetric* mm = dynamic_cast<const FilePerfMetric*>(m);
-    if (mm) {
-      DIAG_Assert(pgmScope && pgmScope->ChildCount() > 0, "Attempting to correlate HPCRUN type profile-files without STRUCTURE information.");
-      fileToMetricMap[mm->FileName()].push_back(mm);
+  //-------------------------------------------------------
+  // Insert performance data into scope tree leaves.  Batch several
+  // profile files to one load module to amortize the overhead of
+  // reading symbol tables and debugging information.
+  //-------------------------------------------------------
+  Prof::MetricDescMgr::StringPerfMetricVecMap::const_iterator it = 
+    fnameToFMetricMap.begin();
+  
+  ProfToMetricsTupleVec batchJob;
+  while (getNextBatch(batchJob, it, fnameToFMetricMap.end())) {
+    
+    // For each load module: process the batch job.  A batch job
+    // process a group of profile files (and their associated metrics)
+    // by load module.
+    Prof::Flat::Profile* prof = batchJob[0].first;
+    for (Prof::Flat::Profile::const_iterator it = prof->begin(); 
+	 it != prof->end(); ++it) {
+      
+      const string lmname_orig = it->first;
+      const string lmname = replacePath(lmname_orig);
+      
+      // if (hasStructure(lmname, structIF, hasStructureTbl)) 
+      correlateUsingStructure(lmname, lmname_orig, structIF, batchJob);
     }
-#endif
+    
+    clearBatch(batchJob);
+  }
+
+  //-------------------------------------------------------
+  // Accumulate leaves to interior nodes, if necessary
+  //-------------------------------------------------------
+  if (m_args.metrics_computeInteriorValues) {
+    for (uint i = 0; i < mMgr.size(); i++) {
+      const PerfMetric* m = mMgr.metric(i);
+      const FilePerfMetric* mm = dynamic_cast<const FilePerfMetric*>(m);
+      if (mm) {
+	AccumulateMetricsFromChildren(structIF.GetRoot(), m->Index());
+      }
+    }
   }
 }
 
+
+// Structure information allows correlation by VMA
+void
+Driver::correlateUsingStructure(const string& lmname,
+				const string& lmname_orig,
+				NodeRetriever& structIF,
+				ProfToMetricsTupleVec& profToMetricsVec)
+{
+  binutils::LM* lm = openLM(lmname);
+  if (!lm) {
+    return;
+  }
+
+  LoadModScope* lmScope = structIF.MoveToLoadMod(lmname);
+
+  for (uint i = 0; i < profToMetricsVec.size(); ++i) {
+
+    Prof::Flat::Profile* prof = profToMetricsVec[i].first;
+    Prof::MetricDescMgr::PerfMetricVec* metrics = profToMetricsVec[i].second;
+
+    Prof::Flat::LM* proflm = NULL;
+    Prof::Flat::Profile::iterator it = prof->find(lmname_orig);
+    if (it != prof->end()) {
+      proflm = it->second;
+    }
+    else {
+      DIAG_WMsg(1, "Cannot find LM " << lmname_orig << " within " 
+		<< prof->name() << ".");
+      continue;
+    }
+    
+    //-------------------------------------------------------
+    // For each metric, insert performance data into scope tree
+    //-------------------------------------------------------
+    for (Prof::MetricDescMgr::PerfMetricVec::iterator it = metrics->begin();
+	 it != metrics->end(); ++it) {
+      FilePerfMetric* m = dynamic_cast<FilePerfMetric*>(*it);
+      uint mIdx = (uint)StrUtil::toUInt64(m->NativeName());
+      
+      const Prof::Flat::EventData& profevent = proflm->event(mIdx);
+      correlateUsingStructure(m, profevent, proflm->load_addr(), lmScope, lm);
+    }
+  }
+
+  delete lm;
+}
+
+
+void
+Driver::correlateUsingStructure(PerfMetric* metric,
+				const Prof::Flat::EventData& profevent,
+				VMA lm_load_addr,
+				LoadModScope* lmScope,
+				const binutils::LM* lm)
+{
+  unsigned long period = profevent.mdesc().period();
+  double mval = 0.0;
+  double mval_nostruct = 0.0;
+
+  for (uint i = 0; i < profevent.num_data(); ++i) {
+    const Prof::Flat::Datum& dat = profevent.datum(i);
+    VMA vma = dat.first; // relocated VMA
+    uint32_t samples = dat.second;
+    double events = samples * period; // samples * (events/sample)
+	
+    // 1. Unrelocate vma.
+    VMA ur_vma = vma;
+    if (lm->type() == binutils::LM::SharedLibrary && vma > lm_load_addr) {
+      ur_vma = vma - lm_load_addr;
+    }
+	
+    // 2. Find associated scope and insert into scope tree
+    ScopeInfo* scope = lmScope->findByVMA(ur_vma);
+    if (!scope) {
+      scope = lmScope;
+      mval_nostruct += events;
+    }
+
+    mval += events;
+    scope->SetPerfData(metric->Index(), events); // implicit add!
+    DIAG_DevMsg(6, "Metric associate: " 
+		<< metric->Name() << ":0x" << hex << ur_vma << dec 
+		<< " --> +" << events << "=" 
+		<< scope->PerfData(metric->Index()) << " :: " 
+		<< scope->toXML());
+  }
+  
+#if 0
+  if (mval_nostruct > 0.0) {
+    // INVARIANT: division by 0 is impossible since mval >= mval_nostruct
+    double percent = (mval_nostruct / mval) * 100;
+    DIAG_WMsg(1, "Cannot find STRUCTURE for " << m->Name() << ":" << mval_nostruct << " (" << percent << "%) in " << lmname << ". (Large percentages indicate useless STRUCTURE information. Stale STRUCTURE file? Did STRUCTURE binary have debugging info?)");
+  }
+#endif
+}
+
+
+bool
+Driver::getNextBatch(ProfToMetricsTupleVec& batchJob,
+		     Prof::MetricDescMgr::StringPerfMetricVecMap::const_iterator& it, 
+		     const Prof::MetricDescMgr::StringPerfMetricVecMap::const_iterator& it_end)
+{
+  for (uint i = 0; i < profileBatchSz; ++i) {
+    if (it != it_end) {
+      const string& fnm = it->first;
+      Prof::MetricDescMgr::PerfMetricVec& metrics = 
+	const_cast<Prof::MetricDescMgr::PerfMetricVec&>(it->second);
+      Prof::Flat::Profile* prof = openProf(fnm);
+      batchJob.push_back(make_pair(prof, &metrics));
+      it++;
+    }
+    else {
+      break;
+    }
+  }
+
+  bool haswork = !batchJob.empty();
+  return haswork;
+}
+
+
+void
+Driver::clearBatch(ProfToMetricsTupleVec& batchJob)
+{
+  for (uint i = 0; i < batchJob.size(); ++i) {
+    ProfToMetricsTuple& tup = batchJob[i];
+    delete tup.first;
+  }
+  batchJob.clear();
+}
+
+
+bool
+Driver::hasStructure(const string& lmname, NodeRetriever& structIF,
+		     StringToBoolMap& hasStructureTbl)
+{
+  // hasStructure's test depdends on the *initial* structure information
+  StringToBoolMap::iterator it = hasStructureTbl.find(lmname);
+  if (it != hasStructureTbl.end()) {
+    return it->second; // memoized answer
+  }
+  else {
+    LoadModScope* lmScope = structIF.MoveToLoadMod(lmname);
+    bool hasStruct = (lmScope->ChildCount() > 0);
+    hasStructureTbl.insert(make_pair(lmname, hasStruct));
+    if (!m_args.structureFiles.empty()) {
+      DIAG_WMsg(1, "No STRUCTURE for " << lmname << ".");
+    }
+    return hasStruct;
+  }
+}
+
+
+//----------------------------------------------------------------------------
 
 void
 Driver::computeDerivedMetrics(Prof::MetricDescMgr& mMgr, 
 			      PgmScopeTree& structure)
 {
-  // create PROFILE file and computed metrics
-  NodeRetriever structIF(structure.GetRoot(), SearchPathStr());
+  NodeRetriever structIF(structure.GetRoot(), searchPathStr());
   
   for (uint i = 0; i < mMgr.size(); i++) {
     const PerfMetric* m = mMgr.metric(i);
@@ -418,155 +620,43 @@ Driver::computeDerivedMetrics(Prof::MetricDescMgr& mMgr,
 }
 
 
-void
-Driver::computeFlatProfileMetrics(PgmScopeTree& structure,
-						  const string& profFilenm,
-						  const Prof::MetricDescMgr::PerfMetricVec& metrics)
+//----------------------------------------------------------------------------
+
+Prof::Flat::Profile*
+Driver::openProf(const string& fnm)
 {
-  PgmScope* pgm = structure.GetRoot();
-  NodeRetriever structIF(pgm, SearchPathStr());
-  
-  //-------------------------------------------------------
-  // Read the profile and insert the data
-  //-------------------------------------------------------
-  Prof::Flat::Profile prof;
+  Prof::Flat::Profile* prof = new Prof::Flat::Profile;
   try {
-    prof.read(profFilenm.c_str());
+    prof->read(fnm.c_str());
   }
   catch (...) {
-
-    DIAG_EMsg("While reading '" << profFilenm << "'");
+    DIAG_EMsg("While reading '" << fnm << "'");
     throw;
   }
-
-  uint num_samples = 0;
-  
-  for (Prof::Flat::Profile::const_iterator it = prof.begin(); 
-       it != prof.end(); ++it) {
-    const Prof::Flat::LM* proflm = it->second;
-    std::string lmname = proflm->name();
-    lmname = replacePath(lmname);
-
-    LoadModScope* lmScope = structIF.MoveToLoadMod(lmname);
-    if (lmScope->ChildCount() == 0) {
-      DIAG_WMsg(1, "No STRUCTURE for " << lmname << ".");
-    }
-
-
-    binutils::LM* lm = NULL;
-    try {
-      lm = new binutils::LM();
-      lm->open(lmname.c_str());
-    }
-    catch (const binutils::Exception& x) {
-      DIAG_EMsg("While opening " << lmname.c_str() << ":\n" << x.message());
-      continue;
-    }
-    catch (...) {
-      DIAG_EMsg("Exception encountered while opening " << lmname.c_str());
-      throw;
-    }
-    
-    //-------------------------------------------------------
-    // For each metric, insert performance data into scope tree
-    //-------------------------------------------------------
-    for (Prof::MetricDescMgr::PerfMetricVec::const_iterator it = metrics.begin(); 
-	 it != metrics.end(); ++it) {
-      FilePerfMetric* m = dynamic_cast<FilePerfMetric*>(*it);
-      uint mIdx = (uint)StrUtil::toUInt64(m->NativeName());
-      
-      const Prof::Flat::EventData& profevent = proflm->event(mIdx);
-      unsigned long period = profevent.mdesc().period();
-      double mval = 0.0;
-      double mval_nostruct = 0.0;
-
-      for (uint k = 0; k < profevent.num_data(); ++k) {
-	const Prof::Flat::Datum& dat = profevent.datum(k);
-	VMA vma = dat.first; // relocated VMA
-	uint32_t samples = dat.second;
-	double events = samples * period; // samples * (events/sample)
-	
-	// 1. Unrelocate vma.
-	VMA ur_vma = vma;
-	if (lm->type() == binutils::LM::SharedLibrary 
-	    && vma > proflm->load_addr()) {
-	  ur_vma = vma - proflm->load_addr();
-	}
-	
-	// 2. Find associated scope and insert into scope tree
-	ScopeInfo* scope = lmScope->findByVMA(ur_vma);
-	if (!scope) {
-	  if (!m_args.structureFiles.empty() && lmScope->ChildCount() > 0) {
-	    DIAG_WMsg(3, "Cannot find STRUCTURE for " << lmname << ":0x" << hex << ur_vma << dec << " [" << m->Name() << ", " << events << "]");
-	  }
-	  scope = lmScope;
-	  mval_nostruct += events;
-	}
-
-	mval += events;
-	scope->SetPerfData(m->Index(), events); // implicit add!
-	DIAG_DevMsg(6, "Metric associate: " 
-		    << m->Name() << ":0x" << hex << ur_vma << dec 
-		    << " --> +" << events << "=" 
-		    << scope->PerfData(m->Index()) << " :: " 
-		    << scope->toXML());
-      }
-
-      num_samples += profevent.num_data();
-      if (mval_nostruct > 0.0) {
-	// INVARIANT: division by 0 is impossible since mval >= mval_nostruct
-	double percent = (mval_nostruct / mval) * 100;
-	DIAG_WMsg(1, "Cannot find STRUCTURE for " << m->Name() << ":" << mval_nostruct << " (" << percent << "%) in " << lmname << ". (Large percentages indicate useless STRUCTURE information. Stale STRUCTURE file? Did STRUCTURE binary have debugging info?)");
-      }
-    }
-
-    delete lm;
-  }
-
-  if (num_samples == 0) {
-    DIAG_WMsg(1, profFilenm << " contains no samples!");
-  }
-
-  DIAG_If(3) {
-    DIAG_Msg(3, "Initial scope tree, before aggregation:");
-    write_experiment(DIAG_CERR);
-  }
-  
-  //-------------------------------------------------------
-  // Accumulate metrics
-  //-------------------------------------------------------
-  for (Prof::MetricDescMgr::PerfMetricVec::const_iterator it = metrics.begin(); 
-       it != metrics.end(); ++it) {
-    FilePerfMetric* m = dynamic_cast<FilePerfMetric*>(*it);
-    AccumulateMetricsFromChildren(pgm, m->Index());
-  }
+  return prof;
 }
 
 
-string 
-Driver::replacePath(const char* oldpath)
+binutils::LM*
+Driver::openLM(const string& fnm)
 {
-  DIAG_Assert(m_args.replaceInPath.size() == m_args.replaceOutPath.size(), "");
-  for (uint i = 0 ; i<m_args.replaceInPath.size() ; i++ ) {
-    uint length = m_args.replaceInPath[i].length();
-    // it makes sense to test for matching only if 'oldpath' is strictly longer
-    // than this replacement inPath.
-    if (strlen(oldpath) > length &&  
-	strncmp(oldpath, m_args.replaceInPath[i].c_str(), length) == 0 ) { 
-      // it's a match
-      string s = m_args.replaceOutPath[i] + &oldpath[length];
-      DIAG_Msg(3, "replacePath: Found a match! New path: " << s);
-      return s;
-    }
+  binutils::LM* lm = NULL;
+  try {
+    lm = new binutils::LM();
+    lm->open(fnm.c_str());
   }
-  // If nothing matched, return the original path
-  DIAG_Msg(3, "replacePath: Nothing matched! Init path: " << oldpath);
-  return string(oldpath);
+  catch (const binutils::Exception& x) {
+    DIAG_EMsg("While opening " << fnm.c_str() << ":\n" << x.message());
+  }
+  catch (...) {
+    DIAG_EMsg("Exception encountered while opening " << fnm.c_str());
+  }
+  return lm;
 }
 
 
 string 
-Driver::SearchPathStr() const
+Driver::searchPathStr() const
 {
   string path = ".";
   
