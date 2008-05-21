@@ -196,6 +196,9 @@ Args::Ctor()
   Diagnostics_SetDiagnosticFilterLevel(1);
 
   // override Analysis::Args defaults
+  db_dir = "";
+  db_copySrcFiles = false;
+  outFilename_XML = "-";
   metrics_computeInteriorValues = true; // dump metrics on interior nodes
 }
 

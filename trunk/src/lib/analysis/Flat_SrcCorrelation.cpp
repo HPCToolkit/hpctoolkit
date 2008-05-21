@@ -85,7 +85,7 @@ namespace Analysis {
 
 namespace Flat {
 
-uint Driver::profileBatchSz = 16;
+uint Driver::profileBatchSz = 8;
 
 
 Driver::Driver(const Analysis::Args& args,
@@ -136,41 +136,46 @@ Driver::run()
   //-------------------------------------------------------
   // 3. Generate Experiment database
   //-------------------------------------------------------
-  if (MakeDir(m_args.db_dir.c_str()) != 0) { // FIXME: pulled out of HTMLDriver
-    return 1;
+  bool db_use = !m_args.db_dir.empty() && m_args.db_dir != "-";
+  if (db_use) {
+    if (MakeDir(m_args.db_dir.c_str()) != 0) { return 1; } // FIXME
   }
 
-  if (m_args.db_copySrcFiles) {
+  if (db_use && m_args.db_copySrcFiles) {
     DIAG_Msg(1, "Copying source files reached by REPLACE/PATH statements to " << m_args.db_dir);
     
     // Note that this may modify file names in the ScopeTree
     copySourceFiles(m_structure.GetRoot(), m_args.searchPathTpls, m_args.db_dir);
   }
 
+  string fpath = (db_use) ? (m_args.db_dir + "/") : "";
+
   if (!m_args.outFilename_CSV.empty()) {
     const string& fnm = m_args.outFilename_CSV;
     DIAG_Msg(1, "Writing final scope tree (in CSV) to " << fnm);
-    string fpath = m_args.db_dir + "/" + fnm;
+    fpath += fnm;
     const char* osnm = (fnm == "-") ? NULL : fpath.c_str();
     std::ostream* os = IOUtil::OpenOStream(osnm);
     write_csv(*os);
     IOUtil::CloseStream(os);
   } 
 
+#if 0
   if (!m_args.outFilename_TSV.empty()) {
     const string& fnm = m_args.outFilename_TSV;
     DIAG_Msg(1, "Writing final scope tree (in TSV) to " << fnm);
-    string fpath = m_args.db_dir + "/" + fnm;
+    fpath += fnm;
     const char* osnm = (fnm == "-") ? NULL : fpath.c_str();
     std::ostream* os = IOUtil::OpenOStream(osnm);
     write_tsv(*os);
     IOUtil::CloseStream(os);
   }
+#endif
   
-  if (m_args.outFilename_XML != "no") {
+  if (!m_args.outFilename_XML.empty()) {
     const string& fnm = m_args.outFilename_XML;
     DIAG_Msg(1, "Writing final scope tree (in XML) to " << fnm);
-    string fpath = m_args.db_dir + "/" + fnm;
+    fpath += fnm;
     const char* osnm = (fnm == "-") ? NULL : fpath.c_str();
     std::ostream* os = IOUtil::OpenOStream(osnm);
     write_experiment(*os);
@@ -428,8 +433,8 @@ Driver::computeRawMetrics(Prof::MetricDescMgr& mMgr, PgmScopeTree& structure)
       const string lmname_orig = it->first;
       const string lmname = replacePath(lmname_orig);
       
-      // if (hasStructure(lmname, structIF, hasStructureTbl)) 
-      correlateUsingStructure(lmname, lmname_orig, structIF, batchJob);
+      bool useStruct = hasStructure(lmname, structIF, hasStructureTbl);
+      computeRawBatchJob(lmname, lmname_orig, structIF, batchJob, useStruct);
     }
     
     clearBatch(batchJob);
@@ -450,12 +455,11 @@ Driver::computeRawMetrics(Prof::MetricDescMgr& mMgr, PgmScopeTree& structure)
 }
 
 
-// Structure information allows correlation by VMA
 void
-Driver::correlateUsingStructure(const string& lmname,
-				const string& lmname_orig,
-				NodeRetriever& structIF,
-				ProfToMetricsTupleVec& profToMetricsVec)
+Driver::computeRawBatchJob(const string& lmname, const string& lmname_orig,
+			   NodeRetriever& structIF,
+			   ProfToMetricsTupleVec& profToMetricsVec,
+			   bool useStruct)
 {
   binutils::LM* lm = openLM(lmname);
   if (!lm) {
@@ -497,6 +501,7 @@ Driver::correlateUsingStructure(const string& lmname,
 }
 
 
+// Structure information allows correlation by VMA
 void
 Driver::correlateUsingStructure(PerfMetric* metric,
 				const Prof::Flat::EventData& profevent,
@@ -594,7 +599,7 @@ Driver::hasStructure(const string& lmname, NodeRetriever& structIF,
     LoadModScope* lmScope = structIF.MoveToLoadMod(lmname);
     bool hasStruct = (lmScope->ChildCount() > 0);
     hasStructureTbl.insert(make_pair(lmname, hasStruct));
-    if (!m_args.structureFiles.empty()) {
+    if (!hasStruct && !m_args.structureFiles.empty()) {
       DIAG_WMsg(1, "No STRUCTURE for " << lmname << ".");
     }
     return hasStruct;

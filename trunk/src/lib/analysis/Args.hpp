@@ -128,13 +128,12 @@ public:
   // -------------------------------------------------------
   // Output arguments
   // -------------------------------------------------------
-  std::string db_dir;
-
-  std::string outFilename_XML; // disable: "no", stdout: "-"
-  std::string outFilename_CSV; // disable: ""  , stdout: "-"
-  std::string outFilename_TSV; // disable: ""  , stdout: "-"
-  
+  std::string db_dir;          // disable: ""
   bool db_copySrcFiles;
+
+  std::string outFilename_XML; // disable: "", stdout: "-"
+  std::string outFilename_CSV; // disable: "", stdout: "-"
+  std::string outFilename_TSV; // disable: "", stdout: "-" [FIXME:OBSOLETE]
 
   bool metrics_computeInteriorValues;
 
