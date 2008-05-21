@@ -242,6 +242,26 @@ PGMDocHandler::PGMDocHandler(Doc_t ty,
 
 PGMDocHandler::~PGMDocHandler() 
 {
+  // element names
+  XMLString::release((XMLCh**)&elemPgm);;
+  XMLString::release((XMLCh**)&elemLM);
+  XMLString::release((XMLCh**)&elemFile);
+  XMLString::release((XMLCh**)&elemProc);
+  XMLString::release((XMLCh**)&elemAlien);
+  XMLString::release((XMLCh**)&elemLoop);
+  XMLString::release((XMLCh**)&elemStmt);
+  XMLString::release((XMLCh**)&elemGroup);
+  
+  // attribute names
+  XMLString::release((XMLCh**)&attrVer);
+  XMLString::release((XMLCh**)&attrId);
+  XMLString::release((XMLCh**)&attrName);
+  XMLString::release((XMLCh**)&attrAlienFile);
+  XMLString::release((XMLCh**)&attrLnName);
+  XMLString::release((XMLCh**)&attrBegin);
+  XMLString::release((XMLCh**)&attrEnd);
+  XMLString::release((XMLCh**)&attrVMA);  
+
   DIAG_Assert(scopeStack.Depth() == 0, "Invalid state reading PGM.");
 }
 

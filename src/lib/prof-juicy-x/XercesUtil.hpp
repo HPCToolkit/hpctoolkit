@@ -46,16 +46,37 @@
 
 #include <xercesc/sax2/Attributes.hpp>
 
+#include <xercesc/util/XMLString.hpp>        
+
 //************************* User Include Files *******************************
 
 //************************ Forward Declarations ******************************
 
-extern void InitXerces();
-extern void FiniXerces();
+extern void 
+InitXerces();
 
-extern std::string getAttr(const XERCES_CPP_NAMESPACE::Attributes& attributes, 
-			   int i); 
-extern std::string getAttr(const XERCES_CPP_NAMESPACE::Attributes& attributes,
-			   const XMLCh* const attr); 
+extern void 
+FiniXerces();
+
+extern std::string 
+getAttr(const XERCES_CPP_NAMESPACE::Attributes& attributes, int i); 
+
+extern std::string 
+getAttr(const XERCES_CPP_NAMESPACE::Attributes& attributes,
+	const XMLCh* const attr);
+
+static inline std::string 
+make_string(const XMLCh* const xmlStr)
+{
+  if (xmlStr) {
+    char* c_str = XERCES_CPP_NAMESPACE::XMLString::transcode(xmlStr); 
+    std::string str(c_str);
+    XERCES_CPP_NAMESPACE::XMLString::release(&c_str);
+    return str;
+  }
+  else {
+    return "";
+  }
+}
 
 #endif

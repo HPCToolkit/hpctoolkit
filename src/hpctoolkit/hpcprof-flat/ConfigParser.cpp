@@ -68,6 +68,7 @@ using XERCES_CPP_NAMESPACE::DOMNamedNodeMap;
 #include "ConfigParser.hpp"
 
 #include <lib/prof-juicy-x/MathMLExprParser.hpp>
+#include <lib/prof-juicy-x/XercesUtil.hpp>
 
 #include <lib/prof-juicy/DerivedPerfMetrics.hpp>
 #include <lib/prof-juicy/PgmScopeTree.hpp>
@@ -82,7 +83,8 @@ using XERCES_CPP_NAMESPACE::DOMNamedNodeMap;
 
 //****************************************************************************
 
-static void ProcessDOCUMENT(DOMNode *node, Analysis::Args& args, Prof::MetricDescMgr& mMgr);
+static void 
+ProcessDOCUMENT(DOMNode *node, Analysis::Args& args, Prof::MetricDescMgr& mMgr);
 
 
 //***************************************************************************
@@ -435,16 +437,15 @@ ProcessFILE(DOMNode* fileNode,
 static string 
 getAttr(DOMNode *node, const XMLCh *attrName)
 {
-  DOMNamedNodeMap  *attributes = node->getAttributes();
-  DOMNode *attrNode = attributes->getNamedItem(attrName);
+  DOMNamedNodeMap* attributes = node->getAttributes();
+  DOMNode* attrNode = attributes->getNamedItem(attrName);
   DIAG_DevMsgIf(DBG, "CONFIG: " << "getAttr(): attrNode" << attrNode);
-  if (attrNode == NULL) {
-    return "";
-  } 
-  else {
-    const XMLCh *attrNodeValue = attrNode->getNodeValue();
-    return XMLString::transcode(attrNodeValue);
+
+  const XMLCh* attrNodeValue = NULL;
+  if (attrNode) {
+    attrNodeValue = attrNode->getNodeValue();
   }
+  return make_string(attrNodeValue);
 }
 
 // -------------------------------------------------------------------------
