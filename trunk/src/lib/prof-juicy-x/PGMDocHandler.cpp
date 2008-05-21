@@ -199,7 +199,7 @@ PGMDocHandler::PGMDocHandler(Doc_t ty,
 			     NodeRetriever* const retriever,
 			     DocHandlerArgs& args) 
   : m_docty(ty),
-    m_nodeRetriever(retriever),
+    m_structIF(retriever),
     m_args(args),
   
     // element names
@@ -300,7 +300,7 @@ void PGMDocHandler:: startElement(const XMLCh* const uri,
       throw PGMException(error);
     }
 
-    PgmScope* root = m_nodeRetriever->GetRoot();
+    PgmScope* root = m_structIF->GetRoot();
     DIAG_DevMsgIf(DBG_ME, "PGM Handler: " << root->toString_me());
 
     currentScope = root;
@@ -313,7 +313,7 @@ void PGMDocHandler:: startElement(const XMLCh* const uri,
     DIAG_Assert(currentLmName.empty(), "Parse or internal error!");
     currentLmName = lm;
     
-    LoadModScope* lmscope = m_nodeRetriever->MoveToLoadMod(currentLmName);
+    LoadModScope* lmscope = m_structIF->MoveToLoadMod(currentLmName);
     DIAG_Assert(lmscope != NULL, "");
     DIAG_DevMsgIf(DBG_ME, "PGM Handler: " << lmscope->toString_me());
     
@@ -331,7 +331,7 @@ void PGMDocHandler:: startElement(const XMLCh* const uri,
     DIAG_Assert(fnm != currentFileName, "");
     
     currentFileName = fnm;
-    FileScope* fileScope = m_nodeRetriever->MoveToFile(currentFileName);
+    FileScope* fileScope = m_structIF->MoveToFile(currentFileName);
     DIAG_Assert(fileScope != NULL, "");
     DIAG_DevMsgIf(DBG_ME, "PGM Handler: " << fileScope->toString_me());
     
@@ -344,14 +344,6 @@ void PGMDocHandler:: startElement(const XMLCh* const uri,
     
     string name  = getAttr(attributes, attrName);   // must exist
     string lname = getAttr(attributes, attrLnName); // optional
-    if (m_args.MustDeleteUnderscore()) {
-      if (!name.empty() && (name[name.length()-1] == '_')) {
-	name[name.length()-1] = '\0';
-      }
-      if (!lname.empty() && (lname[lname.length()-1] == '_')) {
-	lname[lname.length()-1] = '\0';
-      }
-    }
     
     SrcFile::ln lnB = ln_NULL, lnE = ln_NULL;
     string lineB = getAttr(attributes, attrBegin);
@@ -489,7 +481,7 @@ void PGMDocHandler:: startElement(const XMLCh* const uri,
     DIAG_Assert(!grpnm.empty(), "");
 
     ScopeInfo* enclScope = GetCurrentScope(); // enclosing scope
-    GroupScope* grpscope = m_nodeRetriever->MoveToGroup(enclScope, grpnm);
+    GroupScope* grpscope = m_structIF->MoveToGroup(enclScope, grpnm);
     DIAG_Assert(grpscope != NULL, "");
     DIAG_DevMsgIf(DBG_ME, "PGM Handler: " << grpscope->toString_me());
 

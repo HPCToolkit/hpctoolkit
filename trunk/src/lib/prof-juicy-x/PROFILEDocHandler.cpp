@@ -289,11 +289,6 @@ void PROFILEDocHandler::startElement(const XMLCh* const uri, const XMLCh* const 
   // P(roc)
   if (XMLString::equals(name, elemProc)) {
     string name = getAttr(attributes, attrName); // must exist
-    if (m_args.MustDeleteUnderscore()) {
-      if (!name.empty() && (name[name.length()-1] == '_')) {
-	name[name.length()-1] = '\0';
-      }
-    }
     IFTRACE << "P(roc): name="  << name << endl;
 
     // For now, 'attrLnName,' 'attrBegin,' and 'attrEnd' are

@@ -120,6 +120,9 @@ public:
     
   };
 
+  static const std::string UnknownFileNm;
+  static const std::string UnknownProcNm;
+  
 public:
   // Constructor/Destructor
   PgmScopeTree(const char* name, PgmScope* _root = NULL);

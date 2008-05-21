@@ -134,11 +134,13 @@ public:
 		     bool useStruct);
 
   void
-  correlateUsingStructure(PerfMetric* metric,
-			  const Prof::Flat::EventData& profevent,
-			  VMA lm_load_addr,
-			  LoadModScope* lmScope,
-			  const binutils::LM* lm);
+  correlate(PerfMetric* metric,
+	    const Prof::Flat::EventData& profevent,
+	    VMA lm_load_addr,
+	    NodeRetriever& structIF,
+	    LoadModScope* lmStrct,
+	    /*const*/ binutils::LM* lm,
+	    bool useStruct);
   
   bool
   getNextBatch(ProfToMetricsTupleVec& batchJob,

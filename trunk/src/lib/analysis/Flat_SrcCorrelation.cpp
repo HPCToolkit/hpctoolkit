@@ -106,11 +106,11 @@ Driver::run()
   //-------------------------------------------------------
   // 1. Initialize static program structure
   //-------------------------------------------------------
-  DIAG_Msg(2, "Initializing scope tree...");
+  DIAG_Msg(2, "Initializing structure...");
   populatePgmStructure(m_structure);
 
   DIAG_If(3) {
-    DIAG_Msg(3, "Initial scope tree:");
+    DIAG_Msg(3, "Initial structure:");
     write_experiment(DIAG_CERR);
   }
 
@@ -121,7 +121,7 @@ Driver::run()
   correlateMetricsWithStructure(m_mMgr, m_structure);
   
   if (m_args.outFilename_CSV.empty() && m_args.outFilename_TSV.empty()) {
-    // Prune the scope tree (remove structure without metrics)
+    // Prune structure (remove structure without metrics)
     PruneScopeTreeMetrics(m_structure.GetRoot(), m_mMgr.size());
   }
   
@@ -129,7 +129,7 @@ Driver::run()
   m_structure.CollectCrossReferences(); // collect cross referencing information
 
   DIAG_If(3) {
-    DIAG_Msg(3, "Final scope tree:");
+    DIAG_Msg(3, "Final structure:");
     write_experiment(DIAG_CERR);
   }
 
@@ -150,6 +150,16 @@ Driver::run()
 
   string fpath = (db_use) ? (m_args.db_dir + "/") : "";
 
+  if (!m_args.outFilename_XML.empty()) {
+    const string& fnm = m_args.outFilename_XML;
+    DIAG_Msg(1, "Writing final scope tree (in XML) to " << fnm);
+    fpath += fnm;
+    const char* osnm = (fnm == "-") ? NULL : fpath.c_str();
+    std::ostream* os = IOUtil::OpenOStream(osnm);
+    write_experiment(*os);
+    IOUtil::CloseStream(os);
+  }
+
   if (!m_args.outFilename_CSV.empty()) {
     const string& fnm = m_args.outFilename_CSV;
     DIAG_Msg(1, "Writing final scope tree (in CSV) to " << fnm);
@@ -160,7 +170,7 @@ Driver::run()
     IOUtil::CloseStream(os);
   } 
 
-#if 0
+#if 0 // FIXME:OBSOLETE
   if (!m_args.outFilename_TSV.empty()) {
     const string& fnm = m_args.outFilename_TSV;
     DIAG_Msg(1, "Writing final scope tree (in TSV) to " << fnm);
@@ -171,16 +181,6 @@ Driver::run()
     IOUtil::CloseStream(os);
   }
 #endif
-  
-  if (!m_args.outFilename_XML.empty()) {
-    const string& fnm = m_args.outFilename_XML;
-    DIAG_Msg(1, "Writing final scope tree (in XML) to " << fnm);
-    fpath += fnm;
-    const char* osnm = (fnm == "-") ? NULL : fpath.c_str();
-    std::ostream* os = IOUtil::OpenOStream(osnm);
-    write_experiment(*os);
-    IOUtil::CloseStream(os);
-  }
 
   return 0;
 } 
@@ -466,7 +466,11 @@ Driver::computeRawBatchJob(const string& lmname, const string& lmname_orig,
     return;
   }
 
-  LoadModScope* lmScope = structIF.MoveToLoadMod(lmname);
+  if (!useStruct) {
+    lm->read(); // FIXME: do not have to read instructions
+  }
+
+  LoadModScope* lmStrct = structIF.MoveToLoadMod(lmname);
 
   for (uint i = 0; i < profToMetricsVec.size(); ++i) {
 
@@ -493,7 +497,8 @@ Driver::computeRawBatchJob(const string& lmname, const string& lmname_orig,
       uint mIdx = (uint)StrUtil::toUInt64(m->NativeName());
       
       const Prof::Flat::EventData& profevent = proflm->event(mIdx);
-      correlateUsingStructure(m, profevent, proflm->load_addr(), lmScope, lm);
+      correlate(m, profevent, proflm->load_addr(), 
+		structIF, lmStrct, lm, useStruct);
     }
   }
 
@@ -501,53 +506,76 @@ Driver::computeRawBatchJob(const string& lmname, const string& lmname_orig,
 }
 
 
-// Structure information allows correlation by VMA
+// With structure information (an object code to source structure
+// map), correlation is by VMA.  Otherwise correlation is performed
+// using file, function and line debugging information.
 void
-Driver::correlateUsingStructure(PerfMetric* metric,
-				const Prof::Flat::EventData& profevent,
-				VMA lm_load_addr,
-				LoadModScope* lmScope,
-				const binutils::LM* lm)
+Driver::correlate(PerfMetric* metric,
+		  const Prof::Flat::EventData& profevent,
+		  VMA lm_load_addr,
+		  NodeRetriever& structIF,
+		  LoadModScope* lmStrct,
+		  /*const*/ binutils::LM* lm,
+		  bool useStruct)
 {
   unsigned long period = profevent.mdesc().period();
-  double mval = 0.0;
-  double mval_nostruct = 0.0;
+
+  // FIXME: there really should be a relocate bit
+  bool doRelocate = ((lm->type() == binutils::LM::SharedLibrary)
+		     && lm->textBeg() < lm_load_addr);
 
   for (uint i = 0; i < profevent.num_data(); ++i) {
     const Prof::Flat::Datum& dat = profevent.datum(i);
     VMA vma = dat.first; // relocated VMA
     uint32_t samples = dat.second;
     double events = samples * period; // samples * (events/sample)
-	
+    
     // 1. Unrelocate vma.
-    VMA ur_vma = vma;
-    if (lm->type() == binutils::LM::SharedLibrary && vma > lm_load_addr) {
-      ur_vma = vma - lm_load_addr;
-    }
+    VMA ur_vma = (doRelocate) ? (vma - lm_load_addr) : vma;
 	
     // 2. Find associated scope and insert into scope tree
-    ScopeInfo* scope = lmScope->findByVMA(ur_vma);
-    if (!scope) {
-      scope = lmScope;
-      mval_nostruct += events;
+    ScopeInfo* strct = NULL;
+
+    if (useStruct) {
+      strct = lmStrct->findByVMA(ur_vma);
+      if (!strct) {
+	structIF.MoveToFile(PgmScopeTree::UnknownFileNm);
+	strct = structIF.MoveToProc(PgmScopeTree::UnknownProcNm);
+      }
+    }
+    else {
+      string procnm, filenm;
+      SrcFile::ln line;
+      lm->GetSourceFileInfo(ur_vma, 0 /*opIdx*/, procnm, filenm, line);
+
+      if (filenm.empty()) {
+	filenm = PgmScopeTree::UnknownFileNm;
+      }
+      if (procnm.empty()) {
+	procnm = PgmScopeTree::UnknownProcNm;
+      }
+      
+      structIF.MoveToFile(filenm);
+      ProcScope* procStrct = structIF.MoveToProc(procnm);
+      if (SrcFile::isValid(line)) {
+	StmtRangeScope* stmtStrct = procStrct->FindStmtRange(line);
+	if (!stmtStrct) {
+	  stmtStrct = new StmtRangeScope(procStrct, line, line, 0, 0);
+	}
+	strct = stmtStrct;
+      }
+      else {
+	strct = procStrct;
+      }
     }
 
-    mval += events;
-    scope->SetPerfData(metric->Index(), events); // implicit add!
+    strct->SetPerfData(metric->Index(), events); // implicit add!
     DIAG_DevMsg(6, "Metric associate: " 
 		<< metric->Name() << ":0x" << hex << ur_vma << dec 
 		<< " --> +" << events << "=" 
-		<< scope->PerfData(metric->Index()) << " :: " 
-		<< scope->toXML());
-  }
-  
-#if 0
-  if (mval_nostruct > 0.0) {
-    // INVARIANT: division by 0 is impossible since mval >= mval_nostruct
-    double percent = (mval_nostruct / mval) * 100;
-    DIAG_WMsg(1, "Cannot find STRUCTURE for " << m->Name() << ":" << mval_nostruct << " (" << percent << "%) in " << lmname << ". (Large percentages indicate useless STRUCTURE information. Stale STRUCTURE file? Did STRUCTURE binary have debugging info?)");
-  }
-#endif
+		<< strct->PerfData(metric->Index()) << " :: " 
+		<< strct->toXML());
+  }  
 }
 
 
@@ -596,11 +624,11 @@ Driver::hasStructure(const string& lmname, NodeRetriever& structIF,
     return it->second; // memoized answer
   }
   else {
-    LoadModScope* lmScope = structIF.MoveToLoadMod(lmname);
-    bool hasStruct = (lmScope->ChildCount() > 0);
+    LoadModScope* lmStrct = structIF.MoveToLoadMod(lmname);
+    bool hasStruct = (lmStrct->ChildCount() > 0);
     hasStructureTbl.insert(make_pair(lmname, hasStruct));
     if (!hasStruct && !m_args.structureFiles.empty()) {
-      DIAG_WMsg(1, "No STRUCTURE for " << lmname << ".");
+      DIAG_WMsg(2, "No STRUCTURE for " << lmname << ".");
     }
     return hasStruct;
   }
@@ -707,19 +735,19 @@ copySourceFiles(PgmScope* structure, const Analysis::PathTupleVec& pathVec,
 
   ScopeInfoFilter filter(CSF_ScopeFilter, "CSF_ScopeFilter", 0);
   for (ScopeInfoIterator it(structure, &filter); it.Current(); ++it) {
-    ScopeInfo* scope = it.CurScope();
+    ScopeInfo* strct = it.CurScope();
     FileScope* fileScope = NULL;
     AlienScope* alienScope = NULL;
 
     // Note: 'fnm_orig' will be not be absolute if it is not possible to find
     // the file on the current filesystem. (cf. NodeRetriever::MoveToFile)
     string fnm_orig;
-    if (scope->Type() == ScopeInfo::FILE) {
-      fileScope = dynamic_cast<FileScope*>(scope);
+    if (strct->Type() == ScopeInfo::FILE) {
+      fileScope = dynamic_cast<FileScope*>(strct);
       fnm_orig = fileScope->name();
     }
-    else if (scope->Type() == ScopeInfo::ALIEN) {
-      alienScope = dynamic_cast<AlienScope*>(scope);
+    else if (strct->Type() == ScopeInfo::ALIEN) {
+      alienScope = dynamic_cast<AlienScope*>(strct);
       fnm_orig = alienScope->fileName();
     }
     else {

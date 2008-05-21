@@ -69,6 +69,8 @@ class LoadModScope;
 class FileScope;
 class ProcScope;
 
+//************************ Forward Declarations ******************************
+
 //****************************************************************************
 
 class NodeRetriever {
