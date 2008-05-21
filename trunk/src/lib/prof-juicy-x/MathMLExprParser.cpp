@@ -57,10 +57,13 @@ using std::atoi;
 
 #include "MathMLExprParser.hpp"
 
+#include <lib/prof-juicy-x/XercesUtil.hpp>
+
 #include <lib/prof-juicy/PerfMetric.hpp>
 
 #include <lib/support/NaN.h>
 #include <lib/support/Trace.hpp>
+#include <lib/support/StrUtil.hpp>
 
 //************************ Xerces Include Files ******************************
 
@@ -159,14 +162,14 @@ MathMLExprParser::buildEvalTree(DOMNode *node,
     {
       EvalNode* evalNode;
       if (isNumber) {  // is a number
-	char* str = XMLString::transcode(nodeValue);
+	std::string str = make_string(nodeValue);
 	IFTRACE << "str --" << str << "--" << endl; 
-	evalNode = new Const(atof(str));
-	IFTRACE << "number is --" << atof(str) << "--" << endl; 
-	delete[] str;
+	double val = StrUtil::toDbl(str.c_str());
+	evalNode = new Const(val);
+	IFTRACE << "number is --" << val << "--" << endl; 
       }
       else {           // is a variable
-	std::string str = XMLString::transcode(nodeValue);
+	std::string str = make_string(nodeValue);
 	IFTRACE << "str --" << str << "--" << endl; 
 
 	const PerfMetric* m = mMgr.metric(str);

@@ -93,22 +93,14 @@ string
 getAttr(const Attributes& attributes, int i) 
 {
   const XMLCh* const xmlStr = attributes.getValue((unsigned int) i);
-  string s = "";
-  if (xmlStr) {
-    s = XMLString::transcode(xmlStr); 
-  }
-  return s;
+  return make_string(xmlStr);
 }
 
 
 string 
 getAttr(const Attributes& attributes, const XMLCh* const name)
 {
-  const XMLCh* const xmlStr = attributes.getValue(name); 
-  string s = "";
-  if (xmlStr) {
-    s = XMLString::transcode(xmlStr);
-  }
-  return s;
+  const XMLCh* const xmlStr = attributes.getValue(name);
+  return make_string(xmlStr);
 }
 
