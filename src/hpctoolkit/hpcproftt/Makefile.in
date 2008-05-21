@@ -126,7 +126,9 @@ am__objects_2 = hpcproftt_old-main-old.$(OBJEXT) \
 	hpcproftt_old-loadmodule.$(OBJEXT)
 am_hpcproftt_old_OBJECTS = $(am__objects_2)
 hpcproftt_old_OBJECTS = $(am_hpcproftt_old_OBJECTS)
-hpcproftt_old_DEPENDENCIES = $(am__DEPENDENCIES_1)
+am__DEPENDENCIES_2 = $(HPC_LIBPROFJUICY) $(HPC_LIBPROFLEAN) \
+	$(HPC_LIBBINUTILS) $(HPC_LIBISA) $(HPC_LIBSUPPORT)
+hpcproftt_old_DEPENDENCIES = $(am__DEPENDENCIES_2)
 hpcproftt_old_LINK = $(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CXXLD) $(hpcproftt_old_CXXFLAGS) \
 	$(CXXFLAGS) $(hpcproftt_old_LDFLAGS) $(LDFLAGS) -o $@
@@ -356,6 +358,11 @@ MYLDADD = \
 	@HOST_HPCPROFTT_LDFLAGS@ \
 	-lm
 
+MYLDADD_OLD = \
+	@HOST_LIBTREPOSITORY@ \
+	$(HPC_LIBPROFJUICY) $(HPC_LIBPROFLEAN) $(HPC_LIBBINUTILS) $(HPC_LIBISA)  $(HPC_LIBSUPPORT) \
+        @GNUBINUTILS_LDFLAGS@
+
 MYCLEAN = @HOST_LIBTREPOSITORY@
 MYINSTALLDIR = $(DESTDIR)$(prefix)
 
@@ -372,7 +379,7 @@ hpcproftt_old_SOURCES = $(MYSOURCES_OLD)
 hpcproftt_old_CFLAGS = $(MYCFLAGS)
 hpcproftt_old_CXXFLAGS = $(MYCXXFLAGS)
 hpcproftt_old_LDFLAGS = $(MYLDFLAGS)
-hpcproftt_old_LDADD = $(MYLDADD)
+hpcproftt_old_LDADD = $(MYLDADD_OLD)
 MOSTLYCLEANFILES = $(MYCLEAN)
 
 # Assumes includer sets MYCXXFLAGS and MYCFLAGS
