@@ -120,10 +120,7 @@ Driver::run()
   DIAG_Msg(2, "Creating and correlating metrics with program structure: ...");
   correlateMetricsWithStructure(m_mMgr, m_structure);
   
-  if (m_args.outFilename_CSV.empty() && m_args.outFilename_TSV.empty()) {
-    // Prune structure (remove structure without metrics)
-    PruneScopeTreeMetrics(m_structure.GetRoot(), m_mMgr.size());
-  }
+  PruneScopeTreeMetrics(m_structure.GetRoot(), m_mMgr.size());
   
   m_structure.GetRoot()->Freeze();      // disallow further additions to tree 
   m_structure.CollectCrossReferences(); // collect cross referencing information
@@ -144,7 +141,7 @@ Driver::run()
   if (db_use && m_args.db_copySrcFiles) {
     DIAG_Msg(1, "Copying source files reached by REPLACE/PATH statements to " << m_args.db_dir);
     
-    // Note that this may modify file names in the ScopeTree
+    // NOTE: may modify file names in the structure tree
     copySourceFiles(m_structure.GetRoot(), m_args.searchPathTpls, m_args.db_dir);
   }
 
