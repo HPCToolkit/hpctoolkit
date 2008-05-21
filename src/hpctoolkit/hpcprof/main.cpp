@@ -265,7 +265,6 @@ public:
   ~MyDocHandlerArgs() { }
   
   virtual string ReplacePath(const char* oldpath) const { return oldpath; }
-  virtual bool MustDeleteUnderscore() const { return false; }
 };
 
 

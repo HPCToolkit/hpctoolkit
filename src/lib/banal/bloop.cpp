@@ -254,11 +254,8 @@ private:
 #define DBG_PROC 0 /* debug BuildProcStructure */
 #define DBG_CDS  0 /* debug CoalesceDuplicateStmts */
 
-static string OrphanedProcedureFile =
-  "~~~<unknown-file>~~~";
-
-static string InferredProcedure =
-  "~<unknown-proc>~";
+static string OrphanedProcedureFile = PgmScopeTree::UnknownFileNm;
+static string InferredProcedure     = PgmScopeTree::UnknownProcNm;
 
 static const char *PGMdtd =
 #include <lib/xml/PGM.dtd.h>

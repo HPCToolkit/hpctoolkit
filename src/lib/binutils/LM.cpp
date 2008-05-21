@@ -638,7 +638,7 @@ binutils::LM::ReadSymbolTables()
     // don't want this warning emitted for every single mips binary.)
 
     if (bfd_get_arch(impl->abfd) != bfd_arch_mips) {
-      DIAG_Msg(1, "'" << name() << "': No regular symbols found; consulting dynamic symbols.");
+      DIAG_Msg(2, "'" << name() << "': No regular symbols found; consulting dynamic symbols.");
     }
 
     bytesNeeded = bfd_get_dynamic_symtab_upper_bound(impl->abfd);

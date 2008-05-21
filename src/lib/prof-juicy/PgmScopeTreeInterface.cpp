@@ -71,8 +71,6 @@ using std::string;
 
 //************************ Local Declarations ******************************
 
-const char *unknownFileName = "<unknown>";
-
 //****************************************************************************
 
 static string 
@@ -146,9 +144,6 @@ NodeRetriever::MoveToLoadMod(const char* name)
 FileScope *
 NodeRetriever::MoveToFile(const char* name) 
 {
-  static long unknownFileIndex = 0;
-  string knownByName;
-  
   DIAG_Assert(name, "");
   DIAG_Assert(currentLM, "");
 
@@ -163,14 +158,7 @@ NodeRetriever::MoveToFile(const char* name)
   // -------------------------------------------------------
   // Obtain a 'canonical' file name
   // -------------------------------------------------------
-  if (strcmp(name, unknownFileName) == 0) {
-    knownByName = "Unknown file in " + currentLM->BaseName();
-    unknownFileIndex++;
-  } 
-  else {
-    knownByName = name;
-  }
- 
+  string knownByName = name;
   string fileName = GetFormattedSourceFileName(knownByName);
   
   bool srcIsReadable = true; 

@@ -124,6 +124,10 @@ class StmtRangeScopeMap : public map<SrcFile::ln, StmtRangeScope*> { };
 // PgmScopeTree
 //***************************************************************************
 
+const std::string PgmScopeTree::UnknownFileNm = "~~~<unknown-file>~~~";
+
+const std::string PgmScopeTree::UnknownProcNm = "~<unknown-proc>~";
+
 PgmScopeTree::PgmScopeTree(const char* name, PgmScope* _root)
   : root(_root)
 {

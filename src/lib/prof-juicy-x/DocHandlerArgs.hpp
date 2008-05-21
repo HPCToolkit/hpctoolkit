@@ -74,8 +74,6 @@ public:
   std::string ReplacePath(const std::string& oldpath) const
     { return ReplacePath(oldpath.c_str()); }
   
-  virtual bool MustDeleteUnderscore() const { return false; }
-
 private:
 };
 

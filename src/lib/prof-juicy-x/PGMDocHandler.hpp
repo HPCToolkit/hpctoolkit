@@ -166,7 +166,7 @@ private:
   
 private:
   Doc_t m_docty;
-  NodeRetriever* m_nodeRetriever;
+  NodeRetriever* m_structIF;
   DocHandlerArgs& m_args;
   
   // variables for constant values during file processing
