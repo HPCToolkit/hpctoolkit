@@ -12,7 +12,7 @@ LIBS += $(SPL) $(XED2_LIBS)
 
 CXXFLAGS = $(INCL) -g
 
-OBJS = symbols.o x86-process-ranges.o code-ranges.o function-entries.o
+OBJS = symbols.o x86-process-ranges.o code-ranges.o function-entries.o intervals.o
 
 .PHONY: build
 build: stapi_syms sts
