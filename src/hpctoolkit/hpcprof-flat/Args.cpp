@@ -138,9 +138,6 @@ information. (Set <fname> to '-' to write to stdout.)\n\
                        NOTE: To disable, set <fname> to 'no'.\n\
   --csv [<fname>]      Comma-separated-value format. {"Analysis_EXPERIMENTCSV"}\n\
                        Includes flat scope tree and loops. Useful for\n\
-                       downstream external tools.\n\
-  --tsv [<fname>]      Tab-separated-value format. {"Analysis_EXPERIMENTTSV"}\n\
-                       Includes flat scope tree and lines. Useful for\n\
                        downstream external tools.\n";
 
 
@@ -166,7 +163,6 @@ CmdLineParser::OptArgDesc Args::optArgs[] = {
   // Output formats
   { 'x', "experiment",      CLP::ARG_OPT,  CLP::DUPOPT_CLOB, NULL },
   {  0 , "csv",             CLP::ARG_OPT,  CLP::DUPOPT_CLOB, NULL },
-  {  0 , "tsv",             CLP::ARG_OPT,  CLP::DUPOPT_CLOB, NULL },
 
   // General
   { 'v', "verbose",         CLP::ARG_OPT,  CLP::DUPOPT_CLOB, NULL },
@@ -333,6 +329,9 @@ Args::parse(int argc, const char* const argv[])
       if (parser.IsOptArg("experiment")) {
 	outFilename_XML = parser.GetOptArg("experiment");
       }
+      if (outFilename_XML == "no") { // special case
+	outFilename_XML = "";
+      }
     }
     if (parser.IsOpt("csv")) {
       outFilename_CSV = Analysis_EXPERIMENTCSV;
@@ -341,6 +340,7 @@ Args::parse(int argc, const char* const argv[])
       }
       db_copySrcFiles = false;
     }
+#if 0
     if (parser.IsOpt("tsv")) { 
       outFilename_TSV = Analysis_EXPERIMENTTSV;
       if (parser.IsOptArg("tsv")) {
@@ -348,6 +348,7 @@ Args::parse(int argc, const char* const argv[])
       }
       db_copySrcFiles = false;
     }
+#endif
     
     // Check for required arguments
     uint numArgs = parser.GetNumArgs();

@@ -128,10 +128,10 @@ public:
   computeRawMetrics(Prof::MetricDescMgr& mMgr, PgmScopeTree& structure);
 
   void
-  correlateUsingStructure(const string& lmname,
-			  const string& lmname_orig,
-			  NodeRetriever& structIF,
-			  ProfToMetricsTupleVec& profToMetricsVec);
+  computeRawBatchJob(const string& lmname, const string& lmname_orig,
+		     NodeRetriever& structIF,
+		     ProfToMetricsTupleVec& profToMetricsVec,
+		     bool useStruct);
 
   void
   correlateUsingStructure(PerfMetric* metric,
