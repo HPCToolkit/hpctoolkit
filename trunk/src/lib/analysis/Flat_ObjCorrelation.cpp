@@ -455,78 +455,68 @@ correlateWithObject_LM(ostream& os,
   // 1. Print annotated load module
   // --------------------------------------------------------
   
-  for (binutils::LMSegIterator it(lm); it.IsValid(); ++it) {
-    binutils::Seg* seg = it.Current();
-    if (seg->type() != binutils::Seg::TypeText) { continue; }
-    
-    // We have a 'TextSeg'.  Iterate over procedures.
-    os << std::endl 
-       << "Section: " << seg->name();
-
-    binutils::TextSeg* tseg = dynamic_cast<binutils::TextSeg*>(seg);
-    for (binutils::TextSegProcIterator it(*tseg); it.IsValid(); ++it) {
-      binutils::Proc* p = it.Current();
-      string bestName = GetBestFuncName(p->name());
+  for (binutils::LM::ProcMap::const_iterator it = lm.procs().begin();
+       it != lm.procs().end(); ++it) {
+    const binutils::Proc* p = it->second;
+    string bestName = GetBestFuncName(p->name());
       
-      binutils::Insn* endInsn = p->lastInsn();
-      VMAInterval procint(p->begVMA(), p->endVMA() + endInsn->size());
+    binutils::Insn* endInsn = p->lastInsn();
+    VMAInterval procint(p->begVMA(), p->endVMA() + endInsn->size());
       
-      const vector<uint64_t> metricTotsProc = 
-	metricCursor.computeMetricVals(procint, false);
-      if (!metricCursor.hasMetricValGE(metricTotsProc, procVisThreshold)) {
-	continue;
-      }
-
-      // We have a 'Procedure'.  Iterate over instructionsn
-      os << std::endl << std::endl
-	 << "Procedure: " << p->name() << " (" << bestName << ")\n";
-
-      writeMetricSummary(os, metricDescs, metricTotsProc, &metricTots);
-      os << std::endl << std::endl;
-      
-      string the_file;
-      SrcFile::ln the_line = SrcFile::ln_NULL;
-
-      for (binutils::ProcInsnIterator it(*p); it.IsValid(); ++it) {
-	binutils::Insn* insn = it.Current();
-	VMA vma = insn->vma();
-	VMA opVMA = binutils::LM::isa->ConvertVMAToOpVMA(vma, insn->opIndex());
-
-	// 1. Collect metric annotations
-	const vector<uint64_t>& metricValVMA = 
-	  metricCursor.computeMetricForVMA(opVMA);
-
-	// 2. Print line information (if necessary)
-	if (srcCode) {
-	  string func, file;
-	  SrcFile::ln line;
-	  p->GetSourceFileInfo(vma, insn->opIndex(), func, file, line);
-	
-	  if (file != the_file || line != the_line) {
-	    the_file = file;
-	    the_line = line;
-	    os << the_file << ":" << the_line << std::endl;
-	  }
-	}
-	
-	// 3. Print annotated instruction
-	os << std::hex << opVMA << std::dec << ": ";
-	
-	if (metricCursor.hasNonZeroMetricVal(metricValVMA)) {
-	  for (uint i = 0; i < metricValVMA.size(); ++i) {
-	    uint64_t metricCnt = metricValVMA[i];
-	    colFmt.metric_col(metricCnt, metricTotsProc[i]);
-	  }
-	}
-	else {
-	  colFmt.fill_cols();
-	}
-
-	insn->decode(os);
-	os << std::endl;
-      }
+    const vector<uint64_t> metricTotsProc = 
+      metricCursor.computeMetricVals(procint, false);
+    if (!metricCursor.hasMetricValGE(metricTotsProc, procVisThreshold)) {
+      continue;
     }
-    os << std::endl; // section
+
+    // We have a 'Procedure'.  Iterate over instructions
+    os << std::endl << std::endl
+       << "Procedure: " << p->name() << " (" << bestName << ")\n";
+
+    writeMetricSummary(os, metricDescs, metricTotsProc, &metricTots);
+    os << std::endl << std::endl;
+      
+    string the_file;
+    SrcFile::ln the_line = SrcFile::ln_NULL;
+
+    for (binutils::ProcInsnIterator it(*p); it.IsValid(); ++it) {
+      binutils::Insn* insn = it.Current();
+      VMA vma = insn->vma();
+      VMA opVMA = binutils::LM::isa->ConvertVMAToOpVMA(vma, insn->opIndex());
+
+      // 1. Collect metric annotations
+      const vector<uint64_t>& metricValVMA = 
+	metricCursor.computeMetricForVMA(opVMA);
+
+      // 2. Print line information (if necessary)
+      if (srcCode) {
+	string func, file;
+	SrcFile::ln line;
+	p->GetSourceFileInfo(vma, insn->opIndex(), func, file, line);
+	
+	if (file != the_file || line != the_line) {
+	  the_file = file;
+	  the_line = line;
+	  os << the_file << ":" << the_line << std::endl;
+	}
+      }
+	
+      // 3. Print annotated instruction
+      os << std::hex << opVMA << std::dec << ": ";
+	
+      if (metricCursor.hasNonZeroMetricVal(metricValVMA)) {
+	for (uint i = 0; i < metricValVMA.size(); ++i) {
+	  uint64_t metricCnt = metricValVMA[i];
+	  colFmt.metric_col(metricCnt, metricTotsProc[i]);
+	}
+      }
+      else {
+	colFmt.fill_cols();
+      }
+
+      insn->decode(os);
+      os << std::endl;
+    }
   }
 
   os << std::endl << std::endl;

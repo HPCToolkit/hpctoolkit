@@ -109,11 +109,15 @@ binutils::LM::LM()
 
 binutils::LM::~LM()
 {
-  // Clear sections
-  for (LMSegIterator it(*this); it.IsValid(); ++it) {
-    delete it.Current(); // Seg*
+  for (SegMap::iterator it = m_segMap.begin(); it != m_segMap.end(); ++it) {
+    delete it->second; // Seg*
   }
-  m_sections.clear();
+  m_segMap.clear();
+
+  for (InsnMap::iterator it = m_insnMap.begin(); it != m_insnMap.end(); ++it) {
+    delete it->second; // Insn*
+  }
+  m_insnMap.clear();
 
   // BFD info
   if (m_bfd) {
@@ -126,14 +130,7 @@ binutils::LM::~LM()
 
   delete[] m_bfdSymTabSort;
   m_bfdSymTabSort = NULL; 
-    
-  // Clear vmaToInsMap
-  InsnMap::iterator it;
-  for (it = m_insnMap.begin(); it != m_insnMap.end(); ++it) {
-    delete (*it).second; // Insn*
-  }
-  m_insnMap.clear();
-
+  
   // reset isa
   delete isa;
   isa = NULL;
@@ -302,11 +299,11 @@ binutils::LM::GetSourceFileInfo(VMA vma, ushort opIndex,
   // Find the Seg where this vma lives.
   asection *bfdSeg = NULL;
   VMA base = 0;
-  for (LMSegIterator it(*this); it.IsValid(); ++it) {
-    Seg* sec = it.Current();
-    if (sec->isIn(opVMA)) {
+  for (SegMap::iterator it = m_segMap.begin(); it != m_segMap.end(); ++it) {
+    Seg* seg = it->second;
+    if (seg->isIn(opVMA)) {
       // Obtain the bfd section corresponding to our Seg.
-      bfdSeg = bfd_get_section_by_name(m_bfd, sec->name().c_str());
+      bfdSeg = bfd_get_section_by_name(m_bfd, seg->name().c_str());
       base = bfd_section_vma(m_bfd, bfdSeg);
       break; 
     } 
@@ -422,16 +419,16 @@ binutils::LM::textBegEndVMA(VMA* begVMA, VMA* endVMA)
   VMA curr_endVMA;
   VMA sml_begVMA = 0;
   VMA lg_endVMA  = 0;
-  for (LMSegIterator it(*this); it.IsValid(); ++it) {
-    Seg* sec = it.Current(); 
-    if (sec->type() == Seg::TypeText)  {    
+  for (SegMap::iterator it = m_segMap.begin(); it != m_segMap.end(); ++it) {
+    Seg* seg = it->second; 
+    if (seg->type() == Seg::TypeText)  {    
       if (!(sml_begVMA || lg_endVMA)) {
-	sml_begVMA = sec->begVMA();
-	lg_endVMA  = sec->endVMA(); 
+	sml_begVMA = seg->begVMA();
+	lg_endVMA  = seg->endVMA(); 
       } 
       else { 
-	curr_begVMA = sec->begVMA();
-	curr_endVMA = sec->endVMA(); 
+	curr_begVMA = seg->begVMA();
+	curr_endVMA = seg->endVMA(); 
 	if (curr_begVMA < sml_begVMA)
 	  sml_begVMA = curr_begVMA;
 	if (curr_endVMA > lg_endVMA)
@@ -483,9 +480,9 @@ binutils::LM::dump(std::ostream& o, int flags, const char* pre) const
   }
   
   o << p2 << "Sections (" << numSegs() << "):\n";
-  for (LMSegIterator it(*this); it.IsValid(); ++it) {
-    Seg* sec = it.Current();
-    sec->dump(o, flags, p2.c_str());
+  for (SegMap::const_iterator it = segs().begin(); it != segs().end(); ++it) {
+    Seg* seg = it->second;
+    seg->dump(o, flags, p2.c_str());
   }
 }
 
@@ -612,21 +609,20 @@ binutils::LM::readSegs(bool readInsns)
   for (asection* sec = m_bfd->sections; (sec); sec = sec->next) {
 
     // 1. Determine initial section attributes
-    string secName(bfd_section_name(m_bfd, sec));
-    bfd_vma secBeg = bfd_section_vma(m_bfd, sec);
-    uint64_t secSz = bfd_section_size(m_bfd, sec) / bfd_octets_per_byte(m_bfd);
-    bfd_vma secEnd = secBeg + secSz;
+    string segnm(bfd_section_name(m_bfd, sec));
+    bfd_vma segBeg = bfd_section_vma(m_bfd, sec);
+    uint64_t segSz = bfd_section_size(m_bfd, sec) / bfd_octets_per_byte(m_bfd);
+    bfd_vma segEnd = segBeg + segSz;
     
     // 2. Create section
+    Seg* seg = NULL;
     if (sec->flags & SEC_CODE) {
-      TextSeg* newSeg = new TextSeg(this, secName, secBeg, secEnd, secSz);
-      insertSeg(newSeg);
+      seg = new TextSeg(this, segnm, segBeg, segEnd, segSz);
     }
     else {
-      Seg* newSeg = new Seg(this, secName, Seg::TypeData, 
-			    secBeg, secEnd, secSz);
-      insertSeg(newSeg);
+      seg = new Seg(this, segnm, Seg::TypeData, segBeg, segEnd, segSz);
     }
+    insertSeg(VMAInterval(segBeg, segEnd), seg);
   }
 
   m_dbgInfo.clear();
@@ -818,21 +814,6 @@ binutils::Exe::dumpme(std::ostream& o, const char* pre) const
 {
   o << pre << "Program start address: " << hex << GetStartVMA()
     << dec << endl;
-}
-
-
-//***************************************************************************
-// LMSegIterator
-//***************************************************************************
-
-binutils::LMSegIterator::LMSegIterator(const LM& _lm)
-  : lm(_lm)
-{
-  Reset();
-}
-
-binutils::LMSegIterator::~LMSegIterator()
-{
 }
 
 //***************************************************************************
