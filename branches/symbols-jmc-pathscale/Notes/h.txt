@@ -1,0 +1,1000 @@
+  139  dirs
+  140  pushd ~/csprof-install/lib
+  141  ls
+  142  ldd libsymtabAPI.so 
+  143  LD_LIBRARY_PATH=`pwd` ldd libsymtabAPI.so 
+  144  ls
+  145  dirs
+  146  popd
+  147  ls
+  148  dirs
+  149  pushd ~/TestInstall/
+  150  ls
+  151  cd lib
+  152  ls
+  153  ldd libsymtabAPI.so 
+  154  ls
+  155  dirs
+  156  ls
+  157  popd
+  158  pushd ~/csprof/symtabAPI/
+  159  ls
+  160  ./build-init
+  161  ./build 2>&1 | tee b.log
+  162  ls
+  163  ls x86_64-unknown-linux2.4/
+  164  ls x86_64-unknown-linux2.4/lib
+  165  ldd x86_64-unknown-linux2.4/lib/libsymtabAPI.so 
+  166  mv b.log ~
+  167  ls
+  168  dirs
+  169  pushd ~/symtabAPI-f-paradyn.org/
+  170  dirs
+  171  pushd symtabAPI/src/core/
+  172  ls
+  173  find . -type f -exec egrep -i extra_lib \{\} /dev/null ;
+  174  find . -type f -exec egrep -i extra_lib \{\} /dev/null \;
+  175  find . -type f -exec egrep LIBS \{\} /dev/null \;
+  176  find . -type f -exec egrep LDFLAGS \{\} /dev/null \;
+  177  pwd
+  178  pushd ..
+  179  ls
+  180  cd x86_64-unknown-linux2.4/
+  181  ls
+  182  cd lib
+  183  ls
+  184  ldd libsymtabAPI.so 
+  185  ls
+  186  man readelf
+  187  pwd
+  188  pwd
+  189  popd
+  190  ls
+  191  find . -type f -exec egrep LIBS \{\} /dev/null \;
+  192  pushd ~/symtabAPI-f-paradyn.org/paradyn/libelf/x86-64-unknown-linux2.4
+  193  pwd
+  194  ls
+  195  ln -s libelf.so.0 libelf.so
+  196  ls
+  197  pwd
+  198  ls
+  199  mv {NO.,}libelf.a 
+  200  ls
+  201  pwd
+  202  dirs -v
+  203  pushd +4
+  204  ls
+  205  sts stapi_syms
+  206  ./sts stapi_syms
+  207  rm -rf ~/TestInstall
+  208  ./sts stapi_syms
+  209  ls
+  210  rm ss
+  211  cp stapi_syms stpd
+  212  strip stpd
+  213  ./sts stpd
+  214  ./sts stapi_syms
+  215  rm stpd
+  216  cp ~/csprof-install/lib/libsymtabAPI.so .
+  217  file libsymtabAPI.so 
+  218  mv libsymtabAPI.so l.so
+  219  file l.so
+  220  strip l.so
+  221  file l.so
+  222  ./sts l.so
+  223  ls
+  224  rm l.so
+  225  cp stapi_syms stpd
+  226  strip stpd
+  227  ./sts stapi_syms
+  228  ./sts stpd
+  229  ls
+  230  rm stpd
+  231  ls
+  232  make clean
+  233  ls
+  234  cat Makefile.conf
+  235  dirs
+  236  dirs -v
+  237  pushd +3
+  238  ls
+  239  r~
+  240  ls
+  241  ls usr
+  242  ls usr/lib64/
+  243  ls
+  244  dirs
+  245  make clean
+  246  ls
+  247  cd usr
+  248  ls
+  249  cd ..
+  250  ls
+  251  pwd
+  252  dirs
+  253  cd ..
+  254  ls
+  255  rm b.log
+  256  ls XED2-f-PIN/
+  257  ls
+  258  ls
+  259  cd csprof
+  260  ls
+  261  svn update
+  262  ls
+  263  rm -rf Build
+  264  mkdir Build
+  265  ls
+  266  cd Build
+  267  ls
+  268  echo ../configure --prefix=$HOME/TestInstall --monitor-dir=$HOME/csprof-install --xed
+  269  ../configure --prefix=$HOME/TestInstall --monitor-dir=$HOME/csprof-install --xed2-dir=$HOME/XED2-f-PIN/XED2
+  270  echo ../configure --prefix=$HOME/TestInstall --monitor-dir=$HOME/csprof-install --xed2-dir=$HOME/XED2-f-PIN/XED2 > configure-line-f-new.txt
+  271  ls
+  272  r~
+  273  ls
+  274  pwd
+  275  cd ..
+  276  ls
+  277  svn info
+  278  svn ls https://hpc.svn.rice.edu/r/hpctoolkit/trunk/src/hpctoolkit
+  279  svn mkdir https://hpc.svn.rice.edu/r/hpctoolkit/trunk/src/hpctoolkit/symtabAPI-f-paradyn
+  280  svn mkdir https://hpc.svn.rice.edu/r/hpctoolkit/trunk/src/hpctoolkit/symtabAPI-f-paradyn -m"Temporary Repo F symtabPI"
+  281  svn mkdir https://hpc.svn.rice.edu/r/hpctoolkit/trunk/src/hpctoolkit/symbols -m"Temporary Repo F auxiliary symbols program"
+  282  svn mkdir https://hpc.svn.rice.edu/r/hpctoolkit/trunk/src/hpctoolkit/XED2 -m"Temporary Repo F XED2 component"
+  283  svn ls https://hpc.svn.rice.edu/r/hpctoolkit/trunk/src/hpctoolkit
+  284  dirs
+  285  pushd ~
+  286  ls
+  287  svn co https://hpc.svn.rice.edu/r/hpctoolkit/trunk/src/hpctoolkit/XED2
+  288  ls
+  289  ls XED2-f-PIN/
+  290  ls XED2-f-PIN/XED2
+  291  cp -r XED2-f-PIN/XED2/* XED2
+  292  ls XED2
+  293  dirs
+  294  pushd XED2
+  295  ls
+  296  svn stat
+  297  svn add *
+  298  svn stat
+  299  svn commit -m"Add XED2 package for gcc 4.x"
+  300  history | tail -20
+  301  svn ls https://hpc.svn.rice.edu/r/hpctoolkit/trunk/src/hpctoolkit
+  302  pwd
+  303  ls
+  304  cd ..
+  305  ls
+  306  svn ls https://hpc.svn.rice.edu/r/hpctoolkit/trunk/src/hpctoolkit/symtabAPI-f-paradyn
+  307  svn co https://hpc.svn.rice.edu/r/hpctoolkit/trunk/src/hpctoolkit/symtabAPI-f-paradyn
+  308  ls
+  309  ls symtabAPI-f-paradyn
+  310  echo cp -r symtabAPI-f-paradyn.org/{Makefile{,.conf},README,libdwarf,mf.ext.mk,paradyn,symtabAPI} symtabAPI-f-paradyn
+  311  cp -r symtabAPI-f-paradyn.org/{Makefile{,.conf},README,libdwarf,mf.ext.mk,paradyn,symtabAPI} symtabAPI-f-paradyn
+  312  pwd
+  313  cd XED2
+  314  ls
+  315  svn stat
+  316  svn add README
+  317  svn commit -m"Added README message"
+  318  svn update
+  319  svn info
+  320  pwd
+  321  dirs
+  322  ls
+  323  jbos
+  324  svn stat
+  325  dirs
+  326  popd
+  327  ls
+  328  dirs -v
+  329  cd symtabAPI-f-paradyn
+  330  ls
+  331  svn stat
+  332  find . -name '*.o'
+  333  find . -name '*.so'
+  334  svn add
+  335  svn add Makefile.conf mf.ext.mk symtabAPI libdwarf README Makefile paradyn
+  336  svn stat
+  337  svn commit -m"initial setup"
+  338  svn update
+  339  ls
+  340  pwd
+  341  ls
+  342  pwd
+  343  cd ..
+  344  ls
+  345  mv symbols{,-f-csprof}
+  346  ls
+  347  more st.diff.txt 
+  348  ls
+  349  rm st.diff.txt
+  350  ls
+  351  svn ls https://hpc.svn.rice.edu/r/hpctoolkit/trunk/src/hpctoolkit
+  352  svn ls https://hpc.svn.rice.edu/r/hpctoolkit/trunk/src/hpctoolkit/symbols
+  353  echo svn co https://hpc.svn.rice.edu/r/hpctoolkit/trunk/src/hpctoolkit/symbols ; pwd
+  354  svn co https://hpc.svn.rice.edu/r/hpctoolkit/trunk/src/hpctoolkit/symbols
+  355  pwd
+  356  ls
+  357  ls symbols-f-csprof/
+  358  pushd symbols-f-csprof/
+  359  ls
+  360  make clean
+  361  ls
+  362  jobs
+  363  pwd
+  364  ls
+  365  cd ..
+  366  ls
+  367  ls symbols-f-csprof/
+  368  echo cp symbols-f-csprof/{Make*,*.{cpp,h}} symbols
+  369  cp symbols-f-csprof/{Make*,*.{cpp,h}} symbols
+  370  ls
+  371  dirs -v
+  372  popd
+  373  dirs -v
+  374  pushd +3
+  375  ls
+  376  svn stat
+  377  svn add Make* *.cpp *.h
+  378  svn commit -m"Initial Setup"
+  379  ls
+  380  pwd
+  381  ls
+  382  dirs -v
+  383  pushd +3
+  384  ls
+  385  rm -rf symbols-f-csprof/
+  386  ls
+  387  dirs
+  388  pushd symtabAPI-f-paradyn
+  389  ls
+  390  svn stat
+  391  ls
+  392  rm -rf TestInstall
+  393  ls
+  394  dirs
+  395  pushd symbols/
+  396  ls
+  397  ./sts stapi_syms
+  398  ls
+  399  dirs
+  400  pushd ~/symtabAPI-f-paradyn
+  401  ls
+  402  cd paradyn/libelf/
+  403  ls
+  404  cd x86-64-unknown-linux2.4/
+  405  ls
+  406  svn mv libelf.so{,.0}
+  407  ln -s libelf.so{.0,}
+  408  ls
+  409  ls -l
+  410  rm libelf.so
+  411  rm -rf ~/TestInstall/
+  412  ls
+  413  dirs -v
+  414  popd
+  415  ls
+  416  ./sts stapi_syms
+  417  cp stapi_syms stpd
+  418  strip stpd
+  419  ./sts stpd
+  420  ls
+  421  rm stpd
+  422  ls
+  423  ./sts stapi_syms
+  424  cp stapi_syms stpd && strip stpd
+  425  ./sts stpd
+  426  rm stpd
+  427  ls
+  428  pwd
+  429  ls
+  430  dirs
+  431  pushd ~/csprof
+  432  ls
+  433  cd Build
+  434  cd ..
+  435  ls
+  436  rm -rf Build
+  437  mkdir Build
+  438  ls
+  439  cd Build
+  440  pwd
+  441  ls
+  442  dirs -v
+  443  pushd
+  444  ls
+  445  ~/TestInstall/libexec/csprof_syms stapi_syms foo.c
+  446  ls
+  447  rm foo.c
+  448  ~/TestInstall/libexec/csprof_syms stapi_syms .
+  449  ls
+  450  more stapi_syms.nm.c
+  451  ls
+  452  rm stapi_syms.nm.*
+  453  ls
+  454  ls
+  455  pwd
+  456  dirs
+  457  ls
+  458  jobs
+  459  pushd
+  460  dirs
+  461  pwd
+  462  ls
+  463  pushd ../T1
+  464  ls
+  465  ./t1
+  466  export PATH=~/TestInstall/bin:$PATH
+  467  which csprof
+  468  . ~/Setups/cspkg.sh
+  469  ls
+  470  lc
+  471  csprof t1
+  472  lc
+  473  cat *.dbg.log
+  474  rc
+  475  csprof tp 25
+  476  lc
+  477  cat *.dbg.log
+  478  rc
+  479  ls
+  480  dirs
+  481  cd ..
+  482  ls
+  483  svn stat
+  484  svn commit -m"Makefile.in altered to NOT install symbols"
+  485  svn update
+  486  dirs
+  487  dirs -v
+  488  pushd ../symtabAPI-f-paradyn
+  489  ls
+  490  make clean
+  491  svn stat
+  492  ls -l paradyn/libelf/x86-64-unknown-linux2.4/libelf.so
+  493  rm paradyn/libelf/x86-64-unknown-linux2.4/libelf.so
+  494  svn stat
+  495  svn commit -F~/msg.txt
+  496  svn commit -F ~/msg.txt
+  497  svn update
+  498  dirs -v
+  499  pushd +3
+  500  svn stat
+  501  make clean
+  502  svns tat
+  503  svn sgtat
+  504  svn stat
+  505  svn commit -m"Added install option to Makefile and PREFIX var to Makefile.conf"
+  506  pwd
+  507  ls
+  508  dirs -v
+  509  pushd +2
+  510  ls
+  511  svn update
+  512  ls
+  513  dirs -v
+  514  pushd +3
+  515  ls
+  516  svn update
+  517  ls
+  518  ./sts stapi_syms
+  519  cp stapi_syms stpd ; strip stpd
+  520  ./sts stpd
+  521  rm stpd
+  522  ls
+  523  dirs
+  524  ls
+  525  dirs -v
+  526  pushd +3
+  527  ls
+  528  cd Build
+  529  ls
+  530  mkae
+  531  make
+  532  pwd
+  533  ls
+  534  r~
+  535  cd ..
+  536  ls
+  537  r~
+  538  ls
+  539  find . -name '*~'
+  540  ls
+  541  pwd
+  542  dirs
+  543  ls
+  544  jbos
+  545  jobs
+  546  dirs
+  547  pushd T1
+  548  ls
+  549  which csprof
+  550  csprof t1
+  551  lc
+  552  cat *.dbg.log
+  553  rc
+  554  dirs
+  555  csprof tp 20
+  556  lc
+  557  cat *.dbg.log
+  558  rc
+  559  ls
+  560  cd ..
+  561  ls
+  562  dirs
+  563  dirs
+  564  pwd
+  565  cd T1
+  566  pushd
+  567  svn revert Makefile.in
+  568  pwd
+  569  ls
+  570  svn stat
+  571  pwd
+  572  svn commit -m"Remove stapi_syms target (now handled separately)"
+  573  svn update
+  574  svn info
+  575  ls
+  576  lc
+  577  echo $PATH
+  578  which csprof
+  579  cwt 'EMACS @ ANDRE1'
+  580  ls
+  581  cd csprof
+  582  emacs -nw .
+  583  pwd
+  584  emcs -nw .
+  585  emacs --version
+  586  emacs -nw .
+  587  clear
+  588  ls
+  589  pwd
+  590  cd ..
+  591  ls
+  592  emacs -nw .
+  593  pwd
+  594  ls
+  595  dirs
+  596  emacs -nw .
+  597  bgx
+  598  dirs
+  599  ls
+  600  pushd csprof/T1
+  601  ls
+  602  which csprof
+  603  ls ~/Setups
+  604  ls ~/Setups
+  605  . ~/Setups/csprof.sh 
+  606  which csprof
+  607  ls
+  608  make t1
+  609  ./t1
+  610  csprof t1
+  611  lc
+  612  tail -10 *.dbg.log
+  613  ls
+  614  ls *.log
+  615  tail -10 *.log
+  616  rc
+  617  ls *.log
+  618  rm *.log
+  619  csprof t1
+  620  ls *.dbg.log
+  621  tail -10 *.log
+  622  rc
+  623  ls
+  624  make tp
+  625  tp 20
+  626  ./tp 20
+  627  ls
+  628  csprof tp 20
+  629  lc
+  630  tail -10 *.dbg.log
+  631  rc
+  632  ls
+  633  make stack
+  634  csprof stack
+  635  lc
+  636  tail -10 *.dbg.log
+  637  rc
+  638  ls
+  639  csprof --pp="`cat ~/ex1`" tp 20
+  640  ls
+  641  lc
+  642  tail -10 *.dbg.log
+  643  rc
+  644  ls
+  645  dirs
+  646  pushd /projects/wgeco/src
+  647  ls
+  648  bin/runTest.sh 1
+  649  ls ~/Setups/*intel*
+  650  ls ~/Setups/
+  651  pushd ~/Setups
+  652  ls
+  653  rm adbook adsetup.sourceme adsetup2.0 adsetup3.0.bash 
+  654  cat alias.bash
+  655  ls
+  656  more ch2.1-setup.csh 
+  657  rm ch2.1-setup.csh 
+  658  rm chg-open-office.py 
+  659  ls
+  660  rm dos_alias gcc-latest.pl irix linkgmake.csh linux-vt100 mapy mpi-SunOS mpi.sp2 mpi-AC-Sun
+  661  rm dos_alias gcc-latest.pl irix linkgmake.csh linux-vt100 mapy mpi-SunOS mpi.sp2 mpich-AC-Sun 
+  662  ls
+  663  rm gcc-latest.csh 
+  664  rm neb-a.csh neb.csh no-ad-path.prl open64.anon.csh open64.csh*
+  665  ls ov-perl perl58.csh perl5*
+  666  cat py
+  667  rm py py.bash
+  668  rm rcsman.csh
+  669  rm rcsman.* remote.* ruby-1.8.csh sg_cvs.info.txt spruce.csh sunos* term1.csh termcap unlinkgmake.csh whirl 
+  670  ls
+  671  emacs -nw ~johnmc/.
+  672  clear
+  673  ls
+  674  pwd
+  675  dirs
+  676  dirs -v
+  677  pushd
+  678  . ~/Setups/intel.sh 
+  679  bin/runTest.sh 1
+  680  ls
+  681  pwd
+  682  ls bin
+  683  dirs
+  684  pushd bin
+  685  ls *.dbg.log
+  686  ls -l *.dbg.log
+  687  ls -ld .
+  688  more *28789.dbg.log
+  689  cat *28789.dbg.log
+  690  ls /usr/lib64/libstdc++.so.6
+  691  ls -l /usr/lib64/libstdc++.so.6
+  692  ls -l /usr/lib64/libgcc_s*
+  693  ls -l /usr/lib64/libstdc++.so.6
+  694  ldd /usr/lib64/libstdc++.so.6
+  695  ls /lib64/libgcc_s.so.1 
+  696  ls -l /lib64/libgcc_s.so.1 
+  697  dirs
+  698  ls
+  699  rc
+  700  ls
+  701  ls *.csp
+  702  ls *.dbg.log
+  703  ls *.log
+  704  rm *.log
+  705  ls
+  706  pwd
+  707  dirs -v
+  708  pushd +3
+  709  ls
+  710  csprof t1
+  711  lc
+  712  tail -10 *.dbg.log
+  713  rc
+  714  csprof tp 25
+  715  ls
+  716  lc
+  717  tail -10 *.dbg.log
+  718  rc
+  719  ls
+  720  dirs -v
+  721  pushd +3
+  722  ls
+  723  bin/runTest.sh 1
+  724  ls
+  725  dirs
+  726  cd bin
+  727  ls
+  728  ls -lrt *.dbg.log
+  729  more *.dbg.log
+  730  ls
+  731  r~
+  732  ls
+  733  ls
+  734  rc
+  735  ls
+  736  dirs -v
+  737  pushd +2
+  738  ls
+  739  csprof --pp="`cat ~/ex1`" tp 20
+  740  rc
+  741  csprof --pp="`cat ~/ex1`" tp 20
+  742  tail -10 *.dbg.log
+  743  lc
+  744  rc
+  745  ls
+  746  csprof t1
+  747  tail -10 *.dbg.log
+  748  lc
+  749  rc
+  750  csprof stack
+  751  tail -10 *.dbg.log
+  752  lc
+  753  rc
+  754  ls
+  755  dirs
+  756  dirs -v
+  757  pushd =2
+  758  pushd +2
+  759  cd ..
+  760  ls
+  761  bin/runTest.sh 1
+  762  pwd
+  763  dirs -v
+  764  pushd +3
+  765  csprof t1
+  766  which xcsprof
+  767  bash
+  768  ls
+  769  dirs -v
+  770  pushd +2
+  771  ls
+  772  bin/runTest.sh 1
+  773  dirs
+  774  dirs -v
+  775  pushd
+  776  lc
+  777  ls *.dbg.log
+  778  ls -l *.dbg.log
+  779  emacs -nw *319*.dbg.log
+  780  clear
+  781  ls
+  782  rc
+  783  ls
+  784  dirs
+  785  pushd
+  786  ls
+  787  bin/runTest.sh 1
+  788  ls bin/*.dbg.log
+  789  emacs -nw bin/*.dbg.log
+  790   ls
+  791  ps -u mfagan | egrep -i emacs
+  792  man install
+  793  man install
+  794  man -s 2 assert
+  795  ls
+  796  pwd
+  797  ls
+  798  pwd
+  799  ls
+  800  pushd /data/home/mfagan/symtabAPI-f-paradyn.org/symtabAPI/src/x86_64-unknown-linux2.4/lib
+  801  ls
+  802  man readelf
+  803  readelf -d libsymtabAPI.so 
+  804  echo $LD_LIBRARY_PATH 
+  805  ldd libsymtabAPI.so 
+  806  ldd ~/csprof-install/lib/libsymtabAPI.so 
+  807  ls
+  808  dirs
+  809  pwd
+  810  ls
+  811  ls
+  812  pwd
+  813  pwd
+  814  pwd
+  815  cd ..
+  816  ls
+  817  pwd
+  818  cd ..
+  819  ls
+  820  ls
+  821  ls core
+  822  pwd
+  823  ls
+  824  cd x86_64-unknown-linux2.4/
+  825  ls
+  826  cd lib
+  827  ls
+  828  ldd libsymtabAPI.so 
+  829  pushd /data/home/mfagan/symtabAPI-f-paradyn.org/paradyn/libelf/x86_64-unknown-linux2.4
+  830  pushd ~
+  831  cd symtabAPI-f-paradyn.org/
+  832  ls
+  833  cd paradyn/
+  834  ls
+  835  cd libelf/
+  836  ls
+  837  cd x86-64-unknown-linux2.4/
+  838  ls
+  839  pwd
+  840  ls
+  841  dirs
+  842  cd ..
+  843  ls
+  844  pwd
+  845  cd ..
+  846  ls
+  847  dirs -v
+  848  pushd
+  849  ls
+  850  ls -l
+  851  ldd libsymtabAPI.so 
+  852  ls -l
+  853  readelf -d libsymtabAPI.so 
+  854  dirs
+  855  dirs -v
+  856  pushd +1
+  857  ls
+  858  cd libelf/
+  859  ls
+  860  cd x86-64-unknown-linux2.4/
+  861  ls
+  862  readelf -d libelf.so.0 
+  863  dirs
+  864  dirs -v
+  865  pushd +6
+  866  ls
+  867  readelf -d libelf.so.0 
+  868  readelf -d libsymtabAPI.so 
+  869  dirs
+  870  dirs
+  871  pusdh +1
+  872  pushd +1
+  873  ls
+  874  file ./libelf.so.0 
+  875  lt
+  876  ls -l
+  877  ls -l -h
+  878  ldd libelf.so.0 
+  879  ldd libelf.so.0 
+  880  readelf -d libelf.so.0 
+  881  pwd
+  882  ls
+  883  pwd
+  884  dirs -v
+  885  pushd +6
+  886  ls
+  887  ldd libsymtabAPI.so 
+  888  pwd
+  889  ls
+  890  dirs
+  891  ls
+  892  pwd
+  893  pwd
+  894  ls
+  895  dirs
+  896  popd
+  897  ls
+  898  pwd
+  899  pwd
+  900  ls
+  901  dirs
+  902  pushd ~/csprof/T1
+  903  ls
+  904  ./t1
+  905  which csprof
+  906  bash
+  907  echo $PATH > /tmp/p
+  908  emacs -nw p
+  909  . /tmp/p
+  910  rm /tmp/p
+  911  ls
+  912  which csprof
+  913  csprof t1
+  914  ls /projects/pkgs/papi
+  915  ls /projects/pkgs/papi/lib
+  916  echo $LD_LIBRARY_PAT
+  917  echo $LD_LIBRARY_PATH
+  918  l
+  919  ls
+  920  csprof t1
+  921  lc
+  922  cat ~/Setups/csprof.sh
+  923  alias lc='ls -l *.csp'
+  924  alias rc='rm -rf *.dbg.log *.csp core* experiment*'
+  925  lc
+  926  tail -10 *.dbg.log
+  927  rc
+  928  csprof tp 20
+  929  tail -10 *.dbg.log
+  930  lc
+  931  rc
+  932  ls
+  933  pwd
+  934  ls
+  935  cd ..
+  936  ls
+  937  svn info
+  938  pwd
+  939  ls
+  940  pushd ../libmonitor/
+  941  ls
+  942  svn info
+  943  ls
+  944  cd ..
+  945  ls
+  946  cd XED2
+  947  ls
+  948  svn info
+  949  pwd
+  950  cd ../symtabAPI-f-paradyn
+  951  svn info
+  952  ls
+  953  pwd
+  954  cd ..
+  955  ls
+  956  cd symbols
+  957  svn info
+  958  pwd
+  959  ls
+  960  cd .
+  961  cd ..
+  962  ls
+  963  ls
+  964  cd csprof
+  965  ls
+  966  svn stat
+  967  svn info
+  968  gcc --version
+  969  ls
+  970  pwd
+  971  svn info
+  972  ls
+  973  pwd
+  974  ls
+  975  dirs
+  976  ls
+  977  jobs
+  978  pwd
+  979  dirs
+  980  cd T1
+  981  ls
+  982  dirs
+  983  which csprof
+  984  csprof tp 6
+  985  lc
+  986  pwd
+  987  ls
+  988  lc
+  989  dirs
+  990  jobs
+  991  emacs -nw .
+  992  ls
+  993  pwd
+  994  ls
+  995  scp fnbounds_dynamic_server.[ch] ada.rice.edu:
+  996  ls
+  997  cat ex1
+  998  pwd
+  999  emacs -nw .
+ 1000  ls
+ 1001  pushd ~johnmc=
+ 1002  pushd ~johnmc
+ 1003  ls
+ 1004  cd 2008-03-22
+ 1005  ls
+ 1006  cd hpctoolkit-oss/
+ 1007  ls
+ 1008  cd hpctoolkit/
+ 1009  ls
+ 1010  cd src
+ 1011  ls
+ 1012  cd hpctoolkit/
+ 1013  ls
+ 1014  cd symbols
+ 1015  ls
+ 1016  cat intervals.h
+ 1017  more /tmp/boost
+ 1018  more /tmp/boost-new2 
+ 1019  ls
+ 1020  pushd ../csprof/
+ 1021  l;s
+ 1022  ls
+ 1023  cd unwind-analysis/
+ 1024  ls
+ 1025  cd x86-family/
+ 1026  ls
+ 1027  vi x86-return.c 
+ 1028  vi /tmp/boost
+ 1029  pushd
+ 1030  vi symbols.cpp 
+ 1031  vi x86-process-ranges.cpp 
+ 1032  gdb ~johnmc/libmv.so.1 
+ 1033  gdb ~johnmc/libmv.so.1 
+ 1034  ls
+ 1035  svn diff | more
+ 1036  diff /tmp/boost-new /tmp/boost-old | more
+ 1037  diff /tmp/boost-new /tmp/boost-old 2>&1 | less
+ 1038  diff /tmp/boost-new /tmp/boost-old | less 2>&1
+ 1039  sdiff /tmp/boost-new /tmp/boost-old | more
+ 1040  history
+ 1041  sdiff /tmp/boost-new /tmp/boost-old | more
+ 1042  sdiff /tmp/boost-new2 /tmp/boost-old | more
+ 1043  pwd
+ 1044  ls
+ 1045  LD_LIBRARY_PATH=/home/johnmc/2008-03-22/install/lib gdb stapi_syms 
+ 1046  sdiff /tmp/boost-new2 /tmp/boost-old | more
+ 1047  fg
+ 1048  vi /tmp/boost
+ 1049  gdb /projects/wgeco/x86_linux_64/lib/libboost_thread-gcc34-mt-1_34.so.1.34.0 
+ 1050  a.out
+ 1051  ./a.out
+ 1052  ls -ltr
+ 1053  history
+ 1054  LD_LIBRARY_PATH=/home/johnmc/2008-03-22/install/lib stapi_syms /home/johnmc/libmv.so.1 | less
+ 1055  LD_LIBRARY_PATH=/home/johnmc/2008-03-22/install/lib ./stapi_syms /home/johnmc/libmv.so.1 | less
+ 1056  /home/johnmc/2008-03-10/install/libexec/csprof_syms /home/johnmc/libmv.so.1 | less
+ 1057  /home/johnmc/2008-03-10/install/libexec/csprof_syms /home/johnmc/libmv.so.1 | less
+ 1058  vi /tmp/libmv.so.1.nm.c 
+ 1059  LD_LIBRARY_PATH=/home/johnmc/2008-03-22/install/lib ./stapi_syms /home/johnmc/libmv.so.1 | less
+ 1060  ls
+ 1061  pwd
+ 1062  ls
+ 1063  dirs
+ 1064  ls
+ 1065  jobs
+ 1066  pwd
+ 1067  dirs
+ 1068  ls
+ 1069  make -n clean
+ 1070  svn stat
+ 1071  pushd ~
+ 1072  ls
+ 1073  cd symbols
+ 1074  ls
+ 1075  svn info
+ 1076  pwd
+ 1077  ls
+ 1078  svn info
+ 1079  pwd
+ 1080  pwd
+ 1081  cd ..
+ 1082  ls
+ 1083  svn ls https://hpc.svn.rice.edu/r/hpctoolkit/branches
+ 1084  svn rm https://hpc.svn.rice.edu/r/hpctoolkit/branches/csprof-dl-new
+ 1085* 
+ 1086  svn ls https://hpc.svn.rice.edu/r/hpctoolkit/trunk/src
+ 1087  svn ls https://hpc.svn.rice.edu/r/hpctoolkit/trunk/src/hpctoolkit
+ 1088  svn ls https://hpc.svn.rice.edu/r/hpctoolkit/trunk/src/hpctoolkit/symbols
+ 1089  svn cp https://hpc.svn.rice.edu/r/hpctoolkit/trunk/src/hpctoolkit/symbols https://hpc.svn.rice.edu/r/hpctoolkit/branches/symbols-jmc-pathscale
+ 1090  svn cp https://hpc.svn.rice.edu/r/hpctoolkit/trunk/src/hpctoolkit/symbols https://hpc.svn.rice.edu/r/hpctoolkit/branches/symbols-jmc-pathscale -m"add branch for symbols program mods for pathscale compiler"
+ 1091  pwd
+ 1092  ls
+ 1093  svn co https://hpc.svn.rice.edu/r/hpctoolkit/branches/symbols-jmc-pathscale symbols-jmc
+ 1094  dirs
+ 1095  pushd
+ 1096  ls
+ 1097  tar -jcf ~/jmc.tbz *.{cpp,h,c} Makefile*
+ 1098  tar -jcf ~/jmc.tbz *.{cpp,h} Makefile*
+ 1099  dirs
+ 1100  pushd
+ 1101  ls
+ 1102  cd symbols-jmc
+ 1103  ls
+ 1104  make -n
+ 1105  ls
+ 1106  cd ..
+ 1107  ls
+ 1108  ls symtabAPI-f-paradyn
+ 1109  ls
+ 1110  cd symbols-jmc/
+ 1111  ls
+ 1112  mv ../jmc.tbz .
+ 1113  tar -jxf jmc.tbz 
+ 1114  ls
+ 1115  rm *.tbz
+ 1116  ls
+ 1117  svn stat
+ 1118  svn add intervals.cpp intervals.h
+ 1119  svn diff | more
+ 1120  ls
+ 1121  dirs
+ 1122  pushd
+ 1123  s
+ 1124  ls
+ 1125  ls ..
+ 1126  dirs
+ 1127  ls
+ 1128  pushd
+ 1129  ls
+ 1130  svn commit -m"Initial checkin from JMC"
+ 1131  svn info
+ 1132  dirs
+ 1133  pushd
+ 1134  history | tail -30 > h.30.txt
+ 1135  history | tail -30 > ~/h.30.txt
+ 1136  emacs -nw ~/h.30.txt 
+ 1137  rm ~/h.30.txt 
+ 1138  history > ~/h.txt

@@ -1,0 +1,16 @@
+verify that differences between old and new stapi_syms runs (see d.txt) are
+valid.
+
+oldfns.txt contains the addresses that old stapi_syms identified as stripped functions that
+ new stapi does NOT think are stripped functions because they fall into conditional branch
+ range [No call instructions that call to an address that lies in a conditional branch range
+ is a valid call].
+
+newfns.txt contains the stripped functions that new stapi_syms found, but that old stapi
+ did NOT discover.
+
+/tmp/boost is disassembly of boost thread stuff of interest
+ copied to ./boost.dis.txt for posterity
+
+oldfns.txt checked by inspection using the chk.gdb debug macro
+
