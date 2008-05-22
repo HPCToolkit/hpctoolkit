@@ -396,21 +396,14 @@ BuildLMSkeleton(LoadModScope* lmScope, binutils::LM* lm)
   // -------------------------------------------------------
   // 1. Create basic structure for each procedure
   // -------------------------------------------------------
-  for (binutils::LMSegIterator it(*lm); it.IsValid(); ++it) {
-    binutils::Seg* seg = it.Current();
-    if (seg->type() != binutils::Seg::TypeText) {
-      continue;
-    }
-    
-    // We have a text segment.  Iterate over procedures.
-    binutils::TextSeg* tseg = dynamic_cast<binutils::TextSeg*>(seg);
-    for (binutils::TextSegProcIterator it1(*tseg); it1.IsValid(); ++it1) {
-      binutils::Proc* p = it1.Current();
-      if (p->size() != 0) {
-	FileScope* fScope = FindOrCreateFileNode(lmScope, p);
-	ProcScope* pScope = FindOrCreateProcNode(fScope, p);
-	mp->insert(make_pair(pScope, p));
-      }
+
+  for (binutils::LM::ProcMap::iterator it = lm->procs().begin();
+       it != lm->procs().end(); ++it) {
+    binutils::Proc* p = it->second;
+    if (p->size() != 0) {
+      FileScope* fScope = FindOrCreateFileNode(lmScope, p);
+      ProcScope* pScope = FindOrCreateProcNode(fScope, p);
+      mp->insert(make_pair(pScope, p));
     }
   }
 

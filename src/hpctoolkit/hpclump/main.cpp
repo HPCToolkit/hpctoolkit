@@ -222,67 +222,61 @@ DumpSymbolicInfoOld(std::ostream& os, binutils::LM* lm)
   // ------------------------------------------------------------------------  
 
   os << pre << "Dump:\n";
-  for (binutils::LMSegIterator it(*lm); it.IsValid(); ++it) {
-    binutils::Seg* sec = it.Current();
-    if (sec->type() != binutils::Seg::TypeText) { continue; }
-    
-    // We have a 'TextSeg'.  Iterate over procedures.
-    binutils::TextSeg* tsec = dynamic_cast<binutils::TextSeg*>(sec);
-    for (binutils::TextSegProcIterator it(*tsec); it.IsValid(); ++it) {
-      binutils::Proc* p = it.Current();
-      string pName = GetBestFuncName(p->name());
+  for (binutils::LM::ProcMap::iterator it = lm->procs().begin();
+       it != lm->procs().end(); ++it) {
+    binutils::Proc* p = it->second;
+    string pName = GetBestFuncName(p->name());
 
       
-      // We have a 'Procedure'.  Iterate over VMA values     
-      string theFunc = pName, theFile;
-      LineToVMAListMap map;
+    // We have a 'Procedure'.  Iterate over VMA values     
+    string theFunc = pName, theFile;
+    LineToVMAListMap map;
 
-      for (binutils::ProcInsnIterator it(*p); it.IsValid(); ++it) {
-	binutils::Insn* inst = it.Current();
-	VMA vma = inst->vma();
-	VMA opVMA = binutils::LM::isa->ConvertVMAToOpVMA(vma, inst->opIndex());
+    for (binutils::ProcInsnIterator it(*p); it.IsValid(); ++it) {
+      binutils::Insn* inst = it.Current();
+      VMA vma = inst->vma();
+      VMA opVMA = binutils::LM::isa->ConvertVMAToOpVMA(vma, inst->opIndex());
 	
-	// 1. Attempt to find symbolic information
-	string func, file;
-	SrcFile::ln line;
-	p->GetSourceFileInfo(vma, inst->opIndex(), func, file, line);
-	func = GetBestFuncName(func);
+      // 1. Attempt to find symbolic information
+      string func, file;
+      SrcFile::ln line;
+      p->GetSourceFileInfo(vma, inst->opIndex(), func, file, line);
+      func = GetBestFuncName(func);
 	
-	// Bad line number: cannot fix; advance iteration
-	if ( !SrcFile::isValid(line) ) {
-	  continue; // cannot continue without valid symbolic info
-	}
-
-	// Bad/Different func name: ignore for now and use 'theFunc' (FIXME)
-	if (func.empty()) { func = theFunc; }
-	
-	// Bad/Different file name: ignore and try 'theFile' (FIXME)
-	if (file.empty() && !theFile.empty() // possible replacement...
-	    && func == theFunc) { // ...the replacement is valid
-	  file = theFile; 
-	}
-
-	// 2. We have decent symbolic info.  Squirrel this away.
-	if (theFunc.empty()) { theFunc = func; }
-	if (theFile.empty()) { theFile = file; }
-	
-	LineToVMAListMapIt it1 = map.find(line);
-	VMAList* list;
-	if (it1 != map.end()) { 
-	  list = (*it1).second; // modify existing list
-	  list->push_back(opVMA);	  
-	} else { 
-	  list = new VMAList; // create a new list and insert pair
-	  list->push_back(opVMA);
-	  map.insert(LineToVMAListMapItVal(line, list));
-	}
+      // Bad line number: cannot fix; advance iteration
+      if ( !SrcFile::isValid(line) ) {
+	continue; // cannot continue without valid symbolic info
       }
-      
-      DumpSymbolicInfoForFunc(os, pre1.c_str(), 
-			      theFunc.c_str(), &map, theFile.c_str());
-      ClearLineToVMAListMap(&map);
-      
+
+      // Bad/Different func name: ignore for now and use 'theFunc' (FIXME)
+      if (func.empty()) { func = theFunc; }
+	
+      // Bad/Different file name: ignore and try 'theFile' (FIXME)
+      if (file.empty() && !theFile.empty() // possible replacement...
+	  && func == theFunc) { // ...the replacement is valid
+	file = theFile; 
+      }
+
+      // 2. We have decent symbolic info.  Squirrel this away.
+      if (theFunc.empty()) { theFunc = func; }
+      if (theFile.empty()) { theFile = file; }
+	
+      LineToVMAListMapIt it1 = map.find(line);
+      VMAList* list;
+      if (it1 != map.end()) { 
+	list = (*it1).second; // modify existing list
+	list->push_back(opVMA);	  
+      } 
+      else { 
+	list = new VMAList; // create a new list and insert pair
+	list->push_back(opVMA);
+	map.insert(LineToVMAListMapItVal(line, list));
+      }
     }
+      
+    DumpSymbolicInfoForFunc(os, pre1.c_str(), 
+			    theFunc.c_str(), &map, theFile.c_str());
+    ClearLineToVMAListMap(&map);
   }
   os << "\n" << "End LoadModule Stmt Dump\n";
 }

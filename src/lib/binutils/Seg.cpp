@@ -156,14 +156,15 @@ binutils::TextSeg::TextSeg(binutils::LM* lm, const string& name,
   // 2. Read in the section data (usually raw instructions).
   // ------------------------------------------------------------
   
-  // Obtain a new buffer, and align the pointer to a 16-byte boundary.
-  // We also add a 16 byte buffer at the beginning of the contents.
+  // - Obtain a new buffer, and align the pointer to a 16-byte
+  //   boundary.
+  // - We also add a 16 byte buffer at the beginning of the contents.
   //   This is because some of the GNU decoders (e.g. Sparc) want to
-  //   examine both an instruction and its predecessor at the same time.
-  //   Since we do not want to tell them about text section sizes -- the
-  //   ISA classes are independent of these details -- we add this
-  //   padding to prevent array access errors when decoding the first
-  //   instruciton.
+  //   examine both an instruction and its predecessor at the same
+  //   time.  Since we do not want to tell them about text section
+  //   sizes -- the ISA classes are independent of these details -- we
+  //   add this padding to prevent array access errors when decoding
+  //   the first instruction.
   
   // FIXME: Does "new" provide a way of returning an aligned pointer?
   m_contentsRaw = new char[size+16+16];
@@ -244,14 +245,16 @@ binutils::TextSeg::Create_InitializeProcs()
   uint symtabSz = m_lm->bfdSymTabSz();
 
   for (int i = 0; i < symtabSz; i++) {
-    // FIXME: exploit the fact that the symbol table is sorted by vma
+    // FIXME:PERF exploit the fact that the symbol table is sorted by vma
     asymbol* sym = symtab[i]; 
     if (isIn(bfd_asymbol_value(sym)) 
 	&& (sym->flags & BSF_FUNCTION)
         && !bfd_is_und_section(sym->section)) {
-      
+
+      // NOTE: initially we have [begVMA, endVMA) where endVMA is the
+      // *end* of the last insn.  This is changed after decoding below.
       VMA begVMA = bfd_asymbol_value(sym);
-      VMA endVMA = 0; // see note above
+      VMA endVMA = 0; 
       
       Proc::Type procType;
       if (sym->flags & BSF_LOCAL) {
@@ -280,8 +283,6 @@ binutils::TextSeg::Create_InitializeProcs()
       // Create a procedure based on best information we have.  We
       // always prefer explicit debug information over that inferred
       // from the symbol table.
-      // NOTE: Initially, the end addr is the *end* of the last insn.
-      // This is changed after decoding below.
       string procNm;
       string symNm = bfd_asymbol_name(sym);
 
@@ -318,13 +319,14 @@ binutils::TextSeg::Create_InitializeProcs()
       if (!dbg || endVMA == 0) {
 	endVMA = endVMA_approx;
       }
-      uint size = endVMA - begVMA; // see note above
+      uint size = endVMA - begVMA;
 
       if (size == 0) {
 	continue;
       }
       
-      // We now have a valid procedure
+      // We now have a valid procedure.  Initilize with [begVMA, endVMA),
+      // but note this is changed after disassembly.
       proc = new Proc(this, procNm, symNm, procType, begVMA, endVMA, size);
       m_procedures.push_back(proc);
       m_lm->insertProc(VMAInterval(begVMA, endVMA), proc);
@@ -345,6 +347,7 @@ binutils::TextSeg::Create_InitializeProcs()
   //  the whole section a quasi procedure
   // ------------------------------------------------------------
   if (GetNumProcs() == 0) {
+    // [begVMA, endVMA)
     Proc* proc = new Proc(this, name(), name(), Proc::Quasi, 
 			  begVMA(), endVMA(), size());
     m_procedures.push_back(proc);

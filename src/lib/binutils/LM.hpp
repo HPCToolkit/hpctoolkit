@@ -105,11 +105,6 @@ public:
   typedef VMAIntervalMap<Proc*> ProcMap;
   typedef std::map<VMA, Insn*>  InsnMap;
   
-  // Seg sequence: 'deque' supports random access iterators (and
-  // is thus sortable with std::sort) and constant time insertion/deletion at
-  // beginning/end.
-  typedef std::deque<Seg*> SegSeq;
-  
 public:
   // -------------------------------------------------------  
   // Constructor/Destructor
@@ -201,16 +196,11 @@ public:
     m_segMap.insert(SegMap::value_type(ival_ur, seg));
   }
 
-
-  // GetNumSegs: Return number of segments/sections
-  // insertSeg: insert a segment/section
-  uint numSegs() const { return m_sections.size(); }
-  void insertSeg(Seg* section) { m_sections.push_back(section); }
+  uint numSegs() const { return m_segMap.size(); }
 
 
   // -------------------------------------------------------
-  // Procedures: All procedures found in text sections may be
-  // accessed here.
+  // Procedures: All procedures may be accessed here.
   // -------------------------------------------------------
 
   ProcMap&       procs()       { return m_procMap; }
@@ -383,7 +373,6 @@ public:
   // -------------------------------------------------------
   static ISA* isa; // current ISA
   
-  friend class LMSegIterator;
   friend class ProcInsnIterator;
   
 protected:
@@ -429,17 +418,12 @@ private:
   VMA       m_textBegReloc; // relocated text begin
   VMASigned m_unrelocDelta; // offset to unrelocate relocated VMAs
 
-  // - m_segMap: analagous to m_procMap
-  //
-  // - m_procMap: Procedures are indexed by an interval [a b) where a
-  //   is the begin VMA of this procedure and b is the begin VMA of
-  //   the following procedure (or the end of the section if there is
-  //   no following procedure).
+  // - m_segMapm, m_procMap: Segments and procedures are indexed by an
+  //   interval [begVMA endVMA)
   //
   // - m_insnMap: note that 'VMA' is not necessarily the true vma
   //   value; rather, it is the address of the individual operation
   //   (ISA::ConvertVMAToOpVMA).
-  SegSeq m_sections; // A list of sections [FIXME]
   SegMap  m_segMap;
   ProcMap m_procMap;
   InsnMap m_insnMap; // owns all Insn*
@@ -501,54 +485,6 @@ private:
 protected:
 private:
   VMA m_startVMA;
-};
-
-} // namespace binutils
-
-
-//***************************************************************************
-// LMSegIterator
-//***************************************************************************
-
-namespace binutils {
-
-class Seg;
-
-// --------------------------------------------------------------------------
-// 'LMSegIterator': iterator over the sections in a 'LM'
-// --------------------------------------------------------------------------
-
-class LMSegIterator {
-public:   
-  LMSegIterator(const LM& _lm);
-  ~LMSegIterator();
-
-  // Returns the current object or NULL
-  Seg* Current() const {
-    if (it != lm.m_sections.end()) { return *it; }
-    else { return NULL; }
-  }
-  
-  void operator++()    { ++it; } // prefix increment
-  void operator++(int) { it++; } // postfix increment
-
-  bool IsValid() const { return it != lm.m_sections.end(); } 
-  bool IsEmpty() const { return it == lm.m_sections.end(); }
-
-  // Reset and prepare for iteration again
-  void Reset() { it = lm.m_sections.begin(); }
-
-private:
-  // Should not be used
-  LMSegIterator();
-  LMSegIterator(const LMSegIterator& i);
-  LMSegIterator& operator=(const LMSegIterator& i)
-    { return *this; }
-
-protected:
-private:
-  const LM& lm;
-  LM::SegSeq::const_iterator it;
 };
 
 } // namespace binutils

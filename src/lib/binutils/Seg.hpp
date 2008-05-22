@@ -97,7 +97,7 @@ public:
   
   Type type()  const { return m_type; }
   
-  // Return begin/end virtual memory address for section: [beg, end).
+  // Return begin/end virtual memory address for section: [begVMA, endVMA).
   // Note that the end of a section is equal to the begin address of
   // the next section (or the end of the file) which is different than
   // the convention used for a 'Proc'.

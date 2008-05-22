@@ -1007,78 +1007,69 @@ dump_object_lm(ostream& os, const Prof::Flat::LM& proflm, const binutils::LM& lm
   // 1. Print annotated load module
   // --------------------------------------------------------
   
-  for (binutils::LMSegIterator it(lm); it.IsValid(); ++it) {
-    binutils::Seg* seg = it.Current();
-    if (seg->type() != binutils::Seg::TypeText) { continue; }
+  for (binutils::LM::ProcMap::const_iterator it = lm.procs().begin();
+       it != lm.procs().end(); ++it) {
+    const binutils::Proc* p = it->second;
     
-    // We have a 'TextSeg'.  Iterate over procedures.
-    os << endl 
-       << "Section: " << seg->name();
-
-    binutils::TextSeg* tseg = dynamic_cast<binutils::TextSeg*>(seg);
-    for (binutils::TextSegProcIterator it(*tseg); it.IsValid(); ++it) {
-      binutils::Proc* p = it.Current();
-      string bestName = GetBestFuncName(p->name());
+    string bestName = GetBestFuncName(p->name());
       
-      binutils::Insn* endInsn = p->lastInsn();
-      VMAInterval procint(p->begVMA(), p->endVMA() + endInsn->size());
+    binutils::Insn* endInsn = p->lastInsn();
+    VMAInterval procint(p->begVMA(), p->endVMA() + endInsn->size());
       
-      const vector<uint64_t> eventTotsProc = 
-	eventCursor.computeEventCounts(procint, false);
-      if (!eventCursor.hasEventCntGE(eventTotsProc, show_object_procthresh)) {
-	continue;
-      }
-
-      // We have a 'Procedure'.  Iterate over instructionsn
-      os << endl << endl
-	 << "Procedure: " << p->name() << " (" << bestName << ")\n";
-
-      dump_event_summary(os, eventDescs, eventTotsProc, &eventTots);
-      os << endl << endl;
-      
-      string the_file;
-      SrcFile::ln the_line = SrcFile::ln_NULL;
-
-      for (binutils::ProcInsnIterator it(*p); it.IsValid(); ++it) {
-	binutils::Insn* insn = it.Current();
-	VMA vma = insn->vma();
-	VMA opVMA = binutils::LM::isa->ConvertVMAToOpVMA(vma, insn->opIndex());
-
-	// 1. Collect metric annotations
-	const vector<uint64_t>& eventCntVMA = 
-	  eventCursor.computeEventCountsForVMA(opVMA);
-
-	// 2. Print line information (if necessary)
-	if (show_lines) {
-	  string func, file;
-	  SrcFile::ln line;
-	  p->GetSourceFileInfo(vma, insn->opIndex(), func, file, line);
-	
-	  if (file != the_file || line != the_line) {
-	    the_file = file;
-	    the_line = line;
-	    os << the_file << ":" << the_line << endl;
-	  }
-	}
-	
-	// 3. Print annotated instruction
-	os << hex << opVMA << dec << ": ";
-	
-	if (eventCursor.hasNonZeroEventCnt(eventCntVMA)) {
-	  for (uint i = 0; i < eventCntVMA.size(); ++i) {
-	    uint64_t eventCnt = eventCntVMA[i];
-	    colFmt.event_col(eventCnt, eventTotsProc[i]);
-	  }
-	}
-	else {
-	  colFmt.fill_cols();
-	}
-
-	insn->decode(os);
-	os << endl;
-      }
+    const vector<uint64_t> eventTotsProc = 
+      eventCursor.computeEventCounts(procint, false);
+    if (!eventCursor.hasEventCntGE(eventTotsProc, show_object_procthresh)) {
+      continue;
     }
-    os << endl; // section
+
+    // We have a 'Procedure'.  Iterate over instructionsn
+    os << endl << endl
+       << "Procedure: " << p->name() << " (" << bestName << ")\n";
+
+    dump_event_summary(os, eventDescs, eventTotsProc, &eventTots);
+    os << endl << endl;
+      
+    string the_file;
+    SrcFile::ln the_line = SrcFile::ln_NULL;
+
+    for (binutils::ProcInsnIterator it(*p); it.IsValid(); ++it) {
+      binutils::Insn* insn = it.Current();
+      VMA vma = insn->vma();
+      VMA opVMA = binutils::LM::isa->ConvertVMAToOpVMA(vma, insn->opIndex());
+
+      // 1. Collect metric annotations
+      const vector<uint64_t>& eventCntVMA = 
+	eventCursor.computeEventCountsForVMA(opVMA);
+
+      // 2. Print line information (if necessary)
+      if (show_lines) {
+	string func, file;
+	SrcFile::ln line;
+	p->GetSourceFileInfo(vma, insn->opIndex(), func, file, line);
+	
+	if (file != the_file || line != the_line) {
+	  the_file = file;
+	  the_line = line;
+	  os << the_file << ":" << the_line << endl;
+	}
+      }
+	
+      // 3. Print annotated instruction
+      os << hex << opVMA << dec << ": ";
+	
+      if (eventCursor.hasNonZeroEventCnt(eventCntVMA)) {
+	for (uint i = 0; i < eventCntVMA.size(); ++i) {
+	  uint64_t eventCnt = eventCntVMA[i];
+	  colFmt.event_col(eventCnt, eventTotsProc[i]);
+	}
+      }
+      else {
+	colFmt.fill_cols();
+      }
+
+      insn->decode(os);
+      os << endl;
+    }
   }
 
   os << endl << endl;
