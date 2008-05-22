@@ -126,44 +126,44 @@ public:
   
   // iterators:
   iterator begin() 
-    { return mMap.begin(); }
+    { return m_map.begin(); }
   const_iterator begin() const 
-    { return mMap.begin(); }
+    { return m_map.begin(); }
   iterator end() 
-    { return mMap.end(); }
+    { return m_map.end(); }
   const_iterator end() const 
-    { return mMap.end(); }
+    { return m_map.end(); }
     
   // capacity:
   size_type size() const
-    { return mMap.size(); }
+    { return m_map.size(); }
     
   // element access:
   mapped_type& operator[](const key_type& x)
-    { return mMap[x]; }
+    { return m_map[x]; }
     
   // modifiers:
   std::pair<iterator, bool> insert(const value_type& x)
-    { return mMap.insert(x); }
+    { return m_map.insert(x); }
   iterator insert(iterator position, const value_type& x)
-    { return mMap.insert(position, x); }
+    { return m_map.insert(position, x); }
     
   void erase(iterator position) 
-    { mMap.erase(position); }
+    { m_map.erase(position); }
   size_type erase(const key_type& x) 
-    { return mMap.erase(x); }
+    { return m_map.erase(x); }
   void erase(iterator first, iterator last) 
-    { return mMap.erase(first, last); }
+    { return m_map.erase(first, last); }
     
   void clear();
   
-  // mMap operations:
+  // m_map operations:
   iterator find(const key_type& x)
-    { return mMap.find(x); }
+    { return m_map.find(x); }
   const_iterator find(const key_type& x) const
-    { return mMap.find(x); }
+    { return m_map.find(x); }
   size_type count(const key_type& x) const
-    { return mMap.count(x); }
+    { return m_map.count(x); }
 
 
   // -------------------------------------------------------
@@ -172,44 +172,44 @@ public:
   
   // iterators:
   iterator1 begin1() 
-    { return mMap1.begin(); }
+    { return m_map1.begin(); }
   const_iterator1 begin1() const 
-    { return mMap1.begin(); }
+    { return m_map1.begin(); }
   iterator1 end1() 
-    { return mMap1.end(); }
+    { return m_map1.end(); }
   const_iterator1 end1() const 
-    { return mMap1.end(); }
+    { return m_map1.end(); }
     
   // capacity:
   size_type size1() const
-    { return mMap1.size(); }
+    { return m_map1.size(); }
     
   // element access:
   mapped_type& operator[](const key_type1& x)
-    { return mMap1[x]; }
+    { return m_map1[x]; }
     
   // modifiers:
   std::pair<iterator1, bool> insert1(const value_type1& x)
-    { return mMap1.insert(x); }
+    { return m_map1.insert(x); }
   iterator1 insert1(iterator1 position, const value_type1& x)
-    { return mMap1.insert(position, x); }
+    { return m_map1.insert(position, x); }
     
   void erase1(iterator1 position) 
-    { mMap1.erase(position); }
+    { m_map1.erase(position); }
   size_type erase1(const key_type1& x) 
-    { return mMap1.erase(x); }
+    { return m_map1.erase(x); }
   void erase1(iterator1 first, iterator1 last) 
-    { return mMap1.erase(first, last); }
+    { return m_map1.erase(first, last); }
     
   void clear1();
   
-  // mMap operations:
+  // m_map operations:
   iterator1 find1(const key_type1& x)
-    { return mMap1.find(x); }
+    { return m_map1.find(x); }
   const_iterator1 find1(const key_type1& x) const
-    { return mMap1.find(x); }
+    { return m_map1.find(x); }
   size_type count1(const key_type1& x) const
-    { return mMap1.count(x); }
+    { return m_map1.count(x); }
 
     
   // -------------------------------------------------------
@@ -234,8 +234,8 @@ private:
   void setParentPointers();
   
 private:
-  My_t mMap;
-  My1_t mMap1;
+  My_t m_map;
+  My1_t m_map1;
 };
   
 

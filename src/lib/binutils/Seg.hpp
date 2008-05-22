@@ -86,41 +86,42 @@ class Seg {
 public: 
   enum Type { BSS, Text, Data, Unknown };
   
-  Seg(LM* _lm, std::string& name, Type type, VMA beg, VMA end, uint64_t _sz);
+  Seg(LM* lm, const std::string& name, Type type, 
+      VMA beg, VMA end, uint64_t size);
   virtual ~Seg();
 
-  LM* GetLM() const { return lm; }
+  LM* lm() const { return m_lm; }
 
   // Return name and type of section
   const std::string& name() const { return m_name; }
   
-  Type  GetType()  const { return m_type; }
+  Type type()  const { return m_type; }
   
   // Return begin/end virtual memory address for section: [beg, end).
   // Note that the end of a section is equal to the begin address of
   // the next section (or the end of the file) which is different than
   // the convention used for a 'Proc'.
-  VMA GetBeg() const { return m_beg; }
-  VMA GetEnd() const { return m_end; }
+  VMA begVMA() const { return m_begVMA; }
+  VMA endVMA() const { return m_endVMA; }
 
   // Return size of section
-  uint64_t GetSize() const { return m_size; }
+  uint64_t size() const { return m_size; }
 
   // Return true if virtual memory address 'vma' is within the section
   // WARNING: vma must be unrelocated
-  bool IsIn(VMA vma) const { return (m_beg <= vma && vma < m_end); }
+  bool isIn(VMA vma) const { return (m_begVMA <= vma && vma < m_endVMA); }
 
   // Convenient wrappers for the 'LM' versions of the same.
   MachInsn* findMachInsn(VMA vma, ushort &sz) const {
-    return lm->findMachInsn(vma, sz);
+    return m_lm->findMachInsn(vma, sz);
   }
   Insn* findInsn(VMA vma, ushort opIndex) const {
-    return lm->findInsn(vma, opIndex);
+    return m_lm->findInsn(vma, opIndex);
   }
   bool GetSourceFileInfo(VMA vma, ushort opIndex,
 			 std::string& func, std::string& file, 
 			 SrcFile::ln& line) const {
-    return lm->GetSourceFileInfo(vma, opIndex, func, file, line);
+    return m_lm->GetSourceFileInfo(vma, opIndex, func, file, line);
   }
 
   bool GetSourceFileInfo(VMA begVMA, ushort bOpIndex,
@@ -128,8 +129,8 @@ public:
 			 std::string& func, std::string& file,
 			 SrcFile::ln& begLine, SrcFile::ln& endLine,
 			 uint flags = 1) const {
-    return lm->GetSourceFileInfo(begVMA, bOpIndex, endVMA, eOpIndex,
-				 func, file, begLine, endLine, flags);
+    return m_lm->GetSourceFileInfo(begVMA, bOpIndex, endVMA, eOpIndex,
+				   func, file, begLine, endLine, flags);
   }
 
   // -------------------------------------------------------
@@ -150,16 +151,15 @@ protected:
   Seg() { } 
   Seg(const Seg& s) { }
   Seg& operator=(const Seg& s) { return *this; }
-private:
   
 protected:
-private:
-  LM* lm; // we are not owners
+  LM* m_lm; // do not own
 
+private:
   std::string m_name;
   Type m_type;
-  VMA  m_beg;  // beginning of section 
-  VMA  m_end;  // end of section [equal to the beginning of next section]
+  VMA  m_begVMA; // beginning of section 
+  VMA  m_endVMA; // end of section [equal to the beginning of next section]
   uint64_t m_size; // size in bytes
 };
 
@@ -172,8 +172,6 @@ private:
 
 namespace binutils {
 
-class TextSegImpl; 
-
 
 // --------------------------------------------------------------------------
 // 'TextSeg' represents a text segment in a 'LM' and
@@ -182,11 +180,11 @@ class TextSegImpl;
 
 class TextSeg : public Seg { 
 public:
-  TextSeg(LM* _lm, std::string& name, VMA beg, VMA end,
-	  uint64_t size, asymbol** syms, int numSyms, bfd* abfd);
+  TextSeg(LM* lm, const std::string& name, 
+	  VMA beg, VMA end, uint64_t size);
   virtual ~TextSeg();
 
-  uint GetNumProcs() const { return procedures.size(); }
+  uint GetNumProcs() const { return m_procedures.size(); }
 
   // -------------------------------------------------------
   // debugging
@@ -206,9 +204,9 @@ private:
   void Create_DisassembleProcs();
 
   // Construction helpers
-  std::string FindProcName(bfd *abfd, asymbol *procSym) const;
+  std::string FindProcName(bfd* abfd, asymbol* procSym) const;
   VMA FindProcEnd(int funcSymIndex) const;
-  Insn* MakeInsn(bfd *abfd, MachInsn* mi, VMA vma,
+  Insn* MakeInsn(bfd* abfd, MachInsn* mi, VMA vma, 
 		 ushort opIndex, ushort sz) const;
   
   // Proc sequence: 'deque' supports random access iterators (and
@@ -220,8 +218,10 @@ private:
 
 protected:
 private:
-  TextSegImpl* impl;
-  ProcSeq procedures; // FIXME: we could make this a slice of the procs in LM
+  char* m_contents;    // contents, aligned with a 16-byte boundary
+  char* m_contentsRaw; // allocated memory for section contents (we own)
+
+  ProcSeq m_procedures; // FIXME: we could make this a slice of the procs in LM
 };
 
 } // namespace binutils
@@ -245,18 +245,18 @@ public:
 
   // Returns the current object or NULL
   Proc* Current() const {
-    if (it != sec.procedures.end()) { return *it; }
+    if (it != sec.m_procedures.end()) { return *it; }
     else { return NULL; }
   }
   
   void operator++()    { ++it; } // prefix increment
   void operator++(int) { it++; } // postfix increment
 
-  bool IsValid() const { return it != sec.procedures.end(); } 
-  bool IsEmpty() const { return it == sec.procedures.end(); }
+  bool IsValid() const { return it != sec.m_procedures.end(); } 
+  bool IsEmpty() const { return it == sec.m_procedures.end(); }
 
   // Reset and prepare for iteration again
-  void Reset() { it = sec.procedures.begin(); }
+  void Reset() { it = sec.m_procedures.begin(); }
 
 private:
   // Should not be used

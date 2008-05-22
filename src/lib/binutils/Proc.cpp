@@ -223,7 +223,7 @@ binutils::Proc::ddump() const
 //***************************************************************************
 
 binutils::ProcInsnIterator::ProcInsnIterator(const Proc& _p)
-  : p(_p), lm(*(p.GetLM()))
+  : p(_p), lm(*(p.lm()))
 {
   Reset();
 }

@@ -91,16 +91,17 @@ using std::string;
 // Seg
 //***************************************************************************
 
-binutils::Seg::Seg(binutils::LM* _lm, string& name, Type type,
-		   VMA beg, VMA end, VMA _sz)
-  : lm(_lm), m_name(name), m_type(type), m_beg(beg), m_end(end), m_size(_sz)
+binutils::Seg::Seg(binutils::LM* lm, const string& name, Type type,
+		   VMA beg, VMA end, VMA size)
+  : m_lm(lm), m_name(name), m_type(type), 
+    m_begVMA(beg), m_endVMA(end), m_size(size)
 {
 }
 
 
 binutils::Seg::~Seg()
 {
-  lm = NULL; 
+  m_lm = NULL; 
 }
 
 
@@ -121,14 +122,14 @@ binutils::Seg::dump(std::ostream& o, int flags, const char* pre) const
   o << p << "------------------- Section Dump ------------------\n";
   o << p << "  Name: `" << name() << "'\n";
   o << p << "  Type: `";
-  switch (GetType()) {
+  switch (type()) {
     case BSS:  o << "BSS'\n";  break;
     case Text: o << "Text'\n"; break;
     case Data: o << "Data'\n"; break;
     default:   DIAG_Die("Unknown segment type");
   }
-  o << p << "  VMA: [" << hex << GetBeg() << ", " << GetEnd() << dec << ")\n";
-  o << p << "  Size(b): " << GetSize() << "\n";
+  o << p << "  VMA: [" << hex << begVMA() << ", " << endVMA() << dec << ")\n";
+  o << p << "  Size(b): " << size() << "\n";
 }
 
 
@@ -142,33 +143,12 @@ binutils::Seg::ddump() const
 // TextSeg
 //***************************************************************************
 
-class binutils::TextSegImpl { 
-public:
-  TextSegImpl() 
-    : abfd(NULL), symTable(NULL), 
-      contentsRaw(NULL), contents(NULL), numSyms(0) { }
-  ~TextSegImpl() { }
-    
-  bfd* abfd;          // we do not own
-  asymbol **symTable; // we do not own
-  char *contentsRaw; // allocated memory for section contents (we own)
-  char *contents;    // contents, aligned with a 16-byte boundary
-  int numSyms;
-};
-
-
-binutils::TextSeg::TextSeg(binutils::LM* _lm, string& name, 
-			   VMA beg, VMA end, uint64_t size, 
-			   asymbol** syms, int numSyms, bfd* abfd)
-  : Seg(_lm, name, Seg::Text, beg, end, size), impl(NULL),
-    procedures(0)
+binutils::TextSeg::TextSeg(binutils::LM* lm, const string& name, 
+			   VMA beg, VMA end, uint64_t size)
+  : Seg(lm, name, Seg::Text, beg, end, size), 
+    m_procedures(0),
+    m_contentsRaw(NULL), m_contents(NULL)
 {
-  impl = new TextSegImpl;
-  impl->abfd = abfd;     // we do not own 'abfd'
-  impl->symTable = syms; // we do not own 'syms'
-  impl->numSyms = numSyms;
-  impl->contents = NULL;
-
   // 1. Initialize procedures
   Create_InitializeProcs();
 
@@ -186,20 +166,20 @@ binutils::TextSeg::TextSeg(binutils::LM* _lm, string& name,
   //   instruciton.
   
   // FIXME: Does "new" provide a way of returning an aligned pointer?
-  impl->contentsRaw = new char[size+16+16];
-  memset(impl->contentsRaw, 0, 16+16);        // zero the padding
-  char* contentsTmp = impl->contentsRaw + 16; // add the padding
-  impl->contents = (char *)( ((uintptr_t)contentsTmp + 15) & ~15 ); // align
+  m_contentsRaw = new char[size+16+16];
+  memset(m_contentsRaw, 0, 16+16);        // zero the padding
+  char* contentsTmp = m_contentsRaw + 16; // add the padding
+  m_contents = (char *)( ((uintptr_t)contentsTmp + 15) & ~15 ); // align
 
   const char *nameStr = name.c_str();
+  bfd* abfd = m_lm->abfd();
   int result = bfd_get_section_contents(abfd,
                                         bfd_get_section_by_name(abfd, nameStr),
-                                        impl->contents, 0, size);
+                                        m_contents, 0, size);
   if (!result) {
-    delete [] impl->contentsRaw;
-    impl->contentsRaw = impl->contents = NULL;
-    cerr << "Error reading section contents: " << bfd_errmsg(bfd_get_error())
-	 << endl;
+    delete[] m_contentsRaw;
+    m_contentsRaw = m_contents = NULL;
+    DIAG_EMsg("Error reading section: " << bfd_errmsg(bfd_get_error()));
     return;
   }
   
@@ -210,17 +190,15 @@ binutils::TextSeg::TextSeg(binutils::LM* _lm, string& name,
 
 binutils::TextSeg::~TextSeg()
 {
-  // Clear impl
-  impl->symTable = NULL;
-  delete[] impl->contentsRaw; impl->contentsRaw = NULL;
-  impl->contents = NULL;
-  delete impl;
-    
+  delete[] m_contentsRaw;
+  m_contentsRaw = NULL;
+  m_contents = NULL;
+
   // Clear procedures
   for (TextSegProcIterator it(*this); it.IsValid(); ++it) {
     delete it.Current(); // Proc*
   }
-  procedures.clear();
+  m_procedures.clear();
 }
 
 
@@ -245,8 +223,7 @@ binutils::TextSeg::dump(std::ostream& o, int flags, const char* pre) const
 void
 binutils::TextSeg::Create_InitializeProcs()
 {
-  LM* lm = GetLM();
-  dbg::LM* dbgInfo = lm->GetDebugInfo();
+  dbg::LM* dbgInfo = m_lm->GetDebugInfo();
 
   // Any procedure with a parent has a <Proc*, parentVMA> entry
   std::map<Proc*, VMA> parentMap;
@@ -261,10 +238,15 @@ binutils::TextSeg::Create_InitializeProcs()
   // 'sbrk' along with a gloabl symbol '__sbrk'), but we should not
   // have multiple procedures.
   // ------------------------------------------------------------
-  for (int i = 0; i < impl->numSyms; i++) {
+
+  bfd* abfd = m_lm->abfd();
+  asymbol** symtab = m_lm->bfdSymTab();
+  uint symtabSz = m_lm->bfdSymTabSz();
+
+  for (int i = 0; i < symtabSz; i++) {
     // FIXME: exploit the fact that the symbol table is sorted by vma
-    asymbol* sym = impl->symTable[i]; 
-    if (IsIn(bfd_asymbol_value(sym)) 
+    asymbol* sym = symtab[i]; 
+    if (isIn(bfd_asymbol_value(sym)) 
 	&& (sym->flags & BSF_FUNCTION)
         && !bfd_is_und_section(sym->section)) {
       
@@ -285,7 +267,7 @@ binutils::TextSeg::Create_InitializeProcs()
         procType = Proc::Unknown;
       }
       
-      Proc* proc = lm->findProc(begVMA);
+      Proc* proc = m_lm->findProc(begVMA);
       if (proc) {
 	DIAG_Assert(proc->begVMA() == begVMA, "TextSeg::Create_InitializeProcs: Procedure beginning at 0x" << hex << begVMA << " overlaps with:\n" << proc->toString());
 	if (procType == Proc::Global) {
@@ -305,7 +287,7 @@ binutils::TextSeg::Create_InitializeProcs()
 
       dbg::Proc* dbg = (*dbgInfo)[begVMA];
       if (!dbg) {
-	procNm = FindProcName(impl->abfd, sym);
+	procNm = FindProcName(abfd, sym);
 	string pnm = GetBestFuncName(procNm);
 	dbg = (*dbgInfo)[pnm];
       }
@@ -344,8 +326,8 @@ binutils::TextSeg::Create_InitializeProcs()
       
       // We now have a valid procedure
       proc = new Proc(this, procNm, symNm, procType, begVMA, endVMA, size);
-      procedures.push_back(proc);
-      lm->insertProc(VMAInterval(begVMA, endVMA), proc);
+      m_procedures.push_back(proc);
+      m_lm->insertProc(VMAInterval(begVMA, endVMA), proc);
 
       // Add symbolic info
       if (dbg) {
@@ -364,9 +346,9 @@ binutils::TextSeg::Create_InitializeProcs()
   // ------------------------------------------------------------
   if (GetNumProcs() == 0) {
     Proc* proc = new Proc(this, name(), name(), Proc::Quasi, 
-			  GetBeg(), GetEnd(), GetSize());
-    procedures.push_back(proc);
-    lm->insertProc(VMAInterval(GetBeg(), GetEnd()), proc);
+			  begVMA(), endVMA(), size());
+    m_procedures.push_back(proc);
+    m_lm->insertProc(VMAInterval(begVMA(), endVMA()), proc);
   }
 
 
@@ -377,7 +359,7 @@ binutils::TextSeg::Create_InitializeProcs()
        it != parentMap.end(); ++it) {
     Proc* child = it->first;
     VMA parentVMA = it->second;
-    Proc* parent = lm->findProc(parentVMA);
+    Proc* parent = m_lm->findProc(parentVMA);
     DIAG_AssertWarn(parent, "Could not find parent within this section:\n" 
 		    << child->toString());
     DIAG_Assert(parent != child, "Procedure has itself as parent!\n" 
@@ -390,13 +372,10 @@ binutils::TextSeg::Create_InitializeProcs()
 void
 binutils::TextSeg::Create_DisassembleProcs()
 {
-  LM* lm = GetLM();
-  bfd* abfd = impl->abfd;
-  
   // ------------------------------------------------------------
   // Disassemble the instructions in each procedure.
   // ------------------------------------------------------------
-  VMA sectionBase = GetBeg();
+  VMA sectionBase = begVMA();
   
   for (TextSegProcIterator it(*this); it.IsValid(); ++it) {
     Proc* p = it.Current();
@@ -407,7 +386,7 @@ binutils::TextSeg::Create_DisassembleProcs()
 
     // Iterate over each vma at which an instruction might begin
     for (VMA vma = procBeg; vma < procEnd; ) {
-      MachInsn *mi = &(impl->contents[vma - sectionBase]);
+      MachInsn *mi = &(m_contents[vma - sectionBase]);
       insnSz = LM::isa->GetInsnSize(mi);
       if (insnSz == 0) {
 	// This is not a recognized instruction (cf. data on CISC ISAs).
@@ -425,8 +404,8 @@ binutils::TextSeg::Create_DisassembleProcs()
       // We have a valid instruction at this vma!
       lastInsnVMA = vma;
       for (ushort opIndex = 0; opIndex < num_ops; opIndex++) {
-        Insn *newInsn = MakeInsn(abfd, mi, vma, opIndex, insnSz);
-        lm->insertInsn(vma, opIndex, newInsn); 
+        Insn *newInsn = MakeInsn(m_lm->abfd(), mi, vma, opIndex, insnSz);
+        m_lm->insertInsn(vma, opIndex, newInsn); 
       }
       vma += insnSz; 
     }
@@ -446,18 +425,18 @@ binutils::TextSeg::Create_DisassembleProcs()
 // debugging information, if possible; otherwise returns the symbol
 // name.
 string
-binutils::TextSeg::FindProcName(bfd *abfd, asymbol *procSym) const
+binutils::TextSeg::FindProcName(bfd* abfd, asymbol* procSym) const
 {
   string procName;
   const char* func = NULL, * file = NULL;
   uint bfd_line = 0;
 
   // cf. LM::GetSourceFileInfo
-  asection *bfdSeg = bfd_get_section_by_name(abfd, name().c_str());
+  asection* bfdSeg = bfd_get_section_by_name(abfd, name().c_str());
   bfd_vma secBase = bfd_section_vma(abfd, bfdSeg);
   bfd_vma symVal = bfd_asymbol_value(procSym);
   if (bfdSeg) {
-    bfd_find_nearest_line(abfd, bfdSeg, impl->symTable,
+    bfd_find_nearest_line(abfd, bfdSeg, m_lm->bfdSymTab(),
 			  symVal - secBase, &file, &func, &bfd_line);
   }
 
@@ -482,10 +461,13 @@ binutils::TextSeg::FindProcEnd(int funcSymIndex) const
 {
   // Since the symbol table we get is sorted by VMA, we can stop
   // the search as soon as we've gone beyond the VMA of this section.
-  VMA ret = GetEnd();
-  for (int next = funcSymIndex + 1; next < impl->numSyms; next++) {
-    asymbol *sym = impl->symTable[next];
-    if (!IsIn(bfd_asymbol_value(sym))) {
+  asymbol** symtab = m_lm->bfdSymTab();
+  uint symtabSz = m_lm->bfdSymTabSz();
+
+  VMA ret = endVMA();
+  for (int next = funcSymIndex + 1; next < symtabSz; ++next) {
+    asymbol* sym = symtab[next];
+    if (!isIn(bfd_asymbol_value(sym))) {
       break;
     }
     if ((sym->flags & BSF_FUNCTION) && !bfd_is_und_section(sym->section)) {
@@ -500,7 +482,7 @@ binutils::TextSeg::FindProcEnd(int funcSymIndex) const
 // Returns a new instruction of the appropriate type.  Promises not to
 // return NULL.
 binutils::Insn*
-binutils::TextSeg::MakeInsn(bfd *abfd, MachInsn* mi, VMA vma, ushort opIndex,
+binutils::TextSeg::MakeInsn(bfd* abfd, MachInsn* mi, VMA vma, ushort opIndex,
 			     ushort sz) const
 {
   // Assume that there is only one instruction type per

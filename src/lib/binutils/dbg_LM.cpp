@@ -119,7 +119,7 @@ binutils::dbg::LM::clear()
   for (const_iterator it = this->begin(); it != this->end(); ++it) {
     delete it->second;
   }
-  mMap.clear();
+  m_map.clear();
 }
 
 
@@ -129,7 +129,7 @@ binutils::dbg::LM::clear1()
   for (const_iterator1 it = this->begin1(); it != this->end1(); ++it) {
     delete it->second;
   }
-  mMap1.clear();
+  m_map1.clear();
 }
 
 
