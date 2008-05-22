@@ -116,7 +116,7 @@ MathMLExprParser::parse(DOMNode* mathMLExpr,
     }
     IFTRACE << child->getNodeType() << endl; 
     exprs++;
-    exprTree = buildEvalTree(child, mMgr);
+    exprTree = buildEvalTree(child, mMgr, false /*isNum*/);
   }
   if (exprs == 0) {
     throw MathMLExprException("No MathML expression specified for COMPUTE");
@@ -137,10 +137,9 @@ MathMLExprParser::parse(DOMNode* mathMLExpr,
 
 EvalNode* 
 MathMLExprParser::buildEvalTree(DOMNode *node, 
-				const Prof::MetricDescMgr& mMgr) 
+				const Prof::MetricDescMgr& mMgr,
+				bool isNum) 
 {
-  bool isNumber;
-
   static const XMLCh* APPLY = XMLString::transcode("apply");
   static const XMLCh* DIVISION = XMLString::transcode("divide");
   static const XMLCh* SUBTRACTION = XMLString::transcode("minus");
@@ -161,7 +160,7 @@ MathMLExprParser::buildEvalTree(DOMNode *node,
   case DOMNode::TEXT_NODE:
     {
       EvalNode* evalNode;
-      if (isNumber) {  // is a number
+      if (isNum) {  // is a number
 	std::string str = make_string(nodeValue);
 	IFTRACE << "str --" << str << "--" << endl; 
 	double val = StrUtil::toDbl(str.c_str());
@@ -235,7 +234,7 @@ MathMLExprParser::buildEvalTree(DOMNode *node,
 	} while (!isOperandNode(child));
 	IFTRACE << "child " << i << " " << child << endl; 
 	try {
-	  nodes[i] = buildEvalTree(child, mMgr);
+	  nodes[i] = buildEvalTree(child, mMgr, isNum);
 	}
 	catch (const MathMLExprException& e) {
 	  for (int j = 0; j < i; j++)
@@ -275,10 +274,9 @@ MathMLExprParser::buildEvalTree(DOMNode *node,
 
     if (XMLString::equals(nodeName,NUMBER)) {
       IFTRACE << "--" << child << "--" << endl; 
-      isNumber = true;
       EvalNode* builtNode;
       try {
-	builtNode = buildEvalTree(child, mMgr);
+	builtNode = buildEvalTree(child, mMgr, true /*isNum*/);
 	return builtNode;
       }
       catch (const MathMLExprException& e) {
@@ -288,10 +286,9 @@ MathMLExprParser::buildEvalTree(DOMNode *node,
 
     if (XMLString::equals(nodeName,IDENTIFIER)) {
       IFTRACE << "--" << child << "--" << endl; 
-      isNumber = false;
       EvalNode* builtNode;
       try {
-	builtNode = buildEvalTree(child, mMgr);
+	builtNode = buildEvalTree(child, mMgr, false /*isNum*/);
 	return builtNode;
       }
       catch (const MathMLExprException& e) {
