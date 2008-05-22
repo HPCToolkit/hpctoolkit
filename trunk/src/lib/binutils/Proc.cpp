@@ -237,12 +237,12 @@ binutils::ProcInsnIterator::~ProcInsnIterator()
 void
 binutils::ProcInsnIterator::Reset()
 {
-  it    = lm.vmaToInsnMap.find(p.m_begVMA);
-  endIt = lm.vmaToInsnMap.find(p.m_endVMA); 
+  it    = lm.m_vmaToInsnMap.find(p.m_begVMA);
+  endIt = lm.m_vmaToInsnMap.find(p.m_endVMA); 
   
-  if (it != lm.vmaToInsnMap.end()) {
+  if (it != lm.m_vmaToInsnMap.end()) {
     // We have at least one instruction: p.endVMA should have been found
-    DIAG_Assert(endIt != lm.vmaToInsnMap.end(), "Internal error!");
+    DIAG_Assert(endIt != lm.m_vmaToInsnMap.end(), "Internal error!");
     
     endIt++; // 'endIt' is now one past the last valid instruction
   
@@ -250,7 +250,7 @@ binutils::ProcInsnIterator::Reset()
     // vma are also included.  Push 'endIt' back as needed; when done it
     // should remain one past the last valid instruction
     for (; // ((*endIt).second) returns Insn*
-	 (endIt != lm.vmaToInsnMap.end() && endIt->second->vma() == p.m_endVMA);
+	 (endIt != lm.m_vmaToInsnMap.end() && endIt->second->vma() == p.m_endVMA);
 	 endIt++)
       { }
   }

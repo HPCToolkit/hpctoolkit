@@ -139,6 +139,7 @@ HasPerfData(const ScopeInfo *si, int nm)
 //    data associated
 //***************************************************************************
 
+// FIXME: relocate
 void 
 PruneScopeTreeMetrics(const ScopeInfo *node, int numMetrics)
 {
