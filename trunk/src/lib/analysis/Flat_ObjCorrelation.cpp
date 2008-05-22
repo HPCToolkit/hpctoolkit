@@ -460,7 +460,7 @@ correlateWithObject_LM(ostream& os,
   
   for (binutils::LMSegIterator it(lm); it.IsValid(); ++it) {
     binutils::Seg* seg = it.Current();
-    if (seg->GetType() != binutils::Seg::Text) { continue; }
+    if (seg->type() != binutils::Seg::Text) { continue; }
     
     // We have a 'TextSeg'.  Iterate over procedures.
     os << std::endl 

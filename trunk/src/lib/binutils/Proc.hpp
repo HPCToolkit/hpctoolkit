@@ -96,8 +96,8 @@ public:
   // Basic data
   // -------------------------------------------------------
 
-  TextSeg* GetTextSeg() const { return m_seg; }
-  LM*  GetLM()  const { return m_seg->GetLM(); }
+  TextSeg* seg() const { return m_seg; }
+  LM*      lm()  const { return m_seg->lm(); }
 
   // Returns the name as determined by debugging information; if this
   // is unavailable returns the name found in the symbol table.  (Note
@@ -121,8 +121,8 @@ public:
   void endVMA(VMA endVMA) { m_endVMA = endVMA; }
 
   // Return size, which is (endVMA - startVMA) + sizeof(last instruction)
-  unsigned int size() const             { return m_size; }
-  void         size(unsigned int size)  { m_size = size; }
+  uint size() const             { return m_size; }
+  void size(unsigned int size)  { m_size = size; }
   
   // -------------------------------------------------------
   // Symbolic information: availability depends upon debugging information
@@ -133,8 +133,8 @@ public:
   const std::string& filename() const         { return m_filenm; }
   void               filename(std::string& x) { m_filenm = x; }
 
-  SrcFile::ln  begLine() const        { return m_begLine; }
-  void         begLine(SrcFile::ln x) { m_begLine = x; }
+  SrcFile::ln begLine() const        { return m_begLine; }
+  void        begLine(SrcFile::ln x) { m_begLine = x; }
 
   Proc* parent() const  { return m_parent; }
   void  parent(Proc* x) { m_parent = x; }
@@ -162,25 +162,25 @@ public:
   // -------------------------------------------------------
 
   MachInsn* findMachInsn(VMA vma, ushort &sz) const {
-    return m_seg->GetLM()->findMachInsn(vma, sz);
+    return m_seg->lm()->findMachInsn(vma, sz);
   }
   Insn* findInsn(VMA vma, ushort opIndex) const {
-    return m_seg->GetLM()->findInsn(vma, opIndex);
+    return m_seg->lm()->findInsn(vma, opIndex);
   }
   bool GetSourceFileInfo(VMA vma, ushort opIndex,
 			 std::string& func, std::string& file, 
 			 SrcFile::ln& line) const {
-    return m_seg->GetLM()->GetSourceFileInfo(vma, opIndex, func, file, line);
+    return m_seg->lm()->GetSourceFileInfo(vma, opIndex, func, file, line);
   }
   bool GetSourceFileInfo(VMA begVMA, ushort bOpIndex,
 			 VMA endVMA, ushort eOpIndex,
 			 std::string& func, std::string& file,
 			 SrcFile::ln& begLine, SrcFile::ln& endLine,
 			 unsigned flags = 1) const {
-    return m_seg->GetLM()->GetSourceFileInfo(begVMA, bOpIndex,
-					     endVMA, eOpIndex, 
-					     func, file, 
-					     begLine, endLine, flags);
+    return m_seg->lm()->GetSourceFileInfo(begVMA, bOpIndex,
+					  endVMA, eOpIndex, 
+					  func, file, 
+					  begLine, endLine, flags);
   }
   
   // -------------------------------------------------------
@@ -207,6 +207,7 @@ private:
 protected:
 private:
   TextSeg*    m_seg; // we do not own
+
   std::string m_name;
   std::string m_linkname;
   Type        m_type;

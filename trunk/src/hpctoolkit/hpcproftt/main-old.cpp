@@ -1009,7 +1009,7 @@ dump_object_lm(ostream& os, const Prof::Flat::LM& proflm, const binutils::LM& lm
   
   for (binutils::LMSegIterator it(lm); it.IsValid(); ++it) {
     binutils::Seg* seg = it.Current();
-    if (seg->GetType() != binutils::Seg::Text) { continue; }
+    if (seg->type() != binutils::Seg::Text) { continue; }
     
     // We have a 'TextSeg'.  Iterate over procedures.
     os << endl 

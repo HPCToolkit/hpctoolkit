@@ -100,11 +100,9 @@ class LM {
 public:
   enum Type { Executable, SharedLibrary, Unknown };
 
-  // VMAInterval to Proc map.
+  typedef VMAIntervalMap<Seg*>  VMAToSegMap;
   typedef VMAIntervalMap<Proc*> VMAToProcMap;
-  
-  // Virtual memory address to Insn* map.
-  typedef std::map<VMA, Insn*> VMAToInsnMap;
+  typedef std::map<VMA, Insn*>  VMAToInsnMap;
   
   // Seg sequence: 'deque' supports random access iterators (and
   // is thus sortable with std::sort) and constant time insertion/deletion at
@@ -133,7 +131,7 @@ public:
   // read: If module has not already been read, attempt to do so;
   // return an exception on error.  If a file has already been read do
   // nothing.
-  virtual void read();
+  virtual void read(bool readInsns = true);
 
 
   // -------------------------------------------------------
@@ -263,7 +261,15 @@ public:
   GetProcFirstLineInfo(VMA vma, ushort opIndex, SrcFile::ln& line) const;
 
   bool realpath(std::string& fnm) { m_realpath_mgr.realpath(fnm); }
-  
+
+
+  // -------------------------------------------------------
+  // BFD details
+  // -------------------------------------------------------
+  bfd*      abfd()        const { return m_bfd; }
+  asymbol** bfdSymTab()   const { return m_bfdSymTabSort; }
+  uint      bfdSymTabSz() const { return m_bfdSymTabSz; }
+
   // -------------------------------------------------------
   // debugging
   // -------------------------------------------------------
@@ -324,11 +330,11 @@ protected:
 
 private: 
   // Constructing routines: return true on success; false on error
-  bool 
-  ReadSymbolTables();
+  void
+  readSymbolTables();
 
-  bool 
-  ReadSegs();
+  void
+  readSegs(bool readInsns);
   
   // UnRelocateVMA: Given a relocated VMA, returns a non-relocated version.
   VMA 
@@ -356,35 +362,35 @@ private:
     
 private:
   std::string m_name;
-  Type  m_type;
-  VMA   m_txtBeg, m_txtEnd; // text begin and end
-  VMA   m_begVMA;         // shared library load address begin
+  Type m_type;
+  VMA  m_txtBeg, m_txtEnd; // text begin and end
+  VMA  m_begVMA;           // shared library load address begin
 
   VMA       m_textBegReloc; // relocated text begin
   VMASigned m_unRelocDelta; // offset to unrelocate relocated VMAs
 
+  // A map of VMAs to Seg, Proc, and Insn  
+  //
+  // - m_vmaToSegMap, m_vmaToProcMap: indexed by an interval [a b)
+  //   where a is the begin VMA of this procedure and b is the begin
+  //   VMA of the following procedure (or the end of the section if
+  //   there is no following procedure).
+  //
+  // - m_vmaToInsnMap: note that 'VMA' is not necessarily the true vma
+  //   value; rather, it is the address of the individual operation
+  //   (ISA::ConvertVMAToOpVMA).
   SegSeq m_sections; // A list of sections
-
-protected:  
-  bfd* m_bfd;                 // BFD of this module.
-  asymbol** m_bfdSymTbl;      // Unmodified BFD symbol table
-  asymbol** m_bfdSymTblSort;  // Sorted BFD symbol table
-  long m_numSyms;             // Number of syms in table.
-
-private:
-  // A map of VMAs to Proc* and Insn*.  
-  //   1. 'm_vmaToProcMap' is indexed by an interval [a b) where a is
-  // the begin VMA of this procedure and b is the begin VMA of the
-  // following procedure (or the end of the section if there is no
-  // following procedure).
-  //   2. For 'm_vmaToInsnMap', note that 'VMA' is not necessarily the
-  // true vma value; rather, it is the address of the individual
-  // operation (ISA::ConvertVMAToOpVMA).
+  //VMAToSegMap  m_vmaToSegMap;
   VMAToProcMap m_vmaToProcMap;
   VMAToInsnMap m_vmaToInsnMap; // owns all Insn*
 
   // symbolic info used in building procedures
   binutils::dbg::LM m_dbgInfo;
+
+  bfd*      m_bfd;           // BFD of this module.
+  asymbol** m_bfdSymTab;     // Unmodified BFD symbol table
+  asymbol** m_bfdSymTabSort; // Sorted BFD symbol table
+  uint      m_bfdSymTabSz;   // Number of syms in table.
 
   RealPathMgr m_realpath_mgr;
 };
@@ -415,7 +421,7 @@ public:
   // -------------------------------------------------------
 
   // See LM::Open comments
-  virtual void open(const char* moduleName);
+  virtual void open(const char* filenm);
   
   VMA GetStartVMA() const { return m_startVMA; }
 

@@ -102,8 +102,7 @@ binutils::LM::LM()
   : m_type(Unknown),
     m_txtBeg(0), m_txtEnd(0), m_begVMA(0),
     m_textBegReloc(0), m_unRelocDelta(0),
-    m_bfd(NULL), m_bfdSymTbl(NULL), m_bfdSymTblSort(NULL), 
-    m_numSyms(0)
+    m_bfd(NULL), m_bfdSymTab(NULL), m_bfdSymTabSort(NULL), m_bfdSymTabSz(0)
 {
 }
 
@@ -122,11 +121,11 @@ binutils::LM::~LM()
     m_bfd = NULL;
   }
 
-  delete[] m_bfdSymTbl;
-  m_bfdSymTbl = NULL;
+  delete[] m_bfdSymTab;
+  m_bfdSymTab = NULL;
 
-  delete[] m_bfdSymTblSort;
-  m_bfdSymTblSort = NULL; 
+  delete[] m_bfdSymTabSort;
+  m_bfdSymTabSort = NULL; 
     
   // Clear vmaToInsMap
   VMAToInsnMap::iterator it;
@@ -142,9 +141,9 @@ binutils::LM::~LM()
 
 
 void
-binutils::LM::open(const char* moduleName)
+binutils::LM::open(const char* filenm)
 {
-  DIAG_Assert(Logic::implies(!m_name.empty(), m_name.c_str() == moduleName), "Cannot open a different file!");
+  DIAG_Assert(Logic::implies(!m_name.empty(), m_name.c_str() == filenm), "Cannot open a different file!");
   
   // -------------------------------------------------------
   // 1. Initialize bfd and open the object file.
@@ -152,20 +151,19 @@ binutils::LM::open(const char* moduleName)
 
   // Determine file existence.
   bfd_init();
-  m_bfd = bfd_openr(moduleName, "default");
+  m_bfd = bfd_openr(filenm, "default");
   if (!m_bfd) {
-    BINUTILS_Throw("'" << moduleName << "': " << bfd_errmsg(bfd_get_error()));
+    BINUTILS_Throw("'" << filenm << "': " << bfd_errmsg(bfd_get_error()));
   }
   
-  // bfd_object: The BFD may contain data, symbols, relocations and
-  //   debug info.
-  // bfd_archive: The BFD contains other BFDs and an optional index.
-  // bfd_core: The BFD contains the result of an executable core dump.
+  // bfd_object:  may contain data, symbols, relocations and debug info
+  // bfd_archive: contains other BFDs and an optional index
+  // bfd_core:    contains the result of an executable core dump
   if (!bfd_check_format(m_bfd, bfd_object)) {
-    BINUTILS_Throw("'" << moduleName << "': not an object or executable");
+    BINUTILS_Throw("'" << filenm << "': not an object or executable");
   }
   
-  m_name = moduleName;
+  m_name = filenm;
   realpath(m_name);
   
   // -------------------------------------------------------
@@ -242,17 +240,13 @@ binutils::LM::open(const char* moduleName)
 
 
 void
-binutils::LM::read()
+binutils::LM::read(bool readInsns)
 {
   // If the file has not been opened...
   DIAG_Assert(!m_name.empty(), "Must call LM::Open first");
 
-  // Read if we have not already done so
-  if (m_bfdSymTbl == NULL
-      && m_sections.size() == 0 && m_vmaToInsnMap.size() == 0) {
-    ReadSymbolTables();
-    ReadSegs();
-  } 
+  readSymbolTables();
+  readSegs(readInsns);
 }
 
 
@@ -343,7 +337,9 @@ binutils::LM::GetSourceFileInfo(VMA vma, ushort opIndex,
   func = file = "";
   line = 0;
 
-  if (!m_bfdSymTbl) { return STATUS; }
+  if (!m_bfdSymTab) { 
+    return STATUS; 
+  }
   
   VMA unrelocVMA = UnRelocateVMA(vma);
   VMA opVMA = isa->ConvertVMAToOpVMA(unrelocVMA, opIndex);
@@ -353,7 +349,7 @@ binutils::LM::GetSourceFileInfo(VMA vma, ushort opIndex,
   VMA base = 0;
   for (LMSegIterator it(*this); it.IsValid(); ++it) {
     Seg* sec = it.Current();
-    if (sec->IsIn(opVMA)) {
+    if (sec->isIn(opVMA)) {
       // Obtain the bfd section corresponding to our Seg.
       bfdSeg = bfd_get_section_by_name(m_bfd, sec->name().c_str());
       base = bfd_section_vma(m_bfd, bfdSeg);
@@ -369,7 +365,7 @@ binutils::LM::GetSourceFileInfo(VMA vma, ushort opIndex,
   uint bfd_line = 0;
 
   bfd_boolean fnd = 
-    bfd_find_nearest_line(m_bfd, bfdSeg, m_bfdSymTbl,
+    bfd_find_nearest_line(m_bfd, bfdSeg, m_bfdSymTab,
 			  opVMA - base, &bfd_file, &bfd_func, &bfd_line);
   if (fnd) {
     STATUS = (bfd_file && bfd_func && SrcFile::isValid(bfd_line));
@@ -473,14 +469,14 @@ binutils::LM::textBegEndVMA(VMA* begVMA, VMA* endVMA)
   VMA lg_endVMA  = 0;
   for (LMSegIterator it(*this); it.IsValid(); ++it) {
     Seg* sec = it.Current(); 
-    if (sec->GetType() == sec->Text)  {    
+    if (sec->type() == sec->Text)  {    
       if (!(sml_begVMA || lg_endVMA)) {
-	sml_begVMA = sec->GetBeg();
-	lg_endVMA  = sec->GetEnd(); 
+	sml_begVMA = sec->begVMA();
+	lg_endVMA  = sec->endVMA(); 
       } 
       else { 
-	curr_begVMA = sec->GetBeg();
-	curr_endVMA = sec->GetEnd(); 
+	curr_begVMA = sec->begVMA();
+	curr_endVMA = sec->endVMA(); 
 	if (curr_begVMA < sml_begVMA)
 	  sml_begVMA = curr_begVMA;
 	if (curr_endVMA > lg_endVMA)
@@ -527,7 +523,7 @@ binutils::LM::dump(std::ostream& o, int flags, const char* pre) const
   dumpme(o, p2.c_str());
 
   if (flags & DUMP_Flg_SymTab) {
-    o << p2 << "Symbol Table (" << m_numSyms << "):\n";
+    o << p2 << "Symbol Table (" << m_bfdSymTabSz << "):\n";
     DumpSymTab(o, p2.c_str());
   }
   
@@ -594,27 +590,25 @@ binutils::LM::SymCmpByVMAFunc(const void* s1, const void* s2)
 }
 
 
-bool
-binutils::LM::ReadSymbolTables()
+void
+binutils::LM::readSymbolTables()
 {
-  bool STATUS = true;
-
   // First, attempt to get the normal symbol table.  If that fails,
   // attempt to read the dynamic symbol table.
   long bytesNeeded = bfd_get_symtab_upper_bound(m_bfd);
   
   // If we found a populated symbol table...
   if (bytesNeeded > 0) {
-    m_bfdSymTbl = new asymbol*[bytesNeeded];
-    m_numSyms = bfd_canonicalize_symtab(m_bfd, m_bfdSymTbl);
-    if (m_numSyms == 0) {
-      delete[] m_bfdSymTbl;
-      m_bfdSymTbl = NULL;
+    m_bfdSymTab = new asymbol*[bytesNeeded];
+    m_bfdSymTabSz = bfd_canonicalize_symtab(m_bfd, m_bfdSymTab);
+    if (m_bfdSymTabSz == 0) {
+      delete[] m_bfdSymTab;
+      m_bfdSymTab = NULL;
     }
   }
 
   // If we found no symbols, or if there was an error reading symbolic info...
-  if (bytesNeeded <= 0 || m_numSyms == 0) {
+  if (bytesNeeded <= 0 || m_bfdSymTabSz == 0) {
 
     // Either there are no symbols or there is no normal symbol table.
     // So try obtaining dynamic symbol table.  Unless this is a mips
@@ -630,42 +624,37 @@ binutils::LM::ReadSymbolTables()
     if (bytesNeeded <= 0) {
       // We can't find any symbols. 
       DIAG_Msg(1, "Warning: '" << name() << "': No dynamic symbols found.");
-      return false;
+      return;
     }
     
-    m_bfdSymTbl = new asymbol*[bytesNeeded];
-    m_numSyms = bfd_canonicalize_dynamic_symtab(m_bfd, m_bfdSymTbl);
+    m_bfdSymTab = new asymbol*[bytesNeeded];
+    m_bfdSymTabSz = bfd_canonicalize_dynamic_symtab(m_bfd, m_bfdSymTab);
   }
-  DIAG_Assert(m_numSyms >= 0, "");
+  DIAG_Assert(m_bfdSymTab && m_bfdSymTabSz >= 0, "");
 
   // Make a scratch copy of the symbol table.
-  m_bfdSymTblSort = new asymbol*[bytesNeeded];
-  memcpy(m_bfdSymTblSort, m_bfdSymTbl, bytesNeeded);
+  m_bfdSymTabSort = new asymbol*[bytesNeeded];
+  memcpy(m_bfdSymTabSort, m_bfdSymTab, bytesNeeded);
 
   // Sort scratch symbol table by VMA.
   QuickSort QSort;
-  QSort.Create((void **)(m_bfdSymTblSort), LM::SymCmpByVMAFunc);
-  QSort.Sort(0, m_numSyms - 1);
-  return STATUS;
+  QSort.Create((void **)(m_bfdSymTabSort), LM::SymCmpByVMAFunc);
+  QSort.Sort(0, m_bfdSymTabSz - 1);
 }
 
 
-bool
-binutils::LM::ReadSegs()
+void
+binutils::LM::readSegs(bool readInsns)
 {
-  bool STATUS = true;
-
   // Create sections.
   // Pass symbol table and debug summary information for each section
   // into that section as it is created.
-  if (!m_bfdSymTbl) { 
-    return false; 
-  }
+  DIAG_Assert(m_bfdSymTab, "");
 
-  m_dbgInfo.read(m_bfd, m_bfdSymTbl);
+  m_dbgInfo.read(m_bfd, m_bfdSymTab);
 
   // Process each section in the object file.
-  for (asection *sec = m_bfd->sections; sec; sec = sec->next) {
+  for (asection* sec = m_bfd->sections; (sec); sec = sec->next) {
 
     // 1. Determine initial section attributes
     string secName(bfd_section_name(m_bfd, sec));
@@ -675,20 +664,16 @@ binutils::LM::ReadSegs()
     
     // 2. Create section
     if (sec->flags & SEC_CODE) {
-      TextSeg *newSeg =
-	new TextSeg(this, secName, secBeg, secEnd, secSz,
-		    m_bfdSymTblSort, m_numSyms, m_bfd);
+      TextSeg* newSeg = new TextSeg(this, secName, secBeg, secEnd, secSz);
       insertSeg(newSeg);
-    } 
+    }
     else {
-      Seg *newSeg = new Seg(this, secName, Seg::Data, secBeg, secEnd, secSz);
+      Seg* newSeg = new Seg(this, secName, Seg::Data, secBeg, secEnd, secSz);
       insertSeg(newSeg);
     }
   }
 
   m_dbgInfo.clear();
-  
-  return STATUS;
 }
 
 
@@ -696,7 +681,7 @@ bool
 binutils::LM::GetProcFirstLineInfo(VMA vma, ushort opIndex, 
 				   SrcFile::ln &line) const
 {
-  bool STATUS = false;
+  bool isfound = false;
   line = 0;
 
   VMA unrelocVMA = UnRelocateVMA(vma);
@@ -708,12 +693,12 @@ binutils::LM::GetProcFirstLineInfo(VMA vma, ushort opIndex,
   if (it != m_vmaToProcMap.end()) {
     Proc* proc = it->second;
     line = proc->begLine();
-    STATUS = true;
+    isfound = true;
   }
   DIAG_MsgIf(DBG_BLD_PROC_MAP, "LM::GetProcFirstLineInfo " 
 	     << vmaint.toString() << " = " << line);
 
-  return STATUS;
+  return isfound;
 }
 
 
@@ -828,8 +813,8 @@ binutils::LM::DumpSymTab(std::ostream& o, const char* pre) const
   // Every function symbol seems to have section *ABS*.  Thus, we
   // can't obtain any relevant section information from the symbol
   // itself.  I haven't noticed this on any other platform.
-  for (int i = 0; i < m_numSyms; i++) {
-    asymbol *sym = m_bfdSymTblSort[i]; // m_bfdSymTbl[i];
+  for (int i = 0; i < m_bfdSymTabSz; i++) {
+    asymbol *sym = m_bfdSymTabSort[i]; // m_bfdSymTab[i];
     o << p1 << hex << (bfd_vma)bfd_asymbol_value(sym) << ": " << dec
       << "[" << sym->section->name << "] "
       << ((sym->flags & BSF_FUNCTION) ? " * " : "   ")
@@ -854,14 +839,14 @@ binutils::Exe::~Exe()
 
 
 void
-binutils::Exe::open(const char* moduleName)
+binutils::Exe::open(const char* filenm)
 {
-  LM::open(moduleName);
+  LM::open(filenm);
   if (type() != LM::Executable) {
-    BINUTILS_Throw("'" << moduleName << "' is not an executable.");
+    BINUTILS_Throw("'" << filenm << "' is not an executable.");
   }
 
-  m_startVMA = bfd_get_start_address(m_bfd);
+  m_startVMA = bfd_get_start_address(abfd());
 }
 
 

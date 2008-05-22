@@ -224,7 +224,7 @@ DumpSymbolicInfoOld(std::ostream& os, binutils::LM* lm)
   os << pre << "Dump:\n";
   for (binutils::LMSegIterator it(*lm); it.IsValid(); ++it) {
     binutils::Seg* sec = it.Current();
-    if (sec->GetType() != binutils::Seg::Text) { continue; }
+    if (sec->type() != binutils::Seg::Text) { continue; }
     
     // We have a 'TextSeg'.  Iterate over procedures.
     binutils::TextSeg* tsec = dynamic_cast<binutils::TextSeg*>(sec);

@@ -398,7 +398,7 @@ BuildLMSkeleton(LoadModScope* lmScope, binutils::LM* lm)
   // -------------------------------------------------------
   for (binutils::LMSegIterator it(*lm); it.IsValid(); ++it) {
     binutils::Seg* seg = it.Current();
-    if (seg->GetType() != binutils::Seg::Text) {
+    if (seg->type() != binutils::Seg::Text) {
       continue;
     }
     
@@ -449,7 +449,7 @@ FindOrCreateFileNode(LoadModScope* lmScope, binutils::Proc* p)
 {
   // Attempt to find filename for procedure
   string filenm = p->filename();
-  p->GetLM()->realpath(filenm);
+  p->lm()->realpath(filenm);
   
   if (filenm.empty()) {
     string procnm;
