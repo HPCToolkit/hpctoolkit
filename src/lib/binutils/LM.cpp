@@ -237,13 +237,13 @@ binutils::LM::open(const char* filenm)
 
 
 void
-binutils::LM::read(bool readInsns)
+binutils::LM::read(bool makeInsns)
 {
   // If the file has not been opened...
   DIAG_Assert(!m_name.empty(), "Must call LM::Open first");
 
   readSymbolTables();
-  readSegs(readInsns);
+  readSegs(makeInsns);
 }
 
 
@@ -596,7 +596,7 @@ binutils::LM::readSymbolTables()
 
 
 void
-binutils::LM::readSegs(bool readInsns)
+binutils::LM::readSegs(bool makeInsns)
 {
   // Create sections.
   // Pass symbol table and debug summary information for each section

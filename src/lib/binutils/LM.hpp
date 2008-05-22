@@ -127,7 +127,7 @@ public:
   // read: If module has not already been read, attempt to do so;
   // return an exception on error.  If a file has already been read do
   // nothing.
-  virtual void read(bool readInsns = true);
+  virtual void read(bool makeInsns = true);
 
 
   // -------------------------------------------------------
@@ -248,6 +248,9 @@ public:
   MachInsn*
   findMachInsn(VMA vma, ushort &size) const;
   
+  InsnMap&       insns()       { return m_insnMap; }
+  const InsnMap& insns() const { return m_insnMap; }
+
   Insn*
   findInsn(VMA vma, ushort opIndex) const
   {
@@ -386,7 +389,7 @@ private:
   readSymbolTables();
 
   void
-  readSegs(bool readInsns);
+  readSegs(bool makeInsns);
   
   // unrelocate: Given a relocated VMA, returns a non-relocated version.
   VMA unrelocate(VMA relocVMA) const { return (relocVMA + m_unrelocDelta); }
@@ -424,7 +427,7 @@ private:
   // - m_insnMap: note that 'VMA' is not necessarily the true vma
   //   value; rather, it is the address of the individual operation
   //   (ISA::ConvertVMAToOpVMA).
-  SegMap  m_segMap;
+  SegMap  m_segMap;  // owns all Seg*
   ProcMap m_procMap;
   InsnMap m_insnMap; // owns all Insn*
 
