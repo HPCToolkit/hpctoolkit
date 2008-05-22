@@ -101,6 +101,15 @@ class LM {
 public:
   enum Type { TypeNULL = 0, TypeExe, TypeDSO };
 
+  // Read flags: forms an inverse hierarchy where a smaller scope
+  // implies all the larger scopes.  E.g. ReadFlg_Insn implies
+  // ReadFlg_Proc and ReadFlg_Seg.
+  enum ReadFlg { 
+    ReadFlg_NULL = 0,
+    ReadFlg_Seg  = 0x0001, // always read: permits source code lookup
+    ReadFlg_Proc = 0x0010,
+    ReadFlg_Insn = 0x0100  };
+
   typedef VMAIntervalMap<Seg*>  SegMap;
   typedef VMAIntervalMap<Proc*> ProcMap;
   typedef std::map<VMA, Insn*>  InsnMap;
@@ -111,9 +120,9 @@ public:
   // -------------------------------------------------------
 
   // Constructor allocates an empty data structure
-  LM();
+  //   readflg: use ReadFlg flags
+  LM(uint readflg = ReadFlg_Seg | ReadFlg_Proc | ReadFlg_Insn);
   virtual ~LM();
-
 
   // -------------------------------------------------------  
   // open/read (cf. istreams)
@@ -127,7 +136,7 @@ public:
   // read: If module has not already been read, attempt to do so;
   // return an exception on error.  If a file has already been read do
   // nothing.
-  virtual void read(bool makeInsns = true);
+  virtual void read();
 
 
   // -------------------------------------------------------
@@ -137,10 +146,12 @@ public:
   // name: Return name of load module
   const std::string& name() const { return m_name; }
 
-  // GetType:  Return type of load module
+  // type:  Return type of load module
   Type type() const { return m_type; }
 
-  // GetTextBeg, GetTextEnd: (Unrelocated) Text begin and end.
+  uint readFlags() { return m_readFlags; }
+
+  // textBeg, textEnd: (Unrelocated) Text begin and end.
   // FIXME: only guaranteed on alpha at present
   VMA textBeg() const { return m_txtBeg; }
   VMA textEnd() const { return m_txtEnd; }
@@ -389,7 +400,7 @@ private:
   readSymbolTables();
 
   void
-  readSegs(bool makeInsns);
+  readSegs();
   
   // unrelocate: Given a relocated VMA, returns a non-relocated version.
   VMA unrelocate(VMA relocVMA) const { return (relocVMA + m_unrelocDelta); }
@@ -414,7 +425,10 @@ private:
     
 private:
   std::string m_name;
+
   Type m_type;
+  uint m_readFlags;
+
   VMA  m_txtBeg, m_txtEnd; // text begin and end
   VMA  m_begVMA;           // shared library load address begin
 
@@ -460,7 +474,7 @@ public:
   // -------------------------------------------------------  
   // Constructor/Destructor
   // -------------------------------------------------------
-  Exe(); // set type to executable
+  Exe(uint readflg = LM::ReadFlg_Seg | LM::ReadFlg_Proc | LM::ReadFlg_Insn);
   virtual ~Exe();
 
   // -------------------------------------------------------
@@ -482,8 +496,8 @@ public:
 
 private:
   // Should not be used
-  Exe(const Exe& e) { }
-  Exe& operator=(const Exe& e) { return *this; }
+  Exe(const Exe& e); // { }
+  Exe& operator=(const Exe& e); // { return *this; }
   
 protected:
 private:

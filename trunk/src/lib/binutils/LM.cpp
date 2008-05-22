@@ -98,12 +98,17 @@ using std::dec;
 ISA* binutils::LM::isa = NULL;
 
 
-binutils::LM::LM()
-  : m_type(TypeNULL),
+binutils::LM::LM(uint readflg)
+  : m_type(TypeNULL), m_readFlags(readflg),
     m_txtBeg(0), m_txtEnd(0), m_begVMA(0),
     m_textBegReloc(0), m_unrelocDelta(0),
     m_bfd(NULL), m_bfdSymTab(NULL), m_bfdSymTabSort(NULL), m_bfdSymTabSz(0)
 {
+  // enforce ReadFlg rules
+  m_readFlags = (m_readFlags | ReadFlg_Seg);
+  if (readflg | ReadFlg_Insn) {
+    m_readFlags = m_readFlags | ReadFlg_Proc;
+  }
 }
 
 
@@ -237,13 +242,13 @@ binutils::LM::open(const char* filenm)
 
 
 void
-binutils::LM::read(bool makeInsns)
+binutils::LM::read()
 {
   // If the file has not been opened...
   DIAG_Assert(!m_name.empty(), "Must call LM::Open first");
 
   readSymbolTables();
-  readSegs(makeInsns);
+  readSegs();
 }
 
 
@@ -596,7 +601,7 @@ binutils::LM::readSymbolTables()
 
 
 void
-binutils::LM::readSegs(bool makeInsns)
+binutils::LM::readSegs()
 {
   // Create sections.
   // Pass symbol table and debug summary information for each section
@@ -779,8 +784,8 @@ binutils::LM::DumpSymTab(std::ostream& o, const char* pre) const
 // Exe
 //***************************************************************************
 
-binutils::Exe::Exe()
-  : m_startVMA(0)
+binutils::Exe::Exe(uint readflg)
+  : LM(readflg), m_startVMA(0)
 {
 }
 
