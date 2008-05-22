@@ -364,8 +364,9 @@ public:
   //mapped_type& operator[](const key_type& x);
 
   // mMap operations:
-  //  find: Given a VMAInterval x, find the element mapped to the
-  //    interval that equals or contains x.
+
+  // find: Given a VMAInterval x, find the element mapped to the
+  //   interval that equals or contains x.
   iterator find(const key_type& toFind)
   {
     // find lb where lb is the first element !< x;

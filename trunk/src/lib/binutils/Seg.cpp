@@ -146,7 +146,6 @@ binutils::Seg::ddump() const
 binutils::TextSeg::TextSeg(binutils::LM* lm, const string& name, 
 			   VMA beg, VMA end, uint64_t size)
   : Seg(lm, name, Seg::TypeText, beg, end, size), 
-    m_procedures(0),
     m_contentsRaw(NULL), m_contents(NULL)
 {
   // 1. Initialize procedures
@@ -196,10 +195,9 @@ binutils::TextSeg::~TextSeg()
   m_contents = NULL;
 
   // Clear procedures
-  for (TextSegProcIterator it(*this); it.IsValid(); ++it) {
-    delete it.Current(); // Proc*
+  for (ProcVec::iterator it = m_procs.begin(); it != m_procs.end(); ++it) {
+    delete *it; // Proc*
   }
-  m_procedures.clear();
 }
 
 
@@ -210,9 +208,10 @@ binutils::TextSeg::dump(std::ostream& o, int flags, const char* pre) const
   string p1 = p + "  ";
 
   Seg::dump(o, flags, pre);
-  o << p << "  Procedures (" << GetNumProcs() << ")\n";
-  for (TextSegProcIterator it(*this); it.IsValid(); ++it) {
-    Proc* p = it.Current();
+  o << p << "  Procedures (" << numProcs() << ")\n";
+  for (ProcVec::const_iterator it = m_procs.begin(); 
+       it != m_procs.end(); ++it) {
+    Proc* p = *it;
     p->dump(o, flags, p1.c_str());
   }
 }
@@ -326,9 +325,9 @@ binutils::TextSeg::Create_InitializeProcs()
       }
       
       // We now have a valid procedure.  Initilize with [begVMA, endVMA),
-      // but note this is changed after disassembly.
+      // but note tohis is changed after disassembly.
       proc = new Proc(this, procNm, symNm, procType, begVMA, endVMA, size);
-      m_procedures.push_back(proc);
+      m_procs.push_back(proc);
       m_lm->insertProc(VMAInterval(begVMA, endVMA), proc);
 
       // Add symbolic info
@@ -346,11 +345,11 @@ binutils::TextSeg::Create_InitializeProcs()
   //  If a text section does not have any function symbols, consider
   //  the whole section a quasi procedure
   // ------------------------------------------------------------
-  if (GetNumProcs() == 0) {
+  if (numProcs() == 0) {
     // [begVMA, endVMA)
     Proc* proc = new Proc(this, name(), name(), Proc::Quasi, 
 			  begVMA(), endVMA(), size());
-    m_procedures.push_back(proc);
+    m_procs.push_back(proc);
     m_lm->insertProc(VMAInterval(begVMA(), endVMA()), proc);
   }
 
@@ -380,8 +379,8 @@ binutils::TextSeg::Create_DisassembleProcs()
   // ------------------------------------------------------------
   VMA sectionBase = begVMA();
   
-  for (TextSegProcIterator it(*this); it.IsValid(); ++it) {
-    Proc* p = it.Current();
+  for (ProcVec::iterator it = m_procs.begin(); it != m_procs.end(); ++it) {
+    Proc* p = *it;
     VMA procBeg = p->begVMA();
     VMA procEnd = p->endVMA();
     ushort insnSz = 0;
@@ -509,19 +508,5 @@ binutils::TextSeg::MakeInsn(bfd* abfd, MachInsn* mi, VMA vma, ushort opIndex,
   return newInsn;
 }
 
-
-//***************************************************************************
-// TextSegProcIterator
-//***************************************************************************
-
-binutils::TextSegProcIterator::TextSegProcIterator(const TextSeg& _sec)
-  : sec(_sec)
-{
-  Reset();
-}
-
-binutils::TextSegProcIterator::~TextSegProcIterator()
-{
-}
 
 //***************************************************************************

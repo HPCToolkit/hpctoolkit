@@ -54,7 +54,7 @@
 //************************* System Include Files ****************************
 
 #include <string>
-#include <deque>
+#include <vector>
 #include <iostream>
 
 //*************************** User Include Files ****************************
@@ -180,11 +180,51 @@ namespace binutils {
 
 class TextSeg : public Seg { 
 public:
+  typedef std::vector<Proc*> ProcVec;
+
+public:
   TextSeg(LM* lm, const std::string& name, 
 	  VMA beg, VMA end, uint64_t size);
   virtual ~TextSeg();
 
-  uint GetNumProcs() const { return m_procedures.size(); }
+  // -------------------------------------------------------
+  // Procedures
+  // -------------------------------------------------------
+  
+  uint numProcs() const { return m_procs.size(); }
+  
+#if 0
+  LM::ProcMap::iterator
+  begin() { 
+    if (size() > 0) {
+      return m_lm->procs().find(VMAInterval(begVMA(), begVMA() + 1));
+    }
+    else {
+      return m_lm->procs().end();
+    }
+  }
+
+  LM::ProcMap::const_iterator
+  begin() const { 
+    return const_cast<TextSeg*>(this)->begin();
+  }
+  
+  LM::ProcMap::iterator 
+  end() {
+    if (size() > 0) {
+      return m_lm->procs().find(VMAInterval(endVMA() - 1, endVMA()));
+    }
+    else {
+      return m_lm->procs().end();
+    }
+  }
+
+  LM::ProcMap::const_iterator 
+  end() const {
+    return const_cast<TextSeg*>(this)->end();
+  }
+#endif
+
 
   // -------------------------------------------------------
   // debugging
@@ -192,8 +232,6 @@ public:
   virtual void dump(std::ostream& o = std::cerr, 
 		    int flags = LM::DUMP_Short, const char* pre = "") const;
   
-  friend class TextSegProcIterator;
-
 private:
   // Should not be used
   TextSeg() { }
@@ -208,67 +246,14 @@ private:
   VMA FindProcEnd(int funcSymIndex) const;
   Insn* MakeInsn(bfd* abfd, MachInsn* mi, VMA vma, 
 		 ushort opIndex, ushort sz) const;
-  
-  // Proc sequence: 'deque' supports random access iterators (and
-  // is thus sortable with std::sort) and constant time insertion/deletion at
-  // beginning/end.
-  typedef std::deque<Proc*> ProcSeq;
-  typedef std::deque<Proc*>::iterator ProcSeqIt;
-  typedef std::deque<Proc*>::const_iterator ProcSeqItC;
 
 protected:
 private:
+  ProcVec m_procs;
   char* m_contents;    // contents, aligned with a 16-byte boundary
   char* m_contentsRaw; // allocated memory for section contents (we own)
-
-  ProcSeq m_procedures; // FIXME: we could make this a slice of the procs in LM
 };
 
-} // namespace binutils
-
-
-//***************************************************************************
-// TextSegProcIterator
-//***************************************************************************
-
-namespace binutils {
-
-// --------------------------------------------------------------------------
-// 'TextSegProcIterator': iterate over the 'Proc' in a
-// 'TextSeg'.  No order is guaranteed.
-// --------------------------------------------------------------------------
-
-class TextSegProcIterator {
-public: 
-  TextSegProcIterator(const TextSeg& _sec);
-  ~TextSegProcIterator();
-
-  // Returns the current object or NULL
-  Proc* Current() const {
-    if (it != sec.m_procedures.end()) { return *it; }
-    else { return NULL; }
-  }
-  
-  void operator++()    { ++it; } // prefix increment
-  void operator++(int) { it++; } // postfix increment
-
-  bool IsValid() const { return it != sec.m_procedures.end(); } 
-  bool IsEmpty() const { return it == sec.m_procedures.end(); }
-
-  // Reset and prepare for iteration again
-  void Reset() { it = sec.m_procedures.begin(); }
-
-private:
-  // Should not be used
-  TextSegProcIterator();
-  TextSegProcIterator(const TextSegProcIterator& i);
-  TextSegProcIterator& operator=(const TextSegProcIterator& i) { return *this; }
-
-protected:
-private:
-  const TextSeg& sec;
-  TextSeg::ProcSeqItC it;
-};
 
 } // namespace binutils
 

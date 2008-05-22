@@ -177,10 +177,8 @@ public:
 			 std::string& func, std::string& file,
 			 SrcFile::ln& begLine, SrcFile::ln& endLine,
 			 unsigned flags = 1) const {
-    return m_seg->lm()->GetSourceFileInfo(begVMA, bOpIndex,
-					  endVMA, eOpIndex, 
-					  func, file, 
-					  begLine, endLine, flags);
+    return m_seg->lm()->GetSourceFileInfo(begVMA, bOpIndex, endVMA, eOpIndex, 
+					  func, file, begLine, endLine, flags);
   }
   
   // -------------------------------------------------------
