@@ -65,7 +65,7 @@ using std::dec;
 
 //*************************** User Include Files ****************************
 
-#include <include/gnu_bfd.h>
+#include <include/general.h>
 
 #include "LM.hpp"
 #include "Seg.hpp"
@@ -98,48 +98,42 @@ using std::dec;
 ISA* binutils::LM::isa = NULL;
 
 
-class binutils::LMImpl {
-public:
-  asymbol** bfdSymbolTable;        // Unmodified BFD symbol table
-  asymbol** sortedSymbolTable;     // Sorted BFD symbol table
-  int numSyms;                     // Number of syms in table.
-  bfd* abfd;                       // BFD of this module.
-};
-
-
 binutils::LM::LM()
-  : m_type(Unknown), m_txtBeg(0), m_txtEnd(0), 
-    textBegReloc(0), unRelocDelta(0)
+  : m_type(Unknown),
+    m_txtBeg(0), m_txtEnd(0), m_begVMA(0),
+    m_textBegReloc(0), m_unRelocDelta(0),
+    m_bfd(NULL), m_bfdSymTbl(NULL), m_bfdSymTblSort(NULL), 
+    m_numSyms(0)
 {
-  impl = new LMImpl;
-  impl->bfdSymbolTable = impl->sortedSymbolTable = NULL;
-  impl->abfd = NULL;
 }
 
 
 binutils::LM::~LM()
 {
-  // Clear impl
-  delete[] impl->bfdSymbolTable;    impl->bfdSymbolTable = NULL;
-  delete[] impl->sortedSymbolTable; impl->sortedSymbolTable = NULL; 
-  if (impl->abfd) {
-    bfd_close(impl->abfd);
-    impl->abfd = NULL;
-  }
-  delete impl;
-
   // Clear sections
   for (LMSegIterator it(*this); it.IsValid(); ++it) {
     delete it.Current(); // Seg*
   }
-  sections.clear();
+  m_sections.clear();
+
+  // BFD info
+  if (m_bfd) {
+    bfd_close(m_bfd);
+    m_bfd = NULL;
+  }
+
+  delete[] m_bfdSymTbl;
+  m_bfdSymTbl = NULL;
+
+  delete[] m_bfdSymTblSort;
+  m_bfdSymTblSort = NULL; 
     
   // Clear vmaToInsMap
   VMAToInsnMap::iterator it;
-  for (it = vmaToInsnMap.begin(); it != vmaToInsnMap.end(); ++it) {
+  for (it = m_vmaToInsnMap.begin(); it != m_vmaToInsnMap.end(); ++it) {
     delete (*it).second; // Insn*
   }
-  vmaToInsnMap.clear();
+  m_vmaToInsnMap.clear();
 
   // reset isa
   delete isa;
@@ -158,8 +152,8 @@ binutils::LM::open(const char* moduleName)
 
   // Determine file existence.
   bfd_init();
-  bfd *abfd = bfd_openr(moduleName, "default");
-  if (!abfd) {
+  m_bfd = bfd_openr(moduleName, "default");
+  if (!m_bfd) {
     BINUTILS_Throw("'" << moduleName << "': " << bfd_errmsg(bfd_get_error()));
   }
   
@@ -167,22 +161,20 @@ binutils::LM::open(const char* moduleName)
   //   debug info.
   // bfd_archive: The BFD contains other BFDs and an optional index.
   // bfd_core: The BFD contains the result of an executable core dump.
-  if (!bfd_check_format(abfd, bfd_object)) {
+  if (!bfd_check_format(m_bfd, bfd_object)) {
     BINUTILS_Throw("'" << moduleName << "': not an object or executable");
   }
   
   m_name = moduleName;
   realpath(m_name);
   
-  impl->abfd = abfd;
-
   // -------------------------------------------------------
   // 2. Collect data from BFD
   // -------------------------------------------------------
 
   // Set flags.  FIXME: both executable and dynamic flags can be set
   // on some architectures (e.g. alpha).
-  flagword flags = bfd_get_file_flags(impl->abfd);
+  flagword flags = bfd_get_file_flags(m_bfd);
   if (flags & EXEC_P) {         // BFD is directly executable
     m_type = Executable;
   } 
@@ -194,18 +186,18 @@ binutils::LM::open(const char* moduleName)
   }
   
 #if defined(HAVE_HPC_GNUBINUTILS)
-  if (bfd_get_arch(impl->abfd) == bfd_arch_alpha) {
-    m_txtBeg = bfd_ecoff_get_text_start(impl->abfd);
-    m_txtEnd = bfd_ecoff_get_text_end(impl->abfd);
+  if (bfd_get_arch(m_bfd) == bfd_arch_alpha) {
+    m_txtBeg = bfd_ecoff_get_text_start(m_bfd);
+    m_txtEnd = bfd_ecoff_get_text_end(m_bfd);
     m_begVMA = m_txtBeg;
   } 
   else {
     // Currently, this is ELF specific
-    m_txtBeg = bfd_get_start_address(impl->abfd); // entry point
-    m_begVMA = bfd_get_first_addr(impl->abfd);     
+    m_txtBeg = bfd_get_start_address(m_bfd); // entry point
+    m_begVMA = bfd_get_first_addr(m_bfd);     
   }
 #else
-  m_txtBeg = bfd_get_start_address(impl->abfd); // entry point
+  m_txtBeg = bfd_get_start_address(m_bfd); // entry point
   m_begVMA = m_txtBeg;
 #endif /* HAVE_HPC_GNUBINUTILS */
   
@@ -215,7 +207,7 @@ binutils::LM::open(const char* moduleName)
 
   // Create a new ISA (this may not be necessary, but it is cheap)
   ISA* newisa = NULL;
-  switch (bfd_get_arch(impl->abfd)) {
+  switch (bfd_get_arch(m_bfd)) {
     case bfd_arch_mips:
       newisa = new MipsISA;
       break;
@@ -226,13 +218,13 @@ binutils::LM::open(const char* moduleName)
       newisa = new SparcISA;
       break;
     case bfd_arch_i386: // x86 and x86_64
-      newisa = new x86ISA(bfd_get_mach(impl->abfd) == bfd_mach_x86_64);
+      newisa = new x86ISA(bfd_get_mach(m_bfd) == bfd_mach_x86_64);
       break;
     case bfd_arch_ia64:
       newisa = new IA64ISA;
       break;
     default:
-      DIAG_Die("Unknown bfd arch: " << bfd_get_arch(abfd));
+      DIAG_Die("Unknown bfd arch: " << bfd_get_arch(m_bfd));
   }
 
   // Sanity check.  Test to make sure the new LM is using the
@@ -256,8 +248,8 @@ binutils::LM::read()
   DIAG_Assert(!m_name.empty(), "Must call LM::Open first");
 
   // Read if we have not already done so
-  if (impl->bfdSymbolTable == NULL
-      && sections.size() == 0 && vmaToInsnMap.size() == 0) {
+  if (m_bfdSymTbl == NULL
+      && m_sections.size() == 0 && m_vmaToInsnMap.size() == 0) {
     ReadSymbolTables();
     ReadSegs();
   } 
@@ -268,24 +260,18 @@ binutils::LM::read()
 // VMAs.  All routines operating on VMAs should call UnRelocateVMA(),
 // which will do the right thing.
 void 
-binutils::LM::relocate(VMA textBegReloc_)
+binutils::LM::relocate(VMA textBegReloc)
 {
   DIAG_Assert(m_txtBeg != 0, "LM::Relocate not supported!");
-  textBegReloc = textBegReloc_;
+  m_textBegReloc = textBegReloc;
   
-  if (textBegReloc == 0) {
-    unRelocDelta = 0;
+  if (m_textBegReloc == 0) {
+    m_unRelocDelta = 0;
   } 
   else {
-    //unRelocDelta = -(textBegReloc - m_txtBeg); // FMZ
-      unRelocDelta = -(textBegReloc - m_begVMA);
+    //m_unRelocDelta = -(m_textBegReloc - m_txtBeg); // FMZ
+      m_unRelocDelta = -(m_textBegReloc - m_begVMA);
   } 
-}
-
-bool 
-binutils::LM::is_relocated() const 
-{ 
-  return (textBegReloc != 0);
 }
 
 
@@ -294,8 +280,8 @@ binutils::LM::findProc(VMA vma) const
 {
   VMA unrelocVMA = UnRelocateVMA(vma);
   VMAInterval unrelocInt(unrelocVMA, unrelocVMA + 1); // size must be > 0
-  VMAToProcMap::const_iterator it = vmaToProcMap.find(unrelocInt);
-  Proc* proc = (it != vmaToProcMap.end()) ? it->second : NULL;
+  VMAToProcMap::const_iterator it = m_vmaToProcMap.find(unrelocInt);
+  Proc* proc = (it != m_vmaToProcMap.end()) ? it->second : NULL;
   return proc;
 }
 
@@ -307,7 +293,7 @@ binutils::LM::insertProc(VMAInterval vmaint, binutils::Proc* proc)
 			 UnRelocateVMA(vmaint.end()));
   
   // FIXME: It wouldn't hurt to verify this isn't a duplicate
-  vmaToProcMap.insert(VMAToProcMap::value_type(unrelocInt, proc));
+  m_vmaToProcMap.insert(VMAToProcMap::value_type(unrelocInt, proc));
 }
 
 
@@ -331,8 +317,8 @@ binutils::LM::findInsn(VMA vma, ushort opIndex) const
   VMA unrelocVMA = UnRelocateVMA(vma);
   VMA mapVMA = isa->ConvertVMAToOpVMA(unrelocVMA, opIndex);
   
-  VMAToInsnMap::const_iterator it = vmaToInsnMap.find(mapVMA);
-  Insn* insn = (it != vmaToInsnMap.end()) ? it->second : NULL;
+  VMAToInsnMap::const_iterator it = m_vmaToInsnMap.find(mapVMA);
+  Insn* insn = (it != m_vmaToInsnMap.end()) ? it->second : NULL;
   return insn;
 }
 
@@ -344,7 +330,7 @@ binutils::LM::insertInsn(VMA vma, ushort opIndex, binutils::Insn* insn)
   VMA mapVMA = isa->ConvertVMAToOpVMA(unrelocVMA, opIndex);
 
   // FIXME: It wouldn't hurt to verify this isn't a duplicate
-  vmaToInsnMap.insert(VMAToInsnMap::value_type(mapVMA, insn));
+  m_vmaToInsnMap.insert(VMAToInsnMap::value_type(mapVMA, insn));
 }
 
 
@@ -357,7 +343,7 @@ binutils::LM::GetSourceFileInfo(VMA vma, ushort opIndex,
   func = file = "";
   line = 0;
 
-  if (!impl->bfdSymbolTable) { return STATUS; }
+  if (!m_bfdSymTbl) { return STATUS; }
   
   VMA unrelocVMA = UnRelocateVMA(vma);
   VMA opVMA = isa->ConvertVMAToOpVMA(unrelocVMA, opIndex);
@@ -369,8 +355,8 @@ binutils::LM::GetSourceFileInfo(VMA vma, ushort opIndex,
     Seg* sec = it.Current();
     if (sec->IsIn(opVMA)) {
       // Obtain the bfd section corresponding to our Seg.
-      bfdSeg = bfd_get_section_by_name(impl->abfd, sec->name().c_str());
-      base = bfd_section_vma(impl->abfd, bfdSeg);
+      bfdSeg = bfd_get_section_by_name(m_bfd, sec->name().c_str());
+      base = bfd_section_vma(m_bfd, bfdSeg);
       break; 
     } 
   }
@@ -383,7 +369,7 @@ binutils::LM::GetSourceFileInfo(VMA vma, ushort opIndex,
   uint bfd_line = 0;
 
   bfd_boolean fnd = 
-    bfd_find_nearest_line(impl->abfd, bfdSeg, impl->bfdSymbolTable,
+    bfd_find_nearest_line(m_bfd, bfdSeg, m_bfdSymTbl,
 			  opVMA - base, &bfd_file, &bfd_func, &bfd_line);
   if (fnd) {
     STATUS = (bfd_file && bfd_func && SrcFile::isValid(bfd_line));
@@ -541,7 +527,7 @@ binutils::LM::dump(std::ostream& o, int flags, const char* pre) const
   dumpme(o, p2.c_str());
 
   if (flags & DUMP_Flg_SymTab) {
-    o << p2 << "Symbol Table (" << impl->numSyms << "):\n";
+    o << p2 << "Symbol Table (" << m_numSyms << "):\n";
     DumpSymTab(o, p2.c_str());
   }
   
@@ -570,8 +556,8 @@ void
 binutils::LM::dumpProcMap(std::ostream& os, unsigned flag, 
 			  const char* pre) const
 {
-  for (VMAToProcMap::const_iterator it = vmaToProcMap.begin(); 
-       it != vmaToProcMap.end(); ++it) {
+  for (VMAToProcMap::const_iterator it = m_vmaToProcMap.begin(); 
+       it != m_vmaToProcMap.end(); ++it) {
     os << it->first.toString() << " --> " << hex << "Ox" << it->second 
        << dec << endl;
     if (flag != 0) {
@@ -615,21 +601,20 @@ binutils::LM::ReadSymbolTables()
 
   // First, attempt to get the normal symbol table.  If that fails,
   // attempt to read the dynamic symbol table.
-  long numSyms = -1;
-  long bytesNeeded = bfd_get_symtab_upper_bound(impl->abfd);
+  long bytesNeeded = bfd_get_symtab_upper_bound(m_bfd);
   
   // If we found a populated symbol table...
   if (bytesNeeded > 0) {
-    impl->bfdSymbolTable = new asymbol*[bytesNeeded];
-    numSyms = bfd_canonicalize_symtab(impl->abfd, impl->bfdSymbolTable);
-    if (numSyms == 0) {
-      delete [] impl->bfdSymbolTable;
-      impl->bfdSymbolTable = NULL;
+    m_bfdSymTbl = new asymbol*[bytesNeeded];
+    m_numSyms = bfd_canonicalize_symtab(m_bfd, m_bfdSymTbl);
+    if (m_numSyms == 0) {
+      delete[] m_bfdSymTbl;
+      m_bfdSymTbl = NULL;
     }
   }
 
   // If we found no symbols, or if there was an error reading symbolic info...
-  if (bytesNeeded <= 0 || numSyms == 0) {
+  if (bytesNeeded <= 0 || m_numSyms == 0) {
 
     // Either there are no symbols or there is no normal symbol table.
     // So try obtaining dynamic symbol table.  Unless this is a mips
@@ -637,32 +622,30 @@ binutils::LM::ReadSymbolTables()
     // that that standard mips symbol table is the dynamic one; and
     // don't want this warning emitted for every single mips binary.)
 
-    if (bfd_get_arch(impl->abfd) != bfd_arch_mips) {
+    if (bfd_get_arch(m_bfd) != bfd_arch_mips) {
       DIAG_Msg(2, "'" << name() << "': No regular symbols found; consulting dynamic symbols.");
     }
 
-    bytesNeeded = bfd_get_dynamic_symtab_upper_bound(impl->abfd);
+    bytesNeeded = bfd_get_dynamic_symtab_upper_bound(m_bfd);
     if (bytesNeeded <= 0) {
       // We can't find any symbols. 
       DIAG_Msg(1, "Warning: '" << name() << "': No dynamic symbols found.");
       return false;
     }
     
-    impl->bfdSymbolTable = new asymbol*[bytesNeeded];
-    numSyms = bfd_canonicalize_dynamic_symtab(impl->abfd,
-					      impl->bfdSymbolTable);
+    m_bfdSymTbl = new asymbol*[bytesNeeded];
+    m_numSyms = bfd_canonicalize_dynamic_symtab(m_bfd, m_bfdSymTbl);
   }
-  DIAG_Assert(numSyms >= 0, "");
-  impl->numSyms = numSyms;
+  DIAG_Assert(m_numSyms >= 0, "");
 
   // Make a scratch copy of the symbol table.
-  impl->sortedSymbolTable = new asymbol*[bytesNeeded];
-  memcpy(impl->sortedSymbolTable, impl->bfdSymbolTable, bytesNeeded);
+  m_bfdSymTblSort = new asymbol*[bytesNeeded];
+  memcpy(m_bfdSymTblSort, m_bfdSymTbl, bytesNeeded);
 
   // Sort scratch symbol table by VMA.
   QuickSort QSort;
-  QSort.Create((void **)(impl->sortedSymbolTable), LM::SymCmpByVMAFunc);
-  QSort.Sort(0, numSyms - 1);
+  QSort.Create((void **)(m_bfdSymTblSort), LM::SymCmpByVMAFunc);
+  QSort.Sort(0, m_numSyms - 1);
   return STATUS;
 }
 
@@ -675,29 +658,30 @@ binutils::LM::ReadSegs()
   // Create sections.
   // Pass symbol table and debug summary information for each section
   // into that section as it is created.
-  if (!impl->bfdSymbolTable) { return false; }
-  bfd *abfd = impl->abfd;
+  if (!m_bfdSymTbl) { 
+    return false; 
+  }
 
-  m_dbgInfo.read(abfd, impl->bfdSymbolTable);
+  m_dbgInfo.read(m_bfd, m_bfdSymTbl);
 
   // Process each section in the object file.
-  for (asection *sec = abfd->sections; sec; sec = sec->next) {
+  for (asection *sec = m_bfd->sections; sec; sec = sec->next) {
 
     // 1. Determine initial section attributes
-    string secName(bfd_section_name(abfd, sec));
-    bfd_vma secBeg = bfd_section_vma(abfd, sec);
-    uint64_t secSize = bfd_section_size(abfd, sec) / bfd_octets_per_byte(abfd);
-    bfd_vma secEnd = secBeg + secSize;
+    string secName(bfd_section_name(m_bfd, sec));
+    bfd_vma secBeg = bfd_section_vma(m_bfd, sec);
+    uint64_t secSz = bfd_section_size(m_bfd, sec) / bfd_octets_per_byte(m_bfd);
+    bfd_vma secEnd = secBeg + secSz;
     
     // 2. Create section
     if (sec->flags & SEC_CODE) {
       TextSeg *newSeg =
-	new TextSeg(this, secName, secBeg, secEnd, secSize,
-		    impl->sortedSymbolTable, impl->numSyms, abfd);
+	new TextSeg(this, secName, secBeg, secEnd, secSz,
+		    m_bfdSymTblSort, m_numSyms, m_bfd);
       insertSeg(newSeg);
     } 
     else {
-      Seg *newSeg = new Seg(this, secName, Seg::Data, secBeg, secEnd, secSize);
+      Seg *newSeg = new Seg(this, secName, Seg::Data, secBeg, secEnd, secSz);
       insertSeg(newSeg);
     }
   }
@@ -720,8 +704,8 @@ binutils::LM::GetProcFirstLineInfo(VMA vma, ushort opIndex,
 
   VMAInterval vmaint(opVMA, opVMA + 1); // [opVMA, opVMA + 1)
 
-  VMAToProcMap::const_iterator it = vmaToProcMap.find(vmaint);
-  if (it != vmaToProcMap.end()) {
+  VMAToProcMap::const_iterator it = m_vmaToProcMap.find(vmaint);
+  if (it != m_vmaToProcMap.end()) {
     Proc* proc = it->second;
     line = proc->begLine();
     STATUS = true;
@@ -737,11 +721,10 @@ void
 binutils::LM::DumpModuleInfo(std::ostream& o, const char* pre) const
 {
   string p(pre);
-  bfd *abfd = impl->abfd;
 
   o << p << "Name: `" << name() << "'\n";
 
-  o << p << "Format: `" << bfd_get_target(abfd) << "'" << endl;
+  o << p << "Format: `" << bfd_get_target(m_bfd) << "'" << endl;
   // bfd_get_flavour
 
   o << p << "Type: `";
@@ -765,22 +748,22 @@ binutils::LM::DumpModuleInfo(std::ostream& o, const char* pre) const
     << hex << textBeg() << ", " << textEnd() << dec << "\n";
   
   o << p << "Endianness: `"
-    << ( (bfd_big_endian(abfd)) ? "Big'\n" : "Little'\n" );
+    << ( (bfd_big_endian(m_bfd)) ? "Big'\n" : "Little'\n" );
   
   o << p << "Architecture: `";
-  switch (bfd_get_arch(abfd)) {
+  switch (bfd_get_arch(m_bfd)) {
     case bfd_arch_alpha: o << "Alpha'\n"; break;
     case bfd_arch_mips:  o << "MIPS'\n";  break;
     case bfd_arch_sparc: o << "Sparc'\n"; break;
     case bfd_arch_i386:  o << "x86'\n";   break;
     case bfd_arch_ia64:  o << "IA-64'\n"; break; 
-    default: DIAG_Die("Unknown bfd arch: " << bfd_get_arch(abfd));
+    default: DIAG_Die("Unknown bfd arch: " << bfd_get_arch(m_bfd));
   }
 
   o << p << "Architectural implementation: `";
-  switch (bfd_get_arch(abfd)) {
+  switch (bfd_get_arch(m_bfd)) {
     case bfd_arch_alpha:
-      switch (bfd_get_mach(abfd)) {
+      switch (bfd_get_mach(m_bfd)) {
         case bfd_mach_alpha_ev4: o << "EV4'\n"; break;
         case bfd_mach_alpha_ev5: o << "EV5'\n"; break;
         case bfd_mach_alpha_ev6: o << "EV6'\n"; break;
@@ -788,7 +771,7 @@ binutils::LM::DumpModuleInfo(std::ostream& o, const char* pre) const
       }
       break;
     case bfd_arch_mips:
-      switch (bfd_get_mach(abfd)) {
+      switch (bfd_get_mach(m_bfd)) {
         case bfd_mach_mips3000:  o << "R3000'\n"; break;
         case bfd_mach_mips4000:  o << "R4000'\n"; break;
         case bfd_mach_mips6000:  o << "R6000'\n"; break;
@@ -799,7 +782,7 @@ binutils::LM::DumpModuleInfo(std::ostream& o, const char* pre) const
       }
       break;
     case bfd_arch_sparc: 
-      switch (bfd_get_mach(abfd)) {
+      switch (bfd_get_mach(m_bfd)) {
         case bfd_mach_sparc_sparclet:     o << "let'\n"; break;
         case bfd_mach_sparc_sparclite:    o << "lite'\n"; break;
         case bfd_mach_sparc_sparclite_le: o << "lite_le'\n"; break;
@@ -813,7 +796,7 @@ binutils::LM::DumpModuleInfo(std::ostream& o, const char* pre) const
       }
       break;
     case bfd_arch_i386:
-      switch (bfd_get_mach(abfd)) {
+      switch (bfd_get_mach(m_bfd)) {
         case bfd_mach_i386_i386:  o << "x86'\n"; break;
         case bfd_mach_i386_i8086: o << "x86 (8086)'\n"; break;
         case bfd_mach_x86_64:     o << "x86_64'\n"; break;
@@ -824,12 +807,12 @@ binutils::LM::DumpModuleInfo(std::ostream& o, const char* pre) const
       o << "IA-64'\n"; 
       break; 
     default: 
-      DIAG_Die("Unknown bfd arch: " << bfd_get_arch(abfd));
+      DIAG_Die("Unknown bfd arch: " << bfd_get_arch(m_bfd));
   }
   
-  o << p << "Bits per byte: "    << bfd_arch_bits_per_byte(abfd)    << endl;
-  o << p << "Bits per address: " << bfd_arch_bits_per_address(abfd) << endl;
-  o << p << "Bits per word: "    << abfd->arch_info->bits_per_word  << endl;
+  o << p << "Bits per byte: "    << bfd_arch_bits_per_byte(m_bfd)    << endl;
+  o << p << "Bits per address: " << bfd_arch_bits_per_address(m_bfd) << endl;
+  o << p << "Bits per word: "    << m_bfd->arch_info->bits_per_word  << endl;
 }
 
 
@@ -845,8 +828,8 @@ binutils::LM::DumpSymTab(std::ostream& o, const char* pre) const
   // Every function symbol seems to have section *ABS*.  Thus, we
   // can't obtain any relevant section information from the symbol
   // itself.  I haven't noticed this on any other platform.
-  for (int i = 0; i < impl->numSyms; i++) {
-    asymbol *sym = impl->sortedSymbolTable[i]; // impl->bfdSymbolTable[i];
+  for (int i = 0; i < m_numSyms; i++) {
+    asymbol *sym = m_bfdSymTblSort[i]; // m_bfdSymTbl[i];
     o << p1 << hex << (bfd_vma)bfd_asymbol_value(sym) << ": " << dec
       << "[" << sym->section->name << "] "
       << ((sym->flags & BSF_FUNCTION) ? " * " : "   ")
@@ -860,7 +843,7 @@ binutils::LM::DumpSymTab(std::ostream& o, const char* pre) const
 //***************************************************************************
 
 binutils::Exe::Exe()
-  : startVMA(0)
+  : m_startVMA(0)
 {
 }
 
@@ -878,7 +861,7 @@ binutils::Exe::open(const char* moduleName)
     BINUTILS_Throw("'" << moduleName << "' is not an executable.");
   }
 
-  startVMA = bfd_get_start_address(impl->abfd);
+  m_startVMA = bfd_get_start_address(m_bfd);
 }
 
 

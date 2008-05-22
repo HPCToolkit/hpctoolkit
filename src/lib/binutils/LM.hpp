@@ -61,6 +61,7 @@
 //*************************** User Include Files ****************************
 
 #include <include/general.h>
+#include <include/gnu_bfd.h>
 
 #include "dbg_LM.hpp"
 #include "VMAInterval.hpp"
@@ -159,15 +160,17 @@ public:
 
 
   // after reading the binary, get the smallest begin VMA and largest end VMA
-  // of all the text sections
+  // of all the text m_sections
   void textBegEndVMA(VMA* begVMA, VMA* endVMA);
 
   // relocate: 'Relocate' the text section to the supplied text begin
   // address.  All member functions that take VMAs will assume they
   // receive *relocated* values.  A value of 0 unrelocates the module.
-  void relocate(VMA textBegReloc_);
+  void relocate(VMA textBegReloc);
 
-  bool is_relocated() const;
+  bool is_relocated() const {
+    return (m_textBegReloc != 0);
+  }
 
   // -------------------------------------------------------
   // Segments: 
@@ -175,8 +178,8 @@ public:
 
   // GetNumSegs: Return number of segments/sections
   // insertSeg: insert a segment/section
-  uint numSegs() const { return sections.size(); }
-  void insertSeg(Seg* section) { sections.push_back(section); }
+  uint numSegs() const { return m_sections.size(); }
+  void insertSeg(Seg* section) { m_sections.push_back(section); }
 
   // -------------------------------------------------------
   // Procedures: All procedures found in text sections may be
@@ -329,8 +332,9 @@ private:
   
   // UnRelocateVMA: Given a relocated VMA, returns a non-relocated version.
   VMA 
-  UnRelocateVMA(VMA relocatedVMA) const 
-    { return (relocatedVMA + unRelocDelta); }
+  UnRelocateVMA(VMA relocatedVMA) const { 
+    return (relocatedVMA + m_unRelocDelta); 
+  }
   
   // Comparison routines for QuickSort.
   static int 
@@ -346,31 +350,38 @@ private:
   friend class TextSeg; // for TextSeg::Create_InitializeProcs();
 
   binutils::dbg::LM* 
-  GetDebugInfo() { return &m_dbgInfo; }
+  GetDebugInfo() { 
+    return &m_dbgInfo; 
+  }
     
-protected:
-  LMImpl* impl; 
-
 private:
   std::string m_name;
   Type  m_type;
   VMA   m_txtBeg, m_txtEnd; // text begin and end
   VMA   m_begVMA;         // shared library load address begin
-  VMA   textBegReloc;     // relocated text begin
-  VMASigned unRelocDelta; // offset to unrelocate relocated VMAs
-    
-  SegSeq sections; // A list of sections
 
+  VMA       m_textBegReloc; // relocated text begin
+  VMASigned m_unRelocDelta; // offset to unrelocate relocated VMAs
+
+  SegSeq m_sections; // A list of sections
+
+protected:  
+  bfd* m_bfd;                 // BFD of this module.
+  asymbol** m_bfdSymTbl;      // Unmodified BFD symbol table
+  asymbol** m_bfdSymTblSort;  // Sorted BFD symbol table
+  long m_numSyms;             // Number of syms in table.
+
+private:
   // A map of VMAs to Proc* and Insn*.  
-  //   1. 'vmaToProcMap' is indexed by an interval [a b) where a is
+  //   1. 'm_vmaToProcMap' is indexed by an interval [a b) where a is
   // the begin VMA of this procedure and b is the begin VMA of the
   // following procedure (or the end of the section if there is no
   // following procedure).
-  //   2. For 'vmaToInsnMap', note that 'VMA' is not necessarily the
+  //   2. For 'm_vmaToInsnMap', note that 'VMA' is not necessarily the
   // true vma value; rather, it is the address of the individual
   // operation (ISA::ConvertVMAToOpVMA).
-  VMAToProcMap vmaToProcMap;
-  VMAToInsnMap vmaToInsnMap; // owns all Insn*
+  VMAToProcMap m_vmaToProcMap;
+  VMAToInsnMap m_vmaToInsnMap; // owns all Insn*
 
   // symbolic info used in building procedures
   binutils::dbg::LM m_dbgInfo;
@@ -406,7 +417,7 @@ public:
   // See LM::Open comments
   virtual void open(const char* moduleName);
   
-  VMA GetStartVMA() const { return startVMA; }
+  VMA GetStartVMA() const { return m_startVMA; }
 
   // -------------------------------------------------------
   // debugging
@@ -423,7 +434,7 @@ private:
   
 protected:
 private:
-  VMA startVMA;
+  VMA m_startVMA;
 };
 
 } // namespace binutils
@@ -448,18 +459,18 @@ public:
 
   // Returns the current object or NULL
   Seg* Current() const {
-    if (it != lm.sections.end()) { return *it; }
+    if (it != lm.m_sections.end()) { return *it; }
     else { return NULL; }
   }
   
   void operator++()    { ++it; } // prefix increment
   void operator++(int) { it++; } // postfix increment
 
-  bool IsValid() const { return it != lm.sections.end(); } 
-  bool IsEmpty() const { return it == lm.sections.end(); }
+  bool IsValid() const { return it != lm.m_sections.end(); } 
+  bool IsEmpty() const { return it == lm.m_sections.end(); }
 
   // Reset and prepare for iteration again
-  void Reset() { it = lm.sections.begin(); }
+  void Reset() { it = lm.m_sections.begin(); }
 
 private:
   // Should not be used
