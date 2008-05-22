@@ -238,13 +238,14 @@ private:
   TextSeg(const TextSeg& s) { }
   TextSeg& operator=(const TextSeg& s) { return *this; }
 
-  void Create_InitializeProcs();
-  void Create_DisassembleProcs();
+  void ctor_initProcs();
+  void ctor_readSegment();
+  void ctor_disassembleProcs();
 
   // Construction helpers
-  std::string FindProcName(bfd* abfd, asymbol* procSym) const;
-  VMA FindProcEnd(int funcSymIndex) const;
-  Insn* MakeInsn(bfd* abfd, MachInsn* mi, VMA vma, 
+  std::string findProcName(bfd* abfd, asymbol* procSym) const;
+  VMA findProcEnd(int funcSymIndex) const;
+  Insn* makeInsn(bfd* abfd, MachInsn* mi, VMA vma, 
 		 ushort opIndex, ushort sz) const;
 
 protected:

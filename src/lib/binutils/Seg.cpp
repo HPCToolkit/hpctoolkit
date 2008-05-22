@@ -148,43 +148,14 @@ binutils::TextSeg::TextSeg(binutils::LM* lm, const string& name,
   : Seg(lm, name, Seg::TypeText, beg, end, size), 
     m_contentsRaw(NULL), m_contents(NULL)
 {
-  // 1. Initialize procedures
-  Create_InitializeProcs();
-
-  // ------------------------------------------------------------
-  // 2. Read in the section data (usually raw instructions).
-  // ------------------------------------------------------------
-  
-  // - Obtain a new buffer, and align the pointer to a 16-byte
-  //   boundary.
-  // - We also add a 16 byte buffer at the beginning of the contents.
-  //   This is because some of the GNU decoders (e.g. Sparc) want to
-  //   examine both an instruction and its predecessor at the same
-  //   time.  Since we do not want to tell them about text section
-  //   sizes -- the ISA classes are independent of these details -- we
-  //   add this padding to prevent array access errors when decoding
-  //   the first instruction.
-  
-  // FIXME: Does "new" provide a way of returning an aligned pointer?
-  m_contentsRaw = new char[size+16+16];
-  memset(m_contentsRaw, 0, 16+16);        // zero the padding
-  char* contentsTmp = m_contentsRaw + 16; // add the padding
-  m_contents = (char *)( ((uintptr_t)contentsTmp + 15) & ~15 ); // align
-
-  const char *nameStr = name.c_str();
-  bfd* abfd = m_lm->abfd();
-  int result = bfd_get_section_contents(abfd,
-                                        bfd_get_section_by_name(abfd, nameStr),
-                                        m_contents, 0, size);
-  if (!result) {
-    delete[] m_contentsRaw;
-    m_contentsRaw = m_contents = NULL;
-    DIAG_EMsg("Error reading section: " << bfd_errmsg(bfd_get_error()));
-    return;
+  uint rflg = m_lm->readFlags();
+  if (rflg | LM::ReadFlg_Proc) {
+    ctor_initProcs();
   }
-  
-  // 3. Disassemble the instructions in each procedure
-  Create_DisassembleProcs();
+  if (rflg | LM::ReadFlg_Insn) {
+    ctor_readSegment();
+    ctor_disassembleProcs();
+  }
 }
 
 
@@ -221,7 +192,7 @@ binutils::TextSeg::dump(std::ostream& o, int flags, const char* pre) const
 
 
 void
-binutils::TextSeg::Create_InitializeProcs()
+binutils::TextSeg::ctor_initProcs()
 {
   dbg::LM* dbgInfo = m_lm->GetDebugInfo();
 
@@ -243,8 +214,8 @@ binutils::TextSeg::Create_InitializeProcs()
   asymbol** symtab = m_lm->bfdSymTab();
   uint symtabSz = m_lm->bfdSymTabSz();
 
+  // FIXME:PERF exploit the fact that the symbol table is sorted by vma
   for (int i = 0; i < symtabSz; i++) {
-    // FIXME:PERF exploit the fact that the symbol table is sorted by vma
     asymbol* sym = symtab[i]; 
     if (isIn(bfd_asymbol_value(sym)) 
 	&& (sym->flags & BSF_FUNCTION)
@@ -271,7 +242,7 @@ binutils::TextSeg::Create_InitializeProcs()
       
       Proc* proc = m_lm->findProc(begVMA);
       if (proc) {
-	DIAG_Assert(proc->begVMA() == begVMA, "TextSeg::Create_InitializeProcs: Procedure beginning at 0x" << hex << begVMA << " overlaps with:\n" << proc->toString());
+	DIAG_Assert(proc->begVMA() == begVMA, "TextSeg::ctor_initProcs: Procedure beginning at 0x" << hex << begVMA << " overlaps with:\n" << proc->toString());
 	if (procType == Proc::Global) {
 	  // 'global' types take precedence
 	  proc->type(procType);
@@ -287,7 +258,7 @@ binutils::TextSeg::Create_InitializeProcs()
 
       dbg::Proc* dbg = (*dbgInfo)[begVMA];
       if (!dbg) {
-	procNm = FindProcName(abfd, sym);
+	procNm = findProcName(abfd, sym);
 	string pnm = GetBestFuncName(procNm);
 	dbg = (*dbgInfo)[pnm];
       }
@@ -298,7 +269,7 @@ binutils::TextSeg::Create_InitializeProcs()
       // Finding the end VMA (end of last insn).  The computation is
       // as follows because sometimes the debug information is
       // *wrong*. (Intel 9 has generated significant over-estimates).
-      VMA endVMA_approx = FindProcEnd(i);
+      VMA endVMA_approx = findProcEnd(i);
       if (dbg) {
 	if (!dbg->name.empty()) {
 	  procNm = dbg->name;
@@ -371,8 +342,41 @@ binutils::TextSeg::Create_InitializeProcs()
 }
 
 
+// Read in the section data (usually raw instructions).
 void
-binutils::TextSeg::Create_DisassembleProcs()
+binutils::TextSeg::ctor_readSegment()
+{
+  // - Obtain a new buffer, and align the pointer to a 16-byte
+  //   boundary.
+  // - We also add a 16 byte buffer at the beginning of the contents.
+  //   This is because some of the GNU decoders (e.g. Sparc) want to
+  //   examine both an instruction and its predecessor at the same
+  //   time.  Since we do not want to tell them about text section
+  //   sizes -- the ISA classes are independent of these details -- we
+  //   add this padding to prevent array access errors when decoding
+  //   the first instruction.
+  
+  // FIXME: Does "new" provide a way of returning an aligned pointer?
+  m_contentsRaw = new char[size()+16+16];
+  memset(m_contentsRaw, 0, 16+16);        // zero the padding
+  char* contentsTmp = m_contentsRaw + 16; // add the padding
+  m_contents = (char *)( ((uintptr_t)contentsTmp + 15) & ~15 ); // align
+
+  bfd* abfd = m_lm->abfd();
+  asection* bfdSeg = bfd_get_section_by_name(abfd, name().c_str());
+  int ret = bfd_get_section_contents(abfd, bfdSeg, m_contents, 0, size());
+  if (!ret) {
+    delete[] m_contentsRaw;
+    m_contentsRaw = m_contents = NULL;
+    DIAG_EMsg("Error reading section: " << bfd_errmsg(bfd_get_error()));
+    return;
+  }
+}
+
+
+// Disassemble the instructions in each procedure
+void
+binutils::TextSeg::ctor_disassembleProcs()
 {
   // ------------------------------------------------------------
   // Disassemble the instructions in each procedure.
@@ -406,7 +410,7 @@ binutils::TextSeg::Create_DisassembleProcs()
       // We have a valid instruction at this vma!
       lastInsnVMA = vma;
       for (ushort opIndex = 0; opIndex < num_ops; opIndex++) {
-        Insn *newInsn = MakeInsn(m_lm->abfd(), mi, vma, opIndex, insnSz);
+        Insn *newInsn = makeInsn(m_lm->abfd(), mi, vma, opIndex, insnSz);
         m_lm->insertInsn(vma, opIndex, newInsn); 
       }
       vma += insnSz; 
@@ -427,7 +431,7 @@ binutils::TextSeg::Create_DisassembleProcs()
 // debugging information, if possible; otherwise returns the symbol
 // name.
 string
-binutils::TextSeg::FindProcName(bfd* abfd, asymbol* procSym) const
+binutils::TextSeg::findProcName(bfd* abfd, asymbol* procSym) const
 {
   string procName;
   const char* func = NULL, * file = NULL;
@@ -446,7 +450,7 @@ binutils::TextSeg::FindProcName(bfd* abfd, asymbol* procSym) const
     procName = func;
   } 
   else {
-    procName = bfd_asymbol_name(procSym); 
+    procName = bfd_asymbol_name(procSym);
   }
   
   return procName;
@@ -459,7 +463,7 @@ binutils::TextSeg::FindProcName(bfd* abfd, asymbol* procSym) const
 // then it is the address of the end of the section.  One can safely
 // assume this returns an over-estimate of the end VMA.
 VMA
-binutils::TextSeg::FindProcEnd(int funcSymIndex) const
+binutils::TextSeg::findProcEnd(int funcSymIndex) const
 {
   // Since the symbol table we get is sorted by VMA, we can stop
   // the search as soon as we've gone beyond the VMA of this section.
@@ -484,7 +488,7 @@ binutils::TextSeg::FindProcEnd(int funcSymIndex) const
 // Returns a new instruction of the appropriate type.  Promises not to
 // return NULL.
 binutils::Insn*
-binutils::TextSeg::MakeInsn(bfd* abfd, MachInsn* mi, VMA vma, ushort opIndex,
+binutils::TextSeg::makeInsn(bfd* abfd, MachInsn* mi, VMA vma, ushort opIndex,
 			     ushort sz) const
 {
   // Assume that there is only one instruction type per
@@ -503,7 +507,7 @@ binutils::TextSeg::MakeInsn(bfd* abfd, MachInsn* mi, VMA vma, ushort opIndex,
       newInsn = new VLIWInsn(mi, vma, opIndex);
       break;
     default:
-      DIAG_Die("TextSeg::MakeInsn encountered unknown instruction type!");
+      DIAG_Die("TextSeg::makeInsn encountered unknown instruction type!");
   }
   return newInsn;
 }
