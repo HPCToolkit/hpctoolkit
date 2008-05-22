@@ -295,7 +295,7 @@ processCallingCtxtTree(CSProfile* prof, VMA begVMA, VMA endVMA,
   try {
     binutils::LM* lm = new binutils::LM();
     lm->open(lm_fnm.c_str());
-    if (lm->type() != binutils::LM::Executable) {
+    if (lm->type() != binutils::LM::TypeExe) {
       relocVMA = begVMA;
     }
     delete lm;
@@ -325,7 +325,7 @@ processCallingCtxtTree(CSProfile* prof, VMA begVMA, VMA endVMA,
   }
   
   // get the start and end PC from the text sections 
-  if (lm->type() != binutils::LM::Executable) {
+  if (lm->type() != binutils::LM::TypeExe) {
     lm->relocate(begVMA);
   }
   

@@ -123,9 +123,9 @@ binutils::Seg::dump(std::ostream& o, int flags, const char* pre) const
   o << p << "  Name: `" << name() << "'\n";
   o << p << "  Type: `";
   switch (type()) {
-    case BSS:  o << "BSS'\n";  break;
-    case Text: o << "Text'\n"; break;
-    case Data: o << "Data'\n"; break;
+    case TypeBSS:  o << "BSS'\n";  break;
+    case TypeText: o << "Text'\n"; break;
+    case TypeData: o << "Data'\n"; break;
     default:   DIAG_Die("Unknown segment type");
   }
   o << p << "  VMA: [" << hex << begVMA() << ", " << endVMA() << dec << ")\n";
@@ -145,7 +145,7 @@ binutils::Seg::ddump() const
 
 binutils::TextSeg::TextSeg(binutils::LM* lm, const string& name, 
 			   VMA beg, VMA end, uint64_t size)
-  : Seg(lm, name, Seg::Text, beg, end, size), 
+  : Seg(lm, name, Seg::TypeText, beg, end, size), 
     m_procedures(0),
     m_contentsRaw(NULL), m_contents(NULL)
 {

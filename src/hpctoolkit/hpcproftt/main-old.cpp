@@ -1009,7 +1009,7 @@ dump_object_lm(ostream& os, const Prof::Flat::LM& proflm, const binutils::LM& lm
   
   for (binutils::LMSegIterator it(lm); it.IsValid(); ++it) {
     binutils::Seg* seg = it.Current();
-    if (seg->type() != binutils::Seg::Text) { continue; }
+    if (seg->type() != binutils::Seg::TypeText) { continue; }
     
     // We have a 'TextSeg'.  Iterate over procedures.
     os << endl 
@@ -1150,7 +1150,7 @@ ColumnFormatter::event_col(uint64_t eventCnt, uint64_t eventTot)
 
 EventCursor::EventCursor(const Prof::Flat::LM& proflm, const binutils::LM& lm)
 {
-  m_doRelocate = (lm.type() == binutils::LM::SharedLibrary);
+  m_doRelocate = (lm.type() == binutils::LM::TypeDSO);
   m_loadAddr = (VMA)proflm.load_addr();
   
   // --------------------------------------------------------

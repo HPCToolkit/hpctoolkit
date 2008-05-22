@@ -190,10 +190,10 @@ DumpHeaderInfo(std::ostream& os, binutils::LM* lm, const char* pre = "")
   os << pre << "Name: `" << lm->name() << "'\n";
   os << pre << "Type: `";
   switch (lm->type()) {
-    case binutils::LM::Executable:
+    case binutils::LM::TypeExe:
       os << "Executable (fully linked except for possible DSOs)'\n";
       break;
-    case binutils::LM::SharedLibrary:
+    case binutils::LM::TypeDSO:
       os << "Dynamically Shared Library'\n";
       break;
     default:
@@ -224,7 +224,7 @@ DumpSymbolicInfoOld(std::ostream& os, binutils::LM* lm)
   os << pre << "Dump:\n";
   for (binutils::LMSegIterator it(*lm); it.IsValid(); ++it) {
     binutils::Seg* sec = it.Current();
-    if (sec->type() != binutils::Seg::Text) { continue; }
+    if (sec->type() != binutils::Seg::TypeText) { continue; }
     
     // We have a 'TextSeg'.  Iterate over procedures.
     binutils::TextSeg* tsec = dynamic_cast<binutils::TextSeg*>(sec);

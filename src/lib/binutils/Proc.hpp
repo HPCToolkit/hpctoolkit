@@ -278,8 +278,8 @@ protected:
 private:
   const Proc& p;
   const LM& lm;
-  LM::VMAToInsnMap::const_iterator it;
-  LM::VMAToInsnMap::const_iterator endIt;
+  LM::InsnMap::const_iterator it;
+  LM::InsnMap::const_iterator endIt;
 };
 
 } // namespace binutils
