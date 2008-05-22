@@ -126,7 +126,8 @@ public:
 
 private:
   static EvalNode* buildEvalTree(DOMNode *node,
-				 const Prof::MetricDescMgr& mMgr);
+				 const Prof::MetricDescMgr& mMgr,
+				 bool isNum);
 };
 
 
