@@ -68,6 +68,7 @@
 #include "BinUtils.hpp"
 
 #include <lib/isa/ISATypes.hpp>
+#include <lib/isa/ISA.hpp>
 
 #include <lib/support/Exception.hpp>
 #include <lib/support/SrcFile.hpp>
@@ -98,11 +99,11 @@ class LMImpl;
 
 class LM {
 public:
-  enum Type { Executable, SharedLibrary, Unknown };
+  enum Type { TypeNULL = 0, TypeExe, TypeDSO };
 
-  typedef VMAIntervalMap<Seg*>  VMAToSegMap;
-  typedef VMAIntervalMap<Proc*> VMAToProcMap;
-  typedef std::map<VMA, Insn*>  VMAToInsnMap;
+  typedef VMAIntervalMap<Seg*>  SegMap;
+  typedef VMAIntervalMap<Proc*> ProcMap;
+  typedef std::map<VMA, Insn*>  InsnMap;
   
   // Seg sequence: 'deque' supports random access iterators (and
   // is thus sortable with std::sort) and constant time insertion/deletion at
@@ -166,25 +167,73 @@ public:
   // receive *relocated* values.  A value of 0 unrelocates the module.
   void relocate(VMA textBegReloc);
 
-  bool is_relocated() const {
+  bool isRelocated() const {
     return (m_textBegReloc != 0);
+  }
+
+  // doUnrelocate: is unrelocation necessary?
+  bool doUnrelocate(VMA loadAddr) const {
+    return ((type() == TypeDSO) && (textBeg() < loadAddr));
   }
 
   // -------------------------------------------------------
   // Segments: 
   // -------------------------------------------------------
 
+  SegMap&       segs()       { return m_segMap; }
+  const SegMap& segs() const { return m_segMap; }
+
+  Seg* 
+  findSeg(VMA vma) const
+  {
+    VMA vma_ur = unrelocate(vma);
+    VMAInterval ival_ur(vma_ur, vma_ur + 1); // size must be > 0
+    SegMap::const_iterator it = m_segMap.find(ival_ur);
+    Seg* seg = (it != m_segMap.end()) ? it->second : NULL;
+    return seg;
+  }
+
+  // NOTE: does not check for duplicates
+  void 
+  insertSeg(VMAInterval ival, Seg* seg) 
+  {
+    VMAInterval ival_ur(unrelocate(ival.beg()), unrelocate(ival.end()));
+    m_segMap.insert(SegMap::value_type(ival_ur, seg));
+  }
+
+
   // GetNumSegs: Return number of segments/sections
   // insertSeg: insert a segment/section
   uint numSegs() const { return m_sections.size(); }
   void insertSeg(Seg* section) { m_sections.push_back(section); }
 
+
   // -------------------------------------------------------
   // Procedures: All procedures found in text sections may be
   // accessed here.
   // -------------------------------------------------------
-  Proc* findProc(VMA vma) const;
-  void  insertProc(VMAInterval vmaint, Proc* proc);  
+
+  ProcMap&       procs()       { return m_procMap; }
+  const ProcMap& procs() const { return m_procMap; }
+
+  Proc* 
+  findProc(VMA vma) const
+  {
+    VMA vma_ur = unrelocate(vma);
+    VMAInterval ival_ur(vma_ur, vma_ur + 1); // size must be > 0
+    ProcMap::const_iterator it = m_procMap.find(ival_ur);
+    Proc* proc = (it != m_procMap.end()) ? it->second : NULL;
+    return proc;
+  }
+
+  // NOTE: does not check for duplicates
+  void 
+  insertProc(VMAInterval ival, Proc* proc) 
+  {
+    VMAInterval ival_ur(unrelocate(ival.beg()), unrelocate(ival.end()));
+    m_procMap.insert(ProcMap::value_type(ival_ur, proc));
+  }
+
   
   // -------------------------------------------------------
   // Instructions: All instructions found in text sections may be
@@ -210,10 +259,24 @@ public:
   findMachInsn(VMA vma, ushort &size) const;
   
   Insn*
-  findInsn(VMA vma, ushort opIndex) const;
+  findInsn(VMA vma, ushort opIndex) const
+  {
+    VMA vma_ur = unrelocate(vma);
+    VMA opvma = isa->ConvertVMAToOpVMA(vma_ur, opIndex);
+    
+    InsnMap::const_iterator it = m_insnMap.find(opvma);
+    Insn* insn = (it != m_insnMap.end()) ? it->second : NULL;
+    return insn;
+  }
 
+  // NOTE: does not check for duplicates
   void
-  insertInsn(VMA vma, ushort opIndex, Insn* insn);
+  insertInsn(VMA vma, ushort opIndex, Insn* insn)
+  {
+    VMA vma_ur = unrelocate(vma);
+    VMA opvma = isa->ConvertVMAToOpVMA(vma_ur, opIndex);
+    m_insnMap.insert(InsnMap::value_type(opvma, insn));
+  }
 
   
   // -------------------------------------------------------
@@ -336,11 +399,8 @@ private:
   void
   readSegs(bool readInsns);
   
-  // UnRelocateVMA: Given a relocated VMA, returns a non-relocated version.
-  VMA 
-  UnRelocateVMA(VMA relocatedVMA) const { 
-    return (relocatedVMA + m_unRelocDelta); 
-  }
+  // unrelocate: Given a relocated VMA, returns a non-relocated version.
+  VMA unrelocate(VMA relocVMA) const { return (relocVMA + m_unrelocDelta); }
   
   // Comparison routines for QuickSort.
   static int 
@@ -367,22 +427,22 @@ private:
   VMA  m_begVMA;           // shared library load address begin
 
   VMA       m_textBegReloc; // relocated text begin
-  VMASigned m_unRelocDelta; // offset to unrelocate relocated VMAs
+  VMASigned m_unrelocDelta; // offset to unrelocate relocated VMAs
 
-  // A map of VMAs to Seg, Proc, and Insn  
+  // - m_segMap: analagous to m_procMap
   //
-  // - m_vmaToSegMap, m_vmaToProcMap: indexed by an interval [a b)
-  //   where a is the begin VMA of this procedure and b is the begin
-  //   VMA of the following procedure (or the end of the section if
-  //   there is no following procedure).
+  // - m_procMap: Procedures are indexed by an interval [a b) where a
+  //   is the begin VMA of this procedure and b is the begin VMA of
+  //   the following procedure (or the end of the section if there is
+  //   no following procedure).
   //
-  // - m_vmaToInsnMap: note that 'VMA' is not necessarily the true vma
+  // - m_insnMap: note that 'VMA' is not necessarily the true vma
   //   value; rather, it is the address of the individual operation
   //   (ISA::ConvertVMAToOpVMA).
-  SegSeq m_sections; // A list of sections
-  //VMAToSegMap  m_vmaToSegMap;
-  VMAToProcMap m_vmaToProcMap;
-  VMAToInsnMap m_vmaToInsnMap; // owns all Insn*
+  SegSeq m_sections; // A list of sections [FIXME]
+  SegMap  m_segMap;
+  ProcMap m_procMap;
+  InsnMap m_insnMap; // owns all Insn*
 
   // symbolic info used in building procedures
   binutils::dbg::LM m_dbgInfo;

@@ -131,17 +131,14 @@ public:
   hasMetricValGE(const vector<uint64_t>& metricCnt, uint64_t val);
 
 private:
-  VMA relocate(VMA vma) const {
-    VMA ur_vma = vma;
-    if (m_doRelocate && vma > m_loadAddr) {
-      ur_vma = vma - m_loadAddr;
-    }
+  VMA unrelocate(VMA vma) const {
+    VMA ur_vma = (m_doUnrelocate) ? (vma - m_loadAddr) : vma;
     return ur_vma;
   }
 
 
 private:
-  bool m_doRelocate;
+  bool m_doUnrelocate;
   VMA m_loadAddr;
 
   vector<const Prof::Flat::EventData*> m_metricDescs;
@@ -154,8 +151,8 @@ private:
 
 MetricCursor::MetricCursor(const Prof::Flat::LM& proflm, const binutils::LM& lm)
 {
-  m_doRelocate = (lm.type() == binutils::LM::SharedLibrary);
   m_loadAddr = (VMA)proflm.load_addr();
+  m_doUnrelocate = lm.doUnrelocate(m_loadAddr);
   
   // --------------------------------------------------------
   // Find all metrics for load module and compute totals for each metric
@@ -216,7 +213,7 @@ MetricCursor::computeMetricVals(const VMAInterval vmaint,
     for (int& j = m_curMetricIdx[i]; j < profevent.num_data(); ++j) {
       const Prof::Flat::Datum& evdat = profevent.datum(j);
       VMA ev_vma = evdat.first;
-      VMA ev_ur_vma = relocate(ev_vma);
+      VMA ev_ur_vma = unrelocate(ev_vma);
       VMA ev_ur_vma_ub = ev_ur_vma + profevent.bucket_size();
       
       if ((ev_ur_vma <= vmaint.beg() && vmaint.beg() < ev_ur_vma_ub) 
@@ -230,7 +227,7 @@ MetricCursor::computeMetricVals(const VMAInterval vmaint,
     for (int j = m_curMetricIdx[i]; j < profevent.num_data(); ++j) {
       const Prof::Flat::Datum& evdat = profevent.datum(j);
       VMA ev_vma = evdat.first;
-      VMA ev_ur_vma = relocate(ev_vma);
+      VMA ev_ur_vma = unrelocate(ev_vma);
       VMA ev_ur_vma_ub = ev_ur_vma + profevent.bucket_size();
 
       if (ev_ur_vma >= vmaint.end()) {
@@ -460,7 +457,7 @@ correlateWithObject_LM(ostream& os,
   
   for (binutils::LMSegIterator it(lm); it.IsValid(); ++it) {
     binutils::Seg* seg = it.Current();
-    if (seg->type() != binutils::Seg::Text) { continue; }
+    if (seg->type() != binutils::Seg::TypeText) { continue; }
     
     // We have a 'TextSeg'.  Iterate over procedures.
     os << std::endl 

@@ -84,7 +84,7 @@ class Insn;
 
 class Seg {
 public: 
-  enum Type { BSS, Text, Data, Unknown };
+  enum Type { TypeNULL = 0, TypeBSS, TypeText, TypeData };
   
   Seg(LM* lm, const std::string& name, Type type, 
       VMA beg, VMA end, uint64_t size);

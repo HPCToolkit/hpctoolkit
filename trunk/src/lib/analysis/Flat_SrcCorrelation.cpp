@@ -516,10 +516,7 @@ Driver::correlate(PerfMetric* metric,
 		  bool useStruct)
 {
   unsigned long period = profevent.mdesc().period();
-
-  // FIXME: there really should be a relocate bit
-  bool doRelocate = ((lm->type() == binutils::LM::SharedLibrary)
-		     && lm->textBeg() < lm_load_addr);
+  bool doUnrelocate = lm->doUnrelocate(lm_load_addr);
 
   for (uint i = 0; i < profevent.num_data(); ++i) {
     const Prof::Flat::Datum& dat = profevent.datum(i);
@@ -528,13 +525,13 @@ Driver::correlate(PerfMetric* metric,
     double events = samples * period; // samples * (events/sample)
     
     // 1. Unrelocate vma.
-    VMA ur_vma = (doRelocate) ? (vma - lm_load_addr) : vma;
+    VMA vma_ur = (doUnrelocate) ? (vma - lm_load_addr) : vma;
 	
     // 2. Find associated scope and insert into scope tree
     ScopeInfo* strct = NULL;
 
     if (useStruct) {
-      strct = lmStrct->findByVMA(ur_vma);
+      strct = lmStrct->findByVMA(vma_ur);
       if (!strct) {
 	structIF.MoveToFile(PgmScopeTree::UnknownFileNm);
 	strct = structIF.MoveToProc(PgmScopeTree::UnknownProcNm);
@@ -543,7 +540,7 @@ Driver::correlate(PerfMetric* metric,
     else {
       string procnm, filenm;
       SrcFile::ln line;
-      lm->GetSourceFileInfo(ur_vma, 0 /*opIdx*/, procnm, filenm, line);
+      lm->GetSourceFileInfo(vma_ur, 0 /*opIdx*/, procnm, filenm, line);
 
       if (filenm.empty()) {
 	filenm = PgmScopeTree::UnknownFileNm;
@@ -568,7 +565,7 @@ Driver::correlate(PerfMetric* metric,
 
     strct->SetPerfData(metric->Index(), events); // implicit add!
     DIAG_DevMsg(6, "Metric associate: " 
-		<< metric->Name() << ":0x" << hex << ur_vma << dec 
+		<< metric->Name() << ":0x" << hex << vma_ur << dec 
 		<< " --> +" << events << "=" 
 		<< strct->PerfData(metric->Index()) << " :: " 
 		<< strct->toXML());

@@ -398,7 +398,7 @@ BuildLMSkeleton(LoadModScope* lmScope, binutils::LM* lm)
   // -------------------------------------------------------
   for (binutils::LMSegIterator it(*lm); it.IsValid(); ++it) {
     binutils::Seg* seg = it.Current();
-    if (seg->type() != binutils::Seg::Text) {
+    if (seg->type() != binutils::Seg::TypeText) {
       continue;
     }
     

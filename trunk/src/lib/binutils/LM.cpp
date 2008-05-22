@@ -99,9 +99,9 @@ ISA* binutils::LM::isa = NULL;
 
 
 binutils::LM::LM()
-  : m_type(Unknown),
+  : m_type(TypeNULL),
     m_txtBeg(0), m_txtEnd(0), m_begVMA(0),
-    m_textBegReloc(0), m_unRelocDelta(0),
+    m_textBegReloc(0), m_unrelocDelta(0),
     m_bfd(NULL), m_bfdSymTab(NULL), m_bfdSymTabSort(NULL), m_bfdSymTabSz(0)
 {
 }
@@ -128,11 +128,11 @@ binutils::LM::~LM()
   m_bfdSymTabSort = NULL; 
     
   // Clear vmaToInsMap
-  VMAToInsnMap::iterator it;
-  for (it = m_vmaToInsnMap.begin(); it != m_vmaToInsnMap.end(); ++it) {
+  InsnMap::iterator it;
+  for (it = m_insnMap.begin(); it != m_insnMap.end(); ++it) {
     delete (*it).second; // Insn*
   }
-  m_vmaToInsnMap.clear();
+  m_insnMap.clear();
 
   // reset isa
   delete isa;
@@ -174,13 +174,13 @@ binutils::LM::open(const char* filenm)
   // on some architectures (e.g. alpha).
   flagword flags = bfd_get_file_flags(m_bfd);
   if (flags & EXEC_P) {         // BFD is directly executable
-    m_type = Executable;
+    m_type = TypeExe;
   } 
   else if (flags & DYNAMIC) { // BFD is a dynamic object
-    m_type = SharedLibrary;
+    m_type = TypeDSO;
   } 
-  else if (flags) {
-    m_type = Unknown;
+  else {
+    m_type = TypeNULL;
   }
   
 #if defined(HAVE_HPC_GNUBINUTILS)
@@ -251,7 +251,7 @@ binutils::LM::read(bool readInsns)
 
 
 // relocate: Internally, all operations are performed on non-relocated
-// VMAs.  All routines operating on VMAs should call UnRelocateVMA(),
+// VMAs.  All routines operating on VMAs should call unrelocate(),
 // which will do the right thing.
 void 
 binutils::LM::relocate(VMA textBegReloc)
@@ -260,34 +260,12 @@ binutils::LM::relocate(VMA textBegReloc)
   m_textBegReloc = textBegReloc;
   
   if (m_textBegReloc == 0) {
-    m_unRelocDelta = 0;
+    m_unrelocDelta = 0;
   } 
   else {
-    //m_unRelocDelta = -(m_textBegReloc - m_txtBeg); // FMZ
-      m_unRelocDelta = -(m_textBegReloc - m_begVMA);
+    //m_unrelocDelta = -(m_textBegReloc - m_txtBeg); // FMZ
+      m_unrelocDelta = -(m_textBegReloc - m_begVMA);
   } 
-}
-
-
-binutils::Proc*
-binutils::LM::findProc(VMA vma) const
-{
-  VMA unrelocVMA = UnRelocateVMA(vma);
-  VMAInterval unrelocInt(unrelocVMA, unrelocVMA + 1); // size must be > 0
-  VMAToProcMap::const_iterator it = m_vmaToProcMap.find(unrelocInt);
-  Proc* proc = (it != m_vmaToProcMap.end()) ? it->second : NULL;
-  return proc;
-}
-
-
-void
-binutils::LM::insertProc(VMAInterval vmaint, binutils::Proc* proc)
-{
-  VMAInterval unrelocInt(UnRelocateVMA(vmaint.beg()), 
-			 UnRelocateVMA(vmaint.end()));
-  
-  // FIXME: It wouldn't hurt to verify this isn't a duplicate
-  m_vmaToProcMap.insert(VMAToProcMap::value_type(unrelocInt, proc));
 }
 
 
@@ -305,29 +283,6 @@ binutils::LM::findMachInsn(VMA vma, ushort &size) const
 }
 
 
-binutils::Insn*
-binutils::LM::findInsn(VMA vma, ushort opIndex) const
-{
-  VMA unrelocVMA = UnRelocateVMA(vma);
-  VMA mapVMA = isa->ConvertVMAToOpVMA(unrelocVMA, opIndex);
-  
-  VMAToInsnMap::const_iterator it = m_vmaToInsnMap.find(mapVMA);
-  Insn* insn = (it != m_vmaToInsnMap.end()) ? it->second : NULL;
-  return insn;
-}
-
-
-void
-binutils::LM::insertInsn(VMA vma, ushort opIndex, binutils::Insn* insn)
-{
-  VMA unrelocVMA = UnRelocateVMA(vma);
-  VMA mapVMA = isa->ConvertVMAToOpVMA(unrelocVMA, opIndex);
-
-  // FIXME: It wouldn't hurt to verify this isn't a duplicate
-  m_vmaToInsnMap.insert(VMAToInsnMap::value_type(mapVMA, insn));
-}
-
-
 bool
 binutils::LM::GetSourceFileInfo(VMA vma, ushort opIndex,
 				string& func, 
@@ -341,7 +296,7 @@ binutils::LM::GetSourceFileInfo(VMA vma, ushort opIndex,
     return STATUS; 
   }
   
-  VMA unrelocVMA = UnRelocateVMA(vma);
+  VMA unrelocVMA = unrelocate(vma);
   VMA opVMA = isa->ConvertVMAToOpVMA(unrelocVMA, opIndex);
   
   // Find the Seg where this vma lives.
@@ -469,7 +424,7 @@ binutils::LM::textBegEndVMA(VMA* begVMA, VMA* endVMA)
   VMA lg_endVMA  = 0;
   for (LMSegIterator it(*this); it.IsValid(); ++it) {
     Seg* sec = it.Current(); 
-    if (sec->type() == sec->Text)  {    
+    if (sec->type() == Seg::TypeText)  {    
       if (!(sml_begVMA || lg_endVMA)) {
 	sml_begVMA = sec->begVMA();
 	lg_endVMA  = sec->endVMA(); 
@@ -552,8 +507,8 @@ void
 binutils::LM::dumpProcMap(std::ostream& os, unsigned flag, 
 			  const char* pre) const
 {
-  for (VMAToProcMap::const_iterator it = m_vmaToProcMap.begin(); 
-       it != m_vmaToProcMap.end(); ++it) {
+  for (ProcMap::const_iterator it = m_procMap.begin(); 
+       it != m_procMap.end(); ++it) {
     os << it->first.toString() << " --> " << hex << "Ox" << it->second 
        << dec << endl;
     if (flag != 0) {
@@ -668,7 +623,8 @@ binutils::LM::readSegs(bool readInsns)
       insertSeg(newSeg);
     }
     else {
-      Seg* newSeg = new Seg(this, secName, Seg::Data, secBeg, secEnd, secSz);
+      Seg* newSeg = new Seg(this, secName, Seg::TypeData, 
+			    secBeg, secEnd, secSz);
       insertSeg(newSeg);
     }
   }
@@ -684,19 +640,19 @@ binutils::LM::GetProcFirstLineInfo(VMA vma, ushort opIndex,
   bool isfound = false;
   line = 0;
 
-  VMA unrelocVMA = UnRelocateVMA(vma);
-  VMA opVMA = isa->ConvertVMAToOpVMA(unrelocVMA, opIndex);
+  VMA vma_ur = unrelocate(vma);
+  VMA opVMA = isa->ConvertVMAToOpVMA(vma_ur, opIndex);
 
-  VMAInterval vmaint(opVMA, opVMA + 1); // [opVMA, opVMA + 1)
+  VMAInterval ival(opVMA, opVMA + 1); // [opVMA, opVMA + 1)
 
-  VMAToProcMap::const_iterator it = m_vmaToProcMap.find(vmaint);
-  if (it != m_vmaToProcMap.end()) {
+  ProcMap::const_iterator it = m_procMap.find(ival);
+  if (it != m_procMap.end()) {
     Proc* proc = it->second;
     line = proc->begLine();
     isfound = true;
   }
   DIAG_MsgIf(DBG_BLD_PROC_MAP, "LM::GetProcFirstLineInfo " 
-	     << vmaint.toString() << " = " << line);
+	     << ival.toString() << " = " << line);
 
   return isfound;
 }
@@ -714,14 +670,14 @@ binutils::LM::DumpModuleInfo(std::ostream& o, const char* pre) const
 
   o << p << "Type: `";
   switch (type()) {
-    case Executable:    
+    case TypeNULL:
+      o << "Unknown load module type'\n";
+      break;
+    case TypeExe:    
       o << "Executable (fully linked except for possible DSOs)'\n";
       break;
-    case SharedLibrary: 
+    case TypeDSO: 
       o << "Dynamically Shared Library'\n";
-      break;
-    case Unknown:
-      o << "Unknown load module type'\n";
       break;
     default:
       DIAG_Die("Invalid load module type: " << type());
@@ -842,7 +798,7 @@ void
 binutils::Exe::open(const char* filenm)
 {
   LM::open(filenm);
-  if (type() != LM::Executable) {
+  if (type() != LM::TypeExe) {
     BINUTILS_Throw("'" << filenm << "' is not an executable.");
   }
 
