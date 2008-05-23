@@ -77,31 +77,6 @@ using std::endl;
 // class NonUniformDegreeTreeNode interface operations
 //***************************************************************************
 
-//-----------------------------------------------
-// constructor initializes empty node then links
-// it to its parent and siblings (if any)
-//-----------------------------------------------
-NonUniformDegreeTreeNode::NonUniformDegreeTreeNode
-(NonUniformDegreeTreeNode *_parent)
-{
-  ZeroLinks();
-  Link(_parent); // link to parent and siblings if any
-}
-
-
-NonUniformDegreeTreeNode& 
-NonUniformDegreeTreeNode::operator=(const NonUniformDegreeTreeNode& other) 
-{
-  // shallow copy
-  if (&other != this) {
-    parent       = other.parent;
-    children     = other.children;
-    next_sibling = other.next_sibling;
-    prev_sibling = other.prev_sibling;
-    child_count  = other.child_count;
-  }
-  return *this;
-}
 
 //-----------------------------------------------
 // links a node to a parent and at the end of the 
@@ -230,57 +205,6 @@ NonUniformDegreeTreeNode::ToString() const
 //****************************************************************************
 
 
-NonUniformDegreeTreeNodeChildIterator::NonUniformDegreeTreeNodeChildIterator
-(const NonUniformDegreeTreeNode* _parent, bool firstToLast) : 
-parent(_parent), currentChild(0), forward(firstToLast)
-{
-  Reset();
-}
-
-
-NonUniformDegreeTreeNodeChildIterator::~NonUniformDegreeTreeNodeChildIterator()
-{
-}
-
-NonUniformDegreeTreeNode *NonUniformDegreeTreeNodeChildIterator::Current() const
-{
-  return currentChild;
-}
-
-
-void *NonUniformDegreeTreeNodeChildIterator::CurrentUpCall() const
-{
-  return Current();
-}
-
-
-void NonUniformDegreeTreeNodeChildIterator::Reset()
-{
-  currentChild = forward ? parent->FirstChild() : parent->LastChild();
-}
-
-
-void NonUniformDegreeTreeNodeChildIterator::operator++()
-{
-  if (currentChild) {
-    currentChild = forward
-                     ? currentChild->NextSibling()
-                     : currentChild->PrevSibling();
-    const NonUniformDegreeTreeNode* pastEnd = forward
-                                                  ? parent->FirstChild()
-                                                  : parent->LastChild();
-    if (currentChild == pastEnd) 
-      currentChild = 0;
-  }
-}
-
-
-void NonUniformDegreeTreeNodeChildIterator::operator++(int)
-{
-  operator++();
-}
-
-
 
 //****************************************************************************
 // class NonUniformDegreeTreeIterator interface operations
@@ -312,25 +236,8 @@ NonUniformDegreeTreeIterator::NonUniformDegreeTreeIterator(
 }
 
 
-NonUniformDegreeTreeIterator::~NonUniformDegreeTreeIterator()
-{
-}
-
-
-NonUniformDegreeTreeNode *NonUniformDegreeTreeIterator::Current() const
-{
-  return (NonUniformDegreeTreeNode *) IteratorStack::CurrentUpCall();
-}
-
-
-void *NonUniformDegreeTreeIterator::CurrentUpCall() const
-{
-  return Current();
-}
-
-
-StackableIterator *NonUniformDegreeTreeIterator::IteratorToPushIfAny
-(void *current)
+StackableIterator*
+NonUniformDegreeTreeIterator::IteratorToPushIfAny(void *current)
 {
   NonUniformDegreeTreeNode *node = (NonUniformDegreeTreeNode *) current;
 
