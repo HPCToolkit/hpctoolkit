@@ -317,7 +317,7 @@ processCallingCtxtTree(CSProfile* prof, VMA begVMA, VMA endVMA,
   try {
     lm = new binutils::LM();
     lm->open(lm_fnm.c_str());
-    lm->read();
+    lm->read(binutils::LM::ReadFlg_Proc);
   }
   catch (...) {
     DIAG_EMsg("While reading '" << lm_fnm << "'...");

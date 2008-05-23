@@ -970,7 +970,7 @@ dump_object(ostream& os,
     try {
       lm = new binutils::LM();
       lm->open(proflm->name().c_str());
-      lm->read();
+      lm->read(binutils::LM::ReadFlg_ALL);
     } 
     catch (...) {
       DIAG_EMsg("Exception encountered while reading " << proflm->name());

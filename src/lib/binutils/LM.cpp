@@ -98,17 +98,12 @@ using std::dec;
 ISA* binutils::LM::isa = NULL;
 
 
-binutils::LM::LM(uint readflg)
-  : m_type(TypeNULL), m_readFlags(readflg),
+binutils::LM::LM()
+  : m_type(TypeNULL), m_readFlags(ReadFlg_NULL),
     m_txtBeg(0), m_txtEnd(0), m_begVMA(0),
     m_textBegReloc(0), m_unrelocDelta(0),
     m_bfd(NULL), m_bfdSymTab(NULL), m_bfdSymTabSort(NULL), m_bfdSymTabSz(0)
 {
-  // enforce ReadFlg rules
-  m_readFlags = (m_readFlags | ReadFlg_Seg);
-  if (readflg | ReadFlg_Insn) {
-    m_readFlags = m_readFlags | ReadFlg_Proc;
-  }
 }
 
 
@@ -242,10 +237,11 @@ binutils::LM::open(const char* filenm)
 
 
 void
-binutils::LM::read()
+binutils::LM::read(LM::ReadFlg readflg)
 {
   // If the file has not been opened...
   DIAG_Assert(!m_name.empty(), "Must call LM::Open first");
+  m_readFlags = (ReadFlg)(readflg | LM::ReadFlg_Seg); // enforce ReadFlg rules
 
   readSymbolTables();
   readSegs();
@@ -784,8 +780,8 @@ binutils::LM::DumpSymTab(std::ostream& o, const char* pre) const
 // Exe
 //***************************************************************************
 
-binutils::Exe::Exe(uint readflg)
-  : LM(readflg), m_startVMA(0)
+binutils::Exe::Exe()
+  : m_startVMA(0)
 {
 }
 

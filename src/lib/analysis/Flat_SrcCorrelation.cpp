@@ -464,7 +464,7 @@ Driver::computeRawBatchJob(const string& lmname, const string& lmname_orig,
   }
 
   if (!useStruct) {
-    lm->read(); // FIXME: do not have to read instructions
+    lm->read(binutils::LM::ReadFlg_Seg);
   }
 
   LoadModScope* lmStrct = structIF.MoveToLoadMod(lmname);

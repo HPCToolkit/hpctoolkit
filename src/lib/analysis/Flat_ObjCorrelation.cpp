@@ -413,7 +413,7 @@ correlateWithObject(std::ostream& os, const string& profileFile,
     try {
       lm = new binutils::LM();
       lm->open(proflm->name().c_str());
-      lm->read();
+      lm->read(binutils::LM::ReadFlg_ALL);
     } 
     catch (...) {
       DIAG_EMsg("While reading " << proflm->name());
