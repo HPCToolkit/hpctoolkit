@@ -409,9 +409,8 @@ correlateWithObject(std::ostream& os, const string& profileFile,
     const Prof::Flat::LM* proflm = it->second;
     
     // 1. Open and read the load module
-    binutils::LM* lm = NULL;
+    binutils::LM* lm = new binutils::LM();
     try {
-      lm = new binutils::LM();
       lm->open(proflm->name().c_str());
       lm->read(binutils::LM::ReadFlg_ALL);
     } 

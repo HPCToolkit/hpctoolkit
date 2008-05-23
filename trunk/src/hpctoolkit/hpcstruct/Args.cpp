@@ -88,7 +88,7 @@ optimized binaries created from C, C++ and Fortran source code. Because\n\
 hpcstruct's algorithms exploit a binary's debugging information, for best\n\
 results, binary should be compiled with standard debugging information.\n\
 hpcstruct's output is typically passed to an HPCToolkit's correlation tool.\n\
-See the documentation for more information.\
+See the documentation for more information.\n\
 \n\
 Options: General\n\
   -v, --verbose [<n>]  Verbose: generate progress messages to stderr at\n\

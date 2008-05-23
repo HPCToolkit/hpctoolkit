@@ -161,14 +161,15 @@ binutils::TextSeg::TextSeg(binutils::LM* lm, const string& name,
 
 binutils::TextSeg::~TextSeg()
 {
-  delete[] m_contentsRaw;
-  m_contentsRaw = NULL;
-  m_contents = NULL;
-
   // Clear procedures
   for (ProcVec::iterator it = m_procs.begin(); it != m_procs.end(); ++it) {
     delete *it; // Proc*
   }
+
+  // BFD info
+  delete[] m_contentsRaw;
+  m_contentsRaw = NULL;
+  m_contents = NULL;
 }
 
 
