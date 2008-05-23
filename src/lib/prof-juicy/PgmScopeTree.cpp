@@ -82,11 +82,9 @@ using std::map;
 
 #include <lib/support/diagnostics.h>
 #include <lib/support/Logic.hpp>
-#include <lib/support/NaN.h>
 #include <lib/support/SrcFile.hpp>
 using SrcFile::ln_NULL;
 #include <lib/support/StrUtil.hpp>
-#include <lib/support/VectorTmpl.hpp>
 #include <lib/support/realpath.h>
 
 //*************************** Forward Declarations **************************
@@ -101,11 +99,6 @@ using namespace xml;
 //***************************************************************************
 // template classes 
 //***************************************************************************
-
-class DoubleVector : public VectorTmpl<double> {
-public: 
-  DoubleVector() : VectorTmpl<double>(c_FP_NAN_d, true) { }
-};
 
 class GroupScopeMap     : public map<string, GroupScope*> { };
 
@@ -1103,43 +1096,6 @@ ScopeInfo::IsMergable(ScopeInfo* toNode, ScopeInfo* fromNode)
 //***************************************************************************
 // Performance Data
 //***************************************************************************
-
-bool 
-ScopeInfo::HasPerfData(int i) const
-{
-  ScopeInfo *si = (ScopeInfo*) this;
-  double x = (*si->perfData)[i];
-  return (x != 0.0 && !c_isnan_d(x));
-}
-
-
-double 
-ScopeInfo::PerfData(int i) const
-{
-  //DIAG_Assert(HasPerfData(i), "");
-  ScopeInfo *si = (ScopeInfo*) this;
-  return (*si->perfData)[i];
-}
-
-
-void 
-ScopeInfo::SetPerfData(int i, double d) 
-{
-  // NOTE: VectorTmpl::operator[] automatically 'adds' the index if necessary
-  if (c_isnan_d((*perfData)[i])) {
-    (*perfData)[i] = d;
-  }
-  else {
-    (*perfData)[i] += d;
-  }
-}
-
-
-uint
-ScopeInfo::NumPerfData() const
-{
-  return perfData->GetNumElements();
-}
 
 
 //***************************************************************************
