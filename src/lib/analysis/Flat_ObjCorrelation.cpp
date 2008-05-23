@@ -394,7 +394,7 @@ correlateWithObject(std::ostream& os, const string& profileFile,
 {
   Prof::Flat::Profile prof;
   try {
-    prof.read(profileFile.c_str());
+    prof.openread(profileFile.c_str());
   }
   catch (...) {
     DIAG_EMsg("While reading '" << profileFile << "'");
