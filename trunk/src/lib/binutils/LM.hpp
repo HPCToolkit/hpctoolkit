@@ -107,8 +107,11 @@ public:
   enum ReadFlg { 
     ReadFlg_NULL = 0,
     ReadFlg_Seg  = 0x0001, // always read: permits source code lookup
-    ReadFlg_Proc = 0x0010,
-    ReadFlg_Insn = 0x0100  };
+    ReadFlg_Proc = 0x0011,
+    ReadFlg_Insn = 0x0111,
+
+    ReadFlg_ALL  = ReadFlg_Seg | ReadFlg_Proc | ReadFlg_Insn
+  };
 
   typedef VMAIntervalMap<Seg*>  SegMap;
   typedef VMAIntervalMap<Proc*> ProcMap;
@@ -120,8 +123,7 @@ public:
   // -------------------------------------------------------
 
   // Constructor allocates an empty data structure
-  //   readflg: use ReadFlg flags
-  LM(uint readflg = ReadFlg_Seg | ReadFlg_Proc | ReadFlg_Insn);
+  LM();
   virtual ~LM();
 
   // -------------------------------------------------------  
@@ -131,12 +133,12 @@ public:
   // open: If 'moduleName' is not already open, attempt to do so;
   // throw an exception on error.  If a file is already, do nothing.
   // (Segs, Procs and Insns are not constructed yet.)
-  virtual void open(const char* moduleName);
+  virtual void open(const char* filenm);
 
   // read: If module has not already been read, attempt to do so;
   // return an exception on error.  If a file has already been read do
   // nothing.
-  virtual void read();
+  virtual void read(ReadFlg readflg/* = ReadFlg_Seg*/);
 
 
   // -------------------------------------------------------
@@ -149,7 +151,7 @@ public:
   // type:  Return type of load module
   Type type() const { return m_type; }
 
-  uint readFlags() { return m_readFlags; }
+  ReadFlg readFlags() { return m_readFlags; }
 
   // textBeg, textEnd: (Unrelocated) Text begin and end.
   // FIXME: only guaranteed on alpha at present
@@ -426,8 +428,8 @@ private:
 private:
   std::string m_name;
 
-  Type m_type;
-  uint m_readFlags;
+  Type    m_type;
+  ReadFlg m_readFlags;
 
   VMA  m_txtBeg, m_txtEnd; // text begin and end
   VMA  m_begVMA;           // shared library load address begin
@@ -474,7 +476,7 @@ public:
   // -------------------------------------------------------  
   // Constructor/Destructor
   // -------------------------------------------------------
-  Exe(uint readflg = LM::ReadFlg_Seg | LM::ReadFlg_Proc | LM::ReadFlg_Insn);
+  Exe();
   virtual ~Exe();
 
   // -------------------------------------------------------
