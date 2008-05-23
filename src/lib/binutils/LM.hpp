@@ -201,12 +201,14 @@ public:
     return seg;
   }
 
-  // NOTE: does not check for duplicates
-  void 
+  // returns false if an overlapping segment already exists
+  bool 
   insertSeg(VMAInterval ival, Seg* seg) 
   {
     VMAInterval ival_ur(unrelocate(ival.beg()), unrelocate(ival.end()));
-    m_segMap.insert(SegMap::value_type(ival_ur, seg));
+    std::pair<SegMap::iterator, bool> ret =
+      m_segMap.insert(SegMap::value_type(ival_ur, seg));
+    return ret.second;
   }
 
   uint numSegs() const { return m_segMap.size(); }
@@ -229,12 +231,13 @@ public:
     return proc;
   }
 
-  // NOTE: does not check for duplicates
-  void 
+  bool
   insertProc(VMAInterval ival, Proc* proc) 
   {
     VMAInterval ival_ur(unrelocate(ival.beg()), unrelocate(ival.end()));
-    m_procMap.insert(ProcMap::value_type(ival_ur, proc));
+    std::pair<ProcMap::iterator, bool> ret =
+      m_procMap.insert(ProcMap::value_type(ival_ur, proc));
+    return ret.second;
   }
 
   
