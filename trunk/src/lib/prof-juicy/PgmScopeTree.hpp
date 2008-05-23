@@ -71,10 +71,12 @@
 #include <lib/support/diagnostics.h>
 #include <lib/support/Files.hpp>
 #include <lib/support/Logic.hpp>
+#include <lib/support/NaN.h>
 #include <lib/support/NonUniformDegreeTree.hpp>
 #include <lib/support/SrcFile.hpp>
 using SrcFile::ln_NULL;
 #include <lib/support/Unique.hpp>
+#include <lib/support/VectorTmpl.hpp>
 
 //*************************** Forward Declarations **************************
 
@@ -86,7 +88,10 @@ typedef std::set<ScopeInfo*> ScopeInfoSet;
 
 //*************************** Forward Declarations **************************
 
-class DoubleVector;
+class DoubleVector : public VectorTmpl<double> {
+public: 
+  DoubleVector() : VectorTmpl<double>(c_FP_NAN_d, true) { }
+};
 
 class GroupScopeMap;
 class LoadModScopeMap;
@@ -224,10 +229,29 @@ public:
   int ScopeHeight() const { return height; }
   int ScopeDepth() const { return depth; }
 
-  bool   HasPerfData(int i) const;     // checks whether PerfData(i) is set
-  double PerfData(int i) const;        // returns FP_NAN iff !HasPerfData(i) 
-  void   SetPerfData(int i, double d); // asserts out iff HasPerfData(i) 
-  uint   NumPerfData() const;
+  bool HasPerfData(int i) const {
+    double x = (*perfData)[i];
+    return (x != 0.0 && !c_isnan_d(x));
+  }
+  
+  double PerfData(int i) const {
+    return (*perfData)[i];
+  }
+
+  void SetPerfData(int i, double d) {
+    // NOTE: VectorTmpl::operator[] automatically 'adds' the index if necessary
+    if (c_isnan_d((*perfData)[i])) {
+      (*perfData)[i] = d;
+    }
+    else {
+      (*perfData)[i] += d;
+    }
+  }
+
+  uint NumPerfData() const {
+    return perfData->GetNumElements();
+  }
+
   
   // --------------------------------------------------------
   // Parent

@@ -121,15 +121,15 @@ const ScopeInfoFilter ScopeTypeFilter[ScopeInfo::NUMBER_OF_SCOPES] = {
 //    check if this node has any profile data associated with it
 //***************************************************************************
 
-int 
+bool 
 HasPerfData(const ScopeInfo *si, int nm)
 {
   for (int i = 0; i < nm ; i++) {
     if (si->HasPerfData(i)) {
-      return 1;
+      return true;
     }
   }
-  return 0;
+  return false;
 }
 
 
@@ -168,66 +168,13 @@ PruneScopeTreeMetrics(const ScopeInfo *node, int numMetrics)
 // ScopeInfoChildIterator
 //***************************************************************************
 
-ScopeInfoChildIterator::ScopeInfoChildIterator(const ScopeInfo *root, 
-					       const ScopeInfoFilter* f) 
-  : NonUniformDegreeTreeNodeChildIterator(root, /*firstToLast*/ false),
-    filter(f)
-{ }
-
-NonUniformDegreeTreeNode* 
-ScopeInfoChildIterator::Current()  const
-{
-  NonUniformDegreeTreeNode *s;
-  ScopeInfo *si;
-  while ( (s = NonUniformDegreeTreeNodeChildIterator::Current()) ) {
-    si = dynamic_cast<ScopeInfo*>(s);
-    if ((filter == NULL) || filter->Apply(*si)) { 
-      break; 	
-    }
-    ((ScopeInfoChildIterator*) this)->operator++();
-  } 
-  return dynamic_cast<ScopeInfo*>(s);
-} 
-
-
 //***************************************************************************
 // CodeInfoChildIterator
 //***************************************************************************
 
-CodeInfoChildIterator::CodeInfoChildIterator(const CodeInfo *root) 
-  : NonUniformDegreeTreeNodeChildIterator(root, /*firstToLast*/ false)
-  {}
-
 //***************************************************************************
 // ScopeInfoIterator
 //***************************************************************************
-
-ScopeInfoIterator::ScopeInfoIterator(const ScopeInfo *root, 
-	                             const ScopeInfoFilter *f, 
-                                     bool leavesOnly, 
-				     TraversalOrder torder)
-  : NonUniformDegreeTreeIterator(root, torder, 
-			(leavesOnly) ? NON_UNIFORM_DEGREE_TREE_ENUM_LEAVES_ONLY
-				 : NON_UNIFORM_DEGREE_TREE_ENUM_ALL_NODES),
-  filter(f)
-{
-}
-
-NonUniformDegreeTreeNode* 
-ScopeInfoIterator::Current()  const
-{
-  NonUniformDegreeTreeNode *s;
-  ScopeInfo *si;
-  while ( (s = NonUniformDegreeTreeIterator::Current()) ) {
-    si = dynamic_cast<ScopeInfo*>(s);
-    DIAG_Assert(si != NULL, "");
-    if ((filter == NULL) || filter->Apply(*si)) { 
-      break; 	
-    }
-    ((ScopeInfoIterator*) this)->operator++();
-  } 
-  return dynamic_cast<ScopeInfo*>(s);
-} 
 
 //***************************************************************************
 // ScopeInfoLineSortedIterator

@@ -67,8 +67,22 @@
 
 //*************************** Forward Declarations **************************
 
-int HasPerfData(const ScopeInfo *si, int nm);
+bool HasPerfData(const ScopeInfo *si, int nm);
 void PruneScopeTreeMetrics(const ScopeInfo *node, int noMetrics);
+
+
+//*************************** Forward Declarations **************************
+
+// tallent: For performance tuning; see usage below.  Unnecessary
+// dynamic casting -- every NonUniformDegreeTreeNode is a ScopeInfo --
+// was consuming 15-20% of execution time.
+#define PGM_SCOPE_TREE__USE_DYNAMIC_CAST 0
+#if (PGM_SCOPE_TREE__USE_DYNAMIC_CAST)
+# define PST_USELESS_DCAST(t, x) dynamic_cast<t>(x)
+#else
+# define PST_USELESS_DCAST(t, x) (t)(x)
+#endif
+
 
 //***************************************************************************
 // ScopeInfoFilter
@@ -113,14 +127,39 @@ extern const ScopeInfoFilter ScopeTypeFilter[ScopeInfo::NUMBER_OF_SCOPES];
 
 class ScopeInfoChildIterator : public NonUniformDegreeTreeNodeChildIterator {
 public: 
-  ScopeInfoChildIterator(const ScopeInfo *root, 
-			 const ScopeInfoFilter *filter = NULL);
-	             // filter == NULL enumerate all entries
-	             // otherwise: only entries with filter->fct(e) == true
+
+  // filter == NULL enumerate all entries
+  // otherwise: only entries with filter->fct(e) == true
+  ScopeInfoChildIterator(const ScopeInfo* root, 
+			 const ScopeInfoFilter* filter = NULL)
+    : NonUniformDegreeTreeNodeChildIterator(root, /*firstToLast*/ false),
+      filter(filter)
+  { }
+
   
-  virtual NonUniformDegreeTreeNode* Current() const; // really ScopeInfo
+  // NOTE: really ScopeInfo
+  virtual NonUniformDegreeTreeNode* 
+  Current() const 
+  {
+    NonUniformDegreeTreeNode* s;
+    ScopeInfo* si = NULL;
+    while ( (s = NonUniformDegreeTreeNodeChildIterator::Current()) ) {
+      si = PST_USELESS_DCAST(ScopeInfo*, s);
+      if ((filter == NULL) || filter->Apply(*si)) { 
+	break; 	
+      }
+      ((ScopeInfoChildIterator*)this)->operator++();
+    } 
+    return PST_USELESS_DCAST(ScopeInfo*, s);
+  }
   
-  ScopeInfo* CurScope() const { return dynamic_cast<ScopeInfo*>(Current()); }
+  
+  ScopeInfo* 
+  CurScope() const 
+  {
+    return PST_USELESS_DCAST(ScopeInfo*, Current());
+  }
+
 private: 
   const ScopeInfoFilter *filter;
 };
@@ -135,8 +174,16 @@ private:
 
 class CodeInfoChildIterator : public NonUniformDegreeTreeNodeChildIterator {
 public: 
-  CodeInfoChildIterator(const CodeInfo *root);
-  CodeInfo* CurCodeInfo() const { return dynamic_cast<CodeInfo*>(Current()); }
+  CodeInfoChildIterator(const CodeInfo *root)
+    : NonUniformDegreeTreeNodeChildIterator(root, /*firstToLast*/ false)
+  { }
+
+  CodeInfo* 
+  CurCodeInfo() const 
+  { 
+    return dynamic_cast<CodeInfo*>(Current()); 
+  }
+
 };  
 
 
@@ -156,13 +203,40 @@ public:
    ScopeInfoIterator(const ScopeInfo *root,
 		     const ScopeInfoFilter* filter = NULL,
 		     bool leavesOnly = false,
-		     TraversalOrder torder = PreOrder);
-   
-  virtual NonUniformDegreeTreeNode* Current() const; // really ScopeInfo
+		     TraversalOrder torder = PreOrder)
+     : NonUniformDegreeTreeIterator(root, torder, 
+			(leavesOnly) ? NON_UNIFORM_DEGREE_TREE_ENUM_LEAVES_ONLY
+				 : NON_UNIFORM_DEGREE_TREE_ENUM_ALL_NODES),
+       filter(filter)
+  {
+  }
+
+
+  // Note: really ScopeInfo
+  virtual NonUniformDegreeTreeNode* 
+  Current() const
+  {
+    NonUniformDegreeTreeNode* s;
+    ScopeInfo* si = NULL;
+    while ( (s = NonUniformDegreeTreeIterator::Current()) ) {
+      si = PST_USELESS_DCAST(ScopeInfo*, s);
+      if ((filter == NULL) || filter->Apply(*si)) { 
+	break; 	
+      }
+      ((ScopeInfoIterator*)this)->operator++();
+    } 
+    return PST_USELESS_DCAST(ScopeInfo*, s);
+  }
+
   
-  ScopeInfo* CurScope() const { return dynamic_cast<ScopeInfo*>(Current()); }
+  ScopeInfo* 
+  CurScope() const 
+  { 
+    return PST_USELESS_DCAST(ScopeInfo*, Current());
+  }
+
 private: 
-  const ScopeInfoFilter *filter;
+  const ScopeInfoFilter* filter;
 };  
 
 
