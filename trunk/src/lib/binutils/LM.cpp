@@ -298,17 +298,15 @@ binutils::LM::GetSourceFileInfo(VMA vma, ushort opIndex,
   VMA opVMA = isa->ConvertVMAToOpVMA(unrelocVMA, opIndex);
   
   // Find the Seg where this vma lives.
-  asection *bfdSeg = NULL;
+  asection* bfdSeg = NULL;
   VMA base = 0;
-  for (SegMap::iterator it = m_segMap.begin(); it != m_segMap.end(); ++it) {
-    Seg* seg = it->second;
-    if (seg->isIn(opVMA)) {
-      // Obtain the bfd section corresponding to our Seg.
-      bfdSeg = bfd_get_section_by_name(m_bfd, seg->name().c_str());
-      base = bfd_section_vma(m_bfd, bfdSeg);
-      break; 
-    } 
+
+  Seg* seg = findSeg(opVMA);
+  if (seg) {
+    bfdSeg = bfd_get_section_by_name(m_bfd, seg->name().c_str());
+    base = bfd_section_vma(m_bfd, bfdSeg);
   }
+
   if (!bfdSeg) {
     return STATUS;
   }
@@ -316,7 +314,6 @@ binutils::LM::GetSourceFileInfo(VMA vma, ushort opIndex,
   // Obtain the source line information.
   const char *bfd_func = NULL, *bfd_file = NULL;
   uint bfd_line = 0;
-
   bfd_boolean fnd = 
     bfd_find_nearest_line(m_bfd, bfdSeg, m_bfdSymTab,
 			  opVMA - base, &bfd_file, &bfd_func, &bfd_line);
@@ -410,6 +407,31 @@ binutils::LM::GetSourceFileInfo(VMA begVMA, ushort bOpIndex,
   }
 
   return STATUS;
+}
+
+
+bool 
+binutils::LM::GetProcFirstLineInfo(VMA vma, ushort opIndex, 
+				   SrcFile::ln &line) const
+{
+  bool isfound = false;
+  line = 0;
+
+  VMA vma_ur = unrelocate(vma);
+  VMA opVMA = isa->ConvertVMAToOpVMA(vma_ur, opIndex);
+
+  VMAInterval ival(opVMA, opVMA + 1); // [opVMA, opVMA + 1)
+
+  ProcMap::const_iterator it = m_procMap.find(ival);
+  if (it != m_procMap.end()) {
+    Proc* proc = it->second;
+    line = proc->begLine();
+    isfound = true;
+  }
+  DIAG_MsgIf(DBG_BLD_PROC_MAP, "LM::GetProcFirstLineInfo " 
+	     << ival.toString() << " = " << line);
+
+  return isfound;
 }
 
 
@@ -623,35 +645,15 @@ binutils::LM::readSegs()
     else {
       seg = new Seg(this, segnm, Seg::TypeData, segBeg, segEnd, segSz);
     }
-    insertSeg(VMAInterval(segBeg, segEnd), seg);
+    bool ins = insertSeg(VMAInterval(segBeg, segEnd), seg);
+    if (!ins) {
+      DIAG_WMsg(3, "Overlapping segment: " << segnm << ": " 
+		<< std::hex << segBeg << " " << segEnd << std::dec);
+      delete seg;
+    }
   }
 
   m_dbgInfo.clear();
-}
-
-
-bool 
-binutils::LM::GetProcFirstLineInfo(VMA vma, ushort opIndex, 
-				   SrcFile::ln &line) const
-{
-  bool isfound = false;
-  line = 0;
-
-  VMA vma_ur = unrelocate(vma);
-  VMA opVMA = isa->ConvertVMAToOpVMA(vma_ur, opIndex);
-
-  VMAInterval ival(opVMA, opVMA + 1); // [opVMA, opVMA + 1)
-
-  ProcMap::const_iterator it = m_procMap.find(ival);
-  if (it != m_procMap.end()) {
-    Proc* proc = it->second;
-    line = proc->begLine();
-    isfound = true;
-  }
-  DIAG_MsgIf(DBG_BLD_PROC_MAP, "LM::GetProcFirstLineInfo " 
-	     << ival.toString() << " = " << line);
-
-  return isfound;
 }
 
 
