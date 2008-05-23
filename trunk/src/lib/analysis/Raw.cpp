@@ -122,7 +122,7 @@ Analysis::Raw::writeAsText_flat(const char* filenm)
   
   Prof::Flat::Profile prof;
   try {
-    prof.read(filenm);
+    prof.openread(filenm);
   }
   catch (...) {
     DIAG_EMsg("While reading '" << filenm << "'");

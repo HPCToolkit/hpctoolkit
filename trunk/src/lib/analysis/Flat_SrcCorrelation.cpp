@@ -51,6 +51,8 @@ using std::map;
 #include <vector>
 using std::vector;
 
+#include <climits>
+
 //************************* User Include Files *******************************
 
 #include "Flat_SrcCorrelation.hpp"
@@ -85,7 +87,7 @@ namespace Analysis {
 
 namespace Flat {
 
-uint Driver::profileBatchSz = 8;
+uint Driver::profileBatchSz = 16; // UINT_MAX;
 
 
 Driver::Driver(const Analysis::Args& args,
@@ -431,7 +433,7 @@ Driver::computeRawMetrics(Prof::MetricDescMgr& mMgr, PgmScopeTree& structure)
       const string lmname = replacePath(lmname_orig);
       
       bool useStruct = hasStructure(lmname, structIF, hasStructureTbl);
-      computeRawBatchJob(lmname, lmname_orig, structIF, batchJob, useStruct);
+      computeRawBatchJob_LM(lmname, lmname_orig, structIF, batchJob, useStruct);
     }
     
     clearBatch(batchJob);
@@ -453,10 +455,10 @@ Driver::computeRawMetrics(Prof::MetricDescMgr& mMgr, PgmScopeTree& structure)
 
 
 void
-Driver::computeRawBatchJob(const string& lmname, const string& lmname_orig,
-			   NodeRetriever& structIF,
-			   ProfToMetricsTupleVec& profToMetricsVec,
-			   bool useStruct)
+Driver::computeRawBatchJob_LM(const string& lmname, const string& lmname_orig,
+			      NodeRetriever& structIF,
+			      ProfToMetricsTupleVec& profToMetricsVec,
+			      bool useStruct)
 {
   binutils::LM* lm = openLM(lmname);
   if (!lm) {
@@ -573,6 +575,8 @@ Driver::correlate(PerfMetric* metric,
 }
 
 
+
+// A batch is a vector of [Prof::Flat::Profile, <metric-vector>] pairs
 bool
 Driver::getNextBatch(ProfToMetricsTupleVec& batchJob,
 		     Prof::MetricDescMgr::StringPerfMetricVecMap::const_iterator& it, 
@@ -583,7 +587,7 @@ Driver::getNextBatch(ProfToMetricsTupleVec& batchJob,
       const string& fnm = it->first;
       Prof::MetricDescMgr::PerfMetricVec& metrics = 
 	const_cast<Prof::MetricDescMgr::PerfMetricVec&>(it->second);
-      Prof::Flat::Profile* prof = openProf(fnm);
+      Prof::Flat::Profile* prof = readProf(fnm);
       batchJob.push_back(make_pair(prof, &metrics));
       it++;
     }
@@ -650,17 +654,24 @@ Driver::computeDerivedMetrics(Prof::MetricDescMgr& mMgr,
 //----------------------------------------------------------------------------
 
 Prof::Flat::Profile*
-Driver::openProf(const string& fnm)
+Driver::readProf(const string& fnm)
 {
-  Prof::Flat::Profile* prof = new Prof::Flat::Profile;
+  Prof::Flat::Profile* prof = new Prof::Flat::Profile(fnm.c_str());
+  readProf(prof);
+  return prof;
+}
+
+
+void
+Driver::readProf(Prof::Flat::Profile* prof)
+{
   try {
-    prof->read(fnm.c_str());
+    prof->openread();
   }
   catch (...) {
-    DIAG_EMsg("While reading '" << fnm << "'");
+    DIAG_EMsg("While reading '" << prof->name() << "'");
     throw;
   }
-  return prof;
 }
 
 

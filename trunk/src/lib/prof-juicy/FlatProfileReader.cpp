@@ -50,8 +50,8 @@ read_string(FILE *fp, std::string& str);
 
 //***************************************************************************
 
-Prof::Flat::Profile::Profile()
-  : m_fs(NULL)
+Prof::Flat::Profile::Profile(const char* filename)
+  : m_name((filename) ? filename : ""), m_fs(NULL)
 {
 }
 
@@ -61,39 +61,31 @@ Prof::Flat::Profile::~Profile()
   if (m_fs) {
     fclose(m_fs);
   }
+
   for (const_iterator it = begin(); it != end(); ++it) {
     const Prof::Flat::LM* proflm = it->second;
     delete proflm;
   }
+  clear();
+
   for (SampledMetricDescVec::iterator it = m_mdescs.begin();
        it != m_mdescs.end(); ++it) {
     delete (*it);
   }
-}
-
-
-
-void
-Prof::Flat::Profile::open(const char* filename)
-{
-  DIAG_Assert(Logic::implies(!m_name.empty(), m_name.c_str() == filename), "Cannot open a different file!");
-
-  // Open file
-  m_fs = Profile::fopen(filename);
-  m_name = filename;  
-
-  // Gather metrics
-  read_metrics();
-  fseek(m_fs, 0L, SEEK_SET); // rewind
+  m_mdescs.clear();
 }
 
 
 void
-Prof::Flat::Profile::read(const char* filename)
+Prof::Flat::Profile::openread(const char* filename)
 {
+  DIAG_Assert(Logic::implies(!m_name.empty() && filename, m_name.c_str() == filename), "Cannot open a different file!");
+  if (m_name.empty() && filename) {
+    m_name = filename;
+  }
+
   // Open file
-  m_fs = Profile::fopen(filename);
-  m_name = filename;  
+  m_fs = Profile::fopen(m_name.c_str());
 
   // Read it
   read();
@@ -101,6 +93,25 @@ Prof::Flat::Profile::read(const char* filename)
   // Gather metrics
   iterator it = begin();
   mdescs(it->second);
+}
+
+
+void
+Prof::Flat::Profile::open(const char* filename)
+{
+  DIAG_Assert(Logic::implies(!m_name.empty() && filename, m_name.c_str() == filename), "Cannot open a different file!");
+  if (m_name.empty() && filename) {
+    m_name = filename;
+  }
+
+  // Open file
+  m_fs = Profile::fopen(m_name.c_str());
+
+  // Gather metrics
+  read_metrics();
+  fseek(m_fs, 0L, SEEK_SET); // rewind
+
+  // NOT YET READ
 }
 
 

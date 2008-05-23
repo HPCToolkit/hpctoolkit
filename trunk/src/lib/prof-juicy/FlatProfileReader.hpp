@@ -83,7 +83,7 @@ class LM;
 
 class Profile : public std::map<std::string, LM*> {
 public:
-  Profile();
+  Profile(const char* filename = NULL);
   ~Profile();
   
   const std::string& name() const { return m_name; }
@@ -102,14 +102,18 @@ public:
   // open/read: Throws an exception on an error!
   // -------------------------------------------------------
   // Two ways of using:
-  //   1. open(...): opens file and read metrics only
-  //      read(): reads file
-  //   2. read(...): open and reads file
-  
-  void open(const char* filename);
-  void read();
-  void read(const char* filename);
+  //   1. open(fnm): open fnm and read metrics information only
+  //      read()   : read (rest of) contents
+  //
+  //   2. openread(fnm): opens and reads fnm
+  //
+  // NOTE: in either case, fnm may be supplied by constructor
+
+  void openread(const char* filename = NULL);
  
+  void open(const char* filename = NULL);
+  void read();
+
   // -------------------------------------------------------
   // 
   // -------------------------------------------------------

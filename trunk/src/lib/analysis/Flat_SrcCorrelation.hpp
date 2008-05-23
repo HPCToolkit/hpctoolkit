@@ -128,10 +128,10 @@ public:
   computeRawMetrics(Prof::MetricDescMgr& mMgr, PgmScopeTree& structure);
 
   void
-  computeRawBatchJob(const string& lmname, const string& lmname_orig,
-		     NodeRetriever& structIF,
-		     ProfToMetricsTupleVec& profToMetricsVec,
-		     bool useStruct);
+  computeRawBatchJob_LM(const string& lmname, const string& lmname_orig,
+			NodeRetriever& structIF,
+			ProfToMetricsTupleVec& profToMetricsVec,
+			bool useStruct);
 
   void
   correlate(PerfMetric* metric,
@@ -162,7 +162,10 @@ public:
   // -------------------------------------------------------
 
   Prof::Flat::Profile*
-  openProf(const string& fnm);
+  readProf(const string& fnm);
+
+  void
+  readProf(Prof::Flat::Profile* prof);
 
   binutils::LM*
   openLM(const string& fnm);
