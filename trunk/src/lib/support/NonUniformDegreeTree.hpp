@@ -84,13 +84,33 @@
 
 class NonUniformDegreeTreeNode {
 public:
-  NonUniformDegreeTreeNode(NonUniformDegreeTreeNode *_parent = 0);
+
+  //-----------------------------------------------
+  // constructor initializes empty node then links
+  // it to its parent and siblings (if any)
+  //-----------------------------------------------
+  NonUniformDegreeTreeNode(NonUniformDegreeTreeNode *_parent = 0)
+  {
+    ZeroLinks();
+    Link(_parent); // link to parent and siblings if any
+  }
   
   NonUniformDegreeTreeNode(const NonUniformDegreeTreeNode& other) {
     *this = other;
   }
   
-  NonUniformDegreeTreeNode& operator=(const NonUniformDegreeTreeNode& other);
+  NonUniformDegreeTreeNode& operator=(const NonUniformDegreeTreeNode& other)
+  {
+    // shallow copy
+    if (&other != this) {
+      parent       = other.parent;
+      children     = other.children;
+      next_sibling = other.next_sibling;
+      prev_sibling = other.prev_sibling;
+      child_count  = other.child_count;
+    }
+    return *this;
+  }
 
   // destructor for destroying derived class instances
   virtual ~NonUniformDegreeTreeNode();
@@ -134,8 +154,8 @@ protected:
   NonUniformDegreeTreeNode *parent, *children, *next_sibling, *prev_sibling;
   unsigned int child_count;
 
-friend class NonUniformDegreeTreeNodeChildIterator;
-friend class NonUniformDegreeTreeIterator;
+  friend class NonUniformDegreeTreeNodeChildIterator;
+  friend class NonUniformDegreeTreeIterator;
 };
 
 
@@ -146,26 +166,57 @@ friend class NonUniformDegreeTreeIterator;
 
 class NonUniformDegreeTreeNodeChildIterator : public StackableIterator {
 public:
-  NonUniformDegreeTreeNodeChildIterator(
-                                     const NonUniformDegreeTreeNode* _parent,
-				     bool firstToLast = true);
-  ~NonUniformDegreeTreeNodeChildIterator();
+  NonUniformDegreeTreeNodeChildIterator(const NonUniformDegreeTreeNode* _parent,
+					bool firstToLast = true)
+    : parent(_parent), currentChild(0), forward(firstToLast)
+  {
+    Reset();
+  }
 
-  void Reset(void);
-  void operator++();    // prefix increment
-  void operator++(int); // postfix increment
+  ~NonUniformDegreeTreeNodeChildIterator()
+  {
+  }
 
-// protected is commented out because NonUniformDegreeTreeIterators are used
-// directly by deprecated (but still necessary) code in the Fortran D compiler.
-// it should be uncommented when the offending code is rewritten.
-// --JMC 4 Nov 1994
-// protected:
-  virtual NonUniformDegreeTreeNode *Current() const;
+  void Reset(void) 
+  {
+    currentChild = forward ? parent->FirstChild() : parent->LastChild();
+  }
+
+  // prefix increment
+  void operator++()
+  {
+    if (currentChild) {
+      currentChild = (forward ? currentChild->NextSibling() 
+   		              : currentChild->PrevSibling());
+      const NonUniformDegreeTreeNode* pastEnd = 
+	forward ? parent->FirstChild() : parent->LastChild();
+      if (currentChild == pastEnd) {
+	currentChild = NULL;
+      }
+    }
+  }
+
+  // postfix increment
+  void operator++(int)
+  {
+    operator++();
+  }
+
+  virtual NonUniformDegreeTreeNode* 
+  Current() const
+  {
+    return currentChild;
+  }
 
   virtual void DumpAndReset(std::ostream &os = std::cerr);
 
 private:
-  void *CurrentUpCall() const; // interface for StackableIterator
+  // interface for StackableIterator
+  void *CurrentUpCall() const
+  {
+    return Current();
+  }
+
   const NonUniformDegreeTreeNode *parent;
   NonUniformDegreeTreeNode *currentChild;
   bool forward;
@@ -180,7 +231,7 @@ enum NonUniformDegreeTreeEnumType {
   NON_UNIFORM_DEGREE_TREE_ENUM_LEAVES_ONLY = ITER_STACK_ENUM_LEAVES_ONLY,
   NON_UNIFORM_DEGREE_TREE_ENUM_ALL_NODES = ITER_STACK_ENUM_ALL_NODES,
   NON_UNIFORM_DEGREE_TREE_ENUM_ALL_NON_ROOTS
-  };
+};
 
 // Note:  Reverse traversal orders are OK.
 
@@ -189,19 +240,25 @@ public:
   NonUniformDegreeTreeIterator
     (const NonUniformDegreeTreeNode *root, TraversalOrder torder = PreOrder,
      NonUniformDegreeTreeEnumType how= NON_UNIFORM_DEGREE_TREE_ENUM_ALL_NODES);
-  ~NonUniformDegreeTreeIterator();
 
-// protected is commented out because NonUniformDegreeTreeIterators are used
-// directly by deprecated (but still necessary) code in the Fortran D compiler.
-// it should be uncommented when the offending code is rewritten.
-// --JMC 4 Nov 1994
-// protected:
-  virtual NonUniformDegreeTreeNode *Current() const;
+  ~NonUniformDegreeTreeIterator()
+  {
+  }
+
+
+  virtual NonUniformDegreeTreeNode* 
+  Current() const
+  {
+    return (NonUniformDegreeTreeNode *) IteratorStack::CurrentUpCall();
+  }
 
   virtual void DumpAndReset(std::ostream &os = std::cerr); 
 private:
   // upcall interface for StackableIterator
-  void *CurrentUpCall() const; 
+  void *CurrentUpCall() const
+  {
+    return Current();
+  }
 
   // upcall for IteratorStack
   StackableIterator *IteratorToPushIfAny(void *current); 
