@@ -75,7 +75,7 @@ m4_include(config/hpc-cxxutils.m4)
 #    correctly
 #----------------------------------------------------------------------------
 
-AC_INIT([hpctoolkit], [TRUNK-4.9.0=1280], [hpc@cs.rice.edu], [hpctoolkit])
+AC_INIT([hpctoolkit], [TRUNK-4.9.0=1370], [hpc@cs.rice.edu], [hpctoolkit])
 AC_CONFIG_SRCDIR([src/include/HPCToolkitVersionInfo.h])
 AC_CONFIG_AUX_DIR([config])
 
@@ -85,8 +85,8 @@ AM_INIT_AUTOMAKE(1.10)
 
 AC_CANONICAL_HOST()
 
-AC_MSG_NOTICE([INFO: On entry: CXX=${CXX} CXXFLAGS=${CXXFLAGS}])
-AC_MSG_NOTICE([INFO: On entry: CC=${CC} CFLAGS=${CFLAGS}])
+AC_MSG_NOTICE([INFO: Entry: CXX=${CXX} CXXFLAGS=${CXXFLAGS}])
+AC_MSG_NOTICE([INFO: Entry: CC=${CC} CFLAGS=${CFLAGS}])
 
 #----------------------------------------------------------------------------
 # Setup
@@ -143,8 +143,8 @@ AC_PROG_CC_STDC()
 AC_PROG_CXXCPP()
 AC_PROG_INSTALL()
 
-AC_MSG_NOTICE([INFO: After check: CXX=${CXX} CXXFLAGS=${CXXFLAGS}])
-AC_MSG_NOTICE([INFO: After check: CC=${CC} CFLAGS=${CFLAGS}])
+AC_MSG_NOTICE([INFO: ac_prog: CXX=${CXX} CXXFLAGS=${CXXFLAGS}])
+AC_MSG_NOTICE([INFO: ac_prog: CC=${CC} CFLAGS=${CFLAGS}])
 
 # Use C++ compiler for all checks
 AC_LANG(C++)
@@ -286,9 +286,9 @@ if test "$OPT_ENABLE_DEVELOP" = "yes" ; then
   my_opt_cflags="-g -O0"
   my_opt_cxxflags="-g -O0"
 else 
-  # On some compilers, -g implies -O0.  Make sure -O2 takes precedence!
-  my_opt_cflags="-g -O2"
-  my_opt_cxxflags="-g -O2"
+  # On some compilers, -g implies -O0.  Make sure -O3 takes precedence!
+  my_opt_cflags="-g -O3"
+  my_opt_cxxflags="-g -O3"
 fi
 
 
@@ -324,7 +324,7 @@ case ${host} in
       if test "$OPT_ENABLE_DEVELOP" = "yes" ; then
         my_opt_cflags="-g -O0 -c9x"
       else
-        my_opt_cflags="-gopt -O2 -c9x"
+        my_opt_cflags="-gopt -O3 -c9x"
       fi
     fi
     ;;
@@ -396,7 +396,7 @@ case ${host} in
       if test "$OPT_ENABLE_DEVELOP" = "yes" ; then
         my_opt_cflags="-g"
       else 
-        my_opt_cflags="-g3 -O2"
+        my_opt_cflags="-g3 -O3"
       fi
     fi
 
@@ -417,6 +417,7 @@ HOST_HPCSTRUCT_LDFLAGS="${HOST_HPCSTRUCT_LDFLAGS} ${my_demangle_ldflags}"
 HOST_HPCPROF_LDFLAGS="${HOST_HPCPROF_LDFLAGS} ${my_demangle_ldflags}"
 HOST_XPROF_LDFLAGS="${HOST_XPROF_LDFLAGS} ${my_demangle_ldflags}"
 
+
 #-------------------------------------------------
 # Distribute these settings into makefiles
 #-------------------------------------------------
@@ -434,6 +435,8 @@ AC_SUBST([HOST_HPCPROF_FLAT_LDFLAGS])
 AC_SUBST([HOST_HPCPROFTT_LDFLAGS])
 AC_SUBST([HOST_XPROF_LDFLAGS])
 
+AC_MSG_NOTICE([INFO: Exit: CXX=${CXX} CXXFLAGS=${CXXFLAGS} HOST_CXXFLAGS=${HOST_CXXFLAGS}])
+AC_MSG_NOTICE([INFO: Exit: CC=${CC} CFLAGS=${CFLAGS} HOST_CFLAGS=${HOST_CFLAGS}])
 
 #----------------------------------------------------------------------------
 # Prerequisites: external libraries
