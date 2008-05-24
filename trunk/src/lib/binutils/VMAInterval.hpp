@@ -233,7 +233,8 @@ public:
   // use inherited std::set routines
 
   // insert: Insert a VMA or VMAInterval and maintain the
-  // non-overlapping interval invariant
+  // non-overlapping interval invariant. Merges intervals that overlap
+  // or intersect only at a boundary.
   std::pair<iterator, bool> insert(const VMA beg, const VMA end)
     { return insert(value_type(beg, end)); }
   std::pair<iterator, bool> insert(const value_type& x);

@@ -109,8 +109,8 @@ public:
   const std::string& Name() const          { return name; }
   void               Name(const std::string& nm)  { name = nm; }
   const std::string& NativeName() const    { return nativeName; }
-  unsigned int Index() const          { return m_id; } 
-  void         Index(uint id)         { m_id = id; } 
+  uint Index() const   { return m_id; } 
+  void Index(uint id)  { m_id = id; } 
   
   bool Display() const                { return display; }
   bool Percent() const                { return percent; }

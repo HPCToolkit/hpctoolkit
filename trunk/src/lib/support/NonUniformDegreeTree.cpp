@@ -166,22 +166,6 @@ void NonUniformDegreeTreeNode::Unlink()
 }
 
 
-//-----------------------------------------------
-// virtual destructor that frees all of its 
-// children before freeing itself 
-//-----------------------------------------------
-NonUniformDegreeTreeNode::~NonUniformDegreeTreeNode()
-{
-  if (child_count > 0) {
-    NonUniformDegreeTreeNode *next, *start = children;
-    for (int i = child_count; i-- > 0; ) {
-      next = start->next_sibling;
-      delete start;
-      start = next;
-    }
-  }
-}
-
 unsigned int
 NonUniformDegreeTreeNode::AncestorCount() const
 {

@@ -441,11 +441,11 @@ Driver::computeRawMetrics(Prof::MetricDescMgr& mMgr, PgmScopeTree& structure)
   //-------------------------------------------------------
   // Accumulate leaves to interior nodes, if necessary
   //-------------------------------------------------------
-
-  // First compute batch jobs: all raw metrics are independent of each
-  // other and therefore may be computed en masse.
-  VMAIntervalSet ivalset; // cheat using a VMAInterval set
   if (m_args.metrics_computeInteriorValues) {
+    // 1. Compute batch jobs: all raw metrics are independent of each
+    //    other and therefore may be computed en masse.
+    VMAIntervalSet ivalset; // cheat using a VMAInterval set
+
     for (uint i = 0; i < mMgr.size(); i++) {
       const PerfMetric* m = mMgr.metric(i);
       const FilePerfMetric* mm = dynamic_cast<const FilePerfMetric*>(m);
@@ -453,14 +453,14 @@ Driver::computeRawMetrics(Prof::MetricDescMgr& mMgr, PgmScopeTree& structure)
 	ivalset.insert(VMAInterval(m->Index(), m->Index() + 1)); // [ )
       }
     }
-  }
-
-  // Now execute the batch jobs
-  for (VMAIntervalSet::iterator it = ivalset.begin(); 
-       it != ivalset.end(); ++it) {
-    const VMAInterval& ival = *it;
-    structIF.GetRoot()->accumulateMetrics((uint)ival.beg(), 
-					  (uint)ival.end() - 1); // [ ]
+    
+    // 2. Now execute the batch jobs
+    for (VMAIntervalSet::iterator it = ivalset.begin(); 
+	 it != ivalset.end(); ++it) {
+      const VMAInterval& ival = *it;
+      structIF.GetRoot()->accumulateMetrics((uint)ival.beg(), 
+					    (uint)ival.end() - 1); // [ ]
+    }
   }
 }
 

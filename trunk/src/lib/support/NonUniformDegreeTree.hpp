@@ -112,8 +112,21 @@ public:
     return *this;
   }
 
-  // destructor for destroying derived class instances
-  virtual ~NonUniformDegreeTreeNode();
+  //-----------------------------------------------
+  // virtual destructor that frees all of its 
+  // children before freeing itself 
+  //-----------------------------------------------
+  virtual ~NonUniformDegreeTreeNode()
+  {
+    if (child_count > 0) {
+      NonUniformDegreeTreeNode *next, *start = children;
+      for (int i = child_count; i-- > 0; ) {
+	next = start->next_sibling;
+	delete start;
+	start = next;
+      }
+    }
+  }
   
   // link/unlink a node to a parent and siblings 
   void Link(NonUniformDegreeTreeNode *_parent);
