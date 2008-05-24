@@ -15,14 +15,16 @@ using namespace std;
 
 class CodeRange {
 public:
-  CodeRange(void *_start, void *_end, long _offset);
-  void Process(bool fn_discovery);
+  CodeRange(void *_start, void *_end, long _offset, bool discover);
+  void Process();
   bool Contains(void *addr);
+  bool Discover() { return discover; }
   void *Relocate(void *addr); 
 private:
   void *start;
   void *end;
   long offset;
+  bool discover;
 };
 
 
@@ -42,7 +44,7 @@ static CodeRangeSet code_ranges;
  *****************************************************************************/
 
 bool 
-is_valid_code_address(void *addr)
+consider_possible_fn_address(void *addr)
 {
   CodeRangeSet::iterator it = code_ranges.lower_bound(addr);
 
@@ -50,26 +52,26 @@ is_valid_code_address(void *addr)
   if (--it == code_ranges.begin()) return false;
 
   CodeRange *r = (*it).second;
-  return r->Contains(addr);
+  return r->Contains(addr) & r->Discover();
 } 
 
 
 void 
-new_code_range(void *start, void *end, long offset)
+new_code_range(void *start, void *end, long offset, bool discover)
 {
   code_ranges.insert(pair<void*,CodeRange*>(start, 
-					    new CodeRange(start, end, offset)));
+					    new CodeRange(start, end, offset, discover)));
 }
 
 
 void 
-process_code_ranges(bool fn_discovery)
+process_code_ranges()
 {
   process_range_init();
   CodeRangeSet::iterator it = code_ranges.begin();
   for (; it != code_ranges.end(); it++) {
     CodeRange *r = (*it).second;
-    r->Process(fn_discovery);
+    r->Process();
   }
 }
 
@@ -77,11 +79,12 @@ process_code_ranges(bool fn_discovery)
  * private operations 
  *****************************************************************************/
 
-CodeRange::CodeRange(void *_start, void *_end, long _offset) 
+CodeRange::CodeRange(void *_start, void *_end, long _offset, bool _discover) 
 { 
   start = _start;
   end = _end; 
   offset = _offset;
+  discover = _discover;
 }
 
 void * 
@@ -97,8 +100,8 @@ CodeRange::Contains(void *addr)
 }
 
 void 
-CodeRange::Process(bool fn_discovery)
+CodeRange::Process()
 {
-  process_range(-offset, Relocate(start), Relocate(end), fn_discovery);
+  process_range(-offset, Relocate(start), Relocate(end), discover);
 }
 
