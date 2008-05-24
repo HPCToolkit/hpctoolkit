@@ -229,30 +229,60 @@ public:
   int ScopeHeight() const { return height; }
   int ScopeDepth() const { return depth; }
 
-  bool HasPerfData(int i) const {
-    double x = (*perfData)[i];
+
+  // --------------------------------------------------------
+  // Metric data
+  // --------------------------------------------------------
+
+  bool 
+  HasPerfData() const 
+  {
+    uint end = NumPerfData();
+    for (int i = 0; i < end; ++i) {
+      if (HasPerfData(i)) {
+	return true;
+      }
+    }
+    return false;
+  }
+
+  bool 
+  HasPerfData(int midx) const 
+  {
+    double x = (*perfData)[midx];
     return (x != 0.0 && !c_isnan_d(x));
   }
   
-  double PerfData(int i) const {
-    return (*perfData)[i];
+  double 
+  PerfData(int midx) const 
+  {
+    return (*perfData)[midx];
   }
 
-  void SetPerfData(int i, double d) {
+  void 
+  SetPerfData(int midx, double d) 
+  {
     // NOTE: VectorTmpl::operator[] automatically 'adds' the index if necessary
-    if (c_isnan_d((*perfData)[i])) {
-      (*perfData)[i] = d;
+    if (c_isnan_d((*perfData)[midx])) {
+      (*perfData)[midx] = d;
     }
     else {
-      (*perfData)[i] += d;
+      (*perfData)[midx] += d;
     }
   }
 
-  uint NumPerfData() const {
+  uint 
+  NumPerfData() const 
+  {
     return perfData->GetNumElements();
   }
 
-  
+  // accumulates metrics from children
+  void accumulateMetrics(int metricIdx);
+
+  // traverses the tree and removes all nodes for which HasPerfData() is false
+  void pruneByMetrics();
+
   // --------------------------------------------------------
   // Parent
   // --------------------------------------------------------

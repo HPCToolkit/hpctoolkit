@@ -134,30 +134,6 @@ ComputedPerfMetric::~ComputedPerfMetric()
 // Make methods 
 // **************************************************************************
 
-void
-AccumulateMetricsFromChildren(ScopeInfo* si, int perfInfoIndex) 
-{
-  ScopeInfoChildIterator it(si); 
-  for (; it.Current(); it++) { 
-     AccumulateMetricsFromChildren(it.CurScope(), perfInfoIndex); 
-  } 
-  it.Reset(); 
-  if (it.Current() != NULL) { // its not a leaf 
-    double val = 0.0; 
-    bool hasVal = false; 
-    for (; it.Current(); it++) { 
-      if (it.CurScope()->HasPerfData(perfInfoIndex)) { 
-         val += it.CurScope()->PerfData(perfInfoIndex); 
-	 hasVal = true; 
-      }
-    } 
-    if (hasVal) { 
-      si->SetPerfData(perfInfoIndex, val); 
-    }
-  }
-}
-
-
 void 
 FilePerfMetric::Make(NodeRetriever &ret) const
 {
@@ -168,10 +144,10 @@ FilePerfMetric::Make(NodeRetriever &ret) const
 
 
 void 
-ComputedPerfMetric::Make(NodeRetriever &ret) const
+ComputedPerfMetric::Make(NodeRetriever& structIF) const
 {
-  ScopeInfoIterator it(ret.GetRoot(), 
-		       /*filter*/ NULL, /*leavesOnly*/ false, 
+  PgmScope* pgmStrct = structIF.GetRoot();
+  ScopeInfoIterator it(pgmStrct, NULL /*filter*/, false /*leavesOnly*/,
 		       IteratorStack::PostOrder);
 
   for (; it.Current(); it++) {
@@ -188,7 +164,7 @@ ComputedPerfMetric::Make(NodeRetriever &ret) const
   }
 
   if (PropComputed()) {
-    AccumulateMetricsFromChildren(ret.GetRoot(), Index());
+    pgmStrct->accumulateMetrics(Index());
   }
 }
 

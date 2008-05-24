@@ -117,54 +117,6 @@ const ScopeInfoFilter ScopeTypeFilter[ScopeInfo::NUMBER_OF_SCOPES] = {
 
 
 //***************************************************************************
-// HasPerfData
-//    check if this node has any profile data associated with it
-//***************************************************************************
-
-bool 
-HasPerfData(const ScopeInfo *si, int nm)
-{
-  for (int i = 0; i < nm ; i++) {
-    if (si->HasPerfData(i)) {
-      return true;
-    }
-  }
-  return false;
-}
-
-
-//***************************************************************************
-// PruneScopeTreeMetrics - not a member of any class
-//    traverses a tree and removes all the nodes that don't have any profile
-//    data associated
-//***************************************************************************
-
-// FIXME: relocate
-void 
-PruneScopeTreeMetrics(const ScopeInfo *node, int numMetrics)
-{
-  std::vector<ScopeInfo*> toBeRemoved;
-  
-  ScopeInfoChildIterator it( node, NULL );
-  for ( ; it.Current(); it++) {
-    ScopeInfo* si = dynamic_cast<ScopeInfo*>(it.Current());
-    if (HasPerfData(si, numMetrics)) {
-      PruneScopeTreeMetrics(si, numMetrics);
-    }
-    else {
-      toBeRemoved.push_back(si);
-    }
-  }
-  
-  for (unsigned int i = 0; i < toBeRemoved.size(); i++) {
-    ScopeInfo* si = toBeRemoved[i];
-    si->Unlink();
-    delete si;
-  }
-}
-
-
-//***************************************************************************
 // ScopeInfoChildIterator
 //***************************************************************************
 
