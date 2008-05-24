@@ -105,12 +105,17 @@ public:
   // implies all the larger scopes.  E.g. ReadFlg_Insn implies
   // ReadFlg_Proc and ReadFlg_Seg.
   enum ReadFlg { 
-    ReadFlg_NULL = 0,
-    ReadFlg_Seg  = 0x0001, // always read: permits source code lookup
-    ReadFlg_Proc = 0x0011,
-    ReadFlg_Insn = 0x0111,
+    ReadFlg_NULL  = 0,
 
-    ReadFlg_ALL  = ReadFlg_Seg | ReadFlg_Proc | ReadFlg_Insn
+    // individual flags
+    ReadFlg_iSeg  = 0x0001, // always read: permits source code lookup
+    ReadFlg_iProc = 0x0010,
+    ReadFlg_iInsn = 0x0100,
+
+    // composite flags
+    ReadFlg_ALL  = ReadFlg_iSeg | ReadFlg_iProc | ReadFlg_iInsn,
+    ReadFlg_Proc = ReadFlg_iSeg | ReadFlg_iProc,
+    ReadFlg_Seg  = ReadFlg_iSeg
   };
 
   typedef VMAIntervalMap<Seg*>  SegMap;
