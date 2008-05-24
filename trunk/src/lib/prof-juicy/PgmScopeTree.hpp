@@ -247,27 +247,27 @@ public:
   }
 
   bool 
-  HasPerfData(int midx) const 
+  HasPerfData(int mId) const 
   {
-    double x = (*perfData)[midx];
+    double x = (*perfData)[mId];
     return (x != 0.0 && !c_isnan_d(x));
   }
   
   double 
-  PerfData(int midx) const 
+  PerfData(int mId) const 
   {
-    return (*perfData)[midx];
+    return (*perfData)[mId];
   }
 
   void 
-  SetPerfData(int midx, double d) 
+  SetPerfData(int mId, double d) 
   {
     // NOTE: VectorTmpl::operator[] automatically 'adds' the index if necessary
-    if (c_isnan_d((*perfData)[midx])) {
-      (*perfData)[midx] = d;
+    if (c_isnan_d((*perfData)[mId])) {
+      (*perfData)[mId] = d;
     }
     else {
-      (*perfData)[midx] += d;
+      (*perfData)[mId] += d;
     }
   }
 
@@ -277,8 +277,33 @@ public:
     return perfData->GetNumElements();
   }
 
-  // accumulates metrics from children
-  void accumulateMetrics(int metricIdx);
+  // accumulates metrics from children. [mBegId, mEndId] forms an
+  // inclusive interval for batch processing.  In particular, 'raw'
+  // metrics are independent of all other raw metrics.
+  void
+  accumulateMetrics(uint mBegId, uint mEndId) 
+  {
+    // NOTE: Must not call HasPerfData() since this node may not have
+    // any metric data yet!
+    uint sz = mEndId + 1;
+    double* valVec = new double[sz];
+    bool* hasValVec = new bool[sz];
+    accumulateMetrics(mBegId, mEndId, valVec, hasValVec);
+    delete[] valVec;
+    delete[] hasValVec;
+  }
+
+  void 
+  accumulateMetrics(uint mBegId)
+  {
+    accumulateMetrics(mBegId, mBegId);
+  }
+
+private:
+  void
+  accumulateMetrics(uint mBegId, uint mEndId, double* valVec, bool* hasValVec);
+
+public:
 
   // traverses the tree and removes all nodes for which HasPerfData() is false
   void pruneByMetrics();
