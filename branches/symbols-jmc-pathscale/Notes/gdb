@@ -1,5 +1,0 @@
-#! /bin/sh
-#
-export LD_LIBRARY_PATH=$HOME/csprof-install/lib
-echo running my gdb with LD_LIBRARY_PATH=$LD_LIBRARY_PATH
-exec gdb $1
