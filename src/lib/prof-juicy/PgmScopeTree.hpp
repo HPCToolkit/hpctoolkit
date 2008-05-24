@@ -77,6 +77,7 @@
 using SrcFile::ln_NULL;
 #include <lib/support/Unique.hpp>
 #include <lib/support/VectorTmpl.hpp>
+#include <lib/support/realpath.h>
 
 //*************************** Forward Declarations **************************
 
@@ -93,12 +94,25 @@ public:
   DoubleVector() : VectorTmpl<double>(c_FP_NAN_d, true) { }
 };
 
-class GroupScopeMap;
-class LoadModScopeMap;
-class FileScopeMap;
-class ProcScopeMap;
-class StmtRangeScopeMap;
 
+// FIXME: move these into their respective classes...
+class GroupScope;
+class GroupScopeMap     : public std::map<std::string, GroupScope*> { };
+
+class LoadModScope;
+class LoadModScopeMap   : public std::map<std::string, LoadModScope*> { };
+
+// ProcScopeMap: This is is a multimap because procedure names are
+// sometimes "generic", i.e. not qualified by types in the case of
+// templates, resulting in duplicate names
+class ProcScope;
+class ProcScopeMap      : public std::multimap<std::string, ProcScope*> { };
+
+class FileScope;
+class FileScopeMap      : public std::map<std::string, FileScope*> { };
+
+class StmtRangeScope;
+class StmtRangeScopeMap : public std::map<SrcFile::ln, StmtRangeScope*> { };
 
 //***************************************************************************
 // PgmScopeTree
@@ -208,10 +222,23 @@ protected:
 
 private:
   static const std::string ScopeNames[NUMBER_OF_SCOPES];
-  
+
 public:
-  ScopeInfo(ScopeType type, ScopeInfo* parent = NULL);
-  virtual ~ScopeInfo();
+  ScopeInfo(ScopeType ty, ScopeInfo* parent = NULL)
+    : NonUniformDegreeTreeNode(parent), type(ty)
+  { 
+    if (0) { ctorCheck(); }
+    uid = s_nextUniqueId++;
+    height = 0;
+    depth = 0;
+    perfData = new DoubleVector();
+  }
+
+  virtual ~ScopeInfo()
+  {
+    if (0) { dtorCheck(); }
+    delete perfData;
+  }
   
   // --------------------------------------------------------
   // General Interface to fields 
@@ -466,6 +493,12 @@ public:
 			       int dmpFlag = 0,
 			       const char* pre = "") const;
 
+private:
+  void ctorCheck() const;
+  void dtorCheck() const;
+
+  static uint s_nextUniqueId;
+  
 protected:
   ScopeType type;
   uint uid;
@@ -474,21 +507,32 @@ protected:
   DoubleVector* perfData;
 };
 
+
 // --------------------------------------------------------------------------
 // CodeInfo is a base class for all scopes other than PGM and LM.
 // Describes some kind of code, i.e. Files, Procedures, Loops...
 // --------------------------------------------------------------------------
 class CodeInfo : public ScopeInfo {
 protected: 
-  CodeInfo(ScopeType t, ScopeInfo* mom = NULL, 
+  CodeInfo(ScopeType t, ScopeInfo* parent = NULL, 
 	   SrcFile::ln begLn = ln_NULL,
 	   SrcFile::ln endLn = ln_NULL,
-	   VMA begVMA = 0, VMA endVMA = 0);
+	   VMA begVMA = 0, VMA endVMA = 0)
+    : ScopeInfo(t, parent), m_begLn(ln_NULL), m_endLn(ln_NULL)
+  { 
+    SetLineRange(begLn, endLn);
+    if (begVMA != 0 && endVMA != 0) {
+      m_vmaSet.insert(begVMA, endVMA);
+    }
+  }
+
   CodeInfo(const CodeInfo& x) : ScopeInfo(x.type) { *this = x; }
+
   CodeInfo& operator=(const CodeInfo& x);
 
 public: 
-  virtual ~CodeInfo();
+  virtual ~CodeInfo()
+  { }
 
   // Line range in source code
   SrcFile::ln  begLine() const { return m_begLn; }
@@ -623,20 +667,47 @@ protected:
   PgmScope& operator=(const PgmScope& x);
 
 public: 
-  PgmScope(const char* nm);
-  PgmScope(const std::string& nm);
+  PgmScope(const char* nm)
+    : ScopeInfo(PGM, NULL) 
+  { 
+    Ctor(nm);
+  }
+  
+  PgmScope(const std::string& nm)
+    : ScopeInfo(PGM, NULL)
+  { 
+    Ctor(nm.c_str());
+  }
 
-  virtual ~PgmScope();
+  virtual ~PgmScope()
+  {
+    frozen = false;
+    delete groupMap;
+    delete lmMap;
+  }
 
   const std::string& name() const { return m_name; }
   void               SetName(const char* n) { m_name = n; }
   void               SetName(const std::string& n) { m_name = n; }
 
-  LoadModScope* FindLoadMod(const char* nm) const; // find by 'realpath'
+  LoadModScope* FindLoadMod(const char* nm) const // find by 'realpath'
+  {
+    std::string lmName = RealPath(nm);
+    LoadModScopeMap::iterator it = lmMap->find(lmName);
+    LoadModScope* x = (it != lmMap->end()) ? it->second : NULL;
+    return x;
+  }
+  
   LoadModScope* FindLoadMod(const std::string& nm) const 
     { return FindLoadMod(nm.c_str()); }
 
-  GroupScope*   FindGroup(const char* nm) const;
+  GroupScope*   FindGroup(const char* nm) const
+  {
+    GroupScopeMap::iterator it = groupMap->find(nm);
+    GroupScope* x = (it != groupMap->end()) ? it->second : NULL;
+    return x;
+  }
+
   GroupScope*   FindGroup(const std::string& nm) const
     { return FindGroup(nm.c_str()); }
 
@@ -669,8 +740,8 @@ protected:
 private: 
   void Ctor(const char* nm);
 
-  void AddToGroupMap(GroupScope& grp);
-  void AddToLoadModMap(LoadModScope& lm);
+  void AddToGroupMap(GroupScope* grp);
+  void AddToLoadModMap(LoadModScope* lm);
  
   friend class GroupScope;
   friend class LoadModScope;
@@ -694,11 +765,21 @@ private:
 // --------------------------------------------------------------------------
 class GroupScope: public CodeInfo {
 public: 
-  GroupScope(const char* nm, ScopeInfo* mom,
-	     int begLn = ln_NULL, int endLn = ln_NULL);
-  GroupScope(const std::string& nm, ScopeInfo* mom,
-	     int begLn = ln_NULL, int endLn = ln_NULL);
-  virtual ~GroupScope();
+  GroupScope(const char* nm, ScopeInfo* parent,
+	     int begLn = ln_NULL, int endLn = ln_NULL)
+    : CodeInfo(GROUP, parent, begLn, endLn, 0, 0)
+  {
+    Ctor(nm, parent);
+  }
+  
+  GroupScope(const std::string& nm, ScopeInfo* parent,
+	     int begLn = ln_NULL, int endLn = ln_NULL)
+    : CodeInfo(GROUP, parent, begLn, endLn, 0, 0)
+  {
+    Ctor(nm.c_str(), parent);
+  }
+  
+  virtual ~GroupScope() { }
   
   const std::string& name() const { return m_name; } // same as grpName
 
@@ -717,7 +798,7 @@ public:
 			       const char* pre = "") const;
 
 private:
-  void Ctor(const char* nm, ScopeInfo* mom);
+  void Ctor(const char* nm, ScopeInfo* parent);
 
 private: 
   std::string m_name;
@@ -734,9 +815,24 @@ protected:
   LoadModScope& operator=(const LoadModScope& x);
 
 public: 
-  LoadModScope(const char* nm, ScopeInfo* mom);
-  LoadModScope(const std::string& nm, ScopeInfo* mom);
-  virtual ~LoadModScope();
+  LoadModScope(const char* nm, ScopeInfo* parent)
+    : CodeInfo(LM, parent, ln_NULL, ln_NULL, 0, 0)
+  { 
+    Ctor(nm, parent);
+  }
+
+  LoadModScope(const std::string& nm, ScopeInfo* parent)
+    : CodeInfo(LM, parent, ln_NULL, ln_NULL, 0, 0)
+  {
+    Ctor(nm.c_str(), parent);
+  }
+
+  virtual ~LoadModScope()
+  {
+    delete fileMap;
+    delete procMap;
+    delete stmtMap;
+  }
 
   virtual std::string BaseName() const  { return BaseFileName(m_name); }
 
@@ -746,7 +842,14 @@ public:
 
   virtual ScopeInfo* Clone() { return new LoadModScope(*this); }
 
-  FileScope*    FindFile(const char* nm) const;    // find by 'realpath'
+  FileScope*    FindFile(const char* nm) const    // find by 'realpath'
+  {
+    std::string fName = RealPath(nm);
+    FileScopeMap::iterator it = fileMap->find(fName);
+    FileScope* x = (it != fileMap->end()) ? it->second : NULL;
+    return x;
+  }
+
   FileScope*    FindFile(const std::string& nm) const
     { return FindFile(nm.c_str()); }
 
@@ -789,9 +892,9 @@ public:
   typedef VMAIntervalMap<StmtRangeScope*> VMAToStmtRangeMap;
 
 protected: 
-  void Ctor(const char* nm, ScopeInfo* mom);
+  void Ctor(const char* nm, ScopeInfo* parent);
 
-  void AddToFileMap(FileScope& file);
+  void AddToFileMap(FileScope* file);
 
   template<typename T> 
   void buildMap(VMAIntervalMap<T>*& m, ScopeInfo::ScopeType ty) const;
@@ -822,15 +925,28 @@ protected:
   FileScope& operator=(const FileScope& x);
 
 public: 
-  // fileNameWithPath/mom must not be NULL
+  // fileNameWithPath/parent must not be NULL
   // srcIsReadable == fopen(fileNameWithPath, "r") works 
-  FileScope(const char* fileNameWithPath, bool srcIsReadable_, 
-	    ScopeInfo *mom, 
-	    SrcFile::ln begLn = ln_NULL, SrcFile::ln endLn = ln_NULL);
-  FileScope(const std::string& fileNameWithPath, bool srcIsReadable_, 
-	    ScopeInfo *mom, 
-	    SrcFile::ln begLn = ln_NULL, SrcFile::ln endLn = ln_NULL);
-  virtual ~FileScope();
+  FileScope(const char* srcFileWithPath, bool srcIsReadable_, 
+	    ScopeInfo *parent, 
+	    SrcFile::ln begLn = ln_NULL, SrcFile::ln endLn = ln_NULL)
+    : CodeInfo(FILE, parent, begLn, endLn, 0, 0)
+  {
+    Ctor(srcFileWithPath, srcIsReadable_, parent);
+  }
+  
+  FileScope(const std::string& srcFileWithPath, bool srcIsReadable_, 
+	    ScopeInfo *parent, 
+	    SrcFile::ln begLn = ln_NULL, SrcFile::ln endLn = ln_NULL)
+    : CodeInfo(FILE, parent, begLn, endLn, 0, 0)
+  {
+    Ctor(srcFileWithPath.c_str(), srcIsReadable_, parent);
+  }
+  
+  virtual ~FileScope()
+  {
+    delete procMap;
+  }
 
 
   static FileScope* 
@@ -881,9 +997,9 @@ public:
 
 private: 
   void Ctor(const char* srcFileWithPath, bool srcIsReadble_, 
-	    ScopeInfo* mom);
+	    ScopeInfo* parent);
 
-  void AddToProcMap(ProcScope& proc);
+  void AddToProcMap(ProcScope* proc);
   friend class ProcScope;
 
 private:
@@ -906,15 +1022,26 @@ protected:
   ProcScope& operator=(const ProcScope& x);
 
 public: 
-  ProcScope(const char* name, CodeInfo* mom, 
+  ProcScope(const char* name, CodeInfo* parent, 
 	    const char* linkname, bool hasSym,
-	    SrcFile::ln begLn = ln_NULL, SrcFile::ln endLn = ln_NULL);
+	    SrcFile::ln begLn = ln_NULL, SrcFile::ln endLn = ln_NULL)
+    : CodeInfo(PROC, parent, begLn, endLn, 0, 0)
+  {
+    Ctor(name, parent, linkname, hasSym);
+  }
   
-  ProcScope(const std::string& name, CodeInfo* mom,
+  ProcScope(const std::string& name, CodeInfo* parent,
 	    const std::string& linkname, bool hasSym,
-	    SrcFile::ln begLn = ln_NULL, SrcFile::ln endLn = ln_NULL);
+	    SrcFile::ln begLn = ln_NULL, SrcFile::ln endLn = ln_NULL)
+    : CodeInfo(PROC, parent, begLn, endLn, 0, 0)
+  {
+    Ctor(name.c_str(), parent, linkname.c_str(), hasSym);
+  }
 
-  virtual ~ProcScope();
+  virtual ~ProcScope()
+  {
+    delete stmtMap;
+  }
 
   bool hasSymbolic() const { return m_hasSym; }
   
@@ -929,7 +1056,13 @@ public:
 
   virtual ScopeInfo* Clone() { return new ProcScope(*this); }
 
-  StmtRangeScope* FindStmtRange(SrcFile::ln line);  
+  StmtRangeScope* 
+  FindStmtRange(SrcFile::ln begLn)
+  {
+    StmtRangeScopeMap::iterator it = stmtMap->find(begLn);
+    StmtRangeScope* x = (it != stmtMap->end()) ? it->second : NULL;
+    return x;
+  }
 
   virtual std::string toXML(int dmpFlag = 0) const;
 
@@ -951,9 +1084,9 @@ public:
 			       const char* pre = "") const;
 
 private:
-  void Ctor(const char* n, CodeInfo* mom, const char* ln, bool hasSym);
+  void Ctor(const char* n, CodeInfo* parent, const char* ln, bool hasSym);
 
-  void AddToStmtMap(StmtRangeScope& stmt);
+  void AddToStmtMap(StmtRangeScope* stmt);
 
   friend class StmtRangeScope;
 
@@ -981,12 +1114,23 @@ protected:
   AlienScope& operator=(const AlienScope& x);
 
 public: 
-  AlienScope(CodeInfo* mom, const char* filenm, const char* procnm,
-	     SrcFile::ln begLn = ln_NULL, SrcFile::ln endLn = ln_NULL);
-  AlienScope(CodeInfo* mom, 
+  AlienScope(CodeInfo* parent, const char* filenm, const char* procnm,
+	     SrcFile::ln begLn = ln_NULL, SrcFile::ln endLn = ln_NULL)
+    : CodeInfo(ALIEN, parent, begLn, endLn, 0, 0)
+  {
+    Ctor(parent, filenm, procnm);
+  }
+
+  AlienScope(CodeInfo* parent, 
 	     const std::string& filenm, const std::string& procnm,
-	     SrcFile::ln begLn = ln_NULL, SrcFile::ln endLn = ln_NULL);
-  virtual ~AlienScope();
+	     SrcFile::ln begLn = ln_NULL, SrcFile::ln endLn = ln_NULL)
+    : CodeInfo(ALIEN, parent, begLn, endLn, 0, 0)
+  {
+    Ctor(parent, filenm.c_str(), procnm.c_str());
+  }
+
+  virtual ~AlienScope()
+  { }
   
   const std::string& fileName() const { return m_filenm; }
   void fileName(const std::string& fnm) { m_filenm = fnm; }
@@ -1017,7 +1161,7 @@ public:
 			       const char* pre = "") const;
 
 private:
-  void Ctor(CodeInfo* mom, const char* filenm, const char* procnm);
+  void Ctor(CodeInfo* parent, const char* filenm, const char* procnm);
 
 private:
   std::string m_filenm;
@@ -1032,9 +1176,17 @@ private:
 // --------------------------------------------------------------------------
 class LoopScope: public CodeInfo {
 public: 
-  LoopScope(CodeInfo* mom, 
-	    SrcFile::ln begLn = ln_NULL, SrcFile::ln endLn = ln_NULL);
-  virtual ~LoopScope();
+  LoopScope(CodeInfo* parent, 
+	    SrcFile::ln begLn = ln_NULL, SrcFile::ln endLn = ln_NULL)
+    : CodeInfo(LOOP, parent, begLn, endLn, 0, 0)
+  {
+    ScopeType t = (parent) ? parent->Type() : ANY;
+    DIAG_Assert((parent == NULL) || (t == GROUP) || (t == FILE) || (t == PROC) 
+		|| (t == ALIEN) || (t == LOOP), "");
+  }
+
+  virtual ~LoopScope()
+  { }
   
   virtual std::string CodeName() const;
 
@@ -1060,9 +1212,24 @@ public:
 // --------------------------------------------------------------------------
 class StmtRangeScope: public CodeInfo {
 public: 
-  StmtRangeScope(CodeInfo* mom, SrcFile::ln begLn, SrcFile::ln endLn,
-		 VMA begVMA = 0, VMA endVMA = 0);
-  virtual ~StmtRangeScope();
+  StmtRangeScope(CodeInfo* parent, SrcFile::ln begLn, SrcFile::ln endLn,
+		 VMA begVMA = 0, VMA endVMA = 0)
+    : CodeInfo(STMT_RANGE, parent, begLn, endLn, begVMA, endVMA),
+      m_sortId((int)begLn)
+  {
+    ScopeType t = (parent) ? parent->Type() : ANY;
+    DIAG_Assert((parent == NULL) || (t == GROUP) || (t == FILE) || (t == PROC)
+		|| (t == ALIEN) || (t == LOOP), "");
+    ProcScope* p = Proc();
+    if (p) { 
+      p->AddToStmtMap(this); 
+      //DIAG_DevIf(0) { LoadMod()->verifyStmtMap(); }
+    }
+    //DIAG_DevMsg(3, "StmtRangeScope::StmtRangeScope: " << toString_me());
+  }
+
+  virtual ~StmtRangeScope()
+  { }
   
   virtual std::string CodeName() const;
 
@@ -1093,8 +1260,8 @@ private:
 // ----------------------------------------------------------------------
 class RefScope: public CodeInfo {
 public: 
-  RefScope(CodeInfo* mom, int _begPos, int _endPos, const char* refName);
-  // mom->Type() == STMT_RANGE_SCOPE 
+  RefScope(CodeInfo* parent, int _begPos, int _endPos, const char* refName);
+  // parent->Type() == STMT_RANGE_SCOPE 
   
   uint BegPos() const { return begPos; };
   uint EndPos() const   { return endPos; };

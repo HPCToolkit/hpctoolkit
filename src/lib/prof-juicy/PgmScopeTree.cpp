@@ -50,24 +50,17 @@
 
 //************************* System Include Files ****************************
 
-#ifdef NO_STD_CHEADERS
-# include <stdio.h>
-# include <limits.h>
-#else
-# include <cstdio> // for 'fopen'
-# include <climits>
-using namespace std; // For compatibility with non-std C headers
-#endif
+#include <cstdio> // for 'fopen'
+#include <climits>
 
 #include <iostream>
 using std::ostream;
+using std::hex;
+using std::dec;
 using std::endl;
 
 #include <string>
 using std::string;
-
-#include <map> // STL
-using std::map;
 
 #include <algorithm>
 
@@ -97,29 +90,15 @@ using namespace xml;
 //***************************************************************************
 
 //***************************************************************************
-// template classes 
-//***************************************************************************
-
-class GroupScopeMap     : public map<string, GroupScope*> { };
-
-class LoadModScopeMap   : public map<string, LoadModScope*> { };
-
-// ProcScopeMap: This is is a multimap because procedure names are
-// sometimes "generic", i.e. not qualified by types in the case of
-// templates, resulting in duplicate names
-class ProcScopeMap      : public multimap<string, ProcScope*> { };
-
-class FileScopeMap      : public map<string, FileScope*> { };
-
-class StmtRangeScopeMap : public map<SrcFile::ln, StmtRangeScope*> { };
-
-//***************************************************************************
 // PgmScopeTree
 //***************************************************************************
+
+uint ScopeInfo::s_nextUniqueId = 0;
 
 const std::string PgmScopeTree::UnknownFileNm = "~~~<unknown-file>~~~";
 
 const std::string PgmScopeTree::UnknownProcNm = "~<unknown-proc>~";
+
 
 PgmScopeTree::PgmScopeTree(const char* name, PgmScope* _root)
   : root(_root)
@@ -192,18 +171,6 @@ ScopeInfo::IntToScopeType(long i)
 // ScopeInfo, etc: constructors/destructors
 //***************************************************************************
 
-ScopeInfo::ScopeInfo(ScopeType t, ScopeInfo* parent) 
-  : NonUniformDegreeTreeNode(parent), type(t)
-{ 
-  DIAG_Assert((type == PGM) || (Pgm() == NULL) || !Pgm()->IsFrozen(), "");
-  static uint uniqueId = 0;
-  uid = uniqueId++;
-  height = 0;
-  depth = 0;
-  perfData = new DoubleVector();
-}
-
-
 ScopeInfo& 
 ScopeInfo::operator=(const ScopeInfo& x) 
 {
@@ -261,7 +228,8 @@ ScopeInfo::NoteHeight()
 {
   if (IsLeaf()) {
     height = 0;
-  } else {
+  } 
+  else {
     height = 0;
     for (ScopeInfoChildIterator it(this); it.Current(); it++) {
       int childHeight = it.CurScope()->NoteHeight();
@@ -278,7 +246,8 @@ ScopeInfo::NoteDepth()
   ScopeInfo* p = Parent();
   if (p) {
     depth = p->depth + 1;
-  } else {
+  } 
+  else {
     depth = 0;
   }
   for (ScopeInfoChildIterator it(this); it.Current(); it++) {
@@ -287,37 +256,33 @@ ScopeInfo::NoteDepth()
 }
 
 
-static bool
-OkToDelete(ScopeInfo *si) 
+void
+ScopeInfo::ctorCheck() const
 {
-  PgmScope *pgm = si->Pgm();
-  if (pgm && pgm->Type() != ScopeInfo::PGM)
-     return true;
-  DIAG_Assert( pgm == NULL || pgm->Type() == ScopeInfo::PGM, "");
-  return ((pgm == NULL) || !(pgm->IsFrozen()));
+  bool isOK = ((type == PGM) || (Pgm() == NULL) || !Pgm()->IsFrozen());
+  DIAG_Assert(isOK, "");
 } 
 
 
-ScopeInfo::~ScopeInfo() 
+void
+ScopeInfo::dtorCheck() const
 {
-  DIAG_DevMsgIf(false, "~ScopeInfo::ScopeInfo: " << toString_id()
-		<< " " << hex << this << dec);
-  DIAG_Assert(OkToDelete(this), "ScopeInfo '" << this << " " << ToString() 
-	      << "' is not ready for deletion!");
-  delete perfData;
-}
+  DIAG_DevMsgIf(0, "~ScopeInfo::ScopeInfo: " << toString_id()
+		<< " " << std::hex << this << std::dec);
+  bool isOK = false;
 
-
-CodeInfo::CodeInfo(ScopeType t, ScopeInfo* parent, 
-		   SrcFile::ln begLn, SrcFile::ln endLn,
-		   VMA begVMA, VMA endVMA) 
-  : ScopeInfo(t, parent), m_begLn(ln_NULL), m_endLn(ln_NULL)
-{ 
-  SetLineRange(begLn, endLn);
-  if (begVMA != 0 && endVMA != 0) {
-    m_vmaSet.insert(begVMA, endVMA);
+  PgmScope* pgm = Pgm();
+  if (pgm && pgm->Type() != ScopeInfo::PGM) {
+    isOK = true;
   }
-}
+  else {
+    DIAG_Assert(pgm == NULL || pgm->Type() == ScopeInfo::PGM, "");
+    isOK = ((pgm == NULL) || !(pgm->IsFrozen()));
+  }
+  
+  DIAG_Assert(isOK, "ScopeInfo '" << this << " " << ToString() 
+	      << "' is not ready for deletion!");
+} 
 
 
 CodeInfo& 
@@ -333,11 +298,6 @@ CodeInfo::operator=(const CodeInfo& x)
 }
 
 
-CodeInfo::~CodeInfo() 
-{
-}
-
-
 void 
 CodeInfo::LinkAndSetLineRange(CodeInfo* parent)
 {
@@ -347,20 +307,6 @@ CodeInfo::LinkAndSetLineRange(CodeInfo* parent)
     SrcFile::ln eLn = std::max(parent->endLine(), endLine());
     parent->SetLineRange(bLn, eLn);
   }
-}
-
-
-PgmScope::PgmScope(const char* nm) 
-  : ScopeInfo(PGM, NULL) 
-{ 
-  Ctor(nm);
-}
-
-
-PgmScope::PgmScope(const std::string& nm)
-  : ScopeInfo(PGM, NULL)
-{ 
-  Ctor(nm.c_str());
 }
 
 
@@ -389,30 +335,6 @@ PgmScope::operator=(const PgmScope& x)
 }
 
 
-PgmScope::~PgmScope() 
-{
-  frozen = false;
-  delete groupMap;
-  delete lmMap;
-}
-
-
-GroupScope::GroupScope(const char* nm, ScopeInfo* parent, 
-		       int begLn, int endLn) 
-  : CodeInfo(GROUP, parent, begLn, endLn, 0, 0)
-{
-  Ctor(nm, parent);
-}
-
-
-GroupScope::GroupScope(const string& nm, ScopeInfo* parent, 
-		       int begLn, int endLn) 
-  : CodeInfo(GROUP, parent, begLn, endLn, 0, 0)
-{
-  Ctor(nm.c_str(), parent);
-}
-
-
 void
 GroupScope::Ctor(const char* nm, ScopeInfo* parent)
 {
@@ -422,26 +344,7 @@ GroupScope::Ctor(const char* nm, ScopeInfo* parent)
 	      || (t == FILE) || (t == PROC) || (t == ALIEN) 
 	      || (t == LOOP), "");
   m_name = nm;
-  Pgm()->AddToGroupMap(*this);
-}
-
-
-GroupScope::~GroupScope()
-{
-}
-
-
-LoadModScope::LoadModScope(const char* nm, ScopeInfo* parent)
-  : CodeInfo(LM, parent, ln_NULL, ln_NULL, 0, 0)
-{ 
-  Ctor(nm, parent);
-}
-
-
-LoadModScope::LoadModScope(const std::string& nm, ScopeInfo* parent)
-  : CodeInfo(LM, parent, ln_NULL, ln_NULL, 0, 0)
-{
-  Ctor(nm.c_str(), parent);
+  Pgm()->AddToGroupMap(this);
 }
 
 
@@ -457,7 +360,7 @@ LoadModScope::Ctor(const char* nm, ScopeInfo* parent)
   procMap = NULL;
   stmtMap = NULL;
 
-  Pgm()->AddToLoadModMap(*this);
+  Pgm()->AddToLoadModMap(this);
 }
 
 
@@ -475,32 +378,6 @@ LoadModScope::operator=(const LoadModScope& x)
 }
 
 
-LoadModScope::~LoadModScope() 
-{
-  delete fileMap;
-  delete procMap;
-  delete stmtMap;
-}
-
-
-FileScope::FileScope(const char* srcFileWithPath, bool srcIsReadble_, 
-		     ScopeInfo *parent,
-		     SrcFile::ln begLn, SrcFile::ln endLn)
-  : CodeInfo(FILE, parent, begLn, endLn, 0, 0)
-{
-  Ctor(srcFileWithPath, srcIsReadble_, parent);
-}
-
-
-FileScope::FileScope(const string& srcFileWithPath, bool srcIsReadble_, 
-		     ScopeInfo *parent,
-		     SrcFile::ln begLn, SrcFile::ln endLn)
-  : CodeInfo(FILE, parent, begLn, endLn, 0, 0)
-{
-  Ctor(srcFileWithPath.c_str(), srcIsReadble_, parent);
-}
-
-
 void
 FileScope::Ctor(const char* srcFileWithPath, bool srcIsReadble_, 
 		ScopeInfo* parent)
@@ -511,7 +388,7 @@ FileScope::Ctor(const char* srcFileWithPath, bool srcIsReadble_,
 
   srcIsReadable = srcIsReadble_;
   m_name = srcFileWithPath;
-  LoadMod()->AddToFileMap(*this);
+  LoadMod()->AddToFileMap(this);
   procMap = new ProcScopeMap();
 }
 
@@ -528,11 +405,6 @@ FileScope::operator=(const FileScope& x)
   return *this;
 }
 
-FileScope::~FileScope() 
-{
-  delete procMap;
-}
-
 
 FileScope* 
 FileScope::findOrCreate(LoadModScope* lmScope, const string& filenm)
@@ -543,24 +415,6 @@ FileScope::findOrCreate(LoadModScope* lmScope, const string& filenm)
     fScope = new FileScope(filenm, fileIsReadable, lmScope);
   }
   return fScope; // guaranteed to be a valid pointer
-}
-
-
-ProcScope::ProcScope(const char* n, CodeInfo* parent, const char* ln, 
-		     bool hasSym,
-		     SrcFile::ln begLn, SrcFile::ln endLn) 
-  : CodeInfo(PROC, parent, begLn, endLn, 0, 0)
-{
-  Ctor(n, parent, ln, hasSym);
-}
-
-
-ProcScope::ProcScope(const string& n, CodeInfo* parent, const string& ln, 
-		     bool hasSym,
-		     SrcFile::ln begLn, SrcFile::ln endLn) 
-  : CodeInfo(PROC, parent, begLn, endLn, 0, 0)
-{
-  Ctor(n.c_str(), parent, ln.c_str(), hasSym);
 }
 
 
@@ -578,7 +432,7 @@ ProcScope::Ctor(const char* n, CodeInfo* parent, const char* ln, bool hasSym)
   if (parent) {
     Relocate();
   }
-  if (File()) { File()->AddToProcMap(*this); }
+  if (File()) { File()->AddToProcMap(this); }
 }
 
 
@@ -596,12 +450,6 @@ ProcScope::operator=(const ProcScope& x)
 }
 
 
-ProcScope::~ProcScope() 
-{
-  delete stmtMap;
-}
-
-
 ProcScope*
 ProcScope::findOrCreate(FileScope* fScope, const string& procnm, 
 			SrcFile::ln line)
@@ -612,23 +460,6 @@ ProcScope::findOrCreate(FileScope* fScope, const string& procnm,
     pScope = new ProcScope(procnm, fScope, procnm, false, line, line);
   }
   return pScope;
-}
-
-
-AlienScope::AlienScope(CodeInfo* parent, const char* filenm, const char* nm,
-		       SrcFile::ln begLn, SrcFile::ln endLn) 
-  : CodeInfo(ALIEN, parent, begLn, endLn, 0, 0)
-{
-  Ctor(parent, filenm, nm);
-}
-
-
-AlienScope::AlienScope(CodeInfo* parent, 
-		       const std::string& filenm, const std::string& nm,
-		       SrcFile::ln begLn, SrcFile::ln endLn) 
-  : CodeInfo(ALIEN, parent, begLn, endLn, 0, 0)
-{
-  Ctor(parent, filenm.c_str(), nm.c_str());
 }
 
 
@@ -653,48 +484,6 @@ AlienScope::operator=(const AlienScope& x)
     m_name   = x.m_name;
   }
   return *this;
-}
-
-
-AlienScope::~AlienScope() 
-{
-}
-
-
-LoopScope::LoopScope(CodeInfo* parent, SrcFile::ln begLn, SrcFile::ln endLn) 
-  : CodeInfo(LOOP, parent, begLn, endLn, 0, 0)
-{
-  ScopeType t = (parent) ? parent->Type() : ANY;
-  DIAG_Assert((parent == NULL) || (t == GROUP) || (t == FILE) || (t == PROC) 
-	      || (t == ALIEN) || (t == LOOP), "");
-}
-
-
-LoopScope::~LoopScope()
-{
-}
-
-
-StmtRangeScope::StmtRangeScope(CodeInfo* parent, 
-			       SrcFile::ln begLn, SrcFile::ln endLn,
-			       VMA begVMA, VMA endVMA)
-  : CodeInfo(STMT_RANGE, parent, begLn, endLn, begVMA, endVMA),
-    m_sortId((int)begLn)
-{
-  ScopeType t = (parent) ? parent->Type() : ANY;
-  DIAG_Assert((parent == NULL) || (t == GROUP) || (t == FILE) || (t == PROC)
-	      || (t == ALIEN) || (t == LOOP), "");
-  ProcScope* p = Proc();
-  if (p) { 
-    p->AddToStmtMap(*this); 
-    //DIAG_DevIf(0) { LoadMod()->verifyStmtMap(); }
-  }
-  //DIAG_DevMsg(3, "StmtRangeScope::StmtRangeScope: " << toString_me());
-}
-
-
-StmtRangeScope::~StmtRangeScope()
-{
 }
 
 
@@ -1162,81 +951,48 @@ ScopeInfo::pruneByMetrics()
 //***************************************************************************
 
 void 
-PgmScope::AddToGroupMap(GroupScope& grp) 
+PgmScope::AddToGroupMap(GroupScope* grp) 
 {
-  string grpName = grp.name();
-  // STL::map is a Unique Associative Container
-  DIAG_Assert(groupMap->count(grpName) == 0, "");
-  (*groupMap)[grpName] = &grp;
+  std::pair<GroupScopeMap::iterator, bool> ret = 
+    groupMap->insert(std::make_pair(grp->name(), grp));
+  DIAG_Assert(ret.second, "Duplicate!");
 }
 
 
 void 
-PgmScope::AddToLoadModMap(LoadModScope& lm)
+PgmScope::AddToLoadModMap(LoadModScope* lm)
 {
-  string lmName = RealPath(lm.name().c_str());
-  // STL::map is a Unique Associative Container  
-  DIAG_Assert(lmMap->count(lmName) == 0, "");
-  (*lmMap)[lmName] = &lm;
+  string lmName = RealPath(lm->name().c_str());
+  std::pair<LoadModScopeMap::iterator, bool> ret = 
+    lmMap->insert(std::make_pair(lmName, lm));
+  DIAG_Assert(ret.second, "Duplicate!");
 }
 
 
 void 
-LoadModScope::AddToFileMap(FileScope& f)
+LoadModScope::AddToFileMap(FileScope* f)
 {
-  string fName = RealPath(f.name().c_str());
-  DIAG_DevMsg(2, "LoadModScope: mapping file name '" << fName
-	      << "' to FileScope* " << &f);
-  DIAG_Assert(fileMap->count(fName) == 0, "Adding multiple instances of file "
-	      << f.name() << " to\n" << toStringXML());
-  (*fileMap)[fName] = &f;
+  string fName = RealPath(f->name().c_str());
+  DIAG_DevMsg(2, "LoadModScope: mapping file name '" << fName << "' to FileScope* " << f);
+  std::pair<FileScopeMap::iterator, bool> ret = 
+    fileMap->insert(std::make_pair(fName, f));
+  DIAG_Assert(ret.second, "Duplicate instance: " << f->name() << "\n" << toStringXML());
 }
 
 
 void 
-FileScope::AddToProcMap(ProcScope& p) 
+FileScope::AddToProcMap(ProcScope* p) 
 {
-  DIAG_DevMsg(2, "FileScope (" << this << "): mapping proc name '" << p.name()
-	      << "' to ProcScope* " << &p);
-  
-  procMap->insert(make_pair(p.name(), &p));
+  DIAG_DevMsg(2, "FileScope (" << this << "): mapping proc name '" << p->name()
+	      << "' to ProcScope* " << p);
+  procMap->insert(make_pair(p->name(), p)); // multimap
 } 
 
 
 void 
-ProcScope::AddToStmtMap(StmtRangeScope& stmt)
+ProcScope::AddToStmtMap(StmtRangeScope* stmt)
 {
-  // STL::map is a Unique Associative Container
-  (*stmtMap)[stmt.begLine()] = &stmt;
-}
-
-
-LoadModScope*
-PgmScope::FindLoadMod(const char* nm) const
-{
-  string lmName = RealPath(nm);
-  if (lmMap->count(lmName) != 0) 
-    return (*lmMap)[lmName];
-  return NULL;
-}
-
-
-GroupScope*
-PgmScope::FindGroup(const char* nm) const
-{
-  if (groupMap->count(nm) != 0)
-    return (*groupMap)[nm];
-  return NULL;
-}
-
-
-FileScope*
-LoadModScope::FindFile(const char* nm) const
-{
-  string fName = RealPath(nm);
-  if (fileMap->count(fName) != 0) 
-    return (*fileMap)[fName];
-  return NULL;
+  (*stmtMap)[stmt->begLine()] = stmt;
 }
 
 
@@ -1276,7 +1032,7 @@ LoadModScope::buildMap(VMAIntervalMap<T>*& m, ScopeInfo::ScopeType ty) const
 	 it != vmaset.end(); ++it) {
       const VMAInterval& vmaint = *it;
       DIAG_MsgIf(0, vmaint.toString());
-      m->insert(make_pair(vmaint, x));
+      m->insert(std::make_pair(vmaint, x));
     }
   }
 }
@@ -1322,8 +1078,9 @@ ProcScope*
 FileScope::FindProc(const char* nm, const char* lnm) const
 {
   ProcScope* found = NULL;
-  if (procMap->count(nm) != 0) {
-    ProcScopeMap::const_iterator it = procMap->find(nm);
+
+  ProcScopeMap::const_iterator it = procMap->find(nm);
+  if (it != procMap->end()) {
     if (lnm && lnm != '\0') {
       for ( ; (it != procMap->end() && it->first == nm); ++it) {
 	ProcScope* p = it->second;
@@ -1336,14 +1093,8 @@ FileScope::FindProc(const char* nm, const char* lnm) const
       found = it->second;
     }
   }
+  
   return found;
-}
-
-
-StmtRangeScope*
-ProcScope::FindStmtRange(SrcFile::ln begLn)
-{
-  return (*stmtMap)[begLn];
 }
 
 
