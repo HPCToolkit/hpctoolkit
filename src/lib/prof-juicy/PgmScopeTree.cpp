@@ -1094,8 +1094,57 @@ ScopeInfo::IsMergable(ScopeInfo* toNode, ScopeInfo* fromNode)
 
 
 //***************************************************************************
-// Performance Data
+// Metric Data
 //***************************************************************************
+
+void
+ScopeInfo::accumulateMetrics(int mbegIdx) 
+{
+  ScopeInfoChildIterator it(this); 
+  for (; it.Current(); it++) { 
+    it.CurScope()->accumulateMetrics(mbegIdx);
+  } 
+
+  it.Reset(); 
+  if (it.Current() != NULL) { // its not a leaf 
+
+    double val = 0.0; 
+    bool hasVal = false;
+    for (; it.Current(); it++) { 
+      if (it.CurScope()->HasPerfData(mbegIdx)) {
+	val += it.CurScope()->PerfData(mbegIdx); 
+	hasVal = true;
+      }
+    } 
+    if (hasVal) {
+      SetPerfData(mbegIdx, val); 
+    }
+  }
+}
+
+
+void 
+ScopeInfo::pruneByMetrics()
+{
+  std::vector<ScopeInfo*> toBeRemoved;
+  
+  ScopeInfoChildIterator it(this, NULL);
+  for ( ; it.Current(); it++) {
+    ScopeInfo* si = it.CurScope();
+    if (si->HasPerfData()) {
+      si->pruneByMetrics();
+    }
+    else {
+      toBeRemoved.push_back(si);
+    }
+  }
+  
+  for (uint i = 0; i < toBeRemoved.size(); i++) {
+    ScopeInfo* si = toBeRemoved[i];
+    si->Unlink();
+    delete si;
+  }
+}
 
 
 //***************************************************************************

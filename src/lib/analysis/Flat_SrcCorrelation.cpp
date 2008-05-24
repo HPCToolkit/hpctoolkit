@@ -122,8 +122,7 @@ Driver::run()
   DIAG_Msg(2, "Creating and correlating metrics with program structure: ...");
   correlateMetricsWithStructure(m_mMgr, m_structure);
   
-  PruneScopeTreeMetrics(m_structure.GetRoot(), m_mMgr.size());
-  
+  m_structure.GetRoot()->pruneByMetrics();
   m_structure.GetRoot()->Freeze();      // disallow further additions to tree 
   m_structure.CollectCrossReferences(); // collect cross referencing information
 
@@ -447,7 +446,7 @@ Driver::computeRawMetrics(Prof::MetricDescMgr& mMgr, PgmScopeTree& structure)
       const PerfMetric* m = mMgr.metric(i);
       const FilePerfMetric* mm = dynamic_cast<const FilePerfMetric*>(m);
       if (mm) {
-	AccumulateMetricsFromChildren(structIF.GetRoot(), m->Index());
+	structIF.GetRoot()->accumulateMetrics(m->Index());
       }
     }
   }
