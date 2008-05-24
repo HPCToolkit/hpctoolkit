@@ -76,7 +76,7 @@ process_range(long offset, void *vstart, void *vend, bool fn_discovery)
     switch(xiclass) {
     case XED_ICLASS_CALL_FAR:
     case XED_ICLASS_CALL_NEAR:
-      process_call(ins, xptr, offset, vstart, vend);
+      /* if (fn_discovery) */ process_call(ins, xptr, offset, vstart, vend);
       break;
 
     case XED_ICLASS_JMP: 
@@ -145,7 +145,7 @@ get_branch_target(char *ins, xed_decoded_inst_t *xptr, xed_operand_values_t *val
   int offset = 0;
   switch(bytes) {
   case 1:
-    offset = xed_operand_values_get_branch_displacement_byte(vals,0);
+    offset = (signed char) xed_operand_values_get_branch_displacement_byte(vals,0);
     break;
   case 4:
     offset = xed_operand_values_get_branch_displacement_int32(vals);
@@ -173,9 +173,8 @@ process_call(char *ins, xed_decoded_inst_t *xptr, long offset, void *start,
     xed_operand_values_t *vals = xed_decoded_inst_operands(xptr);
 
     if (xed_operand_values_has_branch_displacement(vals)) {
-      void *target = get_branch_target(ins,xptr,vals);
-      void *vaddr = (char *)target + offset;
-      if (is_valid_code_address(vaddr)) add_stripped_function_entry(vaddr);
+      void *vaddr = get_branch_target(ins + offset,xptr,vals);
+      if (consider_possible_fn_address(vaddr)) add_stripped_function_entry(vaddr);
     }
 
   }
@@ -195,7 +194,16 @@ process_branch(char *ins, xed_decoded_inst_t *xptr)
     xed_operand_values_t *vals = xed_decoded_inst_operands(xptr);
 
     if (xed_operand_values_has_branch_displacement(vals)) {
-      add_branch_target(get_branch_target(ins,xptr,vals));
+      void *target = get_branch_target(ins,xptr,vals);
+      void *start, *end;
+      if (target < ins) {
+	start = target;
+	end = ins; 
+      } else {
+	start = ins;
+	end = ((char *) target) + 1; // add one to ensure that the branch target is part of the "covered" range
+      }
+      add_branch_range(start, end);
     }
   }
 }

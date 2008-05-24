@@ -7,8 +7,8 @@
 
 #include "code-ranges.h"
 #include "function-entries.h"
+#include "intervals.h"
 
-#include <set>
 #include <map>
 
 using namespace std;
@@ -42,10 +42,9 @@ static void new_function_entry(void *addr, string *comment);
  *****************************************************************************/
 
 typedef map<void*,Function*> FunctionSet;
-typedef set<void*> CondBranchTargets;
 
 static FunctionSet function_entries;
-static CondBranchTargets cbtargets;
+static intervals cbranges;
 
 /******************************************************************************
  * interface operations 
@@ -65,7 +64,7 @@ dump_reachable_functions()
     if (f->comment) {
       name = f->comment->c_str();
     } else {
-      if (is_branch_target(f->address)) continue;
+      if (!is_possible_fn(f->address)) continue;
       sprintf(buffer,"stripped_%p", f->address);
       name = buffer;
     }
@@ -109,16 +108,16 @@ new_function_entry(void *addr, string *comment)
 
 
 int 
-is_branch_target(void *addr)
+is_possible_fn(void *addr)
 {
-  return (cbtargets.find(addr) != cbtargets.end());
+  return (cbranges.contains(addr) == NULL);
 }
 
 
 void 
-add_branch_target(void *addr)
+add_branch_range(void *start, void *end)
 {
-  if (!is_branch_target(addr)) cbtargets.insert(addr);
+  cbranges.insert(start,end);
 }
 
 

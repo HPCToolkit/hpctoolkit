@@ -126,12 +126,12 @@ code_range_comment(string &name, string section, const char *which)
 
 
 static void
-note_code_range(Section *s, long memaddr)
+note_code_range(Section *s, long memaddr, bool discover)
 {
   char *start = (char *) s->getSecAddr();
   char *end = start + s->getSecSize();
   string ntmp;
-  new_code_range(start, end, memaddr);
+  new_code_range(start, end, memaddr, discover);
 
   add_function_entry(start, code_range_comment(ntmp, s->getSecName(), "start"));
   add_function_entry(end, code_range_comment(ntmp, s->getSecName(), "end"));
@@ -139,29 +139,29 @@ note_code_range(Section *s, long memaddr)
 
 
 static void
-note_section(Symtab *syms, const char *sname)
+note_section(Symtab *syms, const char *sname, bool discover)
 {
   long memaddr = (long) syms->mem_image();
   Section *s;
   if (syms->findSection(s, sname) && s) 
-    note_code_range(s, memaddr - syms->imageOffset());
+    note_code_range(s, memaddr - syms->imageOffset(), discover);
 }
 
 
 static void
-note_code_ranges(Symtab *syms)
+note_code_ranges(Symtab *syms, bool fn_discovery)
 {
-  note_section(syms, SECTION_INIT);
-  note_section(syms, SECTION_PLT);
-  note_section(syms, SECTION_TEXT);
-  note_section(syms, SECTION_FINI);
+  note_section(syms, SECTION_INIT, fn_discovery);
+  note_section(syms, SECTION_PLT, ALWAYS_DISCOVER_FUNCTIONS);
+  note_section(syms, SECTION_TEXT, fn_discovery);
+  note_section(syms, SECTION_FINI, fn_discovery);
 }
 
 
 static void 
-dump_symbols(Symtab *syms, vector<Symbol *> &symvec, int fn_discovery)
+dump_symbols(Symtab *syms, vector<Symbol *> &symvec, bool fn_discovery)
 {
-  note_code_ranges(syms);
+  note_code_ranges(syms, fn_discovery);
 
   //-----------------------------------------------------------------
   // collect function start addresses and pair them with a comment
@@ -174,7 +174,7 @@ dump_symbols(Symtab *syms, vector<Symbol *> &symvec, int fn_discovery)
     if (report_symbol(s)) add_function_entry((void *) s->getAddr(), &s->getName());
   }
 
-  process_code_ranges(fn_discovery);
+  process_code_ranges();
 
   //-----------------------------------------------------------------
   // dump the address and comment for each function  
