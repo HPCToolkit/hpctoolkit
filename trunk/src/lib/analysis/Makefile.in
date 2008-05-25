@@ -112,7 +112,7 @@ am__objects_1 = libHPCanalysis_la-CallPath.lo \
 	libHPCanalysis_la-Flat_SrcCorrelation.lo \
 	libHPCanalysis_la-Flat_ObjCorrelation.lo \
 	libHPCanalysis_la-Raw.lo libHPCanalysis_la-Args.lo \
-	libHPCanalysis_la-Util.lo
+	libHPCanalysis_la-Util.lo libHPCanalysis_la-TextUtil.lo
 am_libHPCanalysis_la_OBJECTS = $(am__objects_1)
 libHPCanalysis_la_OBJECTS = $(am_libHPCanalysis_la_OBJECTS)
 libHPCanalysis_la_LINK = $(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) \
@@ -331,7 +331,8 @@ MYSOURCES = \
 	Raw.hpp Raw.cpp	\
 	\
 	Args.hpp Args.cpp \
-	Util.hpp Util.cpp
+	Util.hpp Util.cpp \
+	TextUtil.hpp TextUtil.cpp
 
 
 # GNU binutils flags are needed for HPC_LIBISA.
@@ -418,6 +419,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCanalysis_la-Flat_ObjCorrelation.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCanalysis_la-Flat_SrcCorrelation.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCanalysis_la-Raw.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCanalysis_la-TextUtil.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCanalysis_la-Util.Plo@am__quote@
 
 .cpp.o:
@@ -482,6 +484,13 @@ libHPCanalysis_la-Util.lo: Util.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='Util.cpp' object='libHPCanalysis_la-Util.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCanalysis_la_CXXFLAGS) $(CXXFLAGS) -c -o libHPCanalysis_la-Util.lo `test -f 'Util.cpp' || echo '$(srcdir)/'`Util.cpp
+
+libHPCanalysis_la-TextUtil.lo: TextUtil.cpp
+@am__fastdepCXX_TRUE@	$(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCanalysis_la_CXXFLAGS) $(CXXFLAGS) -MT libHPCanalysis_la-TextUtil.lo -MD -MP -MF $(DEPDIR)/libHPCanalysis_la-TextUtil.Tpo -c -o libHPCanalysis_la-TextUtil.lo `test -f 'TextUtil.cpp' || echo '$(srcdir)/'`TextUtil.cpp
+@am__fastdepCXX_TRUE@	mv -f $(DEPDIR)/libHPCanalysis_la-TextUtil.Tpo $(DEPDIR)/libHPCanalysis_la-TextUtil.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='TextUtil.cpp' object='libHPCanalysis_la-TextUtil.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCanalysis_la_CXXFLAGS) $(CXXFLAGS) -c -o libHPCanalysis_la-TextUtil.lo `test -f 'TextUtil.cpp' || echo '$(srcdir)/'`TextUtil.cpp
 
 mostlyclean-libtool:
 	-rm -f *.lo

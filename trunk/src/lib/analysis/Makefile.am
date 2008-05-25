@@ -70,7 +70,8 @@ MYSOURCES = \
 	Raw.hpp Raw.cpp	\
 	\
 	Args.hpp Args.cpp \
-	Util.hpp Util.cpp
+	Util.hpp Util.cpp \
+	TextUtil.hpp TextUtil.cpp
 
 # GNU binutils flags are needed for HPC_LIBISA.
 MYCFLAGS   = @HOST_CFLAGS@   $(HPC_IFLAGS) @GNUBINUTILS_IFLAGS@

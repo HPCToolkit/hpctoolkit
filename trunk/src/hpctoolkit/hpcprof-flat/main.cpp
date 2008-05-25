@@ -122,7 +122,7 @@ realmain(int argc, char* const* argv)
     readConfFile(args, metricMgr); // exits on failure
   }
   else {
-    metricMgr.makeTable(args.profileFiles);
+    metricMgr.makeRawMetrics(args.profileFiles);
   }
   
   //-------------------------------------------------------

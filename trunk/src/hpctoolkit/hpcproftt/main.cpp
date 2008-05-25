@@ -142,7 +142,7 @@ main_srcCorrelation(const Args& args)
   // Create metric descriptors
   //-------------------------------------------------------
   Prof::MetricDescMgr metricMgr;
-  metricMgr.makeTable(args.profileFiles);
+  metricMgr.makeRawMetrics(args.profileFiles);
 
   //-------------------------------------------------------
   // Correlate metrics with program structure and Generate output
@@ -162,16 +162,21 @@ main_objCorrelation(const Args& args)
   std::ostream& os = std::cout;
   
   for (int i = 0; i < args.profileFiles.size(); ++i) {
-    const char* fnm = args.profileFiles[i].c_str();
+    const std::string& fnm = args.profileFiles[i];
 
-    // generate nice header
+    // 0. Generate nice header
     os << std::setfill('=') << std::setw(77) << "=" << std::endl;
     os << fnm << std::endl;
     os << std::setfill('=') << std::setw(77) << "=" << std::endl;
 
-    Analysis::Flat::correlateWithObject(os, fnm,
+    // 1. Create metric descriptors
+    Prof::MetricDescMgr metricMgr;
+    metricMgr.makeRawMetrics(fnm);
+    
+    // 2. Correlate
+    Analysis::Flat::correlateWithObject(metricMgr,
+					os, 
 					true, /*source*/   // FIXME
-					true, /*percent*/
 					1 /*procthreshhold*/);
   }
   return 0;

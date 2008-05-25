@@ -76,7 +76,7 @@ Prof::MetricDescMgr::~MetricDescMgr()
 
 
 void 
-Prof::MetricDescMgr::makeTable(const std::vector<std::string>& profileFiles)
+Prof::MetricDescMgr::makeRawMetrics(const std::vector<std::string>& profileFiles)
 {
   // ------------------------------------------------------------
   // Create a FilePerfMetric for each event within each profile
@@ -108,8 +108,6 @@ Prof::MetricDescMgr::makeTable(const std::vector<std::string>& profileFiles)
   // ------------------------------------------------------------
   // Create computed metrics
   // ------------------------------------------------------------
-  // FIXME: 
-  
 }
 
 
