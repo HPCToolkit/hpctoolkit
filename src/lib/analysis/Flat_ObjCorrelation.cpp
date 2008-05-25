@@ -61,11 +61,10 @@ using std::string;
 #include <vector>
 using std::vector;
 
-#include <cmath> // pow
-
 //*************************** User Include Files ****************************
 
 #include "Flat_ObjCorrelation.hpp"
+#include "TextUtil.hpp"
 
 #include <lib/prof-juicy/FlatProfileReader.hpp>
 
@@ -76,6 +75,7 @@ using std::vector;
 #include <lib/binutils/VMAInterval.hpp>
 
 #include <lib/support/diagnostics.h>
+#include <lib/support/StrUtil.hpp> 
 
 //*************************** Forward Declarations ***************************
 
@@ -92,7 +92,9 @@ namespace Flat {
 
 class MetricCursor {
 public:
-  MetricCursor(const Prof::Flat::LM& proflm, const binutils::LM& lm);
+  MetricCursor(const Prof::MetricDescMgr& metricMgr,
+	       const Prof::Flat::LM& proflm, 
+	       const binutils::LM& lm);
   ~MetricCursor();
   
   const vector<const Prof::Flat::EventData*>& 
@@ -123,12 +125,12 @@ public:
   metricValAtVMA() const { return m_metricValAtVMA; }
 
   static bool 
-  hasNonZeroMetricVal(const vector<uint64_t>& metricCnt) {
-    return hasMetricValGE(metricCnt, 1);
+  hasNonZeroMetricVal(const vector<uint64_t>& metricVal) {
+    return hasMetricValGE(metricVal, 1);
   }
 
   static bool 
-  hasMetricValGE(const vector<uint64_t>& metricCnt, uint64_t val);
+  hasMetricValGE(const vector<uint64_t>& metricVal, uint64_t val);
 
 private:
   VMA unrelocate(VMA vma) const {
@@ -149,7 +151,9 @@ private:
 };
 
 
-MetricCursor::MetricCursor(const Prof::Flat::LM& proflm, const binutils::LM& lm)
+MetricCursor::MetricCursor(const Prof::MetricDescMgr& metricMgr,
+			   const Prof::Flat::LM& proflm, 
+			   const binutils::LM& lm)
 {
   m_loadAddr = (VMA)proflm.load_addr();
   m_doUnrelocate = lm.doUnrelocate(m_loadAddr);
@@ -158,9 +162,17 @@ MetricCursor::MetricCursor(const Prof::Flat::LM& proflm, const binutils::LM& lm)
   // Find all metrics for load module and compute totals for each metric
   // For now we have one metric per sampled event.
   // --------------------------------------------------------
-  for (uint i = 0; i < proflm.num_events(); ++i) {
-    const Prof::Flat::EventData& profevent = proflm.event(i);
-    m_metricDescs.push_back(&profevent);
+
+  // NOTE: only handles raw events
+
+  for (uint i = 0; i < metricMgr.size(); ++i) {
+    const PerfMetric* m = metricMgr.metric(i);
+    const FilePerfMetric* mm = dynamic_cast<const FilePerfMetric*>(m);
+    if (mm) {
+      uint mIdx = (uint)StrUtil::toUInt64(mm->NativeName());
+      const Prof::Flat::EventData& profevent = proflm.event(mIdx);
+      m_metricDescs.push_back(&profevent);
+    }
   }
 
   m_metricTots.resize(m_metricDescs.size());
@@ -253,10 +265,10 @@ MetricCursor::computeMetricVals(const VMAInterval vmaint,
 
 
 bool 
-MetricCursor::hasMetricValGE(const vector<uint64_t>& metricCnt, uint64_t val)
+MetricCursor::hasMetricValGE(const vector<uint64_t>& metricVal, uint64_t val)
 {
-  for (uint i = 0; i < metricCnt.size(); ++i) {
-    if (metricCnt[i] >= val) {
+  for (uint i = 0; i < metricVal.size(); ++i) {
+    if (metricVal[i] >= val) {
       return true;
     }
   }
@@ -268,130 +280,37 @@ MetricCursor::hasMetricValGE(const vector<uint64_t>& metricCnt, uint64_t val)
 //
 //****************************************************************************
 
-class ColumnFormatter {
-public:
-  ColumnFormatter(ostream& os, int num_metrics, int num_digits, 
-		  bool showAsPercent)
-    : m_os(os),
-      m_num_metrics(num_metrics), m_num_digits(num_digits),
-      m_showAsPercent(showAsPercent),
-      m_metricAnnotationWidth(0), 
-      m_metricAnnotationWidthTot(0),
-      m_scientificFormatThreshold(0) 
-  {
-    os.setf(std::ios_base::fmtflags(0), std::ios_base::floatfield);
-    os << std::right << std::noshowpos;
-
-    // Compute annotation width
-    if (m_showAsPercent) {
-      if (m_num_digits >= 1) {
-	// xxx.(yy)% or x.xE-yy% (for small numbers)
-	m_metricAnnotationWidth = std::max(8, 5 + m_num_digits);
-	m_scientificFormatThreshold = 
-	  std::pow((double)10, -(double)m_num_digits);
-      }
-      else {
-	// xxx%
-	m_metricAnnotationWidth = 4;
-      }
-      os << std::showpoint << std::scientific;
-    }
-    else {
-      // x.xE+yy (for large numbers)
-      m_metricAnnotationWidth = 7;
-      
-      // for floating point numbers over the scientificFormatThreshold
-      // printed in scientific format.
-      m_scientificFormatThreshold = 
-	std::pow((double)10, (double)m_metricAnnotationWidth);
-      os << std::setprecision(m_metricAnnotationWidth - 6);
-      os << std::scientific;
-    }
-    os << std::showbase;
-    
-    m_metricAnnotationWidthTot = ((m_num_metrics * m_metricAnnotationWidth) 
-				 + m_num_metrics);
-  }
-
-  ~ColumnFormatter() { }
-
-  void 
-  metric_col(uint64_t metricCnt, uint64_t metricTot);
-
-  void
-  fill_cols() {
-    m_os << std::setw(m_metricAnnotationWidthTot) << std::setfill(' ') << " ";
-  }
-
-private:
-  ostream& m_os;
-  int    m_num_metrics;
-  int    m_num_digits;
-  bool   m_showAsPercent;
-  int    m_metricAnnotationWidth;
-  int    m_metricAnnotationWidthTot;
-  double m_scientificFormatThreshold;
-};
-
-
-void
-ColumnFormatter::metric_col(uint64_t metricCnt, uint64_t metricTot)
-{
-  if (m_showAsPercent) {
-    double val = 0.0;
-    if (metricTot != 0) {
-      val = ((double)metricCnt / (double)metricTot) * 100;
-    }
-    
-    m_os << std::setw(m_metricAnnotationWidth - 1);
-    if (val != 0.0 && val < m_scientificFormatThreshold) {
-      m_os << std::scientific 
-	   << std::setprecision(m_metricAnnotationWidth - 7);
-    }
-    else {
-      //m_os.unsetf(ios_base::scientific);
-      m_os << std::fixed
-	   << std::setprecision(m_num_digits);
-    }
-    m_os << std::setfill(' ') << val << "%";
-  }
-  else {
-    m_os << std::setw(m_metricAnnotationWidth);
-    if ((double)metricCnt >= m_scientificFormatThreshold) {
-      m_os << (double)metricCnt;
-    }
-    else {
-      m_os << std::setfill(' ') << metricCnt;
-    }
-  }
-  m_os << " ";
-}
-
-
-//****************************************************************************
-//
-//****************************************************************************
-
 static void
 writeMetricSummary(std::ostream& os, 
 		   const vector<const Prof::Flat::EventData*>& metricDescs,
-		   const vector<uint64_t>& metricCnt,
+		   const vector<uint64_t>& metricVal,
 		   const vector<uint64_t>* metricTot);
 
 static void
-correlateWithObject_LM(ostream& os, 
-		       const Prof::Flat::LM& proflm, const binutils::LM& lm,
+correlateWithObject_LM(const Prof::MetricDescMgr& metricMgr,
+		       const Prof::Flat::LM& proflm, 
+		       const binutils::LM& lm,
+		       // ----------------------------------------------
+		       std::ostream& os, 
 		       bool srcCode,
-		       bool metricsAsPercent,
 		       uint64_t procVisThreshold);
 
 
 void
-correlateWithObject(std::ostream& os, const string& profileFile,
+correlateWithObject(const Prof::MetricDescMgr& metricMgr,
+		    // ----------------------------------------------
+		    std::ostream& os, 
 		    bool srcCode,
-		    bool metricsAsPercent,
 		    uint64_t procVisThreshold)
 {
+  using Prof::MetricDescMgr;
+
+  const MetricDescMgr::StringPerfMetricVecMap& fnameToFMetricMap = 
+    metricMgr.fnameToFMetricMap();
+  DIAG_Assert(fnameToFMetricMap.size() == 1, DIAG_UnexpectedInput);
+
+  const string& profileFile = fnameToFMetricMap.begin()->first;
+
   Prof::Flat::Profile prof;
   try {
     prof.openread(profileFile.c_str());
@@ -419,23 +338,28 @@ correlateWithObject(std::ostream& os, const string& profileFile,
       throw;
     }
     
-    correlateWithObject_LM(os, *proflm, *lm, 
-			   srcCode, metricsAsPercent, procVisThreshold);
+    correlateWithObject_LM(metricMgr, *proflm, *lm, 
+			   os, srcCode, procVisThreshold);
     delete lm;
   }
 }
 
 
 void
-correlateWithObject_LM(ostream& os, 
-		       const Prof::Flat::LM& proflm, const binutils::LM& lm,
+correlateWithObject_LM(const Prof::MetricDescMgr& metricMgr, 
+		       const Prof::Flat::LM& proflm, 
+		       const binutils::LM& lm,
+		       // ----------------------------------------------
+		       ostream& os, 
 		       bool srcCode,
-		       bool metricsAsPercent,
 		       uint64_t procVisThreshold)
 {
-  MetricCursor metricCursor(proflm, lm);
-  ColumnFormatter colFmt(os, metricCursor.metricDescs().size(), 2, 
-			 metricsAsPercent);
+  // INVARIANT: metricMgr only contains metrics related to 'proflm'
+  
+  using Analysis::TextUtil::ColumnFormatter;
+
+  MetricCursor metricCursor(metricMgr, proflm, lm);
+  ColumnFormatter colFmt(metricMgr, os, 2);
 
   // --------------------------------------------------------
   // 0. Print metric list
@@ -505,12 +429,12 @@ correlateWithObject_LM(ostream& os,
 	
       if (metricCursor.hasNonZeroMetricVal(metricValVMA)) {
 	for (uint i = 0; i < metricValVMA.size(); ++i) {
-	  uint64_t metricCnt = metricValVMA[i];
-	  colFmt.metric_col(metricCnt, metricTotsProc[i]);
+	  uint64_t metricVal = metricValVMA[i];
+	  colFmt.genCol(i, metricVal, metricTotsProc[i]);
 	}
       }
       else {
-	colFmt.fill_cols();
+	colFmt.genBlankCols();
       }
 
       insn->decode(os);
@@ -525,7 +449,7 @@ correlateWithObject_LM(ostream& os,
 void
 writeMetricSummary(std::ostream& os, 
 		   const vector<const Prof::Flat::EventData*>& metricDescs,
-		   const vector<uint64_t>& metricCnt,
+		   const vector<uint64_t>& metricVal,
 		   const vector<uint64_t>* metricTot)
 {
   os << std::endl 
@@ -537,10 +461,10 @@ writeMetricSummary(std::ostream& os,
     const Prof::SampledMetricDesc& mdesc = profevent.mdesc();
     os << "  " << mdesc.name() << ":" << mdesc.period() 
        << " - " << mdesc.description() 
-       << " (" << metricCnt[i] << " samples";
+       << " (" << metricVal[i] << " samples";
     
     if (metricTot) {
-      double pct = ((double)metricCnt[i] / (double)(*metricTot)[i]) * 100;
+      double pct = ((double)metricVal[i] / (double)(*metricTot)[i]) * 100;
       os << " - " << std::fixed << std::setprecision(4) 
 	 << pct << "%";
     }

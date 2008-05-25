@@ -48,18 +48,19 @@
 //
 //***************************************************************************
 
-#ifndef Analysis_Flat_ObjCorrelation_hpp 
-#define Analysis_Flat_ObjCorrelation_hpp
+#ifndef Analysis_Util_hpp 
+#define Analysis_Util_hpp
 
 //************************* System Include Files ****************************
 
 #include <string>
+#include <vector>
 
 //*************************** User Include Files ****************************
 
-#include <include/general.h> 
+#include <include/general.h>
 
-#include <lib/prof-juicy/MetricDescMgr.hpp> 
+#include <lib/prof-juicy/MetricDescMgr.hpp>
 
 //*************************** Forward Declarations ***************************
 
@@ -67,23 +68,52 @@
 
 namespace Analysis {
 
-namespace Flat {
+namespace TextUtil {
 
-  // Given a flat profile file, correlate metrics for the events contained
-  // therein with the object code instructions
+
+//****************************************************************************
+//
+//****************************************************************************
+
+class ColumnFormatter {
+public:
+  ColumnFormatter(const Prof::MetricDescMgr& metricMgr, 
+		  ostream& os, int num_digits);
+  ~ColumnFormatter() { }
+
+  // generates a formatted column for metric id 'mid' (if displayed).
+  void 
+  genCol(uint mid, uint64_t metricVal, uint64_t metricTot);
+
+  // generates 'formatted blanks' for all 'displayed' metrics
   void
-  correlateWithObject(const Prof::MetricDescMgr& metricMgr,
-		      // ----------------------------------------------
-		      std::ostream& os, 
-		      // show source code lines
-		      bool srcCode,
-		      // show procs with at least one metric total >= threshold
-		      uint64_t procVisThreshold);
+  genBlankCols() {
+    m_os << std::setw(m_metricAnnotationWidthTot) << std::setfill(' ') << " ";
+  }
 
-} // namespace Flat
+  bool
+  isDisplayed(uint mId) 
+  {
+    // m_mMgr.metric(mId)->Display()
+    return (m_metricAnnotationWidth[mId] != 0);
+  }
+  
+
+private:
+  const Prof::MetricDescMgr& m_mMgr;
+  ostream& m_os;
+  int      m_num_digits;
+
+  std::vector<int>    m_metricAnnotationWidth;
+  int                 m_metricAnnotationWidthTot;
+  std::vector<double> m_scientificFormatThreshold;
+};
+
+
+} // namespace TextUtil
 
 } // namespace Analysis
 
 //****************************************************************************
 
-#endif // Analysis_Flat_ObjCorrelation_hpp
+#endif // Analysis_TextUtil_hpp
