@@ -125,16 +125,27 @@ PerfMetric::Make(NodeRetriever& ret) const
 
 
 string
-PerfMetric::ToString() const 
+PerfMetric::toString(int flags) const 
 {
-  return string("PerfMetric: ") + 
-    "name=" + name + " " + 
-    "display=" + ((display) ? "true " : "false ") + 
-    "perfInfoIndex=" + StrUtil::toStr(m_id) + " " + 
-    "eventsPerCount=" + StrUtil::toStr(eventsPerCount) + " " + 
-    "dispInfo=" + dispInfo->ToString(); 
-}
+  const string& dnm = dispInfo->Name();
 
+  string str(name);
+  
+  if (dnm != name) {
+    " (" + dispInfo->Name() + ")";
+  }
+  
+  if (flags) {
+    str += string("PerfMetric: ") + 
+      "name=" + name + " " + 
+      "display=" + ((display) ? "true " : "false ") + 
+      "perfInfoIndex=" + StrUtil::toStr(m_id) + " " + 
+      "eventsPerCount=" + StrUtil::toStr(eventsPerCount) + " " + 
+      "dispInfo=" + dispInfo->toString(); 
+  }
+  return str;
+}
+  
 
 // ************************************************************************* //
 // DataDisplayInfo
@@ -146,12 +157,13 @@ DataDisplayInfo::~DataDisplayInfo()
 
 
 string 
-DataDisplayInfo::ToString() const 
+DataDisplayInfo::toString() const 
 {
-  return string("DisplayInfo ") + 
+  string str = string("DisplayInfo ") + 
     "name=" + name + " " + 
     "color=" + color + " " + 
     "width=" + StrUtil::toStr(width) + " " + 
     "asInt=" + ((formatAsInt) ? "true" : "false"); 
+  return str;
 }
 

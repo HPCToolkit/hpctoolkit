@@ -73,12 +73,13 @@ public:
   MetricDescMgr();
   ~MetricDescMgr(); 
 
-  void makeRawMetrics(const std::vector<std::string>& profileFiles);
+  void makeRawMetrics(const std::vector<std::string>& profileFiles, 
+		      bool isunit_ev = true);
 
-  void makeRawMetrics(const std::string& profileFile)
+  void makeRawMetrics(const std::string& profileFile, bool isunit_ev = true)
   {
     std::vector<std::string> vec(1, profileFile);
-    makeRawMetrics(vec);
+    makeRawMetrics(vec, isunit_ev);
   }
 
   // ------------------------------------------------------------

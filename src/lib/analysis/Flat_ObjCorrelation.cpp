@@ -65,6 +65,7 @@ using std::vector;
 
 #include "Flat_ObjCorrelation.hpp"
 #include "TextUtil.hpp"
+using Analysis::TextUtil::ColumnFormatter;
 
 #include <lib/prof-juicy/FlatProfileReader.hpp>
 
@@ -281,10 +282,10 @@ MetricCursor::hasMetricValGE(const vector<uint64_t>& metricVal, uint64_t val)
 //****************************************************************************
 
 static void
-writeMetricSummary(std::ostream& os, 
-		   const vector<const Prof::Flat::EventData*>& metricDescs,
-		   const vector<uint64_t>& metricVal,
-		   const vector<uint64_t>* metricTot);
+writeMetricVals(ColumnFormatter& colFmt,
+		const vector<uint64_t>& metricVal,
+		const vector<uint64_t>& metricTot,
+		ColumnFormatter::Flag flg = ColumnFormatter::Flag_NULL);
 
 static void
 correlateWithObject_LM(const Prof::MetricDescMgr& metricMgr,
@@ -323,7 +324,7 @@ correlateWithObject(const Prof::MetricDescMgr& metricMgr,
   // --------------------------------------------------------
   // For each load module, dump metrics and object code instructions
   // --------------------------------------------------------
-  for (Prof::Flat::Profile::const_iterator it = prof.begin(); 
+  for (Prof::Flat::Profile::const_iterator it = prof.begin();
        it != prof.end(); ++it) {
     const Prof::Flat::LM* proflm = it->second;
     
@@ -356,26 +357,31 @@ correlateWithObject_LM(const Prof::MetricDescMgr& metricMgr,
 {
   // INVARIANT: metricMgr only contains metrics related to 'proflm'
   
-  using Analysis::TextUtil::ColumnFormatter;
-
   MetricCursor metricCursor(metricMgr, proflm, lm);
   ColumnFormatter colFmt(metricMgr, os, 2);
 
   // --------------------------------------------------------
-  // 0. Print metric list
+  // 0. Metric summary for load module
   // --------------------------------------------------------
 
-  os << std::setfill('=') << std::setw(77) << "=" << std::endl;
-  os << "Load module: " << proflm.name() << std::endl;
+  os << std::setfill('=') << std::setw(77) << "=" << std::endl
+     << "Load module: " << proflm.name() << std::endl
+     << std::setfill('-') << std::setw(77) << "-" << std::endl;
 
   const vector<const Prof::Flat::EventData*>& metricDescs = 
     metricCursor.metricDescs();
   const vector<uint64_t>& metricTots = metricCursor.metricTots();
   
-  writeMetricSummary(os, metricDescs, metricTots, NULL);
+  os << std::endl;
+  colFmt.genColHeaderSummary();
+  os << std::endl
+     << "Metric summary for load module (totals):\n"
+     << "  ";
+  writeMetricVals(colFmt, metricTots, metricTots, 
+		  ColumnFormatter::Flag_ForceVal);
 
   // --------------------------------------------------------
-  // 1. Print annotated load module
+  // 1. For each procedure in the load module
   // --------------------------------------------------------
   
   for (binutils::LM::ProcMap::const_iterator it = lm.procs().begin();
@@ -392,13 +398,32 @@ correlateWithObject_LM(const Prof::MetricDescMgr& metricMgr,
       continue;
     }
 
-    // We have a 'Procedure'.  Iterate over instructions
-    os << std::endl << std::endl
-       << "Procedure: " << p->name() << " (" << bestName << ")\n";
+    // --------------------------------------------------------
+    // Metric summary for procedure
+    // --------------------------------------------------------
 
-    writeMetricSummary(os, metricDescs, metricTotsProc, &metricTots);
-    os << std::endl << std::endl;
-      
+    os << std::endl << std::endl
+       << "Procedure: " << p->name() << " (" << bestName << ")\n"
+       << std::setfill('-') << std::setw(60) << "-" << std::endl;
+
+    os << std::endl;
+    colFmt.genColHeaderSummary();
+    os << std::endl
+       << "Metric summary for procedure (percents relative to load module):\n"
+       << "  ";
+    writeMetricVals(colFmt, metricTotsProc, metricTots, 
+		    ColumnFormatter::Flag_ForceVal);
+    os << std::endl << "  ";
+    writeMetricVals(colFmt, metricTotsProc, metricTots,
+		    ColumnFormatter::Flag_ForcePct);
+    os << std::endl;
+
+    // --------------------------------------------------------
+    // Metric summary for instructions
+    // --------------------------------------------------------
+    os << std::endl
+       << "Metric details for procedure (percents relative to procedure):\n";
+
     string the_file;
     SrcFile::ln the_line = SrcFile::ln_NULL;
 
@@ -411,7 +436,7 @@ correlateWithObject_LM(const Prof::MetricDescMgr& metricMgr,
       const vector<uint64_t>& metricValVMA = 
 	metricCursor.computeMetricForVMA(opVMA);
 
-      // 2. Print line information (if necessary)
+      // 2. Print source line information (if necessary)
       if (srcCode) {
 	string func, file;
 	SrcFile::ln line;
@@ -426,12 +451,9 @@ correlateWithObject_LM(const Prof::MetricDescMgr& metricMgr,
 	
       // 3. Print annotated instruction
       os << std::hex << opVMA << std::dec << ": ";
-	
+
       if (metricCursor.hasNonZeroMetricVal(metricValVMA)) {
-	for (uint i = 0; i < metricValVMA.size(); ++i) {
-	  uint64_t metricVal = metricValVMA[i];
-	  colFmt.genCol(i, metricVal, metricTotsProc[i]);
-	}
+	writeMetricVals(colFmt, metricValVMA, metricTotsProc);
       }
       else {
 	colFmt.genBlankCols();
@@ -446,6 +468,20 @@ correlateWithObject_LM(const Prof::MetricDescMgr& metricMgr,
 }
 
 
+static void
+writeMetricVals(ColumnFormatter& colFmt,
+		const vector<uint64_t>& metricVal,
+		const vector<uint64_t>& metricTot,
+		ColumnFormatter::Flag flg)
+{
+  for (uint i = 0; i < metricVal.size(); ++i) {
+    colFmt.genCol(i, metricVal[i], metricTot[i], flg);
+  }
+}
+
+
+#if 0
+// OBSOLETED: keeping just in case SiCortex really complains
 void
 writeMetricSummary(std::ostream& os, 
 		   const vector<const Prof::Flat::EventData*>& metricDescs,
@@ -453,7 +489,7 @@ writeMetricSummary(std::ostream& os,
 		   const vector<uint64_t>* metricTot)
 {
   os << std::endl 
-     << "Columns correspond to the following metrics [event:period (events/sample)]\n";
+     << "Metric definitions for each column:\n";
 
   for (uint i = 0; i < metricDescs.size(); ++i) {
     const Prof::Flat::EventData& profevent = *(metricDescs[i]);
@@ -472,7 +508,7 @@ writeMetricSummary(std::ostream& os,
     os << ")" << std::endl;
   }
 }
-
+#endif
 
 
 } // namespace Flat

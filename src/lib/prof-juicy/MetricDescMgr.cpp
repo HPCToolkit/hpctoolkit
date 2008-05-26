@@ -76,7 +76,8 @@ Prof::MetricDescMgr::~MetricDescMgr()
 
 
 void 
-Prof::MetricDescMgr::makeRawMetrics(const std::vector<std::string>& profileFiles)
+Prof::MetricDescMgr::makeRawMetrics(const std::vector<std::string>& profileFiles,
+				    bool isunit_ev)
 {
   // ------------------------------------------------------------
   // Create a FilePerfMetric for each event within each profile
@@ -95,13 +96,17 @@ Prof::MetricDescMgr::makeRawMetrics(const std::vector<std::string>& profileFiles
 
     const Prof::SampledMetricDescVec& mdescs = prof.mdescs();
     for (uint j = 0; j < mdescs.size(); ++j) {
-      const Prof::SampledMetricDesc& m = *mdescs[j];
+      const Prof::SampledMetricDesc& m_raw = *mdescs[j];
       
       string nativeNm = StrUtil::toStr(j);
       bool sortby = empty();
-      insert(new FilePerfMetric(m.name(), nativeNm, m.name(),
-				true /*display*/, true /*percent*/, 
-				sortby, proffnm, string("HPCRUN")));
+      FilePerfMetric* m = new FilePerfMetric(m_raw.name(), nativeNm,
+					     m_raw.name(),
+					     true/*display*/, true/*percent*/,
+					     sortby, proffnm, string("HPCRUN"),
+					     isunit_ev);
+      m->rawdesc(m_raw);
+      insert(m);
     }
   }
 
@@ -177,7 +182,7 @@ void
 Prof::MetricDescMgr::dump(std::ostream& o, const char* pre) const
 {
   for (uint i = 0; i < m_metrics.size(); i++) {
-    o << m_metrics[i]->ToString() + "\n";
+    o << m_metrics[i]->toString() + "\n";
   }
 }
 

@@ -76,14 +76,41 @@ namespace TextUtil {
 //****************************************************************************
 
 class ColumnFormatter {
+public:  
+  enum Flag { 
+    Flag_NULL  = 0,
+    Flag_ForcePct, // force percent column formatting
+    Flag_ForceVal  // force value column formatting
+  };
+
 public:
   ColumnFormatter(const Prof::MetricDescMgr& metricMgr, 
 		  ostream& os, int num_digits);
   ~ColumnFormatter() { }
 
+  // generates a summary of the formatted column for all metrics
+  void
+  genColHeaderSummary();
+
   // generates a formatted column for metric id 'mid' (if displayed).
+  // The 'doValue' flag forces the column to be displayed as a value
+  // (non-percentage) even if it was formatted as a percent.
   void 
-  genCol(uint mid, uint64_t metricVal, uint64_t metricTot);
+  genCol(uint mid, uint64_t metricVal, uint64_t metricTot, 
+	 Flag flg = Flag_NULL);
+
+  void 
+  genCol(uint mid, uint64_t metricVal, uint64_t metricTot)
+  {
+    genCol(mid, metricVal, metricTot, Flag_NULL);
+  }
+
+  void 
+  genCol(uint mid, uint64_t metricVal)
+  {
+    genCol(mid, metricVal, 0, Flag_ForceVal);
+  }
+
 
   // generates 'formatted blanks' for all 'displayed' metrics
   void
@@ -91,6 +118,7 @@ public:
     m_os << std::setw(m_metricAnnotationWidthTot) << std::setfill(' ') << " ";
   }
 
+private:
   bool
   isDisplayed(uint mId) 
   {

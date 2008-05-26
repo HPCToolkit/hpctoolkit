@@ -171,7 +171,7 @@ main_objCorrelation(const Args& args)
 
     // 1. Create metric descriptors
     Prof::MetricDescMgr metricMgr;
-    metricMgr.makeRawMetrics(fnm);
+    metricMgr.makeRawMetrics(fnm, false/*isunit_ev*/);
     
     // 2. Correlate
     Analysis::Flat::correlateWithObject(metricMgr,
