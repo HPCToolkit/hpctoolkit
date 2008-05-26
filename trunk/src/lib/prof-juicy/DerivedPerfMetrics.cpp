@@ -69,9 +69,10 @@ FilePerfMetric::FilePerfMetric(const char* nm,
 			       const char* displayNm, 
 			       bool doDisp, bool doPerc, bool doSort, 
 			       const char* file,
-			       const char* type) 
+			       const char* type,
+			       bool isunit_ev) 
   : PerfMetric(nm, nativeNm, displayNm, doDisp, doPerc, false, doSort),
-    m_file(file), m_type(type)
+    m_file(file), m_type(type), m_isunit_event(isunit_ev)
 { 
   // trace = 1;
 }
@@ -82,9 +83,10 @@ FilePerfMetric::FilePerfMetric(const std::string& nm,
 			       const std::string& displayNm,
 			       bool doDisp, bool doPerc, bool doSort, 
 			       const std::string& file, 
-			       const std::string& type)
+			       const std::string& type,
+			       bool isunit_ev)
   : PerfMetric(nm, nativeNm, displayNm, doDisp, doPerc, false, doSort),
-    m_file(file), m_type(type)
+    m_file(file), m_type(type), m_isunit_event(isunit_ev)
 { 
   // trace = 1;
 }
@@ -92,9 +94,36 @@ FilePerfMetric::FilePerfMetric(const std::string& nm,
 
 FilePerfMetric::~FilePerfMetric() 
 {
-  IFTRACE << "~FilePerfMetric " << ToString() << endl; 
+  IFTRACE << "~FilePerfMetric " << toString() << endl; 
 }
 
+
+void 
+FilePerfMetric::Make(NodeRetriever &ret) const
+{
+  IFTRACE << "FilePerfMetric::Make " << endl << " " << toString() << endl;
+  DIAG_Assert(m_type == "HPCRUN", "Unexpected FilePefMetric type: " << m_type);
+  // handled within the Driver
+}
+
+
+string
+FilePerfMetric::toString(int flags) const 
+{
+  string unitstr = isunit_event() ? " [events]" : " [samples]";
+  string rawstr = " {" + m_rawdesc.description() + ":" + StrUtil::toStr(m_rawdesc.period()) + " ev/smpl}";
+  string str = PerfMetric::toString() + unitstr + rawstr;
+
+  if (flags) {
+    str += "file='" + m_file + "' " + "type='" + m_type + "'";
+  }
+  return str;
+} 
+
+
+// **************************************************************************
+// 
+// **************************************************************************
 
 ComputedPerfMetric::ComputedPerfMetric(const char* nm, const char* displayNm,
 				       bool doDisp, bool doPerc, bool doSort,
@@ -126,20 +155,8 @@ ComputedPerfMetric::Ctor(const char* nm, EvalNode* expr)
 
 ComputedPerfMetric::~ComputedPerfMetric() 
 {
-  IFTRACE << "~ComputedPerfMetric " << ToString() << endl; 
+  IFTRACE << "~ComputedPerfMetric " << toString() << endl; 
   delete m_exprTree;
-}
-
-// **************************************************************************
-// Make methods 
-// **************************************************************************
-
-void 
-FilePerfMetric::Make(NodeRetriever &ret) const
-{
-  IFTRACE << "FilePerfMetric::Make " << endl << " " << ToString() << endl;
-  DIAG_Assert(m_type == "HPCRUN", "Unexpected FilePefMetric type: " << m_type);
-  // handled within the Driver
 }
 
 
@@ -168,21 +185,12 @@ ComputedPerfMetric::Make(NodeRetriever& structIF) const
   }
 }
 
-// **************************************************************************
-// ToString methods 
-// **************************************************************************
-string
-FilePerfMetric::ToString() const 
-{
-  return PerfMetric::ToString() + " " +  string("FilePerfMetric: " ) + 
-         "file=\"" + m_file + "\" " + 
-         "type=\"" + m_type + "\""; 
-} 
 
 string
-ComputedPerfMetric::ToString() const 
+ComputedPerfMetric::toString(int flags) const 
 {
-  return PerfMetric::ToString() + " " + string("ComputeMetricInfo: " ) 
-    + "exprTree=\"" + m_exprTree->toString();
+  string str = PerfMetric::toString() 
+    + "{" + m_exprTree->toString() + "}";
+  return str;
 } 
 

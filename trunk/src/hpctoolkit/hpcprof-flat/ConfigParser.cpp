@@ -423,7 +423,7 @@ ProcessFILE(DOMNode* fileNode,
     mMgr.insert(new FilePerfMetric(metricNm, nativeNm, metricDispNm, 
 				   metricDoDisp, metricDoPercent, 
 				   metricDoSortBy, metricFile, 
-				   metricFileType));
+				   metricFileType, true /*isunit_ev*/));
   } 
   else {
     ConfigParser_Throw("METRIC '" << metricNm << "' FILE name empty.");

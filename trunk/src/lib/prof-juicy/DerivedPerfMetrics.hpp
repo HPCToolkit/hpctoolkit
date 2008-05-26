@@ -47,7 +47,9 @@
 #include <include/general.h> 
 
 #include "EvalNode.hpp"
+#include "MetricDesc.hpp"
 #include "PerfMetric.hpp"
+
 
 //************************ Forward Declarations ******************************
 
@@ -60,24 +62,49 @@ public:
   // NOTE: NativeName() is the 'select' attribute
   FilePerfMetric(const char* nm, const char* nativeNm, const char* displayNm,
 		 bool display, bool percent, bool sortBy, 
-		 const char* fname, const char* ftype); 
+		 const char* fname, const char* ftype,
+		 bool isuint_ev); 
   FilePerfMetric(const std::string& nm, const std::string& nativeNm, 
 		 const std::string& displayNm,
 		 bool display, bool percent, bool sortBy, 
-		 const std::string& fname, const std::string& ftype); 
+		 const std::string& fname, const std::string& ftype, 
+		 bool isunit_ev); 
 
   virtual ~FilePerfMetric(); 
+
+  virtual void Make(NodeRetriever &ret) const;
+
+  // --------------------------------------------------------
   
   const std::string& FileName() const { return m_file; }
   const std::string& FileType() const { return m_type; } // HPCRUN, PROFILE
+
+  const Prof::SampledMetricDesc& 
+  rawdesc() const 
+  { 
+    return m_rawdesc; 
+  }
+
+  void 
+  rawdesc(const Prof::SampledMetricDesc& rawdesc) 
+  { 
+    m_rawdesc = rawdesc; 
+  }
   
-  virtual void Make(NodeRetriever &ret) const;
-  
-  virtual std::string ToString() const; 
+
+  bool isunit_event() const { return m_isunit_event; }
+
+  // --------------------------------------------------------
+
+
+  virtual std::string toString(int flags = 0) const; 
 
 private: 
   std::string m_file;
   std::string m_type; // for later use
+  bool m_isunit_event;
+  
+  Prof::SampledMetricDesc m_rawdesc;
 };
 
 
@@ -98,7 +125,7 @@ public:
 
   virtual void Make(NodeRetriever &ret) const; // compute node by node
   
-  virtual std::string ToString() const; 
+  virtual std::string toString(int flags = 0) const; 
 
 private:
   void Ctor(const char* nm, EvalNode* expr);

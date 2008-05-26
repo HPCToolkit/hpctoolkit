@@ -71,7 +71,7 @@ public:
   unsigned int        Width()       const { return width; }
   bool                FormatAsInt() const { return formatAsInt; }
   
-  std::string ToString() const; 
+  std::string toString() const; 
 
 private:
   void SetWidth(unsigned int w) { width = w; } 
@@ -119,13 +119,16 @@ public:
   void setSortBy()                    { sortBy = true; }
   
   DataDisplayInfo& DisplayInfo() const { return *dispInfo; }; 
-  
+
+  // FIXME: remove
   unsigned int EventsPerCount()      const; 
   void SetEventsPerCount(int eventsPerCount); 
   
   virtual void Make(NodeRetriever& ret) const;
   
-  std::string ToString() const; 
+  // flags: default -> display output
+  //        non-zero -> debugging output
+  virtual std::string toString(int flags = 0) const; 
 
 private:
   void Ctor(const char *name, const char* displayName); 

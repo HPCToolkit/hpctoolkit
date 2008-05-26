@@ -128,15 +128,42 @@ ColumnFormatter::ColumnFormatter(const Prof::MetricDescMgr& metricMgr,
 
 
 void
-ColumnFormatter::genCol(uint mId, uint64_t metricVal, uint64_t metricTot)
+ColumnFormatter::genColHeaderSummary()
+{
+  m_os << "Metric definitions. column: name (nice-name) [units] {details}:\n";
+
+  uint colId = 1;
+  for (uint mId = 0; mId < m_mMgr.size(); ++mId) {
+    const PerfMetric* m = m_mMgr.metric(mId);
+
+    m_os << std::fixed << std::setw(4) << std::setfill(' ');
+    if (m->Display()) {
+      m_os << colId;
+      colId++;
+    }
+    else {
+      m_os << "-";
+    }
+
+    m_os << ": " << m->toString() << std::endl;
+  }
+}
+
+
+void
+ColumnFormatter::genCol(uint mId, uint64_t metricVal, uint64_t metricTot,
+			ColumnFormatter::Flag flg)
 {
   const PerfMetric* m = m_mMgr.metric(mId);
 
   if (!isDisplayed(mId)) {
     return;
   }
-  
-  if (m->Percent()) {
+
+  bool doPercent = ((flg == Flag_ForcePct) 
+		    || flg != Flag_ForceVal && m->Percent());
+
+  if (doPercent) {
     double val = 0.0;
     if (metricTot != 0) {
       val = ((double)metricVal / (double)metricTot) * 100;
@@ -148,7 +175,6 @@ ColumnFormatter::genCol(uint mId, uint64_t metricVal, uint64_t metricTot)
 	   << std::setprecision(m_metricAnnotationWidth[mId] - 7);
     }
     else {
-      //m_os.unsetf(ios_base::scientific);
       m_os << std::fixed
 	   << std::setprecision(m_num_digits);
     }
@@ -170,14 +196,6 @@ ColumnFormatter::genCol(uint mId, uint64_t metricVal, uint64_t metricTot)
 
 
 //****************************************************************************
-
-#if 0
-void
-writeMetricSummary(std::ostream& os, 
-		   const vector<const Prof::Flat::EventData*>& metricDescs,
-		   const vector<uint64_t>& metricVal,
-		   const vector<uint64_t>* metricTot)
-#endif
 
 
 } // namespace TextUtil

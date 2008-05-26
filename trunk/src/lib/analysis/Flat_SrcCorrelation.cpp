@@ -504,9 +504,12 @@ Driver::computeRawBatchJob_LM(const string& lmname, const string& lmname_orig,
     for (Prof::MetricDescMgr::PerfMetricVec::iterator it = metrics->begin();
 	 it != metrics->end(); ++it) {
       FilePerfMetric* m = dynamic_cast<FilePerfMetric*>(*it);
+      DIAG_Assert(m->isunit_event(), "Assumes metric should compute events!");
       uint mIdx = (uint)StrUtil::toUInt64(m->NativeName());
       
       const Prof::Flat::EventData& profevent = proflm->event(mIdx);
+      m->rawdesc(profevent.mdesc());
+
       correlate(m, profevent, proflm->load_addr(), 
 		structIF, lmStrct, lm, useStruct);
     }
