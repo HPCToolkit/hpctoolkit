@@ -143,6 +143,7 @@ main_srcCorrelation(const Args& args)
   //-------------------------------------------------------
   Prof::MetricDescMgr metricMgr;
   metricMgr.makeRawMetrics(args.profileFiles);
+  metricMgr.makeSummaryMetrics();
 
   //-------------------------------------------------------
   // Correlate metrics with program structure and Generate output

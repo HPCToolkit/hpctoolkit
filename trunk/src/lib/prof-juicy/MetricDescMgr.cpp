@@ -74,6 +74,7 @@ Prof::MetricDescMgr::~MetricDescMgr()
   }
 } 
 
+//----------------------------------------------------------------------------
 
 void 
 Prof::MetricDescMgr::makeRawMetrics(const std::vector<std::string>& profileFiles,
@@ -115,6 +116,57 @@ Prof::MetricDescMgr::makeRawMetrics(const std::vector<std::string>& profileFiles
   // ------------------------------------------------------------
 }
 
+
+void 
+Prof::MetricDescMgr::makeSummaryMetrics()
+{
+  StringPerfMetricVecMap::iterator it = m_nuniqnmToMetricMap.begin();
+  for ( ; it != m_nuniqnmToMetricMap.end(); ++it) {
+    const string& m_nm = it->first;
+    PerfMetricVec& mvec = it->second;
+    if (mvec.size() > 1) {
+      string sum_nm = "SUM-" + m_nm;
+      string min_nm = "MIN-" + m_nm;
+      string max_nm = "MAX-" + m_nm;
+      makeSummaryMetric(sum_nm, mvec);
+      makeSummaryMetric(min_nm, mvec);
+      makeSummaryMetric(max_nm, mvec);
+    }
+  }
+}
+
+
+void
+Prof::MetricDescMgr::makeSummaryMetric(const string& m_nm,
+				       const PerfMetricVec& m_opands)
+{
+  EvalNode** opands = new EvalNode*[m_opands.size()];
+  for (uint i = 0; i < m_opands.size(); ++i) {
+    PerfMetric* m = m_opands[i];
+    opands[i] = new Var(m->Name(), m->Index());
+  }
+
+  EvalNode* expr = NULL;
+  if (m_nm.find("SUM", 0) == 0) {
+    expr = new Plus(opands, m_opands.size());
+  }
+  else if (m_nm.find("MIN", 0) == 0) {
+    expr = new Min(opands, m_opands.size());
+  }
+  else if (m_nm.find("MAX", 0) == 0) {
+    expr = new Max(opands, m_opands.size());
+  }
+  else {
+    DIAG_Die(DIAG_UnexpectedInput);
+  }
+  
+  insert(new ComputedPerfMetric(m_nm, m_nm, true/*display*/, 
+				true/*percent*/, true/*sortby*/,
+				false/*propagateComputed*/, expr));
+}
+
+
+//----------------------------------------------------------------------------
 
 bool 
 Prof::MetricDescMgr::insert(PerfMetric* m)

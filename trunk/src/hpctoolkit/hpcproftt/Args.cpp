@@ -89,10 +89,10 @@ static const char* usage_summary3 =
 "--dump <profile-file>...\n";
 
 static const char* usage_details = "\
-hpcproftt correlates 'flat' profiles with either source code structure\n\
-(the first mode above) or object code (second mode above) and generates\n\
-textual output suitable for a terminal.  In each of these cases, hpcproftt\n\
-expects a list of flat profile files.\n\
+hpcproftt correlates 'flat' profile metrics with either source code structure\n\
+(first mode) or object code (second mode) and generates textual output\n\
+suitable for a terminal.  In each of these modes, hpcproftt expects a list\n\
+of flat profile files.\n\
 \n\
 hpcproftt also supports a third mode in which it generates textual dumps of\n\
 profile files.  In this mode, the profile list may contain either flat or\n\
@@ -134,11 +134,26 @@ Options: Dump Raw Profile Data:\n\
 
 #if 0
 "Options: Metrics [??? not sure ???]\n\
-  --metric <samples|percent|events>\n\
+  --metric <percent>\n\
                       control of standard metrics\n\
-  --threshold <n>     Show only load modules, files or procedures with an\n\
-                      event count >= <n> {1}  (Use 0 to see all procedures.)\n\
   --addmetric <...>   ??? a few predefined metrics...???\n";
+
+  --threshold <n>     Show only load modules, files or procedures with a\n\
+                      sample count >= <n> {1}  (Use 0 to see all procedures.)\n\
+
+properties
+  display
+  percent
+  sortby
+  [threshold]
+
+--metric raw,percent
+  raw metrics are always created
+
+--metric summary,percent
+
+  create & display summary metrics
+   
 #endif
 
 
