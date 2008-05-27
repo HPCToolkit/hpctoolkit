@@ -68,7 +68,7 @@
 #define Analysis_EXPERIMENTDB  "experiment-db"
 #define Analysis_EXPERIMENTXML "experiment.xml"
 #define Analysis_EXPERIMENTCSV "experiment.csv"
-#define Analysis_EXPERIMENTTSV "experiment.tsv"
+#define Analysis_EXPERIMENTTXT "experiment.txt"
 
 namespace Analysis {
 
@@ -133,7 +133,7 @@ public:
 
   std::string outFilename_XML; // disable: "", stdout: "-"
   std::string outFilename_CSV; // disable: "", stdout: "-"
-  std::string outFilename_TSV; // disable: "", stdout: "-" [FIXME:OBSOLETE]
+  std::string outFilename_TXT; // disable: "", stdout: "-"
 
   bool metrics_computeInteriorValues;
 

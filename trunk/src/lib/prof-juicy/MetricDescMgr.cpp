@@ -169,6 +169,21 @@ Prof::MetricDescMgr::insert(PerfMetric* m)
 }
 
 
+PerfMetric*
+Prof::MetricDescMgr::findSortBy() const
+{
+  PerfMetric* m_sortby = NULL;
+  for (uint i = 0; i < m_metrics.size(); ++i) {
+    PerfMetric* m = m_metrics[i]; 
+    if (m->SortBy()) {
+      m_sortby = m;
+      break;
+    }
+  }
+  return m_sortby;
+}
+
+
 string
 Prof::MetricDescMgr::toString(const char* pre) const
 {

@@ -112,10 +112,10 @@ public:
   // modified, false otherwise.
   // NOTE: Assumes ownership of 'm'
   bool insert(PerfMetric* m);
-  
-  // makeFileMetric
-  // makeComputedMetric
 
+  // Return the (first) metric this has the sort-by attribute set
+  PerfMetric* findSortBy() const;
+  
   // ------------------------------------------------------------
   // helper tables
   // ------------------------------------------------------------

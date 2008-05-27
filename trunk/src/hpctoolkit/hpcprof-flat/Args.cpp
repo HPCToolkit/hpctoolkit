@@ -340,15 +340,6 @@ Args::parse(int argc, const char* const argv[])
       }
       db_copySrcFiles = false;
     }
-#if 0
-    if (parser.IsOpt("tsv")) { 
-      outFilename_TSV = Analysis_EXPERIMENTTSV;
-      if (parser.IsOptArg("tsv")) {
-	outFilename_TSV = parser.GetOptArg("tsv");
-      }
-      db_copySrcFiles = false;
-    }
-#endif
     
     // Check for required arguments
     uint numArgs = parser.GetNumArgs();

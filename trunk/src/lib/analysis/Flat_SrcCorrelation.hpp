@@ -96,7 +96,7 @@ public:
   // -------------------------------------------------------
   void write_experiment(std::ostream &os) const;
   void write_csv(std::ostream &os) const;
-  void write_tsv(std::ostream &os) const;
+  void write_txt(std::ostream &os) const;
 
   void write_config(std::ostream &os = std::cout) const;
 

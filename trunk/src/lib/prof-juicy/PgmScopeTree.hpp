@@ -466,12 +466,6 @@ public:
 			const char* proc_name = NULL,
 			int lLevel = 0) const;
 
-  void TSV_DumpSelf(const PgmScope &root, std::ostream& os = std::cout) const;
-  virtual void TSV_dump(const PgmScope &root, std::ostream& os = std::cout, 
-			const char* file_name = NULL, 
-			const char* proc_name = NULL,
-			int lLevel = 0) const;
-
   // --------------------------------------------------------
   // debugging
   // --------------------------------------------------------
@@ -614,10 +608,6 @@ public:
                const char* file_name = NULL, const char* proc_name = NULL,
                int lLevel = 0) const;
 
-  virtual void TSV_dump(const PgmScope &root, std::ostream& os = std::cout, 
-               const char* file_name = NULL, const char* proc_name = NULL,
-               int lLevel = 0) const;
-
   // --------------------------------------------------------
   // debugging
   // --------------------------------------------------------
@@ -726,7 +716,6 @@ public:
 				  int dmpFlag = 0, 
 				  const char* pre = "") const;
   void CSV_TreeDump(std::ostream& os = std::cout) const;
-  void TSV_TreeDump(std::ostream& os = std::cout) const;
 
   // --------------------------------------------------------
   // debugging
@@ -982,10 +971,6 @@ public:
 			const char* file_name = NULL, 
 			const char* proc_name = NULL,
 			int lLevel = 0) const;
-  virtual void TSV_dump(const PgmScope &root, std::ostream& os = std::cout, 
-			const char* file_name = NULL, 
-			const char* proc_name = NULL,
-			int lLevel = 0) const;
 
   // --------------------------------------------------------
   // debugging
@@ -1070,10 +1055,6 @@ public:
 			const char* file_name = NULL, 
 			const char* proc_name = NULL,
 			int lLevel = 0) const;
-  virtual void TSV_dump(const PgmScope &root, std::ostream& os = std::cout, 
-			const char* file_name = NULL, 
-			const char* proc_name = NULL,
-			int lLevel = 0) const;
 
   // --------------------------------------------------------
   // debugging
@@ -1144,10 +1125,6 @@ public:
   virtual std::string toXML(int dmpFlag = 0) const;
 
   virtual void CSV_dump(const PgmScope &root, std::ostream& os = std::cout, 
-			const char* file_name = NULL, 
-			const char* proc_name = NULL,
-			int lLevel = 0) const;
-  virtual void TSV_dump(const PgmScope &root, std::ostream& os = std::cout, 
 			const char* file_name = NULL, 
 			const char* proc_name = NULL,
 			int lLevel = 0) const;
