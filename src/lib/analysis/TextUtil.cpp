@@ -151,7 +151,7 @@ ColumnFormatter::genColHeaderSummary()
 
 
 void
-ColumnFormatter::genCol(uint mId, uint64_t metricVal, uint64_t metricTot,
+ColumnFormatter::genCol(uint mId, double metricVal, double metricTot,
 			ColumnFormatter::Flag flg)
 {
   const PerfMetric* m = m_mMgr.metric(mId);
@@ -166,7 +166,7 @@ ColumnFormatter::genCol(uint mId, uint64_t metricVal, uint64_t metricTot,
   if (doPercent) {
     double val = 0.0;
     if (metricTot != 0) {
-      val = ((double)metricVal / (double)metricTot) * 100;
+      val = (metricVal / metricTot) * 100;
     }
     
     m_os << std::showpoint << std::setw(m_metricAnnotationWidth[mId] - 1);
@@ -181,15 +181,16 @@ ColumnFormatter::genCol(uint mId, uint64_t metricVal, uint64_t metricTot,
     m_os << std::setfill(' ') << val << "%";
   }
   else {
-    m_os << std::scientific
-	 << std::setprecision(m_metricAnnotationWidth[mId] - 6)
-	 << std::setw(m_metricAnnotationWidth[mId]);
-    if ((double)metricVal >= m_scientificFormatThreshold[mId]) {
-      m_os << (double)metricVal;
+    m_os << std::setw(m_metricAnnotationWidth[mId]);
+    if (metricVal >= m_scientificFormatThreshold[mId]) {
+      m_os << std::scientific
+	   << std::setprecision(m_metricAnnotationWidth[mId] - 6);
     }
     else {
-      m_os << std::setfill(' ') << metricVal;
+      m_os << std::fixed
+	   << std::noshowpoint << std::setprecision(0);
     }
+    m_os << std::setfill(' ') << metricVal;
   }
   m_os << " ";
 }

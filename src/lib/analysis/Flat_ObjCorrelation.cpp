@@ -475,7 +475,7 @@ writeMetricVals(ColumnFormatter& colFmt,
 		ColumnFormatter::Flag flg)
 {
   for (uint i = 0; i < metricVal.size(); ++i) {
-    colFmt.genCol(i, metricVal[i], metricTot[i], flg);
+    colFmt.genCol(i, (double)metricVal[i], (double)metricTot[i], flg);
   }
 }
 
