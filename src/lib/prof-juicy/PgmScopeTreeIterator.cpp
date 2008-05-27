@@ -356,54 +356,33 @@ ScopeInfoNameSortedChildIterator::CompareByName(const void* a, const void *b)
 }
 
 //***************************************************************************
-// SortedCodeInfoIterator
+// ScopeInfoMetricSortedIterator
 //***************************************************************************
 
-SortedCodeInfoIterator::SortedCodeInfoIterator(const PgmScope *pgm,
-					       int perfInfoIndex,
-					     const ScopeInfoFilter *filterFunc)
+ScopeInfoMetricSortedIterator::ScopeInfoMetricSortedIterator(const PgmScope* pgm,
+							     uint metricId,
+							     const ScopeInfoFilter* filterFunc)
+  : m_metricId(metricId)
 {
   DIAG_Assert(pgm != NULL, "");
-  compareByPerfInfo = perfInfoIndex;
-  
+
   ScopeInfoIterator it(pgm, filterFunc, false);
   ScopeInfo *cur;
   for (; (cur = it.CurScope()); ) {
     scopes.Add((unsigned long) cur);
     it++;
   }
-  CompareByPerfInfo_MetricIndex = compareByPerfInfo;
-  ptrSetIt = new WordSetSortedIterator(&scopes, CompareByPerfInfo);
+  CompareByMetricId_mId = m_metricId;
+  ptrSetIt = new WordSetSortedIterator(&scopes, CompareByMetricId);
 }
 
-SortedCodeInfoIterator::~SortedCodeInfoIterator()
-{
-  delete ptrSetIt;
-}
-
-CodeInfo*
-SortedCodeInfoIterator::Current() const
-{
-  CodeInfo *cur = NULL;
-  if (ptrSetIt->Current()) {
-    cur = (CodeInfo*) (*ptrSetIt->Current());
-    DIAG_Assert(cur != NULL, "");
-  }
-  return cur;
-}
-
-void
-SortedCodeInfoIterator::Reset()
-{
-  ptrSetIt->Reset();
-}
 
 
 //***************************************************************************
-// SortedCodeInfoChildIterator
+// ScopeInfoMetricSortedChildIterator
 //***************************************************************************
 
-SortedCodeInfoChildIterator::SortedCodeInfoChildIterator
+ScopeInfoMetricSortedChildIterator::ScopeInfoMetricSortedChildIterator
 (const ScopeInfo *scope, int flattenDepth, 
  int compare(const void* a, const void *b),
  const ScopeInfoFilter *filterFunc)
@@ -413,29 +392,8 @@ SortedCodeInfoChildIterator::SortedCodeInfoChildIterator
   ptrSetIt = new WordSetSortedIterator(&scopes, compare);
 }
 
-SortedCodeInfoChildIterator::~SortedCodeInfoChildIterator()
-{
-  delete ptrSetIt;
-}
 
-CodeInfo*
-SortedCodeInfoChildIterator::Current() const
-{
-  CodeInfo *cur = NULL;
-  if (ptrSetIt->Current()) {
-    cur = (CodeInfo*) (*ptrSetIt->Current());
-    DIAG_Assert(cur != NULL, "");
-  }
-  return cur;
-}
-
-void
-SortedCodeInfoChildIterator::Reset()
-{
-  ptrSetIt->Reset();
-}
-
-void SortedCodeInfoChildIterator::AddChildren
+void ScopeInfoMetricSortedChildIterator::AddChildren
 (const ScopeInfo *scope, int curDepth, const ScopeInfoFilter *filterFunc)
 {
   DIAG_Assert(scope != NULL, "");
@@ -456,26 +414,26 @@ void SortedCodeInfoChildIterator::AddChildren
 // static functions
 //***************************************************************************
 
-int CompareByPerfInfo_MetricIndex = -1;
+int CompareByMetricId_mId = -1;
 
-int CompareByPerfInfo(const void* a, const void *b)
+int CompareByMetricId(const void* a, const void *b)
 {
   ScopeInfo* x = *(ScopeInfo**) a;
   ScopeInfo* y = *(ScopeInfo**) b;
   DIAG_Assert(x != NULL, "");
   DIAG_Assert(y != NULL, "");
   double vx = 0.0;
-  if (x->HasPerfData(CompareByPerfInfo_MetricIndex)) {
-    vx = x->PerfData(CompareByPerfInfo_MetricIndex);
+  if (x->HasPerfData(CompareByMetricId_mId)) {
+    vx = x->PerfData(CompareByMetricId_mId);
   }
   double vy = 0.0;
-  if (y->HasPerfData(CompareByPerfInfo_MetricIndex)) {
-    vy = y->PerfData(CompareByPerfInfo_MetricIndex);
+  if (y->HasPerfData(CompareByMetricId_mId)) {
+    vy = y->PerfData(CompareByMetricId_mId);
   }
-  double difference = vy-vx;
+  double difference = vy - vx;
   
-  if ( difference < 0) return -1;	
-  else if ( difference > 0) return 1;	
+  if (difference < 0) return -1;	
+  else if (difference > 0) return 1;	
   return 0;
 }
 

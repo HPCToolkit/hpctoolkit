@@ -393,7 +393,7 @@ private:
 };
 
 //***************************************************************************
-// SortedCodeInfoIterator
+// ScopeInfoMetricSortedIterator
 //    behaves as ScopeInfoIterator, except that it gurantees PerformanceOrder
 //    PerformanceOrder:
 //          a is enumerated before b
@@ -401,28 +401,42 @@ private:
 //             where GetVal(i) retrieves the value for the performace
 //             statistic that the iterator is to sort for
 //
-// FIXME: do we need this
 //***************************************************************************
 
-class SortedCodeInfoIterator {
+class ScopeInfoMetricSortedIterator {
 public:
-  SortedCodeInfoIterator(const PgmScope *scope, int perfInfoIndex, 
-			  const ScopeInfoFilter *filterFunc = NULL);
-  virtual ~SortedCodeInfoIterator();
+  ScopeInfoMetricSortedIterator(const PgmScope* scope, 
+			 uint metricId, 
+			 const ScopeInfoFilter* filterFunc = NULL);
 
-  CodeInfo *Current() const;
-  void  operator++(int)   { (*ptrSetIt)++;}
-  void Reset();
+  virtual ~ScopeInfoMetricSortedIterator()
+  {
+    delete ptrSetIt;
+  }  
+  
+  ScopeInfo* Current() const
+  {
+    ScopeInfo* cur = NULL;
+    if (ptrSetIt->Current()) {
+      cur = (ScopeInfo*) (*ptrSetIt->Current());
+    }
+    return cur;
+  }
+
+  void operator++(int) { (*ptrSetIt)++; }
+
+  void Reset() { ptrSetIt->Reset(); }
+
 private:
-  int compareByPerfInfo;
+  uint m_metricId; // sort key
 
   WordSet scopes;  // the scopes we want to have sorted
-  WordSetSortedIterator *ptrSetIt;
+  WordSetSortedIterator* ptrSetIt;
 };
 
 
 //***************************************************************************
-// SortedCodeInfoChildIterator
+// ScopeInfoMetricSortedChildIterator
 //    behaves as ScopeInfoChildIterator, except that it guarantees children in 
 //    PerformanceOrder.
 //
@@ -432,19 +446,32 @@ private:
 //             where GetVal(i) retrieves the value for the performace
 //             statistic that the iterator is to sort for
 //
-// FIXME: do we need this
 //***************************************************************************
 
-class SortedCodeInfoChildIterator {
+class ScopeInfoMetricSortedChildIterator {
 public:
-  SortedCodeInfoChildIterator(const ScopeInfo *scope, int flattenDepth,
-			      int compare(const void* a, const void *b),
-			      const ScopeInfoFilter *filterFunc = NULL);
-  virtual ~SortedCodeInfoChildIterator();
+  ScopeInfoMetricSortedChildIterator(const ScopeInfo *scope, int flattenDepth,
+				     int compare(const void* a, const void *b),
+				     const ScopeInfoFilter *filterFunc = NULL);
+  
+  virtual ~ScopeInfoMetricSortedChildIterator()
+  {
+    delete ptrSetIt;
+  }
 
-  CodeInfo *Current() const;
-  void  operator++(int)   { (*ptrSetIt)++;}
-  void Reset();
+  ScopeInfo* Current() const
+  {
+    ScopeInfo* cur = NULL;
+    if (ptrSetIt->Current()) {
+      cur = (ScopeInfo*) (*ptrSetIt->Current());
+    }
+    return cur;
+  }
+
+  void operator++(int)   { (*ptrSetIt)++;}
+
+  void Reset() { ptrSetIt->Reset(); }
+
 private:
   void AddChildren(const ScopeInfo *scope, int curDepth,
 		   const ScopeInfoFilter *filterFunc);
@@ -453,6 +480,7 @@ private:
   WordSetSortedIterator *ptrSetIt;
   int depth;
 };
+
 
 //***************************************************************************
 // Function CompareByPerfInfo
@@ -469,10 +497,9 @@ private:
 //   to remain constant for the duration of the constructor to which 
 //   CompareByPerfInfo is passed.
 //
-// FIXME: do we need this
 //***************************************************************************
 
-int CompareByPerfInfo(const void* a, const void *b);
-extern int CompareByPerfInfo_MetricIndex;
+int CompareByMetricId(const void* a, const void *b);
+extern int CompareByMetricId_mId;
 
 #endif /* prof_juicy_PgmScopeTreeIterator_hpp */

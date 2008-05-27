@@ -53,6 +53,9 @@
 
 //************************* System Include Files ****************************
 
+#include <iostream>
+#include <iomanip>
+
 #include <string>
 #include <vector>
 
@@ -85,7 +88,7 @@ public:
 
 public:
   ColumnFormatter(const Prof::MetricDescMgr& metricMgr, 
-		  ostream& os, int num_digits);
+		  std::ostream& os, int num_digits);
   ~ColumnFormatter() { }
 
   // generates a summary of the formatted column for all metrics
@@ -129,8 +132,8 @@ private:
 
 private:
   const Prof::MetricDescMgr& m_mMgr;
-  ostream& m_os;
-  int      m_num_digits;
+  std::ostream& m_os;
+  int m_num_digits;
 
   std::vector<int>    m_metricAnnotationWidth;
   int                 m_metricAnnotationWidthTot;

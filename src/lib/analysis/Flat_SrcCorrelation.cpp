@@ -56,6 +56,7 @@ using std::vector;
 //************************* User Include Files *******************************
 
 #include "Flat_SrcCorrelation.hpp"
+#include "TextUtil.hpp"
 #include "Util.hpp"
 
 #include <lib/prof-juicy-x/PGMReader.hpp>
@@ -105,6 +106,10 @@ Driver::~Driver()
 int
 Driver::run()
 {
+  if (m_mMgr.empty()) {
+    return 0;
+  }
+
   //-------------------------------------------------------
   // 1. Initialize static program structure
   //-------------------------------------------------------
@@ -168,17 +173,15 @@ Driver::run()
     IOUtil::CloseStream(os);
   } 
 
-#if 0 // FIXME:OBSOLETE
-  if (!m_args.outFilename_TSV.empty()) {
-    const string& fnm = m_args.outFilename_TSV;
-    DIAG_Msg(1, "Writing final scope tree (in TSV) to " << fnm);
+  if (!m_args.outFilename_TXT.empty()) {
+    const string& fnm = m_args.outFilename_TXT;
+    DIAG_Msg(1, "Writing final scope tree (in TXT) to " << fnm);
     fpath += fnm;
     const char* osnm = (fnm == "-") ? NULL : fpath.c_str();
     std::ostream* os = IOUtil::OpenOStream(osnm);
-    write_tsv(*os);
+    write_txt(*os);
     IOUtil::CloseStream(os);
   }
-#endif
 
   return 0;
 } 
@@ -272,21 +275,54 @@ Driver::write_csv(std::ostream &os) const
 
 
 void
-Driver::write_tsv(std::ostream &os) const
+Driver::write_txt(std::ostream &os) const
 {
-  os << "LineID";
+  using Analysis::TextUtil::ColumnFormatter;
+
+  //write_experiment(os);
+
+  PerfMetric* m_sortby = m_mMgr.findSortBy();
+  DIAG_Assert(m_sortby, "INVARIANT: at least on sort-by metric must exist");
+
+  PgmScope* pgmStrct = m_structure.GetRoot();
+
+  ColumnFormatter colFmt(m_mMgr, os, 2);
+
+  os << std::setfill('=') << std::setw(77) << "=" << std::endl;
+  colFmt.genColHeaderSummary();
+
+  // Program summary
+  os << std::endl
+     << std::setfill('=') << std::setw(77) << "=" << std::endl
+     << "Program summary: " << pgmStrct->name() << std::endl
+     << std::setfill('-') << std::setw(77) << "-" << std::endl;
+
+#if 0  
   for (uint i = 0; i < m_mMgr.size(); ++i) {
-    const PerfMetric* m = m_mMgr.metric(i); 
-    os << "\t" << m->DisplayInfo().Name();
-    /*
-    if (m->Percent())
-      os << "\t" << m->DisplayInfo().Name() << " (%)";
-    */
+    colFmt.genCol(i, pgmStrct->PerfData(i));
   }
-  os << endl;
+#endif  
   
-  // Dump SCOPETREE
-  m_structure.GetRoot()->TSV_TreeDump(os);
+#if 0
+  ScopeTypeFilter[ScopeInfo::LM];
+  ScopeTypeFilter[ScopeInfo::FILE];
+  ScopeTypeFilter[ScopeInfo::PROC];
+  ScopeTypeFilter[ScopeInfo::STMT_RANGE];
+
+  
+  SortedCodeInfoIterator it(scopes.GetRoot(), 
+			    m_sortby->Index(),
+			    ScopeTypeFilter[ScopeInfo::LM]);
+
+  int linesLeft = args.maxLinesPerPerfPane;
+  for (; it.Current() && linesLeft-- > 0; it++) {
+    if (!WriteRow(hf, *it.Current(), true, sortByPerfIndex)) {
+      return false; 
+    }
+    IFTRACE << "ROW done" << endl; 
+  } 
+  IFTRACE << "HTMLTable::WriteTableBody  no more ROWS" << endl; 
+#endif
 }
 
 

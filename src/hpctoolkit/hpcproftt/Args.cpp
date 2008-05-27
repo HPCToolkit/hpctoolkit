@@ -198,7 +198,8 @@ Args::Ctor()
   // override Analysis::Args defaults
   db_dir = "";
   db_copySrcFiles = false;
-  outFilename_XML = "-";
+  outFilename_XML = "";
+  outFilename_TXT = "-";
   metrics_computeInteriorValues = true; // dump metrics on interior nodes
 }
 

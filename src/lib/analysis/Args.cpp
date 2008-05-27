@@ -87,7 +87,7 @@ Analysis::Args::Ctor()
   db_dir          = Analysis_EXPERIMENTDB;
   outFilename_XML = Analysis_EXPERIMENTXML;
   outFilename_CSV = "";
-  outFilename_TSV = "";
+  outFilename_TXT = "";
 
   db_copySrcFiles = true;
 
@@ -115,7 +115,7 @@ Analysis::Args::dump(std::ostream& os) const
   os << "db_dir= " << db_dir << std::endl;
   os << "outFilename_XML= " << outFilename_XML << std::endl;
   os << "outFilename_CSV= " << outFilename_CSV << std::endl;
-  os << "outFilename_TSV= " << outFilename_TSV << std::endl;
+  os << "outFilename_TXT= " << outFilename_TXT << std::endl;
 }
 
 
