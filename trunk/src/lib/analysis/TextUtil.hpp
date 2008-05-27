@@ -99,17 +99,17 @@ public:
   // The 'doValue' flag forces the column to be displayed as a value
   // (non-percentage) even if it was formatted as a percent.
   void 
-  genCol(uint mid, uint64_t metricVal, uint64_t metricTot, 
+  genCol(uint mid, double metricVal, double metricTot, 
 	 Flag flg = Flag_NULL);
 
   void 
-  genCol(uint mid, uint64_t metricVal, uint64_t metricTot)
+  genCol(uint mid, double metricVal, double metricTot)
   {
     genCol(mid, metricVal, metricTot, Flag_NULL);
   }
 
   void 
-  genCol(uint mid, uint64_t metricVal)
+  genCol(uint mid, double metricVal)
   {
     genCol(mid, metricVal, 0, Flag_ForceVal);
   }
