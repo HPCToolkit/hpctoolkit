@@ -114,9 +114,10 @@ public:
   
   bool Display() const                { return display; }
   bool Percent() const                { return percent; }
-  bool PropComputed() const           { return pcomputed; }
   bool SortBy() const                 { return sortBy; }
   void setSortBy()                    { sortBy = true; }
+
+  bool PropComputed() const           { return pcomputed; }
   
   DataDisplayInfo& DisplayInfo() const { return *dispInfo; }; 
 

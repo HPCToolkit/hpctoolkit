@@ -189,8 +189,7 @@ ComputedPerfMetric::Make(NodeRetriever& structIF) const
 string
 ComputedPerfMetric::toString(int flags) const 
 {
-  string str = PerfMetric::toString() 
-    + "{" + m_exprTree->toString() + "}";
+  string str = PerfMetric::toString() + " {" + m_exprTree->toString() + "}";
   return str;
 } 
 

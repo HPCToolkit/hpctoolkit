@@ -73,32 +73,46 @@ public:
   MetricDescMgr();
   ~MetricDescMgr(); 
 
-  void makeRawMetrics(const std::vector<std::string>& profileFiles, 
-		      bool isunit_ev = true);
+  void 
+  makeRawMetrics(const std::vector<std::string>& profileFiles, 
+		 bool isunit_ev = true);
 
-  void makeRawMetrics(const std::string& profileFile, bool isunit_ev = true)
+  void 
+  makeRawMetrics(const std::string& profileFile, bool isunit_ev = true)
   {
     std::vector<std::string> vec(1, profileFile);
     makeRawMetrics(vec, isunit_ev);
   }
 
+  void 
+  makeSummaryMetrics();
+
+
   // ------------------------------------------------------------
   // The metric table
   // ------------------------------------------------------------
-  PerfMetric* metric(int i) { 
+  PerfMetric*
+  metric(int i) 
+  { 
     return m_metrics[i]; 
   }
 
-  const PerfMetric* metric(int i) const { 
+  const PerfMetric* 
+  metric(int i) const 
+  { 
     return m_metrics[i]; 
   }
 
-  PerfMetric* metric(const std::string& uniqNm) { 
+  PerfMetric* 
+  metric(const std::string& uniqNm)
+  { 
     StringPerfMetricMap::const_iterator it = m_uniqnmToMetricMap.find(uniqNm);
     return (it != m_uniqnmToMetricMap.end()) ? it->second : NULL;
   }
 
-  const PerfMetric* metric(const std::string& uniqNm) const { 
+  const PerfMetric* 
+  metric(const std::string& uniqNm) const 
+  { 
     StringPerfMetricMap::const_iterator it = m_uniqnmToMetricMap.find(uniqNm);
     return (it != m_uniqnmToMetricMap.end()) ? it->second : NULL;
   }
@@ -111,10 +125,12 @@ public:
   // by qualifying it if necessary.  Returns true if the name was
   // modified, false otherwise.
   // NOTE: Assumes ownership of 'm'
-  bool insert(PerfMetric* m);
+  bool 
+  insert(PerfMetric* m);
 
   // Return the (first) metric this has the sort-by attribute set
-  PerfMetric* findSortBy() const;
+  PerfMetric* 
+  findSortBy() const;
   
   // ------------------------------------------------------------
   // helper tables
@@ -142,7 +158,12 @@ public:
   typedef std::list<FilePerfMetric*> MetricList_t;
 
 private:
-  std::string makeUniqueName(const std::string& nm);
+  std::string 
+  makeUniqueName(const std::string& nm);
+
+  void
+  makeSummaryMetric(const std::string& m_nm, const PerfMetricVec& m_opands);
+
   
 private:
   // the metric table
