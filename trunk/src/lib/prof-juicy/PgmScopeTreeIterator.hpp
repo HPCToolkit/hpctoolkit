@@ -406,8 +406,8 @@ private:
 class ScopeInfoMetricSortedIterator {
 public:
   ScopeInfoMetricSortedIterator(const PgmScope* scope, 
-			 uint metricId, 
-			 const ScopeInfoFilter* filterFunc = NULL);
+				uint metricId, 
+				const ScopeInfoFilter* filterFunc = NULL);
 
   virtual ~ScopeInfoMetricSortedIterator()
   {

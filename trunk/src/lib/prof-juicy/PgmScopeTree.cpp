@@ -1103,22 +1103,6 @@ FileScope::FindProc(const char* nm, const char* lnm) const
 //***************************************************************************
 
 string
-CodeInfo::CodeName() const
-{
-  FileScope *f = File();
-  string nm;
-  if (f != NULL) { 
-    nm = File()->BaseName() + ": ";
-  } 
-  nm += StrUtil::toStr(m_begLn);
-  if (m_begLn != m_endLn) {
-    nm += "-" +  StrUtil::toStr(m_endLn);
-  }
-  return nm;
-} 
-
-
-string
 CodeInfo::LineRange() const
 {
   string self = "b=" + StrUtil::toStr(m_begLn) 
@@ -1128,43 +1112,53 @@ CodeInfo::LineRange() const
 
 
 string
-GroupScope::CodeName() const 
+CodeInfo::codeName() const
 {
-  string self = ScopeTypeToName(Type()) + " " + CodeInfo::CodeName();
-  return self;
-}
-
-
-string
-LoadModScope::CodeName() const 
-{
-  string self = ScopeTypeToName(Type()) + " " + CodeInfo::CodeName();
-  return self;
-}
-
-
-string
-FileScope::CodeName() const 
-{
-  return BaseName();
-}
-
-
-string
-ProcScope::CodeName() const 
-{
-  FileScope *f = File();
-  string nm = m_name + " (";
-  if (f != NULL) { 
-    nm += f->BaseName() + ":";
-  } 
-  nm += StrUtil::toStr(m_begLn) + ")";
+  string nm = StrUtil::toStr(m_begLn);
+  if (m_begLn != m_endLn) {
+    nm += "-" + StrUtil::toStr(m_endLn);
+  }
   return nm;
 } 
 
 
 string
-AlienScope::CodeName() const 
+GroupScope::codeName() const 
+{
+  string self = ScopeTypeToName(Type()) + " " + CodeInfo::codeName();
+  return self;
+}
+
+
+string
+FileScope::codeName() const 
+{
+  string nm;
+  LoadModScope* lmStrct = LoadMod();
+  if (lmStrct) {
+    nm = "[" + lmStrct->name() + "]";
+  }
+  nm += name();
+  return nm;
+}
+
+
+string
+ProcScope::codeName() const 
+{
+  FileScope* fileStrct = File();
+  LoadModScope* lmStrct = (fileStrct) ? fileStrct->LoadMod() : NULL;
+  string nm;
+  if (lmStrct && fileStrct) {
+    nm = "[" + lmStrct->name() + "]<" + fileStrct->name() + ">";
+  }
+  nm += name();
+  return nm;
+}
+
+
+string
+AlienScope::codeName() const 
 {
   string nm = "<" + m_filenm + ">[" + m_name + "]:";
   nm += StrUtil::toStr(m_begLn);
@@ -1173,25 +1167,31 @@ AlienScope::CodeName() const
 
 
 string
-LoopScope::CodeName() const 
+LoopScope::codeName() const 
 {
-  string nm = ScopeTypeToName(Type()) + " " + CodeInfo::CodeName();
+  string nm = ScopeTypeToName(Type()) + " " + CodeInfo::codeName();
   return nm;
 } 
 
 
 string
-StmtRangeScope::CodeName() const 
+StmtRangeScope::codeName() const 
 {
-  string nm = ScopeTypeToName(Type()) + " " + CodeInfo::CodeName();
+  FileScope* fileStrct = File();
+  LoadModScope* lmStrct = (fileStrct) ? fileStrct->LoadMod() : NULL;
+  string nm;
+  if (lmStrct && fileStrct) {
+    nm = "[" + lmStrct->name() + "]<" + fileStrct->name() + ">";
+  }
+  nm += CodeInfo::codeName();
   return nm;
 }
 
 
 string
-RefScope::CodeName() const 
+RefScope::codeName() const 
 {
-  return m_name + " " + CodeInfo::CodeName();
+  return m_name + " " + CodeInfo::codeName();
 }
 
 
