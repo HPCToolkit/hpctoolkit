@@ -96,17 +96,10 @@ public:
   genColHeaderSummary();
 
   // generates a formatted column for metric id 'mid' (if displayed).
-  // The 'doValue' flag forces the column to be displayed as a value
-  // (non-percentage) even if it was formatted as a percent.
+  // The flag can force the column to be displayed as a value
+  // (non-percentage) even if it was formatted as a percent and vice versa
   void 
-  genCol(uint mid, double metricVal, double metricTot, 
-	 Flag flg = Flag_NULL);
-
-  void 
-  genCol(uint mid, double metricVal, double metricTot)
-  {
-    genCol(mid, metricVal, metricTot, Flag_NULL);
-  }
+  genCol(uint mid, double metricVal, double metricTot, Flag flg = Flag_NULL);
 
   void 
   genCol(uint mid, double metricVal)

@@ -50,6 +50,7 @@
 #include <include/general.h>
 
 #include "Args.hpp"
+#include "TextUtil.hpp"
 
 #include <lib/prof-juicy-x/PGMDocHandler.hpp>
 #include <lib/prof-juicy-x/DocHandlerArgs.hpp>
@@ -172,6 +173,13 @@ public:
 
   std::string 
   searchPathStr() const;
+
+  // -------------------------------------------------------
+
+  void write_secSummary(std::ostream& os, 
+			Analysis::TextUtil::ColumnFormatter& colFmt,
+			const std::string& title,
+			const ScopeInfoFilter* filter) const;
 
 private:
   const Analysis::Args& m_args;

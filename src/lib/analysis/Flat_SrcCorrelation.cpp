@@ -290,39 +290,60 @@ Driver::write_txt(std::ostream &os) const
 
   os << std::setfill('=') << std::setw(77) << "=" << std::endl;
   colFmt.genColHeaderSummary();
+  os << std::endl;
 
-  // Program summary
-  os << std::endl
-     << std::setfill('=') << std::setw(77) << "=" << std::endl
-     << "Program summary: " << pgmStrct->name() << std::endl
+  string pgm_nm = "Program summary: " + pgmStrct->name();
+  write_secSummary(os, colFmt, pgm_nm, NULL);
+
+  string lm_nm = "Load module summary:";
+  write_secSummary(os, colFmt, lm_nm, &ScopeTypeFilter[ScopeInfo::LM]);
+
+  string f_nm = "File summary:";
+  write_secSummary(os, colFmt, f_nm, &ScopeTypeFilter[ScopeInfo::FILE]);
+  
+  string p_nm = "Procedure summary:";
+  write_secSummary(os, colFmt, p_nm, &ScopeTypeFilter[ScopeInfo::PROC]);
+
+  // FIXME: loops?
+
+  string s_nm = "Statement summary:";
+  write_secSummary(os, colFmt, s_nm, &ScopeTypeFilter[ScopeInfo::STMT_RANGE]);
+
+  // FIXME: Annotated sourc file
+}
+
+
+void
+Driver::write_secSummary(std::ostream& os, 
+			 Analysis::TextUtil::ColumnFormatter& colFmt,
+			 const std::string& title,
+			 const ScopeInfoFilter* filter) const
+{
+  os << std::setfill('=') << std::setw(77) << "=" << std::endl
+     << title << std::endl
      << std::setfill('-') << std::setw(77) << "-" << std::endl;
 
-#if 0  
-  for (uint i = 0; i < m_mMgr.size(); ++i) {
-    colFmt.genCol(i, pgmStrct->PerfData(i));
-  }
-#endif  
-  
-#if 0
-  ScopeTypeFilter[ScopeInfo::LM];
-  ScopeTypeFilter[ScopeInfo::FILE];
-  ScopeTypeFilter[ScopeInfo::PROC];
-  ScopeTypeFilter[ScopeInfo::STMT_RANGE];
+  PgmScope* pgmStrct = m_structure.GetRoot();
+  PerfMetric* m_sortby = m_mMgr.findSortBy();
 
-  
-  SortedCodeInfoIterator it(scopes.GetRoot(), 
-			    m_sortby->Index(),
-			    ScopeTypeFilter[ScopeInfo::LM]);
-
-  int linesLeft = args.maxLinesPerPerfPane;
-  for (; it.Current() && linesLeft-- > 0; it++) {
-    if (!WriteRow(hf, *it.Current(), true, sortByPerfIndex)) {
-      return false; 
+  if (!filter) {
+    for (uint i = 0; i < m_mMgr.size(); ++i) {
+      colFmt.genCol(i, pgmStrct->PerfData(i));
     }
-    IFTRACE << "ROW done" << endl; 
-  } 
-  IFTRACE << "HTMLTable::WriteTableBody  no more ROWS" << endl; 
-#endif
+    // FIXME: show sample totals
+    os << std::endl;
+  }
+  else {
+    ScopeInfoMetricSortedIterator it(pgmStrct, m_sortby->Index(), filter);
+    for (; it.Current(); it++) {
+      ScopeInfo* strct = it.Current();
+      for (uint i = 0; i < m_mMgr.size(); ++i) {
+	colFmt.genCol(i, strct->PerfData(i), pgmStrct->PerfData(i));
+      }
+      os << " " << strct->nameQual() << std::endl;
+    } 
+  }
+  os << std::endl;
 }
 
 

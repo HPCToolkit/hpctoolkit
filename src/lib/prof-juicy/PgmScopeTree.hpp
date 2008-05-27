@@ -246,8 +246,10 @@ public:
   ScopeType Type() const         { return type; }
   uint      UniqueId() const     { return uid; }
 
-  // name() is overridden by some scopes
+  // name: 
+  // nameQual: qualified name [built dynamically]
   virtual const std::string& name() const { return ScopeTypeToName(Type()); }
+  virtual std::string nameQual() const { return name(); }
 
   void CollectCrossReferences();
   int  NoteHeight();
@@ -578,21 +580,27 @@ public:
 
   CodeInfo* CodeInfoWithLine(SrcFile::ln ln) const;
 
-  // returns a string of the form: 
-  //   File()->name() + ":" + <Line-Range> 
-  //
-  // where Line-Range is either: 
-  //                     begLine() + "-" + endLine()      or simply 
-  //                     begLine() 
-  virtual std::string CodeName() const;
-  virtual std::string LineRange() const;
 
-  static std::string CodeLineName(SrcFile::ln line);
+  // --------------------------------------------------------
+  // 
+  // --------------------------------------------------------
+
+  virtual std::string nameQual() const { return codeName(); }
+
+  // returns a string representing the code name in the form:
+  //  loadmodName
+  //  [loadmodName]fileName
+  //  [loadmodName]<fileName>procName
+  //  [loadmodName]<fileName>begLn-endLn
+
+  virtual std::string codeName() const;
+  
+  std::string LineRange() const;
 
   virtual ScopeInfo* Clone() { return new CodeInfo(*this); }
 
   // FIXME: not needed?
-  //CodeInfo* GetFirst() const { return first; } 
+  //CodeInfo* GetFirst() const { return first; }
   //CodeInfo* GetLast() const { return last; } 
 
   // --------------------------------------------------------
@@ -772,7 +780,7 @@ public:
   
   const std::string& name() const { return m_name; } // same as grpName
 
-  virtual std::string CodeName() const;
+  virtual std::string codeName() const;
 
   virtual ScopeInfo* Clone() { return new GroupScope(*this); }
 
@@ -827,7 +835,7 @@ public:
 
   const std::string& name() const { return m_name; }
 
-  virtual std::string CodeName() const;
+  virtual std::string codeName() const { return name(); }
 
   virtual ScopeInfo* Clone() { return new LoadModScope(*this); }
 
@@ -959,7 +967,7 @@ public:
   void SetName(const std::string& fname) { m_name = fname; }
     
   virtual std::string BaseName() const  { return BaseFileName(m_name); }
-  virtual std::string CodeName() const;
+  virtual std::string codeName() const;
 
   bool HasSourceFile() const { return srcIsReadable; } // srcIsReadable
 
@@ -1037,7 +1045,7 @@ public:
   virtual const std::string& name() const     { return m_name; }
   virtual const std::string& LinkName() const { return m_linkname; }
 
-  virtual       std::string CodeName() const;
+  virtual       std::string codeName() const;
 
   virtual ScopeInfo* Clone() { return new ProcScope(*this); }
 
@@ -1118,7 +1126,7 @@ public:
 
   virtual const std::string& name() const { return m_name; }
   
-  virtual       std::string CodeName() const;
+  virtual       std::string codeName() const;
 
   virtual ScopeInfo* Clone() { return new AlienScope(*this); }
 
@@ -1165,7 +1173,7 @@ public:
   virtual ~LoopScope()
   { }
   
-  virtual std::string CodeName() const;
+  virtual std::string codeName() const;
 
   virtual ScopeInfo* Clone() { return new LoopScope(*this); }
 
@@ -1208,7 +1216,7 @@ public:
   virtual ~StmtRangeScope()
   { }
   
-  virtual std::string CodeName() const;
+  virtual std::string codeName() const;
 
   virtual ScopeInfo* Clone() { return new StmtRangeScope(*this); }
 
@@ -1245,7 +1253,7 @@ public:
   
   virtual const std::string& name() const { return m_name; }
 
-  virtual std::string CodeName() const;
+  virtual std::string codeName() const;
 
   virtual ScopeInfo* Clone() { return new RefScope(*this); }
 
