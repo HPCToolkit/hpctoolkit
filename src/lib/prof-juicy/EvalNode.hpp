@@ -38,26 +38,18 @@
 // ----------------------------------------------------------------------
 //
 // class EvalNode and derived node classes
-//   Define the evaluation tree nodes.  Currently supported nodes are
-//     Const --  a double constant
-//     Var   --  a variable with a String name
-//     Neg   --  a minus times a node
-//     Power --  a power expressed in base and exponent
-//     Divide--  a division expression
-//     Minus --  a subtraction expression
-//     Plus  --  an addition expression
-//     Times --  a multiplication expression
-//     Max   --  max expression
-//     Min   --  min expression
-//   Const and Var are leaf nodes.  Neg is a unary node.  Divide, Power
-//   and Minus are binary nodes.  Plus and Times are n-ary nodes.
 //
-//   During the evaluation of EvalNode objects, a NAN will be returned
-//   in the following cases:
-//   1)  a constant or variable corresponds to a NAN
-//   2)  any part of unary, binary or N-ary operations evaluates to
-//       a NAN
-//   3)  divide by zero
+// Currently supported nodes are
+//   Const : double constant                      : leaf
+//   Var   : variable with a String name          : leaf
+//   Neg   : minus times a node                   : unary
+//   Power : power expressed in base and exponent : binary
+//   Divide: division expression                  : binary
+//   Minus : subtraction expression               : binary
+//   Plus  : addition expression                  : n-ary
+//   Times : multiplication expression            : n-ary
+//   Max   : max expression                       : n-ary
+//   Min   : min expression                       : n-ary
 //
 // ----------------------------------------------------------------------
 
@@ -72,6 +64,8 @@
 //************************* User Include Files *******************************
 
 #include "PgmScopeTree.hpp"
+
+#include <lib/support/NaN.h>
 
 //************************ Forward Declarations ******************************
 
@@ -93,10 +87,15 @@ public:
 
   virtual double eval(const ScopeInfo* si) = 0;
 
+  static bool isok(double x) {
+    return !(c_isnan_d(x) || c_isinf_d(x));
+  }
+
   virtual std::ostream& dump(std::ostream& os = std::cout) const = 0;
   
   virtual std::string toString() const;
 };
+
 
 // ----------------------------------------------------------------------
 // class Const
@@ -124,6 +123,7 @@ private:
   double m_c;
 };
 
+
 // ----------------------------------------------------------------------
 // class Neg
 //   Represent a negative value of an EvalNode
@@ -149,6 +149,7 @@ public:
 private:
   EvalNode* m_expr;
 };
+
 
 // ----------------------------------------------------------------------
 // class Var
@@ -180,6 +181,7 @@ private:
   int index;
 };
 
+
 // ----------------------------------------------------------------------
 // class Power
 //   Represent a power expression
@@ -197,6 +199,7 @@ private:
   EvalNode* base;
   EvalNode* exponent;
 };
+
 
 // ----------------------------------------------------------------------
 // class Divide
@@ -216,6 +219,7 @@ private:
   EvalNode* denominator;
 };
 
+
 // ----------------------------------------------------------------------
 // class Minus
 //   Represent the subtraction
@@ -233,6 +237,7 @@ private:
   EvalNode* minuend;
   EvalNode* subtrahend;
 };
+
 
 // ----------------------------------------------------------------------
 // class Plus
@@ -254,6 +259,7 @@ private:
   int m_sz;
 };
 
+
 // ----------------------------------------------------------------------
 // class Times
 //   Represent multiplication
@@ -273,6 +279,10 @@ private:
 };
 
 
+// ----------------------------------------------------------------------
+// Max
+// ----------------------------------------------------------------------
+
 class Max : public EvalNode
 {
 public:
@@ -286,6 +296,11 @@ private:
   int m_sz;
 };
 
+
+// ----------------------------------------------------------------------
+// Min
+// ----------------------------------------------------------------------
+
 class Min : public EvalNode
 {
 public:
@@ -298,5 +313,7 @@ private:
   EvalNode** m_opands;
   int m_sz;
 };
+
+//****************************************************************************
 
 #endif /* prof_juicy_EvalNode */

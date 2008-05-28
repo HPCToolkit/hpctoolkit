@@ -174,7 +174,7 @@ ComputedPerfMetric::Make(NodeRetriever& structIF) const
 	val = m_exprTree->eval(it.CurScope());
       }
 
-      if (! c_isnan_d(val)) {
+      if (!c_isnan_d(val)) {
 	it.CurScope()->SetPerfData(Index(), val); 
       } 
     }

@@ -50,12 +50,7 @@ using std::endl;
 #include <string>
 #include <algorithm>
 
-#ifdef NO_STD_CHEADERS
-# include <math.h>
-#else
-# include <cmath>
-using namespace std; // For compatibility with non-std C headers
-#endif
+#include <cmath>
 
 //************************* User Include Files *******************************
 
@@ -67,6 +62,13 @@ using namespace std; // For compatibility with non-std C headers
 #include <lib/support/Trace.hpp>
 
 //************************ Forward Declarations ******************************
+
+#define EVALNODE_DO_CHECK 0
+#if (EVALNODE_DO_CHECK)
+# define EVALNODE_CHECK(x) if (!isok(x)) { return c_FP_NAN_d; }
+#else
+# define EVALNODE_CHECK(x) 
+#endif
 
 //****************************************************************************
 
@@ -102,13 +104,11 @@ Const::dump(std::ostream& os) const
 double 
 Neg::eval(const ScopeInfo* si) 
 {
-  double tmp = m_expr->eval(si);
-  if (c_isnan_d(tmp) || c_isinf_d(tmp)) {
-    return c_FP_NAN_d;
-  }
+  double result = m_expr->eval(si);
 
-  //IFTRACE << "neg=" << -tmp << endl; 
-  return -tmp;
+  //IFTRACE << "neg=" << -result << endl; 
+  EVALNODE_CHECK(result);
+  return -result;
 }
 
 
@@ -152,30 +152,13 @@ Power::~Power()
 double 
 Power::eval(const ScopeInfo* si) 
 {
-  if (base == NULL || exponent == NULL)
-    return c_FP_NAN_d;
   double b = base->eval(si);
   double e = exponent->eval(si);
-  if ((c_isnan_d(e) || c_isinf_d(e)) && (c_isnan_d(b) || c_isinf_d(b))) {
-    // do not create a value if both are missing
-    return c_FP_NAN_d;
-  }
-  if (c_isnan_d(e) || c_isinf_d(e) || e == 0) {
-    // exp is missing, assume it is zero
-    return 1;
-  }
-  else {
-    if (c_isnan_d(b) || c_isinf_d(b) || b == 0) {
-      return 0;
-    }
-  }
-  // if b < 0, pow works only if e is integer
-  // I will simplify. If b<0, return c_FP_NAN_d;
-  if (b < 0) {
-    return c_FP_NAN_d;
-  }
+  double result = pow(b, e);
+  
   //IFTRACE << "pow=" << pow(b, e) << endl; 
-  return pow(b, e);
+  EVALNODE_CHECK(result);
+  return result;
 }
 
 
@@ -207,19 +190,13 @@ Divide::~Divide()
 double 
 Divide::eval(const ScopeInfo* si) 
 {
-  if (numerator == NULL || denominator == NULL) {
-    return c_FP_NAN_d;
-  }
   double n = numerator->eval(si);
   double d = denominator->eval(si);
-  if (c_isnan_d(d) || c_isinf_d(d) || d == 0.0) {
-    return c_FP_NAN_d;
-  }
-  if (c_isnan_d(n) || c_isinf_d(n)) {
-    return 0;
-  }
+  double result = n / d;
+
   //IFTRACE << "divident=" << n/d << endl; 
-  return n / d;
+  EVALNODE_CHECK(result);
+  return result;
 }
 
 
@@ -258,17 +235,11 @@ Minus::eval(const ScopeInfo* si)
 {
   double m = minuend->eval(si);
   double s = subtrahend->eval(si);
-  if ((c_isnan_d(m) || c_isinf_d(m)) && (c_isnan_d(s) || c_isinf_d(s))) {
-    return c_FP_NAN_d;
-  }
-  if (c_isnan_d(m) || c_isinf_d(m)) {
-    m = 0.0;
-  }
-  if (c_isnan_d(s) || c_isinf_d(s)) {
-    s = 0.0;
-  }
+  double result = (m - s);
+  
   //IFTRACE << "diff=" << m-s << endl; 
-  return (m - s);
+  EVALNODE_CHECK(result);
+  return result;
 }
 
 
@@ -302,29 +273,14 @@ Plus::~Plus()
 double 
 Plus::eval(const ScopeInfo* si) 
 {
-  double result = c_FP_NAN_d;
+  double result = 0.0;
+  for (int i = 0; i < m_sz; ++i) {
+    double x = m_opands[i]->eval(si);
+    result += x;
+  }
 
-  int i;
-  for (i = 0; i < m_sz; ++i) {
-    if (m_opands[i]) {
-      double tmp = m_opands[i]->eval(si);
-      if (c_isnan_d(tmp) || c_isinf_d(tmp)) {
-	continue; 
-      }
-      result = tmp;
-      break;
-    }
-  }
-  for (++i; i < m_sz; ++i) {
-    if (m_opands[i]) {
-      double tmp = m_opands[i]->eval(si);
-      if (c_isnan_d(tmp) || c_isinf_d(tmp)) {
-	continue; 
-      }
-      result += tmp;
-    }
-  }
   //IFTRACE << "sum=" << result << endl; 
+  EVALNODE_CHECK(result);
   return result;
 }
 
@@ -366,16 +322,14 @@ Times::~Times()
 double 
 Times::eval(const ScopeInfo* si) 
 {
-  double product = 1.0;
+  double result = 1.0;
   for (int i = 0; i < m_sz; ++i) {
-    double tmp = m_opands[i]->eval(si);
-    if (c_isnan_d(tmp) || c_isinf_d(tmp)) {
-      return c_FP_NAN_d;
-    }
-    product *= tmp;
+    double x = m_opands[i]->eval(si);
+    result *= x;
   }
-  //IFTRACE << "product=" << product << endl; 
-  return product;
+  //IFTRACE << "result=" << result << endl; 
+  EVALNODE_CHECK(result);
+  return result;
 }
 
 
@@ -416,29 +370,14 @@ Min::~Min()
 double 
 Min::eval(const ScopeInfo* si) 
 {
-  double result = c_FP_NAN_d;
-  int i;
-  for (i = 0; i < m_sz; ++i) {
-    if (m_opands[i] != NULL) {
-      double tmp = m_opands[i]->eval(si);
-      if (c_isnan_d(tmp) || c_isinf_d(tmp)) {
-	continue; 
-      }
-      // if i > 0, there is an empty value that we will treat as 0.0
-      result = (i == 0) ? tmp : std::min(tmp, 0.0);
-      break;
-    }
+  double result = m_opands[0]->eval(si);
+  for (int i = 1; i < m_sz; ++i) {
+    double x = m_opands[i]->eval(si);
+    result = std::min(result, x);
   }
-  for (++i; i < m_sz; ++i) {
-    if (m_opands[i] != NULL) {
-      double tmp = m_opands[i]->eval(si);
-      if (c_isnan_d(tmp) || c_isinf_d(tmp)) {
-	tmp = 0.0; 
-      }
-      result = std::min(result, tmp);
-    }
-  }
-  //IFTRACE << "min=" << result << endl; 
+
+  //IFTRACE << "min=" << result << endl;   
+  EVALNODE_CHECK(result);
   return result;
 }
 
@@ -480,30 +419,14 @@ Max::~Max()
 double 
 Max::eval(const ScopeInfo* si) 
 {
-  double result = c_FP_NAN_d;
-  int i;
-  for (i = 0; i < m_sz; ++i) {
-    if (m_opands[i] != NULL) {
-      double tmp = m_opands[i]->eval(si);
-      if (c_isnan_d(tmp) || c_isinf_d(tmp)) {
-	continue; 
-      }
-      // if i > 0, there is an empty value that we will treat as 0.0
-      result = (i == 0) ? tmp : std::max(tmp, 0.0);
-      result = tmp;
-      break;
-    }
+  double result = m_opands[0]->eval(si);
+  for (int i = 1; i < m_sz; ++i) {
+    double x = m_opands[i]->eval(si);
+    result = std::max(result, x);
   }
-  for (++i; i < m_sz; ++i) {
-    if (m_opands[i] != NULL) {
-      double tmp = m_opands[i]->eval(si);
-      if (c_isnan_d(tmp) || c_isinf_d(tmp)) {
-	tmp = 0.0; 
-      }
-      result = std::max(result, tmp);
-    }
-  }
+
   //IFTRACE << "max=" << result << endl; 
+  EVALNODE_CHECK(result);
   return result;
 }
 
