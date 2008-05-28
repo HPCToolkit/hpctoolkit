@@ -346,8 +346,10 @@ ProcessMETRIC(DOMNode *node, Analysis::Args& args, Prof::MetricDescMgr& mMgr)
 		  metricDispNm);
     }
     else if (XMLString::equals(metricType,COMPUTE)) {
-      bool propagateComputed
-	= (getAttr(metricImpl, PROPAGATEATTR) == "computed"); 
+
+      bool propagateComputed = false; // tallent
+        // (getAttr(metricImpl, PROPAGATEATTR) == "computed"); 
+
       DOMNode *child = metricImpl->getFirstChild();
       for (; child != NULL; child = child->getNextSibling()) {
 	if (child->getNodeType() == DOMNode::TEXT_NODE) {

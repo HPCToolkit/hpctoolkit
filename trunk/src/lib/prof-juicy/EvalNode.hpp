@@ -85,7 +85,7 @@ public:
   virtual ~EvalNode() 
   { }
 
-  virtual double eval(const ScopeInfo* si) = 0;
+  virtual double eval(const ScopeInfo* si) const = 0;
 
   static bool isok(double x) {
     return !(c_isnan_d(x) || c_isinf_d(x));
@@ -112,7 +112,7 @@ public:
   ~Const() 
   { }
 
-  double eval(const ScopeInfo* si) 
+  double eval(const ScopeInfo* si) const
   {
     return m_c;
   }
@@ -142,7 +142,7 @@ public:
     delete m_expr; 
   }
 
-  double eval(const ScopeInfo* si);
+  double eval(const ScopeInfo* si) const;
 
   std::ostream& dump(std::ostream& os = std::cout) const;
   
@@ -169,7 +169,7 @@ public:
   { 
   }
 
-  double eval(const ScopeInfo* si)
+  double eval(const ScopeInfo* si) const
   {
     return si->PerfData(index);
   }
@@ -192,7 +192,7 @@ class Power : public EvalNode
 public:
   Power(EvalNode* b, EvalNode* e);
   ~Power();
-  double eval(const ScopeInfo* si);
+  double eval(const ScopeInfo* si) const;
   std::ostream& dump(std::ostream& os = std::cout) const;
 
 private:
@@ -211,7 +211,9 @@ class Divide : public EvalNode
 public:
   Divide(EvalNode* num, EvalNode* denom);
   ~Divide();
-  double eval(const ScopeInfo* si);
+
+  double eval(const ScopeInfo* si) const;
+
   std::ostream& dump(std::ostream& os = std::cout) const;
 
 private:
@@ -230,7 +232,9 @@ class Minus : public EvalNode
 public:
   Minus(EvalNode* m, EvalNode* s);
   ~Minus();
-  double eval(const ScopeInfo* si);
+
+  double eval(const ScopeInfo* si) const;
+
   std::ostream& dump(std::ostream& os = std::cout) const;
 
 private:
@@ -250,7 +254,7 @@ public:
   Plus(EvalNode** oprnds, int numOprnds);
   ~Plus();
   
-  double eval(const ScopeInfo* si);
+  double eval(const ScopeInfo* si) const;
 
   std::ostream& dump(std::ostream& os = std::cout) const;
 
@@ -270,7 +274,9 @@ class Times : public EvalNode
 public:
   Times(EvalNode** oprnds, int numOprnds);
   ~Times();
-  double eval(const ScopeInfo* si);
+
+  double eval(const ScopeInfo* si) const;
+
   std::ostream& dump(std::ostream& os = std::cout) const;
 
 private:
@@ -288,7 +294,9 @@ class Max : public EvalNode
 public:
   Max(EvalNode** oprnds, int numOprnds);
   ~Max();
-  double eval(const ScopeInfo* si);
+
+  double eval(const ScopeInfo* si) const;
+
   std::ostream& dump(std::ostream& os = std::cout) const;
 
 private:
@@ -306,7 +314,9 @@ class Min : public EvalNode
 public:
   Min(EvalNode** oprnds, int numOprnds);
   ~Min();
-  double eval(const ScopeInfo* si);
+
+  double eval(const ScopeInfo* si) const;
+
   std::ostream& dump(std::ostream& os = std::cout) const;
 
 private:

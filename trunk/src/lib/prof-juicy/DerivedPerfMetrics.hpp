@@ -123,9 +123,11 @@ public:
 
   virtual ~ComputedPerfMetric(); 
 
-  virtual void Make(NodeRetriever &ret) const; // compute node by node
+  virtual void Make(NodeRetriever &ret) const;
   
   virtual std::string toString(int flags = 0) const; 
+
+  const EvalNode* expr() const { return m_exprTree; }
 
 private:
   void Ctor(const char* nm, EvalNode* expr);

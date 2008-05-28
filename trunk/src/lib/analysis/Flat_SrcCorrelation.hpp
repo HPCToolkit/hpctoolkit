@@ -135,21 +135,21 @@ public:
 			bool useStruct);
 
   void
-  correlate(PerfMetric* metric,
-	    const Prof::Flat::EventData& profevent,
-	    VMA lm_load_addr,
-	    NodeRetriever& structIF,
-	    LoadModScope* lmStrct,
-	    /*const*/ binutils::LM* lm,
-	    bool useStruct);
+  correlateRaw(PerfMetric* metric,
+	       const Prof::Flat::EventData& profevent,
+	       VMA lm_load_addr,
+	       NodeRetriever& structIF,
+	       LoadModScope* lmStrct,
+	       /*const*/ binutils::LM* lm,
+	       bool useStruct);
   
   bool
-  getNextBatch(ProfToMetricsTupleVec& batchJob,
-	       Prof::MetricDescMgr::StringPerfMetricVecMap::const_iterator& it,
-	       const Prof::MetricDescMgr::StringPerfMetricVecMap::const_iterator& it_end);
+  getNextRawBatch(ProfToMetricsTupleVec& batchJob,
+		  Prof::MetricDescMgr::StringPerfMetricVecMap::const_iterator& it,
+		  const Prof::MetricDescMgr::StringPerfMetricVecMap::const_iterator& it_end);
 
   void
-  clearBatch(ProfToMetricsTupleVec& batchJob);
+  clearRawBatch(ProfToMetricsTupleVec& batchJob);
 
   bool
   hasStructure(const string& lmname, NodeRetriever& structIF,
@@ -159,6 +159,12 @@ public:
 
   void 
   computeDerivedMetrics(Prof::MetricDescMgr& mMgr, PgmScopeTree& structure);
+
+  // [mBegId, mEndId]
+  void 
+  computeDerivedBatch(PgmScopeTree& structure, 
+		      const EvalNode** mExprVec,
+		      uint mBegId, uint mEndId);
 
   // -------------------------------------------------------
 
