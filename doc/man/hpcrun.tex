@@ -30,7 +30,7 @@
 \rcsInfo $Id$
 \setDate{\rcsInfoLongDate}
 }{
-\setDate{ 2007/11/02}
+\setDate{ 2008/05/28}
 \message{package rcsinfo not present, discard it}
 }
 
@@ -44,10 +44,12 @@
 
 \begin{Name}{1}{hpcrun}{The HPCToolkit Performance Tools}{The HPCToolkit Performance Tools}{hpcrun:\\ Statistical Profiling}
 
-\Prog{hpcrun} profiles the execution of an arbitrary command using statistical
-sampling.
-In general, multiple events may be sampled and for each sampled event, \Prog{hpcrun} creates creates an IP (instruction pointer) histogram.
+\Prog{hpcrun} is a flat statistical sampling-based profiler.
+It supports multiple sample sources during one execution and creates an IP (instruction pointer) histogram, or flat profile, for each sample source.
+\Prog{hpcrun} profiles complex applications (forks, execs, threads and dynamically loaded libraries) and may be used in conjunction with parallel process launchers such as MPICH's \texttt{mpiexec} and SLURM's \texttt{srun}.
+
 See \HTMLhref{hpctoolkit.html}{\Cmd{hpctoolkit}{1}} for an overview of \textbf{HPCToolkit}.
+
 
 \end{Name}
 
@@ -62,17 +64,17 @@ See \HTMLhref{hpctoolkit.html}{\Cmd{hpctoolkit}{1}} for an overview of \textbf{H
 \section{Description}
 
 \Prog{hpcrun} profiles the execution of an arbitrary command \Arg{command} using statistical sampling.
-In general, multiple events may be sampled and for each sampled event, \Prog{hpcrun} creates creates an IP (instruction pointer) histogram.
-Events may be specified using either PAPI platform independent names or the native event names for the processor.
-The special option `\texttt{--}' can be used to stop \Prog{hpcrun} option parsing; this is especially useful when \Arg{command} takes arguments of its own.
-\Prog{hpcrun} can be used in combination with other launchers such as MPICH's \texttt{mpiexec} and SLURM's \texttt{srun}.
+It supports multiple sample sources during one execution and creates an IP (instruction pointer) histogram, or flat profile, for each sample source.
+Specifically, for an event \emph{e} and period \emph{p}, after every \emph{p} instances of \emph{e} a counter associated with the instruction of the current IP is incremented.
+\Prog{hpcrun} profiles complex applications (forks, execs, threads and dynamically loaded libraries) and may be used in conjunction with parallel process launchers such as MPICH's \texttt{mpiexec} and SLURM's \texttt{srun}.
 
-For an event \emph{e} and period \emph{p}, after every \emph{p} instances of \emph{e} a counter associated with the instruction of the current IP is incremented.
 When \Arg{command} terminates normally, a profile --- a histogram of counts for instructions in each load module --- will be written to a file with the name\\
 \SP\SP\SP \Arg{command}.\Arg{event1}.\Arg{hostname}.\Arg{pid}.\Arg{tid}\\
 If multiple events are specified, \texttt{-etc} is appended to \Arg{event1} to indicate the presence of additional data.
-
 \Prog{hpcrun} allows the user to abort a process \emph{and} write the partial profiling data to disk by sending the Interrupt signal (INT or Ctrl-C).  This can be extremely useful on long-running or misbehaving applications.
+
+The special option `\texttt{--}' can be used to stop \Prog{hpcrun} option parsing; this is especially useful when \Arg{command} takes arguments of its own.
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Arguments}
@@ -87,7 +89,7 @@ Default values for an option's optional arguments are shown in \{\}.
 \subsection{Options: Informational}
 
 \begin{Description}
-\item[\Opt{-l}, \Opt{--events-short}] List available events (NOTE: some may not be profilable).
+\item[\Opt{-l}, \Opt{--events-short}] List available events (N.B.: some may not be profilable)
 \item[\Opt{-L}, \Opt{--events-long}] Similar to above but with more information.
 \item[\Opt{--paths}] Print paths for external PAPI and MONITOR.
 \item[\Opt{-V}, \Opt{--version}] Print version information.

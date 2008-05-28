@@ -91,26 +91,38 @@ static const char* usage_summary2 =
 "[output-options] --config <config-file>\n";
 
 static const char* usage_details = "\
-hpcprof-flat correlates dynamic profiling metrics with static source code\n\
+hpcprof-flat correlates flat profiling metrics with static source code\n\
 structure and (by default) generates an Experiment database for use with\n\
 hpcviewer. hpcprof-flat is invoked in one of two ways.  In the former,\n\
 correlation options are specified on the command line along with a list of\n\
 flat profile files.  In the latter, these options along with derived metrics\n\
-are specified in the configuration file.\n\
+are specified in the configuration file <config-file>.  Note that the first\n\
+mode is generally sufficient since derived metrics may be computed in\n\
+hpcviewer.  However, to facilitate the batch processing of the second mode,\n\
+when run in the first mode, a sample configuration file (config.xml) is\n\
+generated within the Experiment database.\n\
+\n\
+For optimal results, structure information from hpcstruct should be provided.\n\
+Without structure information, hpcprof-flat will default to correlation using\n\
+line map information.\n\
+\n\
 \n\
 Options: General:\n\
-  -v, --verbose [<n>]  Verbose: generate progress messages to stderr at\n\
+  -v [<n>], --verbose [<n>]\n\
+                       Verbose: generate progress messages to stderr at\n\
                        verbosity level <n>. {1}  (Use n=2 to debug path\n\
                        replacement if metric and program structure is not\n\
                        properly matched.)\n\
   -V, --version        Print version information.\n\
-  -h, --help           Print this help.\n\
+  -h, --help           Print help.\n\
   --debug [<n>]        Debug: use debug level <n>. {1}\n\
 \n\
 Options: Source Structure Correlation:\n\
   -I <path>, --include <path>\n\
-                       Use <path> when searching for source files. May pass\n\
-                       multiple times.\n\
+                       Use <path> when searching for source files. To\n\
+                       recursively search a path append an escaped `*' after\n\
+                       the last slash, e.g., /mypath/\\* (escaping is for the\n\
+                       shell). May pass multiple times.\n\
   -S <file>, --structure <file>\n\
                        Use hpcstruct structure file <file> for correlation.\n\
                        May pass multiple times (e.g., for shared libraries).\n\

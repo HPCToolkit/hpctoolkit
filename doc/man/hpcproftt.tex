@@ -30,7 +30,7 @@
 \rcsInfo $Id$
 \setDate{\rcsInfoLongDate}
 }{
-\setDate{ 2008/05/27}
+\setDate{ 2008/05/28}
 \message{package rcsinfo not present, discard it}
 }
 
@@ -46,14 +46,18 @@
 
 \Prog{hpcproftt} correlates `flat' execution profiles with source code files, procedures, lines or with object code.
 It is typically used to generate plain-text or HTML output.
-The code is derived from Curtis Janssen's VProf.
 
 \end{Name}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Synopsis}
 
-\Prog{hpcproftt} \oOpt{options} \Arg{executable} \Arg{hpcrun-file}...
+\Prog{hpcproftt} [--source] \oOpt{options} \Arg{profile-file}...
+
+\Prog{hpcproftt} --object \oOpt{options} \Arg{profile-file}...
+
+\Prog{hpcproftt} --dump \Arg{profile-file}...
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Description}

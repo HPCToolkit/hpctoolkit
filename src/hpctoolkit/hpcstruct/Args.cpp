@@ -91,7 +91,8 @@ hpcstruct's output is typically passed to an HPCToolkit's correlation tool.\n\
 See the documentation for more information.\n\
 \n\
 Options: General\n\
-  -v, --verbose [<n>]  Verbose: generate progress messages to stderr at\n\
+  -v [<n>], --verbose [<n>]\n\
+                       Verbose: generate progress messages to stderr at\n\
                        verbosity level <n>. {1}\n\
   -V, --version        Print version information.\n\
   -h, --help           Print this help.\n\

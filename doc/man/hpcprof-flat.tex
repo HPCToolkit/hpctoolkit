@@ -44,29 +44,38 @@
 
 \begin{Name}{1}{hpcprof-flat}{The HPCToolkit Performance Tools}{The HPCToolkit Performance Tools}{hpcprof-flat:\\ Correlation of Flat Profile Metrics with Static Program Structure}
 
-\Prog{hpcprof-flat} correlates dynamic (`flat') profile metrics with static source code structure.  See \HTMLhref{hpctoolkit.html}{\Cmd{hpctoolkit}{1}} for an overview of \textbf{HPCToolkit}.
+\Prog{hpcprof-flat} `flat' (IP histograms) profile metrics with static source code structure.  See \HTMLhref{hpctoolkit.html}{\Cmd{hpctoolkit}{1}} for an overview of \textbf{HPCToolkit}.
 
 \end{Name}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Synopsis}
 
-\Prog{hpcprof-flat} \oOpt{options} \Arg{config-file}
+\Prog{hpcprof-flat} \oOpt{output-options} \oOpt{correlation-options} \Arg{profile-file}...
+
+\Prog{hpcprof-flat} \oOpt{output-options} --config \Arg{config-file}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Description}
 
-\Prog{hpcprof-flat} correlates dynamic profiling metrics with static source code structure and (by default) generates an Experiment database for use with \HTMLhref{hpcviewer.html}{\Cmd{hpcviewer}{1}}.
-\Prog{hpcprof-flat} is driven by the configuration file \Arg{config-file}, which amongh other things, may contain user defined derived metrics.
-
-The easiest way to create a configuration file is to first run \Prog{hpcprof-flat} and edit the configuration file it generates.
+\Prog{hpcprof-flat} correlates flat profiling metrics with static source code structure and (by default) generates an Experiment database for use with \HTMLhref{hpcviewer.html}{\Cmd{hpcviewer}{1}}.
+\Prog{hpcprof-flat} is invoked in one of two ways.
+In the former, correlation options are specified on the command line along with a list of flat profile files.
+In the latter, these options along with derived metrics are specified in the configuration file \Arg{config-file}.
+Note that the first mode is generally sufficient since derived metrics may be computed in \HTMLhref{hpcviewer.html}{\Cmd{hpcviewer}{1}}.
+However, to facilitate the batch processing of the second mode, during the first mode, a sample configuration file (\texttt{config.xml}) is generated within the Experiment database.
 See the section \emph{Configuration File} below for more details about its syntax.
+
+For optimal results, structure information from \HTMLhref{hpcstruct.html}{\Cmd{hpcstruct}{1}} should be provided.
+Without structure information, hpcprof-flat will default to correlation using line map information.
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Arguments}
 
 \begin{Description}
-\item[\Arg{config-file...}] The \Prog{hpcprof-flat} configuration file.
+\item[\Arg{profile-file...}] A list of flat profile files.
+\item[\Arg{config-file}] The \Prog{hpcprof-flat} configuration file.
 \end{Description}
 
 Default values for an option's optional arguments are shown in \{\}.
@@ -78,6 +87,13 @@ Default values for an option's optional arguments are shown in \{\}.
 \item[\Opt{-V}, \Opt{--version}] Print version information.
 \item[\Opt{-h}, \Opt{--help}] Print help.
 \item[\OptoArg{--debug}{n}]   Debug: use debug level \Arg{n}. \{1\}
+\end{Description}
+
+\subsection{Options: Source Structure Correlation}
+
+\begin{Description}
+\item[\OptArg{-I}{path}, \OptArg{--include}{path}] Use \Arg{path} when searching for source files. To recursively search a path, append an escaped `*' after the last slash, e.g., \verb+/mypath/\*+ (escaping is for the shell). May pass multiple times.
+\item[\OptArg{-S}{file}, \OptArg{--structure}{file}] Use \HTMLhref{hpcstruct.html}{\Cmd{hpcstruct}{1}} structure file \Arg{file} for correlation.  May pass multiple times (e.g., for shared libraries).
 \end{Description}
 
 
@@ -96,7 +112,6 @@ Select different output formats and optionally specify the output filename \Arg{
 \begin{Description}
   \item[\OptoArg{-x}{fname}, \OptoArg{--experiment}{fname}] Default.  ExperimentXML format. \{\File{experiment.xml}\}.  NOTE: To disable, set \Arg{fname} to \verb+no+.
   \item[\OptoArg{--csv}{fname}] Comma-separated-value format. \{\File{experiment.csv}\}. Includes flat scope tree and loops.  Useful for downstream external tools.
-  \item[\OptoArg{--tsv}{fname}] Tab-separated-value format. \{\File{experiment.tsv}\}. Includes flat scope tree and lines.  Useful for downstream external tools.
 \end{Description}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -119,7 +134,7 @@ The following briefly describes its syntax.
 
 \item (Optional) A set of PATH directives specifying path names to search for source files.
 \Arg{path} is a relative or absolute path containing source code to which performance data should be correlated.
-In order to search a directory \emph{and} recursively search all of its descendents, append an escaped `\texttt{*}' after the last slash, e.g., \verb+/mypath/\*+ (escaping is for the shell).
+In order to recursively search a directory, append an escaped `\texttt{*}' after the last slash, e.g., \verb+/mypath/\*+ (escaping is for the shell).
   \begin{itemize}
   \texttt{$<$PATH name="}\Arg{path}\texttt{"/$>$}
   \end{itemize}
