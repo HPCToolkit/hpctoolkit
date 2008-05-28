@@ -72,8 +72,6 @@ public:
 
   virtual ~FilePerfMetric(); 
 
-  virtual void Make(NodeRetriever &ret) const;
-
   // --------------------------------------------------------
   
   const std::string& FileName() const { return m_file; }
@@ -123,8 +121,6 @@ public:
 
   virtual ~ComputedPerfMetric(); 
 
-  virtual void Make(NodeRetriever &ret) const;
-  
   virtual std::string toString(int flags = 0) const; 
 
   const EvalNode* expr() const { return m_exprTree; }

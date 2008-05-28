@@ -98,15 +98,6 @@ FilePerfMetric::~FilePerfMetric()
 }
 
 
-void 
-FilePerfMetric::Make(NodeRetriever &ret) const
-{
-  IFTRACE << "FilePerfMetric::Make " << endl << " " << toString() << endl;
-  DIAG_Assert(m_type == "HPCRUN", "Unexpected FilePefMetric type: " << m_type);
-  // handled within the Driver
-}
-
-
 string
 FilePerfMetric::toString(int flags) const 
 {
@@ -157,34 +148,6 @@ ComputedPerfMetric::~ComputedPerfMetric()
 {
   IFTRACE << "~ComputedPerfMetric " << toString() << endl; 
   delete m_exprTree;
-}
-
-
-void 
-ComputedPerfMetric::Make(NodeRetriever& structIF) const
-{
-#if 0
-  PgmScope* pgmStrct = structIF.GetRoot();
-  ScopeInfoIterator it(pgmStrct, NULL /*filter*/, false /*leavesOnly*/,
-		       IteratorStack::PostOrder);
-
-  for (; it.Current(); it++) {
-    if (it.CurScope()->IsLeaf() || !PropComputed()) {
-      double val = c_FP_NAN_d;
-      if (m_exprTree) {
-	val = m_exprTree->eval(it.CurScope());
-      }
-
-      if (!c_isnan_d(val)) {
-	it.CurScope()->SetPerfData(Index(), val); 
-      } 
-    }
-  }
-
-  if (PropComputed()) {
-    pgmStrct->accumulateMetrics(Index());
-  }
-#endif
 }
 
 
