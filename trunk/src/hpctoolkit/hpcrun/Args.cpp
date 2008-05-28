@@ -83,73 +83,74 @@ static const char* usage_summary1 =
 static const char* usage_summary2 =
 "[info-options]\n";
 
-static const char* usage_details =
-"hpcrun profiles the execution of an arbitrary command command using\n"
-"statistical sampling. In general, multiple events may be sampled and for\n"
-"each sampled event, hpcrun creates creates an IP (instruction pointer)\n"
-"histogram. Events may be specified using either PAPI platform independent\n"
-"names or the native event names for the processor. The special option '--'\n"
-"can be used to stop hpcrun option parsing; this is especially useful when\n"
-"command takes arguments of its own.\n"
-"\n"
-"For an event 'e' and period 'p', after every 'p' instances of 'e' a counter\n"
-"associated with the instruction of the current IP is incremented. When\n"
-"<command> terminates normally, a histogram of counts for instructions in\n"
-"each load module will be written to a file with the name\n"
-"  <command>.<event1>.<hostname>.<pid>.<tid>\n"
-"If multiple events are specified, '-etc' is appended to <event1> to indicate\n"
-"the presence of additional data.\n"
-"\n"
-"hpcrun allows the user to abort a process *and* write the partial profiling\n"
-"data to disk by sending the Interrupt signal (INT or Ctrl-C).  This can be\n"
-"extremely useful on long-running or misbehaving applications.\n"
-"\n"
-"Options: Informational\n"
-"  -l, --events-short   List available events (NOTE: some may not be\n"
-"                       profilable).\n"
-"  -L, --events-long    Similar to above but with more information.\n"
-"  --paths              Print paths for external PAPI and MONITOR.\n"
-"  -V, --version        Print version information.\n"
-"  -h, --help           Print this help.\n"
-"  --debug [<n>]        Debug: use debug level <n>. {1}\n"
-"\n"
-"Options: Profiling (Defaults are shown in curly brackets {})\n"
-"  -r [<yes|no>], --recursive [<yes|no>]                               {no}\n"
-"      By default all processes spawned by <command> will be profiled, each\n"
-"      receiving its own output file. Use this option to turn off recursive\n"
-"      profiling; only <command> will be profiled.\n"
-"  -t <mode>, --threads <mode>                                       {each}\n"
-"      Select thread profiling mode:\n"
-"        each: Create separate profiles for each thread.\n"
-"        all:  Create one combined profile of all threads.\n"
-"      Note that only POSIX threads are supported.  Also note that the\n"
-"      WALLCLK event cannot be used in a multithreaded process.\n"
-"  -e <event>[:<period>], --event <event>[:<period>]   {PAPI_TOT_CYC:999999}\n"
-"      An event to profile and its corresponding sample period.  <event>\n"
-"      may be either a PAPI or native processor event.  NOTES:\n"
-"      o It is recommended to always specify the sampling period for each\n"
-"        profiling event.\n"
-"      o The special event WALLCLK may be used to profile the 'wall clock.'\n"
-"        It may be used only *once* and cannot be used with another event.\n"
-"        It is an error to specify a period.\n"
-"      o Multiple events may be selected for profiling during an execution\n" 
-"        by using multiple '-e' arguments.\n"
-"      o The maximum number of events that can be monitored during a single\n"
-"        execution depends on the processor. Not all combinations of events\n"
-"        may be monitored in the same execution; allowable combinations\n"
-"        depend on the processor. Check your processor documentation.\n"
-"  -o <outpath>, --output <outpath>                                      {.}\n"
-"      Directory for output data\n"
-"  --papi-flag <flag>                                    {PAPI_POSIX_PROFIL}\n"
-"      Profile style flag\n"
-"\n"
-"NOTES:\n"
-"* Because hpcrun uses LD_PRELOAD to initiate profiling, it cannot be used\n"
-"  to profile setuid commands.\n"
-"* For the same reason, it cannot profile statically linked applications.\n"
-"* Bug: For non-recursive profiling, LD_PRELOAD is currently unsetenv'd.\n"
-"  Child processes that otherwise depend LD_PRELOAD will likely die.\n"
-"\n";
+static const char* usage_details = "\
+hpcrun profiles the execution of an arbitrary command <command> using\n\
+statistical sampling.  It supports multiple sample sources during one\n\
+execution and creates an IP (instruction pointer) histogram, or flat profile,\n\
+for each sample source.  Specifically, for an event 'e' and period 'p', after\n\
+every 'p' instances of 'e' a counter associated with the instruction of the\n\
+current IP is incremented.  hpcrun profiles complex applications (forks,\n\
+execs, threads and dynamically loaded libraries) and may be used in\n\
+conjunction with parallel process launchers such as MPICH's mpiexec and\n\
+SLURM's srun.\n\
+\n\
+When <command> terminates normally, a profile -- a histogram of counts for\n\
+instructions in each load module -- will be written to a file with the name\n\
+  <command>.<event1>.<hostname>.<pid>.<tid>\n\
+If multiple events are specified, '-etc' is appended to <event1> to indicate\n\
+the presence of additional data.  hpcrun allows the user to abort a process\n\
+and write the partial profiling data to disk by sending the Interrupt signal\n\
+(INT or Ctrl-C).  This can be extremely useful on long-running or misbehaving\n\
+applications.\n\
+\n\
+The special option '--' can be used to stop hpcrun option parsing; this is\n\
+especially useful when <command> takes arguments of its own.\n\
+\n\
+Options: Informational\n\
+  -l, --events-short   List available events (NB: some may not be profilable)\n\
+  -L, --events-long    Similar to above but with more information.\n\
+  --paths              Print paths for external PAPI and MONITOR.\n\
+  -V, --version        Print version information.\n\
+  -h, --help           Print help.\n\
+  --debug [<n>]        Debug: use debug level <n>. {1}\n\
+\n\
+Options: Profiling (Defaults shown in curly brackets {})\n\
+  -r [<yes|no>], --recursive [<yes|no>]                               {no}\n\
+      By default all processes spawned by <command> will be profiled, each\n\
+      receiving its own output file. Use this option to turn off recursive\n\
+      profiling; only <command> will be profiled.\n\
+  -t <mode>, --threads <mode>                                       {each}\n\
+      Select thread profiling mode:\n\
+        each: Create separate profiles for each thread.\n\
+        all:  Create one combined profile of all threads.\n\
+      Note that only POSIX threads are supported.  Also note that the\n\
+      WALLCLK event cannot be used in a multithreaded process.\n\
+  -e <event>[:<period>], --event <event>[:<period>]   {PAPI_TOT_CYC:999999}\n\
+      An event to profile and its corresponding sample period.  <event>\n\
+      may be either a PAPI or native processor event.  NOTES:\n\
+      o It is recommended to always specify the sampling period for each\n\
+        profiling event.\n\
+      o The special event WALLCLK may be used to profile the 'wall clock.'\n\
+        It may be used only *once* and cannot be used with another event.\n\
+        It is an error to specify a period.\n\
+      o Multiple events may be selected for profiling during an execution\n\
+        by using multiple '-e' arguments.\n\
+      o The maximum number of events that can be monitored during a single\n\
+        execution depends on the processor. Not all combinations of events\n\
+        may be monitored in the same execution; allowable combinations\n\
+        depend on the processor. Check your processor documentation.\n\
+  -o <outpath>, --output <outpath>                                      {.}\n\
+      Directory for output data\n\
+  --papi-flag <flag>                                    {PAPI_POSIX_PROFIL}\n\
+      Profile style flag\n\
+\n\
+NOTES:\n\
+* Because hpcrun uses LD_PRELOAD to initiate profiling, it cannot be used\n\
+  to profile setuid commands.\n\
+* For the same reason, it cannot profile statically linked applications.\n\
+* Bug: For non-recursive profiling, LD_PRELOAD is currently unsetenv'd.\n\
+  Child processes that otherwise depend LD_PRELOAD will likely die.\n\
+";
 
 
 #define CLP CmdLineParser

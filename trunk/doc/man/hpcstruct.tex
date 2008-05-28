@@ -30,7 +30,7 @@
 \rcsInfo $Id$
 \setDate{\rcsInfoLongDate}
 }{
-\setDate{ 2008/05/27}
+\setDate{ 2008/05/28}
 \message{package rcsinfo not present, discard it}
 }
 
@@ -61,7 +61,7 @@ Typical usage:\\
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Description}
 
-Given an application binary \Arg{binary}, \Prog{hpcstruct} recovers the program structure of its object code and writes to standard output a program structure to object code mapping.
+Given an application binary or DSO \Arg{binary}, \Prog{hpcstruct} recovers the program structure of its object code and writes to standard output a program structure to object code mapping.
 \Prog{hpcstruct} is designed primarily for highly optimized binaries created from C, C++ and Fortran source code.
 Because \Prog{hpcstruct}'s algorithms exploit a binary's debugging information, for best results, \Arg{binary} should be compiled with standard debugging information.
 \Prog{hpcstruct}'s output is typically passed to \textbf{HPCToolkit}'s correlation tool, \HTMLhref{hpcprof.html}{\Cmd{hpcprof}{1}} or \HTMLhref{hpcprof-flat.html}{\Cmd{hpcprof-flat}{1}}.
