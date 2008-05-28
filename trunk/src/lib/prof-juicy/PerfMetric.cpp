@@ -100,30 +100,6 @@ PerfMetric::~PerfMetric()
 }
 
 
-uint
-PerfMetric::EventsPerCount()  const 
-{
-  DIAG_Assert(eventsPerCount > 0, ""); 
-  return eventsPerCount; 
-}
-
-
-void
-PerfMetric::SetEventsPerCount(int events) 
-{
-  if (events <= 0)  events =1;
-  eventsPerCount = events; 
-  // DIAG_Assert(eventsPerCount > 0); 
-}
-
-
-void
-PerfMetric::Make(NodeRetriever& ret) const
-{
-  // nothing to do
-}
-
-
 string
 PerfMetric::toString(int flags) const 
 {

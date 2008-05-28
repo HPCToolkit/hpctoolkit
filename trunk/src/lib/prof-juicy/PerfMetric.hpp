@@ -117,17 +117,15 @@ public:
   bool SortBy() const                 { return sortBy; }
   void setSortBy()                    { sortBy = true; }
 
-  // FIXME: remove
+#if 0
+  // FIXME:tallent This only applies to computed metrics.  It appears
+  // to refer to a metric where the EvalTree is applied at the leaves
+  // and then those results are accumulated to the interior nodes.
+  // This seems useless and only a special case of the current functionality.
   bool PropComputed() const           { return pcomputed; }
+#endif
   
   DataDisplayInfo& DisplayInfo() const { return *dispInfo; }; 
-
-  // FIXME: remove
-  unsigned int EventsPerCount()      const; 
-  void SetEventsPerCount(int eventsPerCount); 
-
-  // FIXME: removex
-  virtual void Make(NodeRetriever& ret) const;
   
   // flags: default -> display output
   //        non-zero -> debugging output
