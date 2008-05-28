@@ -236,6 +236,20 @@ Prof::MetricDescMgr::findSortBy() const
 }
 
 
+bool 
+Prof::MetricDescMgr::hasDerived() const
+{
+  for (uint i = 0; i < m_metrics.size(); ++i) {
+    PerfMetric* m = m_metrics[i]; 
+    ComputedPerfMetric* mm = dynamic_cast<ComputedPerfMetric*>(m);
+    if (mm) {
+      return true;
+    }
+  }
+  return false;
+}
+
+
 string
 Prof::MetricDescMgr::toString(const char* pre) const
 {

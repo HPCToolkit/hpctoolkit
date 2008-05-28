@@ -309,12 +309,9 @@ public:
   {
     // NOTE: Must not call HasPerfData() since this node may not have
     // any metric data yet!
-    uint sz = mEndId + 1;
-    double* valVec = new double[sz];
-    bool* hasValVec = new bool[sz];
-    accumulateMetrics(mBegId, mEndId, valVec, hasValVec);
+    double* valVec = new double[mEndId + 1];
+    accumulateMetrics(mBegId, mEndId, valVec);
     delete[] valVec;
-    delete[] hasValVec;
   }
 
   void 
@@ -325,7 +322,7 @@ public:
 
 private:
   void
-  accumulateMetrics(uint mBegId, uint mEndId, double* valVec, bool* hasValVec);
+  accumulateMetrics(uint mBegId, uint mEndId, double* valVec);
 
 public:
 

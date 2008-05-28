@@ -476,7 +476,7 @@ Driver::computeRawMetrics(Prof::MetricDescMgr& mMgr, PgmScopeTree& structure)
     fnameToFMetricMap.begin();
   
   ProfToMetricsTupleVec batchJob;
-  while (getNextBatch(batchJob, it, fnameToFMetricMap.end())) {
+  while (getNextRawBatch(batchJob, it, fnameToFMetricMap.end())) {
     
     // For each load module: process the batch job.  A batch job
     // process a group of profile files (and their associated metrics)
@@ -492,13 +492,14 @@ Driver::computeRawMetrics(Prof::MetricDescMgr& mMgr, PgmScopeTree& structure)
       computeRawBatchJob_LM(lmname, lmname_orig, structIF, batchJob, useStruct);
     }
     
-    clearBatch(batchJob);
+    clearRawBatch(batchJob);
   }
 
   //-------------------------------------------------------
   // Accumulate leaves to interior nodes, if necessary
   //-------------------------------------------------------
-  if (m_args.metrics_computeInteriorValues) {
+
+  if (m_args.metrics_computeInteriorValues || mMgr.hasDerived()) {
     // 1. Compute batch jobs: all raw metrics are independent of each
     //    other and therefore may be computed en masse.
     VMAIntervalSet ivalset; // cheat using a VMAInterval set
@@ -567,8 +568,8 @@ Driver::computeRawBatchJob_LM(const string& lmname, const string& lmname_orig,
       const Prof::Flat::EventData& profevent = proflm->event(mIdx);
       m->rawdesc(profevent.mdesc());
 
-      correlate(m, profevent, proflm->load_addr(), 
-		structIF, lmStrct, lm, useStruct);
+      correlateRaw(m, profevent, proflm->load_addr(), 
+		   structIF, lmStrct, lm, useStruct);
     }
   }
 
@@ -580,7 +581,7 @@ Driver::computeRawBatchJob_LM(const string& lmname, const string& lmname_orig,
 // map), correlation is by VMA.  Otherwise correlation is performed
 // using file, function and line debugging information.
 void
-Driver::correlate(PerfMetric* metric,
+Driver::correlateRaw(PerfMetric* metric,
 		  const Prof::Flat::EventData& profevent,
 		  VMA lm_load_addr,
 		  NodeRetriever& structIF,
@@ -649,9 +650,9 @@ Driver::correlate(PerfMetric* metric,
 
 // A batch is a vector of [Prof::Flat::Profile, <metric-vector>] pairs
 bool
-Driver::getNextBatch(ProfToMetricsTupleVec& batchJob,
-		     Prof::MetricDescMgr::StringPerfMetricVecMap::const_iterator& it, 
-		     const Prof::MetricDescMgr::StringPerfMetricVecMap::const_iterator& it_end)
+Driver::getNextRawBatch(ProfToMetricsTupleVec& batchJob,
+			Prof::MetricDescMgr::StringPerfMetricVecMap::const_iterator& it, 
+			const Prof::MetricDescMgr::StringPerfMetricVecMap::const_iterator& it_end)
 {
   for (uint i = 0; i < profileBatchSz; ++i) {
     if (it != it_end) {
@@ -673,7 +674,7 @@ Driver::getNextBatch(ProfToMetricsTupleVec& batchJob,
 
 
 void
-Driver::clearBatch(ProfToMetricsTupleVec& batchJob)
+Driver::clearRawBatch(ProfToMetricsTupleVec& batchJob)
 {
   for (uint i = 0; i < batchJob.size(); ++i) {
     ProfToMetricsTuple& tup = batchJob[i];
@@ -710,16 +711,55 @@ void
 Driver::computeDerivedMetrics(Prof::MetricDescMgr& mMgr, 
 			      PgmScopeTree& structure)
 {
-  NodeRetriever structIF(structure.GetRoot(), searchPathStr());
-  
+  // INVARIANT: All raw metrics have interior (and leaf) values before
+  // derived metrics are computed.
+
+  // 1. Compute batch jobs: a derived metric with id 'x' only depends
+  //    on metrics with id's strictly less than 'x'.
+  VMAIntervalSet ivalset; // cheat using a VMAInterval set
+  const EvalNode** mExprVec = new const EvalNode*[mMgr.size()];
+
   for (uint i = 0; i < mMgr.size(); i++) {
     const PerfMetric* m = mMgr.metric(i);
     const ComputedPerfMetric* mm = dynamic_cast<const ComputedPerfMetric*>(m);
     if (mm) {
-      mm->Make(structIF);
+      ivalset.insert(VMAInterval(m->Index(), m->Index() + 1)); // [ )
+      mExprVec[i] = mm->expr();
+      DIAG_Assert(mExprVec[i], DIAG_UnexpectedInput);
     }
-  } 
+  }
+  
+  // 2. Now execute the batch jobs
+  for (VMAIntervalSet::iterator it = ivalset.begin(); 
+       it != ivalset.end(); ++it) {
+    const VMAInterval& ival = *it;
+    computeDerivedBatch(structure, mExprVec,
+			(uint)ival.beg(), (uint)ival.end() - 1); // [ ]
+  }
+
+  delete[] mExprVec;
 }
+
+
+void
+Driver::computeDerivedBatch(PgmScopeTree& structure, 
+			    const EvalNode** mExprVec,
+			    uint mBegId, uint mEndId)
+{
+  PgmScope* pgmStrct = structure.GetRoot();
+  ScopeInfoIterator it(pgmStrct, NULL /*filter*/, false /*leavesOnly*/,
+		       IteratorStack::PostOrder);
+      
+  for (; it.Current(); it++) {
+    for (uint mId = mBegId; mId <= mEndId; ++mId) {
+      const EvalNode* expr = mExprVec[mId];
+      double val = expr->eval(it.CurScope());
+      // if (!EvalNode::isok(val)) ...
+      it.CurScope()->SetPerfData(mId, val);
+    }
+  }
+}
+
 
 
 //----------------------------------------------------------------------------

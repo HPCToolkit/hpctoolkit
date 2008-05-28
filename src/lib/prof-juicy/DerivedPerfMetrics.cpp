@@ -163,6 +163,7 @@ ComputedPerfMetric::~ComputedPerfMetric()
 void 
 ComputedPerfMetric::Make(NodeRetriever& structIF) const
 {
+#if 0
   PgmScope* pgmStrct = structIF.GetRoot();
   ScopeInfoIterator it(pgmStrct, NULL /*filter*/, false /*leavesOnly*/,
 		       IteratorStack::PostOrder);
@@ -183,6 +184,7 @@ ComputedPerfMetric::Make(NodeRetriever& structIF) const
   if (PropComputed()) {
     pgmStrct->accumulateMetrics(Index());
   }
+#endif
 }
 
 

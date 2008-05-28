@@ -887,36 +887,28 @@ ScopeInfo::IsMergable(ScopeInfo* toNode, ScopeInfo* fromNode)
 //***************************************************************************
 
 void
-ScopeInfo::accumulateMetrics(uint mBegId, uint mEndId, 
-			     double* valVec, bool* hasValVec)
+ScopeInfo::accumulateMetrics(uint mBegId, uint mEndId, double* valVec)
 {
   ScopeInfoChildIterator it(this); 
   for (; it.Current(); it++) { 
-    it.CurScope()->accumulateMetrics(mBegId, mEndId, valVec, hasValVec);
+    it.CurScope()->accumulateMetrics(mBegId, mEndId, valVec);
   }
 
   it.Reset(); 
   if (it.Current() != NULL) { // it's not a leaf 
-
     // initialize helper data
     for (uint i = mBegId; i <= mEndId; ++i) {
       valVec[i] = 0.0; 
-      hasValVec[i] = false;
     }
 
     for (; it.Current(); it++) { 
       for (uint i = mBegId; i <= mEndId; ++i) {
-	if (it.CurScope()->HasPerfData(i)) {
-	  valVec[i] += it.CurScope()->PerfData(i);
-	  hasValVec[i] = true;
-	}
+	valVec[i] += it.CurScope()->PerfData(i);
       }
     } 
     
     for (uint i = mBegId; i <= mEndId; ++i) {
-      if (hasValVec[i]) {
-	SetPerfData(i, valVec[i]);
-      }
+      SetPerfData(i, valVec[i]);
     }
   }
 }

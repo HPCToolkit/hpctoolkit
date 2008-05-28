@@ -117,6 +117,7 @@ public:
   bool SortBy() const                 { return sortBy; }
   void setSortBy()                    { sortBy = true; }
 
+  // FIXME: remove
   bool PropComputed() const           { return pcomputed; }
   
   DataDisplayInfo& DisplayInfo() const { return *dispInfo; }; 
@@ -124,7 +125,8 @@ public:
   // FIXME: remove
   unsigned int EventsPerCount()      const; 
   void SetEventsPerCount(int eventsPerCount); 
-  
+
+  // FIXME: removex
   virtual void Make(NodeRetriever& ret) const;
   
   // flags: default -> display output

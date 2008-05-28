@@ -90,6 +90,13 @@ public:
 
   // ------------------------------------------------------------
   // The metric table
+  // 
+  // INVARIANTS:
+  // - All 'raw' metrics are independent of each other
+  // - A metric's id is always within [0 size())
+  // - A derived metric is dependent only upon 'prior' metrics,
+  //   i.e. metrics with ids strictly less than its own.
+  //   
   // ------------------------------------------------------------
   PerfMetric*
   metric(int i) 
@@ -131,6 +138,9 @@ public:
   // Return the (first) metric this has the sort-by attribute set
   PerfMetric* 
   findSortBy() const;
+
+  bool 
+  hasDerived() const;
   
   // ------------------------------------------------------------
   // helper tables
