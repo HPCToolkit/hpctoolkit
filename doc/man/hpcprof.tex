@@ -30,7 +30,7 @@
 \rcsInfo $Id$
 \setDate{\rcsInfoLongDate}
 }{
-\setDate{ 2008/05/27}
+\setDate{ 2008/05/28}
 \message{package rcsinfo not present, discard it}
 }
 
@@ -51,34 +51,47 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Synopsis}
 
-\Prog{hpcuick} \oOpt{other-options}
-               \oOptArg{-I}{dir}
-               \oOptArg{-S}{struct-file}
-               \Arg{profile-file...}
+\Prog{hpcprof} \oOpt{options} \Arg{profile-file}...
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Description}
 
-\Prog{hpcprof} correlates dynamic profiling metrics with static source code structure and (by default) generates an Experiment database for use with \HTMLhref{hpcviewer.html}{\Cmd{hpcviewer}{1}}....
+\Prog{hpcprof} correlates call path profiling metrics with static source code structure and generates an Experiment database for use with \HTMLhref{hpcviewer.html}{\Cmd{hpcviewer}{1}}.
+It expects a list of call path profile files.
 
 For best results, two other options should be used: \textbf{-I} to provide paths for source code directories and \textbf{-S} to provide source code structure from \HTMLhref{hpcstruct.html}{\Cmd{hpcstruct}{1}}.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Arguments}
 
-\subsection{Options: Correlation}
-
 \begin{Description}
-\item[\OptArg{-I}{path}] A path (relative or absolute) containing source code to which performance data should be correlated.  In order to search a directory \emph{and} recursively search all of its descendents, append an escaped `*' after the last slash, e.g., \verb+/mypath/\*+ (escaping is for the shell). May be passed multiple times.
-\item[\OptArg{-S}{struct-file}] A structure file (from \HTMLhref{hpcstruct.html}{\Cmd{hpcstruct}{1}}) for the main program and/or any or all of the shared libraries used by the program.  May be passed multiple times.
+\item[\Arg{profile-file...}] A list of flat profile files.
 \end{Description}
+
+Default values for an option's optional arguments are shown in \{\}.
 
 \subsection{Options: General}
 
 \begin{Description}
-\item[\Opt{-V}] Print version information.
-\item[\Opt{-h}] Print help.
+\item[\OptoArg{-v}{n}, \OptoArg{--verbose}{n}] Verbose: generate progress messages to stderr at verbosity level \Arg{n}.  \{1\} 
+\item[\Opt{-V}, \Opt{--version}] Print version information.
+\item[\Opt{-h}, \Opt{--help}] Print help.
+\item[\OptoArg{--debug}{n}]   Debug: use debug level \Arg{n}. \{1\}
 \end{Description}
+
+\subsection{Options: Source Structure Correlation}
+
+\begin{Description}
+\item[\OptArg{-I}{path}, \OptArg{--include}{path}] Use \Arg{path} when searching for source files. May pass multiple times.
+\item[\OptArg{-S}{file}, \OptArg{--structure}{file}] Use \HTMLhref{hpcstruct.html}{\Cmd{hpcstruct}{1}} structure file \Arg{file} for correlation.  May pass multiple times (e.g., for shared libraries).
+\end{Description}
+
+\subsection{Options: Output}
+
+\begin{Description}
+  \item[\OptArg{-o}{db-path}, \OptArg{--db}{db-path}, \OptArg{--output}{db-path}] Specify Experiment database name \Arg{db-path}.  \{\File{./experiment-db}\}
+\end{Description}
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Examples}
@@ -86,10 +99,6 @@ For best results, two other options should be used: \textbf{-I} to provide paths
 %\begin{enumerate}
 %\item 
 
-Assume we have collected \HTMLhref{hpcrun.html}{\Cmd{hpcrun}{1}} data for a run of \texttt{poissonSolve3d}.  Further assume we have used \HTMLhref{hpcstruct.html}{\Cmd{hpcstruct}{1}} to compute program structure and stored the result in \texttt{poissonSolve3d.psxml}.  Source code for the application is located under the relative paths \verb+../lib+ and \verb+../example+.  \Prog{hpcprof} can be used to generate an Experiment database:
-\begin{verbatim}
-   hpcprof -I ../lib/\* -I ../example/\* -S poissonSolve3d.psxml -P poissonSolve3d.Linux.icpc.ifort.ex.PAPI_L2_DCM-etc.andre1.2150.0x866
-\end{verbatim}
 
 %\end{enumerate}
 

@@ -85,9 +85,9 @@ static const char* usage_summary =
 "[options] <profile-file>...\n";
 
 static const char* usage_details = "\
-hpcprof correlates dynamic call path profiling metrics with static source\n\
-code structure and generates an Experiment database for use with hpcviewer.\n\
-It expects a list of call path profile files.\n\
+hpcprof correlates call path profiling metrics with static source code\n\
+structure and generates an Experiment database for use with hpcviewer. It\n\
+expects a list of call path profile files.\n\
 \n\
 Options: General:\n\
   -v [<n>], --verbose [<n>]\n\

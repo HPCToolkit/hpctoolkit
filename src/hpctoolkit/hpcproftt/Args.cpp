@@ -99,7 +99,8 @@ profile files.  In this mode, the profile list may contain either flat or\n\
 call path profile files.\n\
 \n\
 Options: General:\n\
-  -v, --verbose [<n>]  Verbose: generate progress messages to stderr at\n\
+  -v [<n>], --verbose [<n>]\n\
+                       Verbose: generate progress messages to stderr at\n\
                        verbosity level <n>. {1}\n\
   -V, --version        Print version information.\n\
   -h, --help           Print this help.\n\

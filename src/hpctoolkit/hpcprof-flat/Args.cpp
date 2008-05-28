@@ -142,13 +142,13 @@ Options: Output:\n\
                        self-contained.\n\
 \n\
 Output formats: Select different output formats and optionally specify the\n\
-output filename <fname> (located within the Experiment database). The output\n\
+output filename <file> (located within the Experiment database). The output\n\
 is sparse in the sense that it ignores program areas without profiling\n\
-information. (Set <fname> to '-' to write to stdout.)\n\
-  -x [<fname>], --experiment [<fname>]\n\
+information. (Set <file> to '-' to write to stdout.)\n\
+  -x [<file>], --experiment [<file>]\n\
                        Default. ExperimentXML format. {"Analysis_EXPERIMENTXML"}\n\
-                       NOTE: To disable, set <fname> to 'no'.\n\
-  --csv [<fname>]      Comma-separated-value format. {"Analysis_EXPERIMENTCSV"}\n\
+                       NOTE: To disable, set <file> to 'no'.\n\
+  --csv [<file>]      Comma-separated-value format. {"Analysis_EXPERIMENTCSV"}\n\
                        Includes flat scope tree and loops. Useful for\n\
                        downstream external tools.\n";
 

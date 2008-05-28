@@ -44,7 +44,7 @@
 
 \begin{Name}{1}{hpcprof-flat}{The HPCToolkit Performance Tools}{The HPCToolkit Performance Tools}{hpcprof-flat:\\ Correlation of Flat Profile Metrics with Static Program Structure}
 
-\Prog{hpcprof-flat} `flat' (IP histograms) profile metrics with static source code structure.  See \HTMLhref{hpctoolkit.html}{\Cmd{hpctoolkit}{1}} for an overview of \textbf{HPCToolkit}.
+\Prog{hpcprof-flat} correlates `flat' (IP histograms) profile metrics with static source code structure.  See \HTMLhref{hpctoolkit.html}{\Cmd{hpctoolkit}{1}} for an overview of \textbf{HPCToolkit}.
 
 \end{Name}
 
@@ -96,7 +96,6 @@ Default values for an option's optional arguments are shown in \{\}.
 \item[\OptArg{-S}{file}, \OptArg{--structure}{file}] Use \HTMLhref{hpcstruct.html}{\Cmd{hpcstruct}{1}} structure file \Arg{file} for correlation.  May pass multiple times (e.g., for shared libraries).
 \end{Description}
 
-
 \subsection{Options: Output}
 
 \begin{Description}
@@ -104,14 +103,13 @@ Default values for an option's optional arguments are shown in \{\}.
   \item[\OptoArg{--src}{yes \Bar\ no}, \OptoArg{--source}{yes \Bar\ no}] Whether to copy source code files into Experiment database. \{yes\} By default, \Prog{hpcprof-flat} copies source files with performance metrics and that can be reached by PATH/REPLACE statements, resulting in a self-contained dataset that does not rely on an external source code repository.  Note that if copying is suppressed, the database is no longer self-contained.
 \end{Description}
 
-
 \subsection{Output Formats}
 
-Select different output formats and optionally specify the output filename \Arg{fname} (located within the Experiment database). The output is sparse in the sense that it ignores program areas without profiling information. (Set \Arg{fname} to '-' to write to stdout.)
+Select different output formats and optionally specify the output filename \Arg{file} (located within the Experiment database). The output is sparse in the sense that it ignores program areas without profiling information. (Set \Arg{file} to '-' to write to stdout.)
 
 \begin{Description}
-  \item[\OptoArg{-x}{fname}, \OptoArg{--experiment}{fname}] Default.  ExperimentXML format. \{\File{experiment.xml}\}.  NOTE: To disable, set \Arg{fname} to \verb+no+.
-  \item[\OptoArg{--csv}{fname}] Comma-separated-value format. \{\File{experiment.csv}\}. Includes flat scope tree and loops.  Useful for downstream external tools.
+  \item[\OptoArg{-x}{file}, \OptoArg{--experiment}{file}] Default.  ExperimentXML format. \{\File{experiment.xml}\}.  NOTE: To disable, set \Arg{file} to \verb+no+.
+  \item[\OptoArg{--csv}{file}] Comma-separated-value format. \{\File{experiment.csv}\}. Includes flat scope tree and loops.  Useful for downstream external tools.
 \end{Description}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -215,7 +213,7 @@ and the following MathML operators (used within \verb+<apply>+):
 
   Assuming we have a document with two metrics \verb+PAPI_TOT_CYC+ (cycles) and \verb+PAPI_FP_INS+ (floating point operations) we could compute cycles/FLOP:
 
-  \begin{verbatim}Q
+  \begin{verbatim}
   <METRIC name="cyc/fp" displayName="..." percent="false">
     <COMPUTE>
       <math>
@@ -332,8 +330,8 @@ Version: \Version\ of \Date.
 \section{Authors}
 
 \noindent
-John Mellor-Crummey \\
 Nathan Tallent \\
+John Mellor-Crummey \\
 Rob Fowler \\
 Email: \Email{hpc@cs.rice.edu} \\
 WWW: \URL{http://hipersoft.cs.rice.edu/hpctoolkit}.

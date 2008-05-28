@@ -100,7 +100,7 @@ Default values for an option's optional arguments are shown in \{\}.
 \subsection{Options: Profiling}
 
 \begin{Description}
-  \item[\OptoArg{-r}{yes \Bar no}, \OptoArg{--recursive}{yes \Bar no}] By default all processes spawned by \Arg{command} will be profiled, each receiving its own output file.  Use this option to turn off recursive profiling; only \Arg{command} will be profiled. \{no\}.
+  \item[\OptoArg{-r}{yes \Bar no}, \OptoArg{--recursive}{yes \Bar no}] Profile processes spawned by \Arg{command}.  \{no\}.  (Each process will receive its own output file.)
   \item[\OptArg{-t}{mode}, \OptArg{--threads}{mode}] Select thread profiling mode \{each\}:
   \begin{itemize}
     \item \textbf{each} Create separate profiles for each thread.
@@ -108,12 +108,11 @@ Default values for an option's optional arguments are shown in \{\}.
   \end{itemize}
   Note that only POSIX threads are supported.
   Also note that the WALLCLK event cannot be used in a multithreaded process.
-  \item[\OptArg{-e}{event\Lbr:period\Rbr}, \OptArg{--event}{event\Lbr:period\Rbr}]  An event to profile and its corresponding sample period. \Arg{event} may be either a PAPI or native processor event. \{\verb+PAPI_TOT_CYC:999999+\} Notes:
+  \item[\OptArg{-e}{event\Lbr:period\Rbr}, \OptArg{--event}{event\Lbr:period\Rbr}]  An event to profile and its corresponding sample period. \Arg{event} may be either a PAPI or native processor event. \{\verb+PAPI_TOT_CYC:999999+\} May pass multiple times. 
   \begin{itemize}
     \item It is recommended to always specify the sampling period for each profiling event.
     \item The special event WALLCLK may be used to profile the `wall clock.'  It may be used only \emph{once} and cannot be used with another event. It is an error to specify a period.
-    \item Multiple events may be selected for profiling during an execution by using multiple \textbf{-e} arguments.
-    \item The maximum number of events that can be monitored during a single execution depends on the processor. Not all combinations of events may be monitored in the same execution; allowable combinations depend on the processor. Check your processor documentation.
+    \item Hardware and drivers 1) limit the maximum number of events that can be monitored simultaneously, and 2) forbid certain combinations of events. Check your documentation.
   \end{itemize}
   \item[\OptoArg{-o}{outpath}, \OptoArg{--output}{outpath}] Directory for output data.  \{\texttt{.}\}
   \item[\OptArg{--papi-flag}{flag}] Profile style flag.  \{\verb+PAPI_POSIX_PROFIL+\}

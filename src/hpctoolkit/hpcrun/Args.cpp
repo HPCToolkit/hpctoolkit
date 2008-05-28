@@ -115,34 +115,27 @@ Options: Informational\n\
   --debug [<n>]        Debug: use debug level <n>. {1}\n\
 \n\
 Options: Profiling (Defaults shown in curly brackets {})\n\
-  -r [<yes|no>], --recursive [<yes|no>]                               {no}\n\
-      By default all processes spawned by <command> will be profiled, each\n\
-      receiving its own output file. Use this option to turn off recursive\n\
-      profiling; only <command> will be profiled.\n\
-  -t <mode>, --threads <mode>                                       {each}\n\
-      Select thread profiling mode:\n\
-        each: Create separate profiles for each thread.\n\
-        all:  Create one combined profile of all threads.\n\
-      Note that only POSIX threads are supported.  Also note that the\n\
-      WALLCLK event cannot be used in a multithreaded process.\n\
-  -e <event>[:<period>], --event <event>[:<period>]   {PAPI_TOT_CYC:999999}\n\
-      An event to profile and its corresponding sample period.  <event>\n\
-      may be either a PAPI or native processor event.  NOTES:\n\
-      o It is recommended to always specify the sampling period for each\n\
-        profiling event.\n\
-      o The special event WALLCLK may be used to profile the 'wall clock.'\n\
-        It may be used only *once* and cannot be used with another event.\n\
-        It is an error to specify a period.\n\
-      o Multiple events may be selected for profiling during an execution\n\
-        by using multiple '-e' arguments.\n\
-      o The maximum number of events that can be monitored during a single\n\
-        execution depends on the processor. Not all combinations of events\n\
-        may be monitored in the same execution; allowable combinations\n\
-        depend on the processor. Check your processor documentation.\n\
-  -o <outpath>, --output <outpath>                                      {.}\n\
-      Directory for output data\n\
-  --papi-flag <flag>                                    {PAPI_POSIX_PROFIL}\n\
-      Profile style flag\n\
+  -r [<yes|no>], --recursive [<yes|no>]\n\
+                       Profile processes spawned by <command>. {no} (Each\n\
+                       process will receive its own output file.)\n\
+  -t <mode>, --threads <mode>\n\
+                       Select thread profiling mode. {each}\n\
+                         each: Separate profiles for each thread.\n\
+                         all:  Combined profiles of all threads.\n\
+                       Only POSIX threads are supported; the WALLCLK event\n\
+                       cannot be used in a multithreaded process.\n\
+  -e <event>[:<period>], --event <event>[:<period>]\n\
+                       An event to profile and its corresponding sample\n\
+                       period. <event> may be either a PAPI or native\n\
+                       processor event.  {PAPI_TOT_CYC:999999}. May pass\n\
+                       multiple times.\n\
+                       o Recommended: always specify sampling period.\n\
+                       o Special event: WALLCLK (use once, without period)\n\
+                       o Hardware and drivers limit possibilities.\n\
+  -o <outpath>, --output <outpath>\n\
+                       Directory for output data {.}\n\
+  --papi-flag <flag>\n\
+                       Profile style flag {PAPI_POSIX_PROFIL}\n\
 \n\
 NOTES:\n\
 * Because hpcrun uses LD_PRELOAD to initiate profiling, it cannot be used\n\
