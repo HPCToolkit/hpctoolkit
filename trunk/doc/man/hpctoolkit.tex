@@ -30,7 +30,7 @@
 \rcsInfo $Id$
 \setDate{\rcsInfoLongDate}
 }{
-\setDate{ 2008/04/30}
+\setDate{ 2008/05/27}
 \message{package rcsinfo not present, discard it}
 }
 
@@ -47,14 +47,45 @@
 \textbf{HPCToolkit} is a collection of performance analysis tools for node-based performance analysis.
 It has been designed around the following principles:
 \begin{itemize}
-\item \textbf{Language independence.} Modern scientific codes are multi-lingual.
-\item \textbf{Avoid code instrumentation.} Adding instrumentation manually requires making \emph{a priori} assumptions about bottlenecks; adding instrumentation automatically can dilate execution and preclude compiler optimizations.
-\item \textbf{Context is essential for understanding layered and object-oriented software.} In large, modular programs costs must be understood in their calling context.
+
+\item \textbf{Language independence.}
+Modern scientific codes are multi-lingual; therefore \textbf{HPCToolkit} is not dependent on particular language.
+
+\item \textbf{Avoid code instrumentation.}
+Adding instrumentation manually requires making \emph{a priori} assumptions about bottlenecks; adding instrumentation automatically can dilate execution and preclude compiler optimizations.
+Consequently, \textbf{HPCToolkit} uses a sampling based measurement approach.
+
+\item \textbf{Avoid blind spots.}
+Production applications frequently link against fully optimized and even partially stripped binaries such as math and communication libraries for which source code is not available.
+Although such libraries pose significant measurement challenges, \textbf{HPCToolkit} employs techniques that enable it to collect performance measurements for such libraries.
+
+\item \textbf{Context is essential for understanding layered and object-oriented software.}
+In large, modular programs costs must be understood in their calling context.
+Thus, \textbf{HPCToolkit} has a sophisticated call path profiler.
+
 \item \textbf{Any one performance measure produces a myopic view.}
+\textbf{HPCToolkit} supports collection, correlation and presentation of multiple metrics.
+
 \item \textbf{Derived performance metrics are essential for effective analysis.}
+Effective tuning a program with appropriate complexity bounds requires a measure of not where resources are consumed, but where they are consumed inefficiently.
+For this reason, \textbf{HPCToolkit} supports derived metrics such as the differences between peak and actual performance 
+
 \item \textbf{Performance analysis should be top down.}
+To make analysis of large programs tractable, performance tools should organize performance data in a hierarchical fashion, prioritize what appear to be important problems, and support a top-down analysis methodology that helps users quickly locate bottlenecks.
+
 \item \textbf{Hierarchical aggregation is important in the face of approximate attribution.} 
+In modern multi-issue microprocessor cores with multiple functional units, out-of-order execution, and non-blocking caches, line level (or finer) information can be misleading.
+For this reason, \textbf{HPCToolkit} focuses on aggregate information for loops or procedures, which can be very accurate.
+Loop-level information is particularly useful.
+
 \item \textbf{With instruction-level parallelism, aggregate properties are vital.}
+Even if profiling instrumentation could provide perfect attribution of costs to executable instructions performance is often less dependent on the properties of individual source lines, and more a function of the data dependencies and balance among the statements in larger program units such as loops or loop nests.
+\textbf{HPCToolkit}'s loop-level aggregation is particularly helpful.
+
+\item \textbf{Measurement and analysis must be scalable.}
+Scientific applications are increasingly executed on clusters with SMP nodes of multicore chips, creating several layers parallelism. 
+It is critical that measurement techniques must be scalable to 10s and even 100s of thousands of threads. 
+
 \end{itemize}
 
 \textbf{HPCToolkit}'s website contains papers that explain these design principles in more detail.
@@ -79,7 +110,7 @@ It accounts for procedure and loop transformations such as inlining and software
 \item \textbf{Correlating dynamic profiles with static source code structure.} 
 \textbf{HPCToolkit}'s correlation tool combines dynamic profile information with \HTMLhref{hpcstruct.html}{\Cmd{hpcstruct}{1}}'s static program structure to correlate costs of the optimized object code to useful source code constructs such as loop nests.
 The result of correlation is called an Experiment database.
-Currently, \HTMLhref{hpcquick.html}{\Cmd{hpcquick}{1}}/\HTMLhref{hpcview.html}{\Cmd{hpcview}{1}} is used for flat profiles and \Cmd{hpcprof}{1} for call stack profiles.
+Currently, \HTMLhref{hpcprof-flat.html}{\Cmd{hpcprof-flat}{1}} is used for flat profiles and \Cmd{hpcprof}{1} for call stack profiles.
 
 \item \textbf{Top-down visualization}
 \Prog{hpcviewer} is a Java-based top-down viewer for flat and call stack profiles.
@@ -118,9 +149,9 @@ Assume we have an application called \emph{zoo} whose source code is located in 
 \end{verbatim}
 
 \item \textbf{Correlate dynamic profiles with static source code structure}.
-Create an Experiment database using \HTMLhref{hpcquick.html}{\Cmd{hpcquick}{1}}, a front-end to \HTMLhref{hpcview.html}{\Cmd{hpcview}{1}}.  Assume the Experiment database is located in \File{experiment-db}.
+Create an Experiment database using \HTMLhref{hpcprof-flat.html}{\Cmd{hpcprof-flat}{1}}.  Assume the Experiment database is located in \File{experiment-db}.
 \begin{verbatim}
-  hpcquick -I path-to-zoo/\* -S zoo.psxml -P profile-file-1 -P profile-file-2
+  hpcprof-flat -I path-to-zoo/\* -S zoo.psxml profile-file-1 profile-file-2
 \end{verbatim}
 
 \item \textbf{Visualize}.
@@ -134,14 +165,14 @@ Visualize the Experiment database using \HTMLhref{hpcviewer.html}{\Cmd{hpcviewer
 \subsection{Visualize derived metrics for flat profiles}
 
 The easiest way to begin is to collect all native metrics and then perform steps 1, 2 and 3 above.
-These steps create a template \HTMLhref{hpcview.html}{\Cmd{hpcview}{1}} configuration file which can be modified and used to rerun \Prog{hpcview}.
+These steps create a template \HTMLhref{hpcprof-flat.html}{\Cmd{hpcprof-flat}{1}} configuration file which can be modified and used to rerun \Prog{hpcprof-flat}.
 
 \begin{enumerate}
-\item \textbf{Create derived metrics}.  Add COMPUTE metrics to the \HTMLhref{hpcview.html}{\Cmd{hpcview}{1}} configuration file generated by \HTMLhref{hpcquick.html}{\Cmd{hpcquick}{1}}, typically stored in \File{hpcquick.xml}.  The \HTMLhref{hpcview.html}{\Cmd{hpcview}{1}} man page contains some examples. 
+\item \textbf{Create derived metrics}.  Add COMPUTE metrics to the \HTMLhref{hpcprof-flat.html}{\Cmd{hpcprof-flat}{1}} configuration file (named \File{config.xml}) generated during the initial run.  The \HTMLhref{hpcprof-flat.html}{\Cmd{hpcprof-flat}{1}} man page contains some examples. 
 
-\item \textbf{Correlate}. Rerun \HTMLhref{hpcview.html}{\Cmd{hpcview}{1}} to create a new Experiment database.  Assume that it is located in \File{experiment-db-1}
+\item \textbf{Correlate}. Rerun \HTMLhref{hpcprof-flat.html}{\Cmd{hpcprof-flat}{1}} to create a new Experiment database.  Assume that it is located in \File{experiment-db-1}
 \begin{verbatim}
-  hpcview hpcquick.xml
+  hpcprof-flat --config config.xml
 \end{verbatim}
 
 \item \textbf{Visualize}.
@@ -161,7 +192,7 @@ Visualize the Experiment database using \HTMLhref{hpcviewer.html}{\Cmd{hpcviewer
 
 \HTMLhref{hpcrun.html}{\Cmd{hpcrun}{1}}, \Cmd{csprof}{1} \\
 \HTMLhref{hpcstruct.html}{\Cmd{hpcstruct}{1}} \\
-\HTMLhref{hpcquick.html}{\Cmd{hpcquick}{1}}, \HTMLhref{hpcview.html}{\Cmd{hpcview}{1}}, \Cmd{hpcprof}{1}, \HTMLhref{hpcproftt.html}{\Cmd{hpcproftt}{1}} \\ %\Cmd{xprof}{1} 
+\HTMLhref{hpcprof-flat.html}{\Cmd{hpcprof-flat}{1}}, \HTMLhref{hpcprof.html}{\Cmd{hpcprof}{1}}, \HTMLhref{hpcproftt.html}{\Cmd{hpcproftt}{1}} \\ %\Cmd{xprof}{1} 
 \HTMLhref{hpcviewer.html}{\Cmd{hpcviewer}{1}}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
