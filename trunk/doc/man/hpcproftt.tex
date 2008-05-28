@@ -42,10 +42,10 @@
 
 \begin{document}
 
-\begin{Name}{1}{hpcproftt}{The HPCToolkit Performance Tools}{The HPCToolkit Performance Tools}{hpcproftt:\\ Simple correlation of flat profiles with source code}
+\begin{Name}{1}{hpcproftt}{The HPCToolkit Performance Tools}{The HPCToolkit Performance Tools}{hpcproftt:\\ Correlation of Flat Profile Metrics for Teletype Output}
 
-\Prog{hpcproftt} correlates `flat' execution profiles with source code files, procedures, lines or with object code.
-It is typically used to generate plain-text or HTML output.
+\Prog{hpcproftt} correlates `flat' profile metrics with either source code structure or object code and generates textual output suitable for a terminal.
+Alternatively, it also generates textual dumps of profile files.
 
 \end{Name}
 
@@ -62,9 +62,12 @@ It is typically used to generate plain-text or HTML output.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Description}
 
-\Prog{hpcproftt} correlates `flat' execution profiles of \Arg{executable} with source code files, procedures, lines or with object code.
-It is typically used to generate plain-text or HTML output (hence the tt, for teletype, in its name).
-\Arg{hpcrun-file} is a collection of event-based program counter histograms obtained using \HTMLhref{hpcrun.html}{\Cmd{hpcrun}{1}} (or \Cmd{hpcex}{1}).
+\Prog{hpcproftt} correlates `flat' profile metrics with either source code structure (first mode) or object code (second mode) and generates textual output suitable for a terminal (hence the tt, for teletype, in its name).
+In each of these modes, \Prog{hpcproftt} expects a list of flat profile files 
+
+\Prog{hpcproftt} also supports a third mode in which it generates textual dumps of profile files.
+In this mode, the profile list may contain either flat or call path profile files.
+
 
 \Prog{hpcproftt} can generate the following information.  Note that the term \emph{native} event refers to an event for which there is a program counter histogram.  
 \begin{Description}
@@ -88,8 +91,7 @@ NOTE: On ISA's with variable sized instructions, histogram buckets (4 bytes in s
 \section{Arguments}
 
 \begin{Description}
-\item[\Arg{executable}] An executable binary.
-\item[\Arg{hpcrun-file}...] A non-empty list of \Arg{hpcrun-file}s.
+\item[\Arg{profile-file}...] A list of flat profile files.
 \end{Description}
 
 Default values for an option's optional arguments are shown in \{\}.
@@ -97,30 +99,30 @@ Default values for an option's optional arguments are shown in \{\}.
 \subsection{Options: General}
 
 \begin{Description}
-\item[\OptArg{-d}{dir}, \OptArg{--directory}{dir}] Search \Arg{dir} for source files.
-\item[\OptArg{-D}{dir}, \OptArg{--recursive-directory}{dir}] Search \Arg{dir} recursively for source files.
-\item[\Opt{--force}] Show data that is not accurate.
+\item[\OptoArg{-v}{n}, \OptoArg{--verbose}{n}] Verbose: generate progress messages to stderr at verbosity level \Arg{n}.  \{1\} 
 \item[\Opt{-V}, \Opt{--version}] Print version information.
 \item[\Opt{-h}, \Opt{--help}] Print help.
-\item[\OptArg{--debug}{n}]   Debug: use debug level \Arg{n}.
+\item[\OptoArg{--debug}{n}]   Debug: use debug level \Arg{n}. \{1\}
 \end{Description}
 
-\subsection{Options: Plain-text and HTML Output}
+\subsection{Options: Source Structure Correlation}
+
 \begin{Description}
-  \item[\Opt{-e}, \Opt{--everything}] load-module, file, function, line correlations, and annotated source files.
-  \item[\Opt{-f}, \Opt{--files}] Show file correlation described above.
-  \item[\Opt{-r}, \Opt{--funcs}] Show function correlation described above.
-  \item[\Opt{-l}, \Opt{--lines}] Show line correlation described above.
-  \item[\OptArg{-a}{file}, \OptArg{--annotate}{file}] Show annotated source file \Arg{file}.  (Note that \Arg{file} must match the string contained in the executables's debugging file tables.)
-
-  \item[\Opt{-o}, \Opt{--object}] Show object code correlation (plain-text only).  Use the \Opt{-l}, \Opt{--lines} option to intermingle source line information with object code.
-  \item[\Opt{--othreshold}] Show only object procedures with an event count greater than or equal to \Arg{n}.  \{1\}\  (Use 0 to see all procedures).
-
-  \item[\Opt{-n}, \Opt{--number}] Show number of samples instead of percentage
-  \item[\OptArg{-s}{n}, \OptArg{--show}{n}] Use threshold \Arg{n} for showing aggregate data
-  \item[\OptArg{-H}{dir}, \OptArg{--html}{dir}] Output HTML into directory \Arg{dir}
+\item[\OptArg{-I}{path}, \OptArg{--include}{path}] Use \Arg{path} when searching for source files. To recursively search a path, append an escaped `*' after the last slash, e.g., \verb+/mypath/\*+ (escaping is for the shell). May pass multiple times.
+\item[\OptArg{-S}{file}, \OptArg{--structure}{file}] Use \HTMLhref{hpcstruct.html}{\Cmd{hpcstruct}{1}} structure file \Arg{file} for correlation.  May pass multiple times (e.g., for shared libraries).
 \end{Description}
 
+\subsection{Options: Object Correlation}
+
+\begin{Description}
+\item[\OptArg{--object}{...}] Show object code correlation: load modules, procedures, instructions...
+\end{Description}
+
+\subsection{Options: Dump Raw Profile Data}
+
+\begin{Description}
+\item[\Opt{--dump}] Generate textual representation of raw profile data.
+\end{Description}
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
