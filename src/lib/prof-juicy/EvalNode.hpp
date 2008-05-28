@@ -85,9 +85,14 @@
 class EvalNode
 {
 public:
-  EvalNode() { }
-  virtual ~EvalNode() { }
-  virtual double eval(const ScopeInfo *si) = 0;
+  EvalNode()
+  { }
+
+  virtual ~EvalNode() 
+  { }
+
+  virtual double eval(const ScopeInfo* si) = 0;
+
   virtual std::ostream& dump(std::ostream& os = std::cout) const = 0;
   
   virtual std::string toString() const;
@@ -101,13 +106,22 @@ public:
 class Const : public EvalNode
 {
 public:
-  Const(double c);
-  ~Const();
-  double eval(const ScopeInfo *si);
+  Const(double c) 
+    : m_c(c) 
+  { }
+
+  ~Const() 
+  { }
+
+  double eval(const ScopeInfo* si) 
+  {
+    return m_c;
+  }
+
   std::ostream& dump(std::ostream& os = std::cout) const;
   
 private:
-  double val;
+  double m_c;
 };
 
 // ----------------------------------------------------------------------
@@ -118,13 +132,22 @@ private:
 class Neg : public EvalNode
 {  
 public:
-  Neg(EvalNode* node);
-  ~Neg();
-  double eval(const ScopeInfo *si);
+  Neg(EvalNode* expr)
+  { 
+    m_expr = expr; 
+  }
+
+  ~Neg()
+  { 
+    delete m_expr; 
+  }
+
+  double eval(const ScopeInfo* si);
+
   std::ostream& dump(std::ostream& os = std::cout) const;
   
 private:
-  EvalNode* node;
+  EvalNode* m_expr;
 };
 
 // ----------------------------------------------------------------------
@@ -136,9 +159,20 @@ private:
 class Var : public EvalNode
 {
 public:
-  Var(std::string n, int i);
-  ~Var();
-  double eval(const ScopeInfo *si);
+  Var(std::string n, int i)
+    : name(n), index(i) 
+  { 
+  }
+  
+  ~Var()
+  { 
+  }
+
+  double eval(const ScopeInfo* si)
+  {
+    return si->PerfData(index);
+  }
+  
   std::ostream& dump(std::ostream& os = std::cout) const;
   
 private:
@@ -156,7 +190,7 @@ class Power : public EvalNode
 public:
   Power(EvalNode* b, EvalNode* e);
   ~Power();
-  double eval(const ScopeInfo *si);
+  double eval(const ScopeInfo* si);
   std::ostream& dump(std::ostream& os = std::cout) const;
 
 private:
@@ -174,7 +208,7 @@ class Divide : public EvalNode
 public:
   Divide(EvalNode* num, EvalNode* denom);
   ~Divide();
-  double eval(const ScopeInfo *si);
+  double eval(const ScopeInfo* si);
   std::ostream& dump(std::ostream& os = std::cout) const;
 
 private:
@@ -192,7 +226,7 @@ class Minus : public EvalNode
 public:
   Minus(EvalNode* m, EvalNode* s);
   ~Minus();
-  double eval(const ScopeInfo *si);
+  double eval(const ScopeInfo* si);
   std::ostream& dump(std::ostream& os = std::cout) const;
 
 private:
@@ -210,12 +244,14 @@ class Plus : public EvalNode
 public:
   Plus(EvalNode** oprnds, int numOprnds);
   ~Plus();
-  double eval(const ScopeInfo *si);
+  
+  double eval(const ScopeInfo* si);
+
   std::ostream& dump(std::ostream& os = std::cout) const;
 
 private:
-  EvalNode** nodes;
-  int n;
+  EvalNode** m_opands;
+  int m_sz;
 };
 
 // ----------------------------------------------------------------------
@@ -228,12 +264,12 @@ class Times : public EvalNode
 public:
   Times(EvalNode** oprnds, int numOprnds);
   ~Times();
-  double eval(const ScopeInfo *si);
+  double eval(const ScopeInfo* si);
   std::ostream& dump(std::ostream& os = std::cout) const;
 
 private:
-  EvalNode** nodes;
-  int n;
+  EvalNode** m_opands;
+  int m_sz;
 };
 
 
@@ -242,12 +278,12 @@ class Max : public EvalNode
 public:
   Max(EvalNode** oprnds, int numOprnds);
   ~Max();
-  double eval(const ScopeInfo *si);
+  double eval(const ScopeInfo* si);
   std::ostream& dump(std::ostream& os = std::cout) const;
 
 private:
-  EvalNode** nodes;
-  int n;
+  EvalNode** m_opands;
+  int m_sz;
 };
 
 class Min : public EvalNode
@@ -255,12 +291,12 @@ class Min : public EvalNode
 public:
   Min(EvalNode** oprnds, int numOprnds);
   ~Min();
-  double eval(const ScopeInfo *si);
+  double eval(const ScopeInfo* si);
   std::ostream& dump(std::ostream& os = std::cout) const;
 
 private:
-  EvalNode** nodes;
-  int n;
+  EvalNode** m_opands;
+  int m_sz;
 };
 
 #endif /* prof_juicy_EvalNode */

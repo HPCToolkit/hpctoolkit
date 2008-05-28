@@ -82,88 +82,47 @@ EvalNode::toString() const
   return os.str();
 }
 
+
 // ----------------------------------------------------------------------
 // class Const
 // ----------------------------------------------------------------------
 
-Const::Const(double c) 
-  : val(c) 
-{ 
-}
-
-Const::~Const()
-{ 
-}
-
-double 
-Const::eval(const ScopeInfo *si) 
-{
-  IFTRACE << "constant=" << val << endl; 
-  return val;
-}
-
 std::ostream& 
 Const::dump(std::ostream& os) const
 { 
-  os << "(" << val << ")"; 
+  os << "(" << m_c << ")"; 
   return os;
 }
+
 
 // ----------------------------------------------------------------------
 // class Neg
 // ----------------------------------------------------------------------
 
-Neg::Neg(EvalNode* aNode) 
-{ 
-  node = aNode; 
-}
-
-Neg::~Neg() 
-{ 
-  delete node; 
-}
-
 double 
-Neg::eval(const ScopeInfo *si) 
+Neg::eval(const ScopeInfo* si) 
 {
-  if (!node) {
-    return c_FP_NAN_d;
-  }
-  
-  double tmp = node->eval(si);
+  double tmp = m_expr->eval(si);
   if (c_isnan_d(tmp) || c_isinf_d(tmp)) {
     return c_FP_NAN_d;
   }
 
-  IFTRACE << "neg=" << -tmp << endl; 
+  //IFTRACE << "neg=" << -tmp << endl; 
   return -tmp;
 }
+
 
 std::ostream& 
 Neg::dump(std::ostream& os) const
 { 
-  os << "(-"; node->dump(os); os << ")"; 
+  os << "(-"; m_expr->dump(os); os << ")"; 
   return os;
 }
+
 
 // ----------------------------------------------------------------------
 // class Var
 // ----------------------------------------------------------------------
-
-Var::Var(std::string n, int i) 
-  : name(n), index(i) 
-{ 
-}
-
-Var::~Var() 
-{ 
-}
-
-double 
-Var::eval(const ScopeInfo *si) 
-{
-  return si->PerfData(index);
-}
 
 std::ostream& 
 Var::dump(std::ostream& os) const
@@ -171,6 +130,7 @@ Var::dump(std::ostream& os) const
   os << name; 
   return os;
 }
+
 
 // ----------------------------------------------------------------------
 // class Power
@@ -181,13 +141,16 @@ Power::Power(EvalNode* b, EvalNode* e)
 { 
 }
 
+
 Power::~Power() 
 { 
-  delete base; delete exponent; 
+  delete base; 
+  delete exponent; 
 }
 
+
 double 
-Power::eval(const ScopeInfo *si) 
+Power::eval(const ScopeInfo* si) 
 {
   if (base == NULL || exponent == NULL)
     return c_FP_NAN_d;
@@ -211,9 +174,10 @@ Power::eval(const ScopeInfo *si)
   if (b < 0) {
     return c_FP_NAN_d;
   }
-  IFTRACE << "pow=" << pow(b, e) << endl; 
+  //IFTRACE << "pow=" << pow(b, e) << endl; 
   return pow(b, e);
 }
+
 
 std::ostream& 
 Power::dump(std::ostream& os) const
@@ -222,22 +186,26 @@ Power::dump(std::ostream& os) const
   return os;
 }
 
+
 // ----------------------------------------------------------------------
 // class Divide
 // ----------------------------------------------------------------------
 
 Divide::Divide(EvalNode* num, EvalNode* denom)
-    : numerator(num), denominator(denom) 
+  : numerator(num), denominator(denom) 
 { 
 }
+
 
 Divide::~Divide() 
 { 
-  delete numerator; delete denominator; 
+  delete numerator; 
+  delete denominator; 
 }
 
+
 double 
-Divide::eval(const ScopeInfo *si) 
+Divide::eval(const ScopeInfo* si) 
 {
   if (numerator == NULL || denominator == NULL) {
     return c_FP_NAN_d;
@@ -250,9 +218,10 @@ Divide::eval(const ScopeInfo *si)
   if (c_isnan_d(n) || c_isinf_d(n)) {
     return 0;
   }
-  IFTRACE << "divident=" << n/d << endl; 
+  //IFTRACE << "divident=" << n/d << endl; 
   return n / d;
 }
+
 
 std::ostream& 
 Divide::dump(std::ostream& os) const
@@ -265,6 +234,7 @@ Divide::dump(std::ostream& os) const
   return os;
 }
 
+
 // ----------------------------------------------------------------------
 // class Minus
 // ----------------------------------------------------------------------
@@ -272,18 +242,20 @@ Divide::dump(std::ostream& os) const
 Minus::Minus(EvalNode* m, EvalNode* s) 
   : minuend(m), subtrahend(s) 
 { 
+  // if (minuend == NULL || subtrahend == NULL) { ... }
 }
+
 
 Minus::~Minus() 
 { 
-  delete minuend; delete subtrahend; 
+  delete minuend; 
+  delete subtrahend; 
 }
 
+
 double 
-Minus::eval(const ScopeInfo *si) 
+Minus::eval(const ScopeInfo* si) 
 {
-  if (minuend == NULL || subtrahend == NULL)
-    return c_FP_NAN_d;
   double m = minuend->eval(si);
   double s = subtrahend->eval(si);
   if ((c_isnan_d(m) || c_isinf_d(m)) && (c_isnan_d(s) || c_isinf_d(s))) {
@@ -295,9 +267,10 @@ Minus::eval(const ScopeInfo *si)
   if (c_isnan_d(s) || c_isinf_d(s)) {
     s = 0.0;
   }
-  IFTRACE << "diff=" << m-s << endl; 
+  //IFTRACE << "diff=" << m-s << endl; 
   return (m - s);
 }
+
 
 std::ostream& 
 Minus::dump(std::ostream& os) const
@@ -306,30 +279,35 @@ Minus::dump(std::ostream& os) const
   return os;
 }
 
+
 // ----------------------------------------------------------------------
 // class Plus
 // ----------------------------------------------------------------------
 
-Plus::Plus(EvalNode** oprnds, int numOprnds) 
-: nodes(oprnds), n(numOprnds) 
+Plus::Plus(EvalNode** oprnds, int numOprnds)
+  : m_opands(oprnds), m_sz(numOprnds) 
 { 
 }
 
+
 Plus::~Plus() 
 {
-  for (int i = 0; i < n; i++)
-    delete nodes[i];
-  delete[] nodes;
+  for (int i = 0; i < m_sz; ++i) {
+    delete m_opands[i];
+  }
+  delete[] m_opands;
 }
 
+
 double 
-Plus::eval(const ScopeInfo *si) 
+Plus::eval(const ScopeInfo* si) 
 {
   double result = c_FP_NAN_d;
+
   int i;
-  for (i = 0; i < n; i++) {
-    if (nodes[i] != NULL) {
-      double tmp = nodes[i]->eval(si);
+  for (i = 0; i < m_sz; ++i) {
+    if (m_opands[i]) {
+      double tmp = m_opands[i]->eval(si);
       if (c_isnan_d(tmp) || c_isinf_d(tmp)) {
 	continue; 
       }
@@ -337,69 +315,79 @@ Plus::eval(const ScopeInfo *si)
       break;
     }
   }
-  for (i++; i < n; i++) {
-    if (nodes[i] != NULL) {
-      double tmp = nodes[i]->eval(si);
+  for (++i; i < m_sz; ++i) {
+    if (m_opands[i]) {
+      double tmp = m_opands[i]->eval(si);
       if (c_isnan_d(tmp) || c_isinf_d(tmp)) {
 	continue; 
       }
       result += tmp;
     }
   }
-  IFTRACE << "sum=" << result << endl; 
+  //IFTRACE << "sum=" << result << endl; 
   return result;
 }
+
 
 std::ostream& 
 Plus::dump(std::ostream& os) const
 {
   os << "(";
-  for (int i = 0; i < n; i++) {
-      nodes[i]->dump(os);
-      if (i < n-1) os << "+";
+  for (int i = 0; i < m_sz; ++i) {
+    m_opands[i]->dump(os);
+    if (i < m_sz-1) { 
+      os << "+"; 
+    }
   }
   os << ")";
   return os;
 }
+
 
 // ----------------------------------------------------------------------
 // class Times
 // ----------------------------------------------------------------------
 
 Times::Times(EvalNode** oprnds, int numOprnds) 
-  : nodes(oprnds), n(numOprnds) 
+  : m_opands(oprnds), m_sz(numOprnds) 
 { 
 }
 
+
 Times::~Times() 
 {
-  for (int i = 0; i < n; i++)
-    delete nodes[i];
-  delete[] nodes;
+  for (int i = 0; i < m_sz; ++i) {
+    delete m_opands[i];
+  }
+  delete[] m_opands;
 }
 
+
 double 
-Times::eval(const ScopeInfo *si) 
+Times::eval(const ScopeInfo* si) 
 {
   double product = 1.0;
-  for (int i = 0; i < n; i++) {
-    double tmp = nodes[i]->eval(si);
+  for (int i = 0; i < m_sz; ++i) {
+    double tmp = m_opands[i]->eval(si);
     if (c_isnan_d(tmp) || c_isinf_d(tmp)) {
       return c_FP_NAN_d;
     }
     product *= tmp;
   }
-  IFTRACE << "product=" << product << endl; 
+  //IFTRACE << "product=" << product << endl; 
   return product;
 }
+
 
 std::ostream& 
 Times::dump(std::ostream& os) const
 {
   os << "(";
-  for (int i = 0; i < n; i++) {
-    nodes[i]->dump(os);
-    if (i < n-1) os << "*";
+  for (int i = 0; i < m_sz; ++i) {
+    m_opands[i]->dump(os);
+    if (i < m_sz-1) {
+      os << "*";
+    }
   }
   os << ")";
   return os;
@@ -411,25 +399,28 @@ Times::dump(std::ostream& os) const
 // ----------------------------------------------------------------------
 
 Min::Min(EvalNode** oprnds, int numOprnds) 
-  : nodes(oprnds), n(numOprnds) 
+  : m_opands(oprnds), m_sz(numOprnds) 
 { 
 }
 
+
 Min::~Min() 
 {
-  for (int i = 0; i < n; i++)
-    delete nodes[i];
-  delete[] nodes;
+  for (int i = 0; i < m_sz; ++i) {
+    delete m_opands[i];
+  }
+  delete[] m_opands;
 }
 
+
 double 
-Min::eval(const ScopeInfo *si) 
+Min::eval(const ScopeInfo* si) 
 {
   double result = c_FP_NAN_d;
   int i;
-  for (i = 0; i < n; i++) {
-    if (nodes[i] != NULL) {
-      double tmp = nodes[i]->eval(si);
+  for (i = 0; i < m_sz; ++i) {
+    if (m_opands[i] != NULL) {
+      double tmp = m_opands[i]->eval(si);
       if (c_isnan_d(tmp) || c_isinf_d(tmp)) {
 	continue; 
       }
@@ -438,55 +429,62 @@ Min::eval(const ScopeInfo *si)
       break;
     }
   }
-  for (i++; i < n; i++) {
-    if (nodes[i] != NULL) {
-      double tmp = nodes[i]->eval(si);
+  for (++i; i < m_sz; ++i) {
+    if (m_opands[i] != NULL) {
+      double tmp = m_opands[i]->eval(si);
       if (c_isnan_d(tmp) || c_isinf_d(tmp)) {
 	tmp = 0.0; 
       }
       result = std::min(result, tmp);
     }
   }
-  IFTRACE << "min=" << result << endl; 
+  //IFTRACE << "min=" << result << endl; 
   return result;
 }
+
 
 std::ostream& 
 Min::dump(std::ostream& os) const
 {
   os << "min(";
-  for (int i = 0; i < n; i++) {
-    nodes[i]->dump(os);
-    if (i < n-1) os << ",";
+  for (int i = 0; i < m_sz; ++i) {
+    m_opands[i]->dump(os);
+    if (i < m_sz-1) {
+      os << ",";
+    }
   }
   os << ")";
   return os;
 }
+
 
 // ----------------------------------------------------------------------
 // class Max
 // ----------------------------------------------------------------------
 
 Max::Max(EvalNode** oprnds, int numOprnds) 
-  : nodes(oprnds), n(numOprnds) 
+  : m_opands(oprnds), m_sz(numOprnds) 
 { 
 }
 
+
 Max::~Max() 
 {
-  for (int i = 0; i < n; i++)
-    delete nodes[i];
-  delete[] nodes;
+  for (int i = 0; i < m_sz; ++i) {
+    delete m_opands[i];
+  }
+  delete[] m_opands;
 }
 
+
 double 
-Max::eval(const ScopeInfo *si) 
+Max::eval(const ScopeInfo* si) 
 {
   double result = c_FP_NAN_d;
   int i;
-  for (i = 0; i < n; i++) {
-    if (nodes[i] != NULL) {
-      double tmp = nodes[i]->eval(si);
+  for (i = 0; i < m_sz; ++i) {
+    if (m_opands[i] != NULL) {
+      double tmp = m_opands[i]->eval(si);
       if (c_isnan_d(tmp) || c_isinf_d(tmp)) {
 	continue; 
       }
@@ -496,27 +494,29 @@ Max::eval(const ScopeInfo *si)
       break;
     }
   }
-  for (i++; i < n; i++) {
-    if (nodes[i] != NULL) {
-      double tmp = nodes[i]->eval(si);
+  for (++i; i < m_sz; ++i) {
+    if (m_opands[i] != NULL) {
+      double tmp = m_opands[i]->eval(si);
       if (c_isnan_d(tmp) || c_isinf_d(tmp)) {
 	tmp = 0.0; 
       }
       result = std::max(result, tmp);
     }
   }
-  IFTRACE << "max=" << result << endl; 
+  //IFTRACE << "max=" << result << endl; 
   return result;
 }
+
 
 std::ostream& 
 Max::dump(std::ostream& os) const
 {
   os << "max(";
-
-  for (int i = 0; i < n; i++) {
-      nodes[i]->dump(os);
-      if (i < n-1) os << ",";
+  for (int i = 0; i < m_sz; ++i) {
+    m_opands[i]->dump(os);
+    if (i < m_sz-1) { 
+      os << ",";
+    }
   }
   os << ")";
   return os;
