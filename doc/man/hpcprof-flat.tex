@@ -42,31 +42,31 @@
 
 \begin{document}
 
-\begin{Name}{1}{hpcview}{The HPCToolkit Performance Tools}{The HPCToolkit Performance Tools}{hpcview:\\ Correlation of Flat Profiles with Static Program Structure}
+\begin{Name}{1}{hpcprof-flat}{The HPCToolkit Performance Tools}{The HPCToolkit Performance Tools}{hpcprof-flat:\\ Correlation of Flat Profile Metrics with Static Program Structure}
 
-\Prog{hpcview} correlates dynamic (`flat') profiles with static source code structure.  See \HTMLhref{hpctoolkit.html}{\Cmd{hpctoolkit}{1}} for an overview of \textbf{HPCToolkit}.
+\Prog{hpcprof-flat} correlates dynamic (`flat') profile metrics with static source code structure.  See \HTMLhref{hpctoolkit.html}{\Cmd{hpctoolkit}{1}} for an overview of \textbf{HPCToolkit}.
 
 \end{Name}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Synopsis}
 
-\Prog{hpcview} \oOpt{options} \Arg{config-file}
+\Prog{hpcprof-flat} \oOpt{options} \Arg{config-file}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Description}
 
-\Prog{hpcview} correlates dynamic profiling metrics with static source code structure and (by default) generates an Experiment database for use with \HTMLhref{hpcviewer.html}{\Cmd{hpcviewer}{1}}.
-\Prog{hpcview} is driven by the configuration file \Arg{config-file}, which amongh other things, may contain user defined derived metrics.
+\Prog{hpcprof-flat} correlates dynamic profiling metrics with static source code structure and (by default) generates an Experiment database for use with \HTMLhref{hpcviewer.html}{\Cmd{hpcviewer}{1}}.
+\Prog{hpcprof-flat} is driven by the configuration file \Arg{config-file}, which amongh other things, may contain user defined derived metrics.
 
-The easiest way to create a configuration file is to use the \HTMLhref{hpcquick.html}{\Cmd{hpcquick}{1}}, a front end to \Prog{hpcview}.
+The easiest way to create a configuration file is to first run \Prog{hpcprof-flat} and edit the configuration file it generates.
 See the section \emph{Configuration File} below for more details about its syntax.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Arguments}
 
 \begin{Description}
-\item[\Arg{config-file...}] The \Prog{hpcview} configuration file.
+\item[\Arg{config-file...}] The \Prog{hpcprof-flat} configuration file.
 \end{Description}
 
 Default values for an option's optional arguments are shown in \{\}.
@@ -85,7 +85,7 @@ Default values for an option's optional arguments are shown in \{\}.
 
 \begin{Description}
   \item[\OptArg{-o}{db-path}, \OptArg{--db}{db-path}, \OptArg{--output}{db-path}] Specify Experiment database name \Arg{db-path}.  \{\File{./experiment-db}\}
-  \item[\OptoArg{--src}{yes \Bar\ no}, \OptoArg{--source}{yes \Bar\ no}] Whether to copy source code files into Experiment database. \{yes\} By default, \Prog{hpcview} copies source files with performance metrics and that can be reached by PATH/REPLACE statements, resulting in a self-contained dataset that does not rely on an external source code repository.  Note that if copying is suppressed, the database is no longer self-contained.
+  \item[\OptoArg{--src}{yes \Bar\ no}, \OptoArg{--source}{yes \Bar\ no}] Whether to copy source code files into Experiment database. \{yes\} By default, \Prog{hpcprof-flat} copies source files with performance metrics and that can be reached by PATH/REPLACE statements, resulting in a self-contained dataset that does not rely on an external source code repository.  Note that if copying is suppressed, the database is no longer self-contained.
 \end{Description}
 
 
@@ -102,7 +102,7 @@ Select different output formats and optionally specify the output filename \Arg{
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Configuration File}
 
-A \Prog{hpcview} configuration file is an XML document of type \texttt{HPCVIEW}.
+A \Prog{hpcprof-flat} configuration file is an XML document of type \texttt{HPCVIEW}.
 The following briefly describes its syntax.
 
 \begin{itemize}
@@ -181,7 +181,7 @@ The two metric types are
 
 There is one important difference in how each type is handled.  HPCRUN files are correlated to source code using the object code addresses annotations of STRUCTURE files; thus, they require valid STRUCTURE information.  In contrast, PROFILE files are correlated by source line level information.
 
-  \item \textbf{Derived or COMPUTE metrics.} Derived metrics are specified by a \texttt{COMPUTE} element containing a MathML equation in terms of metrics defined earlier in the HPCVIEW document.  \Prog{hpcview} supports the following operands
+  \item \textbf{Derived or COMPUTE metrics.} Derived metrics are specified by a \texttt{COMPUTE} element containing a MathML equation in terms of metrics defined earlier in the HPCVIEW document.  \Prog{hpcprof-flat} supports the following operands
   \begin{itemize}
     \item \textbf{constants}: \verb+<cn>2</cn>+
     \item \textbf{variables}: \verb+<ci>m1</ci>+ (used to refer to other metrics)

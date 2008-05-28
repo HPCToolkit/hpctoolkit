@@ -30,7 +30,7 @@
 \rcsInfo $Id$
 \setDate{\rcsInfoLongDate}
 }{
-\setDate{ 2008/04/30}
+\setDate{ 2008/05/27}
 \message{package rcsinfo not present, discard it}
 }
 
@@ -42,10 +42,9 @@
 
 \begin{document}
 
-\begin{Name}{1}{hpcquick}{The HPCToolkit Performance Tools}{The HPCToolkit Performance Tools}{hpcquick:\\ A Front-end for hpcview}
+\begin{Name}{1}{hpcprof}{The HPCToolkit Performance Tools}{The HPCToolkit Performance Tools}{hpcprof:\\ Correlation of Call Path Profile Metrics with Static Program Structure}
 
-\Prog{hpcquick} is a front-end for \HTMLhref{hpcview.html}{\Cmd{hpcview}{1}}.
-It creates an \HTMLhref{hpcview.html}{\Cmd{hpcview}{1}} configuration file and optionally runs \Prog{hpcview} to create an Experiment database.
+\Prog{hpcprof} correlates dynamic call path profile metrics with static source code structure.  See \HTMLhref{hpctoolkit.html}{\Cmd{hpctoolkit}{1}} for an overview of \textbf{HPCToolkit}.
 
 \end{Name}
 
@@ -55,22 +54,13 @@ It creates an \HTMLhref{hpcview.html}{\Cmd{hpcview}{1}} configuration file and o
 \Prog{hpcuick} \oOpt{other-options}
                \oOptArg{-I}{dir}
                \oOptArg{-S}{struct-file}
-%              \oOptArg{-G}{group-file}
-               \OptArg{-P}{profile-file...}
+               \Arg{profile-file...}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Description}
 
-\Prog{hpcquick} is a front-end for \HTMLhref{hpcview.html}{\Cmd{hpcview}{1}}.
-It creates an \HTMLhref{hpcview.html}{\Cmd{hpcview}{1}} configuration file (\File{./hpcquick.xml}) and runs \Prog{hpcview} to create an Experiment database.
-All shell commands used to create the Experiment database are recorded in a log file (\File{./hpcquick.log}).
+\Prog{hpcprof} correlates dynamic profiling metrics with static source code structure and (by default) generates an Experiment database for use with \HTMLhref{hpcviewer.html}{\Cmd{hpcviewer}{1}}....
 
-\Prog{hpcquick} expects a (space-separated) list of profile files, which may be of the following types:
-\begin{itemize}
-  \item binary output from \HTMLhref{hpcrun.html}{\Cmd{hpcrun}{1}} (or \Cmd{hpcex}{1})
-  \item binary output from SGI's ssrun and 
-  \item XML PROFILE files (e.g., from \Cmd{hpcproftt}{1} and \Prog{xprof})
-\end{itemize}
 For best results, two other options should be used: \textbf{-I} to provide paths for source code directories and \textbf{-S} to provide source code structure from \HTMLhref{hpcstruct.html}{\Cmd{hpcstruct}{1}}.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -81,13 +71,11 @@ For best results, two other options should be used: \textbf{-I} to provide paths
 \begin{Description}
 \item[\OptArg{-I}{path}] A path (relative or absolute) containing source code to which performance data should be correlated.  In order to search a directory \emph{and} recursively search all of its descendents, append an escaped `*' after the last slash, e.g., \verb+/mypath/\*+ (escaping is for the shell). May be passed multiple times.
 \item[\OptArg{-S}{struct-file}] A structure file (from \HTMLhref{hpcstruct.html}{\Cmd{hpcstruct}{1}}) for the main program and/or any or all of the shared libraries used by the program.  May be passed multiple times.
-%\item[\OptArg{-G}{group-file}] A group file for the main program and/or any or all of the shared libraries used by the program. May be passed multiple times.
 \end{Description}
 
 \subsection{Options: General}
 
 \begin{Description}
-\item[\Opt{-n}] No \HTMLhref{hpcview.html}{\Cmd{hpcview}{1}} output.  Convert profiles and create a configuration file, but do not generate an Experiment database by running \HTMLhref{hpcview.html}{\Cmd{hpcview}{1}}.
 \item[\Opt{-V}] Print version information.
 \item[\Opt{-h}] Print help.
 \end{Description}
@@ -98,9 +86,9 @@ For best results, two other options should be used: \textbf{-I} to provide paths
 %\begin{enumerate}
 %\item 
 
-Assume we have collected \HTMLhref{hpcrun.html}{\Cmd{hpcrun}{1}} data for a run of \texttt{poissonSolve3d}.  Further assume we have used \HTMLhref{hpcstruct.html}{\Cmd{hpcstruct}{1}} to compute program structure and stored the result in \texttt{poissonSolve3d.psxml}.  Source code for the application is located under the relative paths \verb+../lib+ and \verb+../example+.  \Prog{hpcquick} can be used to generate an Experiment database:
+Assume we have collected \HTMLhref{hpcrun.html}{\Cmd{hpcrun}{1}} data for a run of \texttt{poissonSolve3d}.  Further assume we have used \HTMLhref{hpcstruct.html}{\Cmd{hpcstruct}{1}} to compute program structure and stored the result in \texttt{poissonSolve3d.psxml}.  Source code for the application is located under the relative paths \verb+../lib+ and \verb+../example+.  \Prog{hpcprof} can be used to generate an Experiment database:
 \begin{verbatim}
-   hpcquick -I ../lib/\* -I ../example/\* -S poissonSolve3d.psxml -P poissonSolve3d.Linux.icpc.ifort.ex.PAPI_L2_DCM-etc.andre1.2150.0x866
+   hpcprof -I ../lib/\* -I ../example/\* -S poissonSolve3d.psxml -P poissonSolve3d.Linux.icpc.ifort.ex.PAPI_L2_DCM-etc.andre1.2150.0x866
 \end{verbatim}
 
 %\end{enumerate}

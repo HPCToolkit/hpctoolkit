@@ -62,8 +62,8 @@ MYSOURCES = \
 	\
 	hpcstruct.tex \
 	\
-	hpcquick.tex \
-	hpcview.tex \
+	hpcprof-flat.tex \
+	hpcprof.tex \
 	hpcproftt.tex \
 	\
 	hpcviewer.tex

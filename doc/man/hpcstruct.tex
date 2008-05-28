@@ -30,7 +30,7 @@
 \rcsInfo $Id$
 \setDate{\rcsInfoLongDate}
 }{
-\setDate{ 2008/04/22}
+\setDate{ 2008/05/27}
 \message{package rcsinfo not present, discard it}
 }
 
@@ -64,7 +64,7 @@ Typical usage:\\
 Given an application binary \Arg{binary}, \Prog{hpcstruct} recovers the program structure of its object code and writes to standard output a program structure to object code mapping.
 \Prog{hpcstruct} is designed primarily for highly optimized binaries created from C, C++ and Fortran source code.
 Because \Prog{hpcstruct}'s algorithms exploit a binary's debugging information, for best results, \Arg{binary} should be compiled with standard debugging information.
-\Prog{hpcstruct}'s output is typically passed to \textbf{HPCToolkit}'s correlation tool. %% hpcview (change to hpcprof)
+\Prog{hpcstruct}'s output is typically passed to \textbf{HPCToolkit}'s correlation tool, \HTMLhref{hpcprof.html}{\Cmd{hpcprof}{1}} or \HTMLhref{hpcprof-flat.html}{\Cmd{hpcprof-flat}{1}}.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Arguments}
@@ -105,7 +105,7 @@ Default values for an option's optional arguments are shown in \{\}.
 %\begin{enumerate}
 %\item 
 Assume we have collected profiling information for the (optimized) binary \File{sweep3dsingle}, compiled with debugging information.
-We wish to recover program structure in the file \File{sweep3dsingle.psxml} for use with \HTMLhref{hpcquick.html}{\Cmd{hpcquick}{1}}/\HTMLhref{hpcview.html}{\Cmd{hpcview}{1}}.
+We wish to recover program structure in the file \File{sweep3dsingle.psxml} for use with \HTMLhref{hpcprof.html}{\Cmd{hpcprof}{1}} or \HTMLhref{hpcprof-flat.html}{\Cmd{hpcprof-flat}{1}}.
 To do this, execute:
 \begin{verbatim}
     hpcstruct sweep3dsingle > sweep3dsingle.psxml
