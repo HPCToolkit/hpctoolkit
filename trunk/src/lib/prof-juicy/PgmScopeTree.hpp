@@ -71,7 +71,6 @@
 #include <lib/support/diagnostics.h>
 #include <lib/support/Files.hpp>
 #include <lib/support/Logic.hpp>
-#include <lib/support/NaN.h>
 #include <lib/support/NonUniformDegreeTree.hpp>
 #include <lib/support/SrcFile.hpp>
 using SrcFile::ln_NULL;
@@ -91,7 +90,8 @@ typedef std::set<ScopeInfo*> ScopeInfoSet;
 
 class DoubleVector : public VectorTmpl<double> {
 public: 
-  DoubleVector() : VectorTmpl<double>(c_FP_NAN_d, true) { }
+  DoubleVector() 
+    : VectorTmpl<double>(0.0, true/*autoExtend*/, 16/*size*/) { }
 };
 
 
@@ -279,7 +279,7 @@ public:
   HasPerfData(int mId) const 
   {
     double x = (*perfData)[mId];
-    return (x != 0.0 && !c_isnan_d(x));
+    return (x != 0.0);
   }
   
   double 
@@ -292,12 +292,7 @@ public:
   SetPerfData(int mId, double d) 
   {
     // NOTE: VectorTmpl::operator[] automatically 'adds' the index if necessary
-    if (c_isnan_d((*perfData)[mId])) {
-      (*perfData)[mId] = d;
-    }
-    else {
-      (*perfData)[mId] += d;
-    }
+    (*perfData)[mId] += d;
   }
 
   uint 
