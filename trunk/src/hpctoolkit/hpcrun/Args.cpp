@@ -150,22 +150,21 @@ NOTES:\n\
 
 // Note: Changing the option name requires changing the name in Parse()
 CmdLineParser::OptArgDesc Args::optArgs[] = {
-
   // Options: info
-  { 'l', "events-short", CLP::ARG_NONE, CLP::DUPOPT_CLOB, NULL },
-  { 'L', "events-long",  CLP::ARG_NONE, CLP::DUPOPT_CLOB, NULL },
-  {  0 , "paths",        CLP::ARG_NONE, CLP::DUPOPT_CLOB, NULL },
+  { 'l', "events-short", CLP::ARG_NONE, CLP::DUPOPT_CLOB, NULL, NULL },
+  { 'L', "events-long",  CLP::ARG_NONE, CLP::DUPOPT_CLOB, NULL, NULL },
+  {  0 , "paths",        CLP::ARG_NONE, CLP::DUPOPT_CLOB, NULL, NULL },
 
   // Options: profiling
-  { 'r', "recursive",   CLP::ARG_OPT,  CLP::DUPOPT_CLOB, NULL },
-  { 't', "threads",     CLP::ARG_REQ,  CLP::DUPOPT_CLOB, NULL },
-  { 'e', "event",       CLP::ARG_REQ,  CLP::DUPOPT_CAT,  ";"  },
-  { 'o', "output",      CLP::ARG_REQ , CLP::DUPOPT_CLOB, NULL },
-  { 'f', "papi-flag",   CLP::ARG_REQ , CLP::DUPOPT_CLOB, NULL },
+  { 'r', "recursive",   CLP::ARG_OPT,  CLP::DUPOPT_CLOB, NULL, NULL },
+  { 't', "threads",     CLP::ARG_REQ,  CLP::DUPOPT_CLOB, NULL, NULL },
+  { 'e', "event",       CLP::ARG_REQ,  CLP::DUPOPT_CAT,  ";" , NULL },
+  { 'o', "output",      CLP::ARG_REQ , CLP::DUPOPT_CLOB, NULL, NULL },
+  { 'f', "papi-flag",   CLP::ARG_REQ , CLP::DUPOPT_CLOB, NULL, NULL },
   
-  { 'V', "version",     CLP::ARG_NONE, CLP::DUPOPT_CLOB, NULL },
-  { 'h', "help",        CLP::ARG_NONE, CLP::DUPOPT_CLOB, NULL },
-  {  0 , "debug",       CLP::ARG_OPT,  CLP::DUPOPT_CLOB, NULL }, // hidden
+  { 'V', "version",     CLP::ARG_NONE, CLP::DUPOPT_CLOB, NULL, NULL },
+  { 'h', "help",        CLP::ARG_NONE, CLP::DUPOPT_CLOB, NULL, NULL },
+  {  0 , "debug",       CLP::ARG_OPT,  CLP::DUPOPT_CLOB, NULL, NULL }, // hidden
   CmdLineParser_OptArgDesc_NULL_MACRO // SGI's compiler requires this version
 };
 

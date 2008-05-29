@@ -120,6 +120,8 @@
 //     only options without arguments are allowed to be grouped.]
 //
 // Warnings:
+//   *** NOTE: the following should now be resolved with IsOptArg_fn ***
+//   
 //   - Switches that take optional arguments can be confusing.  For
 //     example, assume a command 'foo' takes a filename and on option,
 //     --debug, which itself takes an optional debug level.  The
@@ -156,6 +158,12 @@ public:
     DUPOPT_CAT   // concat all available arguments using 'dupArgSep'
   };
   
+
+  // A callback for disambiguating between a switch's potential 
+  // optional argument and an actual argument; cf. Warnings above.
+  // INVARIANT: 'str' is non-NULL
+  typedef bool (*IsOptArg_fn_t)(const char* str);
+
   struct OptArgDesc {
     
     bool operator==(const OptArgDesc& x) const { 
@@ -171,8 +179,10 @@ public:
     OptKind kind;
     DupOptKind dupKind;
     const char* dupArgSep; // separator for 'DUPARG_CONCAT'
+    IsOptArg_fn_t isOptArgFn; // NULL for default handler
   };
-  
+
+
   // The NULL terminator (two versions).  The use of the first version
   // is preferable, but some older compilers won't support it.
   static OptArgDesc OptArgDesc_NULL;
@@ -318,14 +328,22 @@ private:
   // returned as an object)
   class SwDesc {
   public:
-    SwDesc() : isLong(false) { }
+    SwDesc() 
+      : isLong(false)
+    { }
+
     SwDesc(const char* sw_, bool isLong_, const char* arg_) 
-      : sw(sw_), isLong(isLong_), arg(arg_) { }
-    SwDesc(const std::string& sw_, bool isLong_, const std::string& arg_) 
-      : sw(sw_), isLong(isLong_), arg(arg_) { }
-    ~SwDesc() { }
-    // use default copy constructor if necessary
+      : sw(sw_), isLong(isLong_), arg(arg_)
+    { }
     
+    SwDesc(const std::string& sw_, bool isLong_, const std::string& arg_) 
+      : sw(sw_), isLong(isLong_), arg(arg_)
+    { }
+    
+    ~SwDesc() { }
+    
+    // use default copy constructor if necessary
+
     std::string sw;  // switch text without dashes
     bool isLong;     // long style
     std::string arg; // any argument

@@ -118,18 +118,26 @@ Options: Output:\n\
 // Note: Changing the option name requires changing the name in Parse()
 CmdLineParser::OptArgDesc Args::optArgs[] = {
   // Source structure correlation options
-  { 'I', "include",         CLP::ARG_REQ,  CLP::DUPOPT_CAT,  CLP_SEPARATOR },
-  { 'S', "structure",       CLP::ARG_REQ,  CLP::DUPOPT_CAT,  CLP_SEPARATOR },
+  { 'I', "include",         CLP::ARG_REQ,  CLP::DUPOPT_CAT,  CLP_SEPARATOR,
+     NULL },
+  { 'S', "structure",       CLP::ARG_REQ,  CLP::DUPOPT_CAT,  CLP_SEPARATOR,
+     NULL },
 
   // Output options
-  { 'o', "output",          CLP::ARG_REQ , CLP::DUPOPT_CLOB, NULL },
-  {  0 , "db",              CLP::ARG_REQ , CLP::DUPOPT_CLOB, NULL },
+  { 'o', "output",          CLP::ARG_REQ , CLP::DUPOPT_CLOB, NULL,
+     NULL },
+  {  0 , "db",              CLP::ARG_REQ , CLP::DUPOPT_CLOB, NULL,
+     NULL },
 
   // General
-  { 'v', "verbose",         CLP::ARG_OPT,  CLP::DUPOPT_CLOB, NULL },
-  { 'V', "version",         CLP::ARG_NONE, CLP::DUPOPT_CLOB, NULL },
-  { 'h', "help",            CLP::ARG_NONE, CLP::DUPOPT_CLOB, NULL },
-  {  0 , "debug",           CLP::ARG_OPT,  CLP::DUPOPT_CLOB, NULL }, // hidden
+  { 'v', "verbose",         CLP::ARG_OPT,  CLP::DUPOPT_CLOB, NULL,
+     NULL },
+  { 'V', "version",         CLP::ARG_NONE, CLP::DUPOPT_CLOB, NULL,
+     NULL },
+  { 'h', "help",            CLP::ARG_NONE, CLP::DUPOPT_CLOB, NULL,
+     NULL },
+  {  0 , "debug",           CLP::ARG_OPT,  CLP::DUPOPT_CLOB, NULL,  // hidden
+     NULL },
   CmdLineParser_OptArgDesc_NULL_MACRO // SGI's compiler requires this version
 };
 

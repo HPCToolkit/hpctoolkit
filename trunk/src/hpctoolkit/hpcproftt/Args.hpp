@@ -104,6 +104,9 @@ public:
   // Parsed Data
   Mode_t mode;
 
+  // Object Correlation args
+  bool showSourceCode;
+
 private:
   void Ctor();
   void setHPCHome(); 

@@ -175,9 +175,8 @@ main_objCorrelation(const Args& args)
     metricMgr.makeRawMetrics(fnm, false/*isunit_ev*/);
     
     // 2. Correlate
-    Analysis::Flat::correlateWithObject(metricMgr,
-					os, 
-					true, /*source*/   // FIXME
+    Analysis::Flat::correlateWithObject(metricMgr, os,
+					args.showSourceCode,
 					1 /*procthreshhold*/);
   }
   return 0;

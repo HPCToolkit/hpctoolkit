@@ -119,24 +119,33 @@ Options: Recovery and Output\n\
 
 // Note: Changing the option name requires changing the name in Parse()
 CmdLineParser::OptArgDesc Args::optArgs[] = {
-
   // Options
   { 'i', "irreducible-interval-as-loop-off",
-                            CLP::ARG_NONE, CLP::DUPOPT_CLOB, NULL },
+                            CLP::ARG_NONE, CLP::DUPOPT_CLOB, NULL,
+     NULL },
   { 'f', "forward-substitution-off",
-                            CLP::ARG_NONE, CLP::DUPOPT_CLOB, NULL },
-  { 'p', "canonical-paths", CLP::ARG_REQ , CLP::DUPOPT_CAT,  ":" },
+                            CLP::ARG_NONE, CLP::DUPOPT_CLOB, NULL,
+     NULL },
+  { 'p', "canonical-paths", CLP::ARG_REQ , CLP::DUPOPT_CAT,  ":",
+     NULL },
 
-  { 'n', "normalize-off",   CLP::ARG_NONE, CLP::DUPOPT_CLOB, NULL },
+  { 'n', "normalize-off",   CLP::ARG_NONE, CLP::DUPOPT_CLOB, NULL,
+     NULL },
   { 'u', "unsafe-normalize-off", 
-                            CLP::ARG_NONE, CLP::DUPOPT_CLOB, NULL },
-  { 'c', "compact",         CLP::ARG_NONE, CLP::DUPOPT_CLOB, NULL },
+                            CLP::ARG_NONE, CLP::DUPOPT_CLOB, NULL,
+     NULL },
+  { 'c', "compact",         CLP::ARG_NONE, CLP::DUPOPT_CLOB, NULL,
+     NULL },
   
   // Options
-  { 'v', "verbose",     CLP::ARG_OPT,  CLP::DUPOPT_CLOB, NULL },
-  { 'V', "version",     CLP::ARG_NONE, CLP::DUPOPT_CLOB, NULL },
-  { 'h', "help",        CLP::ARG_NONE, CLP::DUPOPT_CLOB, NULL },
-  {  0 , "debug",       CLP::ARG_OPT,  CLP::DUPOPT_CLOB, NULL }, // hidden
+  { 'v', "verbose",     CLP::ARG_OPT,  CLP::DUPOPT_CLOB, NULL,
+     NULL },
+  { 'V', "version",     CLP::ARG_NONE, CLP::DUPOPT_CLOB, NULL,
+     NULL },
+  { 'h', "help",        CLP::ARG_NONE, CLP::DUPOPT_CLOB, NULL,
+     NULL },
+  {  0 , "debug",           CLP::ARG_OPT,  CLP::DUPOPT_CLOB, NULL,  // hidden
+     NULL },
   CmdLineParser_OptArgDesc_NULL_MACRO // SGI's compiler requires this version
 };
 
