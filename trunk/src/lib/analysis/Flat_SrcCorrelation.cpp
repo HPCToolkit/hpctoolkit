@@ -293,35 +293,43 @@ Driver::write_txt(std::ostream &os) const
   os << std::endl;
 
   string pgm_nm = "Program summary: " + pgmStrct->name();
-  write_secSummary(os, colFmt, pgm_nm, NULL);
+  write_txt_secSummary(os, colFmt, pgm_nm, NULL);
 
   string lm_nm = "Load module summary:";
-  write_secSummary(os, colFmt, lm_nm, &ScopeTypeFilter[ScopeInfo::LM]);
+  write_txt_secSummary(os, colFmt, lm_nm, &ScopeTypeFilter[ScopeInfo::LM]);
 
   string f_nm = "File summary:";
-  write_secSummary(os, colFmt, f_nm, &ScopeTypeFilter[ScopeInfo::FILE]);
+  write_txt_secSummary(os, colFmt, f_nm, &ScopeTypeFilter[ScopeInfo::FILE]);
   
   string p_nm = "Procedure summary:";
-  write_secSummary(os, colFmt, p_nm, &ScopeTypeFilter[ScopeInfo::PROC]);
+  write_txt_secSummary(os, colFmt, p_nm, &ScopeTypeFilter[ScopeInfo::PROC]);
 
-  // FIXME: loops?
+  string l_nm = "Loop summary (dependent on structure information):";
+  write_txt_secSummary(os, colFmt, l_nm, &ScopeTypeFilter[ScopeInfo::LOOP]);
 
   string s_nm = "Statement summary:";
-  write_secSummary(os, colFmt, s_nm, &ScopeTypeFilter[ScopeInfo::STMT_RANGE]);
-
-  // FIXME: Annotated sourc file
+  write_txt_secSummary(os, colFmt, s_nm, 
+		       &ScopeTypeFilter[ScopeInfo::STMT_RANGE]);
+  
+  ScopeInfoIterator it(m_structure.GetRoot(), 
+		       &ScopeTypeFilter[ScopeInfo::FILE]);
+  for (ScopeInfo* strct = NULL; (strct = it.CurScope()); it++) {
+    FileScope* fileStrct = dynamic_cast<FileScope*>(strct);
+    const string& fnm = fileStrct->name();
+    if (fnm != PgmScopeTree::UnknownFileNm /* && filter passes*/) {
+      write_txt_annotateFile(os, colFmt, fileStrct);
+    }
+  }
 }
 
 
 void
-Driver::write_secSummary(std::ostream& os, 
-			 Analysis::TextUtil::ColumnFormatter& colFmt,
-			 const std::string& title,
-			 const ScopeInfoFilter* filter) const
+Driver::write_txt_secSummary(std::ostream& os, 
+			     Analysis::TextUtil::ColumnFormatter& colFmt,
+			     const std::string& title,
+			     const ScopeInfoFilter* filter) const
 {
-  os << std::setfill('=') << std::setw(77) << "=" << std::endl
-     << title << std::endl
-     << std::setfill('-') << std::setw(77) << "-" << std::endl;
+  write_txt_hdr(os, title);
 
   PgmScope* pgmStrct = m_structure.GetRoot();
   PerfMetric* m_sortby = m_mMgr.findSortBy();
@@ -344,6 +352,92 @@ Driver::write_secSummary(std::ostream& os,
     } 
   }
   os << std::endl;
+}
+
+
+void
+Driver::write_txt_annotateFile(std::ostream& os, 
+			       Analysis::TextUtil::ColumnFormatter& colFmt,
+			       const FileScope* fileStrct) const
+{
+  const string& fnm = fileStrct->name();
+  const string& fnm_qual = fileStrct->nameQual();
+
+  string title = "Annotated file (line level): " + fnm_qual;
+  write_txt_hdr(os, title);
+  
+  std::istream* is = NULL;
+  try {
+    is = IOUtil::OpenIStream(fnm.c_str());
+  }
+  catch (const Diagnostics::Exception& x) {
+    os << "  Cannot open.\n" << std::endl;
+    return;
+  }
+
+  //-------------------------------------------------------
+  //
+  //-------------------------------------------------------
+
+  PgmScope* pgmStrct = m_structure.GetRoot();
+  const uint linew = 5;
+  string linetxt;
+  SrcFile::ln ln_file = 1; // line number *after* next getline
+
+  ScopeInfoLineSortedIterator it(fileStrct, 
+				 &ScopeTypeFilter[ScopeInfo::STMT_RANGE]);
+  for (CodeInfo* strct = NULL; (strct = it.Current()); it++) {
+    SrcFile::ln ln_metric = strct->begLine();
+
+    // Advance ln_file to just before ln_metric, if necessary
+    while (ln_file < ln_metric && is->good()) {
+      std::getline(*is, linetxt);
+      os << std::setw(linew) << std::setfill(' ') << ln_file;
+      colFmt.genBlankCols();
+      os << " " << linetxt << std::endl;
+      ln_file++;
+    }
+
+    // INVARIANT: isValid(ln_metric) ==> ln_metric == ln_file
+    //DIAG_Assert(Logic::implies(SrcFile::isValid(ln_metric), ln_metric == ln_file, DIAG_UnexpectedInput);
+    
+    // Generate columns for ln_metric
+    os << std::setw(linew) << std::setfill(' ') << ln_metric;
+    for (uint i = 0; i < m_mMgr.size(); ++i) {
+      colFmt.genCol(i, strct->PerfData(i), pgmStrct->PerfData(i));
+    }
+
+    // Generate source file line for ln_metric, if necessary
+    if (SrcFile::isValid(ln_metric)) {
+      std::getline(*is, linetxt);
+      os << " " << linetxt;
+      ln_file++;
+    }
+    os << std::endl;
+  }
+  
+  // Finish generating file, if necessary
+  for ( ; is->good(); ln_file++) {
+    std::getline(*is, linetxt);
+    os << std::setw(linew) << std::setfill(' ') << ln_file;
+    colFmt.genBlankCols();
+    os << " " << linetxt << std::endl;
+  }
+
+  //-------------------------------------------------------
+  //
+  //-------------------------------------------------------
+  os << std::endl;
+  IOUtil::CloseStream(is);
+}
+
+
+void 
+Driver::write_txt_hdr(std::ostream& os, const std::string& hdr) const
+{
+  os << std::setfill('=') << std::setw(77) << "=" << std::endl
+     << hdr << std::endl
+     << std::setfill('-') << std::setw(77) << "-" << std::endl;
 }
 
 
