@@ -625,6 +625,8 @@ protected:
       Relocate();
     }
   }
+
+  std::string codeName_LM_F() const;
   
 protected:
   SrcFile::ln m_begLn;

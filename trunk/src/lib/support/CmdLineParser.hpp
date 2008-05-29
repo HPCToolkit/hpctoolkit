@@ -94,10 +94,13 @@
 // The command line generally has the form (but note qualifications below):
 //   <command> [arguments]
 //   
-//   [arguments] ::= [optional_arg] | [regular_arg]
+//   <argument>      ::= | <switch> | <switch_arg> | <switch_optarg> | <word>
 //   
-//   [optional_arg] ::= -f [arg] | -f[arg]
-//                    | --foo [arg] | --foo=arg
+//   <switch>        ::= -f | --foo  (<short_switch> | <long_switch>)
+//
+//   <switch_arg>    ::= -f arg   | -farg   | --foo arg   | --foo=arg
+//
+//   <switch_optarg> ::= -f [arg] | -f[arg] | --foo [arg] | --foo[=arg]
 //
 // An element of argv that starts with '-' or '--' (and is not exactly
 // '--') signifies an option.  The option switch is the text without

@@ -85,7 +85,7 @@ OpenIStream(const char* filenm)
       OpenIFile(*ifs, filenm);
       return ifs;
     }
-    catch (Diagnostics::Exception& e) {
+    catch (const Diagnostics::Exception& e) {
       delete ifs;
       throw;
     }
