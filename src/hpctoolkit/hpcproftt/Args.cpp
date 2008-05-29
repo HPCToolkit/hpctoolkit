@@ -125,37 +125,16 @@ Options: Source Structure Correlation:\n\
                        <path-substring>.\n\
 \n\
 Options: Object Correlation:\n\
-  --object[=s]         Show object code correlation: load modules,\n\
-                       procedures, instructions.\n\
-  --obj[=...]          Options:\n\
+  --object[=s]         Show object code correlation: load modules, procedures\n\
+  --obj[=s]            instructions.  Options:\n\
                          s: intermingle source line info with object code\n\
 \n\
 Options: Dump Raw Profile Data:\n\
-  --dump               Generate textual representation of raw profile data.\n";
+  --dump               Generate textual representation of raw profile data.\n\
+";
 
-#if 0
-"Options: Metrics [??? not sure ???]\n\
-  --metric <percent>\n\
-                      control of standard metrics\n\
-  --addmetric <...>   ??? a few predefined metrics...???\n";
 
-  --threshold <n>     Show only load modules, files or procedures with a\n\
-                      sample count >= <n> {1}  (Use 0 to see all procedures.)\n\
-
-properties
-  display
-  percent
-  sortby
-  [threshold]
-
---metric raw,percent
-  raw metrics are always created
-
---metric summary,percent
-
-  create & display summary metrics
-   
-#endif
+static bool isOptArg_obj(const char* x);
 
 
 #define CLP CmdLineParser
@@ -164,29 +143,48 @@ properties
 // Note: Changing the option name requires changing the name in Parse()
 CmdLineParser::OptArgDesc Args::optArgs[] = {
   // Source structure correlation options
-  {  0 , "source",          CLP::ARG_OPT , CLP::DUPOPT_CLOB, NULL },
-  {  0 , "src",             CLP::ARG_OPT , CLP::DUPOPT_CLOB, NULL },
-  { 'I', "include",         CLP::ARG_REQ,  CLP::DUPOPT_CAT,  CLP_SEPARATOR },
-  { 'S', "structure",       CLP::ARG_REQ,  CLP::DUPOPT_CAT,  CLP_SEPARATOR },
-  {  0 , "file",            CLP::ARG_REQ , CLP::DUPOPT_CAT,  CLP_SEPARATOR },
+  {  0 , "source",          CLP::ARG_OPT , CLP::DUPOPT_CLOB, NULL,
+     NULL },
+  {  0 , "src",             CLP::ARG_OPT , CLP::DUPOPT_CLOB, NULL,
+     NULL },
+  { 'I', "include",         CLP::ARG_REQ,  CLP::DUPOPT_CAT,  CLP_SEPARATOR,
+     NULL },
+  { 'S', "structure",       CLP::ARG_REQ,  CLP::DUPOPT_CAT,  CLP_SEPARATOR,
+     NULL },
+  {  0 , "file",            CLP::ARG_REQ , CLP::DUPOPT_CAT,  CLP_SEPARATOR,
+     NULL },
 
   // Object correlation options
-  {  0 , "object",          CLP::ARG_OPT , CLP::DUPOPT_CLOB, NULL },
-  {  0 , "obj",             CLP::ARG_OPT , CLP::DUPOPT_CLOB, NULL },
-  {  0 , "obj",             CLP::ARG_NONE, CLP::DUPOPT_CLOB, NULL },
+  {  0 , "object",          CLP::ARG_OPT , CLP::DUPOPT_CLOB, NULL,
+     isOptArg_obj },
+  {  0 , "obj",             CLP::ARG_OPT , CLP::DUPOPT_CLOB, NULL,
+     isOptArg_obj },
 
   // Raw profile data
-  {  0 , "dump",            CLP::ARG_NONE, CLP::DUPOPT_CLOB, NULL },
+  {  0 , "dump",            CLP::ARG_NONE, CLP::DUPOPT_CLOB, NULL,
+     NULL },
 
   // General
-  { 'v', "verbose",         CLP::ARG_OPT,  CLP::DUPOPT_CLOB, NULL },
-  { 'V', "version",         CLP::ARG_NONE, CLP::DUPOPT_CLOB, NULL },
-  { 'h', "help",            CLP::ARG_NONE, CLP::DUPOPT_CLOB, NULL },
-  {  0 , "debug",           CLP::ARG_OPT,  CLP::DUPOPT_CLOB, NULL }, // hidden
+  { 'v', "verbose",         CLP::ARG_OPT,  CLP::DUPOPT_CLOB, NULL,
+     NULL },
+  { 'V', "version",         CLP::ARG_NONE, CLP::DUPOPT_CLOB, NULL,
+     NULL },
+  { 'h', "help",            CLP::ARG_NONE, CLP::DUPOPT_CLOB, NULL,
+     NULL },
+  {  0 , "debug",           CLP::ARG_OPT,  CLP::DUPOPT_CLOB, NULL,  // hidden
+     NULL },
   CmdLineParser_OptArgDesc_NULL_MACRO // SGI's compiler requires this version
 };
 
 #undef CLP
+
+
+static bool 
+isOptArg_obj(const char* x)
+{
+  return (x[0] == 's');
+}
+
 
 
 //***************************************************************************
@@ -218,6 +216,9 @@ Args::Ctor()
   outFilename_XML = "";
   outFilename_TXT = "-";
   metrics_computeInteriorValues = true; // dump metrics on interior nodes
+
+  // Object Correlation
+  showSourceCode = false;
 }
 
 
@@ -313,7 +314,7 @@ Args::parse(int argc, const char* const argv[])
       string opt;
       if (parser.isOptArg("source"))   { opt = parser.getOptArg("source"); }
       else if (parser.isOptArg("src")) { opt = parser.getOptArg("src"); }
-    }
+          }
     if (parser.isOpt("include")) {
       string str = parser.getOptArg("include");
       StrUtil::tokenize(str, CLP_SEPARATOR, searchPaths);
@@ -334,9 +335,19 @@ Args::parse(int argc, const char* const argv[])
     // Check for other options: Object correlation options
     if (parser.isOpt("object") || parser.isOpt("obj")) {
       mode = Mode_ObjectCorrelation;
+
       string opt;
       if (parser.isOptArg("object"))   { opt = parser.getOptArg("object"); }
       else if (parser.isOptArg("obj")) { opt = parser.getOptArg("obj"); }
+
+      if (!opt.empty()) {
+	if (opt == "s") {
+	  showSourceCode = true;
+	}
+	else {
+	  ARG_ERROR("Unknown argument to --obj,--object: '" << opt << "'");
+	}
+      }
     }
 
     // Check for other options: Dump raw profile data

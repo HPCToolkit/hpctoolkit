@@ -235,9 +235,14 @@ CmdLineParser::parse(const OptArgDesc* optArgDescsOrig,
       else if (d->kind == ARG_REQ || d->kind == ARG_OPT) {
 	if (swdesc.arg.empty()) {
 	  int nexti = i + 1;
-	  if (nexti < argc && argv[nexti] && isArg(argv[nexti])) {
-	    swdesc.arg = argv[nexti];
-	    i = nexti; // increment iteration
+	  if (nexti < argc && argv[nexti]) {
+	    const char* nxt = argv[nexti];
+	    bool isarg_nxt = 
+	      (d->isOptArgFn) ? isArg(nxt) && d->isOptArgFn(nxt) : isArg(nxt);
+	    if (isarg_nxt) {
+	      swdesc.arg = nxt;
+	      i = nexti; // increment iteration
+	    }
 	  }
 	} 
 	if (swdesc.arg.empty() && d->kind == ARG_REQ) {
@@ -549,7 +554,7 @@ CmdLineParser::MakeSwitchDesc(const char* str)
     begArg = (len > 2) ? (str + 2) : NULL;   // starts after '-f'
     endArg = (begArg) ? (strEnd - 1) : NULL; // ends right before '\0'
     begSw  = (len > 1) ? (str + 1) : NULL;   // starts after '-'
-    endSw  = begSw;                               // single character
+    endSw  = begSw;                          // single character
   } 
   else {
     throw InternalError("Programming Error!");
