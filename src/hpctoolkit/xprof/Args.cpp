@@ -179,7 +179,7 @@ Args::~Args()
 void 
 Args::PrintVersion(std::ostream& os) const
 {
-  os << GetCmd() << ": " << version_info << endl;
+  os << getCmd() << ": " << version_info << endl;
 }
 
 
@@ -187,8 +187,8 @@ void
 Args::PrintUsage(std::ostream& os) const
 {
   os << "Usage: " << endl
-     << GetCmd() << " " << usage_summary1
-     << GetCmd() << " " << usage_summary2 << endl
+     << getCmd() << " " << usage_summary1
+     << getCmd() << " " << usage_summary2 << endl
      << usage_details << endl;
 } 
 
@@ -196,8 +196,8 @@ Args::PrintUsage(std::ostream& os) const
 void 
 Args::PrintError(std::ostream& os, const char* msg) const
 {
-  os << GetCmd() << ": " << msg << endl
-     << "Try `" << GetCmd() << " --help' for more information." << endl;
+  os << getCmd() << ": " << msg << endl
+     << "Try `" << getCmd() << " --help' for more information." << endl;
 }
 
 void 
@@ -215,7 +215,7 @@ Args::Parse(int argc, const char* const argv[])
     // -------------------------------------------------------
     // Parse the command line
     // -------------------------------------------------------
-    parser.Parse(optArgs, argc, argv);
+    parser.parse(optArgs, argc, argv);
     
     // -------------------------------------------------------
     // Sift through results, checking for semantic errors
@@ -223,38 +223,38 @@ Args::Parse(int argc, const char* const argv[])
     
     // Special options that should be checked first
     trace = 0;
-    if (parser.IsOpt("debug")) { 
+    if (parser.isOpt("debug")) { 
       trace = 1; 
-      if (parser.IsOptArg("debug")) {
-	const string& arg = parser.GetOptArg("debug");
-	trace = (int)CmdLineParser::ToLong(arg);
+      if (parser.isOptArg("debug")) {
+	const string& arg = parser.getOptArg("debug");
+	trace = (int)CmdLineParser::toLong(arg);
       }
     }
-    if (parser.IsOpt("help")) { 
+    if (parser.isOpt("help")) { 
       PrintUsage(std::cerr); 
       exit(1);
     }
-    if (parser.IsOpt("version")) { 
+    if (parser.isOpt("version")) { 
       PrintVersion(std::cerr);
       exit(1);
     }
     
     // Check for other options: List mode
-    if (parser.IsOpt('l')) { 
+    if (parser.isOpt('l')) { 
       listAvailableMetrics = 1;
     } 
-    if (parser.IsOpt('L')) { 
+    if (parser.isOpt('L')) { 
       listAvailableMetrics = 2;
     } 
 
     // Check for other options: normal mode
-    if (parser.IsOpt("metrics")) { 
-      metricList = parser.GetOptArg("metrics");
+    if (parser.isOpt("metrics")) { 
+      metricList = parser.getOptArg("metrics");
     }
-    if (parser.IsOpt("exclude-metrics")) { 
-      excludeMList = parser.GetOptArg("exclude-metrics");
+    if (parser.isOpt("exclude-metrics")) { 
+      excludeMList = parser.getOptArg("exclude-metrics");
     }
-    if (parser.IsOpt("raw-metrics")) { 
+    if (parser.isOpt("raw-metrics")) { 
       outputRawMetrics = true;
     } 
 
@@ -266,25 +266,25 @@ Args::Parse(int argc, const char* const argv[])
     
     // Check for other options: General
     bool profFileFromStdin = false;
-    if (parser.IsOpt('p')) { 
+    if (parser.isOpt('p')) { 
       profFileFromStdin = true;
     } 
     
     // Check for required arguments
     string errtxt;
-    int argsleft = parser.GetNumArgs();
+    int argsleft = parser.getNumArgs();
     if (profFileFromStdin) {
       switch (argsleft) {
       case 0: break; // ok
-      case 1: progFile = parser.GetArg(0); break;
+      case 1: progFile = parser.getArg(0); break;
       default: errtxt = "Too many arguments!";
       }
     } else {
       switch (argsleft) {
-      case 1: profFile = parser.GetArg(0); break;
+      case 1: profFile = parser.getArg(0); break;
       case 2: 
-	progFile = parser.GetArg(0); 
-	profFile = parser.GetArg(1); 
+	progFile = parser.getArg(0); 
+	profFile = parser.getArg(1); 
 	break;
       default: errtxt = "Incorrect number of arguments!";
       }
@@ -310,7 +310,7 @@ Args::Parse(int argc, const char* const argv[])
 void 
 Args::Dump(std::ostream& os) const
 {
-  os << "Args.cmd= " << GetCmd() << endl; 
+  os << "Args.cmd= " << getCmd() << endl; 
   os << "Args.progFile= " << progFile << endl;
   os << "Args.profFile= " << profFile << endl;
   os << "::trace " << ::trace << endl; 

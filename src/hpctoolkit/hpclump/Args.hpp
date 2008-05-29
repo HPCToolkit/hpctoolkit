@@ -90,7 +90,7 @@ public:
 
 public:  
   // Parsed Data: Command
-  const std::string& getCmd() const { return parser.GetCmd(); }
+  const std::string& getCmd() const { return parser.getCmd(); }
 
   // Parsed Data: optional arguments
   bool dumpLong;

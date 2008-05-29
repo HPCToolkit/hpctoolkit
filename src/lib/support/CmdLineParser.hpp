@@ -252,7 +252,7 @@ public:
   // command line arguments, parses the argv/argc into switches,
   // optional and required arguments.
   void
-  Parse(const OptArgDesc* optArgDescs, 
+  parse(const OptArgDesc* optArgDescs, 
 	int argc, const char* const argv[]);
   
   // -------------------------------------------------------
@@ -260,51 +260,51 @@ public:
   // -------------------------------------------------------
 
   // GetCmd: The command (will be valid even after a parse error)
-  const std::string& GetCmd() const;
+  const std::string& getCmd() const;
   
   // -------------------------------------------------------
   // Parsed Data: Optional arguments
   // -------------------------------------------------------
   
-  // IsOpt: (IsOption) Given a short or long switch, returns whether
+  // isOpt: (isOption) Given a short or long switch, returns whether
   // the switch has been seen.
-  bool IsOpt(const char swShort) const;
-  bool IsOpt(const char* swLong) const;
-  bool IsOpt(const std::string& sw) const;
+  bool isOpt(const char swShort) const;
+  bool isOpt(const char* swLong) const;
+  bool isOpt(const std::string& sw) const;
 
-  // IsOptArg: (IsOptionArgument) Given a short or long switch,
+  // isOptArg: (isOptionArgument) Given a short or long switch,
   // returns whether an argument is associated with it.  Designed for
   // switches that optionally take arguments.
-  bool IsOptArg(const char swShort) const;
-  bool IsOptArg(const char* swLong) const;
-  bool IsOptArg(const std::string& sw) const;  
+  bool isOptArg(const char swShort) const;
+  bool isOptArg(const char* swLong) const;
+  bool isOptArg(const std::string& sw) const;  
   
-  // GetOptArg: (GetOptionArgument) Given a short or long switch, get
+  // getOptArg: (GetOptionArgument) Given a short or long switch, get
   // the argument associated with it.  Assumes user has verified that
   // an argument *exists*.
-  const std::string& GetOptArg(const char swShort) const;
-  const std::string& GetOptArg(const char* swLong) const;
-  const std::string& GetOptArg(const std::string& sw) const;
+  const std::string& getOptArg(const char swShort) const;
+  const std::string& getOptArg(const char* swLong) const;
+  const std::string& getOptArg(const std::string& sw) const;
 
   // -------------------------------------------------------
   // Parsed Data: Arguments
   // -------------------------------------------------------
-  unsigned int GetNumArgs() const;
-  const std::string& GetArg(unsigned int i) const;
+  unsigned int getNumArgs() const;
+  const std::string& getArg(unsigned int i) const;
 
   // -------------------------------------------------------
   // Convert strings into other formats
   // -------------------------------------------------------
   // The input should be non-empty
-  static long     ToLong(const std::string& str);
-  static uint64_t ToUInt64(const std::string& str);
-  static double   ToDbl(const std::string& str);
+  static long     toLong(const std::string& str);
+  static uint64_t toUInt64(const std::string& str);
+  static double   toDbl(const std::string& str);
   
   // -------------------------------------------------------
   // Misc
   // -------------------------------------------------------
-  void Dump(std::ostream& os = std::cerr) const;
-  void DDump() const;
+  void dump(std::ostream& os = std::cerr) const;
+  void ddump() const;
   
 private:
   // Should not be used 

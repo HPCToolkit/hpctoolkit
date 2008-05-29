@@ -202,7 +202,7 @@ Args::parse(int argc, const char* const argv[])
     // -------------------------------------------------------
     // Parse the command line
     // -------------------------------------------------------
-    parser.Parse(optArgs, argc, argv);
+    parser.parse(optArgs, argc, argv);
     
     // -------------------------------------------------------
     // Sift through results, checking for semantic errors
@@ -211,39 +211,39 @@ Args::parse(int argc, const char* const argv[])
     // Special options that should be checked first
     trace = debugLevel = 0;
     
-    if (parser.IsOpt("debug")) { 
+    if (parser.isOpt("debug")) { 
       trace = debugLevel = 1; 
-      if (parser.IsOptArg("debug")) {
-	const string& arg = parser.GetOptArg("debug");
-	trace = debugLevel = (int)CmdLineParser::ToLong(arg);
+      if (parser.isOptArg("debug")) {
+	const string& arg = parser.getOptArg("debug");
+	trace = debugLevel = (int)CmdLineParser::toLong(arg);
       }
     }
-    if (parser.IsOpt("help")) { 
+    if (parser.isOpt("help")) { 
       printUsage(std::cerr); 
       exit(1);
     }
-    if (parser.IsOpt("version")) { 
+    if (parser.isOpt("version")) { 
       printVersion(std::cerr);
       exit(1);
     }
     
     // Check for other options
     int numDumpOptions = 0;
-    if (parser.IsOpt("long")) {
+    if (parser.isOpt("long")) {
       dumpLong = true;
       numDumpOptions++;
     } 
-    if (parser.IsOpt("short")) { 
+    if (parser.isOpt("short")) { 
       dumpShort = true;
       numDumpOptions++;
     } 
-    if (parser.IsOpt("decode")) {
+    if (parser.isOpt("decode")) {
       dumpDecode = true;
       if (dumpShort) {
 	ARG_ERROR("--decode not valid with --short!");
       }
     } 
-    if (parser.IsOpt("old")) { 
+    if (parser.isOpt("old")) { 
       dumpOld = true;
       numDumpOptions++;
     } 
@@ -251,9 +251,9 @@ Args::parse(int argc, const char* const argv[])
       ARG_ERROR("At most one dump option may be given!");
     }
 
-    if (parser.IsOpt("load-addr")) { 
-      const string& arg = parser.GetOptArg("load-addr");
-      loadVMA = CmdLineParser::ToLong(arg);
+    if (parser.isOpt("load-addr")) { 
+      const string& arg = parser.getOptArg("load-addr");
+      loadVMA = CmdLineParser::toLong(arg);
 
 #if 0
       errno = 0;
@@ -267,10 +267,10 @@ Args::parse(int argc, const char* const argv[])
     }
     
     // Check for required arguments
-    if (parser.GetNumArgs() != 1) {
+    if (parser.getNumArgs() != 1) {
       ARG_ERROR("Incorrect number of arguments!");
     }
-    inputFile = parser.GetArg(0);
+    inputFile = parser.getArg(0);
   }
   catch (const CmdLineParser::ParseError& x) {
     ARG_ERROR(x.what());

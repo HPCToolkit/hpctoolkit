@@ -199,7 +199,7 @@ Args::getCmd() const
 { 
   // avoid error messages with: .../bin/hpcprof-bin
   static string cmd = "hpcprof";
-  return cmd; // parser.GetCmd(); 
+  return cmd; // parser.getCmd(); 
 }
 
 
@@ -210,67 +210,67 @@ Args::parse(int argc, const char* const argv[])
     // -------------------------------------------------------
     // Parse the command line
     // -------------------------------------------------------
-    parser.Parse(optArgs, argc, argv);
+    parser.parse(optArgs, argc, argv);
     
     // -------------------------------------------------------
     // Sift through results, checking for semantic errors
     // -------------------------------------------------------
     
     // Special options that should be checked first
-    if (parser.IsOpt("debug")) {
+    if (parser.isOpt("debug")) {
       int dbg = 1;
-      if (parser.IsOptArg("debug")) {
-	const string& arg = parser.GetOptArg("debug");
-	dbg = (int)CmdLineParser::ToLong(arg);
+      if (parser.isOptArg("debug")) {
+	const string& arg = parser.getOptArg("debug");
+	dbg = (int)CmdLineParser::toLong(arg);
       }
       Diagnostics_SetDiagnosticFilterLevel(dbg);
       trace = dbg;
     }
-    if (parser.IsOpt("help")) { 
+    if (parser.isOpt("help")) { 
       printUsage(std::cerr); 
       exit(1);
     }
-    if (parser.IsOpt("version")) { 
+    if (parser.isOpt("version")) { 
       printVersion(std::cerr);
       exit(1);
     }
-    if (parser.IsOpt("verbose")) {
+    if (parser.isOpt("verbose")) {
       int verb = 1;
-      if (parser.IsOptArg("verbose")) {
-	const string& arg = parser.GetOptArg("verbose");
-	verb = (int)CmdLineParser::ToLong(arg);
+      if (parser.isOptArg("verbose")) {
+	const string& arg = parser.getOptArg("verbose");
+	verb = (int)CmdLineParser::toLong(arg);
       }
       Diagnostics_SetDiagnosticFilterLevel(verb);
     }
 
     // Check for other options: Correlation options
-    if (parser.IsOpt("include")) {
-      string str = parser.GetOptArg("include");
+    if (parser.isOpt("include")) {
+      string str = parser.getOptArg("include");
       StrUtil::tokenize(str, CLP_SEPARATOR, searchPaths);
     }
-    if (parser.IsOpt("structure")) {
-      string str = parser.GetOptArg("structure");
+    if (parser.isOpt("structure")) {
+      string str = parser.getOptArg("structure");
       StrUtil::tokenize(str, CLP_SEPARATOR, structureFiles);
     }
     
     // Check for other options: Output options
-    if (parser.IsOpt("output")) {
-      db_dir = parser.GetOptArg("output");
+    if (parser.isOpt("output")) {
+      db_dir = parser.getOptArg("output");
     }
-    if (parser.IsOpt("db")) {
-      db_dir = parser.GetOptArg("db");
+    if (parser.isOpt("db")) {
+      db_dir = parser.getOptArg("db");
     }
     db_dir = normalizeFilePath(db_dir);
 
     // Check for required arguments
-    uint numArgs = parser.GetNumArgs();
+    uint numArgs = parser.getNumArgs();
     if ( !(numArgs >= 1) ) {
       ARG_ERROR("Incorrect number of arguments!");
     }
 
     profileFiles.resize(numArgs);
     for (uint i = 0; i < numArgs; ++i) {
-      profileFiles[i] = parser.GetArg(i);
+      profileFiles[i] = parser.getArg(i);
     }
   }
   catch (const CmdLineParser::ParseError& x) {

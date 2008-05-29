@@ -88,7 +88,7 @@ public:
 
 public:  
   // Parsed Data: Command
-  const std::string& GetCmd() const { return parser.GetCmd(); }
+  const std::string& getCmd() const { return parser.getCmd(); }
 
   // Parsed Data: optional arguments
   unsigned int listAvailableMetrics; // 0: no, 1: short, 2: long. 0 is default
