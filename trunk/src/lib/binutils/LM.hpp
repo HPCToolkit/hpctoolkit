@@ -108,14 +108,14 @@ public:
     ReadFlg_NULL  = 0,
 
     // individual flags
-    ReadFlg_iSeg  = 0x0001, // always read: permits source code lookup
-    ReadFlg_iProc = 0x0010,
-    ReadFlg_iInsn = 0x0100,
+    ReadFlg_fSeg  = 0x0001, // always read: permits source code lookup
+    ReadFlg_fProc = 0x0010,
+    ReadFlg_fInsn = 0x0100,
 
     // composite flags
-    ReadFlg_ALL  = ReadFlg_iSeg | ReadFlg_iProc | ReadFlg_iInsn,
-    ReadFlg_Proc = ReadFlg_iSeg | ReadFlg_iProc,
-    ReadFlg_Seg  = ReadFlg_iSeg
+    ReadFlg_ALL  = ReadFlg_fSeg | ReadFlg_fProc | ReadFlg_fInsn,
+    ReadFlg_Proc = ReadFlg_fSeg | ReadFlg_fProc,
+    ReadFlg_Seg  = ReadFlg_fSeg
   };
 
   typedef VMAIntervalMap<Seg*>  SegMap;

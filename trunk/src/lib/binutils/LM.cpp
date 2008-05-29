@@ -241,7 +241,7 @@ binutils::LM::read(LM::ReadFlg readflg)
 {
   // If the file has not been opened...
   DIAG_Assert(!m_name.empty(), "Must call LM::Open first");
-  m_readFlags = (ReadFlg)(readflg | LM::ReadFlg_iSeg); // enforce ReadFlg rules
+  m_readFlags = (ReadFlg)(readflg | LM::ReadFlg_fSeg); // enforce ReadFlg rules
 
   readSymbolTables();
   readSegs();
