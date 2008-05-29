@@ -150,18 +150,8 @@ ScopeInfoLineSortedIterator(const CodeInfo *file,
 ScopeInfoLineSortedIterator::~ScopeInfoLineSortedIterator() 
 {
   delete ptrSetIt;
-}
- 
-CodeInfo* 
-ScopeInfoLineSortedIterator::Current() const
-{
-  CodeInfo *cur = NULL;
-  if (ptrSetIt->Current()) {
-    cur = (CodeInfo*) (*ptrSetIt->Current());
-    DIAG_Assert(cur != NULL, "");
-  }
-  return cur;
 } 
+
 
 void 
 ScopeInfoLineSortedIterator::DumpAndReset(ostream &os)
@@ -174,11 +164,6 @@ ScopeInfoLineSortedIterator::DumpAndReset(ostream &os)
   Reset();
 }
 
-void 
-ScopeInfoLineSortedIterator::Reset()
-{
-  ptrSetIt->Reset();
-}
 
 static int 
 CompareByLine(const void* a, const void *b) 
@@ -207,27 +192,12 @@ ScopeInfoLineSortedChildIterator(const ScopeInfo *scope,
   ptrSetIt = new WordSetSortedIterator(&scopes, CompareByLine);
 }
 
+
 ScopeInfoLineSortedChildIterator::~ScopeInfoLineSortedChildIterator()
 {
   delete ptrSetIt;
 }
 
-CodeInfo*
-ScopeInfoLineSortedChildIterator::Current() const
-{
-  CodeInfo *cur = NULL;
-  if (ptrSetIt->Current()) {
-    cur = (CodeInfo*) (*ptrSetIt->Current());
-    DIAG_Assert(cur != NULL, "");
-  }
-  return cur;
-}
-
-void
-ScopeInfoLineSortedChildIterator::Reset()
-{
-  ptrSetIt->Reset();
-}
 
 void
 ScopeInfoLineSortedChildIterator::DumpAndReset(ostream &os)

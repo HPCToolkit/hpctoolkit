@@ -114,7 +114,7 @@ public:
 		    Prof::MetricDescMgr::PerfMetricVec*> ProfToMetricsTuple;
   typedef std::vector<ProfToMetricsTuple> ProfToMetricsTupleVec;
 
-public:
+private:
   void 
   populatePgmStructure(PgmScopeTree& structure);
 
@@ -182,10 +182,17 @@ public:
 
   // -------------------------------------------------------
 
-  void write_secSummary(std::ostream& os, 
-			Analysis::TextUtil::ColumnFormatter& colFmt,
-			const std::string& title,
-			const ScopeInfoFilter* filter) const;
+  void write_txt_secSummary(std::ostream& os, 
+			    Analysis::TextUtil::ColumnFormatter& colFmt,
+			    const std::string& title,
+			    const ScopeInfoFilter* filter) const;
+
+  void write_txt_annotateFile(std::ostream& os, 
+			      Analysis::TextUtil::ColumnFormatter& colFmt,
+			      const FileScope* fileStrct) const;
+
+  void write_txt_hdr(std::ostream& os, const std::string& hdr) const;
+
 
 private:
   const Analysis::Args& m_args;

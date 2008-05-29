@@ -265,9 +265,23 @@ public:
 			      bool leavesOnly = true);
   ~ScopeInfoLineSortedIterator();
   
-  CodeInfo* Current() const;
+  CodeInfo* Current() const
+  {
+    CodeInfo *cur = NULL;
+    if (ptrSetIt->Current()) {
+      cur = (CodeInfo*) (*ptrSetIt->Current());
+    }
+    return cur;
+  } 
+
+
   void  operator++(int)   { (*ptrSetIt)++;}
-  void Reset();
+
+  void Reset()
+  {
+    ptrSetIt->Reset();
+  }
+
   void DumpAndReset(std::ostream &os = std::cerr);
 
 private:
@@ -281,9 +295,22 @@ public:
 				   const ScopeInfoFilter* filterFunc = NULL);
   ~ScopeInfoLineSortedChildIterator();
 
-  CodeInfo* Current() const;
+  CodeInfo* Current() const
+  {
+    CodeInfo *cur = NULL;
+    if (ptrSetIt->Current()) {
+      cur = (CodeInfo*) (*ptrSetIt->Current());
+    }
+    return cur;
+  }
+
   void  operator++(int)   { (*ptrSetIt)++;}
-  void Reset();
+
+  void Reset()
+  {
+    ptrSetIt->Reset();
+  }
+
   void DumpAndReset(std::ostream &os = std::cerr);
 
   // both of these are buried in other parts of the HPCView code :-(
