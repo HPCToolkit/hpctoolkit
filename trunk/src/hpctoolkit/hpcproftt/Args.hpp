@@ -63,6 +63,7 @@
 
 #include <lib/analysis/Args.hpp>
 
+#include <lib/support/diagnostics.h>
 #include <lib/support/CmdLineParser.hpp>
 
 //*************************** Forward Declarations **************************
@@ -78,6 +79,22 @@ public:
     Mode_RawDataDump
   };
 
+  class Exception : public Diagnostics::Exception {
+  public:
+    Exception(const char* x,
+	      const char* filenm = NULL, unsigned int lineno = 0)
+      : Diagnostics::Exception(x, filenm, lineno) 
+      { }
+
+    Exception(std::string x,
+	      const char* filenm = NULL, unsigned int lineno = 0) 
+      : Diagnostics::Exception(x, filenm, lineno) 
+      { }
+
+    ~Exception() { }
+  };
+
+
 public: 
   Args(); 
   Args(int argc, const char* const argv[]);
@@ -91,15 +108,18 @@ public:
   void printUsage(std::ostream& os) const;
   
   // Error
-  void printError(std::ostream& os, const char* msg) const;
-  void printError(std::ostream& os, const std::string& msg) const;
+  static void printError(std::ostream& os, const char* msg) /*const*/;
+  static void printError(std::ostream& os, const std::string& msg) /*const*/;
 
   // Dump
   virtual void dump(std::ostream& os = std::cerr) const;
 
 public:
   // Parsed Data: Command
-  const std::string& getCmd() const;
+  static const std::string& getCmd() /*const*/;
+
+  static int/*TxtSum*/ parse_sourceOpts(const std::string& srcOpts);
+  static bool          parse_objectOpts(const std::string& srcOpts);
 
   // Parsed Data
   Mode_t mode;

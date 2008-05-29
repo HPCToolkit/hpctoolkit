@@ -67,6 +67,8 @@ using std::string;
 
 //*************************** Forward Declarations **************************
 
+#define ARG_Throw(streamArgs) DIAG_ThrowX(Args::Exception, streamArgs)
+
 // Cf. DIAG_Die.
 #define ARG_ERROR(streamArgs)                                        \
   { std::ostringstream WeIrDnAmE;                                    \
@@ -80,7 +82,7 @@ static const char* version_info =
 #include <include/HPCToolkitVersionInfo.h>
 
 static const char* usage_summary1 =
-"--source [options] <profile-file>...";
+"[--source] [options] <profile-file>...";
 
 static const char* usage_summary2 =
 "--object [options] <profile-file>...";
@@ -90,13 +92,14 @@ static const char* usage_summary3 =
 
 static const char* usage_details = "\
 hpcproftt correlates 'flat' profile metrics with either source code structure\n\
-(first mode) or object code (second mode) and generates textual output\n\
-suitable for a terminal.  In each of these modes, hpcproftt expects a list\n\
-of flat profile files.\n\
+(the first and default mode) or object code (second mode) and generates\n\
+textual output suitable for a terminal.  In both of these modes, hpcproftt\n\
+expects a list of flat profile files. hpcproftt also supports a third mode\n\
+in which it generates textual dumps of profile files.  In this mode, the\n\
+profile list may contain either flat or call path profile files.\n\
 \n\
-hpcproftt also supports a third mode in which it generates textual dumps of\n\
-profile files.  In this mode, the profile list may contain either flat or\n\
-call path profile files.\n\
+hpcproftt defaults to source code correlation mode. Without any mode switch,\n\
+it behaves as if passed --source=pgm,lm.\n\
 \n\
 Options: General:\n\
   -v [<n>], --verbose [<n>]\n\
@@ -107,22 +110,32 @@ Options: General:\n\
   --debug [<n>]        Debug: use debug level <n>. {1}\n\
 \n\
 Options: Source Structure Correlation:\n\
-  --source=[fpls]      Defaults to showing all structure: load modules,\n\
-  --src=[...]          files, procedures, loops, statements.\n\
-                       Optionally select specific structure to show:\n\
-                         f: files\n\
-                         p: procedures\n\
-                         l: loops\n\
-                         s: statements\n\
+  --source[=all,pgm,lm,f,p,l,s]\n\
+  --src[=all,pgm,lm,f,p,l,s]\n\
+                       Show metrics summarized by source structure. {all}\n\
+                         all: all summaries below\n\
+                         pgm: program summary\n\
+                         lm:  load module summary\n\
+                         f:   files summary\n\
+                         p:   procedure summary\n\
+                         l:   loop summary\n\
+                         s:   statement summary\n\
+  --srcannot           Annotate source files with metrics.\n\
+                       Default path filter is '*'; change with --srcfile.\n\
+  --srcfile=<path-substring>\n\
+                       Annotate source files with path names that match\n\
+                       <path-substring>.\n\
+  -M <metric>, --metric <metric>\n\
+                       Show a supplemental or different metric set.\n\
+                         sum:    \n\
+                         sum-only: \n\
+\n\
   -I <path>, --include <path>\n\
                        Use <path> when searching for source files. May pass\n\
                        multiple times.\n\
   -S <file>, --structure <file>\n\
                        Use hpcstruct structure file <file> for correlation.\n\
                        May pass multiple times (e.g., for shared libraries).\n\
-  --file=<path-substring>\n\
-                       Annotate source files with path names that match\n\
-                       <path-substring>.\n\
 \n\
 Options: Object Correlation:\n\
   --object[=s]         Show object code correlation: load modules, procedures\n\
@@ -134,6 +147,7 @@ Options: Dump Raw Profile Data:\n\
 ";
 
 
+static bool isOptArg_src(const char* x);
 static bool isOptArg_obj(const char* x);
 
 
@@ -144,8 +158,10 @@ static bool isOptArg_obj(const char* x);
 CmdLineParser::OptArgDesc Args::optArgs[] = {
   // Source structure correlation options
   {  0 , "source",          CLP::ARG_OPT , CLP::DUPOPT_CLOB, NULL,
-     NULL },
+     isOptArg_src },
   {  0 , "src",             CLP::ARG_OPT , CLP::DUPOPT_CLOB, NULL,
+     isOptArg_src },
+  {  0 , "srcannot",        CLP::ARG_NONE, CLP::DUPOPT_CLOB, NULL,
      NULL },
   { 'I', "include",         CLP::ARG_REQ,  CLP::DUPOPT_CAT,  CLP_SEPARATOR,
      NULL },
@@ -180,11 +196,46 @@ CmdLineParser::OptArgDesc Args::optArgs[] = {
 
 
 static bool 
-isOptArg_obj(const char* x)
+isOptArg_src(const char* x)
 {
-  return (x[0] == 's');
+  string opt(x);
+  bool ret = true;
+  try {
+    Args::parse_objectOpts(opt);
+  }
+  catch (const Args::Exception& x) {
+    // To enable good error messages, consider strings with a ratio of
+    // commas:characters >= 1/3 to be an attempt at a src argument.
+    // NOTE: this metric assumes an implicit comma at the end of the string
+    const double tolerance = 1.0/3.0;
+
+    double commas = 1;
+    for (size_t p = 0; (p = opt.find_first_of(',', p)) != string::npos; ++p) {
+      commas += 1;
+    }
+
+    double characters = opt.size();
+    
+    ret = (commas / characters) >= tolerance;
+  }
+  return ret;
 }
 
+
+static bool 
+isOptArg_obj(const char* x)
+{
+  string opt(x);
+  bool ret = true;
+  try {
+    Args::parse_objectOpts(opt);
+  }
+  catch (const Args::Exception& x) {
+    // To enable good error messages, consider strings of size 1
+    return (opt.size() == 1);
+  }
+  return ret;
+}
 
 
 //***************************************************************************
@@ -211,10 +262,13 @@ Args::Ctor()
   Diagnostics_SetDiagnosticFilterLevel(1);
 
   // override Analysis::Args defaults
-  db_dir = "";
-  db_copySrcFiles = false;
-  outFilename_XML = "";
-  outFilename_TXT = "-";
+  out_db_experiment = "";
+  db_dir            = "";
+  db_copySrcFiles   = false;
+
+  out_txt            = "-";
+  txt_summary        = TxtSum_fPgm | TxtSum_fLM;
+  txt_src_annotation = false;
   metrics_computeInteriorValues = true; // dump metrics on interior nodes
 
   // Object Correlation
@@ -246,21 +300,21 @@ Args::printUsage(std::ostream& os) const
 
 
 void 
-Args::printError(std::ostream& os, const char* msg) const
+Args::printError(std::ostream& os, const char* msg) /*const*/
 {
   os << getCmd() << ": " << msg << endl
      << "Try `" << getCmd() << " --help' for more information." << endl;
 }
 
 void 
-Args::printError(std::ostream& os, const std::string& msg) const
+Args::printError(std::ostream& os, const std::string& msg) /*const*/
 {
   printError(os, msg.c_str());
 }
 
 
 const std::string& 
-Args::getCmd() const
+Args::getCmd() /*const*/
 { 
   // avoid error messages with: .../bin/hpcproftt-bin
   static string cmd = "hpcproftt";
@@ -311,10 +365,19 @@ Args::parse(int argc, const char* const argv[])
     // Check for other options: Source correlation options
     if (parser.isOpt("source") || parser.isOpt("src")) {
       mode = Mode_SourceCorrelation;
+      txt_summary = TxtSum_ALL;
+      
       string opt;
       if (parser.isOptArg("source"))   { opt = parser.getOptArg("source"); }
       else if (parser.isOptArg("src")) { opt = parser.getOptArg("src"); }
-          }
+
+      if (!opt.empty()) {
+	txt_summary = parse_sourceOpts(opt);
+      }
+    }
+    if (parser.isOpt("srcannot")) {
+      txt_src_annotation = true;
+    }
     if (parser.isOpt("include")) {
       string str = parser.getOptArg("include");
       StrUtil::tokenize(str, CLP_SEPARATOR, searchPaths);
@@ -341,12 +404,7 @@ Args::parse(int argc, const char* const argv[])
       else if (parser.isOptArg("obj")) { opt = parser.getOptArg("obj"); }
 
       if (!opt.empty()) {
-	if (opt == "s") {
-	  showSourceCode = true;
-	}
-	else {
-	  ARG_ERROR("Unknown argument to --obj,--object: '" << opt << "'");
-	}
+	showSourceCode = parse_objectOpts(opt);
       }
     }
 
@@ -375,6 +433,51 @@ Args::parse(int argc, const char* const argv[])
     DIAG_EMsg(x.message());
     exit(1);
   }
+  catch (const Args::Exception& x) {
+    ARG_ERROR(x.what());
+  }
+}
+
+
+int/*TxtSum*/
+Args::parse_sourceOpts(const string& opts)
+{
+  int/*TxtSum*/ txt_summary = Analysis::Args::TxtSum_NULL;
+
+  std::vector<std::string> srcOptVec;
+  StrUtil::tokenize(opts, ",", srcOptVec);
+
+  for (uint i = 0; i < srcOptVec.size(); ++i) {
+    const string& opt = srcOptVec[i];
+
+    Analysis::Args::TxtSum flg = Analysis::Args::TxtSum_NULL;
+    if      (opt == "all") { flg = TxtSum_ALL; }
+    else if (opt == "pgm") { flg = TxtSum_fPgm; }
+    else if (opt == "lm")  { flg = TxtSum_fLM; }
+    else if (opt == "f")   { flg = TxtSum_fFile; }
+    else if (opt == "p")   { flg = TxtSum_fProc; }
+    else if (opt == "l")   { flg = TxtSum_fLoop; }
+    else if (opt == "s")   { flg = TxtSum_fStmt; }
+    else {
+      ARG_Throw("Unknown argument to --src,--source: '" << opt << "'");
+    }
+    
+    txt_summary = (txt_summary | flg);
+  }
+  
+  return txt_summary;
+}
+
+
+bool
+Args::parse_objectOpts(const string& opts)
+{
+  if (opts == "s") {
+    return true;
+  }
+
+  ARG_Throw("Unknown argument to --obj,--object: '" << opts << "'");
+  return false; // Unreachable
 }
 
 

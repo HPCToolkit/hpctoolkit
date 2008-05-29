@@ -65,11 +65,6 @@
 
 //***************************************************************************
 
-#define Analysis_EXPERIMENTDB  "experiment-db"
-#define Analysis_EXPERIMENTXML "experiment.xml"
-#define Analysis_EXPERIMENTCSV "experiment.csv"
-#define Analysis_EXPERIMENTTXT "experiment.txt"
-
 namespace Analysis {
 
 // PathTuple: a {path, viewname} pair.
@@ -126,15 +121,49 @@ public:
 
 
   // -------------------------------------------------------
-  // Output arguments
+  // Output arguments: database output
   // -------------------------------------------------------
-  std::string db_dir;          // disable: ""
+
+#define Analysis_OUT_DB_EXPERIMENT "experiment.xml"
+#define Analysis_OUT_DB_CSV        "experiment.csv"
+#define Analysis_DB_DIR            "experiment-db"
+
+  std::string out_db_experiment; // disable: "", stdout: "-"
+  std::string out_db_csv;        // disable: "", stdout: "-"
+
+  std::string db_dir;            // disable: ""
   bool db_copySrcFiles;
 
-  std::string outFilename_XML; // disable: "", stdout: "-"
-  std::string outFilename_CSV; // disable: "", stdout: "-"
-  std::string outFilename_TXT; // disable: "", stdout: "-"
+  // -------------------------------------------------------
+  // Output arguments: textual output
+  // -------------------------------------------------------
 
+#define Analysis_OUT_TXT           ""
+
+  std::string out_txt;           // disable: "", stdout: "-"
+
+  enum TxtSum { 
+    TxtSum_NULL  = 0,
+    
+    // individual flags
+    TxtSum_fPgm  = 0x00000001,
+    TxtSum_fLM   = 0x00000010,
+    TxtSum_fFile = 0x00000100,
+    TxtSum_fProc = 0x00001000,
+    TxtSum_fLoop = 0x00010000,
+    TxtSum_fStmt = 0x00100000,
+
+    // composite flags
+    TxtSum_ALL  = (TxtSum_fPgm | TxtSum_fLM | TxtSum_fFile | TxtSum_fProc 
+		   | TxtSum_fLoop | TxtSum_fStmt)
+  };
+
+  int/*TxtSum*/ txt_summary;
+
+  bool txt_src_annotation;
+
+
+  // FIXME: computed metrics require interior values...
   bool metrics_computeInteriorValues;
 
 private:
