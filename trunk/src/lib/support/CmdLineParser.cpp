@@ -117,28 +117,28 @@ private:
 
 //****************************************************************************
 
-// IsDashDash
+// isDashDash
 static inline bool
-IsDashDash(const char* str) { return (strcmp(str, "--") == 0); }
+isDashDash(const char* str) { return (strcmp(str, "--") == 0); }
 
 
 // IsSwitch, IsLongSwitch, IsShortSwitch: Assumes str is non-NULL!  Note also
 // that the test for short switch is not quite complete and depends on
 // testing for a long switch first!
 static inline bool
-IsLongSwitch(const char* str) { return (strncmp(str, "--", 2) == 0); }
+isLongSwitch(const char* str) { return (strncmp(str, "--", 2) == 0); }
 
 static inline bool
-IsShortSwitch(const char* str) { return (*str == '-'); }
+isShortSwitch(const char* str) { return (*str == '-'); }
 
 static inline bool
-IsSwitch(const char* str) { return (IsLongSwitch(str) || IsShortSwitch(str)); }
+isSwitch(const char* str) { return (isLongSwitch(str) || isShortSwitch(str)); }
 
 
-// IsArg: Verifies that we should interpret 'str' as an argument.
+// isArg: Verifies that we should interpret 'str' as an argument.
 // Should be non-NULL;
 static inline bool
-IsArg(const char* str) { return (!IsSwitch(str) && !IsDashDash(str)); }
+isArg(const char* str) { return (!isSwitch(str) && !isDashDash(str)); }
 
 
 //****************************************************************************
@@ -160,7 +160,7 @@ CmdLineParser::CmdLineParser(const OptArgDesc* optArgDescs,
 			     int argc, const char* const argv[])
 {
   Ctor();
-  Parse(optArgDescs, argc, argv);
+  parse(optArgDescs, argc, argv);
 }
 
 void
@@ -178,7 +178,7 @@ CmdLineParser::~CmdLineParser()
 
 
 void
-CmdLineParser::Parse(const OptArgDesc* optArgDescsOrig, 
+CmdLineParser::parse(const OptArgDesc* optArgDescsOrig, 
 		     int argc, const char* const argv[])
 { 
   Reset();
@@ -200,12 +200,12 @@ CmdLineParser::Parse(const OptArgDesc* optArgDescsOrig,
     }
     
     // A '--' signifies end of optional arguments
-    if (IsDashDash(str)) {
+    if (isDashDash(str)) {
       endOfOpts = true;
       continue;
     }
     
-    if (!endOfOpts && IsSwitch(str)) {
+    if (!endOfOpts && isSwitch(str)) {
       // -------------------------------------------------------
       // An option switch (possibly needing an argument)
       // -------------------------------------------------------
@@ -231,10 +231,11 @@ CmdLineParser::Parse(const OptArgDesc* optArgDescsOrig,
 	    + swdesc.sw + "'";
 	  throw ParseError(msg);
 	}
-      } else if (d->kind == ARG_REQ || d->kind == ARG_OPT) {
+      } 
+      else if (d->kind == ARG_REQ || d->kind == ARG_OPT) {
 	if (swdesc.arg.empty()) {
 	  int nexti = i + 1;
-	  if (nexti < argc && argv[nexti] && IsArg(argv[nexti])) {
+	  if (nexti < argc && argv[nexti] && isArg(argv[nexti])) {
 	    swdesc.arg = argv[nexti];
 	    i = nexti; // increment iteration
 	  }
@@ -262,52 +263,52 @@ CmdLineParser::Parse(const OptArgDesc* optArgDescsOrig,
 //****************************************************************************
 
 const string& 
-CmdLineParser::GetCmd() const
+CmdLineParser::getCmd() const
 {
   return command;
 }
 
 
-// IsOpt:
+// isOpt:
 bool 
-CmdLineParser::IsOpt(const char swShort) const
+CmdLineParser::isOpt(const char swShort) const
 {
   string sw(1, swShort);
-  return IsOpt(sw);
+  return isOpt(sw);
 }
 
 bool 
-CmdLineParser::IsOpt(const char* swLong) const
+CmdLineParser::isOpt(const char* swLong) const
 {
   string sw(swLong);
-  return IsOpt(sw);
+  return isOpt(sw);
 }
 
 bool 
-CmdLineParser::IsOpt(const string& sw) const
+CmdLineParser::isOpt(const string& sw) const
 {
   SwitchToArgMap::const_iterator it = switchToArgMap.find(sw);
   return (it != switchToArgMap.end());
 }
 
 
-// IsOptArg:
+// isOptArg:
 bool 
-CmdLineParser::IsOptArg(const char swShort) const
+CmdLineParser::isOptArg(const char swShort) const
 {
   string sw(1, swShort);
-  return IsOptArg(sw);
+  return isOptArg(sw);
 }
 
 bool 
-CmdLineParser::IsOptArg(const char* swLong) const
+CmdLineParser::isOptArg(const char* swLong) const
 {
   string sw(swLong);
-  return IsOptArg(sw);
+  return isOptArg(sw);
 }
 
 bool 
-CmdLineParser::IsOptArg(const string& sw) const
+CmdLineParser::isOptArg(const string& sw) const
 {
   SwitchToArgMap::const_iterator it = switchToArgMap.find(sw);
   if ((it != switchToArgMap.end()) && ((*it).second != NULL)) {
@@ -317,23 +318,23 @@ CmdLineParser::IsOptArg(const string& sw) const
 }
 
 
-// GetOptArg:
+// getOptArg:
 const string&
-CmdLineParser::GetOptArg(const char swShort) const
+CmdLineParser::getOptArg(const char swShort) const
 {
   string sw(1, swShort);
-  return GetOptArg(sw);
+  return getOptArg(sw);
 }
 
 const string&
-CmdLineParser::GetOptArg(const char* swLong) const
+CmdLineParser::getOptArg(const char* swLong) const
 {
   string sw(swLong);
-  return GetOptArg(sw);
+  return getOptArg(sw);
 }
 
 const string&
-CmdLineParser::GetOptArg(const string& sw) const
+CmdLineParser::getOptArg(const string& sw) const
 {
   SwitchToArgMap::const_iterator it = switchToArgMap.find(sw);
   if (it == switchToArgMap.end()) {
@@ -348,13 +349,13 @@ CmdLineParser::GetOptArg(const string& sw) const
 
 
 unsigned int 
-CmdLineParser::GetNumArgs() const
+CmdLineParser::getNumArgs() const
 { 
   return arguments.size(); 
 }
 
 const string& 
-CmdLineParser::GetArg(unsigned int i) const
+CmdLineParser::getArg(unsigned int i) const
 {
   return arguments[i];
 }
@@ -363,7 +364,7 @@ CmdLineParser::GetArg(unsigned int i) const
 //****************************************************************************
 
 long
-CmdLineParser::ToLong(const string& str)
+CmdLineParser::toLong(const string& str)
 {
   if (str.empty()) { throw InternalError("ToLong"); }
   
@@ -377,7 +378,7 @@ CmdLineParser::ToLong(const string& str)
 
 
 uint64_t
-CmdLineParser::ToUInt64(const string& str)
+CmdLineParser::toUInt64(const string& str)
 {
   if (str.empty()) { throw InternalError("ToUInt64"); }
   
@@ -391,7 +392,7 @@ CmdLineParser::ToUInt64(const string& str)
 
 
 double   
-CmdLineParser::ToDbl(const string& str)
+CmdLineParser::toDbl(const string& str)
 {
   if (str.empty()) { throw InternalError("ToDbl"); }
   
@@ -407,9 +408,9 @@ CmdLineParser::ToDbl(const string& str)
 //****************************************************************************
 
 void 
-CmdLineParser::Dump(std::ostream& os) const
+CmdLineParser::dump(std::ostream& os) const
 {
-  os << "Command: `" << GetCmd() << "'" << std::endl;
+  os << "Command: `" << getCmd() << "'" << std::endl;
   
   os << "Switch to Argument map:" << std::endl;
   for (SwitchToArgMap::const_iterator it = switchToArgMap.begin();
@@ -427,9 +428,9 @@ CmdLineParser::Dump(std::ostream& os) const
 
 
 void 
-CmdLineParser::DDump() const
+CmdLineParser::ddump() const
 {
-  Dump(std::cerr);
+  dump(std::cerr);
 }
 
 
@@ -494,7 +495,8 @@ CmdLineParser::CheckForErrors(const OptArgDesc* optArgDescs)
 
     if (p->swLong) {
       sw = p->swLong; 
-    } else {
+    } 
+    else {
       sw = p->swShort;
     }
     
@@ -531,7 +533,7 @@ CmdLineParser::MakeSwitchDesc(const char* str)
   const char* begSw = NULL, *endSw = NULL;   // end pointers are inclusive!
   const char* begArg = NULL, *endArg = NULL;
   bool isLong = false;
-  if (IsLongSwitch(str)) {
+  if (isLongSwitch(str)) {
     // test for --foo=arg
     begArg = strchr(str, '=');
     if (begArg) {
@@ -542,7 +544,7 @@ CmdLineParser::MakeSwitchDesc(const char* str)
     endSw = (begArg) ? (begArg - 2) : (strEnd - 1);
     isLong = true;
   } 
-  else if (IsShortSwitch(str)) {
+  else if (isShortSwitch(str)) {
     // test for -f[arg]
     begArg = (len > 2) ? (str + 2) : NULL;   // starts after '-f'
     endArg = (begArg) ? (strEnd - 1) : NULL; // ends right before '\0'
@@ -589,7 +591,8 @@ CmdLineParser::FindOptDesc(const OptArgDesc* optArgDescs, const SwDesc& swdesc,
 	odesc = p;
 	break;
       }
-    } else {
+    } 
+    else {
       if (p->swShort != 0 && p->swShort == swdesc.sw[0]) {
 	odesc = p;
 	break;
@@ -612,7 +615,8 @@ CmdLineParser::FindOptDesc(const OptArgDesc* optArgDescs, const SwDesc& swdesc,
       msg += swdesc.sw; msg += "' matches two different options: ";
       if (swdesc.isLong) {
 	msg += odesc->swLong; msg += ", "; msg += m->swLong;
-      } else {
+      } 
+      else {
 	msg += odesc->swShort; msg += ", "; msg += m->swShort;
       }
       throw ParseError(msg);
@@ -655,7 +659,8 @@ CmdLineParser::AddOption(const OptArgDesc& odesc,
     // Insert in map
     string* theArg = (arg.empty()) ? NULL : new string(arg);
     switchToArgMap.insert(SwitchToArgMap::value_type(sw, theArg));
-  } else {
+  } 
+  else {
     // Handle duplicates
     string* theArg = (*it).second;
     
@@ -666,10 +671,12 @@ CmdLineParser::AddOption(const OptArgDesc& odesc,
     if (!arg.empty()) {
       if (!theArg) {
 	theArg = new string(arg);
-      } else {
+      } 
+      else {
 	if (odesc.dupKind == DUPOPT_CLOB) {
 	  *theArg = arg;
-	} else if (odesc.dupKind == DUPOPT_CAT) {
+	} 
+	else if (odesc.dupKind == DUPOPT_CAT) {
 	  *theArg += odesc.dupArgSep + arg;
 	} 
       }

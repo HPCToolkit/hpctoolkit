@@ -208,7 +208,7 @@ Args::printError(std::ostream& os, const std::string& msg) const
 const std::string& 
 Args::getCmd() const
 {
-  return parser.GetCmd();
+  return parser.getCmd();
 }
 
 
@@ -219,63 +219,63 @@ Args::parse(int argc, const char* const argv[])
     // -------------------------------------------------------
     // Parse the command line
     // -------------------------------------------------------
-    parser.Parse(optArgs, argc, argv);
+    parser.parse(optArgs, argc, argv);
     
     // -------------------------------------------------------
     // Sift through results, checking for semantic errors
     // -------------------------------------------------------
     
     // Special options that should be checked first
-    if (parser.IsOpt("debug")) { 
+    if (parser.isOpt("debug")) { 
       int dbg = 1;
-      if (parser.IsOptArg("debug")) {
-	const string& arg = parser.GetOptArg("debug");
-	dbg = (int)CmdLineParser::ToLong(arg);
+      if (parser.isOptArg("debug")) {
+	const string& arg = parser.getOptArg("debug");
+	dbg = (int)CmdLineParser::toLong(arg);
       }
       Diagnostics_SetDiagnosticFilterLevel(dbg);
     }
-    if (parser.IsOpt("help")) { 
+    if (parser.isOpt("help")) { 
       printUsage(std::cerr); 
       exit(1);
     }
-    if (parser.IsOpt("version")) { 
+    if (parser.isOpt("version")) { 
       printVersion(std::cerr);
       exit(1);
     }
-    if (parser.IsOpt("verbose")) {
+    if (parser.isOpt("verbose")) {
       int verb = 1;
-      if (parser.IsOptArg("verbose")) {
-	const string& arg = parser.GetOptArg("verbose");
-	verb = (int)CmdLineParser::ToLong(arg);
+      if (parser.isOptArg("verbose")) {
+	const string& arg = parser.getOptArg("verbose");
+	verb = (int)CmdLineParser::toLong(arg);
       }
       Diagnostics_SetDiagnosticFilterLevel(verb);
     } 
     
     // Check for other options
-    if (parser.IsOpt("irreducible-interval-as-loop-off")) { 
+    if (parser.isOpt("irreducible-interval-as-loop-off")) { 
       irreducibleIntervalIsLoop = false;
     } 
-    if (parser.IsOpt("forward-substitution-off")) { 
+    if (parser.isOpt("forward-substitution-off")) { 
       forwardSubstitutionOff = true;
     } 
-    if (parser.IsOpt("canonical-paths")) { 
-      canonicalPathList = parser.GetOptArg("canonical-paths");
+    if (parser.isOpt("canonical-paths")) { 
+      canonicalPathList = parser.getOptArg("canonical-paths");
     }
-    if (parser.IsOpt("normalize-off")) { 
+    if (parser.isOpt("normalize-off")) { 
       normalizeScopeTree = false;
     } 
-    if (parser.IsOpt("unsafe-normalize-off")) { 
+    if (parser.isOpt("unsafe-normalize-off")) { 
       unsafeNormalizations = false;
     } 
-    if (parser.IsOpt("compact")) { 
+    if (parser.isOpt("compact")) { 
       prettyPrintOutput = false;
     } 
     
     // Check for required arguments
-    if (parser.GetNumArgs() != 1) {
+    if (parser.getNumArgs() != 1) {
       ARG_ERROR("Incorrect number of arguments!");
     }
-    inputFile = parser.GetArg(0);
+    inputFile = parser.getArg(0);
   }
   catch (const CmdLineParser::ParseError& x) {
     ARG_ERROR(x.what());

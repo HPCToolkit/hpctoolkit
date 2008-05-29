@@ -236,7 +236,7 @@ Args::printError(std::ostream& os, const std::string& msg) const
 const std::string& 
 Args::getCmd() const
 { 
-  return parser.GetCmd(); 
+  return parser.getCmd(); 
 }
 
 
@@ -249,48 +249,48 @@ Args::parse(int argc, const char* const argv[])
     // -------------------------------------------------------
     // Parse the command line
     // -------------------------------------------------------
-    parser.Parse(optArgs, argc, argv);
+    parser.parse(optArgs, argc, argv);
     
     // -------------------------------------------------------
     // Sift through results, checking for semantic errors
     // -------------------------------------------------------
     
     // Special options that should be checked first
-    if (parser.IsOpt("debug")) {
+    if (parser.isOpt("debug")) {
       int dbg = 1;
-      if (parser.IsOptArg("debug")) {
-	const string& arg = parser.GetOptArg("debug");
-	dbg = (int)CmdLineParser::ToLong(arg);
+      if (parser.isOptArg("debug")) {
+	const string& arg = parser.getOptArg("debug");
+	dbg = (int)CmdLineParser::toLong(arg);
       }
       Diagnostics_SetDiagnosticFilterLevel(dbg);
     }
-    if (parser.IsOpt("help")) { 
+    if (parser.isOpt("help")) { 
       printUsage(std::cerr); 
       exit(1);
     }
-    if (parser.IsOpt("version")) { 
+    if (parser.isOpt("version")) { 
       printVersion(std::cerr);
       exit(1);
     }
      
     // Check for informational options
-    if (parser.IsOpt("events-short")) { 
+    if (parser.isOpt("events-short")) { 
       listEvents = LIST_SHORT;
       requireCmd = false;
     } 
-    if (parser.IsOpt("events-long")) { 
+    if (parser.isOpt("events-long")) { 
       listEvents = LIST_LONG;
       requireCmd = false;
     } 
-    if (parser.IsOpt("paths")) { 
+    if (parser.isOpt("paths")) { 
       printPaths = true;
       requireCmd = false;
     }
 
     // Check for profiling options    
-    if (parser.IsOpt("recursive")) { 
-      if (parser.IsOptArg("recursive")) {
-	const string& arg = parser.GetOptArg("recursive");
+    if (parser.isOpt("recursive")) { 
+      if (parser.isOptArg("recursive")) {
+	const string& arg = parser.getOptArg("recursive");
 	if (arg == "no" || arg == "yes") {
 	  profRecursive = arg;
 	}
@@ -302,8 +302,8 @@ Args::parse(int argc, const char* const argv[])
 	profRecursive = "no";
       }
     }
-    if (parser.IsOpt("threads")) { 
-      const string& arg = parser.GetOptArg("threads");
+    if (parser.isOpt("threads")) { 
+      const string& arg = parser.getOptArg("threads");
       if (arg == "each" || arg == "all") {
 	profThread = arg;
       }
@@ -311,25 +311,25 @@ Args::parse(int argc, const char* const argv[])
 	ARG_ERROR("Unexpected option argument '" << arg << "'");
       }
     }
-    if (parser.IsOpt("event")) { 
-      profEvents = parser.GetOptArg("event");
+    if (parser.isOpt("event")) { 
+      profEvents = parser.getOptArg("event");
     }
-    if (parser.IsOpt("output")) { 
-      profOutput = parser.GetOptArg("output");
+    if (parser.isOpt("output")) { 
+      profOutput = parser.getOptArg("output");
     }
-    if (parser.IsOpt("papi-flag")) { 
-      profPAPIFlag = parser.GetOptArg("papi-flag");
+    if (parser.isOpt("papi-flag")) { 
+      profPAPIFlag = parser.getOptArg("papi-flag");
     }
     
-    // Check for required arguments: Get <command> [command-arguments]
-    uint numArgs = parser.GetNumArgs();
+    // Check for required arguments: get <command> [command-arguments]
+    uint numArgs = parser.getNumArgs();
     if (requireCmd && numArgs < 1) {
       ARG_ERROR("Incorrect number of arguments: Missing <command> to profile.");
     }
     
     profArgV.resize(numArgs);
     for (uint i = 0; i < numArgs; ++i) {
-      profArgV[i] = parser.GetArg(i);
+      profArgV[i] = parser.getArg(i);
     }
   }
   catch (const CmdLineParser::ParseError& x) {

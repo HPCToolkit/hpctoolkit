@@ -173,6 +173,7 @@ CmdLineParser::OptArgDesc Args::optArgs[] = {
   // Object correlation options
   {  0 , "object",          CLP::ARG_OPT , CLP::DUPOPT_CLOB, NULL },
   {  0 , "obj",             CLP::ARG_OPT , CLP::DUPOPT_CLOB, NULL },
+  {  0 , "obj",             CLP::ARG_NONE, CLP::DUPOPT_CLOB, NULL },
 
   // Raw profile data
   {  0 , "dump",            CLP::ARG_NONE, CLP::DUPOPT_CLOB, NULL },
@@ -262,7 +263,7 @@ Args::getCmd() const
 { 
   // avoid error messages with: .../bin/hpcproftt-bin
   static string cmd = "hpcproftt";
-  return cmd; // parser.GetCmd(); 
+  return cmd; // parser.getCmd(); 
 }
 
 
@@ -273,87 +274,87 @@ Args::parse(int argc, const char* const argv[])
     // -------------------------------------------------------
     // Parse the command line
     // -------------------------------------------------------
-    parser.Parse(optArgs, argc, argv);
+    parser.parse(optArgs, argc, argv);
     
     // -------------------------------------------------------
     // Sift through results, checking for semantic errors
     // -------------------------------------------------------
     
     // Special options that should be checked first
-    if (parser.IsOpt("debug")) {
+    if (parser.isOpt("debug")) {
       int dbg = 1;
-      if (parser.IsOptArg("debug")) {
-	const string& arg = parser.GetOptArg("debug");
-	dbg = (int)CmdLineParser::ToLong(arg);
+      if (parser.isOptArg("debug")) {
+	const string& arg = parser.getOptArg("debug");
+	dbg = (int)CmdLineParser::toLong(arg);
       }
       Diagnostics_SetDiagnosticFilterLevel(dbg);
       trace = dbg;
     }
-    if (parser.IsOpt("help")) { 
+    if (parser.isOpt("help")) { 
       printUsage(std::cerr); 
       exit(1);
     }
-    if (parser.IsOpt("version")) { 
+    if (parser.isOpt("version")) { 
       printVersion(std::cerr);
       exit(1);
     }
-    if (parser.IsOpt("verbose")) {
+    if (parser.isOpt("verbose")) {
       int verb = 1;
-      if (parser.IsOptArg("verbose")) {
-	const string& arg = parser.GetOptArg("verbose");
-	verb = (int)CmdLineParser::ToLong(arg);
+      if (parser.isOptArg("verbose")) {
+	const string& arg = parser.getOptArg("verbose");
+	verb = (int)CmdLineParser::toLong(arg);
       }
       Diagnostics_SetDiagnosticFilterLevel(verb);
     }
 
     // Check for other options: Source correlation options
-    if (parser.IsOpt("source") || parser.IsOpt("src")) {
+    if (parser.isOpt("source") || parser.isOpt("src")) {
       mode = Mode_SourceCorrelation;
       string opt;
-      if (parser.IsOptArg("source"))   { opt = parser.GetOptArg("source"); }
-      else if (parser.IsOptArg("src")) { opt = parser.GetOptArg("src"); }
+      if (parser.isOptArg("source"))   { opt = parser.getOptArg("source"); }
+      else if (parser.isOptArg("src")) { opt = parser.getOptArg("src"); }
     }
-    if (parser.IsOpt("include")) {
-      string str = parser.GetOptArg("include");
+    if (parser.isOpt("include")) {
+      string str = parser.getOptArg("include");
       StrUtil::tokenize(str, CLP_SEPARATOR, searchPaths);
       
       for (uint i = 0; i < searchPaths.size(); ++i) {
 	searchPathTpls.push_back(Analysis::PathTuple(searchPaths[i], "src"));
       }
     }
-    if (parser.IsOpt("structure")) {
-      string str = parser.GetOptArg("structure");
+    if (parser.isOpt("structure")) {
+      string str = parser.getOptArg("structure");
       StrUtil::tokenize(str, CLP_SEPARATOR, structureFiles);
     }
-    if (parser.IsOpt("file")) {
-      string str = parser.GetOptArg("file");
+    if (parser.isOpt("file")) {
+      string str = parser.getOptArg("file");
       // ...
     }
     
     // Check for other options: Object correlation options
-    if (parser.IsOpt("object") || parser.IsOpt("obj")) {
+    if (parser.isOpt("object") || parser.isOpt("obj")) {
       mode = Mode_ObjectCorrelation;
       string opt;
-      if (parser.IsOptArg("object"))   { opt = parser.GetOptArg("object"); }
-      else if (parser.IsOptArg("obj")) { opt = parser.GetOptArg("obj"); }
+      if (parser.isOptArg("object"))   { opt = parser.getOptArg("object"); }
+      else if (parser.isOptArg("obj")) { opt = parser.getOptArg("obj"); }
     }
 
     // Check for other options: Dump raw profile data
-    if (parser.IsOpt("dump")) {
+    if (parser.isOpt("dump")) {
       mode = Mode_RawDataDump;
     }
 
     // FIXME: sanity check that options correspond to mode
     
     // Check for required arguments
-    uint numArgs = parser.GetNumArgs();
+    uint numArgs = parser.getNumArgs();
     if ( !(numArgs >= 1) ) {
       ARG_ERROR("Incorrect number of arguments!");
     }
 
     profileFiles.resize(numArgs);
     for (uint i = 0; i < numArgs; ++i) {
-      profileFiles[i] = parser.GetArg(i);
+      profileFiles[i] = parser.getArg(i);
     }
   }
   catch (const CmdLineParser::ParseError& x) {
