@@ -149,10 +149,10 @@ binutils::TextSeg::TextSeg(binutils::LM* lm, const string& name,
     m_contentsRaw(NULL), m_contents(NULL)
 {
   uint rflg = m_lm->readFlags();
-  if (rflg & LM::ReadFlg_iProc) {
+  if (rflg & LM::ReadFlg_fProc) {
     ctor_initProcs();
   }
-  if (rflg & LM::ReadFlg_iInsn) {
+  if (rflg & LM::ReadFlg_fInsn) {
     ctor_readSegment();
     ctor_disassembleProcs();
   }
