@@ -210,7 +210,7 @@ realmain(int argc, char* const* argv)
   
   Analysis::CallPath::copySourceFiles(prof, args.searchPaths, dbSrcDir);
   
-  string experiment_fnm = args.db_dir + "/" + args.outFilename_XML;
+  string experiment_fnm = args.db_dir + "/" + args.out_db_experiment;
   Analysis::CallPath::writeInDatabase(prof, experiment_fnm);
   //Analysis::CallPath::write(prof, std::cout, /* prettyPrint */ true);
   

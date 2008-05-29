@@ -108,8 +108,8 @@ Options: Source Structure Correlation:\n\
 Options: Output:\n\
   -o <db-path>, --db <db-path>, --output <db-path>\n\
                        Specify Experiment database name <db-path>.\n\
-                       {./"Analysis_EXPERIMENTDB"}\n\
-                       Experiment format {"Analysis_EXPERIMENTXML"}\n";
+                       {./"Analysis_DB_DIR"}\n\
+                       Experiment format {"Analysis_OUT_DB_EXPERIMENT"}\n";
 
 
 #define CLP CmdLineParser

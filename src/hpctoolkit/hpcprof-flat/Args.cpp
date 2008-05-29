@@ -130,7 +130,7 @@ Options: Source Structure Correlation:\n\
 Options: Output:\n\
   -o <db-path>, --db <db-path>, --output <db-path>\n\
                        Specify Experiment database name <db-path>.\n\
-                       {./"Analysis_EXPERIMENTDB"}\n\
+                       {./"Analysis_DB_DIR"}\n\
   --src [yes|no], --source [yes|no]\n\
                        Whether to copy source code files into Experiment\n\
                        database. {yes} By default, hpcprof-flat copies source\n\
@@ -146,9 +146,9 @@ output filename <file> (located within the Experiment database). The output\n\
 is sparse in the sense that it ignores program areas without profiling\n\
 information. (Set <file> to '-' to write to stdout.)\n\
   -x [<file>], --experiment [<file>]\n\
-                       Default. ExperimentXML format. {"Analysis_EXPERIMENTXML"}\n\
+                       Default. ExperimentXML format. {"Analysis_OUT_DB_EXPERIMENT"}\n\
                        NOTE: To disable, set <file> to 'no'.\n\
-  --csv [<file>]      Comma-separated-value format. {"Analysis_EXPERIMENTCSV"}\n\
+  --csv [<file>]       Comma-separated-value format. {"Analysis_OUT_DB_CSV"}\n\
                        Includes flat scope tree and loops. Useful for\n\
                        downstream external tools.\n";
 
@@ -350,18 +350,18 @@ Args::parse(int argc, const char* const argv[])
 
     // Check for other options: Output formats
     if (parser.isOpt("experiment")) {
-      outFilename_XML = Analysis_EXPERIMENTXML;
+      out_db_experiment = Analysis_OUT_DB_EXPERIMENT;
       if (parser.isOptArg("experiment")) {
-	outFilename_XML = parser.getOptArg("experiment");
+	out_db_experiment = parser.getOptArg("experiment");
       }
-      if (outFilename_XML == "no") { // special case
-	outFilename_XML = "";
+      if (out_db_experiment == "no") { // special case
+	out_db_experiment = "";
       }
     }
     if (parser.isOpt("csv")) {
-      outFilename_CSV = Analysis_EXPERIMENTCSV;
+      out_db_csv = Analysis_OUT_DB_CSV;
       if (parser.isOptArg("csv")) {
-	outFilename_CSV = parser.getOptArg("csv");
+	out_db_csv = parser.getOptArg("csv");
       }
       db_copySrcFiles = false;
     }

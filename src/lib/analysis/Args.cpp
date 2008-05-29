@@ -84,12 +84,14 @@ Analysis::Args::Ctor()
   // Output arguments
   // -------------------------------------------------------
 
-  db_dir          = Analysis_EXPERIMENTDB;
-  outFilename_XML = Analysis_EXPERIMENTXML;
-  outFilename_CSV = "";
-  outFilename_TXT = "";
+  out_db_experiment = Analysis_OUT_DB_EXPERIMENT;
+  out_db_csv        = "";
+  db_dir            = Analysis_DB_DIR;
+  db_copySrcFiles   = true;
 
-  db_copySrcFiles = true;
+  out_txt            = Analysis_OUT_TXT;
+  txt_summary        = TxtSum_NULL;
+  txt_src_annotation = false;
 
   metrics_computeInteriorValues = false;
 }
@@ -113,9 +115,9 @@ void
 Analysis::Args::dump(std::ostream& os) const
 {
   os << "db_dir= " << db_dir << std::endl;
-  os << "outFilename_XML= " << outFilename_XML << std::endl;
-  os << "outFilename_CSV= " << outFilename_CSV << std::endl;
-  os << "outFilename_TXT= " << outFilename_TXT << std::endl;
+  os << "out_db_experiment= " << out_db_experiment << std::endl;
+  os << "out_db_csv= " << out_db_csv << std::endl;
+  os << "out_txt= " << out_txt << std::endl;
 }
 
 

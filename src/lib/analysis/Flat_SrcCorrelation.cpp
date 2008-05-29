@@ -153,8 +153,8 @@ Driver::run()
 
   string fpath = (db_use) ? (m_args.db_dir + "/") : "";
 
-  if (!m_args.outFilename_XML.empty()) {
-    const string& fnm = m_args.outFilename_XML;
+  if (!m_args.out_db_experiment.empty()) {
+    const string& fnm = m_args.out_db_experiment;
     DIAG_Msg(1, "Writing final scope tree (in XML) to " << fnm);
     fpath += fnm;
     const char* osnm = (fnm == "-") ? NULL : fpath.c_str();
@@ -163,8 +163,8 @@ Driver::run()
     IOUtil::CloseStream(os);
   }
 
-  if (!m_args.outFilename_CSV.empty()) {
-    const string& fnm = m_args.outFilename_CSV;
+  if (!m_args.out_db_csv.empty()) {
+    const string& fnm = m_args.out_db_csv;
     DIAG_Msg(1, "Writing final scope tree (in CSV) to " << fnm);
     fpath += fnm;
     const char* osnm = (fnm == "-") ? NULL : fpath.c_str();
@@ -173,9 +173,8 @@ Driver::run()
     IOUtil::CloseStream(os);
   } 
 
-  if (!m_args.outFilename_TXT.empty()) {
-    const string& fnm = m_args.outFilename_TXT;
-    DIAG_Msg(1, "Writing final scope tree (in TXT) to " << fnm);
+  if (!m_args.out_txt.empty()) {
+    const string& fnm = m_args.out_txt;
     fpath += fnm;
     const char* osnm = (fnm == "-") ? NULL : fpath.c_str();
     std::ostream* os = IOUtil::OpenOStream(osnm);
@@ -292,32 +291,46 @@ Driver::write_txt(std::ostream &os) const
   colFmt.genColHeaderSummary();
   os << std::endl;
 
-  string pgm_nm = "Program summary: " + pgmStrct->name();
-  write_txt_secSummary(os, colFmt, pgm_nm, NULL);
+  if (m_args.txt_summary & Analysis::Args::TxtSum_fPgm) { 
+    string nm = "Program summary: " + pgmStrct->name();
+    write_txt_secSummary(os, colFmt, nm, NULL);
+  }
 
-  string lm_nm = "Load module summary:";
-  write_txt_secSummary(os, colFmt, lm_nm, &ScopeTypeFilter[ScopeInfo::LM]);
+  if (m_args.txt_summary & Analysis::Args::TxtSum_fLM) { 
+    string nm = "Load module summary:";
+    write_txt_secSummary(os, colFmt, nm, &ScopeTypeFilter[ScopeInfo::LM]);
+  }
 
-  string f_nm = "File summary:";
-  write_txt_secSummary(os, colFmt, f_nm, &ScopeTypeFilter[ScopeInfo::FILE]);
+  if (m_args.txt_summary & Analysis::Args::TxtSum_fFile) { 
+    string nm = "File summary:";
+    write_txt_secSummary(os, colFmt, nm, &ScopeTypeFilter[ScopeInfo::FILE]);
+  }
+
+  if (m_args.txt_summary & Analysis::Args::TxtSum_fProc) { 
+    string nm = "Procedure summary:";
+    write_txt_secSummary(os, colFmt, nm, &ScopeTypeFilter[ScopeInfo::PROC]);
+  }
+
+  if (m_args.txt_summary & Analysis::Args::TxtSum_fLoop) { 
+    string nm = "Loop summary (dependent on structure information):";
+    write_txt_secSummary(os, colFmt, nm, &ScopeTypeFilter[ScopeInfo::LOOP]);
+  }
+
+  if (m_args.txt_summary & Analysis::Args::TxtSum_fStmt) { 
+    string nm = "Statement summary:";
+    write_txt_secSummary(os, colFmt, nm, 
+			 &ScopeTypeFilter[ScopeInfo::STMT_RANGE]);
+  }
   
-  string p_nm = "Procedure summary:";
-  write_txt_secSummary(os, colFmt, p_nm, &ScopeTypeFilter[ScopeInfo::PROC]);
-
-  string l_nm = "Loop summary (dependent on structure information):";
-  write_txt_secSummary(os, colFmt, l_nm, &ScopeTypeFilter[ScopeInfo::LOOP]);
-
-  string s_nm = "Statement summary:";
-  write_txt_secSummary(os, colFmt, s_nm, 
-		       &ScopeTypeFilter[ScopeInfo::STMT_RANGE]);
-  
-  ScopeInfoIterator it(m_structure.GetRoot(), 
-		       &ScopeTypeFilter[ScopeInfo::FILE]);
-  for (ScopeInfo* strct = NULL; (strct = it.CurScope()); it++) {
-    FileScope* fileStrct = dynamic_cast<FileScope*>(strct);
-    const string& fnm = fileStrct->name();
-    if (fnm != PgmScopeTree::UnknownFileNm /* && filter passes*/) {
-      write_txt_annotateFile(os, colFmt, fileStrct);
+  if (m_args.txt_src_annotation) {
+    ScopeInfoIterator it(m_structure.GetRoot(), 
+			 &ScopeTypeFilter[ScopeInfo::FILE]);
+    for (ScopeInfo* strct = NULL; (strct = it.CurScope()); it++) {
+      FileScope* fileStrct = dynamic_cast<FileScope*>(strct);
+      const string& fnm = fileStrct->name();
+      if (fnm != PgmScopeTree::UnknownFileNm /* && filter passes*/) {
+	write_txt_annotateFile(os, colFmt, fileStrct);
+      }
     }
   }
 }
