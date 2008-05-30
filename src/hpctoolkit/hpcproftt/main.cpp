@@ -133,6 +133,9 @@ realmain(int argc, char* const* argv)
 //
 //****************************************************************************
 
+static void
+makeDerivedMetrics(Prof::MetricDescMgr& metricMgr, const string& metrics);
+
 static int
 main_srcCorrelation(const Args& args)
 {
@@ -143,7 +146,7 @@ main_srcCorrelation(const Args& args)
   //-------------------------------------------------------
   Prof::MetricDescMgr metricMgr;
   metricMgr.makeRawMetrics(args.profileFiles);
-  metricMgr.makeSummaryMetrics();
+  makeDerivedMetrics(metricMgr, args.txt_metrics);
 
   //-------------------------------------------------------
   // Correlate metrics with program structure and Generate output
@@ -199,4 +202,38 @@ main_rawData(const std::vector<string>& profileFiles)
     Analysis::Raw::writeAsText(fnm); // pass os FIXME
   }
   return 0;
+}
+
+//****************************************************************************
+
+static void
+makeDerivedMetrics(Prof::MetricDescMgr& metricMgr, const string& metrics)
+{
+  if (metrics.empty()) {
+    return;
+  }
+
+  DIAG_Assert(metrics == "sum" || metrics == "sum-only", DIAG_UnexpectedInput);
+
+  metricMgr.makeSummaryMetrics();
+  
+  if (metrics == "sum-only") {
+    for (uint i = 0; i < metricMgr.size(); i++) {
+      PerfMetric* m = metricMgr.metric(i);
+      FilePerfMetric* mm = dynamic_cast<FilePerfMetric*>(m);
+      if (mm) {
+	mm->Display(false);
+	mm->SortBy(false);
+      }
+    }
+
+    for (uint i = 0; i < metricMgr.size(); i++) {
+      PerfMetric* m = metricMgr.metric(i);
+      ComputedPerfMetric* mm = dynamic_cast<ComputedPerfMetric*>(m);
+      if (mm) {
+	mm->SortBy(true);
+	break;
+      }
+    }
+  }
 }

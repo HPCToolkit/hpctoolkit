@@ -122,13 +122,14 @@ Options: Source Structure Correlation:\n\
                          s:   statement summary\n\
   --srcannot           Annotate source files with metrics.\n\
                        Default path filter is '*'; change with --srcfile.\n\
-  --srcfile=<path-substring>\n\
+  !!! --srcfile=<path-substring>\n\
                        Annotate source files with path names that match\n\
                        <path-substring>.\n\
   -M <metric>, --metric <metric>\n\
-                       Show a supplemental or different metric set.\n\
-                         sum:    \n\
-                         sum-only: \n\
+                       Show a supplemental or different metric set. <metric>\n\
+                       is one of the following:\n\
+                         sum:      Additionallly show Sum, Min, Max\n\
+                         sum-only: Show only Sum, Min, Max\n\
 \n\
   -I <path>, --include <path>\n\
                        Use <path> when searching for source files. May pass\n\
@@ -157,17 +158,19 @@ static bool isOptArg_obj(const char* x);
 // Note: Changing the option name requires changing the name in Parse()
 CmdLineParser::OptArgDesc Args::optArgs[] = {
   // Source structure correlation options
-  {  0 , "source",          CLP::ARG_OPT , CLP::DUPOPT_CLOB, NULL,
+  {  0 , "source",          CLP::ARG_OPT,  CLP::DUPOPT_CLOB, NULL,
      isOptArg_src },
-  {  0 , "src",             CLP::ARG_OPT , CLP::DUPOPT_CLOB, NULL,
+  {  0 , "src",             CLP::ARG_OPT,  CLP::DUPOPT_CLOB, NULL,
      isOptArg_src },
   {  0 , "srcannot",        CLP::ARG_NONE, CLP::DUPOPT_CLOB, NULL,
+     NULL },
+  {  0 , "srcfile",         CLP::ARG_REQ,  CLP::DUPOPT_CAT,  CLP_SEPARATOR,
      NULL },
   { 'I', "include",         CLP::ARG_REQ,  CLP::DUPOPT_CAT,  CLP_SEPARATOR,
      NULL },
   { 'S', "structure",       CLP::ARG_REQ,  CLP::DUPOPT_CAT,  CLP_SEPARATOR,
      NULL },
-  {  0 , "file",            CLP::ARG_REQ , CLP::DUPOPT_CAT,  CLP_SEPARATOR,
+  { 'M', "metric",          CLP::ARG_REQ,  CLP::DUPOPT_CLOB, NULL,
      NULL },
 
   // Object correlation options
@@ -266,9 +269,9 @@ Args::Ctor()
   db_dir            = "";
   db_copySrcFiles   = false;
 
-  out_txt            = "-";
-  txt_summary        = TxtSum_fPgm | TxtSum_fLM;
-  txt_src_annotation = false;
+  out_txt           = "-";
+  txt_summary       = TxtSum_fPgm | TxtSum_fLM;
+  txt_srcAnnotation = false;
   metrics_computeInteriorValues = true; // dump metrics on interior nodes
 
   // Object Correlation
@@ -376,7 +379,11 @@ Args::parse(int argc, const char* const argv[])
       }
     }
     if (parser.isOpt("srcannot")) {
-      txt_src_annotation = true;
+      txt_srcAnnotation = true;
+    }
+    if (parser.isOpt("srcfile")) {
+      string str = parser.getOptArg("srcfile");
+      // ...
     }
     if (parser.isOpt("include")) {
       string str = parser.getOptArg("include");
@@ -390,9 +397,9 @@ Args::parse(int argc, const char* const argv[])
       string str = parser.getOptArg("structure");
       StrUtil::tokenize(str, CLP_SEPARATOR, structureFiles);
     }
-    if (parser.isOpt("file")) {
-      string str = parser.getOptArg("file");
-      // ...
+    if (parser.isOpt("metric")) {
+      string opt = parser.getOptArg("metric");
+      txt_metrics = parse_metricOpts(opt);
     }
     
     // Check for other options: Object correlation options
@@ -478,6 +485,17 @@ Args::parse_objectOpts(const string& opts)
 
   ARG_Throw("Unknown argument to --obj,--object: '" << opts << "'");
   return false; // Unreachable
+}
+
+
+string
+Args::parse_metricOpts(const string& opts)
+{
+  if (opts == "sum" || opts == "sum-only") {
+    return opts;
+  }
+  ARG_Throw("Unknown argument to --obj,--object: '" << opts << "'");
+  return ""; // Unreachable
 }
 
 

@@ -146,22 +146,27 @@ Prof::MetricDescMgr::makeSummaryMetric(const string& m_nm,
     opands[i] = new Var(m->Name(), m->Index());
   }
 
+  bool doDisplay = true;
+  bool doPercent = true;
+
   EvalNode* expr = NULL;
   if (m_nm.find("SUM", 0) == 0) {
     expr = new Plus(opands, m_opands.size());
   }
   else if (m_nm.find("MIN", 0) == 0) {
     expr = new Min(opands, m_opands.size());
+    doPercent = false;
   }
   else if (m_nm.find("MAX", 0) == 0) {
     expr = new Max(opands, m_opands.size());
+    doPercent = false;
   }
   else {
     DIAG_Die(DIAG_UnexpectedInput);
   }
   
-  insert(new ComputedPerfMetric(m_nm, m_nm, true/*display*/, 
-				true/*percent*/, true/*sortby*/,
+  insert(new ComputedPerfMetric(m_nm, m_nm, doDisplay/*display*/, 
+				doPercent/*percent*/, true/*sortby*/,
 				false/*propagateComputed*/, expr));
 }
 

@@ -89,9 +89,9 @@ Analysis::Args::Ctor()
   db_dir            = Analysis_DB_DIR;
   db_copySrcFiles   = true;
 
-  out_txt            = Analysis_OUT_TXT;
-  txt_summary        = TxtSum_NULL;
-  txt_src_annotation = false;
+  out_txt           = Analysis_OUT_TXT;
+  txt_summary       = TxtSum_NULL;
+  txt_srcAnnotation = false;
 
   metrics_computeInteriorValues = false;
 }

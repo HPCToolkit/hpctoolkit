@@ -322,7 +322,7 @@ Driver::write_txt(std::ostream &os) const
 			 &ScopeTypeFilter[ScopeInfo::STMT_RANGE]);
   }
   
-  if (m_args.txt_src_annotation) {
+  if (m_args.txt_srcAnnotation) {
     ScopeInfoIterator it(m_structure.GetRoot(), 
 			 &ScopeTypeFilter[ScopeInfo::FILE]);
     for (ScopeInfo* strct = NULL; (strct = it.CurScope()); it++) {

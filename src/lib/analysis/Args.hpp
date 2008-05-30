@@ -119,6 +119,9 @@ public:
   // Profile files
   std::vector<std::string> profileFiles;
 
+  // FIXME: computed metrics require interior values (implications for
+  // hpcviewer?)... perhaps this should only be an output option.
+  bool metrics_computeInteriorValues;
 
   // -------------------------------------------------------
   // Output arguments: database output
@@ -160,11 +163,8 @@ public:
 
   int/*TxtSum*/ txt_summary;
 
-  bool txt_src_annotation;
-
-
-  // FIXME: computed metrics require interior values...
-  bool metrics_computeInteriorValues;
+  bool txt_srcAnnotation;
+  std::vector<std::string> txt_srcFileGlobs;
 
 private:
   void Ctor();
