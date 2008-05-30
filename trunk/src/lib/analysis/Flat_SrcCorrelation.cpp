@@ -376,7 +376,7 @@ Driver::write_txt_annotateFile(std::ostream& os,
   const string& fnm = fileStrct->name();
   const string& fnm_qual = fileStrct->nameQual();
 
-  string title = "Annotated file (line level): " + fnm_qual;
+  string title = "Annotated file (statement/line level): " + fnm_qual;
   write_txt_hdr(os, title);
   
   std::istream* is = NULL;

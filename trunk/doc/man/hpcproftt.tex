@@ -30,7 +30,7 @@
 \rcsInfo $Id$
 \setDate{\rcsInfoLongDate}
 }{
-\setDate{ 2008/05/28}
+\setDate{ 2008/05/29}
 \message{package rcsinfo not present, discard it}
 }
 
@@ -62,30 +62,50 @@ Alternatively, it also generates textual dumps of profile files.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Description}
 
-\Prog{hpcproftt} correlates `flat' profile metrics with either source code structure (first mode) or object code (second mode) and generates textual output suitable for a terminal (hence the tt, for teletype, in its name).
-In each of these modes, \Prog{hpcproftt} expects a list of flat profile files 
-
+\Prog{hpcproftt} correlates `flat' profile metrics with either source code structure (the first and default mode) or object code (second mode) and generates textual output suitable for a terminal (hence the tt, for teletype, in its name).
+In both of these modes, \Prog{hpcproftt} expects a list of flat profile files.
 \Prog{hpcproftt} also supports a third mode in which it generates textual dumps of profile files.
 In this mode, the profile list may contain either flat or call path profile files.
 
+\Prog{hpcproftt} defaults to source code correlation mode.
+Without any mode switch, it behaves as if passed \Opt{--source=pgm,lm}.
 
-\Prog{hpcproftt} can generate the following information.  Note that the term \emph{native} event refers to an event for which there is a program counter histogram.  
-\begin{Description}
-  \item[totals] Total sample counts for each native event, over each load module.  If the same native event name appears more than once, min/max/sum \emph{derived} events are computed.
-  \item[load-module correlation] For each \emph{native} event (in order), show the exclusive percentage (or number) of samples attributed to each load module in the \Arg{hpcrun-file}s.  
-Percentages are relative to totals.
-  \item[file correlation] For each \emph{native} event (in order), show the exclusive percentage (or number) of samples attributed to each $<$load module$>$$<$source file$>$ pair.  
-Percentages are relative to totals.
-  \item[function correlation] For each \emph{native} event (in order), show the exclusive percentage (or number) of samples attributed to each $<$load module$>$$<$function$>$ pair.
-Percentages are relative to totals.
-  \item[line correlation] For each \emph{native} event (in order), show the exclusive percentage (or number) of samples attributed to each $<$load module$>$$<$file$>$$<$line$>$ triple.
-Percentages are relative to totals.
-  \item[annotated source files] For each $<$load module$>$$<$source file$>$ pair, annotate the file's source lines with line correlation information.
-  \item[object code correlation] For each \emph{native} event (in order), show the exclusive percentage (or number) of samples attributed to each (text segment) object code instruction from each load module.
-Percentages annotating an instruction are relative to that procedure.
-By default, only procedures where some event has a count greater than 0 are shown.
-NOTE: On ISA's with variable sized instructions, histogram buckets (4 bytes in size) may contain information for more than one instruction.  In this case, multiple instructions will report counts for the \emph{same} bucket.
-\end{Description}
+\textbf{Source Source Structure Correlation}.
+First, \Prog{hpcproftt} creates raw metrics for every native event with in each profile file.
+Derived summary metrics can be optionally created with the \Opt{--metric} option.
+All metrics are normalized to use the unit 'events' rather than 'samples' since this enables meaningful comparisons and derived metrics.
+Since percents facilitate rapid comprehension (compared to values), all raw metrics display as percents; derived metrics likewise default to percent, if sensible.
+
+Then, \Prog{hpcproftt} correlates metrics to program structure.
+If \HTMLhref{hpcstruct.html}{\Cmd{hpcstruct}{1}} structure information is available, this is used for correlation; if not, a simple 'File | Procedure | Statement' structure is computed using the load module's line map.
+
+Finally, \Prog{hpcproftt} generates metric summaries and annotated source files to standard out.
+Each metric summary compares a certain source structure element (such as a procedure) with all other elements of that type across the whole program.
+Structure elements include: Program, Load Module, File, Procedure, Loop (requires \HTMLhref{hpcstruct.html}{\Cmd{hpcstruct}{1}}), and Statement.
+For example, the procedure summary shows (exclusive) metric values for each procedure in the program.
+(Structure elements are pruned if all corresponding metrics are 0.)
+Summaries are rank ordered by the first metric.
+\Prog{hpcproftt} optionally annotates source files with Statement (line) level metrics.
+Note that it can only annotate files found by combining debug information with \Opt{--include} search paths.
+
+%%% If the same native event name appears more than once, min/max/sum \emph{derived} events are computed.
+
+\textbf{Object Correlation}.
+
+\Prog{hpcproftt}'s object correlation mode is intended for inspection of fine-grained correlation.
+In contrast to the source structure correlation mode, true summaries are not computed; rather (like an annotated source file) \Prog{hpcproftt} generates annotated object code, i.e., procedures and instructions.
+Moreover, only raw metrics corresponding to the native events in \textbf{one} profile file may be correlated to the object code touched by those metrics.
+Accordingly, \Prog{hpcproftt} creates raw metrics for every native event in one profile file.
+Metrics use the unit 'samples' rather than 'events' and default to percents, though absolute values may optionally be displayed.
+Procedures are pruned from the output if no associated metric totals to the provided threshold.
+
+Warnings:
+\begin{itemize}
+\item On ISA's with variable sized instructions, histogram buckets (4 bytes in size) may contain information for more than one instruction.
+In this case, multiple instructions will report counts for the \emph{same} bucket.
+
+\item On some architectures, delays between event triggers, interrupt generation and sampling of the IP means that an event may be associated with a different instruction than one that caused the event.  It is not abnormal for this gap to be 50-70 instructions wide.
+\end{itemize}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Arguments}
@@ -108,14 +128,56 @@ Default values for an option's optional arguments are shown in \{\}.
 \subsection{Options: Source Structure Correlation}
 
 \begin{Description}
-\item[\OptArg{-I}{path}, \OptArg{--include}{path}] Use \Arg{path} when searching for source files. To recursively search a path, append an escaped `*' after the last slash, e.g., \verb+/mypath/\*+ (escaping is for the shell). May pass multiple times.
-\item[\OptArg{-S}{file}, \OptArg{--structure}{file}] Use \HTMLhref{hpcstruct.html}{\Cmd{hpcstruct}{1}} structure file \Arg{file} for correlation.  May pass multiple times (e.g., for shared libraries).
+\item[\OptoArg{--source}{=all,pgm,lm,f,p,l,s}] 
+\item[\OptoArg{--src}{=all,pgm,lm,f,p,l,s}] 
+Show metrics summarized by source structure. \{all\}
+  \begin{itemize}
+  \item all: all summaries below
+  \item pgm: program summary
+  \item lm:  load module summary
+  \item f:   files summary
+  \item p:   procedure summary
+  \item l:   loop summary
+  \item s:   statement summary
+  \end{itemize}
+
+\item[\Opt{--srcannot}] 
+Annotate source files with metrics. Default path filter is `*'; change with \Opt{--srcfile}.
+
+\item[\OptArg{--srcfile}{path-substring}] 
+Annotate source files with path names that match \Arg{path-substring}.
+
+\item[\OptoArg{-M}{metric}, \OptoArg{--metric}{metric}] 
+Show a supplemental or different metric set. \Arg{metric} is one of the following:
+  \begin{itemize}
+  \item sum: Additionallly show Sum, Min, Max
+  \item sum-only: Show only Sum, Min, Max
+  \end{itemize}
+
+\item[\OptArg{-I}{path}, \OptArg{--include}{path}] 
+Use \Arg{path} when searching for source files. To recursively search a path, append an escaped `*' after the last slash, e.g., \verb+/mypath/\*+ (escaping is for the shell). May pass multiple times.
+
+\item[\OptArg{-S}{file}, \OptArg{--structure}{file}] 
+Use \HTMLhref{hpcstruct.html}{\Cmd{hpcstruct}{1}} structure file \Arg{file} for correlation.  May pass multiple times (e.g., for shared libraries).
 \end{Description}
 
 \subsection{Options: Object Correlation}
 
 \begin{Description}
-\item[\OptArg{--object}{...}] Show object code correlation: load modules, procedures, instructions...
+
+\item[\OptoArg{--object}{=s}] 
+\item[\OptoArg{--obj}{=s}] 
+Show object code correlation: load modules, procedures, instructions. \{\}
+  \begin{itemize}
+  \item s: intermingle source line info with object code
+  \end{itemize}
+
+\item[\Opt{--obj-values}] 
+Show raw metrics as values instead of percents
+
+\item[\OptArg{--obj-threshold}{n}] 
+Prune procedures with an event count < \Arg{n} \{1\}
+
 \end{Description}
 
 \subsection{Options: Dump Raw Profile Data}
