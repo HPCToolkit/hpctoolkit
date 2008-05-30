@@ -122,7 +122,7 @@ Options: Source Structure Correlation:\n\
                          s:   statement summary\n\
   --srcannot           Annotate source files with metrics.\n\
                        Default path filter is '*'; change with --srcfile.\n\
-  !!! --srcfile=<path-substring>\n\
+  !!! --srcfile <path-substring>\n\
                        Annotate source files with path names that match\n\
                        <path-substring>.\n\
   -M <metric>, --metric <metric>\n\
@@ -139,9 +139,11 @@ Options: Source Structure Correlation:\n\
                        May pass multiple times (e.g., for shared libraries).\n\
 \n\
 Options: Object Correlation:\n\
-  --object[=s]         Show object code correlation: load modules, procedures\n\
-  --obj[=s]            instructions.  Options:\n\
+  --object[=s]         Show object code correlation: load modules,\n\
+  --obj[=s]            procedures, instructions. {}\n\
                          s: intermingle source line info with object code\n\
+  !!! --obj-values     Show raw metrics as values instead of percents\n\
+  !!! --obj-threshold <n> Prune procedures with an event count < n {1}\n\
 \n\
 Options: Dump Raw Profile Data:\n\
   --dump               Generate textual representation of raw profile data.\n\
