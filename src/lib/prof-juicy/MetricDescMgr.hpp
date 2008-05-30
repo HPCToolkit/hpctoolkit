@@ -75,13 +75,16 @@ public:
 
   void 
   makeRawMetrics(const std::vector<std::string>& profileFiles, 
-		 bool isunit_ev = true);
+		 bool isunit_ev = true,
+		 bool ispercent = true);
 
   void 
-  makeRawMetrics(const std::string& profileFile, bool isunit_ev = true)
+  makeRawMetrics(const std::string& profileFile, 
+		 bool isunit_ev = true,
+		 bool ispercent = true)
   {
     std::vector<std::string> vec(1, profileFile);
-    makeRawMetrics(vec, isunit_ev);
+    makeRawMetrics(vec, isunit_ev, ispercent);
   }
 
   void 

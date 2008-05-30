@@ -80,45 +80,48 @@ namespace Analysis {
 namespace TextUtil {
 
 ColumnFormatter::ColumnFormatter(const Prof::MetricDescMgr& metricMgr,
-				 ostream& os, int num_digits)
+				 ostream& os, 
+				 int numDecPct, int numDecVal)
   : m_mMgr(metricMgr),
     m_os(os),
-    m_num_digits(num_digits),
-    m_metricAnnotationWidthTot(0)
+    m_numDecPct(numDecPct),
+    m_numDecVal(numDecVal),
+    m_annotWidthTot(0)
 { 
-  m_metricAnnotationWidth.resize(m_mMgr.size(), 0);
-  m_scientificFormatThreshold.resize(m_mMgr.size(), 0.0);
+  m_annotWidth.resize(m_mMgr.size(), 0);
+  m_sciFmtThreshold_pct.resize(m_mMgr.size(), 0.0);
+  m_sciFmtThreshold_val.resize(m_mMgr.size(), 0.0);
 
   for (uint mId = 0; mId < m_mMgr.size(); ++mId) {
     const PerfMetric* m = m_mMgr.metric(mId);
     if (!m->Display()) {
       continue;
     }
-    
-    // Compute annotation width
+
+    // Compute annotation widths. 
+    // NOTE: decimal digits shown as 'd' below
     if (m->Percent()) {
-      if (m_num_digits >= 1) {
-	// xxx.(yy)% or x.xE-yy% (for small numbers)
-	m_metricAnnotationWidth[mId] = std::max(8, 5 + m_num_digits);
-	m_scientificFormatThreshold[mId] = 
-	  std::pow((double)10, -(double)m_num_digits);
+      if (m_numDecPct >= 1) { 
+	// xxx.dd% or x.dE-yy% (latter for small values)
+	m_annotWidth[mId] = std::max(8, 5 + m_numDecPct);
       }
       else {
 	// xxx%
-	m_metricAnnotationWidth[mId] = 4;
+	m_annotWidth[mId] = 4;
       }
     }
     else {
-      // x.xE+yy (for large numbers)
-      m_metricAnnotationWidth[mId] = 7;
-      
-      // for floating point numbers over the scientificFormatThreshold
-      // printed in scientific format.
-      m_scientificFormatThreshold[mId] = 
-	std::pow((double)10, (double)m_metricAnnotationWidth[mId]);
+      // x.dd or x.dE+yy (latter for large numbers)
+      m_annotWidth[mId] = std::max(7, 2 + m_numDecVal);
     }
 
-    m_metricAnnotationWidthTot += m_metricAnnotationWidth[mId] + 1;
+    m_sciFmtThreshold_pct[mId] = std::pow(10.0, (double)-m_numDecPct);
+
+    int decDigits = (m_numDecVal == 0) ? 0 : numDecVal + 1/*dec point*/;
+    int non_decDigits = std::max(0, m_annotWidth[mId] - decDigits);
+    m_sciFmtThreshold_val[mId] = std::pow(10.0, (double)non_decDigits);
+
+    m_annotWidthTot += m_annotWidth[mId] + 1/*space*/;
   }
 
   m_os.setf(std::ios_base::fmtflags(0), std::ios_base::floatfield);
@@ -166,33 +169,51 @@ ColumnFormatter::genCol(uint mId, double metricVal, double metricTot,
   if (doPercent) {
     double val = 0.0;
     if (metricTot != 0) {
-      val = (metricVal / metricTot) * 100;
+      val = (metricVal / metricTot) * 100.0;
     }
     
-    m_os << std::showpoint << std::setw(m_metricAnnotationWidth[mId] - 1);
-    if (val != 0.0 && val < m_scientificFormatThreshold[mId]) {
+    m_os << std::showpoint << std::setw(m_annotWidth[mId] - 1);
+    if (val != 0.0 && val < m_sciFmtThreshold_pct[mId]) {
       m_os << std::scientific 
-	   << std::setprecision(m_metricAnnotationWidth[mId] - 7);
+	   << std::setprecision(m_annotWidth[mId] - 7); // x.dE-yy%
     }
     else {
       m_os << std::fixed
-	   << std::setprecision(m_num_digits);
+	   << std::setprecision(m_numDecPct);
     }
     m_os << std::setfill(' ') << val << "%";
   }
   else {
-    m_os << std::setw(m_metricAnnotationWidth[mId]);
-    if (metricVal >= m_scientificFormatThreshold[mId]) {
+    m_os << std::setw(m_annotWidth[mId]);
+    if (metricVal >= m_sciFmtThreshold_val[mId]) {
       m_os << std::scientific
-	   << std::setprecision(m_metricAnnotationWidth[mId] - 6);
+	   << std::setprecision(m_annotWidth[mId] - 6); // x.dE+yy
     }
     else {
-      m_os << std::fixed
-	   << std::noshowpoint << std::setprecision(0);
+      m_os << std::fixed;
+      if (m_numDecVal == 0) {
+	m_os << std::noshowpoint << std::setprecision(0);
+      }
+      else {
+	m_os << std::setprecision(m_numDecVal);
+      }
     }
     m_os << std::setfill(' ') << metricVal;
   }
   m_os << " ";
+}
+
+
+void
+ColumnFormatter::genBlankCol(uint mId)
+{
+  const PerfMetric* m = m_mMgr.metric(mId);
+  
+  if (!isDisplayed(mId)) {
+    return;
+  }
+  m_os << std::setw(m_annotWidth[mId]) << std::setfill(' ') << " "
+       << " ";
 }
 
 

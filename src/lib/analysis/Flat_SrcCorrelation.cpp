@@ -139,19 +139,21 @@ Driver::run()
   //-------------------------------------------------------
   // 3. Generate Experiment database
   //-------------------------------------------------------
-  bool db_use = !m_args.db_dir.empty() && m_args.db_dir != "-";
+  string db_dir = m_args.db_dir; // make copy
+  bool db_use = !db_dir.empty() && db_dir != "-";
   if (db_use) {
-    if (MakeDir(m_args.db_dir.c_str()) != 0) { return 1; } // FIXME
+    std::pair<string, bool> ret = FileUtil::mkdirUnique(db_dir.c_str());
+    db_dir = ret.first; // exits on failure...
   }
 
   if (db_use && m_args.db_copySrcFiles) {
-    DIAG_Msg(1, "Copying source files reached by REPLACE/PATH statements to " << m_args.db_dir);
-    
-    // NOTE: may modify file names in the structure tree
-    copySourceFiles(m_structure.GetRoot(), m_args.searchPathTpls, m_args.db_dir);
+    DIAG_Msg(1, "Copying source files reached by PATH/REPLACE options to " << db_dir);
+    // NOTE: makes file names in m_structure relative to database
+    copySourceFiles(m_structure.GetRoot(), m_args.searchPathTpls, 
+		    db_dir);
   }
 
-  string fpath = (db_use) ? (m_args.db_dir + "/") : "";
+  string fpath = (db_use) ? (db_dir + "/") : "";
 
   if (!m_args.out_db_experiment.empty()) {
     const string& fnm = m_args.out_db_experiment;
@@ -285,14 +287,14 @@ Driver::write_txt(std::ostream &os) const
 
   PgmScope* pgmStrct = m_structure.GetRoot();
 
-  ColumnFormatter colFmt(m_mMgr, os, 2);
+  ColumnFormatter colFmt(m_mMgr, os, 2, 0);
 
   os << std::setfill('=') << std::setw(77) << "=" << std::endl;
   colFmt.genColHeaderSummary();
   os << std::endl;
 
   if (m_args.txt_summary & Analysis::Args::TxtSum_fPgm) { 
-    string nm = "Program summary: " + pgmStrct->name();
+    string nm = "Program summary (samples | events): " + pgmStrct->name();
     write_txt_secSummary(os, colFmt, nm, NULL);
   }
 
@@ -323,12 +325,16 @@ Driver::write_txt(std::ostream &os) const
   }
   
   if (m_args.txt_srcAnnotation) {
+    const std::vector<std::string>& fnmGlobs = m_args.txt_srcFileGlobs;
+    bool hasFnmGlobs = !fnmGlobs.empty();
+
     ScopeInfoIterator it(m_structure.GetRoot(), 
 			 &ScopeTypeFilter[ScopeInfo::FILE]);
     for (ScopeInfo* strct = NULL; (strct = it.CurScope()); it++) {
       FileScope* fileStrct = dynamic_cast<FileScope*>(strct);
       const string& fnm = fileStrct->name();
-      if (fnm != PgmScopeTree::UnknownFileNm /* && filter passes*/) {
+      if (fnm != PgmScopeTree::UnknownFileNm 
+	  && (!hasFnmGlobs || FileUtil::fnmatch(fnmGlobs, fnm.c_str()))) {
 	write_txt_annotateFile(os, colFmt, fileStrct);
       }
     }
@@ -348,10 +354,25 @@ Driver::write_txt_secSummary(std::ostream& os,
   PerfMetric* m_sortby = m_mMgr.findSortBy();
 
   if (!filter) {
+    // Program *sample* summary
+    for (uint i = 0; i < m_mMgr.size(); ++i) {
+      const PerfMetric* m = m_mMgr.metric(i);
+      const FilePerfMetric* mm = dynamic_cast<const FilePerfMetric*>(m);
+      if (mm) {
+	const Prof::SampledMetricDesc& desc = mm->rawdesc();
+	double smpl = pgmStrct->PerfData(i) / (double)desc.period();
+	colFmt.genCol(i, smpl);
+      }
+      else {
+	colFmt.genBlankCol(i);
+      }
+    }
+    os << std::endl;
+
+    // Program metric summary
     for (uint i = 0; i < m_mMgr.size(); ++i) {
       colFmt.genCol(i, pgmStrct->PerfData(i));
     }
-    // FIXME: show sample totals
     os << std::endl;
   }
   else {

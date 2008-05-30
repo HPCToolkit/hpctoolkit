@@ -113,7 +113,7 @@ Options: Output:\n\
 
 
 #define CLP CmdLineParser
-#define CLP_SEPARATOR "***"
+#define CLP_SEPARATOR "!!!"
 
 // Note: Changing the option name requires changing the name in Parse()
 CmdLineParser::OptArgDesc Args::optArgs[] = {
@@ -254,11 +254,11 @@ Args::parse(int argc, const char* const argv[])
     // Check for other options: Correlation options
     if (parser.isOpt("include")) {
       string str = parser.getOptArg("include");
-      StrUtil::tokenize(str, CLP_SEPARATOR, searchPaths);
+      StrUtil::tokenize_str(str, CLP_SEPARATOR, searchPaths);
     }
     if (parser.isOpt("structure")) {
       string str = parser.getOptArg("structure");
-      StrUtil::tokenize(str, CLP_SEPARATOR, structureFiles);
+      StrUtil::tokenize_str(str, CLP_SEPARATOR, structureFiles);
     }
     
     // Check for other options: Output options

@@ -41,31 +41,26 @@
 
 #include <sys/param.h>
 
-#ifdef NO_STD_CHEADERS
-# include <stdlib.h>
-# include <stdio.h>
-# include <errno.h>
-# include <stdarg.h>
-#else
-# include <cstdlib> // for 'mkstemp' (not technically visible in C++)
-# include <cstdio>  // for 'tmpnam'
-# include <cerrno>
-# include <cstdarg>
-using namespace std; // For compatibility with non-std C headers
-#endif
+#include <cstdlib> // for 'mkstemp' (not technically visible in C++)
+#include <cstdio>  // for 'tmpnam'
+#include <cerrno>
+#include <cstdarg>
 
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <unistd.h>
 #include <fcntl.h>
 
+#include <fnmatch.h>
+
 #include <string>
 using std::string;
 
 //*************************** User Include Files ****************************
 
-#include "diagnostics.h"
 #include "Files.hpp"
+
+#include "diagnostics.h"
 #include "StrUtil.hpp"
 #include "Trace.hpp"
 
@@ -85,6 +80,8 @@ cpy(int srcFd, int dstFd)
   } 
 } 
 
+
+namespace FileUtil {
 
 const char* 
 CopyFile(const char* destFile, ...) 
@@ -127,12 +124,45 @@ CopyFile(const char* destFile, ...)
 
 
 int 
-MakeDir(const char* dir)
+mkdir(const char* dir)
 {
-  /* int ret = */ // should check for success 
-  mkdir(dir, 00755); 
-  return 0; 
+  int ret = ::mkdir(dir, 00755); 
+  return ret;
 } 
+
+
+std::pair<string, bool>
+mkdirUnique(const char* dirnm)
+{
+  string dirnm_new = dirnm;
+  bool is_done = false;
+
+  mode_t mkmode = S_IRWXU | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH;
+
+  int ret = ::mkdir(dirnm, mkmode);
+  if (ret == -1) {
+    if (errno == EEXIST) {
+      // attempt to create dirnm+pid;
+      pid_t pid = getpid();
+      string pid_str = StrUtil::toStr(pid);
+      dirnm_new = dirnm_new + "-" + pid_str;
+      DIAG_Msg(1, "Directory '" << dirnm << "' already exists. Trying " << dirnm_new);
+      ret = ::mkdir(dirnm_new.c_str(), mkmode);
+      if (ret == -1) {
+	DIAG_Die("Could not create alternate directory " << dirnm_new);
+      }
+      else {
+	DIAG_Msg(1, "Created directory: " << dirnm_new);
+	is_done = true;
+      }
+    } 
+    else {
+      DIAG_Die("Could not create database directory " << dirnm);
+    }
+  }
+  
+  return make_pair(dirnm_new, is_done);
+}
 
 
 int 
@@ -155,7 +185,7 @@ CountChar(const char* file, char c)
 
 
 const char* 
-TmpFileName()   
+tmpname()   
 {
   // below is a hack to replace the deprecated tmpnam which g++ 3.2.2 will
   // no longer allow. the mkstemp routine, which is touted as the replacement
@@ -194,7 +224,7 @@ DeleteFile(const char* file)
 
 
 bool
-FileIsReadable(const char *fileName)
+isReadable(const char *fileName)
 {
   bool result = false;
   struct stat sbuf;
@@ -207,7 +237,7 @@ FileIsReadable(const char *fileName)
 
 
 string 
-BaseFileName(const char* fName) 
+basename(const char* fName) 
 {
   const char* lastSlash = strrchr(fName, '/'); 
   string baseFileName;
@@ -225,7 +255,7 @@ BaseFileName(const char* fName)
 
 
 string 
-PathComponent(const char* fName) 
+dirname(const char* fName) 
 {
   const char* lastSlash = strrchr(fName, '/'); 
   string pathComponent = "."; 
@@ -237,35 +267,23 @@ PathComponent(const char* fName)
 }
 
 
-pair<string, bool>
-createUniqueDir(const char* dirnm)
+bool 
+fnmatch(const std::vector<std::string>& patternVec, 
+	const char* string, 
+	int flags)
 {
-  string dirnm_new = dirnm;
-  bool is_done = false;
-
-  mode_t mkmode = S_IRWXU | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH;
-
-  int ret = mkdir(dirnm, mkmode);
-  if (ret == -1) {
-    if (errno == EEXIST) {
-      // attempt to create dirnm+pid;
-      pid_t pid = getpid();
-      string pid_str = StrUtil::toStr(pid);
-      dirnm_new = dirnm_new + "-" + pid_str;
-      DIAG_Msg(1, "Directory '" << dirnm << "' already exists. Trying " << dirnm_new);
-      ret = mkdir(dirnm_new.c_str(), mkmode);
-      if (ret == -1) {
-	DIAG_Die("Could not create alternate directory " << dirnm_new);
-      }
-      else {
-	DIAG_Msg(1, "Created directory: " << dirnm_new);
-	is_done = true;
-      }
-    } 
-    else {
-      DIAG_Die("Could not create database directory " << dirnm);
+  for (uint i = 0; i < patternVec.size(); ++i) {
+    const std::string& pat = patternVec[i];
+    int fnd = ::fnmatch(pat.c_str(), string, flags);
+    if (fnd == 0) {
+      return true;
+    }
+    else if (fnd != FNM_NOMATCH) {
+      // error
     }
   }
-  
-  return make_pair(dirnm_new, is_done);
+
+  return false;
 }
+
+} // end of FileUtil namespace

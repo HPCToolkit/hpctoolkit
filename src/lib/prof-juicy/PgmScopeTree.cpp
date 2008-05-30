@@ -411,7 +411,7 @@ FileScope::findOrCreate(LoadModScope* lmScope, const string& filenm)
 {
   FileScope* fScope = lmScope->FindFile(filenm);
   if (fScope == NULL) {
-    bool fileIsReadable = FileIsReadable(filenm.c_str());
+    bool fileIsReadable = FileUtil::isReadable(filenm.c_str());
     fScope = new FileScope(filenm, fileIsReadable, lmScope);
   }
   return fScope; // guaranteed to be a valid pointer

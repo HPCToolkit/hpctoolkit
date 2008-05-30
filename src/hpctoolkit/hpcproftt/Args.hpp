@@ -118,9 +118,9 @@ public:
   // Parsed Data: Command
   static const std::string& getCmd() /*const*/;
 
-  static int/*TxtSum*/ parse_sourceOpts(const std::string& opts);
-  static bool          parse_objectOpts(const std::string& opts);
-  static std::string   parse_metricOpts(const std::string& opts);
+  static void parse_sourceOpts(Args* args, const std::string& opts);
+  static void parse_objectOpts(Args* args, const std::string& opts);
+  static void parse_metricOpts(Args* args, const std::string& opts);
 
   // Parsed Data
   Mode_t mode;
@@ -129,7 +129,9 @@ public:
   string txt_metrics;
 
   // Object Correlation args
-  bool showSourceCode;
+  bool obj_metricsAsPercents;
+  bool obj_showSourceCode;
+  uint64_t obj_procThreshold;
 
 private:
   void Ctor();

@@ -88,7 +88,8 @@ public:
 
 public:
   ColumnFormatter(const Prof::MetricDescMgr& metricMgr, 
-		  std::ostream& os, int num_digits);
+		  std::ostream& os, 
+		  int numDecPct, int numDecVal);
   ~ColumnFormatter() { }
 
   // generates a summary of the formatted column for all metrics
@@ -108,10 +109,14 @@ public:
   }
 
 
+  // generate a blank column for metric 'mid'
+  void 
+  genBlankCol(uint mid);
+
   // generates 'formatted blanks' for all 'displayed' metrics
   void
   genBlankCols() {
-    m_os << std::setw(m_metricAnnotationWidthTot) << std::setfill(' ') << " ";
+    m_os << std::setw(m_annotWidthTot) << std::setfill(' ') << " ";
   }
 
 private:
@@ -119,18 +124,22 @@ private:
   isDisplayed(uint mId) 
   {
     // m_mMgr.metric(mId)->Display()
-    return (m_metricAnnotationWidth[mId] != 0);
+    return (m_annotWidth[mId] != 0);
   }
   
 
 private:
   const Prof::MetricDescMgr& m_mMgr;
   std::ostream& m_os;
-  int m_num_digits;
 
-  std::vector<int>    m_metricAnnotationWidth;
-  int                 m_metricAnnotationWidthTot;
-  std::vector<double> m_scientificFormatThreshold;
+  // number of decimals in non-scientific format
+  int m_numDecPct; // for percents
+  int m_numDecVal; // for values
+
+  std::vector<int>    m_annotWidth;
+  int                 m_annotWidthTot;
+  std::vector<double> m_sciFmtThreshold_pct; // values < in scientific
+  std::vector<double> m_sciFmtThreshold_val; // values >= in scientific
 };
 
 
