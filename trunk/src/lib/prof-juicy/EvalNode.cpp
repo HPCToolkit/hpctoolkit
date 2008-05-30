@@ -205,7 +205,7 @@ Divide::dump(std::ostream& os) const
 {
   os << "("; 
   numerator->dump(os); 
-  os << "/"; 
+  os << " / "; 
   denominator->dump(os); 
   os << ")";
   return os;
@@ -246,7 +246,7 @@ Minus::eval(const ScopeInfo* si) const
 std::ostream& 
 Minus::dump(std::ostream& os) const
 {
-  os << "("; minuend->dump(os); os << "-"; subtrahend->dump(os); os << ")";
+  os << "("; minuend->dump(os); os << " - "; subtrahend->dump(os); os << ")";
   return os;
 }
 
@@ -292,7 +292,7 @@ Plus::dump(std::ostream& os) const
   for (int i = 0; i < m_sz; ++i) {
     m_opands[i]->dump(os);
     if (i < m_sz-1) { 
-      os << "+"; 
+      os << " + "; 
     }
   }
   os << ")";
@@ -340,7 +340,7 @@ Times::dump(std::ostream& os) const
   for (int i = 0; i < m_sz; ++i) {
     m_opands[i]->dump(os);
     if (i < m_sz-1) {
-      os << "*";
+      os << " * ";
     }
   }
   os << ")";
@@ -389,7 +389,7 @@ Min::dump(std::ostream& os) const
   for (int i = 0; i < m_sz; ++i) {
     m_opands[i]->dump(os);
     if (i < m_sz-1) {
-      os << ",";
+      os << ", ";
     }
   }
   os << ")";
@@ -438,7 +438,7 @@ Max::dump(std::ostream& os) const
   for (int i = 0; i < m_sz; ++i) {
     m_opands[i]->dump(os);
     if (i < m_sz-1) { 
-      os << ",";
+      os << ", ";
     }
   }
   os << ")";

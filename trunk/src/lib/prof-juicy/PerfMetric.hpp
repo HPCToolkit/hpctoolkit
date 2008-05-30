@@ -113,9 +113,10 @@ public:
   void Index(uint id)  { m_id = id; } 
   
   bool Display() const                { return display; }
+  bool Display(bool display_)         { display = display_; }
   bool Percent() const                { return percent; }
   bool SortBy() const                 { return sortBy; }
-  void setSortBy()                    { sortBy = true; }
+  void SortBy(bool sortBy_)           { sortBy = sortBy_; }
 
 #if 0
   // FIXME:tallent This only applies to computed metrics.  It appears

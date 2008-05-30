@@ -118,11 +118,15 @@ public:
   // Parsed Data: Command
   static const std::string& getCmd() /*const*/;
 
-  static int/*TxtSum*/ parse_sourceOpts(const std::string& srcOpts);
-  static bool          parse_objectOpts(const std::string& srcOpts);
+  static int/*TxtSum*/ parse_sourceOpts(const std::string& opts);
+  static bool          parse_objectOpts(const std::string& opts);
+  static std::string   parse_metricOpts(const std::string& opts);
 
   // Parsed Data
   Mode_t mode;
+
+  // Define additional metrics
+  string txt_metrics;
 
   // Object Correlation args
   bool showSourceCode;
