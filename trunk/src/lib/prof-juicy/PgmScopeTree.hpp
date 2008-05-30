@@ -825,7 +825,7 @@ public:
     delete stmtMap;
   }
 
-  virtual std::string BaseName() const  { return BaseFileName(m_name); }
+  virtual std::string BaseName() const  { return FileUtil::basename(m_name); }
 
   const std::string& name() const { return m_name; }
 
@@ -960,7 +960,7 @@ public:
   void SetName(const char* fname) { m_name = fname; }
   void SetName(const std::string& fname) { m_name = fname; }
     
-  virtual std::string BaseName() const  { return BaseFileName(m_name); }
+  virtual std::string BaseName() const  { return FileUtil::basename(m_name); }
   virtual std::string codeName() const;
 
   bool HasSourceFile() const { return srcIsReadable; } // srcIsReadable

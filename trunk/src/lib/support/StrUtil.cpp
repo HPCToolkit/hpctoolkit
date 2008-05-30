@@ -89,21 +89,39 @@ namespace StrUtil {
 // --------------------------------------------------------------------------
 
 void 
-tokenize(const std::string& tokenstr, const char* delim,
-	 std::vector<std::string>& tokenvec)
+tokenize_char(const std::string& tokenstr, const char* delim,
+	      std::vector<std::string>& tokenvec)
 {
   const int sz = tokenstr.size();
-  for (size_t begpos = 0, endpos = 0; begpos < sz; begpos = endpos+1) {
-    begpos = tokenstr.find_first_not_of(delim, begpos);
-    if (begpos == string::npos) {
+  for (size_t begp = 0, endp = 0; begp < sz; begp = endp+1) {
+    begp = tokenstr.find_first_not_of(delim, begp);
+    if (begp == string::npos) {
       break;
     }
     
-    endpos = tokenstr.find_first_of(delim, begpos);
-    if (endpos == string::npos) {
-      endpos = sz;
+    endp = tokenstr.find_first_of(delim, begp);
+    if (endp == string::npos) {
+      endp = sz;
     }
-    string x = tokenstr.substr(begpos, endpos - begpos); // [begin, end)
+    string x = tokenstr.substr(begp, endp - begp); // [begin, end)
+    tokenvec.push_back(x);
+  }
+}
+
+
+void 
+tokenize_str(const std::string& tokenstr, const char* delim,
+	     std::vector<std::string>& tokenvec)
+{
+  const int delimsz = strlen(delim);
+  const int sz = tokenstr.size();
+  
+  for (size_t begp = 0, endp = 0; begp < sz; begp = endp + delimsz) {
+    endp = tokenstr.find(delim, begp);
+    if (endp == string::npos) {
+      endp = sz;
+    }
+    string x = tokenstr.substr(begp, endp - begp); // [begin, end)
     tokenvec.push_back(x);
   }
 }

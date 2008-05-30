@@ -198,9 +198,8 @@ realmain(int argc, char* const* argv)
   // ------------------------------------------------------------
 
   // prepare output directory 
-  std::pair<string, bool> ret = createUniqueDir(args.db_dir);
-  args.db_dir = ret.first;
-  if (!ret.second) { /* exit on failure */ }
+  std::pair<string, bool> ret = FileUtil::mkdirUnique(args.db_dir);
+  args.db_dir = ret.first;  // // exits on failure...
     
   string dbSrcDir = args.db_dir + "/src";
   if (mkdir(dbSrcDir.c_str(),

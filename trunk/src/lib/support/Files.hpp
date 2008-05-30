@@ -35,18 +35,24 @@
 // 
 // ******************************************************* EndRiceCopyright *
 
-#ifndef Files_h
-#define Files_h 
+#ifndef support_FileUtil_hpp
+#define support_FileUtil_hpp 
 
 //************************* System Include Files ****************************
 
 #include <string>
+#include <vector>
+
+#include <fnmatch.h>
 
 //*************************** User Include Files ****************************
 
 //*************************** Forward Declarations ***************************
 
 //****************************************************************************
+
+namespace FileUtil {
+
 
 // ... is a NULL terminated list of file names 
 // CopyFile appends these files into destFile 
@@ -58,14 +64,25 @@ CopyFile(const char* destFile, ...);
 
 
 extern int 
-MakeDir(const char* dir);
+mkdir(const char* dir);
+
+
+// mkdirUnique: 
+std::pair<std::string, bool>
+mkdirUnique(const char* dirnm);
+
+inline std::pair<std::string, bool>
+mkdirUnique(const std::string& dirnm)
+{
+  return mkdirUnique(dirnm.c_str());
+}
 
 
 // retuns a name that can safely be used for a temporary file 
 // in a static variable, which is overwritten with each call to 
-// TmpFileName
+// tmpname
 extern const char* 
-TmpFileName(); 
+tmpname(); 
 
 
 // count how often char appears in file
@@ -80,41 +97,37 @@ DeleteFile(const char *fname);
 
 
 extern bool 
-FileIsReadable(const char *fileName);
+isReadable(const char *fileName);
 
 
-// 'BaseFileName': returns the 'fname.ext' component of fname=/path/fname.ext
+// 'basename': returns the 'fname.ext' component of fname=/path/fname.ext
 extern std::string 
-BaseFileName(const char* fname); 
+basename(const char* fname); 
 
 inline std::string 
-BaseFileName(const std::string& fname)
+basename(const std::string& fname)
 {
-  return BaseFileName(fname.c_str());
+  return basename(fname.c_str());
 }
 
 
-// 'PathComponent': returns the '/path' component of fname=/path/fname.ext
+// 'dirname': returns the '/path' component of fname=/path/fname.ext
 extern std::string 
-PathComponent(const char* fname); 
+dirname(const char* fname); 
 
 inline std::string 
-PathComponent(const std::string& fname)
+dirname(const std::string& fname)
 {
-  return PathComponent(fname.c_str());
+  return dirname(fname.c_str());
 }
 
 
-// createUniqueDir: 
-std::pair<std::string, bool>
-createUniqueDir(const char* dirnm);
+bool 
+fnmatch(const std::vector<std::string>& patternVec, 
+	const char* string, 
+	int flags = 0);
+  
 
-inline std::pair<std::string, bool>
-createUniqueDir(const std::string& dirnm)
-{
-  return createUniqueDir(dirnm.c_str());
-}
+} // end of FileUtil namespace
 
-
-
-#endif 
+#endif // support_FileUtil_hpp

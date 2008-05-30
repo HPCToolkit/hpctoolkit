@@ -175,12 +175,14 @@ main_objCorrelation(const Args& args)
 
     // 1. Create metric descriptors
     Prof::MetricDescMgr metricMgr;
-    metricMgr.makeRawMetrics(fnm, false/*isunit_ev*/);
+    metricMgr.makeRawMetrics(fnm, 
+			     false/*isunit_ev*/, 
+			     args.obj_metricsAsPercents);
     
     // 2. Correlate
     Analysis::Flat::correlateWithObject(metricMgr, os,
-					args.showSourceCode,
-					1 /*procthreshhold*/);
+					args.obj_showSourceCode,
+					args.obj_procThreshold);
   }
   return 0;
 }

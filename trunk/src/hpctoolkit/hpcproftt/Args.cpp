@@ -110,21 +110,23 @@ Options: General:\n\
   --debug [<n>]        Debug: use debug level <n>. {1}\n\
 \n\
 Options: Source Structure Correlation:\n\
-  --source[=all,pgm,lm,f,p,l,s]\n\
-  --src[=all,pgm,lm,f,p,l,s]\n\
-                       Show metrics summarized by source structure. {all}\n\
-                         all: all summaries below\n\
+  --source[=all,sum,pgm,lm,f,p,l,s,src]\n\
+  --src[=all,sum,pgm,lm,f,p,l,s,src]\n\
+                       Correlate metrics to source code structure. Without\n\
+                       --source, default is {pgm,lm}; with, it is {sum}\n\
+                         all: all summaries plus annotated source files\n\
+                         sum: all summaries\n\
                          pgm: program summary\n\
                          lm:  load module summary\n\
                          f:   files summary\n\
                          p:   procedure summary\n\
                          l:   loop summary\n\
                          s:   statement summary\n\
-  --srcannot           Annotate source files with metrics.\n\
-                       Default path filter is '*'; change with --srcfile.\n\
-  !!! --srcfile <path-substring>\n\
+                         src: annotate source files; equiv to --srcannot '*'\n\
+  --srcannot <glob>\n\
                        Annotate source files with path names that match\n\
-                       <path-substring>.\n\
+                       file glob <glob>. Protect globs from the shell with\n\
+                       'single quotes'. May pass multiple times.\n\
   -M <metric>, --metric <metric>\n\
                        Show a supplemental or different metric set. <metric>\n\
                        is one of the following:\n\
@@ -139,11 +141,11 @@ Options: Source Structure Correlation:\n\
                        May pass multiple times (e.g., for shared libraries).\n\
 \n\
 Options: Object Correlation:\n\
-  --object[=s]         Show object code correlation: load modules,\n\
-  --obj[=s]            procedures, instructions. {}\n\
+  --object[=s]         Correlate metrics with object code by annotating\n\
+  --obj[=s]            object code procedures and instructions. {}\n\
                          s: intermingle source line info with object code\n\
-  !!! --obj-values     Show raw metrics as values instead of percents\n\
-  !!! --obj-threshold <n> Prune procedures with an event count < n {1}\n\
+  --obj-values         Show raw metrics as values instead of percents\n\
+  --obj-threshold <n>  Prune procedures with an event count < n {1}\n\
 \n\
 Options: Dump Raw Profile Data:\n\
   --dump               Generate textual representation of raw profile data.\n\
@@ -155,7 +157,7 @@ static bool isOptArg_obj(const char* x);
 
 
 #define CLP CmdLineParser
-#define CLP_SEPARATOR "***"
+#define CLP_SEPARATOR "!!!"
 
 // Note: Changing the option name requires changing the name in Parse()
 CmdLineParser::OptArgDesc Args::optArgs[] = {
@@ -164,9 +166,7 @@ CmdLineParser::OptArgDesc Args::optArgs[] = {
      isOptArg_src },
   {  0 , "src",             CLP::ARG_OPT,  CLP::DUPOPT_CLOB, NULL,
      isOptArg_src },
-  {  0 , "srcannot",        CLP::ARG_NONE, CLP::DUPOPT_CLOB, NULL,
-     NULL },
-  {  0 , "srcfile",         CLP::ARG_REQ,  CLP::DUPOPT_CAT,  CLP_SEPARATOR,
+  {  0 , "srcannot",        CLP::ARG_REQ,  CLP::DUPOPT_CAT,  CLP_SEPARATOR,
      NULL },
   { 'I', "include",         CLP::ARG_REQ,  CLP::DUPOPT_CAT,  CLP_SEPARATOR,
      NULL },
@@ -180,6 +180,10 @@ CmdLineParser::OptArgDesc Args::optArgs[] = {
      isOptArg_obj },
   {  0 , "obj",             CLP::ARG_OPT , CLP::DUPOPT_CLOB, NULL,
      isOptArg_obj },
+  {  0 , "obj-values",      CLP::ARG_NONE, CLP::DUPOPT_CLOB, NULL,
+     NULL },
+  {  0 , "obj-threshold",   CLP::ARG_REQ,  CLP::DUPOPT_CLOB, NULL,
+     NULL },
 
   // Raw profile data
   {  0 , "dump",            CLP::ARG_NONE, CLP::DUPOPT_CLOB, NULL,
@@ -206,7 +210,7 @@ isOptArg_src(const char* x)
   string opt(x);
   bool ret = true;
   try {
-    Args::parse_objectOpts(opt);
+    Args::parse_sourceOpts(NULL, opt);
   }
   catch (const Args::Exception& x) {
     // To enable good error messages, consider strings with a ratio of
@@ -233,7 +237,7 @@ isOptArg_obj(const char* x)
   string opt(x);
   bool ret = true;
   try {
-    Args::parse_objectOpts(opt);
+    Args::parse_objectOpts(NULL, opt);
   }
   catch (const Args::Exception& x) {
     // To enable good error messages, consider strings of size 1
@@ -264,7 +268,13 @@ void
 Args::Ctor()
 {
   mode = Mode_SourceCorrelation;
+
+  obj_metricsAsPercents = true;
+  obj_showSourceCode = false;
+  obj_procThreshold = 1;
+
   Diagnostics_SetDiagnosticFilterLevel(1);
+
 
   // override Analysis::Args defaults
   out_db_experiment = "";
@@ -275,9 +285,6 @@ Args::Ctor()
   txt_summary       = TxtSum_fPgm | TxtSum_fLM;
   txt_srcAnnotation = false;
   metrics_computeInteriorValues = true; // dump metrics on interior nodes
-
-  // Object Correlation
-  showSourceCode = false;
 }
 
 
@@ -377,19 +384,18 @@ Args::parse(int argc, const char* const argv[])
       else if (parser.isOptArg("src")) { opt = parser.getOptArg("src"); }
 
       if (!opt.empty()) {
-	txt_summary = parse_sourceOpts(opt);
+	txt_summary = Analysis::Args::TxtSum_NULL;
+	parse_sourceOpts(this, opt);
       }
     }
     if (parser.isOpt("srcannot")) {
       txt_srcAnnotation = true;
-    }
-    if (parser.isOpt("srcfile")) {
-      string str = parser.getOptArg("srcfile");
-      // ...
+      string str = parser.getOptArg("srcannot");
+      StrUtil::tokenize_str(str, CLP_SEPARATOR, txt_srcFileGlobs);
     }
     if (parser.isOpt("include")) {
       string str = parser.getOptArg("include");
-      StrUtil::tokenize(str, CLP_SEPARATOR, searchPaths);
+      StrUtil::tokenize_str(str, CLP_SEPARATOR, searchPaths);
       
       for (uint i = 0; i < searchPaths.size(); ++i) {
 	searchPathTpls.push_back(Analysis::PathTuple(searchPaths[i], "src"));
@@ -397,11 +403,11 @@ Args::parse(int argc, const char* const argv[])
     }
     if (parser.isOpt("structure")) {
       string str = parser.getOptArg("structure");
-      StrUtil::tokenize(str, CLP_SEPARATOR, structureFiles);
+      StrUtil::tokenize_str(str, CLP_SEPARATOR, structureFiles);
     }
     if (parser.isOpt("metric")) {
       string opt = parser.getOptArg("metric");
-      txt_metrics = parse_metricOpts(opt);
+      parse_metricOpts(this, opt);
     }
     
     // Check for other options: Object correlation options
@@ -413,8 +419,15 @@ Args::parse(int argc, const char* const argv[])
       else if (parser.isOptArg("obj")) { opt = parser.getOptArg("obj"); }
 
       if (!opt.empty()) {
-	showSourceCode = parse_objectOpts(opt);
+	parse_objectOpts(this, opt);
       }
+    }
+    if (parser.isOpt("obj-values")) {
+      obj_metricsAsPercents = false;
+    }
+    if (parser.isOpt("obj-threshold")) {
+      const string& arg = parser.getOptArg("obj-threshold");
+      obj_procThreshold = CmdLineParser::toUInt64(arg);
     }
 
     // Check for other options: Dump raw profile data
@@ -448,56 +461,64 @@ Args::parse(int argc, const char* const argv[])
 }
 
 
-int/*TxtSum*/
-Args::parse_sourceOpts(const string& opts)
+void
+Args::parse_sourceOpts(Args* args, const string& opts)
 {
-  int/*TxtSum*/ txt_summary = Analysis::Args::TxtSum_NULL;
-
   std::vector<std::string> srcOptVec;
-  StrUtil::tokenize(opts, ",", srcOptVec);
+  StrUtil::tokenize_char(opts, ",", srcOptVec);
 
   for (uint i = 0; i < srcOptVec.size(); ++i) {
     const string& opt = srcOptVec[i];
-
+    
     Analysis::Args::TxtSum flg = Analysis::Args::TxtSum_NULL;
     if      (opt == "all") { flg = TxtSum_ALL; }
+    else if (opt == "sum") { flg = TxtSum_ALL; }
     else if (opt == "pgm") { flg = TxtSum_fPgm; }
     else if (opt == "lm")  { flg = TxtSum_fLM; }
     else if (opt == "f")   { flg = TxtSum_fFile; }
     else if (opt == "p")   { flg = TxtSum_fProc; }
     else if (opt == "l")   { flg = TxtSum_fLoop; }
     else if (opt == "s")   { flg = TxtSum_fStmt; }
+    else if (opt == "src") { ; }
     else {
       ARG_Throw("Unknown argument to --src,--source: '" << opt << "'");
     }
-    
-    txt_summary = (txt_summary | flg);
+
+    if (args) {
+      args->txt_summary = (args->txt_summary | flg);
+      if (opt == "all" || opt == "src") {
+	args->txt_srcAnnotation = true;
+      }
+    }
   }
-  
-  return txt_summary;
 }
 
 
-bool
-Args::parse_objectOpts(const string& opts)
+void
+Args::parse_objectOpts(Args* args, const string& opts)
 {
   if (opts == "s") {
-    return true;
+    if (args) {
+      args->obj_showSourceCode = true;
+    }
   }
-
-  ARG_Throw("Unknown argument to --obj,--object: '" << opts << "'");
-  return false; // Unreachable
+  else {
+    ARG_Throw("Unknown argument to --obj,--object: '" << opts << "'");
+  }
 }
 
 
-string
-Args::parse_metricOpts(const string& opts)
+void
+Args::parse_metricOpts(Args* args, const string& opts)
 {
   if (opts == "sum" || opts == "sum-only") {
-    return opts;
+    if (args) {
+      args->txt_metrics = opts;
+    }
   }
-  ARG_Throw("Unknown argument to --obj,--object: '" << opts << "'");
-  return ""; // Unreachable
+  else {
+    ARG_Throw("Unknown argument to -M,--metric: '" << opts << "'");
+  }
 }
 
 

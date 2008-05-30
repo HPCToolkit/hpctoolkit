@@ -30,7 +30,7 @@
 \rcsInfo $Id$
 \setDate{\rcsInfoLongDate}
 }{
-\setDate{ 2008/05/27}
+\setDate{ 2008/05/30}
 \message{package rcsinfo not present, discard it}
 }
 
@@ -118,15 +118,15 @@ An important feature of the Experiment database is that it is relocatable, conta
 This means that the first three steps can be performed remotely on a cluster and then the database can be viewed locally on a laptop or workstation.
 \end{enumerate}
 
-\subsection{Traditional Analysis}
+\subsection{Textual Analysis}
 
 \begin{enumerate}
 \item \textbf{Measurement.}  
 Collect low-overhead, high-accuracy `flat' profiles using statistical sampling (\HTMLhref{hpcrun.html}{\Cmd{hpcrun}{1}}).
 
 \item \textbf{Correlating dynamic profiles with procedures source lines.} 
-\HTMLhref{hpcproftt.html}{\Cmd{hpcproftt}{1}} correlates `flat' profiles with procedure source line information and produces textual output.
-It does not account for procedure transformations such as inlining and does not detect loops.
+\HTMLhref{hpcproftt.html}{\Cmd{hpcproftt}{1}} correlates `flat' profiles with source structure and produces textual output.
+
 \end{enumerate}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

@@ -78,7 +78,8 @@ Prof::MetricDescMgr::~MetricDescMgr()
 
 void 
 Prof::MetricDescMgr::makeRawMetrics(const std::vector<std::string>& profileFiles,
-				    bool isunit_ev)
+				    bool isunit_ev,
+				    bool ispercent)
 {
   // ------------------------------------------------------------
   // Create a FilePerfMetric for each event within each profile
@@ -103,7 +104,7 @@ Prof::MetricDescMgr::makeRawMetrics(const std::vector<std::string>& profileFiles
       bool sortby = empty();
       FilePerfMetric* m = new FilePerfMetric(m_raw.name(), nativeNm,
 					     m_raw.name(),
-					     true/*display*/, true/*percent*/,
+					     true/*display*/, ispercent,
 					     sortby, proffnm, string("HPCRUN"),
 					     isunit_ev);
       m->rawdesc(m_raw);

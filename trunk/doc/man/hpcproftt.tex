@@ -30,7 +30,7 @@
 \rcsInfo $Id$
 \setDate{\rcsInfoLongDate}
 }{
-\setDate{ 2008/05/29}
+\setDate{ 2008/05/30}
 \message{package rcsinfo not present, discard it}
 }
 
@@ -128,24 +128,23 @@ Default values for an option's optional arguments are shown in \{\}.
 \subsection{Options: Source Structure Correlation}
 
 \begin{Description}
-\item[\OptoArg{--source}{=all,pgm,lm,f,p,l,s}] 
-\item[\OptoArg{--src}{=all,pgm,lm,f,p,l,s}] 
-Show metrics summarized by source structure. \{all\}
+\item[\OptoArg{--source}{=all,sum,pgm,lm,f,p,l,s,src}]
+\item[\OptoArg{--src}{=all,sum,pgm,lm,f,p,l,s,src}] 
+Correlate metrics to source code structure. Without \Opt{--source}, default is \{pgm,lm\}; with, it is \{sum\}.
   \begin{itemize}
-  \item all: all summaries below
+  \item all: all summaries plus annotated source files
+  \item sum: all summaries
   \item pgm: program summary
   \item lm:  load module summary
   \item f:   files summary
   \item p:   procedure summary
   \item l:   loop summary
   \item s:   statement summary
+  \item src: annotate source files with metrics; equivalent to \Opt{--srcannot '*'}
   \end{itemize}
 
-\item[\Opt{--srcannot}] 
-Annotate source files with metrics. Default path filter is `*'; change with \Opt{--srcfile}.
-
-\item[\OptArg{--srcfile}{path-substring}] 
-Annotate source files with path names that match \Arg{path-substring}.
+\item[\OptArg{--srcannot}{glob}] 
+Annotate source files with path names that match file glob \Arg{glob}. Protect globs from the shell with 'single quotes'. May pass multiple times.
 
 \item[\OptoArg{-M}{metric}, \OptoArg{--metric}{metric}] 
 Show a supplemental or different metric set. \Arg{metric} is one of the following:
@@ -155,7 +154,7 @@ Show a supplemental or different metric set. \Arg{metric} is one of the followin
   \end{itemize}
 
 \item[\OptArg{-I}{path}, \OptArg{--include}{path}] 
-Use \Arg{path} when searching for source files. To recursively search a path, append an escaped `*' after the last slash, e.g., \verb+/mypath/\*+ (escaping is for the shell). May pass multiple times.
+Use \Arg{path} when searching for source files. To recursively search a path, append an escaped '*' after the last slash, e.g., \verb+/mypath/\*+ (escaping is for the shell). May pass multiple times.
 
 \item[\OptArg{-S}{file}, \OptArg{--structure}{file}] 
 Use \HTMLhref{hpcstruct.html}{\Cmd{hpcstruct}{1}} structure file \Arg{file} for correlation.  May pass multiple times (e.g., for shared libraries).
@@ -167,7 +166,7 @@ Use \HTMLhref{hpcstruct.html}{\Cmd{hpcstruct}{1}} structure file \Arg{file} for 
 
 \item[\OptoArg{--object}{=s}] 
 \item[\OptoArg{--obj}{=s}] 
-Show object code correlation: load modules, procedures, instructions. \{\}
+Correlate metrics with object code by annotating object code procedures and instructions. \{\}
   \begin{itemize}
   \item s: intermingle source line info with object code
   \end{itemize}

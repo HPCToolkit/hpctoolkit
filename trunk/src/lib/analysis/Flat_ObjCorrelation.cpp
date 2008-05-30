@@ -294,7 +294,7 @@ correlateWithObject_LM(const Prof::MetricDescMgr& metricMgr,
 		       // ----------------------------------------------
 		       std::ostream& os, 
 		       bool srcCode,
-		       uint64_t procVisThreshold);
+		       uint64_t procPruneThreshold);
 
 
 void
@@ -302,7 +302,7 @@ correlateWithObject(const Prof::MetricDescMgr& metricMgr,
 		    // ----------------------------------------------
 		    std::ostream& os, 
 		    bool srcCode,
-		    uint64_t procVisThreshold)
+		    uint64_t procPruneThreshold)
 {
   using Prof::MetricDescMgr;
 
@@ -340,7 +340,7 @@ correlateWithObject(const Prof::MetricDescMgr& metricMgr,
     }
     
     correlateWithObject_LM(metricMgr, *proflm, *lm, 
-			   os, srcCode, procVisThreshold);
+			   os, srcCode, procPruneThreshold);
     delete lm;
   }
 }
@@ -353,12 +353,12 @@ correlateWithObject_LM(const Prof::MetricDescMgr& metricMgr,
 		       // ----------------------------------------------
 		       ostream& os, 
 		       bool srcCode,
-		       uint64_t procVisThreshold)
+		       uint64_t procPruneThreshold)
 {
   // INVARIANT: metricMgr only contains metrics related to 'proflm'
   
   MetricCursor metricCursor(metricMgr, proflm, lm);
-  ColumnFormatter colFmt(metricMgr, os, 2);
+  ColumnFormatter colFmt(metricMgr, os, 2, 0);
 
   // --------------------------------------------------------
   // 0. Metric summary for load module
@@ -394,7 +394,7 @@ correlateWithObject_LM(const Prof::MetricDescMgr& metricMgr,
       
     const vector<uint64_t> metricTotsProc = 
       metricCursor.computeMetricVals(procint, false);
-    if (!metricCursor.hasMetricValGE(metricTotsProc, procVisThreshold)) {
+    if (!metricCursor.hasMetricValGE(metricTotsProc, procPruneThreshold)) {
       continue;
     }
 
@@ -478,37 +478,6 @@ writeMetricVals(ColumnFormatter& colFmt,
     colFmt.genCol(i, (double)metricVal[i], (double)metricTot[i], flg);
   }
 }
-
-
-#if 0
-// OBSOLETED: keeping just in case SiCortex really complains
-void
-writeMetricSummary(std::ostream& os, 
-		   const vector<const Prof::Flat::EventData*>& metricDescs,
-		   const vector<uint64_t>& metricVal,
-		   const vector<uint64_t>* metricTot)
-{
-  os << std::endl 
-     << "Metric definitions for each column:\n";
-
-  for (uint i = 0; i < metricDescs.size(); ++i) {
-    const Prof::Flat::EventData& profevent = *(metricDescs[i]);
-    
-    const Prof::SampledMetricDesc& mdesc = profevent.mdesc();
-    os << "  " << mdesc.name() << ":" << mdesc.period() 
-       << " - " << mdesc.description() 
-       << " (" << metricVal[i] << " samples";
-    
-    if (metricTot) {
-      double pct = ((double)metricVal[i] / (double)(*metricTot)[i]) * 100;
-      os << " - " << std::fixed << std::setprecision(4) 
-	 << pct << "%";
-    }
-    
-    os << ")" << std::endl;
-  }
-}
-#endif
 
 
 } // namespace Flat

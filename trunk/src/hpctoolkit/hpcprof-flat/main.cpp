@@ -196,7 +196,7 @@ readConfFile(Args& args, Prof::MetricDescMgr& metricMgr)
 static string
 buildConfFile(const string& hpcHome, const string& confFile) 
 {
-  string tmpFile = TmpFileName(); 
+  string tmpFile = FileUtil::tmpname(); 
   string hpcloc = hpcHome;
   if (hpcloc[hpcloc.length()-1] != '/') {
     hpcloc += "/";

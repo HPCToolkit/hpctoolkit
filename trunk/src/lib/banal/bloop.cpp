@@ -1571,7 +1571,7 @@ FilterFilesFromScopeTree(PgmScopeTree* pgmScopeTree,
     it++; // advance iterator -- it is pointing at 'file'
     
     // Verify this file in the current list of acceptible paths
-    string baseFileName = BaseFileName(file->name());
+    string baseFileName = FileUtil::basename(file->name());
     DIAG_Assert(!baseFileName.empty(), "Invalid path!");
     if (!pathfind(canonicalPathList, baseFileName.c_str(), "r")) {
       file->Unlink(); // unlink 'file' from tree

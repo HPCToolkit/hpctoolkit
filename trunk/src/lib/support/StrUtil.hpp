@@ -76,16 +76,23 @@
 namespace StrUtil {
 
 // --------------------------------------------------------------------------
-// tokenize
+// tokenize_char: Given a string of tokens 'tokenstr' delimited by any of the
+// *individual characters* in 'delim', extract and place each token
+// string in 'tokenvec'.
 //
-// Given a string of tokens 'tokenstr' delimited by 'delim', extract
-// and place each token string in 'tokenvec'.
+// tokenize_str: Same as tokenize_char, except that the delimiter
+// itself is one string (rather than several possible single characters).
 //
 // --------------------------------------------------------------------------
 
 void 
-tokenize(const std::string& tokenstr, const char* delim,
-	 std::vector<std::string>& tokenvec);
+tokenize_char(const std::string& tokenstr, const char* delim,
+	      std::vector<std::string>& tokenvec);
+
+void 
+tokenize_str(const std::string& tokenstr, const char* delim,
+	      std::vector<std::string>& tokenvec);
+
 
 // --------------------------------------------------------------------------
 // string -> numerical types
