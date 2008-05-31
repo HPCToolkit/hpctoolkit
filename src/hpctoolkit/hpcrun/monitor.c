@@ -252,8 +252,10 @@ init_options()
 	  DIEx("error: Invalid profiling flag '%s'.", token);
 	}
 	opt_flagscode |= f->code;
-	MSGx(stderr, "  flag: %s, 0x%x, 0x%x", token, f->code, opt_flagscode);
-	token = strtok_r(token,",:",&ptr);
+	if (opt_debug >=1) {
+	  MSGx(stderr, "  flag: %s, 0x%x, 0x%x", token, f->code, opt_flagscode);
+	}
+	token = strtok_r(NULL,",:",&ptr);
       }
     }
   }
@@ -973,7 +975,7 @@ init_profdesc_ofile(hpcrun_profiles_desc_t* profdesc, int sharedprofdesc)
   char outfilenm[outfilenmLen];
   char hostnm[hostnmLen];
   const char* cmd = hpcrun_cmd; 
-  char* event = NULL, *evetc = "", *slash = NULL;
+  char* event = NULL, *slash = NULL;
   uint numEvents = 0;
   FILE* fs;
   
@@ -1002,29 +1004,32 @@ init_profdesc_ofile(hpcrun_profiles_desc_t* profdesc, int sharedprofdesc)
     numEvents += HPC_GET_PAPIPROFS(profdesc)->size;
     event = HPC_GET_PAPIPROFS(profdesc)->vec[0].einfo.symbol; /* first name */
   }
-  if (numEvents > 1) {
-    evetc = "-etc"; /* indicates unshown events */
-  }
   
   /* <hostname> */
   gethostname(hostnm, hostnmLen);
   hostnm[hostnmLen-1] = '\0'; /* ensure NULL termination */
 
   /* Create file name */
-  snprintf(outfilenm, outfilenmLen, "%s/%s%s.%s%s.%s.%d.0x%lx", 
-	   opt_outpath, opt_prefix, cmd, event, evetc, hostnm, getpid(), 
-	   hpcrun_gettid());
+  snprintf(outfilenm, outfilenmLen, "%s/%s%s."HPCRUN_NAME".%s.%d.0x%lx",
+	   opt_outpath, opt_prefix, cmd, hostnm, getpid(), hpcrun_gettid());
 
-  /* If user has supplied an output filename use that overrides the
-     setting above */
   /* Use a generation suffix if file exists */
   if (strlen(opt_file)) {
+    /* If user has supplied an output filename use that overrides the
+       setting above */
     int inst = get_next_gen(opt_file);
     if (inst) {
       snprintf(outfilenm, outfilenmLen, "%s.%d", opt_file, inst);
-    }
+    } 
     else {
-     strncpy(outfilenm, opt_file, outfilenmLen);
+      strncpy(outfilenm, opt_file, outfilenmLen);
+    }
+  } 
+  else {
+    int inst = get_next_gen(outfilenm);
+    if (inst) {
+      snprintf(opt_file, outfilenmLen, "%s.%d", outfilenm, inst);
+      strncpy(outfilenm, opt_file, outfilenmLen);
     }
   }
   

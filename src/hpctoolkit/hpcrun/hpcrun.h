@@ -41,6 +41,15 @@
    HPCRUN_DEBUG          positive integer
  */
 
+
+// tallent: temporarily create this
+#define HPCRUN_SICORTEX 0
+#if (HPCRUN_SICORTEX)
+# define HPCRUN_NAME "hpcex"
+#else
+# define HPCRUN_NAME "hpcrun"
+#endif
+
 #define HPCRUN_LIB  "libhpcrun.so"
 
 typedef enum enum_hpc_threadprof_t {
