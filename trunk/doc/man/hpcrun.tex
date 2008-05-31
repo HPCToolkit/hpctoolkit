@@ -30,7 +30,7 @@
 \rcsInfo $Id$
 \setDate{\rcsInfoLongDate}
 }{
-\setDate{ 2008/05/28}
+\setDate{ 2008/05/30}
 \message{package rcsinfo not present, discard it}
 }
 
@@ -69,8 +69,7 @@ Specifically, for an event \emph{e} and period \emph{p}, after every \emph{p} in
 \Prog{hpcrun} profiles complex applications (forks, execs, threads and dynamically loaded libraries) and may be used in conjunction with parallel process launchers such as MPICH's \texttt{mpiexec} and SLURM's \texttt{srun}.
 
 When \Arg{command} terminates normally, a profile --- a histogram of counts for instructions in each load module --- will be written to a file with the name\\
-\SP\SP\SP \Arg{command}.\Arg{event1}.\Arg{hostname}.\Arg{pid}.\Arg{tid}\\
-If multiple events are specified, \texttt{-etc} is appended to \Arg{event1} to indicate the presence of additional data.
+\SP\SP\SP \Arg{command}.hpcrun.\Arg{hostname}.\Arg{pid}.\Arg{tid}\\
 \Prog{hpcrun} allows the user to abort a process \emph{and} write the partial profiling data to disk by sending the Interrupt signal (INT or Ctrl-C).  This can be extremely useful on long-running or misbehaving applications.
 
 The special option `\texttt{--}' can be used to stop \Prog{hpcrun} option parsing; this is especially useful when \Arg{command} takes arguments of its own.

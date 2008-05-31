@@ -54,7 +54,7 @@
 // between MSG0 and MSGx.
 
 #define MSG_str(fmt)                                                    \
-  "hpcrun (pid %d, tid 0x%lx): " fmt "\n", getpid(), hpcrun_gettid()
+  HPCRUN_NAME" [pid %d, tid 0x%lx]: " fmt "\n", getpid(), hpcrun_gettid()
 
 
 #define MSG0(x, fmt)                                                    \

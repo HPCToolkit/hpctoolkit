@@ -437,16 +437,7 @@ list_available_events_helper(Args::EventList_t listType)
   // -------------------------------------------------------
 
   /* PAPI does not always correctly return a vendor id */
-  bool isIntel = (hwinfo->vendor == PAPI_VENDOR_INTEL || 
-		  (hwinfo->vendor_string && 
-		   strcmp(hwinfo->vendor_string, "GenuineIntel") == 0));
-  bool isP4 = isIntel && (hwinfo->model == 11 || hwinfo->model == 12
-			  || hwinfo->model == 16);
-
   os << "*** Available native events ***\n";
-  if (isP4) { 
-    os << "Note: Pentium 4 listing is by event groups; group names (*) are not events.\n"; 
-  }
   os << SEPARATOR_MINOR;
   if (listType == Args::LIST_SHORT) { 
     os << "Name\t\t\t\tDescription\n";
@@ -459,51 +450,26 @@ list_available_events_helper(Args::EventList_t listType)
   }
   os << SEPARATOR_MINOR;
   os << std::left << setfill(' ');
-
+  
   i = PAPI_NATIVE_MASK;
   count = 0;
-  if (isP4) {
-    /* Pentium IV special case */
-    // FIXME: Pentium IV PRESETS have been deprecated
-#if defined(PAPI_PENT4_ENUM_BITS) & defined(PAPI_PENT4_ENUM_GROUPS)
-    do {
-      int j = i;
-      unsigned l = 0;
-      PAPI_event_info_t info;
-      if (dl_PAPI_get_event_info(i, &info) == PAPI_OK) {
-	os << "* " << setw(29) << info.symbol << " " << info.long_descr << "\n";
-	l = strlen(info.long_descr);
-      }
-      while (dl_PAPI_enum_event(&j, PAPI_PENT4_ENUM_BITS) == PAPI_OK) {
-	if (dl_PAPI_get_event_info(j, &info) == PAPI_OK) {
-	  os << setw(31) << info.symbol << " " << info.long_descr + l + 1 << "\n";
-
-	  count++;
+  do {
+    PAPI_event_info_t info;
+    if (dl_PAPI_get_event_info(i, &info) == PAPI_OK) {
+      const char* desc = (info.long_descr) ? info.long_descr : "";
+      
+      if (listType == Args::LIST_SHORT || listType == Args::LIST_LONG) {
+	if (strncmp(info.symbol, desc, strlen(info.symbol)) == 0) {
+	  desc += strlen(info.symbol);
 	}
+	os << setw(31) << info.symbol << " " << desc << "\n";
       }
-    } while (dl_PAPI_enum_event(&i, PAPI_PENT4_ENUM_GROUPS) == PAPI_OK);
-#endif
-  }
-  else {
-    do {
-      PAPI_event_info_t info;
-      if (dl_PAPI_get_event_info(i, &info) == PAPI_OK) {
-	const char* desc = (info.long_descr) ? info.long_descr : "";
-	
-	if (listType == Args::LIST_SHORT || listType == Args::LIST_LONG) {
-	  if (strncmp(info.symbol, desc, strlen(info.symbol)) == 0) {
-	    desc += strlen(info.symbol);
-	  }
-	  os << setw(31) << info.symbol << " " << desc << "\n";
-	}
-	else {
-	  DIAG_Die(DIAG_Unimplemented);
-	}
-	count++;
+      else {
+	DIAG_Die(DIAG_Unimplemented);
       }
-    } while (dl_PAPI_enum_event(&i, 0 /*PAPI_ENUM_ALL*/) == PAPI_OK);
-    // FIXME: PAPI 3.5.0 had PAPI_ENUM_ALL=0 vs 3.x.x CVS's PAPI_ENUM_ALL=0
-  }
+      count++;
+    }
+  } while (dl_PAPI_enum_event(&i, PAPI_ENUM_EVENTS) == PAPI_OK);
   
   os << "Total native events reported: " << count << "\n";
   os << SEPARATOR_MAJOR;

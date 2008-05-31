@@ -96,12 +96,10 @@ SLURM's srun.\n\
 \n\
 When <command> terminates normally, a profile -- a histogram of counts for\n\
 instructions in each load module -- will be written to a file with the name\n\
-  <command>.<event1>.<hostname>.<pid>.<tid>\n\
-If multiple events are specified, '-etc' is appended to <event1> to indicate\n\
-the presence of additional data.  hpcrun allows the user to abort a process\n\
-and write the partial profiling data to disk by sending the Interrupt signal\n\
-(INT or Ctrl-C).  This can be extremely useful on long-running or misbehaving\n\
-applications.\n\
+  <command>.hpcrun.<hostname>.<pid>.<tid>\n\
+hpcrun allows the user to abort a process and write the partial profiling\n\
+data to disk by sending the Interrupt signal (INT or Ctrl-C).  This can be\n\
+extremely useful on long-running or misbehaving applications.\n\
 \n\
 The special option '--' can be used to stop hpcrun option parsing; this is\n\
 especially useful when <command> takes arguments of its own.\n\
