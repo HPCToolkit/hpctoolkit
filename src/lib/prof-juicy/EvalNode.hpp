@@ -50,11 +50,13 @@
 //   Times : multiplication expression            : n-ary
 //   Max   : max expression                       : n-ary
 //   Min   : min expression                       : n-ary
+//   Mean  : mean (arithmetic) expression         : n-ary
+//   StdDev: standard deviation expression        : n-ary
 //
 // ----------------------------------------------------------------------
 
-#ifndef prof_juicy_EvalNode
-#define prof_juicy_EvalNode
+#ifndef prof_juicy_Prof_Metric_Eval_hpp
+#define prof_juicy_Prof_Metric_Eval_hpp
 
 //************************ System Include Files ******************************
 
@@ -71,18 +73,22 @@
 
 //****************************************************************************
 
+namespace Prof {
+
+namespace Metric {
+
 // ----------------------------------------------------------------------
-// class EvalNode
+// class AExpr
 //   The base class for all concrete evaluation tree node classes
 // ----------------------------------------------------------------------
 
-class EvalNode
+class AExpr
 {
 public:
-  EvalNode()
+  AExpr()
   { }
 
-  virtual ~EvalNode() 
+  virtual ~AExpr() 
   { }
 
   virtual double eval(const ScopeInfo* si) const = 0;
@@ -94,6 +100,30 @@ public:
   virtual std::ostream& dump(std::ostream& os = std::cout) const = 0;
   
   virtual std::string toString() const;
+
+protected:
+  static double
+  eval_sum(const ScopeInfo* si, AExpr** opands, int sz) 
+  {
+    double result = 0.0;
+    for (int i = 0; i < sz; ++i) {
+      double x = opands[i]->eval(si);
+      result += x;
+    }
+    return result;
+  }
+
+  static double
+  eval_mean(const ScopeInfo* si, AExpr** opands, int sz) 
+  {
+    double sum = eval_sum(si, opands, sz);
+    double result = sum / (double) sz;
+    return result;
+  }
+
+  static void dump_opands(std::ostream& os, AExpr** opands, int sz,
+			  const char* sep = ", ");
+  
 };
 
 
@@ -102,7 +132,7 @@ public:
 //   Represent a double constant
 // ----------------------------------------------------------------------
 
-class Const : public EvalNode
+class Const : public AExpr
 {
 public:
   Const(double c) 
@@ -126,13 +156,14 @@ private:
 
 // ----------------------------------------------------------------------
 // class Neg
-//   Represent a negative value of an EvalNode
+//   Represent a negative value of an AExpr
 // ----------------------------------------------------------------------
 
-class Neg : public EvalNode
+class Neg : public AExpr
 {  
 public:
-  Neg(EvalNode* expr)
+  // Assumes ownership of AExpr
+  Neg(AExpr* expr)
   { 
     m_expr = expr; 
   }
@@ -147,7 +178,7 @@ public:
   std::ostream& dump(std::ostream& os = std::cout) const;
   
 private:
-  EvalNode* m_expr;
+  AExpr* m_expr;
 };
 
 
@@ -157,7 +188,7 @@ private:
 //   table
 // ----------------------------------------------------------------------
 
-class Var : public EvalNode
+class Var : public AExpr
 {
 public:
   Var(std::string n, int i)
@@ -187,17 +218,18 @@ private:
 //   Represent a power expression
 // ----------------------------------------------------------------------
 
-class Power : public EvalNode
+class Power : public AExpr
 {
 public:
-  Power(EvalNode* b, EvalNode* e);
+  // Assumes ownership of AExpr
+  Power(AExpr* b, AExpr* e);
   ~Power();
   double eval(const ScopeInfo* si) const;
   std::ostream& dump(std::ostream& os = std::cout) const;
 
 private:
-  EvalNode* base;
-  EvalNode* exponent;
+  AExpr* base;
+  AExpr* exponent;
 };
 
 
@@ -206,10 +238,11 @@ private:
 //   Represent the division
 // ----------------------------------------------------------------------
 
-class Divide : public EvalNode
+class Divide : public AExpr
 {
 public:
-  Divide(EvalNode* num, EvalNode* denom);
+  // Assumes ownership of AExpr
+  Divide(AExpr* num, AExpr* denom);
   ~Divide();
 
   double eval(const ScopeInfo* si) const;
@@ -217,8 +250,8 @@ public:
   std::ostream& dump(std::ostream& os = std::cout) const;
 
 private:
-  EvalNode* numerator;
-  EvalNode* denominator;
+  AExpr* numerator;
+  AExpr* denominator;
 };
 
 
@@ -227,10 +260,11 @@ private:
 //   Represent the subtraction
 // ----------------------------------------------------------------------
 
-class Minus : public EvalNode
+class Minus : public AExpr
 {
 public:
-  Minus(EvalNode* m, EvalNode* s);
+  // Assumes ownership of AExpr
+  Minus(AExpr* m, AExpr* s);
   ~Minus();
 
   double eval(const ScopeInfo* si) const;
@@ -238,8 +272,8 @@ public:
   std::ostream& dump(std::ostream& os = std::cout) const;
 
 private:
-  EvalNode* minuend;
-  EvalNode* subtrahend;
+  AExpr* minuend;
+  AExpr* subtrahend;
 };
 
 
@@ -248,10 +282,11 @@ private:
 //   Represent addition
 // ----------------------------------------------------------------------
 
-class Plus : public EvalNode
+class Plus : public AExpr
 {
 public:
-  Plus(EvalNode** oprnds, int numOprnds);
+  // Assumes ownership of AExpr
+  Plus(AExpr** oprnds, int numOprnds);
   ~Plus();
   
   double eval(const ScopeInfo* si) const;
@@ -259,7 +294,7 @@ public:
   std::ostream& dump(std::ostream& os = std::cout) const;
 
 private:
-  EvalNode** m_opands;
+  AExpr** m_opands;
   int m_sz;
 };
 
@@ -269,10 +304,11 @@ private:
 //   Represent multiplication
 // ----------------------------------------------------------------------
 
-class Times : public EvalNode
+class Times : public AExpr
 {
 public:
-  Times(EvalNode** oprnds, int numOprnds);
+  // Assumes ownership of AExpr
+  Times(AExpr** oprnds, int numOprnds);
   ~Times();
 
   double eval(const ScopeInfo* si) const;
@@ -280,7 +316,7 @@ public:
   std::ostream& dump(std::ostream& os = std::cout) const;
 
 private:
-  EvalNode** m_opands;
+  AExpr** m_opands;
   int m_sz;
 };
 
@@ -289,10 +325,11 @@ private:
 // Max
 // ----------------------------------------------------------------------
 
-class Max : public EvalNode
+class Max : public AExpr
 {
 public:
-  Max(EvalNode** oprnds, int numOprnds);
+  // Assumes ownership of AExpr
+  Max(AExpr** oprnds, int numOprnds);
   ~Max();
 
   double eval(const ScopeInfo* si) const;
@@ -300,7 +337,7 @@ public:
   std::ostream& dump(std::ostream& os = std::cout) const;
 
 private:
-  EvalNode** m_opands;
+  AExpr** m_opands;
   int m_sz;
 };
 
@@ -309,10 +346,11 @@ private:
 // Min
 // ----------------------------------------------------------------------
 
-class Min : public EvalNode
+class Min : public AExpr
 {
 public:
-  Min(EvalNode** oprnds, int numOprnds);
+  // Assumes ownership of AExpr
+  Min(AExpr** oprnds, int numOprnds);
   ~Min();
 
   double eval(const ScopeInfo* si) const;
@@ -320,10 +358,59 @@ public:
   std::ostream& dump(std::ostream& os = std::cout) const;
 
 private:
-  EvalNode** m_opands;
+  AExpr** m_opands;
   int m_sz;
 };
 
+
+// ----------------------------------------------------------------------
+// Mean
+// ----------------------------------------------------------------------
+
+class Mean : public AExpr
+{
+public:
+  // Assumes ownership of AExpr
+  Mean(AExpr** oprnds, int numOprnds);
+  ~Mean();
+
+  double eval(const ScopeInfo* si) const;
+
+  std::ostream& dump(std::ostream& os = std::cout) const;
+
+private:
+  AExpr** m_opands;
+  int m_sz;
+};
+
+
+// ----------------------------------------------------------------------
+// StdDev
+// ----------------------------------------------------------------------
+
+class StdDev : public AExpr
+{
+public:
+  // Assumes ownership of AExpr
+  StdDev(AExpr** oprnds, int numOprnds);
+  ~StdDev();
+
+  double eval(const ScopeInfo* si) const;
+
+  std::ostream& dump(std::ostream& os = std::cout) const;
+
+private:
+  AExpr** m_opands;
+  int m_sz;
+};
+
+
 //****************************************************************************
 
-#endif /* prof_juicy_EvalNode */
+} // namespace Metric
+
+} // namespace Prof
+
+//****************************************************************************
+
+#endif /* prof_juicy_Prof_Metric_Eval_hpp */

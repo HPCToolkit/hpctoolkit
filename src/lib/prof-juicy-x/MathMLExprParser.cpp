@@ -93,11 +93,11 @@ MathMLExprParser::~MathMLExprParser()
 }
 
 
-EvalNode* 
+Prof::Metric::AExpr* 
 MathMLExprParser::parse(DOMNode* mathMLExpr, 
 			const Prof::MetricDescMgr& mMgr)
 {
-  EvalNode* exprTree = NULL;
+  Prof::Metric::AExpr* exprTree = NULL;
 
   int exprs = 0;
 
@@ -127,29 +127,32 @@ MathMLExprParser::parse(DOMNode* mathMLExpr,
 
 
 // ----------------------------------------------------------------------
-// -- EvalNode* buildEvalTree(DOMNode *node) --
-//   Build an EvalNode object out of a DOMNode object.
+// -- Prof::Metric::AExpr* buildEvalTree(DOMNode *node) --
+//   Build an Prof::Metric::AExpr object out of a DOMNode object.
 // -- params --
 //   node:    a DOMNode
 // -- exception --
 //   An exception of type MathMLExprException could be thrown.  If the 
 // ----------------------------------------------------------------------
 
-EvalNode* 
+Prof::Metric::AExpr* 
 MathMLExprParser::buildEvalTree(DOMNode *node, 
 				const Prof::MetricDescMgr& mMgr,
 				bool isNum) 
 {
-  static const XMLCh* APPLY = XMLString::transcode("apply");
-  static const XMLCh* DIVISION = XMLString::transcode("divide");
-  static const XMLCh* SUBTRACTION = XMLString::transcode("minus");
-  static const XMLCh* ADDITION = XMLString::transcode("plus");
-  static const XMLCh* EXPONENTIATION = XMLString::transcode("power");
-  static const XMLCh* MULTIPLICATION = XMLString::transcode("times");
-  static const XMLCh* MAXML = XMLString::transcode("max");
-  static const XMLCh* MINML = XMLString::transcode("min");
   static const XMLCh* NUMBER = XMLString::transcode("cn");
   static const XMLCh* IDENTIFIER = XMLString::transcode("ci");
+
+  static const XMLCh* APPLY = XMLString::transcode("apply");
+  static const XMLCh* SUBTRACTION = XMLString::transcode("minus");
+  static const XMLCh* ADDITION = XMLString::transcode("plus");
+  static const XMLCh* DIVISION = XMLString::transcode("divide");
+  static const XMLCh* MULTIPLICATION = XMLString::transcode("times");
+  static const XMLCh* EXPONENTIATION = XMLString::transcode("power");
+  static const XMLCh* MAXML = XMLString::transcode("max");
+  static const XMLCh* MINML = XMLString::transcode("min");
+  static const XMLCh* MEAN = XMLString::transcode("mean");
+  static const XMLCh* STDDEV = XMLString::transcode("sdev");
 
   // Get the name and value out for convenience
   const XMLCh* nodeName = node->getNodeName();
@@ -159,12 +162,12 @@ MathMLExprParser::buildEvalTree(DOMNode *node,
     
   case DOMNode::TEXT_NODE:
     {
-      EvalNode* evalNode;
+      Prof::Metric::AExpr* evalNode;
       if (isNum) {  // is a number
 	std::string str = make_string(nodeValue);
 	IFTRACE << "str --" << str << "--" << endl; 
 	double val = StrUtil::toDbl(str.c_str());
-	evalNode = new Const(val);
+	evalNode = new Prof::Metric::Const(val);
 	IFTRACE << "number is --" << val << "--" << endl; 
       }
       else {           // is a variable
@@ -177,7 +180,7 @@ MathMLExprParser::buildEvalTree(DOMNode *node,
 	}
 
 	IFTRACE << "index --" << m->Index() << "--" << endl;
-	evalNode = new Var(str, m->Index());
+	evalNode = new Prof::Metric::Var(str, m->Index());
       }
       return evalNode;
     }
@@ -225,7 +228,7 @@ MathMLExprParser::buildEvalTree(DOMNode *node,
 	return NULL;
       }
 
-      EvalNode** nodes = new EvalNode*[numChildren];
+      Prof::Metric::AExpr** nodes = new Prof::Metric::AExpr*[numChildren];
 
       child = op;
       for (int i = 0; i < numChildren; i++) {
@@ -246,35 +249,47 @@ MathMLExprParser::buildEvalTree(DOMNode *node,
       }
 
       nodeName = op->getNodeName();
-      if (XMLString::equals(nodeName,ADDITION))
-	return new Plus(nodes, numChildren);
       if (XMLString::equals(nodeName,SUBTRACTION) && numChildren <= 2) {
 	if (numChildren == 1)
-	  return new Neg(nodes[0]);
-	return new Minus(nodes[0], nodes[1]);
+	  return new Prof::Metric::Neg(nodes[0]);
+	return new Prof::Metric::Minus(nodes[0], nodes[1]);
       }
-      if (XMLString::equals(nodeName,EXPONENTIATION) && numChildren == 2)
-	return new Power(nodes[0], nodes[1]);
-      if (XMLString::equals(nodeName,MULTIPLICATION))
-	return new Times(nodes, numChildren);
-      if (XMLString::equals(nodeName,MAXML))
-	return new Max(nodes, numChildren);
-      if (XMLString::equals(nodeName,MINML))
-	return new Min(nodes, numChildren);
-      if (XMLString::equals(nodeName,DIVISION) && numChildren == 2)
-	return new Divide(nodes[0], nodes[1]);
-      // otherwise, throw an exception and return NULL after the switch
-      // switch
-
-      for (int i = 0; i < numChildren; i++)
-	delete nodes[i];
-      delete[] nodes;
-      throw MathMLExprException("Unknown operation");
+      else if (XMLString::equals(nodeName,ADDITION)) {
+	return new Prof::Metric::Plus(nodes, numChildren);
+      }
+      else if (XMLString::equals(nodeName,MULTIPLICATION)) {
+	return new Prof::Metric::Times(nodes, numChildren);
+      }
+      else if (XMLString::equals(nodeName,DIVISION) && numChildren == 2) {
+	return new Prof::Metric::Divide(nodes[0], nodes[1]);
+      }
+      else if (XMLString::equals(nodeName,EXPONENTIATION) && numChildren == 2) {
+	return new Prof::Metric::Power(nodes[0], nodes[1]);
+      }
+      else if (XMLString::equals(nodeName,MAXML)) {
+	return new Prof::Metric::Max(nodes, numChildren);
+      }
+      else if (XMLString::equals(nodeName,MINML)) {
+	return new Prof::Metric::Min(nodes, numChildren);
+      }
+      else if (XMLString::equals(nodeName,MEAN)) {
+	return new Prof::Metric::Mean(nodes, numChildren);
+      }
+      else if (XMLString::equals(nodeName,STDDEV)) {
+	return new Prof::Metric::StdDev(nodes, numChildren);
+      }
+      else {
+	// otherwise, throw an exception and return NULL after the switch
+	for (int i = 0; i < numChildren; i++)
+	  delete nodes[i];
+	delete[] nodes;
+	throw MathMLExprException("Unknown operation");
+      }
     }
 
     if (XMLString::equals(nodeName,NUMBER)) {
       IFTRACE << "--" << child << "--" << endl; 
-      EvalNode* builtNode;
+      Prof::Metric::AExpr* builtNode;
       try {
 	builtNode = buildEvalTree(child, mMgr, true /*isNum*/);
 	return builtNode;
@@ -286,7 +301,7 @@ MathMLExprParser::buildEvalTree(DOMNode *node,
 
     if (XMLString::equals(nodeName,IDENTIFIER)) {
       IFTRACE << "--" << child << "--" << endl; 
-      EvalNode* builtNode;
+      Prof::Metric::AExpr* builtNode;
       try {
 	builtNode = buildEvalTree(child, mMgr, false /*isNum*/);
 	return builtNode;
