@@ -114,22 +114,24 @@ class ComputedPerfMetric : public PerfMetric {
 public: 
   ComputedPerfMetric(const char* nm, const char* displayNm,
 		     bool display, bool percent, bool sortBy, 
-		     bool propagateComputed, EvalNode* expr);
+		     bool propagateComputed, 
+		     Prof::Metric::AExpr* expr);
   ComputedPerfMetric(const std::string& nm, const std::string& displayNm,
 		     bool display, bool percent, bool sortBy, 
-		     bool propagateComputed, EvalNode* expr);
+		     bool propagateComputed, 
+		     Prof::Metric::AExpr* expr);
 
   virtual ~ComputedPerfMetric(); 
 
   virtual std::string toString(int flags = 0) const; 
 
-  const EvalNode* expr() const { return m_exprTree; }
+  const Prof::Metric::AExpr* expr() const { return m_exprTree; }
 
 private:
-  void Ctor(const char* nm, EvalNode* expr);
+  void Ctor(const char* nm, Prof::Metric::AExpr* expr);
 
 private: 
-  EvalNode* m_exprTree; 
+  Prof::Metric::AExpr* m_exprTree; 
 };
 
 //****************************************************************************

@@ -63,25 +63,42 @@ using std::endl;
 
 //************************ Forward Declarations ******************************
 
-#define EVALNODE_DO_CHECK 0
-#if (EVALNODE_DO_CHECK)
-# define EVALNODE_CHECK(x) if (!isok(x)) { return c_FP_NAN_d; }
+#define AEXPR_DO_CHECK 0
+#if (AEXPR_DO_CHECK)
+# define AEXPR_CHECK(x) if (!isok(x)) { return c_FP_NAN_d; }
 #else
-# define EVALNODE_CHECK(x) 
+# define AEXPR_CHECK(x) 
 #endif
 
 //****************************************************************************
 
+namespace Prof {
+
+namespace Metric {
+
+
 // ----------------------------------------------------------------------
-// class EvalNode
+// class AExpr
 // ----------------------------------------------------------------------
 
 std::string
-EvalNode::toString() const
+AExpr::toString() const
 {
   std::ostringstream os;
   dump(os);
   return os.str();
+}
+
+
+void 
+AExpr::dump_opands(std::ostream& os, AExpr** opands, int sz, const char* sep)
+{
+  for (int i = 0; i < sz; ++i) {
+    opands[i]->dump(os);
+    if (i < (sz - 1)) {
+      os << sep;
+    }
+  }
 }
 
 
@@ -107,7 +124,7 @@ Neg::eval(const ScopeInfo* si) const
   double result = m_expr->eval(si);
 
   //IFTRACE << "neg=" << -result << endl; 
-  EVALNODE_CHECK(result);
+  AEXPR_CHECK(result);
   return -result;
 }
 
@@ -136,7 +153,7 @@ Var::dump(std::ostream& os) const
 // class Power
 // ----------------------------------------------------------------------
 
-Power::Power(EvalNode* b, EvalNode* e) 
+Power::Power(AExpr* b, AExpr* e) 
   : base(b), exponent(e) 
 { 
 }
@@ -157,7 +174,7 @@ Power::eval(const ScopeInfo* si) const
   double result = pow(b, e);
   
   //IFTRACE << "pow=" << pow(b, e) << endl; 
-  EVALNODE_CHECK(result);
+  AEXPR_CHECK(result);
   return result;
 }
 
@@ -174,7 +191,7 @@ Power::dump(std::ostream& os) const
 // class Divide
 // ----------------------------------------------------------------------
 
-Divide::Divide(EvalNode* num, EvalNode* denom)
+Divide::Divide(AExpr* num, AExpr* denom)
   : numerator(num), denominator(denom) 
 { 
 }
@@ -195,7 +212,7 @@ Divide::eval(const ScopeInfo* si) const
   double result = n / d;
 
   //IFTRACE << "divident=" << n/d << endl; 
-  EVALNODE_CHECK(result);
+  AEXPR_CHECK(result);
   return result;
 }
 
@@ -216,7 +233,7 @@ Divide::dump(std::ostream& os) const
 // class Minus
 // ----------------------------------------------------------------------
 
-Minus::Minus(EvalNode* m, EvalNode* s) 
+Minus::Minus(AExpr* m, AExpr* s) 
   : minuend(m), subtrahend(s) 
 { 
   // if (minuend == NULL || subtrahend == NULL) { ... }
@@ -238,7 +255,7 @@ Minus::eval(const ScopeInfo* si) const
   double result = (m - s);
   
   //IFTRACE << "diff=" << m-s << endl; 
-  EVALNODE_CHECK(result);
+  AEXPR_CHECK(result);
   return result;
 }
 
@@ -255,7 +272,7 @@ Minus::dump(std::ostream& os) const
 // class Plus
 // ----------------------------------------------------------------------
 
-Plus::Plus(EvalNode** oprnds, int numOprnds)
+Plus::Plus(AExpr** oprnds, int numOprnds)
   : m_opands(oprnds), m_sz(numOprnds) 
 { 
 }
@@ -273,14 +290,10 @@ Plus::~Plus()
 double 
 Plus::eval(const ScopeInfo* si) const
 {
-  double result = 0.0;
-  for (int i = 0; i < m_sz; ++i) {
-    double x = m_opands[i]->eval(si);
-    result += x;
-  }
+  double result = eval_sum(si, m_opands, m_sz);
 
   //IFTRACE << "sum=" << result << endl; 
-  EVALNODE_CHECK(result);
+  AEXPR_CHECK(result);
   return result;
 }
 
@@ -289,12 +302,7 @@ std::ostream&
 Plus::dump(std::ostream& os) const
 {
   os << "(";
-  for (int i = 0; i < m_sz; ++i) {
-    m_opands[i]->dump(os);
-    if (i < m_sz-1) { 
-      os << " + "; 
-    }
-  }
+  dump_opands(os, m_opands, m_sz, " + ");
   os << ")";
   return os;
 }
@@ -304,7 +312,7 @@ Plus::dump(std::ostream& os) const
 // class Times
 // ----------------------------------------------------------------------
 
-Times::Times(EvalNode** oprnds, int numOprnds) 
+Times::Times(AExpr** oprnds, int numOprnds) 
   : m_opands(oprnds), m_sz(numOprnds) 
 { 
 }
@@ -328,7 +336,7 @@ Times::eval(const ScopeInfo* si) const
     result *= x;
   }
   //IFTRACE << "result=" << result << endl; 
-  EVALNODE_CHECK(result);
+  AEXPR_CHECK(result);
   return result;
 }
 
@@ -337,61 +345,7 @@ std::ostream&
 Times::dump(std::ostream& os) const
 {
   os << "(";
-  for (int i = 0; i < m_sz; ++i) {
-    m_opands[i]->dump(os);
-    if (i < m_sz-1) {
-      os << " * ";
-    }
-  }
-  os << ")";
-  return os;
-}
-
-
-// ----------------------------------------------------------------------
-// class Min
-// ----------------------------------------------------------------------
-
-Min::Min(EvalNode** oprnds, int numOprnds) 
-  : m_opands(oprnds), m_sz(numOprnds) 
-{ 
-}
-
-
-Min::~Min() 
-{
-  for (int i = 0; i < m_sz; ++i) {
-    delete m_opands[i];
-  }
-  delete[] m_opands;
-}
-
-
-double 
-Min::eval(const ScopeInfo* si) const
-{
-  double result = m_opands[0]->eval(si);
-  for (int i = 1; i < m_sz; ++i) {
-    double x = m_opands[i]->eval(si);
-    result = std::min(result, x);
-  }
-
-  //IFTRACE << "min=" << result << endl;   
-  EVALNODE_CHECK(result);
-  return result;
-}
-
-
-std::ostream& 
-Min::dump(std::ostream& os) const
-{
-  os << "min(";
-  for (int i = 0; i < m_sz; ++i) {
-    m_opands[i]->dump(os);
-    if (i < m_sz-1) {
-      os << ", ";
-    }
-  }
+  dump_opands(os, m_opands, m_sz, " * ");
   os << ")";
   return os;
 }
@@ -401,7 +355,7 @@ Min::dump(std::ostream& os) const
 // class Max
 // ----------------------------------------------------------------------
 
-Max::Max(EvalNode** oprnds, int numOprnds) 
+Max::Max(AExpr** oprnds, int numOprnds) 
   : m_opands(oprnds), m_sz(numOprnds) 
 { 
 }
@@ -426,7 +380,7 @@ Max::eval(const ScopeInfo* si) const
   }
 
   //IFTRACE << "max=" << result << endl; 
-  EVALNODE_CHECK(result);
+  AEXPR_CHECK(result);
   return result;
 }
 
@@ -435,12 +389,157 @@ std::ostream&
 Max::dump(std::ostream& os) const
 {
   os << "max(";
-  for (int i = 0; i < m_sz; ++i) {
-    m_opands[i]->dump(os);
-    if (i < m_sz-1) { 
-      os << ", ";
-    }
-  }
+  dump_opands(os, m_opands, m_sz);
   os << ")";
   return os;
 }
+
+
+// ----------------------------------------------------------------------
+// class Min
+// ----------------------------------------------------------------------
+
+Min::Min(AExpr** oprnds, int numOprnds) 
+  : m_opands(oprnds), m_sz(numOprnds) 
+{ 
+}
+
+
+Min::~Min() 
+{
+  for (int i = 0; i < m_sz; ++i) {
+    delete m_opands[i];
+  }
+  delete[] m_opands;
+}
+
+
+double 
+Min::eval(const ScopeInfo* si) const
+{
+  double result = m_opands[0]->eval(si);
+  for (int i = 1; i < m_sz; ++i) {
+    double x = m_opands[i]->eval(si);
+    result = std::min(result, x);
+  }
+
+  //IFTRACE << "min=" << result << endl;   
+  AEXPR_CHECK(result);
+  return result;
+}
+
+
+std::ostream& 
+Min::dump(std::ostream& os) const
+{
+  os << "min(";
+  dump_opands(os, m_opands, m_sz);
+  os << ")";
+  return os;
+}
+
+
+// ----------------------------------------------------------------------
+// class Mean
+// ----------------------------------------------------------------------
+
+Mean::Mean(AExpr** oprnds, int numOprnds)
+  : m_opands(oprnds), m_sz(numOprnds) 
+{ 
+}
+
+
+Mean::~Mean() 
+{
+  for (int i = 0; i < m_sz; ++i) {
+    delete m_opands[i];
+  }
+  delete[] m_opands;
+}
+
+
+double 
+Mean::eval(const ScopeInfo* si) const
+{
+  double result = eval_mean(si, m_opands, m_sz);
+
+  //IFTRACE << "mean=" << result << endl; 
+  AEXPR_CHECK(result);
+  return result;
+}
+
+
+std::ostream& 
+Mean::dump(std::ostream& os) const
+{
+  os << "mean(";
+  dump_opands(os, m_opands, m_sz);
+  os << ")";
+  return os;
+}
+
+
+// ----------------------------------------------------------------------
+// class StdDev
+// ----------------------------------------------------------------------
+
+StdDev::StdDev(AExpr** oprnds, int numOprnds)
+  : m_opands(oprnds), m_sz(numOprnds) 
+{ 
+}
+
+
+StdDev::~StdDev() 
+{
+  for (int i = 0; i < m_sz; ++i) {
+    delete m_opands[i];
+  }
+  delete[] m_opands;
+}
+
+
+double 
+StdDev::eval(const ScopeInfo* si) const
+{
+  double* x = new double[m_sz];
+
+  double x_mean = 0.0; // mean
+  for (int i = 0; i < m_sz; ++i) {
+    double t = m_opands[i]->eval(si);
+    x[i] = t;
+    x_mean += t;
+  }
+  x_mean = x_mean / m_sz;
+
+  double x_var = 0.0; // variance
+  for (int i = 0; i < m_sz; ++i) {
+    double t = (x[i] - x_mean);
+    t = t * t;
+    x_var += t;
+  }
+  x_var = x_var / m_sz;
+
+  double result = sqrt(x_var);
+  delete[] x;
+
+  //IFTRACE << "stddev=" << result << endl; 
+  AEXPR_CHECK(result);
+  return result;
+}
+
+
+std::ostream& 
+StdDev::dump(std::ostream& os) const
+{
+  os << "sdev(";
+  dump_opands(os, m_opands, m_sz);
+  os << ")";
+  return os;
+}
+
+//****************************************************************************
+
+
+} // namespace Metric
+
+} // namespace Prof

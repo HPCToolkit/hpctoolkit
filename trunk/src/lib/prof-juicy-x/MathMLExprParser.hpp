@@ -69,7 +69,7 @@ using XERCES_CPP_NAMESPACE::DOMNode;
 //
 // class MathMLExprParser
 //   The expressive power of this MathMLExprParser class is determined by the
-//   kinds of nodes supported by class EvalNode.  Only the content
+//   kinds of nodes supported by class Prof::Metric::AExpr.  Only the content
 //   markup part of the MathML is employed here.  Currently, only the
 //   following is supported: (the corresponding MathML content mark up
 //   is include in the parenthesis)
@@ -113,9 +113,10 @@ public:
   //   MathMLExprParserException could be thrown due to invalid or unsupported
   //   MathML expressions.
   // ------------------------------------------------------------
-  static EvalNode* parse(DOMNode* mathMLExpr, 
-			 const Prof::MetricDescMgr& mMgr);
-
+  static Prof::Metric::AExpr* 
+  parse(DOMNode* mathMLExpr, 
+	const Prof::MetricDescMgr& mMgr);
+  
   // ------------------------------------------------------------
   //
   // ------------------------------------------------------------
@@ -125,9 +126,10 @@ public:
 #endif
 
 private:
-  static EvalNode* buildEvalTree(DOMNode *node,
-				 const Prof::MetricDescMgr& mMgr,
-				 bool isNum);
+  static Prof::Metric::AExpr* 
+  buildEvalTree(DOMNode *node,
+		const Prof::MetricDescMgr& mMgr,
+		bool isNum);
 };
 
 

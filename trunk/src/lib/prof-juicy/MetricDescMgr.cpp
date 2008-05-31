@@ -126,10 +126,12 @@ Prof::MetricDescMgr::makeSummaryMetrics()
     const string& m_nm = it->first;
     PerfMetricVec& mvec = it->second;
     if (mvec.size() > 1) {
-      string sum_nm = "SUM-" + m_nm;
+      string mean_nm = "MEAN-" + m_nm;
+      string sdev_nm = "SDEV-" + m_nm;
       string min_nm = "MIN-" + m_nm;
       string max_nm = "MAX-" + m_nm;
-      makeSummaryMetric(sum_nm, mvec);
+      makeSummaryMetric(mean_nm, mvec);
+      makeSummaryMetric(sdev_nm, mvec);
       makeSummaryMetric(min_nm, mvec);
       makeSummaryMetric(max_nm, mvec);
     }
@@ -141,25 +143,33 @@ void
 Prof::MetricDescMgr::makeSummaryMetric(const string& m_nm,
 				       const PerfMetricVec& m_opands)
 {
-  EvalNode** opands = new EvalNode*[m_opands.size()];
+  Prof::Metric::AExpr** opands = new Prof::Metric::AExpr*[m_opands.size()];
   for (uint i = 0; i < m_opands.size(); ++i) {
     PerfMetric* m = m_opands[i];
-    opands[i] = new Var(m->Name(), m->Index());
+    opands[i] = new Prof::Metric::Var(m->Name(), m->Index());
   }
 
   bool doDisplay = true;
   bool doPercent = true;
 
-  EvalNode* expr = NULL;
+  Prof::Metric::AExpr* expr = NULL;
   if (m_nm.find("SUM", 0) == 0) {
-    expr = new Plus(opands, m_opands.size());
+    expr = new Prof::Metric::Plus(opands, m_opands.size());
   }
   else if (m_nm.find("MIN", 0) == 0) {
-    expr = new Min(opands, m_opands.size());
+    expr = new Prof::Metric::Min(opands, m_opands.size());
     doPercent = false;
   }
   else if (m_nm.find("MAX", 0) == 0) {
-    expr = new Max(opands, m_opands.size());
+    expr = new Prof::Metric::Max(opands, m_opands.size());
+    doPercent = false;
+  }
+  else if (m_nm.find("MEAN", 0) == 0) {
+    expr = new Prof::Metric::Mean(opands, m_opands.size());
+    doPercent = false;
+  }
+  else if (m_nm.find("SDEV", 0) == 0) {
+    expr = new Prof::Metric::StdDev(opands, m_opands.size());
     doPercent = false;
   }
   else {

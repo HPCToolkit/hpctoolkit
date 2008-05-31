@@ -294,7 +294,8 @@ Driver::write_txt(std::ostream &os) const
   os << std::endl;
 
   if (m_args.txt_summary & Analysis::Args::TxtSum_fPgm) { 
-    string nm = "Program summary (samples | events): " + pgmStrct->name();
+    string nm = "Program summary [row 1: samples for raw metrics; row 2: events]: "
+      + pgmStrct->name();
     write_txt_secSummary(os, colFmt, nm, NULL);
   }
 
@@ -839,13 +840,15 @@ void
 Driver::computeDerivedMetrics(Prof::MetricDescMgr& mMgr, 
 			      PgmScopeTree& structure)
 {
+  using Prof::Metric::AExpr;
+
   // INVARIANT: All raw metrics have interior (and leaf) values before
   // derived metrics are computed.
 
   // 1. Compute batch jobs: a derived metric with id 'x' only depends
   //    on metrics with id's strictly less than 'x'.
   VMAIntervalSet ivalset; // cheat using a VMAInterval set
-  const EvalNode** mExprVec = new const EvalNode*[mMgr.size()];
+  const AExpr** mExprVec = new const AExpr*[mMgr.size()];
 
   for (uint i = 0; i < mMgr.size(); i++) {
     const PerfMetric* m = mMgr.metric(i);
@@ -871,7 +874,7 @@ Driver::computeDerivedMetrics(Prof::MetricDescMgr& mMgr,
 
 void
 Driver::computeDerivedBatch(PgmScopeTree& structure, 
-			    const EvalNode** mExprVec,
+			    const Prof::Metric::AExpr** mExprVec,
 			    uint mBegId, uint mEndId)
 {
   PgmScope* pgmStrct = structure.GetRoot();
@@ -880,9 +883,9 @@ Driver::computeDerivedBatch(PgmScopeTree& structure,
       
   for (; it.Current(); it++) {
     for (uint mId = mBegId; mId <= mEndId; ++mId) {
-      const EvalNode* expr = mExprVec[mId];
+      const Prof::Metric::AExpr* expr = mExprVec[mId];
       double val = expr->eval(it.CurScope());
-      // if (!EvalNode::isok(val)) ...
+      // if (!Prof::Metric::AExpr::isok(val)) ...
       it.CurScope()->SetPerfData(mId, val);
     }
   }

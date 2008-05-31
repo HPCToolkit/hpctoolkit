@@ -119,7 +119,7 @@ FilePerfMetric::toString(int flags) const
 ComputedPerfMetric::ComputedPerfMetric(const char* nm, const char* displayNm,
 				       bool doDisp, bool doPerc, bool doSort,
 				       bool propagateComputed,
-				       EvalNode* expr)
+				       Prof::Metric::AExpr* expr)
   : PerfMetric(nm, "", displayNm, doDisp, doPerc, propagateComputed, doSort)
 {
   Ctor(nm, expr);
@@ -130,7 +130,7 @@ ComputedPerfMetric::ComputedPerfMetric(const std::string& nm,
 				       const std::string& displayNm,
 				       bool doDisp, bool doPerc, bool doSort,
 				       bool propagateComputed,
-				       EvalNode* expr)
+				       Prof::Metric::AExpr* expr)
   : PerfMetric(nm, "", displayNm, doDisp, doPerc, propagateComputed, doSort)
 {
   Ctor(nm.c_str(), expr);
@@ -138,7 +138,7 @@ ComputedPerfMetric::ComputedPerfMetric(const std::string& nm,
 
 
 void
-ComputedPerfMetric::Ctor(const char* nm, EvalNode* expr)
+ComputedPerfMetric::Ctor(const char* nm, Prof::Metric::AExpr* expr)
 {
   m_exprTree = expr;
 }

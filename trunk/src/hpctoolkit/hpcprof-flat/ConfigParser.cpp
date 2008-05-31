@@ -134,7 +134,7 @@ static void ProcessFILE(DOMNode *fileNode, Analysis::Args& args, Prof::MetricDes
 			bool metricDoPercent, bool metricDoSortBy, 
 			const string& metricDispNm);
 
-static EvalNode*
+static Prof::Metric::AExpr*
 makeMathMLExpr(const char* nm, DOMNode* mathMLExpr, 
 	       Prof::MetricDescMgr& mMgr);
 
@@ -360,7 +360,8 @@ ProcessMETRIC(DOMNode *node, Analysis::Args& args, Prof::MetricDescMgr& mMgr)
 	  continue;
 	}
 
-	EvalNode* expr = makeMathMLExpr(metricNm.c_str(), child, mMgr);
+	Prof::Metric::AExpr* expr = 
+	  makeMathMLExpr(metricNm.c_str(), child, mMgr);
 	mMgr.insert(new ComputedPerfMetric(metricNm, metricDispNm, 
 					   metricDoDisp, metricDoPercent, 
 					   metricDoSortBy,
@@ -374,11 +375,11 @@ ProcessMETRIC(DOMNode *node, Analysis::Args& args, Prof::MetricDescMgr& mMgr)
 }
 
 
-static EvalNode*
+static Prof::Metric::AExpr*
 makeMathMLExpr(const char* nm, DOMNode* mathMLExpr, 
 	       Prof::MetricDescMgr& mMgr)
 {
-  EvalNode* expr = NULL;
+  Prof::Metric::AExpr* expr = NULL;
 
   try {
     expr = MathMLExprParser::parse(mathMLExpr, mMgr);

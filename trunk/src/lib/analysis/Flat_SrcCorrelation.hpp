@@ -163,7 +163,7 @@ private:
   // [mBegId, mEndId]
   void 
   computeDerivedBatch(PgmScopeTree& structure, 
-		      const EvalNode** mExprVec,
+		      const Prof::Metric::AExpr** mExprVec,
 		      uint mBegId, uint mEndId);
 
   // -------------------------------------------------------
