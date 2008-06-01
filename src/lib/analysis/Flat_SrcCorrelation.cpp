@@ -123,11 +123,11 @@ Driver::run()
 
   //-------------------------------------------------------
   // 2. Correlate metrics with program structure
+  //    (Results in a pruned structure tree)
   //-------------------------------------------------------
   DIAG_Msg(2, "Creating and correlating metrics with program structure: ...");
   correlateMetricsWithStructure(m_mMgr, m_structure);
   
-  m_structure.GetRoot()->pruneByMetrics();
   m_structure.GetRoot()->Freeze();      // disallow further additions to tree 
   m_structure.CollectCrossReferences(); // collect cross referencing information
 
@@ -581,6 +581,16 @@ Driver::correlateMetricsWithStructure(Prof::MetricDescMgr& mMgr,
 				      PgmScopeTree& structure) 
 {
   computeRawMetrics(mMgr, structure);
+  
+  // NOTE: Pruning the structure tree now (as opposed to after
+  // computing derived metrics) can significantly speed up the
+  // computation of derived metrics.  Technically, this may not be
+  // correct, since a derived metric could simply add a constant to
+  // every value of a raw metric, potentially creating 'unprunable'
+  // nodes from those that would otherwise be prunable.  However, any
+  // sane computed metric will not have this property.
+  structure.GetRoot()->pruneByMetrics();
+
   computeDerivedMetrics(mMgr, structure);
 }
 
