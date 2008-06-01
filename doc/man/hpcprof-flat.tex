@@ -92,8 +92,11 @@ Default values for an option's optional arguments are shown in \{\}.
 \subsection{Options: Source Structure Correlation}
 
 \begin{Description}
-\item[\OptArg{-I}{path}, \OptArg{--include}{path}] Use \Arg{path} when searching for source files. To recursively search a path, append an escaped `*' after the last slash, e.g., \verb+/mypath/\*+ (escaping is for the shell). May pass multiple times.
-\item[\OptArg{-S}{file}, \OptArg{--structure}{file}] Use \HTMLhref{hpcstruct.html}{\Cmd{hpcstruct}{1}} structure file \Arg{file} for correlation.  May pass multiple times (e.g., for shared libraries).
+\item[\OptArg{-I}{path}, \OptArg{--include}{path}] 
+Use \Arg{path} when searching for source files. For a recursive search, append a '*' after the last slash, e.g., \verb+'/mypath/*'+ (quote or escape to protect from the shell). May pass multiple times.
+
+\item[\OptArg{-S}{file}, \OptArg{--structure}{file}] 
+Use \HTMLhref{hpcstruct.html}{\Cmd{hpcstruct}{1}} structure file \Arg{file} for correlation.  May pass multiple times (e.g., for shared libraries).
 \end{Description}
 
 \subsection{Options: Output}
