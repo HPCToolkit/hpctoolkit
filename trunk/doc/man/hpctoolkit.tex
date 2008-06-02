@@ -30,7 +30,7 @@
 \rcsInfo $Id$
 \setDate{\rcsInfoLongDate}
 }{
-\setDate{ 2008/05/30}
+\setDate{ 2008/06/02}
 \message{package rcsinfo not present, discard it}
 }
 
@@ -106,11 +106,12 @@ Collect low-overhead, high-accuracy profiles using statistical sampling.
 \item \textbf{Recovering static source code structure.} 
 \HTMLhref{hpcstruct.html}{\Cmd{hpcstruct}{1}} recovers static program structure such as procedures and loop nests.
 It accounts for procedure and loop transformations such as inlining and software pipelining.
+Technically, this is an optional step, but critical information is lost without it.
 
 \item \textbf{Correlating dynamic profiles with static source code structure.} 
 \textbf{HPCToolkit}'s correlation tool combines dynamic profile information with \HTMLhref{hpcstruct.html}{\Cmd{hpcstruct}{1}}'s static program structure to correlate costs of the optimized object code to useful source code constructs such as loop nests.
 The result of correlation is called an Experiment database.
-Currently, \HTMLhref{hpcprof-flat.html}{\Cmd{hpcprof-flat}{1}} is used for flat profiles and \Cmd{hpcprof}{1} for call stack profiles.
+Currently, \HTMLhref{hpcprof-flat.html}{\Cmd{hpcprof-flat}{1}} is used for flat profiles and \HTMLhref{hpcprof.html}{\Cmd{hpcprof}{1}} for call stack profiles.
 
 \item \textbf{Top-down visualization}
 \Prog{hpcviewer} is a Java-based top-down viewer for flat and call stack profiles.
@@ -124,6 +125,9 @@ This means that the first three steps can be performed remotely on a cluster and
 \item \textbf{Measurement.}  
 Collect low-overhead, high-accuracy `flat' profiles using statistical sampling (\HTMLhref{hpcrun.html}{\Cmd{hpcrun}{1}}).
 
+\item \textbf{Recovering static source code structure.} 
+\HTMLhref{hpcstruct.html}{\Cmd{hpcstruct}{1}} is used for the same purpose described above.
+
 \item \textbf{Correlating dynamic profiles with procedures source lines.} 
 \HTMLhref{hpcproftt.html}{\Cmd{hpcproftt}{1}} correlates `flat' profiles with source structure and produces textual output.
 
@@ -132,7 +136,7 @@ Collect low-overhead, high-accuracy `flat' profiles using statistical sampling (
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Examples}
 
-\subsection{Visualize native metrics from flat profiles}
+\subsection{Interactively visualize call path or flat metrics correlated with program structure}
 
 Assume we have an application called \emph{zoo} whose source code is located in in \File{path-to-zoo}.
 
@@ -148,10 +152,14 @@ Assume we have an application called \emph{zoo} whose source code is located in 
   hpcstruct zoo > zoo.psxml
 \end{verbatim}
 
-\item \textbf{Correlate dynamic profiles with static source code structure}.
+\item \textbf{Correlate call path or flat metrics with static source code structure}.
 Create an Experiment database using \HTMLhref{hpcprof-flat.html}{\Cmd{hpcprof-flat}{1}}.  Assume the Experiment database is located in \File{experiment-db}.
 \begin{verbatim}
-  hpcprof-flat -I path-to-zoo/\* -S zoo.psxml profile-file-1 profile-file-2
+  hpcprof -I 'path-to-zoo' -S zoo.psxml profile-file-1 profile-file-2
+\end{verbatim}
+or
+\begin{verbatim}
+  hpcprof-flat -I 'path-to-zoo/*' -S zoo.psxml profile-file-1 profile-file-2
 \end{verbatim}
 
 \item \textbf{Visualize}.
@@ -159,15 +167,46 @@ Visualize the Experiment database using \HTMLhref{hpcviewer.html}{\Cmd{hpcviewer
 \begin{verbatim}
   hpcviewer experiment-db/experiment.xml
 \end{verbatim}
+Derived metrics may be computed on-the-fly with the viewer.
 
 \end{enumerate}
 
-\subsection{Visualize derived metrics for flat profiles}
 
-The easiest way to begin is to collect all native metrics and then perform steps 1, 2 and 3 above.
+\subsection{Visualize textual summaries of flat metrics}
+
+Begin with steps 1 and 2 above.
+
+\begin{itemize}
+
+\item \textbf{Correlate metrics with static source code structure and generate textual summaries}.
+
+To compute raw metrics for each native event and generate the default program and load module summaries:
+\begin{verbatim}
+  hpcproftt -I 'path-to-zoo/*' -S zoo.psxml profile-file-1 profile-file-2
+\end{verbatim}
+
+To compute raw and summary metrics (but only show the latter) and generate summaries for all program structure elements:
+\begin{verbatim}
+  hpcproftt --src=sum --metric=sum-only -I 'path-to-zoo/*' -S zoo.psxml profile-file-1 profile-file-2
+\end{verbatim}
+
+To compute raw and summary metrics and generate summaries for all program structure elements and generate annotated source files:
+\begin{verbatim}
+  hpcproftt --src=all --metric=sum -I 'path-to-zoo/*' -S zoo.psxml profile-file-1 profile-file-2
+\end{verbatim}
+
+
+The first computes
+
+\end{itemize}
+
+
+\subsection{Interactively visualize derived flat metrics (computed in batch) correlated with program structure}
+
+Begin with steps 1, 2 and 3 above.
 These steps create a template \HTMLhref{hpcprof-flat.html}{\Cmd{hpcprof-flat}{1}} configuration file which can be modified and used to rerun \Prog{hpcprof-flat}.
 
-\begin{enumerate}
+\begin{itemize}
 \item \textbf{Create derived metrics}.  Add COMPUTE metrics to the \HTMLhref{hpcprof-flat.html}{\Cmd{hpcprof-flat}{1}} configuration file (named \File{config.xml}) generated during the initial run.  The \HTMLhref{hpcprof-flat.html}{\Cmd{hpcprof-flat}{1}} man page contains some examples. 
 
 \item \textbf{Correlate}. Rerun \HTMLhref{hpcprof-flat.html}{\Cmd{hpcprof-flat}{1}} to create a new Experiment database.  Assume that it is located in \File{experiment-db-1}
@@ -181,7 +220,7 @@ Visualize the Experiment database using \HTMLhref{hpcviewer.html}{\Cmd{hpcviewer
   hpcviewer experiment-db-1/experiment.xml
 \end{verbatim}
 
-\end{enumerate}
+\end{itemize}
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
