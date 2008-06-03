@@ -1,0 +1,199 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+
+<!--
+  HPCTools Top-level Page: Editing within Netscape/Mozilla Composer
+  is possible, but it generates strange stuff in-line.  
+  Please use an ordinary text editor.
+-->
+
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+		<meta name="description" content="HPCToolkit Overview - Our primary research interest is in the optimization of programs, both sequential and parallel, for modern high-performance systems. While the goal of the research is to perform these optimizations in a compiler, we also do a lot of optimization and performance analysis by hand. In particular, we found that we were spending too much time and effort in the `modify, run, analyze' cycle and that existing performance tools were not helping. Hence, HPCToolkit.">
+		<meta name="keywords" content="HPCToolkit overview, optimization of programs, sequential optimization, parallel optimization, high-performance systems, performance analysis, compiler optimization, hpcview, hpcviewer, hvprof, bloop">
+		<title>HPCToolkit Detailed Overview</title>
+		<link rel='stylesheet' type='text/css' href='style/styles.css'>
+	</head>
+
+<body>
+
+<!-- ********************************************************************** -->
+
+<script language="JavaScript" src="style/header-hpctoolkit.js"></script>
+
+<!-- ********************************************************************** -->
+
+<div id="main">
+
+
+<p>The motivation for HPCToolkit and a description of our approach are discussed in depth in the <a href="papers.html">papers</a>.  Here we
+outline some of the key motivation for our work and briefly describe our approach.
+
+<p><b>Motivation</b></p>
+
+<p>Our group's primary research interest is in the optimization of
+programs (both sequential and parallel) for modern high-performance
+systems. While the goal of the research is to perform these
+optimizations in a compiler, we also do a lot of optimization and
+performance analysis by hand. In particular, we found that we were
+spending too much time and effort in the 'modify, run, analyze' cycle
+and that existing performance tools were not helping. 
+
+<p>The most important problems we had with existing tools were:
+
+<ul>
+<li>
+They were not adequately helping us go back and forth between
+performance data and source code.
+
+<li>
+Data was not aggregated at the appropriate level.  With optimizing
+compilers and highly-pipelined, out-of-order processors, line-level
+(or finer) performance numbers are becoming less and less meaningful.
+Procedure-level numbers are either too coarse, or they are not
+meaningful for small procedures unless you turn off aggressive
+compiler optimizations.
+
+<li>
+The tools do not help to quickly identify problems through top-down
+analysis.
+
+<li>
+We work in a heterogeneous environment with multiple architectures,
+compilers, and languages.  Existing tools weren't flexible enough.
+
+<li>
+Existing tools didn't allow us to compute new performance metrics
+from existing ones.  Metrics such as cache miss rates, FLOPS/cycle,
+and cycles per instruction are very informative, especially when
+computed at many levels of the program.
+
+<li>
+Existing tools did not sufficiently support the tuning cycle.
+GUI interfaces may be easy the first time you use them, but
+not if you have to manually redo everything each time around the cycle.
+
+</ul>
+<p>We deveoped HPCToolkit to avoid these limitations and help
+us more easily gain insight into program performance. The
+result of our work was a set of useful tools that work on key
+platforms for high performance computing.
+
+<p><b>Approach</b></p>
+
+<p>A program called <span class="hpctool">hpcview</span> is at the
+toolkit's center.  It takes performance profiles, program structure information, and, under
+the direction of a configuration file, correlates it with application source code to 
+produce a browsable performance database.
+<span class="hpctool">hpcview</span> also enables the user to define
+expressions to compute derived metrics as functions other metrics already defined (e.g. measured
+metrics read from data files or previously-computed derived metrics).
+Performance databases are explored using our Java-based 
+<span class="hpctool">hpcviewer</span> user interface that enables 
+one to explore an application's performance data in a top-down fashion and enables one to
+easily navigate back and forth between performance data and
+source code. A screenshot of the 
+<span class="hpctool">hpcviewer</span> user interface 
+is shown 
+<a href="screenshot.html">here</a>. 
+The browser supports panes for presenting a  program's source files,
+a navigation pane that enables one to move to source files associated with 
+particular performance data, and tables of performance data that can be sorted
+by each of the columns.  
+</p>
+
+<p>The user interface presents performance data in a hierarchical
+display. At any time, you are looking at some program context
+(program, file, procedure, loop, or line).  Also displayed is the data
+for both the parent and the children of the current context.  Up and
+down arrows on the lines of the display are used to walk the
+hierarchy.  In order to speed up top-down analysis, the interface also
+provides `flatten' and `un-flatten' buttons.  Their icons hint at
+their function. `Flatten' modifies the hierarchy by eliding non-leaf
+children of the current node and replacing them with the
+grandchildren.  Unflatten reverses this.  Since the tables are sorted,
+the flatten operation makes short work of diving into the program from
+the top to identify the most important files, procedures, loops and
+statements.
+
+<p>Performance data manipulated by 
+<span class="hpctool">hpcview</span> can come from any source, as long
+as the profile data can be translated or saved directly to a standard,
+profile-like input format.  To date, the principal sources of input
+data for <span class="hpctool">hpcview</span> have been hardware
+performance counter profiles.  Such profiles are generated by setting
+up a hardware counter to monitor events of interest (<i>e.g.,</i>
+primary cache misses), to generate a trap when the counter overflows,
+and then to histogram the program counter values at which these traps
+occur. For Linux, we developed the   
+<span class="hpctool">hpcrun</span> tool to collect profiles by
+sampling hardware performance counters. This tool uses UTK's
+<a href="http://icl.cs.utk.edu/projects/papi" class="xtool">PAPI library</a>
+for access to hardware performance counters.  A second tool,
+<span class="hpctool">hpcprof</span> is used to map profiles collected using 
+<span class="hpctool">hpcrun</span> 
+back to program source lines.  <span class="hpctool">hpcprof</span> 
+is based on
+code from Curt Janssen's
+<a href="http://aros.ca.sandia.gov/~cljanss/perf/vprof">cprof/vprof</a> 
+profiler. On operating systems other than Linux, we use vendor-supplied tools to collect profile data. 
+On MIPS+Irix platforms, we use
+SGI's <span class="xtool">ssrun</span> tool to collect profiles. 
+On Alpha+Tru64, we use either with Compaq's
+<span class="xtool">uprofile</span> or
+<a href="http://h30097.www3.hp.com/dcpi" class="xtool">DCPI</a> utilities
+for this purpose.
+
+<p>
+<span class="hpctool">hpcview</span> 
+and
+<span class="hpctool">hpcviewer</span> 
+can be used to view profile-like data of any type, not just data sampled from hardware performance counters. To analyze one program that contained many register spills, 
+we built a perl script to examine assembly code generated by the SGI compilers for MIPS+Irix 
+and create profiles that map register spills back to source code lines.
+</p>
+
+
+
+<p>To facilitate automation, the programs in HPCToolkit are intended to be run using scripts and configuration files. Once these are set up, rerunning the program to collect new data, and all of the steps that go into generating a browsable dataset can be completely automated. The scripts automate the collection of data and conversion of profile data into a common, XML-based format.
+
+<p>Other performance tools (e.g. SGI's ssrun) report performance data
+at the line, procedure, and program level. However, since much of the 
+time in scientific programs is spent in loops; having data at the loop level as well is critical to
+facilitate performance tuning. For this reason, HPCToolkit includes a binary analyzer
+<span class="hpctool">bloop</span> that extracts loop nesting structure 
+from application binaries and uses symbol table line map information to map this 
+structure back to the source programs level. 
+Because <span class="hpctool">bloop</span> 
+works on binaries, this process is independent of the language used (though in practice it can be somewhat compiler dependent).
+The loop nesting  structure  
+information produced by <span class="hpctool">bloop</span> 
+enables 
+<span class="hpctool">hpcview</span> to associate performance data with each loop in a program
+without incurring 
+any additional overhead for data collection during program execution.
+
+<!-- ********************************************************************** -->
+
+<p class="lastupdated">Page last updated: 2008/06/02</p>
+
+<!-- ********************************************************************** -->
+
+<script language="JavaScript" src="style/footer-hpctoolkit.js"></script>
+
+<!-- ********************************************************************** -->
+
+</p>
+</div> <!-- id=main -->
+
+</body>
+</html>
+
+
+<!-- Local Variables: -->
+<!-- eval: (add-hook 'write-file-hooks 'time-stamp) -->
+<!-- time-stamp-start: "<p class=\"lastupdated\">Page last updated: " -->
+<!-- time-stamp-format: "%:y/%02m/%02d" -->
+<!-- time-stamp-end: "</p>" -->
+<!-- time-stamp-line-limit: 10000 -->
+<!-- End: -->

@@ -5,7 +5,7 @@
 document.write('<a name="top"></a>');
 
 // Locate the 'HPCToolkit' Image (height = 71 pixels)
-document.write('<img style="position:absolute; top:0px; left:0px" src="images/header.gif">');
+document.write('<img style="position:absolute; top:0px; left:0px" src="style/header.gif">');
 
 // Row 1 of the menu items (over the image)
 document.write('<div style="position:absolute; top:60px; right:15px;">');

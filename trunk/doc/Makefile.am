@@ -55,32 +55,13 @@ AUTOMAKE_OPTIONS = foreign
 # Local settings
 #############################################################################
 
-MYSOURCES = \
-	index.html \
-	\
-	building.html \
-	testing.html \
-	\
-	header_hpctoolkit.js \
-	footer_hpctoolkit.js \
-	styleForAll.css \
-	images/header.gif \
-	images/index.html
-
-# Obsolete:
-#   dtd_pgm.html 
-#   hpc_xprof.html
-#   hwctools.html 
-
-
 #############################################################################
 # Automake rules
 #############################################################################
 
 SUBDIRS = \
-	man
-
-nobase_dist_doc_DATA = $(MYSOURCES)
+	man \
+	www
 
 #############################################################################
 # Other rules

@@ -187,6 +187,11 @@ ul {
   background-color: transparent;
 }
 
+ol { 
+   font-size: 14px; 
+   font-family: serif 
+}
+
 blockquote {
   background-color: transparent;
 }

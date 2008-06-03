@@ -1,0 +1,79 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+
+<!--
+  HPCToolkit Top-level Page: Editing within Netscape/Mozilla Composer
+  is possible, but it generates strange stuff in-line.  
+  Please use an ordinary text editor.
+-->
+
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+		<meta name="description" content="We developed HPCToolkit -- a multi-platform package with tools for 1). collecting raw profile information 2). converting various types of profiling information into platform independent XML formats and 3). synthesizing browsable representations that correlate performance metrics gathered from multiple sources with program source code.">
+		<meta name="keywords" content="HPCToolkit, performance analysis, tuning tools, performance, performance tools, performance metrics, language independent, compiler independent, hpcview, data layout, compiler optimization">
+		<title>HPCToolkit Home</title>
+
+  <link rel='stylesheet' type='text/css' href='style/styles.css'>
+</head>
+
+<body>
+
+<!-- ********************************************************************** -->
+
+<script language="JavaScript" src="style/header-hpctoolkit.js"></script>
+
+<!-- ********************************************************************** -->
+
+<div id="main">
+
+<p>
+HPCToolkit is an open-source suite of multi-platform tools for profile-based performance analysis of applications. The figure provides an overview of the toolkit components and their relationships.  
+</p>
+<table>
+<tr>
+<td><p>The toolkit components include:
+<ul>
+
+<li> <span class=hpctool>hpcrun / csprof</span>: Measurement tools for profiling executions of unmodified application binaries using statistical sampling of the system timer or hardware performance counters.  The latter collect call path profiles, while the former collects flat profiles.
+
+<li> <span class=hpctool>hpcstruct</span>: A binary analysis tool for recovering the static program structure of <i>fully optimized</i> object code.  In particular, hpcstruct recovers source code procedures and loop nests, detects inlining, and associates procedures and loops with object code addresses.</li>
+
+<li> <span class=hpctool>hpcprof / hpcprof-flat</span>: Profile interpretation and correlation tools.  Specifically, these tools correlate call path and flat profile metrics with program structure to produce a performance database.</li>
+
+<li> <span class=hpctool>hpcviewer</span>: Rich Client Platform based GUI for exploring databases consisting of performance information correlated with program source.</li>
+</ul>
+</p>
+</td><td>
+<img width=500 src="fig/hpctoolkit-workflow.jpg">
+</td>
+</table>
+<p>
+Supported platforms: Pentium+Linux, Opteron+Linux, Athlon+Linux, Itanium+Linux.
+<br>
+Platforms under development: Cray XT (Opteron + Catamount or Compute Node Linux), IBM Blue Gene. 
+</p>
+
+<p>
+HPCToolkit is open-source software released with a BSD-like <a href="http://www.hipersoft.rice.edu/hpctoolkit/documentation/HPCToolkit/README.license">license</a>. </p>
+
+<p class="lastupdated">Page last updated: 2008/06/02</p>
+
+<!-- ********************************************************************** -->
+
+<script language="JavaScript" src="style/footer-hpctoolkit.js"></script>
+
+<!-- ********************************************************************** -->
+
+</div> <!-- id=main -->
+
+</body>
+</html>
+
+
+<!-- Local Variables: -->
+<!-- eval: (add-hook 'write-file-hooks 'time-stamp) -->
+<!-- time-stamp-start: "<p class=\"lastupdated\">Page last updated: " -->
+<!-- time-stamp-format: "%:y/%02m/%02d" -->
+<!-- time-stamp-end: "</p>" -->
+<!-- time-stamp-line-limit: 10000 -->
+<!-- End: -->
