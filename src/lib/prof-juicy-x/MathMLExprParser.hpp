@@ -57,7 +57,7 @@ using XERCES_CPP_NAMESPACE::DOMNode;
 
 //************************* User Include Files *******************************
 
-#include <lib/prof-juicy/EvalNode.hpp>
+#include <lib/prof-juicy/Metric-AExpr.hpp>
 #include <lib/prof-juicy/MetricDescMgr.hpp>
 
 //************************ Forward Declarations ******************************

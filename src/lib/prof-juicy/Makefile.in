@@ -114,7 +114,7 @@ am__objects_1 = libHPCprof_juicy_la-PgmScopeTree.lo \
 	libHPCprof_juicy_la-MetricDescMgr.lo \
 	libHPCprof_juicy_la-PerfMetric.lo \
 	libHPCprof_juicy_la-DerivedPerfMetrics.lo \
-	libHPCprof_juicy_la-EvalNode.lo \
+	libHPCprof_juicy_la-Metric-AExpr.lo \
 	libHPCprof_juicy_la-FlatProfileReader.lo \
 	libHPCprof_juicy_la-CallPathProfile.lo \
 	libHPCprof_juicy_la-CallPathEpoch.lo \
@@ -338,7 +338,7 @@ MYSOURCES = \
 	MetricDesc.hpp \
 	PerfMetric.hpp PerfMetric.cpp \
 	DerivedPerfMetrics.hpp DerivedPerfMetrics.cpp \
-	EvalNode.hpp EvalNode.cpp \
+	Metric-AExpr.hpp Metric-AExpr.cpp \
 	\
 	FlatProfileReader.hpp FlatProfileReader.cpp \
 	\
@@ -432,8 +432,8 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCprof_juicy_la-CallingContextTree.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCprof_juicy_la-CallingContextTreeIterator.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCprof_juicy_la-DerivedPerfMetrics.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCprof_juicy_la-EvalNode.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCprof_juicy_la-FlatProfileReader.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCprof_juicy_la-Metric-AExpr.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCprof_juicy_la-MetricDescMgr.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCprof_juicy_la-PerfMetric.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCprof_juicy_la-PgmScopeTree.Plo@am__quote@
@@ -503,12 +503,12 @@ libHPCprof_juicy_la-DerivedPerfMetrics.lo: DerivedPerfMetrics.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprof_juicy_la_CXXFLAGS) $(CXXFLAGS) -c -o libHPCprof_juicy_la-DerivedPerfMetrics.lo `test -f 'DerivedPerfMetrics.cpp' || echo '$(srcdir)/'`DerivedPerfMetrics.cpp
 
-libHPCprof_juicy_la-EvalNode.lo: EvalNode.cpp
-@am__fastdepCXX_TRUE@	$(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprof_juicy_la_CXXFLAGS) $(CXXFLAGS) -MT libHPCprof_juicy_la-EvalNode.lo -MD -MP -MF $(DEPDIR)/libHPCprof_juicy_la-EvalNode.Tpo -c -o libHPCprof_juicy_la-EvalNode.lo `test -f 'EvalNode.cpp' || echo '$(srcdir)/'`EvalNode.cpp
-@am__fastdepCXX_TRUE@	mv -f $(DEPDIR)/libHPCprof_juicy_la-EvalNode.Tpo $(DEPDIR)/libHPCprof_juicy_la-EvalNode.Plo
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='EvalNode.cpp' object='libHPCprof_juicy_la-EvalNode.lo' libtool=yes @AMDEPBACKSLASH@
+libHPCprof_juicy_la-Metric-AExpr.lo: Metric-AExpr.cpp
+@am__fastdepCXX_TRUE@	$(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprof_juicy_la_CXXFLAGS) $(CXXFLAGS) -MT libHPCprof_juicy_la-Metric-AExpr.lo -MD -MP -MF $(DEPDIR)/libHPCprof_juicy_la-Metric-AExpr.Tpo -c -o libHPCprof_juicy_la-Metric-AExpr.lo `test -f 'Metric-AExpr.cpp' || echo '$(srcdir)/'`Metric-AExpr.cpp
+@am__fastdepCXX_TRUE@	mv -f $(DEPDIR)/libHPCprof_juicy_la-Metric-AExpr.Tpo $(DEPDIR)/libHPCprof_juicy_la-Metric-AExpr.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='Metric-AExpr.cpp' object='libHPCprof_juicy_la-Metric-AExpr.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprof_juicy_la_CXXFLAGS) $(CXXFLAGS) -c -o libHPCprof_juicy_la-EvalNode.lo `test -f 'EvalNode.cpp' || echo '$(srcdir)/'`EvalNode.cpp
+@am__fastdepCXX_FALSE@	$(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprof_juicy_la_CXXFLAGS) $(CXXFLAGS) -c -o libHPCprof_juicy_la-Metric-AExpr.lo `test -f 'Metric-AExpr.cpp' || echo '$(srcdir)/'`Metric-AExpr.cpp
 
 libHPCprof_juicy_la-FlatProfileReader.lo: FlatProfileReader.cpp
 @am__fastdepCXX_TRUE@	$(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprof_juicy_la_CXXFLAGS) $(CXXFLAGS) -MT libHPCprof_juicy_la-FlatProfileReader.lo -MD -MP -MF $(DEPDIR)/libHPCprof_juicy_la-FlatProfileReader.Tpo -c -o libHPCprof_juicy_la-FlatProfileReader.lo `test -f 'FlatProfileReader.cpp' || echo '$(srcdir)/'`FlatProfileReader.cpp

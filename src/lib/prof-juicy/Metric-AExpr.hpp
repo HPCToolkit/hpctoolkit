@@ -55,8 +55,8 @@
 //
 // ----------------------------------------------------------------------
 
-#ifndef prof_juicy_Prof_Metric_Eval_hpp
-#define prof_juicy_Prof_Metric_Eval_hpp
+#ifndef prof_juicy_Prof_Metric_AExpr_hpp
+#define prof_juicy_Prof_Metric_AExpr_hpp
 
 //************************ System Include Files ******************************
 
@@ -413,4 +413,4 @@ private:
 
 //****************************************************************************
 
-#endif /* prof_juicy_Prof_Metric_Eval_hpp */
+#endif /* prof_juicy_Prof_Metric_AExpr_hpp */

@@ -70,7 +70,7 @@ MYSOURCES = \
 	MetricDesc.hpp \
 	PerfMetric.hpp PerfMetric.cpp \
 	DerivedPerfMetrics.hpp DerivedPerfMetrics.cpp \
-	EvalNode.hpp EvalNode.cpp \
+	Metric-AExpr.hpp Metric-AExpr.cpp \
 	\
 	FlatProfileReader.hpp FlatProfileReader.cpp \
 	\
