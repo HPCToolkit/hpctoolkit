@@ -1,5 +1,5 @@
 # -*-Mode: makefile;-*-
-# $Id$
+# $Id: Makefile.am 1398 2008-06-02 16:04:22Z eraxxon $
 
 ## * BeginRiceCopyright *****************************************************
 ## 
@@ -56,56 +56,38 @@ AUTOMAKE_OPTIONS = foreign
 #############################################################################
 
 MYSOURCES = \
-	hpctoolkit.tex \
+	index.html \
 	\
-	hpcrun.tex \
+	acknowledgments.html \
+	contact.html \
+	documentation.html \
+	examples.html \
+	overview.html \
+	overview-screenshot.html \
+	papers.html \
+	people.html \
+	software.html \
+	software-build.html \
 	\
-	hpcstruct.tex \
+	fig/index.html \
+	fig/hpctoolkit-workflow.jpg \
+	fig/hpcviewer-annotated-screenshot.jpg \
+	fig/spacer.gif \
 	\
-	hpcprof-flat.tex \
-	hpcprof.tex \
-	hpcproftt.tex \
-	\
-	hpcviewer.tex
+	style/index.html \
+	style/styles.css \
+	style/footer-hpctoolkit.js \
+	style/header-hpctoolkit.js \
+	style/header.gif
 
-MYLATEX2MAN = @abs_top_srcdir@/tools/latex2man/latex2man
-MYLATEX2MANTRANS = @srcdir@/hpctoolkit-latex2man.trans
-
-MYMANEXT = 1hpctoolkit
-
-MYMAN     = $(patsubst %.tex,%.$(MYMANEXT),$(MYSOURCES))
-MYMANHTML = $(patsubst %.tex,%.html,$(MYSOURCES))
 
 #############################################################################
 # Automake rules
 #############################################################################
 
-# BUG! Won't work with $(MYMAN) variable!
-#man_MANS = $(MYMAN)
-man_MANS = \
-	hpctoolkit.1hpctoolkit \
-	hpcrun.1hpctoolkit \
-	hpcstruct.1hpctoolkit \
-	hpcprof-flat.1hpctoolkit \
-	hpcprof.1hpctoolkit \
-	hpcproftt.1hpctoolkit \
-	hpcviewer.1hpctoolkit
-
-wwwmandir = $(docdir)/man
-dist_wwwman_DATA = $(MYMANHTML)
-
-CLEANFILES = $(MYMAN) $(MYMANHTML)
+nobase_dist_doc_DATA = $(MYSOURCES)
 
 #############################################################################
 # Other rules
 #############################################################################
 
-%.tex.pp : %.tex
-	sed -e 's/=PACKAGE_VERSION=/@PACKAGE_VERSION@/g' $< > $@
-#	$(MYCPP) -P -I@builddir@ $< $@
-
-%.$(MYMANEXT) : %.tex.pp
-	$(MYLATEX2MAN) -t $(MYLATEX2MANTRANS) $< $@
-
-%.html : %.tex.pp
-	$(MYLATEX2MAN) -H -t $(MYLATEX2MANTRANS) $< $@

@@ -1,0 +1,100 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+
+<!--
+  HPCTools Top-level Page: Editing within Netscape/Mozilla Composer
+  is possible, but it generates strange stuff in-line.  
+  Please use an ordinary text editor.
+-->
+
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+
+  <title>HPCToolkit Examples</title>
+
+  <link rel='stylesheet' type='text/css' href='style/styles.css'>
+</head>
+
+<body>
+
+<!-- ********************************************************************** -->
+
+<script language="JavaScript" src="style/header-hpctoolkit.js"></script>
+
+<!-- ********************************************************************** -->
+
+<div id="main">
+
+
+<h2>HPCToolkit Examples</h2>
+
+<p>This page contains links that will enable you to download a copy of 
+hpcviewer (HPCToolkit's performance data browser) and some sample 
+databases to help give you get a sense of what it is like to use 
+HPCToolkit for performance analysis. 
+<br>
+<ul>
+<li>
+Download hpcviewer
+[<a href="examples/HPCViewer.jar.gz">HPCViewer.jar.gz</a> (767KB)], 
+[<a href="examples/HPCViewer.jar">HPCViewer.jar</a> (2.5MB)], 
+- This is a Java archive (jar) file that is HPCToolkit's user interface for interactive browsing of performance databases. The jar file was built with Java 1.4.1 and requires a recent version of Java, though it may work with Java versions earlier than 1.4.1.  Launching the jar file will start the viewer and bring up a file chooser dialog to open a performance database. The file chooser dialog should be used to open the XML file inside the top-level directory of a performance database. 
+</li>
+<br>
+<li>
+<a href="examples/icc-vs-gcc.tar.gz">Download icc-vs-gcc.tar.gz</a> (5KB) - This gzipped tar file contains an HPCViewer performance 
+database that compares the Intel 8.0 C compiler (-g -O3)
+with gcc 3.2.3 (-O3 -g3 -funroll-all-loops) on an Itanium 2 (McKinley) 
+(900MHz XS6000) for McAlpin's Streams benchmark.  The former 
+generates code alomst 4x faster than the latter. 
+<br>
+<br>
+This small but interesting example illustrates the compiler-independence
+of HPCToolkit.  While the database provided only compares two compilers on the same architecture, HPCToolkit can also be used similarly for 
+cross-architecture comparisons.
+</li>
+<br>
+<li>
+<a href="examples/NAS-BT-meas-vs-predicted.tar.gz">Download NAS-BT-meas-vs-predicted.tar.gz</a> (57KB) - This gzipped tar file contains an HPCViewer performance 
+database for 200x200x200 problem size executions of NAS BT. The database includes both a variety of metrics (L2 Miss, L3 Miss, Total Mem Access) measured on a 900MHz Itanium 2, as well as predictions of these values made using a combination of static and dynamic analysis of a SPARC binary. 
+<br>
+<br>
+The performance prediction approach that is compared with measured data 
+is described in the following  paper:
+<br>
+Gabriel Marin and John Mellor-Crummey. 
+Cross Architecture Performance Predictions for Scientific Applications
+Using Parameterized Models. In Proceedings of the Joint International Conference on Measurement and Modeling of Computer Systems, NY, NY, June 2004. 
+<a href="http://www.cs.rice.edu/~johnmc/papers/MM-SIGMETRICS04-abstract.html">[abstract]</a>
+<a href="http://www.cs.rice.edu/~johnmc/papers/MM-SIGMETRICS04.pdf">[pdf]</a>
+</li>
+<br>
+</ul>
+<p>
+<a href="oldexamples.html">Older performance databases</a> - These  performance databases consist of static HTML and JavaScript and can be browsed over the WWW with standard browsers including Netscape, Mozilla, and Internet Explorer. (Safari does not display them properly.)
+These HTML and JavaScript databases are much larger than HPCViewer's newer 
+XML-based format for performance databases.
+</p>
+
+
+<p class="lastupdated">Page last updated: 2008/06/02</p>
+
+<!-- ********************************************************************** -->
+
+<script language="JavaScript" src="style/footer-hpctoolkit.js"></script>
+
+<!-- ********************************************************************** -->
+
+</div> <!-- id=main -->
+
+</body>
+</html>
+
+
+<!-- Local Variables: -->
+<!-- eval: (add-hook 'write-file-hooks 'time-stamp) -->
+<!-- time-stamp-start: "<p class=\"lastupdated\">Page last updated: " -->
+<!-- time-stamp-format: "%:y/%02m/%02d" -->
+<!-- time-stamp-end: "</p>" -->
+<!-- time-stamp-line-limit: 10000 -->
+<!-- End: -->
