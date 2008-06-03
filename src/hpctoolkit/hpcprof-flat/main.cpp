@@ -71,7 +71,7 @@ using namespace std; // For compatibility with non-std C headers
 //************************ Forward Declarations ******************************
 
 static void
-readConfFile(Args& args, Prof::MetricDescMgr& metricMgr);
+readConfFile(Args& args, Prof::Metric::Mgr& metricMgr);
 
 //****************************************************************************
 
@@ -116,7 +116,7 @@ realmain(int argc, char* const* argv)
   //-------------------------------------------------------
   // Create metric descriptors (and for conf file, rest of the args)
   //-------------------------------------------------------
-  Prof::MetricDescMgr metricMgr;
+  Prof::Metric::Mgr metricMgr;
 
   if (args.configurationFileMode) {
     readConfFile(args, metricMgr); // exits on failure
@@ -157,7 +157,7 @@ static void
 appendContents(std::ofstream &dest, const char *srcFile);
 
 static void
-readConfFile(Args& args, Prof::MetricDescMgr& metricMgr)
+readConfFile(Args& args, Prof::Metric::Mgr& metricMgr)
 {
   InitXerces(); // exits iff failure 
 

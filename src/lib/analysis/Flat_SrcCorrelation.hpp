@@ -56,7 +56,7 @@
 #include <lib/prof-juicy-x/DocHandlerArgs.hpp>
 
 #include <lib/prof-juicy/FlatProfileReader.hpp>
-#include <lib/prof-juicy/MetricDescMgr.hpp>
+#include <lib/prof-juicy/Metric-Mgr.hpp>
 #include <lib/prof-juicy/PgmScopeTree.hpp>
 
 #include <lib/binutils/LM.hpp>
@@ -75,7 +75,7 @@ namespace Flat {
 class Driver : public Unique { // not copyable
 public: 
   Driver(const Analysis::Args& args, 
-	 Prof::MetricDescMgr& mMgr, PgmScopeTree& structure);
+	 Prof::Metric::Mgr& mMgr, PgmScopeTree& structure);
   ~Driver(); 
 
   // -------------------------------------------------------
@@ -111,7 +111,7 @@ public:
   typedef std::map<string, bool> StringToBoolMap;
 
   typedef std::pair<Prof::Flat::Profile*, 
-		    Prof::MetricDescMgr::PerfMetricVec*> ProfToMetricsTuple;
+		    Prof::Metric::Mgr::PerfMetricVec*> ProfToMetricsTuple;
   typedef std::vector<ProfToMetricsTuple> ProfToMetricsTupleVec;
 
 private:
@@ -119,14 +119,14 @@ private:
   populatePgmStructure(PgmScopeTree& structure);
 
   void 
-  correlateMetricsWithStructure(Prof::MetricDescMgr& mMgr,
+  correlateMetricsWithStructure(Prof::Metric::Mgr& mMgr,
 				PgmScopeTree& structure);
 
 
   // -------------------------------------------------------
 
   void 
-  computeRawMetrics(Prof::MetricDescMgr& mMgr, PgmScopeTree& structure);
+  computeRawMetrics(Prof::Metric::Mgr& mMgr, PgmScopeTree& structure);
 
   void
   computeRawBatchJob_LM(const string& lmname, const string& lmname_orig,
@@ -145,8 +145,8 @@ private:
   
   bool
   getNextRawBatch(ProfToMetricsTupleVec& batchJob,
-		  Prof::MetricDescMgr::StringPerfMetricVecMap::const_iterator& it,
-		  const Prof::MetricDescMgr::StringPerfMetricVecMap::const_iterator& it_end);
+		  Prof::Metric::Mgr::StringPerfMetricVecMap::const_iterator& it,
+		  const Prof::Metric::Mgr::StringPerfMetricVecMap::const_iterator& it_end);
 
   void
   clearRawBatch(ProfToMetricsTupleVec& batchJob);
@@ -158,7 +158,7 @@ private:
   // -------------------------------------------------------
 
   void 
-  computeDerivedMetrics(Prof::MetricDescMgr& mMgr, PgmScopeTree& structure);
+  computeDerivedMetrics(Prof::Metric::Mgr& mMgr, PgmScopeTree& structure);
 
   // [mBegId, mEndId]
   void 
@@ -197,7 +197,7 @@ private:
 private:
   const Analysis::Args& m_args;
 
-  Prof::MetricDescMgr& m_mMgr;
+  Prof::Metric::Mgr& m_mMgr;
   PgmScopeTree& m_structure;
 
   static uint profileBatchSz;

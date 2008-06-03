@@ -63,7 +63,7 @@
 
 #include <include/general.h>
 
-#include <lib/prof-juicy/MetricDescMgr.hpp>
+#include <lib/prof-juicy/Metric-Mgr.hpp>
 
 //*************************** Forward Declarations ***************************
 
@@ -87,7 +87,7 @@ public:
   };
 
 public:
-  ColumnFormatter(const Prof::MetricDescMgr& metricMgr, 
+  ColumnFormatter(const Prof::Metric::Mgr& metricMgr, 
 		  std::ostream& os, 
 		  int numDecPct, int numDecVal);
   ~ColumnFormatter() { }
@@ -129,7 +129,7 @@ private:
   
 
 private:
-  const Prof::MetricDescMgr& m_mMgr;
+  const Prof::Metric::Mgr& m_mMgr;
   std::ostream& m_os;
 
   // number of decimals in non-scientific format

@@ -59,7 +59,7 @@
 
 #include <include/general.h> 
 
-#include <lib/prof-juicy/MetricDescMgr.hpp> 
+#include <lib/prof-juicy/Metric-Mgr.hpp> 
 
 //*************************** Forward Declarations ***************************
 
@@ -72,7 +72,7 @@ namespace Flat {
   // Given a flat profile file, correlate metrics for the events contained
   // therein with the object code instructions
   void
-  correlateWithObject(const Prof::MetricDescMgr& metricMgr,
+  correlateWithObject(const Prof::Metric::Mgr& metricMgr,
 		      // ----------------------------------------------
 		      std::ostream& os, 
 		      // show source code lines

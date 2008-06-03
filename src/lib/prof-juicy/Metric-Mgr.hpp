@@ -59,19 +59,19 @@
 
 namespace Prof {
 
-//namespace Metric {
+namespace Metric {
 
 //****************************************************************************
 
-class MetricDescMgr : public Unique { // non copyable
+class Mgr : public Unique { // non copyable
 public:
   typedef std::vector<PerfMetric*> PerfMetricVec;
   typedef std::map<std::string, PerfMetric*> StringPerfMetricMap;
   typedef std::map<std::string, PerfMetricVec> StringPerfMetricVecMap;
 
 public: 
-  MetricDescMgr();
-  ~MetricDescMgr(); 
+  Mgr();
+  ~Mgr(); 
 
   void 
   makeRawMetrics(const std::vector<std::string>& profileFiles, 
@@ -195,7 +195,7 @@ private:
 
 //****************************************************************************
 
-//} // namespace Metric
+} // namespace Metric
 
 } // namespace Prof
 

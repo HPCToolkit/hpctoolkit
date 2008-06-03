@@ -50,7 +50,7 @@ using std::vector;
 
 //************************* User Include Files *******************************
 
-#include "MetricDescMgr.hpp"
+#include "Metric-Mgr.hpp"
 
 #include <lib/prof-juicy/FlatProfileReader.hpp>
 
@@ -60,14 +60,18 @@ using std::vector;
 //************************ Forward Declarations ******************************
 
 
+namespace Prof {
+
+namespace Metric {
+
 //****************************************************************************
 
-Prof::MetricDescMgr::MetricDescMgr()
+Mgr::Mgr()
 {
 } 
 
 
-Prof::MetricDescMgr::~MetricDescMgr()
+Mgr::~Mgr()
 {
   for (uint i = 0; i < m_metrics.size(); ++i) {
     delete m_metrics[i];
@@ -77,9 +81,8 @@ Prof::MetricDescMgr::~MetricDescMgr()
 //----------------------------------------------------------------------------
 
 void 
-Prof::MetricDescMgr::makeRawMetrics(const std::vector<std::string>& profileFiles,
-				    bool isunit_ev,
-				    bool ispercent)
+Mgr::makeRawMetrics(const std::vector<std::string>& profileFiles,
+		    bool isunit_ev,  bool ispercent)
 {
   // ------------------------------------------------------------
   // Create a FilePerfMetric for each event within each profile
@@ -119,7 +122,7 @@ Prof::MetricDescMgr::makeRawMetrics(const std::vector<std::string>& profileFiles
 
 
 void 
-Prof::MetricDescMgr::makeSummaryMetrics()
+Mgr::makeSummaryMetrics()
 {
   StringPerfMetricVecMap::iterator it = m_nuniqnmToMetricMap.begin();
   for ( ; it != m_nuniqnmToMetricMap.end(); ++it) {
@@ -140,36 +143,35 @@ Prof::MetricDescMgr::makeSummaryMetrics()
 
 
 void
-Prof::MetricDescMgr::makeSummaryMetric(const string& m_nm,
-				       const PerfMetricVec& m_opands)
+Mgr::makeSummaryMetric(const string& m_nm, const PerfMetricVec& m_opands)
 {
-  Prof::Metric::AExpr** opands = new Prof::Metric::AExpr*[m_opands.size()];
+  Metric::AExpr** opands = new Metric::AExpr*[m_opands.size()];
   for (uint i = 0; i < m_opands.size(); ++i) {
     PerfMetric* m = m_opands[i];
-    opands[i] = new Prof::Metric::Var(m->Name(), m->Index());
+    opands[i] = new Metric::Var(m->Name(), m->Index());
   }
 
   bool doDisplay = true;
   bool doPercent = true;
 
-  Prof::Metric::AExpr* expr = NULL;
+  Metric::AExpr* expr = NULL;
   if (m_nm.find("SUM", 0) == 0) {
-    expr = new Prof::Metric::Plus(opands, m_opands.size());
+    expr = new Metric::Plus(opands, m_opands.size());
   }
   else if (m_nm.find("MIN", 0) == 0) {
-    expr = new Prof::Metric::Min(opands, m_opands.size());
+    expr = new Metric::Min(opands, m_opands.size());
     doPercent = false;
   }
   else if (m_nm.find("MAX", 0) == 0) {
-    expr = new Prof::Metric::Max(opands, m_opands.size());
+    expr = new Metric::Max(opands, m_opands.size());
     doPercent = false;
   }
   else if (m_nm.find("MEAN", 0) == 0) {
-    expr = new Prof::Metric::Mean(opands, m_opands.size());
+    expr = new Metric::Mean(opands, m_opands.size());
     doPercent = false;
   }
   else if (m_nm.find("SDEV", 0) == 0) {
-    expr = new Prof::Metric::StdDev(opands, m_opands.size());
+    expr = new Metric::StdDev(opands, m_opands.size());
     doPercent = false;
   }
   else {
@@ -185,7 +187,7 @@ Prof::MetricDescMgr::makeSummaryMetric(const string& m_nm,
 //----------------------------------------------------------------------------
 
 bool 
-Prof::MetricDescMgr::insert(PerfMetric* m)
+Mgr::insert(PerfMetric* m)
 { 
   bool ans = false;
   
@@ -238,7 +240,7 @@ Prof::MetricDescMgr::insert(PerfMetric* m)
 
 
 PerfMetric*
-Prof::MetricDescMgr::findSortBy() const
+Mgr::findSortBy() const
 {
   PerfMetric* m_sortby = NULL;
   for (uint i = 0; i < m_metrics.size(); ++i) {
@@ -253,7 +255,7 @@ Prof::MetricDescMgr::findSortBy() const
 
 
 bool 
-Prof::MetricDescMgr::hasDerived() const
+Mgr::hasDerived() const
 {
   for (uint i = 0; i < m_metrics.size(); ++i) {
     PerfMetric* m = m_metrics[i]; 
@@ -267,7 +269,7 @@ Prof::MetricDescMgr::hasDerived() const
 
 
 string
-Prof::MetricDescMgr::toString(const char* pre) const
+Mgr::toString(const char* pre) const
 {
   std::ostringstream os;
   dump(os, pre);
@@ -276,7 +278,7 @@ Prof::MetricDescMgr::toString(const char* pre) const
 
 
 void
-Prof::MetricDescMgr::dump(std::ostream& o, const char* pre) const
+Mgr::dump(std::ostream& o, const char* pre) const
 {
   for (uint i = 0; i < m_metrics.size(); i++) {
     o << m_metrics[i]->toString() + "\n";
@@ -285,7 +287,13 @@ Prof::MetricDescMgr::dump(std::ostream& o, const char* pre) const
 
 
 void
-Prof::MetricDescMgr::ddump() const
+Mgr::ddump() const
 {
   dump(std::cerr);
 }
+
+//****************************************************************************
+
+} // namespace Metric
+
+} // namespace Prof

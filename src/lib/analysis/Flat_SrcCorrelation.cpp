@@ -92,7 +92,7 @@ uint Driver::profileBatchSz = 16; // UINT_MAX;
 
 
 Driver::Driver(const Analysis::Args& args,
-	       Prof::MetricDescMgr& mMgr, PgmScopeTree& structure)
+	       Prof::Metric::Mgr& mMgr, PgmScopeTree& structure)
   : Unique(), m_args(args), m_mMgr(mMgr), m_structure(structure)
 {
 } 
@@ -577,7 +577,7 @@ Driver::populatePgmStructure(PgmScopeTree& structure)
 
 
 void
-Driver::correlateMetricsWithStructure(Prof::MetricDescMgr& mMgr,
+Driver::correlateMetricsWithStructure(Prof::Metric::Mgr& mMgr,
 				      PgmScopeTree& structure) 
 {
   computeRawMetrics(mMgr, structure);
@@ -598,12 +598,12 @@ Driver::correlateMetricsWithStructure(Prof::MetricDescMgr& mMgr,
 //----------------------------------------------------------------------------
 
 void
-Driver::computeRawMetrics(Prof::MetricDescMgr& mMgr, PgmScopeTree& structure) 
+Driver::computeRawMetrics(Prof::Metric::Mgr& mMgr, PgmScopeTree& structure) 
 {
   NodeRetriever structIF(structure.GetRoot(), searchPathStr());
   StringToBoolMap hasStructureTbl;
   
-  const Prof::MetricDescMgr::StringPerfMetricVecMap& fnameToFMetricMap = 
+  const Prof::Metric::Mgr::StringPerfMetricVecMap& fnameToFMetricMap = 
     mMgr.fnameToFMetricMap();
 
   //-------------------------------------------------------
@@ -611,7 +611,7 @@ Driver::computeRawMetrics(Prof::MetricDescMgr& mMgr, PgmScopeTree& structure)
   // profile files to one load module to amortize the overhead of
   // reading symbol tables and debugging information.
   //-------------------------------------------------------
-  Prof::MetricDescMgr::StringPerfMetricVecMap::const_iterator it = 
+  Prof::Metric::Mgr::StringPerfMetricVecMap::const_iterator it = 
     fnameToFMetricMap.begin();
   
   ProfToMetricsTupleVec batchJob;
@@ -682,7 +682,7 @@ Driver::computeRawBatchJob_LM(const string& lmname, const string& lmname_orig,
   for (uint i = 0; i < profToMetricsVec.size(); ++i) {
 
     Prof::Flat::Profile* prof = profToMetricsVec[i].first;
-    Prof::MetricDescMgr::PerfMetricVec* metrics = profToMetricsVec[i].second;
+    Prof::Metric::Mgr::PerfMetricVec* metrics = profToMetricsVec[i].second;
 
     Prof::Flat::LM* proflm = NULL;
     Prof::Flat::Profile::iterator it = prof->find(lmname_orig);
@@ -698,7 +698,7 @@ Driver::computeRawBatchJob_LM(const string& lmname, const string& lmname_orig,
     //-------------------------------------------------------
     // For each metric, insert performance data into scope tree
     //-------------------------------------------------------
-    for (Prof::MetricDescMgr::PerfMetricVec::iterator it = metrics->begin();
+    for (Prof::Metric::Mgr::PerfMetricVec::iterator it = metrics->begin();
 	 it != metrics->end(); ++it) {
       FilePerfMetric* m = dynamic_cast<FilePerfMetric*>(*it);
       DIAG_Assert(m->isunit_event(), "Assumes metric should compute events!");
@@ -790,14 +790,14 @@ Driver::correlateRaw(PerfMetric* metric,
 // A batch is a vector of [Prof::Flat::Profile, <metric-vector>] pairs
 bool
 Driver::getNextRawBatch(ProfToMetricsTupleVec& batchJob,
-			Prof::MetricDescMgr::StringPerfMetricVecMap::const_iterator& it, 
-			const Prof::MetricDescMgr::StringPerfMetricVecMap::const_iterator& it_end)
+			Prof::Metric::Mgr::StringPerfMetricVecMap::const_iterator& it, 
+			const Prof::Metric::Mgr::StringPerfMetricVecMap::const_iterator& it_end)
 {
   for (uint i = 0; i < profileBatchSz; ++i) {
     if (it != it_end) {
       const string& fnm = it->first;
-      Prof::MetricDescMgr::PerfMetricVec& metrics = 
-	const_cast<Prof::MetricDescMgr::PerfMetricVec&>(it->second);
+      Prof::Metric::Mgr::PerfMetricVec& metrics = 
+	const_cast<Prof::Metric::Mgr::PerfMetricVec&>(it->second);
       Prof::Flat::Profile* prof = readProf(fnm);
       batchJob.push_back(make_pair(prof, &metrics));
       it++;
@@ -847,7 +847,7 @@ Driver::hasStructure(const string& lmname, NodeRetriever& structIF,
 //----------------------------------------------------------------------------
 
 void
-Driver::computeDerivedMetrics(Prof::MetricDescMgr& mMgr, 
+Driver::computeDerivedMetrics(Prof::Metric::Mgr& mMgr, 
 			      PgmScopeTree& structure)
 {
   using Prof::Metric::AExpr;
