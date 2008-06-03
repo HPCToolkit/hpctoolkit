@@ -75,13 +75,13 @@ m4_include(config/hpc-cxxutils.m4)
 #    correctly
 #----------------------------------------------------------------------------
 
-AC_INIT([hpctoolkit], [TRUNK-4.9.0=1400], [hpc@cs.rice.edu], [hpctoolkit])
+AC_INIT([hpctoolkit], [TRUNK-4.9.0=1420], [hpc@cs.rice.edu], [hpctoolkit])
 AC_CONFIG_SRCDIR([src/include/HPCToolkitVersionInfo.h])
 AC_CONFIG_AUX_DIR([config])
 
 AC_PREREQ(2.61)
-AM_INIT_AUTOMAKE(1.10)
-# Require libtool 1.5.23b
+AM_INIT_AUTOMAKE(1.10.1)
+# Require libtool 1.5.26
 
 AC_CANONICAL_HOST()
 
