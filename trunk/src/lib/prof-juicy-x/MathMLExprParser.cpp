@@ -95,7 +95,7 @@ MathMLExprParser::~MathMLExprParser()
 
 Prof::Metric::AExpr* 
 MathMLExprParser::parse(DOMNode* mathMLExpr, 
-			const Prof::MetricDescMgr& mMgr)
+			const Prof::Metric::Mgr& mMgr)
 {
   Prof::Metric::AExpr* exprTree = NULL;
 
@@ -137,7 +137,7 @@ MathMLExprParser::parse(DOMNode* mathMLExpr,
 
 Prof::Metric::AExpr* 
 MathMLExprParser::buildEvalTree(DOMNode *node, 
-				const Prof::MetricDescMgr& mMgr,
+				const Prof::Metric::Mgr& mMgr,
 				bool isNum) 
 {
   static const XMLCh* NUMBER = XMLString::transcode("cn");

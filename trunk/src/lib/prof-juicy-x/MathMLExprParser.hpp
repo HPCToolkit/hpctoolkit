@@ -58,7 +58,7 @@ using XERCES_CPP_NAMESPACE::DOMNode;
 //************************* User Include Files *******************************
 
 #include <lib/prof-juicy/Metric-AExpr.hpp>
-#include <lib/prof-juicy/MetricDescMgr.hpp>
+#include <lib/prof-juicy/Metric-Mgr.hpp>
 
 //************************ Forward Declarations ******************************
 
@@ -115,7 +115,7 @@ public:
   // ------------------------------------------------------------
   static Prof::Metric::AExpr* 
   parse(DOMNode* mathMLExpr, 
-	const Prof::MetricDescMgr& mMgr);
+	const Prof::Metric::Mgr& mMgr);
   
   // ------------------------------------------------------------
   //
@@ -128,7 +128,7 @@ public:
 private:
   static Prof::Metric::AExpr* 
   buildEvalTree(DOMNode *node,
-		const Prof::MetricDescMgr& mMgr,
+		const Prof::Metric::Mgr& mMgr,
 		bool isNum);
 };
 

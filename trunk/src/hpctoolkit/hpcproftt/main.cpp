@@ -134,7 +134,7 @@ realmain(int argc, char* const* argv)
 //****************************************************************************
 
 static void
-makeDerivedMetrics(Prof::MetricDescMgr& metricMgr, const string& metrics);
+makeDerivedMetrics(Prof::Metric::Mgr& metricMgr, const string& metrics);
 
 static int
 main_srcCorrelation(const Args& args)
@@ -144,7 +144,7 @@ main_srcCorrelation(const Args& args)
   //-------------------------------------------------------
   // Create metric descriptors
   //-------------------------------------------------------
-  Prof::MetricDescMgr metricMgr;
+  Prof::Metric::Mgr metricMgr;
   metricMgr.makeRawMetrics(args.profileFiles);
   makeDerivedMetrics(metricMgr, args.txt_metrics);
 
@@ -174,7 +174,7 @@ main_objCorrelation(const Args& args)
     os << std::setfill('=') << std::setw(77) << "=" << std::endl;
 
     // 1. Create metric descriptors
-    Prof::MetricDescMgr metricMgr;
+    Prof::Metric::Mgr metricMgr;
     metricMgr.makeRawMetrics(fnm, 
 			     false/*isunit_ev*/, 
 			     args.obj_metricsAsPercents);
@@ -209,7 +209,7 @@ main_rawData(const std::vector<string>& profileFiles)
 //****************************************************************************
 
 static void
-makeDerivedMetrics(Prof::MetricDescMgr& metricMgr, const string& metrics)
+makeDerivedMetrics(Prof::Metric::Mgr& metricMgr, const string& metrics)
 {
   if (metrics.empty()) {
     return;

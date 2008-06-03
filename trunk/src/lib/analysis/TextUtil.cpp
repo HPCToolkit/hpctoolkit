@@ -79,7 +79,7 @@ namespace Analysis {
 
 namespace TextUtil {
 
-ColumnFormatter::ColumnFormatter(const Prof::MetricDescMgr& metricMgr,
+ColumnFormatter::ColumnFormatter(const Prof::Metric::Mgr& metricMgr,
 				 ostream& os, 
 				 int numDecPct, int numDecVal)
   : m_mMgr(metricMgr),

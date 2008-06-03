@@ -93,7 +93,7 @@ namespace Flat {
 
 class MetricCursor {
 public:
-  MetricCursor(const Prof::MetricDescMgr& metricMgr,
+  MetricCursor(const Prof::Metric::Mgr& metricMgr,
 	       const Prof::Flat::LM& proflm, 
 	       const binutils::LM& lm);
   ~MetricCursor();
@@ -152,7 +152,7 @@ private:
 };
 
 
-MetricCursor::MetricCursor(const Prof::MetricDescMgr& metricMgr,
+MetricCursor::MetricCursor(const Prof::Metric::Mgr& metricMgr,
 			   const Prof::Flat::LM& proflm, 
 			   const binutils::LM& lm)
 {
@@ -288,7 +288,7 @@ writeMetricVals(ColumnFormatter& colFmt,
 		ColumnFormatter::Flag flg = ColumnFormatter::Flag_NULL);
 
 static void
-correlateWithObject_LM(const Prof::MetricDescMgr& metricMgr,
+correlateWithObject_LM(const Prof::Metric::Mgr& metricMgr,
 		       const Prof::Flat::LM& proflm, 
 		       const binutils::LM& lm,
 		       // ----------------------------------------------
@@ -298,15 +298,15 @@ correlateWithObject_LM(const Prof::MetricDescMgr& metricMgr,
 
 
 void
-correlateWithObject(const Prof::MetricDescMgr& metricMgr,
+correlateWithObject(const Prof::Metric::Mgr& metricMgr,
 		    // ----------------------------------------------
 		    std::ostream& os, 
 		    bool srcCode,
 		    uint64_t procPruneThreshold)
 {
-  using Prof::MetricDescMgr;
+  using Prof::Metric::Mgr;
 
-  const MetricDescMgr::StringPerfMetricVecMap& fnameToFMetricMap = 
+  const Mgr::StringPerfMetricVecMap& fnameToFMetricMap = 
     metricMgr.fnameToFMetricMap();
   DIAG_Assert(fnameToFMetricMap.size() == 1, DIAG_UnexpectedInput);
 
@@ -347,7 +347,7 @@ correlateWithObject(const Prof::MetricDescMgr& metricMgr,
 
 
 void
-correlateWithObject_LM(const Prof::MetricDescMgr& metricMgr, 
+correlateWithObject_LM(const Prof::Metric::Mgr& metricMgr, 
 		       const Prof::Flat::LM& proflm, 
 		       const binutils::LM& lm,
 		       // ----------------------------------------------
