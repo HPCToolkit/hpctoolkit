@@ -37,21 +37,22 @@
 
 // ----------------------------------------------------------------------
 //
-// class EvalNode and derived node classes
+// class Prof::Metric::AExpr and derived classes
 //
-// Currently supported nodes are
-//   Const : double constant                      : leaf
-//   Var   : variable with a String name          : leaf
-//   Neg   : minus times a node                   : unary
-//   Power : power expressed in base and exponent : binary
-//   Divide: division expression                  : binary
-//   Minus : subtraction expression               : binary
-//   Plus  : addition expression                  : n-ary
-//   Times : multiplication expression            : n-ary
-//   Max   : max expression                       : n-ary
-//   Min   : min expression                       : n-ary
-//   Mean  : mean (arithmetic) expression         : n-ary
-//   StdDev: standard deviation expression        : n-ary
+// Currently supported expressions are
+//   Const  : double constant                      : leaf
+//   Var    : variable with a String name          : leaf
+//   Neg    : minus times a node                   : unary
+//   Power  : power expressed in base and exponent : binary
+//   Divide : division expression                  : binary
+//   Minus  : subtraction expression               : binary
+//   Plus   : addition expression                  : n-ary
+//   Times  : multiplication expression            : n-ary
+//   Max    : max expression                       : n-ary
+//   Min    : min expression                       : n-ary
+//   Mean   : mean (arithmetic) expression         : n-ary
+//   StdDev : standard deviation expression        : n-ary
+//   RStdDev: relative standard deviation          : n-ary
 //
 // ----------------------------------------------------------------------
 
@@ -119,6 +120,33 @@ protected:
     double sum = eval_sum(si, opands, sz);
     double result = sum / (double) sz;
     return result;
+  }
+
+  
+  // returns <variance, mean>
+  static std::pair<double, double>
+  eval_variance(const ScopeInfo* si, AExpr** opands, int sz) 
+  {
+    double* x = new double[sz];
+    
+    double x_mean = 0.0; // mean
+    for (int i = 0; i < sz; ++i) {
+      double t = opands[i]->eval(si);
+      x[i] = t;
+      x_mean += t;
+    }
+    x_mean = x_mean / sz;
+    
+    double x_var = 0.0; // variance
+    for (int i = 0; i < sz; ++i) {
+      double t = (x[i] - x_mean);
+      t = t * t;
+      x_var += t;
+    }
+    x_var = x_var / sz;
+    delete[] x;
+    
+    return std::make_pair(x_var, x_mean);
   }
 
   static void dump_opands(std::ostream& os, AExpr** opands, int sz,
@@ -385,7 +413,7 @@ private:
 
 
 // ----------------------------------------------------------------------
-// StdDev
+// StdDev: standard deviation
 // ----------------------------------------------------------------------
 
 class StdDev : public AExpr
@@ -394,6 +422,27 @@ public:
   // Assumes ownership of AExpr
   StdDev(AExpr** oprnds, int numOprnds);
   ~StdDev();
+
+  double eval(const ScopeInfo* si) const;
+
+  std::ostream& dump(std::ostream& os = std::cout) const;
+
+private:
+  AExpr** m_opands;
+  int m_sz;
+};
+
+
+// ----------------------------------------------------------------------
+// RStdDev: relative standard deviation
+// ----------------------------------------------------------------------
+
+class RStdDev : public AExpr
+{
+public:
+  // Assumes ownership of AExpr
+  RStdDev(AExpr** oprnds, int numOprnds);
+  ~RStdDev();
 
   double eval(const ScopeInfo* si) const;
 

@@ -61,12 +61,12 @@ class FilePerfMetric : public PerfMetric {
 public: 
   // NOTE: NativeName() is the 'select' attribute
   FilePerfMetric(const char* nm, const char* nativeNm, const char* displayNm,
-		 bool display, bool percent, bool sortBy, 
+		 bool display, bool dispPercent, bool sortBy, 
 		 const char* fname, const char* ftype,
 		 bool isuint_ev); 
   FilePerfMetric(const std::string& nm, const std::string& nativeNm, 
 		 const std::string& displayNm,
-		 bool display, bool percent, bool sortBy, 
+		 bool display, bool dispPercent, bool sortBy, 
 		 const std::string& fname, const std::string& ftype, 
 		 bool isunit_ev); 
 
@@ -113,11 +113,11 @@ private:
 class ComputedPerfMetric : public PerfMetric {
 public: 
   ComputedPerfMetric(const char* nm, const char* displayNm,
-		     bool display, bool percent, bool sortBy, 
+		     bool display, bool dispPercent, bool sortBy, 
 		     bool propagateComputed, 
 		     Prof::Metric::AExpr* expr);
   ComputedPerfMetric(const std::string& nm, const std::string& displayNm,
-		     bool display, bool percent, bool sortBy, 
+		     bool display, bool dispPercent, bool sortBy, 
 		     bool propagateComputed, 
 		     Prof::Metric::AExpr* expr);
 

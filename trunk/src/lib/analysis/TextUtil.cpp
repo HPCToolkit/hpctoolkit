@@ -91,16 +91,22 @@ ColumnFormatter::ColumnFormatter(const Prof::Metric::Mgr& metricMgr,
   m_annotWidth.resize(m_mMgr.size(), 0);
   m_sciFmtThreshold_pct.resize(m_mMgr.size(), 0.0);
   m_sciFmtThreshold_val.resize(m_mMgr.size(), 0.0);
+  m_dispPercent.resize(m_mMgr.size(), false);
+  m_isForceable.resize(m_mMgr.size(), false);
 
   for (uint mId = 0; mId < m_mMgr.size(); ++mId) {
     const PerfMetric* m = m_mMgr.metric(mId);
     if (!m->Display()) {
       continue;
     }
+    
+    m_isForceable[mId] = ((dynamic_cast<const FilePerfMetric*>(m) != NULL) 
+			  || !m->isPercent());
 
     // Compute annotation widths. 
     // NOTE: decimal digits shown as 'd' below
-    if (m->Percent()) {
+    if (m->dispPercent()) {
+      m_dispPercent[mId] = true;
       if (m_numDecPct >= 1) { 
 	// xxx.dd% or x.dE-yy% (latter for small values)
 	m_annotWidth[mId] = std::max(8, 5 + m_numDecPct);
@@ -157,19 +163,21 @@ void
 ColumnFormatter::genCol(uint mId, double metricVal, double metricTot,
 			ColumnFormatter::Flag flg)
 {
-  const PerfMetric* m = m_mMgr.metric(mId);
-
   if (!isDisplayed(mId)) {
     return;
   }
 
-  bool doPercent = ((flg == Flag_ForcePct) 
-		    || flg != Flag_ForceVal && m->Percent());
-
-  if (doPercent) {
-    double val = 0.0;
-    if (metricTot != 0) {
-      val = (metricVal / metricTot) * 100.0;
+  bool dispPercent = m_dispPercent[mId];
+  if (flg != Flag_NULL && m_isForceable[mId]) {
+    dispPercent = (flg == Flag_ForcePct);
+  }
+  
+  if (dispPercent) {
+    double val = metricVal; // may already be a percent
+    
+    const PerfMetric* m = m_mMgr.metric(mId);
+    if (!m->isPercent() && metricTot != 0.0) {
+      val = (metricVal / metricTot) * 100.0; // make the percent
     }
     
     m_os << std::showpoint << std::setw(m_annotWidth[mId] - 1);

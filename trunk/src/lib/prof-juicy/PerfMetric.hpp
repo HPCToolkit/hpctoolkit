@@ -35,8 +35,8 @@
 // 
 // ******************************************************* EndRiceCopyright *
 
-#ifndef PerfMetric_h 
-#define PerfMetric_h 
+#ifndef prof_juicy_Prof_Metric_ADesc_hpp 
+#define prof_juicy_Prof_Metric_ADesc_hpp 
 
 //************************ System Include Files ******************************
 
@@ -50,9 +50,13 @@
 
 //************************ Forward Declarations ******************************
 
-class NodeRetriever; 
 
 //****************************************************************************
+
+//namespace Prof {
+
+//namespace Metric {
+
 
 class DataDisplayInfo { 
 public: 
@@ -95,11 +99,11 @@ public:
   // fastest).
   
   PerfMetric(const char *name, const char *nativeName, const char* displayName,
-	     bool display, bool percent, bool propComputed, bool sortBy);
+	     bool display, bool dispPercent, bool isPercent, bool sortBy);
 
   PerfMetric(const std::string& name, const std::string& nativeName, 
 	     const std::string& displayName, 
-	     bool display, bool percent, bool propComputed, bool sortBy);
+	     bool display, bool dispPercent, bool isPercent, bool sortBy);
 
   // constructor automatically adds new instance to PerfMetricTable
   // and sets this->perfInfoIndex to instance's index in the table
@@ -114,7 +118,15 @@ public:
   
   bool Display() const                { return display; }
   bool Display(bool display_)         { display = display_; }
-  bool Percent() const                { return percent; }
+
+  // display as a percentage
+  bool dispPercent() const            { return m_dispPercent; }
+
+  // value is already a percent (if not, it must be converted to
+  // display as percentage).  This is especially critical for computed
+  // metrics where dispPercent is ambiguous.
+  bool isPercent() const              { return m_isPercent; }
+
   bool SortBy() const                 { return sortBy; }
   void SortBy(bool sortBy_)           { sortBy = sortBy_; }
 
@@ -138,10 +150,12 @@ private:
 private: 
   std::string name;
   std::string nativeName;
-  unsigned int eventsPerCount; 
   DataDisplayInfo *dispInfo; 
   bool display; 
-  bool percent; 
+
+  bool m_dispPercent; 
+  bool m_isPercent; 
+
   bool pcomputed; 
   bool sortBy;
   
@@ -150,4 +164,12 @@ protected:
 };
 
 
-#endif // PerfMetric_h
+//****************************************************************************
+
+//} // namespace Metric
+
+//} // namespace Prof
+
+//****************************************************************************
+
+#endif // prof_juicy_Prof_Metric_ADesc_hpp

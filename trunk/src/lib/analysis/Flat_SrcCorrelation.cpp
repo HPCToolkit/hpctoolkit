@@ -239,7 +239,7 @@ Driver::write_experiment(std::ostream &os) const
        << "\" nativeName=\""  << metric->NativeName()
        << "\" displayName=\"" << metric->DisplayInfo().Name()
        << "\" display=\"" << ((metric->Display()) ? "true" : "false")
-       << "\" percent=\"" << ((metric->Percent()) ? "true" : "false")
+       << "\" percent=\"" << ((metric->dispPercent()) ? "true" : "false")
       //<< "\" sortBy=\""  << ((metric->SortBy())  ? "true" : "false")
        << "\"/>" << endl;
   }
@@ -265,7 +265,7 @@ Driver::write_csv(std::ostream &os) const
   for (uint i = 0; i < m_mMgr.size(); ++i) {
     const PerfMetric* m = m_mMgr.metric(i); 
     os << "," << m->DisplayInfo().Name();
-    if (m->Percent())
+    if (m->dispPercent())
       os << "," << m->DisplayInfo().Name() << " (%)";
   }
   os << endl;
@@ -349,6 +349,8 @@ Driver::write_txt_secSummary(std::ostream& os,
 			     const std::string& title,
 			     const ScopeInfoFilter* filter) const
 {
+  using Analysis::TextUtil::ColumnFormatter;
+
   write_txt_hdr(os, title);
 
   PgmScope* pgmStrct = m_structure.GetRoot();
