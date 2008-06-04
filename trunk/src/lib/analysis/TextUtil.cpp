@@ -89,8 +89,10 @@ ColumnFormatter::ColumnFormatter(const Prof::Metric::Mgr& metricMgr,
     m_annotWidthTot(0)
 { 
   m_annotWidth.resize(m_mMgr.size(), 0);
-  m_sciFmtThreshold_pct.resize(m_mMgr.size(), 0.0);
-  m_sciFmtThreshold_val.resize(m_mMgr.size(), 0.0);
+  m_sciFmtLoThrsh_pct.resize(m_mMgr.size(), 0.0);
+  m_sciFmtHiThrsh_pct.resize(m_mMgr.size(), 0.0);
+  m_sciFmtLoThrsh_val.resize(m_mMgr.size(), 0.0);
+  m_sciFmtHiThrsh_val.resize(m_mMgr.size(), 0.0);
   m_dispPercent.resize(m_mMgr.size(), false);
   m_isForceable.resize(m_mMgr.size(), false);
 
@@ -121,11 +123,18 @@ ColumnFormatter::ColumnFormatter(const Prof::Metric::Mgr& metricMgr,
       m_annotWidth[mId] = std::max(7, 2 + m_numDecVal);
     }
 
-    m_sciFmtThreshold_pct[mId] = std::pow(10.0, (double)-m_numDecPct);
+    // compute threshholds
+    int nNonUnitsPct = (m_numDecPct == 0) ? 1 : m_numDecPct + 2; // . + %
+    int nNonUnitsVal = (m_numDecVal == 0) ? 0 : m_numDecVal + 1; // .
 
-    int decDigits = (m_numDecVal == 0) ? 0 : numDecVal + 1/*dec point*/;
-    int non_decDigits = std::max(0, m_annotWidth[mId] - decDigits);
-    m_sciFmtThreshold_val[mId] = std::pow(10.0, (double)non_decDigits);
+    int nUnitsPct = std::max(0, m_annotWidth[mId] - nNonUnitsPct);
+    int nUnitsVal = std::max(0, m_annotWidth[mId] - nNonUnitsVal);
+
+    m_sciFmtHiThrsh_pct[mId] = std::pow(10.0, (double)nUnitsPct);
+    m_sciFmtHiThrsh_val[mId] = std::pow(10.0, (double)nUnitsVal);
+
+    m_sciFmtLoThrsh_pct[mId] = std::pow(10.0, (double)-m_numDecPct);
+    m_sciFmtLoThrsh_val[mId] = std::pow(10.0, (double)-m_numDecVal);
 
     m_annotWidthTot += m_annotWidth[mId] + 1/*space*/;
   }
@@ -171,17 +180,19 @@ ColumnFormatter::genCol(uint mId, double metricVal, double metricTot,
   if (flg != Flag_NULL && m_isForceable[mId]) {
     dispPercent = (flg == Flag_ForcePct);
   }
-  
+
+  double val = metricVal;
+
   if (dispPercent) {
-    double val = metricVal; // may already be a percent
-    
+    // convert 'val' to a percent if necessary
     const PerfMetric* m = m_mMgr.metric(mId);
     if (!m->isPercent() && metricTot != 0.0) {
       val = (metricVal / metricTot) * 100.0; // make the percent
     }
     
     m_os << std::showpoint << std::setw(m_annotWidth[mId] - 1);
-    if (val != 0.0 && val < m_sciFmtThreshold_pct[mId]) {
+    if (val != 0.0 &&
+	(val < m_sciFmtLoThrsh_pct[mId] || val >= m_sciFmtHiThrsh_pct[mId])) {
       m_os << std::scientific 
 	   << std::setprecision(m_annotWidth[mId] - 7); // x.dE-yy%
     }
@@ -193,7 +204,8 @@ ColumnFormatter::genCol(uint mId, double metricVal, double metricTot,
   }
   else {
     m_os << std::setw(m_annotWidth[mId]);
-    if (metricVal >= m_sciFmtThreshold_val[mId]) {
+    if (val != 0.0 &&
+	(val < m_sciFmtLoThrsh_val[mId] || val >= m_sciFmtHiThrsh_val[mId])) {
       m_os << std::scientific
 	   << std::setprecision(m_annotWidth[mId] - 6); // x.dE+yy
     }
@@ -206,7 +218,7 @@ ColumnFormatter::genCol(uint mId, double metricVal, double metricTot,
 	m_os << std::setprecision(m_numDecVal);
       }
     }
-    m_os << std::setfill(' ') << metricVal;
+    m_os << std::setfill(' ') << val;
   }
   m_os << " ";
 }

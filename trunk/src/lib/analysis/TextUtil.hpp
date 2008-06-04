@@ -140,8 +140,13 @@ private:
 
   std::vector<int>    m_annotWidth;
   int                 m_annotWidthTot;
-  std::vector<double> m_sciFmtThreshold_pct; // values < in scientific
-  std::vector<double> m_sciFmtThreshold_val; // values >= in scientific
+
+  std::vector<double> m_sciFmtLoThrsh_pct; // x <  thrsh => scientific format
+  std::vector<double> m_sciFmtHiThrsh_pct; // x >= thrsh => scientific format
+
+  std::vector<double> m_sciFmtLoThrsh_val; // x <  thrsh => scientific format
+  std::vector<double> m_sciFmtHiThrsh_val; // x >= thrsh => scientific format
+
   std::vector<bool>   m_dispPercent;
   std::vector<bool>   m_isForceable;
 };
