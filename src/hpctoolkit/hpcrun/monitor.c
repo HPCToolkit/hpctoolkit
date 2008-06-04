@@ -1,4 +1,3 @@
-
 /* -*-Mode: C;-*- */
 /* $Id$ */
 
@@ -308,13 +307,15 @@ hpcrun_sighandler(int sig)
  * Initialize profiling 
  ****************************************************************************/
 
-static void count_events(uint* sysEvents, uint* papiEvents);
+static void 
+count_events(uint* sysEvents, uint* papiEvents);
 
 static void 
 init_profdesc(hpcrun_profiles_desc_t** profdesc, 
 	      uint numSysEv, uint numPapiEv, 
 	      rtloadmap_t* rtmap,
 	      hpcrun_profiles_desc_t* sharedprofdesc);
+
 static void 
 init_sysprofdesc_buffer(hpcsys_profile_desc_vec_t* profdesc, 
 			uint numEv, rtloadmap_t* rtmap,
@@ -332,25 +333,46 @@ append_papiprofdesc_buffer(hpcpapi_profile_desc_vec_t* profdesc,
 			   uint numEv, rtloadmap_t* rtmap,
 			   hpcpapi_profile_desc_vec_t* sharedprofdesc);
 
-static void init_profdesc_ofile(hpcrun_profiles_desc_t* profdesc, 
-				int sharedprofdesc);
+static void 
+init_profdesc_ofile(hpcrun_profiles_desc_t* profdesc, 
+		    int sharedprofdesc);
 
-static void add_sysevent(hpcsys_profile_desc_vec_t* profdescs, 
-			 rtloadmap_t* rtmap, int profidx, 
-			 char* eventnm, uint64_t period);
-static void start_sysprof(hpcsys_profile_desc_vec_t* profdescs);
+static void
+notify_ofile(hpcrun_profiles_desc_t* profdesc, 
+	     hpcrun_profiles_desc_t* sharedprofdesc);
 
-static void init_papi_for_process();
-static void add_papievent(hpcpapi_profile_desc_vec_t* profdescs, 
-			  rtloadmap_t* rtmap, int profidx, 
-			  char* eventnm, uint64_t period);
-static void start_papi_for_thread(hpcpapi_profile_desc_vec_t* profdescs);
+static void 
+add_sysevent(hpcsys_profile_desc_vec_t* profdescs, 
+	     rtloadmap_t* rtmap, int profidx, 
+	     char* eventnm, uint64_t period);
 
-static void init_sighandlers();
+static void 
+start_sysprof(hpcsys_profile_desc_vec_t* profdescs);
+
+static void 
+init_papi_for_process();
+
+static void 
+add_papievent(hpcpapi_profile_desc_vec_t* profdescs, 
+	      rtloadmap_t* rtmap, int profidx, 
+	      char* eventnm, uint64_t period);
+
+static void 
+start_papi_for_thread(hpcpapi_profile_desc_vec_t* profdescs);
+
+static void 
+init_sighandlers();
+
 
 /* Stop profiling */
-static void stop_sysprof(hpcsys_profile_desc_vec_t* profdescs);
-static void stop_papi_for_thread(hpcpapi_profile_desc_vec_t* profdescs);
+static void 
+stop_sysprof(hpcsys_profile_desc_vec_t* profdescs);
+
+static void 
+stop_papi_for_thread(hpcpapi_profile_desc_vec_t* profdescs);
+
+
+
 
 /*
  *  Prepare for profiling this process
@@ -435,8 +457,6 @@ extern hpcrun_profiles_desc_t*
 init_thread(int is_thread)
 {
   hpcrun_profiles_desc_t* profdesc = NULL, *sharedprofdesc = NULL;
-  const char* out_fname = NULL;
-  const char* out_sfx = "";
   
   if (opt_debug >= 1) { MSG0(stderr, "*** init_thread ***"); }
   
@@ -447,14 +467,8 @@ init_thread(int is_thread)
   init_profdesc(&profdesc, numSysEvents, numPAPIEvents, rtloadmap, 
 		sharedprofdesc);
   
-  /* Let user know about output file */
-  out_fname = profdesc->ofile.fname;
-  if (!out_fname) {
-    out_fname = sharedprofdesc->ofile.fname;
-    out_sfx = " (SHARED)";
-  }
-  MSGx(stderr, "Using output file %s%s\n", out_fname, out_sfx);
-  
+  notify_ofile(profdesc, sharedprofdesc);
+
   /* Init signal handlers */
   init_sighandlers();
 
@@ -967,6 +981,7 @@ static int get_next_gen(const char *path) {
   return inst;
 }
 
+
 static void 
 init_profdesc_ofile(hpcrun_profiles_desc_t* profdesc, int sharedprofdesc)
 {
@@ -987,7 +1002,7 @@ init_profdesc_ofile(hpcrun_profiles_desc_t* profdesc, int sharedprofdesc)
 
 
   /* Get components for constructing file name:
-     <outpath>/<command>.<event1>.<hostname>.<pid>.<tid> */
+     <outpath>/<command>.hpcrun.<hostname>.<pid>.<tid> */
   
   /* <command> */
   slash = rindex(cmd, '/');
@@ -995,6 +1010,7 @@ init_profdesc_ofile(hpcrun_profiles_desc_t* profdesc, int sharedprofdesc)
     cmd = slash + 1; /* basename of cmd */
   }
   
+#if 0
   /* <event1> */
   if (HPC_GET_SYSPROFS(profdesc)) {
     numEvents += HPC_GET_SYSPROFS(profdesc)->size;
@@ -1004,6 +1020,7 @@ init_profdesc_ofile(hpcrun_profiles_desc_t* profdesc, int sharedprofdesc)
     numEvents += HPC_GET_PAPIPROFS(profdesc)->size;
     event = HPC_GET_PAPIPROFS(profdesc)->vec[0].einfo.symbol; /* first name */
   }
+#endif
   
   /* <hostname> */
   gethostname(hostnm, hostnmLen);
@@ -1014,7 +1031,7 @@ init_profdesc_ofile(hpcrun_profiles_desc_t* profdesc, int sharedprofdesc)
 	   opt_outpath, opt_prefix, cmd, hostnm, getpid(), hpcrun_gettid());
 
   /* Use a generation suffix if file exists */
-  if (strlen(opt_file)) {
+  if (strlen(opt_file) != 0) {
     /* If user has supplied an output filename use that overrides the
        setting above */
     int inst = get_next_gen(opt_file);
@@ -1033,6 +1050,7 @@ init_profdesc_ofile(hpcrun_profiles_desc_t* profdesc, int sharedprofdesc)
     }
   }
   
+
   profdesc->ofile.fs = NULL;
   profdesc->ofile.fname = (char*)malloc(strlen(outfilenm)+1);
   if (!profdesc->ofile.fname) { DIE0("error: malloc() failed!"); }
@@ -1053,13 +1071,23 @@ init_profdesc_ofile(hpcrun_profiles_desc_t* profdesc, int sharedprofdesc)
 	 outfilenm, strerror(errno));
   }
   fclose(fs);
-  
-  /* Note: it is possible for this filename to already exist
-     (e.g. consider a process that exec's itself).  Claim our
-     territory by leaving an empty file in the file system. */
-
-  /* FIXME: what if this filename already exists? e.g., we exec ourself! */
 }
+
+
+static void
+notify_ofile(hpcrun_profiles_desc_t* profdesc, 
+	     hpcrun_profiles_desc_t* sharedprofdesc)
+{
+  /* Let user know about output file */
+  const char* out_fname = profdesc->ofile.fname;
+  const char* out_sfx = "";
+  if (!out_fname) {
+    out_fname = sharedprofdesc->ofile.fname;
+    out_sfx = " (SHARED)";
+  }
+  MSGx(stderr, "Using output file %s%s\n", out_fname, out_sfx);
+}
+
 
 
 static void
@@ -1418,7 +1446,14 @@ fini_thread(hpcrun_profiles_desc_t** profdesc, int is_thread)
     stop_sysprof(HPC_GET_SYSPROFS(*profdesc));
   }
 
+  
+  if (is_thread && opt_thread == HPCRUN_THREADPROF_ALL) {
+    sharedprofdesc = 1; /* histogram buffers are shared */
+  }
+
   /* Write data (if necessary) */
+  //init_profdesc_ofile(*profdesc, sharedprofdesc);
+  //notify_ofile(*profdesc, hpc_profdesc);
   write_all_profiles(*profdesc, rtloadmap);
 
   /* Finalize profiling subsystems and uninit descriptor */
@@ -1426,9 +1461,6 @@ fini_thread(hpcrun_profiles_desc_t** profdesc, int is_thread)
     fini_papi_for_thread(HPC_GET_PAPIPROFS(*profdesc));
   }
   
-  if (is_thread && opt_thread == HPCRUN_THREADPROF_ALL) {
-    sharedprofdesc = 1; /* histogram buffers are shared */
-  }
   fini_profdesc(profdesc, sharedprofdesc);
 }
 
