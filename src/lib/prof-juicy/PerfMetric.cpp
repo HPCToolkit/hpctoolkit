@@ -65,9 +65,10 @@ using std::string;
 
 PerfMetric::PerfMetric(const char *nm, const char *nativeNm, 
 		       const char* displayNm, 
-		       bool disp, bool perc, bool propComputed, bool sort)
- : name(nm), nativeName(nativeNm), eventsPerCount(0), dispInfo(NULL), 
-   display(disp), percent(perc), pcomputed(propComputed), sortBy(sort) 
+		       bool disp, bool dispPercent, bool isPercent, bool sort)
+ : name(nm), nativeName(nativeNm), dispInfo(NULL), 
+   display(disp), m_dispPercent(dispPercent), m_isPercent(isPercent), 
+   sortBy(sort) 
 {
   Ctor(nm, displayNm);
 }
@@ -75,9 +76,10 @@ PerfMetric::PerfMetric(const char *nm, const char *nativeNm,
 
 PerfMetric::PerfMetric(const std::string& nm, const std::string& nativeNm, 
 		       const std::string& displayNm, 
-		       bool disp, bool perc, bool propComputed, bool sort)
- : name(nm), nativeName(nativeNm), eventsPerCount(0), dispInfo(NULL), 
-   display(disp), percent(perc), pcomputed(propComputed), sortBy(sort) 
+		       bool disp, bool dispPercent, bool isPercent, bool sort)
+ : name(nm), nativeName(nativeNm), dispInfo(NULL), 
+   display(disp), m_dispPercent(dispPercent), m_isPercent(isPercent), 
+   sortBy(sort) 
 {
   Ctor(nm.c_str(), displayNm.c_str());
 }
@@ -116,7 +118,6 @@ PerfMetric::toString(int flags) const
       "name=" + name + " " + 
       "display=" + ((display) ? "true " : "false ") + 
       "perfInfoIndex=" + StrUtil::toStr(m_id) + " " + 
-      "eventsPerCount=" + StrUtil::toStr(eventsPerCount) + " " + 
       "dispInfo=" + dispInfo->toString(); 
   }
   return str;

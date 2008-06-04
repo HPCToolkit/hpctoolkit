@@ -364,8 +364,8 @@ ProcessMETRIC(DOMNode *node, Analysis::Args& args, Prof::Metric::Mgr& mMgr)
 	  makeMathMLExpr(metricNm.c_str(), child, mMgr);
 	mMgr.insert(new ComputedPerfMetric(metricNm, metricDispNm, 
 					   metricDoDisp, metricDoPercent, 
-					   metricDoSortBy,
-					   propagateComputed, expr));
+					   propagateComputed/*isPercent*/,
+					   metricDoSortBy, expr));
       }
     } 
     else {

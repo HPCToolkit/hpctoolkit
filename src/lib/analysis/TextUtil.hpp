@@ -80,6 +80,8 @@ namespace TextUtil {
 
 class ColumnFormatter {
 public:  
+  // NOTE: Since computed metrics may be of any unit, forcing is only
+  // allowed for raw metrics.
   enum Flag { 
     Flag_NULL  = 0,
     Flag_ForcePct, // force percent column formatting
@@ -103,9 +105,9 @@ public:
   genCol(uint mid, double metricVal, double metricTot, Flag flg = Flag_NULL);
 
   void 
-  genCol(uint mid, double metricVal)
+  genCol(uint mid, double metricVal, Flag flg = Flag_ForceVal)
   {
-    genCol(mid, metricVal, 0, Flag_ForceVal);
+    genCol(mid, metricVal, 0, flg);
   }
 
 
@@ -140,6 +142,8 @@ private:
   int                 m_annotWidthTot;
   std::vector<double> m_sciFmtThreshold_pct; // values < in scientific
   std::vector<double> m_sciFmtThreshold_val; // values >= in scientific
+  std::vector<bool>   m_dispPercent;
+  std::vector<bool>   m_isForceable;
 };
 
 

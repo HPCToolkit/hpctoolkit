@@ -67,11 +67,11 @@ using std::string;
 FilePerfMetric::FilePerfMetric(const char* nm, 
 			       const char* nativeNm,
 			       const char* displayNm, 
-			       bool doDisp, bool doPerc, bool doSort, 
+			       bool doDisp, bool dispPercent, bool doSort, 
 			       const char* file,
 			       const char* type,
 			       bool isunit_ev) 
-  : PerfMetric(nm, nativeNm, displayNm, doDisp, doPerc, false, doSort),
+  : PerfMetric(nm, nativeNm, displayNm, doDisp, dispPercent, false, doSort),
     m_file(file), m_type(type), m_isunit_event(isunit_ev)
 { 
   // trace = 1;
@@ -81,11 +81,11 @@ FilePerfMetric::FilePerfMetric(const char* nm,
 FilePerfMetric::FilePerfMetric(const std::string& nm, 
 			       const std::string& nativeNm, 
 			       const std::string& displayNm,
-			       bool doDisp, bool doPerc, bool doSort, 
+			       bool doDisp, bool dispPercent, bool doSort, 
 			       const std::string& file, 
 			       const std::string& type,
 			       bool isunit_ev)
-  : PerfMetric(nm, nativeNm, displayNm, doDisp, doPerc, false, doSort),
+  : PerfMetric(nm, nativeNm, displayNm, doDisp, dispPercent, false, doSort),
     m_file(file), m_type(type), m_isunit_event(isunit_ev)
 { 
   // trace = 1;
@@ -117,10 +117,10 @@ FilePerfMetric::toString(int flags) const
 // **************************************************************************
 
 ComputedPerfMetric::ComputedPerfMetric(const char* nm, const char* displayNm,
-				       bool doDisp, bool doPerc, bool doSort,
-				       bool propagateComputed,
-				       Prof::Metric::AExpr* expr)
-  : PerfMetric(nm, "", displayNm, doDisp, doPerc, propagateComputed, doSort)
+				       bool doDisp, bool dispPercent, 
+				       bool isPercent,  bool doSort,
+      				       Prof::Metric::AExpr* expr)
+  : PerfMetric(nm, "", displayNm, doDisp, dispPercent, isPercent, doSort)
 {
   Ctor(nm, expr);
 }
@@ -128,10 +128,10 @@ ComputedPerfMetric::ComputedPerfMetric(const char* nm, const char* displayNm,
 
 ComputedPerfMetric::ComputedPerfMetric(const std::string& nm,
 				       const std::string& displayNm,
-				       bool doDisp, bool doPerc, bool doSort,
-				       bool propagateComputed,
+				       bool doDisp, bool dispPercent, 
+				       bool isPercent,  bool doSort,
 				       Prof::Metric::AExpr* expr)
-  : PerfMetric(nm, "", displayNm, doDisp, doPerc, propagateComputed, doSort)
+  : PerfMetric(nm, "", displayNm, doDisp, dispPercent, isPercent, doSort)
 {
   Ctor(nm.c_str(), expr);
 }

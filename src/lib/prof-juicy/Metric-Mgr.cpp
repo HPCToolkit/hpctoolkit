@@ -114,10 +114,6 @@ Mgr::makeRawMetrics(const std::vector<std::string>& profileFiles,
       insert(m);
     }
   }
-
-  // ------------------------------------------------------------
-  // Create computed metrics
-  // ------------------------------------------------------------
 }
 
 
@@ -129,12 +125,13 @@ Mgr::makeSummaryMetrics()
     const string& m_nm = it->first;
     PerfMetricVec& mvec = it->second;
     if (mvec.size() > 1) {
-      string mean_nm = "MEAN-" + m_nm;
-      string sdev_nm = "SDEV-" + m_nm;
-      string min_nm = "MIN-" + m_nm;
-      string max_nm = "MAX-" + m_nm;
+      string mean_nm = "Mean-" + m_nm;
+      string rsd_nm = "RStdDev-" + m_nm;
+      //string rsd_nm = "StdDev-" + m_nm;
+      string min_nm = "Min-" + m_nm;
+      string max_nm = "Max-" + m_nm;
       makeSummaryMetric(mean_nm, mvec);
-      makeSummaryMetric(sdev_nm, mvec);
+      makeSummaryMetric(rsd_nm, mvec);
       makeSummaryMetric(min_nm, mvec);
       makeSummaryMetric(max_nm, mvec);
     }
@@ -152,35 +149,44 @@ Mgr::makeSummaryMetric(const string& m_nm, const PerfMetricVec& m_opands)
   }
 
   bool doDisplay = true;
-  bool doPercent = true;
+  bool dispPercent = true;
+  bool isPercent = false;
 
+  // This is a a cheesy way of creating the metrics, but it is good
+  // enough for now.  Perhaps, this can be pushed into a metric parser
+  // as mathxml is retired.
   Metric::AExpr* expr = NULL;
-  if (m_nm.find("SUM", 0) == 0) {
-    expr = new Metric::Plus(opands, m_opands.size());
-  }
-  else if (m_nm.find("MIN", 0) == 0) {
-    expr = new Metric::Min(opands, m_opands.size());
-    doPercent = false;
-  }
-  else if (m_nm.find("MAX", 0) == 0) {
-    expr = new Metric::Max(opands, m_opands.size());
-    doPercent = false;
-  }
-  else if (m_nm.find("MEAN", 0) == 0) {
+  if (m_nm.find("Mean", 0) == 0) {
     expr = new Metric::Mean(opands, m_opands.size());
-    doPercent = false;
+    dispPercent = false;
   }
-  else if (m_nm.find("SDEV", 0) == 0) {
+  else if (m_nm.find("StdDev", 0) == 0) {
     expr = new Metric::StdDev(opands, m_opands.size());
-    doPercent = false;
+    dispPercent = false;
+  }
+  else if (m_nm.find("RStdDev", 0) == 0) {
+    expr = new Metric::RStdDev(opands, m_opands.size());
+    isPercent = true;
+  }
+  else if (m_nm.find("Min", 0) == 0) {
+    expr = new Metric::Min(opands, m_opands.size());
+    dispPercent = false;
+  }
+  else if (m_nm.find("Max", 0) == 0) {
+    expr = new Metric::Max(opands, m_opands.size());
+    dispPercent = false;
+  }
+  else if (m_nm.find("Sum", 0) == 0) {
+    expr = new Metric::Plus(opands, m_opands.size());
   }
   else {
     DIAG_Die(DIAG_UnexpectedInput);
   }
   
   insert(new ComputedPerfMetric(m_nm, m_nm, doDisplay/*display*/, 
-				doPercent/*percent*/, true/*sortby*/,
-				false/*propagateComputed*/, expr));
+				dispPercent/*dispPercent*/, 
+				isPercent/*isPercent*/, 
+				true/*sortby*/, expr));
 }
 
 

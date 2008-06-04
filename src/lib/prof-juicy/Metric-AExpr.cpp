@@ -501,26 +501,8 @@ StdDev::~StdDev()
 double 
 StdDev::eval(const ScopeInfo* si) const
 {
-  double* x = new double[m_sz];
-
-  double x_mean = 0.0; // mean
-  for (int i = 0; i < m_sz; ++i) {
-    double t = m_opands[i]->eval(si);
-    x[i] = t;
-    x_mean += t;
-  }
-  x_mean = x_mean / m_sz;
-
-  double x_var = 0.0; // variance
-  for (int i = 0; i < m_sz; ++i) {
-    double t = (x[i] - x_mean);
-    t = t * t;
-    x_var += t;
-  }
-  x_var = x_var / m_sz;
-
-  double result = sqrt(x_var);
-  delete[] x;
+  std::pair<double, double> v_m = eval_variance(si, m_opands, m_sz);
+  double result = sqrt(v_m.first);
 
   //IFTRACE << "stddev=" << result << endl; 
   AEXPR_CHECK(result);
@@ -531,7 +513,49 @@ StdDev::eval(const ScopeInfo* si) const
 std::ostream& 
 StdDev::dump(std::ostream& os) const
 {
-  os << "sdev(";
+  os << "stddev(";
+  dump_opands(os, m_opands, m_sz);
+  os << ")";
+  return os;
+}
+
+
+// ----------------------------------------------------------------------
+// class RStdDev
+// ----------------------------------------------------------------------
+
+RStdDev::RStdDev(AExpr** oprnds, int numOprnds)
+  : m_opands(oprnds), m_sz(numOprnds) 
+{ 
+}
+
+
+RStdDev::~RStdDev() 
+{
+  for (int i = 0; i < m_sz; ++i) {
+    delete m_opands[i];
+  }
+  delete[] m_opands;
+}
+
+
+double 
+RStdDev::eval(const ScopeInfo* si) const{
+
+  std::pair<double, double> v_m = eval_variance(si, m_opands, m_sz);
+  double sdev = sqrt(v_m.first);
+  double result = (sdev / v_m.second) * 100;
+
+  //IFTRACE << "r-stddev=" << result << endl; 
+  AEXPR_CHECK(result);
+  return result;
+}
+
+
+std::ostream& 
+RStdDev::dump(std::ostream& os) const
+{
+  os << "r-stddev(";
   dump_opands(os, m_opands, m_sz);
   os << ")";
   return os;
