@@ -294,7 +294,7 @@ Driver::write_txt(std::ostream &os) const
   os << std::endl;
 
   if (m_args.txt_summary & Analysis::Args::TxtSum_fPgm) { 
-    string nm = "Program summary [row 1: samples for raw metrics; row 2: events]: "
+    string nm = "Program summary (row 1: sample count for raw metrics): "
       + pgmStrct->name();
     write_txt_secSummary(os, colFmt, nm, NULL);
   }
