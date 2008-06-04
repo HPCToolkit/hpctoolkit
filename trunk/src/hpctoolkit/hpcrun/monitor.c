@@ -102,6 +102,8 @@ static hpcrun_profiles_desc_t* hpc_profdesc = NULL;
 /* PAPI-specific variables */
 static int domain = 0;
 
+#define OPEN_OUTPUTFILE_AT_BEG 1
+
 /****************************************************************************
  * Library initialization and finalization
  ****************************************************************************/
@@ -373,6 +375,7 @@ stop_papi_for_thread(hpcpapi_profile_desc_vec_t* profdescs);
 
 
 
+volatile int DEBUGGER_WAIT = 1;
 
 /*
  *  Prepare for profiling this process
@@ -380,6 +383,10 @@ stop_papi_for_thread(hpcpapi_profile_desc_vec_t* profdescs);
 extern void 
 init_process()
 {
+  if (getenv("HPCRUN_WAIT")){
+    while(DEBUGGER_WAIT);
+  }
+
   if (opt_debug >= 1) { MSG0(stderr, "*** init_process ***"); }
 
   rtloadmap = hpcrun_get_rtloadmap(opt_debug);
@@ -467,7 +474,11 @@ init_thread(int is_thread)
   init_profdesc(&profdesc, numSysEvents, numPAPIEvents, rtloadmap, 
 		sharedprofdesc);
   
+#if (OPEN_OUTPUTFILE_AT_BEG)
+  /* Init file info if necessary. */
+  init_profdesc_ofile(profdesc, (sharedprofdesc != NULL));
   notify_ofile(profdesc, sharedprofdesc);
+#endif
 
   /* Init signal handlers */
   init_sighandlers();
@@ -697,10 +708,6 @@ init_profdesc(hpcrun_profiles_desc_t** profdesc,
     init_papiprofdesc_buffer(HPC_GET_PAPIPROFS(*profdesc), numPapiEv, rtmap,
 			     sh);
   }
-
-  /* 4c. Init file info if necessary.  Perform a filesystem test to
-     make sure we will be able to write output data. */
-  init_profdesc_ofile(*profdesc, (sharedprofdesc != NULL));
 }
 
 
@@ -985,6 +992,9 @@ static int get_next_gen(const char *path) {
 static void 
 init_profdesc_ofile(hpcrun_profiles_desc_t* profdesc, int sharedprofdesc)
 {
+  /* Perform a filesystem test to make sure we will be able to write
+     output data. */
+
   static uint outfilenmLen = PATH_MAX; /* never redefined */
   static uint hostnmLen = 128;         /* never redefined */
   char outfilenm[outfilenmLen];
@@ -1452,8 +1462,11 @@ fini_thread(hpcrun_profiles_desc_t** profdesc, int is_thread)
   }
 
   /* Write data (if necessary) */
-  //init_profdesc_ofile(*profdesc, sharedprofdesc);
-  //notify_ofile(*profdesc, hpc_profdesc);
+#if (!OPEN_OUTPUTFILE_AT_BEG)
+  MSG0(stderr, "*** TST ***\n");
+  init_profdesc_ofile(*profdesc, sharedprofdesc);
+  notify_ofile(*profdesc, hpc_profdesc);
+#endif
   write_all_profiles(*profdesc, rtloadmap);
 
   /* Finalize profiling subsystems and uninit descriptor */
@@ -1485,7 +1498,7 @@ stop_papi_for_thread(hpcpapi_profile_desc_vec_t* profdescs)
 {
   int rval, i;
   long_long* values = NULL; // array the size of the eventset
-  
+
   rval = PAPI_stop(profdescs->eset, values);
   if (rval != PAPI_OK) {
     //DIEx("error: PAPI_stop (%d): %s.", rval, PAPI_strerror(rval));
