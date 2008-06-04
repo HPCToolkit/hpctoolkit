@@ -70,6 +70,8 @@ using std::endl;
 # define AEXPR_CHECK(x) 
 #endif
 
+static double epsilon = 0.000001;
+
 //****************************************************************************
 
 namespace Prof {
@@ -543,8 +545,12 @@ double
 RStdDev::eval(const ScopeInfo* si) const{
 
   std::pair<double, double> v_m = eval_variance(si, m_opands, m_sz);
-  double sdev = sqrt(v_m.first);
-  double result = (sdev / v_m.second) * 100;
+  double sdev = sqrt(v_m.first); // always non-negative
+  double mean = v_m.second;
+  double result = 0.0;
+  if (mean > epsilon) {
+    result = (sdev / mean) * 100;
+  }
 
   //IFTRACE << "r-stddev=" << result << endl; 
   AEXPR_CHECK(result);
