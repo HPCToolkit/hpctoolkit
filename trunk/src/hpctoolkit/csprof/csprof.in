@@ -149,8 +149,12 @@ EOF
 
 f_checkenv()
 {
+  case "$monitor_prefix" in
+     /* ) monitor_dir="${monitor_prefix}/lib" ;;
+     *  ) monitor_dir="$CSPROF_LIB" ;;
+  esac
 
-  RLD_LIB="${CSPROF_LIB}/libcsprof.so.1:${CSPROF_LIB}/libmonitor.so"
+  RLD_LIB="${CSPROF_LIB}/libcsprof.so.1:${monitor_dir}/libmonitor.so"
 
   # preload our library first before loading all of those specified in
   # the application binary (signified by DEFAULT).
