@@ -11,7 +11,15 @@ dbg()
 
 run_stapi_syms()
 {
-    LD_LIBRARY_PATH=${libcpp_path}:${libdir} ${libexecdir}/stapi_syms $1 > ${prog_file}
+    lib_path="${libcpp_path}:${libdir}"
+    case "$symtabAPI_prefix" in
+	/* ) lib_path="${lib_path}:${symtabAPI_prefix}/lib" ;;
+    esac
+    case "$symbols_prefix" in
+	/* ) stapi_dir="${symbols_prefix}/libexec" ;;
+	*  ) stapi_dir="$libexecdir" ;;
+    esac
+    LD_LIBRARY_PATH=${lib_path} ${stapi_dir}/stapi_syms $1 > ${prog_file}
 }
 
 ############ MAIN CODE ###################

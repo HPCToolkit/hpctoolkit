@@ -87,6 +87,10 @@ else
   opt_monitor_dir=""
 fi
 
+monitor_prefix=default
+symbols_prefix=default
+symtabAPI_prefix=default
+
 while [ $# -gt 0 ]
 do
     case $1 in
@@ -100,10 +104,18 @@ do
 	          ;;
 
 	--monitor-dir=*) opt_monitor_dir=${1#--monitor-dir=}
+		  monitor_prefix="$opt_monitor_dir"
 	          ;;
 
-	  --with-dbg)opt_with_dbg=1;
+	--symbols-dir=*) symbols_prefix=${1#--symbols-dir=}
+	          ;;
+
+	--symtabAPI-dir=*) symtabAPI_prefix=${1#--symtabAPI-dir=}
+	          ;;
+
+	--with-dbg) opt_with_dbg=1
                   ;;
+
 	--*) printf "invalid option: '$1'\n";
 	    exit 1;
 	    ;;
@@ -147,6 +159,9 @@ fi
 cat <<EOF2 > conf.sh
 ## file to be sourced when running csprof script or other scripts
 
+monitor_prefix=$monitor_prefix
+symbols_prefix=$symbols_prefix
+symtabAPI_prefix=$symtabAPI_prefix
 libcpp_path=$libcpp_path
 papi_ld_lst=$papi_ld_lst
 EOF2
