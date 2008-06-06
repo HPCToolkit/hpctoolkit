@@ -41,4 +41,6 @@
  E(AS_started),
  E(SS_COMMON),
  D(PID),
- E(METRICS)
+ E(METRICS),
+ D(TROLL_WAIT)
+

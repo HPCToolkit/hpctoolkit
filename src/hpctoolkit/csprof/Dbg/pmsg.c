@@ -34,6 +34,18 @@ static char *tbl[] = {
 # undef D
 };
 
+void
+dbg_set_flag(pmsg_category flag,int val)
+{
+  dbg_flags[flag] = val;
+}
+
+int
+dbg_get_flag(pmsg_category flag)
+{
+  return dbg_flags[flag];
+}
+
 #define N_CATEGORIES (sizeof(tbl)/sizeof(tbl[0]))
 
 static int defaults[] = {

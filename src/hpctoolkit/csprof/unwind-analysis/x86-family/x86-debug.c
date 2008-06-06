@@ -14,7 +14,7 @@ void x86_dump_intervals(char  *addr)
   intervals = x86_build_intervals(s, e - s, 0);
 
   for(u = intervals.first; u; u = u->next) {
-    dump_ui(u, true);
+    dump_ui(u, 1);
   }
 }
 

@@ -4,8 +4,13 @@
 //       target system vs the build system.
 // !! ESPECIALLY FOR CATAMOUNT !!
 //
+#include <stdio.h>
 #include <setjmp.h>
 #include <ucontext.h>
+
+// for getpid
+#include <sys/types.h>
+#include <unistd.h>
 
 #include "state.h"
 #include "dump_backtraces.h"
@@ -136,6 +141,8 @@ int unw_get_reg(unw_cursor_t *cursor,int REGID,void **regv)
   return 0;
 }
 
+static dbg_troll = 0;
+
 int unw_step (unw_cursor_t *cursor)
 {
   void **bp, **spr_sp, **spr_bp;
@@ -221,6 +228,15 @@ int unw_step (unw_cursor_t *cursor)
     PMSG(TROLL,"UNW STEP FAILURE :candidate pc = %p, cursor pc = %p, cursor bp = %p, cursor sp = %p",spr_pc,pc,bp,sp);
     PMSG(TROLL,"UNW STEP calls stack troll");
 
+    IF_ENABLED(TROLL_WAIT) {
+      fprintf(stderr,"Hit troll point: attach w gdb to %d\n"
+	             "Maybe call dbg_set_flag(DBG_TROLL_WAIT,0) after attached\n",getpid());
+      dbg_troll = 1;
+      while(dbg_troll){
+	;
+      }
+      
+    }
     update_cursor_with_troll(cursor, sp, pc, bp);
   }
   else {
