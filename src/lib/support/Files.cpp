@@ -45,6 +45,7 @@
 #include <cstdio>  // for 'tmpnam'
 #include <cerrno>
 #include <cstdarg>
+#include <cstring>
 
 #include <sys/types.h>
 #include <sys/stat.h>

@@ -36,6 +36,8 @@
 
 /**************************** User Include Files ****************************/
 
+#include <include/general.h>
+
 #include "hpcrun.h"
 #include "hpcpapi.h"
 
@@ -150,17 +152,6 @@ typedef struct {
 //#else
 //#define HPC_GET_PAPIPROFS(x) (x->papiprofs)
 //#endif
-
-/**************************** Forward Declarations **************************/
-
-#ifdef MAX
-# undef MAX
-#endif
-#ifdef MIN
-# undef MIN
-#endif
-#define MAX(a,b)	((a>=b)?a:b)
-#define MIN(a,b)	((a<=b)?a:b)
 
 /**************************** Forward Declarations **************************/
 

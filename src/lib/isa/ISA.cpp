@@ -55,6 +55,8 @@ using std::ostream;
 
 #include <cstdarg>
 
+#include <cstring>
+
 //*************************** User Include Files ****************************
 
 #include "ISA.hpp"

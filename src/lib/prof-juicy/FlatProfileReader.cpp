@@ -25,8 +25,10 @@
 #include <iostream>
 #include <string>
 
-#include <stdio.h>
 #include <sys/stat.h>
+
+#include <cstdio>
+#include <cstring>
 
 //*************************** User Include Files ****************************
 

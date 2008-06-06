@@ -37,12 +37,7 @@
 
 //************************* System Include Files ****************************
 
-#ifdef NO_STD_CHEADERS
-# include <stdio.h>
-#else
-# include <cstdio>
-using namespace std; // For compatibility with non-std C headers
-#endif
+#include <cstdio>
 
 //*************************** User Include Files ****************************
 

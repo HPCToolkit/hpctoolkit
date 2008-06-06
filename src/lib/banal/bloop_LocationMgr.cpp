@@ -68,6 +68,8 @@ using std::pair;
 
 #include <climits>
 
+#include <cstring>
+
 //*************************** User Include Files ****************************
 
 #include "bloop_LocationMgr.hpp"

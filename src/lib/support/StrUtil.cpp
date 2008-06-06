@@ -59,13 +59,8 @@
 #include <string>
 using std::string;
 
-#ifdef NO_STD_CHEADERS
-# include <stdlib.h>
-#else
-# include <cstdlib>
-using std::strtol; // For compatibility with non-std C headers
-using std::strtod;
-#endif
+#include <cstdlib>
+#include <cstring>
 
 #include <errno.h>
 
