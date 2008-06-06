@@ -63,6 +63,8 @@ using std::endl;
 using std::hex;
 using std::dec;
 
+#include <cstring>
+
 //*************************** User Include Files ****************************
 
 #include <include/general.h>

@@ -61,6 +61,8 @@ using std::dec;
 #include <string>
 using std::string;
 
+#include <cstring>
+
 //*************************** User Include Files ****************************
 
 #include "VMAInterval.hpp"

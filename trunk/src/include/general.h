@@ -64,13 +64,9 @@
  * ------------------------------------------------------------------------*/
 
 #if defined(__cplusplus)
-# ifdef NO_STD_CHEADERS
-#  include <stddef.h>
-# else
-#  include <cstddef> // for 'NULL'
-# endif
+# include <cstddef> // for 'NULL'
 #else
-#  include <stddef.h>
+# include <stddef.h>
 #endif
 
 
@@ -78,7 +74,15 @@
  * Convenient types (Possibly push detection to configure.ac)
  * ------------------------------------------------------------------------*/
 
-#include <inttypes.h> /* commonly available, unlike <stdint.h> */
+#ifdef HAVE_SYS_TYPES_H
+# include <sys/types.h>
+#endif
+#ifdef HAVE_INTTYPES_H
+# include <inttypes.h> /* commonly available, unlike <stdint.h> */
+#endif
+#ifdef HAVE_STDINT_H
+# include <stdint.h>
+#endif
 
 #if defined(__cplusplus)
 

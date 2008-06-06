@@ -65,6 +65,8 @@ using std::string;
 
 #include <algorithm>
 
+#include <cstring>
+
 //*************************** User Include Files ****************************
 
 #include <include/gnu_bfd.h>

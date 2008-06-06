@@ -30,9 +30,8 @@
 #include <string>
 #include <utility>
 
-#include <stdlib.h>
-#include <stdio.h>
-#include <inttypes.h>
+#include <cstdlib>
+#include <cstdio>
 
 #include <sys/time.h>
 

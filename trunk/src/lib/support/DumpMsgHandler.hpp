@@ -49,14 +49,8 @@
 
 //************************** System Include Files ***************************
 
-#ifdef NO_STD_CHEADERS
-# include <stdarg.h>
-# include <stdio.h>
-#else
-# include <cstdarg>
-# include <cstdio> // for 'FILE'
-using std::FILE;
-#endif
+#include <cstdarg>
+#include <cstdio> // for 'FILE'
 
 //*************************** User Include Files ****************************
 

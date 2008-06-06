@@ -37,21 +37,18 @@
 
 //************************* System Include Files ****************************
 
-#ifdef NO_STD_CHEADERS
-# include <stdio.h>
-#else
-# include <cstdio> // for 'fopen'
-using namespace std; // For compatibility with non-std C headers
-#endif
+#include <cstdio> // for 'fopen'
+#include <cstring>
+
+#include <iostream>
+using std::ostream;
+using std::endl;
 
 //*************************** User Include Files ****************************
 
 #include "SrcFile.hpp" 
 
 //*************************** Forward Declarations **************************
-
-using std::ostream;
-using std::endl;
 
 #define MAXLINESIZE 2048
 
