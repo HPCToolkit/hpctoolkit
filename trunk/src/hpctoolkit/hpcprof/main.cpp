@@ -157,15 +157,15 @@ realmain(int argc, char* const* argv)
     Analysis::CallPath::ldmdSetUsedFlag(prof); 
 
     // Note that this assumes iteration in reverse sorted order
-    int num_lm = prof->epoch()->GetNumLdModule();
+    int num_lm = prof->epoch()->lm_size();
     VMA endVMA = VMA_MAX;
     
     for (int i = num_lm - 1; i >= 0; i--) {
-      CSProfLDmodule* csp_lm = prof->epoch()->GetLdModule(i); 
-      VMA begVMA = csp_lm->GetMapaddr(); // for next csploadmodule
+      Epoch::LM* csp_lm = prof->epoch()->lm(i); 
+      VMA begVMA = csp_lm->loadAddr(); // for next csploadmodule
 
       if (csp_lm->GetUsedFlag()) {
-	const string& lm_fnm = csp_lm->GetName();
+	const string& lm_fnm = csp_lm->name();
 	LoadModScope* lmScope = NULL;
 	if (pgmScope) {
 	  lmScope = pgmScope->FindLoadMod(lm_fnm);

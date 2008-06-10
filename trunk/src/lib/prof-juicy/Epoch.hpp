@@ -73,129 +73,96 @@
 
 namespace Prof {
 
-class CSProfLDmodule : public Unique {
-public:
-  // Constructor/Destructor
-  CSProfLDmodule();
-  
-  virtual ~CSProfLDmodule();
-  
-  const std::string& GetName() const{return name;}
-  
-  VMA GetVaddr() const {return vaddr; }
-  
-  VMA GetMapaddr() const {return mapaddr;} 
-  bool GetUsedFlag() const {return used;}
-  
-  void SetName(const char* s) { name = (s) ? s: ""; }
-  void SetVaddr(VMA  v) {vaddr=v;}
-  void SetMapaddr(VMA  m) {mapaddr=m; }  
-  void SetUsedFlag(bool b) {used=b;}
-  
-  bool LMIsEmpty() {return (lm == NULL); } 
-  void SetLM(binutils::LM* x) {lm = x;}
-  binutils::LM* GetLM() {return lm;}
-  
-  void Dump(std::ostream& o= std::cerr);
-  void DDump();
-  
-private: 
-  binutils::LM* lm;
-  std::string name;
-  VMA vaddr;
-  VMA mapaddr;  
-  bool used;
-
-};
-
-typedef std::vector<CSProfLDmodule *> CSProfLDmoduleVec;
-typedef CSProfLDmoduleVec::iterator   CSProfLDmoduleVecIt;
-typedef CSProfLDmoduleVec::const_iterator CSProfLDmoduleVecCIt;
-
-struct compare_ldmodule_by_mapaddr
-{
-  bool operator()(const CSProfLDmodule* a, 
-		  const CSProfLDmodule* b) const
-  { return (a->GetMapaddr() < b->GetMapaddr());}
-};
-
-
 //****************************************************************************
 // Epoch
 //****************************************************************************
 
 class Epoch : public Unique {
+public:
+
+  class LM : public Unique {
+  public:
+    LM();
+    virtual ~LM();
+    
+    const std::string& name() const
+      { return m_name; }
+    void name(const char* s) 
+      { m_name = (s) ? s: ""; }
+    
+    VMA loadAddr() const 
+      { return m_loadAddr; }
+    void loadAddr(VMA addr) 
+      { m_loadAddr = addr; }
+
+    // FIXME: why do we want these three sets of functions here?
+    VMA GetVaddr() const   { return m_prefAddr; }
+    void SetVaddr(VMA  v)  { m_prefAddr = v; }
+
+    bool GetUsedFlag() const { return used; }
+    void SetUsedFlag(bool b) { used=b; }
+
+    bool LMIsEmpty()            { return (lm == NULL); }
+    void SetLM(binutils::LM* x) { lm = x; }
+    binutils::LM* GetLM()       { return lm; }
+    
+    void dump(std::ostream& o= std::cerr);
+    void ddump();
+    
+  private: 
+    std::string m_name;
+    VMA m_loadAddr;
+
+    VMA m_prefAddr;
+    bool used;
+    binutils::LM* lm;
+  };
+
+  struct cmp_LM_loadAddr
+  {
+    bool operator()(const LM* a, const LM* b) const
+    { return (a->loadAddr() < b->loadAddr()); }
+  };
+  
+  typedef std::vector<LM*> LMVec;
+  
 public: 
-  // Constructor/Destructor
   Epoch(const unsigned int i);
   virtual ~Epoch();
   
-  // Data
-  void  AddLoadModule(CSProfLDmodule* ldm) {loadmoduleVec.push_back(ldm);}
+
+  uint lm_size() { return m_lmVec.size(); } 
+
+  LM* lm(uint i) { return m_lmVec[i]; }
+  void lm(uint i, const LM* lm) { m_lmVec[i] = const_cast<LM*>(lm); }
+
+  LM* lm_find(VMA ip);
+
+  //void lm_add(LM* ldm) { m_lmVec.push_back(ldm); }
   
-  void SetLoadmodule(unsigned int i, const CSProfLDmodule* ldm) {
-    loadmoduleVec[i] = const_cast<CSProfLDmodule*>(ldm);
-  }
-  
-  void SortLoadmoduleByVMA(){
-    std::sort(loadmoduleVec.begin(), loadmoduleVec.end(), 
-	      compare_ldmodule_by_mapaddr());
+
+  void SortLoadmoduleByVMA() {
+    std::sort(m_lmVec.begin(), m_lmVec.end(), cmp_LM_loadAddr());
   } 
-  
-  unsigned int GetNumLdModule() {return numberofldmodule;} 
-  
-  CSProfLDmodule* GetLdModule(unsigned int i)  {return loadmoduleVec[i];}
+
+
+  // iterators:
+  LMVec::iterator lm_begin() 
+    { return m_lmVec.begin(); }
+  LMVec::const_iterator lm_begin() const 
+    { return m_lmVec.begin(); }
+  LMVec::iterator lm_end() 
+    { return m_lmVec.end(); }
+  LMVec::const_iterator lm_end() const 
+    { return m_lmVec.end(); }
   
   // Debug
-  void Dump(std::ostream& o = std::cerr);
-  void DDump();
-  
-  CSProfLDmodule* FindLDmodule(VMA i);
-  
-  friend class Epoch_LdModuleIterator ;
+  void dump(std::ostream& o = std::cerr);
+  void ddump();
   
 protected:
 private:
-  unsigned int       numberofldmodule;   
-  // vector of load module with this epoch 
-  // the size of the vector is numberofldmodule
-  CSProfLDmoduleVec  loadmoduleVec;
-  
-};
-
-
-// "Epoch_LdModuleIterator" iterator over all "CSPorfLDmodule" 
-// within Epoch"
-class Epoch_LdModuleIterator  
-{
-public :
-  Epoch_LdModuleIterator(const Epoch& x):p (x) {
-    Reset();
-  }
-  virtual ~Epoch_LdModuleIterator(){}
-  
-  CSProfLDmodule* Current() const { return (*it);}
-  
-  void operator++()    {it++;} //prefix
-  void operator++(int) {++it;} //postfix
-  
-  bool IsValid() const { return it != p.loadmoduleVec.end(); }
-  bool IsEmpty() const { return it == p.loadmoduleVec.end(); }
-  
-  // Reset and prepare for iteration again 
-  void Reset() { it = p.loadmoduleVec.begin(); }
-  
-private:
-  // Should not be used 
-  Epoch_LdModuleIterator();
-  Epoch_LdModuleIterator(const Epoch_LdModuleIterator& x);
-  Epoch_LdModuleIterator& operator=(const Epoch_LdModuleIterator& x)
-  {return *this;}
-  
-protected:
-private:
-  const Epoch& p;
-  CSProfLDmoduleVecCIt it;
+  LMVec  m_lmVec;
 };
 
 

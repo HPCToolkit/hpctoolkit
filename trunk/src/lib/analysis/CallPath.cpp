@@ -175,6 +175,8 @@ Analysis::CallPath::write(CSProfile* prof, std::ostream& os, bool prettyPrint)
 CSProfile* 
 ReadProfile_CSPROF(const char* fnm) 
 {
+  using namespace Prof;
+
   hpcfile_csprof_data_t metadata;
   int ret;
 
@@ -221,15 +223,16 @@ ReadProfile_CSPROF(const char* fnm)
   
   uint num_lm = epochtbl.epoch_modlist[0].num_loadmodule;
 
-  Prof::Epoch* epochmdlist = new Prof::Epoch(num_lm);
+  Epoch* epochmdlist = new Epoch(num_lm);
 
   for (int i = 0; i < num_lm; i++) { 
-    Prof::CSProfLDmodule* lm = new Prof::CSProfLDmodule();
-    lm->SetName(epochtbl.epoch_modlist[0].loadmodule[i].name);
+    Epoch::LM* lm = new Epoch::LM();
+    lm->name(epochtbl.epoch_modlist[0].loadmodule[i].name);
+    lm->loadAddr(epochtbl.epoch_modlist[0].loadmodule[i].mapaddr);
+    
     lm->SetVaddr(epochtbl.epoch_modlist[0].loadmodule[i].vaddr);
-    lm->SetMapaddr(epochtbl.epoch_modlist[0].loadmodule[i].mapaddr);  
     lm->SetUsedFlag(false);
-    epochmdlist->SetLoadmodule(i,lm);
+    epochmdlist->lm(i,lm);
   }
   epoch_table__free_data(&epochtbl, hpcfile_free_CB);
   
@@ -1468,7 +1471,7 @@ Analysis::CallPath::ldmdSetUsedFlag(CSProfile* prof)
     
     if (nn)  {
       curr_ip = nn->ip();
-      CSProfLDmodule * csploadmd = prof->epoch()->FindLDmodule(curr_ip);
+      Epoch::LM * csploadmd = prof->epoch()->lm_find(curr_ip);
       if (!(csploadmd->GetUsedFlag())) {
 	csploadmd->SetUsedFlag(true);
       }
