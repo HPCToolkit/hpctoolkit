@@ -60,7 +60,7 @@ using std::string;
 #include "Util.hpp"
 
 #include <lib/prof-lean/hpcfile_csproflib.h>
-#include <lib/prof-juicy/FlatProfileReader.hpp>
+#include <lib/prof-juicy/Flat-ProfileData.hpp>
 
 #include <lib/support/diagnostics.h>
 
@@ -120,7 +120,7 @@ Analysis::Raw::writeAsText_flat(const char* filenm)
 {
   if (!filenm) { return; }
   
-  Prof::Flat::Profile prof;
+  Prof::Flat::ProfileData prof;
   try {
     prof.openread(filenm);
   }

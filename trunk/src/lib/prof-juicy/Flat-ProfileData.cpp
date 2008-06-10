@@ -15,9 +15,6 @@
 // Author:
 //    Written by John Mellor-Crummey and Nathan Tallent, Rice University.
 //
-//    Adapted from parts of The Visual Profiler by Curtis L. Janssen
-//    (vmonfile.cc).
-//
 //***************************************************************************
 
 //************************* System Include Files ****************************
@@ -32,7 +29,7 @@
 
 //*************************** User Include Files ****************************
 
-#include "FlatProfileReader.hpp"
+#include "Flat-ProfileData.hpp"
 
 #include <lib/prof-lean/hpcfile_hpcrun.h>
 #include <lib/prof-lean/io.h>
@@ -52,20 +49,25 @@ read_string(FILE *fp, std::string& str);
 
 //***************************************************************************
 
-Prof::Flat::Profile::Profile(const char* filename)
+namespace Prof {
+
+namespace Flat {
+
+
+ProfileData::ProfileData(const char* filename)
   : m_name((filename) ? filename : ""), m_fs(NULL)
 {
 }
 
 
-Prof::Flat::Profile::~Profile()
+ProfileData::~ProfileData()
 {
   if (m_fs) {
     fclose(m_fs);
   }
 
   for (const_iterator it = begin(); it != end(); ++it) {
-    const Prof::Flat::LM* proflm = it->second;
+    const LM* proflm = it->second;
     delete proflm;
   }
   clear();
@@ -79,7 +81,7 @@ Prof::Flat::Profile::~Profile()
 
 
 void
-Prof::Flat::Profile::openread(const char* filename)
+ProfileData::openread(const char* filename)
 {
   DIAG_Assert(Logic::implies(!m_name.empty() && filename, m_name.c_str() == filename), "Cannot open a different file!");
   if (m_name.empty() && filename) {
@@ -87,7 +89,7 @@ Prof::Flat::Profile::openread(const char* filename)
   }
 
   // Open file
-  m_fs = Profile::fopen(m_name.c_str());
+  m_fs = ProfileData::fopen(m_name.c_str());
 
   // Read it
   read();
@@ -99,7 +101,7 @@ Prof::Flat::Profile::openread(const char* filename)
 
 
 void
-Prof::Flat::Profile::open(const char* filename)
+ProfileData::open(const char* filename)
 {
   DIAG_Assert(Logic::implies(!m_name.empty() && filename, m_name.c_str() == filename), "Cannot open a different file!");
   if (m_name.empty() && filename) {
@@ -107,7 +109,7 @@ Prof::Flat::Profile::open(const char* filename)
   }
 
   // Open file
-  m_fs = Profile::fopen(m_name.c_str());
+  m_fs = ProfileData::fopen(m_name.c_str());
 
   // Gather metrics
   read_metrics();
@@ -118,7 +120,7 @@ Prof::Flat::Profile::open(const char* filename)
 
 
 void
-Prof::Flat::Profile::read()
+ProfileData::read()
 {
   // INVARIANT: at least one LM must exist in a profile.
 
@@ -136,7 +138,7 @@ Prof::Flat::Profile::read()
   DIAG_Assert(count > 0, "At least one LM must exist in a profile!");
   
   for (uint i = 0; i < count; ++i) {
-    Prof::Flat::LM* proflm = new Prof::Flat::LM();
+    LM* proflm = new LM();
     proflm->read(m_fs);
     pair<iterator,bool> ret = insert(make_pair(proflm->name(), proflm));
     // FIXME: must merge if duplicate is found
@@ -149,7 +151,7 @@ Prof::Flat::Profile::read()
 
 
 void
-Prof::Flat::Profile::read_metrics()
+ProfileData::read_metrics()
 {
   // ASSUMES: Each LM has the *same* set of metrics
 
@@ -166,7 +168,7 @@ Prof::Flat::Profile::read_metrics()
   uint count = read_lm_count(m_fs);
   DIAG_Assert(count > 0, "At least one LM must exist in a profile!");
 
-  Prof::Flat::LM* proflm = new Prof::Flat::LM();
+  LM* proflm = new LM();
   proflm->read(m_fs);
 
   // -------------------------------------------------------
@@ -179,7 +181,7 @@ Prof::Flat::Profile::read_metrics()
 
 
 void
-Prof::Flat::Profile::mdescs(LM* proflm)
+ProfileData::mdescs(LM* proflm)
 {
   // ASSUMES: Each LM has the *same* set of metrics
 
@@ -188,14 +190,14 @@ Prof::Flat::Profile::mdescs(LM* proflm)
   m_mdescs.resize(sz);
 
   for (uint i = 0; i < sz; ++i) {
-    const Prof::Flat::EventData& profevent = proflm->event(i);
+    const EventData& profevent = proflm->event(i);
     m_mdescs[i] = new SampledMetricDesc(profevent.mdesc());
   }
 }
 
 
 FILE*
-Prof::Flat::Profile::fopen(const char* filename)
+ProfileData::fopen(const char* filename)
 {
   struct stat statbuf;
   int ret = stat(filename, &statbuf);
@@ -213,7 +215,7 @@ Prof::Flat::Profile::fopen(const char* filename)
 
 
 void
-Prof::Flat::Profile::read_header(FILE* fs)
+ProfileData::read_header(FILE* fs)
 {
   char magic_str[HPCRUNFILE_MAGIC_STR_LEN];
   char version[HPCRUNFILE_VERSION_LEN];
@@ -252,7 +254,7 @@ Prof::Flat::Profile::read_header(FILE* fs)
 
 
 uint
-Prof::Flat::Profile::read_lm_count(FILE* fs)
+ProfileData::read_lm_count(FILE* fs)
 {
   uint32_t count;
 
@@ -266,36 +268,36 @@ Prof::Flat::Profile::read_lm_count(FILE* fs)
 
 
 void
-Prof::Flat::Profile::dump(std::ostream& o, const char* pre) const
+ProfileData::dump(std::ostream& o, const char* pre) const
 {
   string p = pre;
   string p1 = p + "  ";
 
-  o << p << "--- Profile Dump ---" << endl;
-  o << p << "{ Profile: " << m_name << " }" << endl;
+  o << p << "--- ProfileData Dump ---" << endl;
+  o << p << "{ ProfileData: " << m_name << " }" << endl;
 
   for (const_iterator it = begin(); it != end(); ++it) {
-    const Prof::Flat::LM* proflm = it->second;
+    const LM* proflm = it->second;
     proflm->dump(o, p1.c_str());
   }
-  o << p << "--- End Profile Dump ---" << endl;
+  o << p << "--- End ProfileData Dump ---" << endl;
 }
 
 
 //***************************************************************************
 
-Prof::Flat::LM::LM()
+LM::LM()
 {
 }
 
 
-Prof::Flat::LM::~LM()
+LM::~LM()
 {
 }
 
 
 void
-Prof::Flat::LM::read(FILE *fs)
+LM::read(FILE *fs)
 {
   size_t sz;
 
@@ -334,7 +336,7 @@ Prof::Flat::LM::read(FILE *fs)
 
 
 void
-Prof::Flat::LM::dump(std::ostream& o, const char* pre) const
+LM::dump(std::ostream& o, const char* pre) const
 {
   string p = pre;
   string p1 = p + "  ";
@@ -352,18 +354,18 @@ Prof::Flat::LM::dump(std::ostream& o, const char* pre) const
 //***************************************************************************
 
 
-Prof::Flat::EventData::EventData()
+EventData::EventData()
 {
 }
 
 
-Prof::Flat::EventData::~EventData()
+EventData::~EventData()
 {
 }
 
 
 void
-Prof::Flat::EventData::read(FILE *fs, uint64_t load_addr)
+EventData::read(FILE *fs, uint64_t load_addr)
 {
   size_t sz;
   
@@ -429,7 +431,7 @@ Prof::Flat::EventData::read(FILE *fs, uint64_t load_addr)
 
 
 void
-Prof::Flat::EventData::dump(std::ostream& o, const char* pre) const
+EventData::dump(std::ostream& o, const char* pre) const
 {
   string p = pre;
   string p1 = p + "  ";
@@ -446,6 +448,10 @@ Prof::Flat::EventData::dump(std::ostream& o, const char* pre) const
       << dat.second << " }" << endl;
   }
 }
+
+} // namespace Flat
+
+} // namespace Prof
 
 
 //***************************************************************************
@@ -474,6 +480,7 @@ read_string(FILE *fs, std::string& str)
   return 0;
 }
 
+
 //***************************************************************************
 
 #ifdef PROFREADER_TEST
@@ -481,7 +488,7 @@ read_string(FILE *fs, std::string& str)
 int main(int argc, char **argv)
 {
   std::string filename = argv[1];
-  Profile f;
+  ProfileData f;
 
   int ret = f.read(filename);
 
@@ -497,3 +504,5 @@ int main(int argc, char **argv)
 }
 
 #endif
+
+//***************************************************************************

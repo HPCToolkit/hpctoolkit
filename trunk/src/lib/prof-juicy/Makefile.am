@@ -74,7 +74,7 @@ MYSOURCES = \
 	PgmScopeTreeIterator.hpp PgmScopeTreeIterator.cpp \
 	PgmScopeTreeInterface.hpp PgmScopeTreeInterface.cpp \
 	\
-	FlatProfileReader.hpp FlatProfileReader.cpp \
+	Flat-ProfileData.hpp Flat-ProfileData.cpp \
 	\
 	CallPathProfile.hpp CallPathProfile.cpp \
 	CallingContextTree.hpp CallingContextTree.cpp \

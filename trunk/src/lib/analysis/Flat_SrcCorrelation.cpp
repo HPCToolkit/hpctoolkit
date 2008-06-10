@@ -63,7 +63,7 @@ using std::vector;
 
 #include <lib/prof-juicy/PgmScopeTreeInterface.hpp>
 #include <lib/prof-juicy/PgmScopeTree.hpp>
-#include <lib/prof-juicy/FlatProfileReader.hpp>
+#include <lib/prof-juicy/Flat-ProfileData.hpp>
 
 #include <lib/binutils/LM.hpp>
 
@@ -622,8 +622,8 @@ Driver::computeRawMetrics(Prof::Metric::Mgr& mMgr, PgmScopeTree& structure)
     // For each load module: process the batch job.  A batch job
     // process a group of profile files (and their associated metrics)
     // by load module.
-    Prof::Flat::Profile* prof = batchJob[0].first;
-    for (Prof::Flat::Profile::const_iterator it = prof->begin(); 
+    Prof::Flat::ProfileData* prof = batchJob[0].first;
+    for (Prof::Flat::ProfileData::const_iterator it = prof->begin(); 
 	 it != prof->end(); ++it) {
       
       const string lmname_orig = it->first;
@@ -683,11 +683,11 @@ Driver::computeRawBatchJob_LM(const string& lmname, const string& lmname_orig,
 
   for (uint i = 0; i < profToMetricsVec.size(); ++i) {
 
-    Prof::Flat::Profile* prof = profToMetricsVec[i].first;
+    Prof::Flat::ProfileData* prof = profToMetricsVec[i].first;
     Prof::Metric::Mgr::PerfMetricVec* metrics = profToMetricsVec[i].second;
 
     Prof::Flat::LM* proflm = NULL;
-    Prof::Flat::Profile::iterator it = prof->find(lmname_orig);
+    Prof::Flat::ProfileData::iterator it = prof->find(lmname_orig);
     if (it != prof->end()) {
       proflm = it->second;
     }
@@ -800,7 +800,7 @@ Driver::getNextRawBatch(ProfToMetricsTupleVec& batchJob,
       const string& fnm = it->first;
       Prof::Metric::Mgr::PerfMetricVec& metrics = 
 	const_cast<Prof::Metric::Mgr::PerfMetricVec&>(it->second);
-      Prof::Flat::Profile* prof = readProf(fnm);
+      Prof::Flat::ProfileData* prof = readProf(fnm);
       batchJob.push_back(make_pair(prof, &metrics));
       it++;
     }
@@ -907,17 +907,17 @@ Driver::computeDerivedBatch(PgmScopeTree& structure,
 
 //----------------------------------------------------------------------------
 
-Prof::Flat::Profile*
+Prof::Flat::ProfileData*
 Driver::readProf(const string& fnm)
 {
-  Prof::Flat::Profile* prof = new Prof::Flat::Profile(fnm.c_str());
+  Prof::Flat::ProfileData* prof = new Prof::Flat::ProfileData(fnm.c_str());
   readProf(prof);
   return prof;
 }
 
 
 void
-Driver::readProf(Prof::Flat::Profile* prof)
+Driver::readProf(Prof::Flat::ProfileData* prof)
 {
   try {
     prof->openread();
