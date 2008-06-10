@@ -60,9 +60,9 @@
 
 #include <include/general.h>
 
-#include "CallingContextTree.hpp"
 #include "MetricDesc.hpp"
-#include "CallPathEpoch.hpp"
+#include "Epoch.hpp"
+#include "CallingContextTree.hpp"
 
 //*************************** Forward Declarations ***************************
 
@@ -106,8 +106,8 @@ public:
 
   CSProfTree*  cct() const { return m_cct; }
 
-  CSProfEpoch* epoch() const         { return m_epoch; }
-  void         epoch(CSProfEpoch* x) { m_epoch = x; }
+  Epoch* epoch() const         { return m_epoch; }
+  void         epoch(Epoch* x) { m_epoch = x; }
 
 
   // -------------------------------------------------------
@@ -126,7 +126,7 @@ private:
 
   CSProfTree* m_cct;
   SampledMetricDescVec m_metricdesc;
-  CSProfEpoch* m_epoch;
+  Epoch* m_epoch;
 };
 
 

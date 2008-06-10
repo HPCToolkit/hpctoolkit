@@ -52,7 +52,7 @@
 
 //*************************** User Include Files ****************************
 
-#include "CallPathEpoch.hpp"
+#include "Epoch.hpp"
 
 #include <lib/xml/xml.hpp>
 using namespace xml;
@@ -61,27 +61,34 @@ using namespace xml;
 
 //****************************************************************************
 
-CSProfLDmodule::CSProfLDmodule()
-{
-  lm = NULL;
-}
-
-CSProfLDmodule::~CSProfLDmodule()
-{
-  delete lm;
-}
+namespace Prof {
 
 
-CSProfEpoch::CSProfEpoch(const unsigned int i)
+Epoch::Epoch(const unsigned int i)
   : loadmoduleVec(i)
 {
   numberofldmodule = i;
 } 
 
 
-CSProfEpoch::~CSProfEpoch()
+void Epoch::Dump(std::ostream& o)
 {
-  for (CSProfEpoch_LdModuleIterator it(*this); it.IsValid(); ++it) {
+  for (int i=0; i<numberofldmodule; i++) {
+    CSProfLDmodule* lm = loadmoduleVec[i];
+    lm->Dump(o);
+  }
+}
+
+
+void Epoch::DDump()
+{
+  Dump(std::cerr);
+}
+
+
+Epoch::~Epoch()
+{
+  for (Epoch_LdModuleIterator it(*this); it.IsValid(); ++it) {
     CSProfLDmodule* lm = it.Current(); 
     delete lm; 
   }
@@ -89,8 +96,9 @@ CSProfEpoch::~CSProfEpoch()
   loadmoduleVec.clear();
 }
 
+
 CSProfLDmodule* 
-CSProfEpoch::FindLDmodule(VMA ip)
+Epoch::FindLDmodule(VMA ip)
 {
   CSProfLDmodule* pre=loadmoduleVec[0];
   for (int i=0; i< numberofldmodule; i++) { 
@@ -105,7 +113,23 @@ CSProfEpoch::FindLDmodule(VMA ip)
   return pre;
 }
 
-void CSProfLDmodule::Dump(std::ostream& o)
+
+//****************************************************************************
+
+CSProfLDmodule::CSProfLDmodule()
+{
+  lm = NULL;
+}
+
+
+CSProfLDmodule::~CSProfLDmodule()
+{
+  delete lm;
+}
+
+
+void 
+CSProfLDmodule::Dump(std::ostream& o)
 { 
   using std::hex;
   using std::dec;
@@ -117,23 +141,12 @@ void CSProfLDmodule::Dump(std::ostream& o)
   o<< dec << endl; 
 }
 
-void CSProfLDmodule::DDump()
-{
-  Dump(std::cerr);
-}
 
-void CSProfEpoch::Dump(std::ostream& o)
-{
-  for (int i=0; i<numberofldmodule; i++) {
-    CSProfLDmodule* lm = loadmoduleVec[i];
-    lm->Dump(o);
-  }
-}
-
-
-void CSProfEpoch::DDump()
+void 
+CSProfLDmodule::DDump()
 {
   Dump(std::cerr);
 }
 
 
+} // namespace Prof

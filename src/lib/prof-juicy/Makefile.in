@@ -108,16 +108,16 @@ CONFIG_CLEAN_FILES =
 LTLIBRARIES = $(noinst_LTLIBRARIES)
 am__DEPENDENCIES_1 =
 libHPCprof_juicy_la_DEPENDENCIES = $(am__DEPENDENCIES_1)
-am__objects_1 = libHPCprof_juicy_la-PgmScopeTree.lo \
-	libHPCprof_juicy_la-PgmScopeTreeIterator.lo \
-	libHPCprof_juicy_la-PgmScopeTreeInterface.lo \
-	libHPCprof_juicy_la-Metric-Mgr.lo \
+am__objects_1 = libHPCprof_juicy_la-Metric-Mgr.lo \
 	libHPCprof_juicy_la-PerfMetric.lo \
 	libHPCprof_juicy_la-DerivedPerfMetrics.lo \
 	libHPCprof_juicy_la-Metric-AExpr.lo \
+	libHPCprof_juicy_la-Epoch.lo \
+	libHPCprof_juicy_la-PgmScopeTree.lo \
+	libHPCprof_juicy_la-PgmScopeTreeIterator.lo \
+	libHPCprof_juicy_la-PgmScopeTreeInterface.lo \
 	libHPCprof_juicy_la-FlatProfileReader.lo \
 	libHPCprof_juicy_la-CallPathProfile.lo \
-	libHPCprof_juicy_la-CallPathEpoch.lo \
 	libHPCprof_juicy_la-CallingContextTree.lo \
 	libHPCprof_juicy_la-CallingContextTreeIterator.lo
 am_libHPCprof_juicy_la_OBJECTS = $(am__objects_1)
@@ -330,20 +330,21 @@ HPC_LIBSUPPORT = $(top_builddir)/src/lib/support/libHPCsupport.la
 # Local settings
 #############################################################################
 MYSOURCES = \
-	PgmScopeTree.hpp PgmScopeTree.cpp \
-	PgmScopeTreeIterator.hpp PgmScopeTreeIterator.cpp \
-	PgmScopeTreeInterface.hpp PgmScopeTreeInterface.cpp \
-	\
 	Metric-Mgr.hpp Metric-Mgr.cpp \
 	PerfMetric.hpp PerfMetric.cpp \
 	DerivedPerfMetrics.hpp DerivedPerfMetrics.cpp \
 	Metric-AExpr.hpp Metric-AExpr.cpp \
 	MetricDesc.hpp \
 	\
+	Epoch.hpp Epoch.cpp \
+	\
+	PgmScopeTree.hpp PgmScopeTree.cpp \
+	PgmScopeTreeIterator.hpp PgmScopeTreeIterator.cpp \
+	PgmScopeTreeInterface.hpp PgmScopeTreeInterface.cpp \
+	\
 	FlatProfileReader.hpp FlatProfileReader.cpp \
 	\
 	CallPathProfile.hpp CallPathProfile.cpp \
-	CallPathEpoch.hpp CallPathEpoch.cpp \
 	CallingContextTree.hpp CallingContextTree.cpp \
 	CallingContextTreeIterator.hpp CallingContextTreeIterator.cpp
 
@@ -427,11 +428,11 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCprof_juicy_la-CallPathEpoch.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCprof_juicy_la-CallPathProfile.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCprof_juicy_la-CallingContextTree.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCprof_juicy_la-CallingContextTreeIterator.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCprof_juicy_la-DerivedPerfMetrics.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCprof_juicy_la-Epoch.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCprof_juicy_la-FlatProfileReader.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCprof_juicy_la-Metric-AExpr.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCprof_juicy_la-Metric-Mgr.Plo@am__quote@
@@ -461,27 +462,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(LTCXXCOMPILE) -c -o $@ $<
 
-libHPCprof_juicy_la-PgmScopeTree.lo: PgmScopeTree.cpp
-@am__fastdepCXX_TRUE@	$(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprof_juicy_la_CXXFLAGS) $(CXXFLAGS) -MT libHPCprof_juicy_la-PgmScopeTree.lo -MD -MP -MF $(DEPDIR)/libHPCprof_juicy_la-PgmScopeTree.Tpo -c -o libHPCprof_juicy_la-PgmScopeTree.lo `test -f 'PgmScopeTree.cpp' || echo '$(srcdir)/'`PgmScopeTree.cpp
-@am__fastdepCXX_TRUE@	mv -f $(DEPDIR)/libHPCprof_juicy_la-PgmScopeTree.Tpo $(DEPDIR)/libHPCprof_juicy_la-PgmScopeTree.Plo
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='PgmScopeTree.cpp' object='libHPCprof_juicy_la-PgmScopeTree.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprof_juicy_la_CXXFLAGS) $(CXXFLAGS) -c -o libHPCprof_juicy_la-PgmScopeTree.lo `test -f 'PgmScopeTree.cpp' || echo '$(srcdir)/'`PgmScopeTree.cpp
-
-libHPCprof_juicy_la-PgmScopeTreeIterator.lo: PgmScopeTreeIterator.cpp
-@am__fastdepCXX_TRUE@	$(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprof_juicy_la_CXXFLAGS) $(CXXFLAGS) -MT libHPCprof_juicy_la-PgmScopeTreeIterator.lo -MD -MP -MF $(DEPDIR)/libHPCprof_juicy_la-PgmScopeTreeIterator.Tpo -c -o libHPCprof_juicy_la-PgmScopeTreeIterator.lo `test -f 'PgmScopeTreeIterator.cpp' || echo '$(srcdir)/'`PgmScopeTreeIterator.cpp
-@am__fastdepCXX_TRUE@	mv -f $(DEPDIR)/libHPCprof_juicy_la-PgmScopeTreeIterator.Tpo $(DEPDIR)/libHPCprof_juicy_la-PgmScopeTreeIterator.Plo
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='PgmScopeTreeIterator.cpp' object='libHPCprof_juicy_la-PgmScopeTreeIterator.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprof_juicy_la_CXXFLAGS) $(CXXFLAGS) -c -o libHPCprof_juicy_la-PgmScopeTreeIterator.lo `test -f 'PgmScopeTreeIterator.cpp' || echo '$(srcdir)/'`PgmScopeTreeIterator.cpp
-
-libHPCprof_juicy_la-PgmScopeTreeInterface.lo: PgmScopeTreeInterface.cpp
-@am__fastdepCXX_TRUE@	$(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprof_juicy_la_CXXFLAGS) $(CXXFLAGS) -MT libHPCprof_juicy_la-PgmScopeTreeInterface.lo -MD -MP -MF $(DEPDIR)/libHPCprof_juicy_la-PgmScopeTreeInterface.Tpo -c -o libHPCprof_juicy_la-PgmScopeTreeInterface.lo `test -f 'PgmScopeTreeInterface.cpp' || echo '$(srcdir)/'`PgmScopeTreeInterface.cpp
-@am__fastdepCXX_TRUE@	mv -f $(DEPDIR)/libHPCprof_juicy_la-PgmScopeTreeInterface.Tpo $(DEPDIR)/libHPCprof_juicy_la-PgmScopeTreeInterface.Plo
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='PgmScopeTreeInterface.cpp' object='libHPCprof_juicy_la-PgmScopeTreeInterface.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprof_juicy_la_CXXFLAGS) $(CXXFLAGS) -c -o libHPCprof_juicy_la-PgmScopeTreeInterface.lo `test -f 'PgmScopeTreeInterface.cpp' || echo '$(srcdir)/'`PgmScopeTreeInterface.cpp
-
 libHPCprof_juicy_la-Metric-Mgr.lo: Metric-Mgr.cpp
 @am__fastdepCXX_TRUE@	$(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprof_juicy_la_CXXFLAGS) $(CXXFLAGS) -MT libHPCprof_juicy_la-Metric-Mgr.lo -MD -MP -MF $(DEPDIR)/libHPCprof_juicy_la-Metric-Mgr.Tpo -c -o libHPCprof_juicy_la-Metric-Mgr.lo `test -f 'Metric-Mgr.cpp' || echo '$(srcdir)/'`Metric-Mgr.cpp
 @am__fastdepCXX_TRUE@	mv -f $(DEPDIR)/libHPCprof_juicy_la-Metric-Mgr.Tpo $(DEPDIR)/libHPCprof_juicy_la-Metric-Mgr.Plo
@@ -510,6 +490,34 @@ libHPCprof_juicy_la-Metric-AExpr.lo: Metric-AExpr.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprof_juicy_la_CXXFLAGS) $(CXXFLAGS) -c -o libHPCprof_juicy_la-Metric-AExpr.lo `test -f 'Metric-AExpr.cpp' || echo '$(srcdir)/'`Metric-AExpr.cpp
 
+libHPCprof_juicy_la-Epoch.lo: Epoch.cpp
+@am__fastdepCXX_TRUE@	$(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprof_juicy_la_CXXFLAGS) $(CXXFLAGS) -MT libHPCprof_juicy_la-Epoch.lo -MD -MP -MF $(DEPDIR)/libHPCprof_juicy_la-Epoch.Tpo -c -o libHPCprof_juicy_la-Epoch.lo `test -f 'Epoch.cpp' || echo '$(srcdir)/'`Epoch.cpp
+@am__fastdepCXX_TRUE@	mv -f $(DEPDIR)/libHPCprof_juicy_la-Epoch.Tpo $(DEPDIR)/libHPCprof_juicy_la-Epoch.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='Epoch.cpp' object='libHPCprof_juicy_la-Epoch.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprof_juicy_la_CXXFLAGS) $(CXXFLAGS) -c -o libHPCprof_juicy_la-Epoch.lo `test -f 'Epoch.cpp' || echo '$(srcdir)/'`Epoch.cpp
+
+libHPCprof_juicy_la-PgmScopeTree.lo: PgmScopeTree.cpp
+@am__fastdepCXX_TRUE@	$(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprof_juicy_la_CXXFLAGS) $(CXXFLAGS) -MT libHPCprof_juicy_la-PgmScopeTree.lo -MD -MP -MF $(DEPDIR)/libHPCprof_juicy_la-PgmScopeTree.Tpo -c -o libHPCprof_juicy_la-PgmScopeTree.lo `test -f 'PgmScopeTree.cpp' || echo '$(srcdir)/'`PgmScopeTree.cpp
+@am__fastdepCXX_TRUE@	mv -f $(DEPDIR)/libHPCprof_juicy_la-PgmScopeTree.Tpo $(DEPDIR)/libHPCprof_juicy_la-PgmScopeTree.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='PgmScopeTree.cpp' object='libHPCprof_juicy_la-PgmScopeTree.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprof_juicy_la_CXXFLAGS) $(CXXFLAGS) -c -o libHPCprof_juicy_la-PgmScopeTree.lo `test -f 'PgmScopeTree.cpp' || echo '$(srcdir)/'`PgmScopeTree.cpp
+
+libHPCprof_juicy_la-PgmScopeTreeIterator.lo: PgmScopeTreeIterator.cpp
+@am__fastdepCXX_TRUE@	$(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprof_juicy_la_CXXFLAGS) $(CXXFLAGS) -MT libHPCprof_juicy_la-PgmScopeTreeIterator.lo -MD -MP -MF $(DEPDIR)/libHPCprof_juicy_la-PgmScopeTreeIterator.Tpo -c -o libHPCprof_juicy_la-PgmScopeTreeIterator.lo `test -f 'PgmScopeTreeIterator.cpp' || echo '$(srcdir)/'`PgmScopeTreeIterator.cpp
+@am__fastdepCXX_TRUE@	mv -f $(DEPDIR)/libHPCprof_juicy_la-PgmScopeTreeIterator.Tpo $(DEPDIR)/libHPCprof_juicy_la-PgmScopeTreeIterator.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='PgmScopeTreeIterator.cpp' object='libHPCprof_juicy_la-PgmScopeTreeIterator.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprof_juicy_la_CXXFLAGS) $(CXXFLAGS) -c -o libHPCprof_juicy_la-PgmScopeTreeIterator.lo `test -f 'PgmScopeTreeIterator.cpp' || echo '$(srcdir)/'`PgmScopeTreeIterator.cpp
+
+libHPCprof_juicy_la-PgmScopeTreeInterface.lo: PgmScopeTreeInterface.cpp
+@am__fastdepCXX_TRUE@	$(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprof_juicy_la_CXXFLAGS) $(CXXFLAGS) -MT libHPCprof_juicy_la-PgmScopeTreeInterface.lo -MD -MP -MF $(DEPDIR)/libHPCprof_juicy_la-PgmScopeTreeInterface.Tpo -c -o libHPCprof_juicy_la-PgmScopeTreeInterface.lo `test -f 'PgmScopeTreeInterface.cpp' || echo '$(srcdir)/'`PgmScopeTreeInterface.cpp
+@am__fastdepCXX_TRUE@	mv -f $(DEPDIR)/libHPCprof_juicy_la-PgmScopeTreeInterface.Tpo $(DEPDIR)/libHPCprof_juicy_la-PgmScopeTreeInterface.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='PgmScopeTreeInterface.cpp' object='libHPCprof_juicy_la-PgmScopeTreeInterface.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprof_juicy_la_CXXFLAGS) $(CXXFLAGS) -c -o libHPCprof_juicy_la-PgmScopeTreeInterface.lo `test -f 'PgmScopeTreeInterface.cpp' || echo '$(srcdir)/'`PgmScopeTreeInterface.cpp
+
 libHPCprof_juicy_la-FlatProfileReader.lo: FlatProfileReader.cpp
 @am__fastdepCXX_TRUE@	$(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprof_juicy_la_CXXFLAGS) $(CXXFLAGS) -MT libHPCprof_juicy_la-FlatProfileReader.lo -MD -MP -MF $(DEPDIR)/libHPCprof_juicy_la-FlatProfileReader.Tpo -c -o libHPCprof_juicy_la-FlatProfileReader.lo `test -f 'FlatProfileReader.cpp' || echo '$(srcdir)/'`FlatProfileReader.cpp
 @am__fastdepCXX_TRUE@	mv -f $(DEPDIR)/libHPCprof_juicy_la-FlatProfileReader.Tpo $(DEPDIR)/libHPCprof_juicy_la-FlatProfileReader.Plo
@@ -523,13 +531,6 @@ libHPCprof_juicy_la-CallPathProfile.lo: CallPathProfile.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='CallPathProfile.cpp' object='libHPCprof_juicy_la-CallPathProfile.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprof_juicy_la_CXXFLAGS) $(CXXFLAGS) -c -o libHPCprof_juicy_la-CallPathProfile.lo `test -f 'CallPathProfile.cpp' || echo '$(srcdir)/'`CallPathProfile.cpp
-
-libHPCprof_juicy_la-CallPathEpoch.lo: CallPathEpoch.cpp
-@am__fastdepCXX_TRUE@	$(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprof_juicy_la_CXXFLAGS) $(CXXFLAGS) -MT libHPCprof_juicy_la-CallPathEpoch.lo -MD -MP -MF $(DEPDIR)/libHPCprof_juicy_la-CallPathEpoch.Tpo -c -o libHPCprof_juicy_la-CallPathEpoch.lo `test -f 'CallPathEpoch.cpp' || echo '$(srcdir)/'`CallPathEpoch.cpp
-@am__fastdepCXX_TRUE@	mv -f $(DEPDIR)/libHPCprof_juicy_la-CallPathEpoch.Tpo $(DEPDIR)/libHPCprof_juicy_la-CallPathEpoch.Plo
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='CallPathEpoch.cpp' object='libHPCprof_juicy_la-CallPathEpoch.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprof_juicy_la_CXXFLAGS) $(CXXFLAGS) -c -o libHPCprof_juicy_la-CallPathEpoch.lo `test -f 'CallPathEpoch.cpp' || echo '$(srcdir)/'`CallPathEpoch.cpp
 
 libHPCprof_juicy_la-CallingContextTree.lo: CallingContextTree.cpp
 @am__fastdepCXX_TRUE@	$(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprof_juicy_la_CXXFLAGS) $(CXXFLAGS) -MT libHPCprof_juicy_la-CallingContextTree.lo -MD -MP -MF $(DEPDIR)/libHPCprof_juicy_la-CallingContextTree.Tpo -c -o libHPCprof_juicy_la-CallingContextTree.lo `test -f 'CallingContextTree.cpp' || echo '$(srcdir)/'`CallingContextTree.cpp
