@@ -67,7 +67,7 @@ using std::vector;
 #include "TextUtil.hpp"
 using Analysis::TextUtil::ColumnFormatter;
 
-#include <lib/prof-juicy/FlatProfileReader.hpp>
+#include <lib/prof-juicy/Flat-ProfileData.hpp>
 
 #include <lib/binutils/LM.hpp>
 #include <lib/binutils/Seg.hpp>
@@ -312,7 +312,7 @@ correlateWithObject(const Prof::Metric::Mgr& metricMgr,
 
   const string& profileFile = fnameToFMetricMap.begin()->first;
 
-  Prof::Flat::Profile prof;
+  Prof::Flat::ProfileData prof;
   try {
     prof.openread(profileFile.c_str());
   }
@@ -324,7 +324,7 @@ correlateWithObject(const Prof::Metric::Mgr& metricMgr,
   // --------------------------------------------------------
   // For each load module, dump metrics and object code instructions
   // --------------------------------------------------------
-  for (Prof::Flat::Profile::const_iterator it = prof.begin();
+  for (Prof::Flat::ProfileData::const_iterator it = prof.begin();
        it != prof.end(); ++it) {
     const Prof::Flat::LM* proflm = it->second;
     

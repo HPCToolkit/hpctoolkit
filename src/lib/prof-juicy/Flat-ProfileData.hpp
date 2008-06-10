@@ -15,13 +15,10 @@
 // Author:
 //    Written by John Mellor-Crummey and Nathan Tallent, Rice University.
 //
-//    Adapted from parts of The Visual Profiler by Curtis L. Janssen
-//    (vmonfile.h).
-//
 //***************************************************************************
 
-#ifndef prof_juicy_FlatProfileReader
-#define prof_juicy_FlatProfileReader
+#ifndef prof_juicy_Prof_Flat_ProfileData_hpp
+#define prof_juicy_Prof_Flat_ProfileData_hpp
 
 //************************* System Include Files ****************************
 
@@ -50,40 +47,29 @@
 //***************************************************************************
 
 
-// FlatProfileReader: 
-class FlatProfileReader {
-public:
-  FlatProfileReader();
-  ~FlatProfileReader();
-  
-private:
-};
-
-//***************************************************************************
-
-
 namespace Prof {
+
 namespace Flat {
 
 
 //***************************************************************************
 // Basic format for the hpcprof data file:
-//   A profile file (Profile) contains one or more load module sections
+//   A profile file (ProfileData) contains one or more load module sections
 //   (LM) with each load module section containing one or more
-//   profiling data sets, one for each event/metric. (ProfileEvent).
+//   profiling data sets, one for each event/metric. (EventData).
 //***************************************************************************
 
 class LM;
 
 //---------------------------------------------------------------------------
-// Profile: represents flat profile information
+// ProfileData: represents flat profile information
 //   INVARIANT: a load module appears once
 //---------------------------------------------------------------------------
 
-class Profile : public std::map<std::string, LM*> {
+class ProfileData : public std::map<std::string, LM*> {
 public:
-  Profile(const char* filename = NULL);
-  ~Profile();
+  ProfileData(const char* filename = NULL);
+  ~ProfileData();
   
   const std::string& name() const { return m_name; }
   
@@ -120,8 +106,8 @@ public:
   void dump(std::ostream& o = std::cerr, const char* pre = "") const;
 
 private:
-  Profile(const Profile& x);
-  Profile& operator=(const Profile& x) { return *this; }
+  ProfileData(const ProfileData& x);
+  ProfileData& operator=(const ProfileData& x) { return *this; }
 
   void read_metrics();
   void mdescs(LM* proflm);
@@ -193,6 +179,8 @@ private:
 
 //---------------------------------------------------------------------------
 // LM: represents flat profile information for a load module
+//
+// FIXME: should use Prof::Epoch
 //---------------------------------------------------------------------------
 
 class LM {
@@ -247,9 +235,10 @@ private:
 //***************************************************************************
 
 } // namespace Flat
+
 } // namespace Prof
 
 
 //***************************************************************************
 
-#endif /* prof_juicy_FlatProfileReader */
+#endif /* prof_juicy_Prof_Flat_ProfileData_hpp */

@@ -38,7 +38,7 @@
 
 #include "loadmodule.hpp"
 
-#include <lib/prof-juicy/FlatProfileReader.hpp>
+#include <lib/prof-juicy/Flat-ProfileData.hpp>
 
 //*************************** Forward Declarations **************************
 
@@ -326,7 +326,7 @@ class Summary {
         @param v A vector of vmon data files.
         @param debug The debugging level.
      */
-    Summary(const LoadModule *e, const std::vector<Prof::Flat::Profile*>& v,
+    Summary(const LoadModule *e, const std::vector<Prof::Flat::ProfileData*>& v,
 	    int debug = 0);
     /** Construct a Summary object.
         @param p Name of the main program binary
@@ -337,9 +337,9 @@ class Summary {
 
     /** Initialize this Summary object.
         @param p Name of the main program binary
-        @param v A vector of Prof::Flat::Profiles.
+        @param v A vector of Prof::Flat::ProfileDatas.
      */
-    bool init(const std::string&, const std::vector<Prof::Flat::Profile*>&);
+    bool init(const std::string&, const std::vector<Prof::Flat::ProfileData*>&);
 
     bool process_lm(const Prof::Flat::LM&, int);
 

@@ -144,7 +144,7 @@ usage(const string &argv0)
 int
 real_main(int argc, char* argv[]);
 
-int dump_object(ostream& os, const string& pgm, const vector<Prof::Flat::Profile*>& profs);
+int dump_object(ostream& os, const string& pgm, const vector<Prof::Flat::ProfileData*>& profs);
 int dump_html_or_text(Summary& sum);
 int dump_PROFILE(Summary& sum);
 
@@ -300,10 +300,10 @@ real_main(int argc, char *argv[])
     return 1;
   }
   
-  vector<Prof::Flat::Profile*> the_profiles(the_proffilenms.size());
+  vector<Prof::Flat::ProfileData*> the_profiles(the_proffilenms.size());
   for (unsigned int i = 0; i < the_proffilenms.size(); ++i) {
     try {
-      the_profiles[i] = new Prof::Flat::Profile();
+      the_profiles[i] = new Prof::Flat::ProfileData();
       the_profiles[i]->open(the_proffilenms[i].c_str());
       the_profiles[i]->read();
     }
@@ -336,7 +336,7 @@ real_main(int argc, char *argv[])
   }
   
   // 3. Cleanup profiling data
-  for (vector<Prof::Flat::Profile*>::iterator it = the_profiles.begin(); 
+  for (vector<Prof::Flat::ProfileData*>::iterator it = the_profiles.begin(); 
        it != the_profiles.end(); ++it) {
     delete (*it);
   }
@@ -948,7 +948,7 @@ dump_event_summary(ostream& os,
 
 int
 dump_object(ostream& os, 
-	    const string& binary, const vector<Prof::Flat::Profile*>& profiles)
+	    const string& binary, const vector<Prof::Flat::ProfileData*>& profiles)
 {
   // FIXME
   //   verify that load map is the same for each profile
@@ -959,9 +959,9 @@ dump_object(ostream& os,
   // --------------------------------------------------------
   DIAG_Assert(profiles.size() > 0, DIAG_UnexpectedInput);
   
-  const Prof::Flat::Profile* prof = profiles[0];
+  const Prof::Flat::ProfileData* prof = profiles[0];
 
-  for (Prof::Flat::Profile::const_iterator it = prof->begin(); 
+  for (Prof::Flat::ProfileData::const_iterator it = prof->begin(); 
        it != prof->end(); ++it) {
     const Prof::Flat::LM* proflm = it->second;
     

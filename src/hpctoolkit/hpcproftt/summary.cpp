@@ -253,7 +253,7 @@ Summary::Summary(int d)
 }
 
 
-Summary::Summary(const LoadModule *exec, const vector<Prof::Flat::Profile*>& profs, int d)
+Summary::Summary(const LoadModule *exec, const vector<Prof::Flat::ProfileData*>& profs, int d)
   : debug_(d)
 {
   abort();  // FIXME: do we want a LoadModule?
@@ -279,9 +279,9 @@ Summary::~Summary()
 }
 
 
-// 'profs' contains at least one Prof::Flat::Profile
+// 'profs' contains at least one Prof::Flat::ProfileData
 bool
-Summary::init(const string& pgm, const vector<Prof::Flat::Profile*>& profs)
+Summary::init(const string& pgm, const vector<Prof::Flat::ProfileData*>& profs)
 { 
   // FIXME: For what we want to do, the order in which vprof creates a
   // summary is annoying.  For now, to avoid a rewrite, I have hacked
@@ -291,7 +291,7 @@ Summary::init(const string& pgm, const vector<Prof::Flat::Profile*>& profs)
   
   // 1a. Sanity check file modification times
   for (uint i = 0; i < profs.size(); ++i) {
-    const Prof::Flat::Profile* prof = profs[i];
+    const Prof::Flat::ProfileData* prof = profs[i];
     prof_mtime_ = 0;
   }
 
@@ -305,12 +305,12 @@ Summary::init(const string& pgm, const vector<Prof::Flat::Profile*>& profs)
   uint ev_i = 0; // nth event
 
   for (uint i = 0; i < profs.size(); ++i) {
-    const Prof::Flat::Profile* prof = profs[i];
+    const Prof::Flat::ProfileData* prof = profs[i];
       
     // We inspect only the first load module of each prof file because
     // while one prof file contains multiple load modules, each load
     // module contains the same events.  
-    Prof::Flat::Profile::const_iterator it = prof->begin();
+    Prof::Flat::ProfileData::const_iterator it = prof->begin();
     const Prof::Flat::LM* proflm = it->second;
     n_event_ += proflm->num_events();
     for (uint k = 0; k < proflm->num_events(); ++k, ++ev_i) {
@@ -358,12 +358,12 @@ Summary::init(const string& pgm, const vector<Prof::Flat::Profile*>& profs)
   //    them more than once.
   ev_i = 0;
   for (uint i = 0; i < profs.size(); ++i) {
-    const Prof::Flat::Profile* prof = profs[i];
+    const Prof::Flat::ProfileData* prof = profs[i];
 
-    Prof::Flat::Profile::const_iterator it0 = prof->begin();
+    Prof::Flat::ProfileData::const_iterator it0 = prof->begin();
     const Prof::Flat::LM* proflm0 = it0->second;
 
-    for (Prof::Flat::Profile::const_iterator it = prof->begin();
+    for (Prof::Flat::ProfileData::const_iterator it = prof->begin();
 	 it != prof->end(); ++it) {
       const Prof::Flat::LM* proflm = it->second;
       process_lm(*proflm, ev_i);

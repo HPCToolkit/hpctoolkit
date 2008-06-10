@@ -55,7 +55,7 @@
 #include <lib/prof-juicy-x/PGMDocHandler.hpp>
 #include <lib/prof-juicy-x/DocHandlerArgs.hpp>
 
-#include <lib/prof-juicy/FlatProfileReader.hpp>
+#include <lib/prof-juicy/Flat-ProfileData.hpp>
 #include <lib/prof-juicy/Metric-Mgr.hpp>
 #include <lib/prof-juicy/PgmScopeTree.hpp>
 
@@ -110,7 +110,7 @@ public:
 public:
   typedef std::map<string, bool> StringToBoolMap;
 
-  typedef std::pair<Prof::Flat::Profile*, 
+  typedef std::pair<Prof::Flat::ProfileData*, 
 		    Prof::Metric::Mgr::PerfMetricVec*> ProfToMetricsTuple;
   typedef std::vector<ProfToMetricsTuple> ProfToMetricsTupleVec;
 
@@ -168,11 +168,11 @@ private:
 
   // -------------------------------------------------------
 
-  Prof::Flat::Profile*
+  Prof::Flat::ProfileData*
   readProf(const string& fnm);
 
   void
-  readProf(Prof::Flat::Profile* prof);
+  readProf(Prof::Flat::ProfileData* prof);
 
   binutils::LM*
   openLM(const string& fnm);

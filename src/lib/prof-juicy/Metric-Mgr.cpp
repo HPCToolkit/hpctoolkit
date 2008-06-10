@@ -52,7 +52,7 @@ using std::vector;
 
 #include "Metric-Mgr.hpp"
 
-#include <lib/prof-juicy/FlatProfileReader.hpp>
+#include <lib/prof-juicy/Flat-ProfileData.hpp>
 
 #include <lib/support/diagnostics.h>
 #include <lib/support/StrUtil.hpp>
@@ -90,7 +90,7 @@ Mgr::makeRawMetrics(const std::vector<std::string>& profileFiles,
   for (uint i = 0; i < profileFiles.size(); ++i) {
     const string& proffnm = profileFiles[i];
 
-    Prof::Flat::Profile prof;
+    Prof::Flat::ProfileData prof;
     try {
       prof.open(proffnm.c_str());
     }
