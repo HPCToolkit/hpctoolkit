@@ -123,8 +123,7 @@ Options: Source Structure Correlation:\n\
                          l:   loop summary\n\
                          s:   statement summary\n\
                          src: annotate source files; equiv to --srcannot '*'\n\
-  --srcannot <glob>\n\
-                       Annotate source files with path names that match\n\
+  --srcannot <glob>    Annotate source files with path names that match\n\
                        file glob <glob>. Protect globs from the shell with\n\
                        'single quotes'. May pass multiple times.\n\
   -M <metric>, --metric <metric>\n\

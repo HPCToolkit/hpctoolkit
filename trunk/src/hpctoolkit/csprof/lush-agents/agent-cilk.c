@@ -523,7 +523,7 @@ LUSHI_get_concurrency()
   double n_working = (double)CILK_Threads_Working;
   double n_not_working = n - n_working;
 
-  double c = (n_not_working) / (n * n_working);
+  double c = n_not_working / n_working;
   return c;
 }
 

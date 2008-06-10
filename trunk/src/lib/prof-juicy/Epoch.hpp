@@ -48,8 +48,8 @@
 //
 //***************************************************************************
 
-#ifndef prof_juicy_CallPathEpoch
-#define prof_juicy_CallPathEpoch
+#ifndef prof_juicy_Prof_Epoch_hpp
+#define prof_juicy_Prof_Epoch_hpp
 
 //************************* System Include Files ****************************
 
@@ -70,6 +70,8 @@
 #include <lib/support/Unique.hpp>
 
 //*************************** Forward Declarations ***************************
+
+namespace Prof {
 
 class CSProfLDmodule : public Unique {
 public:
@@ -119,14 +121,14 @@ struct compare_ldmodule_by_mapaddr
 
 
 //****************************************************************************
-// CSProfEpoch
+// Epoch
 //****************************************************************************
 
-class CSProfEpoch : public Unique {
+class Epoch : public Unique {
 public: 
   // Constructor/Destructor
-  CSProfEpoch(const unsigned int i);
-  virtual ~CSProfEpoch();
+  Epoch(const unsigned int i);
+  virtual ~Epoch();
   
   // Data
   void  AddLoadModule(CSProfLDmodule* ldm) {loadmoduleVec.push_back(ldm);}
@@ -150,7 +152,7 @@ public:
   
   CSProfLDmodule* FindLDmodule(VMA i);
   
-  friend class CSProfEpoch_LdModuleIterator ;
+  friend class Epoch_LdModuleIterator ;
   
 protected:
 private:
@@ -162,15 +164,15 @@ private:
 };
 
 
-// "CSProfEpoch_LdModuleIterator" iterator over all "CSPorfLDmodule" 
-// within CSProfEpoch"
-class CSProfEpoch_LdModuleIterator  
+// "Epoch_LdModuleIterator" iterator over all "CSPorfLDmodule" 
+// within Epoch"
+class Epoch_LdModuleIterator  
 {
 public :
-  CSProfEpoch_LdModuleIterator(const CSProfEpoch& x):p (x) {
+  Epoch_LdModuleIterator(const Epoch& x):p (x) {
     Reset();
   }
-  virtual ~CSProfEpoch_LdModuleIterator(){}
+  virtual ~Epoch_LdModuleIterator(){}
   
   CSProfLDmodule* Current() const { return (*it);}
   
@@ -185,17 +187,20 @@ public :
   
 private:
   // Should not be used 
-  CSProfEpoch_LdModuleIterator();
-  CSProfEpoch_LdModuleIterator(const CSProfEpoch_LdModuleIterator& x);
-  CSProfEpoch_LdModuleIterator& operator=(const CSProfEpoch_LdModuleIterator& x)
+  Epoch_LdModuleIterator();
+  Epoch_LdModuleIterator(const Epoch_LdModuleIterator& x);
+  Epoch_LdModuleIterator& operator=(const Epoch_LdModuleIterator& x)
   {return *this;}
   
 protected:
 private:
-  const  CSProfEpoch& p;
+  const Epoch& p;
   CSProfLDmoduleVecCIt it;
 };
 
+
+} // namespace Prof
+
 //***************************************************************************
 
-#endif /* prof_juicy_CallPathEpoch */
+#endif /* prof_juicy_Prof_Epoch_hpp */

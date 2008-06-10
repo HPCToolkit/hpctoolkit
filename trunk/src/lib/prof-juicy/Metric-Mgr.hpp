@@ -35,8 +35,8 @@
 // 
 // ******************************************************* EndRiceCopyright *
 
-#ifndef Prof_Metric_Mgr_hpp
-#define Prof_Metric_Mgr_hpp 
+#ifndef prof_juicy_Prof_Metric_Mgr_hpp
+#define prof_juicy_Prof_Metric_Mgr_hpp 
 
 //************************ System Include Files ******************************
 
@@ -202,4 +202,4 @@ private:
 
 //****************************************************************************
 
-#endif // Prof_Metric_Mgr_hpp
+#endif // prof_juicy_Prof_Metric_Mgr_hpp

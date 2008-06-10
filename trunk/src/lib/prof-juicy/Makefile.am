@@ -62,20 +62,21 @@ include $(top_srcdir)/src/Makeinclude.config
 #############################################################################
 
 MYSOURCES = \
-	PgmScopeTree.hpp PgmScopeTree.cpp \
-	PgmScopeTreeIterator.hpp PgmScopeTreeIterator.cpp \
-	PgmScopeTreeInterface.hpp PgmScopeTreeInterface.cpp \
-	\
 	Metric-Mgr.hpp Metric-Mgr.cpp \
 	PerfMetric.hpp PerfMetric.cpp \
 	DerivedPerfMetrics.hpp DerivedPerfMetrics.cpp \
 	Metric-AExpr.hpp Metric-AExpr.cpp \
 	MetricDesc.hpp \
 	\
+	Epoch.hpp Epoch.cpp \
+	\
+	PgmScopeTree.hpp PgmScopeTree.cpp \
+	PgmScopeTreeIterator.hpp PgmScopeTreeIterator.cpp \
+	PgmScopeTreeInterface.hpp PgmScopeTreeInterface.cpp \
+	\
 	FlatProfileReader.hpp FlatProfileReader.cpp \
 	\
 	CallPathProfile.hpp CallPathProfile.cpp \
-	CallPathEpoch.hpp CallPathEpoch.cpp \
 	CallingContextTree.hpp CallingContextTree.cpp \
 	CallingContextTreeIterator.hpp CallingContextTreeIterator.cpp
 

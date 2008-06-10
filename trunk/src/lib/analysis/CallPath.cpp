@@ -221,10 +221,10 @@ ReadProfile_CSPROF(const char* fnm)
   
   uint num_lm = epochtbl.epoch_modlist[0].num_loadmodule;
 
-  CSProfEpoch* epochmdlist = new CSProfEpoch(num_lm);
+  Prof::Epoch* epochmdlist = new Prof::Epoch(num_lm);
 
   for (int i = 0; i < num_lm; i++) { 
-    CSProfLDmodule* lm = new CSProfLDmodule();
+    Prof::CSProfLDmodule* lm = new Prof::CSProfLDmodule();
     lm->SetName(epochtbl.epoch_modlist[0].loadmodule[i].name);
     lm->SetVaddr(epochtbl.epoch_modlist[0].loadmodule[i].vaddr);
     lm->SetMapaddr(epochtbl.epoch_modlist[0].loadmodule[i].mapaddr);  
