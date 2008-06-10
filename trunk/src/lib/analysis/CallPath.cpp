@@ -107,10 +107,10 @@ static void
 convertOpIPToIP(VMA opIP, VMA& ip, ushort& opIdx);
 
 static bool
-addPGMToCSProfTree(CSProfTree* tree, const char* progName);
+addPGMToCSProfTree(Prof::CSProfTree* tree, const char* progName);
 
 static bool 
-fixLeaves(CSProfNode* node);
+fixLeaves(Prof::CSProfNode* node);
 
 
 //****************************************************************************
@@ -122,7 +122,7 @@ const char *CSPROFILEdtd =
 
 
 void 
-Analysis::CallPath::writeInDatabase(CSProfile* prof, const string& filenm) 
+Analysis::CallPath::writeInDatabase(Prof::CSProfile* prof, const string& filenm) 
 {
   filebuf fb;
   fb.open(filenm.c_str(), ios::out);
@@ -134,7 +134,7 @@ Analysis::CallPath::writeInDatabase(CSProfile* prof, const string& filenm)
 
 /* version=1.0.2 for alpha memory profile---FMZ */
 void
-Analysis::CallPath::write(CSProfile* prof, std::ostream& os, bool prettyPrint)
+Analysis::CallPath::write(Prof::CSProfile* prof, std::ostream& os, bool prettyPrint)
 {
   os << "<?xml version=\"1.0\"?>" << std::endl;
   os << "<!DOCTYPE CSPROFILE [\n" << CSPROFILEdtd << "]>" << std::endl;
@@ -147,7 +147,7 @@ Analysis::CallPath::write(CSProfile* prof, std::ostream& os, bool prettyPrint)
   // write out metrics
   uint n_metrics = prof->numMetrics();
   for (uint i = 0; i < n_metrics; i++) {
-    const SampledMetricDesc* metric = prof->metric(i);
+    const Prof::SampledMetricDesc* metric = prof->metric(i);
     os << "<METRIC shortName" << MakeAttrNum(i)
        << " nativeName" << MakeAttrStr(metric->name())
        << " period" << MakeAttrNum(metric->period())
@@ -158,8 +158,8 @@ Analysis::CallPath::write(CSProfile* prof, std::ostream& os, bool prettyPrint)
 
   os.flush();
   
-  int dumpFlags = (CSProfTree::XML_TRUE); // CSProfTree::XML_NO_ESC_CHARS
-  if (!prettyPrint) { dumpFlags |= CSProfTree::COMPRESSED_OUTPUT; }
+  int dumpFlags = (Prof::CSProfTree::XML_TRUE); // CSProfTree::XML_NO_ESC_CHARS
+  if (!prettyPrint) { dumpFlags |= Prof::CSProfTree::COMPRESSED_OUTPUT; }
   
   prof->cct()->dump(os, dumpFlags);
 
@@ -172,7 +172,7 @@ Analysis::CallPath::write(CSProfile* prof, std::ostream& os, bool prettyPrint)
 // Set of routines to build a scope tree while reading data file
 //****************************************************************************
 
-CSProfile* 
+Prof::CSProfile* 
 ReadProfile_CSPROF(const char* fnm) 
 {
   using namespace Prof;
@@ -201,7 +201,7 @@ ReadProfile_CSPROF(const char* fnm)
   
   DIAG_Msg(2, "Metrics found: " << num_metrics);
 
-  CSProfile* prof = new CSProfile(num_metrics);
+  Prof::CSProfile* prof = new Prof::CSProfile(num_metrics);
   ret = hpcfile_cstree_read(fs, prof->cct(), num_metrics,
 			    cstree_create_node_CB, cstree_link_parent_CB,
 			    hpcfile_alloc_CB, hpcfile_free_CB);
@@ -223,20 +223,20 @@ ReadProfile_CSPROF(const char* fnm)
   
   uint num_lm = epochtbl.epoch_modlist[0].num_loadmodule;
 
-  Epoch* epochmdlist = new Epoch(num_lm);
+  Epoch* epoch = new Epoch(num_lm);
 
   for (int i = 0; i < num_lm; i++) { 
     Epoch::LM* lm = new Epoch::LM();
     lm->name(epochtbl.epoch_modlist[0].loadmodule[i].name);
     lm->loadAddr(epochtbl.epoch_modlist[0].loadmodule[i].mapaddr);
     
-    lm->SetVaddr(epochtbl.epoch_modlist[0].loadmodule[i].vaddr);
-    lm->SetUsedFlag(false);
-    epochmdlist->lm(i,lm);
+    //lm->loadAddrPref(epochtbl.epoch_modlist[0].loadmodule[i].vaddr);
+    lm->isUsed(false);
+    epoch->lm(i, lm);
   }
   epoch_table__free_data(&epochtbl, hpcfile_free_CB);
   
-  epochmdlist->SortLoadmoduleByVMA(); 
+  epoch->SortLoadmoduleByVMA(); 
 
   // Extract profiling info
   prof->name("[Profile Name]"); 
@@ -249,7 +249,7 @@ ReadProfile_CSPROF(const char* fnm)
     metric->period(metadata.metrics[i].sample_period);
   }
 
-  prof->epoch(epochmdlist);
+  prof->epoch(epoch);
 
   // We must deallocate pointer-data
   for (int i = 0; i < num_metrics; i++) {
@@ -261,7 +261,7 @@ ReadProfile_CSPROF(const char* fnm)
   // Add PGM node to tree
   addPGMToCSProfTree(prof->cct(), prof->name().c_str());
   
-  // Convert leaves (CSProfCallSiteNode) to CSProfStatementNodes
+  // Convert leaves (CSProfCallSiteNode) to Prof::CSProfStatementNodes
   // FIXME: There should be a better way of doing this.  We could
   // merge it with a normalization step...
   fixLeaves(prof->cct()->root());
@@ -274,7 +274,7 @@ static void*
 cstree_create_node_CB(void* tree, 
 		      hpcfile_cstree_nodedata_t* data)
 {
-  CSProfTree* my_tree = (CSProfTree*)tree; 
+  Prof::CSProfTree* my_tree = (Prof::CSProfTree*)tree; 
   
   VMA ip;
   ushort opIdx;
@@ -286,9 +286,9 @@ cstree_create_node_CB(void* tree,
   }
 
   DIAG_DevMsgIf(0, "cstree_create_node_CB: " << hex << data->ip << dec);
-  CSProfCallSiteNode* n = 
-    new CSProfCallSiteNode(NULL, data->as_info, ip, opIdx, data->lip.ptr,
-			   &my_tree->metadata()->metricDesc(), metricVec);
+  Prof::CSProfCallSiteNode* n = 
+    new Prof::CSProfCallSiteNode(NULL, data->as_info, ip, opIdx, data->lip.ptr,
+				 &my_tree->metadata()->metricDesc(), metricVec);
   n->SetSrcInfoDone(false);
   
   // Initialize the tree, if necessary
@@ -303,8 +303,8 @@ cstree_create_node_CB(void* tree,
 static void  
 cstree_link_parent_CB(void* tree, void* node, void* parent)
 {
-  CSProfCallSiteNode* p = (CSProfCallSiteNode*)parent;
-  CSProfCallSiteNode* n = (CSProfCallSiteNode*)node;
+  Prof::CSProfCallSiteNode* p = (Prof::CSProfCallSiteNode*)parent;
+  Prof::CSProfCallSiteNode* n = (Prof::CSProfCallSiteNode*)node;
   n->Link(p);
 }
 
@@ -343,14 +343,14 @@ convertOpIPToIP(VMA opIP, VMA& ip, ushort& opIdx)
 
 
 bool
-addPGMToCSProfTree(CSProfTree* tree, const char* progName)
+addPGMToCSProfTree(Prof::CSProfTree* tree, const char* progName)
 {
   bool noError = true;
 
   // Add PGM node
-  CSProfNode* n = tree->root();
-  if (!n || n->GetType() != CSProfNode::PGM) {
-    CSProfNode* root = new CSProfPgmNode(progName);
+  Prof::CSProfNode* n = tree->root();
+  if (!n || n->GetType() != Prof::CSProfNode::PGM) {
+    Prof::CSProfNode* root = new Prof::CSProfPgmNode(progName);
     if (n) { 
       n->Link(root); // 'root' is parent of 'n'
     }
@@ -362,25 +362,25 @@ addPGMToCSProfTree(CSProfTree* tree, const char* progName)
 
 
 static bool 
-fixLeaves(CSProfNode* node)
+fixLeaves(Prof::CSProfNode* node)
 {
   bool noError = true;
   
   if (!node) { return noError; }
 
   // For each immediate child of this node...
-  for (CSProfNodeChildIterator it(node); it.Current(); /* */) {
-    CSProfCodeNode* child = dynamic_cast<CSProfCodeNode*>(it.CurNode());
-    IDynNode* child_dyn = dynamic_cast<IDynNode*>(child);
+  for (Prof::CSProfNodeChildIterator it(node); it.Current(); /* */) {
+    Prof::CSProfCodeNode* child = dynamic_cast<Prof::CSProfCodeNode*>(it.CurNode());
+    Prof::IDynNode* child_dyn = dynamic_cast<Prof::IDynNode*>(child);
     DIAG_Assert(child && child_dyn, "");
     it++; // advance iterator -- it is pointing at 'child'
 
     DIAG_DevMsgIf(0, "fixLeaves: " << hex << child_dyn->ip() << dec);
-    if (child->IsLeaf() && child->GetType() == CSProfNode::CALLSITE) {
+    if (child->IsLeaf() && child->GetType() == Prof::CSProfNode::CALLSITE) {
       // This child is a leaf. Convert.
-      CSProfCallSiteNode* c = dynamic_cast<CSProfCallSiteNode*>(child);
+      Prof::CSProfCallSiteNode* c = dynamic_cast<Prof::CSProfCallSiteNode*>(child);
       
-      CSProfStatementNode* newc = new CSProfStatementNode(NULL, c->metricdesc());
+      Prof::CSProfStatementNode* newc = new Prof::CSProfStatementNode(NULL, c->metricdesc());
       *newc = *c;
       
       newc->LinkBefore(node->FirstChild()); // do not break iteration!
@@ -397,14 +397,38 @@ fixLeaves(CSProfNode* node)
 }
 
 
+void
+Epoch_SetLMUsed(Prof::CSProfile* prof)
+{
+  VMA curr_ip;  
+  
+  Prof::CSProfTree* tree = prof->cct();
+  Prof::CSProfNode* root = tree->root();
+  
+  for (Prof::CSProfNodeIterator it(root); it.CurNode(); ++it) {
+    Prof::CSProfNode* n = it.CurNode();
+    Prof::CSProfCallSiteNode* nn = dynamic_cast<Prof::CSProfCallSiteNode*>(n);
+    
+    if (nn)  {
+      curr_ip = nn->ip();
+      Prof::Epoch::LM* csploadmd = prof->epoch()->lm_find(curr_ip);
+      if (!(csploadmd->isUsed())) {
+	csploadmd->isUsed(true);
+      }
+    }
+  }
+}
+
+
+
 //****************************************************************************
 // Routines for Inferring Call Frames (based on STRUCTURE information)
 //****************************************************************************
 
-typedef std::map<CodeInfo*, CSProfProcedureFrameNode*> CodeInfoToProcFrameMap;
+typedef std::map<CodeInfo*, Prof::CSProfProcedureFrameNode*> CodeInfoToProcFrameMap;
 
 
-typedef std::pair<CSProfProcedureFrameNode*, CodeInfo*> ProcFrameAndLoop;
+typedef std::pair<Prof::CSProfProcedureFrameNode*, CodeInfo*> ProcFrameAndLoop;
 inline bool 
 operator<(const ProcFrameAndLoop& x, const ProcFrameAndLoop& y) 
 {
@@ -412,17 +436,17 @@ operator<(const ProcFrameAndLoop& x, const ProcFrameAndLoop& y)
 	  ((x.first == y.first) && (x.second < y.second)));
 }
 
-typedef std::map<ProcFrameAndLoop, CSProfLoopNode*> ProcFrameAndLoopToCSLoopMap;
+typedef std::map<ProcFrameAndLoop, Prof::CSProfLoopNode*> ProcFrameAndLoopToCSLoopMap;
 
 
 
 
 void
-addSymbolicInfo(CSProfCodeNode* n, IDynNode* n_dyn,
+addSymbolicInfo(Prof::CSProfCodeNode* n, Prof::IDynNode* n_dyn,
 		LoadModScope* lmScope, CodeInfo* callingCtxt, CodeInfo* scope);
 
-CSProfProcedureFrameNode*
-findOrCreateProcFrame(IDynNode* node,
+Prof::CSProfProcedureFrameNode*
+findOrCreateProcFrame(Prof::IDynNode* node,
 		      LoadModScope* lmScope, CodeInfo* callingCtxt,
 		      LoopScope* loop,
 		      VMA curr_ip,
@@ -430,18 +454,18 @@ findOrCreateProcFrame(IDynNode* node,
 		      ProcFrameAndLoopToCSLoopMap& loopMap);
 
 void
-createFramesForProc(ProcScope* proc, IDynNode* dyn_node,
+createFramesForProc(ProcScope* proc, Prof::IDynNode* dyn_node,
 		    CodeInfoToProcFrameMap& frameMap,
 		    ProcFrameAndLoopToCSLoopMap& loopMap);
 
 void
-loopifyFrame(CSProfProcedureFrameNode* frame, CodeInfo* ctxtScope,
+loopifyFrame(Prof::CSProfProcedureFrameNode* frame, CodeInfo* ctxtScope,
 	     CodeInfoToProcFrameMap& frameMap,
 	     ProcFrameAndLoopToCSLoopMap& loopMap);
 
 
 void 
-inferCallFrames(CSProfile* prof, CSProfNode* node, 
+inferCallFrames(Prof::CSProfile* prof, Prof::CSProfNode* node, 
 		VMA begVMA, VMA endVMA, LoadModScope* lmScope, VMA relocVMA);
 
 
@@ -449,10 +473,10 @@ inferCallFrames(CSProfile* prof, CSProfNode* node,
 // for all the return addresses found under.
 //
 void
-Analysis::CallPath::inferCallFrames(CSProfile* prof, VMA begVMA, VMA endVMA, 
+Analysis::CallPath::inferCallFrames(Prof::CSProfile* prof, VMA begVMA, VMA endVMA, 
 		LoadModScope* lmScope, VMA relocVMA)
 {
-  CSProfTree* csproftree = prof->cct();
+  Prof::CSProfTree* csproftree = prof->cct();
   if (!csproftree) { return; }
   
   inferCallFrames(prof, csproftree->root(), begVMA, endVMA, 
@@ -461,7 +485,7 @@ Analysis::CallPath::inferCallFrames(CSProfile* prof, VMA begVMA, VMA endVMA,
 
 
 void 
-inferCallFrames(CSProfile* prof, CSProfNode* node, 
+inferCallFrames(Prof::CSProfile* prof, Prof::CSProfNode* node, 
 		VMA begVMA, VMA endVMA, LoadModScope* lmScope, VMA relocVMA)
 {
   // INVARIANT: The parent of 'node' has been fully processed and
@@ -473,20 +497,20 @@ inferCallFrames(CSProfile* prof, CSProfNode* node,
   ProcFrameAndLoopToCSLoopMap loopMap;
 
   // For each immediate child of this node...
-  for (CSProfNodeChildIterator it(node); it.Current(); /* */) {
-    CSProfCodeNode* n = dynamic_cast<CSProfCodeNode*>(it.CurNode());
+  for (Prof::CSProfNodeChildIterator it(node); it.Current(); /* */) {
+    Prof::CSProfCodeNode* n = dynamic_cast<Prof::CSProfCodeNode*>(it.CurNode());
     DIAG_Assert(n, "Unexpected node type");
     
     it++; // advance iterator -- it is pointing at 'n' 
     
     // process this node
-    IDynNode* n_dyn = dynamic_cast<IDynNode*>(n);
+    Prof::IDynNode* n_dyn = dynamic_cast<Prof::IDynNode*>(n);
     if (n_dyn && (begVMA <= n_dyn->ip() && n_dyn->ip() <= endVMA)) {
       VMA ip = n_dyn->ip(); // for debuggers
       VMA curr_ip = ip - relocVMA;
       
       DIAG_DevIf(50) {
-	CSProfCallSiteNode* p = node->AncestorCallSite();
+	Prof::CSProfCallSiteNode* p = node->AncestorCallSite();
 	DIAG_DevMsg(0, "inferCallFrames: " << hex << ((p) ? p->ip() : 0) << " --> " << ip << dec);
       }
       
@@ -504,13 +528,13 @@ inferCallFrames(CSProfile* prof, CSProfNode* node,
       addSymbolicInfo(n, n_dyn, lmScope, ctxt, scope);
 
       // Find (or create) a procedure frame for 'n'.
-      CSProfProcedureFrameNode* frame = 
+      Prof::CSProfProcedureFrameNode* frame = 
 	findOrCreateProcFrame(n_dyn, lmScope, ctxt, loop, curr_ip, 
 			      frameMap, loopMap);
       
       // Find appropriate (new) parent context for 'node': the frame
       // or a loop within the frame
-      CSProfCodeNode* newParent = frame;
+      Prof::CSProfCodeNode* newParent = frame;
       if (loop) {
 	ProcFrameAndLoop toFind(frame, loop);
 	ProcFrameAndLoopToCSLoopMap::iterator it = loopMap.find(toFind);
@@ -537,15 +561,15 @@ inferCallFrames(CSProfile* prof, CSProfNode* node,
 // statement-type scope.
 // 
 // Assumes that symbolic information has been added to node.
-CSProfProcedureFrameNode*
-findOrCreateProcFrame(IDynNode* node,
+Prof::CSProfProcedureFrameNode*
+findOrCreateProcFrame(Prof::IDynNode* node,
 		      LoadModScope* lmScope, CodeInfo* callingCtxt,
 		      LoopScope* loop,
 		      VMA curr_ip,
 		      CodeInfoToProcFrameMap& frameMap,
 		      ProcFrameAndLoopToCSLoopMap& loopMap)
 {
-  CSProfProcedureFrameNode* frame = NULL;
+  Prof::CSProfProcedureFrameNode* frame = NULL;
 
   CodeInfo* toFind = (callingCtxt) ? callingCtxt : lmScope;
   
@@ -567,7 +591,7 @@ findOrCreateProcFrame(IDynNode* node,
       frame = (*it).second;
     }
     else {
-      frame = new CSProfProcedureFrameNode(NULL);
+      frame = new Prof::CSProfProcedureFrameNode(NULL);
       addSymbolicInfo(frame, node, lmScope, NULL, NULL);
       frame->Link(node->proxy()->Parent());
 
@@ -584,13 +608,13 @@ findOrCreateProcFrame(IDynNode* node,
 
 
 void 
-createFramesForProc(ProcScope* proc, IDynNode* node_dyn,
+createFramesForProc(ProcScope* proc, Prof::IDynNode* node_dyn,
 		    CodeInfoToProcFrameMap& frameMap,
 		    ProcFrameAndLoopToCSLoopMap& loopMap)
 {
-  CSProfProcedureFrameNode* frame;
+  Prof::CSProfProcedureFrameNode* frame;
   
-  frame = new CSProfProcedureFrameNode(NULL);
+  frame = new Prof::CSProfProcedureFrameNode(NULL);
   addSymbolicInfo(frame, node_dyn, NULL, proc, proc);
   frame->Link(node_dyn->proxy()->Parent());
   frameMap.insert(std::make_pair(proc, frame));
@@ -601,9 +625,9 @@ createFramesForProc(ProcScope* proc, IDynNode* node_dyn,
 
 
 void
-loopifyFrame(CSProfCodeNode* mirrorNode, CodeInfo* node,
-	     CSProfProcedureFrameNode* frame,
-	     CSProfLoopNode* enclLoop,
+loopifyFrame(Prof::CSProfCodeNode* mirrorNode, CodeInfo* node,
+	     Prof::CSProfProcedureFrameNode* frame,
+	     Prof::CSProfLoopNode* enclLoop,
 	     CodeInfoToProcFrameMap& frameMap,
 	     ProcFrameAndLoopToCSLoopMap& loopMap);
 
@@ -612,7 +636,7 @@ loopifyFrame(CSProfCodeNode* mirrorNode, CodeInfo* node,
 // 'ctxtScope' (ProcScope or AlienScope), mirror ctxtScope's loop and
 // context structure and add entries to 'frameMap' and 'loopMap.'
 void
-loopifyFrame(CSProfProcedureFrameNode* frame, CodeInfo* ctxtScope,
+loopifyFrame(Prof::CSProfProcedureFrameNode* frame, CodeInfo* ctxtScope,
 	     CodeInfoToProcFrameMap& frameMap,
 	     ProcFrameAndLoopToCSLoopMap& loopMap)
 {
@@ -623,9 +647,9 @@ loopifyFrame(CSProfProcedureFrameNode* frame, CodeInfo* ctxtScope,
 // 'frame' is the enclosing frame
 // 'loop' is the enclosing loop
 void
-loopifyFrame(CSProfCodeNode* mirrorNode, CodeInfo* node,
-	     CSProfProcedureFrameNode* frame,
-	     CSProfLoopNode* enclLoop,
+loopifyFrame(Prof::CSProfCodeNode* mirrorNode, CodeInfo* node,
+	     Prof::CSProfProcedureFrameNode* frame,
+	     Prof::CSProfLoopNode* enclLoop,
 	     CodeInfoToProcFrameMap& frameMap,
 	     ProcFrameAndLoopToCSLoopMap& loopMap)
 {
@@ -641,15 +665,15 @@ loopifyFrame(CSProfCodeNode* mirrorNode, CodeInfo* node,
     // - Presume that alien frames derive from callsites in the parent
     // frame, but flatten any nesting.
 
-    CSProfCodeNode* mirrorRoot = mirrorNode;
-    CSProfProcedureFrameNode* nxt_frame = frame;
-    CSProfLoopNode* nxt_enclLoop = enclLoop;
+    Prof::CSProfCodeNode* mirrorRoot = mirrorNode;
+    Prof::CSProfProcedureFrameNode* nxt_frame = frame;
+    Prof::CSProfLoopNode* nxt_enclLoop = enclLoop;
 
     if (n->Type() == ScopeInfo::LOOP) {
       // loops are always children of the current root (loop or frame)
-      CSProfLoopNode* lp = 
-	new CSProfLoopNode(mirrorNode, n->begLine(), n->endLine(), 
-			   n->UniqueId());
+      Prof::CSProfLoopNode* lp = 
+	new Prof::CSProfLoopNode(mirrorNode, n->begLine(), n->endLine(), 
+				 n->UniqueId());
       loopMap.insert(std::make_pair(ProcFrameAndLoop(frame, n), lp));
       DIAG_DevMsgIf(0, hex << "(" << frame << " " << n << ") -> (" << lp << ")" << dec);
 
@@ -657,7 +681,7 @@ loopifyFrame(CSProfCodeNode* mirrorNode, CodeInfo* node,
       nxt_enclLoop = lp;
     }
     else if (n->Type() == ScopeInfo::ALIEN) {
-      CSProfProcedureFrameNode* fr = new CSProfProcedureFrameNode(NULL);
+      Prof::CSProfProcedureFrameNode* fr = new Prof::CSProfProcedureFrameNode(NULL);
       addSymbolicInfo(fr, NULL, NULL, n, n);
       fr->isAlien() = true;
       frameMap.insert(std::make_pair(n, fr));
@@ -682,7 +706,7 @@ loopifyFrame(CSProfCodeNode* mirrorNode, CodeInfo* node,
 //***************************************************************************
 
 void 
-addSymbolicInfo(CSProfCodeNode* n, IDynNode* n_dyn,
+addSymbolicInfo(Prof::CSProfCodeNode* n, Prof::IDynNode* n_dyn,
 		LoadModScope* lmScope, CodeInfo* callingCtxt, CodeInfo* scope)
 {
   if (!n) {
@@ -724,12 +748,12 @@ addSymbolicInfo(CSProfCodeNode* n, IDynNode* n_dyn,
 // Routines for Inferring Call Frames (based on LM)
 //***************************************************************************
 
-typedef std::map<string, CSProfProcedureFrameNode*> StringToProcFrameMap;
+typedef std::map<string, Prof::CSProfProcedureFrameNode*> StringToProcFrameMap;
 
-void addSymbolicInfo(IDynNode* n, binutils::LM* lm);
+void addSymbolicInfo(Prof::IDynNode* n, binutils::LM* lm);
 
 void 
-inferCallFrames(CSProfile* prof, CSProfNode* node, 
+inferCallFrames(Prof::CSProfile* prof, Prof::CSProfNode* node, 
 		VMA begVMA, VMA endVMA, binutils::LM* lm);
 
 // create an extended profile representation
@@ -747,10 +771,10 @@ inferCallFrames(CSProfile* prof, CSProfNode* node,
 // coalese these leaves into one.
 
 void 
-Analysis::CallPath::inferCallFrames(CSProfile* prof, VMA begVMA, VMA endVMA, 
+Analysis::CallPath::inferCallFrames(Prof::CSProfile* prof, VMA begVMA, VMA endVMA, 
 				    binutils::LM *lm)
 {
-  CSProfTree* csproftree = prof->cct();
+  Prof::CSProfTree* csproftree = prof->cct();
   if (!csproftree) { return; }
   
   DIAG_MsgIf(DBG_NORM_PROC_FRAME, "start normalizing same procedure children");
@@ -759,7 +783,7 @@ Analysis::CallPath::inferCallFrames(CSProfile* prof, VMA begVMA, VMA endVMA,
 
 
 void 
-inferCallFrames(CSProfile* prof, CSProfNode* node, 
+inferCallFrames(Prof::CSProfile* prof, Prof::CSProfNode* node, 
 		VMA begVMA, VMA endVMA, binutils::LM* lm)
 {
   if (!node) { return; }
@@ -768,8 +792,8 @@ inferCallFrames(CSProfile* prof, CSProfNode* node,
   StringToProcFrameMap frameMap;
 
   // For each immediate child of this node...
-  for (CSProfNodeChildIterator it(node); it.Current(); /* */) {
-    CSProfCodeNode* n = dynamic_cast<CSProfCodeNode*>(it.CurNode());
+  for (Prof::CSProfNodeChildIterator it(node); it.Current(); /* */) {
+    Prof::CSProfCodeNode* n = dynamic_cast<Prof::CSProfCodeNode*>(it.CurNode());
     DIAG_Assert(n, "Unexpected node type");
     
     it++; // advance iterator -- it is pointing at 'n' 
@@ -783,9 +807,9 @@ inferCallFrames(CSProfile* prof, CSProfNode* node,
 
     // ------------------------------------------------------------
     // process this node if within the current load module
-    //   (and of the correct type: IDynNode!)
+    //   (and of the correct type: Prof::IDynNode!)
     // ------------------------------------------------------------
-    IDynNode* n_dyn = dynamic_cast<IDynNode*>(n);
+    Prof::IDynNode* n_dyn = dynamic_cast<Prof::IDynNode*>(n);
     if (n_dyn && (begVMA <= n_dyn->ip() && n_dyn->ip() <= endVMA)) {
       VMA curr_ip = n_dyn->ip();
       DIAG_MsgIf(DBG_NORM_PROC_FRAME, "analyzing node " << n->GetProc()
@@ -796,14 +820,14 @@ inferCallFrames(CSProfile* prof, CSProfNode* node,
       string myid = n->GetFile() + n->GetProc();
       
       StringToProcFrameMap::iterator it = frameMap.find(myid);
-      CSProfProcedureFrameNode* frame;
+      Prof::CSProfProcedureFrameNode* frame;
       if (it != frameMap.end()) { 
 	// found 
 	frame = (*it).second;
       } 
       else {
 	// no entry found -- add
-	frame = new CSProfProcedureFrameNode(NULL);
+	frame = new Prof::CSProfProcedureFrameNode(NULL);
 	frame->SetFile(n->GetFile() C_STR);
 	
 	string frameNm = n->GetProc();
@@ -841,20 +865,20 @@ inferCallFrames(CSProfile* prof, CSProfNode* node,
 
 #if 0
 void
-addSymbolicInfo(CSProfile* prof, VMA begVMA, VMA endVMA, binutils::LM* lm)
+addSymbolicInfo(Prof::CSProfile* prof, VMA begVMA, VMA endVMA, binutils::LM* lm)
 {
   VMA curr_ip; 
 
   /* point to the first load module in the Epoch table */
-  CSProfTree* tree = prof->Getcct();
-  CSProfNode* root = tree->GetRoot();
+  Prof::CSProfTree* tree = prof->Getcct();
+  Prof::CSProfNode* root = tree->GetRoot();
   
-  for (CSProfNodeIterator it(root); it.CurNode(); ++it) {
-    CSProfNode* n = it.CurNode();
-    CSProfCodeNode* nn = dynamic_cast<CSProfCodeNode*>(n);
+  for (Prof::CSProfNodeIterator it(root); it.CurNode(); ++it) {
+    Prof::CSProfNode* n = it.CurNode();
+    Prof::CSProfCodeNode* nn = dynamic_cast<Prof::CSProfCodeNode*>(n);
     
-    if (nn && (nn->GetType() == CSProfNode::STATEMENT 
-	       || nn->GetType() == CSProfNode::CALLSITE)
+    if (nn && (nn->GetType() == Prof::CSProfNode::STATEMENT 
+	       || nn->GetType() == Prof::CSProfNode::CALLSITE)
 	&& !nn->GotSrcInfo()) {
       curr_ip = nn->ip();
       if (begVMA <= curr_ip && curr_ip <= endVMA) { 
@@ -869,13 +893,13 @@ addSymbolicInfo(CSProfile* prof, VMA begVMA, VMA endVMA, binutils::LM* lm)
 
 
 void 
-addSymbolicInfo(IDynNode* n_dyn, binutils::LM* lm)
+addSymbolicInfo(Prof::IDynNode* n_dyn, binutils::LM* lm)
 {
   if (!n_dyn) {
     return;
   }
 
-  CSProfCodeNode* n = n_dyn->proxy();
+  Prof::CSProfCodeNode* n = n_dyn->proxy();
 
   string func, file;
   SrcFile::ln srcLn;
@@ -906,11 +930,11 @@ addSymbolicInfo(IDynNode* n_dyn, binutils::LM* lm)
 // Routines for normalizing the ScopeTree
 //***************************************************************************
 
-bool coalesceCallsiteLeaves(CSProfile* prof);
-void removeEmptyScopes(CSProfile* prof);
+bool coalesceCallsiteLeaves(Prof::CSProfile* prof);
+void removeEmptyScopes(Prof::CSProfile* prof);
 
 bool 
-Analysis::CallPath::normalize(CSProfile* prof)
+Analysis::CallPath::normalize(Prof::CSProfile* prof)
 {
   // Remove duplicate/inplied file and procedure information from tree
   coalesceCallsiteLeaves(prof);
@@ -923,12 +947,12 @@ Analysis::CallPath::normalize(CSProfile* prof)
 // FIXME
 // If pc values from the leaves map to the same source file info,
 // coalese these leaves into one.
-bool coalesceCallsiteLeaves(CSProfNode* node);
+bool coalesceCallsiteLeaves(Prof::CSProfNode* node);
 
 bool 
-coalesceCallsiteLeaves(CSProfile* prof)
+coalesceCallsiteLeaves(Prof::CSProfile* prof)
 {
-  CSProfTree* csproftree = prof->cct();
+  Prof::CSProfTree* csproftree = prof->cct();
   if (!csproftree) { return true; }
   
   return coalesceCallsiteLeaves(csproftree->root());
@@ -936,10 +960,10 @@ coalesceCallsiteLeaves(CSProfile* prof)
 
 
 // FIXME
-typedef std::map<string, CSProfStatementNode*> StringToCallSiteMap;
+typedef std::map<string, Prof::CSProfStatementNode*> StringToCallSiteMap;
 
 bool 
-coalesceCallsiteLeaves(CSProfNode* node)
+coalesceCallsiteLeaves(Prof::CSProfNode* node)
 {
   bool noError = true;
   
@@ -949,24 +973,24 @@ coalesceCallsiteLeaves(CSProfNode* node)
   StringToCallSiteMap sourceInfoMap;
   
   // For each immediate child of this node...
-  for (CSProfNodeChildIterator it(node); it.Current(); /* */) {
-    CSProfCodeNode* child = dynamic_cast<CSProfCodeNode*>(it.CurNode());
+  for (Prof::CSProfNodeChildIterator it(node); it.Current(); /* */) {
+    Prof::CSProfCodeNode* child = dynamic_cast<Prof::CSProfCodeNode*>(it.CurNode());
     DIAG_Assert(child, ""); // always true (FIXME)
     it++; // advance iterator -- it is pointing at 'child'
     
     bool inspect = (child->IsLeaf() 
-		    && (child->GetType() == CSProfNode::STATEMENT));
+		    && (child->GetType() == Prof::CSProfNode::STATEMENT));
     
     if (inspect) {
       // This child is a leaf. Test for duplicate source line info.
-      CSProfStatementNode* c = dynamic_cast<CSProfStatementNode*>(child);
+      Prof::CSProfStatementNode* c = dynamic_cast<Prof::CSProfStatementNode*>(child);
       string myid = string(c->GetFile()) + string(c->GetProc()) 
 	+ StrUtil::toStr(c->GetLine());
       
       StringToCallSiteMap::iterator it = sourceInfoMap.find(myid);
       if (it != sourceInfoMap.end()) {
 	// found -- we have a duplicate
-	CSProfStatementNode* c1 = (*it).second;
+	Prof::CSProfStatementNode* c1 = (*it).second;
 	c1->mergeMetrics(*c);
 	
 	// remove 'child' from tree
@@ -990,12 +1014,12 @@ coalesceCallsiteLeaves(CSProfNode* node)
 
 
 void 
-removeEmptyScopes(CSProfNode* node);
+removeEmptyScopes(Prof::CSProfNode* node);
 
 void 
-removeEmptyScopes(CSProfile* prof)
+removeEmptyScopes(Prof::CSProfile* prof)
 {
-  CSProfTree* csproftree = prof->cct();
+  Prof::CSProfTree* csproftree = prof->cct();
   if (!csproftree) { return; }
   
   removeEmptyScopes(csproftree->root());
@@ -1003,12 +1027,12 @@ removeEmptyScopes(CSProfile* prof)
 
 
 void 
-removeEmptyScopes(CSProfNode* node)
+removeEmptyScopes(Prof::CSProfNode* node)
 {
   if (!node) { return; }
 
-  for (CSProfNodeChildIterator it(node); it.Current(); /* */) {
-    CSProfNode* child = it.CurNode();
+  for (Prof::CSProfNodeChildIterator it(node); it.Current(); /* */) {
+    Prof::CSProfNode* child = it.CurNode();
     it++; // advance iterator -- it is pointing at 'child'
     
     // 1. Recursively do any trimming for this tree's children
@@ -1016,7 +1040,7 @@ removeEmptyScopes(CSProfNode* node)
 
     // 2. Trim this node if necessary
     bool remove = (child->IsLeaf() 
-		   && child->GetType() == CSProfNode::PROCEDURE_FRAME);
+		   && child->GetType() == Prof::CSProfNode::PROCEDURE_FRAME);
     if (remove) {
       child->Unlink(); // unlink 'child' from tree
       delete child;
@@ -1029,11 +1053,11 @@ removeEmptyScopes(CSProfNode* node)
 // 
 //***************************************************************************
 
-void copySourceFiles(CSProfNode* node, 
+void copySourceFiles(Prof::CSProfNode* node, 
 		     std::vector<string>& searchPaths,
 		     const string& dest_dir);
 
-void innerCopySourceFiles(CSProfNode* node, 
+void innerCopySourceFiles(Prof::CSProfNode* node, 
 			  std::vector<string>& searchPaths,
 			  const string& dest_dir);
 
@@ -1041,11 +1065,11 @@ void innerCopySourceFiles(CSProfNode* node,
 /** Copies the source files for the executable into the database 
     directory. */
 void 
-Analysis::CallPath::copySourceFiles(CSProfile *prof, 
+Analysis::CallPath::copySourceFiles(Prof::CSProfile *prof, 
 				    std::vector<string>& searchPaths,
 				    const string& dest_dir) 
 {
-  CSProfTree* csproftree = prof->cct();
+  Prof::CSProfTree* csproftree = prof->cct();
   if (!csproftree) { return ; }
 
   copySourceFiles(csproftree->root(), searchPaths, dest_dir);
@@ -1056,7 +1080,7 @@ Analysis::CallPath::copySourceFiles(CSProfile *prof,
     the source files for the executable into the database
     directory. */
 void 
-copySourceFiles(CSProfNode* node, 
+copySourceFiles(Prof::CSProfNode* node, 
 		std::vector<string>& searchPaths,
 		const string& dest_dir) 
 {
@@ -1068,7 +1092,7 @@ copySourceFiles(CSProfNode* node,
   }
 
   // For each immediate child of this node...
-  for (CSProfNodeChildIterator it(node); it.CurNode(); it++) {
+  for (Prof::CSProfNodeChildIterator it(node); it.CurNode(); it++) {
     // recur 
     copySourceFiles(it.CurNode(), searchPaths, dest_dir);
   }
@@ -1078,7 +1102,7 @@ copySourceFiles(CSProfNode* node,
 
 
 void 
-innerCopySourceFiles(CSProfNode* node, 
+innerCopySourceFiles(Prof::CSProfNode* node, 
 		     std::vector<string>& searchPaths,
 		     const string& dest_dir)
 {
@@ -1090,9 +1114,9 @@ innerCopySourceFiles(CSProfNode* node,
   bool fileIsText = false; 
 
   switch(node->GetType()) {
-  case CSProfNode::CALLSITE:
+  case Prof::CSProfNode::CALLSITE:
     {
-      CSProfCallSiteNode* c = dynamic_cast<CSProfCallSiteNode*>(node);
+      Prof::CSProfCallSiteNode* c = dynamic_cast<Prof::CSProfCallSiteNode*>(node);
       nodeSourceFile = c->GetFile();
       fileIsText = c->FileIsText();
       inspect = true;
@@ -1104,9 +1128,9 @@ innerCopySourceFiles(CSProfNode* node,
     }
     break;
 
-  case CSProfNode::STATEMENT:
+  case Prof::CSProfNode::STATEMENT:
     {
-      CSProfStatementNode* st = dynamic_cast<CSProfStatementNode*>(node);
+      Prof::CSProfStatementNode* st = dynamic_cast<Prof::CSProfStatementNode*>(node);
       nodeSourceFile = st->GetFile();
       fileIsText = st->FileIsText();
       inspect = true;
@@ -1118,10 +1142,10 @@ innerCopySourceFiles(CSProfNode* node,
     }
     break;
 
-  case CSProfNode::PROCEDURE_FRAME:
+  case Prof::CSProfNode::PROCEDURE_FRAME:
     {
-      CSProfProcedureFrameNode* pf = 
-	dynamic_cast<CSProfProcedureFrameNode*>(node);
+      Prof::CSProfProcedureFrameNode* pf = 
+	dynamic_cast<Prof::CSProfProcedureFrameNode*>(node);
       nodeSourceFile = pf->GetFile();
       fileIsText = pf->FileIsText();
       inspect = true;
@@ -1259,22 +1283,22 @@ innerCopySourceFiles(CSProfNode* node,
   
   if (inspect && sourceFileWasCopied) {
     switch( node->GetType()) {
-    case CSProfNode::CALLSITE:
+    case Prof::CSProfNode::CALLSITE:
       {
-	CSProfCallSiteNode* c = dynamic_cast<CSProfCallSiteNode*>(node);
+	Prof::CSProfCallSiteNode* c = dynamic_cast<Prof::CSProfCallSiteNode*>(node);
 	c->SetFile(relativeSourceFile);
       }
       break;
-    case CSProfNode::STATEMENT:
+    case Prof::CSProfNode::STATEMENT:
       {
-	CSProfStatementNode* st = dynamic_cast<CSProfStatementNode*>(node);
+	Prof::CSProfStatementNode* st = dynamic_cast<Prof::CSProfStatementNode*>(node);
 	st->SetFile(relativeSourceFile);
       }
       break;
-    case CSProfNode::PROCEDURE_FRAME:
+    case Prof::CSProfNode::PROCEDURE_FRAME:
       {
-	CSProfProcedureFrameNode* pf = 
-	  dynamic_cast<CSProfProcedureFrameNode*>(node);
+	Prof::CSProfProcedureFrameNode* pf = 
+	  dynamic_cast<Prof::CSProfProcedureFrameNode*>(node);
 	pf->SetFile(relativeSourceFile);
       }
       break;
@@ -1450,32 +1474,5 @@ breakPathIntoSegments(const string& normFilePath,
 			   std::stack<string>& pathSegmentsStack)
 {
   string resultPath = normalizeFilePath(normFilePath, pathSegmentsStack);
-}
-
-
-//***************************************************************************
-// 
-//***************************************************************************
-
-void
-Analysis::CallPath::ldmdSetUsedFlag(CSProfile* prof)
-{
-  VMA curr_ip;  
-  
-  CSProfTree* tree = prof->cct();
-  CSProfNode* root = tree->root();
-  
-  for (CSProfNodeIterator it(root); it.CurNode(); ++it) {
-    CSProfNode* n = it.CurNode();
-    CSProfCallSiteNode* nn = dynamic_cast<CSProfCallSiteNode*>(n);
-    
-    if (nn)  {
-      curr_ip = nn->ip();
-      Epoch::LM * csploadmd = prof->epoch()->lm_find(curr_ip);
-      if (!(csploadmd->GetUsedFlag())) {
-	csploadmd->SetUsedFlag(true);
-      }
-    }
-  }
 }
 

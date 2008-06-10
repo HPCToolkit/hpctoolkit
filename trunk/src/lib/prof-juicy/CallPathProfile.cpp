@@ -70,6 +70,8 @@ using namespace xml;
 // CSProfile
 //***************************************************************************
 
+namespace Prof {
+
 CSProfile::CSProfile(uint i)
 {
   m_metricdesc.resize(i);
@@ -121,3 +123,4 @@ CSProfile::ddump() const
   dump();
 }
 
+} // namespace Prof

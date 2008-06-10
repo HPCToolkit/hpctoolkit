@@ -79,6 +79,9 @@ using SrcFile::ln_NULL;
 // CSProfTree
 //***************************************************************************
 
+namespace Prof {
+
+
 CSProfTree::CSProfTree(const CSProfile* metadata)
   : m_root(NULL), m_metadata(metadata)
 {
@@ -1096,13 +1099,16 @@ int CSProfCodeNodeLineComp(CSProfCodeNode* x, CSProfCodeNode* y)
 }
 
 
+} // namespace Prof
+
+
 // Given a set of flags 'dmpFlag', determines whether we need to
 // ensure that certain characters are escaped.  Returns xml::ESC_TRUE
 // or xml::ESC_FALSE. 
 int AddXMLEscapeChars(int dmpFlag)
 {
-  if ((dmpFlag & CSProfTree::XML_TRUE) &&
-      !(dmpFlag & CSProfTree::XML_NO_ESC_CHARS)) {
+  if ((dmpFlag & Prof::CSProfTree::XML_TRUE) &&
+      !(dmpFlag & Prof::CSProfTree::XML_NO_ESC_CHARS)) {
     return xml::ESC_TRUE;
   } else {
     return xml::ESC_FALSE;

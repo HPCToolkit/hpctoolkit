@@ -74,7 +74,7 @@ using std::string;
 
 //*************************** Forward Declarations ***************************
 
-static CSProfile* 
+static Prof::CSProfile* 
 readProfileData(std::vector<string>& profileFiles);
 
 static PgmScopeTree*
@@ -84,11 +84,11 @@ static void
 dumpProfileData(std::ostream& os, std::vector<string>& profileFiles);
 
 static void
-processCallingCtxtTree(CSProfile* profData, VMA begVMA, VMA endVMA, 
+processCallingCtxtTree(Prof::CSProfile* profData, VMA begVMA, VMA endVMA, 
 		       const string& lm_fnm, LoadModScope* lmScope);
 
 static void
-processCallingCtxtTree(CSProfile* profData, VMA begVMA, VMA endVMA, 
+processCallingCtxtTree(Prof::CSProfile* profData, VMA begVMA, VMA endVMA, 
 		       const string& lm_fnm);
 
 
@@ -133,7 +133,7 @@ realmain(int argc, char* const* argv)
   // ------------------------------------------------------------
   // Read 'profData', the profiling data file
   // ------------------------------------------------------------
-  CSProfile* prof = readProfileData(args.profileFiles);
+  Prof::CSProfile* prof = readProfileData(args.profileFiles);
 
   // ------------------------------------------------------------
   // Add source file info
@@ -154,18 +154,18 @@ realmain(int argc, char* const* argv)
     // add one more pass search the callstack tree, to set 
     // the flag -"alpha"- only, since we get info from binary 
     // profile file not from bfd  
-    Analysis::CallPath::ldmdSetUsedFlag(prof); 
+    Epoch_SetLMUsed(prof); 
 
     // Note that this assumes iteration in reverse sorted order
     int num_lm = prof->epoch()->lm_size();
     VMA endVMA = VMA_MAX;
     
     for (int i = num_lm - 1; i >= 0; i--) {
-      Epoch::LM* csp_lm = prof->epoch()->lm(i); 
-      VMA begVMA = csp_lm->loadAddr(); // for next csploadmodule
+      Prof::Epoch::LM* epoch_lm = prof->epoch()->lm(i);
+      VMA begVMA = epoch_lm->loadAddr(); // for next Epoch::LM
 
-      if (csp_lm->GetUsedFlag()) {
-	const string& lm_fnm = csp_lm->name();
+      if (epoch_lm->isUsed()) {
+	const string& lm_fnm = epoch_lm->name();
 	LoadModScope* lmScope = NULL;
 	if (pgmScope) {
 	  lmScope = pgmScope->FindLoadMod(lm_fnm);
@@ -220,17 +220,17 @@ realmain(int argc, char* const* argv)
 
 //****************************************************************************
 
-static CSProfile* 
+static Prof::CSProfile* 
 readProfileFile(const string& prof_fnm);
 
 
-static CSProfile* 
+static Prof::CSProfile* 
 readProfileData(std::vector<string>& profileFiles)
 {
-  CSProfile* prof = readProfileFile(profileFiles[0]);
+  Prof::CSProfile* prof = readProfileFile(profileFiles[0]);
   
   for (int i = 1; i < profileFiles.size(); ++i) {
-    CSProfile* p = readProfileFile(profileFiles[i]);
+    Prof::CSProfile* p = readProfileFile(profileFiles[i]);
     prof->merge(*p);
     delete p;
   }
@@ -239,10 +239,10 @@ readProfileData(std::vector<string>& profileFiles)
 }
 
 
-static CSProfile* 
+static Prof::CSProfile* 
 readProfileFile(const string& prof_fnm)
 {
-  CSProfile* prof = NULL;
+  Prof::CSProfile* prof = NULL;
   try {
     //prof = TheProfileReader.ReadProfileFile(args.profFnm /*type*/);
     prof = ReadProfile_CSPROF(prof_fnm.c_str());
@@ -286,7 +286,7 @@ readStructure(std::vector<string>& structureFiles)
 //****************************************************************************
 
 static void
-processCallingCtxtTree(CSProfile* prof, VMA begVMA, VMA endVMA, 
+processCallingCtxtTree(Prof::CSProfile* prof, VMA begVMA, VMA endVMA, 
 		       const string& lm_fnm, LoadModScope* lmScope)
 {
   VMA relocVMA = 0;
@@ -309,7 +309,7 @@ processCallingCtxtTree(CSProfile* prof, VMA begVMA, VMA endVMA,
 
 
 static void
-processCallingCtxtTree(CSProfile* prof, VMA begVMA, VMA endVMA, 
+processCallingCtxtTree(Prof::CSProfile* prof, VMA begVMA, VMA endVMA, 
 		       const string& lm_fnm)
 {
   binutils::LM* lm = NULL;
