@@ -69,22 +69,6 @@ Epoch::Epoch(const unsigned int i)
 {
 } 
 
-
-void Epoch::dump(std::ostream& o)
-{
-  for (int i = 0; i < m_lmVec.size(); ++i) {
-    LM* lm = m_lmVec[i];
-    lm->dump(o);
-  }
-}
-
-
-void Epoch::ddump()
-{
-  dump(std::cerr);
-}
-
-
 Epoch::~Epoch()
 {
   for (LMVec::iterator it = lm_begin(); it != lm_end(); ++it) {
@@ -111,31 +95,41 @@ Epoch::lm_find(VMA ip)
 }
 
 
+void Epoch::dump(std::ostream& o)
+{
+  for (int i = 0; i < m_lmVec.size(); ++i) {
+    LM* lm = m_lmVec[i];
+    lm->dump(o);
+  }
+}
+
+
+void Epoch::ddump()
+{
+  dump(std::cerr);
+}
+
+
 //****************************************************************************
 
 Epoch::LM::LM()
+  : m_loadAddr(0), m_loadAddrPref(0), m_isUsed(false)
 {
-  lm = NULL;
 }
 
 
 Epoch::LM::~LM()
 {
-  delete lm;
 }
 
 
 void 
 Epoch::LM::dump(std::ostream& o)
 { 
-  using std::hex;
-  using std::dec;
-  using std::endl; 
-  
   o << m_name;
-  o <<" m_loadAddr is 0x" << hex <<  m_loadAddr;
-  o <<" m_prefAddr is 0x" << hex  << m_prefAddr;
-  o << dec << endl; 
+  o <<" m_loadAddr is 0x" << std::hex <<  m_loadAddr;
+  o <<" m_loadAddrPref is 0x" << std::hex  << m_loadAddrPref;
+  o << std::dec << std::endl; 
 }
 
 

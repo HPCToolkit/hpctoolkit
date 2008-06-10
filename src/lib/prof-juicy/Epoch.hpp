@@ -95,16 +95,15 @@ public:
     void loadAddr(VMA addr) 
       { m_loadAddr = addr; }
 
-    // FIXME: why do we want these three sets of functions here?
-    VMA GetVaddr() const   { return m_prefAddr; }
-    void SetVaddr(VMA  v)  { m_prefAddr = v; }
+#if 0
+    // tallent: I don't think we want this here
+    VMA loadAddrPref() const  { return m_loadAddrPref; }
+    void loadAddrPref(VMA x)  { m_loadAddrPref = x; }
+#endif
 
-    bool GetUsedFlag() const { return used; }
-    void SetUsedFlag(bool b) { used=b; }
-
-    bool LMIsEmpty()            { return (lm == NULL); }
-    void SetLM(binutils::LM* x) { lm = x; }
-    binutils::LM* GetLM()       { return lm; }
+    // tallent: FIXME: should not be located here
+    bool isUsed() const { return m_isUsed; }
+    void isUsed(bool x) { m_isUsed = x; }
     
     void dump(std::ostream& o= std::cerr);
     void ddump();
@@ -112,10 +111,8 @@ public:
   private: 
     std::string m_name;
     VMA m_loadAddr;
-
-    VMA m_prefAddr;
-    bool used;
-    binutils::LM* lm;
+    VMA m_loadAddrPref;
+    bool m_isUsed;
   };
 
   struct cmp_LM_loadAddr
@@ -162,7 +159,7 @@ public:
   
 protected:
 private:
-  LMVec  m_lmVec;
+  LMVec m_lmVec;
 };
 
 
