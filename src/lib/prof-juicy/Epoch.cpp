@@ -65,46 +65,43 @@ namespace Prof {
 
 
 Epoch::Epoch(const unsigned int i)
-  : loadmoduleVec(i)
+  : m_lmVec(i, NULL)
 {
-  numberofldmodule = i;
 } 
 
 
-void Epoch::Dump(std::ostream& o)
+void Epoch::dump(std::ostream& o)
 {
-  for (int i=0; i<numberofldmodule; i++) {
-    CSProfLDmodule* lm = loadmoduleVec[i];
-    lm->Dump(o);
+  for (int i = 0; i < m_lmVec.size(); ++i) {
+    LM* lm = m_lmVec[i];
+    lm->dump(o);
   }
 }
 
 
-void Epoch::DDump()
+void Epoch::ddump()
 {
-  Dump(std::cerr);
+  dump(std::cerr);
 }
 
 
 Epoch::~Epoch()
 {
-  for (Epoch_LdModuleIterator it(*this); it.IsValid(); ++it) {
-    CSProfLDmodule* lm = it.Current(); 
-    delete lm; 
+  for (LMVec::iterator it = lm_begin(); it != lm_end(); ++it) {
+    delete *it; // Epoch::LM*
   }
-  
-  loadmoduleVec.clear();
+  m_lmVec.clear();
 }
 
 
-CSProfLDmodule* 
-Epoch::FindLDmodule(VMA ip)
+Epoch::LM* 
+Epoch::lm_find(VMA ip)
 {
-  CSProfLDmodule* pre=loadmoduleVec[0];
-  for (int i=0; i< numberofldmodule; i++) { 
-    CSProfLDmodule* curr =loadmoduleVec[i];
-    if (ip >= (pre->GetMapaddr()) &&
-	ip < curr->GetMapaddr())
+  LM* pre = m_lmVec[0];
+
+  for (int i = 1; i < m_lmVec.size(); ++i) {
+    LM* curr = m_lmVec[i];
+    if (pre->loadAddr() <= ip && ip < curr->loadAddr())
       return pre;
     else 
       pre = curr;
@@ -116,36 +113,36 @@ Epoch::FindLDmodule(VMA ip)
 
 //****************************************************************************
 
-CSProfLDmodule::CSProfLDmodule()
+Epoch::LM::LM()
 {
   lm = NULL;
 }
 
 
-CSProfLDmodule::~CSProfLDmodule()
+Epoch::LM::~LM()
 {
   delete lm;
 }
 
 
 void 
-CSProfLDmodule::Dump(std::ostream& o)
+Epoch::LM::dump(std::ostream& o)
 { 
   using std::hex;
   using std::dec;
   using std::endl; 
   
-  o<<"the load module name is " << name;
-  o<<" vaddr is 0x" << hex  << vaddr;
-  o<<" mapaddr is 0x" << hex <<  mapaddr;
-  o<< dec << endl; 
+  o << m_name;
+  o <<" m_loadAddr is 0x" << hex <<  m_loadAddr;
+  o <<" m_prefAddr is 0x" << hex  << m_prefAddr;
+  o << dec << endl; 
 }
 
 
 void 
-CSProfLDmodule::DDump()
+Epoch::LM::ddump()
 {
-  Dump(std::cerr);
+  dump(std::cerr);
 }
 
 
