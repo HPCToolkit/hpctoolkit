@@ -59,12 +59,15 @@
 
 #include <include/general.h>               
 
-#include "CallingContextTree.hpp"
+// NOTE: included by CallingContextTree.hpp
+//#include "CallingContextTree.hpp"
 
 #include <lib/support/NonUniformDegreeTree.hpp>
 #include <lib/support/PtrSetIterator.hpp>
 
 //*************************** Forward Declarations ***************************
+
+namespace Prof {
 
 //*****************************************************************************
 // CSProfNodeFilter: Filters are used in iterators to make sure only
@@ -213,6 +216,8 @@ private:
   WordSet scopes;  // the scopes we want to have sorted
   WordSetSortedIterator *ptrSetIt;  
 };
+
+} // namespace Prof
 
 //***************************************************************************
 

@@ -48,8 +48,8 @@
 //
 //***************************************************************************
 
-#ifndef prof_juicy_CallPathProfile 
-#define prof_juicy_CallPathProfile
+#ifndef prof_juicy_Prof_CallPath_Profile_hpp 
+#define prof_juicy_Prof_CallPath_Profile_hpp
 
 //************************* System Include Files ****************************
 
@@ -86,7 +86,7 @@
 // the bottom of the all the call stack smples
 // muliple metrics => multiple sample data associated with each tree leaf
 
-using namespace Prof; // temporary: for SampledMetricDesc
+namespace Prof {
 
 class CSProfile: public Unique {
 public:
@@ -106,8 +106,8 @@ public:
 
   CSProfTree*  cct() const { return m_cct; }
 
-  Epoch* epoch() const         { return m_epoch; }
-  void         epoch(Epoch* x) { m_epoch = x; }
+  Epoch* epoch() const   { return m_epoch; }
+  void   epoch(Epoch* x) { m_epoch = x; }
 
 
   // -------------------------------------------------------
@@ -130,7 +130,9 @@ private:
 };
 
 
+} // namespace Prof
+
 //***************************************************************************
 
-#endif /* prof_juicy_CallPathProfile */
+#endif /* prof_juicy_Prof_CallPath_Profile_hpp */
 

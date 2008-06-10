@@ -74,23 +74,21 @@ namespace Analysis {
 
 namespace CallPath {
 
-void inferCallFrames(CSProfile* prof, VMA begVMA, VMA endVMA,
+void inferCallFrames(Prof::CSProfile* prof, VMA begVMA, VMA endVMA,
 		     LoadModScope* lmScope, VMA relocVMA);
 
-void inferCallFrames(CSProfile* prof, VMA begVMA, VMA endVMA,
+void inferCallFrames(Prof::CSProfile* prof, VMA begVMA, VMA endVMA,
 		     binutils::LM* lm);
 
-bool normalize(CSProfile* prof);
+bool normalize(Prof::CSProfile* prof);
 
-void writeInDatabase(CSProfile* prof, const std::string& filenm);
+void writeInDatabase(Prof::CSProfile* prof, const std::string& filenm);
 
-void write(CSProfile* prof, std::ostream& os, bool prettyPrint = true);
+void write(Prof::CSProfile* prof, std::ostream& os, bool prettyPrint = true);
 
-void copySourceFiles(CSProfile *prof, 
+void copySourceFiles(Prof::CSProfile *prof, 
 		     std::vector<std::string>& searchPaths,
 		     const std::string& dest_dir);  
-
-void ldmdSetUsedFlag(CSProfile* prof); 
 
 } // namespace CallPath
 
@@ -99,8 +97,10 @@ void ldmdSetUsedFlag(CSProfile* prof);
 //****************************************************************************
 
 // FIXME: move to prof-juicy
+Prof::CSProfile* ReadProfile_CSPROF(const char* fnm);
 
-CSProfile* ReadProfile_CSPROF(const char* fnm);
+// FIXME: OBSOLETE
+void Epoch_SetLMUsed(Prof::CSProfile* prof);  
 
 // FIXME: move to support
 

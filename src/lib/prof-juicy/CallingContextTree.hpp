@@ -94,12 +94,11 @@ operator<<(std::ostream& os, const hpcfile_metric_data_t x)
 }
 
 
-
 //***************************************************************************
 // CSProfTree
 //***************************************************************************
 
-using namespace Prof; // temporary: for SampledMetricDesc
+namespace Prof {
 
 class CSProfile;
 class CSProfNode;
@@ -799,10 +798,14 @@ public:
 #define DEB_READ_MMETRICS 0
 #define DEB_UNIFY_PROCEDURE_FRAME 0
 
+} // namespace Prof
+
 //***************************************************************************
 
 #include "CallingContextTreeIterator.hpp"
 
 //***************************************************************************
+
+
 
 #endif /* prof_juicy_CallingContextTree */

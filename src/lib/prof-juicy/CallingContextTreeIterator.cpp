@@ -52,18 +52,21 @@
 
 //*************************** User Include Files ****************************
 
-#include "CallingContextTreeIterator.hpp"
+#include "CallingContextTree.hpp"
 
 #include <lib/support/diagnostics.h>
 
 //*************************** Forward Declarations ***************************
 
-static int CompareByLine(const void *a, const void *b);
-
 using std::ostream;
 using std::endl;
 
 //****************************************************************************
+
+namespace Prof {
+
+static int CompareByLine(const void *a, const void *b);
+
 
 //*****************************************************************************
 // CSProfNodeFilter support
@@ -74,6 +77,7 @@ bool HasNodeType(const CSProfNode& sinfo, long type)
   return (type == CSProfNode::ANY) 
     || (sinfo.GetType() == CSProfNode::IntToNodeType(type)); 
 }
+
 
 const CSProfNodeFilter NodeTypeFilter[CSProfNode::NUMBER_OF_TYPES] = {
   CSProfNodeFilter(HasNodeType,
@@ -321,3 +325,5 @@ CSProfNodeNameSortedChildIterator::CompareByName(const void* a, const void* b)
 }
 
 //***************************************************************************
+
+} // namespace Prof
