@@ -74,10 +74,10 @@ namespace Analysis {
 
 namespace CallPath {
 
-void inferCallFrames(Prof::CSProfile* prof, VMA begVMA, VMA endVMA,
+void inferCallFrames(Prof::CSProfile* prof, Prof::Epoch::LM* epoch_lm,
 		     LoadModScope* lmScope, VMA relocVMA);
 
-void inferCallFrames(Prof::CSProfile* prof, VMA begVMA, VMA endVMA,
+void inferCallFrames(Prof::CSProfile* prof, Prof::Epoch::LM* epoch_lm,
 		     binutils::LM* lm);
 
 bool normalize(Prof::CSProfile* prof);

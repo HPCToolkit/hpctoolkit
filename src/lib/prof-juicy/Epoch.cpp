@@ -133,7 +133,8 @@ void Epoch::ddump() const
 //****************************************************************************
 
 Epoch::LM::LM(const char* nm, VMA loadAddr)
-  : m_id(LM_id_NULL), m_name((nm) ? nm: ""), m_loadAddr(loadAddr), 
+  : m_id(LM_id_NULL), m_name((nm) ? nm: ""), 
+    m_loadAddr(loadAddr), m_relocAmt(0),
     m_loadAddrPref(0), m_isUsed(false)
 {
 }
@@ -147,7 +148,9 @@ Epoch::LM::~LM()
 void 
 Epoch::LM::dump(std::ostream& os) const
 { 
-  os << "0x" << std::hex << m_loadAddr << std::dec << ": " << m_name;
+  using namespace std;
+  os << "0x" << hex << m_loadAddr << dec << " (+" << m_relocAmt <<  "): " 
+     << m_name;
 }
 
 

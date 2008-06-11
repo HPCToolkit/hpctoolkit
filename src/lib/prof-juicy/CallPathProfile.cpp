@@ -154,6 +154,9 @@ addPGMToCSProfTree(Prof::CSProfTree* tree, const char* progName);
 static bool 
 fixLeaves(Prof::CSProfNode* node);
 
+static void
+unrelocateIPs(Prof::CSProfile* prof);
+
 
 
 Prof::CSProfile* 
@@ -199,12 +202,14 @@ ReadProfile_CSPROF(const char* fnm)
   hpcfile_close(fs);
 
 
-  // ------------------------------------------------------------
-  // 
-  // ------------------------------------------------------------
-
-  DIAG_WMsgIf(epochtbl.num_epoch > 1, fnm << ": only processing first epoch!");
+  // Extract profiling info
+  prof->name("[Profile Name]"); 
   
+  // ------------------------------------------------------------
+  // Epoch
+  // ------------------------------------------------------------
+  DIAG_WMsgIf(epochtbl.num_epoch > 1, fnm << ": only processing first epoch!");
+
   uint num_lm = epochtbl.epoch_modlist[0].num_loadmodule;
 
   Epoch* epoch = new Epoch(num_lm);
@@ -218,10 +223,11 @@ ReadProfile_CSPROF(const char* fnm)
   }
   epoch_table__free_data(&epochtbl, hpcfile_free_CB);
 
-  // Extract profiling info
-  prof->name("[Profile Name]"); 
-  
+  prof->epoch(epoch);
+
+  // ------------------------------------------------------------
   // Extract metrics
+  // ------------------------------------------------------------
   for (int i = 0; i < num_metrics; i++) {
     SampledMetricDesc* metric = prof->metric(i);
     metric->name(metadata.metrics[i].metric_name);
@@ -229,14 +235,19 @@ ReadProfile_CSPROF(const char* fnm)
     metric->period(metadata.metrics[i].sample_period);
   }
 
-  prof->epoch(epoch);
-
-  // We must deallocate pointer-data
+  // ------------------------------------------------------------
+  // Cleanup
+  // ------------------------------------------------------------
   for (int i = 0; i < num_metrics; i++) {
     hpcfile_free_CB(metadata.metrics[i].metric_name);
   }
   hpcfile_free_CB(metadata.target);
   hpcfile_free_CB(metadata.metrics);
+
+
+  // ------------------------------------------------------------
+  // Postprocess
+  // ------------------------------------------------------------
 
   // Add PGM node to tree
   addPGMToCSProfTree(prof->cct(), prof->name().c_str());
@@ -245,6 +256,8 @@ ReadProfile_CSPROF(const char* fnm)
   // FIXME: There should be a better way of doing this.  We could
   // merge it with a normalization step...
   fixLeaves(prof->cct()->root());
+
+  unrelocateIPs(prof);
   
   return prof;
 }
@@ -344,23 +357,25 @@ addPGMToCSProfTree(Prof::CSProfTree* tree, const char* progName)
 static bool 
 fixLeaves(Prof::CSProfNode* node)
 {
+  using namespace Prof;
+
   bool noError = true;
   
   if (!node) { return noError; }
 
   // For each immediate child of this node...
-  for (Prof::CSProfNodeChildIterator it(node); it.Current(); /* */) {
-    Prof::CSProfCodeNode* child = dynamic_cast<Prof::CSProfCodeNode*>(it.CurNode());
-    Prof::IDynNode* child_dyn = dynamic_cast<Prof::IDynNode*>(child);
+  for (CSProfNodeChildIterator it(node); it.Current(); /* */) {
+    CSProfCodeNode* child = dynamic_cast<CSProfCodeNode*>(it.CurNode());
+    IDynNode* child_dyn = dynamic_cast<IDynNode*>(child);
     DIAG_Assert(child && child_dyn, "");
     it++; // advance iterator -- it is pointing at 'child'
 
     DIAG_DevMsgIf(0, "fixLeaves: " << hex << child_dyn->ip() << dec);
-    if (child->IsLeaf() && child->GetType() == Prof::CSProfNode::CALLSITE) {
+    if (child->IsLeaf() && child->GetType() == CSProfNode::CALLSITE) {
       // This child is a leaf. Convert.
-      Prof::CSProfCallSiteNode* c = dynamic_cast<Prof::CSProfCallSiteNode*>(child);
+      CSProfCallSiteNode* c = dynamic_cast<CSProfCallSiteNode*>(child);
       
-      Prof::CSProfStatementNode* newc = new Prof::CSProfStatementNode(NULL, c->metricdesc());
+      CSProfStatementNode* newc = new CSProfStatementNode(NULL, c->metricdesc());
       *newc = *c;
       
       newc->LinkBefore(node->FirstChild()); // do not break iteration!
@@ -377,26 +392,25 @@ fixLeaves(Prof::CSProfNode* node)
 }
 
 
-void
-Epoch_SetLMUsed(Prof::CSProfile* prof)
+static void
+unrelocateIPs(Prof::CSProfile* prof)
 {
-  VMA curr_ip;  
-  
-  Prof::CSProfTree* tree = prof->cct();
-  Prof::CSProfNode* root = tree->root();
+  Prof::CSProfNode* root = prof->cct()->root();
+  const Prof::Epoch* epoch = prof->epoch();
   
   for (Prof::CSProfNodeIterator it(root); it.CurNode(); ++it) {
     Prof::CSProfNode* n = it.CurNode();
-    Prof::CSProfCallSiteNode* nn = dynamic_cast<Prof::CSProfCallSiteNode*>(n);
-    
-    if (nn) {
-      curr_ip = nn->ip();
-      Prof::Epoch::LM* lm = prof->epoch()->lm_find(curr_ip);
-      if (!(lm->isUsed())) {
-	lm->isUsed(true);
-      }
+
+    Prof::IDynNode* n_dyn = dynamic_cast<Prof::IDynNode*>(n);
+    if (n_dyn) {
+      VMA ip = n_dyn->ip_real();
+      Prof::Epoch::LM* lm = epoch->lm_find(ip);
+      VMA ip_ur = ip - lm->relocAmt();
+
+      n_dyn->lm_id(lm->id());
+      n_dyn->ip(ip_ur, 0);
+      lm->isUsed(true); // FIXME:
     }
   }
 }
-
 

@@ -101,8 +101,12 @@ const char *CSPROFILEdtd =
 #include <lib/xml/CSPROFILE.dtd.h>
 
 
+namespace Analysis {
+
+namespace CallPath {
+
 void 
-Analysis::CallPath::writeInDatabase(Prof::CSProfile* prof, const string& filenm) 
+writeInDatabase(Prof::CSProfile* prof, const string& filenm) 
 {
   std::filebuf fb;
   fb.open(filenm.c_str(), std::ios::out);
@@ -112,9 +116,8 @@ Analysis::CallPath::writeInDatabase(Prof::CSProfile* prof, const string& filenm)
 }
 
 
-/* version=1.0.2 for alpha memory profile---FMZ */
 void
-Analysis::CallPath::write(Prof::CSProfile* prof, std::ostream& os, bool prettyPrint)
+write(Prof::CSProfile* prof, std::ostream& os, bool prettyPrint)
 {
   os << "<?xml version=\"1.0\"?>" << std::endl;
   os << "<!DOCTYPE CSPROFILE [\n" << CSPROFILEdtd << "]>" << std::endl;
@@ -146,6 +149,10 @@ Analysis::CallPath::write(Prof::CSProfile* prof, std::ostream& os, bool prettyPr
   os << "</CSPROFILE>\n";
   os.flush();
 }
+
+} // namespace CallPath
+
+} // namespace Analysis
 
 
 //****************************************************************************
@@ -193,27 +200,27 @@ loopifyFrame(Prof::CSProfProcedureFrameNode* frame, CodeInfo* ctxtScope,
 
 void 
 inferCallFrames(Prof::CSProfile* prof, Prof::CSProfNode* node, 
-		VMA begVMA, VMA endVMA, LoadModScope* lmScope, VMA relocVMA);
+		Prof::Epoch::LM* epoch_lm, LoadModScope* lmScope, VMA relocVMA);
 
 
 // inferCallFrames: Effectively create equivalence classes of frames
 // for all the return addresses found under.
 //
 void
-Analysis::CallPath::inferCallFrames(Prof::CSProfile* prof, VMA begVMA, VMA endVMA, 
+Analysis::CallPath::
+inferCallFrames(Prof::CSProfile* prof, Prof::Epoch::LM* epoch_lm, 
 		LoadModScope* lmScope, VMA relocVMA)
 {
   Prof::CSProfTree* csproftree = prof->cct();
   if (!csproftree) { return; }
   
-  inferCallFrames(prof, csproftree->root(), begVMA, endVMA, 
-		  lmScope, relocVMA);
+  inferCallFrames(prof, csproftree->root(), epoch_lm, lmScope, relocVMA);
 }
 
 
 void 
 inferCallFrames(Prof::CSProfile* prof, Prof::CSProfNode* node, 
-		VMA begVMA, VMA endVMA, LoadModScope* lmScope, VMA relocVMA)
+		Prof::Epoch::LM* epoch_lm, LoadModScope* lmScope, VMA relocVMA)
 {
   // INVARIANT: The parent of 'node' has been fully processed and
   // lives within a correctly located procedure frame.
@@ -232,16 +239,16 @@ inferCallFrames(Prof::CSProfile* prof, Prof::CSProfNode* node,
     
     // process this node
     Prof::IDynNode* n_dyn = dynamic_cast<Prof::IDynNode*>(n);
-    if (n_dyn && (begVMA <= n_dyn->ip() && n_dyn->ip() <= endVMA)) {
+    if (n_dyn && (n_dyn->lm_id() == epoch_lm->id())) {
       VMA ip = n_dyn->ip(); // for debuggers
-      VMA curr_ip = ip - relocVMA;
+      VMA ip_ur = ip - relocVMA;
       
       DIAG_DevIf(50) {
 	Prof::CSProfCallSiteNode* p = node->AncestorCallSite();
 	DIAG_DevMsg(0, "inferCallFrames: " << hex << ((p) ? p->ip() : 0) << " --> " << ip << dec);
       }
       
-      CodeInfo* scope = lmScope->findByVMA(curr_ip);
+      CodeInfo* scope = lmScope->findByVMA(ip_ur);
       CodeInfo* ctxt = NULL;
       LoopScope* loop = NULL;
       if (scope) {
@@ -256,7 +263,7 @@ inferCallFrames(Prof::CSProfile* prof, Prof::CSProfNode* node,
 
       // Find (or create) a procedure frame for 'n'.
       Prof::CSProfProcedureFrameNode* frame = 
-	findOrCreateProcFrame(n_dyn, lmScope, ctxt, loop, curr_ip, 
+	findOrCreateProcFrame(n_dyn, lmScope, ctxt, loop, ip_ur, 
 			      frameMap, loopMap);
       
       // Find appropriate (new) parent context for 'node': the frame
@@ -276,7 +283,7 @@ inferCallFrames(Prof::CSProfile* prof, Prof::CSProfNode* node,
     
     // recur 
     if (!n->IsLeaf()) {
-      inferCallFrames(prof, n, begVMA, endVMA, lmScope, relocVMA);
+      inferCallFrames(prof, n, epoch_lm, lmScope, relocVMA);
     }
   }
 }
@@ -292,7 +299,7 @@ Prof::CSProfProcedureFrameNode*
 findOrCreateProcFrame(Prof::IDynNode* node,
 		      LoadModScope* lmScope, CodeInfo* callingCtxt,
 		      LoopScope* loop,
-		      VMA curr_ip,
+		      VMA ip_ur,
 		      CodeInfoToProcFrameMap& frameMap,
 		      ProcFrameAndLoopToCSLoopMap& loopMap)
 {
@@ -322,7 +329,7 @@ findOrCreateProcFrame(Prof::IDynNode* node,
       addSymbolicInfo(frame, node, lmScope, NULL, NULL);
       frame->Link(node->proxy()->Parent());
 
-      string nm = string("unknown(s)@") + StrUtil::toStr(curr_ip, 16); // FIXME
+      string nm = string("unknown(s)@") + StrUtil::toStr(ip_ur, 16); // FIXME
       //string nm = "unknown(s)@" + StrUtil::toStr(ip, 16);
       frame->SetProc(nm C_STR);
       
@@ -481,7 +488,7 @@ void addSymbolicInfo(Prof::IDynNode* n, binutils::LM* lm);
 
 void 
 inferCallFrames(Prof::CSProfile* prof, Prof::CSProfNode* node, 
-		VMA begVMA, VMA endVMA, binutils::LM* lm);
+		Prof::Epoch::LM* epoch_lm, binutils::LM* lm);
 
 // create an extended profile representation
 // normalize call sites 
@@ -498,20 +505,21 @@ inferCallFrames(Prof::CSProfile* prof, Prof::CSProfNode* node,
 // coalese these leaves into one.
 
 void 
-Analysis::CallPath::inferCallFrames(Prof::CSProfile* prof, VMA begVMA, VMA endVMA, 
-				    binutils::LM *lm)
+Analysis::CallPath::
+inferCallFrames(Prof::CSProfile* prof, Prof::Epoch::LM* epoch_lm, 
+		binutils::LM* lm)
 {
   Prof::CSProfTree* csproftree = prof->cct();
   if (!csproftree) { return; }
   
   DIAG_MsgIf(DBG_NORM_PROC_FRAME, "start normalizing same procedure children");
-  inferCallFrames(prof, csproftree->root(), begVMA, endVMA, lm);
+  inferCallFrames(prof, csproftree->root(), epoch_lm, lm);
 }
 
 
 void 
 inferCallFrames(Prof::CSProfile* prof, Prof::CSProfNode* node, 
-		VMA begVMA, VMA endVMA, binutils::LM* lm)
+		Prof::Epoch::LM* epoch_lm, binutils::LM* lm)
 {
   if (!node) { return; }
 
@@ -529,7 +537,7 @@ inferCallFrames(Prof::CSProfile* prof, Prof::CSProfNode* node,
     // recur 
     // ------------------------------------------------------------
     if (!n->IsLeaf()) {
-      inferCallFrames(prof, n, begVMA, endVMA, lm);
+      inferCallFrames(prof, n, epoch_lm, lm);
     }
 
     // ------------------------------------------------------------
@@ -537,10 +545,10 @@ inferCallFrames(Prof::CSProfile* prof, Prof::CSProfNode* node,
     //   (and of the correct type: Prof::IDynNode!)
     // ------------------------------------------------------------
     Prof::IDynNode* n_dyn = dynamic_cast<Prof::IDynNode*>(n);
-    if (n_dyn && (begVMA <= n_dyn->ip() && n_dyn->ip() <= endVMA)) {
-      VMA curr_ip = n_dyn->ip();
+    if (n_dyn && (n_dyn->lm_id() == epoch_lm->id())) {
+      VMA ip = n_dyn->ip();
       DIAG_MsgIf(DBG_NORM_PROC_FRAME, "analyzing node " << n->GetProc()
-		 << hex << " " << curr_ip);
+		 << hex << " " << ip);
       
       addSymbolicInfo(n_dyn, lm);
       
@@ -559,7 +567,7 @@ inferCallFrames(Prof::CSProfile* prof, Prof::CSProfNode* node,
 	
 	string frameNm = n->GetProc();
 	if (frameNm.empty()) {
-	  frameNm = string("unknown(~s)@") + StrUtil::toStr(curr_ip, 16);
+	  frameNm = string("unknown(~s)@") + StrUtil::toStr(ip, 16);
 	} 
 	DIAG_MsgIf(DBG_NORM_PROC_FRAME, "frame name: " << n->GetProc() 
 		   << " --> " << frameNm);
@@ -573,7 +581,7 @@ inferCallFrames(Prof::CSProfile* prof, Prof::CSProfNode* node,
 	else {
 	  // determine the first line of the enclosing procedure
 	  SrcFile::ln begLn;
-	  lm->GetProcFirstLineInfo(curr_ip, n_dyn->opIndex(), begLn);
+	  lm->GetProcFirstLineInfo(ip, n_dyn->opIndex(), begLn);
 	  frame->SetLine(begLn);
 	}
 	

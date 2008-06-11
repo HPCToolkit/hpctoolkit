@@ -564,13 +564,16 @@ private:
 
   lush_assoc_info_t m_as_info;
 
-  int m_lmId;     // Epoch::LM id
+  Epoch::LM_id_t m_lmId; // Epoch::LM id
   VMA m_ip;       // instruction pointer for this node
-  ushort m_opIdx; // index in the instruction
+  ushort m_opIdx; // index in the instruction [OBSOLETE]
 
   lush_lip_t* m_lip; // lush logical ip
 
+  // FIXME: convert to metric-id a la Metric::Mgr
   const SampledMetricDescVec*        m_metricdesc; // does not own memory
+
+  // FIXME: a vector of doubles, a la ScopeInfo
   std::vector<hpcfile_metric_data_t> m_metrics;
 };
 

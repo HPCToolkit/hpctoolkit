@@ -104,8 +104,14 @@ public:
     
     VMA loadAddr() const 
       { return m_loadAddr; }
-    void loadAddr(VMA addr) 
-      { m_loadAddr = addr; }
+    void loadAddr(VMA x) 
+      { m_loadAddr = x; }
+
+    // loadAddr() - relocAmt() = unrelocated VMA
+    VMA relocAmt() const
+      { return m_relocAmt; }
+    VMA relocAmt(VMA x)
+      { m_relocAmt = x; }
 
 #if 0
     // tallent: I don't think we want this here
@@ -130,6 +136,8 @@ public:
     LM_id_t m_id;
     std::string m_name;
     VMA m_loadAddr;
+    VMA m_relocAmt;
+    
     VMA m_loadAddrPref;
     bool m_isUsed;
   };
