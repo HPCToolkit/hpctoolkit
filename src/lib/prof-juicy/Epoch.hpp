@@ -125,6 +125,7 @@ public:
     // tallent: FIXME: should not be located here
     bool isUsed() const { return m_isUsed; }
     void isUsed(bool x) { m_isUsed = x; }
+    void isUsedMrg(bool x) { m_isUsed = (m_isUsed || x); }
     
     void dump(std::ostream& os = std::cerr) const;
     void ddump() const;
