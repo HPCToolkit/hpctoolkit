@@ -226,17 +226,13 @@ ReadProfile_CSPROF(const char* fnm)
   Epoch* epoch = new Epoch(num_lm);
 
   for (int i = 0; i < num_lm; i++) { 
-    Epoch::LM* lm = new Epoch::LM();
-    lm->name(epochtbl.epoch_modlist[0].loadmodule[i].name);
-    lm->loadAddr(epochtbl.epoch_modlist[0].loadmodule[i].mapaddr);
-    
+    const char* nm = epochtbl.epoch_modlist[0].loadmodule[i].name;
+    VMA loadAddr = epochtbl.epoch_modlist[0].loadmodule[i].mapaddr;
+    Epoch::LM* lm = new Epoch::LM(nm, loadAddr);
     //lm->loadAddrPref(epochtbl.epoch_modlist[0].loadmodule[i].vaddr);
-    lm->isUsed(false);
-    epoch->lm(i, lm);
+    epoch->lm_insert(lm);
   }
   epoch_table__free_data(&epochtbl, hpcfile_free_CB);
-  
-  epoch->SortLoadmoduleByVMA(); 
 
   // Extract profiling info
   prof->name("[Profile Name]"); 
@@ -409,11 +405,11 @@ Epoch_SetLMUsed(Prof::CSProfile* prof)
     Prof::CSProfNode* n = it.CurNode();
     Prof::CSProfCallSiteNode* nn = dynamic_cast<Prof::CSProfCallSiteNode*>(n);
     
-    if (nn)  {
+    if (nn) {
       curr_ip = nn->ip();
-      Prof::Epoch::LM* csploadmd = prof->epoch()->lm_find(curr_ip);
-      if (!(csploadmd->isUsed())) {
-	csploadmd->isUsed(true);
+      Prof::Epoch::LM* lm = prof->epoch()->lm_find(curr_ip);
+      if (!(lm->isUsed())) {
+	lm->isUsed(true);
       }
     }
   }

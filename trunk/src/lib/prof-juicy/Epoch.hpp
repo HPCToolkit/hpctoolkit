@@ -53,10 +53,15 @@
 
 //************************* System Include Files ****************************
 
-#include <string>
-#include <vector>
-#include <algorithm>
 #include <iostream>
+
+#include <string>
+
+#include <vector>
+#include <set>
+
+#include <algorithm>
+
 
 //*************************** User Include Files ****************************
 
@@ -66,8 +71,9 @@
 
 #include <lib/binutils/LM.hpp>
 
-#include <lib/support/NonUniformDegreeTree.hpp>
+#include <lib/support/diagnostics.h>
 #include <lib/support/Unique.hpp>
+
 
 //*************************** Forward Declarations ***************************
 
@@ -82,8 +88,11 @@ public:
 
   class LM : public Unique {
   public:
-    LM();
+    LM(const char* name = NULL, VMA loadAddr = 0);
     virtual ~LM();
+
+    int id() const 
+      { return m_id; }
     
     const std::string& name() const
       { return m_name; }
@@ -105,65 +114,113 @@ public:
     bool isUsed() const { return m_isUsed; }
     void isUsed(bool x) { m_isUsed = x; }
     
-    void dump(std::ostream& o= std::cerr);
-    void ddump();
+    void dump(std::ostream& os = std::cerr) const;
+    void ddump() const;
+
+  private:
+    void id(uint x)
+      { m_id = x; }
+
+    friend class Epoch;
     
   private: 
+    int m_id;
     std::string m_name;
     VMA m_loadAddr;
     VMA m_loadAddrPref;
     bool m_isUsed;
   };
 
-  struct cmp_LM_loadAddr
+  struct lt_LM
   {
-    bool operator()(const LM* a, const LM* b) const
-    { return (a->loadAddr() < b->loadAddr()); }
+    inline bool 
+    operator()(const LM* x, const LM* y) const
+    { 
+      return (x->loadAddr() < y->loadAddr()); 
+    }
   };
   
   typedef std::vector<LM*> LMVec;
+  typedef std::set<LM*, lt_LM> LMSet;
   
 public: 
-  Epoch(const unsigned int i);
+  Epoch(const uint i = 16);
   virtual ~Epoch();
+
+  // assumes ownership
+  void lm_insert(Epoch::LM* x) 
+  { 
+    int id = m_lm_byId.size();
+    x->id(id);
+    m_lm_byId.push_back(x);
+
+    m_lm_byVMA.insert(x);
+  }
   
+  // ------------------------------------------------------------
+  // Access by id
+  // ------------------------------------------------------------
+  uint lm_size() const
+  { return m_lm_byId.size(); } 
 
-  uint lm_size() { return m_lmVec.size(); } 
+  LM* lm(uint i) const
+  { return m_lm_byId[i]; }
 
-  LM* lm(uint i) { return m_lmVec[i]; }
-  void lm(uint i, const LM* lm) { m_lmVec[i] = const_cast<LM*>(lm); }
+  // ------------------------------------------------------------
+  // Access by VMA
+  // ------------------------------------------------------------
+  LM* lm_find(VMA ip) const;
 
-  LM* lm_find(VMA ip);
+  LMSet::iterator lm_begin() 
+  { return m_lm_byVMA.begin(); }
 
-  //void lm_add(LM* ldm) { m_lmVec.push_back(ldm); }
-  
+  LMSet::const_iterator lm_begin() const 
+  { return m_lm_byVMA.begin(); }
 
-  void SortLoadmoduleByVMA() {
-    std::sort(m_lmVec.begin(), m_lmVec.end(), cmp_LM_loadAddr());
-  } 
+  LMSet::iterator lm_end() 
+  { return m_lm_byVMA.end(); }
+
+  LMSet::const_iterator lm_end() const 
+  { return m_lm_byVMA.end(); }
 
 
-  // iterators:
-  LMVec::iterator lm_begin() 
-    { return m_lmVec.begin(); }
-  LMVec::const_iterator lm_begin() const 
-    { return m_lmVec.begin(); }
-  LMVec::iterator lm_end() 
-    { return m_lmVec.end(); }
-  LMVec::const_iterator lm_end() const 
-    { return m_lmVec.end(); }
-  
-  // Debug
-  void dump(std::ostream& o = std::cerr);
-  void ddump();
+  LMSet::reverse_iterator lm_rbegin()
+  { return m_lm_byVMA.rbegin(); }
+
+  LMSet::const_reverse_iterator lm_rbegin() const
+  { return m_lm_byVMA.rbegin(); }
+
+  LMSet::reverse_iterator lm_rend()
+  { return m_lm_byVMA.rend(); }
+
+  LMSet::const_reverse_iterator lm_rend() const
+  { return m_lm_byVMA.rend(); }
+
+  // ------------------------------------------------------------
+  // 
+  // ------------------------------------------------------------
+  void dump(std::ostream& os = std::cerr) const;
+  void ddump() const;
   
 protected:
+#if 0
+  void lm_sort() {
+    std::sort(m_lm_byVMA.begin(), m_lm_byVMA.end(), lt_LM());
+  } 
+#endif
+
 private:
-  LMVec m_lmVec;
+  LMVec m_lm_byId;
+  LMSet m_lm_byVMA;
 };
 
-
 } // namespace Prof
+
+inline bool 
+operator<(const Prof::Epoch::LM x, const Prof::Epoch::LM y)
+{
+  return (x.loadAddr() < y.loadAddr());
+}
 
 //***************************************************************************
 

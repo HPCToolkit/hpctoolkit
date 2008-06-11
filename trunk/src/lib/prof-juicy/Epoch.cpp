@@ -54,8 +54,6 @@
 
 #include "Epoch.hpp"
 
-#include <lib/xml/xml.hpp>
-using namespace xml;
 
 //*************************** Forward Declarations ***************************
 
@@ -64,47 +62,69 @@ using namespace xml;
 namespace Prof {
 
 
-Epoch::Epoch(const unsigned int i)
-  : m_lmVec(i, NULL)
+Epoch::Epoch(uint sz)
 {
-} 
+  m_lm_byId.reserve(sz);
+}
+
 
 Epoch::~Epoch()
 {
-  for (LMVec::iterator it = lm_begin(); it != lm_end(); ++it) {
-    delete *it; // Epoch::LM*
+  for (uint i = 0; i < lm_size(); ++i) {
+    delete lm(i); // Epoch::LM*
   }
-  m_lmVec.clear();
+  m_lm_byId.clear();
+  m_lm_byVMA.clear();
 }
 
 
 Epoch::LM* 
-Epoch::lm_find(VMA ip)
+Epoch::lm_find(VMA ip) const
 {
-  LM* pre = m_lmVec[0];
+  static Epoch::LM key;
 
-  for (int i = 1; i < m_lmVec.size(); ++i) {
-    LM* curr = m_lmVec[i];
-    if (pre->loadAddr() <= ip && ip < curr->loadAddr())
-      return pre;
-    else 
-      pre = curr;
+  if (m_lm_byVMA.empty()) {
+    return NULL;
   }
-  
-  return pre;
-}
 
-
-void Epoch::dump(std::ostream& o)
-{
-  for (int i = 0; i < m_lmVec.size(); ++i) {
-    LM* lm = m_lmVec[i];
-    lm->dump(o);
+  // NOTE: lower_bound(y) returns first z : ((z > y) || (z = y))
+  // NOTE: upper_bound(y) returns first z : (z > y)
+  key.loadAddr(ip);
+  LMSet::iterator it = m_lm_byVMA.upper_bound(&key);
+  if (it != m_lm_byVMA.begin()) {
+    --it;
+    return *it;
+  }
+  else {
+    return *it;
   }
 }
 
 
-void Epoch::ddump()
+void Epoch::dump(std::ostream& os) const
+{
+  std::string pre = "  ";
+
+  os << "{ Prof::Epoch\n";
+  for (uint i = 0; i < lm_size(); ++i) {
+    os << pre << i << " : ";
+    lm(i)->dump(os);
+    os << std::endl;
+  }
+
+  os << "-----------------------------\n";
+
+  for (LMSet::const_iterator it = lm_begin(); it != lm_end(); ++it) {
+    LM* lm = *it;
+    os << pre;
+    lm->dump(os);
+    os << std::endl;
+  }
+  os << "}\n";
+}
+
+
+void Epoch::ddump() const
 {
   dump(std::cerr);
 }
@@ -112,9 +132,10 @@ void Epoch::ddump()
 
 //****************************************************************************
 
-Epoch::LM::LM()
-  : m_loadAddr(0), m_loadAddrPref(0), m_isUsed(false)
+Epoch::LM::LM(const char* nm, VMA loadAddr)
+  : m_id(-1), m_loadAddr(loadAddr), m_loadAddrPref(0), m_isUsed(false)
 {
+  name(nm);
 }
 
 
@@ -124,17 +145,14 @@ Epoch::LM::~LM()
 
 
 void 
-Epoch::LM::dump(std::ostream& o)
+Epoch::LM::dump(std::ostream& os) const
 { 
-  o << m_name;
-  o <<" m_loadAddr is 0x" << std::hex <<  m_loadAddr;
-  o <<" m_loadAddrPref is 0x" << std::hex  << m_loadAddrPref;
-  o << std::dec << std::endl; 
+  os << "0x" << std::hex << m_loadAddr << std::dec << ": " << m_name;
 }
 
 
 void 
-Epoch::LM::ddump()
+Epoch::LM::ddump() const
 {
   dump(std::cerr);
 }

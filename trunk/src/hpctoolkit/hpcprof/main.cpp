@@ -160,9 +160,12 @@ realmain(int argc, char* const* argv)
     int num_lm = prof->epoch()->lm_size();
     VMA endVMA = VMA_MAX;
     
-    for (int i = num_lm - 1; i >= 0; i--) {
-      Prof::Epoch::LM* epoch_lm = prof->epoch()->lm(i);
-      VMA begVMA = epoch_lm->loadAddr(); // for next Epoch::LM
+    Prof::Epoch* epoch = prof->epoch();
+
+    for (Prof::Epoch::LMSet::reverse_iterator it = epoch->lm_rbegin();
+	 it != epoch->lm_rend(); ++it) {
+      Prof::Epoch::LM* epoch_lm = *it;
+      VMA begVMA = epoch_lm->loadAddr();
 
       if (epoch_lm->isUsed()) {
 	const string& lm_fnm = epoch_lm->name();
