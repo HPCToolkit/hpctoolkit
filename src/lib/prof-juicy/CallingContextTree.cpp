@@ -53,6 +53,8 @@
 #include <iostream>
 using std::ostream;
 using std::endl;
+using std::hex;
+using std::dec;
 
 #include <string>
 using std::string;
@@ -263,7 +265,7 @@ CSProfCallSiteNode::CSProfCallSiteNode(CSProfNode* _parent,
 				       VMA ip, ushort opIndex, 
 				       lush_lip_t* lip,
 				       const SampledMetricDescVec* metricdesc,
-				       vector<hpcfile_metric_data_t>& metrics)
+				       std::vector<hpcfile_metric_data_t>& metrics)
   : CSProfCodeNode(CALLSITE, _parent, ln_NULL, ln_NULL), 
     IDynNode(this, as_info, ip, opIndex, lip, metricdesc, metrics)
 {
