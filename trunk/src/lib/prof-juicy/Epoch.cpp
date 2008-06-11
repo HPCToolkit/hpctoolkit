@@ -156,9 +156,9 @@ Epoch::merge(const Epoch& y)
 
     Epoch::LM* x_lm = (x_fnd.first != lm_end_nm()) ? *(x_fnd.first) : NULL;
     bool is_x_lm_uniq = (x_lm && (x_fnd.first == --(x_fnd.second)));
-    
+
     if (is_x_lm_uniq && x_lm->id() == y_lm->id()) {
-      continue;
+      ; // nothing
     }
     else if (is_x_lm_uniq && x_lm->id() != y_lm->id()) {
       // y_lm->id() is replaced by x_lm->id()
@@ -171,6 +171,8 @@ Epoch::merge(const Epoch& y)
       lm_insert(x_lm);
       mergeChg.push_back(MergeChange(y_lm->id(), x_lm->id()));
     }
+
+    x_lm->isUsedMrg(y_lm->isUsed());
   }
   
   return mergeChg;
