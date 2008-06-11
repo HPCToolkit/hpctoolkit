@@ -96,14 +96,7 @@ void copySourceFiles(Prof::CSProfile *prof,
 
 //****************************************************************************
 
-// FIXME: move to prof-juicy
-Prof::CSProfile* ReadProfile_CSPROF(const char* fnm);
-
-// FIXME: OBSOLETE
-void Epoch_SetLMUsed(Prof::CSProfile* prof);  
-
 // FIXME: move to support
-
 #define MAX_PATH_SIZE 2048 
 /** Normalizes a file path.*/
 std::string normalizeFilePath(const std::string& filePath);
@@ -111,9 +104,6 @@ std::string normalizeFilePath(const std::string& filePath,
 			      std::stack<std::string>& pathSegmentsStack);
 void breakPathIntoSegments(const std::string& normFilePath, 
 			   std::stack<std::string>& pathSegmentsStack);
-
-#define DEB_NORM_SEARCH_PATH  0
-#define DEB_MKDIR_SRC_DIR 0
 
 //****************************************************************************
 

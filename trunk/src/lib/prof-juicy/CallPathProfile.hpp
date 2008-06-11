@@ -132,6 +132,15 @@ private:
 
 } // namespace Prof
 
+
+//***************************************************************************
+
+// FIXME: cleanup
+Prof::CSProfile* ReadProfile_CSPROF(const char* fnm);
+
+// FIXME: OBSOLETE
+void Epoch_SetLMUsed(Prof::CSProfile* prof);  
+
 //***************************************************************************
 
 #endif /* prof_juicy_Prof_CallPath_Profile_hpp */
