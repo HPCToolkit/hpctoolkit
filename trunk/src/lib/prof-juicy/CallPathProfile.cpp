@@ -73,23 +73,26 @@ using namespace xml;
 
 
 //***************************************************************************
-// CSProfile
+// Profile
 //***************************************************************************
 
 namespace Prof {
 
-CSProfile::CSProfile(uint i)
+namespace CallPath {
+
+
+Profile::Profile(uint numMetrics)
 {
-  m_metricdesc.resize(i);
+  m_metricdesc.resize(numMetrics);
   for (int i = 0; i < m_metricdesc.size(); ++i) {
     m_metricdesc[i] = new SampledMetricDesc();
   }
-  m_cct  = new CSProfTree(this);
+  m_cct = new CCT::Tree(this);
   m_epoch = NULL;
 }
 
 
-CSProfile::~CSProfile()
+Profile::~Profile()
 {
   for (int i = 0; i < m_metricdesc.size(); ++i) {
     delete m_metricdesc[i];
@@ -100,7 +103,7 @@ CSProfile::~CSProfile()
 
 
 void 
-CSProfile::merge(const CSProfile& y)
+Profile::merge(const Profile& y)
 {
   uint x_numMetrics = numMetrics();
 
@@ -117,17 +120,20 @@ CSProfile::merge(const CSProfile& y)
 
 
 void 
-CSProfile::dump(std::ostream& os) const
+Profile::dump(std::ostream& os) const
 {
   // FIXME
 }
 
 
 void 
-CSProfile::ddump() const
+Profile::ddump() const
 {
   dump();
 }
+
+
+} // namespace CallPath
 
 } // namespace Prof
 
@@ -149,18 +155,18 @@ static void
 convertOpIPToIP(VMA opIP, VMA& ip, ushort& opIdx);
 
 static bool
-addPGMToCSProfTree(Prof::CSProfTree* tree, const char* progName);
+addPGMToTree(Prof::CCT::Tree* tree, const char* progName);
 
 static bool 
 fixLeaves(Prof::CSProfNode* node);
 
 static void
-unrelocateIPs(Prof::CSProfile* prof);
+unrelocateIPs(Prof::CallPath::Profile* prof);
 
 
 
-Prof::CSProfile* 
-ReadProfile_CSPROF(const char* fnm) 
+Prof::CallPath::Profile* 
+Prof::CallPath::Profile::make(const char* fnm) 
 {
   using namespace Prof;
 
@@ -188,7 +194,7 @@ ReadProfile_CSPROF(const char* fnm)
   
   DIAG_Msg(2, "Metrics found: " << num_metrics);
 
-  Prof::CSProfile* prof = new Prof::CSProfile(num_metrics);
+  CallPath::Profile* prof = new CallPath::Profile(num_metrics);
   ret = hpcfile_cstree_read(fs, prof->cct(), num_metrics,
 			    cstree_create_node_CB, cstree_link_parent_CB,
 			    hpcfile_alloc_CB, hpcfile_free_CB);
@@ -250,7 +256,7 @@ ReadProfile_CSPROF(const char* fnm)
   // ------------------------------------------------------------
 
   // Add PGM node to tree
-  addPGMToCSProfTree(prof->cct(), prof->name().c_str());
+  addPGMToTree(prof->cct(), prof->name().c_str());
   
   // Convert leaves (CSProfCallSiteNode) to Prof::CSProfStatementNodes
   // FIXME: There should be a better way of doing this.  We could
@@ -267,7 +273,7 @@ static void*
 cstree_create_node_CB(void* tree, 
 		      hpcfile_cstree_nodedata_t* data)
 {
-  Prof::CSProfTree* my_tree = (Prof::CSProfTree*)tree; 
+  Prof::CCT::Tree* my_tree = (Prof::CCT::Tree*)tree; 
   
   VMA ip;
   ushort opIdx;
@@ -336,7 +342,7 @@ convertOpIPToIP(VMA opIP, VMA& ip, ushort& opIdx)
 
 
 bool
-addPGMToCSProfTree(Prof::CSProfTree* tree, const char* progName)
+addPGMToTree(Prof::CCT::Tree* tree, const char* progName)
 {
   bool noError = true;
 
@@ -393,7 +399,7 @@ fixLeaves(Prof::CSProfNode* node)
 
 
 static void
-unrelocateIPs(Prof::CSProfile* prof)
+unrelocateIPs(Prof::CallPath::Profile* prof)
 {
   Prof::CSProfNode* root = prof->cct()->root();
   const Prof::Epoch* epoch = prof->epoch();
@@ -408,7 +414,7 @@ unrelocateIPs(Prof::CSProfile* prof)
       VMA ip_ur = ip - lm->relocAmt();
 
       n_dyn->lm_id(lm->id());
-      n_dyn->ip(ip_ur, 0);
+      n_dyn->ip(ip_ur, n_dyn->opIndex());
       lm->isUsed(true); // FIXME:
     }
   }

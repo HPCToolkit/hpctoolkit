@@ -106,7 +106,7 @@ namespace Analysis {
 namespace CallPath {
 
 void 
-writeInDatabase(Prof::CSProfile* prof, const string& filenm) 
+writeInDatabase(Prof::CallPath::Profile* prof, const string& filenm) 
 {
   std::filebuf fb;
   fb.open(filenm.c_str(), std::ios::out);
@@ -117,8 +117,10 @@ writeInDatabase(Prof::CSProfile* prof, const string& filenm)
 
 
 void
-write(Prof::CSProfile* prof, std::ostream& os, bool prettyPrint)
+write(Prof::CallPath::Profile* prof, std::ostream& os, bool prettyPrint)
 {
+  using namespace Prof;
+
   os << "<?xml version=\"1.0\"?>" << std::endl;
   os << "<!DOCTYPE CSPROFILE [\n" << CSPROFILEdtd << "]>" << std::endl;
   os.flush();
@@ -130,7 +132,7 @@ write(Prof::CSProfile* prof, std::ostream& os, bool prettyPrint)
   // write out metrics
   uint n_metrics = prof->numMetrics();
   for (uint i = 0; i < n_metrics; i++) {
-    const Prof::SampledMetricDesc* metric = prof->metric(i);
+    const SampledMetricDesc* metric = prof->metric(i);
     os << "<METRIC shortName" << MakeAttrNum(i)
        << " nativeName" << MakeAttrStr(metric->name())
        << " period" << MakeAttrNum(metric->period())
@@ -141,8 +143,8 @@ write(Prof::CSProfile* prof, std::ostream& os, bool prettyPrint)
 
   os.flush();
   
-  int dumpFlags = (Prof::CSProfTree::XML_TRUE); // CSProfTree::XML_NO_ESC_CHARS
-  if (!prettyPrint) { dumpFlags |= Prof::CSProfTree::COMPRESSED_OUTPUT; }
+  int dumpFlags = (CCT::Tree::XML_TRUE); // CCT::Tree::XML_NO_ESC_CHARS
+  if (!prettyPrint) { dumpFlags |= CCT::Tree::COMPRESSED_OUTPUT; }
   
   prof->cct()->dump(os, dumpFlags);
 
@@ -199,7 +201,7 @@ loopifyFrame(Prof::CSProfProcedureFrameNode* frame, CodeInfo* ctxtScope,
 
 
 void 
-inferCallFrames(Prof::CSProfile* prof, Prof::CSProfNode* node, 
+inferCallFrames(Prof::CallPath::Profile* prof, Prof::CSProfNode* node, 
 		Prof::Epoch::LM* epoch_lm, LoadModScope* lmScope);
 
 
@@ -208,18 +210,18 @@ inferCallFrames(Prof::CSProfile* prof, Prof::CSProfNode* node,
 //
 void
 Analysis::CallPath::
-inferCallFrames(Prof::CSProfile* prof, Prof::Epoch::LM* epoch_lm, 
+inferCallFrames(Prof::CallPath::Profile* prof, Prof::Epoch::LM* epoch_lm, 
 		LoadModScope* lmScope)
 {
-  Prof::CSProfTree* csproftree = prof->cct();
-  if (!csproftree) { return; }
+  Prof::CCT::Tree* cct = prof->cct();
+  if (!cct) { return; }
   
-  inferCallFrames(prof, csproftree->root(), epoch_lm, lmScope);
+  inferCallFrames(prof, cct->root(), epoch_lm, lmScope);
 }
 
 
 void 
-inferCallFrames(Prof::CSProfile* prof, Prof::CSProfNode* node, 
+inferCallFrames(Prof::CallPath::Profile* prof, Prof::CSProfNode* node, 
 		Prof::Epoch::LM* epoch_lm, LoadModScope* lmScope)
 {
   // INVARIANT: The parent of 'node' has been fully processed and
@@ -485,7 +487,7 @@ typedef std::map<string, Prof::CSProfProcedureFrameNode*> StringToProcFrameMap;
 void addSymbolicInfo(Prof::IDynNode* n, binutils::LM* lm);
 
 void 
-inferCallFrames(Prof::CSProfile* prof, Prof::CSProfNode* node, 
+inferCallFrames(Prof::CallPath::Profile* prof, Prof::CSProfNode* node, 
 		Prof::Epoch::LM* epoch_lm, binutils::LM* lm);
 
 // create an extended profile representation
@@ -504,19 +506,19 @@ inferCallFrames(Prof::CSProfile* prof, Prof::CSProfNode* node,
 
 void 
 Analysis::CallPath::
-inferCallFrames(Prof::CSProfile* prof, Prof::Epoch::LM* epoch_lm, 
+inferCallFrames(Prof::CallPath::Profile* prof, Prof::Epoch::LM* epoch_lm, 
 		binutils::LM* lm)
 {
-  Prof::CSProfTree* csproftree = prof->cct();
-  if (!csproftree) { return; }
+  Prof::CCT::Tree* cct = prof->cct();
+  if (!cct) { return; }
   
   DIAG_MsgIf(DBG_NORM_PROC_FRAME, "start normalizing same procedure children");
-  inferCallFrames(prof, csproftree->root(), epoch_lm, lm);
+  inferCallFrames(prof, cct->root(), epoch_lm, lm);
 }
 
 
 void 
-inferCallFrames(Prof::CSProfile* prof, Prof::CSProfNode* node, 
+inferCallFrames(Prof::CallPath::Profile* prof, Prof::CSProfNode* node, 
 		Prof::Epoch::LM* epoch_lm, binutils::LM* lm)
 {
   if (!node) { return; }
@@ -598,12 +600,12 @@ inferCallFrames(Prof::CSProfile* prof, Prof::CSProfNode* node,
 
 #if 0
 void
-addSymbolicInfo(Prof::CSProfile* prof, VMA begVMA, VMA endVMA, binutils::LM* lm)
+addSymbolicInfo(Prof::CallPath::Profile* prof, VMA begVMA, VMA endVMA, binutils::LM* lm)
 {
   VMA curr_ip; 
 
   /* point to the first load module in the Epoch table */
-  Prof::CSProfTree* tree = prof->Getcct();
+  Prof::CCT::Tree* tree = prof->Getcct();
   Prof::CSProfNode* root = tree->GetRoot();
   
   for (Prof::CSProfNodeIterator it(root); it.CurNode(); ++it) {
@@ -663,11 +665,11 @@ addSymbolicInfo(Prof::IDynNode* n_dyn, binutils::LM* lm)
 // Routines for normalizing the ScopeTree
 //***************************************************************************
 
-bool coalesceCallsiteLeaves(Prof::CSProfile* prof);
-void removeEmptyScopes(Prof::CSProfile* prof);
+bool coalesceCallsiteLeaves(Prof::CallPath::Profile* prof);
+void removeEmptyScopes(Prof::CallPath::Profile* prof);
 
 bool 
-Analysis::CallPath::normalize(Prof::CSProfile* prof)
+Analysis::CallPath::normalize(Prof::CallPath::Profile* prof)
 {
   // Remove duplicate/inplied file and procedure information from tree
   coalesceCallsiteLeaves(prof);
@@ -683,12 +685,12 @@ Analysis::CallPath::normalize(Prof::CSProfile* prof)
 bool coalesceCallsiteLeaves(Prof::CSProfNode* node);
 
 bool 
-coalesceCallsiteLeaves(Prof::CSProfile* prof)
+coalesceCallsiteLeaves(Prof::CallPath::Profile* prof)
 {
-  Prof::CSProfTree* csproftree = prof->cct();
-  if (!csproftree) { return true; }
+  Prof::CCT::Tree* cct = prof->cct();
+  if (!cct) { return true; }
   
-  return coalesceCallsiteLeaves(csproftree->root());
+  return coalesceCallsiteLeaves(cct->root());
 }
 
 
@@ -750,12 +752,12 @@ void
 removeEmptyScopes(Prof::CSProfNode* node);
 
 void 
-removeEmptyScopes(Prof::CSProfile* prof)
+removeEmptyScopes(Prof::CallPath::Profile* prof)
 {
-  Prof::CSProfTree* csproftree = prof->cct();
-  if (!csproftree) { return; }
+  Prof::CCT::Tree* cct = prof->cct();
+  if (!cct) { return; }
   
-  removeEmptyScopes(csproftree->root());
+  removeEmptyScopes(cct->root());
 }
 
 
@@ -798,14 +800,14 @@ void innerCopySourceFiles(Prof::CSProfNode* node,
 /** Copies the source files for the executable into the database 
     directory. */
 void 
-Analysis::CallPath::copySourceFiles(Prof::CSProfile *prof, 
+Analysis::CallPath::copySourceFiles(Prof::CallPath::Profile* prof, 
 				    std::vector<string>& searchPaths,
 				    const string& dest_dir) 
 {
-  Prof::CSProfTree* csproftree = prof->cct();
-  if (!csproftree) { return ; }
+  Prof::CCT::Tree* cct = prof->cct();
+  if (!cct) { return ; }
 
-  copySourceFiles(csproftree->root(), searchPaths, dest_dir);
+  copySourceFiles(cct->root(), searchPaths, dest_dir);
 }
 
 

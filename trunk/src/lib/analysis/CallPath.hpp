@@ -74,21 +74,27 @@ namespace Analysis {
 
 namespace CallPath {
 
-void inferCallFrames(Prof::CSProfile* prof, Prof::Epoch::LM* epoch_lm,
-		     LoadModScope* lmScope);
+void 
+inferCallFrames(Prof::CallPath::Profile* prof, Prof::Epoch::LM* epoch_lm,
+		LoadModScope* lmScope);
 
-void inferCallFrames(Prof::CSProfile* prof, Prof::Epoch::LM* epoch_lm,
-		     binutils::LM* lm);
+void 
+inferCallFrames(Prof::CallPath::Profile* prof, Prof::Epoch::LM* epoch_lm,
+		binutils::LM* lm);
 
-bool normalize(Prof::CSProfile* prof);
+bool 
+normalize(Prof::CallPath::Profile* prof);
 
-void writeInDatabase(Prof::CSProfile* prof, const std::string& filenm);
+void 
+writeInDatabase(Prof::CallPath::Profile* prof, const std::string& filenm);
 
-void write(Prof::CSProfile* prof, std::ostream& os, bool prettyPrint = true);
+void 
+write(Prof::CallPath::Profile* prof, std::ostream& os, bool prettyPrint = true);
 
-void copySourceFiles(Prof::CSProfile *prof, 
-		     std::vector<std::string>& searchPaths,
-		     const std::string& dest_dir);  
+void 
+copySourceFiles(Prof::CallPath::Profile *prof, 
+		std::vector<std::string>& searchPaths,
+		const std::string& dest_dir);  
 
 } // namespace CallPath
 
@@ -96,7 +102,7 @@ void copySourceFiles(Prof::CSProfile *prof,
 
 //****************************************************************************
 
-// FIXME: move to support
+// FIXME: move to lib/support
 #define MAX_PATH_SIZE 2048 
 /** Normalizes a file path.*/
 std::string normalizeFilePath(const std::string& filePath);

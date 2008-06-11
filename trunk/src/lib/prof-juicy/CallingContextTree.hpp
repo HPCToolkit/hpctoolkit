@@ -48,8 +48,8 @@
 //
 //***************************************************************************
 
-#ifndef prof_juicy_CallingContextTree 
-#define prof_juicy_CallingContextTree
+#ifndef prof_juicy_Prof_CCT_Tree_hpp 
+#define prof_juicy_Prof_CCT_Tree_hpp
 
 //************************* System Include Files ****************************
 
@@ -63,7 +63,6 @@
 
 #include <include/general.h>
 
-// FIXME: CSProfTree should be merged or at least relocated a la PgmScopeTree
 #include "PgmScopeTree.hpp"
 #include "MetricDesc.hpp"
 #include "Epoch.hpp"
@@ -83,8 +82,6 @@ using SrcFile::ln_NULL;
 
 //*************************** Forward Declarations ***************************
 
-int AddXMLEscapeChars(int dmpFlag);
-
 
 inline std::ostream&
 operator<<(std::ostream& os, const hpcfile_metric_data_t x)
@@ -95,15 +92,20 @@ operator<<(std::ostream& os, const hpcfile_metric_data_t x)
 
 
 //***************************************************************************
-// CSProfTree
+// Tree
 //***************************************************************************
 
 namespace Prof {
 
-class CSProfile;
+namespace CallPath {
+  class Profile;
+}
 class CSProfNode;
 
-class CSProfTree: public Unique {
+namespace CCT {
+
+
+class Tree: public Unique {
 public:
   enum {
     // User-level bit flags
@@ -122,8 +124,10 @@ public:
 
 public:
   // Constructor/Destructor
-  CSProfTree(const CSProfile* metadata);
-  virtual ~CSProfTree();
+
+  // FIXME: metadata should be metrics and epoch, not 
+  Tree(const CallPath::Profile* metadata);
+  virtual ~Tree();
 
   // -------------------------------------------------------
   // Tree data
@@ -133,13 +137,13 @@ public:
 
   bool empty() const { return (m_root == NULL); }
 
-  const CSProfile* metadata() { return m_metadata; }
+  const CallPath::Profile* metadata() { return m_metadata; }
 
   
   // -------------------------------------------------------
-  // Given a CSProfTree, merge into 'this'
+  // Given a Tree, merge into 'this'
   // -------------------------------------------------------
-  void merge(const CSProfTree* y, 
+  void merge(const Tree* y, 
 	     const SampledMetricDescVec* new_mdesc, 
 	     uint x_numMetrics, uint y_numMetrics);
 
@@ -149,16 +153,31 @@ public:
   virtual void dump(std::ostream& os = std::cerr, 
 		    int dmpFlag = XML_TRUE) const;
   virtual void ddump() const;
+
+
+  // Given a set of flags 'dmpFlag', determines whether we need to
+  // ensure that certain characters are escaped.  Returns xml::ESC_TRUE
+  // or xml::ESC_FALSE. 
+  static int AddXMLEscapeChars(int dmpFlag);
  
 private:
   CSProfNode* m_root;
-  const CSProfile* m_metadata; // does not own
+  const CallPath::Profile* m_metadata; // does not own
 };
+
+
+} // namespace CCT
+
+} // namespace Prof
 
 
 //***************************************************************************
 // CSProfNode, CSProfCodeNode.
 //***************************************************************************
+
+// tallent: wait before using Prof::CCT
+namespace Prof {
+
 
 class CSProfNode;     // Everyone's base class 
 class CSProfCodeNode; // Base class for describing source code
@@ -255,21 +274,21 @@ public:
   // --------------------------------------------------------
   // Dump contents for inspection
   // --------------------------------------------------------
-  virtual std::string ToDumpString(int dmpFlag = CSProfTree::XML_TRUE) const; 
+  virtual std::string ToDumpString(int dmpFlag = CCT::Tree::XML_TRUE) const; 
 
   virtual std::string Types(); // lists this instance's base and derived types 
   
   void DumpSelfBefore(std::ostream& os = std::cerr, 
-		      int dmpFlag = CSProfTree::XML_TRUE,
+		      int dmpFlag = CCT::Tree::XML_TRUE,
 		      const char *prefix = "") const;
   void DumpSelfAfter (std::ostream& os = std::cerr, 
-		      int dmpFlag = CSProfTree::XML_TRUE,
+		      int dmpFlag = CCT::Tree::XML_TRUE,
 		      const char *prefix = "") const;
   void Dump          (std::ostream& os = std::cerr, 
-		      int dmpFlag = CSProfTree::XML_TRUE,
+		      int dmpFlag = CCT::Tree::XML_TRUE,
 		      const char *pre = "") const;
   void DumpLineSorted(std::ostream& os = std::cerr, 
-		      int dmpFlag = CSProfTree::XML_TRUE,
+		      int dmpFlag = CCT::Tree::XML_TRUE,
 		      const char *pre = "") const;
   
   void DDump();
@@ -342,7 +361,7 @@ public:
   uint& structureId()       { return m_sId; }
   
   // Dump contents for inspection
-  virtual std::string ToDumpString(int dmpFlag = CSProfTree::XML_TRUE) const;
+  virtual std::string ToDumpString(int dmpFlag = CCT::Tree::XML_TRUE) const;
     
 protected: 
   void Relocate();
@@ -611,7 +630,7 @@ public:
   bool IsFrozen() const { return frozen; }
   
   // Dump contents for inspection
-  virtual std::string ToDumpString(int dmpFlag = CSProfTree::XML_TRUE) const;
+  virtual std::string ToDumpString(int dmpFlag = CCT::Tree::XML_TRUE) const;
   
 protected: 
 private: 
@@ -636,7 +655,7 @@ public:
   const std::string& GetName() const { return name; }
   
   // Dump contents for inspection
-  virtual std::string ToDumpString(int dmpFlag = CSProfTree::XML_TRUE) const;
+  virtual std::string ToDumpString(int dmpFlag = CCT::Tree::XML_TRUE) const;
 
 private: 
   std::string name; 
@@ -684,7 +703,7 @@ public:
   void SetSrcInfoDone(bool bi) {donewithsrcinfproc=bi;}
   
   // Dump contents for inspection
-  virtual std::string ToDumpString(int dmpFlag = CSProfTree::XML_TRUE) const;
+  virtual std::string ToDumpString(int dmpFlag = CCT::Tree::XML_TRUE) const;
  
 protected: 
   // source file info
@@ -728,7 +747,7 @@ class CSProfStatementNode: public CSProfCodeNode, public IDynNode {
   void SetSrcInfoDone(bool bi) { donewithsrcinfproc = bi; }
   
   // Dump contents for inspection
-  virtual std::string ToDumpString(int dmpFlag = CSProfTree::XML_TRUE) const;
+  virtual std::string ToDumpString(int dmpFlag = CCT::Tree::XML_TRUE) const;
 
 protected: 
 
@@ -770,7 +789,7 @@ public:
   bool& isAlien()       { return m_alien; } 
 
   // Dump contents for inspection
-  virtual std::string ToDumpString(int dmpFlag = CSProfTree::XML_TRUE) const;
+  virtual std::string ToDumpString(int dmpFlag = CCT::Tree::XML_TRUE) const;
  
 private: 
   // source file info
@@ -794,7 +813,7 @@ public:
   
   // Dump contents for inspection
   virtual std::string CodeName() const;
-  virtual std::string ToDumpString(int dmpFlag = CSProfTree::XML_TRUE) const; 
+  virtual std::string ToDumpString(int dmpFlag = CCT::Tree::XML_TRUE) const; 
   
 private:
 };
@@ -814,7 +833,7 @@ public:
   
   // Dump contents for inspection
   virtual std::string CodeName() const;
-  virtual std::string ToDumpString(int dmpFlag = CSProfTree::XML_TRUE) const;
+  virtual std::string ToDumpString(int dmpFlag = CCT::Tree::XML_TRUE) const;
 };
 
 #ifndef xDEBUG
@@ -823,6 +842,7 @@ public:
 
 #define DEB_READ_MMETRICS 0
 #define DEB_UNIFY_PROCEDURE_FRAME 0
+
 
 } // namespace Prof
 
@@ -833,5 +853,4 @@ public:
 //***************************************************************************
 
 
-
-#endif /* prof_juicy_CallingContextTree */
+#endif /* prof_juicy_Prof_CCT_Tree_hpp */
