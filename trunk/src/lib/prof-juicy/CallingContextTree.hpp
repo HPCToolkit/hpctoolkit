@@ -66,13 +66,14 @@
 // FIXME: CSProfTree should be merged or at least relocated a la PgmScopeTree
 #include "PgmScopeTree.hpp"
 #include "MetricDesc.hpp"
+#include "Epoch.hpp"
 
 #include <lib/isa/ISATypes.hpp>
 
 #include <lib/prof-lean/lush/lush-support.h>
 #include <lib/prof-lean/hpcfile_cstree.h>
 
-#include <lib/xml/xml.hpp> 
+#include <lib/xml/xml.hpp>
 
 #include <lib/support/diagnostics.h>
 #include <lib/support/NonUniformDegreeTree.hpp>
@@ -371,7 +372,8 @@ public:
   IDynNode(CSProfCodeNode* proxy, 
 	   const SampledMetricDescVec* metricdesc)
     : m_proxy(proxy),
-      m_as_info(lush_assoc_info_NULL), m_ip(0), m_opIdx(0), m_lip(NULL),
+      m_as_info(lush_assoc_info_NULL), 
+      m_lmId(Epoch::LM_id_NULL), m_ip(0), m_opIdx(0), m_lip(NULL),
       m_metricdesc(metricdesc)
     { }
 
@@ -379,7 +381,8 @@ public:
 	   lush_assoc_info_t as_info, VMA ip, ushort opIdx, lush_lip_t* lip,
 	   const SampledMetricDescVec* metricdesc)
     : m_proxy(proxy), 
-      m_as_info(as_info), m_ip(ip), m_opIdx(opIdx), m_lip(lip),
+      m_as_info(as_info), 
+      m_lmId(Epoch::LM_id_NULL), m_ip(ip), m_opIdx(opIdx), m_lip(lip),
       m_metricdesc(metricdesc)
     { }
 
@@ -388,7 +391,8 @@ public:
 	   const SampledMetricDescVec* metricdesc,
 	   std::vector<hpcfile_metric_data_t>& metrics)
     : m_proxy(proxy),
-      m_as_info(as_info), m_ip(ip), m_opIdx(opIdx), m_lip(lip), 
+      m_as_info(as_info), 
+      m_lmId(Epoch::LM_id_NULL), m_ip(ip), m_opIdx(opIdx), m_lip(lip), 
       m_metricdesc(metricdesc), m_metrics(metrics) 
     { }
 
@@ -400,6 +404,7 @@ public:
   IDynNode(const IDynNode& x)
     : //m_proxy(x.m_proxy),
       m_as_info(x.m_as_info), 
+      m_lmId(x.m_lmId),
       m_ip(x.m_ip), m_opIdx(x.m_opIdx), 
       m_lip(clone_lip(x.m_lip)),
       m_metricdesc(x.m_metricdesc),
@@ -411,6 +416,7 @@ public:
     if (this != &x) {
       //m_proxy = x.m_proxy;
       m_as_info = x.m_as_info;
+      m_lmId = x.m_lmId;
       m_ip = x.m_ip;
       m_opIdx = x.m_opIdx;
       delete_lip(m_lip);
@@ -431,12 +437,21 @@ public:
   // 
   // -------------------------------------------------------
 
-  lush_assoc_info_t assocInfo() const { return m_as_info; }
-  void assocInfo(lush_assoc_info_t x) { m_as_info = x; }
+  lush_assoc_info_t assocInfo() const 
+    { return m_as_info; }
+  void assocInfo(lush_assoc_info_t x) 
+    { m_as_info = x; }
 
-  lush_assoc_t assoc() const { return lush_assoc_info__get_assoc(m_as_info); }
+  lush_assoc_t assoc() const 
+  { return lush_assoc_info__get_assoc(m_as_info); }
 
-  virtual VMA ip() const {
+  Epoch::LM_id_t lm_id() const 
+    { return m_lmId; }
+  void lm_id(Epoch::LM_id_t x)
+    { m_lmId = x; }
+
+  virtual VMA ip() const 
+  {
     // FIXME: Hack for interpreting Cilk-like LIPs.
     if (m_lip) {
       VMA cilk_ip = m_lip->data8[0];
@@ -446,17 +461,23 @@ public:
     }
     return m_ip; 
   }
-  VMA ip_real() const { return m_ip; } // motivated by Cilk hack above
+  VMA ip_real() const 
+  { return m_ip; } // motivated by Cilk hack above
 
-  void ip(VMA ip, ushort opIdx) { m_ip = ip; m_opIdx = opIdx; }
+  void ip(VMA ip, ushort opIdx) 
+  { m_ip = ip; m_opIdx = opIdx; }
 
-  ushort opIndex() const { return m_opIdx; }
+  ushort opIndex() const 
+  { return m_opIdx; }
 
 
-  lush_lip_t* lip() const { return m_lip; }
-  void lip(lush_lip_t* lip) { m_lip = lip; }
+  lush_lip_t* lip() const 
+    { return m_lip; }
+  void lip(lush_lip_t* lip) 
+    { m_lip = lip; }
 
-  static lush_lip_t* clone_lip(lush_lip_t* x) {
+  static lush_lip_t* clone_lip(lush_lip_t* x) 
+  {
     lush_lip_t* x_clone = NULL;
     if (x) {
       // NOTE: for consistency with hpcfile_alloc_CB
@@ -467,16 +488,19 @@ public:
     return x_clone;
   }
 
-  static void delete_lip(lush_lip_t* x) {
-    delete[] (char*)x;
-  }
+  static void delete_lip(lush_lip_t* x) 
+  { delete[] (char*)x; }
 
 
-  hpcfile_metric_data_t metric(int i) const { return m_metrics[i]; }
-  uint numMetrics() const { return m_metrics.size(); }
+  hpcfile_metric_data_t metric(int i) const 
+    { return m_metrics[i]; }
+  uint numMetrics() const 
+    { return m_metrics.size(); }
 
-  const SampledMetricDescVec* metricdesc() const { return m_metricdesc; }
-  void                        metricdesc(const SampledMetricDescVec* x) { m_metricdesc = x; }
+  const SampledMetricDescVec* metricdesc() const 
+    { return m_metricdesc; }
+  void metricdesc(const SampledMetricDescVec* x) 
+    { m_metricdesc = x; }
 
 
   // -------------------------------------------------------
@@ -540,13 +564,13 @@ private:
 
   lush_assoc_info_t m_as_info;
 
+  int m_lmId;     // Epoch::LM id
   VMA m_ip;       // instruction pointer for this node
   ushort m_opIdx; // index in the instruction
 
   lush_lip_t* m_lip; // lush logical ip
 
-  // A bit vector indicates whether a metric is of integral or real type.
-  const SampledMetricDescVec*   m_metricdesc; // does not own memory
+  const SampledMetricDescVec*        m_metricdesc; // does not own memory
   std::vector<hpcfile_metric_data_t> m_metrics;
 };
 

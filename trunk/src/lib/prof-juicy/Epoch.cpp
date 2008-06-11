@@ -133,9 +133,9 @@ void Epoch::ddump() const
 //****************************************************************************
 
 Epoch::LM::LM(const char* nm, VMA loadAddr)
-  : m_id(-1), m_loadAddr(loadAddr), m_loadAddrPref(0), m_isUsed(false)
+  : m_id(LM_id_NULL), m_name((nm) ? nm: ""), m_loadAddr(loadAddr), 
+    m_loadAddrPref(0), m_isUsed(false)
 {
-  name(nm);
 }
 
 
