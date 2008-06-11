@@ -82,7 +82,6 @@ using SrcFile::ln_NULL;
 
 //*************************** Forward Declarations ***************************
 
-using namespace std;
 int AddXMLEscapeChars(int dmpFlag);
 
 
@@ -189,11 +188,11 @@ public:
     NUMBER_OF_TYPES
   };
   
-  static const string& NodeTypeToName(NodeType tp);
-  static NodeType      IntToNodeType(long i);
+  static const std::string& NodeTypeToName(NodeType tp);
+  static NodeType           IntToNodeType(long i);
 
 private:
-  static const string NodeNames[NUMBER_OF_TYPES];
+  static const std::string NodeNames[NUMBER_OF_TYPES];
   
 public:
   CSProfNode(NodeType t, CSProfNode* _parent);
@@ -349,7 +348,7 @@ protected:
   SrcFile::ln begLine;
   SrcFile::ln endLine;
   uint m_sId;  // static structure id
-  static string BOGUS;
+  static std::string BOGUS;
 }; 
 
 // - if x < y; 0 if x == y; + otherwise
@@ -387,7 +386,7 @@ public:
   IDynNode(CSProfCodeNode* proxy, 
 	   lush_assoc_info_t as_info, VMA ip, ushort opIdx, lush_lip_t* lip,
 	   const SampledMetricDescVec* metricdesc,
-	   vector<hpcfile_metric_data_t>& metrics)
+	   std::vector<hpcfile_metric_data_t>& metrics)
     : m_proxy(proxy),
       m_as_info(as_info), m_ip(ip), m_opIdx(opIdx), m_lip(lip), 
       m_metricdesc(metricdesc), m_metrics(metrics) 
@@ -548,7 +547,7 @@ private:
 
   // A bit vector indicates whether a metric is of integral or real type.
   const SampledMetricDescVec*   m_metricdesc; // does not own memory
-  vector<hpcfile_metric_data_t> m_metrics;
+  std::vector<hpcfile_metric_data_t> m_metrics;
 };
 
 inline std::ostream&
@@ -633,7 +632,7 @@ public:
 		     VMA ip, ushort opIdx, 
 		     lush_lip_t* lip,
 		     const SampledMetricDescVec* metricdesc,
-		     vector<hpcfile_metric_data_t>& metrics);
+		     std::vector<hpcfile_metric_data_t>& metrics);
   virtual ~CSProfCallSiteNode();
   
   // Node data
