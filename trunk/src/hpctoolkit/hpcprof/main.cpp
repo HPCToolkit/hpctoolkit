@@ -84,12 +84,11 @@ static void
 dumpProfileData(std::ostream& os, std::vector<string>& profileFiles);
 
 static void
-processCallingCtxtTree(Prof::CSProfile* profData, VMA begVMA, VMA endVMA, 
-		       const string& lm_fnm, LoadModScope* lmScope);
+processCallingCtxtTree(Prof::CSProfile* prof, Prof::Epoch::LM* epoch_lm,
+		       LoadModScope* lmScope);
 
 static void
-processCallingCtxtTree(Prof::CSProfile* profData, VMA begVMA, VMA endVMA, 
-		       const string& lm_fnm);
+processCallingCtxtTree(Prof::CSProfile* prof, Prof::Epoch::LM* epoch_lm);
 
 
 //****************************************************************************
@@ -147,27 +146,12 @@ realmain(int argc, char* const* argv)
   }
   
   try { 
-    // for each (used) load module, add information to the calling
-    // context tree.
-    
-    // for efficiency, we add a flag in CSProfLDmodule "used"
-    // add one more pass search the callstack tree, to set 
-    // the flag -"alpha"- only, since we get info from binary 
-    // profile file not from bfd  
-    Epoch_SetLMUsed(prof); 
-
-    // Note that this assumes iteration in reverse sorted order
-    int num_lm = prof->epoch()->lm_size();
-    VMA endVMA = VMA_MAX;
-    
     Prof::Epoch* epoch = prof->epoch();
-
-    for (Prof::Epoch::LMSet::reverse_iterator it = epoch->lm_rbegin();
-	 it != epoch->lm_rend(); ++it) {
+    for (Prof::Epoch::LMSet::iterator it = epoch->lm_begin();
+	 it != epoch->lm_end(); ++it) {
       Prof::Epoch::LM* epoch_lm = *it;
-      VMA begVMA = epoch_lm->loadAddr();
 
-      if (epoch_lm->isUsed()) {
+      if (epoch_lm->isUsed()) { // FIXME
 	const string& lm_fnm = epoch_lm->name();
 	LoadModScope* lmScope = NULL;
 	if (pgmScope) {
@@ -176,16 +160,14 @@ realmain(int argc, char* const* argv)
 	
 	if (lmScope) {
 	  DIAG_Msg(1, "Using STRUCTURE for: " << lm_fnm);
-	  processCallingCtxtTree(prof, begVMA, endVMA, lm_fnm, lmScope);
+	  processCallingCtxtTree(prof, epoch_lm, lmScope);
 	}
 	else {
 	  DIAG_Msg(1, "Using debug info for: " << lm_fnm);
-	  processCallingCtxtTree(prof, begVMA, endVMA, lm_fnm);
+	  processCallingCtxtTree(prof, epoch_lm);
 	}
       }
-
-      endVMA = begVMA - 1;
-    } /* for each load module */ 
+    }
     
     Analysis::CallPath::normalize(prof);
   }
@@ -289,49 +271,48 @@ readStructure(std::vector<string>& structureFiles)
 //****************************************************************************
 
 static void
-processCallingCtxtTree(Prof::CSProfile* prof, VMA begVMA, VMA endVMA, 
-		       const string& lm_fnm, LoadModScope* lmScope)
+processCallingCtxtTree(Prof::CSProfile* prof, Prof::Epoch::LM* epoch_lm,
+		       LoadModScope* lmScope)
 {
   VMA relocVMA = 0;
 
   try {
     binutils::LM* lm = new binutils::LM();
-    lm->open(lm_fnm.c_str());
+    lm->open(epoch_lm->name().c_str());
     if (lm->type() != binutils::LM::TypeExe) {
-      relocVMA = begVMA;
+      relocVMA = epoch_lm->loadAddr();
     }
     delete lm;
   }
   catch (...) {
-    DIAG_EMsg("While reading '" << lm_fnm << "'...");
+    DIAG_EMsg("While reading '" << epoch_lm->name() << "'...");
     throw;
   }
   
-  Analysis::CallPath::inferCallFrames(prof, begVMA, endVMA, lmScope, relocVMA);
+  Analysis::CallPath::inferCallFrames(prof, epoch_lm, lmScope, relocVMA);
 }
 
 
 static void
-processCallingCtxtTree(Prof::CSProfile* prof, VMA begVMA, VMA endVMA, 
-		       const string& lm_fnm)
+processCallingCtxtTree(Prof::CSProfile* prof, Prof::Epoch::LM* epoch_lm)
 {
   binutils::LM* lm = NULL;
   try {
     lm = new binutils::LM();
-    lm->open(lm_fnm.c_str());
+    lm->open(epoch_lm->name().c_str());
     lm->read(binutils::LM::ReadFlg_Proc);
   }
   catch (...) {
-    DIAG_EMsg("While reading '" << lm_fnm << "'...");
+    DIAG_EMsg("While reading '" << epoch_lm->name() << "'...");
     throw;
   }
   
   // get the start and end PC from the text sections 
   if (lm->type() != binutils::LM::TypeExe) {
-    lm->relocate(begVMA);
+    lm->relocate(epoch_lm->loadAddr());
   }
   
-  Analysis::CallPath::inferCallFrames(prof, begVMA, endVMA, lm);
+  Analysis::CallPath::inferCallFrames(prof, epoch_lm, lm);
   
   delete lm;
 }
