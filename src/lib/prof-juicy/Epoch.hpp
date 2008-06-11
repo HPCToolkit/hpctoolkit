@@ -86,18 +86,21 @@ namespace Prof {
 class Epoch : public Unique {
 public:
 
+  typedef int LM_id_t;
+  static const LM_id_t LM_id_NULL = -1;
+
   class LM : public Unique {
   public:
     LM(const char* name = NULL, VMA loadAddr = 0);
     virtual ~LM();
 
-    int id() const 
+    LM_id_t id() const 
       { return m_id; }
     
     const std::string& name() const
       { return m_name; }
-    void name(const char* s) 
-      { m_name = (s) ? s: ""; }
+    void name(const char* x) 
+      { m_name = (x) ? x: ""; }
     
     VMA loadAddr() const 
       { return m_loadAddr; }
@@ -124,7 +127,7 @@ public:
     friend class Epoch;
     
   private: 
-    int m_id;
+    LM_id_t m_id;
     std::string m_name;
     VMA m_loadAddr;
     VMA m_loadAddrPref;
