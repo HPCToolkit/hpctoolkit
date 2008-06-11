@@ -50,6 +50,10 @@
 
 //************************* System Include Files ****************************
 
+#include <iostream>
+using std::hex;
+using std::dec;
+
 //*************************** User Include Files ****************************
 
 #include <include/general.h>
@@ -58,6 +62,8 @@
 
 #include <lib/xml/xml.hpp>
 using namespace xml;
+
+#include <lib/prof-lean/hpcfile_csproflib.h>
 
 #include <lib/support/Trace.hpp>
 
@@ -124,3 +130,273 @@ CSProfile::ddump() const
 }
 
 } // namespace Prof
+
+
+//***************************************************************************
+//
+//***************************************************************************
+
+extern "C" {
+  static void* cstree_create_node_CB(void* tree, 
+				     hpcfile_cstree_nodedata_t* data);
+  static void  cstree_link_parent_CB(void* tree, void* node, void* parent);
+
+  static void* hpcfile_alloc_CB(size_t sz);
+  static void  hpcfile_free_CB(void* mem);
+}
+
+static void 
+convertOpIPToIP(VMA opIP, VMA& ip, ushort& opIdx);
+
+static bool
+addPGMToCSProfTree(Prof::CSProfTree* tree, const char* progName);
+
+static bool 
+fixLeaves(Prof::CSProfNode* node);
+
+
+
+Prof::CSProfile* 
+ReadProfile_CSPROF(const char* fnm) 
+{
+  using namespace Prof;
+
+  hpcfile_csprof_data_t metadata;
+  int ret;
+
+  // ------------------------------------------------------------
+  // Read profile
+  // ------------------------------------------------------------
+
+  FILE* fs = hpcfile_open_for_read(fnm);
+  if (!fs) { 
+    DIAG_Throw(fnm << ": could not open");
+  }
+
+  epoch_table_t epochtbl;
+  ret = hpcfile_csprof_read(fs, &metadata, &epochtbl, hpcfile_alloc_CB, 
+			     hpcfile_free_CB);
+  if (ret != HPCFILE_OK) {
+    DIAG_Throw(fnm << ": error reading header (HPC_CSPROF)");
+    return NULL;
+  }
+  
+  uint num_metrics = metadata.num_metrics;
+  
+  DIAG_Msg(2, "Metrics found: " << num_metrics);
+
+  Prof::CSProfile* prof = new Prof::CSProfile(num_metrics);
+  ret = hpcfile_cstree_read(fs, prof->cct(), num_metrics,
+			    cstree_create_node_CB, cstree_link_parent_CB,
+			    hpcfile_alloc_CB, hpcfile_free_CB);
+  if (ret != HPCFILE_OK) {
+    DIAG_Throw(fnm << ": error reading calling context tree (HPC_CSTREE)."
+	       << " (Or no samples were taken.) [FIXME: should not have been lumped together!]");
+    delete prof;
+    return NULL;
+  }
+
+  hpcfile_close(fs);
+
+
+  // ------------------------------------------------------------
+  // 
+  // ------------------------------------------------------------
+
+  DIAG_WMsgIf(epochtbl.num_epoch > 1, fnm << ": only processing first epoch!");
+  
+  uint num_lm = epochtbl.epoch_modlist[0].num_loadmodule;
+
+  Epoch* epoch = new Epoch(num_lm);
+
+  for (int i = 0; i < num_lm; i++) { 
+    const char* nm = epochtbl.epoch_modlist[0].loadmodule[i].name;
+    VMA loadAddr = epochtbl.epoch_modlist[0].loadmodule[i].mapaddr;
+    Epoch::LM* lm = new Epoch::LM(nm, loadAddr);
+    //lm->loadAddrPref(epochtbl.epoch_modlist[0].loadmodule[i].vaddr);
+    epoch->lm_insert(lm);
+  }
+  epoch_table__free_data(&epochtbl, hpcfile_free_CB);
+
+  // Extract profiling info
+  prof->name("[Profile Name]"); 
+  
+  // Extract metrics
+  for (int i = 0; i < num_metrics; i++) {
+    SampledMetricDesc* metric = prof->metric(i);
+    metric->name(metadata.metrics[i].metric_name);
+    metric->flags(metadata.metrics[i].flags);
+    metric->period(metadata.metrics[i].sample_period);
+  }
+
+  prof->epoch(epoch);
+
+  // We must deallocate pointer-data
+  for (int i = 0; i < num_metrics; i++) {
+    hpcfile_free_CB(metadata.metrics[i].metric_name);
+  }
+  hpcfile_free_CB(metadata.target);
+  hpcfile_free_CB(metadata.metrics);
+
+  // Add PGM node to tree
+  addPGMToCSProfTree(prof->cct(), prof->name().c_str());
+  
+  // Convert leaves (CSProfCallSiteNode) to Prof::CSProfStatementNodes
+  // FIXME: There should be a better way of doing this.  We could
+  // merge it with a normalization step...
+  fixLeaves(prof->cct()->root());
+  
+  return prof;
+}
+
+
+static void* 
+cstree_create_node_CB(void* tree, 
+		      hpcfile_cstree_nodedata_t* data)
+{
+  Prof::CSProfTree* my_tree = (Prof::CSProfTree*)tree; 
+  
+  VMA ip;
+  ushort opIdx;
+  convertOpIPToIP((VMA)data->ip, ip, opIdx);
+  std::vector<hpcfile_metric_data_t> metricVec;
+  metricVec.clear();
+  for (uint i = 0; i < data->num_metrics; i++) {
+    metricVec.push_back(data->metrics[i]);
+  }
+
+  DIAG_DevMsgIf(0, "cstree_create_node_CB: " << hex << data->ip << dec);
+  Prof::CSProfCallSiteNode* n = 
+    new Prof::CSProfCallSiteNode(NULL, data->as_info, ip, opIdx, data->lip.ptr,
+				 &my_tree->metadata()->metricDesc(), metricVec);
+  n->SetSrcInfoDone(false);
+  
+  // Initialize the tree, if necessary
+  if (my_tree->empty()) {
+    my_tree->root(n);
+  }
+  
+  return n;
+}
+
+
+static void  
+cstree_link_parent_CB(void* tree, void* node, void* parent)
+{
+  Prof::CSProfCallSiteNode* p = (Prof::CSProfCallSiteNode*)parent;
+  Prof::CSProfCallSiteNode* n = (Prof::CSProfCallSiteNode*)node;
+  n->Link(p);
+}
+
+
+static void* 
+hpcfile_alloc_CB(size_t sz)
+{
+  return (new char[sz]);
+}
+
+
+static void  
+hpcfile_free_CB(void* mem)
+{
+  delete[] (char*)mem;
+}
+
+
+// convertOpIPToIP: Find the instruction pointer 'ip' and operation
+// index 'opIdx' from the operation pointer 'opIP'.  The operation
+// pointer is represented by adding 0, 1, or 2 to the instruction
+// pointer for the first, second and third operation, respectively.
+void 
+convertOpIPToIP(VMA opIP, VMA& ip, ushort& opIdx)
+{
+#if 0  
+  opIdx = (ushort)(opIP & 0x3); // the mask ...00011 covers 0, 1 and 2
+  ip = opIP - opIdx;
+#else
+  // FIXME: tallent: Sigh! The above is only true for IA64! Replace
+  // with ISA::ConvertVMAToOpVMA, probably accessed through LM::isa
+  ip = opIP;
+  opIdx = 0;
+#endif
+}
+
+
+bool
+addPGMToCSProfTree(Prof::CSProfTree* tree, const char* progName)
+{
+  bool noError = true;
+
+  // Add PGM node
+  Prof::CSProfNode* n = tree->root();
+  if (!n || n->GetType() != Prof::CSProfNode::PGM) {
+    Prof::CSProfNode* root = new Prof::CSProfPgmNode(progName);
+    if (n) { 
+      n->Link(root); // 'root' is parent of 'n'
+    }
+    tree->root(root);
+  }
+  
+  return noError;
+}
+
+
+static bool 
+fixLeaves(Prof::CSProfNode* node)
+{
+  bool noError = true;
+  
+  if (!node) { return noError; }
+
+  // For each immediate child of this node...
+  for (Prof::CSProfNodeChildIterator it(node); it.Current(); /* */) {
+    Prof::CSProfCodeNode* child = dynamic_cast<Prof::CSProfCodeNode*>(it.CurNode());
+    Prof::IDynNode* child_dyn = dynamic_cast<Prof::IDynNode*>(child);
+    DIAG_Assert(child && child_dyn, "");
+    it++; // advance iterator -- it is pointing at 'child'
+
+    DIAG_DevMsgIf(0, "fixLeaves: " << hex << child_dyn->ip() << dec);
+    if (child->IsLeaf() && child->GetType() == Prof::CSProfNode::CALLSITE) {
+      // This child is a leaf. Convert.
+      Prof::CSProfCallSiteNode* c = dynamic_cast<Prof::CSProfCallSiteNode*>(child);
+      
+      Prof::CSProfStatementNode* newc = new Prof::CSProfStatementNode(NULL, c->metricdesc());
+      *newc = *c;
+      
+      newc->LinkBefore(node->FirstChild()); // do not break iteration!
+      c->Unlink();
+      delete c;
+    } 
+    else if (!child->IsLeaf()) {
+      // Recur:
+      noError = noError && fixLeaves(child);
+    }
+  }
+  
+  return noError;
+}
+
+
+void
+Epoch_SetLMUsed(Prof::CSProfile* prof)
+{
+  VMA curr_ip;  
+  
+  Prof::CSProfTree* tree = prof->cct();
+  Prof::CSProfNode* root = tree->root();
+  
+  for (Prof::CSProfNodeIterator it(root); it.CurNode(); ++it) {
+    Prof::CSProfNode* n = it.CurNode();
+    Prof::CSProfCallSiteNode* nn = dynamic_cast<Prof::CSProfCallSiteNode*>(n);
+    
+    if (nn) {
+      curr_ip = nn->ip();
+      Prof::Epoch::LM* lm = prof->epoch()->lm_find(curr_ip);
+      if (!(lm->isUsed())) {
+	lm->isUsed(true);
+      }
+    }
+  }
+}
+
+
