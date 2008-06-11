@@ -91,7 +91,7 @@ public:
 
   class LM : public Unique {
   public:
-    LM(const char* name = NULL, VMA loadAddr = 0);
+    LM(const char* name = NULL, VMA loadAddr = 0, size_t size = 0);
     virtual ~LM();
 
     LM_id_t id() const 
@@ -99,6 +99,8 @@ public:
     
     const std::string& name() const
       { return m_name; }
+    void name(std::string x)
+      { m_name = x; }
     void name(const char* x) 
       { m_name = (x) ? x: ""; }
     
@@ -106,6 +108,11 @@ public:
       { return m_loadAddr; }
     void loadAddr(VMA x) 
       { m_loadAddr = x; }
+
+    VMA size() const 
+      { return m_size; }
+    void size(size_t x) 
+      { m_size = x; }
 
     // relocate_VMA - relocAmt() = unrelocated_VMA
     VMA relocAmt() const
@@ -132,12 +139,23 @@ public:
     LM_id_t m_id;
     std::string m_name;
     VMA m_loadAddr;
+    size_t m_size;
+
     VMA m_relocAmt;
     
     bool m_isUsed;
   };
 
-  struct lt_LM
+  struct lt_LM_nm
+  {
+    inline bool 
+    operator()(const LM* x, const LM* y) const
+    { 
+      return (x->name() < y->name()); 
+    }
+  };
+
+  struct lt_LM_vma
   {
     inline bool 
     operator()(const LM* x, const LM* y) const
@@ -145,23 +163,17 @@ public:
       return (x->loadAddr() < y->loadAddr()); 
     }
   };
-  
+
   typedef std::vector<LM*> LMVec;
-  typedef std::set<LM*, lt_LM> LMSet;
+  typedef std::multiset<LM*, lt_LM_nm> LMSet_nm;
+  typedef std::set<LM*, lt_LM_vma> LMSet;
   
 public: 
   Epoch(const uint i = 16);
   virtual ~Epoch();
 
   // assumes ownership
-  void lm_insert(Epoch::LM* x) 
-  { 
-    int id = m_lm_byId.size();
-    x->id(id);
-    m_lm_byId.push_back(x);
-
-    m_lm_byVMA.insert(x);
-  }
+  void lm_insert(Epoch::LM* x);
   
   // ------------------------------------------------------------
   // Access by id
@@ -171,6 +183,25 @@ public:
 
   LM* lm(uint i) const
   { return m_lm_byId[i]; }
+
+  // ------------------------------------------------------------
+  // Access by name
+  // ------------------------------------------------------------
+  std::pair<LMSet_nm::iterator, LMSet_nm::iterator>
+  lm_find(const std::string& nm) const;
+
+  LMSet::iterator lm_begin_nm() 
+  { return m_lm_byName.begin(); }
+
+  LMSet::const_iterator lm_begin_nm() const 
+  { return m_lm_byName.begin(); }
+
+  LMSet::iterator lm_end_nm() 
+  { return m_lm_byName.end(); }
+
+  LMSet::const_iterator lm_end_nm() const 
+  { return m_lm_byName.end(); }
+
 
   // ------------------------------------------------------------
   // Access by VMA
@@ -208,22 +239,29 @@ public:
   // ------------------------------------------------------------
   void compute_relocAmt();
 
+
+  // Given an Epoch y, merge y into x = 'this'.  Returns a vector of
+  // MergeChange describing changes that were made.  The vector
+  // contains at most one MergeChange for each LM_id_t (old_id) in y.
+
+  struct MergeChange {
+    MergeChange(LM_id_t old_, LM_id_t new_) : old_id(old_), new_id(new_) { }
+    LM_id_t old_id /*in y*/, new_id /*in x */;
+  };
+
+  std::vector<MergeChange> 
+  merge(const Epoch& y);
+
   // ------------------------------------------------------------
   // 
   // ------------------------------------------------------------
   void dump(std::ostream& os = std::cerr) const;
   void ddump() const;
-  
-protected:
-#if 0
-  void lm_sort() {
-    std::sort(m_lm_byVMA.begin(), m_lm_byVMA.end(), lt_LM());
-  } 
-#endif
 
 private:
-  LMVec m_lm_byId;
-  LMSet m_lm_byVMA;
+  LMVec    m_lm_byId;
+  LMSet_nm m_lm_byName;
+  LMSet    m_lm_byVMA;
 };
 
 } // namespace Prof

@@ -103,9 +103,13 @@ public:
     { m_epoch = x; }
 
   // -------------------------------------------------------
-  // Given a Profile, merge into 'this'
+  // 
   // -------------------------------------------------------
-  void merge(const Profile& x);
+
+  // Given a Profile y, merge y into x = 'this'
+  // ASSUMES: both x and y are in canonical form (cct_canonicalize())
+  // WARNING: the merge may change/destroy y
+  void merge(Profile& y);
 
   // -------------------------------------------------------
   // 
@@ -117,6 +121,16 @@ public:
   // -------------------------------------------------------
   virtual void dump(std::ostream& os = std::cerr) const;
   virtual void ddump() const;
+
+private:
+
+  // 1. annotate CCT::Tree nodes with associated Prof::Epoch::LM_id_t 
+  // 2. normalize CCT::Tree node IPs (unrelocate)
+  void 
+  cct_canonicalize();
+
+  void 
+  cct_applyEpochMergeChanges(std::vector<Epoch::MergeChange>& mergeChg);
  
 private:
   std::string m_name;

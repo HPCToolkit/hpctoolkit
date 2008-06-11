@@ -264,12 +264,16 @@ public:
   // 
   // --------------------------------------------------------
 
-  void merge_prepare(uint numMetrics);
-  void merge(CSProfNode* y, 
-	     const SampledMetricDescVec* new_mdesc,
-	     uint x_numMetrics, uint y_numMetrics);
+  void 
+  merge_prepare(uint numMetrics);
 
-  CSProfNode* findDynChild(lush_assoc_info_t as_info, VMA ip, lush_lip_t* lip);
+  void 
+  merge(CSProfNode* y, const SampledMetricDescVec* new_mdesc,
+	uint x_numMetrics, uint y_numMetrics);
+
+  CSProfNode* 
+  findDynChild(lush_assoc_info_t as_info, 
+	       Epoch::LM_id_t lm_id, VMA ip, lush_lip_t* lip);
 
   // --------------------------------------------------------
   // Dump contents for inspection

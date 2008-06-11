@@ -563,7 +563,7 @@ CSProfNode::merge_prepare(uint numMetrics)
 }
 
 
-// Let y be a node corresponding to 'this'(= x) and assume x is already
+// Let y be a node corresponding to 'this' = x and assume x is already
 // merged.  Given y, merge y's children into x.
 // NOTE: assume we can destroy y...
 // NOTE: assume x already has space to store merged metrics
@@ -595,6 +595,7 @@ CSProfNode::merge(CSProfNode* y,
     it++; // advance iterator -- it is pointing at 'child'
 
     CSProfNode* x_child = findDynChild(y_child_dyn->assocInfo(),
+				       y_child_dyn->lm_id(),
 				       y_child_dyn->ip_real(),
 				       y_child_dyn->lip());
     if (!x_child) {
@@ -615,7 +616,8 @@ CSProfNode::merge(CSProfNode* y,
 
 
 CSProfNode* 
-CSProfNode::findDynChild(lush_assoc_info_t as_info, VMA ip, lush_lip_t* lip)
+CSProfNode::findDynChild(lush_assoc_info_t as_info, 
+			 Epoch::LM_id_t lm_id, VMA ip, lush_lip_t* lip)
 {
   for (CSProfNodeChildIterator it(this); it.Current(); ++it) {
     CSProfNode* child = it.CurNode();
@@ -624,6 +626,7 @@ CSProfNode::findDynChild(lush_assoc_info_t as_info, VMA ip, lush_lip_t* lip)
     lush_assoc_t as = lush_assoc_info__get_assoc(as_info);
 
     if (child_dyn 
+	&& child_dyn->lm_id() == lm_id
 	&& child_dyn->ip_real() == ip
 	&& lush_lip_eq(child_dyn->lip(), lip)
 	&& lush_assoc_class_eq(child_dyn->assoc(), as) 
