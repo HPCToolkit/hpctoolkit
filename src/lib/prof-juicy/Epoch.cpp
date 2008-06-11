@@ -54,6 +54,10 @@
 
 #include "Epoch.hpp"
 
+#include <lib/binutils/LM.hpp>
+
+#include <lib/support/diagnostics.h>
+
 
 //*************************** Forward Declarations ***************************
 
@@ -100,8 +104,18 @@ Epoch::lm_find(VMA ip) const
   }
 }
 
+  
+void 
+Epoch::compute_relocAmt()
+{
+  for (uint i = 0; i < lm_size(); ++i) {
+    lm(i)->compute_relocAmt();
+  }
+}
 
-void Epoch::dump(std::ostream& os) const
+
+void 
+Epoch::dump(std::ostream& os) const
 {
   std::string pre = "  ";
 
@@ -124,7 +138,8 @@ void Epoch::dump(std::ostream& os) const
 }
 
 
-void Epoch::ddump() const
+void 
+Epoch::ddump() const
 {
   dump(std::cerr);
 }
@@ -135,13 +150,31 @@ void Epoch::ddump() const
 Epoch::LM::LM(const char* nm, VMA loadAddr)
   : m_id(LM_id_NULL), m_name((nm) ? nm: ""), 
     m_loadAddr(loadAddr), m_relocAmt(0),
-    m_loadAddrPref(0), m_isUsed(false)
+    m_isUsed(false)
 {
 }
 
 
 Epoch::LM::~LM()
 {
+}
+
+
+void 
+Epoch::LM::compute_relocAmt()
+{
+  try {
+    binutils::LM* lm = new binutils::LM();
+    lm->open(m_name.c_str());
+    if (lm->doUnrelocate(m_loadAddr)) {
+      m_relocAmt = m_loadAddr;
+    }
+    delete lm;
+  }
+  catch (...) {
+    DIAG_EMsg("While reading '" << m_name << "'...");
+    throw;
+  }
 }
 
 

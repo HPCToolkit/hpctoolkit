@@ -274,22 +274,7 @@ static void
 processCallingCtxtTree(Prof::CSProfile* prof, Prof::Epoch::LM* epoch_lm,
 		       LoadModScope* lmScope)
 {
-  VMA relocVMA = 0;
-
-  try {
-    binutils::LM* lm = new binutils::LM();
-    lm->open(epoch_lm->name().c_str());
-    if (lm->type() != binutils::LM::TypeExe) {
-      relocVMA = epoch_lm->loadAddr();
-    }
-    delete lm;
-  }
-  catch (...) {
-    DIAG_EMsg("While reading '" << epoch_lm->name() << "'...");
-    throw;
-  }
-  
-  Analysis::CallPath::inferCallFrames(prof, epoch_lm, lmScope, relocVMA);
+  Analysis::CallPath::inferCallFrames(prof, epoch_lm, lmScope);
 }
 
 
@@ -306,14 +291,7 @@ processCallingCtxtTree(Prof::CSProfile* prof, Prof::Epoch::LM* epoch_lm)
     DIAG_EMsg("While reading '" << epoch_lm->name() << "'...");
     throw;
   }
-  
-  // get the start and end PC from the text sections 
-  if (lm->type() != binutils::LM::TypeExe) {
-    lm->relocate(epoch_lm->loadAddr());
-  }
-  
   Analysis::CallPath::inferCallFrames(prof, epoch_lm, lm);
-  
   delete lm;
 }
 

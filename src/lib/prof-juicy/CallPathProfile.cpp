@@ -218,11 +218,11 @@ ReadProfile_CSPROF(const char* fnm)
     const char* nm = epochtbl.epoch_modlist[0].loadmodule[i].name;
     VMA loadAddr = epochtbl.epoch_modlist[0].loadmodule[i].mapaddr;
     Epoch::LM* lm = new Epoch::LM(nm, loadAddr);
-    //lm->loadAddrPref(epochtbl.epoch_modlist[0].loadmodule[i].vaddr);
     epoch->lm_insert(lm);
   }
   epoch_table__free_data(&epochtbl, hpcfile_free_CB);
 
+  epoch->compute_relocAmt();
   prof->epoch(epoch);
 
   // ------------------------------------------------------------

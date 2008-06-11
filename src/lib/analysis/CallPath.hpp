@@ -75,7 +75,7 @@ namespace Analysis {
 namespace CallPath {
 
 void inferCallFrames(Prof::CSProfile* prof, Prof::Epoch::LM* epoch_lm,
-		     LoadModScope* lmScope, VMA relocVMA);
+		     LoadModScope* lmScope);
 
 void inferCallFrames(Prof::CSProfile* prof, Prof::Epoch::LM* epoch_lm,
 		     binutils::LM* lm);
