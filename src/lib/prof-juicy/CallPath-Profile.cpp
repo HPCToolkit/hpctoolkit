@@ -58,7 +58,7 @@ using std::dec;
 
 #include <include/general.h>
 
-#include "CallPathProfile.hpp"
+#include "CallPath-Profile.hpp"
 
 #include <lib/xml/xml.hpp>
 using namespace xml;

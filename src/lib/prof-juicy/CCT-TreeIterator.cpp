@@ -52,7 +52,7 @@
 
 //*************************** User Include Files ****************************
 
-#include "CallingContextTree.hpp"
+#include "CCT-Tree.hpp"
 
 #include <lib/support/diagnostics.h>
 

@@ -62,7 +62,7 @@
 
 #include "MetricDesc.hpp"
 #include "Epoch.hpp"
-#include "CallingContextTree.hpp"
+#include "CCT-Tree.hpp"
 
 //*************************** Forward Declarations ***************************
 
