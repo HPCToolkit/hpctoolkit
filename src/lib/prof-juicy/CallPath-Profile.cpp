@@ -103,18 +103,27 @@ Profile::~Profile()
 
 
 void 
-Profile::merge(const Profile& y)
+Profile::merge(Profile& y)
 {
-  uint x_numMetrics = numMetrics();
-
+  // -------------------------------------------------------
   // merge metrics
-  for (int i = 0; i < y.numMetrics(); ++i) {
+  // -------------------------------------------------------
+  uint x_numMetrics = numMetrics();
+  for (uint i = 0; i < y.numMetrics(); ++i) {
     const SampledMetricDesc* m = y.metric(i);
     m_metricdesc.push_back(new SampledMetricDesc(*m));
   }
   
-  // merge epochs... [FIXME]
-  
+  // -------------------------------------------------------
+  // merge epochs
+  // -------------------------------------------------------
+  std::vector<Epoch::MergeChange> mergeChg = m_epoch->merge(*y.epoch());
+  y.cct_applyEpochMergeChanges(mergeChg);
+  // INVARIANT: y's cct now refers to x's epoch
+
+  // -------------------------------------------------------
+  // merge cct
+  // -------------------------------------------------------
   m_cct->merge(y.cct(), &m_metricdesc, x_numMetrics, y.numMetrics());
 }
 
@@ -160,13 +169,15 @@ addPGMToTree(Prof::CCT::Tree* tree, const char* progName);
 static bool 
 fixLeaves(Prof::CSProfNode* node);
 
-static void
-unrelocateIPs(Prof::CallPath::Profile* prof);
 
 
+namespace Prof {
 
-Prof::CallPath::Profile* 
-Prof::CallPath::Profile::make(const char* fnm) 
+namespace CallPath {
+
+
+Profile* 
+Profile::make(const char* fnm) 
 {
   using namespace Prof;
 
@@ -220,10 +231,11 @@ Prof::CallPath::Profile::make(const char* fnm)
 
   Epoch* epoch = new Epoch(num_lm);
 
-  for (int i = 0; i < num_lm; i++) { 
+  for (int i = num_lm - 1; i >= 0; --i) { 
     const char* nm = epochtbl.epoch_modlist[0].loadmodule[i].name;
     VMA loadAddr = epochtbl.epoch_modlist[0].loadmodule[i].mapaddr;
-    Epoch::LM* lm = new Epoch::LM(nm, loadAddr);
+    size_t sz = 0; //epochtbl.epoch_modlist[0].loadmodule[i].size;
+    Epoch::LM* lm = new Epoch::LM(nm, loadAddr, sz);
     epoch->lm_insert(lm);
   }
   epoch_table__free_data(&epochtbl, hpcfile_free_CB);
@@ -263,10 +275,63 @@ Prof::CallPath::Profile::make(const char* fnm)
   // merge it with a normalization step...
   fixLeaves(prof->cct()->root());
 
-  unrelocateIPs(prof);
+  prof->cct_canonicalize();
   
   return prof;
 }
+
+
+void
+Profile::cct_canonicalize()
+{
+  Prof::CSProfNode* root = cct()->root();
+  
+  for (Prof::CSProfNodeIterator it(root); it.CurNode(); ++it) {
+    Prof::CSProfNode* n = it.CurNode();
+
+    Prof::IDynNode* n_dyn = dynamic_cast<Prof::IDynNode*>(n);
+    if (n_dyn) {
+      VMA ip = n_dyn->ip_real();
+      Prof::Epoch::LM* lm = epoch()->lm_find(ip);
+      VMA ip_ur = ip - lm->relocAmt();
+
+      n_dyn->lm_id(lm->id());
+      n_dyn->ip(ip_ur, n_dyn->opIndex());
+      lm->isUsed(true); // FIXME:
+    }
+  }
+}
+
+
+void 
+Profile::cct_applyEpochMergeChanges(std::vector<Epoch::MergeChange>& mergeChg)
+{
+  Prof::CSProfNode* root = cct()->root();
+  
+  for (Prof::CSProfNodeIterator it(root); it.CurNode(); ++it) {
+    Prof::CSProfNode* n = it.CurNode();
+    
+    Prof::IDynNode* n_dyn = dynamic_cast<Prof::IDynNode*>(n);
+    if (n_dyn) {
+
+      Epoch::LM_id_t y_lm_id = n_dyn->lm_id();
+      for (uint i = 0; i < mergeChg.size(); ++i) {
+	const Epoch::MergeChange& chg = mergeChg[i];
+	if (chg.old_id == y_lm_id) {
+	  n_dyn->lm_id(chg.new_id);
+	  break;
+	}
+      }
+
+    }
+  }
+}
+
+
+} // namespace CallPath
+
+} // namespace Prof
+
 
 
 static void* 
@@ -395,28 +460,5 @@ fixLeaves(Prof::CSProfNode* node)
   }
   
   return noError;
-}
-
-
-static void
-unrelocateIPs(Prof::CallPath::Profile* prof)
-{
-  Prof::CSProfNode* root = prof->cct()->root();
-  const Prof::Epoch* epoch = prof->epoch();
-  
-  for (Prof::CSProfNodeIterator it(root); it.CurNode(); ++it) {
-    Prof::CSProfNode* n = it.CurNode();
-
-    Prof::IDynNode* n_dyn = dynamic_cast<Prof::IDynNode*>(n);
-    if (n_dyn) {
-      VMA ip = n_dyn->ip_real();
-      Prof::Epoch::LM* lm = epoch->lm_find(ip);
-      VMA ip_ur = ip - lm->relocAmt();
-
-      n_dyn->lm_id(lm->id());
-      n_dyn->ip(ip_ur, n_dyn->opIndex());
-      lm->isUsed(true); // FIXME:
-    }
-  }
 }
 

@@ -78,7 +78,34 @@ Epoch::~Epoch()
     delete lm(i); // Epoch::LM*
   }
   m_lm_byId.clear();
+  m_lm_byName.clear();
   m_lm_byVMA.clear();
+}
+
+
+void 
+Epoch::lm_insert(Epoch::LM* x) 
+{ 
+  // FIXME: combine load modules if adjacent
+
+  int id = m_lm_byId.size();
+  x->id(id);
+  m_lm_byId.push_back(x);
+  
+  m_lm_byName.insert(x);
+  m_lm_byVMA.insert(x);
+}
+
+
+std::pair<Epoch::LMSet_nm::iterator, Epoch::LMSet_nm::iterator>
+Epoch::lm_find(const std::string& nm) const
+{
+  static Epoch::LM key;
+  key.name(nm);
+
+  std::pair<LMSet_nm::iterator, LMSet_nm::iterator> fnd = 
+    m_lm_byName.equal_range(&key);
+  return fnd;
 }
 
 
@@ -111,6 +138,42 @@ Epoch::compute_relocAmt()
   for (uint i = 0; i < lm_size(); ++i) {
     lm(i)->compute_relocAmt();
   }
+}
+
+
+std::vector<Epoch::MergeChange> 
+Epoch::merge(const Epoch& y)
+{
+  std::vector<MergeChange> mergeChg;
+  
+  Epoch& x = *this;
+
+  for (uint i = 0; i < y.lm_size(); ++i) { 
+    Epoch::LM* y_lm = y.lm(i);
+    
+    std::pair<Epoch::LMSet_nm::iterator, Epoch::LMSet_nm::iterator> x_fnd = 
+      x.lm_find(y_lm->name());
+
+    Epoch::LM* x_lm = (x_fnd.first != lm_end_nm()) ? *(x_fnd.first) : NULL;
+    bool is_x_lm_uniq = (x_lm && (x_fnd.first == --(x_fnd.second)));
+    
+    if (is_x_lm_uniq && x_lm->id() == y_lm->id()) {
+      continue;
+    }
+    else if (is_x_lm_uniq && x_lm->id() != y_lm->id()) {
+      // y_lm->id() is replaced by x_lm->id()
+      mergeChg.push_back(MergeChange(y_lm->id(), x_lm->id()));
+    }
+    else {
+      // Create and insert x_lm.  y_lm->id() is replaced by x_lm->id().
+      x_lm = new Epoch::LM(y_lm->name().c_str(), y_lm->loadAddr(), 
+			   y_lm->size());
+      lm_insert(x_lm);
+      mergeChg.push_back(MergeChange(y_lm->id(), x_lm->id()));
+    }
+  }
+  
+  return mergeChg;
 }
 
 
@@ -147,9 +210,10 @@ Epoch::ddump() const
 
 //****************************************************************************
 
-Epoch::LM::LM(const char* nm, VMA loadAddr)
+Epoch::LM::LM(const char* nm, VMA loadAddr, size_t size)
   : m_id(LM_id_NULL), m_name((nm) ? nm: ""), 
-    m_loadAddr(loadAddr), m_relocAmt(0),
+    m_loadAddr(loadAddr), m_size(size),
+    m_relocAmt(0),
     m_isUsed(false)
 {
 }
