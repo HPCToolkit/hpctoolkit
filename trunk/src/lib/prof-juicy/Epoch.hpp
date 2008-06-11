@@ -107,17 +107,13 @@ public:
     void loadAddr(VMA x) 
       { m_loadAddr = x; }
 
-    // loadAddr() - relocAmt() = unrelocated VMA
+    // relocate_VMA - relocAmt() = unrelocated_VMA
     VMA relocAmt() const
       { return m_relocAmt; }
     VMA relocAmt(VMA x)
       { m_relocAmt = x; }
-
-#if 0
-    // tallent: I don't think we want this here
-    VMA loadAddrPref() const  { return m_loadAddrPref; }
-    void loadAddrPref(VMA x)  { m_loadAddrPref = x; }
-#endif
+    
+    void compute_relocAmt();
 
     // tallent: FIXME: should not be located here
     bool isUsed() const { return m_isUsed; }
@@ -138,7 +134,6 @@ public:
     VMA m_loadAddr;
     VMA m_relocAmt;
     
-    VMA m_loadAddrPref;
     bool m_isUsed;
   };
 
@@ -206,6 +201,12 @@ public:
 
   LMSet::const_reverse_iterator lm_rend() const
   { return m_lm_byVMA.rend(); }
+
+
+  // ------------------------------------------------------------
+  // 
+  // ------------------------------------------------------------
+  void compute_relocAmt();
 
   // ------------------------------------------------------------
   // 
