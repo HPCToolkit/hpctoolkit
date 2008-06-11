@@ -59,8 +59,8 @@
 
 #include <include/general.h>               
 
-// NOTE: included by CallingContextTree.hpp
-//#include "CallingContextTree.hpp"
+// NOTE: included by CCT-Tree.hpp
+//#include "CCT-Tree.hpp"
 
 #include <lib/support/NonUniformDegreeTree.hpp>
 #include <lib/support/PtrSetIterator.hpp>

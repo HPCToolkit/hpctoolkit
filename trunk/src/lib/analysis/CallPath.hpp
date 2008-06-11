@@ -64,7 +64,7 @@
 
 #include <lib/binutils/LM.hpp>
 
-#include <lib/prof-juicy/CallPathProfile.hpp>
+#include <lib/prof-juicy/CallPath-Profile.hpp>
 
 //*************************** Forward Declarations ***************************
 

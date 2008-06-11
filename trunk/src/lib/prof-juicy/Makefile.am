@@ -74,11 +74,12 @@ MYSOURCES = \
 	PgmScopeTreeIterator.hpp PgmScopeTreeIterator.cpp \
 	PgmScopeTreeInterface.hpp PgmScopeTreeInterface.cpp \
 	\
+	CCT-Tree.hpp CCT-Tree.cpp \
+	CCT-TreeIterator.hpp CCT-TreeIterator.cpp \
+	\
 	Flat-ProfileData.hpp Flat-ProfileData.cpp \
 	\
-	CallPathProfile.hpp CallPathProfile.cpp \
-	CallingContextTree.hpp CallingContextTree.cpp \
-	CallingContextTreeIterator.hpp CallingContextTreeIterator.cpp
+	CallPath-Profile.hpp CallPath-Profile.cpp 
 
 
 # GNU binutils flags are needed for HPC_LIBISA.
