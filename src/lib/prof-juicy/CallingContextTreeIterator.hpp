@@ -48,8 +48,8 @@
 //
 //***************************************************************************
 
-#ifndef prof_juicy_CallingContextTreeIterator
-#define prof_juicy_CallingContextTreeIterator
+#ifndef prof_juicy_Prof_CCT_TreeIterator_hpp
+#define prof_juicy_Prof_CCT_TreeIterator_hpp
 
 //************************* System Include Files ****************************
 
@@ -221,4 +221,4 @@ private:
 
 //***************************************************************************
 
-#endif /* prof_juicy_CallingContextTreeIterator */
+#endif /* prof_juicy_Prof_CCT_TreeIterator_hpp */

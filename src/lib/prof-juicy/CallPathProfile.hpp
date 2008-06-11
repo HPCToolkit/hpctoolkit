@@ -67,53 +67,50 @@
 //*************************** Forward Declarations ***************************
 
 //***************************************************************************
-// CSProfile
+// Profile
 //***************************************************************************
-
-// 'CSProfile' represents data resulting from a call stack profile.
-// It assumes that only one (possibly complex) metric was used in
-// collecting call stack samples and that consequently there is only
-// one set of sample data.  The call stack data is stored as a tree
-// with the root representing the bottom of the all the call stack
-// samples. ----OLD
-
-// call stack profile could have multiple metrics such as "retired
-// instruction" "byte allocated" "byte deallocated" "sigmentation
-// fault" "cycle" etc.
-// We supposed to get the number of metrics from the data file and
-// based on the number to have a vector of metrics
-// The call stack data is stored as a tree with the root representing
-// the bottom of the all the call stack smples
-// muliple metrics => multiple sample data associated with each tree leaf
 
 namespace Prof {
 
-class CSProfile: public Unique {
+namespace CallPath {
+
+class Profile: public Unique {
 public:
-  // Constructor/Destructor
-  CSProfile(uint i);
-  virtual ~CSProfile();
+  Profile(uint numMetrics);
+  virtual ~Profile();
   
   // -------------------------------------------------------
   // Data
   // -------------------------------------------------------
-  const std::string& name() const { return m_name; }
-  void               name(const char* s) { m_name = (s) ? s : ""; }
+  const std::string& name() const 
+    { return m_name; }
+  void name(const char* s) 
+    { m_name = (s) ? s : ""; }
 
-  uint             numMetrics() const   { return m_metricdesc.size(); }
-  SampledMetricDesc* metric(uint i) const { return m_metricdesc[i]; }
-  const SampledMetricDescVec& metricDesc() const { return m_metricdesc; }
+  uint numMetrics() const
+    { return m_metricdesc.size(); }
+  SampledMetricDesc* metric(uint i) const 
+    { return m_metricdesc[i]; }
+  const SampledMetricDescVec& metricDesc() const 
+    { return m_metricdesc; }
 
-  CSProfTree*  cct() const { return m_cct; }
+  CCT::Tree*  cct() const 
+    { return m_cct; }
 
-  Epoch* epoch() const   { return m_epoch; }
-  void   epoch(Epoch* x) { m_epoch = x; }
-
+  Epoch* epoch() const
+    { return m_epoch; }
+  void epoch(Epoch* x) 
+    { m_epoch = x; }
 
   // -------------------------------------------------------
-  // Given a CSProfile, merge into 'this'
+  // Given a Profile, merge into 'this'
   // -------------------------------------------------------
-  void merge(const CSProfile& x);
+  void merge(const Profile& x);
+
+  // -------------------------------------------------------
+  // 
+  // -------------------------------------------------------
+  static Profile* make(const char* fnm);
 
   // -------------------------------------------------------
   // Dump contents for inspection
@@ -124,19 +121,18 @@ public:
 private:
   std::string m_name;
 
-  CSProfTree* m_cct;
+  CCT::Tree* m_cct;
   SampledMetricDescVec m_metricdesc;
   Epoch* m_epoch;
 };
 
+} // namespace CallPath
 
 } // namespace Prof
 
 
 //***************************************************************************
 
-// FIXME: cleanup
-Prof::CSProfile* ReadProfile_CSPROF(const char* fnm);
 
 //***************************************************************************
 

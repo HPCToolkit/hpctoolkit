@@ -78,19 +78,21 @@ using SrcFile::ln_NULL;
 //***************************************************************************
 
 //***************************************************************************
-// CSProfTree
+// Tree
 //***************************************************************************
 
 namespace Prof {
 
+namespace CCT {
 
-CSProfTree::CSProfTree(const CSProfile* metadata)
+
+Tree::Tree(const CallPath::Profile* metadata)
   : m_root(NULL), m_metadata(metadata)
 {
 }
 
 
-CSProfTree::~CSProfTree()
+Tree::~Tree()
 {
   delete m_root; 
   m_metadata = NULL;
@@ -98,9 +100,9 @@ CSProfTree::~CSProfTree()
 
 
 void 
-CSProfTree::merge(const CSProfTree* y, 
-		  const SampledMetricDescVec* new_mdesc,		  
-		  uint x_numMetrics, uint y_numMetrics)
+Tree::merge(const Tree* y, 
+	    const SampledMetricDescVec* new_mdesc,		  
+	    uint x_numMetrics, uint y_numMetrics)
 {
   CSProfPgmNode* x_root = dynamic_cast<CSProfPgmNode*>(root());
   CSProfPgmNode* y_root = dynamic_cast<CSProfPgmNode*>(y->root());
@@ -115,7 +117,7 @@ CSProfTree::merge(const CSProfTree* y,
 
 
 void 
-CSProfTree::dump(std::ostream& os, int dmpFlag) const
+Tree::dump(std::ostream& os, int dmpFlag) const
 {
   os << "<CSPROFILETREE>\n";
   if (m_root) {
@@ -126,10 +128,33 @@ CSProfTree::dump(std::ostream& os, int dmpFlag) const
 
 
 void 
-CSProfTree::ddump() const
+Tree::ddump() const
 {
   dump(std::cerr, XML_FALSE);
 }
+
+
+int 
+Tree::AddXMLEscapeChars(int dmpFlag)
+{
+  if ((dmpFlag & Tree::XML_TRUE) &&
+      !(dmpFlag & Tree::XML_NO_ESC_CHARS)) {
+    return xml::ESC_TRUE;
+  } 
+  else {
+    return xml::ESC_FALSE;
+  }
+}
+
+
+
+} // namespace CCT
+
+} // namespace Prof
+
+
+
+namespace Prof {
 
 //***************************************************************************
 // NodeType `methods' (could completely replace with dynamic typing)
@@ -662,7 +687,7 @@ CSProfNode::ToDumpString(int dmpFlag) const
 { 
   string self;
   self = NodeTypeToName(GetType());
-  if ((dmpFlag & CSProfTree::XML_TRUE) == CSProfTree::XML_FALSE) {
+  if ((dmpFlag & CCT::Tree::XML_TRUE) == CCT::Tree::XML_FALSE) {
     self = self + " uid" + xml::MakeAttrNum(GetUniqueId());
   }
   return self;
@@ -752,7 +777,7 @@ string
 CSProfPgmNode::ToDumpString(int dmpFlag) const
 { 
   string self = CSProfNode::ToDumpString(dmpFlag) + " n" +
-    xml::MakeAttrStr(name, AddXMLEscapeChars(dmpFlag));
+    xml::MakeAttrStr(name, CCT::Tree::AddXMLEscapeChars(dmpFlag));
   return self;
 }
 
@@ -761,7 +786,7 @@ string
 CSProfGroupNode::ToDumpString(int dmpFlag) const
 {
   string self = CSProfNode::ToDumpString(dmpFlag) + " n" +
-    xml::MakeAttrStr(name, AddXMLEscapeChars(dmpFlag));
+    xml::MakeAttrStr(name, CCT::Tree::AddXMLEscapeChars(dmpFlag));
   return self;
 }
 
@@ -771,7 +796,7 @@ CSProfCallSiteNode::ToDumpString(int dmpFlag) const
 {
   string self = CSProfNode::ToDumpString(dmpFlag);
   
-  if (!(dmpFlag & CSProfTree::XML_TRUE)) {
+  if (!(dmpFlag & CCT::Tree::XML_TRUE)) {
     self = self 
       + " assoc" + xml::MakeAttrStr(assocInfo_str()) 
       + " ip_real" + xml::MakeAttrNum(ip_real(), 16)
@@ -781,13 +806,13 @@ CSProfCallSiteNode::ToDumpString(int dmpFlag) const
 
   if (!file.empty()) { 
      if (fileistext)
-        self = self + " f" + xml::MakeAttrStr(file, AddXMLEscapeChars(dmpFlag));
+        self = self + " f" + xml::MakeAttrStr(file, CCT::Tree::AddXMLEscapeChars(dmpFlag));
      else 
-        self = self + " lm" + xml::MakeAttrStr(file, AddXMLEscapeChars(dmpFlag));
+        self = self + " lm" + xml::MakeAttrStr(file, CCT::Tree::AddXMLEscapeChars(dmpFlag));
    } 
 
   if (!proc.empty()) {
-    self = self + " p" + xml::MakeAttrStr(proc, AddXMLEscapeChars(dmpFlag));
+    self = self + " p" + xml::MakeAttrStr(proc, CCT::Tree::AddXMLEscapeChars(dmpFlag));
   } 
   else {
     self = self + " ip" + xml::MakeAttrNum(ip(), 16);
@@ -807,20 +832,20 @@ CSProfStatementNode::ToDumpString(int dmpFlag) const
 {
   string self = CSProfNode::ToDumpString(dmpFlag);
   
-  if (!(dmpFlag & CSProfTree::XML_TRUE)) {
+  if (!(dmpFlag & CCT::Tree::XML_TRUE)) {
     self = self + " ip" + xml::MakeAttrNum(ip(), 16) 
       + " op" + xml::MakeAttrNum(opIndex());
   } 
 
   if (!file.empty()) { 
      if (fileistext)
-        self = self + " f" + xml::MakeAttrStr(file, AddXMLEscapeChars(dmpFlag)); 
+        self = self + " f" + xml::MakeAttrStr(file, CCT::Tree::AddXMLEscapeChars(dmpFlag)); 
      else 
-        self = self + " lm" + xml::MakeAttrStr(file, AddXMLEscapeChars(dmpFlag)); 
+        self = self + " lm" + xml::MakeAttrStr(file, CCT::Tree::AddXMLEscapeChars(dmpFlag)); 
    } 
 
   if (!proc.empty()) {
-    self = self + " p" + xml::MakeAttrStr(proc, AddXMLEscapeChars(dmpFlag));
+    self = self + " p" + xml::MakeAttrStr(proc, CCT::Tree::AddXMLEscapeChars(dmpFlag));
   } 
   else {
     self = self + " ip" + xml::MakeAttrNum(ip(), 16);
@@ -842,15 +867,15 @@ CSProfProcedureFrameNode::ToDumpString(int dmpFlag) const
   
   if (!file.empty()) { 
      if (fileistext)
-        self = self + " f" + xml::MakeAttrStr(file, AddXMLEscapeChars(dmpFlag)); 
+        self = self + " f" + xml::MakeAttrStr(file, CCT::Tree::AddXMLEscapeChars(dmpFlag)); 
      else 
-        self = self + " lm" + xml::MakeAttrStr(file, AddXMLEscapeChars(dmpFlag)); 
+        self = self + " lm" + xml::MakeAttrStr(file, CCT::Tree::AddXMLEscapeChars(dmpFlag)); 
    } 
 
   if (!proc.empty()) {
-    self = self + " p" + xml::MakeAttrStr(proc, AddXMLEscapeChars(dmpFlag));
+    self = self + " p" + xml::MakeAttrStr(proc, CCT::Tree::AddXMLEscapeChars(dmpFlag));
   } else {
-    self = self + " p" + xml::MakeAttrStr("unknown", AddXMLEscapeChars(dmpFlag)) ; 
+    self = self + " p" + xml::MakeAttrStr("unknown", CCT::Tree::AddXMLEscapeChars(dmpFlag)) ; 
   }
 
   if (GetBegLine() != ln_NULL) {
@@ -858,7 +883,7 @@ CSProfProcedureFrameNode::ToDumpString(int dmpFlag) const
   }
   
   const char* alien = isAlien() ? "true" : "false";
-  self = self + " alien" + xml::MakeAttrStr(alien, AddXMLEscapeChars(dmpFlag)); 
+  self = self + " alien" + xml::MakeAttrStr(alien, CCT::Tree::AddXMLEscapeChars(dmpFlag)); 
 
   return self; 
 } 
@@ -891,23 +916,23 @@ CSProfNode::DumpSelfBefore(ostream& os, int dmpFlag, const char *prefix) const
     this_dyn->writeMetrics_xml(os, dmpFlag, prefix);
   }
 
-  if (!(dmpFlag & CSProfTree::COMPRESSED_OUTPUT)) { os << endl; }
+  if (!(dmpFlag & CCT::Tree::COMPRESSED_OUTPUT)) { os << endl; }
 }
 
 void
 CSProfNode::DumpSelfAfter(ostream &os, int dmpFlag, const char *prefix) const
 {
   os << prefix << "</" << NodeTypeToName(GetType()) << ">";
-  if (!(dmpFlag & CSProfTree::COMPRESSED_OUTPUT)) { os << endl; }
+  if (!(dmpFlag & CCT::Tree::COMPRESSED_OUTPUT)) { os << endl; }
 }
 
 void
 CSProfNode::Dump(ostream &os, int dmpFlag, const char *pre) const 
 {
   string indent = "  ";
-  if (dmpFlag & CSProfTree::COMPRESSED_OUTPUT) { pre = ""; indent = ""; }  
-  if (/*(dmpFlag & CSProfTree::XML_TRUE) &&*/ IsLeaf()) { 
-    dmpFlag |= CSProfTree::XML_EMPTY_TAG; 
+  if (dmpFlag & CCT::Tree::COMPRESSED_OUTPUT) { pre = ""; indent = ""; }  
+  if (/*(dmpFlag & CCT::Tree::XML_TRUE) &&*/ IsLeaf()) { 
+    dmpFlag |= CCT::Tree::XML_EMPTY_TAG; 
   }
   
   DumpSelfBefore(os, dmpFlag, pre); 
@@ -923,22 +948,22 @@ CSProfNode::Dump(ostream &os, int dmpFlag, const char *pre) const
 void
 CSProfNode::DDump()
 {
-  Dump(std::cerr, CSProfTree::XML_TRUE, ""); 
+  Dump(std::cerr, CCT::Tree::XML_TRUE, ""); 
 } 
 
 void
 CSProfNode::DDumpSort()
 {
-  DumpLineSorted(std::cerr, CSProfTree::XML_TRUE, ""); 
+  DumpLineSorted(std::cerr, CCT::Tree::XML_TRUE, ""); 
 }
 
 void
 CSProfNode::DumpLineSorted(ostream &os, int dmpFlag, const char *pre) const 
 {
   string indent = "  ";
-  if (dmpFlag & CSProfTree::COMPRESSED_OUTPUT) { pre = ""; indent = ""; }  
-  if ( /*(dmpFlag & CSProfTree::XML_TRUE) &&*/ IsLeaf()) { 
-    dmpFlag |= CSProfTree::XML_EMPTY_TAG; 
+  if (dmpFlag & CCT::Tree::COMPRESSED_OUTPUT) { pre = ""; indent = ""; }  
+  if ( /*(dmpFlag & CCT::Tree::XML_TRUE) &&*/ IsLeaf()) { 
+    dmpFlag |= CCT::Tree::XML_EMPTY_TAG; 
   }
   
   DumpSelfBefore(os, dmpFlag, pre); 
@@ -1102,18 +1127,4 @@ int CSProfCodeNodeLineComp(CSProfCodeNode* x, CSProfCodeNode* y)
 
 
 } // namespace Prof
-
-
-// Given a set of flags 'dmpFlag', determines whether we need to
-// ensure that certain characters are escaped.  Returns xml::ESC_TRUE
-// or xml::ESC_FALSE. 
-int AddXMLEscapeChars(int dmpFlag)
-{
-  if ((dmpFlag & Prof::CSProfTree::XML_TRUE) &&
-      !(dmpFlag & Prof::CSProfTree::XML_NO_ESC_CHARS)) {
-    return xml::ESC_TRUE;
-  } else {
-    return xml::ESC_FALSE;
-  }
-}
 

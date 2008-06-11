@@ -74,7 +74,7 @@ using std::string;
 
 //*************************** Forward Declarations ***************************
 
-static Prof::CSProfile* 
+static Prof::CallPath::Profile* 
 readProfileData(std::vector<string>& profileFiles);
 
 static PgmScopeTree*
@@ -84,11 +84,11 @@ static void
 dumpProfileData(std::ostream& os, std::vector<string>& profileFiles);
 
 static void
-processCallingCtxtTree(Prof::CSProfile* prof, Prof::Epoch::LM* epoch_lm,
+processCallingCtxtTree(Prof::CallPath::Profile* prof, Prof::Epoch::LM* epoch_lm,
 		       LoadModScope* lmScope);
 
 static void
-processCallingCtxtTree(Prof::CSProfile* prof, Prof::Epoch::LM* epoch_lm);
+processCallingCtxtTree(Prof::CallPath::Profile* prof, Prof::Epoch::LM* epoch_lm);
 
 
 //****************************************************************************
@@ -132,7 +132,7 @@ realmain(int argc, char* const* argv)
   // ------------------------------------------------------------
   // Read 'profData', the profiling data file
   // ------------------------------------------------------------
-  Prof::CSProfile* prof = readProfileData(args.profileFiles);
+  Prof::CallPath::Profile* prof = readProfileData(args.profileFiles);
 
   // ------------------------------------------------------------
   // Add source file info
@@ -205,17 +205,17 @@ realmain(int argc, char* const* argv)
 
 //****************************************************************************
 
-static Prof::CSProfile* 
+static Prof::CallPath::Profile* 
 readProfileFile(const string& prof_fnm);
 
 
-static Prof::CSProfile* 
+static Prof::CallPath::Profile* 
 readProfileData(std::vector<string>& profileFiles)
 {
-  Prof::CSProfile* prof = readProfileFile(profileFiles[0]);
+  Prof::CallPath::Profile* prof = readProfileFile(profileFiles[0]);
   
   for (int i = 1; i < profileFiles.size(); ++i) {
-    Prof::CSProfile* p = readProfileFile(profileFiles[i]);
+    Prof::CallPath::Profile* p = readProfileFile(profileFiles[i]);
     prof->merge(*p);
     delete p;
   }
@@ -224,13 +224,13 @@ readProfileData(std::vector<string>& profileFiles)
 }
 
 
-static Prof::CSProfile* 
+static Prof::CallPath::Profile* 
 readProfileFile(const string& prof_fnm)
 {
-  Prof::CSProfile* prof = NULL;
+  Prof::CallPath::Profile* prof = NULL;
   try {
     //prof = TheProfileReader.ReadProfileFile(args.profFnm /*type*/);
-    prof = ReadProfile_CSPROF(prof_fnm.c_str());
+    prof = Prof::CallPath::Profile::make(prof_fnm.c_str());
   } 
   catch (...) {
     DIAG_EMsg("While reading profile '" << prof_fnm << "'...");
@@ -271,7 +271,7 @@ readStructure(std::vector<string>& structureFiles)
 //****************************************************************************
 
 static void
-processCallingCtxtTree(Prof::CSProfile* prof, Prof::Epoch::LM* epoch_lm,
+processCallingCtxtTree(Prof::CallPath::Profile* prof, Prof::Epoch::LM* epoch_lm,
 		       LoadModScope* lmScope)
 {
   Analysis::CallPath::inferCallFrames(prof, epoch_lm, lmScope);
@@ -279,7 +279,7 @@ processCallingCtxtTree(Prof::CSProfile* prof, Prof::Epoch::LM* epoch_lm,
 
 
 static void
-processCallingCtxtTree(Prof::CSProfile* prof, Prof::Epoch::LM* epoch_lm)
+processCallingCtxtTree(Prof::CallPath::Profile* prof, Prof::Epoch::LM* epoch_lm)
 {
   binutils::LM* lm = NULL;
   try {
