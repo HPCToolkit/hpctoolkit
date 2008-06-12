@@ -77,18 +77,20 @@ using std::string;
 static Prof::CallPath::Profile* 
 readProfileData(std::vector<string>& profileFiles);
 
-static PgmScopeTree*
+static Prof::Struct::Tree*
 readStructure(std::vector<string>& structureFiles);
 
 static void
 dumpProfileData(std::ostream& os, std::vector<string>& profileFiles);
 
 static void
-processCallingCtxtTree(Prof::CallPath::Profile* prof, Prof::Epoch::LM* epoch_lm,
-		       LoadModScope* lmScope);
+processCallingCtxtTree(Prof::CallPath::Profile* prof, 
+		       Prof::Epoch::LM* epoch_lm,
+		       Prof::Struct::LM* lmStrct);
 
 static void
-processCallingCtxtTree(Prof::CallPath::Profile* prof, Prof::Epoch::LM* epoch_lm);
+processCallingCtxtTree(Prof::CallPath::Profile* prof, 
+		       Prof::Epoch::LM* epoch_lm);
 
 
 //****************************************************************************
@@ -138,8 +140,8 @@ realmain(int argc, char* const* argv)
   // Add source file info
   // ------------------------------------------------------------
 
-  PgmScopeTree* scopeTree = NULL;
-  PgmScope* pgmScope = NULL;
+  Prof::Struct::Tree* scopeTree = NULL;
+  Prof::Struct::Pgm* pgmScope = NULL;
   if (!args.structureFiles.empty()) {
     scopeTree = readStructure(args.structureFiles);
     pgmScope = scopeTree->GetRoot();
@@ -153,14 +155,14 @@ realmain(int argc, char* const* argv)
 
       if (epoch_lm->isUsed()) { // FIXME
 	const string& lm_fnm = epoch_lm->name();
-	LoadModScope* lmScope = NULL;
+	Prof::Struct::LM* lmStrct = NULL;
 	if (pgmScope) {
-	  lmScope = pgmScope->FindLoadMod(lm_fnm);
+	  lmStrct = pgmScope->findLM(lm_fnm);
 	}
 	
-	if (lmScope) {
+	if (lmStrct) {
 	  DIAG_Msg(1, "Using STRUCTURE for: " << lm_fnm);
-	  processCallingCtxtTree(prof, epoch_lm, lmScope);
+	  processCallingCtxtTree(prof, epoch_lm, lmStrct);
 	}
 	else {
 	  DIAG_Msg(1, "Using debug info for: " << lm_fnm);
@@ -252,14 +254,14 @@ public:
 };
 
 
-static PgmScopeTree*
+static Prof::Struct::Tree*
 readStructure(std::vector<string>& structureFiles)
 {
 
   string searchPath = "."; // FIXME
-  PgmScope* pgm = new PgmScope("");
-  PgmScopeTree* structure = new PgmScopeTree("", pgm);
-  NodeRetriever structIF(pgm, searchPath);
+  Prof::Struct::Pgm* pgm = new Prof::Struct::Pgm("");
+  Prof::Struct::Tree* structure = new Prof::Struct::Tree("", pgm);
+  Prof::Struct::TreeInterface structIF(pgm, searchPath);
   MyDocHandlerArgs docargs; // FIXME
 
   Prof::Struct::readStructure(structIF, structureFiles, 
@@ -271,15 +273,17 @@ readStructure(std::vector<string>& structureFiles)
 //****************************************************************************
 
 static void
-processCallingCtxtTree(Prof::CallPath::Profile* prof, Prof::Epoch::LM* epoch_lm,
-		       LoadModScope* lmScope)
+processCallingCtxtTree(Prof::CallPath::Profile* prof, 
+		       Prof::Epoch::LM* epoch_lm,
+		       Prof::Struct::LM* lmStrct)
 {
-  Analysis::CallPath::inferCallFrames(prof, epoch_lm, lmScope);
+  Analysis::CallPath::inferCallFrames(prof, epoch_lm, lmStrct);
 }
 
 
 static void
-processCallingCtxtTree(Prof::CallPath::Profile* prof, Prof::Epoch::LM* epoch_lm)
+processCallingCtxtTree(Prof::CallPath::Profile* prof, 
+		       Prof::Epoch::LM* epoch_lm)
 {
   binutils::LM* lm = NULL;
   try {

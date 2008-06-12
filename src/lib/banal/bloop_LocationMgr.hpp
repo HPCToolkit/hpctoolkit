@@ -81,13 +81,14 @@ namespace bloop {
   }
 
   inline bool 
-  ctxtNameEqFuzzy(const CodeInfo* callCtxt, const string& x) 
+  ctxtNameEqFuzzy(const Prof::Struct::ACodeNode* callCtxt, const string& x) 
   {
+    using namespace Prof;
     bool t1 = ctxtNameEqFuzzy(callCtxt->name(), x);
     bool t2 = false;
-    if (callCtxt->Type() == ScopeInfo::PROC) {
-      const ProcScope* pScope = dynamic_cast<const ProcScope*>(callCtxt);
-      t2 = ctxtNameEqFuzzy(pScope->LinkName(), x);
+    if (callCtxt->Type() == Struct::ANode::TyPROC) {
+      const Struct::Proc* pStrct = dynamic_cast<const Struct::Proc*>(callCtxt);
+      t2 = ctxtNameEqFuzzy(pStrct->LinkName(), x);
     }
     return (t1 || t2);    
   }
@@ -113,22 +114,24 @@ namespace bloop {
 
 class LocationMgr {
 public:
-  LocationMgr(LoadModScope* lm = NULL);
+  LocationMgr(Prof::Struct::LM* lm = NULL);
   ~LocationMgr();
 
-  // set scope tree, debug mode, etc.
-  void init(LoadModScope* lm = NULL);
+  // set structure tree, debug mode, etc.
+  void 
+  init(Prof::Struct::LM* lm = NULL);
   
   // -------------------------------------------------------
   //
   // -------------------------------------------------------
 
-  // begSeq: Given a ProcScope 'enclosingProc', prepare for a sequence
+  // begSeq: Given a Struct::Proc 'enclosingProc', prepare for a sequence
   //   of method invocations from the following list.  (The internal
   //   context stack should be empty.)
-  void begSeq(ProcScope* enclosingProc, bool fwdSubstOff = false);
+  void 
+  begSeq(Prof::Struct::Proc* enclosingProc, bool fwdSubstOff = false);
 
-  // locate: Given a parentless LoopScope 'loop', the original
+  // locate: Given a parentless Struct::Loop 'loop', the original
   //   enclosing scope 'proposed_scope' and best-guess source-line
   //   information, delegate the task of locating 'loop', i.e., finding
   //   the source line enclosing scope.  Sets the current context to use
@@ -138,18 +141,22 @@ public:
   //   1) 'loop' was originally contained within 'proposed_scope', but
   //      may need to be relocated to a more appropriate scope.
   //   2) 'proposed_scope' itself has already been relocated, if necessary.
-  void locate(LoopScope* loop, CodeInfo* proposed_scope,
-	      std::string& filenm, std::string& procnm, SrcFile::ln line);
-
-  // locate: Given a parentless StmtRangeScope 'stmt', the original
+  void 
+  locate(Prof::Struct::Loop* loop, 
+	 Prof::Struct::ACodeNode* proposed_scope,
+	 std::string& filenm, std::string& procnm, SrcFile::ln line);
+  
+  // locate: Given a parentless Struct::Stmt 'stmt', the original
   //   enclosing scope 'proposed_scope' and best-guess source-line
   //   information, delegate the task of locating 'stmt', i.e., finding
   //   the source line enclosing scope.  Sets the current context to use
   //   the newly located loop.
   //  
   // The above assumptions apply.
-  void locate(StmtRangeScope* stmt, CodeInfo* proposed_scope,
-	      std::string& filenm, std::string& procnm, SrcFile::ln line);
+  void 
+  locate(Prof::Struct::Stmt* stmt, 
+	 Prof::Struct::ACodeNode* proposed_scope,
+	 std::string& filenm, std::string& procnm, SrcFile::ln line);
 
   // endSeq: 
   void endSeq();
@@ -158,11 +165,15 @@ public:
   // 
   // -------------------------------------------------------
   
-  CodeInfo* curScope() const {
+  Prof::Struct::ACodeNode* 
+  curScope() const 
+  {
     return (m_ctxtStack.empty()) ? NULL : m_ctxtStack.front().scope();
   }
   
-  bool isParentScope(CodeInfo* scope) const {
+  bool 
+  isParentScope(Prof::Struct::ACodeNode* scope) const 
+  {
     return (findCtxt(scope) != NULL);
   }
 
@@ -171,11 +182,13 @@ public:
   // -------------------------------------------------------
 
   // Assume we know that file names match
-  static bool containsLineFzy(CodeInfo* x, SrcFile::ln line, 
-			      bool loopIsAlien = false);
+  static bool 
+  containsLineFzy(Prof::Struct::ACodeNode* x, SrcFile::ln line, 
+		  bool loopIsAlien = false);
 
-  static bool containsIntervalFzy(CodeInfo* x, 
-				  SrcFile::ln begLn, SrcFile::ln endLn);
+  static bool 
+  containsIntervalFzy(Prof::Struct::ACodeNode* x, 
+		      SrcFile::ln begLn, SrcFile::ln endLn);
 
   // -------------------------------------------------------
   // debugging
@@ -196,25 +209,29 @@ private:
   // -------------------------------------------------------
   class Ctxt {
   public:
-    Ctxt(CodeInfo* ctxt = NULL, LoopScope* loop = NULL)
+    Ctxt(Prof::Struct::ACodeNode* ctxt = NULL, 
+	 Prof::Struct::Loop* loop = NULL)
       : m_ctxt(ctxt), m_loop(loop), 
-	m_filenm( (isAlien()) ? dynamic_cast<AlienScope*>(ctxt)->fileName()
-		  : dynamic_cast<ProcScope*>(ctxt)->File()->name() )
+	m_filenm( (isAlien()) ? 
+		    dynamic_cast<Prof::Struct::Alien*>(ctxt)->fileName()
+		  : dynamic_cast<Prof::Struct::Proc*>(ctxt)->AncFile()->name() )
     { }
     ~Ctxt() { }
 
-    // enclosing (calling) context (ProcScope, AlienScope)
-    CodeInfo* ctxt() const { return m_ctxt; }
+    // enclosing (calling) context (Struct::Proc, Struct::Alien)
+    Prof::Struct::ACodeNode* ctxt() const { return m_ctxt; }
     
     // enclosing file name
     const std::string& fileName() const { return m_filenm; }
 
     // current enclosing loop
-    LoopScope*  loop() const { return m_loop; }
-    LoopScope*& loop()       { return m_loop; }
+    Prof::Struct::Loop*  loop() const { return m_loop; }
+    Prof::Struct::Loop*& loop()       { return m_loop; }
     
     // current enclosing scope
-    CodeInfo* scope() const {
+    Prof::Struct::ACodeNode* 
+    scope() const 
+    {
       if (m_loop) {
 	return m_loop;
       }
@@ -234,7 +251,8 @@ private:
 
     bool containsLine(SrcFile::ln line) const;
     
-    bool isAlien() const { return (m_ctxt->Type() == ScopeInfo::ALIEN); }
+    bool isAlien() const 
+    { return (m_ctxt->Type() == Prof::Struct::ANode::TyALIEN); }
     
     int  level() const { return m_level; }
     int& level()       { return m_level; }
@@ -248,8 +266,8 @@ private:
     void ddump() const;
 
   private:
-    CodeInfo*  m_ctxt;
-    LoopScope* m_loop;
+    Prof::Struct::ACodeNode*  m_ctxt;
+    Prof::Struct::Loop* m_loop;
     const std::string& m_filenm;
     int m_level;
   };
@@ -307,24 +325,27 @@ private:
   // Assume that 'proposed_scope' has already been located and thus
   // may already live within an alien context)
   CtxtChange_t 
-  determineContext(CodeInfo* proposed_scope,
+  determineContext(Prof::Struct::ACodeNode* proposed_scope,
 		   std::string& filenm, std::string& procnm, SrcFile::ln line);
   
   // fixCtxtStack: Yuck.
   void
-  fixContextStack(const CodeInfo* proposed_scope);
+  fixContextStack(const Prof::Struct::ACodeNode* proposed_scope);
 
   // fixScopeTree: Given a scope 'from_scope' that should be
   // located within the calling context 'true_ctxt' but specifically
   // within lines 'begLn' and 'endLn', perform the transformations.
   void
-  fixScopeTree(CodeInfo* from_scope, CodeInfo* true_ctxt, 
+  fixScopeTree(Prof::Struct::ACodeNode* from_scope, 
+	       Prof::Struct::ACodeNode* true_ctxt, 
 	       SrcFile::ln begLn, SrcFile::ln endLn);
 
   // alienateScopeTree: place all non-Alien children of 'scope' into an Alien
   // context based on 'alien' except for 'exclude'
   void
-  alienateScopeTree(CodeInfo* scope, AlienScope* alien, CodeInfo* exclude);
+  alienateScopeTree(Prof::Struct::ACodeNode* scope, 
+		    Prof::Struct::Alien* alien, 
+		    Prof::Struct::ACodeNode* exclude);
 
   
   // revertToLoop: Pop contexts between top and 'ctxt' until
@@ -440,7 +461,7 @@ private:
   };
 
 
-  Ctxt* findCtxt(CodeInfo* ctxt) const;
+  Ctxt* findCtxt(Prof::Struct::ACodeNode* ctxt) const;
   Ctxt* findCtxt(FindCtxt_MatchOp& op, 
 		 const Ctxt* base = NULL) const;
   
@@ -467,22 +488,23 @@ private:
   //
   // -------------------------------------------------------
   
-  // AlienScopeMapKey: Note that we do not include line numbers
+  // AlienStrctMapKey: Note that we do not include line numbers
   // because these will be changing.
-  struct AlienScopeMapKey {
-    AlienScopeMapKey(CodeInfo* x, const std::string& y, const std::string& z)
+  struct AlienStrctMapKey {
+    AlienStrctMapKey(Prof::Struct::ACodeNode* x, 
+		     const std::string& y, const std::string& z)
       : parent_scope(x), filenm(y), procnm(z)
     { }
 
-    CodeInfo* parent_scope; // the first enclosing LOOP or PROC scope
+    Prof::Struct::ACodeNode* parent_scope; // the first enclosing LOOP or PROC scope
     std::string filenm;     // file name
     std::string procnm;     // procedure name
   };
   
-  struct lt_AlienScopeMapKey {
+  struct lt_AlienStrctMapKey {
     // return true if x1 < x2; false otherwise
-    bool operator()(const AlienScopeMapKey& x1, 
-		    const AlienScopeMapKey& x2) const
+    bool operator()(const AlienStrctMapKey& x1, 
+		    const AlienStrctMapKey& x2) const
     {
       if (x1.parent_scope == x2.parent_scope) {
 	int filecmp = x1.filenm.compare(x2.filenm);
@@ -499,23 +521,25 @@ private:
     }
   };
 
-  typedef std::multimap<AlienScopeMapKey, AlienScope*, lt_AlienScopeMapKey>
-    AlienScopeMap;
+  typedef std::multimap<AlienStrctMapKey, 
+			Prof::Struct::Alien*, 
+			lt_AlienStrctMapKey> AlienStrctMap;
 
-  // Find or create an AlienScope
-  AlienScope* findOrCreateAlienScope(CodeInfo* parent_scope,
-				     const std::string& filenm,
-				     const std::string& procnm, 
-				     SrcFile::ln line,
-				     bool tosOnCreate = true);
+  // Find or create an Struct::Alien
+  Prof::Struct::Alien* 
+  findOrCreateAlienStrct(Prof::Struct::ACodeNode* parent_scope,
+			 const std::string& filenm,
+			 const std::string& procnm, 
+			 SrcFile::ln line,
+			 bool tosOnCreate = true);
   
 private: 
-  MyStack       m_ctxtStack; // cf. topCtxt() [begin()/front() is the top]
-  LoadModScope* m_loadMod;
-  int           mDBG;
-  bool          m_fwdSubstOff;
+  MyStack     m_ctxtStack; // cf. topCtxt() [begin()/front() is the top]
+  Prof::Struct::LM* m_loadMod;
+  int         mDBG;
+  bool        m_fwdSubstOff;
 
-  AlienScopeMap m_alienMap;
+  AlienStrctMap m_alienMap;
 };
   
 

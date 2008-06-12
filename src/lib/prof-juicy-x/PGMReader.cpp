@@ -80,7 +80,7 @@ namespace Struct {
 
 
 void
-readStructure(NodeRetriever& structIF, 
+readStructure(Struct::TreeInterface& structIF, 
 	      const std::vector<string>& structureFiles,
 	      PGMDocHandler::Doc_t docty, 
 	      DocHandlerArgs& docargs)
@@ -100,7 +100,7 @@ readStructure(NodeRetriever& structIF,
 
 
 void
-read_PGM(NodeRetriever& structIF,
+read_PGM(Struct::TreeInterface& structIF,
 	 const char* filenm,
 	 PGMDocHandler::Doc_t docty,
 	 DocHandlerArgs& docHandlerArgs)

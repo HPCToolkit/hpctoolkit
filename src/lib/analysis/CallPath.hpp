@@ -76,7 +76,7 @@ namespace CallPath {
 
 void 
 inferCallFrames(Prof::CallPath::Profile* prof, Prof::Epoch::LM* epoch_lm,
-		LoadModScope* lmScope);
+		Prof::Struct::LM* lmStrct);
 
 void 
 inferCallFrames(Prof::CallPath::Profile* prof, Prof::Epoch::LM* epoch_lm,

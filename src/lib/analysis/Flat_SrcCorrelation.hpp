@@ -75,7 +75,7 @@ namespace Flat {
 class Driver : public Unique { // not copyable
 public: 
   Driver(const Analysis::Args& args, 
-	 Prof::Metric::Mgr& mMgr, PgmScopeTree& structure);
+	 Prof::Metric::Mgr& mMgr, Prof::Struct::Tree& structure);
   ~Driver(); 
 
   // -------------------------------------------------------
@@ -116,21 +116,21 @@ public:
 
 private:
   void 
-  populatePgmStructure(PgmScopeTree& structure);
+  populatePgmStructure(Prof::Struct::Tree& structure);
 
   void 
   correlateMetricsWithStructure(Prof::Metric::Mgr& mMgr,
-				PgmScopeTree& structure);
+				Prof::Struct::Tree& structure);
 
 
   // -------------------------------------------------------
 
   void 
-  computeRawMetrics(Prof::Metric::Mgr& mMgr, PgmScopeTree& structure);
+  computeRawMetrics(Prof::Metric::Mgr& mMgr, Prof::Struct::Tree& structure);
 
   void
   computeRawBatchJob_LM(const string& lmname, const string& lmname_orig,
-			NodeRetriever& structIF,
+			Prof::Struct::TreeInterface& structIF,
 			ProfToMetricsTupleVec& profToMetricsVec,
 			bool useStruct);
 
@@ -138,8 +138,8 @@ private:
   correlateRaw(PerfMetric* metric,
 	       const Prof::Flat::EventData& profevent,
 	       VMA lm_load_addr,
-	       NodeRetriever& structIF,
-	       LoadModScope* lmStrct,
+	       Prof::Struct::TreeInterface& structIF,
+	       Prof::Struct::LM* lmStrct,
 	       /*const*/ binutils::LM* lm,
 	       bool useStruct);
   
@@ -152,17 +152,17 @@ private:
   clearRawBatch(ProfToMetricsTupleVec& batchJob);
 
   bool
-  hasStructure(const string& lmname, NodeRetriever& structIF,
+  hasStructure(const string& lmname, Prof::Struct::TreeInterface& structIF,
 	       StringToBoolMap& hasStructureTbl);
 
   // -------------------------------------------------------
 
   void 
-  computeDerivedMetrics(Prof::Metric::Mgr& mMgr, PgmScopeTree& structure);
+  computeDerivedMetrics(Prof::Metric::Mgr& mMgr, Prof::Struct::Tree& structure);
 
   // [mBegId, mEndId]
   void 
-  computeDerivedBatch(PgmScopeTree& structure, 
+  computeDerivedBatch(Prof::Struct::Tree& structure, 
 		      const Prof::Metric::AExpr** mExprVec,
 		      uint mBegId, uint mEndId);
 
@@ -185,11 +185,11 @@ private:
   void write_txt_secSummary(std::ostream& os, 
 			    Analysis::TextUtil::ColumnFormatter& colFmt,
 			    const std::string& title,
-			    const ScopeInfoFilter* filter) const;
+			    const Prof::Struct::ANodeFilter* filter) const;
 
   void write_txt_annotateFile(std::ostream& os, 
 			      Analysis::TextUtil::ColumnFormatter& colFmt,
-			      const FileScope* fileStrct) const;
+			      const Prof::Struct::File* fileStrct) const;
 
   void write_txt_hdr(std::ostream& os, const std::string& hdr) const;
 
@@ -198,7 +198,7 @@ private:
   const Analysis::Args& m_args;
 
   Prof::Metric::Mgr& m_mMgr;
-  PgmScopeTree& m_structure;
+  Prof::Struct::Tree& m_structure;
 
   static uint profileBatchSz;
 };

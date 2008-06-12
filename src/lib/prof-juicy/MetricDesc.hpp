@@ -145,12 +145,14 @@ public:
     { }
 
   SampledMetricDesc(const SampledMetricDesc& x)
-    : MetricDesc(x.name(), x.description()), m_period(x.m_period)
+    : MetricDesc(x.name(), x.description()), 
+      m_flags(x.m_flags), m_period(x.m_period)
     { }
 
   SampledMetricDesc& operator=(const SampledMetricDesc& x) {
     MetricDesc::operator=(x);
     if (this != &x) {
+      m_flags = x.m_flags;      
       m_period = x.m_period;
     }
     return *this;
@@ -159,11 +161,21 @@ public:
   // -------------------------------------------------------
   // 
   // -------------------------------------------------------
-  hpcfile_csprof_metric_flag_t flags() const         { return m_flags; }
-  void                         flags(hpcfile_csprof_metric_flag_t x) { m_flags = x; }
+  hpcfile_csprof_metric_flag_t 
+  flags() const
+  { return m_flags; }
+  
+  void
+  flags(hpcfile_csprof_metric_flag_t x) 
+  { m_flags = x; }
 
-  uint64_t period() const     { return m_period; }
-  void     period(uint64_t x) { m_period = x; }
+  uint64_t 
+  period() const
+  { return m_period; }
+  
+  void
+  period(uint64_t x)
+  { m_period = x; }
 
   // -------------------------------------------------------
   // 

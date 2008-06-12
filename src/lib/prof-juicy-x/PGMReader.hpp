@@ -69,20 +69,20 @@ namespace Prof {
 namespace Struct {
 
 void
-readStructure(NodeRetriever& structIF, 
+readStructure(TreeInterface& structIF, 
 	      const std::vector<string>& structureFiles,
 	      PGMDocHandler::Doc_t docty, 
 	      DocHandlerArgs& docargs);
 
 void
-read_PGM(NodeRetriever& structIF,
+read_PGM(TreeInterface& structIF,
 	 const char* filenm,
 	 PGMDocHandler::Doc_t docty,
 	 DocHandlerArgs& docHandlerArgs);
 
-} // namespace Util
+} // namespace Struct
 
-} // namespace Analysis
+} // namespace Prof
 
 //****************************************************************************
 

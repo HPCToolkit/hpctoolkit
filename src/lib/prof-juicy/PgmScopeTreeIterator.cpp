@@ -67,78 +67,77 @@ using std::endl;
 
 //*************************** Forward Declarations **************************
 
-static int CompareByLine(const void *a, const void *b);
+
+namespace Prof {
+namespace Struct {
+  static int CompareByLine(const void *a, const void *b);
+} // namespace Struct
+} // namespace Prof
+
 
 //***************************************************************************
 
+namespace Prof {
+namespace Struct {
+
 //***************************************************************************
-// ScopeInfoFilter support
+// ANodeFilter support
 //***************************************************************************
 
 bool 
-HasScopeType(const ScopeInfo& sinfo, long type)
+HasANodeTy(const ANode& node, long type)
 {
-  return (type == ScopeInfo::ANY
-	  || sinfo.Type() == ScopeInfo::IntToScopeType(type));
+  return (type == ANode::TyANY
+	  || node.Type() == ANode::IntToANodeTy(type));
 }
 
-const ScopeInfoFilter ScopeTypeFilter[ScopeInfo::NUMBER_OF_SCOPES] = {
-  ScopeInfoFilter(HasScopeType,
-		  ScopeInfo::ScopeTypeToName(ScopeInfo::PGM).c_str(),
-		  ScopeInfo::PGM),
-  ScopeInfoFilter(HasScopeType,
-		  ScopeInfo::ScopeTypeToName(ScopeInfo::GROUP).c_str(),
-		  ScopeInfo::GROUP),
-  ScopeInfoFilter(HasScopeType,
-		  ScopeInfo::ScopeTypeToName(ScopeInfo::LM).c_str(), 
-		  ScopeInfo::LM),
-  ScopeInfoFilter(HasScopeType,
-		  ScopeInfo::ScopeTypeToName(ScopeInfo::FILE).c_str(),
-		  ScopeInfo::FILE),
-  ScopeInfoFilter(HasScopeType,
-		  ScopeInfo::ScopeTypeToName(ScopeInfo::PROC).c_str(),
-		  ScopeInfo::PROC),
-  ScopeInfoFilter(HasScopeType,
-		  ScopeInfo::ScopeTypeToName(ScopeInfo::ALIEN).c_str(),
-		  ScopeInfo::ALIEN),
-  ScopeInfoFilter(HasScopeType,
-		  ScopeInfo::ScopeTypeToName(ScopeInfo::LOOP).c_str(),
-		  ScopeInfo::LOOP),
-  ScopeInfoFilter(HasScopeType,
-		  ScopeInfo::ScopeTypeToName(ScopeInfo::STMT_RANGE).c_str(),
-		  ScopeInfo::STMT_RANGE),
-  ScopeInfoFilter(HasScopeType,
-		  ScopeInfo::ScopeTypeToName(ScopeInfo::REF).c_str(),
-		  ScopeInfo::REF),
-  ScopeInfoFilter(HasScopeType,
-		  ScopeInfo::ScopeTypeToName(ScopeInfo::ANY).c_str(),
-		  ScopeInfo::ANY)
+const ANodeFilter ANodeTyFilter[ANode::TyNUMBER] = {
+  ANodeFilter(HasANodeTy, 
+	      ANode::ANodeTyToName(ANode::TyPGM).c_str(), ANode::TyPGM),
+  ANodeFilter(HasANodeTy, 
+	      ANode::ANodeTyToName(ANode::TyGROUP).c_str(), ANode::TyGROUP),
+  ANodeFilter(HasANodeTy,
+	      ANode::ANodeTyToName(ANode::TyLM).c_str(), ANode::TyLM),
+  ANodeFilter(HasANodeTy,
+	      ANode::ANodeTyToName(ANode::TyFILE).c_str(), ANode::TyFILE),
+  ANodeFilter(HasANodeTy,
+	      ANode::ANodeTyToName(ANode::TyPROC).c_str(), ANode::TyPROC),
+  ANodeFilter(HasANodeTy,
+	      ANode::ANodeTyToName(ANode::TyALIEN).c_str(), ANode::TyALIEN),
+  ANodeFilter(HasANodeTy,
+	      ANode::ANodeTyToName(ANode::TyLOOP).c_str(), ANode::TyLOOP),
+  ANodeFilter(HasANodeTy,
+	      ANode::ANodeTyToName(ANode::TySTMT).c_str(), ANode::TySTMT),
+  ANodeFilter(HasANodeTy,
+	      ANode::ANodeTyToName(ANode::TyREF).c_str(), ANode::TyREF),
+  ANodeFilter(HasANodeTy,
+	      ANode::ANodeTyToName(ANode::TyANY).c_str(), ANode::TyANY)
 };
-
-
+  
+  
 //***************************************************************************
-// ScopeInfoChildIterator
-//***************************************************************************
-
-//***************************************************************************
-// CodeInfoChildIterator
+// ANodeChildIterator
 //***************************************************************************
 
 //***************************************************************************
-// ScopeInfoIterator
+// ACodeNodeChildIterator
 //***************************************************************************
 
 //***************************************************************************
-// ScopeInfoLineSortedIterator
+// ANodeIterator
 //***************************************************************************
 
-ScopeInfoLineSortedIterator::
-ScopeInfoLineSortedIterator(const CodeInfo *file, 
-			    const ScopeInfoFilter *filterFunc, 
+//***************************************************************************
+// ANodeLineSortedIterator
+//***************************************************************************
+
+ANodeLineSortedIterator::
+ANodeLineSortedIterator(const ACodeNode *file, 
+			    const ANodeFilter *filterFunc, 
 			    bool leavesOnly)
 {
-  ScopeInfoIterator it(file, filterFunc, leavesOnly);
-  ScopeInfo *cur;
+  ANodeIterator it(file, filterFunc, leavesOnly);
+  ANode *cur;
   for (; (cur = it.CurScope()); ) {
     scopes.Add((unsigned long) cur);
     it++;
@@ -147,16 +146,16 @@ ScopeInfoLineSortedIterator(const CodeInfo *file,
 }
 
 
-ScopeInfoLineSortedIterator::~ScopeInfoLineSortedIterator() 
+ANodeLineSortedIterator::~ANodeLineSortedIterator() 
 {
   delete ptrSetIt;
 } 
 
 
 void 
-ScopeInfoLineSortedIterator::DumpAndReset(ostream &os)
+ANodeLineSortedIterator::DumpAndReset(ostream &os)
 {
-  os << "ScopeInfoLineSortedIterator: " << endl;
+  os << "ANodeLineSortedIterator: " << endl;
   while (Current()) {
     os << Current()->ToString() << endl;
     (*this)++;
@@ -168,23 +167,23 @@ ScopeInfoLineSortedIterator::DumpAndReset(ostream &os)
 static int 
 CompareByLine(const void* a, const void *b) 
 {
-  CodeInfo* x = (*(CodeInfo**)a);
-  CodeInfo* y = (*(CodeInfo**)b);
+  ACodeNode* x = (*(ACodeNode**)a);
+  ACodeNode* y = (*(ACodeNode**)b);
   DIAG_Assert (x != NULL, "");
   DIAG_Assert (y != NULL, "");
-  return CodeInfoLineComp(x, y);
+  return ACodeNodeLineComp(x, y);
 }
 
 //***************************************************************************
-// ScopeInfoLineSortedChildIterator
+// ANodeLineSortedChildIterator
 //***************************************************************************
 
-ScopeInfoLineSortedChildIterator::
-ScopeInfoLineSortedChildIterator(const ScopeInfo *scope, 
-				 const ScopeInfoFilter * f)
+ANodeLineSortedChildIterator::
+ANodeLineSortedChildIterator(const ANode *scope, 
+				 const ANodeFilter * f)
 {
-  ScopeInfoChildIterator it(scope, f);
-  ScopeInfo *cur;
+  ANodeChildIterator it(scope, f);
+  ANode *cur;
   for (; (cur = it.CurScope()); ) {
     scopes.Add((unsigned long) cur);
     it++;
@@ -193,16 +192,16 @@ ScopeInfoLineSortedChildIterator(const ScopeInfo *scope,
 }
 
 
-ScopeInfoLineSortedChildIterator::~ScopeInfoLineSortedChildIterator()
+ANodeLineSortedChildIterator::~ANodeLineSortedChildIterator()
 {
   delete ptrSetIt;
 }
 
 
 void
-ScopeInfoLineSortedChildIterator::DumpAndReset(ostream &os)
+ANodeLineSortedChildIterator::DumpAndReset(ostream &os)
 {
-  os << "ScopeInfoLineSortedChildIterator: " << endl;
+  os << "ANodeLineSortedChildIterator: " << endl;
   while (Current()) {
     os << Current()->ToString() << endl;
     (*this)++;
@@ -212,24 +211,24 @@ ScopeInfoLineSortedChildIterator::DumpAndReset(ostream &os)
 
 
 //***************************************************************************
-// ScopeInfoLineSortedIteratorForLargeScopes
+// ANodeLineSortedIteratorForLargeScopes
 //***************************************************************************
 
-ScopeInfoLineSortedIteratorForLargeScopes::ScopeInfoLineSortedIteratorForLargeScopes(
-					const CodeInfo *file, 
-					const ScopeInfoFilter *filterFunc, 
+ANodeLineSortedIteratorForLargeScopes::ANodeLineSortedIteratorForLargeScopes(
+					const ACodeNode *file, 
+					const ANodeFilter *filterFunc, 
 					bool leavesOnly)
 {
-  ScopeInfoIterator it(file, filterFunc, leavesOnly);
-  ScopeInfo *cur;
+  ANodeIterator it(file, filterFunc, leavesOnly);
+  ANode *cur;
   for (; (cur = it.CurScope()); ) {
-    CodeInfoLine *cur1 = new CodeInfoLine(dynamic_cast<CodeInfo*>(cur), 
+    ACodeNodeLine *cur1 = new ACodeNodeLine(dynamic_cast<ACodeNode*>(cur), 
                          IS_BEG_LINE);
     scopes.Add((unsigned long) cur1);
-    if (cur->Type() == ScopeInfo::LOOP)
-    {  // create a CodeInfoLine object for both begin and end line
+    if (cur->Type() == ANode::TyLOOP)
+    {  // create a ACodeNodeLine object for both begin and end line
        // only for Loops. For PROCs we are interested only in BegLine
-      CodeInfoLine *cur2 = new CodeInfoLine(dynamic_cast<CodeInfo*>(cur), 
+      ACodeNodeLine *cur2 = new ACodeNodeLine(dynamic_cast<ACodeNode*>(cur), 
                          IS_END_LINE);
       scopes.Add((unsigned long) cur2);
     }
@@ -239,53 +238,53 @@ ScopeInfoLineSortedIteratorForLargeScopes::ScopeInfoLineSortedIteratorForLargeSc
 }
 
 
-ScopeInfoLineSortedIteratorForLargeScopes::~ScopeInfoLineSortedIteratorForLargeScopes() 
+ANodeLineSortedIteratorForLargeScopes::~ANodeLineSortedIteratorForLargeScopes() 
 {
-  // First deallocate all CodeInfoLine objects created
+  // First deallocate all ACodeNodeLine objects created
   ptrSetIt->Reset();
   for ( ; ptrSetIt->Current() ; (*ptrSetIt)++ )
-    delete ((CodeInfoLine*) (*ptrSetIt->Current()));
+    delete ((ACodeNodeLine*) (*ptrSetIt->Current()));
   delete ptrSetIt;
 }
  
-CodeInfoLine* 
-ScopeInfoLineSortedIteratorForLargeScopes::Current() const
+ACodeNodeLine* 
+ANodeLineSortedIteratorForLargeScopes::Current() const
 {
-  CodeInfoLine *cur = NULL;
+  ACodeNodeLine *cur = NULL;
   if (ptrSetIt->Current()) {
-    cur = (CodeInfoLine*) (*ptrSetIt->Current());
+    cur = (ACodeNodeLine*) (*ptrSetIt->Current());
     DIAG_Assert(cur != NULL, "");
   }
   return cur;
 } 
 
 void 
-ScopeInfoLineSortedIteratorForLargeScopes::DumpAndReset(std::ostream &os)
+ANodeLineSortedIteratorForLargeScopes::DumpAndReset(std::ostream &os)
 {
-  os << "ScopeInfoLineSortedIteratorForLargeScopes: " << endl;
+  os << "ANodeLineSortedIteratorForLargeScopes: " << endl;
   while (Current()) {
-    os << Current()->GetCodeInfo()->ToString() << endl;
+    os << Current()->GetACodeNode()->ToString() << endl;
     (*this)++;
   } 
   Reset();
 }
 
 void 
-ScopeInfoLineSortedIteratorForLargeScopes::Reset()
+ANodeLineSortedIteratorForLargeScopes::Reset()
 {
   ptrSetIt->Reset();
 }
 
 //***************************************************************************
-// ScopeInfoNameSortedChildIterator
+// ANodeNameSortedChildIterator
 //***************************************************************************
 
-ScopeInfoNameSortedChildIterator::
-ScopeInfoNameSortedChildIterator(const ScopeInfo *scope, 
-				 const ScopeInfoFilter * f)
+ANodeNameSortedChildIterator::
+ANodeNameSortedChildIterator(const ANode *scope, 
+				 const ANodeFilter * f)
 {
-  ScopeInfoChildIterator it(scope, f);
-  ScopeInfo *cur;
+  ANodeChildIterator it(scope, f);
+  ANode *cur;
   for (; (cur = it.CurScope()); ) {
     scopes.Add((unsigned long) cur);
     it++;
@@ -293,51 +292,51 @@ ScopeInfoNameSortedChildIterator(const ScopeInfo *scope,
   ptrSetIt = new WordSetSortedIterator(&scopes, CompareByName);
 }
 
-ScopeInfoNameSortedChildIterator::~ScopeInfoNameSortedChildIterator() 
+ANodeNameSortedChildIterator::~ANodeNameSortedChildIterator() 
 {
   delete ptrSetIt;
 }
  
-CodeInfo* 
-ScopeInfoNameSortedChildIterator::Current() const
+ACodeNode* 
+ANodeNameSortedChildIterator::Current() const
 {
-  CodeInfo *cur = NULL;
+  ACodeNode *cur = NULL;
   if (ptrSetIt->Current()) {
-    cur = (CodeInfo*) (*ptrSetIt->Current());
+    cur = (ACodeNode*) (*ptrSetIt->Current());
     DIAG_Assert(cur != NULL, "");
   }
   return cur;
 }
 
 void 
-ScopeInfoNameSortedChildIterator::Reset()
+ANodeNameSortedChildIterator::Reset()
 {
   ptrSetIt->Reset();
 }
 
 int 
-ScopeInfoNameSortedChildIterator::CompareByName(const void* a, const void *b) 
+ANodeNameSortedChildIterator::CompareByName(const void* a, const void *b) 
 {
-  ScopeInfo* x = (*(ScopeInfo**)a);
-  ScopeInfo* y = (*(ScopeInfo**)b);
+  ANode* x = (*(ANode**)a);
+  ANode* y = (*(ANode**)b);
   DIAG_Assert (x != NULL, "");
   DIAG_Assert (y != NULL, "");
   return x->name().compare(y->name());
 }
 
 //***************************************************************************
-// ScopeInfoMetricSortedIterator
+// ANodeMetricSortedIterator
 //***************************************************************************
 
-ScopeInfoMetricSortedIterator::ScopeInfoMetricSortedIterator(const PgmScope* pgm,
-							     uint metricId,
-							     const ScopeInfoFilter* filterFunc)
+ANodeMetricSortedIterator::ANodeMetricSortedIterator(const Pgm* pgm,
+						     uint metricId,
+						     const ANodeFilter* filterFunc)
   : m_metricId(metricId)
 {
   DIAG_Assert(pgm != NULL, "");
 
-  ScopeInfoIterator it(pgm, filterFunc, false);
-  ScopeInfo *cur;
+  ANodeIterator it(pgm, filterFunc, false);
+  ANode *cur;
   for (; (cur = it.CurScope()); ) {
     scopes.Add((unsigned long) cur);
     it++;
@@ -349,13 +348,13 @@ ScopeInfoMetricSortedIterator::ScopeInfoMetricSortedIterator(const PgmScope* pgm
 
 
 //***************************************************************************
-// ScopeInfoMetricSortedChildIterator
+// ANodeMetricSortedChildIterator
 //***************************************************************************
 
-ScopeInfoMetricSortedChildIterator::ScopeInfoMetricSortedChildIterator
-(const ScopeInfo *scope, int flattenDepth, 
+ANodeMetricSortedChildIterator::ANodeMetricSortedChildIterator
+(const ANode *scope, int flattenDepth, 
  int compare(const void* a, const void *b),
- const ScopeInfoFilter *filterFunc)
+ const ANodeFilter *filterFunc)
 {
   depth = flattenDepth;
   AddChildren(scope, 0, filterFunc);
@@ -363,13 +362,13 @@ ScopeInfoMetricSortedChildIterator::ScopeInfoMetricSortedChildIterator
 }
 
 
-void ScopeInfoMetricSortedChildIterator::AddChildren
-(const ScopeInfo *scope, int curDepth, const ScopeInfoFilter *filterFunc)
+void ANodeMetricSortedChildIterator::AddChildren
+(const ANode *scope, int curDepth, const ANodeFilter *filterFunc)
 {
   DIAG_Assert(scope != NULL, "");
   
-  ScopeInfoChildIterator it(scope, filterFunc);
-  ScopeInfo *cur;
+  ANodeChildIterator it(scope, filterFunc);
+  ANode *cur;
   for (; (cur = it.CurScope()); ) {
     if ((curDepth == depth) || cur->IsLeaf()) {
       scopes.Add((unsigned long) cur);
@@ -388,8 +387,8 @@ int CompareByMetricId_mId = -1;
 
 int CompareByMetricId(const void* a, const void *b)
 {
-  ScopeInfo* x = *(ScopeInfo**) a;
-  ScopeInfo* y = *(ScopeInfo**) b;
+  ANode* x = *(ANode**) a;
+  ANode* y = *(ANode**) b;
   DIAG_Assert(x != NULL, "");
   DIAG_Assert(y != NULL, "");
   double vx = 0.0;
@@ -407,3 +406,6 @@ int CompareByMetricId(const void* a, const void *b)
   return 0;
 }
 
+
+} // namespace Struct
+} // namespace Prof

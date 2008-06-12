@@ -78,7 +78,7 @@ using std::vector;
 //************************ Forward Declarations ******************************
 
 static bool 
-copySourceFiles(PgmScope* structure, 
+copySourceFiles(Prof::Struct::Pgm* structure, 
 		const Analysis::PathTupleVec& pathVec, 
 		const string& dstDir);
 
@@ -92,7 +92,7 @@ uint Driver::profileBatchSz = 16; // UINT_MAX;
 
 
 Driver::Driver(const Analysis::Args& args,
-	       Prof::Metric::Mgr& mMgr, PgmScopeTree& structure)
+	       Prof::Metric::Mgr& mMgr, Prof::Struct::Tree& structure)
   : Unique(), m_args(args), m_mMgr(mMgr), m_structure(structure)
 {
 } 
@@ -250,7 +250,7 @@ Driver::write_experiment(std::ostream &os) const
   // 
   // ------------------------------------------------------------
   os << pre << "<SCOPETREE>" << endl;
-  int dumpFlags = (m_args.metrics_computeInteriorValues) ? 0 : PgmScopeTree::DUMP_LEAF_METRICS;
+  int dumpFlags = (m_args.metrics_computeInteriorValues) ? 0 : Prof::Struct::Tree::DUMP_LEAF_METRICS;
   m_structure.GetRoot()->XML_DumpLineSorted(os, dumpFlags, pre.c_str());
   os << pre << "</SCOPETREE>" << endl;
 
@@ -279,13 +279,15 @@ void
 Driver::write_txt(std::ostream &os) const
 {
   using Analysis::TextUtil::ColumnFormatter;
+  using Prof::Struct::ANodeTyFilter;
+  using namespace Prof;
 
   //write_experiment(os);
 
   PerfMetric* m_sortby = m_mMgr.findSortBy();
   DIAG_Assert(m_sortby, "INVARIANT: at least on sort-by metric must exist");
 
-  PgmScope* pgmStrct = m_structure.GetRoot();
+  Struct::Pgm* pgmStrct = m_structure.GetRoot();
 
   ColumnFormatter colFmt(m_mMgr, os, 2, 0);
 
@@ -301,40 +303,44 @@ Driver::write_txt(std::ostream &os) const
 
   if (m_args.txt_summary & Analysis::Args::TxtSum_fLM) { 
     string nm = "Load module summary:";
-    write_txt_secSummary(os, colFmt, nm, &ScopeTypeFilter[ScopeInfo::LM]);
+    write_txt_secSummary(os, colFmt, nm, 
+			 &ANodeTyFilter[Struct::ANode::TyLM]);
   }
 
   if (m_args.txt_summary & Analysis::Args::TxtSum_fFile) { 
     string nm = "File summary:";
-    write_txt_secSummary(os, colFmt, nm, &ScopeTypeFilter[ScopeInfo::FILE]);
+    write_txt_secSummary(os, colFmt, nm, 
+			 &ANodeTyFilter[Struct::ANode::TyFILE]);
   }
 
   if (m_args.txt_summary & Analysis::Args::TxtSum_fProc) { 
     string nm = "Procedure summary:";
-    write_txt_secSummary(os, colFmt, nm, &ScopeTypeFilter[ScopeInfo::PROC]);
+    write_txt_secSummary(os, colFmt, nm, 
+			 &ANodeTyFilter[Struct::ANode::TyPROC]);
   }
 
   if (m_args.txt_summary & Analysis::Args::TxtSum_fLoop) { 
     string nm = "Loop summary (dependent on structure information):";
-    write_txt_secSummary(os, colFmt, nm, &ScopeTypeFilter[ScopeInfo::LOOP]);
+    write_txt_secSummary(os, colFmt, nm, 
+			 &ANodeTyFilter[Struct::ANode::TyLOOP]);
   }
 
   if (m_args.txt_summary & Analysis::Args::TxtSum_fStmt) { 
     string nm = "Statement summary:";
     write_txt_secSummary(os, colFmt, nm, 
-			 &ScopeTypeFilter[ScopeInfo::STMT_RANGE]);
+			 &ANodeTyFilter[Struct::ANode::TySTMT]);
   }
   
   if (m_args.txt_srcAnnotation) {
     const std::vector<std::string>& fnmGlobs = m_args.txt_srcFileGlobs;
     bool hasFnmGlobs = !fnmGlobs.empty();
 
-    ScopeInfoIterator it(m_structure.GetRoot(), 
-			 &ScopeTypeFilter[ScopeInfo::FILE]);
-    for (ScopeInfo* strct = NULL; (strct = it.CurScope()); it++) {
-      FileScope* fileStrct = dynamic_cast<FileScope*>(strct);
+    Struct::ANodeIterator 
+      it(m_structure.GetRoot(), &ANodeTyFilter[Struct::ANode::TyFILE]);
+    for (Struct::ANode* strct = NULL; (strct = it.CurScope()); it++) {
+      Struct::File* fileStrct = dynamic_cast<Struct::File*>(strct);
       const string& fnm = fileStrct->name();
-      if (fnm != PgmScopeTree::UnknownFileNm 
+      if (fnm != Struct::Tree::UnknownFileNm 
 	  && (!hasFnmGlobs || FileUtil::fnmatch(fnmGlobs, fnm.c_str()))) {
 	write_txt_annotateFile(os, colFmt, fileStrct);
       }
@@ -347,13 +353,13 @@ void
 Driver::write_txt_secSummary(std::ostream& os, 
 			     Analysis::TextUtil::ColumnFormatter& colFmt,
 			     const std::string& title,
-			     const ScopeInfoFilter* filter) const
+			     const Prof::Struct::ANodeFilter* filter) const
 {
   using Analysis::TextUtil::ColumnFormatter;
 
   write_txt_hdr(os, title);
 
-  PgmScope* pgmStrct = m_structure.GetRoot();
+  Prof::Struct::Pgm* pgmStrct = m_structure.GetRoot();
   PerfMetric* m_sortby = m_mMgr.findSortBy();
 
   if (!filter) {
@@ -379,9 +385,9 @@ Driver::write_txt_secSummary(std::ostream& os,
     os << std::endl;
   }
   else {
-    ScopeInfoMetricSortedIterator it(pgmStrct, m_sortby->Index(), filter);
+    Prof::Struct::ANodeMetricSortedIterator it(pgmStrct, m_sortby->Index(), filter);
     for (; it.Current(); it++) {
-      ScopeInfo* strct = it.Current();
+      Prof::Struct::ANode* strct = it.Current();
       for (uint i = 0; i < m_mMgr.size(); ++i) {
 	colFmt.genCol(i, strct->PerfData(i), pgmStrct->PerfData(i));
       }
@@ -395,7 +401,7 @@ Driver::write_txt_secSummary(std::ostream& os,
 void
 Driver::write_txt_annotateFile(std::ostream& os, 
 			       Analysis::TextUtil::ColumnFormatter& colFmt,
-			       const FileScope* fileStrct) const
+			       const Prof::Struct::File* fileStrct) const
 {
   const string& fnm = fileStrct->name();
   const string& fnm_qual = fileStrct->nameQual();
@@ -416,14 +422,14 @@ Driver::write_txt_annotateFile(std::ostream& os,
   //
   //-------------------------------------------------------
 
-  PgmScope* pgmStrct = m_structure.GetRoot();
+  Prof::Struct::Pgm* pgmStrct = m_structure.GetRoot();
   const uint linew = 5;
   string linetxt;
   SrcFile::ln ln_file = 1; // line number *after* next getline
 
-  ScopeInfoLineSortedIterator it(fileStrct, 
-				 &ScopeTypeFilter[ScopeInfo::STMT_RANGE]);
-  for (CodeInfo* strct = NULL; (strct = it.Current()); it++) {
+  Prof::Struct::ANodeLineSortedIterator 
+    it(fileStrct, &Prof::Struct::ANodeTyFilter[Prof::Struct::ANode::TySTMT]);
+  for (Prof::Struct::ACodeNode* strct = NULL; (strct = it.Current()); it++) {
     SrcFile::ln ln_metric = strct->begLine();
 
     // Advance ln_file to just before ln_metric, if necessary
@@ -557,9 +563,9 @@ namespace Flat {
 
 
 void
-Driver::populatePgmStructure(PgmScopeTree& structure)
+Driver::populatePgmStructure(Prof::Struct::Tree& structure)
 {
-  NodeRetriever structIF(structure.GetRoot(), searchPathStr());
+  Prof::Struct::TreeInterface structIF(structure.GetRoot(), searchPathStr());
   DriverDocHandlerArgs docargs(this);
   
   //-------------------------------------------------------
@@ -568,7 +574,7 @@ Driver::populatePgmStructure(PgmScopeTree& structure)
   //-------------------------------------------------------
   Prof::Struct::readStructure(structIF, m_args.structureFiles,
 			      PGMDocHandler::Doc_STRUCT, docargs);
-
+  
   //-------------------------------------------------------
   // if a PGM/Group document has been provided, use it to form the 
   // group partitions (as wall as initialize/extend the scope tree)
@@ -580,7 +586,7 @@ Driver::populatePgmStructure(PgmScopeTree& structure)
 
 void
 Driver::correlateMetricsWithStructure(Prof::Metric::Mgr& mMgr,
-				      PgmScopeTree& structure) 
+				      Prof::Struct::Tree& structure) 
 {
   computeRawMetrics(mMgr, structure);
   
@@ -600,9 +606,9 @@ Driver::correlateMetricsWithStructure(Prof::Metric::Mgr& mMgr,
 //----------------------------------------------------------------------------
 
 void
-Driver::computeRawMetrics(Prof::Metric::Mgr& mMgr, PgmScopeTree& structure) 
+Driver::computeRawMetrics(Prof::Metric::Mgr& mMgr, Prof::Struct::Tree& structure) 
 {
-  NodeRetriever structIF(structure.GetRoot(), searchPathStr());
+  Prof::Struct::TreeInterface structIF(structure.GetRoot(), searchPathStr());
   StringToBoolMap hasStructureTbl;
   
   const Prof::Metric::Mgr::StringPerfMetricVecMap& fnameToFMetricMap = 
@@ -666,7 +672,7 @@ Driver::computeRawMetrics(Prof::Metric::Mgr& mMgr, PgmScopeTree& structure)
 
 void
 Driver::computeRawBatchJob_LM(const string& lmname, const string& lmname_orig,
-			      NodeRetriever& structIF,
+			      Prof::Struct::TreeInterface& structIF,
 			      ProfToMetricsTupleVec& profToMetricsVec,
 			      bool useStruct)
 {
@@ -679,7 +685,7 @@ Driver::computeRawBatchJob_LM(const string& lmname, const string& lmname_orig,
     lm->read(binutils::LM::ReadFlg_Seg);
   }
 
-  LoadModScope* lmStrct = structIF.MoveToLoadMod(lmname);
+  Prof::Struct::LM* lmStrct = structIF.MoveToLM(lmname);
 
   for (uint i = 0; i < profToMetricsVec.size(); ++i) {
 
@@ -725,8 +731,8 @@ void
 Driver::correlateRaw(PerfMetric* metric,
 		  const Prof::Flat::EventData& profevent,
 		  VMA lm_load_addr,
-		  NodeRetriever& structIF,
-		  LoadModScope* lmStrct,
+		  Prof::Struct::TreeInterface& structIF,
+		  Prof::Struct::LM* lmStrct,
 		  /*const*/ binutils::LM* lm,
 		  bool useStruct)
 {
@@ -743,13 +749,13 @@ Driver::correlateRaw(PerfMetric* metric,
     VMA vma_ur = (doUnrelocate) ? (vma - lm_load_addr) : vma;
 	
     // 2. Find associated scope and insert into scope tree
-    ScopeInfo* strct = NULL;
+    Prof::Struct::ANode* strct = NULL;
 
     if (useStruct) {
       strct = lmStrct->findByVMA(vma_ur);
       if (!strct) {
-	structIF.MoveToFile(PgmScopeTree::UnknownFileNm);
-	strct = structIF.MoveToProc(PgmScopeTree::UnknownProcNm);
+	structIF.MoveToFile(Prof::Struct::Tree::UnknownFileNm);
+	strct = structIF.MoveToProc(Prof::Struct::Tree::UnknownProcNm);
       }
     }
     else {
@@ -758,18 +764,18 @@ Driver::correlateRaw(PerfMetric* metric,
       lm->GetSourceFileInfo(vma_ur, 0 /*opIdx*/, procnm, filenm, line);
 
       if (filenm.empty()) {
-	filenm = PgmScopeTree::UnknownFileNm;
+	filenm = Prof::Struct::Tree::UnknownFileNm;
       }
       if (procnm.empty()) {
-	procnm = PgmScopeTree::UnknownProcNm;
+	procnm = Prof::Struct::Tree::UnknownProcNm;
       }
       
       structIF.MoveToFile(filenm);
-      ProcScope* procStrct = structIF.MoveToProc(procnm);
+      Prof::Struct::Proc* procStrct = structIF.MoveToProc(procnm);
       if (SrcFile::isValid(line)) {
-	StmtRangeScope* stmtStrct = procStrct->FindStmtRange(line);
+	Prof::Struct::Stmt* stmtStrct = procStrct->findStmt(line);
 	if (!stmtStrct) {
-	  stmtStrct = new StmtRangeScope(procStrct, line, line, 0, 0);
+	  stmtStrct = new Prof::Struct::Stmt(procStrct, line, line, 0, 0);
 	}
 	strct = stmtStrct;
       }
@@ -826,7 +832,7 @@ Driver::clearRawBatch(ProfToMetricsTupleVec& batchJob)
 
 
 bool
-Driver::hasStructure(const string& lmname, NodeRetriever& structIF,
+Driver::hasStructure(const string& lmname, Prof::Struct::TreeInterface& structIF,
 		     StringToBoolMap& hasStructureTbl)
 {
   // hasStructure's test depdends on the *initial* structure information
@@ -835,7 +841,7 @@ Driver::hasStructure(const string& lmname, NodeRetriever& structIF,
     return it->second; // memoized answer
   }
   else {
-    LoadModScope* lmStrct = structIF.MoveToLoadMod(lmname);
+    Prof::Struct::LM* lmStrct = structIF.MoveToLM(lmname);
     bool hasStruct = (lmStrct->ChildCount() > 0);
     hasStructureTbl.insert(make_pair(lmname, hasStruct));
     if (!hasStruct && !m_args.structureFiles.empty()) {
@@ -850,7 +856,7 @@ Driver::hasStructure(const string& lmname, NodeRetriever& structIF,
 
 void
 Driver::computeDerivedMetrics(Prof::Metric::Mgr& mMgr, 
-			      PgmScopeTree& structure)
+			      Prof::Struct::Tree& structure)
 {
   using Prof::Metric::AExpr;
 
@@ -885,12 +891,12 @@ Driver::computeDerivedMetrics(Prof::Metric::Mgr& mMgr,
 
 
 void
-Driver::computeDerivedBatch(PgmScopeTree& structure, 
+Driver::computeDerivedBatch(Prof::Struct::Tree& structure, 
 			    const Prof::Metric::AExpr** mExprVec,
 			    uint mBegId, uint mEndId)
 {
-  PgmScope* pgmStrct = structure.GetRoot();
-  ScopeInfoIterator it(pgmStrct, NULL /*filter*/, false /*leavesOnly*/,
+  Prof::Struct::Pgm* pgmStrct = structure.GetRoot();
+  Prof::Struct::ANodeIterator it(pgmStrct, NULL /*filter*/, false /*leavesOnly*/,
 		       IteratorStack::PostOrder);
       
   for (; it.Current(); it++) {
@@ -973,17 +979,18 @@ matchFileWithPath(const string& filenm, const Analysis::PathTupleVec& pathVec);
 
 
 static bool 
-CSF_ScopeFilter(const ScopeInfo& x, long type)
+CSF_ScopeFilter(const Prof::Struct::ANode& x, long type)
 {
-  return (x.Type() == ScopeInfo::FILE || x.Type() == ScopeInfo::ALIEN);
+  return (x.Type() == Prof::Struct::ANode::TyFILE || x.Type() == Prof::Struct::ANode::TyALIEN);
 }
 
-// 'copySourceFiles': For every file FileScope and AlienScope in
+// 'copySourceFiles': For every file Prof::Struct::File and Prof::Struct::Alien in
 // 'pgmScope' that can be reached with paths in 'pathVec', copy F to
 // its appropriate viewname path and update F's path to be relative to
 // this location.
 static bool
-copySourceFiles(PgmScope* structure, const Analysis::PathTupleVec& pathVec,
+copySourceFiles(Prof::Struct::Pgm* structure, 
+		const Analysis::PathTupleVec& pathVec,
 		const string& dstDir)
 {
   bool noError = true;
@@ -992,22 +999,22 @@ copySourceFiles(PgmScope* structure, const Analysis::PathTupleVec& pathVec,
   // times.  Prevent multiple copies of the same file.
   std::map<string, string> copiedFiles;
 
-  ScopeInfoFilter filter(CSF_ScopeFilter, "CSF_ScopeFilter", 0);
-  for (ScopeInfoIterator it(structure, &filter); it.Current(); ++it) {
-    ScopeInfo* strct = it.CurScope();
-    FileScope* fileScope = NULL;
-    AlienScope* alienScope = NULL;
+  Prof::Struct::ANodeFilter filter(CSF_ScopeFilter, "CSF_ScopeFilter", 0);
+  for (Prof::Struct::ANodeIterator it(structure, &filter); it.Current(); ++it) {
+    Prof::Struct::ANode* strct = it.CurScope();
+    Prof::Struct::File* fileStrct = NULL;
+    Prof::Struct::Alien* alienStrct = NULL;
 
     // Note: 'fnm_orig' will be not be absolute if it is not possible to find
-    // the file on the current filesystem. (cf. NodeRetriever::MoveToFile)
+    // the file on the current filesystem. (cf. TreeInterface::MoveToFile)
     string fnm_orig;
-    if (strct->Type() == ScopeInfo::FILE) {
-      fileScope = dynamic_cast<FileScope*>(strct);
-      fnm_orig = fileScope->name();
+    if (strct->Type() == Prof::Struct::ANode::TyFILE) {
+      fileStrct = dynamic_cast<Prof::Struct::File*>(strct);
+      fnm_orig = fileStrct->name();
     }
-    else if (strct->Type() == ScopeInfo::ALIEN) {
-      alienScope = dynamic_cast<AlienScope*>(strct);
-      fnm_orig = alienScope->fileName();
+    else if (strct->Type() == Prof::Struct::ANode::TyALIEN) {
+      alienStrct = dynamic_cast<Prof::Struct::Alien*>(strct);
+      fnm_orig = alienStrct->fileName();
     }
     else {
       DIAG_Die(DIAG_Unimplemented);
@@ -1078,11 +1085,11 @@ copySourceFiles(PgmScope* structure, const Analysis::PathTupleVec& pathVec,
     // Use find fnm_new
     // ------------------------------------------------------
     if (!fnm_new.empty()) {
-      if (fileScope) {
-	fileScope->SetName(fnm_new);
+      if (fileStrct) {
+	fileStrct->SetName(fnm_new);
       }
       else {
-	alienScope->fileName(fnm_new);
+	alienStrct->fileName(fnm_new);
       }
     }
     

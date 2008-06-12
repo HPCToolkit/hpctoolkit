@@ -49,8 +49,8 @@
 //
 //***************************************************************************
 
-#ifndef prof_juicy_PgmScopeTreeInterface_hpp
-#define prof_juicy_PgmScopeTreeInterface_hpp
+#ifndef prof_juicy_Prof_Struct_TreeInterface_hpp
+#define prof_juicy_Prof_Struct_TreeInterface_hpp
 
 //************************ System Include Files ******************************
 
@@ -58,63 +58,60 @@
 
 //************************* User Include Files *******************************
 
-//************************ Forward Declarations ******************************
-
-class ScopeInfo;
-class CodeInfo;
-
-class PgmScope;
-class GroupScope;
-class LoadModScope;
-class FileScope;
-class ProcScope;
+#include "PgmScopeTree.hpp"
 
 //************************ Forward Declarations ******************************
 
 //****************************************************************************
 
-class NodeRetriever {
+namespace Prof {
+namespace Struct {
+
+class TreeInterface {
 public: 
   // root must not be NULL
   // path = non empty list of directories 
-  NodeRetriever(PgmScope *root, const std::string& path); 
-  ~NodeRetriever();
+  TreeInterface(Pgm* root, const std::string& path); 
+  ~TreeInterface();
   
-  PgmScope* GetRoot() const { return root; }; 
+  Pgm* GetRoot() const { return root; }; 
 
   // get/make group scope with given parent and name.  We need a
   // parent scope for now because a Group can be a child of basically
   // anything and we do not keep an 'enclosingscope' pointer.
-  GroupScope* MoveToGroup(ScopeInfo* parent, const char* name);
-  GroupScope* MoveToGroup(ScopeInfo* parent, const std::string& name)
+  Group* MoveToGroup(ANode* parent, const char* name);
+  Group* MoveToGroup(ANode* parent, const std::string& name)
     { return MoveToGroup(parent, name.c_str()); }
 
 
   // get/make load module with name 'name' and remember it as current
   // load module.  Resets current file and proc.
-  LoadModScope* MoveToLoadMod(const char* name);
-  LoadModScope* MoveToLoadMod(const std::string& name)
-    { return MoveToLoadMod(name.c_str()); }
+  LM* MoveToLM(const char* name);
+  LM* MoveToLM(const std::string& name)
+    { return MoveToLM(name.c_str()); }
 
   // get/make file with name 'name' and remember it as current file.
   // Requires the current load module to be set. Resets the current
   // proc.
-  FileScope* MoveToFile(const char* name);
-  FileScope* MoveToFile(const std::string& name)
+  File* MoveToFile(const char* name);
+  File* MoveToFile(const std::string& name)
     { return MoveToFile(name.c_str()); }
 
   // get/make procedure with name 'name' within current file and load
   // module (i.e. these must not be NULL).
-  ProcScope* MoveToProc(const char* name);
-  ProcScope* MoveToProc(const std::string& name)
+  Proc* MoveToProc(const char* name);
+  Proc* MoveToProc(const std::string& name)
     { return MoveToProc(name.c_str()); }
 
 private:
-  PgmScope *root;
-  LoadModScope* currentLM;
-  FileScope* currentFile;
-  ProcScope* currentProc;
+  Pgm* root;
+  LM* currentLM;
+  File* currentFile;
+  Proc* currentProc;
   std::string path; 
 };
 
-#endif /* prof_juicy_PgmScopeTreeInterface_hpp */
+} // namespace Struct
+} // namespace Prof
+
+#endif /* prof_juicy_Prof_Struct_TreeInterface_hpp */
