@@ -624,7 +624,14 @@ Driver::computeRawMetrics(Prof::Metric::Mgr& mMgr, Prof::Struct::Tree& structure
   
   ProfToMetricsTupleVec batchJob;
   while (getNextRawBatch(batchJob, it, fnameToFMetricMap.end())) {
-    
+
+    //-------------------------------------------------------
+    // FIXME: Assume that each profile file has an idential epoch.
+    // This will have to change when true dlopen support is available.
+    //-------------------------------------------------------
+
+    string prev_lmname_orig;
+
     // For each load module: process the batch job.  A batch job
     // process a group of profile files (and their associated metrics)
     // by load module.
@@ -633,6 +640,13 @@ Driver::computeRawMetrics(Prof::Metric::Mgr& mMgr, Prof::Struct::Tree& structure
 	 it != prof->end(); ++it) {
       
       const string lmname_orig = it->first;
+      if (lmname_orig == prev_lmname_orig) {
+	// Skip multiple entries for same LM.  This is sufficient
+	// b/c iteration proceeds in sorted fashion.
+	continue; 
+      }
+      prev_lmname_orig = lmname_orig;
+
       const string lmname = replacePath(lmname_orig);
       
       bool useStruct = hasStructure(lmname, structIF, hasStructureTbl);
@@ -692,31 +706,37 @@ Driver::computeRawBatchJob_LM(const string& lmname, const string& lmname_orig,
     Prof::Flat::ProfileData* prof = profToMetricsVec[i].first;
     Prof::Metric::Mgr::PerfMetricVec* metrics = profToMetricsVec[i].second;
 
-    Prof::Flat::LM* proflm = NULL;
-    Prof::Flat::ProfileData::iterator it = prof->find(lmname_orig);
-    if (it != prof->end()) {
-      proflm = it->second;
-    }
-    else {
+    
+    using Prof::Flat::ProfileData;
+    std::pair<ProfileData::iterator, ProfileData::iterator> fnd =
+      prof->equal_range(lmname_orig);
+    if (fnd.first == prof->end()) {
       DIAG_WMsg(1, "Cannot find LM " << lmname_orig << " within " 
 		<< prof->name() << ".");
       continue;
     }
-    
-    //-------------------------------------------------------
-    // For each metric, insert performance data into scope tree
-    //-------------------------------------------------------
-    for (Prof::Metric::Mgr::PerfMetricVec::iterator it = metrics->begin();
-	 it != metrics->end(); ++it) {
-      FilePerfMetric* m = dynamic_cast<FilePerfMetric*>(*it);
-      DIAG_Assert(m->isunit_event(), "Assumes metric should compute events!");
-      uint mIdx = (uint)StrUtil::toUInt64(m->NativeName());
-      
-      const Prof::Flat::EventData& profevent = proflm->event(mIdx);
-      m->rawdesc(profevent.mdesc());
 
-      correlateRaw(m, profevent, proflm->load_addr(), 
-		   structIF, lmStrct, lm, useStruct);
+    //-------------------------------------------------------
+    // For each Prof::Flat::LM that matches lmname_orig
+    //-------------------------------------------------------
+    for (ProfileData::iterator it = fnd.first; it != fnd.second; ++it) {
+      Prof::Flat::LM* proflm = it->second;
+    
+      //-------------------------------------------------------
+      // For each metric, insert performance data into scope tree
+      //-------------------------------------------------------
+      for (Prof::Metric::Mgr::PerfMetricVec::iterator it = metrics->begin();
+	   it != metrics->end(); ++it) {
+	FilePerfMetric* m = dynamic_cast<FilePerfMetric*>(*it);
+	DIAG_Assert(m->isunit_event(), "Assumes metric should compute events!");
+	uint mIdx = (uint)StrUtil::toUInt64(m->NativeName());
+	
+	const Prof::Flat::EventData& profevent = proflm->event(mIdx);
+	m->rawdesc(profevent.mdesc());
+	
+	correlateRaw(m, profevent, proflm->load_addr(), 
+		     structIF, lmStrct, lm, useStruct);
+      }
     }
   }
 
@@ -729,12 +749,12 @@ Driver::computeRawBatchJob_LM(const string& lmname, const string& lmname_orig,
 // using file, function and line debugging information.
 void
 Driver::correlateRaw(PerfMetric* metric,
-		  const Prof::Flat::EventData& profevent,
-		  VMA lm_load_addr,
-		  Prof::Struct::TreeInterface& structIF,
-		  Prof::Struct::LM* lmStrct,
-		  /*const*/ binutils::LM* lm,
-		  bool useStruct)
+		     const Prof::Flat::EventData& profevent,
+		     VMA lm_load_addr,
+		     Prof::Struct::TreeInterface& structIF,
+		     Prof::Struct::LM* lmStrct,
+		     /*const*/ binutils::LM* lm,
+		     bool useStruct)
 {
   unsigned long period = profevent.mdesc().period();
   bool doUnrelocate = lm->doUnrelocate(lm_load_addr);
