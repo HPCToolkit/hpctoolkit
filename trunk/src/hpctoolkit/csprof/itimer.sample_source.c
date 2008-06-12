@@ -230,8 +230,10 @@ itimer_obj_reg(void)
 static int
 csprof_itimer_signal_handler(int sig, siginfo_t *siginfo, void *context)
 {
-  TMSG(ITIMER_HANDLER,"Itimer sample event");
-  csprof_sample_event(context, ITIMER_METRIC_ID, 1 /*sample_count*/);
+  if (!csprof_handling_synchronous_sample_p()) {
+    TMSG(ITIMER_HANDLER,"Itimer sample event");
+    csprof_sample_event(context, ITIMER_METRIC_ID, 1 /*sample_count*/);
+  }
   METHOD_CALL(&_itimer_obj,start);
 
   return 0; /* tell monitor that the signal has been handled */

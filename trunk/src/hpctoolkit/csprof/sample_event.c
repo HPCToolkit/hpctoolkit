@@ -134,3 +134,19 @@ csprof_take_profile_sample(csprof_state_t *state, struct ucontext *ctx,
   
   return n;
 }
+
+
+void  
+csprof_handling_synchronous_sample(int val) 
+{
+  thread_data_t *td = csprof_get_thread_data();
+  td->handling_synchronous_sample = val;
+}
+
+
+int 
+csprof_handling_synchronous_sample_p() 
+{
+  thread_data_t *td = csprof_get_thread_data();
+  return (td->handling_synchronous_sample != 0);
+}

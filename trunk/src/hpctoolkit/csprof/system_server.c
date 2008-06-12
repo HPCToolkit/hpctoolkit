@@ -214,3 +214,8 @@ system_server_execute_command(char *command)
 
   return status;
 }
+
+int system(__const char *command) 
+{
+  return system_server_execute_command(command);  
+}

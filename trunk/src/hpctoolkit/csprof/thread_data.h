@@ -25,6 +25,7 @@ typedef struct _td_t {
   int             eventSet[MAX_POSSIBLE_SAMPLE_SOURCES];
   source_state_t  ss_state[MAX_POSSIBLE_SAMPLE_SOURCES];
   int             handling_sample;
+  int             handling_synchronous_sample;
   int             splay_lock;
 } thread_data_t;
 
