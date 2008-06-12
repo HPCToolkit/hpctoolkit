@@ -44,6 +44,9 @@ tmpi: tmpi.c
 t1: t1.o
 	$(CC) -g $< -lm -o $@
 
+fib: fib.o
+	$(CC) -g $< -o $@
+
 tp2: tp2.o
 	$(CC) -g $< -lpthread -o $@
 
