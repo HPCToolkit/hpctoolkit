@@ -58,7 +58,7 @@
 
 //************************* User Include Files *******************************
 
-#include "PgmScopeTree.hpp"
+#include "Struct-Tree.hpp"
 
 //************************ Forward Declarations ******************************
 

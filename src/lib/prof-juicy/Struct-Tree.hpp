@@ -1308,7 +1308,7 @@ private:
 // Iterators
 /************************************************************************/
 
-#include "PgmScopeTreeIterator.hpp" 
+#include "Struct-TreeIterator.hpp" 
 
 
 #endif /* prof_juicy_Prof_Struct_Tree_hpp */

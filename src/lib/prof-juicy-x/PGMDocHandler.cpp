@@ -71,8 +71,8 @@ using XERCES_CPP_NAMESPACE::XMLString;
 #include "XercesUtil.hpp"
 #include "XercesErrorHandler.hpp"
 
-#include <lib/prof-juicy/PgmScopeTreeInterface.hpp>
-#include <lib/prof-juicy/PgmScopeTree.hpp>
+#include <lib/prof-juicy/Struct-TreeInterface.hpp>
+#include <lib/prof-juicy/Struct-Tree.hpp>
 using namespace Prof;
 
 #include <lib/support/diagnostics.h>

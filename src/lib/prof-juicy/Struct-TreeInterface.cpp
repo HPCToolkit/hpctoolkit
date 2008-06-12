@@ -60,8 +60,8 @@ using std::string;
 
 //************************* User Include Files *******************************
 
-#include "PgmScopeTreeInterface.hpp"
-#include "PgmScopeTree.hpp"
+#include "Struct-TreeInterface.hpp"
+#include "Struct-Tree.hpp"
 
 #include <lib/support/diagnostics.h>
 #include <lib/support/pathfind.h>

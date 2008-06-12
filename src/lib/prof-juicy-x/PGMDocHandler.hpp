@@ -61,8 +61,8 @@
 #include "XercesSAX2.hpp"
 #include "DocHandlerArgs.hpp"
 
-#include <lib/prof-juicy/PgmScopeTreeInterface.hpp>
-#include <lib/prof-juicy/PgmScopeTree.hpp>
+#include <lib/prof-juicy/Struct-TreeInterface.hpp>
+#include <lib/prof-juicy/Struct-Tree.hpp>
 
 #include <lib/support/PointerStack.hpp>
 

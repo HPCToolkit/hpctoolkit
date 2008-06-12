@@ -60,7 +60,7 @@
 #include "PGMDocHandler.hpp"
 #include "DocHandlerArgs.hpp"
 
-#include <lib/prof-juicy/PgmScopeTreeInterface.hpp>
+#include <lib/prof-juicy/Struct-TreeInterface.hpp>
 
 //************************ Forward Declarations ******************************
 

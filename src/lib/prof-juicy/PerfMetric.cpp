@@ -50,7 +50,7 @@ using std::string;
 #include <include/general.h>
 
 #include "PerfMetric.hpp"
-#include "PgmScopeTree.hpp"
+#include "Struct-Tree.hpp"
 
 #include <lib/support/diagnostics.h>
 #include <lib/support/Trace.hpp>

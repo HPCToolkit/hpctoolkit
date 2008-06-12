@@ -57,7 +57,7 @@
 
 #include <lib/prof-juicy/Flat-ProfileData.hpp>
 #include <lib/prof-juicy/Metric-Mgr.hpp>
-#include <lib/prof-juicy/PgmScopeTree.hpp>
+#include <lib/prof-juicy/Struct-Tree.hpp>
 
 #include <lib/binutils/LM.hpp>
 

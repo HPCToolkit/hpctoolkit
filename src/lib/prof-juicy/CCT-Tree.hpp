@@ -63,7 +63,7 @@
 
 #include <include/general.h>
 
-#include "PgmScopeTree.hpp"
+#include "Struct-Tree.hpp"
 #include "MetricDesc.hpp"
 #include "Epoch.hpp"
 
