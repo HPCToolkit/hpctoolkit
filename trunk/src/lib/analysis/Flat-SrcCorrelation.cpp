@@ -55,7 +55,7 @@ using std::vector;
 
 //************************* User Include Files *******************************
 
-#include "Flat_SrcCorrelation.hpp"
+#include "Flat-SrcCorrelation.hpp"
 #include "TextUtil.hpp"
 #include "Util.hpp"
 

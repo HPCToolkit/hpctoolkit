@@ -63,7 +63,7 @@ using std::vector;
 
 //*************************** User Include Files ****************************
 
-#include "Flat_ObjCorrelation.hpp"
+#include "Flat-ObjCorrelation.hpp"
 #include "TextUtil.hpp"
 using Analysis::TextUtil::ColumnFormatter;
 
