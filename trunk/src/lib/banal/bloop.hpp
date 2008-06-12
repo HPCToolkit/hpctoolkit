@@ -57,7 +57,7 @@
 
 #include <include/general.h> 
 
-#include <lib/prof-juicy/PgmScopeTree.hpp>
+#include <lib/prof-juicy/Struct-Tree.hpp>
 #include <lib/binutils/LM.hpp>
 
 //*************************** Forward Declarations ***************************

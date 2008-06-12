@@ -87,7 +87,7 @@ using std::string;
 #include "bloop_LocationMgr.hpp"
 #include "OAInterface.hpp"
 
-#include <lib/prof-juicy/PgmScopeTree.hpp>
+#include <lib/prof-juicy/Struct-Tree.hpp>
 using namespace Prof;
 
 #include <lib/binutils/LM.hpp>

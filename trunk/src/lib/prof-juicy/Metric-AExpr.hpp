@@ -66,7 +66,7 @@
 
 //************************* User Include Files *******************************
 
-#include "PgmScopeTree.hpp"
+#include "Struct-Tree.hpp"
 
 #include <lib/support/NaN.h>
 

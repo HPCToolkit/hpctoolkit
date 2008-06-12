@@ -47,8 +47,8 @@ using std::string;
 
 #include "DerivedPerfMetrics.hpp"
 
-#include <lib/prof-juicy/PgmScopeTreeInterface.hpp>
-#include <lib/prof-juicy/PgmScopeTree.hpp>
+#include <lib/prof-juicy/Struct-TreeInterface.hpp>
+#include <lib/prof-juicy/Struct-Tree.hpp>
 
 #include <lib/support/diagnostics.h>
 #include <lib/support/pathfind.h>

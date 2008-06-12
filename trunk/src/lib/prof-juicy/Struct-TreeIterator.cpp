@@ -59,8 +59,7 @@ using std::endl;
 
 //*************************** User Include Files ****************************
 
-#include "PgmScopeTree.hpp"
-#include "PgmScopeTreeIterator.hpp"
+#include "Struct-Tree.hpp"
 #include "PerfMetric.hpp"
 
 #include <lib/support/diagnostics.h>

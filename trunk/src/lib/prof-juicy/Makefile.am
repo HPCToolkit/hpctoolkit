@@ -70,9 +70,9 @@ MYSOURCES = \
 	\
 	Epoch.hpp Epoch.cpp \
 	\
-	PgmScopeTree.hpp PgmScopeTree.cpp \
-	PgmScopeTreeIterator.hpp PgmScopeTreeIterator.cpp \
-	PgmScopeTreeInterface.hpp PgmScopeTreeInterface.cpp \
+	Struct-Tree.hpp Struct-Tree.cpp \
+	Struct-TreeIterator.hpp Struct-TreeIterator.cpp \
+	Struct-TreeInterface.hpp Struct-TreeInterface.cpp \
 	\
 	CCT-Tree.hpp CCT-Tree.cpp \
 	CCT-TreeIterator.hpp CCT-TreeIterator.cpp \

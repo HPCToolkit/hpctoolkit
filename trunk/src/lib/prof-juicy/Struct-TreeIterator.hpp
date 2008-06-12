@@ -59,8 +59,8 @@
 
 #include <include/general.h>
 
-//NOTE: included by PgmScopeTree.hpp
-//#include "PgmScopeTree.hpp"
+//NOTE: included by Struct-Tree.hpp
+//#include "Struct-Tree.hpp"
 
 #include <lib/support/NonUniformDegreeTree.hpp>
 #include <lib/support/PtrSetIterator.hpp>

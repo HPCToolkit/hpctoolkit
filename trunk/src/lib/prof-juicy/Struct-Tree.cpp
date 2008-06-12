@@ -68,7 +68,7 @@ using std::string;
 
 #include <include/general.h>
 
-#include "PgmScopeTree.hpp"
+#include "Struct-Tree.hpp"
 #include "PerfMetric.hpp"
 
 #include <lib/xml/xml.hpp>

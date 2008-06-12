@@ -74,7 +74,7 @@ using std::pair;
 
 #include "bloop_LocationMgr.hpp"
 
-#include <lib/prof-juicy/PgmScopeTree.hpp>
+#include <lib/prof-juicy/Struct-Tree.hpp>
 using namespace Prof;
 
 #include <lib/binutils/BinUtils.hpp>
