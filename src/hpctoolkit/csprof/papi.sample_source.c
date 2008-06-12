@@ -86,12 +86,14 @@ METHOD_FN(init)
     abort();
   }
 
+#if 0
   ret = PAPI_thread_init(pthread_self);
   TMSG(PAPI,"PAPI_thread_init = %d",ret);
   if(ret != PAPI_OK){
     EMSG("Failed: PAPI_thread_init");
     abort();
   }
+#endif
   self->state = INIT;
 }
 
@@ -183,6 +185,7 @@ METHOD_FN(process_event_list)
     METHOD_CALL(self,store_event,evcode,thresh);
   }
   int nevents = (self->evl).nevents;
+  TMSG(PAPI,"nevents = %d", nevents);
   csprof_set_max_metrics(nevents);
   for(i=0; i < nevents; i++){
     char buffer[PAPI_MAX_STR_LEN];
@@ -357,6 +360,8 @@ papi_event_handler(int event_set, void *pc, long long ovec,
   int i;
   int my_events[MAX_EVENTS];
   int my_event_count = MAX_EVENTS;
+
+  if (csprof_handling_synchronous_sample_p()) return;
 
   TMSG(PAPI_SAMPLE,"papi event happened, ovec = %ld",ovec);
 

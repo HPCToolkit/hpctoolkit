@@ -132,8 +132,6 @@ csprof_init_internal(void)
     dbg_init();
 # endif                 // DBG_EXTRA
 
-  csprof_options__init(&opts);
-  csprof_options__getopts(&opts);
 
   /* private memory store for the initial thread is done below */
 
@@ -153,7 +151,12 @@ csprof_init_internal(void)
     csprof_epoch_unlock();
 # endif // STATIC_ONLY
 
+    // WARNING: a perfmon bug requires us to fork off the fnbounds server before
+    // we call PAPI_init, which is done in argument processing below. Also, fnbounds_init
+    // must be done after the memory allocator is initialized.
   fnbounds_init();
+  csprof_options__init(&opts);
+  csprof_options__getopts(&opts);
 
   // Initialize LUSH agents
   if (opts.lush_agent_paths[0] != '\0') {
@@ -226,16 +229,22 @@ csprof_thread_pre_create(void)
   //   1. init-process has occurred.
   //   2. current execution context is either the spawning process or thread.
 
+#if 0
   // Disable signals (could also disable timers)
   ret = monitor_real_pthread_sigmask(SIG_BLOCK,&prof_sigset,NULL);
   if (ret){
     EMSG("WARNING: Thread init could not block SIGPROF, ret = %d",ret);
   }
+#endif
 
   // -------------------------------------------------------
   // Capture new thread's creation context.
   // -------------------------------------------------------
   csprof_state_t* state = csprof_get_state();
+
+
+  csprof_handling_synchronous_sample(1); 
+
 
   ucontext_t context;
   ret = getcontext(&context);
@@ -272,10 +281,14 @@ csprof_thread_pre_create(void)
 void
 csprof_thread_post_create(void *dc)
 {
+  csprof_handling_synchronous_sample(0); 
+
+#if 0
   int ret = monitor_real_pthread_sigmask(SIG_UNBLOCK,&prof_sigset,NULL);
   if (ret){
     EMSG("WARNING: Thread init could not unblock SIGPROF, ret = %d",ret);
   }
+#endif
 }
 
 void *
