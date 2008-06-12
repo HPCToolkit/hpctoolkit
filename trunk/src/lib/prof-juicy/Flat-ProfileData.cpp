@@ -140,9 +140,7 @@ ProfileData::read()
   for (uint i = 0; i < count; ++i) {
     LM* proflm = new LM();
     proflm->read(m_fs);
-    pair<iterator,bool> ret = insert(make_pair(proflm->name(), proflm));
-    // FIXME: must merge if duplicate is found
-    DIAG_Assert(ret.second, "Load module already exists:" << proflm->name());
+    insert(make_pair(proflm->name(), proflm));
   }
 
   fclose(m_fs);

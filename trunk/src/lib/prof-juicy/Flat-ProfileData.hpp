@@ -55,7 +55,7 @@ namespace Flat {
 //***************************************************************************
 // Basic format for the hpcprof data file:
 //   A profile file (ProfileData) contains one or more load module sections
-//   (LM) with each load module section containing one or more
+//   (LM) with each load module section containi*ng one or more
 //   profiling data sets, one for each event/metric. (EventData).
 //***************************************************************************
 
@@ -63,10 +63,15 @@ class LM;
 
 //---------------------------------------------------------------------------
 // ProfileData: represents flat profile information
-//   INVARIANT: a load module appears once
+//
+//   NOTE: it would be nice to support the invariant that "a load
+//   module appears once".  However, doing this requires merging data
+//   from load module segments potentially mapped in a non-contiguous
+//   manner.  For now, we do not promise this and use a std::multimap
+//
 //---------------------------------------------------------------------------
 
-class ProfileData : public std::map<std::string, LM*> {
+class ProfileData : public std::multimap<std::string, LM*> {
 public:
   ProfileData(const char* filename = NULL);
   ~ProfileData();
