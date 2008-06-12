@@ -86,7 +86,6 @@ thread_specific_td(void)
 {
   thread_data_t *ret = (thread_data_t *) pthread_getspecific(_csprof_key);
   if (!ret){
-    EMSG("Cannot get thread specific data");
     monitor_real_abort();
   }
   return ret;
