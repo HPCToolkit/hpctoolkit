@@ -52,8 +52,8 @@ using std::string;
 
 #include "Args.hpp"
 
-#include <lib/analysis/Flat_SrcCorrelation.hpp>
-#include <lib/analysis/Flat_ObjCorrelation.hpp>
+#include <lib/analysis/Flat-SrcCorrelation.hpp>
+#include <lib/analysis/Flat-ObjCorrelation.hpp>
 #include <lib/analysis/Raw.hpp>
 
 #include <lib/support/diagnostics.h>

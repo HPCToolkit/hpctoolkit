@@ -64,8 +64,8 @@ include $(top_srcdir)/src/Makeinclude.config
 MYSOURCES = \
 	CallPath.hpp CallPath.cpp \
 	\
-	Flat_SrcCorrelation.hpp Flat_SrcCorrelation.cpp \
-	Flat_ObjCorrelation.hpp Flat_ObjCorrelation.cpp \
+	Flat-SrcCorrelation.hpp Flat-SrcCorrelation.cpp \
+	Flat-ObjCorrelation.hpp Flat-ObjCorrelation.cpp \
 	\
 	Raw.hpp Raw.cpp	\
 	\
