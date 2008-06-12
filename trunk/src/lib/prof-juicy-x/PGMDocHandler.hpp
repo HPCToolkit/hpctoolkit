@@ -77,7 +77,7 @@ public:
 
 public:
 
-  PGMDocHandler(Doc_t ty, NodeRetriever* const retriever, 
+  PGMDocHandler(Doc_t ty, Prof::Struct::TreeInterface* const retriever, 
 		DocHandlerArgs& args);
   ~PGMDocHandler();
 
@@ -95,26 +95,29 @@ private:
 
   class StackEntry_t {
   public:
-    StackEntry_t(ScopeInfo* entry_ = NULL, ScopeInfo* shadow_ = NULL) 
+    StackEntry_t(Prof::Struct::ANode* entry_ = NULL, 
+		 Prof::Struct::ANode* shadow_ = NULL) 
       : entry(entry_), shadow(shadow_), isLeaf(true) { }
     ~StackEntry_t() { }
     
-    ScopeInfo* GetScope() const { return entry; }
-    ScopeInfo* GetShadow() const { return shadow; }
+    Prof::Struct::ANode* GetScope() const { return entry; }
+    Prof::Struct::ANode* GetShadow() const { return shadow; }
 
-    void SetScope(ScopeInfo* x) { entry = x; }
-    void SetShadow(ScopeInfo* x) { shadow = x; }
+    void SetScope(Prof::Struct::ANode* x) { entry = x; }
+    void SetShadow(Prof::Struct::ANode* x) { shadow = x; }
 
     // Is this a leaf node?
     bool IsLeaf() { return isLeaf; }
     void SetLeaf(bool x) { isLeaf = x; }
 
-    bool IsGroupScope() { return (entry->Type() == ScopeInfo::GROUP); }
-    bool IsNonGroupLeaf() { return (IsLeaf() && !IsGroupScope()); }
+    bool IsGroupScope() 
+      { return (entry->Type() == Prof::Struct::ANode::TyGROUP); }
+    bool IsNonGroupLeaf() 
+      { return (IsLeaf() && !IsGroupScope()); }
 
   private:
-    ScopeInfo* entry;
-    ScopeInfo* shadow;
+    Prof::Struct::ANode* entry;
+    Prof::Struct::ANode* shadow;
     bool isLeaf;
   };
   
@@ -124,25 +127,25 @@ private:
     return static_cast<StackEntry_t*>(scopeStack.Get(idx));
   }
   
-  ScopeInfo* GetCurrentScope()
+  Prof::Struct::ANode* GetCurrentScope()
   {
     StackEntry_t* entry = static_cast<StackEntry_t*>(scopeStack.Top());
     return entry->GetScope();
   }
 
-  ScopeInfo* GetScope(unsigned int idx)
+  Prof::Struct::ANode* GetScope(unsigned int idx)
   {
     StackEntry_t* entry = static_cast<StackEntry_t*>(scopeStack.Get(idx));
     return entry->GetScope();
   }
 
-  ScopeInfo* GetShadowScope(unsigned int idx)
+  Prof::Struct::ANode* GetShadowScope(unsigned int idx)
   {
     StackEntry_t* entry = static_cast<StackEntry_t*>(scopeStack.Get(idx));
     return entry->GetShadow();
   }
 
-  void PushCurrentScope(ScopeInfo* scope)
+  void PushCurrentScope(Prof::Struct::ANode* scope)
   {
     StackEntry_t* entry = new StackEntry_t(scope);
     scopeStack.Push(entry);
@@ -155,7 +158,7 @@ private:
   }
   
   // Find the current file scope (include top of stack)
-  FileScope* FindCurrentFileScope();
+  Prof::Struct::File* FindCurrentFile();
 
   // Find the enclosing GroupScope stack depth (excluding the top of
   // stack) or return 0 if not found.
@@ -166,7 +169,7 @@ private:
   
 private:
   Doc_t m_docty;
-  NodeRetriever* m_structIF;
+  Prof::Struct::TreeInterface* m_structIF;
   DocHandlerArgs& m_args;
   
   // variables for constant values during file processing
@@ -176,7 +179,7 @@ private:
   std::string currentLmName;    // only one LM on the stack at a time
   std::string currentFileName;  // only one File on the stack at a time
   std::string currentFuncName;
-  ProcScope* currentFuncScope;
+  Prof::Struct::Proc* currentFuncScope;
   unsigned groupNestingLvl;
 
   // stack of StackEntry_t representing current scope context.  Top of

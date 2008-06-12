@@ -48,8 +48,8 @@
 //
 //***************************************************************************
 
-#ifndef prof_juicy_PgmScopeTree 
-#define prof_juicy_PgmScopeTree
+#ifndef prof_juicy_Prof_Struct_Tree_hpp 
+#define prof_juicy_Prof_Struct_Tree_hpp
 
 //************************* System Include Files ****************************
 
@@ -80,11 +80,18 @@ using SrcFile::ln_NULL;
 
 //*************************** Forward Declarations **************************
 
-class ScopeInfo;
+namespace Prof {
+namespace Struct {
 
-// Some possibly useful containers
-typedef std::list<ScopeInfo*> ScopeInfoList;
-typedef std::set<ScopeInfo*> ScopeInfoSet;
+  class ANode;
+
+  // Some possibly useful containers
+  typedef std::list<ANode*> ANodeList;
+  typedef std::set<ANode*> ANodeSet;
+
+} // namespace Struct
+} // namespace Prof
+
 
 //*************************** Forward Declarations **************************
 
@@ -95,32 +102,42 @@ public:
 };
 
 
+namespace Prof {
+namespace Struct {
+
 // FIXME: move these into their respective classes...
-class GroupScope;
-class GroupScopeMap     : public std::map<std::string, GroupScope*> { };
+class Group;
+class GroupMap : public std::map<std::string, Group*> { };
 
-class LoadModScope;
-class LoadModScopeMap   : public std::map<std::string, LoadModScope*> { };
+class LM;
+class LMMap : public std::map<std::string, LM*> { };
 
-// ProcScopeMap: This is is a multimap because procedure names are
+// ProcMap: This is is a multimap because procedure names are
 // sometimes "generic", i.e. not qualified by types in the case of
 // templates, resulting in duplicate names
-class ProcScope;
-class ProcScopeMap      : public std::multimap<std::string, ProcScope*> { };
+class Proc;
+class ProcMap : public std::multimap<std::string, Proc*> { };
 
-class FileScope;
-class FileScopeMap      : public std::map<std::string, FileScope*> { };
+class File;
+class FileMap : public std::map<std::string, File*> { };
 
-class StmtRangeScope;
-class StmtRangeScopeMap : public std::map<SrcFile::ln, StmtRangeScope*> { };
+class Stmt;
+class StmtMap : public std::map<SrcFile::ln, Stmt*> { };
+
+} // namespace Struct
+} // namespace Prof
+
 
 //***************************************************************************
-// PgmScopeTree
+// Tree
 //***************************************************************************
 
-class PgmScope;
+namespace Prof {
+namespace Struct {
 
-class PgmScopeTree : public Unique {
+class Pgm;
+
+class Tree : public Unique {
 public:
   enum {
     // User-level bit flags
@@ -144,87 +161,95 @@ public:
   
 public:
   // Constructor/Destructor
-  PgmScopeTree(const char* name, PgmScope* _root = NULL);
-  PgmScopeTree(const std::string& name, PgmScope* _root = NULL)
-    { PgmScopeTree(name.c_str(), _root); }
+  Tree(const char* name, Pgm* _root = NULL);
+  Tree(const std::string& name, Pgm* _root = NULL)
+    { Tree(name.c_str(), _root); }
 
-  virtual ~PgmScopeTree();
+  virtual ~Tree();
 
   // Tree data
-  PgmScope* GetRoot() const { return root; }
-  void SetRoot(PgmScope* x) { root = x; }
+  Pgm* GetRoot() const { return root; }
+  void SetRoot(Pgm* x) { root = x; }
   bool IsEmpty() const { return (root == NULL); }
   
   void CollectCrossReferences();
 
-  virtual void xml_dump(std::ostream& os = std::cerr, 
-			int dmpFlag = XML_TRUE) const;
+  virtual void 
+  xml_dump(std::ostream& os = std::cerr, int dmpFlag = XML_TRUE) const;
 
 
-  // Dump contents for inspection (use flags from ScopeInfo)
-  virtual void dump(std::ostream& os = std::cerr, 
-		    int dmpFlag = XML_TRUE) const;
-  virtual void ddump() const;
+  // Dump contents for inspection (use flags from ANode)
+  virtual void 
+  dump(std::ostream& os = std::cerr, int dmpFlag = XML_TRUE) const;
+  
+  virtual void 
+  ddump() const;
  
 private:
-  PgmScope* root;
+  Pgm* root;
 };
 
+} // namespace Struct
+} // namespace Prof
+
+
+namespace Prof {
+namespace Struct {
 
 //***************************************************************************
-// ScopeInfo, CodeInfo.
+// ANode, ACodeNode.
 //***************************************************************************
 
-// FIXME: It would make more sense for GroupScope and LoadModScope to
-// simply be ScopeInfos and not CodeInfos, but the assumption that
-// *only* a PgmScope is not a CodeInfo is deeply embedded and would
+// FIXME: It would make more sense for Group and LM to
+// simply be ANodes and not ACodeNodes, but the assumption that
+// *only* a Pgm is not a ACodeNode is deeply embedded and would
 // take a while to untangle.
 
-class ScopeInfo;   // Base class for all scopes
-class CodeInfo;    // Base class for everyone but PGM
+class ANode;     // Base class for all nodes
+class ACodeNode; // Base class for everyone but TyPGM
 
-class PgmScope;    // Tree root
-class GroupScope;
-class LoadModScope;
-class FileScope;
-class ProcScope;
-class AlienScope;
-class LoopScope;
-class StmtRangeScope;
-class RefScope;
+class Pgm;       // Tree root
+class Group;
+class LM;
+class File;
+class Proc;
+class Alien;
+class Loop;
+class Stmt;
+class Ref;
 
 // ---------------------------------------------------------
-// ScopeInfo: The base node for a program scope tree
+// ANode: The base node for a program scope tree
 // ---------------------------------------------------------
-class ScopeInfo: public NonUniformDegreeTreeNode {
+class ANode: public NonUniformDegreeTreeNode {
 public:
-  enum ScopeType {
-    PGM = 0,
-    GROUP,
-    LM,
-    FILE,
-    PROC,
-    ALIEN,
-    LOOP,
-    STMT_RANGE,
-    REF,
-    ANY,
-    NUMBER_OF_SCOPES
+  enum ANodeTy {
+    TyPGM = 0,
+    TyGROUP,
+    TyLM,
+    TyFILE,
+    TyPROC,
+    TyALIEN,
+    TyLOOP,
+    TySTMT,
+    TyREF,
+    TyANY,
+    TyNUMBER
   };
 
-  static const std::string& ScopeTypeToName(ScopeType tp);
-  static const std::string& ScopeTypeToXMLelement(ScopeType tp);
-  static ScopeType     IntToScopeType(long i);
+  static const std::string& ANodeTyToName(ANodeTy tp);
+  static const std::string& ANodeTyToXMLelement(ANodeTy tp);
+  static ANodeTy            IntToANodeTy(long i);
 
 protected:
-  ScopeInfo(const ScopeInfo& x) { *this = x; }
-  ScopeInfo& operator=(const ScopeInfo& x);
+  ANode(const ANode& x) { *this = x; }
+  ANode& operator=(const ANode& x);
 
 private:
-  static const std::string ScopeNames[NUMBER_OF_SCOPES];
+  static const std::string ScopeNames[TyNUMBER];
 
 public:
-  ScopeInfo(ScopeType ty, ScopeInfo* parent = NULL)
+  ANode(ANodeTy ty, ANode* parent = NULL)
     : NonUniformDegreeTreeNode(parent), type(ty)
   { 
     if (0) { ctorCheck(); }
@@ -234,7 +259,7 @@ public:
     perfData = new DoubleVector();
   }
 
-  virtual ~ScopeInfo()
+  virtual ~ANode()
   {
     if (0) { dtorCheck(); }
     delete perfData;
@@ -243,12 +268,12 @@ public:
   // --------------------------------------------------------
   // General Interface to fields 
   // --------------------------------------------------------
-  ScopeType Type() const         { return type; }
+  ANodeTy Type() const         { return type; }
   uint      UniqueId() const     { return uid; }
 
   // name: 
   // nameQual: qualified name [built dynamically]
-  virtual const std::string& name() const { return ScopeTypeToName(Type()); }
+  virtual const std::string& name() const { return ANodeTyToName(Type()); }
   virtual std::string nameQual() const { return name(); }
 
   void CollectCrossReferences();
@@ -332,59 +357,59 @@ public:
   // --------------------------------------------------------
   // Parent
   // --------------------------------------------------------
-  ScopeInfo *Parent() const 
-  { return (ScopeInfo*) NonUniformDegreeTreeNode::Parent(); }
+  ANode* Parent() const 
+  { return (ANode*)NonUniformDegreeTreeNode::Parent(); }
   
-  CodeInfo* CodeInfoParent() const;  // return dyn_cast<CodeInfo*>(Parent())
+  ACodeNode* ACodeNodeParent() const;  // return dyn_cast<ACodeNode*>(Parent())
   
   // --------------------------------------------------------
-  // Ancestor: find first ScopeInfo in path from this to root with given type
+  // Ancestor: find first ANode in path from this to root with given type
   // (Note: We assume that a node *can* be an ancestor of itself.)
   // --------------------------------------------------------
-  ScopeInfo* Ancestor(ScopeType type) const;
-  ScopeInfo* Ancestor(ScopeType tp1, ScopeType tp2) const;
+  ANode* Ancestor(ANodeTy type) const;
+  ANode* Ancestor(ANodeTy tp1, ANodeTy tp2) const;
   
-  PgmScope*       Pgm() const;           // return Ancestor(PGM)
-  GroupScope*     Group() const;         // return Ancestor(GROUP)
-  LoadModScope*   LoadMod() const;       // return Ancestor(LM)
-  FileScope*      File() const;          // return Ancestor(FILE)
-  ProcScope*      Proc() const;          // return Ancestor(PROC)
-  AlienScope*     Alien() const;         // return Ancestor(ALIEN)
-  LoopScope*      Loop() const;          // return Ancestor(LOOP)
-  StmtRangeScope* StmtRange() const;     // return Ancestor(STMT_RANGE)
+  Pgm*   AncPgm() const;    // return Ancestor(TyPGM)
+  Group* AncGroup() const;  // return Ancestor(TyGROUP)
+  LM*    AncLM() const;     // return Ancestor(TyLM)
+  File*  AncFile() const;   // return Ancestor(TyFILE)
+  Proc*  AncProc() const;   // return Ancestor(TyPROC)
+  Alien* AncAlien() const;  // return Ancestor(TyALIEN)
+  Loop*  AncLoop() const;   // return Ancestor(TyLOOP)
+  Stmt*  AncStmt() const;   // return Ancestor(TySTMT)
 
-  CodeInfo*       CallingCtxt() const;   // return Ancestor(ALIEN|PROC)
+  ACodeNode* AncCallingCtxt() const; // return Ancestor(TyALIEN|TyPROC)
 
 
-  // LeastCommonAncestor: Given two ScopeInfo nodes, return the least
+  // LeastCommonAncestor: Given two ANode nodes, return the least
   // common ancestor (deepest nested common ancestor) or NULL.
-  static ScopeInfo* LeastCommonAncestor(ScopeInfo* n1, ScopeInfo* n2);
+  static ANode* LeastCommonAncestor(ANode* n1, ANode* n2);
 
   // --------------------------------------------------------
   // Tree navigation 
-  //   1) all ScopeInfos contain CodeInfos as children 
-  //   2) PgmRoot is the only ScopeInfo type that is not also a CodeInfo;
-  //      since PgmScopes have no siblings, it is safe to make Next/PrevScope 
-  //      return CodeInfo pointers 
+  //   1) all ANodes contain ACodeNodes as children 
+  //   2) PgmRoot is the only ANode type that is not also a ACodeNode;
+  //      since Pgms have no siblings, it is safe to make Next/PrevScope 
+  //      return ACodeNode pointers 
   // --------------------------------------------------------
-  CodeInfo* FirstEnclScope() const;      // return  FirstChild()
-  CodeInfo* LastEnclScope()  const;      // return  LastChild()
-  CodeInfo* NextScope()      const;      // return  NULL or NextSibling()
-  CodeInfo* PrevScope()      const;      // return  NULL or PrevSibling()
-  bool      IsLeaf()         const       { return  FirstEnclScope() == NULL; }
+  ACodeNode* FirstEnclScope() const;      // return  FirstChild()
+  ACodeNode* LastEnclScope()  const;      // return  LastChild()
+  ACodeNode* NextScope()      const;      // return  NULL or NextSibling()
+  ACodeNode* PrevScope()      const;      // return  NULL or PrevSibling()
+  bool       IsLeaf()         const       { return  FirstEnclScope() == NULL; }
 
-  CodeInfo* nextScopeNonOverlapping() const;
+  ACodeNode* nextScopeNonOverlapping() const;
 
   // --------------------------------------------------------
   // Paths and Merging
   // --------------------------------------------------------
 
-  // Distance: Given two ScopeInfo nodes, a node and some ancestor,
+  // Distance: Given two ANode nodes, a node and some ancestor,
   // return the distance of the path between the two.  The distance
   // between a node and its direct ancestor is 1.  If there is no path
   // between the two nodes, returns a negative number; if the two
   // nodes are equal, returns 0.
-  static int Distance(ScopeInfo* ancestor, ScopeInfo* descendent);
+  static int Distance(ANode* ancestor, ANode* descendent);
 
   // ArePathsOverlapping: Given two nodes and their least common
   // ancestor, lca, returns whether the paths from the nodes to lca
@@ -405,29 +430,29 @@ public:
   //
   // 3. Divergent:   lca ---...--- d1
   //                    \---...--- d2
-  static bool ArePathsOverlapping(ScopeInfo* lca, ScopeInfo* desc1, 
-				  ScopeInfo* desc2);
+  static bool ArePathsOverlapping(ANode* lca, ANode* desc1, 
+				  ANode* desc2);
   
   // MergePaths: Given divergent paths (as defined above), merges the path
   // from 'toDesc' into 'fromDesc'. If a merge takes place returns true.
-  static bool MergePaths(ScopeInfo* lca, 
-			 ScopeInfo* toDesc, ScopeInfo* fromDesc);
+  static bool MergePaths(ANode* lca, 
+			 ANode* toDesc, ANode* fromDesc);
   
   // Merge: Given two nodes, 'fromNode' and 'toNode', merges the
   // former into the latter, if possible.  If the merge takes place,
   // deletes 'fromNode' and returns true; otherwise returns false.
-  static bool Merge(ScopeInfo* toNode, ScopeInfo* fromNode);
+  static bool Merge(ANode* toNode, ANode* fromNode);
 
   // IsMergable: Returns whether 'fromNode' is capable of being merged
   // into 'toNode'
-  static bool IsMergable(ScopeInfo* toNode, ScopeInfo* fromNode);
+  static bool IsMergable(ANode* toNode, ANode* fromNode);
   
   // --------------------------------------------------------
   // cloning
   // --------------------------------------------------------
   
   // Clone: return a shallow copy, unlinked from the tree
-  virtual ScopeInfo* Clone() { return new ScopeInfo(*this); }
+  virtual ANode* Clone() { return new ANode(*this); }
   
   // --------------------------------------------------------
   // XML output
@@ -438,9 +463,9 @@ public:
   virtual std::string toXML(int dmpFlag = 0) const;
 
   bool XML_DumpSelfBefore(std::ostream& os = std::cout,
-		int dmpFlag = 0, const char* prefix = "") const;
+			  int dmpFlag = 0, const char* prefix = "") const;
   void XML_DumpSelfAfter (std::ostream& os = std::cout,
-		int dmpFlag = 0, const char* prefix = "") const;
+			  int dmpFlag = 0, const char* prefix = "") const;
   void XML_dump(std::ostream& os = std::cout,
 		int dmpFlag = 0, const char* pre = "") const;
   
@@ -454,8 +479,8 @@ public:
   // Other output
   // --------------------------------------------------------
 
-  void CSV_DumpSelf(const PgmScope &root, std::ostream& os = std::cout) const;
-  virtual void CSV_dump(const PgmScope &root, std::ostream& os = std::cout, 
+  void CSV_DumpSelf(const Pgm &root, std::ostream& os = std::cout) const;
+  virtual void CSV_dump(const Pgm &root, std::ostream& os = std::cout, 
 			const char* file_name = NULL, 
 			const char* proc_name = NULL,
 			int lLevel = 0) const;
@@ -488,7 +513,7 @@ private:
   static uint s_nextUniqueId;
   
 protected:
-  ScopeType type;
+  ANodeTy type;
   uint uid;
   int height; // cross reference information
   int depth;
@@ -497,16 +522,16 @@ protected:
 
 
 // --------------------------------------------------------------------------
-// CodeInfo is a base class for all scopes other than PGM and LM.
+// ACodeNode is a base class for all scopes other than TyPGM and TyLM.
 // Describes some kind of code, i.e. Files, Procedures, Loops...
 // --------------------------------------------------------------------------
-class CodeInfo : public ScopeInfo {
+class ACodeNode : public ANode {
 protected: 
-  CodeInfo(ScopeType t, ScopeInfo* parent = NULL, 
+  ACodeNode(ANodeTy t, ANode* parent = NULL, 
 	   SrcFile::ln begLn = ln_NULL,
 	   SrcFile::ln endLn = ln_NULL,
 	   VMA begVMA = 0, VMA endVMA = 0)
-    : ScopeInfo(t, parent), m_begLn(ln_NULL), m_endLn(ln_NULL)
+    : ANode(t, parent), m_begLn(ln_NULL), m_endLn(ln_NULL)
   { 
     SetLineRange(begLn, endLn);
     if (begVMA != 0 && endVMA != 0) {
@@ -514,12 +539,12 @@ protected:
     }
   }
 
-  CodeInfo(const CodeInfo& x) : ScopeInfo(x.type) { *this = x; }
+  ACodeNode(const ACodeNode& x) : ANode(x.type) { *this = x; }
 
-  CodeInfo& operator=(const CodeInfo& x);
+  ACodeNode& operator=(const ACodeNode& x);
 
 public: 
-  virtual ~CodeInfo()
+  virtual ~ACodeNode()
   { }
 
   // Line range in source code
@@ -534,16 +559,16 @@ public:
   
   void ExpandLineRange(SrcFile::ln begLn, SrcFile::ln endLn, int propagate = 1);
 
-  void LinkAndSetLineRange(CodeInfo* parent);
+  void LinkAndSetLineRange(ACodeNode* parent);
 
   void checkLineRange(SrcFile::ln begLn, SrcFile::ln endLn)
   {
     DIAG_Assert(Logic::equiv(begLn == ln_NULL, endLn == ln_NULL),
-		"CodeInfo::checkLineRange: b=" << begLn << " e=" << endLn);
+		"ACodeNode::checkLineRange: b=" << begLn << " e=" << endLn);
     DIAG_Assert(begLn <= endLn, 
-		"CodeInfo::checkLineRange: b=" << begLn << " e=" << endLn);
+		"ACodeNode::checkLineRange: b=" << begLn << " e=" << endLn);
     DIAG_Assert(Logic::equiv(m_begLn == ln_NULL, m_endLn == ln_NULL),
-		"CodeInfo::checkLineRange: b=" << m_begLn << " e=" << m_endLn);
+		"ACodeNode::checkLineRange: b=" << m_begLn << " e=" << m_endLn);
   }
   
   // A set of *unrelocated* VMAs associated with this scope
@@ -570,7 +595,7 @@ public:
     { return (containsLine(begLn, beg_epsilon, end_epsilon) 
 	      && containsLine(endLn, beg_epsilon, end_epsilon)); }
 
-  CodeInfo* CodeInfoWithLine(SrcFile::ln ln) const;
+  ACodeNode* ACodeNodeWithLine(SrcFile::ln ln) const;
 
 
   // --------------------------------------------------------
@@ -589,11 +614,11 @@ public:
   
   std::string LineRange() const;
 
-  virtual ScopeInfo* Clone() { return new CodeInfo(*this); }
+  virtual ANode* Clone() { return new ACodeNode(*this); }
 
   // FIXME: not needed?
-  //CodeInfo* GetFirst() const { return first; }
-  //CodeInfo* GetLast() const { return last; } 
+  //ACodeNode* GetFirst() const { return first; }
+  //ACodeNode* GetLast() const { return last; } 
 
   // --------------------------------------------------------
   // XML output
@@ -604,7 +629,7 @@ public:
   virtual std::string XMLLineRange(int dmpFlag) const;
   virtual std::string XMLVMAIntervals(int dmpFlag) const;
 
-  virtual void CSV_dump(const PgmScope &root, std::ostream& os = std::cout, 
+  virtual void CSV_dump(const Pgm &root, std::ostream& os = std::cout, 
                const char* file_name = NULL, const char* proc_name = NULL,
                int lLevel = 0) const;
 
@@ -621,7 +646,7 @@ protected:
   void Relocate();
   
   void RelocateIf() {
-    if (Parent() && Type() == ScopeInfo::PROC) {
+    if (Parent() && Type() == ANode::TyPROC) {
       Relocate();
     }
   }
@@ -633,45 +658,45 @@ protected:
   SrcFile::ln m_endLn;
   VMAIntervalSet m_vmaSet;
 
-  CodeInfo* first; // FIXME: only used in ScopeInfo::CollectCrossReferences...
-  CodeInfo* last;  //   what about NonUniformDegreeTree...
-  friend void ScopeInfo::CollectCrossReferences();
+  ACodeNode* first; // FIXME: only used in ANode::CollectCrossReferences...
+  ACodeNode* last;  //   what about NonUniformDegreeTree...
+  friend void ANode::CollectCrossReferences();
 };
 
 
 // - if x < y; 0 if x == y; + otherwise
 // N.B.: in the case that x == y, break ties using VMAIntervalSet and
 // then by name attributes.
-int CodeInfoLineComp(const CodeInfo* x, const CodeInfo* y);
+int ACodeNodeLineComp(const ACodeNode* x, const ACodeNode* y);
 
 
 //***************************************************************************
-// PgmScope, GroupScope, LoadModScope, FileScope, ProcScope, LoopScope,
-// StmtRangeScope
+// Pgm, Group, LM, File, Proc, Loop,
+// Stmt
 //***************************************************************************
 
 // --------------------------------------------------------------------------
-// PgmScope is root of the scope tree
+// Pgm is root of the scope tree
 // --------------------------------------------------------------------------
-class PgmScope: public ScopeInfo {
+class Pgm: public ANode {
 protected:
-  PgmScope(const PgmScope& x) : ScopeInfo(x.type) { *this = x; }
-  PgmScope& operator=(const PgmScope& x);
+  Pgm(const Pgm& x) : ANode(x.type) { *this = x; }
+  Pgm& operator=(const Pgm& x);
 
 public: 
-  PgmScope(const char* nm)
-    : ScopeInfo(PGM, NULL) 
+  Pgm(const char* nm)
+    : ANode(TyPGM, NULL) 
   { 
     Ctor(nm);
   }
   
-  PgmScope(const std::string& nm)
-    : ScopeInfo(PGM, NULL)
+  Pgm(const std::string& nm)
+    : ANode(TyPGM, NULL)
   { 
     Ctor(nm.c_str());
   }
 
-  virtual ~PgmScope()
+  virtual ~Pgm()
   {
     frozen = false;
     delete groupMap;
@@ -681,32 +706,37 @@ public:
   const std::string& name() const { return m_name; }
   void               SetName(const char* n) { m_name = n; }
   void               SetName(const std::string& n) { m_name = n; }
-
-  LoadModScope* FindLoadMod(const char* nm) const // find by 'realpath'
+  
+  LM* 
+  findLM(const char* nm) const // find by 'realpath'
   {
     std::string lmName = RealPath(nm);
-    LoadModScopeMap::iterator it = lmMap->find(lmName);
-    LoadModScope* x = (it != lmMap->end()) ? it->second : NULL;
+    LMMap::iterator it = lmMap->find(lmName);
+    LM* x = (it != lmMap->end()) ? it->second : NULL;
     return x;
   }
   
-  LoadModScope* FindLoadMod(const std::string& nm) const 
-    { return FindLoadMod(nm.c_str()); }
+  LM* 
+  findLM(const std::string& nm) const 
+    { return findLM(nm.c_str()); }
 
-  GroupScope*   FindGroup(const char* nm) const
+  Group* 
+  findGroup(const char* nm) const
   {
-    GroupScopeMap::iterator it = groupMap->find(nm);
-    GroupScope* x = (it != groupMap->end()) ? it->second : NULL;
+    GroupMap::iterator it = groupMap->find(nm);
+    Group* x = (it != groupMap->end()) ? it->second : NULL;
     return x;
   }
 
-  GroupScope*   FindGroup(const std::string& nm) const
-    { return FindGroup(nm.c_str()); }
+  Group* 
+  findGroup(const std::string& nm) const
+    { return findGroup(nm.c_str()); }
+
 
   void Freeze() { frozen = true;} // disallow additions to/deletions from tree
   bool IsFrozen() const { return frozen; }
 
-  virtual ScopeInfo* Clone() { return new PgmScope(*this); }
+  virtual ANode* Clone() { return new Pgm(*this); }
 
   // --------------------------------------------------------
   // XML output
@@ -731,52 +761,52 @@ protected:
 private: 
   void Ctor(const char* nm);
 
-  void AddToGroupMap(GroupScope* grp);
-  void AddToLoadModMap(LoadModScope* lm);
+  void AddToGroupMap(Group* grp);
+  void AddToLoadModMap(LM* lm);
  
-  friend class GroupScope;
-  friend class LoadModScope;
+  friend class Group;
+  friend class LM;
 
 private:
   bool frozen;
   std::string m_name; // the program name
 
-  GroupScopeMap*     groupMap;
-  LoadModScopeMap*   lmMap;     // mapped by 'realpath'
+  GroupMap*     groupMap;
+  LMMap*   lmMap;     // mapped by 'realpath'
 };
 
 
 // --------------------------------------------------------------------------
-// GroupScopes are children of PgmScope's, GroupScope's, LoadModScopes's, 
-//   FileScope's, ProcScope's, LoopScope's
-// children: GroupScope's, LoadModScope's, FileScope's, ProcScope's,
-//   LoopScope's, StmtRangeScopes,
+// Groups are children of Pgm's, Group's, LMs's, 
+//   File's, Proc's, Loop's
+// children: Group's, LM's, File's, Proc's,
+//   Loop's, Stmts,
 // They may be used to describe several different types of scopes
 //   (including user-defined ones)
 // --------------------------------------------------------------------------
-class GroupScope: public CodeInfo {
+class Group: public ACodeNode {
 public: 
-  GroupScope(const char* nm, ScopeInfo* parent,
+  Group(const char* nm, ANode* parent,
 	     int begLn = ln_NULL, int endLn = ln_NULL)
-    : CodeInfo(GROUP, parent, begLn, endLn, 0, 0)
+    : ACodeNode(TyGROUP, parent, begLn, endLn, 0, 0)
   {
     Ctor(nm, parent);
   }
   
-  GroupScope(const std::string& nm, ScopeInfo* parent,
+  Group(const std::string& nm, ANode* parent,
 	     int begLn = ln_NULL, int endLn = ln_NULL)
-    : CodeInfo(GROUP, parent, begLn, endLn, 0, 0)
+    : ACodeNode(TyGROUP, parent, begLn, endLn, 0, 0)
   {
     Ctor(nm.c_str(), parent);
   }
   
-  virtual ~GroupScope() { }
+  virtual ~Group() { }
   
   const std::string& name() const { return m_name; } // same as grpName
 
   virtual std::string codeName() const;
 
-  virtual ScopeInfo* Clone() { return new GroupScope(*this); }
+  virtual ANode* Clone() { return new Group(*this); }
 
   virtual std::string toXML(int dmpFlag = 0) const;
 
@@ -789,7 +819,7 @@ public:
 			       const char* pre = "") const;
 
 private:
-  void Ctor(const char* nm, ScopeInfo* parent);
+  void Ctor(const char* nm, ANode* parent);
 
 private: 
   std::string m_name;
@@ -797,28 +827,28 @@ private:
 
 
 // --------------------------------------------------------------------------
-// LoadModScopes are children of PgmScope's or GroupScope's
-// children: GroupScope's, FileScope's
+// LMs are children of Pgm's or Group's
+// children: Group's, File's
 // --------------------------------------------------------------------------
-// FIXME: See note about LoadModScope above.
-class LoadModScope: public CodeInfo {
+// FIXME: See note about LM above.
+class LM: public ACodeNode {
 protected:
-  LoadModScope& operator=(const LoadModScope& x);
+  LM& operator=(const LM& x);
 
 public: 
-  LoadModScope(const char* nm, ScopeInfo* parent)
-    : CodeInfo(LM, parent, ln_NULL, ln_NULL, 0, 0)
+  LM(const char* nm, ANode* parent)
+    : ACodeNode(TyLM, parent, ln_NULL, ln_NULL, 0, 0)
   { 
     Ctor(nm, parent);
   }
 
-  LoadModScope(const std::string& nm, ScopeInfo* parent)
-    : CodeInfo(LM, parent, ln_NULL, ln_NULL, 0, 0)
+  LM(const std::string& nm, ANode* parent)
+    : ACodeNode(TyLM, parent, ln_NULL, ln_NULL, 0, 0)
   {
     Ctor(nm.c_str(), parent);
   }
 
-  virtual ~LoadModScope()
+  virtual ~LM()
   {
     delete fileMap;
     delete procMap;
@@ -831,33 +861,35 @@ public:
 
   virtual std::string codeName() const { return name(); }
 
-  virtual ScopeInfo* Clone() { return new LoadModScope(*this); }
+  virtual ANode* Clone() { return new LM(*this); }
 
-  FileScope*    FindFile(const char* nm) const    // find by 'realpath'
+  File*    FindFile(const char* nm) const    // find by 'realpath'
   {
     std::string fName = RealPath(nm);
-    FileScopeMap::iterator it = fileMap->find(fName);
-    FileScope* x = (it != fileMap->end()) ? it->second : NULL;
+    FileMap::iterator it = fileMap->find(fName);
+    File* x = (it != fileMap->end()) ? it->second : NULL;
     return x;
   }
 
-  FileScope*    FindFile(const std::string& nm) const
+  File*    FindFile(const std::string& nm) const
     { return FindFile(nm.c_str()); }
 
   // find scope by *unrelocated* VMA
-  CodeInfo* findByVMA(VMA vma);
+  ACodeNode* findByVMA(VMA vma);
   
-  ProcScope* findProc(VMA vma) 
+  Proc* 
+  findProc(VMA vma) 
   {
     VMAInterval toFind(vma, vma+1); // [vma, vma+1)
-    VMAIntervalMap<ProcScope*>::iterator it = procMap->find(toFind);
+    VMAIntervalMap<Proc*>::iterator it = procMap->find(toFind);
     return (it != procMap->end()) ? it->second : NULL;
   }
 
-  StmtRangeScope* findStmtRange(VMA vma)
+  Stmt* 
+  findStmt(VMA vma)
   {
     VMAInterval toFind(vma, vma+1); // [vma, vma+1)
-    VMAIntervalMap<StmtRangeScope*>::iterator it = stmtMap->find(toFind);
+    VMAIntervalMap<Stmt*>::iterator it = stmtMap->find(toFind);
     return (it != stmtMap->end()) ? it->second : NULL;
   }
 
@@ -879,69 +911,69 @@ public:
   bool verifyStmtMap() const;
 
 public:
-  typedef VMAIntervalMap<ProcScope*>      VMAToProcMap;
-  typedef VMAIntervalMap<StmtRangeScope*> VMAToStmtRangeMap;
+  typedef VMAIntervalMap<Proc*>      VMAToProcMap;
+  typedef VMAIntervalMap<Stmt*> VMAToStmtRangeMap;
 
 protected: 
-  void Ctor(const char* nm, ScopeInfo* parent);
+  void Ctor(const char* nm, ANode* parent);
 
-  void AddToFileMap(FileScope* file);
+  void AddToFileMap(File* file);
 
   template<typename T> 
-  void buildMap(VMAIntervalMap<T>*& m, ScopeInfo::ScopeType ty) const;
+  void buildMap(VMAIntervalMap<T>*& m, ANode::ANodeTy ty) const;
 
   template<typename T>
   static bool 
   verifyMap(VMAIntervalMap<T>* m, const char* map_nm);
 
-  friend class FileScope;
+  friend class File;
 
 private:
   std::string m_name; // the load module name
 
-  FileScopeMap*      fileMap;   // mapped by 'realpath'
+  FileMap*      fileMap;   // mapped by 'realpath'
   VMAToProcMap*      procMap;
   VMAToStmtRangeMap* stmtMap;
 };
 
 
 // --------------------------------------------------------------------------
-// FileScopes are children of PgmScope's, GroupScope's and LoadModScope's.
-// children: GroupScope's, ProcScope's, LoopScope's, or StmtRangeScope's.
-// FileScopes may refer to an unreadable file
+// Files are children of Pgm's, Group's and LM's.
+// children: Group's, Proc's, Loop's, or Stmt's.
+// Files may refer to an unreadable file
 // --------------------------------------------------------------------------
-class FileScope: public CodeInfo {
+class File: public ACodeNode {
 protected:
-  FileScope(const FileScope& x) : CodeInfo(x.type) { *this = x; }
-  FileScope& operator=(const FileScope& x);
+  File(const File& x) : ACodeNode(x.type) { *this = x; }
+  File& operator=(const File& x);
 
 public: 
   // fileNameWithPath/parent must not be NULL
   // srcIsReadable == fopen(fileNameWithPath, "r") works 
-  FileScope(const char* srcFileWithPath, bool srcIsReadable_, 
-	    ScopeInfo *parent, 
+  File(const char* srcFileWithPath, bool srcIsReadable_, 
+	    ANode *parent, 
 	    SrcFile::ln begLn = ln_NULL, SrcFile::ln endLn = ln_NULL)
-    : CodeInfo(FILE, parent, begLn, endLn, 0, 0)
+    : ACodeNode(TyFILE, parent, begLn, endLn, 0, 0)
   {
     Ctor(srcFileWithPath, srcIsReadable_, parent);
   }
   
-  FileScope(const std::string& srcFileWithPath, bool srcIsReadable_, 
-	    ScopeInfo *parent, 
+  File(const std::string& srcFileWithPath, bool srcIsReadable_, 
+	    ANode *parent, 
 	    SrcFile::ln begLn = ln_NULL, SrcFile::ln endLn = ln_NULL)
-    : CodeInfo(FILE, parent, begLn, endLn, 0, 0)
+    : ACodeNode(TyFILE, parent, begLn, endLn, 0, 0)
   {
     Ctor(srcFileWithPath.c_str(), srcIsReadable_, parent);
   }
   
-  virtual ~FileScope()
+  virtual ~File()
   {
     delete procMap;
   }
 
 
-  static FileScope* 
-  findOrCreate(LoadModScope* lmScope, const std::string& filenm);
+  static File* 
+  findOrCreate(LM* lmScope, const std::string& filenm);
 
 
  // fileNameWithPath from constructor 
@@ -949,8 +981,8 @@ public:
 
   // FindProc: Attempt to find the procedure within the multimap.  If
   // 'lnm' is provided, require that link names match.
-  ProcScope* FindProc(const char* nm, const char* lnm = NULL) const;
-  ProcScope* FindProc(const std::string& nm, const std::string& lnm = "") const
+  Proc* FindProc(const char* nm, const char* lnm = NULL) const;
+  Proc* FindProc(const std::string& nm, const std::string& lnm = "") const
     { 
       const char* x = lnm.c_str();
       return FindProc(nm.c_str(), (x[0] == '\0') ? NULL : x);
@@ -965,11 +997,11 @@ public:
 
   bool HasSourceFile() const { return srcIsReadable; } // srcIsReadable
 
-  virtual ScopeInfo* Clone() { return new FileScope(*this); }
+  virtual ANode* Clone() { return new File(*this); }
 
   virtual std::string toXML(int dmpFlag = 0) const;
 
-  virtual void CSV_dump(const PgmScope &root, std::ostream& os = std::cout, 
+  virtual void CSV_dump(const Pgm &root, std::ostream& os = std::cout, 
 			const char* file_name = NULL, 
 			const char* proc_name = NULL,
 			int lLevel = 0) const;
@@ -984,56 +1016,56 @@ public:
 
 private: 
   void Ctor(const char* srcFileWithPath, bool srcIsReadble_, 
-	    ScopeInfo* parent);
+	    ANode* parent);
 
-  void AddToProcMap(ProcScope* proc);
-  friend class ProcScope;
+  void AddToProcMap(Proc* proc);
+  friend class Proc;
 
 private:
   bool srcIsReadable;
   std::string m_name; // the file name including the path 
-  ProcScopeMap* procMap;
+  ProcMap* procMap;
 };
 
 
 // --------------------------------------------------------------------------
-// ProcScopes are children of GroupScope's or FileScope's
-// children: GroupScope's, LoopScope's, StmtRangeScope's
+// Procs are children of Group's or File's
+// children: Group's, Loop's, Stmt's
 // 
 //   (begLn == 0) <==> (endLn == 0)
 //   (begLn != 0) <==> (endLn != 0)
 // --------------------------------------------------------------------------
-class ProcScope: public CodeInfo {
+class Proc: public ACodeNode {
 protected:
-  ProcScope(const ProcScope& x) : CodeInfo(x.type) { *this = x; }
-  ProcScope& operator=(const ProcScope& x);
+  Proc(const Proc& x) : ACodeNode(x.type) { *this = x; }
+  Proc& operator=(const Proc& x);
 
 public: 
-  ProcScope(const char* name, CodeInfo* parent, 
+  Proc(const char* name, ACodeNode* parent, 
 	    const char* linkname, bool hasSym,
 	    SrcFile::ln begLn = ln_NULL, SrcFile::ln endLn = ln_NULL)
-    : CodeInfo(PROC, parent, begLn, endLn, 0, 0)
+    : ACodeNode(TyPROC, parent, begLn, endLn, 0, 0)
   {
     Ctor(name, parent, linkname, hasSym);
   }
   
-  ProcScope(const std::string& name, CodeInfo* parent,
+  Proc(const std::string& name, ACodeNode* parent,
 	    const std::string& linkname, bool hasSym,
 	    SrcFile::ln begLn = ln_NULL, SrcFile::ln endLn = ln_NULL)
-    : CodeInfo(PROC, parent, begLn, endLn, 0, 0)
+    : ACodeNode(TyPROC, parent, begLn, endLn, 0, 0)
   {
     Ctor(name.c_str(), parent, linkname.c_str(), hasSym);
   }
 
-  virtual ~ProcScope()
+  virtual ~Proc()
   {
     delete stmtMap;
   }
 
   bool hasSymbolic() const { return m_hasSym; }
   
-  static ProcScope*
-  findOrCreate(FileScope* fScope, const std::string& procnm, SrcFile::ln line);
+  static Proc*
+  findOrCreate(File* fScope, const std::string& procnm, SrcFile::ln line);
   
   
   virtual const std::string& name() const     { return m_name; }
@@ -1041,19 +1073,19 @@ public:
 
   virtual       std::string codeName() const;
 
-  virtual ScopeInfo* Clone() { return new ProcScope(*this); }
+  virtual ANode* Clone() { return new Proc(*this); }
 
-  StmtRangeScope* 
-  FindStmtRange(SrcFile::ln begLn)
+  Stmt* 
+  findStmt(SrcFile::ln begLn)
   {
-    StmtRangeScopeMap::iterator it = stmtMap->find(begLn);
-    StmtRangeScope* x = (it != stmtMap->end()) ? it->second : NULL;
+    StmtMap::iterator it = stmtMap->find(begLn);
+    Stmt* x = (it != stmtMap->end()) ? it->second : NULL;
     return x;
   }
 
   virtual std::string toXML(int dmpFlag = 0) const;
 
-  virtual void CSV_dump(const PgmScope &root, std::ostream& os = std::cout, 
+  virtual void CSV_dump(const Pgm &root, std::ostream& os = std::cout, 
 			const char* file_name = NULL, 
 			const char* proc_name = NULL,
 			int lLevel = 0) const;
@@ -1067,52 +1099,52 @@ public:
 			       const char* pre = "") const;
 
 private:
-  void Ctor(const char* n, CodeInfo* parent, const char* ln, bool hasSym);
+  void Ctor(const char* n, ACodeNode* parent, const char* ln, bool hasSym);
 
-  void AddToStmtMap(StmtRangeScope* stmt);
+  void AddToStmtMap(Stmt* stmt);
 
-  friend class StmtRangeScope;
+  friend class Stmt;
 
 private:
   std::string m_name;
   std::string m_linkname;
   bool        m_hasSym;
-  StmtRangeScopeMap* stmtMap;
+  StmtMap* stmtMap;
 };
 
 
 // --------------------------------------------------------------------------
-// AlienScope: represents an alien context (e.g. inlined procedure, macro).
+// Alien: represents an alien context (e.g. inlined procedure, macro).
 //
-// AlienScopes are children of GroupScope's, AlienScope's, ProcScope's
-//   or LoopScope's
-// children: GroupScope's, AlienScope's, LoopScope's, StmtRangeScope's
+// Aliens are children of Group's, Alien's, Proc's
+//   or Loop's
+// children: Group's, Alien's, Loop's, Stmt's
 // 
 //   (begLn == 0) <==> (endLn == 0)
 //   (begLn != 0) <==> (endLn != 0)
 // --------------------------------------------------------------------------
-class AlienScope: public CodeInfo {
+class Alien: public ACodeNode {
 protected:
-  AlienScope(const AlienScope& x) : CodeInfo(x.type) { *this = x; }
-  AlienScope& operator=(const AlienScope& x);
+  Alien(const Alien& x) : ACodeNode(x.type) { *this = x; }
+  Alien& operator=(const Alien& x);
 
 public: 
-  AlienScope(CodeInfo* parent, const char* filenm, const char* procnm,
+  Alien(ACodeNode* parent, const char* filenm, const char* procnm,
 	     SrcFile::ln begLn = ln_NULL, SrcFile::ln endLn = ln_NULL)
-    : CodeInfo(ALIEN, parent, begLn, endLn, 0, 0)
+    : ACodeNode(TyALIEN, parent, begLn, endLn, 0, 0)
   {
     Ctor(parent, filenm, procnm);
   }
 
-  AlienScope(CodeInfo* parent, 
+  Alien(ACodeNode* parent, 
 	     const std::string& filenm, const std::string& procnm,
 	     SrcFile::ln begLn = ln_NULL, SrcFile::ln endLn = ln_NULL)
-    : CodeInfo(ALIEN, parent, begLn, endLn, 0, 0)
+    : ACodeNode(TyALIEN, parent, begLn, endLn, 0, 0)
   {
     Ctor(parent, filenm.c_str(), procnm.c_str());
   }
 
-  virtual ~AlienScope()
+  virtual ~Alien()
   { }
   
   const std::string& fileName() const { return m_filenm; }
@@ -1122,11 +1154,11 @@ public:
   
   virtual       std::string codeName() const;
 
-  virtual ScopeInfo* Clone() { return new AlienScope(*this); }
+  virtual ANode* Clone() { return new Alien(*this); }
 
   virtual std::string toXML(int dmpFlag = 0) const;
 
-  virtual void CSV_dump(const PgmScope &root, std::ostream& os = std::cout, 
+  virtual void CSV_dump(const Pgm &root, std::ostream& os = std::cout, 
 			const char* file_name = NULL, 
 			const char* proc_name = NULL,
 			int lLevel = 0) const;
@@ -1140,7 +1172,7 @@ public:
 			       const char* pre = "") const;
 
 private:
-  void Ctor(CodeInfo* parent, const char* filenm, const char* procnm);
+  void Ctor(ACodeNode* parent, const char* filenm, const char* procnm);
 
 private:
   std::string m_filenm;
@@ -1149,27 +1181,27 @@ private:
 
 
 // --------------------------------------------------------------------------
-// LoopScopes are children of GroupScope's, FileScope's, ProcScope's,
-//   or LoopScope's.
-// children: GroupScope's, LoopScope's, or StmtRangeScope's
+// Loops are children of Group's, File's, Proc's,
+//   or Loop's.
+// children: Group's, Loop's, or Stmt's
 // --------------------------------------------------------------------------
-class LoopScope: public CodeInfo {
+class Loop: public ACodeNode {
 public: 
-  LoopScope(CodeInfo* parent, 
+  Loop(ACodeNode* parent, 
 	    SrcFile::ln begLn = ln_NULL, SrcFile::ln endLn = ln_NULL)
-    : CodeInfo(LOOP, parent, begLn, endLn, 0, 0)
+    : ACodeNode(TyLOOP, parent, begLn, endLn, 0, 0)
   {
-    ScopeType t = (parent) ? parent->Type() : ANY;
-    DIAG_Assert((parent == NULL) || (t == GROUP) || (t == FILE) || (t == PROC) 
-		|| (t == ALIEN) || (t == LOOP), "");
+    ANodeTy t = (parent) ? parent->Type() : TyANY;
+    DIAG_Assert((parent == NULL) || (t == TyGROUP) || (t == TyFILE) || (t == TyPROC) 
+		|| (t == TyALIEN) || (t == TyLOOP), "");
   }
 
-  virtual ~LoopScope()
+  virtual ~Loop()
   { }
   
   virtual std::string codeName() const;
 
-  virtual ScopeInfo* Clone() { return new LoopScope(*this); }
+  virtual ANode* Clone() { return new Loop(*this); }
 
   virtual std::string toXML(int dmpFlag = 0) const;
 
@@ -1185,34 +1217,34 @@ public:
 
 
 // --------------------------------------------------------------------------
-// StmtRangeScopes are children of GroupScope's, FileScope's,
-//   ProcScope's, or LoopScope's.
+// Stmts are children of Group's, File's,
+//   Proc's, or Loop's.
 // children: none
 // --------------------------------------------------------------------------
-class StmtRangeScope: public CodeInfo {
+class Stmt: public ACodeNode {
 public: 
-  StmtRangeScope(CodeInfo* parent, SrcFile::ln begLn, SrcFile::ln endLn,
+  Stmt(ACodeNode* parent, SrcFile::ln begLn, SrcFile::ln endLn,
 		 VMA begVMA = 0, VMA endVMA = 0)
-    : CodeInfo(STMT_RANGE, parent, begLn, endLn, begVMA, endVMA),
+    : ACodeNode(TySTMT, parent, begLn, endLn, begVMA, endVMA),
       m_sortId((int)begLn)
   {
-    ScopeType t = (parent) ? parent->Type() : ANY;
-    DIAG_Assert((parent == NULL) || (t == GROUP) || (t == FILE) || (t == PROC)
-		|| (t == ALIEN) || (t == LOOP), "");
-    ProcScope* p = Proc();
+    ANodeTy t = (parent) ? parent->Type() : TyANY;
+    DIAG_Assert((parent == NULL) || (t == TyGROUP) || (t == TyFILE) || (t == TyPROC)
+		|| (t == TyALIEN) || (t == TyLOOP), "");
+    Proc* p = AncProc();
     if (p) { 
       p->AddToStmtMap(this); 
       //DIAG_DevIf(0) { LoadMod()->verifyStmtMap(); }
     }
-    //DIAG_DevMsg(3, "StmtRangeScope::StmtRangeScope: " << toString_me());
+    //DIAG_DevMsg(3, "Stmt::Stmt: " << toString_me());
   }
 
-  virtual ~StmtRangeScope()
+  virtual ~Stmt()
   { }
   
   virtual std::string codeName() const;
 
-  virtual ScopeInfo* Clone() { return new StmtRangeScope(*this); }
+  virtual ANode* Clone() { return new Stmt(*this); }
 
   // a handle for sorting within the enclosing procedure context
   int  sortId() { return m_sortId; }
@@ -1233,14 +1265,14 @@ private:
 };
 
 // ----------------------------------------------------------------------
-// RefScopes are chldren of LineScopes 
+// Refs are chldren of LineScopes 
 // They are used to describe a reference in source code.
-// RefScopes are build only iff we have preprocessing information.
+// Refs are build only iff we have preprocessing information.
 // ----------------------------------------------------------------------
-class RefScope: public CodeInfo {
+class Ref: public ACodeNode {
 public: 
-  RefScope(CodeInfo* parent, int _begPos, int _endPos, const char* refName);
-  // parent->Type() == STMT_RANGE_SCOPE 
+  Ref(ACodeNode* parent, int _begPos, int _endPos, const char* refName);
+  // parent->Type() == TySTMT 
   
   uint BegPos() const { return begPos; };
   uint EndPos() const   { return endPos; };
@@ -1249,7 +1281,7 @@ public:
 
   virtual std::string codeName() const;
 
-  virtual ScopeInfo* Clone() { return new RefScope(*this); }
+  virtual ANode* Clone() { return new Ref(*this); }
 
   virtual std::string toXML(int dmpFlag = 0) const;
 
@@ -1268,15 +1300,15 @@ private:
   std::string m_name;
 };
 
+} // namespace Struct
+} // namespace Prof
+
+
 /************************************************************************/
 // Iterators
 /************************************************************************/
 
 #include "PgmScopeTreeIterator.hpp" 
 
-/************************************************************************/
-// testing 
-/************************************************************************/
-extern void ScopeInfoTester(int argc, const char** argv);
 
-#endif /* prof_juicy_PgmScopeTree */
+#endif /* prof_juicy_Prof_Struct_Tree_hpp */

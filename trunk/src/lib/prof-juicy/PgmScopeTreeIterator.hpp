@@ -48,8 +48,8 @@
 //
 //***************************************************************************
 
-#ifndef prof_juicy_PgmScopeTreeIterator_hpp
-#define prof_juicy_PgmScopeTreeIterator_hpp
+#ifndef prof_juicy_Prof_Struct_TreeIterator_hpp
+#define prof_juicy_Prof_Struct_TreeIterator_hpp
 
 //************************* System Include Files ****************************
 
@@ -59,22 +59,18 @@
 
 #include <include/general.h>
 
-#include "PgmScopeTree.hpp"
+//NOTE: included by PgmScopeTree.hpp
+//#include "PgmScopeTree.hpp"
 
 #include <lib/support/NonUniformDegreeTree.hpp>
 #include <lib/support/PtrSetIterator.hpp>
 #include <lib/support/SrcFile.hpp>
 
-//*************************** Forward Declarations **************************
-
-bool HasPerfData(const ScopeInfo *si, int nm);
-void PruneScopeTreeMetrics(const ScopeInfo *node, int noMetrics);
-
 
 //*************************** Forward Declarations **************************
 
 // tallent: For performance tuning; see usage below.  Unnecessary
-// dynamic casting -- every NonUniformDegreeTreeNode is a ScopeInfo --
+// dynamic casting -- every NonUniformDegreeTreeNode is a ANode --
 // was consuming 15-20% of execution time.
 #define PGM_SCOPE_TREE__USE_DYNAMIC_CAST 0
 #if (PGM_SCOPE_TREE__USE_DYNAMIC_CAST)
@@ -85,123 +81,128 @@ void PruneScopeTreeMetrics(const ScopeInfo *node, int noMetrics);
 
 
 //***************************************************************************
-// ScopeInfoFilter
-//    filters are used in iterators to make sure only desirable ScopeInfos 
+
+namespace Prof {
+namespace Struct {
+
+//***************************************************************************
+// ANodeFilter
+//    filters are used in iterators to make sure only desirable ANodes 
 //    are iterated 
-// ScopeTypeFilter is an array of globally defined filters that return true 
-//    for ScopeInfos with a given type only 
-// HasScopeType 
-//    global fct used in filters from ScopeTypeFilter array
+// ANodeTyFilter is an array of globally defined filters that return true 
+//    for ANodes with a given type only 
+// HasANodeTy 
+//    global fct used in filters from ANodeTyFilter array
 //***************************************************************************
 
-typedef bool (*ScopeInfoFilterFct)(const ScopeInfo &info, long addArg);
+typedef bool (*ANodeFilterFct)(const ANode &info, long addArg);
 
-class ScopeInfoFilter {
+class ANodeFilter {
 public:
-   ScopeInfoFilter(ScopeInfoFilterFct f, const char* n, long a) 
+   ANodeFilter(ANodeFilterFct f, const char* n, long a) 
      : fct(f), name(n), arg(a) { }
 
-   virtual ~ScopeInfoFilter() { }
-   bool Apply(const ScopeInfo& s) const { return fct(s, arg); }
+   virtual ~ANodeFilter() { }
+   bool Apply(const ANode& s) const { return fct(s, arg); }
    const char* Name() const { return name; }
 
 private:
-   const ScopeInfoFilterFct fct;
+   const ANodeFilterFct fct;
    const char* name;
    long arg;
 };
 
-// HasScopeType(s,tp) == ((tp == ANY) || (s.Type() == tp));
-extern bool HasScopeType(const ScopeInfo &sinfo, long type);
+// HasANodeTy(s,tp) == ((tp == ANY) || (s.Type() == tp));
+extern bool HasANodeTy(const ANode &sinfo, long type);
 
-// ScopeTypeFile[tp].Apply(s) == HasScopeType(s,tp) 
-extern const ScopeInfoFilter ScopeTypeFilter[ScopeInfo::NUMBER_OF_SCOPES];
+// ANodeTyFile[tp].Apply(s) == HasANodeTy(s,tp) 
+extern const ANodeFilter ANodeTyFilter[ANode::TyNUMBER];
 
 
 //***************************************************************************
-// ScopeInfoChildIterator
-//    iterates over all children of a ScopeInfo that pass the given 
+// ANodeChildIterator
+//    iterates over all children of a ANode that pass the given 
 //    filter or if a NULL filter was given over all children 
 //    no particular order is garanteed 
 //***************************************************************************
 
-class ScopeInfoChildIterator : public NonUniformDegreeTreeNodeChildIterator {
+class ANodeChildIterator : public NonUniformDegreeTreeNodeChildIterator {
 public: 
 
   // filter == NULL enumerate all entries
   // otherwise: only entries with filter->fct(e) == true
-  ScopeInfoChildIterator(const ScopeInfo* root, 
-			 const ScopeInfoFilter* filter = NULL)
+  ANodeChildIterator(const ANode* root, 
+			 const ANodeFilter* filter = NULL)
     : NonUniformDegreeTreeNodeChildIterator(root, /*firstToLast*/ false),
       filter(filter)
   { }
 
   
-  // NOTE: really ScopeInfo
+  // NOTE: really ANode
   virtual NonUniformDegreeTreeNode* 
   Current() const 
   {
     NonUniformDegreeTreeNode* s;
-    ScopeInfo* si = NULL;
+    ANode* si = NULL;
     while ( (s = NonUniformDegreeTreeNodeChildIterator::Current()) ) {
-      si = PST_USELESS_DCAST(ScopeInfo*, s);
+      si = PST_USELESS_DCAST(ANode*, s);
       if ((filter == NULL) || filter->Apply(*si)) { 
 	break; 	
       }
-      ((ScopeInfoChildIterator*)this)->operator++();
+      ((ANodeChildIterator*)this)->operator++();
     } 
-    return PST_USELESS_DCAST(ScopeInfo*, s);
+    return PST_USELESS_DCAST(ANode*, s);
   }
   
   
-  ScopeInfo* 
+  ANode* 
   CurScope() const 
   {
-    return PST_USELESS_DCAST(ScopeInfo*, Current());
+    return PST_USELESS_DCAST(ANode*, Current());
   }
 
 private: 
-  const ScopeInfoFilter *filter;
+  const ANodeFilter *filter;
 };
 
 
 //***************************************************************************
-// CodeInfoChildIterator
-//    iterates over all children of a ScopeInfo that pass the given 
+// ACodeNodeChildIterator
+//    iterates over all children of a ANode that pass the given 
 //    filter or if a NULL filter was given over all children 
 //    no particular order is garanteed 
 //***************************************************************************
 
-class CodeInfoChildIterator : public NonUniformDegreeTreeNodeChildIterator {
+class ACodeNodeChildIterator : public NonUniformDegreeTreeNodeChildIterator {
 public: 
-  CodeInfoChildIterator(const CodeInfo *root)
+  ACodeNodeChildIterator(const ACodeNode *root)
     : NonUniformDegreeTreeNodeChildIterator(root, /*firstToLast*/ false)
   { }
 
-  CodeInfo* 
-  CurCodeInfo() const 
+  ACodeNode* 
+  CurACodeNode() const 
   { 
-    return dynamic_cast<CodeInfo*>(Current()); 
+    return dynamic_cast<ACodeNode*>(Current()); 
   }
 
 };  
 
 
 //***************************************************************************
-// ScopeInfoIterator
-//    iterates over all ScopeInfos in the tree rooted at a given ScopeInfo 
+// ANodeIterator
+//    iterates over all ANodes in the tree rooted at a given ANode 
 //    that pass the given filter or if a NULL filter was given over all 
-//    ScopeInfos in the tree.
+//    ANodes in the tree.
 //    no particular order is garanteed, unless stated explicitly , i.e. we 
 //    may change the default value for torder
 //***************************************************************************
 
-class ScopeInfoIterator : public NonUniformDegreeTreeIterator {
+class ANodeIterator : public NonUniformDegreeTreeIterator {
 public: 
    // filter == NULL enumerate all entries
    // otherwise: only entries with filter->fct(e) == true
-   ScopeInfoIterator(const ScopeInfo *root,
-		     const ScopeInfoFilter* filter = NULL,
+   ANodeIterator(const ANode *root,
+		     const ANodeFilter* filter = NULL,
 		     bool leavesOnly = false,
 		     TraversalOrder torder = PreOrder)
      : NonUniformDegreeTreeIterator(root, torder, 
@@ -212,42 +213,42 @@ public:
   }
 
 
-  // Note: really ScopeInfo
+  // Note: really ANode
   virtual NonUniformDegreeTreeNode* 
   Current() const
   {
     NonUniformDegreeTreeNode* s;
-    ScopeInfo* si = NULL;
+    ANode* si = NULL;
     while ( (s = NonUniformDegreeTreeIterator::Current()) ) {
-      si = PST_USELESS_DCAST(ScopeInfo*, s);
+      si = PST_USELESS_DCAST(ANode*, s);
       if ((filter == NULL) || filter->Apply(*si)) { 
 	break; 	
       }
-      ((ScopeInfoIterator*)this)->operator++();
+      ((ANodeIterator*)this)->operator++();
     } 
-    return PST_USELESS_DCAST(ScopeInfo*, s);
+    return PST_USELESS_DCAST(ANode*, s);
   }
 
   
-  ScopeInfo* 
+  ANode* 
   CurScope() const 
   { 
-    return PST_USELESS_DCAST(ScopeInfo*, Current());
+    return PST_USELESS_DCAST(ANode*, Current());
   }
 
 private: 
-  const ScopeInfoFilter* filter;
+  const ANodeFilter* filter;
 };  
 
 
 //***************************************************************************
-// ScopeInfoLineSortedIterator
+// ANodeLineSortedIterator
 //
-// ScopeInfoLineSortedChildIterator
-//    behaves as ScopeInfoIterator (PreOrder), 
+// ANodeLineSortedChildIterator
+//    behaves as ANodeIterator (PreOrder), 
 //    except that it gurantees LineOrder among siblings  
 //
-// LineOrder: CodeInfo* a is enumerated before b 
+// LineOrder: ACodeNode* a is enumerated before b 
 //                    iff a->StartLine() < b->StartLine() 
 //            RefInfo * a is enumerated before b 
 //                    iff a->StartPos() < b->StartPos() 
@@ -258,18 +259,18 @@ private:
 //       of the set in sorted order. -- johnmc 5/31/00
 //***************************************************************************
 
-class ScopeInfoLineSortedIterator {
+class ANodeLineSortedIterator {
 public: 
-  ScopeInfoLineSortedIterator(const CodeInfo *file, 
-			      const ScopeInfoFilter* filterFunc = NULL, 
+  ANodeLineSortedIterator(const ACodeNode *file, 
+			      const ANodeFilter* filterFunc = NULL, 
 			      bool leavesOnly = true);
-  ~ScopeInfoLineSortedIterator();
+  ~ANodeLineSortedIterator();
   
-  CodeInfo* Current() const
+  ACodeNode* Current() const
   {
-    CodeInfo *cur = NULL;
+    ACodeNode *cur = NULL;
     if (ptrSetIt->Current()) {
-      cur = (CodeInfo*) (*ptrSetIt->Current());
+      cur = (ACodeNode*) (*ptrSetIt->Current());
     }
     return cur;
   } 
@@ -289,17 +290,17 @@ private:
   WordSetSortedIterator *ptrSetIt;  
 };
 
-class ScopeInfoLineSortedChildIterator {
+class ANodeLineSortedChildIterator {
 public: 
-  ScopeInfoLineSortedChildIterator(const ScopeInfo *root, 
-				   const ScopeInfoFilter* filterFunc = NULL);
-  ~ScopeInfoLineSortedChildIterator();
+  ANodeLineSortedChildIterator(const ANode *root, 
+				   const ANodeFilter* filterFunc = NULL);
+  ~ANodeLineSortedChildIterator();
 
-  CodeInfo* Current() const
+  ACodeNode* Current() const
   {
-    CodeInfo *cur = NULL;
+    ACodeNode *cur = NULL;
     if (ptrSetIt->Current()) {
-      cur = (CodeInfo*) (*ptrSetIt->Current());
+      cur = (ACodeNode*) (*ptrSetIt->Current());
     }
     return cur;
   }
@@ -314,8 +315,8 @@ public:
   void DumpAndReset(std::ostream &os = std::cerr);
 
   // both of these are buried in other parts of the HPCView code :-(
-  CodeInfo* CurScope() const { return dynamic_cast<CodeInfo*>(Current()); }
-  CodeInfo* CurCode()  const { return dynamic_cast<CodeInfo*>(Current()); }
+  ACodeNode* CurScope() const { return dynamic_cast<ACodeNode*>(Current()); }
+  ACodeNode* CurCode()  const { return dynamic_cast<ACodeNode*>(Current()); }
 
 private:
   WordSet scopes;  // the scopes we want to have sorted
@@ -323,7 +324,7 @@ private:
 };
 
 //***************************************************************************
-// CodeInfoLine
+// ACodeNodeLine
 //  is a dummy class used just for the large scopes iterators.
 //  the instance can be created either for the start line or for the end line
 //
@@ -333,41 +334,41 @@ private:
 #define IS_BEG_LINE 0
 #define IS_END_LINE 1
 
-class CodeInfoLine
+class ACodeNodeLine
 {
 public:
-  CodeInfoLine( CodeInfo* ci, int forEndLine ) 
+  ACodeNodeLine( ACodeNode* ci, int forEndLine ) 
     : _ci(ci), _forEndLine(forEndLine), _type(ci->Type())
   {
   }
   
   int IsEndLine()    { return _forEndLine; }
   
-  CodeInfo* GetCodeInfo()  { return _ci; }
+  ACodeNode* GetACodeNode()  { return _ci; }
   
   SrcFile::ln GetLine()
   { 
       return (_forEndLine ? _ci->endLine() : _ci->begLine());
   }
   
-  ScopeInfo::ScopeType Type()   { return _type; }
+  ANode::ANodeTy Type()   { return _type; }
   
 private:
-  CodeInfo* _ci;
+  ACodeNode* _ci;
   int _forEndLine;
-  ScopeInfo::ScopeType _type;
+  ANode::ANodeTy _type;
 };
 
 //***************************************************************************
-// ScopeInfoLineSortedIteratorForLargeScopes
+// ANodeLineSortedIteratorForLargeScopes
 //
-//   behaves as ScopeInfoLineSortedIterator, but it consider both the
+//   behaves as ANodeLineSortedIterator, but it consider both the
 //   StartLine and the EndLine for scopes such as LOOPs or PROCs or
 //   even GROUPs.
 //    -- mgabi 08/18/01
 //   it gurantees LineOrder among siblings  
 //
-// LineOrder: CodeInfo* a is enumerated before b 
+// LineOrder: ACodeNode* a is enumerated before b 
 //                    iff a->StartLine() < b->StartLine() 
 //            RefInfo * a is enumerated before b 
 //                    iff a->StartPos() < b->StartPos() 
@@ -380,14 +381,14 @@ private:
 // FIXME: do we need this?
 //***************************************************************************
 
-class ScopeInfoLineSortedIteratorForLargeScopes {
+class ANodeLineSortedIteratorForLargeScopes {
 public: 
-  ScopeInfoLineSortedIteratorForLargeScopes(const CodeInfo *file, 
-			      const ScopeInfoFilter *filterFunc = NULL, 
+  ANodeLineSortedIteratorForLargeScopes(const ACodeNode *file, 
+			      const ANodeFilter *filterFunc = NULL, 
 			      bool leavesOnly = true);
-  ~ScopeInfoLineSortedIteratorForLargeScopes();
+  ~ANodeLineSortedIteratorForLargeScopes();
   
-  CodeInfoLine* Current() const;
+  ACodeNodeLine* Current() const;
   void  operator++(int)   { (*ptrSetIt)++;}
   void Reset();
   void DumpAndReset(std::ostream &os = std::cerr);
@@ -398,18 +399,18 @@ private:
 };
 
 //***************************************************************************
-// ScopeInfoNameSortedChildIterator
-//    behaves as ScopeInfoChildIterator, except that it gurantees NameOrder 
+// ANodeNameSortedChildIterator
+//    behaves as ANodeChildIterator, except that it gurantees NameOrder 
 //    NameOrder: a is enumerated before b iff a->Name() < b->Name() 
 //***************************************************************************
 
-class ScopeInfoNameSortedChildIterator {
+class ANodeNameSortedChildIterator {
 public: 
-  ScopeInfoNameSortedChildIterator(const ScopeInfo *root,
-				   const ScopeInfoFilter* filterFunc = NULL);
-  ~ScopeInfoNameSortedChildIterator();
+  ANodeNameSortedChildIterator(const ANode *root,
+				   const ANodeFilter* filterFunc = NULL);
+  ~ANodeNameSortedChildIterator();
   
-  CodeInfo* Current() const;
+  ACodeNode* Current() const;
   void  operator++(int)   { (*ptrSetIt)++;}
   void Reset();
 
@@ -420,8 +421,8 @@ private:
 };
 
 //***************************************************************************
-// ScopeInfoMetricSortedIterator
-//    behaves as ScopeInfoIterator, except that it gurantees PerformanceOrder
+// ANodeMetricSortedIterator
+//    behaves as ANodeIterator, except that it gurantees PerformanceOrder
 //    PerformanceOrder:
 //          a is enumerated before b
 //          iff a->PerfInfos().GetVal(i) > b->PerfInfos().GetVal(i)
@@ -430,22 +431,22 @@ private:
 //
 //***************************************************************************
 
-class ScopeInfoMetricSortedIterator {
+class ANodeMetricSortedIterator {
 public:
-  ScopeInfoMetricSortedIterator(const PgmScope* scope, 
-				uint metricId, 
-				const ScopeInfoFilter* filterFunc = NULL);
+  ANodeMetricSortedIterator(const Pgm* scope, 
+			    uint metricId, 
+			    const ANodeFilter* filterFunc = NULL);
 
-  virtual ~ScopeInfoMetricSortedIterator()
+  virtual ~ANodeMetricSortedIterator()
   {
     delete ptrSetIt;
   }  
   
-  ScopeInfo* Current() const
+  ANode* Current() const
   {
-    ScopeInfo* cur = NULL;
+    ANode* cur = NULL;
     if (ptrSetIt->Current()) {
-      cur = (ScopeInfo*) (*ptrSetIt->Current());
+      cur = (ANode*) (*ptrSetIt->Current());
     }
     return cur;
   }
@@ -463,8 +464,8 @@ private:
 
 
 //***************************************************************************
-// ScopeInfoMetricSortedChildIterator
-//    behaves as ScopeInfoChildIterator, except that it guarantees children in 
+// ANodeMetricSortedChildIterator
+//    behaves as ANodeChildIterator, except that it guarantees children in 
 //    PerformanceOrder.
 //
 //    PerformanceOrder:
@@ -475,22 +476,22 @@ private:
 //
 //***************************************************************************
 
-class ScopeInfoMetricSortedChildIterator {
+class ANodeMetricSortedChildIterator {
 public:
-  ScopeInfoMetricSortedChildIterator(const ScopeInfo *scope, int flattenDepth,
+  ANodeMetricSortedChildIterator(const ANode *scope, int flattenDepth,
 				     int compare(const void* a, const void *b),
-				     const ScopeInfoFilter *filterFunc = NULL);
+				     const ANodeFilter *filterFunc = NULL);
   
-  virtual ~ScopeInfoMetricSortedChildIterator()
+  virtual ~ANodeMetricSortedChildIterator()
   {
     delete ptrSetIt;
   }
 
-  ScopeInfo* Current() const
+  ANode* Current() const
   {
-    ScopeInfo* cur = NULL;
+    ANode* cur = NULL;
     if (ptrSetIt->Current()) {
-      cur = (ScopeInfo*) (*ptrSetIt->Current());
+      cur = (ANode*) (*ptrSetIt->Current());
     }
     return cur;
   }
@@ -500,8 +501,8 @@ public:
   void Reset() { ptrSetIt->Reset(); }
 
 private:
-  void AddChildren(const ScopeInfo *scope, int curDepth,
-		   const ScopeInfoFilter *filterFunc);
+  void AddChildren(const ANode *scope, int curDepth,
+		   const ANodeFilter *filterFunc);
 private:
   WordSet scopes;  // the scopes we want to have sorted
   WordSetSortedIterator *ptrSetIt;
@@ -529,4 +530,7 @@ private:
 int CompareByMetricId(const void* a, const void *b);
 extern int CompareByMetricId_mId;
 
-#endif /* prof_juicy_PgmScopeTreeIterator_hpp */
+} // namespace Struct
+} // namespace Prof
+
+#endif /* prof_juicy_Prof_Struct_TreeIterator_hpp */

@@ -42,7 +42,7 @@
 //
 // Purpose:
 //   Class NodeRetriever provides an interface between the scope info
-//   tree (ScopeInfo) and performance information parsing logic.
+//   tree (ANode) and performance information parsing logic.
 //
 // Description:
 //   [The set of functions, macros, etc. defined in the file]
@@ -98,39 +98,42 @@ GetFormattedSourceFileName(const string& nm)
 
 //****************************************************************************
 
-NodeRetriever::NodeRetriever(PgmScope* _root, const string& p) 
+namespace Prof {
+namespace Struct {
+
+TreeInterface::TreeInterface(Pgm* _root, const string& p) 
   : root(_root), currentLM(NULL), currentFile(NULL), currentProc(NULL), path(p)
 {
   DIAG_Assert(root != NULL, "");
   DIAG_Assert(!p.empty(), "");
 }
 
-NodeRetriever::~NodeRetriever()
+TreeInterface::~TreeInterface()
 {
 }
 
-GroupScope*
-NodeRetriever::MoveToGroup(ScopeInfo* parent, const char* name)
+Group*
+TreeInterface::MoveToGroup(ANode* parent, const char* name)
 {
   DIAG_Assert(parent && name, "");
   
-  GroupScope* grp = root->FindGroup(name);
+  Group* grp = root->findGroup(name);
   if (grp == NULL) {
-    grp = new GroupScope(name, parent);
-    DIAG_DevMsg(3, "NodeRetriever::MoveToGroup new GroupScope: " << name);
+    grp = new Group(name, parent);
+    DIAG_DevMsg(3, "TreeInterface::MoveToGroup new Group: " << name);
   } 
   return grp;
 }
 
-LoadModScope*
-NodeRetriever::MoveToLoadMod(const char* name) 
+LM*
+TreeInterface::MoveToLM(const char* name) 
 {
   DIAG_Assert(name, "");
 
-  LoadModScope* lm = root->FindLoadMod(name);
+  LM* lm = root->findLM(name);
   if (lm == NULL) {
-    lm = new LoadModScope(name, root);
-    DIAG_DevMsg(3, "NodeRetriever::MoveToLoadMod new LoadModScope: " << name);
+    lm = new LM(name, root);
+    DIAG_DevMsg(3, "TreeInterface::MoveToLM new LM: " << name);
   } 
   currentLM = lm; 
 
@@ -141,8 +144,8 @@ NodeRetriever::MoveToLoadMod(const char* name)
   return lm;
 }
 
-FileScope *
-NodeRetriever::MoveToFile(const char* name) 
+File* 
+TreeInterface::MoveToFile(const char* name) 
 {
   DIAG_Assert(name, "");
   DIAG_Assert(currentLM, "");
@@ -151,7 +154,7 @@ NodeRetriever::MoveToFile(const char* name)
   // If the file is not found, a load module will be created, if
   // needed, with the same name as the root.
   if (!currentLM) {
-    currentLM = MoveToLoadMod(root->name());
+    currentLM = MoveToLM(root->name());
   } 
 #endif
 
@@ -176,13 +179,13 @@ NodeRetriever::MoveToFile(const char* name)
   // -------------------------------------------------------
   // Search for the file
   // -------------------------------------------------------
-  FileScope *f = currentLM->FindFile(filePath);
+  File* f = currentLM->FindFile(filePath);
   const char* msg = "File Scope Found "; // an optimistic variable
   if (f == NULL) {
-    f = new FileScope(filePath, srcIsReadable, currentLM);
+    f = new File(filePath, srcIsReadable, currentLM);
 
-    msg = "File Scope Created for ";
-    DIAG_DevMsg(3, "NodeRetriever::MoveToFile makes new FileScope:" << endl
+    msg = "File Created for ";
+    DIAG_DevMsg(3, "TreeInterface::MoveToFile makes new File:" << endl
 		<< "  name=" << name << "  fname=" << filePath);
   } 
   currentFile = f;
@@ -194,18 +197,21 @@ NodeRetriever::MoveToFile(const char* name)
   return f;
 }
 
-ProcScope* 
-NodeRetriever::MoveToProc(const char* name) 
+Proc* 
+TreeInterface::MoveToProc(const char* name) 
 {
   DIAG_Assert(name, "");
   DIAG_Assert(currentLM, "");
   DIAG_Assert(currentFile, "");
 
-  ProcScope* p = currentFile->FindProc(name);
+  Proc* p = currentFile->FindProc(name);
   if (p == NULL) {
-    p = new ProcScope(name, currentFile, false, "");
+    p = new Proc(name, currentFile, false, "");
   }
   currentProc = p;
 
   return p;
 }
+
+} // namespace Struct
+} // namespace Prof

@@ -121,7 +121,7 @@ Const::dump(std::ostream& os) const
 // ----------------------------------------------------------------------
 
 double 
-Neg::eval(const ScopeInfo* si) const
+Neg::eval(const Struct::ANode* si) const
 {
   double result = m_expr->eval(si);
 
@@ -169,7 +169,7 @@ Power::~Power()
 
 
 double 
-Power::eval(const ScopeInfo* si) const
+Power::eval(const Struct::ANode* si) const
 {
   double b = base->eval(si);
   double e = exponent->eval(si);
@@ -207,7 +207,7 @@ Divide::~Divide()
 
 
 double 
-Divide::eval(const ScopeInfo* si) const
+Divide::eval(const Struct::ANode* si) const
 {
   double n = numerator->eval(si);
   double d = denominator->eval(si);
@@ -250,7 +250,7 @@ Minus::~Minus()
 
 
 double 
-Minus::eval(const ScopeInfo* si) const
+Minus::eval(const Struct::ANode* si) const
 {
   double m = minuend->eval(si);
   double s = subtrahend->eval(si);
@@ -290,7 +290,7 @@ Plus::~Plus()
 
 
 double 
-Plus::eval(const ScopeInfo* si) const
+Plus::eval(const Struct::ANode* si) const
 {
   double result = eval_sum(si, m_opands, m_sz);
 
@@ -330,7 +330,7 @@ Times::~Times()
 
 
 double 
-Times::eval(const ScopeInfo* si) const
+Times::eval(const Struct::ANode* si) const
 {
   double result = 1.0;
   for (int i = 0; i < m_sz; ++i) {
@@ -373,7 +373,7 @@ Max::~Max()
 
 
 double 
-Max::eval(const ScopeInfo* si) const
+Max::eval(const Struct::ANode* si) const
 {
   double result = m_opands[0]->eval(si);
   for (int i = 1; i < m_sz; ++i) {
@@ -417,7 +417,7 @@ Min::~Min()
 
 
 double 
-Min::eval(const ScopeInfo* si) const
+Min::eval(const Struct::ANode* si) const
 {
   double result = m_opands[0]->eval(si);
   for (int i = 1; i < m_sz; ++i) {
@@ -461,7 +461,7 @@ Mean::~Mean()
 
 
 double 
-Mean::eval(const ScopeInfo* si) const
+Mean::eval(const Struct::ANode* si) const
 {
   double result = eval_mean(si, m_opands, m_sz);
 
@@ -501,7 +501,7 @@ StdDev::~StdDev()
 
 
 double 
-StdDev::eval(const ScopeInfo* si) const
+StdDev::eval(const Struct::ANode* si) const
 {
   std::pair<double, double> v_m = eval_variance(si, m_opands, m_sz);
   double result = sqrt(v_m.first);
@@ -542,7 +542,7 @@ RStdDev::~RStdDev()
 
 
 double 
-RStdDev::eval(const ScopeInfo* si) const{
+RStdDev::eval(const Struct::ANode* si) const{
 
   std::pair<double, double> v_m = eval_variance(si, m_opands, m_sz);
   double sdev = sqrt(v_m.first); // always non-negative

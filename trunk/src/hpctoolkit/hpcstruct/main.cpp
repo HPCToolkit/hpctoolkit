@@ -123,15 +123,15 @@ real_main(int argc, char* argv[])
   // ------------------------------------------------------------
   { 
     using namespace banal::bloop;
-    PgmScopeTree* pgmScopeTree =
+    Prof::Struct::Tree* strctTree =
       BuildLMStructure(lm, args.canonicalPathList.c_str(),
 		       args.normalizeScopeTree, 
 		       args.unsafeNormalizations,
 		       args.irreducibleIntervalIsLoop,
 		       args.forwardSubstitutionOff);
     
-    WriteScopeTree(std::cout, pgmScopeTree, args.prettyPrintOutput);
-    delete pgmScopeTree;
+    WriteStrctTree(std::cout, strctTree, args.prettyPrintOutput);
+    delete strctTree;
   }
   
   // Cleanup

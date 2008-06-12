@@ -92,7 +92,7 @@ public:
   virtual ~AExpr() 
   { }
 
-  virtual double eval(const ScopeInfo* si) const = 0;
+  virtual double eval(const Struct::ANode* si) const = 0;
 
   static bool isok(double x) {
     return !(c_isnan_d(x) || c_isinf_d(x));
@@ -104,7 +104,7 @@ public:
 
 protected:
   static double
-  eval_sum(const ScopeInfo* si, AExpr** opands, int sz) 
+  eval_sum(const Struct::ANode* si, AExpr** opands, int sz) 
   {
     double result = 0.0;
     for (int i = 0; i < sz; ++i) {
@@ -115,7 +115,7 @@ protected:
   }
 
   static double
-  eval_mean(const ScopeInfo* si, AExpr** opands, int sz) 
+  eval_mean(const Struct::ANode* si, AExpr** opands, int sz) 
   {
     double sum = eval_sum(si, opands, sz);
     double result = sum / (double) sz;
@@ -125,7 +125,7 @@ protected:
   
   // returns <variance, mean>
   static std::pair<double, double>
-  eval_variance(const ScopeInfo* si, AExpr** opands, int sz) 
+  eval_variance(const Struct::ANode* si, AExpr** opands, int sz) 
   {
     double* x = new double[sz];
     
@@ -170,7 +170,7 @@ public:
   ~Const() 
   { }
 
-  double eval(const ScopeInfo* si) const
+  double eval(const Struct::ANode* si) const
   {
     return m_c;
   }
@@ -201,7 +201,7 @@ public:
     delete m_expr; 
   }
 
-  double eval(const ScopeInfo* si) const;
+  double eval(const Struct::ANode* si) const;
 
   std::ostream& dump(std::ostream& os = std::cout) const;
   
@@ -228,7 +228,7 @@ public:
   { 
   }
 
-  double eval(const ScopeInfo* si) const
+  double eval(const Struct::ANode* si) const
   {
     return si->PerfData(index);
   }
@@ -252,7 +252,7 @@ public:
   // Assumes ownership of AExpr
   Power(AExpr* b, AExpr* e);
   ~Power();
-  double eval(const ScopeInfo* si) const;
+  double eval(const Struct::ANode* si) const;
   std::ostream& dump(std::ostream& os = std::cout) const;
 
 private:
@@ -273,7 +273,7 @@ public:
   Divide(AExpr* num, AExpr* denom);
   ~Divide();
 
-  double eval(const ScopeInfo* si) const;
+  double eval(const Struct::ANode* si) const;
 
   std::ostream& dump(std::ostream& os = std::cout) const;
 
@@ -295,7 +295,7 @@ public:
   Minus(AExpr* m, AExpr* s);
   ~Minus();
 
-  double eval(const ScopeInfo* si) const;
+  double eval(const Struct::ANode* si) const;
 
   std::ostream& dump(std::ostream& os = std::cout) const;
 
@@ -317,7 +317,7 @@ public:
   Plus(AExpr** oprnds, int numOprnds);
   ~Plus();
   
-  double eval(const ScopeInfo* si) const;
+  double eval(const Struct::ANode* si) const;
 
   std::ostream& dump(std::ostream& os = std::cout) const;
 
@@ -339,7 +339,7 @@ public:
   Times(AExpr** oprnds, int numOprnds);
   ~Times();
 
-  double eval(const ScopeInfo* si) const;
+  double eval(const Struct::ANode* si) const;
 
   std::ostream& dump(std::ostream& os = std::cout) const;
 
@@ -360,7 +360,7 @@ public:
   Max(AExpr** oprnds, int numOprnds);
   ~Max();
 
-  double eval(const ScopeInfo* si) const;
+  double eval(const Struct::ANode* si) const;
 
   std::ostream& dump(std::ostream& os = std::cout) const;
 
@@ -381,7 +381,7 @@ public:
   Min(AExpr** oprnds, int numOprnds);
   ~Min();
 
-  double eval(const ScopeInfo* si) const;
+  double eval(const Struct::ANode* si) const;
 
   std::ostream& dump(std::ostream& os = std::cout) const;
 
@@ -402,7 +402,7 @@ public:
   Mean(AExpr** oprnds, int numOprnds);
   ~Mean();
 
-  double eval(const ScopeInfo* si) const;
+  double eval(const Struct::ANode* si) const;
 
   std::ostream& dump(std::ostream& os = std::cout) const;
 
@@ -423,7 +423,7 @@ public:
   StdDev(AExpr** oprnds, int numOprnds);
   ~StdDev();
 
-  double eval(const ScopeInfo* si) const;
+  double eval(const Struct::ANode* si) const;
 
   std::ostream& dump(std::ostream& os = std::cout) const;
 
@@ -444,7 +444,7 @@ public:
   RStdDev(AExpr** oprnds, int numOprnds);
   ~RStdDev();
 
-  double eval(const ScopeInfo* si) const;
+  double eval(const Struct::ANode* si) const;
 
   std::ostream& dump(std::ostream& os = std::cout) const;
 

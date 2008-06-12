@@ -73,6 +73,7 @@ using XERCES_CPP_NAMESPACE::XMLString;
 
 #include <lib/prof-juicy/PgmScopeTreeInterface.hpp>
 #include <lib/prof-juicy/PgmScopeTree.hpp>
+using namespace Prof;
 
 #include <lib/support/diagnostics.h>
 #include <lib/support/SrcFile.hpp>
@@ -123,7 +124,7 @@ using SrcFile::ln_NULL;
 //      file (mostly).  IOW, a LM, F or P that is a child of a group will
 //      be added to the tree as if it were _not_ (shadow nodes will be
 //      created when the group scope is closed).  We get this behavior
-//      by default because NodeRetriever maintains LM/F/P cursors and
+//      by default because Struct::TreeInterface maintains LM/F/P cursors and
 //      igores the group.
 // 
 //      The exception is that unlike LM, F and P, L and S will be added
@@ -188,15 +189,15 @@ using SrcFile::ln_NULL;
 //****************************************************************************
 
 // ----------------------------------------------------------------------
-// -- PGMDocHandler(NodeRetriever* const retriever) --
+// -- PGMDocHandler(Struct::TreeInterface* const retriever) --
 //   Constructor.
 //
 //   -- arguments --
-//     retriever:        a const pointer to a NodeRetriever object
+//     retriever:        a const pointer to a Struct::TreeInterface object
 // ----------------------------------------------------------------------
 
 PGMDocHandler::PGMDocHandler(Doc_t ty,
-			     NodeRetriever* const retriever,
+			     Struct::TreeInterface* const retriever,
 			     DocHandlerArgs& args) 
   : m_docty(ty),
     m_structIF(retriever),
@@ -284,7 +285,7 @@ void PGMDocHandler:: startElement(const XMLCh* const uri,
 				  const XMLCh* const qname, 
 				  const XERCES_CPP_NAMESPACE::Attributes& attributes)
 { 
-  ScopeInfo* currentScope = NULL;
+  Struct::ANode* currentScope = NULL;
   
   // -----------------------------------------------------------------
   // PGM
@@ -300,7 +301,7 @@ void PGMDocHandler:: startElement(const XMLCh* const uri,
       throw PGMException(error);
     }
 
-    PgmScope* root = m_structIF->GetRoot();
+    Struct::Pgm* root = m_structIF->GetRoot();
     DIAG_DevMsgIf(DBG_ME, "PGM Handler: " << root->toString_me());
 
     currentScope = root;
@@ -313,7 +314,7 @@ void PGMDocHandler:: startElement(const XMLCh* const uri,
     DIAG_Assert(currentLmName.empty(), "Parse or internal error!");
     currentLmName = lm;
     
-    LoadModScope* lmscope = m_structIF->MoveToLoadMod(currentLmName);
+    Struct::LM* lmscope = m_structIF->MoveToLM(currentLmName);
     DIAG_Assert(lmscope != NULL, "");
     DIAG_DevMsgIf(DBG_ME, "PGM Handler: " << lmscope->toString_me());
     
@@ -331,7 +332,7 @@ void PGMDocHandler:: startElement(const XMLCh* const uri,
     DIAG_Assert(fnm != currentFileName, "");
     
     currentFileName = fnm;
-    FileScope* fileScope = m_structIF->MoveToFile(currentFileName);
+    Struct::File* fileScope = m_structIF->MoveToFile(currentFileName);
     DIAG_Assert(fileScope != NULL, "");
     DIAG_DevMsgIf(DBG_ME, "PGM Handler: " << fileScope->toString_me());
     
@@ -354,7 +355,7 @@ void PGMDocHandler:: startElement(const XMLCh* const uri,
     string vma = getAttr(attributes, attrVMA);
     
     // Find enclosing File scope
-    FileScope* curFile = FindCurrentFileScope();
+    Struct::File* curFile = FindCurrentFile();
     if (!curFile) {
       string error = "No F(ile) scope for P(roc) scope '" + name + "'";
       throw PGMException(error);
@@ -374,7 +375,7 @@ void PGMDocHandler:: startElement(const XMLCh* const uri,
     }
 
     if (!currentFuncScope) {
-      currentFuncScope = new ProcScope(name, curFile, lname, false, lnB, lnE);
+      currentFuncScope = new Struct::Proc(name, curFile, lname, false, lnB, lnE);
       if (!vma.empty()) {
 	currentFuncScope->vmaSet().fromString(vma.c_str());
       }
@@ -405,10 +406,11 @@ void PGMDocHandler:: startElement(const XMLCh* const uri,
     if (!lineB.empty()) { begLn = (SrcFile::ln)StrUtil::toLong(lineB); }
     if (!lineE.empty()) { endLn = (SrcFile::ln)StrUtil::toLong(lineE); }
 
-    CodeInfo* enclScope = 
-      dynamic_cast<CodeInfo*>(GetCurrentScope()); // enclosing scope
+    Struct::ACodeNode* enclScope = 
+      dynamic_cast<Struct::ACodeNode*>(GetCurrentScope()); // enclosing scope
 
-    CodeInfo* alien = new AlienScope(enclScope, fnm, nm, begLn, endLn);
+    Struct::ACodeNode* alien = 
+      new Struct::Alien(enclScope, fnm, nm, begLn, endLn);
     DIAG_DevMsgIf(DBG_ME, "PGM Handler: " << alien->toString_me());
 
     currentScope = alien;
@@ -429,10 +431,10 @@ void PGMDocHandler:: startElement(const XMLCh* const uri,
     if (!lineE.empty()) { lnE = (SrcFile::ln)StrUtil::toLong(lineE); }
 
     // by now the file and function names should have been found
-    CodeInfo* enclScope = 
-      dynamic_cast<CodeInfo*>(GetCurrentScope()); // enclosing scope
+    Struct::ACodeNode* enclScope = 
+      dynamic_cast<Struct::ACodeNode*>(GetCurrentScope()); // enclosing scope
 
-    CodeInfo* loopNode = new LoopScope(enclScope, lnB, lnE);
+    Struct::ACodeNode* loopNode = new Struct::Loop(enclScope, lnB, lnE);
     DIAG_DevMsgIf(DBG_ME, "PGM Handler: " << loopNode->toString_me());
 
     currentScope = loopNode;
@@ -462,11 +464,11 @@ void PGMDocHandler:: startElement(const XMLCh* const uri,
     string vma = getAttr(attributes, attrVMA);
 
     // by now the file and function names should have been found
-    CodeInfo* enclScope = 
-      dynamic_cast<CodeInfo*>(GetCurrentScope()); // enclosing scope
+    Struct::ACodeNode* enclScope = 
+      dynamic_cast<Struct::ACodeNode*>(GetCurrentScope()); // enclosing scope
     DIAG_Assert(currentFuncScope != NULL, "");
 
-    StmtRangeScope* stmtNode = new StmtRangeScope(enclScope, lnB, lnE);
+    Struct::Stmt* stmtNode = new Struct::Stmt(enclScope, lnB, lnE);
     if (!vma.empty()) {
       stmtNode->vmaSet().fromString(vma.c_str());
     }
@@ -480,8 +482,8 @@ void PGMDocHandler:: startElement(const XMLCh* const uri,
     string grpnm = getAttr(attributes, attrName); // must exist
     DIAG_Assert(!grpnm.empty(), "");
 
-    ScopeInfo* enclScope = GetCurrentScope(); // enclosing scope
-    GroupScope* grpscope = m_structIF->MoveToGroup(enclScope, grpnm);
+    Struct::ANode* enclScope = GetCurrentScope(); // enclosing scope
+    Struct::Group* grpscope = m_structIF->MoveToGroup(enclScope, grpnm);
     DIAG_Assert(grpscope != NULL, "");
     DIAG_DevMsgIf(DBG_ME, "PGM Handler: " << grpscope->toString_me());
 
@@ -614,13 +616,13 @@ PGMDocHandler::warning(const SAXParseException& e)
 //  
 // ---------------------------------------------------------------------------
 
-FileScope* 
-PGMDocHandler::FindCurrentFileScope() 
+Struct::File* 
+PGMDocHandler::FindCurrentFile() 
 {
   for (unsigned int i = 0; i < scopeStack.Depth(); ++i) {
-    ScopeInfo* s = GetScope(i);
-    if (s->Type() == ScopeInfo::FILE) {
-      return dynamic_cast<FileScope*>(s);
+    Struct::ANode* s = GetScope(i);
+    if (s->Type() == Struct::ANode::TyFILE) {
+      return dynamic_cast<Struct::File*>(s);
     }
   }
   return NULL;
@@ -630,8 +632,8 @@ unsigned int
 PGMDocHandler::FindEnclosingGroupScopeDepth() 
 {
   for (unsigned int i = 1; i < scopeStack.Depth(); ++i) {
-    ScopeInfo* s = GetScope(i);
-    if (s->Type() == ScopeInfo::GROUP) {
+    Struct::ANode* s = GetScope(i);
+    if (s->Type() == Struct::ANode::TyGROUP) {
       return i + 1; // depth is index + 1
     }
   }
@@ -656,11 +658,11 @@ PGMDocHandler::ProcessGroupDocEndTag()
     
     // 2. For each node between g (excluding g) to the node before
     // top-of-stack, create a shadow node
-    ScopeInfo* parentNode = GetScope(enclGrpIdx);
+    Struct::ANode* parentNode = GetScope(enclGrpIdx);
     for (unsigned int i = enclGrpIdx - 1; i >= 1; --i) {
       StackEntry_t* entry = GetStackEntry(i);
-      ScopeInfo* curNode = entry->GetScope();
-      ScopeInfo* shadowNode = entry->GetShadow();
+      Struct::ANode* curNode = entry->GetScope();
+      Struct::ANode* shadowNode = entry->GetShadow();
       if (!shadowNode) {
 	shadowNode = curNode->Clone();
 	shadowNode->Link(parentNode);
@@ -670,7 +672,7 @@ PGMDocHandler::ProcessGroupDocEndTag()
     }
     
     // 3. Make the top node a child of the most recent shadow node
-    ScopeInfo* topNode = GetScope(0);
+    Struct::ANode* topNode = GetScope(0);
     topNode->Unlink();
     topNode->Link(parentNode);
   }
