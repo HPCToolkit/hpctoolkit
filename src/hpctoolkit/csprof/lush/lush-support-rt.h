@@ -31,7 +31,7 @@
 
 #include <lush-support.h>
 
-#include <prim_unw.h>
+#include <unwind.h>
 #include <mem.h>
 
 //*************************** Forward Declarations **************************
