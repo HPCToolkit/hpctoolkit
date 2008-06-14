@@ -30,7 +30,7 @@
 \rcsInfo $Id$
 \setDate{\rcsInfoLongDate}
 }{
-\setDate{ 2008/06/02}
+\setDate{ 2008/06/14}
 \message{package rcsinfo not present, discard it}
 }
 
@@ -49,42 +49,15 @@ It has been designed around the following principles:
 \begin{itemize}
 
 \item \textbf{Language independence.}
-Modern scientific codes are multi-lingual; therefore \textbf{HPCToolkit} is not dependent on particular language.
-
 \item \textbf{Avoid code instrumentation.}
-Adding instrumentation manually requires making \emph{a priori} assumptions about bottlenecks; adding instrumentation automatically can dilate execution and preclude compiler optimizations.
-Consequently, \textbf{HPCToolkit} uses a sampling based measurement approach.
-
 \item \textbf{Avoid blind spots.}
-Production applications frequently link against fully optimized and even partially stripped binaries such as math and communication libraries for which source code is not available.
-Although such libraries pose significant measurement challenges, \textbf{HPCToolkit} employs techniques that enable it to collect performance measurements for such libraries.
-
 \item \textbf{Context is essential for understanding layered and object-oriented software.}
-In large, modular programs costs must be understood in their calling context.
-Thus, \textbf{HPCToolkit} has a sophisticated call path profiler.
-
 \item \textbf{Any one performance measure produces a myopic view.}
-\textbf{HPCToolkit} supports collection, correlation and presentation of multiple metrics.
-
 \item \textbf{Derived performance metrics are essential for effective analysis.}
-Effective tuning a program with appropriate complexity bounds requires a measure of not where resources are consumed, but where they are consumed inefficiently.
-For this reason, \textbf{HPCToolkit} supports derived metrics such as the differences between peak and actual performance 
-
 \item \textbf{Performance analysis should be top down.}
-To make analysis of large programs tractable, performance tools should organize performance data in a hierarchical fashion, prioritize what appear to be important problems, and support a top-down analysis methodology that helps users quickly locate bottlenecks.
-
 \item \textbf{Hierarchical aggregation is important in the face of approximate attribution.} 
-In modern multi-issue microprocessor cores with multiple functional units, out-of-order execution, and non-blocking caches, line level (or finer) information can be misleading.
-For this reason, \textbf{HPCToolkit} focuses on aggregate information for loops or procedures, which can be very accurate.
-Loop-level information is particularly useful.
-
 \item \textbf{With instruction-level parallelism, aggregate properties are vital.}
-Even if profiling instrumentation could provide perfect attribution of costs to executable instructions performance is often less dependent on the properties of individual source lines, and more a function of the data dependencies and balance among the statements in larger program units such as loops or loop nests.
-\textbf{HPCToolkit}'s loop-level aggregation is particularly helpful.
-
 \item \textbf{Measurement and analysis must be scalable.}
-Scientific applications are increasingly executed on clusters with SMP nodes of multicore chips, creating several layers parallelism. 
-It is critical that measurement techniques must be scalable to 10s and even 100s of thousands of threads. 
 
 \end{itemize}
 

@@ -37,7 +37,7 @@
   background-color: transparent;
 }
 
-/* hpctool class: a reference to an hpctool such as bloop or hpcview.
+/* hpctool class: a reference to an hpctool such as hpcrun, hpcstruct, hpcprof
  */
 .hpctool {
   font-weight: bold;
