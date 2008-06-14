@@ -1,5 +1,7 @@
 objs = test-spinlock test-atomic-ops test-executable-path
-CFLAGS =-g
+processor:=`uname -p`
+CFLAGS =-g -D__${processor}__
+
 all: $(objs)
 
 test-spinlock: test-spinlock.c 

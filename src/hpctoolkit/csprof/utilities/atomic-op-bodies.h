@@ -25,8 +25,7 @@
 }
 
 
-#elif 1 
-// defined(__ppc64__)
+#elif defined(__ppc64__)
 
 #define LL_BODY \
    __asm__ __volatile__(                                                            \

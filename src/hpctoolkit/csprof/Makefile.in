@@ -3,6 +3,10 @@
 
 -include Makefile.conf
 
+ifndef PPC64
+X86=1
+endif
+
 install_lib := $(install_prefix)/lib
 install_bin := $(install_prefix)/bin
 
@@ -14,8 +18,7 @@ CXX  := g++ -Wall
 link := gcc
 static_link_options := --verbose -nostdlib -nodefaultlibs -nostartfiles -static -Wl,-r
 
-XED2_INCLUDE_OPTS := -I$(XED2_DIR)/include
-XED2_LIBS := -L$(XED2_DIR)/lib -lxed
+
 
 MONITOR_INCLUDE_OPTS := -I$(MONITOR_DIR)/include
 MONITOR_LIBS := -L$(MONITOR_DIR)/lib -lmonitor
@@ -35,14 +38,6 @@ ifdef DO_LUSH
   LUSH_AGENTS = agent-cilk.so
 endif
 
-#### FIXME: *Revisit* this when need synchronous profiling
-####
-#DRIVER ?= mallocprof
-# MWF wants async timing, so chg default
-#DRIVER = itimer
-#DRIVER_DIR = itimer
-####
-#### 
 
 all: $(CSPROFLIB) $(LUSH_AGENTS)
 #all: $(CSPROF_DOT_O)
@@ -78,8 +73,6 @@ module_dirs := utilities                \
                hpcfile                  \
                os/catamount             \
                os/linux                 \
-               sampling/sources/itimer  \
-               sampling/sources/papi    \
                lush                     \
                lush-agents
 
@@ -116,14 +109,19 @@ DEFINES += -DCSPROF_MALLOC_PROFILING=1
 endif
 
 ifdef WITH_PAPI
-INCS += $(PAPI_INCLUDES)
-LIBS += $(PAPI_LD) 
+  INCS += $(PAPI_INCLUDES)
+  LIBS += $(PAPI_LD) 
+  OBJS += papi.sample_source.o
 endif
 
+ifdef X86 
 ifdef WITH_XED2
 INCS += $(XED2_INCLUDE_OPTS)
 LIBS += $(XED2_LIBS) 
 endif
+endif
+
+INCS += $(ARCH_INCLUDES)
 
 INCS += $(MONITOR_INCLUDE_OPTS)
 LIBS += $(MONITOR_LIBS) 
@@ -197,22 +195,22 @@ ifndef DO_LUSH
   OBJS += backtrace.o
 endif
 
-OBJS += swizzle.o unsafe.o
 OBJS += processor-libc.o 
 
 ifdef USE_TRAMP
   OBJS += tramp.o 
 endif
 
-# OBJS += itimer.o papi_sample.o
 OBJS += all_sample_sources.o \
         registered_sample_sources.o \
         common.sample_source.o \
-        itimer.sample_source.o \
-        papi.sample_source.o
+        itimer.sample_source.o 
+
 OBJS += state.o env.o data.o dump_backtraces.o segv_handler.o
 OBJS += pmsg.o
+
 # OBJS += bad_unwind.o
+
 OBJS += handling_sample.o thread_data.o
 OBJS += $(hpcfile_objs)
 
@@ -238,6 +236,7 @@ OBJS += lush.o \
 	lush-support.o \
 	lush-support-rt.o
 
+ifdef X86
 #-----------------------------------------------------------------
 # all x86 binary analysis files are now included into one file and 
 # compiled into a single object file to avoid replicating lots of
@@ -245,6 +244,8 @@ OBJS += lush.o \
 #-----------------------------------------------------------------
 OBJS += x86-all.o 
 OBJS += x86-unwind-support.o 
+OBJS += swizzle.o unsafe.o
+endif
 
 OBJS += stack_troll.o
 OBJS += $(gethost)

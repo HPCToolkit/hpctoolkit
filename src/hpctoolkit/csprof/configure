@@ -41,15 +41,28 @@ EOF
 f_papi_ld_list()
 {
     papi_ld_lst=''
-    for a in $1; do
-	if [ ${a#-L} != $a ]; then
-	    papi_ld_lst=${a#-L}:$papi_ld_lst
-	fi
-    done
+    if [ $opt_papi == 1 ]; then
+      for a in $1; do
+  	  if [ ${a#-L} != $a ]; then
+  	      papi_ld_lst=${a#-L}:$papi_ld_lst
+  	  fi
+      done
+    fi
     papi_ld_lst=${papi_ld_lst%:}
 }
 
 # ================ Main code =====================
+
+processor=`uname -p`
+
+if [ "${processor} == ppc64" ]; then
+  ARCH_INCLUDES=-D__ppc64__
+  ARCH=PPC64
+elif [ "${processor} == x86_64" ]; then
+  ARCH_INCLUDES=-D__x86_64__
+  ARCH=X86
+fi
+
 
 f_find_cpp_lib
 
@@ -64,9 +77,11 @@ else
   PKGS=$conf_home
 fi
 
-opt_xed2_dir=$PKGS/XED2
+opt_xed2_dir= #$PKGS/XED2
+opt_xed2=0
 
-opt_papi_dir=$PKGS/papi
+opt_papi_dir= # $PKGS/papi
+opt_papi=0
 
 
 papi_inc=''
@@ -98,9 +113,12 @@ do
 	          ;;
 
 	--papi-dir=*) opt_papi_dir=${1#--papi-dir=}
+                  opt_papi=1
 	          ;;
 
-	--xed2-dir=*) opt_xed2_dir=${1#--xed2-dir=}
+	--xed2-dir=*) 
+                  opt_xed2_dir=${1#--xed2-dir=}
+                  opt_xed2=1
 	          ;;
 
 	--monitor-dir=*) opt_monitor_dir=${1#--monitor-dir=}
@@ -132,25 +150,28 @@ done
 opt_prefix=${opt_prefix:="."}
 opt_prefix=${opt_prefix%/}
 
-if [ "$papi_inc"x == x ]; then
-    papi_inc=-I${opt_papi_dir}/include
-fi
+if [ "$opt_papi" == 1 ]; then
+
+  if [ "$papi_inc"x == x ]; then
+      papi_inc=-I${opt_papi_dir}/include
+  fi
 
 ## FIXME opt_papi_dir non-null ==> do this also
 ##
-if [ "$papi_ld"x == x ]; then
-    if [ -d "$opt_papi_dir/lib" ]; then
-        papi_lib_name=lib
-    elif [ -d "$opt_papi_dir/lib64" ]; then
-        papi_lib_name=lib64
-    fi
-    if [ -e /dev/perfctr ]; then
-        perfc="-lperfctr"
-    fi
-    papi_ld="-L${opt_papi_dir}/${papi_lib_name} -lpapi ${perfc}"
-fi
+  if [ "$papi_ld"x == x ]; then
+      if [ -d "$opt_papi_dir/lib" ]; then
+          papi_lib_name=lib
+      elif [ -d "$opt_papi_dir/lib64" ]; then
+          papi_lib_name=lib64
+      fi
+      if [ -e /dev/perfctr ]; then
+          perfc="-lperfctr"
+      fi
+      papi_ld="-L${opt_papi_dir}/${papi_lib_name} -lpapi ${perfc}"
+  fi
 
-f_papi_ld_list "$papi_ld"
+  f_papi_ld_list "$papi_ld"
+fi
 
 if [ -z $opt_monitor_dir ]; then
   opt_monitor_dir=$opt_prefix
@@ -179,8 +200,11 @@ dbg_extra      := $opt_with_dbg
 
 ###### these will be configured later ##############
 
-WITH_PAPI=1
-WITH_XED2=1
+WITH_PAPI=$opt_papi
+WITH_XED2=$opt_xed2
+
+ARCH_INCLUDES=$ARCH_INCLUDES
+${ARCH}=1
 
 #STATIC_ONLY := 1
 #NO_MMAP := 1
@@ -190,11 +214,8 @@ DO_THREADS := 1
 PERF := -DCSPROF_PERF=1
 export PERF
 
-#PRIM_UNWIND := 1
-#export PRIM_UNWIND
-
 #special decls for xed library usage
-XEDDCL := -DXED_SCALARS
+# XEDDCL := -DXED_SCALARS
 
 #CSPROF_TRAMPOLINE := -DCSPROF_TRAMPOLINE_BACKEND=1
 
