@@ -52,6 +52,8 @@
 
 #include <iostream>
 
+#include <cstring>
+
 //*************************** User Include Files ****************************
 
 #include "PCProfileFilter.hpp"

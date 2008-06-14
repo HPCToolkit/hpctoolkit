@@ -65,12 +65,8 @@ using std::dec;
 #include <string>
 using std::string;
 
-#ifdef NO_STD_CHEADERS
-# include <stdlib.h>
-#else
-# include <cstdlib>
-using std::strtoul; // For compatibility with non-std C headers
-#endif
+#include <cstdlib>
+#include <cstring>
 
 //*************************** User Include Files ****************************
 

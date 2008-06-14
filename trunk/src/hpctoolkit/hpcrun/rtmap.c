@@ -177,7 +177,7 @@ get_line_slot(void)
     }
   }
   mappings[slots_in_use] = (char *) malloc(MAXLINELEN);
-  *mappings[slots_in_use] = (char) NULL;
+  *mappings[slots_in_use] = '\0';
   return mappings[slots_in_use++];
 }
 

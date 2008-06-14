@@ -37,6 +37,7 @@ using std::vector;
 #include <sys/types.h>
 
 #include <cmath> // pow
+#include <cstring> // strerror
 
 //*************************** User Include Files ****************************
 

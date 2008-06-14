@@ -25,6 +25,8 @@
 
 #include <iostream>
 
+#include <cstdlib> // qsort
+
 //*************************** User Include Files ****************************
 
 #include "loadmodule.hpp"

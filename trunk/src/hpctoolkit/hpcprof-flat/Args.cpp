@@ -57,6 +57,8 @@ using std::endl;
 #include <string>
 using std::string;
 
+#include <cstring> // strlen
+
 #include <dirent.h> 
 #include <sys/types.h> 
 
