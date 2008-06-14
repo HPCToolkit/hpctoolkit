@@ -12,13 +12,13 @@
 #ifndef PRIM_UNWIND
 #include <libunwind.h>
 #else
-#include "prim_unw.h"
+#include "unwind.h"
 #endif
 */
 
 //*************************** User Include Files ****************************
 
-#include "prim_unw.h"
+#include "unwind.h"
 
 #include "backtrace.h"
 #include "state.h"
@@ -64,8 +64,6 @@ csprof_cct_node_t*
 csprof_sample_callstack(csprof_state_t *state, ucontext_t* context, 
 			int metric_id, size_t sample_count)
 {
-  mcontext_t* mctxt = &context->uc_mcontext;
-
 #if 0
   int first_ever_unwind = (state->bufstk == state->bufend);
   void *sp1 = first_ever_unwind ? (void *) -1 : state->bufstk->sp;
@@ -97,7 +95,7 @@ csprof_sample_callstack(csprof_state_t *state, ucontext_t* context,
 #endif
 #endif
 
-  unw_init_mcontext(mctxt,&frame);
+  unw_init_cursor(context, &frame);
   MSG(1,"back from cursor init: pc = %p, bp = %p\n",frame.pc,frame.bp);
 
 #if 0

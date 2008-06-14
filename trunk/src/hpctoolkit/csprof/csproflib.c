@@ -92,7 +92,7 @@
 
 #include "hpcfile_csproflib.h"
 #include "pmsg.h"
-#include "prim_unw.h"
+#include "unwind.h"
 #include "fnbounds_interface.h"
 #include "dbg_extra.h"
 

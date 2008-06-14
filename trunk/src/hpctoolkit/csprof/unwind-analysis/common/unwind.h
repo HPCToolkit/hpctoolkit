@@ -1,17 +1,17 @@
 // -*-Mode: C++;-*- // technically C99
 // $Id$
 
-#ifndef PRIM_UNW_H
-#define PRIM_UNW_H
+#ifndef UNWIND_H
+#define UNWIND_H
 
 #include <ucontext.h>
 
-#include "prim_unw_cursor.h"
+#include "unwind_cursor.h"
 
-extern void unw_init_context(ucontext_t* context, unw_cursor_t* cursor);
-extern void unw_init_mcontext(mcontext_t* mctxt, unw_cursor_t* cursor);
-extern int unw_get_reg(unw_cursor_t *c,int rid, void **reg);
+
 extern void unw_init(void);
+
+extern void unw_init_cursor(ucontext_t* context, unw_cursor_t* cursor);
 
 // Given a cursor, step the cursor to the next (less deeply nested)
 // frame.  Conforms to the semantics of libunwind's unw_step.  In
@@ -20,6 +20,8 @@ extern void unw_init(void);
 //     0 : previous frame was the end of the unwind
 //   < 0 : error condition
 extern int unw_step(unw_cursor_t *c);
+
+extern int unw_get_reg(unw_cursor_t *c,int rid, void **reg);
 
 typedef void *unw_word_t;
 

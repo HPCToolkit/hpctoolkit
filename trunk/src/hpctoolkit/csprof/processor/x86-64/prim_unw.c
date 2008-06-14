@@ -22,7 +22,7 @@
 #include "stack_troll.h"
 #include "monitor.h"
 
-#include "prim_unw_cursor.h"
+#include "unwind.h"
 #include "x86-decoder.h"
 
 #include "splay.h"
@@ -45,22 +45,14 @@ int debug_unw = 0;
 
 
 static void update_cursor_with_troll(unw_cursor_t *cursor, void *sp, void *pc, void *bp);
+static void unw_init_mcontext(mcontext_t* mctxt, unw_cursor_t *cursor);
 
-#if 0
-// tallent: relocated here from backtrace.c 
-// FIXME: perhaps rename and better package
-static int 
-csprof_check_fence(void *ip)
-{
-  return (monitor_unwind_process_bottom_frame(ip) 
-	  || monitor_unwind_thread_bottom_frame(ip));
-}
-#endif
 static int 
 csprof_check_fence(void *ip)
 {
   return monitor_in_start_func_wide(ip);
 }
+
 
 /****************************************************************************************
  * interface functions
@@ -79,7 +71,8 @@ unw_init(void)
 }
 
 
-void unw_init_context(ucontext_t* context, unw_cursor_t *cursor)
+void 
+unw_init_cursor(ucontext_t* context, unw_cursor_t *cursor)
 {
 
   PMSG(UNW,"init prim unw called w ucontext: context = %p, cursor_p = %p\n",context,cursor);
@@ -87,7 +80,8 @@ void unw_init_context(ucontext_t* context, unw_cursor_t *cursor)
 }
 
 
-void unw_init_mcontext(mcontext_t* mctxt, unw_cursor_t *cursor)
+static void 
+unw_init_mcontext(mcontext_t* mctxt, unw_cursor_t *cursor)
 {
 
   void **bp, *sp,*pc;

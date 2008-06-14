@@ -23,4 +23,4 @@ int system_server_start();
 void system_server_shutdown();
  
 
-int system_server_execute_command(char *command);  
+int system_server_execute_command(const char *command);  

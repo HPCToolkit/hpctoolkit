@@ -18,9 +18,9 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>  // for strlen
+#include <string.h> // for strlen
 #include <stdarg.h> // for varargs
-#include <unistd.h>  //for pipe
+#include <unistd.h> // for pipe
 
 
 
@@ -37,14 +37,6 @@
 #include "system_server.h"
 
 
-#if 0
-//*******************************************************************************
-// forward declarations
-//*******************************************************************************
-
-static void exit_on_error(int ret, int ret_expected, char *format, ...);
-#endif
-
 
 //*******************************************************************************
 // private data  
@@ -53,7 +45,7 @@ static void exit_on_error(int ret, int ret_expected, char *format, ...);
 // constant data 
 static const int server_done = -1;
 
-static int fnbounds_server_pipes[2][2];
+static int system_server_pipes[2][2];
 static pid_t server_pid;
 
 
@@ -65,8 +57,8 @@ static pid_t server_pid;
 #define SERVER_TO_CLIENT 1
 
 
-#define READ_FD(end) fnbounds_server_pipes[end][0]
-#define WRITE_FD(end) fnbounds_server_pipes[end][1]
+#define READ_FD(end) system_server_pipes[end][0]
+#define WRITE_FD(end) system_server_pipes[end][1]
 
 
 
@@ -83,11 +75,11 @@ system_server_start()
   // --------------------------------------------------------------------------------------------------
   // set up pipes for communication between client and server
   // --------------------------------------------------------------------------------------------------
-  ret = pipe(fnbounds_server_pipes[CLIENT_TO_SERVER]);
-  EXIT_ON_ERROR(ret, 0, "fnbounds server: failed to create 1st pipe");
+  ret = pipe(system_server_pipes[CLIENT_TO_SERVER]);
+  EXIT_ON_ERROR(ret, 0, "system server: failed to create 1st pipe");
 
-  ret = pipe(fnbounds_server_pipes[SERVER_TO_CLIENT]);
-  EXIT_ON_ERROR(ret, 0, "fnbounds server: failed to create 2nd pipe");
+  ret = pipe(system_server_pipes[SERVER_TO_CLIENT]);
+  EXIT_ON_ERROR(ret, 0, "system server: failed to create 2nd pipe");
 
   // --------------------------------------------------------------------------------------------------
   // fork server from client
@@ -105,7 +97,7 @@ system_server_start()
      // server: close unused file descriptor to send data to self 
      // --------------------------------------------------------------------------------------------------
      ret = close(WRITE_FD(CLIENT_TO_SERVER));
-     EXIT_ON_ERROR(ret, 0, "fnbounds server: failed to close pipe in server");
+     EXIT_ON_ERROR(ret, 0, "system server: failed to close pipe in server");
 
      for(;;) {
        int nbytes;
@@ -114,10 +106,10 @@ system_server_start()
        // receive command string length from client
        // --------------------------------------------------------------------------------------------------
        ret = read(READ_FD(CLIENT_TO_SERVER), &nbytes, sizeof(nbytes));
-       EXIT_ON_ERROR(ret, sizeof(nbytes), "fnbounds server fatal error: read failed");
+       EXIT_ON_ERROR(ret, sizeof(nbytes), "system server fatal error: read failed");
 
        if (nbytes > 0) {
-          TMSG(SYSTEM_SERVER,"fnbounds server: expecting command of %d bytes", nbytes);
+          TMSG(SYSTEM_SERVER,"system server: expecting command of %d bytes", nbytes);
 
 	  // --------------------------------------------------------------------------------------------------
 	  // allocate space for command string 
@@ -128,7 +120,7 @@ system_server_start()
 	  // receive command string from client
 	  // --------------------------------------------------------------------------------------------------
           ret = read(READ_FD(CLIENT_TO_SERVER), command, nbytes);
-          EXIT_ON_ERROR(ret, nbytes, "fnbounds server fatal error: "
+          EXIT_ON_ERROR(ret, nbytes, "system server fatal error: "
 	                "read only %d of %d bytes for a command %d", ret, nbytes);
 
 	  // --------------------------------------------------------------------------------------------------
@@ -152,7 +144,7 @@ system_server_start()
 	  free(command);
        } else {
 	 if (nbytes != server_done) {
-            EXIT_ON_ERROR(nbytes, server_done, "fnbounds server fatal error: "
+            EXIT_ON_ERROR(nbytes, server_done, "system server fatal error: "
 			  "received negative length %d for command string", nbytes);
 	 }
 	 // --------------------------------------------------------------------------------------------------
@@ -170,7 +162,7 @@ system_server_start()
   // client: close unused file descriptor to send data to self 
   // --------------------------------------------------------------------------------------------------
   ret = close(WRITE_FD(SERVER_TO_CLIENT));
-  EXIT_ON_ERROR(ret, 0, "fnbounds server: failed to close pipe in client");
+  EXIT_ON_ERROR(ret, 0, "system server: failed to close pipe in client");
 
   return (server_pid != -1) ? 0 : -1;
 }
@@ -183,12 +175,12 @@ system_server_shutdown()
   // send command string length value of -1 to terminate 
   // --------------------------------------------------------------------------------------------------
   int ret = write(WRITE_FD(CLIENT_TO_SERVER), &server_done, sizeof(server_done));
-  EXIT_ON_ERROR(ret, sizeof(server_done), "fnbounds server shutdown failed");
+  EXIT_ON_ERROR(ret, sizeof(server_done), "system server shutdown failed");
 }
  
 
 int 
-system_server_execute_command(char *command)  
+system_server_execute_command(const char *command)  
 {
   int ret, status;
   int len = strlen(command) + 1;         // add 1 for terminating null
@@ -196,21 +188,21 @@ system_server_execute_command(char *command)
   // --------------------------------------------------------------------------------------------------
   // send command string length to server
   // --------------------------------------------------------------------------------------------------
-  TMSG(SYSTEM_COMMAND,"fnbounds server: sending command size = %d bytes", len);
+  TMSG(SYSTEM_COMMAND,"system server: sending command size = %d bytes", len);
   ret = write(WRITE_FD(CLIENT_TO_SERVER), &len, sizeof(len));
-  EXIT_ON_ERROR(ret, sizeof(len), "fnbounds server fatal error: write of command size failed");
+  EXIT_ON_ERROR(ret, sizeof(len), "system server fatal error: write of command size failed");
 
   // --------------------------------------------------------------------------------------------------
   // send command string to server
   // --------------------------------------------------------------------------------------------------
   ret = write(WRITE_FD(CLIENT_TO_SERVER), command, len);
-  EXIT_ON_ERROR(ret, len, "fnbounds server fatal error: write command failed");
+  EXIT_ON_ERROR(ret, len, "system server fatal error: write command failed");
 
   // --------------------------------------------------------------------------------------------------
   // receive command result from server 
   // --------------------------------------------------------------------------------------------------
   ret = read(READ_FD(SERVER_TO_CLIENT), &status, sizeof(status));
-  EXIT_ON_ERROR(ret, sizeof(status), "fnbounds server fatal error: read status failed\n");
+  EXIT_ON_ERROR(ret, sizeof(status), "system server fatal error: read status failed\n");
 
   return status;
 }
