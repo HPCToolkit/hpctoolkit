@@ -1,9 +1,9 @@
-// NOTE: For static linked versions, this MUST BE compiled for
-//       the target system, as the include file that defines the
-//       structure for the contexts may be different for the
-//       target system vs the build system.
-// !! ESPECIALLY FOR CATAMOUNT !!
-//
+// note: 
+//     when cross compiling, this version MUST BE compiled for
+//     the target system, as the include file that defines the
+//     structure for the contexts may be different for the
+//     target system vs the build system.
+
 #include <stdio.h>
 #include <setjmp.h>
 #include <ucontext.h>
@@ -17,14 +17,12 @@
 
 #include "general.h"
 #include "mem.h"
-#include "intervals.h"
+// #include "intervals.h"
 #include "pmsg.h"
 #include "stack_troll.h"
 #include "monitor.h"
 
 #include "unwind.h"
-#include "x86-decoder.h"
-
 #include "splay.h"
 
 #include "thread_data.h"
@@ -34,24 +32,32 @@
 #define __CRAYXT_CATAMOUNT_TARGET
 #endif
 
-#define NO 1
-#define BUILD_INT 1
+
+/****************************************************************************************
+ * global data 
+ ***************************************************************************************/
 
 int debug_unw = 0;
 
+
+
 /****************************************************************************************
- * private operations
+ * local data 
  ***************************************************************************************/
 
+static int DEBUG_WAIT_BEFORE_TROLLING = 1; // flag value won't matter environment var set
 
-static void update_cursor_with_troll(unw_cursor_t *cursor, void *sp, void *pc, void *bp);
-static void unw_init_mcontext(mcontext_t* mctxt, unw_cursor_t *cursor);
+static int DEBUG_NO_LONGJMP = 0;
 
-static int 
-csprof_check_fence(void *ip)
-{
-  return monitor_in_start_func_wide(ip);
-}
+
+
+/****************************************************************************************
+ * forward declarations 
+ ***************************************************************************************/
+
+static void update_cursor_with_troll(unw_cursor_t *cursor);
+
+static int csprof_check_fence(void *ip);
 
 
 /****************************************************************************************
@@ -62,11 +68,7 @@ csprof_check_fence(void *ip)
 void
 unw_init(void)
 {
-  extern void xed_init(void);
-
-  
-  PMSG(UNW,"UNW: xed, splay tree init");
-  x86_family_decoder_init();
+  unw_init_arch();
   csprof_interval_tree_init();
 }
 
@@ -76,46 +78,22 @@ unw_init_cursor(ucontext_t* context, unw_cursor_t *cursor)
 {
 
   PMSG(UNW,"init prim unw called w ucontext: context = %p, cursor_p = %p\n",context,cursor);
-  unw_init_mcontext(&(context->uc_mcontext),cursor);
-}
 
+  unw_init_cursor_arch(context, cursor);
 
-static void 
-unw_init_mcontext(mcontext_t* mctxt, unw_cursor_t *cursor)
-{
+  PMSG(UNW,"UNW_INIT: frame pc = %p, frame bp = %p, frame sp = %p", 
+       cursor->pc, cursor->bp, cursor->sp);
 
-  void **bp, *sp,*pc;
+  cursor->intvl = csprof_addr_to_interval(cursor->pc);
 
-  PMSG(UNW,"init prim unw (mcontext) called: mctxt = %p, cursor_p = %p\n",mctxt,cursor);
+  if (!cursor->intvl) {
+    PMSG(TROLL,"UNW INIT FAILURE: frame pc = %p, frame bp = %p, frame sp = %p",
+         cursor->pc, cursor->bp, cursor->sp);
 
-
-#ifdef __CRAYXT_CATAMOUNT_TARGET
-  pc = (void *)mctxt->sc_rip;
-  bp = (void **)mctxt->sc_rbp;
-  sp = (void **)mctxt->sc_rsp;
-#else
-  pc = (void *)mctxt->gregs[REG_RIP];
-  bp = (void **)mctxt->gregs[REG_RBP];
-  sp = (void **)mctxt->gregs[REG_RSP];
-#endif
-
-  PMSG(UNW,"UNW_INIT:frame pc = %p, frame bp = %p, frame sp = %p",pc,bp,sp);
-
-  // EMSG("UNW_INIT:frame pc = %p, frame bp = %p, frame sp = %p",pc,bp,sp);
-
-  cursor->intvl = csprof_addr_to_interval(pc);
-
-  if (! cursor->intvl){
-    PMSG(TROLL,"UNW INIT FAILURE :frame pc = %p, frame bp = %p, frame sp = %p",pc,bp,sp);
     PMSG(TROLL,"UNW INIT calls stack troll");
 
-    update_cursor_with_troll(cursor, sp, pc, bp);
-  }
-  else {
-    cursor->pc = pc;
-    cursor->bp = bp;
-    cursor->sp = sp;
-  }
+    update_cursor_with_troll(cursor);
+  } 
 
   if (debug_unw) {
     PMSG(UNW,"dumping the found interval");
@@ -127,20 +105,20 @@ unw_init_mcontext(mcontext_t* mctxt, unw_cursor_t *cursor)
 
 // This get_reg just extracts the pc, regardless of REGID
 
-int unw_get_reg(unw_cursor_t *cursor,int REGID,void **regv)
+int 
+unw_get_reg(unw_cursor_t *cursor, int reg_id,void **reg_value)
 {
-
-  *regv = cursor->pc;
-  
-  return 0;
+   unw_get_reg_arch(cursor, reg_id, reg_value);
+   return 0;
 }
 
-static dbg_troll = 0;
 
-int unw_step (unw_cursor_t *cursor)
+int 
+unw_step (unw_cursor_t *cursor)
 {
-  void **bp, **spr_sp, **spr_bp;
-  void *sp,*pc,*spr_pc;
+  void *sp, **bp, *pc; 
+  void **next_sp, **next_bp, *next_pc;
+
   unwind_interval *uw;
 
   // current frame
@@ -150,31 +128,30 @@ int unw_step (unw_cursor_t *cursor)
   uw = cursor->intvl;
 
   //-----------------------------------------------------------
-  // 
+  // check if we have reached the end of our unwind, which is
+  // demarcated with a fence. 
   //-----------------------------------------------------------
-  if (csprof_check_fence(pc)) {
-    return 0;
-  }
+  if (csprof_check_fence(pc)) return 0;
   
   //-----------------------------------------------------------
   // 
   //-----------------------------------------------------------
   cursor->intvl = NULL;
+
   if ((cursor->intvl == NULL) && 
       (uw->ra_status == RA_SP_RELATIVE || uw->ra_status == RA_STD_FRAME)) {
-    spr_sp  = ((void **)((unsigned long) sp + uw->sp_ra_pos));
-    spr_pc  = *spr_sp;
+    next_sp  = ((void **)((unsigned long) sp + uw->sp_ra_pos));
+    next_pc  = *next_sp;
     if (uw->bp_status == BP_UNCHANGED){
-      spr_bp = bp;
-    }
-    else {
+      next_bp = bp;
+    } else {
       //-----------------------------------------------------------
       // reload the candidate value for the caller's BP from the 
       // save area in the activation frame according to the unwind 
       // information produced by binary analysis
       //-----------------------------------------------------------
-      spr_bp = (void **)((unsigned long) sp + uw->sp_bp_pos);
-      spr_bp  = *spr_bp; 
+      next_bp = (void **)((unsigned long) sp + uw->sp_bp_pos);
+      next_bp  = *next_bp; 
 
       //-----------------------------------------------------------
       // if value of BP reloaded from the save area does not point 
@@ -189,12 +166,12 @@ int unw_step (unw_cursor_t *cursor)
       //
       // 19 December 2007 - John Mellor-Crummey
       //-----------------------------------------------------------
-      if (((unsigned long) spr_bp < (unsigned long) sp) && 
+      if (((unsigned long) next_bp < (unsigned long) sp) && 
 	  ((unsigned long) bp > (unsigned long) sp)) 
-	spr_bp = bp;
+	next_bp = bp;
     }
-    spr_sp += 1;
-    cursor->intvl = csprof_addr_to_interval(spr_pc);
+    next_sp += 1;
+    cursor->intvl = csprof_addr_to_interval(next_pc);
   }
 
   if ((cursor->intvl == NULL) && 
@@ -202,41 +179,36 @@ int unw_step (unw_cursor_t *cursor)
        ((uw->ra_status == RA_STD_FRAME) && 
 	((unsigned long) bp >= (unsigned long) sp)))) {
     // bp relative
-    spr_sp  = ((void **)((unsigned long) bp + uw->bp_bp_pos));
-    spr_bp  = *spr_sp;
-    spr_sp  = ((void **)((unsigned long) bp + uw->bp_ra_pos));
-    spr_pc  = *spr_sp;
-    spr_sp += 1;
-    if ((unsigned long) spr_sp > (unsigned long) sp) { 
+    next_sp  = ((void **)((unsigned long) bp + uw->bp_bp_pos));
+    next_bp  = *next_sp;
+    next_sp  = ((void **)((unsigned long) bp + uw->bp_ra_pos));
+    next_pc  = *next_sp;
+    next_sp += 1;
+    if ((unsigned long) next_sp > (unsigned long) sp) { 
       // this condition is a weak correctness check. only
       // try building an interval for the return address again if it succeeds
-      cursor->intvl = csprof_addr_to_interval(spr_pc);
+      cursor->intvl = csprof_addr_to_interval(next_pc);
     }
   }
 
   if (! cursor->intvl){
-    if (((void *)spr_sp) >= monitor_stack_bottom()) { 
-      return 0; 
-    }
+    if (((void *)next_sp) >= monitor_stack_bottom()) return 0; 
     
-    PMSG(TROLL,"UNW STEP FAILURE :candidate pc = %p, cursor pc = %p, cursor bp = %p, cursor sp = %p",spr_pc,pc,bp,sp);
+    PMSG(TROLL,"UNW STEP FAILURE :candidate pc = %p, cursor pc = %p, cursor bp = %p, cursor sp = %p", next_pc, pc, bp, sp);
     PMSG(TROLL,"UNW STEP calls stack troll");
 
     IF_ENABLED(TROLL_WAIT) {
       fprintf(stderr,"Hit troll point: attach w gdb to %d\n"
 	             "Maybe call dbg_set_flag(DBG_TROLL_WAIT,0) after attached\n",getpid());
-      dbg_troll = 1;
-      while(dbg_troll){
-	;
-      }
-      
+
+      while(DEBUG_WAIT_BEFORE_TROLLING);  // spin wait for developer to attach a debugger and clear the flag 
     }
-    update_cursor_with_troll(cursor, sp, pc, bp);
-  }
-  else {
-    cursor->pc = spr_pc;
-    cursor->bp = spr_bp;
-    cursor->sp = spr_sp;
+
+    update_cursor_with_troll(cursor);
+  } else {
+    cursor->pc = next_pc;
+    cursor->bp = next_bp;
+    cursor->sp = next_sp;
   }
 
   if (debug_unw) {
@@ -251,59 +223,66 @@ int unw_step (unw_cursor_t *cursor)
 
 
 
-
 /****************************************************************************************
  * private operations
  ***************************************************************************************/
 
-int _dbg_no_longjmp = 0;
-
-static void drop_sample(void)
+static void 
+drop_sample(void)
 {
-  if (_dbg_no_longjmp){
-    return;
-  }
+  if (DEBUG_NO_LONGJMP) return;
+
   dump_backtraces(TD_GET(state),0);
   sigjmp_buf_t *it = &(TD_GET(bad_unwind));
   siglongjmp(it->jb,9);
 }
 
-static void update_cursor_with_troll(unw_cursor_t *cursor, void *sp, void *pc, void *bp)
+
+static void 
+update_cursor_with_troll(unw_cursor_t *cursor)
 {
-  void  **spr_sp, **spr_bp, *spr_pc;
+  unsigned int tmp_ra_offset;
 
-  unsigned int tmp_ra_loc;
-  if (stack_troll((char **)sp,&tmp_ra_loc)){
-    spr_sp  = ((void **)((unsigned long) sp + tmp_ra_loc));
-    spr_pc  = *spr_sp;
-#if 0
-    spr_bp  = (void **) *(spr_sp - 1);
-#else
-    spr_bp  = (void **) bp;
-#endif
-    spr_sp += 1;
+  if (stack_troll((char **)cursor->sp, &tmp_ra_offset)) {
+    void  **next_sp = ((void **)((unsigned long) cursor->sp + tmp_ra_offset));
+    void *next_pc = *next_sp;
 
-    cursor->intvl = csprof_addr_to_interval(spr_pc);
-    if (! cursor->intvl){
-      PMSG(TROLL, "No interval found for trolled pc, dropping sample,cursor pc = %p",pc);
-      // assert(0);
-      drop_sample();
+    // the current base pointer is a good assumption for the caller's base pointer 
+    void **next_bp = (void **) cursor->bp; 
+
+    next_sp += 1;
+
+    cursor->intvl = csprof_addr_to_interval(next_pc);
+    if (cursor->intvl) {
+      PMSG(TROLL,"Trolling advances cursor to pc = %p,sp = %p", next_pc, next_sp);
+      PMSG(TROLL,"TROLL SUCCESS pc = %p", cursor->pc);
+
+      cursor->pc = next_pc;
+      cursor->bp = next_bp;
+      cursor->sp = next_sp;
+
+      return; // success!
     }
-    else {
-      PMSG(TROLL,"Trolling advances cursor to pc = %p,sp = %p",spr_pc,spr_sp);
-      PMSG(TROLL,"TROLL SUCCESS pc = %p",pc);
-      cursor->pc = spr_pc;
-      cursor->bp = spr_bp;
-      cursor->sp = spr_sp;
-    }
+    PMSG(TROLL, "No interval found for trolled pc, dropping sample,cursor pc = %p", cursor->pc);
+    // fall through for error handling
+  } else {
+    PMSG(TROLL, "Troll failed: dropping sample,cursor pc = %p", cursor->pc);
+    PMSG(TROLL,"TROLL FAILURE pc = %p", cursor->pc);
+    // fall through for error handling
   }
-  else {
-    PMSG(TROLL, "Troll failed: dropping sample,cursor pc = %p",pc);
-    PMSG(TROLL,"TROLL FAILURE pc = %p",pc);
-    // assert(0);
-    drop_sample();
-  }
+
+  // assert(0);
+  drop_sample();
 }
+
+
+static int 
+csprof_check_fence(void *ip)
+{
+  return monitor_in_start_func_wide(ip);
+}
+
+
 
 /****************************************************************************************
  * debug operations
@@ -313,7 +292,7 @@ unw_cursor_t _dbg_cursor;
 
 void dbg_init_cursor(void *context)
 {
-  _dbg_no_longjmp = 1;
-  unw_init_mcontext(context,&_dbg_cursor);
-  _dbg_no_longjmp = 0;
+  DEBUG_NO_LONGJMP = 1;
+  unw_init_cursor_arch(context, &_dbg_cursor);
+  DEBUG_NO_LONGJMP = 0;
 }
