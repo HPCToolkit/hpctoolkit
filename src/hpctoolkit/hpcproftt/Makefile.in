@@ -98,7 +98,7 @@ host_triplet = @host@
 DIST_COMMON = $(srcdir)/Makefile.am $(srcdir)/Makefile.in \
 	$(top_srcdir)/src/Makeinclude.config \
 	$(top_srcdir)/src/Makeinclude.rules
-bin_PROGRAMS = hpcproftt-bin$(EXEEXT) hpcproftt-old$(EXEEXT)
+bin_PROGRAMS = hpcproftt-bin$(EXEEXT)
 subdir = src/hpctoolkit/hpcproftt
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/config/hpc-cxxutils.m4 \
@@ -121,17 +121,6 @@ hpcproftt_bin_DEPENDENCIES = $(am__DEPENDENCIES_1)
 hpcproftt_bin_LINK = $(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CXXLD) $(hpcproftt_bin_CXXFLAGS) \
 	$(CXXFLAGS) $(hpcproftt_bin_LDFLAGS) $(LDFLAGS) -o $@
-am__objects_2 = hpcproftt_old-main-old.$(OBJEXT) \
-	hpcproftt_old-summary.$(OBJEXT) \
-	hpcproftt_old-loadmodule.$(OBJEXT)
-am_hpcproftt_old_OBJECTS = $(am__objects_2)
-hpcproftt_old_OBJECTS = $(am_hpcproftt_old_OBJECTS)
-am__DEPENDENCIES_2 = $(HPC_LIBPROFJUICY) $(HPC_LIBPROFLEAN) \
-	$(HPC_LIBBINUTILS) $(HPC_LIBISA) $(HPC_LIBSUPPORT)
-hpcproftt_old_DEPENDENCIES = $(am__DEPENDENCIES_2)
-hpcproftt_old_LINK = $(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) \
-	$(LIBTOOLFLAGS) --mode=link $(CXXLD) $(hpcproftt_old_CXXFLAGS) \
-	$(CXXFLAGS) $(hpcproftt_old_LDFLAGS) $(LDFLAGS) -o $@
 binSCRIPT_INSTALL = $(INSTALL_SCRIPT)
 SCRIPTS = $(bin_SCRIPTS)
 DEFAULT_INCLUDES = -I.@am__isrc@
@@ -155,8 +144,8 @@ CCLD = $(CC)
 LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
 	--mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) \
 	$(LDFLAGS) -o $@
-SOURCES = $(hpcproftt_bin_SOURCES) $(hpcproftt_old_SOURCES)
-DIST_SOURCES = $(hpcproftt_bin_SOURCES) $(hpcproftt_old_SOURCES)
+SOURCES = $(hpcproftt_bin_SOURCES)
+DIST_SOURCES = $(hpcproftt_bin_SOURCES)
 ETAGS = etags
 CTAGS = ctags
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
@@ -341,11 +330,6 @@ MYSOURCES = \
 	main.cpp \
 	Args.hpp Args.cpp
 
-MYSOURCES_OLD = \
-	main-old.cpp \
-	summary.hpp summary.cpp \
-	loadmodule.hpp loadmodule.cpp
-
 
 # GNU binutils flags are needed for HPC_LIBISA.
 MYCFLAGS = @HOST_CFLAGS@   $(HPC_IFLAGS) @GNUBINUTILS_IFLAGS@
@@ -358,13 +342,7 @@ MYLDADD = \
 	@HOST_HPCPROFTT_LDFLAGS@ \
 	-lm
 
-MYLDADD_OLD = \
-	@HOST_LIBTREPOSITORY@ \
-	$(HPC_LIBPROFJUICY) $(HPC_LIBPROFLEAN) $(HPC_LIBBINUTILS) $(HPC_LIBISA)  $(HPC_LIBSUPPORT) \
-        @GNUBINUTILS_LDFLAGS@
-
 MYCLEAN = @HOST_LIBTREPOSITORY@
-MYINSTALLDIR = $(DESTDIR)$(prefix)
 
 #############################################################################
 # Automake rules
@@ -375,11 +353,6 @@ hpcproftt_bin_CFLAGS = $(MYCFLAGS)
 hpcproftt_bin_CXXFLAGS = $(MYCXXFLAGS)
 hpcproftt_bin_LDFLAGS = $(MYLDFLAGS)
 hpcproftt_bin_LDADD = $(MYLDADD)
-hpcproftt_old_SOURCES = $(MYSOURCES_OLD)
-hpcproftt_old_CFLAGS = $(MYCFLAGS)
-hpcproftt_old_CXXFLAGS = $(MYCXXFLAGS)
-hpcproftt_old_LDFLAGS = $(MYLDFLAGS)
-hpcproftt_old_LDADD = $(MYLDADD_OLD)
 MOSTLYCLEANFILES = $(MYCLEAN)
 
 # Assumes includer sets MYCXXFLAGS and MYCFLAGS
@@ -455,9 +428,6 @@ clean-binPROGRAMS:
 hpcproftt-bin$(EXEEXT): $(hpcproftt_bin_OBJECTS) $(hpcproftt_bin_DEPENDENCIES) 
 	@rm -f hpcproftt-bin$(EXEEXT)
 	$(hpcproftt_bin_LINK) $(hpcproftt_bin_OBJECTS) $(hpcproftt_bin_LDADD) $(LIBS)
-hpcproftt-old$(EXEEXT): $(hpcproftt_old_OBJECTS) $(hpcproftt_old_DEPENDENCIES) 
-	@rm -f hpcproftt-old$(EXEEXT)
-	$(hpcproftt_old_LINK) $(hpcproftt_old_OBJECTS) $(hpcproftt_old_LDADD) $(LIBS)
 install-binSCRIPTS: $(bin_SCRIPTS)
 	@$(NORMAL_INSTALL)
 	test -z "$(bindir)" || $(MKDIR_P) "$(DESTDIR)$(bindir)"
@@ -486,9 +456,6 @@ distclean-compile:
 
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/hpcproftt_bin-Args.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/hpcproftt_bin-main.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/hpcproftt_old-loadmodule.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/hpcproftt_old-main-old.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/hpcproftt_old-summary.Po@am__quote@
 
 .cpp.o:
 @am__fastdepCXX_TRUE@	$(CXXCOMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
@@ -538,48 +505,6 @@ hpcproftt_bin-Args.obj: Args.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='Args.cpp' object='hpcproftt_bin-Args.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(hpcproftt_bin_CXXFLAGS) $(CXXFLAGS) -c -o hpcproftt_bin-Args.obj `if test -f 'Args.cpp'; then $(CYGPATH_W) 'Args.cpp'; else $(CYGPATH_W) '$(srcdir)/Args.cpp'; fi`
-
-hpcproftt_old-main-old.o: main-old.cpp
-@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(hpcproftt_old_CXXFLAGS) $(CXXFLAGS) -MT hpcproftt_old-main-old.o -MD -MP -MF $(DEPDIR)/hpcproftt_old-main-old.Tpo -c -o hpcproftt_old-main-old.o `test -f 'main-old.cpp' || echo '$(srcdir)/'`main-old.cpp
-@am__fastdepCXX_TRUE@	mv -f $(DEPDIR)/hpcproftt_old-main-old.Tpo $(DEPDIR)/hpcproftt_old-main-old.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='main-old.cpp' object='hpcproftt_old-main-old.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(hpcproftt_old_CXXFLAGS) $(CXXFLAGS) -c -o hpcproftt_old-main-old.o `test -f 'main-old.cpp' || echo '$(srcdir)/'`main-old.cpp
-
-hpcproftt_old-main-old.obj: main-old.cpp
-@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(hpcproftt_old_CXXFLAGS) $(CXXFLAGS) -MT hpcproftt_old-main-old.obj -MD -MP -MF $(DEPDIR)/hpcproftt_old-main-old.Tpo -c -o hpcproftt_old-main-old.obj `if test -f 'main-old.cpp'; then $(CYGPATH_W) 'main-old.cpp'; else $(CYGPATH_W) '$(srcdir)/main-old.cpp'; fi`
-@am__fastdepCXX_TRUE@	mv -f $(DEPDIR)/hpcproftt_old-main-old.Tpo $(DEPDIR)/hpcproftt_old-main-old.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='main-old.cpp' object='hpcproftt_old-main-old.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(hpcproftt_old_CXXFLAGS) $(CXXFLAGS) -c -o hpcproftt_old-main-old.obj `if test -f 'main-old.cpp'; then $(CYGPATH_W) 'main-old.cpp'; else $(CYGPATH_W) '$(srcdir)/main-old.cpp'; fi`
-
-hpcproftt_old-summary.o: summary.cpp
-@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(hpcproftt_old_CXXFLAGS) $(CXXFLAGS) -MT hpcproftt_old-summary.o -MD -MP -MF $(DEPDIR)/hpcproftt_old-summary.Tpo -c -o hpcproftt_old-summary.o `test -f 'summary.cpp' || echo '$(srcdir)/'`summary.cpp
-@am__fastdepCXX_TRUE@	mv -f $(DEPDIR)/hpcproftt_old-summary.Tpo $(DEPDIR)/hpcproftt_old-summary.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='summary.cpp' object='hpcproftt_old-summary.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(hpcproftt_old_CXXFLAGS) $(CXXFLAGS) -c -o hpcproftt_old-summary.o `test -f 'summary.cpp' || echo '$(srcdir)/'`summary.cpp
-
-hpcproftt_old-summary.obj: summary.cpp
-@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(hpcproftt_old_CXXFLAGS) $(CXXFLAGS) -MT hpcproftt_old-summary.obj -MD -MP -MF $(DEPDIR)/hpcproftt_old-summary.Tpo -c -o hpcproftt_old-summary.obj `if test -f 'summary.cpp'; then $(CYGPATH_W) 'summary.cpp'; else $(CYGPATH_W) '$(srcdir)/summary.cpp'; fi`
-@am__fastdepCXX_TRUE@	mv -f $(DEPDIR)/hpcproftt_old-summary.Tpo $(DEPDIR)/hpcproftt_old-summary.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='summary.cpp' object='hpcproftt_old-summary.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(hpcproftt_old_CXXFLAGS) $(CXXFLAGS) -c -o hpcproftt_old-summary.obj `if test -f 'summary.cpp'; then $(CYGPATH_W) 'summary.cpp'; else $(CYGPATH_W) '$(srcdir)/summary.cpp'; fi`
-
-hpcproftt_old-loadmodule.o: loadmodule.cpp
-@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(hpcproftt_old_CXXFLAGS) $(CXXFLAGS) -MT hpcproftt_old-loadmodule.o -MD -MP -MF $(DEPDIR)/hpcproftt_old-loadmodule.Tpo -c -o hpcproftt_old-loadmodule.o `test -f 'loadmodule.cpp' || echo '$(srcdir)/'`loadmodule.cpp
-@am__fastdepCXX_TRUE@	mv -f $(DEPDIR)/hpcproftt_old-loadmodule.Tpo $(DEPDIR)/hpcproftt_old-loadmodule.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='loadmodule.cpp' object='hpcproftt_old-loadmodule.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(hpcproftt_old_CXXFLAGS) $(CXXFLAGS) -c -o hpcproftt_old-loadmodule.o `test -f 'loadmodule.cpp' || echo '$(srcdir)/'`loadmodule.cpp
-
-hpcproftt_old-loadmodule.obj: loadmodule.cpp
-@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(hpcproftt_old_CXXFLAGS) $(CXXFLAGS) -MT hpcproftt_old-loadmodule.obj -MD -MP -MF $(DEPDIR)/hpcproftt_old-loadmodule.Tpo -c -o hpcproftt_old-loadmodule.obj `if test -f 'loadmodule.cpp'; then $(CYGPATH_W) 'loadmodule.cpp'; else $(CYGPATH_W) '$(srcdir)/loadmodule.cpp'; fi`
-@am__fastdepCXX_TRUE@	mv -f $(DEPDIR)/hpcproftt_old-loadmodule.Tpo $(DEPDIR)/hpcproftt_old-loadmodule.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='loadmodule.cpp' object='hpcproftt_old-loadmodule.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(hpcproftt_old_CXXFLAGS) $(CXXFLAGS) -c -o hpcproftt_old-loadmodule.obj `if test -f 'loadmodule.cpp'; then $(CYGPATH_W) 'loadmodule.cpp'; else $(CYGPATH_W) '$(srcdir)/loadmodule.cpp'; fi`
 
 mostlyclean-libtool:
 	-rm -f *.lo
