@@ -197,12 +197,6 @@ ifndef DO_LUSH
   OBJS += backtrace.o
 endif
 
-ifdef PRIM_UNWIND
-  #OBJS += splay_if.o
-endif
-  OBJS += splay.o
-  OBJS += prim_unw.o
-
 OBJS += swizzle.o unsafe.o
 OBJS += processor-libc.o 
 
@@ -223,6 +217,8 @@ OBJS += handling_sample.o thread_data.o
 OBJS += $(hpcfile_objs)
 
 OBJS += intervals.o 
+OBJS += splay.o
+OBJS += unwind.o
 
 # ----------------------------------------------------------
 # LUSH
