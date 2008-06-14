@@ -65,11 +65,6 @@ MYSOURCES = \
 	main.cpp \
 	Args.hpp Args.cpp
 
-MYSOURCES_OLD = \
-	main-old.cpp \
-	summary.hpp summary.cpp \
-	loadmodule.hpp loadmodule.cpp
-
 # GNU binutils flags are needed for HPC_LIBISA.
 MYCFLAGS   = @HOST_CFLAGS@   $(HPC_IFLAGS) @GNUBINUTILS_IFLAGS@
 MYCXXFLAGS = @HOST_CXXFLAGS@ $(HPC_IFLAGS) @GNUBINUTILS_IFLAGS@ @XERCES_IFLAGS@
@@ -83,14 +78,8 @@ MYLDADD = \
 	@HOST_HPCPROFTT_LDFLAGS@ \
 	-lm
 
-MYLDADD_OLD = \
-	@HOST_LIBTREPOSITORY@ \
-	$(HPC_LIBPROFJUICY) $(HPC_LIBPROFLEAN) $(HPC_LIBBINUTILS) $(HPC_LIBISA)  $(HPC_LIBSUPPORT) \
-        @GNUBINUTILS_LDFLAGS@
-
 MYCLEAN = @HOST_LIBTREPOSITORY@
 
-MYINSTALLDIR = $(DESTDIR)$(prefix)
 
 #############################################################################
 # Automake rules
@@ -98,19 +87,13 @@ MYINSTALLDIR = $(DESTDIR)$(prefix)
 
 bin_SCRIPTS = hpcproftt
 
-bin_PROGRAMS = hpcproftt-bin hpcproftt-old
+bin_PROGRAMS = hpcproftt-bin
 
 hpcproftt_bin_SOURCES   = $(MYSOURCES)
 hpcproftt_bin_CFLAGS    = $(MYCFLAGS)
 hpcproftt_bin_CXXFLAGS  = $(MYCXXFLAGS)
 hpcproftt_bin_LDFLAGS   = $(MYLDFLAGS)
 hpcproftt_bin_LDADD     = $(MYLDADD)
-
-hpcproftt_old_SOURCES   = $(MYSOURCES_OLD)
-hpcproftt_old_CFLAGS    = $(MYCFLAGS)
-hpcproftt_old_CXXFLAGS  = $(MYCXXFLAGS)
-hpcproftt_old_LDFLAGS   = $(MYLDFLAGS)
-hpcproftt_old_LDADD     = $(MYLDADD_OLD)
 
 MOSTLYCLEANFILES = $(MYCLEAN)
 
