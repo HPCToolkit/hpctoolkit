@@ -78,8 +78,14 @@
 #include "segv_handler.h"
 #include "epoch.h"
 #include "metrics.h"
+
+#if 0
 #include "itimer.h"
 #include "papi_sample.h"
+#endif
+
+#include "csprof_options.h"
+
 #include "sample_event.h"
 #include "state.h"
 
