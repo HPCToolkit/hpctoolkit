@@ -325,8 +325,8 @@ bclean:
 install: all
 	-install -d $(install_lib) $(install_bin) $(install_libexec)
 	install $(CSPROFLIB) $(install_lib)
-	cp $(src_dir_prefix)csprof.in $(install_bin)/csprof
-	cp $(src_dir_prefix)csprof_syms.in $(install_libexec)/csprof_syms
+	cp $(src_dir_prefix)/scripts/csprof.in $(install_bin)/csprof
+	cp $(src_dir_prefix)/scripts/csprof_syms.in $(install_libexec)/csprof_syms
 	cp conf.sh $(install_libexec)
 
 %.o: %.c
