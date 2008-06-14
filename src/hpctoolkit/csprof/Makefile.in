@@ -114,11 +114,11 @@ ifdef WITH_PAPI
   OBJS += papi.sample_source.o
 endif
 
-ifdef X86 
-ifdef WITH_XED2
+ifdef X86
+XED2_INCLUDE_OPTS=-I$(XED2_DIR)/include
+XED2_LIBS=-L$(XED2_DIR)/lib -lxed
 INCS += $(XED2_INCLUDE_OPTS)
 LIBS += $(XED2_LIBS) 
-endif
 endif
 
 INCS += $(ARCH_INCLUDES)
