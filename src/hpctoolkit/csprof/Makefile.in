@@ -71,8 +71,8 @@ module_dirs := utilities                \
                fnbounds                 \
                memory                   \
                processor/x86-64         \
-               unwind-analysis/common \
-               unwind-analysis/x86-family \
+               unwind/common            \
+               unwind/x86-family        \
                sampling/types/callstack \
                Dbg                      \
                hpcfile                  \
