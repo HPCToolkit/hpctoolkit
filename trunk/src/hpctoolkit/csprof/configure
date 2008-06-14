@@ -55,10 +55,10 @@ f_papi_ld_list()
 
 processor=`uname -p`
 
-if [ "${processor} == ppc64" ]; then
+if [ "${processor}"x == ppc64x ]; then
   ARCH_INCLUDES=-D__ppc64__
   ARCH=PPC64
-elif [ "${processor} == x86_64" ]; then
+elif [ "${processor}"x == x86_64x ]; then
   ARCH_INCLUDES=-D__x86_64__
   ARCH=X86
 fi
