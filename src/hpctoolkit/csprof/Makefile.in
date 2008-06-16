@@ -95,6 +95,15 @@ endif
 
 INCS := -I$(src_dir_inc)
 
+# do not move "csprof_first_func.o" or "csprof_last_func.o"; they need
+# to be in those places to force the linker to stitch together the
+# library in the proper order and for correct functioning of the profiler
+
+#### ALSO, do NOT move the := assignment elsewhere, because OBJS += construct
+#### will fail to work properly
+
+OBJS := first_func.o
+
 ifdef MPI_SPECIAL
 INCS += $(MPI_INC)
 endif
@@ -154,10 +163,6 @@ CFLAGS += $(DEFINES) $(CSPROF_THREADS) $(CSPROF_TRAMPOLINE) -I./$(ARCH)
 
 hpcfile_objs := $(addsuffix .o,$(addprefix hpcfile_,general cstree csprof))
 
-# do not move "csprof_first_func.o" or "csprof_last_func.o"; they need
-# to be in those places to force the linker to stitch together the
-# library in the proper order and for correct functioning of the profiler
-OBJS := first_func.o
 ifndef STATIC_ONLY
    OBJS += libmonitor_upcalls.o
 else
@@ -277,13 +282,13 @@ vpath %.cpp $(addprefix $(src_dir_prefix),$(module_dirs))
 .PHONY: TT
 
 TT:
-#	 OBJS = $(OBJS)
+	# OBJS = $(OBJS)
 #	 INCS = $(INCS)
 #	 LIBS = $(LIBS)
 #	 CXX  = $(CXX)
 #	 CC   = $(CC)
 #	 INC_CSFILE = $(INC_CSFILE)
-	$(CC) --version
+#	$(CC) --version
 #	 gethostid := |$(gethostid)|
 #	 src dir prefix = |$(src_dir_prefix)|, src dir = |$(src_dir)|
 #	 PRIM_UNWIND = |$(PRIM_UNWIND)|
