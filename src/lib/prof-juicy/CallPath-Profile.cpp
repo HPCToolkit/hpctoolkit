@@ -163,11 +163,11 @@ extern "C" {
 static void 
 convertOpIPToIP(VMA opIP, VMA& ip, ushort& opIdx);
 
-static bool
-addPGMToTree(Prof::CCT::Tree* tree, const char* progName);
+static void
+cct_fixRoot(Prof::CCT::Tree* tree, const char* progName);
 
-static bool 
-fixLeaves(Prof::CSProfNode* node);
+static void
+cct_fixLeaves(Prof::CSProfNode* node);
 
 
 
@@ -266,14 +266,8 @@ Profile::make(const char* fnm)
   // ------------------------------------------------------------
   // Postprocess
   // ------------------------------------------------------------
-
-  // Add PGM node to tree
-  addPGMToTree(prof->cct(), prof->name().c_str());
-  
-  // Convert leaves (CSProfCallSiteNode) to Prof::CSProfStatementNodes
-  // FIXME: There should be a better way of doing this.  We could
-  // merge it with a normalization step...
-  fixLeaves(prof->cct()->root());
+  cct_fixRoot(prof->cct(), prof->name().c_str());  
+  cct_fixLeaves(prof->cct()->root());
 
   prof->cct_canonicalize();
   
@@ -406,33 +400,45 @@ convertOpIPToIP(VMA opIP, VMA& ip, ushort& opIdx)
 }
 
 
-bool
-addPGMToTree(Prof::CCT::Tree* tree, const char* progName)
+// 1. Create a (PGM) root for the CCT
+// 2. Remove the 'monitor_main' placeholder root 
+static void
+cct_fixRoot(Prof::CCT::Tree* tree, const char* progName)
 {
-  bool noError = true;
-
   // Add PGM node
-  Prof::CSProfNode* n = tree->root();
-  if (!n || n->GetType() != Prof::CSProfNode::PGM) {
-    Prof::CSProfNode* root = new Prof::CSProfPgmNode(progName);
-    if (n) { 
-      n->Link(root); // 'root' is parent of 'n'
+  Prof::CSProfNode* oldroot = tree->root();
+  if (!oldroot || oldroot->GetType() != Prof::CSProfNode::PGM) {
+    Prof::CSProfNode* newroot = new Prof::CSProfPgmNode(progName);
+
+    if (oldroot) { 
+      //oldroot->Link(newroot); // 'newroot' is parent of 'n'
+
+      // Move all children of 'oldroot' to 'newroot'
+      for (Prof::CSProfNodeChildIterator it(oldroot); it.Current(); /* */) {
+	Prof::CSProfNode* n = it.CurNode();
+	it++; // advance iterator -- it is pointing at 'n'
+	n->Unlink();
+	n->Link(newroot);
+      }
+      
+      delete oldroot;
     }
-    tree->root(root);
+
+    tree->root(newroot);
   }
-  
-  return noError;
 }
 
 
-static bool 
-fixLeaves(Prof::CSProfNode* node)
+// Convert leaves (CSProfCallSiteNode) to Prof::CSProfStatementNodes
+//
+// FIXME: There should be a better way of doing this.  Can it be
+// avoided altogether, by reading the tree in correctly?
+static void
+cct_fixLeaves(Prof::CSProfNode* node)
 {
   using namespace Prof;
 
-  bool noError = true;
-  
-  if (!node) { return noError; }
+  if (!node) { return; }
 
   // For each immediate child of this node...
   for (CSProfNodeChildIterator it(node); it.Current(); /* */) {
@@ -441,7 +447,7 @@ fixLeaves(Prof::CSProfNode* node)
     DIAG_Assert(child && child_dyn, "");
     it++; // advance iterator -- it is pointing at 'child'
 
-    DIAG_DevMsgIf(0, "fixLeaves: " << hex << child_dyn->ip() << dec);
+    DIAG_DevMsgIf(0, "cct_fixLeaves: " << hex << child_dyn->ip() << dec);
     if (child->IsLeaf() && child->GetType() == CSProfNode::CALLSITE) {
       // This child is a leaf. Convert.
       CSProfCallSiteNode* c = dynamic_cast<CSProfCallSiteNode*>(child);
@@ -454,11 +460,8 @@ fixLeaves(Prof::CSProfNode* node)
       delete c;
     } 
     else if (!child->IsLeaf()) {
-      // Recur:
-      noError = noError && fixLeaves(child);
+      cct_fixLeaves(child);
     }
   }
-  
-  return noError;
 }
 
