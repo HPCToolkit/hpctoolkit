@@ -58,7 +58,7 @@ csprof_cct_node__link(csprof_cct_node_t *, csprof_cct_node_t *);
 // FIXME: tallent: when code is merged into hpctoolkit tree, this
 // should come from src/lib/support/Logic.hpp (where a C version can
 // easily be created).
-inline bool implies(bool p, bool q) { return (!p || q); }
+static inline bool implies(bool p, bool q) { return (!p || q); }
 
 //***************************************************************************
 //
