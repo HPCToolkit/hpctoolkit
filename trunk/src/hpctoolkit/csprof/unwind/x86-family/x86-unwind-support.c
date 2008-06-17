@@ -1,4 +1,5 @@
 #include <ucontext.h>
+#include <assert.h>
 
 #include "x86-decoder.h"
 #include "unwind.h"
