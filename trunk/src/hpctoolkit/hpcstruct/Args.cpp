@@ -97,6 +97,8 @@ Options: General\n\
   -V, --version        Print version information.\n\
   -h, --help           Print this help.\n\
   --debug [<n>]        Debug: use debug level <n>. {1}\n\
+  --debug-proc <glob>  Debug structure recovery for procedures matching\n\
+                       the procedure glob <glob>\n\
 \n\
 Options: Recovery and Output\n\
   -i, --irreducible-interval-as-loop-off\n\
@@ -144,7 +146,9 @@ CmdLineParser::OptArgDesc Args::optArgs[] = {
      NULL },
   { 'h', "help",        CLP::ARG_NONE, CLP::DUPOPT_CLOB, NULL,
      NULL },
-  {  0 , "debug",           CLP::ARG_OPT,  CLP::DUPOPT_CLOB, NULL,  // hidden
+  {  0 , "debug",       CLP::ARG_OPT,  CLP::DUPOPT_CLOB, NULL,
+     NULL },
+  {  0 , "debug-proc",  CLP::ARG_REQ,  CLP::DUPOPT_CLOB, NULL,
      NULL },
   CmdLineParser_OptArgDesc_NULL_MACRO // SGI's compiler requires this version
 };
@@ -259,6 +263,9 @@ Args::parse(int argc, const char* const argv[])
       }
       Diagnostics_SetDiagnosticFilterLevel(verb);
     } 
+    if (parser.isOpt("debug-proc")) { 
+      dbgProcGlob = parser.getOptArg("debug-proc");
+    }
     
     // Check for other options
     if (parser.isOpt("irreducible-interval-as-loop-off")) { 

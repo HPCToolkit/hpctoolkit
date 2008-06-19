@@ -389,7 +389,7 @@ correlateWithObject_LM(const Prof::Metric::Mgr& metricMgr,
     const binutils::Proc* p = it->second;
     string bestName = GetBestFuncName(p->name());
       
-    binutils::Insn* endInsn = p->lastInsn();
+    binutils::Insn* endInsn = p->endInsn();
     VMAInterval procint(p->begVMA(), p->endVMA() + endInsn->size());
       
     const vector<uint64_t> metricTotsProc = 

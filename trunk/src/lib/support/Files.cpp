@@ -275,12 +275,9 @@ fnmatch(const std::vector<std::string>& patternVec,
 {
   for (uint i = 0; i < patternVec.size(); ++i) {
     const std::string& pat = patternVec[i];
-    int fnd = ::fnmatch(pat.c_str(), string, flags);
-    if (fnd == 0) {
+    bool fnd = FileUtil::fnmatch(pat, string, flags);
+    if (fnd) {
       return true;
-    }
-    else if (fnd != FNM_NOMATCH) {
-      // error
     }
   }
 

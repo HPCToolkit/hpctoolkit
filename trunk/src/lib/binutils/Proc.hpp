@@ -154,8 +154,8 @@ public:
   unsigned int numInsns()  const { return m_numInsns; }
 
   // Return the first and last instruction in the procedure
-  Insn* firstInsn() const { return findInsn(m_begVMA, 0); }
-  Insn* lastInsn() const;
+  Insn* begInsn() const { return findInsn(m_begVMA, 0); }
+  Insn* endInsn() const;
   
   // -------------------------------------------------------
   // Convenient wrappers for the 'LM' versions of the same.

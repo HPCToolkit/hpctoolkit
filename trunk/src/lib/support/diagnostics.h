@@ -146,27 +146,41 @@ Diagnostics_TheMostVisitedBreakpointInHistory(const char* filenm,
 // a message string.  Example:
 //   if (...) DIAG_EMsg("bad val: '" << v << "'")
 
-#define DIAG_MsgIf(ifexpr, streamArgs)                              \
+#define DIAG_MsgIf_GENERIC(tag, ifexpr, streamArgs)		    \
   if (ifexpr) {                                                     \
-    DIAG_CERR << "msg: " << streamArgs << DIAG_ENDL; }
+    DIAG_CERR << tag << streamArgs << DIAG_ENDL; }
+
+
+#define DIAG_MsgIf(ifexpr, streamArgs)                              \
+  DIAG_MsgIf_GENERIC("msg: ", ifexpr, streamArgs)
+
+#define DIAG_MsgIfCtd(ifexpr, streamArgs)                           \
+  DIAG_MsgIf_GENERIC("", ifexpr, streamArgs)
 
 #define DIAG_Msg(level, streamArgs)                                 \
   DIAG_MsgIf((level <= DIAG_DBG_LVL_PUB), streamArgs)
 
-#define DIAG_DevMsgIf(ifexpr, streamArgs)                           \
-  if (ifexpr) {                                                     \
-    DIAG_CERR << "msg*: " << streamArgs << DIAG_ENDL; }
+
+#define DIAG_DevMsgIf(ifexpr, streamArgs)		            \
+  DIAG_MsgIf_GENERIC("msg*: ", ifexpr, streamArgs)
+
+#define DIAG_DevMsgIfCtd(ifexpr, streamArgs)		            \
+  DIAG_MsgIf_GENERIC("", ifexpr, streamArgs)
 
 #define DIAG_DevMsg(level, streamArgs)                              \
   if (level <= DIAG_DBG_LVL) {                                      \
     DIAG_CERR << "msg* [" << level << "]: " << streamArgs << DIAG_ENDL; }
 
+
 #define DIAG_WMsgIf(ifexpr, streamArgs)                              \
-  if (ifexpr) {                                                     \
-    DIAG_CERR << "warning: " << streamArgs << DIAG_ENDL; }
+  DIAG_MsgIf_GENERIC("warning: ", ifexpr, streamArgs)
+
+#define DIAG_WMsgIfCtd(ifexpr, streamArgs)                           \
+  DIAG_MsgIf_GENERIC("", ifexpr, streamArgs)
 
 #define DIAG_WMsg(level, streamArgs)                                 \
   DIAG_WMsgIf((level <= DIAG_DBG_LVL_PUB), streamArgs)
+
 
 #define DIAG_EMsg(streamArgs)                                       \
   { DIAG_CERR << "error: " << streamArgs << DIAG_ENDL;              \

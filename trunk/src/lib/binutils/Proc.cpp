@@ -97,7 +97,7 @@ binutils::Proc::~Proc()
 
 
 binutils::Insn* 
-binutils::Proc::lastInsn() const
+binutils::Proc::endInsn() const
 {
   Insn* insn = findInsn(m_endVMA, 0);
   if (insn) {
@@ -128,7 +128,7 @@ binutils::Proc::dump(std::ostream& os, int flags, const char* pre) const
   
   string func, file, b_func, b_file, e_func, e_file;
   SrcFile::ln begLn, endLn, b_begLn, e_endLn2;
-  Insn* eInsn = lastInsn();
+  Insn* eInsn = endInsn();
   ushort endOp = (eInsn) ? eInsn->opIndex() : 0;
 
   // This call performs some consistency checking

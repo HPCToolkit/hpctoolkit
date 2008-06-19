@@ -97,6 +97,7 @@ public:
   bool unsafeNormalizations;      // default: true
   bool prettyPrintOutput;         // default: true
   std::string canonicalPathList;
+  std::string dbgProcGlob;
 
   // Parsed Data: arguments
   std::string inputFile;

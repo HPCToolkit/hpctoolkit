@@ -124,13 +124,14 @@ real_main(int argc, char* argv[])
   { 
     using namespace banal::bloop;
     Prof::Struct::Tree* strctTree =
-      BuildLMStructure(lm, args.canonicalPathList.c_str(),
+      buildLMStructure(lm, args.canonicalPathList.c_str(),
 		       args.normalizeScopeTree, 
 		       args.unsafeNormalizations,
 		       args.irreducibleIntervalIsLoop,
-		       args.forwardSubstitutionOff);
+		       args.forwardSubstitutionOff,
+		       args.dbgProcGlob);
     
-    WriteStrctTree(std::cout, strctTree, args.prettyPrintOutput);
+    writeStructure(std::cout, strctTree, args.prettyPrintOutput);
     delete strctTree;
   }
   
