@@ -28,7 +28,7 @@ install: build
 	cp $(DYNINST_ROOT)/src/$(PLATFORM)/lib/*.so   $(PREFIX)/lib
 	cp $(libdwarf)/*.so                           $(PREFIX)/lib
 	cp $(libelf)/*.so.0                           $(PREFIX)/lib
-	cd $(PREFIX)/lib ; ln -s libelf.so.0 libelf.so
+	cd $(PREFIX)/lib ; rm -f libelf.so ; ln -s libelf.so.0 libelf.so
 
 .DEFAULT:
 	cd $(DYNINST_ROOT)/src/core; $(MAKE) -f $(ROOT)/mf.ext.mk $(MAKECMDGOALS)
