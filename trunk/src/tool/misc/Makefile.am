@@ -62,12 +62,7 @@ include $(top_srcdir)/src/Makeinclude.config
 #############################################################################
 
 MYSCRIPTS =
-#	dcpicounts \
-#	hpcmissing \
-#	f90modfilt \
-#       ptran \
-#	pxmlcat \
-#	xprofquick
+#	hpcmissing
 
 #############################################################################
 # Automake rules
