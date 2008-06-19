@@ -185,7 +185,7 @@ CilkOverhead = {
 
   }
 
-class OverheadMgr:
+class CilkMgr:
     def __init__(self):
         self.data = {
             're_lst' : [ ],
@@ -193,6 +193,11 @@ class OverheadMgr:
         self.makeREs(CilkOverhead['parallel'], 'parallel');
         self.makeREs(CilkOverhead['sync'],     'sync');
         self.makeREs(CilkOverhead['cp'],       'cp');
+
+        # special RE for handling cilk import routines
+        redesc = REDesc()
+        redesc.make_cilk_import()
+        (self.data['re_lst']).append(redesc);
         
     def processLine(self, line, ppMgr):
         new_line = line;
@@ -209,19 +214,34 @@ class OverheadMgr:
     # ------------------------------
     def makeREs(self, overheadFnLst, overhead_ty):
         for fn in overheadFnLst:
-            redesc = REDesc(fn, overhead_ty)
+            redesc = REDesc()
+            redesc.make_overhead(fn, overhead_ty)
             (self.data['re_lst']).append(redesc);
 
 
 class REDesc:
-    def __init__(self, fn, overhead_ty):
+    def __init__(self):
         self.data = {
             'old_reObj': None,
             'new_re'   : None,
+            'ty_ohead' : True,
             }
-        self.make(fn, overhead_ty)
 
-    def make(self, fn, overhead_ty):
+    def oldRE(self):
+        return self.data['old_reObj']
+    def set_oldRE(self, x):
+        self.data['old_reObj'] = x
+
+    def make_newRE(self, filenm, lineno):
+        if (self.isTyOverhead()):
+            txt = self.newRE() % (lineno, lineno, filenm);
+        else:
+            txt = self.newRE() % (lineno, filenm);
+        return txt;
+
+    # ------------------------------
+
+    def make_overhead(self, fn, overhead_ty):
         cilk2c_pre  = r';\s*'
         cilk2c_post = r'[^;]*\s*;'
         old_re = r"%s(%s%s)" % (cilk2c_pre, fn, cilk2c_post);
@@ -231,26 +251,31 @@ class REDesc:
         lush_unmark = r'#line %d "%s"'; # line cilk-fnm
         self.set_newRE(r";\n%s\n  \1\n%s\n  " % (lush_mark, lush_unmark));
 
-    def oldRE(self):
-        return self.data['old_reObj']
-    def set_oldRE(self, x):
-        self.data['old_reObj'] = x
+    def make_cilk_import(self):
+        old_re = r"(^.*_cilk\w+_import\(.+$)";
+        self.set_oldRE(re.compile(old_re));
 
-    def make_newRE(self, filenm, lineno):
-        txt = self.newRE() % (lineno, lineno, filenm);
-        return txt;
+        fix_mark = r'#line %d "%s"';
+        self.set_newRE(r"\1\n%s" % (fix_mark));
+        self.data['ty_ohead'] = False;
 
     # ------------------------------
+    
     def newRE(self):
         return self.data['new_re']
     def set_newRE(self, x):
         self.data['new_re'] = x
 
+    def isTyOverhead(self):
+        return (self.data['ty_ohead']);
+
     def __str__(self):
         return ("old: %s\nnew: %s") % (self.oldRE().pattern, self.newRE())
 
 
-class PPMgr:
+
+
+class CppMgr:
     def __init__(self):
         self.data = {
             'dir_re'     : re.compile(r"^#"),
@@ -295,15 +320,15 @@ def processFile(filenm):
     """..."""
     stream = openInFile(filenm)
 
-    oheadMgr = OverheadMgr()
-    ppMgr = PPMgr()
+    cilkMgr = CilkMgr()
+    cppMgr = CppMgr()
     
     for line in stream:
-        if (ppMgr.isDirective(line)):
-            ppMgr.processDirLine(line)
+        if (cppMgr.isDirective(line)):
+            cppMgr.processDirLine(line)
         else:
-            line = oheadMgr.processLine(line, ppMgr)
-            ppMgr.processNonDirLine()
+            line = cilkMgr.processLine(line, cppMgr)
+            cppMgr.processNonDirLine()
             
         print ("%s") % (line),
         
