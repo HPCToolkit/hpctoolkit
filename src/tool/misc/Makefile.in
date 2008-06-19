@@ -15,7 +15,7 @@
 @SET_MAKE@
 
 # -*-Mode: makefile;-*-
-# $Id: Makefile.am 1275 2008-05-01 02:15:35Z eraxxon $
+# $Id: Makefile.am 1465 2008-06-19 18:58:57Z eraxxon $
 
 #############################################################################
 #
@@ -265,12 +265,7 @@ HPC_LIBSUPPORT = $(top_builddir)/src/lib/support/libHPCsupport.la
 # Local settings
 #############################################################################
 MYSCRIPTS = 
-#	dcpicounts \
-#	hpcmissing \
-#	f90modfilt \
-#       ptran \
-#	pxmlcat \
-#	xprofquick
+#	hpcmissing
 
 #############################################################################
 # Automake rules
