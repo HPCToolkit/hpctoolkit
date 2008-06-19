@@ -122,12 +122,27 @@ dirname(const std::string& fname)
 }
 
 
+static inline bool 
+fnmatch(const std::string pattern, const char* string, int flags = 0)
+{
+  int fnd = ::fnmatch(pattern.c_str(), string, flags);
+  return (fnd == 0);
+#if 0
+  if (fnd == 0) {
+    return true;
+  }
+  else if (fnd != FNM_NOMATCH) {
+    // error
+  }
+#endif
+}
+
+
 bool 
 fnmatch(const std::vector<std::string>& patternVec, 
 	const char* string, 
 	int flags = 0);
   
-
 } // end of FileUtil namespace
 
 #endif // support_FileUtil_hpp

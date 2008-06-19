@@ -67,20 +67,21 @@ namespace banal {
 namespace bloop {
   
   Prof::Struct::Tree* 
-  BuildLMStructure(binutils::LM* lm, 
+  buildLMStructure(binutils::LM* lm, 
 		   const char* canonicalPathList = "",
 		   bool normalizeScopeTree = true,
 		   bool unsafeNormalizations = true,
 		   bool irreducibleIntervalIsLoop = false,
-		   bool forwardSubstitutionOff = false);
+		   bool forwardSubstitutionOff = false,
+		   const std::string& dbgProcGlob = "");
   
   bool 
-  Normalize(Prof::Struct::Tree* pgmScopeTree, 
+  normalize(Prof::Struct::Tree* pgmScopeTree, 
 	    bool unsafeNormalizations = true);
 
 
   void
-  WriteStrctTree(std::ostream& os, 
+  writeStructure(std::ostream& os, 
 		 Prof::Struct::Tree* pgmScopeTree,
 		 bool prettyPrint = true);
 

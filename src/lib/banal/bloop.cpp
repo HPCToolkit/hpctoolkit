@@ -55,15 +55,10 @@ using std::cout;
 using std::cerr;
 using std::endl;
 
+#include <iomanip>
+
 #include <fstream>
 #include <sstream>
-
-#ifdef NO_STD_CHEADERS
-# include <string.h>
-#else
-# include <cstring>
-using namespace std; // For compatibility with non-std C headers
-#endif
 
 #include <string>
 using std::string;
@@ -73,6 +68,8 @@ using std::string;
 #include <vector>
 
 #include <algorithm>
+
+#include <cstring>
 
 //************************ OpenAnalysis Include Files ***********************
 
@@ -111,39 +108,40 @@ namespace bloop {
 
 typedef std::multimap<Struct::Proc*, binutils::Proc*> ProcStrctToProcMap;
 
-
 static ProcStrctToProcMap*
-BuildLMSkeleton(Struct::LM* lmStrct, binutils::LM* lm);
+buildLMSkeleton(Struct::LM* lmStrct, binutils::LM* lm);
 
 static Struct::File*
-FindOrCreateFileNode(Struct::LM* lmStrct, binutils::Proc* p);
+findOrCreateFileNode(Struct::LM* lmStrct, binutils::Proc* p);
 
 static Struct::Proc*
-FindOrCreateProcNode(Struct::File* fStrct, binutils::Proc* p);
+findOrCreateProcNode(Struct::File* fStrct, binutils::Proc* p);
 
 
 static Struct::Proc*
-BuildProcStructure(Struct::Proc* pStrct, binutils::Proc* p, 
-		   bool irrIvalIsLoop, bool fwdSubstOff); 
+buildProcStructure(Struct::Proc* pStrct, binutils::Proc* p, 
+		   bool irrIvalIsLoop, 
+		   bool fwdSubstOff,
+		   const std::string& dbgProcGlob); 
 
 static int
-BuildProcLoopNests(Struct::Proc* pStrct, binutils::Proc* p,
-		   bool irrIvalIsLoop, bool fwdSubstOff);
+buildProcLoopNests(Struct::Proc* pStrct, binutils::Proc* p,
+		   bool irrIvalIsLoop, bool fwdSubstOff, bool isDbg);
 
 static int
-BuildStmts(bloop::LocationMgr& locMgr,
+buildStmts(bloop::LocationMgr& locMgr,
 	   Struct::ACodeNode* enclosingStrct, binutils::Proc* p,
 	   OA::OA_ptr<OA::CFG::NodeInterface> bb);
 
 
 static void
-FindLoopBegLineInfo(binutils::Proc* p, 
+findLoopBegLineInfo(binutils::Proc* p, 
 		    OA::OA_ptr<OA::CFG::NodeInterface> headBB,
 		    string& begFilenm, string& begProcnm, SrcFile::ln& begLn);
 
 #if 0
 static Struct::Stmt*
-FindOrCreateStmtNode(std::map<SrcFile::ln, Struct::Stmt*>& stmtMap,
+findOrCreateStmtNode(std::map<SrcFile::ln, Struct::Stmt*>& stmtMap,
 		     Struct::ACodeNode* enclosingStrct, SrcFile::ln line, 
 		     VMAInterval& vmaint);
 #endif
@@ -180,25 +178,25 @@ namespace bloop {
 // ------------------------------------------------------------
 
 static bool 
-RemoveOrphanedProcedureRepository(Prof::Struct::Tree* strctTree);
+removeOrphanedProcedureRepository(Prof::Struct::Tree* strctTree);
 
 static bool 
-MergeBogusAlienStrct(Prof::Struct::Tree* strctTree);
+mergeBogusAlienStrct(Prof::Struct::Tree* strctTree);
 
 static bool
-CoalesceDuplicateStmts(Prof::Struct::Tree* strctTree, 
+coalesceDuplicateStmts(Prof::Struct::Tree* strctTree, 
 		       bool unsafeNormalizations);
 
 static bool 
-MergePerfectlyNestedLoops(Prof::Struct::Tree* strctTree);
+mergePerfectlyNestedLoops(Prof::Struct::Tree* strctTree);
 
 static bool 
-RemoveEmptyNodes(Prof::Struct::Tree* strctTree);
+removeEmptyNodes(Prof::Struct::Tree* strctTree);
 
 static bool 
-FilterFilesFromStrctTree(Prof::Struct::Tree* strctTree, 
+filterFilesFromStrctTree(Prof::Struct::Tree* strctTree, 
 			 const char* canonicalPathList);
-
+  
 // ------------------------------------------------------------
 // Helpers for normalizing the structure tree
 // ------------------------------------------------------------
@@ -232,7 +230,7 @@ private:
 };
 
 static void 
-DeleteContents(Struct::ANodeSet* s);
+deleteContents(Struct::ANodeSet* s);
 
 
 // ------------------------------------------------------------
@@ -255,8 +253,7 @@ private:
 
 //*************************** Forward Declarations ***************************
 
-#define DBG_PROC 0 /* debug BuildProcStructure */
-#define DBG_CDS  0 /* debug CoalesceDuplicateStmts */
+#define DBG_CDS  0 /* debug coalesceDuplicateStmts */
 
 static string OrphanedProcedureFile = Prof::Struct::Tree::UnknownFileNm;
 static string InferredProcedure     = Prof::Struct::Tree::UnknownProcNm;
@@ -270,7 +267,7 @@ static const char *PGMdtd =
 
 // FIXME (minor): move to prof-juicy library for experiment writer
 void
-banal::bloop::WriteStrctTree(std::ostream& os, Struct::Tree* strctTree, 
+banal::bloop::writeStructure(std::ostream& os, Struct::Tree* strctTree, 
 			     bool prettyPrint)
 {
   os << "<?xml version=\"1.0\"?>" << std::endl;
@@ -287,7 +284,7 @@ banal::bloop::WriteStrctTree(std::ostream& os, Struct::Tree* strctTree,
 // Set of routines to build a scope tree
 //****************************************************************************
 
-// BuildLMStructure: Builds a scope tree -- with a focus on loop nest
+// buildLMStructure: Builds a scope tree -- with a focus on loop nest
 //   recovery -- representing program source code from the load module
 //   'lm'.
 // A load module represents binary code, which is essentially
@@ -300,12 +297,13 @@ banal::bloop::WriteStrctTree(std::ostream& os, Struct::Tree* strctTree,
 //   normalizer employs heuristics to reverse certain compiler
 //   optimizations such as loop unrolling.
 Prof::Struct::Tree*
-banal::bloop::BuildLMStructure(binutils::LM* lm, 
+banal::bloop::buildLMStructure(binutils::LM* lm, 
 			       const char* canonicalPathList, 
 			       bool normalizeScopeTree,
 			       bool unsafeNormalizations,
 			       bool irreducibleIntervalIsLoop,
-			       bool forwardSubstitutionOff)
+			       bool forwardSubstitutionOff,
+			       const std::string& dbgProcGlob)
 {
   DIAG_Assert(lm, DIAG_UnexpectedInput);
 
@@ -322,7 +320,7 @@ banal::bloop::BuildLMStructure(binutils::LM* lm,
   Struct::LM* lmStrct = new Struct::LM(lm->name(), pgmStrct);
 
   // 1. Build Struct::File/Struct::Proc skeletal structure
-  ProcStrctToProcMap* mp = BuildLMSkeleton(lmStrct, lm);
+  ProcStrctToProcMap* mp = buildLMSkeleton(lmStrct, lm);
   
 
   // 2. For each [Struct::Proc, binutils::Proc] pair, complete the build.
@@ -333,19 +331,20 @@ banal::bloop::BuildLMStructure(binutils::LM* lm,
     binutils::Proc* p = it->second;
 
     DIAG_Msg(2, "Building scope tree for [" << p->name()  << "] ... ");
-    BuildProcStructure(pStrct, p, 
-		       irreducibleIntervalIsLoop, forwardSubstitutionOff);
+    buildProcStructure(pStrct, p, 
+		       irreducibleIntervalIsLoop, forwardSubstitutionOff,
+		       dbgProcGlob);
   }
   delete mp;
 
   // 3. Normalize
   if (canonicalPathList && canonicalPathList[0] != '\0') {
-    bool result = FilterFilesFromStrctTree(strctTree, canonicalPathList);
+    bool result = filterFilesFromStrctTree(strctTree, canonicalPathList);
     DIAG_Assert(result, "Path canonicalization result should never be false!");
   }
 
   if (normalizeScopeTree) {
-    bool result = Normalize(strctTree, unsafeNormalizations);
+    bool result = normalize(strctTree, unsafeNormalizations);
     DIAG_Assert(result, "Normalization result should never be false!");
   }
 
@@ -353,25 +352,25 @@ banal::bloop::BuildLMStructure(binutils::LM* lm,
 }
 
 
-// Normalize: Because of compiler optimizations and other things, it
+// normalize: Because of compiler optimizations and other things, it
 // is almost always desirable normalize a scope tree.  For example,
 // almost all unnormalized scope tree contain duplicate statement
 // instances.  See each normalizing routine for more information.
 bool 
-banal::bloop::Normalize(Prof::Struct::Tree* strctTree,
+banal::bloop::normalize(Prof::Struct::Tree* strctTree,
 			bool unsafeNormalizations)
 {
   bool changed = false;
   
-  // changed |= RemoveOrphanedProcedureRepository(strctTree);
+  // changed |= removeOrphanedProcedureRepository(strctTree);
 
   // Remove unnecessary alien scopes
-  changed |= MergeBogusAlienStrct(strctTree);
+  changed |= mergeBogusAlienStrct(strctTree);
 
   // Cleanup procedure/alien scopes
-  changed |= CoalesceDuplicateStmts(strctTree, unsafeNormalizations);
-  changed |= MergePerfectlyNestedLoops(strctTree);
-  changed |= RemoveEmptyNodes(strctTree);
+  changed |= coalesceDuplicateStmts(strctTree, unsafeNormalizations);
+  changed |= mergePerfectlyNestedLoops(strctTree);
+  changed |= removeEmptyNodes(strctTree);
   
   return true; // no errors
 }
@@ -385,7 +384,7 @@ namespace banal {
 
 namespace bloop {
 
-// BuildLMSkeleton: Build skeletal file-procedure structure.  This
+// buildLMSkeleton: Build skeletal file-procedure structure.  This
 // will be useful later when detecting alien lines.  Also, the
 // nesting structure allows inference of accurate boundaries on
 // procedure end lines.
@@ -394,7 +393,7 @@ namespace bloop {
 //
 // Struct::Procs will be sorted by begLn (cf. Struct::ACodeNode::Reorder)
 static ProcStrctToProcMap*
-BuildLMSkeleton(Struct::LM* lmStrct, binutils::LM* lm)
+buildLMSkeleton(Struct::LM* lmStrct, binutils::LM* lm)
 {
   ProcStrctToProcMap* mp = new ProcStrctToProcMap;
   
@@ -406,8 +405,8 @@ BuildLMSkeleton(Struct::LM* lmStrct, binutils::LM* lm)
        it != lm->procs().end(); ++it) {
     binutils::Proc* p = it->second;
     if (p->size() != 0) {
-      Struct::File* fStrct = FindOrCreateFileNode(lmStrct, p);
-      Struct::Proc* pStrct = FindOrCreateProcNode(fStrct, p);
+      Struct::File* fStrct = findOrCreateFileNode(lmStrct, p);
+      Struct::Proc* pStrct = findOrCreateProcNode(fStrct, p);
       mp->insert(make_pair(pStrct, p));
     }
   }
@@ -441,9 +440,9 @@ BuildLMSkeleton(Struct::LM* lmStrct, binutils::LM* lm)
 }
 
 
-// FindOrCreateFileNode: 
+// findOrCreateFileNode: 
 static Struct::File* 
-FindOrCreateFileNode(Struct::LM* lmStrct, binutils::Proc* p)
+findOrCreateFileNode(Struct::LM* lmStrct, binutils::Proc* p)
 {
   // Attempt to find filename for procedure
   string filenm = p->filename();
@@ -463,10 +462,10 @@ FindOrCreateFileNode(Struct::LM* lmStrct, binutils::Proc* p)
 } 
 
 
-// FindOrCreateProcNode: Build skeletal Struct::Proc.  We can assume that
+// findOrCreateProcNode: Build skeletal Struct::Proc.  We can assume that
 // the parent is always a Struct::File.
 static Struct::Proc*
-FindOrCreateProcNode(Struct::File* fStrct, binutils::Proc* p)
+findOrCreateProcNode(Struct::File* fStrct, binutils::Proc* p)
 {
   // Find VMA boundaries: [beg, end)
   VMA endVMA = p->begVMA() + p->size();
@@ -481,7 +480,7 @@ FindOrCreateProcNode(Struct::File* fStrct, binutils::Proc* p)
   // Find preliminary source line bounds
   string file, proc;
   SrcFile::ln begLn1, endLn1;
-  binutils::Insn* eInsn = p->lastInsn();
+  binutils::Insn* eInsn = p->endInsn();
   ushort endOp = (eInsn) ? eInsn->opIndex() : 0;
   p->GetSourceFileInfo(p->begVMA(), 0, p->endVMA(), endOp, 
 		       proc, file, begLn1, endLn1, 0 /*no swapping*/);
@@ -526,63 +525,58 @@ FindOrCreateProcNode(Struct::File* fStrct, binutils::Proc* p)
 // 
 //****************************************************************************
 
-#if (DBG_PROC)
-static bool DBG_PROC_print_now = false;
-#endif
-
 namespace banal {
 
 namespace bloop {
 
 
 static int 
-BuildProcLoopNests(Struct::Proc* enclosingProc, binutils::Proc* p,
+buildProcLoopNests(Struct::Proc* enclosingProc, binutils::Proc* p,
 		   OA::OA_ptr<OA::NestedSCR> tarj,
 		   OA::OA_ptr<OA::CFG::CFGInterface> cfg, 
 		   OA::RIFG::NodeId fgRoot, 
-		   bool irrIvalIsLoop, bool fwdSubstOff);
+		   bool irrIvalIsLoop, bool fwdSubstOff, bool isDbg);
 
 static Struct::ACodeNode*
-BuildLoopAndStmts(bloop::LocationMgr& locMgr, 
+buildLoopAndStmts(bloop::LocationMgr& locMgr, 
 		  Struct::ACodeNode* enclosingStrct, binutils::Proc* p,
 		  OA::OA_ptr<OA::NestedSCR> tarj,
 		  OA::OA_ptr<OA::CFG::CFGInterface> cfg, 
 		  OA::RIFG::NodeId fgNode, bool irrIvalIsLoop);
 
 
-// BuildProcStructure: Complete the representation for 'pStrct' given the
+// buildProcStructure: Complete the representation for 'pStrct' given the
 // binutils::Proc 'p'.  Note that pStrcts parent may itself be a Struct::Proc.
 static Struct::Proc* 
-BuildProcStructure(Struct::Proc* pStrct, binutils::Proc* p,
-		   bool irrIvalIsLoop, bool fwdSubstOff)
+buildProcStructure(Struct::Proc* pStrct, binutils::Proc* p,
+		   bool irrIvalIsLoop, bool fwdSubstOff,
+		   const std::string& dbgProcGlob)
 {
   DIAG_Msg(3, "==> Proc `" << p->name() << "' (" << p->id() << ") <==");
   
-#if (DBG_PROC)
-  DBG_PROC_print_now = false;
-  uint dbgId = p->GetId();
-  const char* dbgNm = "xxx";
-  if (p->GetName().find(dbgNm) != string::npos) {
-    DBG_PROC_print_now = true;
+  bool isDbg = false;
+  if (!dbgProcGlob.empty()) {
+    //uint dbgId = p->id();
+    isDbg = FileUtil::fnmatch(dbgProcGlob, p->name().c_str());
   }
-  if (dbgId == 10) {
-    DBG_PROC_print_now = true; 
-  }
-#endif
   
-  BuildProcLoopNests(pStrct, p, irrIvalIsLoop, fwdSubstOff);
+  buildProcLoopNests(pStrct, p, irrIvalIsLoop, fwdSubstOff, isDbg);
   
   return pStrct;
 }
 
 
-// BuildProcLoopNests: Build procedure structure by traversing
+// buildProcLoopNests: Build procedure structure by traversing
 // the Nested SCR (Tarjan tree) to create loop nests and statement
 // scopes.
 static int
-BuildProcLoopNests(Struct::Proc* pStrct, binutils::Proc* p,
-		   bool irrIvalIsLoop, bool fwdSubstOff)
+buildProcLoopNests(Struct::Proc* pStrct, binutils::Proc* p,
+		   bool irrIvalIsLoop, bool fwdSubstOff, bool isDbg)
 {
+  static const int sepWidth = 77;
+  using std::setfill;
+  using std::setw;
+
   try {
     using banal::OAInterface;
     
@@ -599,32 +593,42 @@ BuildProcLoopNests(Struct::Proc* pStrct, binutils::Proc* p,
     
     OA::RIFG::NodeId fgRoot = rifg->getSource();
 
-#if (DBG_PROC)
-    if (DBG_PROC_print_now) {
-      cout << "*** CFG for `" << p->GetName() << "' ***" << endl;
-      cout << "  total blocks: " << cfg->getNumNodes() << endl
-	   << "  total edges:  " << cfg->getNumEdges() << endl;
+    if (isDbg) {
+      cerr << setfill('=') << setw(sepWidth) << "=" << endl;
+      cerr << "Procedure: " << p->name() << endl << endl;
 
       OA::OA_ptr<OA::OutputBuilder> ob1, ob2;
-      ob1 = new OA::OutputBuilderText();
-      ob2 = new OA::OutputBuilderDOT();
+      ob1 = new OA::OutputBuilderText(cerr);
+      ob2 = new OA::OutputBuilderDOT(cerr);
 
+      cerr << setfill('-') << setw(sepWidth) << "-" << endl;
+      cerr << "*** CFG Text: [nodes, edges: " 
+	   << cfg->getNumNodes() << ", " << cfg->getNumEdges() << "]\n";
       cfg->configOutput(ob1);
       cfg->output(*irIF);
 
+      cerr << setfill('-') << setw(sepWidth) << "-" << endl;
+      cerr << "*** CFG DOT:\n";
       cfg->configOutput(ob2);
       cfg->output(*irIF);
+      cerr << endl;
 
-      cout << "*** Nested SCR (Tarjan Interval) Tree for `" << 
-	p->GetName() << "' ***" << endl;
-      tarj->dump(cout);
-      cout << endl;
-      cout.flush(); cerr.flush();
+      cerr << setfill('-') << setw(sepWidth) << "-" << endl;
+      cerr << "*** Nested SCR (Tarjan) Tree\n";
+      tarj->dump(cerr);
+      cerr << endl;
+
+      cerr << setfill('-') << setw(sepWidth) << "-" << endl;
+      cerr << endl << flush;
     }
-#endif
 
-    int r = BuildProcLoopNests(pStrct, p, tarj, cfg, fgRoot,
-			       irrIvalIsLoop, fwdSubstOff);
+    int r = buildProcLoopNests(pStrct, p, tarj, cfg, fgRoot,
+			       irrIvalIsLoop, fwdSubstOff, isDbg);
+
+    if (isDbg) {
+      cerr << setfill('-') << setw(sepWidth) << "-" << endl;
+    }
+
     return r;
   }
   catch (const OA::Exception& x) {
@@ -635,17 +639,17 @@ BuildProcLoopNests(Struct::Proc* pStrct, binutils::Proc* p,
 }
 
 
-// BuildProcLoopNests: Visit the object code loops in pre-order and
+// buildProcLoopNests: Visit the object code loops in pre-order and
 // create source code representations.  Technically we choose to visit
 // in BFS order, which in a better world would would allow us to check
 // sibling loop boundaries.  Note that the resulting source coded
 // loops are UNNORMALIZED.
 static int 
-BuildProcLoopNests(Struct::Proc* enclosingProc, binutils::Proc* p,
+buildProcLoopNests(Struct::Proc* enclosingProc, binutils::Proc* p,
 		   OA::OA_ptr<OA::NestedSCR> tarj,
 		   OA::OA_ptr<OA::CFG::CFGInterface> cfg, 
 		   OA::RIFG::NodeId fgRoot, 
-		   bool irrIvalIsLoop, bool fwdSubstOff)
+		   bool irrIvalIsLoop, bool fwdSubstOff, bool isDbg)
 {
   typedef std::list<QNode> MyQueue;
 
@@ -654,11 +658,10 @@ BuildProcLoopNests(Struct::Proc* enclosingProc, binutils::Proc* p,
   std::vector<bool> isNodeProcessed(tarj->getRIFG()->getHighWaterMarkNodeId() + 1);
   
   bloop::LocationMgr locMgr(enclosingProc->AncLM());
-#if DBG_PROC
-  if (DBG_PROC_print_now) {
+  if (isDbg) {
     locMgr.debug(1);
   }
-#endif
+
   locMgr.begSeq(enclosingProc, fwdSubstOff);
   
   // -------------------------------------------------------
@@ -703,7 +706,7 @@ BuildProcLoopNests(Struct::Proc* enclosingProc, binutils::Proc* p,
       // Note that if this call closes an alien context, invariants
       // below ensure that this context has been fully explored.
       Struct::ACodeNode* myScope;
-      myScope = BuildLoopAndStmts(locMgr, qnode.enclosingStrct, p,
+      myScope = buildLoopAndStmts(locMgr, qnode.enclosingStrct, p,
 				  tarj, cfg, qnode.fgNode, irrIvalIsLoop);
       isNodeProcessed[qnode.fgNode] = true;
       qnode.scope = myScope;
@@ -723,7 +726,7 @@ BuildProcLoopNests(Struct::Proc* enclosingProc, binutils::Proc* p,
     
     do {
       Struct::ACodeNode* myScope;
-      myScope = BuildLoopAndStmts(locMgr, qnode.scope, p, 
+      myScope = buildLoopAndStmts(locMgr, qnode.scope, p, 
 				  tarj, cfg, kid, irrIvalIsLoop);
       isNodeProcessed[kid] = true;
       if (myScope->Type() == Struct::ANode::TyLOOP) {
@@ -765,7 +768,7 @@ BuildProcLoopNests(Struct::Proc* enclosingProc, binutils::Proc* p,
   for (uint i = 1; i < isNodeProcessed.size(); ++i) {
     if (!isNodeProcessed[i]) {
       // INVARIANT: return value is never a Struct::Loop
-      BuildLoopAndStmts(locMgr, enclosingProc, p, tarj, cfg, i, irrIvalIsLoop);
+      buildLoopAndStmts(locMgr, enclosingProc, p, tarj, cfg, i, irrIvalIsLoop);
     }
   }
 
@@ -776,10 +779,10 @@ BuildProcLoopNests(Struct::Proc* enclosingProc, binutils::Proc* p,
 }
 
 
-// BuildLoopAndStmts: Returns the expected (or 'original') enclosing
+// buildLoopAndStmts: Returns the expected (or 'original') enclosing
 // scope for children of 'fgNode', e.g. loop or proc. 
 static Struct::ACodeNode*
-BuildLoopAndStmts(bloop::LocationMgr& locMgr, 
+buildLoopAndStmts(bloop::LocationMgr& locMgr, 
 		  Struct::ACodeNode* enclosingStrct, binutils::Proc* p,
 		  OA::OA_ptr<OA::NestedSCR> tarj,
 		  OA::OA_ptr<OA::CFG::CFGInterface> cfg, 
@@ -791,7 +794,7 @@ BuildLoopAndStmts(bloop::LocationMgr& locMgr,
   binutils::Insn* insn = banal::OA_CFG_getBegInsn(bb);
   VMA begVMA = (insn) ? insn->opVMA() : 0;
   
-  DIAG_DevMsg(10, "BuildLoopAndStmts: " << bb << " [id: " << bb->getId() << "] " << hex << begVMA << " --> " << enclosingStrct << dec << " " << enclosingStrct->toString_id());
+  DIAG_DevMsg(10, "buildLoopAndStmts: " << bb << " [id: " << bb->getId() << "] " << hex << begVMA << " --> " << enclosingStrct << dec << " " << enclosingStrct->toString_id());
 
   Struct::ACodeNode* childScope = enclosingStrct;
 
@@ -809,7 +812,7 @@ BuildLoopAndStmts(bloop::LocationMgr& locMgr,
     // -----------------------------------------------------
     string fnm, pnm;
     SrcFile::ln line;
-    FindLoopBegLineInfo(p, bb, fnm, pnm, line);
+    findLoopBegLineInfo(p, bb, fnm, pnm, line);
     pnm = GetBestFuncName(pnm);
     
     Struct::Loop* loop = new Struct::Loop(NULL, line, line);
@@ -829,17 +832,17 @@ BuildLoopAndStmts(bloop::LocationMgr& locMgr,
   // -----------------------------------------------------
   // Process instructions within BB
   // -----------------------------------------------------
-  BuildStmts(locMgr, childScope, p, bb);
+  buildStmts(locMgr, childScope, p, bb);
 
   return childScope;
 }
 
 
-// BuildStmts: Form loop structure by setting bounds and adding
+// buildStmts: Form loop structure by setting bounds and adding
 // statements from the current basic block to 'enclosingStrct'.  Does
 // not add duplicates.
 static int 
-BuildStmts(bloop::LocationMgr& locMgr,
+buildStmts(bloop::LocationMgr& locMgr,
 	   Struct::ACodeNode* enclosingStrct, binutils::Proc* p,
 	   OA::OA_ptr<OA::CFG::NodeInterface> bb)
 {
@@ -891,7 +894,7 @@ BuildStmts(bloop::LocationMgr& locMgr,
 
 
 #if 0 // FIXME: Deprecated
-// BuildProcLoopNests: Recursively build loops using Nested SCR
+// buildProcLoopNests: Recursively build loops using Nested SCR
 // (Tarjan interval) analysis and returns the number of loops created.
 // 
 // We visit the interval tree in DFS order which is equivalent to
@@ -899,7 +902,7 @@ BuildStmts(bloop::LocationMgr& locMgr,
 //
 // Note that these loops are UNNORMALIZED.
 static int 
-BuildProcLoopNests(Struct::ACodeNode* enclosingStrct, binutils::Proc* p, 
+buildProcLoopNests(Struct::ACodeNode* enclosingStrct, binutils::Proc* p, 
 		   OA::OA_ptr<OA::NestedSCR> tarj,
 		   OA::OA_ptr<OA::CFG::Interface> cfg, 
 		   OA::RIFG::NodeId fgNode, 
@@ -910,7 +913,7 @@ BuildProcLoopNests(Struct::ACodeNode* enclosingStrct, binutils::Proc* p,
   OA::OA_ptr<OA::CFG::Interface::Node> bb =
     rifg->getNode(fgNode).convert<OA::CFG::Interface::Node>();
   
-  DIAG_DevMsg(50, "BuildProcLoopNests: " << bb <<  " --> "  << hex << enclosingStrct << dec << " " << enclosingStrct->toString_id());
+  DIAG_DevMsg(50, "buildProcLoopNests: " << bb <<  " --> "  << hex << enclosingStrct << dec << " " << enclosingStrct->toString_id());
 
   if (addStmts) {
     // mp->push_back(make_pair(bb, enclosingStrct));
@@ -941,7 +944,7 @@ BuildProcLoopNests(Struct::ACodeNode* enclosingStrct, binutils::Proc* p,
 
       // add alien context if necessary....
       Struct::Loop* lScope = new Struct::Loop(enclosingStrct, line, line);
-      int num = BuildProcLoopNests(lScope, p, tarj, cfg, kid, mp,
+      int num = buildProcLoopNests(lScope, p, tarj, cfg, kid, mp,
 				   1, irrIvalIsLoop);
       localLoops += (num + 1);
     }
@@ -949,7 +952,7 @@ BuildProcLoopNests(Struct::ACodeNode* enclosingStrct, binutils::Proc* p,
       // -----------------------------------------------------
       // IRREDUCIBLE as no loop: May contain loops
       // -----------------------------------------------------
-      int num = BuildProcLoopNests(enclosingStrct, p, tarj, cfg, kid, mp,
+      int num = buildProcLoopNests(enclosingStrct, p, tarj, cfg, kid, mp,
 				   addStmts, irrIvalIsLoop);
       localLoops += num;
     }
@@ -967,7 +970,7 @@ BuildProcLoopNests(Struct::ACodeNode* enclosingStrct, binutils::Proc* p,
 // 
 //****************************************************************************
 
-// FindLoopBegLineInfo: Given the head basic block node of the loop,
+// findLoopBegLineInfo: Given the head basic block node of the loop,
 // find loop begin source line information.  
 //
 // The routine first attempts to use the source line information for
@@ -978,7 +981,7 @@ BuildProcLoopNests(Struct::ACodeNode* enclosingStrct, binutils::Proc* p,
 // former case, we take the smallest source line of them all; in the
 // latter we use headVMA.
 static void
-FindLoopBegLineInfo(binutils::Proc* p, 
+findLoopBegLineInfo(binutils::Proc* p, 
 		    OA::OA_ptr<OA::CFG::NodeInterface> headBB,
 		    string& begFilenm, string& begProcnm, SrcFile::ln& begLn)
 {
@@ -1033,10 +1036,10 @@ FindLoopBegLineInfo(binutils::Proc* p,
 
 
 #if 0
-// FindOrCreateStmtNode: Build a Struct::Stmt.  Unlike LocateStmt,
+// findOrCreateStmtNode: Build a Struct::Stmt.  Unlike LocateStmt,
 // assumes that procedure boundaries do not need to be expanded.
 static Struct::Stmt*
-FindOrCreateStmtNode(std::map<SrcFile::ln, Struct::Stmt*>& stmtMap,
+findOrCreateStmtNode(std::map<SrcFile::ln, Struct::Stmt*>& stmtMap,
 		     Struct::ACodeNode* enclosingStrct, SrcFile::ln line, VMAInterval& vmaint)
 {
   Struct::Stmt* stmt = stmtMap[line];
@@ -1065,10 +1068,10 @@ namespace banal {
 
 namespace bloop {
 
-// RemoveOrphanedProcedureRepository: Remove the OrphanedProcedureFile
+// removeOrphanedProcedureRepository: Remove the OrphanedProcedureFile
 // from the tree.
 static bool 
-RemoveOrphanedProcedureRepository(Prof::Struct::Tree* strctTree)
+removeOrphanedProcedureRepository(Prof::Struct::Tree* strctTree)
 {
   bool changed = false;
   
@@ -1095,11 +1098,11 @@ RemoveOrphanedProcedureRepository(Prof::Struct::Tree* strctTree)
 //****************************************************************************
 
 static bool 
-MergeBogusAlienStrct(Struct::ACodeNode* node, Struct::File* file);
+mergeBogusAlienStrct(Struct::ACodeNode* node, Struct::File* file);
 
 
 static bool 
-MergeBogusAlienStrct(Prof::Struct::Tree* strctTree)
+mergeBogusAlienStrct(Prof::Struct::Tree* strctTree)
 {
   bool changed = false;
   
@@ -1111,7 +1114,7 @@ MergeBogusAlienStrct(Prof::Struct::Tree* strctTree)
        it.Current(); ++it) {
     Struct::Proc* proc = dynamic_cast<Struct::Proc*>(it.Current());
     Struct::File* file = proc->AncFile();
-    changed |= MergeBogusAlienStrct(proc, file);
+    changed |= mergeBogusAlienStrct(proc, file);
   }
   
   return changed;
@@ -1119,7 +1122,7 @@ MergeBogusAlienStrct(Prof::Struct::Tree* strctTree)
 
 
 static bool 
-MergeBogusAlienStrct(Struct::ACodeNode* node, Struct::File* file)
+mergeBogusAlienStrct(Struct::ACodeNode* node, Struct::File* file)
 {
   bool changed = false;
   
@@ -1130,7 +1133,7 @@ MergeBogusAlienStrct(Struct::ACodeNode* node, Struct::File* file)
     it++; // advance iterator -- it is pointing at 'child'
     
     // 1. Recursively do any merging for this tree's children
-    changed |= MergeBogusAlienStrct(child, file);
+    changed |= mergeBogusAlienStrct(child, file);
     
     // 2. Merge an alien node if it is redundant with its calling context
     if (child->Type() == Struct::ANode::TyALIEN) {
@@ -1148,7 +1151,7 @@ MergeBogusAlienStrct(Struct::ACodeNode* node, Struct::File* file)
 					      alien->endLine()))  {
 	// Move all children of 'alien' into 'parent'
 	changed = Struct::ANode::Merge(parent, alien);
-	DIAG_Assert(changed, "MergeBogusAlienStrct: merge failed.");
+	DIAG_Assert(changed, "mergeBogusAlienStrct: merge failed.");
       }
     }
   }
@@ -1159,7 +1162,7 @@ MergeBogusAlienStrct(Struct::ACodeNode* node, Struct::File* file)
 
 //****************************************************************************
 
-// CoalesceDuplicateStmts: Coalesce duplicate statement instances that
+// coalesceDuplicateStmts: Coalesce duplicate statement instances that
 // may appear in the scope tree.  There are two basic cases:
 //
 // Case 1a:
@@ -1176,7 +1179,8 @@ MergeBogusAlienStrct(Struct::ACodeNode* node, Struct::File* file)
 // Case 1b:
 // If the same statement exists within the same loop, discard all but one.
 // Rationale: Multiple statements exist at the same level because of
-//   multiple basic blocks containing the same statement, cf. BuildStmts(). [FIXME -- LocationMgr]
+//   multiple basic blocks containing the same statement, cf. buildStmts(). 
+//   [FIXME -- LocationMgr]
 //   Also, the merging in case 2 may result in duplicate statements.
 // E.g.: lca --- s1
 //          \--- s2
@@ -1195,7 +1199,7 @@ MergeBogusAlienStrct(Struct::ACodeNode* node, Struct::File* file)
 static bool CDS_unsafeNormalizations = true;
 
 static bool
-CoalesceDuplicateStmts(Struct::ACodeNode* scope, SortIdToStmtMap* stmtMap, 
+coalesceDuplicateStmts(Struct::ACodeNode* scope, SortIdToStmtMap* stmtMap, 
 		       Struct::ANodeSet* visited, Struct::ANodeSet* toDelete,
 		       int level);
 
@@ -1215,7 +1219,7 @@ CDS_ScopeFilter(const Struct::ANode& x, long type)
 }
 
 static bool
-CoalesceDuplicateStmts(Prof::Struct::Tree* strctTree, 
+coalesceDuplicateStmts(Prof::Struct::Tree* strctTree, 
 		       bool unsafeNormalizations)
 {
   bool changed = false;
@@ -1234,18 +1238,18 @@ CoalesceDuplicateStmts(Prof::Struct::Tree* strctTree,
   Struct::ANodeFilter filter(CDS_ScopeFilter, "CDS_ScopeFilter", 0);
   for (Struct::ANodeIterator it(pgmStrct, &filter); it.Current(); ++it) {
     Struct::ACodeNode* scope = dynamic_cast<Struct::ACodeNode*>(it.Current());
-    changed |= CoalesceDuplicateStmts(scope, &stmtMap, &visitedScopes,
+    changed |= coalesceDuplicateStmts(scope, &stmtMap, &visitedScopes,
 				      &toDelete, 1);
     stmtMap.clear();           // Clear statement table
     visitedScopes.clear();     // Clear visited set
-    DeleteContents(&toDelete); // Clear 'toDelete'
+    deleteContents(&toDelete); // Clear 'toDelete'
   }
 
   return changed;
 }
 
 
-// CoalesceDuplicateStmts Helper: 
+// coalesceDuplicateStmts Helper: 
 //
 // Because instances of case 2 can create instances of case 1, we need
 // to restart the algorithm at the lca after merging has been applied.
@@ -1306,7 +1310,7 @@ CoalesceDuplicateStmts(Prof::Struct::Tree* strctTree,
 //   fast local resorts).  Phase 2 iterates over the map, applying
 //   case 1 and 2 until all duplicate entries are removed.
 static bool
-CoalesceDuplicateStmts(Struct::ACodeNode* scope, SortIdToStmtMap* stmtMap, 
+coalesceDuplicateStmts(Struct::ACodeNode* scope, SortIdToStmtMap* stmtMap, 
 		       Struct::ANodeSet* visited, Struct::ANodeSet* toDelete, 
 		       int level)
 {
@@ -1316,7 +1320,7 @@ CoalesceDuplicateStmts(Struct::ACodeNode* scope, SortIdToStmtMap* stmtMap,
   catch (CDS_RestartException& x) {
     // Unwind the recursion stack until we find the node
     if (x.GetNode() == scope) {
-      return CoalesceDuplicateStmts(x.GetNode(), stmtMap, visited, 
+      return coalesceDuplicateStmts(x.GetNode(), stmtMap, visited, 
 				    toDelete, level);
     } 
     else {
@@ -1352,7 +1356,7 @@ CDS_Main(Struct::ACodeNode* scope, SortIdToStmtMap* stmtMap, Struct::ANodeSet* v
     DIAG_DevMsgIf(DBG_CDS, "CDS: " << child);
 
     // 1. Recursively perform re-nesting on 'child'.
-    changed |= CoalesceDuplicateStmts(child, stmtMap, visited, toDelete,
+    changed |= coalesceDuplicateStmts(child, stmtMap, visited, toDelete,
 				      level + 1);
     
     // 2. Examine 'child'
@@ -1440,21 +1444,21 @@ CDS_InspectStmt(Struct::Stmt* stmt1, SortIdToStmtMap* stmtMap,
 
 //****************************************************************************
 
-// MergePerfectlyNestedLoops: Fuse together a child with a parent when
+// mergePerfectlyNestedLoops: Fuse together a child with a parent when
 // the child is perfectly nested in the parent.
 static bool 
-MergePerfectlyNestedLoops(Struct::ANode* node);
+mergePerfectlyNestedLoops(Struct::ANode* node);
 
 
 static bool 
-MergePerfectlyNestedLoops(Prof::Struct::Tree* strctTree)
+mergePerfectlyNestedLoops(Prof::Struct::Tree* strctTree)
 {
-  return MergePerfectlyNestedLoops(strctTree->GetRoot());
+  return mergePerfectlyNestedLoops(strctTree->GetRoot());
 }
 
 
 static bool 
-MergePerfectlyNestedLoops(Struct::ANode* node)
+mergePerfectlyNestedLoops(Struct::ANode* node)
 {
   bool changed = false;
   
@@ -1467,7 +1471,7 @@ MergePerfectlyNestedLoops(Struct::ANode* node)
     it++; // advance iterator -- it is pointing at 'child'
     
     // 1. Recursively do any merging for this tree's children
-    changed |= MergePerfectlyNestedLoops(child);
+    changed |= mergePerfectlyNestedLoops(child);
     
     // 2. Test if this is a perfectly nested loop with identical loop
     //    bounds and merge if so.
@@ -1486,7 +1490,7 @@ MergePerfectlyNestedLoops(Struct::ANode* node)
 
       // Move all children of 'child' so that they are children of 'node'
       changed = Struct::ANode::Merge(node, child);
-      DIAG_Assert(changed, "MergePerfectlyNestedLoops: merge failed.");
+      DIAG_Assert(changed, "mergePerfectlyNestedLoops: merge failed.");
     }
   } 
   
@@ -1496,26 +1500,26 @@ MergePerfectlyNestedLoops(Struct::ANode* node)
 
 //****************************************************************************
 
-// RemoveEmptyNodes: Removes certain 'empty' scopes from the tree,
+// removeEmptyNodes: Removes certain 'empty' scopes from the tree,
 // always maintaining the top level Struct::Pgm (PGM) scope.  See the
-// predicate 'RemoveEmptyNodes_isEmpty' for details.
+// predicate 'removeEmptyNodes_isEmpty' for details.
 static bool 
-RemoveEmptyNodes(Struct::ANode* node);
+removeEmptyNodes(Struct::ANode* node);
 
 static bool 
-RemoveEmptyNodes_isEmpty(const Struct::ANode* node);
+removeEmptyNodes_isEmpty(const Struct::ANode* node);
 
 
 static bool 
-RemoveEmptyNodes(Prof::Struct::Tree* strctTree)
+removeEmptyNodes(Prof::Struct::Tree* strctTree)
 {
   // Always maintain the top level PGM scope, even if empty
-  return RemoveEmptyNodes(strctTree->GetRoot());
+  return removeEmptyNodes(strctTree->GetRoot());
 }
 
 
 static bool 
-RemoveEmptyNodes(Struct::ANode* node)
+removeEmptyNodes(Struct::ANode* node)
 {
   bool changed = false;
   
@@ -1527,10 +1531,10 @@ RemoveEmptyNodes(Struct::ANode* node)
     it++; // advance iterator -- it is pointing at 'child'
     
     // 1. Recursively do any trimming for this tree's children
-    changed |= RemoveEmptyNodes(child);
+    changed |= removeEmptyNodes(child);
 
     // 2. Trim this node if necessary
-    if (RemoveEmptyNodes_isEmpty(child)) {
+    if (removeEmptyNodes_isEmpty(child)) {
       child->Unlink(); // unlink 'child' from tree
       delete child;
       changed = true;
@@ -1541,13 +1545,13 @@ RemoveEmptyNodes(Struct::ANode* node)
 }
 
 
-// RemoveEmptyNodes_isEmpty: determines whether a scope is 'empty':
+// removeEmptyNodes_isEmpty: determines whether a scope is 'empty':
 //   true, if a Struct::File has no children.
 //   true, if a Struct::Loop or Struct::Proc has no children *and* an empty
 //     VMAIntervalSet.
 //   false, otherwise
 static bool 
-RemoveEmptyNodes_isEmpty(const Struct::ANode* node)
+removeEmptyNodes_isEmpty(const Struct::ANode* node)
 {
   if ((node->Type() == Struct::ANode::TyFILE 
        || node->Type() == Struct::ANode::TyALIEN)
@@ -1566,9 +1570,9 @@ RemoveEmptyNodes_isEmpty(const Struct::ANode* node)
 
 //****************************************************************************
 
-// FilterFilesFromStrctTree: 
+// filterFilesFromStrctTree: 
 static bool 
-FilterFilesFromStrctTree(Prof::Struct::Tree* strctTree, 
+filterFilesFromStrctTree(Prof::Struct::Tree* strctTree, 
 			 const char* canonicalPathList)
 {
   bool changed = false;
@@ -1614,7 +1618,7 @@ SortIdToStmtMap::clear()
 //****************************************************************************
 
 static void 
-DeleteContents(Struct::ANodeSet* s)
+deleteContents(Struct::ANodeSet* s)
 {
   // Delete nodes in toDelete
   for (Struct::ANodeSet::iterator it = s->begin(); it != s->end(); ++it) {

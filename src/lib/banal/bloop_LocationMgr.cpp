@@ -84,8 +84,6 @@ using namespace Prof;
 
 //*************************** Forward Declarations **************************
 
-#define DBG (0 && mDBG)
-
 //*************************** Forward Declarations **************************
 
 static const string RELOCATED = "[reloc-from]";
@@ -153,7 +151,7 @@ void
 LocationMgr::locate(Struct::Loop* loop, Struct::ACodeNode* proposed_scope,
 		    string& filenm, string& procnm, SrcFile::ln line)
 {
-  DIAG_DevMsgIf(DBG, "LocationMgr::locate: " << loop->toXML() << "\n"
+  DIAG_DevMsgIf(mDBG, "LocationMgr::locate: " << loop->toXML() << "\n"
 		<< "  proposed: " << proposed_scope->toXML() << "\n"
 		<< "  guess: {" << filenm << "}[" << procnm << "]:" << line);
   determineContext(proposed_scope, filenm, procnm, line);
@@ -166,7 +164,7 @@ void
 LocationMgr::locate(Struct::Stmt* stmt, Struct::ACodeNode* proposed_scope,
 		    string& filenm, string& procnm, SrcFile::ln line)
 {
-  DIAG_DevMsgIf(DBG, "LocationMgr::locate: " << stmt->toXML() << "\n"
+  DIAG_DevMsgIf(mDBG, "LocationMgr::locate: " << stmt->toXML() << "\n"
 		<< "  proposed: " << proposed_scope->toXML() << "\n"
 		<< "  guess: {" << filenm << "}[" << procnm << "]:" << line);
   // FIXME (minor): manage stmt cache! if stmt already exists, only add vma
@@ -197,6 +195,9 @@ LocationMgr::containsLineFzy(Struct::ACodeNode* x, SrcFile::ln line, bool loopIs
     case Struct::ANode::TyPROC:
       { 
 	beg_epsilon = 2;  end_epsilon = 100;
+
+	// Procedure specialization (e.g. template instantiation)
+	// violates non-overlapping principle.
 	Struct::ACodeNode* next = x->nextScopeNonOverlapping(); // sorted
 	if (next) {
 	  end_epsilon = (int)(next->begLine() - 1 - x->endLine());
@@ -393,7 +394,7 @@ LocationMgr::CtxtChange_t
 LocationMgr::determineContext(Struct::ACodeNode* proposed_scope,
 			      string& filenm, string& procnm, SrcFile::ln line)
 {
-  DIAG_DevMsgIf(DBG, "LocationMgr::determineContext");
+  DIAG_DevMsgIf(mDBG, "LocationMgr::determineContext");
 
   CtxtChange_t change = CtxtChange_NULL;
   
@@ -445,8 +446,8 @@ LocationMgr::determineContext(Struct::ACodeNode* proposed_scope,
   // -----------------------------------------------------
   const Ctxt* use_ctxt = switch_findCtxt(filenm, procnm, line);
   
-  DIAG_DevMsgIf(DBG, "  first ctxt:\n"
-		<< ((use_ctxt) ? use_ctxt->toString(-1, "  ") : ""));
+  DIAG_DevMsgIfCtd(mDBG, "  first ctxt:\n"
+		   << ((use_ctxt) ? use_ctxt->toString(-1, "  ") : ""));
   
   // -----------------------------------------------------
   // 3. Setup the current context (either by reversion to a prior
@@ -457,11 +458,11 @@ LocationMgr::determineContext(Struct::ACodeNode* proposed_scope,
   if (use_ctxt) {
     // Revert scope tree to a prior context, if necessary
     if (use_ctxt->level() < proposed_ctxt->level()) {
-      DIAG_DevMsgIf(DBG, "  fixScopeTree: before\n" << toString() 
-		    << use_ctxt->ctxt()->toStringXML());
+      DIAG_DevMsgIfCtd(mDBG, "  fixScopeTree: before\n" << toString() 
+		       << use_ctxt->ctxt()->toStringXML());
       fixScopeTree(top_ctxt->scope(), use_ctxt->ctxt(), line, line);
-      DIAG_DevMsgIf(DBG, "  fixScopeTree: after\n" 
-		    << use_ctxt->ctxt()->toStringXML());
+      DIAG_DevMsgIfCtd(mDBG, "  fixScopeTree: after\n" 
+		       << use_ctxt->ctxt()->toStringXML());
       
       // reset proposed_ctxt
       proposed_ctxt = const_cast<Ctxt*>(use_ctxt);
@@ -538,8 +539,8 @@ LocationMgr::determineContext(Struct::ACodeNode* proposed_scope,
     use_ctxt = topCtxt();
   }
 
-  DIAG_DevMsgIf(DBG, "  final ctxt [" << toString(change) << "]\n" 
-		<< use_ctxt->toString(0, "  "));
+  DIAG_DevMsgIfCtd(mDBG, "  final ctxt [" << toString(change) << "]\n" 
+		   << use_ctxt->toString(0, "  "));
   return change;
 }
 

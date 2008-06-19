@@ -30,7 +30,7 @@
 \rcsInfo $Id$
 \setDate{\rcsInfoLongDate}
 }{
-\setDate{ 2008/05/28}
+\setDate{ 2008/06/18}
 \message{package rcsinfo not present, discard it}
 }
 
@@ -79,10 +79,20 @@ Default values for an option's optional arguments are shown in \{\}.
 \subsection{Options: General}
 
 \begin{Description}
-\item[\OptoArg{-v}{n}, \OptoArg{--verbose}{n}] Verbose: generate progress messages to stderr at verbosity level \Arg{n}.  \{1\}
-\item[\Opt{-V}, \Opt{--version}] Print version information.
-\item[\Opt{-h}, \Opt{--help}] Print help.
-\item[\OptoArg{--debug}{n}]   Debug: use debug level \Arg{n}. \{1\}
+\item[\OptoArg{-v}{n}, \OptoArg{--verbose}{n}]
+Verbose: generate progress messages to stderr at verbosity level \Arg{n}.  \{1\}
+
+\item[\Opt{-V}, \Opt{--version}]
+Print version information.
+
+\item[\Opt{-h}, \Opt{--help}]
+Print help.
+
+\item[\OptoArg{--debug}{n}]
+Debug: use debug level \Arg{n}. \{1\}
+
+\item[\OptArg{--debug-proc}{glob}]
+Debug structure recovery for procedures matching the procedure glob \Arg{glob}.
 \end{Description}
 
 \subsection{Options: Recovery and Output}
