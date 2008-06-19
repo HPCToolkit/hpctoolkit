@@ -75,7 +75,7 @@ m4_include(config/hpc-cxxutils.m4)
 #    correctly
 #----------------------------------------------------------------------------
 
-AC_INIT([hpctoolkit], [TRUNK-4.9.0=1460], [hpc@cs.rice.edu], [hpctoolkit])
+AC_INIT([hpctoolkit], [TRUNK-4.9.0=1470], [hpc@cs.rice.edu], [hpctoolkit])
 AC_CONFIG_SRCDIR([src/include/HPCToolkitVersionInfo.h])
 AC_CONFIG_AUX_DIR([config])
 
@@ -877,15 +877,15 @@ AC_CONFIG_FILES([ \
   lib/Makefile \
   \
   src/Makefile \
-  src/hpctoolkit/Makefile \
-  src/hpctoolkit/hpclump/Makefile \
-  src/hpctoolkit/hpcprof/Makefile \
-  src/hpctoolkit/hpcprof-flat/Makefile \
-  src/hpctoolkit/hpcproftt/Makefile \
-  src/hpctoolkit/hpcrun/Makefile \
-  src/hpctoolkit/hpcstruct/Makefile \
-  src/hpctoolkit/misc/Makefile \
-  src/hpctoolkit/xprof/Makefile \
+  src/tool/Makefile \
+  src/tool/hpclump/Makefile \
+  src/tool/hpcprof/Makefile \
+  src/tool/hpcprof-flat/Makefile \
+  src/tool/hpcproftt/Makefile \
+  src/tool/hpcrun/Makefile \
+  src/tool/hpcstruct/Makefile \
+  src/tool/misc/Makefile \
+  src/tool/xprof/Makefile \
   src/lib/Makefile \
   src/lib/analysis/Makefile \
   src/lib/banal/Makefile \

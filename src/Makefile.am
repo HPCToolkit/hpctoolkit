@@ -57,7 +57,7 @@ AUTOMAKE_OPTIONS = foreign
 
 SUBDIRS = \
 	lib \
-	hpctoolkit
+	tool
 
 #############################################################################
 # Other rules
