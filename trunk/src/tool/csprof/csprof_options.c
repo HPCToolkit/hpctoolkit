@@ -6,6 +6,7 @@
 
 #include "all_sample_sources.h"
 #include "csprof_options.h"
+#include "registered_sample_sources.h"
 #include "process_event_list.h"
 #include "csprof_misc_fn_stat.h"
 #include "env.h"
