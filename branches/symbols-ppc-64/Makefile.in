@@ -1,0 +1,86 @@
+-include Makefile.conf
+
+## utility symbols derived from configuraion
+symtabAPI_lib  := $(PREFIX)/lib
+
+ifdef NO
+symtabAPI_base := $(symtabAPI_home)/symtabAPI/src/core
+symtabAPI_inc  := $(symtabAPI_base)/symtabAPI/h
+dynutil_inc    := $(symtabAPI_base)/dynutil/h
+endif
+
+symtabAPI_inc  := $(symtabAPI_home)/include
+symtabAPI_lib  := $(symtabAPI_home)/lib
+dynutil_inc    := .
+
+ifndef arch
+   arch := x86
+endif
+
+XED2_INCLUDE_OPTS := -I$(XED2_DIR)/include
+XED2_LIBS := -L$(XED2_DIR)/lib -lxed
+
+SPI = -I$(symtabAPI_inc) -I$(dynutil_inc)
+SPL = -L$(symtabAPI_lib) -lsymtabAPI -ldwarf -lelf -lcommon
+
+INCL += $(SPI)
+LIBS += $(SPL)
+
+ifeq ( "$(arch)","x86" )
+    INCL += $(XED2_INCLUDE_OPTS)
+    LIBS += $(XED2_LIBS)
+endif
+
+CXXFLAGS := -m64
+CXXFLAGS += $(INCL) -g
+
+LDFLAGS := -m64
+
+stapi_syms_SRC := symbols                \
+                  $(arch)-process-ranges \
+                  code-ranges        	 \
+                  function-entries   	 \
+                  intervals
+
+OBJS = $(addsuffix .o,$(stapi_syms_SRC))
+
+.PHONY: build
+build: stapi_syms sts
+
+stapi_syms: $(OBJS)
+	g++ $(LDFLAGS) -o $@ $(OBJS) $(LIBS)
+
+cxxp = $(patsubst %/,%,$(dir $(shell ldd ./stapi_syms | awk '/libstdc\+\+/ {print $$3}')))
+
+sts: stapi_syms
+	@echo "#! /bin/bash" > $@
+	@echo >> $@
+	@echo 'LD_LIBRARY_PATH=$(cxxp):$(symtabAPI_lib):$(XED2_DIR)/lib ./stapi_syms "$$@"' >> $@
+	chmod +x sts
+
+.PHONY: install
+install: build
+	install -d $(PREFIX)/libexec
+	cp stapi_syms $(PREFIX)/libexec
+
+.PHONY: clean
+clean:
+	rm -f *.o stapi_syms csprof_syms sts *.e
+
+.PHONY:TT
+TT:
+#	@echo xed2 includes; ls $(XED2_DIR)/include
+#	@echo cxxp = $(cxxp)
+	# OBJS = $(OBJS)
+	# INCL = $(INCL)
+        # LIBS = $(LIBS)
+
+
+#############################################################################
+# Compiling Rules:
+#############################################################################
+
+vpath %.cpp $(src_dir)
+
+%.o : %.cpp
+	g++ $(CXXFLAGS) -c $<
