@@ -285,9 +285,10 @@ Profile::cct_canonicalize()
 
     Prof::IDynNode* n_dyn = dynamic_cast<Prof::IDynNode*>(n);
     if (n_dyn) {
-      VMA ip = n_dyn->ip_real();
+      VMA ip = n_dyn->IDynNode::ip();
       Prof::Epoch::LM* lm = epoch()->lm_find(ip);
       VMA ip_ur = ip - lm->relocAmt();
+      DIAG_MsgIf(0, "cct_canonicalize: " << hex << ip << dec << " -> " << lm->id());
 
       n_dyn->lm_id(lm->id());
       n_dyn->ip(ip_ur, n_dyn->opIndex());
