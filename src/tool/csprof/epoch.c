@@ -40,6 +40,7 @@
 #include "hpcfile_general.h"
 #include "spinlock.h"
 #include "state.h"
+#include "fnbounds_interface.h"
 
 /* epochs are entirely separate from profiling state */
 static csprof_epoch_t *current_epoch = NULL;

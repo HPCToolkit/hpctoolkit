@@ -27,8 +27,8 @@
 
 //*************************** Cilk Include Files ****************************
 
-#include <../cilk/cilk.h>          /* Cilk (installed) */
-#include <../cilk/cilk-internal.h> /* Cilk (not installed) */
+#include <cilk/cilk.h>          /* Cilk (installed) */
+#include <cilk/cilk-internal.h> /* Cilk (not installed) */
 
 //*************************** User Include Files ****************************
 
