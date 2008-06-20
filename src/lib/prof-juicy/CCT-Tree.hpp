@@ -82,6 +82,8 @@ using SrcFile::ln_NULL;
 
 //*************************** Forward Declarations ***************************
 
+// Hack for interpreting Cilk-like LIPs.
+#define FIXME_CILK_LIP_HACK
 
 inline std::ostream&
 operator<<(std::ostream& os, const hpcfile_metric_data_t x)
@@ -475,23 +477,37 @@ public:
 
   virtual VMA ip() const 
   {
-    // FIXME: Hack for interpreting Cilk-like LIPs.
-    if (m_lip) {
-      VMA cilk_ip = m_lip->data8[0];
-      if (cilk_ip != 0 && cilk_ip != m_ip) {
-	return (cilk_ip + 1); // add 1 since 1 will be subtracted...
-      }
-    }
+#ifdef FIXME_CILK_LIP_HACK
+    if (lip_cilk_isvalid()) { return lip_cilk(); }
+#endif
     return m_ip; 
   }
-  VMA ip_real() const 
-  { return m_ip; } // motivated by Cilk hack above
 
   void ip(VMA ip, ushort opIdx) 
-  { m_ip = ip; m_opIdx = opIdx; }
+  { 
+#ifdef FIXME_CILK_LIP_HACK
+    if (lip_cilk_isvalid()) { lip_cilk(ip); return; }
+#endif
+    m_ip = ip; m_opIdx = opIdx; 
+  }
 
   ushort opIndex() const 
   { return m_opIdx; }
+
+
+#ifdef FIXME_CILK_LIP_HACK
+  VMA ip_real() const 
+  { return m_ip; }
+
+  bool lip_cilk_isvalid() const 
+  { return m_lip && (lip_cilk() != 0) && (lip_cilk() != (VMA)m_lip); }
+
+  VMA lip_cilk() const 
+  { return m_lip->data8[0]; }
+  
+  void lip_cilk(VMA ip) 
+  { m_lip->data8[0] = ip; }
+#endif
 
 
   lush_lip_t* lip() const 
@@ -686,8 +702,15 @@ public:
   virtual ~CSProfCallSiteNode();
   
   // Node data
-  virtual VMA ip() const { return (IDynNode::ip() - 1); }
-  VMA ra() const { return IDynNode::ip(); }
+  virtual VMA ip() const 
+  { 
+#ifdef FIXME_CILK_LIP_HACK
+    if (lip_cilk_isvalid()) { return lip_cilk(); }
+#endif    
+    return (IDynNode::ip_real() - 1); 
+  }
+  
+  VMA ra() const { return IDynNode::ip_real(); }
   
   const std::string& GetFile() const { return file; }
   const std::string& GetProc() const { return proc; }
