@@ -13,9 +13,10 @@ typedef enum {
 #undef E
 #undef D
 
-extern void pmsg_init(char *exec_name);
+extern void pmsg_init();
 extern void pmsg_fini(void);
 extern void csprof_emsg(const char *fmt,...);
+extern void csprof_amsg(const char *fmt,...);
 extern void csprof_pmsg(pmsg_category flag,const char *fmt,...);
 extern void csprof_nmsg(pmsg_category flag,const char *fmt,...);
 extern void csprof_exit_on_error(int ret, int ret_expected, const char *fmt,...);

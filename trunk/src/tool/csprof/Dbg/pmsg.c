@@ -8,10 +8,12 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/param.h>
 #include <sys/types.h>
 #include <unistd.h>
 
 #include "fname_max.h"
+#include "files.h"
 #include "name.h"
 #include "pmsg.h"
 #include "spinlock.h"
@@ -20,6 +22,9 @@
 #include "tokenize.h"
 
 // FIXME: use tbl below to count # flags
+
+static FILE *log_file;
+static spinlock_t pmsg_lock = SPINLOCK_UNLOCKED;
 
 #define N_DBG_FLAGS 200
 static int dbg_flags[N_DBG_FLAGS];
@@ -97,15 +102,10 @@ csprof_dbg_init(char *in)
   }
 }
 
-static FILE *log_file;
-// FILE *pmsg_db_save_file;
-
-#define LOG_FILE_EXT "dbg.log"
-
-static spinlock_t pmsg_lock = SPINLOCK_UNLOCKED;
 
 static void
-dump(void){
+dump(void)
+{
   for (int i=0; i < N_DBG_FLAGS; i++){
     if (i < N_CATEGORIES){
       fprintf(stderr,"dbg_flags[%s] = %d\n",tbl[i],dbg_flags[i]);
@@ -115,18 +115,18 @@ dump(void){
   }
 }
 
+
 void
-pmsg_init(char *exec_name)
+pmsg_init()
 {
-  /* Generate a filename */
-  char fnm[CSPROF_FNM_SZ];
+  // get name for log file 
+  char log_name[PATH_MAX];
+  files_log_name(log_name, PATH_MAX);
 
-  sprintf(fnm, "%s.%lx-%u.%s", exec_name, gethostid(), getpid(), LOG_FILE_EXT);
+  // open log file
+  log_file = fopen(log_name,"w");
+  if (!log_file) log_file = stderr;
 
-  log_file = fopen(fnm,"w");
-  if (! log_file) {
-    log_file = stderr;
-  }
   flag_fill(0);
   for (int i=0; i < NDEFAULTS; i++){
     dbg_flags[defaults[i]] = 1;
@@ -137,15 +137,12 @@ pmsg_init(char *exec_name)
     csprof_dbg_init(s);
   }
   spinlock_unlock(&pmsg_lock);
-  // dump();
 }
 
 void
 pmsg_fini(void)
 {
-  if (! (log_file == stderr)) {
-    fclose(log_file);
-  }
+  if (log_file != stderr) fclose(log_file);
 }
 
 static void
