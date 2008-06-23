@@ -17,35 +17,27 @@
 // system includes 
 //*******************************************************************************
 
-#include <sys/param.h> // for PATH_MAX
 #include <dlfcn.h>     // for dlopen/dlclose
 #include <string.h>    // for strcmp
-
-#if 0
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <stdarg.h>
-#endif
-
+#include <stdlib.h>    // for getenv
+#include <sys/param.h> // for PATH_MAX
+#include <sys/stat.h>  // mkdir
+#include <sys/types.h>
+#include <unistd.h>    // getpid
 
 
 //*******************************************************************************
 // local includes 
 //*******************************************************************************
 
-//-------------
-// monitor
-//-------------
-#include "monitor.h"
-
-#include "fnbounds_interface.h"
-#include "dylib.h"
-
-#include "system_server.h"
 #include "csprof_dlfns.h"
+#include "dylib.h"
 #include "epoch.h"
-
+#include "fnbounds_interface.h"
+#include "monitor.h"
+#include "pmsg.h"
+#include "structs.h"
+#include "system_server.h"
 #include "unlink.h"
 
 
@@ -118,6 +110,7 @@ static void        dso_list_remove(dso_info_t **dso_list, dso_info_t *self);
 static dso_info_t *dso_info_allocate();
 static void        dso_info_free(dso_info_t *unused);
 
+static char *nm_command = 0;
 
 //*******************************************************************************
 // interface operations  
@@ -142,6 +135,8 @@ fnbounds_init()
   if (result == 0) {
     result = fnbounds_tmpdir_create();
     if (result == 0) {
+      nm_command = getenv("CSPROF_NM_COMMAND"); 
+  
       fnbounds_map_executable();
       fnbounds_map_open_dsos();
     } else {
@@ -260,32 +255,6 @@ fnbounds_fini()
 }
 
 
-/******************************************************************************
- * system includes
- *****************************************************************************/
-
-#include <sys/stat.h>
-#include <sys/types.h>
-
-#include <assert.h>
-#include <limits.h>
-#include <stdlib.h>
-#include <string.h>
-#include <assert.h>
-#include <dlfcn.h>
-#include <unistd.h>
-
-/******************************************************************************
- * local includes
- *****************************************************************************/
-
-
-/*---------------------------
- * csprof
- *--------------------------*/
-#include "structs.h"
-#include "pmsg.h"
-
 
 /******************************************************************************
  * private operations
@@ -296,8 +265,7 @@ fnbounds_compute(const char *incoming_filename, void *start, void *end)
 {
   char filename[PATH_MAX];
   realpath(incoming_filename, filename);
-  
-  char *nm_command = getenv("CSPROF_NM_COMMAND"); 
+
   if (nm_command) {
     char command[MAXPATHLEN+1024];
     char dlname[MAXPATHLEN];
