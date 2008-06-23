@@ -66,7 +66,7 @@
 
 static void papi_event_handler(int event_set, void *pc, long long ovec, void *context);
 static void extract_and_check_event(char *in,int *ec,long *th);
-static void extract_ev_thresh(char *in,int evlen,char *ev,long *th);
+static void extract_ev_thresh(const char *in,int evlen,char *ev,long *th);
 static int event_name_to_code(char *evname,int *ec);
 
 /******************************************************************************
@@ -291,7 +291,7 @@ papi_obj_reg(void)
 #define DEFAULT_THRESHOLD 1000000L
 
 static void
-extract_ev_thresh(char *in,int evlen,char *ev,long *th)
+extract_ev_thresh(const char *in,int evlen,char *ev,long *th)
 {
   unsigned int len;
 
