@@ -27,6 +27,7 @@ typedef struct _td_t {
   int             handling_sample;
   int             handling_synchronous_sample;
   int             splay_lock;
+  FILE*           trace_file;
 } thread_data_t;
 
 #define TD_GET(field) csprof_get_thread_data()->field
