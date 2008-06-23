@@ -89,6 +89,8 @@ _ASB(started)
 void
 csprof_sample_sources_from_eventlist(char *evl)
 {
+  if (evl == 0) return;
+
   TMSG(EVENTS,"evl (before processing) = |%s|",evl);
 
   for(char *event = start_tok(evl); more_tok(); event = next_tok()){
