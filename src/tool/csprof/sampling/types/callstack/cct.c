@@ -309,6 +309,7 @@ rbtree_insert(struct rbtree *tree, csprof_cct_node_t *node)
 
 /* various internal functions for maintaining vdegree trees */
 
+#if 0
 /* csprof_cct_node__init: initializes empty node and links
    it to its parent and siblings (if any) */
 static int
@@ -327,12 +328,14 @@ csprof_cct_node__init(csprof_cct_node_t* x, csprof_cct_node_t* parent,
   csprof_cct_node__link(x, parent); 
   return CSPROF_OK;
 }
+#endif
 
 static csprof_cct_node_t *
 csprof_cct_node__create(lush_assoc_info_t as_info, 
 			void* ip,
 			lush_lip_t* lip,
-			void* sp)
+			void* sp,
+			csprof_cct_t *x)
 {
   size_t sz = (sizeof(csprof_cct_node_t)
 	       + sizeof(cct_metric_data_t)*(csprof_get_max_metrics() - 1));
@@ -360,11 +363,13 @@ csprof_cct_node__parent_insert(csprof_cct_node_t *x, csprof_cct_node_t *parent)
 #endif
 }
 
+#if 0
 static int
 csprof_cct_node__fini(csprof_cct_node_t* x)
 {
   return CSPROF_OK;
 }
+#endif
 
 /* csprof_cct_node__link: links a node to a parent and at
    the end of the circular doubly-linked list of its siblings (if any) */
@@ -447,6 +452,7 @@ int
 csprof_cct__init(csprof_cct_t* x)
 {
   memset(x, 0, sizeof(*x));
+  x->next_cpid = 1;        // valid call path ids are > 0
 
 #ifndef CSPROF_TRAMPOLINE_BACKEND
   {
@@ -470,6 +476,22 @@ csprof_cct__fini(csprof_cct_t *x)
 }
 
 
+// find a child with the specified pc. if none exists, create one.
+csprof_cct_node_t*
+csprof_cct_get_child(csprof_cct_t *cct, csprof_cct_node_t *parent, csprof_frame_t *frm)
+{
+  csprof_cct_node_t *c = csprof_cct_node__find_child(parent, frm->as_info, frm->ip, frm->lip, frm->sp);  
+
+  if (!c) {
+    c = csprof_cct_node__create(frm->as_info, frm->ip, frm->lip, frm->sp, cct);
+    csprof_cct_node__parent_insert(c, parent);
+    cct->num_nodes++;
+  }
+
+
+  return c;
+} 
+
 // See usage in header.
 csprof_cct_node_t*
 csprof_cct_insert_backtrace(csprof_cct_t *x, void *treenode, int metric_id,
@@ -492,7 +514,7 @@ csprof_cct_insert_backtrace(csprof_cct_t *x, void *treenode, int metric_id,
   if (csprof_cct__isempty(x)) {
     // introduce bogus root to handle possible forests
     x->tree_root = csprof_cct_node__create(frm->as_info, frm->ip, 
-					   frm->lip, frm->sp);
+					   frm->lip, frm->sp, x);
     tn = x->tree_root;
     x->num_nodes = 1;
 
@@ -561,7 +583,7 @@ csprof_cct_insert_backtrace(csprof_cct_t *x, void *treenode, int metric_id,
       
       while (!csprof_MY_IS_PATH_FRAME_AT_END(frm)) {
 	MSG(1,"create node w ip = %lx",frm->ip);
-	c = csprof_cct_node__create(frm->as_info, frm->ip, frm->lip, frm->sp);
+	c = csprof_cct_node__create(frm->as_info, frm->ip, frm->lip, frm->sp, x);
 	csprof_cct_node__parent_insert(c, tn);
 	x->num_nodes++;
 	
@@ -655,8 +677,12 @@ static int
 hpcfile_cstree_count_nodes(csprof_cct_t* tree, csprof_cct_node_t* node, 
 			   int levels_to_skip);
 
+#undef NODE_CHILD_COUNT // FIXME: this is now dead code. can it be expunged?
+
+#ifdef NODE_CHILD_COUNT 
 static int
 node_child_count(csprof_cct_t* tree, csprof_cct_node_t* node);
+#endif
 
 
 
@@ -679,7 +705,7 @@ hpcfile_cstree_write(FILE* fs, csprof_cct_t* tree,
 
   if (tree_ctxt != 0) {
     levels_to_skip = 2;
-#if 0
+#ifdef NODE_CHILD_COUNT 
   } else {
     // this case needs to be coordinated with the context writer. it should skip the same.
     int children = node_child_count(tree, root);
@@ -841,6 +867,7 @@ hpcfile_cstree_write_node_hlp(FILE* fs, csprof_cct_node_t* node,
   tmp_node->data.ip = (hpcfile_vma_t)node->ip;
   tmp_node->data.lip.id = id_lip;
   tmp_node->data.sp = (hpcfile_uint_t)node->sp;
+  tmp_node->data.cpid = node->cpid;
   memcpy(tmp_node->data.metrics, node->metrics, 
 	 tmp_node->data.num_metrics * sizeof(cct_metric_data_t));
 
@@ -882,6 +909,7 @@ hpcfile_cstree_count_nodes(csprof_cct_t* tree, csprof_cct_node_t* node,
 }
 
 
+#ifdef NODE_CHILD_COUNT 
 static int
 node_child_count(csprof_cct_t* tree, csprof_cct_node_t* node)
 {
@@ -901,6 +929,7 @@ node_child_count(csprof_cct_t* tree, csprof_cct_node_t* node)
   }
   return children; 
 }
+#endif
 
 
 //***************************************************************************
