@@ -395,7 +395,7 @@ public:
   // -------------------------------------------------------
   
   IDynNode(CSProfCodeNode* proxy, 
-	   u_int32_t cpid,
+	   uint32_t cpid,
 	   const SampledMetricDescVec* metricdesc)
     : m_proxy(proxy),
       m_as_info(lush_assoc_info_NULL), 
@@ -405,7 +405,7 @@ public:
 
   IDynNode(CSProfCodeNode* proxy, 
 	   lush_assoc_info_t as_info, VMA ip, ushort opIdx, lush_lip_t* lip,
-	   u_int32_t cpid,
+	   uint32_t cpid,
 	   const SampledMetricDescVec* metricdesc)
     : m_proxy(proxy), 
       m_as_info(as_info), 
@@ -415,7 +415,7 @@ public:
 
   IDynNode(CSProfCodeNode* proxy, 
 	   lush_assoc_info_t as_info, VMA ip, ushort opIdx, lush_lip_t* lip,
-	   u_int32_t cpid,
+	   uint32_t cpid,
 	   const SampledMetricDescVec* metricdesc,
 	   std::vector<hpcfile_metric_data_t>& metrics)
     : m_proxy(proxy),
@@ -535,7 +535,7 @@ public:
   static void delete_lip(lush_lip_t* x) 
   { delete[] (char*)x; }
 
-  u_int32_t cpid() const 
+  uint32_t cpid() const 
     { return m_cpid; }
 
   hpcfile_metric_data_t metric(int i) const 
@@ -616,7 +616,7 @@ private:
 
   lush_lip_t* m_lip; // lush logical ip
 
-  u_int32_t m_cpid; // call path node handle for tracing
+  uint32_t m_cpid; // call path node handle for tracing
 
   // FIXME: convert to metric-id a la Metric::Mgr
   const SampledMetricDescVec*        m_metricdesc; // does not own memory
@@ -701,13 +701,13 @@ class CSProfCallSiteNode: public CSProfCodeNode, public IDynNode {
 public:
   // Constructor/Destructor
   CSProfCallSiteNode(CSProfNode* _parent,
-		     u_int32_t cpid,
+		     uint32_t cpid,
 		     const SampledMetricDescVec* metricdesc);
   CSProfCallSiteNode(CSProfNode* _parent, 
 		     lush_assoc_info_t as_info,
 		     VMA ip, ushort opIdx, 
 		     lush_lip_t* lip,
-		     u_int32_t cpid,
+		     uint32_t cpid,
 		     const SampledMetricDescVec* metricdesc,
 		     std::vector<hpcfile_metric_data_t>& metrics);
   virtual ~CSProfCallSiteNode();
@@ -760,7 +760,7 @@ class CSProfStatementNode: public CSProfCodeNode, public IDynNode {
  public:
   // Constructor/Destructor
   CSProfStatementNode(CSProfNode* _parent, 
-		      u_int32_t cpid,
+		      uint32_t cpid,
 		      const SampledMetricDescVec* metricdesc);
   virtual ~CSProfStatementNode();
 
