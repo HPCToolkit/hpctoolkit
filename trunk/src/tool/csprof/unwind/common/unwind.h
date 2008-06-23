@@ -33,10 +33,11 @@
 // interface to architecture-specific operations
 //********************************************************************
 
-void unw_init_arch(void);
-void unw_init_cursor_arch(ucontext_t* context, unw_cursor_t *cursor);
-int unw_get_reg_arch(unw_cursor_t *c, int reg_id, void **reg_value);
+void *context_pc(void *context);
 
+void  unw_init_arch(void);
+void  unw_init_cursor_arch(void* context, unw_cursor_t *cursor);
+int   unw_get_reg_arch(unw_cursor_t *c, int reg_id, void **reg_value);
 
 
 //********************************************************************
@@ -45,7 +46,7 @@ int unw_get_reg_arch(unw_cursor_t *c, int reg_id, void **reg_value);
 
 void unw_init(void);
 
-void unw_init_cursor(ucontext_t* context, unw_cursor_t* cursor);
+void unw_init_cursor(void* context, unw_cursor_t* cursor);
 
 //---------------------------------------------------------------------
 // function: unw_step
