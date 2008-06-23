@@ -9,6 +9,7 @@
 #include <sys/types.h>          /* pid_t, e.g. */
 
 #include "csprof_csdata.h"
+#include "epoch.h"
 #include "list.h"
 
 #include <lush/lush.h>
