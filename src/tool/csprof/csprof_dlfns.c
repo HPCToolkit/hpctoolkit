@@ -20,7 +20,7 @@ csprof_dlopen_pending()
 
 
 void 
-csprof_dlopen(char *module_name, int flags, void *handle)
+csprof_dlopen(const char *module_name, int flags, void *handle)
 {
    long pending = fetch_and_add(&dlopens_pending, -1L);
    if (pending == 1) {
