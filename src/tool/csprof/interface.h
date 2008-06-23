@@ -18,8 +18,8 @@ struct lox {
     ra_loc_t current, stored;
 };
 
-/* retrieves the pc from 'context' */
-void *csprof_get_pc(void *);
+/* retrieves the pc from a 'ucontext' */
+void *context_pc(void *);
 
 void csprof_remove_trampoline(csprof_state_t *, mcontext_t *);
 void csprof_insert_trampoline(csprof_state_t *, struct lox *, mcontext_t *);

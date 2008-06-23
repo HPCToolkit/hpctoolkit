@@ -70,7 +70,7 @@
 #include "hpcfile_cstreelib.h"
 #include "hpcfile_cstree.h"
 
-#include <lib/support/diagnostics.h>
+//#include <lib/support/diagnostics.h>
 
 //*************************** Forward Declarations **************************
 
@@ -521,10 +521,13 @@ hpcfile_cstree_nodedata__fread(hpcfile_cstree_nodedata_t* x, FILE* fs)
   sz = hpc_fread_le8(&x->sp, fs);
   if (sz != sizeof(x->sp)) { return HPCFILE_ERR; }
 
-  DIAG_MsgIf(DBG_READ_METRICS, "reading node ip=%"PRIx64, x->ip);
+  sz = hpc_fread_le4(&x->cpid, fs);
+  if (sz != sizeof(x->cpid)) { return HPCFILE_ERR; }
+
+  //DIAG_MsgIf(DBG_READ_METRICS, "reading node ip=%"PRIx64, x->ip);
   for (i = 0; i < x->num_metrics; ++i) {
     sz = hpc_fread_le8(&x->metrics[i].bits, fs);
-    DIAG_MsgIf(DBG_READ_METRICS, "metrics[%d]=%"PRIu64, i, x->metrics[i]);
+    //DIAG_MsgIf(DBG_READ_METRICS, "metrics[%d]=%"PRIu64, i, x->metrics[i]);
     if (sz != sizeof(x->metrics[i])) {
       return HPCFILE_ERR;
     }
@@ -552,6 +555,9 @@ hpcfile_cstree_nodedata__fwrite(hpcfile_cstree_nodedata_t* x, FILE* fs)
   sz = hpc_fwrite_le8(&x->sp, fs);
   if (sz != sizeof(x->sp)) { return HPCFILE_ERR; }
 
+  sz = hpc_fwrite_le4(&x->cpid, fs);
+  if (sz != sizeof(x->cpid)) { return HPCFILE_ERR; }
+
   for (i = 0; i < x->num_metrics; ++i) {
     sz = hpc_fwrite_le8(&x->metrics[i].bits, fs);
     if (sz != sizeof(x->metrics[i])) {
@@ -569,7 +575,8 @@ hpcfile_cstree_nodedata__fprint(hpcfile_cstree_nodedata_t* x, FILE* fs,
   char as_str[LUSH_ASSOC_INFO_STR_MIN_LEN];
   lush_assoc_info_sprintf(as_str, x->as_info);
 
-  fprintf(fs, "%s{nodedata: (as: %s) (ip: 0x%"PRIx64") (lip: [%"PRIu64"][%p]) (sp: %"PRIx64") ", pre, as_str, x->ip, x->lip.id, x->lip.ptr, x->sp);
+  fprintf(fs, "%s{nodedata: (as: %s) (ip: 0x%"PRIx64") (lip: [%"PRIu64"][%p]) (sp: %"PRIx64") (cpid: %"PRIu32")\n", pre, as_str, x->ip, x->lip.id, x->lip.ptr, 
+	  x->sp, x->cpid);
 
   fprintf(fs, "%s  (metrics:", pre);
   for (int i = 0; i < x->num_metrics; ++i) {
