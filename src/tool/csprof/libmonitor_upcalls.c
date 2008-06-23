@@ -21,6 +21,7 @@
 #include "monitor.h"
 
 #include "all_sample_sources.h"
+#include "files.h"
 #include "general.h"
 #include "name.h"
 #include "epoch.h"
@@ -31,6 +32,7 @@
 #include "registered_sample_sources.h"
 #include "csprof_dlfns.h"
 #include "fnbounds_interface.h"
+#include "trace.h"
 
 
 //***************************************************************************
@@ -63,11 +65,15 @@ monitor_init_process(int *argc, char **argv, void *data)
   if (getenv("CSPROF_WAIT")){
     while(DEBUGGER_WAIT);
   }
-  csprof_set_executable_name(process_name);
-  pmsg_init(process_name);
+
+  files_set_directory();
+  files_set_executable(process_name);
+
+  pmsg_init();
   NMSG(PROCESS,"init");
 
   csprof_init_internal();
+
   return data;
 }
 
@@ -119,6 +125,7 @@ void
 monitor_fini_process(int how, void *data)
 {
   csprof_fini_internal();
+  trace_close();
   fnbounds_fini();
 }
 
@@ -166,6 +173,8 @@ monitor_init_thread(int tid, void *data)
   void *thread_data = csprof_thread_init(tid, (lush_cct_ctxt_t*)data);
   NMSG(THREAD,"back from init thread %d",tid);
 
+  trace_open();
+
   return thread_data;
 }
 
@@ -176,6 +185,8 @@ monitor_fini_thread(void *init_thread_data)
   csprof_state_t *state = (csprof_state_t *)init_thread_data;
 
   csprof_thread_fini(state);
+
+  trace_close();
 }
 
 #endif
