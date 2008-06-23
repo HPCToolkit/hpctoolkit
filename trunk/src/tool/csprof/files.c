@@ -63,6 +63,13 @@ files_trace_name(char *filename, int len)
 }
 
 
+const char * 
+files_executable_name()
+{
+  return executable_name;
+}
+
+
 void
 files_profile_name(char *filename, int len)
 {
