@@ -6,7 +6,6 @@
 
 #include <stdio.h>
 #include <setjmp.h>
-#include <ucontext.h>
 
 // for getpid
 #include <sys/types.h>
@@ -17,7 +16,6 @@
 
 #include "general.h"
 #include "mem.h"
-// #include "intervals.h"
 #include "pmsg.h"
 #include "stack_troll.h"
 #include "monitor.h"
@@ -26,12 +24,6 @@
 #include "splay.h"
 
 #include "thread_data.h"
-
-#if defined(__LIBCATAMOUNT__)
-#undef __CRAYXT_CATAMOUNT_TARGET
-#define __CRAYXT_CATAMOUNT_TARGET
-#endif
-
 
 /****************************************************************************************
  * global data 
@@ -74,10 +66,10 @@ unw_init(void)
 
 
 void 
-unw_init_cursor(ucontext_t* context, unw_cursor_t *cursor)
+unw_init_cursor(void* context, unw_cursor_t *cursor)
 {
 
-  PMSG(UNW,"init prim unw called w ucontext: context = %p, cursor_p = %p\n",context,cursor);
+  PMSG(UNW,"init prim unw called with context = %p, cursor_p = %p\n",context, cursor);
 
   unw_init_cursor_arch(context, cursor);
 

@@ -1,30 +1,31 @@
 // -*-Mode: C++;-*- // technically C99
 // $Id$
 
-//************************* System Include Files ****************************
-
-#include <ucontext.h>
 
 //*************************** User Include Files ****************************
 
 #include "dump_backtraces.h"
 #include "getregs.h"
 #include "metrics_types.h"
-// #include "mpi_special.h"
 #include "pmsg.h"
 #include "segv_handler.h"
 #include "splay.h"
 #include "state.h"
 #include "thread_data.h"
 #include "thread_use.h"
+#include "trace.h"
 #include "backtrace.h"
 #include "csprof_csdata.h"
 #include "handling_sample.h"
+#include "fnbounds_interface.h"
+#include "unwind.h"
+
+
 
 //*************************** Forward Declarations **************************
 
 static csprof_cct_node_t*
-csprof_take_profile_sample(csprof_state_t *state, struct ucontext *ctx,
+csprof_take_profile_sample(csprof_state_t *state, void *context,
 			   int metric_id, size_t sample_count);
 
 //***************************************************************************
@@ -53,9 +54,23 @@ csprof_sample_event(void *context, int metric_id, size_t sample_count)
 
   if (!sigsetjmp(it->jb,1)){
 
-    struct ucontext *ctx = (struct ucontext *)(context);
     if (state != NULL) {
-      node = csprof_take_profile_sample(state, ctx, metric_id, sample_count);
+      node = csprof_take_profile_sample(state, context, metric_id, sample_count);
+
+      if (trace_isactive()) {
+	void *pc = context_pc(context);
+	csprof_cct_t *cct = &(td->state->csdata); 
+	void *func_start_pc, *func_end_pc;
+
+	fnbounds_enclosing_addr(pc, &func_start_pc, &func_end_pc); 
+
+	csprof_frame_t frm = {.ip = func_start_pc};
+	csprof_cct_node_t* func_proxy = csprof_cct_get_child(cct, node->parent, &frm);
+
+	// assign it a call path node id if it doesn't have one
+	if (func_proxy->cpid == 0) func_proxy->cpid = cct->next_cpid++;
+	trace_append(func_proxy->cpid);
+      }
       csprof_state_flag_clear(state, CSPROF_THRU_TRAMP);
     }
   }
@@ -76,11 +91,10 @@ csprof_sample_event(void *context, int metric_id, size_t sample_count)
 
 
 static csprof_cct_node_t*
-csprof_take_profile_sample(csprof_state_t *state, struct ucontext *ctx,
+csprof_take_profile_sample(csprof_state_t *state, void *context,
 			   int metric_id, size_t sample_count)
 {
-  mcontext_t *context = &ctx->uc_mcontext;
-  void *pc = csprof_get_pc(context);
+  void *pc = context_pc(context);
 
   PMSG(SAMPLE,"csprof take profile sample");
 #ifdef USE_TRAMP
@@ -89,7 +103,7 @@ csprof_take_profile_sample(csprof_state_t *state, struct ucontext *ctx,
      /* dynamical libraries are in flux; don't bother */
      /* || csprof_epoch_is_locked() */
      /* general checking for addresses in libraries */
-     || csprof_context_is_unsafe(ctx)) {
+     || csprof_context_is_unsafe(context)) {
     EMSG("Reached trampoline code !!");
     /* ugh, don't even bother */
     state->trampoline_samples++;
@@ -116,7 +130,7 @@ csprof_take_profile_sample(csprof_state_t *state, struct ucontext *ctx,
 #endif
   
   csprof_cct_node_t* n;
-  n = csprof_sample_callstack(state, ctx, metric_id, sample_count);
+  n = csprof_sample_callstack(state, context, metric_id, sample_count);
 
   // FIXME: n == -1 if sample is filtered
 #if 0
