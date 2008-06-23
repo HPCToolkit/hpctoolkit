@@ -37,7 +37,10 @@
 
 extern const char* CSPROF_FNM_PFX;
 extern const char* CSPROF_PSTATE_FNM_SFX;
-extern const char* CSPROF_OUT_FNM_SFX;
+
+extern const char* CSPROF_PROFILE_FNM_SFX;
+extern const char* CSPROF_TRACE_FNM_SFX;
+extern const char* CSPROF_LOG_FNM_SFX;
 
 extern const char* CSPROF_OPT_LUSH_AGENTS;
 
@@ -45,6 +48,7 @@ extern const char* CSPROF_OPT_LUSH_AGENTS;
 extern const char* CSPROF_OPT_OUT_PATH;
 extern const char* CSPROF_OPT_SAMPLE_PERIOD;
 extern const char* CSPROF_OPT_MEM_SZ;
+extern const char* CSPROF_OPT_TRACE;
 
 extern const char* CSPROF_OPT_VERBOSITY;
 extern const char* CSPROF_OPT_DEBUG;
