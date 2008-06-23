@@ -176,7 +176,7 @@ typedef struct hpcfile_cstree_nodedata_s {
   // tallent: Why is this needed?
   hpcfile_uint_t sp;
 
-  u_int32_t cpid;
+  uint32_t cpid;
 
   hpcfile_uint_t num_metrics;
   hpcfile_metric_data_t* metrics;

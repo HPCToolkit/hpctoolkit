@@ -277,7 +277,7 @@ CSProfCallSiteNode_Check(CSProfCallSiteNode* n, CSProfNode* _parent)
 
 
 CSProfCallSiteNode::CSProfCallSiteNode(CSProfNode* _parent,
-				       u_int32_t cpid,
+				       uint32_t cpid,
 				       const SampledMetricDescVec* metricdesc)
   : CSProfCodeNode(CALLSITE, _parent, ln_NULL, ln_NULL),
     IDynNode(this, cpid, metricdesc)
@@ -290,7 +290,7 @@ CSProfCallSiteNode::CSProfCallSiteNode(CSProfNode* _parent,
 				       lush_assoc_info_t as_info,
 				       VMA ip, ushort opIndex, 
 				       lush_lip_t* lip,
-				       u_int32_t cpid,
+				       uint32_t cpid,
 				       const SampledMetricDescVec* metricdesc,
 				       std::vector<hpcfile_metric_data_t>& metrics)
   : CSProfCodeNode(CALLSITE, _parent, ln_NULL, ln_NULL), 
@@ -305,7 +305,7 @@ CSProfCallSiteNode::~CSProfCallSiteNode()
 
 
 CSProfStatementNode::CSProfStatementNode(CSProfNode* _parent, 
-					 u_int32_t cpid,
+					 uint32_t cpid,
 					 const SampledMetricDescVec* metricdesc)
   :  CSProfCodeNode(STATEMENT, _parent, ln_NULL, ln_NULL),
      IDynNode(this, cpid, metricdesc)
