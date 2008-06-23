@@ -68,6 +68,7 @@
 
 #include "all_sample_sources.h"
 #include "atomic.h"
+#include "files.h"
 #include "libc.h"
 #include "csproflib.h"
 #include "csproflib_private.h"
@@ -78,11 +79,7 @@
 #include "segv_handler.h"
 #include "epoch.h"
 #include "metrics.h"
-
-#if 0
-#include "itimer.h"
-#include "papi_sample.h"
-#endif
+#include "trace.h"
 
 #include "csprof_options.h"
 
@@ -158,6 +155,9 @@ csprof_init_internal(void)
   fnbounds_init();
   csprof_options__init(&opts);
   csprof_options__getopts(&opts);
+
+  trace_init(); // this must go after thread initialization
+  trace_open(); 
 
   // Initialize LUSH agents
   if (opts.lush_agent_paths[0] != '\0') {
@@ -416,8 +416,6 @@ void csprof_print_backtrace(csprof_state_t *state)
 
 int csprof_write_profile_data(csprof_state_t *state){
 
-  extern int csprof_using_threads;
-
   int ret = CSPROF_OK, ret1, ret2;
   FILE* fs;
 
@@ -425,18 +423,8 @@ int csprof_write_profile_data(csprof_state_t *state){
   char fnm[CSPROF_FNM_SZ];
 
 
-  if (csprof_using_threads){
-    sprintf(fnm, "%s/%s.%lx-%u-%lu%s", 
-	    opts.out_path, csprof_get_executable_name(), 
-	    gethostid(), state->pstate.pid, state->pstate.thrid, 
-	    CSPROF_OUT_FNM_SFX);
-  }
-  else {
-    sprintf(fnm, "%s/%s.%lx-%u%s", 
-	    opts.out_path, csprof_get_executable_name(),
-            gethostid(), state->pstate.pid, 
-	    CSPROF_OUT_FNM_SFX);
-  }
+  files_profile_name(fnm, CSPROF_FNM_SZ);
+
   MSG(CSPROF_MSG_DATAFILE, "CSPROF write_profile_data: Writing %s", fnm);
 
   /* Open file for writing; fail if the file already exists. */

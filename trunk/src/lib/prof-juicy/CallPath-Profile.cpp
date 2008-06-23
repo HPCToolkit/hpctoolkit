@@ -346,7 +346,7 @@ cstree_create_node_CB(void* tree,
 
   DIAG_DevMsgIf(0, "cstree_create_node_CB: " << hex << data->ip << dec);
   Prof::CSProfCallSiteNode* n = 
-    new Prof::CSProfCallSiteNode(NULL, data->as_info, ip, opIdx, data->lip.ptr,
+    new Prof::CSProfCallSiteNode(NULL, data->as_info, ip, opIdx, data->lip.ptr, data->cpid,
 				 &my_tree->metadata()->metricDesc(), metricVec);
   n->SetSrcInfoDone(false);
   
@@ -453,7 +453,7 @@ cct_fixLeaves(Prof::CSProfNode* node)
       // This child is a leaf. Convert.
       CSProfCallSiteNode* c = dynamic_cast<CSProfCallSiteNode*>(child);
       
-      CSProfStatementNode* newc = new CSProfStatementNode(NULL, c->metricdesc());
+      CSProfStatementNode* newc = new CSProfStatementNode(NULL, c->cpid(), c->metricdesc());
       *newc = *c;
       
       newc->LinkBefore(node->FirstChild()); // do not break iteration!

@@ -7,11 +7,9 @@
 extern void *__libc_start_main;
 
 void *
-csprof_get_pc(void *context)
+context_pc(void *context) 
 {
-    mcontext_t *ctx = (mcontext_t *)context;
-
-    return (void *)ctx->sc_ip;
+  return (void *) ((ucontext_t *) context)->uc_mcontext->sc_ip;
 }
 
 int

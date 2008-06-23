@@ -217,7 +217,7 @@ CSProfCodeNode::CSProfCodeNode(NodeType t, CSProfNode* _parent,
 			       SrcFile::ln begLn, SrcFile::ln endLn,
 			       uint sId) 
   : CSProfNode(t, _parent), 
-    begLine(ln_NULL), endLine(ln_NULL), m_sId(sId)
+    begLine(ln_NULL), endLine(ln_NULL), m_sId(sId) 
 { 
   SetLineRange(begLn, endLn); 
   xDEBUG(DEB_UNIFY_PROCEDURE_FRAME,
@@ -277,9 +277,10 @@ CSProfCallSiteNode_Check(CSProfCallSiteNode* n, CSProfNode* _parent)
 
 
 CSProfCallSiteNode::CSProfCallSiteNode(CSProfNode* _parent,
+				       u_int32_t cpid,
 				       const SampledMetricDescVec* metricdesc)
   : CSProfCodeNode(CALLSITE, _parent, ln_NULL, ln_NULL),
-    IDynNode(this, metricdesc)
+    IDynNode(this, cpid, metricdesc)
 {
   CSProfCallSiteNode_Check(this, _parent);
 }
@@ -289,10 +290,11 @@ CSProfCallSiteNode::CSProfCallSiteNode(CSProfNode* _parent,
 				       lush_assoc_info_t as_info,
 				       VMA ip, ushort opIndex, 
 				       lush_lip_t* lip,
+				       u_int32_t cpid,
 				       const SampledMetricDescVec* metricdesc,
 				       std::vector<hpcfile_metric_data_t>& metrics)
   : CSProfCodeNode(CALLSITE, _parent, ln_NULL, ln_NULL), 
-    IDynNode(this, as_info, ip, opIndex, lip, metricdesc, metrics)
+    IDynNode(this, as_info, ip, opIndex, lip, cpid, metricdesc, metrics)
 {
   CSProfCallSiteNode_Check(this, _parent);
 }
@@ -303,9 +305,10 @@ CSProfCallSiteNode::~CSProfCallSiteNode()
 
 
 CSProfStatementNode::CSProfStatementNode(CSProfNode* _parent, 
+					 u_int32_t cpid,
 					 const SampledMetricDescVec* metricdesc)
   :  CSProfCodeNode(STATEMENT, _parent, ln_NULL, ln_NULL),
-     IDynNode(this, metricdesc)
+     IDynNode(this, cpid, metricdesc)
 {
 }
 
@@ -509,6 +512,11 @@ IDynNode::mergeMetrics(const IDynNode& y, uint beg_idx)
     m_metrics.resize(y.numMetrics());
   }
 #endif
+
+  DIAG_Assert(m_cpid == 0 || y.m_cpid == 0, "multiple node ids for a call path"); 
+
+  // if either node has an id, make sure the node after the merge has a node id
+  if (m_cpid == 0) m_cpid = y.m_cpid;
 
   uint x_end = y.numMetrics() + beg_idx;
   DIAG_Assert(x_end <= numMetrics(), "Insufficient space for merging.");
@@ -826,6 +834,10 @@ CSProfCallSiteNode::ToDumpString(int dmpFlag) const
     self = self + " l" + xml::MakeAttrNum(GetBegLine());
   }  
 
+  if (cpid() != 0) {
+    self = self + " cpid" + xml::MakeAttrNum(cpid());
+  }  
+
   return self; 
 } 
 
@@ -854,9 +866,12 @@ CSProfStatementNode::ToDumpString(int dmpFlag) const
     self = self + " ip" + xml::MakeAttrNum(ip(), 16);
   }
   
-
   if (GetBegLine() != ln_NULL) {
     self = self + " l" + xml::MakeAttrNum(GetBegLine());
+  }  
+
+  if (cpid() != 0) {
+    self = self + " cpid" + xml::MakeAttrNum(cpid());
   }  
 
   return self; 

@@ -168,7 +168,7 @@ ifndef STATIC_ONLY
 else
    OBJS += static_mon_ovr.o
 endif
-OBJS += csproflib.o metrics.o mem.o cct.o
+OBJS += csproflib.o files.o trace.o metrics.o mem.o cct.o
 OBJS += name.o list.o epoch.o
 OBJS += sample_event.o 
 #OBJS += csprof_options.o process_event_list.o

@@ -395,29 +395,32 @@ public:
   // -------------------------------------------------------
   
   IDynNode(CSProfCodeNode* proxy, 
+	   u_int32_t cpid,
 	   const SampledMetricDescVec* metricdesc)
     : m_proxy(proxy),
       m_as_info(lush_assoc_info_NULL), 
-      m_lmId(Epoch::LM_id_NULL), m_ip(0), m_opIdx(0), m_lip(NULL),
+      m_lmId(Epoch::LM_id_NULL), m_ip(0), m_opIdx(0), m_lip(NULL), m_cpid(cpid),
       m_metricdesc(metricdesc)
     { }
 
   IDynNode(CSProfCodeNode* proxy, 
 	   lush_assoc_info_t as_info, VMA ip, ushort opIdx, lush_lip_t* lip,
+	   u_int32_t cpid,
 	   const SampledMetricDescVec* metricdesc)
     : m_proxy(proxy), 
       m_as_info(as_info), 
-      m_lmId(Epoch::LM_id_NULL), m_ip(ip), m_opIdx(opIdx), m_lip(lip),
+      m_lmId(Epoch::LM_id_NULL), m_ip(ip), m_opIdx(opIdx), m_lip(lip), m_cpid(cpid),
       m_metricdesc(metricdesc)
     { }
 
   IDynNode(CSProfCodeNode* proxy, 
 	   lush_assoc_info_t as_info, VMA ip, ushort opIdx, lush_lip_t* lip,
+	   u_int32_t cpid,
 	   const SampledMetricDescVec* metricdesc,
 	   std::vector<hpcfile_metric_data_t>& metrics)
     : m_proxy(proxy),
       m_as_info(as_info), 
-      m_lmId(Epoch::LM_id_NULL), m_ip(ip), m_opIdx(opIdx), m_lip(lip), 
+      m_lmId(Epoch::LM_id_NULL), m_ip(ip), m_opIdx(opIdx), m_lip(lip), m_cpid(cpid),
       m_metricdesc(metricdesc), m_metrics(metrics) 
     { }
 
@@ -432,6 +435,7 @@ public:
       m_lmId(x.m_lmId),
       m_ip(x.m_ip), m_opIdx(x.m_opIdx), 
       m_lip(clone_lip(x.m_lip)),
+      m_cpid(x.m_cpid),
       m_metricdesc(x.m_metricdesc),
       m_metrics(x.m_metrics) 
     { }
@@ -446,6 +450,7 @@ public:
       m_opIdx = x.m_opIdx;
       delete_lip(m_lip);
       m_lip = clone_lip(x.m_lip);
+      m_cpid = x.m_cpid;
       m_metricdesc = x.m_metricdesc;
       m_metrics = x.m_metrics;
     }
@@ -530,6 +535,8 @@ public:
   static void delete_lip(lush_lip_t* x) 
   { delete[] (char*)x; }
 
+  u_int32_t cpid() const 
+    { return m_cpid; }
 
   hpcfile_metric_data_t metric(int i) const 
     { return m_metrics[i]; }
@@ -608,6 +615,8 @@ private:
   ushort m_opIdx; // index in the instruction [OBSOLETE]
 
   lush_lip_t* m_lip; // lush logical ip
+
+  u_int32_t m_cpid; // call path node handle for tracing
 
   // FIXME: convert to metric-id a la Metric::Mgr
   const SampledMetricDescVec*        m_metricdesc; // does not own memory
@@ -692,11 +701,13 @@ class CSProfCallSiteNode: public CSProfCodeNode, public IDynNode {
 public:
   // Constructor/Destructor
   CSProfCallSiteNode(CSProfNode* _parent,
+		     u_int32_t cpid,
 		     const SampledMetricDescVec* metricdesc);
   CSProfCallSiteNode(CSProfNode* _parent, 
 		     lush_assoc_info_t as_info,
 		     VMA ip, ushort opIdx, 
 		     lush_lip_t* lip,
+		     u_int32_t cpid,
 		     const SampledMetricDescVec* metricdesc,
 		     std::vector<hpcfile_metric_data_t>& metrics);
   virtual ~CSProfCallSiteNode();
@@ -749,6 +760,7 @@ class CSProfStatementNode: public CSProfCodeNode, public IDynNode {
  public:
   // Constructor/Destructor
   CSProfStatementNode(CSProfNode* _parent, 
+		      u_int32_t cpid,
 		      const SampledMetricDescVec* metricdesc);
   virtual ~CSProfStatementNode();
 
