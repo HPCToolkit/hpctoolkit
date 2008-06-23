@@ -44,3 +44,13 @@ void
 fnbounds_fini()
 {
 }
+
+
+void 
+fnbounds_epoch_finalize()
+{
+  csprof_epoch_add_module(files_executable_name(), NULL /* no vaddr */, 
+			  csprof_nm_addrs[0], 
+			  csprof_nm_addrs[csprof_nm_addrs_len - 1]);
+} 
+

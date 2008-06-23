@@ -139,15 +139,22 @@ csprof_init_internal(void)
      the thread-specific memory manager if need be) */
   /* figure out what libraries we currently have loaded */
 
+#if 0
 # ifdef STATIC_ONLY
     static_epoch_offset = (void *)&_start;
     static_epoch_end    = (void *)&__stop___libc_freeres_ptrs;
     static_epoch_size   = (long) (static_epoch_end - static_epoch_offset);
 # else     // ! STATIC_ONLY
+
     csprof_epoch_lock();
     csprof_epoch_new();
     csprof_epoch_unlock();
 # endif // STATIC_ONLY
+#endif
+
+    csprof_epoch_lock();
+    csprof_epoch_new();
+    csprof_epoch_unlock();
 
     // WARNING: a perfmon bug requires us to fork off the fnbounds server before
     // we call PAPI_init, which is done in argument processing below. Also, fnbounds_init
