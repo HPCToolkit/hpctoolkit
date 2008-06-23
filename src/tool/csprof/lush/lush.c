@@ -76,7 +76,7 @@ lush_agent__init(lush_agent_t* x, int id, const char* path,
 			  (LUSHCB_malloc_fn_t)NULL, 
 			  (LUSHCB_free_fn_t)NULL,
 			  (LUSHCB_step_fn_t)unw_step,
-			  LUSHCB_get_loadmap);
+			  LUSHCB_loadmap_find);
   return 0;
 }
 

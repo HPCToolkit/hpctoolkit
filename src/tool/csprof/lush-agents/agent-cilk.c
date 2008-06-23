@@ -20,10 +20,14 @@
 //************************* System Include Files ****************************
 
 #include <stdlib.h>
-#include <string.h>
-#include <errno.h>
 #include <stdbool.h>
+
 #include <pthread.h>
+
+#include <string.h>
+
+#include <limits.h>  // PATH_MAX
+#include <errno.h>
 
 //*************************** User Include Files ****************************
 
@@ -40,7 +44,7 @@
 LUSHCB_DECL(CB_malloc);
 LUSHCB_DECL(CB_free);
 LUSHCB_DECL(CB_step);
-LUSHCB_DECL(CB_get_loadmap);
+LUSHCB_DECL(CB_loadmap_find);
 // lush_cursor stuff
 
 #undef LUSHCB_DECL
@@ -54,30 +58,16 @@ static const char* libcilk_str = "libcilk";
 static const char* lib_str = "lib";
 static const char* ld_str = "ld-linux";
 
-typedef struct {
-  void* beg; // [low, high)
-  void* end;
-} addr_pair_t;
-
-#define tablecilk_sz 5
-addr_pair_t tablecilk[tablecilk_sz];
-
-#define tableother_sz 200
-addr_pair_t tableother[tableother_sz];
-
 //*************************** Forward Declarations **************************
 
 static void
 init_lcursor(lush_cursor_t* cursor);
 
-static int 
-determine_code_ranges();
+static bool
+is_libcilk(void* addr, char* lm_buffer /*helper storage*/);
 
 static bool
-is_libcilk(void* addr);
-
-static bool
-is_cilkprogram(void* addr);
+is_cilkprogram(void* addr, char* lm_buffer /*helper storage*/);
 
 
 // **************************************************************************
@@ -86,20 +76,19 @@ is_cilkprogram(void* addr);
 
 extern int
 LUSHI_init(int argc, char** argv,
-	   lush_agentid_t          aid,
-	   LUSHCB_malloc_fn_t      malloc_fn,
-	   LUSHCB_free_fn_t        free_fn,
-	   LUSHCB_step_fn_t        step_fn,
-	   LUSHCB_get_loadmap_fn_t loadmap_fn)
+	   lush_agentid_t           aid,
+	   LUSHCB_malloc_fn_t       malloc_fn,
+	   LUSHCB_free_fn_t         free_fn,
+	   LUSHCB_step_fn_t         step_fn,
+	   LUSHCB_loadmap_find_fn_t loadmap_fn)
 {
   MY_lush_aid = aid;
 
-  CB_malloc      = malloc_fn;
-  CB_free        = free_fn;
-  CB_step        = step_fn;
-  CB_get_loadmap = loadmap_fn;
+  CB_malloc       = malloc_fn;
+  CB_free         = free_fn;
+  CB_step         = step_fn;
+  CB_loadmap_find = loadmap_fn;
 
-  determine_code_ranges();
   return 0;
 }
 
@@ -126,7 +115,7 @@ LUSHI_strerror(int code)
 extern int 
 LUSHI_reg_dlopen()
 {
-  determine_code_ranges();
+  // FIXME: what should we do here...
   return 0;
 }
 
@@ -134,9 +123,46 @@ LUSHI_reg_dlopen()
 extern bool 
 LUSHI_ismycode(void* addr)
 {
-  return (is_libcilk(addr) || is_cilkprogram(addr));
+  char buffer[PATH_MAX];
+  return (is_libcilk(addr, buffer) || is_cilkprogram(addr, buffer));
 }
 
+
+bool
+is_libcilk(void* addr, char* lm_name /*helper storage*/)
+{
+  void *lm_beg, *lm_end;
+  int ret = CB_loadmap_find(addr, lm_name, &lm_beg, &lm_end);
+  if (ret && strstr(lm_name, libcilk_str)) {
+    return true;
+  }
+  return false;
+}
+
+
+bool
+is_cilkprogram(void* addr, char* lm_name /*helper storage*/)
+{
+  void *lm_beg, *lm_end;
+  int ret = CB_loadmap_find(addr, lm_name, &lm_beg, &lm_end); 
+  if (ret && !(strstr(lm_name, lib_str) || strstr(lm_name, ld_str))) {
+    return true;
+  }
+  return false;
+}
+
+
+#if 0
+typedef struct {
+  void* beg; // [low, high)
+  void* end;
+} addr_pair_t;
+
+#define tablecilk_sz 5
+addr_pair_t tablecilk[tablecilk_sz];
+
+#define tableother_sz 200
+addr_pair_t tableother[tableother_sz];
 
 int 
 determine_code_ranges()
@@ -213,6 +239,7 @@ is_cilkprogram(void* addr)
   }
   return true;
 }
+#endif
 
 
 // **************************************************************************
@@ -233,8 +260,9 @@ LUSHI_step_bichord(lush_cursor_t* cursor)
   // -------------------------------------------------------
   unw_seg_t cur_seg = UNW_SEG_NULL;
 
-  bool is_cilkrt = is_libcilk(csr->u.ref_ip);
-  bool is_user   = is_cilkprogram(csr->u.ref_ip);
+  char buffer[PATH_MAX];
+  bool is_cilkrt = is_libcilk(csr->u.ref_ip, buffer);
+  bool is_user   = is_cilkprogram(csr->u.ref_ip, buffer);
 
   if (unw_ty_is_worker(csr->u.ty)) {
     // -------------------------------------------------------
