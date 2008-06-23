@@ -22,6 +22,7 @@
 // type declarations
 //***********************************************************************************
 
+// tallent: FIXME(double check): why not use a void* or uintptr_t instead of a 'long long'?  The latter tends to only bring trouble during ports.
 struct dylib_seg_bounds_s {
   unsigned long long start;
   unsigned long long end;
