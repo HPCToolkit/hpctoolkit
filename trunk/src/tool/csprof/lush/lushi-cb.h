@@ -28,9 +28,6 @@
 
 #include "lush-support-rt.h"
 
-#include "epoch.h" // for csprof_epoch_t
-
-
 //*************************** Forward Declarations **************************
 
 // **************************************************************************
@@ -63,12 +60,10 @@ typedef unw_cursor_t LUSHCB_cursor_t;
 LUSHI_DECL(int, LUSHCB_step, (LUSHCB_cursor_t* cursor));
 
 
-typedef csprof_epoch_t LUSHCB_epoch_t;
-
-LUSHI_DECL(int, LUSHCB_get_loadmap, (LUSHCB_epoch_t** epoch));
-
-
-// FIXME: do we need a find_proc callback?
+LUSHI_DECL(int, LUSHCB_loadmap_find, (void* addr, 
+				      char *module_name,
+				      void** start, 
+				      void** end));
 
 #ifdef __cplusplus
 }

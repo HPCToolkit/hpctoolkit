@@ -27,6 +27,8 @@
 
 #include "lushi-cb.h"
 
+#include "dylib.h"
+
 //*************************** Forward Declarations **************************
 
 
@@ -37,11 +39,17 @@
 // **************************************************************************
 // Facility for unwinding physical stack
 // **************************************************************************
-
+ 
 int
-LUSHCB_get_loadmap(LUSHCB_epoch_t** epoch)
+LUSHCB_loadmap_find(void* addr, 
+		    char* module_name,
+		    void** start, 
+		    void** end)
 {
-  *epoch = csprof_get_epoch();
-  return 0;
+  int r = dylib_find_module_containing_addr((unsigned long long)addr, 
+					    module_name, 
+					    (unsigned long long *)start, 
+					    (unsigned long long *)end);
+  return r;
 }
 

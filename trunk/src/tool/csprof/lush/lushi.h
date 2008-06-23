@@ -53,11 +53,11 @@ extern "C" {
 // --------------------------------------------------------------------------
 
 LUSHI_DECL(int, LUSHI_init, (int argc, char** argv,
-			     lush_agentid_t          aid,
-			     LUSHCB_malloc_fn_t      malloc_fn,
-			     LUSHCB_free_fn_t        free_fn,
-			     LUSHCB_step_fn_t        step_fn,
-			     LUSHCB_get_loadmap_fn_t loadmap_fn));
+			     lush_agentid_t           aid,
+			     LUSHCB_malloc_fn_t       malloc_fn,
+			     LUSHCB_free_fn_t         free_fn,
+			     LUSHCB_step_fn_t         step_fn,
+			     LUSHCB_loadmap_find_fn_t loadmap_fn));
 
 LUSHI_DECL(int, LUSHI_fini, ());
 
