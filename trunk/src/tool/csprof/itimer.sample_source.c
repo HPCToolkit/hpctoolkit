@@ -1,3 +1,6 @@
+// -*-Mode: C++;-*- // technically C99
+// $Id$
+
 //
 // itimer sample source simple oo interface
 //
@@ -116,7 +119,7 @@ METHOD_FN(supports_event,const char *ev_str)
 #define WALLCLOCK 0
 
 static void
-METHOD_FN(process_event_list)
+METHOD_FN(process_event_list,int lush_metrics)
 {
   long period = 5000L;
 
@@ -161,11 +164,9 @@ METHOD_FN(gen_event_set,int lush_metrics)
 				      HPCFILE_METRIC_FLAG_ASYNC,
 				      sample_period);
     
+    // FIXME:LUSH: inadequacy compounded by inadequacy of metric
+    // interface.  Cf. papi version.
     if (lush_metrics == 1) {
-      // FIXME: ASSUMES itimer!
-      //   1. This only makes sense for time-like metrics (must check metrics)
-      //   2. Should we have one for each time-like metric?
-      //   3. Better located elsewhere?
       int lush_metric_id = csprof_new_metric();
       assert(lush_metric_id == 1);
       csprof_set_metric_info_and_period(lush_metric_id, "P non-work (ms)",

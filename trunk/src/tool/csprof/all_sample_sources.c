@@ -78,7 +78,7 @@ csprof_all_sources_ ##n(void)                      \
 
 // The mapped operations
 
-_AS0(process_event_list)
+_AS1(process_event_list,int,lush_metrics)
 _AS0(init)
 _AS1(gen_event_set,int,lush_metrics)
 _AS0(start)

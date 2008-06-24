@@ -74,7 +74,7 @@ lush_backtrace(csprof_state_t* state, ucontext_t* context,
   lush_cursor_t cursor;
   lush_init_unw(&cursor, lush_agents, context);
 
-  // FIXME: processor/x86-64/backtrace.c
+  // FIXME: unwind/common/backtrace.c
   state->unwind   = state->btbuf;  // innermost
   state->bufstk   = state->bufend;
   state->treenode = NULL;

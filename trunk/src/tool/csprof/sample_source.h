@@ -44,7 +44,7 @@ typedef struct _obj_s {
   VMETHOD_DEF(stop);
   VMETHOD_DEF(shutdown);
   METHOD_DEF(int,supports_event,const char *ev_str);
-  VMETHOD_DEF(process_event_list);
+  VMETHOD_DEF(process_event_list,int lush_agents);
   VMETHOD_DEF(gen_event_set,int lush_agents);
 
   // data

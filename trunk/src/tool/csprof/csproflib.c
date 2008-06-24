@@ -173,7 +173,7 @@ csprof_init_internal(void)
   // sample source setup
 
   SAMPLE_SOURCES(init);
-  SAMPLE_SOURCES(process_event_list);
+  SAMPLE_SOURCES(process_event_list,lush_metrics);
   SAMPLE_SOURCES(gen_event_set,lush_metrics);
   SAMPLE_SOURCES(start);
 

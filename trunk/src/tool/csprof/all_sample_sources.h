@@ -6,7 +6,7 @@
 void csprof_sample_sources_from_eventlist(char *evl);
 
 void csprof_all_sources_init(void);
-void csprof_all_sources_process_event_list(void);
+void csprof_all_sources_process_event_list(int lush_metrics);
 void csprof_all_sources_gen_event_set(int lush_metrics);
 void csprof_all_sources_start(void);
 void csprof_all_sources_stop(void);
