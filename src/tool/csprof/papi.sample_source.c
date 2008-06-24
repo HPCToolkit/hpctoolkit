@@ -1,3 +1,6 @@
+// -*-Mode: C++;-*- // technically C99
+// $Id$
+
 //
 // PAPI sample source simple oo interface
 //
@@ -16,6 +19,7 @@
 #include <unistd.h>
 #include <ucontext.h>
 #include <pthread.h>
+#include <stdbool.h>
 
 /******************************************************************************
  * local includes
@@ -169,10 +173,14 @@ METHOD_FN(supports_event,const char *ev_str)
 }
  
 static void
-METHOD_FN(process_event_list)
+METHOD_FN(process_event_list, int lush_metrics)
 {
   char *event;
   int i;
+
+  // FIXME:LUSH: inadequacy compounded by inadequacy of metric
+  // interface.  Cf. itimer version.
+  bool num_lush_metrics = 0;
 
   char *evlist = self->evl.evl_spec;
   for(event = start_tok(evlist); more_tok(); event = next_tok()){
@@ -181,12 +189,19 @@ METHOD_FN(process_event_list)
 
     TMSG(PAPI,"checking event spec = %s",event);
     extract_and_check_event(event,&evcode,&thresh);
+    
+    if (strncmp(event, "PAPI_TOT_CYC", 12) == 0) {
+      num_lush_metrics++; // LUSH
+    }
+
     TMSG(PAPI,"got event code = %x, thresh = %ld",evcode,thresh);
     METHOD_CALL(self,store_event,evcode,thresh);
   }
   int nevents = (self->evl).nevents;
   TMSG(PAPI,"nevents = %d", nevents);
-  csprof_set_max_metrics(nevents);
+
+  csprof_set_max_metrics(nevents + num_lush_metrics);
+
   for(i=0; i < nevents; i++){
     char buffer[PAPI_MAX_STR_LEN];
     int metric_id = csprof_new_metric(); /* weight */
@@ -195,6 +210,13 @@ METHOD_FN(process_event_list)
     csprof_set_metric_info_and_period(metric_id, strdup(buffer),
 				      HPCFILE_METRIC_FLAG_ASYNC,
 				      self->evl.events[i].thresh);
+    if (num_lush_metrics > 0 && strcmp(buffer, "PAPI_TOT_CYC") == 0) {
+      int lush_metric_id = csprof_new_metric();
+      assert(num_lush_metrics == 1 && lush_metric_id == 1);
+      csprof_set_metric_info_and_period(lush_metric_id, "P non-work (ms)",
+					HPCFILE_METRIC_FLAG_ASYNC | HPCFILE_METRIC_FLAG_REAL,
+					self->evl.events[i].thresh);
+    }
   }
 }
 
