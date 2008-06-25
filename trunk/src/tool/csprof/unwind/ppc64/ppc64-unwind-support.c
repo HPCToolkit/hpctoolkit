@@ -1,7 +1,9 @@
+#include "context.h"
+#include "monitor.h"
+#include "pmsg.h"
+#include "splay.h"
 #include "unwind.h"
 #include "unwind_cursor.h"
-#include "context.h"
-#include "pmsg.h"
 
 
 #define RA_OFFSET_FROM_BP 2
@@ -23,12 +25,11 @@ unw_step(unw_cursor_t *cursor)
   void **bp  = cursor->bp;
   void **sp  = cursor->sp;
   void *pc   = cursor->pc;
-  void *uw   = cursor->intvl;
 
   //-----------------------------------------------------------
   // if we fail this check, we are done with the unwind.
   //-----------------------------------------------------------
-  if (csprof_check_fence(pc)) return 0;
+  if (monitor_in_start_func_wide(pc)) return 0;
   
   //-----------------------------------------------------------
   //  BP relative unwind
@@ -58,12 +59,14 @@ unw_step(unw_cursor_t *cursor)
   cursor->bp = next_bp;
   cursor->sp = next_sp;
 
+#if 0
   if (debug_unw) {
     PMSG(UNW,"dumping the found interval");
     dump_ui(cursor->intvl,1); // debug for now
   }
 
   PMSG(UNW,"NEXT frame pc = %p, frame bp = %p\n", cursor->pc, cursor->bp);
+#endif
 
   return 1;
 }
