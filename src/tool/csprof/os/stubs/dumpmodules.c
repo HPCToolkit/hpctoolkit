@@ -3,5 +3,5 @@
 
 void csprof_os_dump_loaded_modules(void)
 {
-  MSG(1,"STATIC_ONLY: dump loaded modules unimplemented for OS");
+  MSG(1,"HPCRUN_STATIC_LINK: dump loaded modules unimplemented for OS");
 }

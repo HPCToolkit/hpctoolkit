@@ -192,7 +192,7 @@ monitor_fini_thread(void *init_thread_data)
 #endif
 
 
-#ifndef STATIC_ONLY
+#ifndef HPCRUN_STATIC_LINK
 
 void
 monitor_pre_dlopen(const char *path, int flags)
@@ -232,4 +232,4 @@ monitor_dlclose(void *handle)
 */
 }
 
-#endif /* STATIC_ONLY */
+#endif /* HPCRUN_STATIC_LINK */
