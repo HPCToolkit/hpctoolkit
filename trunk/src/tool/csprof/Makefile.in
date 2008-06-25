@@ -82,7 +82,7 @@ TAGS:
 	etags *.[csh] hpcfile/*.[csh] $(addsuffix /*.[csh],$(module_dirs))
 
 
-ifdef STATIC_ONLY
+ifdef HPCRUN_STATIC_LINK
   gethost := gethostid.o override.o MPI_Init.o 
 endif
 
@@ -148,8 +148,8 @@ ifdef NO_MMAP
    DEFINES += -DNO_MMAP=1
 endif
 
-ifdef STATIC_ONLY
-DEFINES += -DSTATIC_ONLY=1
+ifdef HPCRUN_STATIC_LINK
+DEFINES += -DHPCRUN_STATIC_LINK=1
 endif
 
 DEFINES += -DINLINE_FN=1
@@ -163,7 +163,7 @@ CFLAGS += $(DEFINES) $(CSPROF_THREADS) $(CSPROF_TRAMPOLINE) -I./$(ARCH)
 
 hpcfile_objs := $(addsuffix .o,$(addprefix hpcfile_,general cstree csprof))
 
-ifndef STATIC_ONLY
+ifndef HPCRUN_STATIC_LINK
    OBJS += libmonitor_upcalls.o
 else
    OBJS += static_mon_ovr.o
@@ -178,7 +178,7 @@ OBJS += csprof_options.o
 # finding function bounds
 #-------------------------
 OBJS += fnbounds_common.o 
-ifdef STATIC_ONLY
+ifdef HPCRUN_STATIC_LINK
    OBJS += fnbounds_static.o
 else
    OBJS += system_server.o

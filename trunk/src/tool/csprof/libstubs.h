@@ -6,7 +6,7 @@
    functions.  This file commonizes the necessary frobbing. */
 
 /* grab the function pointer and die if we can't find it */
-#ifndef STATIC_ONLY
+#ifndef HPCRUN_STATIC_LINK
 #define CSPROF_GRAB_FUNCPTR(our_name, platform_name) \
 do { \
     csprof_ ## our_name = dlsym(RTLD_NEXT, #platform_name); \
