@@ -53,11 +53,11 @@
 
 //************************* System Include Files ****************************
 
-#include <string.h> // for memcpy
-
 #include <iostream>
 #include <vector>
 #include <string>
+
+#include <cstring> // for memcpy
 
 //*************************** User Include Files ****************************
 

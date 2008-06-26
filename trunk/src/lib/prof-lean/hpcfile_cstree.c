@@ -252,7 +252,7 @@ hpcfile_cstree_fprint(FILE* infs, int num_metrics, FILE* outfs)
   
   // Open file for reading; read and sanity check header
   if (hpcfile_cstree_read_hdr(infs, &fhdr) != HPCFILE_OK) {
-    fprintf(outfs, "** Error reading header **\n");
+    fprintf(outfs, "** Error reading CCT header **\n");
     return HPCFILE_ERR;
   }
   
@@ -278,7 +278,7 @@ hpcfile_cstree_fprint(FILE* infs, int num_metrics, FILE* outfs)
       lush_lip_t lip;
       ret = hpcfile_cstree_lip__fread(&lip, infs);
       if (ret != HPCFILE_OK) { 	
-	fprintf(outfs, "** Error reading LIP %d **\n", i);
+	fprintf(outfs, "** Error reading CCT LIP %d **\n", i);
 	goto cstree_read_cleanup; // HPCFILE_ERR
       }
 
@@ -295,7 +295,7 @@ hpcfile_cstree_fprint(FILE* infs, int num_metrics, FILE* outfs)
     // ----------------------------------------------------------
     ret = hpcfile_cstree_node__fread(&tmp_node, infs);
     if (ret != HPCFILE_OK) { 
-      fprintf(outfs, "** Error reading node %d **\n", i);
+      fprintf(outfs, "** Error reading CCT node %d **\n", i);
       goto cstree_read_cleanup; // HPCFILE_ERR
     }
 
@@ -320,25 +320,36 @@ hpcfile_cstree_fprint(FILE* infs, int num_metrics, FILE* outfs)
 int
 hpcfile_cstree_read_hdr(FILE* fs, hpcfile_cstree_hdr_t* hdr)
 {
+  int ret;
+  
   // Read header
-  if (hpcfile_cstree_hdr__fread(hdr, fs) != HPCFILE_OK) { 
+  ret = hpcfile_cstree_hdr__fread(hdr, fs);
+  if (ret != HPCFILE_OK) { 
     return HPCFILE_ERR; 
   }
   
   // Sanity check file id
-  if (strncmp(hdr->fid.magic_str, HPCFILE_CSTREE_MAGIC_STR, 
-	      HPCFILE_CSTREE_MAGIC_STR_LEN) != 0) { 
+  ret = strncmp(hdr->fid.magic_str, HPCFILE_CSTREE_MAGIC_STR, 
+		HPCFILE_CSTREE_MAGIC_STR_LEN);
+  if (ret != 0) {
     return HPCFILE_ERR; 
   }
-  if (strncmp(hdr->fid.version, HPCFILE_CSTREE_VERSION, 
-	      HPCFILE_CSTREE_VERSION_LEN) != 0) { 
+  ret = strncmp(hdr->fid.version, HPCFILE_CSTREE_VERSION, 
+		HPCFILE_CSTREE_VERSION_LEN);
+  if (ret != 0) { 
     return HPCFILE_ERR; 
   }
-  if (hdr->fid.endian != HPCFILE_CSTREE_ENDIAN) { return HPCFILE_ERR; }
+  if (hdr->fid.endian != HPCFILE_CSTREE_ENDIAN) { 
+    return HPCFILE_ERR; 
+  }
   
   // Sanity check header
-  if (hdr->vma_sz != 8) { return HPCFILE_ERR; }
-  if (hdr->uint_sz != 8) { return HPCFILE_ERR; }
+  if (hdr->vma_sz != 8) { 
+    return HPCFILE_ERR; 
+  }
+  if (hdr->uint_sz != 8) { 
+    return HPCFILE_ERR; 
+  }
   
   return HPCFILE_OK;
 }
