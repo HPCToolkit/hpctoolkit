@@ -46,7 +46,7 @@
 static csprof_epoch_t *current_epoch = NULL;
 
 /* locking functions to ensure that epochs are consistent */
-static spinlock_t epoch_lock = 0;
+static spinlock_t epoch_lock = SPINLOCK_UNLOCKED;
 
 void
 csprof_epoch_lock() 
@@ -160,6 +160,7 @@ csprof_write_epoch(csprof_epoch_t *epoch, FILE *fs)
   }
 }
 
+
 void
 csprof_write_all_epochs(FILE *fs)
 {
@@ -170,7 +171,11 @@ csprof_write_all_epochs(FILE *fs)
   unsigned int id_runner = 0;
 
   // lazily finalize the last epoch
-  if (current_epoch->loaded_modules == NULL) fnbounds_epoch_finalize();
+  csprof_epoch_lock();
+  if (current_epoch->loaded_modules == NULL) {
+    fnbounds_epoch_finalize();
+  }
+  csprof_epoch_unlock();
 
   while(runner != NULL) {
     runner->id = id_runner;
