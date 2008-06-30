@@ -70,7 +70,7 @@ MYSOURCES = \
 	software-build.html \
 	\
 	fig/index.html \
-	fig/hpctoolkit-workflow.jpg \
+	fig/hpctoolkit-workflow.png \
 	fig/hpcviewer-annotated-screenshot.jpg \
 	fig/spacer.gif \
 	\
