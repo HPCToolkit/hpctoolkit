@@ -22768,7 +22768,7 @@ LIB_SEARCH_PATH="lib"
 { echo "$as_me:$LINENO: checking for multilib platform" >&5
 echo $ECHO_N "checking for multilib platform... $ECHO_C" >&6; }
 case ${host} in
-  x86_64*-*-linux* | mips64*-*-linux*)
+  x86_64*-*-linux* | mips64*-*-linux* | powerpc64*-*-linux*)
     HAVE_OS_MULTILIB="yes"
     LIB_SEARCH_PATH="lib lib64 lib32"
     ;;
@@ -22835,6 +22835,15 @@ _ACEOF
 #define HOST_PLATFORM_MIPS64LE_LINUX
 _ACEOF
 
+    cat >>confdefs.h <<\_ACEOF
+#define HOST_OS_LINUX
+_ACEOF
+
+    ;;
+
+  powerpc64*-*-linux*)
+    # []
+    HOST_OS="Linux"
     cat >>confdefs.h <<\_ACEOF
 #define HOST_OS_LINUX
 _ACEOF
@@ -22968,6 +22977,10 @@ case ${host} in
         my_opt_cflags="-gopt -O3 -c9x"
       fi
     fi
+    ;;
+
+  powerpc64*-*-linux*)
+    # IBM compiler
     ;;
 
   # IRIX
