@@ -108,9 +108,10 @@ CONFIG_CLEAN_FILES =
 LTLIBRARIES = $(noinst_LTLIBRARIES)
 am__DEPENDENCIES_1 =
 libHPCisa_la_DEPENDENCIES = $(am__DEPENDENCIES_1)
-am__objects_1 = libHPCisa_la-AlphaISA.lo libHPCisa_la-IA64ISA.lo \
-	libHPCisa_la-ISA.lo libHPCisa_la-MipsISA.lo \
-	libHPCisa_la-SparcISA.lo libHPCisa_la-x86ISA.lo
+am__objects_1 = libHPCisa_la-ISA.lo libHPCisa_la-AlphaISA.lo \
+	libHPCisa_la-IA64ISA.lo libHPCisa_la-MipsISA.lo \
+	libHPCisa_la-PowerISA.lo libHPCisa_la-SparcISA.lo \
+	libHPCisa_la-x86ISA.lo
 am_libHPCisa_la_OBJECTS = $(am__objects_1)
 libHPCisa_la_OBJECTS = $(am_libHPCisa_la_OBJECTS)
 libHPCisa_la_LINK = $(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) \
@@ -320,13 +321,16 @@ HPC_LIBSUPPORT = $(top_builddir)/src/lib/support/libHPCsupport.la
 # Local settings
 #############################################################################
 MYSOURCES = \
+	ISATypes.hpp \
+	ISA.hpp ISA.cpp \
+	\
 	AlphaISA.hpp AlphaISA.cpp \
 	IA64ISA.hpp IA64ISA.cpp \
-	ISA.hpp ISA.cpp \
-	ISATypes.hpp \
 	MipsISA.hpp MipsISA.cpp \
+	PowerISA.hpp PowerISA.cpp \
 	SparcISA.hpp SparcISA.cpp \
 	x86ISA.hpp x86ISA.cpp \
+	\
 	instructionSets/alpha.h \
 	instructionSets/mips.h
 
@@ -412,6 +416,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCisa_la-IA64ISA.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCisa_la-ISA.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCisa_la-MipsISA.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCisa_la-PowerISA.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCisa_la-SparcISA.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCisa_la-x86ISA.Plo@am__quote@
 
@@ -436,6 +441,13 @@ distclean-compile:
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(LTCXXCOMPILE) -c -o $@ $<
 
+libHPCisa_la-ISA.lo: ISA.cpp
+@am__fastdepCXX_TRUE@	$(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCisa_la_CXXFLAGS) $(CXXFLAGS) -MT libHPCisa_la-ISA.lo -MD -MP -MF $(DEPDIR)/libHPCisa_la-ISA.Tpo -c -o libHPCisa_la-ISA.lo `test -f 'ISA.cpp' || echo '$(srcdir)/'`ISA.cpp
+@am__fastdepCXX_TRUE@	mv -f $(DEPDIR)/libHPCisa_la-ISA.Tpo $(DEPDIR)/libHPCisa_la-ISA.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='ISA.cpp' object='libHPCisa_la-ISA.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCisa_la_CXXFLAGS) $(CXXFLAGS) -c -o libHPCisa_la-ISA.lo `test -f 'ISA.cpp' || echo '$(srcdir)/'`ISA.cpp
+
 libHPCisa_la-AlphaISA.lo: AlphaISA.cpp
 @am__fastdepCXX_TRUE@	$(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCisa_la_CXXFLAGS) $(CXXFLAGS) -MT libHPCisa_la-AlphaISA.lo -MD -MP -MF $(DEPDIR)/libHPCisa_la-AlphaISA.Tpo -c -o libHPCisa_la-AlphaISA.lo `test -f 'AlphaISA.cpp' || echo '$(srcdir)/'`AlphaISA.cpp
 @am__fastdepCXX_TRUE@	mv -f $(DEPDIR)/libHPCisa_la-AlphaISA.Tpo $(DEPDIR)/libHPCisa_la-AlphaISA.Plo
@@ -450,19 +462,19 @@ libHPCisa_la-IA64ISA.lo: IA64ISA.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCisa_la_CXXFLAGS) $(CXXFLAGS) -c -o libHPCisa_la-IA64ISA.lo `test -f 'IA64ISA.cpp' || echo '$(srcdir)/'`IA64ISA.cpp
 
-libHPCisa_la-ISA.lo: ISA.cpp
-@am__fastdepCXX_TRUE@	$(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCisa_la_CXXFLAGS) $(CXXFLAGS) -MT libHPCisa_la-ISA.lo -MD -MP -MF $(DEPDIR)/libHPCisa_la-ISA.Tpo -c -o libHPCisa_la-ISA.lo `test -f 'ISA.cpp' || echo '$(srcdir)/'`ISA.cpp
-@am__fastdepCXX_TRUE@	mv -f $(DEPDIR)/libHPCisa_la-ISA.Tpo $(DEPDIR)/libHPCisa_la-ISA.Plo
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='ISA.cpp' object='libHPCisa_la-ISA.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCisa_la_CXXFLAGS) $(CXXFLAGS) -c -o libHPCisa_la-ISA.lo `test -f 'ISA.cpp' || echo '$(srcdir)/'`ISA.cpp
-
 libHPCisa_la-MipsISA.lo: MipsISA.cpp
 @am__fastdepCXX_TRUE@	$(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCisa_la_CXXFLAGS) $(CXXFLAGS) -MT libHPCisa_la-MipsISA.lo -MD -MP -MF $(DEPDIR)/libHPCisa_la-MipsISA.Tpo -c -o libHPCisa_la-MipsISA.lo `test -f 'MipsISA.cpp' || echo '$(srcdir)/'`MipsISA.cpp
 @am__fastdepCXX_TRUE@	mv -f $(DEPDIR)/libHPCisa_la-MipsISA.Tpo $(DEPDIR)/libHPCisa_la-MipsISA.Plo
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='MipsISA.cpp' object='libHPCisa_la-MipsISA.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCisa_la_CXXFLAGS) $(CXXFLAGS) -c -o libHPCisa_la-MipsISA.lo `test -f 'MipsISA.cpp' || echo '$(srcdir)/'`MipsISA.cpp
+
+libHPCisa_la-PowerISA.lo: PowerISA.cpp
+@am__fastdepCXX_TRUE@	$(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCisa_la_CXXFLAGS) $(CXXFLAGS) -MT libHPCisa_la-PowerISA.lo -MD -MP -MF $(DEPDIR)/libHPCisa_la-PowerISA.Tpo -c -o libHPCisa_la-PowerISA.lo `test -f 'PowerISA.cpp' || echo '$(srcdir)/'`PowerISA.cpp
+@am__fastdepCXX_TRUE@	mv -f $(DEPDIR)/libHPCisa_la-PowerISA.Tpo $(DEPDIR)/libHPCisa_la-PowerISA.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='PowerISA.cpp' object='libHPCisa_la-PowerISA.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCisa_la_CXXFLAGS) $(CXXFLAGS) -c -o libHPCisa_la-PowerISA.lo `test -f 'PowerISA.cpp' || echo '$(srcdir)/'`PowerISA.cpp
 
 libHPCisa_la-SparcISA.lo: SparcISA.cpp
 @am__fastdepCXX_TRUE@	$(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCisa_la_CXXFLAGS) $(CXXFLAGS) -MT libHPCisa_la-SparcISA.lo -MD -MP -MF $(DEPDIR)/libHPCisa_la-SparcISA.Tpo -c -o libHPCisa_la-SparcISA.lo `test -f 'SparcISA.cpp' || echo '$(srcdir)/'`SparcISA.cpp
