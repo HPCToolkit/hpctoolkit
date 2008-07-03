@@ -169,7 +169,7 @@ HAVE_OS_MULTILIB="no"
 LIB_SEARCH_PATH="lib"
 AC_MSG_CHECKING([for multilib platform])
 case ${host} in
-  x86_64*-*-linux* | mips64*-*-linux*)
+  x86_64*-*-linux* | mips64*-*-linux* | powerpc64*-*-linux*)
     HAVE_OS_MULTILIB="yes"
     LIB_SEARCH_PATH="lib lib64 lib32"
     ;;
@@ -214,6 +214,12 @@ case ${host} in
     # __mips64 && __linux / _MIPS_SIM == _ABIN32 / _MIPS_SIM == _ABI64
     HOST_OS="Linux"
     AC_DEFINE([HOST_PLATFORM_MIPS64LE_LINUX], [], [])
+    AC_DEFINE([HOST_OS_LINUX], [], [])
+    ;;
+
+  powerpc64*-*-linux*)
+    # []
+    HOST_OS="Linux"
     AC_DEFINE([HOST_OS_LINUX], [], [])
     ;;
 
@@ -327,6 +333,10 @@ case ${host} in
         my_opt_cflags="-gopt -O3 -c9x"
       fi
     fi
+    ;;
+
+  powerpc64*-*-linux*)
+    # IBM compiler
     ;;
 
   # IRIX

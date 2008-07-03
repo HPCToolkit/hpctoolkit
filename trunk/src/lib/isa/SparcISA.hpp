@@ -69,7 +69,7 @@ struct disassemble_info;
 // SparcISA
 //***************************************************************************
 
-// 'SparcISA': Implements the Alpha Instruction Set Architecture.
+// 'SparcISA': Implements the SPARC Instruction Set Architecture.
 
 class SparcISA : public ISA {
 public:  
