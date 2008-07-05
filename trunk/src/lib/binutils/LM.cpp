@@ -76,11 +76,12 @@ using std::dec;
 
 #include "dbg_LM.hpp"
 
-#include <lib/isa/MipsISA.hpp>
 #include <lib/isa/AlphaISA.hpp>
+#include <lib/isa/IA64ISA.hpp>
+#include <lib/isa/MipsISA.hpp>
+#include <lib/isa/PowerISA.hpp>
 #include <lib/isa/SparcISA.hpp>
 #include <lib/isa/x86ISA.hpp>
-#include <lib/isa/IA64ISA.hpp>
 
 #include <lib/support/diagnostics.h>
 #include <lib/support/Logic.hpp>
@@ -205,20 +206,23 @@ binutils::LM::open(const char* filenm)
   // Create a new ISA (this may not be necessary, but it is cheap)
   ISA* newisa = NULL;
   switch (bfd_get_arch(m_bfd)) {
-    case bfd_arch_mips:
-      newisa = new MipsISA;
-      break;
     case bfd_arch_alpha:
       newisa = new AlphaISA;
-      break;
-    case bfd_arch_sparc:
-      newisa = new SparcISA;
       break;
     case bfd_arch_i386: // x86 and x86_64
       newisa = new x86ISA(bfd_get_mach(m_bfd) == bfd_mach_x86_64);
       break;
     case bfd_arch_ia64:
       newisa = new IA64ISA;
+      break;
+    case bfd_arch_mips:
+      newisa = new MipsISA;
+      break;
+    case bfd_arch_powerpc:
+      newisa = new PowerISA;
+      break;
+    case bfd_arch_sparc:
+      newisa = new SparcISA;
       break;
     default:
       DIAG_Die("Unknown bfd arch: " << bfd_get_arch(m_bfd));
@@ -694,11 +698,12 @@ binutils::LM::DumpModuleInfo(std::ostream& o, const char* pre) const
   
   o << p << "Architecture: `";
   switch (bfd_get_arch(m_bfd)) {
-    case bfd_arch_alpha: o << "Alpha'\n"; break;
-    case bfd_arch_mips:  o << "MIPS'\n";  break;
-    case bfd_arch_sparc: o << "Sparc'\n"; break;
-    case bfd_arch_i386:  o << "x86'\n";   break;
-    case bfd_arch_ia64:  o << "IA-64'\n"; break; 
+    case bfd_arch_alpha:   o << "Alpha'\n"; break;
+    case bfd_arch_mips:    o << "MIPS'\n";  break;
+    case bfd_arch_powerpc: o << "POWER'\n"; break;
+    case bfd_arch_sparc:   o << "SPARC'\n"; break;
+    case bfd_arch_i386:    o << "x86'\n";   break;
+    case bfd_arch_ia64:    o << "IA-64'\n"; break; 
     default: DIAG_Die("Unknown bfd arch: " << bfd_get_arch(m_bfd));
   }
 
@@ -721,6 +726,13 @@ binutils::LM::DumpModuleInfo(std::ostream& o, const char* pre) const
         case bfd_mach_mips10000: o << "R10000'\n"; break;
         case bfd_mach_mips12000: o << "R12000'\n"; break;
         default:                 o << "-unknown MIPS-'\n";
+      }
+      break;
+    case bfd_arch_powerpc:
+      switch (bfd_get_mach(m_bfd)) {
+        case bfd_mach_ppc:   o << "PPC'\n"; break;
+        case bfd_mach_ppc64: o << "PPC-64'\n"; break;
+        default:             o << "-unknown POWER-'\n";
       }
       break;
     case bfd_arch_sparc: 
