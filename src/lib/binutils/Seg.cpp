@@ -500,6 +500,7 @@ binutils::TextSeg::makeInsn(bfd* abfd, MachInsn* mi, VMA vma, ushort opIndex,
   switch (bfd_get_arch(abfd)) {
     case bfd_arch_mips:
     case bfd_arch_alpha:
+    case bfd_arch_powerpc:
     case bfd_arch_sparc:
       newInsn = new RISCInsn(mi, vma);
       break;

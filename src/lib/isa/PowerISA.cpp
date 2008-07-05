@@ -38,13 +38,13 @@
 //***************************************************************************
 //
 // File:
-//    $Source$
+//   $Source$
 //
 // Purpose:
-//    [The purpose of this file]
+//   [The purpose of this file]
 //
 // Description:
-//    [The set of functions, macros, etc. defined in the file]
+//   [The set of functions, macros, etc. defined in the file]
 //
 //***************************************************************************
 
@@ -91,6 +91,39 @@ GNUbu_print_addr(bfd_vma di_vma, struct disassemble_info* di)
 // PowerISA
 //****************************************************************************
 
+// Summary of interesting instructions:
+//
+//   [Relevant formats]
+//     BD-form: conditional branches
+//     I-form: unconditional branches
+//     XL-form: indirect branches, among other things
+// 
+// unconditional branch:
+//   - relative [I]  {b:  branch}
+//   - absolute [I]  {ba: branch, absolute}
+//   - indirect      {bctr ~[bcctr]: branch to count reg}
+//
+// conditional branch:
+//   - relative [BD] {bc    = b__:  branch cond}
+//   - absolute [BD] {bca   = b__a: branch cond, absolute}
+//   - indirect [XL] {bcctr = b_ctr: branch cond to count reg}
+//
+// subroutine call:
+//   - relative [I]  {bl:  branch and link}
+//   - absolute [I]  {bla: branch and link/absolute}
+//   - indirect      {bctrl ~[bcctrl]: branch to count reg and link}
+//
+// subroutine call, conditional:
+//   - relative [BD] {bcl = b__l:  branch cond and link}
+//   - absolute [BD] {bcla = b__la: branch cond and link/absolute}
+//   - indirect [XL] {bcctrl = b_ctrl = bccl: branch cond to count reg & link}
+//
+// return:
+//   - uncond   [XL] {blr = br ~[bclr]: branch to link reg}
+//   - cond     [XL] {bclr = b__lr = bcr: branch cond to link reg}
+//   - CRAZY!   [XL] {blrl = brl ~[bclrl]: branch to link reg and link}
+//   - CRAZY!   [XL] {bclrl = b__lrl = bcrl: branch cond to link reg and link}
+
 PowerISA::PowerISA()
  : m_di(NULL), m_di_dis(NULL)
 {
@@ -131,42 +164,37 @@ PowerISA::GetInsnDesc(MachInsn* mi, ushort opIndex, ushort sz)
     CacheSet(mi, size);
   }
 
-  // The target field is set (to an absolute vma) on PC-relative
-  // branches/jumps.  However, the target field is also set after
-  // sequences of the form {sethi, insn}, where insn uses the same
-  // register as in sethi.  Because {sethi, jmp} sequences are
-  // possible, the target field can also be set (to an absolute vma)
-  // in the case of a register indirect jump.  We need some way to
-  // distinguish because of the way GNU calculates PC-relative
-  // targets.
-  bool isPCRel = (m_di->target2 == 0); // FIXME: binutils needs fixing
+  // NOTE: 
+  //   m_di->target  is set for relative branch/subroutine targets
+  //   m_di->target2 is set for absolute branch/subroutine targets
+  bool isIndirect = (m_di->target == 0) && (m_di->target2 == 0);
 
   switch (m_di->insn_type) {
     case dis_noninsn:
       d.Set(InsnDesc::INVALID);
       break;
     case dis_branch:
-      if (m_di->target != 0 && isPCRel) {
-	d.Set(InsnDesc::BR_UN_COND_REL);
+      if (isIndirect) {
+	d.Set(InsnDesc::BR_UN_COND_IND);
       }
       else {
-	d.Set(InsnDesc::BR_UN_COND_IND);
+	d.Set(InsnDesc::BR_UN_COND_REL);
       }
       break;
     case dis_condbranch:
-      if (m_di->target != 0 && isPCRel) {
-	d.Set(InsnDesc::INT_BR_COND_REL); // arbitrarily choose int
+      if (isIndirect) {
+	d.Set(InsnDesc::INT_BR_COND_IND); // arbitrarily choose int
       }
       else {
-	d.Set(InsnDesc::INT_BR_COND_IND); // arbitrarily choose int
+	d.Set(InsnDesc::INT_BR_COND_REL); // arbitrarily choose int
       }
       break;
     case dis_jsr:
-      if (m_di->target != 0 && isPCRel) {
-	d.Set(InsnDesc::SUBR_REL);
+      if (isIndirect) {
+	d.Set(InsnDesc::SUBR_IND);
       }
       else {
-	d.Set(InsnDesc::SUBR_IND);
+	d.Set(InsnDesc::SUBR_REL);
       }
       break;
     case dis_condjsr:
@@ -200,10 +228,17 @@ PowerISA::GetInsnTargetVMA(MachInsn* mi, VMA vma, ushort opIndex, ushort sz)
   
   ISA::InsnDesc d = GetInsnDesc(mi, opIndex, sz);
   if (d.IsBrRel() || d.IsSubrRel()) {
-    return GNUvma2vma(m_di->target, mi, vma);
+    // NOTE: 
+    //   m_di->target  is set to the displacement for relative targets
+    //   m_di->target2 is set to the absolute value for absolute targets
+    if (m_di->target != 0) {
+      return vma + m_di->target;
+    }
+    else {
+      return m_di->target2;
+    }
   }
   else {
-    // return m_di->target; // return the results of sethi instruction chains
     return 0;
   }
 }
