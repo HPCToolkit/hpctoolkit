@@ -38,13 +38,13 @@
 //***************************************************************************
 //
 // File:
-//    IA64ISA.C
+//   $Source$
 //
 // Purpose:
-//    [The purpose of this file]
+//   [The purpose of this file]
 //
 // Description:
-//    [The set of functions, macros, etc. defined in the file]
+//   [The set of functions, macros, etc. defined in the file]
 //
 //***************************************************************************
 
@@ -53,14 +53,8 @@
 #include <iostream>
 using std::ostream;
 
-#ifdef NO_STD_CHEADERS
-# include <stdarg.h>
-# include <string.h>
-#else
-# include <cstdarg>
-# include <cstring> // for 'memcpy'
-using namespace std; // For compatibility with non-std C headers
-#endif
+#include <cstdarg>
+#include <cstring> // for 'memcpy'
 
 //*************************** User Include Files ****************************
 
