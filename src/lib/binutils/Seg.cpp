@@ -259,14 +259,19 @@ binutils::TextSeg::ctor_initProcs()
       string procNm;
       string symNm = bfd_asymbol_name(sym);
 
-      dbg::Proc* dbg = (*dbgInfo)[begVMA];
+      dbg::LM::iterator it = dbgInfo->find(begVMA);
+      dbg::Proc* dbg = (it != dbgInfo->end()) ? it->second : NULL;
+
       if (!dbg) {
 	procNm = findProcName(abfd, sym);
 	string pnm = GetBestFuncName(procNm);
-	dbg = (*dbgInfo)[pnm];
+	
+	dbg::LM::iterator1 it1 = dbgInfo->find1(pnm);
+	dbg = (it1 != dbgInfo->end1()) ? it1->second : NULL;
       }
       if (!dbg) {
-	dbg = (*dbgInfo)[symNm];
+	dbg::LM::iterator1 it1 = dbgInfo->find1(symNm);
+	dbg = (it1 != dbgInfo->end1()) ? it1->second : NULL;
       }
       
       // Finding the end VMA (end of last insn).  The computation is
