@@ -205,25 +205,61 @@ binutils::dbg::LM::bfd_dbgInfoCallback(void* callback_obj,
   DIAG_DevMsg(10, "binutils::dbg::LM::bfd_dbgInfoCallback:\n"
 	      << pinfo->toString());
 
+
+  // -------------------------------------------------------
   // store this 'pinfo' if it is of use
+  //
+  // NOTE: in the presense of inlining we may get multiple callbacks
+  // for what appears to be the same routine when only looking at
+  // begin VMAs:
+  //
+  // <1><93510>: Abbrev Number: 32 (DW_TAG_subprogram)
+  //  <93511>     DW_AT_external    : 1	
+  //  <93512>     DW_AT_name        : moo
+  //  <93519>     DW_AT_low_pc      : 0x421520	
+  //
+  // <2><935c9>: Abbrev Number: 36 (DW_TAG_inlined_subroutine)
+  //  <935ca>     DW_AT_abstract_origin: <8b982> [moo]
+  //  <935ce>     DW_AT_low_pc      : 0x421520	
+  //
+  // Since all sorts of havok is created if the second entry is
+  // preferred to the first, there really should be a bit to
+  // distinguish between DW_TAG_subprogram and
+  // DW_TAG_inlined_subroutine.  Below I employ the heuristic of
+  // keeping the entry with the widest VMA range.
+  // -------------------------------------------------------
+
   if (pinfo->begVMA != 0) {
-    std::pair<iterator, bool> xxx = 
+    std::pair<iterator, bool> fnd = 
       lminfo->insert(std::make_pair(pinfo->begVMA, pinfo));
-    if (!xxx.second) {
-      // Often, an inlined procedure has a DWARF entry in each DWARF
-      // compilation unit.
-      DIAG_Msg(5, "Found multiple descriptors for the same procedure: "
-	       << pinfo->toString());
-      delete pinfo;
+    if (!fnd.second) {
+      dbg::Proc* map_pinfo = fnd.first->second;
+      dbg::Proc* tokeep = map_pinfo;
+      dbg::Proc* todel = pinfo;
+      if (pinfo->endVMA > map_pinfo->endVMA) {
+	tokeep = pinfo;
+	todel = map_pinfo;
+	(*lminfo)[pinfo->begVMA] = tokeep;
+      }
+      DIAG_Msg(5, "Multiple DWARF descriptors for the same procedure (VMA):\nkeeping: " << tokeep->toString() << "deleting: " << todel->toString());
+      delete todel;
     }
   }
   else if (!pinfo->filenm.empty()) {
-    std::pair<iterator1, bool> xxx = 
+    std::pair<iterator1, bool> fnd = 
       lminfo->insert1(std::make_pair(pinfo->name, pinfo));
-    if (!xxx.second) {
-      DIAG_Msg(5, "Found multiple descriptors for the same procedure: "
-	       << pinfo->toString());
-      delete pinfo;
+    if (!fnd.second) {
+      dbg::Proc* map_pinfo = fnd.first->second;
+      dbg::Proc* tokeep = map_pinfo;
+      dbg::Proc* todel = pinfo;
+      if (pinfo->begVMA < map_pinfo->begVMA 
+	  || pinfo->endVMA > map_pinfo->endVMA) {
+	tokeep = pinfo;
+	todel = map_pinfo;
+	(*lminfo)[pinfo->name] = tokeep;
+      }
+      DIAG_Msg(5, "Multiple DWARF descriptors for the same procedure (name):\nkeeping: " << tokeep->toString() << "deleting: " << todel->toString());
+      delete todel;
       // FIXME: Would it be a good idea to delete *all* entries if
       // line numbers and files names don't match?
     }
