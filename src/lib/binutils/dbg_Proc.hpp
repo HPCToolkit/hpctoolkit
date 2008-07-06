@@ -89,7 +89,21 @@ public:
       begVMA(0), endVMA(0), name(""), filenm(""), begLine(0)
   { }
   ~Proc() { }
+
+  Proc& operator=(const Proc& x) 
+  {
+    if (this != &x) {
+      parent    = x.parent;
+      parentVMA = x.parentVMA;
+      begVMA    = x.begVMA;
+      endVMA    = x.endVMA;
+      name      = x.name;
+      filenm    = x.filenm;
+      begLine   = x.begLine;
+    }
+  }
   
+
   // private:
   Proc* parent;
   VMA   parentVMA;
