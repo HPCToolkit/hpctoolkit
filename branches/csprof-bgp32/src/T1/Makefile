@@ -5,6 +5,9 @@ CFLAGS += -g -I..
 ifdef static
    LCC  := $(HOME)/csprof-install/bin/csprof-link gcc -static
    LCXX := $(HOME)/csprof-install/bin/csprof-link g++  -static
+else
+   LCC := gcc
+   LCXX := g++
 endif
 tmpi: tmpi.c
 	mpicc $< -lm -o $@

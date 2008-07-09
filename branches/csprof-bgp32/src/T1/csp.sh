@@ -10,7 +10,10 @@ lc()
 {
     ls -l *.csp
 }
+
+alias ll=ls
 unalias ll
+
 ll()
 {
     ls -l *.csl
