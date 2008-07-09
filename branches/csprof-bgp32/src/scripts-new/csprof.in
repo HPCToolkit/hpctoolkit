@@ -1,0 +1,353 @@
+#!/bin/sh
+# Testing: set -x: line by line (set -n: syntax)
+# set -x
+
+# $Id: csprof.in 1443 2008-06-14 14:10:44Z johnmc $
+## * BeginRiceCopyright *****************************************************
+ # Copyright ((c)) 2002, Rice University 
+ # All rights reserved.
+ # 
+ # Redistribution and use in source and binary forms, with or without
+ # modification, are permitted provided that the following conditions are
+ # met:
+ # 
+ # * Redistributions of source code must retain the above copyright
+ #   notice, this list of conditions and the following disclaimer.
+ # 
+ # * Redistributions in binary form must reproduce the above copyright
+ #   notice, this list of conditions and the following disclaimer in the
+ #   documentation and/or other materials provided with the distribution.
+ # 
+ # * Neither the name of Rice University (RICE) nor the names of its
+ #   contributors may be used to endorse or promote products derived from
+ #   this software without specific prior written permission.
+ # 
+ # This software is provided by RICE and contributors "as is" and any
+ # express or implied warranties, including, but not limited to, the
+ # implied warranties of merchantability and fitness for a particular
+ # purpose are disclaimed. In no event shall RICE or contributors be
+ # liable for any direct, indirect, incidental, special, exemplary, or
+ # consequential damages (including, but not limited to, procurement of
+ # substitute goods or services; loss of use, data, or profits; or
+ # business interruption) however caused and on any theory of liability,
+ # whether in contract, strict liability, or tort (including negligence
+ # or otherwise) arising in any way out of the use of this software, even
+ # if advised of the possibility of such damage.
+## ******************************************************* EndRiceCopyright *
+
+## **************************************************************************
+##
+## File: 
+##    csprof: Launch the call stack profiler by setting up a preloaded
+##    library that will intercept an application's execution and start
+##    the profiler.  This script processes arguments and passes them
+##    to the profiling library through environment variables.
+##
+## Author:
+##    Written by Nathan Tallent, Rice University.
+##    
+## **************************************************************************
+
+#############################################################################
+
+# umask -S g=rwx,o=rwx # temporary check
+# umask -S -p # see change
+
+ulimit_works='' # default to NO on jacquard
+
+CSPROF_VERSION="1.0"
+
+CSPROF_DIR="`dirname $0`"
+if test ${CSPROF_DIR}x == "$0"x; then
+   CSPROF_DIR=.
+fi
+if test ${CSPROF_DIR} == "."; then
+   CSPROF_ROOT=..
+else
+   CSPROF_ROOT=`dirname ${CSPROF_DIR}`
+fi
+CSPROF_LIB=${CSPROF_ROOT}/lib
+CSPROF_LIBEXEC=${CSPROF_ROOT}/libexec
+
+# One can set personal defaults here, instead of changing source code.
+# These values will be overriden by commandline options.
+opt_out_path=""
+opt_lush_agents="";
+opt_period=""
+opt_memsize=""
+opt_event=""
+opt_verbosity=""
+opt_debug=""
+opt_debug_wait=""
+opt_papi=""
+opt_ev_list=''
+
+#####################
+
+# These option variables cannot be modified with personal defaults.
+
+cmd_to_profile=""
+
+#############################################################################
+
+# Note: All function names are prefixed with 'f_' in order to make
+# function calls very clear.
+
+cmd="$0"
+
+monitor_prefix='@libmonitor_prefix@'
+papi_prefix='@papi_prefix@'
+
+f_usage()
+{
+  cat <<EOF
+Usage:
+   csprof [-o outpath] [-e EVENT:PERIOD]* cmd
+
+   -o outpath
+      Directory in which to store profiler output data.
+      Defaults to the current directory.
+
+   -e EVENT:PERIOD EVENT_NAME:PERIOD,(can have more than 1)
+
+      If no events are specified, the default is WALLCLOCK:5000
+      (every 5000 microseconds).
+
+      Currently only PAPI events, and the special WALLCLOCK event are
+      supported.
+      CAVEAT: You *cannot* use both PAPI events and the WALLCLOCK event.
+              You may, however, use multiple PAPI events
+
+      PAPI events use the hardware performance counters as the
+      sampling source (via the PAPI interface). The "PERIOD" component of a
+      PAPI event specfication is a count of the number of events.
+
+      For a list of PAPI events, please run
+        hpcrun -L
+
+      The WALLCLOCK event is triggered by the Unix itimer feature. The "PERIOD"
+      component of the WALLCLOCK event is the number of microseconds between
+      samples
+
+      EXAMPLE
+        csprof -e PAPI_TOT_INS:1000000 -e PAPI_FP_INS:100000 A_PROGRAM
+
+        The above command line would sample A_PROGRAM every 1000000 instructions
+        OR every 1000000 floating point instructions.
+
+  NOTES:
+     csprof uses preloaded shared libraries to initiate profiling;      
+     modifications to the csprof launcher script will be necessary      
+     to profile programs that use library preloading
+
+     csprof cannot be used to profile setuid commands as preloading
+     shared libraries is not permitted for them.
+EOF
+}
+
+f_checkenv()
+{
+  case "$monitor_prefix" in
+     /* ) monitor_dir="${monitor_prefix}/lib" ;;
+     *  ) monitor_dir="$CSPROF_LIB" ;;
+  esac
+
+  RLD_LIB="${CSPROF_LIB}/libcsprof.so.0:${monitor_dir}/libmonitor.so"
+
+  # preload our library first before loading all of those specified in
+  # the application binary (signified by DEFAULT).
+  # this turns our sampling on at the beginning of the application
+  # when our library is loaded.
+
+  sysname=`uname`
+
+  if [ "$sysname" = "OSF1" ]; then
+    _RLD_LIST="${RLD_LIB}:DEFAULT"
+  else
+    LD_PRELOAD="${RLD_LIB}"
+  fi
+}
+
+# args: ($1, $2): (string_to_check, string_for_error_msg[optional])
+f_error_on_nil()
+{
+  if [ -z "$1" ]; then
+    if [ -n "$2" ]; then printf "$2"; fi
+    f_usage
+    exit 1
+  fi
+}
+
+# args: ($1, $2): (option, option_value)
+f_opt_check()
+{
+  # 'option_value' should be non-nil
+  f_error_on_nil "$2" "** no value for option $1\n"
+    
+  # 'option_value' should not start with '-'
+  if ( echo "$2" | grep '^-.*' >/dev/null 2>&1 ); then
+    printf "** invalid value for option $1: $2\n"
+    f_usage
+    exit 1
+  fi
+}
+
+# args: ($1..$n): all arguments given to this script
+f_getoptions()
+{
+  # We can't easily use 'getopt' or 'getopts' because we have to
+  # protect options given to the command to profile.
+
+  if [ -z "$1" ]; then
+    f_usage
+    exit 0
+  fi
+
+  # parse argument list
+  while [ $# -ge 1 ]; do
+    case $1 in
+      -a)   shift; opt_lush_agents="$1";
+            f_opt_check "-a" "${opt_lush_agents}";
+            ;;
+      -e)   shift; 
+            opt_ev_list="$LL$1";
+	    LL="$opt_ev_list "
+            ;;
+#      -E)   shift; opt_papi=1;
+#            opt_papi_evlst="${opt_papi_evlst} $1"
+#            ;;
+      -o)   shift; opt_out_path="$1"; 
+            f_opt_check "-o" "${opt_out_path}";
+            ;;
+      -L)   # shift; opt_debug="$1";
+            # f_opt_check "-L" "${opt_debug}";
+	    opt_debug=1
+            ;;
+     -md)   opt_monitor_debug=1 ;;
+     -dd)   shift; 
+            dd_list="$L2$1"
+	    L2="$dd_list "
+            ;;
+      -d)   opt_debug_wait=1;
+            ;;
+      -*)  printf "** Invalid option '$1'\n";
+           f_usage; exit 1;
+           ;;
+      *)   break ;;
+    esac
+    shift
+  done
+
+  cmd_to_profile="$*"
+  f_error_on_nil "${cmd_to_profile}" "** no command to profile\n";
+}
+
+# get the executable from the list of (remaining) args
+f_getexec()
+{
+    _EXEC=$1
+}
+
+# assumes: all csprof control variables have been set
+#
+# adds the unwind nm file to the LD_PRELOAD
+#
+f_prepareenv()
+{
+  sysname=`uname`
+
+  f_getexec $cmd_to_profile
+
+  # export the profiler library
+  if [ $sysname = "OSF1" ]; then
+    export _RLD_LIST
+  else
+    export LD_PRELOAD
+  fi
+
+  export CSPROF_NM_COMMAND="${CSPROF_LIBEXEC}/csprof_syms"
+
+  # export profiler options
+  if [ -n "${opt_lush_agents}" ]; then
+    CSPROF_OPT_LUSH_AGENTS="${opt_lush_agents}"
+    export CSPROF_OPT_LUSH_AGENTS
+  fi
+  if [ -n "${opt_out_path}" ]; then
+    CSPROF_OPT_OUT_PATH="${opt_out_path}"
+    export CSPROF_OPT_OUT_PATH
+  fi
+#  if [ -n "${opt_period}" ]; then
+#    CSPROF_OPT_SAMPLE_PERIOD="${opt_period}"
+#    export CSPROF_OPT_SAMPLE_PERIOD
+#  fi
+#  if [ -n "${opt_memsize}" ]; then
+#    CSPROF_OPT_MEM_SZ="${opt_memsize}"
+#    export CSPROF_OPT_MEM_SZ
+#  fi
+  if [ -n "${opt_ev_list}" ]; then
+    CSPROF_OPT_EVENT="${opt_ev_list}"
+  else
+    CSPROF_OPT_EVENT="WALLCLOCK:5000"
+  fi
+  export CSPROF_OPT_EVENT
+  if [ -n "${opt_debug}" ]; then
+    CSPROF_OPT_DEBUG="${opt_debug}"
+    export CSPROF_OPT_DEBUG
+  fi
+  if [ -n "${opt_debug_wait}" ]; then
+    export CSPROF_WAIT=1
+  fi
+  if [ -n "$dd_list" ]; then
+    export CSPROF_DD=$dd_list
+  fi
+  if [ -n "$opt_monitor_debug" ]; then
+    export MONITOR_DEBUG=1
+  fi
+#  if [ -n "${opt_papi}" ]; then
+#    export SWITCH_TO_PAPI=1
+#  fi
+#  if [ -n "$opt_papi_evlst" ]; then
+#    export PAPI_EVLST=$opt_papi_evlst
+#  fi
+
+  # Make sure that `.' is in the PATH so that we can find the command
+  # to profile if in the current directory. [We can get around this,
+  # but for now it is the quickest thing.] 
+  export PATH=".:${PATH}" 
+
+  # set up the LD_LIBRARY_PATH
+  case "$papi_prefix" in
+      /* )
+	  LD_LIBRARY_PATH="${papi_prefix}/lib:$LD_LIBRARY_PATH"
+	  ;;
+  esac
+  export LD_LIBRARY_PATH
+}
+
+#############################################################################
+# Main
+#############################################################################
+# $n: argument n, with $0 being the command name
+# $*: all arguments from $1 to $n
+
+f_checkenv 
+
+f_getoptions "$@"
+
+f_prepareenv
+
+if [ ${ulimit_works}x != x ]; then
+   ulimit -c unlimited
+fi
+if [ -n "${opt_debug}" ]; then
+  echo csprof script LD_PRELOAD = $LD_PRELOAD
+  echo CSPROF_DD = $CSPROF_DD
+  echo event list = $CSPROF_OPT_EVENT
+fi
+#
+# !!! WOW !!
+# prevent wierdo error:
+# *** glibc detected *** double free or corruption (out): 0x0000000000501030 ***
+#
+#export MALLOC_CHECK_=0
+exec ${cmd_to_profile}

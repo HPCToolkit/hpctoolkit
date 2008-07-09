@@ -1,0 +1,92 @@
+#include "monitor.h"
+
+/*
+ *  Callback functions for the client to override.
+ */
+void
+monitor_init_library(void)
+{
+}
+
+void
+monitor_fini_library(void)
+{
+}
+
+void *
+monitor_init_process(int *argc, char **argv, void *data)
+{
+}
+
+void
+monitor_fini_process(int how, void *data)
+{
+}
+
+void *
+monitor_pre_fork(void)
+{
+}
+
+void 
+monitor_post_fork(pid_t child, void *data)
+{
+}
+
+void *
+monitor_thread_pre_create(void)
+{
+}
+
+void 
+monitor_thread_post_create(void *)
+{
+}
+
+void 
+monitor_init_thread_support(void)
+{
+}
+
+void *
+monitor_init_thread(int tid, void *data)
+{
+}
+
+void 
+monitor_fini_thread(void *data)
+{
+}
+
+void 
+monitor_pre_dlopen(const char *path, int flags)
+{
+}
+
+void 
+monitor_dlopen(const char *path, int flags, void *handle)
+{
+}
+
+void 
+monitor_dlclose(void *handle)
+{
+}
+
+void 
+monitor_post_dlclose(void *handle, int ret)
+{
+}
+
+void 
+monitor_init_mpi(int *argc, char ***argv)
+{
+}
+
+void 
+monitor_fini_mpi(void)
+{
+}
+
+
+

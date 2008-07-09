@@ -1,0 +1,1 @@
+(ucontext_t *)uc->uc_mcontext.uc_regs->gregs[reg]

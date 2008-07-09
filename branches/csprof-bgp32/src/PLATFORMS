@@ -1,0 +1,34 @@
+We attempt to support two basic paradigms:
+
+* a profiler for threaded programs
+* a profiler for non-threaded programs
+
+Within these distinctions, we also attempt to support two different
+kinds of call graph profiling:
+
+* profiling without sample-based edge counts
+* profiling with sample-based edge counts
+
+Which leaves us with four different configurations in which the software
+can be built.  Not all of them work at one time (like, right now).  We
+also try to support multiple mechanisms by which signal events are
+generated: SIGPROF, hardware event counters--native via something like
+pfmon or layered with a library like PAPI, etc.  This latter support is
+not well integrated into the codebase, but it is coming.
+
+Two macros control the kind of profiler being constructed.
+
+* CSPROF_TRAMPOLINE_BACKEND: by defining this macro, support for
+  collecting sample-based edge counts will be included.  This macro is
+  not supported on all CPUs for which the profiler can be built; the
+  only platform for which it is currently suggested is Tru64.
+
+* CSPROF_THREADS: a profiler for threaded programs will be built if this
+  macro is defined.  Otherwise, a single-threaded profiler will be
+  constructed.  Both profilers will probably cause strange things to
+  happen if you use them on the wrong kind of program
+  (e.g. single-threaded profiler on a threaded program).  When in doubt,
+  build a threaded profiler, especially if you are writing programs for
+  parallel computers.
+
+Both of these macros can be defined (or undefined) in the Makefile.

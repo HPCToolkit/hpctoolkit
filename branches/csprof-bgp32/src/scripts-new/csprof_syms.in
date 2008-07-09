@@ -1,0 +1,110 @@
+#!/bin/sh 
+
+############ UTILITY FUNCTIONS #################
+
+dbg()
+{
+    if [ $dbg_script ]; then
+	echo "CSPROF_SYMS:" "$@"
+    fi
+}
+
+run_stapi_syms()
+{
+    lib_path="${libcpp_path}:${libdir}"
+    case "$symtabAPI_prefix" in
+	/* ) lib_path="${lib_path}:${symtabAPI_prefix}/lib" ;;
+    esac
+    case "$symbols_prefix" in
+	/* ) stapi_dir="${symbols_prefix}/libexec" ;;
+	*  ) stapi_dir="$libexecdir" ;;
+    esac
+    LD_LIBRARY_PATH=${lib_path} ${stapi_dir}/stapi_syms $1 > ${prog_file}
+}
+
+############ MAIN CODE ###################
+
+libexecdir=`dirname $0`
+base=`basename $1`
+if test ${libexecdir}x == "$0"x; then
+   libexecdir=.
+fi
+if test ${libexecdir} == "."; then
+   rootdir=..
+else
+   rootdir=`dirname ${libexecdir}`
+fi
+libdir=${rootdir}/lib
+
+symbols_prefix='@symbols_prefix@'
+symtabAPI_prefix='@symtabAPI_prefix@'
+libcpp_path='@libcpp_path@'
+
+# output directory
+if test "$2"x == "x"; then
+    odir=/tmp
+else
+    odir=$2
+    if [ $dbg_script ]; then
+	chmod +rx $odir
+    fi
+fi
+
+# debug script
+dbg_script=$3
+
+dbg args = "$@"
+
+OLDIFS=${IFS}
+IFS=':'
+
+# set default object file in case real one not found 
+object_file=/dev/null
+
+if [ -r $1 ]; then
+  object_file=$1
+else
+   for d in ${LD_LIBRARY_PATH}; do
+      if [ -r ${d}/${base} ]; then
+         object_file=${d}/${base} 
+         break;
+      fi
+   done
+fi
+IFS=${OLDIFS}
+
+prog_file=${odir}/${base}.nm.c
+so_file=${odir}/${base}.nm.so
+
+dbg object_file = $object_file
+dbg prog_file = $prog_file
+
+run_stapi_syms $object_file
+if [ ! -s $prog_file ]; then
+    echo stapi_syms create $prog_file from $object_file failed ... 
+    echo ... trying stripped version
+    dbg doing cp $object_file $odir';' strip $odir/$base
+    dbg umask = `umask -S -p`
+    cp $object_file $odir
+
+    dbg version of strip = `which strip`
+    dbg permissions for object file = `ls -l $odir/$base`
+
+    chmod u+w $odir/$base
+    dbg permissions for object file AFTER CHMOD = `ls -l $odir/$base`
+
+    strip $odir/$base
+    run_stapi_syms $odir/$base
+    if [ -s $prog_file ]; then
+        echo stripping succeeds '!!'. $prog_file exists
+    else
+        echo stapi_syms tried stripping $object_file, but that failed also ...
+	rm -f /tmp/_s.$$
+	echo creating default $prog_file
+	cat <<EOF > $prog_file
+int BOGUS = 1;
+unsigned int csprof_stripped = 1;
+EOF
+    fi
+fi
+gcc ${prog_file} -fPIC -shared -nostartfiles -o ${so_file}

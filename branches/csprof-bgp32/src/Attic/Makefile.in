@@ -1,0 +1,345 @@
+# Makefile intermediate to full autoconf, automake
+# now, just the std Makefile, but include Makefile.conf
+
+-include Makefile.conf
+
+ifndef PPC64
+X86=1
+endif
+
+install_lib := $(install_prefix)/lib
+install_bin := $(install_prefix)/bin
+
+# location of helper scripts+executables
+install_libexec := $(install_prefix)/libexec
+
+CC   := gcc -std=c99 -Wall -Wno-unused-function
+CXX  := g++ -Wall
+link := gcc
+static_link_options := --verbose -nostdlib -nodefaultlibs -nostartfiles -static -Wl,-r
+
+
+
+MONITOR_INCLUDE_OPTS := -I$(MONITOR_DIR)/include
+MONITOR_LIBS := -L$(MONITOR_DIR)/lib -lmonitor
+
+src_dir        = $(patsubst %/,%,$(src_dir_prefix))
+
+CSPROFLIB := libcsprof.so.1
+
+CSPROF_DOT_O := libcsprof.o
+
+# ----------------------------------------------------------
+# LUSH
+# ----------------------------------------------------------
+# DO_LUSH = 1
+LUSH_AGENTS =
+ifdef DO_LUSH
+  LUSH_AGENTS = agent-cilk.so
+endif
+
+
+all: $(CSPROFLIB) $(LUSH_AGENTS)
+#all: $(CSPROF_DOT_O)
+
+# we develop on Tru64, make it the default
+# MWF: working on x86-64, make it (and gcc) the default 30jan07
+
+DEFINES := -D_GNU_SOURCE
+DEFINES += -DCSPROF_LAST_EDGE_ONLY=1
+DEFINES += $(PERF)
+
+ifdef dbg_extra
+    DEFINES += -DDBG_EXTRA
+endif
+
+CFLAGS := -fPIC -g -Wall 
+
+#CFLAGS := -g -Wall  #CATAMOUNT doesn't use fPIC
+
+AR := /usr/bin/ar
+ARFLAGS := -r
+
+link_flags := -Wl,-Bsymbolic -Wl,-soname,$(CSPROFLIB) -shared
+
+module_dirs := utilities                \
+               fnbounds                 \
+               memory                   \
+               processor/x86-64         \
+               unwind/common            \
+               unwind/x86-family        \
+               sampling/types/callstack \
+               Dbg                      \
+               hpcfile                  \
+               os/catamount             \
+               os/linux                 \
+               lush                     \
+               lush-agents
+
+
+.PHONY: TAGS
+TAGS:
+	etags *.[csh] hpcfile/*.[csh] $(addsuffix /*.[csh],$(module_dirs))
+
+
+ifdef HPCRUN_STATIC_LINK
+  gethost := gethostid.o override.o MPI_Init.o 
+endif
+
+
+ifeq "$(strip $(src_dir_prefix))" ""
+src_dir_inc := .
+else
+src_dir_inc := $(patsubst %/,%,$(src_dir_prefix))
+endif
+
+INCS := -I$(src_dir_inc)
+
+# do not move "csprof_first_func.o" or "csprof_last_func.o"; they need
+# to be in those places to force the linker to stitch together the
+# library in the proper order and for correct functioning of the profiler
+
+#### ALSO, do NOT move the := assignment elsewhere, because OBJS += construct
+#### will fail to work properly
+
+OBJS := first_func.o
+
+ifdef MPI_SPECIAL
+INCS += $(MPI_INC)
+endif
+
+INCS += $(addprefix -I$(src_dir_prefix),$(module_dirs))
+
+ifneq "$(DRIVER_DIR)" "itimer"
+DEFINES += -DCSPROF_SYNCHRONOUS_PROFILING_ONLY=1
+endif
+ifeq "$(DRIVER_DIR)" "mallocprof"
+DEFINES += -DCSPROF_MALLOC_PROFILING=1
+endif
+
+ifdef WITH_PAPI
+  INCS += $(PAPI_INCLUDES)
+  LIBS += $(PAPI_LD) 
+  OBJS += papi.sample_source.o
+endif
+
+ifdef X86
+XED2_INCLUDE_OPTS=-I$(XED2_DIR)/include
+XED2_LIBS=-L$(XED2_DIR)/lib -lxed
+INCS += $(XED2_INCLUDE_OPTS)
+LIBS += $(XED2_LIBS) 
+endif
+
+INCS += $(ARCH_INCLUDES)
+
+INCS += $(MONITOR_INCLUDE_OPTS)
+LIBS += $(MONITOR_LIBS) 
+
+ifdef DO_THREADS
+  CSPROF_THREADS := -DCSPROF_THREADS=1
+  LIB_THREAD := -lpthread
+endif
+
+ifdef PRIM_UNWIND
+   DEFINES += -DPRIM_UNWIND=1
+endif
+
+ifdef NO_MMAP
+   DEFINES += -DNO_MMAP=1
+endif
+
+ifdef HPCRUN_STATIC_LINK
+DEFINES += -DHPCRUN_STATIC_LINK=1
+endif
+
+DEFINES += -DINLINE_FN=1
+
+ifdef MPI_SPECIAL
+DEFINES += -DMPI_SPECIAL=1
+endif
+
+# includes might have set up their own special CFLAGS, so we add
+CFLAGS += $(DEFINES) $(CSPROF_THREADS) $(CSPROF_TRAMPOLINE) -I./$(ARCH)
+
+hpcfile_objs := $(addsuffix .o,$(addprefix hpcfile_,general cstree csprof))
+
+ifndef HPCRUN_STATIC_LINK
+   OBJS += libmonitor_upcalls.o
+else
+   OBJS += static_mon_ovr.o
+endif
+OBJS += csproflib.o files.o trace.o metrics.o mem.o cct.o
+OBJS += name.o list.o epoch.o
+OBJS += sample_event.o 
+#OBJS += csprof_options.o process_event_list.o
+OBJS += csprof_options.o
+
+#-------------------------
+# finding function bounds
+#-------------------------
+OBJS += fnbounds_common.o 
+ifdef HPCRUN_STATIC_LINK
+   OBJS += fnbounds_static.o
+else
+   OBJS += system_server.o
+   OBJS += fnbounds_dynamic.o
+   OBJS += dylib.o
+   OBJS += csprof_dlfns.o
+endif
+
+#-------------------
+# utilities
+#-------------------
+OBJS += spinlock.o
+OBJS += unlink.o
+OBJS += executable-path.o
+OBJS += tokenize.o
+
+# LUSH will provide its own backtrace [FIXME: clutzy]
+ifndef DO_LUSH
+  OBJS += backtrace.o
+endif
+
+OBJS += processor-libc.o 
+
+ifdef USE_TRAMP
+  OBJS += tramp.o 
+endif
+
+OBJS += all_sample_sources.o \
+        registered_sample_sources.o \
+        common.sample_source.o \
+        itimer.sample_source.o 
+
+OBJS += state.o env.o data.o dump_backtraces.o segv_handler.o
+OBJS += pmsg.o
+
+# OBJS += bad_unwind.o
+
+OBJS += handling_sample.o thread_data.o
+OBJS += $(hpcfile_objs)
+
+OBJS += intervals.o 
+OBJS += splay.o
+OBJS += unwind.o
+
+# ----------------------------------------------------------
+# LUSH
+# ----------------------------------------------------------
+LUSH_AGENT_OBJS =
+
+ifdef DO_LUSH
+  CILK_INSTALL = /home/eraxxon/develop/cilk/cilk-install
+  INCS += -I$(CILK_INSTALL)/include
+
+  OBJS += lush-backtrace.o
+  LUSH_AGENT_OBJS += agent-cilk.o lush-support-rt.o
+endif
+
+OBJS += lush.o \
+	lushi-cb.o \
+	lush-support.o \
+	lush-support-rt.o
+
+ifdef X86
+#-----------------------------------------------------------------
+# all x86 binary analysis files are now included into one file and 
+# compiled into a single object file to avoid replicating lots of
+# static functions defined in the xed interface files
+#-----------------------------------------------------------------
+OBJS += x86-all.o 
+OBJS += x86-unwind-support.o 
+OBJS += swizzle.o unsafe.o
+endif
+
+OBJS += stack_troll.o
+OBJS += $(gethost)
+
+OBJS += last.o
+ifdef dbg_extra
+    OBJS += dbg_extra.o
+endif
+OBJS += last_func.o
+
+#LIBS := hpcfile/$(LIB_CSFILE) $(LIB_THREAD) $(LIB_UNWIND) $(LIB_PFM)
+
+#LIBS := hpcfile/$(LIB_CSFILE) $(LIB_THREAD) $(LIB_PFM)
+#LIBS = $(LIB_THREAD) $(LIB_PFM)
+LIBS += $(LIB_THREAD) 
+
+#LIBS += $(XED_LIBS) $(XED_CPP_LIBS) 
+
+#############################################################################
+# Compiling Rules:
+#############################################################################
+
+vpath %.c $(src_dir) $(addprefix $(src_dir_prefix),$(module_dirs))
+
+vpath %.s $(src_dir_prefix)processor/x86-64
+
+vpath %.cpp $(addprefix $(src_dir_prefix),$(module_dirs))
+
+.PHONY: TT
+
+TT:
+	# OBJS = $(OBJS)
+#	 INCS = $(INCS)
+#	 LIBS = $(LIBS)
+#	 CXX  = $(CXX)
+#	 CC   = $(CC)
+#	 INC_CSFILE = $(INC_CSFILE)
+#	$(CC) --version
+#	 gethostid := |$(gethostid)|
+#	 src dir prefix = |$(src_dir_prefix)|, src dir = |$(src_dir)|
+#	 PRIM_UNWIND = |$(PRIM_UNWIND)|
+#	 XED_LIBS = |$(XED_LIBS)|
+#	 src_dir = |$(src_dir)|
+#	 DEFINES = $(DEFINES)
+
+$(LIB_CSFILE):
+	@cd hpcfile; $(MAKE) -I ..
+
+.PHONY: clean
+clean:
+	rm -rf *.o *.so *.so.[0-9]*
+	@/bin/rm -f $(LUSH_AGENTS) $(LUSH_AGENT_OBJS)
+
+.PHONY : all libcsfile static check install
+
+$(CSPROFLIB): $(LIB_CSFILE) $(OBJS)
+	$(link) $(link_flags) -o $@ $(OBJS) $(LIBS)
+	@echo "*** $(CSPROFLIB) is up to date. ***"
+
+# LUSH agents
+$(LUSH_AGENTS): $(LUSH_AGENT_OBJS)
+	$(CC) -Wl,-Bsymbolic -Wl,-soname,$@ -shared -o $@ $(LUSH_AGENT_OBJS)
+	@echo "*** $@ is up to date. ***"
+
+
+
+$(CSPROF_DOT_O): $(OBJS)
+	$(link) $(static_link_options) -o $@ $(OBJS) $(LIBS)
+	@echo "*** $@ is up to date. ***"
+
+
+.PHONY: bclean
+bclean:
+
+install: all
+	-install -d $(install_lib) $(install_bin) $(install_libexec)
+	install $(CSPROFLIB) $(install_lib)
+	cp $(src_dir_prefix)/scripts/csprof.in $(install_bin)/csprof
+	cp $(src_dir_prefix)/scripts/csprof_syms.in $(install_libexec)/csprof_syms
+	cp conf.sh $(install_libexec)
+
+%.o: %.c
+	$(CC) $(INCS) $(CFLAGS) -c $< -o $@
+
+%.E: %.c
+	$(CC) $(INCS) $(CFLAGS) -E $< > $@
+
+%.o: %.s
+	$(CC) $(INCS) $(CFLAGS) -c $< -o $@
+
+%.o: %.cpp
+	$(CXX) $(INCS) $(XEDDCL) $(CFLAGS) -c $< -o $@
