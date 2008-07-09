@@ -98,7 +98,7 @@ host_triplet = @host@
 DIST_COMMON = README $(srcdir)/Makefile.am $(srcdir)/Makefile.in \
 	$(top_srcdir)/src/Makeinclude.config \
 	$(top_srcdir)/src/Makeinclude.rules
-bin_PROGRAMS = hpcrun$(EXEEXT)
+bin_PROGRAMS = hpcrun-flat$(EXEEXT)
 subdir = src/tool/hpcrun
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/config/hpc-cxxutils.m4 \
@@ -128,15 +128,16 @@ libhpcrun_la_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
 	$(CFLAGS) $(libhpcrun_la_LDFLAGS) $(LDFLAGS) -o $@
 binPROGRAMS_INSTALL = $(INSTALL_PROGRAM)
 PROGRAMS = $(bin_PROGRAMS)
-am__objects_2 = hpcrun-hpcrun.$(OBJEXT) hpcrun-Args.$(OBJEXT) \
-	hpcrun-hpcpapi.$(OBJEXT) hpcrun-dlpapi.$(OBJEXT)
-am_hpcrun_OBJECTS = $(am__objects_2)
-hpcrun_OBJECTS = $(am_hpcrun_OBJECTS)
+am__objects_2 = hpcrun_flat-hpcrun.$(OBJEXT) \
+	hpcrun_flat-Args.$(OBJEXT) hpcrun_flat-hpcpapi.$(OBJEXT) \
+	hpcrun_flat-dlpapi.$(OBJEXT)
+am_hpcrun_flat_OBJECTS = $(am__objects_2)
+hpcrun_flat_OBJECTS = $(am_hpcrun_flat_OBJECTS)
 am__DEPENDENCIES_2 = $(HPC_LIBSUPPORT)
-hpcrun_DEPENDENCIES = $(am__DEPENDENCIES_2)
-hpcrun_LINK = $(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
-	--mode=link $(CXXLD) $(hpcrun_CXXFLAGS) $(CXXFLAGS) \
-	$(hpcrun_LDFLAGS) $(LDFLAGS) -o $@
+hpcrun_flat_DEPENDENCIES = $(am__DEPENDENCIES_2)
+hpcrun_flat_LINK = $(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) \
+	$(LIBTOOLFLAGS) --mode=link $(CXXLD) $(hpcrun_flat_CXXFLAGS) \
+	$(CXXFLAGS) $(hpcrun_flat_LDFLAGS) $(LDFLAGS) -o $@
 DEFAULT_INCLUDES = -I.@am__isrc@
 depcomp = $(SHELL) $(top_srcdir)/config/depcomp
 am__depfiles_maybe = depfiles
@@ -158,8 +159,8 @@ CXXLD = $(CXX)
 CXXLINK = $(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
 	--mode=link $(CXXLD) $(AM_CXXFLAGS) $(CXXFLAGS) $(AM_LDFLAGS) \
 	$(LDFLAGS) -o $@
-SOURCES = $(libhpcrun_la_SOURCES) $(hpcrun_SOURCES)
-DIST_SOURCES = $(libhpcrun_la_SOURCES) $(hpcrun_SOURCES)
+SOURCES = $(libhpcrun_la_SOURCES) $(hpcrun_flat_SOURCES)
+DIST_SOURCES = $(libhpcrun_la_SOURCES) $(hpcrun_flat_SOURCES)
 ETAGS = etags
 CTAGS = ctags
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
@@ -394,11 +395,11 @@ MYLDADD_LIBHPCRUN_STATIC = \
 	@OPT_PAPI_LDFLAGS@
 
 MYCLEAN = @HOST_LIBTREPOSITORY@
-hpcrun_SOURCES = $(MYSOURCES_HPCRUN)
-hpcrun_CFLAGS = $(MYCFLAGS_HPCRUN)
-hpcrun_CXXFLAGS = $(MYCXXFLAGS_HPCRUN)
-hpcrun_LDFLAGS = $(MYLDFLAGS_HPCRUN)
-hpcrun_LDADD = $(MYLDADD_HPCRUN)
+hpcrun_flat_SOURCES = $(MYSOURCES_HPCRUN)
+hpcrun_flat_CFLAGS = $(MYCFLAGS_HPCRUN)
+hpcrun_flat_CXXFLAGS = $(MYCXXFLAGS_HPCRUN)
+hpcrun_flat_LDFLAGS = $(MYLDFLAGS_HPCRUN)
+hpcrun_flat_LDADD = $(MYLDADD_HPCRUN)
 
 # N.B.: We only care about the dynamically linked version of this
 # library.  An install-hook below ensures only intercepted symbols
@@ -542,9 +543,9 @@ clean-binPROGRAMS:
 	  echo " rm -f $$p $$f"; \
 	  rm -f $$p $$f ; \
 	done
-hpcrun$(EXEEXT): $(hpcrun_OBJECTS) $(hpcrun_DEPENDENCIES) 
-	@rm -f hpcrun$(EXEEXT)
-	$(hpcrun_LINK) $(hpcrun_OBJECTS) $(hpcrun_LDADD) $(LIBS)
+hpcrun-flat$(EXEEXT): $(hpcrun_flat_OBJECTS) $(hpcrun_flat_DEPENDENCIES) 
+	@rm -f hpcrun-flat$(EXEEXT)
+	$(hpcrun_flat_LINK) $(hpcrun_flat_OBJECTS) $(hpcrun_flat_LDADD) $(LIBS)
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
@@ -552,10 +553,10 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/hpcrun-Args.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/hpcrun-dlpapi.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/hpcrun-hpcpapi.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/hpcrun-hpcrun.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/hpcrun_flat-Args.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/hpcrun_flat-dlpapi.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/hpcrun_flat-hpcpapi.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/hpcrun_flat-hpcrun.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-hpcpapi.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-monitor.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-monitor_preload.Plo@am__quote@
@@ -610,33 +611,33 @@ libhpcrun_la-rtmap.lo: rtmap.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o libhpcrun_la-rtmap.lo `test -f 'rtmap.c' || echo '$(srcdir)/'`rtmap.c
 
-hpcrun-hpcpapi.o: hpcpapi.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(hpcrun_CFLAGS) $(CFLAGS) -MT hpcrun-hpcpapi.o -MD -MP -MF $(DEPDIR)/hpcrun-hpcpapi.Tpo -c -o hpcrun-hpcpapi.o `test -f 'hpcpapi.c' || echo '$(srcdir)/'`hpcpapi.c
-@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/hpcrun-hpcpapi.Tpo $(DEPDIR)/hpcrun-hpcpapi.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='hpcpapi.c' object='hpcrun-hpcpapi.o' libtool=no @AMDEPBACKSLASH@
+hpcrun_flat-hpcpapi.o: hpcpapi.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(hpcrun_flat_CFLAGS) $(CFLAGS) -MT hpcrun_flat-hpcpapi.o -MD -MP -MF $(DEPDIR)/hpcrun_flat-hpcpapi.Tpo -c -o hpcrun_flat-hpcpapi.o `test -f 'hpcpapi.c' || echo '$(srcdir)/'`hpcpapi.c
+@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/hpcrun_flat-hpcpapi.Tpo $(DEPDIR)/hpcrun_flat-hpcpapi.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='hpcpapi.c' object='hpcrun_flat-hpcpapi.o' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(hpcrun_CFLAGS) $(CFLAGS) -c -o hpcrun-hpcpapi.o `test -f 'hpcpapi.c' || echo '$(srcdir)/'`hpcpapi.c
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(hpcrun_flat_CFLAGS) $(CFLAGS) -c -o hpcrun_flat-hpcpapi.o `test -f 'hpcpapi.c' || echo '$(srcdir)/'`hpcpapi.c
 
-hpcrun-hpcpapi.obj: hpcpapi.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(hpcrun_CFLAGS) $(CFLAGS) -MT hpcrun-hpcpapi.obj -MD -MP -MF $(DEPDIR)/hpcrun-hpcpapi.Tpo -c -o hpcrun-hpcpapi.obj `if test -f 'hpcpapi.c'; then $(CYGPATH_W) 'hpcpapi.c'; else $(CYGPATH_W) '$(srcdir)/hpcpapi.c'; fi`
-@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/hpcrun-hpcpapi.Tpo $(DEPDIR)/hpcrun-hpcpapi.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='hpcpapi.c' object='hpcrun-hpcpapi.obj' libtool=no @AMDEPBACKSLASH@
+hpcrun_flat-hpcpapi.obj: hpcpapi.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(hpcrun_flat_CFLAGS) $(CFLAGS) -MT hpcrun_flat-hpcpapi.obj -MD -MP -MF $(DEPDIR)/hpcrun_flat-hpcpapi.Tpo -c -o hpcrun_flat-hpcpapi.obj `if test -f 'hpcpapi.c'; then $(CYGPATH_W) 'hpcpapi.c'; else $(CYGPATH_W) '$(srcdir)/hpcpapi.c'; fi`
+@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/hpcrun_flat-hpcpapi.Tpo $(DEPDIR)/hpcrun_flat-hpcpapi.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='hpcpapi.c' object='hpcrun_flat-hpcpapi.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(hpcrun_CFLAGS) $(CFLAGS) -c -o hpcrun-hpcpapi.obj `if test -f 'hpcpapi.c'; then $(CYGPATH_W) 'hpcpapi.c'; else $(CYGPATH_W) '$(srcdir)/hpcpapi.c'; fi`
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(hpcrun_flat_CFLAGS) $(CFLAGS) -c -o hpcrun_flat-hpcpapi.obj `if test -f 'hpcpapi.c'; then $(CYGPATH_W) 'hpcpapi.c'; else $(CYGPATH_W) '$(srcdir)/hpcpapi.c'; fi`
 
-hpcrun-dlpapi.o: dlpapi.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(hpcrun_CFLAGS) $(CFLAGS) -MT hpcrun-dlpapi.o -MD -MP -MF $(DEPDIR)/hpcrun-dlpapi.Tpo -c -o hpcrun-dlpapi.o `test -f 'dlpapi.c' || echo '$(srcdir)/'`dlpapi.c
-@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/hpcrun-dlpapi.Tpo $(DEPDIR)/hpcrun-dlpapi.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='dlpapi.c' object='hpcrun-dlpapi.o' libtool=no @AMDEPBACKSLASH@
+hpcrun_flat-dlpapi.o: dlpapi.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(hpcrun_flat_CFLAGS) $(CFLAGS) -MT hpcrun_flat-dlpapi.o -MD -MP -MF $(DEPDIR)/hpcrun_flat-dlpapi.Tpo -c -o hpcrun_flat-dlpapi.o `test -f 'dlpapi.c' || echo '$(srcdir)/'`dlpapi.c
+@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/hpcrun_flat-dlpapi.Tpo $(DEPDIR)/hpcrun_flat-dlpapi.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='dlpapi.c' object='hpcrun_flat-dlpapi.o' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(hpcrun_CFLAGS) $(CFLAGS) -c -o hpcrun-dlpapi.o `test -f 'dlpapi.c' || echo '$(srcdir)/'`dlpapi.c
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(hpcrun_flat_CFLAGS) $(CFLAGS) -c -o hpcrun_flat-dlpapi.o `test -f 'dlpapi.c' || echo '$(srcdir)/'`dlpapi.c
 
-hpcrun-dlpapi.obj: dlpapi.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(hpcrun_CFLAGS) $(CFLAGS) -MT hpcrun-dlpapi.obj -MD -MP -MF $(DEPDIR)/hpcrun-dlpapi.Tpo -c -o hpcrun-dlpapi.obj `if test -f 'dlpapi.c'; then $(CYGPATH_W) 'dlpapi.c'; else $(CYGPATH_W) '$(srcdir)/dlpapi.c'; fi`
-@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/hpcrun-dlpapi.Tpo $(DEPDIR)/hpcrun-dlpapi.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='dlpapi.c' object='hpcrun-dlpapi.obj' libtool=no @AMDEPBACKSLASH@
+hpcrun_flat-dlpapi.obj: dlpapi.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(hpcrun_flat_CFLAGS) $(CFLAGS) -MT hpcrun_flat-dlpapi.obj -MD -MP -MF $(DEPDIR)/hpcrun_flat-dlpapi.Tpo -c -o hpcrun_flat-dlpapi.obj `if test -f 'dlpapi.c'; then $(CYGPATH_W) 'dlpapi.c'; else $(CYGPATH_W) '$(srcdir)/dlpapi.c'; fi`
+@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/hpcrun_flat-dlpapi.Tpo $(DEPDIR)/hpcrun_flat-dlpapi.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='dlpapi.c' object='hpcrun_flat-dlpapi.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(hpcrun_CFLAGS) $(CFLAGS) -c -o hpcrun-dlpapi.obj `if test -f 'dlpapi.c'; then $(CYGPATH_W) 'dlpapi.c'; else $(CYGPATH_W) '$(srcdir)/dlpapi.c'; fi`
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(hpcrun_flat_CFLAGS) $(CFLAGS) -c -o hpcrun_flat-dlpapi.obj `if test -f 'dlpapi.c'; then $(CYGPATH_W) 'dlpapi.c'; else $(CYGPATH_W) '$(srcdir)/dlpapi.c'; fi`
 
 .cpp.o:
 @am__fastdepCXX_TRUE@	$(CXXCOMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
@@ -659,33 +660,33 @@ hpcrun-dlpapi.obj: dlpapi.c
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(LTCXXCOMPILE) -c -o $@ $<
 
-hpcrun-hpcrun.o: hpcrun.cpp
-@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(hpcrun_CXXFLAGS) $(CXXFLAGS) -MT hpcrun-hpcrun.o -MD -MP -MF $(DEPDIR)/hpcrun-hpcrun.Tpo -c -o hpcrun-hpcrun.o `test -f 'hpcrun.cpp' || echo '$(srcdir)/'`hpcrun.cpp
-@am__fastdepCXX_TRUE@	mv -f $(DEPDIR)/hpcrun-hpcrun.Tpo $(DEPDIR)/hpcrun-hpcrun.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='hpcrun.cpp' object='hpcrun-hpcrun.o' libtool=no @AMDEPBACKSLASH@
+hpcrun_flat-hpcrun.o: hpcrun.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(hpcrun_flat_CXXFLAGS) $(CXXFLAGS) -MT hpcrun_flat-hpcrun.o -MD -MP -MF $(DEPDIR)/hpcrun_flat-hpcrun.Tpo -c -o hpcrun_flat-hpcrun.o `test -f 'hpcrun.cpp' || echo '$(srcdir)/'`hpcrun.cpp
+@am__fastdepCXX_TRUE@	mv -f $(DEPDIR)/hpcrun_flat-hpcrun.Tpo $(DEPDIR)/hpcrun_flat-hpcrun.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='hpcrun.cpp' object='hpcrun_flat-hpcrun.o' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(hpcrun_CXXFLAGS) $(CXXFLAGS) -c -o hpcrun-hpcrun.o `test -f 'hpcrun.cpp' || echo '$(srcdir)/'`hpcrun.cpp
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(hpcrun_flat_CXXFLAGS) $(CXXFLAGS) -c -o hpcrun_flat-hpcrun.o `test -f 'hpcrun.cpp' || echo '$(srcdir)/'`hpcrun.cpp
 
-hpcrun-hpcrun.obj: hpcrun.cpp
-@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(hpcrun_CXXFLAGS) $(CXXFLAGS) -MT hpcrun-hpcrun.obj -MD -MP -MF $(DEPDIR)/hpcrun-hpcrun.Tpo -c -o hpcrun-hpcrun.obj `if test -f 'hpcrun.cpp'; then $(CYGPATH_W) 'hpcrun.cpp'; else $(CYGPATH_W) '$(srcdir)/hpcrun.cpp'; fi`
-@am__fastdepCXX_TRUE@	mv -f $(DEPDIR)/hpcrun-hpcrun.Tpo $(DEPDIR)/hpcrun-hpcrun.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='hpcrun.cpp' object='hpcrun-hpcrun.obj' libtool=no @AMDEPBACKSLASH@
+hpcrun_flat-hpcrun.obj: hpcrun.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(hpcrun_flat_CXXFLAGS) $(CXXFLAGS) -MT hpcrun_flat-hpcrun.obj -MD -MP -MF $(DEPDIR)/hpcrun_flat-hpcrun.Tpo -c -o hpcrun_flat-hpcrun.obj `if test -f 'hpcrun.cpp'; then $(CYGPATH_W) 'hpcrun.cpp'; else $(CYGPATH_W) '$(srcdir)/hpcrun.cpp'; fi`
+@am__fastdepCXX_TRUE@	mv -f $(DEPDIR)/hpcrun_flat-hpcrun.Tpo $(DEPDIR)/hpcrun_flat-hpcrun.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='hpcrun.cpp' object='hpcrun_flat-hpcrun.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(hpcrun_CXXFLAGS) $(CXXFLAGS) -c -o hpcrun-hpcrun.obj `if test -f 'hpcrun.cpp'; then $(CYGPATH_W) 'hpcrun.cpp'; else $(CYGPATH_W) '$(srcdir)/hpcrun.cpp'; fi`
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(hpcrun_flat_CXXFLAGS) $(CXXFLAGS) -c -o hpcrun_flat-hpcrun.obj `if test -f 'hpcrun.cpp'; then $(CYGPATH_W) 'hpcrun.cpp'; else $(CYGPATH_W) '$(srcdir)/hpcrun.cpp'; fi`
 
-hpcrun-Args.o: Args.cpp
-@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(hpcrun_CXXFLAGS) $(CXXFLAGS) -MT hpcrun-Args.o -MD -MP -MF $(DEPDIR)/hpcrun-Args.Tpo -c -o hpcrun-Args.o `test -f 'Args.cpp' || echo '$(srcdir)/'`Args.cpp
-@am__fastdepCXX_TRUE@	mv -f $(DEPDIR)/hpcrun-Args.Tpo $(DEPDIR)/hpcrun-Args.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='Args.cpp' object='hpcrun-Args.o' libtool=no @AMDEPBACKSLASH@
+hpcrun_flat-Args.o: Args.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(hpcrun_flat_CXXFLAGS) $(CXXFLAGS) -MT hpcrun_flat-Args.o -MD -MP -MF $(DEPDIR)/hpcrun_flat-Args.Tpo -c -o hpcrun_flat-Args.o `test -f 'Args.cpp' || echo '$(srcdir)/'`Args.cpp
+@am__fastdepCXX_TRUE@	mv -f $(DEPDIR)/hpcrun_flat-Args.Tpo $(DEPDIR)/hpcrun_flat-Args.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='Args.cpp' object='hpcrun_flat-Args.o' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(hpcrun_CXXFLAGS) $(CXXFLAGS) -c -o hpcrun-Args.o `test -f 'Args.cpp' || echo '$(srcdir)/'`Args.cpp
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(hpcrun_flat_CXXFLAGS) $(CXXFLAGS) -c -o hpcrun_flat-Args.o `test -f 'Args.cpp' || echo '$(srcdir)/'`Args.cpp
 
-hpcrun-Args.obj: Args.cpp
-@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(hpcrun_CXXFLAGS) $(CXXFLAGS) -MT hpcrun-Args.obj -MD -MP -MF $(DEPDIR)/hpcrun-Args.Tpo -c -o hpcrun-Args.obj `if test -f 'Args.cpp'; then $(CYGPATH_W) 'Args.cpp'; else $(CYGPATH_W) '$(srcdir)/Args.cpp'; fi`
-@am__fastdepCXX_TRUE@	mv -f $(DEPDIR)/hpcrun-Args.Tpo $(DEPDIR)/hpcrun-Args.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='Args.cpp' object='hpcrun-Args.obj' libtool=no @AMDEPBACKSLASH@
+hpcrun_flat-Args.obj: Args.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(hpcrun_flat_CXXFLAGS) $(CXXFLAGS) -MT hpcrun_flat-Args.obj -MD -MP -MF $(DEPDIR)/hpcrun_flat-Args.Tpo -c -o hpcrun_flat-Args.obj `if test -f 'Args.cpp'; then $(CYGPATH_W) 'Args.cpp'; else $(CYGPATH_W) '$(srcdir)/Args.cpp'; fi`
+@am__fastdepCXX_TRUE@	mv -f $(DEPDIR)/hpcrun_flat-Args.Tpo $(DEPDIR)/hpcrun_flat-Args.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='Args.cpp' object='hpcrun_flat-Args.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(hpcrun_CXXFLAGS) $(CXXFLAGS) -c -o hpcrun-Args.obj `if test -f 'Args.cpp'; then $(CYGPATH_W) 'Args.cpp'; else $(CYGPATH_W) '$(srcdir)/Args.cpp'; fi`
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(hpcrun_flat_CXXFLAGS) $(CXXFLAGS) -c -o hpcrun_flat-Args.obj `if test -f 'Args.cpp'; then $(CYGPATH_W) 'Args.cpp'; else $(CYGPATH_W) '$(srcdir)/Args.cpp'; fi`
 
 mostlyclean-libtool:
 	-rm -f *.lo

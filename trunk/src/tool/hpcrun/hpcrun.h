@@ -47,7 +47,7 @@
 #if (HPCRUN_SICORTEX)
 # define HPCRUN_NAME "hpcex"
 #else
-# define HPCRUN_NAME "hpcrun"
+# define HPCRUN_NAME "hpcrun-flat"
 #endif
 
 #define HPCRUN_LIB  "libhpcrun.so"

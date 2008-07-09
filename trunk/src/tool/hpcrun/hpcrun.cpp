@@ -122,8 +122,8 @@ real_main(int argc, char* argv[])
   }
   else {
     // Launch and profile
-    char* installpath = findinstall(argv[0], "hpcrun");
-    DIAG_Assert(installpath, "Cannot locate installation path for 'hpcrun'");
+    char* installpath = findinstall(argv[0], HPCRUN_NAME);
+    DIAG_Assert(installpath, "Cannot locate installation path for '"HPCRUN_NAME"'");
     
     ret = launch_with_profiling(installpath, args);
     // only returns on error
@@ -154,7 +154,7 @@ launch_with_profiling(const char* installpath, const Args& args)
   }
   profArgV[args.profArgV.size()] = NULL;
   
-  DIAG_Msg(1, "hpcrun (pid " << getpid() << ") ==> " << profArgV[0]);
+  DIAG_Msg(1, HPCRUN_NAME" (pid " << getpid() << ") ==> " << profArgV[0]);
   
   prepare_env_for_profiling(installpath, args);
   
@@ -230,8 +230,8 @@ prepare_env_for_profiling(const char* installpath, const Args& args)
 
   prepend_to_ld_preload(HPCRUN_LIB " " HPC_LIBMONITOR_SO);
   
-  DIAG_Msg(1, "hpcrun (pid " << getpid() << "): LD_LIBRARY_PATH=" << getenv(LD_LIBRARY_PATH));
-  DIAG_Msg(1, "hpcrun (pid " << getpid() << "): LD_PRELOAD=" << getenv(LD_PRELOAD));
+  DIAG_Msg(1, HPCRUN_NAME" (pid " << getpid() << "): LD_LIBRARY_PATH=" << getenv(LD_LIBRARY_PATH));
+  DIAG_Msg(1, HPCRUN_NAME" (pid " << getpid() << "): LD_PRELOAD=" << getenv(LD_PRELOAD));
 
   
   // -------------------------------------------------------
