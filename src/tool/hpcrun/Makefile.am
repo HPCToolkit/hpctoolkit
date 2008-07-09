@@ -123,12 +123,12 @@ MYCLEAN = @HOST_LIBTREPOSITORY@
 # Automake rules
 #############################################################################
 
-bin_PROGRAMS            = hpcrun
-hpcrun_SOURCES          = $(MYSOURCES_HPCRUN)
-hpcrun_CFLAGS           = $(MYCFLAGS_HPCRUN)
-hpcrun_CXXFLAGS         = $(MYCXXFLAGS_HPCRUN)
-hpcrun_LDFLAGS          = $(MYLDFLAGS_HPCRUN)
-hpcrun_LDADD            = $(MYLDADD_HPCRUN)
+bin_PROGRAMS            = hpcrun-flat
+hpcrun_flat_SOURCES     = $(MYSOURCES_HPCRUN)
+hpcrun_flat_CFLAGS      = $(MYCFLAGS_HPCRUN)
+hpcrun_flat_CXXFLAGS    = $(MYCXXFLAGS_HPCRUN)
+hpcrun_flat_LDFLAGS     = $(MYLDFLAGS_HPCRUN)
+hpcrun_flat_LDADD       = $(MYLDADD_HPCRUN)
 
 # N.B.: We only care about the dynamically linked version of this
 # library.  An install-hook below ensures only intercepted symbols
