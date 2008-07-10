@@ -58,16 +58,16 @@ AUTOMAKE_OPTIONS = foreign
 MYSOURCES = \
 	index.html \
 	\
-	acknowledgments.html \
-	contact.html \
 	documentation.html \
 	examples.html \
 	overview.html \
-	overview-screenshot.html \
 	papers.html \
-	people.html \
 	software.html \
 	software-build.html \
+	\
+	info-acks.html \
+	info-contact.html \
+	info-people.html \
 	\
 	fig/index.html \
 	fig/hpctoolkit-workflow.png \
