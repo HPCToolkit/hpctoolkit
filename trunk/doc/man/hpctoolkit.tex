@@ -30,7 +30,7 @@
 \rcsInfo $Id$
 \setDate{\rcsInfoLongDate}
 }{
-\setDate{ 2008/06/14}
+\setDate{ 2008/07/09}
 \message{package rcsinfo not present, discard it}
 }
 
@@ -74,7 +74,7 @@ A typical node-based performance analysis session consists of:
 \begin{enumerate}
 \item \textbf{Measurement.}  
 Collect low-overhead, high-accuracy profiles using statistical sampling.
-\HTMLhref{hpcrun.html}{\Cmd{hpcrun}{1}} collects `flat' profiles (IP histograms, where IP is instruction pointer) while \Cmd{csprof}{1} collects call path profiles.
+\HTMLhref{hpcrun.html}{\Cmd{hpcrun}{1}} collects call path profiles while \HTMLhref{hpcrun-flat.html}{\Cmd{hpcrun-flat}{1}} collects `flat' profiles (IP histograms, where IP is instruction pointer).
 
 \item \textbf{Recovering static source code structure.} 
 \HTMLhref{hpcstruct.html}{\Cmd{hpcstruct}{1}} recovers static program structure such as procedures and loop nests.
@@ -84,10 +84,10 @@ Technically, this is an optional step, but critical information is lost without 
 \item \textbf{Correlating dynamic profiles with static source code structure.} 
 \textbf{HPCToolkit}'s correlation tool combines dynamic profile information with \HTMLhref{hpcstruct.html}{\Cmd{hpcstruct}{1}}'s static program structure to correlate costs of the optimized object code to useful source code constructs such as loop nests.
 The result of correlation is called an Experiment database.
-Currently, \HTMLhref{hpcprof-flat.html}{\Cmd{hpcprof-flat}{1}} is used for flat profiles and \HTMLhref{hpcprof.html}{\Cmd{hpcprof}{1}} for call stack profiles.
+Currently, \HTMLhref{hpcprof.html}{\Cmd{hpcprof}{1}} is used for call stack profiles and \HTMLhref{hpcprof-flat.html}{\Cmd{hpcprof-flat}{1}} is used for flat profiles.
 
 \item \textbf{Top-down visualization}
-\Prog{hpcviewer} is a Java-based top-down viewer for flat and call stack profiles.
+\HTMLhref{hpcviewer.html}{\Cmd{hpcviewer}{1}} is a Rich Client Platform-based tool for presenting the resulting Experiment databases.
 An important feature of the Experiment database is that it is relocatable, containing profile information and copies of application source files.
 This means that the first three steps can be performed remotely on a cluster and then the database can be viewed locally on a laptop or workstation.
 \end{enumerate}
@@ -96,7 +96,7 @@ This means that the first three steps can be performed remotely on a cluster and
 
 \begin{enumerate}
 \item \textbf{Measurement.}  
-Collect low-overhead, high-accuracy `flat' profiles using statistical sampling (\HTMLhref{hpcrun.html}{\Cmd{hpcrun}{1}}).
+Collect low-overhead, high-accuracy `flat' profiles using statistical sampling (\HTMLhref{hpcrun-flat.html}{\Cmd{hpcrun-flat}{1}}).
 
 \item \textbf{Recovering static source code structure.} 
 \HTMLhref{hpcstruct.html}{\Cmd{hpcstruct}{1}} is used for the same purpose described above.
@@ -114,13 +114,15 @@ Collect low-overhead, high-accuracy `flat' profiles using statistical sampling (
 Assume we have an application called \emph{zoo} whose source code is located in in \File{path-to-zoo}.
 
 \begin{enumerate}
-\item \textbf{Measure}.  Profile with \HTMLhref{hpcrun.html}{\Cmd{hpcrun}{1}}.  Assume we wish to use two different sets of events and that the results are placed in \File{profile-file-1} and \File{profile-file-2}.
+\item \textbf{Measure}.
+Profile with \HTMLhref{hpcrun.html}{\Cmd{hpcrun}{1}}.  Assume we wish to use two different sets of events and that the results are placed in \File{profile-file-1} and \File{profile-file-2}.
 \begin{verbatim}
   hpcrun <event-set-1> zoo
   hpcrun <event-set-2> zoo
 \end{verbatim}
 
-\item \textbf{Recover static source code structure}. Use \HTMLhref{hpcstruct.html}{\Cmd{hpcstruct}{1}} to recover program structure.
+\item \textbf{Recover static source code structure}. 
+Use \HTMLhref{hpcstruct.html}{\Cmd{hpcstruct}{1}} to recover program structure.
 \begin{verbatim}
   hpcstruct zoo > zoo.psxml
 \end{verbatim}
@@ -202,9 +204,10 @@ Visualize the Experiment database using \HTMLhref{hpcviewer.html}{\Cmd{hpcviewer
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{See Also}
 
-\HTMLhref{hpcrun.html}{\Cmd{hpcrun}{1}}, \Cmd{csprof}{1} \\
+\HTMLhref{hpcrun.html}{\Cmd{hpcrun}{1}}, \HTMLhref{hpcrun-flat.html}{\Cmd{hpcrun-flat}{1}} \\
 \HTMLhref{hpcstruct.html}{\Cmd{hpcstruct}{1}} \\
-\HTMLhref{hpcprof-flat.html}{\Cmd{hpcprof-flat}{1}}, \HTMLhref{hpcprof.html}{\Cmd{hpcprof}{1}}, \HTMLhref{hpcproftt.html}{\Cmd{hpcproftt}{1}} \\ %\Cmd{xprof}{1} 
+\HTMLhref{hpcprof.html}{\Cmd{hpcprof}{1}}, \HTMLhref{hpcprof-flat.html}{\Cmd{hpcprof-flat}{1}}, \HTMLhref{hpcproftt.html}{\Cmd{hpcproftt}{1}} \\
+%\Cmd{xprof}{1} 
 \HTMLhref{hpcviewer.html}{\Cmd{hpcviewer}{1}}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -216,7 +219,7 @@ Version: \Version\ of \Date.
 \section{License and Copyright}
 
 \begin{description}
-\item[Copyright] \copyright\ 2002-2007, Rice University.
+\item[Copyright] \copyright\ 2002-2008, Rice University.
 \item[License] See \File{README.License}.
 \end{description}
 

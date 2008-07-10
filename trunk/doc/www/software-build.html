@@ -12,21 +12,18 @@
 
   <title>HPCToolkit: Downloading, Building and Installing</title>
 
-  <link rel='stylesheet' type='text/css' href='styleForAll.css'>
+  <link rel='stylesheet' type='text/css' href='style/styles.css'>
 </head>
 
 <body>
 
 <!-- ********************************************************************** -->
 
-<script language="JavaScript" src="header_hpctoolkit.js"></script>
+<script language="JavaScript" src="style/header-hpctoolkit.js"></script>
 
 <!-- ********************************************************************** -->
 
 <div id="main">
-
-<!-- automatically updated by Emacs hook below; nicer than CVS Date -->
-<p class="lastupdated">Last Updated: 2008-06-02</p>
 
 <a name="toc"></a>
 <h1>Downloading, Building and Installing HPCToolkit</h1>
@@ -38,8 +35,6 @@
   <li><a href="#sources">Downloading the Sources</a>
 
   <li><a href="#building_installing">Building and Installing</a>
-
-  <li><a href="#using">Using</a>  
 </ul>
 
 
@@ -60,31 +55,32 @@ to distribute it in source form only.
 
 <li>
 <p>HPCToolkit requires an ANSI/ISO C/C++ compliant compiler.
-Generally speaking any relatively recent vendor compiler or GCC 3.x
-and 4.x should be fine.  The toolkit uses GNU binutils which requires
-a C compiler that also supports a few GNU extensions; obviously, GCC
-may be used.
+Generally speaking any recent GCC (4.x, 3.3+) should be fine.
+Some vendor compilers that support GNU extensions also work.
+(GNU binutils employs GNU extensions.)
     
   <ul class="noindent">
 
-
-    <li>Linux-x86
+    <li>Linux-x86_64 (x86):
       <ul class="noindent">
-        <li>Intel C++/C 8.x, 9.x
-        <li>GCC C++/C 3.x, 4.x
+        <li>GCC C++/C 4.x, 3.4
+        <li>Intel C++/C 10.x, 9.x
       </ul>
 
     <li>Linux-ia64:
       <ul class="noindent">
-        <li>Intel C++/C 8.x, 9.x
-        <li>GCC C++/C 3.x, 4.x
+        <li>GCC C++/C 4.x, 3.4
+        <li>Intel C++/C 9.x
       </ul>
 
-    <li>Linux-x86_64:
+    <li>Linux-MIPS:
       <ul class="noindent">
-        <li>Intel C++/C 9.x, 10.x
-        <li>GCC C++/C 3.x, 4.x
-        <li>Compiler bug: PGI 6.0.2, 6.1.2 (internal compiler error)
+        <li>GCC C++/C 4.x
+      </ul>
+
+    <li>Linux-POWER:
+      <ul class="noindent">
+        <li>GCC C++/C 4.x
       </ul>
     
     <!--
@@ -101,21 +97,14 @@ may be used.
 
 
 <li>
-<p><a href="hpcrun.html" class="hpctool">hpcrun</a>, a tool for
-collecting performance data on Linux, requires an installation
-of <a href="http://icl.cs.utk.edu/projects/papi/">PAPI</a> 3.0 or greater.
-To learn more about installing PAPI on your system consult our 
-<a href="hwctools.html#papi">PAPI notes</a>.
+<p><span class="hpctool">hpcrun</span>, a tool for collecting performance data on Linux, requires an installation of <a href="http://icl.cs.utk.edu/projects/papi/">PAPI</a> 3.0 or greater.
+To learn more about installing PAPI on your system consult our <a href="hwctools.html#papi">PAPI notes</a>.
 
 <li>
-<p><a href="hpcviewer.html" class="hpctool">hpcviewer</a> is a Rich Client
-application that can be used on a variety of platforms.  It needs
-a Java 1.5 runtime environment (JRE) and gtk (on Linux).
+<p><span class="hpctool">hpcviewer</span> is a Rich Client application that can be used on a variety of platforms.  It needs a Java 1.5 runtime environment (JRE) and gtk (on Linux).
 
 <li>
-<p>HPCToolkit requires a basic version of GNU make, not a vendor
-supplied make.  We have successfully used versions 3.70, 3.76, 3.77, 
-3.78, 3.79 3.80.
+<p>HPCToolkit requires a basic version of GNU make, not a vendor supplied make.  We have successfully used versions 3.70, 3.76, 3.77, 3.78, 3.79 3.80.
 
 <!--
 <li>
@@ -140,18 +129,18 @@ succssfully used versions 5.6.x, 5.8.x.
 <li>
 <p><a href="software.html">Download</a> a HPCToolkit one-stop-shopping tarball and untar it:
 <div class="indent">
-  <code>gunzip hpctoolkit-one-stop-shopping-x.y.z.tar.gz</code><br>
-  <code>tar xvf hpctoolkit-one-stop-shopping-x.y.z.tar</code><br>
+  <code>tar zxvf hpctoolkit-one-stop-shopping-x.y.z.tar</code><br>
 </div>
+
+<li>
+<p><a href="software.html">Download</a> a <span class="hpctool">hpcviewer</span> build.
 
 </ol>
 
 
-<p>(Note: The one-stop-shopping tarball contains sevearl external
-libraries, e.g. OpenAnalysis, Xerces-C++ and GNU binutils. In some cases
-it may be possible to use versions of these libraries that are already
-installed on your system.  However, we do not support such
-configurations.)</p>
+<p>(Note: The one-stop-shopping tarball contains several external libraries, e.g., OpenAnalysis, Xerces-C++ and GNU binutils.
+In some cases it may be possible to use versions of these libraries that are already installed on your system.
+However, we do not support such configurations.)</p>
 
 
 <!-- ********************************************************************** -->
@@ -162,21 +151,11 @@ configurations.)</p>
 <h2>Building and Installing</h2>
 <p><i>[<a href="#toc">Contents</a>]</i>
 
-<p>The easiest way to build HPCToolkit is to use
-<code>Makefile.quick</code>.  If you want to build HPCToolkit's
-<a href="hpcrun.html" class="hpctool">hpcrun</a>, you will need to use
-the <code>PAPI</code> option.  For a brief description, list of
-supported options and the default installation path, execute the
-following.
-
+<p>The easiest way to build HPCToolkit is to use <code>Makefile.quick</code>, which is simply a wrapper for running <code>configure ; make ; make install</code>.
+If you want to build HPCToolkit's <span class=hpctool>hpcrun</span>, you will need to use the <code>PAPI</code> option.  For a brief description, list of supported options and the default installation path, execute the following.
 <div class="indent">
   <code>make -f Makefile.quick help</code><br>
 </div>
-
-<p>As a special exception, 
-<a href="hpcviewer.html" class="hpctool">hpcviewer</a> may be used 
-<i>without performing the steps below</i>.  This is useful in a
-non-Un*x environment (e.g. Windows without Cygwin).
 
 <ol class="noindent">
 
@@ -223,41 +202,11 @@ the GNU compiler:
 Because the installation is compact and self-contained, you may rename
 or move it to another location.  All source code may be removed.
 
-<!-- end: Building -->
+<p class="lastupdated">Page last updated: 2008/07/09</p>
 
 <!-- ********************************************************************** -->
-<!-- ********************************************************************** -->
 
-<a name="using"></a>
-
-<h2>Using</h2>
-<p><i>[<a href="#toc">Contents</a>]</i>
-
-<p>You may use the resulting installation as-is. However, you may wish
-to add the <code>bin</code> subdirectory to your <code>PATH</code>.
-One way to do this is to set the <code>HPCTOOLKIT</code> environment
-variable to the root of your installation and then use our 'Sourceme'
-script.  For example:
-<div class="indent">
-  <i>(csh variants)</i><br>
-  <code>setenv HPCTOOLKIT "/my_path/HPCToolkit"</code><br>
-  <code>source $HPCTOOLKIT/Sourceme-csh</code>
-<br><br>
-  <i>(sh variants)</i><br>
-  <code>export HPCTOOLKIT="/my_path/HPCToolkit"</code><br>
-  <code>source $HPCTOOLKIT/Sourceme-sh</code>
-</div>
-
-<p>As a special exception for non-Un*x environments, 
-<a href="hpcviewer.html" class="hpctool">hpcviewer</a> may be lauched via 
-the GUI.  See the <a href="hpcviewer.html">man page</a> for more information.
-
-<!-- end: Using -->
-
-<!-- ********************************************************************** -->
-<!-- ********************************************************************** -->
-
-<script language="JavaScript" src="footer_hpctoolkit.js"></script>
+<script language="JavaScript" src="style/footer-hpctoolkit.js"></script>
 
 <!-- ********************************************************************** -->
 
