@@ -30,7 +30,7 @@
 \rcsInfo $Id$
 \setDate{\rcsInfoLongDate}
 }{
-\setDate{ 2008/06/03}
+\setDate{ 2008/07/09}
 \message{package rcsinfo not present, discard it}
 }
 
@@ -191,17 +191,17 @@ Prune procedures with an event count < \Arg{n} \{1\}
 
 \begin{itemize}
 
-\item Assume we have collected flat profiling information using \HTMLhref{hpcrun.html}{\Cmd{hpcrun}{1}} \Cmd{hpcex}{1}).
+\item Assume we have collected flat profiling information using \HTMLhref{hpcrun-flat.html}{\Cmd{hpcrun-flat}{1}}).
 Let the executable and profile be named \File{poissonSolve} and \File{poissonSolve.PAPI_L2_DCM-etc...}, respectively.
-Assume further that we wish to correlate the profile with source lines.
+Assume further that we wish to correlate derived summary metrics (Mean, RStdDev, Min, Max) with source code and generate summary tables.
 To do this, execute:
 \begin{verbatim}
-    hpcproftt -l poissonSolve sweep3dsingle poissonSolve.PAPI_L2_DCM-etc...
+    hpcproftt --src --metric=sum-only poissonSolve.hpcrun*
 \end{verbatim}
 
 \item Using the same example as above, assume we wish to correlate the profile with object code.  Execute the following command:
 \begin{verbatim}
-    hpcproftt -o poissonSolve sweep3dsingle poissonSolve.PAPI_L2_DCM-etc...
+    hpcproftt --obj poissonSolve.hpcrun*
 \end{verbatim}
 
 \end{itemize}
@@ -223,7 +223,7 @@ Version: \Version\ of \Date.
 \section{License and Copyright}
 
 \begin{description}
-\item[Copyright] \copyright\ 2002-2007, Rice University.
+\item[Copyright] \copyright\ 2002-2008, Rice University.
 \item[License] See \File{README.License}.
 \end{description}
 
