@@ -72,12 +72,12 @@ The workflow is organized around four principal capabilities:
 </ul>
 
 <p>First, one compiles and links one's application for a production run, using <i>full</i> optimization.
-Second, one launches an application with HPCToolkit's measurement tool, which uses statistical sampling to collect a performance profile.
-Third, one invokes HPCToolkit's tool for analyzing the application binary to recover information about files, functions, loops, and inlined code.
+Second, one launches an application with HPCToolkit's measurement tool, <span class=hpctool>hpcrun</span>, which uses statistical sampling to collect a performance profile.
+Third, one invokes <span class=hpctool>hpcstruct</span>, a tool for analyzing the application binary to recover information about files, functions, loops, and inlined code.
 (For the most detailed attribution of application performance data using HPCToolkit, one should ensure that the compiler includes line map information in the object code it generates.
 Since compilers often provide line map  information for fully-optimized code, this requirement need not require a special build process.)
-Fourth, one combines information about an application's structure with dynamic performance measurements to produce a performance database.
-Finally, one explores a performance database with an interactive viewer.
+Fourth, one uses <span class=hpctool>hpcprof</span> to combine information about an application's structure with dynamic performance measurements to produce a performance database.
+Finally, one explores a performance database with an interactive viewer called <span class=hpctool>hpcviewer</span>.
 
 </td>
 
@@ -90,24 +90,28 @@ Finally, one explores a performance database with an interactive viewer.
 
 
 <h3>Measurement</h3>
-<p>HPCToolkit uses event-based sampling to measure and analyze program performance.
+<p><span class=hpctool>hpcrun</span> uses event-based sampling to measure and analyze program performance.
 Sample events correspond to periodic interrupts induced by an interval timer or overflow of hardware performance counters measuring events such as cycles, instructions executed, cache misses, and memory bus transactions.
-During an interrupt, HPCToolkit's call path profiler attributes samples to calling contexts.
-To accurately measure code from "black box" vendor compilers, HPCToolkit uses on-the-fly binary analysis to enable stack-unwinding of fully optimized code <i>without compiler support</i>, even code that lacks frame pointers and uses optimizations such as tail calls.
-The call path profiler will store sample counts and their associated calling contexts in a <i>calling context tree</i> (CCT).
+During an interrupt, <span class=hpctool>hpcrun</span> attributes samples to calling contexts to form <i>call path profiles</i>.
+To accurately measure code from "black box" vendor compilers, <span class=hpctool>hpcrun</span> uses on-the-fly binary analysis to enable stack-unwinding of fully optimized code <i>without compiler support</i>, even code that lacks frame pointers and uses optimizations such as tail calls.
+<span class=hpctool>hpcrun</span> stores sample counts and their associated calling contexts in a <i>calling context tree</i> (CCT).
 </p>
 
-<h3>Analysis and Correlation.</h3>
-<p>To put measurements to use, HPCToolkit correlates them with source code abstractions.
+<h3>Analysis and Correlation</h3>
+<p>To put measurements to use, HPCToolkit's correlation tool, <span class=hpctool>hpcprof</span>, correlates them with source code abstractions.
 To associate sample-based performance measurements of fully optimized binaries with source code structure, HPCToolkit uses binary analysis to recover information about procedures, loop nests, and inlined code.
-For each procedure in the executable, the binary analyzer parses its machine code, identify branch instructions, build a control flow graph, and then uses interval analysis to identify loop nests within the control flow.
-The binary analyzer then combines this information with line map information that is routinely recorded by vendor compilers in a way that enables it to associate samples associated with machine instructions to procedures and loops, even in the presence of optimizations such as inlining and loop transformations such as fusion, and compiler-generated loops from scalarization of Fortran 90 array operations or array copies induced by Fortran 90's calling conventions.
+For each procedure in the executable, the <span class=hpctool>hpcstruct</span> binary analyzer parses its machine code, identify branch instructions, build a control flow graph, and then uses interval analysis to identify loop nests within the control flow.
+<span class=hpctool>hpcstruct</span> then combines this information with line map information that is routinely recorded by vendor compilers in a way that enables it to associate samples associated with machine instructions to procedures and loops, even in the presence of optimizations such as inlining and loop transformations such as fusion, and compiler-generated loops from scalarization of Fortran 90 array operations or array copies induced by Fortran 90's calling conventions.
 </p>
 
+<h3>Presentation.</h3>
+<p>HPCToolkit's visualization tool, <span class=hpctool>hpcviewer</span>, presents performance metrics correlated to program structure and mapped to source code.
+Some screen shots are shown below.
+<br><img src="fig/hpcviewer-annotated-screenshot.jpg" alt="hpcviewer screenshot">
 
 <!-- ********************************************************************** -->
 
-<p class="lastupdated">Page last updated: 2008/06/27</p>
+<p class="lastupdated">Page last updated: 2008/07/10</p>
 
 <!-- ********************************************************************** -->
 
