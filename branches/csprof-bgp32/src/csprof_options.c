@@ -47,6 +47,10 @@ csprof_options__getopts(csprof_options_t* x)
   
   NMSG(OPTIONS,"--before init of registered sample sources");
   csprof_registered_sources_init();
+#if 0 // BG/P temporarily use fixed options here
   csprof_sample_sources_from_eventlist(getenv("CSPROF_OPT_EVENT"));
+#else
+  csprof_sample_sources_from_eventlist("WALLCLOCK:5000");
+#endif
   return CSPROF_OK;
 }

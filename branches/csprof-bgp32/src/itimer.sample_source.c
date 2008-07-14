@@ -144,10 +144,15 @@ METHOD_FN(process_event_list,int lush_metrics)
   itimer.it_value.tv_sec = seconds;
   itimer.it_value.tv_usec = microseconds;
 
+#if 0 // use interval for BG/P
   /* no automatic restart */
   itimer.it_interval.tv_sec = 0;
   itimer.it_interval.tv_usec = 0;
-
+#else
+  // automatic restart, f BG/P
+  itimer.it_interval.tv_sec = seconds;
+  itimer.it_interval.tv_usec = microseconds;
+#endif
 }
 
 static void
@@ -227,15 +232,56 @@ itimer_obj_reg(void)
  * private operations 
  *****************************************************************************/
 
+#include <ucontext.h>
+
+// BG/P specific at the moment
+
+#define ADVANCE_BP(bp) *((void **)(bp))
+#define NEXT_PC(bp)    *(((void **)(bp))+1)
+
 #define ITIMER_METRIC_ID 0
 static int
 csprof_itimer_signal_handler(int sig, siginfo_t *siginfo, void *context)
 {
+#if 1 // hack for bg/p
+
+  ucontext_t ctx;
+
+  if ( ! context ) {
+    TMSG(GETCONTEXT,"NO CONTEXT!! FALLING BACK ON getcontext (IIIICK)!!");
+
+    getcontext(&ctx);
+
+    unsigned long r1 = ctx.uc_mcontext.regs->gpr[1];
+    unsigned long pc = ctx.uc_mcontext.regs->nip;
+    TMSG(GETCONTEXT,"nip fetched from ucontext = %p",(void *)pc);
+    unsigned long link = ctx.uc_mcontext.regs->link;
+
+    r1 = (long)ADVANCE_BP(r1);
+    TMSG(GETCONTEXT,"(adv) pc fetched from context = %p",(void *)pc);
+    // TMSG(GETCONTEXT,"link fetched from context = %p",(void *)link);
+    // EMSG("------------------------");
+
+    for(int i=0; i < 3;i++){
+      TMSG(GETCONTEXT,"next pc from frame = %p",NEXT_PC(r1));
+      EMSG("------------------------");
+      r1 = (long)ADVANCE_BP(r1);
+    }
+    ctx.uc_mcontext.regs->nip = (unsigned long) NEXT_PC(r1);
+    ctx.uc_mcontext.regs->gpr[1] = r1;
+    context = &ctx;
+  }
+  else {
+    TMSG(GETCONTEXT,"context NOT empty");
+  }
+#endif // bg/p hack
   if (!csprof_handling_synchronous_sample_p()) {
     TMSG(ITIMER_HANDLER,"Itimer sample event");
     csprof_sample_event(context, ITIMER_METRIC_ID, 1 /*sample_count*/);
   }
+#if 0 // use interval, since BG/P doesn't work without it
   METHOD_CALL(&_itimer_obj,start);
+#endif
 
   return 0; /* tell monitor that the signal has been handled */
 }

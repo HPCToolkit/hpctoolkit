@@ -62,8 +62,10 @@ csprof_sample_callstack(csprof_state_t *state, ucontext_t* context,
 
   csprof_state_verify_backtrace_invariants(state);
 
+  char *s = context ? "context NOT null" : "context IS null";
+  // TMSG(GETCONTEXT,s);
   unw_init_cursor(context, &frame);
-  MSG(1,"back from cursor init: pc = %p, bp = %p\n",frame.pc,frame.bp);
+  TMSG(GETCONTEXT,"back from cursor init: pc = %p, bp = %p",frame.pc,frame.bp);
 
   csprof_cct_node_t* n;
   n = csprof_sample_callstack_from_frame(state, metric_id,

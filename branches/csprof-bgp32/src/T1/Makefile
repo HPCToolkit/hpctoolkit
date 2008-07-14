@@ -1,16 +1,7 @@
-CC     := gcc -std=gnu99
-CXX    := g++
+-include conf.mk
 
-CFLAGS += -g -I..
-ifdef static
-   LCC  := $(HOME)/csprof-install/bin/csprof-link gcc -static
-   LCXX := $(HOME)/csprof-install/bin/csprof-link g++  -static
-else
-   LCC := gcc
-   LCXX := g++
-endif
 tmpi: tmpi.c
-	mpicc $< -lm -o $@
+	$(mpicc) $< -lm -o $@
 
 t1: t1.o
 	$(LCC) -g $< -lm -o $@
@@ -58,3 +49,8 @@ vpath %.c ..
 
 %.E : %.c
 	$(CC) -I.. -E $< > $@
+
+.PHONY:T
+T:
+	# cc = $(CC)
+	# lcc = $(LCC)

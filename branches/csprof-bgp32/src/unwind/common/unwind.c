@@ -6,6 +6,12 @@
 
 #include <stdio.h>
 #include <setjmp.h>
+#include <ucontext.h>
+
+// BG/P specific at the moment
+
+#define ADVANCE_BP(bp) *((void **)(bp))
+#define NEXT_PC(bp)    *(((void **)(bp))+1)
 
 // for getpid
 #include <sys/types.h>
@@ -52,9 +58,7 @@ static int DEBUG_NO_LONGJMP = 0;
 
 static void update_cursor_with_troll(unw_cursor_t *cursor);
 
-#if 0
 static int csprof_check_fence(void *ip);
-#endif
 
 
 /****************************************************************************************
@@ -76,9 +80,37 @@ unw_init_cursor(void* context, unw_cursor_t *cursor)
 
   // TMSG(UNW_INIT,"init prim unw called with context = %p, cursor_p = %p\n",context, cursor);
 
-  cursor->pc = context_pc(context);
-  cursor->bp = context_bp(context);
-  cursor->sp = context_sp(context);
+  if ( ! context ) {
+    TMSG(UNW_INIT,"NO CONTEXT!! FALLING BACK ON getcontext (IIIICK)!!");
+
+    ucontext_t ctx;
+    getcontext(&ctx);
+
+    unsigned long r1 = ctx.uc_mcontext.regs->gpr[1];
+    unsigned long pc = ctx.uc_mcontext.regs->nip;
+    TMSG(GETCONTEXT,"nip fetched from ucontext = %p",(void *)pc);
+    unsigned long link = ctx.uc_mcontext.regs->link;
+
+    r1 = (long)ADVANCE_BP(r1);
+    TMSG(GETCONTEXT,"(adv) pc fetched from context = %p",(void *)pc);
+    // TMSG(GETCONTEXT,"link fetched from context = %p",(void *)link);
+    // EMSG("------------------------");
+
+    for(int i=0; i < 2;i++){
+      TMSG(GETCONTEXT,"next pc from frame = %p",NEXT_PC(r1));
+      EMSG("------------------------");
+      r1 = (long)ADVANCE_BP(r1);
+    }
+    cursor->pc = NEXT_PC(r1);
+    cursor->bp = r1;
+    cursor->sp = r1;
+  }
+  else {
+    TMSG(UNW_INIT,"context NOT null");
+    cursor->pc = context_pc(context);
+    cursor->bp = context_bp(context);
+    cursor->sp = context_sp(context);
+  }
 
   TMSG(UNW_INIT,"frame pc = %p, frame bp = %p, frame sp = %p", 
        cursor->pc, cursor->bp, cursor->sp);

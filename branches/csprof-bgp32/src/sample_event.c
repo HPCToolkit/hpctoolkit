@@ -1,7 +1,6 @@
 // -*-Mode: C++;-*- // technically C99
 // $Id: sample_event.c 1474 2008-06-23 15:13:35Z johnmc $
 
-
 //*************************** User Include Files ****************************
 
 #include "dump_backtraces.h"
@@ -40,13 +39,22 @@ int filtered_samples = 0; // global variable to count filtered samples
 csprof_cct_node_t*
 csprof_sample_event(void *context, int metric_id, size_t sample_count)
 {
-  PMSG(SAMPLE,"Handling sample");
+  TMSG(SAMPLE,"Handling sample");
 
   thread_data_t *td = csprof_get_thread_data();
   sigjmp_buf_t *it = &(td->bad_unwind);
 
   samples_taken++;
 
+#if 0 // just to check on getting itimer samples
+
+#include <stdlib.h>
+
+  if (samples_taken > 5) {
+    _exit(0);
+  }
+  // return;
+#endif
   csprof_set_handling_sample(td);
 
   csprof_cct_node_t* node = NULL;
@@ -94,6 +102,7 @@ static csprof_cct_node_t*
 csprof_take_profile_sample(csprof_state_t *state, void *context,
 			   int metric_id, size_t sample_count)
 {
+  
   void *pc = context_pc(context);
 
   PMSG(SAMPLE,"csprof take profile sample");

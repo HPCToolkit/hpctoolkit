@@ -22,3 +22,7 @@ rc()
 {
     rm -rf *.csp *.csl experiment*
 }
+clo()
+{
+    rm -rf *.error *.output
+}

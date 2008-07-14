@@ -132,7 +132,11 @@ pmsg_init()
     dbg_flags[defaults[i]] = 1;
   }
 
+#if 0 // no env vars for BG/P
   char *s = getenv("CSPROF_DD");
+#else
+  char *s = "SAMPLE UNW_INIT GETCONTEXT";
+#endif
   if(s){
     csprof_dbg_init(s);
   }
