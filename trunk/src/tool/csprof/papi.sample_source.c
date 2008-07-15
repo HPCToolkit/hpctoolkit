@@ -190,7 +190,7 @@ METHOD_FN(process_event_list, int lush_metrics)
     TMSG(PAPI,"checking event spec = %s",event);
     extract_and_check_event(event,&evcode,&thresh);
     
-    if (strncmp(event, "PAPI_TOT_CYC", 12) == 0) {
+    if (lush_metrics == 1 && strncmp(event, "PAPI_TOT_CYC", 12) == 0) {
       num_lush_metrics++; // LUSH
     }
 
