@@ -7,12 +7,11 @@
 //***************************************************************************
 //
 #include <pthread.h>
+#include <unistd.h>
 
 #ifdef LINUX
 #include <linux/unistd.h>
 #endif
-
-
 
 //***************************************************************************
 // local include files 
@@ -66,6 +65,25 @@ monitor_init_process(int *argc, char **argv, void *data)
     while(DEBUGGER_WAIT);
   }
 
+  // BG/P only for now --- figure out rest later
+#if 1
+# define OK 0 // std unix nothing wrong code
+
+  static char csprof_opt_event[256];
+  static char setenv_str[512];
+  static char env_file_name[] = "./.hpcrun-param";
+  static FILE *fp;
+
+  if ((access(env_file_name,R_OK) == OK) && (fp = fopen(env_file_name,"r"))){
+    fscanf(fp,"%s",csprof_opt_event);
+    sprintf(setenv_str,"CSPROF_OPT_EVENT=%s",csprof_opt_event);
+    putenv(setenv_str);
+    fclose(fp);
+  }
+  else {
+    putenv("CSPROF_OPT_EVENT=WALLCLOCK:5000");
+  }
+#endif
   files_set_directory();
   files_set_executable(process_name);
 

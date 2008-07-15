@@ -4,6 +4,7 @@
 platform := bgp
 static   := 1
 base     := compute
+#base     := head
 
 -include $(platform).mk
 
