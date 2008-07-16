@@ -254,19 +254,33 @@ csprof_itimer_signal_handler(int sig, siginfo_t *siginfo, void *context)
 
     unsigned long r1 = ctx.uc_mcontext.regs->gpr[1];
     unsigned long pc = ctx.uc_mcontext.regs->nip;
-    TMSG(GETCONTEXT,"nip fetched from ucontext = %p",(void *)pc);
+    TMSG(GETCONTEXT,"fetch from getcontext: r1 = %p,pc = %p",(void *)r1,(void *)pc);
     unsigned long link = ctx.uc_mcontext.regs->link;
 
-    r1 = (long)ADVANCE_BP(r1);
-    TMSG(GETCONTEXT,"(adv) pc fetched from context = %p",(void *)pc);
+    // TMSG(GETCONTEXT,"(adv) pc fetched from context = %p",(void *)pc);
     // TMSG(GETCONTEXT,"link fetched from context = %p",(void *)link);
     // EMSG("------------------------");
 
-    for(int i=0; i < 3;i++){
-      TMSG(GETCONTEXT,"next pc from frame = %p",NEXT_PC(r1));
-      EMSG("------------------------");
+    for(int i=1; i <= 2;i++){
       r1 = (long)ADVANCE_BP(r1);
+      TMSG(GETCONTEXT,"i = %d: (bp = %p) next pc from frame = %p",i,r1,NEXT_PC(r1));
+      PMSG(GETCONTEXT,"------------------------");
+      // r1 = (long)ADVANCE_BP(r1);
     }
+    void **tramp = (void **)NEXT_PC(r1);
+    TMSG(GETCONTEXT,"tramp location = %p",tramp);
+    TMSG(GETCONTEXT,"prior word before tramp on stack = %d",*((long *)tramp - 1));
+    PMSG(GETCONTEXT,"========================================");
+    void **sp = tramp - 1;
+    for (int i = 0;i < 128;i++,sp--){
+      TMSG(GETCONTEXT,"stack[%d][%p] = %p",i,sp,*sp);
+    }
+    char *reg_save = (char *)tramp - 4 - 784; // FIXME: magic numbers
+    void *good_ip = *((void **)(reg_save + 648));
+    TMSG(GETCONTEXT,"\nreg save address = %p, ip [%p] = %p",reg_save,reg_save + 648,good_ip);
+    TMSG(GETCONTEXT,"(hopefully good ip = %p",good_ip);
+    PMSG(GETCONTEXT,"========================================");
+
     ctx.uc_mcontext.regs->nip = (unsigned long) NEXT_PC(r1);
     ctx.uc_mcontext.regs->gpr[1] = r1;
     context = &ctx;

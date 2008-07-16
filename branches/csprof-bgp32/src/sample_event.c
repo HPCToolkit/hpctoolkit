@@ -46,14 +46,14 @@ csprof_sample_event(void *context, int metric_id, size_t sample_count)
 
   samples_taken++;
 
-#if 0 // just to check on getting itimer samples
+#if 1 // just to check on getting itimer samples
 
 #include <stdlib.h>
 
-  if (samples_taken > 5) {
+  if (samples_taken >= 5) {
     _exit(0);
   }
-  // return;
+  return;
 #endif
   csprof_set_handling_sample(td);
 

@@ -22,7 +22,7 @@ clean:
                rm $$f; \
             fi; \
          done
-	@rm -rf *.o *.E *~ *.so *.nm.c *.nm.so
+	@rm -rf *.o *.E *~ *.so *.nm.c *.nm.so *.nm *.output *.error
 
 .PHONY: showclean
 showclean: 
@@ -49,6 +49,9 @@ vpath %.c ..
 
 %.E : %.c
 	$(CC) -I.. -E $< > $@
+
+%.nm: %
+	nm -v $< > $@
 
 .PHONY:T
 T:
