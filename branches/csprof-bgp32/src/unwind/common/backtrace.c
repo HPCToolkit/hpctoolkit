@@ -145,11 +145,16 @@ csprof_sample_callstack_from_frame(csprof_state_t *state, int metric_id,
   
   IF_NOT_DISABLED(SAMPLE_FILTERING){
     if (csprof_sample_filter(unw_len,state->btbuf,state->unwind - 1)){
+#if 0
       TMSG(SAMPLE_FILTER,"filter sample of length %d",unw_len);
       csprof_frame_t *fr = state->btbuf;
       for (int i = 0; i < unw_len; i++,fr++){
 	TMSG(SAMPLE_FILTER,"  frame ip[%d] = %p",i,fr->ip);
       }
+#else
+      EMSG("filter sample of length %d shown below", unw_len);
+#endif
+      dump_backtraces(state, state->unwind);
       filtered_samples++;
       return 0;
     }

@@ -135,7 +135,7 @@ pmsg_init()
 #if 0 // no env vars for BG/P
   char *s = getenv("CSPROF_DD");
 #else
-  char *s = "SAMPLE_FILTER GETCONTEXT";
+  char *s = "";
 #endif
   if(s){
     csprof_dbg_init(s);

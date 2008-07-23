@@ -56,9 +56,16 @@
 /******************************************************************************
  * forward declarations 
  *****************************************************************************/
+#ifdef __ppc64__ 
+#define BLUE_GENE_P_COMPUTE 1
+#endif
 
-static int
-csprof_itimer_signal_handler(int sig, siginfo_t *siginfo, void *context);
+#ifdef BLUE_GENE_P_COMPUTE
+static int csprof_itimer_signal_handler_bgp(int sig, siginfo_t *siginfo, 
+	void *context, void *bgp_pc);
+#endif
+
+static int csprof_itimer_signal_handler(int sig, siginfo_t *siginfo, void *context);
 
 
 
@@ -182,7 +189,12 @@ METHOD_FN(gen_event_set,int lush_metrics)
   thread_data_t *td = csprof_get_thread_data();
   td->eventSet[self->evset_idx] = 0xDEAD; // Event sets not relevant for itimer
 
+#ifdef BLUE_GENE_P_COMPUTE
+  monitor_sigaction(CSPROF_PROFILE_SIGNAL, (monitor_sighandler_t*) 
+	&csprof_itimer_signal_handler_bgp, 0, NULL);
+#else
   monitor_sigaction(CSPROF_PROFILE_SIGNAL, &csprof_itimer_signal_handler, 0, NULL);
+#endif
 }
 
 /***************************************************************************
@@ -240,61 +252,55 @@ itimer_obj_reg(void)
 #define NEXT_PC(bp)    *(((void **)(bp))+1)
 
 #define ITIMER_METRIC_ID 0
-static int
-csprof_itimer_signal_handler(int sig, siginfo_t *siginfo, void *context)
-{
-#if 1 // hack for bg/p
 
+static int
+csprof_itimer_signal_handler_bgp(int sig, siginfo_t *siginfo, void *context, 
+	void *bgp_pc)
+{
   ucontext_t ctx;
 
   if ( ! context ) {
-    TMSG(GETCONTEXT,"NO CONTEXT!! FALLING BACK ON getcontext (IIIICK)!!");
-
     getcontext(&ctx);
+
+    TMSG(GETCONTEXT, "value of arg 4 = %p", bgp_pc);
 
     unsigned long r1 = ctx.uc_mcontext.regs->gpr[1];
     unsigned long pc = ctx.uc_mcontext.regs->nip;
+
     TMSG(GETCONTEXT,"fetch from getcontext: r1 = %p,pc = %p",(void *)r1,(void *)pc);
+
     unsigned long link = ctx.uc_mcontext.regs->link;
 
-    // TMSG(GETCONTEXT,"(adv) pc fetched from context = %p",(void *)pc);
-    // TMSG(GETCONTEXT,"link fetched from context = %p",(void *)link);
-    // EMSG("------------------------");
-
-    for(int i=1; i <= 2;i++){
+    for(int i=1; i <= 4;i++){
       r1 = (long)ADVANCE_BP(r1);
       TMSG(GETCONTEXT,"i = %d: (bp = %p) next pc from frame = %p",i,r1,NEXT_PC(r1));
-      PMSG(GETCONTEXT,"------------------------");
-      // r1 = (long)ADVANCE_BP(r1);
     }
-    void **tramp = (void **)NEXT_PC(r1);
-    TMSG(GETCONTEXT,"tramp location = %p",tramp);
-    TMSG(GETCONTEXT,"prior word before tramp on stack = %d",*((long *)tramp - 1));
-    PMSG(GETCONTEXT,"========================================");
-    void **sp = tramp - 1;
-    for (int i = 0;i < 128;i++,sp--){
-      TMSG(GETCONTEXT,"stack[%d][%p] = %p",i,sp,*sp);
-    }
-    char *reg_save = (char *)tramp - 4 - 784; // FIXME: magic numbers
-    void *good_ip = *((void **)(reg_save + 648));
-    TMSG(GETCONTEXT,"\nreg save address = %p, ip [%p] = %p",reg_save,reg_save + 648,good_ip);
-    TMSG(GETCONTEXT,"(hopefully good ip = %p",good_ip);
-    PMSG(GETCONTEXT,"========================================");
-
-    ctx.uc_mcontext.regs->nip = (unsigned long) NEXT_PC(r1);
+    ctx.uc_mcontext.regs->nip = (long) bgp_pc;
     ctx.uc_mcontext.regs->gpr[1] = r1;
+    TMSG(GETCONTEXT,"resulting ucontext: r1 = %p, nip = %p",r1,bgp_pc);
     context = &ctx;
   }
-  else {
-    TMSG(GETCONTEXT,"context NOT empty");
-  }
-#endif // bg/p hack
+  return csprof_itimer_signal_handler(sig, siginfo, context);
+}
+
+static int
+csprof_itimer_signal_handler(int sig, siginfo_t *siginfo, void *context)
+{
+#if DEBUG_FEW
+  static int ninterrupts = 0;
+#endif
+
   if (!csprof_handling_synchronous_sample_p()) {
     TMSG(ITIMER_HANDLER,"Itimer sample event");
     csprof_sample_event(context, ITIMER_METRIC_ID, 1 /*sample_count*/);
   }
+
 #if 0 // use interval, since BG/P doesn't work without it
   METHOD_CALL(&_itimer_obj,start);
+#endif
+
+#if DEBUG_FEW
+ if (++ninterrupts > 4) exit(1);
 #endif
 
   return 0; /* tell monitor that the signal has been handled */

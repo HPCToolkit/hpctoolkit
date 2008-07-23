@@ -77,40 +77,9 @@ unw_init(void)
 void 
 unw_init_cursor(void* context, unw_cursor_t *cursor)
 {
-
-  // TMSG(UNW_INIT,"init prim unw called with context = %p, cursor_p = %p\n",context, cursor);
-
-  if ( ! context ) {
-    TMSG(UNW_INIT,"NO CONTEXT!! FALLING BACK ON getcontext (IIIICK)!!");
-
-    ucontext_t ctx;
-    getcontext(&ctx);
-
-    unsigned long r1 = ctx.uc_mcontext.regs->gpr[1];
-    unsigned long pc = ctx.uc_mcontext.regs->nip;
-    TMSG(GETCONTEXT,"nip fetched from ucontext = %p",(void *)pc);
-    unsigned long link = ctx.uc_mcontext.regs->link;
-
-    r1 = (long)ADVANCE_BP(r1);
-    TMSG(GETCONTEXT,"(adv) pc fetched from context = %p",(void *)pc);
-    // TMSG(GETCONTEXT,"link fetched from context = %p",(void *)link);
-    // EMSG("------------------------");
-
-    for(int i=0; i < 2;i++){
-      TMSG(GETCONTEXT,"next pc from frame = %p",NEXT_PC(r1));
-      EMSG("------------------------");
-      r1 = (long)ADVANCE_BP(r1);
-    }
-    cursor->pc = NEXT_PC(r1);
-    cursor->bp = r1;
-    cursor->sp = r1;
-  }
-  else {
-    TMSG(UNW_INIT,"context NOT null");
-    cursor->pc = context_pc(context);
-    cursor->bp = context_bp(context);
-    cursor->sp = context_sp(context);
-  }
+  cursor->pc = context_pc(context);
+  cursor->bp = context_bp(context);
+  cursor->sp = context_sp(context);
 
   TMSG(UNW_INIT,"frame pc = %p, frame bp = %p, frame sp = %p", 
        cursor->pc, cursor->bp, cursor->sp);
