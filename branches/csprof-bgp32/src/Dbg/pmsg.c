@@ -135,7 +135,7 @@ pmsg_init()
 #if 0 // no env vars for BG/P
   char *s = getenv("CSPROF_DD");
 #else
-  char *s = "";
+  char *s = "GETCONTEXT";
 #endif
   if(s){
     csprof_dbg_init(s);

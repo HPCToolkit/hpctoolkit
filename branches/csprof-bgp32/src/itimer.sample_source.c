@@ -44,6 +44,8 @@
  * macros
  *****************************************************************************/
 
+#define DEBUG_FEW 1
+
 #define CSPROF_PROFILE_SIGNAL SIGPROF
 #define CSPROF_PROFILE_TIMER ITIMER_PROF
 
@@ -52,13 +54,13 @@
 #define CSPROF_PROFILE_TIMER ITIMER_REAL
 #endif
 
+#ifdef __ppc64__ 
+#define BLUE_GENE_P_COMPUTE 1
+#endif
 
 /******************************************************************************
  * forward declarations 
  *****************************************************************************/
-#ifdef __ppc64__ 
-#define BLUE_GENE_P_COMPUTE 1
-#endif
 
 #ifdef BLUE_GENE_P_COMPUTE
 static int csprof_itimer_signal_handler_bgp(int sig, siginfo_t *siginfo, 
@@ -264,6 +266,7 @@ csprof_itimer_signal_handler_bgp(int sig, siginfo_t *siginfo, void *context,
 
     TMSG(GETCONTEXT, "value of arg 4 = %p", bgp_pc);
 
+    unsigned long tr1;
     unsigned long r1 = ctx.uc_mcontext.regs->gpr[1];
     unsigned long pc = ctx.uc_mcontext.regs->nip;
 
@@ -271,13 +274,37 @@ csprof_itimer_signal_handler_bgp(int sig, siginfo_t *siginfo, void *context,
 
     unsigned long link = ctx.uc_mcontext.regs->link;
 
-    for(int i=1; i <= 4;i++){
+    for(int i=1; i <= 3;i++){
       r1 = (long)ADVANCE_BP(r1);
       TMSG(GETCONTEXT,"i = %d: (bp = %p) next pc from frame = %p",i,r1,NEXT_PC(r1));
+      if (i == 2) tr1 = r1;
     }
+    void **tramp = (void **)NEXT_PC(tr1);
+    TMSG(GETCONTEXT,"tramp location = %p",tramp);
+    TMSG(GETCONTEXT,"prior word before tramp on stack = %d",*((long *)tramp - 1));
+    PMSG(GETCONTEXT,"========================================");
+    void **sp = tramp - 1;
+    for (int i = 0;i < 828;i++,sp--){
+      TMSG(GETCONTEXT,"stack[%d][%p] = %p",i,sp,*sp);
+    }
+
+    void **ip_ptr = tramp-39;
+    void **lr_ptr = tramp-36;
+    void **r0_ptr = tramp-201;
+    void *ip = *ip_ptr;
+    void *lr = *lr_ptr;
+    void *r0 = *r0_ptr;
+
+    TMSG(GETCONTEXT,"ip  = %x (at location %p)",ip, ip_ptr);
+    TMSG(GETCONTEXT,"lr  = %x (at location %p)",lr, lr_ptr);
+    TMSG(GETCONTEXT,"r0  = %x (at location %p)",r0, r0_ptr);
+
     ctx.uc_mcontext.regs->nip = (long) bgp_pc;
+    ctx.uc_mcontext.regs->link = (long) lr;
+    ctx.uc_mcontext.regs->gpr[0] = r0;
     ctx.uc_mcontext.regs->gpr[1] = r1;
-    TMSG(GETCONTEXT,"resulting ucontext: r1 = %p, nip = %p",r1,bgp_pc);
+
+    TMSG(GETCONTEXT,"resulting ucontext: r1 = %p, nip = %p ip = %p lr = %p r0 = %p", r1 ,bgp_pc, ip, lr, r0);
     context = &ctx;
   }
   return csprof_itimer_signal_handler(sig, siginfo, context);
