@@ -44,7 +44,7 @@
  * macros
  *****************************************************************************/
 
-#define DEBUG_FEW 1
+#define DEBUG_FEW 0 
 
 #define CSPROF_PROFILE_SIGNAL SIGPROF
 #define CSPROF_PROFILE_TIMER ITIMER_PROF
@@ -64,7 +64,7 @@
 
 #ifdef BLUE_GENE_P_COMPUTE
 static int csprof_itimer_signal_handler_bgp(int sig, siginfo_t *siginfo, 
-	void *context, void *bgp_pc);
+	void *context);
 #endif
 
 static int csprof_itimer_signal_handler(int sig, siginfo_t *siginfo, void *context);
@@ -256,30 +256,30 @@ itimer_obj_reg(void)
 #define ITIMER_METRIC_ID 0
 
 static int
-csprof_itimer_signal_handler_bgp(int sig, siginfo_t *siginfo, void *context, 
-	void *bgp_pc)
+csprof_itimer_signal_handler_bgp(int sig, siginfo_t *siginfo, void *context) 
 {
   ucontext_t ctx;
 
   if ( ! context ) {
     getcontext(&ctx);
 
-    TMSG(GETCONTEXT, "value of arg 4 = %p", bgp_pc);
-
     unsigned long tr1;
     unsigned long r1 = ctx.uc_mcontext.regs->gpr[1];
-    unsigned long pc = ctx.uc_mcontext.regs->nip;
 
+#if 0
     TMSG(GETCONTEXT,"fetch from getcontext: r1 = %p,pc = %p",(void *)r1,(void *)pc);
-
-    unsigned long link = ctx.uc_mcontext.regs->link;
+#endif
 
     for(int i=1; i <= 3;i++){
       r1 = (long)ADVANCE_BP(r1);
+#if 0
       TMSG(GETCONTEXT,"i = %d: (bp = %p) next pc from frame = %p",i,r1,NEXT_PC(r1));
+#endif
       if (i == 2) tr1 = r1;
     }
     void **tramp = (void **)NEXT_PC(tr1);
+
+#if 0
     TMSG(GETCONTEXT,"tramp location = %p",tramp);
     TMSG(GETCONTEXT,"prior word before tramp on stack = %d",*((long *)tramp - 1));
     PMSG(GETCONTEXT,"========================================");
@@ -287,24 +287,31 @@ csprof_itimer_signal_handler_bgp(int sig, siginfo_t *siginfo, void *context,
     for (int i = 0;i < 828;i++,sp--){
       TMSG(GETCONTEXT,"stack[%d][%p] = %p",i,sp,*sp);
     }
+#endif
 
-    void **ip_ptr = tramp-39;
-    void **lr_ptr = tramp-36;
-    void **r0_ptr = tramp-201;
-    void *ip = *ip_ptr;
-    void *lr = *lr_ptr;
-    void *r0 = *r0_ptr;
+    // magic offsets to pluck the register values out of the kernel register state
+    long *ip_ptr = (long *) tramp-39;
+    long *lr_ptr = (long *) tramp-36;
+    long *r0_ptr = (long *) tramp-201;
+    long *r1_ptr = (long *) tramp-200;
 
+    long ip = *ip_ptr;
+    long lr = *lr_ptr;
+    long r0 = *r0_ptr;
+    long r1s = *r1_ptr;
+
+#if 0
     TMSG(GETCONTEXT,"ip  = %x (at location %p)",ip, ip_ptr);
     TMSG(GETCONTEXT,"lr  = %x (at location %p)",lr, lr_ptr);
     TMSG(GETCONTEXT,"r0  = %x (at location %p)",r0, r0_ptr);
+#endif
 
-    ctx.uc_mcontext.regs->nip = (long) bgp_pc;
-    ctx.uc_mcontext.regs->link = (long) lr;
+    ctx.uc_mcontext.regs->nip = ip;
+    ctx.uc_mcontext.regs->link = lr;
     ctx.uc_mcontext.regs->gpr[0] = r0;
     ctx.uc_mcontext.regs->gpr[1] = r1;
 
-    TMSG(GETCONTEXT,"resulting ucontext: r1 = %p, nip = %p ip = %p lr = %p r0 = %p", r1 ,bgp_pc, ip, lr, r0);
+    TMSG(GETCONTEXT,"synthesized ucontext: r1 = %p, r1s = %p, ip = %p lr = %p r0 = %p", r1 , r1s , ip, lr, r0);
     context = &ctx;
   }
   return csprof_itimer_signal_handler(sig, siginfo, context);

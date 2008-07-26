@@ -155,6 +155,7 @@ ppc64_build_intervals(char *ins, unsigned int len)
 }
 
 
+#if 0
 void ppc64_dump_intervals(char  *addr) 
 {
   void *s, *e;
@@ -172,16 +173,25 @@ void ppc64_dump_intervals(char  *addr)
     dump_ui(u, 1);
   }
 }
+#endif
 
 
 interval_status 
 build_intervals(char *ins, unsigned int len)
 {
    interval_status stat;
+   unwind_interval *u;
 
+   stat = ppc64_build_intervals(ins, len);
+
+  for(u = stat.first; u; u = u->next) {
+    dump_ui(u, 0);
+  }
+
+  return stat;
 #if 0
+
    ppc64_dump_intervals(ins);
-#endif
 
    unwind_interval *ui = new_ui(ins, RA_BP_FRAME, 0, 16, BP_SAVED, 0, 0, NULL);
    ui->endaddr = ins + len;
@@ -191,5 +201,6 @@ build_intervals(char *ins, unsigned int len)
    stat.first = ui;
 
    return stat; 
+#endif
 }
 

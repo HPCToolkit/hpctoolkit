@@ -73,7 +73,7 @@ unw_init(void)
   csprof_interval_tree_init();
 }
 
-
+#if 0
 void 
 unw_init_cursor(void* context, unw_cursor_t *cursor)
 {
@@ -81,11 +81,14 @@ unw_init_cursor(void* context, unw_cursor_t *cursor)
   cursor->bp = context_bp(context);
   cursor->sp = context_sp(context);
 
+  cursor->intvl = csprof_addr_to_interval(cursor->pc);
+
+
   TMSG(UNW_INIT,"frame pc = %p, frame bp = %p, frame sp = %p", 
        cursor->pc, cursor->bp, cursor->sp);
 
-  cursor->intvl = csprof_addr_to_interval(cursor->pc);
 
+#if 0
   if (!cursor->intvl) {
     TMSG(TROLL,"UNW INIT FAILURE: frame pc = %p, frame bp = %p, frame sp = %p",
          cursor->pc, cursor->bp, cursor->sp);
@@ -94,13 +97,19 @@ unw_init_cursor(void* context, unw_cursor_t *cursor)
 
     update_cursor_with_troll(cursor);
   } 
+#endif
+
+  unw_init_cursor_arch(context, cursor);
 
   if (debug_unw) {
     TMSG(UNWIND,"dumping the found interval");
     dump_ui(cursor->intvl,1); // debug for now
   }
+
   TMSG(UNW_INIT,"returned interval = %p",cursor->intvl);
 }
+
+#endif
 
 
 // This get_reg just extracts the pc, regardless of REGID
