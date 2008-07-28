@@ -266,10 +266,6 @@ csprof_itimer_signal_handler_bgp(int sig, siginfo_t *siginfo, void *context)
     unsigned long tr1;
     unsigned long r1 = ctx.uc_mcontext.regs->gpr[1];
 
-#if 0
-    TMSG(GETCONTEXT,"fetch from getcontext: r1 = %p,pc = %p",(void *)r1,(void *)pc);
-#endif
-
     for(int i=1; i <= 3;i++){
       r1 = (long)ADVANCE_BP(r1);
 #if 0
