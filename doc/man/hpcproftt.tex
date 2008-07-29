@@ -30,7 +30,7 @@
 \rcsInfo $Id$
 \setDate{\rcsInfoLongDate}
 }{
-\setDate{ 2008/07/09}
+\setDate{ 2008/07/29}
 \message{package rcsinfo not present, discard it}
 }
 
@@ -144,13 +144,13 @@ Correlate metrics to source code structure. Without \Opt{--source}, default is \
   \end{itemize}
 
 \item[\OptArg{--srcannot}{glob}] 
-Annotate source files with path names that match file glob \Arg{glob}. Protect globs from the shell with 'single quotes'. May pass multiple times.
+Annotate source files with path names that match file glob \Arg{glob}. (Protect glob characters from shell with single quotes or backslash.) May pass multiple times to logically OR additional globs.
 
 \item[\OptoArg{-M}{metric}, \OptoArg{--metric}{metric}] 
 Show a supplemental or different metric set. \Arg{metric} is one of the following:
   \begin{itemize}
-  \item sum: Additionally show Mean, RStdDev, Min, Max
-  \item sum-only: Show only Mean, RStdDev, Min, Max
+  \item sum:      Show also Mean, CoefVar (coefficient of variation), Min, Max, Sum
+  \item sum-only: Show only Mean, CoefVar (coefficient of variation), Min, Max, Sum
   \end{itemize}
 
 \item[\OptArg{-I}{path}, \OptArg{--include}{path}] 
@@ -171,11 +171,14 @@ Correlate metrics with object code by annotating object code procedures and inst
   \item s: intermingle source line info with object code
   \end{itemize}
 
-\item[\Opt{--obj-values}] 
-Show raw metrics as values instead of percents
+\item[\OptArg{--objannot}{glob}] 
+Annotate object procedures with (unmangled) names that match glob \Arg{glob}. (Protect glob characters from shell with single quotes or backslash.) May pass multiple times to logically OR additional globs.
 
 \item[\OptArg{--obj-threshold}{n}] 
 Prune procedures with an event count < \Arg{n} \{1\}
+
+\item[\Opt{--obj-values}] 
+Show raw metrics as values instead of percents
 
 \end{Description}
 

@@ -54,6 +54,7 @@
 //************************* System Include Files ****************************
 
 #include <string>
+#include <vector>
 
 //*************************** User Include Files ****************************
 
@@ -77,8 +78,10 @@ namespace Flat {
 		      std::ostream& os, 
 		      // show source code lines
 		      bool srcCode,
+		      // show procs that match one of the globs
+		      const std::vector<std::string>& procPruneGlobs,
 		      // show procs with at least one metric total >= threshold
-		      uint64_t procVisThreshold);
+		      uint64_t procPruneThreshold);
 
 } // namespace Flat
 

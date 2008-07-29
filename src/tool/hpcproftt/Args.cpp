@@ -124,13 +124,14 @@ Options: Source Structure Correlation:\n\
                          s:   statement summary\n\
                          src: annotate source files; equiv to --srcannot '*'\n\
   --srcannot <glob>    Annotate source files with path names that match\n\
-                       file glob <glob>. Protect globs from the shell with\n\
-                       'single quotes'. May pass multiple times.\n\
+                       file glob <glob>. (Protect glob characters from shell\n\
+                       with single quotes or backslash.) May pass multiple\n\
+                       times to logically OR additional globs.\n\
   -M <metric>, --metric <metric>\n\
                        Show a supplemental or different metric set. <metric>\n\
                        is one of the following:\n\
-                         sum:      Additionally show Mean, RStdDev, Min, Max\n\
-                         sum-only: Show only Mean, RStdDev, Min, Max\n\
+                         sum:      Show also Mean, CoefVar, Min, Max, Sum\n\
+                         sum-only: Show only Mean, CoefVar, Min, Max, Sum\n\
 \n\
   -I <path>, --include <path>\n\
                        Use <path> when searching for source files. For a\n\
@@ -145,8 +146,12 @@ Options: Object Correlation:\n\
   --object[=s]         Correlate metrics with object code by annotating\n\
   --obj[=s]            object code procedures and instructions. {}\n\
                          s: intermingle source line info with object code\n\
-  --obj-values         Show raw metrics as values instead of percents\n\
+  --objannot <glob>    Annotate object procedures with (unmangled) names that\n\
+                       match glob <glob>. (Protect glob characters from the\n\
+                       shell with single quotes or backslash.) May pass\n\
+                       multiple times to logically OR additional globs.\n\
   --obj-threshold <n>  Prune procedures with an event count < n {1}\n\
+  --obj-values         Show raw metrics as values instead of percents\n\
 \n\
 Options: Dump Raw Profile Data:\n\
   --dump               Generate textual representation of raw profile data.\n\
@@ -181,6 +186,8 @@ CmdLineParser::OptArgDesc Args::optArgs[] = {
      isOptArg_obj },
   {  0 , "obj",             CLP::ARG_OPT , CLP::DUPOPT_CLOB, NULL,
      isOptArg_obj },
+  {  0 , "objannot",        CLP::ARG_REQ,  CLP::DUPOPT_CAT,  CLP_SEPARATOR,
+     NULL },
   {  0 , "obj-values",      CLP::ARG_NONE, CLP::DUPOPT_CLOB, NULL,
      NULL },
   {  0 , "obj-threshold",   CLP::ARG_REQ,  CLP::DUPOPT_CLOB, NULL,
@@ -429,6 +436,10 @@ Args::parse(int argc, const char* const argv[])
       if (!opt.empty()) {
 	parse_objectOpts(this, opt);
       }
+    }
+    if (parser.isOpt("objannot")) {
+      string str = parser.getOptArg("objannot");
+      StrUtil::tokenize_str(str, CLP_SEPARATOR, obj_procGlobs);
     }
     if (parser.isOpt("obj-values")) {
       obj_metricsAsPercents = false;

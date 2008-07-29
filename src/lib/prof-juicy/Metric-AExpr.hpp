@@ -52,6 +52,7 @@
 //   Min    : min expression                       : n-ary
 //   Mean   : mean (arithmetic) expression         : n-ary
 //   StdDev : standard deviation expression        : n-ary
+//   CoefVar: coefficient of variance              : n-ary
 //   RStdDev: relative standard deviation          : n-ary
 //
 // ----------------------------------------------------------------------
@@ -422,6 +423,27 @@ public:
   // Assumes ownership of AExpr
   StdDev(AExpr** oprnds, int numOprnds);
   ~StdDev();
+
+  double eval(const Struct::ANode* si) const;
+
+  std::ostream& dump(std::ostream& os = std::cout) const;
+
+private:
+  AExpr** m_opands;
+  int m_sz;
+};
+
+
+// ----------------------------------------------------------------------
+// CoefVar: relative standard deviation
+// ----------------------------------------------------------------------
+
+class CoefVar : public AExpr
+{
+public:
+  // Assumes ownership of AExpr
+  CoefVar(AExpr** oprnds, int numOprnds);
+  ~CoefVar();
 
   double eval(const Struct::ANode* si) const;
 

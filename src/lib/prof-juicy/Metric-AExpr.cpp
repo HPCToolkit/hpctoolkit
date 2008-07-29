@@ -523,6 +523,52 @@ StdDev::dump(std::ostream& os) const
 
 
 // ----------------------------------------------------------------------
+// class CoefVar
+// ----------------------------------------------------------------------
+
+CoefVar::CoefVar(AExpr** oprnds, int numOprnds)
+  : m_opands(oprnds), m_sz(numOprnds) 
+{ 
+}
+
+
+CoefVar::~CoefVar() 
+{
+  for (int i = 0; i < m_sz; ++i) {
+    delete m_opands[i];
+  }
+  delete[] m_opands;
+}
+
+
+double 
+CoefVar::eval(const Struct::ANode* si) const
+{
+  std::pair<double, double> v_m = eval_variance(si, m_opands, m_sz);
+  double sdev = sqrt(v_m.first); // always non-negative
+  double mean = v_m.second;
+  double result = 0.0;
+  if (mean > epsilon) {
+    result = sdev / mean;
+  }
+
+  //IFTRACE << "r-stddev=" << result << endl; 
+  AEXPR_CHECK(result);
+  return result;
+}
+
+
+std::ostream& 
+CoefVar::dump(std::ostream& os) const
+{
+  os << "coefvar(";
+  dump_opands(os, m_opands, m_sz);
+  os << ")";
+  return os;
+}
+
+
+// ----------------------------------------------------------------------
 // class RStdDev
 // ----------------------------------------------------------------------
 
@@ -542,8 +588,8 @@ RStdDev::~RStdDev()
 
 
 double 
-RStdDev::eval(const Struct::ANode* si) const{
-
+RStdDev::eval(const Struct::ANode* si) const
+{
   std::pair<double, double> v_m = eval_variance(si, m_opands, m_sz);
   double sdev = sqrt(v_m.first); // always non-negative
   double mean = v_m.second;
