@@ -126,14 +126,17 @@ Mgr::makeSummaryMetrics()
     PerfMetricVec& mvec = it->second;
     if (mvec.size() > 1) {
       string mean_nm = "Mean-" + m_nm;
-      string rsd_nm = "RStdDev-" + m_nm;
-      //string rsd_nm = "StdDev-" + m_nm;
+      //string rsd_nm = "RStdDev-" + m_nm;
+      string cv_nm = "CoefVar-" + m_nm;
       string min_nm = "Min-" + m_nm;
       string max_nm = "Max-" + m_nm;
+      string sum_nm = "Sum-" + m_nm;
       makeSummaryMetric(mean_nm, mvec);
-      makeSummaryMetric(rsd_nm, mvec);
+      //makeSummaryMetric(rsd_nm, mvec);
+      makeSummaryMetric(cv_nm, mvec);
       makeSummaryMetric(min_nm, mvec);
       makeSummaryMetric(max_nm, mvec);
+      makeSummaryMetric(sum_nm, mvec);
     }
   }
 }
@@ -167,6 +170,9 @@ Mgr::makeSummaryMetric(const string& m_nm, const PerfMetricVec& m_opands)
   else if (m_nm.find("RStdDev", 0) == 0) {
     expr = new Metric::RStdDev(opands, m_opands.size());
     isPercent = true;
+  }
+  else if (m_nm.find("CoefVar", 0) == 0) {
+    expr = new Metric::CoefVar(opands, m_opands.size());
   }
   else if (m_nm.find("Min", 0) == 0) {
     expr = new Metric::Min(opands, m_opands.size());

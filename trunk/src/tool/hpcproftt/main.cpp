@@ -182,6 +182,7 @@ main_objCorrelation(const Args& args)
     // 2. Correlate
     Analysis::Flat::correlateWithObject(metricMgr, os,
 					args.obj_showSourceCode,
+					args.obj_procGlobs,
 					args.obj_procThreshold);
   }
   return 0;

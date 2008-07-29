@@ -76,6 +76,7 @@ using Analysis::TextUtil::ColumnFormatter;
 #include <lib/binutils/VMAInterval.hpp>
 
 #include <lib/support/diagnostics.h>
+#include <lib/support/Files.hpp>
 #include <lib/support/StrUtil.hpp> 
 
 //*************************** Forward Declarations ***************************
@@ -294,6 +295,7 @@ correlateWithObject_LM(const Prof::Metric::Mgr& metricMgr,
 		       // ----------------------------------------------
 		       std::ostream& os, 
 		       bool srcCode,
+		       const std::vector<std::string>& procPruneGlobs,
 		       uint64_t procPruneThreshold);
 
 
@@ -302,6 +304,7 @@ correlateWithObject(const Prof::Metric::Mgr& metricMgr,
 		    // ----------------------------------------------
 		    std::ostream& os, 
 		    bool srcCode,
+		    const std::vector<std::string>& procPruneGlobs,
 		    uint64_t procPruneThreshold)
 {
   using Prof::Metric::Mgr;
@@ -340,7 +343,7 @@ correlateWithObject(const Prof::Metric::Mgr& metricMgr,
     }
     
     correlateWithObject_LM(metricMgr, *proflm, *lm, 
-			   os, srcCode, procPruneThreshold);
+			   os, srcCode, procPruneGlobs, procPruneThreshold);
     delete lm;
   }
 }
@@ -353,12 +356,15 @@ correlateWithObject_LM(const Prof::Metric::Mgr& metricMgr,
 		       // ----------------------------------------------
 		       ostream& os, 
 		       bool srcCode,
+		       const std::vector<std::string>& procPruneGlobs,
 		       uint64_t procPruneThreshold)
 {
   // INVARIANT: metricMgr only contains metrics related to 'proflm'
   
   MetricCursor metricCursor(metricMgr, proflm, lm);
   ColumnFormatter colFmt(metricMgr, os, 2, 0);
+
+  bool hasProcGlobs = !procPruneGlobs.empty();
 
   // --------------------------------------------------------
   // 0. Metric summary for load module
@@ -387,11 +393,17 @@ correlateWithObject_LM(const Prof::Metric::Mgr& metricMgr,
   for (binutils::LM::ProcMap::const_iterator it = lm.procs().begin();
        it != lm.procs().end(); ++it) {
     const binutils::Proc* p = it->second;
+
+    // obtain name (and prune if necessary)
     string bestName = GetBestFuncName(p->name());
-      
+    if (hasProcGlobs && FileUtil::fnmatch(procPruneGlobs, bestName.c_str())) {
+      continue;
+    }
+     
     binutils::Insn* endInsn = p->endInsn();
     VMAInterval procint(p->begVMA(), p->endVMA() + endInsn->size());
-      
+
+    // obtain counts (and prune if necessary)
     const vector<uint64_t> metricTotsProc = 
       metricCursor.computeMetricVals(procint, false);
     if (!metricCursor.hasMetricValGE(metricTotsProc, procPruneThreshold)) {

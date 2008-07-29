@@ -129,9 +129,11 @@ public:
   string txt_metrics;
 
   // Object Correlation args
+  std::vector<std::string> obj_procGlobs;
+  uint64_t obj_procThreshold;
+
   bool obj_metricsAsPercents;
   bool obj_showSourceCode;
-  uint64_t obj_procThreshold;
 
 private:
   void Ctor();
