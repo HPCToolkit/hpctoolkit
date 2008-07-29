@@ -173,6 +173,7 @@ Mgr::makeSummaryMetric(const string& m_nm, const PerfMetricVec& m_opands)
   }
   else if (m_nm.find("CoefVar", 0) == 0) {
     expr = new Metric::CoefVar(opands, m_opands.size());
+    dispPercent = false;
   }
   else if (m_nm.find("Min", 0) == 0) {
     expr = new Metric::Min(opands, m_opands.size());
