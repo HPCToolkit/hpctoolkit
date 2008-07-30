@@ -396,7 +396,7 @@ correlateWithObject_LM(const Prof::Metric::Mgr& metricMgr,
 
     // obtain name (and prune if necessary)
     string bestName = GetBestFuncName(p->name());
-    if (hasProcGlobs && FileUtil::fnmatch(procPruneGlobs, bestName.c_str())) {
+    if (hasProcGlobs && !FileUtil::fnmatch(procPruneGlobs, bestName.c_str())) {
       continue;
     }
      
