@@ -131,10 +131,8 @@ after_unconditional(long offset, char *ins, xed_decoded_inst_t *xptr)
 {
   ins += xed_decoded_inst_get_length(xptr);
   unsigned char *uins = (unsigned char *) ins;
-  if (is_padding(*uins++)) { // try always adding
-    for (; is_padding(*uins); uins++); // skip remaining padding 
-    add_stripped_function_entry(uins + offset); // potential function entry point
-  }
+  for (; is_padding(*uins); uins++); // skip remaining padding 
+  add_stripped_function_entry(uins + offset); // potential function entry point
 }
 
 
