@@ -203,14 +203,15 @@ dump_file_info(const char *filename, bool fn_discovery)
   vector<Symbol *> symvec;
   Symtab::openFile(syms, sfile);
   int stripped = 1;
-  bool is_stripped = file_is_stripped(syms);
+#if 0
+  // be conservative with function discovery: only apply it to stripped objects
+  fn_discovery &=  file_is_stripped(syms);
+#endif
 
   syms->getAllSymbolsByType(symvec, Symbol::ST_FUNCTION);
   if (syms->getObjectType() != obj_Unknown) {
     if (symvec.size() > 0) {
-      // be conservative with function discovery: only apply it to stripped 
-      // objects
-      dump_file_symbols(syms, symvec, fn_discovery & is_stripped);
+      dump_file_symbols(syms, symvec, fn_discovery);
       stripped = 0;
     }
     int relocatable = syms->isExec() ? 0 : 1;
