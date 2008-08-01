@@ -3,6 +3,9 @@
 //*********************************************************************
 
 #include <stdio.h>
+#include <sys/time.h>
+
+
 
 
 
@@ -18,6 +21,14 @@
 #include "thread_data.h"
 
 
+//*********************************************************************
+// type declarations
+//*********************************************************************
+
+typedef struct trecord_s {
+  unsigned int cpid;
+  double time;
+} trecord_t;
 
 //*********************************************************************
 // forward declarations 
@@ -73,8 +84,14 @@ trace_append(unsigned int cpid)
 {
   if (tracing) {
 #define NITEMS 1
+    struct timeval tv;
+    int notime = gettimeofday(&tv, NULL);
+    assert(notime == 0 && "in trace_append: gettimeofday failed!"); 
+    double microtime = tv.tv_usec + tv.tv_sec * 1000000;
+    trecord_t record = { cpid, microtime };
+
     thread_data_t *td = csprof_get_thread_data();
-    int written = fwrite(&cpid, sizeof(cpid), NITEMS, td->trace_file);
+    int written = fwrite(&record, sizeof(record), NITEMS, td->trace_file);
     trace_file_validate(written == NITEMS, "append");
   }
 }
