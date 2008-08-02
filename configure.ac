@@ -454,6 +454,33 @@ AC_MSG_NOTICE([INFO: Exit: CC=${CC} CFLAGS=${CFLAGS} HOST_CFLAGS=${HOST_CFLAGS}]
 #----------------------------------------------------------------------------
 
 #-------------------------------------------------
+# Option: --with-externals=PATH
+#
+# If specified, then use PATH as the root of the external prereqs tree
+# and the file PATH/externs.conf for the locations of binutils, open
+# analysis, xerces, etc.  Default is not to use this.
+#-------------------------------------------------
+
+AC_ARG_WITH([dummy-blank-line], [AS_HELP_STRING([], [])])
+AC_ARG_WITH([externals],
+  [AS_HELP_STRING([--with-externals=PATH],
+    [path to external prereqs tree (default no)])],
+  [],
+  [with_externals=no])
+
+use_externals=no
+if test "x$with_externals" != xno ; then
+  ext_file="${with_externals}/externs.conf"
+  if test -f "$ext_file" ; then
+    AC_MSG_NOTICE([using externals file: $ext_file])
+    . "$ext_file"
+    use_externals=yes
+  else
+    AC_MSG_ERROR([missing externals file: $ext_file])
+  fi
+fi
+
+#-------------------------------------------------
 # Check for Xerces-C (XML parser)
 #-------------------------------------------------
 
@@ -472,6 +499,10 @@ AC_ARG_WITH([xerces],
      XERCES=${withval}
    fi],
   [])
+
+if test "$use_externals" = yes ; then
+  XERCES="$ext_xerces_prefix"
+fi
 
 XERCES_IFLAGS="-I${XERCES}/include"
 XERCES_LDFLAGS="-L${XERCES}/lib -lxerces-c"
@@ -498,6 +529,10 @@ AC_ARG_WITH([oa],
    fi],
   [])
 
+if test "$use_externals" = yes ; then
+  OA="$ext_open_analysis_prefix"
+fi
+
 OA_IFLAGS="-DOA_IRHANDLETYPE_SZ64 -I${OA}/include"
 OA_LDFLAGS="-L${OA}/lib -lOAsz64"
 
@@ -523,6 +558,9 @@ AC_ARG_WITH([binutils],
    fi],
   [])
 
+if test "$use_externals" = yes ; then
+  GNUBINUTILS="$ext_binutils_prefix"
+fi
 
 # The binutils installer (2.16.1, 2.17) creates libbfd.la and
 # libopcodes.la but only libiberty.a.  Apparently, not having
@@ -558,7 +596,6 @@ MONITOR=
 MONITOR_LIBS=
 HPC_MONITOR=
 
-
 # Use monitor by default
 if test "${HOST_OS}" = "Linux"; then
   OPT_WITH_MONITOR=yes
@@ -578,6 +615,12 @@ AC_ARG_WITH([monitor],
    fi],
   [])
 
+if test "$use_externals" = yes ; then
+  OPT_WITH_MONITOR=yes
+  OPT_INSTALL_MONITOR=no
+  MONITOR="$ext_old_monitor_prefix"
+fi
+
 for lib in ${LIB_SEARCH_PATH} ; do
   if test -r "${MONITOR}/${lib}/libmonitor.so"; then
     MONITOR_LIBS="${MONITOR_LIBS} ${MONITOR}/${lib}/libmonitor.so"
@@ -592,7 +635,6 @@ if test "${OPT_INSTALL_MONITOR}" = "yes" ; then
 else 
   HPC_MONITOR="${MONITOR}"
 fi
-
 
 if test "${OPT_WITH_MONITOR}" = "yes" ; then
   AC_DEFINE([HAVE_MONITOR], [], [Monitor library])
