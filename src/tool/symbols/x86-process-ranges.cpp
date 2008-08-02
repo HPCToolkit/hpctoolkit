@@ -86,6 +86,7 @@ process_range(long offset, void *vstart, void *vend, bool fn_discovery)
       if (fn_discovery) after_unconditional(offset, ins ,xptr);
       break;
 
+    case XED_ICLASS_JB:
     case XED_ICLASS_JBE: 
     case XED_ICLASS_JL: 
     case XED_ICLASS_JLE: 
