@@ -60,6 +60,15 @@ static pid_t server_pid;
 #define READ_FD(end) system_server_pipes[end][0]
 #define WRITE_FD(end) system_server_pipes[end][1]
 
+#define SS_EXIT_ON_ERROR(r,e,...) system_server_exit_on_error(r,e,__VA_ARGS__)
+
+
+//*******************************************************************************
+// forward declarations 
+//*******************************************************************************
+
+void system_server_exit_on_error(int ret, int ret_expected, const char *fmt, ...);
+
 
 
 //*******************************************************************************
@@ -97,7 +106,7 @@ system_server_start()
      // server: close unused file descriptor to send data to self 
      // --------------------------------------------------------------------------------------------------
      ret = close(WRITE_FD(CLIENT_TO_SERVER));
-     EXIT_ON_ERROR(ret, 0, "system server: failed to close pipe in server");
+     SS_EXIT_ON_ERROR(ret, 0, "system server: failed to close pipe in server");
 
      for(;;) {
        int nbytes;
@@ -106,7 +115,7 @@ system_server_start()
        // receive command string length from client
        // --------------------------------------------------------------------------------------------------
        ret = read(READ_FD(CLIENT_TO_SERVER), &nbytes, sizeof(nbytes));
-       EXIT_ON_ERROR(ret, sizeof(nbytes), "system server fatal error: read failed");
+       SS_EXIT_ON_ERROR(ret, sizeof(nbytes), "system server fatal error: read failed");
 
        if (nbytes > 0) {
           TMSG(SYSTEM_SERVER,"system server: expecting command of %d bytes", nbytes);
@@ -120,7 +129,7 @@ system_server_start()
 	  // receive command string from client
 	  // --------------------------------------------------------------------------------------------------
           ret = read(READ_FD(CLIENT_TO_SERVER), command, nbytes);
-          EXIT_ON_ERROR(ret, nbytes, "system server fatal error: "
+          SS_EXIT_ON_ERROR(ret, nbytes, "system server fatal error: "
 	                "read only %d of %d bytes for a command %d", ret, nbytes);
 
 	  // --------------------------------------------------------------------------------------------------
@@ -144,7 +153,7 @@ system_server_start()
 	  free(command);
        } else {
 	 if (nbytes != server_done) {
-            EXIT_ON_ERROR(nbytes, server_done, "system server fatal error: "
+            SS_EXIT_ON_ERROR(nbytes, server_done, "system server fatal error: "
 			  "received negative length %d for command string", nbytes);
 	 }
 	 // --------------------------------------------------------------------------------------------------
@@ -210,4 +219,16 @@ system_server_execute_command(const char *command)
 int system(__const char *command) 
 {
   return system_server_execute_command(command);  
+}
+
+void
+system_server_exit_on_error(int ret, int ret_expected, const char *fmt, ...)
+{
+  if (ret == ret_expected) {
+    return;
+  }
+  va_list args;
+  va_start(args,fmt);
+  csprof_emsg(fmt, args); 
+  monitor_real_exit(0);
 }

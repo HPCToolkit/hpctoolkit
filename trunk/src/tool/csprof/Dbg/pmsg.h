@@ -16,6 +16,7 @@ typedef enum {
 extern void pmsg_init();
 extern void pmsg_fini(void);
 extern void csprof_emsg(const char *fmt,...);
+extern void csprof_emsg_valist(const char *fmt, va_list args);
 extern void csprof_amsg(const char *fmt,...);
 extern void csprof_pmsg(pmsg_category flag,const char *fmt,...);
 extern void csprof_nmsg(pmsg_category flag,const char *fmt,...);
