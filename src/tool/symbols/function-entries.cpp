@@ -94,6 +94,14 @@ add_function_entry(void *addr, const string *comment)
 }
 
 
+bool contains_function_entry(void *address)
+{
+  FunctionSet::iterator it = function_entries.find(address); 
+  if (it != function_entries.end()) return true;
+  else return false;
+}
+
+
 
 /******************************************************************************
  * private operations 
