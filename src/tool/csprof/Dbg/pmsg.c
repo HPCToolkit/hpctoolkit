@@ -191,6 +191,14 @@ _nmsg(const char *fmt,va_list args)
   va_end(args);
 }
 
+
+void
+csprof_emsg_valist(const char *fmt, va_list args)
+{
+  _msg(fmt,args);
+}
+
+
 void
 csprof_emsg(const char *fmt,...)
 {

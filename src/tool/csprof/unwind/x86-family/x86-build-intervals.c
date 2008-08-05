@@ -4,12 +4,13 @@
 #include "x86-decoder.h"
 #include "x86-process-inst.h"
 #include "x86-unwind-analysis.h"
+#include "x86-unwind-interval-fixup.h"
 
 /******************************************************************************
  * forward declarations 
  *****************************************************************************/
 
-static void set_xed_stat(interval_status *xed_stat, char *fui, int errcode, 
+static void set_status(interval_status *status, char *fui, int errcode, 
 			 unwind_interval *first);
 
 interval_status 
@@ -31,10 +32,12 @@ build_intervals(char *ins, unsigned int len)
 interval_status 
 x86_build_intervals(char *ins, unsigned int len, int noisy)
 {
+  char *first_ins = ins;
+
   xed_decoded_inst_t xedd;
   xed_decoded_inst_t *xptr = &xedd;
 
-  interval_status xed_stat;
+  interval_status status;
   xed_error_enum_t xed_error;
 
   unwind_interval *prev = NULL, *current = NULL, *next = NULL, *first = NULL;
@@ -71,8 +74,8 @@ x86_build_intervals(char *ins, unsigned int len, int noisy)
 			&highwatermark, &canonical_interval, &bp_frames_found);
     
     if (next == &poison_ui) {
-      set_xed_stat(&xed_stat, ins, -1, NULL);
-      return xed_stat;
+      set_status(&status, ins, -1, NULL);
+      return status;
     }
 
 #if 0
@@ -93,8 +96,10 @@ x86_build_intervals(char *ins, unsigned int len, int noisy)
 
   current->endaddr = end;
 
-  set_xed_stat(&xed_stat, ins, error_count, first);
-  return xed_stat;
+  set_status(&status, ins, error_count, first);
+
+  x86_fix_unwind_intervals(first_ins, len, &status);
+  return status;
 }
 
 
@@ -103,11 +108,11 @@ x86_build_intervals(char *ins, unsigned int len, int noisy)
  * private operations 
  *****************************************************************************/
 
-static void set_xed_stat(interval_status *xed_stat, char *fui, int errcode, 
-			 unwind_interval *first) 
+static void set_status(interval_status *status, char *fui, int errcode, 
+		       unwind_interval *first) 
 {
-  xed_stat->first_undecoded_ins = fui;
-  xed_stat->errcode = errcode;
-  xed_stat->first   = first;
+  status->first_undecoded_ins = fui;
+  status->errcode = errcode;
+  status->first   = first;
 }
 

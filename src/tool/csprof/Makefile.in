@@ -249,6 +249,8 @@ ifdef X86
 #-----------------------------------------------------------------
 OBJS += x86-all.o 
 OBJS += x86-unwind-support.o 
+OBJS += x86-unwind-interval-fixup.o 
+OBJS += x86-linux-dlresolver.o 
 OBJS += swizzle.o unsafe.o
 endif
 
