@@ -19,7 +19,12 @@ run_stapi_syms()
 	/* ) stapi_dir="${symbols_prefix}/libexec" ;;
 	*  ) stapi_dir="$libexecdir" ;;
     esac
-    LD_LIBRARY_PATH=${lib_path} ${stapi_dir}/stapi_syms $1 > ${prog_file}
+   if LD_LIBRARY_PATH=${lib_path} ${stapi_dir}/stapi_syms $1 > ${prog_file}; then
+     success=1 # effectively a no-op 
+   else
+     rm -f $prog_file;
+   fi
+   return
 }
 
 ############ MAIN CODE ###################
