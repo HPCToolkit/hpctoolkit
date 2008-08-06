@@ -1,6 +1,8 @@
 #ifndef PMSG_H
 #define PMSG_H
 
+#include <stdarg.h>
+
 #define DBG_PREFIX(s) DBG_##s
 
 #undef E
