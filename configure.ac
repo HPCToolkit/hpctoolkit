@@ -463,22 +463,203 @@ AC_MSG_NOTICE([INFO: Exit: CC=${CC} CFLAGS=${CFLAGS} HOST_CFLAGS=${HOST_CFLAGS}]
 
 AC_ARG_WITH([dummy-blank-line], [AS_HELP_STRING([], [])])
 AC_ARG_WITH([externals],
-  [AS_HELP_STRING([--with-externals=PATH],
-    [path to external prereqs tree (default no)])],
-  [],
-  [with_externals=no])
+    [AS_HELP_STRING([--with-externals=PATH],
+	    [path to external prereqs tree (default no)])],
+    [],
+    [with_externals=no])
 
 use_externals=no
 if test "x$with_externals" != xno ; then
-  ext_file="${with_externals}/externs.conf"
-  if test -f "$ext_file" ; then
-    AC_MSG_NOTICE([using externals file: $ext_file])
-    . "$ext_file"
-    use_externals=yes
-  else
-    AC_MSG_ERROR([missing externals file: $ext_file])
-  fi
+    ext_file="${with_externals}/externs.conf"
+    if test -f "$ext_file" ; then
+	AC_MSG_NOTICE([using externals file: $ext_file])
+	. "$ext_file"
+	use_externals=yes
+    else
+	AC_MSG_ERROR([missing externals file: $ext_file])
+    fi
 fi
+
+
+#-------------------------------------------------
+# Option: --with-libdwarf=PATH
+#-------------------------------------------------
+
+LIBDWARF=no
+if test "$use_externals" = yes ; then
+    LIBDWARF="$ext_libdwarf_prefix"
+fi
+
+AC_ARG_WITH([libdwarf],
+    [AS_HELP_STRING([--with-libdwarf=PATH],
+	    [path to libdwarf install directory])],
+    [LIBDWARF=$withval],
+    [])
+
+AC_MSG_CHECKING([for libdwarf])
+
+case "$LIBDWARF" in
+    /* )
+	if test -f "${LIBDWARF}/include/libdwarf.h" ; then :
+	else
+	    AC_MSG_ERROR([invalid libdwarf directory: $LIBDWARF])
+	fi
+	;;
+    no )
+	;;
+    * )
+	AC_MSG_ERROR([libdwarf directory must be absolute path: $LIBDWARF])
+	;;
+esac
+
+AC_MSG_RESULT([$LIBDWARF])
+AC_SUBST([LIBDWARF])
+
+
+#-------------------------------------------------
+# Option: --with-libelf=PATH
+#-------------------------------------------------
+
+LIBELF=no
+if test "$use_externals" = yes ; then
+    LIBELF="$ext_libelf_prefix"
+fi
+
+AC_ARG_WITH([libelf],
+    [AS_HELP_STRING([--with-libelf=PATH],
+	    [path to libelf install directory])],
+    [LIBELF=$withval],
+    [])
+
+AC_MSG_CHECKING([for libelf])
+
+valid_libelf_dir()
+{
+    test -f "$1/include/libelf.h" || test -f "$1/include/libelf/libelf.h"
+}
+
+case "$LIBELF" in
+    /* )
+	if valid_libelf_dir "$LIBELF" ; then :
+	else
+	    AC_MSG_ERROR([invalid libelf directory: $LIBELF])
+	fi
+	;;
+    no )
+	;;
+    * )
+	AC_MSG_ERROR([libelf directory must be absolute path: $LIBELF])
+	;;
+esac
+
+AC_MSG_RESULT([$LIBELF])
+AC_SUBST([LIBELF])
+
+
+#-------------------------------------------------
+# Option: --with-libmonitor=PATH
+#-------------------------------------------------
+
+LIBMONITOR=no
+if test "$use_externals" = yes ; then
+    LIBMONITOR="$ext_libmonitor_prefix"
+fi
+
+AC_ARG_WITH([libmonitor],
+    [AS_HELP_STRING([--with-libmonitor=PATH],
+	    [path to libmonitor install directory])],
+    [LIBMONITOR=$withval],
+    [])
+
+AC_MSG_CHECKING([for libmonitor])
+
+case "$LIBMONITOR" in
+    /* )
+	if test -f "${LIBMONITOR}/include/monitor.h" ; then :
+	else
+	    AC_MSG_ERROR([invalid libmonitor directory: $LIBMONITOR])
+	fi
+	;;
+    no )
+	;;
+    * )
+	AC_MSG_ERROR([libmonitor directory must be absolute path: $LIBMONITOR])
+	;;
+esac
+
+AC_MSG_RESULT([$LIBMONITOR])
+AC_SUBST([LIBMONITOR])
+
+
+#-------------------------------------------------
+# Option: --with-symtabAPI=PATH
+#-------------------------------------------------
+
+SYMTABAPI=no
+if test "$use_externals" = yes ; then
+    SYMTABAPI="$ext_symtabAPI_prefix"
+fi
+
+AC_ARG_WITH([symtabAPI],
+    [AS_HELP_STRING([--with-symtabAPI=PATH],
+	    [path to symtabAPI install directory])],
+    [SYMTABAPI=$withval],
+    [])
+
+AC_MSG_CHECKING([for symtabAPI])
+
+case "$SYMTABAPI" in
+    /* )
+	if test -f "${SYMTABAPI}/include/Symtab.h" ; then :
+	else
+	    AC_MSG_ERROR([invalid symtabAPI directory: $SYMTABAPI])
+	fi
+	;;
+    no )
+	;;
+    * )
+	AC_MSG_ERROR([symtabAPI directory must be absolute path: $SYMTABAPI])
+	;;
+esac
+
+AC_MSG_RESULT([$SYMTABAPI])
+AC_SUBST([SYMTABAPI])
+
+
+#-------------------------------------------------
+# Option: --with-xed2=PATH
+#-------------------------------------------------
+
+XED2=no
+if test "$use_externals" = yes ; then
+    XED2="$ext_xed2_prefix"
+fi
+
+AC_ARG_WITH([xed2],
+    [AS_HELP_STRING([--with-xed2=PATH],
+	    [path to xed2 install directory])],
+    [XED2=$withval],
+    [])
+
+AC_MSG_CHECKING([for xed2])
+
+case "$XED2" in
+    /* )
+	if test -f "${XED2}/include/xed-interface.h" ; then :
+	else
+	    AC_MSG_ERROR([invalid xed2 directory: $XED2])
+	fi
+	;;
+    no )
+	;;
+    * )
+	AC_MSG_ERROR([xed2 directory must be absolute path: $XED2])
+	;;
+esac
+
+AC_MSG_RESULT([$XED2])
+AC_SUBST([XED2])
+
 
 #-------------------------------------------------
 # Check for Xerces-C (XML parser)
@@ -955,3 +1136,25 @@ AC_CONFIG_FILES([ \
 AC_CONFIG_COMMANDS()
 
 AC_OUTPUT()
+
+#
+# Summary of the config options.
+#
+AC_MSG_NOTICE([])
+AC_MSG_NOTICE([HPCToolkit summary])
+AC_MSG_NOTICE([prefix: $prefix])
+AC_MSG_NOTICE([host: $host])
+AC_MSG_NOTICE([CC, CFLAGS: $CC $CFLAGS])
+AC_MSG_NOTICE([CXX, CXXFLAGS: $CXX $CXXFLAGS])
+AC_MSG_NOTICE([binutils: $GNUBINUTILS])
+AC_MSG_NOTICE([libdwarf: $LIBDWARF])
+AC_MSG_NOTICE([libelf: $LIBELF])
+AC_MSG_NOTICE([libmonitor: $LIBMONITOR])
+AC_MSG_NOTICE([(old) monitor: $MONITOR])
+AC_MSG_NOTICE([libunwind: $OPT_LIBUNWIND])
+AC_MSG_NOTICE([open analysis: $OA])
+AC_MSG_NOTICE([papi: $OPT_PAPI])
+AC_MSG_NOTICE([symtabAPI: $SYMTABAPI])
+AC_MSG_NOTICE([xed2: $XED2])
+AC_MSG_NOTICE([xerces: $XERCES])
+
