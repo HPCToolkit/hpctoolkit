@@ -71,6 +71,13 @@ CSPROF_X86_FILES =				\
 	unwind/x86-family/x86-all.c		\
 	unwind/x86-family/x86-unwind-support.c
 
+CSPROF_X86_INCLUDES =                           \
+	-I$(srcdir)/unwind/x86-family	        \
+	-I$(srcdir)/processor/x86-64
+
+CSPROF_PPC_INCLUDES =                           \
+	-I$(srcdir)/unwind/ppc64
+
 CSPROF_PAPI_FILES = papi.sample_source.c
 
 CSPROF_CPP_DEFINES =			\
@@ -90,10 +97,8 @@ CSPROF_INCLUDE_DIRS =			\
 	-I$(srcdir)/memory		\
 	-I$(srcdir)/os/catamount	\
 	-I$(srcdir)/os/linux		\
-	-I$(srcdir)/processor/x86-64	\
 	-I$(srcdir)/sampling/types/callstack	\
 	-I$(srcdir)/unwind/common	\
-	-I$(srcdir)/unwind/x86-family	\
 	-I$(srcdir)/utilities
 
 CSPROF_EXTERN_INCLUDES = @csprof_extern_includes@
@@ -137,12 +142,14 @@ if CSPROF_AMTEST_IS_PPC
     libcsprof_o_SOURCES  += $(CSPROF_PPC_FILES)
     libcsprof_la_CFLAGS += -D__ppc64__
     libcsprof_o_CFLAGS  += -D__ppc64__
+    CSPROF_INCLUDE_DIRS += $(CSPROF_PPC_INCLUDES)
 endif
 
 if CSPROF_AMTEST_IS_X86
     libcsprof_la_SOURCES += $(CSPROF_X86_FILES)
     libcsprof_o_SOURCES  += $(CSPROF_X86_FILES)
     libcsprof_la_LDFLAGS += -L@xed2_prefix@/lib -lxed
+    CSPROF_INCLUDE_DIRS += $(CSPROF_X86_INCLUDES)
 endif
 
 if CSPROF_AMTEST_USE_PAPI
