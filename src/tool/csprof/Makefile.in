@@ -68,6 +68,7 @@ module_dirs := utilities                \
                processor/x86-64         \
                unwind/common            \
                unwind/x86-family        \
+               unwind/x86-family/manual-intervals        \
                sampling/types/callstack \
                Dbg                      \
                hpcfile                  \
