@@ -39,7 +39,7 @@ static void process_branch(char *ins, long offset, xed_decoded_inst_t *xptr);
 
 static void after_unconditional(char *ins, long offset, xed_decoded_inst_t *xptr);
 
-static bool is_mov_rax(unsigned char *ins);
+static bool invalid_routine_start(unsigned char *ins);
 
 
 /******************************************************************************
@@ -160,7 +160,7 @@ after_unconditional(char *ins, long offset, xed_decoded_inst_t *xptr)
 
   // only infer a function entry before padding bytes if there isn't already one after padding bytes
   if (contains_function_entry(uins + offset) == false) {
-    if (is_aligned(uins + offset) && !is_mov_rax(uins)) {
+    if (is_aligned(uins + offset) && !invalid_routine_start(uins)) {
       add_stripped_function_entry(potential_function_addr); // potential function entry point
     }
   }
@@ -241,29 +241,110 @@ process_branch(char *ins, long offset, xed_decoded_inst_t *xptr)
   }
 }
 
+static int
+mem_below_rsp_or_rbp(xed_decoded_inst_t *xptr, int oindex)
+{
+      xed_reg_enum_t basereg = xed_decoded_inst_get_base_reg(xptr, oindex);
+      if (basereg == XED_REG_RSP || basereg == XED_REG_RBP) {
+         int64_t offset = xed_decoded_inst_get_memory_displacement(xptr, oindex);
+#if 0
+         if (offset > 0) {
+#endif
+	    return 1;
+#if 0
+	 }
+#endif
+     } else if (basereg == XED_REG_RAX) {
+	return 1;
+     }
+     return 0;
+}
+
+static bool
+inst_accesses_callers_mem(xed_decoded_inst_t *xptr)
+{
+	// if the instruction accesses memory below the rsp or rbp, this is
+	// not a valid first instruction for a routine. if this is the first
+	// instruction in a routine, this must be manipulating values in the
+	// caller's frame, not its own.
+	int noperands = xed_decoded_inst_number_of_memory_operands(xptr);
+	int not_my_mem = 0;
+	switch (noperands) {
+		case 2: not_my_mem |= mem_below_rsp_or_rbp(xptr, 1);
+		case 1: not_my_mem |= mem_below_rsp_or_rbp(xptr, 0);
+	        case 0: 
+                   break;
+		default:
+		   assert(0 && "unexpected number of memory operands");
+	}
+	if (not_my_mem) return true;
+	return false;
+}
+
+static bool
+from_rax_eax(xed_decoded_inst_t *xptr)
+{
+	int noperands = xed_decoded_inst_noperands(xptr);
+	if (noperands == 2) {
+		const xed_inst_t *xi = xed_decoded_inst_inst(xptr);
+		const xed_operand_t *op1 =  xed_inst_operand(xi, 1);
+		xed_operand_enum_t   op1_name = xed_operand_name(op1);
+
+#if 0
+		if ((xed_decoded_inst_get_iclass(xptr) == XED_ICLASS_MOV) || 
+				(xed_decoded_inst_get_iclass(xptr) == XED_ICLASS_MOVSXD)) {
+#endif
+			if ((op1_name == XED_OPERAND_REG1) && 
+					((xed_decoded_inst_get_reg(xptr, op1_name) == XED_REG_RAX) ||
+					 (xed_decoded_inst_get_reg(xptr, op1_name) == XED_REG_EAX))) {
+				return true;
+			}
+#if 0
+		}
+#endif
+	}
+
+	return false;
+}
+
+
+// prefetches are commonly outlined from loops. don't infer them as function starts
+// after unconditional control flow
+static bool
+is_prefetch(xed_decoded_inst_t *xptr)
+{
+  switch(xed_decoded_inst_get_iclass(xptr)) {
+  case XED_ICLASS_PREFETCHNTA:
+  case XED_ICLASS_PREFETCHT0:
+  case XED_ICLASS_PREFETCHT1:
+  case XED_ICLASS_PREFETCHT2:
+  case XED_ICLASS_PREFETCH_EXCLUSIVE:
+  case XED_ICLASS_PREFETCH_MODIFIED:
+  case XED_ICLASS_PREFETCH_RESERVED:
+    return true;
+  default: 
+    return false;
+  }
+}
+
+
 
 
 static bool
-is_mov_rax(unsigned char *ins)
+invalid_routine_start(unsigned char *ins)
 {
-  xed_decoded_inst_t xdi;
+	xed_decoded_inst_t xdi;
 
-  xed_decoded_inst_zero_set_mode(&xdi, &xed_machine_state_x86_64);
-  xed_error_enum_t xed_error = xed_decode(&xdi, (uint8_t*) ins, 15);
+	xed_decoded_inst_zero_set_mode(&xdi, &xed_machine_state_x86_64);
+	xed_error_enum_t xed_error = xed_decode(&xdi, (uint8_t*) ins, 15);
 
-  if ((xed_error == XED_ERROR_NONE) && 
-      (xed_decoded_inst_get_iclass(&xdi) == XED_ICLASS_MOV)) {
-    const xed_inst_t *xi = xed_decoded_inst_inst(&xdi);
-    const xed_operand_t *op1 =  xed_inst_operand(xi, 1);
-    xed_operand_enum_t   op1_name = xed_operand_name(op1);
+	if (xed_error == XED_ERROR_NONE) { 
+		if (inst_accesses_callers_mem(&xdi)) return true;
+		if (from_rax_eax(&xdi)) return true;
+		if (is_prefetch(&xdi)) return true;
+	}
 
-    if ((op1_name == XED_OPERAND_REG1) && 
-	(xed_decoded_inst_get_reg(&xdi, op1_name) == XED_REG_RAX)) {
-      return true;
-    }
-  }
-
-  return false;
+	return false;
 }
 
 
