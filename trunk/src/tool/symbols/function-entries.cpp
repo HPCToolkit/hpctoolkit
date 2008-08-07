@@ -10,6 +10,7 @@
 #include "intervals.h"
 
 #include <map>
+#include <set>
 
 using namespace std;
 
@@ -42,13 +43,22 @@ static void new_function_entry(void *addr, string *comment);
  *****************************************************************************/
 
 typedef map<void*,Function*> FunctionSet;
+typedef set<void*> ExcludedFunctionSet;
 
 static FunctionSet function_entries;
+static ExcludedFunctionSet excluded_function_entries;
+
 static intervals cbranges;
 
 /******************************************************************************
  * interface operations 
  *****************************************************************************/
+
+void
+exclude_function_entry(void *addr)
+{
+  excluded_function_entries.insert(addr);
+}
 
 
 void 
@@ -56,27 +66,41 @@ dump_reachable_functions()
 {
   char buffer[1024];
   FunctionSet::iterator i = function_entries.begin();
+  int first = 1;
   for (; i != function_entries.end();) {
     Function *f = (*i).second;
-    const char *sep = (++i != function_entries.end()) ? "," : " ";
+    ++i;
 
     const char *name;
     if (f->comment) {
       name = f->comment->c_str();
     } else {
       if (!is_possible_fn(f->address)) continue;
+
+      // inferred functions must be at least 16 bytes long
+      if (i != function_entries.end()) {
+        Function *nextf = (*i).second;
+	 if ((((unsigned long) nextf->address) - 
+              ((unsigned long) f->address)) < 16) continue;
+      }
       sprintf(buffer,"stripped_%p", f->address);
       name = buffer;
     }
-    printf("   %p%s /* %s */\n", f->address, sep, name);
+    if (first) printf("   %p /* %s */", f->address, name);
+    else printf(",\n   %p /* %s */", f->address, name);
+    first = 0;
   }
+  if (!first) printf("\n");
 }
 
 
 void 
 add_stripped_function_entry(void *addr)
 {
-  add_function_entry(addr, NULL);
+  // only add the function if it hasn't been specifically excluded 
+  if (excluded_function_entries.find(addr) == excluded_function_entries.end())  {
+    add_function_entry(addr, NULL);
+  }
 }
 
 
