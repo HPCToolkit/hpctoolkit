@@ -48,6 +48,7 @@ POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
 @OPT_ENABLE_HPCRUN_TRUE@am__append_1 = hpcrun
+@OPT_ENABLE_CSPROF_TRUE@am__append_2 = csprof symbols
 subdir = src/tool
 DIST_COMMON = $(srcdir)/Makefile.am $(srcdir)/Makefile.in
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
@@ -71,7 +72,7 @@ RECURSIVE_CLEAN_TARGETS = mostlyclean-recursive clean-recursive	\
 ETAGS = etags
 CTAGS = ctags
 DIST_SUBDIRS = hpcstruct hpcprof hpcprof-flat hpcproftt hpclump xprof \
-	misc hpcrun
+	misc hpcrun csprof symbols
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
 ACLOCAL = @ACLOCAL@
 AMTAR = @AMTAR@
@@ -123,9 +124,10 @@ INSTALL_PROGRAM = @INSTALL_PROGRAM@
 INSTALL_SCRIPT = @INSTALL_SCRIPT@
 INSTALL_STRIP_PROGRAM = @INSTALL_STRIP_PROGRAM@
 LDFLAGS = @LDFLAGS@
-LIBDWARF = @LIBDWARF@
-LIBELF = @LIBELF@
-LIBMONITOR = @LIBMONITOR@
+LIBDWARF_LIB = @LIBDWARF_LIB@
+LIBELF_LIB = @LIBELF_LIB@
+LIBMONITOR_INC = @LIBMONITOR_INC@
+LIBMONITOR_LIB = @LIBMONITOR_LIB@
 LIBOBJS = @LIBOBJS@
 LIBS = @LIBS@
 LIBTOOL = @LIBTOOL@
@@ -163,9 +165,11 @@ SED = @SED@
 SET_MAKE = @SET_MAKE@
 SHELL = @SHELL@
 STRIP = @STRIP@
-SYMTABAPI = @SYMTABAPI@
+SYMTABAPI_INC = @SYMTABAPI_INC@
+SYMTABAPI_LIB = @SYMTABAPI_LIB@
 VERSION = @VERSION@
-XED2 = @XED2@
+XED2_INC = @XED2_INC@
+XED2_LIB = @XED2_LIB@
 XERCES = @XERCES@
 XERCES_IFLAGS = @XERCES_IFLAGS@
 XERCES_LDFLAGS = @XERCES_LDFLAGS@
@@ -188,6 +192,7 @@ build_cpu = @build_cpu@
 build_os = @build_os@
 build_vendor = @build_vendor@
 builddir = @builddir@
+csprof_libcpp_path = @csprof_libcpp_path@
 datadir = @datadir@
 datarootdir = @datarootdir@
 docdir = @docdir@
@@ -204,11 +209,13 @@ infodir = @infodir@
 install_sh = @install_sh@
 libdir = @libdir@
 libexecdir = @libexecdir@
+libmonitor_prefix = @libmonitor_prefix@
 localedir = @localedir@
 localstatedir = @localstatedir@
 mandir = @mandir@
 mkdir_p = @mkdir_p@
 oldincludedir = @oldincludedir@
+papi_extra_libs = @papi_extra_libs@
 pdfdir = @pdfdir@
 prefix = @prefix@
 program_transform_name = @program_transform_name@
@@ -233,7 +240,7 @@ AUTOMAKE_OPTIONS = foreign
 # Automake rules
 #############################################################################
 SUBDIRS = hpcstruct hpcprof hpcprof-flat hpcproftt hpclump xprof misc \
-	$(am__append_1)
+	$(am__append_1) $(am__append_2)
 all: all-recursive
 
 .SUFFIXES:

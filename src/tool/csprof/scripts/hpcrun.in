@@ -38,7 +38,7 @@
 ## **************************************************************************
 ##
 ## File: 
-##    hpcrun: Launch the call stack profiler by setting up a preloaded
+##    csprof: Launch the call stack profiler by setting up a preloaded
 ##    library that will intercept an application's execution and start
 ##    the profiler.  This script processes arguments and passes them
 ##    to the profiling library through environment variables.
@@ -78,7 +78,6 @@ opt_memsize=""
 opt_event=""
 opt_verbosity=""
 opt_debug=""
-opt_trace=""
 opt_debug_wait=""
 opt_papi=""
 opt_ev_list=''
@@ -96,16 +95,14 @@ cmd_to_profile=""
 
 cmd="$0"
 
-# source the configure info
-#
-
-. ${CSPROF_ROOT}/libexec/conf.sh
+monitor_prefix='@libmonitor_prefix@'
+papi_prefix='@OPT_PAPI@'
 
 f_usage()
 {
   cat <<EOF
 Usage:
-   hpcrun [-t] [-o outpath] [-e EVENT:PERIOD]* cmd
+   csprof [-o outpath] [-e EVENT:PERIOD]* cmd
 
    -o outpath
       Directory in which to store profiler output data.
@@ -125,27 +122,25 @@ Usage:
       sampling source (via the PAPI interface). The "PERIOD" component of a
       PAPI event specfication is a count of the number of events.
 
-      For a list of PAPI events, you can run the papi_avail utility that is
-      in the bin directory of the PAPI software package.
+      For a list of PAPI events, please run
+        hpcrun -L
 
       The WALLCLOCK event is triggered by the Unix itimer feature. The "PERIOD"
       component of the WALLCLOCK event is the number of microseconds between
       samples
 
       EXAMPLE
-        hpcrun -e PAPI_TOT_INS:1000000 -e PAPI_FP_INS:100000 A_PROGRAM
+        csprof -e PAPI_TOT_INS:1000000 -e PAPI_FP_INS:100000 A_PROGRAM
 
         The above command line would sample A_PROGRAM every 1000000 instructions
         OR every 1000000 floating point instructions.
 
-    -t record a call path trace in addition to call path profile
-
   NOTES:
-     hpcrun uses preloaded shared libraries to initiate profiling;      
-     modifications to the hpcrun launcher script will be necessary      
+     csprof uses preloaded shared libraries to initiate profiling;      
+     modifications to the csprof launcher script will be necessary      
      to profile programs that use library preloading
 
-     hpcrun cannot be used to profile setuid commands as preloading
+     csprof cannot be used to profile setuid commands as preloading
      shared libraries is not permitted for them.
 EOF
 }
@@ -157,7 +152,7 @@ f_checkenv()
      *  ) monitor_dir="$CSPROF_LIB" ;;
   esac
 
-  RLD_LIB="${CSPROF_LIB}/libcsprof.so.1:${monitor_dir}/libmonitor.so"
+  RLD_LIB="${CSPROF_LIB}/libcsprof.so.0:${monitor_dir}/libmonitor.so"
 
   # preload our library first before loading all of those specified in
   # the application binary (signified by DEFAULT).
@@ -218,8 +213,9 @@ f_getoptions()
             opt_ev_list="$LL$1";
 	    LL="$opt_ev_list "
             ;;
-      -t)   opt_trace=1
-            ;;
+#      -E)   shift; opt_papi=1;
+#            opt_papi_evlst="${opt_papi_evlst} $1"
+#            ;;
       -o)   shift; opt_out_path="$1"; 
             f_opt_check "-o" "${opt_out_path}";
             ;;
@@ -301,15 +297,18 @@ f_prepareenv()
   if [ -n "${opt_debug_wait}" ]; then
     export CSPROF_WAIT=1
   fi
-  if [ -n "${opt_trace}" ]; then
-    export CSPROF_OPT_TRACE=1
-  fi
   if [ -n "$dd_list" ]; then
     export CSPROF_DD=$dd_list
   fi
   if [ -n "$opt_monitor_debug" ]; then
     export MONITOR_DEBUG=1
   fi
+#  if [ -n "${opt_papi}" ]; then
+#    export SWITCH_TO_PAPI=1
+#  fi
+#  if [ -n "$opt_papi_evlst" ]; then
+#    export PAPI_EVLST=$opt_papi_evlst
+#  fi
 
   # Make sure that `.' is in the PATH so that we can find the command
   # to profile if in the current directory. [We can get around this,
@@ -317,8 +316,12 @@ f_prepareenv()
   export PATH=".:${PATH}" 
 
   # set up the LD_LIBRARY_PATH
-
-  export LD_LIBRARY_PATH=$papi_ld_lst:$LD_LIBRARY_PATH
+  case "$papi_prefix" in
+      /* )
+	  LD_LIBRARY_PATH="${papi_prefix}/lib:$LD_LIBRARY_PATH"
+	  ;;
+  esac
+  export LD_LIBRARY_PATH
 }
 
 #############################################################################

@@ -902,6 +902,12 @@ F77
 FFLAGS
 ac_ct_F77
 LIBTOOL
+HOST_OS_LINUX_TRUE
+HOST_OS_LINUX_FALSE
+HOST_CPU_PPC_TRUE
+HOST_CPU_PPC_FALSE
+HOST_CPU_X86_TRUE
+HOST_CPU_X86_FALSE
 HOST_CFLAGS
 HOST_CXXFLAGS
 HOST_AR
@@ -915,11 +921,15 @@ HOST_HPCPROF_LDFLAGS
 HOST_HPCPROF_FLAT_LDFLAGS
 HOST_HPCPROFTT_LDFLAGS
 HOST_XPROF_LDFLAGS
-LIBDWARF
-LIBELF
-LIBMONITOR
-SYMTABAPI
-XED2
+LIBDWARF_LIB
+LIBELF_LIB
+LIBMONITOR_INC
+LIBMONITOR_LIB
+libmonitor_prefix
+SYMTABAPI_INC
+SYMTABAPI_LIB
+XED2_INC
+XED2_LIB
 XERCES
 XERCES_IFLAGS
 XERCES_LDFLAGS
@@ -937,6 +947,7 @@ OPT_PAPI_IFLAGS
 OPT_PAPI_LDFLAGS
 OPT_PAPI_LIBPATH
 OPT_PAPI_LIB
+papi_extra_libs
 OPT_HAVE_LIBUNWIND_TRUE
 OPT_HAVE_LIBUNWIND_FALSE
 OPT_LIBUNWIND_IFLAGS
@@ -946,10 +957,13 @@ OPT_LIBUNWIND_LIBSO
 OPT_LIBUNWIND_LIBA
 OPT_ENABLE_HPCRUN_TRUE
 OPT_ENABLE_HPCRUN_FALSE
+OPT_ENABLE_CSPROF_TRUE
+OPT_ENABLE_CSPROF_FALSE
 OPT_ENABLE_CSPROF_SYNC_TRUE
 OPT_ENABLE_CSPROF_SYNC_FALSE
 OPT_ENABLE_CSPROF_ASYNC_TRUE
 OPT_ENABLE_CSPROF_ASYNC_FALSE
+csprof_libcpp_path
 OPT_ENABLE_DEVTOOLS_TRUE
 OPT_ENABLE_DEVTOOLS_FALSE
 OPT_OBJCOPY
@@ -981,6 +995,7 @@ with_binutils
 with_monitor
 with_papi
 with_libunwind
+enable_csprof
 enable_csprof_sync
 enable_csprof_async
 enable_devtools
@@ -1642,6 +1657,7 @@ Optional Features:
   --disable-dependency-tracking  speeds up one-time build
   --enable-dependency-tracking   do not reject slow dependency extractors
   --disable-libtool-lock  avoid locking (might break parallel builds)
+  --enable-csprof         build csprof (default yes)
   --enable-csprof-sync    Build csprof (synchronous)
   --enable-csprof-async   Build csprof (synchronous)
   --enable-devtools       Build development tools (enable debugging)
@@ -4614,7 +4630,7 @@ ia64-*-hpux*)
   ;;
 *-*-irix6*)
   # Find out which ABI we are using.
-  echo '#line 4617 "configure"' > conftest.$ac_ext
+  echo '#line 4633 "configure"' > conftest.$ac_ext
   if { (eval echo "$as_me:$LINENO: \"$ac_compile\"") >&5
   (eval $ac_compile) 2>&5
   ac_status=$?
@@ -7721,11 +7737,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:7724: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:7740: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:7728: \$? = $ac_status" >&5
+   echo "$as_me:7744: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -8011,11 +8027,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:8014: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:8030: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:8018: \$? = $ac_status" >&5
+   echo "$as_me:8034: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -8115,11 +8131,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:8118: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:8134: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>out/conftest.err)
    ac_status=$?
    cat out/conftest.err >&5
-   echo "$as_me:8122: \$? = $ac_status" >&5
+   echo "$as_me:8138: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s out/conftest2.$ac_objext
    then
      # The compiler can only warn and ignore the option if not recognized
@@ -10515,7 +10531,7 @@ else
   lt_dlunknown=0; lt_dlno_uscore=1; lt_dlneed_uscore=2
   lt_status=$lt_dlunknown
   cat > conftest.$ac_ext <<EOF
-#line 10518 "configure"
+#line 10534 "configure"
 #include "confdefs.h"
 
 #if HAVE_DLFCN_H
@@ -10615,7 +10631,7 @@ else
   lt_dlunknown=0; lt_dlno_uscore=1; lt_dlneed_uscore=2
   lt_status=$lt_dlunknown
   cat > conftest.$ac_ext <<EOF
-#line 10618 "configure"
+#line 10634 "configure"
 #include "confdefs.h"
 
 #if HAVE_DLFCN_H
@@ -13024,11 +13040,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:13027: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:13043: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:13031: \$? = $ac_status" >&5
+   echo "$as_me:13047: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -13128,11 +13144,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:13131: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:13147: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>out/conftest.err)
    ac_status=$?
    cat out/conftest.err >&5
-   echo "$as_me:13135: \$? = $ac_status" >&5
+   echo "$as_me:13151: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s out/conftest2.$ac_objext
    then
      # The compiler can only warn and ignore the option if not recognized
@@ -14711,11 +14727,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:14714: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:14730: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:14718: \$? = $ac_status" >&5
+   echo "$as_me:14734: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -14815,11 +14831,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:14818: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:14834: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>out/conftest.err)
    ac_status=$?
    cat out/conftest.err >&5
-   echo "$as_me:14822: \$? = $ac_status" >&5
+   echo "$as_me:14838: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s out/conftest2.$ac_objext
    then
      # The compiler can only warn and ignore the option if not recognized
@@ -17030,11 +17046,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:17033: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:17049: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:17037: \$? = $ac_status" >&5
+   echo "$as_me:17053: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -17320,11 +17336,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:17323: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:17339: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:17327: \$? = $ac_status" >&5
+   echo "$as_me:17343: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -17424,11 +17440,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:17427: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:17443: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>out/conftest.err)
    ac_status=$?
    cat out/conftest.err >&5
-   echo "$as_me:17431: \$? = $ac_status" >&5
+   echo "$as_me:17447: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s out/conftest2.$ac_objext
    then
      # The compiler can only warn and ignore the option if not recognized
@@ -21862,6 +21878,137 @@ test -z "$INSTALL_SCRIPT" && INSTALL_SCRIPT='${INSTALL}'
 
 test -z "$INSTALL_DATA" && INSTALL_DATA='${INSTALL} -m 644'
 
+if test "x$CC" != xcc; then
+  { $as_echo "$as_me:$LINENO: checking whether $CC and cc understand -c and -o together" >&5
+$as_echo_n "checking whether $CC and cc understand -c and -o together... " >&6; }
+else
+  { $as_echo "$as_me:$LINENO: checking whether cc understands -c and -o together" >&5
+$as_echo_n "checking whether cc understands -c and -o together... " >&6; }
+fi
+set dummy $CC; ac_cc=`$as_echo "$2" |
+		      sed 's/[^a-zA-Z0-9_]/_/g;s/^[0-9]/_/'`
+if { as_var=ac_cv_prog_cc_${ac_cc}_c_o; eval "test \"\${$as_var+set}\" = set"; }; then
+  $as_echo_n "(cached) " >&6
+else
+  cat >conftest.$ac_ext <<_ACEOF
+/* confdefs.h.  */
+_ACEOF
+cat confdefs.h >>conftest.$ac_ext
+cat >>conftest.$ac_ext <<_ACEOF
+/* end confdefs.h.  */
+
+int
+main ()
+{
+
+  ;
+  return 0;
+}
+_ACEOF
+# Make sure it works both with $CC and with simple cc.
+# We do the test twice because some compilers refuse to overwrite an
+# existing .o file with -o, though they will create one.
+ac_try='$CC -c conftest.$ac_ext -o conftest2.$ac_objext >&5'
+rm -f conftest2.*
+if { (case "(($ac_try" in
+  *\"* | *\`* | *\\*) ac_try_echo=\$ac_try;;
+  *) ac_try_echo=$ac_try;;
+esac
+eval ac_try_echo="\"\$as_me:$LINENO: $ac_try_echo\""
+$as_echo "$ac_try_echo") >&5
+  (eval "$ac_try") 2>&5
+  ac_status=$?
+  $as_echo "$as_me:$LINENO: \$? = $ac_status" >&5
+  (exit $ac_status); } &&
+   test -f conftest2.$ac_objext && { (case "(($ac_try" in
+  *\"* | *\`* | *\\*) ac_try_echo=\$ac_try;;
+  *) ac_try_echo=$ac_try;;
+esac
+eval ac_try_echo="\"\$as_me:$LINENO: $ac_try_echo\""
+$as_echo "$ac_try_echo") >&5
+  (eval "$ac_try") 2>&5
+  ac_status=$?
+  $as_echo "$as_me:$LINENO: \$? = $ac_status" >&5
+  (exit $ac_status); };
+then
+  eval ac_cv_prog_cc_${ac_cc}_c_o=yes
+  if test "x$CC" != xcc; then
+    # Test first that cc exists at all.
+    if { ac_try='cc -c conftest.$ac_ext >&5'
+  { (case "(($ac_try" in
+  *\"* | *\`* | *\\*) ac_try_echo=\$ac_try;;
+  *) ac_try_echo=$ac_try;;
+esac
+eval ac_try_echo="\"\$as_me:$LINENO: $ac_try_echo\""
+$as_echo "$ac_try_echo") >&5
+  (eval "$ac_try") 2>&5
+  ac_status=$?
+  $as_echo "$as_me:$LINENO: \$? = $ac_status" >&5
+  (exit $ac_status); }; }; then
+      ac_try='cc -c conftest.$ac_ext -o conftest2.$ac_objext >&5'
+      rm -f conftest2.*
+      if { (case "(($ac_try" in
+  *\"* | *\`* | *\\*) ac_try_echo=\$ac_try;;
+  *) ac_try_echo=$ac_try;;
+esac
+eval ac_try_echo="\"\$as_me:$LINENO: $ac_try_echo\""
+$as_echo "$ac_try_echo") >&5
+  (eval "$ac_try") 2>&5
+  ac_status=$?
+  $as_echo "$as_me:$LINENO: \$? = $ac_status" >&5
+  (exit $ac_status); } &&
+	 test -f conftest2.$ac_objext && { (case "(($ac_try" in
+  *\"* | *\`* | *\\*) ac_try_echo=\$ac_try;;
+  *) ac_try_echo=$ac_try;;
+esac
+eval ac_try_echo="\"\$as_me:$LINENO: $ac_try_echo\""
+$as_echo "$ac_try_echo") >&5
+  (eval "$ac_try") 2>&5
+  ac_status=$?
+  $as_echo "$as_me:$LINENO: \$? = $ac_status" >&5
+  (exit $ac_status); };
+      then
+	# cc works too.
+	:
+      else
+	# cc exists but doesn't like -o.
+	eval ac_cv_prog_cc_${ac_cc}_c_o=no
+      fi
+    fi
+  fi
+else
+  eval ac_cv_prog_cc_${ac_cc}_c_o=no
+fi
+rm -f core conftest*
+
+fi
+if eval test \$ac_cv_prog_cc_${ac_cc}_c_o = yes; then
+  { $as_echo "$as_me:$LINENO: result: yes" >&5
+$as_echo "yes" >&6; }
+else
+  { $as_echo "$as_me:$LINENO: result: no" >&5
+$as_echo "no" >&6; }
+
+cat >>confdefs.h <<\_ACEOF
+#define NO_MINUS_C_MINUS_O 1
+_ACEOF
+
+fi
+
+# FIXME: we rely on the cache variable name because
+# there is no other way.
+set dummy $CC
+ac_cc=`echo $2 | sed 's/[^a-zA-Z0-9_]/_/g;s/^[0-9]/_/'`
+if eval "test \"`echo '$ac_cv_prog_cc_'${ac_cc}_c_o`\" != yes"; then
+   # Losing compiler, so override with the script.
+   # FIXME: It is wrong to rewrite CC.
+   # But if we don't then we get into trouble of one sort or another.
+   # A longer-term fix would be to have automake use am__CC in this case,
+   # and then we could set am__CC="\$(top_srcdir)/compile \$(CC)"
+   CC="$am_aux_dir/compile $CC"
+fi
+
+
 
 { $as_echo "$as_me:$LINENO: INFO: ac_prog: CXX=${CXX} CXXFLAGS=${CXXFLAGS}" >&5
 $as_echo "$as_me: INFO: ac_prog: CXX=${CXX} CXXFLAGS=${CXXFLAGS}" >&6;}
@@ -23186,7 +23333,6 @@ $as_echo "${HAVE_OS_MULTILIB} (searching: ${LIB_SEARCH_PATH})" >&6; }
 # -none thus far-
 
 
-
 #----------------------------------------------------------------------------
 # Host-dependent configuration
 # $host: $host_cpu-$host_vendor-$host_os
@@ -23212,12 +23358,28 @@ MYcxxcmp()
 
 # NOTE: To see what macros gcc-like compilers define:
 #   gcc -dM -E - < /dev/null | sort
-HOST_OS=""
+#
+# FIXME: This should probably be split into separate CPU and OS
+# sections.
+
+HOST_OS=
+host_cpu_ppc=no
+host_cpu_x86=no
 
 case ${host} in
   # Linux
-  i386*-*-linux* | i686*-*-linux* | x86_64*-*-linux* | ia64*-*-linux*)
-    # __i386 / __x86_64 / __ia64 && __linux
+  i386*-*-linux* | i686*-*-linux* | x86_64*-*-linux*)
+    # __i386 / __x86_64 && __linux
+    HOST_OS="Linux"
+    host_cpu_x86=yes
+    cat >>confdefs.h <<\_ACEOF
+#define HOST_OS_LINUX /**/
+_ACEOF
+
+    ;;
+
+  ia64*-*-linux*)
+    # __ia64 && __linux
     HOST_OS="Linux"
     cat >>confdefs.h <<\_ACEOF
 #define HOST_OS_LINUX /**/
@@ -23241,6 +23403,7 @@ _ACEOF
   powerpc64*-*-linux*)
     # []
     HOST_OS="Linux"
+    host_cpu_ppc=yes
     cat >>confdefs.h <<\_ACEOF
 #define HOST_OS_LINUX /**/
 _ACEOF
@@ -23251,6 +23414,7 @@ _ACEOF
   powerpc*-*-darwin*)
     # __ppc__ / __MACH__
     HOST_OS="MacOS"
+    host_cpu_ppc=yes
     cat >>confdefs.h <<\_ACEOF
 #define HOST_OS_MACOS /**/
 _ACEOF
@@ -23259,6 +23423,7 @@ _ACEOF
 
   i386*-*-darwin* | i686*-*-darwin*)
     HOST_OS="MacOS"
+    host_cpu_x86=yes
     cat >>confdefs.h <<\_ACEOF
 #define HOST_OS_MACOS /**/
 _ACEOF
@@ -23303,6 +23468,31 @@ $as_echo "$as_me: error: HPCToolkit is not configured for HOST=${host}!" >&2;}
    { (exit 1); exit 1; }; }
     ;;
 esac
+
+ if test "$HOST_OS" = Linux; then
+  HOST_OS_LINUX_TRUE=
+  HOST_OS_LINUX_FALSE='#'
+else
+  HOST_OS_LINUX_TRUE='#'
+  HOST_OS_LINUX_FALSE=
+fi
+
+ if test "$host_cpu_ppc" = yes; then
+  HOST_CPU_PPC_TRUE=
+  HOST_CPU_PPC_FALSE='#'
+else
+  HOST_CPU_PPC_TRUE='#'
+  HOST_CPU_PPC_FALSE=
+fi
+
+ if test "$host_cpu_x86" = yes; then
+  HOST_CPU_X86_TRUE=
+  HOST_CPU_X86_FALSE='#'
+else
+  HOST_CPU_X86_TRUE='#'
+  HOST_CPU_X86_FALSE=
+fi
+
 
 
 #-------------------------------------------------
@@ -23578,6 +23768,8 @@ $as_echo "$as_me: error: libdwarf directory must be absolute path: $LIBDWARF" >&
 	;;
 esac
 
+LIBDWARF_LIB="${LIBDWARF}/lib"
+
 { $as_echo "$as_me:$LINENO: result: $LIBDWARF" >&5
 $as_echo "$LIBDWARF" >&6; }
 
@@ -23625,6 +23817,8 @@ $as_echo "$as_me: error: libelf directory must be absolute path: $LIBELF" >&2;}
 	;;
 esac
 
+LIBELF_LIB="${LIBELF}/lib"
+
 { $as_echo "$as_me:$LINENO: result: $LIBELF" >&5
 $as_echo "$LIBELF" >&6; }
 
@@ -23667,8 +23861,14 @@ $as_echo "$as_me: error: libmonitor directory must be absolute path: $LIBMONITOR
 	;;
 esac
 
+LIBMONITOR_INC="${LIBMONITOR}/include"
+LIBMONITOR_LIB="${LIBMONITOR}/lib"
+libmonitor_prefix="$LIBMONITOR"
+
 { $as_echo "$as_me:$LINENO: result: $LIBMONITOR" >&5
 $as_echo "$LIBMONITOR" >&6; }
+
+
 
 
 
@@ -23709,8 +23909,12 @@ $as_echo "$as_me: error: symtabAPI directory must be absolute path: $SYMTABAPI" 
 	;;
 esac
 
+SYMTABAPI_INC="${SYMTABAPI}/include"
+SYMTABAPI_LIB="${SYMTABAPI}/lib"
+
 { $as_echo "$as_me:$LINENO: result: $SYMTABAPI" >&5
 $as_echo "$SYMTABAPI" >&6; }
+
 
 
 
@@ -23751,8 +23955,12 @@ $as_echo "$as_me: error: xed2 directory must be absolute path: $XED2" >&2;}
 	;;
 esac
 
+XED2_INC="${XED2}/include"
+XED2_LIB="${XED2}/lib"
+
 { $as_echo "$as_me:$LINENO: result: $XED2" >&5
 $as_echo "$XED2" >&6; }
+
 
 
 
@@ -24111,6 +24319,19 @@ else
 $as_echo "no" >&6; }
 fi
 
+papi_extra_libs=
+so_file="${OPT_PAPI_LIBPATH}/libpapi.so"
+if test -f "$so_file" ; then
+  ldd "$so_file" | grep libperfctr >/dev/null 2>&1
+  if test $? = 0 ; then
+    papi_extra_libs="${papi_extra_libs} -lperfctr"
+  fi
+  ldd "$so_file" | grep libpfm >/dev/null 2>&1
+  if test $? = 0 ; then
+    papi_extra_libs="${papi_extra_libs} -lpfm"
+  fi
+fi
+
  if test "${OPT_HAVE_PAPI}" = "yes"; then
   OPT_HAVE_PAPI_TRUE=
   OPT_HAVE_PAPI_FALSE='#'
@@ -24118,6 +24339,7 @@ else
   OPT_HAVE_PAPI_TRUE='#'
   OPT_HAVE_PAPI_FALSE=
 fi
+
 
 
 
@@ -24206,11 +24428,50 @@ fi
 
 
 #-------------------------------------------------
-# enable-csprof: [not yet available]
+# enable-csprof:
 # enable-csprof-sync:
 # enable-csprof-async:
 #   - on Linux, requires libunwind
 #-------------------------------------------------
+
+# Check whether --enable-csprof was given.
+if test "${enable_csprof+set}" = set; then
+  enableval=$enable_csprof;
+else
+  enable_csprof=yes
+fi
+
+
+{ $as_echo "$as_me:$LINENO: checking whether to build csprof" >&5
+$as_echo_n "checking whether to build csprof... " >&6; }
+
+OPT_ENABLE_CSPROF=yes
+enable_csprof_mesg=yes
+if test "$enable_csprof" = no ; then
+  OPT_ENABLE_CSPROF=no
+  enable_csprof_mesg='no (disabled)'
+elif test "$LIBDWARF" = no   || test "$LIBELF" = no ||  \
+     test "$LIBMONITOR" = no || test "$SYMTABAPI" = no
+then
+  OPT_ENABLE_CSPROF=no
+  enable_csprof_mesg='no (missing prerequisites)'
+fi
+if test "$hpc_cpu_x86" = yes && test "$XED2" = no ; then
+  OPT_ENABLE_CSPROF=no
+  enable_csprof_mesg='no (missing prerequisites)'
+fi
+
+{ $as_echo "$as_me:$LINENO: result: $enable_csprof_mesg" >&5
+$as_echo "$enable_csprof_mesg" >&6; }
+ if test "$OPT_ENABLE_CSPROF" = yes; then
+  OPT_ENABLE_CSPROF_TRUE=
+  OPT_ENABLE_CSPROF_FALSE='#'
+else
+  OPT_ENABLE_CSPROF_TRUE='#'
+  OPT_ENABLE_CSPROF_FALSE=
+fi
+
+
 
 { $as_echo "$as_me:$LINENO: checking whether to build csprof (synchronous)" >&5
 $as_echo_n "checking whether to build csprof (synchronous)... " >&6; }
@@ -24283,6 +24544,21 @@ $as_echo "$as_me: error: libunwind is needed to build csprof on Linux" >&2;}
    { (exit 1); exit 1; }; }
   fi
 fi
+
+#
+# Find location of libstdc++.
+# FIXME -- Is there an Autoconf macro for this?
+#
+src="/tmp/hello.$$.cc"
+obj="/tmp/hello.$$.out"
+cat <<EOF > "$src"
+main(){}
+EOF
+g++ -o "$obj" "$src"
+csprof_libcpp_path=`ldd $obj | $AWK '/libstdc\+\+/ {print $3}'`
+csprof_libcpp_path=`dirname $csprof_libcpp_path`
+rm -f "$src" "$obj"
+
 
 
 #-------------------------------------------------
@@ -24383,7 +24659,14 @@ $as_echo "yes (${OPT_OBJCOPY})" >&6; }
 # Makefiles to create
 #----------------------------------------------------------------------------
 
-ac_config_files="$ac_config_files Makefile doc/Makefile doc/man/Makefile doc/man/HPCToolkitVersionInfo.tex doc/www/Makefile lib/Makefile src/Makefile src/tool/Makefile src/tool/hpclump/Makefile src/tool/hpcprof/Makefile src/tool/hpcprof-flat/Makefile src/tool/hpcproftt/Makefile src/tool/hpcrun/Makefile src/tool/hpcstruct/Makefile src/tool/misc/Makefile src/tool/xprof/Makefile src/lib/Makefile src/lib/analysis/Makefile src/lib/banal/Makefile src/lib/binutils/Makefile src/lib/isa/Makefile src/lib/perl/Makefile src/lib/prof-juicy/Makefile src/lib/prof-juicy-x/Makefile src/lib/prof-lean/Makefile src/lib/support/Makefile src/lib/xml/Makefile"
+ac_config_files="$ac_config_files Makefile doc/Makefile doc/man/Makefile doc/man/HPCToolkitVersionInfo.tex doc/www/Makefile lib/Makefile src/Makefile src/tool/Makefile src/tool/csprof/Makefile src/tool/hpclump/Makefile src/tool/hpcprof/Makefile src/tool/hpcprof-flat/Makefile src/tool/hpcproftt/Makefile src/tool/hpcrun/Makefile src/tool/hpcstruct/Makefile src/tool/misc/Makefile src/tool/symbols/Makefile src/tool/xprof/Makefile src/lib/Makefile src/lib/analysis/Makefile src/lib/banal/Makefile src/lib/binutils/Makefile src/lib/isa/Makefile src/lib/perl/Makefile src/lib/prof-juicy/Makefile src/lib/prof-juicy-x/Makefile src/lib/prof-lean/Makefile src/lib/support/Makefile src/lib/xml/Makefile"
+
+
+ac_config_files="$ac_config_files src/tool/csprof/scripts/hpcrun"
+
+ac_config_files="$ac_config_files src/tool/csprof/scripts/hpclink"
+
+ac_config_files="$ac_config_files src/tool/csprof/scripts/csprof_syms"
 
 
 ac_config_commands="$ac_config_commands "
@@ -24571,6 +24854,27 @@ $as_echo "$as_me: error: conditional \"am__fastdepCC\" was never defined.
 Usually this means the macro was only invoked conditionally." >&2;}
    { (exit 1); exit 1; }; }
 fi
+if test -z "${HOST_OS_LINUX_TRUE}" && test -z "${HOST_OS_LINUX_FALSE}"; then
+  { { $as_echo "$as_me:$LINENO: error: conditional \"HOST_OS_LINUX\" was never defined.
+Usually this means the macro was only invoked conditionally." >&5
+$as_echo "$as_me: error: conditional \"HOST_OS_LINUX\" was never defined.
+Usually this means the macro was only invoked conditionally." >&2;}
+   { (exit 1); exit 1; }; }
+fi
+if test -z "${HOST_CPU_PPC_TRUE}" && test -z "${HOST_CPU_PPC_FALSE}"; then
+  { { $as_echo "$as_me:$LINENO: error: conditional \"HOST_CPU_PPC\" was never defined.
+Usually this means the macro was only invoked conditionally." >&5
+$as_echo "$as_me: error: conditional \"HOST_CPU_PPC\" was never defined.
+Usually this means the macro was only invoked conditionally." >&2;}
+   { (exit 1); exit 1; }; }
+fi
+if test -z "${HOST_CPU_X86_TRUE}" && test -z "${HOST_CPU_X86_FALSE}"; then
+  { { $as_echo "$as_me:$LINENO: error: conditional \"HOST_CPU_X86\" was never defined.
+Usually this means the macro was only invoked conditionally." >&5
+$as_echo "$as_me: error: conditional \"HOST_CPU_X86\" was never defined.
+Usually this means the macro was only invoked conditionally." >&2;}
+   { (exit 1); exit 1; }; }
+fi
 if test -z "${IS_HOST_AR_TRUE}" && test -z "${IS_HOST_AR_FALSE}"; then
   { { $as_echo "$as_me:$LINENO: error: conditional \"IS_HOST_AR\" was never defined.
 Usually this means the macro was only invoked conditionally." >&5
@@ -24596,6 +24900,13 @@ if test -z "${OPT_ENABLE_HPCRUN_TRUE}" && test -z "${OPT_ENABLE_HPCRUN_FALSE}"; 
   { { $as_echo "$as_me:$LINENO: error: conditional \"OPT_ENABLE_HPCRUN\" was never defined.
 Usually this means the macro was only invoked conditionally." >&5
 $as_echo "$as_me: error: conditional \"OPT_ENABLE_HPCRUN\" was never defined.
+Usually this means the macro was only invoked conditionally." >&2;}
+   { (exit 1); exit 1; }; }
+fi
+if test -z "${OPT_ENABLE_CSPROF_TRUE}" && test -z "${OPT_ENABLE_CSPROF_FALSE}"; then
+  { { $as_echo "$as_me:$LINENO: error: conditional \"OPT_ENABLE_CSPROF\" was never defined.
+Usually this means the macro was only invoked conditionally." >&5
+$as_echo "$as_me: error: conditional \"OPT_ENABLE_CSPROF\" was never defined.
 Usually this means the macro was only invoked conditionally." >&2;}
    { (exit 1); exit 1; }; }
 fi
@@ -25109,6 +25420,7 @@ do
     "lib/Makefile") CONFIG_FILES="$CONFIG_FILES lib/Makefile" ;;
     "src/Makefile") CONFIG_FILES="$CONFIG_FILES src/Makefile" ;;
     "src/tool/Makefile") CONFIG_FILES="$CONFIG_FILES src/tool/Makefile" ;;
+    "src/tool/csprof/Makefile") CONFIG_FILES="$CONFIG_FILES src/tool/csprof/Makefile" ;;
     "src/tool/hpclump/Makefile") CONFIG_FILES="$CONFIG_FILES src/tool/hpclump/Makefile" ;;
     "src/tool/hpcprof/Makefile") CONFIG_FILES="$CONFIG_FILES src/tool/hpcprof/Makefile" ;;
     "src/tool/hpcprof-flat/Makefile") CONFIG_FILES="$CONFIG_FILES src/tool/hpcprof-flat/Makefile" ;;
@@ -25116,6 +25428,7 @@ do
     "src/tool/hpcrun/Makefile") CONFIG_FILES="$CONFIG_FILES src/tool/hpcrun/Makefile" ;;
     "src/tool/hpcstruct/Makefile") CONFIG_FILES="$CONFIG_FILES src/tool/hpcstruct/Makefile" ;;
     "src/tool/misc/Makefile") CONFIG_FILES="$CONFIG_FILES src/tool/misc/Makefile" ;;
+    "src/tool/symbols/Makefile") CONFIG_FILES="$CONFIG_FILES src/tool/symbols/Makefile" ;;
     "src/tool/xprof/Makefile") CONFIG_FILES="$CONFIG_FILES src/tool/xprof/Makefile" ;;
     "src/lib/Makefile") CONFIG_FILES="$CONFIG_FILES src/lib/Makefile" ;;
     "src/lib/analysis/Makefile") CONFIG_FILES="$CONFIG_FILES src/lib/analysis/Makefile" ;;
@@ -25128,6 +25441,9 @@ do
     "src/lib/prof-lean/Makefile") CONFIG_FILES="$CONFIG_FILES src/lib/prof-lean/Makefile" ;;
     "src/lib/support/Makefile") CONFIG_FILES="$CONFIG_FILES src/lib/support/Makefile" ;;
     "src/lib/xml/Makefile") CONFIG_FILES="$CONFIG_FILES src/lib/xml/Makefile" ;;
+    "src/tool/csprof/scripts/hpcrun") CONFIG_FILES="$CONFIG_FILES src/tool/csprof/scripts/hpcrun" ;;
+    "src/tool/csprof/scripts/hpclink") CONFIG_FILES="$CONFIG_FILES src/tool/csprof/scripts/hpclink" ;;
+    "src/tool/csprof/scripts/csprof_syms") CONFIG_FILES="$CONFIG_FILES src/tool/csprof/scripts/csprof_syms" ;;
 
   *) { { $as_echo "$as_me:$LINENO: error: invalid argument: $ac_config_target" >&5
 $as_echo "$as_me: error: invalid argument: $ac_config_target" >&2;}
@@ -25729,6 +26045,9 @@ $as_echo "$as_me: error: cannot create directory $as_dir" >&2;}
   done
 done
  ;;
+    "src/tool/csprof/scripts/hpcrun":F) chmod +x src/tool/csprof/scripts/hpcrun ;;
+    "src/tool/csprof/scripts/hpclink":F) chmod +x src/tool/csprof/scripts/hpclink ;;
+    "src/tool/csprof/scripts/csprof_syms":F) chmod +x src/tool/csprof/scripts/csprof_syms ;;
 
   esac
 done # for ac_tag
@@ -25808,4 +26127,6 @@ $as_echo "$as_me: symtabAPI: $SYMTABAPI" >&6;}
 $as_echo "$as_me: xed2: $XED2" >&6;}
 { $as_echo "$as_me:$LINENO: xerces: $XERCES" >&5
 $as_echo "$as_me: xerces: $XERCES" >&6;}
+{ $as_echo "$as_me:$LINENO: build csprof: $enable_csprof_mesg" >&5
+$as_echo "$as_me: build csprof: $enable_csprof_mesg" >&6;}
 

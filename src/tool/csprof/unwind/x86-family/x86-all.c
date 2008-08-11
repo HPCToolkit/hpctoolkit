@@ -4,6 +4,8 @@
  * files into a single object file.
  */
 
+#include <stdbool.h>
+
 #include "x86-addsub.c"
 #include "x86-build-intervals.c"
 #include "x86-call.c"

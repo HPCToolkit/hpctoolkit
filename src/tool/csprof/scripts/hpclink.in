@@ -1,0 +1,208 @@
+#!/bin/sh
+#
+#  Link application with libcsprof, libmonitor, PAPI and Xed2
+#  statically by editing the compile line.
+#
+#  Usage: csprof-link [options] compiler file ...
+#
+#     -h, --help
+#     -u, --undefined  <symbol>
+#     -v, --verbose
+#
+#  where <symbol> is a symbol name passed to the linker (may be used
+#  multiple times).
+#
+#  $Id$
+#
+
+libmonitor_libdir="@LIBMONITOR_LIB@"
+papi_libdir="@OPT_PAPI_LIBPATH@"
+papi_extra_libs="@papi_extra_libs@"
+symtabAPI_libdir="@SYMTABAPI_LIB@"
+xed2_libdir="@XED2_LIB@"
+
+my_bindir=`dirname $0`
+
+# FIXME: The wrap list should come from monitor.
+wrap1="main exit _exit dlopen dlclose fork vfork system"
+wrap2="execl execlp execle execv execvp execve"
+wrap3="pthread_create signal sigaction sigprocmask pthread_sigmask"
+monitor_wrap_names="${wrap1} ${wrap2} ${wrap3}"
+
+# Set to -m64 on 64-bit version (for gcc).
+# NM_FLAGS='-m64'
+
+CC=gcc
+hello="_hpc_hello_$$"
+nm_addrs="_hpc_nm_addrs_$$"
+
+stapi="${my_bindir}/../libexec/stapi_syms"
+LD_LIBRARY_PATH="${symtabAPI_libdir}:${LD_LIBRARY_PATH}"
+
+# Space-separated list of symbol names to force undefined.
+undef_names=
+
+die()
+{
+    echo "$0: error: $*" 1>&2
+    exit 1
+}
+
+usage()
+{
+    cat <<EOF
+Usage: $0 [options] compiler file ...
+
+   -h, --help
+   -u, --undefined  <symbol>
+   -v, --verbose
+
+where <symbol> is a symbol name passed to the linker (may be used
+multiple times).
+
+EOF
+    exit 0
+}
+
+test -x "$stapi" || die "missing stapi_syms: $stapi"
+
+#
+# Step 1 -- Parse linker options, our options first.
+#
+verbose=no
+while test "x$1" != x
+do
+    case "$1" in
+	-h | --help )
+	    usage
+	    ;;
+	-u | --undefined )
+	    test "x$2" != x || die "missing argument: $*"
+	    undef_names="${undef_names} $2"
+	    shift ; shift
+	    ;;
+	-v | --verbose )
+	    verbose=yes
+	    shift
+	    ;;
+	-- )
+	    shift
+	    break
+	    ;;
+	-* )
+	    die "unknown option: $1"
+	    ;;
+	* )
+	    break
+	    ;;
+    esac
+done
+
+#
+# Must have a compiler command and at least one argument.
+#
+test "x$2" != x || usage
+command="$1"
+shift
+
+#
+# Read the command line for: -l<lib> and -o <file> arguments.
+# It's important not to change the command line here.
+#
+appl_libs=
+appl_out=a.out
+now=no
+for arg in "$@"
+do
+    if test "$now" = yes ; then
+	appl_out="$arg"
+	now=no
+    fi
+    case "$arg" in
+	-l?* ) appl_libs="${appl_libs} ${arg}" ;;
+	-o ) now=yes ;;
+    esac
+done
+
+#
+# Step 2 -- Build the new compile line.
+#
+#   wrap-args, undef-args, $@, libcsprof, nm-addrs, monitor, PAPI, Xed2,
+#   -lpthread, -ldl, repeat-application-libs.
+#
+if test "$verbose" = yes ; then
+    echo "original command line: $command $@"
+fi
+
+undef_args=
+for name in $undef_names
+do
+    undef_args="${undef_args} -Wl,-u,__wrap_${name}"
+done
+set -- $undef_args "$@"
+
+wrap_args=
+for name in $monitor_wrap_names
+do
+    wrap_args="${wrap_args} -Wl,--wrap,${name}"
+done
+set -- $wrap_args "$@"
+
+libcsprof="${my_bindir}/../libexec/libcsprof.o"
+test -f "$libcsprof" || die "no such file: $libcsprof"
+set -- "$@" "$libcsprof" "${nm_addrs}.o"
+
+libmonitor="${libmonitor_libdir}/libmonitor_wrap.a"
+test -f "$libmonitor" || die "no such file: $libmonitor"
+set -- "$@" "$libmonitor"
+
+if test -d "$papi_libdir" ; then
+    set -- "$@" "-L${papi_libdir}" -lpapi $papi_extra_libs
+fi
+
+if test -d "$xed2_libdir" ; then
+    set -- "$@" "-L${xed2_libdir}" -lxed
+fi
+
+# FIXME: shouldn't always need pthread, and shoudn't ever need dl.
+set -- "$@" -lpthread -ldl
+set -- "$@" $appl_libs
+
+if test "$verbose" = yes ; then
+    echo "new command line: $command $@"
+fi
+
+#
+# Step 3 -- Link with dummy nm file.
+#
+rm -f "${hello}.c" "$hello"
+cat <<EOF > "${hello}.c"
+int main(int argc, char **argv)
+{
+    return (0);
+}
+EOF
+$CC -o "$hello" "${hello}.c"
+
+rm -f "${nm_addrs}.c" "${nm_addrs}.o"
+$stapi "$hello" > "${nm_addrs}.c" || die "stapi_syms failed on $hello"
+$CC $NM_FLAGS -c -o "${nm_addrs}.o" "${nm_addrs}.c"
+$command "$@" || die "compile #1 failed: $command $@"
+test -f "$appl_out" || die "compile #1 failed: $command $@"
+rm -f "${hello}.c" "$hello"
+
+#
+# Step 4 -- Link with real nm file.
+#
+rm -f "${nm_addrs}.c" "${nm_addrs}.o"
+$stapi "$appl_out" > "${nm_addrs}.c" || die "stapi_syms failed on $appl_out"
+$CC $NM_FLAGS -c -o "${nm_addrs}.o" "${nm_addrs}.c"
+$command "$@" || die "compile #2 failed: $command $@"
+test -f "$appl_out" || die "compile #2 failed: $command $@"
+
+rm -f "${nm_addrs}.o"
+if test "$verbose" != yes ; then
+    rm -f "${nm_addrs}.c"
+fi
+
+exit 0
