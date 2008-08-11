@@ -143,6 +143,7 @@ AC_PROG_CC(HPC_CC_LIST)
 AC_PROG_CC_STDC()
 AC_PROG_CXXCPP()
 AC_PROG_INSTALL()
+AM_PROG_CC_C_O
 
 AC_MSG_NOTICE([INFO: ac_prog: CXX=${CXX} CXXFLAGS=${CXXFLAGS}])
 AC_MSG_NOTICE([INFO: ac_prog: CC=${CC} CFLAGS=${CFLAGS}])
@@ -187,7 +188,6 @@ AC_MSG_RESULT([${HAVE_OS_MULTILIB} (searching: ${LIB_SEARCH_PATH})])
 # -none thus far-
 
 
-
 #----------------------------------------------------------------------------
 # Host-dependent configuration
 # $host: $host_cpu-$host_vendor-$host_os
@@ -201,12 +201,25 @@ HPC_DEF_CXXCMP()
 
 # NOTE: To see what macros gcc-like compilers define:
 #   gcc -dM -E - < /dev/null | sort
-HOST_OS=""
+#
+# FIXME: This should probably be split into separate CPU and OS
+# sections.
+
+HOST_OS=
+host_cpu_ppc=no
+host_cpu_x86=no
 
 case ${host} in
   # Linux
-  i386*-*-linux* | i686*-*-linux* | x86_64*-*-linux* | ia64*-*-linux*)
-    # __i386 / __x86_64 / __ia64 && __linux
+  i386*-*-linux* | i686*-*-linux* | x86_64*-*-linux*)
+    # __i386 / __x86_64 && __linux
+    HOST_OS="Linux"
+    host_cpu_x86=yes
+    AC_DEFINE([HOST_OS_LINUX], [], [])
+    ;;
+
+  ia64*-*-linux*)
+    # __ia64 && __linux
     HOST_OS="Linux"
     AC_DEFINE([HOST_OS_LINUX], [], [])
     ;;
@@ -221,6 +234,7 @@ case ${host} in
   powerpc64*-*-linux*)
     # []
     HOST_OS="Linux"
+    host_cpu_ppc=yes
     AC_DEFINE([HOST_OS_LINUX], [], [])
     ;;
 
@@ -228,11 +242,13 @@ case ${host} in
   powerpc*-*-darwin*)
     # __ppc__ / __MACH__
     HOST_OS="MacOS"
+    host_cpu_ppc=yes
     AC_DEFINE([HOST_OS_MACOS], [], [])
     ;;
 
   i386*-*-darwin* | i686*-*-darwin*)
     HOST_OS="MacOS"
+    host_cpu_x86=yes
     AC_DEFINE([HOST_OS_MACOS], [], [])
     ;;
 
@@ -263,6 +279,10 @@ case ${host} in
     AC_MSG_ERROR([HPCToolkit is not configured for HOST=${host}!])
     ;;
 esac
+
+AM_CONDITIONAL([HOST_OS_LINUX], [test "$HOST_OS" = Linux])
+AM_CONDITIONAL([HOST_CPU_PPC],  [test "$host_cpu_ppc" = yes])
+AM_CONDITIONAL([HOST_CPU_X86],  [test "$host_cpu_x86" = yes])
 
 
 #-------------------------------------------------
@@ -512,8 +532,10 @@ case "$LIBDWARF" in
 	;;
 esac
 
+LIBDWARF_LIB="${LIBDWARF}/lib"
+
 AC_MSG_RESULT([$LIBDWARF])
-AC_SUBST([LIBDWARF])
+AC_SUBST([LIBDWARF_LIB])
 
 
 #-------------------------------------------------
@@ -552,8 +574,10 @@ case "$LIBELF" in
 	;;
 esac
 
+LIBELF_LIB="${LIBELF}/lib"
+
 AC_MSG_RESULT([$LIBELF])
-AC_SUBST([LIBELF])
+AC_SUBST([LIBELF_LIB])
 
 
 #-------------------------------------------------
@@ -587,8 +611,14 @@ case "$LIBMONITOR" in
 	;;
 esac
 
+LIBMONITOR_INC="${LIBMONITOR}/include"
+LIBMONITOR_LIB="${LIBMONITOR}/lib"
+libmonitor_prefix="$LIBMONITOR"
+
 AC_MSG_RESULT([$LIBMONITOR])
-AC_SUBST([LIBMONITOR])
+AC_SUBST([LIBMONITOR_INC])
+AC_SUBST([LIBMONITOR_LIB])
+AC_SUBST([libmonitor_prefix])
 
 
 #-------------------------------------------------
@@ -622,8 +652,12 @@ case "$SYMTABAPI" in
 	;;
 esac
 
+SYMTABAPI_INC="${SYMTABAPI}/include"
+SYMTABAPI_LIB="${SYMTABAPI}/lib"
+
 AC_MSG_RESULT([$SYMTABAPI])
-AC_SUBST([SYMTABAPI])
+AC_SUBST([SYMTABAPI_INC])
+AC_SUBST([SYMTABAPI_LIB])
 
 
 #-------------------------------------------------
@@ -657,8 +691,12 @@ case "$XED2" in
 	;;
 esac
 
+XED2_INC="${XED2}/include"
+XED2_LIB="${XED2}/lib"
+
 AC_MSG_RESULT([$XED2])
-AC_SUBST([XED2])
+AC_SUBST([XED2_INC])
+AC_SUBST([XED2_LIB])
 
 
 #-------------------------------------------------
@@ -911,12 +949,26 @@ else
   AC_MSG_RESULT([no])
 fi
 
+papi_extra_libs=
+so_file="${OPT_PAPI_LIBPATH}/libpapi.so"
+if test -f "$so_file" ; then
+  ldd "$so_file" | grep libperfctr >/dev/null 2>&1
+  if test $? = 0 ; then
+    papi_extra_libs="${papi_extra_libs} -lperfctr"
+  fi
+  ldd "$so_file" | grep libpfm >/dev/null 2>&1
+  if test $? = 0 ; then
+    papi_extra_libs="${papi_extra_libs} -lpfm"
+  fi
+fi
+
 AM_CONDITIONAL(OPT_HAVE_PAPI, test "${OPT_HAVE_PAPI}" = "yes")
 AC_SUBST(OPT_PAPI)
 AC_SUBST(OPT_PAPI_IFLAGS)
 AC_SUBST(OPT_PAPI_LDFLAGS)
 AC_SUBST(OPT_PAPI_LIBPATH)
 AC_SUBST(OPT_PAPI_LIB)
+AC_SUBST([papi_extra_libs])
 
 
 #-------------------------------------------------
@@ -977,11 +1029,39 @@ AM_CONDITIONAL(OPT_ENABLE_HPCRUN, test "${OPT_ENABLE_HPCRUN}" = "yes")
 
 
 #-------------------------------------------------
-# enable-csprof: [not yet available]
+# enable-csprof:
 # enable-csprof-sync: 
 # enable-csprof-async: 
 #   - on Linux, requires libunwind
 #-------------------------------------------------
+
+AC_ARG_ENABLE([csprof],
+  [AS_HELP_STRING([--enable-csprof],
+	  [build csprof (default yes)])],
+  [],
+  [enable_csprof=yes])
+
+AC_MSG_CHECKING([whether to build csprof])
+
+OPT_ENABLE_CSPROF=yes
+enable_csprof_mesg=yes
+if test "$enable_csprof" = no ; then
+  OPT_ENABLE_CSPROF=no
+  enable_csprof_mesg='no (disabled)'
+elif test "$LIBDWARF" = no   || test "$LIBELF" = no ||  \
+     test "$LIBMONITOR" = no || test "$SYMTABAPI" = no
+then
+  OPT_ENABLE_CSPROF=no
+  enable_csprof_mesg='no (missing prerequisites)'
+fi
+if test "$hpc_cpu_x86" = yes && test "$XED2" = no ; then
+  OPT_ENABLE_CSPROF=no
+  enable_csprof_mesg='no (missing prerequisites)'
+fi
+
+AC_MSG_RESULT([$enable_csprof_mesg])
+AM_CONDITIONAL([OPT_ENABLE_CSPROF], [test "$OPT_ENABLE_CSPROF" = yes])
+
 
 AC_MSG_CHECKING([whether to build csprof (synchronous)])
 
@@ -1027,6 +1107,21 @@ if test "${OPT_ENABLE_CSPROF_SYNC}" = "yes" ||
   fi
 fi
 
+#
+# Find location of libstdc++.
+# FIXME -- Is there an Autoconf macro for this?
+#
+src="/tmp/hello.$$.cc"
+obj="/tmp/hello.$$.out"
+cat <<EOF > "$src"
+main(){}
+EOF
+g++ -o "$obj" "$src"
+csprof_libcpp_path=`ldd $obj | $AWK '/libstdc\+\+/ {print $3}'`
+csprof_libcpp_path=`dirname $csprof_libcpp_path`
+rm -f "$src" "$obj"
+
+AC_SUBST([csprof_libcpp_path])
 
 #-------------------------------------------------
 # enable-devtools: Tools of interest to developers
@@ -1112,6 +1207,7 @@ AC_CONFIG_FILES([ \
   \
   src/Makefile \
   src/tool/Makefile \
+  src/tool/csprof/Makefile \
   src/tool/hpclump/Makefile \
   src/tool/hpcprof/Makefile \
   src/tool/hpcprof-flat/Makefile \
@@ -1119,6 +1215,7 @@ AC_CONFIG_FILES([ \
   src/tool/hpcrun/Makefile \
   src/tool/hpcstruct/Makefile \
   src/tool/misc/Makefile \
+  src/tool/symbols/Makefile \
   src/tool/xprof/Makefile \
   src/lib/Makefile \
   src/lib/analysis/Makefile \
@@ -1132,6 +1229,13 @@ AC_CONFIG_FILES([ \
   src/lib/support/Makefile \
   src/lib/xml/Makefile \
 ])
+
+AC_CONFIG_FILES([src/tool/csprof/scripts/hpcrun],
+  [chmod +x src/tool/csprof/scripts/hpcrun])
+AC_CONFIG_FILES([src/tool/csprof/scripts/hpclink],
+  [chmod +x src/tool/csprof/scripts/hpclink])
+AC_CONFIG_FILES([src/tool/csprof/scripts/csprof_syms],
+  [chmod +x src/tool/csprof/scripts/csprof_syms])
 
 AC_CONFIG_COMMANDS()
 
@@ -1157,4 +1261,5 @@ AC_MSG_NOTICE([papi: $OPT_PAPI])
 AC_MSG_NOTICE([symtabAPI: $SYMTABAPI])
 AC_MSG_NOTICE([xed2: $XED2])
 AC_MSG_NOTICE([xerces: $XERCES])
+AC_MSG_NOTICE([build csprof: $enable_csprof_mesg])
 

@@ -75,6 +75,10 @@ if OPT_ENABLE_HPCRUN
   SUBDIRS += hpcrun
 endif
 
+if OPT_ENABLE_CSPROF
+  SUBDIRS += csprof symbols
+endif
+
 #if OPT_ENABLE_CSPROF_ASYNC
 #  SUBDIRS += csprof 
 #endif

@@ -1,4 +1,7 @@
-#!/bin/sh 
+#!/bin/sh
+
+symtabAPI_libdir='@SYMTABAPI_LIB@'
+libcpp_path='@csprof_libcpp_path@'
 
 ############ UTILITY FUNCTIONS #################
 
@@ -11,18 +14,14 @@ dbg()
 
 run_stapi_syms()
 {
-    lib_path="${libcpp_path}:${libdir}"
-    case "$symtabAPI_prefix" in
-	/* ) lib_path="${lib_path}:${symtabAPI_prefix}/lib" ;;
-    esac
-    case "$symbols_prefix" in
-	/* ) stapi_dir="${symbols_prefix}/libexec" ;;
-	*  ) stapi_dir="$libexecdir" ;;
-    esac
-   if LD_LIBRARY_PATH=${lib_path} ${stapi_dir}/stapi_syms $1 > ${prog_file}; then
-     success=1 # effectively a no-op 
+   lib_path="${libcpp_path}:${libdir}"
+   case "$symtabAPI_libdir" in
+      /* ) lib_path="${lib_path}:${symtabAPI_libdir}" ;;
+   esac
+   if LD_LIBRARY_PATH=${lib_path} ${libexecdir}/stapi_syms $1 > ${prog_file}; then
+     success=1 # effectively a no-op
    else
-     rm -f $prog_file;
+     rm -f $prog_file
    fi
    return
 }
@@ -40,8 +39,6 @@ else
    rootdir=`dirname ${libexecdir}`
 fi
 libdir=${rootdir}/lib
-
-. ${rootdir}/libexec/conf.sh
 
 # output directory
 if test "$2"x == "x"; then
