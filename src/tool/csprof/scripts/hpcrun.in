@@ -98,6 +98,7 @@ cmd="$0"
 
 monitor_prefix='@libmonitor_prefix@'
 papi_prefix='@OPT_PAPI@'
+papi_libdir='@OPT_PAPI_LIBPATH@'
 
 f_usage()
 {
@@ -318,7 +319,7 @@ f_prepareenv()
   # set up the LD_LIBRARY_PATH
   case "$papi_prefix" in
       /* )
-	  LD_LIBRARY_PATH="${papi_prefix}/lib:$LD_LIBRARY_PATH"
+	  LD_LIBRARY_PATH="${papi_libdir}:$LD_LIBRARY_PATH"
 	  ;;
   esac
   export LD_LIBRARY_PATH
