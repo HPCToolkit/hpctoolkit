@@ -1171,6 +1171,27 @@ fi
 
 
 #-------------------------------------------------
+# Option: --enable-lush
+#-------------------------------------------------
+
+AC_ARG_ENABLE([lush],
+  [AS_HELP_STRING([--enable-lush],
+          [use lush backtrace in hpcrun])],
+  [],
+  [enable_lush=no])
+
+AC_MSG_CHECKING([whether to use lush])
+
+if test "$enable_lush" != yes ; then
+  enable_lush=no
+fi
+
+AC_MSG_RESULT([$enable_lush])
+
+AM_CONDITIONAL([OPT_ENABLE_LUSH], [test "$enable_lush" = yes])
+
+
+#-------------------------------------------------
 # with-objcopy
 #-------------------------------------------------
 
@@ -1262,4 +1283,5 @@ AC_MSG_NOTICE([symtabAPI: $SYMTABAPI])
 AC_MSG_NOTICE([xed2: $XED2])
 AC_MSG_NOTICE([xerces: $XERCES])
 AC_MSG_NOTICE([build csprof: $enable_csprof_mesg])
+AC_MSG_NOTICE([use lush: $enable_lush])
 
