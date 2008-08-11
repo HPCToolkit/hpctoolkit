@@ -25,7 +25,7 @@
 #include "monitor.h"
 #include "sample_event.h"
 
-
+#include <lush/lush-backtrace.h>
 
 //***************************************************************************
 // forward declarations 
@@ -60,14 +60,23 @@ csprof_sample_callstack(csprof_state_t *state, ucontext_t* context,
 {
   unw_cursor_t frame;
 
+  csprof_cct_node_t* n;
+
   csprof_state_verify_backtrace_invariants(state);
 
-  unw_init_cursor(context, &frame);
-  MSG(1,"back from cursor init: pc = %p, bp = %p\n",frame.pc,frame.bp);
+  if (!lush_agents) {
+    unw_init_cursor(context, &frame);
+    MSG(1,"back from cursor init: pc = %p, bp = %p\n",frame.pc,frame.bp);
+    n = csprof_sample_callstack_from_frame(state, metric_id,
+					   sample_count, &frame);
+  }
+  else {
+    n = lush_backtrace(state, context, metric_id, sample_count);
+  }
 
-  csprof_cct_node_t* n;
-  n = csprof_sample_callstack_from_frame(state, metric_id,
-					 sample_count, &frame);
+  if (!n) {
+    DBGMSG_PUB(1, "Error... (pid=%d)", getpid()); // FIXME: improve
+  }
 
   return n;
 }

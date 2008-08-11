@@ -41,13 +41,11 @@ CSPROF_BASE_FILES =			\
 	unsafe.c			\
 	Dbg/pmsg.c			\
 	fnbounds/fnbounds_common.c	\
-	hpcfile/hpcfile_csprof.c	\
-	hpcfile/hpcfile_cstree.c	\
-	hpcfile/hpcfile_general.c	\
+	lush/lush-backtrace.c		\
 	lush/lush.c			\
+	lush/lushi-cb.c			\
 	lush/lush-support.c		\
 	lush/lush-support-rt.c		\
-	lush/lushi-cb.c			\
 	memory/list.c			\
 	memory/mem.c			\
 	sampling/types/callstack/cct.c	\
@@ -60,7 +58,12 @@ CSPROF_BASE_FILES =			\
 	utilities/executable-path.c	\
 	utilities/spinlock.c		\
 	utilities/tokenize.c		\
-	utilities/unlink.c
+	utilities/unlink.c 		\
+	\
+	hpcfile/hpcfile_csprof.c	\
+	hpcfile/hpcfile_cstree.c	\
+	hpcfile/hpcfile_general.c	
+# tallent: moved hpcfile to end since it should be DEPRECATED
 
 CSPROF_DYNAMIC_FILES = 			\
 	fnbounds/fnbounds_dynamic.c	\
