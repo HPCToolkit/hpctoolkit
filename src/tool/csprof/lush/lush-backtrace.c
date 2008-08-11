@@ -53,7 +53,7 @@ canonicalize_chord(csprof_frame_t* chord_beg, lush_assoc_t as,
 // LUSH backtrace
 //***************************************************************************
 
-
+#if 0 // FIXME: OBSOLETE
 csprof_cct_node_t*
 csprof_sample_callstack(csprof_state_t* state, ucontext_t* context,
 			int metric_id, size_t sample_count)
@@ -65,6 +65,7 @@ csprof_sample_callstack(csprof_state_t* state, ucontext_t* context,
   }
   return n;
 }
+#endif
 
 
 csprof_cct_node_t*
