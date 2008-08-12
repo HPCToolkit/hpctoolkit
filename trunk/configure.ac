@@ -75,7 +75,7 @@ m4_include(config/hpc-cxxutils.m4)
 #    correctly
 #----------------------------------------------------------------------------
 
-AC_INIT([hpctoolkit], [TRUNK-4.9.0=1530], [hpc@cs.rice.edu], [hpctoolkit])
+AC_INIT([hpctoolkit], [TRUNK-4.9.1=1550], [hpc@cs.rice.edu], [hpctoolkit])
 AC_CONFIG_SRCDIR([src/include/HPCToolkitVersionInfo.h])
 AC_CONFIG_AUX_DIR([config])
 
@@ -1017,7 +1017,7 @@ AC_SUBST(OPT_LIBUNWIND_LIBA)
 # enable-hpcrun: Only build hpcrun if on Linux and PAPI is present
 #-------------------------------------------------
 
-AC_MSG_CHECKING([whether to build hpcrun])
+AC_MSG_CHECKING([whether to build hpcrun-flat])
 
 OPT_ENABLE_HPCRUN="no"
 if test "${OPT_HAVE_PAPI}" = "yes" && test "${HOST_OS}" = "Linux"; then
@@ -1269,8 +1269,8 @@ AC_MSG_NOTICE([])
 AC_MSG_NOTICE([HPCToolkit summary])
 AC_MSG_NOTICE([prefix: $prefix])
 AC_MSG_NOTICE([host: $host])
-AC_MSG_NOTICE([CC, CFLAGS: $CC $CFLAGS])
-AC_MSG_NOTICE([CXX, CXXFLAGS: $CXX $CXXFLAGS])
+AC_MSG_NOTICE([CC, CFLAGS: $CC $CFLAGS ${HOST_CFLAGS}])
+AC_MSG_NOTICE([CXX, CXXFLAGS: $CXX $CXXFLAGS ${HOST_CXXFLAGS}])
 AC_MSG_NOTICE([binutils: $GNUBINUTILS])
 AC_MSG_NOTICE([libdwarf: $LIBDWARF])
 AC_MSG_NOTICE([libelf: $LIBELF])
@@ -1282,6 +1282,7 @@ AC_MSG_NOTICE([papi: $OPT_PAPI])
 AC_MSG_NOTICE([symtabAPI: $SYMTABAPI])
 AC_MSG_NOTICE([xed2: $XED2])
 AC_MSG_NOTICE([xerces: $XERCES])
-AC_MSG_NOTICE([build csprof: $enable_csprof_mesg])
+AC_MSG_NOTICE([build hpcrun: $enable_csprof_mesg])
+AC_MSG_NOTICE([build hpcrun-flat: ${OPT_ENABLE_HPCRUN}])
 AC_MSG_NOTICE([use lush: $enable_lush])
 

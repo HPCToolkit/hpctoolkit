@@ -15,7 +15,7 @@
 @SET_MAKE@
 
 # -*-Mode: makefile;-*-
-# $Id: Makefile.am 1317 2008-05-15 17:16:34Z eraxxon $
+# $Id: Makefile.am 1465 2008-06-19 18:58:57Z eraxxon $
 
 #############################################################################
 #
@@ -299,7 +299,6 @@ sharedstatedir = @sharedstatedir@
 srcdir = @srcdir@
 sysconfdir = @sysconfdir@
 target_alias = @target_alias@
-top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 

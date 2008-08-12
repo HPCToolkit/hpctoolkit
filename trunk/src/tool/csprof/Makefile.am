@@ -122,6 +122,8 @@ CSPROF_X86_INCLUDE_DIRS =		\
 	-I$(srcdir)/unwind/x86-family	\
 	-I$(XED2_INC)
 
+# FIXME: tallent: added empty pkglib
+pkglib_LTLIBRARIES = 
 lib_LTLIBRARIES = libcsprof.la
 libexec_PROGRAMS = libcsprof.o
 
@@ -187,3 +189,22 @@ endif
 libcsprof_la_SOURCES += utilities/last_func.c
 libcsprof_o_SOURCES  += utilities/last_func.c
 
+
+
+MY_CILK_INSTALL = /home/eraxxon/develop/cilk/cilk-install
+
+MY_CILK_AGENT_SOURCES = \
+	lush-agents/agent-cilk.h lush-agents/agent-cilk.c \
+	lush/lush-support-rt.h   lush/lush-support-rt.c
+
+MY_CILK_AGENT_IFLAGS = -I$(MY_CILK_INSTALL)/include
+
+MY_CILK_AGENT_CFLAGS = \
+	$(MY_CILK_AGENT_IFLAGS) \
+	$(CSPROF_INCLUDE_DIRS)
+
+if OPT_ENABLE_LUSH
+  pkglib_LTLIBRARIES       += libagent-cilk.la
+  libagent_cilk_la_SOURCES  = $(MY_CILK_AGENT_SOURCES)
+  libagent_cilk_la_CFLAGS   = $(MY_CILK_AGENT_CFLAGS)
+endif
