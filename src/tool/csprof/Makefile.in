@@ -421,6 +421,7 @@ sharedstatedir = @sharedstatedir@
 srcdir = @srcdir@
 sysconfdir = @sysconfdir@
 target_alias = @target_alias@
+top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 PAPI_INC_FLGS = @OPT_PAPI_IFLAGS@
@@ -549,8 +550,10 @@ libcsprof_la_CPPFLAGS = $(CSPROF_CPP_DEFINES) $(CSPROF_INCLUDE_DIRS) \
 libcsprof_o_CPPFLAGS = -DHPCRUN_STATIC_LINK $(CSPROF_CPP_DEFINES) \
 	$(CSPROF_INCLUDE_DIRS) $(am__append_5) $(am__append_11) \
 	$(am__append_17)
-libcsprof_la_CFLAGS = -std=c99 $(am__append_6)
-libcsprof_o_CFLAGS = -std=c99 $(am__append_7)
+libcsprof_la_CFLAGS = -std=c99 -g $(CFLAGS) $(HOST_CFLAGS) \
+	$(am__append_6)
+libcsprof_o_CFLAGS = -std=c99 -g $(CFLAGS) $(HOST_CFLAGS) \
+	$(am__append_7)
 libcsprof_la_LDFLAGS = -Wl,-Bsymbolic -L$(LIBMONITOR_LIB) -lmonitor \
 	-lpthread $(am__append_12) $(am__append_18)
 libcsprof_o_LDFLAGS = $(am__append_13) $(am__append_19)

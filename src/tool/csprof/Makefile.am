@@ -147,8 +147,8 @@ libcsprof_o_CPPFLAGS =			\
 	$(CSPROF_CPP_DEFINES)		\
 	$(CSPROF_INCLUDE_DIRS)
 
-libcsprof_la_CFLAGS = -std=c99
-libcsprof_o_CFLAGS  = -std=c99
+libcsprof_la_CFLAGS = -std=c99 -g $(CFLAGS) $(HOST_CFLAGS)
+libcsprof_o_CFLAGS  = -std=c99 -g $(CFLAGS) $(HOST_CFLAGS)
 
 libcsprof_la_LDFLAGS = -Wl,-Bsymbolic 	\
 	-L$(LIBMONITOR_LIB) -lmonitor -lpthread
@@ -190,7 +190,6 @@ libcsprof_la_SOURCES += utilities/last_func.c
 libcsprof_o_SOURCES  += utilities/last_func.c
 
 
-
 MY_CILK_INSTALL = /home/eraxxon/develop/cilk/cilk-install
 
 MY_CILK_AGENT_SOURCES = \
@@ -208,3 +207,4 @@ if OPT_ENABLE_LUSH
   libagent_cilk_la_SOURCES  = $(MY_CILK_AGENT_SOURCES)
   libagent_cilk_la_CFLAGS   = $(MY_CILK_AGENT_CFLAGS)
 endif
+
