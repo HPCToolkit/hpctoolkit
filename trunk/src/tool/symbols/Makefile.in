@@ -63,7 +63,7 @@ am_stapi_syms_OBJECTS = $(am__objects_1) $(am__objects_2) \
 stapi_syms_OBJECTS = $(am_stapi_syms_OBJECTS)
 stapi_syms_LDADD = $(LDADD)
 stapi_syms_LINK = $(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) \
-	$(LIBTOOLFLAGS) --mode=link $(CXXLD) $(AM_CXXFLAGS) \
+	$(LIBTOOLFLAGS) --mode=link $(CXXLD) $(stapi_syms_CXXFLAGS) \
 	$(CXXFLAGS) $(stapi_syms_LDFLAGS) $(LDFLAGS) -o $@
 DEFAULT_INCLUDES = -I.@am__isrc@
 depcomp = $(SHELL) $(top_srcdir)/config/depcomp
@@ -233,6 +233,7 @@ sharedstatedir = @sharedstatedir@
 srcdir = @srcdir@
 sysconfdir = @sysconfdir@
 target_alias = @target_alias@
+top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 SYMBOLS_BASE_FILES = \
@@ -244,6 +245,7 @@ SYMBOLS_BASE_FILES = \
 stapi_syms_SOURCES = $(SYMBOLS_BASE_FILES) $(am__append_1) \
 	$(am__append_4)
 stapi_syms_CPPFLAGS = -I$(SYMTABAPI_INC) $(am__append_2)
+stapi_syms_CXXFLAGS = $(CXXFLAGS) $(HOST_CXXFLAGS)
 stapi_syms_LDFLAGS = -L$(SYMTABAPI_LIB) -lsymtabAPI -lcommon \
 	-L$(LIBDWARF_LIB) -ldwarf -L$(LIBELF_LIB) -lelf \
 	$(am__append_3)
@@ -347,88 +349,88 @@ distclean-compile:
 @am__fastdepCXX_FALSE@	$(LTCXXCOMPILE) -c -o $@ $<
 
 stapi_syms-code-ranges.o: code-ranges.cpp
-@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(stapi_syms_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT stapi_syms-code-ranges.o -MD -MP -MF $(DEPDIR)/stapi_syms-code-ranges.Tpo -c -o stapi_syms-code-ranges.o `test -f 'code-ranges.cpp' || echo '$(srcdir)/'`code-ranges.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(stapi_syms_CPPFLAGS) $(CPPFLAGS) $(stapi_syms_CXXFLAGS) $(CXXFLAGS) -MT stapi_syms-code-ranges.o -MD -MP -MF $(DEPDIR)/stapi_syms-code-ranges.Tpo -c -o stapi_syms-code-ranges.o `test -f 'code-ranges.cpp' || echo '$(srcdir)/'`code-ranges.cpp
 @am__fastdepCXX_TRUE@	mv -f $(DEPDIR)/stapi_syms-code-ranges.Tpo $(DEPDIR)/stapi_syms-code-ranges.Po
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='code-ranges.cpp' object='stapi_syms-code-ranges.o' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(stapi_syms_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o stapi_syms-code-ranges.o `test -f 'code-ranges.cpp' || echo '$(srcdir)/'`code-ranges.cpp
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(stapi_syms_CPPFLAGS) $(CPPFLAGS) $(stapi_syms_CXXFLAGS) $(CXXFLAGS) -c -o stapi_syms-code-ranges.o `test -f 'code-ranges.cpp' || echo '$(srcdir)/'`code-ranges.cpp
 
 stapi_syms-code-ranges.obj: code-ranges.cpp
-@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(stapi_syms_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT stapi_syms-code-ranges.obj -MD -MP -MF $(DEPDIR)/stapi_syms-code-ranges.Tpo -c -o stapi_syms-code-ranges.obj `if test -f 'code-ranges.cpp'; then $(CYGPATH_W) 'code-ranges.cpp'; else $(CYGPATH_W) '$(srcdir)/code-ranges.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(stapi_syms_CPPFLAGS) $(CPPFLAGS) $(stapi_syms_CXXFLAGS) $(CXXFLAGS) -MT stapi_syms-code-ranges.obj -MD -MP -MF $(DEPDIR)/stapi_syms-code-ranges.Tpo -c -o stapi_syms-code-ranges.obj `if test -f 'code-ranges.cpp'; then $(CYGPATH_W) 'code-ranges.cpp'; else $(CYGPATH_W) '$(srcdir)/code-ranges.cpp'; fi`
 @am__fastdepCXX_TRUE@	mv -f $(DEPDIR)/stapi_syms-code-ranges.Tpo $(DEPDIR)/stapi_syms-code-ranges.Po
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='code-ranges.cpp' object='stapi_syms-code-ranges.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(stapi_syms_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o stapi_syms-code-ranges.obj `if test -f 'code-ranges.cpp'; then $(CYGPATH_W) 'code-ranges.cpp'; else $(CYGPATH_W) '$(srcdir)/code-ranges.cpp'; fi`
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(stapi_syms_CPPFLAGS) $(CPPFLAGS) $(stapi_syms_CXXFLAGS) $(CXXFLAGS) -c -o stapi_syms-code-ranges.obj `if test -f 'code-ranges.cpp'; then $(CYGPATH_W) 'code-ranges.cpp'; else $(CYGPATH_W) '$(srcdir)/code-ranges.cpp'; fi`
 
 stapi_syms-function-entries.o: function-entries.cpp
-@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(stapi_syms_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT stapi_syms-function-entries.o -MD -MP -MF $(DEPDIR)/stapi_syms-function-entries.Tpo -c -o stapi_syms-function-entries.o `test -f 'function-entries.cpp' || echo '$(srcdir)/'`function-entries.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(stapi_syms_CPPFLAGS) $(CPPFLAGS) $(stapi_syms_CXXFLAGS) $(CXXFLAGS) -MT stapi_syms-function-entries.o -MD -MP -MF $(DEPDIR)/stapi_syms-function-entries.Tpo -c -o stapi_syms-function-entries.o `test -f 'function-entries.cpp' || echo '$(srcdir)/'`function-entries.cpp
 @am__fastdepCXX_TRUE@	mv -f $(DEPDIR)/stapi_syms-function-entries.Tpo $(DEPDIR)/stapi_syms-function-entries.Po
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='function-entries.cpp' object='stapi_syms-function-entries.o' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(stapi_syms_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o stapi_syms-function-entries.o `test -f 'function-entries.cpp' || echo '$(srcdir)/'`function-entries.cpp
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(stapi_syms_CPPFLAGS) $(CPPFLAGS) $(stapi_syms_CXXFLAGS) $(CXXFLAGS) -c -o stapi_syms-function-entries.o `test -f 'function-entries.cpp' || echo '$(srcdir)/'`function-entries.cpp
 
 stapi_syms-function-entries.obj: function-entries.cpp
-@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(stapi_syms_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT stapi_syms-function-entries.obj -MD -MP -MF $(DEPDIR)/stapi_syms-function-entries.Tpo -c -o stapi_syms-function-entries.obj `if test -f 'function-entries.cpp'; then $(CYGPATH_W) 'function-entries.cpp'; else $(CYGPATH_W) '$(srcdir)/function-entries.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(stapi_syms_CPPFLAGS) $(CPPFLAGS) $(stapi_syms_CXXFLAGS) $(CXXFLAGS) -MT stapi_syms-function-entries.obj -MD -MP -MF $(DEPDIR)/stapi_syms-function-entries.Tpo -c -o stapi_syms-function-entries.obj `if test -f 'function-entries.cpp'; then $(CYGPATH_W) 'function-entries.cpp'; else $(CYGPATH_W) '$(srcdir)/function-entries.cpp'; fi`
 @am__fastdepCXX_TRUE@	mv -f $(DEPDIR)/stapi_syms-function-entries.Tpo $(DEPDIR)/stapi_syms-function-entries.Po
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='function-entries.cpp' object='stapi_syms-function-entries.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(stapi_syms_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o stapi_syms-function-entries.obj `if test -f 'function-entries.cpp'; then $(CYGPATH_W) 'function-entries.cpp'; else $(CYGPATH_W) '$(srcdir)/function-entries.cpp'; fi`
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(stapi_syms_CPPFLAGS) $(CPPFLAGS) $(stapi_syms_CXXFLAGS) $(CXXFLAGS) -c -o stapi_syms-function-entries.obj `if test -f 'function-entries.cpp'; then $(CYGPATH_W) 'function-entries.cpp'; else $(CYGPATH_W) '$(srcdir)/function-entries.cpp'; fi`
 
 stapi_syms-intervals.o: intervals.cpp
-@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(stapi_syms_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT stapi_syms-intervals.o -MD -MP -MF $(DEPDIR)/stapi_syms-intervals.Tpo -c -o stapi_syms-intervals.o `test -f 'intervals.cpp' || echo '$(srcdir)/'`intervals.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(stapi_syms_CPPFLAGS) $(CPPFLAGS) $(stapi_syms_CXXFLAGS) $(CXXFLAGS) -MT stapi_syms-intervals.o -MD -MP -MF $(DEPDIR)/stapi_syms-intervals.Tpo -c -o stapi_syms-intervals.o `test -f 'intervals.cpp' || echo '$(srcdir)/'`intervals.cpp
 @am__fastdepCXX_TRUE@	mv -f $(DEPDIR)/stapi_syms-intervals.Tpo $(DEPDIR)/stapi_syms-intervals.Po
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='intervals.cpp' object='stapi_syms-intervals.o' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(stapi_syms_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o stapi_syms-intervals.o `test -f 'intervals.cpp' || echo '$(srcdir)/'`intervals.cpp
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(stapi_syms_CPPFLAGS) $(CPPFLAGS) $(stapi_syms_CXXFLAGS) $(CXXFLAGS) -c -o stapi_syms-intervals.o `test -f 'intervals.cpp' || echo '$(srcdir)/'`intervals.cpp
 
 stapi_syms-intervals.obj: intervals.cpp
-@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(stapi_syms_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT stapi_syms-intervals.obj -MD -MP -MF $(DEPDIR)/stapi_syms-intervals.Tpo -c -o stapi_syms-intervals.obj `if test -f 'intervals.cpp'; then $(CYGPATH_W) 'intervals.cpp'; else $(CYGPATH_W) '$(srcdir)/intervals.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(stapi_syms_CPPFLAGS) $(CPPFLAGS) $(stapi_syms_CXXFLAGS) $(CXXFLAGS) -MT stapi_syms-intervals.obj -MD -MP -MF $(DEPDIR)/stapi_syms-intervals.Tpo -c -o stapi_syms-intervals.obj `if test -f 'intervals.cpp'; then $(CYGPATH_W) 'intervals.cpp'; else $(CYGPATH_W) '$(srcdir)/intervals.cpp'; fi`
 @am__fastdepCXX_TRUE@	mv -f $(DEPDIR)/stapi_syms-intervals.Tpo $(DEPDIR)/stapi_syms-intervals.Po
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='intervals.cpp' object='stapi_syms-intervals.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(stapi_syms_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o stapi_syms-intervals.obj `if test -f 'intervals.cpp'; then $(CYGPATH_W) 'intervals.cpp'; else $(CYGPATH_W) '$(srcdir)/intervals.cpp'; fi`
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(stapi_syms_CPPFLAGS) $(CPPFLAGS) $(stapi_syms_CXXFLAGS) $(CXXFLAGS) -c -o stapi_syms-intervals.obj `if test -f 'intervals.cpp'; then $(CYGPATH_W) 'intervals.cpp'; else $(CYGPATH_W) '$(srcdir)/intervals.cpp'; fi`
 
 stapi_syms-symbols.o: symbols.cpp
-@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(stapi_syms_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT stapi_syms-symbols.o -MD -MP -MF $(DEPDIR)/stapi_syms-symbols.Tpo -c -o stapi_syms-symbols.o `test -f 'symbols.cpp' || echo '$(srcdir)/'`symbols.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(stapi_syms_CPPFLAGS) $(CPPFLAGS) $(stapi_syms_CXXFLAGS) $(CXXFLAGS) -MT stapi_syms-symbols.o -MD -MP -MF $(DEPDIR)/stapi_syms-symbols.Tpo -c -o stapi_syms-symbols.o `test -f 'symbols.cpp' || echo '$(srcdir)/'`symbols.cpp
 @am__fastdepCXX_TRUE@	mv -f $(DEPDIR)/stapi_syms-symbols.Tpo $(DEPDIR)/stapi_syms-symbols.Po
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='symbols.cpp' object='stapi_syms-symbols.o' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(stapi_syms_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o stapi_syms-symbols.o `test -f 'symbols.cpp' || echo '$(srcdir)/'`symbols.cpp
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(stapi_syms_CPPFLAGS) $(CPPFLAGS) $(stapi_syms_CXXFLAGS) $(CXXFLAGS) -c -o stapi_syms-symbols.o `test -f 'symbols.cpp' || echo '$(srcdir)/'`symbols.cpp
 
 stapi_syms-symbols.obj: symbols.cpp
-@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(stapi_syms_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT stapi_syms-symbols.obj -MD -MP -MF $(DEPDIR)/stapi_syms-symbols.Tpo -c -o stapi_syms-symbols.obj `if test -f 'symbols.cpp'; then $(CYGPATH_W) 'symbols.cpp'; else $(CYGPATH_W) '$(srcdir)/symbols.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(stapi_syms_CPPFLAGS) $(CPPFLAGS) $(stapi_syms_CXXFLAGS) $(CXXFLAGS) -MT stapi_syms-symbols.obj -MD -MP -MF $(DEPDIR)/stapi_syms-symbols.Tpo -c -o stapi_syms-symbols.obj `if test -f 'symbols.cpp'; then $(CYGPATH_W) 'symbols.cpp'; else $(CYGPATH_W) '$(srcdir)/symbols.cpp'; fi`
 @am__fastdepCXX_TRUE@	mv -f $(DEPDIR)/stapi_syms-symbols.Tpo $(DEPDIR)/stapi_syms-symbols.Po
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='symbols.cpp' object='stapi_syms-symbols.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(stapi_syms_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o stapi_syms-symbols.obj `if test -f 'symbols.cpp'; then $(CYGPATH_W) 'symbols.cpp'; else $(CYGPATH_W) '$(srcdir)/symbols.cpp'; fi`
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(stapi_syms_CPPFLAGS) $(CPPFLAGS) $(stapi_syms_CXXFLAGS) $(CXXFLAGS) -c -o stapi_syms-symbols.obj `if test -f 'symbols.cpp'; then $(CYGPATH_W) 'symbols.cpp'; else $(CYGPATH_W) '$(srcdir)/symbols.cpp'; fi`
 
 stapi_syms-x86-process-ranges.o: x86-process-ranges.cpp
-@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(stapi_syms_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT stapi_syms-x86-process-ranges.o -MD -MP -MF $(DEPDIR)/stapi_syms-x86-process-ranges.Tpo -c -o stapi_syms-x86-process-ranges.o `test -f 'x86-process-ranges.cpp' || echo '$(srcdir)/'`x86-process-ranges.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(stapi_syms_CPPFLAGS) $(CPPFLAGS) $(stapi_syms_CXXFLAGS) $(CXXFLAGS) -MT stapi_syms-x86-process-ranges.o -MD -MP -MF $(DEPDIR)/stapi_syms-x86-process-ranges.Tpo -c -o stapi_syms-x86-process-ranges.o `test -f 'x86-process-ranges.cpp' || echo '$(srcdir)/'`x86-process-ranges.cpp
 @am__fastdepCXX_TRUE@	mv -f $(DEPDIR)/stapi_syms-x86-process-ranges.Tpo $(DEPDIR)/stapi_syms-x86-process-ranges.Po
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='x86-process-ranges.cpp' object='stapi_syms-x86-process-ranges.o' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(stapi_syms_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o stapi_syms-x86-process-ranges.o `test -f 'x86-process-ranges.cpp' || echo '$(srcdir)/'`x86-process-ranges.cpp
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(stapi_syms_CPPFLAGS) $(CPPFLAGS) $(stapi_syms_CXXFLAGS) $(CXXFLAGS) -c -o stapi_syms-x86-process-ranges.o `test -f 'x86-process-ranges.cpp' || echo '$(srcdir)/'`x86-process-ranges.cpp
 
 stapi_syms-x86-process-ranges.obj: x86-process-ranges.cpp
-@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(stapi_syms_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT stapi_syms-x86-process-ranges.obj -MD -MP -MF $(DEPDIR)/stapi_syms-x86-process-ranges.Tpo -c -o stapi_syms-x86-process-ranges.obj `if test -f 'x86-process-ranges.cpp'; then $(CYGPATH_W) 'x86-process-ranges.cpp'; else $(CYGPATH_W) '$(srcdir)/x86-process-ranges.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(stapi_syms_CPPFLAGS) $(CPPFLAGS) $(stapi_syms_CXXFLAGS) $(CXXFLAGS) -MT stapi_syms-x86-process-ranges.obj -MD -MP -MF $(DEPDIR)/stapi_syms-x86-process-ranges.Tpo -c -o stapi_syms-x86-process-ranges.obj `if test -f 'x86-process-ranges.cpp'; then $(CYGPATH_W) 'x86-process-ranges.cpp'; else $(CYGPATH_W) '$(srcdir)/x86-process-ranges.cpp'; fi`
 @am__fastdepCXX_TRUE@	mv -f $(DEPDIR)/stapi_syms-x86-process-ranges.Tpo $(DEPDIR)/stapi_syms-x86-process-ranges.Po
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='x86-process-ranges.cpp' object='stapi_syms-x86-process-ranges.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(stapi_syms_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o stapi_syms-x86-process-ranges.obj `if test -f 'x86-process-ranges.cpp'; then $(CYGPATH_W) 'x86-process-ranges.cpp'; else $(CYGPATH_W) '$(srcdir)/x86-process-ranges.cpp'; fi`
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(stapi_syms_CPPFLAGS) $(CPPFLAGS) $(stapi_syms_CXXFLAGS) $(CXXFLAGS) -c -o stapi_syms-x86-process-ranges.obj `if test -f 'x86-process-ranges.cpp'; then $(CYGPATH_W) 'x86-process-ranges.cpp'; else $(CYGPATH_W) '$(srcdir)/x86-process-ranges.cpp'; fi`
 
 stapi_syms-generic-process-ranges.o: generic-process-ranges.cpp
-@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(stapi_syms_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT stapi_syms-generic-process-ranges.o -MD -MP -MF $(DEPDIR)/stapi_syms-generic-process-ranges.Tpo -c -o stapi_syms-generic-process-ranges.o `test -f 'generic-process-ranges.cpp' || echo '$(srcdir)/'`generic-process-ranges.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(stapi_syms_CPPFLAGS) $(CPPFLAGS) $(stapi_syms_CXXFLAGS) $(CXXFLAGS) -MT stapi_syms-generic-process-ranges.o -MD -MP -MF $(DEPDIR)/stapi_syms-generic-process-ranges.Tpo -c -o stapi_syms-generic-process-ranges.o `test -f 'generic-process-ranges.cpp' || echo '$(srcdir)/'`generic-process-ranges.cpp
 @am__fastdepCXX_TRUE@	mv -f $(DEPDIR)/stapi_syms-generic-process-ranges.Tpo $(DEPDIR)/stapi_syms-generic-process-ranges.Po
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='generic-process-ranges.cpp' object='stapi_syms-generic-process-ranges.o' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(stapi_syms_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o stapi_syms-generic-process-ranges.o `test -f 'generic-process-ranges.cpp' || echo '$(srcdir)/'`generic-process-ranges.cpp
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(stapi_syms_CPPFLAGS) $(CPPFLAGS) $(stapi_syms_CXXFLAGS) $(CXXFLAGS) -c -o stapi_syms-generic-process-ranges.o `test -f 'generic-process-ranges.cpp' || echo '$(srcdir)/'`generic-process-ranges.cpp
 
 stapi_syms-generic-process-ranges.obj: generic-process-ranges.cpp
-@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(stapi_syms_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT stapi_syms-generic-process-ranges.obj -MD -MP -MF $(DEPDIR)/stapi_syms-generic-process-ranges.Tpo -c -o stapi_syms-generic-process-ranges.obj `if test -f 'generic-process-ranges.cpp'; then $(CYGPATH_W) 'generic-process-ranges.cpp'; else $(CYGPATH_W) '$(srcdir)/generic-process-ranges.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(stapi_syms_CPPFLAGS) $(CPPFLAGS) $(stapi_syms_CXXFLAGS) $(CXXFLAGS) -MT stapi_syms-generic-process-ranges.obj -MD -MP -MF $(DEPDIR)/stapi_syms-generic-process-ranges.Tpo -c -o stapi_syms-generic-process-ranges.obj `if test -f 'generic-process-ranges.cpp'; then $(CYGPATH_W) 'generic-process-ranges.cpp'; else $(CYGPATH_W) '$(srcdir)/generic-process-ranges.cpp'; fi`
 @am__fastdepCXX_TRUE@	mv -f $(DEPDIR)/stapi_syms-generic-process-ranges.Tpo $(DEPDIR)/stapi_syms-generic-process-ranges.Po
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='generic-process-ranges.cpp' object='stapi_syms-generic-process-ranges.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(stapi_syms_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o stapi_syms-generic-process-ranges.obj `if test -f 'generic-process-ranges.cpp'; then $(CYGPATH_W) 'generic-process-ranges.cpp'; else $(CYGPATH_W) '$(srcdir)/generic-process-ranges.cpp'; fi`
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(stapi_syms_CPPFLAGS) $(CPPFLAGS) $(stapi_syms_CXXFLAGS) $(CXXFLAGS) -c -o stapi_syms-generic-process-ranges.obj `if test -f 'generic-process-ranges.cpp'; then $(CYGPATH_W) 'generic-process-ranges.cpp'; else $(CYGPATH_W) '$(srcdir)/generic-process-ranges.cpp'; fi`
 
 mostlyclean-libtool:
 	-rm -f *.lo

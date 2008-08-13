@@ -25,6 +25,8 @@ stapi_syms_SOURCES = $(SYMBOLS_BASE_FILES)
 
 stapi_syms_CPPFLAGS = -I$(SYMTABAPI_INC)
 
+stapi_syms_CXXFLAGS = $(CXXFLAGS) $(HOST_CXXFLAGS)
+
 stapi_syms_LDFLAGS = 				\
     -L$(SYMTABAPI_LIB) -lsymtabAPI -lcommon	\
     -L$(LIBDWARF_LIB) -ldwarf			\
