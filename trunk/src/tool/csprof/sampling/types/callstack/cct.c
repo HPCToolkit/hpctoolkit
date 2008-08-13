@@ -401,7 +401,7 @@ csprof_cct_node__link(csprof_cct_node_t* x, csprof_cct_node_t* parent)
 // csprof_cct_node__find_child: finds the child of 'x' with
 // instruction pointer equal to 'ip'.
 //
-// tallent: I slightly sanitied the different versions, but FIXME
+// tallent: I slightly sanitized the different versions, but FIXME
 //
 static csprof_cct_node_t*
 csprof_cct_node__find_child(csprof_cct_node_t* x,
@@ -427,8 +427,7 @@ csprof_cct_node__find_child(csprof_cct_node_t* x,
       if (c->ip == ip 
 	  && lush_lip_eq(c->lip, lip)
 	  && lush_assoc_class_eq(c_as, as) 
-	  && implies(lush_assoc_info_is_root_note(as_info), 
-		     lush_assoc_info_is_root_note(c->as_info))) {
+	  && lush_assoc_info__path_len_eq(c->as_info, as_info)) {
 	return c;
       }
 

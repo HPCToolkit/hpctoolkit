@@ -195,6 +195,13 @@ lush_assoc_info__set_path_len(lush_assoc_info_t& x, uint32_t new_len)
   (x).u.len = (new_len)
 #endif
 
+
+static inline bool
+lush_assoc_info__path_len_eq(lush_assoc_info_t x, lush_assoc_info_t y)
+{
+  return lush_assoc_info__get_path_len(x) == lush_assoc_info__get_path_len(y);
+}
+
 static inline bool
 lush_assoc_info_is_root_note(lush_assoc_info_t x)
 {
