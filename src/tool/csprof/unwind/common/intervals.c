@@ -60,9 +60,25 @@ new_ui(char *startaddr, ra_loc ra_status, unsigned int sp_ra_pos,
 
   u->prev = prev;
   u->next = NULL;
+  u->prev_canonical = NULL;
+  u->restored_canonical = 0;
 
   return u; 
 }
+
+
+void
+set_ui_canonical(unwind_interval *u, unwind_interval *value)
+{
+  u->prev_canonical = value;
+} 
+
+void
+set_ui_restored_canonical(unwind_interval *u, unwind_interval *value)
+{
+  u->restored_canonical = 1;
+  u->prev_canonical = value;
+} 
 
 
 unwind_interval *
@@ -96,15 +112,21 @@ dump_ui(unwind_interval *u, int dump_to_stdout)
   char buf[1000];
 
   sprintf(buf, "start=%p end =%p ra_status=%s sp_ra_pos=%d sp_bp_pos=%d bp_status=%s "
-	  "bp_ra_pos = %d bp_bp_pos=%d next=%p prev=%p\n", 
+	  "bp_ra_pos = %d bp_bp_pos=%d next=%p prev=%p prev_canonical=%p rest_canon=%d\n", 
 	  (void *) u->startaddr, (void *) u->endaddr, ra_status_string(u->ra_status),
 	  u->sp_ra_pos, u->sp_bp_pos, 
 	  bp_status_string(u->bp_status),
 	  u->bp_ra_pos, u->bp_bp_pos,
-	  u->next, u->prev); 
+	  u->next, u->prev, u->prev_canonical, u->restored_canonical); 
 
+#if 0
   PMSG(INTV,buf);
-  if (dump_to_stdout) printf("%s", buf);
+#endif
+  EMSG(buf);
+  if (dump_to_stdout) { 
+    fprintf(stderr, "%s", buf);
+    fflush(stderr);
+  }
 }
 
 

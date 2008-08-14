@@ -33,28 +33,40 @@ reset_to_canonical_interval(xed_decoded_inst_t *xptr, unwind_interval *current,
     if (bp_frames_found) { 
       // look for first bp frame
       first = find_first_bp_frame(first);
+      set_ui_canonical(first, *canonical_interval);
       *canonical_interval = first;
     } else if (crhs) {
 #if 0
       if ((hw_uwi && hw_uwi->bp_status == BP_SAVED) && 
 	  (crhs->bp_status != BP_SAVED) &&
-	  (crhs->sp_ra_pos == hw_uwi->sp_ra_pos)) *canonical_interval = hw_uwi;
+	  (crhs->sp_ra_pos == hw_uwi->sp_ra_pos)) {
+        set_ui_canonical(hw_uwi, *canonical_interval);
+	*canonical_interval = hw_uwi;
+      }
       if ((hw_uwi && hw_uwi->bp_status == BP_SAVED) && 
-	  (crhs->bp_status != BP_SAVED)) *canonical_interval = hw_uwi;
+	  (crhs->bp_status != BP_SAVED)) {
+         set_ui_canonical(hw_uwi, *canonical_interval);
+         *canonical_interval = hw_uwi;
+      }
 #endif
       if (hw_uwi && hw_uwi->bp_status == BP_SAVED)  
-	if (crhs->bp_status != BP_SAVED) *canonical_interval = hw_uwi;
+	if (crhs->bp_status != BP_SAVED) {
+         set_ui_canonical(hw_uwi, *canonical_interval);
+         *canonical_interval = hw_uwi;
+      }
       first = *canonical_interval;
 #if 0
       // moved bp frame code first
     } else if (bp_frames_found){ 
       // look for first bp frame
       first = find_first_bp_frame(first);
+      set_ui_canonical(first, *canonical_interval);
       *canonical_interval = first;
 #endif
     } else { 
       // look for first nondecreasing with no jmp
       first = find_first_non_decr(first, hw_uwi);
+      set_ui_canonical(first, *canonical_interval);
       *canonical_interval = first;
     }
     {
@@ -74,6 +86,7 @@ reset_to_canonical_interval(xed_decoded_inst_t *xptr, unwind_interval *current,
 		       istatus, first->sp_ra_pos, first->bp_ra_pos,
 		       first->bp_status, first->sp_bp_pos, first->bp_bp_pos,
 		       current);
+        set_ui_restored_canonical(*next, (*canonical_interval)->prev_canonical);
 	return;
       }
     }

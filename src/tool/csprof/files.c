@@ -35,7 +35,7 @@
 // forward declarations 
 //***************************************************************
 
-static char *files_name(char *filename, const char *suffix);
+static char *files_name(char *filename, unsigned int mpi, const char *suffix);
 
 static unsigned int os_pid();
 static long os_hostid();
@@ -57,9 +57,9 @@ char *executable_name = 0;
 //***************************************************************
 
 void 
-files_trace_name(char *filename, int len)
+files_trace_name(char *filename, unsigned int mpi, int len)
 {
-  files_name(filename, CSPROF_TRACE_FNM_SFX);
+  files_name(filename, mpi, CSPROF_TRACE_FNM_SFX);
 }
 
 
@@ -71,9 +71,9 @@ files_executable_name()
 
 
 void
-files_profile_name(char *filename, int len)
+files_profile_name(char *filename, unsigned int mpi, int len)
 {
-  files_name(filename, CSPROF_PROFILE_FNM_SFX);
+  files_name(filename, mpi, CSPROF_PROFILE_FNM_SFX);
 }
 
 
@@ -142,14 +142,14 @@ os_realpath(const char *inpath, char *outpath)
 
 
 static char *
-files_name(char *filename, const char *suffix)
+files_name(char *filename, unsigned int mpi, const char *suffix)
 {
   thread_data_t *td = csprof_get_thread_data();
 
-  sprintf(filename, "%s/%s-%lx-%u-%lu.%s", 
-	  output_directory, executable_name, os_hostid(), 
-	  os_pid(), td->state->pstate.thrid,
-	  suffix); 
+  sprintf(filename, "%s/%s-%06lu-%03lu-%lx-%u.%s", 
+	  output_directory, executable_name, mpi, 
+	  td->state->pstate.thrid,
+          os_hostid(), os_pid(), suffix); 
 
   return filename;
 }

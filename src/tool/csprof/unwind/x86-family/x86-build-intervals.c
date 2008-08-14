@@ -70,7 +70,7 @@ x86_build_intervals(char *ins, unsigned int len, int noisy)
       continue;      /* continue onward ... */
     }
 
-    next = process_inst(xptr, ins, end, current, first, &bp_just_pushed, 
+    next = process_inst(xptr, &ins, end, &current, first, &bp_just_pushed, 
 			&highwatermark, &canonical_interval, &bp_frames_found);
     
     if (next == &poison_ui) {
