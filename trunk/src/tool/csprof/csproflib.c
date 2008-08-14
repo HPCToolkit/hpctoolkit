@@ -417,7 +417,9 @@ int csprof_write_profile_data(csprof_state_t *state){
   char fnm[CSPROF_FNM_SZ];
 
 
-  files_profile_name(fnm, CSPROF_FNM_SZ);
+  int rank = monitor_mpi_comm_rank();
+  if (rank < 0) rank = 0;
+  files_profile_name(fnm, rank, CSPROF_FNM_SZ);
 
   MSG(CSPROF_MSG_DATAFILE, "CSPROF write_profile_data: Writing %s", fnm);
 

@@ -14,12 +14,41 @@ static bool plt_is_next(char *ins);
  *****************************************************************************/
 
 unwind_interval *
-process_return(xed_decoded_inst_t *xptr, unwind_interval *current, 
-	       char *ins, char *end, bool irdebug, unwind_interval *first, 
+process_return(xed_decoded_inst_t *xptr, unwind_interval **current_ptr, 
+	       char **ins_ptr, char *end, bool irdebug, unwind_interval *first, 
 	       highwatermark_t *highwatermark, 
-	       unwind_interval **canonical_interval, bool bp_frames_found)
+	       unwind_interval **canonical_interval, bool *bp_frames_found)
 {
+  unwind_interval *current = *current_ptr;
+  char *ins = *ins_ptr;
   unwind_interval *next = current;
+  if (current->bp_status == BP_SAVED) {
+     unwind_interval *ui = current;
+     while (ui && ui->restored_canonical == 0) ui = ui->prev;
+     if (ui && ui->restored_canonical) {
+        *canonical_interval = ui->prev_canonical;
+        ui->prev_canonical = ui->prev_canonical->prev_canonical; 
+        ui->next = NULL;
+
+        ui->ra_status = (*canonical_interval)->ra_status;
+        ui->bp_status = (*canonical_interval)->bp_status;
+
+        ui->sp_ra_pos = (*canonical_interval)->sp_ra_pos;
+        ui->sp_bp_pos = (*canonical_interval)->sp_bp_pos;
+
+        ui->bp_ra_pos = (*canonical_interval)->bp_ra_pos;
+        ui->bp_bp_pos = (*canonical_interval)->bp_bp_pos;
+
+	*current_ptr = ui->prev;
+	*bp_frames_found = 0;
+        highwatermark->uwi = NULL;
+
+        // restart at the end of the first interval that we just patched
+        *ins_ptr = ((char *) ui->prev->endaddr) - xed_decoded_inst_get_length(xptr); // gabriel's hack
+        return ui;
+        // FIXME
+     }
+  }
   if (ins + xed_decoded_inst_get_length(xptr) < end) {
     //-------------------------------------------------------------------------
     // the return is not the last instruction in the interval; 
@@ -37,7 +66,7 @@ process_return(xed_decoded_inst_t *xptr, unwind_interval *current,
       *canonical_interval = current;
     } else {
       reset_to_canonical_interval(xptr, current, &next, ins, end, irdebug, first, 
-				  highwatermark, canonical_interval, bp_frames_found); 
+				  highwatermark, canonical_interval, *bp_frames_found); 
     }
   }
   return next;

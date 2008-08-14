@@ -17,6 +17,8 @@ struct unwind_interval_t {
   int bp_bp_pos; /* (caller's) BP offset from bp */
   struct unwind_interval_t *next;
   struct unwind_interval_t *prev;
+  struct unwind_interval_t *prev_canonical;
+  int restored_canonical;
 };
 
 #define lstartaddr ((unsigned long) startaddr)
@@ -45,6 +47,12 @@ extern const unwind_interval poison_ui;
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+
+  void set_ui_canonical(unwind_interval *u, unwind_interval *value);
+
+  void set_ui_restored_canonical(unwind_interval *u, unwind_interval *value);
+
 
   interval_status build_intervals(char  *ins, unsigned int len);
 

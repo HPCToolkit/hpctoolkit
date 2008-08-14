@@ -26,9 +26,11 @@
 //*********************************************************************
 
 typedef struct trecord_s {
-  unsigned int cpid;
   double time;
+  unsigned int cpid;
 } trecord_t;
+
+#define TRECORD_SIZE (sizeof(double) + sizeof(unsigned int))
 
 //*********************************************************************
 // forward declarations 
@@ -71,7 +73,7 @@ trace_open()
 {
   if (tracing) {
     char trace_file[PATH_MAX];
-    files_trace_name(trace_file, PATH_MAX);
+    files_trace_name(trace_file, 0, PATH_MAX);
     thread_data_t *td = csprof_get_thread_data();
     td->trace_file = fopen(trace_file, "w");
     trace_file_validate(td->trace_file != 0, "open");
@@ -88,10 +90,10 @@ trace_append(unsigned int cpid)
     int notime = gettimeofday(&tv, NULL);
     assert(notime == 0 && "in trace_append: gettimeofday failed!"); 
     double microtime = tv.tv_usec + tv.tv_sec * 1000000;
-    trecord_t record = { cpid, microtime };
+    trecord_t record = { microtime, cpid };
 
     thread_data_t *td = csprof_get_thread_data();
-    int written = fwrite(&record, sizeof(record), NITEMS, td->trace_file);
+    int written = fwrite(&record, TRECORD_SIZE, NITEMS, td->trace_file);
     trace_file_validate(written == NITEMS, "append");
   }
 }
@@ -108,6 +110,14 @@ trace_close()
 
     ret = fclose(td->trace_file);
     trace_file_validate(ret == 0, "close");
+    int rank = monitor_mpi_comm_rank();
+    if (rank >= 0) {
+      char old[PATH_MAX];
+      char new[PATH_MAX];
+      files_trace_name(old, 0, PATH_MAX);
+      files_trace_name(new, rank, PATH_MAX);
+      rename(old, new);
+    }
   }
 }
 

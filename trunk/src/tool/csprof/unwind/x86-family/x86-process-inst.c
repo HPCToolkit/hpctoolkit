@@ -10,13 +10,15 @@
 #include "x86-return.h"
 
 
-unwind_interval *process_inst(xed_decoded_inst_t *xptr, char *ins, char *end, 
-			      unwind_interval *current, unwind_interval *first,
+unwind_interval *process_inst(xed_decoded_inst_t *xptr, char **ins_ptr, char *end, 
+			      unwind_interval **current_ptr, unwind_interval *first,
 			      bool *bp_just_pushed, 
 			      highwatermark_t *highwatermark,
 			      unwind_interval **canonical_interval, 
 			      bool *bp_frames_found)
 {
+  char *ins = *ins_ptr;
+  unwind_interval *current = *current_ptr;
   xed_iclass_enum_t xiclass = xed_decoded_inst_get_iclass(xptr);
   const xed_inst_t *xi = xed_decoded_inst_inst(xptr);
   unwind_interval *next;
@@ -85,8 +87,8 @@ unwind_interval *process_inst(xed_decoded_inst_t *xptr, char *ins, char *end,
 
   case XED_ICLASS_RET_FAR:
   case XED_ICLASS_RET_NEAR:
-    next = process_return(xptr, current, ins, end, irdebug, first, 
-			  highwatermark, canonical_interval, *bp_frames_found);
+    next = process_return(xptr, current_ptr, ins_ptr, end, irdebug, first, 
+			  highwatermark, canonical_interval, bp_frames_found);
     break;
 
   case XED_ICLASS_ADD:   
